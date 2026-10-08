@@ -78,45 +78,153 @@ class FormData {
 }
 class XMLHttpRequestEventTarget extends EventTarget {}
 installHandlers(XMLHttpRequestEventTarget.prototype, false, ['abort', 'error', 'load', 'loadend', 'loadstart', 'progress', 'timeout']);
+const XHR_FORBIDDEN = new Set(['accept-charset', 'accept-encoding', 'access-control-request-headers', 'access-control-request-method', 'connection', 'content-length', 'cookie', 'cookie2', 'date', 'dnt', 'expect', 'host', 'keep-alive', 'origin', 'referer', 'set-cookie', 'te', 'trailer', 'transfer-encoding', 'upgrade', 'via']);
+const HTTP_TOKEN = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
+let xhrMakeUpload = false;
+class XMLHttpRequestUpload extends XMLHttpRequestEventTarget { constructor() { if (!xhrMakeUpload) illegal(); super(); } }
 class XMLHttpRequest extends XMLHttpRequestEventTarget {
-    constructor() { super(); Object.assign(this, { readyState: 0, status: 0, statusText: '', responseURL: '', responseType: '', timeout: 0, withCredentials: false, onreadystatechange: null }); def(this, '_rh', new Headers()); def(this, '_hdrs', []); def(this, '_body', null); this.upload = new XMLHttpRequestEventTarget(); }
-    open(m, u, async = true) { this._m = String(m).toUpperCase(); this._u = new URL(String(u), document.baseURI).href; this._async = async !== false; this._rh = new Headers(); this._state(1); }
-    setRequestHeader(k, v) { if (this.readyState !== 1) throw new DOMException("The object's state must be OPENED.", 'InvalidStateError'); this._rh.append(k, v); }
-    getResponseHeader(k) { if (this.readyState < 2) return null; const h = fromFlat(this._hdrs); return h.get(k); }
-    getAllResponseHeaders() { if (this.readyState < 2) return ''; let s = ''; for (let i = 0; i + 1 < this._hdrs.length; i += 2) s += this._hdrs[i].toLowerCase() + ': ' + this._hdrs[i + 1] + '\r\n'; return s; }
-    overrideMimeType() {}
-    _state(s) { this.readyState = s; const ev = new Event('readystatechange'); if (typeof this.onreadystatechange === 'function') { try { this.onreadystatechange(ev); } catch (e) { report(e); } } if (this.__ls) dispatch(this, ev); }
-    _fire(t, tgt = this) { const n = this._body ? this._body.byteLength : 0; dispatch(tgt, new ProgressEvent(t, { lengthComputable: true, loaded: n, total: n })); }
-    _done(status, statusText, url, hdrs, body, err) {
-        if (this._aborted) return;
-        if (this._timer) clearTimeout(this._timer);
-        if (err) { this.status = 0; this._state(4); this._fire('error'); this._fire('loadend'); return; }
-        this.status = status; this.statusText = statusText; this.responseURL = url; this._hdrs = hdrs; this._body = body;
-        this._state(2); this._state(3); this._fire('progress'); this._state(4); this._fire('load'); this._fire('loadend');
+    constructor() {
+        super();
+        for (const [k, v] of Object.entries({ _rs: 0, _st: 0, _stt: '', _url: '', _rt: '', _to: 0, _wc: false, _gen: 0, _send: false, _async: true, _hdrs: [], _body: null, _resp: undefined, _mime: null, _up: null, _upDone: true, _id: 0, _timer: 0, _m: 'GET', _u: '' })) def(this, k, v);
+        def(this, '_rh', new Headers());
+    }
+    get readyState() { return this._rs; } get status() { return this._st; } get statusText() { return this._stt; }
+    get responseURL() { return this._url.replace(/#.*$/, ''); }
+    get upload() { if (!this._up) { xhrMakeUpload = true; try { this._up = new XMLHttpRequestUpload(); } finally { xhrMakeUpload = false; } } return this._up; }
+    get timeout() { return this._to; }
+    set timeout(v) { if (this._rs === 1 && !this._async) throw new DOMException('Timeouts cannot be set for synchronous requests made from a document.', 'InvalidAccessError'); this._to = toU32(v); }
+    get withCredentials() { return this._wc; }
+    set withCredentials(v) { if (this._rs > 1 || this._send) throw new DOMException("The value may only be set if the object's state is UNSENT or OPENED.", 'InvalidStateError'); this._wc = !!v; }
+    get responseType() { return this._rt; }
+    set responseType(v) {
+        v = String(v); if (!['', 'arraybuffer', 'blob', 'document', 'json', 'text'].includes(v)) return;
+        if (this._rs >= 3) throw new DOMException("The response type cannot be set if the object's state is LOADING or DONE.", 'InvalidStateError');
+        if (this._rs === 1 && !this._async) throw new DOMException('The response type cannot be changed for synchronous requests made from a document.', 'InvalidAccessError');
+        this._rt = v;
+    }
+    _state(s) { this._rs = s; dispatch(this, new Event('readystatechange')); }
+    _fire(t, tgt = this, n = 0, tot = 0, lc = false) { dispatch(tgt, new ProgressEvent(t, { lengthComputable: lc, loaded: n, total: tot })); }
+    _terminate() { this._gen++; if (this._id) { N.abort(this._id); this._id = 0; } if (this._timer) { clearTimeout(this._timer); this._timer = 0; } }
+    _reset() { this._st = 0; this._stt = ''; this._url = ''; this._hdrs = []; this._body = null; this._resp = undefined; }
+    open(method, url, async, user, pass) {
+        if (arguments.length < 2) throw new TypeError(`Failed to execute 'open' on 'XMLHttpRequest': 2 arguments required, but only ${arguments.length} present.`);
+        method = String(method); url = String(url);
+        if (arguments.length > 2) { async = !!async; if (user != null) user = String(user); if (pass != null) pass = String(pass); } else async = true;
+        if (!HTTP_TOKEN.test(method)) throw new DOMException(`'${method}' is not a valid HTTP method.`, 'SyntaxError');
+        const up = method.toUpperCase();
+        if (up === 'CONNECT' || up === 'TRACE' || up === 'TRACK') throw new DOMException(`'${method}' HTTP method is unsupported.`, 'SecurityError');
+        if (['DELETE', 'GET', 'HEAD', 'OPTIONS', 'POST', 'PUT'].includes(up)) method = up;
+        let u; try { u = new URL(url, document.baseURI); } catch (e) { throw new DOMException(`Invalid URL`, 'SyntaxError'); }
+        if (user != null || pass != null) { if (u.host) { if (user != null) u.username = user; if (pass != null) u.password = pass; } }
+        if (!async && (this._to || this._rt)) throw new DOMException('Synchronous requests from a document must not set a response type or timeout.', 'InvalidAccessError');
+        this._terminate();
+        this._m = method; this._u = u.href; this._async = async; this._send = false; this._upDone = true;
+        this._rh = new Headers(); this._reset();
+        if (this._rs !== 1) this._state(1);
+    }
+    setRequestHeader(k, v) {
+        if (arguments.length < 2) throw new TypeError(`Failed to execute 'setRequestHeader' on 'XMLHttpRequest': 2 arguments required, but only ${arguments.length} present.`);
+        if (this._rs !== 1 || this._send) throw new DOMException("The object's state must be OPENED.", 'InvalidStateError');
+        k = String(k); v = String(v).replace(/^[\t\n\r ]+|[\t\n\r ]+$/g, '');
+        if (!HTTP_TOKEN.test(k)) throw new DOMException(`'${k}' is not a valid HTTP header field name.`, 'SyntaxError');
+        if (/[\0\r\n]/.test(v) || /[^\x00-\xff]/.test(v)) throw new DOMException(`'${v}' is not a valid HTTP header field value.`, 'SyntaxError');
+        const l = k.toLowerCase();
+        if (XHR_FORBIDDEN.has(l) || l.startsWith('proxy-') || l.startsWith('sec-')) return;
+        this._rh.append(k, v);
+    }
+    _hdrList() { const a = []; for (let i = 0; i + 1 < this._hdrs.length; i += 2) a.push([this._hdrs[i].toLowerCase(), this._hdrs[i + 1]]); return a; }
+    getResponseHeader(k) {
+        if (this._rs < 2 || !this._hdrs.length) return null;
+        k = String(k).toLowerCase(); if (k === 'set-cookie' || k === 'set-cookie2') return null;
+        const v = this._hdrList().filter(h => h[0] === k).map(h => h[1]);
+        return v.length ? v.join(', ') : null;
+    }
+    getAllResponseHeaders() {
+        if (this._rs < 2) return '';
+        const m = new Map();
+        for (const [k, v] of this._hdrList()) { if (k === 'set-cookie' || k === 'set-cookie2') continue; m.set(k, m.has(k) ? m.get(k) + ', ' + v : v); }
+        return [...m.keys()].sort((a, b) => a < b ? -1 : a > b ? 1 : 0).map(k => k + ': ' + m.get(k) + '\r\n').join('');
+    }
+    overrideMimeType(m) { if (this._rs >= 3) throw new DOMException("MimeType cannot be overridden when the state is LOADING or DONE.", 'InvalidStateError'); this._mime = String(m); }
+    _errorSteps(ev) {
+        this._rs = 4; this._send = false; this._reset();
+        dispatch(this, new Event('readystatechange'));
+        if (!this._async) return;
+        if (!this._upDone) { this._upDone = true; if (this._up) { this._fire(ev, this._up); this._fire('loadend', this._up); } }
+        this._fire(ev); this._fire('loadend');
+    }
+    _done(gen, status, statusText, url, hdrs, body, err) {
+        if (gen !== this._gen) return;
+        this._id = 0; if (this._timer) { clearTimeout(this._timer); this._timer = 0; }
+        if (err) { this._errorSteps('error'); if (!this._async) throw new DOMException(`Failed to load '${this._u}'.`, 'NetworkError'); return; }
+        if (!this._upDone) { this._upDone = true; if (this._up && this._async) { const n = this._reqLen; this._fire('progress', this._up, n, n, true); this._fire('load', this._up, n, n, true); this._fire('loadend', this._up, n, n, true); } }
+        this._st = status; this._stt = statusText; this._url = url || this._u; this._hdrs = hdrs || []; this._body = body;
+        const n = body ? body.byteLength : 0, len = +this.getResponseHeader('content-length'), lc = Number.isFinite(len) && len > 0, tot = lc ? len : 0;
+        if (this._async) {
+            this._state(2); if (gen !== this._gen) return;
+            if (n) { this._state(3); if (gen !== this._gen) return; this._fire('progress', this, n, tot, lc); if (gen !== this._gen) return; }
+        }
+        this._send = false; this._state(4); if (gen !== this._gen) return;
+        this._fire('load', this, n, tot, lc); this._fire('loadend', this, n, tot, lc);
     }
     send(body) {
-        if (this.readyState !== 1) throw new DOMException("The object's state must be OPENED.", 'InvalidStateError');
-        const b = this._m === 'GET' || this._m === 'HEAD' ? null : bodyInit(body, this._rh);
-        const lb = localBody(this._u);
-        if (lb !== undefined) { const f = () => this._done(lb ? 200 : 0, lb ? 'OK' : '', this._u, lb ? ['content-type', lb[1]] : [], lb ? lb[0] : null, !lb); if (this._async) setTimeout(f); else f(); return; }
-        if (!this._async) { const r = N.fetchSync(this._m, this._u, this._rh._flat(), b); this._done(...r); return; }
-        this._fire('loadstart');
-        this._id = N.fetch(this._m, this._u, this._rh._flat(), b, (...a) => this._done(...a));
-        if (this.timeout > 0) this._timer = setTimeout(() => { N.abort(this._id); this._aborted = true; this._state(4); this._fire('timeout'); this._fire('loadend'); }, this.timeout);
-    }
-    abort() { if (this._id) N.abort(this._id); this._aborted = true; if (this.readyState > 1 && this.readyState < 4) { this._state(4); this._fire('abort'); this._fire('loadend'); } this.readyState = 0; }
-    get responseText() { if (this.responseType && this.responseType !== 'text') throw new DOMException("The value is only accessible if the object's 'responseType' is '' or 'text'.", 'InvalidStateError'); return this._body ? N.decode(this._body) : ''; }
-    get response() {
-        if (this.readyState !== 4 || !this._body) return this.responseType === '' || this.responseType === 'text' ? (this._body ? N.decode(this._body) : '') : null;
-        switch (this.responseType) {
-        case 'arraybuffer': return this._body; case 'blob': return new Blob([this._body], { type: this.getResponseHeader('content-type') || '' });
-        case 'json': try { return JSON.parse(N.decode(this._body)); } catch (e) { return null; }
-        case 'document': return null; default: return N.decode(this._body);
+        if (this._rs !== 1 || this._send) throw new DOMException("The object's state must be OPENED.", 'InvalidStateError');
+        const b = this._m === 'GET' || this._m === 'HEAD' || body == null ? null : bodyInit(body, this._rh);
+        this._reqLen = b ? (b.byteLength ?? b.length ?? 0) : 0;
+        this._upDone = !b; this._send = true;
+        const gen = this._gen;
+        if (this._async) {
+            this._fire('loadstart');
+            if (!this._upDone && this._up) this._fire('loadstart', this._up, 0, this._reqLen, true);
+            if (gen !== this._gen || this._rs !== 1 || !this._send) return;
         }
+        const lb = localBody(this._u);
+        if (lb !== undefined) { const f = () => this._done(gen, lb ? 200 : 0, lb ? 'OK' : '', this._u, lb ? ['content-type', lb[1]] : [], lb ? lb[0] : null, !lb); if (this._async) setTimeout(f); else f(); return; }
+        if (!this._async) { const r = N.fetchSync(this._m, this._u, this._rh._flat(), b); this._done(gen, ...r); return; }
+        this._id = N.fetch(this._m, this._u, this._rh._flat(), b, (...a) => this._done(gen, ...a));
+        if (this._to > 0) this._timer = setTimeout(() => { if (gen !== this._gen) return; this._terminate(); this._errorSteps('timeout'); }, this._to);
     }
-    get responseXML() { return null; }
+    abort() {
+        this._terminate();
+        if ((this._rs === 1 && this._send) || this._rs === 2 || this._rs === 3) this._errorSteps('abort');
+        if (this._rs === 4) { this._rs = 0; this._reset(); }
+    }
+    _mimeType() { return (this._mime || this.getResponseHeader('content-type') || '').split(';')[0].trim().toLowerCase(); }
+    _text() { if (!this._body) return ''; let s = N.decode(this._body); if (s.charCodeAt(0) === 0xFEFF) s = s.slice(1); return s; }
+    get responseText() {
+        if (this._rt && this._rt !== 'text') throw new DOMException("The value is only accessible if the object's 'responseType' is '' or 'text' (was '" + this._rt + "').", 'InvalidStateError');
+        return this._rs < 3 ? '' : this._text();
+    }
+    _doc() {
+        if (this._resp !== undefined) return this._resp;
+        const mt = this._mimeType(); let d = null;
+        if (this._body) {
+            if (mt === 'text/html' && this._rt === 'document' && this._async) d = N.parseDoc(this._text());
+            else if (mt === '' || XML_TYPES.includes(mt) || mt.endsWith('+xml')) { d = parseXML(this._text(), 'application/xml'); if (d.documentElement && d.documentElement.localName === 'parsererror') d = null; }
+        }
+        if (d) def(d, '__url', this.responseURL);
+        return this._resp = d;
+    }
+    get responseXML() {
+        if (this._rt && this._rt !== 'document') throw new DOMException("The value is only accessible if the object's 'responseType' is '' or 'document' (was '" + this._rt + "').", 'InvalidStateError');
+        return this._rs === 4 ? this._doc() : null;
+    }
+    get response() {
+        if (this._rt === '' || this._rt === 'text') return this.responseText;
+        if (this._rs !== 4) return null;
+        if (this._rt === 'document') return this._doc();
+        if (this._resp !== undefined) return this._resp;
+        const b = this._body || new Uint8Array(0);
+        switch (this._rt) {
+        case 'arraybuffer': return this._resp = b instanceof ArrayBuffer ? b : b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength);
+        case 'blob': return this._resp = new Blob([b], { type: this._mime || this.getResponseHeader('content-type') || '' });
+        case 'json': try { return this._resp = JSON.parse(this._text()); } catch (e) { return this._resp = null; }
+        }
+        return null;
+    }
 }
-Object.assign(XMLHttpRequest, { UNSENT: 0, OPENED: 1, HEADERS_RECEIVED: 2, LOADING: 3, DONE: 4 });
+installHandlers(XMLHttpRequest.prototype, false, ['readystatechange']);
+for (const [k, v] of Object.entries({ UNSENT: 0, OPENED: 1, HEADERS_RECEIVED: 2, LOADING: 3, DONE: 4 })) { Object.defineProperty(XMLHttpRequest, k, { value: v, enumerable: true }); Object.defineProperty(XMLHttpRequest.prototype, k, { value: v, enumerable: true }); }
 class WebSocket extends EventTarget {
     constructor(url) { super(); this.url = String(url); this.readyState = 3; this.protocol = ''; this.extensions = ''; this.bufferedAmount = 0; this.binaryType = 'blob'; setTimeout(() => { for (const t of ['error', 'close']) { const ev = t === 'close' ? Object.assign(new Event('close'), { code: 1006, reason: '', wasClean: false }) : new Event('error'); if (this['on' + t]) this['on' + t](ev); dispatch(this, ev); } }); }
     send() { throw new DOMException('WebSocket is not supported yet', 'InvalidStateError'); } close() {}
