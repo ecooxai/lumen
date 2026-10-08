@@ -166,6 +166,7 @@ typedef struct App {
     Tab *t, *tabs[MAX_TABS]; int ntabs, ti;
     char wsname[16][64]; Tab *wslast[16]; int nws, wi; float side;
     int wsicon[16]; Image *icimg[16][2];
+    int tip_tab; double tip_until;     /* CPU-limit dot tooltip pinned by a click */
     bool editing; int sel_all;
     double caret_t;
     bool dirty;
@@ -231,7 +232,7 @@ static float push_text(DisplayList *dl, Font *f, const char *s, float x, float b
     return w;
 }
 
-enum { HB_NONE, HB_BACK, HB_FWD, HB_RELOAD, HB_URL, HB_NEWTAB, HB_WSNEW, HB_TAB = 100, HB_TABX = 200, HB_WS = 300, HB_INFO = 400 };
+enum { HB_NONE, HB_BACK, HB_FWD, HB_RELOAD, HB_URL, HB_NEWTAB, HB_WSNEW, HB_TAB = 100, HB_TABX = 200, HB_WS = 300, HB_INFO = 400, HB_TABDOT = 500 };
 static void info_btn(App *a, int k, float *x, float *w) {
     static const float W[4] = { 70, 76, 82, 28 }; float r = a->vw - 12;
     for (int i = 3; i >= k; i--) r -= W[i] + (i < 3 ? 6 : 0);
@@ -258,7 +259,7 @@ static float tab_w(App *a) { int v[MAX_TABS], n = ws_tabs(a, a->wi, v); float w 
 static int bar_hit(App *a, float x, float y) {
     if (y < TABH) {
         int v[MAX_TABS], n = ws_tabs(a, a->wi, v), k; float tw = tab_w(a), x0 = TLW + 6; k = (int)((x - x0) / tw);
-        if (x >= x0 && k < n) return x > x0 + k * tw + tw - 28 ? HB_TABX + v[k] : HB_TAB + v[k];
+        if (x >= x0 && k < n) { float lx = x - x0 - k * tw; return lx > tw - 28 ? HB_TABX + v[k] : a->tabs[v[k]]->limited && lx > tw - 46 ? HB_TABDOT + v[k] : HB_TAB + v[k]; }
         if (x >= x0 + n * tw && x < x0 + n * tw + 32) return HB_NEWTAB;
         return HB_NONE;
     }
@@ -284,6 +285,17 @@ static void draw_icon(DisplayList *dl, int kind, float cx, float cy, Color c) {
     }
 }
 
+static void chrome_tip(App *a) {   /* tooltip for a tab's CPU-limit dot (hover or click) */
+    int i = a->hover >= HB_TABDOT ? a->hover - HB_TABDOT : a->tip_until ? a->tip_tab : -1;
+    if (i < 0 || i >= a->ntabs || !a->tabs[i]->limited || a->tabs[i]->ws != a->wi) return;
+    int vt[MAX_TABS], n = ws_tabs(a, a->wi, vt), k = 0; while (k < n && vt[k] != i) k++;
+    const char *msg = "CPU use of this tab is limited to 40%";
+    float tw = tab_w(a), w = text_width(a->ui, msg, strlen(msg), 0) + 20, x = TLW + 6 + k * tw + tw - 35 - w / 2, y = TABH + 3;
+    if (x + w > a->vw - 6) x = a->vw - 6 - w;
+    if (x < 6) x = 6;
+    push_rect(&a->cdl, x, y, w, 26, 6, RGBA(45, 45, 48, 240));
+    push_text(&a->cdl, a->ui, msg, x + 10, y + 13 + (a->ui->ascent - a->ui->descent) / 2, w, RGBA(255, 255, 255, 255));
+}
 static void build_chrome(App *a) {
     DisplayList *dl = &a->cdl; dl_clear(dl);
     push_rect(dl, 0, 0, a->vw, TABH, 0, RGBA(222, 225, 230, 255));
@@ -295,7 +307,8 @@ static void build_chrome(App *a) {
         else if (a->hover == HB_TAB + i || a->hover == HB_TABX + i) push_rect(dl, x, 6, tabw - 2, TABH - 10, 6, RGBA(235, 237, 240, 255));
         else if (k + 1 < nvt && vt[k + 1] != a->ti) push_rect(dl, x + tabw - 2, 9, 1, TABH - 16, 0, RGBA(170, 175, 180, 255));
         const char *title = t->cur && t->cur->d && t->cur->d->title && *t->cur->d->title ? t->cur->d->title : *t->url ? t->url : "New Tab";
-        push_text(dl, a->ui, title, x + 12, tbase, tabw - 40, RGBA(40, 40, 40, 255));
+        push_text(dl, a->ui, title, x + 12, tbase, tabw - (t->limited ? 54 : 40), RGBA(40, 40, 40, 255));
+        if (t->limited) push_rect(dl, x + tabw - 40, (4 + TABH) / 2 - 5, 10, 10, 5, RGBA(52, 199, 89, 255));
         push_text(dl, a->ui, "\xC3\x97", x + tabw - 22, tbase, 16, a->hover == HB_TABX + i ? RGBA(20, 20, 20, 255) : RGBA(110, 110, 110, 255));
         if (t->loading) push_rect(dl, x + 8, TABH - 3, (tabw - 18) * 0.35f, 2, 1, RGBA(66, 133, 244, 255));
     }
@@ -416,7 +429,7 @@ static void render(App *a) {
             gvp = &gvd;
         }
     } else { a->gvid_ok = false; raster(&a->page, &(DisplayList){0}, RGBA(255, 255, 255, 255)); }
-    if (!part) { build_chrome(a); raster(&a->frame, &a->cdl, RGBA(255, 255, 255, 255)); }
+    if (!part) { build_chrome(a); chrome_tip(a); raster(&a->frame, &a->cdl, RGBA(255, 255, 255, 255)); }
     if (!gskip) for (int y = part ? ry0 : 0; y < (part ? ry1 : ph) && y + bar_px < a->ph; y++)
         memcpy(a->frame.px + (size_t)(y + bar_px) * (size_t)a->frame.stride + side_px, a->page.px + (size_t)y * (size_t)a->page.stride, (size_t)pwp * 4);
     if (!(a->gpu && gpu_present_frame(a->gpu, a->frame.px, a->frame.w, a->frame.h, a->frame.stride, gskip ? 0 : part ? bar_px + ry0 : 0, gskip ? 0 : part ? bar_px + ry1 : a->frame.h, gvp))) {
@@ -956,7 +969,7 @@ static void navigate(App *a, const char *url, bool push);
 static void menu_cmd(App *a, int c) {
     char nm[64], def[64];
     switch (c) {
-    case MENU_WS_NEW: snprintf(def, sizeof def, "Workspace %d", a->nws + 1); if (ui_prompt("New workspace", def, nm, sizeof nm)) ws_new(a, nm); break;
+    case MENU_WS_NEW: snprintf(def, sizeof def, "Workspace %d", a->nws + 1); ws_new(a, def); break;
     case MENU_WS_RENAME: if (ui_prompt("Rename workspace", a->wsname[a->wi], nm, sizeof nm)) snprintf(a->wsname[a->wi], sizeof a->wsname[0], "%s", nm); break;
     case MENU_WS_CLOSE: ws_close(a, a->wi); break;
     case MENU_WS_REFRESH: { Tab *act = a->t; for (int i = 0; i < a->ntabs; i++) { Tab *t = a->tabs[i]; if (t->ws != a->wi || t->hpos < 0) continue; a->t = t; navigate(a, t->hist[t->hpos], false); } a->t = act; break; }
@@ -1095,6 +1108,7 @@ int main(int argc, char **argv) {
             if (tn - last_evict > 2000) { last_evict = tn; img_evict(); }
         }
         { int mt = media_timeout_ms(); if (mt >= 0 && mt < to) to = mt; }
+        if (a.tip_until) { double r = a.tip_until - now_ms(); if (r <= 0) { a.tip_until = 0; a.dirty = true; a.vonly = false; } else if (r + 1 < to) to = (int)r + 1; }
         {
             bool want = false;
             if (!a.editing && page_focus(&a)) {
@@ -1122,6 +1136,7 @@ int main(int argc, char **argv) {
                 { int bh = bar_hit(&a, ev.button.x, ev.button.y);
                   if (bh >= HB_INFO) { info_click(&a, bh - HB_INFO); break; }
                   if (bh >= HB_WS) { int w = bh - HB_WS; if (w != a.wi) ws_select(&a, w); else ws_popup(&a, w, ev.button.x, ev.button.y); break; }
+                  if (bh >= HB_TABDOT) { a.tip_tab = bh - HB_TABDOT; a.tip_until = now_ms() + 4000; a.dirty = true; a.vonly = false; break; }
                   if (bh == HB_WSNEW) { menu_cmd(&a, MENU_WS_NEW); break; }
                   if (bh >= HB_TABX) { tab_close(&a, bh - HB_TABX, &quit); break; }
                   if (bh >= HB_TAB) { tab_select(&a, bh - HB_TAB); break; }
