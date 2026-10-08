@@ -92,9 +92,14 @@ typedef struct ComputedStyle {
     float filter_blur; float filter_brightness; float backdrop_blur;
     float line_clamp;
     Color caret_color, fill, stroke; float stroke_width;
+    const char *anim_name; float anim_dur, anim_delay, anim_iter; /* first animation layer; name is an atom */
+    const char *tr_prop; float tr_dur, tr_delay;                 /* transition-property list atom (NULL = all), max times */
     CustomProps *custom;
     struct ComputedStyle *before, *after; /* pseudo element styles */
 } ComputedStyle;
+
+/* called on every element restyle (old may be NULL); used to fire animation/transition events */
+extern void (*css_style_change_hook)(Node *n, const ComputedStyle *old, const ComputedStyle *now);
 
 /* ---------------- stylesheet ---------------- */
 typedef struct Decl { const char *prop; char *value; bool important; } Decl;

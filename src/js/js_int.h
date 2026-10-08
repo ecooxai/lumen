@@ -3,6 +3,7 @@
 #include <v8.h>
 #include <libplatform/libplatform.h>
 #include <map>
+#include <thread>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -30,6 +31,14 @@ struct Timer {
     bool repeat;
     v8::Global<v8::Function> fn;
 };
+struct AnimEv {
+    double due;
+    Node *n;
+    v8::Global<v8::Value> target;
+    std::string type, name;
+    double elapsed;
+    bool anim;
+};
 struct JsCtx {
     v8::Isolate *iso = nullptr;
     v8::ArrayBuffer::Allocator *alloc = nullptr;
@@ -52,6 +61,8 @@ struct JsCtx {
     int depth = 0;
     std::map<uint32_t, MediaPlayer *> players;
     uint32_t next_player = 1;
+    std::vector<AnimEv> anims;
+    std::thread::id thread;
 };
 
 #define JS_ENTER(c)                                         \

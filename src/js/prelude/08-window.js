@@ -295,6 +295,14 @@ for (const k of ['addEventListener', 'removeEventListener', 'dispatchEvent']) {
     Object.defineProperty(G, k, { value: function (...a) { return f.apply(this ?? G, a); }, writable: true, configurable: true });
 }
 function fire(target, type, init, Ctor = Event) { return dispatch(target, new Ctor(type, init), true); }
-return { protoFor, dispatch, fire, report, mediaChanged, ceConnected, Event, MouseEvent, PointerEvent, KeyboardEvent, FocusEvent, WheelEvent, InputEvent, PopStateEvent, ErrorEvent };
+const ANIM_PREFIXED = { animationstart: 'webkitAnimationStart', animationend: 'webkitAnimationEnd', animationiteration: 'webkitAnimationIteration', transitionend: 'webkitTransitionEnd' };
+function fireAnim(t, type, name, elapsed, anim) {
+    const init = anim ? { bubbles: true, animationName: name, elapsedTime: elapsed } : { bubbles: true, propertyName: name, elapsedTime: elapsed };
+    const path = []; for (let n = t; n; n = n.parentNode || n.host) path.push(n); path.push(G);
+    const heard = ty => path.some(n => (n.__ls && n.__ls.get(ty)?.some(l => !l.removed)) || typeof n['on' + ty] === 'function');
+    const ty = ANIM_PREFIXED[type] && !heard(type) ? ANIM_PREFIXED[type] : type;
+    return dispatch(t, new (anim ? AnimationEvent : TransitionEvent)(ty, init), true);
+}
+return { protoFor, dispatch, fire, fireAnim, report, mediaChanged, ceConnected, Event, MouseEvent, PointerEvent, KeyboardEvent, FocusEvent, WheelEvent, InputEvent, PopStateEvent, ErrorEvent };
 })
 

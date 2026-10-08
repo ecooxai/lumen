@@ -147,11 +147,16 @@ void js_global_init(const char *argv0) {
     v8::V8::Initialize();
 }
 
+static std::vector<JsCtx *> g_ctxs;
+
 JsCtx *js_new(Document *d, const JsHost *host) {
     JsCtx *c = new JsCtx();
     c->doc = d;
     if (host) c->host = *host;
     c->t0 = now_ms();
+    c->thread = std::this_thread::get_id();
+    g_ctxs.push_back(c);
+    jsg_install_hooks();
     v8::Isolate::CreateParams cp;
     c->alloc = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
     cp.array_buffer_allocator = c->alloc;
@@ -202,6 +207,7 @@ JsCtx *js_new(Document *d, const JsHost *host) {
 void js_free(JsCtx *c) {
     if (!c) return;
     for (auto &kv : c->players) mp_free(kv.second);
+    g_ctxs.erase(std::remove(g_ctxs.begin(), g_ctxs.end(), c), g_ctxs.end());
     c->players.clear();
     std::vector<Node *> roots;
     std::vector<Document *> docs = std::move(c->docs);
@@ -212,6 +218,7 @@ void js_free(JsCtx *c) {
         c->fetches.clear();
         c->timers.clear();
         c->rafs.clear();
+        c->anims.clear();
         c->protos.clear();
         c->protoFor.Reset(); c->fire.Reset(); c->report.Reset(); c->mediaChanged.Reset();
         c->api.Reset(); c->node_tmpl.Reset();
@@ -284,6 +291,7 @@ double js_next_deadline(JsCtx *c) {
     if (!c) return INFINITY;
     double d = INFINITY;
     for (auto &kv : c->timers) d = std::min(d, kv.second.due);
+    for (auto &e : c->anims) d = std::min(d, e.due);
     if (!c->rafs.empty()) d = std::min(d, c->last_raf + 16);
     return d;
 }
@@ -311,9 +319,49 @@ void js_tick(JsCtx *c) {
         v8::Local<v8::Value> ts = v8::Number::New(iso, now - c->t0);
         for (auto &kv : list) (void)jcall(c, kv.second.Get(iso), ctx->Global(), 1, &ts);
     }
+    if (!c->anims.empty()) {
+        std::vector<AnimEv> due_ev;
+        for (size_t i = 0; i < c->anims.size();)
+            if (c->anims[i].due <= now) { due_ev.push_back(std::move(c->anims[i])); c->anims.erase(c->anims.begin() + (long)i); }
+            else i++;
+        std::stable_sort(due_ev.begin(), due_ev.end(), [](const AnimEv &x, const AnimEv &y) { return x.due < y.due; });
+        v8::Local<v8::Value> fa;
+        if (!due_ev.empty() && !c->api.IsEmpty() && c->api.Get(iso)->Get(ctx, jstr(iso, "fireAnim")).ToLocal(&fa) && fa->IsFunction())
+            for (auto &e : due_ev) {
+                v8::Local<v8::Value> argv[5] = { e.target.Get(iso), jstr(iso, e.type.c_str()), jstr(iso, e.name.c_str()), v8::Number::New(iso, e.elapsed), v8::Boolean::New(iso, e.anim) };
+                (void)jcall(c, fa.As<v8::Function>(), v8::Undefined(iso), 5, argv);
+            }
+    }
     settle(c);
 }
 
 bool js_wants_frame(JsCtx *c) { return c && !c->rafs.empty(); }
+
+static JsCtx *ctx_for(Node *n) {
+    for (JsCtx *c : g_ctxs)
+        if (c->thread == std::this_thread::get_id() && (n->doc == c->doc || std::find(c->docs.begin(), c->docs.end(), n->doc) != c->docs.end())) return c;
+    return nullptr;
+}
+
+void js_anim_event(Node *n, const char *type, const char *name, double delay, double elapsed, bool anim) {
+    JsCtx *c = ctx_for(n);
+    if (!c || c->ctx.IsEmpty()) return;
+    JS_ENTER(c);
+    AnimEv e;
+    e.due = now_ms() + delay; e.n = n; e.target.Reset(iso, jwrap(c, n));
+    e.type = type; e.name = name; e.elapsed = elapsed; e.anim = anim;
+    c->anims.push_back(std::move(e));
+}
+
+bool js_anim_cancel(Node *n, const char *name) {
+    JsCtx *c = ctx_for(n);
+    if (!c) return false;
+    bool had = false;
+    for (size_t i = 0; i < c->anims.size();)
+        if (c->anims[i].n == n && c->anims[i].anim && c->anims[i].name == name) { c->anims.erase(c->anims.begin() + (long)i); had = true; }
+        else i++;
+    if (had) js_anim_event(n, "animationcancel", name, 0, 0, true);
+    return had;
+}
 
 }

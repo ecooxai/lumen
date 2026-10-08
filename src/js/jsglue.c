@@ -1,5 +1,7 @@
 /* C-side helpers for the V8 bindings (keeps C-only headers out of C++) */
 #include "jsglue.h"
+#include <math.h>
+#include <string.h>
 #include "../css/css.h"
 #include "../layout/layout.h"
 
@@ -54,3 +56,50 @@ bool jsg_classic_script(Node *s) {
         if (str_istarts(t, ok[i]) && (!t[strlen(ok[i])] || t[strlen(ok[i])] == ';' || t[strlen(ok[i])] == ' ')) return true;
     return false;
 }
+
+static bool hidden_chain(Node *n) {
+    for (; n && n->type == NODE_ELEMENT; n = n->parent) if (n->style && n->style->display == D_NONE) return true;
+    return false;
+}
+static bool tr_allows(const char *list, const char *p) {
+    if (!list) return true;
+    size_t pl = strlen(p);
+    for (const char *s = list;;) {
+        const char *e = strchr(s, ','); size_t n = e ? (size_t)(e - s) : strlen(s);
+        if ((n == 3 && !strncmp(s, "all", 3)) || (n == pl && !strncmp(s, p, n))) return true;
+        if (!e) return false;
+        s = e + 1;
+    }
+}
+static bool len_ne(Length a, Length b) { return a.kind != b.kind || a.px != b.px || a.pct != b.pct; }
+
+/* Lumen does not interpolate CSS animations/transitions, but pages (Google sign-in, YouTube) wait for their events. */
+static void style_change(Node *n, const ComputedStyle *o, const ComputedStyle *s) {
+    bool vis = s->display != D_NONE && !hidden_chain(n->parent);
+    const char *on = o && o->display != D_NONE ? o->anim_name : NULL, *nn = vis ? s->anim_name : NULL;
+    if (on && on != nn) js_anim_cancel(n, on);
+    if (nn && nn != on) {
+        js_anim_event(n, "animationstart", nn, s->anim_delay * 1000, 0, true);
+        if (isfinite(s->anim_iter)) { double d = s->anim_dur * s->anim_iter; js_anim_event(n, "animationend", nn, (s->anim_delay + d) * 1000, d, true); }
+    }
+    if (!o || !vis || o->display == D_NONE || s->tr_dur + s->tr_delay <= 0) return;
+    struct { const char *p; bool ch; } c[] = {
+        { "opacity", o->opacity != s->opacity },
+        { "transform", o->has_transform != s->has_transform || memcmp(o->transform, s->transform, sizeof s->transform) != 0 },
+        { "color", o->color != s->color }, { "background-color", o->bg_color != s->bg_color },
+        { "visibility", o->visibility != s->visibility },
+        { "width", len_ne(o->width, s->width) }, { "height", len_ne(o->height, s->height) },
+        { "max-width", len_ne(o->max_width, s->max_width) }, { "max-height", len_ne(o->max_height, s->max_height) },
+        { "top", len_ne(o->inset[0], s->inset[0]) }, { "right", len_ne(o->inset[1], s->inset[1]) },
+        { "bottom", len_ne(o->inset[2], s->inset[2]) }, { "left", len_ne(o->inset[3], s->inset[3]) },
+        { "margin-top", len_ne(o->margin[0], s->margin[0]) }, { "margin-left", len_ne(o->margin[3], s->margin[3]) },
+        { "filter", o->filter_blur != s->filter_blur || o->filter_brightness != s->filter_brightness },
+    };
+    for (size_t i = 0; i < sizeof c / sizeof *c; i++)
+        if (c[i].ch && tr_allows(s->tr_prop, c[i].p)) {
+            js_anim_event(n, "transitionrun", c[i].p, 0, 0, false);
+            js_anim_event(n, "transitionstart", c[i].p, s->tr_delay * 1000, 0, false);
+            js_anim_event(n, "transitionend", c[i].p, (s->tr_delay + s->tr_dur) * 1000, s->tr_dur, false);
+        }
+}
+void jsg_install_hooks(void) { css_style_change_hook = style_change; }

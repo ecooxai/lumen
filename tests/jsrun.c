@@ -27,6 +27,22 @@ int main(int argc, char **argv) {
     Document *d = doc_new(r->url ? r->url : url);
     html_parse(d, r->body ? r->body : "", r->body ? r->body_len : 0);
     net_response_free(r);
+    StyleEngine *se = style_engine_new(d); se->media.vw = 1280; se->media.vh = 800;
+    for (Node *n = d->node.first; n; n = node_next_in_tree(n, &d->node)) {
+        if (n->type != NODE_ELEMENT || n->ns != NS_HTML) continue;
+        const char *rel = node_attr(n, "rel");
+        if (n->tag == A_style) {
+            char *t = node_text_content(n); StyleSheet *s = css_parse_sheet(t, strlen(t), d->url, 1, &se->media); s->owner = n; style_engine_add_sheet(se, s); free(t);
+        } else if (n->tag == A_link && rel && strstr(rel, "stylesheet") && node_attr(n, "href")) {
+            char *u = url_join(d->url, node_attr(n, "href"));
+            NetResponse *cr = u ? net_fetch_sync(net_request_new("GET", u)) : NULL;
+            if (cr && cr->status == 200) { StyleSheet *s = css_parse_sheet(cr->body, cr->body_len, cr->url, 1, &se->media); s->owner = n; style_engine_add_sheet(se, s); }
+            if (cr) net_response_free(cr);
+            free(u);
+        }
+    }
+    style_recalc(se, &d->node, true);
+    uint64_t seen_ver = d->dom_version;
     JsHost h = {0};
     h.viewport = vp;
     double t0 = now_ms();
@@ -61,6 +77,7 @@ int main(int argc, char **argv) {
         net_poll();
         media_tick();
         js_tick(js);
+        if (d->dom_version != seen_ver) { seen_ver = d->dom_version; style_recalc(se, &d->node, false); }
         double dl = js_next_deadline(js) - now_ms();
         if (dl > 5) dl = 5;
         if (dl > 0) usleep((useconds_t)(dl * 1000));
@@ -69,6 +86,7 @@ int main(int argc, char **argv) {
     if (getenv("JSRUN_DUMP") && d->body) { char *s = node_serialize(d->body, true); puts(s); free(s); }
     if (getenv("JSRUN_POST")) js_eval(js, getenv("JSRUN_POST"), "jsrun:post");
     js_free(js);
+    style_engine_free(se);
     doc_free(d);
     return 0;
 }

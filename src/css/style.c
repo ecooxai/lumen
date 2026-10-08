@@ -9,7 +9,7 @@ typedef VEC(Rule *) RuleVec;
 /* ---------------- style objects ---------------- */
 ComputedStyle *style_new_default(void) {
     ComputedStyle *s = xcalloc(1, sizeof *s);
-    s->refs = 1;
+    s->refs = 1; s->anim_iter = 1;
     s->display = D_INLINE; s->font_size = 16; s->font_weight = 400; s->line_height_normal = true;
     s->color = RGBA(0, 0, 0, 255); s->opacity = 1; s->flex_shrink = 1; s->flex_basis = L_auto();
     s->width = s->height = L_auto(); s->min_width = s->min_height = L_auto();
@@ -522,7 +522,7 @@ static uint8_t parse_align(const char *v) {
     return (uint8_t)k;
 }
 
-static const char *const known_props[] = { "display","position","float","clear","width","height","min-width","min-height","max-width","max-height","margin","margin-top","margin-right","margin-bottom","margin-left","padding","padding-top","padding-right","padding-bottom","padding-left","border","border-width","border-style","border-color","border-top","border-right","border-bottom","border-left","border-radius","color","background","background-color","background-image","font","font-size","font-weight","font-family","font-style","line-height","text-align","text-decoration","white-space","overflow","overflow-x","overflow-y","visibility","opacity","z-index","top","right","bottom","left","inset","flex","flex-direction","flex-wrap","flex-grow","flex-shrink","flex-basis","justify-content","align-items","align-self","align-content","gap","row-gap","column-gap","order","grid","grid-template-columns","grid-template-rows","grid-column","grid-row","grid-area","transform","transition","animation","box-shadow","text-shadow","box-sizing","cursor","pointer-events","content","list-style","list-style-type","vertical-align","text-transform","letter-spacing","word-spacing","text-indent","text-overflow","word-break","overflow-wrap","word-wrap","object-fit","aspect-ratio","filter","outline","user-select","appearance","will-change","contain","isolation","mix-blend-mode","place-items","place-content","place-self","justify-items","justify-self","table-layout","border-collapse","border-spacing","clip-path","mask","resize","scroll-behavior","overscroll-behavior","touch-action","font-variant","text-rendering","-webkit-font-smoothing","fill","stroke","caret-color","accent-color","color-scheme","translate","scale","rotate","container-type","backdrop-filter","line-clamp","-webkit-line-clamp","text-wrap","hyphens","tab-size","direction","unicode-bidi","writing-mode","inset-inline","inset-block","margin-inline","margin-block","padding-inline","padding-block", NULL };
+static const char *const known_props[] = { "animation","animation-name","animation-duration","animation-delay","animation-iteration-count","animation-timing-function","animation-fill-mode","animation-direction","animation-play-state","transition","transition-property","transition-duration","transition-delay","transition-timing-function","display","position","float","clear","width","height","min-width","min-height","max-width","max-height","margin","margin-top","margin-right","margin-bottom","margin-left","padding","padding-top","padding-right","padding-bottom","padding-left","border","border-width","border-style","border-color","border-top","border-right","border-bottom","border-left","border-radius","color","background","background-color","background-image","font","font-size","font-weight","font-family","font-style","line-height","text-align","text-decoration","white-space","overflow","overflow-x","overflow-y","visibility","opacity","z-index","top","right","bottom","left","inset","flex","flex-direction","flex-wrap","flex-grow","flex-shrink","flex-basis","justify-content","align-items","align-self","align-content","gap","row-gap","column-gap","order","grid","grid-template-columns","grid-template-rows","grid-column","grid-row","grid-area","transform","transition","animation","box-shadow","text-shadow","box-sizing","cursor","pointer-events","content","list-style","list-style-type","vertical-align","text-transform","letter-spacing","word-spacing","text-indent","text-overflow","word-break","overflow-wrap","word-wrap","object-fit","aspect-ratio","filter","outline","user-select","appearance","will-change","contain","isolation","mix-blend-mode","place-items","place-content","place-self","justify-items","justify-self","table-layout","border-collapse","border-spacing","clip-path","mask","resize","scroll-behavior","overscroll-behavior","touch-action","font-variant","text-rendering","-webkit-font-smoothing","fill","stroke","caret-color","accent-color","color-scheme","translate","scale","rotate","container-type","backdrop-filter","line-clamp","-webkit-line-clamp","text-wrap","hyphens","tab-size","direction","unicode-bidi","writing-mode","inset-inline","inset-block","margin-inline","margin-block","padding-inline","padding-block", NULL };
 bool css_property_known(const char *p) { return kw(p, known_props) >= 0; }
 
 static char *parse_grid_areas(const char *v) {
@@ -538,6 +538,79 @@ static char *parse_grid_areas(const char *v) {
     }
     if (!any) { sb_free(&b); return NULL; }
     return sb_take(&b);
+}
+
+void (*css_style_change_hook)(Node *n, const ComputedStyle *old, const ComputedStyle *now);
+
+static int split_top(char *s, char sep, char **out, int max) {
+    int n = 0, depth = 0; char *start = s;
+    for (char *p = s;; p++) {
+        bool end = !*p;
+        if (*p == '(') depth++; else if (*p == ')') depth--;
+        if (end || (depth == 0 && (sep == ' ' ? is_ws((unsigned char)*p) : *p == sep))) {
+            *p = 0;
+            char *t = str_trim(start);
+            if (*t && n < max) out[n++] = t;
+            start = p + 1;
+        }
+        if (end) break;
+    }
+    return n;
+}
+static bool css_time(const char *t, float *out) {
+    char *e; float v = strtof(t, &e);
+    if (e == t) return false;
+    if (str_ieq(e, "ms")) v /= 1000; else if (!str_ieq(e, "s")) return false;
+    *out = v; return true;
+}
+static bool anim_kw(const char *t) {
+    static const char *const k[] = { "linear", "ease", "ease-in", "ease-out", "ease-in-out", "step-start", "step-end", "normal", "reverse", "alternate", "alternate-reverse", "forwards", "backwards", "both", "running", "paused", "allow-discrete" };
+    for (size_t i = 0; i < sizeof k / sizeof *k; i++) if (str_ieq(t, k[i])) return true;
+    return strchr(t, '(') != NULL;
+}
+static const char *layer_list(char **layer, int nl) {
+    if (!nl) return NULL;
+    SB b; sb_init(&b);
+    for (int l = 0; l < nl; l++) { if (l) sb_puts(&b, ","); sb_puts(&b, layer[l]); }
+    char *s = sb_take(&b); const char *a = atom(s); free(s);
+    return a;
+}
+static void anim_decl(ComputedStyle *st, const char *Q, const char *val) {
+    char *buf = xstrdup(val), *layer[32], *tok[16];
+    int nl = split_top(buf, ',', layer, 32);
+    float f;
+    if (!strcmp(Q, "animation")) {
+        st->anim_name = NULL; st->anim_dur = st->anim_delay = 0; st->anim_iter = 1;
+        int nt = nl ? split_top(layer[0], ' ', tok, 16) : 0, ntime = 0;
+        for (int i = 0; i < nt; i++) {
+            char *e;
+            if (css_time(tok[i], &f)) { if (ntime++ == 0) st->anim_dur = f; else st->anim_delay = f; }
+            else if (str_ieq(tok[i], "infinite")) st->anim_iter = INFINITY;
+            else if ((f = strtof(tok[i], &e)), e != tok[i] && !*e) st->anim_iter = f;
+            else if (!anim_kw(tok[i]) && !str_ieq(tok[i], "none")) st->anim_name = atom(tok[i]);
+        }
+    } else if (!strcmp(Q, "animation-name")) st->anim_name = nl && !str_ieq(layer[0], "none") ? atom(layer[0]) : NULL;
+    else if (!strcmp(Q, "animation-duration")) st->anim_dur = nl && css_time(layer[0], &f) ? f : 0;
+    else if (!strcmp(Q, "animation-delay")) st->anim_delay = nl && css_time(layer[0], &f) ? f : 0;
+    else if (!strcmp(Q, "animation-iteration-count")) st->anim_iter = !nl ? 1 : str_ieq(layer[0], "infinite") ? INFINITY : strtof(layer[0], NULL);
+    else if (!strcmp(Q, "transition")) {
+        st->tr_dur = st->tr_delay = 0;
+        for (int l = 0; l < nl; l++) {
+            int nt = split_top(layer[l], ' ', tok, 16), ntime = 0; char *prop = (char *)"all";
+            for (int i = 0; i < nt; i++) {
+                if (css_time(tok[i], &f)) { if (ntime++ == 0) { if (f > st->tr_dur) st->tr_dur = f; } else if (f > st->tr_delay) st->tr_delay = f; }
+                else if (!anim_kw(tok[i])) prop = tok[i];
+            }
+            layer[l] = prop;
+        }
+        st->tr_prop = layer_list(layer, nl);
+    } else if (!strcmp(Q, "transition-property")) st->tr_prop = layer_list(layer, nl);
+    else if (!strcmp(Q, "transition-duration") || !strcmp(Q, "transition-delay")) {
+        float m = 0;
+        for (int l = 0; l < nl; l++) if (css_time(layer[l], &f) && f > m) m = f;
+        if (!strcmp(Q, "transition-duration")) st->tr_dur = m; else st->tr_delay = m;
+    }
+    free(buf);
 }
 
 void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *prop, const char *value_in, StyleEngine *e, Node *el) {
@@ -563,6 +636,10 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
     const char *P = prop;
     Length l; Color col; int k;
     bool inherit = str_ieq(val, "inherit"), initial = str_ieq(val, "initial") || str_ieq(val, "revert") || str_ieq(val, "revert-layer"), unset = str_ieq(val, "unset");
+    {
+        const char *Q = strncmp(P, "-webkit-", 8) ? P : P + 8;
+        if (!strncmp(Q, "animation", 9) || !strncmp(Q, "transition", 10)) { anim_decl(st, Q, inherit || initial || unset ? "" : val); free(vbuf); free(subst); return; }
+    }
     if (inherit || initial || unset) {
         static ComputedStyle *def; if (!def) def = style_new_default();
         const ComputedStyle *src = inherit ? (par ? par : def) : def;
@@ -1066,6 +1143,7 @@ static void recalc(StyleEngine *e, Node *n, const ComputedStyle *par, bool force
             if (st->display != D_NONE) {
                 if (e->idx.count) { st->before = compute_pseudo(e, n, st, 1); st->after = compute_pseudo(e, n, st, 2); }
             }
+            if (css_style_change_hook) css_style_change_hook(n, n->style, st);
             if (n->style) style_free(n->style);
             n->style = st;
             force = true; /* children inherit */
