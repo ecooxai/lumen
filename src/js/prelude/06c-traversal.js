@@ -1,14 +1,129 @@
-class TreeWalker {
-    constructor(root, what, filter) { this.root = root; this.whatToShow = what; this.filter = filter; this.currentNode = root; }
-    _ok(n) { if (!((this.whatToShow >>> (N.type(n) - 1)) & 1)) return 3; if (!this.filter) return 1; return typeof this.filter === 'function' ? this.filter(n) : this.filter.acceptNode(n); }
-    _next(n) { const f = N.first(n); if (f) return f; for (; n && n !== this.root; n = N.parent(n)) { const s = N.next(n); if (s) return s; } return null; }
-    nextNode() { for (let n = this._next(this.currentNode); n; n = this._next(n)) if (this._ok(n) === 1) return this.currentNode = n; return null; }
-    parentNode() { for (let n = this.currentNode; n && n !== this.root;) { n = N.parent(n); if (n && this._ok(n) === 1) return this.currentNode = n; } return null; }
-    firstChild() { for (let c = N.first(this.currentNode); c; c = N.next(c)) if (this._ok(c) === 1) return this.currentNode = c; return null; }
-    nextSibling() { for (let c = N.next(this.currentNode); c; c = N.next(c)) if (this._ok(c) === 1) return this.currentNode = c; return null; }
+const NodeFilter = { FILTER_ACCEPT: 1, FILTER_REJECT: 2, FILTER_SKIP: 3, SHOW_ALL: 0xFFFFFFFF, SHOW_ELEMENT: 0x1, SHOW_ATTRIBUTE: 0x2, SHOW_TEXT: 0x4, SHOW_CDATA_SECTION: 0x8, SHOW_ENTITY_REFERENCE: 0x10, SHOW_ENTITY: 0x20, SHOW_PROCESSING_INSTRUCTION: 0x40, SHOW_COMMENT: 0x80, SHOW_DOCUMENT: 0x100, SHOW_DOCUMENT_TYPE: 0x200, SHOW_DOCUMENT_FRAGMENT: 0x400, SHOW_NOTATION: 0x800 };
+function travFilter(t, n) {
+    if (t._active) throw new DOMException('The filter is already running.', 'InvalidStateError');
+    if (!(t._what & (1 << (n.nodeType - 1)))) return 3;
+    const f = t._filter; if (f == null) return 1;
+    t._active = true;
+    try {
+        let r;
+        if (typeof f === 'function') r = f.call(undefined, n);
+        else { const m = f.acceptNode; if (typeof m !== 'function') throw new TypeError("Failed to execute 'acceptNode' on 'NodeFilter': The provided callback is not callable."); r = m.call(f, n); }
+        return toU32(r) & 0xFFFF;
+    } finally { t._active = false; }
 }
-class NodeIterator extends TreeWalker { nextNode() { if (!this._started) { this._started = true; if (this._ok(this.root) === 1) return this.root; } return super.nextNode(); } detach() {} }
-const NodeFilter = { FILTER_ACCEPT: 1, FILTER_REJECT: 2, FILTER_SKIP: 3, SHOW_ALL: 0xFFFFFFFF, SHOW_ELEMENT: 1, SHOW_TEXT: 4, SHOW_COMMENT: 128 };
+function mkTraversal(C, root, what, filter) {
+    needNode(root, C === TreeWalker ? 'createTreeWalker' : 'createNodeIterator');
+    const t = Object.create(C.prototype);
+    def(t, '_root', root); def(t, '_what', toU32(what)); def(t, '_filter', filter === undefined ? null : filter); def(t, '_active', false);
+    if (C === TreeWalker) def(t, '_cur', root);
+    else { def(t, '_ref', root); def(t, '_before', true); liveIters.add(new WeakRef(t)); }
+    return t;
+}
+class TreeWalker {
+    constructor() { illegal(); }
+    get root() { return this._root; } get whatToShow() { return this._what; } get filter() { return this._filter; }
+    get currentNode() { return this._cur; }
+    set currentNode(n) { needNode(n, 'currentNode'); this._cur = n; }
+    parentNode() {
+        let n = this._cur;
+        while (n && n !== this._root) { n = n.parentNode; if (n && travFilter(this, n) === 1) { this._cur = n; return n; } }
+        return null;
+    }
+    _children(first) {
+        let n = first ? this._cur.firstChild : this._cur.lastChild;
+        while (n) {
+            const r = travFilter(this, n);
+            if (r === 1) { this._cur = n; return n; }
+            if (r === 3) { const c = first ? n.firstChild : n.lastChild; if (c) { n = c; continue; } }
+            while (n) {
+                const s = first ? n.nextSibling : n.previousSibling;
+                if (s) { n = s; break; }
+                const p = n.parentNode;
+                if (p == null || p === this._root || p === this._cur) return null;
+                n = p;
+            }
+        }
+        return null;
+    }
+    firstChild() { return this._children(true); }
+    lastChild() { return this._children(false); }
+    _siblings(next) {
+        let n = this._cur; if (n === this._root) return null;
+        for (;;) {
+            let s = next ? n.nextSibling : n.previousSibling;
+            while (s) {
+                n = s; const r = travFilter(this, n);
+                if (r === 1) { this._cur = n; return n; }
+                s = next ? n.firstChild : n.lastChild;
+                if (r === 2 || !s) s = next ? n.nextSibling : n.previousSibling;
+            }
+            n = n.parentNode;
+            if (n == null || n === this._root) return null;
+            if (travFilter(this, n) === 1) return null;
+        }
+    }
+    nextSibling() { return this._siblings(true); }
+    previousSibling() { return this._siblings(false); }
+    previousNode() {
+        let n = this._cur;
+        while (n !== this._root) {
+            let s = n.previousSibling;
+            while (s) {
+                n = s; let r = travFilter(this, n);
+                while (r !== 2 && n.lastChild) { n = n.lastChild; r = travFilter(this, n); }
+                if (r === 1) { this._cur = n; return n; }
+                s = n.previousSibling;
+            }
+            if (n === this._root || n.parentNode == null) return null;
+            n = n.parentNode;
+            if (travFilter(this, n) === 1) { this._cur = n; return n; }
+        }
+        return null;
+    }
+    nextNode() {
+        let n = this._cur, r = 1;
+        for (;;) {
+            while (r !== 2 && n.firstChild) { n = n.firstChild; r = travFilter(this, n); if (r === 1) { this._cur = n; return n; } }
+            let s = null, t = n;
+            while (t) { if (t === this._root) return null; s = t.nextSibling; if (s) break; t = t.parentNode; }
+            if (!s) return null;
+            n = s; r = travFilter(this, n);
+            if (r === 1) { this._cur = n; return n; }
+        }
+    }
+}
+const travFollowing = (n, root) => { if (n.firstChild) return n.firstChild; for (; n; n = n.parentNode) { if (n === root) return null; if (n.nextSibling) return n.nextSibling; } return null; };
+const travPreceding = (n, root) => { if (n === root) return null; let s = n.previousSibling; if (s) { while (s.lastChild) s = s.lastChild; return s; } return n.parentNode; };
+class NodeIterator {
+    constructor() { illegal(); }
+    get root() { return this._root; } get whatToShow() { return this._what; } get filter() { return this._filter; }
+    get referenceNode() { return this._ref; } get pointerBeforeReferenceNode() { return this._before; }
+    detach() {}
+    _trav(next) {
+        let n = this._ref, before = this._before;
+        for (;;) {
+            if (next) { if (!before) { n = travFollowing(n, this._root); if (!n) return null; } else before = false; }
+            else { if (before) { n = travPreceding(n, this._root); if (!n) return null; } else before = true; }
+            if (travFilter(this, n) === 1) { this._ref = n; this._before = before; return n; }
+        }
+    }
+    nextNode() { return this._trav(true); }
+    previousNode() { return this._trav(false); }
+}
+function itersPreRemove(c) {
+    for (const w of liveIters) {
+        const it = w.deref(); if (!it) { liveIters.delete(w); continue; }
+        if (N.contains(c, it._root) || !N.contains(c, it._ref)) continue;
+        if (it._before) {
+            let t = c, next = null;
+            for (; t; t = t.parentNode) { if (t === it._root) break; if (t.nextSibling) { next = t.nextSibling; break; } }
+            if (next) { it._ref = next; continue; }
+            it._before = false;
+        }
+        let p = c.previousSibling;
+        if (p) { while (p.lastChild) p = p.lastChild; it._ref = p; } else it._ref = c.parentNode;
+    }
+}
 const rootOf = (n) => { for (;;) { const p = N.parent(n); if (!p) return n; n = p; } };
 const childAt = (n, i) => { let c = N.first(n); while (c && i-- > 0) c = N.next(c); return c; };
 const nextSkip = (n) => { for (; n; n = N.parent(n)) { const s = N.next(n); if (s) return s; } return null; };

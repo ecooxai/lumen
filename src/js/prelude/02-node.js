@@ -5,7 +5,7 @@ Object.assign(Node.prototype, { ELEMENT_NODE: 1, TEXT_NODE: 3, COMMENT_NODE: 8, 
 const nextIn = (n, root) => { const f = N.first(n); if (f) return f; for (; n && n !== root; n = N.parent(n)) { const x = N.next(n); if (x) return x; } return null; };
 const kids = (n) => { const a = []; for (let c = N.first(n); c; c = N.next(c)) a.push(c); return a; };
 const elKids = (n) => { const a = []; for (let c = N.first(n); c; c = N.next(c)) if (N.type(c) === 1) a.push(c); return a; };
-const liveRanges = new Set();
+const liveRanges = new Set(), liveIters = new Set();
 const rangesEach = (f) => { for (const w of liveRanges) { const r = w.deref(); if (r) f(r); else liveRanges.delete(w); } };
 const idxOf = (n) => { let i = 0; for (let s = N.prev(n); s; s = N.prev(s)) i++; return i; };
 const isCD = (n) => { const t = N.type(n); return t === 3 || t === 4 || t === 7 || t === 8; };
@@ -14,6 +14,8 @@ const nodeLength = (n) => { const t = N.type(n); if (t === 10) return 0; if (t =
 const toU32 = (v) => { v = Number(v); if (!Number.isFinite(v)) return 0; v = Math.trunc(v) % 4294967296; return v < 0 ? v + 4294967296 : v; };
 const hre = (m = 'The operation would yield an incorrect node tree.') => new DOMException(m, 'HierarchyRequestError');
 function rangePreRemove(c) {
+    if (liveIters.size) itersPreRemove(c);
+    if (!liveRanges.size) return;
     const p = N.parent(c), i = idxOf(c);
     rangesEach(r => {
         if (N.contains(c, r._sc)) { r._sc = p; r._so = i; }
@@ -29,7 +31,7 @@ function replaceData(n, o, c, s) {
     if (o + c > len) c = len - o;
     N.setText(n, d.slice(0, o) + s + d.slice(o + c));
     notify('characterData', n, { oldValue: d });
-    if (liveRanges.size) rangesEach(r => {
+    if (liveRanges.size || liveIters.size) rangesEach(r => {
         if (r._sc === n && r._so > o && r._so <= o + c) r._so = o;
         if (r._ec === n && r._eo > o && r._eo <= o + c) r._eo = o;
         if (r._sc === n && r._so > o + c) r._so += s.length - c;
@@ -98,7 +100,7 @@ function insertNode(p, c, ref) {
     if (observers.length) for (const a of added) { const op = N.parent(a); if (op) notify('childList', op, { removedNodes: [a] }); }
     if (ref === c) ref = N.next(c);
     const moved = added.filter(a => N.connected(a));
-    if (liveRanges.size) for (const a of added) if (N.parent(a)) rangePreRemove(a);
+    if (liveRanges.size || liveIters.size) for (const a of added) if (N.parent(a)) rangePreRemove(a);
     const prev = ref ? N.prev(ref) : N.last(p);
     N.insert(p, c, ref == null ? null : ref);
     if (liveRanges.size && added.length) rangeInserted(p, idxOf(added[0]), added.length);
@@ -110,7 +112,7 @@ function insertNode(p, c, ref) {
 function removeNode(c) {
     const p = N.parent(c); if (!p) return c;
     const prev = N.prev(c), next = N.next(c), was = N.connected(c);
-    if (liveRanges.size) rangePreRemove(c);
+    if (liveRanges.size || liveIters.size) rangePreRemove(c);
     N.remove(c);
     notify('childList', p, { removedNodes: [c], previousSibling: prev, nextSibling: next });
     if (was) ceConnected(c, false);
@@ -134,7 +136,7 @@ methods(Node.prototype, {
         v = v == null ? '' : String(v);
         if (t === 3 || t === 8 || t === 4 || t === 7) { replaceData(this, 0, N.text(this).length, v); return; }
         const removed = kids(this);
-        if (liveRanges.size) for (let i = removed.length - 1; i >= 0; i--) rangePreRemove(removed[i]);
+        if (liveRanges.size || liveIters.size) for (let i = removed.length - 1; i >= 0; i--) rangePreRemove(removed[i]);
         for (const r of removed) ceConnected(r, false);
         N.setText(this, v);
         if (removed.length || N.first(this)) notify('childList', this, { removedNodes: removed, addedNodes: kids(this) });
@@ -172,7 +174,7 @@ methods(Node.prototype, {
             if (!data) continue;
             replaceData(node, length, 0, data);
             for (let cur = N.next(node); cur && N.type(cur) === 3; cur = N.next(cur)) {
-                if (liveRanges.size) { const cp = N.parent(cur), ci = idxOf(cur), L = length; rangesEach(r => {
+                if (liveRanges.size || liveIters.size) { const cp = N.parent(cur), ci = idxOf(cur), L = length; rangesEach(r => {
                     if (r._sc === cur) { r._sc = node; r._so += L; } if (r._ec === cur) { r._ec = node; r._eo += L; }
                     if (r._sc === cp && r._so === ci) { r._sc = node; r._so = L; } if (r._ec === cp && r._eo === ci) { r._ec = node; r._eo = L; }
                 }); }
@@ -224,7 +226,7 @@ methods(Text.prototype, {
         const doc = N.ownerDoc(this), t = N.type(this) === 4 ? N.cdata(d.slice(o), doc) : N.textNode(d.slice(o), doc), p = N.parent(this);
         if (p) {
             insertNode(p, t, N.next(this));
-            if (liveRanges.size) { const i = idxOf(this) + 1; rangesEach(r => {
+            if (liveRanges.size || liveIters.size) { const i = idxOf(this) + 1; rangesEach(r => {
                 if (r._sc === this && r._so > o) { r._sc = t; r._so -= o; } if (r._ec === this && r._eo > o) { r._ec = t; r._eo -= o; }
                 if (r._sc === p && r._so === i) r._so++; if (r._ec === p && r._eo === i) r._eo++;
             }); }
