@@ -39,9 +39,12 @@ function insertNode(p, c, ref) {
     if (ref != null && N.parent(ref) !== p) throw new DOMException('The node before which the new node is to be inserted is not a child of this node.', 'NotFoundError');
     const added = N.type(c) === 11 ? kids(c) : [c];
     if (observers.length) for (const a of added) { const op = N.parent(a); if (op) notify('childList', op, { removedNodes: [a] }); }
+    if (ref === c) ref = N.next(c);
+    const moved = added.filter(a => N.connected(a));
     const prev = ref ? N.prev(ref) : N.last(p);
     N.insert(p, c, ref == null ? null : ref);
     if (added.length) notify('childList', p, { addedNodes: added, previousSibling: prev, nextSibling: ref || null });
+    for (const a of moved) ceConnected(a, false, true);
     for (const a of added) ceConnected(a, true);
     return c;
 }

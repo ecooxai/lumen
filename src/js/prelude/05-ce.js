@@ -167,12 +167,12 @@ function ceUpgrade(el) {
         for (const a of d.observed) { const v = N.attr(el, a); if (v != null) { try { el.attributeChangedCallback(a, null, v, null); } catch (e) { report(e); } } }
     if (N.connected(el) && typeof el.connectedCallback === 'function') { try { el.connectedCallback(); } catch (e) { report(e); } }
 }
-function ceConnected(root, connected) {
+function ceConnected(root, connected, moved) {
     if (!registry.byName.size) return;
     const t = N.type(root); if (t !== 1 && t !== 11) return;
     for (const el of N.ceScan(root)) {
-        if (!el.__ce) { ceUpgrade(el); continue; }
-        if (connected !== N.connected(el)) continue;
+        if (!el.__ce) { if (!moved) ceUpgrade(el); continue; }
+        if (!moved && connected !== N.connected(el)) continue;
         const cb = connected ? el.connectedCallback : el.disconnectedCallback;
         if (typeof cb === 'function') { try { cb.call(el); } catch (e) { report(e); } }
     }
