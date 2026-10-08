@@ -15,6 +15,7 @@ typedef struct {
     int ir0;              /* unused */
     float strutA, strutD;
     bool first_line;
+    float cbh;
 } IC;
 
 static TextFrag *push_frag(Box *b) {
@@ -174,7 +175,7 @@ static void place_text(IC *c, Box *t) {
 }
 
 static void place_atomic(IC *c, Box *a) {
-    layout_box(c->L, a, 0, 0, c->W, -1, NULL, SZ_SHRINK, 0, -1);
+    layout_box(c->L, a, 0, 0, c->W, c->cbh, NULL, SZ_SHRINK, 0, -1);
     float ow = a->w + a->m[1] + a->m[3], oh = a->h + a->m[0] + a->m[2];
     if (c->line_has_content && c->pen + ow > c->right + 0.01f) finish_line(c, false);
     float itemA;
@@ -219,7 +220,7 @@ static void walk(IC *c, Box *p) {
         default:
             if (ch->abs) { ch->sx = c->pen; ch->sy = c->y; add_abs(c->L, ch); break; }
             if (ch->floated) {
-                layout_box(c->L, ch, 0, 0, c->W, -1, NULL, SZ_SHRINK, 0, -1);
+                layout_box(c->L, ch, 0, 0, c->W, c->cbh, NULL, SZ_SHRINK, 0, -1);
                 float fy = c->line_has_content ? c->y + c->A + c->D : c->y;
                 if (c->fc) { fc_place(c->fc, ch, fy, c->x0, c->x0 + c->W); if (!c->line_has_content) { float l, r; fc_avail(c->fc, c->y, LMAX(1, c->strutA + c->strutD), c->x0, c->x0 + c->W, &l, &r); c->left = l; c->right = r; c->pen = LMAX(c->pen, l); } }
                 else box_translate(ch, c->x0 + ch->m[3] - ch->x, fy + ch->m[0] - ch->y);
@@ -238,7 +239,7 @@ float layout_inline(Layout *L, Box *b, float x0, float y0, float W, FloatCtx *fc
     b->nfrags = 0; b->nlines = 0;
     clear_frags(b);
     IC c; memset(&c, 0, sizeof c);
-    c.L = L; c.blk = b; c.fc = fc; c.x0 = x0; c.W = W; c.y = y0; c.first_line = true;
+    c.L = L; c.blk = b; c.fc = fc; c.cbh = L->inl_cbh; c.x0 = x0; c.W = W; c.y = y0; c.first_line = true;
     Font *f = style_font(b->st);
     metrics_for(b->st, f, &c.strutA, &c.strutD);
     new_line_state(&c);

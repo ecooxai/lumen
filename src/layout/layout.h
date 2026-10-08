@@ -47,6 +47,7 @@ typedef struct Layout {
     float doc_w, doc_h;
     float scroll_x, scroll_y;
     int nboxes;
+    float inl_cbh;   /* containing-block height handed to layout_inline (floats/atomics resolve % heights against it) */
     double ms;
 } Layout;
 

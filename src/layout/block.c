@@ -208,7 +208,7 @@ void layout_box(Layout *L, Box *b, float x, float y, float cbw, float cbh, Float
     float ch = 0;
     b->nlines = 0; b->nfrags = 0;
     switch (b->fmt) {
-    case FMT_INLINE: ch = layout_inline(L, b, cx, cy, cw, f); break;
+    case FMT_INLINE: L->inl_cbh = ch_for_kids; ch = layout_inline(L, b, cx, cy, cw, f); break;
     case FMT_FLOW: ch = layout_flow(L, b, cx, cy, cw, ch_for_kids, f); break;
     case FMT_FLEX: ch = layout_flex(L, b, cx, cy, cw, ch_for_kids); break;
     case FMT_GRID: ch = layout_grid(L, b, cx, cy, cw, ch_for_kids); break;

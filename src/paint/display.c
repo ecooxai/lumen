@@ -288,6 +288,9 @@ static void paint_stacking(PB *p, Box *b) {
     float tx = 0, ty = 0;
     if (s->has_transform) { tx = s->transform[4]; ty = s->transform[5]; if (s->translate_pending[0].pct) tx += s->translate_pending[0].pct * b->w / 100; if (s->translate_pending[1].pct) ty += s->translate_pending[1].pct * b->h / 100; }
     p->dx += tx; p->dy += ty;
+    /* axis-aligned scale (e.g. progress bars using scaleX): scale the subtree's non-text items about transform-origin */
+    float ksx = s->has_transform && !s->transform[1] && !s->transform[2] ? s->transform[0] : 1, ksy = s->has_transform && !s->transform[1] && !s->transform[2] ? s->transform[3] : 1;
+    int i0 = p->dl->items.n;
     bool layer = s->opacity < 0.999f;
     if (layer) { DItem *l = emit(p, DO_PUSH_LAYER); l->alpha = s->opacity; }
     DefVec defs = {0};
@@ -301,6 +304,17 @@ static void paint_stacking(PB *p, Box *b) {
     for (int i = 0; i < defs.n; i++) paint_deferred(p, &defs.v[i]);
     vec_free(defs);
     if (layer) emit(p, DO_POP_LAYER);
+    if (fabsf(ksx - 1) > 1e-4f || fabsf(ksy - 1) > 1e-4f) {
+        float ox = b->x + p->dx + s->transform_origin[0].px + s->transform_origin[0].pct * b->w / 100;
+        float oy = b->y + p->dy + s->transform_origin[1].px + s->transform_origin[1].pct * b->h / 100;
+        for (int i = i0; i < p->dl->items.n; i++) {
+            DItem *it = &p->dl->items.v[i];
+            if (it->g) continue;
+            it->x = ox + (it->x - ox) * ksx; it->y = oy + (it->y - oy) * ksy; it->w *= ksx; it->h *= ksy;
+            if (it->w < 0) { it->x += it->w; it->w = -it->w; }
+            if (it->h < 0) { it->y += it->h; it->h = -it->h; }
+        }
+    }
     p->dx -= tx; p->dy -= ty;
 }
 

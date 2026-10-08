@@ -1010,10 +1010,11 @@ static void submit_form(App *a, Node *ctl) {
     char *dest = sb_take(&full); navigate(a, dest, true); free(dest);
 }
 
+static double g_mv_t, g_mv_rep; static float g_mv_x, g_mv_y; static Page *g_mv_p;
 static void page_move(App *a, float x, float y) {   /* pointer moves for page scripts (e.g. YouTube shows its controls on mousemove) */
     static double last; static Node *prev; double tn = now_ms();
     Page *p = a->t->cur; if (!p || !p->js || !p->L || tn - last < 30) return;
-    last = tn;
+    last = tn; g_mv_t = tn; g_mv_x = x; g_mv_y = y; g_mv_p = p;
     Box *b = layout_hit(p->L, x, y + a->t->sy); Node *n = b ? b->node : NULL;
     while (n && n->type != NODE_ELEMENT) n = n->parent;
     if (!n) return;
@@ -1021,8 +1022,20 @@ static void page_move(App *a, float x, float y) {   /* pointer moves for page sc
     js_dispatch(p->js, n, "pointermove", "MouseEvent", true, true, x, y, 0, NULL);
     js_dispatch(p->js, n, "mousemove", "MouseEvent", true, true, x, y, 0, NULL);
 }
+static void page_move_keep(App *a) {   /* YouTube hides its controls ~3 s after the pointer stops; keep them up for 8 s */
+    double tn = now_ms(); Page *p = g_mv_p;
+    if (!p || tn - g_mv_t > 8000) { g_mv_p = NULL; return; }
+    if (tn - g_mv_rep < 1000) return;
+    g_mv_rep = tn;
+    if (a->t->cur != p || !p->js || !p->L) { g_mv_p = NULL; return; }
+    Box *b = layout_hit(p->L, g_mv_x, g_mv_y + a->t->sy); Node *n = b ? b->node : NULL;
+    while (n && n->type != NODE_ELEMENT) n = n->parent;
+    float j = ((long)(tn / 1000) & 1) ? 1 : 0;   /* YouTube ignores moves to the same spot */
+    if (n) js_dispatch(p->js, n, "mousemove", "MouseEvent", true, true, g_mv_x + j, g_mv_y, 0, NULL);
+}
 #define VBH 34.f
 static bool vbar_on(App *a, Node *n) { return n->type == NODE_ELEMENT && n->tag == A_video && n->box && n->box->w >= 120 && (node_attr(n, "controls") || (vctl_on(a->t) && !is_youtube(a->t->url))); }
+static float vbar_y(App *a, const Box *b) { return vctl_on(a->t) ? b->y + b->h : b->y + b->h - VBH; }   /* below the video when "always show", else inside its bottom edge */
 static void fmt_t(char *o, size_t n, double s) { int t = s >= 0 && s < 1e7 ? (int)s : 0; if (t >= 3600) snprintf(o, n, "%d:%02d:%02d", t / 3600, t / 60 % 60, t % 60); else snprintf(o, n, "%d:%02d", t / 60, t % 60); }
 static void vbar_layout(App *a, const Box *b, const MpState *s, char *tm, size_t n, float *tx0, float *tx1) {
     char c[16], d[16]; fmt_t(c, sizeof c, s->time); fmt_t(d, sizeof d, s->duration); snprintf(tm, n, "%s / %s", c, d);
@@ -1032,7 +1045,7 @@ static bool video_bars(App *a, DisplayList *dl) {   /* control bar under each <v
     bool playing = false; Document *d = a->t->cur->d; float rb = (a->ui->ascent - a->ui->descent) / 2;
     for (Node *n = d->node.first; n; n = node_next_in_tree(n, &d->node)) {
         if (!vbar_on(a, n)) continue;
-        Box *b = n->box; float y = b->y + b->h - a->t->sy;
+        Box *b = n->box; float y = vbar_y(a, b) - a->t->sy;
         if (y < -VBH || y > a->vh) continue;
         MpState s; memset(&s, 0, sizeof s); if (!media_state_for(n, &s)) s.paused = true;
         playing |= !s.paused;
@@ -1051,7 +1064,7 @@ static bool vbar_click(App *a, float x, float y) {   /* document coordinates */
     Page *p = a->t->cur; if (!p->js) return false;
     for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) {
         if (!vbar_on(a, n)) continue;
-        Box *b = n->box; float by = b->y + b->h;
+        Box *b = n->box; float by = vbar_y(a, b);
         if (x < b->x || x >= b->x + b->w || y < by || y >= by + VBH) continue;
         MpState s; memset(&s, 0, sizeof s); bool ok = media_state_for(n, &s);
         char tm[48], key[32] = "toggle"; float tx0, tx1; vbar_layout(a, b, &s, tm, sizeof tm, &tx0, &tx1);
@@ -1364,6 +1377,7 @@ int main(int argc, char **argv) {
             if (tn - last_evict > 2000) { last_evict = tn; img_evict(); }
         }
         { int mt = media_timeout_ms(); if (mt >= 0 && mt < to) to = mt; }
+        page_move_keep(&a); if (g_mv_p && to > 1000) to = 1000;
         if (a.vbars) { static double lb; double tn = now_ms(); if (tn - lb >= 500) { lb = tn; a.dirty = true; a.vonly = false; } if (to > 500) to = 500; }
         if (a.tip_until) { double r = a.tip_until - now_ms(); if (r <= 0) { a.tip_until = 0; a.dirty = true; a.vonly = false; } else if (r + 1 < to) to = (int)r + 1; }
         {
