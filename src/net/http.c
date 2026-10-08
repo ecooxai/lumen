@@ -1,3 +1,4 @@
+#include <strings.h>
 /* HTTP/1.1 client with TLS (OpenSSL), keep-alive connection pooling, redirects, decompression. */
 #include "net.h"
 #include <pthread.h>
@@ -81,6 +82,15 @@ static int connect_tcp(const char *host, int port, char **err) {
     char ps[16]; snprintf(ps, sizeof ps, "%d", port);
     const char *h = host; char hb[256];
     if (host[0] == '[') { size_t n = strlen(host); snprintf(hb, sizeof hb, "%.*s", (int)(n - 2), host + 1); h = hb; }
+    /* LUMEN_HOST_MAP="suffix=ip,..." resolves matching hosts to a fixed address (test harnesses only) */
+    const char *map = getenv("LUMEN_HOST_MAP"); char mip[64];
+    for (const char *m = map; m && *m;) {
+        const char *eq = strchr(m, '='), *end = strchr(m, ','); if (!end) end = m + strlen(m);
+        if (!eq || eq > end) break;
+        size_t sl = (size_t)(eq - m), hl = strlen(h);
+        if (sl && (hl == sl || (hl > sl && h[hl - sl - 1] == '.')) && !strncasecmp(h + hl - sl, m, sl)) { snprintf(mip, sizeof mip, "%.*s", (int)(end - eq - 1), eq + 1); h = mip; break; }
+        m = *end ? end + 1 : end;
+    }
     int gr = getaddrinfo(h, ps, &hints, &res);
     if (gr) { *err = xstrdup(gai_strerror(gr)); return -1; }
     int fd = -1;

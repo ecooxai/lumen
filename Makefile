@@ -13,7 +13,7 @@ endif
 WARN := -Wall -Wextra -Wno-unused-parameter -Wno-sign-compare -Wno-missing-field-initializers
 INC := -Isrc
 ifeq ($(UNAME),Darwin)
-  DEPS := openssl@3 brotli zstd freetype harfbuzz sdl3 v8 wgpu-native ffmpeg libpng jpeg-turbo webp giflib
+  DEPS := openssl@3 brotli zstd freetype harfbuzz sdl3 v8 wgpu-native ffmpeg libpng jpeg-turbo webp giflib icu4c
   INC += $(foreach d,$(DEPS),-I$(BREW)/opt/$(d)/include) -I$(BREW)/opt/freetype/include/freetype2 -I$(BREW)/opt/harfbuzz/include/harfbuzz -I$(BREW)/include
   LIBDIRS := $(foreach d,$(DEPS),-L$(BREW)/opt/$(d)/lib)
   PLATLIBS := -framework Cocoa -framework QuartzCore -framework Metal -framework AVFoundation -framework CoreMedia -framework CoreVideo -framework ScreenCaptureKit
@@ -24,7 +24,8 @@ else
 endif
 CFLAGS := -std=c11 $(OPT) $(WARN) $(INC) -D_GNU_SOURCE -D_DARWIN_C_SOURCE
 CXXFLAGS := -std=c++20 $(OPT) $(WARN) $(INC) -DV8_COMPRESS_POINTERS
-NETLIBS := $(LIBDIRS) -lssl -lcrypto -lz -lbrotlidec -lzstd
+BASELIBS := $(LIBDIRS) -licuuc
+NETLIBS := $(BASELIBS) -lssl -lcrypto -lz -lbrotlidec -lzstd
 
 BASE_SRC := $(wildcard src/base/*.c)
 NET_SRC := $(wildcard src/net/*.c)
@@ -57,7 +58,7 @@ $(BUILD)/lumen: $(call OBJ,$(CORE_SRC) $(APP_SRC) $(JS_SRC))
 $(BUILD)/fetch: $(call OBJ,tests/fetch.c $(BASE_SRC) $(NET_SRC))
 	$(CC) $(OPT) $^ -o $@ $(NETLIBS)
 $(BUILD)/test_url: $(call OBJ,tests/test_url.c $(BASE_SRC))
-	$(CC) $(OPT) $^ -o $@
+	$(CC) $(OPT) $^ -o $@ $(BASELIBS)
 
 test: $(BUILD)/test_url
 	$(BUILD)/test_url
@@ -73,7 +74,7 @@ CSS_TEST_SRC := $(BASE_SRC) $(NET_SRC) src/dom/dom.c src/html/html.c src/html/en
 $(BUILD)/style: $(call OBJ,tests/style.c $(CSS_TEST_SRC))
 	$(CC) $(OPT) $^ -o $@ $(NETLIBS)
 $(BUILD)/text: $(call OBJ,tests/text.c $(BASE_SRC) src/text/font.c)
-	$(CC) $(OPT) $^ -o $@ $(LIBDIRS) -lfreetype -lharfbuzz
+	$(CC) $(OPT) $^ -o $@ $(BASELIBS) -lfreetype -lharfbuzz
 LAYOUT_TEST_SRC := $(CSS_TEST_SRC) src/text/font.c $(wildcard src/layout/*.c)
 $(BUILD)/layout: $(call OBJ,tests/layout.c $(LAYOUT_TEST_SRC))
 	$(CC) $(OPT) $^ -o $@ $(NETLIBS) -lfreetype -lharfbuzz

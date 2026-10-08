@@ -1,3 +1,5 @@
+#include <pthread.h>
+#include <unicode/uidna.h>
 #include "url.h"
 #include <ctype.h>
 #include <strings.h>
@@ -165,6 +167,28 @@ static int utf8_dec(const unsigned char *s, size_t n, size_t *i, uint32_t *cp) {
     for (int k = 1; k < len; k++) { if ((s[*i + (size_t)k] & 0xC0) != 0x80) return 0; v = (v << 6) | (s[*i + (size_t)k] & 63); }
     *i += (size_t)len; *cp = v; return 1;
 }
+/* UTS #46 domain-to-ASCII as the URL standard requires (CheckBidi, CheckJoiners, nontransitional, beStrict=false) */
+static UIDNA *g_idna; static pthread_once_t g_idna_once = PTHREAD_ONCE_INIT;
+static void idna_init(void) {
+    UErrorCode e = U_ZERO_ERROR;
+    g_idna = uidna_openUTS46(UIDNA_CHECK_BIDI | UIDNA_CHECK_CONTEXTJ | UIDNA_NONTRANSITIONAL_TO_ASCII | UIDNA_NONTRANSITIONAL_TO_UNICODE, &e);
+    if (U_FAILURE(e)) g_idna = NULL;
+}
+static bool idna_to_ascii(const char *s, size_t n, SB *o) {
+    pthread_once(&g_idna_once, idna_init);
+    if (!g_idna) return false;
+    char buf[512], *big = NULL; UIDNAInfo info = UIDNA_INFO_INITIALIZER; UErrorCode e = U_ZERO_ERROR;
+    int32_t len = uidna_nameToASCII_UTF8(g_idna, s, (int32_t)n, buf, (int32_t)sizeof buf, &info, &e);
+    if (e == U_BUFFER_OVERFLOW_ERROR) {
+        UIDNAInfo i2 = UIDNA_INFO_INITIALIZER; info = i2; e = U_ZERO_ERROR; big = xmalloc((size_t)len + 1);
+        len = uidna_nameToASCII_UTF8(g_idna, s, (int32_t)n, big, len + 1, &info, &e);
+    }
+    const uint32_t lenient = UIDNA_ERROR_EMPTY_LABEL | UIDNA_ERROR_LABEL_TOO_LONG | UIDNA_ERROR_DOMAIN_NAME_TOO_LONG |
+                             UIDNA_ERROR_LEADING_HYPHEN | UIDNA_ERROR_TRAILING_HYPHEN | UIDNA_ERROR_HYPHEN_3_4;
+    bool ok = U_SUCCESS(e) && !(info.errors & ~lenient);
+    if (ok) sb_put(o, big ? big : buf, (size_t)len);
+    free(big); return ok;
+}
 static bool forbidden_host(unsigned char c) { return c == 0 || strchr("\t\n\r #/:<>?@[\\]^|", c); }
 static char *host_parse(const char *s, size_t n, bool opaque) {
     SB o; sb_init(&o);
@@ -178,18 +202,11 @@ static char *host_parse(const char *s, size_t n, bool opaque) {
         return sb_take(&o);
     }
     {
-        char *dec = url_decode(s, n); size_t dn = strlen(dec), i = 0;
-        uint32_t *cp = xmalloc((dn + 1) * sizeof *cp); int nc = 0; bool ok = true;
-        while (i < dn) { uint32_t c; if (!utf8_dec((const unsigned char *)dec, dn, &i, &c)) { ok = false; break; } if (c == 0x3002 || c == 0xFF0E || c == 0xFF61) c = '.'; if (c >= 'A' && c <= 'Z') c += 32; cp[nc++] = c; }
+        char *dec = url_decode(s, n); size_t dn = strlen(dec); bool simple = true;
+        for (size_t i = 0; i < dn; i++) { unsigned char c = (unsigned char)dec[i]; if (c >= 0x80) simple = false; dec[i] = (char)(c >= 'A' && c <= 'Z' ? c + 32 : c); }
+        if (simple && strstr(dec, "xn--")) simple = false;
+        bool ok = simple ? (sb_put(&o, dec, dn), true) : idna_to_ascii(dec, dn, &o);
         free(dec);
-        for (int st = 0; ok && st <= nc;) {
-            int e = st; bool ascii = true; while (e < nc && cp[e] != '.') { if (cp[e] >= 128) ascii = false; e++; }
-            if (ascii) for (int k = st; k < e; k++) sb_putc(&o, (char)cp[k]);
-            else { sb_puts(&o, "xn--"); puny(&o, cp + st, e - st); }
-            if (e < nc) sb_putc(&o, '.');
-            st = e + 1;
-        }
-        free(cp);
         if (!ok || !o.n) goto fail;
         for (size_t k = 0; k < o.n; k++) { unsigned char c = (unsigned char)o.s[k]; if (forbidden_host(c) || c < 0x20 || c == '%' || c == 0x7f) goto fail; }
         char *h = sb_take(&o);
