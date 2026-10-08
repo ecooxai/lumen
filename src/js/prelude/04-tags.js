@@ -96,11 +96,11 @@ mk('HTMLSelectElement', HTMLElement, ['select'], p => {
     methods(p, {
         get type() { return this.multiple ? 'select-multiple' : 'select-one'; },
         get options() { return nodeList(N.query(this, 'option', true)); }, get length() { return this.options.length; },
-        get selectedOptions() { return nodeList(this.options.filter(o => o.selected)); },
+        get selectedOptions() { return nodeList([...this.options].filter(o => o.selected)); },
         get selectedIndex() { const o = this.options; for (let i = 0; i < o.length; i++) if (N.checked(o[i])) return i; for (let i = 0; i < o.length; i++) if (o[i].hasAttribute('selected')) return i; return o.length && !this.multiple ? 0 : -1; },
         set selectedIndex(i) { this.options.forEach((o, k) => N.setChecked(o, k === i)); },
         get value() { const o = this.options[this.selectedIndex]; return o ? o.value : ''; },
-        set value(v) { const i = this.options.findIndex(o => o.value === String(v)); this.selectedIndex = i; },
+        set value(v) { const i = [...this.options].findIndex(o => o.value === String(v)); this.selectedIndex = i; },
         item(i) { return this.options[i] || null; },
         add(o, before) { insertNode(this, o, typeof before === 'number' ? this.options[before] || null : before || null); },
     });
@@ -111,7 +111,7 @@ mk('HTMLOptionElement', HTMLElement, ['option'], p => {
         get value() { return N.attr(this, 'value') ?? N.text(this).trim(); }, set value(v) { this.setAttribute('value', v); },
         get selected() { const s = this.closest('select'); return s ? s.options[s.selectedIndex] === this : N.checked(this); },
         set selected(v) { const s = this.closest('select'); if (v && s && !s.multiple) for (const o of s.options) N.setChecked(o, false); N.setChecked(this, !!v); },
-        get index() { const s = this.closest('select'); return s ? s.options.indexOf(this) : 0; },
+        get index() { const s = this.closest('select'); return s ? [...s.options].indexOf(this) : 0; },
     });
 });
 mk('HTMLLabelElement', HTMLElement, ['label'], p => { acc(p, 'htmlFor', function () { return N.attr(this, 'for') ?? ''; }, function (v) { this.setAttribute('for', v); }); methods(p, { get control() { const f = N.attr(this, 'for'); return f ? N.byId(f) : this.querySelector('input,select,textarea,button'); } }); });

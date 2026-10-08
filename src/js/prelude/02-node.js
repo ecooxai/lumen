@@ -4,8 +4,15 @@ Object.assign(Node, { ELEMENT_NODE: 1, ATTRIBUTE_NODE: 2, TEXT_NODE: 3, CDATA_SE
 Object.assign(Node.prototype, { ELEMENT_NODE: 1, TEXT_NODE: 3, COMMENT_NODE: 8, DOCUMENT_NODE: 9, DOCUMENT_FRAGMENT_NODE: 11 });
 const kids = (n) => { const a = []; for (let c = N.first(n); c; c = N.next(c)) a.push(c); return a; };
 const elKids = (n) => { const a = []; for (let c = N.first(n); c; c = N.next(c)) if (N.type(c) === 1) a.push(c); return a; };
-class NodeList extends Array { item(i) { return this[i] ?? null; } static get [Symbol.species]() { return Array; } }
-const nodeList = (a) => { Object.setPrototypeOf(a, NodeList.prototype); return a; };
+class NodeList {
+    item(i) { return this[i] ?? null; }
+    forEach(fn, self) { for (let i = 0; i < this.length; i++) fn.call(self, this[i], i, this); }
+    *[Symbol.iterator]() { for (let i = 0; i < this.length; i++) yield this[i]; }
+    *entries() { for (let i = 0; i < this.length; i++) yield [i, this[i]]; }
+    *keys() { for (let i = 0; i < this.length; i++) yield i; }
+    values() { return this[Symbol.iterator](); }
+}
+const nodeList = (a) => { const o = Object.create(NodeList.prototype); for (let i = 0; i < a.length; i++) o[i] = a[i]; Object.defineProperty(o, 'length', { value: a.length }); return o; };
 const liveIdx = (k) => typeof k === 'string' && /^(0|[1-9]\d*)$/.test(k) ? +k : -1;
 const liveHandler = {
     get(t, k, r) { if (k === 'length') return t._cur().length; const i = liveIdx(k); return i >= 0 ? t._cur()[i] : Reflect.get(t, k, r); },
