@@ -12,7 +12,7 @@ typedef struct {
     uint32_t *px;
 } R;
 
-void canvas_init(Canvas *c, int w, int h, float scale) { c->w = w; c->h = h; c->stride = w; c->scale = scale; c->px = xcalloc((size_t)w * (size_t)h, 4); }
+void canvas_init(Canvas *c, int w, int h, float scale) { c->w = w; c->h = h; c->stride = w; c->scale = scale; c->punch = NULL; c->punched = false; c->px = xcalloc((size_t)w * (size_t)h, 4); }
 void canvas_free(Canvas *c) { free(c->px); c->px = NULL; }
 
 static inline uint32_t premul(Color c, float cov) {
@@ -219,6 +219,12 @@ static void image(R *r, const DItem *it) {
     float x0 = it->x * s, y0 = it->y * s, x1 = (it->x + it->w) * s, y1 = (it->y + it->h) * s;
     if (x1 - x0 < 0.5f || y1 - y0 < 0.5f) return;
     const Clip *c = clip(r);
+    if (r->c->punch && (const void *)im == r->c->punch) {
+        int qx0 = LMAX(c->x0, (int)floorf(x0 + 0.5f)), qy0 = LMAX(c->y0, (int)floorf(y0 + 0.5f)), qx1 = LMIN(c->x1, (int)floorf(x1 + 0.5f)), qy1 = LMIN(c->y1, (int)floorf(y1 + 0.5f));
+        for (int y = qy0; qx1 > qx0 && y < qy1; y++) memset(r->px + (size_t)y * (size_t)r->c->stride + qx0, 0, (size_t)(qx1 - qx0) * 4);
+        r->c->punched = !r->nlayer && !c->round;
+        return;
+    }
     int px0 = LMAX(c->x0, (int)floorf(x0)), py0 = LMAX(c->y0, (int)floorf(y0)), px1 = LMIN(c->x1, (int)ceilf(x1)), py1 = LMIN(c->y1, (int)ceilf(y1));
     if (px1 <= px0 || py1 <= py0) return;
     float kx = im->w / (x1 - x0), ky = im->h / (y1 - y0);

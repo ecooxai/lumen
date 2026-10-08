@@ -32,7 +32,8 @@ void image_unref(Image *im);
 void dl_build(DisplayList *dl, Layout *L, float scroll_x, float scroll_y, float vw, float vh);
 void dl_clear(DisplayList *dl);
 
-typedef struct Canvas { int w, h, stride; uint32_t *px; float scale; } Canvas;
+/* punch: image whose pixels raster leaves as alpha-0 holes (composited by the GPU); punched is set when it was hit. */
+typedef struct Canvas { int w, h, stride; uint32_t *px; float scale; const void *punch; bool punched; } Canvas;
 void canvas_init(Canvas *c, int w, int h, float scale);
 void canvas_free(Canvas *c);
 void raster(Canvas *c, const DisplayList *dl, Color clear);

@@ -127,7 +127,7 @@ typedef struct App {
     float sy; bool dirty, relayout;
     Font *ui;
     int hover; double frame_ms;
-    bool vonly; float last_sy; uint64_t last_ver; Page *last_page;
+    bool vonly; float last_sy; uint64_t last_ver; Page *last_page; bool gvid_ok;
 } App;
 
 static char *normalize_url(const char *in) {
@@ -236,6 +236,7 @@ static void render(App *a) {
     bool part = !why;
     int rx0 = a->pw, ry0 = ph, rx1 = 0, ry1 = 0;
     if (a->page.w != a->pw || a->page.h != ph) { canvas_free(&a->page); canvas_init(&a->page, a->pw, ph, a->scale); part = false; }
+    bool gskip = false; GpuVideo gvd, *gvp = NULL;
     if (a->cur) {
         if (a->relayout || !a->cur->L) {
             if (!a->cur->L) a->cur->L = layout_new();
@@ -246,22 +247,34 @@ static void render(App *a) {
         a->sy = LCLAMP(a->sy, 0, max_scroll(a));
         if (a->sy != a->last_sy && part) { part = false; why = 5; }
         dl_clear(&a->pdl); dl_build(&a->pdl, a->cur->L, 0, a->sy, a->vw, a->vh - BAR);
+        const DItem *vit = NULL; int nv = 0;
         for (int i = 0; i < a->pdl.items.n; i++) {
             const DItem *it = &a->pdl.items.v[i];
             if (it->op != DO_IMAGE || !media_is_frame(it->img)) continue;
+            if (!nv++) vit = it;
             float s = a->page.scale;
             rx0 = LMIN(rx0, (int)floorf(it->x * s)); ry0 = LMIN(ry0, (int)floorf(it->y * s));
             rx1 = LMAX(rx1, (int)ceilf((it->x + it->w) * s)); ry1 = LMAX(ry1, (int)ceilf((it->y + it->h) * s));
         }
         rx0 = LMAX(rx0, 0); ry0 = LMAX(ry0, 0); rx1 = LMIN(rx1, a->pw); ry1 = LMIN(ry1, ph);
-        if (part && rx1 > rx0 && ry1 > ry0) raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), rx0, ry0, rx1, ry1);
-        else { part = false; raster(&a->page, &a->pdl, RGBA(255, 255, 255, 255)); }
-    } else raster(&a->page, &(DisplayList){0}, RGBA(255, 255, 255, 255));
-    build_chrome(a);
-    raster(&a->frame, &a->cdl, RGBA(255, 255, 255, 255));
-    for (int y = part ? ry0 : 0; y < (part ? ry1 : ph) && y + bar_px < a->ph; y++)
+        bool gv = a->gpu && nv == 1;
+        if (part && (nv == 0 || (gv && a->gvid_ok))) gskip = true;
+        else if (part && rx1 > rx0 && ry1 > ry0) { a->gvid_ok = false; raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), rx0, ry0, rx1, ry1); }
+        else {
+            part = false; a->page.punch = gv ? vit->img : NULL; a->page.punched = false;
+            raster(&a->page, &a->pdl, RGBA(255, 255, 255, 255));
+            a->gvid_ok = gv && a->page.punched; a->page.punch = NULL;
+        }
+        if (gv && a->gvid_ok) {
+            const Image *im = vit->img; float s = a->page.scale;
+            gvd = (GpuVideo){ im->px, im->w, im->h, im->w, floorf(vit->x * s + 0.5f), floorf(vit->y * s + 0.5f) + bar_px, floorf((vit->x + vit->w) * s + 0.5f), floorf((vit->y + vit->h) * s + 0.5f) + bar_px };
+            gvp = &gvd;
+        }
+    } else { a->gvid_ok = false; raster(&a->page, &(DisplayList){0}, RGBA(255, 255, 255, 255)); }
+    if (!part) { build_chrome(a); raster(&a->frame, &a->cdl, RGBA(255, 255, 255, 255)); }
+    if (!gskip) for (int y = part ? ry0 : 0; y < (part ? ry1 : ph) && y + bar_px < a->ph; y++)
         memcpy(a->frame.px + (size_t)(y + bar_px) * (size_t)a->frame.stride, a->page.px + (size_t)y * (size_t)a->page.stride, (size_t)a->pw * 4);
-    if (!(a->gpu && gpu_present_rows(a->gpu, a->frame.px, a->frame.w, a->frame.h, a->frame.stride, part ? bar_px + ry0 : 0, part ? bar_px + ry1 : a->frame.h))) {
+    if (!(a->gpu && gpu_present_frame(a->gpu, a->frame.px, a->frame.w, a->frame.h, a->frame.stride, gskip ? 0 : part ? bar_px + ry0 : 0, gskip ? 0 : part ? bar_px + ry1 : a->frame.h, gvp))) {
         SDL_Surface *ws = SDL_GetWindowSurface(a->win);
         if (ws) {
             SDL_Surface *src = SDL_CreateSurfaceFrom(a->frame.w, a->frame.h, SDL_PIXELFORMAT_ARGB8888, a->frame.px, a->frame.stride * 4);
