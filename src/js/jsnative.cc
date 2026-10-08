@@ -172,12 +172,13 @@ FN(templateContent) {
 }
 FN(rect) {
     CTX; ARGN(n, 0); float r[4];
+    if (c->host.sync) c->host.sync(c->host.ud, c->doc, true);
     if (!jsg_rect(n, r)) { RET(v8::Null(iso)); return; }
     v8::Local<v8::Array> o = v8::Array::New(iso, 4);
     for (int i = 0; i < 4; i++) (void)o->Set(ctx, i, v8::Number::New(iso, r[i]));
     RET(o);
 }
-FN(computed) { CTX; ARGN(n, 0); std::string p = S(1); char *v = jsg_computed(n, p.c_str()); RET(nstr(iso, v)); free(v); }
+FN(computed) { CTX; ARGN(n, 0); if (c->host.sync) c->host.sync(c->host.ud, c->doc, false); std::string p = S(1); char *v = jsg_computed(n, p.c_str()); RET(nstr(iso, v)); free(v); }
 FN(value) { CTX; ARGN(n, 0); RET(nstr(iso, n->value_override)); }
 FN(setValue) { CTX; ARGN(n, 0); free(n->value_override); n->value_override = a[1]->IsNullOrUndefined() ? nullptr : xstrdup(S(1).c_str()); doc_mark_dirty(n->doc, n); }
 FN(checked) {

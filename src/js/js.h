@@ -19,6 +19,7 @@ typedef struct JsHost {
     Node *(*hit)(void *ud, float x, float y);                  /* viewport coordinates */
     int (*history_len)(void *ud);
     void (*navigate_post)(void *ud, const char *url, const char *body, size_t len, const char *ctype);
+    void (*sync)(void *ud, Document *d, bool layout);  /* flush style (and layout) before geometry/style queries */
 } JsHost;
 
 void js_global_init(const char *argv0);

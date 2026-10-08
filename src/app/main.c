@@ -344,6 +344,16 @@ static void restyle(App *a) {
     a->relayout = a->dirty = true;
 }
 static void history_go(App *a, int d);
+static void h_sync(void *ud, Document *d, bool layout) {
+    App *a = ud; Page *p = a->cur;
+    if (!p || p->d != d) return;
+    restyle(a);
+    if (!layout || !a->relayout) return;
+    if (!p->L) p->L = layout_new();
+    p->e->media.vw = a->vw; p->e->media.vh = a->vh - BAR;
+    layout_run(p->L, p->d, a->vw, a->vh - BAR);
+    a->relayout = false;
+}
 static void h_navigate(void *ud, const char *u) { (void)ud; navigate(g_app, u, true); }
 static void h_set_url(void *ud, const char *u, bool push) {
     (void)ud; App *a = g_app;
@@ -361,7 +371,7 @@ static void h_scroll_to(void *ud, float x, float y) { (void)ud; (void)x; g_app->
 static Node *h_hit(void *ud, float x, float y) { (void)ud; Page *p = g_app->cur; if (!p || !p->L) return NULL; Box *b = layout_hit(p->L, x, y + g_app->sy); return b ? b->node : NULL; }
 static void page_start_js(App *a, Page *p) {
     if (getenv("LUMEN_NO_JS")) return;
-    JsHost h = { a, &p->e->media, h_navigate, h_set_url, h_history_go, h_viewport, h_scroll_to, h_hit, h_history_len, h_navigate_post };
+    JsHost h = { a, &p->e->media, h_navigate, h_set_url, h_history_go, h_viewport, h_scroll_to, h_hit, h_history_len, h_navigate_post, h_sync };
     double t0 = now_ms();
     sync_sheets(p, true);
     p->js = js_new(p->d, &h);
