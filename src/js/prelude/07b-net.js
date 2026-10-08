@@ -9,6 +9,35 @@ class Headers {
     [Symbol.iterator]() { return this.entries(); }
     _flat() { const a = []; for (const [k, v] of this._m) a.push(k, v); return a; }
 }
+
+// Fetch "append a request Origin header": CORS requests and non-GET/HEAD requests carry the document origin.
+function withOrigin(flat, url, method, mode) {
+    try {
+        const o = location.origin, safe = /^(GET|HEAD)$/i.test(method);
+        if ((new URL(url).origin === o || mode === 'no-cors') && safe) return flat;
+        for (let i = 0; i < flat.length; i += 2) if (/^origin$/i.test(flat[i])) return flat;
+        flat.push('Origin', o);
+    } catch (e) {}
+    return flat;
+}
+
+// CORS check: a cross-origin response is readable only if Access-Control-Allow-Origin admits this origin.
+function corsOk(reqUrl, finalUrl, hdrs, cred) {
+    const o = location.origin;
+    let cross;
+    try {
+        const r = new URL(reqUrl), f = new URL(finalUrl || reqUrl);
+        if (/^(data|blob|about):$/.test(f.protocol)) return true;
+        cross = r.origin !== o || f.origin !== o;
+    } catch (e) { return true; }
+    if (!cross) return true;
+    const get = (n) => { for (let i = 0; i + 1 < hdrs.length; i += 2) if (String(hdrs[i]).toLowerCase() === n) return String(hdrs[i + 1]).trim(); return null; };
+    const a = get('access-control-allow-origin');
+    if (a === null) return false;
+    if (a === '*') return !cred;
+    return a === o && (!cred || get('access-control-allow-credentials') === 'true');
+}
+
 const fromFlat = (a) => { const h = new Headers(); for (let i = 0; i + 1 < a.length; i += 2) h.append(a[i], a[i + 1]); return h; };
 function bodyInit(b, h) {
     if (b == null) return null;
@@ -59,8 +88,14 @@ function fetch(input, init) {
         if (req.signal.aborted) return reject(req.signal.reason);
         const lb = localBody(req.url);
         if (lb !== undefined) { if (!lb) return reject(new TypeError('Failed to fetch')); const r = new Response(lb[0], { headers: { 'content-type': lb[1] } }); r.url = req.url; return resolve(r); }
-        const id = N.fetch(req.method, req.url, req.headers._flat(), req._b, (status, statusText, url, hdrs, body, err) => {
+        const id = N.fetch(req.method, req.url, withOrigin(req.headers._flat(), req.url, req.method, req.mode), req._b, (status, statusText, url, hdrs, body, err) => {
             if (err) return reject(new TypeError('Failed to fetch'));
+            if (!corsOk(req.url, url, hdrs || [], req.credentials === 'include')) {
+                if (req.mode !== 'no-cors') return reject(new TypeError('Failed to fetch'));
+                const r = new Response(null); r.status = 0; r.url = ''; r.type = 'opaque';
+                return resolve(r);
+            }
+            if (req.mode === 'same-origin') { try { if (new URL(url || req.url).origin !== location.origin) return reject(new TypeError('Failed to fetch')); } catch (e) {} }
             const r = new Response(null, { status, statusText, headers: fromFlat(hdrs) }); r._b = body; r.url = url; r.redirected = url !== req.url; r.type = 'basic';
             resolve(r);
         });
@@ -156,7 +191,7 @@ class XMLHttpRequest extends XMLHttpRequestEventTarget {
     _done(gen, status, statusText, url, hdrs, body, err) {
         if (gen !== this._gen) return;
         this._id = 0; if (this._timer) { clearTimeout(this._timer); this._timer = 0; }
-        if (err) { this._errorSteps('error'); if (!this._async) throw new DOMException(`Failed to load '${this._u}'.`, 'NetworkError'); return; }
+        if (err || !corsOk(this._u, url, hdrs || [], this._wc)) { this._errorSteps('error'); if (!this._async) throw new DOMException(`Failed to load '${this._u}'.`, 'NetworkError'); return; }
         if (!this._upDone) { this._upDone = true; if (this._up && this._async) { const n = this._reqLen; this._fire('progress', this._up, n, n, true); this._fire('load', this._up, n, n, true); this._fire('loadend', this._up, n, n, true); } }
         this._st = status; this._stt = statusText; this._url = url || this._u; this._hdrs = hdrs || []; this._body = body;
         const n = body ? body.byteLength : 0, len = +this.getResponseHeader('content-length'), lc = Number.isFinite(len) && len > 0, tot = lc ? len : 0;
@@ -180,8 +215,8 @@ class XMLHttpRequest extends XMLHttpRequestEventTarget {
         }
         const lb = localBody(this._u);
         if (lb !== undefined) { const f = () => this._done(gen, lb ? 200 : 0, lb ? 'OK' : '', this._u, lb ? ['content-type', lb[1]] : [], lb ? lb[0] : null, !lb); if (this._async) setTimeout(f); else f(); return; }
-        if (!this._async) { const r = N.fetchSync(this._m, this._u, this._rh._flat(), b); this._done(gen, ...r); return; }
-        this._id = N.fetch(this._m, this._u, this._rh._flat(), b, (...a) => this._done(gen, ...a));
+        if (!this._async) { const r = N.fetchSync(this._m, this._u, withOrigin(this._rh._flat(), this._u, this._m, 'cors'), b); this._done(gen, ...r); return; }
+        this._id = N.fetch(this._m, this._u, withOrigin(this._rh._flat(), this._u, this._m, 'cors'), b, (...a) => this._done(gen, ...a));
         if (this._to > 0) this._timer = setTimeout(() => { if (gen !== this._gen) return; this._terminate(); this._errorSteps('timeout'); }, this._to);
     }
     abort() {
