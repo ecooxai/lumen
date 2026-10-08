@@ -1,0 +1,14 @@
+<!doctype html><title>Lumen media</title>
+<style>body{font:16px sans-serif;margin:20px;background:#111;color:#eee} video{display:block;width:640px;height:360px;background:#000;margin:8px 0}</style>
+<h3>Progressive MP4</h3><video id=a src="test.mp4" autoplay loop></video>
+<h3>MSE (fragmented MP4)</h3><video id=b muted></video><div id=st></div>
+<script>
+const b = document.getElementById('b'), ms = new MediaSource();
+b.src = URL.createObjectURL(ms);
+ms.addEventListener('sourceopen', async () => {
+  const add = async (t, u) => { const sb = ms.addSourceBuffer(t); sb.appendBuffer(await (await fetch(u)).arrayBuffer()); await new Promise(r => sb.addEventListener('updateend', r, { once: true })); };
+  await Promise.all([add('video/mp4; codecs="avc1.64001e"', 'frag_v.mp4'), add('audio/mp4; codecs="mp4a.40.2"', 'frag_a.mp4')]);
+  ms.endOfStream(); b.loop = true; b.play();
+});
+setInterval(() => { document.getElementById('st').textContent = 'mse t=' + b.currentTime.toFixed(2) + ' ready=' + b.readyState; }, 250);
+</script>

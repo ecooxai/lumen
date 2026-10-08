@@ -123,8 +123,13 @@ static void run_source(JsCtx *c, const char *src, size_t n, const char *name) {
 static void on_reject(v8::PromiseRejectMessage m) {
     if (m.GetEvent() != v8::kPromiseRejectWithNoHandler || g_log_level > 2) return;
     v8::Isolate *iso = v8::Isolate::GetCurrent();
-    std::string s = jcstr(iso, m.GetValue());
-    fprintf(stderr, "[js warn] Unhandled promise rejection: %.300s\n", s.c_str());
+    v8::Local<v8::Value> v = m.GetValue();
+    std::string s = jcstr(iso, v);
+    if (v->IsObject()) {
+        v8::Local<v8::Value> st;
+        if (v.As<v8::Object>()->Get(iso->GetCurrentContext(), jstr(iso, "stack")).ToLocal(&st) && st->IsString()) s = jcstr(iso, st);
+    }
+    fprintf(stderr, "[js warn] Unhandled promise rejection: %.600s\n", s.c_str());
 }
 
 extern "C" {
