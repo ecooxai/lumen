@@ -28,7 +28,7 @@ NETLIBS := $(LIBDIRS) -lssl -lcrypto -lz -lbrotlidec -lzstd
 
 BASE_SRC := $(wildcard src/base/*.c)
 NET_SRC := $(wildcard src/net/*.c)
-CORE_SRC := $(BASE_SRC) $(NET_SRC) $(wildcard src/html/*.c src/dom/*.c src/css/*.c src/layout/*.c src/paint/*.c src/media/*.c)
+CORE_SRC := $(BASE_SRC) $(NET_SRC) $(wildcard src/html/*.c src/dom/*.c src/css/*.c src/text/*.c src/layout/*.c src/paint/*.c src/media/*.c)
 APP_SRC := $(wildcard src/app/*.c)
 JS_SRC := $(wildcard src/js/*.cc)
 ifeq ($(UNAME),Darwin)
@@ -72,3 +72,5 @@ $(BUILD)/parse: $(call OBJ,tests/parse.c $(BASE_SRC) $(NET_SRC) src/dom/dom.c sr
 CSS_TEST_SRC := $(BASE_SRC) $(NET_SRC) src/dom/dom.c src/html/html.c src/html/entities.c $(wildcard src/css/*.c)
 $(BUILD)/style: $(call OBJ,tests/style.c $(CSS_TEST_SRC))
 	$(CC) $(OPT) $^ -o $@ $(NETLIBS)
+$(BUILD)/text: $(call OBJ,tests/text.c $(BASE_SRC) src/text/font.c)
+	$(CC) $(OPT) $^ -o $@ $(LIBDIRS) -lfreetype -lharfbuzz
