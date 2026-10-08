@@ -613,6 +613,9 @@ int media_tick(void) {
                 m->abuf -= (double)(c->frames - c->off) / OUT_RATE; if (m->abuf < 0) m->abuf = 0;
                 free(c->s); free(c); SDL_BroadcastCondition(m->cv);
             }
+            if (all_eof && !(m->expect_audio && m->dev) && !isnan(m->duration) && t >= m->duration - 0.01) while (m->ah) {
+                AChunk *c = m->ah; m->ah = c->next; if (!m->ah) m->at = NULL; free(c->s); free(c); m->abuf = 0;
+            }
             if (all_eof && !isnan(m->duration) && t >= m->duration - 0.01) while (m->vqn) { present(m, m->vq[0].im); memmove(m->vq, m->vq + 1, sizeof m->vq[0] * (size_t)--m->vqn); popped = true; }
             while (m->vqn && m->vq[0].pts <= t + 0.008) { present(m, m->vq[0].im); memmove(m->vq, m->vq + 1, sizeof m->vq[0] * (size_t)--m->vqn); popped = true; }
             if (all_eof && !m->vqn && !m->ah && (m->eos || (m->nst && m->st[0]->progressive))) {
