@@ -75,10 +75,13 @@ void add_abs(Layout *L, Box *c) {
 }
 
 static void layout_abs(Layout *L, Box *cb) {
-    Box *list = NULL;
-    for (Box *a = cb->abs_head; a; ) { Box *n = a->abs_next; a->abs_next = list; list = a; a = n; } /* restore document order */
+    /* Laying out one positioned box can register more (e.g. a fixed box inside an absolute one), so repeat until no new ones appear. */
+    Box *stop = NULL;
+    while (cb->abs_head != stop) {
+    Box *list = stop;
+    for (Box *a = cb->abs_head; a != stop; ) { Box *n = a->abs_next; a->abs_next = list; list = a; a = n; } /* restore document order */
     cb->abs_head = list;
-    for (Box *a = list; a; a = a->abs_next) {
+    for (Box *a = list; a != stop; a = a->abs_next) {
         float px, py, pw, ph;
         if (cb == L->root || (a->fixed && cb == L->root)) { px = 0; py = 0; pw = L->vw; ph = L->vh; }
         else { px = cb->x + cb->b[3]; py = cb->y + cb->b[0]; pw = cb->w - cb->b[1] - cb->b[3]; ph = cb->h - cb->b[0] - cb->b[2]; }
@@ -102,6 +105,8 @@ static void layout_abs(Layout *L, Box *cb) {
         if (!lA) x = px + l + a->m[3]; else if (!rA) x = px + pw - r - a->m[1] - ow; else x = sx + a->m[3];
         if (!tA) y = py + t + a->m[0]; else if (!bA) y = py + ph - bt - a->m[2] - oh; else y = sy + a->m[0];
         box_translate(a, x - a->x, y - a->y);
+    }
+    stop = list;
     }
 }
 
