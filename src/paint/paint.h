@@ -3,7 +3,7 @@
 #include "../layout/layout.h"
 
 /* Decoded image: premultiplied 0xAARRGGBB pixels */
-typedef struct Image { int w, h, refs; uint32_t *px; float scale; /* device px per CSS px, 0 = 1 */ } Image;
+typedef struct Image { int w, h, refs; uint32_t *px; float scale; /* device px per CSS px, 0 = 1 */ struct ImgAnim *anim; } Image;
 static inline float image_css_w(const Image *im) { return im->scale > 0 ? im->w / im->scale : (float)im->w; }
 static inline float image_css_h(const Image *im) { return im->scale > 0 ? im->h / im->scale : (float)im->h; }
 
@@ -31,6 +31,8 @@ extern Image *(*paint_image_hook)(Node *n);
 extern Image *(*paint_url_image_hook)(const char *url);
 Image *image_decode(const uint8_t *data, size_t n);
 void image_unref(Image *im);
+/* Advances animated images; true if any frame changed. *next_ms gets the next frame time (0 = none). */
+bool image_anim_tick(double now_ms, double *next_ms);
 Image *svg_image(Node *n, float cw, float ch, float dpr);
 void dl_build(DisplayList *dl, Layout *L, float scroll_x, float scroll_y, float vw, float vh);
 void dl_clear(DisplayList *dl);

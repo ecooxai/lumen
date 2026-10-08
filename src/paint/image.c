@@ -1,4 +1,4 @@
-/* Image decoding (PNG, JPEG, WebP, GIF first frame) to premultiplied ARGB32 */
+/* Image decoding (PNG, JPEG, WebP, animated GIF, SVG) to premultiplied ARGB32 */
 #include "paint.h"
 #include "../dom/dom.h"
 #include "../base/util.h"
@@ -8,6 +8,7 @@
 #include <jpeglib.h>
 #include <webp/decode.h>
 #include <gif_lib.h>
+#include <pthread.h>
 
 static void premultiply(uint32_t *px, size_t n) {
     for (size_t i = 0; i < n; i++) {
@@ -21,7 +22,43 @@ static Image *img_new(int w, int h) {
     if (w <= 0 || h <= 0 || (size_t)w * (size_t)h > 64u * 1024 * 1024) return NULL;
     Image *im = xcalloc(1, sizeof *im); im->w = w; im->h = h; im->refs = 1; im->px = xmalloc((size_t)w * (size_t)h * 4); return im;
 }
-void image_unref(Image *im) { if (im && --im->refs <= 0) { free(im->px); free(im); } }
+/* Animated GIFs keep every composited frame; px points at the current one */
+typedef struct ImgAnim { int n, cur, loops, played; uint32_t **fr; int *delay; double next; } ImgAnim;
+static pthread_mutex_t anim_mu = PTHREAD_MUTEX_INITIALIZER;
+static Image **anims; static int nanims, canims;
+
+void image_unref(Image *im) {
+    if (!im || --im->refs > 0) return;
+    if (im->anim) {
+        pthread_mutex_lock(&anim_mu);
+        for (int i = 0; i < nanims; i++) if (anims[i] == im) { anims[i] = anims[--nanims]; break; }
+        pthread_mutex_unlock(&anim_mu);
+        for (int i = 0; i < im->anim->n; i++) free(im->anim->fr[i]);
+        free(im->anim->fr); free(im->anim->delay); free(im->anim);
+    } else free(im->px);
+    free(im);
+}
+
+bool image_anim_tick(double now, double *next) {
+    bool changed = false; *next = 0;
+    pthread_mutex_lock(&anim_mu);
+    for (int i = 0; i < nanims; i++) {
+        Image *im = anims[i]; ImgAnim *a = im->anim;
+        if (a->loops >= 0 && a->played > a->loops && a->cur == a->n - 1) continue;
+        if (!a->next) a->next = now + a->delay[a->cur];
+        int steps = 0;
+        while (now >= a->next && steps++ < a->n) {
+            if (++a->cur == a->n) { a->cur = 0; a->played++; }
+            im->px = a->fr[a->cur]; changed = true;
+            if (a->loops >= 0 && a->played > a->loops) { a->cur = a->n - 1; im->px = a->fr[a->cur]; break; }
+            a->next += a->delay[a->cur];
+            if (now - a->next > 1000) a->next = now + a->delay[a->cur];
+        }
+        if (!(a->loops >= 0 && a->played > a->loops) && (!*next || a->next < *next)) *next = a->next;
+    }
+    pthread_mutex_unlock(&anim_mu);
+    return changed;
+}
 
 static Image *dec_png(const uint8_t *d, size_t n) {
     png_image p; memset(&p, 0, sizeof p); p.version = PNG_IMAGE_VERSION;
@@ -66,21 +103,50 @@ static Image *dec_gif(const uint8_t *d, size_t n) {
     GifMem m = { d, n, 0 }; int err;
     GifFileType *g = DGifOpen(&m, gread, &err); if (!g) return NULL;
     if (DGifSlurp(g) != GIF_OK || g->ImageCount < 1) { DGifCloseFile(g, &err); return NULL; }
-    Image *im = img_new(g->SWidth, g->SHeight);
-    if (!im) { DGifCloseFile(g, &err); return NULL; }
-    memset(im->px, 0, (size_t)im->w * (size_t)im->h * 4);
-    SavedImage *f = &g->SavedImages[0];
-    ColorMapObject *cm = f->ImageDesc.ColorMap ? f->ImageDesc.ColorMap : g->SColorMap;
-    int trans = -1;
-    for (int i = 0; i < f->ExtensionBlockCount; i++) { ExtensionBlock *e = &f->ExtensionBlocks[i]; if (e->Function == GRAPHICS_EXT_FUNC_CODE && e->ByteCount >= 4 && (e->Bytes[0] & 1)) trans = (unsigned char)e->Bytes[3]; }
-    int fx = f->ImageDesc.Left, fy = f->ImageDesc.Top, fw = f->ImageDesc.Width, fh = f->ImageDesc.Height;
-    for (int y = 0; y < fh; y++) for (int x = 0; x < fw; x++) {
-        int X = fx + x, Y = fy + y; if (X >= im->w || Y >= im->h || !cm) continue;
-        int ci = f->RasterBits[y * fw + x]; if (ci == trans || ci >= cm->ColorCount) continue;
-        GifColorType c = cm->Colors[ci];
-        im->px[(size_t)Y * (size_t)im->w + (size_t)X] = 0xff000000u | ((uint32_t)c.Red << 16) | ((uint32_t)c.Green << 8) | c.Blue;
+    int W = g->SWidth, H = g->SHeight; size_t np = (size_t)W * (size_t)H;
+    if (W <= 0 || H <= 0) { DGifCloseFile(g, &err); return NULL; }
+    int nf = g->ImageCount;
+    if (np * 4 * (size_t)nf > ((size_t)64 << 20)) nf = 1;   /* too large to keep every frame: show the first */
+    uint32_t *canvas = xcalloc(np, 4), *prev = NULL, **fr = xcalloc((size_t)nf, sizeof *fr);
+    int *delay = xcalloc((size_t)nf, sizeof *delay), loops = -1;
+    for (int k = 0; k < nf; k++) {
+        SavedImage *f = &g->SavedImages[k];
+        ColorMapObject *cm = f->ImageDesc.ColorMap ? f->ImageDesc.ColorMap : g->SColorMap;
+        int trans = -1, disp = 0, dl = 0;
+        for (int i = 0; i < f->ExtensionBlockCount; i++) {
+            ExtensionBlock *e = &f->ExtensionBlocks[i];
+            if (e->Function == GRAPHICS_EXT_FUNC_CODE && e->ByteCount >= 4) {
+                disp = (e->Bytes[0] >> 2) & 7; dl = e->Bytes[1] | e->Bytes[2] << 8;
+                if (e->Bytes[0] & 1) trans = (unsigned char)e->Bytes[3];
+            } else if (e->Function == APPLICATION_EXT_FUNC_CODE && e->ByteCount == 11 && !memcmp(e->Bytes, "NETSCAPE2.0", 11) &&
+                       i + 1 < f->ExtensionBlockCount && f->ExtensionBlocks[i + 1].ByteCount >= 3 && f->ExtensionBlocks[i + 1].Bytes[0] == 1) {
+                int c = f->ExtensionBlocks[i + 1].Bytes[1] | f->ExtensionBlocks[i + 1].Bytes[2] << 8;
+                loops = c ? c : -2;   /* -2: forever */
+            }
+        }
+        if (disp == 3) { if (!prev) prev = xcalloc(np, 4); memcpy(prev, canvas, np * 4); }
+        int fx = f->ImageDesc.Left, fy = f->ImageDesc.Top, fw = f->ImageDesc.Width, fh = f->ImageDesc.Height;
+        for (int y = 0; cm && f->RasterBits && y < fh; y++) for (int x = 0; x < fw; x++) {
+            int X = fx + x, Y = fy + y; if (X < 0 || Y < 0 || X >= W || Y >= H) continue;
+            int ci = f->RasterBits[y * fw + x]; if (ci == trans || ci >= cm->ColorCount) continue;
+            GifColorType c = cm->Colors[ci];
+            canvas[(size_t)Y * (size_t)W + (size_t)X] = 0xff000000u | ((uint32_t)c.Red << 16) | ((uint32_t)c.Green << 8) | c.Blue;
+        }
+        fr[k] = xmalloc(np * 4); memcpy(fr[k], canvas, np * 4);
+        delay[k] = dl <= 1 ? 100 : dl * 10;   /* browsers treat 0-10 ms as 100 ms */
+        if (disp == 2) for (int y = LMAX(fy, 0); y < LMIN(fy + fh, H); y++) for (int x = LMAX(fx, 0); x < LMIN(fx + fw, W); x++) canvas[(size_t)y * (size_t)W + (size_t)x] = 0;
+        else if (disp == 3 && prev) memcpy(canvas, prev, np * 4);
     }
-    DGifCloseFile(g, &err);
+    DGifCloseFile(g, &err); free(canvas); free(prev);
+    Image *im = xcalloc(1, sizeof *im); im->w = W; im->h = H; im->refs = 1; im->px = fr[0];
+    if (nf > 1) {
+        ImgAnim *a = xcalloc(1, sizeof *a); a->n = nf; a->fr = fr; a->delay = delay; a->loops = loops == -2 ? -1 : loops < 0 ? 0 : loops;
+        im->anim = a;
+        pthread_mutex_lock(&anim_mu);
+        if (nanims == canims) { canims = canims ? canims * 2 : 16; anims = xrealloc(anims, (size_t)canims * sizeof *anims); }
+        anims[nanims++] = im;
+        pthread_mutex_unlock(&anim_mu);
+    } else { free(fr); free(delay); }
     return im;
 }
 
