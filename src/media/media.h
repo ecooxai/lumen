@@ -42,4 +42,6 @@ Image *media_frame_for(Node *element);
 bool media_is_frame(const Image *im);   /* borrowed; valid until a later media_tick */
 extern void (*media_wakeup)(void);
 size_t media_mem_bytes(size_t *frames);
+extern bool media_lowmem;   /* hidden players skip RGBA conversion */
+void media_mark_visible(bool (*vis)(Node *, void *), void *ud);
 

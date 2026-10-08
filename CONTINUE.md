@@ -26,3 +26,13 @@ off-screen media eviction setting off and on (on: target < 150 MB for YouTube pl
 ## Chrome 154 baseline (5 tabs)
 RAM 1,307-1,314 MB, peak sum ~1,850 MB, CPU 10-14%, GPU proc ~94 MB, video 854x480.
 Load (DCL/load): Google 0.53/3.66 s, Bing 1.97/2.23 s, YT watch ~2.2/3.47 s, YT home 2.29/2.33 s.
+
+## UI (2026-10-08)
+- Tabs live in the title bar right of the traffic lights (`mac_style_window` in src/app/macui.m: full-size content view,
+  transparent titlebar; `win_hit` makes empty tab-row space draggable).
+- Workspaces: left bar `SIDEW` 68pt (right edge = 3rd traffic light), `Tab.ws`, `ws_select/ws_new/ws_close`,
+  Workspace menu (`mac_install_menu`, events `EV_MENU` -> `menu_cmd`). Double-click a workspace to rename.
+  `LUMEN_NO_SIDEBAR=1` hides the bar.
+- Low-memory mode (`LUMEN_LOWMEM=1`): `img_evict` drops images not painted for 3 s (refetch on paint),
+  `media_mark_visible` + `hidden` in media.c emit 1x1 frames for players outside the active tab.
+  3-tab YouTube test: 523 -> 496 MB, images 24.8 -> 6.1 MB; JS heap (~70 MB/YouTube page) dominates.

@@ -60,7 +60,7 @@ struct MediaPlayer {
     int w, h;
     VFrame vq[VQ_MAX]; int vqn;
     AChunk *ah, *at; double abuf;
-    Image *cur, *grave[3]; int ngrave;
+    Image *cur, *grave[3]; int ngrave; double painted;
 };
 
 void (*media_wakeup)(void);
@@ -243,17 +243,20 @@ static Image *to_image(struct SwsContext **sws, AVFrame *f) {
     return im;
 }
 typedef struct { struct SwsContext *sws; SwrContext *swr; double skip; uint64_t epoch; } DecCtx;
+bool media_lowmem;
+static Image *tiny_image(void) { Image *im = xcalloc(1, sizeof *im); im->w = im->h = 1; im->refs = 1; im->px = xcalloc(1, 4); return im; }
 static bool emit_video(Stream *s, DecCtx *d, AVFrame *f, AVRational tb) {
     MediaPlayer *m = s->m;
     int64_t ts = f->best_effort_timestamp != AV_NOPTS_VALUE ? f->best_effort_timestamp : f->pts;
     double pts = ts == AV_NOPTS_VALUE ? 0 : ts * av_q2d(tb);
     if (pts < d->skip - 1e-3) return true;
+    bool hidden = media_lowmem && (double)SDL_GetTicks() - m->painted > 2000;
     AVFrame *sw = NULL;
-    if (f->format == AV_PIX_FMT_VIDEOTOOLBOX) {
+    if (!hidden && f->format == AV_PIX_FMT_VIDEOTOOLBOX) {
         sw = av_frame_alloc();
         if (!sw || av_hwframe_transfer_data(sw, f, 0) < 0) { av_frame_free(&sw); return true; }
     }
-    Image *im = to_image(&d->sws, sw ? sw : f);
+    Image *im = hidden ? tiny_image() : to_image(&d->sws, sw ? sw : f);
     av_frame_free(&sw);
     if (!im) return true;
     SDL_LockMutex(m->mu);
@@ -724,4 +727,11 @@ int media_can_play(const char *mime, bool mse) {
         while (*c && *c != ',' && *c != '"' && *c != '\'' && *c != ';') c++;
     }
     return 2;
+}
+
+void media_mark_visible(bool (*vis)(Node *, void *), void *ud) {
+    double now = (double)SDL_GetTicks();
+    SDL_LockMutex(g_mu);
+    for (int i = 0; i < g_np; i++) if (vis(g_pl[i]->node, ud)) g_pl[i]->painted = now;
+    SDL_UnlockMutex(g_mu);
 }
