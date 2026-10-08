@@ -164,9 +164,18 @@ FN(parseDoc) {
     c->docs.push_back(nd);
     RET(jwrap(c, &nd->node));
 }
+static void throw_dom(v8::Isolate *iso, v8::Local<v8::Context> ctx, const std::string &msg, const char *name) {
+    v8::Local<v8::Value> ctor;
+    if (ctx->Global()->Get(ctx, jstr(iso, "DOMException")).ToLocal(&ctor) && ctor->IsFunction()) {
+        v8::Local<v8::Value> args[2] = { jstr(iso, msg.c_str()), jstr(iso, name) };
+        v8::Local<v8::Object> ex;
+        if (ctor.As<v8::Function>()->NewInstance(ctx, 2, args).ToLocal(&ex)) { iso->ThrowException(ex); return; }
+    }
+    iso->ThrowException(v8::Exception::SyntaxError(jstr(iso, msg.c_str())));
+}
 FN(query) {
     CTX; ARGN(root, 0); std::string sel = S(1); bool all = BOOL(2);
-    if (!jsg_valid_selector(sel.c_str())) { iso->ThrowException(v8::Exception::SyntaxError(jstr(iso, ("'" + sel + "' is not a valid selector.").c_str()))); return; }
+    if (!jsg_valid_selector(sel.c_str())) { throw_dom(iso, ctx, "'" + sel + "' is not a valid selector.", "SyntaxError"); return; }
     Node **out = nullptr;
     int k = jsg_query(root, sel.c_str(), all, &out);
     if (!all) { RET(jwrap(c, k ? out[0] : nullptr)); free(out); return; }
@@ -178,7 +187,7 @@ FN(query) {
 FN(matches) {
     CTX; ARGN(n, 0); std::string sel = S(1); bool ok = false;
     bool m = n->type == NODE_ELEMENT && jsg_matches(n, sel.c_str(), &ok);
-    if (n->type == NODE_ELEMENT && !ok) { iso->ThrowException(v8::Exception::SyntaxError(jstr(iso, ("'" + sel + "' is not a valid selector.").c_str()))); return; }
+    if (n->type == NODE_ELEMENT && !ok) { throw_dom(iso, ctx, "'" + sel + "' is not a valid selector.", "SyntaxError"); return; }
     RET(m);
 }
 FN(byId) { CTX; std::string id = S(0); RET(jwrap(c, doc_get_element_by_id(c->doc, id.c_str()))); }

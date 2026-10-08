@@ -153,7 +153,7 @@ static bool parse_nth(const char *s, int *a, int *b, const char **rest) {
             if (lc(*q) == 'n') {
                 *a = sign * (has_num ? num : 1); q++;
                 while (is_ws((unsigned char)*q)) q++;
-                if (*q == '+' || *q == '-') { int bs = *q == '-' ? -1 : 1; q++; while (is_ws((unsigned char)*q)) q++; int bn = 0; while (isdigit((unsigned char)*q)) { bn = bn * 10 + (*q - '0'); q++; } *b = bs * bn; }
+                if (*q == '+' || *q == '-') { int bs = *q == '-' ? -1 : 1; q++; while (is_ws((unsigned char)*q)) q++; if (!isdigit((unsigned char)*q)) return false; int bn = 0; while (isdigit((unsigned char)*q)) { bn = bn * 10 + (*q - '0'); q++; } *b = bs * bn; }
                 else *b = 0;
             } else { *a = 0; *b = sign * num; }
             s = q;
@@ -216,6 +216,7 @@ static bool parse_compound(SP *p, Compound *c, Selector *sel) {
             if (!el && (s.name == atom("before") || s.name == atom("after") || s.name == atom("first-line") || s.name == atom("first-letter"))) el = true;
             s.kind = el ? SK_PSEUDO_EL : SK_PSEUDO;
             if (el) sel->pseudo_el = s.name == atom("before") ? 1 : s.name == atom("after") ? 2 : 3;
+            if ((p->i >= p->n || p->s[p->i] != '(') && (s.name == atom("not") || s.name == atom("is") || s.name == atom("where") || s.name == atom("has") || str_starts(s.name, "nth-"))) goto fail;
             if (p->i < p->n && p->s[p->i] == '(') {
                 p->i++;
                 size_t close = find_close_paren(p->s, p->i, p->n);
@@ -232,6 +233,7 @@ static bool parse_compound(SP *p, Compound *c, Selector *sel) {
                 } else if (str_starts(nmx, "nth-")) {
                     const char *rest = NULL;
                     if (!parse_nth(arg, &s.a, &s.b, &rest)) { free(arg); goto fail; }
+                    if (rest && *rest && !str_istarts(rest, "of ")) { free(arg); goto fail; }
                     if (rest && str_istarts(rest, "of ")) { s.sub = xcalloc(1, sizeof(SelList)); SP q = { rest + 3, 0, strlen(rest + 3) }; parse_sellist(&q, s.sub, false, 0); }
                 } else s.value = xstrdup(str_trim(arg));
                 free(arg);
@@ -293,7 +295,7 @@ static bool parse_selector(SP *p, Selector *sel, bool relative) {
         if (p->i < p->n && strchr(">+~", p->s[p->i])) { char c = p->s[p->i++]; comb = c == '>' ? CB_CHILD : c == '+' ? CB_ADJ : CB_SIB; sp_ws(p); }
         else comb = CB_DESC;
         /* relative selectors: represent leading combinator with a :scope compound */
-        Compound sc = {0}; SimpleSel s = {0}; s.kind = SK_PSEUDO; s.name = atom("scope");
+        Compound sc = {0}; SimpleSel s = {0}; s.kind = SK_PSEUDO; s.name = atom("scope"); s.op = 2; /* implicit relative anchor */
         sc.s = xmalloc(sizeof s); sc.s[0] = s; sc.n = 1; sc.comb = CB_NONE;
         vec_push(cs, sc);
     }
@@ -731,13 +733,16 @@ static void ser_anb(SB *b, int a, int bb) {
 }
 static void ser_selector(SB *b, const Selector *s) {
     static const char *combs[] = { "", " ", " > ", " + ", " ~ " };
+    bool first = true;
     for (int i = 0; i < s->n; i++) {
         const Compound *c = &s->c[i];
-        if (c->comb) { const char *k = combs[c->comb]; sb_puts(b, i ? k : (c->comb == CB_DESC ? "" : k + 1)); }
+        if (!i && c->n == 1 && c->s[0].kind == SK_PSEUDO && c->s[0].op == 2) continue;
+        if (c->comb) { const char *k = combs[c->comb]; sb_puts(b, !first ? k : (c->comb == CB_DESC ? "" : k + 1)); }
+        first = false;
         for (int j = 0; j < c->n; j++) {
             const SimpleSel *x = &c->s[j];
             switch (x->kind) {
-            case SK_UNIVERSAL: sb_putc(b, '*'); break;
+            case SK_UNIVERSAL: if (c->n == 1) sb_putc(b, '*'); break;
             case SK_TYPE: ser_ident(b, x->name); break;
             case SK_ID: sb_putc(b, '#'); ser_ident(b, x->name); break;
             case SK_CLASS: sb_putc(b, '.'); ser_ident(b, x->name); break;

@@ -13,6 +13,19 @@ static void vp(void *ud, float *w, float *h, float *sx, float *sy, float *dpr) {
     (void)ud; *w = 1280; *h = 800; *sx = *sy = 0; *dpr = 1;
 }
 
+static StyleEngine *g_se;
+static uint64_t g_seen;
+static void jsrun_sync(void *ud, Document *d, bool layout) {
+    (void)ud; (void)layout;
+    if (!g_se || g_se->doc != d || d->dom_version == g_seen) return;
+    g_seen = d->dom_version;
+    for (Node *n = d->node.first; n; n = node_next_in_tree(n, &d->node)) {
+        if (n->type != NODE_ELEMENT || n->ns != NS_HTML || n->tag != A_style) continue;
+        style_engine_remove_owner(g_se, n);
+        char *t = node_text_content(n); StyleSheet *s = css_parse_sheet(t, strlen(t), d->url, 1, &g_se->media); s->owner = n; style_engine_add_sheet(g_se, s); free(t);
+    }
+    style_recalc(g_se, &d->node, true);
+}
 int main(int argc, char **argv) {
     if (argc < 2) { fprintf(stderr, "usage: jsrun URL|FILE [ms]\n"); return 2; }
     double ms = argc > 2 ? atof(argv[2]) : 1000;
@@ -45,6 +58,7 @@ int main(int argc, char **argv) {
     uint64_t seen_ver = d->dom_version;
     JsHost h = {0};
     h.viewport = vp;
+    g_se = se; g_seen = d->dom_version; h.sync = jsrun_sync;
     double t0 = now_ms();
     JsCtx *js = js_new(d, &h);
     double t1 = now_ms();
