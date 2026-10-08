@@ -170,7 +170,15 @@ static void on_reject(v8::PromiseRejectMessage m) {
         v8::Local<v8::Value> st;
         if (v.As<v8::Object>()->Get(iso->GetCurrentContext(), jstr(iso, "stack")).ToLocal(&st) && st->IsString()) s = jcstr(iso, st);
     }
-    fprintf(stderr, "[js warn] Unhandled promise rejection: %.600s\n", s.c_str());
+    if (!v->IsObject() || s.find('\n') == std::string::npos) {
+        v8::Local<v8::StackTrace> tr = v8::StackTrace::CurrentStackTrace(iso, 4);
+        for (int i = 0; i < tr->GetFrameCount(); i++) {
+            v8::Local<v8::StackFrame> f = tr->GetFrame(iso, i);
+            v8::Local<v8::String> fn = f->GetFunctionName(), sn = f->GetScriptName();
+            s += "\n    at " + (fn.IsEmpty() ? std::string("?") : jcstr(iso, fn)) + " (" + (sn.IsEmpty() ? std::string("?") : jcstr(iso, sn)) + ":" + std::to_string(f->GetLineNumber()) + ":" + std::to_string(f->GetColumn()) + ")";
+        }
+    }
+    fprintf(stderr, "[js warn] Unhandled promise rejection: %.900s\n", s.c_str());
 }
 
 extern "C" {
