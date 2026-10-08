@@ -178,7 +178,7 @@ function ceConnected(root, connected, moved) {
     if (!registry.byName.size) return;
     const t = N.type(root); if (t !== 1 && t !== 11) return;
     for (const el of N.ceScan(root)) {
-        if (!el.__ce) { if (!moved) ceUpgrade(el); continue; }
+        if (!el.__ce) { if (!moved && N.connected(el)) ceUpgrade(el); continue; }
         if (!moved && connected !== N.connected(el)) continue;
         const cb = connected ? el.connectedCallback : el.disconnectedCallback;
         if (typeof cb === 'function') { try { cb.call(el); } catch (e) { report(e); } }
