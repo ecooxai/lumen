@@ -1156,6 +1156,38 @@ static ComputedStyle *compute(StyleEngine *e, Node *el, const ComputedStyle *par
     return st;
 }
 
+static bool str_same(const char *a, const char *b) { return a == b || (a && b && !strcmp(a, b)); }
+/* true when a and b differ only in properties that are resolved at paint time */
+static bool paint_only(const ComputedStyle *a, const ComputedStyle *b) {
+    if (!a || !b) return a == b;
+    if (a->has_transform != b->has_transform || !str_same(a->content, b->content) || !str_same(a->grid_areas, b->grid_areas) || !str_same(a->grid_area, b->grid_area)) return false;
+    if (a->grid_ncols != b->grid_ncols || a->grid_nrows != b->grid_nrows) return false;
+    if (a->grid_ncols && memcmp(a->grid_cols, b->grid_cols, sizeof *a->grid_cols * (size_t)a->grid_ncols)) return false;
+    if (a->grid_nrows && memcmp(a->grid_rows, b->grid_rows, sizeof *a->grid_rows * (size_t)a->grid_nrows)) return false;
+    if (!paint_only(a->before, b->before) || !paint_only(a->after, b->after)) return false;
+    ComputedStyle x = *a, y = *b;
+#define PO_Z(f) (memset(&x.f, 0, sizeof x.f), memset(&y.f, 0, sizeof y.f))
+    PO_Z(refs); PO_Z(grid_cols); PO_Z(grid_rows); PO_Z(content); PO_Z(grid_areas); PO_Z(grid_area); PO_Z(before); PO_Z(after); PO_Z(custom);
+    PO_Z(color); PO_Z(bg_color); PO_Z(bg_image); PO_Z(bg_gradient); PO_Z(bg_repeat); PO_Z(bg_size_kind); PO_Z(bg_size); PO_Z(bg_pos);
+    PO_Z(mask_image); PO_Z(mask_fit); PO_Z(border_color); PO_Z(outline_style); PO_Z(outline_width); PO_Z(outline_offset); PO_Z(outline_color);
+    PO_Z(box_shadow); PO_Z(has_shadow); PO_Z(text_shadow); PO_Z(has_text_shadow); PO_Z(text_decoration);
+    PO_Z(opacity); PO_Z(transform); PO_Z(transform_origin); PO_Z(translate_pending); PO_Z(visibility); PO_Z(z_index); PO_Z(z_auto); PO_Z(isolation);
+    PO_Z(cursor); PO_Z(pointer_events); PO_Z(user_select); PO_Z(caret_color); PO_Z(fill); PO_Z(stroke); PO_Z(stroke_width); PO_Z(object_fit);
+    PO_Z(filter_blur); PO_Z(filter_brightness); PO_Z(backdrop_blur);
+    PO_Z(anim_name); PO_Z(anim_dur); PO_Z(anim_delay); PO_Z(anim_iter); PO_Z(tr_prop); PO_Z(tr_dur); PO_Z(tr_delay);
+#undef PO_Z
+    return !memcmp(&x, &y, sizeof x);
+}
+/* moves nw's values into old (keeping old's address, which boxes point at); nw is left holding old's values */
+static void adopt(ComputedStyle *old, ComputedStyle *nw) {
+    ComputedStyle *ob = old->before, *oa = old->after, *nb = nw->before, *na = nw->after;
+    if (ob) adopt(ob, nb);
+    if (oa) adopt(oa, na);
+    ComputedStyle t = *old; int refs = old->refs;
+    *old = *nw; old->refs = refs; old->before = ob; old->after = oa;
+    *nw = t; nw->refs = 1; nw->before = nb; nw->after = na;
+}
+
 static void recalc(StyleEngine *e, Node *n, const ComputedStyle *par, bool force) {
     if (n->type == NODE_ELEMENT) {
         bool need = force || (n->flags & NF_STYLE_DIRTY) || !n->style;
@@ -1165,8 +1197,8 @@ static void recalc(StyleEngine *e, Node *n, const ComputedStyle *par, bool force
                 if (e->idx.count) { st->before = compute_pseudo(e, n, st, 1); st->after = compute_pseudo(e, n, st, 2); }
             }
             if (css_style_change_hook) css_style_change_hook(n, n->style, st);
-            if (n->style) style_free(n->style);
-            n->style = st;
+            if (n->style && paint_only(n->style, st)) { adopt(n->style, st); style_free(st); e->stats_paint++; }
+            else { if (n->style) style_free(n->style); n->style = st; e->layout_dirty = true; }
             force = true; /* children inherit */
             e->stats_matched++;
         }
@@ -1185,7 +1217,7 @@ static void recalc(StyleEngine *e, Node *n, const ComputedStyle *par, bool force
 
 void style_recalc(StyleEngine *e, Node *root, bool force) {
     if (e->idx_dirty) { idx_build(e); force = true; }
-    e->stats_matched = 0;
+    e->stats_matched = e->stats_paint = 0;
     recalc(e, root, NULL, force);
 }
 ComputedStyle *style_for_text(Node *t) { Node *p = t->parent; while (p && p->type != NODE_ELEMENT) p = p->parent ? p->parent : p->host; return p ? p->style : NULL; }

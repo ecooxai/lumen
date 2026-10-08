@@ -30,7 +30,7 @@ typedef struct { Node *n; char *src; size_t len; char *name; } PScript;
 typedef struct { Node *n; uint64_t h; } SheetRef;
 typedef struct Page {
     char *url; Document *d; StyleEngine *e; Layout *L; uint64_t gen; double load_ms;
-    JsCtx *js; PScript *scripts; int nscripts; uint64_t seen_ver;
+    JsCtx *js; PScript *scripts; int nscripts; uint64_t seen_ver, lay_ver;
     SheetRef *sref; int nsref;
     HMap img_fired; bool img_check;
     /* <iframe> child browsing context (document owned by the JS layer) */
@@ -561,6 +561,7 @@ static void build_chrome(App *a) {
 static float max_scroll(App *a) { return a->t->cur && a->t->cur->L ? LMAX(0, a->t->cur->L->doc_h - (a->vh - BAR)) : 0; }
 
 static double g_tr, g_tl, g_td, g_tx;
+static bool g_no_paint_only;
 static void render(App *a) {
     double t0 = now_ms();
     int bar_px = (int)(BAR * a->scale);
@@ -901,7 +902,9 @@ static void restyle(App *a) {
     { double q = now_ms(); style_recalc(p->e, &p->d->node, sheets); g_tr += now_ms() - q; }
     sync_images(p);
     p->img_check = true;
-    a->t->relayout = true; if (a->t == a->tabs[a->ti]) a->dirty = true;
+    if (sheets || p->e->layout_dirty || p->d->layout_version != p->lay_ver || g_no_paint_only) a->t->relayout = true;
+    p->e->layout_dirty = false; p->lay_ver = p->d->layout_version;
+    if (a->t == a->tabs[a->ti]) a->dirty = true;
 }
 static void history_go(App *a, int d);
 static void h_sync_in(void *ud, Document *d, bool layout) {
@@ -1337,6 +1340,7 @@ static void crash_handler(int sig) {
 }
 
 int main(int argc, char **argv) {
+    g_no_paint_only = getenv("LUMEN_NO_PAINT_ONLY") != NULL;
     signal(SIGSEGV, crash_handler); signal(SIGBUS, crash_handler); signal(SIGABRT, crash_handler);
     const char *start = argc > 1 ? argv[1] : "https://en.wikipedia.org/wiki/Web_browser";
     SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
