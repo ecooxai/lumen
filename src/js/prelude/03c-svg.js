@@ -1,6 +1,8 @@
 const SVG_UNITS = ['', '', '%', 'em', 'ex', 'px', 'cm', 'mm', 'in', 'pt', 'pc'];
 const SVG_PX = [0, 1, 0, 16, 8, 1, 96 / 2.54, 96 / 25.4, 96, 4 / 3, 16];
-const SVG_NUM = '[+-]?(?:\\d+\\.?\\d*|\\.\\d+)(?:[eE][+-]?\\d+)?';
+const SVG_NUM = '[+-]?(?:\\d+(?:\\.\\d+)?|\\.\\d+)(?:[eE][+-]?\\d+)?';
+const SVG_NUM_RE = new RegExp(`^\\s*${SVG_NUM}\\s*$`);
+function svgPair(s, i, re) { if (s == null) return null; const p = s.trim().split(/\s*,\s*|\s+/); if (p.length < 1 || p.length > 2 || !p.every(x => re.test(x))) return null; return +(p[i] !== undefined ? p[i] : p[0]); }
 const SVG_LEN_RE = new RegExp(`^\\s*(${SVG_NUM})(%|em|ex|px|cm|mm|in|pt|pc)?\\s*$`, 'i');
 function svgParseLen(s) { const m = s == null ? null : SVG_LEN_RE.exec(s); if (!m) return null; return [Math.max(1, SVG_UNITS.indexOf((m[2] || '').toLowerCase())), +m[1]]; }
 function svgConsts(C, o) { for (const [k, v] of Object.entries(o)) { Object.defineProperty(C, k, { value: v, enumerable: true }); Object.defineProperty(C.prototype, k, { value: v, enumerable: true }); } }
@@ -23,13 +25,13 @@ svgConsts(SVGLength, { SVG_LENGTHTYPE_UNKNOWN: 0, SVG_LENGTHTYPE_NUMBER: 1, SVG_
 function mkLen(el, attr, ro, d) { const l = Object.create(SVGLength.prototype); def(l, '_el', el); def(l, '_attr', attr); def(l, '_ro', ro); def(l, '_d', d ? svgParseLen(d) : null); def(l, '_v', [1, 0]); return l; }
 class SVGNumber {
     constructor() { illegal(); }
-    get value() { if (!this._el) return this._v; const s = N.attr(this._el, this._attr); return s != null && new RegExp(`^\\s*${SVG_NUM}\\s*$`).test(s) ? +s : this._d; }
-    set value(v) { if (this._ro) svgRO(); v = +v; if (!isFinite(v)) throw new TypeError('The provided float value is non-finite.'); if (this._el) this._el.setAttribute(this._attr, String(v)); else this._v = v; }
+    get value() { if (!this._el) return this._v; const s = N.attr(this._el, this._attr); if (this._i >= 0) { const v = svgPair(s, this._i, SVG_NUM_RE); return v === null ? this._d : v; } return s != null && SVG_NUM_RE.test(s) ? +s : this._d; }
+    set value(v) { if (this._ro) svgRO(); v = +v; if (!isFinite(v)) throw new TypeError('The provided float value is non-finite.'); if (!this._el) { this._v = v; return; } if (this._i >= 0) { const o = mkNum(this._el, this._attr, this._d, false, 1 - this._i).value; this._el.setAttribute(this._attr, this._i ? o + ' ' + v : v + ' ' + o); } else this._el.setAttribute(this._attr, String(v)); }
 }
-function mkNum(el, attr, d, ro) { const n = Object.create(SVGNumber.prototype); def(n, '_el', el); def(n, '_attr', attr); def(n, '_d', d); def(n, '_ro', ro); def(n, '_v', 0); return n; }
+function mkNum(el, attr, d, ro, i = -1) { const n = Object.create(SVGNumber.prototype); def(n, '_el', el); def(n, '_attr', attr); def(n, '_d', d); def(n, '_ro', ro); def(n, '_v', 0); def(n, '_i', i); return n; }
 class SVGAnimatedLength { constructor() { illegal(); } get baseVal() { return this._b; } get animVal() { return this._a; } }
 class SVGAnimatedNumber { constructor() { illegal(); } get baseVal() { return this._n.value; } set baseVal(v) { this._n.value = v; } get animVal() { return this._n.value; } }
-class SVGAnimatedInteger { constructor() { illegal(); } get baseVal() { const s = N.attr(this._el, this._attr); return s != null && /^\s*[+-]?\d+\s*$/.test(s) ? parseInt(s, 10) : this._d; } set baseVal(v) { this._el.setAttribute(this._attr, String(Math.trunc(+v) | 0)); } get animVal() { return this.baseVal; } }
+class SVGAnimatedInteger { constructor() { illegal(); } get baseVal() { const s = N.attr(this._el, this._attr); if (this._i >= 0) { const v = svgPair(s, this._i, /^[+-]?\d+$/); return v === null ? this._d : v; } return s != null && /^\s*[+-]?\d+\s*$/.test(s) ? parseInt(s, 10) : this._d; } set baseVal(v) { v = String(Math.trunc(+v) | 0); if (this._i >= 0) { const o = svgMk(SVGAnimatedInteger, { _el: this._el, _attr: this._attr, _d: this._d, _i: 1 - this._i }).baseVal; v = this._i ? o + ' ' + v : v + ' ' + o; } this._el.setAttribute(this._attr, v); } get animVal() { return this.baseVal; } }
 class SVGAnimatedBoolean { constructor() { illegal(); } get baseVal() { return N.attr(this._el, this._attr) === 'true'; } set baseVal(v) { this._el.setAttribute(this._attr, v ? 'true' : 'false'); } get animVal() { return this.baseVal; } }
 class SVGAnimatedString {
     constructor() { illegal(); }
@@ -57,7 +59,9 @@ function svgProps(C, spec) {
                 switch (kind) {
                 case 'len': return svgMk(SVGAnimatedLength, { _b: mkLen(this, attr, false, d), _a: mkLen(this, attr, true, d) });
                 case 'num': return svgMk(SVGAnimatedNumber, { _n: mkNum(this, attr, d, false) });
-                case 'int': return svgMk(SVGAnimatedInteger, { _el: this, _attr: attr, _d: d });
+                case 'num0': case 'num1': return svgMk(SVGAnimatedNumber, { _n: mkNum(this, attr, d, false, +kind[3]) });
+                case 'int': return svgMk(SVGAnimatedInteger, { _el: this, _attr: attr, _d: d, _i: -1 });
+                case 'int0': case 'int1': return svgMk(SVGAnimatedInteger, { _el: this, _attr: attr, _d: d, _i: +kind[3] });
                 case 'bool': return svgMk(SVGAnimatedBoolean, { _el: this, _attr: attr });
                 case 'str': return svgMk(SVGAnimatedString, { _el: this, _attr: attr });
                 case 'enum': return svgMk(SVGAnimatedEnumeration, { _el: this, _attr: attr, _d: d, _map: map });
@@ -73,7 +77,7 @@ const XYWH10 = [['x', 'len', 'x', '-10%'], ['y', 'len', 'y', '-10%'], ['width', 
 const svgClasses = {};
 function svgClass(name, base, tags, spec) { const C = { [name]: class extends base {} }[name]; if (spec) svgProps(C, spec); for (const t of tags) svgClasses[t.toLowerCase()] = C; return C; }
 svgProps(SVGElement, [['className', 'str', 'class']]);
-svgProps(SVGSVGElement, XYWH.concat([['viewBox', 'rect']]));
+svgProps(SVGSVGElement, [['x', 'len'], ['y', 'len'], ['width', 'len', 'width', '100%'], ['height', 'len', 'height', '100%'], ['viewBox', 'rect']]);
 svgClasses.svg = SVGSVGElement;
 methods(SVGSVGElement.prototype, {
     createSVGLength() { return mkLen(null, null, false); },
@@ -106,8 +110,8 @@ const SVGTextPathElement = svgClass('SVGTextPathElement', SVGTextContentElement,
 svgConsts(SVGTextPathElement, { TEXTPATH_METHODTYPE_UNKNOWN: 0, TEXTPATH_METHODTYPE_ALIGN: 1, TEXTPATH_METHODTYPE_STRETCH: 2, TEXTPATH_SPACINGTYPE_UNKNOWN: 0, TEXTPATH_SPACINGTYPE_AUTO: 1, TEXTPATH_SPACINGTYPE_EXACT: 2 });
 const SVGGradientElement = svgClass('SVGGradientElement', SVGElement, [], [['gradientUnits', 'enum', 'gradientUnits', 2, UNITS], ['spreadMethod', 'enum', 'spreadMethod', 1, ['', 'pad', 'reflect', 'repeat']], ['href', 'str']]);
 svgConsts(SVGGradientElement, { SVG_SPREADMETHOD_UNKNOWN: 0, SVG_SPREADMETHOD_PAD: 1, SVG_SPREADMETHOD_REFLECT: 2, SVG_SPREADMETHOD_REPEAT: 3 });
-const SVGLinearGradientElement = svgClass('SVGLinearGradientElement', SVGGradientElement, ['linearGradient'], [['x1', 'len'], ['y1', 'len'], ['x2', 'len', 'x2', '100%'], ['y2', 'len']]);
-const SVGRadialGradientElement = svgClass('SVGRadialGradientElement', SVGGradientElement, ['radialGradient'], [['cx', 'len', 'cx', '50%'], ['cy', 'len', 'cy', '50%'], ['r', 'len', 'r', '50%'], ['fx', 'len', 'fx', '50%'], ['fy', 'len', 'fy', '50%'], ['fr', 'len']]);
+const SVGLinearGradientElement = svgClass('SVGLinearGradientElement', SVGGradientElement, ['linearGradient'], [['x1', 'len', 'x1', '0%'], ['y1', 'len', 'y1', '0%'], ['x2', 'len', 'x2', '100%'], ['y2', 'len', 'y2', '0%']]);
+const SVGRadialGradientElement = svgClass('SVGRadialGradientElement', SVGGradientElement, ['radialGradient'], [['cx', 'len', 'cx', '50%'], ['cy', 'len', 'cy', '50%'], ['r', 'len', 'r', '50%'], ['fx', 'len', 'fx', '50%'], ['fy', 'len', 'fy', '50%'], ['fr', 'len', 'fr', '0%']]);
 const SVGStopElement = svgClass('SVGStopElement', SVGElement, ['stop'], [['offset', 'num']]);
 const SVGClipPathElement = svgClass('SVGClipPathElement', SVGElement, ['clipPath'], [['clipPathUnits', 'enum', 'clipPathUnits', 1, UNITS]]);
 const SVGMaskElement = svgClass('SVGMaskElement', SVGElement, ['mask'], [['maskUnits', 'enum', 'maskUnits', 2, UNITS], ['maskContentUnits', 'enum', 'maskContentUnits', 1, UNITS]].concat(XYWH10));
@@ -121,12 +125,38 @@ const SVGDescElement = svgClass('SVGDescElement', SVGElement, ['desc']);
 const SVGMetadataElement = svgClass('SVGMetadataElement', SVGElement, ['metadata']);
 const SVGStyleElement = svgClass('SVGStyleElement', SVGElement, ['style']);
 const SVGScriptElement = svgClass('SVGScriptElement', SVGElement, ['script'], [['href', 'str']]);
-const SVGFEColorMatrixElement = svgClass('SVGFEColorMatrixElement', SVGElement, ['feColorMatrix'], [['type', 'enum', 'type', 1, ['', 'matrix', 'saturate', 'hueRotate', 'luminanceToAlpha']], ['in1', 'str', 'in']]);
-const SVGFECompositeElement = svgClass('SVGFECompositeElement', SVGElement, ['feComposite'], [['operator', 'enum', 'operator', 1, ['', 'over', 'in', 'out', 'atop', 'xor', 'arithmetic']], ['in1', 'str', 'in'], ['in2', 'str', 'in2'], ['k1', 'num'], ['k2', 'num'], ['k3', 'num'], ['k4', 'num']]);
-const SVGFEMorphologyElement = svgClass('SVGFEMorphologyElement', SVGElement, ['feMorphology'], [['operator', 'enum', 'operator', 1, ['', 'erode', 'dilate']], ['in1', 'str', 'in']]);
-const SVGFETurbulenceElement = svgClass('SVGFETurbulenceElement', SVGElement, ['feTurbulence'], [['type', 'enum', 'type', 2, ['', 'fractalNoise', 'turbulence']], ['stitchTiles', 'enum', 'stitchTiles', 2, ['', 'stitch', 'noStitch']], ['numOctaves', 'int', 'numOctaves', 1], ['seed', 'num']]);
-const SVGFEDisplacementMapElement = svgClass('SVGFEDisplacementMapElement', SVGElement, ['feDisplacementMap'], [['xChannelSelector', 'enum', 'xChannelSelector', 4, ['', 'R', 'G', 'B', 'A']], ['yChannelSelector', 'enum', 'yChannelSelector', 4, ['', 'R', 'G', 'B', 'A']], ['scale', 'num'], ['in1', 'str', 'in'], ['in2', 'str', 'in2']]);
-const SVGFEConvolveMatrixElement = svgClass('SVGFEConvolveMatrixElement', SVGElement, ['feConvolveMatrix'], [['edgeMode', 'enum', 'edgeMode', 1, ['', 'duplicate', 'wrap', 'none']], ['preserveAlpha', 'bool'], ['divisor', 'num'], ['bias', 'num'], ['in1', 'str', 'in']]);
+const FE_STD = [['x', 'len', 'x', '0%'], ['y', 'len', 'y', '0%'], ['width', 'len', 'width', '100%'], ['height', 'len', 'height', '100%'], ['result', 'str']];
+const IN1 = ['in1', 'str', 'in'], IN2 = ['in2', 'str', 'in2'];
+const fe = (name, tag, spec, consts) => { const C = svgClass(name, SVGElement, [tag], FE_STD.concat(spec)); if (consts) svgConsts(C, consts); return C; };
+const pair = (x, y, attr, kind, d = 0) => [[x, kind + '0', attr, d], [y, kind + '1', attr, d]];
+const enumConsts = (prefix, kws) => { const o = { [prefix + 'UNKNOWN']: 0 }; kws.forEach((k, i) => { o[prefix + k] = i + 1; }); return o; };
+const EDGE = ['', 'duplicate', 'wrap', 'none'], EDGE_C = enumConsts('SVG_EDGEMODE_', ['DUPLICATE', 'WRAP', 'NONE']);
+const BLEND = ['normal', 'multiply', 'screen', 'darken', 'lighten', 'overlay', 'color-dodge', 'color-burn', 'hard-light', 'soft-light', 'difference', 'exclusion', 'hue', 'saturation', 'color', 'luminosity'];
+const SVGFEBlendElement = fe('SVGFEBlendElement', 'feBlend', [['mode', 'enum', 'mode', 1, [''].concat(BLEND)], IN1, IN2], enumConsts('SVG_FEBLEND_MODE_', BLEND.map(k => k.toUpperCase().replace('-', '_'))));
+const SVGFEColorMatrixElement = fe('SVGFEColorMatrixElement', 'feColorMatrix', [['type', 'enum', 'type', 1, ['', 'matrix', 'saturate', 'hueRotate', 'luminanceToAlpha']], IN1], enumConsts('SVG_FECOLORMATRIX_TYPE_', ['MATRIX', 'SATURATE', 'HUEROTATE', 'LUMINANCETOALPHA']));
+const SVGFEComponentTransferElement = fe('SVGFEComponentTransferElement', 'feComponentTransfer', [IN1]);
+const SVGFECompositeElement = fe('SVGFECompositeElement', 'feComposite', [['operator', 'enum', 'operator', 1, ['', 'over', 'in', 'out', 'atop', 'xor', 'arithmetic']], IN1, IN2, ['k1', 'num'], ['k2', 'num'], ['k3', 'num'], ['k4', 'num']], enumConsts('SVG_FECOMPOSITE_OPERATOR_', ['OVER', 'IN', 'OUT', 'ATOP', 'XOR', 'ARITHMETIC']));
+const SVGFEConvolveMatrixElement = fe('SVGFEConvolveMatrixElement', 'feConvolveMatrix', [['edgeMode', 'enum', 'edgeMode', 1, EDGE], ['preserveAlpha', 'bool'], ['divisor', 'num', 'divisor', 1], ['bias', 'num'], IN1, ['targetX', 'int'], ['targetY', 'int']].concat(pair('orderX', 'orderY', 'order', 'int', 3), pair('kernelUnitLengthX', 'kernelUnitLengthY', 'kernelUnitLength', 'num')), EDGE_C);
+const SVGFEDiffuseLightingElement = fe('SVGFEDiffuseLightingElement', 'feDiffuseLighting', [IN1, ['surfaceScale', 'num', 'surfaceScale', 1], ['diffuseConstant', 'num', 'diffuseConstant', 1]].concat(pair('kernelUnitLengthX', 'kernelUnitLengthY', 'kernelUnitLength', 'num')));
+const SVGFESpecularLightingElement = fe('SVGFESpecularLightingElement', 'feSpecularLighting', [IN1, ['surfaceScale', 'num', 'surfaceScale', 1], ['specularConstant', 'num', 'specularConstant', 1], ['specularExponent', 'num', 'specularExponent', 1]].concat(pair('kernelUnitLengthX', 'kernelUnitLengthY', 'kernelUnitLength', 'num')));
+const SVGFEDisplacementMapElement = fe('SVGFEDisplacementMapElement', 'feDisplacementMap', [['xChannelSelector', 'enum', 'xChannelSelector', 4, ['', 'R', 'G', 'B', 'A']], ['yChannelSelector', 'enum', 'yChannelSelector', 4, ['', 'R', 'G', 'B', 'A']], ['scale', 'num'], IN1, IN2], enumConsts('SVG_CHANNEL_', ['R', 'G', 'B', 'A']));
+const SVGFEDropShadowElement = fe('SVGFEDropShadowElement', 'feDropShadow', [IN1, ['dx', 'num', 'dx', 2], ['dy', 'num', 'dy', 2]].concat(pair('stdDeviationX', 'stdDeviationY', 'stdDeviation', 'num', 2)));
+const SVGFEFloodElement = fe('SVGFEFloodElement', 'feFlood', []);
+const SVGFEGaussianBlurElement = fe('SVGFEGaussianBlurElement', 'feGaussianBlur', [IN1, ['edgeMode', 'enum', 'edgeMode', 3, EDGE]].concat(pair('stdDeviationX', 'stdDeviationY', 'stdDeviation', 'num')), EDGE_C);
+const SVGFEImageElement = fe('SVGFEImageElement', 'feImage', [['href', 'str']]);
+const SVGFEMergeElement = fe('SVGFEMergeElement', 'feMerge', []);
+const SVGFEMergeNodeElement = svgClass('SVGFEMergeNodeElement', SVGElement, ['feMergeNode'], [IN1]);
+const SVGFEMorphologyElement = fe('SVGFEMorphologyElement', 'feMorphology', [['operator', 'enum', 'operator', 1, ['', 'erode', 'dilate']], IN1].concat(pair('radiusX', 'radiusY', 'radius', 'num')), enumConsts('SVG_MORPHOLOGY_OPERATOR_', ['ERODE', 'DILATE']));
+const SVGFEOffsetElement = fe('SVGFEOffsetElement', 'feOffset', [IN1, ['dx', 'num'], ['dy', 'num']]);
+const SVGFETileElement = fe('SVGFETileElement', 'feTile', [IN1]);
+const SVGFETurbulenceElement = fe('SVGFETurbulenceElement', 'feTurbulence', [['type', 'enum', 'type', 2, ['', 'fractalNoise', 'turbulence']], ['stitchTiles', 'enum', 'stitchTiles', 2, ['', 'stitch', 'noStitch']], ['numOctaves', 'int', 'numOctaves', 1], ['seed', 'num']].concat(pair('baseFrequencyX', 'baseFrequencyY', 'baseFrequency', 'num')), Object.assign(enumConsts('SVG_TURBULENCE_TYPE_', ['FRACTALNOISE', 'TURBULENCE']), enumConsts('SVG_STITCHTYPE_', ['STITCH', 'NOSTITCH'])));
+const SVGFEDistantLightElement = svgClass('SVGFEDistantLightElement', SVGElement, ['feDistantLight'], [['azimuth', 'num'], ['elevation', 'num']]);
+const SVGFEPointLightElement = svgClass('SVGFEPointLightElement', SVGElement, ['fePointLight'], [['x', 'num'], ['y', 'num'], ['z', 'num']]);
+const SVGFESpotLightElement = svgClass('SVGFESpotLightElement', SVGElement, ['feSpotLight'], [['x', 'num'], ['y', 'num'], ['z', 'num'], ['pointsAtX', 'num'], ['pointsAtY', 'num'], ['pointsAtZ', 'num'], ['specularExponent', 'num', 'specularExponent', 1], ['limitingConeAngle', 'num']]);
 const SVGComponentTransferFunctionElement = svgClass('SVGComponentTransferFunctionElement', SVGElement, [], [['type', 'enum', 'type', 1, ['', 'identity', 'table', 'discrete', 'linear', 'gamma']], ['slope', 'num', 'slope', 1], ['intercept', 'num'], ['amplitude', 'num', 'amplitude', 1], ['exponent', 'num', 'exponent', 1], ['offset', 'num']]);
-for (const c of 'RGBA') svgClass('SVGFEFunc' + c + 'Element', SVGComponentTransferFunctionElement, ['feFunc' + c]);
+svgConsts(SVGComponentTransferFunctionElement, enumConsts('SVG_FECOMPONENTTRANSFER_TYPE_', ['IDENTITY', 'TABLE', 'DISCRETE', 'LINEAR', 'GAMMA']));
+const SVGFEFuncRElement = svgClass('SVGFEFuncRElement', SVGComponentTransferFunctionElement, ['feFuncR']);
+const SVGFEFuncGElement = svgClass('SVGFEFuncGElement', SVGComponentTransferFunctionElement, ['feFuncG']);
+const SVGFEFuncBElement = svgClass('SVGFEFuncBElement', SVGComponentTransferFunctionElement, ['feFuncB']);
+const SVGFEFuncAElement = svgClass('SVGFEFuncAElement', SVGComponentTransferFunctionElement, ['feFuncA']);
 const svgProto = (tag) => (svgClasses[tag.toLowerCase()] || (/^(g|path|rect|circle|ellipse|line|polyline|polygon|use|text|image)$/.test(tag) ? SVGGraphicsElement : SVGElement)).prototype;
