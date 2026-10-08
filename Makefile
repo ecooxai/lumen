@@ -87,3 +87,5 @@ $(BUILD)/src/js/prelude.inc: $(PRELUDE_JS)
 	{ printf 'R"JS('; cat $(PRELUDE_JS); printf ')JS"'; } > $@
 $(BUILD)/src/js/js.cc.o: $(BUILD)/src/js/prelude.inc
 $(BUILD)/src/js/js.cc.o: CXXFLAGS += -I$(BUILD)/src/js
+$(BUILD)/jsrun: $(call OBJ,tests/jsrun.c $(CORE_SRC) $(JS_SRC))
+	$(CXX) $(OPT) $^ -o $@ $(LIBS)

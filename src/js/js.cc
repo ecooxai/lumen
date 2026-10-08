@@ -197,6 +197,7 @@ JsCtx *js_new(Document *d, const JsHost *host) {
 void js_free(JsCtx *c) {
     if (!c) return;
     std::vector<Node *> roots;
+    std::vector<Document *> docs = std::move(c->docs);
     {
         v8::Isolate::Scope is(c->iso);
         v8::HandleScope hs(c->iso);
@@ -215,6 +216,7 @@ void js_free(JsCtx *c) {
     c->iso->Dispose();
     delete c->alloc;
     for (Node *n : roots) node_free_tree(n);
+    for (Document *d : docs) doc_free(d);
     delete c;
 }
 

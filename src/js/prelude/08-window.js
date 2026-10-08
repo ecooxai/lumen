@@ -123,7 +123,15 @@ installHandlers(Window.prototype, false, EVENT_HANDLERS.concat(['beforeunload', 
 Object.setPrototypeOf(G, Window.prototype);
 const document = N.doc();
 Object.setPrototypeOf(document, HTMLDocument.prototype);
+function illegalCtor() { throw new TypeError('Illegal constructor'); }
+const History = function History() { illegalCtor(); }, Navigator = function Navigator() { illegalCtor(); }, Screen = function Screen() { illegalCtor(); };
+const Performance = function Performance() { illegalCtor(); }, Crypto = function Crypto() { illegalCtor(); }, SubtleCrypto = function SubtleCrypto() { illegalCtor(); };
+Object.setPrototypeOf(Performance.prototype, EventTarget.prototype);
+Object.setPrototypeOf(history, History.prototype); Object.setPrototypeOf(navigator, Navigator.prototype); Object.setPrototypeOf(screen, Screen.prototype);
+Object.setPrototypeOf(performance, Performance.prototype); Object.setPrototypeOf(crypto, Crypto.prototype);
 const globals = {
+    ProcessingInstruction, TouchEvent, CompositionEvent, ClipboardEvent, DragEvent, StorageEvent, PromiseRejectionEvent, SubmitEvent,
+    StyleSheet, IdleDeadline, TimeRanges, MediaError, History, Navigator, Screen, Performance, Crypto, SubtleCrypto,
     DOMException, DOMRectReadOnly, DOMRect, Event, CustomEvent, UIEvent, FocusEvent, MouseEvent, PointerEvent, WheelEvent, KeyboardEvent, InputEvent, ErrorEvent, ProgressEvent, MessageEvent, PopStateEvent, HashChangeEvent, PageTransitionEvent, AnimationEvent, TransitionEvent, MediaQueryListEvent,
     EventTarget, AbortSignal, AbortController, MutationObserver, MutationRecord, Node, NodeList, HTMLCollection: NodeList, CharacterData, Text, CDATASection, Comment, DocumentType, DocumentFragment, ShadowRoot, Attr, NamedNodeMap, DOMTokenList,
     CSSStyleDeclaration, Element, HTMLElement, SVGElement, SVGGraphicsElement, SVGSVGElement, MathMLElement, Image, Audio, Option, CustomElementRegistry, Document, HTMLDocument, CSSRule, CSSStyleSheet, CSS, FontFace,
@@ -142,6 +150,11 @@ const globals = {
 };
 for (const k of Object.keys(H)) globals[k] = H[k];
 for (const k of Object.keys(globals)) { const d = Object.getOwnPropertyDescriptor(globals, k); d.configurable = true; if (!d.get) d.writable = true; d.enumerable = false; Object.defineProperty(G, k, d); }
+for (const k of Object.keys(globals)) {
+    const d = Object.getOwnPropertyDescriptor(globals, k), v = d.value;
+    if (typeof v === 'function' && /^[A-Z]/.test(k) && v.prototype && v.prototype.constructor === v && !Object.prototype.hasOwnProperty.call(v.prototype, Symbol.toStringTag))
+        Object.defineProperty(v.prototype, Symbol.toStringTag, { value: k, configurable: true });
+}
 const visual = { get width() { return N.viewport()[0]; }, get height() { return N.viewport()[1]; }, offsetLeft: 0, offsetTop: 0, pageLeft: 0, pageTop: 0, scale: 1, addEventListener() {}, removeEventListener() {} };
 G.visualViewport = visual;
 function fire(target, type, init, Ctor = Event) { return dispatch(target, new Ctor(type, init), true); }

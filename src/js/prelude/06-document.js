@@ -57,4 +57,4 @@ function docWrite(html) {
     const s = N.currentScript(), parent = s ? N.parent(s) : document.body;
     if (parent) insertNode(parent, N.parseFrag(parent, html), s ? N.next(s) : null);
 }
-const implementation = { hasFeature() { return true; }, createHTMLDocument() { throw new DOMException('createHTMLDocument is not supported yet', 'NotSupportedError'); }, createDocumentType(n) { return { name: n, nodeType: 10 }; } };
+const implementation = { hasFeature() { return true; }, createHTMLDocument(t) { const d = N.newDoc(t === undefined ? null : String(t)); Object.setPrototypeOf(d, HTMLDocument.prototype); return d; }, createDocumentType(n) { return { name: n, nodeType: 10 }; } };

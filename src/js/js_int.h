@@ -46,6 +46,7 @@ struct JsCtx {
     uint32_t next_raf = 1;
     double last_raf = 0, t0 = 0;
     std::map<uint64_t, Fetch *> fetches;
+    std::vector<Document *> docs;
     Node *current_script = nullptr;
     int depth = 0;
 };

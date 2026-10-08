@@ -5,16 +5,20 @@
 #include "../net/net.h"
 #include "../base/url.h"
 #include "../gpu/gpu.h"
+#include "../js/js.h"
+#include "../js/jsglue.h"
 
 #define BAR 44.f
 
+typedef struct { Node *n; char *src; size_t len; char *name; } PScript;
 typedef struct Page {
     char *url; Document *d; StyleEngine *e; Layout *L; uint64_t gen; double load_ms;
+    JsCtx *js; PScript *scripts; int nscripts; uint64_t seen_ver;
 } Page;
 
 static SDL_Mutex *icache_mu;
 static HMap icache;
-static Uint32 EV_LOADED;
+static Uint32 EV_LOADED, EV_NET;
 static uint64_t load_gen;
 
 static Image *cache_get(const char *u) {
@@ -50,6 +54,20 @@ static int loader(void *arg) {
     p->url = xstrdup(r && r->url ? r->url : rq->url);
     p->d = doc_new(p->url);
     html_parse(p->d, body, blen);
+    if (!getenv("LUMEN_NO_JS")) for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) {
+        if (rq->gen != load_gen) break;
+        if (n->type != NODE_ELEMENT || n->tag != A_script || n->ns != NS_HTML || !jsg_classic_script(n)) continue;
+        PScript sc = { n, NULL, 0, NULL };
+        const char *src = node_attr(n, "src");
+        if (src) {
+            sc.name = url_join(p->d->url, src);
+            if (!sc.name) continue;
+            NetResponse *sr = net_fetch_sync(net_request_new("GET", sc.name));
+            if (sr && sr->status >= 200 && sr->status < 300) { sc.src = xstrndup(sr->body ? sr->body : "", sr->body_len); sc.len = sr->body_len; }
+            if (sr) net_response_free(sr);
+        } else { sc.src = node_text_content(n); sc.len = strlen(sc.src); sc.name = xstrdup(p->url); }
+        p->scripts = xrealloc(p->scripts, sizeof *p->scripts * (size_t)(p->nscripts + 1)); p->scripts[p->nscripts++] = sc;
+    }
     p->e = style_engine_new(p->d); p->e->media.vw = rq->vw; p->e->media.vh = rq->vh;
     for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) {
         if (rq->gen != load_gen) break;
@@ -66,6 +84,7 @@ static int loader(void *arg) {
         }
     }
     style_recalc(p->e, &p->d->node, true);
+    p->seen_ver = p->d->dom_version;
     p->load_ms = now_ms() - t0;
     if (r) net_response_free(r);
     free(errbuf); free(rq->url); free(rq);
@@ -75,6 +94,9 @@ static int loader(void *arg) {
 
 static void page_free(Page *p) {
     if (!p) return;
+    js_free(p->js);
+    for (int i = 0; i < p->nscripts; i++) { free(p->scripts[i].src); free(p->scripts[i].name); }
+    free(p->scripts);
     if (p->L) layout_free(p->L);
     if (p->e) style_engine_free(p->e);
     if (p->d) doc_free(p->d);
@@ -228,9 +250,62 @@ static void update_size(App *a) {
     a->relayout = a->dirty = true;
 }
 
+static App *g_app;
+static void restyle(App *a) {
+    Page *p = a->cur;
+    if (!p || p->d->dom_version == p->seen_ver) return;
+    p->seen_ver = p->d->dom_version;
+    style_recalc(p->e, &p->d->node, false);
+    a->relayout = a->dirty = true;
+}
+static void history_go(App *a, int d);
+static void h_navigate(void *ud, const char *u) { (void)ud; navigate(g_app, u, true); }
+static void h_set_url(void *ud, const char *u, bool push) {
+    (void)ud; App *a = g_app;
+    if (push && a->nhist < 256) { for (int i = a->hpos + 1; i < a->nhist; i++) free(a->hist[i]); a->nhist = a->hpos + 1; a->hist[a->nhist++] = xstrdup(u); a->hpos = a->nhist - 1; }
+    else if (a->hpos >= 0) { free(a->hist[a->hpos]); a->hist[a->hpos] = xstrdup(u); }
+    if (a->cur) { free(a->cur->url); a->cur->url = xstrdup(u); }
+    if (!a->editing) snprintf(a->url, sizeof a->url, "%s", u);
+    a->dirty = true;
+}
+static void h_history_go(void *ud, int d) { (void)ud; history_go(g_app, d); }
+static int h_history_len(void *ud) { (void)ud; return g_app->nhist; }
+static void h_viewport(void *ud, float *w, float *h, float *sx, float *sy, float *dpr) { (void)ud; *w = g_app->vw; *h = g_app->vh - BAR; *sx = 0; *sy = g_app->sy; *dpr = g_app->scale; }
+static void h_scroll_to(void *ud, float x, float y) { (void)ud; (void)x; g_app->sy = y; g_app->dirty = true; }
+static Node *h_hit(void *ud, float x, float y) { (void)ud; Page *p = g_app->cur; if (!p || !p->L) return NULL; Box *b = layout_hit(p->L, x, y + g_app->sy); return b ? b->node : NULL; }
+static void page_start_js(App *a, Page *p) {
+    if (getenv("LUMEN_NO_JS")) return;
+    JsHost h = { a, &p->e->media, h_navigate, h_set_url, h_history_go, h_viewport, h_scroll_to, h_hit, h_history_len };
+    double t0 = now_ms();
+    p->js = js_new(p->d, &h);
+    for (int i = 0; i < p->nscripts; i++) {
+        PScript *sc = &p->scripts[i];
+        if ((sc->n->flags & NF_SCRIPT_STARTED) || !(sc->n->flags & NF_CONNECTED)) continue;
+        if (sc->src) js_run_script(p->js, sc->n, sc->src, sc->len, sc->name);
+        else { sc->n->flags |= NF_SCRIPT_STARTED; js_dispatch(p->js, sc->n, "error", "Event", false, false, 0, 0, 0, NULL); }
+    }
+    js_set_ready_state(p->js, 1);
+    js_dispatch(p->js, &p->d->node, "DOMContentLoaded", "Event", true, false, 0, 0, 0, NULL);
+    js_set_ready_state(p->js, 2);
+    js_dispatch_window(p->js, "load");
+    fprintf(stderr, "lumen: ran %d scripts in %.0fms\n", p->nscripts, now_ms() - t0);
+    restyle(a);
+}
+static void wake(void) { SDL_Event e; SDL_zero(e); e.type = EV_NET; SDL_PushEvent(&e); }
+
 static void click_page(App *a, float x, float y) {
     if (!a->cur || !a->cur->L) return;
     Box *b = layout_hit(a->cur->L, x, y - BAR + a->sy);
+    Node *t = b ? b->node : NULL;
+    while (t && t->type != NODE_ELEMENT) t = t->parent;
+    if (t && a->cur->js) {
+        JsCtx *js = a->cur->js; float cy = y - BAR;
+        js_dispatch(js, t, "mousedown", "MouseEvent", true, true, x, cy, 0, NULL);
+        js_dispatch(js, t, "mouseup", "MouseEvent", true, true, x, cy, 0, NULL);
+        bool ok = js_dispatch(js, t, "click", "MouseEvent", true, true, x, cy, 0, NULL);
+        restyle(a);
+        if (!ok) return;
+    }
     for (Node *n = b ? b->node : NULL; n; n = n->parent)
         if (n->type == NODE_ELEMENT && n->tag == A_a && node_attr(n, "href")) {
             const char *h = node_attr(n, "href");
@@ -256,9 +331,10 @@ int main(int argc, char **argv) {
     const char *start = argc > 1 ? argv[1] : "https://en.wikipedia.org/wiki/Web_browser";
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) { fprintf(stderr, "SDL_Init: %s\n", SDL_GetError()); return 1; }
     dom_init(); net_init(6); font_init();
-    icache_mu = SDL_CreateMutex(); EV_LOADED = SDL_RegisterEvents(1);
+    icache_mu = SDL_CreateMutex(); EV_LOADED = SDL_RegisterEvents(1); EV_NET = SDL_RegisterEvents(1);
+    net_wakeup = wake; js_global_init(argv[0]);
     paint_image_hook = node_img; paint_url_image_hook = url_img; layout_image_size_hook = img_size;
-    App a; memset(&a, 0, sizeof a); a.hpos = -1;
+    App a; memset(&a, 0, sizeof a); a.hpos = -1; g_app = &a;
     bool want_gpu = !getenv("LUMEN_NO_GPU");
     a.win = SDL_CreateWindow("Lumen", 1280, 840, SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY | (want_gpu && !strcmp(SDL_GetPlatform(), "macOS") ? SDL_WINDOW_METAL : 0));
     if (!a.win) { fprintf(stderr, "SDL_CreateWindow: %s\n", SDL_GetError()); return 1; }
@@ -279,7 +355,10 @@ int main(int argc, char **argv) {
     bool quit = false, cmd = false;
     while (!quit) {
         SDL_Event ev;
-        if (!SDL_WaitEventTimeout(&ev, a.loading ? 120 : 1000)) { if (a.loading) a.dirty = true; }
+        int to = a.loading ? 120 : 1000;
+        if (a.cur && a.cur->js) { double dl = js_next_deadline(a.cur->js) - now_ms(); if (dl < to) to = dl < 0 ? 0 : (int)dl; }
+        if (net_pending() && to > 50) to = 50;
+        if (!SDL_WaitEventTimeout(&ev, to)) { if (a.loading) a.dirty = true; }
         else do {
             switch (ev.type) {
             case SDL_EVENT_QUIT: quit = true; break;
@@ -338,11 +417,14 @@ int main(int argc, char **argv) {
                     if (a.hpos >= 0) { free(a.hist[a.hpos]); a.hist[a.hpos] = xstrdup(p->url); }
                     char title[512]; snprintf(title, sizeof title, "%s", p->d->title && *p->d->title ? p->d->title : p->url);
                     SDL_SetWindowTitle(a.win, title);
+                    page_start_js(&a, p);
                     double t0 = now_ms(); render(&a);
                     fprintf(stderr, "lumen: %s loaded in %.0fms, first frame %.1fms (layout+paint+present), %d boxes\n", p->url, p->load_ms, now_ms() - t0, p->L ? p->L->nboxes : 0);
                 }
             }
         } while (SDL_PollEvent(&ev));
+        net_poll();
+        if (a.cur && a.cur->js) { js_tick(a.cur->js); restyle(&a); }
         if (a.dirty) render(&a);
     }
     page_free(a.cur);

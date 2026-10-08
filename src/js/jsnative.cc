@@ -83,8 +83,23 @@ FN(insert) {
     std::vector<Node *> added;
     if (ch->type == NODE_FRAGMENT) for (Node *x = ch->first; x; x = x->next) added.push_back(x);
     else added.push_back(ch);
+    if (ch->doc != p->doc) for (Node *x = ch; x; x = node_next_in_tree(x, ch)) x->doc = p->doc;
     node_insert_before(p, ch, ref && ref->parent == p ? ref : nullptr);
     for (Node *x : added) js_run_inserted(c, x);
+}
+FN(newDoc) {
+    CTX;
+    Document *nd = doc_new("about:blank");
+    std::string h = "<!doctype html><html><head>";
+    if (!a[0]->IsNullOrUndefined()) {
+        h += "<title>";
+        for (char ch : S(0)) h += ch == '<' ? std::string("&lt;") : ch == '&' ? std::string("&amp;") : std::string(1, ch);
+        h += "</title>";
+    }
+    h += "</head><body></body></html>";
+    html_parse(nd, h.data(), h.size());
+    c->docs.push_back(nd);
+    RET(jwrap(c, &nd->node));
 }
 FN(remove) { CTX; ARGN(ch, 0); node_remove(ch); }
 FN(create) { CTX; std::string t = S(0); RET(jwrap(c, node_new_element(c->doc, atom(t.c_str()), a[1]->Int32Value(ctx).FromMaybe(0)))); }
@@ -426,7 +441,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     v8::Local<v8::Context> ctx = iso->GetCurrentContext();
 #define REG(nm) (void)N->Set(ctx, jstr(iso, #nm), v8::Function::New(ctx, n_##nm).ToLocalChecked())
     REG(isNode); REG(type); REG(name); REG(ns); REG(parent); REG(first); REG(last); REG(next); REG(prev);
-    REG(text); REG(setText); REG(attr); REG(setAttr); REG(rmAttr); REG(attrs); REG(insert); REG(remove);
+    REG(text); REG(setText); REG(attr); REG(setAttr); REG(rmAttr); REG(attrs); REG(insert); REG(remove); REG(newDoc);
     REG(create); REG(textNode); REG(comment); REG(frag); REG(html); REG(setHTML); REG(parseFrag); REG(query);
     REG(matches); REG(byId); REG(clone); REG(doc); REG(contains); REG(connected); REG(host); REG(attachShadow);
     REG(templateContent); REG(rect); REG(computed); REG(value); REG(setValue); REG(checked); REG(setChecked);
