@@ -14,7 +14,12 @@ off-screen media eviction setting off and on (on: target < 150 MB for YouTube pl
   Background tabs keep JS ticking and media playing.
 
 ## Next
-- Off-screen media eviction setting (default off).
+- Off-screen media eviction: setting plumbing done (`g_lowmem` in main.c, `offscreen_media_eviction=1` in
+  SDL pref dir settings.txt, `LUMEN_LOWMEM=1` env). Still to do: evict decoded images not painted for a few
+  seconds (ImgSlot in main.c; img_size layout hook also calls node_img, so mark use from paint only), skip
+  BGRA conversion for videos in background tabs/off screen (media.c emit_video). V8 MemoryPressureNotification
+  + malloc_zone_pressure_relief did not help (tested, removed).
+- GPU %: read from Activity Monitor % GPU column (CLI has none in this VM).
 - CPU: profile shows swscale NV12->BGRA + memmove; consider GPU NV12 upload.
 - Rerun 5-page compare: `~/sites/lumen-tabs.sh`, `~/sites/chrome-tabs.mjs`, `~/sites/cpusum.sh`.
 
