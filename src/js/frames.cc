@@ -45,6 +45,8 @@ JsCtx *js_frame_ctx(Node *f) {
     for (JsCtx *k : p->kids) if (!k->dead && k->frame_el == f) return k;
     return nullptr;
 }
+void frame_nav(JsCtx *k, const char *u);
+void js_frame_navigate(Node *f, const char *u) { if (JsCtx *k = js_frame_ctx(f)) frame_nav(k, u); }
 Document *js_frame_doc(Node *f) { JsCtx *k = js_frame_ctx(f); return k ? k->doc : nullptr; }
 
 void frame_kill(JsCtx *k) {

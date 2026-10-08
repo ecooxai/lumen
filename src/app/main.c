@@ -19,11 +19,17 @@ typedef struct Page {
     JsCtx *js; PScript *scripts; int nscripts; uint64_t seen_ver;
     SheetRef *sref; int nsref;
     HMap img_fired; bool img_check;
+    /* <iframe> child browsing context (document owned by the JS layer) */
+    Node *frame_el; float fw, fh, fsy; Canvas cv; Image img; DisplayList fdl;
+    uint64_t drawn_ver; int drawn_epoch; bool frelayout; struct Page *fnext;
 } Page;
+static Page *g_frames;
+static Page *frame_find(Node *f) { for (Page *p = g_frames; p; p = p->fnext) if (p->frame_el == f) return p; return NULL; }
 typedef struct { Image *im; bool done; } ImgSlot;
 
 static SDL_Mutex *icache_mu;
 static HMap icache;
+static int g_img_epoch;
 static Uint32 EV_LOADED, EV_NET;
 static uint64_t load_gen;
 
@@ -41,12 +47,15 @@ static void cache_fetch(const char *u) {
     SDL_LockMutex(icache_mu); if (!hm_get(&icache, u)) hm_put(&icache, u, slot); else { image_unref(im); free(slot); } SDL_UnlockMutex(icache_mu);
 }
 static Image *node_img(Node *n) {
+    if (n->tag == A_iframe) { Page *fp = frame_find(n); return fp && fp->cv.px ? &fp->img : NULL; }
     if (n->tag == A_video) { Image *f = media_frame_for(n); if (f) return f; }
     const char *s = node_attr(n, n->tag == A_video ? "poster" : "src"); if (!s) return NULL;
     char *u = url_join(n->doc->url, s); Image *im = cache_get(u); free(u); return im;
 }
 static Image *url_img(const char *u) { return u ? cache_get(u) : NULL; }
-static bool img_size(Node *n, float *w, float *h) { Image *im = node_img(n); if (!im) return false; *w = image_css_w(im); *h = image_css_h(im); return true; }
+static bool img_size(Node *n, float *w, float *h) {
+    if (n->tag == A_iframe) return false;
+    Image *im = node_img(n); if (!im) return false; *w = image_css_w(im); *h = image_css_h(im); return true; }
 
 typedef struct { char *url; uint64_t gen; float vw, vh; char *body; size_t blen; char *ctype; } LoadReq;
 
@@ -285,6 +294,11 @@ static void render(App *a) {
         }
     }
     a->frame_ms = now_ms() - t0;
+    if (getenv("LUMEN_SHOT")) {   /* write the presented frame to a PNG after LUMEN_SHOT_MS and exit */
+        static double ts; if (!ts) ts = t0;
+        const char *d = getenv("LUMEN_SHOT_MS");
+        if (t0 - ts >= (d ? atof(d) : 1500)) { png_write(getenv("LUMEN_SHOT"), a->frame.px, a->frame.w, a->frame.h, a->frame.stride); exit(0); }
+    }
     if (getenv("LUMEN_DEBUG_PAINT")) {
         static int np, nf, nw[6]; static double tp, tf, t_last;
         if (part) { np++; tp += a->frame_ms; } else { nf++; tf += a->frame_ms; nw[why]++; }
@@ -322,6 +336,7 @@ static void link_done(NetRequest *rq, NetResponse *r, void *ud) {
 typedef struct { uint64_t gen; char *u; } ImgLoad;
 static void img_done(NetRequest *rq, NetResponse *r, void *ud) {
     (void)rq; ImgLoad *l = ud;
+    g_img_epoch++;
     Image *im = r && r->status == 200 && r->body ? image_decode((const uint8_t *)r->body, r->body_len) : NULL;
     if (getenv("LUMEN_DEBUG_IMG")) fprintf(stderr, "lumen: img decode -> %s\n", im ? "ok" : "NULL");
     SDL_LockMutex(icache_mu);
@@ -404,6 +419,116 @@ static bool sync_sheets(Page *p, bool seed) {
     free(p->sref); p->sref = cur; p->nsref = nc;
     return changed;
 }
+static bool frame_restyle(Page *p) {
+    if (p->d->dom_version == p->seen_ver) return false;
+    p->seen_ver = p->d->dom_version;
+    bool sheets = sync_sheets(p, false);
+    style_recalc(p->e, &p->d->node, sheets);
+    sync_images(p);
+    p->img_check = p->frelayout = true;
+    return true;
+}
+static void frame_layout(Page *p) {
+    if (!p->frelayout && p->L) return;
+    if (!p->L) p->L = layout_new();
+    p->e->media.vw = p->fw; p->e->media.vh = p->fh;
+    layout_run(p->L, p->d, p->fw, p->fh);
+    p->frelayout = false; p->drawn_ver = ~0ull;
+}
+/* Restyle, lay out and raster an iframe's document into its cached image; true if it changed. */
+static bool frame_update(Page *p) {
+    Box *b = p->frame_el->box;
+    if (!b || !(p->frame_el->flags & NF_CONNECTED)) return false;
+    float w = b->w - (b->b[1] + b->b[3] + b->p[1] + b->p[3]), h = b->h - (b->b[0] + b->b[2] + b->p[0] + b->p[2]);
+    if (w < 1 || h < 1) return false;
+    frame_restyle(p);
+    if (w != p->fw || h != p->fh) { p->fw = w; p->fh = h; p->frelayout = true; }
+    frame_layout(p);
+    float s = g_app->scale; int pw = (int)ceilf(w * s), ph = (int)ceilf(h * s);
+    if (p->cv.w != pw || p->cv.h != ph || !p->cv.px) { canvas_free(&p->cv); canvas_init(&p->cv, pw, ph, s); p->drawn_ver = ~0ull; }
+    if (p->drawn_ver == p->d->dom_version && p->drawn_epoch == g_img_epoch) return false;
+    dl_clear(&p->fdl); dl_build(&p->fdl, p->L, 0, p->fsy, w, h);
+    raster(&p->cv, &p->fdl, RGBA(255, 255, 255, 255));
+    p->drawn_ver = p->d->dom_version; p->drawn_epoch = g_img_epoch;
+    p->img = (Image){ .w = pw, .h = ph, .refs = 1 << 30, .px = p->cv.px, .scale = s };
+    return true;
+}
+static void frames_tick(App *a) {
+    for (Page *p = g_frames; p; p = p->fnext) {
+        p->js = js_frame_ctx(p->frame_el);
+        if (frame_update(p)) { a->dirty = true; a->vonly = false; }
+        fire_img_events(p);
+    }
+}
+static void hf_sync(void *ud, Document *d, bool layout) {
+    Page *p = ud; if (p->d != d) return;
+    frame_restyle(p);
+    if (layout && p->fw > 0) frame_layout(p);
+}
+static void hf_viewport(void *ud, float *w, float *h, float *sx, float *sy, float *dpr) { Page *p = ud; *w = p->fw; *h = p->fh; *sx = 0; *sy = p->fsy; *dpr = g_app->scale; }
+static void hf_scroll_to(void *ud, float x, float y) { (void)x; Page *p = ud; p->fsy = y > 0 ? y : 0; p->drawn_ver = ~0ull; }
+static Node *hf_hit(void *ud, float x, float y) { Page *p = ud; if (!p->L) return NULL; Box *b = layout_hit(p->L, x, y + p->fsy); return b ? b->node : NULL; }
+static void h_frame_close(void *ud);
+static void h_frame_open(void *ud, Node *f, Document *d, JsHost *ch) {
+    (void)ud;
+    Page *p = xcalloc(1, sizeof *p);
+    p->url = xstrdup(d->url ? d->url : "about:blank"); p->d = d; p->frame_el = f;
+    Box *b = f->box;
+    p->fw = b ? b->w - (b->b[1] + b->b[3] + b->p[1] + b->p[3]) : 300; p->fh = b ? b->h - (b->b[0] + b->b[2] + b->p[0] + b->p[2]) : 150;
+    if (p->fw < 1) p->fw = 300;
+    if (p->fh < 1) p->fh = 150;
+    p->e = style_engine_new(d); p->e->media.vw = p->fw; p->e->media.vh = p->fh;
+    for (Node *n = d->node.first; n; n = node_next_in_tree(n, &d->node)) {
+        if (n->type != NODE_ELEMENT || n->ns != NS_HTML) continue;
+        if (n->tag == A_style) {
+            char *t = node_text_content(n); StyleSheet *sh = css_parse_sheet(t, strlen(t), d->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); free(t);
+        } else if (is_sheet_link(n)) {
+            char *u = url_join(d->url, node_attr(n, "href"));
+            NetResponse *cr = u ? net_fetch_sync(net_request_new("GET", u)) : NULL;
+            if (cr && cr->status == 200 && cr->body) { StyleSheet *sh = css_parse_sheet(cr->body, cr->body_len, cr->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); }
+            if (cr) net_response_free(cr);
+            free(u);
+        }
+    }
+    sync_sheets(p, true);
+    style_recalc(p->e, &d->node, true);
+    sync_images(p);
+    p->seen_ver = d->dom_version; p->frelayout = true;
+    p->fnext = g_frames; g_frames = p;
+    *ch = (JsHost){ .ud = p, .media = &p->e->media, .viewport = hf_viewport, .scroll_to = hf_scroll_to, .hit = hf_hit, .sync = hf_sync, .frame_open = h_frame_open, .frame_close = h_frame_close };
+}
+static void h_frame_close(void *ud) {
+    Page *p = ud;
+    for (Page **pp = &g_frames; *pp; pp = &(*pp)->fnext) if (*pp == p) { *pp = p->fnext; break; }
+    if (p->L) layout_free(p->L);
+    if (p->e) style_engine_free(p->e);
+    for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) { n->box = NULL; n->style = NULL; }
+    hm_free(&p->img_fired, NULL); free(p->sref);
+    canvas_free(&p->cv); dl_clear(&p->fdl); free(p->fdl.items.v);
+    free(p->url); free(p);
+    if (g_app) { g_app->dirty = true; g_app->vonly = false; }
+}
+static void click_frame(App *a, Page *fp, float x, float y) {
+    Box *b = layout_hit(fp->L, x, y + fp->fsy);
+    Node *t = b ? b->node : NULL;
+    while (t && t->type != NODE_ELEMENT) t = t->parent;
+    JsCtx *js = js_frame_ctx(fp->frame_el);
+    if (!t || !js) return;
+    js_dispatch(js, t, "mousedown", "MouseEvent", true, true, x, y, 0, NULL);
+    js_dispatch(js, t, "mouseup", "MouseEvent", true, true, x, y, 0, NULL);
+    bool ok = js_dispatch(js, t, "click", "MouseEvent", true, true, x, y, 0, NULL);
+    a->dirty = true; a->vonly = false;
+    if (!ok) return;
+    for (Node *n = t; n; n = n->parent)
+        if (n->type == NODE_ELEMENT && n->tag == A_a && node_attr(n, "href")) {
+            const char *h = node_attr(n, "href"), *tg = node_attr(n, "target");
+            if (!strncmp(h, "javascript:", 11) || h[0] == '#') return;
+            char *u = url_join(fp->d->url, h);
+            if (u && tg && (!strcmp(tg, "_top") || !strcmp(tg, "_blank"))) navigate(a, u, true);
+            else if (u) js_frame_navigate(fp->frame_el, u);
+            free(u); return;
+        }
+}
 static void restyle(App *a) {
     Page *p = a->cur;
     if (!p || p->d->dom_version == p->seen_ver) return;
@@ -442,7 +567,7 @@ static void h_scroll_to(void *ud, float x, float y) { (void)ud; (void)x; g_app->
 static Node *h_hit(void *ud, float x, float y) { (void)ud; Page *p = g_app->cur; if (!p || !p->L) return NULL; Box *b = layout_hit(p->L, x, y + g_app->sy); return b ? b->node : NULL; }
 static void page_start_js(App *a, Page *p) {
     if (getenv("LUMEN_NO_JS")) return;
-    JsHost h = { a, &p->e->media, h_navigate, h_set_url, h_history_go, h_viewport, h_scroll_to, h_hit, h_history_len, h_navigate_post, h_sync };
+    JsHost h = { a, &p->e->media, h_navigate, h_set_url, h_history_go, h_viewport, h_scroll_to, h_hit, h_history_len, h_navigate_post, h_sync, h_frame_open, h_frame_close };
     double t0 = now_ms();
     sync_sheets(p, true);
     p->js = js_new(p->d, &h);
@@ -547,6 +672,12 @@ static void click_page(App *a, float x, float y) {
         fprintf(stderr, " connected=%d\n", root == &a->cur->d->node);
     }
     while (t && t->type != NODE_ELEMENT) t = t->parent;
+    Page *fp = t && t->tag == A_iframe ? frame_find(t) : NULL;
+    if (fp && fp->L && t->box) {
+        Box *fb = t->box;
+        click_frame(a, fp, x - (fb->x + fb->b[3] + fb->p[3]), y - BAR + a->sy - (fb->y + fb->b[0] + fb->p[0]));
+        return;
+    }
     if (t && a->cur->js) {
         JsCtx *js = a->cur->js; float cy = y - BAR;
         Node *before = a->cur->d->focus;
@@ -752,7 +883,7 @@ int main(int argc, char **argv) {
             }
         } while (SDL_PollEvent(&ev));
         net_poll();
-        if (a.cur && a.cur->js) { js_tick(a.cur->js); restyle(&a); fire_img_events(a.cur); }
+        if (a.cur && a.cur->js) { js_tick(a.cur->js); restyle(&a); fire_img_events(a.cur); frames_tick(&a); }
         if (a.dirty) render(&a);
         if (*cookie_path && now_ms() - cookies_saved_at > 5000) { cookies_save(cookie_path); cookies_saved_at = now_ms(); }
     }

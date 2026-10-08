@@ -1,0 +1,6 @@
+<!doctype html><html><body style="margin:20px;background:#eef;font:16px sans-serif">
+<p>Parent page above the frames.</p>
+<iframe id="a" style="width:320px;height:160px;border:2px solid #333" srcdoc="<body style='margin:0;background:#c8f7c5'><h2 style='margin:8px'>srcdoc frame</h2><a id=l href='data:text/html,<body style=background:%23fcc><h1>navigated</h1>'>go inside</a><div id=d></div><script>setTimeout(()=>document.getElementById('d').textContent='script ran',50)</script></body>"></iframe>
+<iframe id="b" src="iframe-child.html" style="width:320px;height:160px;border:2px solid #933"></iframe>
+<p>Parent page below the frames.</p>
+</body></html>
