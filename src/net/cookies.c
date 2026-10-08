@@ -7,6 +7,7 @@
 typedef struct { char *name, *value, *domain, *path; bool host_only, secure, http_only; double expires; } Cookie;
 static VEC(Cookie) g_jar;
 static pthread_mutex_t g_mu = PTHREAD_MUTEX_INITIALIZER;
+static bool g_dirty;
 
 static bool domain_match(const char *host, const char *dom) {
     size_t hl = strlen(host), dl = strlen(dom);
@@ -70,6 +71,7 @@ static void set_cookie(const char *host, const char *rpath, const char *sc, bool
         }
     }
     if (c.expires < 0 || c.expires > (double)time(NULL)) vec_push(g_jar, c); else cookie_free(&c);
+    g_dirty = true;
     pthread_mutex_unlock(&g_mu);
 }
 
@@ -97,3 +99,39 @@ char *cookies_get(const URL *u, bool for_http) {
 }
 void cookies_set_document(const char *url, const char *str) { URL u; if (!url_parse(url, &u)) return; set_cookie(u.host ? u.host : "", u.path ? u.path : "/", str, false); url_free(&u); }
 char *cookies_get_document(const char *url) { URL u; if (!url_parse(url, &u) || !u.host) return xstrdup(""); char *r = cookies_get(&u, false); url_free(&u); return r ? r : xstrdup(""); }
+
+/* Persistence: one tab-separated cookie per line (domain host_only path secure http_only expires name value). */
+void cookies_load(const char *path) {
+    FILE *f = fopen(path, "r");
+    if (!f) return;
+    char line[16384]; double now = (double)time(NULL);
+    pthread_mutex_lock(&g_mu);
+    while (fgets(line, sizeof line, f)) {
+        line[strcspn(line, "\r\n")] = 0;
+        char *fld[8]; int n = 0;
+        for (char *p = line; n < 8; n++) { fld[n] = p; char *t = strchr(p, '\t'); if (!t) { n++; break; } *t = 0; p = t + 1; }
+        if (n != 8) continue;
+        Cookie c = { xstrdup(fld[6]), xstrdup(fld[7]), xstrdup(fld[0]), xstrdup(fld[2]), fld[1][0] == '1', fld[3][0] == '1', fld[4][0] == '1', atof(fld[5]) };
+        if (c.expires >= 0 && c.expires < now) { cookie_free(&c); continue; }
+        vec_push(g_jar, c);
+    }
+    pthread_mutex_unlock(&g_mu);
+    fclose(f);
+}
+bool cookies_save(const char *path) {
+    pthread_mutex_lock(&g_mu);
+    if (!g_dirty) { pthread_mutex_unlock(&g_mu); return true; }
+    char tmp[4096]; snprintf(tmp, sizeof tmp, "%s.tmp", path);
+    FILE *f = fopen(tmp, "w");
+    if (!f) { pthread_mutex_unlock(&g_mu); return false; }
+    double now = (double)time(NULL);
+    for (int i = 0; i < g_jar.n; i++) {
+        Cookie *c = &g_jar.v[i];
+        if ((c->expires >= 0 && c->expires < now) || strpbrk(c->name, "\t\n") || strpbrk(c->value, "\t\n")) continue;
+        fprintf(f, "%s\t%d\t%s\t%d\t%d\t%.0f\t%s\t%s\n", c->domain, c->host_only, c->path, c->secure, c->http_only, c->expires, c->name, c->value);
+    }
+    bool ok = fclose(f) == 0 && rename(tmp, path) == 0;
+    if (ok) g_dirty = false;
+    pthread_mutex_unlock(&g_mu);
+    return ok;
+}

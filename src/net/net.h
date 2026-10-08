@@ -60,6 +60,8 @@ void cookies_set_from_header(const URL *u, const char *set_cookie);
 char *cookies_get(const URL *u, bool for_http); /* "a=b; c=d" or NULL */
 void cookies_set_document(const char *url, const char *cookie_str);
 char *cookies_get_document(const char *url);
+void cookies_load(const char *path);
+bool cookies_save(const char *path); /* writes only when the jar changed */
 
 extern const char *g_user_agent;
 #endif

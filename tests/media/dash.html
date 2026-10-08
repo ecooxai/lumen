@@ -1,0 +1,12 @@
+<!doctype html><title>dash.js on Lumen</title>
+<style>body{background:#111;color:#eee;font:14px sans-serif} video{width:640px;height:360px;background:#000}</style>
+<video id=v muted></video><div id=st></div>
+<script src="https://cdn.dashjs.org/v4.7.4/dash.all.min.js"></script>
+<script>
+const v = document.getElementById('v');
+const p = dashjs.MediaPlayer().create();
+p.updateSettings({ debug: { logLevel: 2 } });
+p.on('error', e => console.log('DASH error ' + JSON.stringify(e.error || e).slice(0, 200)));
+p.initialize(v, 'https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd', true);
+setInterval(() => { document.getElementById('st').textContent = 't=' + v.currentTime.toFixed(2) + ' ready=' + v.readyState + ' buf=' + (v.buffered.length ? v.buffered.end(0).toFixed(1) : 0); }, 500);
+</script>

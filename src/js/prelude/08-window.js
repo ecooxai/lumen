@@ -157,6 +157,12 @@ for (const k of Object.keys(globals)) {
 }
 const visual = { get width() { return N.viewport()[0]; }, get height() { return N.viewport()[1]; }, offsetLeft: 0, offsetTop: 0, pageLeft: 0, pageTop: 0, scale: 1, addEventListener() {}, removeEventListener() {} };
 G.visualViewport = visual;
+// Bare global calls like `addEventListener(...)` run with an undefined receiver in strict code.
+for (const k of ['addEventListener', 'removeEventListener', 'dispatchEvent']) {
+    const f = EventTarget.prototype[k];
+    Object.defineProperty(G, k, { value: function (...a) { return f.apply(this ?? G, a); }, writable: true, configurable: true });
+}
 function fire(target, type, init, Ctor = Event) { return dispatch(target, new Ctor(type, init), true); }
 return { protoFor, dispatch, fire, report, mediaChanged, ceConnected, Event, MouseEvent, PointerEvent, KeyboardEvent, FocusEvent, WheelEvent, InputEvent, PopStateEvent, ErrorEvent };
 })
+

@@ -1,5 +1,6 @@
 /* Lumen: SDL3 window, minimalist chrome, navigation, wgpu/CPU presentation */
 #include <math.h>
+#include <ctype.h>
 #include <SDL3/SDL.h>
 #include "../paint/paint.h"
 #include "../media/media.h"
@@ -339,6 +340,73 @@ static void page_start_js(App *a, Page *p) {
 }
 static void wake(void) { SDL_Event e; SDL_zero(e); e.type = EV_NET; SDL_PushEvent(&e); }
 
+static bool is_text_ctl(Node *n) {
+    if (!n || n->type != NODE_ELEMENT || n->ns != NS_HTML) return false;
+    if (n->tag == A_textarea) return true;
+    if (n->tag != A_input) return false;
+    const char *t = node_attr(n, "type");
+    if (!t || !*t) return true;
+    static const char *const ok[] = { "text", "email", "password", "search", "tel", "url", "number", NULL };
+    for (int i = 0; ok[i]; i++) if (str_ieq(t, ok[i])) return true;
+    return false;
+}
+static Node *page_focus(App *a) { Node *f = a->cur && a->cur->d ? a->cur->d->focus : NULL; return is_text_ctl(f) ? f : NULL; }
+static char *ctl_value(Node *n) {
+    if (n->value_override) return xstrdup(n->value_override);
+    if (n->tag == A_textarea) return node_text_content(n);
+    const char *v = node_attr(n, "value"); return xstrdup(v ? v : "");
+}
+static void ctl_set(App *a, Node *n, char *v) {
+    free(n->value_override); n->value_override = v; doc_mark_dirty(n->doc, n);
+    if (a->cur->js) js_dispatch(a->cur->js, n, "input", "InputEvent", true, false, 0, 0, 0, NULL);
+    a->relayout = true; a->dirty = true;
+}
+static void focus_node(App *a, Node *n) {
+    Document *d = a->cur->d; Node *old = d->focus; JsCtx *js = a->cur->js;
+    if (old == n) return;
+    if (old) { old->flags &= ~(uint32_t)NF_FOCUS; doc_mark_dirty(d, old); }
+    d->focus = n;
+    if (n) { n->flags |= NF_FOCUS; doc_mark_dirty(d, n); }
+    if (js && old) { js_dispatch(js, old, "blur", "FocusEvent", false, false, 0, 0, 0, NULL); js_dispatch(js, old, "focusout", "FocusEvent", true, false, 0, 0, 0, NULL); }
+    if (js && n) { js_dispatch(js, n, "focus", "FocusEvent", false, false, 0, 0, 0, NULL); js_dispatch(js, n, "focusin", "FocusEvent", true, false, 0, 0, 0, NULL); }
+    if (is_text_ctl(n)) SDL_StartTextInput(a->win);
+    a->relayout = true; a->dirty = true;
+}
+static void url_enc(SB *b, const char *s) {
+    for (const unsigned char *p = (const unsigned char *)s; *p; p++) {
+        if (isalnum(*p) || strchr("-_.*", *p)) sb_putc(b, (char)*p);
+        else if (*p == ' ') sb_putc(b, '+');
+        else { char h[4]; snprintf(h, sizeof h, "%%%02X", *p); sb_puts(b, h); }
+    }
+}
+static void submit_form(App *a, Node *ctl) {
+    Node *f = ctl;
+    while (f && !(f->type == NODE_ELEMENT && f->tag == A_form)) f = f->parent;
+    if (!f) return;
+    if (a->cur->js && !js_dispatch(a->cur->js, f, "submit", "Event", true, true, 0, 0, 0, NULL)) return;
+    const char *m = node_attr(f, "method");
+    if (m && str_ieq(m, "post")) { fprintf(stderr, "lumen: native POST form submission not supported yet\n"); return; }
+    SB q; sb_init(&q);
+    for (Node *n = f->first; n; n = node_next_in_tree(n, f)) {
+        if (n->type != NODE_ELEMENT || !(n->tag == A_input || n->tag == A_textarea || n->tag == A_select)) continue;
+        const char *name = node_attr(n, "name"), *ty = node_attr(n, "type");
+        if (!name || !*name || node_has_attr(n, "disabled")) continue;
+        if (ty && (str_ieq(ty, "submit") || str_ieq(ty, "button") || str_ieq(ty, "reset") || str_ieq(ty, "image") || str_ieq(ty, "file"))) continue;
+        if (ty && (str_ieq(ty, "checkbox") || str_ieq(ty, "radio")) && !(n->checked_override ? n->checked_override > 0 : node_has_attr(n, "checked"))) continue;
+        char *v = ctl_value(n);
+        if (q.n) sb_putc(&q, '&');
+        url_enc(&q, name); sb_putc(&q, '='); url_enc(&q, v); free(v);
+    }
+    const char *act = node_attr(f, "action");
+    char *u = url_join(a->cur->d->url, act && *act ? act : a->cur->d->url);
+    char *qm = strchr(u, '?'); if (qm) *qm = 0;
+    char *hm = strchr(u, '#'); if (hm) *hm = 0;
+    char *qs = q.n ? sb_take(&q) : NULL; if (!qs) sb_free(&q);
+    SB full; sb_init(&full); sb_puts(&full, u); sb_putc(&full, '?'); if (qs) sb_puts(&full, qs);
+    free(u); free(qs);
+    char *dest = sb_take(&full); navigate(a, dest, true); free(dest);
+}
+
 static void click_page(App *a, float x, float y) {
     if (!a->cur || !a->cur->L) return;
     Box *b = layout_hit(a->cur->L, x, y - BAR + a->sy);
@@ -347,6 +415,15 @@ static void click_page(App *a, float x, float y) {
     if (t && a->cur->js) {
         JsCtx *js = a->cur->js; float cy = y - BAR;
         js_dispatch(js, t, "mousedown", "MouseEvent", true, true, x, cy, 0, NULL);
+        Node *ctl = t;
+        for (Node *l = t; l; l = l->parent) if (l->type == NODE_ELEMENT && l->tag && !strcmp(l->tag, "label")) {
+            const char *fo = node_attr(l, "for");
+            Node *c = fo ? doc_get_element_by_id(a->cur->d, fo) : NULL;
+            for (Node *k = l->first; !c && k; k = node_next_in_tree(k, l)) if (is_text_ctl(k)) c = k;
+            if (c) ctl = c;
+            break;
+        }
+        if (is_text_ctl(ctl)) focus_node(a, ctl); else if (page_focus(a)) focus_node(a, NULL);
         js_dispatch(js, t, "mouseup", "MouseEvent", true, true, x, cy, 0, NULL);
         bool ok = js_dispatch(js, t, "click", "MouseEvent", true, true, x, cy, 0, NULL);
         restyle(a);
@@ -410,6 +487,9 @@ int main(int argc, char **argv) {
     }
     fprintf(stderr, "lumen: presenting with %s\n", gpu_backend_name(a.gpu));
     a.ui = font_get("system-ui", 400, false, 13.5f);
+    char cookie_path[1024] = "";
+    { char *pref = SDL_GetPrefPath("lumen", "Lumen"); if (pref) { snprintf(cookie_path, sizeof cookie_path, "%scookies.txt", pref); SDL_free(pref); cookies_load(cookie_path); } }
+    double cookies_saved_at = now_ms();
     navigate(&a, start, true);
     bool quit = false, cmd = false;
     while (!quit) {
@@ -441,7 +521,15 @@ int main(int argc, char **argv) {
                 }
                 break;
             case SDL_EVENT_TEXT_INPUT:
-                if (a.editing) { if (a.sel_all) { a.url[0] = 0; a.sel_all = 0; } strncat(a.url, ev.text.text, sizeof a.url - strlen(a.url) - 1); a.dirty = true; }
+                if (!a.editing && page_focus(&a)) {
+                    Node *f = page_focus(&a);
+                    if (!a.cur->js || js_dispatch(a.cur->js, f, "keydown", "KeyboardEvent", true, true, 0, 0, 0, ev.text.text)) {
+                        char *v = ctl_value(f); SB b; sb_init(&b); sb_puts(&b, v); sb_puts(&b, ev.text.text); free(v);
+                        ctl_set(&a, f, sb_take(&b));
+                    }
+                    if (a.cur->js) js_dispatch(a.cur->js, f, "keyup", "KeyboardEvent", true, true, 0, 0, 0, ev.text.text);
+                    restyle(&a);
+                } else if (a.editing) { if (a.sel_all) { a.url[0] = 0; a.sel_all = 0; } strncat(a.url, ev.text.text, sizeof a.url - strlen(a.url) - 1); a.dirty = true; }
                 break;
             case SDL_EVENT_KEY_UP: if (ev.key.key == SDLK_LGUI || ev.key.key == SDLK_RGUI || ev.key.key == SDLK_LCTRL || ev.key.key == SDLK_RCTRL) cmd = false; break;
             case SDL_EVENT_KEY_DOWN: {
@@ -461,6 +549,18 @@ int main(int argc, char **argv) {
                     else if (k == SDLK_BACKSPACE) { if (a.sel_all) { a.url[0] = 0; a.sel_all = 0; } else { size_t n = strlen(a.url); while (n && (a.url[n - 1] & 0xC0) == 0x80) n--; if (n) n--; a.url[n] = 0; } }
                     else if (k == SDLK_LEFT || k == SDLK_RIGHT) a.sel_all = 0;
                     a.dirty = true; break;
+                }
+                if (page_focus(&a)) {
+                    Node *f = page_focus(&a); const char *kn = k == SDLK_RETURN || k == SDLK_KP_ENTER ? "Enter" : k == SDLK_BACKSPACE ? "Backspace" : k == SDLK_ESCAPE ? "Escape" : k == SDLK_TAB ? "Tab" : k == SDLK_LEFT ? "ArrowLeft" : k == SDLK_RIGHT ? "ArrowRight" : k == SDLK_UP ? "ArrowUp" : k == SDLK_DOWN ? "ArrowDown" : NULL;
+                    if (kn) {
+                        bool ok = !a.cur->js || js_dispatch(a.cur->js, f, "keydown", "KeyboardEvent", true, true, 0, 0, 0, kn);
+                        if (ok && !strcmp(kn, "Backspace")) { char *v = ctl_value(f); size_t n = strlen(v); while (n && (v[n - 1] & 0xC0) == 0x80) n--; if (n) n--; v[n] = 0; ctl_set(&a, f, v); }
+                        else if (ok && !strcmp(kn, "Enter") && f->tag == A_input) submit_form(&a, f);
+                        else if (ok && !strcmp(kn, "Escape")) focus_node(&a, NULL);
+                        if (a.cur && a.cur->js && page_focus(&a) == f) js_dispatch(a.cur->js, f, "keyup", "KeyboardEvent", true, true, 0, 0, 0, kn);
+                        restyle(&a); a.dirty = true;
+                    }
+                    break;
                 }
                 if (k == SDLK_DOWN) a.sy += 40; else if (k == SDLK_UP) a.sy -= 40;
                 else if (k == SDLK_PAGEDOWN || k == SDLK_SPACE) a.sy += (ev.key.mod & SDL_KMOD_SHIFT) ? -page : page;
@@ -487,7 +587,9 @@ int main(int argc, char **argv) {
         net_poll();
         if (a.cur && a.cur->js) { js_tick(a.cur->js); restyle(&a); }
         if (a.dirty) render(&a);
+        if (*cookie_path && now_ms() - cookies_saved_at > 5000) { cookies_save(cookie_path); cookies_saved_at = now_ms(); }
     }
+    if (*cookie_path) cookies_save(cookie_path);
     page_free(a.cur);
     gpu_destroy(a.gpu);
     if (a.mview) SDL_Metal_DestroyView(a.mview);
