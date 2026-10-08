@@ -1110,7 +1110,8 @@ static void click_page(App *a, float x, float y) {
     if (t && a->t->cur->js) {
         JsCtx *js = a->t->cur->js; float cy = y - BAR;
         Node *before = a->t->cur->d->focus;
-        js_dispatch(js, t, "mousedown", "MouseEvent", true, true, x, cy, 0, NULL);
+        js_dispatch(js, t, "pointerdown", "PointerEvent", true, true, x, cy, 0, NULL);
+        bool md_ok = js_dispatch(js, t, "mousedown", "MouseEvent", true, true, x, cy, 0, NULL);
         bool js_focused = a->t->cur->d->focus != before;
         Node *ctl = t;
         for (Node *l = t; l; l = l->parent) if (l->type == NODE_ELEMENT && l->tag && !strcmp(l->tag, "label")) {
@@ -1125,7 +1126,8 @@ static void click_page(App *a, float x, float y) {
             for (Node *n = a->t->cur->d->node.first; n; n = node_next_in_tree(n, &a->t->cur->d->node))
                 if (is_text_ctl(n) && n->box && px >= n->box->x && px < n->box->x + n->box->w && py >= n->box->y && py < n->box->y + n->box->h) { ctl = n; break; }
         }
-        if (is_text_ctl(ctl)) focus_node(a, ctl); else if (!js_focused && page_focus(a)) focus_node(a, NULL);
+        if (is_text_ctl(ctl)) focus_node(a, ctl); else if (!js_focused && md_ok && page_focus(a)) focus_node(a, NULL);
+        js_dispatch(js, t, "pointerup", "PointerEvent", true, true, x, cy, 0, NULL);
         js_dispatch(js, t, "mouseup", "MouseEvent", true, true, x, cy, 0, NULL);
         bool ok = js_dispatch(js, t, "click", "MouseEvent", true, true, x, cy, 0, NULL);
         restyle(a);
