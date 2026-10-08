@@ -32,6 +32,7 @@ int main(int argc, char **argv) {
     double t0 = now_ms();
     JsCtx *js = js_new(d, &h);
     double t1 = now_ms();
+    if (getenv("JSRUN_PRE")) js_eval(js, getenv("JSRUN_PRE"), "jsrun:pre");
     int nscripts = 0;
     for (Node *n = d->node.first; n; n = node_next_in_tree(n, &d->node)) {
         if (n->type != NODE_ELEMENT || n->tag != A_script || n->ns != NS_HTML || (n->flags & NF_SCRIPT_STARTED) || !jsg_classic_script(n)) continue;
@@ -66,6 +67,7 @@ int main(int argc, char **argv) {
     }
     fprintf(stderr, "jsrun: context %.1fms, %d scripts %.1fms, dom_version %llu\n", t1 - t0, nscripts, t2 - t1, (unsigned long long)d->dom_version);
     if (getenv("JSRUN_DUMP") && d->body) { char *s = node_serialize(d->body, true); puts(s); free(s); }
+    if (getenv("JSRUN_POST")) js_eval(js, getenv("JSRUN_POST"), "jsrun:post");
     js_free(js);
     doc_free(d);
     return 0;
