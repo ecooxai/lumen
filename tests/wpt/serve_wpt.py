@@ -39,11 +39,21 @@ def wrapped(request, response):
 
 routes = [('GET', '/resources/testharnessreport.js', report),
           ('GET', '*.any.html', wrapped), ('GET', '*.window.html', wrapped)] + wroutes.routes
-config = {'browser_host': '127.0.0.1', 'domains': {'': {'': '127.0.0.1', 'www': '127.0.0.1', 'www1': '127.0.0.1', 'www2': '127.0.0.1'}},
-          'ports': {'http': [PORT, PORT + 1], 'https': [PORT + 2]}, 'server_host': '127.0.0.1'}
+HOST = os.environ.get('WPT_HOST', 'web-platform.test')  # resolve via LUMEN_HOST_MAP=web-platform.test=127.0.0.1
 if __name__ == '__main__':
+    import logging
+    from wptserve.config import ConfigBuilder
+    from collections import defaultdict
+
+    class Builder(ConfigBuilder):
+        def _get_ports(self, data):  # keep https/wss listed for templates even though only http is served
+            return defaultdict(list, {k: list(v) for k, v in data['ports'].items()})
+
+    config = Builder(logging.getLogger('wpt'), subdomains={'www', 'www1', 'www2', '\u5929\u6c17\u306e\u826f\u3044\u65e5', '\u00e9l\u00e8ve'},
+                     not_subdomains={'nonexistent'}, browser_host=HOST, alternate_hosts={'alt': 'not-' + HOST}, server_host='127.0.0.1',
+                     ports={'http': [PORT, PORT + 1], 'https': [PORT + 2, PORT + 3], 'http-private': [PORT + 4], 'http-public': [PORT + 5], 'https-private': [PORT + 6], 'https-public': [PORT + 7], 'ws': [PORT + 8], 'wss': [PORT + 9], 'h2': [PORT + 10], 'webtransport-h3': [PORT + 11]}, doc_root=ROOT).__enter__()
     with StashServer(('127.0.0.1', 0), authkey=b'lumen'):
-        httpd = server.WebTestHttpd(host='127.0.0.1', port=PORT, doc_root=ROOT, routes=routes, config=config)
-        httpd.start()
+        for port in (PORT, PORT + 1):
+            server.WebTestHttpd(host='127.0.0.1', port=port, doc_root=ROOT, routes=routes, config=config).start()
         while True:
             time.sleep(3600)
