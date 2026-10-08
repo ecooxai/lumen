@@ -101,3 +101,10 @@ Load (DCL/load): Google 0.53/3.66 s, Bing 1.97/2.23 s, YT watch ~2.2/3.47 s, YT 
 - YouTube 1080p still ~33%: main thread ~22% (YouTube JS ~9%, `getBoundingClientRect` -> full
   `layout_run` ~3%, render ~4%). Next: incremental layout for `n_rect`/`h_sync`, paint-only style
   invalidation, IOSurface zero-copy into Metal textures.
+- `c5e83ab` paint-only restyle: recalcs that change only paint-time properties update the ComputedStyle in place
+  (`paint_only`/`adopt` in src/css/style.c) and `style`/`class` attribute writes bump `dom_version` but not
+  `layout_version`, so `restyle()` only sets `relayout` when needed. `LUMEN_NO_PAINT_ONLY=1` forces relayout.
+  Correctness page ~/sites/po/index.html (getBoundingClientRect after style/class/text changes) passes.
+  CPU: YouTube content 1080p measured 28-33% with it vs 23-28% without in back-to-back 6x10 s runs; another
+  pair (one during an ad) went the other way. Layout ms/s dropped 24 -> 8 in one pair, equal in another.
+  Conclusion: run-to-run noise on this VM (+-5 points) is bigger than the main-thread savings; needs a real Mac.
