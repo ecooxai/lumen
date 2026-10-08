@@ -1134,9 +1134,9 @@ int main(int argc, char **argv) {
             case SDL_EVENT_MOUSE_BUTTON_DOWN:
                 if (ev.button.button != SDL_BUTTON_LEFT) break;
                 { int bh = bar_hit(&a, ev.button.x, ev.button.y);
+                  if (bh >= HB_TABDOT) { a.tip_tab = bh - HB_TABDOT; a.tip_until = now_ms() + 4000; a.dirty = true; a.vonly = false; break; }
                   if (bh >= HB_INFO) { info_click(&a, bh - HB_INFO); break; }
                   if (bh >= HB_WS) { int w = bh - HB_WS; if (w != a.wi) ws_select(&a, w); else ws_popup(&a, w, ev.button.x, ev.button.y); break; }
-                  if (bh >= HB_TABDOT) { a.tip_tab = bh - HB_TABDOT; a.tip_until = now_ms() + 4000; a.dirty = true; a.vonly = false; break; }
                   if (bh == HB_WSNEW) { menu_cmd(&a, MENU_WS_NEW); break; }
                   if (bh >= HB_TABX) { tab_close(&a, bh - HB_TABX, &quit); break; }
                   if (bh >= HB_TAB) { tab_select(&a, bh - HB_TAB); break; }
