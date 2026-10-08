@@ -248,7 +248,25 @@ function structuredClone(v, seen = new Map()) {
     if (v instanceof Set) { const s = new Set(); seen.set(v, s); for (const x of v) s.add(structuredClone(x, seen)); return s; }
     const o = Array.isArray(v) ? [] : {}; seen.set(v, o); for (const k of Object.keys(v)) o[k] = structuredClone(v[k], seen); return o;
 }
-function postMessage(data, origin) { const d = structuredClone(data); setTimeout(() => dispatch(G, new MessageEvent('message', { data: d, origin: location.origin, source: G }))); }
+function postMessage(data, origin) { const [src, org] = N.caller(); const d = structuredClone(data); setTimeout(() => dispatch(G, new MessageEvent('message', { data: d, origin: org, source: asWin(src) }))); }
+function queueMessage(data, origin, src) { setTimeout(() => dispatch(G, new MessageEvent('message', { data, origin, source: asWin(src) }))); }
+const remoteWins = new Map();
+function asWin(v) {
+    if (typeof v !== 'number') return v;
+    let w = remoteWins.get(v);
+    if (w) return w;
+    const nav = u => N.ctxRel(v, 4, String(u));
+    w = Object.freeze({
+        postMessage(d, o) { N.postTo(v, d, o && typeof o === 'object' ? String(o.targetOrigin ?? '/') : String(o ?? '/')); },
+        get window() { return w; }, get self() { return w; }, get frames() { return w; },
+        get parent() { return asWin(N.ctxRel(v, 0)) ?? w; }, get top() { return asWin(N.ctxRel(v, 1)) ?? w; },
+        get length() { return N.ctxRel(v, 2); }, get closed() { return N.ctxRel(v, 3); }, opener: null,
+        location: Object.freeze({ set href(u) { nav(u); }, replace: nav, assign: nav }),
+        focus() {}, blur() {}, close() {},
+    });
+    remoteWins.set(v, w);
+    return w;
+}
 const counts = {}, timers = {};
 const console = {
     log: (...a) => N.log(1, fmt(a)), info: (...a) => N.log(1, fmt(a)), debug: (...a) => N.log(0, fmt(a)), trace: (...a) => N.log(0, fmt(a)),
@@ -283,7 +301,7 @@ const globals = {
     TextEncoder, TextDecoder, btoa, atob, Blob, File, FileReader, ReadableStream, URLSearchParams, URL, webkitURL: URL, Headers, Request, Response, fetch, FormData, XMLHttpRequestEventTarget, XMLHttpRequest, WebSocket, MessagePort, MessageChannel, BroadcastChannel,
     ResizeObserver, IntersectionObserver, PerformanceObserver, Storage, localStorage, sessionStorage, Location, location, history, navigator, screen, performance, crypto, MediaQueryList, matchMedia, getComputedStyle,
     setTimeout, setInterval, clearTimeout, clearInterval, requestAnimationFrame, cancelAnimationFrame, requestIdleCallback, cancelIdleCallback, queueMicrotask, structuredClone, postMessage, console, customElements, Window, document,
-    window: G, self: G, globalThis: G, top: G, parent: G, frames: G, opener: null, frameElement: null, closed: false, name: '', length: 0, origin: location.origin, isSecureContext: location.protocol === 'https:', crossOriginIsolated: false,
+    window: G, self: G, globalThis: G, get top() { return asWin(N.topWin()) ?? G; }, get parent() { return asWin(N.parentWin()) ?? G; }, frames: G, opener: null, get frameElement() { return N.frameEl(); }, closed: false, name: '', get length() { return N.frameCount(); }, origin: location.origin, isSecureContext: location.protocol === 'https:', crossOriginIsolated: false,
     get innerWidth() { return N.viewport()[0]; }, get innerHeight() { return N.viewport()[1]; }, get outerWidth() { return N.viewport()[0]; }, get outerHeight() { return N.viewport()[1] + 40; },
     get scrollX() { return N.viewport()[2]; }, get scrollY() { return N.viewport()[3]; }, get pageXOffset() { return N.viewport()[2]; }, get pageYOffset() { return N.viewport()[3]; }, get devicePixelRatio() { return N.viewport()[4]; },
     screenX: 0, screenY: 0, screenLeft: 0, screenTop: 0,
@@ -299,6 +317,7 @@ for (const k of Object.keys(globals)) {
     if (typeof v === 'function' && /^[A-Z]/.test(k) && v.prototype && v.prototype.constructor === v && !Object.prototype.hasOwnProperty.call(v.prototype, Symbol.toStringTag))
         Object.defineProperty(v.prototype, Symbol.toStringTag, { value: k, configurable: true });
 }
+for (let i = 0; i < 32; i++) Object.defineProperty(G, i, { get() { return asWin(N.frameAt(i)); }, configurable: true });
 const visual = { get width() { return N.viewport()[0]; }, get height() { return N.viewport()[1]; }, offsetLeft: 0, offsetTop: 0, pageLeft: 0, pageTop: 0, scale: 1, addEventListener() {}, removeEventListener() {} };
 G.visualViewport = visual;
 // Bare global calls like `addEventListener(...)` run with an undefined receiver in strict code.
@@ -311,6 +330,6 @@ function fireAnim(t, type, name, elapsed, anim) {
     const init = anim ? { bubbles: true, animationName: name, elapsedTime: elapsed } : { bubbles: true, propertyName: name, elapsedTime: elapsed };
     return dispatch(t, new (anim ? AnimationEvent : TransitionEvent)(type, init), true);
 }
-return { protoFor, dispatch, fire, fireAnim, report, mediaChanged, ceConnected, Event, MouseEvent, PointerEvent, KeyboardEvent, FocusEvent, WheelEvent, InputEvent, PopStateEvent, ErrorEvent };
+return { queueMessage, protoFor, dispatch, fire, fireAnim, report, mediaChanged, ceConnected, Event, MouseEvent, PointerEvent, KeyboardEvent, FocusEvent, WheelEvent, InputEvent, PopStateEvent, ErrorEvent };
 })
 

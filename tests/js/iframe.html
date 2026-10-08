@@ -1,0 +1,23 @@
+<!doctype html><html><body><iframe id="f" srcdoc="<p id=x>hi</p><script>window.v = 41 + 1; parent.postMessage('ping', '*')</script>"></iframe>
+<script>
+const r = {}; const f = document.getElementById('f');
+const w = f.contentWindow;
+r.win = w && w !== window ? 'PASS' : 'FAIL';
+r.doc = f.contentDocument && f.contentDocument.getElementById('x')?.textContent === 'hi' ? 'PASS' : 'FAIL';
+r.script = w.v === 42 ? 'PASS' : 'FAIL:' + w.v;
+r.parent = w.parent === window && w.top === window ? 'PASS' : 'FAIL';
+r.frameEl = w.frameElement === f ? 'PASS' : 'FAIL';
+r.frames = window.length === 1 && window[0] === w ? 'PASS' : 'FAIL:' + window.length;
+const g = document.createElement('iframe'); document.body.appendChild(g);
+r.dyn = g.contentDocument && g.contentDocument.body && window.length === 2 ? 'PASS' : 'FAIL:' + window.length;
+g.contentDocument.body.innerHTML = '<b>x</b>';
+const b = g.contentDocument.querySelector('b');
+r.realm = b instanceof g.contentWindow.HTMLElement && !(b instanceof HTMLElement) ? 'PASS' : 'FAIL';
+g.remove();
+let msg = null; window.addEventListener('message', e => { if (e.data === 'ping') msg = e; });
+setTimeout(() => {
+  r.msg = msg && msg.source === w ? 'PASS' : 'FAIL:' + (msg && msg.origin);
+  r.removed = window.length === 1 && g.contentWindow === null ? 'PASS' : 'FAIL:' + window.length;
+  console.log('RESULTS ' + Object.entries(r).map(([k, v]) => k + ':' + v).join(' '));
+}, 100);
+</script></body></html>

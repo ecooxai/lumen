@@ -72,6 +72,14 @@ struct JsCtx {
     std::mutex wd_mu;
     std::condition_variable wd_cv;
     std::thread watchdog;
+    JsCtx *parent = nullptr;          /* nested browsing context: owning frame's context */
+    Node *frame_el = nullptr;         /* the <iframe> in the parent document */
+    std::vector<JsCtx *> kids;
+    uint32_t id = 0;
+    bool dead = false;
+    uint64_t frame_scan_ver = ~0ull;
+    void *host_ud = nullptr;          /* child host data returned by frame_open */
+    std::string frame_src;
 };
 
 #define JS_ENTER(c)                                         \
@@ -91,3 +99,12 @@ void jfire(JsCtx *c, Node *n, const char *type);
 void jreport(JsCtx *c, v8::Local<v8::Value> exc, v8::Local<v8::Message> msg);
 void js_install_native(JsCtx *c, v8::Local<v8::Object> N);
 void js_run_inserted(JsCtx *c, Node *root);
+extern "C" JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame);
+extern "C" JsCtx *owner_ctx(Document *d);
+std::string ctx_origin(JsCtx *c);
+void frames_scan(JsCtx *c);
+void frames_inserted(JsCtx *c, Node *root);
+void frames_forget(JsCtx *c);
+void frame_kill(JsCtx *k);
+void frame_nav(JsCtx *k, const char *u);
+void js_install_frames(JsCtx *c, v8::Local<v8::Object> N);

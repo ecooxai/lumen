@@ -211,7 +211,7 @@ FN(setUrl) {
     free(c->doc->url); c->doc->url = xstrdup(u.c_str());
     if (c->host.set_url) c->host.set_url(c->host.ud, u.c_str(), BOOL(1));
 }
-FN(navigate) { CTX; std::string u = S(0); if (c->host.navigate) c->host.navigate(c->host.ud, u.c_str()); }
+FN(navigate) { CTX; std::string u = S(0); if (c->parent) { frame_nav(c, u.c_str()); return; } if (c->host.navigate) c->host.navigate(c->host.ud, u.c_str()); }
 FN(navigatePost) {
     CTX; std::string u = S(0), b = S(1), t = S(2);
     if (c->host.navigate_post) c->host.navigate_post(c->host.ud, u.c_str(), b.data(), b.size(), t.c_str());
@@ -663,6 +663,7 @@ void js_run_inserted(JsCtx *c, Node *root) {
         start_fetch(c, rq, new Fetch{ c, 0, {}, s });
         free(u);
     }
+    frames_inserted(c, root);
 }
 
 void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
@@ -683,4 +684,5 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(currentScript); REG(media); REG(cssSupports); REG(urlParse); REG(encode); REG(decode); REG(random); REG(cDigest); REG(cHmac); REG(cAes); REG(cEcGen); REG(cEcDerive); REG(cEcSign); REG(cEcVerify); REG(cSpki); REG(cSpkiParse); REG(cPkcs8Parse); REG(cEcFromD); REG(cHkdf); REG(cPbkdf2);
     REG(heap); REG(imgSize); REG(userAgent); REG(platform); REG(cpus);
 #undef REG
+    js_install_frames(c, N);
 }

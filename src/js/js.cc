@@ -12,7 +12,13 @@ static const char kPrelude[] =
 #include "prelude.inc"
     ;
 
-JsCtx *jctx(v8::Isolate *iso) { return static_cast<JsCtx *>(iso->GetData(0)); }
+JsCtx *jctx(v8::Isolate *iso) {
+    if (iso->InContext()) {
+        v8::Local<v8::Context> cx = iso->GetCurrentContext();
+        if (void *p = cx->GetAlignedPointerFromEmbedderData(1, kTag)) return static_cast<JsCtx *>(p);
+    }
+    return static_cast<JsCtx *>(iso->GetData(0));
+}
 
 v8::Local<v8::String> jstr(v8::Isolate *iso, const char *s, int n) {
     v8::Local<v8::String> r;
@@ -45,8 +51,9 @@ v8::Local<v8::Value> jwrap(JsCtx *c, Node *n) {
     v8::Isolate *iso = c->iso;
     if (!n) return v8::Null(iso);
     if (n->js) return static_cast<v8::Global<v8::Object> *>(n->js)->Get(iso);
+    if (n->doc && n->doc != c->doc) if (JsCtx *o = owner_ctx(n->doc)) c = o;
     v8::EscapableHandleScope hs(iso);
-    v8::Local<v8::Context> ctx = iso->GetCurrentContext();
+    v8::Local<v8::Context> ctx = c->ctx.Get(iso);
     v8::Local<v8::Object> o;
     if (!c->node_tmpl.Get(iso)->NewInstance(ctx).ToLocal(&o)) return hs.Escape(v8::Local<v8::Value>(v8::Null(iso)));
     o->SetAlignedPointerInInternalField(0, &kNodeMagic, kTag);
@@ -181,15 +188,28 @@ void js_global_init(const char *argv0) {
 }
 
 static std::vector<JsCtx *> g_ctxs;
+static uint32_t g_next_ctx_id = 1;
+JsCtx *owner_ctx(Document *d) {
+    for (JsCtx *c : g_ctxs) if (c->doc == d) return c;
+    for (JsCtx *c : g_ctxs) if (std::find(c->docs.begin(), c->docs.end(), d) != c->docs.end()) return c;
+    return nullptr;
+}
+JsCtx *js_new(Document *d, const JsHost *host) { return js_new_ex(d, host, nullptr, nullptr); }
 
-JsCtx *js_new(Document *d, const JsHost *host) {
+JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
     JsCtx *c = new JsCtx();
+    c->id = g_next_ctx_id++;
+    c->parent = parent; c->frame_el = frame;
+    if (frame) frame->refcount++;
+    if (parent) parent->kids.push_back(c);
     c->doc = d;
     if (host) c->host = *host;
     c->t0 = now_ms();
     c->thread = std::this_thread::get_id();
     g_ctxs.push_back(c);
     jsg_install_hooks();
+    if (parent) c->iso = parent->iso;
+    else {
     v8::Isolate::CreateParams cp;
     c->alloc = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
     cp.array_buffer_allocator = c->alloc;
@@ -197,11 +217,14 @@ JsCtx *js_new(Document *d, const JsHost *host) {
     c->iso->SetData(0, c);
     c->iso->SetMicrotasksPolicy(v8::MicrotasksPolicy::kExplicit);
     c->iso->SetPromiseRejectCallback(on_reject);
+    }
     v8::Isolate *iso = c->iso;
     v8::Isolate::Scope is(iso);
     v8::HandleScope hs(iso);
     v8::Local<v8::Context> ctx = v8::Context::New(iso);
     c->ctx.Reset(iso, ctx);
+    ctx->SetAlignedPointerInEmbedderData(1, c, kTag);
+    ctx->SetSecurityToken(v8::String::NewFromUtf8(iso, ctx_origin(c).c_str(), v8::NewStringType::kInternalized).ToLocalChecked());
     v8::Context::Scope cs(ctx);
     v8::Local<v8::ObjectTemplate> tmpl = v8::ObjectTemplate::New(iso);
     tmpl->SetInternalFieldCount(2);
@@ -235,12 +258,19 @@ JsCtx *js_new(Document *d, const JsHost *host) {
     }
     iso->PerformMicrotaskCheckpoint();
     if (const char *to = getenv("LUMEN_JS_TIMEOUT_MS")) g_js_timeout_ms = atof(to);
-    if (g_js_timeout_ms > 0) c->watchdog = std::thread(watchdog_run, c);
+    if (g_js_timeout_ms > 0 && !parent) c->watchdog = std::thread(watchdog_run, c);
     return c;
 }
 
 void js_free(JsCtx *c) {
     if (!c) return;
+    for (JsCtx *k : std::vector<JsCtx *>(c->kids)) js_free(k);
+    frames_forget(c);
+    if (c->parent) {
+        frame_kill(c);
+        auto &pk = c->parent->kids; pk.erase(std::remove(pk.begin(), pk.end(), c), pk.end());
+        if (c->frame_el && c->frame_el->refcount) c->frame_el->refcount--;
+    }
     if (c->watchdog.joinable()) {
         { std::lock_guard<std::mutex> lk(c->wd_mu); c->wd_stop = true; }
         c->wd_cv.notify_all();
@@ -251,6 +281,7 @@ void js_free(JsCtx *c) {
     c->players.clear();
     std::vector<Node *> roots;
     std::vector<Document *> docs = std::move(c->docs);
+    if (c->parent) docs.push_back(c->doc);
     {
         v8::Isolate::Scope is(c->iso);
         v8::HandleScope hs(c->iso);
@@ -267,8 +298,7 @@ void js_free(JsCtx *c) {
             if (!n->parent && n->type != NODE_DOCUMENT && !n->refcount && !n->host) roots.push_back(n);
         c->ctx.Reset();
     }
-    c->iso->Dispose();
-    delete c->alloc;
+    if (!c->parent) { c->iso->Dispose(); delete c->alloc; }
     for (Node *n : roots) node_free_tree(n);
     for (Document *d : docs) doc_free(d);
     delete c;
@@ -333,11 +363,18 @@ double js_next_deadline(JsCtx *c) {
     for (auto &kv : c->timers) d = std::min(d, kv.second.due);
     for (auto &e : c->anims) d = std::min(d, e.due);
     if (!c->rafs.empty()) d = std::min(d, c->last_raf + 16);
+    for (JsCtx *k : c->kids) if (!k->dead) d = std::min(d, js_next_deadline(k));
     return d;
 }
 
+static void tick_one(JsCtx *c);
 void js_tick(JsCtx *c) {
-    if (!c) return;
+    if (!c || c->dead) return;
+    tick_one(c);
+    frames_scan(c);
+    for (JsCtx *k : std::vector<JsCtx *>(c->kids)) if (!k->dead) js_tick(k);
+}
+static void tick_one(JsCtx *c) {
     JS_ENTER(c);
     while (v8::platform::PumpMessageLoop(g_platform.get(), iso)) {}
     double now = now_ms();
@@ -375,7 +412,12 @@ void js_tick(JsCtx *c) {
     settle(c);
 }
 
-bool js_wants_frame(JsCtx *c) { return c && !c->rafs.empty(); }
+bool js_wants_frame(JsCtx *c) {
+    if (!c || c->dead) return false;
+    if (!c->rafs.empty()) return true;
+    for (JsCtx *k : c->kids) if (js_wants_frame(k)) return true;
+    return false;
+}
 
 static JsCtx *ctx_for(Node *n) {
     for (JsCtx *c : g_ctxs)

@@ -20,6 +20,9 @@ typedef struct JsHost {
     int (*history_len)(void *ud);
     void (*navigate_post)(void *ud, const char *url, const char *body, size_t len, const char *ctype);
     void (*sync)(void *ud, Document *d, bool layout);  /* flush style (and layout) before geometry/style queries */
+    /* nested browsing context for <iframe>: fill *child (its ud is the frame's host data) */
+    void (*frame_open)(void *ud, Node *iframe, Document *d, struct JsHost *child);
+    void (*frame_close)(void *child_ud);
 } JsHost;
 
 void js_global_init(const char *argv0);
@@ -39,6 +42,9 @@ double js_next_deadline(JsCtx *c);
 /* run due timers, animation frames and microtasks */
 void js_tick(JsCtx *c);
 bool js_wants_frame(JsCtx *c);
+/* the live child browsing context's document for an <iframe>, or NULL */
+Document *js_frame_doc(Node *iframe);
+JsCtx *js_frame_ctx(Node *iframe);
 
 #ifdef __cplusplus
 }
