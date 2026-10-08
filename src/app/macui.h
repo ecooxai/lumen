@@ -18,4 +18,10 @@ bool mac_prompt(const char *title, const char *init, char *out, size_t n);
 int mac_ws_menu(SDL_Window *w, float x, float y);
 /* Renders workspace icon `idx` tinted `rgb` into px*px premultiplied ARGB. */
 bool mac_icon_rgba(int idx, int px, uint32_t rgb, uint32_t *out);
+/* Renders SF Symbol `name` tinted `rgb` into px*px premultiplied ARGB. */
+bool mac_symbol_rgba(const char *name, int px, uint32_t rgb, uint32_t *out);
+enum { MENU_TAB_CPU_DEFAULT = 2000, MENU_TAB_CPU_NEVER, MENU_TAB_VCTL };
+#define MENU_TAB_CPU_LIM 2100   /* + percent */
+/* Per-tab menu (CPU limit mode 0 default / 1 never / 2 fixed `lim`%, video controls); returns MENU_TAB_* or 0. */
+int mac_tab_menu(SDL_Window *w, float x, float y, int mode, int lim, bool vctl, const char *deflabel);
 #endif

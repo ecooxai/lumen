@@ -95,9 +95,7 @@ int mac_ws_menu(SDL_Window *w, float x, float y) {
     return g_pick;
 }
 
-bool mac_icon_rgba(int idx, int px, uint32_t rgb, uint32_t *out) {
-    if (idx < 0 || idx >= MAC_NICONS) return false;
-    NSImage *im = icon_image(idx);
+static bool draw_rgba(NSImage *im, int px, uint32_t rgb, uint32_t *out) {
     if (!im) return false;
     CGColorSpaceRef cs = CGColorSpaceCreateDeviceRGB();
     CGContextRef ctx = CGBitmapContextCreate(out, (size_t)px, (size_t)px, 8, (size_t)px * 4, cs, kCGImageAlphaPremultipliedFirst | kCGBitmapByteOrder32Little);
@@ -112,4 +110,36 @@ bool mac_icon_rgba(int idx, int px, uint32_t rgb, uint32_t *out) {
     [NSGraphicsContext restoreGraphicsState];
     CGContextRelease(ctx);
     return true;
+}
+
+bool mac_icon_rgba(int idx, int px, uint32_t rgb, uint32_t *out) {
+    return idx >= 0 && idx < MAC_NICONS && draw_rgba(icon_image(idx), px, rgb, out);
+}
+
+bool mac_symbol_rgba(const char *name, int px, uint32_t rgb, uint32_t *out) {
+    NSImage *im = [NSImage imageWithSystemSymbolName:[NSString stringWithUTF8String:name] accessibilityDescription:nil];
+    im = [im imageWithSymbolConfiguration:[NSImageSymbolConfiguration configurationWithPointSize:px weight:NSFontWeightSemibold]];
+    return draw_rgba(im, px, rgb, out);
+}
+
+int mac_tab_menu(SDL_Window *w, float x, float y, int mode, int lim, bool vctl, const char *deflabel) {
+    NSWindow *win = (__bridge NSWindow *)SDL_GetPointerProperty(SDL_GetWindowProperties(w), SDL_PROP_WINDOW_COCOA_WINDOW_POINTER, NULL);
+    if (!win) return 0;
+    static LumenPick *pk; if (!pk) pk = [LumenPick new];
+    NSMenuItem *(^add)(NSMenu *, NSString *, int, bool) = ^(NSMenu *mm, NSString *t, int tag, bool on) {
+        NSMenuItem *it = [mm addItemWithTitle:t action:@selector(pick:) keyEquivalent:@""]; it.target = pk; it.tag = tag;
+        it.state = on ? NSControlStateValueOn : NSControlStateValueOff; return it;
+    };
+    NSMenu *m = [NSMenu new]; m.autoenablesItems = NO;
+    [m addItemWithTitle:@"CPU limit for this tab" action:nil keyEquivalent:@""].enabled = NO;
+    add(m, [NSString stringWithUTF8String:deflabel], MENU_TAB_CPU_DEFAULT, mode == 0);
+    add(m, @"Never limit", MENU_TAB_CPU_NEVER, mode == 1);
+    static const int P[3] = { 20, 40, 60 };
+    for (int i = 0; i < 3; i++) add(m, [NSString stringWithFormat:@"Limit to %d%%", P[i]], MENU_TAB_CPU_LIM + P[i], mode == 2 && lim == P[i]);
+    [m addItem:[NSMenuItem separatorItem]];
+    add(m, @"Always show video controls", MENU_TAB_VCTL, vctl);
+    g_pick = 0;
+    NSView *v = win.contentView;
+    [m popUpMenuPositioningItem:nil atLocation:(v.isFlipped ? NSMakePoint(x, y) : NSMakePoint(x, v.bounds.size.height - y)) inView:v];
+    return g_pick;
 }

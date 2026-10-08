@@ -31,6 +31,7 @@ void mp_pause(MediaPlayer *m);
 void mp_seek(MediaPlayer *m, double t);
 void mp_set_volume(MediaPlayer *m, float volume, bool muted);
 void mp_state(MediaPlayer *m, MpState *s);
+bool media_state_for(Node *el, MpState *s);   /* state of the player attached to <video>/<audio> el */
 
 /* 0 = no, 1 = maybe, 2 = probably */
 int media_can_play(const char *mime, bool mse);

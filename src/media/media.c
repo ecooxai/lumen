@@ -720,6 +720,16 @@ Image *media_frame_for(Node *el) {
     return im;
 }
 
+bool media_state_for(Node *el, MpState *s) {
+    if (!g_mu) return false;
+    MediaPlayer *m = NULL;
+    SDL_LockMutex(g_mu);
+    for (int i = 0; i < g_np; i++) if (g_pl[i]->node == el) { m = g_pl[i]; break; }
+    SDL_UnlockMutex(g_mu);
+    if (m) mp_state(m, s);
+    return m != NULL;
+}
+
 static bool has_param_over(const char *mime, const char *key, double lim) {
     const char *p = strstr(mime, key);
     return p && atof(p + strlen(key)) > lim;

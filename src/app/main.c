@@ -48,6 +48,44 @@ static int g_img_epoch;
 static Uint32 EV_LOADED, EV_NET, EV_MENU;
 static uint64_t load_gen;
 static bool g_lowmem;
+static int g_cpu_on = 1, g_cpu_pct = 80, g_cpu_secs = 60, g_cpu_lim = 40;
+static bool g_vctl;
+static char g_pref[1024];
+typedef struct { char *url, *title; } Link;
+#define MAX_BM 512
+#define MAX_HV 1000
+static Link g_bms[MAX_BM], g_hv[MAX_HV]; static int g_nbm, g_nhv;
+static void pref_path(char *out, size_t n, const char *f) { snprintf(out, n, "%s%s", g_pref, f); }
+static void settings_save(void) {
+    char p[1200]; pref_path(p, sizeof p, "settings.txt"); FILE *f = *g_pref ? fopen(p, "w") : NULL; if (!f) return;
+    fprintf(f, "offscreen_media_eviction=%d\ncpu_limit=%d\ncpu_pct=%d\ncpu_secs=%d\ncpu_lim=%d\nvideo_controls=%d\n", g_lowmem, g_cpu_on, g_cpu_pct, g_cpu_secs, g_cpu_lim, g_vctl);
+    fclose(f);
+}
+static void link_put(Link *v, int *n, int max, const char *url, const char *title) {
+    if (*n == max) { free(v[0].url); free(v[0].title); memmove(v, v + 1, sizeof *v * (size_t)(max - 1)); (*n)--; }
+    char *t = xstrdup(title && *title ? title : url); for (char *c = t; *c; c++) if (*c == '\t' || *c == '\n' || *c == '\r') *c = ' ';
+    v[*n].url = xstrdup(url); v[*n].title = t; (*n)++;
+}
+static void link_del(Link *v, int *n, int i) { free(v[i].url); free(v[i].title); memmove(v + i, v + i + 1, sizeof *v * (size_t)(*n - i - 1)); (*n)--; }
+static void links_save(const char *file, Link *v, int n) {
+    char p[1200]; pref_path(p, sizeof p, file); FILE *f = *g_pref ? fopen(p, "w") : NULL; if (!f) return;
+    for (int i = 0; i < n; i++) fprintf(f, "%s\t%s\n", v[i].url, v[i].title);
+    fclose(f);
+}
+static void links_load(const char *file, Link *v, int *n, int max) {
+    char p[1200]; pref_path(p, sizeof p, file); FILE *f = *g_pref ? fopen(p, "r") : NULL; if (!f) return;
+    char line[4096]; int total = 0;
+    while (fgets(line, sizeof line, f)) { line[strcspn(line, "\r\n")] = 0; char *tab = strchr(line, '\t'); if (!tab || tab == line) continue; *tab = 0; link_put(v, n, max, line, tab + 1); total++; }
+    fclose(f);
+    if (total > *n) links_save(file, v, *n);
+}
+static int bm_find(const char *url) { for (int i = 0; i < g_nbm; i++) if (!strcmp(g_bms[i].url, url)) return i; return -1; }
+static void hist_add(const char *url, const char *title) {
+    if (g_nhv && !strcmp(g_hv[g_nhv - 1].url, url)) return;
+    link_put(g_hv, &g_nhv, MAX_HV, url, title);
+    char p[1200]; pref_path(p, sizeof p, "history.txt"); FILE *f = *g_pref ? fopen(p, "a") : NULL;
+    if (f) { fprintf(f, "%s\t%s\n", g_hv[g_nhv - 1].url, g_hv[g_nhv - 1].title); fclose(f); }
+}
 static double g_full_paint; static bool g_in_layout;
 #define MAX_TABS 32
 static volatile uint64_t g_tab_gen[MAX_TABS];
@@ -82,27 +120,28 @@ static bool img_size(Node *n, float *w, float *h) {
     if (n->tag == A_iframe) return false;
     g_in_layout = true; Image *im = node_img(n); g_in_layout = false;
     if (!im) {
-        const char *s = n->tag == A_img && g_lowmem ? node_attr(n, "src") : NULL; char *u = s ? url_join(n->doc->url, s) : NULL;
+        const char *s = n->tag == A_img ? node_attr(n, "src") : NULL; char *u = s ? url_join(n->doc->url, s) : NULL;
         SDL_LockMutex(icache_mu); ImgSlot *sl = u ? hm_get(&icache, u) : NULL; bool ok = sl && sl->evicted; if (ok) { *w = sl->ew; *h = sl->eh; } SDL_UnlockMutex(icache_mu);
         free(u); return ok;
     }
     *w = image_css_w(im); *h = image_css_h(im); return true; }
 
-typedef struct { char *url; uint64_t gen; float vw, vh; char *body; size_t blen; char *ctype; } LoadReq;
+typedef struct { char *url; uint64_t gen; float vw, vh; char *body; size_t blen; char *ctype; char *html; } LoadReq;
 
 static int loader(void *arg) {
     LoadReq *rq = arg; double t0 = now_ms();
-    NetRequest *nr = net_request_new(rq->body ? "POST" : "GET", rq->url);
+    NetRequest *nr = rq->html ? NULL : net_request_new(rq->body ? "POST" : "GET", rq->url);
     if (rq->body) {
         nr->body = rq->body; nr->body_len = rq->blen; rq->body = NULL;
         headers_set(&nr->headers, "Content-Type", rq->ctype && *rq->ctype ? rq->ctype : "application/x-www-form-urlencoded");
     }
-    NetResponse *r = net_fetch_sync(nr);
+    NetResponse *r = rq->html ? NULL : net_fetch_sync(nr);
     Page *p = xcalloc(1, sizeof *p); p->gen = rq->gen;
     const char *body = r && r->body ? r->body : "";
     size_t blen = r && r->body ? r->body_len : 0;
     char *errbuf = NULL;
-    if (!r || r->status == 0) { errbuf = xmalloc(512); snprintf(errbuf, 512, "<title>Error</title><body style='font:15px system-ui;padding:40px;color:#444'><h2>Can't open this page</h2><p>%s</p>", rq->url); body = errbuf; blen = strlen(errbuf); }
+    if (rq->html) { body = rq->html; blen = strlen(body); }
+    else if (!r || r->status == 0) { errbuf = xmalloc(512); snprintf(errbuf, 512, "<title>Error</title><body style='font:15px system-ui;padding:40px;color:#444'><h2>Can't open this page</h2><p>%s</p>", rq->url); body = errbuf; blen = strlen(errbuf); }
     p->url = xstrdup(r && r->url ? r->url : rq->url);
     p->d = doc_new(p->url);
     html_parse(p->d, body, blen);
@@ -139,7 +178,7 @@ static int loader(void *arg) {
     p->seen_ver = p->d->dom_version;
     p->load_ms = now_ms() - t0;
     if (r) net_response_free(r);
-    free(errbuf); free(rq->url); free(rq->body); free(rq->ctype); free(rq);
+    free(errbuf); free(rq->url); free(rq->body); free(rq->ctype); free(rq->html); free(rq);
     SDL_Event ev; SDL_zero(ev); ev.type = EV_LOADED; ev.user.data1 = p; SDL_PushEvent(&ev);
     return 0;
 }
@@ -158,7 +197,7 @@ static void page_free(Page *p) {
 }
 
 typedef struct Tab { Page *cur; bool loading, relayout; char *hist[256]; uint64_t hgen[256]; int nhist, hpos; char url[2048]; float sy; uint64_t lgen; int ws;
-    double cpu_ms, media_ms0, budget, bud_t, unlimit_until; float pct, cpuhist[60]; int ncpu, cpui; bool limited, info; } Tab;
+    double cpu_ms, media_ms0, budget, bud_t, unlimit_until; float pct, lim, cpuhist[600]; int ncpu, cpui, cpumode, vctl, vap; uint64_t vgen; bool limited, info; } Tab;
 typedef struct App {
     SDL_Window *win; SDL_MetalView mview; Gpu *gpu;
     int pw, ph; float scale, vw, vh;
@@ -166,6 +205,7 @@ typedef struct App {
     Tab *t, *tabs[MAX_TABS]; int ntabs, ti;
     char wsname[16][64]; Tab *wslast[16]; int nws, wi; float side;
     int wsicon[16]; Image *icimg[16][2];
+    Image *sym[7][4]; bool vbars;
     int tip_tab; double tip_until;     /* CPU-limit dot tooltip pinned by a click */
     bool editing; int sel_all;
     double caret_t;
@@ -177,10 +217,14 @@ typedef struct App {
 static void publish_gens(App *a) { for (int i = 0; i < MAX_TABS; i++) g_tab_gen[i] = i < a->ntabs ? a->tabs[i]->lgen : 0; }
 static Tab *tab_new(App *a) {
     if (a->ntabs == MAX_TABS) return NULL;
-    Tab *t = xcalloc(1, sizeof *t); t->hpos = -1; t->ws = a->wi; a->tabs[a->ntabs++] = t;
+    Tab *t = xcalloc(1, sizeof *t); t->hpos = -1; t->ws = a->wi; t->vctl = -1; t->lim = 0.4f; a->tabs[a->ntabs++] = t;
     if (!a->t) a->t = t;
     return t;
 }
+static bool is_youtube(const char *u) { const char *h = strstr(u, "://"); if (!h) return false; h += 3; size_t n = strcspn(h, "/?#:"); return n >= 11 && !strncmp(h + n - 11, "youtube.com", 11); }
+static bool vctl_on(const Tab *t) { return t->vctl >= 0 ? t->vctl : g_vctl; }
+static bool video_bars(App *a, DisplayList *dl);
+static void tab_unlimit(Tab *t) { t->limited = t->info = false; t->ncpu = t->cpui = 0; if (t->cur) media_set_limit(t->cur->d, 0); }
 #define TAB_CALL(ud, expr) do { Tab *o_ = g_app->t; g_app->t = (Tab *)(ud); expr; g_app->t = o_; } while (0)
 
 
@@ -195,8 +239,103 @@ static char *normalize_url(const char *in) {
     *w = 0; return o;
 }
 
+static bool qparam(const char *q, const char *k, char *out, size_t n) {
+    size_t kl = strlen(k);
+    for (const char *p = q; p && *p; p = strchr(p, '&') ? strchr(p, '&') + 1 : NULL)
+        if (!strncmp(p, k, kl) && p[kl] == '=') { size_t l = strcspn(p + kl + 1, "&#"); if (l >= n) l = n - 1; memcpy(out, p + kl + 1, l); out[l] = 0; return true; }
+    return false;
+}
+static void sb_esc(SB *b, const char *s) {
+    for (; *s; s++) switch (*s) {
+    case '<': sb_puts(b, "&lt;"); break; case '>': sb_puts(b, "&gt;"); break; case '&': sb_puts(b, "&amp;"); break;
+    case '"': sb_puts(b, "&quot;"); break; case '\'': sb_puts(b, "&#39;"); break; default: sb_putc(b, *s);
+    }
+}
+static void ip_toggle(SB *b, const char *key, bool on) { sb_printf(b, "<a class=\"btn%s\" href=\"lumen://set?s=settings&%s=%d\">%s</a>", on ? " on" : "", key, !on, on ? "On" : "Off"); }
+static char *internal_page(const char *u) {   /* lumen://newtab?s=bookmarks|history|settings */
+    const char *q = strchr(u, '?'); char sec[16] = "bookmarks"; if (q) qparam(q + 1, "s", sec, sizeof sec);
+    if (strcmp(sec, "history") && strcmp(sec, "settings")) strcpy(sec, "bookmarks");
+    SB b; sb_init(&b);
+    sb_puts(&b, "<!doctype html><html><head><meta charset=utf-8><title>New Tab</title><style>"
+        "body{margin:0;font:14px -apple-system,system-ui,sans-serif;color:#202124;background:#f6f7f9;display:flex;min-height:100vh}"
+        "nav{width:190px;flex:none;min-height:100vh;background:#fff;border-right:1px solid #e3e5e8;padding:24px 12px;box-sizing:border-box}"
+        "nav h1{font-size:20px;font-weight:600;margin:0 12px 20px}"
+        "nav a{display:block;padding:9px 12px;margin:2px 0;border-radius:8px;color:#3c4043;text-decoration:none}"
+        "nav a.on{background:#e8f0fe;color:#1967d2;font-weight:600}"
+        "main{flex:1;padding:32px 40px;max-width:820px}"
+        "h2{font-size:22px;font-weight:600;margin:0 0 18px}"
+        ".card{background:#fff;border:1px solid #e3e5e8;border-radius:12px;padding:4px 18px;margin-bottom:16px}"
+        ".row{display:flex;align-items:center;padding:12px 0;border-bottom:1px solid #f0f1f3}"
+        ".row:last-child{border-bottom:0}"
+        ".grow{flex:1;min-width:0;margin-right:12px}"
+        ".t{font-weight:500;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}"
+        ".u{color:#5f6368;font-size:12px;margin-top:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}"
+        "a.l{color:inherit;text-decoration:none;display:block}"
+        ".x{color:#80868b;text-decoration:none;padding:4px 10px;border-radius:6px;font-size:18px}"
+        ".btn{display:inline-block;padding:6px 16px;border-radius:16px;background:#e8eaed;color:#202124;text-decoration:none;font:500 14px -apple-system,system-ui,sans-serif;border:0}"
+        ".btn.on{background:#1a73e8;color:#fff}"
+        ".note{background:#e8f0fe;color:#174ea6;border-radius:8px;padding:10px 12px;margin:0 0 14px;line-height:1.45}"
+        ".sub{color:#5f6368;font-size:13px;margin-top:3px;line-height:1.4}"
+        "input{width:48px;padding:4px 6px;border:1px solid #dadce0;border-radius:6px;font:14px -apple-system,system-ui,sans-serif;margin:0 4px}"
+        ".empty{color:#5f6368;padding:18px 0}"
+        "</style></head><body><nav><h1>Lumen</h1>");
+    static const char *S[3][2] = { { "bookmarks", "Bookmarks" }, { "history", "History" }, { "settings", "Settings" } };
+    for (int i = 0; i < 3; i++) sb_printf(&b, "<a href=\"lumen://newtab?s=%s\"%s>%s</a>", S[i][0], strcmp(sec, S[i][0]) ? "" : " class=on", S[i][1]);
+    sb_puts(&b, "</nav><main>");
+    if (!strcmp(sec, "settings")) {
+        sb_puts(&b, "<h2>Settings</h2><div class=card><div class=row><div class=grow><div class=t>Lite mode</div><div class=sub>Uses less memory on heavy pages such as YouTube.</div></div>");
+        ip_toggle(&b, "lite", g_lowmem);
+        sb_puts(&b, "</div>");
+        if (g_lowmem) sb_puts(&b, "<p class=note>Lite mode is on. Images, video pictures and other media outside the visible part of a page are removed from memory; only the text and layout are kept. They load again when you scroll back to them, so they may appear a moment later. Audio keeps playing.</p>");
+        sb_puts(&b, "</div><div class=card><div class=row><div class=grow><div class=t>CPU limit</div><div class=sub>Slows down a tab that keeps the processor busy for a long time.</div></div>");
+        ip_toggle(&b, "cpu", g_cpu_on);
+        sb_printf(&b, "</div><div class=row><div class=grow>When a tab uses more than <input id=n value=%d>%% CPU for <input id=m value=%d> seconds, limit it to <input id=t value=%d>%%</div><button class=btn onclick=\"save()\">Save</button></div>"
+            "<div class=sub style=\"padding:0 0 12px\">To set the limit for one tab only, click the tab, then click it again.</div></div>", g_cpu_pct, g_cpu_secs, g_cpu_lim);
+        sb_puts(&b, "<div class=card><div class=row><div class=grow><div class=t>Always show video controls</div><div class=sub>Keeps the play controls visible under every video, including YouTube, so they never hide. To change it for one tab only, click the tab, then click it again.</div></div>");
+        ip_toggle(&b, "vctl", g_vctl);
+        sb_puts(&b, "</div></div><script>function save(){var g=function(i){return parseInt(document.getElementById(i).value,10)||0};location.href='lumen://set?s=settings&cpu_pct='+g('n')+'&cpu_secs='+g('m')+'&cpu_lim='+g('t')}</script>");
+    } else {
+        bool bm = sec[0] == 'b'; Link *v = bm ? g_bms : g_hv; int n = bm ? g_nbm : g_nhv;
+        sb_printf(&b, "<h2>%s</h2>", bm ? "Bookmarks" : "History");
+        if (!bm && n) sb_puts(&b, "<p><a class=btn href=\"lumen://set?s=history&clearhist=1\">Clear history</a></p>");
+        sb_puts(&b, "<div class=card>");
+        if (!n) sb_printf(&b, "<div class=empty>%s</div>", bm ? "No bookmarks yet. Click the star next to the address bar to bookmark a page." : "No pages visited yet.");
+        for (int i = n - 1, k = 0; i >= 0 && k < 300; i--, k++) {
+            sb_puts(&b, "<div class=row><a class=\"l grow\" href=\""); sb_esc(&b, v[i].url); sb_puts(&b, "\"><div class=t>"); sb_esc(&b, v[i].title);
+            sb_puts(&b, "</div><div class=u>"); sb_esc(&b, v[i].url); sb_puts(&b, "</div></a>");
+            if (bm) sb_printf(&b, "<a class=x title=Remove href=\"lumen://set?s=bookmarks&unbm=%d\">\xC3\x97</a>", i);
+            sb_puts(&b, "</div>");
+        }
+        sb_puts(&b, "</div>");
+    }
+    sb_puts(&b, "</main></body></html>");
+    return sb_take(&b);
+}
+static void apply_set(App *a, const char *q) {
+    char v[32];
+    if (qparam(q, "lite", v, sizeof v)) { g_lowmem = atoi(v) != 0; media_lowmem = g_lowmem; }
+    if (qparam(q, "cpu", v, sizeof v)) g_cpu_on = atoi(v) != 0;
+    if (qparam(q, "vctl", v, sizeof v)) g_vctl = atoi(v) != 0;
+    if (qparam(q, "cpu_pct", v, sizeof v)) g_cpu_pct = LCLAMP(atoi(v), 10, 100);
+    if (qparam(q, "cpu_secs", v, sizeof v)) g_cpu_secs = LCLAMP(atoi(v), 5, 600);
+    if (qparam(q, "cpu_lim", v, sizeof v)) g_cpu_lim = LCLAMP(atoi(v), 5, 95);
+    for (int i = 0; i < a->ntabs; i++) { Tab *t = a->tabs[i]; t->ncpu = t->cpui = 0; if (!g_cpu_on && !t->cpumode && t->limited) tab_unlimit(t); }
+    if (qparam(q, "unbm", v, sizeof v)) { int i = atoi(v); if (i >= 0 && i < g_nbm) { link_del(g_bms, &g_nbm, i); links_save("bookmarks.txt", g_bms, g_nbm); } }
+    if (qparam(q, "clearhist", v, sizeof v)) { while (g_nhv) link_del(g_hv, &g_nhv, g_nhv - 1); links_save("history.txt", g_hv, 0); }
+    settings_save();
+}
+
 static void navigate_ex(App *a, const char *url, bool push, const char *body, size_t blen, const char *ctype) {
-    char *u = normalize_url(url);
+    char *u = normalize_url(url), *html = NULL;
+    if (!strncmp(u, "lumen://", 8)) {
+        if (!strncmp(u, "lumen://set?", 12)) {   /* only Lumen's own pages may change settings */
+            if (strncmp(a->t->url, "lumen://", 8)) { free(u); return; }
+            apply_set(a, u + 12);
+            char sec[16] = "settings"; qparam(u + 12, "s", sec, sizeof sec);
+            free(u); u = xmalloc(64); snprintf(u, 64, "lumen://newtab?s=%s", sec); push = false;
+        }
+        html = internal_page(u);
+    }
     if (push) {
         for (int i = a->t->hpos + 1; i < a->t->nhist; i++) free(a->t->hist[i]);
         a->t->nhist = a->t->hpos + 1;
@@ -205,7 +344,7 @@ static void navigate_ex(App *a, const char *url, bool push, const char *body, si
     }
     snprintf(a->t->url, sizeof a->t->url, "%s", u);
     a->editing = false; a->t->loading = true; a->dirty = true;
-    LoadReq *rq = xcalloc(1, sizeof *rq); rq->url = u; rq->gen = ++load_gen; rq->vw = a->vw - a->side; rq->vh = a->vh - BAR; a->t->lgen = rq->gen; publish_gens(a);
+    LoadReq *rq = xcalloc(1, sizeof *rq); rq->url = u; rq->html = html; rq->gen = ++load_gen; rq->vw = a->vw - a->side; rq->vh = a->vh - BAR; a->t->lgen = rq->gen; publish_gens(a);
     if (push) a->t->hgen[a->t->hpos] = rq->gen;
     if (body) { rq->body = xmalloc(blen + 1); memcpy(rq->body, body, blen); rq->body[blen] = 0; rq->blen = blen; rq->ctype = xstrdup(ctype ? ctype : ""); }
     SDL_Thread *t = SDL_CreateThread(loader, "loader", rq); SDL_DetachThread(t);
@@ -232,7 +371,7 @@ static float push_text(DisplayList *dl, Font *f, const char *s, float x, float b
     return w;
 }
 
-enum { HB_NONE, HB_BACK, HB_FWD, HB_RELOAD, HB_URL, HB_NEWTAB, HB_WSNEW, HB_TAB = 100, HB_TABX = 200, HB_WS = 300, HB_INFO = 400, HB_TABDOT = 500 };
+enum { HB_NONE, HB_BACK, HB_FWD, HB_RELOAD, HB_URL, HB_NEWTAB, HB_WSNEW, HB_STAR, HB_TAB = 100, HB_TABX = 200, HB_WS = 300, HB_INFO = 400, HB_TABDOT = 500 };
 static void info_btn(App *a, int k, float *x, float *w) {
     static const float W[4] = { 70, 76, 82, 28 }; float r = a->vw - 12;
     for (int i = 3; i >= k; i--) r -= W[i] + (i < 3 ? 6 : 0);
@@ -271,10 +410,27 @@ static int bar_hit(App *a, float x, float y) {
     if (y > BAR) return HB_NONE;
     if (y >= TABH + TB) { for (int k = 0; k < 4; k++) { float bx, bw; info_btn(a, k, &bx, &bw); if (x >= bx && x < bx + bw) return HB_INFO + k; } return HB_NONE; }
     x -= a->side;
-    if (x < 40) return HB_BACK; if (x < 72) return HB_FWD; if (x < 104) return HB_RELOAD;
+    if (x < 40) return HB_BACK; if (x < 72) return HB_FWD; if (x < 104) return HB_RELOAD; if (x < 136) return HB_STAR;
     return HB_URL;
 }
 
+static void push_img(DisplayList *dl, Image *im, float x, float y, float w, float h) { DItem it; memset(&it, 0, sizeof it); it.op = DO_IMAGE; it.x = x; it.y = y; it.w = w; it.h = h; it.img = im; it.alpha = 1; vec_push(dl->items, it); }
+static Image *sym_icon(App *a, int k, int c) {   /* k: 0 back 1 forward 2 reload 3 star 4 star.fill 5 play 6 pause; c: 0 dark 1 grey 2 blue 3 white */
+#ifdef __APPLE__
+    static const char *N[7] = { "chevron.left", "chevron.right", "arrow.clockwise", "star", "star.fill", "play.fill", "pause.fill" };
+    static const uint32_t C[4] = { 0x3c4043, 0xbdc1c6, 0x1a73e8, 0xffffff };
+    Image **slot = &a->sym[k][c];
+    if (!*slot) {
+        int px = (int)(16 * a->scale + 0.5f); Image *im = xcalloc(1, sizeof *im);
+        im->w = im->h = px; im->refs = 1; im->scale = a->scale; im->px = xcalloc((size_t)px * (size_t)px, 4);
+        if (!mac_symbol_rgba(N[k], px, C[c], im->px)) { free(im->px); free(im); return NULL; }
+        *slot = im;
+    }
+    return *slot;
+#else
+    (void)a; (void)k; (void)c; return NULL;
+#endif
+}
 static void draw_icon(DisplayList *dl, int kind, float cx, float cy, Color c) {
     if (kind == HB_BACK || kind == HB_FWD) {
         float d = kind == HB_BACK ? -1 : 1;
@@ -289,7 +445,7 @@ static void chrome_tip(App *a) {   /* tooltip for a tab's CPU-limit dot (hover o
     int i = a->hover >= HB_TABDOT ? a->hover - HB_TABDOT : a->tip_until ? a->tip_tab : -1;
     if (i < 0 || i >= a->ntabs || !a->tabs[i]->limited || a->tabs[i]->ws != a->wi) return;
     int vt[MAX_TABS], n = ws_tabs(a, a->wi, vt), k = 0; while (k < n && vt[k] != i) k++;
-    const char *msg = "CPU use of this tab is limited to 40%";
+    char msg[64]; snprintf(msg, sizeof msg, "CPU use of this tab is limited to %d%%", (int)(a->tabs[i]->lim * 100 + 0.5f));
     float tw = tab_w(a), w = text_width(a->ui, msg, strlen(msg), 0) + 20, x = TLW + 6 + k * tw + 15 - w / 2, y = TABH + 3;
     if (x + w > a->vw - 6) x = a->vw - 6 - w;
     if (x < 6) x = 6;
@@ -342,7 +498,10 @@ static void build_chrome(App *a) {
         float y0 = TABH + TB, rb = (a->ui->ascent - a->ui->descent) / 2, cy = y0 + g_info_h / 2 + rb;
         push_rect(dl, a->side, y0, a->vw - a->side, g_info_h, 0, RGBA(254, 247, 224, 255));
         push_rect(dl, a->side, y0 + g_info_h - 1, a->vw - a->side, 1, 0, RGBA(230, 214, 160, 255));
-        push_text(dl, a->ui, "This tab used over 80% CPU for 60 s, so Lumen limited it to 40%. Remove the limit for:", a->side + 14, cy, a->vw - a->side - 310, RGBA(60, 50, 20, 255));
+        char msg[200]; int lp = (int)(a->t->lim * 100 + 0.5f);
+        if (a->t->cpumode == 2) snprintf(msg, sizeof msg, "You limited this tab to %d%% CPU. Remove the limit for:", lp);
+        else snprintf(msg, sizeof msg, "This tab used over %d%% CPU for %d s, so Lumen limited it to %d%%. Remove the limit for:", g_cpu_pct, g_cpu_secs, lp);
+        push_text(dl, a->ui, msg, a->side + 14, cy, a->vw - a->side - 310, RGBA(60, 50, 20, 255));
         static const char *lb[4] = { "1 hour", "4 hours", "10 hours", "\xC3\x97" };
         for (int k = 0; k < 4; k++) {
             float bx, bwid; info_btn(a, k, &bx, &bwid);
@@ -360,9 +519,15 @@ static void build_chrome(App *a) {
         float cx = 22.f + i * 32.f;
         if (a->hover == hk[i]) push_rect(dl, cx - 13, TB / 2 - 13, 26, 26, 13, RGBA(232, 232, 232, 255));
         bool en = hk[i] == HB_BACK ? a->t->hpos > 0 : hk[i] == HB_FWD ? a->t->hpos < a->t->nhist - 1 : true;
-        draw_icon(dl, hk[i], cx, TB / 2, en ? on : off);
+        Image *si = sym_icon(a, i, en ? 0 : 1); if (si) push_img(dl, si, cx - 8, TB / 2 - 8, 16, 16); else draw_icon(dl, hk[i], cx, TB / 2, en ? on : off);
     }
-    float ux = 112, uw = (a->vw - a->side) - ux - 12;
+    {
+        bool bmd = !a->editing && bm_find(a->t->url) >= 0; float cx = 22.f + 3 * 32.f;
+        if (a->hover == HB_STAR) push_rect(dl, cx - 13, TB / 2 - 13, 26, 26, 13, RGBA(232, 232, 232, 255));
+        Image *si = sym_icon(a, bmd ? 4 : 3, bmd ? 2 : 0);
+        if (si) push_img(dl, si, cx - 8, TB / 2 - 8, 16, 16); else push_text(dl, a->ui, bmd ? "\xE2\x98\x85" : "\xE2\x98\x86", cx - 7, TB / 2 + (a->ui->ascent - a->ui->descent) / 2, 16, on);
+    }
+    float ux = 144, uw = (a->vw - a->side) - ux - 12;
     push_rect(dl, ux, 7, uw, TB - 14, (TB - 14) / 2, a->editing ? RGBA(255, 255, 255, 255) : RGBA(238, 238, 238, 255));
     if (a->editing) {
         DItem it; memset(&it, 0, sizeof it); it.op = DO_BORDER; it.x = ux; it.y = 7; it.w = uw; it.h = TB - 14;
@@ -404,7 +569,7 @@ static void render(App *a) {
         }
         a->t->sy = LCLAMP(a->t->sy, 0, max_scroll(a));
         if (a->t->sy != a->last_sy && part) { part = false; why = 5; }
-        g_full_paint = (double)SDL_GetTicks(); dl_clear(&a->pdl); dl_build(&a->pdl, a->t->cur->L, 0, a->t->sy, a->vw - a->side, a->vh - BAR);
+        g_full_paint = (double)SDL_GetTicks(); dl_clear(&a->pdl); dl_build(&a->pdl, a->t->cur->L, 0, a->t->sy, a->vw - a->side, a->vh - BAR); a->vbars = video_bars(a, &a->pdl);
         const DItem *vit = NULL; int nv = 0;
         for (int i = 0; i < a->pdl.items.n; i++) {
             const DItem *it = &a->pdl.items.v[i];
@@ -753,6 +918,8 @@ static void page_start_js(App *a, Page *p) {
     double t0 = now_ms();
     sync_sheets(p, true);
     p->js = js_new(p->d, &h);
+    js_eval(p->js, "document.addEventListener('lumenmediactl',function(e){var v=e.target;if(!(v instanceof HTMLMediaElement))return;e.stopImmediatePropagation();"
+        "if(e.key==='toggle'){if(v.paused)v.play();else v.pause()}else if(e.key.indexOf('seek:')===0&&v.duration>0)v.currentTime=v.duration*parseFloat(e.key.slice(5))},true)", "lumen:ctl");
     const char *pre = getenv("LUMEN_PRE_FILE");
     FILE *pf = pre ? fopen(pre, "rb") : NULL;
     if (pf) {
@@ -843,9 +1010,63 @@ static void submit_form(App *a, Node *ctl) {
     char *dest = sb_take(&full); navigate(a, dest, true); free(dest);
 }
 
+static void page_move(App *a, float x, float y) {   /* pointer moves for page scripts (e.g. YouTube shows its controls on mousemove) */
+    static double last; static Node *prev; double tn = now_ms();
+    Page *p = a->t->cur; if (!p || !p->js || !p->L || tn - last < 30) return;
+    last = tn;
+    Box *b = layout_hit(p->L, x, y + a->t->sy); Node *n = b ? b->node : NULL;
+    while (n && n->type != NODE_ELEMENT) n = n->parent;
+    if (!n) return;
+    if (n != prev) { prev = n; js_dispatch(p->js, n, "pointerover", "MouseEvent", true, true, x, y, 0, NULL); js_dispatch(p->js, n, "mouseover", "MouseEvent", true, true, x, y, 0, NULL); }
+    js_dispatch(p->js, n, "pointermove", "MouseEvent", true, true, x, y, 0, NULL);
+    js_dispatch(p->js, n, "mousemove", "MouseEvent", true, true, x, y, 0, NULL);
+}
+#define VBH 34.f
+static bool vbar_on(App *a, Node *n) { return n->type == NODE_ELEMENT && n->tag == A_video && n->box && n->box->w >= 120 && (node_attr(n, "controls") || (vctl_on(a->t) && !is_youtube(a->t->url))); }
+static void fmt_t(char *o, size_t n, double s) { int t = s >= 0 && s < 1e7 ? (int)s : 0; if (t >= 3600) snprintf(o, n, "%d:%02d:%02d", t / 3600, t / 60 % 60, t % 60); else snprintf(o, n, "%d:%02d", t / 60, t % 60); }
+static void vbar_layout(App *a, const Box *b, const MpState *s, char *tm, size_t n, float *tx0, float *tx1) {
+    char c[16], d[16]; fmt_t(c, sizeof c, s->time); fmt_t(d, sizeof d, s->duration); snprintf(tm, n, "%s / %s", c, d);
+    *tx0 = b->x + 44; *tx1 = b->x + b->w - text_width(a->ui, tm, strlen(tm), 0) - 26;
+}
+static bool video_bars(App *a, DisplayList *dl) {   /* control bar under each <video controls> (or every video when "always show video controls" is on) */
+    bool playing = false; Document *d = a->t->cur->d; float rb = (a->ui->ascent - a->ui->descent) / 2;
+    for (Node *n = d->node.first; n; n = node_next_in_tree(n, &d->node)) {
+        if (!vbar_on(a, n)) continue;
+        Box *b = n->box; float y = b->y + b->h - a->t->sy;
+        if (y < -VBH || y > a->vh) continue;
+        MpState s; memset(&s, 0, sizeof s); if (!media_state_for(n, &s)) s.paused = true;
+        playing |= !s.paused;
+        char tm[48]; float tx0, tx1; vbar_layout(a, b, &s, tm, sizeof tm, &tx0, &tx1);
+        push_rect(dl, b->x, y, b->w, VBH, 0, RGBA(32, 33, 36, 240));
+        Image *ic = sym_icon(a, s.paused ? 5 : 6, 3); if (ic) push_img(dl, ic, b->x + 14, y + (VBH - 16) / 2, 16, 16);
+        float f = s.duration > 0 ? LCLAMP(s.time / s.duration, 0, 1) : 0, cy = y + VBH / 2;
+        push_rect(dl, tx0, cy - 2, tx1 - tx0, 4, 2, RGBA(255, 255, 255, 90));
+        push_rect(dl, tx0, cy - 2, (tx1 - tx0) * f, 4, 2, RGBA(255, 48, 48, 255));
+        push_rect(dl, tx0 + (tx1 - tx0) * f - 6, cy - 6, 12, 12, 6, RGBA(255, 255, 255, 255));
+        push_text(dl, a->ui, tm, tx1 + 14, cy + rb, b->x + b->w - tx1, RGBA(255, 255, 255, 255));
+    }
+    return playing;
+}
+static bool vbar_click(App *a, float x, float y) {   /* document coordinates */
+    Page *p = a->t->cur; if (!p->js) return false;
+    for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) {
+        if (!vbar_on(a, n)) continue;
+        Box *b = n->box; float by = b->y + b->h;
+        if (x < b->x || x >= b->x + b->w || y < by || y >= by + VBH) continue;
+        MpState s; memset(&s, 0, sizeof s); bool ok = media_state_for(n, &s);
+        char tm[48], key[32] = "toggle"; float tx0, tx1; vbar_layout(a, b, &s, tm, sizeof tm, &tx0, &tx1);
+        if (ok && s.duration > 0 && x >= tx0 - 8 && x <= tx1 + 8) snprintf(key, sizeof key, "seek:%.4f", LCLAMP((x - tx0) / (tx1 - tx0), 0, 1));
+        else if (x >= b->x + 44) return true;
+        js_dispatch(p->js, n, "lumenmediactl", "KeyboardEvent", false, false, 0, 0, 0, key);
+        a->dirty = true; a->vonly = false;
+        return true;
+    }
+    return false;
+}
 static void click_page(App *a, float x, float y) {
     x -= a->side;
     if (!a->t->cur || !a->t->cur->L) return;
+    if (vbar_click(a, x, y - BAR + a->t->sy)) return;
     Box *b = layout_hit(a->t->cur->L, x, y - BAR + a->t->sy);
     Node *t = b ? b->node : NULL;
     if (getenv("LUMEN_DEBUG_CLICK")) {
@@ -911,6 +1132,7 @@ static void tab_select(App *a, int i) {
 static void tab_open(App *a) {
     if (!tab_new(a)) return;
     tab_select(a, a->ntabs - 1);
+    navigate(a, "lumen://newtab", true);
     a->editing = true; a->sel_all = 1; a->t->url[0] = 0; SDL_StartTextInput(a->win);
 }
 static void tab_free(Tab *t) { if (t->cur) page_free(t->cur); for (int k = 0; k < t->nhist; k++) free(t->hist[k]); free(t); }
@@ -981,28 +1203,55 @@ static void menu_cmd(App *a, int c) {
 }
 static void info_click(App *a, int k) {
     Tab *t = a->t;
-    if (k < 3) { static const int H[3] = { 1, 4, 10 }; t->unlimit_until = (double)time(NULL) + H[k] * 3600.0; t->limited = false; t->ncpu = 0; if (t->cur) media_set_limit(t->cur->d, 0); }
+    if (k < 3) { static const int H[3] = { 1, 4, 10 }; t->unlimit_until = (double)time(NULL) + H[k] * 3600.0; t->limited = false; t->ncpu = t->cpui = 0; t->cpumode = 0; if (t->cur) media_set_limit(t->cur->d, 0); }
     t->info = false; a->dirty = true; a->vonly = false;
 }
-static void cpu_monitor(App *a) {   /* a tab over 80% of a core for 60 s is limited to 40% until the user lifts it */
+static const char YT_VCTL[] = "(function(on){var s=document.getElementById('__lumen_vctl');if(on&&!s){s=document.createElement('style');s.id='__lumen_vctl';"
+    "s.textContent='.ytp-autohide .ytp-chrome-bottom,.ytp-autohide .ytp-gradient-bottom{opacity:1!important;visibility:visible!important}';"
+    "(document.head||document.documentElement).appendChild(s)}else if(!on&&s)s.remove()})(%d)";
+static void cpu_monitor(App *a) {   /* a tab averaging over g_cpu_pct% of a core for g_cpu_secs is limited to g_cpu_lim% until the user lifts it */
     static double last; double now = now_ms();
     if (!last) { last = now; return; }
     double dt = now - last; if (dt < 1000) return; last = now;
     for (int i = 0; i < a->ntabs; i++) {
         Tab *t = a->tabs[i];
+        if (t->cur && t->cur->js && is_youtube(t->cur->url) && (t->vgen != t->cur->gen || t->vap != vctl_on(t))) {
+            char js[600]; t->vgen = t->cur->gen; t->vap = vctl_on(t); snprintf(js, sizeof js, YT_VCTL, t->vap);
+            TAB_CALL(t, js_eval(t->cur->js, js, "lumen:vctl"));
+        }
         double mc = t->cur ? media_cpu_ms(t->cur->d) : 0, used = t->cpu_ms + LMAX(0, mc - t->media_ms0);
         t->media_ms0 = mc; t->cpu_ms = 0; t->pct = (float)(used / dt);
-        if (t->limited) { if (t->cur) media_set_limit(t->cur->d, 0.4f); continue; }
-        if ((double)time(NULL) < t->unlimit_until) continue;
-        t->cpuhist[t->cpui] = t->pct; t->cpui = (t->cpui + 1) % 60; if (t->ncpu < 60) t->ncpu++;
+        if (t->limited) { if (t->cur) media_set_limit(t->cur->d, t->lim); continue; }
+        if (!g_cpu_on || t->cpumode || (double)time(NULL) < t->unlimit_until) continue;
+        int win = g_cpu_secs;
+        t->cpuhist[t->cpui] = t->pct; t->cpui = (t->cpui + 1) % win; if (t->ncpu < win) t->ncpu++;
         float sum = 0; for (int k = 0; k < t->ncpu; k++) sum += t->cpuhist[k];
-        if (t->ncpu == 60 && sum / 60 > 0.8f) {
-            t->limited = t->info = true; t->budget = 0; t->bud_t = now;
-            if (t->cur) media_set_limit(t->cur->d, 0.4f);
-            fprintf(stderr, "lumen: tab %d limited to 40%% CPU (was %.0f%%)\n", i, t->pct * 100);
+        if (t->ncpu == win && sum / win > g_cpu_pct / 100.f) {
+            t->limited = t->info = true; t->lim = g_cpu_lim / 100.f; t->budget = 0; t->bud_t = now;
+            if (t->cur) media_set_limit(t->cur->d, t->lim);
+            fprintf(stderr, "lumen: tab %d limited to %d%% CPU (was %.0f%%)\n", i, g_cpu_lim, t->pct * 100);
         }
     }
     if (getenv("LUMEN_CPU_DEBUG")) for (int i = 0; i < a->ntabs; i++) fprintf(stderr, "lumen-cpu: tab %d %.0f%%%s\n", i, a->tabs[i]->pct * 100, a->tabs[i]->limited ? " limited" : "");
+}
+static void bm_toggle(App *a) {
+    if (!a->t->cur || !*a->t->url || !strncmp(a->t->url, "lumen:", 6)) return;
+    int i = bm_find(a->t->url);
+    if (i >= 0) link_del(g_bms, &g_nbm, i); else link_put(g_bms, &g_nbm, MAX_BM, a->t->url, a->t->cur->d->title);
+    links_save("bookmarks.txt", g_bms, g_nbm);
+}
+static void tab_popup(App *a, int i, float x, float y) {
+#ifdef __APPLE__
+    Tab *t = a->tabs[i]; char def[96];
+    if (g_cpu_on) snprintf(def, sizeof def, "Default (over %d%% for %d s \xE2\x86\x92 %d%%)", g_cpu_pct, g_cpu_secs, g_cpu_lim); else snprintf(def, sizeof def, "Default (limit off)");
+    int c = mac_tab_menu(a->win, x, y, t->cpumode, (int)(t->lim * 100 + 0.5f), vctl_on(t), def);
+    if (c == MENU_TAB_VCTL) t->vctl = !vctl_on(t);
+    else if (c == MENU_TAB_CPU_DEFAULT || c == MENU_TAB_CPU_NEVER) { t->cpumode = c == MENU_TAB_CPU_NEVER; tab_unlimit(t); t->unlimit_until = 0; }
+    else if (c > MENU_TAB_CPU_LIM) { t->cpumode = 2; t->limited = true; t->info = false; t->lim = (c - MENU_TAB_CPU_LIM) / 100.f; t->budget = 0; t->bud_t = now_ms(); }
+    a->dirty = true; a->vonly = false;
+#else
+    (void)a; (void)i; (void)x; (void)y;
+#endif
 }
 static void ws_popup(App *a, int w, float x, float y) {
 #ifdef __APPLE__
@@ -1080,12 +1329,18 @@ int main(int argc, char **argv) {
     double cookies_saved_at = now_ms();
     {
         char *pref = SDL_GetPrefPath("lumen", "Lumen"); char sp[1024] = "";
-        if (pref) { snprintf(sp, sizeof sp, "%ssettings.txt", pref); SDL_free(pref); }
+        if (pref) { snprintf(g_pref, sizeof g_pref, "%s", pref); snprintf(sp, sizeof sp, "%ssettings.txt", pref); SDL_free(pref); }
         FILE *sf = *sp ? fopen(sp, "r") : NULL; char line[256];
-        while (sf && fgets(line, sizeof line, sf)) if (!strncmp(line, "offscreen_media_eviction=", 25)) g_lowmem = atoi(line + 25) != 0;
+        while (sf && fgets(line, sizeof line, sf)) {
+            char k[64]; int v; if (sscanf(line, "%63[^=]=%d", k, &v) != 2) continue;
+            if (!strcmp(k, "offscreen_media_eviction")) g_lowmem = v != 0; else if (!strcmp(k, "cpu_limit")) g_cpu_on = v != 0;
+            else if (!strcmp(k, "cpu_pct")) g_cpu_pct = LCLAMP(v, 10, 100); else if (!strcmp(k, "cpu_secs")) g_cpu_secs = LCLAMP(v, 5, 600);
+            else if (!strcmp(k, "cpu_lim")) g_cpu_lim = LCLAMP(v, 5, 95); else if (!strcmp(k, "video_controls")) g_vctl = v != 0;
+        }
         if (sf) fclose(sf);
+        links_load("bookmarks.txt", g_bms, &g_nbm, MAX_BM); links_load("history.txt", g_hv, &g_nhv, MAX_HV);
         const char *lm = getenv("LUMEN_LOWMEM"); if (lm) g_lowmem = atoi(lm) != 0;
-        fprintf(stderr, "lumen: offscreen media eviction %s\n", g_lowmem ? "on" : "off");
+        fprintf(stderr, "lumen: lite mode %s\n", g_lowmem ? "on" : "off");
         media_lowmem = g_lowmem;
     }
     navigate(&a, start, true);
@@ -1095,7 +1350,7 @@ int main(int argc, char **argv) {
     while (!quit) {
         SDL_Event ev;
         int to = a.t->loading ? 120 : 1000;
-        for (int i = 0; i < a.ntabs; i++) { Tab *tb = a.tabs[i]; if (tb->cur && tb->cur->js) { double dl = js_next_deadline(tb->cur->js) - now_ms(); if (tb->limited && tb->budget < 0) dl = LMAX(dl, -tb->budget / 0.4 - (now_ms() - tb->bud_t)); if (dl < to) to = dl < 0 ? 0 : (int)dl; } }
+        for (int i = 0; i < a.ntabs; i++) { Tab *tb = a.tabs[i]; if (tb->cur && tb->cur->js) { double dl = js_next_deadline(tb->cur->js) - now_ms(); if (tb->limited && tb->budget < 0) dl = LMAX(dl, -tb->budget / tb->lim - (now_ms() - tb->bud_t)); if (dl < to) to = dl < 0 ? 0 : (int)dl; } }
         if (net_pending() && to > 50) to = 50;
         { int mf = media_tick(); if (mf & 1) { if (!a.dirty) a.vonly = true; a.dirty = true; } if (mf & 2) a.t->relayout = true; }
         if (!a.editing && page_focus(&a) && !SDL_TextInputActive(a.win)) SDL_StartTextInput(a.win);
@@ -1109,6 +1364,7 @@ int main(int argc, char **argv) {
             if (tn - last_evict > 2000) { last_evict = tn; img_evict(); }
         }
         { int mt = media_timeout_ms(); if (mt >= 0 && mt < to) to = mt; }
+        if (a.vbars) { static double lb; double tn = now_ms(); if (tn - lb >= 500) { lb = tn; a.dirty = true; a.vonly = false; } if (to > 500) to = 500; }
         if (a.tip_until) { double r = a.tip_until - now_ms(); if (r <= 0) { a.tip_until = 0; a.dirty = true; a.vonly = false; } else if (r + 1 < to) to = (int)r + 1; }
         {
             bool want = false;
@@ -1130,6 +1386,7 @@ int main(int argc, char **argv) {
             case SDL_EVENT_MOUSE_WHEEL: a.t->sy -= ev.wheel.y * 40; a.dirty = true; break;
             case SDL_EVENT_MOUSE_MOTION: {
                 int h = bar_hit(&a, ev.motion.x, ev.motion.y); if (h != a.hover) { a.hover = h; a.dirty = true; }
+                if (!h && ev.motion.y > BAR && ev.motion.x > a.side) page_move(&a, ev.motion.x - a.side, ev.motion.y - BAR);
                 SDL_SetCursor(SDL_CreateSystemCursor(h == HB_URL ? SDL_SYSTEM_CURSOR_TEXT : over_link(&a, ev.motion.x, ev.motion.y) || (h && h != HB_URL) ? SDL_SYSTEM_CURSOR_POINTER : SDL_SYSTEM_CURSOR_DEFAULT));
                 break; }
             case SDL_EVENT_MOUSE_BUTTON_DOWN:
@@ -1140,11 +1397,12 @@ int main(int argc, char **argv) {
                   if (bh >= HB_WS) { int w = bh - HB_WS; if (w != a.wi) ws_select(&a, w); else ws_popup(&a, w, ev.button.x, ev.button.y); break; }
                   if (bh == HB_WSNEW) { menu_cmd(&a, MENU_WS_NEW); break; }
                   if (bh >= HB_TABX) { tab_close(&a, bh - HB_TABX, &quit); break; }
-                  if (bh >= HB_TAB) { tab_select(&a, bh - HB_TAB); break; }
+                  if (bh >= HB_TAB) { int i = bh - HB_TAB; if (i == a.ti) tab_popup(&a, i, ev.button.x, ev.button.y); else tab_select(&a, i); break; }
                   if (bh == HB_NEWTAB) { tab_open(&a); break; } }
                 switch (bar_hit(&a, ev.button.x, ev.button.y)) {
                 case HB_BACK: history_go(&a, -1); break;
                 case HB_FWD: history_go(&a, 1); break;
+                case HB_STAR: bm_toggle(&a); a.dirty = true; a.vonly = false; break;
                 case HB_RELOAD: if (a.t->hpos >= 0) navigate(&a, a.t->hist[a.t->hpos], false); break;
                 case HB_URL: a.editing = true; a.sel_all = 1; SDL_StartTextInput(a.win); a.dirty = true; break;
                 default: if (a.editing) { a.editing = false; SDL_StopTextInput(a.win); a.dirty = true; } click_page(&a, ev.button.x, ev.button.y);
@@ -1219,6 +1477,7 @@ int main(int argc, char **argv) {
                     if (!a.editing) snprintf(a.t->url, sizeof a.t->url, "%s", p->url);
                     if (a.t->hpos >= 0) { free(a.t->hist[a.t->hpos]); a.t->hist[a.t->hpos] = xstrdup(p->url); }
                     char title[512]; snprintf(title, sizeof title, "%s", p->d->title && *p->d->title ? p->d->title : p->url);
+                    if (strncmp(p->url, "lumen:", 6) && strncmp(p->url, "about:", 6) && strncmp(p->url, "data:", 5)) hist_add(p->url, title);
                     if (fg) SDL_SetWindowTitle(a.win, title);
                     sync_images(p);
                     page_start_js(&a, p);
@@ -1228,7 +1487,7 @@ int main(int argc, char **argv) {
             }
         } while (SDL_PollEvent(&ev));
         net_poll();
-        { Tab *act = a.t; double tn = now_ms(); for (int i = 0; i < a.ntabs; i++) { a.t = a.tabs[i]; if (a.t->limited) { a.t->budget = LMIN(a.t->budget + 0.4 * (tn - a.t->bud_t), 100); a.t->bud_t = tn; if (a.t->budget < 0) continue; } if (a.t->cur && a.t->cur->js) { double c0 = now_ms(); js_tick(a.t->cur->js); restyle(&a); fire_img_events(a.t->cur); double c = now_ms() - c0; a.t->cpu_ms += c; if (a.t->limited) a.t->budget -= c; } } a.t = act; if (a.t->cur && a.t->cur->js) frames_tick(&a); }
+        { Tab *act = a.t; double tn = now_ms(); for (int i = 0; i < a.ntabs; i++) { a.t = a.tabs[i]; if (a.t->limited) { a.t->budget = LMIN(a.t->budget + a.t->lim * (tn - a.t->bud_t), 100); a.t->bud_t = tn; if (a.t->budget < 0) continue; } if (a.t->cur && a.t->cur->js) { double c0 = now_ms(); js_tick(a.t->cur->js); restyle(&a); fire_img_events(a.t->cur); double c = now_ms() - c0; a.t->cpu_ms += c; if (a.t->limited) a.t->budget -= c; } } a.t = act; if (a.t->cur && a.t->cur->js) frames_tick(&a); }
         if (a.dirty) { double r0 = now_ms(); render(&a); a.t->cpu_ms += now_ms() - r0; }
         cpu_monitor(&a);
         { float want = a.t->info ? INFOH : 0; if (want != g_info_h) { g_info_h = want; for (int i = 0; i < a.ntabs; i++) a.tabs[i]->relayout = true; a.dirty = true; a.vonly = false; } }
