@@ -2,7 +2,7 @@
 #include "../src/net/net.h"
 static HMap icache;
 static Image *load_url(const char *u) {
-    if (!u || !*u || !strncmp(u, "data:", 5)) return NULL;
+    if (!u || !*u) return NULL;
     Image **c = (Image **)hm_get(&icache, u); if (c) return *c;
     NetResponse *r = net_fetch_sync(net_request_new("GET", u));
     Image *im = r && r->status == 200 ? image_decode((const uint8_t *)r->body, r->body_len) : NULL;
@@ -10,7 +10,7 @@ static Image *load_url(const char *u) {
     return im;
 }
 static Image *node_img(Node *n) { const char *s = node_attr(n, n->tag == A_video ? "poster" : "src"); if (!s) return NULL; char *u = url_join(n->doc->url, s); Image *im = load_url(u); free(u); return im; }
-static bool img_size(Node *n, float *w, float *h) { Image *im = node_img(n); if (!im) return false; *w = (float)im->w; *h = (float)im->h; return true; }
+static bool img_size(Node *n, float *w, float *h) { Image *im = node_img(n); if (!im) return false; *w = image_css_w(im); *h = image_css_h(im); return true; }
 /* usage: render URL out.png [width] [height] [scroll_y] */
 int main(int argc, char **argv) {
     if (argc < 3) { fprintf(stderr, "usage: render URL out.png [w] [h] [scroll]\n"); return 1; }

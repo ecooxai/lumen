@@ -3,7 +3,9 @@
 #include "../layout/layout.h"
 
 /* Decoded image: premultiplied 0xAARRGGBB pixels */
-typedef struct Image { int w, h, refs; uint32_t *px; } Image;
+typedef struct Image { int w, h, refs; uint32_t *px; float scale; /* device px per CSS px, 0 = 1 */ } Image;
+static inline float image_css_w(const Image *im) { return im->scale > 0 ? im->w / im->scale : (float)im->w; }
+static inline float image_css_h(const Image *im) { return im->scale > 0 ? im->h / im->scale : (float)im->h; }
 
 enum DOp { DO_RECT, DO_BORDER, DO_TEXT, DO_IMAGE, DO_GRADIENT, DO_SHADOW, DO_LINE,
            DO_PUSH_CLIP, DO_POP_CLIP, DO_PUSH_LAYER, DO_POP_LAYER };

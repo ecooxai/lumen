@@ -46,7 +46,7 @@ static Image *node_img(Node *n) {
     char *u = url_join(n->doc->url, s); Image *im = cache_get(u); free(u); return im;
 }
 static Image *url_img(const char *u) { return u ? cache_get(u) : NULL; }
-static bool img_size(Node *n, float *w, float *h) { Image *im = node_img(n); if (!im) return false; *w = (float)im->w; *h = (float)im->h; return true; }
+static bool img_size(Node *n, float *w, float *h) { Image *im = node_img(n); if (!im) return false; *w = image_css_w(im); *h = image_css_h(im); return true; }
 
 typedef struct { char *url; uint64_t gen; float vw, vh; char *body; size_t blen; char *ctype; } LoadReq;
 
@@ -334,7 +334,7 @@ static void sync_images(Page *p) {
     for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) {
         if (n->type != NODE_ELEMENT) continue;
         char *u = NULL;
-        if (n->style && n->style->bg_image && n->style->display != D_NONE) u = xstrdup(n->style->bg_image);
+        if (n->style && (n->style->mask_image || n->style->bg_image) && n->style->display != D_NONE) u = xstrdup(n->style->mask_image ? n->style->mask_image : n->style->bg_image);
         else if (n->ns == NS_HTML && n->tag == A_img && node_attr(n, "src")) u = url_join(p->d->url, node_attr(n, "src"));
         else continue;
         if (!u || !*u || !strncmp(u, "blob:", 5)) { free(u); continue; }

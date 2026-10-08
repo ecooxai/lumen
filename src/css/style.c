@@ -46,7 +46,7 @@ ComputedStyle *style_inherit(const ComputedStyle *p) {
 void style_ref(ComputedStyle *s) { if (s) s->refs++; }
 void style_free(ComputedStyle *s) {
     if (!s || --s->refs > 0) return;
-    free(s->bg_image); free(s->bg_gradient); free(s->content); free(s->grid_cols); free(s->grid_rows); free(s->grid_areas); free(s->grid_area);
+    free(s->bg_image); free(s->mask_image); free(s->bg_gradient); free(s->content); free(s->grid_cols); free(s->grid_rows); free(s->grid_areas); free(s->grid_area);
     custom_unref(s->custom);
     if (s->before) style_free(s->before);
     if (s->after) style_free(s->after);
@@ -523,7 +523,7 @@ static uint8_t parse_align(const char *v) {
     return (uint8_t)k;
 }
 
-static const char *const known_props[] = { "animation","animation-name","animation-duration","animation-delay","animation-iteration-count","animation-timing-function","animation-fill-mode","animation-direction","animation-play-state","transition","transition-property","transition-duration","transition-delay","transition-timing-function","display","position","float","clear","width","height","min-width","min-height","max-width","max-height","margin","margin-top","margin-right","margin-bottom","margin-left","padding","padding-top","padding-right","padding-bottom","padding-left","border","border-width","border-style","border-color","border-top","border-right","border-bottom","border-left","border-radius","color","background","background-color","background-image","font","font-size","font-weight","font-family","font-style","line-height","text-align","text-decoration","white-space","overflow","overflow-x","overflow-y","visibility","opacity","z-index","top","right","bottom","left","inset","flex","flex-direction","flex-wrap","flex-grow","flex-shrink","flex-basis","justify-content","align-items","align-self","align-content","gap","row-gap","column-gap","order","grid","grid-template-columns","grid-template-rows","grid-column","grid-row","grid-area","transform","transition","animation","box-shadow","text-shadow","box-sizing","cursor","pointer-events","content","list-style","list-style-type","vertical-align","text-transform","letter-spacing","word-spacing","text-indent","text-overflow","word-break","overflow-wrap","word-wrap","object-fit","aspect-ratio","filter","outline","user-select","appearance","will-change","contain","isolation","mix-blend-mode","place-items","place-content","place-self","justify-items","justify-self","table-layout","border-collapse","border-spacing","clip-path","mask","resize","scroll-behavior","overscroll-behavior","touch-action","font-variant","text-rendering","-webkit-font-smoothing","fill","stroke","caret-color","accent-color","color-scheme","translate","scale","rotate","container-type","backdrop-filter","line-clamp","-webkit-line-clamp","text-wrap","hyphens","tab-size","direction","unicode-bidi","writing-mode","inset-inline","inset-block","margin-inline","margin-block","padding-inline","padding-block", NULL };
+static const char *const known_props[] = { "animation","animation-name","animation-duration","animation-delay","animation-iteration-count","animation-timing-function","animation-fill-mode","animation-direction","animation-play-state","transition","transition-property","transition-duration","transition-delay","transition-timing-function","display","position","float","clear","width","height","min-width","min-height","max-width","max-height","margin","margin-top","margin-right","margin-bottom","margin-left","padding","padding-top","padding-right","padding-bottom","padding-left","border","border-width","border-style","border-color","border-top","border-right","border-bottom","border-left","border-radius","color","background","background-color","background-image","font","font-size","font-weight","font-family","font-style","line-height","text-align","text-decoration","white-space","overflow","overflow-x","overflow-y","visibility","opacity","z-index","top","right","bottom","left","inset","flex","flex-direction","flex-wrap","flex-grow","flex-shrink","flex-basis","justify-content","align-items","align-self","align-content","gap","row-gap","column-gap","order","grid","grid-template-columns","grid-template-rows","grid-column","grid-row","grid-area","transform","transition","animation","box-shadow","text-shadow","box-sizing","cursor","pointer-events","content","list-style","list-style-type","vertical-align","text-transform","letter-spacing","word-spacing","text-indent","text-overflow","word-break","overflow-wrap","word-wrap","object-fit","aspect-ratio","filter","outline","user-select","appearance","will-change","contain","isolation","mix-blend-mode","place-items","place-content","place-self","justify-items","justify-self","table-layout","border-collapse","border-spacing","clip-path","mask","mask-image","mask-size","-webkit-mask","-webkit-mask-image","-webkit-mask-size","resize","scroll-behavior","overscroll-behavior","touch-action","font-variant","text-rendering","-webkit-font-smoothing","fill","stroke","caret-color","accent-color","color-scheme","translate","scale","rotate","container-type","backdrop-filter","line-clamp","-webkit-line-clamp","text-wrap","hyphens","tab-size","direction","unicode-bidi","writing-mode","inset-inline","inset-block","margin-inline","margin-block","padding-inline","padding-block", NULL };
 bool css_property_known(const char *p) { return kw(p, known_props) >= 0; }
 
 static char *parse_grid_areas(const char *v) {
@@ -667,6 +667,14 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         else if (!strcmp(P, "all")) {}
         goto out;
     }
+    if (!strcmp(P, "mask-image") || !strcmp(P, "-webkit-mask-image") || !strcmp(P, "mask") || !strcmp(P, "-webkit-mask")) {
+        free(st->mask_image); st->mask_image = NULL;
+        char *u = strstr(val, "url(") ? extract_url(val) : NULL;
+        if (u) { const char *base = c.e && c.e->doc ? (c.e->doc->base_url ? c.e->doc->base_url : c.e->doc->url) : NULL; st->mask_image = url_join(base, u); free(u); }
+        if (P[strlen(P) - 1] == 'k') st->mask_fit = strstr(val, "contain") ? 1 : strstr(val, "cover") ? 2 : 0;
+        goto out;
+    }
+    if (!strcmp(P, "mask-size") || !strcmp(P, "-webkit-mask-size")) { st->mask_fit = str_ieq(val, "contain") ? 1 : str_ieq(val, "cover") ? 2 : 0; goto out; }
     switch (P[0]) {
     case 'a':
         if (!strcmp(P, "align-items")) st->align_items = parse_align(val);

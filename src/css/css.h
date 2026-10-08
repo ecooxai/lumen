@@ -77,6 +77,8 @@ typedef struct ComputedStyle {
     Color color, bg_color;
     char *bg_image;         /* url (owned) */
     Gradient *bg_gradient;  /* owned */
+    char *mask_image;       /* url (owned) */
+    uint8_t mask_fit;       /* 0 auto, 1 contain, 2 cover */
     Length bg_size[2], bg_pos[2];
     const char *font_family; /* atom of the full family list */
     Shadow box_shadow; bool has_shadow;

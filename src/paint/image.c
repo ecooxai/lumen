@@ -1,5 +1,8 @@
 /* Image decoding (PNG, JPEG, WebP, GIF first frame) to premultiplied ARGB32 */
 #include "paint.h"
+#include "../dom/dom.h"
+#include "../base/util.h"
+#include <ctype.h>
 #include <setjmp.h>
 #include <png.h>
 #include <jpeglib.h>
@@ -81,11 +84,43 @@ static Image *dec_gif(const uint8_t *d, size_t n) {
     return im;
 }
 
+static bool is_svg(const uint8_t *d, size_t n) {
+    size_t i = n >= 3 && !memcmp(d, "\xEF\xBB\xBF", 3) ? 3 : 0;
+    while (i < n && isspace(d[i])) i++;
+    if (i >= n || d[i] != '<') return false;
+    for (size_t j = i, lim = n < 4096 ? n : 4096; j + 4 <= lim; j++) if (!memcmp(d + j, "<svg", 4)) return true;
+    return false;
+}
+/* Rasterised once at >=2x (small icons at >=128 px) since it may be scaled up; scale records the density */
+static Image *dec_svg(const uint8_t *d, size_t n) {
+    Document *doc = doc_new("about:blank");
+    Node *ctx = node_new_element(doc, "div", NS_HTML);
+    Node *frag = html_parse_fragment(doc, ctx, (const char *)d, n), *s = NULL;
+    for (Node *k = frag ? frag->first : NULL; k && !s; k = node_next_in_tree(k, frag))
+        if (k->type == NODE_ELEMENT && k->ns == NS_SVG && !strcmp(k->tag, "svg")) s = k;
+    Image *im = NULL;
+    if (s) {
+        float vb[4] = { 0 }, w = 0, h = 0; const char *v;
+        bool hv = (v = node_attr(s, "viewBox")) && sscanf(v, "%f%*[ ,]%f%*[ ,]%f%*[ ,]%f", &vb[0], &vb[1], &vb[2], &vb[3]) == 4 && vb[2] > 0 && vb[3] > 0;
+        if ((v = node_attr(s, "width")) && !strchr(v, '%')) w = (float)atof(v);
+        if ((v = node_attr(s, "height")) && !strchr(v, '%')) h = (float)atof(v);
+        if (w <= 0) w = hv ? (h > 0 ? h * vb[2] / vb[3] : vb[2]) : 300;
+        if (h <= 0) h = hv ? w * vb[3] / vb[2] : 150;
+        im = svg_image(s, w, h, LMAX(2, 128 / LMAX(w, h)));
+        if (im) { im->refs++; im->scale = (float)im->w / w; }
+    }
+    if (frag) node_free_tree(frag);
+    node_free_tree(ctx);
+    doc_free(doc);
+    return im;
+}
+
 Image *image_decode(const uint8_t *d, size_t n) {
     if (!d || n < 8) return NULL;
     if (!memcmp(d, "\x89PNG", 4)) return dec_png(d, n);
     if (d[0] == 0xFF && d[1] == 0xD8) return dec_jpeg(d, n);
     if (n > 12 && !memcmp(d, "RIFF", 4) && !memcmp(d + 8, "WEBP", 4)) return dec_webp(d, n);
     if (!memcmp(d, "GIF8", 4)) return dec_gif(d, n);
+    if (is_svg(d, n)) return dec_svg(d, n);
     return NULL;
 }

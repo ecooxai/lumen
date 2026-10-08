@@ -31,10 +31,38 @@ static void radii(const Box *b, float w, float h, float r[4]) {
     if (f < 1) for (int i = 0; i < 4; i++) r[i] *= f;
 }
 
+/* mask-image is approximated as the background colour shown through the mask's alpha */
+typedef struct { Image *src; Color c; Image *out; } Tint;
+static Tint tints[128]; static int tint_i; static Image *tint_grave[128]; static int tint_grave_i;
+static Image *tinted(Image *src, Color c) {
+    for (int i = 0; i < 128; i++) if (tints[i].src == src && tints[i].c == c) return tints[i].out;
+    Tint *t = &tints[tint_i]; tint_i = (tint_i + 1) % 128;
+    if (t->out) {
+        if (tint_grave[tint_grave_i]) image_unref(tint_grave[tint_grave_i]);
+        tint_grave[tint_grave_i] = t->out; tint_grave_i = (tint_grave_i + 1) % 128; image_unref(t->src);
+    }
+    size_t n = (size_t)src->w * (size_t)src->h;
+    Image *o = xcalloc(1, sizeof *o); o->w = src->w; o->h = src->h; o->refs = 1; o->scale = src->scale; o->px = xmalloc(n * 4);
+    uint32_t ca = COLOR_A(c), cr = COLOR_R(c), cg = COLOR_G(c), cb = COLOR_B(c);
+    for (size_t i = 0; i < n; i++) { uint32_t a = (src->px[i] >> 24) * ca / 255; o->px[i] = a << 24 | (cr * a / 255) << 16 | (cg * a / 255) << 8 | cb * a / 255; }
+    src->refs++; t->src = src; t->c = c; t->out = o;
+    return o;
+}
+
 static void paint_rect_deco(PB *p, Box *b, float x, float y, float w, float h, bool l_edge, bool r_edge) {
     const ComputedStyle *s = b->st;
     if (!visible(p, x - 64, y - 64, w + 128, h + 128)) return;
     float r[4]; radii(b, w, h, r);
+    if (s->mask_image) {
+        Image *mk = paint_url_image_hook ? paint_url_image_hook(s->mask_image) : NULL;
+        if (!mk || !mk->w || !mk->h || !COLOR_A(s->bg_color)) return;
+        float iw = image_css_w(mk), ih = image_css_h(mk), ox = x, oy = y;
+        if (s->mask_fit) { float k = s->mask_fit == 1 ? LMIN(w / iw, h / ih) : LMAX(w / iw, h / ih); iw *= k; ih *= k; ox += (w - iw) / 2; oy += (h - ih) / 2; }
+        DItem *c = emit(p, DO_PUSH_CLIP); c->x = x; c->y = y; c->w = w; c->h = h; memcpy(c->r, r, sizeof r);
+        DItem *it = emit(p, DO_IMAGE); it->x = ox; it->y = oy; it->w = iw; it->h = ih; it->img = tinted(mk, s->bg_color);
+        emit(p, DO_POP_CLIP);
+        return;
+    }
     if (s->has_shadow && !s->box_shadow.inset && COLOR_A(s->box_shadow.color)) {
         DItem *it = emit(p, DO_SHADOW); it->x = x + s->box_shadow.x; it->y = y + s->box_shadow.y; it->w = w; it->h = h;
         memcpy(it->r, r, sizeof r); it->color = s->box_shadow.color; it->blur = s->box_shadow.blur; it->spread = s->box_shadow.spread;
@@ -44,7 +72,7 @@ static void paint_rect_deco(PB *p, Box *b, float x, float y, float w, float h, b
     if (s->bg_image && paint_url_image_hook) {
         Image *im = paint_url_image_hook(s->bg_image);
         if (im && im->w && im->h) {
-            float iw = (float)im->w, ih = (float)im->h;
+            float iw = image_css_w(im), ih = image_css_h(im);
             if (s->bg_size_kind == BGS_COVER || s->bg_size_kind == BGS_CONTAIN) { float k = s->bg_size_kind == BGS_COVER ? LMAX(w / iw, h / ih) : LMIN(w / iw, h / ih); iw *= k; ih *= k; }
             else if (s->bg_size_kind == BGS_LEN) { float a = s->bg_size[0].kind == LK_LEN ? res(s->bg_size[0], w) : -1, c = s->bg_size[1].kind == LK_LEN ? res(s->bg_size[1], h) : -1; if (a >= 0 && c >= 0) { iw = a; ih = c; } else if (a >= 0) { ih = ih * a / iw; iw = a; } else if (c >= 0) { iw = iw * c / ih; ih = c; } }
             float ox = x + res(s->bg_pos[0], w - iw), oy = y + res(s->bg_pos[1], h - ih);
