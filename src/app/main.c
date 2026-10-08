@@ -127,6 +127,7 @@ typedef struct App {
     float sy; bool dirty, relayout;
     Font *ui;
     int hover; double frame_ms;
+    bool vonly; float last_sy; uint64_t last_ver; Page *last_page;
 } App;
 
 static char *normalize_url(const char *in) {
@@ -231,7 +232,9 @@ static void render(App *a) {
     int bar_px = (int)(BAR * a->scale);
     if (a->frame.w != a->pw || a->frame.h != a->ph) { canvas_free(&a->frame); canvas_init(&a->frame, a->pw, a->ph, a->scale); }
     int ph = a->ph - bar_px; if (ph < 1) ph = 1;
-    if (a->page.w != a->pw || a->page.h != ph) { canvas_free(&a->page); canvas_init(&a->page, a->pw, ph, a->scale); }
+    bool part = a->vonly && a->cur && a->cur == a->last_page && a->cur->L && !a->relayout && a->cur->d->dom_version == a->last_ver;
+    int rx0 = a->pw, ry0 = ph, rx1 = 0, ry1 = 0;
+    if (a->page.w != a->pw || a->page.h != ph) { canvas_free(&a->page); canvas_init(&a->page, a->pw, ph, a->scale); part = false; }
     if (a->cur) {
         if (a->relayout || !a->cur->L) {
             if (!a->cur->L) a->cur->L = layout_new();
@@ -240,12 +243,22 @@ static void render(App *a) {
             a->relayout = false;
         }
         a->sy = LCLAMP(a->sy, 0, max_scroll(a));
+        if (a->sy != a->last_sy) part = false;
         dl_clear(&a->pdl); dl_build(&a->pdl, a->cur->L, 0, a->sy, a->vw, a->vh - BAR);
-        raster(&a->page, &a->pdl, RGBA(255, 255, 255, 255));
+        for (int i = 0; part && i < a->pdl.items.n; i++) {
+            const DItem *it = &a->pdl.items.v[i];
+            if (it->op != DO_IMAGE || !media_is_frame(it->img)) continue;
+            float s = a->page.scale;
+            rx0 = LMIN(rx0, (int)floorf(it->x * s)); ry0 = LMIN(ry0, (int)floorf(it->y * s));
+            rx1 = LMAX(rx1, (int)ceilf((it->x + it->w) * s)); ry1 = LMAX(ry1, (int)ceilf((it->y + it->h) * s));
+        }
+        rx0 = LMAX(rx0, 0); ry0 = LMAX(ry0, 0); rx1 = LMIN(rx1, a->pw); ry1 = LMIN(ry1, ph);
+        if (part && rx1 > rx0 && ry1 > ry0) raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), rx0, ry0, rx1, ry1);
+        else { part = false; raster(&a->page, &a->pdl, RGBA(255, 255, 255, 255)); }
     } else raster(&a->page, &(DisplayList){0}, RGBA(255, 255, 255, 255));
     build_chrome(a);
     raster(&a->frame, &a->cdl, RGBA(255, 255, 255, 255));
-    for (int y = 0; y < ph && y + bar_px < a->ph; y++)
+    for (int y = part ? ry0 : 0; y < (part ? ry1 : ph) && y + bar_px < a->ph; y++)
         memcpy(a->frame.px + (size_t)(y + bar_px) * (size_t)a->frame.stride, a->page.px + (size_t)y * (size_t)a->page.stride, (size_t)a->pw * 4);
     if (!(a->gpu && gpu_present(a->gpu, a->frame.px, a->frame.w, a->frame.h, a->frame.stride))) {
         SDL_Surface *ws = SDL_GetWindowSurface(a->win);
@@ -256,7 +269,8 @@ static void render(App *a) {
         }
     }
     a->frame_ms = now_ms() - t0;
-    a->dirty = false;
+    a->dirty = a->vonly = false;
+    a->last_page = a->cur; a->last_sy = a->sy; a->last_ver = a->cur ? a->cur->d->dom_version : 0;
 }
 
 static void update_size(App *a) {
@@ -588,11 +602,12 @@ int main(int argc, char **argv) {
         int to = a.loading ? 120 : 1000;
         if (a.cur && a.cur->js) { double dl = js_next_deadline(a.cur->js) - now_ms(); if (dl < to) to = dl < 0 ? 0 : (int)dl; }
         if (net_pending() && to > 50) to = 50;
-        { int mf = media_tick(); if (mf & 1) a.dirty = true; if (mf & 2) a.relayout = true; }
+        { int mf = media_tick(); if (mf & 1) { if (!a.dirty) a.vonly = true; a.dirty = true; } if (mf & 2) a.relayout = true; }
         if (!a.editing && page_focus(&a) && !SDL_TextInputActive(a.win)) SDL_StartTextInput(a.win);
         { int mt = media_timeout_ms(); if (mt >= 0 && mt < to) to = mt; }
         if (!SDL_WaitEventTimeout(&ev, to)) { if (a.loading) a.dirty = true; }
         else do {
+            a.vonly = false;
             switch (ev.type) {
             case SDL_EVENT_QUIT: quit = true; break;
             case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: case SDL_EVENT_WINDOW_RESIZED: update_size(&a); break;

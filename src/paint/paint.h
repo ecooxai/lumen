@@ -36,5 +36,7 @@ typedef struct Canvas { int w, h, stride; uint32_t *px; float scale; } Canvas;
 void canvas_init(Canvas *c, int w, int h, float scale);
 void canvas_free(Canvas *c);
 void raster(Canvas *c, const DisplayList *dl, Color clear);
+/* Re-raster only device-pixel rect [x0,x1)x[y0,y1); pixels outside are left untouched. */
+void raster_rect(Canvas *c, const DisplayList *dl, Color clear, int x0, int y0, int x1, int y1);
 bool png_write(const char *path, const uint32_t *px, int w, int h, int stride);
 #endif

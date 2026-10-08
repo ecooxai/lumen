@@ -224,11 +224,14 @@ static void image(R *r, const DItem *it) {
     }
 }
 
-void raster(Canvas *cv, const DisplayList *dl, Color clearc) {
+void raster(Canvas *cv, const DisplayList *dl, Color clearc) { raster_rect(cv, dl, clearc, 0, 0, cv->w, cv->h); }
+void raster_rect(Canvas *cv, const DisplayList *dl, Color clearc, int rx0, int ry0, int rx1, int ry1) {
     R r; memset(&r, 0, sizeof r); r.c = cv; r.s = cv->scale; r.px = cv->px;
+    rx0 = LMAX(rx0, 0); ry0 = LMAX(ry0, 0); rx1 = LMIN(rx1, cv->w); ry1 = LMIN(ry1, cv->h);
+    if (rx1 <= rx0 || ry1 <= ry0) return;
     uint32_t cl = premul(clearc, 1);
-    for (size_t i = 0, n = (size_t)cv->stride * (size_t)cv->h; i < n; i++) cv->px[i] = cl;
-    r.clips[0] = (Clip){ 0, 0, cv->w, cv->h, 0, 0, (float)cv->w, (float)cv->h, {0}, false }; r.nclip = 1;
+    for (int y = ry0; y < ry1; y++) for (int x = rx0; x < rx1; x++) cv->px[(size_t)y * (size_t)cv->stride + (size_t)x] = cl;
+    r.clips[0] = (Clip){ rx0, ry0, rx1, ry1, 0, 0, (float)cv->w, (float)cv->h, {0}, false }; r.nclip = 1;
     float s = r.s;
     for (int i = 0; i < dl->items.n; i++) {
         const DItem *it = &dl->items.v[i];
@@ -261,7 +264,7 @@ void raster(Canvas *cv, const DisplayList *dl, Color clearc) {
             if (!r.nlayer) break;
             r.nlayer--; if (r.nlayer >= 16) break;
             uint32_t *dst = r.layers[r.nlayer].px, *src = r.px; uint32_t k = (uint32_t)(r.layers[r.nlayer].alpha * 256);
-            for (size_t j = 0, n = (size_t)cv->stride * (size_t)cv->h; j < n; j++) if (src[j]) over(&dst[j], scale_px(src[j], k));
+            for (int y = ry0; y < ry1; y++) for (int x = rx0; x < rx1; x++) { size_t j = (size_t)y * (size_t)cv->stride + (size_t)x; if (src[j]) over(&dst[j], scale_px(src[j], k)); }
             free(src); r.px = dst; break;
         }
         }

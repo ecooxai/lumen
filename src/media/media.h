@@ -38,5 +38,6 @@ int media_can_play(const char *mime, bool mse);
 /* Main-thread pump: advances clocks and presents frames. Bit 0: a frame changed, bit 1: a video size changed. */
 int media_tick(void);
 int media_timeout_ms(void);              /* -1 when nothing is playing */
-Image *media_frame_for(Node *element);   /* borrowed; valid until a later media_tick */
+Image *media_frame_for(Node *element);
+bool media_is_frame(const Image *im);   /* borrowed; valid until a later media_tick */
 extern void (*media_wakeup)(void);

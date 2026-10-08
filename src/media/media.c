@@ -645,6 +645,14 @@ int media_timeout_ms(void) {
     SDL_UnlockMutex(g_mu);
     return to;
 }
+bool media_is_frame(const Image *im) {
+    if (!g_mu || !im) return false;
+    bool r = false;
+    SDL_LockMutex(g_mu);
+    for (int i = 0; i < g_np && !r; i++) r = g_pl[i]->cur == im;
+    SDL_UnlockMutex(g_mu);
+    return r;
+}
 Image *media_frame_for(Node *el) {
     if (!g_mu) return NULL;
     Image *im = NULL;
