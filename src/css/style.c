@@ -510,7 +510,7 @@ static void parse_grid_line(const char *v, int *start, int *span) {
     if (slash) *slash = 0;
     char *a = str_trim(s);
     if (str_istarts(a, "span")) *span = LMAX(1, atoi(a + 4)); else *start = atoi(a);
-    if (slash) { char *b = str_trim(slash + 1); if (str_istarts(b, "span")) *span = LMAX(1, atoi(b + 4)); else { int e = atoi(b); if (e > 0 && *start > 0 && e > *start) *span = e - *start; else if (e == -1 && *start > 0) *span = -1; } }
+    if (slash) { char *b = str_trim(slash + 1); if (str_istarts(b, "span")) *span = LMAX(1, atoi(b + 4)); else { int e = atoi(b); if (e > 0 && *start > 0 && e > *start) *span = e - *start; else if (e < 0 && *start > 0) *span = e; } }
     free(s);
 }
 static uint8_t parse_align(const char *v) {

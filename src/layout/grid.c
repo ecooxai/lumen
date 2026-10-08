@@ -45,11 +45,11 @@ float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
         if (c->abs) { c->sx = cx; c->sy = cy; add_abs(L, c); continue; }
         c->bfc = true;
         const ComputedStyle *is = c->st;
-        int cs = is->grid_col_span == -1 ? nc : LMAX(1, LMIN(is->grid_col_span, nc));
+        int cs = is->grid_col_span < 0 ? nc : LMAX(1, LMIN(is->grid_col_span, nc));
         int rs = LMAX(1, is->grid_row_span);
         GI g = { c, 0, 0, rs, cs };
         if (s->grid_areas && is->grid_area && area_lookup(s->grid_areas, is->grid_area, &g.r, &g.c, &g.rs, &g.cs)) { vec_push(items, g); continue; }
-        if (is->grid_col_start > 0) { g.c = LMIN(is->grid_col_start - 1, nc - 1); if (is->grid_col_span == -1) g.cs = nc - g.c; g.r = is->grid_row_start > 0 ? is->grid_row_start - 1 : ar; if (is->grid_row_start <= 0 && g.c < ac) g.r = ++ar; ac = g.c + g.cs; }
+        if (is->grid_col_start > 0) { g.c = LMIN(is->grid_col_start - 1, nc - 1); if (is->grid_col_span < 0) g.cs = LMAX(1, nc + 1 + is->grid_col_span - g.c); g.r = is->grid_row_start > 0 ? is->grid_row_start - 1 : ar; if (is->grid_row_start <= 0 && g.c < ac) g.r = ++ar; ac = g.c + g.cs; }
         else if (is->grid_row_start > 0) { g.r = is->grid_row_start - 1; g.c = 0; }
         else { if (ac + cs > nc) { ar++; ac = 0; } g.r = ar; g.c = ac; ac += cs; if (ac >= nc) { ar++; ac = 0; } }
         if (g.c + g.cs > nc) g.cs = nc - g.c;
