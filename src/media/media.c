@@ -8,6 +8,8 @@
 #include "net/net.h"
 #include <SDL3/SDL.h>
 #include <libavcodec/avcodec.h>
+#include <libavutil/hwcontext.h>
+#include <libavutil/pixdesc.h>
 #include <libavformat/avformat.h>
 #include <libavutil/channel_layout.h>
 #include <libswresample/swresample.h>
@@ -246,7 +248,13 @@ static bool emit_video(Stream *s, DecCtx *d, AVFrame *f, AVRational tb) {
     int64_t ts = f->best_effort_timestamp != AV_NOPTS_VALUE ? f->best_effort_timestamp : f->pts;
     double pts = ts == AV_NOPTS_VALUE ? 0 : ts * av_q2d(tb);
     if (pts < d->skip - 1e-3) return true;
-    Image *im = to_image(&d->sws, f);
+    AVFrame *sw = NULL;
+    if (f->format == AV_PIX_FMT_VIDEOTOOLBOX) {
+        sw = av_frame_alloc();
+        if (!sw || av_hwframe_transfer_data(sw, f, 0) < 0) { av_frame_free(&sw); return true; }
+    }
+    Image *im = to_image(&d->sws, sw ? sw : f);
+    av_frame_free(&sw);
     if (!im) return true;
     SDL_LockMutex(m->mu);
     while (m->vqn == VQ_MAX && !m->quit && m->epoch == d->epoch) SDL_WaitCondition(m->cv, m->mu);
@@ -280,12 +288,25 @@ static bool emit_audio(Stream *s, DecCtx *d, AVFrame *f, AVRational tb) {
     if (!ok) { free(c->s); free(c); } else wake();
     return ok;
 }
+static enum AVPixelFormat pick_hw(AVCodecContext *cc, const enum AVPixelFormat *fmts) {
+    (void)cc;
+    for (const enum AVPixelFormat *p = fmts; *p != AV_PIX_FMT_NONE; p++) if (*p == AV_PIX_FMT_VIDEOTOOLBOX) { if (getenv("LUMEN_MEDIA_DEBUG")) fprintf(stderr, "lumen-media: using VideoToolbox for %s\n", cc->codec->name); return *p; }
+    for (const enum AVPixelFormat *p = fmts; *p != AV_PIX_FMT_NONE; p++) { const AVPixFmtDescriptor *d = av_pix_fmt_desc_get(*p); if (d && !(d->flags & AV_PIX_FMT_FLAG_HWACCEL)) return *p; }
+    return fmts[0];
+}
+static bool hwdec_enabled(void) { const char *e = getenv("LUMEN_HWDEC"); return !e || strcmp(e, "0") != 0; }
 static AVCodecContext *open_dec(AVStream *st) {
     const AVCodec *codec = avcodec_find_decoder(st->codecpar->codec_id);
     if (!codec) return NULL;
     AVCodecContext *cc = avcodec_alloc_context3(codec);
     if (!cc || avcodec_parameters_to_context(cc, st->codecpar) < 0) { avcodec_free_context(&cc); return NULL; }
     { const char *dt = getenv("LUMEN_DEC_THREADS"); cc->thread_count = dt ? atoi(dt) : 4; } cc->pkt_timebase = st->time_base;
+    if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && hwdec_enabled() &&
+        av_hwdevice_ctx_create(&cc->hw_device_ctx, AV_HWDEVICE_TYPE_VIDEOTOOLBOX, NULL, NULL, 0) == 0) {
+        cc->get_format = pick_hw;
+        if (getenv("LUMEN_MEDIA_DEBUG")) fprintf(stderr, "lumen-media: hwdec device ok for %s\n", codec->name);
+        if (!getenv("LUMEN_DEC_THREADS")) cc->thread_count = 1;
+    }
     if (avcodec_open2(cc, codec, NULL) < 0) { avcodec_free_context(&cc); return NULL; }
     return cc;
 }
