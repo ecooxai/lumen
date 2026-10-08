@@ -9,7 +9,7 @@ cd "$(dirname "$0")/../.." || exit 1
 for dir in "$@"; do
   (cd "$WPT" && find "$dir" \( -name '*.html' -o -name '*.htm' -o -name '*.any.js' -o -name '*.window.js' \) \
      ! -path '*/resources/*' ! -path '*/support/*' ! -path '*/crashtests/*' ! -name '*-ref.htm*' ! -name '*-manual*' ! -name '*.sub.*' ! -name '*.https.*' \
-     ! -name '*.tentative.*' | sort) | while read -r f; do
+     ! -name '*.tentative.*' ! -path '*/tentative/*' | sort) | while read -r f; do
     case $f in *.js) p=${f%.js}.html ;; *) p=$f ;; esac
     grep -qs 'testharness.js' "$WPT/$f" || case $f in *.js) ;; *) continue ;; esac
     if grep -qs 'testdriver' "$WPT/$f"; then printf '%s\t0\t0\tSKIP_TESTDRIVER\n' "$p" >> "$out/results.tsv"; continue; fi
