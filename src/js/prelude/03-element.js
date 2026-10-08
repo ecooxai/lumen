@@ -39,7 +39,7 @@ const XML_NS = 'http://www.w3.org/XML/1998/namespace', XMLNS_NS = 'http://www.w3
 const validLocalName = n => /^[A-Za-z][^\t\n\f\r \/>\x00]*$/.test(n) || /^[:_\u0080-\u{10FFFF}][A-Za-z0-9\-.:_\u0080-\u{10FFFF}]*$/u.test(n);
 const asciiLower = s => s.replace(/[A-Z]+/g, c => c.toLowerCase()), asciiUpper = s => s.replace(/[a-z]+/g, c => c.toUpperCase());
 methods(Element.prototype, {
-    get tagName() { const q = this.__pfx ? this.__pfx + ':' + this.localName : this.localName; return this.namespaceURI === NSURI[0] ? asciiUpper(q) : q; },
+    get tagName() { let ln = this.localName; if (typeof ln !== 'string') ln = String(N.name(this)); const q = this.__pfx ? this.__pfx + ':' + ln : ln; return this.namespaceURI === NSURI[0] ? asciiUpper(q) : q; },
     get localName() { return this.__ln ?? N.name(this); }, get namespaceURI() { return this.__nsu !== undefined ? this.__nsu : NSURI[N.ns(this)] || NSURI[0]; }, get prefix() { return this.__pfx ?? null; },
     get id() { return N.attr(this, 'id') ?? ''; }, set id(v) { this.setAttribute('id', v); },
     get className() { return N.attr(this, 'class') ?? ''; }, set className(v) { this.setAttribute('class', v); },

@@ -122,7 +122,7 @@ typedef struct App {
     int pw, ph; float scale, vw, vh;
     Canvas frame, page; DisplayList pdl, cdl;
     Page *cur; bool loading;
-    char *hist[256]; int nhist, hpos;
+    char *hist[256]; uint64_t hgen[256]; int nhist, hpos;
     char url[2048]; bool editing; int sel_all;
     double caret_t;
     float sy; bool dirty, relayout;
@@ -147,12 +147,13 @@ static void navigate_ex(App *a, const char *url, bool push, const char *body, si
     if (push) {
         for (int i = a->hpos + 1; i < a->nhist; i++) free(a->hist[i]);
         a->nhist = a->hpos + 1;
-        if (a->nhist == 256) { free(a->hist[0]); memmove(a->hist, a->hist + 1, sizeof(char *) * 255); a->nhist--; }
+        if (a->nhist == 256) { free(a->hist[0]); memmove(a->hist, a->hist + 1, sizeof(char *) * 255); memmove(a->hgen, a->hgen + 1, sizeof(uint64_t) * 255); a->nhist--; }
         a->hist[a->nhist++] = xstrdup(u); a->hpos = a->nhist - 1;
     }
     snprintf(a->url, sizeof a->url, "%s", u);
     a->editing = false; a->loading = true; a->dirty = true;
     LoadReq *rq = xcalloc(1, sizeof *rq); rq->url = u; rq->gen = ++load_gen; rq->vw = a->vw; rq->vh = a->vh - BAR;
+    if (push) a->hgen[a->hpos] = rq->gen;
     if (body) { rq->body = xmalloc(blen + 1); memcpy(rq->body, body, blen); rq->body[blen] = 0; rq->blen = blen; rq->ctype = xstrdup(ctype ? ctype : ""); }
     SDL_Thread *t = SDL_CreateThread(loader, "loader", rq); SDL_DetachThread(t);
 }
@@ -427,7 +428,7 @@ static void h_sync(void *ud, Document *d, bool layout) {
 static void h_navigate(void *ud, const char *u) { (void)ud; navigate(g_app, u, true); }
 static void h_set_url(void *ud, const char *u, bool push) {
     (void)ud; App *a = g_app;
-    if (push && a->nhist < 256) { for (int i = a->hpos + 1; i < a->nhist; i++) free(a->hist[i]); a->nhist = a->hpos + 1; a->hist[a->nhist++] = xstrdup(u); a->hpos = a->nhist - 1; }
+    if (push && a->nhist < 256) { for (int i = a->hpos + 1; i < a->nhist; i++) free(a->hist[i]); a->nhist = a->hpos + 1; a->hist[a->nhist++] = xstrdup(u); a->hpos = a->nhist - 1; a->hgen[a->hpos] = a->cur ? a->cur->gen : 0; }
     else if (a->hpos >= 0) { free(a->hist[a->hpos]); a->hist[a->hpos] = xstrdup(u); }
     if (a->cur) { free(a->cur->url); a->cur->url = xstrdup(u); }
     if (!a->editing) snprintf(a->url, sizeof a->url, "%s", u);
@@ -588,7 +589,18 @@ static bool over_link(App *a, float x, float y) {
 
 static void history_go(App *a, int d) {
     int np = a->hpos + d; if (np < 0 || np >= a->nhist) return;
-    a->hpos = np; navigate(a, a->hist[np], false);
+    Page *p = a->cur;
+    if (p && p->js && a->hgen[np] == p->gen && a->hgen[a->hpos] == p->gen) {
+        a->hpos = np;
+        free(p->d->url); p->d->url = xstrdup(a->hist[np]);
+        free(p->url); p->url = xstrdup(a->hist[np]);
+        if (!a->editing) snprintf(a->url, sizeof a->url, "%s", a->hist[np]);
+        char js[64]; snprintf(js, sizeof js, "__lumenPopState(%d)", d);
+        js_eval(p->js, js, "lumen:popstate");
+        a->dirty = true;
+        return;
+    }
+    a->hpos = np; navigate(a, a->hist[np], false); a->hgen[np] = load_gen;
 }
 
 #include <execinfo.h>

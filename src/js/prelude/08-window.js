@@ -37,11 +37,17 @@ class Location {
 }
 URL_KEYS.forEach((k, i) => { if (k !== 'href') acc(Location.prototype, k, function () { return N.urlParse(N.url(), null)[i]; }, k === 'origin' ? undefined : function (v) { const u = new URL(N.url()); u[k] = v; this.assign(u.href); }); });
 const location = new Location();
-let histState = null;
+let histState = null, histIdx = 0;
+const histStates = [null];
+Object.defineProperty(globalThis, '__lumenPopState', { value: d => {
+    histIdx = Math.max(0, Math.min(histStates.length - 1, histIdx + d));
+    histState = histStates[histIdx] ?? null;
+    globalThis.dispatchEvent(new PopStateEvent('popstate', { state: histState }));
+} });
 const history = {
     get length() { return N.histLen(); }, get state() { return histState; }, scrollRestoration: 'auto',
-    pushState(s, t, u) { histState = structuredClone(s); if (u != null) N.setUrl(new URL(String(u), N.url()).href, true); },
-    replaceState(s, t, u) { histState = structuredClone(s); if (u != null) N.setUrl(new URL(String(u), N.url()).href, false); },
+    pushState(s, t, u) { histState = structuredClone(s); histStates.length = ++histIdx; histStates[histIdx] = histState; N.setUrl(u != null ? new URL(String(u), N.url()).href : N.url(), true); },
+    replaceState(s, t, u) { histState = structuredClone(s); histStates[histIdx] = histState; if (u != null) N.setUrl(new URL(String(u), N.url()).href, false); },
     back() { N.histGo(-1); }, forward() { N.histGo(1); }, go(d) { N.histGo(d | 0); },
 };
 const navigator = {
