@@ -287,36 +287,48 @@ void layout_run(Layout *L, Document *d, float vw, float vh) {
 }
 
 /* ---------------- hit testing ---------------- */
-static Box *hit(Box *b, float x, float y, float ox, float oy, bool fixed_pass) {
-    if (b->st && b->st->visibility == VIS_HIDDEN && b->kind != BX_TEXT) { }
+/* Children are tested front to back: positioned z>0 (highest first), positioned z auto/0,
+   in-flow, then positioned z<0; ties go to the later sibling. vx/vy map fixed boxes into viewport space. */
+static int hit_layer(const Box *c) {
+    if (!c->st || c->st->position == P_STATIC) return 2;
+    int z = c->st->z_auto ? 0 : c->st->z_index;
+    return z > 0 ? 0 : z == 0 ? 1 : 3;
+}
+static Box *hit(Box *b, float x, float y, float ox, float oy, float vx, float vy) {
+    bool hidden = b->st && b->st->visibility != VIS_VISIBLE;   /* not a target itself, but visible descendants are */
     float lx = x + ox, ly = y + oy;
     bool inside = lx >= b->x && lx < b->x + b->w && ly >= b->y && ly < b->y + b->h;
     if (b->scroller && b->node && !inside) return NULL;
     float cox = ox, coy = oy;
     if (b->scroller && b->node) { cox += b->node->scroll_x; coy += b->node->scroll_y; }
-    /* positioned children are on top: test them first (reverse order) */
-    for (int pass = 0; pass < 2; pass++)
+    int done = INT32_MAX;   /* z>0 layer: repeatedly take the highest z below the last one taken */
+    for (;;) {
+        int best = INT32_MIN;
+        for (Box *c = b->last; c; c = c->prev) if (hit_layer(c) == 0 && c->st->z_index < done && c->st->z_index > best) best = c->st->z_index;
+        if (best == INT32_MIN) break;
+        for (Box *c = b->last; c; c = c->prev) if (hit_layer(c) == 0 && c->st->z_index == best) {
+            Box *h = hit(c, x, y, c->fixed ? vx : cox, c->fixed ? vy : coy, vx, vy);
+            if (h) return h;
+        }
+        done = best;
+    }
+    for (int layer = 1; layer <= 3; layer++)
         for (Box *c = b->last; c; c = c->prev) {
-            bool pos = c->st && c->st->position != P_STATIC;
-            if ((pass == 0) != pos) continue;
-            if (c->fixed && !fixed_pass) continue;
-            Box *h = hit(c, x, y, c->fixed ? 0 : cox, c->fixed ? 0 : coy, fixed_pass);
+            if (hit_layer(c) != layer) continue;
+            Box *h = hit(c, x, y, c->fixed ? vx : cox, c->fixed ? vy : coy, vx, vy);
             if (h) return h;
         }
     if (b->kind == BX_INLINE) {
         for (int i = 0; i < b->nir; i++) { IRect *r = &b->ir[i]; if (lx >= r->x && lx < r->x + r->w && ly >= r->y && ly < r->y + r->h) return b; }
         return NULL;
     }
-    for (int i = 0; i < b->nfrags; i++) { TextFrag *f = &b->frags[i]; if (f->box->kind == BX_TEXT && lx >= f->x && lx < f->x + f->w && ly >= f->y && ly < f->y + f->h) { Box *t = f->box; return t->parent && t->parent->kind == BX_INLINE ? t->parent : b; } }
-    if (inside && b->node && b->st && b->st->pointer_events) return b;
+    for (int i = 0; i < b->nfrags; i++) { TextFrag *f = &b->frags[i]; if (f->box->kind == BX_TEXT && !(f->box->st && f->box->st->visibility != VIS_VISIBLE) && lx >= f->x && lx < f->x + f->w && ly >= f->y && ly < f->y + f->h) { Box *t = f->box; return t->parent && t->parent->kind == BX_INLINE ? t->parent : b; } }
+    if (inside && !hidden && b->node && b->st && b->st->pointer_events) return b;
     return NULL;
 }
 Box *layout_hit(Layout *L, float x, float y) {
     if (!L->root) return NULL;
-    /* fixed boxes first, in viewport space */
-    Box *h = hit(L->root, x - L->scroll_x, y - L->scroll_y, 0, 0, true);
-    if (h) return h;
-    return hit(L->root, x, y, 0, 0, false);
+    return hit(L->root, x, y, 0, 0, -L->scroll_x, -L->scroll_y);
 }
 
 void layout_dump(Box *b, int depth, int maxdepth) {

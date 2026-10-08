@@ -189,7 +189,10 @@ static void build(BState *bs, Box *parent, Node *n, int *li) {
     b->ctl = (uint8_t)ctl;
     b->abs = st->position == P_ABSOLUTE || st->position == P_FIXED; b->fixed = st->position == P_FIXED;
     b->floated = !b->abs && st->float_ != F_NONE;
-    b->scroller = st->overflow_x != OV_VISIBLE || st->overflow_y != OV_VISIBLE;
+    /* The root's overflow (or body's, when the root's is visible) belongs to the viewport, not the box */
+    const ComputedStyle *hs = L->doc->html ? L->doc->html->style : NULL;
+    bool to_viewport = n == L->doc->html || (n == L->doc->body && (!hs || (hs->overflow_x == OV_VISIBLE && hs->overflow_y == OV_VISIBLE)));
+    b->scroller = !to_viewport && (st->overflow_x != OV_VISIBLE || st->overflow_y != OV_VISIBLE);
     b->bfc = b->abs || b->floated || atomic || b->scroller || st->display == D_FLOW_ROOT || st->display == D_TABLE_CELL || st->display == D_TABLE_CAPTION || n == L->doc->html;
     switch (st->display) {
     case D_FLEX: case D_INLINE_FLEX: b->fmt = FMT_FLEX; break;

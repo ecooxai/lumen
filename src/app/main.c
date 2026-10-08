@@ -534,6 +534,12 @@ static void click_page(App *a, float x, float y) {
     if (!a->cur || !a->cur->L) return;
     Box *b = layout_hit(a->cur->L, x, y - BAR + a->sy);
     Node *t = b ? b->node : NULL;
+    if (getenv("LUMEN_DEBUG_CLICK")) {
+        fprintf(stderr, "lumen: click %.0f,%.0f box[%.0f,%.0f %.0fx%.0f] ->", x, y, b ? b->x : 0, b ? b->y : 0, b ? b->w : 0, b ? b->h : 0);
+        Node *n = t, *root = t; int i = 0;
+        for (; n; root = n, n = n->parent) if (i++ < 8) fprintf(stderr, " %s%s%s", n->type == NODE_ELEMENT ? n->tag : "#", n->type == NODE_ELEMENT && node_attr(n, "id") ? "#" : "", n->type == NODE_ELEMENT && node_attr(n, "id") ? node_attr(n, "id") : "");
+        fprintf(stderr, " connected=%d\n", root == &a->cur->d->node);
+    }
     while (t && t->type != NODE_ELEMENT) t = t->parent;
     if (t && a->cur->js) {
         JsCtx *js = a->cur->js; float cy = y - BAR;
@@ -595,6 +601,7 @@ static void crash_handler(int sig) {
 int main(int argc, char **argv) {
     signal(SIGSEGV, crash_handler); signal(SIGBUS, crash_handler); signal(SIGABRT, crash_handler);
     const char *start = argc > 1 ? argv[1] : "https://en.wikipedia.org/wiki/Web_browser";
+    SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) { fprintf(stderr, "SDL_Init: %s\n", SDL_GetError()); return 1; }
     dom_init(); net_init(6); font_init();
     icache_mu = SDL_CreateMutex(); EV_LOADED = SDL_RegisterEvents(1); EV_NET = SDL_RegisterEvents(1);

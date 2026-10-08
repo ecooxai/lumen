@@ -73,7 +73,9 @@ int main(int argc, char **argv) {
     js_dispatch_window(js, "load");
     double t2 = now_ms();
     double end = t2 + ms;
+    const char *until = getenv("JSRUN_UNTIL_ATTR");   /* stop early once <html> carries this attribute */
     while (now_ms() < end) {
+        if (until && d->html && node_attr(d->html, until)) break;
         net_poll();
         media_tick();
         js_tick(js);
