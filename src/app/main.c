@@ -1,6 +1,7 @@
 /* Lumen: SDL3 window, minimalist chrome, navigation, wgpu/CPU presentation */
 #include <math.h>
 #include <ctype.h>
+#include <time.h>
 #include <SDL3/SDL.h>
 #include "../paint/paint.h"
 #include "../media/media.h"
@@ -12,14 +13,16 @@
 
 #define TABH 30.f
 #define TB 44.f
-#define BAR (TABH + TB)
+static float g_info_h;
+#define INFOH 36.f
+#define BAR (TABH + TB + g_info_h)
 #ifdef __APPLE__
 #include "macui.h"
 #define TLW 78.f
 #else
 #define TLW 0.f
 #endif
-#define SIDEW 68.f
+#define SIDEW 84.f
 #define WSY0 (TABH + 8)
 #define WSRH 40.f
 
@@ -154,13 +157,15 @@ static void page_free(Page *p) {
     free(p->url); free(p);
 }
 
-typedef struct Tab { Page *cur; bool loading, relayout; char *hist[256]; uint64_t hgen[256]; int nhist, hpos; char url[2048]; float sy; uint64_t lgen; int ws; } Tab;
+typedef struct Tab { Page *cur; bool loading, relayout; char *hist[256]; uint64_t hgen[256]; int nhist, hpos; char url[2048]; float sy; uint64_t lgen; int ws;
+    double cpu_ms, media_ms0, hot_ms, budget, bud_t, unlimit_until; float pct; bool limited, info; } Tab;
 typedef struct App {
     SDL_Window *win; SDL_MetalView mview; Gpu *gpu;
     int pw, ph; float scale, vw, vh;
     Canvas frame, page; DisplayList pdl, cdl;
     Tab *t, *tabs[MAX_TABS]; int ntabs, ti;
     char wsname[16][64]; Tab *wslast[16]; int nws, wi; float side;
+    int wsicon[16]; Image *icimg[16][2];
     bool editing; int sel_all;
     double caret_t;
     bool dirty;
@@ -226,8 +231,28 @@ static float push_text(DisplayList *dl, Font *f, const char *s, float x, float b
     return w;
 }
 
-enum { HB_NONE, HB_BACK, HB_FWD, HB_RELOAD, HB_URL, HB_NEWTAB, HB_WSNEW, HB_TAB = 100, HB_TABX = 200, HB_WS = 300 };
+enum { HB_NONE, HB_BACK, HB_FWD, HB_RELOAD, HB_URL, HB_NEWTAB, HB_WSNEW, HB_TAB = 100, HB_TABX = 200, HB_WS = 300, HB_INFO = 400 };
+static void info_btn(App *a, int k, float *x, float *w) {
+    static const float W[4] = { 70, 76, 82, 28 }; float r = a->vw - 12;
+    for (int i = 3; i >= k; i--) r -= W[i] + (i < 3 ? 6 : 0);
+    *x = r; *w = W[k];
+}
 static int utf8_len(const char *q) { unsigned char c = (unsigned char)*q; int n = c < 0x80 ? 1 : (c & 0xE0) == 0xC0 ? 2 : (c & 0xF0) == 0xE0 ? 3 : 4; for (int k = 1; k < n; k++) if (!q[k]) return k; return n; }
+static Image *ws_icon(App *a, int ic, bool on) {
+#ifdef __APPLE__
+    if (ic < 0 || ic >= MAC_NICONS) return NULL;
+    Image **slot = &a->icimg[ic][on];
+    if (!*slot) {
+        int px = (int)(18 * a->scale + 0.5f); Image *im = xcalloc(1, sizeof *im);
+        im->w = im->h = px; im->refs = 1; im->scale = a->scale; im->px = xcalloc((size_t)px * (size_t)px, 4);
+        if (!mac_icon_rgba(ic, px, on ? 0x141414 : 0x5a5e64, im->px)) { free(im->px); free(im); return NULL; }
+        *slot = im;
+    }
+    return *slot;
+#else
+    (void)a; (void)ic; (void)on; return NULL;
+#endif
+}
 static int ws_tabs(App *a, int w, int *out) { int n = 0; for (int i = 0; i < a->ntabs; i++) if (a->tabs[i]->ws == w) out[n++] = i; return n; }
 static float tab_w(App *a) { int v[MAX_TABS], n = ws_tabs(a, a->wi, v); float w = (a->vw - TLW - 48) / (n ? n : 1); return w > 220 ? 220 : w; }
 static int bar_hit(App *a, float x, float y) {
@@ -243,6 +268,7 @@ static int bar_hit(App *a, float x, float y) {
         return y >= WSY0 && r == a->nws ? HB_WSNEW : HB_NONE;
     }
     if (y > BAR) return HB_NONE;
+    if (y >= TABH + TB) { for (int k = 0; k < 4; k++) { float bx, bw; info_btn(a, k, &bx, &bw); if (x >= bx && x < bx + bw) return HB_INFO + k; } return HB_NONE; }
     x -= a->side;
     if (x < 40) return HB_BACK; if (x < 72) return HB_FWD; if (x < 104) return HB_RELOAD;
     return HB_URL;
@@ -294,7 +320,22 @@ static void build_chrome(App *a) {
             float lw = text_width(a->ui, lab, strlen(lab), 0);
             if (on || hov || w == a->nws) push_rect(dl, 10, y + 3, bw, WSRH - 6, 8, on ? RGBA(255, 255, 255, 255) : hov ? RGBA(222, 225, 230, 255) : RGBA(236, 238, 241, 255));
             if (on) push_rect(dl, 4, y + 12, 3, WSRH - 24, 1, RGBA(66, 133, 244, 255));
-            push_text(dl, a->ui, lab, 10 + (bw - lw) / 2, y + WSRH / 2 + rb, bw, on ? RGBA(20, 20, 20, 255) : RGBA(90, 94, 100, 255));
+            Image *ici = w < a->nws ? ws_icon(a, a->wsicon[w], on) : NULL;
+            if (ici) { DItem it; memset(&it, 0, sizeof it); it.op = DO_IMAGE; it.x = 10 + (bw - 18) / 2; it.y = y + (WSRH - 18) / 2; it.w = it.h = 18; it.img = ici; it.alpha = 1; vec_push(dl->items, it); }
+            else push_text(dl, a->ui, lab, 10 + (bw - lw) / 2, y + WSRH / 2 + rb, bw, on ? RGBA(20, 20, 20, 255) : RGBA(90, 94, 100, 255));
+        }
+    }
+    if (g_info_h > 0) {
+        float y0 = TABH + TB, rb = (a->ui->ascent - a->ui->descent) / 2, cy = y0 + g_info_h / 2 + rb;
+        push_rect(dl, a->side, y0, a->vw - a->side, g_info_h, 0, RGBA(254, 247, 224, 255));
+        push_rect(dl, a->side, y0 + g_info_h - 1, a->vw - a->side, 1, 0, RGBA(230, 214, 160, 255));
+        push_text(dl, a->ui, "This tab used over 80% CPU for 20 s, so Lumen limited it to 40%. Remove the limit for:", a->side + 14, cy, a->vw - a->side - 310, RGBA(60, 50, 20, 255));
+        static const char *lb[4] = { "1 hour", "4 hours", "10 hours", "\xC3\x97" };
+        for (int k = 0; k < 4; k++) {
+            float bx, bwid; info_btn(a, k, &bx, &bwid);
+            if (k < 3 || a->hover == HB_INFO + k) push_rect(dl, bx, y0 + 6, bwid, g_info_h - 12, 6, a->hover == HB_INFO + k ? RGBA(240, 228, 190, 255) : RGBA(255, 255, 255, 255));
+            float lw = text_width(a->ui, lb[k], strlen(lb[k]), 0);
+            push_text(dl, a->ui, lb[k], bx + (bwid - lw) / 2, cy, bwid, RGBA(60, 50, 20, 255));
         }
     }
     int n0 = dl->items.n;
@@ -889,7 +930,7 @@ static void ws_select(App *a, int w) {
 }
 static void ws_new(App *a, const char *name) {
     if (a->nws == 16) return;
-    snprintf(a->wsname[a->nws], sizeof a->wsname[0], "%s", name); a->wslast[a->nws++] = NULL;
+    snprintf(a->wsname[a->nws], sizeof a->wsname[0], "%s", name); a->wsicon[a->nws] = -1; a->wslast[a->nws++] = NULL;
     ws_select(a, a->nws - 1);
 }
 static void ws_close(App *a, int w) {
@@ -898,6 +939,7 @@ static void ws_close(App *a, int w) {
     for (int i = 0; i < a->ntabs; i++) { Tab *t = a->tabs[i]; if (t->ws == w) tab_free(t); else { if (t->ws > w) t->ws--; a->tabs[n++] = t; } }
     a->ntabs = n;
     memmove(a->wsname + w, a->wsname + w + 1, sizeof a->wsname[0] * (size_t)(a->nws - w - 1));
+    memmove(a->wsicon + w, a->wsicon + w + 1, sizeof(int) * (size_t)(a->nws - w - 1));
     memmove(a->wslast + w, a->wslast + w + 1, sizeof(Tab *) * (size_t)(a->nws - w - 1)); a->nws--;
     publish_gens(a);
     a->t = n ? a->tabs[0] : NULL; a->ti = 0;
@@ -910,17 +952,52 @@ static bool ui_prompt(const char *title, const char *init, char *out, size_t n) 
     (void)title; snprintf(out, n, "%s", init); return true;
 #endif
 }
+static void navigate(App *a, const char *url, bool push);
 static void menu_cmd(App *a, int c) {
     char nm[64], def[64];
     switch (c) {
     case MENU_WS_NEW: snprintf(def, sizeof def, "Workspace %d", a->nws + 1); if (ui_prompt("New workspace", def, nm, sizeof nm)) ws_new(a, nm); break;
     case MENU_WS_RENAME: if (ui_prompt("Rename workspace", a->wsname[a->wi], nm, sizeof nm)) snprintf(a->wsname[a->wi], sizeof a->wsname[0], "%s", nm); break;
     case MENU_WS_CLOSE: ws_close(a, a->wi); break;
+    case MENU_WS_REFRESH: { Tab *act = a->t; for (int i = 0; i < a->ntabs; i++) { Tab *t = a->tabs[i]; if (t->ws != a->wi || t->hpos < 0) continue; a->t = t; navigate(a, t->hist[t->hpos], false); } a->t = act; break; }
     case MENU_WS_NEXT: ws_select(a, (a->wi + 1) % a->nws); break;
     case MENU_WS_PREV: ws_select(a, (a->wi + a->nws - 1) % a->nws); break;
     case MENU_WS_SIDEBAR: a->side = a->side > 0 ? 0 : SIDEW; for (int i = 0; i < a->ntabs; i++) a->tabs[i]->relayout = true; break;
     }
     a->dirty = true; a->vonly = false;
+}
+static void info_click(App *a, int k) {
+    Tab *t = a->t;
+    if (k < 3) { static const int H[3] = { 1, 4, 10 }; t->unlimit_until = (double)time(NULL) + H[k] * 3600.0; t->limited = false; t->hot_ms = 0; if (t->cur) media_set_limit(t->cur->d, 0); }
+    t->info = false; a->dirty = true; a->vonly = false;
+}
+static void cpu_monitor(App *a) {   /* a tab over 80% of a core for 20 s is limited to 40% until the user lifts it */
+    static double last; double now = now_ms();
+    if (!last) { last = now; return; }
+    double dt = now - last; if (dt < 1000) return; last = now;
+    for (int i = 0; i < a->ntabs; i++) {
+        Tab *t = a->tabs[i];
+        double mc = t->cur ? media_cpu_ms(t->cur->d) : 0, used = t->cpu_ms + LMAX(0, mc - t->media_ms0);
+        t->media_ms0 = mc; t->cpu_ms = 0; t->pct = (float)(used / dt);
+        if (t->limited) { if (t->cur) media_set_limit(t->cur->d, 0.4f); continue; }
+        if ((double)time(NULL) < t->unlimit_until) continue;
+        if (t->pct > 0.8f) t->hot_ms += dt; else t->hot_ms = 0;
+        if (t->hot_ms >= 20000) {
+            t->limited = t->info = true; t->budget = 0; t->bud_t = now;
+            if (t->cur) media_set_limit(t->cur->d, 0.4f);
+            fprintf(stderr, "lumen: tab %d limited to 40%% CPU (was %.0f%%)\n", i, t->pct * 100);
+        }
+    }
+    if (getenv("LUMEN_CPU_DEBUG")) for (int i = 0; i < a->ntabs; i++) fprintf(stderr, "lumen-cpu: tab %d %.0f%%%s\n", i, a->tabs[i]->pct * 100, a->tabs[i]->limited ? " limited" : "");
+}
+static void ws_popup(App *a, int w, float x, float y) {
+#ifdef __APPLE__
+    int c = mac_ws_menu(a->win, x, y);
+    if (c >= MENU_WS_ICON) { int ic = c - MENU_WS_ICON; a->wsicon[w] = ic >= MAC_NICONS ? -1 : ic; a->dirty = true; a->vonly = false; }
+    else if (c) menu_cmd(a, c);
+#else
+    (void)w; (void)x; (void)y; menu_cmd(a, MENU_WS_RENAME);
+#endif
 }
 static SDL_HitTestResult win_hit(SDL_Window *w, const SDL_Point *pt, void *ud) {
     (void)w;
@@ -963,7 +1040,7 @@ int main(int argc, char **argv) {
     icache_mu = SDL_CreateMutex(); EV_LOADED = SDL_RegisterEvents(1); EV_NET = SDL_RegisterEvents(1); EV_MENU = SDL_RegisterEvents(1);
     net_wakeup = wake; media_wakeup = wake; js_wakeup = wake; js_global_init(argv[0]);
     paint_image_hook = node_img; paint_url_image_hook = url_img; layout_image_size_hook = img_size;
-    App a; memset(&a, 0, sizeof a); g_app = &a; a.nws = 1; snprintf(a.wsname[0], sizeof a.wsname[0], "Personal"); a.side = getenv("LUMEN_NO_SIDEBAR") ? 0 : SIDEW; tab_new(&a);
+    App a; memset(&a, 0, sizeof a); g_app = &a; a.nws = 1; a.wsicon[0] = -1; snprintf(a.wsname[0], sizeof a.wsname[0], "Personal"); a.side = getenv("LUMEN_NO_SIDEBAR") ? 0 : SIDEW; tab_new(&a);
     bool want_gpu = !getenv("LUMEN_NO_GPU");
     a.win = SDL_CreateWindow("Lumen", 1280, 840, SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY | (want_gpu && !strcmp(SDL_GetPlatform(), "macOS") ? SDL_WINDOW_METAL : 0));
     if (!a.win) { fprintf(stderr, "SDL_CreateWindow: %s\n", SDL_GetError()); return 1; }
@@ -1004,7 +1081,7 @@ int main(int argc, char **argv) {
     while (!quit) {
         SDL_Event ev;
         int to = a.t->loading ? 120 : 1000;
-        for (int i = 0; i < a.ntabs; i++) { Tab *tb = a.tabs[i]; if (tb->cur && tb->cur->js) { double dl = js_next_deadline(tb->cur->js) - now_ms(); if (dl < to) to = dl < 0 ? 0 : (int)dl; } }
+        for (int i = 0; i < a.ntabs; i++) { Tab *tb = a.tabs[i]; if (tb->cur && tb->cur->js) { double dl = js_next_deadline(tb->cur->js) - now_ms(); if (tb->limited && tb->budget < 0) dl = LMAX(dl, -tb->budget / 0.4 - (now_ms() - tb->bud_t)); if (dl < to) to = dl < 0 ? 0 : (int)dl; } }
         if (net_pending() && to > 50) to = 50;
         { int mf = media_tick(); if (mf & 1) { if (!a.dirty) a.vonly = true; a.dirty = true; } if (mf & 2) a.t->relayout = true; }
         if (!a.editing && page_focus(&a) && !SDL_TextInputActive(a.win)) SDL_StartTextInput(a.win);
@@ -1043,7 +1120,8 @@ int main(int argc, char **argv) {
             case SDL_EVENT_MOUSE_BUTTON_DOWN:
                 if (ev.button.button != SDL_BUTTON_LEFT) break;
                 { int bh = bar_hit(&a, ev.button.x, ev.button.y);
-                  if (bh >= HB_WS) { ws_select(&a, bh - HB_WS); if (ev.button.clicks == 2) menu_cmd(&a, MENU_WS_RENAME); break; }
+                  if (bh >= HB_INFO) { info_click(&a, bh - HB_INFO); break; }
+                  if (bh >= HB_WS) { int w = bh - HB_WS; if (w != a.wi) ws_select(&a, w); else ws_popup(&a, w, ev.button.x, ev.button.y); break; }
                   if (bh == HB_WSNEW) { menu_cmd(&a, MENU_WS_NEW); break; }
                   if (bh >= HB_TABX) { tab_close(&a, bh - HB_TABX, &quit); break; }
                   if (bh >= HB_TAB) { tab_select(&a, bh - HB_TAB); break; }
@@ -1134,8 +1212,10 @@ int main(int argc, char **argv) {
             }
         } while (SDL_PollEvent(&ev));
         net_poll();
-        { Tab *act = a.t; for (int i = 0; i < a.ntabs; i++) { a.t = a.tabs[i]; if (a.t->cur && a.t->cur->js) { js_tick(a.t->cur->js); restyle(&a); fire_img_events(a.t->cur); } } a.t = act; if (a.t->cur && a.t->cur->js) frames_tick(&a); }
-        if (a.dirty) render(&a);
+        { Tab *act = a.t; double tn = now_ms(); for (int i = 0; i < a.ntabs; i++) { a.t = a.tabs[i]; if (a.t->limited) { a.t->budget = LMIN(a.t->budget + 0.4 * (tn - a.t->bud_t), 100); a.t->bud_t = tn; if (a.t->budget < 0) continue; } if (a.t->cur && a.t->cur->js) { double c0 = now_ms(); js_tick(a.t->cur->js); restyle(&a); fire_img_events(a.t->cur); double c = now_ms() - c0; a.t->cpu_ms += c; if (a.t->limited) a.t->budget -= c; } } a.t = act; if (a.t->cur && a.t->cur->js) frames_tick(&a); }
+        if (a.dirty) { double r0 = now_ms(); render(&a); a.t->cpu_ms += now_ms() - r0; }
+        cpu_monitor(&a);
+        { float want = a.t->info ? INFOH : 0; if (want != g_info_h) { g_info_h = want; for (int i = 0; i < a.ntabs; i++) a.tabs[i]->relayout = true; a.dirty = true; a.vonly = false; } }
         if (*cookie_path && now_ms() - cookies_saved_at > 5000) { cookies_save(cookie_path); cookies_saved_at = now_ms(); }
     }
     if (*cookie_path) cookies_save(cookie_path);

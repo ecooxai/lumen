@@ -42,6 +42,10 @@ Image *media_frame_for(Node *element);
 bool media_is_frame(const Image *im);   /* borrowed; valid until a later media_tick */
 extern void (*media_wakeup)(void);
 size_t media_mem_bytes(size_t *frames);
+/* Tab CPU limiter: decoder-thread CPU (ms) of players in `d`, and cap them to `lim` of a core (0 = none). */
+struct Document;
+double media_cpu_ms(struct Document *d);
+void media_set_limit(struct Document *d, float lim);
 extern bool media_lowmem;   /* hidden players skip RGBA conversion */
 void media_mark_visible(bool (*vis)(Node *, void *), void *ud);
 

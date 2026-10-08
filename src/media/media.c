@@ -61,6 +61,7 @@ struct MediaPlayer {
     VFrame vq[VQ_MAX]; int vqn;
     AChunk *ah, *at; double abuf;
     Image *cur, *grave[3]; int ngrave; double painted;
+    float limit; double cpu_ms;            /* tab CPU limiter: max share of a core, decoder-thread CPU used */
 };
 
 void (*media_wakeup)(void);
@@ -68,6 +69,19 @@ static SDL_Mutex *g_mu;
 static MediaPlayer **g_pl; static int g_np, g_cap;
 
 static void wake(void) { if (media_wakeup) media_wakeup(); }
+static double thread_cpu_ms(void) { struct timespec ts; clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts); return (double)ts.tv_sec * 1e3 + (double)ts.tv_nsec / 1e6; }
+double media_cpu_ms(struct Document *d) {
+    double t = 0;
+    SDL_LockMutex(g_mu);
+    for (int i = 0; i < g_np; i++) { MediaPlayer *m = g_pl[i]; if (m->node && m->node->doc == d) { SDL_LockMutex(m->mu); t += m->cpu_ms; SDL_UnlockMutex(m->mu); } }
+    SDL_UnlockMutex(g_mu);
+    return t;
+}
+void media_set_limit(struct Document *d, float lim) {
+    SDL_LockMutex(g_mu);
+    for (int i = 0; i < g_np; i++) { MediaPlayer *m = g_pl[i]; if (m->node && m->node->doc == d) { SDL_LockMutex(m->mu); m->limit = lim; SDL_UnlockMutex(m->mu); } }
+    SDL_UnlockMutex(g_mu);
+}
 size_t media_mem_bytes(size_t *frames) {
     size_t seg = 0, fr = 0;
     SDL_LockMutex(g_mu);
@@ -346,11 +360,18 @@ static int run_demux(Stream *s, DecCtx *d, double start) {
     if (s->progressive && start > 0) av_seek_frame(fc, -1, (int64_t)(start * AV_TIME_BASE), AVSEEK_FLAG_BACKWARD);
     int r;
     ret = 0;
+    double wc0 = (double)SDL_GetTicks(), cc0 = thread_cpu_ms(), cl = cc0;
     while ((r = av_read_frame(fc, pkt)) >= 0) {
         bool ok = true;
         if (pkt->stream_index == vi) ok = decode_pkt(s, d, vc, pkt, f, true, fc->streams[vi]->time_base);
         else if (pkt->stream_index == ai) ok = decode_pkt(s, d, ac, pkt, f, false, fc->streams[ai]->time_base);
         av_packet_unref(pkt);
+        double cn = thread_cpu_ms(); SDL_LockMutex(m->mu); m->cpu_ms += cn - cl; float lim = m->limit; SDL_UnlockMutex(m->mu); cl = cn;
+        if (lim > 0) {
+            double wn = (double)SDL_GetTicks(), need = (cn - cc0) / lim - (wn - wc0);
+            if (need > 1) SDL_Delay((Uint32)fmin(need, 200));
+            if (wn - wc0 > 2000) { wc0 = (double)SDL_GetTicks(); cc0 = thread_cpu_ms(); }
+        }
         if (!ok) goto done;
     }
     if (r == AVERROR_EXIT) goto done;
