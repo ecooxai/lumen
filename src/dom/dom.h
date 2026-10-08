@@ -32,11 +32,13 @@ typedef struct Node {
     char *text; size_t text_len;   /* text / comment / doctype name */
     struct ComputedStyle *style;
     struct Box *box;
+    float scroll_x, scroll_y;      /* element scroll offsets (kept across relayouts) */
     void *js;                      /* JS wrapper (v8::Global*) */
     void *ext;                     /* element specific data (img, video, canvas, input) */
     void (*ext_free)(void *);
     struct Node *shadow_root;      /* attached shadow root (FRAGMENT with host) */
     struct Node *host;             /* for shadow roots */
+    char *value_override;          /* form control value set by user/script */
     struct Node *template_content; /* for <template> */
     char *inline_style_src;        /* cached style="" for change detection */
     void *inline_decls;            /* parsed CSS declarations for style attr */

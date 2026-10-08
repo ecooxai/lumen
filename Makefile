@@ -74,3 +74,6 @@ $(BUILD)/style: $(call OBJ,tests/style.c $(CSS_TEST_SRC))
 	$(CC) $(OPT) $^ -o $@ $(NETLIBS)
 $(BUILD)/text: $(call OBJ,tests/text.c $(BASE_SRC) src/text/font.c)
 	$(CC) $(OPT) $^ -o $@ $(LIBDIRS) -lfreetype -lharfbuzz
+LAYOUT_TEST_SRC := $(CSS_TEST_SRC) src/text/font.c $(wildcard src/layout/*.c)
+$(BUILD)/layout: $(call OBJ,tests/layout.c $(LAYOUT_TEST_SRC))
+	$(CC) $(OPT) $^ -o $@ $(NETLIBS) -lfreetype -lharfbuzz
