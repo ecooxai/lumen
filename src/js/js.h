@@ -45,6 +45,7 @@ bool js_wants_frame(JsCtx *c);
 /* the live child browsing context's document for an <iframe>, or NULL */
 Document *js_frame_doc(Node *iframe);
 JsCtx *js_frame_ctx(Node *iframe);
+extern void (*js_wakeup)(void);   /* called from worker threads when messages are queued */
 void js_frame_navigate(Node *iframe, const char *url);
 
 #ifdef __cplusplus

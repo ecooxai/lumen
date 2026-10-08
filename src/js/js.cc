@@ -5,6 +5,7 @@
 #include <unistd.h>
 
 static std::unique_ptr<v8::Platform> g_platform;
+v8::Platform *js_platform() { return g_platform.get(); }
 int g_log_level = 3;
 alignas(8) static char kNodeMagic;
 
@@ -264,6 +265,7 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
 
 void js_free(JsCtx *c) {
     if (!c) return;
+    workers_kill(c);
     for (JsCtx *k : std::vector<JsCtx *>(c->kids)) js_free(k);
     frames_forget(c);
     if (c->parent) {
@@ -364,6 +366,7 @@ double js_next_deadline(JsCtx *c) {
     for (auto &e : c->anims) d = std::min(d, e.due);
     if (!c->rafs.empty()) d = std::min(d, c->last_raf + 16);
     for (JsCtx *k : c->kids) if (!k->dead) d = std::min(d, js_next_deadline(k));
+    d = std::min(d, workers_deadline(c));
     return d;
 }
 
@@ -409,6 +412,7 @@ static void tick_one(JsCtx *c) {
                 (void)jcall(c, fa.As<v8::Function>(), v8::Undefined(iso), 5, argv);
             }
     }
+    workers_pump(c);
     settle(c);
 }
 

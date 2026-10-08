@@ -82,6 +82,7 @@ int main(int argc, char **argv) {
         if (d->dom_version != seen_ver) { seen_ver = d->dom_version; style_recalc(se, &d->node, false); }
         double dl = js_next_deadline(js) - now_ms();
         if (dl > 5) dl = 5;
+        if (dl > 5) dl = 5;
         if (dl > 0) usleep((useconds_t)(dl * 1000));
     }
     fprintf(stderr, "jsrun: context %.1fms, %d scripts %.1fms, dom_version %llu\n", t1 - t0, nscripts, t2 - t1, (unsigned long long)d->dom_version);

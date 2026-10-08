@@ -684,5 +684,5 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(currentScript); REG(media); REG(cssSupports); REG(urlParse); REG(encode); REG(decode); REG(random); REG(cDigest); REG(cHmac); REG(cAes); REG(cEcGen); REG(cEcDerive); REG(cEcSign); REG(cEcVerify); REG(cSpki); REG(cSpkiParse); REG(cPkcs8Parse); REG(cEcFromD); REG(cHkdf); REG(cPbkdf2);
     REG(heap); REG(imgSize); REG(userAgent); REG(platform); REG(cpus);
 #undef REG
-    js_install_frames(c, N);
+    js_install_frames(c, N); js_install_workers(c, N);
 }

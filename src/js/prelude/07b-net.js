@@ -125,3 +125,32 @@ Object.assign(WebSocket, { CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3 });
 class MessagePort extends EventTarget { constructor() { super(); this.onmessage = null; def(this, '_other', null); } postMessage(d) { const o = this._other; if (o) setTimeout(() => { const ev = new MessageEvent('message', { data: structuredClone(d) }); if (o.onmessage) o.onmessage(ev); dispatch(o, ev); }); } start() {} close() { this._other = null; } }
 class MessageChannel { constructor() { this.port1 = new MessagePort(); this.port2 = new MessagePort(); this.port1._other = this.port2; this.port2._other = this.port1; } }
 class BroadcastChannel extends EventTarget { constructor(n) { super(); this.name = String(n); } postMessage() {} close() {} }
+
+const workers = new Map();
+class Worker extends EventTarget {
+    constructor(url, opts) {
+        super();
+        if (arguments.length < 1) throw new TypeError("Failed to construct 'Worker': 1 argument required, but only 0 present.");
+        const u = new URL(String(url), document.baseURI || N.url());
+        if (opts && opts.type === 'module') throw new DOMException("Failed to construct 'Worker': Module scripts are not supported in workers yet.", 'NotSupportedError');
+        let src = null;
+        if (u.protocol === 'blob:') { const b = objectURLs.get(u.href); if (b) src = new TextDecoder().decode(b._buf); }
+        else if (u.protocol === 'data:') { const lb = localBody(u.href); if (lb) src = new TextDecoder().decode(lb[0]); }
+        else if (u.origin !== location.origin) throw new DOMException(`Failed to construct 'Worker': Script at '${u.href}' cannot be accessed from origin '${location.origin}'.`, 'SecurityError');
+        this.onmessage = null; this.onmessageerror = null; this.onerror = null;
+        def(this, '_id', N.workerNew(u.href, src, N.userAgent(), N.platform(), opts && opts.name != null ? String(opts.name) : ''));
+        workers.set(this._id, this);
+    }
+    postMessage(m, t) { if (arguments.length < 1) throw new TypeError("Failed to execute 'postMessage' on 'Worker': 1 argument required, but only 0 present."); if (this._id) N.workerPost(this._id, m); }
+    terminate() { if (this._id) { N.workerTerm(this._id); workers.delete(this._id); this._id = 0; } }
+}
+function workerEvent(id, kind, data, message, filename, lineno, colno) {
+    const w = workers.get(id); if (!w) return;
+    if (kind === 0) dispatch(w, new MessageEvent('message', { data }), true);
+    else if (kind === 1) {
+        const e = new ErrorEvent('error', { message, filename, lineno, colno, cancelable: true });
+        dispatch(w, e, true);
+        if (!e.defaultPrevented) N.log(3, 'Uncaught (in worker) ' + message + ' at ' + filename + ':' + lineno);
+    } else if (kind === 3) dispatch(w, new MessageEvent('messageerror', {}), true);
+    else dispatch(w, new Event('error', { cancelable: true }), true);
+}
