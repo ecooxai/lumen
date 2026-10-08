@@ -87,6 +87,8 @@ typedef struct ComputedStyle {
     char *content;          /* for ::before/::after */
     int grid_ncols; GridTrack *grid_cols; int grid_nrows; GridTrack *grid_rows; Length grid_auto_rows;
     int grid_col_start, grid_col_span, grid_row_start, grid_row_span;
+    char *grid_areas;       /* template areas: cells space-separated, rows '/'-separated */
+    char *grid_area;        /* named grid-area of an item */
     float filter_blur; float filter_brightness; float backdrop_blur;
     float line_clamp;
     Color caret_color, fill, stroke; float stroke_width;

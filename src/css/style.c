@@ -45,7 +45,7 @@ ComputedStyle *style_inherit(const ComputedStyle *p) {
 void style_ref(ComputedStyle *s) { if (s) s->refs++; }
 void style_free(ComputedStyle *s) {
     if (!s || --s->refs > 0) return;
-    free(s->bg_image); free(s->bg_gradient); free(s->content); free(s->grid_cols); free(s->grid_rows);
+    free(s->bg_image); free(s->bg_gradient); free(s->content); free(s->grid_cols); free(s->grid_rows); free(s->grid_areas); free(s->grid_area);
     custom_unref(s->custom);
     if (s->before) style_free(s->before);
     if (s->after) style_free(s->after);
@@ -524,6 +524,21 @@ static uint8_t parse_align(const char *v) {
 static const char *const known_props[] = { "display","position","float","clear","width","height","min-width","min-height","max-width","max-height","margin","margin-top","margin-right","margin-bottom","margin-left","padding","padding-top","padding-right","padding-bottom","padding-left","border","border-width","border-style","border-color","border-top","border-right","border-bottom","border-left","border-radius","color","background","background-color","background-image","font","font-size","font-weight","font-family","font-style","line-height","text-align","text-decoration","white-space","overflow","overflow-x","overflow-y","visibility","opacity","z-index","top","right","bottom","left","inset","flex","flex-direction","flex-wrap","flex-grow","flex-shrink","flex-basis","justify-content","align-items","align-self","align-content","gap","row-gap","column-gap","order","grid","grid-template-columns","grid-template-rows","grid-column","grid-row","grid-area","transform","transition","animation","box-shadow","text-shadow","box-sizing","cursor","pointer-events","content","list-style","list-style-type","vertical-align","text-transform","letter-spacing","word-spacing","text-indent","text-overflow","word-break","overflow-wrap","word-wrap","object-fit","aspect-ratio","filter","outline","user-select","appearance","will-change","contain","isolation","mix-blend-mode","place-items","place-content","place-self","justify-items","justify-self","table-layout","border-collapse","border-spacing","clip-path","mask","resize","scroll-behavior","overscroll-behavior","touch-action","font-variant","text-rendering","-webkit-font-smoothing","fill","stroke","caret-color","accent-color","color-scheme","translate","scale","rotate","container-type","backdrop-filter","line-clamp","-webkit-line-clamp","text-wrap","hyphens","tab-size","direction","unicode-bidi","writing-mode","inset-inline","inset-block","margin-inline","margin-block","padding-inline","padding-block", NULL };
 bool css_property_known(const char *p) { return kw(p, known_props) >= 0; }
 
+static char *parse_grid_areas(const char *v) {
+    if (str_ieq(v, "none")) return NULL;
+    SB b; sb_init(&b); bool any = false;
+    for (const char *q = v; *q; q++) {
+        if (*q != '"' && *q != '\'') continue;
+        char qc = *q++; if (any) sb_putc(&b, '/');
+        bool sp = true;
+        for (; *q && *q != qc; q++) { if (*q == ' ' || *q == '\t') { if (!sp) sb_putc(&b, ' '); sp = true; } else { sb_putc(&b, *q); sp = false; } }
+        while (b.n && b.s[b.n - 1] == ' ') b.n--;
+        any = true; if (!*q) break;
+    }
+    if (!any) { sb_free(&b); return NULL; }
+    return sb_take(&b);
+}
+
 void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *prop, const char *value_in, StyleEngine *e, Node *el) {
     if (prop[0] == '-' && prop[1] == '-') {
         /* custom property: copy-on-write map */
@@ -697,13 +712,14 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         if (!strcmp(P, "gap") || !strcmp(P, "grid-gap")) { char *t[2]; int n = split_ws(val, t, 2); if (n && alen(&c, t[0], &l)) { st->row_gap = l.px; st->row_gap_l = l; st->column_gap = l.px; st->column_gap_l = l; } if (n > 1 && alen(&c, t[1], &l)) { st->column_gap = l.px; st->column_gap_l = l; } free_toks(t, n); }
         else if (!strcmp(P, "grid-template-columns")) { free(st->grid_cols); st->grid_cols = NULL; st->grid_ncols = str_ieq(val, "none") ? 0 : parse_grid_tracks(&c, val, &st->grid_cols); }
         else if (!strcmp(P, "grid-template-rows")) { free(st->grid_rows); st->grid_rows = NULL; st->grid_nrows = str_ieq(val, "none") ? 0 : parse_grid_tracks(&c, val, &st->grid_rows); }
-        else if (!strcmp(P, "grid-template")) { char *sl = strchr(val, '/'); if (sl) { *sl = 0; css_apply_decl(st, par, "grid-template-rows", val, e, el); css_apply_decl(st, par, "grid-template-columns", sl + 1, e, el); } }
+        else if (!strcmp(P, "grid-template")) { if (strchr(val, '"') || strchr(val, '\'')) { free(st->grid_areas); st->grid_areas = parse_grid_areas(val); } char *sl = strchr(val, '/'); if (sl) { *sl = 0; css_apply_decl(st, par, "grid-template-rows", val, e, el); css_apply_decl(st, par, "grid-template-columns", sl + 1, e, el); } }
         else if (!strcmp(P, "grid-column")) parse_grid_line(val, &st->grid_col_start, &st->grid_col_span);
         else if (!strcmp(P, "grid-row")) parse_grid_line(val, &st->grid_row_start, &st->grid_row_span);
         else if (!strcmp(P, "grid-column-start")) { if (str_istarts(val, "span")) st->grid_col_span = atoi(val + 4); else st->grid_col_start = atoi(val); }
         else if (!strcmp(P, "grid-row-start")) { if (str_istarts(val, "span")) st->grid_row_span = atoi(val + 4); else st->grid_row_start = atoi(val); }
         else if (!strcmp(P, "grid-auto-rows")) alen(&c, val, &st->grid_auto_rows);
-        else if (!strcmp(P, "grid-area")) { int a = atoi(val); if (a > 0) st->grid_row_start = a; }
+        else if (!strcmp(P, "grid-area")) { free(st->grid_area); st->grid_area = NULL; int a = atoi(val); if (a > 0) st->grid_row_start = a; else if (isalpha((unsigned char)*val) || *val == '_' || *val == '-') { size_t k = strcspn(val, " /"); st->grid_area = xstrndup(val, k); } }
+        else if (!strcmp(P, "grid-template-areas")) { free(st->grid_areas); st->grid_areas = parse_grid_areas(val); }
         break;
     case 'h':
         if (!strcmp(P, "height")) alen(&c, val, &st->height);

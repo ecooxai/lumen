@@ -3,6 +3,21 @@
 
 static float track_fixed(const GridTrack *t, float W) { if (t->size.kind == LK_LEN && !t->fr) return res(t->size, W); if (t->min.kind == LK_LEN && t->min.px > 0 && !t->fr) return res(t->min, W); return -1; }
 
+static bool area_lookup(const char *areas, const char *name, int *r, int *c, int *rs, int *cs) {
+    int r0 = 1 << 20, c0 = 1 << 20, r1 = -1, c1 = -1, row = 0, col = 0;
+    size_t nl = strlen(name);
+    for (const char *q = areas; ; ) {
+        const char *e = q; while (*e && *e != ' ' && *e != '/') e++;
+        if ((size_t)(e - q) == nl && !memcmp(q, name, nl)) { r0 = LMIN(r0, row); c0 = LMIN(c0, col); r1 = LMAX(r1, row); c1 = LMAX(c1, col); }
+        if (!*e) break;
+        if (*e == '/') { row++; col = 0; } else col++;
+        q = e + 1;
+    }
+    if (r1 < 0) return false;
+    *r = r0; *c = c0; *rs = r1 - r0 + 1; *cs = c1 - c0 + 1; return true;
+}
+static int area_cols(const char *a) { int n = 1; for (; *a && *a != '/'; a++) if (*a == ' ') n++; return n; }
+
 float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) {
     const ComputedStyle *s = b->st;
     float cg = s->column_gap_l.pct ? res(s->column_gap_l, cw) : s->column_gap, rg = s->row_gap;
@@ -20,6 +35,7 @@ float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
         vec_push(cols, t);
     }
     if (!cols.n) vec_push(cols, one);
+    if (s->grid_areas) { int an = area_cols(s->grid_areas); GridTrack at = { L_auto(), 0, L_auto() }; while (cols.n < an) vec_push(cols, at); }
     nc = cols.n;
     /* items + placement */
     typedef struct { Box *b; int r, c, rs, cs; } GI;
@@ -32,27 +48,38 @@ float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
         int cs = is->grid_col_span == -1 ? nc : LMAX(1, LMIN(is->grid_col_span, nc));
         int rs = LMAX(1, is->grid_row_span);
         GI g = { c, 0, 0, rs, cs };
+        if (s->grid_areas && is->grid_area && area_lookup(s->grid_areas, is->grid_area, &g.r, &g.c, &g.rs, &g.cs)) { vec_push(items, g); continue; }
         if (is->grid_col_start > 0) { g.c = LMIN(is->grid_col_start - 1, nc - 1); if (is->grid_col_span == -1) g.cs = nc - g.c; g.r = is->grid_row_start > 0 ? is->grid_row_start - 1 : ar; if (is->grid_row_start <= 0 && g.c < ac) g.r = ++ar; ac = g.c + g.cs; }
         else if (is->grid_row_start > 0) { g.r = is->grid_row_start - 1; g.c = 0; }
         else { if (ac + cs > nc) { ar++; ac = 0; } g.r = ar; g.c = ac; ac += cs; if (ac >= nc) { ar++; ac = 0; } }
         if (g.c + g.cs > nc) g.cs = nc - g.c;
         vec_push(items, g);
     }
-    /* column sizes */
-    float *cwid = xcalloc((size_t)nc, sizeof(float));
-    float fixed = cg * (nc - 1), frsum = 0; int nauto = 0;
+    /* column sizes: kind 0=auto 1=fixed 2=fr 3=minmax(len,len) */
+    float *cwid = xcalloc((size_t)nc, sizeof(float)), *cap = xcalloc((size_t)nc, sizeof(float));
+    uint8_t *kind = xcalloc((size_t)nc, 1);
+    float fixed = cg * (nc - 1), frsum = 0; int nauto = 0, ngrow = 0;
     for (int i = 0; i < nc; i++) {
-        float f = track_fixed(&cols.v[i], cw);
-        if (cols.v[i].fr > 0) { frsum += cols.v[i].fr; cwid[i] = cols.v[i].min.kind == LK_LEN ? res(cols.v[i].min, cw) : 0; fixed += cwid[i]; continue; }
-        if (f >= 0) { cwid[i] = f; fixed += f; continue; }
+        GridTrack *t = &cols.v[i];
+        if (t->fr > 0) { kind[i] = 2; frsum += t->fr; cwid[i] = t->min.kind == LK_LEN ? res(t->min, cw) : 0; fixed += cwid[i]; continue; }
+        if (t->size.kind == LK_LEN && t->min.kind == LK_LEN && res(t->min, cw) < res(t->size, cw)) { kind[i] = 3; cwid[i] = res(t->min, cw); cap[i] = res(t->size, cw); fixed += cwid[i]; ngrow++; continue; }
+        float f = track_fixed(t, cw);
+        if (f >= 0) { kind[i] = 1; cwid[i] = f; fixed += f; continue; }
         float mx = 0;
-        for (int k = 0; k < items.n; k++) if (items.v[k].c == i && items.v[k].cs == 1) { float a, z; intrinsic_outer(L, items.v[k].b, &a, &z); mx = LMAX(mx, cols.v[i].size.kind == LK_MIN_CONTENT ? a : z); }
+        for (int k = 0; k < items.n; k++) if (items.v[k].c == i && items.v[k].cs == 1) { float a, z; intrinsic_outer(L, items.v[k].b, &a, &z); mx = LMAX(mx, t->size.kind == LK_MIN_CONTENT ? a : z); }
         cwid[i] = mx; fixed += mx; nauto++;
     }
     float left = cw - fixed;
-    if (frsum > 0 && left > 0) { for (int i = 0; i < nc; i++) if (cols.v[i].fr > 0) cwid[i] += left * cols.v[i].fr / LMAX(1, frsum); }
-    else if (nauto && left > 0 && (s->justify_content == AL_NORMAL || s->justify_content == AL_STRETCH)) { for (int i = 0; i < nc; i++) if (cols.v[i].fr == 0 && track_fixed(&cols.v[i], cw) < 0) cwid[i] += left / nauto; }
-    else if (left < 0 && nauto) { /* shrink autos towards min-content */ float need = -left; for (int i = 0; i < nc && need > 0; i++) if (cols.v[i].fr == 0 && track_fixed(&cols.v[i], cw) < 0) { float take = LMIN(need / nauto, cwid[i]); cwid[i] -= take; } }
+    for (int pass = 0; pass < 4 && left > 0.01f && ngrow; pass++) {
+        int n = 0; for (int i = 0; i < nc; i++) if (kind[i] == 3 && cwid[i] < cap[i]) n++;
+        if (!n) break;
+        float share = left / n;
+        for (int i = 0; i < nc; i++) if (kind[i] == 3 && cwid[i] < cap[i]) { float add = LMIN(share, cap[i] - cwid[i]); cwid[i] += add; left -= add; }
+    }
+    if (frsum > 0 && left > 0) { for (int i = 0; i < nc; i++) if (kind[i] == 2) cwid[i] += left * cols.v[i].fr / LMAX(1, frsum); }
+    else if (nauto && left > 0 && (s->justify_content == AL_NORMAL || s->justify_content == AL_STRETCH)) { for (int i = 0; i < nc; i++) if (kind[i] == 0) cwid[i] += left / nauto; }
+    else if (left < 0 && nauto) { float need = -left; for (int i = 0; i < nc && need > 0; i++) if (kind[i] == 0) { float take = LMIN(need / nauto, cwid[i]); cwid[i] -= take; } }
+    free(cap); free(kind);
     float *cx0 = xcalloc((size_t)nc + 1, sizeof(float));
     for (int i = 0; i < nc; i++) cx0[i + 1] = cx0[i] + cwid[i] + (i < nc - 1 ? cg : 0);
     int nr = 0; for (int k = 0; k < items.n; k++) nr = LMAX(nr, items.v[k].r + items.v[k].rs);
