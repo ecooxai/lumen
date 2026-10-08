@@ -196,6 +196,8 @@ JsCtx *js_new(Document *d, const JsHost *host) {
 
 void js_free(JsCtx *c) {
     if (!c) return;
+    for (auto &kv : c->players) mp_free(kv.second);
+    c->players.clear();
     std::vector<Node *> roots;
     std::vector<Document *> docs = std::move(c->docs);
     {

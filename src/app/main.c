@@ -2,6 +2,7 @@
 #include <math.h>
 #include <SDL3/SDL.h>
 #include "../paint/paint.h"
+#include "../media/media.h"
 #include "../net/net.h"
 #include "../base/url.h"
 #include "../gpu/gpu.h"
@@ -37,6 +38,7 @@ static void cache_fetch(const char *u) {
     SDL_LockMutex(icache_mu); if (!hm_get(&icache, u)) hm_put(&icache, u, slot); else { image_unref(im); free(slot); } SDL_UnlockMutex(icache_mu);
 }
 static Image *node_img(Node *n) {
+    if (n->tag == A_video) { Image *f = media_frame_for(n); if (f) return f; }
     const char *s = node_attr(n, n->tag == A_video ? "poster" : "src"); if (!s) return NULL;
     char *u = url_join(n->doc->url, s); Image *im = cache_get(u); free(u); return im;
 }
@@ -389,7 +391,7 @@ int main(int argc, char **argv) {
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) { fprintf(stderr, "SDL_Init: %s\n", SDL_GetError()); return 1; }
     dom_init(); net_init(6); font_init();
     icache_mu = SDL_CreateMutex(); EV_LOADED = SDL_RegisterEvents(1); EV_NET = SDL_RegisterEvents(1);
-    net_wakeup = wake; js_global_init(argv[0]);
+    net_wakeup = wake; media_wakeup = wake; js_global_init(argv[0]);
     paint_image_hook = node_img; paint_url_image_hook = url_img; layout_image_size_hook = img_size;
     App a; memset(&a, 0, sizeof a); a.hpos = -1; g_app = &a;
     bool want_gpu = !getenv("LUMEN_NO_GPU");
@@ -415,6 +417,8 @@ int main(int argc, char **argv) {
         int to = a.loading ? 120 : 1000;
         if (a.cur && a.cur->js) { double dl = js_next_deadline(a.cur->js) - now_ms(); if (dl < to) to = dl < 0 ? 0 : (int)dl; }
         if (net_pending() && to > 50) to = 50;
+        { int mf = media_tick(); if (mf & 1) a.dirty = true; if (mf & 2) a.relayout = true; }
+        { int mt = media_timeout_ms(); if (mt >= 0 && mt < to) to = mt; }
         if (!SDL_WaitEventTimeout(&ev, to)) { if (a.loading) a.dirty = true; }
         else do {
             switch (ev.type) {

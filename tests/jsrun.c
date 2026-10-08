@@ -7,6 +7,7 @@
 #include "../src/base/url.h"
 #include "../src/js/js.h"
 #include "../src/js/jsglue.h"
+#include "../src/media/media.h"
 
 static void vp(void *ud, float *w, float *h, float *sx, float *sy, float *dpr) {
     (void)ud; *w = 1280; *h = 800; *sx = *sy = 0; *dpr = 1;
@@ -57,6 +58,7 @@ int main(int argc, char **argv) {
     double end = t2 + ms;
     while (now_ms() < end) {
         net_poll();
+        media_tick();
         js_tick(js);
         double dl = js_next_deadline(js) - now_ms();
         if (dl > 5) dl = 5;

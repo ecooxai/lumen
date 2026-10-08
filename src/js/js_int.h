@@ -11,6 +11,7 @@ extern "C" {
 #include "jsglue.h"
 #include "../net/net.h"
 #include "../base/url.h"
+#include "../media/media.h"
 extern const char *g_user_agent;
 }
 
@@ -49,6 +50,8 @@ struct JsCtx {
     std::vector<Document *> docs;
     Node *current_script = nullptr;
     int depth = 0;
+    std::map<uint32_t, MediaPlayer *> players;
+    uint32_t next_player = 1;
 };
 
 #define JS_ENTER(c)                                         \

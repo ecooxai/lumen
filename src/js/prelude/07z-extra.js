@@ -77,3 +77,79 @@ for (const m of ['fillRect', 'strokeRect', 'clearRect', 'beginPath', 'closePath'
     CanvasRenderingContext2D.prototype[m] = noop;
 for (const m of ['moveTo', 'lineTo', 'bezierCurveTo', 'quadraticCurveTo', 'arc', 'arcTo', 'ellipse', 'rect', 'roundRect', 'closePath', 'addPath'])
     Path2D.prototype[m] = noop;
+
+// ---- Media Source Extensions (fragmented MP4) ----
+class SourceBufferList extends EventTarget {
+    constructor() { super(); this._l = []; }
+    get length() { return this._l.length; }
+    item(i) { return this._l[i] ?? null; }
+    [Symbol.iterator]() { return this._l[Symbol.iterator](); }
+    _sync() { for (let i = 0; i < 32; i++) delete this[i]; this._l.forEach((b, i) => Object.defineProperty(this, i, { value: b, configurable: true, enumerable: true })); }
+}
+class SourceBuffer extends EventTarget {
+    constructor(ms, idx, mime) {
+        super();
+        Object.assign(this, { _ms: ms, _i: idx, _mime: mime, updating: false, mode: 'segments', timestampOffset: 0, appendWindowStart: 0, appendWindowEnd: Infinity });
+    }
+    get buffered() { return this._ms._id ? mediaRanges(N.mediaBuffered(this._ms._id, this._i)) : new TimeRanges([]); }
+    _op(fn) {
+        if (this._ms.readyState === 'closed') throw new DOMException('MediaSource is closed', 'InvalidStateError');
+        if (this.updating) throw new DOMException('SourceBuffer is updating', 'InvalidStateError');
+        if (this._ms.readyState === 'ended') { this._ms.readyState = 'open'; this._ms.dispatchEvent(new Event('sourceopen')); }
+        this.updating = true; this.dispatchEvent(new Event('updatestart'));
+        setTimeout(() => {
+            if (!this.updating) return;
+            const ok = fn();
+            this.updating = false;
+            if (ok === false) { this.dispatchEvent(new Event('error')); this._ms.endOfStream('decode'); }
+            else this.dispatchEvent(new Event('update'));
+            this.dispatchEvent(new Event('updateend'));
+        }, 0);
+    }
+    appendBuffer(data) {
+        const copy = data instanceof ArrayBuffer ? data.slice(0) : new Uint8Array(data.buffer, data.byteOffset, data.byteLength).slice();
+        this._op(() => N.mediaAppend(this._ms._id, this._i, copy));
+    }
+    remove(s, e) { this._op(() => { N.mediaRemove(this._ms._id, this._i, +s, +e); }); }
+    abort() { if (this.updating) { this.updating = false; this.dispatchEvent(new Event('abort')); this.dispatchEvent(new Event('updateend')); } }
+    changeType(t) { this._mime = String(t); }
+}
+class MediaSource extends EventTarget {
+    constructor() { super(); this.readyState = 'closed'; this._dur = NaN; this._id = 0; this.sourceBuffers = new SourceBufferList(); this.activeSourceBuffers = this.sourceBuffers; }
+    static isTypeSupported(t) { return N.mediaCanPlay(String(t), true) > 0; }
+    static get canConstructInDedicatedWorker() { return false; }
+    get duration() { return this._dur; }
+    set duration(v) { this._dur = +v; if (this._id) N.mediaSetDuration(this._id, this._dur); }
+    addSourceBuffer(t) {
+        if (this.readyState !== 'open') throw new DOMException('MediaSource is not open', 'InvalidStateError');
+        if (!MediaSource.isTypeSupported(t)) throw new DOMException('Unsupported type: ' + t, 'NotSupportedError');
+        const i = N.mediaAddBuffer(this._id, String(t));
+        if (i < 0) throw new DOMException('Too many SourceBuffers', 'QuotaExceededError');
+        const sb = new SourceBuffer(this, i, String(t));
+        this.sourceBuffers._l.push(sb); this.sourceBuffers._sync();
+        return sb;
+    }
+    removeSourceBuffer(sb) { const l = this.sourceBuffers._l, k = l.indexOf(sb); if (k >= 0) { l.splice(k, 1); this.sourceBuffers._sync(); } }
+    endOfStream(err) {
+        if (this.readyState !== 'open') return;
+        this.readyState = 'ended';
+        if (!err) {
+            let end = 0;
+            for (const sb of this.sourceBuffers._l) { const b = sb.buffered; if (b.length) end = Math.max(end, b.end(b.length - 1)); }
+            if (end > 0 && !(end <= this._dur)) this.duration = end;
+            N.mediaEos(this._id);
+        }
+        setTimeout(() => this.dispatchEvent(new Event('sourceended')), 0);
+    }
+    setLiveSeekableRange() {}
+    clearLiveSeekableRange() {}
+    _attach(el, id) {
+        this._el = el; this._id = id;
+        if (!Number.isNaN(this._dur)) N.mediaSetDuration(id, this._dur);
+        setTimeout(() => { this.readyState = 'open'; this.dispatchEvent(new Event('sourceopen')); }, 0);
+    }
+}
+Promise.resolve().then(() => document.addEventListener('DOMContentLoaded', () => {
+    for (const el of document.querySelectorAll('video, audio'))
+        if (!el.__mp && (el.getAttribute('src') || el.querySelector('source[src]'))) { el.load(); if (el.autoplay) el.play(); }
+}));

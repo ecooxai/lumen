@@ -286,6 +286,43 @@ static uint64_t start_fetch(JsCtx *c, NetRequest *rq, Fetch *f) {
     c->fetches[f->id] = f;
     return f->id;
 }
+#define MP                                                        \
+    auto mpit = c->players.find((uint32_t)NUM(0));                \
+    if (mpit == c->players.end()) return;                         \
+    MediaPlayer *mp = mpit->second
+FN(mediaNew) { CTX; ARGN(n, 0); uint32_t id = c->next_player++; c->players[id] = mp_new(n); RET((double)id); }
+FN(mediaFree) { CTX; MP; mp_free(mp); c->players.erase(mpit); }
+FN(mediaOpen) { CTX; MP; mp_open_url(mp, S(1).c_str()); }
+FN(mediaAddBuffer) { CTX; MP; RET((double)mp_add_buffer(mp, S(1).c_str())); }
+FN(mediaAppend) {
+    CTX; MP; const char *p; size_t n;
+    if (!bytes_of(a[2], &p, &n)) return;
+    RET(v8::Boolean::New(iso, mp_append(mp, (int)NUM(1), (const uint8_t *)p, n)));
+}
+FN(mediaRemove) { CTX; MP; mp_remove(mp, (int)NUM(1), NUM(2), NUM(3)); }
+FN(mediaBuffered) {
+    CTX; MP; double r[64]; int n = mp_buffered(mp, (int)NUM(1), r, 32);
+    v8::Local<v8::Array> arr = v8::Array::New(iso, n * 2);
+    for (int i = 0; i < n * 2; i++) (void)arr->Set(ctx, (uint32_t)i, v8::Number::New(iso, r[i]));
+    RET(arr);
+}
+FN(mediaEos) { CTX; MP; mp_end_of_stream(mp); }
+FN(mediaSetDuration) { CTX; MP; mp_set_duration(mp, NUM(1)); }
+FN(mediaPlay) { CTX; MP; mp_play(mp); }
+FN(mediaPause) { CTX; MP; mp_pause(mp); }
+FN(mediaSeek) { CTX; MP; mp_seek(mp, NUM(1)); }
+FN(mediaVolume) { CTX; MP; mp_set_volume(mp, (float)NUM(1), BOOL(2)); }
+FN(mediaState) {
+    CTX; MP; MpState s; mp_state(mp, &s);
+    v8::Local<v8::Value> v[] = {
+        v8::Number::New(iso, s.ready), v8::Boolean::New(iso, s.paused), v8::Boolean::New(iso, s.ended),
+        v8::Boolean::New(iso, s.seeking), v8::Boolean::New(iso, s.waiting), v8::Boolean::New(iso, s.error),
+        v8::Number::New(iso, s.time), v8::Number::New(iso, s.duration), v8::Number::New(iso, s.w),
+        v8::Number::New(iso, s.h), nstr(iso, s.errmsg),
+    };
+    RET(v8::Array::New(iso, v, 11));
+}
+FN(mediaCanPlay) { CTX; RET((double)media_can_play(S(0).c_str(), BOOL(1))); }
 FN(fetch) {
     CTX;
     if (!a[4]->IsFunction()) return;
@@ -447,7 +484,9 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(templateContent); REG(rect); REG(computed); REG(value); REG(setValue); REG(checked); REG(setChecked);
     REG(focus); REG(active); REG(cookie); REG(setCookie); REG(url); REG(setUrl); REG(navigate); REG(histGo);
     REG(histLen); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
-    REG(abort); REG(log); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(readyState); REG(quirks);
+    REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove);
+    REG(mediaBuffered); REG(mediaEos); REG(mediaSetDuration); REG(mediaPlay); REG(mediaPause); REG(mediaSeek);
+    REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(readyState); REG(quirks);
     REG(currentScript); REG(media); REG(cssSupports); REG(urlParse); REG(encode); REG(decode); REG(random);
     REG(heap); REG(imgSize); REG(userAgent); REG(platform); REG(cpus);
 #undef REG

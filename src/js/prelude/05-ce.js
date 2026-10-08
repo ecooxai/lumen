@@ -1,23 +1,117 @@
 const timeRanges = (r) => ({ length: r.length, start(i) { return r[i][0]; }, end(i) { return r[i][1]; } });
+const mediaEls = new Set();
+let mediaPumpId = 0;
+const mediaFire = (el, t) => el.dispatchEvent(new Event(t));
+const mediaLater = (el, t) => setTimeout(() => mediaFire(el, t), 0);
+const mediaRanges = (flat) => { const r = []; for (let i = 0; i + 1 < flat.length; i += 2) r.push([flat[i], flat[i + 1]]); return new TimeRanges(r); };
+function mediaPoll() {
+    for (const el of mediaEls) {
+        if (!el.__mp) { mediaEls.delete(el); continue; }
+        const s = N.mediaState(el.__mp); if (!s) continue;
+        const [ready, , ended, seeking, waiting, error, time, duration, w, h, msg] = s;
+        const o = el.__st || { ready: 0, ended: false, seeking: false, waiting: false, error: false, duration: NaN, w: 0, h: 0, tu: -1 };
+        const n = { ready, ended, seeking, waiting, error, duration, w, h, tu: o.tu };
+        def(el, '__st', n);
+        const playing = el.__paused === false;
+        if (error && !o.error) { def(el, '__err', new MediaError(msg === 'network error' ? 2 : 3, msg || '')); mediaFire(el, 'error'); continue; }
+        if (!(Number.isNaN(duration) && Number.isNaN(o.duration)) && duration !== o.duration) mediaFire(el, 'durationchange');
+        if (ready >= 1 && o.ready < 1) mediaFire(el, 'loadedmetadata');
+        if ((w !== o.w || h !== o.h) && ready >= 1) mediaFire(el, 'resize');
+        if (ready >= 2 && o.ready < 2) mediaFire(el, 'loadeddata');
+        if (ready >= 3 && o.ready < 3) { mediaFire(el, 'canplay'); if (playing) mediaFire(el, 'playing'); }
+        if (ready >= 4 && o.ready < 4) mediaFire(el, 'canplaythrough');
+        if (waiting && !o.waiting) mediaFire(el, 'waiting');
+        if (!waiting && o.waiting && playing) mediaFire(el, 'playing');
+        if (!seeking && o.seeking) { n.tu = time; mediaFire(el, 'timeupdate'); mediaFire(el, 'seeked'); }
+        if (playing && !seeking && Math.abs(time - n.tu) >= 0.25) { n.tu = time; mediaFire(el, 'timeupdate'); }
+        if (ended && !o.ended) {
+            if (el.loop) { N.mediaSeek(el.__mp, 0); N.mediaPlay(el.__mp); continue; }
+            def(el, '__paused', true); mediaFire(el, 'timeupdate'); mediaFire(el, 'pause'); mediaFire(el, 'ended');
+        }
+    }
+    if (!mediaEls.size && mediaPumpId) { clearInterval(mediaPumpId); mediaPumpId = 0; }
+}
+function mediaDetach(el) {
+    if (el.__mp) { N.mediaFree(el.__mp); def(el, '__mp', 0); }
+    mediaEls.delete(el);
+    def(el, '__st', null); def(el, '__err', null); def(el, '__src', '');
+}
+function mediaAttach(el, src) {
+    const id = N.mediaNew(el); def(el, '__mp', id);
+    mediaEls.add(el); if (!mediaPumpId) mediaPumpId = setInterval(mediaPoll, 50);
+    N.mediaVolume(id, el.volume, el.muted);
+    if (src instanceof MediaSource) { def(el, '__src', ''); src._attach(el, id); }
+    else {
+        const ms = objectURLs.get(src);
+        def(el, '__src', src);
+        if (ms instanceof MediaSource) ms._attach(el, id); else N.mediaOpen(id, src);
+    }
+    mediaLater(el, 'loadstart');
+}
 mk('HTMLMediaElement', HTMLElement, [], p => {
-    reflectUrl(p, 'src'); reflectStr(p, 'crossOrigin', 'preload'); reflectBool(p, 'autoplay', 'loop', 'controls', 'playsInline');
+    reflectStr(p, 'crossOrigin', 'preload'); reflectBool(p, 'autoplay', 'loop', 'controls', 'playsInline', 'defaultMuted');
+    const st = (el) => el.__mp ? N.mediaState(el.__mp) : null;
     methods(p, {
-        get currentSrc() { return this.src; }, get paused() { return this.__paused !== false; }, get ended() { return false; }, get seeking() { return false; },
-        get readyState() { return 0; }, get networkState() { return this.src ? 3 : 0; }, get error() { return null; },
-        get duration() { return NaN; }, get currentTime() { return this.__ct || 0; }, set currentTime(v) { def(this, '__ct', +v || 0); },
-        get volume() { return this.__vol ?? 1; }, set volume(v) { def(this, '__vol', +v); },
-        get muted() { return this.__muted ?? N.attr(this, 'muted') != null; }, set muted(v) { def(this, '__muted', !!v); },
-        get playbackRate() { return this.__rate ?? 1; }, set playbackRate(v) { def(this, '__rate', +v); }, get defaultPlaybackRate() { return 1; },
-        get buffered() { return timeRanges([]); }, get played() { return timeRanges([]); }, get seekable() { return timeRanges([]); },
-        get textTracks() { return Object.assign([], { addEventListener() {}, removeEventListener() {}, getTrackById() { return null; } }); },
-        get srcObject() { return this.__so ?? null; }, set srcObject(v) { def(this, '__so', v); },
-        play() { return Promise.reject(new DOMException('Media playback is not implemented yet', 'NotSupportedError')); },
-        pause() { def(this, '__paused', true); }, load() {}, canPlayType() { return ''; },
+        get src() { const v = N.attr(this, 'src'); return v == null ? '' : new URL(v, document.baseURI).href; },
+        set src(v) { N.setAttr(this, 'src', String(v)); this.load(); },
+        get currentSrc() { return this.__src || ''; },
+        get paused() { return this.__paused !== false; },
+        get ended() { const s = st(this); return !!(s && s[2]); },
+        get seeking() { const s = st(this); return !!(s && s[3]); },
+        get readyState() { const s = st(this); return s ? s[0] : 0; },
+        get networkState() { const s = st(this); return s ? (s[0] >= 4 ? 1 : 2) : (N.attr(this, 'src') != null ? 3 : 0); },
+        get error() { return this.__err || null; },
+        get duration() { const s = st(this); return s ? s[7] : NaN; },
+        get currentTime() { const s = st(this); return s ? s[6] : (this.__ct || 0); },
+        set currentTime(v) {
+            v = +v || 0;
+            if (!this.__mp) { def(this, '__ct', v); return; }
+            N.mediaSeek(this.__mp, v); if (this.__st) this.__st.seeking = true;
+            mediaFire(this, 'seeking');
+        },
+        fastSeek(t) { this.currentTime = t; },
+        get volume() { return this.__vol ?? 1; },
+        set volume(v) { v = +v; if (!(v >= 0 && v <= 1)) throw new DOMException('volume out of range', 'IndexSizeError'); def(this, '__vol', v); if (this.__mp) N.mediaVolume(this.__mp, v, this.muted); mediaLater(this, 'volumechange'); },
+        get muted() { return this.__muted ?? N.attr(this, 'muted') != null; },
+        set muted(v) { def(this, '__muted', !!v); if (this.__mp) N.mediaVolume(this.__mp, this.volume, !!v); mediaLater(this, 'volumechange'); },
+        get playbackRate() { return this.__rate ?? 1; }, set playbackRate(v) { def(this, '__rate', +v); mediaLater(this, 'ratechange'); },
+        get defaultPlaybackRate() { return 1; }, set defaultPlaybackRate(v) {}, get preservesPitch() { return true; }, set preservesPitch(v) {},
+        get buffered() { return this.__mp ? mediaRanges(N.mediaBuffered(this.__mp, -1)) : new TimeRanges([]); },
+        get played() { return new TimeRanges([]); },
+        get seekable() { const d = this.duration; return new TimeRanges(d > 0 && Number.isFinite(d) ? [[0, d]] : []); },
+        get textTracks() { return this.__tt || def(this, '__tt', Object.assign([], { addEventListener() {}, removeEventListener() {}, getTrackById() { return null; } })) || this.__tt; },
+        get audioTracks() { return Object.assign([], { addEventListener() {}, removeEventListener() {}, getTrackById() { return null; } }); },
+        get videoTracks() { return Object.assign([], { addEventListener() {}, removeEventListener() {}, getTrackById() { return null; } }); },
+        get srcObject() { return this.__so ?? null; },
+        set srcObject(v) { def(this, '__so', v ?? null); mediaDetach(this); def(this, '__paused', true); if (v instanceof MediaSource) mediaAttach(this, v); },
+        load() {
+            const was = !!this.__mp;
+            mediaDetach(this);
+            if (was || this.__paused === false) { def(this, '__paused', true); mediaLater(this, 'emptied'); }
+            let src = N.attr(this, 'src');
+            if (src == null) { const s = this.querySelector('source[src]'); src = s && s.getAttribute('src'); }
+            if (src == null || src === '') return;
+            mediaAttach(this, new URL(src, document.baseURI).href);
+            if (this.__ct) { N.mediaSeek(this.__mp, this.__ct); def(this, '__ct', 0); }
+        },
+        play() {
+            if (!this.__mp) this.load();
+            if (!this.__mp) return Promise.reject(new DOMException('The element has no supported sources.', 'NotSupportedError'));
+            if (this.__err) return Promise.reject(new DOMException(this.__err.message || 'playback error', 'NotSupportedError'));
+            if (this.__paused !== false) { def(this, '__paused', false); mediaLater(this, 'play'); if (this.readyState >= 3) mediaLater(this, 'playing'); }
+            N.mediaPlay(this.__mp);
+            return Promise.resolve();
+        },
+        pause() {
+            if (this.__mp) N.mediaPause(this.__mp);
+            if (this.__paused === false) { def(this, '__paused', true); mediaLater(this, 'timeupdate'); mediaLater(this, 'pause'); }
+        },
+        canPlayType(t) { return ['', 'maybe', 'probably'][N.mediaCanPlay(String(t), false)] || ''; },
         addTextTrack() { return { mode: 'disabled', cues: [], addCue() {}, removeCue() {} }; }, setSinkId() { return Promise.resolve(); },
     });
 });
 Object.assign(H.HTMLMediaElement, { NETWORK_EMPTY: 0, NETWORK_IDLE: 1, NETWORK_LOADING: 2, NETWORK_NO_SOURCE: 3, HAVE_NOTHING: 0, HAVE_METADATA: 1, HAVE_CURRENT_DATA: 2, HAVE_FUTURE_DATA: 3, HAVE_ENOUGH_DATA: 4 });
-mk('HTMLVideoElement', H.HTMLMediaElement, ['video'], p => { reflectUrl(p, 'poster'); reflectInt(p, 0, 'width', 'height'); methods(p, { get videoWidth() { return 0; }, get videoHeight() { return 0; }, getVideoPlaybackQuality() { return { totalVideoFrames: 0, droppedVideoFrames: 0, corruptedVideoFrames: 0, creationTime: N.now() }; }, requestVideoFrameCallback() { return 0; }, cancelVideoFrameCallback() {} }); });
+mk('HTMLVideoElement', H.HTMLMediaElement, ['video'], p => { reflectUrl(p, 'poster'); reflectInt(p, 0, 'width', 'height'); methods(p, { get videoWidth() { return this.__mp ? N.mediaState(this.__mp)[8] : 0; }, get videoHeight() { return this.__mp ? N.mediaState(this.__mp)[9] : 0; }, getVideoPlaybackQuality() { return { totalVideoFrames: 0, droppedVideoFrames: 0, corruptedVideoFrames: 0, creationTime: N.now() }; }, requestVideoFrameCallback() { return 0; }, cancelVideoFrameCallback() {} }); });
 mk('HTMLAudioElement', H.HTMLMediaElement, ['audio']);
 function Image(w, h) { const e = document.createElement('img'); if (w !== undefined) e.width = w; if (h !== undefined) e.height = h; return e; }
 Image.prototype = H.HTMLImageElement.prototype;

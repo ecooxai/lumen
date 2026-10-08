@@ -1,0 +1,32 @@
+<!doctype html><title>media</title>
+<video id=pv src="../media/test.mp4" muted></video>
+<video id=mv muted></video>
+<script>
+const R = {}; const ok = (k, v) => { R[k] = v ? 'PASS' : 'FAIL'; };
+ok('canPlayType', document.createElement('video').canPlayType('video/mp4; codecs="avc1.42E01E, mp4a.40.2"') === 'probably' && document.createElement('video').canPlayType('video/x-foo') === '');
+ok('isTypeSupported', MediaSource.isTypeSupported('video/mp4; codecs="avc1.4d401f"') && MediaSource.isTypeSupported('audio/mp4; codecs="mp4a.40.2"') && !MediaSource.isTypeSupported('video/mp4; codecs="avc1.4d401f"; width=99999'));
+const pv = document.getElementById('pv'), pe = [];
+for (const t of ['loadedmetadata', 'canplay', 'playing', 'ended', 'seeked']) pv.addEventListener(t, () => pe.push(t));
+pv.addEventListener('loadedmetadata', () => { ok('progMeta', pv.videoWidth === 640 && pv.videoHeight === 360 && Math.abs(pv.duration - 4) < 0.2); pv.currentTime = 3; pv.play(); });
+const mv = document.getElementById('mv'), ms = new MediaSource(), me = [];
+for (const t of ['loadedmetadata', 'canplay', 'playing', 'seeked', 'ended']) mv.addEventListener(t, () => me.push(t));
+mv.src = URL.createObjectURL(ms);
+ms.addEventListener('sourceopen', async () => {
+    const vb = ms.addSourceBuffer('video/mp4; codecs="avc1.64001e"'), ab = ms.addSourceBuffer('audio/mp4; codecs="mp4a.40.2"');
+    const feed = async (sb, url) => {
+        const buf = new Uint8Array(await (await fetch(url)).arrayBuffer());
+        for (let o = 0; o < buf.length; o += 100000) { sb.appendBuffer(buf.subarray(o, o + 100000)); await new Promise(r => sb.addEventListener('updateend', r, { once: true })); }
+    };
+    await Promise.all([feed(vb, '../media/frag_v.mp4'), feed(ab, '../media/frag_a.mp4')]);
+    ok('mseBuffered', mv.buffered.length === 1 && Math.abs(mv.buffered.end(0) - 4) < 0.2 && vb.buffered.length === 1);
+    ms.endOfStream();
+    mv.play();
+    setTimeout(() => { R.mseTimeAt1s = mv.currentTime.toFixed(2); ok('mseAdvances', mv.currentTime > 0.5); mv.currentTime = 2.5; }, 1000);
+});
+setTimeout(() => {
+    ok('progEvents', ['loadedmetadata', 'canplay', 'seeked', 'ended'].every(e => pe.includes(e)));
+    ok('mseEvents', ['loadedmetadata', 'canplay', 'playing', 'seeked', 'ended'].every(e => me.includes(e)));
+    ok('mseEnded', mv.ended && mv.paused);
+    console.log('RESULTS ' + Object.entries(R).map(([k, v]) => k + ':' + v).join(' ') + ' | prog=' + pe.join(',') + ' | mse=' + me.join(','));
+}, 5500);
+</script>
