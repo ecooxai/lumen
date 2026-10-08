@@ -26,7 +26,14 @@ ComputedStyle *style_new_default(void) {
     return s;
 }
 static CustomProps *custom_ref(CustomProps *c) { if (c) c->refs++; return c; }
-static void custom_unref(CustomProps *c) { if (c && --c->refs == 0) { hm_free(&c->map, free); free(c); } }
+static void custom_unref(CustomProps *c) {
+    while (c && --c->refs == 0) { CustomProps *up = c->parent; hm_free(&c->map, free); free(c); c = up; }
+}
+const char *custom_get(const CustomProps *c, const char *name) {
+    for (; c; c = c->parent) { const char *v = hm_get((HMap *)&c->map, name); if (v) return v; }
+    return NULL;
+}
+#define CUSTOM_MAX_DEPTH 24
 
 ComputedStyle *style_inherit(const ComputedStyle *p) {
     ComputedStyle *s = style_new_default();
@@ -224,7 +231,7 @@ static char *subst_vars(const char *v, const ComputedStyle *st, int depth) {
         char *comma = NULL; int dd = 0; for (char *c = inner; *c; c++) { if (*c == '(') dd++; else if (*c == ')') dd--; else if (*c == ',' && !dd) { comma = c; break; } }
         if (comma) *comma = 0;
         char *name = str_trim(inner);
-        const char *val = st->custom ? hm_get((HMap *)&st->custom->map, name) : NULL;
+        const char *val = custom_get(st->custom, name);
         char *r = val && *val ? subst_vars(val, st, depth + 1) : comma ? subst_vars(str_trim(comma + 1), st, depth + 1) : NULL;
         free(inner);
         /* unresolvable or runaway expansion: declaration is invalid at computed-value time */
@@ -619,8 +626,14 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         /* custom property: copy-on-write map */
         if (!st->custom || st->custom->refs > 1 || (par && st->custom == par->custom)) {
             CustomProps *n = xcalloc(1, sizeof *n); n->refs = 1;
-            if (st->custom) hm_foreach(&st->custom->map, ent) hm_put(&n->map, ent->key, xstrdup((char *)ent->val));
-            custom_unref(st->custom); st->custom = n;
+            if (st->custom && st->custom->depth < CUSTOM_MAX_DEPTH) { n->parent = st->custom; n->depth = st->custom->depth + 1; }
+            else if (st->custom) {
+                const CustomProps *chain[CUSTOM_MAX_DEPTH + 1]; int nc = 0;
+                for (const CustomProps *c = st->custom; c && nc <= CUSTOM_MAX_DEPTH; c = c->parent) chain[nc++] = c;
+                while (nc-- > 0) hm_foreach((HMap *)&chain[nc]->map, ent) { char *prev = hm_get(&n->map, ent->key); hm_put(&n->map, ent->key, xstrdup((char *)ent->val)); free(prev); }
+                custom_unref(st->custom);
+            }
+            st->custom = n;
         }
         char *old = hm_get(&st->custom->map, prop);
         char *v = subst_vars(value_in, st, 0);
@@ -1205,7 +1218,7 @@ char *css_get_computed_value(Node *el, const char *prop) {
     if (!s) return sb_take(&b);
     static const char *const ds[] = { "none", "inline", "block", "inline-block", "flex", "inline-flex", "grid", "inline-grid", "list-item", "table", "inline-table", "table-row", "table-cell", "table-row-group", "table-header-group", "table-footer-group", "table-column", "table-column-group", "table-caption", "contents", "flow-root" };
     static const char *const ps[] = { "static", "relative", "absolute", "fixed", "sticky" };
-    if (prop[0] == '-' && prop[1] == '-') { const char *v = s->custom ? hm_get(&s->custom->map, prop) : NULL; if (v) sb_puts(&b, v); }
+    if (prop[0] == '-' && prop[1] == '-') { const char *v = custom_get(s->custom, prop); if (v) sb_puts(&b, v); }
     else if (!strcmp(prop, "display")) sb_puts(&b, ds[s->display]);
     else if (!strncmp(prop, "animation-", 10) || !strncmp(prop, "transition-", 11) || !strncmp(prop, "-webkit-animation-", 18) || !strncmp(prop, "-webkit-transition-", 19)) {
         const char *q = strncmp(prop, "-webkit-", 8) ? prop : prop + 8;

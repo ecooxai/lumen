@@ -27,6 +27,7 @@ typedef struct JsHost {
 
 void js_global_init(const char *argv0);
 JsCtx *js_new(Document *d, const JsHost *host);
+void js_mem_stats(size_t *heap, size_t *external);
 void js_free(JsCtx *c);
 /* run a parser-inserted script (sets document.currentScript) */
 void js_run_script(JsCtx *c, Node *script, const char *src, size_t n, const char *name);

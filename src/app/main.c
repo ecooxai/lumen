@@ -29,6 +29,7 @@ typedef struct { Image *im; bool done; } ImgSlot;
 
 static SDL_Mutex *icache_mu;
 static HMap icache;
+static size_t g_icache_bytes; static int g_icache_n;
 static int g_img_epoch;
 static Uint32 EV_LOADED, EV_NET;
 static uint64_t load_gen;
@@ -44,7 +45,7 @@ static void cache_fetch(const char *u) {
     Image *im = r && r->status == 200 ? image_decode((const uint8_t *)r->body, r->body_len) : NULL;
     if (r) net_response_free(r);
     ImgSlot *slot = xcalloc(1, sizeof *slot); slot->im = im; slot->done = true;
-    SDL_LockMutex(icache_mu); if (!hm_get(&icache, u)) hm_put(&icache, u, slot); else { image_unref(im); free(slot); } SDL_UnlockMutex(icache_mu);
+    SDL_LockMutex(icache_mu); if (!hm_get(&icache, u)) { hm_put(&icache, u, slot); if (im) { g_icache_bytes += (size_t)im->w * (size_t)im->h * 4; g_icache_n++; } } else { image_unref(im); free(slot); } SDL_UnlockMutex(icache_mu);
 }
 static Image *node_img(Node *n) {
     if (n->tag == A_iframe) { Page *fp = frame_find(n); return fp && fp->cv.px ? &fp->img : NULL; }
@@ -341,6 +342,7 @@ static void img_done(NetRequest *rq, NetResponse *r, void *ud) {
     if (getenv("LUMEN_DEBUG_IMG")) fprintf(stderr, "lumen: img decode -> %s\n", im ? "ok" : "NULL");
     SDL_LockMutex(icache_mu);
     ImgSlot *slot = hm_get(&icache, l->u);
+    if (slot && !slot->im && im) { g_icache_bytes += (size_t)im->w * (size_t)im->h * 4; g_icache_n++; }
     if (slot && !slot->im) { slot->im = im; im = NULL; }
     if (slot) slot->done = true;
     SDL_UnlockMutex(icache_mu);
@@ -581,7 +583,7 @@ static void page_start_js(App *a, Page *p) {
     for (int i = 0; i < p->nscripts; i++) {
         PScript *sc = &p->scripts[i];
         if ((sc->n->flags & NF_SCRIPT_STARTED) || !(sc->n->flags & NF_CONNECTED)) continue;
-        if (sc->src) js_run_script(p->js, sc->n, sc->src, sc->len, sc->name);
+        if (sc->src) { js_run_script(p->js, sc->n, sc->src, sc->len, sc->name); free(sc->src); sc->src = NULL; sc->len = 0; }
         else { sc->n->flags |= NF_SCRIPT_STARTED; js_dispatch(p->js, sc->n, "error", "Event", false, false, 0, 0, 0, NULL); }
     }
     js_set_ready_state(p->js, 1);
@@ -784,6 +786,10 @@ int main(int argc, char **argv) {
         if (net_pending() && to > 50) to = 50;
         { int mf = media_tick(); if (mf & 1) { if (!a.dirty) a.vonly = true; a.dirty = true; } if (mf & 2) a.relayout = true; }
         if (!a.editing && page_focus(&a) && !SDL_TextInputActive(a.win)) SDL_StartTextInput(a.win);
+        if (getenv("LUMEN_MEM_STATS")) {
+            static double last_stats; double tn = now_ms();
+            if (tn - last_stats > 10000) { last_stats = tn; size_t fr, seg = media_mem_bytes(&fr); size_t jh = 0, je = 0; js_mem_stats(&jh, &je); fprintf(stderr, "lumen-mem: mse=%.1fMB vframes=%.1fMB images=%.1fMB/%d js_heap=%.1fMB js_external=%.1fMB canvases=%.1fMB\n", seg / 1048576.0, fr / 1048576.0, g_icache_bytes / 1048576.0, g_icache_n, jh / 1048576.0, je / 1048576.0, ((double)a.frame.w * a.frame.h + (double)a.page.w * a.page.h) * 4 / 1048576.0); }
+        }
         { int mt = media_timeout_ms(); if (mt >= 0 && mt < to) to = mt; }
         {
             bool want = false;

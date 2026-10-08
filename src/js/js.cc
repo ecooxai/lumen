@@ -185,11 +185,20 @@ void js_global_init(const char *argv0) {
     v8::V8::InitializeExternalStartupData(argv0);
     g_platform = v8::platform::NewDefaultPlatform();
     v8::V8::InitializePlatform(g_platform.get());
+    if (const char *vf = getenv("LUMEN_V8_FLAGS")) v8::V8::SetFlagsFromString(vf);
     v8::V8::Initialize();
 }
 
 static std::vector<JsCtx *> g_ctxs;
 static uint32_t g_next_ctx_id = 1;
+void js_mem_stats(size_t *heap, size_t *external) {
+    size_t h = 0, e = 0; std::vector<v8::Isolate *> seen;
+    for (JsCtx *c : g_ctxs) {
+        if (!c->iso || std::find(seen.begin(), seen.end(), c->iso) != seen.end()) continue;
+        seen.push_back(c->iso); v8::HeapStatistics hs; c->iso->GetHeapStatistics(&hs); h += hs.used_heap_size(); e += hs.external_memory();
+    }
+    *heap = h; *external = e;
+}
 JsCtx *owner_ctx(Document *d) {
     for (JsCtx *c : g_ctxs) if (c->doc == d) return c;
     for (JsCtx *c : g_ctxs) if (std::find(c->docs.begin(), c->docs.end(), d) != c->docs.end()) return c;

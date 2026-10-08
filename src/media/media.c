@@ -66,6 +66,19 @@ static SDL_Mutex *g_mu;
 static MediaPlayer **g_pl; static int g_np, g_cap;
 
 static void wake(void) { if (media_wakeup) media_wakeup(); }
+size_t media_mem_bytes(size_t *frames) {
+    size_t seg = 0, fr = 0;
+    SDL_LockMutex(g_mu);
+    for (int i = 0; i < g_np; i++) {
+        MediaPlayer *m = g_pl[i]; SDL_LockMutex(m->mu);
+        for (int j = 0; j < m->nst; j++) { Stream *s = m->st[j]; for (int k = 0; k < s->nsegs; k++) seg += s->segs[k].n; seg += s->cappend; if (s->init) seg += s->init->n; }
+        for (int k = 0; k < m->vqn; k++) if (m->vq[k].im) fr += (size_t)m->vq[k].im->w * (size_t)m->vq[k].im->h * 4;
+        SDL_UnlockMutex(m->mu);
+    }
+    SDL_UnlockMutex(g_mu);
+    if (frames) *frames = fr;
+    return seg;
+}
 static void blob_unref(Blob *b) { if (b && --b->refs <= 0) { free(b->p); free(b); } }
 static uint32_t rd32(const uint8_t *p) { return (uint32_t)p[0] << 24 | (uint32_t)p[1] << 16 | (uint32_t)p[2] << 8 | p[3]; }
 static uint64_t rd64(const uint8_t *p) { return (uint64_t)rd32(p) << 32 | rd32(p + 4); }
@@ -272,7 +285,7 @@ static AVCodecContext *open_dec(AVStream *st) {
     if (!codec) return NULL;
     AVCodecContext *cc = avcodec_alloc_context3(codec);
     if (!cc || avcodec_parameters_to_context(cc, st->codecpar) < 0) { avcodec_free_context(&cc); return NULL; }
-    cc->thread_count = 0; cc->pkt_timebase = st->time_base;
+    { const char *dt = getenv("LUMEN_DEC_THREADS"); cc->thread_count = dt ? atoi(dt) : 4; } cc->pkt_timebase = st->time_base;
     if (avcodec_open2(cc, codec, NULL) < 0) { avcodec_free_context(&cc); return NULL; }
     return cc;
 }

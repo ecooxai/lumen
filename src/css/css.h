@@ -46,7 +46,8 @@ typedef struct Gradient { uint8_t type; /* 0 linear 1 radial */ float angle; int
 
 typedef struct { float x, y, blur, spread; Color color; bool inset; } Shadow;
 
-typedef struct CustomProps { int refs; HMap map; } CustomProps; /* name -> char* value */
+typedef struct CustomProps { int refs, depth; HMap map; struct CustomProps *parent; } CustomProps; /* own name -> char* value, then parent's */
+const char *custom_get(const CustomProps *c, const char *name);
 
 typedef struct GridTrack { Length size; float fr; Length min; } GridTrack;
 
