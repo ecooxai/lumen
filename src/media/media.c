@@ -680,7 +680,7 @@ int media_tick(void) {
                 m->base_t = isnan(m->duration) ? t : m->duration; m->playing = false; m->ended = true;
             }
         }
-        if (popped) { SDL_BroadcastCondition(m->cv); out |= 1; if (m->cur && (m->cur->w != ow || m->cur->h != oh)) out |= 2; }
+        if (popped) { SDL_BroadcastCondition(m->cv); out |= 1; if (m->cur && (m->cur->w != ow || m->cur->h != oh)) { out |= 2; if (getenv("LUMEN_DEBUG_PAINT")) fprintf(stderr, "media: size %p %dx%d -> %dx%d\n", (void *)m, ow, oh, m->cur->w, m->cur->h); } }
         SDL_UnlockMutex(m->mu);
     }
     SDL_UnlockMutex(g_mu);

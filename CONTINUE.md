@@ -76,3 +76,12 @@ Load (DCL/load): Google 0.53/3.66 s, Bing 1.97/2.23 s, YT watch ~2.2/3.47 s, YT 
 - `LUMEN_WINDOW=800x600` sets the window size.
 - DMG: `python3 tools/mkdmg.py 0.1.0-preview` -> `dist/`. Signing identity "Lumen Debug Signing" lives in `~/.lumen-signing/` (keychain + p12 + passwords, NOT in repo); unlock the keychain with the password in `keychain-pass` before running, and pass `LUMEN_SIGN_ID=<sha1>`.
 - Pushed to ecooxai/lumen branch devin/lumen-early-preview (PR #1) via `git push https://github.com/ecooxai/lumen HEAD:refs/heads/devin/lumen-early-preview`. Promo video tooling in tools/promo. Not done: GitHub release (needs a token), Lite-off CPU on YouTube results page (~30%).
+
+## Video CPU work (branch devin/1791493877-youtube-ads-controls, after v0.1.1-preview)
+- Profiling (LUMEN_DEBUG_PAINT=1 prints paint counts + ms/s for style/layout/dl/raster): on a YouTube watch page the
+  cost was NOT decoding. YouTube updates progress-bar styles ~30x/s -> restyle -> full layout_run (~11 ms) + full raster
+  every video frame (~45% CPU). VideoToolbox decode + sws_scale was small.
+- Fix in progress: render() defers DOM/relayout-driven full paints to <=4/s while media plays and no user input for 1 s
+  (`a->deferred`, `last_full`, `last_input`); video frames still go through the GPU punch path every frame.
+- Next: zero-copy NV12 (CVPixelBuffer -> wgpu R8/RG8 textures + YUV shader) to drop av_hwframe_transfer_data + sws_scale;
+  paint-only style changes (transform/opacity/color) should skip layout entirely.
