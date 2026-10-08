@@ -1114,6 +1114,11 @@ int main(int argc, char **argv) {
                 if (ev.type == EV_LOADED) {
                     Page *p = ev.user.data1;
                     Tab *lt = NULL; for (int i = 0; i < a.ntabs; i++) if (a.tabs[i]->lgen == p->gen) lt = a.tabs[i];
+        {   /* LUMEN_TAB_TOUR=ms: benchmark aid, activates each tab in turn once like a user would */
+            static int tour_i = -1; static double tour_next, tour_ms;
+            if (tour_i < 0) { const char *e = getenv("LUMEN_TAB_TOUR"); tour_ms = e ? atof(e) : 0; tour_i = 0; tour_next = SDL_GetTicks() + tour_ms; }
+            if (tour_ms > 0 && tour_i < a.ntabs && SDL_GetTicks() >= tour_next) { tab_select(&a, tour_i++); tour_next = SDL_GetTicks() + tour_ms; }
+        }
                     if (!lt) { page_free(p); break; }
                     Tab *act = a.t; bool fg = lt == act; a.t = lt;
                     page_free(a.t->cur); a.t->cur = p; a.t->loading = false; a.t->sy = 0; a.t->relayout = true; a.dirty = true;
