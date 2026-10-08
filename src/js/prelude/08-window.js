@@ -54,6 +54,12 @@ const navigator = {
     clipboard: { writeText() { return Promise.resolve(); }, readText() { return Promise.resolve(''); } },
     permissions: { query() { return Promise.resolve({ state: 'prompt', addEventListener() {} }); } },
     mediaDevices: Object.assign(new EventTarget(), { enumerateDevices() { return Promise.resolve([]); }, getUserMedia() { return Promise.reject(new DOMException('Capture is not implemented yet', 'NotSupportedError')); }, getDisplayMedia() { return Promise.reject(new DOMException('Capture is not implemented yet', 'NotSupportedError')); }, getSupportedConstraints() { return {}; } }),
+    serviceWorker: Object.assign(new EventTarget(), {
+        controller: null, ready: new Promise(() => {}),
+        register() { return Promise.reject(new DOMException('Service workers are not supported', 'SecurityError')); },
+        getRegistration() { return Promise.resolve(undefined); }, getRegistrations() { return Promise.resolve([]); },
+        startMessages() {},
+    }),
     storage: { estimate() { return Promise.resolve({ quota: 1e9, usage: 0 }); }, persist() { return Promise.resolve(false); } },
     locks: { request(n, o, cb) { cb = typeof o === 'function' ? o : cb; return Promise.resolve().then(() => cb({ name: n })); } },
     getGamepads() { return []; }, getBattery() { return Promise.reject(new DOMException('', 'NotSupportedError')); },
