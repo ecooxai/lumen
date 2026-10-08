@@ -1,0 +1,439 @@
+/* Native functions (the `N` object) backing the JS DOM/Web API prelude */
+#include "js_int.h"
+#include <thread>
+#ifndef __APPLE__
+#include <sys/random.h>
+#endif
+
+using FCI = v8::FunctionCallbackInfo<v8::Value>;
+#define FN(nm) static void n_##nm(const FCI &a)
+#define CTX                                              \
+    JsCtx *c = jctx(a.GetIsolate());                     \
+    v8::Isolate *iso = c->iso;                           \
+    v8::Local<v8::Context> ctx = iso->GetCurrentContext(); \
+    (void)ctx
+#define RET(v) a.GetReturnValue().Set(v)
+#define ARGN(var, i)                                                                          \
+    Node *var = junwrap(a[i]);                                                                \
+    if (!var) { iso->ThrowException(v8::Exception::TypeError(jstr(iso, "parameter is not of type 'Node'"))); return; }
+#define S(i) jcstr(iso, a[i])
+#define NUM(i) a[i]->NumberValue(ctx).FromMaybe(0)
+#define BOOL(i) a[i]->BooleanValue(iso)
+
+static v8::Local<v8::Value> nstr(v8::Isolate *iso, const char *s) { return s ? v8::Local<v8::Value>(jstr(iso, s)) : v8::Local<v8::Value>(v8::Null(iso)); }
+static v8::Local<v8::ArrayBuffer> mkab(v8::Isolate *iso, const void *p, size_t n) {
+    v8::Local<v8::ArrayBuffer> ab = v8::ArrayBuffer::New(iso, n);
+    if (n) memcpy(ab->Data(), p, n);
+    return ab;
+}
+static bool bytes_of(v8::Local<v8::Value> v, const char **p, size_t *n) {
+    if (v->IsArrayBuffer()) { auto ab = v.As<v8::ArrayBuffer>(); *p = (const char *)ab->Data(); *n = ab->ByteLength(); return true; }
+    if (v->IsArrayBufferView()) { auto vw = v.As<v8::ArrayBufferView>(); *p = (const char *)vw->Buffer()->Data() + vw->ByteOffset(); *n = vw->ByteLength(); return true; }
+    return false;
+}
+static bool is_textish(Node *n) { return n->type == NODE_TEXT || n->type == NODE_COMMENT || n->type == NODE_CDATA; }
+static void clear_children(Node *n) {
+    while (n->first) { Node *ch = n->first; node_remove(ch); node_free_tree(ch); }
+}
+static void mark_started(Node *root) {
+    for (Node *x = root; x; x = node_next_in_tree(x, root))
+        if (x->type == NODE_ELEMENT && x->tag == A_script) x->flags |= NF_SCRIPT_STARTED;
+}
+
+FN(isNode) { CTX; RET(junwrap(a[0]) != nullptr); }
+FN(type) { CTX; ARGN(n, 0); RET((int)n->type); }
+FN(name) { CTX; ARGN(n, 0); RET(jstr(iso, n->type == NODE_ELEMENT ? n->tag : n->type == NODE_DOCTYPE ? n->text : "")); }
+FN(ns) { CTX; ARGN(n, 0); RET((int)n->ns); }
+FN(parent) { CTX; ARGN(n, 0); RET(jwrap(c, n->parent)); }
+FN(first) { CTX; ARGN(n, 0); RET(jwrap(c, n->first)); }
+FN(last) { CTX; ARGN(n, 0); RET(jwrap(c, n->last)); }
+FN(next) { CTX; ARGN(n, 0); RET(jwrap(c, n->next)); }
+FN(prev) { CTX; ARGN(n, 0); RET(jwrap(c, n->prev)); }
+FN(text) {
+    CTX; ARGN(n, 0);
+    if (is_textish(n)) { RET(jstr(iso, n->text ? n->text : "", n->text ? (int)n->text_len : 0)); return; }
+    char *t = node_text_content(n); RET(jstr(iso, t ? t : "")); free(t);
+}
+FN(setText) {
+    CTX; ARGN(n, 0); std::string s = S(1);
+    if (is_textish(n)) {
+        free(n->text); n->text = xstrndup(s.data(), s.size()); n->text_len = s.size();
+        doc_mark_dirty(n->doc, n->parent ? n->parent : n);
+        return;
+    }
+    clear_children(n);
+    if (!s.empty()) node_append(n, node_new_text(c->doc, s.data(), s.size()));
+}
+FN(attr) { CTX; ARGN(n, 0); std::string k = S(1); RET(nstr(iso, n->type == NODE_ELEMENT ? node_attr(n, k.c_str()) : nullptr)); }
+FN(setAttr) { CTX; ARGN(n, 0); std::string k = S(1), v = S(2); node_set_attr(n, atom(k.c_str()), v.c_str()); doc_mark_dirty(n->doc, n); }
+FN(rmAttr) { CTX; ARGN(n, 0); std::string k = S(1); if (node_has_attr(n, k.c_str())) { node_remove_attr(n, k.c_str()); doc_mark_dirty(n->doc, n); } }
+FN(attrs) {
+    CTX; ARGN(n, 0);
+    v8::Local<v8::Array> r = v8::Array::New(iso, n->nattrs * 2);
+    for (int i = 0; i < n->nattrs; i++) {
+        (void)r->Set(ctx, 2 * i, jstr(iso, n->attrs[i].name));
+        (void)r->Set(ctx, 2 * i + 1, jstr(iso, n->attrs[i].value ? n->attrs[i].value : ""));
+    }
+    RET(r);
+}
+FN(insert) {
+    CTX; ARGN(p, 0); ARGN(ch, 1);
+    Node *ref = junwrap(a[2]);
+    if (ch->type == NODE_DOCUMENT || p->type == NODE_TEXT || p->type == NODE_COMMENT) { iso->ThrowException(v8::Exception::TypeError(jstr(iso, "HierarchyRequestError"))); return; }
+    std::vector<Node *> added;
+    if (ch->type == NODE_FRAGMENT) for (Node *x = ch->first; x; x = x->next) added.push_back(x);
+    else added.push_back(ch);
+    node_insert_before(p, ch, ref && ref->parent == p ? ref : nullptr);
+    for (Node *x : added) js_run_inserted(c, x);
+}
+FN(remove) { CTX; ARGN(ch, 0); node_remove(ch); }
+FN(create) { CTX; std::string t = S(0); RET(jwrap(c, node_new_element(c->doc, atom(t.c_str()), a[1]->Int32Value(ctx).FromMaybe(0)))); }
+FN(textNode) { CTX; std::string s = S(0); RET(jwrap(c, node_new_text(c->doc, s.data(), s.size()))); }
+FN(comment) { CTX; std::string s = S(0); RET(jwrap(c, node_new_comment(c->doc, s.data(), s.size()))); }
+FN(frag) { CTX; RET(jwrap(c, node_new_fragment(c->doc))); }
+FN(html) { CTX; ARGN(n, 0); char *s = node_serialize(n, BOOL(1)); RET(jstr(iso, s ? s : "")); free(s); }
+FN(setHTML) {
+    CTX; ARGN(n, 0); std::string s = S(1);
+    Node *target = n;
+    if (n->type == NODE_ELEMENT && n->tag == A_template) {
+        if (!n->template_content) { n->template_content = node_new_fragment(c->doc); n->template_content->refcount = 1; }
+        target = n->template_content;
+    }
+    clear_children(target);
+    Node *ctxn = n->type == NODE_ELEMENT ? n : n->host ? n->host : nullptr;
+    Node *f = html_parse_fragment(c->doc, ctxn ? ctxn : c->doc->body, s.data(), s.size());
+    if (!f) return;
+    mark_started(f);
+    node_append(target, f);
+    node_free_tree(f);
+}
+FN(parseFrag) {
+    CTX; Node *cx = junwrap(a[0]); std::string s = S(1);
+    if (!cx || cx->type != NODE_ELEMENT) cx = c->doc->body;
+    Node *f = html_parse_fragment(c->doc, cx, s.data(), s.size());
+    if (f) mark_started(f);
+    RET(jwrap(c, f));
+}
+FN(query) {
+    CTX; ARGN(root, 0); std::string sel = S(1); bool all = BOOL(2);
+    if (!jsg_valid_selector(sel.c_str())) { iso->ThrowException(v8::Exception::SyntaxError(jstr(iso, ("'" + sel + "' is not a valid selector.").c_str()))); return; }
+    Node **out = nullptr;
+    int k = jsg_query(root, sel.c_str(), all, &out);
+    if (!all) { RET(jwrap(c, k ? out[0] : nullptr)); free(out); return; }
+    v8::Local<v8::Array> r = v8::Array::New(iso, k);
+    for (int i = 0; i < k; i++) (void)r->Set(ctx, i, jwrap(c, out[i]));
+    free(out);
+    RET(r);
+}
+FN(matches) {
+    CTX; ARGN(n, 0); std::string sel = S(1); bool ok = false;
+    bool m = n->type == NODE_ELEMENT && jsg_matches(n, sel.c_str(), &ok);
+    if (n->type == NODE_ELEMENT && !ok) { iso->ThrowException(v8::Exception::SyntaxError(jstr(iso, ("'" + sel + "' is not a valid selector.").c_str()))); return; }
+    RET(m);
+}
+FN(byId) { CTX; std::string id = S(0); RET(jwrap(c, doc_get_element_by_id(c->doc, id.c_str()))); }
+FN(clone) { CTX; ARGN(n, 0); RET(jwrap(c, node_clone(n, BOOL(1), c->doc))); }
+FN(doc) { CTX; RET(jwrap(c, &c->doc->node)); }
+FN(contains) { CTX; ARGN(x, 0); ARGN(y, 1); RET(node_is_inclusive_ancestor(x, y)); }
+FN(connected) { CTX; ARGN(n, 0); RET(n->type == NODE_DOCUMENT || (n->flags & NF_CONNECTED) != 0); }
+FN(host) { CTX; ARGN(n, 0); RET(jwrap(c, n->host)); }
+FN(attachShadow) {
+    CTX; ARGN(n, 0);
+    if (!n->shadow_root) { Node *f = node_new_fragment(c->doc); f->host = n; f->refcount = 1; n->shadow_root = f; doc_mark_dirty(c->doc, n); }
+    RET(jwrap(c, n->shadow_root));
+}
+FN(templateContent) {
+    CTX; ARGN(n, 0);
+    if (!n->template_content) { n->template_content = node_new_fragment(c->doc); n->template_content->refcount = 1; }
+    RET(jwrap(c, n->template_content));
+}
+FN(rect) {
+    CTX; ARGN(n, 0); float r[4];
+    if (!jsg_rect(n, r)) { RET(v8::Null(iso)); return; }
+    v8::Local<v8::Array> o = v8::Array::New(iso, 4);
+    for (int i = 0; i < 4; i++) (void)o->Set(ctx, i, v8::Number::New(iso, r[i]));
+    RET(o);
+}
+FN(computed) { CTX; ARGN(n, 0); std::string p = S(1); char *v = jsg_computed(n, p.c_str()); RET(nstr(iso, v)); free(v); }
+FN(value) { CTX; ARGN(n, 0); RET(nstr(iso, n->value_override)); }
+FN(setValue) { CTX; ARGN(n, 0); free(n->value_override); n->value_override = a[1]->IsNullOrUndefined() ? nullptr : xstrdup(S(1).c_str()); doc_mark_dirty(n->doc, n); }
+FN(checked) {
+    CTX; ARGN(n, 0);
+    RET(n->checked_override ? n->checked_override > 0 : node_has_attr(n, n->tag && !strcmp(n->tag, "option") ? "selected" : "checked"));
+}
+FN(setChecked) {
+    CTX; ARGN(n, 0); bool b = BOOL(1);
+    n->checked_override = b ? 1 : -1;
+    if (b) n->flags |= NF_CHECKED; else n->flags &= ~(uint32_t)NF_CHECKED;
+    doc_mark_dirty(n->doc, n);
+}
+FN(focus) {
+    CTX; Node *n = junwrap(a[0]); Node *old = c->doc->focus;
+    if (old == n) return;
+    if (old) { old->flags &= ~(uint32_t)NF_FOCUS; doc_mark_dirty(c->doc, old); }
+    c->doc->focus = n;
+    if (n) { n->flags |= NF_FOCUS; doc_mark_dirty(c->doc, n); }
+    if (old) jfire(c, old, "blur");
+    if (n) jfire(c, n, "focus");
+}
+FN(active) { CTX; RET(jwrap(c, c->doc->focus)); }
+FN(cookie) { CTX; char *s = cookies_get_document(c->doc->url); RET(jstr(iso, s ? s : "")); free(s); }
+FN(setCookie) { CTX; std::string s = S(0); cookies_set_document(c->doc->url, s.c_str()); }
+FN(url) { CTX; RET(jstr(iso, c->doc->url ? c->doc->url : "about:blank")); }
+FN(setUrl) {
+    CTX; std::string u = S(0);
+    free(c->doc->url); c->doc->url = xstrdup(u.c_str());
+    if (c->host.set_url) c->host.set_url(c->host.ud, u.c_str(), BOOL(1));
+}
+FN(navigate) { CTX; std::string u = S(0); if (c->host.navigate) c->host.navigate(c->host.ud, u.c_str()); }
+FN(histGo) { CTX; if (c->host.history_go) c->host.history_go(c->host.ud, a[0]->Int32Value(ctx).FromMaybe(0)); }
+FN(histLen) { CTX; RET(c->host.history_len ? c->host.history_len(c->host.ud) : 1); }
+FN(timer) {
+    CTX;
+    if (!a[0]->IsFunction()) return;
+    uint32_t id = c->next_timer++;
+    Timer &t = c->timers[id];
+    t.fn.Reset(iso, a[0].As<v8::Function>());
+    t.repeat = BOOL(2);
+    t.interval = std::max(NUM(1), t.repeat ? 4.0 : 0.0);
+    t.due = now_ms() + t.interval;
+    RET(id);
+}
+FN(clearTimer) { CTX; c->timers.erase((uint32_t)NUM(0)); }
+FN(raf) {
+    CTX;
+    if (!a[0]->IsFunction()) return;
+    uint32_t id = c->next_raf++;
+    c->rafs[id].Reset(iso, a[0].As<v8::Function>());
+    RET(id);
+}
+FN(cancelRaf) { CTX; c->rafs.erase((uint32_t)NUM(0)); }
+FN(now) { CTX; RET(now_ms() - c->t0); }
+
+static NetRequest *mkreq(JsCtx *c, const FCI &a) {
+    v8::Isolate *iso = c->iso;
+    v8::Local<v8::Context> ctx = iso->GetCurrentContext();
+    std::string m = S(0), u = S(1);
+    NetRequest *rq = net_request_new(m.c_str(), u.c_str());
+    bool referer = false;
+    if (a[2]->IsArray()) {
+        v8::Local<v8::Array> h = a[2].As<v8::Array>();
+        for (uint32_t i = 0; i + 1 < h->Length(); i += 2) {
+            v8::Local<v8::Value> k, v;
+            if (!h->Get(ctx, i).ToLocal(&k) || !h->Get(ctx, i + 1).ToLocal(&v)) continue;
+            std::string ks = jcstr(iso, k), vs = jcstr(iso, v);
+            if (str_ieq(ks.c_str(), "referer")) referer = true;
+            headers_add(&rq->headers, ks.c_str(), vs.c_str());
+        }
+    }
+    if (!referer && c->doc->url && !strncmp(c->doc->url, "http", 4)) headers_add(&rq->headers, "Referer", c->doc->url);
+    const char *p; size_t n;
+    if (a.Length() > 3 && bytes_of(a[3], &p, &n) && n) { rq->body = (char *)xmalloc(n); memcpy(rq->body, p, n); rq->body_len = n; }
+    return rq;
+}
+static void resp_args(v8::Isolate *iso, NetResponse *r, v8::Local<v8::Value> out[6]) {
+    bool err = !r || r->status == 0;
+    out[0] = v8::Integer::New(iso, r ? r->status : 0);
+    out[1] = jstr(iso, r && r->status_text ? r->status_text : "");
+    out[2] = jstr(iso, r && r->url ? r->url : "");
+    v8::Local<v8::Context> ctx = iso->GetCurrentContext();
+    v8::Local<v8::Array> h = v8::Array::New(iso, r ? (int)r->headers.n * 2 : 0);
+    if (r) for (size_t i = 0; i < r->headers.n; i++) {
+        (void)h->Set(ctx, (uint32_t)(2 * i), jstr(iso, r->headers.v[i].name));
+        (void)h->Set(ctx, (uint32_t)(2 * i + 1), jstr(iso, r->headers.v[i].value));
+    }
+    out[3] = h;
+    out[4] = mkab(iso, r && r->body ? r->body : "", r && r->body ? r->body_len : 0);
+    out[5] = err ? v8::Local<v8::Value>(jstr(iso, r && r->error ? r->error : "network error")) : v8::Local<v8::Value>(v8::False(iso));
+}
+static void fetch_done(NetRequest *req, NetResponse *r, void *ud) {
+    (void)req;
+    Fetch *f = static_cast<Fetch *>(ud);
+    JsCtx *c = f->c;
+    if (!c) { delete f; return; }
+    c->fetches.erase(f->id);
+    JS_ENTER(c);
+    if (f->script) {
+        if (r && r->status >= 200 && r->status < 300) js_run_script(c, f->script, r->body ? r->body : "", r->body ? r->body_len : 0, r->url ? r->url : "");
+        else jfire(c, f->script, "error");
+    } else {
+        v8::Local<v8::Value> argv[6];
+        resp_args(iso, r, argv);
+        (void)jcall(c, f->cb.Get(iso), v8::Undefined(iso), 6, argv);
+    }
+    f->cb.Reset();
+    delete f;
+}
+static uint64_t start_fetch(JsCtx *c, NetRequest *rq, Fetch *f) {
+    rq->done = fetch_done;
+    rq->ud = f;
+    f->id = net_fetch(rq);
+    c->fetches[f->id] = f;
+    return f->id;
+}
+FN(fetch) {
+    CTX;
+    if (!a[4]->IsFunction()) return;
+    Fetch *f = new Fetch{ c, 0, {}, nullptr };
+    f->cb.Reset(iso, a[4].As<v8::Function>());
+    RET((double)start_fetch(c, mkreq(c, a), f));
+}
+FN(fetchSync) {
+    CTX;
+    NetResponse *r = net_fetch_sync(mkreq(c, a));
+    v8::Local<v8::Value> out[6];
+    resp_args(iso, r, out);
+    if (r) net_response_free(r);
+    RET(v8::Array::New(iso, out, 6));
+}
+FN(abort) {
+    CTX; uint64_t id = (uint64_t)NUM(0);
+    auto it = c->fetches.find(id);
+    if (it == c->fetches.end()) return;
+    net_cancel(id);
+    it->second->c = nullptr; it->second->cb.Reset();
+    c->fetches.erase(it);
+}
+FN(log) {
+    CTX; int lv = a[0]->Int32Value(ctx).FromMaybe(1);
+    if (lv < g_log_level) return;
+    static const char *names[] = { "debug", "log", "warn", "error" };
+    std::string m = S(1);
+    fprintf(stderr, "[js %s] %.2000s\n", names[std::clamp(lv, 0, 3)], m.c_str());
+}
+FN(viewport) {
+    CTX; float w = 0, h = 0, sx = 0, sy = 0, dpr = 1;
+    if (c->host.viewport) c->host.viewport(c->host.ud, &w, &h, &sx, &sy, &dpr);
+    double v[7] = { w, h, sx, sy, dpr, std::max(w, 1440.f), std::max(h, 900.f) };
+    v8::Local<v8::Array> r = v8::Array::New(iso, 7);
+    for (int i = 0; i < 7; i++) (void)r->Set(ctx, i, v8::Number::New(iso, v[i]));
+    RET(r);
+}
+FN(scrollTo) { CTX; if (c->host.scroll_to) c->host.scroll_to(c->host.ud, (float)NUM(0), (float)NUM(1)); }
+FN(hit) {
+    CTX; Node *n = c->host.hit ? c->host.hit(c->host.ud, (float)NUM(0), (float)NUM(1)) : nullptr;
+    while (n && n->type != NODE_ELEMENT) n = n->parent;
+    RET(jwrap(c, n));
+}
+FN(ceScan) {
+    CTX; ARGN(root, 0);
+    v8::Local<v8::Array> r = v8::Array::New(iso);
+    uint32_t k = 0;
+    for (Node *x = root; x; x = node_next_in_tree(x, root))
+        if (x->type == NODE_ELEMENT && x->ns == NS_HTML && x->tag && strchr(x->tag, '-')) (void)r->Set(ctx, k++, jwrap(c, x));
+    RET(r);
+}
+FN(readyState) { CTX; RET(c->doc->ready_state); }
+FN(quirks) { CTX; RET(c->doc->quirks); }
+FN(currentScript) { CTX; RET(jwrap(c, c->current_script)); }
+FN(media) { CTX; std::string q = S(0); RET(jsg_media(c->host.media, q.c_str())); }
+FN(cssSupports) { CTX; std::string q = S(0); RET(jsg_supports(q.c_str())); }
+FN(urlParse) {
+    CTX; std::string s = S(0);
+    URL u = {}, b = {};
+    bool ok;
+    if (a[1]->IsNullOrUndefined()) ok = url_parse(s.c_str(), &u);
+    else {
+        std::string bs = S(1);
+        ok = url_parse(bs.c_str(), &b) && url_resolve(&b, s.c_str(), &u);
+        url_free(&b);
+    }
+    if (!ok || !u.scheme) { url_free(&u); RET(v8::Null(iso)); return; }
+    char *href = url_to_string(&u);
+    std::string user, pass;
+    if (u.userinfo) { const char *col = strchr(u.userinfo, ':'); user = col ? std::string(u.userinfo, (size_t)(col - u.userinfo)) : u.userinfo; if (col) pass = col + 1; }
+    std::string hostname = u.host ? u.host : "";
+    std::string port = u.port && u.port != url_default_port(u.scheme) ? std::to_string(u.port) : "";
+    std::string host = hostname + (port.empty() ? "" : ":" + port);
+    std::string origin = "null";
+    if (!u.opaque && u.host) { char *o = url_origin(&u); if (o) { origin = o; free(o); } }
+    std::string f[11] = { href ? href : s, std::string(u.scheme) + ":", user, pass, host, hostname, port, u.path ? u.path : "",
+                          u.query && *u.query ? std::string("?") + u.query : "", u.fragment && *u.fragment ? std::string("#") + u.fragment : "", origin };
+    free(href);
+    url_free(&u);
+    v8::Local<v8::Array> r = v8::Array::New(iso, 11);
+    for (int i = 0; i < 11; i++) (void)r->Set(ctx, i, jstr(iso, f[i].c_str(), (int)f[i].size()));
+    RET(r);
+}
+FN(encode) { CTX; v8::String::Utf8Value u(iso, a[0]); RET(mkab(iso, *u ? *u : "", *u ? (size_t)u.length() : 0)); }
+FN(decode) {
+    CTX; const char *p = ""; size_t n = 0;
+    bytes_of(a[0], &p, &n);
+    if (n >= 3 && (unsigned char)p[0] == 0xEF && (unsigned char)p[1] == 0xBB && (unsigned char)p[2] == 0xBF) { p += 3; n -= 3; }
+    RET(jstr(iso, p, (int)n));
+}
+FN(random) {
+    CTX; (void)iso;
+    if (!a[0]->IsArrayBuffer()) return;
+    uint8_t *p = (uint8_t *)a[0].As<v8::ArrayBuffer>()->Data() + (size_t)NUM(1);
+    size_t n = (size_t)NUM(2);
+#ifdef __APPLE__
+    arc4random_buf(p, n);
+#else
+    while (n) { ssize_t k = getrandom(p, n, 0); if (k <= 0) break; p += k; n -= (size_t)k; }
+#endif
+}
+FN(heap) {
+    CTX; v8::HeapStatistics hs;
+    iso->GetHeapStatistics(&hs);
+    v8::Local<v8::Value> v[3] = { v8::Number::New(iso, (double)hs.used_heap_size()), v8::Number::New(iso, (double)hs.total_heap_size()), v8::Number::New(iso, (double)hs.heap_size_limit()) };
+    RET(v8::Array::New(iso, v, 3));
+}
+FN(imgSize) {
+    CTX; ARGN(n, 0); float w, h;
+    if (!jsg_img_size(n, &w, &h)) { RET(v8::Null(iso)); return; }
+    v8::Local<v8::Value> v[2] = { v8::Number::New(iso, w), v8::Number::New(iso, h) };
+    RET(v8::Array::New(iso, v, 2));
+}
+FN(userAgent) { CTX; RET(jstr(iso, g_user_agent)); }
+FN(platform) {
+    CTX;
+#ifdef __APPLE__
+    RET(jstr(iso, "MacIntel"));
+#else
+    RET(jstr(iso, "Linux x86_64"));
+#endif
+}
+FN(cpus) { CTX; (void)iso; RET((int)std::max(1u, std::thread::hardware_concurrency())); }
+
+void js_run_inserted(JsCtx *c, Node *root) {
+    if (!(root->flags & NF_CONNECTED)) return;
+    std::vector<Node *> list;
+    for (Node *x = root; x; x = node_next_in_tree(x, root))
+        if (x->type == NODE_ELEMENT && x->tag == A_script && x->ns == NS_HTML && !(x->flags & NF_SCRIPT_STARTED)) list.push_back(x);
+    for (Node *s : list) {
+        s->flags |= NF_SCRIPT_STARTED;
+        if (!jsg_classic_script(s)) continue;
+        const char *src = node_attr(s, "src");
+        if (!src) {
+            char *t = node_text_content(s);
+            js_run_script(c, s, t ? t : "", t ? strlen(t) : 0, c->doc->url);
+            free(t);
+            continue;
+        }
+        char *u = *src ? url_join(c->doc->url, src) : nullptr;
+        if (!u) { jfire(c, s, "error"); continue; }
+        jwrap(c, s);
+        NetRequest *rq = net_request_new("GET", u);
+        if (c->doc->url && !strncmp(c->doc->url, "http", 4)) headers_add(&rq->headers, "Referer", c->doc->url);
+        start_fetch(c, rq, new Fetch{ c, 0, {}, s });
+        free(u);
+    }
+}
+
+void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
+    v8::Isolate *iso = c->iso;
+    v8::Local<v8::Context> ctx = iso->GetCurrentContext();
+#define REG(nm) (void)N->Set(ctx, jstr(iso, #nm), v8::Function::New(ctx, n_##nm).ToLocalChecked())
+    REG(isNode); REG(type); REG(name); REG(ns); REG(parent); REG(first); REG(last); REG(next); REG(prev);
+    REG(text); REG(setText); REG(attr); REG(setAttr); REG(rmAttr); REG(attrs); REG(insert); REG(remove);
+    REG(create); REG(textNode); REG(comment); REG(frag); REG(html); REG(setHTML); REG(parseFrag); REG(query);
+    REG(matches); REG(byId); REG(clone); REG(doc); REG(contains); REG(connected); REG(host); REG(attachShadow);
+    REG(templateContent); REG(rect); REG(computed); REG(value); REG(setValue); REG(checked); REG(setChecked);
+    REG(focus); REG(active); REG(cookie); REG(setCookie); REG(url); REG(setUrl); REG(navigate); REG(histGo);
+    REG(histLen); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
+    REG(abort); REG(log); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(readyState); REG(quirks);
+    REG(currentScript); REG(media); REG(cssSupports); REG(urlParse); REG(encode); REG(decode); REG(random);
+    REG(heap); REG(imgSize); REG(userAgent); REG(platform); REG(cpus);
+#undef REG
+}

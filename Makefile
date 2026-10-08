@@ -28,7 +28,7 @@ NETLIBS := $(LIBDIRS) -lssl -lcrypto -lz -lbrotlidec -lzstd
 
 BASE_SRC := $(wildcard src/base/*.c)
 NET_SRC := $(wildcard src/net/*.c)
-CORE_SRC := $(BASE_SRC) $(NET_SRC) $(wildcard src/html/*.c src/dom/*.c src/css/*.c src/text/*.c src/layout/*.c src/paint/*.c src/media/*.c src/gpu/*.c)
+CORE_SRC := $(BASE_SRC) $(NET_SRC) $(wildcard src/html/*.c src/dom/*.c src/css/*.c src/text/*.c src/layout/*.c src/paint/*.c src/media/*.c src/gpu/*.c src/js/*.c)
 APP_SRC := $(wildcard src/app/*.c)
 JS_SRC := $(wildcard src/js/*.cc)
 ifeq ($(UNAME),Darwin)
@@ -80,3 +80,10 @@ $(BUILD)/layout: $(call OBJ,tests/layout.c $(LAYOUT_TEST_SRC))
 RENDER_TEST_SRC := $(LAYOUT_TEST_SRC) $(wildcard src/paint/*.c)
 $(BUILD)/render: $(call OBJ,tests/render.c $(RENDER_TEST_SRC))
 	$(CC) $(OPT) $^ -o $@ $(NETLIBS) -lfreetype -lharfbuzz -lpng -ljpeg -lwebp -lgif
+
+PRELUDE_JS := $(sort $(wildcard src/js/prelude/*.js))
+$(BUILD)/src/js/prelude.inc: $(PRELUDE_JS)
+	@mkdir -p $(dir $@)
+	{ printf 'R"JS('; cat $(PRELUDE_JS); printf ')JS"'; } > $@
+$(BUILD)/src/js/js.cc.o: $(BUILD)/src/js/prelude.inc
+$(BUILD)/src/js/js.cc.o: CXXFLAGS += -I$(BUILD)/src/js
