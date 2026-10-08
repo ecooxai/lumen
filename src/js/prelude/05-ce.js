@@ -130,6 +130,7 @@ const PLAIN = new Set('abbr address article aside b bdi bdo cite code dd dfn dt 
 function protoFor(type, tag, ns) {
     switch (type) {
     case 1:
+        if (ns === 3) return Element.prototype;
         if (ns === 1) return (tag === 'svg' ? SVGSVGElement : /^(g|path|rect|circle|ellipse|line|polyline|polygon|use|text|image)$/.test(tag) ? SVGGraphicsElement : SVGElement).prototype;
         if (ns === 2) return MathMLElement.prototype;
         if (TAGS[tag]) return TAGS[tag].prototype;
@@ -137,7 +138,8 @@ function protoFor(type, tag, ns) {
     case 3: return Text.prototype;
     case 4: return CDATASection.prototype;
     case 8: return Comment.prototype;
-    case 9: return HTMLDocument.prototype;
+    case 7: return ProcessingInstruction.prototype;
+    case 9: return ns === 3 ? XMLDocument.prototype : HTMLDocument.prototype;
     case 10: return DocumentType.prototype;
     case 11: return DocumentFragment.prototype;
     }

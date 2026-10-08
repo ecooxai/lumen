@@ -48,6 +48,9 @@ Node *node_new_comment(Document *d, const char *s, size_t len) { Node *n = alloc
 Node *node_new_fragment(Document *d) { Node *n = alloc_node(d, NODE_FRAGMENT); n->tag = atom("#document-fragment"); return n; }
 Node *node_new_doctype(Document *d, const char *name) { Node *n = alloc_node(d, NODE_DOCTYPE); n->text = xstrdup(name ? name : "html"); n->text_len = strlen(n->text); n->tag = atom("#doctype"); return n; }
 
+Node *node_new_pi(Document *d, const char *target, const char *s, size_t len) { Node *n = alloc_node(d, NODE_PI); n->text = xstrndup(s, len); n->text_len = len; n->tag = atom(target); return n; }
+Node *node_new_cdata(Document *d, const char *s, size_t len) { Node *n = alloc_node(d, NODE_CDATA); n->text = xstrndup(s, len); n->text_len = len; n->tag = atom("#cdata-section"); return n; }
+
 static void mark_connected(Node *n, bool on) {
     for (Node *c = n; c; c = node_next_in_tree(c, n)) { if (on) c->flags |= NF_CONNECTED; else c->flags &= ~(uint32_t)NF_CONNECTED; }
 }
@@ -185,11 +188,11 @@ static void text_rec(const Node *n, SB *b) {
     }
 }
 char *node_text_content(const Node *n) {
-    if (n->type == NODE_TEXT || n->type == NODE_COMMENT || n->type == NODE_CDATA) return xstrndup(n->text, n->text_len);
+    if (n->type == NODE_TEXT || n->type == NODE_COMMENT || n->type == NODE_CDATA || n->type == NODE_PI) return xstrndup(n->text, n->text_len);
     SB b; sb_init(&b); text_rec(n, &b); return sb_take(&b);
 }
 void node_set_text_content(Node *n, const char *s) {
-    if (n->type == NODE_TEXT || n->type == NODE_COMMENT) { free(n->text); n->text = xstrdup(s); n->text_len = strlen(s); doc_mark_dirty(n->doc, n); return; }
+    if (n->type == NODE_TEXT || n->type == NODE_COMMENT || n->type == NODE_CDATA || n->type == NODE_PI) { free(n->text); n->text = xstrdup(s); n->text_len = strlen(s); doc_mark_dirty(n->doc, n); return; }
     while (n->first) { Node *c = n->first; node_remove(c); node_free_tree(c); }
     if (s && *s) node_append(n, node_new_text(n->doc, s, strlen(s)));
 }
@@ -203,7 +206,9 @@ Node *node_clone(Node *n, bool deep, Document *d) {
     case NODE_ELEMENT: c = node_new_element(d, n->tag, n->ns); for (int i = 0; i < n->nattrs; i++) node_set_attr(c, n->attrs[i].name, n->attrs[i].value); break;
     case NODE_TEXT: c = node_new_text(d, n->text, n->text_len); break;
     case NODE_COMMENT: c = node_new_comment(d, n->text, n->text_len); break;
-    case NODE_DOCTYPE: c = node_new_doctype(d, n->text); break;
+    case NODE_DOCTYPE: c = node_new_doctype(d, n->text); for (int i = 0; i < n->nattrs; i++) node_set_attr(c, n->attrs[i].name, n->attrs[i].value); break;
+    case NODE_PI: c = node_new_pi(d, n->tag, n->text, n->text_len); break;
+    case NODE_CDATA: c = node_new_cdata(d, n->text, n->text_len); break;
     default: c = node_new_fragment(d); break;
     }
     if (n->template_content) { c->template_content = node_clone(n->template_content, true, d); c->template_content->refcount = 1; c->template_content->flags |= NF_INERT; }
@@ -243,6 +248,8 @@ static void ser(const Node *n, SB *b) {
     case NODE_TEXT: esc(b, n->text, n->text_len, false); break;
     case NODE_COMMENT: sb_puts(b, "<!--"); sb_put(b, n->text, n->text_len); sb_puts(b, "-->"); break;
     case NODE_DOCTYPE: sb_printf(b, "<!DOCTYPE %s>", n->text); break;
+    case NODE_PI: sb_printf(b, "<?%s ", n->tag); sb_put(b, n->text, n->text_len); sb_puts(b, "?>"); break;
+    case NODE_CDATA: sb_puts(b, "<![CDATA["); sb_put(b, n->text, n->text_len); sb_puts(b, "]]>"); break;
     default: for (const Node *c = n->first; c; c = c->next) ser(c, b);
     }
 }

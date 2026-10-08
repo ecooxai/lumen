@@ -40,7 +40,7 @@ const validLocalName = n => /^[A-Za-z][^\t\n\f\r \/>\x00]*$/.test(n) || /^[:_\u0
 const asciiLower = s => s.replace(/[A-Z]+/g, c => c.toLowerCase()), asciiUpper = s => s.replace(/[a-z]+/g, c => c.toUpperCase());
 methods(Element.prototype, {
     get tagName() { let ln = this.localName; if (typeof ln !== 'string') ln = String(N.name(this)); const q = this.__pfx ? this.__pfx + ':' + ln : ln; return this.namespaceURI === NSURI[0] ? asciiUpper(q) : q; },
-    get localName() { return this.__ln ?? N.name(this); }, get namespaceURI() { return this.__nsu !== undefined ? this.__nsu : NSURI[N.ns(this)] || NSURI[0]; }, get prefix() { return this.__pfx ?? null; },
+    get localName() { return this.__ln ?? N.name(this); }, get namespaceURI() { return this.__nsu !== undefined ? this.__nsu : N.ns(this) === 3 ? null : NSURI[N.ns(this)] || NSURI[0]; }, get prefix() { return this.__pfx ?? null; },
     get id() { return N.attr(this, 'id') ?? ''; }, set id(v) { this.setAttribute('id', v); },
     get className() { return N.attr(this, 'class') ?? ''; }, set className(v) { this.setAttribute('class', v); },
     get classList() { if (!this.__cl) def(this, '__cl', new DOMTokenList(this, 'class')); return this.__cl; }, set classList(v) { this.setAttribute('class', v); },

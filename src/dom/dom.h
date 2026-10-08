@@ -2,8 +2,8 @@
 #define LUMEN_DOM_H
 #include "../base/util.h"
 
-enum { NODE_ELEMENT = 1, NODE_TEXT = 3, NODE_CDATA = 4, NODE_COMMENT = 8, NODE_DOCUMENT = 9, NODE_DOCTYPE = 10, NODE_FRAGMENT = 11 };
-enum { NS_HTML = 0, NS_SVG = 1, NS_MATHML = 2 };
+enum { NODE_ELEMENT = 1, NODE_TEXT = 3, NODE_CDATA = 4, NODE_PI = 7, NODE_COMMENT = 8, NODE_DOCUMENT = 9, NODE_DOCTYPE = 10, NODE_FRAGMENT = 11 };
+enum { NS_HTML = 0, NS_SVG = 1, NS_MATHML = 2, NS_NONE = 3 };
 
 /* node flags */
 enum {
@@ -69,6 +69,8 @@ Node *node_new_text(Document *d, const char *s, size_t n);
 Node *node_new_comment(Document *d, const char *s, size_t n);
 Node *node_new_fragment(Document *d);
 Node *node_new_doctype(Document *d, const char *name);
+Node *node_new_pi(Document *d, const char *target, const char *s, size_t n);   /* target in tag, data in text */
+Node *node_new_cdata(Document *d, const char *s, size_t n);
 void node_append(Node *parent, Node *child);
 void node_insert_before(Node *parent, Node *child, Node *ref);
 void node_remove(Node *child);

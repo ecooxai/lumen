@@ -39,7 +39,9 @@ static bool bytes_of(v8::Local<v8::Value> v, const char **p, size_t *n) {
     if (v->IsArrayBufferView()) { auto vw = v.As<v8::ArrayBufferView>(); *p = (const char *)vw->Buffer()->Data() + vw->ByteOffset(); *n = vw->ByteLength(); return true; }
     return false;
 }
-static bool is_textish(Node *n) { return n->type == NODE_TEXT || n->type == NODE_COMMENT || n->type == NODE_CDATA; }
+static bool is_textish(Node *n) { return n->type == NODE_TEXT || n->type == NODE_COMMENT || n->type == NODE_CDATA || n->type == NODE_PI; }
+static void adopt_tree(Node *n, Document *d) { for (Node *x = n; x; x = node_next_in_tree(x, n)) x->doc = d; }
+#define ADOC(i) Document *od = c->doc; if (a.Length() > (i)) if (Node *dn_ = junwrap(a[i])) if (dn_->type == NODE_DOCUMENT) od = (Document *)dn_
 static void clear_children(Node *n) {
     while (n->first) { Node *ch = n->first; node_remove(ch); node_free_tree(ch); }
 }
@@ -50,7 +52,7 @@ static void mark_started(Node *root) {
 
 FN(isNode) { CTX; RET(junwrap(a[0]) != nullptr); }
 FN(type) { CTX; ARGN(n, 0); RET((int)n->type); }
-FN(name) { CTX; ARGN(n, 0); RET(jstr(iso, n->type == NODE_ELEMENT ? n->tag : n->type == NODE_DOCTYPE ? n->text : "")); }
+FN(name) { CTX; ARGN(n, 0); RET(jstr(iso, n->type == NODE_ELEMENT || n->type == NODE_PI ? n->tag : n->type == NODE_DOCTYPE ? n->text : "")); }
 FN(ns) { CTX; ARGN(n, 0); RET((int)n->ns); }
 FN(parent) { CTX; ARGN(n, 0); RET(jwrap(c, n->parent)); }
 FN(first) { CTX; ARGN(n, 0); RET(jwrap(c, n->first)); }
@@ -92,9 +94,11 @@ FN(insert) {
     if (ch->type == NODE_FRAGMENT) for (Node *x = ch->first; x; x = x->next) added.push_back(x);
     else added.push_back(ch);
     if (ch->doc != p->doc) for (Node *x = ch; x; x = node_next_in_tree(x, ch)) x->doc = p->doc;
+    if (ch->doc != p->doc) adopt_tree(ch, p->doc);
     node_insert_before(p, ch, ref && ref->parent == p ? ref : nullptr);
     for (Node *x : added) js_run_inserted(c, x);
 }
+FN(adopt) { CTX; ARGN(n, 0); ARGN(d, 1); adopt_tree(n, d->doc); }
 FN(newDoc) {
     CTX;
     Document *nd = doc_new("about:blank");
@@ -110,10 +114,25 @@ FN(newDoc) {
     RET(jwrap(c, &nd->node));
 }
 FN(remove) { CTX; ARGN(ch, 0); node_remove(ch); }
-FN(create) { CTX; std::string t = S(0); RET(jwrap(c, node_new_element(c->doc, atom(t.c_str()), a[1]->Int32Value(ctx).FromMaybe(0)))); }
-FN(textNode) { CTX; std::string s = S(0); RET(jwrap(c, node_new_text(c->doc, s.data(), s.size()))); }
-FN(comment) { CTX; std::string s = S(0); RET(jwrap(c, node_new_comment(c->doc, s.data(), s.size()))); }
-FN(frag) { CTX; RET(jwrap(c, node_new_fragment(c->doc))); }
+FN(create) { CTX; ADOC(2); std::string t = S(0); RET(jwrap(c, node_new_element(od, atom(t.c_str()), a[1]->Int32Value(ctx).FromMaybe(0)))); }
+FN(textNode) { CTX; ADOC(1); std::string s = S(0); RET(jwrap(c, node_new_text(od, s.data(), s.size()))); }
+FN(comment) { CTX; ADOC(1); std::string s = S(0); RET(jwrap(c, node_new_comment(od, s.data(), s.size()))); }
+FN(frag) { CTX; ADOC(0); RET(jwrap(c, node_new_fragment(od))); }
+FN(pi) { CTX; ADOC(2); std::string t = S(0), s = S(1); RET(jwrap(c, node_new_pi(od, atom(t.c_str()), s.data(), s.size()))); }
+FN(cdata) { CTX; ADOC(1); std::string s = S(0); RET(jwrap(c, node_new_cdata(od, s.data(), s.size()))); }
+FN(doctype) {
+    CTX; ADOC(3); std::string n = S(0), p = S(1), s = S(2);
+    Node *d = node_new_doctype(od, n.c_str());
+    node_set_attr(d, atom("publicId"), p.c_str()); node_set_attr(d, atom("systemId"), s.c_str());
+    RET(jwrap(c, d));
+}
+FN(newXmlDoc) {
+    CTX; Document *nd = doc_new("about:blank");
+    nd->node.ns = NS_NONE;
+    c->docs.push_back(nd);
+    RET(jwrap(c, &nd->node));
+}
+FN(ownerDoc) { CTX; ARGN(n, 0); RET(n->type == NODE_DOCUMENT || !n->doc ? v8::Local<v8::Value>(v8::Null(iso)) : jwrap(c, &n->doc->node)); }
 FN(html) { CTX; ARGN(n, 0); char *s = node_serialize(n, BOOL(1)); RET(jstr(iso, s ? s : "")); free(s); }
 FN(setHTML) {
     CTX; ARGN(n, 0); std::string s = S(1);
@@ -672,7 +691,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
 #define REG(nm) (void)N->Set(ctx, jstr(iso, #nm), v8::Function::New(ctx, n_##nm).ToLocalChecked())
     REG(isNode); REG(version);
     REG(inert); REG(type); REG(name); REG(ns); REG(parent); REG(first); REG(last); REG(next); REG(prev);
-    REG(text); REG(setText); REG(attr); REG(setAttr); REG(rmAttr); REG(attrs); REG(insert); REG(remove); REG(newDoc);
+    REG(text); REG(setText); REG(attr); REG(setAttr); REG(rmAttr); REG(attrs); REG(insert); REG(remove); REG(newDoc); REG(newXmlDoc); REG(adopt); REG(pi); REG(cdata); REG(doctype); REG(ownerDoc);
     REG(create); REG(textNode); REG(comment); REG(frag); REG(html); REG(setHTML); REG(parseFrag); REG(query);
     REG(matches); REG(byId); REG(clone); REG(doc); REG(contains); REG(connected); REG(host); REG(attachShadow);
     REG(templateContent); REG(rect); REG(computed); REG(value); REG(setValue); REG(checked); REG(setChecked);

@@ -2,8 +2,59 @@ const illegal = () => { throw new TypeError('Illegal constructor'); };
 class Node extends EventTarget { constructor() { super(); illegal(); } }
 Object.assign(Node, { ELEMENT_NODE: 1, ATTRIBUTE_NODE: 2, TEXT_NODE: 3, CDATA_SECTION_NODE: 4, PROCESSING_INSTRUCTION_NODE: 7, COMMENT_NODE: 8, DOCUMENT_NODE: 9, DOCUMENT_TYPE_NODE: 10, DOCUMENT_FRAGMENT_NODE: 11, DOCUMENT_POSITION_DISCONNECTED: 1, DOCUMENT_POSITION_PRECEDING: 2, DOCUMENT_POSITION_FOLLOWING: 4, DOCUMENT_POSITION_CONTAINS: 8, DOCUMENT_POSITION_CONTAINED_BY: 16, DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC: 32 });
 Object.assign(Node.prototype, { ELEMENT_NODE: 1, TEXT_NODE: 3, COMMENT_NODE: 8, DOCUMENT_NODE: 9, DOCUMENT_FRAGMENT_NODE: 11 });
+const nextIn = (n, root) => { const f = N.first(n); if (f) return f; for (; n && n !== root; n = N.parent(n)) { const x = N.next(n); if (x) return x; } return null; };
 const kids = (n) => { const a = []; for (let c = N.first(n); c; c = N.next(c)) a.push(c); return a; };
 const elKids = (n) => { const a = []; for (let c = N.first(n); c; c = N.next(c)) if (N.type(c) === 1) a.push(c); return a; };
+const liveRanges = new Set();
+const rangesEach = (f) => { for (const w of liveRanges) { const r = w.deref(); if (r) f(r); else liveRanges.delete(w); } };
+const idxOf = (n) => { let i = 0; for (let s = N.prev(n); s; s = N.prev(s)) i++; return i; };
+const isCD = (n) => { const t = N.type(n); return t === 3 || t === 4 || t === 7 || t === 8; };
+const isTextNode = (n) => { const t = N.type(n); return t === 3 || t === 4; };
+const nodeLength = (n) => { const t = N.type(n); if (t === 10) return 0; if (t === 3 || t === 4 || t === 7 || t === 8) return N.text(n).length; let k = 0; for (let c = N.first(n); c; c = N.next(c)) k++; return k; };
+const toU32 = (v) => { v = Number(v); if (!Number.isFinite(v)) return 0; v = Math.trunc(v) % 4294967296; return v < 0 ? v + 4294967296 : v; };
+const hre = (m = 'The operation would yield an incorrect node tree.') => new DOMException(m, 'HierarchyRequestError');
+function rangePreRemove(c) {
+    const p = N.parent(c), i = idxOf(c);
+    rangesEach(r => {
+        if (N.contains(c, r._sc)) { r._sc = p; r._so = i; }
+        if (N.contains(c, r._ec)) { r._ec = p; r._eo = i; }
+        if (r._sc === p && r._so > i) r._so--;
+        if (r._ec === p && r._eo > i) r._eo--;
+    });
+}
+function rangeInserted(p, i, k) { rangesEach(r => { if (r._sc === p && r._so > i) r._so += k; if (r._ec === p && r._eo > i) r._eo += k; }); }
+function replaceData(n, o, c, s) {
+    const d = N.text(n), len = d.length;
+    if (o > len) throw new DOMException(`The offset ${o} is greater than the node's length (${len}).`, 'IndexSizeError');
+    if (o + c > len) c = len - o;
+    N.setText(n, d.slice(0, o) + s + d.slice(o + c));
+    notify('characterData', n, { oldValue: d });
+    if (liveRanges.size) rangesEach(r => {
+        if (r._sc === n && r._so > o && r._so <= o + c) r._so = o;
+        if (r._ec === n && r._eo > o && r._eo <= o + c) r._eo = o;
+        if (r._sc === n && r._so > o + c) r._so += s.length - c;
+        if (r._ec === n && r._eo > o + c) r._eo += s.length - c;
+    });
+}
+function preInsertCheck(p, c, ref) {
+    const pt = N.type(p), ct = N.type(c);
+    if (pt !== 1 && pt !== 9 && pt !== 11) throw hre('Nodes of this type may not contain children.');
+    if (N.contains(c, p)) throw hre('The new child element contains the parent.');
+    if (ref != null && N.parent(ref) !== p) throw new DOMException('The node before which the new node is to be inserted is not a child of this node.', 'NotFoundError');
+    if (ct === 9 || ct === 2) throw hre();
+    if ((ct === 3 || ct === 4) && pt === 9) throw hre('Nodes of type \'#text\' may not be inserted inside nodes of type \'#document\'.');
+    if (ct === 10 && pt !== 9) throw hre();
+    if (pt !== 9) return;
+    const els = elKids(p).length, refAfterDoctype = () => { for (let s = ref; s; s = N.next(s)) if (N.type(s) === 10) return true; return false; };
+    const one = () => { if (els || (ref && N.type(ref) === 10) || refAfterDoctype()) throw hre(); };
+    if (ct === 11) { const k = elKids(c).length; if (k > 1 || kids(c).some(x => isTextNode(x))) throw hre(); if (k === 1) one(); }
+    else if (ct === 1) one();
+    else if (ct === 10) {
+        if (kids(p).some(x => N.type(x) === 10)) throw hre();
+        if (ref) { for (let s = N.prev(ref); s; s = N.prev(s)) if (N.type(s) === 1) throw hre(); }
+        else if (els) throw hre();
+    }
+}
 class NodeList {
     item(i) { return this[i] ?? null; }
     forEach(fn, self) { for (let i = 0; i < this.length; i++) fn.call(self, this[i], i, this); }
@@ -42,14 +93,15 @@ function cachedLive(owner, key, compute) {
 function toNode(x) { return N.isNode(x) ? x : N.textNode(String(x)); }
 function insertNode(p, c, ref) {
     if (!N.isNode(c)) throw new TypeError("parameter is not of type 'Node'");
-    if (N.contains(c, p)) throw new DOMException('The new child element contains the parent.', 'HierarchyRequestError');
-    if (ref != null && N.parent(ref) !== p) throw new DOMException('The node before which the new node is to be inserted is not a child of this node.', 'NotFoundError');
+    preInsertCheck(p, c, ref);
     const added = N.type(c) === 11 ? kids(c) : [c];
     if (observers.length) for (const a of added) { const op = N.parent(a); if (op) notify('childList', op, { removedNodes: [a] }); }
     if (ref === c) ref = N.next(c);
     const moved = added.filter(a => N.connected(a));
+    if (liveRanges.size) for (const a of added) if (N.parent(a)) rangePreRemove(a);
     const prev = ref ? N.prev(ref) : N.last(p);
     N.insert(p, c, ref == null ? null : ref);
+    if (liveRanges.size && added.length) rangeInserted(p, idxOf(added[0]), added.length);
     if (added.length) notify('childList', p, { addedNodes: added, previousSibling: prev, nextSibling: ref || null });
     for (const a of moved) ceConnected(a, false, true);
     for (const a of added) ceConnected(a, true);
@@ -58,6 +110,7 @@ function insertNode(p, c, ref) {
 function removeNode(c) {
     const p = N.parent(c); if (!p) return c;
     const prev = N.prev(c), next = N.next(c), was = N.connected(c);
+    if (liveRanges.size) rangePreRemove(c);
     N.remove(c);
     notify('childList', p, { removedNodes: [c], previousSibling: prev, nextSibling: next });
     if (was) ceConnected(c, false);
@@ -65,7 +118,7 @@ function removeNode(c) {
 }
 methods(Node.prototype, {
     get nodeType() { return N.type(this); },
-    get nodeName() { const t = N.type(this); return t === 1 ? this.tagName : t === 3 ? '#text' : t === 4 ? '#cdata-section' : t === 8 ? '#comment' : t === 9 ? '#document' : t === 11 ? '#document-fragment' : t === 10 ? N.name(this) : ''; },
+    get nodeName() { const t = N.type(this); return t === 1 ? this.tagName : t === 3 ? '#text' : t === 4 ? '#cdata-section' : t === 7 ? N.name(this) : t === 8 ? '#comment' : t === 9 ? '#document' : t === 11 ? '#document-fragment' : t === 10 ? N.name(this) : ''; },
     get baseURI() { return document.baseURI; },
     get parentNode() { return N.parent(this); },
     get parentElement() { const p = N.parent(this); return p && N.type(p) === 1 ? p : null; },
@@ -73,20 +126,21 @@ methods(Node.prototype, {
     get nextSibling() { return N.next(this); }, get previousSibling() { return N.prev(this); },
     get childNodes() { return cachedLive(this, 'childNodes', () => kids(this)); },
     hasChildNodes() { return !!N.first(this); },
-    get ownerDocument() { return N.type(this) === 9 ? null : document; },
+    get ownerDocument() { return N.type(this) === 9 ? null : N.ownerDoc(this); },
     get isConnected() { return N.connected(this); },
     get textContent() { const t = N.type(this); return t === 9 || t === 10 ? null : N.text(this); },
     set textContent(v) {
         const t = N.type(this); if (t === 9 || t === 10) return;
         v = v == null ? '' : String(v);
-        if (t === 3 || t === 8 || t === 4) { const old = observers.length ? N.text(this) : null; N.setText(this, v); notify('characterData', this, { oldValue: old }); return; }
+        if (t === 3 || t === 8 || t === 4 || t === 7) { replaceData(this, 0, N.text(this).length, v); return; }
         const removed = kids(this);
+        if (liveRanges.size) for (let i = removed.length - 1; i >= 0; i--) rangePreRemove(removed[i]);
         for (const r of removed) ceConnected(r, false);
         N.setText(this, v);
         if (removed.length || N.first(this)) notify('childList', this, { removedNodes: removed, addedNodes: kids(this) });
     },
-    get nodeValue() { const t = N.type(this); return t === 3 || t === 8 || t === 4 ? N.text(this) : null; },
-    set nodeValue(v) { const t = N.type(this); if (t === 3 || t === 8 || t === 4) this.textContent = v; },
+    get nodeValue() { return isCD(this) ? N.text(this) : null; },
+    set nodeValue(v) { if (isCD(this)) this.textContent = v; },
     appendChild(c) { return insertNode(this, c, null); },
     insertBefore(c, ref) { return insertNode(this, c, ref === undefined ? null : ref); },
     removeChild(c) { if (!N.isNode(c) || N.parent(c) !== this) throw new DOMException('The node to be removed is not a child of this node.', 'NotFoundError'); return removeNode(c); },
@@ -107,7 +161,26 @@ methods(Node.prototype, {
         for (let c = N.next(a[i]); c; c = N.next(c)) if (c === b[i]) return 4;
         return 2;
     },
-    normalize() {},
+    normalize() {
+        const texts = [];
+        for (let n = N.first(this); n; n = nextIn(n, this)) if (N.type(n) === 3) texts.push(n);
+        for (const node of texts) {
+            if (!N.contains(this, node)) continue;
+            let length = N.text(node).length;
+            if (!length) { removeNode(node); continue; }
+            let data = ''; for (let x = N.next(node); x && N.type(x) === 3; x = N.next(x)) data += N.text(x);
+            if (!data) continue;
+            replaceData(node, length, 0, data);
+            for (let cur = N.next(node); cur && N.type(cur) === 3; cur = N.next(cur)) {
+                if (liveRanges.size) { const cp = N.parent(cur), ci = idxOf(cur), L = length; rangesEach(r => {
+                    if (r._sc === cur) { r._sc = node; r._so += L; } if (r._ec === cur) { r._ec = node; r._eo += L; }
+                    if (r._sc === cp && r._so === ci) { r._sc = node; r._so = L; } if (r._ec === cp && r._eo === ci) { r._ec = node; r._eo = L; }
+                }); }
+                length += N.text(cur).length;
+            }
+            for (let x = N.next(node); x && N.type(x) === 3;) { const nx = N.next(x); removeNode(x); x = nx; }
+        }
+    },
     lookupNamespaceURI() { return null; }, isDefaultNamespace(ns) { return ns == null || ns === 'http://www.w3.org/1999/xhtml'; },
 });
 const ParentNode = {
@@ -134,25 +207,38 @@ const ChildNode = {
 class CharacterData extends Node {}
 methods(CharacterData.prototype, ChildNode);
 methods(CharacterData.prototype, {
-    get data() { return N.text(this); }, set data(v) { this.textContent = v == null ? '' : String(v); },
+    get data() { return N.text(this); }, set data(v) { replaceData(this, 0, N.text(this).length, v == null ? '' : String(v)); },
     get length() { return N.text(this).length; },
-    appendData(s) { this.data += s; },
-    substringData(o, c) { return this.data.substr(o, c); },
-    insertData(o, s) { const d = this.data; this.data = d.slice(0, o) + s + d.slice(o); },
-    deleteData(o, c) { const d = this.data; this.data = d.slice(0, o) + d.slice(o + c); },
-    replaceData(o, c, s) { const d = this.data; this.data = d.slice(0, o) + s + d.slice(o + c); },
+    appendData(s) { replaceData(this, N.text(this).length, 0, String(s)); },
+    substringData(o, c) { o = toU32(o); c = toU32(c); const d = N.text(this); if (o > d.length) throw new DOMException(`The offset ${o} is greater than the node's length (${d.length}).`, 'IndexSizeError'); return d.substring(o, o + c); },
+    insertData(o, s) { replaceData(this, toU32(o), 0, String(s)); },
+    deleteData(o, c) { replaceData(this, toU32(o), toU32(c), ''); },
+    replaceData(o, c, s) { replaceData(this, toU32(o), toU32(c), String(s)); },
 });
 class Text extends CharacterData { constructor(s = '') { return N.textNode(String(s)); } }
 methods(Text.prototype, {
     get wholeText() { return this.data; },
-    splitText(o) { const d = this.data; const t = N.textNode(d.slice(o)); this.data = d.slice(0, o); const p = N.parent(this); if (p) insertNode(p, t, N.next(this)); return t; },
+    splitText(o) {
+        o = toU32(o); const d = N.text(this), len = d.length;
+        if (o > len) throw new DOMException(`The offset ${o} is larger than the Text node's length.`, 'IndexSizeError');
+        const doc = N.ownerDoc(this), t = N.type(this) === 4 ? N.cdata(d.slice(o), doc) : N.textNode(d.slice(o), doc), p = N.parent(this);
+        if (p) {
+            insertNode(p, t, N.next(this));
+            if (liveRanges.size) { const i = idxOf(this) + 1; rangesEach(r => {
+                if (r._sc === this && r._so > o) { r._sc = t; r._so -= o; } if (r._ec === this && r._eo > o) { r._ec = t; r._eo -= o; }
+                if (r._sc === p && r._so === i) r._so++; if (r._ec === p && r._eo === i) r._eo++;
+            }); }
+        }
+        replaceData(this, o, len - o, '');
+        return t;
+    },
     get assignedSlot() { return null; },
 });
 class CDATASection extends Text {}
 class Comment extends CharacterData { constructor(s = '') { return N.comment(String(s)); } }
 class DocumentType extends Node {}
 methods(DocumentType.prototype, ChildNode);
-methods(DocumentType.prototype, { get name() { return N.name(this); }, get publicId() { return ''; }, get systemId() { return ''; } });
+methods(DocumentType.prototype, { get name() { return N.name(this); }, get publicId() { return N.attr(this, 'publicId') || ''; }, get systemId() { return N.attr(this, 'systemId') || ''; } });
 class DocumentFragment extends Node { constructor() { return N.frag(); } }
 methods(DocumentFragment.prototype, ParentNode);
 methods(DocumentFragment.prototype, { getElementById(id) { return N.query(this, '#' + CSS.escape(String(id)), false); } });

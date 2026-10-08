@@ -1,6 +1,6 @@
 
 // ---- extra interfaces: rarer node/event types, media helpers ----
-class ProcessingInstruction extends CharacterData {}
+class ProcessingInstruction extends CharacterData { get target() { return N.name(this); } }
 const copyInit = (ev, init, keys) => { if (init) for (const k of keys) if (k in init) ev[k] = init[k]; };
 class TouchEvent extends UIEvent {
     constructor(t, i = {}) {
