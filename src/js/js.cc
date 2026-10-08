@@ -66,11 +66,44 @@ Node *junwrap(v8::Local<v8::Value> v) {
     return static_cast<Node *>(o->GetAlignedPointerFromInternalField(1, kTag));
 }
 
+/* A single script task that runs longer than LUMEN_JS_TIMEOUT_MS is terminated so the UI stays responsive. */
+static double g_js_timeout_ms = 10000;
+
+static void js_enter(JsCtx *c) {
+    if (!c->depth++) c->busy_since = now_ms();
+}
+
+static void js_leave(JsCtx *c) {
+    if (--c->depth) return;
+    c->busy_since = 0;
+    if (c->wd_fired.exchange(false)) c->iso->CancelTerminateExecution();
+}
+
+static void on_watchdog(v8::Isolate *iso, void *) {
+    fprintf(stderr, "lumen: script exceeded %.0f ms, terminating\n", g_js_timeout_ms);
+    v8::HandleScope hs(iso);
+    v8::Local<v8::StackTrace> st = v8::StackTrace::CurrentStackTrace(iso, 12);
+    for (int i = 0; i < st->GetFrameCount(); i++) {
+        v8::Local<v8::StackFrame> f = st->GetFrame(iso, i);
+        fprintf(stderr, "    at %s (%s:%d:%d)\n", jcstr(iso, f->GetFunctionName()).c_str(), jcstr(iso, f->GetScriptName()).c_str(), f->GetLineNumber(), f->GetColumn());
+    }
+    iso->TerminateExecution();
+}
+
+static void watchdog_run(JsCtx *c) {
+    std::unique_lock<std::mutex> lk(c->wd_mu);
+    while (!c->wd_stop) {
+        c->wd_cv.wait_for(lk, std::chrono::milliseconds(250));
+        double t = c->busy_since;
+        if (t > 0 && now_ms() - t > g_js_timeout_ms && !c->wd_fired.exchange(true)) c->iso->RequestInterrupt(on_watchdog, nullptr);
+    }
+}
+
 static void settle(JsCtx *c) {
     if (c->depth) return;
-    c->depth++;
+    js_enter(c);
     c->iso->PerformMicrotaskCheckpoint();
-    c->depth--;
+    js_leave(c);
 }
 
 void jreport(JsCtx *c, v8::Local<v8::Value> exc, v8::Local<v8::Message> msg) {
@@ -92,9 +125,9 @@ v8::MaybeLocal<v8::Value> jcall(JsCtx *c, v8::Local<v8::Function> f, v8::Local<v
     v8::Isolate *iso = c->iso;
     v8::Local<v8::Context> ctx = iso->GetCurrentContext();
     v8::TryCatch tc(iso);
-    c->depth++;
+    js_enter(c);
     v8::MaybeLocal<v8::Value> r = f->Call(ctx, recv, argc, argv);
-    c->depth--;
+    js_leave(c);
     if (tc.HasCaught() && tc.CanContinue()) jreport(c, tc.Exception(), tc.Message());
     settle(c);
     return r;
@@ -113,9 +146,9 @@ static void run_source(JsCtx *c, const char *src, size_t n, const char *name) {
     v8::TryCatch tc(iso);
     v8::ScriptOrigin origin(jstr(iso, name ? name : ""));
     v8::Local<v8::Script> s;
-    c->depth++;
+    js_enter(c);
     if (v8::Script::Compile(ctx, jstr(iso, src, (int)n), &origin).ToLocal(&s)) (void)s->Run(ctx);
-    c->depth--;
+    js_leave(c);
     if (tc.HasCaught() && tc.CanContinue()) jreport(c, tc.Exception(), tc.Message());
     settle(c);
 }
@@ -201,11 +234,18 @@ JsCtx *js_new(Document *d, const JsHost *host) {
         fprintf(stderr, "lumen: JS prelude failed (line %d): %s\n", line, m.c_str());
     }
     iso->PerformMicrotaskCheckpoint();
+    if (const char *to = getenv("LUMEN_JS_TIMEOUT_MS")) g_js_timeout_ms = atof(to);
+    if (g_js_timeout_ms > 0) c->watchdog = std::thread(watchdog_run, c);
     return c;
 }
 
 void js_free(JsCtx *c) {
     if (!c) return;
+    if (c->watchdog.joinable()) {
+        { std::lock_guard<std::mutex> lk(c->wd_mu); c->wd_stop = true; }
+        c->wd_cv.notify_all();
+        c->watchdog.join();
+    }
     for (auto &kv : c->players) mp_free(kv.second);
     g_ctxs.erase(std::remove(g_ctxs.begin(), g_ctxs.end(), c), g_ctxs.end());
     c->players.clear();

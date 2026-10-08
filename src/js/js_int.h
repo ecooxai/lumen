@@ -2,7 +2,10 @@
 #pragma once
 #include <v8.h>
 #include <libplatform/libplatform.h>
+#include <atomic>
+#include <condition_variable>
 #include <map>
+#include <mutex>
 #include <thread>
 #include <string>
 #include <unordered_map>
@@ -63,6 +66,12 @@ struct JsCtx {
     uint32_t next_player = 1;
     std::vector<AnimEv> anims;
     std::thread::id thread;
+    std::atomic<double> busy_since{0};
+    std::atomic<bool> wd_fired{false};
+    bool wd_stop = false;
+    std::mutex wd_mu;
+    std::condition_variable wd_cv;
+    std::thread watchdog;
 };
 
 #define JS_ENTER(c)                                         \
