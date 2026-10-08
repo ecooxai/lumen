@@ -293,5 +293,114 @@ class Animation extends EventTarget {
 class DOMMatrixReadOnly { constructor() { Object.assign(this, { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0, m41: 0, m42: 0, is2D: true, isIdentity: true }); } translate() { return new DOMMatrix(); } scale() { return new DOMMatrix(); } multiply() { return new DOMMatrix(); } inverse() { return new DOMMatrix(); } transformPoint(p) { return p; } toString() { return 'matrix(1, 0, 0, 1, 0, 0)'; } }
 class DOMMatrix extends DOMMatrixReadOnly {}
 class DOMPoint { constructor(x = 0, y = 0, z = 0, w = 1) { Object.assign(this, { x, y, z, w }); } }
-class DOMParser { parseFromString() { throw new DOMException('DOMParser is not supported yet', 'NotSupportedError'); } }
-class XMLSerializer { serializeToString(n) { return N.html(n, N.type(n) === 1); } }
+const XML_TYPES = ['text/xml', 'application/xml', 'application/xhtml+xml', 'image/svg+xml'];
+function parseXML(src, type) {
+    const doc = N.newXmlDoc(); def(doc, '__ct', type);
+    const ents = { lt: '<', gt: '>', amp: '&', quot: '"', apos: "'" };
+    const decode = (s) => s.indexOf('&') < 0 ? s : s.replace(/&([^;\s&<]*);?/g, (m, e) => {
+        if (!m.endsWith(';')) throw 'unterminated entity';
+        if (e[0] === '#') { const v = e[1] === 'x' ? parseInt(e.slice(2), 16) : parseInt(e.slice(1), 10); if (!(v > 0 && v <= 0x10FFFF)) throw 'bad char ref'; return String.fromCodePoint(v); }
+        if (!(e in ents)) throw `undefined entity &${e};`; return ents[e];
+    });
+    const stack = [doc], scopes = [{ xml: XML_NS, xmlns: XMLNS_NS }];
+    const tagRe = /<([^\s\/>]+)/y, attrRe = /\s+([^\s=\/>]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/y, endRe = /\s*(\/?)>/y, closeRe = /<\/([^\s>]+)\s*>/y;
+    let i = 0, line = 1;
+    try {
+        if (src.charCodeAt(0) === 0xFEFF) i = 1;
+        while (i < src.length) {
+            const cur = stack[stack.length - 1];
+            if (src[i] !== '<') {
+                let j = src.indexOf('<', i); if (j < 0) j = src.length;
+                const t = src.slice(i, j);
+                if (cur !== doc) insertNode(cur, N.textNode(decode(t), doc), null);
+                else if (/\S/.test(t)) throw 'content outside the root element';
+                i = j; continue;
+            }
+            if (src.startsWith('<!--', i)) { const j = src.indexOf('-->', i + 4); if (j < 0) throw 'unterminated comment'; insertNode(cur, N.comment(src.slice(i + 4, j), doc), null); i = j + 3; continue; }
+            if (src.startsWith('<![CDATA[', i)) { const j = src.indexOf(']]>', i); if (j < 0 || cur === doc) throw 'bad CDATA section'; insertNode(cur, N.cdata(src.slice(i + 9, j), doc), null); i = j + 3; continue; }
+            if (src.startsWith('<?', i)) {
+                const j = src.indexOf('?>', i); if (j < 0) throw 'unterminated processing instruction';
+                const m = /^([^\s?]+)\s*([\s\S]*)$/.exec(src.slice(i + 2, j)); if (!m) throw 'bad processing instruction';
+                if (m[1].toLowerCase() !== 'xml') insertNode(cur, N.pi(m[1], m[2], doc), null);
+                else if (i !== 0 && !(i === 1 && src.charCodeAt(0) === 0xFEFF)) throw 'XML declaration not at start';
+                i = j + 2; continue;
+            }
+            if (src.startsWith('<!DOCTYPE', i)) {
+                let j = i + 9, depth = 0;
+                for (; j < src.length; j++) { const ch = src[j]; if (ch === '[') depth++; else if (ch === ']') depth--; else if (ch === '>' && depth <= 0) break; }
+                const m = /^<!DOCTYPE\s+([^\s>\[]+)(?:\s+(?:PUBLIC\s+(?:"([^"]*)"|'([^']*)')\s*(?:"([^"]*)"|'([^']*)')?|SYSTEM\s+(?:"([^"]*)"|'([^']*)')))?/.exec(src.slice(i, j + 1));
+                if (!m || cur !== doc) throw 'bad doctype';
+                insertNode(doc, N.doctype(m[1], m[2] ?? m[3] ?? '', m[4] ?? m[5] ?? m[6] ?? m[7] ?? '', doc), null);
+                i = j + 1; continue;
+            }
+            if (src[i + 1] === '/') {
+                closeRe.lastIndex = i; const m = closeRe.exec(src);
+                if (!m || stack.length < 2 || stack[stack.length - 1].tagName !== m[1]) throw `mismatched end tag ${m ? m[1] : ''}`;
+                stack.pop(); scopes.pop(); i = closeRe.lastIndex; continue;
+            }
+            tagRe.lastIndex = i; const tm = tagRe.exec(src); if (!tm) throw 'bad start tag';
+            i = tagRe.lastIndex;
+            const attrs = []; const scope = Object.create(scopes[scopes.length - 1]);
+            for (;;) {
+                attrRe.lastIndex = i; const am = attrRe.exec(src); if (!am) break;
+                const v = decode(am[2] ?? am[3]).replace(/[\t\n\r]/g, ' ');
+                if (attrs.some(a => a[0] === am[1])) throw `duplicate attribute ${am[1]}`;
+                attrs.push([am[1], v]); i = attrRe.lastIndex;
+                if (am[1] === 'xmlns') scope[''] = v || null; else if (am[1].startsWith('xmlns:')) scope[am[1].slice(6)] = v;
+            }
+            endRe.lastIndex = i; const em = endRe.exec(src); if (!em) throw `bad start tag ${tm[1]}`;
+            i = endRe.lastIndex;
+            const q = tm[1], c = q.indexOf(':'), pfx = c > 0 ? q.slice(0, c) : '';
+            const uri = scope[pfx]; if (pfx && uri == null) throw `unbound prefix ${pfx}`;
+            if (cur === doc && doc.documentElement) throw 'extra content at the end of the document';
+            const el = Document.prototype.createElementNS.call(doc, uri ?? null, q);
+            for (const [k, v] of attrs) N.setAttr(el, k, v);
+            insertNode(cur, el, null);
+            if (!em[1]) { stack.push(el); scopes.push(scope); }
+        }
+        if (stack.length > 1) throw `unclosed element ${stack[stack.length - 1].tagName}`;
+        if (!doc.documentElement) throw 'no root element';
+    } catch (e) {
+        if (typeof e !== 'string') throw e;
+        while (N.first(doc)) removeNode(N.first(doc));
+        const pe = Document.prototype.createElementNS.call(doc, 'http://www.mozilla.org/newlayout/xml/parsererror.xml', 'parsererror');
+        insertNode(pe, N.textNode('XML Parsing Error: ' + e, doc), null);
+        insertNode(doc, pe, null);
+    }
+    return doc;
+}
+class DOMParser {
+    parseFromString(s, type) {
+        if (arguments.length < 2) throw new TypeError(`Failed to execute 'parseFromString' on 'DOMParser': 2 arguments required, but only ${arguments.length} present.`);
+        s = String(s); type = String(type);
+        if (type === 'text/html') return N.parseDoc(s);
+        if (!XML_TYPES.includes(type)) throw new TypeError(`Failed to execute 'parseFromString' on 'DOMParser': The provided value '${type}' is not a valid enum value of type DOMParserSupportedType.`);
+        return parseXML(s, type);
+    }
+}
+const xmlEscT = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const xmlEscA = (s) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\t/g, '&#9;').replace(/\n/g, '&#10;').replace(/\r/g, '&#13;');
+function xmlSer(n, pns) {
+    switch (N.type(n)) {
+    case 1: {
+        const ns = n.namespaceURI, q = n.prefix ? n.prefix + ':' + n.localName : n.localName;
+        let s = '<' + q;
+        const names = n.getAttributeNames();
+        if (ns !== pns && !n.prefix && !names.includes('xmlns')) s += ` xmlns="${xmlEscA(ns ?? '')}"`;
+        for (const k of names) s += ` ${k}="${xmlEscA(n.getAttribute(k))}"`;
+        const src = n.localName === 'template' && n.content ? n.content : n;
+        let body = ''; for (let c = N.first(src); c; c = N.next(c)) body += xmlSer(c, ns);
+        if (body) return s + '>' + body + '</' + q + '>';
+        if (ns === NSURI[0]) return html_void.has(n.localName) ? s + ' />' : s + '></' + q + '>';
+        return s + '/>';
+    }
+    case 3: return xmlEscT(N.text(n));
+    case 4: return '<![CDATA[' + N.text(n) + ']]>';
+    case 7: return '<?' + N.name(n) + ' ' + N.text(n) + '?>';
+    case 8: return '<!--' + N.text(n) + '-->';
+    case 10: { const p = n.publicId, sy = n.systemId; return '<!DOCTYPE ' + n.name + (p ? ` PUBLIC "${p}"` : sy ? ' SYSTEM' : '') + (sy ? ` "${sy}"` : '') + '>'; }
+    default: { let s = ''; for (let c = N.first(n); c; c = N.next(c)) s += xmlSer(c, pns); return s; }
+    }
+}
+const html_void = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'source', 'track', 'wbr']);
+class XMLSerializer { serializeToString(n) { if (!N.isNode(n)) throw new TypeError("Failed to execute 'serializeToString' on 'XMLSerializer': parameter 1 is not of type 'Node'."); return xmlSer(n, null); } }

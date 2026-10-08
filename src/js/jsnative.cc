@@ -74,7 +74,7 @@ FN(setText) {
     clear_children(n);
     if (!s.empty()) node_append(n, node_new_text(c->doc, s.data(), s.size()));
 }
-FN(attr) { CTX; ARGN(n, 0); std::string k = S(1); RET(nstr(iso, n->type == NODE_ELEMENT ? node_attr(n, k.c_str()) : nullptr)); }
+FN(attr) { CTX; ARGN(n, 0); std::string k = S(1); RET(nstr(iso, n->type == NODE_ELEMENT || n->type == NODE_DOCTYPE ? node_attr(n, k.c_str()) : nullptr)); }
 FN(setAttr) { CTX; ARGN(n, 0); std::string k = S(1), v = S(2); node_set_attr(n, atom(k.c_str()), v.c_str()); doc_mark_dirty(n->doc, n); }
 FN(rmAttr) { CTX; ARGN(n, 0); std::string k = S(1); if (node_has_attr(n, k.c_str())) { node_remove_attr(n, k.c_str()); doc_mark_dirty(n->doc, n); } }
 FN(attrs) {
@@ -155,6 +155,14 @@ FN(parseFrag) {
     Node *f = html_parse_fragment(c->doc, cx, s.data(), s.size());
     if (f) mark_started(f);
     RET(jwrap(c, f));
+}
+FN(parseDoc) {
+    CTX; std::string s = S(0);
+    Document *nd = doc_new(c->doc->url);
+    html_parse(nd, s.data(), s.size());
+    mark_started(&nd->node);
+    c->docs.push_back(nd);
+    RET(jwrap(c, &nd->node));
 }
 FN(query) {
     CTX; ARGN(root, 0); std::string sel = S(1); bool all = BOOL(2);
@@ -691,7 +699,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
 #define REG(nm) (void)N->Set(ctx, jstr(iso, #nm), v8::Function::New(ctx, n_##nm).ToLocalChecked())
     REG(isNode); REG(version);
     REG(inert); REG(type); REG(name); REG(ns); REG(parent); REG(first); REG(last); REG(next); REG(prev);
-    REG(text); REG(setText); REG(attr); REG(setAttr); REG(rmAttr); REG(attrs); REG(insert); REG(remove); REG(newDoc); REG(newXmlDoc); REG(adopt); REG(pi); REG(cdata); REG(doctype); REG(ownerDoc);
+    REG(text); REG(setText); REG(attr); REG(setAttr); REG(rmAttr); REG(attrs); REG(insert); REG(remove); REG(newDoc); REG(newXmlDoc); REG(parseDoc); REG(adopt); REG(pi); REG(cdata); REG(doctype); REG(ownerDoc);
     REG(create); REG(textNode); REG(comment); REG(frag); REG(html); REG(setHTML); REG(parseFrag); REG(query);
     REG(matches); REG(byId); REG(clone); REG(doc); REG(contains); REG(connected); REG(host); REG(attachShadow);
     REG(templateContent); REG(rect); REG(computed); REG(value); REG(setValue); REG(checked); REG(setChecked);

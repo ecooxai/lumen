@@ -67,7 +67,7 @@ const nodeList = (a) => { const o = Object.create(NodeList.prototype); for (let 
 const liveIdx = (k) => typeof k === 'string' && /^(0|[1-9]\d*)$/.test(k) ? +k : -1;
 const liveHandler = {
     get(t, k, r) { if (k === 'length') return t._cur().length; const i = liveIdx(k); return i >= 0 ? t._cur()[i] : Reflect.get(t, k, r); },
-    has(t, k) { const i = liveIdx(k); return i >= 0 ? i < t._cur().length : Reflect.has(t, k); },
+    has(t, k) { if (k === 'length') return true; const i = liveIdx(k); return i >= 0 ? i < t._cur().length : Reflect.has(t, k); },
     ownKeys(t) { return t._cur().map((_, i) => String(i)).concat(Reflect.ownKeys(t)); },
     getOwnPropertyDescriptor(t, k) {
         const i = liveIdx(k);

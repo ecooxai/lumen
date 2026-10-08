@@ -1,4 +1,4 @@
-class Document extends Node { constructor() { if (new.target === HTMLDocument) illegal(); const d = N.newXmlDoc(); Object.setPrototypeOf(d, new.target.prototype); return d; } }
+class Document extends Node { constructor() { if (new.target === HTMLDocument) illegal(); const d = N.newXmlDoc(); Object.setPrototypeOf(d, new.target.prototype); def(d, '__url', 'about:blank'); return d; } }
 class HTMLDocument extends Document {}
 class XMLDocument extends Document {}
 methods(Document.prototype, ParentNode);
@@ -11,14 +11,14 @@ methods(Document.prototype, {
     get doctype() { for (let c = N.first(this); c; c = N.next(c)) if (N.type(c) === 10) return c; return null; },
     get title() { const t = N.query(this, 'title', false); return t ? N.text(t).replace(/\s+/g, ' ').trim() : ''; },
     set title(v) { let t = N.query(this, 'title', false); if (!t) { const h = this.head; if (!h) return; t = N.create('title', 0); insertNode(h, t, null); } t.textContent = v; },
-    get URL() { return N.url(); }, get documentURI() { return N.url(); },
+    get URL() { return this.__url ?? N.url(); }, get documentURI() { return this.__url ?? N.url(); },
     get baseURI() { const b = N.query(this, 'base[href]', false); const u = N.url(); if (b) { const r = N.urlParse(N.attr(b, 'href'), u); if (r) return r[0]; } return u; },
     get location() { return location; }, set location(v) { location.href = v; },
     get domain() { const r = N.urlParse(N.url(), null); return r ? r[5] : ''; }, set domain(v) {},
     get referrer() { return ''; },
     get cookie() { return N.cookie(); }, set cookie(v) { N.setCookie(String(v)); },
     get readyState() { return ['loading', 'interactive', 'complete'][N.readyState()]; },
-    get characterSet() { return 'UTF-8'; }, get charset() { return 'UTF-8'; }, get contentType() { return N.ns(this) === 3 ? 'application/xml' : 'text/html'; },
+    get characterSet() { return 'UTF-8'; }, get charset() { return 'UTF-8'; }, get inputEncoding() { return 'UTF-8'; }, get contentType() { return this.__ct ?? (N.ns(this) === 3 ? 'application/xml' : 'text/html'); },
     get compatMode() { return N.quirks() ? 'BackCompat' : 'CSS1Compat'; },
     get visibilityState() { return 'visible'; }, get hidden() { return false; }, get webkitHidden() { return false; }, get prerendering() { return false; },
     get defaultView() { return G; }, get activeElement() { return N.active() || this.body; },
@@ -72,5 +72,5 @@ function docWrite(html) {
     const s = N.currentScript(), parent = s ? N.parent(s) : document.body;
     if (parent) insertNode(parent, N.parseFrag(parent, html), s ? N.next(s) : null);
 }
-const implementation = { hasFeature() { return true; }, createHTMLDocument(t) { const d = N.newDoc(t === undefined ? null : String(t)); Object.setPrototypeOf(d, HTMLDocument.prototype); return d; }, createDocumentType(n, p, s) { n = String(n); if (!n || /[\t\n\f\r >\x00]/.test(n)) throw new DOMException(`The qualified name provided ('${n}') contains the invalid name-start character.`, 'InvalidCharacterError'); return N.doctype(n, String(p), String(s), document); },
-    createDocument(ns, q, dt = null) { const d = N.newXmlDoc(); q = q == null ? '' : String(q); const el = q ? Document.prototype.createElementNS.call(d, ns, q) : null; if (dt) insertNode(d, dt, null); if (el) insertNode(d, el, null); return d; } };
+const implementation = { hasFeature() { return true; }, createHTMLDocument(t) { const d = N.newDoc(t === undefined ? null : String(t)); Object.setPrototypeOf(d, HTMLDocument.prototype); def(d, '__url', 'about:blank'); return d; }, createDocumentType(n, p, s) { n = String(n); if (/[\t\n\f\r >\x00]/.test(n)) throw new DOMException(`The qualified name provided ('${n}') contains the invalid name-start character.`, 'InvalidCharacterError'); return N.doctype(n, String(p), String(s), document); },
+    createDocument(ns, q, dt = null) { const d = N.newXmlDoc(); def(d, '__url', 'about:blank'); if (ns === NSURI[0]) def(d, '__ct', 'application/xhtml+xml'); else if (ns === NSURI[1]) def(d, '__ct', 'image/svg+xml'); q = q == null ? '' : String(q); const el = q ? Document.prototype.createElementNS.call(d, ns, q) : null; if (dt) insertNode(d, dt, null); if (el) insertNode(d, el, null); return d; } };

@@ -141,7 +141,7 @@ static int attr_index(const Node *n, const char *name) {
     if (n->ns == NS_HTML) { for (int i = 0; i < n->nattrs; i++) if (str_ieq(n->attrs[i].name, name)) return i; }
     return -1;
 }
-const char *node_attr(const Node *n, const char *name) { if (!n || n->type != NODE_ELEMENT) return NULL; int i = attr_index(n, name); return i >= 0 ? n->attrs[i].value : NULL; }
+const char *node_attr(const Node *n, const char *name) { if (!n || (n->type != NODE_ELEMENT && n->type != NODE_DOCTYPE)) return NULL; int i = attr_index(n, name); return i >= 0 ? n->attrs[i].value : NULL; }
 bool node_has_attr(const Node *n, const char *name) { return node_attr(n, name) != NULL; }
 void node_set_attr(Node *n, const char *name, const char *value) {
     int i = attr_index(n, name);
