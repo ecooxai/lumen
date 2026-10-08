@@ -206,7 +206,7 @@ Node *node_clone(Node *n, bool deep, Document *d) {
     case NODE_DOCTYPE: c = node_new_doctype(d, n->text); break;
     default: c = node_new_fragment(d); break;
     }
-    if (n->template_content) { c->template_content = node_clone(n->template_content, true, d); c->template_content->refcount = 1; }
+    if (n->template_content) { c->template_content = node_clone(n->template_content, true, d); c->template_content->refcount = 1; c->template_content->flags |= NF_INERT; }
     if (deep) for (Node *k = n->first; k; k = k->next) node_append(c, node_clone(k, true, d));
     return c;
 }

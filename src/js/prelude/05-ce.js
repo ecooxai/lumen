@@ -155,6 +155,13 @@ function ceConstruct(nt) {
     def(el, '__ce', d);
     return el;
 }
+function ceUpgradeTree(root) {
+    if (!registry.byName.size) return;
+    const t = N.type(root);
+    if (t !== 1 && t !== 11) return;
+    for (const el of N.ceScan(root)) if (!el.__ce) ceUpgrade(el);
+}
+
 function ceUpgrade(el) {
     if (el.__ce || N.type(el) !== 1 || N.ns(el) !== 0) return;
     const d = registry.byName.get(N.name(el)); if (!d) return;

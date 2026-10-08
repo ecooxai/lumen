@@ -13,6 +13,7 @@ enum {
     NF_HOVER = 1 << 3, NF_ACTIVE = 1 << 4, NF_FOCUS = 1 << 5,
     NF_CHECKED = 1 << 6, NF_PARSER_INSERTED = 1 << 7, NF_SCRIPT_STARTED = 1 << 8,
     NF_CONNECTED = 1 << 9, NF_DISABLED = 1 << 10,
+    NF_INERT = 1 << 11,           /* template content fragment */
 };
 
 typedef struct { const char *name; char *value; } Attr; /* name is an atom */

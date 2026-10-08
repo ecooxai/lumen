@@ -73,7 +73,7 @@ static Node *insert_el(HtmlParser *p, const char *tag, int ns) {
     Node *e = node_new_element(p->doc, tag, ns);
     for (int i = 0; i < p->attrs.n; i++) if (!node_has_attr(e, p->attrs.v[i].name)) node_set_attr(e, p->attrs.v[i].name, p->attrs.v[i].value);
     e->flags |= NF_PARSER_INSERTED;
-    if (tag == A_template && ns == NS_HTML) { e->template_content = node_new_fragment(p->doc); e->template_content->refcount = 1; }
+    if (tag == A_template && ns == NS_HTML) { e->template_content = node_new_fragment(p->doc); e->template_content->refcount = 1; e->template_content->flags |= NF_INERT; }
     node_append(insertion_parent(p), e);
     vec_push(p->open, e);
     return e;

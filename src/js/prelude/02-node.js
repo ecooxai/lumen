@@ -84,7 +84,7 @@ methods(Node.prototype, {
     insertBefore(c, ref) { return insertNode(this, c, ref === undefined ? null : ref); },
     removeChild(c) { if (!N.isNode(c) || N.parent(c) !== this) throw new DOMException('The node to be removed is not a child of this node.', 'NotFoundError'); return removeNode(c); },
     replaceChild(n, old) { if (N.parent(old) !== this) throw new DOMException('The node to be replaced is not a child of this node.', 'NotFoundError'); if (n === old) return old; const nx = N.next(old); removeNode(old); insertNode(this, n, nx === n ? N.next(n) : nx); return old; },
-    cloneNode(deep) { return N.clone(this, !!deep); },
+    cloneNode(deep) { const r = N.clone(this, !!deep); if (!N.inert(this)) ceUpgradeTree(r); return r; },
     contains(o) { return o != null && N.isNode(o) && N.contains(this, o); },
     getRootNode(o) { let n = this; for (;;) { const p = N.parent(n); if (p) { n = p; continue; } if (o && o.composed && N.type(n) === 11 && N.host(n)) { n = N.host(n); continue; } return n; } },
     isSameNode(o) { return this === o; },

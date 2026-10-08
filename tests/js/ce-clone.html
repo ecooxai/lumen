@@ -1,0 +1,16 @@
+<!doctype html><html><body><template id="t"><x-up no-pre-wrap></x-up></template>
+<script>
+class XUp extends HTMLElement { constructor() { super(); this.made = true; } set data(v) { this._d = v; } get data() { return this._d; } }
+customElements.define('x-up', XUp);
+const r = {};
+const f = document.importNode(document.getElementById('t').content, true);
+const e = f.firstElementChild;
+r.importUpgraded = e instanceof XUp ? 'PASS' : 'FAIL';
+const c = document.createElement('div'); c.innerHTML = '<x-up></x-up>';
+r.innerHTMLUpgraded = c.firstChild instanceof XUp ? 'PASS' : 'FAIL';
+const k = document.createElement('x-up').cloneNode(true);
+r.cloneUpgraded = k instanceof XUp ? 'PASS' : 'FAIL';
+const tc = document.getElementById('t').content.cloneNode(true).firstElementChild;
+r.templateCloneNotUpgraded = !(tc instanceof XUp) ? 'PASS' : 'FAIL';
+console.log('RESULTS ' + Object.entries(r).map(([k, v]) => k + ':' + v).join(' '));
+</script></body></html>

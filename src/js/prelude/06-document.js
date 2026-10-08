@@ -44,7 +44,7 @@ methods(Document.prototype, {
     createNodeIterator(root, what = 0xFFFFFFFF, filter = null) { return new NodeIterator(root, what, filter); },
     getElementById(id) { return N.byId(String(id)); },
     getElementsByName(n) { return nodeList(N.query(this, `[name="${CSS.escape(String(n))}"]`, true)); },
-    importNode(n, deep) { return N.clone(n, !!deep); }, adoptNode(n) { removeNode(n); return n; },
+    importNode(n, deep) { const r = N.clone(n, !!deep); ceUpgradeTree(r); return r; }, adoptNode(n) { removeNode(n); return n; },
     hasFocus() { return true; },
     elementFromPoint(x, y) { return N.hit(+x, +y); },
     elementsFromPoint(x, y) { const r = []; for (let e = N.hit(+x, +y); e && N.type(e) === 1; e = N.parent(e)) r.push(e); return r; },
