@@ -353,6 +353,8 @@ static AVCodecContext *open_dec(AVStream *st) {
     if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && hwdec_enabled() &&
         !getenv("LUMEN_NO_HWDEC") && av_hwdevice_ctx_create(&cc->hw_device_ctx, AV_HWDEVICE_TYPE_VIDEOTOOLBOX, NULL, NULL, 0) == 0) {
         cc->get_format = pick_hw;
+        /* frame threads around a VideoToolbox session only add hand-offs (12% vs 23% CPU at 1080p30) */
+        if (!getenv("LUMEN_DEC_THREADS") && (cc->codec_id == AV_CODEC_ID_H264 || cc->codec_id == AV_CODEC_ID_HEVC)) cc->thread_count = 1;
         if (getenv("LUMEN_MEDIA_DEBUG")) fprintf(stderr, "lumen-media: hwdec device ok for %s\n", codec->name);
         if (!getenv("LUMEN_DEC_THREADS")) cc->thread_count = 1;
     }
