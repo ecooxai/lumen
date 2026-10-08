@@ -56,6 +56,7 @@ typedef struct Document {
     bool quirks;
     int ready_state;              /* 0 loading, 1 interactive, 2 complete */
     uint64_t dom_version;         /* bumped on any mutation */
+    HMap id_cache; uint64_t id_cache_ver; bool id_cache_ok; /* id -> first element, rebuilt per dom_version */
     void *stylesheets;            /* css engine data */
     struct Node *focus;
     void *browser;                /* owning page */

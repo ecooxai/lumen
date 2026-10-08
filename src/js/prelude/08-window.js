@@ -282,6 +282,14 @@ const customElements = new CustomElementRegistry();
 class Window extends EventTarget {}
 installHandlers(Window.prototype, false, EVENT_HANDLERS.concat(['beforeunload', 'hashchange', 'message', 'messageerror', 'offline', 'online', 'pagehide', 'pageshow', 'popstate', 'storage', 'unhandledrejection', 'rejectionhandled', 'unload', 'DOMContentLoaded']));
 Object.setPrototypeOf(G, Window.prototype);
+{
+    const namedGet = (p) => { const d = G.document; return typeof p === 'string' && p && d ? N.byId(p) : null; };
+    Object.setPrototypeOf(Window.prototype, new Proxy(EventTarget.prototype, {
+        get(t, p, r) { if (typeof p !== 'string' || p in t) return Reflect.get(t, p, r); const e = namedGet(p); return e === null ? undefined : e; },
+        has(t, p) { return p in t || namedGet(p) !== null; },
+        getOwnPropertyDescriptor(t, p) { const d = Reflect.getOwnPropertyDescriptor(t, p); if (d || typeof p !== 'string') return d; const e = namedGet(p); return e ? { value: e, writable: true, enumerable: false, configurable: true } : undefined; },
+    }));
+}
 const document = N.doc();
 Object.setPrototypeOf(document, HTMLDocument.prototype);
 function illegalCtor() { throw new TypeError('Illegal constructor'); }

@@ -129,6 +129,7 @@ void node_free_tree(Node *n) {
     node_free_one(n);
 }
 void doc_free(Document *d) {
+    hm_free(&d->id_cache, NULL);
     Node *c = d->node.first;
     while (c) { Node *nx = c->next; c->parent = NULL; c->refcount = 0; c->js = NULL; node_free_tree(c); c = nx; }
     free(d->url); free(d->base_url); free(d->title); free(d);
@@ -261,8 +262,14 @@ char *node_serialize(const Node *n, bool outer) {
 }
 
 Node *doc_get_element_by_id(Document *d, const char *id) {
-    for (Node *n = d->node.first; n; n = node_next_in_tree(n, &d->node)) if (n->type == NODE_ELEMENT && n->id && !strcmp(n->id, id)) return n;
-    return NULL;
+    if (!id[0]) return NULL;
+    if (!d->id_cache_ok || d->id_cache_ver != d->dom_version) {
+        hm_free(&d->id_cache, NULL); memset(&d->id_cache, 0, sizeof d->id_cache);
+        for (Node *n = d->node.first; n; n = node_next_in_tree(n, &d->node))
+            if (n->type == NODE_ELEMENT && n->id && n->id[0] && !hm_get(&d->id_cache, n->id)) hm_put(&d->id_cache, n->id, n);
+        d->id_cache_ver = d->dom_version; d->id_cache_ok = true;
+    }
+    return hm_get(&d->id_cache, id);
 }
 
 void dom_dump(const Node *n, int depth, FILE *f) {
