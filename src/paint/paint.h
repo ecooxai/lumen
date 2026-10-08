@@ -29,6 +29,7 @@ extern Image *(*paint_image_hook)(Node *n);
 extern Image *(*paint_url_image_hook)(const char *url);
 Image *image_decode(const uint8_t *data, size_t n);
 void image_unref(Image *im);
+Image *svg_image(Node *n, float cw, float ch, float dpr);
 void dl_build(DisplayList *dl, Layout *L, float scroll_x, float scroll_y, float vw, float vh);
 void dl_clear(DisplayList *dl);
 

@@ -1096,7 +1096,6 @@ static ComputedStyle *compute(StyleEngine *e, Node *el, const ComputedStyle *par
     { RuleVec u = { e->idx.universal.v, e->idx.universal.n, 0 }; collect(e, el, &u, 0, (void *)&md); }
     qsort(md.v, (size_t)md.n, sizeof(MDecl), mdecl_cmp);
     ComputedStyle *st = style_inherit(par);
-    if (el->ns == NS_SVG && el->tag != A_svg) st->display = D_NONE;
     /* split normal / important so presentational hints & inline style go between */
     int split = 0; while (split < md.n && (md.v[split].key >> 62) < 2) split++;
     presentational_hints(st, par, el, e);

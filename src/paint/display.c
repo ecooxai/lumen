@@ -142,7 +142,7 @@ static void paint_replaced(PB *p, Box *b) {
         return;
     }
     if (b->ctl == CTL_RANGE) { DItem *t = emit(p, DO_RECT); t->x = x; t->y = y + h / 2 - 2; t->w = w; t->h = 4; t->color = RGBA(0, 117, 255, 255); for (int i = 0; i < 4; i++) t->r[i] = 2; DItem *k = emit(p, DO_RECT); k->x = x + w / 2 - 8; k->y = y; k->w = 16; k->h = 16; k->color = RGBA(0, 117, 255, 255); for (int i = 0; i < 4; i++) k->r[i] = 8; return; }
-    Image *im = paint_image_hook && b->node ? paint_image_hook(b->node) : NULL;
+    Image *im = b->node && b->node->ns == NS_SVG ? svg_image(b->node, w, h, 2) : paint_image_hook && b->node ? paint_image_hook(b->node) : NULL;
     if (!im || !im->w || !im->h) return;
     float dw = w, dh = h, dx = x, dy = y;
     int of = b->st->object_fit;
