@@ -232,7 +232,8 @@ static void render(App *a) {
     int bar_px = (int)(BAR * a->scale);
     if (a->frame.w != a->pw || a->frame.h != a->ph) { canvas_free(&a->frame); canvas_init(&a->frame, a->pw, a->ph, a->scale); }
     int ph = a->ph - bar_px; if (ph < 1) ph = 1;
-    bool part = a->vonly && a->cur && a->cur == a->last_page && a->cur->L && !a->relayout && a->cur->d->dom_version == a->last_ver;
+    int why = !a->vonly ? 1 : !a->cur || a->cur != a->last_page || !a->cur->L ? 2 : a->relayout ? 3 : a->cur->d->dom_version != a->last_ver ? 4 : 0;
+    bool part = !why;
     int rx0 = a->pw, ry0 = ph, rx1 = 0, ry1 = 0;
     if (a->page.w != a->pw || a->page.h != ph) { canvas_free(&a->page); canvas_init(&a->page, a->pw, ph, a->scale); part = false; }
     if (a->cur) {
@@ -243,7 +244,7 @@ static void render(App *a) {
             a->relayout = false;
         }
         a->sy = LCLAMP(a->sy, 0, max_scroll(a));
-        if (a->sy != a->last_sy) part = false;
+        if (a->sy != a->last_sy && part) { part = false; why = 5; }
         dl_clear(&a->pdl); dl_build(&a->pdl, a->cur->L, 0, a->sy, a->vw, a->vh - BAR);
         for (int i = 0; part && i < a->pdl.items.n; i++) {
             const DItem *it = &a->pdl.items.v[i];
@@ -269,6 +270,14 @@ static void render(App *a) {
         }
     }
     a->frame_ms = now_ms() - t0;
+    if (getenv("LUMEN_DEBUG_PAINT")) {
+        static int np, nf, nw[6]; static double tp, tf, t_last;
+        if (part) { np++; tp += a->frame_ms; } else { nf++; tf += a->frame_ms; nw[why]++; }
+        if (t0 - t_last > 1000) {
+            fprintf(stderr, "lumen: paint partial=%d (%.1fms avg) full=%d (%.1fms avg) why: novonly=%d page=%d relayout=%d dom=%d scroll=%d\n", np, np ? tp / np : 0, nf, nf ? tf / nf : 0, nw[1], nw[2], nw[3], nw[4], nw[5]);
+            np = nf = 0; tp = tf = 0; memset(nw, 0, sizeof nw); t_last = t0;
+        }
+    }
     a->dirty = a->vonly = false;
     a->last_page = a->cur; a->last_sy = a->sy; a->last_ver = a->cur ? a->cur->d->dom_version : 0;
 }
@@ -607,7 +616,7 @@ int main(int argc, char **argv) {
         { int mt = media_timeout_ms(); if (mt >= 0 && mt < to) to = mt; }
         if (!SDL_WaitEventTimeout(&ev, to)) { if (a.loading) a.dirty = true; }
         else do {
-            a.vonly = false;
+            if (ev.type != EV_NET) a.vonly = false;
             switch (ev.type) {
             case SDL_EVENT_QUIT: quit = true; break;
             case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: case SDL_EVENT_WINDOW_RESIZED: update_size(&a); break;
