@@ -249,6 +249,7 @@ static bool parse_compound(SP *p, Compound *c, Selector *sel) {
         vec_push(v, s); any = true;
     }
     if (!any) goto fail;
+    if (v.n < v.cap) v.v = xrealloc(v.v, sizeof *v.v * (size_t)v.n);
     c->s = v.v; c->n = v.n;
     return true;
 fail:
@@ -314,6 +315,7 @@ static bool parse_selector(SP *p, Selector *sel, bool relative) {
         else if (p->i > save) comb = CB_DESC;
         else goto fail;
     }
+    if (cs.n && cs.n < cs.cap) cs.v = xrealloc(cs.v, sizeof *cs.v * (size_t)cs.n);
     sel->c = cs.v; sel->n = cs.n;
     sel->spec = compute_spec(sel);
     return true;
@@ -339,6 +341,7 @@ static bool parse_sellist(SP *p, SelList *out, bool relative, char endc) {
         if (p->i < p->n && p->s[p->i] == ',') { p->i++; continue; }
         break;
     }
+    if (v.n && v.n < v.cap) v.v = xrealloc(v.v, sizeof *v.v * (size_t)v.n);
     out->v = v.v; out->n = v.n;
     return ok && p->i >= p->n;
 }

@@ -17,7 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define VQ_MAX 6
+#define VQ_MAX 3
 #define AQ_MAX_SEC 1.0
 #define OUT_RATE 48000
 #define IO_BUF 65536
