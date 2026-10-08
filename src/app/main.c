@@ -35,6 +35,7 @@ static size_t g_icache_bytes; static int g_icache_n;
 static int g_img_epoch;
 static Uint32 EV_LOADED, EV_NET;
 static uint64_t load_gen;
+static bool g_lowmem;
 #define MAX_TABS 32
 static volatile uint64_t g_tab_gen[MAX_TABS];
 static bool gen_live(uint64_t g) { for (int i = 0; i < MAX_TABS; i++) if (g_tab_gen[i] == g) return true; return false; }
@@ -847,6 +848,15 @@ int main(int argc, char **argv) {
     char cookie_path[1024] = "";
     { char *pref = SDL_GetPrefPath("lumen", "Lumen"); if (pref) { snprintf(cookie_path, sizeof cookie_path, "%scookies.txt", pref); SDL_free(pref); cookies_load(cookie_path); } }
     double cookies_saved_at = now_ms();
+    {
+        char *pref = SDL_GetPrefPath("lumen", "Lumen"); char sp[1024] = "";
+        if (pref) { snprintf(sp, sizeof sp, "%ssettings.txt", pref); SDL_free(pref); }
+        FILE *sf = *sp ? fopen(sp, "r") : NULL; char line[256];
+        while (sf && fgets(line, sizeof line, sf)) if (!strncmp(line, "offscreen_media_eviction=", 25)) g_lowmem = atoi(line + 25) != 0;
+        if (sf) fclose(sf);
+        const char *lm = getenv("LUMEN_LOWMEM"); if (lm) g_lowmem = atoi(lm) != 0;
+        fprintf(stderr, "lumen: offscreen media eviction %s\n", g_lowmem ? "on" : "off");
+    }
     navigate(&a, start, true);
     for (int i = 2; i < argc; i++) { Tab *nt = tab_new(&a); if (!nt) break; a.t = nt; navigate(&a, argv[i], true); }
     a.t = a.tabs[0]; a.ti = 0;
