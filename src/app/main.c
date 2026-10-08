@@ -39,7 +39,8 @@ typedef struct Page {
 } Page;
 static Page *g_frames;
 static Page *frame_find(Node *f) { for (Page *p = g_frames; p; p = p->fnext) if (p->frame_el == f) return p; return NULL; }
-typedef struct { Image *im; bool done, evicted, refetch; double used; float ew, eh; } ImgSlot;
+typedef struct { Image *im; bool done, evicted, refetch; double used; float ew, eh; uint8_t *enc; size_t enclen; } ImgSlot;   /* enc: compressed bytes kept in Lite mode for local re-decode */
+static bool g_lite_active;
 
 static SDL_Mutex *icache_mu;
 static HMap icache;
@@ -93,9 +94,18 @@ static bool gen_live(uint64_t g) { for (int i = 0; i < MAX_TABS; i++) if (g_tab_
 
 static void img_refetch(const char *u);
 static Image *cache_get(const char *u) {
-    SDL_LockMutex(icache_mu); ImgSlot *s = hm_get(&icache, u); Image *im = s ? s->im : NULL; bool want = false;
-    if (s && !g_in_layout) { s->used = (double)SDL_GetTicks(); if (s->evicted && !s->refetch) s->refetch = want = true; }
+    SDL_LockMutex(icache_mu); ImgSlot *s = hm_get(&icache, u); Image *im = s ? s->im : NULL; bool want = false; const uint8_t *enc = NULL; size_t en = 0;
+    if (s && !g_in_layout) { s->used = (double)SDL_GetTicks(); if (s->evicted && !s->refetch) { s->refetch = true; if (s->enc) { enc = s->enc; en = s->enclen; } else want = true; } }
     SDL_UnlockMutex(icache_mu);
+    if (enc) {   /* evicted in Lite mode: decode again from the kept compressed bytes, no network round trip */
+        Image *d = image_decode(enc, en);
+        SDL_LockMutex(icache_mu);
+        if (d && !s->im) { s->im = d; d = NULL; g_icache_bytes += (size_t)s->im->w * (size_t)s->im->h * 4; g_icache_n++; }
+        if (s->im) s->evicted = s->refetch = false; else want = true;
+        im = s->im;
+        SDL_UnlockMutex(icache_mu);
+        if (d) image_unref(d);
+    }
     if (want) img_refetch(u);
     return im;
 }
@@ -197,7 +207,7 @@ static void page_free(Page *p) {
 }
 
 typedef struct Tab { Page *cur; bool loading, relayout; char *hist[256]; uint64_t hgen[256]; int nhist, hpos; char url[2048]; float sy; uint64_t lgen; int ws;
-    double cpu_ms, media_ms0, budget, bud_t, unlimit_until; float pct, lim, cpuhist[600]; int ncpu, cpui, cpumode, vctl, vap; uint64_t vgen; bool limited, info; } Tab;
+    double cpu_ms, media_ms0, budget, bud_t, unlimit_until; float pct, lim, cpuhist[600]; int ncpu, cpui, cpumode, vctl, vap, lite; uint64_t vgen; bool limited, info; } Tab;
 typedef struct App {
     SDL_Window *win; SDL_MetalView mview; Gpu *gpu;
     int pw, ph; float scale, vw, vh;
@@ -217,12 +227,13 @@ typedef struct App {
 static void publish_gens(App *a) { for (int i = 0; i < MAX_TABS; i++) g_tab_gen[i] = i < a->ntabs ? a->tabs[i]->lgen : 0; }
 static Tab *tab_new(App *a) {
     if (a->ntabs == MAX_TABS) return NULL;
-    Tab *t = xcalloc(1, sizeof *t); t->hpos = -1; t->ws = a->wi; t->vctl = -1; t->lim = 0.4f; a->tabs[a->ntabs++] = t;
+    Tab *t = xcalloc(1, sizeof *t); t->hpos = -1; t->ws = a->wi; t->vctl = -1; t->lite = -1; t->lim = 0.4f; a->tabs[a->ntabs++] = t;
     if (!a->t) a->t = t;
     return t;
 }
 static bool is_youtube(const char *u) { const char *h = strstr(u, "://"); if (!h) return false; h += 3; size_t n = strcspn(h, "/?#:"); return n >= 11 && !strncmp(h + n - 11, "youtube.com", 11); }
 static bool vctl_on(const Tab *t) { return t->vctl >= 0 ? t->vctl : g_vctl; }
+static bool lite_on(const Tab *t) { return t->lite >= 0 ? t->lite : g_lowmem; }
 static bool video_bars(App *a, DisplayList *dl);
 static void tab_unlimit(Tab *t) { t->limited = t->info = false; t->ncpu = t->cpui = 0; if (t->cur) media_set_limit(t->cur->d, 0); }
 #define TAB_CALL(ud, expr) do { Tab *o_ = g_app->t; g_app->t = (Tab *)(ud); expr; g_app->t = o_; } while (0)
@@ -464,7 +475,7 @@ static void build_chrome(App *a) {
         else if (k + 1 < nvt && vt[k + 1] != a->ti) push_rect(dl, x + tabw - 2, 9, 1, TABH - 16, 0, RGBA(170, 175, 180, 255));
         const char *title = t->cur && t->cur->d && t->cur->d->title && *t->cur->d->title ? t->cur->d->title : *t->url ? t->url : "New Tab";
         if (t->limited) push_rect(dl, x + 10, (4 + TABH) / 2 - 5, 10, 10, 5, RGBA(52, 199, 89, 255));
-        push_text(dl, a->ui, title, x + (t->limited ? 26 : 12), tbase, tabw - (t->limited ? 54 : 40), RGBA(40, 40, 40, 255));
+        push_text(dl, a->ui, title, x + (t->limited ? 26 : 12), tbase, tabw - (t->limited ? 54 : 40), lite_on(t) ? RGBA(0, 100, 0, 255) : RGBA(40, 40, 40, 255));
         push_text(dl, a->ui, "\xC3\x97", x + tabw - 22, tbase, 16, a->hover == HB_TABX + i ? RGBA(20, 20, 20, 255) : RGBA(110, 110, 110, 255));
         if (t->loading) push_rect(dl, x + 8, TABH - 3, (tabw - 18) * 0.35f, 2, 1, RGBA(66, 133, 244, 255));
     }
@@ -656,6 +667,7 @@ static void img_done(NetRequest *rq, NetResponse *r, void *ud) {
     ImgSlot *slot = hm_get(&icache, l->u);
     if (slot && !slot->im && im) { g_icache_bytes += (size_t)im->w * (size_t)im->h * 4; g_icache_n++; }
     if (slot && !slot->im) { slot->im = im; im = NULL; }
+    if (slot && slot->im && !slot->enc && g_lite_active && r->body_len < (8u << 20)) { slot->enc = xmalloc(r->body_len); memcpy(slot->enc, r->body, r->body_len); slot->enclen = r->body_len; }
     if (slot) { slot->done = true; slot->evicted = slot->refetch = false; }
     SDL_UnlockMutex(icache_mu);
     if (getenv("LUMEN_DEBUG_IMG")) fprintf(stderr, "lumen: img done status=%d len=%zu decoded=%d slot=%d %.80s\n", r ? r->status : -1, r && r->body ? r->body_len : 0, slot && slot->im ? 1 : 0, slot ? 1 : 0, l->u);
@@ -1257,8 +1269,9 @@ static void tab_popup(App *a, int i, float x, float y) {
 #ifdef __APPLE__
     Tab *t = a->tabs[i]; char def[96];
     if (g_cpu_on) snprintf(def, sizeof def, "Default (over %d%% for %d s \xE2\x86\x92 %d%%)", g_cpu_pct, g_cpu_secs, g_cpu_lim); else snprintf(def, sizeof def, "Default (limit off)");
-    int c = mac_tab_menu(a->win, x, y, t->cpumode, (int)(t->lim * 100 + 0.5f), vctl_on(t), def);
+    int c = mac_tab_menu(a->win, x, y, t->cpumode, (int)(t->lim * 100 + 0.5f), vctl_on(t), lite_on(t), def);
     if (c == MENU_TAB_VCTL) t->vctl = !vctl_on(t);
+    else if (c == MENU_TAB_LITE) t->lite = !lite_on(t);
     else if (c == MENU_TAB_CPU_DEFAULT || c == MENU_TAB_CPU_NEVER) { t->cpumode = c == MENU_TAB_CPU_NEVER; tab_unlimit(t); t->unlimit_until = 0; }
     else if (c > MENU_TAB_CPU_LIM) { t->cpumode = 2; t->limited = true; t->info = false; t->lim = (c - MENU_TAB_CPU_LIM) / 100.f; t->budget = 0; t->bud_t = now_ms(); }
     a->dirty = true; a->vonly = false;
@@ -1318,7 +1331,8 @@ int main(int argc, char **argv) {
     paint_image_hook = node_img; paint_url_image_hook = url_img; layout_image_size_hook = img_size;
     App a; memset(&a, 0, sizeof a); g_app = &a; a.nws = 1; a.wsicon[0] = -1; snprintf(a.wsname[0], sizeof a.wsname[0], "Personal"); a.side = getenv("LUMEN_NO_SIDEBAR") ? 0 : SIDEW; tab_new(&a);
     bool want_gpu = !getenv("LUMEN_NO_GPU");
-    a.win = SDL_CreateWindow("Lumen", 1280, 840, SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY | (want_gpu && !strcmp(SDL_GetPlatform(), "macOS") ? SDL_WINDOW_METAL : 0));
+    int ww = 1280, wh = 840; { const char *e = getenv("LUMEN_WINDOW"); if (e) sscanf(e, "%dx%d", &ww, &wh); }   /* e.g. LUMEN_WINDOW=800x600 */
+    a.win = SDL_CreateWindow("Lumen", ww, wh, SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY | (want_gpu && !strcmp(SDL_GetPlatform(), "macOS") ? SDL_WINDOW_METAL : 0));
     if (!a.win) { fprintf(stderr, "SDL_CreateWindow: %s\n", SDL_GetError()); return 1; }
 #ifdef __APPLE__
     mac_style_window(a.win); mac_install_menu(EV_MENU);
@@ -1371,7 +1385,8 @@ int main(int argc, char **argv) {
             static double last_stats; double tn = now_ms();
             if (tn - last_stats > 10000) { last_stats = tn; size_t fr, seg = media_mem_bytes(&fr); size_t jh = 0, je = 0; js_mem_stats(&jh, &je); fprintf(stderr, "lumen-mem: mse=%.1fMB vframes=%.1fMB images=%.1fMB/%d js_heap=%.1fMB js_external=%.1fMB canvases=%.1fMB\n", seg / 1048576.0, fr / 1048576.0, g_icache_bytes / 1048576.0, g_icache_n, jh / 1048576.0, je / 1048576.0, ((double)a.frame.w * a.frame.h + (double)a.page.w * a.page.h) * 4 / 1048576.0); }
         }
-        if (g_lowmem) {
+        g_lite_active = a.t && lite_on(a.t); media_lowmem = g_lite_active;
+        if (g_lite_active) {
             static double last_evict; double tn = now_ms();
             if (a.t->cur) media_mark_visible(vis_doc, a.t->cur->d);
             if (tn - last_evict > 2000) { last_evict = tn; img_evict(); }

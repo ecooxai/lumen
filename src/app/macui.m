@@ -122,7 +122,7 @@ bool mac_symbol_rgba(const char *name, int px, uint32_t rgb, uint32_t *out) {
     return draw_rgba(im, px, rgb, out);
 }
 
-int mac_tab_menu(SDL_Window *w, float x, float y, int mode, int lim, bool vctl, const char *deflabel) {
+int mac_tab_menu(SDL_Window *w, float x, float y, int mode, int lim, bool vctl, bool lite, const char *deflabel) {
     NSWindow *win = (__bridge NSWindow *)SDL_GetPointerProperty(SDL_GetWindowProperties(w), SDL_PROP_WINDOW_COCOA_WINDOW_POINTER, NULL);
     if (!win) return 0;
     static LumenPick *pk; if (!pk) pk = [LumenPick new];
@@ -138,6 +138,7 @@ int mac_tab_menu(SDL_Window *w, float x, float y, int mode, int lim, bool vctl, 
     for (int i = 0; i < 3; i++) add(m, [NSString stringWithFormat:@"Limit to %d%%", P[i]], MENU_TAB_CPU_LIM + P[i], mode == 2 && lim == P[i]);
     [m addItem:[NSMenuItem separatorItem]];
     add(m, @"Always show video controls", MENU_TAB_VCTL, vctl);
+    add(m, @"Lite mode (release off-screen media to save RAM)", MENU_TAB_LITE, lite);
     g_pick = 0;
     NSView *v = win.contentView;
     [m popUpMenuPositioningItem:nil atLocation:(v.isFlipped ? NSMakePoint(x, y) : NSMakePoint(x, v.bounds.size.height - y)) inView:v];

@@ -1,3 +1,12 @@
+const allColl = new WeakMap(), allMeta = new WeakMap();
+const allNamed = (l, k) => { for (const e of l) if (e.id === k || (e.getAttribute('name') === k)) return e; return null; };
+class HTMLAllCollection {
+    constructor() { illegal(); }
+    get length() { return allMeta.get(this)().length; }
+    item(k) { if (k === undefined) return null; const l = allMeta.get(this)(); return /^\d+$/.test(String(k)) ? l[+k] ?? null : allNamed(l, String(k)); }
+    namedItem(k) { return allNamed(allMeta.get(this)(), String(k)); }
+    [Symbol.iterator]() { return allMeta.get(this)()[Symbol.iterator](); }
+}
 class Document extends Node { constructor() { if (new.target === HTMLDocument) illegal(); const d = N.newXmlDoc(); Object.setPrototypeOf(d, new.target.prototype); def(d, '__url', 'about:blank'); return d; } }
 class HTMLDocument extends Document {}
 class XMLDocument extends Document {}
@@ -5,6 +14,7 @@ methods(Document.prototype, ParentNode);
 installHandlers(Document.prototype, false);
 const findChild = (p, tag) => { if (!p) return null; for (let c = N.first(p); c; c = N.next(c)) if (N.type(c) === 1 && N.name(c) === tag) return c; return null; };
 methods(Document.prototype, {
+    get all() { let o = allColl.get(this); if (!o) { const d = this, list = () => d.getElementsByTagName('*'); o = N.makeAll(function (k) { if (typeof k === 'number' || /^\d+$/.test(k)) return list()[+k] ?? undefined; return k === undefined ? undefined : allNamed(list(), String(k)) ?? undefined; }); Object.setPrototypeOf(o, HTMLAllCollection.prototype); allMeta.set(o, list); allColl.set(this, o); } return o; },
     get documentElement() { for (let c = N.first(this); c; c = N.next(c)) if (N.type(c) === 1) return c; return null; },
     get head() { return findChild(this.documentElement, 'head'); },
     get body() { return findChild(this.documentElement, 'body'); },

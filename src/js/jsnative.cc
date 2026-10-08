@@ -675,6 +675,41 @@ FN(platform) {
     RET(jstr(iso, "Linux x86_64"));
 #endif
 }
+static v8::Intercepted all_named(v8::Local<v8::Name> k, const v8::PropertyCallbackInfo<v8::Value> &i) {
+    if (!k->IsString()) return v8::Intercepted::kNo;
+    v8::Isolate *iso = i.GetIsolate();
+    v8::Local<v8::Context> ctx = iso->GetCurrentContext();
+    v8::Local<v8::Value> argv[1] = { k }, r;
+    if (!i.Data().As<v8::Function>()->Call(ctx, i.Holder(), 1, argv).ToLocal(&r) || r->IsUndefined()) return v8::Intercepted::kNo;
+    i.GetReturnValue().Set(r);
+    return v8::Intercepted::kYes;
+}
+static v8::Intercepted all_index(uint32_t idx, const v8::PropertyCallbackInfo<v8::Value> &i) {
+    v8::Isolate *iso = i.GetIsolate();
+    v8::Local<v8::Context> ctx = iso->GetCurrentContext();
+    v8::Local<v8::Value> argv[1] = { v8::Integer::NewFromUnsigned(iso, idx) }, r;
+    if (!i.Data().As<v8::Function>()->Call(ctx, i.Holder(), 1, argv).ToLocal(&r) || r->IsUndefined()) return v8::Intercepted::kNo;
+    i.GetReturnValue().Set(r);
+    return v8::Intercepted::kYes;
+}
+static void all_call(const FCI &a) {
+    v8::Isolate *iso = a.GetIsolate();
+    v8::Local<v8::Context> ctx = iso->GetCurrentContext();
+    v8::Local<v8::Value> argv[1] = { a.Length() ? a[0] : v8::Undefined(iso).As<v8::Value>() }, r;
+    if (a.Data().As<v8::Function>()->Call(ctx, a.This(), 1, argv).ToLocal(&r)) a.GetReturnValue().Set(r->IsUndefined() ? v8::Null(iso).As<v8::Value>() : r);
+}
+/* document.all: an undetectable object (typeof "undefined", falsy, == null) whose lookups go to get(key) */
+FN(makeAll) {
+    CTX;
+    if (!a[0]->IsFunction()) return;
+    v8::Local<v8::ObjectTemplate> t = v8::ObjectTemplate::New(iso);
+    t->MarkAsUndetectable();
+    t->SetCallAsFunctionHandler(all_call, a[0]);
+    t->SetHandler(v8::NamedPropertyHandlerConfiguration(all_named, nullptr, nullptr, nullptr, nullptr, a[0], v8::PropertyHandlerFlags::kNonMasking));
+    t->SetHandler(v8::IndexedPropertyHandlerConfiguration(all_index, nullptr, nullptr, nullptr, nullptr, a[0]));
+    v8::Local<v8::Object> o;
+    if (t->NewInstance(ctx).ToLocal(&o)) RET(o);
+}
 FN(cpus) { CTX; (void)iso; RET((int)std::max(1u, std::thread::hardware_concurrency())); }
 
 void js_run_inserted(JsCtx *c, Node *root) {
@@ -719,7 +754,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(mediaBuffered); REG(mediaEos); REG(mediaSetDuration); REG(mediaPlay); REG(mediaPause); REG(mediaSeek);
     REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(readyState); REG(quirks);
     REG(currentScript); REG(media); REG(cssSupports); REG(cssSelText); REG(urlParse); REG(encode); REG(decode); REG(random); REG(cDigest); REG(cHmac); REG(cAes); REG(cEcGen); REG(cEcDerive); REG(cEcSign); REG(cEcVerify); REG(cSpki); REG(cSpkiParse); REG(cPkcs8Parse); REG(cEcFromD); REG(cHkdf); REG(cPbkdf2);
-    REG(heap); REG(imgSize); REG(userAgent); REG(platform); REG(cpus);
+    REG(heap); REG(imgSize); REG(userAgent); REG(platform); REG(cpus); REG(makeAll);
 #undef REG
     js_install_frames(c, N); js_install_workers(c, N);
 }
