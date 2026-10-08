@@ -39,6 +39,7 @@ typedef struct Node {
     struct Node *shadow_root;      /* attached shadow root (FRAGMENT with host) */
     struct Node *host;             /* for shadow roots */
     char *value_override;          /* form control value set by user/script */
+    int8_t checked_override;       /* 0 unset, 1 checked, -1 unchecked */
     struct Node *template_content; /* for <template> */
     char *inline_style_src;        /* cached style="" for change detection */
     void *inline_decls;            /* parsed CSS declarations for style attr */

@@ -77,3 +77,6 @@ $(BUILD)/text: $(call OBJ,tests/text.c $(BASE_SRC) src/text/font.c)
 LAYOUT_TEST_SRC := $(CSS_TEST_SRC) src/text/font.c $(wildcard src/layout/*.c)
 $(BUILD)/layout: $(call OBJ,tests/layout.c $(LAYOUT_TEST_SRC))
 	$(CC) $(OPT) $^ -o $@ $(NETLIBS) -lfreetype -lharfbuzz
+RENDER_TEST_SRC := $(LAYOUT_TEST_SRC) $(wildcard src/paint/*.c)
+$(BUILD)/render: $(call OBJ,tests/render.c $(RENDER_TEST_SRC))
+	$(CC) $(OPT) $^ -o $@ $(NETLIBS) -lfreetype -lharfbuzz
