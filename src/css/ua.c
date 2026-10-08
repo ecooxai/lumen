@@ -17,7 +17,7 @@ const char *css_ua_sheet =
 "small{font-size:smaller}big{font-size:larger}sub{vertical-align:sub;font-size:smaller}sup{vertical-align:super;font-size:smaller}"
 "a:any-link{color:#0000ee;text-decoration:underline;cursor:pointer}mark{background-color:yellow;color:black}"
 "hr{border:1px inset #eee;margin:.5em auto;color:gray;overflow:hidden}center{text-align:center}nobr{white-space:nowrap}"
-"img,video,canvas,iframe,embed,object,svg{display:inline-block}iframe{border:2px inset #eee;width:300px;height:150px}video{width:300px;height:150px;object-fit:contain}"
+"img,video,canvas,iframe,embed,object,svg{display:inline-block}iframe{border:2px inset #eee}video{width:300px;height:150px;object-fit:contain}"
 "svg:not(:root){overflow:hidden}audio:not([controls]){display:none}audio{width:300px;height:54px;display:inline-block}"
 "input,select,button,textarea{display:inline-block;font-size:13.333px;font-family:system-ui;margin:0;color:black}"
 "input{padding:1px 2px;border:2px inset #767676;background:white;width:150px;height:auto;line-height:normal}input[type=hidden]{display:none}"
