@@ -313,6 +313,9 @@ static void link_done(NetRequest *rq, NetResponse *r, void *ud) {
         StyleSheet *s = css_parse_sheet(r->body, r->body_len, r->url, 1, &p->e->media); s->owner = l->n; style_engine_add_sheet(p->e, s);
         style_recalc(p->e, &p->d->node, true); g_app->relayout = g_app->dirty = true;
     }
+    if (p && p->gen == l->gen && p->js)
+        js_dispatch(p->js, l->n, r && r->status == 200 && r->body ? "load" : "error", "Event", false, false, 0, 0, 0, NULL);
+    node_release(l->n);
     free(l);
 }
 typedef struct { uint64_t gen; char *u; } ImgLoad;
@@ -386,7 +389,7 @@ static bool sync_sheets(Page *p, bool seed) {
             if (t) { StyleSheet *sh = css_parse_sheet(t, strlen(t), p->d->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); changed = true; }
             else {
                 char *u = url_join(p->d->url, node_attr(n, "href"));
-                if (u) { NetRequest *rq = net_request_new("GET", u); LinkLoad *l = xmalloc(sizeof *l); l->gen = p->gen; l->n = n; rq->done = link_done; rq->ud = l; net_fetch(rq); free(u); }
+                if (u) { NetRequest *rq = net_request_new("GET", u); LinkLoad *l = xmalloc(sizeof *l); l->gen = p->gen; l->n = n; n->refcount++; rq->done = link_done; rq->ud = l; net_fetch(rq); free(u); }
             }
         }
         free(t);
