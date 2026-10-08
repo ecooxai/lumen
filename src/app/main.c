@@ -575,8 +575,9 @@ static void render(App *a) {
     int rx0 = pwp, ry0 = ph, rx1 = 0, ry1 = 0;
     if (a->page.w != pwp || a->page.h != ph) { canvas_free(&a->page); canvas_init(&a->page, pwp, ph, a->scale); part = false; }
     bool gskip = false; GpuVideo gvd, *gvp = NULL;
-    if (a->t->cur && defer) {   /* layout may be stale (restyle/DOM changed): only swap the video texture */
-        Image *im = a->gvid_ok ? media_owner_frame(a->vown) : NULL;
+    Image *fast = part && a->t->cur && a->gpu && a->gvid_ok && a->t->sy == a->last_sy && a->page.w == pwp && a->page.h == ph ? media_owner_frame(a->vown) : NULL;
+    if (a->t->cur && (defer || fast)) {   /* nothing but the video changed, or layout may be stale: only swap the video texture */
+        Image *im = fast;
         if (!im) { a->dirty = a->vframe = false; return; }
         float s = a->page.scale; const float *r = a->vrect;
         gvd = (GpuVideo){ im->px, im->w, im->h, im->w, floorf(r[0] * s + 0.5f) + side_px, floorf(r[1] * s + 0.5f) + bar_px, floorf((r[0] + r[2]) * s + 0.5f) + side_px, floorf((r[1] + r[3]) * s + 0.5f) + bar_px };
