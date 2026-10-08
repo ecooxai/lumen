@@ -28,7 +28,7 @@ NETLIBS := $(LIBDIRS) -lssl -lcrypto -lz -lbrotlidec -lzstd
 
 BASE_SRC := $(wildcard src/base/*.c)
 NET_SRC := $(wildcard src/net/*.c)
-CORE_SRC := $(BASE_SRC) $(NET_SRC) $(wildcard src/html/*.c src/dom/*.c src/css/*.c src/text/*.c src/layout/*.c src/paint/*.c src/media/*.c)
+CORE_SRC := $(BASE_SRC) $(NET_SRC) $(wildcard src/html/*.c src/dom/*.c src/css/*.c src/text/*.c src/layout/*.c src/paint/*.c src/media/*.c src/gpu/*.c)
 APP_SRC := $(wildcard src/app/*.c)
 JS_SRC := $(wildcard src/js/*.cc)
 ifeq ($(UNAME),Darwin)

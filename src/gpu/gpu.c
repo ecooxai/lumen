@@ -1,0 +1,200 @@
+/* wgpu-native presenter: uploads the composited frame and blits it to the surface */
+#include "gpu.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <webgpu.h>
+#include <wgpu.h>
+
+struct Gpu {
+    WGPUInstance inst; WGPUSurface surf; WGPUAdapter adapter; WGPUDevice dev; WGPUQueue q;
+    WGPUTextureFormat fmt; WGPURenderPipeline pipe; WGPUBindGroupLayout bgl; WGPUSampler samp;
+    WGPUTexture tex; WGPUTextureView view; WGPUBindGroup bg; int tw, th; int w, h; bool configured;
+    WGPUBackendType backend;
+};
+
+static const char *WGSL =
+    "@group(0) @binding(0) var t: texture_2d<f32>;\n"
+    "@group(0) @binding(1) var s: sampler;\n"
+    "struct V { @builtin(position) p: vec4f, @location(0) uv: vec2f };\n"
+    "@vertex fn vs(@builtin(vertex_index) i: u32) -> V {\n"
+    "  var uv = vec2f(f32((i << 1u) & 2u), f32(i & 2u));\n"
+    "  var o: V; o.p = vec4f(uv * vec2f(2.0, -2.0) + vec2f(-1.0, 1.0), 0.0, 1.0); o.uv = uv; return o; }\n"
+    "@fragment fn fs(v: V) -> @location(0) vec4f { return textureSample(t, s, v.uv); }\n";
+
+static WGPUStringView sv(const char *s) { return (WGPUStringView){ s, WGPU_STRLEN }; }
+
+static void on_adapter(WGPURequestAdapterStatus st, WGPUAdapter a, WGPUStringView msg, void *u1, void *u2) {
+    (void)u2; if (st == WGPURequestAdapterStatus_Success) *(WGPUAdapter *)u1 = a;
+    else fprintf(stderr, "gpu: adapter request failed: %.*s\n", (int)(msg.data ? msg.length : 0), msg.data ? msg.data : "");
+}
+static void on_device(WGPURequestDeviceStatus st, WGPUDevice d, WGPUStringView msg, void *u1, void *u2) {
+    (void)u2; if (st == WGPURequestDeviceStatus_Success) *(WGPUDevice *)u1 = d;
+    else fprintf(stderr, "gpu: device request failed: %.*s\n", (int)(msg.data ? msg.length : 0), msg.data ? msg.data : "");
+}
+static void on_error(WGPUDevice const *d, WGPUErrorType t, WGPUStringView msg, void *u1, void *u2) {
+    (void)d; (void)u1; (void)u2; fprintf(stderr, "gpu: error %d: %.*s\n", (int)t, (int)msg.length, msg.data);
+}
+
+static void configure(Gpu *g) {
+    if (g->w <= 0 || g->h <= 0) { g->configured = false; return; }
+    WGPUSurfaceConfiguration c = WGPU_SURFACE_CONFIGURATION_INIT;
+    c.device = g->dev; c.format = g->fmt; c.usage = WGPUTextureUsage_RenderAttachment;
+    c.width = (uint32_t)g->w; c.height = (uint32_t)g->h;
+    c.alphaMode = WGPUCompositeAlphaMode_Auto; c.presentMode = WGPUPresentMode_Fifo;
+    wgpuSurfaceConfigure(g->surf, &c); g->configured = true;
+}
+
+Gpu *gpu_create(const GpuSurfSrc *src, int w, int h, bool prefer_vulkan) {
+    if (getenv("LUMEN_NO_GPU")) return NULL;
+    Gpu *g = calloc(1, sizeof *g); g->w = w; g->h = h;
+    WGPUInstanceExtras ex = { 0 }; ex.chain.sType = (WGPUSType)WGPUSType_InstanceExtras;
+    ex.backends = prefer_vulkan ? WGPUInstanceBackend_Vulkan : WGPUInstanceBackend_Primary;
+    WGPUInstanceDescriptor id = WGPU_INSTANCE_DESCRIPTOR_INIT; id.nextInChain = &ex.chain;
+    if (!(g->inst = wgpuCreateInstance(&id))) goto fail;
+
+    WGPUSurfaceSourceMetalLayer ml = WGPU_SURFACE_SOURCE_METAL_LAYER_INIT;
+    WGPUSurfaceSourceXlibWindow xl = WGPU_SURFACE_SOURCE_XLIB_WINDOW_INIT;
+    WGPUSurfaceSourceWaylandSurface wl = WGPU_SURFACE_SOURCE_WAYLAND_SURFACE_INIT;
+    WGPUSurfaceSourceAndroidNativeWindow an = WGPU_SURFACE_SOURCE_ANDROID_NATIVE_WINDOW_INIT;
+    WGPUSurfaceDescriptor sd = WGPU_SURFACE_DESCRIPTOR_INIT;
+    switch (src->kind) {
+    case GPU_SURF_METAL: ml.layer = src->a; sd.nextInChain = &ml.chain; break;
+    case GPU_SURF_XLIB: xl.display = src->a; xl.window = src->win; sd.nextInChain = &xl.chain; break;
+    case GPU_SURF_WAYLAND: wl.display = src->a; wl.surface = src->b; sd.nextInChain = &wl.chain; break;
+    case GPU_SURF_ANDROID: an.window = src->a; sd.nextInChain = &an.chain; break;
+    }
+    if (!(g->surf = wgpuInstanceCreateSurface(g->inst, &sd))) goto fail;
+
+    WGPURequestAdapterOptions ao = WGPU_REQUEST_ADAPTER_OPTIONS_INIT;
+    ao.compatibleSurface = g->surf; ao.powerPreference = WGPUPowerPreference_HighPerformance;
+    WGPURequestAdapterCallbackInfo ac = WGPU_REQUEST_ADAPTER_CALLBACK_INFO_INIT;
+    ac.mode = WGPUCallbackMode_AllowProcessEvents; ac.callback = on_adapter; ac.userdata1 = &g->adapter;
+    wgpuInstanceRequestAdapter(g->inst, &ao, ac);
+    wgpuInstanceProcessEvents(g->inst);
+    if (!g->adapter) goto fail;
+    WGPUAdapterInfo info = WGPU_ADAPTER_INFO_INIT;
+    if (wgpuAdapterGetInfo(g->adapter, &info) == WGPUStatus_Success) {
+        g->backend = info.backendType;
+        if (info.adapterType == WGPUAdapterType_CPU) { wgpuAdapterInfoFreeMembers(info); goto fail; }
+        wgpuAdapterInfoFreeMembers(info);
+    }
+
+    WGPUDeviceDescriptor dd = WGPU_DEVICE_DESCRIPTOR_INIT;
+    dd.uncapturedErrorCallbackInfo.callback = on_error;
+    WGPURequestDeviceCallbackInfo dc = WGPU_REQUEST_DEVICE_CALLBACK_INFO_INIT;
+    dc.mode = WGPUCallbackMode_AllowProcessEvents; dc.callback = on_device; dc.userdata1 = &g->dev;
+    wgpuAdapterRequestDevice(g->adapter, &dd, dc);
+    wgpuInstanceProcessEvents(g->inst);
+    if (!g->dev) goto fail;
+    g->q = wgpuDeviceGetQueue(g->dev);
+
+    WGPUSurfaceCapabilities caps = WGPU_SURFACE_CAPABILITIES_INIT;
+    if (wgpuSurfaceGetCapabilities(g->surf, g->adapter, &caps) != WGPUStatus_Success || !caps.formatCount) goto fail;
+    g->fmt = caps.formats[0];
+    for (size_t i = 0; i < caps.formatCount; i++)
+        if (caps.formats[i] == WGPUTextureFormat_BGRA8Unorm || caps.formats[i] == WGPUTextureFormat_RGBA8Unorm) { g->fmt = caps.formats[i]; break; }
+    wgpuSurfaceCapabilitiesFreeMembers(caps);
+
+    WGPUShaderSourceWGSL ws = WGPU_SHADER_SOURCE_WGSL_INIT; ws.code = sv(WGSL);
+    WGPUShaderModuleDescriptor smd = WGPU_SHADER_MODULE_DESCRIPTOR_INIT; smd.nextInChain = &ws.chain;
+    WGPUShaderModule sm = wgpuDeviceCreateShaderModule(g->dev, &smd);
+    if (!sm) goto fail;
+    WGPUColorTargetState ct = WGPU_COLOR_TARGET_STATE_INIT; ct.format = g->fmt;
+    WGPUFragmentState fs = WGPU_FRAGMENT_STATE_INIT; fs.module = sm; fs.entryPoint = sv("fs"); fs.targetCount = 1; fs.targets = &ct;
+    WGPURenderPipelineDescriptor pd = WGPU_RENDER_PIPELINE_DESCRIPTOR_INIT;
+    pd.vertex.module = sm; pd.vertex.entryPoint = sv("vs"); pd.fragment = &fs;
+    pd.primitive.topology = WGPUPrimitiveTopology_TriangleList;
+    g->pipe = wgpuDeviceCreateRenderPipeline(g->dev, &pd);
+    wgpuShaderModuleRelease(sm);
+    if (!g->pipe) goto fail;
+    g->bgl = wgpuRenderPipelineGetBindGroupLayout(g->pipe, 0);
+    WGPUSamplerDescriptor smp = WGPU_SAMPLER_DESCRIPTOR_INIT;
+    g->samp = wgpuDeviceCreateSampler(g->dev, &smp);
+    configure(g);
+    return g;
+fail:
+    fprintf(stderr, "gpu: unavailable, using CPU presentation\n");
+    gpu_destroy(g);
+    return NULL;
+}
+
+void gpu_resize(Gpu *g, int w, int h) { if (g && (w != g->w || h != g->h)) { g->w = w; g->h = h; configure(g); } }
+
+static void ensure_tex(Gpu *g, int w, int h) {
+    if (g->tex && g->tw == w && g->th == h) return;
+    if (g->bg) wgpuBindGroupRelease(g->bg);
+    if (g->view) wgpuTextureViewRelease(g->view);
+    if (g->tex) { wgpuTextureDestroy(g->tex); wgpuTextureRelease(g->tex); }
+    WGPUTextureDescriptor td = WGPU_TEXTURE_DESCRIPTOR_INIT;
+    td.size = (WGPUExtent3D){ (uint32_t)w, (uint32_t)h, 1 };
+    td.format = WGPUTextureFormat_BGRA8Unorm;
+    td.usage = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopyDst;
+    g->tex = wgpuDeviceCreateTexture(g->dev, &td);
+    g->view = wgpuTextureCreateView(g->tex, NULL);
+    WGPUBindGroupEntry e[2] = { WGPU_BIND_GROUP_ENTRY_INIT, WGPU_BIND_GROUP_ENTRY_INIT };
+    e[0].binding = 0; e[0].textureView = g->view; e[1].binding = 1; e[1].sampler = g->samp;
+    WGPUBindGroupDescriptor bd = WGPU_BIND_GROUP_DESCRIPTOR_INIT; bd.layout = g->bgl; bd.entryCount = 2; bd.entries = e;
+    g->bg = wgpuDeviceCreateBindGroup(g->dev, &bd);
+    g->tw = w; g->th = h;
+}
+
+bool gpu_present(Gpu *g, const uint32_t *px, int w, int h, int stride) {
+    if (!g || !g->configured) return false;
+    ensure_tex(g, w, h);
+    WGPUTexelCopyTextureInfo dst = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT; dst.texture = g->tex;
+    WGPUTexelCopyBufferLayout lay = WGPU_TEXEL_COPY_BUFFER_LAYOUT_INIT; lay.bytesPerRow = (uint32_t)stride * 4; lay.rowsPerImage = (uint32_t)h;
+    WGPUExtent3D ext = { (uint32_t)w, (uint32_t)h, 1 };
+    wgpuQueueWriteTexture(g->q, &dst, px, (size_t)stride * 4 * (size_t)h, &lay, &ext);
+
+    WGPUSurfaceTexture st = WGPU_SURFACE_TEXTURE_INIT;
+    wgpuSurfaceGetCurrentTexture(g->surf, &st);
+    if (st.status != WGPUSurfaceGetCurrentTextureStatus_SuccessOptimal && st.status != WGPUSurfaceGetCurrentTextureStatus_SuccessSuboptimal) {
+        if (st.texture) wgpuTextureRelease(st.texture);
+        configure(g);
+        return st.status == WGPUSurfaceGetCurrentTextureStatus_Timeout || st.status == WGPUSurfaceGetCurrentTextureStatus_Outdated || st.status == WGPUSurfaceGetCurrentTextureStatus_Lost;
+    }
+    WGPUTextureView tv = wgpuTextureCreateView(st.texture, NULL);
+    WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(g->dev, NULL);
+    WGPURenderPassColorAttachment ca = WGPU_RENDER_PASS_COLOR_ATTACHMENT_INIT;
+    ca.view = tv; ca.loadOp = WGPULoadOp_Clear; ca.storeOp = WGPUStoreOp_Store; ca.clearValue = (WGPUColor){ 1, 1, 1, 1 };
+    WGPURenderPassDescriptor rp = WGPU_RENDER_PASS_DESCRIPTOR_INIT; rp.colorAttachmentCount = 1; rp.colorAttachments = &ca;
+    WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(enc, &rp);
+    wgpuRenderPassEncoderSetPipeline(pass, g->pipe);
+    wgpuRenderPassEncoderSetBindGroup(pass, 0, g->bg, 0, NULL);
+    wgpuRenderPassEncoderDraw(pass, 3, 1, 0, 0);
+    wgpuRenderPassEncoderEnd(pass); wgpuRenderPassEncoderRelease(pass);
+    WGPUCommandBuffer cb = wgpuCommandEncoderFinish(enc, NULL);
+    wgpuQueueSubmit(g->q, 1, &cb);
+    wgpuCommandBufferRelease(cb); wgpuCommandEncoderRelease(enc);
+    wgpuSurfacePresent(g->surf);
+    wgpuTextureViewRelease(tv); wgpuTextureRelease(st.texture);
+    return true;
+}
+
+const char *gpu_backend_name(Gpu *g) {
+    if (!g) return "cpu";
+    switch (g->backend) {
+    case WGPUBackendType_Metal: return "wgpu/metal";
+    case WGPUBackendType_Vulkan: return "wgpu/vulkan";
+    case WGPUBackendType_OpenGL: case WGPUBackendType_OpenGLES: return "wgpu/gl";
+    default: return "wgpu";
+    }
+}
+
+void gpu_destroy(Gpu *g) {
+    if (!g) return;
+    if (g->bg) wgpuBindGroupRelease(g->bg);
+    if (g->view) wgpuTextureViewRelease(g->view);
+    if (g->tex) { wgpuTextureDestroy(g->tex); wgpuTextureRelease(g->tex); }
+    if (g->samp) wgpuSamplerRelease(g->samp);
+    if (g->bgl) wgpuBindGroupLayoutRelease(g->bgl);
+    if (g->pipe) wgpuRenderPipelineRelease(g->pipe);
+    if (g->configured) wgpuSurfaceUnconfigure(g->surf);
+    if (g->q) wgpuQueueRelease(g->q);
+    if (g->dev) wgpuDeviceRelease(g->dev);
+    if (g->adapter) wgpuAdapterRelease(g->adapter);
+    if (g->surf) wgpuSurfaceRelease(g->surf);
+    if (g->inst) wgpuInstanceRelease(g->inst);
+    free(g);
+}
