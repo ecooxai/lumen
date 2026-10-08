@@ -205,6 +205,19 @@ static void collect_inline_positioned(PB *p, Box *ib, DefVec *defs) {
     }
 }
 
+bool dl_caret_on;
+
+static void paint_caret(PB *p, Box *b) {
+    const ComputedStyle *s = b->st;
+    float x = b->x + b->b[3] + b->p[3], y = b->y + b->b[0] + b->p[0], h = s->font_size * 1.2f;
+    float ch = b->h - b->b[0] - b->b[2] - b->p[0] - b->p[2];
+    TextFrag *last = b->nfrags ? &b->frags[b->nfrags - 1] : NULL;
+    for (Box *c = b->first; c; c = c->next) if (c->nfrags) last = &c->frags[c->nfrags - 1];
+    if (last) { y = last->y; h = last->h; if (!b->placeholder) x = last->x + last->w; }
+    else if (b->ctl == CTL_TEXT && ch > h) y += (ch - h) / 2;
+    DItem *it = emit(p, DO_RECT); it->x = x + p->dx; it->y = y + p->dy; it->w = 1; it->h = h; it->color = s->color;
+}
+
 /* paints a non-positioned box's own background and its normal-flow content */
 static void paint_block_content(PB *p, Box *b, DefVec *defs) {
     const ComputedStyle *s = b->st;
@@ -222,6 +235,7 @@ static void paint_block_content(PB *p, Box *b, DefVec *defs) {
     }
     if (s->display == D_LIST_ITEM && vis) paint_marker(p, b);
     paint_flow(p, b, defs);
+    if (vis && dl_caret_on && (b->ctl == CTL_TEXT || b->ctl == CTL_TEXTAREA) && b->node && (b->node->flags & NF_FOCUS)) paint_caret(p, b);
     if (clips) { int order = p->order; *p = saved; p->order = order; emit(p, DO_POP_CLIP); }
 }
 

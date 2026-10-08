@@ -35,6 +35,7 @@ void image_unref(Image *im);
 bool image_anim_tick(double now_ms, double *next_ms);
 Image *svg_image(Node *n, float cw, float ch, float dpr);
 void dl_build(DisplayList *dl, Layout *L, float scroll_x, float scroll_y, float vw, float vh);
+extern bool dl_caret_on; /* paint the caret in the focused text control */
 void dl_clear(DisplayList *dl);
 
 /* punch: image whose pixels raster leaves as alpha-0 holes (composited by the GPU); punched is set when it was hit. */

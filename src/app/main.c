@@ -124,6 +124,7 @@ typedef struct App {
     Page *cur; bool loading;
     char *hist[256]; int nhist, hpos;
     char url[2048]; bool editing; int sel_all;
+    double caret_t;
     float sy; bool dirty, relayout;
     Font *ui;
     int hover; double frame_ms;
@@ -493,6 +494,7 @@ static void focus_node(App *a, Node *n) {
     if (js && old) { js_dispatch(js, old, "blur", "FocusEvent", false, false, 0, 0, 0, NULL); js_dispatch(js, old, "focusout", "FocusEvent", true, false, 0, 0, 0, NULL); }
     if (js && n) { js_dispatch(js, n, "focus", "FocusEvent", false, false, 0, 0, 0, NULL); js_dispatch(js, n, "focusin", "FocusEvent", true, false, 0, 0, 0, NULL); }
     if (is_text_ctl(n)) SDL_StartTextInput(a->win);
+    a->caret_t = now_ms();
     a->relayout = true; a->dirty = true;
 }
 static void url_enc(SB *b, const char *s) {
@@ -637,6 +639,15 @@ int main(int argc, char **argv) {
         { int mf = media_tick(); if (mf & 1) { if (!a.dirty) a.vonly = true; a.dirty = true; } if (mf & 2) a.relayout = true; }
         if (!a.editing && page_focus(&a) && !SDL_TextInputActive(a.win)) SDL_StartTextInput(a.win);
         { int mt = media_timeout_ms(); if (mt >= 0 && mt < to) to = mt; }
+        {
+            bool want = false;
+            if (!a.editing && page_focus(&a)) {
+                double ph = fmod(now_ms() - a.caret_t, 1060);
+                want = ph < 530;
+                int nx = (int)((want ? 530 : 1060) - ph) + 1; if (nx < to) to = nx;
+            }
+            if (want != dl_caret_on) { dl_caret_on = want; a.vonly = false; a.dirty = true; }
+        }
         { double now = now_ms(), gn; if (image_anim_tick(now, &gn)) { a.vonly = false; a.dirty = true; } if (gn > 0 && gn - now < to) to = gn - now < 1 ? 1 : (int)(gn - now); }
         if (!SDL_WaitEventTimeout(&ev, to)) { if (a.loading) a.dirty = true; }
         else do {
@@ -660,7 +671,7 @@ int main(int argc, char **argv) {
                 default: if (a.editing) { a.editing = false; SDL_StopTextInput(a.win); a.dirty = true; } click_page(&a, ev.button.x, ev.button.y);
                 }
                 break;
-            case SDL_EVENT_TEXT_INPUT:
+            case SDL_EVENT_TEXT_INPUT: a.caret_t = now_ms();
                 if (!a.editing && page_focus(&a)) {
                     Node *f = page_focus(&a);
                     if (!a.cur->js || js_dispatch(a.cur->js, f, "keydown", "KeyboardEvent", true, true, 0, 0, 0, ev.text.text)) {
@@ -672,7 +683,7 @@ int main(int argc, char **argv) {
                 } else if (a.editing) { if (a.sel_all) { a.url[0] = 0; a.sel_all = 0; } strncat(a.url, ev.text.text, sizeof a.url - strlen(a.url) - 1); a.dirty = true; }
                 break;
             case SDL_EVENT_KEY_UP: if (ev.key.key == SDLK_LGUI || ev.key.key == SDLK_RGUI || ev.key.key == SDLK_LCTRL || ev.key.key == SDLK_RCTRL) cmd = false; break;
-            case SDL_EVENT_KEY_DOWN: {
+            case SDL_EVENT_KEY_DOWN: { a.caret_t = now_ms();
                 SDL_Keycode k = ev.key.key; float page = a.vh - BAR - 40;
                 if (k == SDLK_LGUI || k == SDLK_RGUI || k == SDLK_LCTRL || k == SDLK_RCTRL) { cmd = true; break; }
                 if (cmd || (ev.key.mod & (SDL_KMOD_GUI | SDL_KMOD_CTRL))) {
