@@ -295,7 +295,7 @@ class DOMMatrix extends DOMMatrixReadOnly {}
 class DOMPoint { constructor(x = 0, y = 0, z = 0, w = 1) { Object.assign(this, { x, y, z, w }); } }
 const XML_TYPES = ['text/xml', 'application/xml', 'application/xhtml+xml', 'image/svg+xml'];
 function parseXML(src, type) {
-    const doc = N.newXmlDoc(); def(doc, '__ct', type);
+    const doc = N.newXmlDoc(); Object.setPrototypeOf(doc, Document.prototype); def(doc, '__ct', type);
     const ents = { lt: '<', gt: '>', amp: '&', quot: '"', apos: "'" };
     const decode = (s) => s.indexOf('&') < 0 ? s : s.replace(/&([^;\s&<]*);?/g, (m, e) => {
         if (!m.endsWith(';')) throw 'unterminated entity';
@@ -380,16 +380,22 @@ class DOMParser {
 }
 const xmlEscT = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const xmlEscA = (s) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\t/g, '&#9;').replace(/\n/g, '&#10;').replace(/\r/g, '&#13;');
-function xmlSer(n, pns) {
+function xmlSer(n, dns, map) {
     switch (N.type(n)) {
     case 1: {
-        const ns = n.namespaceURI, q = n.prefix ? n.prefix + ':' + n.localName : n.localName;
-        let s = '<' + q;
-        const names = n.getAttributeNames();
-        if (ns !== pns && !n.prefix && !names.includes('xmlns')) s += ` xmlns="${xmlEscA(ns ?? '')}"`;
-        for (const k of names) s += ` ${k}="${xmlEscA(n.getAttribute(k))}"`;
+        const ns = n.namespaceURI, pfx = n.prefix, q = pfx ? pfx + ':' + n.localName : n.localName;
+        let s = '<' + q, m = map;
+        const put = (p, u) => { if (m === map) m = Object.assign(Object.create(null), map); m[p] = u; };
+        if (pfx) { if (m[pfx] !== ns) { s += ` xmlns:${pfx}="${xmlEscA(ns ?? '')}"`; put(pfx, ns); } }
+        else if (ns !== dns) { s += ` xmlns="${xmlEscA(ns ?? '')}"`; dns = ns; }
+        for (const k of n.getAttributeNames()) {
+            const v = n.getAttribute(k);
+            if (k === 'xmlns') continue;
+            if (k.startsWith('xmlns:')) { const p = k.slice(6); if (p === pfx || m[p] === v) continue; put(p, v); }
+            s += ` ${k}="${xmlEscA(v)}"`;
+        }
         const src = n.localName === 'template' && n.content ? n.content : n;
-        let body = ''; for (let c = N.first(src); c; c = N.next(c)) body += xmlSer(c, ns);
+        let body = ''; for (let c = N.first(src); c; c = N.next(c)) body += xmlSer(c, dns, m);
         if (body) return s + '>' + body + '</' + q + '>';
         if (ns === NSURI[0]) return html_void.has(n.localName) ? s + ' />' : s + '></' + q + '>';
         return s + '/>';
@@ -399,8 +405,8 @@ function xmlSer(n, pns) {
     case 7: return '<?' + N.name(n) + ' ' + N.text(n) + '?>';
     case 8: return '<!--' + N.text(n) + '-->';
     case 10: { const p = n.publicId, sy = n.systemId; return '<!DOCTYPE ' + n.name + (p ? ` PUBLIC "${p}"` : sy ? ' SYSTEM' : '') + (sy ? ` "${sy}"` : '') + '>'; }
-    default: { let s = ''; for (let c = N.first(n); c; c = N.next(c)) s += xmlSer(c, pns); return s; }
+    default: { let s = ''; for (let c = N.first(n); c; c = N.next(c)) s += xmlSer(c, dns, map); return s; }
     }
 }
 const html_void = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'source', 'track', 'wbr']);
-class XMLSerializer { serializeToString(n) { if (!N.isNode(n)) throw new TypeError("Failed to execute 'serializeToString' on 'XMLSerializer': parameter 1 is not of type 'Node'."); return xmlSer(n, null); } }
+class XMLSerializer { serializeToString(n) { if (!N.isNode(n)) throw new TypeError("Failed to execute 'serializeToString' on 'XMLSerializer': parameter 1 is not of type 'Node'."); return xmlSer(n, null, Object.assign(Object.create(null), { xml: XML_NS })); } }
