@@ -12,6 +12,9 @@ class Headers {
 
 // Fetch "append a request Origin header": CORS requests and non-GET/HEAD requests carry the document origin.
 function withOrigin(flat, url, method, mode) {
+    const kept = [];
+    for (let i = 0; i + 1 < flat.length; i += 2) { const n = String(flat[i]).toLowerCase(); if (!XHR_FORBIDDEN.has(n) && !/^(proxy-|sec-)/.test(n)) kept.push(flat[i], flat[i + 1]); }
+    flat = kept;
     try {
         const o = location.origin, safe = /^(GET|HEAD)$/i.test(method);
         if ((new URL(url).origin === o || mode === 'no-cors') && safe) return flat;
@@ -36,6 +39,52 @@ function corsOk(reqUrl, finalUrl, hdrs, cred) {
     if (a === null) return false;
     if (a === '*') return !cred;
     return a === o && (!cred || get('access-control-allow-credentials') === 'true');
+}
+
+// CORS preflight: cross-origin requests with a non-safelisted method or headers first send OPTIONS.
+const hget = (hdrs, n) => { for (let i = 0; i + 1 < hdrs.length; i += 2) if (String(hdrs[i]).toLowerCase() === n) return String(hdrs[i + 1]).trim(); return null; };
+const CORS_UNSAFE_BYTE = /[\x00-\x08\x0A-\x1F"():<>?@\[\\\]{}\x7F]/;
+function corsUnsafeHeaders(flat) {
+    const out = new Set();
+    for (let i = 0; i + 1 < flat.length; i += 2) {
+        const n = String(flat[i]).toLowerCase(), v = String(flat[i + 1]);
+        if (n === 'origin') continue;
+        let safe = false;
+        if (v.length <= 128) {
+            if (n === 'accept') safe = !CORS_UNSAFE_BYTE.test(v);
+            else if (n === 'accept-language' || n === 'content-language') safe = /^[0-9A-Za-z *,\-.;=]*$/.test(v);
+            else if (n === 'content-type') safe = !CORS_UNSAFE_BYTE.test(v) && /^(application\/x-www-form-urlencoded|multipart\/form-data|text\/plain)$/i.test(v.split(';')[0].trim());
+            else if (n === 'range') safe = /^bytes=\d+-\d*$/.test(v);
+        }
+        if (!safe) out.add(n);
+    }
+    return [...out].sort();
+}
+function needsPreflight(method, url, flat) {
+    try { if (new URL(url).origin === location.origin) return null; } catch (e) { return null; }
+    const hs = corsUnsafeHeaders(flat);
+    return /^(GET|HEAD|POST)$/.test(method) && !hs.length ? null : hs;
+}
+const preflightHdrs = (method, hs) => ['Origin', location.origin, 'Access-Control-Request-Method', method].concat(hs.length ? ['Access-Control-Request-Headers', hs.join(',')] : []);
+function preflightOk(url, method, hs, status, finalUrl, hdrs, cred) {
+    if (status < 200 || status > 299 || !corsOk(url, finalUrl, hdrs, cred)) return false;
+    const list = (n) => (hget(hdrs, n) || '').split(',').map(x => x.trim()).filter(Boolean);
+    const ms = list('access-control-allow-methods'), hl = list('access-control-allow-headers').map(x => x.toLowerCase());
+    if (!/^(GET|HEAD|POST)$/.test(method) && !ms.includes(method) && (cred || !ms.includes('*'))) return false;
+    return hs.every(h => hl.includes(h) || (!cred && h !== 'authorization' && hl.includes('*')));
+}
+function corsSend(cred, onId, method, url, flat, body, cb) {
+    const hs = needsPreflight(method, url, flat);
+    if (!hs) return onId(N.fetch(method, url, flat, body, cb));
+    onId(N.fetch('OPTIONS', url, preflightHdrs(method, hs), null, (status, st, u, hdrs, b, err) => {
+        if (err || !preflightOk(url, method, hs, status, u, hdrs || [], cred)) return cb(0, '', url, [], null, true);
+        onId(N.fetch(method, url, flat, body, cb));
+    }));
+}
+function corsSendSync(cred, method, url, flat, body) {
+    const hs = needsPreflight(method, url, flat);
+    if (hs) { const p = N.fetchSync('OPTIONS', url, preflightHdrs(method, hs), null); if (p[5] || !preflightOk(url, method, hs, p[0], p[2], p[3] || [], cred)) return [0, '', url, [], null, true]; }
+    return N.fetchSync(method, url, flat, body);
 }
 
 const fromFlat = (a) => { const h = new Headers(); for (let i = 0; i + 1 < a.length; i += 2) h.append(a[i], a[i + 1]); return h; };
@@ -100,7 +149,7 @@ function fetch(input, init) {
         if (req.signal.aborted) return reject(req.signal.reason);
         const lb = localBody(req.url);
         if (lb !== undefined) { const br = lb && blobResponse(req.url, lb, req.headers.get('range')); if (!br) return reject(new TypeError('Failed to fetch')); const r = new Response(null, { status: br[0], statusText: br[1], headers: fromFlat(br[2]) }); r._b = br[3]; r.url = req.url; r.type = 'basic'; return resolve(r); }
-        const id = N.fetch(req.method, req.url, withOrigin(req.headers._flat(), req.url, req.method, req.mode), req._b, (status, statusText, url, hdrs, body, err) => {
+        let id = 0; corsSend(req.credentials === 'include', (i) => id = i, req.method, req.url, withOrigin(req.headers._flat(), req.url, req.method, req.mode), req._b, (status, statusText, url, hdrs, body, err) => {
             if (err) return reject(new TypeError('Failed to fetch'));
             if (!corsOk(req.url, url, hdrs || [], req.credentials === 'include')) {
                 if (req.mode !== 'no-cors') return reject(new TypeError('Failed to fetch'));
@@ -239,8 +288,8 @@ class XMLHttpRequest extends XMLHttpRequestEventTarget {
         }
         const lb = localBody(this._u);
         if (lb !== undefined) { const br = lb && blobResponse(this._u, lb, this._rh.get('range')); const f = () => br ? this._done(gen, br[0], br[1], this._u, br[2], br[3], false) : this._done(gen, 0, '', this._u, [], null, true); if (this._async) setTimeout(f); else f(); return; }
-        if (!this._async) { const r = N.fetchSync(this._m, this._u, withOrigin(this._rh._flat(), this._u, this._m, 'cors'), b); this._done(gen, ...r); return; }
-        this._id = N.fetch(this._m, this._u, withOrigin(this._rh._flat(), this._u, this._m, 'cors'), b, (...a) => this._done(gen, ...a));
+        if (!this._async) { const r = corsSendSync(this._wc, this._m, this._u, withOrigin(this._rh._flat(), this._u, this._m, 'cors'), b); this._done(gen, ...r); return; }
+        corsSend(this._wc, (i) => this._id = i, this._m, this._u, withOrigin(this._rh._flat(), this._u, this._m, 'cors'), b, (...a) => this._done(gen, ...a));
         if (this._to > 0) this._timer = setTimeout(() => { if (gen !== this._gen) return; this._terminate(); this._errorSteps('timeout'); }, this._to);
     }
     abort() {
