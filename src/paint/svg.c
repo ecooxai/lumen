@@ -228,6 +228,37 @@ static void build_shape(PathB *p, const Node *n) {
     } else if (!strcmp(t, "line")) { pb_move(p, fattr(n, "x1"), fattr(n, "y1")); pb_line(p, fattr(n, "x2"), fattr(n, "y2")); }
 }
 
+static bool attr_hidden(const Node *n) {
+    const char *v;
+    if (n->style && n->style->display == D_NONE) return true;
+    if ((v = node_attr(n, "display")) && !strcmp(v, "none")) return true;
+    if ((v = node_attr(n, "style")) && strstr(v, "display: none")) return true;
+    return (v = node_attr(n, "style")) && strstr(v, "display:none");
+}
+
+static const Node *url_ref(const Node *n, const char *v) {
+    char id[128]; const char *h = strchr(v, '#'), *e;
+    if (!h || !n->doc) return NULL;
+    h++; e = h; while (*e && *e != ')' && *e != '"' && *e != '\'') e++;
+    if (e == h || e - h >= (int)sizeof id) return NULL;
+    memcpy(id, h, (size_t)(e - h)); id[e - h] = 0;
+    return doc_get_element_by_id(n->doc, id);
+}
+
+static bool has_geometry(const Node *n, int depth) {
+    if (depth > 16 || attr_hidden(n)) return false;
+    const char *t = n->tag, *v;
+    if (!strcmp(t, "use")) { const Node *r = (v = node_attr(n, "href")) || (v = node_attr(n, "xlink:href")) ? url_ref(n, v) : NULL; return r && has_geometry(r, depth + 1); }
+    if (!strcmp(t, "path")) return (v = node_attr(n, "d")) && *skipws(v);
+    if (!strcmp(t, "rect")) return fattr(n, "width") > 0 && fattr(n, "height") > 0;
+    if (!strcmp(t, "circle")) return fattr(n, "r") > 0;
+    if (!strcmp(t, "ellipse")) return fattr(n, "rx") > 0 && fattr(n, "ry") > 0;
+    if (!strcmp(t, "polygon") || !strcmp(t, "polyline") || !strcmp(t, "line") || !strcmp(t, "text") || !strcmp(t, "image")) return true;
+    for (const Node *k = n->first; k; k = k->next)
+        if (k->type == NODE_ELEMENT && has_geometry(k, depth + 1)) return true;
+    return false;
+}
+
 typedef struct { Color fill, stroke; float sw, op, fop, sop; bool eo; } Paint;
 
 static Color attr_color(const Node *n, const char *k, Color def, Color cur) {
@@ -249,6 +280,12 @@ static void walk(Ctx *c, const Node *n, Mat m, Paint pt, int depth) {
         if (s) { if (s->display == D_NONE) continue; q.fill = s->fill; q.stroke = s->stroke; q.sw = s->stroke_width; q.op = pt.op * s->opacity; }
         else { const char *d = node_attr(k, "display"); if (d && !strcmp(d, "none")) continue; q.fill = attr_color(k, "fill", q.fill, cur); const char *o = node_attr(k, "opacity"); if (o) q.op *= (float)atof(o); }
         if (!s || !COLOR_A(q.stroke)) q.stroke = attr_color(k, "stroke", q.stroke, cur);
+        const char *av;
+        if (s && (av = node_attr(k, "opacity"))) q.op *= (float)atof(av);
+        if ((av = node_attr(k, "visibility")) && !strcmp(av, "hidden")) continue;
+        if (s && (av = node_attr(k, "display")) && !strcmp(av, "none")) continue;
+        if (q.op <= 0.002f) continue;
+        if ((av = node_attr(k, "mask")) && strstr(av, "url(")) { const Node *mk = url_ref(k, av); if (mk && !has_geometry(mk, 0)) continue; }
         if (node_attr(k, "stroke-width") && (!s || s->stroke_width == 1)) q.sw = fattr(k, "stroke-width");
         const char *v;
         if ((v = node_attr(k, "fill-rule"))) q.eo = !strcmp(v, "evenodd");
@@ -268,7 +305,7 @@ static void walk(Ctx *c, const Node *n, Mat m, Paint pt, int depth) {
 
 static uint64_t hmix(uint64_t h, const char *s) { if (!s) return h * 1099511628211ull; while (*s) h = (h ^ (uint8_t)*s++) * 1099511628211ull; return (h ^ 0xff) * 1099511628211ull; }
 static uint64_t tree_hash(const Node *n, uint64_t h, int depth) {
-    static const char *const keys[] = { "d", "points", "x", "y", "width", "height", "r", "rx", "ry", "cx", "cy", "x1", "y1", "x2", "y2", "transform", "fill", "stroke", "stroke-width", "viewBox", "opacity", "fill-rule", "display", NULL };
+    static const char *const keys[] = { "d", "points", "x", "y", "width", "height", "r", "rx", "ry", "cx", "cy", "x1", "y1", "x2", "y2", "transform", "fill", "stroke", "stroke-width", "viewBox", "opacity", "fill-rule", "display", "visibility", "fill-opacity", "stroke-opacity", "style", "mask", NULL };
     if (depth > 32) return h;
     for (const Node *k = n->first; k; k = k->next) {
         if (k->type != NODE_ELEMENT) continue;
