@@ -414,7 +414,9 @@ static void click_page(App *a, float x, float y) {
     while (t && t->type != NODE_ELEMENT) t = t->parent;
     if (t && a->cur->js) {
         JsCtx *js = a->cur->js; float cy = y - BAR;
+        Node *before = a->cur->d->focus;
         js_dispatch(js, t, "mousedown", "MouseEvent", true, true, x, cy, 0, NULL);
+        bool js_focused = a->cur->d->focus != before;
         Node *ctl = t;
         for (Node *l = t; l; l = l->parent) if (l->type == NODE_ELEMENT && l->tag && !strcmp(l->tag, "label")) {
             const char *fo = node_attr(l, "for");
@@ -423,7 +425,12 @@ static void click_page(App *a, float x, float y) {
             if (c) ctl = c;
             break;
         }
-        if (is_text_ctl(ctl)) focus_node(a, ctl); else if (page_focus(a)) focus_node(a, NULL);
+        if (!is_text_ctl(ctl) && !js_focused) {   /* overlays (floating labels etc.) above a text field */
+            float px = x, py = y - BAR + a->sy;
+            for (Node *n = a->cur->d->node.first; n; n = node_next_in_tree(n, &a->cur->d->node))
+                if (is_text_ctl(n) && n->box && px >= n->box->x && px < n->box->x + n->box->w && py >= n->box->y && py < n->box->y + n->box->h) { ctl = n; break; }
+        }
+        if (is_text_ctl(ctl)) focus_node(a, ctl); else if (!js_focused && page_focus(a)) focus_node(a, NULL);
         js_dispatch(js, t, "mouseup", "MouseEvent", true, true, x, cy, 0, NULL);
         bool ok = js_dispatch(js, t, "click", "MouseEvent", true, true, x, cy, 0, NULL);
         restyle(a);
@@ -498,6 +505,7 @@ int main(int argc, char **argv) {
         if (a.cur && a.cur->js) { double dl = js_next_deadline(a.cur->js) - now_ms(); if (dl < to) to = dl < 0 ? 0 : (int)dl; }
         if (net_pending() && to > 50) to = 50;
         { int mf = media_tick(); if (mf & 1) a.dirty = true; if (mf & 2) a.relayout = true; }
+        if (!a.editing && page_focus(&a) && !SDL_TextInputActive(a.win)) SDL_StartTextInput(a.win);
         { int mt = media_timeout_ms(); if (mt >= 0 && mt < to) to = mt; }
         if (!SDL_WaitEventTimeout(&ev, to)) { if (a.loading) a.dirty = true; }
         else do {
