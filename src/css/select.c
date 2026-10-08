@@ -11,12 +11,18 @@ static bool nth_match(int a, int b, int idx) {
     return d % a == 0 && d / a >= 0;
 }
 
+static bool html_ci_attr(const char *n) {
+    static const char *const names[] = { "accept", "accept-charset", "align", "alink", "axis", "bgcolor", "charset", "checked", "clear", "codetype", "color", "compact", "declare", "defer", "dir", "direction", "disabled", "enctype", "face", "frame", "hreflang", "http-equiv", "lang", "language", "link", "media", "method", "multiple", "nohref", "noresize", "noshade", "nowrap", "readonly", "rel", "rev", "rules", "scope", "scrolling", "selected", "shape", "target", "text", "type", "valign", "valuetype", "vlink" };
+    for (size_t i = 0; i < sizeof names / sizeof *names; i++) if (!strcmp(n, names[i])) return true;
+    return false;
+}
 static bool attr_match(const SimpleSel *s, Node *el) {
     const char *v = node_attr(el, s->name);
     if (!v) return false;
     if (!s->op) return true;
     const char *w = s->value; size_t wl = strlen(w), vl = strlen(v);
-    int (*cmp)(const char *, const char *, size_t) = s->ci ? (int (*)(const char *, const char *, size_t))strncasecmp : strncmp;
+    bool ci = s->ci == 1 || (!s->ci && el->ns == NS_HTML && html_ci_attr(s->name));
+    int (*cmp)(const char *, const char *, size_t) = ci ? (int (*)(const char *, const char *, size_t))strncasecmp : strncmp;
     switch (s->op) {
     case '=': return vl == wl && !cmp(v, w, wl);
     case '^': return wl && vl >= wl && !cmp(v, w, wl);

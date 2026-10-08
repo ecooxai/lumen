@@ -22,7 +22,7 @@ class StorageEvent extends Event {
 }
 class PromiseRejectionEvent extends Event { constructor(t, i = {}) { super(t, i); this.promise = i.promise; this.reason = i.reason; } }
 class SubmitEvent extends Event { constructor(t, i = {}) { super(t, i); this.submitter = i.submitter || null; } }
-class StyleSheet {}
+
 class IdleDeadline {}
 class TimeRanges {
     constructor(r = []) { this._r = r; }

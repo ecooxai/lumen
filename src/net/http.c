@@ -252,6 +252,7 @@ static NetResponse *http_once(const char *method, const URL *u, const Headers *h
         while (conn_readline(c, &line) && line.n) {
             char *colon = strchr(line.s, ':'); if (!colon) continue;
             *colon = 0; char *v = colon + 1; while (*v == ' ' || *v == '\t') v++;
+            for (char *e = v + strlen(v); e > v && (e[-1] == ' ' || e[-1] == '\t'); ) *--e = 0;
             headers_add(&r->headers, line.s, v);
             if (cookies && str_ieq(line.s, "set-cookie")) cookies_set_from_header(u, v);
         }

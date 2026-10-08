@@ -14,6 +14,7 @@ bool jsg_rect(Node *n, float r[4]);  /* border box, document coordinates */
 bool jsg_media(void *media, const char *q);
 bool jsg_valid_selector(const char *sel);
 bool jsg_supports(const char *cond);
+char *css_selector_text(const char *src);
 bool jsg_img_size(Node *n, float *w, float *h);
 bool jsg_classic_script(Node *s);
 #ifdef __cplusplus

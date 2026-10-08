@@ -422,6 +422,7 @@ FN(readyState) { CTX; RET(c->doc->ready_state); }
 FN(quirks) { CTX; RET(c->doc->quirks); }
 FN(currentScript) { CTX; RET(jwrap(c, c->current_script)); }
 FN(media) { CTX; std::string q = S(0); RET(jsg_media(c->host.media, q.c_str())); }
+FN(cssSelText) { CTX; std::string q = S(0); char *r = css_selector_text(q.c_str()); RET(nstr(iso, r)); free(r); }
 FN(cssSupports) { CTX; std::string q = S(0); RET(jsg_supports(q.c_str())); }
 FN(urlParse) {
     CTX; std::string s = S(0);
@@ -708,7 +709,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove);
     REG(mediaBuffered); REG(mediaEos); REG(mediaSetDuration); REG(mediaPlay); REG(mediaPause); REG(mediaSeek);
     REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(readyState); REG(quirks);
-    REG(currentScript); REG(media); REG(cssSupports); REG(urlParse); REG(encode); REG(decode); REG(random); REG(cDigest); REG(cHmac); REG(cAes); REG(cEcGen); REG(cEcDerive); REG(cEcSign); REG(cEcVerify); REG(cSpki); REG(cSpkiParse); REG(cPkcs8Parse); REG(cEcFromD); REG(cHkdf); REG(cPbkdf2);
+    REG(currentScript); REG(media); REG(cssSupports); REG(cssSelText); REG(urlParse); REG(encode); REG(decode); REG(random); REG(cDigest); REG(cHmac); REG(cAes); REG(cEcGen); REG(cEcDerive); REG(cEcSign); REG(cEcVerify); REG(cSpki); REG(cSpkiParse); REG(cPkcs8Parse); REG(cEcFromD); REG(cHkdf); REG(cPbkdf2);
     REG(heap); REG(imgSize); REG(userAgent); REG(platform); REG(cpus);
 #undef REG
     js_install_frames(c, N); js_install_workers(c, N);

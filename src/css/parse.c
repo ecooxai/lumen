@@ -202,7 +202,7 @@ static bool parse_compound(SP *p, Compound *c, Selector *sel) {
                 } else { char *v = sp_ident(p); if (!v) { size_t st = p->i; while (p->i < p->n && p->s[p->i] != ']' && !is_ws((unsigned char)p->s[p->i])) p->i++; v = xstrndup(p->s + st, p->i - st); } s.value = v; }
                 sp_ws(p);
                 if (p->i < p->n && (p->s[p->i] == 'i' || p->s[p->i] == 'I')) { s.ci = 1; p->i++; sp_ws(p); }
-                else if (p->i < p->n && (p->s[p->i] == 's' || p->s[p->i] == 'S')) { p->i++; sp_ws(p); }
+                else if (p->i < p->n && (p->s[p->i] == 's' || p->s[p->i] == 'S')) { s.ci = 2; p->i++; sp_ws(p); }
             }
             if (p->i >= p->n || p->s[p->i] != ']') { free(s.value); goto fail; }
             p->i++;
@@ -702,4 +702,63 @@ void css_sheet_free(StyleSheet *s) {
     for (int i = 0; i < s->font_faces.n; i++) free(s->font_faces.v[i]);
     vec_free(s->font_faces);
     free(s->base_url); free(s);
+}
+
+/* ---------------- selector serialization (CSSOM) ---------------- */
+static void ser_ident(SB *b, const char *s) {
+    const unsigned char *u = (const unsigned char *)s;
+    if (u[0] == '-' && !u[1]) { sb_puts(b, "\\-"); return; }
+    for (size_t i = 0; u[i]; i++) {
+        unsigned c = u[i];
+        if (c < 0x20 || c == 0x7f || (i == 0 && isdigit(c)) || (i == 1 && isdigit(c) && u[0] == '-')) sb_printf(b, "\\%x ", c);
+        else if (c >= 0x80 || c == '-' || c == '_' || isalnum(c)) sb_putc(b, (char)c);
+        else { sb_putc(b, '\\'); sb_putc(b, (char)c); }
+    }
+}
+static void ser_string(SB *b, const char *s) {
+    sb_putc(b, '"');
+    for (const unsigned char *u = (const unsigned char *)s; *u; u++) {
+        if (*u < 0x20 || *u == 0x7f) sb_printf(b, "\\%x ", *u);
+        else { if (*u == '"' || *u == '\\') sb_putc(b, '\\'); sb_putc(b, (char)*u); }
+    }
+    sb_putc(b, '"');
+}
+static void ser_list(SB *b, const SelList *l);
+static void ser_anb(SB *b, int a, int bb) {
+    if (!a) { sb_printf(b, "%d", bb); return; }
+    if (a == 1) sb_puts(b, "n"); else if (a == -1) sb_puts(b, "-n"); else sb_printf(b, "%dn", a);
+    if (bb > 0) sb_printf(b, "+%d", bb); else if (bb < 0) sb_printf(b, "%d", bb);
+}
+static void ser_selector(SB *b, const Selector *s) {
+    static const char *combs[] = { "", " ", " > ", " + ", " ~ " };
+    for (int i = 0; i < s->n; i++) {
+        const Compound *c = &s->c[i];
+        if (c->comb) { const char *k = combs[c->comb]; sb_puts(b, i ? k : (c->comb == CB_DESC ? "" : k + 1)); }
+        for (int j = 0; j < c->n; j++) {
+            const SimpleSel *x = &c->s[j];
+            switch (x->kind) {
+            case SK_UNIVERSAL: sb_putc(b, '*'); break;
+            case SK_TYPE: ser_ident(b, x->name); break;
+            case SK_ID: sb_putc(b, '#'); ser_ident(b, x->name); break;
+            case SK_CLASS: sb_putc(b, '.'); ser_ident(b, x->name); break;
+            case SK_ATTR:
+                sb_putc(b, '['); ser_ident(b, x->name);
+                if (x->op) { if (x->op != '=') sb_putc(b, (char)x->op); sb_putc(b, '='); ser_string(b, x->value ? x->value : ""); if (x->ci) sb_puts(b, x->ci == 1 ? " i" : " s"); }
+                sb_putc(b, ']'); break;
+            case SK_PSEUDO: case SK_PSEUDO_EL:
+                sb_puts(b, x->kind == SK_PSEUDO_EL ? "::" : ":"); ser_ident(b, x->name);
+                if (str_starts(x->name, "nth-")) { sb_putc(b, '('); ser_anb(b, x->a, x->b); if (x->sub && x->sub->n) { sb_puts(b, " of "); ser_list(b, x->sub); } sb_putc(b, ')'); }
+                else if (x->sub) { sb_putc(b, '('); ser_list(b, x->sub); sb_putc(b, ')'); }
+                else if (x->value) { sb_putc(b, '('); sb_puts(b, x->value); sb_putc(b, ')'); }
+                break;
+            }
+        }
+    }
+}
+static void ser_list(SB *b, const SelList *l) { for (int i = 0; i < l->n; i++) { if (i) sb_puts(b, ", "); ser_selector(b, &l->v[i]); } }
+char *css_selector_text(const char *src) {
+    SelList l = {0};
+    if (!css_parse_selector_list(src, &l) || !l.n) { css_sellist_free(&l); return NULL; }
+    SB b; sb_init(&b); ser_list(&b, &l); css_sellist_free(&l);
+    return b.s ? b.s : xstrdup("");
 }

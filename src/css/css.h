@@ -164,6 +164,7 @@ DeclList *css_parse_decls(const char *src, size_t n);
 void css_decls_free(DeclList *d);
 bool css_parse_selector_list(const char *src, SelList *out);
 void css_sellist_free(SelList *l);
+char *css_selector_text(const char *src); /* canonical CSSOM serialization; NULL if invalid */
 bool css_match_selector_list(const SelList *l, Node *el);
 bool css_match_selector(const Selector *s, Node *el, Node *scope);
 typedef VEC(Node *) NodeVec;

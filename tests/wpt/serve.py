@@ -44,4 +44,5 @@ class H(http.server.SimpleHTTPRequestHandler):
             return self.send_bytes(wrap(ROOT + m.group(1) + '.js', m.group(1) + '.js'), 'text/html; charset=utf-8')
         return super().do_GET()
 
-http.server.ThreadingHTTPServer(('127.0.0.1', PORT), H).serve_forever()
+if __name__ == '__main__':
+    http.server.ThreadingHTTPServer(('127.0.0.1', PORT), H).serve_forever()
