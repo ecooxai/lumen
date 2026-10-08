@@ -1,5 +1,6 @@
 /* Cascade, inheritance and computed values */
 #include "css.h"
+#include "../layout/layout.h"
 #include "../base/url.h"
 #include <math.h>
 #include <ctype.h>
@@ -1170,6 +1171,27 @@ void style_recalc(StyleEngine *e, Node *root, bool force) {
 ComputedStyle *style_for_text(Node *t) { Node *p = t->parent; while (p && p->type != NODE_ELEMENT) p = p->parent ? p->parent : p->host; return p ? p->style : NULL; }
 
 static void color_str(SB *b, Color c) { if (COLOR_A(c) == 255) sb_printf(b, "rgb(%u, %u, %u)", COLOR_R(c), COLOR_G(c), COLOR_B(c)); else sb_printf(b, "rgba(%u, %u, %u, %g)", COLOR_R(c), COLOR_G(c), COLOR_B(c), COLOR_A(c) / 255.0); }
+static void len_str(SB *b, Length l, const char *au) {
+    if (l.kind == LK_AUTO) sb_puts(b, au);
+    else if (l.kind == LK_NONE) sb_puts(b, "none");
+    else if (l.kind == LK_MIN_CONTENT) sb_puts(b, "min-content");
+    else if (l.kind == LK_MAX_CONTENT) sb_puts(b, "max-content");
+    else if (l.kind == LK_FIT_CONTENT) sb_puts(b, "fit-content");
+    else if (l.pct && l.px) sb_printf(b, "calc(%g%% + %gpx)", l.pct, l.px);
+    else if (l.pct) sb_printf(b, "%g%%", l.pct);
+    else sb_printf(b, "%gpx", l.px);
+}
+static void tracks_str(SB *b, const GridTrack *t, int n) {
+    if (!n) { sb_puts(b, "none"); return; }
+    for (int i = 0; i < n; i++, t++) {
+        if (i) sb_putc(b, ' ');
+        if (t->fr > 0 && t->min.kind == LK_LEN && (t->min.px || t->min.pct)) { sb_puts(b, "minmax("); len_str(b, t->min, "auto"); sb_printf(b, ", %gfr)", t->fr); }
+        else if (t->fr > 0) sb_printf(b, "%gfr", t->fr);
+        else if (t->size.kind == LK_LEN && t->min.kind == LK_LEN) { sb_puts(b, "minmax("); len_str(b, t->min, "auto"); sb_puts(b, ", "); len_str(b, t->size, "auto"); sb_putc(b, ')'); }
+        else len_str(b, t->size, "auto");
+    }
+}
+static void gap_str(SB *b, float px, Length l) { if (l.kind == LK_LEN && l.pct) len_str(b, l, "normal"); else if (px) sb_printf(b, "%gpx", px); else sb_puts(b, "normal"); }
 char *css_get_computed_value(Node *el, const char *prop) {
     ComputedStyle *s = el && el->type == NODE_ELEMENT ? el->style : NULL;
     SB b; sb_init(&b);
@@ -1219,6 +1241,31 @@ char *css_get_computed_value(Node *el, const char *prop) {
         int i = !strcmp(side, "top") ? 0 : !strcmp(side, "right") ? 1 : !strcmp(side, "bottom") ? 2 : 3;
         Length l = m ? s->margin[i] : s->padding[i]; sb_printf(&b, "%gpx", l.px);
     }
+    else if (!strcmp(prop, "width") || !strcmp(prop, "height")) {
+        bool W = prop[0] == 'w'; const Box *bx = el->box;
+        if (bx && s->display != D_INLINE) {
+            float v = W ? bx->w : bx->h;
+            if (!s->box_sizing) v -= W ? bx->p[1] + bx->p[3] + bx->b[1] + bx->b[3] : bx->p[0] + bx->p[2] + bx->b[0] + bx->b[2];
+            sb_printf(&b, "%gpx", v > 0 ? v : 0);
+        } else len_str(&b, W ? s->width : s->height, "auto");
+    }
+    else if (!strcmp(prop, "min-width")) len_str(&b, s->min_width, "auto");
+    else if (!strcmp(prop, "min-height")) len_str(&b, s->min_height, "auto");
+    else if (!strcmp(prop, "max-width")) len_str(&b, s->max_width, "none");
+    else if (!strcmp(prop, "max-height")) len_str(&b, s->max_height, "none");
+    else if (!strcmp(prop, "top")) len_str(&b, s->inset[0], "auto");
+    else if (!strcmp(prop, "right")) len_str(&b, s->inset[1], "auto");
+    else if (!strcmp(prop, "bottom")) len_str(&b, s->inset[2], "auto");
+    else if (!strcmp(prop, "left")) len_str(&b, s->inset[3], "auto");
+    else if (!strcmp(prop, "flex-grow")) sb_printf(&b, "%g", s->flex_grow);
+    else if (!strcmp(prop, "flex-shrink")) sb_printf(&b, "%g", s->flex_shrink);
+    else if (!strcmp(prop, "flex-basis")) len_str(&b, s->flex_basis, "auto");
+    else if (!strcmp(prop, "flex")) { sb_printf(&b, "%g %g ", s->flex_grow, s->flex_shrink); len_str(&b, s->flex_basis, "auto"); }
+    else if (!strcmp(prop, "column-gap")) gap_str(&b, s->column_gap, s->column_gap_l);
+    else if (!strcmp(prop, "row-gap")) gap_str(&b, s->row_gap, s->row_gap_l);
+    else if (!strcmp(prop, "gap")) { gap_str(&b, s->row_gap, s->row_gap_l); sb_putc(&b, ' '); gap_str(&b, s->column_gap, s->column_gap_l); }
+    else if (!strcmp(prop, "grid-template-columns")) tracks_str(&b, s->grid_cols, s->grid_ncols);
+    else if (!strcmp(prop, "grid-template-rows")) tracks_str(&b, s->grid_rows, s->grid_nrows);
     else sb_puts(&b, "");
     return sb_take(&b);
 }
