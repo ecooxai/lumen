@@ -83,5 +83,11 @@ Load (DCL/load): Google 0.53/3.66 s, Bing 1.97/2.23 s, YT watch ~2.2/3.47 s, YT 
   every video frame (~45% CPU). VideoToolbox decode + sws_scale was small.
 - Fix in progress: render() defers DOM/relayout-driven full paints to <=4/s while media plays and no user input for 1 s
   (`a->deferred`, `last_full`, `last_input`); video frames still go through the GPU punch path every frame.
-- Next: zero-copy NV12 (CVPixelBuffer -> wgpu R8/RG8 textures + YUV shader) to drop av_hwframe_transfer_data + sws_scale;
+- GPU YUV path (done): VideoToolbox CVPixelBuffer NV12 planes are copied into Image.yuv (no av_hwframe_transfer_data,
+  no sws_scale) and uploaded as R8 + RG8 textures; WGSL shader does BT.601/709 + range conversion. Fallback: BGRA.
+  Env: LUMEN_NO_YUV=1 (BGRA path), LUMEN_NO_HWDEC=1 (software decode). Local 1080p30 H.264 file (~/sites/v1080):
+  hw+yuv 18.5%, hw+bgra 33%, sw 44%, Chrome 27.5% (top, 2x10 s). YouTube 1080p: 31-39% (rest is YouTube JS/layout).
+- Deferred paints no longer rebuild the display list from a stale layout (restyle freed styles -> crash in cache_get);
+  while deferred only the video texture is swapped using the saved rect (App.vown/vrect).
+- Next: paint-only style changes (transform/opacity/color) should skip layout; true zero-copy via IOSurface->Metal texture.
   paint-only style changes (transform/opacity/color) should skip layout entirely.

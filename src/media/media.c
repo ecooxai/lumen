@@ -18,6 +18,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef __APPLE__
+#include <CoreVideo/CoreVideo.h>
+#endif
 
 #define VQ_MAX 3
 #define AQ_MAX_SEC 1.0
@@ -258,6 +261,31 @@ static Image *to_image(struct SwsContext **sws, AVFrame *f) {
 }
 typedef struct { struct SwsContext *sws; SwrContext *swr; double skip; uint64_t epoch; } DecCtx;
 bool media_lowmem;
+bool media_yuv;
+static Image *yuv_copy(int w, int h, const uint8_t *p0, size_t s0, const uint8_t *p1, size_t s1, int mat) {
+    int cw = (w + 1) / 2, ch = (h + 1) / 2;
+    Image *im = xcalloc(1, sizeof *im); im->w = w; im->h = h; im->refs = 1; im->yuv_mat = mat;
+    im->yuv = xmalloc((size_t)w * (size_t)h + (size_t)cw * 2 * (size_t)ch);
+    for (int y = 0; y < h; y++) memcpy(im->yuv + (size_t)y * (size_t)w, p0 + (size_t)y * s0, (size_t)w);
+    uint8_t *uv = im->yuv + (size_t)w * (size_t)h;
+    for (int y = 0; y < ch; y++) memcpy(uv + (size_t)y * (size_t)cw * 2, p1 + (size_t)y * s1, (size_t)cw * 2);
+    return im;
+}
+static int yuv_mat(const AVFrame *f, bool full) { return (f->colorspace == AVCOL_SPC_BT709 || (f->colorspace == AVCOL_SPC_UNSPECIFIED && f->height >= 720) ? 1 : 0) | (full ? 2 : 0); }
+#ifdef __APPLE__
+static Image *vt_image(const AVFrame *f) {   /* copy the decoder surface's NV12 planes once; colour conversion happens on the GPU */
+    CVPixelBufferRef pb = (CVPixelBufferRef)f->data[3];
+    OSType ft = CVPixelBufferGetPixelFormatType(pb);
+    if (ft != kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange && ft != kCVPixelFormatType_420YpCbCr8BiPlanarFullRange) return NULL;
+    if (CVPixelBufferLockBaseAddress(pb, kCVPixelBufferLock_ReadOnly) != kCVReturnSuccess) return NULL;
+    const uint8_t *p0 = CVPixelBufferGetBaseAddressOfPlane(pb, 0), *p1 = CVPixelBufferGetBaseAddressOfPlane(pb, 1);
+    Image *im = NULL;
+    if (p0 && p1 && (int)CVPixelBufferGetWidthOfPlane(pb, 0) >= f->width && (int)CVPixelBufferGetHeightOfPlane(pb, 0) >= f->height)
+        im = yuv_copy(f->width, f->height, p0, CVPixelBufferGetBytesPerRowOfPlane(pb, 0), p1, CVPixelBufferGetBytesPerRowOfPlane(pb, 1), yuv_mat(f, ft == kCVPixelFormatType_420YpCbCr8BiPlanarFullRange));
+    CVPixelBufferUnlockBaseAddress(pb, kCVPixelBufferLock_ReadOnly);
+    return im;
+}
+#endif
 static Image *tiny_image(void) { Image *im = xcalloc(1, sizeof *im); im->w = im->h = 1; im->refs = 1; im->px = xcalloc(1, 4); return im; }
 static bool emit_video(Stream *s, DecCtx *d, AVFrame *f, AVRational tb) {
     MediaPlayer *m = s->m;
@@ -265,12 +293,16 @@ static bool emit_video(Stream *s, DecCtx *d, AVFrame *f, AVRational tb) {
     double pts = ts == AV_NOPTS_VALUE ? 0 : ts * av_q2d(tb);
     if (pts < d->skip - 1e-3) return true;
     bool hidden = media_lowmem && (double)SDL_GetTicks() - m->painted > 2000;
-    AVFrame *sw = NULL;
-    if (!hidden && f->format == AV_PIX_FMT_VIDEOTOOLBOX) {
+    AVFrame *sw = NULL; Image *im = NULL;
+#ifdef __APPLE__
+    if (!hidden && media_yuv && f->format == AV_PIX_FMT_VIDEOTOOLBOX && f->width <= MAX_W) im = vt_image(f);
+#endif
+    if (!hidden && media_yuv && f->format == AV_PIX_FMT_NV12 && f->width <= MAX_W) im = yuv_copy(f->width, f->height, f->data[0], (size_t)f->linesize[0], f->data[1], (size_t)f->linesize[1], yuv_mat(f, f->color_range == AVCOL_RANGE_JPEG));
+    if (!im && !hidden && f->format == AV_PIX_FMT_VIDEOTOOLBOX) {
         sw = av_frame_alloc();
         if (!sw || av_hwframe_transfer_data(sw, f, 0) < 0) { av_frame_free(&sw); return true; }
     }
-    Image *im = hidden ? tiny_image() : to_image(&d->sws, sw ? sw : f);
+    if (!im) im = hidden ? tiny_image() : to_image(&d->sws, sw ? sw : f);
     av_frame_free(&sw);
     if (!im) return true;
     SDL_LockMutex(m->mu);
@@ -319,7 +351,7 @@ static AVCodecContext *open_dec(AVStream *st) {
     if (!cc || avcodec_parameters_to_context(cc, st->codecpar) < 0) { avcodec_free_context(&cc); return NULL; }
     { const char *dt = getenv("LUMEN_DEC_THREADS"); cc->thread_count = dt ? atoi(dt) : 4; } cc->pkt_timebase = st->time_base;
     if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && hwdec_enabled() &&
-        av_hwdevice_ctx_create(&cc->hw_device_ctx, AV_HWDEVICE_TYPE_VIDEOTOOLBOX, NULL, NULL, 0) == 0) {
+        !getenv("LUMEN_NO_HWDEC") && av_hwdevice_ctx_create(&cc->hw_device_ctx, AV_HWDEVICE_TYPE_VIDEOTOOLBOX, NULL, NULL, 0) == 0) {
         cc->get_format = pick_hw;
         if (getenv("LUMEN_MEDIA_DEBUG")) fprintf(stderr, "lumen-media: hwdec device ok for %s\n", codec->name);
         if (!getenv("LUMEN_DEC_THREADS")) cc->thread_count = 1;
@@ -710,6 +742,22 @@ bool media_is_frame(const Image *im) {
     for (int i = 0; i < g_np && !r; i++) r = g_pl[i]->cur == im;
     SDL_UnlockMutex(g_mu);
     return r;
+}
+const void *media_owner_of(const Image *im) {
+    if (!g_mu || !im) return NULL;
+    const void *o = NULL;
+    SDL_LockMutex(g_mu);
+    for (int i = 0; i < g_np && !o; i++) if (g_pl[i]->cur == im) o = g_pl[i];
+    SDL_UnlockMutex(g_mu);
+    return o;
+}
+Image *media_owner_frame(const void *owner) {
+    if (!g_mu || !owner) return NULL;
+    Image *im = NULL;
+    SDL_LockMutex(g_mu);
+    for (int i = 0; i < g_np; i++) if ((const void *)g_pl[i] == owner) { im = g_pl[i]->cur; break; }
+    SDL_UnlockMutex(g_mu);
+    return im;
 }
 Image *media_frame_for(Node *el) {
     if (!g_mu) return NULL;

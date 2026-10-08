@@ -222,7 +222,7 @@ typedef struct App {
     bool dirty;
     Font *ui;
     int hover; double frame_ms;
-    bool vonly, deferred, vframe; double last_input, last_full; float last_sy; uint64_t last_ver; Page *last_page; bool gvid_ok;
+    bool vonly, deferred, vframe; double last_input, last_full; float last_sy; uint64_t last_ver; Page *last_page; bool gvid_ok; const void *vown; float vrect[4];
 } App;
 static void publish_gens(App *a) { for (int i = 0; i < MAX_TABS; i++) g_tab_gen[i] = i < a->ntabs ? a->tabs[i]->lgen : 0; }
 static Tab *tab_new(App *a) {
@@ -568,15 +568,21 @@ static void render(App *a) {
     int ph = a->ph - bar_px; if (ph < 1) ph = 1;
     int side_px = (int)(a->side * a->scale), pwp = a->pw - side_px; if (pwp < 1) pwp = 1;
     int why = !a->vonly ? 1 : !a->t->cur || a->t->cur != a->last_page || !a->t->cur->L ? 2 : a->t->relayout ? 3 : a->t->cur->d->dom_version != a->last_ver ? 4 : 0;
-    bool defer = why && why != 2 && !a->t->loading && a->t->cur && a->t->cur->L && t0 - a->last_input > 1000 && t0 - a->last_full < 250 && media_timeout_ms() >= 0;
+    bool defer = why && why != 2 && !a->t->loading && a->t->cur && a->t->cur->L && t0 - a->last_input > 1000 && t0 - a->last_full < 250 && media_timeout_ms() >= 0 && a->page.w == pwp && a->page.h == ph;
     a->deferred = defer; if (defer) why = 0;
     if (defer && !a->vframe) { a->dirty = false; return; }
     bool part = !why;
     int rx0 = pwp, ry0 = ph, rx1 = 0, ry1 = 0;
     if (a->page.w != pwp || a->page.h != ph) { canvas_free(&a->page); canvas_init(&a->page, pwp, ph, a->scale); part = false; }
     bool gskip = false; GpuVideo gvd, *gvp = NULL;
-    if (a->t->cur) {
-        if ((a->t->relayout && !defer) || !a->t->cur->L) {
+    if (a->t->cur && defer) {   /* layout may be stale (restyle/DOM changed): only swap the video texture */
+        Image *im = a->gvid_ok ? media_owner_frame(a->vown) : NULL;
+        if (!im) { a->dirty = a->vframe = false; return; }
+        float s = a->page.scale; const float *r = a->vrect;
+        gvd = (GpuVideo){ im->px, im->w, im->h, im->w, floorf(r[0] * s + 0.5f) + side_px, floorf(r[1] * s + 0.5f) + bar_px, floorf((r[0] + r[2]) * s + 0.5f) + side_px, floorf((r[1] + r[3]) * s + 0.5f) + bar_px };
+        gvd.yuv = im->yuv; gvd.mat = im->yuv_mat; gvp = &gvd; gskip = true;
+    } else if (a->t->cur) {
+        if (a->t->relayout || !a->t->cur->L) {
             if (!a->t->cur->L) a->t->cur->L = layout_new();
             a->t->cur->e->media.vw = a->vw - a->side; a->t->cur->e->media.vh = a->vh - BAR;
             { double q = now_ms(); layout_run(a->t->cur->L, a->t->cur->d, a->vw - a->side, a->vh - BAR); g_tl += now_ms() - q; }
@@ -606,7 +612,8 @@ static void render(App *a) {
         if (gv && a->gvid_ok) {
             const Image *im = vit->img; float s = a->page.scale;
             gvd = (GpuVideo){ im->px, im->w, im->h, im->w, floorf(vit->x * s + 0.5f) + side_px, floorf(vit->y * s + 0.5f) + bar_px, floorf((vit->x + vit->w) * s + 0.5f) + side_px, floorf((vit->y + vit->h) * s + 0.5f) + bar_px };
-            gvp = &gvd;
+            gvd.yuv = im->yuv; gvd.mat = im->yuv_mat; gvp = &gvd;
+            a->vown = media_owner_of(im); a->vrect[0] = vit->x; a->vrect[1] = vit->y; a->vrect[2] = vit->w; a->vrect[3] = vit->h;
         }
     } else { a->gvid_ok = false; raster(&a->page, &(DisplayList){0}, RGBA(255, 255, 255, 255)); }
     if (!part) { build_chrome(a); chrome_tip(a); raster(&a->frame, &a->cdl, RGBA(255, 255, 255, 255)); }
@@ -1355,6 +1362,7 @@ int main(int argc, char **argv) {
         else if (SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_X11_DISPLAY_POINTER, NULL)) { src.kind = GPU_SURF_XLIB; src.a = SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_X11_DISPLAY_POINTER, NULL); src.win = (uint64_t)SDL_GetNumberProperty(pr, SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0); ok = true; }
         else if (SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_ANDROID_WINDOW_POINTER, NULL)) { src.kind = GPU_SURF_ANDROID; src.a = SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_ANDROID_WINDOW_POINTER, NULL); ok = true; }
         if (ok) a.gpu = gpu_create(&src, a.pw, a.ph, getenv("LUMEN_VULKAN") != NULL || strcmp(SDL_GetPlatform(), "macOS"));
+        media_yuv = gpu_yuv_ok(a.gpu) && !getenv("LUMEN_NO_YUV");
         if (!a.gpu && a.mview) { SDL_Metal_DestroyView(a.mview); a.mview = NULL; }
     }
     fprintf(stderr, "lumen: presenting with %s\n", gpu_backend_name(a.gpu));
