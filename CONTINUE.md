@@ -1,0 +1,78 @@
+# Lumen: handoff notes
+
+## Current goal (user, 2026-10-08)
+Lower RAM/CPU/GPU/load time than Chrome on: YouTube home, 2 YouTube videos playing,
+bing.com, Google search with AI Overview — all loaded and active. Compare with
+off-screen media eviction setting off and on (on: target < 150 MB for YouTube playing).
+
+## Done
+- RAM: decoder threads capped (4), CSS custom props share parent chain, script sources
+  freed, VQ_MAX 3, selector vectors trimmed. Single YouTube ~300 MB (was 396).
+- VideoToolbox hardware decode (`LUMEN_HWDEC=0` disables), software fallback.
+- Real tabs in one process (`src/app/main.c`: `Tab`, `tab_new/select/open/close`,
+  tab strip in chrome, Cmd+T/W/1-9, Ctrl+Tab; extra argv URLs open as tabs).
+  Background tabs keep JS ticking and media playing.
+
+## Next
+- Off-screen media eviction: setting plumbing done (`g_lowmem` in main.c, `offscreen_media_eviction=1` in
+  SDL pref dir settings.txt, `LUMEN_LOWMEM=1` env). Still to do: evict decoded images not painted for a few
+  seconds (ImgSlot in main.c; img_size layout hook also calls node_img, so mark use from paint only), skip
+  BGRA conversion for videos in background tabs/off screen (media.c emit_video). V8 MemoryPressureNotification
+  + malloc_zone_pressure_relief did not help (tested, removed).
+- GPU %: read from Activity Monitor % GPU column (CLI has none in this VM).
+- CPU: profile shows swscale NV12->BGRA + memmove; consider GPU NV12 upload.
+- Rerun 5-page compare: `~/sites/lumen-tabs.sh`, `~/sites/chrome-tabs.mjs`, `~/sites/cpusum.sh`.
+
+## Chrome 154 baseline (5 tabs)
+RAM 1,307-1,314 MB, peak sum ~1,850 MB, CPU 10-14%, GPU proc ~94 MB, video 854x480.
+Load (DCL/load): Google 0.53/3.66 s, Bing 1.97/2.23 s, YT watch ~2.2/3.47 s, YT home 2.29/2.33 s.
+
+## UI (2026-10-08)
+- Tabs live in the title bar right of the traffic lights (`mac_style_window` in src/app/macui.m: full-size content view,
+  transparent titlebar; `win_hit` makes empty tab-row space draggable).
+- Workspaces: left bar `SIDEW` 68pt (right edge = 3rd traffic light), `Tab.ws`, `ws_select/ws_new/ws_close`,
+  Workspace menu (`mac_install_menu`, events `EV_MENU` -> `menu_cmd`). Double-click a workspace to rename.
+  `LUMEN_NO_SIDEBAR=1` hides the bar.
+- Low-memory mode (`LUMEN_LOWMEM=1`): `img_evict` drops images not painted for 3 s (refetch on paint),
+  `media_mark_visible` + `hidden` in media.c emit 1x1 frames for players outside the active tab.
+  3-tab YouTube test: 523 -> 496 MB, images 24.8 -> 6.1 MB; JS heap (~70 MB/YouTube page) dominates.
+- Tab CPU limiter: `cpu_monitor` (main.c) sums per-tab main-thread time (js_tick/restyle/render) + decoder-thread CPU
+  (`media_cpu_ms`). >80% for 60 s -> `limited` (token bucket 0.4 ms/ms, `media_set_limit` sleeps decoder) + infobar
+  (`g_info_h`, buttons `HB_INFO+k`: 1/4/10 h unlimit, x dismiss). `LUMEN_CPU_DEBUG=1` prints per-tab %. Test: tests/js/cpuburn.html
+  (100% -> 40.6% process CPU after the limit kicks in). FFmpeg internal decoder threads and VideoToolbox are not counted.
+- Workspace bar 84pt (= first tab's left edge). Click inactive workspace = switch; click active = native menu
+  (`mac_ws_menu`): Rename, Change Icon (16 SF Symbols, `mac_icon_rgba` -> cached Image), Refresh All Tabs, New, Close.
+- Benchmark: ~/sites/lumen-real.sh off|on URLs... (5 real tabs, `LUMEN_TAB_TOUR=6000`). Latest: off 619-640 MB / 29-37% CPU,
+  on 574-596 MB / 24-28%; Chrome 1307 MB / 10-14%. Profile: biggest CPU = libswscale (BGRA conversion) -> next: VT BGRA
+  output or GPU YUV upload; JS heap ~90 MB per YouTube page.
+- Limited tabs show a green dot left of the tab's x (`HB_TABDOT`); hover or click (pinned 4 s, `tip_until`) shows
+  `chrome_tip`. Hit codes: check `HB_TABDOT` (500) before `HB_INFO` (400) in the click handler. "+" / New Workspace
+  creates "Workspace N" without a prompt (rename from the workspace menu).
+
+## New tab page, bookmarks, settings, tab menu, video controls (latest)
+- `+` opens `lumen://newtab` (built by `internal_page()` in src/app/main.c): left bar Bookmarks / History / Settings.
+  Settings actions go through `apply_set()`; persisted in settings.txt (SDL pref dir) plus bookmarks.txt / history.txt.
+- Toolbar: SF Symbol `arrow.clockwise` refresh, bookmark star right of it (`HB_STAR`, `bm_toggle`).
+- Settings: Lite mode (`offscreen_media_eviction`, same as LUMEN_LOWMEM=1), CPU limit n%/m s/t% (`cpu_pct/cpu_secs/cpu_lim`),
+  always-show video controls (`video_controls`).
+- Second click on the active tab -> `mac_tab_menu()`: per-tab CPU policy (`Tab.cpumode/lim`) and per-tab `vctl` (-1 = follow global).
+- Native video bar (`video_bars`/`vbar_click`): inside the video's bottom edge for `<video controls>`, below every video when
+  always-show is on. Clicks send `lumenmediactl` to page JS (toggle / seek:frac). Test page: tests/media/controls.html.
+- YouTube: `YT_VCTL` CSS keeps .ytp-chrome-bottom visible when always-show is on; `page_move_keep()` re-sends mousemove
+  for 8 s after the pointer stops so the controls hide later.
+- Layout fix: floats / atomic inlines inside inline formatting contexts now get the containing-block height
+  (`Layout.inl_cbh`), so YouTube's progress list has height. Paint: axis-aligned `scale()` now applied (display.c),
+  so YouTube's scaleX progress fill shows played/buffered correctly.
+- Not done: video bar below a video overlaps following content (no layout space reserved); `loop` video state shows paused at end.
+
+## Session 2026-10-08: YouTube search, Lite restore, DMG
+- YouTube search works (type, Enter, search button, URL bar updates, shade closes). Fixes:
+  - `document.all` via `N.makeAll` (undetectable object) — Polymer Resin sanitizer was replacing `hidden` binding with "zClosurez" because `document.all` was missing, hiding results.
+  - `focus()`/`blur()` now fire bubbling `focusin`/`focusout` with `relatedTarget` (dropdown/scrim close).
+  - `history.pushState` borrowed from an iframe realm delegates to the receiver (YouTube binds iframe history methods).
+  - Click path fires pointerdown/pointerup; a prevented mousedown keeps focus.
+  - Cmd+A selects all in page text fields.
+- Lite mode: per-tab toggle in tab menu, dark green title, `IntersectionObserver` re-checks every 300 ms, images re-decoded from retained encoded bytes.
+- `LUMEN_WINDOW=800x600` sets the window size.
+- DMG: `python3 tools/mkdmg.py 0.1.0-preview` -> `dist/`. Signing identity "Lumen Debug Signing" lives in `~/.lumen-signing/` (keychain + p12 + passwords, NOT in repo); unlock the keychain with the password in `keychain-pass` before running, and pass `LUMEN_SIGN_ID=<sha1>`.
+- Pushed to ecooxai/lumen branch devin/lumen-early-preview (PR #1) via `git push https://github.com/ecooxai/lumen HEAD:refs/heads/devin/lumen-early-preview`. Promo video tooling in tools/promo. Not done: GitHub release (needs a token), Lite-off CPU on YouTube results page (~30%).

@@ -1,0 +1,6 @@
+[
+ {"file":"search","start":2,"dur":13,"title":"Search YouTube","tip":"Type in the search box and press Enter","tip2":"Scrolling stays smooth on the YouTube AI results page"},
+ {"file":"tabs","start":1.5,"dur":10,"title":"Real tabs, one light process","tip":"Click a tab in the title bar to switch instantly","tip2":"Background tabs keep playing video"},
+ {"file":"ws","start":1.5,"dur":8,"title":"Workspaces","tip":"Click + in the left bar to add a workspace","tip2":"Each workspace keeps its own tabs"},
+ {"file":"lite","start":2,"dur":10,"title":"Lite mode","tip":"Click the active tab again, then choose Lite mode","tip2":"Off-screen media is released; the title turns green"}
+]

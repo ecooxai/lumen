@@ -1,0 +1,28 @@
+<!doctype html><html><body><script>
+const R = {};
+const done = () => console.log('RESULTS ' + Object.entries(R).map(([k, v]) => k + ':' + v).join(' '));
+const src = `
+self.onmessage = e => {
+  const d = e.data;
+  if (d.op === 'echo') postMessage({ op: 'echo', v: d.v, buf: d.buf, t: typeof window, scope: self.constructor.name, loc: location.protocol });
+  if (d.op === 'timer') setTimeout((a, b) => postMessage({ op: 'timer', v: a + b }), 20, 2, 3);
+  if (d.op === 'throw') throw new Error('boom');
+  if (d.op === 'busy') { const t = performance.now(); while (performance.now() - t < 150); postMessage({ op: 'busy' }); }
+};
+postMessage({ op: 'ready', b64: btoa('hi'), enc: new TextEncoder().encode('\\u00e9').length, dec: new TextDecoder().decode(new Uint8Array([0xe2, 0x82, 0xac])) });
+`;
+const w = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+let parallel = false, terminated = false;
+w.onmessage = e => {
+  const d = e.data;
+  if (terminated) { R.afterTerm = 'FAIL'; return; }
+  if (d.op === 'ready') { R.ready = d.b64 === 'aGk=' && d.enc === 2 && d.dec === '\u20ac' ? 'PASS' : 'FAIL'; w.postMessage({ op: 'echo', v: [1, { a: 2 }], buf: new Uint8Array([1, 2, 3]).buffer }); }
+  else if (d.op === 'echo') { R.echo = d.v[1].a === 2 && d.buf instanceof ArrayBuffer && new Uint8Array(d.buf)[2] === 3 ? 'PASS' : 'FAIL'; R.scope = d.t === 'undefined' && d.scope === 'DedicatedWorkerGlobalScope' && d.loc === 'blob:' ? 'PASS' : 'FAIL'; w.postMessage({ op: 'timer' }); }
+  else if (d.op === 'timer') { R.timer = d.v === 5 ? 'PASS' : 'FAIL'; w.postMessage({ op: 'throw' }); }
+  else if (d.op === 'busy') { R.parallel = parallel ? 'PASS' : 'FAIL'; w.terminate(); terminated = true; w.postMessage({ op: 'echo', v: [0, {}] }); setTimeout(() => { R.terminate = R.afterTerm ? 'FAIL' : 'PASS'; done(); }, 200); }
+};
+w.onerror = e => { R.error = /boom/.test(e.message) && e.lineno > 0 ? 'PASS' : 'FAIL'; e.preventDefault(); w.postMessage({ op: 'busy' }); setTimeout(() => parallel = true, 30); };
+const bad = new Worker('data:text/javascript,postMessage(1)');
+bad.onmessage = e => { R.dataUrl = e.data === 1 ? 'PASS' : 'FAIL'; };
+try { new Worker('https://example.com/x.js'); R.xorigin = 'FAIL'; } catch (e) { R.xorigin = e.name === 'SecurityError' ? 'PASS' : 'FAIL'; }
+</script></body></html>

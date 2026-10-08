@@ -1,0 +1,20 @@
+<!doctype html><html><body><div id="a"><x-item id="it"></x-item></div><div id="b"></div>
+<script>
+const log = [];
+customElements.define('x-item', class extends HTMLElement {
+  connectedCallback() { log.push('C' + this.isConnected); if (!this.firstChild) this.appendChild(document.createElement('span')); }
+  disconnectedCallback() { log.push('D'); this.textContent = ''; }
+});
+const it = document.getElementById('it'); log.length = 0;
+document.getElementById('b').appendChild(it);
+const r = {};
+r.order = log.join(',') === 'D,Ctrue' ? 'PASS' : 'FAIL:' + log.join(',');
+r.once = it.children.length === 1 ? 'PASS' : 'FAIL:' + it.children.length;
+log.length = 0; const b = document.getElementById('b'); b.insertBefore(it, it);
+r.self = log.join(',') === 'D,Ctrue' && it.parentNode === b ? 'PASS' : 'FAIL:' + log.join(',');
+log.length = 0; const f = document.createDocumentFragment(); const n = document.createElement('x-item'); f.appendChild(n); b.appendChild(f);
+r.frag = log.join(',') === 'Ctrue' ? 'PASS' : 'FAIL:' + log.join(',');
+log.length = 0; b.removeChild(n);
+r.remove = log.join(',') === 'D' ? 'PASS' : 'FAIL:' + log.join(',');
+console.log('RESULTS ' + Object.entries(r).map(([k, v]) => k + ':' + v).join(' '));
+</script></body></html>

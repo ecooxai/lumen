@@ -1,0 +1,73 @@
+<!doctype html><title>crypto</title><script>
+const hex = b => [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
+const te = s => new TextEncoder().encode(s);
+const R = {};
+(async () => {
+    const S = crypto.subtle;
+    const t = async (name, f) => { try { R[name] = (await f()) ? 'PASS' : 'FAIL'; } catch (e) { R[name] = 'ERR:' + e.name + ':' + e.message; } };
+    const P256 = { name: 'ECDH', namedCurve: 'P-256' };
+    await t('sha256', async () => hex(await S.digest('SHA-256', te('abc'))) === 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');
+    await t('hmac', async () => {
+        const msg = te('The quick brown fox jumps over the lazy dog');
+        const k = await S.importKey('raw', te('key'), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign', 'verify']);
+        const m = await S.sign('HMAC', k, msg);
+        return hex(m) === 'f7bc83f430538424b13298e6aa6fb143ef4d59a14946175997479dbc2d1a3cd8' && await S.verify('HMAC', k, m, msg);
+    });
+    await t('aesgcm', async () => {
+        const k = await S.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']);
+        const al = { name: 'AES-GCM', iv: crypto.getRandomValues(new Uint8Array(12)), additionalData: te('ad') };
+        const c = await S.encrypt(al, k, te('hello world')), p = await S.decrypt(al, k, c);
+        const bad = new Uint8Array(c); bad[0] ^= 1; let rej = false;
+        try { await S.decrypt(al, k, bad); } catch (e) { rej = e.name === 'OperationError'; }
+        return c.byteLength === 27 && new TextDecoder().decode(p) === 'hello world' && rej;
+    });
+    await t('aescbc', async () => {
+        const k = await S.generateKey({ name: 'AES-CBC', length: 128 }, false, ['encrypt', 'decrypt']);
+        const al = { name: 'AES-CBC', iv: new Uint8Array(16) };
+        const c = await S.encrypt(al, k, te('hello world'));
+        return c.byteLength === 16 && new TextDecoder().decode(await S.decrypt(al, k, c)) === 'hello world';
+    });
+    await t('ecdh', async () => {
+        const a = await S.generateKey(P256, true, ['deriveKey', 'deriveBits']), b = await S.generateKey(P256, true, ['deriveKey', 'deriveBits']);
+        const s1 = await S.deriveBits({ name: 'ECDH', public: b.publicKey }, a.privateKey, 256);
+        const s2 = await S.deriveBits({ name: 'ECDH', public: a.publicKey }, b.privateKey, 256);
+        const k = await S.deriveKey({ name: 'ECDH', public: b.publicKey }, a.privateKey, { name: 'AES-GCM', length: 256 }, true, ['encrypt']);
+        return s1.byteLength === 32 && hex(s1) === hex(s2) && hex(await S.exportKey('raw', k)) === hex(s1);
+    });
+    await t('ecExport', async () => {
+        const a = await S.generateKey(P256, true, ['deriveBits']);
+        const raw = await S.exportKey('raw', a.publicKey), spki = await S.exportKey('spki', a.publicKey);
+        const jwk = await S.exportKey('jwk', a.privateKey), pk8 = await S.exportKey('pkcs8', a.privateKey);
+        const p2 = await S.importKey('spki', spki, P256, true, []);
+        const q = await S.importKey('jwk', jwk, P256, true, ['deriveBits']), q8 = await S.importKey('pkcs8', pk8, P256, true, ['deriveBits']);
+        const ref = hex(await S.deriveBits({ name: 'ECDH', public: a.publicKey }, a.privateKey, 256));
+        return raw.byteLength === 65 && hex(await S.exportKey('raw', p2)) === hex(raw) && jwk.kty === 'EC' && !!jwk.d &&
+            hex(await S.deriveBits({ name: 'ECDH', public: p2 }, q, 256)) === ref && hex(await S.deriveBits({ name: 'ECDH', public: a.publicKey }, q8, 256)) === ref;
+    });
+    await t('ecdsa', async () => {
+        const al = { name: 'ECDSA', hash: 'SHA-256' };
+        const k = await S.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify']);
+        const sig = await S.sign(al, k.privateKey, te('msg'));
+        return sig.byteLength === 64 && await S.verify(al, k.publicKey, sig, te('msg')) && !(await S.verify(al, k.publicKey, sig, te('msh')));
+    });
+    await t('hkdf', async () => {
+        const k = await S.importKey('raw', new Uint8Array(22).fill(11), 'HKDF', false, ['deriveBits']);
+        const salt = Uint8Array.from({ length: 13 }, (_, i) => i), info = Uint8Array.from({ length: 10 }, (_, i) => 0xf0 + i);
+        return hex(await S.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt, info }, k, 336)) === '3cb25f25faacd57a90434f64d0362f2a2d2d0a90cf1a5a4c5db02d56ecc4c5bf34007208d5b887185865';
+    });
+    await t('pbkdf2', async () => {
+        const k = await S.importKey('raw', te('password'), 'PBKDF2', false, ['deriveBits']);
+        return hex(await S.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: te('salt'), iterations: 1 }, k, 256)) === '120fb6cffcf8b32c43e7225256c4f837a86548c92ccc35480805987cb70be17b';
+    });
+    await t('wrap', async () => {
+        const w = await S.generateKey({ name: 'AES-GCM', length: 128 }, true, ['wrapKey', 'unwrapKey']);
+        const k = await S.generateKey({ name: 'HMAC', hash: 'SHA-256' }, true, ['sign']);
+        const al = { name: 'AES-GCM', iv: new Uint8Array(12) };
+        const wr = await S.wrapKey('jwk', k, w, al);
+        const k2 = await S.unwrapKey('jwk', wr, w, al, { name: 'HMAC', hash: 'SHA-256' }, true, ['sign']);
+        return hex(await S.exportKey('raw', k2)) === hex(await S.exportKey('raw', k));
+    });
+    await t('types', async () => crypto.subtle instanceof SubtleCrypto && (await S.generateKey({ name: 'AES-GCM', length: 128 }, false, ['encrypt'])) instanceof CryptoKey);
+    console.log('RESULTS ' + Object.entries(R).map(([k, v]) => k + ':' + v).join(' '));
+})();
+</script>

@@ -1,0 +1,38 @@
+<!doctype html><html><head><style>
+@keyframes fade { from { opacity: 0 } to { opacity: 1 } }
+.a { animation: fade 0.1s ease-out 0.05s; }
+#t { opacity: 1; transition: opacity 0.1s linear, color .2s; }
+#t.dim { opacity: 0.5; }
+#hidden { display: none; }
+.long { animation: fade 5s; }
+</style></head><body>
+<div id="a"></div><div id="t"></div><div id="hidden"><div id="h"></div></div><div id="c"></div>
+<script>
+const R = {}, log = [];
+document.addEventListener('animationstart', e => log.push('start:' + e.target.id + ':' + e.animationName));
+document.addEventListener('animationend', e => log.push('end:' + e.target.id + ':' + e.animationName + ':' + e.elapsedTime.toFixed(2)));
+document.addEventListener('animationcancel', e => log.push('cancel:' + e.target.id));
+document.addEventListener('transitionend', e => log.push('tend:' + e.target.id + ':' + e.propertyName));
+let webkit = 0, webkitBoth = 0;
+document.getElementById('a').addEventListener('webkitAnimationEnd', () => webkit++);
+document.getElementById('t').addEventListener('webkitTransitionEnd', () => webkitBoth++);
+document.getElementById('t').addEventListener('transitionend', () => {});
+requestAnimationFrame(() => {
+  document.getElementById('a').classList.add('a');
+  document.getElementById('t').classList.add('dim');
+  document.getElementById('h').classList.add('a');
+  document.getElementById('c').classList.add('long');
+  setTimeout(() => document.getElementById('c').classList.remove('long'), 100);
+});
+setTimeout(() => {
+  const has = s => log.includes(s);
+  R.animStart = has('start:a:fade') ? 'PASS' : 'FAIL';
+  R.animEnd = log.some(s => s.startsWith('end:a:fade:0.10')) ? 'PASS' : 'FAIL';
+  R.order = log.indexOf('start:a:fade') >= 0 && log.indexOf('start:a:fade') < log.findIndex(s => s.startsWith('end:a')) ? 'PASS' : 'FAIL';
+  R.transitionEnd = has('tend:t:opacity') && !has('tend:t:color') ? 'PASS' : 'FAIL';
+  R.hiddenSkipped = !log.some(s => s.includes(':h')) ? 'PASS' : 'FAIL';
+  R.cancel = has('cancel:c') && !log.some(s => s.startsWith('end:c')) ? 'PASS' : 'FAIL';
+  R.legacyPrefixed = webkit === 1 && webkitBoth === 0 ? 'PASS' : 'FAIL';
+  console.log('RESULTS ' + Object.entries(R).map(([k, v]) => k + ':' + v).join(' ') + ' | ' + log.join(','));
+}, 700);
+</script></body></html>

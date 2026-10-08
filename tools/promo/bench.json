@@ -1,0 +1,6 @@
+{"rows":[
+ {"label":"1 tab: YouTube AI search - RAM","chrome":587,"lumen":224,"unit":"MB"},
+ {"label":"4 tabs: YouTube x2, Bing, Google - RAM","chrome":1109,"lumen":440,"unit":"MB"},
+ {"label":"4 tabs - CPU (Chrome decodes video in hardware)","chrome":7,"lumen":38,"unit":"%"}
+],
+"summary":"Lumen uses only ~40% of Chrome's RAM (Lite mode on)"}
