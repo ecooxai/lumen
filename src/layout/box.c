@@ -360,6 +360,9 @@ void replaced_size(Layout *L, Box *b, float cbw, float *ow, float *oh) {
     } else if (n && n->ns == NS_SVG) {
         const char *vb = node_attr(n, "viewBox");
         float a, c2, w, h; if (vb && sscanf(vb, "%f%*[ ,]%f%*[ ,]%f%*[ ,]%f", &a, &c2, &w, &h) == 4 && h > 0) { ratio = w / h; nw = w; nh = h; }
+        /* An outer <svg> without width is 100% wide; the viewBox ratio gives its height */
+        bool outer = !n->parent || n->parent->type != NODE_ELEMENT || n->parent->ns != NS_SVG;
+        if (outer && ratio > 0 && cbw > 0 && !node_attr(n, "width") && !node_attr(n, "height")) { nw = cbw; nh = cbw / ratio; }
     } else if (n && n->tag == A_video) {
         float w, h; if (layout_image_size_hook && layout_image_size_hook(n, &w, &h) && w > 0) { nw = w; nh = h; }
     } else if (n && n->tag == A_canvas) {
