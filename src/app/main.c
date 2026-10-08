@@ -46,11 +46,16 @@ static Image *node_img(Node *n) {
 static Image *url_img(const char *u) { return u ? cache_get(u) : NULL; }
 static bool img_size(Node *n, float *w, float *h) { Image *im = node_img(n); if (!im) return false; *w = (float)im->w; *h = (float)im->h; return true; }
 
-typedef struct { char *url; uint64_t gen; float vw, vh; } LoadReq;
+typedef struct { char *url; uint64_t gen; float vw, vh; char *body; size_t blen; char *ctype; } LoadReq;
 
 static int loader(void *arg) {
     LoadReq *rq = arg; double t0 = now_ms();
-    NetResponse *r = net_fetch_sync(net_request_new("GET", rq->url));
+    NetRequest *nr = net_request_new(rq->body ? "POST" : "GET", rq->url);
+    if (rq->body) {
+        nr->body = rq->body; nr->body_len = rq->blen; rq->body = NULL;
+        headers_set(&nr->headers, "Content-Type", rq->ctype && *rq->ctype ? rq->ctype : "application/x-www-form-urlencoded");
+    }
+    NetResponse *r = net_fetch_sync(nr);
     Page *p = xcalloc(1, sizeof *p); p->gen = rq->gen;
     const char *body = r && r->body ? r->body : "";
     size_t blen = r && r->body ? r->body_len : 0;
@@ -92,7 +97,7 @@ static int loader(void *arg) {
     p->seen_ver = p->d->dom_version;
     p->load_ms = now_ms() - t0;
     if (r) net_response_free(r);
-    free(errbuf); free(rq->url); free(rq);
+    free(errbuf); free(rq->url); free(rq->body); free(rq->ctype); free(rq);
     SDL_Event ev; SDL_zero(ev); ev.type = EV_LOADED; ev.user.data1 = p; SDL_PushEvent(&ev);
     return 0;
 }
@@ -132,7 +137,7 @@ static char *normalize_url(const char *in) {
     *w = 0; return o;
 }
 
-static void navigate(App *a, const char *url, bool push) {
+static void navigate_ex(App *a, const char *url, bool push, const char *body, size_t blen, const char *ctype) {
     char *u = normalize_url(url);
     if (push) {
         for (int i = a->hpos + 1; i < a->nhist; i++) free(a->hist[i]);
@@ -143,8 +148,10 @@ static void navigate(App *a, const char *url, bool push) {
     snprintf(a->url, sizeof a->url, "%s", u);
     a->editing = false; a->loading = true; a->dirty = true;
     LoadReq *rq = xcalloc(1, sizeof *rq); rq->url = u; rq->gen = ++load_gen; rq->vw = a->vw; rq->vh = a->vh - BAR;
+    if (body) { rq->body = xmalloc(blen + 1); memcpy(rq->body, body, blen); rq->body[blen] = 0; rq->blen = blen; rq->ctype = xstrdup(ctype ? ctype : ""); }
     SDL_Thread *t = SDL_CreateThread(loader, "loader", rq); SDL_DetachThread(t);
 }
+static void navigate(App *a, const char *url, bool push) { navigate_ex(a, url, push, NULL, 0, NULL); }
 
 static void push_rect(DisplayList *dl, float x, float y, float w, float h, float r, Color c) {
     DItem it; memset(&it, 0, sizeof it); it.op = DO_RECT; it.x = x; it.y = y; it.w = w; it.h = h;
@@ -314,6 +321,7 @@ static void h_set_url(void *ud, const char *u, bool push) {
     if (!a->editing) snprintf(a->url, sizeof a->url, "%s", u);
     a->dirty = true;
 }
+static void h_navigate_post(void *ud, const char *u, const char *body, size_t len, const char *ctype) { (void)ud; navigate_ex(g_app, u, true, body, len, ctype); }
 static void h_history_go(void *ud, int d) { (void)ud; history_go(g_app, d); }
 static int h_history_len(void *ud) { (void)ud; return g_app->nhist; }
 static void h_viewport(void *ud, float *w, float *h, float *sx, float *sy, float *dpr) { (void)ud; *w = g_app->vw; *h = g_app->vh - BAR; *sx = 0; *sy = g_app->sy; *dpr = g_app->scale; }
@@ -321,10 +329,17 @@ static void h_scroll_to(void *ud, float x, float y) { (void)ud; (void)x; g_app->
 static Node *h_hit(void *ud, float x, float y) { (void)ud; Page *p = g_app->cur; if (!p || !p->L) return NULL; Box *b = layout_hit(p->L, x, y + g_app->sy); return b ? b->node : NULL; }
 static void page_start_js(App *a, Page *p) {
     if (getenv("LUMEN_NO_JS")) return;
-    JsHost h = { a, &p->e->media, h_navigate, h_set_url, h_history_go, h_viewport, h_scroll_to, h_hit, h_history_len };
+    JsHost h = { a, &p->e->media, h_navigate, h_set_url, h_history_go, h_viewport, h_scroll_to, h_hit, h_history_len, h_navigate_post };
     double t0 = now_ms();
     sync_sheets(p, true);
     p->js = js_new(p->d, &h);
+    const char *pre = getenv("LUMEN_PRE_FILE");
+    FILE *pf = pre ? fopen(pre, "rb") : NULL;
+    if (pf) {
+        fseek(pf, 0, SEEK_END); long n = ftell(pf); fseek(pf, 0, SEEK_SET);
+        char *src = xmalloc((size_t)n + 1); size_t got = fread(src, 1, (size_t)n, pf); src[got] = 0; fclose(pf);
+        js_eval(p->js, src, "lumen:pre"); free(src);
+    }
     for (int i = 0; i < p->nscripts; i++) {
         PScript *sc = &p->scripts[i];
         if ((sc->n->flags & NF_SCRIPT_STARTED) || !(sc->n->flags & NF_CONNECTED)) continue;

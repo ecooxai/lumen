@@ -13,8 +13,10 @@ document.addEventListener('animationstart', e => log.push('start:' + e.target.id
 document.addEventListener('animationend', e => log.push('end:' + e.target.id + ':' + e.animationName + ':' + e.elapsedTime.toFixed(2)));
 document.addEventListener('animationcancel', e => log.push('cancel:' + e.target.id));
 document.addEventListener('transitionend', e => log.push('tend:' + e.target.id + ':' + e.propertyName));
-let webkit = 0;
+let webkit = 0, webkitBoth = 0;
 document.getElementById('a').addEventListener('webkitAnimationEnd', () => webkit++);
+document.getElementById('t').addEventListener('webkitTransitionEnd', () => webkitBoth++);
+document.getElementById('t').addEventListener('transitionend', () => {});
 requestAnimationFrame(() => {
   document.getElementById('a').classList.add('a');
   document.getElementById('t').classList.add('dim');
@@ -30,7 +32,7 @@ setTimeout(() => {
   R.transitionEnd = has('tend:t:opacity') && !has('tend:t:color') ? 'PASS' : 'FAIL';
   R.hiddenSkipped = !log.some(s => s.includes(':h')) ? 'PASS' : 'FAIL';
   R.cancel = has('cancel:c') && !log.some(s => s.startsWith('end:c')) ? 'PASS' : 'FAIL';
-  R.unprefixedWins = webkit === 0 ? 'PASS' : 'FAIL';
+  R.legacyPrefixed = webkit === 1 && webkitBoth === 0 ? 'PASS' : 'FAIL';
   console.log('RESULTS ' + Object.entries(R).map(([k, v]) => k + ':' + v).join(' ') + ' | ' + log.join(','));
 }, 700);
 </script></body></html>

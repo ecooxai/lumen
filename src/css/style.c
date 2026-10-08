@@ -1178,6 +1178,16 @@ char *css_get_computed_value(Node *el, const char *prop) {
     static const char *const ps[] = { "static", "relative", "absolute", "fixed", "sticky" };
     if (prop[0] == '-' && prop[1] == '-') { const char *v = s->custom ? hm_get(&s->custom->map, prop) : NULL; if (v) sb_puts(&b, v); }
     else if (!strcmp(prop, "display")) sb_puts(&b, ds[s->display]);
+    else if (!strncmp(prop, "animation-", 10) || !strncmp(prop, "transition-", 11) || !strncmp(prop, "-webkit-animation-", 18) || !strncmp(prop, "-webkit-transition-", 19)) {
+        const char *q = strncmp(prop, "-webkit-", 8) ? prop : prop + 8;
+        if (!strcmp(q, "animation-name")) sb_puts(&b, s->anim_name ? s->anim_name : "none");
+        else if (!strcmp(q, "animation-duration")) sb_printf(&b, "%gs", s->anim_dur);
+        else if (!strcmp(q, "animation-delay")) sb_printf(&b, "%gs", s->anim_delay);
+        else if (!strcmp(q, "animation-iteration-count")) { if (isinf(s->anim_iter)) sb_puts(&b, "infinite"); else sb_printf(&b, "%g", s->anim_iter); }
+        else if (!strcmp(q, "transition-property")) sb_puts(&b, s->tr_prop ? s->tr_prop : "all");
+        else if (!strcmp(q, "transition-duration")) sb_printf(&b, "%gs", s->tr_dur);
+        else if (!strcmp(q, "transition-delay")) sb_printf(&b, "%gs", s->tr_delay);
+    }
     else if (!strcmp(prop, "position")) sb_puts(&b, ps[s->position]);
     else if (!strcmp(prop, "visibility")) sb_puts(&b, s->visibility ? "hidden" : "visible");
     else if (!strcmp(prop, "color")) color_str(&b, s->color);

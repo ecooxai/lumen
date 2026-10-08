@@ -123,6 +123,8 @@ function parentForEvent(t, ev) {
     }
     return null;
 }
+/* Blink fires webkit-prefixed listeners on a target only when it has no unprefixed ones */
+const LEGACY_EV = { animationstart: 'webkitAnimationStart', animationend: 'webkitAnimationEnd', animationiteration: 'webkitAnimationIteration', transitionend: 'webkitTransitionEnd' };
 function invoke(t, ev, phase) {
     ev.currentTarget = t;
     if (phase !== 1) {
@@ -137,7 +139,10 @@ function invoke(t, ev, phase) {
         }
     }
     const m = t.__ls; if (!m) return;
-    const a = m.get(ev._type); if (!a || !a.length) return;
+    const type = ev._type;
+    let a = m.get(type);
+    if ((!a || !a.length) && ev.isTrusted && LEGACY_EV[type]) { a = m.get(LEGACY_EV[type]); ev._type = LEGACY_EV[type]; }
+    if (!a || !a.length) { ev._type = type; return; }
     for (const l of a.slice()) {
         if (l.removed) continue;
         if (phase === 1 && !l.capture) continue;
@@ -149,6 +154,7 @@ function invoke(t, ev, phase) {
         ev._passive = false;
         if (ev._imm) break;
     }
+    ev._type = type;
 }
 function dispatch(target, ev, trusted) {
     ev.target = target; if (trusted) ev.isTrusted = true;

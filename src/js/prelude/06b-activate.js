@@ -20,7 +20,17 @@ function submitForm(form, submitter) {
     if (submitter && submitter.name) fd.append(submitter.name, submitter.value);
     const u = new URL((submitter && submitter.getAttribute('formaction')) || N.attr(form, 'action') || N.url(), document.baseURI);
     if (form.method === 'get') { u.search = new URLSearchParams([...fd].filter(([, v]) => typeof v === 'string')).toString(); N.navigate(u.href); }
-    else N.log(2, 'POST form submission is not supported yet: ' + u.href);
+    else {
+        const et = ((submitter && submitter.getAttribute('formenctype')) || N.attr(form, 'enctype') || '').toLowerCase();
+        const kv = [...fd].filter(([, v]) => typeof v === 'string');
+        if (et === 'multipart/form-data') {
+            const bd = '----LumenFormBoundary' + Math.random().toString(36).slice(2);
+            const esc = s => s.replace(/"/g, '%22').replace(/\r?\n/g, '%0D%0A');
+            const body = kv.map(([k, v]) => `--${bd}\r\nContent-Disposition: form-data; name="${esc(k)}"\r\n\r\n${v}\r\n`).join('') + `--${bd}--\r\n`;
+            N.navigatePost(u.href, body, 'multipart/form-data; boundary=' + bd);
+        } else if (et === 'text/plain') N.navigatePost(u.href, kv.map(([k, v]) => `${k}=${v}\r\n`).join(''), 'text/plain');
+        else N.navigatePost(u.href, new URLSearchParams(kv).toString(), 'application/x-www-form-urlencoded');
+    }
 }
 class CSSRule { constructor(text) { this.cssText = text; } }
 class CSSStyleSheet {

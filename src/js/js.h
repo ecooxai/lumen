@@ -18,6 +18,7 @@ typedef struct JsHost {
     void (*scroll_to)(void *ud, float x, float y);
     Node *(*hit)(void *ud, float x, float y);                  /* viewport coordinates */
     int (*history_len)(void *ud);
+    void (*navigate_post)(void *ud, const char *url, const char *body, size_t len, const char *ctype);
 } JsHost;
 
 void js_global_init(const char *argv0);
