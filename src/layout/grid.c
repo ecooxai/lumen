@@ -18,6 +18,17 @@ static bool area_lookup(const char *areas, const char *name, int *r, int *c, int
 }
 static int area_cols(const char *a) { int n = 1; for (; *a && *a != '/'; a++) if (*a == ' ') n++; return n; }
 
+typedef struct { uint8_t *v; int rows, nc; } Occ;
+static bool occ_free(const Occ *o, int r, int c, int rs, int cs) {
+    if (c + cs > o->nc) return false;
+    for (int y = r; y < r + rs && y < o->rows; y++) for (int x = c; x < c + cs; x++) if (o->v[(size_t)y * o->nc + x]) return false;
+    return true;
+}
+static void occ_mark(Occ *o, int r, int c, int rs, int cs) {
+    if (r + rs > o->rows) { int nr = r + rs; o->v = xrealloc(o->v, (size_t)nr * o->nc); memset(o->v + (size_t)o->rows * o->nc, 0, (size_t)(nr - o->rows) * o->nc); o->rows = nr; }
+    for (int y = r; y < r + rs; y++) for (int x = c; x < c + cs && x < o->nc; x++) o->v[(size_t)y * o->nc + x] = 1;
+}
+
 float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) {
     const ComputedStyle *s = b->st;
     float cg = s->column_gap_l.pct ? res(s->column_gap_l, cw) : s->column_gap, rg = s->row_gap;
@@ -40,21 +51,37 @@ float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
     /* items + placement */
     typedef struct { Box *b; int r, c, rs, cs; } GI;
     VEC(GI) items = {0};
-    int ar = 0, ac = 0;
+    Occ oc = { NULL, 0, nc };
     for (Box *c = b->first; c; c = c->next) {
         if (c->abs) { c->sx = cx; c->sy = cy; add_abs(L, c); continue; }
         c->bfc = true;
         const ComputedStyle *is = c->st;
         int cs = is->grid_col_span < 0 ? nc : LMAX(1, LMIN(is->grid_col_span, nc));
         int rs = LMAX(1, is->grid_row_span);
-        GI g = { c, 0, 0, rs, cs };
-        if (s->grid_areas && is->grid_area && area_lookup(s->grid_areas, is->grid_area, &g.r, &g.c, &g.rs, &g.cs)) { vec_push(items, g); continue; }
-        if (is->grid_col_start > 0) { g.c = LMIN(is->grid_col_start - 1, nc - 1); if (is->grid_col_span < 0) g.cs = LMAX(1, nc + 1 + is->grid_col_span - g.c); g.r = is->grid_row_start > 0 ? is->grid_row_start - 1 : ar; if (is->grid_row_start <= 0 && g.c < ac) g.r = ++ar; ac = g.c + g.cs; }
-        else if (is->grid_row_start > 0) { g.r = is->grid_row_start - 1; g.c = 0; }
-        else { if (ac + cs > nc) { ar++; ac = 0; } g.r = ar; g.c = ac; ac += cs; if (ac >= nc) { ar++; ac = 0; } }
-        if (g.c + g.cs > nc) g.cs = nc - g.c;
+        GI g = { c, -1, -1, rs, cs };
+        if (!(s->grid_areas && is->grid_area && area_lookup(s->grid_areas, is->grid_area, &g.r, &g.c, &g.rs, &g.cs))) {
+            if (is->grid_col_start > 0) { g.c = LMIN(is->grid_col_start - 1, nc - 1); if (is->grid_col_span < 0) g.cs = LMAX(1, nc + 1 + is->grid_col_span - g.c); }
+            if (is->grid_row_start > 0) g.r = is->grid_row_start - 1;
+        }
+        if (g.c >= 0 && g.c + g.cs > nc) g.cs = nc - g.c;
+        if (g.r >= 0 && g.c >= 0) occ_mark(&oc, g.r, g.c, g.rs, g.cs);
         vec_push(items, g);
     }
+    for (int k = 0; k < items.n; k++) {
+        GI *g = &items.v[k];
+        if (g->r < 0 || g->c >= 0) continue;
+        int x = 0; while (x + g->cs <= nc && !occ_free(&oc, g->r, x, g->rs, g->cs)) x++;
+        g->c = x + g->cs <= nc ? x : 0; occ_mark(&oc, g->r, g->c, g->rs, g->cs);
+    }
+    int ar = 0, ac = 0;
+    for (int k = 0; k < items.n; k++) {
+        GI *g = &items.v[k];
+        if (g->r >= 0) continue;
+        if (g->c >= 0) { if (g->c < ac) ar++; while (!occ_free(&oc, ar, g->c, g->rs, g->cs)) ar++; }
+        else { for (;;) { if (ac + g->cs > nc) { ar++; ac = 0; } if (occ_free(&oc, ar, ac, g->rs, g->cs)) break; ac++; } g->c = ac; }
+        g->r = ar; occ_mark(&oc, g->r, g->c, g->rs, g->cs); ac = g->c + g->cs;
+    }
+    free(oc.v);
     /* column sizes: kind 0=auto 1=fixed 2=fr 3=minmax(len,len) */
     float *cwid = xcalloc((size_t)nc, sizeof(float)), *cap = xcalloc((size_t)nc, sizeof(float));
     uint8_t *kind = xcalloc((size_t)nc, 1);
