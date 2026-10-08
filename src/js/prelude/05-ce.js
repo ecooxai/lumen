@@ -131,7 +131,7 @@ function protoFor(type, tag, ns) {
     switch (type) {
     case 1:
         if (ns === 3) return Element.prototype;
-        if (ns === 1) return (tag === 'svg' ? SVGSVGElement : /^(g|path|rect|circle|ellipse|line|polyline|polygon|use|text|image)$/.test(tag) ? SVGGraphicsElement : SVGElement).prototype;
+        if (ns === 1) return svgProto(tag);
         if (ns === 2) return MathMLElement.prototype;
         if (TAGS[tag]) return TAGS[tag].prototype;
         return PLAIN.has(tag) || tag.includes('-') ? HTMLElement.prototype : H.HTMLUnknownElement.prototype;
