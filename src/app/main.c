@@ -18,7 +18,9 @@ typedef struct Page {
     char *url; Document *d; StyleEngine *e; Layout *L; uint64_t gen; double load_ms;
     JsCtx *js; PScript *scripts; int nscripts; uint64_t seen_ver;
     SheetRef *sref; int nsref;
+    HMap img_fired; bool img_check;
 } Page;
+typedef struct { Image *im; bool done; } ImgSlot;
 
 static SDL_Mutex *icache_mu;
 static HMap icache;
@@ -35,7 +37,7 @@ static void cache_fetch(const char *u) {
     NetResponse *r = net_fetch_sync(net_request_new("GET", u));
     Image *im = r && r->status == 200 ? image_decode((const uint8_t *)r->body, r->body_len) : NULL;
     if (r) net_response_free(r);
-    Image **slot = xmalloc(sizeof *slot); *slot = im;
+    ImgSlot *slot = xcalloc(1, sizeof *slot); slot->im = im; slot->done = true;
     SDL_LockMutex(icache_mu); if (!hm_get(&icache, u)) hm_put(&icache, u, slot); else { image_unref(im); free(slot); } SDL_UnlockMutex(icache_mu);
 }
 static Image *node_img(Node *n) {
@@ -105,6 +107,7 @@ static int loader(void *arg) {
 static void page_free(Page *p) {
     if (!p) return;
     js_free(p->js);
+    hm_free(&p->img_fired, NULL);
     free(p->sref);
     for (int i = 0; i < p->nscripts; i++) { free(p->scripts[i].src); free(p->scripts[i].name); }
     free(p->scripts);
@@ -281,12 +284,13 @@ static void img_done(NetRequest *rq, NetResponse *r, void *ud) {
     Image *im = r && r->status == 200 && r->body ? image_decode((const uint8_t *)r->body, r->body_len) : NULL;
     if (getenv("LUMEN_DEBUG_IMG")) fprintf(stderr, "lumen: img decode -> %s\n", im ? "ok" : "NULL");
     SDL_LockMutex(icache_mu);
-    Image **slot = (Image **)hm_get(&icache, l->u);
-    if (slot && !*slot) { *slot = im; im = NULL; }
+    ImgSlot *slot = hm_get(&icache, l->u);
+    if (slot && !slot->im) { slot->im = im; im = NULL; }
+    if (slot) slot->done = true;
     SDL_UnlockMutex(icache_mu);
-    if (getenv("LUMEN_DEBUG_IMG")) fprintf(stderr, "lumen: img done status=%d len=%zu decoded=%d slot=%d %.80s\n", r ? r->status : -1, r && r->body ? r->body_len : 0, slot && *slot ? 1 : 0, slot ? 1 : 0, l->u);
+    if (getenv("LUMEN_DEBUG_IMG")) fprintf(stderr, "lumen: img done status=%d len=%zu decoded=%d slot=%d %.80s\n", r ? r->status : -1, r && r->body ? r->body_len : 0, slot && slot->im ? 1 : 0, slot ? 1 : 0, l->u);
     if (im) image_unref(im);
-    if (g_app->cur && g_app->cur->gen == l->gen) g_app->relayout = g_app->dirty = true;
+    if (g_app->cur && g_app->cur->gen == l->gen) { g_app->cur->img_check = true; g_app->relayout = g_app->dirty = true; }
     free(l->u); free(l);
 }
 /* Start async loads for <img> sources that appeared after the initial load (script-inserted or src changed). */
@@ -297,7 +301,7 @@ static void sync_images(Page *p) {
         if (!u || !*u || !strncmp(u, "blob:", 5)) { free(u); continue; }
         SDL_LockMutex(icache_mu);
         bool have = hm_get(&icache, u) != NULL;
-        if (!have) { Image **slot = xcalloc(1, sizeof *slot); hm_put(&icache, u, slot); }
+        if (!have) { ImgSlot *slot = xcalloc(1, sizeof *slot); hm_put(&icache, u, slot); }
         SDL_UnlockMutex(icache_mu);
         if (!have) {
             if (getenv("LUMEN_DEBUG_IMG")) fprintf(stderr, "lumen: img fetch %.80s\n", u);
@@ -305,6 +309,28 @@ static void sync_images(Page *p) {
             rq->done = img_done; rq->ud = l; rq->priority = 2; net_fetch(rq);
         } else free(u);
     }
+}
+/* Fire load/error once per (img node, resolved src) after its fetch completes. */
+static void fire_img_events(Page *p) {
+    if (!p || !p->js || !p->img_check) return;
+    p->img_check = false;
+    Node **ev = NULL; bool *ok = NULL; int ne = 0, cap = 0;
+    for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) {
+        if (n->type != NODE_ELEMENT || n->ns != NS_HTML || n->tag != A_img || !node_attr(n, "src")) continue;
+        char *u = url_join(p->d->url, node_attr(n, "src")); if (!u) continue;
+        char key[2048]; snprintf(key, sizeof key, "%p %s", (void *)n, u);
+        if (!hm_get(&p->img_fired, key)) {
+            SDL_LockMutex(icache_mu); ImgSlot *s = hm_get(&icache, u); bool done = s && s->done, good = done && s->im; SDL_UnlockMutex(icache_mu);
+            if (done) {
+                hm_put(&p->img_fired, key, (void *)1);
+                if (ne == cap) { cap = cap ? cap * 2 : 16; ev = xrealloc(ev, (size_t)cap * sizeof *ev); ok = xrealloc(ok, (size_t)cap * sizeof *ok); }
+                n->refcount++; ev[ne] = n; ok[ne++] = good;
+            }
+        }
+        free(u);
+    }
+    for (int i = 0; i < ne; i++) { js_dispatch(p->js, ev[i], ok[i] ? "load" : "error", "Event", false, false, 0, 0, 0, NULL); node_release(ev[i]); }
+    free(ev); free(ok);
 }
 /* Reconcile engine sheets with <style>/<link rel=stylesheet> currently in the tree; seed only records them. */
 static bool sync_sheets(Page *p, bool seed) {
@@ -341,6 +367,7 @@ static void restyle(App *a) {
     bool sheets = sync_sheets(p, false);
     sync_images(p);
     style_recalc(p->e, &p->d->node, sheets);
+    p->img_check = true;
     a->relayout = a->dirty = true;
 }
 static void history_go(App *a, int d);
@@ -650,7 +677,7 @@ int main(int argc, char **argv) {
             }
         } while (SDL_PollEvent(&ev));
         net_poll();
-        if (a.cur && a.cur->js) { js_tick(a.cur->js); restyle(&a); }
+        if (a.cur && a.cur->js) { js_tick(a.cur->js); restyle(&a); fire_img_events(a.cur); }
         if (a.dirty) render(&a);
         if (*cookie_path && now_ms() - cookies_saved_at > 5000) { cookies_save(cookie_path); cookies_saved_at = now_ms(); }
     }
