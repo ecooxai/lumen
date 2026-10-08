@@ -1,5 +1,16 @@
 #include "../src/paint/paint.h"
 #include "../src/net/net.h"
+static HMap icache;
+static Image *load_url(const char *u) {
+    if (!u || !*u || !strncmp(u, "data:", 5)) return NULL;
+    Image **c = (Image **)hm_get(&icache, u); if (c) return *c;
+    NetResponse *r = net_fetch_sync(net_request_new("GET", u));
+    Image *im = r && r->status == 200 ? image_decode((const uint8_t *)r->body, r->body_len) : NULL;
+    Image **slot = xmalloc(sizeof *slot); *slot = im; hm_put(&icache, u, slot);
+    return im;
+}
+static Image *node_img(Node *n) { const char *s = node_attr(n, n->tag == A_video ? "poster" : "src"); if (!s) return NULL; char *u = url_join(n->doc->url, s); Image *im = load_url(u); free(u); return im; }
+static bool img_size(Node *n, float *w, float *h) { Image *im = node_img(n); if (!im) return false; *w = (float)im->w; *h = (float)im->h; return true; }
 /* usage: render URL out.png [width] [height] [scroll_y] */
 int main(int argc, char **argv) {
     if (argc < 3) { fprintf(stderr, "usage: render URL out.png [w] [h] [scroll]\n"); return 1; }
@@ -16,6 +27,7 @@ int main(int argc, char **argv) {
         if (n->tag == A_style) { char *t = node_text_content(n); StyleSheet *s = css_parse_sheet(t, strlen(t), d->url, 1, &e->media); s->owner = n; style_engine_add_sheet(e, s); free(t); }
         else if (n->tag == A_link && node_attr(n, "rel") && strstr(node_attr(n, "rel"), "stylesheet") && node_attr(n, "href")) { char *u = url_join(d->url, node_attr(n, "href")); NetResponse *cr = net_fetch_sync(net_request_new("GET", u)); StyleSheet *s = css_parse_sheet(cr->body, cr->body_len, cr->url, 1, &e->media); s->owner = n; style_engine_add_sheet(e, s); free(u); }
     }
+    paint_image_hook = node_img; paint_url_image_hook = load_url; layout_image_size_hook = img_size;
     double t1 = now_ms();
     style_recalc(e, &d->node, true);
     double t2 = now_ms();
