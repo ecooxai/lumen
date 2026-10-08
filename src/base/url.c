@@ -85,7 +85,8 @@ bool url_parse(const char *in, URL *u) {
     for (char *p = u->scheme; *p; p++) *p = (char)tolower((unsigned char)*p);
     c++;
     if (special(u->scheme)) {
-        while (*c == '/' || *c == '\\') c++;
+        if (!strcmp(u->scheme, "file")) { if ((c[0] == '/' || c[0] == '\\') && (c[1] == '/' || c[1] == '\\')) c += 2; }
+        else while (*c == '/' || *c == '\\') c++;
         const char *e = c; while (*e && *e != '/' && *e != '\\' && *e != '?' && *e != '#') e++;
         if (!parse_authority(c, (size_t)(e - c), u)) { free(s); url_free(u); return false; }
         if (!u->host[0] && strcmp(u->scheme, "file")) { free(s); url_free(u); return false; }

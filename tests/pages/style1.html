@@ -1,0 +1,19 @@
+<!doctype html><html><head><style>
+:root{--main:#ff0000;--pad:4px}
+body{font:14px/1.5 Arial,sans-serif;color:#333}
+.box{background:var(--main);padding:calc(var(--pad) * 2);display:flex}
+#x.box{color:rgb(0 128 0 / 50%)}
+ul > li:nth-child(2n+1){color:hsl(240,100%,50%)}
+div:has(> span.hi){display:grid}
+@media (max-width:600px){.box{display:none}}
+.n{ & .k{font-size:2em} }
+p:not(.a, .b){font-weight:bold}
+.imp{color:red!important}
+</style></head><body>
+<div id=x class="box"><span class=hi>hi</span></div>
+<ul><li>a</li><li>b</li><li>c</li></ul>
+<div class=n><b class=k>k</b></div>
+<p>p1</p><p class=a>p2</p>
+<p class=imp style="color:blue">imp</p>
+<span style="display:block;font-size:20px;background:linear-gradient(to right,red,blue)">inl</span>
+</body></html>

@@ -69,3 +69,6 @@ clean:
 .PHONY: all clean test
 $(BUILD)/parse: $(call OBJ,tests/parse.c $(BASE_SRC) $(NET_SRC) src/dom/dom.c src/html/html.c src/html/entities.c)
 	$(CC) $(OPT) $^ -o $@ $(NETLIBS)
+CSS_TEST_SRC := $(BASE_SRC) $(NET_SRC) src/dom/dom.c src/html/html.c src/html/entities.c $(wildcard src/css/*.c)
+$(BUILD)/style: $(call OBJ,tests/style.c $(CSS_TEST_SRC))
+	$(CC) $(OPT) $^ -o $@ $(NETLIBS)

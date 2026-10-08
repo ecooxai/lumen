@@ -157,7 +157,8 @@ bool css_parse_selector_list(const char *src, SelList *out);
 void css_sellist_free(SelList *l);
 bool css_match_selector_list(const SelList *l, Node *el);
 bool css_match_selector(const Selector *s, Node *el, Node *scope);
-Node *css_query(Node *root, const char *sel, bool all, VEC(Node *) *out);
+typedef VEC(Node *) NodeVec;
+Node *css_query(Node *root, const char *sel, bool all, NodeVec *out);
 bool css_media_matches(const char *q, const MediaCtx *mc);
 bool css_supports(const char *cond);
 

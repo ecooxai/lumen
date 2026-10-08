@@ -162,12 +162,11 @@ bool css_match_selector_list(const SelList *l, Node *el) {
     return false;
 }
 
-typedef VEC(Node *) NodeVec;
-Node *css_query(Node *root, const char *sel, bool all, VEC(Node *) *outp) {
+Node *css_query(Node *root, const char *sel, bool all, NodeVec *outp) {
     SelList l = {0};
     if (!css_parse_selector_list(sel, &l)) return (Node *)-1; /* syntax error */
     Node *found = NULL;
-    NodeVec *out = (NodeVec *)outp;
+    NodeVec *out = outp;
     Node *start = root->template_content && false ? root->template_content : root;
     /* fast path: single #id */
     if (l.n == 1 && l.v[0].n == 1 && l.v[0].c[0].n == 1 && l.v[0].c[0].s[0].kind == SK_ID && root->type == NODE_DOCUMENT && !all) {

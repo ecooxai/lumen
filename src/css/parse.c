@@ -1,5 +1,6 @@
 /* CSS Syntax Level 3 tokenizer, stylesheet & selector parser */
 #include "css.h"
+#include "../base/url.h"
 #include <ctype.h>
 #include <math.h>
 
@@ -426,7 +427,8 @@ static bool media_feature(const char *f, const MediaCtx *mc) {
                 switch (op) { case 0: return fv >= v; case 1: return fv <= v; case 2: return fv > v; case 3: return fv < v; default: return fabsf(fv - v) < 0.5f; }
             }
         }
-        if (!strcmp(s, "color") || !strcmp(s, "hover") || !strcmp(s, "pointer") || !strcmp(s, "grid") == 0) return strcmp(s, "grid") != 0;
+        if (!strcmp(s, "color") || !strcmp(s, "hover") || !strcmp(s, "pointer")) return true;
+        if (!strcmp(s, "grid")) return false;
         return true;
     }
     *colon = 0; char *name = str_trim(s), *val = str_trim(colon + 1);
@@ -485,7 +487,7 @@ static bool media_single(const char *q, const MediaCtx *mc) {
             if (use_or) result = result || r; else result = result && r;
             t = str_trim(t + (close < strlen(t) ? close + 1 : strlen(t)));
             if (str_istarts(t, "and")) { t = str_trim(t + 3); use_or = false; }
-            else if (str_istarts(t, "or")) { t = str_trim(t + 2); use_or = true; result = result; }
+            else if (str_istarts(t, "or")) { t = str_trim(t + 2); use_or = true; }
             else break;
         } else break;
     }
@@ -666,7 +668,7 @@ static void parse_rules(PCtx *c, const char *s, size_t n, const char *parent_sel
         if (pt[0] == '@') {
             if (str_istarts(pt, "@media")) { if (css_media_matches(pt + 6, c->mc)) parse_rules(c, body, bn, parent_sel); }
             else if (str_istarts(pt, "@supports")) { if (css_supports(pt + 9)) parse_rules(c, body, bn, parent_sel); }
-            else if (str_istarts(pt, "@layer") || str_istarts(pt, "@document") || str_istarts(pt, "@-moz-document") || str_istarts(pt, "@scope") || str_istarts(pt, "@starting-style") == 0 && str_istarts(pt, "@container")) {
+            else if (str_istarts(pt, "@layer") || str_istarts(pt, "@document") || str_istarts(pt, "@-moz-document") || str_istarts(pt, "@scope") || str_istarts(pt, "@starting-style") || str_istarts(pt, "@container")) {
                 if (!str_istarts(pt, "@container") || true) parse_rules(c, body, bn, parent_sel);
             }
             else if (str_istarts(pt, "@font-face")) {

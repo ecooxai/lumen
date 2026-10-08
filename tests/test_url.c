@@ -15,6 +15,8 @@ int main(void) {
     t("https://a.com:443/b/", "./x/./y/../z", "https://a.com/b/x/z");
     t("http://a.com:8080/", "x", "http://a.com:8080/x");
     t("https://a.com/", "data:text/html,hi", "data:text/html,hi");
+    t("file:///Users/x/a.html", "b.css", "file:///Users/x/b.css");
+    t("file:///Users/x/a.html", "/c.css", "file:///c.css");
     printf("url tests ok\n");
     return 0;
 }
