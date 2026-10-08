@@ -6,6 +6,32 @@ const kids = (n) => { const a = []; for (let c = N.first(n); c; c = N.next(c)) a
 const elKids = (n) => { const a = []; for (let c = N.first(n); c; c = N.next(c)) if (N.type(c) === 1) a.push(c); return a; };
 class NodeList extends Array { item(i) { return this[i] ?? null; } static get [Symbol.species]() { return Array; } }
 const nodeList = (a) => { Object.setPrototypeOf(a, NodeList.prototype); return a; };
+const liveIdx = (k) => typeof k === 'string' && /^(0|[1-9]\d*)$/.test(k) ? +k : -1;
+const liveHandler = {
+    get(t, k, r) { if (k === 'length') return t._cur().length; const i = liveIdx(k); return i >= 0 ? t._cur()[i] : Reflect.get(t, k, r); },
+    has(t, k) { const i = liveIdx(k); return i >= 0 ? i < t._cur().length : Reflect.has(t, k); },
+    ownKeys(t) { return t._cur().map((_, i) => String(i)).concat(Reflect.ownKeys(t)); },
+    getOwnPropertyDescriptor(t, k) {
+        const i = liveIdx(k);
+        if (i < 0) return Reflect.getOwnPropertyDescriptor(t, k);
+        const a = t._cur();
+        return i < a.length ? { value: a[i], enumerable: true, configurable: true, writable: false } : undefined;
+    },
+    set(t, k, v, r) { return liveIdx(k) >= 0 || k === 'length' ? true : Reflect.set(t, k, v, r); },
+};
+/* Live NodeList: recomputed lazily whenever the owner document has mutated. */
+function liveList(owner, compute) {
+    const t = Object.create(NodeList.prototype);
+    let ver = -1, arr = [];
+    Object.defineProperty(t, '_cur', { value() { const v = N.version(owner); if (v !== ver) { ver = v; arr = compute(); } return arr; } });
+    return new Proxy(t, liveHandler);
+}
+const liveCache = new WeakMap();
+function cachedLive(owner, key, compute) {
+    let m = liveCache.get(owner);
+    if (!m) liveCache.set(owner, m = {});
+    return m[key] || (m[key] = liveList(owner, compute));
+}
 function toNode(x) { return N.isNode(x) ? x : N.textNode(String(x)); }
 function insertNode(p, c, ref) {
     if (!N.isNode(c)) throw new TypeError("parameter is not of type 'Node'");
@@ -35,7 +61,7 @@ methods(Node.prototype, {
     get parentElement() { const p = N.parent(this); return p && N.type(p) === 1 ? p : null; },
     get firstChild() { return N.first(this); }, get lastChild() { return N.last(this); },
     get nextSibling() { return N.next(this); }, get previousSibling() { return N.prev(this); },
-    get childNodes() { return nodeList(kids(this)); },
+    get childNodes() { return cachedLive(this, 'childNodes', () => kids(this)); },
     hasChildNodes() { return !!N.first(this); },
     get ownerDocument() { return N.type(this) === 9 ? null : document; },
     get isConnected() { return N.connected(this); },
@@ -75,7 +101,7 @@ methods(Node.prototype, {
     lookupNamespaceURI() { return null; }, isDefaultNamespace(ns) { return ns == null || ns === 'http://www.w3.org/1999/xhtml'; },
 });
 const ParentNode = {
-    get children() { return nodeList(elKids(this)); },
+    get children() { return cachedLive(this, 'children', () => elKids(this)); },
     get childElementCount() { return elKids(this).length; },
     get firstElementChild() { for (let c = N.first(this); c; c = N.next(c)) if (N.type(c) === 1) return c; return null; },
     get lastElementChild() { for (let c = N.last(this); c; c = N.prev(c)) if (N.type(c) === 1) return c; return null; },
@@ -84,8 +110,8 @@ const ParentNode = {
     replaceChildren(...ns) { for (const c of kids(this)) removeNode(c); this.append(...ns); },
     querySelector(s) { return N.query(this, String(s), false); },
     querySelectorAll(s) { return nodeList(N.query(this, String(s), true)); },
-    getElementsByTagName(t) { t = String(t); return nodeList(N.query(this, t === '*' ? '*' : t.replace(/[^\w-]/g, ''), true)); },
-    getElementsByClassName(c) { const p = String(c).trim().split(/\s+/).filter(Boolean); return nodeList(p.length ? N.query(this, p.map(x => '.' + CSS.escape(x)).join(''), true) : []); },
+    getElementsByTagName(t) { t = String(t); const sel = t === '*' ? '*' : t.replace(/[^\w-]/g, ''); return liveList(this, () => sel ? N.query(this, sel, true) : []); },
+    getElementsByClassName(c) { const p = String(c).trim().split(/\s+/).filter(Boolean); const sel = p.map(x => '.' + CSS.escape(x)).join(''); return liveList(this, () => sel ? N.query(this, sel, true) : []); },
 };
 const ChildNode = {
     before(...ns) { const p = N.parent(this); if (!p) return; for (const n of ns) insertNode(p, toNode(n), this); },
