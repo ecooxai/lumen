@@ -92,10 +92,9 @@ Load (DCL/load): Google 0.53/3.66 s, Bing 1.97/2.23 s, YT watch ~2.2/3.47 s, YT 
 - Next: paint-only style changes (transform/opacity/color) should skip layout; true zero-copy via IOSurface->Metal texture.
   paint-only style changes (transform/opacity/color) should skip layout entirely.
 
-## Video CPU, round 3 (v0.1.3-preview)
-- Hardware (VideoToolbox) decode now uses `thread_count = 1` for H.264/HEVC. Frame threads around a VT
-  session only added hand-offs: local 1080p30 went from ~23% to ~12-13% process CPU. Override with
-  `LUMEN_DEC_THREADS=n`. Software decode keeps 4 threads.
+## Video CPU, round 3
+- Tried `thread_count = 1` for VT decode: no gain over 6x10 s windows (22-24% both ways); reverted.
+  Short 10 s windows on this VM swing 12-24%, so use >= 60 s of samples before believing a change.
 - `9e5dca5`: video-only frames reuse the saved video rect/owner and skip the display-list rebuild.
 - VM floor (ffmpeg CLI, 1080p30, `-re`): VT decode only 6.3%, VT + transfer 6.6%, software 14.6%.
 - Present costs ~0 (video in a background tab costs the same CPU); audio ~3.5%.
