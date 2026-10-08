@@ -131,7 +131,7 @@ Object.setPrototypeOf(history, History.prototype); Object.setPrototypeOf(navigat
 Object.setPrototypeOf(performance, Performance.prototype); Object.setPrototypeOf(crypto, Crypto.prototype);
 const globals = {
     ProcessingInstruction, TouchEvent, CompositionEvent, ClipboardEvent, DragEvent, StorageEvent, PromiseRejectionEvent, SubmitEvent,
-    StyleSheet, IdleDeadline, TimeRanges, MediaError, History, Navigator, Screen, Performance, Crypto, SubtleCrypto,
+    StyleSheet, IdleDeadline, TimeRanges, MediaError, ImageData, Path2D, CanvasGradient, CanvasPattern, CanvasRenderingContext2D, History, Navigator, Screen, Performance, Crypto, SubtleCrypto,
     DOMException, DOMRectReadOnly, DOMRect, Event, CustomEvent, UIEvent, FocusEvent, MouseEvent, PointerEvent, WheelEvent, KeyboardEvent, InputEvent, ErrorEvent, ProgressEvent, MessageEvent, PopStateEvent, HashChangeEvent, PageTransitionEvent, AnimationEvent, TransitionEvent, MediaQueryListEvent,
     EventTarget, AbortSignal, AbortController, MutationObserver, MutationRecord, Node, NodeList, HTMLCollection: NodeList, CharacterData, Text, CDATASection, Comment, DocumentType, DocumentFragment, ShadowRoot, Attr, NamedNodeMap, DOMTokenList,
     CSSStyleDeclaration, Element, HTMLElement, SVGElement, SVGGraphicsElement, SVGSVGElement, MathMLElement, Image, Audio, Option, CustomElementRegistry, Document, HTMLDocument, CSSRule, CSSStyleSheet, CSS, FontFace,

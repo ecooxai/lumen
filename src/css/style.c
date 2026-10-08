@@ -224,10 +224,11 @@ static char *subst_vars(const char *v, const ComputedStyle *st, int depth) {
         if (comma) *comma = 0;
         char *name = str_trim(inner);
         const char *val = st->custom ? hm_get((HMap *)&st->custom->map, name) : NULL;
-        if (val && *val) { char *r = subst_vars(val, st, depth + 1); sb_puts(&b, r); free(r); }
-        else if (comma) { char *r = subst_vars(str_trim(comma + 1), st, depth + 1); sb_puts(&b, r); free(r); }
-        else { free(inner); sb_free(&b); return NULL; }
+        char *r = val && *val ? subst_vars(val, st, depth + 1) : comma ? subst_vars(str_trim(comma + 1), st, depth + 1) : NULL;
         free(inner);
+        /* unresolvable or runaway expansion: declaration is invalid at computed-value time */
+        if (!r || b.n + strlen(r) > (1u << 16)) { free(r); sb_free(&b); return NULL; }
+        sb_puts(&b, r); free(r);
         p = *e ? e + 1 : e;
     }
     return sb_take(&b);

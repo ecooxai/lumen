@@ -11,9 +11,11 @@
 #define BAR 44.f
 
 typedef struct { Node *n; char *src; size_t len; char *name; } PScript;
+typedef struct { Node *n; uint64_t h; } SheetRef;
 typedef struct Page {
     char *url; Document *d; StyleEngine *e; Layout *L; uint64_t gen; double load_ms;
     JsCtx *js; PScript *scripts; int nscripts; uint64_t seen_ver;
+    SheetRef *sref; int nsref;
 } Page;
 
 static SDL_Mutex *icache_mu;
@@ -95,6 +97,7 @@ static int loader(void *arg) {
 static void page_free(Page *p) {
     if (!p) return;
     js_free(p->js);
+    free(p->sref);
     for (int i = 0; i < p->nscripts; i++) { free(p->scripts[i].src); free(p->scripts[i].name); }
     free(p->scripts);
     if (p->L) layout_free(p->L);
@@ -251,11 +254,51 @@ static void update_size(App *a) {
 }
 
 static App *g_app;
+static uint64_t fnv(const char *s) { uint64_t h = 1469598103934665603ull; for (; s && *s; s++) h = (h ^ (uint8_t)*s) * 1099511628211ull; return h; }
+static bool is_sheet_link(Node *n) { const char *r = node_attr(n, "rel"); return n->tag == A_link && r && strstr(r, "stylesheet") && node_attr(n, "href"); }
+typedef struct { uint64_t gen; Node *n; } LinkLoad;
+static void link_done(NetRequest *rq, NetResponse *r, void *ud) {
+    (void)rq; LinkLoad *l = ud; Page *p = g_app->cur;
+    if (p && p->gen == l->gen && r && r->status == 200 && r->body) {
+        StyleSheet *s = css_parse_sheet(r->body, r->body_len, r->url, 1, &p->e->media); s->owner = l->n; style_engine_add_sheet(p->e, s);
+        style_recalc(p->e, &p->d->node, true); g_app->relayout = g_app->dirty = true;
+    }
+    free(l);
+}
+/* Reconcile engine sheets with <style>/<link rel=stylesheet> currently in the tree; seed only records them. */
+static bool sync_sheets(Page *p, bool seed) {
+    SheetRef *cur = NULL; int nc = 0, cap = 0; bool changed = false;
+    for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) {
+        if (n->type != NODE_ELEMENT || n->ns != NS_HTML || (n->tag != A_style && !is_sheet_link(n))) continue;
+        char *t = n->tag == A_style ? node_text_content(n) : NULL;
+        uint64_t h = t ? fnv(t) : fnv(node_attr(n, "href"));
+        int k = 0; while (k < p->nsref && p->sref[k].n != n) k++;
+        bool known = k < p->nsref;
+        if (!seed && (!known || p->sref[k].h != h)) {
+            if (known) { style_engine_remove_owner(p->e, n); changed = true; }
+            if (t) { StyleSheet *sh = css_parse_sheet(t, strlen(t), p->d->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); changed = true; }
+            else {
+                char *u = url_join(p->d->url, node_attr(n, "href"));
+                if (u) { NetRequest *rq = net_request_new("GET", u); LinkLoad *l = xmalloc(sizeof *l); l->gen = p->gen; l->n = n; rq->done = link_done; rq->ud = l; net_fetch(rq); free(u); }
+            }
+        }
+        free(t);
+        if (nc == cap) { cap = cap ? cap * 2 : 16; cur = xrealloc(cur, sizeof *cur * (size_t)cap); }
+        cur[nc++] = (SheetRef){ n, h };
+    }
+    if (!seed) for (int i = 0; i < p->nsref; i++) {
+        int k = 0; while (k < nc && cur[k].n != p->sref[i].n) k++;
+        if (k == nc) { style_engine_remove_owner(p->e, p->sref[i].n); changed = true; }
+    }
+    free(p->sref); p->sref = cur; p->nsref = nc;
+    return changed;
+}
 static void restyle(App *a) {
     Page *p = a->cur;
     if (!p || p->d->dom_version == p->seen_ver) return;
     p->seen_ver = p->d->dom_version;
-    style_recalc(p->e, &p->d->node, false);
+    bool sheets = sync_sheets(p, false);
+    style_recalc(p->e, &p->d->node, sheets);
     a->relayout = a->dirty = true;
 }
 static void history_go(App *a, int d);
@@ -277,6 +320,7 @@ static void page_start_js(App *a, Page *p) {
     if (getenv("LUMEN_NO_JS")) return;
     JsHost h = { a, &p->e->media, h_navigate, h_set_url, h_history_go, h_viewport, h_scroll_to, h_hit, h_history_len };
     double t0 = now_ms();
+    sync_sheets(p, true);
     p->js = js_new(p->d, &h);
     for (int i = 0; i < p->nscripts; i++) {
         PScript *sc = &p->scripts[i];
@@ -327,7 +371,20 @@ static void history_go(App *a, int d) {
     a->hpos = np; navigate(a, a->hist[np], false);
 }
 
+#include <execinfo.h>
+#include <unistd.h>
+#include <signal.h>
+#include <mach-o/dyld.h>
+static void crash_handler(int sig) {
+    void *bt[64]; int n = backtrace(bt, 64);
+    char buf[96]; int k = snprintf(buf, sizeof buf, "lumen: fatal signal %d, load address 0x%lx\n", sig, (unsigned long)(0x100000000UL + (unsigned long)_dyld_get_image_vmaddr_slide(0)));
+    write(2, buf, (size_t)k);
+    backtrace_symbols_fd(bt, n, 2);
+    signal(sig, SIG_DFL); raise(sig);
+}
+
 int main(int argc, char **argv) {
+    signal(SIGSEGV, crash_handler); signal(SIGBUS, crash_handler); signal(SIGABRT, crash_handler);
     const char *start = argc > 1 ? argv[1] : "https://en.wikipedia.org/wiki/Web_browser";
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) { fprintf(stderr, "SDL_Init: %s\n", SDL_GetError()); return 1; }
     dom_init(); net_init(6); font_init();

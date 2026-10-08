@@ -46,7 +46,7 @@ mk('HTMLBaseElement', HTMLElement, ['base'], p => { reflectUrl(p, 'href'); refle
 mk('HTMLTemplateElement', HTMLElement, ['template'], p => methods(p, { get content() { return N.templateContent(this); } }));
 mk('HTMLSlotElement', HTMLElement, ['slot'], p => { reflectStr(p, 'name'); methods(p, { assignedNodes() { return []; }, assignedElements() { return []; }, assign() {} }); });
 mk('HTMLIFrameElement', HTMLElement, ['iframe'], p => { reflectUrl(p, 'src'); reflectStr(p, 'srcdoc', 'name', 'allow', 'width', 'height', 'referrerPolicy', 'loading', 'sandbox'); methods(p, { get contentWindow() { return null; }, get contentDocument() { return null; } }); });
-mk('HTMLCanvasElement', HTMLElement, ['canvas'], p => { reflectInt(p, 300, 'width'); reflectInt(p, 150, 'height'); methods(p, { getContext() { return null; }, toDataURL() { return 'data:,'; }, toBlob(cb) { setTimeout(() => cb(null)); } }); });
+mk('HTMLCanvasElement', HTMLElement, ['canvas'], p => { reflectInt(p, 300, 'width'); reflectInt(p, 150, 'height'); methods(p, { getContext(t) { return t === '2d' ? (this._ctx2d || (this._ctx2d = new CanvasRenderingContext2D(this))) : null; }, toDataURL() { return 'data:,'; }, toBlob(cb) { setTimeout(() => cb(null)); } }); });
 mk('HTMLFormElement', HTMLElement, ['form'], p => {
     reflectUrl(p, 'action'); reflectStr(p, 'name', 'target', 'acceptCharset', 'autocomplete'); reflectBool(p, 'noValidate');
     methods(p, {
