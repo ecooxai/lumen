@@ -13,6 +13,7 @@
 #include <libswresample/swresample.h>
 #include <libswscale/swscale.h>
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -594,6 +595,7 @@ int media_tick(void) {
             if (s->has_audio && !s->eof) aud_eof = false;
         }
         bool popped = false;
+        if (getenv("LUMEN_MEDIA_DEBUG")) { static double last; if (now_ms() - last > 500) { last = now_ms(); fprintf(stderr, "mp %p play=%d seek=%d wait=%d eos=%d vqn=%d ah=%p abuf=%.2f clk=%.2f dev=%p ea=%d", (void *)m, m->playing, m->seeking, m->waiting, m->eos, m->vqn, (void *)m->ah, m->abuf, clock_of(m), (void *)m->dev, m->expect_audio); for (int k = 0; k < m->nst; k++) fprintf(stderr, " s%d[eof=%d v=%d a=%d]", k, m->st[k]->eof, m->st[k]->has_video, m->st[k]->has_audio); fprintf(stderr, "\n"); } }
         if (m->seeking && (m->vqn || (!vid && m->abuf > 0) || all_eof)) {
             m->seeking = false;
             if (m->vqn) { present(m, m->vq[0].im); memmove(m->vq, m->vq + 1, sizeof m->vq[0] * (size_t)--m->vqn); popped = true; }
@@ -606,6 +608,12 @@ int media_tick(void) {
             if (starve && !m->waiting) { m->base_t = clock_of(m); m->waiting = true; }
             else if (!starve && m->waiting) { m->waiting = false; m->base_wall = now_ms(); }
             double t = clock_of(m);
+            if (!(m->expect_audio && m->dev)) while (m->ah && m->ah->pts + (double)m->ah->frames / OUT_RATE <= t) {   /* no audio device: drain by clock */
+                AChunk *c = m->ah; m->ah = c->next; if (!m->ah) m->at = NULL;
+                m->abuf -= (double)(c->frames - c->off) / OUT_RATE; if (m->abuf < 0) m->abuf = 0;
+                free(c->s); free(c); SDL_BroadcastCondition(m->cv);
+            }
+            if (all_eof && !isnan(m->duration) && t >= m->duration - 0.01) while (m->vqn) { present(m, m->vq[0].im); memmove(m->vq, m->vq + 1, sizeof m->vq[0] * (size_t)--m->vqn); popped = true; }
             while (m->vqn && m->vq[0].pts <= t + 0.008) { present(m, m->vq[0].im); memmove(m->vq, m->vq + 1, sizeof m->vq[0] * (size_t)--m->vqn); popped = true; }
             if (all_eof && !m->vqn && !m->ah && (m->eos || (m->nst && m->st[0]->progressive))) {
                 m->base_t = isnan(m->duration) ? t : m->duration; m->playing = false; m->ended = true;
