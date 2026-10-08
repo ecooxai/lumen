@@ -3,3 +3,4 @@ build/
 *.dSYM
 out/
 build-dev/
+dist/

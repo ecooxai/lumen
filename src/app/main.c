@@ -217,7 +217,7 @@ typedef struct App {
     int wsicon[16]; Image *icimg[16][2];
     Image *sym[7][4]; bool vbars;
     int tip_tab; double tip_until;     /* CPU-limit dot tooltip pinned by a click */
-    bool editing; int sel_all;
+    bool editing; int sel_all, page_sel;
     double caret_t;
     bool dirty;
     Font *ui;
@@ -1441,7 +1441,7 @@ int main(int argc, char **argv) {
                 if (!a.editing && page_focus(&a)) {
                     Node *f = page_focus(&a);
                     if (!a.t->cur->js || js_dispatch(a.t->cur->js, f, "keydown", "KeyboardEvent", true, true, 0, 0, 0, ev.text.text)) {
-                        char *v = ctl_value(f); SB b; sb_init(&b); sb_puts(&b, v); sb_puts(&b, ev.text.text); free(v);
+                        char *v = ctl_value(f); SB b; sb_init(&b); if (!a.page_sel) sb_puts(&b, v); a.page_sel = 0; sb_puts(&b, ev.text.text); free(v);
                         ctl_set(&a, f, sb_take(&b));
                     }
                     if (a.t->cur->js) js_dispatch(a.t->cur->js, f, "keyup", "KeyboardEvent", true, true, 0, 0, 0, ev.text.text);
@@ -1453,7 +1453,8 @@ int main(int argc, char **argv) {
                 SDL_Keycode k = ev.key.key; float page = a.vh - BAR - 40;
                 if (k == SDLK_LGUI || k == SDLK_RGUI || k == SDLK_LCTRL || k == SDLK_RCTRL) { cmd = true; break; }
                 if (cmd || (ev.key.mod & (SDL_KMOD_GUI | SDL_KMOD_CTRL))) {
-                    if (k == SDLK_L) { a.editing = true; a.sel_all = 1; SDL_StartTextInput(a.win); }
+                    if (k == SDLK_A && !a.editing && page_focus(&a)) a.page_sel = 1;
+                    else if (k == SDLK_L) { a.editing = true; a.sel_all = 1; SDL_StartTextInput(a.win); }
                     else if (k == SDLK_R && a.t->hpos >= 0) navigate(&a, a.t->hist[a.t->hpos], false);
                     else if (k == SDLK_LEFTBRACKET) history_go(&a, -1);
                     else if (k == SDLK_RIGHTBRACKET) history_go(&a, 1);
@@ -1474,8 +1475,9 @@ int main(int argc, char **argv) {
                 if (page_focus(&a)) {
                     Node *f = page_focus(&a); const char *kn = k == SDLK_RETURN || k == SDLK_KP_ENTER ? "Enter" : k == SDLK_BACKSPACE ? "Backspace" : k == SDLK_ESCAPE ? "Escape" : k == SDLK_TAB ? "Tab" : k == SDLK_LEFT ? "ArrowLeft" : k == SDLK_RIGHT ? "ArrowRight" : k == SDLK_UP ? "ArrowUp" : k == SDLK_DOWN ? "ArrowDown" : NULL;
                     if (kn) {
+                        if (strcmp(kn, "Backspace")) a.page_sel = 0;
                         bool ok = !a.t->cur->js || js_dispatch(a.t->cur->js, f, "keydown", "KeyboardEvent", true, true, 0, 0, 0, kn);
-                        if (ok && !strcmp(kn, "Backspace")) { char *v = ctl_value(f); size_t n = strlen(v); while (n && (v[n - 1] & 0xC0) == 0x80) n--; if (n) n--; v[n] = 0; ctl_set(&a, f, v); }
+                        if (ok && !strcmp(kn, "Backspace")) { char *v = ctl_value(f); size_t n = a.page_sel ? 1 : strlen(v); if (a.page_sel) v[0] = 0, n = 0, a.page_sel = 0; while (n && (v[n - 1] & 0xC0) == 0x80) n--; if (n) n--; v[n] = 0; ctl_set(&a, f, v); }
                         else if (ok && !strcmp(kn, "Enter") && f->tag == A_input) submit_form(&a, f);
                         else if (ok && !strcmp(kn, "Escape")) focus_node(&a, NULL);
                         if (a.t->cur && a.t->cur->js && page_focus(&a) == f) js_dispatch(a.t->cur->js, f, "keyup", "KeyboardEvent", true, true, 0, 0, 0, kn);
