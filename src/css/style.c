@@ -1192,6 +1192,17 @@ char *css_get_computed_value(Node *el, const char *prop) {
     else if (!strcmp(prop, "visibility")) sb_puts(&b, s->visibility ? "hidden" : "visible");
     else if (!strcmp(prop, "color")) color_str(&b, s->color);
     else if (!strcmp(prop, "background-color")) color_str(&b, s->bg_color);
+    else if (!strcmp(prop, "background-image")) {
+        const Gradient *g = s->bg_gradient;
+        if (s->bg_image) sb_printf(&b, "url(\"%s\")", s->bg_image);
+        else if (!g) sb_puts(&b, "none");
+        else {
+            sb_puts(&b, g->repeating ? "repeating-" : ""); sb_puts(&b, g->type ? "radial-gradient(" : "linear-gradient(");
+            if (!g->type) sb_printf(&b, "%gdeg", g->angle);
+            for (int i = 0; i < g->nstops; i++) { if (i || !g->type) sb_puts(&b, ", "); color_str(&b, g->stops[i].color); sb_printf(&b, " %g%%", g->stops[i].pos * 100); }
+            sb_putc(&b, ')');
+        }
+    }
     else if (!strcmp(prop, "font-size")) sb_printf(&b, "%gpx", s->font_size);
     else if (!strcmp(prop, "font-weight")) sb_printf(&b, "%d", s->font_weight);
     else if (!strcmp(prop, "font-family")) sb_puts(&b, s->font_family);

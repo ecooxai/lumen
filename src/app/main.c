@@ -329,11 +329,14 @@ static void img_done(NetRequest *rq, NetResponse *r, void *ud) {
     if (g_app->cur && g_app->cur->gen == l->gen) { g_app->cur->img_check = true; g_app->relayout = g_app->dirty = true; }
     free(l->u); free(l);
 }
-/* Start async loads for <img> sources that appeared after the initial load (script-inserted or src changed). */
+/* Start async loads for <img> sources and CSS background images that appeared after the initial load. */
 static void sync_images(Page *p) {
     for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) {
-        if (n->type != NODE_ELEMENT || n->ns != NS_HTML || n->tag != A_img || !node_attr(n, "src")) continue;
-        char *u = url_join(p->d->url, node_attr(n, "src"));
+        if (n->type != NODE_ELEMENT) continue;
+        char *u = NULL;
+        if (n->style && n->style->bg_image && n->style->display != D_NONE) u = xstrdup(n->style->bg_image);
+        else if (n->ns == NS_HTML && n->tag == A_img && node_attr(n, "src")) u = url_join(p->d->url, node_attr(n, "src"));
+        else continue;
         if (!u || !*u || !strncmp(u, "blob:", 5)) { free(u); continue; }
         SDL_LockMutex(icache_mu);
         bool have = hm_get(&icache, u) != NULL;
@@ -401,8 +404,8 @@ static void restyle(App *a) {
     if (!p || p->d->dom_version == p->seen_ver) return;
     p->seen_ver = p->d->dom_version;
     bool sheets = sync_sheets(p, false);
-    sync_images(p);
     style_recalc(p->e, &p->d->node, sheets);
+    sync_images(p);
     p->img_check = true;
     a->relayout = a->dirty = true;
 }
@@ -707,6 +710,7 @@ int main(int argc, char **argv) {
                     if (a.hpos >= 0) { free(a.hist[a.hpos]); a.hist[a.hpos] = xstrdup(p->url); }
                     char title[512]; snprintf(title, sizeof title, "%s", p->d->title && *p->d->title ? p->d->title : p->url);
                     SDL_SetWindowTitle(a.win, title);
+                    sync_images(p);
                     page_start_js(&a, p);
                     double t0 = now_ms(); render(&a);
                     fprintf(stderr, "lumen: %s loaded in %.0fms, first frame %.1fms (layout+paint+present), %d boxes\n", p->url, p->load_ms, now_ms() - t0, p->L ? p->L->nboxes : 0);

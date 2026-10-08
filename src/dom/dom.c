@@ -224,6 +224,11 @@ static void esc(SB *b, const char *s, size_t n, bool attr) {
         else sb_putc(b, c);
     }
 }
+static void ser(const Node *n, SB *b);
+static void ser_children(const Node *n, const Node *src, SB *b) {
+    bool raw = n->type == NODE_ELEMENT && n->ns == NS_HTML && (n->tag == A_script || n->tag == A_style || n->tag == A_xmp || n->tag == A_iframe || n->tag == A_noscript || n->tag == A_plaintext || n->tag == atom("noembed") || n->tag == atom("noframes"));
+    for (const Node *c = src->first; c; c = c->next) { if (raw && c->type == NODE_TEXT) sb_put(b, c->text, c->text_len); else ser(c, b); }
+}
 static void ser(const Node *n, SB *b) {
     switch (n->type) {
     case NODE_ELEMENT: {
@@ -232,8 +237,7 @@ static void ser(const Node *n, SB *b) {
         sb_putc(b, '>');
         if (n->ns == NS_HTML && html_is_void(n->tag)) return;
         const Node *src = n->template_content ? n->template_content : n;
-        bool raw = n->tag == A_script || n->tag == A_style || n->tag == A_xmp || n->tag == A_noscript || n->tag == A_plaintext;
-        for (const Node *c = src->first; c; c = c->next) { if (raw && c->type == NODE_TEXT) sb_put(b, c->text, c->text_len); else ser(c, b); }
+        ser_children(n, src, b);
         sb_puts(b, "</"); sb_puts(b, n->tag); sb_putc(b, '>');
         break; }
     case NODE_TEXT: esc(b, n->text, n->text_len, false); break;
@@ -245,7 +249,7 @@ static void ser(const Node *n, SB *b) {
 char *node_serialize(const Node *n, bool outer) {
     SB b; sb_init(&b);
     if (outer) ser(n, &b);
-    else { const Node *src = n->template_content ? n->template_content : n; for (const Node *c = src->first; c; c = c->next) ser(c, &b); }
+    else ser_children(n, n->template_content ? n->template_content : n, &b);
     return sb_take(&b);
 }
 
