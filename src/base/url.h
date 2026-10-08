@@ -9,7 +9,8 @@ typedef struct {
     char *query;    /* without '?', NULL if none */
     char *fragment; /* without '#', NULL if none */
     char *userinfo;
-    bool opaque;    /* data:, about:, javascript:, blob: ... */
+    bool opaque;    /* opaque path: data:, about:, javascript:, blob: ... */
+    bool has_port;  /* explicit non-default port */
 } URL;
 bool url_parse(const char *s, URL *u);
 bool url_resolve(const URL *base, const char *rel, URL *out);

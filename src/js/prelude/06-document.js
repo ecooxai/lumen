@@ -29,13 +29,25 @@ methods(Document.prototype, {
     exitFullscreen() { return Promise.resolve(); }, get pictureInPictureEnabled() { return false; },
     get implementation() { return implementation; },
     createElement(tag, opts) {
-        tag = String(tag); if (!/^[a-zA-Z][^\s\/>\x00]*$/.test(tag)) throw new DOMException(`The tag name provided ('${tag}') is not a valid name.`, 'InvalidCharacterError');
-        const name = tag.toLowerCase(), el = N.create(name, 0);
+        tag = String(tag); if (!validLocalName(tag)) throw new DOMException(`The tag name provided ('${tag}') is not a valid name.`, 'InvalidCharacterError');
+        const name = asciiLower(tag), el = N.create(name, 0); if (N.name(el) !== name) def(el, '__ln', name);
         if (opts && typeof opts === 'object' && opts.is) N.setAttr(el, 'is', String(opts.is));
         if (registry.byName.has(name)) ceUpgrade(el);
         return el;
     },
-    createElementNS(ns, q) { q = String(q); const l = q.includes(':') ? q.slice(q.indexOf(':') + 1) : q; const n = NSURI.indexOf(ns); return n <= 0 ? this.createElement(l) : N.create(l, n); },
+    createElementNS(ns, q) {
+        ns = ns == null || ns === '' ? null : String(ns); q = String(q);
+        const i = q.indexOf(':'), pfx = i >= 0 ? q.slice(0, i) : null, l = i >= 0 ? q.slice(i + 1) : q;
+        if ((pfx !== null && !/^[^\t\n\f\r \/>\x00]+$/.test(pfx)) || !validLocalName(l)) throw new DOMException(`The qualified name provided ('${q}') contains the invalid name-start character.`, 'InvalidCharacterError');
+        if ((pfx !== null && ns === null) || (pfx === 'xml' && ns !== XML_NS) || ((q === 'xmlns' || pfx === 'xmlns') !== (ns === XMLNS_NS)))
+            throw new DOMException(`The namespace configuration for '${q}' is invalid.`, 'NamespaceError');
+        const n = NSURI.indexOf(ns), el = N.create(n === 0 ? l : asciiLower(l), n < 0 ? 0 : n);
+        if (N.name(el) !== l) def(el, '__ln', l);
+        if (n < 0) def(el, '__nsu', ns);
+        if (pfx !== null) def(el, '__pfx', pfx);
+        if (n === 0 && pfx === null && registry.byName.has(l)) ceUpgrade(el);
+        return el;
+    },
     createTextNode(s) { return N.textNode(String(s)); }, createComment(s) { return N.comment(String(s)); },
     createDocumentFragment() { return N.frag(); }, createAttribute(n) { return new Attr(null, String(n).toLowerCase()); },
     createEvent(t) { const m = { event: Event, events: Event, htmlevents: Event, customevent: CustomEvent, uievent: UIEvent, uievents: UIEvent, mouseevent: MouseEvent, mouseevents: MouseEvent, keyboardevent: KeyboardEvent, focusevent: FocusEvent, messageevent: MessageEvent }; const C = m[String(t).toLowerCase()]; if (!C) throw new DOMException(`The provided event type ('${t}') is invalid.`, 'NotSupportedError'); return new C(''); },

@@ -35,9 +35,12 @@ class Element extends Node {}
 methods(Element.prototype, ParentNode); methods(Element.prototype, ChildNode);
 const lcName = (el, n) => { n = String(n); return N.ns(el) === 0 ? n.toLowerCase() : n; };
 const NSURI = ['http://www.w3.org/1999/xhtml', 'http://www.w3.org/2000/svg', 'http://www.w3.org/1998/Math/MathML'];
+const XML_NS = 'http://www.w3.org/XML/1998/namespace', XMLNS_NS = 'http://www.w3.org/2000/xmlns/';
+const validLocalName = n => /^[A-Za-z][^\t\n\f\r \/>\x00]*$/.test(n) || /^[:_\u0080-\u{10FFFF}][A-Za-z0-9\-.:_\u0080-\u{10FFFF}]*$/u.test(n);
+const asciiLower = s => s.replace(/[A-Z]+/g, c => c.toLowerCase()), asciiUpper = s => s.replace(/[a-z]+/g, c => c.toUpperCase());
 methods(Element.prototype, {
-    get tagName() { const n = N.name(this); return N.ns(this) === 0 ? n.toUpperCase() : n; },
-    get localName() { return N.name(this); }, get namespaceURI() { return NSURI[N.ns(this)] || NSURI[0]; }, get prefix() { return null; },
+    get tagName() { const q = this.__pfx ? this.__pfx + ':' + this.localName : this.localName; return this.namespaceURI === NSURI[0] ? asciiUpper(q) : q; },
+    get localName() { return this.__ln ?? N.name(this); }, get namespaceURI() { return this.__nsu !== undefined ? this.__nsu : NSURI[N.ns(this)] || NSURI[0]; }, get prefix() { return this.__pfx ?? null; },
     get id() { return N.attr(this, 'id') ?? ''; }, set id(v) { this.setAttribute('id', v); },
     get className() { return N.attr(this, 'class') ?? ''; }, set className(v) { this.setAttribute('class', v); },
     get classList() { if (!this.__cl) def(this, '__cl', new DOMTokenList(this, 'class')); return this.__cl; }, set classList(v) { this.setAttribute('class', v); },

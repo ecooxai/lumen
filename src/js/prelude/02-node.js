@@ -180,17 +180,30 @@ class NamedNodeMap {
 }
 class DOMTokenList {
     constructor(el, attr) { def(this, '_el', el); def(this, '_attr', attr); }
-    _get() { const v = N.attr(this._el, this._attr); return v ? v.split(/[\t\n\f\r ]+/).filter(Boolean) : []; }
-    _set(a) { this._el.setAttribute(this._attr, a.join(' ')); }
+    _get() { const v = N.attr(this._el, this._attr); return v ? [...new Set(v.split(/[\t\n\f\r ]+/).filter(Boolean))] : []; }
+    _set(a) { if (!a.length && N.attr(this._el, this._attr) == null) return; this._el.setAttribute(this._attr, a.join(' ')); }
+    static _empty(t) { if (!t) throw new DOMException('The token provided must not be empty.', 'SyntaxError'); }
+    static _ws(t) { if (/[\t\n\f\r ]/.test(t)) throw new DOMException(`The token provided ('${t}') contains HTML space characters, which are not valid in tokens.`, 'InvalidCharacterError'); }
+    static _chk(t) { t = String(t); DOMTokenList._empty(t); DOMTokenList._ws(t); return t; }
     get length() { return this._get().length; }
     get value() { return N.attr(this._el, this._attr) || ''; } set value(v) { this._el.setAttribute(this._attr, v); }
     item(i) { return this._get()[i] ?? null; }
     contains(t) { return this._get().includes(String(t)); }
-    add(...ts) { const a = this._get(); let ch = false; for (let t of ts) { t = String(t); if (!t || /\s/.test(t)) throw new DOMException('The token provided contains invalid characters.', t ? 'InvalidCharacterError' : 'SyntaxError'); if (!a.includes(t)) { a.push(t); ch = true; } } if (ch) this._set(a); }
-    remove(...ts) { const r = ts.map(String); const a = this._get(); const b = a.filter(x => !r.includes(x)); if (b.length !== a.length) this._set(b); }
-    toggle(t, force) { t = String(t); const has = this.contains(t); if (force === undefined ? has : !force) { if (has) this.remove(t); return false; } if (!has) this.add(t); return true; }
-    replace(a, b) { const l = this._get(); const i = l.indexOf(String(a)); if (i < 0) return false; l[i] = String(b); this._set([...new Set(l)]); return true; }
-    supports() { return true; }
+    add(...ts) { ts = ts.map(DOMTokenList._chk); const a = this._get(); for (const t of ts) if (!a.includes(t)) a.push(t); this._set(a); }
+    remove(...ts) { ts = ts.map(DOMTokenList._chk); this._set(this._get().filter(x => !ts.includes(x))); }
+    toggle(t, force) {
+        t = DOMTokenList._chk(t); const a = this._get();
+        if (a.includes(t)) { if (force === undefined || !force) { this._set(a.filter(x => x !== t)); return false; } return true; }
+        if (force === undefined || force) { a.push(t); this._set(a); return true; }
+        return false;
+    }
+    replace(t, n) {
+        t = String(t); n = String(n); DOMTokenList._empty(t); DOMTokenList._empty(n); DOMTokenList._ws(t); DOMTokenList._ws(n);
+        const a = this._get(); if (!a.includes(t)) return false;
+        const out = []; for (const x of a) { if (x === t || x === n) { if (!out.includes(n)) out.push(n); } else out.push(x); }
+        this._set(out); return true;
+    }
+    supports(t) { if (this._attr === 'class') throw new TypeError(`DOMTokenList has no supported tokens.`); return true; }
     forEach(fn, self) { this._get().forEach((v, i) => fn.call(self, v, i, this)); }
     entries() { return this._get().entries(); } keys() { return this._get().keys(); } values() { return this._get().values(); }
     [Symbol.iterator]() { return this._get()[Symbol.iterator](); }

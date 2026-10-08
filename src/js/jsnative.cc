@@ -411,7 +411,7 @@ FN(urlParse) {
     std::string user, pass;
     if (u.userinfo) { const char *col = strchr(u.userinfo, ':'); user = col ? std::string(u.userinfo, (size_t)(col - u.userinfo)) : u.userinfo; if (col) pass = col + 1; }
     std::string hostname = u.host ? u.host : "";
-    std::string port = u.port && u.port != url_default_port(u.scheme) ? std::to_string(u.port) : "";
+    std::string port = u.has_port ? std::to_string(u.port) : "";
     std::string host = hostname + (port.empty() ? "" : ":" + port);
     std::string origin = "null";
     if (!u.opaque && u.host) { char *o = url_origin(&u); if (o) { origin = o; free(o); } }
