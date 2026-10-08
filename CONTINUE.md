@@ -64,3 +64,15 @@ Load (DCL/load): Google 0.53/3.66 s, Bing 1.97/2.23 s, YT watch ~2.2/3.47 s, YT 
   (`Layout.inl_cbh`), so YouTube's progress list has height. Paint: axis-aligned `scale()` now applied (display.c),
   so YouTube's scaleX progress fill shows played/buffered correctly.
 - Not done: video bar below a video overlaps following content (no layout space reserved); `loop` video state shows paused at end.
+
+## Session 2026-10-08: YouTube search, Lite restore, DMG
+- YouTube search works (type, Enter, search button, URL bar updates, shade closes). Fixes:
+  - `document.all` via `N.makeAll` (undetectable object) — Polymer Resin sanitizer was replacing `hidden` binding with "zClosurez" because `document.all` was missing, hiding results.
+  - `focus()`/`blur()` now fire bubbling `focusin`/`focusout` with `relatedTarget` (dropdown/scrim close).
+  - `history.pushState` borrowed from an iframe realm delegates to the receiver (YouTube binds iframe history methods).
+  - Click path fires pointerdown/pointerup; a prevented mousedown keeps focus.
+  - Cmd+A selects all in page text fields.
+- Lite mode: per-tab toggle in tab menu, dark green title, `IntersectionObserver` re-checks every 300 ms, images re-decoded from retained encoded bytes.
+- `LUMEN_WINDOW=800x600` sets the window size.
+- DMG: `python3 tools/mkdmg.py 0.1.0-preview` -> `dist/`. Signing identity "Lumen Debug Signing" lives in `~/.lumen-signing/` (keychain + p12 + passwords, NOT in repo); unlock the keychain with the password in `keychain-pass` before running, and pass `LUMEN_SIGN_ID=<sha1>`.
+- Not done: GitHub push/release (no GitHub access on box), product video, fresh Chrome benchmarks.
