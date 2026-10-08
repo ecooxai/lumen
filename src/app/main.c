@@ -158,7 +158,7 @@ static void page_free(Page *p) {
 }
 
 typedef struct Tab { Page *cur; bool loading, relayout; char *hist[256]; uint64_t hgen[256]; int nhist, hpos; char url[2048]; float sy; uint64_t lgen; int ws;
-    double cpu_ms, media_ms0, hot_ms, budget, bud_t, unlimit_until; float pct; bool limited, info; } Tab;
+    double cpu_ms, media_ms0, budget, bud_t, unlimit_until; float pct, cpuhist[60]; int ncpu, cpui; bool limited, info; } Tab;
 typedef struct App {
     SDL_Window *win; SDL_MetalView mview; Gpu *gpu;
     int pw, ph; float scale, vw, vh;
@@ -259,7 +259,7 @@ static float tab_w(App *a) { int v[MAX_TABS], n = ws_tabs(a, a->wi, v); float w 
 static int bar_hit(App *a, float x, float y) {
     if (y < TABH) {
         int v[MAX_TABS], n = ws_tabs(a, a->wi, v), k; float tw = tab_w(a), x0 = TLW + 6; k = (int)((x - x0) / tw);
-        if (x >= x0 && k < n) { float lx = x - x0 - k * tw; return lx > tw - 28 ? HB_TABX + v[k] : a->tabs[v[k]]->limited && lx > tw - 46 ? HB_TABDOT + v[k] : HB_TAB + v[k]; }
+        if (x >= x0 && k < n) { float lx = x - x0 - k * tw; return lx > tw - 28 ? HB_TABX + v[k] : a->tabs[v[k]]->limited && lx < 26 ? HB_TABDOT + v[k] : HB_TAB + v[k]; }
         if (x >= x0 + n * tw && x < x0 + n * tw + 32) return HB_NEWTAB;
         return HB_NONE;
     }
@@ -290,7 +290,7 @@ static void chrome_tip(App *a) {   /* tooltip for a tab's CPU-limit dot (hover o
     if (i < 0 || i >= a->ntabs || !a->tabs[i]->limited || a->tabs[i]->ws != a->wi) return;
     int vt[MAX_TABS], n = ws_tabs(a, a->wi, vt), k = 0; while (k < n && vt[k] != i) k++;
     const char *msg = "CPU use of this tab is limited to 40%";
-    float tw = tab_w(a), w = text_width(a->ui, msg, strlen(msg), 0) + 20, x = TLW + 6 + k * tw + tw - 35 - w / 2, y = TABH + 3;
+    float tw = tab_w(a), w = text_width(a->ui, msg, strlen(msg), 0) + 20, x = TLW + 6 + k * tw + 15 - w / 2, y = TABH + 3;
     if (x + w > a->vw - 6) x = a->vw - 6 - w;
     if (x < 6) x = 6;
     push_rect(&a->cdl, x, y, w, 26, 6, RGBA(45, 45, 48, 240));
@@ -307,8 +307,8 @@ static void build_chrome(App *a) {
         else if (a->hover == HB_TAB + i || a->hover == HB_TABX + i) push_rect(dl, x, 6, tabw - 2, TABH - 10, 6, RGBA(235, 237, 240, 255));
         else if (k + 1 < nvt && vt[k + 1] != a->ti) push_rect(dl, x + tabw - 2, 9, 1, TABH - 16, 0, RGBA(170, 175, 180, 255));
         const char *title = t->cur && t->cur->d && t->cur->d->title && *t->cur->d->title ? t->cur->d->title : *t->url ? t->url : "New Tab";
-        push_text(dl, a->ui, title, x + 12, tbase, tabw - (t->limited ? 54 : 40), RGBA(40, 40, 40, 255));
-        if (t->limited) push_rect(dl, x + tabw - 40, (4 + TABH) / 2 - 5, 10, 10, 5, RGBA(52, 199, 89, 255));
+        if (t->limited) push_rect(dl, x + 10, (4 + TABH) / 2 - 5, 10, 10, 5, RGBA(52, 199, 89, 255));
+        push_text(dl, a->ui, title, x + (t->limited ? 26 : 12), tbase, tabw - (t->limited ? 54 : 40), RGBA(40, 40, 40, 255));
         push_text(dl, a->ui, "\xC3\x97", x + tabw - 22, tbase, 16, a->hover == HB_TABX + i ? RGBA(20, 20, 20, 255) : RGBA(110, 110, 110, 255));
         if (t->loading) push_rect(dl, x + 8, TABH - 3, (tabw - 18) * 0.35f, 2, 1, RGBA(66, 133, 244, 255));
     }
@@ -342,7 +342,7 @@ static void build_chrome(App *a) {
         float y0 = TABH + TB, rb = (a->ui->ascent - a->ui->descent) / 2, cy = y0 + g_info_h / 2 + rb;
         push_rect(dl, a->side, y0, a->vw - a->side, g_info_h, 0, RGBA(254, 247, 224, 255));
         push_rect(dl, a->side, y0 + g_info_h - 1, a->vw - a->side, 1, 0, RGBA(230, 214, 160, 255));
-        push_text(dl, a->ui, "This tab used over 80% CPU for 20 s, so Lumen limited it to 40%. Remove the limit for:", a->side + 14, cy, a->vw - a->side - 310, RGBA(60, 50, 20, 255));
+        push_text(dl, a->ui, "This tab used over 80% CPU for 60 s, so Lumen limited it to 40%. Remove the limit for:", a->side + 14, cy, a->vw - a->side - 310, RGBA(60, 50, 20, 255));
         static const char *lb[4] = { "1 hour", "4 hours", "10 hours", "\xC3\x97" };
         for (int k = 0; k < 4; k++) {
             float bx, bwid; info_btn(a, k, &bx, &bwid);
@@ -981,10 +981,10 @@ static void menu_cmd(App *a, int c) {
 }
 static void info_click(App *a, int k) {
     Tab *t = a->t;
-    if (k < 3) { static const int H[3] = { 1, 4, 10 }; t->unlimit_until = (double)time(NULL) + H[k] * 3600.0; t->limited = false; t->hot_ms = 0; if (t->cur) media_set_limit(t->cur->d, 0); }
+    if (k < 3) { static const int H[3] = { 1, 4, 10 }; t->unlimit_until = (double)time(NULL) + H[k] * 3600.0; t->limited = false; t->ncpu = 0; if (t->cur) media_set_limit(t->cur->d, 0); }
     t->info = false; a->dirty = true; a->vonly = false;
 }
-static void cpu_monitor(App *a) {   /* a tab over 80% of a core for 20 s is limited to 40% until the user lifts it */
+static void cpu_monitor(App *a) {   /* a tab over 80% of a core for 60 s is limited to 40% until the user lifts it */
     static double last; double now = now_ms();
     if (!last) { last = now; return; }
     double dt = now - last; if (dt < 1000) return; last = now;
@@ -994,8 +994,9 @@ static void cpu_monitor(App *a) {   /* a tab over 80% of a core for 20 s is limi
         t->media_ms0 = mc; t->cpu_ms = 0; t->pct = (float)(used / dt);
         if (t->limited) { if (t->cur) media_set_limit(t->cur->d, 0.4f); continue; }
         if ((double)time(NULL) < t->unlimit_until) continue;
-        if (t->pct > 0.8f) t->hot_ms += dt; else t->hot_ms = 0;
-        if (t->hot_ms >= 20000) {
+        t->cpuhist[t->cpui] = t->pct; t->cpui = (t->cpui + 1) % 60; if (t->ncpu < 60) t->ncpu++;
+        float sum = 0; for (int k = 0; k < t->ncpu; k++) sum += t->cpuhist[k];
+        if (t->ncpu == 60 && sum / 60 > 0.8f) {
             t->limited = t->info = true; t->budget = 0; t->bud_t = now;
             if (t->cur) media_set_limit(t->cur->d, 0.4f);
             fprintf(stderr, "lumen: tab %d limited to 40%% CPU (was %.0f%%)\n", i, t->pct * 100);
@@ -1134,7 +1135,7 @@ int main(int argc, char **argv) {
             case SDL_EVENT_MOUSE_BUTTON_DOWN:
                 if (ev.button.button != SDL_BUTTON_LEFT) break;
                 { int bh = bar_hit(&a, ev.button.x, ev.button.y);
-                  if (bh >= HB_TABDOT) { a.tip_tab = bh - HB_TABDOT; a.tip_until = now_ms() + 4000; a.dirty = true; a.vonly = false; break; }
+                  if (bh >= HB_TABDOT) { int i = bh - HB_TABDOT; if (i != a.ti) tab_select(&a, i); a.t->info = true; a.dirty = true; a.vonly = false; break; }
                   if (bh >= HB_INFO) { info_click(&a, bh - HB_INFO); break; }
                   if (bh >= HB_WS) { int w = bh - HB_WS; if (w != a.wi) ws_select(&a, w); else ws_popup(&a, w, ev.button.x, ev.button.y); break; }
                   if (bh == HB_WSNEW) { menu_cmd(&a, MENU_WS_NEW); break; }
