@@ -381,9 +381,14 @@ void worker_main(std::shared_ptr<Worker> w) {
             v8::TryCatch tc(iso);
             v8::ScriptOrigin origin(jstr(iso, w->url.c_str()));
             v8::Local<v8::Script> s; v8::Local<v8::Value> r;
-            if (v8::Script::Compile(ctx, jstr(iso, src.data(), (int)src.size()), &origin).ToLocal(&s)) (void)s->Run(ctx).ToLocal(&r);
-            wcheck(E, tc);
-            iso->PerformMicrotaskCheckpoint();
+            if (!v8::Script::Compile(ctx, jstr(iso, src.data(), (int)src.size()), &origin).ToLocal(&s)) {
+                ok = false;   /* classic-script parse errors fire a plain error Event on the Worker */
+                post_out(E, OutMsg{ WM_LOADFAIL, {}, {}, {}, 0, 0 });
+            } else {
+                (void)s->Run(ctx).ToLocal(&r);
+                wcheck(E, tc);
+                iso->PerformMicrotaskCheckpoint();
+            }
         }
         while (ok && !w->term && !E->closing) {
             std::deque<Buf> msgs;
