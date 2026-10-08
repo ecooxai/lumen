@@ -72,10 +72,141 @@ const performance = Object.assign(new EventTarget(), {
     get memory() { const h = N.heap(); return { usedJSHeapSize: h[0], totalJSHeapSize: h[1], jsHeapSizeLimit: h[2] }; },
     toJSON() { return { timeOrigin: T0 }; },
 });
+const ckeys = new WeakMap();
+class CryptoKey { constructor() { throw new TypeError('Illegal constructor'); } }
+function mkKey(type, extractable, algorithm, usages, data) {
+    const k = Object.create(CryptoKey.prototype);
+    Object.defineProperties(k, { type: { value: type, enumerable: true }, extractable: { value: !!extractable, enumerable: true }, algorithm: { value: Object.freeze(algorithm), enumerable: true }, usages: { value: Object.freeze([...usages]), enumerable: true } });
+    ckeys.set(k, data); return k;
+}
+const ALGS = ['AES-GCM', 'AES-CBC', 'AES-CTR', 'AES-KW', 'HMAC', 'ECDH', 'ECDSA', 'HKDF', 'PBKDF2', 'SHA-1', 'SHA-256', 'SHA-384', 'SHA-512', 'RSA-OAEP', 'RSA-PSS', 'RSASSA-PKCS1-v1_5', 'Ed25519', 'X25519'];
+function normAlg(a) {
+    const o = typeof a === 'string' ? { name: a } : Object.assign({}, a);
+    const n = ALGS.find(x => x.toLowerCase() === String(o.name).toLowerCase());
+    if (!n) throw new DOMException('Unrecognized algorithm name', 'NotSupportedError');
+    o.name = n; return o;
+}
+const hashOf = h => normAlg(h).name;
+function cbytes(x) {
+    if (x instanceof ArrayBuffer) return x.slice(0);
+    if (ArrayBuffer.isView(x)) return new Uint8Array(x.buffer, x.byteOffset, x.byteLength).slice().buffer;
+    throw new TypeError('Expected a BufferSource');
+}
+const b64u = {
+    enc(b) { let s = ''; for (const x of new Uint8Array(b)) s += String.fromCharCode(x); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); },
+    dec(s) { s = String(s).replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; const t = atob(s), u = new Uint8Array(t.length); for (let i = 0; i < t.length; i++) u[i] = t.charCodeAt(i); return u.buffer; },
+};
+const opErr = r => { if (r === undefined) throw new DOMException('The operation failed for an operation-specific reason', 'OperationError'); return r; };
+const keyData = (k, usage) => {
+    if (!(k instanceof CryptoKey)) throw new TypeError('Expected a CryptoKey');
+    if (usage && !k.usages.includes(usage)) throw new DOMException(`Key usages do not permit ${usage}`, 'InvalidAccessError');
+    return ckeys.get(k);
+};
+const hmacLen = h => (h === 'SHA-384' || h === 'SHA-512') ? 1024 : 512;
+const isEC = n => n === 'ECDH' || n === 'ECDSA';
+const ecPoint = (x, y) => { const a = new Uint8Array(x), b = new Uint8Array(y), u = new Uint8Array(1 + a.length + b.length); u[0] = 4; u.set(a, 1); u.set(b, 1 + a.length); return u.buffer; };
+const ecXY = pub => { const u = new Uint8Array(pub), n = (u.length - 1) / 2; return [b64u.enc(u.slice(1, 1 + n)), b64u.enc(u.slice(1 + n))]; };
+const ecUsages = (name, type, usages) => usages.filter(u => name === 'ECDH' ? type === 'private' && (u === 'deriveKey' || u === 'deriveBits') : u === (type === 'private' ? 'sign' : 'verify'));
+const SC = {
+    digest(alg, data) { return opErr(N.cDigest(hashOf(alg), cbytes(data))); },
+    generateKey(alg, ext, usages) {
+        const a = normAlg(alg), n = a.name;
+        if (n.startsWith('AES-')) { if (![128, 192, 256].includes(a.length)) throw new DOMException('AES key length must be 128, 192 or 256 bits', 'OperationError'); return mkKey('secret', ext, { name: n, length: a.length }, usages, crypto.getRandomValues(new Uint8Array(a.length / 8)).buffer); }
+        if (n === 'HMAC') { const h = hashOf(a.hash), len = a.length || hmacLen(h); return mkKey('secret', ext, { name: n, hash: { name: h }, length: len }, usages, crypto.getRandomValues(new Uint8Array(Math.ceil(len / 8))).buffer); }
+        if (isEC(n)) {
+            const kp = opErr(N.cEcGen(a.namedCurve)), al = { name: n, namedCurve: a.namedCurve };
+            return { publicKey: mkKey('public', true, al, ecUsages(n, 'public', usages), { curve: a.namedCurve, pub: kp[1] }), privateKey: mkKey('private', ext, al, ecUsages(n, 'private', usages), { curve: a.namedCurve, priv: kp[0], pub: kp[1] }) };
+        }
+        throw new DOMException(`${n} key generation is not supported`, 'NotSupportedError');
+    },
+    exportKey(fmt, key) {
+        const d = keyData(key), al = key.algorithm;
+        if (!key.extractable) throw new DOMException('key is not extractable', 'InvalidAccessError');
+        const jwkBase = { ext: true, key_ops: [...key.usages] };
+        if (key.type === 'secret') {
+            if (fmt === 'raw') return d.slice(0);
+            if (fmt === 'jwk') { const bits = d.byteLength * 8, alg = al.name === 'HMAC' ? 'HS' + al.hash.name.slice(4) : al.name.startsWith('AES-') ? `A${bits}${al.name.slice(4)}` : undefined; return Object.assign({ kty: 'oct', k: b64u.enc(d) }, alg ? { alg } : {}, jwkBase); }
+        } else if (key.type === 'public') {
+            if (fmt === 'raw') return d.pub.slice(0);
+            if (fmt === 'spki') return opErr(N.cSpki(d.curve, d.pub));
+            if (fmt === 'jwk') { const [x, y] = ecXY(d.pub); return Object.assign({ kty: 'EC', crv: d.curve, x, y }, jwkBase); }
+        } else {
+            if (fmt === 'pkcs8') return d.priv.slice(0);
+            if (fmt === 'jwk') { const r = opErr(N.cPkcs8Parse(d.priv)), [x, y] = ecXY(r[2]); return Object.assign({ kty: 'EC', crv: r[0], x, y, d: b64u.enc(r[1]) }, jwkBase); }
+        }
+        throw new DOMException(`Unsupported export format ${fmt}`, 'NotSupportedError');
+    },
+    importKey(fmt, data, alg, ext, usages) {
+        const a = normAlg(alg), n = a.name;
+        if (isEC(n)) {
+            let curve = a.namedCurve, pub, priv;
+            if (fmt === 'raw') pub = cbytes(data);
+            else if (fmt === 'spki') { const r = opErr(N.cSpkiParse(cbytes(data))); curve = r[0]; pub = r[1]; }
+            else if (fmt === 'pkcs8') { priv = cbytes(data); const r = opErr(N.cPkcs8Parse(priv)); curve = r[0]; pub = r[2]; }
+            else if (fmt === 'jwk') { curve = data.crv || curve; pub = ecPoint(b64u.dec(data.x), b64u.dec(data.y)); if (data.d) priv = opErr(N.cEcFromD(curve, b64u.dec(data.d), pub)); }
+            else throw new DOMException(`Unsupported import format ${fmt}`, 'NotSupportedError');
+            if (curve !== a.namedCurve) throw new DOMException('Curve mismatch', 'DataError');
+            const type = priv ? 'private' : 'public', al = { name: n, namedCurve: curve };
+            if (type === 'public' && !N.cSpki(curve, pub)) throw new DOMException('Invalid EC public key', 'DataError');
+            return mkKey(type, type === 'public' ? true : ext, al, ecUsages(n, type, usages), { curve, pub, priv });
+        }
+        let raw;
+        if (fmt === 'raw') raw = cbytes(data);
+        else if (fmt === 'jwk' && data && data.kty === 'oct') raw = b64u.dec(data.k);
+        else throw new DOMException(`Unsupported import format ${fmt}`, 'NotSupportedError');
+        if (n.startsWith('AES-')) { if (![16, 24, 32].includes(raw.byteLength)) throw new DOMException('Invalid AES key length', 'DataError'); return mkKey('secret', ext, { name: n, length: raw.byteLength * 8 }, usages, raw); }
+        if (n === 'HMAC') return mkKey('secret', ext, { name: n, hash: { name: hashOf(a.hash) }, length: a.length || raw.byteLength * 8 }, usages, raw);
+        if (n === 'HKDF' || n === 'PBKDF2') return mkKey('secret', false, { name: n }, usages, raw);
+        throw new DOMException(`${n} import is not supported`, 'NotSupportedError');
+    },
+    encrypt(alg, key, data, dec, usage) {
+        const a = normAlg(alg), d = keyData(key, usage || (dec ? 'decrypt' : 'encrypt'));
+        if (key.algorithm.name !== a.name) throw new DOMException('Algorithm does not match key', 'InvalidAccessError');
+        const iv = a.name === 'AES-CTR' ? a.counter : a.iv;
+        if (!a.name.startsWith('AES-') || a.name === 'AES-KW') throw new DOMException(`${a.name} is not supported`, 'NotSupportedError');
+        return opErr(N.cAes(a.name, !dec, d, cbytes(iv), cbytes(data), a.additionalData ? cbytes(a.additionalData) : new ArrayBuffer(0), a.tagLength || 128));
+    },
+    decrypt(alg, key, data) { return SC.encrypt(alg, key, data, true); },
+    sign(alg, key, data) {
+        const a = normAlg(alg), d = keyData(key, 'sign');
+        if (a.name === 'HMAC') return opErr(N.cHmac(key.algorithm.hash.name, d, cbytes(data)));
+        if (a.name === 'ECDSA') return opErr(N.cEcSign(d.curve, hashOf(a.hash), d.priv, cbytes(data)));
+        throw new DOMException(`${a.name} signing is not supported`, 'NotSupportedError');
+    },
+    verify(alg, key, sig, data) {
+        const a = normAlg(alg), d = keyData(key, 'verify');
+        if (a.name === 'HMAC') { const m = new Uint8Array(opErr(N.cHmac(key.algorithm.hash.name, d, cbytes(data)))), s = new Uint8Array(cbytes(sig)); let diff = m.length ^ s.length; for (let i = 0; i < m.length; i++) diff |= m[i] ^ (s[i] | 0); return diff === 0; }
+        if (a.name === 'ECDSA') return N.cEcVerify(d.curve, hashOf(a.hash), d.pub, cbytes(data), cbytes(sig));
+        throw new DOMException(`${a.name} verification is not supported`, 'NotSupportedError');
+    },
+    deriveBits(alg, key, length, usage = 'deriveBits') {
+        const a = normAlg(alg), d = keyData(key, usage);
+        if (a.name === 'ECDH') { const peer = keyData(a.public); const s = opErr(N.cEcDerive(d.curve, d.priv, peer.pub)); return length == null ? s : s.slice(0, length / 8); }
+        if (length == null || length % 8) throw new DOMException('length must be a multiple of 8', 'OperationError');
+        if (a.name === 'HKDF') return opErr(N.cHkdf(hashOf(a.hash), d, cbytes(a.salt), cbytes(a.info), length / 8));
+        if (a.name === 'PBKDF2') return opErr(N.cPbkdf2(hashOf(a.hash), d, cbytes(a.salt), a.iterations, length / 8));
+        throw new DOMException(`${a.name} derivation is not supported`, 'NotSupportedError');
+    },
+    deriveKey(alg, key, dAlg, ext, usages) {
+        const da = normAlg(dAlg), len = da.length || (da.name === 'HMAC' ? hmacLen(hashOf(da.hash)) : undefined);
+        return SC.importKey('raw', SC.deriveBits(alg, key, len, 'deriveKey'), da, ext, usages);
+    },
+    wrapKey(fmt, key, wk, wAlg) {
+        const e = SC.exportKey(fmt, key);
+        return SC.encrypt(wAlg, wk, fmt === 'jwk' ? new TextEncoder().encode(JSON.stringify(e)) : e, false, 'wrapKey');
+    },
+    unwrapKey(fmt, data, uk, uAlg, kAlg, ext, usages) {
+        const raw = SC.encrypt(uAlg, uk, data, true, 'unwrapKey');
+        return SC.importKey(fmt, fmt === 'jwk' ? JSON.parse(new TextDecoder().decode(raw)) : raw, kAlg, ext, usages);
+    },
+};
+class SubtleCrypto { constructor() { throw new TypeError('Illegal constructor'); } }
+for (const k of Object.keys(SC)) Object.defineProperty(SubtleCrypto.prototype, k, { value: { [k](...a) { try { return Promise.resolve(SC[k](...a)); } catch (e) { return Promise.reject(e); } } }[k], writable: true, configurable: true });
+const subtle = Object.create(SubtleCrypto.prototype);
 const crypto = {
     getRandomValues(a) { if (!ArrayBuffer.isView(a)) throw new TypeError('getRandomValues requires an ArrayBufferView'); const u = new Uint8Array(a.buffer, a.byteOffset, a.byteLength); N.random(u.buffer, u.byteOffset, u.byteLength); return a; },
     randomUUID() { const b = crypto.getRandomValues(new Uint8Array(16)); b[6] = (b[6] & 15) | 64; b[8] = (b[8] & 63) | 128; const h = [...b].map(x => x.toString(16).padStart(2, '0')).join(''); return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`; },
-    subtle: { digest() { return Promise.reject(new DOMException('SubtleCrypto is not supported yet', 'NotSupportedError')); } },
+    subtle,
 };
 const mqls = [];
 class MediaQueryList extends EventTarget {
@@ -125,11 +256,12 @@ const document = N.doc();
 Object.setPrototypeOf(document, HTMLDocument.prototype);
 function illegalCtor() { throw new TypeError('Illegal constructor'); }
 const History = function History() { illegalCtor(); }, Navigator = function Navigator() { illegalCtor(); }, Screen = function Screen() { illegalCtor(); };
-const Performance = function Performance() { illegalCtor(); }, Crypto = function Crypto() { illegalCtor(); }, SubtleCrypto = function SubtleCrypto() { illegalCtor(); };
+const Performance = function Performance() { illegalCtor(); }, Crypto = function Crypto() { illegalCtor(); };
 Object.setPrototypeOf(Performance.prototype, EventTarget.prototype);
 Object.setPrototypeOf(history, History.prototype); Object.setPrototypeOf(navigator, Navigator.prototype); Object.setPrototypeOf(screen, Screen.prototype);
 Object.setPrototypeOf(performance, Performance.prototype); Object.setPrototypeOf(crypto, Crypto.prototype);
 const globals = {
+    CryptoKey, SubtleCrypto,
     ProcessingInstruction, TouchEvent, CompositionEvent, ClipboardEvent, DragEvent, StorageEvent, PromiseRejectionEvent, SubmitEvent,
     StyleSheet, IdleDeadline, TimeRanges, MediaError, MediaSource, SourceBuffer, SourceBufferList, ImageData, Path2D, CanvasGradient, CanvasPattern, CanvasRenderingContext2D, History, Navigator, Screen, Performance, Crypto, SubtleCrypto,
     DOMException, DOMRectReadOnly, DOMRect, Event, CustomEvent, UIEvent, FocusEvent, MouseEvent, PointerEvent, WheelEvent, KeyboardEvent, InputEvent, ErrorEvent, ProgressEvent, MessageEvent, PopStateEvent, HashChangeEvent, PageTransitionEvent, AnimationEvent, TransitionEvent, MediaQueryListEvent,

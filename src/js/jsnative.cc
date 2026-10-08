@@ -4,6 +4,14 @@
 #ifndef __APPLE__
 #include <sys/random.h>
 #endif
+#include <vector>
+#include <openssl/core_names.h>
+#include <openssl/ecdsa.h>
+#include <openssl/evp.h>
+#include <openssl/hmac.h>
+#include <openssl/kdf.h>
+#include <openssl/param_build.h>
+#include <openssl/x509.h>
 
 using FCI = v8::FunctionCallbackInfo<v8::Value>;
 #define FN(nm) static void n_##nm(const FCI &a)
@@ -414,6 +422,182 @@ FN(decode) {
     if (n >= 3 && (unsigned char)p[0] == 0xEF && (unsigned char)p[1] == 0xBB && (unsigned char)p[2] == 0xBF) { p += 3; n -= 3; }
     RET(jstr(iso, p, (int)n));
 }
+
+/* SubtleCrypto primitives (OpenSSL). Keys cross the bridge as bytes: EC private = PKCS#8 DER, EC public = uncompressed point. */
+static v8::Local<v8::Value> cbuf(v8::Isolate *iso, const void *p, size_t n) {
+    auto ab = v8::ArrayBuffer::New(iso, n);
+    if (n) memcpy(ab->Data(), p, n);
+    return ab;
+}
+static void cb_in(v8::Local<v8::Value> v, const uint8_t **p, size_t *n) {
+    *p = (const uint8_t *)""; *n = 0;
+    if (v->IsArrayBuffer()) { auto ab = v.As<v8::ArrayBuffer>(); *n = ab->ByteLength(); if (*n) *p = (const uint8_t *)ab->Data(); }
+    else if (v->IsArrayBufferView()) { auto vw = v.As<v8::ArrayBufferView>(); *n = vw->ByteLength(); if (*n) *p = (const uint8_t *)vw->Buffer()->Data() + vw->ByteOffset(); }
+}
+#define IN(i, p, n) const uint8_t *p; size_t n; cb_in(a[i], &p, &n)
+static const EVP_MD *md_of(const std::string &h) {
+    if (h == "SHA-1") return EVP_sha1();
+    if (h == "SHA-256") return EVP_sha256();
+    if (h == "SHA-384") return EVP_sha384();
+    if (h == "SHA-512") return EVP_sha512();
+    return nullptr;
+}
+static const char *curve_of(const std::string &c) { return c == "P-256" ? "prime256v1" : c == "P-384" ? "secp384r1" : c == "P-521" ? "secp521r1" : nullptr; }
+static size_t curve_bytes(const std::string &c) { return c == "P-256" ? 32 : c == "P-384" ? 48 : 66; }
+static const char *curve_name(EVP_PKEY *k) {
+    char g[64] = ""; size_t gl = 0;
+    if (!EVP_PKEY_get_utf8_string_param(k, OSSL_PKEY_PARAM_GROUP_NAME, g, sizeof g, &gl)) return nullptr;
+    return !strcmp(g, "prime256v1") ? "P-256" : !strcmp(g, "secp384r1") ? "P-384" : !strcmp(g, "secp521r1") ? "P-521" : nullptr;
+}
+static EVP_PKEY *ec_fromdata(const std::string &curve, const uint8_t *d, size_t dn, const uint8_t *pub, size_t pn) {
+    const char *g = curve_of(curve); if (!g) return nullptr;
+    OSSL_PARAM_BLD *b = OSSL_PARAM_BLD_new(); BIGNUM *bn = d ? BN_bin2bn(d, (int)dn, nullptr) : nullptr;
+    OSSL_PARAM_BLD_push_utf8_string(b, OSSL_PKEY_PARAM_GROUP_NAME, g, 0);
+    OSSL_PARAM_BLD_push_octet_string(b, OSSL_PKEY_PARAM_PUB_KEY, pub, pn);
+    if (bn) OSSL_PARAM_BLD_push_BN(b, OSSL_PKEY_PARAM_PRIV_KEY, bn);
+    OSSL_PARAM *ps = OSSL_PARAM_BLD_to_param(b);
+    EVP_PKEY_CTX *c = EVP_PKEY_CTX_new_from_name(nullptr, "EC", nullptr); EVP_PKEY *k = nullptr;
+    if (c && ps && EVP_PKEY_fromdata_init(c) > 0) EVP_PKEY_fromdata(c, &k, bn ? EVP_PKEY_KEYPAIR : EVP_PKEY_PUBLIC_KEY, ps);
+    EVP_PKEY_CTX_free(c); OSSL_PARAM_free(ps); OSSL_PARAM_BLD_free(b); BN_free(bn);
+    return k;
+}
+static EVP_PKEY *ec_priv(const uint8_t *p, size_t n) {
+    const unsigned char *q = p; PKCS8_PRIV_KEY_INFO *i = d2i_PKCS8_PRIV_KEY_INFO(nullptr, &q, (long)n);
+    if (!i) return nullptr;
+    EVP_PKEY *k = EVP_PKCS82PKEY(i); PKCS8_PRIV_KEY_INFO_free(i); return k;
+}
+static v8::Local<v8::Value> pkcs8_of(v8::Isolate *iso, EVP_PKEY *k) {
+    PKCS8_PRIV_KEY_INFO *i = EVP_PKEY2PKCS8(k); if (!i) return v8::Undefined(iso);
+    unsigned char *o = nullptr; int l = i2d_PKCS8_PRIV_KEY_INFO(i, &o); PKCS8_PRIV_KEY_INFO_free(i);
+    if (l <= 0) return v8::Undefined(iso);
+    auto r = cbuf(iso, o, (size_t)l); OPENSSL_free(o); return r;
+}
+static v8::Local<v8::Value> pubraw_of(v8::Isolate *iso, EVP_PKEY *k) {
+    EVP_PKEY_set_utf8_string_param(k, OSSL_PKEY_PARAM_EC_POINT_CONVERSION_FORMAT, "uncompressed");
+    size_t l = 0; if (!EVP_PKEY_get_octet_string_param(k, OSSL_PKEY_PARAM_PUB_KEY, nullptr, 0, &l)) return v8::Undefined(iso);
+    std::vector<uint8_t> o(l); if (!EVP_PKEY_get_octet_string_param(k, OSSL_PKEY_PARAM_PUB_KEY, o.data(), l, &l)) return v8::Undefined(iso);
+    return cbuf(iso, o.data(), l);
+}
+FN(cDigest) {
+    CTX; const EVP_MD *md = md_of(S(0)); IN(1, p, n); if (!md) return;
+    unsigned char o[EVP_MAX_MD_SIZE]; unsigned ol = 0;
+    if (EVP_Digest(p, n, o, &ol, md, nullptr)) RET(cbuf(iso, o, ol));
+}
+FN(cHmac) {
+    CTX; const EVP_MD *md = md_of(S(0)); IN(1, k, kn); IN(2, p, n); if (!md) return;
+    unsigned char o[EVP_MAX_MD_SIZE]; unsigned ol = 0;
+    if (HMAC(md, k, (int)kn, p, n, o, &ol)) RET(cbuf(iso, o, ol));
+}
+FN(cAes) {
+    CTX; std::string mode = S(0); bool enc = BOOL(1); IN(2, k, kn); IN(3, iv, ivn); IN(4, d, dn); IN(5, ad, adn); int tag = (int)NUM(6) / 8;
+    bool gcm = mode == "AES-GCM", cbc = mode == "AES-CBC", ctr = mode == "AES-CTR";
+    const EVP_CIPHER *ciph = nullptr;
+    if (kn == 16) ciph = gcm ? EVP_aes_128_gcm() : cbc ? EVP_aes_128_cbc() : ctr ? EVP_aes_128_ctr() : nullptr;
+    else if (kn == 24) ciph = gcm ? EVP_aes_192_gcm() : cbc ? EVP_aes_192_cbc() : ctr ? EVP_aes_192_ctr() : nullptr;
+    else if (kn == 32) ciph = gcm ? EVP_aes_256_gcm() : cbc ? EVP_aes_256_cbc() : ctr ? EVP_aes_256_ctr() : nullptr;
+    if (!ciph) return;
+    EVP_CIPHER_CTX *x = EVP_CIPHER_CTX_new(); std::vector<uint8_t> out(dn + 48); int l1 = 0, l2 = 0; bool ok = false;
+    do {
+        if (!x || !EVP_CipherInit_ex(x, ciph, nullptr, nullptr, nullptr, enc)) break;
+        if (gcm && !EVP_CIPHER_CTX_ctrl(x, EVP_CTRL_GCM_SET_IVLEN, (int)ivn, nullptr)) break;
+        if (!EVP_CipherInit_ex(x, nullptr, nullptr, k, iv, enc)) break;
+        size_t body = dn;
+        if (gcm) {
+            if (tag <= 0 || tag > 16) break;
+            if (!enc) { if (dn < (size_t)tag) break; body = dn - (size_t)tag; if (!EVP_CIPHER_CTX_ctrl(x, EVP_CTRL_GCM_SET_TAG, tag, (void *)(d + body))) break; }
+            if (adn && !EVP_CipherUpdate(x, nullptr, &l1, ad, (int)adn)) break;
+        }
+        if (!EVP_CipherUpdate(x, out.data(), &l1, d, (int)body)) break;
+        if (!EVP_CipherFinal_ex(x, out.data() + l1, &l2)) break;
+        size_t total = (size_t)(l1 + l2);
+        if (gcm && enc) { if (!EVP_CIPHER_CTX_ctrl(x, EVP_CTRL_GCM_GET_TAG, tag, out.data() + total)) break; total += (size_t)tag; }
+        out.resize(total); ok = true;
+    } while (0);
+    EVP_CIPHER_CTX_free(x);
+    if (ok) RET(cbuf(iso, out.data(), out.size()));
+}
+FN(cEcGen) {
+    CTX; const char *g = curve_of(S(0)); if (!g) return;
+    EVP_PKEY *k = EVP_PKEY_Q_keygen(nullptr, nullptr, "EC", g); if (!k) return;
+    auto arr = v8::Array::New(iso, 2);
+    (void)arr->Set(ctx, 0, pkcs8_of(iso, k)); (void)arr->Set(ctx, 1, pubraw_of(iso, k));
+    EVP_PKEY_free(k); RET(arr);
+}
+FN(cEcDerive) {
+    CTX; std::string curve = S(0); IN(1, pv, pvn); IN(2, pb, pbn);
+    EVP_PKEY *pk = ec_priv(pv, pvn), *peer = ec_fromdata(curve, nullptr, 0, pb, pbn);
+    EVP_PKEY_CTX *pc = pk ? EVP_PKEY_CTX_new(pk, nullptr) : nullptr; size_t l = 0; std::vector<uint8_t> o; bool ok = false;
+    if (pc && peer && EVP_PKEY_derive_init(pc) > 0 && EVP_PKEY_derive_set_peer(pc, peer) > 0 && EVP_PKEY_derive(pc, nullptr, &l) > 0) { o.resize(l); ok = EVP_PKEY_derive(pc, o.data(), &l) > 0; }
+    EVP_PKEY_CTX_free(pc); EVP_PKEY_free(pk); EVP_PKEY_free(peer);
+    if (ok) RET(cbuf(iso, o.data(), l));
+}
+FN(cEcSign) {
+    CTX; std::string curve = S(0); const EVP_MD *md = md_of(S(1)); IN(2, pv, pvn); IN(3, d, dn); size_t cb = curve_bytes(curve);
+    EVP_PKEY *pk = ec_priv(pv, pvn); EVP_MD_CTX *m = EVP_MD_CTX_new(); size_t l = 0; std::vector<uint8_t> der, o; bool ok = false;
+    if (pk && md && m && EVP_DigestSignInit(m, nullptr, md, nullptr, pk) > 0 && EVP_DigestSign(m, nullptr, &l, d, dn) > 0) {
+        der.resize(l);
+        if (EVP_DigestSign(m, der.data(), &l, d, dn) > 0) {
+            const unsigned char *q = der.data(); ECDSA_SIG *sg = d2i_ECDSA_SIG(nullptr, &q, (long)l);
+            if (sg) { const BIGNUM *r, *s2; ECDSA_SIG_get0(sg, &r, &s2); o.resize(2 * cb); ok = BN_bn2binpad(r, o.data(), (int)cb) > 0 && BN_bn2binpad(s2, o.data() + cb, (int)cb) > 0; ECDSA_SIG_free(sg); }
+        }
+    }
+    EVP_MD_CTX_free(m); EVP_PKEY_free(pk);
+    if (ok) RET(cbuf(iso, o.data(), o.size()));
+}
+FN(cEcVerify) {
+    CTX; std::string curve = S(0); const EVP_MD *md = md_of(S(1)); IN(2, pb, pbn); IN(3, d, dn); IN(4, sig, sn); size_t cb = curve_bytes(curve);
+    bool ok = false;
+    if (md && sn == 2 * cb) {
+        EVP_PKEY *pk = ec_fromdata(curve, nullptr, 0, pb, pbn); ECDSA_SIG *sg = ECDSA_SIG_new();
+        ECDSA_SIG_set0(sg, BN_bin2bn(sig, (int)cb, nullptr), BN_bin2bn(sig + cb, (int)cb, nullptr));
+        unsigned char *der = nullptr; int dl = i2d_ECDSA_SIG(sg, &der); EVP_MD_CTX *m = EVP_MD_CTX_new();
+        ok = pk && dl > 0 && m && EVP_DigestVerifyInit(m, nullptr, md, nullptr, pk) > 0 && EVP_DigestVerify(m, der, (size_t)dl, d, dn) == 1;
+        EVP_MD_CTX_free(m); OPENSSL_free(der); ECDSA_SIG_free(sg); EVP_PKEY_free(pk);
+    }
+    RET(v8::Boolean::New(iso, ok));
+}
+FN(cSpki) {
+    CTX; IN(1, pb, pbn); EVP_PKEY *k = ec_fromdata(S(0), nullptr, 0, pb, pbn); if (!k) return;
+    unsigned char *o = nullptr; int l = i2d_PUBKEY(k, &o); EVP_PKEY_free(k);
+    if (l > 0) RET(cbuf(iso, o, (size_t)l));
+    OPENSSL_free(o);
+}
+FN(cSpkiParse) {
+    CTX; IN(0, p, n); const unsigned char *q = p; EVP_PKEY *k = d2i_PUBKEY(nullptr, &q, (long)n); if (!k) return;
+    const char *cn = curve_name(k);
+    if (cn) { auto arr = v8::Array::New(iso, 2); (void)arr->Set(ctx, 0, jstr(iso, cn)); (void)arr->Set(ctx, 1, pubraw_of(iso, k)); RET(arr); }
+    EVP_PKEY_free(k);
+}
+FN(cPkcs8Parse) {
+    CTX; IN(0, p, n); EVP_PKEY *k = ec_priv(p, n); if (!k) return;
+    const char *cn = curve_name(k); BIGNUM *bn = nullptr;
+    if (cn && EVP_PKEY_get_bn_param(k, OSSL_PKEY_PARAM_PRIV_KEY, &bn)) {
+        size_t cb = curve_bytes(cn); std::vector<uint8_t> d(cb); BN_bn2binpad(bn, d.data(), (int)cb);
+        auto arr = v8::Array::New(iso, 3);
+        (void)arr->Set(ctx, 0, jstr(iso, cn)); (void)arr->Set(ctx, 1, cbuf(iso, d.data(), cb)); (void)arr->Set(ctx, 2, pubraw_of(iso, k));
+        RET(arr);
+    }
+    BN_free(bn); EVP_PKEY_free(k);
+}
+FN(cEcFromD) {
+    CTX; IN(1, d, dn); IN(2, pb, pbn); EVP_PKEY *k = ec_fromdata(S(0), d, dn, pb, pbn); if (!k) return;
+    RET(pkcs8_of(iso, k)); EVP_PKEY_free(k);
+}
+FN(cHkdf) {
+    CTX; const EVP_MD *md = md_of(S(0)); IN(1, k, kn); IN(2, salt, sn); IN(3, info, in); size_t len = (size_t)NUM(4);
+    if (!md || !len) return;
+    EVP_PKEY_CTX *hc = EVP_PKEY_CTX_new_id(EVP_PKEY_HKDF, nullptr); std::vector<uint8_t> o(len); size_t ol = len;
+    bool ok = hc && EVP_PKEY_derive_init(hc) > 0 && EVP_PKEY_CTX_set_hkdf_md(hc, md) > 0 && EVP_PKEY_CTX_set1_hkdf_salt(hc, salt, (int)sn) > 0 &&
+              EVP_PKEY_CTX_set1_hkdf_key(hc, k, (int)kn) > 0 && EVP_PKEY_CTX_add1_hkdf_info(hc, info, (int)in) > 0 && EVP_PKEY_derive(hc, o.data(), &ol) > 0;
+    EVP_PKEY_CTX_free(hc);
+    if (ok) RET(cbuf(iso, o.data(), ol));
+}
+FN(cPbkdf2) {
+    CTX; const EVP_MD *md = md_of(S(0)); IN(1, pw, pn); IN(2, salt, sn); int iter = (int)NUM(3); size_t len = (size_t)NUM(4);
+    if (!md || !len || iter < 1) return;
+    std::vector<uint8_t> o(len);
+    if (PKCS5_PBKDF2_HMAC((const char *)pw, (int)pn, salt, (int)sn, iter, md, (int)len, o.data())) RET(cbuf(iso, o.data(), len));
+}
 FN(random) {
     CTX; (void)iso;
     if (!a[0]->IsArrayBuffer()) return;
@@ -487,7 +671,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove);
     REG(mediaBuffered); REG(mediaEos); REG(mediaSetDuration); REG(mediaPlay); REG(mediaPause); REG(mediaSeek);
     REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(readyState); REG(quirks);
-    REG(currentScript); REG(media); REG(cssSupports); REG(urlParse); REG(encode); REG(decode); REG(random);
+    REG(currentScript); REG(media); REG(cssSupports); REG(urlParse); REG(encode); REG(decode); REG(random); REG(cDigest); REG(cHmac); REG(cAes); REG(cEcGen); REG(cEcDerive); REG(cEcSign); REG(cEcVerify); REG(cSpki); REG(cSpkiParse); REG(cPkcs8Parse); REG(cEcFromD); REG(cHkdf); REG(cPbkdf2);
     REG(heap); REG(imgSize); REG(userAgent); REG(platform); REG(cpus);
 #undef REG
 }
