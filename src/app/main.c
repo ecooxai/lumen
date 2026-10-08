@@ -246,7 +246,7 @@ static void render(App *a) {
         a->sy = LCLAMP(a->sy, 0, max_scroll(a));
         if (a->sy != a->last_sy && part) { part = false; why = 5; }
         dl_clear(&a->pdl); dl_build(&a->pdl, a->cur->L, 0, a->sy, a->vw, a->vh - BAR);
-        for (int i = 0; part && i < a->pdl.items.n; i++) {
+        for (int i = 0; i < a->pdl.items.n; i++) {
             const DItem *it = &a->pdl.items.v[i];
             if (it->op != DO_IMAGE || !media_is_frame(it->img)) continue;
             float s = a->page.scale;
@@ -261,7 +261,7 @@ static void render(App *a) {
     raster(&a->frame, &a->cdl, RGBA(255, 255, 255, 255));
     for (int y = part ? ry0 : 0; y < (part ? ry1 : ph) && y + bar_px < a->ph; y++)
         memcpy(a->frame.px + (size_t)(y + bar_px) * (size_t)a->frame.stride, a->page.px + (size_t)y * (size_t)a->page.stride, (size_t)a->pw * 4);
-    if (!(a->gpu && gpu_present(a->gpu, a->frame.px, a->frame.w, a->frame.h, a->frame.stride))) {
+    if (!(a->gpu && gpu_present_rows(a->gpu, a->frame.px, a->frame.w, a->frame.h, a->frame.stride, part ? bar_px + ry0 : 0, part ? bar_px + ry1 : a->frame.h))) {
         SDL_Surface *ws = SDL_GetWindowSurface(a->win);
         if (ws) {
             SDL_Surface *src = SDL_CreateSurfaceFrom(a->frame.w, a->frame.h, SDL_PIXELFORMAT_ARGB8888, a->frame.px, a->frame.stride * 4);

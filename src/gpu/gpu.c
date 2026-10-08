@@ -139,13 +139,19 @@ static void ensure_tex(Gpu *g, int w, int h) {
     g->tw = w; g->th = h;
 }
 
-bool gpu_present(Gpu *g, const uint32_t *px, int w, int h, int stride) {
+bool gpu_present(Gpu *g, const uint32_t *px, int w, int h, int stride) { return gpu_present_rows(g, px, w, h, stride, 0, h); }
+bool gpu_present_rows(Gpu *g, const uint32_t *px, int w, int h, int stride, int y0, int y1) {
     if (!g || !g->configured) return false;
+    if (!g->tex || g->tw != w || g->th != h) { y0 = 0; y1 = h; }
     ensure_tex(g, w, h);
-    WGPUTexelCopyTextureInfo dst = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT; dst.texture = g->tex;
-    WGPUTexelCopyBufferLayout lay = WGPU_TEXEL_COPY_BUFFER_LAYOUT_INIT; lay.bytesPerRow = (uint32_t)stride * 4; lay.rowsPerImage = (uint32_t)h;
-    WGPUExtent3D ext = { (uint32_t)w, (uint32_t)h, 1 };
-    wgpuQueueWriteTexture(g->q, &dst, px, (size_t)stride * 4 * (size_t)h, &lay, &ext);
+    if (y0 < 0) y0 = 0;
+    if (y1 > h) y1 = h;
+    if (y1 > y0) {
+        WGPUTexelCopyTextureInfo dst = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT; dst.texture = g->tex; dst.origin = (WGPUOrigin3D){ 0, (uint32_t)y0, 0 };
+        WGPUTexelCopyBufferLayout lay = WGPU_TEXEL_COPY_BUFFER_LAYOUT_INIT; lay.bytesPerRow = (uint32_t)stride * 4; lay.rowsPerImage = (uint32_t)(y1 - y0);
+        WGPUExtent3D ext = { (uint32_t)w, (uint32_t)(y1 - y0), 1 };
+        wgpuQueueWriteTexture(g->q, &dst, px + (size_t)y0 * (size_t)stride, (size_t)stride * 4 * (size_t)(y1 - y0), &lay, &ext);
+    }
 
     WGPUSurfaceTexture st = WGPU_SURFACE_TEXTURE_INIT;
     wgpuSurfaceGetCurrentTexture(g->surf, &st);
