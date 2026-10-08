@@ -276,7 +276,7 @@ static void walk(Ctx *c, const Node *n, Mat m, Paint pt, int depth) {
         const char *t = k->tag; bool skipped = false;
         for (int i = 0; skip[i]; i++) if (!strcmp(t, skip[i])) skipped = true;
         if (skipped) continue;
-        Paint q = pt; const ComputedStyle *s = k->style; Color cur = s ? s->color : 0;
+        Paint q = pt; const ComputedStyle *s = k->style; Color cur = s ? s->color : RGBA(0, 0, 0, 255);
         if (s) { if (s->display == D_NONE) continue; q.fill = s->fill; q.stroke = s->stroke; q.sw = s->stroke_width; q.op = pt.op * s->opacity; }
         else { const char *d = node_attr(k, "display"); if (d && !strcmp(d, "none")) continue; q.fill = attr_color(k, "fill", q.fill, cur); const char *o = node_attr(k, "opacity"); if (o) q.op *= (float)atof(o); }
         if (!s || !COLOR_A(q.stroke)) q.stroke = attr_color(k, "stroke", q.stroke, cur);
