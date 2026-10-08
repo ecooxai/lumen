@@ -29,7 +29,7 @@ static Image *cache_get(const char *u) {
     SDL_LockMutex(icache_mu); Image **c = (Image **)hm_get(&icache, u); Image *im = c ? *c : NULL; SDL_UnlockMutex(icache_mu); return im;
 }
 static void cache_fetch(const char *u) {
-    if (!u || !*u || !strncmp(u, "data:", 5)) return;
+    if (!u || !*u || !strncmp(u, "blob:", 5)) return;
     SDL_LockMutex(icache_mu); bool have = hm_get(&icache, u) != NULL; SDL_UnlockMutex(icache_mu);
     if (have) return;
     NetResponse *r = net_fetch_sync(net_request_new("GET", u));
@@ -275,6 +275,37 @@ static void link_done(NetRequest *rq, NetResponse *r, void *ud) {
     }
     free(l);
 }
+typedef struct { uint64_t gen; char *u; } ImgLoad;
+static void img_done(NetRequest *rq, NetResponse *r, void *ud) {
+    (void)rq; ImgLoad *l = ud;
+    Image *im = r && r->status == 200 && r->body ? image_decode((const uint8_t *)r->body, r->body_len) : NULL;
+    if (getenv("LUMEN_DEBUG_IMG")) fprintf(stderr, "lumen: img decode -> %s\n", im ? "ok" : "NULL");
+    SDL_LockMutex(icache_mu);
+    Image **slot = (Image **)hm_get(&icache, l->u);
+    if (slot && !*slot) { *slot = im; im = NULL; }
+    SDL_UnlockMutex(icache_mu);
+    if (getenv("LUMEN_DEBUG_IMG")) fprintf(stderr, "lumen: img done status=%d len=%zu decoded=%d slot=%d %.80s\n", r ? r->status : -1, r && r->body ? r->body_len : 0, slot && *slot ? 1 : 0, slot ? 1 : 0, l->u);
+    if (im) image_unref(im);
+    if (g_app->cur && g_app->cur->gen == l->gen) g_app->relayout = g_app->dirty = true;
+    free(l->u); free(l);
+}
+/* Start async loads for <img> sources that appeared after the initial load (script-inserted or src changed). */
+static void sync_images(Page *p) {
+    for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) {
+        if (n->type != NODE_ELEMENT || n->ns != NS_HTML || n->tag != A_img || !node_attr(n, "src")) continue;
+        char *u = url_join(p->d->url, node_attr(n, "src"));
+        if (!u || !*u || !strncmp(u, "blob:", 5)) { free(u); continue; }
+        SDL_LockMutex(icache_mu);
+        bool have = hm_get(&icache, u) != NULL;
+        if (!have) { Image **slot = xcalloc(1, sizeof *slot); hm_put(&icache, u, slot); }
+        SDL_UnlockMutex(icache_mu);
+        if (!have) {
+            if (getenv("LUMEN_DEBUG_IMG")) fprintf(stderr, "lumen: img fetch %.80s\n", u);
+            NetRequest *rq = net_request_new("GET", u); ImgLoad *l = xmalloc(sizeof *l); l->gen = p->gen; l->u = u;
+            rq->done = img_done; rq->ud = l; rq->priority = 2; net_fetch(rq);
+        } else free(u);
+    }
+}
 /* Reconcile engine sheets with <style>/<link rel=stylesheet> currently in the tree; seed only records them. */
 static bool sync_sheets(Page *p, bool seed) {
     SheetRef *cur = NULL; int nc = 0, cap = 0; bool changed = false;
@@ -308,6 +339,7 @@ static void restyle(App *a) {
     if (!p || p->d->dom_version == p->seen_ver) return;
     p->seen_ver = p->d->dom_version;
     bool sheets = sync_sheets(p, false);
+    sync_images(p);
     style_recalc(p->e, &p->d->node, sheets);
     a->relayout = a->dirty = true;
 }

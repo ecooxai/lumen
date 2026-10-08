@@ -179,7 +179,6 @@ char *url_decode(const char *s, size_t n) {
     SB b; sb_init(&b);
     for (size_t i = 0; i < n; i++) {
         if (s[i] == '%' && i + 2 < n && hexv((unsigned char)s[i + 1]) >= 0 && hexv((unsigned char)s[i + 2]) >= 0) { sb_putc(&b, (char)(hexv((unsigned char)s[i + 1]) * 16 + hexv((unsigned char)s[i + 2]))); i += 2; }
-        else if (s[i] == '+') sb_putc(&b, ' ');
         else sb_putc(&b, s[i]);
     }
     return sb_take(&b);
