@@ -1,13 +1,13 @@
 class Headers {
-    constructor(init) { def(this, '_m', new Map()); if (init instanceof Headers) for (const [k, v] of init) this.append(k, v); else if (Array.isArray(init)) for (const [k, v] of init) this.append(k, v); else if (init && typeof init === 'object') for (const k of Object.keys(init)) this.append(k, init[k]); }
-    append(k, v) { k = String(k).toLowerCase(); v = String(v).trim(); const o = this._m.get(k); this._m.set(k, o == null ? v : k === 'set-cookie' ? o + '\n' + v : o + ', ' + v); }
-    set(k, v) { this._m.set(String(k).toLowerCase(), String(v).trim()); } get(k) { return this._m.get(String(k).toLowerCase()) ?? null; }
-    has(k) { return this._m.has(String(k).toLowerCase()); } delete(k) { this._m.delete(String(k).toLowerCase()); }
+    constructor(init) { def(this, '_m', new Map()); def(this, '_n', new Map()); if (init instanceof Headers) for (const [k, v] of init) this.append(k, v); else if (Array.isArray(init)) for (const [k, v] of init) this.append(k, v); else if (init && typeof init === 'object') for (const k of Object.keys(init)) this.append(k, init[k]); }
+    append(k, v) { k = String(k); const l = k.toLowerCase(); if (!this._n.has(l)) this._n.set(l, k); k = l; v = String(v).trim(); const o = this._m.get(k); this._m.set(k, o == null ? v : k === 'set-cookie' ? o + '\n' + v : o + ', ' + v); }
+    set(k, v) { k = String(k); const l = k.toLowerCase(); if (!this._n.has(l)) this._n.set(l, k); this._m.set(l, String(v).trim()); } get(k) { return this._m.get(String(k).toLowerCase()) ?? null; }
+    has(k) { return this._m.has(String(k).toLowerCase()); } delete(k) { k = String(k).toLowerCase(); this._m.delete(k); this._n.delete(k); }
     getSetCookie() { const v = this._m.get('set-cookie'); return v ? v.split('\n') : []; }
     forEach(fn, self) { for (const [k, v] of this) fn.call(self, v, k, this); }
     *entries() { yield* [...this._m].sort((a, b) => a[0] < b[0] ? -1 : 1); } keys() { return [...this._m.keys()].sort()[Symbol.iterator](); } values() { return [...this.entries()].map(e => e[1])[Symbol.iterator](); }
     [Symbol.iterator]() { return this.entries(); }
-    _flat() { const a = []; for (const [k, v] of this._m) a.push(k, v); return a; }
+    _flat() { const a = []; for (const [k, v] of this._m) a.push(this._n.get(k) || k, v); return a; }
 }
 
 // Fetch "append a request Origin header": CORS requests and non-GET/HEAD requests carry the document origin.
@@ -41,10 +41,10 @@ function corsOk(reqUrl, finalUrl, hdrs, cred) {
 const fromFlat = (a) => { const h = new Headers(); for (let i = 0; i + 1 < a.length; i += 2) h.append(a[i], a[i + 1]); return h; };
 function bodyInit(b, h) {
     if (b == null) return null;
-    if (typeof b === 'string') { if (h && !h.has('content-type')) h.set('content-type', 'text/plain;charset=UTF-8'); return N.encode(b); }
-    if (b instanceof URLSearchParams) { if (h && !h.has('content-type')) h.set('content-type', 'application/x-www-form-urlencoded;charset=UTF-8'); return N.encode(b.toString()); }
-    if (b instanceof FormData) { const bd = '----LumenFormBoundary' + Math.random().toString(36).slice(2); if (h) h.set('content-type', 'multipart/form-data; boundary=' + bd); let s = ''; for (const [k, v] of b) s += `--${bd}\r\nContent-Disposition: form-data; name="${k}"\r\n\r\n${typeof v === 'string' ? v : ''}\r\n`; return N.encode(s + `--${bd}--\r\n`); }
-    if (b instanceof Blob) { if (h && b.type && !h.has('content-type')) h.set('content-type', b.type); return b._buf; }
+    if (typeof b === 'string') { if (h && !h.has('content-type')) h.set('Content-Type', 'text/plain;charset=UTF-8'); return N.encode(b); }
+    if (b instanceof URLSearchParams) { if (h && !h.has('content-type')) h.set('Content-Type', 'application/x-www-form-urlencoded;charset=UTF-8'); return N.encode(b.toString()); }
+    if (b instanceof FormData) { const bd = '----LumenFormBoundary' + Math.random().toString(36).slice(2); if (h && !h.has('content-type')) h.set('Content-Type', 'multipart/form-data; boundary=' + bd); let s = ''; for (const [k, v] of b) s += `--${bd}\r\nContent-Disposition: form-data; name="${k}"\r\n\r\n${typeof v === 'string' ? v : ''}\r\n`; return N.encode(s + `--${bd}--\r\n`); }
+    if (b instanceof Blob) { if (h && b.type && !h.has('content-type')) h.set('Content-Type', b.type); return b._buf; }
     return toBytes(b);
 }
 class Body {
@@ -82,12 +82,24 @@ function localBody(url) {
     const u = new Uint8Array(raw.length); for (let i = 0; i < raw.length; i++) u[i] = raw.charCodeAt(i) & 255;
     return [m[2] ? u.buffer : N.encode(decodeURIComponent(m[3])), m[1] || 'text/plain;charset=US-ASCII'];
 }
+// Blob URL response, honouring a single "Range: bytes=" request header (206 + Content-Range); null = network error.
+function blobResponse(url, lb, range) {
+    const buf = lb[0], n = buf.byteLength, h = ['Content-Type', lb[1], 'Content-Length', String(n)];
+    if (range == null || !url.startsWith('blob:')) return [200, 'OK', h, buf];
+    const m = /^bytes=(\d*)-(\d*)$/.exec(String(range).replace(/\s+/g, ''));
+    if (!m || (m[1] === '' && m[2] === '')) return null;
+    let a, b;
+    if (m[1] === '') { a = Math.max(0, n - +m[2]); b = n - 1; }
+    else { a = +m[1]; b = m[2] === '' ? n - 1 : Math.min(+m[2], n - 1); if (m[2] !== '' && +m[2] < a) return null; }
+    if (a >= n || (m[1] === '' && +m[2] === 0)) return null;
+    return [206, 'Partial Content', ['Content-Type', lb[1], 'Content-Length', String(b - a + 1), 'Content-Range', `bytes ${a}-${b}/${n}`], buf.slice(a, b + 1)];
+}
 function fetch(input, init) {
     let req; try { req = new Request(input, init); } catch (e) { return Promise.reject(e); }
     return new Promise((resolve, reject) => {
         if (req.signal.aborted) return reject(req.signal.reason);
         const lb = localBody(req.url);
-        if (lb !== undefined) { if (!lb) return reject(new TypeError('Failed to fetch')); const r = new Response(lb[0], { headers: { 'content-type': lb[1] } }); r.url = req.url; return resolve(r); }
+        if (lb !== undefined) { const br = lb && blobResponse(req.url, lb, req.headers.get('range')); if (!br) return reject(new TypeError('Failed to fetch')); const r = new Response(null, { status: br[0], statusText: br[1], headers: fromFlat(br[2]) }); r._b = br[3]; r.url = req.url; r.type = 'basic'; return resolve(r); }
         const id = N.fetch(req.method, req.url, withOrigin(req.headers._flat(), req.url, req.method, req.mode), req._b, (status, statusText, url, hdrs, body, err) => {
             if (err) return reject(new TypeError('Failed to fetch'));
             if (!corsOk(req.url, url, hdrs || [], req.credentials === 'include')) {
@@ -204,6 +216,18 @@ class XMLHttpRequest extends XMLHttpRequestEventTarget {
     }
     send(body) {
         if (this._rs !== 1 || this._send) throw new DOMException("The object's state must be OPENED.", 'InvalidStateError');
+        if (this._m !== 'GET' && this._m !== 'HEAD' && body != null) {
+            const isDoc = typeof Document === 'function' && body instanceof Document;
+            if (isDoc) {
+                const html = body.contentType === 'text/html';
+                if (!this._rh.has('content-type')) this._rh.set('Content-Type', html ? 'text/html;charset=UTF-8' : 'application/xml;charset=UTF-8');
+                body = html ? (body.doctype ? `<!DOCTYPE ${body.doctype.name}>` : '') + (body.documentElement ? body.documentElement.outerHTML : '')
+                            : new XMLSerializer().serializeToString(body);
+            }
+            const ct = this._rh.get('content-type');
+            if ((isDoc || typeof body === 'string' || body instanceof URLSearchParams) && ct != null)
+                this._rh.set('content-type', ct.replace(/(;\s*charset\s*=\s*)("[^"]*"|[^;]*)/i, (m, p, v) => /^"?utf-8"?$/i.test(v.trim()) ? m : p + 'UTF-8'));
+        }
         const b = this._m === 'GET' || this._m === 'HEAD' || body == null ? null : bodyInit(body, this._rh);
         this._reqLen = b ? (b.byteLength ?? b.length ?? 0) : 0;
         this._upDone = !b; this._send = true;
@@ -214,7 +238,7 @@ class XMLHttpRequest extends XMLHttpRequestEventTarget {
             if (gen !== this._gen || this._rs !== 1 || !this._send) return;
         }
         const lb = localBody(this._u);
-        if (lb !== undefined) { const f = () => this._done(gen, lb ? 200 : 0, lb ? 'OK' : '', this._u, lb ? ['content-type', lb[1]] : [], lb ? lb[0] : null, !lb); if (this._async) setTimeout(f); else f(); return; }
+        if (lb !== undefined) { const br = lb && blobResponse(this._u, lb, this._rh.get('range')); const f = () => br ? this._done(gen, br[0], br[1], this._u, br[2], br[3], false) : this._done(gen, 0, '', this._u, [], null, true); if (this._async) setTimeout(f); else f(); return; }
         if (!this._async) { const r = N.fetchSync(this._m, this._u, withOrigin(this._rh._flat(), this._u, this._m, 'cors'), b); this._done(gen, ...r); return; }
         this._id = N.fetch(this._m, this._u, withOrigin(this._rh._flat(), this._u, this._m, 'cors'), b, (...a) => this._done(gen, ...a));
         if (this._to > 0) this._timer = setTimeout(() => { if (gen !== this._gen) return; this._terminate(); this._errorSteps('timeout'); }, this._to);
