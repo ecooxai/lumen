@@ -168,7 +168,7 @@ methods(HTMLElement.prototype, {
     get isContentEditable() { const v = N.attr(this, 'contenteditable'); return v === '' || v === 'true'; },
     get contentEditable() { return N.attr(this, 'contenteditable') ?? 'inherit'; }, set contentEditable(v) { this.setAttribute('contenteditable', v); },
     get draggable() { return N.attr(this, 'draggable') === 'true'; }, set draggable(v) { this.setAttribute('draggable', String(!!v)); },
-    focus() { N.focus(this); }, blur() { if (N.active() === this) N.focus(null); },
+    focus() { const o = N.active(); if (o === this) return; N.focus(this); if (N.active() !== this) return; if (o) o.dispatchEvent(new FocusEvent('focusout', { bubbles: true, composed: true, relatedTarget: this })); this.dispatchEvent(new FocusEvent('focusin', { bubbles: true, composed: true, relatedTarget: o })); }, blur() { if (N.active() !== this) return; N.focus(null); this.dispatchEvent(new FocusEvent('focusout', { bubbles: true, composed: true, relatedTarget: null })); },
     click() { if (this.disabled) return; const ev = new MouseEvent('click', { bubbles: true, cancelable: true, composed: true, view: G, detail: 1 }); if (dispatch(this, ev)) activate(this, ev); },
     attachInternals() { return { setFormValue() {}, setValidity() {}, checkValidity() { return true; }, reportValidity() { return true; }, states: new Set(), form: null, labels: [] }; },
     showPopover() {}, hidePopover() {}, togglePopover() {},
