@@ -57,6 +57,25 @@ static void fill(R *r, float x0, float y0, float x1, float y1, const float rad[4
     bool round = rad && (rad[0] > 0 || rad[1] > 0 || rad[2] > 0 || rad[3] > 0);
     uint32_t solid = premul(col, 1);
     int W = r->c->stride;
+    if (!round && !c->round) {
+        bool opaque = (solid >> 24) == 255;
+        int ax = LMAX(ix0, (int)ceilf(x0)), bx = LMIN(ix1, (int)floorf(x1)); if (bx < ax) bx = ax;
+        for (int y = iy0; y < iy1; y++) {
+            uint32_t *row = r->px + (size_t)y * (size_t)W;
+            float cy = span_cov(y0, y1, y);
+            bool full = cy >= 0.999f;
+            for (int x = ix0; x < ix1; x++) {
+                if (full && x == ax) {
+                    if (opaque) for (; x < bx; x++) row[x] = solid; else for (; x < bx; x++) over(&row[x], solid);
+                    if (x >= ix1) break;
+                }
+                float cov = cy * span_cov(x0, x1, x);
+                if (cov <= 0) continue;
+                over(&row[x], cov >= 0.999f ? solid : premul(col, cov));
+            }
+        }
+        return;
+    }
     for (int y = iy0; y < iy1; y++) {
         uint32_t *row = r->px + (size_t)y * (size_t)W;
         float cy = span_cov(y0, y1, y);
@@ -194,34 +213,46 @@ static void text(R *r, const DItem *it) {
     }
 }
 
+typedef struct { int a, b; uint32_t w; float cov; } ImgCol;
 static void image(R *r, const DItem *it) {
     const Image *im = it->img; float s = r->s;
     float x0 = it->x * s, y0 = it->y * s, x1 = (it->x + it->w) * s, y1 = (it->y + it->h) * s;
     if (x1 - x0 < 0.5f || y1 - y0 < 0.5f) return;
     const Clip *c = clip(r);
     int px0 = LMAX(c->x0, (int)floorf(x0)), py0 = LMAX(c->y0, (int)floorf(y0)), px1 = LMIN(c->x1, (int)ceilf(x1)), py1 = LMIN(c->y1, (int)ceilf(y1));
+    if (px1 <= px0 || py1 <= py0) return;
     float kx = im->w / (x1 - x0), ky = im->h / (y1 - y0);
-    bool down = kx > 1.5f || ky > 1.5f;
+    bool down = kx > 1.5f || ky > 1.5f, rclip = c->round;
+    ImgCol *cols = xmalloc(sizeof *cols * (size_t)(px1 - px0));
+    for (int x = px0; x < px1; x++) {
+        ImgCol *k = &cols[x - px0];
+        float sx = (x + 0.5f - x0) * kx - 0.5f;
+        if (down) { k->a = k->b = LCLAMP((int)(sx + 0.5f), 0, im->w - 1); k->w = 0; }
+        else { int ix = (int)floorf(sx); k->a = LCLAMP(ix, 0, im->w - 1); k->b = LCLAMP(ix + 1, 0, im->w - 1); k->w = (uint32_t)((sx - ix) * 256); }
+        k->cov = span_cov(x0, x1, x);
+    }
     for (int y = py0; y < py1; y++) {
-        float sy = (y + 0.5f - y0) * ky - 0.5f; int iy = (int)floorf(sy); float fy = sy - iy;
-        int iy0 = LCLAMP(iy, 0, im->h - 1), iy1 = LCLAMP(iy + 1, 0, im->h - 1);
+        float sy = (y + 0.5f - y0) * ky - 0.5f; int iy = (int)floorf(sy);
+        uint32_t wy = (uint32_t)((sy - iy) * 256);
+        const uint32_t *ra, *rb;
+        if (down) ra = rb = im->px + (size_t)LCLAMP((int)(sy + 0.5f), 0, im->h - 1) * (size_t)im->w;
+        else { ra = im->px + (size_t)LCLAMP(iy, 0, im->h - 1) * (size_t)im->w; rb = im->px + (size_t)LCLAMP(iy + 1, 0, im->h - 1) * (size_t)im->w; }
+        float cy = span_cov(y0, y1, y);
         uint32_t *row = r->px + (size_t)y * (size_t)r->c->stride;
         for (int x = px0; x < px1; x++) {
-            float sx = (x + 0.5f - x0) * kx - 0.5f; int ix = (int)floorf(sx); float fx = sx - ix;
+            const ImgCol *k = &cols[x - px0];
             uint32_t p;
-            if (down) p = im->px[(size_t)LCLAMP((int)(sy + 0.5f), 0, im->h - 1) * (size_t)im->w + (size_t)LCLAMP((int)(sx + 0.5f), 0, im->w - 1)];
+            if (down) p = ra[k->a];
             else {
-                int ix0 = LCLAMP(ix, 0, im->w - 1), ix1 = LCLAMP(ix + 1, 0, im->w - 1);
-                uint32_t a = im->px[(size_t)iy0 * (size_t)im->w + (size_t)ix0], b = im->px[(size_t)iy0 * (size_t)im->w + (size_t)ix1], cc = im->px[(size_t)iy1 * (size_t)im->w + (size_t)ix0], d = im->px[(size_t)iy1 * (size_t)im->w + (size_t)ix1];
-                uint32_t wx = (uint32_t)(fx * 256), wy = (uint32_t)(fy * 256);
-                uint32_t top = scale_px(a, 256 - wx) + scale_px(b, wx), bot = scale_px(cc, 256 - wx) + scale_px(d, wx);
+                uint32_t top = scale_px(ra[k->a], 256 - k->w) + scale_px(ra[k->b], k->w), bot = scale_px(rb[k->a], 256 - k->w) + scale_px(rb[k->b], k->w);
                 p = scale_px(top, 256 - wy) + scale_px(bot, wy);
             }
-            float cov = span_cov(x0, x1, x) * span_cov(y0, y1, y) * clip_cov(r, x + 0.5f, y + 0.5f);
+            float cov = k->cov * cy; if (rclip) cov *= clip_cov(r, x + 0.5f, y + 0.5f);
             if (cov < 0.999f) p = scale_px(p, (uint32_t)(cov * 256));
             over(&row[x], p);
         }
     }
+    free(cols);
 }
 
 void raster(Canvas *cv, const DisplayList *dl, Color clearc) { raster_rect(cv, dl, clearc, 0, 0, cv->w, cv->h); }
