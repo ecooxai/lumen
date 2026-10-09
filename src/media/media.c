@@ -485,6 +485,99 @@ static void open_audio(MediaPlayer *m) {
     SDL_ResumeAudioStreamDevice(m->dev);
 }
 
+/* ---------------- Web Audio: pages push interleaved stereo float at OUT_RATE ---------------- */
+#define WA_MAX 32
+static struct { SDL_AudioStream *s; const void *owner; } g_wa[WA_MAX];
+int wa_open(const void *owner) {
+    if (!(SDL_WasInit(SDL_INIT_AUDIO) & SDL_INIT_AUDIO) && !SDL_InitSubSystem(SDL_INIT_AUDIO)) return -1;
+    for (int i = 0; i < WA_MAX; i++) if (!g_wa[i].s) {
+        SDL_AudioSpec spec = { SDL_AUDIO_F32, 2, OUT_RATE };
+        SDL_AudioStream *st = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, NULL, NULL);
+        if (!st) return -1;
+        SDL_ResumeAudioStreamDevice(st); g_wa[i].s = st; g_wa[i].owner = owner;
+        return i;
+    }
+    return -1;
+}
+static SDL_AudioStream *wa_get(const void *owner, int id) { return id >= 0 && id < WA_MAX && g_wa[id].owner == owner ? g_wa[id].s : NULL; }
+void wa_push(const void *owner, int id, const float *s, int frames) { SDL_AudioStream *st = wa_get(owner, id); if (st && frames > 0) SDL_PutAudioStreamData(st, s, frames * 8); }
+int wa_queued(const void *owner, int id) { SDL_AudioStream *st = wa_get(owner, id); return st ? SDL_GetAudioStreamQueued(st) / 8 : 0; }
+void wa_pause(const void *owner, int id, bool p) {
+    SDL_AudioStream *st = wa_get(owner, id); if (!st) return;
+    if (p) SDL_PauseAudioStreamDevice(st); else SDL_ResumeAudioStreamDevice(st);
+}
+void wa_close(const void *owner, int id) {
+    if (!wa_get(owner, id)) return;
+    SDL_DestroyAudioStream(g_wa[id].s); g_wa[id].s = NULL; g_wa[id].owner = NULL;
+}
+void wa_close_owner(const void *owner) { for (int i = 0; i < WA_MAX; i++) if (g_wa[i].s && g_wa[i].owner == owner) wa_close(owner, i); }
+
+typedef struct { const uint8_t *p; size_t n, pos; } MemIO;
+static int mem_read(void *o, uint8_t *buf, int sz) {
+    MemIO *m = o; size_t k = m->n - m->pos;
+    if (!k) return AVERROR_EOF;
+    if (k > (size_t)sz) k = (size_t)sz;
+    memcpy(buf, m->p + m->pos, k); m->pos += k;
+    return (int)k;
+}
+static int64_t mem_seek(void *o, int64_t off, int wh) {
+    MemIO *m = o;
+    if (wh == AVSEEK_SIZE) return (int64_t)m->n;
+    wh &= ~AVSEEK_FORCE;
+    int64_t b = (wh == SEEK_CUR ? (int64_t)m->pos : wh == SEEK_END ? (int64_t)m->n : 0) + off;
+    if (b < 0 || b > (int64_t)m->n) return -1;
+    m->pos = (size_t)b;
+    return b;
+}
+typedef struct { SwrContext *swr; float *out; size_t cap, len; } Pcm;
+static bool pcm_add(Pcm *pc, AVFrame *f) {
+    if (!pc->swr) {
+        AVChannelLayout stereo = AV_CHANNEL_LAYOUT_STEREO;
+        if (!f || swr_alloc_set_opts2(&pc->swr, &stereo, AV_SAMPLE_FMT_FLT, OUT_RATE, &f->ch_layout, (enum AVSampleFormat)f->format, f->sample_rate, 0, NULL) < 0 || swr_init(pc->swr) < 0) return false;
+    }
+    int want = swr_get_out_samples(pc->swr, f ? f->nb_samples : 0);
+    if (want <= 0) return true;
+    if (pc->len + (size_t)want > pc->cap) { pc->cap = (pc->len + (size_t)want) * 2; pc->out = xrealloc(pc->out, pc->cap * 8); }
+    uint8_t *o = (uint8_t *)(pc->out + pc->len * 2);
+    int got = swr_convert(pc->swr, &o, want, f ? (const uint8_t **)f->extended_data : NULL, f ? f->nb_samples : 0);
+    if (got > 0) pc->len += (size_t)got;
+    return pc->len < (size_t)OUT_RATE * 600;
+}
+float *media_decode_pcm(const uint8_t *p, size_t n, int *frames) {
+    *frames = 0;
+    MemIO mio = { p, n, 0 };
+    AVFormatContext *fc = avformat_alloc_context();
+    AVIOContext *io = avio_alloc_context(av_malloc(32768), 32768, 0, &mio, mem_read, NULL, mem_seek);
+    fc->pb = io; fc->flags |= AVFMT_FLAG_CUSTOM_IO;
+    AVCodecContext *cc = NULL; AVPacket *pk = av_packet_alloc(); AVFrame *f = av_frame_alloc();
+    Pcm pc = { 0 };
+    int si = -1;
+    if (avformat_open_input(&fc, NULL, NULL, NULL) < 0) fc = NULL;
+    if (fc && avformat_find_stream_info(fc, NULL) >= 0) si = av_find_best_stream(fc, AVMEDIA_TYPE_AUDIO, -1, -1, NULL, 0);
+    const AVCodec *codec = si >= 0 ? avcodec_find_decoder(fc->streams[si]->codecpar->codec_id) : NULL;
+    if (codec && (cc = avcodec_alloc_context3(codec)) && avcodec_parameters_to_context(cc, fc->streams[si]->codecpar) >= 0 && avcodec_open2(cc, codec, NULL) >= 0) {
+        bool ok = true, eof = false;
+        while (ok && !eof) {
+            int r = av_read_frame(fc, pk);
+            if (r < 0) { eof = true; avcodec_send_packet(cc, NULL); }
+            else if (pk->stream_index != si) { av_packet_unref(pk); continue; }
+            for (;;) {
+                int sr = eof ? 0 : avcodec_send_packet(cc, pk);
+                while (ok && avcodec_receive_frame(cc, f) == 0) { ok = pcm_add(&pc, f); av_frame_unref(f); }
+                if (sr != AVERROR(EAGAIN)) break;
+            }
+            if (!eof) av_packet_unref(pk);
+        }
+        if (pc.swr) pcm_add(&pc, NULL);
+    }
+    swr_free(&pc.swr); avcodec_free_context(&cc); av_frame_free(&f); av_packet_free(&pk);
+    avformat_close_input(&fc);
+    if (io) { av_freep(&io->buffer); avio_context_free(&io); }
+    if (!pc.len) { free(pc.out); return NULL; }
+    *frames = (int)pc.len;
+    return pc.out;
+}
+
 /* ---------------- public API ---------------- */
 MediaPlayer *mp_new(Node *el) {
     if (!g_mu) g_mu = SDL_CreateMutex();

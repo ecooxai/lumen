@@ -53,3 +53,13 @@ void media_set_limit(struct Document *d, float lim);
 extern bool media_lowmem;   /* hidden players skip RGBA conversion */
 void media_mark_visible(bool (*vis)(Node *, void *), void *ud);
 
+
+/* Web Audio output: one SDL stream per AudioContext, fed interleaved stereo float at 48 kHz; owner = JS context. */
+int wa_open(const void *owner);            /* -1 when no audio device */
+void wa_push(const void *owner, int id, const float *s, int frames);
+int wa_queued(const void *owner, int id);  /* frames not yet played */
+void wa_pause(const void *owner, int id, bool paused);
+void wa_close(const void *owner, int id);
+void wa_close_owner(const void *owner);
+/* decodeAudioData: whole file -> malloc'd interleaved stereo float at 48 kHz, NULL if undecodable */
+float *media_decode_pcm(const uint8_t *p, size_t n, int *frames);

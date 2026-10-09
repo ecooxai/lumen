@@ -597,6 +597,7 @@ void js_free(JsCtx *c) {
         c->watchdog.join();
     }
     for (auto &kv : c->players) mp_free(kv.second);
+    wa_close_owner(c);
     g_ctxs.erase(std::remove(g_ctxs.begin(), g_ctxs.end(), c), g_ctxs.end());
     c->players.clear();
     std::vector<Node *> roots;

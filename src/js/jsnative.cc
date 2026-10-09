@@ -377,6 +377,21 @@ static uint64_t start_fetch(JsCtx *c, NetRequest *rq, Fetch *f) {
     auto mpit = c->players.find((uint32_t)NUM(0));                \
     if (mpit == c->players.end()) return;                         \
     MediaPlayer *mp = mpit->second
+FN(waOpen) { CTX; RET((double)wa_open(c)); }
+FN(waPush) {
+    CTX; const char *p; size_t n;
+    if (bytes_of(a[1], &p, &n)) wa_push(c, (int)NUM(0), (const float *)p, (int)(n / 8));
+}
+FN(waQueued) { CTX; RET((double)wa_queued(c, (int)NUM(0))); }
+FN(waPause) { CTX; wa_pause(c, (int)NUM(0), BOOL(1)); }
+FN(waClose) { CTX; wa_close(c, (int)NUM(0)); }
+FN(audioDecode) {
+    CTX; const char *p; size_t n; int frames = 0;
+    if (!bytes_of(a[0], &p, &n) || !n) { RET(v8::Null(iso)); return; }
+    float *s = media_decode_pcm((const uint8_t *)p, n, &frames);
+    if (!s) { RET(v8::Null(iso)); return; }
+    RET(mkab(iso, s, (size_t)frames * 8)); free(s);
+}
 FN(mediaNew) { CTX; ARGN(n, 0); uint32_t id = c->next_player++; c->players[id] = mp_new(n); RET((double)id); }
 FN(mediaFree) { CTX; MP; mp_free(mp); c->players.erase(mpit); }
 FN(mediaOpen) { CTX; MP; mp_open_url(mp, S(1).c_str()); }
@@ -849,7 +864,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(histLen); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
     REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove);
     REG(mediaBuffered); REG(mediaEos); REG(mediaSetDuration); REG(mediaPlay); REG(mediaPause); REG(mediaSeek);
-    REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(selSet); REG(readyState); REG(quirks);
+    REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(readyState); REG(quirks);
     REG(currentScript); REG(media); REG(cssSupports); REG(cssSelText); REG(urlParse); REG(encode); REG(decode); REG(random); REG(cDigest); REG(cHmac); REG(cAes); REG(cEcGen); REG(cEcDerive); REG(cEcSign); REG(cEcVerify); REG(cSpki); REG(cSpkiParse); REG(cPkcs8Parse); REG(cEcFromD); REG(cHkdf); REG(cPbkdf2);
     REG(heap); REG(imgSize); REG(userAgent); REG(platform); REG(cpus); REG(makeAll);
 #undef REG
