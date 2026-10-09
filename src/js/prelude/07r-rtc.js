@@ -8,6 +8,7 @@ const rtcFire = (t, ev) => dispatch(t, ev, true);
 const rtcEv = (t, type) => rtcFire(t, new Event(type));
 const rtcErr = (name, msg) => new DOMException(msg || name, name);
 const rtcU8 = s => new TextEncoder().encode(s).length;
+const rtcUSV = v => String(v).replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '\uFFFD');
 const rtcRange = (v, max, what) => { const n = Number(v); if (!Number.isFinite(n)) throw new TypeError(`${what} is not a finite number.`); const t = Math.trunc(n); if (t < 0 || t > max) throw new TypeError(`${what} is outside the range [0, ${max}].`); return t; };
 const rtcRO = (C, keys) => { for (const k of keys) Object.defineProperty(C.prototype, k, { get() { return this._[k]; }, configurable: true, enumerable: true }); };
 const rtcOn = (C, names) => { for (const n of names) Object.defineProperty(C.prototype, 'on' + n, { get() { return (this._on && this._on[n]) || null; }, set(f) { if (!this._on) def(this, '_on', {}); this._on[n] = typeof f === 'function' ? f : null; }, configurable: true, enumerable: true }); };
@@ -45,16 +46,25 @@ class RTCSessionDescription {
 rtcRO(RTCSessionDescription, ['type', 'sdp']);
 
 const rtcParseCand = s => {
-    const p = s.replace(/^a=/, '').replace(/^candidate:/, '').trim().split(/\s+/);
     const r = { foundation: null, component: null, priority: null, address: null, protocol: null, port: null, type: null, tcpType: null, relatedAddress: null, relatedPort: null, ufrag: null };
+    if (!s.startsWith('candidate:') || /^\s/.test(s.slice(10))) return r;
+    const p = s.slice(10).trim().split(/\s+/);
     if (p.length < 8 || p[6] !== 'typ') return r;
-    const proto = p[2].toLowerCase(), typ = p[7];
-    if (!['udp', 'tcp'].includes(proto) || !['host', 'srflx', 'prflx', 'relay'].includes(typ) || !/^\d+$/.test(p[1]) || !/^\d+$/.test(p[3]) || !/^\d+$/.test(p[5])) return r;
-    Object.assign(r, { foundation: p[0], component: p[1] === '1' ? 'rtp' : p[1] === '2' ? 'rtcp' : null, protocol: proto, priority: +p[3], address: p[4], port: +p[5], type: typ });
-    for (let i = 8; i + 1 < p.length; i += 2) {
-        if (p[i] === 'raddr') r.relatedAddress = p[i + 1]; else if (p[i] === 'rport') r.relatedPort = +p[i + 1];
-        else if (p[i] === 'tcptype') r.tcpType = p[i + 1]; else if (p[i] === 'ufrag') r.ufrag = p[i + 1];
+    const proto = p[2].toLowerCase(), typ = p[7].toLowerCase();
+    if (!/^[A-Za-z0-9+\/]{1,32}$/.test(p[0]) || !/^\d{1,3}$/.test(p[1]) || +p[1] < 1 || +p[1] > 256) return r;
+    if (!['udp', 'tcp'].includes(proto) || !/^\d{1,10}$/.test(p[3]) || +p[3] < 1 || +p[3] > 2147483647 || !/^\d{1,5}$/.test(p[5]) || +p[5] > 65535) return r;
+    if (!['host', 'srflx', 'prflx', 'relay'].includes(typ)) return r;
+    let i = 8, raddr = null, rport = null, tcpType = null;
+    if (typ !== 'host') {
+        if (p[i] !== 'raddr' || p[i + 2] !== 'rport' || !/^\d{1,5}$/.test(p[i + 3] || '')) return r;
+        raddr = p[i + 1]; rport = +p[i + 3]; i += 4;
     }
+    if (proto === 'tcp' && typ !== 'relay') {
+        if (p[i] !== 'tcptype' || !['active', 'passive', 'so'].includes((p[i + 1] || '').toLowerCase())) return r;
+        tcpType = p[i + 1].toLowerCase(); i += 2;
+    }
+    Object.assign(r, { foundation: p[0], component: p[1] === '1' ? 'rtp' : p[1] === '2' ? 'rtcp' : null, protocol: proto, priority: +p[3], address: p[4], port: +p[5], type: typ, tcpType, relatedAddress: raddr, relatedPort: rport });
+    for (; i + 1 < p.length; i += 2) if (p[i] === 'ufrag') r.ufrag = p[i + 1];
     return r;
 };
 class RTCIceCandidate {
@@ -66,11 +76,12 @@ class RTCIceCandidate {
         const candidate = init.candidate === undefined ? '' : String(init.candidate);
         const c = rtcParseCand(candidate);
         const usernameFragment = init.usernameFragment === undefined || init.usernameFragment === null ? null : String(init.usernameFragment);
-        def(this, '_', Object.assign(c, { candidate, sdpMid, sdpMLineIndex, usernameFragment: usernameFragment ?? c.ufrag }));
+        const opt = k => init[k] === undefined || init[k] === null ? null : String(init[k]);
+        def(this, '_', Object.assign(c, { candidate, sdpMid, sdpMLineIndex, usernameFragment: usernameFragment ?? c.ufrag, relayProtocol: opt('relayProtocol'), url: opt('url') }));
     }
     toJSON() { return { candidate: this.candidate, sdpMid: this.sdpMid, sdpMLineIndex: this.sdpMLineIndex, usernameFragment: this.usernameFragment }; }
 }
-rtcRO(RTCIceCandidate, ['candidate', 'sdpMid', 'sdpMLineIndex', 'foundation', 'component', 'priority', 'address', 'protocol', 'port', 'type', 'tcpType', 'relatedAddress', 'relatedPort', 'usernameFragment']);
+rtcRO(RTCIceCandidate, ['candidate', 'sdpMid', 'sdpMLineIndex', 'foundation', 'component', 'priority', 'address', 'protocol', 'port', 'type', 'tcpType', 'relatedAddress', 'relatedPort', 'usernameFragment', 'relayProtocol', 'url']);
 class RTCPeerConnectionIceEvent extends Event {
     constructor(t, i = {}) { super(t, i); i = i || {}; def(this, '_', { candidate: i.candidate ?? null, url: i.url ?? null }); }
 }
@@ -387,7 +398,7 @@ const rtcParseSdp = sdp => {
     }
     return sess;
 };
-const rtcCodecsOf = m => m.rtpmap.map(r => { const c = { payloadType: r.pt, mimeType: `${m.kind}/${r.name}`, clockRate: r.rate }; if (r.ch) c.channels = r.ch; if (m.fmtp[r.pt]) c.sdpFmtpLine = m.fmtp[r.pt]; return c; });
+const rtcCodecsOf = m => m.rtpmap.map(r => { const c = { payloadType: r.pt, mimeType: `${m.kind}/${r.name}`, clockRate: r.rate }; if (r.ch) c.channels = r.ch; else if (m.kind === 'audio') c.channels = 1; if (m.fmtp[r.pt]) c.sdpFmtpLine = m.fmtp[r.pt]; return c; });
 
 let rtcSessSeq = 0;
 class RTCPeerConnection extends EventTarget {
@@ -421,7 +432,7 @@ class RTCPeerConnection extends EventTarget {
                 return [...v].map(s => {
                     if (s === null || typeof s !== 'object') throw new TypeError("Failed to convert value to 'RTCIceServer'.");
                     if (s.urls === undefined) throw new TypeError("Failed to read the 'urls' property from 'RTCIceServer': Required member is undefined.");
-                    const urls = typeof s.urls === 'string' ? s.urls : typeof s.urls === 'object' && s.urls && typeof s.urls[Symbol.iterator] === 'function' ? [...s.urls].map(String) : String(s.urls);
+                    const urls = typeof s.urls === 'object' && s.urls && typeof s.urls[Symbol.iterator] === 'function' ? [...s.urls].map(String) : [String(s.urls)];
                     const o = { urls }; if (s.username !== undefined) o.username = String(s.username); if (s.credential !== undefined) o.credential = String(s.credential);
                     return o;
                 });
@@ -430,8 +441,9 @@ class RTCPeerConnection extends EventTarget {
             rtcpMuxPolicy: en('rtcpMuxPolicy', ['require'], 'require'),
         };
         for (const s of out.iceServers) {
-            const urls = typeof s.urls === 'string' ? [s.urls] : s.urls;
+            const urls = s.urls;
             if (!urls.length) throw rtcErr('SyntaxError', 'ICE server urls is empty.');
+            for (const u of urls) if (/[\\#]/.test(u)) throw rtcErr('SyntaxError', `Invalid ICE server URL '${u}'.`);
             for (const u of urls) {
                 const m = /^(stuns?|turns?):([^?]*)(\?.*)?$/i.exec(u);
                 if (!m || !m[2] || /[\s/@]/.test(m[2])) throw rtcErr('SyntaxError', `Invalid ICE server URL '${u}'.`);
@@ -536,7 +548,7 @@ class RTCPeerConnection extends EventTarget {
     _codecsFor(x) {
         const t = this._.transceivers.find(k => k.sender === x || k.receiver === x);
         if (!t || !t._.mid) return [];
-        const d = this._.curRemote || this._.pendRemote || this._.curLocal;
+        const d = x instanceof RTCRtpSender ? this._.curRemote : this._.curLocal;
         const m = d && rtcParseSdp(d.sdp)?.media.find(k => k.mid === t._.mid);
         return m ? rtcCodecsOf(m) : [];
     }
@@ -646,6 +658,7 @@ class RTCPeerConnection extends EventTarget {
                 if (this._.pendDataMid !== undefined && this._.dataMid === null) { this._.dataMid = this._.pendDataMid; this._.dataMidFromSLD = true; }
                 if (this._.restart && this._.offerUfrag) { this._.ufrag = this._.offerUfrag; rtcPeers.set(this._.ufrag, this); this._.restart = false; this._.restartPending = true; }
                 this._ensureSctp(parsed);
+                this._.dtlsReady = true;
                 this._sigState('have-local-offer');
             } else {
                 const offer = this._.pendRemote;
@@ -707,9 +720,9 @@ class RTCPeerConnection extends EventTarget {
                 this._rollbackRemote(); return;
             }
             const ok = type === 'offer' ? st === 'stable' || st === 'have-remote-offer' : st === 'have-local-offer' || st === 'have-remote-pranswer';
-            if (!ok) {
-                if (type === 'offer' && st === 'have-local-offer') { this._rollbackLocal(true); }
-                else throw rtcErr('InvalidStateError', `Failed to set remote ${type} sdp: Called in wrong state: ${st}`);
+            const implicitRollback = !ok && type === 'offer' && st === 'have-local-offer';
+            if (!ok && !implicitRollback) {
+                throw rtcErr('InvalidStateError', `Failed to set remote ${type} sdp: Called in wrong state: ${st}`);
             }
             const sdp = desc.sdp === undefined || desc.sdp === null ? '' : String(desc.sdp);
             const parsed = rtcParseSdp(sdp);
@@ -724,6 +737,7 @@ class RTCPeerConnection extends EventTarget {
             }
             await new Promise(r => rtcTask(r));
             if (this._.closed) return;
+            if (implicitRollback) this._rollbackLocal(true);
             const d = new RTCSessionDescription({ type, sdp });
             const first = parsed.media.find(m => m.port !== 0) || parsed.media[0];
             this._.remoteUfrag = first ? first.ufrag : null;
@@ -748,6 +762,7 @@ class RTCPeerConnection extends EventTarget {
                     t._.remoteDir = m.dir;
                 });
                 this._ensureSctp(parsed);
+                this._.dtlsReady = true;
                 this._sigState('have-remote-offer');
             } else {
                 if (type === 'answer') { this._.curRemote = d; this._.curLocal = this._.pendLocal; this._.pendLocal = this._.pendRemote = null; this._.lastOffer = null; }
@@ -826,21 +841,28 @@ class RTCPeerConnection extends EventTarget {
             let m = null;
             if (c && c.sdpMid !== undefined && c.sdpMid !== null) { m = parsed.media.find(x => x.mid === String(c.sdpMid)); if (!m) throw rtcErr('OperationError', 'Unknown sdpMid.'); }
             else if (c && c.sdpMLineIndex !== undefined && c.sdpMLineIndex !== null) { m = parsed.media[+c.sdpMLineIndex]; if (!m) throw rtcErr('OperationError', 'sdpMLineIndex out of range.'); }
-            const uf = c && c.usernameFragment !== undefined && c.usernameFragment !== null ? String(c.usernameFragment) : null;
-            const allUfrags = [this._.curRemote, this._.pendRemote].filter(Boolean).flatMap(d => rtcParseSdp(d.sdp).media.map(x => x.ufrag));
-            if (uf !== null && !allUfrags.includes(uf)) throw rtcErr('OperationError', 'Unknown ufrag.');
-            if (cand === '') { await new Promise(r => rtcTask(r)); return; }
-            const pc = rtcParseCand(cand);
-            if (pc.type === null) throw rtcErr('OperationError', 'Failed to parse candidate.');
-            if (m && m.port === 0) return;
+            const ufRaw = c ? c.usernameFragment : undefined;
+            const uf = ufRaw === undefined || ufRaw === null ? null : String(ufRaw);
+            if (uf !== null && !(m ? [m.ufrag] : parsed.media.map(x => x.ufrag)).includes(uf)) throw rtcErr('OperationError', 'Unknown ufrag.');
+            let line;
+            if (cand !== '') {
+                const pc = rtcParseCand(cand);
+                if (pc.type === null) throw rtcErr('OperationError', 'Failed to parse candidate.');
+                line = 'a=' + cand;
+            } else line = 'a=end-of-candidates';
             await new Promise(r => rtcTask(r));
-            const ice = new RTCIceCandidate({ candidate: cand, sdpMid: m ? m.mid : null, sdpMLineIndex: m ? parsed.media.indexOf(m) : (c.sdpMLineIndex ?? 0), usernameFragment: uf });
-            this._.remoteCands.push(cand); this._.ice._.remote.push(ice);
+            if (cand !== '') {
+                const ice = new RTCIceCandidate({ candidate: cand, sdpMid: m ? m.mid : null, sdpMLineIndex: m ? parsed.media.indexOf(m) : 0, usernameFragment: uf });
+                this._.remoteCands.push(cand); this._.ice._.remote.push(ice);
+            }
             const target = this._.pendRemote || this._.curRemote;
-            const line = 'a=' + (cand.startsWith('candidate:') ? cand : 'candidate:' + cand) + '\r\n';
-            let done = false;
-            const sdp = target.sdp.replace(new RegExp('(a=mid:' + (m ? m.mid : parsed.media[0].mid).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\r\n)'), x => { done = true; return x + line; });
-            const nd = new RTCSessionDescription({ type: target.type, sdp: done ? sdp : target.sdp });
+            const lines = target.sdp.split(/\r?\n/).filter(Boolean), out = [];
+            let sec = -1;
+            const want = m ? parsed.media.indexOf(m) : cand === '' ? null : 0;
+            const flush = () => { if (sec >= 0 && (want === null || want === sec)) out.push(line); };
+            for (const l of lines) { if (l.startsWith('m=')) { flush(); sec++; } out.push(l); }
+            flush();
+            const nd = new RTCSessionDescription({ type: target.type, sdp: out.join('\r\n') + '\r\n' });
             if (this._.pendRemote) this._.pendRemote = nd; else this._.curRemote = nd;
             this._tryConnect();
         });
@@ -910,8 +932,8 @@ class RTCPeerConnection extends EventTarget {
         if (this._.closed) throw rtcErr('InvalidStateError', "Failed to execute 'createDataChannel' on 'RTCPeerConnection': The RTCPeerConnection's signalingState is 'closed'.");
         init = init === undefined || init === null ? {} : init;
         const nul = k => init[k] === undefined || init[k] === null ? null : rtcRange(init[k], 65535, k);
-        label = String(label);
-        const o = { label, ordered: init.ordered === undefined ? true : !!init.ordered, maxPacketLifeTime: nul('maxPacketLifeTime'), maxRetransmits: nul('maxRetransmits'), protocol: init.protocol === undefined ? '' : String(init.protocol), negotiated: !!init.negotiated, id: init.id === undefined || init.id === null ? null : rtcRange(init.id, 65535, 'id') };
+        label = rtcUSV(label);
+        const o = { label, ordered: init.ordered === undefined ? true : !!init.ordered, maxPacketLifeTime: nul('maxPacketLifeTime'), maxRetransmits: nul('maxRetransmits'), protocol: init.protocol === undefined ? '' : rtcUSV(init.protocol), negotiated: !!init.negotiated, id: init.id === undefined || init.id === null ? null : rtcRange(init.id, 65535, 'id') };
         const p = init.priority === undefined ? 'low' : String(init.priority);
         if (!RTC_DC_PRIO.includes(p)) throw new TypeError(`The provided value '${p}' is not a valid enum value of type RTCPriorityType.`);
         o.priority = p;

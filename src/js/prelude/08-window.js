@@ -66,7 +66,13 @@ const navigator = {
     javaEnabled() { return false; }, sendBeacon() { return true; }, vibrate() { return false; }, registerProtocolHandler() {},
     clipboard: { writeText() { return Promise.resolve(); }, readText() { return Promise.resolve(''); } },
     permissions: { query() { return Promise.resolve({ state: 'prompt', addEventListener() {} }); } },
-    mediaDevices: Object.assign(new EventTarget(), { enumerateDevices() { return Promise.resolve([]); }, getUserMedia() { return Promise.reject(new DOMException('Capture is not implemented yet', 'NotSupportedError')); }, getDisplayMedia() { return Promise.reject(new DOMException('Capture is not implemented yet', 'NotSupportedError')); }, getSupportedConstraints() { return {}; } }),
+    mediaDevices: Object.assign(new EventTarget(), { enumerateDevices() { return Promise.resolve([]); }, getUserMedia(c) {
+            if (!c || typeof c !== 'object' || (!c.audio && !c.video)) return Promise.reject(new TypeError("Failed to execute 'getUserMedia': At least one of audio and video must be requested"));
+            const t = [];
+            if (c.audio) t.push(new MediaStreamTrack(RTC_INTERNAL, 'audio', 'Fake Default Audio Input'));
+            if (c.video) t.push(new MediaStreamTrack(RTC_INTERNAL, 'video', 'Fake Default Video Input'));
+            return new Promise(r => setTimeout(() => r(new MediaStream(t))));
+        }, getDisplayMedia() { return Promise.reject(new DOMException('Capture is not implemented yet', 'NotSupportedError')); }, getSupportedConstraints() { return {}; } }),
     serviceWorker: Object.assign(new EventTarget(), {
         controller: null, ready: new Promise(() => {}),
         register() { return Promise.reject(new DOMException('Service workers are not supported', 'SecurityError')); },
