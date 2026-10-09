@@ -259,11 +259,20 @@ class Attr {
     get ownerElement() { return this._el; } get nodeType() { return 2; } get nodeName() { return this.name; } get nodeValue() { return this.value; } get textContent() { return this.value; }
 }
 class NamedNodeMap {
-    constructor(el) { def(this, '_el', el); const n = N.attrs(el); for (let i = 0; i < n.length; i += 2) this[i / 2] = new Attr(el, n[i]); def(this, 'length', n.length / 2); }
-    item(i) { return this[i] || null; }
+    constructor(el) {
+        def(this, '_el', el);
+        return new Proxy(this, {
+            get(t, k, r) { if (typeof k === 'string' && /^\d+$/.test(k)) return t.item(+k) ?? undefined; return Reflect.get(t, k, r); },
+            has(t, k) { if (typeof k === 'string' && /^\d+$/.test(k)) return +k < t.length; return Reflect.has(t, k); },
+            ownKeys(t) { return [...Array(t.length).keys()].map(String).concat(Reflect.ownKeys(t)); },
+            getOwnPropertyDescriptor(t, k) { if (typeof k === 'string' && /^\d+$/.test(k) && +k < t.length) return { value: t.item(+k), enumerable: true, configurable: true }; return Reflect.getOwnPropertyDescriptor(t, k); },
+        });
+    }
+    get length() { return N.attrs(this._el).length / 2; }
+    item(i) { const n = N.attrs(this._el); return i >= 0 && 2 * i < n.length ? new Attr(this._el, n[2 * i]) : null; }
     getNamedItem(n) { n = String(n).toLowerCase(); return N.attr(this._el, n) == null ? null : new Attr(this._el, n); }
     setNamedItem(a) { this._el.setAttribute(a.name, a.value); }
-    removeNamedItem(n) { this._el.removeAttribute(n); }
+    removeNamedItem(n) { const a = this.getNamedItem(n); if (!a) throw new DOMException("Failed to execute 'removeNamedItem' on 'NamedNodeMap': No item with name '" + n + "' was found.", 'NotFoundError'); return this._el.removeAttributeNode(a); }
     *[Symbol.iterator]() { for (let i = 0; i < this.length; i++) yield this[i]; }
 }
 class DOMTokenList {

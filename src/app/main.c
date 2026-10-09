@@ -683,6 +683,17 @@ static App *g_app;
 static uint64_t fnv(const char *s) { uint64_t h = 1469598103934665603ull; for (; s && *s; s++) h = (h ^ (uint8_t)*s) * 1099511628211ull; return h; }
 static bool is_sheet_link(Node *n) { const char *r = node_attr(n, "rel"); return n->tag == A_link && r && strstr(r, "stylesheet") && node_attr(n, "href"); }
 typedef struct { uint64_t gen; Node *n; } LinkLoad;
+static bool is_preload_link(Node *n) {
+    const char *r = node_attr(n, "rel");
+    return n->tag == A_link && r && strstr(r, "preload") && node_attr(n, "href");
+}
+static void preload_done(NetRequest *rq, NetResponse *r, void *ud) {
+    (void)rq; LinkLoad *l = ud; Page *p = g_app->t->cur;
+    if (p && p->gen == l->gen && p->js)
+        js_dispatch(p->js, l->n, r && r->status >= 200 && r->status < 300 ? "load" : "error", "Event", false, false, 0, 0, 0, NULL);
+    node_release(l->n);
+    free(l);
+}
 static void link_done(NetRequest *rq, NetResponse *r, void *ud) {
     (void)rq; LinkLoad *l = ud; Page *p = g_app->t->cur;
     if (p && p->gen == l->gen && r && r->status == 200 && r->body) {
@@ -782,7 +793,7 @@ static void fire_img_events(Page *p) {
 static bool sync_sheets(Page *p, bool seed) {
     SheetRef *cur = NULL; int nc = 0, cap = 0; bool changed = false;
     for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) {
-        if (n->type != NODE_ELEMENT || n->ns != NS_HTML || (n->tag != A_style && !is_sheet_link(n))) continue;
+        if (n->type != NODE_ELEMENT || n->ns != NS_HTML || (n->tag != A_style && !is_sheet_link(n) && !is_preload_link(n))) continue;
         char *t = n->tag == A_style ? node_text_content(n) : NULL;
         uint64_t h = t ? fnv(t) : fnv(node_attr(n, "href"));
         int k = 0; while (k < p->nsref && p->sref[k].n != n) k++;
@@ -792,7 +803,7 @@ static bool sync_sheets(Page *p, bool seed) {
             if (t) { StyleSheet *sh = css_parse_sheet(t, strlen(t), p->d->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); changed = true; }
             else {
                 char *u = url_join(p->d->url, node_attr(n, "href"));
-                if (u) { NetRequest *rq = net_request_new("GET", u); LinkLoad *l = xmalloc(sizeof *l); l->gen = p->gen; l->n = n; n->refcount++; rq->done = link_done; rq->ud = l; net_fetch(rq); free(u); }
+                if (u) { NetRequest *rq = net_request_new("GET", u); LinkLoad *l = xmalloc(sizeof *l); l->gen = p->gen; l->n = n; n->refcount++; rq->done = is_sheet_link(n) ? link_done : preload_done; rq->ud = l; net_fetch(rq); free(u); }
             }
         }
         free(t);

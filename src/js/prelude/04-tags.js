@@ -69,7 +69,7 @@ mk('HTMLInputElement', HTMLElement, ['input'], p => {
         set value(v) { N.setValue(this, v == null ? '' : String(v)); },
         get defaultValue() { return N.attr(this, 'value') ?? ''; }, set defaultValue(v) { this.setAttribute('value', v); },
         get checked() { return N.checked(this); }, set checked(v) { N.setChecked(this, !!v); },
-        get defaultChecked() { return this.hasAttribute('checked'); },
+        get defaultChecked() { return this.hasAttribute('checked'); }, set defaultChecked(v) { this.toggleAttribute('checked', !!v); },
         get valueAsNumber() { return parseFloat(this.value); }, set valueAsNumber(v) { this.value = String(v); },
         get files() { return this.type === 'file' ? [] : null; },
         get selectionStart() { return this.value.length; }, set selectionStart(v) {}, get selectionEnd() { return this.value.length; }, set selectionEnd(v) {},
@@ -112,6 +112,7 @@ mk('HTMLOptionElement', HTMLElement, ['option'], p => {
         get selected() { const s = this.closest('select'); return s ? s.options[s.selectedIndex] === this : N.checked(this); },
         set selected(v) { const s = this.closest('select'); if (v && s && !s.multiple) for (const o of s.options) N.setChecked(o, false); N.setChecked(this, !!v); },
         get index() { const s = this.closest('select'); return s ? [...s.options].indexOf(this) : 0; },
+        get defaultSelected() { return this.hasAttribute('selected'); }, set defaultSelected(v) { this.toggleAttribute('selected', !!v); },
     });
 });
 mk('HTMLLabelElement', HTMLElement, ['label'], p => { acc(p, 'htmlFor', function () { return N.attr(this, 'for') ?? ''; }, function (v) { this.setAttribute('for', v); }); methods(p, { get control() { const f = N.attr(this, 'for'); return f ? N.byId(f) : this.querySelector('input,select,textarea,button'); } }); });

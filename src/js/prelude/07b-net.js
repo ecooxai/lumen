@@ -345,7 +345,7 @@ class WebSocket extends EventTarget {
     send() { throw new DOMException('WebSocket is not supported yet', 'InvalidStateError'); } close() {}
 }
 Object.assign(WebSocket, { CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3 });
-class MessagePort extends EventTarget { constructor() { super(); this.onmessage = null; def(this, '_other', null); } postMessage(d) { const o = this._other; if (o) setTimeout(() => { const ev = new MessageEvent('message', { data: structuredClone(d) }); if (o.onmessage) o.onmessage(ev); dispatch(o, ev, true); }); } start() {} close() { this._other = null; } }
+class MessagePort extends EventTarget { constructor() { super(); this.onmessage = null; def(this, '_other', null); } postMessage(d) { const o = this._other; if (o) setTimeout(() => { dispatch(o, new MessageEvent('message', { data: structuredClone(d) }), true); }); } start() {} close() { this._other = null; } }
 class MessageChannel { constructor() { this.port1 = new MessagePort(); this.port2 = new MessagePort(); this.port1._other = this.port2; this.port2._other = this.port1; } }
 class BroadcastChannel extends EventTarget { constructor(n) { super(); this.name = String(n); } postMessage() {} close() {} }
 
