@@ -1128,6 +1128,7 @@ static bool vbar_click(App *a, float x, float y) {   /* document coordinates */
 static void click_page(App *a, float x, float y) {
     x -= a->side;
     if (!a->t->cur || !a->t->cur->L) return;
+    h_sync_in(a, a->t->cur->d, true);   /* paint may be deferred; hit-test the current DOM, not detached boxes */
     if (vbar_click(a, x, y - BAR + a->t->sy)) return;
     Box *b = layout_hit(a->t->cur->L, x, y - BAR + a->t->sy);
     Node *t = b ? b->node : NULL;

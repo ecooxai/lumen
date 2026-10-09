@@ -328,7 +328,9 @@ static Box *hit(Box *b, float x, float y, float ox, float oy, float vx, float vy
 }
 Box *layout_hit(Layout *L, float x, float y) {
     if (!L->root) return NULL;
-    return hit(L->root, x, y, 0, 0, -L->scroll_x, -L->scroll_y);
+    Box *b = hit(L->root, x, y, 0, 0, -L->scroll_x, -L->scroll_y);
+    while (b && !b->node) b = b->parent;   /* anonymous boxes (e.g. a flex item's text run) belong to their parent's node */
+    return b;
 }
 
 void layout_dump(Box *b, int depth, int maxdepth) {

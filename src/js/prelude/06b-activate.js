@@ -1,6 +1,10 @@
 function activate(el, ev) {
     const a = el.closest ? el.closest('a[href]') : null;
     if (a) { const raw = N.attr(a, 'href'); if (/^javascript:/i.test(raw)) { try { (0, eval)(decodeURIComponent(raw.slice(11))); } catch (e) { report(e); } } else if (a.href) location.assign(a.href); return; }
+    if (el.closest && !/^(input|button|label|summary|textarea|select)$/.test(N.name(el))) {
+        const t = el.closest('button,label,summary');
+        if (t) el = t;
+    }
     const name = N.name(el);
     if (name === 'input' || name === 'button') {
         const t = el.type;

@@ -340,7 +340,13 @@ for (const k of ['addEventListener', 'removeEventListener', 'dispatchEvent']) {
     const f = EventTarget.prototype[k];
     Object.defineProperty(G, k, { value: function (...a) { return f.apply(this ?? G, a); }, writable: true, configurable: true });
 }
-function fire(target, type, init, Ctor = Event) { return dispatch(target, new Ctor(type, init), true); }
+function fire(target, type, init, Ctor = Event) {
+    const ev = new Ctor(type, init), ok = dispatch(target, ev, true);
+    if (ok && type === 'click' && target && target.nodeType === 1 && !(target.closest && target.closest('a[href]')) && !(target.disabled || (target.closest && target.closest('button:disabled')))) {
+        try { activate(target, ev); } catch (e) { report(e); }   /* anchors are navigated natively by the shell */
+    }
+    return ok;
+}
 function fireAnim(t, type, name, elapsed, anim) {
     const init = anim ? { bubbles: true, animationName: name, elapsedTime: elapsed } : { bubbles: true, propertyName: name, elapsedTime: elapsed };
     return dispatch(t, new (anim ? AnimationEvent : TransitionEvent)(type, init), true);
