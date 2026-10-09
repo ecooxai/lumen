@@ -11,7 +11,8 @@
 #include "../js/js.h"
 #include "../js/jsglue.h"
 
-#define TABH 30.f
+static bool g_compact;   /* one tab in the workspace: toolbar lives in the title bar */
+#define TABH (g_compact ? 0.f : 30.f)
 #define TB 44.f
 static float g_info_h;
 #define INFOH 36.f
@@ -23,7 +24,8 @@ static float g_info_h;
 #define TLW 0.f
 #endif
 #define SIDEW 84.f
-#define WSY0 (TABH + 8)
+#define SIDEY (g_compact ? TB : TABH)
+#define WSY0 (SIDEY + 8)
 #define WSRH 40.f
 
 typedef struct { Node *n; char *src; size_t len; char *name; bool module; } PScript;
@@ -217,7 +219,7 @@ typedef struct App {
     Tab *t, *tabs[MAX_TABS]; int ntabs, ti;
     char wsname[16][64]; Tab *wslast[16]; int nws, wi; float side;
     int wsicon[16]; Image *icimg[16][2];
-    Image *sym[7][4]; bool vbars;
+    Image *sym[8][4]; bool vbars;
     int tip_tab; double tip_until;     /* CPU-limit dot tooltip pinned by a click */
     bool editing; int sel_all, page_sel;
     double caret_t;
@@ -428,7 +430,16 @@ static Image *ws_icon(App *a, int ic, bool on) {
 }
 static int ws_tabs(App *a, int w, int *out) { int n = 0; for (int i = 0; i < a->ntabs; i++) if (a->tabs[i]->ws == w) out[n++] = i; return n; }
 static float tab_w(App *a) { int v[MAX_TABS], n = ws_tabs(a, a->wi, v); float w = (a->vw - TLW - 48) / (n ? n : 1); return w > 220 ? 220 : w; }
+static float bar_x0(App *a) { return g_compact ? TLW : a->side; }
+static float url_w(App *a) { return a->vw - bar_x0(a) - 144 - (g_compact ? 92 : 12); }
 static int bar_hit(App *a, float x, float y) {
+    if (g_compact && y < TB) {
+        x -= TLW;
+        if (x < 0) return HB_NONE;
+        if (x < 40) return HB_BACK; if (x < 72) return HB_FWD; if (x < 104) return HB_RELOAD; if (x < 136) return HB_STAR;
+        float ue = 144 + url_w(a);
+        return x < 144 ? HB_NONE : x < ue ? HB_URL : x >= ue + 4 && x < ue + 32 ? HB_NEWTAB : HB_NONE;
+    }
     if (y < TABH) {
         int v[MAX_TABS], n = ws_tabs(a, a->wi, v), k; float tw = tab_w(a), x0 = TLW + 6; k = (int)((x - x0) / tw);
         if (x >= x0 && k < n) { float lx = x - x0 - k * tw; return lx > tw - 28 ? HB_TABX + v[k] : a->tabs[v[k]]->limited && lx < 26 ? HB_TABDOT + v[k] : HB_TAB + v[k]; }
@@ -448,9 +459,9 @@ static int bar_hit(App *a, float x, float y) {
 }
 
 static void push_img(DisplayList *dl, Image *im, float x, float y, float w, float h) { DItem it; memset(&it, 0, sizeof it); it.op = DO_IMAGE; it.x = x; it.y = y; it.w = w; it.h = h; it.img = im; it.alpha = 1; vec_push(dl->items, it); }
-static Image *sym_icon(App *a, int k, int c) {   /* k: 0 back 1 forward 2 reload 3 star 4 star.fill 5 play 6 pause; c: 0 dark 1 grey 2 blue 3 white */
+static Image *sym_icon(App *a, int k, int c) {   /* k: 0 back 1 forward 2 reload 3 star 4 star.fill 5 play 6 pause 7 plus; c: 0 dark 1 grey 2 blue 3 white */
 #ifdef __APPLE__
-    static const char *N[7] = { "chevron.left", "chevron.right", "arrow.clockwise", "star", "star.fill", "play.fill", "pause.fill" };
+    static const char *N[8] = { "chevron.left", "chevron.right", "arrow.clockwise", "star", "star.fill", "play.fill", "pause.fill", "plus" };
     static const uint32_t C[4] = { 0x3c4043, 0xbdc1c6, 0x1a73e8, 0xffffff };
     Image **slot = &a->sym[k][c];
     if (!*slot) {
@@ -487,8 +498,10 @@ static void chrome_tip(App *a) {   /* tooltip for a tab's CPU-limit dot (hover o
 }
 static void build_chrome(App *a) {
     DisplayList *dl = &a->cdl; dl_clear(dl);
-    push_rect(dl, 0, 0, a->vw, TABH, 0, RGBA(222, 225, 230, 255));
-    int vt[MAX_TABS], nvt = ws_tabs(a, a->wi, vt);
+    float x0 = bar_x0(a), tbw = a->vw - x0;
+    if (g_compact) { push_rect(dl, 0, 0, a->vw, TB, 0, RGBA(250, 250, 250, 255)); push_rect(dl, 0, TB - 1, a->vw, 1, 0, RGBA(226, 226, 226, 255)); }
+    else push_rect(dl, 0, 0, a->vw, TABH, 0, RGBA(222, 225, 230, 255));
+    int vt[MAX_TABS], nvt = g_compact ? 0 : ws_tabs(a, a->wi, vt);
     float tabw = tab_w(a), tx0 = TLW + 6, tbase = 4 + (TABH - 4) / 2 + (a->ui->ascent - a->ui->descent) / 2;
     for (int k = 0; k < nvt; k++) {
         int i = vt[k]; Tab *t = a->tabs[i]; float x = tx0 + k * tabw;
@@ -501,13 +514,15 @@ static void build_chrome(App *a) {
         push_text(dl, a->ui, "\xC3\x97", x + tabw - 22, tbase, 16, a->hover == HB_TABX + i ? RGBA(20, 20, 20, 255) : RGBA(110, 110, 110, 255));
         if (t->loading) push_rect(dl, x + 8, TABH - 3, (tabw - 18) * 0.35f, 2, 1, RGBA(66, 133, 244, 255));
     }
-    float npx = tx0 + nvt * tabw + 8;
-    if (a->hover == HB_NEWTAB) push_rect(dl, npx - 4, 6, 24, 20, 10, RGBA(235, 237, 240, 255));
-    push_text(dl, a->ui, "+", npx + 4, tbase, 16, RGBA(60, 60, 60, 255));
+    if (!g_compact) {
+        float npx = tx0 + nvt * tabw + 8;
+        if (a->hover == HB_NEWTAB) push_rect(dl, npx - 4, 6, 24, 20, 10, RGBA(235, 237, 240, 255));
+        push_text(dl, a->ui, "+", npx + 4, tbase, 16, RGBA(60, 60, 60, 255));
+    }
     if (a->side > 0) {
         float rb = (a->ui->ascent - a->ui->descent) / 2, bw = a->side - 20;
-        push_rect(dl, 0, TABH, a->side, a->vh - TABH, 0, RGBA(236, 238, 241, 255));
-        push_rect(dl, a->side - 1, TABH, 1, a->vh - TABH, 0, RGBA(214, 217, 222, 255));
+        push_rect(dl, 0, SIDEY, a->side, a->vh - SIDEY, 0, RGBA(236, 238, 241, 255));
+        push_rect(dl, a->side - 1, SIDEY, 1, a->vh - SIDEY, 0, RGBA(214, 217, 222, 255));
         for (int w = 0; w <= a->nws; w++) {
             float y = WSY0 + w * WSRH;
             bool on = w == a->wi, hov = w < a->nws ? a->hover == HB_WS + w : a->hover == HB_WSNEW;
@@ -544,8 +559,8 @@ static void build_chrome(App *a) {
         }
     }
     int n0 = dl->items.n;
-    push_rect(dl, 0, 0, (a->vw - a->side), TB, 0, RGBA(250, 250, 250, 255));
-    push_rect(dl, 0, TB - 1, (a->vw - a->side), 1, 0, RGBA(226, 226, 226, 255));
+    push_rect(dl, 0, 0, tbw, TB, 0, RGBA(250, 250, 250, 255));
+    push_rect(dl, 0, TB - 1, tbw, 1, 0, RGBA(226, 226, 226, 255));
     Color on = RGBA(60, 60, 60, 255), off = RGBA(190, 190, 190, 255);
     int hk[3] = { HB_BACK, HB_FWD, HB_RELOAD };
     for (int i = 0; i < 3; i++) {
@@ -560,7 +575,7 @@ static void build_chrome(App *a) {
         Image *si = sym_icon(a, bmd ? 4 : 3, bmd ? 2 : 0);
         if (si) push_img(dl, si, cx - 8, TB / 2 - 8, 16, 16); else push_text(dl, a->ui, bmd ? "\xE2\x98\x85" : "\xE2\x98\x86", cx - 7, TB / 2 + (a->ui->ascent - a->ui->descent) / 2, 16, on);
     }
-    float ux = 144, uw = (a->vw - a->side) - ux - 12;
+    float ux = 144, uw = url_w(a);
     push_rect(dl, ux, 7, uw, TB - 14, (TB - 14) / 2, a->editing ? RGBA(255, 255, 255, 255) : RGBA(238, 238, 238, 255));
     if (a->editing) {
         DItem it; memset(&it, 0, sizeof it); it.op = DO_BORDER; it.x = ux; it.y = 7; it.w = uw; it.h = TB - 14;
@@ -576,15 +591,28 @@ static void build_chrome(App *a) {
     }
     float tw = push_text(dl, a->ui, shown, ux + 16, base, uw - 32, a->editing ? RGBA(20, 20, 20, 255) : RGBA(90, 90, 90, 255));
     if (a->editing && !a->sel_all) push_rect(dl, ux + 16 + tw + 1, 13, 1.5f, TB - 26, 0, RGBA(20, 20, 20, 255));
-    if (a->t->loading) push_rect(dl, 0, TB - 2, (a->vw - a->side) * 0.35f, 2, 0, RGBA(66, 133, 244, 255));
-    for (int i = n0; i < dl->items.n; i++) { DItem *it = &dl->items.v[i]; it->y += TABH; it->x += a->side; if (it->op == DO_TEXT) for (int g = 0; g < it->ng; g++) { it->g[g].y += TABH; it->g[g].x += a->side; } }
+    if (g_compact) {
+        float cx = ux + uw + 18;
+        if (a->hover == HB_NEWTAB) push_rect(dl, cx - 13, TB / 2 - 13, 26, 26, 13, RGBA(232, 232, 232, 255));
+        Image *si = sym_icon(a, 7, 0);
+        if (si) push_img(dl, si, cx - 8, TB / 2 - 8, 16, 16); else { push_rect(dl, cx - 6, TB / 2 - 1, 12, 2, 1, on); push_rect(dl, cx - 1, TB / 2 - 6, 2, 12, 1, on); }
+    }
+    if (a->t->loading) push_rect(dl, 0, TB - 2, tbw * 0.35f, 2, 0, RGBA(66, 133, 244, 255));
+    for (int i = n0; i < dl->items.n; i++) { DItem *it = &dl->items.v[i]; it->y += TABH; it->x += x0; if (it->op == DO_TEXT) for (int g = 0; g < it->ng; g++) { it->g[g].y += TABH; it->g[g].x += x0; } }
 }
 
 static float max_scroll(App *a) { return a->t->cur && a->t->cur->L ? LMAX(0, a->t->cur->L->doc_h - (a->vh - BAR)) : 0; }
 
 static double g_tr, g_tl, g_td, g_tx;
 static bool g_no_paint_only;
+static void update_compact(App *a) {
+    int v[MAX_TABS]; bool c = ws_tabs(a, a->wi, v) <= 1;
+    if (c == g_compact) return;
+    g_compact = c; a->hover = HB_NONE; a->vonly = false;
+    for (int i = 0; i < a->ntabs; i++) a->tabs[i]->relayout = true;
+}
 static void render(App *a) {
+    update_compact(a);
     double t0 = now_ms();
     int bar_px = (int)(BAR * a->scale);
     if (a->frame.w != a->pw || a->frame.h != a->ph) { canvas_free(&a->frame); canvas_init(&a->frame, a->pw, a->ph, a->scale); }
@@ -1357,7 +1385,7 @@ static void ws_popup(App *a, int w, float x, float y) {
 }
 static SDL_HitTestResult win_hit(SDL_Window *w, const SDL_Point *pt, void *ud) {
     (void)w;
-    return pt->y < TABH && bar_hit(ud, (float)pt->x, (float)pt->y) == HB_NONE ? SDL_HITTEST_DRAGGABLE : SDL_HITTEST_NORMAL;
+    return pt->y < (g_compact ? TB : TABH) && bar_hit(ud, (float)pt->x, (float)pt->y) == HB_NONE ? SDL_HITTEST_DRAGGABLE : SDL_HITTEST_NORMAL;
 }
 static void history_go(App *a, int d) {
     int np = a->t->hpos + d; if (np < 0 || np >= a->t->nhist) return;
