@@ -4,7 +4,8 @@
 
 /* ---------------- values ---------------- */
 enum { LK_LEN, LK_AUTO, LK_NONE, LK_MIN_CONTENT, LK_MAX_CONTENT, LK_FIT_CONTENT };
-typedef struct { float px, pct; uint8_t kind; } Length;  /* value = px + pct/100 * reference */
+typedef struct { float px, pct; uint8_t kind; bool pctu; } Length;  /* pctu: written with % (so 0% != 0px) */
+/* Length value = px + pct/100 * reference */  /* value = px + pct/100 * reference */
 static inline Length L_px(float v) { Length l = { v, 0, LK_LEN }; return l; }
 static inline Length L_auto(void) { Length l = { 0, 0, LK_AUTO }; return l; }
 static inline float len_resolve(Length l, float ref) { return l.px + l.pct * ref / 100.f; }

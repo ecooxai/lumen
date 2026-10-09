@@ -156,7 +156,7 @@ static bool parse_dim(const char **pp, Length *out, LCtx *c) {
     p = e;
     Length l = { 0, 0, LK_LEN };
     char u[8] = {0}; int k = 0; while (isalpha((unsigned char)*p) && k < 7) u[k++] = (char)lc(*p++);
-    if (*p == '%') { l.pct = v; p++; }
+    if (*p == '%') { l.pct = v; l.pctu = true; p++; }
     else if (!k || !strcmp(u, "px")) l.px = v;
     else if (!strcmp(u, "em")) l.px = v * c->em;
     else if (!strcmp(u, "rem")) l.px = v * c->rem;
@@ -198,6 +198,7 @@ static bool calc_expr(const char **pp, Length *out, LCtx *c) {
         if ((*p == '+' || *p == '-') && (p[1] == ' ' || p[1] == '\t' || p[1] == '\n')) {
             char op = *p++; Length r; if (!calc_term(&p, &r, c)) return false;
             if (op == '+') { out->px += r.px; out->pct += r.pct; } else { out->px -= r.px; out->pct -= r.pct; }
+            out->pctu |= r.pctu;
             *pp = p;
         } else break;
     }
@@ -790,7 +791,7 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
             else if (str_ieq(val, "auto")) { st->flex_grow = 1; st->flex_shrink = 1; st->flex_basis = L_auto(); }
             else {
                 char *t[3]; int n = split_ws(val, t, 3); int nums = 0;
-                st->flex_grow = 1; st->flex_shrink = 1; st->flex_basis = L_px(0);
+                st->flex_grow = 1; st->flex_shrink = 1; st->flex_basis = L_px(0); st->flex_basis.pctu = true;
                 for (int i = 0; i < n; i++) {
                     char *end; float x = strtof(t[i], &end);
                     if (end != t[i] && !*end && nums < 2) { if (nums == 0) st->flex_grow = x; else st->flex_shrink = x; nums++; }

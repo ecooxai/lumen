@@ -26,7 +26,7 @@ float layout_flex(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
         Length fb = cs->flex_basis, sz = row ? cs->width : cs->height;
         float mn, mx; intrinsic(L, c, &mn, &mx);
         float content_h = -1;
-        if (len_def(fb, mainsz)) f->base = res(fb, mainsz) + (bs ? 0 : bp);
+        if (len_def(fb, mainsz) && !(fb.pctu && mainsz < 0)) f->base = res(fb, mainsz) + (bs ? 0 : bp);
         else if (len_def(sz, mainsz) && sz.kind == LK_LEN) f->base = res(sz, mainsz) + (bs ? 0 : bp);
         else if (row) f->base = mx;
         else {
