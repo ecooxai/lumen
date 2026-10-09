@@ -725,7 +725,7 @@ static void render(App *a) {
 
 /* scroll the innermost scrollable box under (x,y) that can still move; false = let the page scroll */
 static bool wheel_scroll(App *a, float x, float y, float dx, float dy) {
-    Page *p = a->t->cur; if (!p || !p->L) return false;
+    Page *p = a->t->cur; if (!p || !p->L || a->t->asleep) return false;
     for (Box *b = layout_hit(p->L, x, y + a->t->sy); b; b = b->parent) {
         if (!b->scroller || !b->node || !b->st) continue;
         bool sx = b->st->overflow_x == OV_AUTO || b->st->overflow_x == OV_SCROLL, sy = b->st->overflow_y == OV_AUTO || b->st->overflow_y == OV_SCROLL;
@@ -1259,7 +1259,7 @@ static bool vbar_click(App *a, float x, float y) {   /* document coordinates */
 }
 static void click_page(App *a, float x, float y) {
     x -= a->side;
-    if (!a->t->cur || !a->t->cur->L) return;
+    if (!a->t->cur || !a->t->cur->L || a->t->asleep) return;   /* a sleeping page is only a picture until its reload lands */
     h_sync_in(a, a->t->cur->d, true);   /* paint may be deferred; hit-test the current DOM, not detached boxes */
     if (vbar_click(a, x, y - BAR + a->t->sy)) return;
     Box *b = layout_hit(a->t->cur->L, x, y - BAR + a->t->sy);
@@ -1316,7 +1316,7 @@ static void click_page(App *a, float x, float y) {
 
 static bool over_link(App *a, float x, float y) {
     x -= a->side;
-    if (!a->t->cur || !a->t->cur->L || y < BAR) return false;
+    if (!a->t->cur || !a->t->cur->L || a->t->asleep || y < BAR) return false;
     Box *b = layout_hit(a->t->cur->L, x, y - BAR + a->t->sy);
     for (Node *n = b ? b->node : NULL; n; n = n->parent) if (n->type == NODE_ELEMENT && n->tag == A_a && node_attr(n, "href")) return true;
     return false;
@@ -1325,6 +1325,7 @@ static bool over_link(App *a, float x, float y) {
 static void tab_select(App *a, int i) {
     if (i < 0 || i >= a->ntabs) return;
     a->ti = i; a->t = a->tabs[i]; a->wi = a->t->ws; a->wslast[a->wi] = a->t; a->editing = false; a->t->relayout = true; a->dirty = true; a->vonly = false;
+    if (a->t->asleep && !a->t->loading) navigate(a, a->t->url, false);
     Page *p = a->t->cur;
     SDL_SetWindowTitle(a->win, p && p->d->title && *p->d->title ? p->d->title : "Lumen");
 }
@@ -1573,7 +1574,7 @@ int main(int argc, char **argv) {
                     bool site = sleep_all || !strncmp(sp->url, "https://chatgpt.com/", 20);
                     if (sleep_ms > 0 && site && tb - st->bg_since > sleep_ms && !js_busy(sp->js)) { js_free(sp->js); sp->js = NULL; st->asleep = true; }
                 }
-                if (a.t->asleep && !a.t->loading) { a.t->asleep = false; navigate(&a, a.t->url, false); }
+                if (a.t->asleep && !a.t->loading) navigate(&a, a.t->url, false);
                 for (Page *p = g_frames; p; p = p->fnext) if (p->js) { Tab *ft = tab_of_doc(&a, p->d); js_set_background(p->js, ft && ft != a.t); }
             }
         }
@@ -1737,7 +1738,7 @@ int main(int argc, char **argv) {
         }
                     if (!lt) { page_free(p); break; }
                     Tab *act = a.t; bool fg = lt == act; a.t = lt;
-                    page_free(a.t->cur); a.t->cur = p; a.t->loading = false; a.t->sy = 0; a.t->relayout = true; a.dirty = true;
+                    page_free(a.t->cur); a.t->cur = p; a.t->asleep = false; a.t->loading = false; a.t->sy = 0; a.t->relayout = true; a.dirty = true;
                     if (!a.editing) snprintf(a.t->url, sizeof a.t->url, "%s", p->url);
                     if (a.t->hpos >= 0) { free(a.t->hist[a.t->hpos]); a.t->hist[a.t->hpos] = xstrdup(p->url); }
                     char title[512]; snprintf(title, sizeof title, "%s", p->d->title && *p->d->title ? p->d->title : p->url);
