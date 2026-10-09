@@ -188,7 +188,7 @@ void layout_box(Layout *L, Box *b, float x, float y, float cbw, float cbh, Float
     }
     if (b->w < 0) b->w = 0;
     /* auto margins for in-flow blocks */
-    if (mode == SZ_FILL && !b->abs && !b->floated) {
+    if (mode == SZ_FILL && !b->abs && !b->floated && !(b->parent && b->parent->fmt == FMT_FLEX)) {   /* flex items: auto margins are resolved by flex alignment */
         bool mlA = s->margin[3].kind == LK_AUTO, mrA = s->margin[1].kind == LK_AUTO;
         float free = cbw - b->w - (mlA ? 0 : b->m[3]) - (mrA ? 0 : b->m[1]);
         if (free > 0 && (mlA || mrA)) {
