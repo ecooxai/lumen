@@ -353,6 +353,46 @@ function fireAnim(t, type, name, elapsed, anim) {
     const init = anim ? { bubbles: true, animationName: name, elapsedTime: elapsed } : { bubbles: true, propertyName: name, elapsedTime: elapsed };
     return dispatch(t, new (anim ? AnimationEvent : TransitionEvent)(type, init), true);
 }
+{
+    const editHost = n => {
+        for (; n; n = n.parentNode) if (n.nodeType === 1) {
+            const v = n.getAttribute('contenteditable');
+            if (v === '' || v === 'true' || v === 'plaintext-only') return n;
+            if (v === 'false') return null;
+        }
+        return null;
+    };
+    const caret = h => {
+        const s = document.getSelection();
+        if (s.rangeCount && h.contains(s.anchorNode)) return s;
+        let n = h;
+        while (n.lastChild && !(n.lastChild.nodeType === 1 && n.lastChild.tagName === 'BR')) n = n.lastChild;
+        s.collapse(n, n.nodeType === 3 ? n.data.length : n.childNodes.length);
+        return s;
+    };
+    const fire = (h, type, inputType, data) => h.dispatchEvent(new InputEvent(type, { inputType, data, bubbles: true, cancelable: type === 'beforeinput', composed: true }));
+    const edit = (e, del) => {
+        e.stopImmediatePropagation();
+        const h = editHost(e.target); if (!h) return;
+        const s = caret(h), data = del ? null : e.key, type = del ? 'deleteContentBackward' : 'insertText';
+        if (!fire(h, 'beforeinput', type, data)) return;
+        if (!s.isCollapsed) s.deleteFromDocument();
+        const c = s.focusNode, o = s.focusOffset;
+        if (del) {
+            if (c.nodeType !== 3 || !o) return;
+            const n = o > 1 && /[\udc00-\udfff]/.test(c.data[o - 1]) ? 2 : 1;
+            c.deleteData(o - n, n); s.collapse(c, o - n);
+        } else if (c.nodeType === 3) { c.insertData(o, data); s.collapse(c, o + data.length); }
+        else {
+            let ref = c.childNodes[o] ?? null;
+            if (!ref && c.lastChild && c.lastChild.nodeType === 1 && c.lastChild.tagName === 'BR') ref = c.lastChild;
+            const t = document.createTextNode(data); c.insertBefore(t, ref); s.collapse(t, data.length);
+        }
+        fire(h, 'input', type, data);
+        document.dispatchEvent(new Event('selectionchange'));
+    };
+    document.addEventListener('lumenedit', e => edit(e, false), true);
+    document.addEventListener('lumeneditdel', e => edit(e, true), true);
+}
 return { queueMessage, workerEvent, protoFor, dispatch, fire, fireAnim, report, mediaChanged, ceConnected, Event, MouseEvent, PointerEvent, KeyboardEvent, FocusEvent, WheelEvent, InputEvent, PopStateEvent, ErrorEvent };
 })
-

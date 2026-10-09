@@ -202,7 +202,6 @@ static v8::MaybeLocal<v8::Module> mod_compile(JsCtx *c, const std::string &key, 
 }
 static bool mod_graph(JsCtx *c, v8::Local<v8::Module> root) {
     v8::Isolate *iso = c->iso;
-    v8::Local<v8::Context> ctx = iso->GetCurrentContext();
     std::string ref = c->doc && c->doc->url ? c->doc->url : "";
     std::vector<v8::Local<v8::Module>> todo{ root };
     while (!todo.empty()) {

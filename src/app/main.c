@@ -1017,6 +1017,15 @@ static bool is_text_ctl(Node *n) {
     for (int i = 0; ok[i]; i++) if (str_ieq(t, ok[i])) return true;
     return false;
 }
+static Node *edit_host(Node *n) {
+    for (; n; n = n->parent) if (n->type == NODE_ELEMENT) {
+        const char *v = node_attr(n, "contenteditable");
+        if (v && (!*v || !strcmp(v, "true") || !strcmp(v, "plaintext-only"))) return n;
+        if (v && !strcmp(v, "false")) return NULL;
+    }
+    return NULL;
+}
+static Node *edit_focus(App *a) { Node *f = a->t->cur && a->t->cur->d && a->t->cur->js ? a->t->cur->d->focus : NULL; return edit_host(f) ? f : NULL; }
 static Node *page_focus(App *a) { Node *f = a->t->cur && a->t->cur->d ? a->t->cur->d->focus : NULL; return is_text_ctl(f) ? f : NULL; }
 static char *ctl_value(Node *n) {
     if (n->value_override) return xstrdup(n->value_override);
@@ -1036,7 +1045,7 @@ static void focus_node(App *a, Node *n) {
     if (n) { n->flags |= NF_FOCUS; doc_mark_dirty(d, n); }
     if (js && old) { js_dispatch(js, old, "blur", "FocusEvent", false, false, 0, 0, 0, NULL); js_dispatch(js, old, "focusout", "FocusEvent", true, false, 0, 0, 0, NULL); }
     if (js && n) { js_dispatch(js, n, "focus", "FocusEvent", false, false, 0, 0, 0, NULL); js_dispatch(js, n, "focusin", "FocusEvent", true, false, 0, 0, 0, NULL); }
-    if (is_text_ctl(n)) SDL_StartTextInput(a->win);
+    if (is_text_ctl(n) || edit_host(n)) SDL_StartTextInput(a->win);
     a->caret_t = now_ms();
     a->t->relayout = true; a->dirty = true;
 }
@@ -1180,7 +1189,9 @@ static void click_page(App *a, float x, float y) {
             for (Node *n = a->t->cur->d->node.first; n; n = node_next_in_tree(n, &a->t->cur->d->node))
                 if (is_text_ctl(n) && n->box && px >= n->box->x && px < n->box->x + n->box->w && py >= n->box->y && py < n->box->y + n->box->h) { ctl = n; break; }
         }
-        if (is_text_ctl(ctl)) focus_node(a, ctl); else if (!js_focused && md_ok && page_focus(a)) focus_node(a, NULL);
+        if (is_text_ctl(ctl)) focus_node(a, ctl);
+        else if (edit_host(t)) { if (!js_focused && md_ok) focus_node(a, edit_host(t)); }
+        else if (!js_focused && md_ok && page_focus(a)) focus_node(a, NULL);
         js_dispatch(js, t, "pointerup", "PointerEvent", true, true, x, cy, 0, NULL);
         js_dispatch(js, t, "mouseup", "MouseEvent", true, true, x, cy, 0, NULL);
         bool ok = js_dispatch(js, t, "click", "MouseEvent", true, true, x, cy, 0, NULL);
@@ -1508,6 +1519,12 @@ int main(int argc, char **argv) {
                     }
                     if (a.t->cur->js) js_dispatch(a.t->cur->js, f, "keyup", "KeyboardEvent", true, true, 0, 0, 0, ev.text.text);
                     restyle(&a);
+                } else if (!a.editing && edit_focus(&a)) {
+                    Node *f = edit_focus(&a); JsCtx *js = a.t->cur->js;
+                    if (js_dispatch(js, f, "keydown", "KeyboardEvent", true, true, 0, 0, 0, ev.text.text))
+                        js_dispatch(js, f, "lumenedit", "KeyboardEvent", false, false, 0, 0, 0, ev.text.text);
+                    js_dispatch(js, f, "keyup", "KeyboardEvent", true, true, 0, 0, 0, ev.text.text);
+                    restyle(&a); a.t->relayout = a.dirty = true;
                 } else if (a.editing) { if (a.sel_all) { a.t->url[0] = 0; a.sel_all = 0; } strncat(a.t->url, ev.text.text, sizeof a.t->url - strlen(a.t->url) - 1); a.dirty = true; }
                 break;
             case SDL_EVENT_KEY_UP: if (ev.key.key == SDLK_LGUI || ev.key.key == SDLK_RGUI || ev.key.key == SDLK_LCTRL || ev.key.key == SDLK_RCTRL) cmd = false; break;
@@ -1544,6 +1561,19 @@ int main(int argc, char **argv) {
                         else if (ok && !strcmp(kn, "Escape")) focus_node(&a, NULL);
                         if (a.t->cur && a.t->cur->js && page_focus(&a) == f) js_dispatch(a.t->cur->js, f, "keyup", "KeyboardEvent", true, true, 0, 0, 0, kn);
                         restyle(&a); a.dirty = true;
+                    }
+                    break;
+                }
+                if (edit_focus(&a)) {
+                    Node *f = edit_focus(&a); JsCtx *js = a.t->cur->js;
+                    const char *kn = k == SDLK_RETURN || k == SDLK_KP_ENTER ? "Enter" : k == SDLK_BACKSPACE ? "Backspace" : k == SDLK_ESCAPE ? "Escape" : k == SDLK_TAB ? "Tab" :
+                        k == SDLK_LEFT ? "ArrowLeft" : k == SDLK_RIGHT ? "ArrowRight" : k == SDLK_UP ? "ArrowUp" : k == SDLK_DOWN ? "ArrowDown" : NULL;
+                    if (kn) {
+                        bool ok = js_dispatch(js, f, "keydown", "KeyboardEvent", true, true, 0, 0, 0, kn);
+                        if (ok && !strcmp(kn, "Backspace")) js_dispatch(js, f, "lumeneditdel", "KeyboardEvent", false, false, 0, 0, 0, kn);
+                        else if (ok && !strcmp(kn, "Escape")) focus_node(&a, NULL);
+                        if (a.t->cur && a.t->cur->js == js) js_dispatch(js, f, "keyup", "KeyboardEvent", true, true, 0, 0, 0, kn);
+                        restyle(&a); a.t->relayout = a.dirty = true;
                     }
                     break;
                 }
