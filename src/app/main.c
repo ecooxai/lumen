@@ -1440,8 +1440,8 @@ static void page_move(App *a, float x, float y) {   /* pointer moves for page sc
     Box *b = layout_hit(p->L, x, y + a->t->sy); Node *n = b ? b->node : NULL;
     while (n && n->type != NODE_ELEMENT) n = n->parent;
     if (!n) return;
-    if (n != prev) { prev = n; js_dispatch(p->js, n, "pointerover", "MouseEvent", true, true, x, y, 0, NULL); js_dispatch(p->js, n, "mouseover", "MouseEvent", true, true, x, y, 0, NULL); }
-    js_dispatch(p->js, n, "pointermove", "MouseEvent", true, true, x, y, 0, NULL);
+    if (n != prev) { prev = n; js_dispatch(p->js, n, "pointerover", "PointerEvent", true, true, x, y, 0, NULL); js_dispatch(p->js, n, "mouseover", "MouseEvent", true, true, x, y, 0, NULL); }
+    js_dispatch(p->js, n, "pointermove", "PointerEvent", true, true, x, y, 0, NULL);
     js_dispatch(p->js, n, "mousemove", "MouseEvent", true, true, x, y, 0, NULL);
 }
 static void page_move_keep(App *a) {   /* YouTube hides its controls ~3 s after the pointer stops; keep them up for 8 s */
@@ -1626,7 +1626,7 @@ static void click_page(App *a, float x, float y) {
         else if (!js_focused && md_ok && page_focus(a)) focus_node(a, NULL);
         js_dispatch(js, t, "pointerup", "PointerEvent", true, true, x, cy, 0, NULL);
         js_dispatch(js, t, "mouseup", "MouseEvent", true, true, x, cy, 0, NULL);
-        bool ok = js_dispatch(js, t, "click", "MouseEvent", true, true, x, cy, 0, NULL);
+        bool ok = js_dispatch(js, t, "click", "PointerEvent", true, true, x, cy, 0, NULL);
         restyle(a);
         if (!ok) return;
     }

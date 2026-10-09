@@ -693,7 +693,10 @@ bool js_dispatch(JsCtx *c, Node *target, const char *type, const char *kind, boo
     set("screenX", v8::Number::New(iso, x));
     set("screenY", v8::Number::New(iso, y));
     set("button", v8::Integer::New(iso, button));
-    set("buttons", v8::Integer::New(iso, button == 0 ? 1 : button == 2 ? 2 : 4));
+    bool hover = type && (!strcmp(type, "pointermove") || !strcmp(type, "mousemove") || !strcmp(type, "pointerover") || !strcmp(type, "mouseover"));
+    bool released = type && (hover || !strcmp(type, "pointerup") || !strcmp(type, "mouseup") || !strcmp(type, "click") || !strcmp(type, "auxclick") || !strcmp(type, "contextmenu"));
+    set("buttons", v8::Integer::New(iso, released ? 0 : button == 0 ? 1 : button == 2 ? 2 : 4));
+    if (type && !strcmp(type, "pointerdown")) set("pressure", v8::Number::New(iso, 0.5));
     set("detail", v8::Integer::New(iso, 1));
     if (key) { set("key", jstr(iso, key)); set("code", jstr(iso, key)); }
     v8::Local<v8::Value> ctor = v8::Undefined(iso);
