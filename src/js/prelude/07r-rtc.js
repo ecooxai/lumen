@@ -214,14 +214,16 @@ const rtcCheckEncodings = (encs, kind) => {
     }
 };
 class RTCRtpSender {
-    constructor(tok, pc, kind, track) { if (tok !== RTC_INTERNAL) throw new TypeError('Illegal constructor'); def(this, '_', { pc, kind, track, streams: [], tid: null, encodings: [{ active: true }], dtmf: null, ssrc: (Math.random() * 0xffffffff) >>> 0, used: !!track }); }
+    constructor(tok, pc, kind, track) { if (tok !== RTC_INTERNAL) throw new TypeError('Illegal constructor'); def(this, '_', { pc, kind, track, streams: [], tid: null, encodings: [kind === 'video' ? { active: true, scaleResolutionDownBy: 1 } : { active: true }], dtmf: null, ssrc: (Math.random() * 0xffffffff) >>> 0, used: !!track }); }
     get track() { return this._.track; }
     get transport() { return this._.pc._.dtlsReady ? this._.pc._.dtls : null; }
     get dtmf() { if (this._.kind !== 'audio') return null; return this._.dtmf || (this._.dtmf = Object.assign(new EventTarget(), { canInsertDTMF: false, toneBuffer: '', ontonechange: null, insertDTMF() {} })); }
     static getCapabilities(kind) { return rtcCaps(String(kind)); }
     getParameters() {
         this._.tid = rtcUUID();
-        return { transactionId: this._.tid, encodings: this._.encodings.map(e => Object.assign({}, e)), headerExtensions: [], rtcp: { cname: this._.pc._.cname, reducedSize: true }, codecs: this._.pc._codecsFor(this), degradationPreference: undefined };
+        const codecs = this._.pc._codecsFor(this);
+        this._.lastCodecs = JSON.stringify(codecs);
+        return { transactionId: this._.tid, encodings: this._.encodings.map(e => Object.assign({}, e)), headerExtensions: [], rtcp: { cname: this._.pc._.cname, reducedSize: true }, codecs, degradationPreference: undefined };
     }
     setParameters(p, opts) {
         const pc = this._.pc;
@@ -231,6 +233,9 @@ class RTCRtpSender {
         if (!Array.isArray(p.encodings) || p.encodings.length !== this._.encodings.length) return Promise.reject(rtcErr('InvalidModificationError', 'encodings can not be added or removed.'));
         for (let i = 0; i < p.encodings.length; i++) if ((p.encodings[i].rid ?? undefined) !== (this._.encodings[i].rid ?? undefined)) return Promise.reject(rtcErr('InvalidModificationError', 'rid can not be modified.'));
         try { rtcCheckEncodings(p.encodings, this._.kind); } catch (e) { return Promise.reject(e); }
+        if (this._.lastCodecs !== undefined && JSON.stringify(p.codecs) !== this._.lastCodecs) return Promise.reject(rtcErr('InvalidModificationError', 'codecs can not be modified.'));
+        const neg = pc._codecsFor(this), allowed = neg.length ? neg : RTC_CODECS[this._.kind];
+        for (const e of p.encodings) if (e.codec !== undefined && !allowed.some(c => rtcCodecEq(c, e.codec))) return Promise.reject(rtcErr('InvalidModificationError', 'codec is not negotiated.'));
         this._.encodings = p.encodings.map(e => Object.assign({}, e));
         return new Promise(r => rtcTask(() => r(undefined)));
     }
@@ -666,7 +671,7 @@ class RTCPeerConnection extends EventTarget {
                 else this._.pendLocal = d;
                 this._applyAnswerDirs(parsed, false);
                 this._.role = (parsed.media[0] && parsed.media[0].setup) === 'passive' ? 'server' : 'client';
-                this._.ice._.role = 'controlled';
+                if (this._.ice._.role === 'unknown') this._.ice._.role = 'controlled';
                 this._ensureSctp(parsed);
                 if (type === 'answer') { this._.lastOffer = this._.lastAnswer = null; this._.nn = false; }
                 this._sigState(type === 'answer' ? 'stable' : 'have-local-pranswer');
@@ -737,7 +742,7 @@ class RTCPeerConnection extends EventTarget {
             }
             await new Promise(r => rtcTask(r));
             if (this._.closed) return;
-            if (implicitRollback) this._rollbackLocal(true);
+            if (implicitRollback) { this._rollbackLocal(true); await new Promise(r => rtcTask(r)); if (this._.closed) return; }
             const d = new RTCSessionDescription({ type, sdp });
             const first = parsed.media.find(m => m.port !== 0) || parsed.media[0];
             this._.remoteUfrag = first ? first.ufrag : null;
@@ -769,7 +774,7 @@ class RTCPeerConnection extends EventTarget {
                 else this._.pendRemote = d;
                 this._applyAnswerDirs(parsed, true);
                 this._.role = (first && first.setup) === 'active' ? 'server' : 'client';
-                this._.ice._.role = 'controlling';
+                if (this._.ice._.role === 'unknown') this._.ice._.role = 'controlling';
                 this._ensureSctp(parsed);
                 if (type === 'answer') this._.nn = false;
                 this._sigState(type === 'answer' ? 'stable' : 'have-remote-pranswer');
@@ -783,6 +788,7 @@ class RTCPeerConnection extends EventTarget {
         if (this._.dataMidFromSLD) { this._.dataMid = null; this._.dataMidFromSLD = false; }
         if (this._.restartPending) { this._.restartPending = false; this._.restart = true; }
         this._.pendLocal = null; this._.lastOffer = null;
+        if (!this._.curLocal && !this._.curRemote) { this._.dtlsReady = false; this._.sctp = null; }
         if (!this._.curLocal && !this._.curRemote && this._.iceGatheringState !== 'new') { this._.localCands = []; this._.iceGatheringState = 'new'; this._.ice._set('gatheringState', 'new'); this._.gatherGen++; rtcEv(this, 'icegatheringstatechange'); }
         this._sigState('stable');
         if (!implicit) { this._.nn = false; this._updateNeg(); }
@@ -790,7 +796,7 @@ class RTCPeerConnection extends EventTarget {
     _rollbackRemote() {
         for (const t of this._.srdCreated || []) {
             const r = t._.receiver;
-            if (t._.fired) { for (const s of r._.streams) s.removeTrack(r._.track); r._.track._mute(true); }
+            if (t._.fired) { t._.fired = false; for (const s of r._.streams) { s.removeTrack(r._.track); rtcFire(s, new MediaStreamTrackEvent('removetrack', { track: r._.track })); } r._.streams = []; r._.track._mute(true); }
             if (t._.addTrackLater) { t._.mid = null; t._.fromSRD = false; }
             else this._.transceivers = this._.transceivers.filter(x => x !== t);
         }
@@ -799,6 +805,7 @@ class RTCPeerConnection extends EventTarget {
         if (this._.dataMidFromSRD) { this._.dataMid = null; this._.dataMidFromSRD = false; }
         this._.srdCreated = [];
         this._.pendRemote = null; this._.lastAnswer = null;
+        if (!this._.curLocal && !this._.curRemote) { this._.dtlsReady = false; this._.sctp = null; }
         this._sigState('stable');
         this._.nn = false; this._updateNeg();
     }
@@ -821,6 +828,7 @@ class RTCPeerConnection extends EventTarget {
                     const c = new RTCIceCandidate({ candidate: `candidate:${Math.random() * 1e9 | 0} 1 udp 2122260223 127.0.0.1 ${port} typ host generation 0 ufrag ${ufrag} network-id 1`, sdpMid: mid, sdpMLineIndex: idx, usernameFragment: ufrag });
                     this._.localCands.push(c); this._.ice._.local.push(c);
                     rtcFire(this, new RTCPeerConnectionIceEvent('icecandidate', { candidate: c }));
+                    this._tryConnect();
                 }
                 rtcTask(() => {
                     if (gen !== this._.gatherGen || this._.closed) return;
@@ -876,6 +884,7 @@ class RTCPeerConnection extends EventTarget {
         const peer = rtcPeers.get(me.remoteUfrag);
         if (!peer || peer === this || peer._.closed || !(peer._.curLocal || peer._.pendLocal) || !peer.remoteDescription || rtcPeers.get(peer._.remoteUfrag) !== this) return;
         if (!me.remoteCands.length && !peer._.remoteCands.length) return;
+        if (!me.localCands.length || !peer._.localCands.length) return;
         if (me.cfg.iceTransportPolicy === 'relay' || peer._.cfg.iceTransportPolicy === 'relay') return;
         for (const pc of [this, peer]) { pc._.connected = true; pc._.peer = pc === this ? peer : this; }
         for (const pc of [this, peer]) pc._connecting();
@@ -970,10 +979,17 @@ class RTCPeerConnection extends EventTarget {
         let encs = init.sendEncodings === undefined ? null : [...init.sendEncodings];
         if (encs) {
             const rids = encs.filter(e => e.rid !== undefined).map(e => String(e.rid));
-            if (rids.some(r => !/^[A-Za-z0-9\-_]{1,255}$/.test(r))) throw new TypeError('Invalid rid.');
+            if (rids.some(r => !/^[A-Za-z0-9]{1,255}$/.test(r))) throw new TypeError('Invalid rid.');
             if (encs.length > 1 && rids.length !== encs.length) throw new TypeError('rid is required for every encoding with simulcast.');
             if (new Set(rids).size !== rids.length) throw new TypeError('Duplicate rid.');
             rtcCheckEncodings(encs, kind);
+            for (const e of encs) if (e.codec !== undefined && !RTC_CODECS[kind].some(c => rtcCodecEq(c, e.codec))) throw rtcErr('OperationError', 'Unsupported codec in sendEncodings.');
+            if (kind === 'audio') encs = encs.length > 1 ? [{ active: true }] : encs.map(e => { const o = Object.assign({}, e); delete o.scaleResolutionDownBy; return o; });
+            else if (encs.length) {
+                encs = encs.slice(0, 4).map(e => Object.assign({}, e));
+                const any = encs.some(e => e.scaleResolutionDownBy !== undefined);
+                encs.forEach((e, i) => { if (e.scaleResolutionDownBy === undefined) e.scaleResolutionDownBy = any ? 1 : 2 ** (encs.length - 1 - i); });
+            }
         }
         if (this._.closed) throw rtcErr('InvalidStateError', "The RTCPeerConnection's signalingState is 'closed'.");
         const t = this._addTr(kind, track, dir);
@@ -988,7 +1004,7 @@ class RTCPeerConnection extends EventTarget {
         if (this._.closed) throw rtcErr('InvalidStateError', "The RTCPeerConnection's signalingState is 'closed'.");
         if (this._.transceivers.some(t => t._.sender._.track === track && !t._.stopping)) throw rtcErr('InvalidAccessError', 'A sender already exists for the track.');
         let t = this._.transceivers.find(x => !x._.stopping && x._.kind === track.kind && !x._.sender._.used && x._.sender._.track === null && !x._.addTrack && x._.fromSRD);
-        if (t) { t._.sender._.track = track; t._.sender._.used = true; t._.direction = rtcMkDir(true, rtcHasRecv(t._.direction)); }
+        if (t) { t._.addTrackLater = true; t._.sender._.track = track; t._.sender._.used = true; t._.direction = rtcMkDir(true, rtcHasRecv(t._.direction)); }
         else { t = this._addTr(track.kind, track, 'sendrecv'); t._.addTrack = true; }
         t._.sender._.streams = [...new Set(streams)];
         this._updateNeg();
