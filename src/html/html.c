@@ -312,7 +312,9 @@ static bool table_end(HtmlParser *p, const char *t) {
     return false;
 }
 
-static bool in_foreign(HtmlParser *p) { Node *c = cur(p); return c && c->type == NODE_ELEMENT && c->ns != NS_HTML && c->tag != atom("foreignObject") && c->tag != atom("desc") && !(c->ns == NS_SVG && c->tag == A_title); }
+/* "adjusted current node": the fragment context element while only the fragment root is open */
+static Node *adj_cur(HtmlParser *p) { return p->frag_ctx && p->open.n == 1 ? p->frag_ctx : cur(p); }
+static bool in_foreign(HtmlParser *p) { Node *c = adj_cur(p); return c && c->type == NODE_ELEMENT && c->ns != NS_HTML && c->tag != atom("foreignObject") && c->tag != atom("desc") && !(c->ns == NS_SVG && c->tag == A_title); }
 
 static void tree_token(HtmlParser *p) {
     int tt = p->tt;
@@ -335,9 +337,9 @@ static void tree_token(HtmlParser *p) {
         if (in_foreign(p)) {
             static const char *const breakout[] = { "b","big","blockquote","body","br","center","code","dd","div","dl","dt","em","embed","h1","h2","h3","h4","h5","h6","head","hr","i","img","li","listing","menu","meta","nobr","ol","p","pre","ruby","s","small","span","strong","strike","sub","sup","table","tt","u","ul","var", NULL };
             if (in_list(t, breakout) || (t == A_font && false)) {
-                while (p->open.n && in_foreign(p)) pop(p);
+                while (p->open.n > (p->frag_root ? 1 : 0) && in_foreign(p)) pop(p);
             } else {
-                int ns = cur(p)->ns;
+                int ns = adj_cur(p)->ns;
                 const char *rt = ns == NS_SVG ? atom(svg_fix_tag(t)) : t;
                 if (ns == NS_SVG) for (int i = 0; i < p->attrs.n; i++) p->attrs.v[i].name = svg_fix_attr(p->attrs.v[i].name);
                 insert_el(p, rt, ns);
