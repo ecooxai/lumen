@@ -231,7 +231,7 @@ static void paint_block_content(PB *p, Box *b, DefVec *defs) {
         DItem *c = emit(p, DO_PUSH_CLIP); c->x = x; c->y = y; c->w = w; c->h = h;
         if (p->clip) { float x1 = LMIN(x + w, p->cx + p->cw), y1 = LMIN(y + h, p->cy + p->ch); x = LMAX(x, p->cx); y = LMAX(y, p->cy); w = LMAX(0, x1 - x); h = LMAX(0, y1 - y); }
         p->clip = true; p->cx = x; p->cy = y; p->cw = w; p->ch = h;
-        p->dx -= b->node->scroll_x; p->dy -= b->node->scroll_y;
+        p->dx -= b->node->scroll_x; p->dy -= box_scroll_y(b);
     }
     if (s->display == D_LIST_ITEM && vis) paint_marker(p, b);
     paint_flow(p, b, defs);

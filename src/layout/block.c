@@ -246,7 +246,7 @@ static void post(Layout *L, Box *b, float cbw, float cbh, float clipx, float cli
         for (int i = 0; i < b->nfrags; i++) { r = LMAX(r, b->frags[i].x + b->frags[i].w); btm = LMAX(btm, b->frags[i].y + b->frags[i].h); }
         b->scroll_w = r - b->x; b->scroll_h = btm - b->y + b->p[2];
         float maxx = LMAX(0, b->scroll_w - b->w), maxy = LMAX(0, b->scroll_h - b->h);
-        b->node->scroll_x = LCLAMP(b->node->scroll_x, 0, maxx); b->node->scroll_y = LCLAMP(b->node->scroll_y, 0, maxy);
+        b->node->scroll_x = LCLAMP(b->node->scroll_x, 0, maxx); b->node->scroll_y = box_scroll_from_end(b) ? LCLAMP(b->node->scroll_y, -maxy, 0) : LCLAMP(b->node->scroll_y, 0, maxy);
     }
 }
 static void extents(Layout *L, Box *b) {
@@ -300,7 +300,7 @@ static Box *hit(Box *b, float x, float y, float ox, float oy, float vx, float vy
     bool inside = lx >= b->x && lx < b->x + b->w && ly >= b->y && ly < b->y + b->h;
     if (b->scroller && b->node && !inside) return NULL;
     float cox = ox, coy = oy;
-    if (b->scroller && b->node) { cox += b->node->scroll_x; coy += b->node->scroll_y; }
+    if (b->scroller && b->node) { cox += b->node->scroll_x; coy += box_scroll_y(b); }
     int done = INT32_MAX;   /* z>0 layer: repeatedly take the highest z below the last one taken */
     for (;;) {
         int best = INT32_MIN;
