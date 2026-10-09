@@ -489,7 +489,7 @@ void worker_main(std::shared_ptr<Worker> w) {
             run_timers(E);
             while (v8::platform::PumpMessageLoop(js_platform(), iso)) {}
         }
-        E->timers.clear(); E->onmsg.Reset(); E->report.Reset(); E->ctx.Reset();
+        E->timers.clear(); E->mods.clear(); E->murl.clear(); E->onmsg.Reset(); E->report.Reset(); E->ctx.Reset();
     }
     {
         std::lock_guard<std::mutex> lk(w->mu);
