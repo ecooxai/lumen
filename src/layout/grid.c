@@ -242,7 +242,8 @@ float layout_table(Layout *L, Box *b, float cx, float cy, float cw, float chdef)
         if (off > 0.5f) for (int l = 0; l < cell->nlines; l++) { cell->lines[l].y += off; cell->lines[l].base += off; }
     }
     /* rows/groups geometry for backgrounds */
-    for (int r = 0; r < nr; r++) { Box *row = g.rows.v[r]; if (row->st->display != D_TABLE_ROW) continue; row->x = cx; row->y = cy + ry[r]; row->w = tw; row->h = rh[r]; }
+    for (int r = 0; r < nr; r++) { Box *row = g.rows.v[r]; if (row->st->display != D_TABLE_ROW) continue; row->x = cx; row->y = cy + ry[r]; row->w = tw; row->h = rh[r];
+        for (int i = 0; i < 4; i++) row->b[i] = row->st->border_style[i] > BS_HIDDEN ? row->st->border_width[i] : 0; }
     for (Box *c = b->first; c; c = c->next) if (is_group(c) && c->first) { c->x = cx; c->y = c->first->y; Box *l = c->last; c->w = tw; c->h = l->y + l->h - c->y; }
     float total = ry[nr];
     if (b->st->width.kind != LK_LEN) { float adj = tw - cw; (void)adj; }

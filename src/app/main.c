@@ -977,7 +977,84 @@ static bool frame_update(Page *p) {
     p->img = (Image){ .w = pw, .h = ph, .refs = 1 << 30, .px = p->cv.px, .scale = s };
     return true;
 }
+/* @font-face: declare faces as sheets arrive; fetch a face only once text asks for it */
+static char *ff_prop(const char *body, const char *name) {
+    size_t nl = strlen(name);
+    for (const char *p = body; (p = strcasestr(p, name)); p += nl) {
+        const char *q = p + nl;
+        while (*q == ' ' || *q == '\t' || *q == '\r' || *q == '\n') q++;
+        if (*q != ':' || (p != body && !strchr("{; \t\r\n", p[-1]))) continue;
+        const char *e = ++q; int par = 0; char qt = 0;
+        for (; *e; e++) {
+            if (qt) { if (*e == qt) qt = 0; continue; }
+            if (*e == '"' || *e == '\'') qt = *e;
+            else if (*e == '(') par++;
+            else if (*e == ')') par--;
+            else if ((*e == ';' || *e == '}') && !par) break;
+        }
+        while (q < e && isspace((unsigned char)*q)) q++;
+        while (e > q && isspace((unsigned char)e[-1])) e--;
+        if (e - q >= 2 && (*q == '"' || *q == '\'') && e[-1] == *q) { q++; e--; }
+        char *r = xmalloc((size_t)(e - q) + 1); memcpy(r, q, (size_t)(e - q)); r[e - q] = 0;
+        return r;
+    }
+    return NULL;
+}
+/* first src entry FreeType can read: TrueType/OpenType/WOFF (no brotli for WOFF2) */
+static char *ff_pick_src(const char *src) {
+    for (const char *p = src; (p = strstr(p, "url(")); ) {
+        p += 4; while (*p == ' ') p++;
+        char qt = *p == '"' || *p == '\'' ? *p++ : 0;
+        const char *e = p; while (*e && (qt ? *e != qt : *e != ')')) e++;
+        size_t n = (size_t)(e - p);
+        const char *nx = e; while (*nx && *nx != ',') nx++;
+        char fmt[32] = ""; const char *f = strstr(e, "format(");
+        if (f && f < nx) { f += 7; size_t k = 0; while (*f && *f != ')' && k < sizeof fmt - 1) { if (*f != '"' && *f != '\'' && *f != ' ') fmt[k++] = (char)tolower((unsigned char)*f); f++; } fmt[k] = 0; }
+        char *u = xmalloc(n + 1); memcpy(u, p, n); u[n] = 0;
+        char *qm = strpbrk(u, "?#"); size_t ul = qm ? (size_t)(qm - u) : n;
+        bool woff2 = strstr(fmt, "woff2") || (!*fmt && ul >= 6 && !strncasecmp(u + ul - 6, ".woff2", 6));
+        bool ok = *fmt ? !woff2 && (strstr(fmt, "truetype") || strstr(fmt, "opentype") || strstr(fmt, "woff")) : !woff2;
+        if (ok && n) return u;
+        free(u); p = nx;
+    }
+    return NULL;
+}
+static void sheet_fonts(StyleSheet *s) {
+    for (int i = 0; i < s->font_faces.n; i++) {
+        const char *b = s->font_faces.v[i];
+        char *fam = ff_prop(b, "font-family"), *src = ff_prop(b, "src"), *wt = ff_prop(b, "font-weight"), *sty = ff_prop(b, "font-style");
+        char *u = src ? ff_pick_src(src) : NULL;
+        char *abs = u && fam && *fam ? url_join(s->base_url, u) : NULL;
+        if (abs) {
+            int w = 400;
+            if (wt && str_ieq(wt, "bold")) w = 700;
+            else if (wt && !strchr(wt, ' ') && atoi(wt) > 0) w = atoi(wt);
+            bool it = sty && (!strncasecmp(sty, "italic", 6) || !strncasecmp(sty, "oblique", 7));
+            font_declare(fam, w, it, abs);
+        }
+        free(abs); free(u); free(fam); free(src); free(wt); free(sty);
+    }
+}
+static HMap g_fontfetch;
+static void font_done(NetRequest *rq, NetResponse *r, void *ud) {
+    (void)rq; char *u = ud;
+    bool got = r && r->status == 200 && r->body && r->body_len;
+    if (font_loaded(u, got ? r->body : NULL, got ? r->body_len : 0)) {
+        g_img_epoch++;
+        for (Page *f = g_frames; f; f = f->fnext) f->frelayout = true;
+        g_app->t->relayout = g_app->dirty = true; g_app->vonly = false;
+    }
+    free(u);
+}
+static void font_pump(void) {
+    for (char *u; (u = font_next_request()); ) {
+        if (hm_get(&g_fontfetch, u)) { free(u); continue; }
+        hm_put(&g_fontfetch, u, (void *)1);
+        NetRequest *rq = net_request_new("GET", u); rq->done = font_done; rq->ud = u; net_fetch(rq);
+    }
+}
 static void frames_tick(App *a) {
+    font_pump();
     for (Page *p = g_frames; p; p = p->fnext) {
         p->js = js_frame_ctx(p->frame_el);
         if (frame_update(p)) { a->dirty = true; a->vonly = false; }
@@ -1561,7 +1638,7 @@ int main(int argc, char **argv) {
     const char *start = argc > 1 ? argv[1] : "https://en.wikipedia.org/wiki/Web_browser";
     SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) { fprintf(stderr, "SDL_Init: %s\n", SDL_GetError()); return 1; }
-    dom_init(); net_init(6); font_init();
+    dom_init(); net_init(6); font_init(); css_sheet_added_hook = sheet_fonts;
     icache_mu = SDL_CreateMutex(); EV_LOADED = SDL_RegisterEvents(1); EV_NET = SDL_RegisterEvents(1); EV_MENU = SDL_RegisterEvents(1);
     net_wakeup = wake; media_wakeup = wake; js_wakeup = wake; js_global_init(argv[0]);
     paint_image_hook = node_img; paint_url_image_hook = url_img; svg_ext_ref_hook = svg_ext_ref; layout_image_size_hook = img_size;

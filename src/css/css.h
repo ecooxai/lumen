@@ -60,6 +60,7 @@ typedef struct ComputedStyle {
     uint8_t vertical_align, bg_repeat, bg_size_kind, object_fit, text_overflow, word_break, overflow_wrap, direction;
     uint8_t border_style[4];
     uint8_t outline_style, user_select, appearance, isolation, table_layout, border_collapse, container_type, resize, writing_mode;
+    const char *container_name; /* atom: space-separated names, or NULL */
     int16_t font_weight;
     int z_index; bool z_auto;
     int order;
@@ -123,12 +124,18 @@ typedef struct Compound { SimpleSel *s; int n; uint8_t comb; /* combinator to th
 typedef struct Selector { Compound *c; int n; uint32_t spec; uint8_t pseudo_el; /* 0 none 1 before 2 after 3 other */ } Selector;
 struct SelList { Selector *v; int n; };
 
+typedef struct ContainerCond { char *name, *query; struct ContainerCond *outer; } ContainerCond;
+/* container query environment: the container's content size and its custom properties (style()) */
+typedef struct CQEnv { float w, h; bool size, block; const char *(*var)(const void *ud, const char *name); const void *ud; } CQEnv;
+bool css_container_eval(const char *q, const CQEnv *env);
+
 typedef struct Rule {
     Selector sel; /* single selector (selector lists are split) */
     DeclList *decls; /* shared between split selectors */
     uint32_t order;
     uint8_t origin; /* 0 UA, 1 author */
     uint8_t layer;
+    const ContainerCond *cq; /* innermost @container, or NULL */
 } Rule;
 
 typedef struct MediaCtx { float vw, vh, dpr; bool dark; } MediaCtx;
@@ -137,6 +144,7 @@ typedef struct StyleSheet {
     VEC(Rule) rules;
     VEC(DeclList *) decl_lists;
     VEC(char *) imports;
+    VEC(ContainerCond *) conds;
     VEC(char *) font_faces; /* raw @font-face src urls, family pairs */
     char *base_url;
     bool disabled;
@@ -178,6 +186,7 @@ bool css_supports(const char *cond);
 StyleEngine *style_engine_new(Document *d);
 void style_engine_free(StyleEngine *e);
 void style_engine_add_sheet(StyleEngine *e, StyleSheet *s);
+extern void (*css_sheet_added_hook)(StyleSheet *s);
 void style_engine_remove_owner(StyleEngine *e, Node *owner);
 void style_engine_invalidate(StyleEngine *e);
 void style_recalc(StyleEngine *e, Node *root, bool force);

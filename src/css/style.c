@@ -729,6 +729,13 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         goto out;
     }
     if (!strcmp(P, "mask-size") || !strcmp(P, "-webkit-mask-size")) { st->mask_fit = str_ieq(val, "contain") ? 1 : str_ieq(val, "cover") ? 2 : 0; goto out; }
+    if (!strcmp(P, "container-name") || !strcmp(P, "container")) {
+        char *sl = strchr(val, '/'); size_t nl = sl ? (size_t)(sl - val) : strlen(val);
+        while (nl && isspace((unsigned char)val[nl - 1])) nl--;
+        st->container_name = nl && !str_ieqn(val, "none", 4) ? atomn(val, nl) : NULL;
+        if (P[9] == 0) { const char *ty = sl ? sl + 1 : "normal"; while (isspace((unsigned char)*ty)) ty++; st->container_type = str_istarts(ty, "size") ? 2 : str_istarts(ty, "inline-size") ? 1 : 0; }
+        goto out;
+    }
     if (!strcmp(P, "container-type")) { st->container_type = str_ieq(val, "size") ? 2 : str_ieq(val, "inline-size") ? 1 : 0; goto out; }
     switch (P[0]) {
     case 'a':
@@ -1034,6 +1041,7 @@ StyleEngine *style_engine_new(Document *d) {
     return e;
 }
 void style_engine_free(StyleEngine *e) { for (int i = 0; i < e->sheets.n; i++) css_sheet_free(e->sheets.v[i]); vec_free(e->sheets); idx_clear(&e->idx); free(e); }
+void (*css_sheet_added_hook)(StyleSheet *s);
 void style_engine_add_sheet(StyleEngine *e, StyleSheet *s) {
     /* keep document order of owner nodes */
     int pos = e->sheets.n;
@@ -1048,6 +1056,7 @@ void style_engine_add_sheet(StyleEngine *e, StyleSheet *s) {
     }
     vec_push(e->sheets, s);
     memmove(&e->sheets.v[pos + 1], &e->sheets.v[pos], sizeof(StyleSheet *) * (size_t)(e->sheets.n - 1 - pos));
+    if (css_sheet_added_hook) css_sheet_added_hook(s);
     e->sheets.v[pos] = s;
     e->idx_dirty = true; e->generation++;
 }
@@ -1061,12 +1070,40 @@ void style_engine_invalidate(StyleEngine *e) { e->idx_dirty = true; e->generatio
 typedef struct { Decl *d; uint64_t key; } MDecl;
 static int mdecl_cmp(const void *a, const void *b) { uint64_t x = ((const MDecl *)a)->key, y = ((const MDecl *)b)->key; return x < y ? -1 : x > y; }
 
+static bool name_in(const char *list, const char *name) {
+    size_t n = strlen(name);
+    for (const char *p = list; p && *p; ) {
+        while (isspace((unsigned char)*p)) p++;
+        const char *e = p; while (*e && !isspace((unsigned char)*e)) e++;
+        if ((size_t)(e - p) == n && !strncmp(p, name, n)) return true;
+        p = e;
+    }
+    return false;
+}
+static const char *cq_var(const void *ud, const char *name) { const ComputedStyle *s = ud; return s ? custom_get(s->custom, name) : NULL; }
+static bool container_matches(const ContainerCond *cc, Node *el) {
+    for (; cc; cc = cc->outer) {
+        bool style_q = strstr(cc->query, "style(") != NULL;
+        Node *a = el->parent;
+        for (; a; a = a->parent) {
+            if (a->type != NODE_ELEMENT || !a->style) continue;
+            if (cc->name && !name_in(a->style->container_name, cc->name)) continue;
+            if (style_q || a->style->container_type) break;
+        }
+        if (!a) return false;
+        CQEnv env = { a->cq_w, a->cq_h, a->style->container_type != 0, a->style->container_type == 2, cq_var, a->style };
+        if (!css_container_eval(cc->query, &env)) return false;
+    }
+    return true;
+}
+
 static void collect(StyleEngine *e, Node *el, RuleVec *rv, int pseudo, VEC(MDecl) *out) {
     if (!rv) return;
     for (int i = 0; i < rv->n; i++) {
         Rule *r = rv->v[i];
         if (r->sel.pseudo_el != pseudo) continue;
         if (!css_match_selector(&r->sel, el, NULL)) continue;
+        if (r->cq && !container_matches(r->cq, el)) continue;
         for (int k = 0; k < r->decls->n; k++) {
             Decl *d = &r->decls->v[k];
             /* key: important(1) | origin(1) | spec(30) | order(32) */

@@ -21,6 +21,11 @@ static HMap faces;   /* "path#index" -> Face* */
 static HMap fonts;   /* "path#index@size/flags" -> Font* */
 static HMap resolve_cache; /* "family|w|i" -> Face* */
 
+/* @font-face declarations: fetched on first use, then swapped in (font-display: swap) */
+typedef struct WebDecl { char *family, *url; int weight, state; bool italic; Face *face; struct WebDecl *next; } WebDecl;
+static WebDecl *webdecls;
+static VEC(char *) webreq;
+
 typedef struct { const char *name; const char *regular, *bold, *italic, *bolditalic; } FamilyDef;
 #define SUP "/System/Library/Fonts/Supplemental/"
 #define SYS "/System/Library/Fonts/"
@@ -92,6 +97,17 @@ static Face *resolve_one(const char *name, int weight, bool italic, bool *synth_
     char lname[128]; size_t n = 0;
     for (const char *p = name; *p && n < sizeof lname - 1; p++) lname[n++] = (char)lc((unsigned char)*p);
     lname[n] = 0;
+    WebDecl *best = NULL; int bs = -1;
+    for (WebDecl *d = webdecls; d; d = d->next) {
+        if (strcmp(d->family, lname)) continue;
+        int sc = (d->italic == italic) * 2 + ((d->weight >= 600) == (weight >= 600)) + (d->face ? 4 : 0);
+        if (sc > bs) { bs = sc; best = d; }
+    }
+    for (WebDecl *d = webdecls; d; d = d->next)
+        if (!d->state && !strcmp(d->family, lname) && d->italic == italic && (d->weight >= 600) == (weight >= 600)) { d->state = 1; vec_push(webreq, xstrdup(d->url)); }
+    if (best && !best->state) { best->state = 1; vec_push(webreq, xstrdup(best->url)); }
+    if (best && best->face) { *synth_b = weight >= 600 && best->weight < 600; *synth_i = italic && !best->italic; return best->face; }
+    if (best) return NULL;
     for (size_t i = 0; i < ARRLEN(families); i++) {
         if (strcmp(families[i].name, lname)) continue;
         const FamilyDef *d = &families[i];
@@ -299,4 +315,46 @@ const Glyph *font_glyph(Font *f, uint32_t gid, float scale) {
     hm_put(&f->glyphs, key, g);
     pthread_mutex_unlock(&font_mu);
     return g;
+}
+
+void font_declare(const char *family, int weight, bool italic, const char *url) {
+    char lname[128]; size_t n = 0;
+    for (const char *p = family; *p && n < sizeof lname - 1; p++) lname[n++] = (char)lc((unsigned char)*p);
+    lname[n] = 0;
+    pthread_mutex_lock(&font_mu);
+    for (WebDecl *d = webdecls; d; d = d->next)
+        if (d->weight == weight && d->italic == italic && !strcmp(d->family, lname) && !strcmp(d->url, url)) { pthread_mutex_unlock(&font_mu); return; }
+    WebDecl *d = xcalloc(1, sizeof *d);
+    d->family = xstrdup(lname); d->url = xstrdup(url); d->weight = weight; d->italic = italic;
+    for (WebDecl *o = webdecls; o; o = o->next) if (!strcmp(o->url, url) && o->state) { d->state = o->state; d->face = o->face; break; }
+    d->next = webdecls; webdecls = d;
+    hm_free(&resolve_cache, free); memset(&resolve_cache, 0, sizeof resolve_cache);
+    pthread_mutex_unlock(&font_mu);
+}
+
+char *font_next_request(void) {
+    pthread_mutex_lock(&font_mu);
+    char *u = webreq.n ? webreq.v[--webreq.n] : NULL;
+    pthread_mutex_unlock(&font_mu);
+    return u;
+}
+
+bool font_loaded(const char *url, const void *data, size_t len) {
+    pthread_mutex_lock(&font_mu);
+    Face *f = NULL; FT_Face ft;
+    void *buf = data && len ? xmalloc(len) : NULL;
+    if (buf) memcpy(buf, data, len);
+    if (buf && !FT_New_Memory_Face(ftlib, buf, (FT_Long)len, 0, &ft)) {
+        f = xcalloc(1, sizeof *f);
+        char key[600]; snprintf(key, sizeof key, "web:%s", url);
+        f->ft = ft; f->path = xstrdup(key);
+        f->hb = hb_ft_face_create_referenced(ft);
+        f->color = FT_HAS_COLOR(ft);
+        f->weight = (ft->style_flags & FT_STYLE_FLAG_BOLD) ? 700 : 400;
+        f->italic = ft->style_flags & FT_STYLE_FLAG_ITALIC;
+    } else free(buf);
+    for (WebDecl *d = webdecls; d; d = d->next) if (!strcmp(d->url, url)) { d->state = 2; d->face = f; }
+    if (f) { hm_free(&resolve_cache, free); memset(&resolve_cache, 0, sizeof resolve_cache); }
+    pthread_mutex_unlock(&font_mu);
+    return f != NULL;
 }
