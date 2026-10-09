@@ -17,6 +17,7 @@ bool jsg_supports(const char *cond);
 char *css_selector_text(const char *src);
 bool jsg_img_size(Node *n, float *w, float *h);
 bool jsg_classic_script(Node *s);
+bool jsg_module_script(Node *s);
 #ifdef __cplusplus
 }
 #endif

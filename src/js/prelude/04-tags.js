@@ -54,7 +54,7 @@ mk('HTMLFormElement', HTMLElement, ['form'], p => {
         get enctype() { return N.attr(this, 'enctype') || 'application/x-www-form-urlencoded'; },
         get elements() { return nodeList(N.query(this, 'input,select,textarea,button,fieldset,output', true)); }, get length() { return this.elements.length; },
         submit() { submitForm(this, null); },
-        requestSubmit(s) { if (dispatch(this, new Event('submit', { bubbles: true, cancelable: true }))) submitForm(this, s); },
+        requestSubmit(s) { if (dispatch(this, new SubmitEvent('submit', { bubbles: true, cancelable: true, submitter: s || null }), true)) submitForm(this, s); },
         reset() { if (dispatch(this, new Event('reset', { bubbles: true, cancelable: true }))) for (const e of this.elements) N.setValue(e, null); },
         checkValidity() { return true; }, reportValidity() { return true; },
     });

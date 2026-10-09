@@ -26,7 +26,7 @@ static float g_info_h;
 #define WSY0 (TABH + 8)
 #define WSRH 40.f
 
-typedef struct { Node *n; char *src; size_t len; char *name; } PScript;
+typedef struct { Node *n; char *src; size_t len; char *name; bool module; } PScript;
 typedef struct { Node *n; uint64_t h; } SheetRef;
 typedef struct Page {
     char *url; Document *d; StyleEngine *e; Layout *L; uint64_t gen; double load_ms;
@@ -157,8 +157,10 @@ static int loader(void *arg) {
     html_parse(p->d, body, blen);
     if (!getenv("LUMEN_NO_JS")) for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) {
         if (!gen_live(rq->gen)) break;
-        if (n->type != NODE_ELEMENT || n->tag != A_script || n->ns != NS_HTML || !jsg_classic_script(n)) continue;
-        PScript sc = { n, NULL, 0, NULL };
+        if (n->type != NODE_ELEMENT || n->tag != A_script || n->ns != NS_HTML) continue;
+        bool mod = jsg_module_script(n);
+        if (!mod && !jsg_classic_script(n)) continue;
+        PScript sc = { n, NULL, 0, NULL, mod };
         const char *src = node_attr(n, "src");
         if (src) {
             sc.name = url_join(p->d->url, src);
@@ -976,10 +978,13 @@ static void page_start_js(App *a, Page *p) {
         char *src = xmalloc((size_t)n + 1); size_t got = fread(src, 1, (size_t)n, pf); src[got] = 0; fclose(pf);
         js_eval(p->js, src, "lumen:pre"); free(src);
     }
-    for (int i = 0; i < p->nscripts; i++) {
+    for (int pass = 0; pass < 2; pass++) for (int i = 0; i < p->nscripts; i++) {   /* module scripts are deferred */
         PScript *sc = &p->scripts[i];
-        if ((sc->n->flags & NF_SCRIPT_STARTED) || !(sc->n->flags & NF_CONNECTED)) continue;
-        if (sc->src) { js_run_script(p->js, sc->n, sc->src, sc->len, sc->name); free(sc->src); sc->src = NULL; sc->len = 0; }
+        if (sc->module != (pass == 1) || (sc->n->flags & NF_SCRIPT_STARTED) || !(sc->n->flags & NF_CONNECTED)) continue;
+        if (sc->src) {
+            if (sc->module) js_run_module(p->js, sc->n, sc->src, sc->len, sc->name); else js_run_script(p->js, sc->n, sc->src, sc->len, sc->name);
+            free(sc->src); sc->src = NULL; sc->len = 0;
+        }
         else { sc->n->flags |= NF_SCRIPT_STARTED; js_dispatch(p->js, sc->n, "error", "Event", false, false, 0, 0, 0, NULL); }
     }
     js_set_ready_state(p->js, 1);

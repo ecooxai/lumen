@@ -161,6 +161,158 @@ static void run_source(JsCtx *c, const char *src, size_t n, const char *name) {
     settle(c);
 }
 
+/* ---- ES modules: fetched synchronously (graph levels in parallel), no import maps ---- */
+static JsCtx *ctx_of(v8::Local<v8::Context> ctx) { return static_cast<JsCtx *>(ctx->GetAlignedPointerFromEmbedderData(1, kTag)); }
+static void mod_throw(v8::Isolate *iso, const std::string &m) { iso->ThrowException(v8::Exception::TypeError(jstr(iso, m.c_str()))); }
+static std::string mod_resolve(const std::string &spec, const std::string &base) {
+    bool rel = !spec.compare(0, 1, "/") || !spec.compare(0, 2, "./") || !spec.compare(0, 3, "../");
+    bool abs = spec.find("://") != std::string::npos || !spec.compare(0, 5, "data:") || !spec.compare(0, 5, "blob:");
+    if (!rel && !abs) return "";
+    char *u = url_join(base.c_str(), spec.c_str());
+    std::string r = u ? u : "";
+    free(u);
+    return r;
+}
+static bool mod_fetch(const std::string &u, const std::string &ref, std::string &out) {
+    NetRequest *rq = net_request_new("GET", u.c_str());
+    if (!ref.compare(0, 4, "http")) headers_add(&rq->headers, "Referer", ref.c_str());
+    NetResponse *r = net_fetch_sync(rq);
+    bool ok = r && r->status >= 200 && r->status < 300;
+    if (ok) out.assign(r->body ? r->body : "", r->body_len);
+    if (r) net_response_free(r);
+    return ok;
+}
+static std::string mod_key(JsCtx *c, v8::Local<v8::Module> m) {
+    auto r = c->mod_url.equal_range(m->GetIdentityHash());
+    for (auto it = r.first; it != r.second; ++it) {
+        auto f = c->mods.find(it->second);
+        if (f != c->mods.end() && f->second.Get(c->iso) == m) return it->second;
+    }
+    return c->doc && c->doc->url ? c->doc->url : "";
+}
+static v8::MaybeLocal<v8::Module> mod_compile(JsCtx *c, const std::string &key, const std::string &src) {
+    v8::Isolate *iso = c->iso;
+    v8::ScriptOrigin origin(jstr(iso, key.c_str()), 0, 0, false, -1, v8::Local<v8::Value>(), false, false, true);
+    v8::ScriptCompiler::Source s(jstr(iso, src.data(), (int)src.size()), origin);
+    v8::Local<v8::Module> m;
+    if (!v8::ScriptCompiler::CompileModule(iso, &s).ToLocal(&m)) return {};
+    c->mods[key].Reset(iso, m);
+    c->mod_url.emplace(m->GetIdentityHash(), key);
+    return m;
+}
+static bool mod_graph(JsCtx *c, v8::Local<v8::Module> root) {
+    v8::Isolate *iso = c->iso;
+    v8::Local<v8::Context> ctx = iso->GetCurrentContext();
+    std::string ref = c->doc && c->doc->url ? c->doc->url : "";
+    std::vector<v8::Local<v8::Module>> todo{ root };
+    while (!todo.empty()) {
+        std::vector<std::string> need;
+        for (v8::Local<v8::Module> m : todo) {
+            std::string base = mod_key(c, m);
+            v8::Local<v8::FixedArray> rq = m->GetModuleRequests();
+            for (int i = 0; i < rq->Length(); i++) {
+                std::string sp = jcstr(iso, rq->Get(i).As<v8::ModuleRequest>()->GetSpecifier());
+                std::string u = mod_resolve(sp, base);
+                if (u.empty()) return mod_throw(iso, "Failed to resolve module specifier \"" + sp + "\""), false;
+                if (!c->mods.count(u) && std::find(need.begin(), need.end(), u) == need.end()) need.push_back(u);
+            }
+        }
+        todo.clear();
+        std::vector<std::string> body(need.size());
+        std::vector<char> ok(need.size(), 0);
+        double busy = c->busy_since.exchange(0);   /* network time is not script time */
+        for (size_t b = 0; b < need.size(); b += 16) {
+            std::vector<std::thread> th;
+            for (size_t i = b; i < need.size() && i < b + 16; i++) th.emplace_back([&, i] { ok[i] = mod_fetch(need[i], ref, body[i]); });
+            for (std::thread &t : th) t.join();
+        }
+        if (busy > 0) c->busy_since = now_ms();
+        for (size_t i = 0; i < need.size(); i++) {
+            if (!ok[i]) return mod_throw(iso, "Failed to fetch module: " + need[i]), false;
+            v8::Local<v8::Module> m;
+            if (!mod_compile(c, need[i], body[i]).ToLocal(&m)) return false;
+            todo.push_back(m);
+        }
+    }
+    return true;
+}
+static v8::MaybeLocal<v8::Module> mod_resolve_cb(v8::Local<v8::Context> ctx, v8::Local<v8::String> spec, v8::Local<v8::FixedArray>, v8::Local<v8::Module> ref) {
+    v8::Isolate *iso = v8::Isolate::GetCurrent();
+    JsCtx *c = ctx_of(ctx);
+    auto it = c->mods.find(mod_resolve(jcstr(iso, spec), mod_key(c, ref)));
+    if (it == c->mods.end()) return mod_throw(iso, "Failed to resolve module specifier \"" + jcstr(iso, spec) + "\""), v8::MaybeLocal<v8::Module>();
+    return it->second.Get(iso);
+}
+static v8::MaybeLocal<v8::Promise> mod_eval(JsCtx *c, v8::Local<v8::Module> m) {
+    v8::Local<v8::Context> ctx = c->iso->GetCurrentContext();
+    if (!mod_graph(c, m)) return {};
+    if (m->GetStatus() == v8::Module::kUninstantiated && !m->InstantiateModule(ctx, mod_resolve_cb).FromMaybe(false)) return {};
+    return m->Evaluate(ctx);
+}
+static v8::MaybeLocal<v8::Promise> mod_dynamic(v8::Local<v8::Context> ctx, v8::Local<v8::Data>, v8::Local<v8::Value> res, v8::Local<v8::String> spec, v8::Local<v8::FixedArray>) {
+    v8::Isolate *iso = v8::Isolate::GetCurrent();
+    JsCtx *c = ctx_of(ctx);
+    v8::Local<v8::Promise::Resolver> R;
+    if (!v8::Promise::Resolver::New(ctx).ToLocal(&R)) return {};
+    std::string base = res->IsString() ? jcstr(iso, res) : "";
+    if (base.find(':') == std::string::npos || !base.compare(0, 6, "lumen:")) base = c->doc && c->doc->url ? c->doc->url : "";
+    std::string u = mod_resolve(jcstr(iso, spec), base);
+    v8::TryCatch tc(iso);
+    v8::Local<v8::Module> m;
+    std::string body;
+    auto it = c->mods.find(u);
+    if (u.empty()) mod_throw(iso, "Failed to resolve module specifier \"" + jcstr(iso, spec) + "\"");
+    else if (it != c->mods.end()) m = it->second.Get(iso);
+    else {
+        double busy = c->busy_since.exchange(0);
+        bool ok = mod_fetch(u, c->doc && c->doc->url ? c->doc->url : "", body);
+        if (busy > 0) c->busy_since = now_ms();
+        if (ok) (void)mod_compile(c, u, body).ToLocal(&m);
+        else mod_throw(iso, "Failed to fetch dynamically imported module: " + u);
+    }
+    v8::Local<v8::Promise> p;
+    if (!m.IsEmpty() && mod_eval(c, m).ToLocal(&p)) {
+        v8::Local<v8::Array> d = v8::Array::New(iso, 2);
+        (void)d->Set(ctx, 0, R);
+        (void)d->Set(ctx, 1, m->GetModuleNamespace());
+        auto done = [](const v8::FunctionCallbackInfo<v8::Value> &a) {
+            v8::Local<v8::Context> cx = a.GetIsolate()->GetCurrentContext();
+            v8::Local<v8::Array> d = a.Data().As<v8::Array>();
+            v8::Local<v8::Promise::Resolver> r = d->Get(cx, 0).ToLocalChecked().As<v8::Promise::Resolver>();
+            (void)r->Resolve(cx, d->Get(cx, 1).ToLocalChecked());
+        };
+        auto fail = [](const v8::FunctionCallbackInfo<v8::Value> &a) {
+            v8::Local<v8::Context> cx = a.GetIsolate()->GetCurrentContext();
+            (void)a.Data().As<v8::Array>()->Get(cx, 0).ToLocalChecked().As<v8::Promise::Resolver>()->Reject(cx, a[0]);
+        };
+        v8::Local<v8::Function> f1, f2;
+        if (v8::Function::New(ctx, done, d).ToLocal(&f1) && v8::Function::New(ctx, fail, d).ToLocal(&f2)) (void)p->Then(ctx, f1, f2);
+    } else if (tc.HasCaught()) {
+        (void)R->Reject(ctx, tc.Exception());
+        tc.Reset();
+    }
+    return R->GetPromise();
+}
+static void mod_meta(v8::Local<v8::Context> ctx, v8::Local<v8::Module> m, v8::Local<v8::Object> meta) {
+    v8::Isolate *iso = v8::Isolate::GetCurrent();
+    std::string u = mod_key(ctx_of(ctx), m);
+    size_t h = u.find("#lumen-inline-");
+    if (h != std::string::npos) u.resize(h);
+    (void)meta->CreateDataProperty(ctx, jstr(iso, "url"), jstr(iso, u.c_str()));
+    auto resolve = [](const v8::FunctionCallbackInfo<v8::Value> &a) {
+        v8::Isolate *iso = a.GetIsolate();
+        std::string r = mod_resolve(jcstr(iso, a[0]), jcstr(iso, a.Data()));
+        if (r.empty()) return mod_throw(iso, "Failed to resolve module specifier \"" + jcstr(iso, a[0]) + "\"");
+        a.GetReturnValue().Set(jstr(iso, r.c_str()));
+    };
+    v8::Local<v8::Function> f;
+    if (v8::Function::New(ctx, resolve, jstr(iso, u.c_str())).ToLocal(&f)) (void)meta->CreateDataProperty(ctx, jstr(iso, "resolve"), f);
+}
+static void mod_report(const v8::FunctionCallbackInfo<v8::Value> &a) {
+    v8::Isolate *iso = a.GetIsolate();
+    if (JsCtx *c = jctx(iso)) jreport(c, a[0], v8::Exception::CreateMessage(iso, a[0]));
+}
+
 static void on_reject(v8::PromiseRejectMessage m) {
     if (m.GetEvent() != v8::kPromiseRejectWithNoHandler || g_log_level > 2) return;
     v8::Isolate *iso = v8::Isolate::GetCurrent();
@@ -235,6 +387,8 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
     c->iso->SetData(0, c);
     c->iso->SetMicrotasksPolicy(v8::MicrotasksPolicy::kExplicit);
     c->iso->SetPromiseRejectCallback(on_reject);
+    c->iso->SetHostImportModuleDynamicallyCallback(mod_dynamic);
+    c->iso->SetHostInitializeImportMetaObjectCallback(mod_meta);
     }
     v8::Isolate *iso = c->iso;
     v8::Isolate::Scope is(iso);
@@ -312,6 +466,7 @@ void js_free(JsCtx *c) {
         c->protos.clear();
         c->protoFor.Reset(); c->fire.Reset(); c->report.Reset(); c->mediaChanged.Reset();
         c->api.Reset(); c->node_tmpl.Reset();
+        c->mods.clear(); c->mod_url.clear();
         for (Node *n : c->wrapped) { delete static_cast<v8::Global<v8::Object> *>(n->js); n->js = nullptr; }
         for (Node *n : c->wrapped)
             if (!n->parent && n->type != NODE_DOCUMENT && !n->refcount && !n->host) roots.push_back(n);
@@ -334,6 +489,34 @@ void js_run_script(JsCtx *c, Node *script, const char *src, size_t n, const char
         JS_ENTER(c);
         jfire(c, script, "load");
     }
+}
+
+void js_run_module(JsCtx *c, Node *script, const char *src, size_t n, const char *url) {
+    if (!c) return;
+    if (script) script->flags |= NF_SCRIPT_STARTED;
+    bool ext = script && node_attr(script, "src"), ok = false;
+    {
+        JS_ENTER(c);
+        v8::TryCatch tc(iso);
+        std::string key = url ? url : "", body;
+        if (!ext) key += "#lumen-inline-" + std::to_string(++c->mod_seq);
+        v8::Local<v8::Module> m;
+        js_enter(c);
+        auto it = c->mods.find(key);
+        if (it != c->mods.end()) { m = it->second.Get(iso); ok = true; }
+        else {
+            if (src) body.assign(src, n);
+            ok = src || mod_fetch(key, c->doc && c->doc->url ? c->doc->url : "", body);
+            if (ok) (void)mod_compile(c, key, body).ToLocal(&m);
+        }
+        v8::Local<v8::Promise> p;
+        v8::Local<v8::Function> f;
+        if (!m.IsEmpty() && mod_eval(c, m).ToLocal(&p) && v8::Function::New(ctx, mod_report).ToLocal(&f)) (void)p->Catch(ctx, f);
+        js_leave(c);
+        if (tc.HasCaught() && tc.CanContinue()) jreport(c, tc.Exception(), tc.Message());
+        settle(c);
+    }
+    if (ext) { JS_ENTER(c); jfire(c, script, ok ? "load" : "error"); }
 }
 
 void js_eval(JsCtx *c, const char *src, const char *name) {

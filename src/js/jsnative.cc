@@ -719,8 +719,16 @@ void js_run_inserted(JsCtx *c, Node *root) {
         if (x->type == NODE_ELEMENT && x->tag == A_script && x->ns == NS_HTML && !(x->flags & NF_SCRIPT_STARTED)) list.push_back(x);
     for (Node *s : list) {
         s->flags |= NF_SCRIPT_STARTED;
-        if (!jsg_classic_script(s)) continue;
+        bool mod = jsg_module_script(s);
+        if (!mod && !jsg_classic_script(s)) continue;
         const char *src = node_attr(s, "src");
+        if (mod) {
+            char *t = src ? nullptr : node_text_content(s), *u = src && *src ? url_join(c->doc->url, src) : nullptr;
+            if (src && !u) jfire(c, s, "error");
+            else js_run_module(c, s, t ? t : (src ? nullptr : ""), t ? strlen(t) : 0, u ? u : c->doc->url);
+            free(t); free(u);
+            continue;
+        }
         if (!src) {
             char *t = node_text_content(s);
             js_run_script(c, s, t ? t : "", t ? strlen(t) : 0, c->doc->url);

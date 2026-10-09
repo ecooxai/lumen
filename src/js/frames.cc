@@ -83,9 +83,15 @@ static JsCtx *frame_create(JsCtx *p, Node *f, const char *url, const char *html,
     k->host_ud = ch.ud;
     if (const char *fp = getenv("LUMEN_FRAME_PRE")) if (strncmp(url, "about:", 6)) js_eval(k, fp, "lumen:frame-pre");
     for (Node *s = d->node.first; s && !k->dead; s = node_next_in_tree(s, &d->node)) {
-        if (s->type != NODE_ELEMENT || s->tag != A_script || s->ns != NS_HTML || (s->flags & NF_SCRIPT_STARTED) || !jsg_classic_script(s)) continue;
+        if (s->type != NODE_ELEMENT || s->tag != A_script || s->ns != NS_HTML || (s->flags & NF_SCRIPT_STARTED)) continue;
+        bool mod = jsg_module_script(s);
+        if (!mod && !jsg_classic_script(s)) continue;
         const char *src = node_attr(s, "src");
-        if (src) {
+        if (mod) {
+            char *t = src ? nullptr : node_text_content(s), *u = src ? url_join(d->url, src) : nullptr;
+            js_run_module(k, s, t ? t : (src ? nullptr : ""), t ? strlen(t) : 0, u ? u : d->url);
+            free(t); free(u);
+        } else if (src) {
             char *u = url_join(d->url, src);
             NetResponse *sr = u ? net_fetch_sync(net_request_new("GET", u)) : nullptr;
             if (sr && sr->status >= 200 && sr->status < 300) js_run_script(k, s, sr->body ? sr->body : "", sr->body_len, u);

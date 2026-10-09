@@ -45,7 +45,17 @@ bool jsg_img_size(Node *n, float *w, float *h) {
     return layout_image_size_hook && layout_image_size_hook(n, w, h);
 }
 
+bool jsg_module_script(Node *s) {
+    const char *t = node_attr(s, "type");
+    if (!t) return false;
+    while (*t == ' ' || *t == '\t' || *t == '\n') t++;
+    size_t n = strlen(t);
+    while (n && (t[n - 1] == ' ' || t[n - 1] == '\t' || t[n - 1] == '\n')) n--;
+    return n == 6 && str_istarts(t, "module");
+}
+
 bool jsg_classic_script(Node *s) {
+    if (node_has_attr(s, "nomodule")) return false;
     const char *t = node_attr(s, "type");
     if (!t) return true;
     while (*t == ' ' || *t == '\t' || *t == '\n') t++;
