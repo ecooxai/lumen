@@ -184,7 +184,7 @@ std::shared_ptr<SrcBuf> src_buf(const char *s, size_t n) {
         const unsigned char *u = (const unsigned char *)s, *e = u + n;
         while (u < e) {
             uint32_t c = *u, k = c < 0x80 ? 0 : c >= 0xF0 ? 3 : c >= 0xE0 ? 2 : c >= 0xC0 ? 1 : 9;
-            if (k == 9 || u + k >= e + (k ? 0 : 1) && k) { p->w.push_back(0xFFFD); u++; continue; }
+            if (k == 9 || (u + k >= e + (k ? 0 : 1) && k)) { p->w.push_back(0xFFFD); u++; continue; }
             c &= k ? 0x3F >> k : 0x7F;
             bool bad = false;
             for (uint32_t j = 1; j <= k; j++) { if ((u[j] & 0xC0) != 0x80) { bad = true; break; } c = c << 6 | (u[j] & 0x3F); }
@@ -678,6 +678,24 @@ void js_release_pins(void) {
     std::vector<Node *> v; v.swap(g_pins);
     for (Node *n : v) node_release(n);
 }
+int js_key_mods;
+
+/* KeyboardEvent.code for a US layout key value */
+static std::string key_code(const char *k) {
+    if (!strcmp(k, " ")) return "Space";
+    if (!k[0] || k[1]) return k;
+    char c = k[0];
+    if (c >= 'a' && c <= 'z') return std::string("Key") + (char)(c - 32);
+    if (c >= 'A' && c <= 'Z') return std::string("Key") + c;
+    if (c >= '0' && c <= '9') return std::string("Digit") + c;
+    const char *sd = strchr(")!@#$%^&*(", c);
+    if (sd) return std::string("Digit") + (char)('0' + (sd - ")!@#$%^&*("));
+    static const char *punct[][2] = { {"-_", "Minus"}, {"=+", "Equal"}, {"[{", "BracketLeft"}, {"]}", "BracketRight"}, {"\\|", "Backslash"},
+        {";:", "Semicolon"}, {"'\"", "Quote"}, {",<", "Comma"}, {".>", "Period"}, {"/?", "Slash"}, {"`~", "Backquote"} };
+    for (auto &p : punct) if (strchr(p[0], c)) return p[1];
+    return k;
+}
+
 bool js_dispatch(JsCtx *c, Node *target, const char *type, const char *kind, bool bubbles, bool cancelable, double x, double y, int button, const char *key) {
     if (!c || c->fire.IsEmpty()) return true;
     if (target && target->parent && target->parent->type != NODE_DOCUMENT) { node_retain(target); g_pins.push_back(target); }
@@ -698,7 +716,11 @@ bool js_dispatch(JsCtx *c, Node *target, const char *type, const char *kind, boo
     set("buttons", v8::Integer::New(iso, released ? 0 : button == 0 ? 1 : button == 2 ? 2 : 4));
     if (type && !strcmp(type, "pointerdown")) set("pressure", v8::Number::New(iso, 0.5));
     set("detail", v8::Integer::New(iso, 1));
-    if (key) { set("key", jstr(iso, key)); set("code", jstr(iso, key)); }
+    set("shiftKey", v8::Boolean::New(iso, js_key_mods & 1));
+    set("ctrlKey", v8::Boolean::New(iso, js_key_mods & 2));
+    set("altKey", v8::Boolean::New(iso, js_key_mods & 4));
+    set("metaKey", v8::Boolean::New(iso, js_key_mods & 8));
+    if (key) { set("key", jstr(iso, key)); set("code", jstr(iso, key_code(key).c_str())); }
     v8::Local<v8::Value> ctor = v8::Undefined(iso);
     if (kind && !c->api.IsEmpty()) (void)c->api.Get(iso)->Get(ctx, jstr(iso, kind)).ToLocal(&ctor);
     v8::Local<v8::Value> argv[4] = { target ? jwrap(c, target) : v8::Local<v8::Value>(ctx->Global()), jstr(iso, type), init, ctor };

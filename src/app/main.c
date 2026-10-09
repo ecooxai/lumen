@@ -1373,6 +1373,31 @@ static Node *edit_host(Node *n) {
     }
     return NULL;
 }
+static const char *key_name(SDL_Keycode k, bool shift, char *b) {
+    switch (k) {
+    case SDLK_RETURN: case SDLK_KP_ENTER: return "Enter"; case SDLK_ESCAPE: return "Escape"; case SDLK_BACKSPACE: return "Backspace";
+    case SDLK_TAB: return "Tab"; case SDLK_DELETE: return "Delete"; case SDLK_SPACE: return " ";
+    case SDLK_LEFT: return "ArrowLeft"; case SDLK_RIGHT: return "ArrowRight"; case SDLK_UP: return "ArrowUp"; case SDLK_DOWN: return "ArrowDown";
+    case SDLK_HOME: return "Home"; case SDLK_END: return "End"; case SDLK_PAGEUP: return "PageUp"; case SDLK_PAGEDOWN: return "PageDown";
+    default: break;
+    }
+    if (k >= SDLK_F1 && k <= SDLK_F12) { snprintf(b, 8, "F%d", (int)(k - SDLK_F1) + 1); return b; }
+    if (k < 33 || k >= 127) return NULL;
+    static const char *plain = "1234567890-=[]\\;',./`", *shifted = "!@#$%^&*()_+{}|:\"<>?~";
+    char c = (char)k; const char *p = strchr(plain, c);
+    if (shift) c = c >= 'a' && c <= 'z' ? (char)(c - 32) : p ? shifted[p - plain] : c;
+    b[0] = c; b[1] = 0; return b;
+}
+static int key_mods(SDL_Keymod m) { return (m & SDL_KMOD_SHIFT ? 1 : 0) | (m & SDL_KMOD_CTRL ? 2 : 0) | (m & SDL_KMOD_ALT ? 4 : 0) | (m & SDL_KMOD_GUI ? 8 : 0); }
+/* keydown+keyup to the focused element (or body) for a key the page may handle; false if the page cancelled it */
+static bool page_key(App *a, SDL_Keycode k, SDL_Keymod mod) {
+    Page *p = a->t->cur; char b[8]; const char *kn = key_name(k, mod & SDL_KMOD_SHIFT, b);
+    Node *f = p && p->d ? (p->d->focus ? p->d->focus : p->d->body) : NULL;
+    if (a->editing || !kn || !f || !p->js) return true;
+    bool ok = js_dispatch(p->js, f, "keydown", "KeyboardEvent", true, true, 0, 0, 0, kn);
+    if (a->t->cur == p) js_dispatch(p->js, f, "keyup", "KeyboardEvent", true, true, 0, 0, 0, kn);
+    return ok;
+}
 static Node *edit_focus(App *a) { Node *f = a->t->cur && a->t->cur->d && a->t->cur->js ? a->t->cur->d->focus : NULL; return edit_host(f) ? f : NULL; }
 static Node *page_focus(App *a) { Node *f = a->t->cur && a->t->cur->d ? a->t->cur->d->focus : NULL; return is_text_ctl(f) ? f : NULL; }
 static char *ctl_value(Node *n) {
@@ -2033,6 +2058,7 @@ int main(int argc, char **argv) {
             bool wheel0 = ev.type == SDL_EVENT_MOUSE_WHEEL && !ev.wheel.x && !ev.wheel.y;
             if ((ev.type >= SDL_EVENT_KEY_DOWN && ev.type <= SDL_EVENT_TEXT_INPUT) || (ev.type >= SDL_EVENT_MOUSE_MOTION && ev.type <= SDL_EVENT_MOUSE_WHEEL && !wheel0)) a.last_input = now_ms();
             if (ev.type != EV_NET && ev.type != SDL_EVENT_MOUSE_WHEEL) a.vonly = false;
+            js_key_mods = key_mods(SDL_GetModState());
             switch (ev.type) {
             case SDL_EVENT_QUIT: quit = true; break;
             case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: case SDL_EVENT_WINDOW_RESIZED: update_size(&a); break;
@@ -2096,9 +2122,13 @@ int main(int argc, char **argv) {
                 break;
             case SDL_EVENT_KEY_UP: if (ev.key.key == SDLK_LGUI || ev.key.key == SDLK_RGUI || ev.key.key == SDLK_LCTRL || ev.key.key == SDLK_RCTRL) cmd = false; break;
             case SDL_EVENT_KEY_DOWN: { a.caret_t = now_ms();
+                js_key_mods = key_mods(ev.key.mod);
                 SDL_Keycode k = ev.key.key; float page = a.vh - BAR - 40;
                 if (k == SDLK_LGUI || k == SDLK_RGUI || k == SDLK_LCTRL || k == SDLK_RCTRL) { cmd = true; break; }
                 if (cmd || (ev.key.mod & (SDL_KMOD_GUI | SDL_KMOD_CTRL))) {
+                    bool reserved = k == SDLK_Q || k == SDLK_W || k == SDLK_T || k == SDLK_N || k == SDLK_L || k == SDLK_TAB || (k >= SDLK_1 && k <= SDLK_9);
+                    if (cmd) js_key_mods |= (ev.key.mod & SDL_KMOD_CTRL) ? 2 : 8;
+                    if (!reserved && !page_key(&a, k, ev.key.mod)) { restyle(&a); a.dirty = true; a.vonly = false; break; }
                     if (k == SDLK_A && !a.editing && page_focus(&a)) a.page_sel = 1;
                     else if (k == SDLK_A && !a.editing && !edit_focus(&a) && a.t->cur && a.t->cur->L) { tsel_all(a.t->cur->L); g_tsel.L = a.t->cur->L; a.vonly = false; }
                     else if (k == SDLK_A && !a.editing && edit_focus(&a)) js_dispatch(a.t->cur->js, edit_focus(&a), "lumensel-all", "MouseEvent", false, false, 0, 0, 0, NULL);
@@ -2153,6 +2183,7 @@ int main(int argc, char **argv) {
                     }
                     break;
                 }
+                if (!page_key(&a, k, ev.key.mod)) { restyle(&a); a.dirty = true; a.vonly = false; break; }
                 if (k == SDLK_DOWN) a.t->sy += 40; else if (k == SDLK_UP) a.t->sy -= 40;
                 else if (k == SDLK_PAGEDOWN || k == SDLK_SPACE) a.t->sy += (ev.key.mod & SDL_KMOD_SHIFT) ? -page : page;
                 else if (k == SDLK_PAGEUP) a.t->sy -= page;
