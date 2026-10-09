@@ -216,6 +216,15 @@ FN(rect) {
     for (int i = 0; i < 4; i++) (void)o->Set(ctx, i, v8::Number::New(iso, r[i]));
     RET(o);
 }
+FN(scrollPos) {
+    CTX; ARGN(n, 0); float r[4];
+    if (c->host.sync) c->host.sync(c->host.ud, c->doc, true);
+    if (!jsg_scroll(n, r)) { RET(v8::Null(iso)); return; }
+    v8::Local<v8::Array> o = v8::Array::New(iso, 4);
+    for (int i = 0; i < 4; i++) (void)o->Set(ctx, i, v8::Number::New(iso, r[i]));
+    RET(o);
+}
+FN(setScroll) { CTX; ARGN(n, 0); if (c->host.sync) c->host.sync(c->host.ud, c->doc, true); RET(jsg_set_scroll(n, (float)NUM(1), (float)NUM(2))); }
 FN(computed) { CTX; ARGN(n, 0); if (c->host.sync) c->host.sync(c->host.ud, c->doc, false); std::string p = S(1); char *v = jsg_computed(n, p.c_str()); RET(nstr(iso, v)); free(v); }
 FN(value) { CTX; ARGN(n, 0); RET(nstr(iso, n->value_override)); }
 FN(setValue) { CTX; ARGN(n, 0); free(n->value_override); n->value_override = a[1]->IsNullOrUndefined() ? nullptr : xstrdup(S(1).c_str()); doc_mark_dirty(n->doc, n); }
@@ -793,7 +802,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(text); REG(setText); REG(attr); REG(setAttr); REG(rmAttr); REG(attrs); REG(insert); REG(remove); REG(newDoc); REG(newXmlDoc); REG(parseDoc); REG(adopt); REG(pi); REG(cdata); REG(doctype); REG(ownerDoc);
     REG(create); REG(textNode); REG(comment); REG(frag); REG(html); REG(setHTML); REG(parseFrag); REG(query);
     REG(matches); REG(byId); REG(clone); REG(doc); REG(contains); REG(connected); REG(host); REG(attachShadow);
-    REG(templateContent); REG(rect); REG(computed); REG(value); REG(setValue); REG(checked); REG(setChecked);
+    REG(templateContent); REG(rect); REG(scrollPos); REG(setScroll); REG(computed); REG(value); REG(setValue); REG(checked); REG(setChecked);
     REG(focus); REG(active); REG(cookie); REG(setCookie); REG(url); REG(setUrl); REG(navigate); REG(navigatePost); REG(histGo);
     REG(histLen); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
     REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove);

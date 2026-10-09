@@ -30,6 +30,24 @@ bool jsg_rect(Node *n, float r[4]) {
     return true;
 }
 
+bool jsg_scroll(Node *n, float r[4]) {
+    struct Box *b = n->box;
+    if (!b || !b->scroller) return false;
+    r[0] = n->scroll_x; r[1] = n->scroll_y; r[2] = LMAX(b->scroll_w, b->w); r[3] = LMAX(b->scroll_h, b->h);
+    return true;
+}
+
+bool jsg_set_scroll(Node *n, float x, float y) {
+    struct Box *b = n->box;
+    if (!b || !b->scroller) return false;
+    float maxx = LMAX(0, b->scroll_w - b->w), maxy = LMAX(0, b->scroll_h - b->h);
+    float nx = isnan(x) ? n->scroll_x : LCLAMP(x, 0, maxx);
+    float ny = isnan(y) ? n->scroll_y : box_scroll_from_end(b) ? LCLAMP(y, -maxy, 0) : LCLAMP(y, 0, maxy);
+    if (nx == n->scroll_x && ny == n->scroll_y) return false;
+    n->scroll_x = nx; n->scroll_y = ny; doc_mark_dirty(n->doc, n);
+    return true;
+}
+
 bool jsg_media(void *media, const char *q) { return media && css_media_matches(q, (const MediaCtx *)media); }
 
 bool jsg_valid_selector(const char *sel) {

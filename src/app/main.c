@@ -699,6 +699,22 @@ static void render(App *a) {
     a->last_page = a->t->cur; a->last_sy = a->t->sy; if (!defer) a->last_ver = a->t->cur ? a->t->cur->d->dom_version : 0;
 }
 
+/* scroll the innermost scrollable box under (x,y) that can still move; false = let the page scroll */
+static bool wheel_scroll(App *a, float x, float y, float dx, float dy) {
+    Page *p = a->t->cur; if (!p || !p->L) return false;
+    for (Box *b = layout_hit(p->L, x, y + a->t->sy); b; b = b->parent) {
+        if (!b->scroller || !b->node || !b->st) continue;
+        bool sx = b->st->overflow_x == OV_AUTO || b->st->overflow_x == OV_SCROLL, sy = b->st->overflow_y == OV_AUTO || b->st->overflow_y == OV_SCROLL;
+        float maxx = LMAX(0, b->scroll_w - b->w), maxy = LMAX(0, b->scroll_h - b->h);
+        float lo = box_scroll_from_end(b) ? -maxy : 0, hi = box_scroll_from_end(b) ? 0 : maxy;
+        float nx = sx ? LCLAMP(b->node->scroll_x + dx, 0, maxx) : b->node->scroll_x, ny = sy ? LCLAMP(b->node->scroll_y + dy, lo, hi) : b->node->scroll_y;
+        if (nx == b->node->scroll_x && ny == b->node->scroll_y) continue;
+        b->node->scroll_x = nx; b->node->scroll_y = ny; a->vonly = false;
+        if (p->js) js_dispatch(p->js, b->node, "scroll", "Event", false, false, 0, 0, 0, NULL);
+        return true;
+    }
+    return false;
+}
 static void update_size(App *a) {
     for (int i = 0; i < a->ntabs; i++) a->tabs[i]->relayout = true;
     int w, h; SDL_GetWindowSize(a->win, &w, &h); SDL_GetWindowSizeInPixels(a->win, &a->pw, &a->ph);
@@ -1526,6 +1542,14 @@ int main(int argc, char **argv) {
             if (want != dl_caret_on) { dl_caret_on = want; a.vonly = false; a.dirty = true; }
         }
         { double now = now_ms(), gn; if (image_anim_tick(now, &gn)) { a.vonly = false; a.dirty = true; } if (gn > 0 && gn - now < to) to = gn - now < 1 ? 1 : (int)(gn - now); }
+        if (getenv("LUMEN_AUTOSCROLL")) {
+            /* test hook: "x,y,dy,start_ms,count" pushes one wheel tick every 16ms */
+            static double t0; static int sent; float wx = 0, wy = 0, wdy = 0; double st = 0; int cnt = 0;
+            sscanf(getenv("LUMEN_AUTOSCROLL"), "%f,%f,%f,%lf,%d", &wx, &wy, &wdy, &st, &cnt);
+            if (!t0) t0 = now_ms();
+            if (sent < cnt && now_ms() - t0 > st + sent * 16.0) { SDL_Event we = {0}; we.type = SDL_EVENT_MOUSE_WHEEL; we.wheel.y = wdy; we.wheel.mouse_x = wx; we.wheel.mouse_y = wy; SDL_PushEvent(&we); sent++; }
+            if (sent < cnt && to > 16) to = 16;
+        }
         if (!SDL_WaitEventTimeout(&ev, to)) { if (a.t->loading || getenv("LUMEN_SHOT")) a.dirty = true; }
         else do {
             bool wheel0 = ev.type == SDL_EVENT_MOUSE_WHEEL && !ev.wheel.x && !ev.wheel.y;
@@ -1535,7 +1559,12 @@ int main(int argc, char **argv) {
             case SDL_EVENT_QUIT: quit = true; break;
             case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: case SDL_EVENT_WINDOW_RESIZED: update_size(&a); break;
             case SDL_EVENT_WINDOW_EXPOSED: a.dirty = true; break;
-            case SDL_EVENT_MOUSE_WHEEL: a.t->sy -= ev.wheel.y * 40; a.dirty = true; break;
+            case SDL_EVENT_MOUSE_WHEEL: {
+                float wdx = ev.wheel.x * 40, wdy = -ev.wheel.y * 40;
+                if (ev.wheel.direction == SDL_MOUSEWHEEL_FLIPPED) { wdx = -wdx; wdy = -wdy; }
+                if (!(ev.wheel.mouse_y > BAR && ev.wheel.mouse_x > a.side && wheel_scroll(&a, ev.wheel.mouse_x - a.side, ev.wheel.mouse_y - BAR, wdx, wdy))) a.t->sy += wdy;
+                a.dirty = true; break;
+            }
             case SDL_EVENT_MOUSE_MOTION: {
                 int h = bar_hit(&a, ev.motion.x, ev.motion.y); if (h != a.hover) { a.hover = h; a.dirty = true; }
                 if (!h && ev.motion.y > BAR && ev.motion.x > a.side) page_move(&a, ev.motion.x - a.side, ev.motion.y - BAR);
