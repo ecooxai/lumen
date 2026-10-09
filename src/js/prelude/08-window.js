@@ -248,11 +248,13 @@ const queueMicrotask = (fn) => { Promise.resolve().then(() => { try { fn(); } ca
 function structuredClone(v, seen = new Map()) {
     if (v === null || typeof v !== 'object') { if (typeof v === 'function' || typeof v === 'symbol') throw new DOMException('could not be cloned.', 'DataCloneError'); return v; }
     if (seen.has(v)) return seen.get(v);
-    if (v instanceof Date) return new Date(v); if (v instanceof RegExp) return new RegExp(v.source, v.flags);
-    if (v instanceof ArrayBuffer) return v.slice(0); if (ArrayBuffer.isView(v)) return new v.constructor(v);
-    if (v instanceof Blob) return v; if (N.isNode(v)) throw new DOMException('could not be cloned.', 'DataCloneError');
-    if (v instanceof Map) { const m = new Map(); seen.set(v, m); for (const [k, x] of v) m.set(structuredClone(k, seen), structuredClone(x, seen)); return m; }
-    if (v instanceof Set) { const s = new Set(); seen.set(v, s); for (const x of v) s.add(structuredClone(x, seen)); return s; }
+    const tag = Object.prototype.toString.call(v).slice(8, -1);
+    if (tag === 'Date') return new Date(Date.prototype.getTime.call(v)); if (tag === 'RegExp') return new RegExp(v.source, v.flags);
+    if (tag === 'ArrayBuffer') { const b = new ArrayBuffer(v.byteLength); new Uint8Array(b).set(new Uint8Array(v)); seen.set(v, b); return b; }
+    if (ArrayBuffer.isView(v)) { const b = structuredClone(v.buffer, seen); return tag === 'DataView' ? new DataView(b, v.byteOffset, v.byteLength) : new globalThis[tag](b, v.byteOffset, v.length); }
+    if (v instanceof Blob || tag === 'Blob' || tag === 'File') return v; if (N.isNode(v)) throw new DOMException('could not be cloned.', 'DataCloneError');
+    if (tag === 'Map') { const m = new Map(); seen.set(v, m); for (const [k, x] of v) m.set(structuredClone(k, seen), structuredClone(x, seen)); return m; }
+    if (tag === 'Set') { const s = new Set(); seen.set(v, s); for (const x of v) s.add(structuredClone(x, seen)); return s; }
     const o = Array.isArray(v) ? [] : {}; seen.set(v, o); for (const k of Object.keys(v)) o[k] = structuredClone(v[k], seen); return o;
 }
 const xferPorts = (o, t) => { const tr = o && typeof o === 'object' ? o.transfer : t; return (tr && typeof tr[Symbol.iterator] === 'function' ? [...tr] : []).filter(p => p && typeof p.postMessage === 'function' && typeof p.start === 'function'); };
