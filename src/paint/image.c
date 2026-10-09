@@ -36,7 +36,24 @@ void image_unref(Image *im) {
         for (int i = 0; i < im->anim->n; i++) free(im->anim->fr[i]);
         free(im->anim->fr); free(im->anim->delay); free(im->anim);
     } else free(im->px);
+    free(im->yuv);
     free(im);
+}
+
+static inline uint32_t c8(float v) { return v < 0 ? 0 : v > 255 ? 255 : (uint32_t)v; }
+void image_yuv_materialize(Image *im) {
+    if (im->px || !im->yuv) return;
+    int w = im->w, h = im->h, cw = (w + 1) / 2; const uint8_t *Y = im->yuv, *UV = im->yuv + (size_t)w * (size_t)h;
+    bool b709 = im->yuv_mat & 1, full = im->yuv_mat & 2;
+    float kr = b709 ? 1.5748f : 1.402f, kgu = b709 ? 0.1873f : 0.344136f, kgv = b709 ? 0.4681f : 0.714136f, kb = b709 ? 1.8556f : 1.772f;
+    float ys = full ? 1.f : 255.f / 219.f, yo = full ? 0 : 16, cs = full ? 1.f : 255.f / 224.f;
+    uint32_t *px = xmalloc((size_t)w * (size_t)h * 4);
+    for (int y = 0; y < h; y++) for (int x = 0; x < w; x++) {
+        const uint8_t *c = UV + (size_t)(y / 2) * (size_t)cw * 2 + (size_t)(x / 2) * 2;
+        float l = (Y[(size_t)y * (size_t)w + x] - yo) * ys, u = (c[0] - 128) * cs, v = (c[1] - 128) * cs;
+        px[(size_t)y * (size_t)w + x] = 0xff000000u | c8(l + kr * v) << 16 | c8(l - kgu * u - kgv * v) << 8 | c8(l + kb * u);
+    }
+    im->px = px;
 }
 
 bool image_anim_tick(double now, double *next) {

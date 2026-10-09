@@ -225,6 +225,7 @@ static void image(R *r, const DItem *it) {
         r->c->punched = !r->nlayer && !c->round;
         return;
     }
+    if (!im->px) { if (!im->yuv) return; image_yuv_materialize((Image *)im); }
     int px0 = LMAX(c->x0, (int)floorf(x0)), py0 = LMAX(c->y0, (int)floorf(y0)), px1 = LMIN(c->x1, (int)ceilf(x1)), py1 = LMIN(c->y1, (int)ceilf(y1));
     if (px1 <= px0 || py1 <= py0) return;
     float kx = im->w / (x1 - x0), ky = im->h / (y1 - y0);

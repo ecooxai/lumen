@@ -13,7 +13,9 @@ bool gpu_present(Gpu *g, const uint32_t *px, int w, int h, int stride);
 /* Like gpu_present but only re-uploads rows [y0,y1); the rest of the texture keeps its previous contents. */
 bool gpu_present_rows(Gpu *g, const uint32_t *px, int w, int h, int stride, int y0, int y1);
 /* A video frame drawn by the GPU under the page texture at device rect (x0,y0)-(x1,y1); the page shows it through alpha-0 holes. */
-typedef struct { const uint32_t *px; int w, h, stride; float x0, y0, x1, y1; } GpuVideo;
+/* yuv, when set, replaces px: NV12 planes (Y, then interleaved UV); mat bit 1 = BT.709, bit 2 = full range. */
+typedef struct { const uint32_t *px; int w, h, stride; float x0, y0, x1, y1; const uint8_t *yuv; int mat; } GpuVideo;
+bool gpu_yuv_ok(Gpu *g);
 bool gpu_present_frame(Gpu *g, const uint32_t *px, int w, int h, int stride, int y0, int y1, const GpuVideo *v);
 const char *gpu_backend_name(Gpu *g);
 void gpu_destroy(Gpu *g);

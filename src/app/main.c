@@ -30,7 +30,7 @@ typedef struct { Node *n; char *src; size_t len; char *name; } PScript;
 typedef struct { Node *n; uint64_t h; } SheetRef;
 typedef struct Page {
     char *url; Document *d; StyleEngine *e; Layout *L; uint64_t gen; double load_ms;
-    JsCtx *js; PScript *scripts; int nscripts; uint64_t seen_ver;
+    JsCtx *js; PScript *scripts; int nscripts; uint64_t seen_ver, lay_ver;
     SheetRef *sref; int nsref;
     HMap img_fired; bool img_check;
     /* <iframe> child browsing context (document owned by the JS layer) */
@@ -222,7 +222,7 @@ typedef struct App {
     bool dirty;
     Font *ui;
     int hover; double frame_ms;
-    bool vonly; float last_sy; uint64_t last_ver; Page *last_page; bool gvid_ok;
+    bool vonly, deferred, vframe; double last_input, last_full; float last_sy; uint64_t last_ver; Page *last_page; bool gvid_ok; const void *vown; float vrect[4];
 } App;
 static void publish_gens(App *a) { for (int i = 0; i < MAX_TABS; i++) g_tab_gen[i] = i < a->ntabs ? a->tabs[i]->lgen : 0; }
 static Tab *tab_new(App *a) {
@@ -560,6 +560,8 @@ static void build_chrome(App *a) {
 
 static float max_scroll(App *a) { return a->t->cur && a->t->cur->L ? LMAX(0, a->t->cur->L->doc_h - (a->vh - BAR)) : 0; }
 
+static double g_tr, g_tl, g_td, g_tx;
+static bool g_no_paint_only;
 static void render(App *a) {
     double t0 = now_ms();
     int bar_px = (int)(BAR * a->scale);
@@ -567,20 +569,30 @@ static void render(App *a) {
     int ph = a->ph - bar_px; if (ph < 1) ph = 1;
     int side_px = (int)(a->side * a->scale), pwp = a->pw - side_px; if (pwp < 1) pwp = 1;
     int why = !a->vonly ? 1 : !a->t->cur || a->t->cur != a->last_page || !a->t->cur->L ? 2 : a->t->relayout ? 3 : a->t->cur->d->dom_version != a->last_ver ? 4 : 0;
+    bool defer = why && why != 2 && !a->t->loading && a->t->cur && a->t->cur->L && t0 - a->last_input > 1000 && t0 - a->last_full < 250 && media_timeout_ms() >= 0 && a->page.w == pwp && a->page.h == ph;
+    a->deferred = defer; if (defer) why = 0;
+    if (defer && !a->vframe) { a->dirty = false; return; }
     bool part = !why;
     int rx0 = pwp, ry0 = ph, rx1 = 0, ry1 = 0;
     if (a->page.w != pwp || a->page.h != ph) { canvas_free(&a->page); canvas_init(&a->page, pwp, ph, a->scale); part = false; }
     bool gskip = false; GpuVideo gvd, *gvp = NULL;
-    if (a->t->cur) {
+    Image *fast = part && a->t->cur && a->gpu && a->gvid_ok && a->t->sy == a->last_sy && a->page.w == pwp && a->page.h == ph ? media_owner_frame(a->vown) : NULL;
+    if (a->t->cur && (defer || fast)) {   /* nothing but the video changed, or layout may be stale: only swap the video texture */
+        Image *im = fast;
+        if (!im) { a->dirty = a->vframe = false; return; }
+        float s = a->page.scale; const float *r = a->vrect;
+        gvd = (GpuVideo){ im->px, im->w, im->h, im->w, floorf(r[0] * s + 0.5f) + side_px, floorf(r[1] * s + 0.5f) + bar_px, floorf((r[0] + r[2]) * s + 0.5f) + side_px, floorf((r[1] + r[3]) * s + 0.5f) + bar_px };
+        gvd.yuv = im->yuv; gvd.mat = im->yuv_mat; gvp = &gvd; gskip = true;
+    } else if (a->t->cur) {
         if (a->t->relayout || !a->t->cur->L) {
             if (!a->t->cur->L) a->t->cur->L = layout_new();
             a->t->cur->e->media.vw = a->vw - a->side; a->t->cur->e->media.vh = a->vh - BAR;
-            layout_run(a->t->cur->L, a->t->cur->d, a->vw - a->side, a->vh - BAR);
+            { double q = now_ms(); layout_run(a->t->cur->L, a->t->cur->d, a->vw - a->side, a->vh - BAR); g_tl += now_ms() - q; }
             a->t->relayout = false;
         }
         a->t->sy = LCLAMP(a->t->sy, 0, max_scroll(a));
         if (a->t->sy != a->last_sy && part) { part = false; why = 5; }
-        g_full_paint = (double)SDL_GetTicks(); dl_clear(&a->pdl); dl_build(&a->pdl, a->t->cur->L, 0, a->t->sy, a->vw - a->side, a->vh - BAR); a->vbars = video_bars(a, &a->pdl);
+        g_full_paint = (double)SDL_GetTicks(); { double q = now_ms(); dl_clear(&a->pdl); dl_build(&a->pdl, a->t->cur->L, 0, a->t->sy, a->vw - a->side, a->vh - BAR); g_td += now_ms() - q; } a->vbars = video_bars(a, &a->pdl);
         const DItem *vit = NULL; int nv = 0;
         for (int i = 0; i < a->pdl.items.n; i++) {
             const DItem *it = &a->pdl.items.v[i];
@@ -596,13 +608,14 @@ static void render(App *a) {
         else if (part && rx1 > rx0 && ry1 > ry0) { a->gvid_ok = false; raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), rx0, ry0, rx1, ry1); }
         else {
             part = false; a->page.punch = gv ? vit->img : NULL; a->page.punched = false;
-            raster(&a->page, &a->pdl, RGBA(255, 255, 255, 255));
+            { double q = now_ms(); raster(&a->page, &a->pdl, RGBA(255, 255, 255, 255)); g_tx += now_ms() - q; }
             a->gvid_ok = gv && a->page.punched; a->page.punch = NULL;
         }
         if (gv && a->gvid_ok) {
             const Image *im = vit->img; float s = a->page.scale;
             gvd = (GpuVideo){ im->px, im->w, im->h, im->w, floorf(vit->x * s + 0.5f) + side_px, floorf(vit->y * s + 0.5f) + bar_px, floorf((vit->x + vit->w) * s + 0.5f) + side_px, floorf((vit->y + vit->h) * s + 0.5f) + bar_px };
-            gvp = &gvd;
+            gvd.yuv = im->yuv; gvd.mat = im->yuv_mat; gvp = &gvd;
+            a->vown = media_owner_of(im); a->vrect[0] = vit->x; a->vrect[1] = vit->y; a->vrect[2] = vit->w; a->vrect[3] = vit->h;
         }
     } else { a->gvid_ok = false; raster(&a->page, &(DisplayList){0}, RGBA(255, 255, 255, 255)); }
     if (!part) { build_chrome(a); chrome_tip(a); raster(&a->frame, &a->cdl, RGBA(255, 255, 255, 255)); }
@@ -626,12 +639,14 @@ static void render(App *a) {
         static int np, nf, nw[6]; static double tp, tf, t_last;
         if (part) { np++; tp += a->frame_ms; } else { nf++; tf += a->frame_ms; nw[why]++; }
         if (t0 - t_last > 1000) {
-            fprintf(stderr, "lumen: paint partial=%d (%.1fms avg) full=%d (%.1fms avg) why: novonly=%d page=%d relayout=%d dom=%d scroll=%d\n", np, np ? tp / np : 0, nf, nf ? tf / nf : 0, nw[1], nw[2], nw[3], nw[4], nw[5]);
+            fprintf(stderr, "lumen: paint partial=%d (%.1fms avg) full=%d (%.1fms avg) why: novonly=%d page=%d relayout=%d dom=%d scroll=%d | ms/s style=%.0f layout=%.0f dl=%.0f raster=%.0f\n", np, np ? tp / np : 0, nf, nf ? tf / nf : 0, nw[1], nw[2], nw[3], nw[4], nw[5], g_tr, g_tl, g_td, g_tx); g_tr = g_tl = g_td = g_tx = 0;
             np = nf = 0; tp = tf = 0; memset(nw, 0, sizeof nw); t_last = t0;
         }
     }
+    if (!part) a->last_full = t0;
+    a->vframe = false;
     a->dirty = a->vonly = false;
-    a->last_page = a->t->cur; a->last_sy = a->t->sy; a->last_ver = a->t->cur ? a->t->cur->d->dom_version : 0;
+    a->last_page = a->t->cur; a->last_sy = a->t->sy; if (!defer) a->last_ver = a->t->cur ? a->t->cur->d->dom_version : 0;
 }
 
 static void update_size(App *a) {
@@ -884,10 +899,12 @@ static void restyle(App *a) {
     if (!p || p->d->dom_version == p->seen_ver) return;
     p->seen_ver = p->d->dom_version;
     bool sheets = sync_sheets(p, false);
-    style_recalc(p->e, &p->d->node, sheets);
+    { double q = now_ms(); style_recalc(p->e, &p->d->node, sheets); g_tr += now_ms() - q; }
     sync_images(p);
     p->img_check = true;
-    a->t->relayout = true; if (a->t == a->tabs[a->ti]) a->dirty = true;
+    if (sheets || p->e->layout_dirty || p->d->layout_version != p->lay_ver || g_no_paint_only) a->t->relayout = true;
+    p->e->layout_dirty = false; p->lay_ver = p->d->layout_version;
+    if (a->t == a->tabs[a->ti]) a->dirty = true;
 }
 static void history_go(App *a, int d);
 static void h_sync_in(void *ud, Document *d, bool layout) {
@@ -1323,6 +1340,7 @@ static void crash_handler(int sig) {
 }
 
 int main(int argc, char **argv) {
+    g_no_paint_only = getenv("LUMEN_NO_PAINT_ONLY") != NULL;
     signal(SIGSEGV, crash_handler); signal(SIGBUS, crash_handler); signal(SIGABRT, crash_handler);
     const char *start = argc > 1 ? argv[1] : "https://en.wikipedia.org/wiki/Web_browser";
     SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
@@ -1349,6 +1367,7 @@ int main(int argc, char **argv) {
         else if (SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_X11_DISPLAY_POINTER, NULL)) { src.kind = GPU_SURF_XLIB; src.a = SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_X11_DISPLAY_POINTER, NULL); src.win = (uint64_t)SDL_GetNumberProperty(pr, SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0); ok = true; }
         else if (SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_ANDROID_WINDOW_POINTER, NULL)) { src.kind = GPU_SURF_ANDROID; src.a = SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_ANDROID_WINDOW_POINTER, NULL); ok = true; }
         if (ok) a.gpu = gpu_create(&src, a.pw, a.ph, getenv("LUMEN_VULKAN") != NULL || strcmp(SDL_GetPlatform(), "macOS"));
+        media_yuv = gpu_yuv_ok(a.gpu) && !getenv("LUMEN_NO_YUV");
         if (!a.gpu && a.mview) { SDL_Metal_DestroyView(a.mview); a.mview = NULL; }
     }
     fprintf(stderr, "lumen: presenting with %s\n", gpu_backend_name(a.gpu));
@@ -1381,7 +1400,7 @@ int main(int argc, char **argv) {
         int to = a.t->loading ? 120 : 1000;
         for (int i = 0; i < a.ntabs; i++) { Tab *tb = a.tabs[i]; if (tb->cur && tb->cur->js) { double dl = js_next_deadline(tb->cur->js) - now_ms(); if (tb->limited && tb->budget < 0) dl = LMAX(dl, -tb->budget / tb->lim - (now_ms() - tb->bud_t)); if (dl < to) to = dl < 0 ? 0 : (int)dl; } }
         if (net_pending() && to > 50) to = 50;
-        { int mf = media_tick(); if (mf & 1) { if (!a.dirty) a.vonly = true; a.dirty = true; } if (mf & 2) a.t->relayout = true; }
+        { int mf = media_tick(); if (mf & 1) { if (!a.dirty && !a.deferred) a.vonly = true; a.dirty = a.vframe = true; } if (mf & 2) a.t->relayout = true; }
         if (!a.editing && page_focus(&a) && !SDL_TextInputActive(a.win)) SDL_StartTextInput(a.win);
         if (getenv("LUMEN_MEM_STATS")) {
             static double last_stats; double tn = now_ms();
@@ -1396,6 +1415,7 @@ int main(int argc, char **argv) {
         { int mt = media_timeout_ms(); if (mt >= 0 && mt < to) to = mt; }
         page_move_keep(&a); if (g_mv_p && to > 1000) to = 1000;
         if (a.vbars) { static double lb; double tn = now_ms(); if (tn - lb >= 500) { lb = tn; a.dirty = true; a.vonly = false; } if (to > 500) to = 500; }
+        if (a.deferred) { double r = 250 - (now_ms() - a.last_full); if (r <= 0) a.dirty = true; else if (r + 1 < to) to = (int)r + 1; }
         if (a.tip_until) { double r = a.tip_until - now_ms(); if (r <= 0) { a.tip_until = 0; a.dirty = true; a.vonly = false; } else if (r + 1 < to) to = (int)r + 1; }
         {
             bool want = false;
@@ -1409,7 +1429,9 @@ int main(int argc, char **argv) {
         { double now = now_ms(), gn; if (image_anim_tick(now, &gn)) { a.vonly = false; a.dirty = true; } if (gn > 0 && gn - now < to) to = gn - now < 1 ? 1 : (int)(gn - now); }
         if (!SDL_WaitEventTimeout(&ev, to)) { if (a.t->loading) a.dirty = true; }
         else do {
-            if (ev.type != EV_NET) a.vonly = false;
+            bool wheel0 = ev.type == SDL_EVENT_MOUSE_WHEEL && !ev.wheel.x && !ev.wheel.y;
+            if ((ev.type >= SDL_EVENT_KEY_DOWN && ev.type <= SDL_EVENT_TEXT_INPUT) || (ev.type >= SDL_EVENT_MOUSE_MOTION && ev.type <= SDL_EVENT_MOUSE_WHEEL && !wheel0)) a.last_input = now_ms();
+            if (ev.type != EV_NET && !wheel0) a.vonly = false;
             switch (ev.type) {
             case SDL_EVENT_QUIT: quit = true; break;
             case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: case SDL_EVENT_WINDOW_RESIZED: update_size(&a); break;

@@ -12,6 +12,7 @@ struct Gpu {
     WGPUTexture tex; WGPUTextureView view; WGPUBindGroup bg; int tw, th; int w, h; bool configured;
     WGPUBackendType backend;
     WGPUSampler vsamp; WGPUBuffer ubuf, vubuf; WGPUTexture vtex; WGPUTextureView vview; WGPUBindGroup vbg; int vtw, vth;
+    WGPURenderPipeline ypipe; WGPUBindGroupLayout ybgl; WGPUBuffer yubuf; WGPUTexture yt, ct; WGPUTextureView ytv, ctv; WGPUBindGroup ybg; int ytw, yth;
 };
 
 static const char *WGSL =
@@ -23,6 +24,20 @@ static const char *WGSL =
     "  let uv = vec2f(f32(i & 1u), f32(i >> 1u));\n"
     "  var o: V; o.p = vec4f(mix(r.xy, r.zw, uv), 0.0, 1.0); o.uv = uv; return o; }\n"
     "@fragment fn fs(v: V) -> @location(0) vec4f { return textureSample(t, s, v.uv); }\n";
+
+static const char *WGSL_YUV =
+    "@group(0) @binding(0) var ty: texture_2d<f32>;\n"
+    "@group(0) @binding(1) var s: sampler;\n"
+    "@group(0) @binding(2) var<uniform> r: array<vec4f, 3>;\n"
+    "@group(0) @binding(3) var tc: texture_2d<f32>;\n"
+    "struct V { @builtin(position) p: vec4f, @location(0) uv: vec2f };\n"
+    "@vertex fn vs(@builtin(vertex_index) i: u32) -> V {\n"
+    "  let uv = vec2f(f32(i & 1u), f32(i >> 1u));\n"
+    "  var o: V; o.p = vec4f(mix(r[0].xy, r[0].zw, uv), 0.0, 1.0); o.uv = uv; return o; }\n"
+    "@fragment fn fs(v: V) -> @location(0) vec4f {\n"
+    "  let y = (textureSample(ty, s, v.uv).r - r[2].x) * r[2].y;\n"
+    "  let c = (textureSample(tc, s, v.uv).rg - vec2f(128.0 / 255.0)) * r[2].z;\n"
+    "  return vec4f(clamp(vec3f(y + r[1].x * c.y, y - r[1].y * c.x - r[1].z * c.y, y + r[1].w * c.x), vec3f(0.0), vec3f(1.0)), 1.0); }\n";
 
 static WGPUStringView sv(const char *s) { return (WGPUStringView){ s, WGPU_STRLEN }; }
 
@@ -113,12 +128,16 @@ Gpu *gpu_create(const GpuSurfSrc *src, int w, int h, bool prefer_vulkan) {
     wgpuShaderModuleRelease(sm);
     if (!g->pipe) goto fail;
     g->bgl = wgpuRenderPipelineGetBindGroupLayout(g->pipe, 0);
+    ws.code = sv(WGSL_YUV); sm = wgpuDeviceCreateShaderModule(g->dev, &smd);
+    if (sm) { pd.vertex.module = fs.module = sm; g->ypipe = wgpuDeviceCreateRenderPipeline(g->dev, &pd); wgpuShaderModuleRelease(sm); }
+    if (g->ypipe) g->ybgl = wgpuRenderPipelineGetBindGroupLayout(g->ypipe, 0);
     WGPUSamplerDescriptor smp = WGPU_SAMPLER_DESCRIPTOR_INIT;
     g->samp = wgpuDeviceCreateSampler(g->dev, &smp);
     WGPUSamplerDescriptor vsmp = WGPU_SAMPLER_DESCRIPTOR_INIT; vsmp.magFilter = WGPUFilterMode_Linear; vsmp.minFilter = WGPUFilterMode_Linear;
     g->vsamp = wgpuDeviceCreateSampler(g->dev, &vsmp);
     WGPUBufferDescriptor ub = WGPU_BUFFER_DESCRIPTOR_INIT; ub.size = 16; ub.usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst;
     g->ubuf = wgpuDeviceCreateBuffer(g->dev, &ub); g->vubuf = wgpuDeviceCreateBuffer(g->dev, &ub);
+    ub.size = 48; g->yubuf = wgpuDeviceCreateBuffer(g->dev, &ub);
     float full[4] = { -1, 1, 1, -1 }; wgpuQueueWriteBuffer(g->q, g->ubuf, 0, full, sizeof full);
     configure(g);
     return g;
@@ -150,6 +169,30 @@ static void ensure_vtex(Gpu *g, int w, int h) {
     g->vbg = make_bg(g, g->vview, g->vsamp, g->vubuf);
     g->vtw = w; g->vth = h;
 }
+static void free_ytex(Gpu *g) {
+    if (g->ybg) wgpuBindGroupRelease(g->ybg);
+    if (g->ytv) wgpuTextureViewRelease(g->ytv);
+    if (g->ctv) wgpuTextureViewRelease(g->ctv);
+    if (g->yt) { wgpuTextureDestroy(g->yt); wgpuTextureRelease(g->yt); }
+    if (g->ct) { wgpuTextureDestroy(g->ct); wgpuTextureRelease(g->ct); }
+    g->ybg = NULL; g->ytv = g->ctv = NULL; g->yt = g->ct = NULL;
+}
+static WGPUTexture mk_tex(Gpu *g, int w, int h, WGPUTextureFormat f) {
+    WGPUTextureDescriptor td = WGPU_TEXTURE_DESCRIPTOR_INIT; td.size = (WGPUExtent3D){ (uint32_t)w, (uint32_t)h, 1 }; td.format = f;
+    td.usage = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopyDst;
+    return wgpuDeviceCreateTexture(g->dev, &td);
+}
+static void ensure_ytex(Gpu *g, int w, int h) {
+    if (g->yt && g->ytw == w && g->yth == h) return;
+    free_ytex(g);
+    g->yt = mk_tex(g, w, h, WGPUTextureFormat_R8Unorm); g->ct = mk_tex(g, (w + 1) / 2, (h + 1) / 2, WGPUTextureFormat_RG8Unorm);
+    g->ytv = wgpuTextureCreateView(g->yt, NULL); g->ctv = wgpuTextureCreateView(g->ct, NULL);
+    WGPUBindGroupEntry e[4] = { WGPU_BIND_GROUP_ENTRY_INIT, WGPU_BIND_GROUP_ENTRY_INIT, WGPU_BIND_GROUP_ENTRY_INIT, WGPU_BIND_GROUP_ENTRY_INIT };
+    e[0].binding = 0; e[0].textureView = g->ytv; e[1].binding = 1; e[1].sampler = g->vsamp; e[2].binding = 2; e[2].buffer = g->yubuf; e[2].size = 48; e[3].binding = 3; e[3].textureView = g->ctv;
+    WGPUBindGroupDescriptor bd = WGPU_BIND_GROUP_DESCRIPTOR_INIT; bd.layout = g->ybgl; bd.entryCount = 4; bd.entries = e;
+    g->ybg = wgpuDeviceCreateBindGroup(g->dev, &bd); g->ytw = w; g->yth = h;
+}
+bool gpu_yuv_ok(Gpu *g) { return g && g->ypipe && g->ybgl && g->yubuf; }
 static void ensure_tex(Gpu *g, int w, int h) {
     if (g->tex && g->tw == w && g->th == h) return;
     if (g->bg) wgpuBindGroupRelease(g->bg);
@@ -179,7 +222,22 @@ bool gpu_present_frame(Gpu *g, const uint32_t *px, int w, int h, int stride, int
         WGPUExtent3D ext = { (uint32_t)w, (uint32_t)(y1 - y0), 1 };
         wgpuQueueWriteTexture(g->q, &dst, px + (size_t)y0 * (size_t)stride, (size_t)stride * 4 * (size_t)(y1 - y0), &lay, &ext);
     }
-    bool vid = v && v->px && v->w > 0 && v->h > 0;
+    bool yv = v && v->yuv && gpu_yuv_ok(g) && v->w > 0 && v->h > 0, vid = !yv && v && v->px && v->w > 0 && v->h > 0;
+    if (yv) {
+        ensure_ytex(g, v->w, v->h);
+        int cw = (v->w + 1) / 2, ch = (v->h + 1) / 2;
+        WGPUTexelCopyTextureInfo dst = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT; dst.texture = g->yt;
+        WGPUTexelCopyBufferLayout lay = WGPU_TEXEL_COPY_BUFFER_LAYOUT_INIT; lay.bytesPerRow = (uint32_t)v->w; lay.rowsPerImage = (uint32_t)v->h;
+        WGPUExtent3D ext = { (uint32_t)v->w, (uint32_t)v->h, 1 };
+        wgpuQueueWriteTexture(g->q, &dst, v->yuv, (size_t)v->w * (size_t)v->h, &lay, &ext);
+        dst.texture = g->ct; lay.bytesPerRow = (uint32_t)cw * 2; lay.rowsPerImage = (uint32_t)ch; ext = (WGPUExtent3D){ (uint32_t)cw, (uint32_t)ch, 1 };
+        wgpuQueueWriteTexture(g->q, &dst, v->yuv + (size_t)v->w * (size_t)v->h, (size_t)cw * 2 * (size_t)ch, &lay, &ext);
+        bool b709 = v->mat & 1, full = v->mat & 2;
+        float u[12] = { v->x0 / w * 2 - 1, 1 - v->y0 / h * 2, v->x1 / w * 2 - 1, 1 - v->y1 / h * 2,
+                        b709 ? 1.5748f : 1.402f, b709 ? 0.1873f : 0.344136f, b709 ? 0.4681f : 0.714136f, b709 ? 1.8556f : 1.772f,
+                        full ? 0 : 16.f / 255, full ? 1 : 255.f / 219, full ? 1 : 255.f / 224, 0 };
+        wgpuQueueWriteBuffer(g->q, g->yubuf, 0, u, sizeof u);
+    }
     if (vid) {
         ensure_vtex(g, v->w, v->h);
         WGPUTexelCopyTextureInfo dst = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT; dst.texture = g->vtex;
@@ -203,6 +261,7 @@ bool gpu_present_frame(Gpu *g, const uint32_t *px, int w, int h, int stride, int
     ca.view = tv; ca.loadOp = WGPULoadOp_Clear; ca.storeOp = WGPUStoreOp_Store; ca.clearValue = (WGPUColor){ 1, 1, 1, 1 };
     WGPURenderPassDescriptor rp = WGPU_RENDER_PASS_DESCRIPTOR_INIT; rp.colorAttachmentCount = 1; rp.colorAttachments = &ca;
     WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(enc, &rp);
+    if (yv) { wgpuRenderPassEncoderSetPipeline(pass, g->ypipe); wgpuRenderPassEncoderSetBindGroup(pass, 0, g->ybg, 0, NULL); wgpuRenderPassEncoderDraw(pass, 4, 1, 0, 0); }
     wgpuRenderPassEncoderSetPipeline(pass, g->pipe);
     if (vid) { wgpuRenderPassEncoderSetBindGroup(pass, 0, g->vbg, 0, NULL); wgpuRenderPassEncoderDraw(pass, 4, 1, 0, 0); }
     wgpuRenderPassEncoderSetBindGroup(pass, 0, g->bg, 0, NULL);
@@ -232,6 +291,10 @@ void gpu_destroy(Gpu *g) {
     if (g->view) wgpuTextureViewRelease(g->view);
     if (g->tex) { wgpuTextureDestroy(g->tex); wgpuTextureRelease(g->tex); }
     if (g->samp) wgpuSamplerRelease(g->samp);
+    free_ytex(g);
+    if (g->ypipe) wgpuRenderPipelineRelease(g->ypipe);
+    if (g->ybgl) wgpuBindGroupLayoutRelease(g->ybgl);
+    if (g->yubuf) wgpuBufferRelease(g->yubuf);
     if (g->vbg) wgpuBindGroupRelease(g->vbg);
     if (g->vview) wgpuTextureViewRelease(g->vview);
     if (g->vtex) { wgpuTextureDestroy(g->vtex); wgpuTextureRelease(g->vtex); }

@@ -56,9 +56,10 @@ static void mark_connected(Node *n, bool on) {
 }
 static bool is_connected(Node *p) { return p->type == NODE_DOCUMENT || (p->flags & NF_CONNECTED); }
 
-void doc_mark_dirty(Document *d, Node *n) {
+static void mark(Document *d, Node *n, bool layout) {
     if (!d) return;
     d->dom_version++;
+    if (layout) d->layout_version++;
     if (n) {
         n->flags |= NF_STYLE_DIRTY | NF_LAYOUT_DIRTY;
         for (Node *p = n->parent; p; p = p->parent ? p->parent : p->host) {
@@ -69,6 +70,9 @@ void doc_mark_dirty(Document *d, Node *n) {
     }
     if (d->on_mutation) d->on_mutation(d, n);
 }
+void doc_mark_dirty(Document *d, Node *n) { mark(d, n, true); }
+void doc_mark_style_dirty(Document *d, Node *n) { mark(d, n, false); }
+static bool style_only_attr(const char *name) { return !strcmp(name, "style") || !strcmp(name, "class"); }
 
 void node_insert_before(Node *parent, Node *child, Node *ref) {
     if (child->type == NODE_FRAGMENT) {
@@ -154,7 +158,7 @@ void node_set_attr(Node *n, const char *name, const char *value) {
     if (n->attrs[i].name == A_id) n->id = n->attrs[i].value;
     /* re-point cached id after realloc */
     for (int k = 0; k < n->nattrs; k++) if (n->attrs[k].name == A_id) n->id = n->attrs[k].value;
-    doc_mark_dirty(n->doc, n);
+    mark(n->doc, n, !style_only_attr(name));
 }
 void node_remove_attr(Node *n, const char *name) {
     int i = attr_index(n, name); if (i < 0) return;
@@ -162,7 +166,7 @@ void node_remove_attr(Node *n, const char *name) {
     free(n->attrs[i].value);
     memmove(&n->attrs[i], &n->attrs[i + 1], sizeof(Attr) * (size_t)(n->nattrs - i - 1)); n->nattrs--;
     for (int k = 0; k < n->nattrs; k++) if (n->attrs[k].name == A_id) n->id = n->attrs[k].value;
-    doc_mark_dirty(n->doc, n);
+    mark(n->doc, n, !style_only_attr(name));
 }
 bool node_has_class(const Node *n, const char *cls) {
     const char *c = node_attr(n, "class"); if (!c) return false;

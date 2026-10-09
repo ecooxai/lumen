@@ -156,7 +156,8 @@ typedef struct StyleEngine {
     uint32_t order_counter;
     Document *doc;
     uint64_t generation;
-    int stats_matched;
+    int stats_matched, stats_paint;
+    bool layout_dirty;          /* a recalc changed something other than paint-only properties */
 } StyleEngine;
 
 StyleSheet *css_parse_sheet(const char *src, size_t n, const char *base_url, int origin, const MediaCtx *mc);

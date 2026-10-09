@@ -56,6 +56,7 @@ typedef struct Document {
     bool quirks;
     int ready_state;              /* 0 loading, 1 interactive, 2 complete */
     uint64_t dom_version;         /* bumped on any mutation */
+    uint64_t layout_version;      /* bumped on mutations that can change layout beyond computed style */
     HMap id_cache; uint64_t id_cache_ver; bool id_cache_ok; /* id -> first element, rebuilt per dom_version */
     void *stylesheets;            /* css engine data */
     struct Node *focus;
@@ -94,6 +95,7 @@ char *node_serialize(const Node *n, bool outer);  /* innerHTML/outerHTML */
 Node *node_next_in_tree(Node *n, Node *root);     /* pre-order traversal */
 Node *doc_get_element_by_id(Document *d, const char *id);
 void doc_mark_dirty(Document *d, Node *n);         /* style + layout dirty */
+void doc_mark_style_dirty(Document *d, Node *n);   /* style only: layout follows from the computed style diff */
 void dom_dump(const Node *n, int depth, FILE *f);
 bool node_is_inclusive_ancestor(const Node *a, const Node *b);
 
