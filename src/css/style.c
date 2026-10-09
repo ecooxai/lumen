@@ -116,12 +116,32 @@ bool css_parse_color(const char *in, Color *out, Color current) {
         *out = RGBA((int)(hue2rgb(p, q, h + 1.f / 3) * 255 + .5f), (int)(hue2rgb(p, q, h) * 255 + .5f), (int)(hue2rgb(p, q, h - 1.f / 3) * 255 + .5f), (int)LCLAMP(a * 255 + .5f, 0, 255));
         return true;
     }
-    if (str_starts(s, "color-mix(")) {
-        /* approximate: take first color */
-        const char *c = strchr(s, ','); if (!c) return false;
-        char t[96]; snprintf(t, sizeof t, "%s", c + 1); char *e = strpbrk(t, " ,"); if (e && *e == ' ' && strchr(t, ',')) { } char *comma = strchr(t, ','); if (comma) *comma = 0;
-        char *pct = strrchr(t, ' '); if (pct && strchr(pct, '%')) *pct = 0;
-        return css_parse_color(t, out, current);
+    if (str_starts(s, "color-mix(")) {   /* color-mix(in <space>, c1 [p1], c2 [p2]): premultiplied sRGB mix */
+        char a[3][128]; int na = 0, d = 0; size_t k = 0;
+        for (const char *q = s + 10; *q && na < 3; q++) {
+            if (*q == '(') d++;
+            else if (*q == ')' && d-- == 0) { a[na][k] = 0; na++; break; }
+            if (*q == ',' && d == 0) { a[na][k] = 0; na++; k = 0; continue; }
+            if (k < sizeof a[0] - 1) a[na][k++] = *q;
+        }
+        if (na != 3) return false;
+        Color c[2]; float w[2]; bool hw[2];
+        for (int i = 0; i < 2; i++) {
+            char *t = a[i + 1]; while (*t == ' ') t++;
+            char *e = t + strlen(t); while (e > t && e[-1] == ' ') *--e = 0;
+            hw[i] = false; w[i] = 0;
+            char *sp = NULL; int dd = 0; for (char *q = t; *q; q++) { if (*q == '(') dd++; else if (*q == ')') dd--; else if (*q == ' ' && !dd) sp = q; }
+            if (sp && e > t && e[-1] == '%') { w[i] = (float)atof(sp + 1) / 100; hw[i] = true; *sp = 0; }
+            else if (*t && isdigit((unsigned char)*t) && (sp = strchr(t, ' ')) && sp[-1] == '%') { w[i] = (float)atof(t) / 100; hw[i] = true; t = sp + 1; }
+            if (!css_parse_color(t, &c[i], current)) return false;
+        }
+        if (!hw[0] && !hw[1]) w[0] = w[1] = .5f; else if (!hw[0]) w[0] = 1 - w[1]; else if (!hw[1]) w[1] = 1 - w[0];
+        float sum = w[0] + w[1]; if (sum <= 0) return false;
+        float mult = sum < 1 ? sum : 1; w[0] /= sum; w[1] /= sum;
+        float a0 = COLOR_A(c[0]) / 255.f * w[0], a1 = COLOR_A(c[1]) / 255.f * w[1], al = a0 + a1;
+        if (al <= 0) { *out = 0; return true; }
+        int r = (int)((COLOR_R(c[0]) * a0 + COLOR_R(c[1]) * a1) / al + .5f), g = (int)((COLOR_G(c[0]) * a0 + COLOR_G(c[1]) * a1) / al + .5f), b = (int)((COLOR_B(c[0]) * a0 + COLOR_B(c[1]) * a1) / al + .5f);
+        *out = RGBA(r, g, b, (int)LCLAMP(al * mult * 255 + .5f, 0, 255)); return true;
     }
     if (str_starts(s, "light-dark(")) { char t[96]; snprintf(t, sizeof t, "%s", s + 11); char *c = strchr(t, ','); if (c) *c = 0; return css_parse_color(t, out, current); }
     if (str_starts(s, "oklch(") || str_starts(s, "lab(") || str_starts(s, "lch(") || str_starts(s, "oklab(")) { float v[4] = {0, 0, 0, 1}; bool pc[4] = {0}; int n = parse_fn_args(strchr(s, '(') + 1, v, pc, 4); if (n < 3) return false; int g = (int)LCLAMP((pc[0] ? v[0] / 100 : (s[0] == 'o' ? v[0] : v[0] / 100)) * 255, 0, 255); *out = RGBA(g, g, g, (int)(LCLAMP(n > 3 ? v[3] : 1, 0, 1) * 255)); return true; }
