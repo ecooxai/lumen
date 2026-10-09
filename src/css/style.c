@@ -58,6 +58,7 @@ void style_free(ComputedStyle *s) {
     free(s->bg_image); free(s->mask_image); free(s->bg_gradient); free(s->content); free(s->grid_cols); free(s->grid_rows); free(s->grid_areas); free(s->grid_area);
     custom_unref(s->custom);
     if (s->before) style_free(s->before);
+    if (s->marker) style_free(s->marker);
     if (s->after) style_free(s->after);
     free(s);
 }
@@ -1171,7 +1172,7 @@ static ComputedStyle *compute_pseudo(StyleEngine *e, Node *el, ComputedStyle *ba
     for (int i = 0; i < md.n; i++) if (md.v[i].d->prop[0] == '-' && md.v[i].d->prop[1] == '-') css_apply_decl(st, base, md.v[i].d->prop, md.v[i].d->value, e, el);
     for (int i = 0; i < md.n; i++) if (!(md.v[i].d->prop[0] == '-' && md.v[i].d->prop[1] == '-')) css_apply_decl(st, base, md.v[i].d->prop, md.v[i].d->value, e, el);
     vec_free(md);
-    if (!st->content) { style_free(st); return NULL; }
+    if (!st->content && which != 4) { style_free(st); return NULL; }
     return st;
 }
 
@@ -1264,7 +1265,7 @@ static bool paint_only(const ComputedStyle *a, const ComputedStyle *b) {
     if (a->grid_ncols != b->grid_ncols || a->grid_nrows != b->grid_nrows) return false;
     if (a->grid_ncols && memcmp(a->grid_cols, b->grid_cols, sizeof *a->grid_cols * (size_t)a->grid_ncols)) return false;
     if (a->grid_nrows && memcmp(a->grid_rows, b->grid_rows, sizeof *a->grid_rows * (size_t)a->grid_nrows)) return false;
-    if (!paint_only(a->before, b->before) || !paint_only(a->after, b->after)) return false;
+    if (!paint_only(a->before, b->before) || !paint_only(a->after, b->after) || !paint_only(a->marker, b->marker)) return false;
     ComputedStyle x = *a, y = *b;
 #define PO_Z(f) (memset(&x.f, 0, sizeof x.f), memset(&y.f, 0, sizeof y.f))
     PO_Z(refs); PO_Z(grid_cols); PO_Z(grid_rows); PO_Z(content); PO_Z(grid_areas); PO_Z(grid_area); PO_Z(before); PO_Z(after); PO_Z(custom);
@@ -1280,12 +1281,12 @@ static bool paint_only(const ComputedStyle *a, const ComputedStyle *b) {
 }
 /* moves nw's values into old (keeping old's address, which boxes point at); nw is left holding old's values */
 static void adopt(ComputedStyle *old, ComputedStyle *nw) {
-    ComputedStyle *ob = old->before, *oa = old->after, *nb = nw->before, *na = nw->after;
+    ComputedStyle *ob = old->before, *oa = old->after, *om = old->marker, *nb = nw->before, *na = nw->after, *nm = nw->marker;
     if (ob) adopt(ob, nb);
     if (oa) adopt(oa, na);
     ComputedStyle t = *old; int refs = old->refs;
-    *old = *nw; old->refs = refs; old->before = ob; old->after = oa;
-    *nw = t; nw->refs = 1; nw->before = nb; nw->after = na;
+    *old = *nw; old->refs = refs; old->before = ob; old->after = oa; old->marker = nm;
+    *nw = t; nw->refs = 1; nw->before = nb; nw->after = na; nw->marker = om;
 }
 
 static void recalc(StyleEngine *e, Node *n, const ComputedStyle *par, bool force) {
@@ -1294,7 +1295,7 @@ static void recalc(StyleEngine *e, Node *n, const ComputedStyle *par, bool force
         if (need) {
             ComputedStyle *st = compute(e, n, par);
             if (st->display != D_NONE) {
-                if (e->idx.count) { st->before = compute_pseudo(e, n, st, 1); st->after = compute_pseudo(e, n, st, 2); }
+                if (e->idx.count) { st->before = compute_pseudo(e, n, st, 1); st->after = compute_pseudo(e, n, st, 2); if (st->display == D_LIST_ITEM) st->marker = compute_pseudo(e, n, st, 4); }
             }
             if (css_style_change_hook) css_style_change_hook(n, n->style, st);
             if (n->style && paint_only(n->style, st)) { adopt(n->style, st); style_free(st); e->stats_paint++; }

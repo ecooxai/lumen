@@ -100,7 +100,7 @@ typedef struct ComputedStyle {
     const char *anim_name; float anim_dur, anim_delay, anim_iter; /* first animation layer; name is an atom */
     const char *tr_prop; float tr_dur, tr_delay;                 /* transition-property list atom (NULL = all), max times */
     CustomProps *custom;
-    struct ComputedStyle *before, *after; /* pseudo element styles */
+    struct ComputedStyle *before, *after, *marker; /* pseudo element styles */
 } ComputedStyle;
 
 /* called on every element restyle (old may be NULL); used to fire animation/transition events */

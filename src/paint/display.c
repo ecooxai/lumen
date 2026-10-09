@@ -133,7 +133,7 @@ static void paint_text_frag(PB *p, TextFrag *f) {
 }
 
 static void paint_marker(PB *p, Box *b) {
-    const ComputedStyle *s = b->st;
+    const ComputedStyle *s = b->st, *ms = s->marker ? s->marker : s;
     if (s->list_style == LST_NONE) return;
     const Box *lb = b;
     while (lb && !lb->nlines) {
@@ -142,14 +142,14 @@ static void paint_marker(PB *p, Box *b) {
         lb = c;
     }
     if (!lb) return;
-    Font *f = style_font(s);
+    Font *f = style_font(ms);
     float base = lb->lines[0].base + p->dy, x = b->x + p->dx;
     if (s->list_style == LST_DISC || s->list_style == LST_CIRCLE || s->list_style == LST_SQUARE) {
-        float d = LMAX(4, s->font_size * 0.33f), cy = base - (f ? f->x_height / 2 : d / 2);
+        float d = LMAX(4, ms->font_size * 0.33f), cy = base - (f ? f->x_height / 2 : d / 2);
         DItem *it = emit(p, s->list_style == LST_CIRCLE ? DO_BORDER : DO_RECT);
-        it->x = x - d - s->font_size * 0.5f; it->y = cy - d / 2; it->w = d; it->h = d; it->color = s->color;
+        it->x = x - d - ms->font_size * 0.5f; it->y = cy - d / 2; it->w = d; it->h = d; it->color = ms->color;
         if (s->list_style != LST_SQUARE) for (int i = 0; i < 4; i++) it->r[i] = d / 2;
-        if (it->op == DO_BORDER) for (int i = 0; i < 4; i++) { it->bw[i] = 1; it->bc[i] = s->color; it->bs[i] = BS_SOLID; }
+        if (it->op == DO_BORDER) for (int i = 0; i < 4; i++) { it->bw[i] = 1; it->bc[i] = ms->color; it->bs[i] = BS_SOLID; }
         return;
     }
     char buf[32]; int n = b->list_index;
@@ -160,8 +160,8 @@ static void paint_marker(PB *p, Box *b) {
         buf[k++] = '.'; buf[k] = 0;
     } else snprintf(buf, sizeof buf, "%d.", n);
     ShapedRun r; text_shape(f, buf, strlen(buf), 0, &r);
-    DItem *it = emit(p, DO_TEXT); it->g = arena_alloc(&p->dl->arena, sizeof(DGlyph) * (size_t)LMAX(1, r.n)); it->color = s->color;
-    float x0 = x - r.width - s->font_size * 0.4f;
+    DItem *it = emit(p, DO_TEXT); it->g = arena_alloc(&p->dl->arena, sizeof(DGlyph) * (size_t)LMAX(1, r.n)); it->color = ms->color;
+    float x0 = x - r.width - ms->font_size * 0.4f;
     for (int i = 0; i < r.n; i++) { DGlyph *d = &it->g[it->ng++]; d->gid = r.g[i].gid; d->font = r.g[i].font; d->x = x0 + r.g[i].x; d->y = base + r.g[i].y; }
     shaped_free(&r);
 }

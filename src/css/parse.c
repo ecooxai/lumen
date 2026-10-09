@@ -216,7 +216,7 @@ static bool parse_compound(SP *p, Compound *c, Selector *sel) {
             s.name = atom(nm); free(nm);
             if (!el && (s.name == atom("before") || s.name == atom("after") || s.name == atom("first-line") || s.name == atom("first-letter"))) el = true;
             s.kind = el ? SK_PSEUDO_EL : SK_PSEUDO;
-            if (el) sel->pseudo_el = s.name == atom("before") ? 1 : s.name == atom("after") ? 2 : 3;
+            if (el) sel->pseudo_el = s.name == atom("before") ? 1 : s.name == atom("after") ? 2 : s.name == atom("marker") ? 4 : 3;
             if ((p->i >= p->n || p->s[p->i] != '(') && (s.name == atom("not") || s.name == atom("is") || s.name == atom("where") || s.name == atom("has") || str_starts(s.name, "nth-"))) goto fail;
             if (p->i < p->n && p->s[p->i] == '(') {
                 p->i++;
