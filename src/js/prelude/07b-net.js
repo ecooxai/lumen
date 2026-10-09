@@ -405,7 +405,8 @@ for (const k of ['url', 'readyState', 'bufferedAmount', 'onopen', 'onerror', 'on
 }
 for (const k of ['wasClean', 'code', 'reason']) { const d = Object.getOwnPropertyDescriptor(CloseEvent.prototype, k); d.enumerable = true; Object.defineProperty(CloseEvent.prototype, k, d); }
 for (const [k, v] of Object.entries({ CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3 })) { Object.defineProperty(WebSocket, k, { value: v, enumerable: true }); Object.defineProperty(WebSocket.prototype, k, { value: v, enumerable: true }); }
-class MessagePort extends EventTarget { constructor() { super(); this.onmessage = null; def(this, '_other', null); } postMessage(d) { const r = this._wk || (this._other && this._other._wk); if (r) { N.workerPost(r[0], { __lumenPort: r[1], data: d }); return; } const o = this._other; if (o) setTimeout(() => { dispatch(o, new MessageEvent('message', { data: structuredClone(d) }), true); }); } start() {} close() { this._other = null; } }
+const portList = t => (t && typeof t[Symbol.iterator] === 'function' ? [...t] : t && t.transfer ? [...t.transfer] : []).filter(p => p && typeof p.postMessage === 'function' && typeof p.start === 'function');
+class MessagePort extends EventTarget { constructor() { super(); this.onmessage = null; def(this, '_other', null); } postMessage(d, t) { const ps = portList(t), r = this._wk || (this._other && this._other._wk); if (r) { N.workerPost(r[0], { __lumenPort: r[1], data: d, xfer: ps.map(p => { const k = ++portSeq; p._wk = [r[0], k]; if (p._other) remotePorts.set(k, p._other); return k; }) }); return; } const o = this._other; if (o) { const c = structuredClone(d); setTimeout(() => o._deliver(c, ps)); } } _deliver(data, ports) { dispatch(this, new MessageEvent('message', { data, ports: ports || [] }), true); } start() {} close() { this._other = null; } }
 class MessageChannel { constructor() { this.port1 = new MessagePort(); this.port2 = new MessagePort(); this.port1._other = this.port2; this.port2._other = this.port1; } }
 class BroadcastChannel extends EventTarget { constructor(n) { super(); this.name = String(n); } postMessage() {} close() {} }
 
@@ -431,7 +432,7 @@ function workerEvent(id, kind, data, message, filename, lineno, colno) {
     if (kind === 0) {
         let ports = [];
         if (data && typeof data === 'object') {
-            if (data.__lumenPort) { const p = remotePorts.get(data.__lumenPort); if (p) dispatch(p, new MessageEvent('message', { data: data.data }), true); return; }
+            if (data.__lumenPort) { const p = remotePorts.get(data.__lumenPort); if (p) p._deliver(data.data, (data.xfer || []).map(k => { const q = new MessagePort(); q._wk = [id, k]; remotePorts.set(k, q); return q; })); return; }
             if (data.__lumenXfer) { ports = data.__lumenXfer.map(k => { const q = new MessagePort(); q._wk = [id, k]; remotePorts.set(k, q); return q; }); data = data.data; }
         }
         dispatch(w, new MessageEvent('message', { data, ports }), true);

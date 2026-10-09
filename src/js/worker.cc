@@ -337,7 +337,7 @@ const console = { log: (...a) => W.log(1, fmt(a)), info: (...a) => W.log(1, fmt(
 const wports = new Map(); let wpseq = 0;
 class MessagePort extends EventTarget {
     constructor() { super(); this.onmessage = null; this.onmessageerror = null; Object.defineProperty(this, '_other', { value: null, writable: true }); Object.defineProperty(this, '_k', { value: 0, writable: true }); }
-    postMessage(d) { const k = this._k || (this._other && this._other._k); if (k) { W.post({ __lumenPort: k, data: d }); return; } const o = this._other; if (o) setTimeout(() => { const e = new MessageEvent('message', { data: W.clone(d) }); e.isTrusted = true; fireOn(o, e); }); }
+    postMessage(d, t) { const ps = (Array.isArray(t) ? t : t && t.transfer || []).filter(p => p instanceof MessagePort), k = this._k || (this._other && this._other._k); if (k) { W.post({ __lumenPort: k, data: d, xfer: ps.map(p => { const j = -(++wpseq); p._k = j; if (p._other) wports.set(j, p._other); return j; }) }); return; } const o = this._other; if (o) { const c = W.clone(d); setTimeout(() => { const e = new MessageEvent('message', { data: c, ports: ps }); e.isTrusted = true; fireOn(o, e); }); } }
     start() {} close() { this._other = null; }
 }
 class MessageChannel { constructor() { this.port1 = new MessagePort(); this.port2 = new MessagePort(); this.port1._other = this.port2; this.port2._other = this.port1; } }
@@ -358,7 +358,7 @@ return {
     onmsg(data) {
         let ports = [];
         if (data && typeof data === 'object') {
-            if (data.__lumenPort) { const p = wports.get(data.__lumenPort); if (p) { const e = new MessageEvent('message', { data: data.data }); e.isTrusted = true; fireOn(p, e); } return; }
+            if (data.__lumenPort) { const p = wports.get(data.__lumenPort); if (p) { const e = new MessageEvent('message', { data: data.data, ports: (data.xfer || []).map(k => { const q = new MessagePort(); q._k = k; wports.set(k, q); return q; }) }); e.isTrusted = true; fireOn(p, e); } return; }
             if (data.__lumenXfer) { ports = data.__lumenXfer.map(k => { const q = new MessagePort(); q._k = k; wports.set(k, q); return q; }); data = data.data; }
         }
         const e = new MessageEvent('message', { data, ports }); e.isTrusted = true; fireOn(G, e);
