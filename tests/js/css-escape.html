@@ -1,0 +1,11 @@
+<!doctype html>
+<style>.x{background-image:url(data:image/svg+xml,%3csvg\ xmlns=\'http://www.w3.org/2000/svg\'%3e%3c/svg%3e)}#a{display:flex}</style>
+<style>@layer base{.y\'z{color:red}#b{display:grid}}</style>
+<div id=a>a</div><div id=b>b</div>
+<script>
+setTimeout(() => {
+  const d = id => getComputedStyle(document.getElementById(id)).display;
+  const n = document.styleSheets[1].cssRules[0].cssRules.length;
+  console.log('RESULTS css-escape cssomRules:' + (n === 2 ? 'PASS' : 'FAIL' + n) + ' unquotedUrl:' + (d('a') === 'flex' ? 'PASS' : 'FAIL') + ' escapedSelector:' + (d('b') === 'grid' ? 'PASS' : 'FAIL'));
+}, 100);
+</script>

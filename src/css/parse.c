@@ -169,6 +169,7 @@ static size_t find_close_paren(const char *s, size_t i, size_t n) {
     for (; i < n; i++) {
         char c = s[i];
         if (q) { if (c == '\\') i++; else if (c == q) q = 0; continue; }
+        if (c == '\\') { i++; continue; }
         if (c == '"' || c == '\'') q = c;
         else if (c == '(') depth++;
         else if (c == ')') { if (--depth == 0) return i; }
@@ -375,6 +376,7 @@ DeclList *css_parse_decls(const char *s, size_t n) {
         while (i < n) {
             char c = s[i];
             if (q) { if (c == '\\') i++; else if (c == q) q = 0; }
+            else if (c == '\\') i++;
             else if (c == '"' || c == '\'') q = c;
             else if (c == '(' || c == '[' || c == '{') depth++;
             else if (c == ')' || c == ']' || c == '}') { if (!depth) break; depth--; }
@@ -553,6 +555,7 @@ static size_t skip_block(const char *s, size_t i, size_t n) {
         char c = s[i];
         if (q) { if (c == '\\') i++; else if (c == q) q = 0; continue; }
         if (c == '/' && i + 1 < n && s[i + 1] == '*') { const char *e = NULL; for (size_t k = i + 2; k + 1 < n; k++) if (s[k] == '*' && s[k + 1] == '/') { e = s + k; break; } i = e ? (size_t)(e - s) + 1 : n; continue; }
+        if (c == '\\') { i++; continue; }
         if (c == '"' || c == '\'') q = c;
         else if (c == '{') depth++;
         else if (c == '}') { if (--depth == 0) return i + 1; }
@@ -603,6 +606,7 @@ static void parse_style_block(PCtx *c, const char *sel, const char *body, size_t
     size_t i = 0, st = 0;
     while (i < bn) {
         char ch = body[i];
+        if (ch == '\\') { i += 2; continue; }
         if (ch == '"' || ch == '\'') { char q = ch; i++; while (i < bn && body[i] != q) { if (body[i] == '\\') i++; i++; } i++; continue; }
         if (ch == '(') { i = find_close_paren(body, i + 1, bn) + 1; continue; }
         if (ch == ';') { sb_put(&decls, body + st, i - st + 1); st = i + 1; i++; continue; }
@@ -641,6 +645,7 @@ static void parse_rules(PCtx *c, const char *s, size_t n, const char *parent_sel
         while (i < n) {
             char ch = s[i];
             if (q) { if (ch == '\\') i++; else if (ch == q) q = 0; i++; continue; }
+            if (ch == '\\') { i += 2; continue; }
             if (ch == '"' || ch == '\'') q = ch;
             else if (ch == '(' || ch == '[') depth++;
             else if (ch == ')' || ch == ']') depth--;

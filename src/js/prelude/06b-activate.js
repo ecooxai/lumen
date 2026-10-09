@@ -42,10 +42,11 @@ function cssSplit(s) {
     while (i < n) {
         const c = s[i];
         if (c === '/' && s[i + 1] === '*') { const e = s.indexOf('*/', i + 2); i = e < 0 ? n : e + 2; pre += ' '; continue; }
+        if (c === '\\') { pre += s.slice(i, i + 2); i += 2; continue; }
         if (c === '"' || c === "'") { const j = skipStr(i, c); pre += s.slice(i, j + 1); i = j + 1; continue; }
         if (c === '{') {
             let d = 1, j = i + 1;
-            while (j < n && d) { const k = s[j]; if (k === '"' || k === "'") j = skipStr(j, k); else if (k === '/' && s[j + 1] === '*') { const e = s.indexOf('*/', j + 2); j = e < 0 ? n : e + 1; } else if (k === '{') d++; else if (k === '}') d--; j++; }
+            while (j < n && d) { const k = s[j]; if (k === '\\') j++; else if (k === '"' || k === "'") j = skipStr(j, k); else if (k === '/' && s[j + 1] === '*') { const e = s.indexOf('*/', j + 2); j = e < 0 ? n : e + 1; } else if (k === '{') d++; else if (k === '}') d--; j++; }
             out.push({ pre: pre.trim(), body: s.slice(i + 1, d ? j : j - 1) }); pre = ''; i = j; continue;
         }
         if (c === ';' && pre.trim()[0] === '@') { out.push({ pre: pre.trim(), body: null }); pre = ''; i++; continue; }
