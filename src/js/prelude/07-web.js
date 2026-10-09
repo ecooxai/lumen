@@ -16,7 +16,7 @@ class FileReader extends EventTarget {
     constructor() { super(); this.result = null; this.readyState = 0; this.error = null; }
     _read(b, f) { this.readyState = 1; setTimeout(() => { this.result = f(b); this.readyState = 2; for (const t of ['load', 'loadend']) { const ev = new ProgressEvent(t); if (this['on' + t]) this['on' + t](ev); dispatch(this, ev); } }); }
     readAsText(b) { this._read(b, x => N.decode(x._buf)); } readAsArrayBuffer(b) { this._read(b, x => x._buf.slice(0)); }
-    readAsDataURL(b) { this._read(b, x => 'data:' + (x.type || 'application/octet-stream') + ';base64,' + btoa(String.fromCharCode(...new Uint8Array(x._buf)))); }
+    readAsDataURL(b) { this._read(b, x => 'data:' + (x.type || 'application/octet-stream') + ';base64,' + btoa(((u, s) => { for (let i = 0; i < u.length; i += 32768) s += String.fromCharCode.apply(null, u.subarray(i, i + 32768)); return s; })(new Uint8Array(x._buf), ''))); }
     abort() {}
 }
 const streamCtl = (s) => ({
