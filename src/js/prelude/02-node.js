@@ -65,6 +65,10 @@ class NodeList {
     *keys() { for (let i = 0; i < this.length; i++) yield i; }
     values() { return this[Symbol.iterator](); }
 }
+class HTMLCollection extends NodeList {
+    namedItem(k) { k = String(k); if (!k) return null; for (let i = 0; i < this.length; i++) { const e = this[i]; if (e.id === k || (e.getAttribute && e.getAttribute('name') === k)) return e; } return null; }
+}
+const htmlColl = (a) => { const o = Object.create(HTMLCollection.prototype); for (let i = 0; i < a.length; i++) o[i] = a[i]; Object.defineProperty(o, 'length', { value: a.length }); return o; };
 const nodeList = (a) => { const o = Object.create(NodeList.prototype); for (let i = 0; i < a.length; i++) o[i] = a[i]; Object.defineProperty(o, 'length', { value: a.length }); return o; };
 const liveIdx = (k) => typeof k === 'string' && /^(0|[1-9]\d*)$/.test(k) ? +k : -1;
 const liveHandler = {

@@ -405,6 +405,7 @@ FN(log) {
     std::string m = S(1);
     fprintf(stderr, "[js %s] %.2000s\n", names[std::clamp(lv, 0, 3)], m.c_str());
 }
+FN(logLevel) { a.GetReturnValue().Set(g_log_level); }
 FN(viewport) {
     CTX; float w = 0, h = 0, sx = 0, sy = 0, dpr = 1;
     if (c->host.viewport) c->host.viewport(c->host.ud, &w, &h, &sx, &sy, &dpr);
@@ -760,7 +761,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(histLen); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
     REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove);
     REG(mediaBuffered); REG(mediaEos); REG(mediaSetDuration); REG(mediaPlay); REG(mediaPause); REG(mediaSeek);
-    REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(readyState); REG(quirks);
+    REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(logLevel); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(readyState); REG(quirks);
     REG(currentScript); REG(media); REG(cssSupports); REG(cssSelText); REG(urlParse); REG(encode); REG(decode); REG(random); REG(cDigest); REG(cHmac); REG(cAes); REG(cEcGen); REG(cEcDerive); REG(cEcSign); REG(cEcVerify); REG(cSpki); REG(cSpkiParse); REG(cPkcs8Parse); REG(cEcFromD); REG(cHkdf); REG(cPbkdf2);
     REG(heap); REG(imgSize); REG(userAgent); REG(platform); REG(cpus); REG(makeAll);
 #undef REG

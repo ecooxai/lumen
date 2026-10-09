@@ -275,12 +275,14 @@ function asWin(v) {
     return w;
 }
 const counts = {}, timers = {};
+const LOG_LEVEL = N.logLevel();
+const clog = (lv, a, pre = '') => { if (lv >= LOG_LEVEL) N.log(lv, pre + fmt(a)); };
 const console = {
-    log: (...a) => N.log(1, fmt(a)), info: (...a) => N.log(1, fmt(a)), debug: (...a) => N.log(0, fmt(a)), trace: (...a) => N.log(0, fmt(a)),
-    warn: (...a) => N.log(2, fmt(a)), error: (...a) => N.log(3, fmt(a)),
-    assert: (c, ...a) => { if (!c) N.log(3, 'Assertion failed: ' + fmt(a)); },
-    dir: (...a) => N.log(1, fmt(a)), dirxml: (...a) => N.log(1, fmt(a)), table: (...a) => N.log(1, fmt(a)),
-    group: (...a) => N.log(1, fmt(a)), groupCollapsed: (...a) => N.log(1, fmt(a)), groupEnd() {},
+    log: (...a) => clog(1, a), info: (...a) => clog(1, a), debug: (...a) => clog(0, a), trace: (...a) => clog(0, a),
+    warn: (...a) => clog(2, a), error: (...a) => clog(3, a),
+    assert: (c, ...a) => { if (!c) clog(3, a, 'Assertion failed: '); },
+    dir: (...a) => clog(1, a), dirxml: (...a) => clog(1, a), table: (...a) => clog(1, a),
+    group: (...a) => clog(1, a), groupCollapsed: (...a) => clog(1, a), groupEnd() {},
     count: (l = 'default') => N.log(1, l + ': ' + (counts[l] = (counts[l] || 0) + 1)), countReset: (l = 'default') => { counts[l] = 0; },
     time: (l = 'default') => { timers[l] = N.now(); }, timeEnd: (l = 'default') => { N.log(1, l + ': ' + (N.now() - (timers[l] || 0)).toFixed(1) + ' ms'); delete timers[l]; }, timeLog: (l = 'default') => N.log(1, l + ': ' + (N.now() - (timers[l] || 0)).toFixed(1) + ' ms'),
     timeStamp() {}, profile() {}, profileEnd() {}, clear() {},
@@ -310,7 +312,7 @@ const globals = {
     ProcessingInstruction, TouchEvent, CompositionEvent, ClipboardEvent, DragEvent, StorageEvent, PromiseRejectionEvent, SubmitEvent,
     StyleSheet, IdleDeadline, TimeRanges, MediaError, MediaSource, SourceBuffer, SourceBufferList, ImageData, Path2D, CanvasGradient, CanvasPattern, CanvasRenderingContext2D, History, Navigator, Screen, Performance, Crypto, SubtleCrypto,
     DOMException, DOMRectReadOnly, DOMRect, Event, CustomEvent, UIEvent, FocusEvent, MouseEvent, PointerEvent, WheelEvent, KeyboardEvent, InputEvent, ErrorEvent, ProgressEvent, MessageEvent, PopStateEvent, HashChangeEvent, PageTransitionEvent, AnimationEvent, TransitionEvent, MediaQueryListEvent,
-    EventTarget, AbortSignal, AbortController, MutationObserver, MutationRecord, Node, NodeList, HTMLCollection: NodeList, CharacterData, Text, CDATASection, Comment, DocumentType, DocumentFragment, ShadowRoot, Attr, NamedNodeMap, DOMTokenList,
+    EventTarget, AbortSignal, AbortController, MutationObserver, MutationRecord, Node, NodeList, HTMLCollection, CharacterData, Text, CDATASection, Comment, DocumentType, DocumentFragment, ShadowRoot, Attr, NamedNodeMap, DOMTokenList,
     CSSStyleDeclaration, SVGFEBlendElement, SVGFEComponentTransferElement, SVGFEDiffuseLightingElement, SVGFESpecularLightingElement, SVGFEDropShadowElement, SVGFEFloodElement, SVGFEGaussianBlurElement, SVGFEImageElement, SVGFEMergeElement, SVGFEMergeNodeElement, SVGFEOffsetElement, SVGFETileElement, SVGFEDistantLightElement, SVGFEPointLightElement, SVGFESpotLightElement, SVGFEFuncRElement, SVGFEFuncGElement, SVGFEFuncBElement, SVGFEFuncAElement, SVGLength, SVGNumber, SVGAnimatedLength, SVGAnimatedNumber, SVGAnimatedInteger, SVGAnimatedBoolean, SVGAnimatedString, SVGAnimatedEnumeration, SVGRect, SVGAnimatedRect, SVGUnitTypes, SVGGeometryElement, SVGRectElement, SVGCircleElement, SVGEllipseElement, SVGLineElement, SVGPathElement, SVGPolylineElement, SVGPolygonElement, SVGGElement, SVGDefsElement, SVGUseElement, SVGImageElement, SVGForeignObjectElement, SVGAElement, SVGSwitchElement, SVGTextContentElement, SVGTextPositioningElement, SVGTextElement, SVGTSpanElement, SVGTextPathElement, SVGGradientElement, SVGLinearGradientElement, SVGRadialGradientElement, SVGStopElement, SVGClipPathElement, SVGMaskElement, SVGPatternElement, SVGFilterElement, SVGMarkerElement, SVGSymbolElement, SVGTitleElement, SVGDescElement, SVGMetadataElement, SVGStyleElement, SVGScriptElement, SVGFEColorMatrixElement, SVGFECompositeElement, SVGFEMorphologyElement, SVGFETurbulenceElement, SVGFEDisplacementMapElement, SVGFEConvolveMatrixElement, SVGComponentTransferFunctionElement, CSSRuleList, CSSStyleRule, CSSGroupingRule, CSSConditionRule, CSSMediaRule, CSSSupportsRule, CSSContainerRule, CSSLayerBlockRule, CSSLayerStatementRule, CSSImportRule, CSSNamespaceRule, CSSFontFaceRule, CSSPageRule, CSSKeyframeRule, CSSKeyframesRule, MediaList, Element, HTMLElement, SVGElement, SVGGraphicsElement, SVGSVGElement, MathMLElement, Image, Audio, Option, CustomElementRegistry, Document, HTMLDocument, XMLDocument, CSSRule, CSSStyleSheet, CSS, FontFace,
     TreeWalker, NodeIterator, NodeFilter, Range, StaticRange, AbstractRange, Selection, Animation, DOMMatrixReadOnly, DOMMatrix, DOMPoint, DOMParser, XMLSerializer,
     TextEncoder, TextDecoder, btoa, atob, Blob, File, FileReader, ReadableStream, ReadableStreamDefaultReader, WritableStream, WritableStreamDefaultWriter, TransformStream, ByteLengthQueuingStrategy, CountQueuingStrategy, TextEncoderStream, TextDecoderStream, URLSearchParams, URL, webkitURL: URL, Headers, Request, Response, fetch, FormData, XMLHttpRequestEventTarget, XMLHttpRequestUpload, XMLHttpRequest, WebSocket, MessagePort, MessageChannel, Worker, BroadcastChannel,
