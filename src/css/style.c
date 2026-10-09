@@ -155,6 +155,9 @@ bool css_parse_color(const char *in, Color *out, Color current) {
 
 /* ---------------- lengths ---------------- */
 typedef struct { float em, rem; const MediaCtx *mc; } LCtx;
+/* nearest query container's size from the last layout (layout re-marks style when it changes); viewport otherwise */
+static float g_cq[2];
+static float cq_dim(const LCtx *c, int h) { return g_cq[h] > 0 ? g_cq[h] : h ? (c->mc ? c->mc->vh : 768) : (c->mc ? c->mc->vw : 1024); }
 static bool calc_expr(const char **pp, Length *out, LCtx *c);
 static bool parse_dim(const char **pp, Length *out, LCtx *c) {
     const char *p = *pp; while (is_ws((unsigned char)*p)) p++;
@@ -193,6 +196,10 @@ static bool parse_dim(const char **pp, Length *out, LCtx *c) {
     else if (!strcmp(u, "q")) l.px = v * 96 / 101.6f;
     else if (!strcmp(u, "vw") || !strcmp(u, "svw") || !strcmp(u, "lvw") || !strcmp(u, "dvw")) l.px = v * (c->mc ? c->mc->vw : 1024) / 100;
     else if (!strcmp(u, "vh") || !strcmp(u, "svh") || !strcmp(u, "lvh") || !strcmp(u, "dvh")) l.px = v * (c->mc ? c->mc->vh : 768) / 100;
+    else if (!strcmp(u, "cqw") || !strcmp(u, "cqi")) l.px = v * cq_dim(c, 0) / 100;
+    else if (!strcmp(u, "cqh") || !strcmp(u, "cqb")) l.px = v * cq_dim(c, 1) / 100;
+    else if (!strcmp(u, "cqmin")) l.px = v * LMIN(cq_dim(c, 0), cq_dim(c, 1)) / 100;
+    else if (!strcmp(u, "cqmax")) l.px = v * LMAX(cq_dim(c, 0), cq_dim(c, 1)) / 100;
     else if (!strcmp(u, "vmin")) l.px = v * LMIN(c->mc ? c->mc->vw : 1024, c->mc ? c->mc->vh : 768) / 100;
     else if (!strcmp(u, "vmax")) l.px = v * LMAX(c->mc ? c->mc->vw : 1024, c->mc ? c->mc->vh : 768) / 100;
     else if (!strcmp(u, "fr")) { l.px = v; }
@@ -660,7 +667,14 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
             st->custom = n;
         }
         char *old = hm_get(&st->custom->map, prop);
-        char *v = custom_defer ? xstrdup(value_in) : subst_vars(value_in, st, 0);
+        char *kb = xstrdup(value_in), *k = str_trim(kb), *v;
+        /* CSS-wide keywords: "" is the guaranteed-invalid value */
+        if (str_ieq(k, "inherit") || str_ieq(k, "unset") || str_ieq(k, "revert") || str_ieq(k, "revert-layer")) {
+            const char *pv = par ? custom_get(par->custom, prop) : NULL; v = xstrdup(pv ? pv : "");
+        } else if (str_ieq(k, "initial")) v = xstrdup("");
+        else if (!*k) v = xstrdup(" ");   /* valid empty value, unlike "" */
+        else v = custom_defer ? xstrdup(value_in) : subst_vars(value_in, st, 0);
+        free(kb);
         hm_put(&st->custom->map, prop, v ? v : xstrdup(""));
         free(old);
         return;
@@ -670,6 +684,9 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
     if (strstr(v, "var(")) { subst = subst_vars(v, st, 0); if (!subst) return; v = subst; }
     char *vbuf = xstrdup(v); char *val = str_trim(vbuf);
     ACtx c = { st, par, e, el, st->font_size, 16, e ? &e->media : NULL };
+    g_cq[0] = g_cq[1] = 0;
+    if (el && strstr(v, "cq")) for (const Node *a = el->parent; a; a = a->parent)
+        if (a->type == NODE_ELEMENT && a->style && a->style->container_type) { g_cq[0] = a->cq_w; g_cq[1] = a->style->container_type == 2 ? a->cq_h : 0; break; }
     if (e && e->doc && e->doc->html && e->doc->html->style && el != e->doc->html) c.rem = e->doc->html->style->font_size;
     const char *P = prop;
     Length l; Color col; int k;
@@ -712,6 +729,7 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         goto out;
     }
     if (!strcmp(P, "mask-size") || !strcmp(P, "-webkit-mask-size")) { st->mask_fit = str_ieq(val, "contain") ? 1 : str_ieq(val, "cover") ? 2 : 0; goto out; }
+    if (!strcmp(P, "container-type")) { st->container_type = str_ieq(val, "size") ? 2 : str_ieq(val, "inline-size") ? 1 : 0; goto out; }
     switch (P[0]) {
     case 'a':
         if (!strcmp(P, "align-items")) st->align_items = parse_align(val);

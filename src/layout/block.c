@@ -268,6 +268,17 @@ static void free_box_data(Box *b) {
 Layout *layout_new(void) { Layout *L = xcalloc(1, sizeof *L); L->dpr = 2; return L; }
 void layout_free(Layout *L) { if (L->root) free_box_data(L->root); arena_reset(&L->arena); free(L); }
 
+static void track_containers(Document *d, Box *b) {
+    for (; b; b = b->next) {
+        Node *n = b->node;
+        if (n && !b->anon && b->st && b->st->container_type && n->style == b->st) {
+            float w = b->w - b->b[1] - b->b[3] - b->p[1] - b->p[3], h = b->h - b->b[0] - b->b[2] - b->p[0] - b->p[2];
+            if (fabsf(w - n->cq_w) > 0.5f || (b->st->container_type == 2 && fabsf(h - n->cq_h) > 0.5f)) { n->cq_w = w; n->cq_h = h; doc_mark_style_dirty(d, n); }
+        }
+        track_containers(d, b->first);
+    }
+}
+
 void layout_run(Layout *L, Document *d, float vw, float vh) {
     double t0 = now_ms();
     if (L->root) free_box_data(L->root);
@@ -285,6 +296,7 @@ void layout_run(Layout *L, Document *d, float vw, float vh) {
     L->doc_w = vw; L->doc_h = 0;
     extents(L, r);
     L->doc_h = LMAX(L->doc_h, vh);
+    track_containers(d, r);
     L->ms = now_ms() - t0;
 }
 

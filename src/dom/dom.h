@@ -34,6 +34,7 @@ typedef struct Node {
     struct ComputedStyle *style;
     struct Box *box;
     float scroll_x, scroll_y;      /* element scroll offsets (kept across relayouts) */
+    float cq_w, cq_h;              /* query-container content size from the last layout */
     void *js;                      /* JS wrapper (v8::Global*) */
     void *ext;                     /* element specific data (img, video, canvas, input) */
     void (*ext_free)(void *);
