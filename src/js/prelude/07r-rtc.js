@@ -932,8 +932,9 @@ class RTCPeerConnection extends EventTarget {
         rtcTask(() => {
             if (peer._.closed || this._.closed) return;
             dc._open();
+            r._.readyState = 'open'; peer._.dcOpened++;
             rtcFire(peer, new RTCDataChannelEvent('datachannel', { channel: r }));
-            rtcTask(() => r._open());
+            rtcTask(() => { if (r._.readyState === 'open') rtcEv(r, 'open'); });
         });
     }
     createDataChannel(label, init = undefined) {
@@ -1100,9 +1101,10 @@ class RTCPeerConnection extends EventTarget {
         me.ops = [];
         if (peer && !peer._.closed) rtcTask(() => {
             if (peer._.closed) return;
-            for (const dc of peer._.channels) if (dc._.peer && dc._.peer._.pc === this && dc._.readyState !== 'closed') dc._closed();
+            for (const dc of peer._.channels) if (dc._.peer && dc._.peer._.pc === this && dc._.readyState !== 'closed') dc._closed('Transport closed');
             if (peer._.sctp) peer._.sctp._set('closed');
             peer._.dtls._set('closed');
+            setTimeout(() => { if (!peer._.closed) { peer._iceState('disconnected'); peer._connState('disconnected'); } }, 500);
         });
     }
 }
