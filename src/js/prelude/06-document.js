@@ -74,7 +74,24 @@ methods(Document.prototype, {
     elementFromPoint(x, y) { return N.hit(+x, +y); },
     elementsFromPoint(x, y) { const r = []; for (let e = N.hit(+x, +y); e && N.type(e) === 1; e = N.parent(e)) r.push(e); return r; },
     getSelection() { return selection; },
-    execCommand() { return false; }, queryCommandSupported() { return false; },
+    execCommand(cmd, ui, val) {
+        cmd = String(cmd).toLowerCase();
+        const ed = n => { for (; n; n = n.parentNode) if (n.nodeType === 1) { const v = n.getAttribute('contenteditable'); if (v === '' || v === 'true' || v === 'plaintext-only') return n; if (v === 'false') return null; } return null; };
+        const ae = this.activeElement, sel = this.getSelection();
+        let t = sel && sel.anchorNode; if (t && t.nodeType !== 1) t = t.parentNode;
+        if (!ed(t) && ae && ed(ae)) t = ae;
+        if (!ed(t)) {
+            if (cmd !== 'inserttext' || !ae || (ae.tagName !== 'INPUT' && ae.tagName !== 'TEXTAREA')) return false;
+            const str = String(val ?? '');
+            if (ae.setRangeText) ae.setRangeText(str, ae.selectionStart, ae.selectionEnd, 'end'); else ae.value += str;
+            ae.dispatchEvent(new InputEvent('input', { inputType: 'insertText', data: str, bubbles: true }));
+            return true;
+        }
+        if (cmd === 'inserttext') { { const ev = new KeyboardEvent('lumenedit', { key: String(val ?? ''), bubbles: true }); ev.lumenExec = true; t.dispatchEvent(ev); } return true; }
+        if (cmd === 'delete') { { const ev = new KeyboardEvent('lumeneditdel', { key: 'Backspace', bubbles: true }); ev.lumenExec = true; t.dispatchEvent(ev); } return true; }
+        return false;
+    },
+    queryCommandSupported(c) { return /^(inserttext|delete)$/i.test(c); },
     open() { return this; }, close() {},
     write(...s) { docWrite(s.join('')); }, writeln(...s) { docWrite(s.join('') + '\n'); },
 });

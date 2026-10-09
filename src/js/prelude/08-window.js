@@ -390,7 +390,7 @@ function fireAnim(t, type, name, elapsed, anim) {
         e.stopImmediatePropagation();
         const h = editHost(e.target); if (!h) return;
         const s = caret(h), data = del ? null : e.key, type = del ? 'deleteContentBackward' : 'insertText';
-        if (!fire(h, 'beforeinput', type, data)) return;
+        if (!e.lumenExec && !fire(h, 'beforeinput', type, data)) return;
         if (!s.isCollapsed) s.deleteFromDocument();
         const c = s.focusNode, o = s.focusOffset;
         if (del) {

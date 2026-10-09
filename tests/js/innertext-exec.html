@@ -1,0 +1,13 @@
+<!doctype html>
+<div id=a><p>One</p><p>Two <b>bold</b></p><div>Three<br>Four</div><script>var zz=1</script><table><tr><td>a</td><td>b</td></tr></table></div>
+<div id=e contenteditable=true><p>hi<br></p></div>
+<script>
+const r=[];
+const it=document.getElementById('a').innerText;
+r.push(it==='One\n\nTwo bold\n\nThree\nFour\na\tb'?'ok':'bad '+JSON.stringify(it));
+const e=document.getElementById('e');e.focus();const s=getSelection();s.collapse(e.firstChild.firstChild,2);
+let bi=0;e.addEventListener('beforeinput',ev=>{if(ev.inputType==='insertText'&&ev.data===' there')bi++});
+const ok=document.execCommand('insertText',false,' there');
+r.push(ok&&bi===0&&e.textContent==='hi there'?'ok':'bad exec '+ok+' '+bi+' '+e.textContent);
+console.log('RESULTS innertext-exec:'+(r.every(x=>x==='ok')?'PASS':'FAIL '+r.join(';')));
+</script>

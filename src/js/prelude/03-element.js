@@ -165,7 +165,7 @@ methods(HTMLElement.prototype, {
         });
         def(this, '__ds', ds); return ds;
     },
-    get innerText() { return N.text(this); }, set innerText(v) { this.textContent = v; }, get outerText() { return N.text(this); },
+    get innerText() { return innerTextOf(this); }, set innerText(v) { this.textContent = v; }, get outerText() { return N.text(this); },
     get tabIndex() { const v = parseInt(N.attr(this, 'tabindex'), 10); return isNaN(v) ? (/^(a|button|input|select|textarea)$/.test(N.name(this)) ? 0 : -1) : v; },
     set tabIndex(v) { this.setAttribute('tabindex', String(v | 0)); },
     get offsetParent() { for (let p = N.parent(this); p && N.type(p) === 1; p = N.parent(p)) { if (p === document.body) return p; const pos = N.computed(p, 'position'); if (pos && pos !== 'static') return p; } return null; },
@@ -194,3 +194,30 @@ class SVGGraphicsElement extends SVGElement {}
 class SVGSVGElement extends SVGGraphicsElement {}
 methods(SVGSVGElement.prototype, { createSVGPoint() { return { x: 0, y: 0, matrixTransform() { return this; } }; }, createSVGMatrix() { return new DOMMatrix(); }, getScreenCTM() { return new DOMMatrix(); } });
 class MathMLElement extends Element {}
+
+function innerTextOf(el) {
+    const BLK = /^(ADDRESS|ARTICLE|ASIDE|BLOCKQUOTE|CAPTION|DD|DETAILS|DIALOG|DIV|DL|DT|FIELDSET|FIGCAPTION|FIGURE|FOOTER|FORM|H[1-6]|HEADER|HR|LI|MAIN|NAV|OL|PRE|SECTION|SUMMARY|TABLE|TBODY|TFOOT|THEAD|TR|UL)$/;
+    const SKIP = /^(SCRIPT|STYLE|TEMPLATE|NOSCRIPT|HEAD|TITLE)$/;
+    let out = '', nlc = 0;
+    const add = t => { if (!t) return; out += t; const m = /\n*$/.exec(t)[0].length; nlc = m === t.length ? nlc + m : m; };
+    const nl = k => { if (out && nlc < k) add('\n'.repeat(k - nlc)); };
+    const walk = (n, pre) => {
+        for (let c = n.firstChild; c; c = c.nextSibling) {
+            if (c.nodeType === 3) {
+                let t = c.data;
+                if (!pre) { t = t.replace(/[\t\n\r ]+/g, ' '); const last = out[out.length - 1]; if (!out || last === ' ' || last === '\n' || last === '\t') t = t.replace(/^ /, ''); }
+                add(t);
+            } else if (c.nodeType === 1) {
+                const tg = c.tagName;
+                if (SKIP.test(tg) || c.hasAttribute('hidden')) continue;
+                if (tg === 'BR') { add('\n'); continue; }
+                const k = tg === 'P' ? 2 : BLK.test(tg) ? 1 : 0;
+                if (k) nl(k);
+                walk(c, pre || tg === 'PRE' || tg === 'TEXTAREA');
+                if (k) nl(k); else if ((tg === 'TD' || tg === 'TH') && c.nextElementSibling) add('\t');
+            }
+        }
+    };
+    walk(el, false);
+    return out.replace(/ +\n/g, '\n').replace(/^\n+|[\n ]+$/g, '');
+}
