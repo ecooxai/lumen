@@ -1,0 +1,12 @@
+<!doctype html><style>*{box-sizing:border-box}</style><body style="margin:0">
+<div id=g style="display:inline-grid;height:36px;grid-template-columns:repeat(2,minmax(0,1fr))">
+<span id=i style="grid-column-start:1;grid-row-start:1"></span>
+<button id=b1 style="grid-column-start:1;grid-row-start:1;height:100%;width:112px">Chat</button>
+<button id=b2 style="height:100%;width:112px">Work</button>
+</div>
+<script>setTimeout(() => {
+  const h = id => Math.round(document.getElementById(id).getBoundingClientRect().height);
+  const ok = h('i') === 36 && h('b1') === 36 && h('b2') === 36;
+  console.log('grid-stretch i=' + h('i') + ' b1=' + h('b1') + ' b2=' + h('b2'));
+  console.log('RESULTS grid-stretch:' + (ok ? 'PASS' : 'FAIL'));
+}, 100);</script>

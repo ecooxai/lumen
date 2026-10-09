@@ -1,3 +1,4 @@
+#include <math.h>
 /* Grid and table layout */
 #include "layout.h"
 
@@ -126,11 +127,25 @@ float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
         if (!stretch && (ja == AL_CENTER || ja == AL_END || ja == AL_FLEX_END)) { float fr = w - c->w - c->m[1] - c->m[3]; box_translate(c, ja == AL_CENTER ? fr / 2 : fr, 0); }
         if (g->rs == 1) { float need = c->h + c->m[0] + c->m[2]; bool fixedrow = g->r < s->grid_nrows && track_fixed(&s->grid_rows[g->r], chdef) >= 0; if (!fixedrow) rh[g->r] = LMAX(rh[g->r], LMAX(need, auto_row)); }
     }
+    /* align-content: normal/stretch grows auto rows to fill a definite height */
+    if (chdef >= 0 && nr && (s->align_content == AL_NORMAL || s->align_content == AL_STRETCH)) {
+        float used = rg * (nr - 1); int na = 0;
+        for (int i = 0; i < nr; i++) { used += rh[i]; if (!(i < s->grid_nrows && track_fixed(&s->grid_rows[i], chdef) >= 0) && auto_row < 0) na++; }
+        if (na && chdef - used > 0.01f) for (int i = 0; i < nr; i++) if (!(i < s->grid_nrows && track_fixed(&s->grid_rows[i], chdef) >= 0) && auto_row < 0) rh[i] += (chdef - used) / na;
+    }
     float *ry = xcalloc((size_t)nr + 1, sizeof(float));
     for (int i = 0; i < nr; i++) ry[i + 1] = ry[i] + rh[i] + (i < nr - 1 ? rg : 0);
     for (int k = 0; k < items.n; k++) {
         GI *g = &items.v[k]; Box *c = g->b;
         float top = ry[g->r], hh = ry[g->r + g->rs] - top - (g->r + g->rs < nr ? rg : 0);
+        if (len_has_pct(c->st->height) && fabsf(c->h + c->m[0] + c->m[2] - hh) > 0.01f) {
+            float w = g->c + g->cs == nc ? cx0[nc] - cx0[g->c] : cx0[g->c + g->cs] - cx0[g->c] - cg;
+            int ja = c->st->justify_self ? c->st->justify_self : s->justify_items;
+            bool st = (ja == AL_NORMAL || ja == AL_STRETCH || ja == AL_AUTO) && c->st->width.kind == LK_AUTO;
+            float x0 = c->x;
+            layout_box(L, c, cx + cx0[g->c] + c->m[3], c->y, w, hh, NULL, st ? SZ_FORCED : SZ_SHRINK, w - c->m[1] - c->m[3], -1);
+            box_translate(c, x0 - c->x, 0);
+        }
         int al = c->st->align_self == AL_AUTO ? s->align_items : c->st->align_self;
         float off = 0, fr = hh - c->h - c->m[0] - c->m[2];
         if (al == AL_CENTER) off = fr / 2; else if (al == AL_END || al == AL_FLEX_END) off = fr;

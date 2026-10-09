@@ -89,13 +89,20 @@ static void fixup_block(Layout *L, Box *b) {
     b->fmt = FMT_FLOW;
 }
 
+/* a flex/grid item wrapping a text run: inherited properties only, everything else initial */
+static ComputedStyle *anon_item_style(Layout *L, const ComputedStyle *p) {
+    ComputedStyle *t = style_inherit(p), *s = arena_alloc(&L->arena, sizeof *s);
+    *s = *t; s->text_decoration = p->text_decoration; s->refs = 1 << 20;
+    style_free(t);
+    return s;
+}
 static void fixup_container_items(Layout *L, Box *b) {
     /* flex/grid: every in-flow child is a block-level item; wrap text runs */
     Box *c = b->first; b->first = b->last = NULL;
     while (c) {
         Box *next = c->next; c->next = c->prev = NULL;
         if (c->kind == BX_TEXT || c->kind == BX_BR) {
-            if (c->kind == BX_TEXT && !is_ws_text(c)) { Box *a = new_box(L, BX_BLOCK, NULL, b->st); a->anon = true; a->fmt = FMT_INLINE; a->bfc = true; append(a, c); append(b, a); }
+            if (c->kind == BX_TEXT && !is_ws_text(c)) { Box *a = new_box(L, BX_BLOCK, NULL, anon_item_style(L, b->st)); a->anon = true; a->fmt = FMT_INLINE; a->bfc = true; append(a, c); append(b, a); }
         } else {
             if (c->kind == BX_INLINE) { c->kind = BX_BLOCK; fixup_block(L, c); }
             else if (c->kind == BX_ATOMIC) c->kind = BX_BLOCK;

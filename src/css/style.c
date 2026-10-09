@@ -257,6 +257,19 @@ bool css_parse_length(const char *s, Length *out, float em, float rem, const Med
 }
 
 /* ---------------- var() substitution ---------------- */
+typedef struct RegProp { char *name, *init; struct RegProp *next; } RegProp;
+static RegProp *g_regprops[256];
+static unsigned regprop_hash(const char *s) { unsigned h = 5381; while (*s) h = h * 33 + (unsigned char)*s++; return h & 255; }
+void css_register_property(const char *name, const char *initial) {
+    if (!name || strncmp(name, "--", 2) || !initial) return;
+    RegProp **b = &g_regprops[regprop_hash(name)];
+    for (RegProp *r = *b; r; r = r->next) if (!strcmp(r->name, name)) { free(r->init); r->init = xstrdup(initial); return; }
+    RegProp *r = xcalloc(1, sizeof *r); r->name = xstrdup(name); r->init = xstrdup(initial); r->next = *b; *b = r;
+}
+const char *css_property_initial(const char *name) {
+    for (RegProp *r = g_regprops[regprop_hash(name)]; r; r = r->next) if (!strcmp(r->name, name)) return r->init;
+    return NULL;
+}
 static char *subst_vars(const char *v, const ComputedStyle *st, int depth) {
     if (!strstr(v, "var(") || depth > 16) return xstrdup(v);
     SB b; sb_init(&b);
@@ -272,6 +285,7 @@ static char *subst_vars(const char *v, const ComputedStyle *st, int depth) {
         if (comma) *comma = 0;
         char *name = str_trim(inner);
         const char *val = custom_get(st->custom, name);
+        if (!val) val = css_property_initial(name);
         char *r = val && *val ? subst_vars(val, st, depth + 1) : comma ? subst_vars(str_trim(comma + 1), st, depth + 1) : NULL;
         free(inner);
         /* unresolvable or runaway expansion: declaration is invalid at computed-value time */
@@ -478,9 +492,10 @@ static void parse_transform(ACtx *c, const char *v) {
         while (is_ws((unsigned char)*p)) p++;
         const char *lp = strchr(p, '('); if (!lp) break;
         char fn[32]; snprintf(fn, sizeof fn, "%.*s", (int)LMIN(lp - p, 31), p);
-        const char *rp = strchr(lp, ')'); if (!rp) break;
+        const char *rp = lp + 1; for (int dp = 1; *rp; rp++) { if (*rp == '(') dp++; else if (*rp == ')' && !--dp) break; }
+        if (!*rp) break;
         char *args = xstrndup(lp + 1, (size_t)(rp - lp - 1));
-        for (char *q = args; *q; q++) if (*q == ',') *q = ' ';
+        { int dp = 0; for (char *q = args; *q; q++) { if (*q == '(') dp++; else if (*q == ')') dp--; else if (*q == ',' && !dp) *q = ' '; } }
         char *t[6]; int n = split_ws(args, t, 6);
         float a = 1, b = 0, cc = 0, d = 1, e = 0, f = 0;
         for (char *q = fn; *q; q++) *q = (char)lc(*q);
@@ -983,7 +998,7 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         else if (!strcmp(P, "text-overflow")) st->text_overflow = str_ieq(val, "ellipsis") ? TO_ELLIPSIS : TO_CLIP;
         else if (!strcmp(P, "text-shadow")) parse_shadow(&c, val, &st->text_shadow, &st->has_text_shadow);
         else if (!strcmp(P, "transform") || !strcmp(P, "-webkit-transform")) parse_transform(&c, val);
-        else if (!strcmp(P, "translate")) { char buf[96]; snprintf(buf, sizeof buf, "translate(%s)", val); if (!str_ieq(val, "none")) { for (char *q = buf + 10; *q; q++) if (*q == ' ') { *q = ','; break; } parse_transform(&c, buf); } }
+        else if (!strcmp(P, "translate")) { char buf[256]; snprintf(buf, sizeof buf, "translate(%s)", val); if (!str_ieq(val, "none")) parse_transform(&c, buf); }
         else if (!strcmp(P, "transform-origin")) { char *t[2]; int n = split_ws(val, t, 2); for (int i = 0; i < n; i++) { if (str_ieq(t[i], "left") || str_ieq(t[i], "top")) st->transform_origin[i] = (Length){0, 0, LK_LEN}; else if (str_ieq(t[i], "right") || str_ieq(t[i], "bottom")) st->transform_origin[i] = (Length){0, 100, LK_LEN}; else if (str_ieq(t[i], "center")) st->transform_origin[i] = (Length){0, 50, LK_LEN}; else alen(&c, t[i], &st->transform_origin[i]); } free_toks(t, n); }
         else if (!strcmp(P, "table-layout")) st->table_layout = str_ieq(val, "fixed");
         else if (!strcmp(P, "text-wrap") || !strcmp(P, "text-wrap-mode")) { if (str_ieq(val, "nowrap")) st->white_space = WS_NOWRAP; }

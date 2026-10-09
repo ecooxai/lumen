@@ -49,6 +49,9 @@ typedef struct { float x, y, blur, spread; Color color; bool inset; } Shadow;
 
 typedef struct CustomProps { int refs, depth; HMap map; struct CustomProps *parent; } CustomProps; /* own name -> char* value, then parent's */
 const char *custom_get(const CustomProps *c, const char *name);
+/* @property registrations: initial-value used when a custom property is unset */
+void css_register_property(const char *name, const char *initial);
+const char *css_property_initial(const char *name);
 
 typedef struct GridTrack { Length size; float fr; Length min; } GridTrack;
 

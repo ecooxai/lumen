@@ -732,7 +732,13 @@ static void parse_rules(PCtx *c, const char *s, size_t n, const char *parent_sel
             else if (str_istarts(pt, "@font-face")) {
                 SB ff; sb_init(&ff); sb_put(&ff, body, bn); vec_push(c->sh->font_faces, sb_take(&ff));
             }
-            /* @keyframes, @page, @font-feature-values, @property, @counter-style: ignored */
+            else if (str_istarts(pt, "@property")) {
+                SB nm; sb_init(&nm); sb_puts(&nm, pt + 9); char *name = str_trim(nm.s);
+                char *bd = xstrndup(body, bn), *iv = strstr(bd, "initial-value");
+                if (iv && (iv = strchr(iv, ':'))) { char *e = strchr(++iv, ';'); if (e) *e = 0; css_register_property(name, str_trim(iv)); }
+                free(bd); sb_free(&nm);
+            }
+            /* @keyframes, @page, @font-feature-values, @counter-style: ignored */
         } else if (parent_sel) {
             char *ns = nest_selector(parent_sel, pt); parse_style_block(c, ns, body, bn); free(ns);
         } else parse_style_block(c, pt, body, bn);
