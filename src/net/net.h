@@ -73,4 +73,7 @@ void cookies_load(const char *path);
 bool cookies_save(const char *path); /* writes only when the jar changed */
 
 extern const char *g_user_agent;
+enum { UA_CHROME, UA_FIREFOX, UA_LUMEN, UA_COUNT };
+void net_set_user_agent(int which);   /* UA_CHROME (default), UA_FIREFOX or UA_LUMEN */
+const char *net_user_agent_name(int which);
 #endif

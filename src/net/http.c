@@ -20,7 +20,22 @@
 #include <brotli/decode.h>
 #include <zstd.h>
 
-const char *g_user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36";
+#ifdef __APPLE__
+#define UA_OS "Macintosh; Intel Mac OS X 10_15_7"
+#define UA_FF_OS "Macintosh; Intel Mac OS X 10.15"
+#else
+#define UA_OS "X11; Linux x86_64"
+#define UA_FF_OS "X11; Linux x86_64"
+#endif
+static const char *const ua_str[UA_COUNT] = {
+    "Mozilla/5.0 (" UA_OS ") AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (" UA_FF_OS "; rv:150.0) Gecko/20100101 Firefox/150.0",
+    "Mozilla/5.0 (" UA_OS ") AppleWebKit/537.36 (KHTML, like Gecko) Lumen/1.0 Safari/537.36",
+};
+static const char *const ua_name[UA_COUNT] = { "Chrome 150", "Firefox 150", "Lumen" };
+const char *g_user_agent = "Mozilla/5.0 (" UA_OS ") AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36";
+void net_set_user_agent(int which) { if (which >= 0 && which < UA_COUNT) g_user_agent = ua_str[which]; }
+const char *net_user_agent_name(int which) { return which >= 0 && which < UA_COUNT ? ua_name[which] : ""; }
 void (*net_wakeup)(void) = NULL;
 
 /* ---------- headers ---------- */

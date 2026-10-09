@@ -41,6 +41,7 @@ void js_run_module(JsCtx *c, Node *script, const char *src, size_t n, const char
 bool js_dispatch(JsCtx *c, Node *target, const char *type, const char *kind, bool bubbles, bool cancelable,
                  double x, double y, int button, const char *key);
 bool js_dispatch_window(JsCtx *c, const char *type);
+void js_release_pins(void);   /* end of a host event batch: unpin js_dispatch targets */
 void js_set_ready_state(JsCtx *c, int state);
 /* ms until the next timer / animation frame is due; <0 if none */
 double js_next_deadline(JsCtx *c);

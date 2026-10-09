@@ -16,6 +16,7 @@ static bool g_compact;   /* one tab in the workspace: toolbar lives in the title
 #define TABH (g_compact ? 0.f : 30.f)
 #define TB 44.f
 static float g_info_h;
+static char g_notice[256];   /* dismissable error notice shown in the info bar */
 #define INFOH 36.f
 #define BAR (TABH + TB + g_info_h)
 #ifdef __APPLE__
@@ -54,6 +55,8 @@ static uint64_t load_gen;
 static bool g_lowmem;
 static int g_cpu_on = 1, g_cpu_pct = 80, g_cpu_secs = 60, g_cpu_lim = 40;
 static bool g_vctl;
+static bool g_tab_sleep;
+static int g_ua;   /* UA_CHROME / UA_FIREFOX / UA_LUMEN */
 static char g_pref[1024];
 typedef struct { char *url, *title; } Link;
 #define MAX_BM 512
@@ -62,7 +65,7 @@ static Link g_bms[MAX_BM], g_hv[MAX_HV]; static int g_nbm, g_nhv;
 static void pref_path(char *out, size_t n, const char *f) { snprintf(out, n, "%s%s", g_pref, f); }
 static void settings_save(void) {
     char p[1200]; pref_path(p, sizeof p, "settings.txt"); FILE *f = *g_pref ? fopen(p, "w") : NULL; if (!f) return;
-    fprintf(f, "offscreen_media_eviction=%d\ncpu_limit=%d\ncpu_pct=%d\ncpu_secs=%d\ncpu_lim=%d\nvideo_controls=%d\n", g_lowmem, g_cpu_on, g_cpu_pct, g_cpu_secs, g_cpu_lim, g_vctl);
+    fprintf(f, "offscreen_media_eviction=%d\ncpu_limit=%d\ncpu_pct=%d\ncpu_secs=%d\ncpu_lim=%d\nvideo_controls=%d\ntab_sleep=%d\nuser_agent=%d\n", g_lowmem, g_cpu_on, g_cpu_pct, g_cpu_secs, g_cpu_lim, g_vctl, g_tab_sleep, g_ua);
     fclose(f);
 }
 static void link_put(Link *v, int *n, int max, const char *url, const char *title) {
@@ -212,7 +215,7 @@ static void page_free(Page *p) {
 }
 
 typedef struct Tab { Page *cur; bool loading, relayout; char *hist[256]; uint64_t hgen[256]; int nhist, hpos; char url[2048]; float sy; uint64_t lgen; int ws;
-    double cpu_ms, media_ms0, budget, bud_t, unlimit_until; float pct, lim, cpuhist[600]; int ncpu, cpui, cpumode, vctl, vap, lite; uint64_t vgen; bool limited, info, asleep; double bg_since; } Tab;
+    double cpu_ms, media_ms0, budget, bud_t, unlimit_until; float pct, lim, cpuhist[600]; int ncpu, cpui, cpumode, vctl, vap, lite; uint64_t vgen; bool limited, info, asleep; double bg_since; int crashes; } Tab;
 typedef struct App {
     SDL_Window *win; SDL_MetalView mview; Gpu *gpu;
     int pw, ph; float scale, vw, vh;
@@ -309,6 +312,10 @@ static char *internal_page(const char *u) {   /* lumen://newtab?s=bookmarks|hist
             "<div class=sub style=\"padding:0 0 12px\">To set the limit for one tab only, click the tab, then click it again.</div></div>", g_cpu_pct, g_cpu_secs, g_cpu_lim);
         sb_puts(&b, "<div class=card><div class=row><div class=grow><div class=t>Always show video controls</div><div class=sub>Keeps the play controls visible under every video, including YouTube, so they never hide. To change it for one tab only, click the tab, then click it again.</div></div>");
         ip_toggle(&b, "vctl", g_vctl);
+        sb_puts(&b, "</div></div><div class=card><div class=row><div class=grow><div class=t>Sleep background ChatGPT tabs</div><div class=sub>A ChatGPT tab left in the background for a minute stops running and frees most of its memory. It keeps showing its last screen and reloads when you click it. Text you typed but did not send in that tab may be lost.</div></div>");
+        ip_toggle(&b, "sleep", g_tab_sleep);
+        sb_puts(&b, "</div></div><div class=card><div class=row><div class=grow><div class=t>User agent</div><div class=sub>How Lumen identifies itself to websites. Chrome works best on most sites. Reload open pages to apply.</div></div>");
+        for (int i = 0; i < UA_COUNT; i++) sb_printf(&b, "<a class=\"btn%s\" href=\"lumen://set?s=settings&ua=%d\">%s</a>", i == g_ua ? " on" : "", i, net_user_agent_name(i));
         sb_puts(&b, "</div></div><script>function save(){var g=function(i){return parseInt(document.getElementById(i).value,10)||0};location.href='lumen://set?s=settings&cpu_pct='+g('n')+'&cpu_secs='+g('m')+'&cpu_lim='+g('t')}</script>");
     } else {
         bool bm = sec[0] == 'b'; Link *v = bm ? g_bms : g_hv; int n = bm ? g_nbm : g_nhv;
@@ -332,6 +339,8 @@ static void apply_set(App *a, const char *q) {
     if (qparam(q, "lite", v, sizeof v)) { g_lowmem = atoi(v) != 0; media_lowmem = g_lowmem; }
     if (qparam(q, "cpu", v, sizeof v)) g_cpu_on = atoi(v) != 0;
     if (qparam(q, "vctl", v, sizeof v)) g_vctl = atoi(v) != 0;
+    if (qparam(q, "sleep", v, sizeof v)) g_tab_sleep = atoi(v) != 0;
+    if (qparam(q, "ua", v, sizeof v)) { g_ua = LCLAMP(atoi(v), 0, UA_COUNT - 1); net_set_user_agent(g_ua); }
     if (qparam(q, "cpu_pct", v, sizeof v)) g_cpu_pct = LCLAMP(atoi(v), 10, 100);
     if (qparam(q, "cpu_secs", v, sizeof v)) g_cpu_secs = LCLAMP(atoi(v), 5, 600);
     if (qparam(q, "cpu_lim", v, sizeof v)) g_cpu_lim = LCLAMP(atoi(v), 5, 95);
@@ -547,6 +556,15 @@ static void build_chrome(App *a) {
         float y0 = TABH + TB, rb = (a->ui->ascent - a->ui->descent) / 2, cy = y0 + g_info_h / 2 + rb;
         push_rect(dl, a->side, y0, a->vw - a->side, g_info_h, 0, RGBA(254, 247, 224, 255));
         push_rect(dl, a->side, y0 + g_info_h - 1, a->vw - a->side, 1, 0, RGBA(230, 214, 160, 255));
+        if (*g_notice) {
+            push_rect(dl, a->side, y0, a->vw - a->side, g_info_h, 0, RGBA(253, 236, 234, 255));
+            push_rect(dl, a->side, y0 + g_info_h - 1, a->vw - a->side, 1, 0, RGBA(232, 180, 172, 255));
+            push_text(dl, a->ui, g_notice, a->side + 14, cy, a->vw - a->side - 80, RGBA(110, 30, 20, 255));
+            float bx, bwid; info_btn(a, 3, &bx, &bwid);
+            if (a->hover == HB_INFO + 3) push_rect(dl, bx, y0 + 6, bwid, g_info_h - 12, 6, RGBA(245, 210, 204, 255));
+            float lw = text_width(a->ui, "\xC3\x97", 2, 0);
+            push_text(dl, a->ui, "\xC3\x97", bx + (bwid - lw) / 2, cy, bwid, RGBA(110, 30, 20, 255));
+        } else {
         char msg[200]; int lp = (int)(a->t->lim * 100 + 0.5f);
         if (a->t->cpumode == 2) snprintf(msg, sizeof msg, "You limited this tab to %d%% CPU. Remove the limit for:", lp);
         else snprintf(msg, sizeof msg, "This tab used over %d%% CPU for %d s, so Lumen limited it to %d%%. Remove the limit for:", g_cpu_pct, g_cpu_secs, lp);
@@ -557,6 +575,7 @@ static void build_chrome(App *a) {
             if (k < 3 || a->hover == HB_INFO + k) push_rect(dl, bx, y0 + 6, bwid, g_info_h - 12, 6, a->hover == HB_INFO + k ? RGBA(240, 228, 190, 255) : RGBA(255, 255, 255, 255));
             float lw = text_width(a->ui, lb[k], strlen(lb[k]), 0);
             push_text(dl, a->ui, lb[k], bx + (bwid - lw) / 2, cy, bwid, RGBA(60, 50, 20, 255));
+        }
         }
     }
     int n0 = dl->items.n;
@@ -1403,6 +1422,7 @@ static void menu_cmd(App *a, int c) {
 }
 static void info_click(App *a, int k) {
     Tab *t = a->t;
+    if (*g_notice) { if (k == 3) { g_notice[0] = 0; a->dirty = true; a->vonly = false; } return; }
     if (k < 3) { static const int H[3] = { 1, 4, 10 }; t->unlimit_until = (double)time(NULL) + H[k] * 3600.0; t->limited = false; t->ncpu = t->cpui = 0; t->cpumode = 0; if (t->cur) media_set_limit(t->cur->d, 0); }
     t->info = false; a->dirty = true; a->vonly = false;
 }
@@ -1486,17 +1506,45 @@ static void history_go(App *a, int d) {
 #include <execinfo.h>
 #include <unistd.h>
 #include <signal.h>
+#include <setjmp.h>
+#include <pthread.h>
 #include <mach-o/dyld.h>
+/* A memory fault on the main thread while handling a tab jumps back to the event loop instead of killing
+   Lumen: that tab's page is abandoned (leaked, never touched again), the tab reloads, and a notice is shown. */
+static sigjmp_buf g_recover;
+static volatile sig_atomic_t g_guard;
+static pthread_t g_main_thr;
 static void crash_handler(int sig) {
     void *bt[64]; int n = backtrace(bt, 64);
     char buf[96]; int k = snprintf(buf, sizeof buf, "lumen: fatal signal %d, load address 0x%lx\n", sig, (unsigned long)(0x100000000UL + (unsigned long)_dyld_get_image_vmaddr_slide(0)));
     write(2, buf, (size_t)k);
     backtrace_symbols_fd(bt, n, 2);
+    if (g_guard && (sig == SIGSEGV || sig == SIGBUS) && pthread_equal(pthread_self(), g_main_thr)) { g_guard = 0; siglongjmp(g_recover, sig); }
     signal(sig, SIG_DFL); raise(sig);
+}
+static void recover_from_crash(App *a, int sig) {
+    Tab *t = a->t, *act = a->ti >= 0 && a->ti < a->ntabs ? a->tabs[a->ti] : t;
+    fprintf(stderr, "lumen: recovered from signal %d in %s\n", sig, *t->url ? t->url : "(blank tab)");
+    js_release_pins();
+    if (t->cur) {
+        Page *drop[256]; int nd = 0;
+        for (Page *p = g_frames; p && nd < 256; p = p->fnext) if (tab_of_doc(a, p->d) == t) drop[nd++] = p;
+        for (int i = 0; i < nd; i++) for (Page **pp = &g_frames; *pp; pp = &(*pp)->fnext) if (*pp == drop[i]) { *pp = drop[i]->fnext; break; }
+        t->cur = NULL;
+    }
+    t->loading = t->asleep = false; t->crashes++;
+    a->last_page = NULL; a->dirty = true; a->vonly = false; a->sdirty = false;
+    for (int i = 0; i < a->ntabs; i++) a->tabs[i]->relayout = true;
+    if (t->crashes <= 3 && *t->url) {
+        snprintf(g_notice, sizeof g_notice, "Something went wrong on this page, so Lumen reloaded the tab instead of quitting.");
+        a->t = t; navigate(a, t->url, false);
+    } else snprintf(g_notice, sizeof g_notice, "This page keeps hitting an error, so Lumen stopped reloading it. Other tabs are not affected.");
+    a->t = act;
 }
 
 int main(int argc, char **argv) {
     g_no_paint_only = getenv("LUMEN_NO_PAINT_ONLY") != NULL;
+    g_main_thr = pthread_self();
     signal(SIGSEGV, crash_handler); signal(SIGBUS, crash_handler); signal(SIGABRT, crash_handler);
     const char *start = argc > 1 ? argv[1] : "https://en.wikipedia.org/wiki/Web_browser";
     SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
@@ -1541,8 +1589,10 @@ int main(int argc, char **argv) {
             if (!strcmp(k, "offscreen_media_eviction")) g_lowmem = v != 0; else if (!strcmp(k, "cpu_limit")) g_cpu_on = v != 0;
             else if (!strcmp(k, "cpu_pct")) g_cpu_pct = LCLAMP(v, 10, 100); else if (!strcmp(k, "cpu_secs")) g_cpu_secs = LCLAMP(v, 5, 600);
             else if (!strcmp(k, "cpu_lim")) g_cpu_lim = LCLAMP(v, 5, 95); else if (!strcmp(k, "video_controls")) g_vctl = v != 0;
+            else if (!strcmp(k, "tab_sleep")) g_tab_sleep = v != 0; else if (!strcmp(k, "user_agent")) g_ua = LCLAMP(v, 0, UA_COUNT - 1);
         }
         if (sf) fclose(sf);
+        net_set_user_agent(g_ua);
         links_load("bookmarks.txt", g_bms, &g_nbm, MAX_BM); links_load("history.txt", g_hv, &g_nhv, MAX_HV);
         const char *lm = getenv("LUMEN_LOWMEM"); if (lm) g_lowmem = atoi(lm) != 0;
         fprintf(stderr, "lumen: lite mode %s\n", g_lowmem ? "on" : "off");
@@ -1553,6 +1603,12 @@ int main(int argc, char **argv) {
     a.t = a.tabs[0]; a.ti = 0;
     bool quit = false, cmd = false;
     while (!quit) {
+        { int sig = sigsetjmp(g_recover, 1); if (sig) recover_from_crash(&a, sig); }
+        g_guard = 1;
+        if (getenv("LUMEN_CRASH_TEST")) {   /* test hook: fault once on the main thread after N ms */
+            static double t0; static bool done; if (!t0) t0 = now_ms();
+            if (!done && now_ms() - t0 > atof(getenv("LUMEN_CRASH_TEST"))) { done = true; *(volatile int *)(uintptr_t)8 = 1; }
+        }
         SDL_Event ev;
         int to = a.t->loading ? 120 : 1000;
         for (int i = 0; i < a.ntabs; i++) { Tab *tb = a.tabs[i]; if (tb->cur && tb->cur->js) { double dl = js_next_deadline(tb->cur->js) - now_ms(); if (tb->limited && tb->budget < 0) dl = LMAX(dl, -tb->budget / tb->lim - (now_ms() - tb->bud_t)); if (dl < to) to = dl < 0 ? 0 : (int)dl; } }
@@ -1564,9 +1620,9 @@ int main(int argc, char **argv) {
             if (tb - last_bg > 2000) {
                 last_bg = tb;
                 for (int i = 0; i < a.ntabs; i++) if (a.tabs[i]->cur && a.tabs[i]->cur->js) js_set_background(a.tabs[i]->cur->js, a.tabs[i] != a.t);
-                /* tab sleep (ChatGPT): an idle background chatgpt.com tab drops its JS (the bulk of its RAM) and keeps
-                   its DOM/layout on screen; activating it reloads. LUMEN_TAB_SLEEP_MS: delay, 0 = off; LUMEN_TAB_SLEEP=all: any site */
-                const char *sm = getenv("LUMEN_TAB_SLEEP_MS"); double sleep_ms = sm ? atof(sm) : 60000; bool sleep_all = getenv("LUMEN_TAB_SLEEP") && !strcmp(getenv("LUMEN_TAB_SLEEP"), "all");
+                /* tab sleep (Settings, off by default): an idle background chatgpt.com tab drops its JS (the bulk of its RAM) and keeps
+                   its DOM/layout on screen; activating it reloads. LUMEN_TAB_SLEEP_MS: delay (overrides the setting), 0 = off; LUMEN_TAB_SLEEP=all: any site */
+                const char *sm = getenv("LUMEN_TAB_SLEEP_MS"); double sleep_ms = sm ? atof(sm) : g_tab_sleep ? 60000 : 0; bool sleep_all = getenv("LUMEN_TAB_SLEEP") && !strcmp(getenv("LUMEN_TAB_SLEEP"), "all");
                 for (int i = 0; i < a.ntabs; i++) {
                     Tab *st = a.tabs[i]; Page *sp = st->cur;
                     if (st == a.t || st->loading || !sp || !sp->js || !sp->url) { st->bg_since = 0; continue; }
@@ -1751,11 +1807,12 @@ int main(int argc, char **argv) {
                 }
             }
         } while (SDL_PollEvent(&ev));
+        js_release_pins();
         net_poll();
         { Tab *act = a.t; double tn = now_ms(); for (int i = 0; i < a.ntabs; i++) { a.t = a.tabs[i]; if (a.t->limited) { a.t->budget = LMIN(a.t->budget + a.t->lim * (tn - a.t->bud_t), 100); a.t->bud_t = tn; if (a.t->budget < 0) continue; } if (a.t->cur && a.t->cur->js) { double c0 = now_ms(); js_tick(a.t->cur->js); restyle(&a); fire_img_events(a.t->cur); double c = now_ms() - c0; a.t->cpu_ms += c; if (a.t->limited) a.t->budget -= c; } } a.t = act; if (a.t->cur && a.t->cur->js) frames_tick(&a); }
         if (a.dirty) { double r0 = now_ms(); render(&a); a.t->cpu_ms += now_ms() - r0; }
         cpu_monitor(&a);
-        { float want = a.t->info ? INFOH : 0; if (want != g_info_h) { g_info_h = want; for (int i = 0; i < a.ntabs; i++) a.tabs[i]->relayout = true; a.dirty = true; a.vonly = false; } }
+        { float want = a.t->info || *g_notice ? INFOH : 0; if (want != g_info_h) { g_info_h = want; for (int i = 0; i < a.ntabs; i++) a.tabs[i]->relayout = true; a.dirty = true; a.vonly = false; } }
         if (*cookie_path && now_ms() - cookies_saved_at > 5000) { cookies_save(cookie_path); cookies_saved_at = now_ms(); }
     }
     if (*cookie_path) cookies_save(cookie_path);

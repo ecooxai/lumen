@@ -613,8 +613,16 @@ void js_eval(JsCtx *c, const char *src, const char *name) {
     if (c && src) run_source(c, src, strlen(src), name);
 }
 
+/* Native callers keep using a dispatch target after its handlers ran; handlers may detach it and a GC may
+   then free it. Targets stay pinned until the host's event batch ends (js_release_pins). */
+static std::vector<Node *> g_pins;
+void js_release_pins(void) {
+    std::vector<Node *> v; v.swap(g_pins);
+    for (Node *n : v) node_release(n);
+}
 bool js_dispatch(JsCtx *c, Node *target, const char *type, const char *kind, bool bubbles, bool cancelable, double x, double y, int button, const char *key) {
     if (!c || c->fire.IsEmpty()) return true;
+    if (target && target->parent && target->parent->type != NODE_DOCUMENT) { node_retain(target); g_pins.push_back(target); }
     JS_ENTER(c);
     v8::Local<v8::Object> init = v8::Object::New(iso);
     auto set = [&](const char *k, v8::Local<v8::Value> v) { (void)init->Set(ctx, jstr(iso, k), v); };
