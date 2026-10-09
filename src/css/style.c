@@ -522,11 +522,8 @@ static void parse_transform(ACtx *c, const char *v) {
     memcpy(c->st->transform, m, sizeof m);
     c->st->has_transform = !(m[0] == 1 && m[1] == 0 && m[2] == 0 && m[3] == 1 && m[4] == 0 && m[5] == 0) || c->st->translate_pending[0].pct || c->st->translate_pending[1].pct;
 }
-static void parse_shadow(ACtx *c, const char *v, Shadow *sh, bool *has) {
-    if (str_ieq(v, "none")) { *has = false; return; }
-    /* first shadow only */
-    char *first = xstrdup(v); int d = 0; for (char *q = first; *q; q++) { if (*q == '(') d++; else if (*q == ')') d--; else if (*q == ',' && !d) { *q = 0; break; } }
-    char *t[7]; int n = split_ws(first, t, 7); float nums[4] = {0}; int nn = 0;
+static bool parse_one_shadow(ACtx *c, char *v, Shadow *sh) {
+    char *t[7]; int n = split_ws(v, t, 7); float nums[4] = {0}; int nn = 0;
     memset(sh, 0, sizeof *sh); sh->color = c->st->color;
     for (int i = 0; i < n; i++) {
         Color col;
@@ -535,8 +532,29 @@ static void parse_shadow(ACtx *c, const char *v, Shadow *sh, bool *has) {
         else if (css_parse_color(t[i], &col, c->st->color)) sh->color = col;
     }
     sh->x = nums[0]; sh->y = nums[1]; sh->blur = nums[2]; sh->spread = nums[3];
-    *has = nn >= 2 && COLOR_A(sh->color) > 0;
-    free_toks(t, n); free(first);
+    free_toks(t, n);
+    return nn >= 2 && COLOR_A(sh->color) > 0;
+}
+/* one shadow is painted: the first visible outer one, else the first visible inset one
+   (Tailwind stacks several, most of them `0 0 #0000`) */
+static void parse_shadow(ACtx *c, const char *v, Shadow *sh, bool *has) {
+    *has = false;
+    if (str_ieq(v, "none")) return;
+    char *all = xstrdup(v), *seg = all; int d = 0; Shadow cur, inset = {0}; bool have_inset = false;
+    for (char *q = all; ; q++) {
+        if (*q == '(') d++; else if (*q == ')') d--;
+        else if ((*q == ',' && !d) || !*q) {
+            bool end = !*q; *q = 0;
+            if (parse_one_shadow(c, seg, &cur)) {
+                if (!cur.inset) { *sh = cur; *has = true; break; }
+                if (!have_inset) { inset = cur; have_inset = true; }
+            }
+            if (end) break;
+            seg = q + 1;
+        }
+    }
+    if (!*has && have_inset) { *sh = inset; *has = true; }
+    free(all);
 }
 static int parse_grid_tracks(ACtx *c, const char *v, GridTrack **out) {
     VEC(GridTrack) tr = {0};
