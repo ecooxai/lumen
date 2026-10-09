@@ -1,8 +1,8 @@
 /* Flexbox layout */
 #include "layout.h"
 
-typedef struct { Box *b; float base, hypo, mn, mx, main, cross, mm0, mm1; bool frozen, amA0, amA1; } FItem;
-static int ord_cmp(const void *a, const void *b) { const FItem *x = a, *y = b; int d = x->b->st->order - y->b->st->order; return d ? d : (x->b->list_index - y->b->list_index); }
+typedef struct { Box *b; int ord; float base, hypo, mn, mx, main, cross, mm0, mm1; bool frozen, amA0, amA1; } FItem;
+static int ord_cmp(const void *a, const void *b) { const FItem *x = a, *y = b; int d = x->b->st->order - y->b->st->order; return d ? d : (x->ord - y->ord); }
 
 float layout_flex(Layout *L, Box *b, float cx, float cy, float cw, float chdef) {
     const ComputedStyle *s = b->st;
@@ -12,7 +12,7 @@ float layout_flex(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
     VEC(FItem) it = {0}; int idx = 0;
     for (Box *c = b->first; c; c = c->next) {
         if (c->abs) { c->sx = cx; c->sy = cy; add_abs(L, c); continue; }
-        FItem f; memset(&f, 0, sizeof f); f.b = c; c->list_index = idx++; c->bfc = true;
+        FItem f; memset(&f, 0, sizeof f); f.b = c; f.ord = idx++; c->bfc = true;
         vec_push(it, f);
     }
     if (it.n > 1) qsort(it.v, (size_t)it.n, sizeof(FItem), ord_cmp);

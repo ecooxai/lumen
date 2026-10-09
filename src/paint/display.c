@@ -134,9 +134,16 @@ static void paint_text_frag(PB *p, TextFrag *f) {
 
 static void paint_marker(PB *p, Box *b) {
     const ComputedStyle *s = b->st;
-    if (s->list_style == LST_NONE || !b->nlines) return;
+    if (s->list_style == LST_NONE) return;
+    const Box *lb = b;
+    while (lb && !lb->nlines) {
+        const Box *c = lb->first;
+        while (c && (c->abs || c->floated || c->kind == BX_TEXT || c->kind == BX_BR || c->kind == BX_INLINE)) c = c->next;
+        lb = c;
+    }
+    if (!lb) return;
     Font *f = style_font(s);
-    float base = b->lines[0].base + p->dy, x = b->x + p->dx;
+    float base = lb->lines[0].base + p->dy, x = b->x + p->dx;
     if (s->list_style == LST_DISC || s->list_style == LST_CIRCLE || s->list_style == LST_SQUARE) {
         float d = LMAX(4, s->font_size * 0.33f), cy = base - (f ? f->x_height / 2 : d / 2);
         DItem *it = emit(p, s->list_style == LST_CIRCLE ? DO_BORDER : DO_RECT);
