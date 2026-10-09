@@ -12,6 +12,9 @@
 #include <mutex>
 #include <cmath>
 #include <unistd.h>
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#endif
 
 static std::unique_ptr<v8::Platform> g_platform;
 v8::Platform *js_platform() { return g_platform.get(); }
@@ -405,8 +408,20 @@ void js_global_init(const char *argv0) {
     const char *lv = getenv("LUMEN_CONSOLE");
     if (lv) g_log_level = atoi(lv);
     const char *icu = getenv("LUMEN_ICU_DATA");
+    std::string bundled;
+#ifdef __APPLE__
+    if (!icu) {
+        char exe[4096]; uint32_t sz = sizeof exe;
+        if (_NSGetExecutablePath(exe, &sz) == 0) {
+            bundled = exe;
+            bundled = bundled.substr(0, bundled.rfind('/')) + "/../Resources/icudtl.dat";
+            if (access(bundled.c_str(), R_OK) == 0) icu = bundled.c_str();
+        }
+    }
+#endif
     if (!icu && access("/opt/homebrew/opt/v8/libexec/icudtl.dat", R_OK) == 0) icu = "/opt/homebrew/opt/v8/libexec/icudtl.dat";
-    v8::V8::InitializeICUDefaultLocation(argv0, icu);
+    if (!v8::V8::InitializeICUDefaultLocation(argv0, icu))
+        fprintf(stderr, "lumen: ICU data not found (%s); Intl APIs will abort\n", icu ? icu : "no icudtl.dat");
     v8::V8::InitializeExternalStartupData(argv0);
     g_platform = v8::platform::NewDefaultPlatform();
     v8::V8::InitializePlatform(g_platform.get());

@@ -54,6 +54,8 @@ def main():
             if not d.startswith("@rpath/"): run("install_name_tool", "-change", d, "@rpath/" + base, f)
     run("install_name_tool", "-add_rpath", "@executable_path/../Frameworks", exe)
     shutil.copy2(os.path.join(ROOT, "assets", "icon", "Lumen.icns"), os.path.join(RES, "Lumen.icns"))
+    # V8's bundled ICU has no built-in data; without icudtl.dat every Intl constructor aborts the process
+    shutil.copy2("/opt/homebrew/opt/v8/libexec/icudtl.dat", os.path.join(RES, "icudtl.dat"))
     with open(os.path.join(APP, "Contents", "Info.plist"), "w") as p:
         p.write(f"""<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
