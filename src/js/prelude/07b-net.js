@@ -345,43 +345,65 @@ class CloseEvent extends Event {
     get wasClean() { return this._c.wasClean; } get code() { return this._c.code; } get reason() { return this._c.reason; }
 }
 class WebSocket extends EventTarget {
-    constructor(url, protocols) {
+    constructor(url, protocols = undefined) {
         super();
         if (arguments.length < 1) throw new TypeError("Failed to construct 'WebSocket': 1 argument required, but only 0 present.");
         let s;
         try { s = new URL(String(url), location.href).href; } catch { throw new DOMException(`Failed to construct 'WebSocket': The URL '${url}' is invalid.`, 'SyntaxError'); }
-        s = s.replace(/#.*$/, '').replace(/^http(s?):/, 'ws$1:');
+        if (s.includes('#')) throw new DOMException(`Failed to construct 'WebSocket': The URL contains a fragment identifier ('${s.slice(s.indexOf('#'))}'). Fragment identifiers are not allowed in WebSocket URLs.`, 'SyntaxError');
+        s = s.replace(/^http(s?):/, 'ws$1:');
+        if (protocols !== null && typeof protocols === 'object' && typeof protocols[Symbol.iterator] !== 'function') protocols = protocols.protocols;
         if (!/^wss?:/.test(s)) throw new DOMException(`Failed to construct 'WebSocket': The URL's scheme must be either 'http', 'https', 'ws', or 'wss'. '${s.split(':')[0]}:' is not allowed.`, 'SyntaxError');
         const ps = protocols === undefined ? [] : typeof protocols === 'string' ? [protocols] : [...protocols].map(String);
-        if (new Set(ps).size !== ps.length || ps.some(p => !/^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/.test(p))) throw new DOMException("Failed to construct 'WebSocket': The subprotocol is invalid.", 'SyntaxError');
-        def(this, '_s', { url: s, rs: 0, protocol: '', binaryType: 'blob' });
+        if (new Set(ps.map(p => p.toLowerCase())).size !== ps.length || ps.some(p => !/^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/.test(p))) throw new DOMException("Failed to construct 'WebSocket': The subprotocol is invalid.", 'SyntaxError');
+        def(this, '_s', { url: s, rs: 0, protocol: '', binaryType: 'blob', ps, buf: 0, dead: false });
         def(this, '_id', N.wsOpen(s, ps.join(', '), location.origin, (type, data, code) => this._ev(type, data, code)));
     }
     get url() { return this._s.url; } get readyState() { return this._s.rs; } get protocol() { return this._s.protocol; }
-    get extensions() { return ''; } get bufferedAmount() { return 0; }
+    get extensions() { void this._s.url; return ''; } get bufferedAmount() { return this._s.buf; }
     get binaryType() { return this._s.binaryType; } set binaryType(v) { if (v === 'blob' || v === 'arraybuffer') this._s.binaryType = v; }
     _ev(type, data, code) {
         const st = this._s;
-        if (type === 0) { st.rs = 1; st.protocol = data; dispatch(this, new Event('open')); }
+        if (st.dead) return;
+        if (type === 0) {
+            if (st.ps.length ? !st.ps.includes(data) : data) { st.rs = 2; N.wsClose(this._id, 1002, ''); this._fail(); return; }
+            st.rs = 1; st.protocol = data; dispatch(this, new Event('open'));
+        }
         else if (type === 1 || type === 2) { if (st.rs !== 1) return; dispatch(this, new MessageEvent('message', { data: type === 1 || st.binaryType === 'arraybuffer' ? data : new Blob([data]), origin: new URL(st.url).origin })); }
         else if (type === 3) dispatch(this, new Event('error'));
         else if (type === 4) { st.rs = 3; dispatch(this, new CloseEvent('close', { wasClean: code !== 1006, code, reason: data })); }
     }
+    _fail() {
+        const st = this._s; st.dead = true;
+        setTimeout(() => { dispatch(this, new Event('error')); st.rs = 3; dispatch(this, new CloseEvent('close', { wasClean: false, code: 1006, reason: '' })); });
+    }
     send(d) {
+        if (arguments.length < 1) throw new TypeError("Failed to execute 'send' on 'WebSocket': 1 argument required, but only 0 present.");
         if (this._s.rs === 0) throw new DOMException("Failed to execute 'send' on 'WebSocket': Still in CONNECTING state.", 'InvalidStateError');
-        if (this._s.rs !== 1) return;
+        const st = this._s, n = d instanceof Blob ? d.size : d instanceof ArrayBuffer || ArrayBuffer.isView(d) ? d.byteLength : new TextEncoder().encode(String(d)).length;
+        st.buf += n;
+        if (st.rs !== 1) return;
+        setTimeout(() => { st.buf -= n; });
         if (d instanceof Blob) d.arrayBuffer().then(b => N.wsSend(this._id, b, true));
         else if (d instanceof ArrayBuffer || ArrayBuffer.isView(d)) N.wsSend(this._id, d, true);
         else N.wsSend(this._id, String(d), false);
     }
     close(code, reason) {
         if (code !== undefined && code !== 1000 && !(code >= 3000 && code <= 4999)) throw new DOMException(`Failed to execute 'close' on 'WebSocket': The close code must be either 1000, or between 3000 and 4999. ${code} is neither.`, 'InvalidAccessError');
+        if (reason !== undefined && new TextEncoder().encode(String(reason)).length > 123) throw new DOMException("Failed to execute 'close' on 'WebSocket': The close reason must not be greater than 123 UTF-8 bytes.", 'SyntaxError');
         if (this._s.rs >= 2) return;
+        if (this._s.rs === 0) { this._s.rs = 2; N.wsClose(this._id, 1000, ''); this._fail(); return; }
         this._s.rs = 2;
         N.wsClose(this._id, code === undefined ? (reason === undefined ? 0 : 1000) : code, reason === undefined ? '' : String(reason));
     }
 }
 installHandlers(WebSocket.prototype, false, ['open', 'message', 'error', 'close']);
+for (const k of ['url', 'readyState', 'bufferedAmount', 'onopen', 'onerror', 'onclose', 'extensions', 'protocol', 'close', 'onmessage', 'binaryType', 'send']) {
+    const P = WebSocket.prototype, d = Object.getOwnPropertyDescriptor(P, k);
+    if (d.get && k.startsWith('on')) { const g = d.get; d.get = function () { if (!(this instanceof WebSocket) || !this._s) throw new TypeError('Illegal invocation'); return g.call(this); }; }
+    d.enumerable = true; Object.defineProperty(P, k, d);
+}
+for (const k of ['wasClean', 'code', 'reason']) { const d = Object.getOwnPropertyDescriptor(CloseEvent.prototype, k); d.enumerable = true; Object.defineProperty(CloseEvent.prototype, k, d); }
 for (const [k, v] of Object.entries({ CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3 })) { Object.defineProperty(WebSocket, k, { value: v, enumerable: true }); Object.defineProperty(WebSocket.prototype, k, { value: v, enumerable: true }); }
 class MessagePort extends EventTarget { constructor() { super(); this.onmessage = null; def(this, '_other', null); } postMessage(d) { const r = this._wk || (this._other && this._other._wk); if (r) { N.workerPost(r[0], { __lumenPort: r[1], data: d }); return; } const o = this._other; if (o) setTimeout(() => { dispatch(o, new MessageEvent('message', { data: structuredClone(d) }), true); }); } start() {} close() { this._other = null; } }
 class MessageChannel { constructor() { this.port1 = new MessagePort(); this.port2 = new MessagePort(); this.port1._other = this.port2; this.port2._other = this.port1; } }
