@@ -200,7 +200,7 @@ FN(connected) { CTX; ARGN(n, 0); RET(n->type == NODE_DOCUMENT || (n->flags & NF_
 FN(host) { CTX; ARGN(n, 0); RET(jwrap(c, n->host)); }
 FN(attachShadow) {
     CTX; ARGN(n, 0);
-    if (!n->shadow_root) { Node *f = node_new_fragment(c->doc); f->host = n; f->refcount = 1; n->shadow_root = f; doc_mark_dirty(c->doc, n); }
+    if (!n->shadow_root) { Node *f = node_new_fragment(c->doc); f->host = n; f->refcount = 1; n->shadow_root = f; if (n->flags & NF_CONNECTED) f->flags |= NF_CONNECTED; doc_mark_dirty(c->doc, n); }
     RET(jwrap(c, n->shadow_root));
 }
 FN(templateContent) {

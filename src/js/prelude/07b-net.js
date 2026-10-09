@@ -94,12 +94,19 @@ function bodyInit(b, h) {
     if (b instanceof URLSearchParams) { if (h && !h.has('content-type')) h.set('Content-Type', 'application/x-www-form-urlencoded;charset=UTF-8'); return N.encode(b.toString()); }
     if (b instanceof FormData) { const bd = '----LumenFormBoundary' + Math.random().toString(36).slice(2); if (h && !h.has('content-type')) h.set('Content-Type', 'multipart/form-data; boundary=' + bd); let s = ''; for (const [k, v] of b) s += `--${bd}\r\nContent-Disposition: form-data; name="${k}"\r\n\r\n${typeof v === 'string' ? v : ''}\r\n`; return N.encode(s + `--${bd}--\r\n`); }
     if (b instanceof Blob) { if (h && b.type && !h.has('content-type')) h.set('Content-Type', b.type); return b._buf; }
+    if (b instanceof ReadableStream) return b;
     return toBytes(b);
 }
 class Body {
-    _take() { if (this.bodyUsed) return Promise.reject(new TypeError('Body has already been consumed.')); def(this, '_used', true); return Promise.resolve(this._b || new ArrayBuffer(0)); }
+    _take() {
+        if (this.bodyUsed) return Promise.reject(new TypeError('Body has already been consumed.'));
+        def(this, '_used', true);
+        const b = this._b;
+        if (!(b instanceof ReadableStream)) return Promise.resolve(b || new ArrayBuffer(0));
+        return (async () => { const parts = []; let n = 0; for await (const c of b) { const u = typeof c === 'string' ? new Uint8Array(N.encode(c)) : c instanceof ArrayBuffer ? new Uint8Array(c) : new Uint8Array(c.buffer, c.byteOffset, c.byteLength); parts.push(u); n += u.length; } const out = new Uint8Array(n); let o = 0; for (const u of parts) { out.set(u, o); o += u.length; } return out.buffer; })();
+    }
     get bodyUsed() { return !!this._used; }
-    get body() { if (!this._b) return null; const b = this._b; return new ReadableStream({ start(c) { c.enqueue(new Uint8Array(b)); c.close(); } }); }
+    get body() { if (!this._b) return null; const b = this._b; if (b instanceof ReadableStream) return b; return new ReadableStream({ start(c) { c.enqueue(new Uint8Array(b)); c.close(); } }); }
     arrayBuffer() { return this._take(); } text() { return this._take().then(N.decode); } json() { return this.text().then(JSON.parse); }
     blob() { return this._take().then(b => new Blob([b], { type: (this.headers.get('content-type') || '') })); } bytes() { return this._take().then(b => new Uint8Array(b)); }
     formData() { return this.text().then(t => { const f = new FormData(); for (const [k, v] of new URLSearchParams(t)) f.append(k, v); return f; }); }

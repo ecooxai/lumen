@@ -150,6 +150,12 @@ void frame_nav(JsCtx *k, const char *u) {
 }
 
 static bool is_iframe(Node *n) { return n->type == NODE_ELEMENT && n->ns == NS_HTML && n->tag == A_iframe; }
+static void collect_iframes(Node *root, std::vector<Node *> &out) {
+    for (Node *n = root; n; n = node_next_in_tree(n, root)) {
+        if (is_iframe(n) && !js_frame_ctx(n)) out.push_back(n);
+        if (n->type == NODE_ELEMENT && n->shadow_root) collect_iframes(n->shadow_root, out);
+    }
+}
 
 void frames_scan(JsCtx *c) {
     if (c->dead || c->doc->dom_version == c->frame_scan_ver) return;
@@ -157,7 +163,7 @@ void frames_scan(JsCtx *c) {
     for (JsCtx *k : std::vector<JsCtx *>(c->kids))
         if (!k->dead && (!(k->frame_el->flags & NF_CONNECTED) || k->frame_el->doc != c->doc || src_key(c, k->frame_el) != k->frame_src)) frame_kill(k);
     std::vector<Node *> todo;
-    for (Node *n = c->doc->node.first; n; n = node_next_in_tree(n, &c->doc->node)) if (is_iframe(n) && !js_frame_ctx(n)) todo.push_back(n);
+    collect_iframes(&c->doc->node, todo);
     for (Node *n : todo) if (!js_frame_ctx(n)) frame_start(c, n);
 }
 
@@ -166,7 +172,7 @@ void frames_inserted(JsCtx *c, Node *root) {
     JsCtx *p = owner_ctx(root->doc);
     if (!p) p = c;
     std::vector<Node *> todo;
-    for (Node *x = root; x; x = node_next_in_tree(x, root)) if (is_iframe(x) && !js_frame_ctx(x)) todo.push_back(x);
+    collect_iframes(root, todo);
     for (Node *x : todo) if (!js_frame_ctx(x)) frame_start(p, x);
 }
 

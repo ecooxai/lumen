@@ -52,7 +52,10 @@ Node *node_new_pi(Document *d, const char *target, const char *s, size_t len) { 
 Node *node_new_cdata(Document *d, const char *s, size_t len) { Node *n = alloc_node(d, NODE_CDATA); n->text = xstrndup(s, len); n->text_len = len; n->tag = atom("#cdata-section"); return n; }
 
 static void mark_connected(Node *n, bool on) {
-    for (Node *c = n; c; c = node_next_in_tree(c, n)) { if (on) c->flags |= NF_CONNECTED; else c->flags &= ~(uint32_t)NF_CONNECTED; }
+    for (Node *c = n; c; c = node_next_in_tree(c, n)) {
+        if (on) c->flags |= NF_CONNECTED; else c->flags &= ~(uint32_t)NF_CONNECTED;
+        if (c->type == NODE_ELEMENT && c->shadow_root) mark_connected(c->shadow_root, on);
+    }
 }
 static bool is_connected(Node *p) { return p->type == NODE_DOCUMENT || (p->flags & NF_CONNECTED); }
 

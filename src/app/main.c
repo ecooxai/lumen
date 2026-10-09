@@ -389,6 +389,26 @@ static void info_btn(App *a, int k, float *x, float *w) {
     *x = r; *w = W[k];
 }
 static int utf8_len(const char *q) { unsigned char c = (unsigned char)*q; int n = c < 0x80 ? 1 : (c & 0xE0) == 0xC0 ? 2 : (c & 0xF0) == 0xE0 ? 3 : 4; for (int k = 1; k < n; k++) if (!q[k]) return k; return n; }
+static const uint8_t app_icon_png[] = {
+#include "icon.inc"
+};
+static void set_window_icon(SDL_Window *w) {
+    Image *im = image_decode(app_icon_png, sizeof app_icon_png);
+    if (!im) return;
+    SDL_Surface *s = SDL_CreateSurface(im->w, im->h, SDL_PIXELFORMAT_ARGB8888);
+    if (s) {
+        for (int y = 0; y < im->h; y++) {
+            uint32_t *row = (uint32_t *)((uint8_t *)s->pixels + (size_t)y * (size_t)s->pitch);
+            for (int x = 0; x < im->w; x++) {
+                uint32_t p = im->px[(size_t)y * (size_t)im->w + (size_t)x], al = p >> 24;
+                row[x] = al ? (al << 24) | (((p >> 16) & 255) * 255 / al) << 16 | (((p >> 8) & 255) * 255 / al) << 8 | ((p & 255) * 255 / al) : 0;
+            }
+        }
+        SDL_SetWindowIcon(w, s);
+        SDL_DestroySurface(s);
+    }
+    image_unref(im);
+}
 static Image *ws_icon(App *a, int ic, bool on) {
 #ifdef __APPLE__
     if (ic < 0 || ic >= MAC_NICONS) return NULL;
@@ -1354,6 +1374,7 @@ int main(int argc, char **argv) {
     int ww = 1280, wh = 840; { const char *e = getenv("LUMEN_WINDOW"); if (e) sscanf(e, "%dx%d", &ww, &wh); }   /* e.g. LUMEN_WINDOW=800x600 */
     a.win = SDL_CreateWindow("Lumen", ww, wh, SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY | (want_gpu && !strcmp(SDL_GetPlatform(), "macOS") ? SDL_WINDOW_METAL : 0));
     if (!a.win) { fprintf(stderr, "SDL_CreateWindow: %s\n", SDL_GetError()); return 1; }
+    set_window_icon(a.win);
 #ifdef __APPLE__
     mac_style_window(a.win); mac_install_menu(EV_MENU);
 #endif
