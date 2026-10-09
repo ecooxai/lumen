@@ -368,6 +368,7 @@ static bool decode_pkt(Stream *s, DecCtx *d, AVCodecContext *cc, AVPacket *pkt, 
     }
     return true;
 }
+static void open_audio(MediaPlayer *m);
 /* returns 0: epoch change/quit, 1: eof, 2: reopen with a new init segment, -1: error */
 static int run_demux(Stream *s, DecCtx *d, double start) {
     MediaPlayer *m = s->m; int ret = -1;
@@ -385,7 +386,7 @@ static int run_demux(Stream *s, DecCtx *d, double start) {
     if (vi < 0 && ai < 0) goto done;
     SDL_LockMutex(m->mu);
     s->has_video = vi >= 0; s->has_audio = ai >= 0; s->opened = true;
-    if (s->has_audio && s->progressive) m->expect_audio = true;
+    if (s->has_audio && s->progressive) { m->expect_audio = true; if (m->playing) open_audio(m); }
     if (vi >= 0 && !m->w) { m->w = fc->streams[vi]->codecpar->width; m->h = fc->streams[vi]->codecpar->height; }
     if (s->progressive && isnan(m->duration) && fc->duration > 0) m->duration = (double)fc->duration / AV_TIME_BASE;
     SDL_UnlockMutex(m->mu); wake();
@@ -512,7 +513,7 @@ int mp_add_buffer(MediaPlayer *m, const char *mime) {
     if (media_can_play(mime, true) == 0) return -1;
     SDL_LockMutex(m->mu);
     Stream *s = new_stream(m, mime, false);
-    if (s && strncmp(mime, "audio/", 6) == 0) m->expect_audio = true;
+    if (s && strncmp(mime, "audio/", 6) == 0) { m->expect_audio = true; if (m->playing) open_audio(m); }
     int r = s ? m->nst - 1 : -1;
     SDL_UnlockMutex(m->mu);
     return r;
