@@ -10,6 +10,7 @@ setTimeout(()=>{
  const c=$('c').getBoundingClientRect(), t=$('t').getBoundingClientRect(), r0=$('r0').getBoundingClientRect(), rr=$('r').getBoundingClientRect();
  console.log('RESULTS gbcr-scroll scrolled:'+(c.top===40?'PASS':'FAIL:'+c.top)+' offsetTop:'+($('c').offsetTop===100?'PASS':'FAIL:'+$('c').offsetTop)
   +' translate:'+(t.left===30&&t.top===140?'PASS':'FAIL:'+t.left+','+t.top)+' fixedParent:'+($('f').offsetParent===null?'PASS':'FAIL')
+  +' hitTranslated:'+(document.elementFromPoint(35,145)===$('t')?'PASS':'FAIL:'+document.elementFromPoint(35,145)?.id)
   +' reverse:'+(r0.top===rr.top+50?'PASS':'FAIL:'+r0.top+' vs '+rr.top));
 },300);
 </script>

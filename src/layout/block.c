@@ -363,12 +363,17 @@ void layout_run(Layout *L, Document *d, float vw, float vh) {
 /* Children are tested front to back: positioned z>0 (highest first), positioned z auto/0,
    in-flow, then positioned z<0; ties go to the later sibling. vx/vy map fixed boxes into viewport space. */
 static int hit_layer(const Box *c) {
-    if (!c->st || c->st->position == P_STATIC) return 2;
-    int z = c->st->z_auto ? 0 : c->st->z_index;
+    if (!c->st || (c->st->position == P_STATIC && !c->st->has_transform && c->st->opacity >= 1)) return 2;
+    int z = c->st->z_auto || c->st->position == P_STATIC ? 0 : c->st->z_index;
     return z > 0 ? 0 : z == 0 ? 1 : 3;
 }
 static Box *hit(Box *b, float x, float y, float ox, float oy, float vx, float vy) {
     bool hidden = b->st && b->st->visibility != VIS_VISIBLE;   /* not a target itself, but visible descendants are */
+    if (b->st && b->st->has_transform) {   /* painted shifted by its translation (paint_stacking) */
+        float tx = b->st->transform[4] + b->st->translate_pending[0].pct * b->w / 100;
+        float ty = b->st->transform[5] + b->st->translate_pending[1].pct * b->h / 100;
+        ox -= tx; oy -= ty; vx -= tx; vy -= ty;
+    }
     float lx = x + ox, ly = y + oy;
     bool inside = lx >= b->x && lx < b->x + b->w && ly >= b->y && ly < b->y + b->h;
     if (b->scroller && b->node && !inside) return NULL;
