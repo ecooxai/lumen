@@ -1353,6 +1353,53 @@ static bool vbar_click(App *a, float x, float y) {   /* document coordinates */
     }
     return false;
 }
+static float g_px, g_py; static bool g_press, g_drag;   /* text selection by mouse */
+static void sel_dirty(App *a) { a->dirty = true; a->vonly = false; }
+static Box *sel_scope(Layout *L, float x, float y) {
+    Box *b = layout_hit(L, x, y);
+    while (b && (b->kind == BX_INLINE || b->kind == BX_TEXT)) b = b->parent;
+    return b;
+}
+static void sel_press(App *a, float x, float y, int clicks) {
+    bool had = g_tsel.on; g_tsel.on = false; g_press = g_drag = false;
+    Page *p = a->t->cur;
+    if (p && p->L && !a->t->asleep) {
+        float px = x - a->side, py = y - BAR + a->t->sy;
+        Box *b = layout_hit(p->L, px, py);
+        bool ok = !(b && b->st && b->st->user_select);
+        for (Node *k = b ? b->node : NULL; ok && k; k = k->parent) if (is_text_ctl(k)) ok = false;
+        if (ok && b && edit_host(b->node)) ok = false;
+        if (ok) {
+            g_press = true; g_px = px; g_py = py;
+            Node *tn; int off;
+            if (clicks >= 2 && tsel_point(p->L, px, py, a->t->sy, sel_scope(p->L, px, py), &tn, &off)) {
+                if (clicks == 2) tsel_word(p->L, tn, off); else tsel_block(p->L, tn);
+                g_press = false;
+            }
+        }
+    }
+    if (had || g_tsel.on) sel_dirty(a);
+}
+static void sel_drag(App *a, float x, float y) {
+    Page *p = a->t->cur;
+    if (!g_press || !p || !p->L) return;
+    float px = x - a->side, py = y - BAR + a->t->sy;
+    if (!g_drag) {
+        if (fabsf(px - g_px) + fabsf(py - g_py) < 4) return;
+        Node *an; int ao;
+        if (!tsel_point(p->L, g_px, g_py, a->t->sy, sel_scope(p->L, g_px, g_py), &an, &ao)) { g_press = false; return; }
+        g_drag = true; g_tsel = (TextSel){ false, p->L, an, an, ao, ao };
+    }
+    Node *fn; int fo;
+    if (!tsel_point(p->L, px, py, a->t->sy, NULL, &fn, &fo)) return;
+    if (fn != g_tsel.fn || fo != g_tsel.fo || !g_tsel.on) { g_tsel.fn = fn; g_tsel.fo = fo; g_tsel.on = fn != g_tsel.an || fo != g_tsel.ao; sel_dirty(a); }
+}
+static void sel_copy(App *a) {
+    Node *f = !a->editing ? page_focus(a) : NULL;
+    if (a->editing) { if (a->sel_all) SDL_SetClipboardText(a->t->url); return; }
+    if (f) { if (a->page_sel) { char *v = ctl_value(f); SDL_SetClipboardText(v); free(v); } return; }
+    if (g_tsel.on && a->t->cur && a->t->cur->L == g_tsel.L) { char *s = tsel_text(a->t->cur->L); if (*s) SDL_SetClipboardText(s); free(s); }
+}
 static void click_page(App *a, float x, float y) {
     x -= a->side;
     if (!a->t->cur || !a->t->cur->L || a->t->asleep) return;   /* a sleeping page is only a picture until its reload lands */
@@ -1567,7 +1614,7 @@ static void pick_done(void *ud, const char *const *list, int filter) {
     if (list) while (list[n]) n++;
     js_files_picked(list, list && n ? n : -1);
 }
-/* accept="image/*,.pdf" -> SDL extension filter "png;jpg;...;pdf" */
+/* accept="image/png,.pdf" -> SDL extension filter "png;jpg;...;pdf" */
 static void pick_files(bool multiple, const char *accept) {
     static char pat[512]; static SDL_DialogFileFilter flt;
     pat[0] = 0;
@@ -1771,7 +1818,7 @@ int main(int argc, char **argv) {
         if (a.tip_until) { double r = a.tip_until - now_ms(); if (r <= 0) { a.tip_until = 0; a.dirty = true; a.vonly = false; } else if (r + 1 < to) to = (int)r + 1; }
         {
             bool want = false;
-            if (!a.editing && page_focus(&a)) {
+            if (!a.editing && (page_focus(&a) || edit_focus(&a))) {
                 double ph = fmod(now_ms() - a.caret_t, 1060);
                 want = ph < 530;
                 int nx = (int)((want ? 530 : 1060) - ph) + 1; if (nx < to) to = nx;
@@ -1805,8 +1852,10 @@ int main(int argc, char **argv) {
             case SDL_EVENT_MOUSE_MOTION: {
                 int h = bar_hit(&a, ev.motion.x, ev.motion.y); if (h != a.hover) { a.hover = h; a.dirty = true; }
                 if (!h && ev.motion.y > BAR && ev.motion.x > a.side) page_move(&a, ev.motion.x - a.side, ev.motion.y - BAR);
+                if (g_press && (ev.motion.state & SDL_BUTTON_LMASK)) sel_drag(&a, ev.motion.x, ev.motion.y);
                 SDL_SetCursor(SDL_CreateSystemCursor(h == HB_URL ? SDL_SYSTEM_CURSOR_TEXT : over_link(&a, ev.motion.x, ev.motion.y) || (h && h != HB_URL) ? SDL_SYSTEM_CURSOR_POINTER : SDL_SYSTEM_CURSOR_DEFAULT));
                 break; }
+            case SDL_EVENT_MOUSE_BUTTON_UP: if (ev.button.button == SDL_BUTTON_LEFT) g_press = g_drag = false; break;
             case SDL_EVENT_MOUSE_BUTTON_DOWN:
                 if (ev.button.button != SDL_BUTTON_LEFT) break;
                 { int bh = bar_hit(&a, ev.button.x, ev.button.y);
@@ -1823,7 +1872,7 @@ int main(int argc, char **argv) {
                 case HB_STAR: bm_toggle(&a); a.dirty = true; a.vonly = false; break;
                 case HB_RELOAD: if (a.t->hpos >= 0) navigate(&a, a.t->hist[a.t->hpos], false); break;
                 case HB_URL: a.editing = true; a.sel_all = 1; SDL_StartTextInput(a.win); a.dirty = true; break;
-                default: if (a.editing) { a.editing = false; SDL_StopTextInput(a.win); a.dirty = true; } click_page(&a, ev.button.x, ev.button.y);
+                default: if (a.editing) { a.editing = false; SDL_StopTextInput(a.win); a.dirty = true; } sel_press(&a, ev.button.x, ev.button.y, ev.button.clicks); click_page(&a, ev.button.x, ev.button.y);
                 }
                 break;
             case SDL_EVENT_TEXT_INPUT: a.caret_t = now_ms();
@@ -1849,6 +1898,8 @@ int main(int argc, char **argv) {
                 if (k == SDLK_LGUI || k == SDLK_RGUI || k == SDLK_LCTRL || k == SDLK_RCTRL) { cmd = true; break; }
                 if (cmd || (ev.key.mod & (SDL_KMOD_GUI | SDL_KMOD_CTRL))) {
                     if (k == SDLK_A && !a.editing && page_focus(&a)) a.page_sel = 1;
+                    else if (k == SDLK_A && !a.editing && !edit_focus(&a) && a.t->cur && a.t->cur->L) { tsel_all(a.t->cur->L); g_tsel.L = a.t->cur->L; a.vonly = false; }
+                    else if (k == SDLK_C) sel_copy(&a);
                     else if (k == SDLK_L) { a.editing = true; a.sel_all = 1; SDL_StartTextInput(a.win); }
                     else if (k == SDLK_R && a.t->hpos >= 0) navigate(&a, a.t->hist[a.t->hpos], false);
                     else if (k == SDLK_LEFTBRACKET) history_go(&a, -1);

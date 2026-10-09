@@ -118,6 +118,15 @@ static void paint_text_frag(PB *p, TextFrag *f) {
     Color col = s->color;
     Box *blk = t->parent; while (blk && blk->kind == BX_INLINE) blk = blk->parent;
     if (blk && blk->placeholder) col = RGBA(117, 117, 117, COLOR_A(col));
+    int ss, se;
+    if (tsel_range(t, &ss, &se)) {
+        float x0 = t->sh.g[f->g0].x, a = -1, e = -1;
+        for (int i = f->g0; i < f->g1; i++) {
+            int c = (int)t->sh.g[i].cluster;
+            if (c >= ss && c < se) { float gx = t->sh.g[i].x - x0; if (a < 0) a = gx; e = gx + t->sh.g[i].adv; }
+        }
+        if (a >= 0 && e > a) { DItem *it = emit(p, DO_RECT); it->x = f->x + a + p->dx; it->y = f->y + p->dy; it->w = e - a; it->h = f->h; it->color = RGBA(179, 215, 255, 255); }
+    }
     if (s->has_text_shadow && COLOR_A(s->text_shadow.color)) emit_glyphs(p, t, f, s->text_shadow.x, s->text_shadow.y, s->text_shadow.color);
     emit_glyphs(p, t, f, 0, 0, col);
     /* text-decoration may come from an ancestor inline */
@@ -226,6 +235,30 @@ static void paint_caret(PB *p, Box *b) {
     DItem *it = emit(p, DO_RECT); it->x = x + p->dx; it->y = y + p->dy; it->w = 1; it->h = h; it->color = s->color;
 }
 
+static void last_frag_in(Box *b, TextFrag **out, const Box **blk) {
+    for (int i = b->nfrags - 1; i >= 0; i--) if (b->frags[i].box->node) { *out = &b->frags[i]; *blk = b; break; }
+    for (Box *c = b->first; c; c = c->next) if (!c->abs && c->kind != BX_TEXT && c->kind != BX_INLINE) last_frag_in(c, out, blk);
+}
+
+/* contenteditable host: caret after the last text, else at the start of its first (empty) block */
+static void paint_edit_caret(PB *p, Box *b) {
+    TextFrag *f = NULL; const Box *fb = NULL; last_frag_in(b, &f, &fb);
+    const ComputedStyle *s = b->st;
+    float x, y, h;
+    if (f) { x = f->x + f->w; y = f->y; h = f->h; s = f->box->st; }
+    else {
+        const Box *c = b; while (c->first && !c->first->abs && c->first->kind == BX_BLOCK) c = c->first;
+        s = c->st; h = s->font_size * 1.2f;
+        x = c->x + c->b[3] + c->p[3]; y = c->y + c->b[0] + c->p[0];
+        float ch = c->h - c->b[0] - c->b[2] - c->p[0] - c->p[2]; if (ch > h) y += (ch - h) / 2;
+    }
+    DItem *it = emit(p, DO_RECT); it->x = x + p->dx; it->y = y + p->dy; it->w = 1; it->h = h; it->color = COLOR_A(s->caret_color) ? s->caret_color : s->color;
+}
+static bool is_edit_host(const Node *n) {
+    const char *ce = n && n->type == NODE_ELEMENT ? node_attr((Node *)n, "contenteditable") : NULL;
+    return ce && strcmp(ce, "false");
+}
+
 /* paints a non-positioned box's own background and its normal-flow content */
 static void paint_block_content(PB *p, Box *b, DefVec *defs) {
     const ComputedStyle *s = b->st;
@@ -245,6 +278,7 @@ static void paint_block_content(PB *p, Box *b, DefVec *defs) {
     if (s->display == D_LIST_ITEM && vis) paint_marker(p, b);
     paint_flow(p, b, defs);
     if (vis && dl_caret_on && (b->ctl == CTL_TEXT || b->ctl == CTL_TEXTAREA) && b->node && (b->node->flags & NF_FOCUS)) paint_caret(p, b);
+    else if (vis && dl_caret_on && b->node && (b->node->flags & NF_FOCUS) && is_edit_host(b->node)) paint_edit_caret(p, b);
     if (clips) { int order = p->order; *p = saved; p->order = order; emit(p, DO_POP_CLIP); }
 }
 
@@ -342,6 +376,7 @@ void dl_clear(DisplayList *dl) { dl->items.n = 0; dl->has_fixed = false; dl->fix
 void dl_build(DisplayList *dl, Layout *L, float scroll_x, float scroll_y, float vw, float vh) {
     dl_clear(dl); dl->vw = vw; dl->vh = vh;
     if (!L->root) return;
+    tsel_prepare(L);
     PB p; memset(&p, 0, sizeof p); p.dl = dl; p.L = L; p.dx = -scroll_x; p.dy = -scroll_y; p.sx = scroll_x; p.sy = scroll_y;
     /* canvas background propagates from html, else body */
     Node *html = L->doc->html, *body = L->doc->body;

@@ -48,4 +48,16 @@ void raster(Canvas *c, const DisplayList *dl, Color clear);
 /* Re-raster only device-pixel rect [x0,x1)x[y0,y1); pixels outside are left untouched. */
 void raster_rect(Canvas *c, const DisplayList *dl, Color clear, int x0, int y0, int x1, int y1);
 bool png_write(const char *path, const uint32_t *px, int w, int h, int stride);
+
+/* native text selection (anchor/focus = text node + byte offset into its layout text) */
+typedef struct TextSel { bool on; const Layout *L; Node *an, *fn; int ao, fo; } TextSel;
+extern TextSel g_tsel;
+bool tsel_point(Layout *L, float x, float y, float page_sy, Box *scope, Node **n, int *off);
+void tsel_prepare(Layout *L);
+bool tsel_range(const Box *t, int *s, int *e);
+char *tsel_text(Layout *L);
+void tsel_word(Layout *L, Node *n, int off);
+void tsel_block(Layout *L, Node *n);
+void tsel_all(Layout *L);
+
 #endif
