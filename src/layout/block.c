@@ -70,6 +70,8 @@ void add_abs(Layout *L, Box *c) {
     if (!c->fixed) for (Box *p = c->parent; p; p = p->parent) if (p->st && p->kind != BX_INLINE && (p->st->position != P_STATIC || p->st->has_transform) && p != c) { cb = p; break; }
     if (c->fixed) for (Box *p = c->parent; p; p = p->parent) if (p->st && p->st->has_transform && p->kind != BX_INLINE) { cb = p; break; }
     c->cb = cb; cb->has_abs = true;
+    if (L->nalog == L->calog) { L->calog = L->calog ? L->calog * 2 : 64; L->alog = xrealloc(L->alog, sizeof *L->alog * (size_t)L->calog); }
+    L->alog[L->nalog++] = c;
     for (Box *x = cb->abs_head; x; x = x->abs_next) if (x == c) return;
     c->abs_next = cb->abs_head; cb->abs_head = c;
 }
@@ -168,7 +170,32 @@ static float clamph(const ComputedStyle *s, float h, float cbh, float bp) {
     return h;
 }
 
+static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float cbh, FloatCtx *fc, int mode, float fw, float fh);
+/* flex/grid measure a child and then lay it out again, often with identical inputs; nested containers made that exponential */
+int g_lb_calls, g_lb_hits;
 void layout_box(Layout *L, Box *b, float x, float y, float cbw, float cbh, FloatCtx *fc, int mode, float fw, float fh) {
+    g_lb_calls++;
+    if (!fc && b->memo && b->mmode == mode && b->mk[2] == cbw && b->mk[3] == cbh && b->mk[4] == fw && b->mk[5] == fh && b->w == b->mk[6] && b->h == b->mk[7]) {
+        float dx = x + b->mk[0] - b->x, dy = y + b->mk[1] - b->y;
+        box_translate(b, dx, dy); g_lb_hits++;
+        static unsigned stamp; stamp++;
+        for (int i = b->alo; i < b->ahi; i++) {
+            Box *c = L->alog[i];
+            if (c->astamp == stamp) continue;
+            c->astamp = stamp;
+            if (c->fixed || (c->cb && !within(c->cb, b))) { c->sx += dx; c->sy += dy; }   /* positioned by an outer box: tr left it alone */
+            add_abs(L, c);
+        }
+        return;
+    }
+    int alo = L->nalog;
+    layout_box_in(L, b, x, y, cbw, cbh, fc, mode, fw, fh);
+    /* table parts get adjusted by their table after layout (row heights, vertical-align), so never reuse them */
+    b->alo = alo; b->ahi = L->nalog;
+    b->memo = !fc && b->fmt != FMT_TABLE && b->st->display != D_TABLE_CELL && (!b->parent || b->parent->fmt != FMT_TABLE);
+    b->mmode = (int8_t)mode; b->mk[0] = b->x - x; b->mk[1] = b->y - y; b->mk[2] = cbw; b->mk[3] = cbh; b->mk[4] = fw; b->mk[5] = fh; b->mk[6] = b->w; b->mk[7] = b->h;
+}
+static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float cbh, FloatCtx *fc, int mode, float fw, float fh) {
     const ComputedStyle *s = b->st;
     compute_mbp(b, cbw);
     b->abs_head = NULL;
@@ -266,7 +293,7 @@ static void free_box_data(Box *b) {
 }
 
 Layout *layout_new(void) { Layout *L = xcalloc(1, sizeof *L); L->dpr = 2; return L; }
-void layout_free(Layout *L) { if (L->root) free_box_data(L->root); arena_reset(&L->arena); free(L); }
+void layout_free(Layout *L) { if (L->root) free_box_data(L->root); arena_reset(&L->arena); free(L->alog); free(L); }
 
 static void track_containers(Document *d, Box *b) {
     for (; b; b = b->next) {
@@ -283,7 +310,7 @@ void layout_run(Layout *L, Document *d, float vw, float vh) {
     double t0 = now_ms();
     if (L->root) free_box_data(L->root);
     arena_reset(&L->arena);
-    L->doc = d; L->vw = vw; L->vh = vh; L->nboxes = 0;
+    L->doc = d; L->vw = vw; L->vh = vh; L->nboxes = 0; L->nalog = 0;
     L->root = build_box_tree(L, d);
     Box *r = L->root;
     r->x = r->y = 0; r->w = vw;
@@ -298,6 +325,9 @@ void layout_run(Layout *L, Document *d, float vw, float vh) {
     L->doc_h = LMAX(L->doc_h, vh);
     track_containers(d, r);
     L->ms = now_ms() - t0;
+    static int dbg = -1, nrun; static double tsum, tlast;
+    if (dbg < 0) dbg = getenv("LUMEN_DEBUG_LAYOUT") != NULL;
+    if (dbg) { nrun++; tsum += L->ms; double t = now_ms(); if (t - tlast > 1000) { fprintf(stderr, "lumen: layout %d runs/s %.1fms avg %d boxes %d calls %d hits\n", nrun, nrun ? tsum / nrun : 0, L->nboxes, nrun ? g_lb_calls / nrun : 0, nrun ? g_lb_hits / nrun : 0); g_lb_calls = g_lb_hits = 0; nrun = 0; tsum = 0; tlast = t; } }
 }
 
 /* ---------------- hit testing ---------------- */

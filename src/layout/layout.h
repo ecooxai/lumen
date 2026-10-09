@@ -34,6 +34,7 @@ typedef struct Box {
     int list_index;
     float sx, sy;
     struct Box *cb, *abs_next, *abs_head;
+    float mk[8]; int8_t mmode; bool memo; int alo, ahi; unsigned astamp;   /* inputs of the last layout_box, reused when called again with the same ones */
 } Box;
 
 typedef struct FRect { float x, y, w, h; uint8_t side; } FRect;
@@ -49,6 +50,7 @@ typedef struct Layout {
     int nboxes;
     float inl_cbh;   /* containing-block height handed to layout_inline (floats/atomics resolve % heights against it) */
     double ms;
+    struct Box **alog; int nalog, calog;   /* every add_abs of this run, so a reused subtree can re-register its abs boxes */
 } Layout;
 
 extern bool (*layout_image_size_hook)(Node *n, float *w, float *h);

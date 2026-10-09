@@ -185,3 +185,16 @@ Load (DCL/load): Google 0.53/3.66 s, Bing 1.97/2.23 s, YT watch ~2.2/3.47 s, YT 
 - Repro: send "Count from 1 to 60 in words, one per line." in a new chat (`~/bench/fc5pre.js` tees the fetch). `POST /backend-api/f/conversation` returns the full ~54 KB `text/event-stream` in 1 chunk ending with `message_stream_complete` and `[DONE]`, but `main.textContent` stays ~158 chars (only the prompt) until reload. After reload, the reply renders fully (same length as Chrome, 5345 chars for 1..300).
 - Plan: stream response heads and chunks from the worker to the main thread (queue drained in `net_poll`), resolve `fetch` on headers, and feed the body `ReadableStream` per chunk. Buffer when `content-encoding` needs whole-body decompression unless an incremental decoder is added. Then recheck whether the live reply renders.
 - Interactive check (`~/bench/fcheck.js`): model picker, profile menu, search, chat actions, More, rate, copy, edit/cancel all match Chrome. Settings via `#settings` hash opens in neither browser.
+
+## Typing CPU / damage raster / CPU readout (2026-10-09)
+- `layout_box()` memoises results per box (mode + containing block + forced size) and re-registers
+  absolute descendants from `L->alog`; tables are excluded. `LUMEN_DEBUG_LAYOUT=1` prints runs/s and hit rate.
+- `font_get()` has a thread-local memo invalidated by `font_gen` when web fonts change.
+- Damage raster (`render()` in main.c): each page display item gets a hash + bounds (`dl_sigs`);
+  on DOM/layout/UI-only frames only the union of changed items is rastered. `LUMEN_CHECK_DAMAGE=1`
+  compares against a full raster and logs mismatched pixels (0 on ChatGPT typing).
+- Typing in the ChatGPT composer is now ~17-30% CPU (was 66-95%); remaining cost is ChatGPT's JS
+  (`js_dispatch`) plus synchronous layouts from its geometry reads (`h_sync`). Target is <10%.
+- Settings > "CPU usage" (`cpu_hud`, off by default, on in debug builds) shows Lumen's CPU and RAM (GB)
+  at the bottom of the workspace sidebar every 2 s; clicking opens a popup with host CPU and RAM.
+- Next: ChatGPT composer click-to-caret and selection (paint_edit_caret always draws at the end).

@@ -19,6 +19,10 @@ static FT_Library ftlib;
 static pthread_mutex_t font_mu = PTHREAD_MUTEX_INITIALIZER;
 static HMap faces;   /* "path#index" -> Face* */
 static HMap fonts;   /* "path#index@size/flags" -> Font* */
+/* per-thread memo in front of font_get: layout asks for the same few fonts for every text box */
+typedef struct { unsigned gen; uint32_t h; int w; bool it; float size; Font *f; char *fam; size_t fl; } FontMemo;
+static unsigned font_gen = 1;
+static _Thread_local FontMemo font_memo[256];
 static HMap resolve_cache; /* "family|w|i" -> Face* */
 
 /* @font-face declarations: fetched on first use, then swapped in (font-display: swap) */
@@ -165,9 +169,22 @@ static Font *font_for_face(Face *face, float size, bool sb, bool si) {
     return f;
 }
 
+static Font *font_get_slow(const char *family, int weight, bool italic, float size);
 Font *font_get(const char *family, int weight, bool italic, float size) {
     if (size <= 0) size = 0.01f;
     if (!family || !*family) family = "sans-serif";
+    size_t fl = strlen(family); uint32_t h = 2166136261u, sb;
+    for (size_t i = 0; i < fl; i++) h = (h ^ (uint8_t)family[i]) * 16777619u;
+    memcpy(&sb, &size, 4);
+    uint32_t k = h ^ (uint32_t)weight * 2654435761u ^ sb * 40503u ^ (uint32_t)italic;
+    FontMemo *m = &font_memo[(k ^ k >> 16) & 255];
+    unsigned g = __atomic_load_n(&font_gen, __ATOMIC_RELAXED);
+    if (m->f && m->gen == g && m->h == h && m->w == weight && m->it == italic && m->size == size && m->fl == fl && !memcmp(m->fam, family, fl)) return m->f;
+    Font *f = font_get_slow(family, weight, italic, size);
+    if (f) { if (m->fl < fl || !m->fam) { free(m->fam); m->fam = xmalloc(fl + 1); } memcpy(m->fam, family, fl + 1); m->fl = fl; m->gen = g; m->h = h; m->w = weight; m->it = italic; m->size = size; m->f = f; }
+    return f;
+}
+static Font *font_get_slow(const char *family, int weight, bool italic, float size) {
     char ck[512]; snprintf(ck, sizeof ck, "%s|%d|%d", family, weight >= 600 ? 700 : 400, italic);
     pthread_mutex_lock(&font_mu);
     Face *face = hm_get(&resolve_cache, ck); bool sb = false, si = false;
@@ -328,7 +345,7 @@ void font_declare(const char *family, int weight, bool italic, const char *url) 
     d->family = xstrdup(lname); d->url = xstrdup(url); d->weight = weight; d->italic = italic;
     for (WebDecl *o = webdecls; o; o = o->next) if (!strcmp(o->url, url) && o->state) { d->state = o->state; d->face = o->face; break; }
     d->next = webdecls; webdecls = d;
-    hm_free(&resolve_cache, free); memset(&resolve_cache, 0, sizeof resolve_cache);
+    hm_free(&resolve_cache, free); memset(&resolve_cache, 0, sizeof resolve_cache); __atomic_add_fetch(&font_gen, 1, __ATOMIC_RELAXED);
     pthread_mutex_unlock(&font_mu);
 }
 
@@ -354,7 +371,7 @@ bool font_loaded(const char *url, const void *data, size_t len) {
         f->italic = ft->style_flags & FT_STYLE_FLAG_ITALIC;
     } else free(buf);
     for (WebDecl *d = webdecls; d; d = d->next) if (!strcmp(d->url, url)) { d->state = 2; d->face = f; }
-    if (f) { hm_free(&resolve_cache, free); memset(&resolve_cache, 0, sizeof resolve_cache); }
+    if (f) { hm_free(&resolve_cache, free); memset(&resolve_cache, 0, sizeof resolve_cache); __atomic_add_fetch(&font_gen, 1, __ATOMIC_RELAXED); }
     pthread_mutex_unlock(&font_mu);
     return f != NULL;
 }

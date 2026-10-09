@@ -3,6 +3,10 @@
 #include <ctype.h>
 #include <time.h>
 #include <malloc/malloc.h>
+#include <sys/resource.h>
+#ifdef __APPLE__
+#include <mach/mach.h>
+#endif
 #include <SDL3/SDL.h>
 #include "../paint/paint.h"
 #include "../media/media.h"
@@ -56,6 +60,14 @@ static bool g_lowmem;
 static int g_cpu_on = 1, g_cpu_pct = 80, g_cpu_secs = 60, g_cpu_lim = 40;
 static bool g_vctl;
 static bool g_tab_sleep;
+#ifdef NDEBUG
+static bool g_hud;          /* CPU/RAM readout at the bottom of the workspace sidebar (Settings; on by default in debug builds) */
+#else
+static bool g_hud = true;
+#endif
+static bool g_hud_pop;      /* host CPU/RAM popup opened by clicking the readout */
+static float g_hud_cpu, g_hud_ram, g_host_cpu, g_host_ram, g_pop[4];
+#define HUDH 48.f
 static int g_ua;   /* UA_CHROME / UA_FIREFOX / UA_LUMEN */
 static char g_pref[1024];
 typedef struct { char *url, *title; } Link;
@@ -65,7 +77,7 @@ static Link g_bms[MAX_BM], g_hv[MAX_HV]; static int g_nbm, g_nhv;
 static void pref_path(char *out, size_t n, const char *f) { snprintf(out, n, "%s%s", g_pref, f); }
 static void settings_save(void) {
     char p[1200]; pref_path(p, sizeof p, "settings.txt"); FILE *f = *g_pref ? fopen(p, "w") : NULL; if (!f) return;
-    fprintf(f, "offscreen_media_eviction=%d\ncpu_limit=%d\ncpu_pct=%d\ncpu_secs=%d\ncpu_lim=%d\nvideo_controls=%d\ntab_sleep=%d\nuser_agent=%d\n", g_lowmem, g_cpu_on, g_cpu_pct, g_cpu_secs, g_cpu_lim, g_vctl, g_tab_sleep, g_ua);
+    fprintf(f, "offscreen_media_eviction=%d\ncpu_limit=%d\ncpu_pct=%d\ncpu_secs=%d\ncpu_lim=%d\nvideo_controls=%d\ntab_sleep=%d\nuser_agent=%d\ncpu_hud=%d\n", g_lowmem, g_cpu_on, g_cpu_pct, g_cpu_secs, g_cpu_lim, g_vctl, g_tab_sleep, g_ua, g_hud);
     fclose(f);
 }
 static void link_put(Link *v, int *n, int max, const char *url, const char *title) {
@@ -219,7 +231,8 @@ typedef struct Tab { Page *cur; bool loading, relayout; char *hist[256]; uint64_
 typedef struct App {
     SDL_Window *win; SDL_MetalView mview; Gpu *gpu;
     int pw, ph; float scale, vw, vh;
-    Canvas frame, page; DisplayList pdl, cdl;
+    Canvas frame, page; DisplayList pdl, cdl, hdl;
+    struct DSig *osig, *nsig; int nosig, cosig, cnsig; uint64_t chash; bool osig_ok;   /* last page display list, to raster only what changed */
     Tab *t, *tabs[MAX_TABS]; int ntabs, ti;
     char wsname[16][64]; Tab *wslast[16]; int nws, wi; float side;
     int wsicon[16]; Image *icimg[16][2];
@@ -314,6 +327,8 @@ static char *internal_page(const char *u) {   /* lumen://newtab?s=bookmarks|hist
         ip_toggle(&b, "vctl", g_vctl);
         sb_puts(&b, "</div></div><div class=card><div class=row><div class=grow><div class=t>Sleep background ChatGPT tabs</div><div class=sub>A ChatGPT tab left in the background for a minute stops running and frees most of its memory. It keeps showing its last screen and reloads when you click it. Text you typed but did not send in that tab may be lost.</div></div>");
         ip_toggle(&b, "sleep", g_tab_sleep);
+        sb_puts(&b, "</div></div><div class=card><div class=row><div class=grow><div class=t>CPU usage</div><div class=sub>Shows how much CPU and memory (GB) Lumen uses at the bottom of the workspace sidebar, updated every 2 seconds. Click it to see the whole computer's CPU and memory use.</div></div>");
+        ip_toggle(&b, "hud", g_hud);
         sb_puts(&b, "</div></div><div class=card><div class=row><div class=grow><div class=t>User agent</div><div class=sub>How Lumen identifies itself to websites. Chrome works best on most sites. Reload open pages to apply.</div></div>");
         for (int i = 0; i < UA_COUNT; i++) sb_printf(&b, "<a class=\"btn%s\" href=\"lumen://set?s=settings&ua=%d\">%s</a>", i == g_ua ? " on" : "", i, net_user_agent_name(i));
         sb_puts(&b, "</div></div><script>function save(){var g=function(i){return parseInt(document.getElementById(i).value,10)||0};location.href='lumen://set?s=settings&cpu_pct='+g('n')+'&cpu_secs='+g('m')+'&cpu_lim='+g('t')}</script>");
@@ -340,6 +355,7 @@ static void apply_set(App *a, const char *q) {
     if (qparam(q, "cpu", v, sizeof v)) g_cpu_on = atoi(v) != 0;
     if (qparam(q, "vctl", v, sizeof v)) g_vctl = atoi(v) != 0;
     if (qparam(q, "sleep", v, sizeof v)) g_tab_sleep = atoi(v) != 0;
+    if (qparam(q, "hud", v, sizeof v)) { g_hud = atoi(v) != 0; g_hud_pop = false; }
     if (qparam(q, "ua", v, sizeof v)) { g_ua = LCLAMP(atoi(v), 0, UA_COUNT - 1); net_set_user_agent(g_ua); }
     if (qparam(q, "cpu_pct", v, sizeof v)) g_cpu_pct = LCLAMP(atoi(v), 10, 100);
     if (qparam(q, "cpu_secs", v, sizeof v)) g_cpu_secs = LCLAMP(atoi(v), 5, 600);
@@ -396,7 +412,7 @@ static float push_text(DisplayList *dl, Font *f, const char *s, float x, float b
     return w;
 }
 
-enum { HB_NONE, HB_BACK, HB_FWD, HB_RELOAD, HB_URL, HB_NEWTAB, HB_WSNEW, HB_STAR, HB_TAB = 100, HB_TABX = 200, HB_WS = 300, HB_INFO = 400, HB_TABDOT = 500 };
+enum { HB_NONE, HB_BACK, HB_FWD, HB_RELOAD, HB_URL, HB_NEWTAB, HB_WSNEW, HB_STAR, HB_HUD, HB_TAB = 100, HB_TABX = 200, HB_WS = 300, HB_INFO = 400, HB_TABDOT = 500 };
 static void info_btn(App *a, int k, float *x, float *w) {
     static const float W[4] = { 70, 76, 82, 28 }; float r = a->vw - 12;
     for (int i = 3; i >= k; i--) r -= W[i] + (i < 3 ? 6 : 0);
@@ -457,6 +473,7 @@ static int bar_hit(App *a, float x, float y) {
         return HB_NONE;
     }
     if (x < a->side) {
+        if (g_hud && y >= a->vh - HUDH) return HB_HUD;
         int r = (int)floorf((y - WSY0) / WSRH);
         if (y >= WSY0 && r < a->nws) return HB_WS + r;
         return y >= WSY0 && r == a->nws ? HB_WSNEW : HB_NONE;
@@ -506,7 +523,45 @@ static void chrome_tip(App *a) {   /* tooltip for a tab's CPU-limit dot (hover o
     push_rect(&a->cdl, x, y, w, 26, 6, RGBA(45, 45, 48, 240));
     push_text(&a->cdl, a->ui, msg, x + 10, y + 13 + (a->ui->ascent - a->ui->descent) / 2, w, RGBA(255, 255, 255, 255));
 }
+static void build_hud_pop(App *a) {
+    DisplayList *dl = &a->hdl; dl_clear(dl);
+    if (!g_hud || !g_hud_pop || a->side <= 0) return;
+    float w = 150, h = 62, x = 8, y = a->vh - HUDH - h - 2, rb = (a->ui->ascent - a->ui->descent) / 2;
+    g_pop[0] = x; g_pop[1] = y; g_pop[2] = x + w; g_pop[3] = y + h;
+    push_rect(dl, x, y, w, h, 0, RGBA(208, 212, 218, 255));
+    push_rect(dl, x + 1, y + 1, w - 2, h - 2, 0, RGBA(255, 255, 255, 255));
+    static const char *lb[2] = { "Host CPU", "Host RAM" };
+    for (int k = 0; k < 2; k++) {
+        char v[16]; float cy = y + 19 + k * 24 + rb;
+        snprintf(v, sizeof v, k ? "%.1f" : "%.0f", k ? g_host_ram : g_host_cpu);
+        push_text(dl, a->ui, lb[k], x + 12, cy, 80, RGBA(95, 99, 104, 255));
+        float tw = text_width(a->ui, v, strlen(v), 0);
+        push_text(dl, a->ui, v, x + w - 12 - tw, cy, 60, RGBA(32, 33, 36, 255));
+    }
+}
+/* this process's CPU (% of one core since the last call) and memory footprint (GB), plus the host's CPU (%) and used memory (GB) */
+static void hud_sample(void) {
+    static double lt; static uint64_t lu, hb, ht; double now = now_ms();
+    struct rusage ru; getrusage(RUSAGE_SELF, &ru);
+    uint64_t us = (uint64_t)ru.ru_utime.tv_sec * 1000000 + (uint64_t)ru.ru_utime.tv_usec + (uint64_t)ru.ru_stime.tv_sec * 1000000 + (uint64_t)ru.ru_stime.tv_usec;
+    if (lt && now > lt) g_hud_cpu = (float)((double)(us - lu) / ((now - lt) * 10.0));
+    lt = now; lu = us;
+#ifdef __APPLE__
+    task_vm_info_data_t vi; mach_msg_type_number_t c = TASK_VM_INFO_COUNT;
+    if (task_info(mach_task_self(), TASK_VM_INFO, (task_info_t)&vi, &c) == KERN_SUCCESS) g_hud_ram = (float)(vi.phys_footprint / 1073741824.0);
+    host_cpu_load_info_data_t cl; c = HOST_CPU_LOAD_INFO_COUNT;
+    if (host_statistics(mach_host_self(), HOST_CPU_LOAD_INFO, (host_info_t)&cl, &c) == KERN_SUCCESS) {
+        uint64_t busy = (uint64_t)cl.cpu_ticks[CPU_STATE_USER] + cl.cpu_ticks[CPU_STATE_SYSTEM] + cl.cpu_ticks[CPU_STATE_NICE], tot = busy + cl.cpu_ticks[CPU_STATE_IDLE];
+        if (ht && tot > ht) g_host_cpu = (float)(100.0 * (double)(busy - hb) / (double)(tot - ht));
+        hb = busy; ht = tot;
+    }
+    vm_statistics64_data_t vs; c = HOST_VM_INFO64_COUNT; vm_size_t pg = 0;
+    if (host_page_size(mach_host_self(), &pg) == KERN_SUCCESS && host_statistics64(mach_host_self(), HOST_VM_INFO64, (host_info64_t)&vs, &c) == KERN_SUCCESS)   /* Activity Monitor's "Memory Used" */
+        g_host_ram = (float)(((double)vs.internal_page_count - vs.purgeable_count + vs.wire_count + vs.compressor_page_count) * (double)pg / 1073741824.0);
+#endif
+}
 static void build_chrome(App *a) {
+    build_hud_pop(a);
     DisplayList *dl = &a->cdl; dl_clear(dl);
     float x0 = bar_x0(a), tbw = a->vw - x0;
     if (g_compact) { push_rect(dl, 0, 0, a->vw, TB, 0, RGBA(250, 250, 250, 255)); push_rect(dl, 0, TB - 1, a->vw, 1, 0, RGBA(226, 226, 226, 255)); }
@@ -550,6 +605,19 @@ static void build_chrome(App *a) {
             Image *ici = w < a->nws ? ws_icon(a, a->wsicon[w], on) : NULL;
             if (ici) { DItem it; memset(&it, 0, sizeof it); it.op = DO_IMAGE; it.x = 10 + (bw - 18) / 2; it.y = y + (WSRH - 18) / 2; it.w = it.h = 18; it.img = ici; it.alpha = 1; vec_push(dl->items, it); }
             else push_text(dl, a->ui, lab, 10 + (bw - lw) / 2, y + WSRH / 2 + rb, bw, on ? RGBA(20, 20, 20, 255) : RGBA(90, 94, 100, 255));
+        }
+        if (g_hud) {
+            static Font *sf; if (!sf) sf = font_get("system-ui", 400, false, 11.f);
+            float hy = a->vh - HUDH, sb = (sf->ascent - sf->descent) / 2;
+            if (a->hover == HB_HUD || g_hud_pop) push_rect(dl, 6, hy + 4, a->side - 12, HUDH - 10, 8, RGBA(222, 225, 230, 255));
+            static const char *lb[2] = { "CPU", "RAM" };
+            for (int k = 0; k < 2; k++) {
+                char v[16]; float cy = hy + 15 + k * 17 + sb;
+                snprintf(v, sizeof v, k ? "%.1f" : "%.0f", k ? g_hud_ram : g_hud_cpu);
+                push_text(dl, sf, lb[k], 14, cy, 30, RGBA(110, 114, 120, 255));
+                float tw = text_width(sf, v, strlen(v), 0);
+                push_text(dl, sf, v, a->side - 14 - tw, cy, 44, RGBA(32, 33, 36, 255));
+            }
         }
     }
     if (g_info_h > 0) {
@@ -631,6 +699,43 @@ static void update_compact(App *a) {
     g_compact = c; a->hover = HB_NONE; a->vonly = false;
     for (int i = 0; i < a->ntabs; i++) a->tabs[i]->relayout = true;
 }
+/* per display item: content hash + device-independent bounds, so a DOM change only rasters the area whose items changed */
+struct DSig { uint64_t h; float b[4]; };
+static uint64_t hmix(uint64_t h, const void *p, size_t n) { const uint8_t *c = p; for (size_t i = 0; i < n; i++) h = (h ^ c[i]) * 1099511628211ull; return h; }
+#define HMIX(h, v) h = hmix(h, &(v), sizeof(v))
+static uint64_t ditem_hash(const DItem *it) {
+    uint64_t h = 1469598103934665603ull;
+    HMIX(h, it->op); HMIX(h, it->x); HMIX(h, it->y); HMIX(h, it->w); HMIX(h, it->h); HMIX(h, it->r); HMIX(h, it->color);
+    HMIX(h, it->bw); HMIX(h, it->bc); HMIX(h, it->bs); HMIX(h, it->img); HMIX(h, it->blur); HMIX(h, it->spread); HMIX(h, it->alpha); HMIX(h, it->inset);
+    if (it->grad) { const Gradient *g = it->grad; HMIX(h, g->type); HMIX(h, g->angle); HMIX(h, g->nstops); HMIX(h, g->repeating); h = hmix(h, g->stops, sizeof g->stops[0] * (size_t)LCLAMP(g->nstops, 0, 8)); }
+    for (int i = 0; i < it->ng; i++) { const DGlyph *g = &it->g[i]; HMIX(h, g->gid); HMIX(h, g->x); HMIX(h, g->y); HMIX(h, g->font); }
+    return h;
+}
+static void bunion(float *a, const float *b) { a[0] = LMIN(a[0], b[0]); a[1] = LMIN(a[1], b[1]); a[2] = LMAX(a[2], b[2]); a[3] = LMAX(a[3], b[3]); }
+static void ditem_box(const DItem *it, float *b) {
+    float x0 = it->x, y0 = it->y, x1 = it->x + it->w, y1 = it->y + it->h, e = 2;
+    if (it->op == DO_SHADOW) e += fabsf(it->spread) + fabsf(it->blur);
+    if (it->op == DO_TEXT) {
+        x0 = y0 = 1e30f; x1 = y1 = -1e30f;
+        for (int i = 0; i < it->ng; i++) { const DGlyph *g = &it->g[i]; float em = g->font ? g->font->size : 16; x0 = LMIN(x0, g->x - em); x1 = LMAX(x1, g->x + 2 * em); y0 = LMIN(y0, g->y - 1.5f * em); y1 = LMAX(y1, g->y + em); }
+    }
+    if (it->op == DO_POP_CLIP || it->op == DO_POP_LAYER || it->op == DO_PUSH_LAYER || x1 <= x0 || y1 <= y0) { b[0] = b[1] = 1e30f; b[2] = b[3] = -1e30f; return; }
+    b[0] = x0 - e; b[1] = y0 - e; b[2] = x1 + e; b[3] = y1 + e;
+}
+static int dl_sigs(const DisplayList *dl, struct DSig **v, int *cap) {
+    int n = dl->items.n, st[64], ns = 0;
+    if (n > *cap) { *cap = n + n / 2 + 16; *v = xrealloc(*v, sizeof **v * (size_t)*cap); }
+    for (int i = 0; i < n; i++) {
+        const DItem *it = &dl->items.v[i]; struct DSig *q = &(*v)[i];
+        q->h = ditem_hash(it); ditem_box(it, q->b);
+        if (it->op == DO_PUSH_LAYER) { if (ns < 64) st[ns++] = i; }   /* a layer covers its contents: an opacity change damages all of them */
+        else if (it->op == DO_POP_LAYER) { if (ns) { int t = st[--ns]; if (ns) bunion((*v)[st[ns - 1]].b, (*v)[t].b); } }
+        else if (ns) bunion((*v)[st[ns - 1]].b, q->b);
+    }
+    return n;
+}
+static uint64_t dl_hash(const DisplayList *dl) { uint64_t h = (uint64_t)dl->items.n; for (int i = 0; i < dl->items.n; i++) h = h * 31 + ditem_hash(&dl->items.v[i]); return h; }
+
 static void render(App *a) {
     update_compact(a);
     double t0 = now_ms();
@@ -644,7 +749,7 @@ static void render(App *a) {
     if (defer && !a->vframe) { a->dirty = false; return; }
     bool part = !why;
     int rx0 = pwp, ry0 = ph, rx1 = 0, ry1 = 0;
-    if (a->page.w != pwp || a->page.h != ph) { canvas_free(&a->page); canvas_init(&a->page, pwp, ph, a->scale); part = false; }
+    if (a->page.w != pwp || a->page.h != ph) { canvas_free(&a->page); canvas_init(&a->page, pwp, ph, a->scale); part = false; a->osig_ok = false; }
     bool gskip = false; GpuVideo gvd, *gvp = NULL;
     Image *fast = part && !a->sdirty && a->t->cur && a->gpu && a->gvid_ok && a->t->sy == a->last_sy && a->page.w == pwp && a->page.h == ph ? media_owner_frame(a->vown) : NULL;
     if (a->t->cur && (defer || fast)) {   /* nothing but the video changed, or layout may be stale: only swap the video texture */
@@ -668,6 +773,7 @@ static void render(App *a) {
             else { part = false; why = 5; }
         }
         g_full_paint = (double)SDL_GetTicks(); { double q = now_ms(); dl_clear(&a->pdl); dl_build(&a->pdl, a->t->cur->L, 0, a->t->sy, a->vw - a->side, a->vh - BAR); g_td += now_ms() - q; } a->vbars = video_bars(a, &a->pdl);
+        int nn = dl_sigs(&a->pdl, &a->nsig, &a->cnsig);
         const DItem *vit = NULL; int nv = 0;
         for (int i = 0; i < a->pdl.items.n; i++) {
             const DItem *it = &a->pdl.items.v[i];
@@ -700,20 +806,49 @@ static void render(App *a) {
         } else if (part && (nv == 0 || (gv && a->gvid_ok))) gskip = true;
         else if (part && rx1 > rx0 && ry1 > ry0) { a->gvid_ok = false; raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), rx0, ry0, rx1, ry1); }
         else {
-            part = false; a->page.punch = gv ? vit->img : NULL; a->page.punched = false;
-            { double q = now_ms(); raster(&a->page, &a->pdl, RGBA(255, 255, 255, 255)); g_tx += now_ms() - q; }
-            a->gvid_ok = gv && a->page.punched; a->page.punch = NULL;
+            bool dmg = (why == 1 || why == 3 || why == 4) && !nv && a->osig_ok && a->t->sy == a->last_sy && !a->t->loading;
+            if (dmg) {   /* only DOM/layout changed: raster the union of the items that differ from the last frame */
+                build_chrome(a); chrome_tip(a);
+                if (dl_hash(&a->cdl) * 31 + dl_hash(&a->hdl) != a->chash) dmg = false;
+                float dm[4] = { 1e30f, 1e30f, -1e30f, -1e30f };
+                for (int i = 0, m = LMAX(nn, a->nosig); dmg && i < m; i++) {
+                    const struct DSig *o = i < a->nosig ? &a->osig[i] : NULL, *q = i < nn ? &a->nsig[i] : NULL;
+                    if (o && q && o->h == q->h) continue;
+                    if (o) bunion(dm, o->b);
+                    if (q) bunion(dm, q->b);
+                }
+                float s = a->page.scale;
+                int x0 = LMAX(0, (int)floorf(dm[0] * s)), y0 = LMAX(0, (int)floorf(dm[1] * s)), x1 = LMIN(pwp, (int)ceilf(dm[2] * s)), y1 = LMIN(ph, (int)ceilf(dm[3] * s));
+                if (dmg && (x1 <= x0 || y1 <= y0)) { part = true; gskip = true; }
+                else if (dmg && (long)(x1 - x0) * (y1 - y0) * 2 < (long)pwp * ph) {
+                    { double q = now_ms(); raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), x0, y0, x1, y1); g_tx += now_ms() - q; }
+                    part = true; rx0 = x0; ry0 = y0; rx1 = x1; ry1 = y1; a->gvid_ok = false;
+                    if (getenv("LUMEN_CHECK_DAMAGE")) {
+                        Canvas t; canvas_init(&t, pwp, ph, a->page.scale); raster(&t, &a->pdl, RGBA(255, 255, 255, 255));
+                        long bad = 0; for (int y = 0; y < ph; y++) for (int x = 0; x < pwp; x++) bad += t.px[(size_t)y * (size_t)t.stride + (size_t)x] != a->page.px[(size_t)y * (size_t)a->page.stride + (size_t)x];
+                        fprintf(stderr, "lumen: damage %dx%d at %d,%d mismatched px=%ld\n", x1 - x0, y1 - y0, x0, y0, bad); canvas_free(&t);
+                    }
+                }
+                else dmg = false;
+            }
+            if (!dmg) {
+                part = false; a->page.punch = gv ? vit->img : NULL; a->page.punched = false;
+                { double q = now_ms(); raster(&a->page, &a->pdl, RGBA(255, 255, 255, 255)); g_tx += now_ms() - q; }
+                a->gvid_ok = gv && a->page.punched; a->page.punch = NULL;
+            }
         }
+        { struct DSig *t = a->osig; a->osig = a->nsig; a->nsig = t; int c = a->cosig; a->cosig = a->cnsig; a->cnsig = c; a->nosig = nn; a->osig_ok = true; }
         if (gv && a->gvid_ok) {
             const Image *im = vit->img; float s = a->page.scale;
             gvd = (GpuVideo){ im->px, im->w, im->h, im->w, floorf(vit->x * s + 0.5f) + side_px, floorf(vit->y * s + 0.5f) + bar_px, floorf((vit->x + vit->w) * s + 0.5f) + side_px, floorf((vit->y + vit->h) * s + 0.5f) + bar_px };
             gvd.yuv = im->yuv; gvd.mat = im->yuv_mat; gvp = &gvd;
             a->vown = media_owner_of(im); a->vrect[0] = vit->x; a->vrect[1] = vit->y; a->vrect[2] = vit->w; a->vrect[3] = vit->h;
         }
-    } else { a->gvid_ok = false; raster(&a->page, &(DisplayList){0}, RGBA(255, 255, 255, 255)); }
-    if (!part) { build_chrome(a); chrome_tip(a); raster(&a->frame, &a->cdl, RGBA(255, 255, 255, 255)); }
+    } else { a->gvid_ok = false; a->osig_ok = false; raster(&a->page, &(DisplayList){0}, RGBA(255, 255, 255, 255)); }
+    if (!part) { build_chrome(a); chrome_tip(a); a->chash = dl_hash(&a->cdl) * 31 + dl_hash(&a->hdl); raster(&a->frame, &a->cdl, RGBA(255, 255, 255, 255)); }
     if (!gskip) for (int y = part ? ry0 : 0; y < (part ? ry1 : ph) && y + bar_px < a->ph; y++)
         memcpy(a->frame.px + (size_t)(y + bar_px) * (size_t)a->frame.stride + side_px, a->page.px + (size_t)y * (size_t)a->page.stride, (size_t)pwp * 4);
+    if (!gskip && a->hdl.items.n) { float s = a->frame.scale; raster_rect(&a->frame, &a->hdl, RGBA(255, 255, 255, 255), (int)floorf(g_pop[0] * s), (int)floorf(g_pop[1] * s), (int)ceilf(g_pop[2] * s), (int)ceilf(g_pop[3] * s)); }   /* floats over the page */
     if (!(a->gpu && gpu_present_frame(a->gpu, a->frame.px, a->frame.w, a->frame.h, a->frame.stride, gskip ? 0 : part ? bar_px + ry0 : 0, gskip ? 0 : part ? bar_px + ry1 : a->frame.h, gvp))) {
         SDL_Surface *ws = SDL_GetWindowSurface(a->win);
         if (ws) {
@@ -1754,7 +1889,7 @@ int main(int argc, char **argv) {
             if (!strcmp(k, "offscreen_media_eviction")) g_lowmem = v != 0; else if (!strcmp(k, "cpu_limit")) g_cpu_on = v != 0;
             else if (!strcmp(k, "cpu_pct")) g_cpu_pct = LCLAMP(v, 10, 100); else if (!strcmp(k, "cpu_secs")) g_cpu_secs = LCLAMP(v, 5, 600);
             else if (!strcmp(k, "cpu_lim")) g_cpu_lim = LCLAMP(v, 5, 95); else if (!strcmp(k, "video_controls")) g_vctl = v != 0;
-            else if (!strcmp(k, "tab_sleep")) g_tab_sleep = v != 0; else if (!strcmp(k, "user_agent")) g_ua = LCLAMP(v, 0, UA_COUNT - 1);
+            else if (!strcmp(k, "tab_sleep")) g_tab_sleep = v != 0; else if (!strcmp(k, "cpu_hud")) g_hud = v != 0; else if (!strcmp(k, "user_agent")) g_ua = LCLAMP(v, 0, UA_COUNT - 1);
         }
         if (sf) fclose(sf);
         net_set_user_agent(g_ua);
@@ -1778,6 +1913,11 @@ int main(int argc, char **argv) {
         int to = a.t->loading ? 120 : 1000;
         for (int i = 0; i < a.ntabs; i++) { Tab *tb = a.tabs[i]; if (tb->cur && tb->cur->js) { double dl = js_next_deadline(tb->cur->js) - now_ms(); if (tb->limited && tb->budget < 0) dl = LMAX(dl, -tb->budget / tb->lim - (now_ms() - tb->bud_t)); if (dl < to) to = dl < 0 ? 0 : (int)dl; } }
         if (net_pending() && to > 50) to = 50;
+        if (g_hud) {
+            static double lh; double th = now_ms();
+            if (th - lh >= 2000) { lh = th; hud_sample(); a.dirty = true; a.vonly = false; }
+            int nx = (int)(2000 - (th - lh)) + 1; if (nx < to) to = nx;
+        }
         { int mf = media_tick(); if (mf & 1) { if (!a.dirty && !a.deferred) a.vonly = true; a.dirty = a.vframe = true; } if (mf & 2) a.t->relayout = true; }
         if (!a.editing && (page_focus(&a) || edit_focus(&a)) && !SDL_TextInputActive(a.win)) SDL_StartTextInput(a.win);
         {
@@ -1859,6 +1999,8 @@ int main(int argc, char **argv) {
             case SDL_EVENT_MOUSE_BUTTON_DOWN:
                 if (ev.button.button != SDL_BUTTON_LEFT) break;
                 { int bh = bar_hit(&a, ev.button.x, ev.button.y);
+                  if (g_hud_pop) { float x = ev.button.x, y = ev.button.y; bool in = x >= g_pop[0] && x < g_pop[2] && y >= g_pop[1] && y < g_pop[3]; g_hud_pop = false; a.dirty = true; a.vonly = false; if (in || bh == HB_HUD) break; }
+                  if (bh == HB_HUD) { g_hud_pop = true; a.dirty = true; a.vonly = false; break; }
                   if (bh >= HB_TABDOT) { int i = bh - HB_TABDOT; if (i != a.ti) tab_select(&a, i); a.t->info = true; a.dirty = true; a.vonly = false; break; }
                   if (bh >= HB_INFO) { info_click(&a, bh - HB_INFO); break; }
                   if (bh >= HB_WS) { int w = bh - HB_WS; if (w != a.wi) ws_select(&a, w); else ws_popup(&a, w, ev.button.x, ev.button.y); break; }
@@ -1889,7 +2031,7 @@ int main(int argc, char **argv) {
                     if (js_dispatch(js, f, "keydown", "KeyboardEvent", true, true, 0, 0, 0, ev.text.text))
                         js_dispatch(js, f, "lumenedit", "KeyboardEvent", false, false, 0, 0, 0, ev.text.text);
                     js_dispatch(js, f, "keyup", "KeyboardEvent", true, true, 0, 0, 0, ev.text.text);
-                    restyle(&a); a.t->relayout = a.dirty = true;
+                    restyle(&a); a.dirty = true;
                 } else if (a.editing) { if (a.sel_all) { a.t->url[0] = 0; a.sel_all = 0; } strncat(a.t->url, ev.text.text, sizeof a.t->url - strlen(a.t->url) - 1); a.dirty = true; }
                 break;
             case SDL_EVENT_KEY_UP: if (ev.key.key == SDLK_LGUI || ev.key.key == SDLK_RGUI || ev.key.key == SDLK_LCTRL || ev.key.key == SDLK_RCTRL) cmd = false; break;
@@ -1940,7 +2082,7 @@ int main(int argc, char **argv) {
                         if (ok && !strcmp(kn, "Backspace")) js_dispatch(js, f, "lumeneditdel", "KeyboardEvent", false, false, 0, 0, 0, kn);
                         else if (ok && !strcmp(kn, "Escape")) focus_node(&a, NULL);
                         if (a.t->cur && a.t->cur->js == js) js_dispatch(js, f, "keyup", "KeyboardEvent", true, true, 0, 0, 0, kn);
-                        restyle(&a); a.t->relayout = a.dirty = true;
+                        restyle(&a); a.dirty = true;
                     }
                     break;
                 }
