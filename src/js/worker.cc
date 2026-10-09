@@ -139,11 +139,27 @@ WFN(fetch) {
     WENV; std::string u = jcstr(iso, a[0]), m = a[1]->IsString() ? jcstr(iso, a[1]) : "GET";
     NetRequest *rq = net_request_new(m.c_str(), u.c_str());
     if (a[2]->IsString()) { std::string b = jcstr(iso, a[2]); rq->body = (char *)malloc(b.size() + 1); memcpy(rq->body, b.c_str(), b.size() + 1); rq->body_len = b.size(); }
+    else if (a[2]->IsArrayBuffer() || a[2]->IsArrayBufferView()) {
+        std::shared_ptr<v8::BackingStore> bs; size_t off = 0, n = 0;
+        if (a[2]->IsArrayBuffer()) { bs = a[2].As<v8::ArrayBuffer>()->GetBackingStore(); n = bs->ByteLength(); }
+        else { v8::Local<v8::ArrayBufferView> v = a[2].As<v8::ArrayBufferView>(); bs = v->Buffer()->GetBackingStore(); off = v->ByteOffset(); n = v->ByteLength(); }
+        rq->body = (char *)malloc(n + 1); if (n) memcpy(rq->body, (char *)bs->Data() + off, n); rq->body[n] = 0; rq->body_len = n;
+    }
+    if (a[3]->IsArray()) {
+        v8::Local<v8::Array> h = a[3].As<v8::Array>();
+        for (uint32_t i = 0; i + 1 < h->Length(); i += 2) {
+            v8::Local<v8::Value> k, v;
+            if (h->Get(ctx, i).ToLocal(&k) && h->Get(ctx, i + 1).ToLocal(&v)) headers_add(&rq->headers, jcstr(iso, k).c_str(), jcstr(iso, v).c_str());
+        }
+    }
+    if (a[4]->IsTrue()) rq->no_cookies = true;
     NetResponse *r = net_fetch_sync(rq);
     if (!r || r->status == 0) { if (r) net_response_free(r); a.GetReturnValue().SetNull(); return; }
-    v8::Local<v8::Value> out[3] = { v8::Integer::New(iso, r->status), jstr(iso, r->url ? r->url : u.c_str()), make_ab(iso, r->body, r->body_len) };
+    v8::Local<v8::Array> hs = v8::Array::New(iso);
+    for (int i = 0; i < r->headers.n; i++) { (void)hs->Set(ctx, (uint32_t)(2 * i), jstr(iso, r->headers.v[i].name)); (void)hs->Set(ctx, (uint32_t)(2 * i + 1), jstr(iso, r->headers.v[i].value)); }
+    v8::Local<v8::Value> out[4] = { v8::Integer::New(iso, r->status), jstr(iso, r->url ? r->url : u.c_str()), make_ab(iso, r->body, r->body_len), hs };
     net_response_free(r);
-    a.GetReturnValue().Set(v8::Array::New(iso, out, 3));
+    a.GetReturnValue().Set(v8::Array::New(iso, out, 4));
 }
 WFN(importScript) {
     WENV; std::string u = resolve(E, jcstr(iso, a[0]));
@@ -278,9 +294,17 @@ function fetch(input, init) {
     try {
         const u = W.resolve(String(input && input.url || input));
         if (u == null) throw new TypeError('Failed to fetch: invalid URL');
-        const r = W.fetch(u, init.method ? String(init.method).toUpperCase() : 'GET', init.body == null ? undefined : String(init.body));
+        const method = String(init.method || (input && input.method) || 'GET').toUpperCase();
+        const hdrs = new Headers(init.headers || (input && input.headers) || undefined);
+        let body = init.body == null ? undefined : init.body;
+        if (body instanceof URLSearchParams) { if (!hdrs.has('content-type')) hdrs.set('content-type', 'application/x-www-form-urlencoded;charset=UTF-8'); body = body.toString(); }
+        else if (typeof body === 'string') { if (!hdrs.has('content-type')) hdrs.set('content-type', 'text/plain;charset=UTF-8'); }
+        else if (body !== undefined && !(body instanceof ArrayBuffer) && !ArrayBuffer.isView(body)) body = String(body);
+        const flat = []; hdrs.forEach((v, k) => flat.push(k, v));
+        const r = W.fetch(u, method, body, flat, init.credentials === 'omit');
         if (!r) return Promise.reject(new TypeError('Failed to fetch'));
-        return Promise.resolve(new Response(r[2], { status: r[0], url: r[1] }));
+        const rh = new Headers(); for (let i = 0; i + 1 < r[3].length; i += 2) rh.append(r[3][i], r[3][i + 1]);
+        return Promise.resolve(new Response(r[2], { status: r[0], url: r[1], headers: rh }));
     } catch (e) { return Promise.reject(e); }
 }
 const toFn = f => typeof f === 'function' ? f : (0, eval)('(function(){' + String(f) + '\n})');

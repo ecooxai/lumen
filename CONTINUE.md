@@ -23,6 +23,22 @@ off-screen media eviction setting off and on (on: target < 150 MB for YouTube pl
 - CPU: profile shows swscale NV12->BGRA + memmove; consider GPU NV12 upload.
 - Rerun 5-page compare: `~/sites/lumen-tabs.sh`, `~/sites/chrome-tabs.mjs`, `~/sites/cpusum.sh`.
 
+## ChatGPT / Cloudflare Turnstile (2026-10-09)
+Goal: chatgpt.com usable in Lumen incl. login. Fixed so far (each has a tests/js fixture):
+- WHATWG streams: pipeTo/pipeThrough/tee/from, WritableStream, TransformStream, Text{En,De}coderStream
+  (Cloudflare's chl_page rejected Lumen as "Browser not supported" without pipeTo). `streams.html`
+- Iframes inside shadow roots never loaded (frames_scan walked light tree only; shadow trees were never
+  NF_CONNECTED). Turnstile mounts its iframe in a closed shadow root. `shadow-iframe.html`
+- postMessage / MessagePort / worker `message` events had isTrusted=false; Turnstile and its blob worker drop
+  untrusted messages. `frame-msg-identity.html`, `worker-trusted.html`
+- Worker fetch: headers, binary bodies, response headers. `worker-fetch.html`
+Status: challenge now runs end to end (worker probes, PoW, timing) and ends in `interactiveBegin` (the
+"Verify you are human" checkbox). That needs a human click in the GUI; agents must not click it.
+`brunhild.challenges.cloudflare.com` does not resolve from the Devin VM (curl fails too), so one worker
+probe always reports "Failed to fetch" here.
+Debug: `LUMEN_FRAME_PRE='js'` evals a script in every non-about: iframe context before its scripts (pair with
+`JSRUN_PRE`, `LUMEN_CONSOLE=1`). Don't wrap Worker/eval/Function with Proxies; it breaks the challenge.
+
 ## Chrome 154 baseline (5 tabs)
 RAM 1,307-1,314 MB, peak sum ~1,850 MB, CPU 10-14%, GPU proc ~94 MB, video 854x480.
 Load (DCL/load): Google 0.53/3.66 s, Bing 1.97/2.23 s, YT watch ~2.2/3.47 s, YT home 2.29/2.33 s.
