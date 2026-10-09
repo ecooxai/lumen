@@ -382,6 +382,43 @@ FN(fetch) {
     f->cb.Reset(iso, a[4].As<v8::Function>());
     RET((double)start_fetch(c, mkreq(c, a), f));
 }
+static void ws_cb(NetWs *ws, int type, const char *d, size_t n, int code, void *ud) {
+    (void)ws;
+    WsSock *s = static_cast<WsSock *>(ud);
+    JsCtx *c = s->c;
+    JS_ENTER(c);
+    v8::Local<v8::Value> argv[3] = {
+        v8::Integer::New(iso, type),
+        type == NET_WS_BINARY ? v8::Local<v8::Value>(mkab(iso, d, n)) : v8::Local<v8::Value>(v8::String::NewFromUtf8(iso, d, v8::NewStringType::kNormal, (int)n).ToLocalChecked()),
+        v8::Integer::New(iso, code),
+    };
+    v8::Local<v8::Function> f = s->cb.Get(iso);
+    if (type == NET_WS_CLOSE) { c->sockets.erase(s->id); net_ws_release(s->ws); s->cb.Reset(); delete s; }
+    (void)jcall(c, f, v8::Undefined(iso), 3, argv);
+}
+FN(wsOpen) {
+    CTX;
+    if (!a[3]->IsFunction()) return;
+    WsSock *s = new WsSock{ c, c->next_ws++, nullptr, {} };
+    s->cb.Reset(iso, a[3].As<v8::Function>());
+    c->sockets[s->id] = s;
+    s->ws = net_ws_open(S(0).c_str(), S(1).c_str(), S(2).c_str(), ws_cb, s);
+    RET((double)s->id);
+}
+FN(wsSend) {
+    CTX;
+    auto it = c->sockets.find((uint32_t)NUM(0));
+    if (it == c->sockets.end()) return;
+    if (BOOL(2)) { const char *p; size_t n; if (bytes_of(a[1], &p, &n)) net_ws_send(it->second->ws, 2, p, n); }
+    else { std::string t = S(1); net_ws_send(it->second->ws, 1, t.data(), t.size()); }
+}
+FN(wsClose) {
+    CTX;
+    auto it = c->sockets.find((uint32_t)NUM(0));
+    if (it == c->sockets.end()) return;
+    std::string r = S(2);
+    net_ws_close(it->second->ws, (int)NUM(1), r.c_str());
+}
 FN(fetchSync) {
     CTX;
     NetResponse *r = net_fetch_sync(mkreq(c, a));
@@ -761,7 +798,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(histLen); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
     REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove);
     REG(mediaBuffered); REG(mediaEos); REG(mediaSetDuration); REG(mediaPlay); REG(mediaPause); REG(mediaSeek);
-    REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(logLevel); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(readyState); REG(quirks);
+    REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(readyState); REG(quirks);
     REG(currentScript); REG(media); REG(cssSupports); REG(cssSelText); REG(urlParse); REG(encode); REG(decode); REG(random); REG(cDigest); REG(cHmac); REG(cAes); REG(cEcGen); REG(cEcDerive); REG(cEcSign); REG(cEcVerify); REG(cSpki); REG(cSpkiParse); REG(cPkcs8Parse); REG(cEcFromD); REG(cHkdf); REG(cPbkdf2);
     REG(heap); REG(imgSize); REG(userAgent); REG(platform); REG(cpus); REG(makeAll);
 #undef REG

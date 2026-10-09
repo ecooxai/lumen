@@ -54,7 +54,7 @@ void frame_kill(JsCtx *k) {
     k->dead = true;
     for (JsCtx *g : k->kids) frame_kill(g);
     for (auto &kv : k->fetches) { net_cancel(kv.first); kv.second->c = nullptr; kv.second->cb.Reset(); }
-    k->fetches.clear();
+    k->fetches.clear(); for (auto &kv : k->sockets) { net_ws_release(kv.second->ws); kv.second->cb.Reset(); delete kv.second; } k->sockets.clear();
     k->timers.clear(); k->rafs.clear(); k->anims.clear();
     if (k->host.frame_close && k->host_ud) k->host.frame_close(k->host_ud);
     k->host_ud = nullptr;

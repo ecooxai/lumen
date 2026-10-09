@@ -29,6 +29,12 @@ struct Fetch {
     v8::Global<v8::Function> cb;
     Node *script;
 };
+struct WsSock {
+    JsCtx *c;
+    uint32_t id;
+    NetWs *ws;
+    v8::Global<v8::Function> cb;
+};
 struct Timer {
     double due, interval;
     bool repeat;
@@ -59,6 +65,8 @@ struct JsCtx {
     uint32_t next_raf = 1;
     double last_raf = 0, t0 = 0;
     std::map<uint64_t, Fetch *> fetches;
+    std::map<uint32_t, struct WsSock *> sockets;
+    uint32_t next_ws = 1;
     std::vector<Document *> docs;
     Node *current_script = nullptr;
     int depth = 0;

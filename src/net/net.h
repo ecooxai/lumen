@@ -56,6 +56,15 @@ int net_pending(void);
 extern void (*net_wakeup)(void);
 
 /* cookies */
+/* WebSocket (RFC 6455): callbacks run on the main thread from net_poll */
+enum { NET_WS_OPEN, NET_WS_TEXT, NET_WS_BINARY, NET_WS_ERROR, NET_WS_CLOSE };
+typedef struct NetWs NetWs;
+typedef void (*NetWsFn)(NetWs *ws, int type, const char *data, size_t n, int code, void *ud);
+NetWs *net_ws_open(const char *url, const char *protocols, const char *origin, NetWsFn cb, void *ud);
+void net_ws_send(NetWs *ws, int opcode, const char *data, size_t n);
+void net_ws_close(NetWs *ws, int code, const char *reason);
+void net_ws_release(NetWs *ws); /* drop the owner reference; no further callbacks */
+
 void cookies_set_from_header(const URL *u, const char *set_cookie);
 char *cookies_get(const URL *u, bool for_http); /* "a=b; c=d" or NULL */
 void cookies_set_document(const char *url, const char *cookie_str);
