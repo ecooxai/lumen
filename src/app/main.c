@@ -60,6 +60,9 @@ static bool g_lowmem;
 static int g_cpu_on = 1, g_cpu_pct = 80, g_cpu_secs = 60, g_cpu_lim = 40;
 static bool g_vctl;
 static bool g_tab_sleep;
+static bool g_smooth;       /* Smooth scrolling (Settings, off by default): animate wheel notches instead of jumping */
+static float g_sm_dx, g_sm_dy, g_sm_x, g_sm_y;
+#define WHEEL_STEP 120.f
 #ifdef NDEBUG
 static bool g_hud;          /* CPU/RAM readout at the bottom of the workspace sidebar (Settings; on by default in debug builds) */
 #else
@@ -77,7 +80,7 @@ static Link g_bms[MAX_BM], g_hv[MAX_HV]; static int g_nbm, g_nhv;
 static void pref_path(char *out, size_t n, const char *f) { snprintf(out, n, "%s%s", g_pref, f); }
 static void settings_save(void) {
     char p[1200]; pref_path(p, sizeof p, "settings.txt"); FILE *f = *g_pref ? fopen(p, "w") : NULL; if (!f) return;
-    fprintf(f, "offscreen_media_eviction=%d\ncpu_limit=%d\ncpu_pct=%d\ncpu_secs=%d\ncpu_lim=%d\nvideo_controls=%d\ntab_sleep=%d\nuser_agent=%d\ncpu_hud=%d\n", g_lowmem, g_cpu_on, g_cpu_pct, g_cpu_secs, g_cpu_lim, g_vctl, g_tab_sleep, g_ua, g_hud);
+    fprintf(f, "offscreen_media_eviction=%d\ncpu_limit=%d\ncpu_pct=%d\ncpu_secs=%d\ncpu_lim=%d\nvideo_controls=%d\ntab_sleep=%d\nuser_agent=%d\ncpu_hud=%d\nsmooth_scroll=%d\n", g_lowmem, g_cpu_on, g_cpu_pct, g_cpu_secs, g_cpu_lim, g_vctl, g_tab_sleep, g_ua, g_hud, g_smooth);
     fclose(f);
 }
 static void link_put(Link *v, int *n, int max, const char *url, const char *title) {
@@ -329,6 +332,8 @@ static char *internal_page(const char *u) {   /* lumen://newtab?s=bookmarks|hist
         ip_toggle(&b, "sleep", g_tab_sleep);
         sb_puts(&b, "</div></div><div class=card><div class=row><div class=grow><div class=t>CPU usage</div><div class=sub>Shows how much CPU and memory (GB) Lumen uses at the bottom of the workspace sidebar, updated every 2 seconds. Click it to see the whole computer's CPU and memory use.</div></div>");
         ip_toggle(&b, "hud", g_hud);
+        sb_puts(&b, "</div></div><div class=card><div class=row><div class=grow><div class=t>Smooth scrolling</div><div class=sub>Animates each mouse-wheel step. When off, each wheel step jumps a fixed, larger distance, which uses less CPU. Trackpad scrolling is not affected.</div></div>");
+        ip_toggle(&b, "smooth", g_smooth);
         sb_puts(&b, "</div></div><div class=card><div class=row><div class=grow><div class=t>User agent</div><div class=sub>How Lumen identifies itself to websites. Chrome works best on most sites. Reload open pages to apply.</div></div>");
         for (int i = 0; i < UA_COUNT; i++) sb_printf(&b, "<a class=\"btn%s\" href=\"lumen://set?s=settings&ua=%d\">%s</a>", i == g_ua ? " on" : "", i, net_user_agent_name(i));
         sb_puts(&b, "</div></div><script>function save(){var g=function(i){return parseInt(document.getElementById(i).value,10)||0};location.href='lumen://set?s=settings&cpu_pct='+g('n')+'&cpu_secs='+g('m')+'&cpu_lim='+g('t')}</script>");
@@ -355,6 +360,7 @@ static void apply_set(App *a, const char *q) {
     if (qparam(q, "cpu", v, sizeof v)) g_cpu_on = atoi(v) != 0;
     if (qparam(q, "vctl", v, sizeof v)) g_vctl = atoi(v) != 0;
     if (qparam(q, "sleep", v, sizeof v)) g_tab_sleep = atoi(v) != 0;
+    if (qparam(q, "smooth", v, sizeof v)) { g_smooth = atoi(v) != 0; g_sm_dx = g_sm_dy = 0; }
     if (qparam(q, "hud", v, sizeof v)) { g_hud = atoi(v) != 0; g_hud_pop = false; }
     if (qparam(q, "ua", v, sizeof v)) { g_ua = LCLAMP(atoi(v), 0, UA_COUNT - 1); net_set_user_agent(g_ua); }
     if (qparam(q, "cpu_pct", v, sizeof v)) g_cpu_pct = LCLAMP(atoi(v), 10, 100);
@@ -901,6 +907,10 @@ static bool wheel_scroll(App *a, float x, float y, float dx, float dy) {
         return true;
     }
     return false;
+}
+static void wheel_apply(App *a, float mx, float my, float dx, float dy) {
+    if (!(my > BAR && mx > a->side && wheel_scroll(a, mx - a->side, my - BAR, dx, dy))) { if (!(a->dirty && !a->vonly)) a->vonly = true; a->t->sy += dy; }
+    a->dirty = true;
 }
 static Tab *tab_of_doc(App *a, Document *d) {
     for (int depth = 0; d && depth < 16; depth++) {
@@ -1926,7 +1936,7 @@ int main(int argc, char **argv) {
             if (!strcmp(k, "offscreen_media_eviction")) g_lowmem = v != 0; else if (!strcmp(k, "cpu_limit")) g_cpu_on = v != 0;
             else if (!strcmp(k, "cpu_pct")) g_cpu_pct = LCLAMP(v, 10, 100); else if (!strcmp(k, "cpu_secs")) g_cpu_secs = LCLAMP(v, 5, 600);
             else if (!strcmp(k, "cpu_lim")) g_cpu_lim = LCLAMP(v, 5, 95); else if (!strcmp(k, "video_controls")) g_vctl = v != 0;
-            else if (!strcmp(k, "tab_sleep")) g_tab_sleep = v != 0; else if (!strcmp(k, "cpu_hud")) g_hud = v != 0; else if (!strcmp(k, "user_agent")) g_ua = LCLAMP(v, 0, UA_COUNT - 1);
+            else if (!strcmp(k, "tab_sleep")) g_tab_sleep = v != 0; else if (!strcmp(k, "cpu_hud")) g_hud = v != 0; else if (!strcmp(k, "smooth_scroll")) g_smooth = v != 0; else if (!strcmp(k, "user_agent")) g_ua = LCLAMP(v, 0, UA_COUNT - 1);
         }
         if (sf) fclose(sf);
         net_set_user_agent(g_ua);
@@ -1989,6 +1999,11 @@ int main(int argc, char **argv) {
             if (tn - last_evict > 2000) { last_evict = tn; img_evict(); }
         }
         { int mt = media_timeout_ms(); if (mt >= 0 && mt < to) to = mt; }
+        if (g_sm_dx || g_sm_dy) {   /* smooth scrolling: move 30% of what is left each 16ms frame */
+            float sx = fabsf(g_sm_dx) < 2 ? g_sm_dx : g_sm_dx * .3f, sy = fabsf(g_sm_dy) < 2 ? g_sm_dy : g_sm_dy * .3f;
+            g_sm_dx -= sx; g_sm_dy -= sy; wheel_apply(&a, g_sm_x, g_sm_y, sx, sy);
+            if (to > 16) to = 16;
+        }
         page_move_keep(&a); if (g_mv_p && to > 1000) to = 1000;
         if (a.vbars) { static double lb; double tn = now_ms(); if (tn - lb >= 500) { lb = tn; a.dirty = true; a.vonly = false; } if (to > 500) to = 500; }
         if (a.deferred) { double r = 250 - (now_ms() - a.last_full); if (r <= 0) a.dirty = true; else if (r + 1 < to) to = (int)r + 1; }
@@ -2021,10 +2036,15 @@ int main(int argc, char **argv) {
             case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: case SDL_EVENT_WINDOW_RESIZED: update_size(&a); break;
             case SDL_EVENT_WINDOW_EXPOSED: a.dirty = true; break;
             case SDL_EVENT_MOUSE_WHEEL: {
-                float wdx = ev.wheel.x * 40, wdy = -ev.wheel.y * 40;
+                /* whole-number deltas come from a mouse wheel: one fixed step per notch; fractional ones from a trackpad */
+                bool notch = ev.wheel.x == roundf(ev.wheel.x) && ev.wheel.y == roundf(ev.wheel.y);
+                float k = notch ? WHEEL_STEP : 40, wdx = ev.wheel.x * k, wdy = -ev.wheel.y * k;
                 if (ev.wheel.direction == SDL_MOUSEWHEEL_FLIPPED) { wdx = -wdx; wdy = -wdy; }
-                if (!(ev.wheel.mouse_y > BAR && ev.wheel.mouse_x > a.side && wheel_scroll(&a, ev.wheel.mouse_x - a.side, ev.wheel.mouse_y - BAR, wdx, wdy))) { if (!(a.dirty && !a.vonly)) a.vonly = true; a.t->sy += wdy; }
-                a.dirty = true; break;
+                if (notch && g_smooth && (wdx || wdy)) {
+                    if (ev.wheel.mouse_x != g_sm_x || ev.wheel.mouse_y != g_sm_y || (g_sm_dy && (g_sm_dy > 0) != (wdy > 0))) g_sm_dx = g_sm_dy = 0;
+                    g_sm_x = ev.wheel.mouse_x; g_sm_y = ev.wheel.mouse_y; g_sm_dx += wdx; g_sm_dy += wdy; break;
+                }
+                wheel_apply(&a, ev.wheel.mouse_x, ev.wheel.mouse_y, wdx, wdy); break;
             }
             case SDL_EVENT_MOUSE_MOTION: {
                 int h = bar_hit(&a, ev.motion.x, ev.motion.y); if (h != a.hover) { a.hover = h; a.dirty = true; }

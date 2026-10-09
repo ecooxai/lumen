@@ -208,3 +208,6 @@ Load (DCL/load): Google 0.53/3.66 s, Bing 1.97/2.23 s, YT watch ~2.2/3.47 s, YT 
   events into the prelude, which moves the JS selection. `edit_sel_sync()` copies it into `g_tsel` so the
   highlight and Cmd+C reuse the page-selection code; the caret paints at the actual focus offset.
   Text inside contenteditable counts as selectable even under `user-select: none` (ChatGPT composer).
+- Wheel: whole-number SDL deltas = mouse notches -> fixed `WHEEL_STEP` (120px); fractional (trackpad) stay 40px/unit.
+  Settings "Smooth scrolling" (`smooth_scroll`, off by default) animates notches (30% of remainder per 16ms frame).
+  Wikipedia, 60 notches/s: ~21% CPU (was 38%); remaining cost is display-list rebuild (~36 ms/s).
