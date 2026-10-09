@@ -255,8 +255,8 @@ function structuredClone(v, seen = new Map()) {
     if (v instanceof Set) { const s = new Set(); seen.set(v, s); for (const x of v) s.add(structuredClone(x, seen)); return s; }
     const o = Array.isArray(v) ? [] : {}; seen.set(v, o); for (const k of Object.keys(v)) o[k] = structuredClone(v[k], seen); return o;
 }
-function postMessage(data, origin) { const [src, org] = N.caller(); const d = structuredClone(data); setTimeout(() => dispatch(G, new MessageEvent('message', { data: d, origin: org, source: asWin(src) }))); }
-function queueMessage(data, origin, src) { setTimeout(() => dispatch(G, new MessageEvent('message', { data, origin, source: asWin(src) }))); }
+function postMessage(data, origin) { const [src, org] = N.caller(); const d = structuredClone(data); setTimeout(() => dispatch(G, new MessageEvent('message', { data: d, origin: org, source: asWin(src) }), true)); }
+function queueMessage(data, origin, src) { setTimeout(() => dispatch(G, new MessageEvent('message', { data, origin, source: asWin(src) }), true)); }
 const remoteWins = new Map();
 function asWin(v) {
     if (typeof v !== 'number') return v;

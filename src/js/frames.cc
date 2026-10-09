@@ -81,6 +81,7 @@ static JsCtx *frame_create(JsCtx *p, Node *f, const char *url, const char *html,
     ch.frame_close = p->host.frame_close;
     JsCtx *k = js_new_ex(d, &ch, p, f);
     k->host_ud = ch.ud;
+    if (const char *fp = getenv("LUMEN_FRAME_PRE")) if (strncmp(url, "about:", 6)) js_eval(k, fp, "lumen:frame-pre");
     for (Node *s = d->node.first; s && !k->dead; s = node_next_in_tree(s, &d->node)) {
         if (s->type != NODE_ELEMENT || s->tag != A_script || s->ns != NS_HTML || (s->flags & NF_SCRIPT_STARTED) || !jsg_classic_script(s)) continue;
         const char *src = node_attr(s, "src");
