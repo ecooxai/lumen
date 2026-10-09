@@ -247,6 +247,8 @@ static void post(Layout *L, Box *b, float cbw, float cbh, float clipx, float cli
         b->scroll_w = r - b->x; b->scroll_h = btm - b->y + b->p[2];
         float maxx = LMAX(0, b->scroll_w - b->w), maxy = LMAX(0, b->scroll_h - b->h);
         b->node->scroll_x = LCLAMP(b->node->scroll_x, 0, maxx); b->node->scroll_y = box_scroll_from_end(b) ? LCLAMP(b->node->scroll_y, -maxy, 0) : LCLAMP(b->node->scroll_y, 0, maxy);
+        /* abs children of a column-reverse scroller are placed against its scroll origin, which is the end */
+        if (box_scroll_from_end(b) && maxy > 0) for (Box *x = b->abs_head; x; x = x->abs_next) box_translate(x, 0, maxy);
     }
 }
 static void extents(Layout *L, Box *b) {
@@ -307,7 +309,7 @@ static Box *hit(Box *b, float x, float y, float ox, float oy, float vx, float vy
         for (Box *c = b->last; c; c = c->prev) if (hit_layer(c) == 0 && c->st->z_index < done && c->st->z_index > best) best = c->st->z_index;
         if (best == INT32_MIN) break;
         for (Box *c = b->last; c; c = c->prev) if (hit_layer(c) == 0 && c->st->z_index == best) {
-            Box *h = hit(c, x, y, c->fixed ? vx : cox, c->fixed ? vy : coy, vx, vy);
+            Box *h = hit(c, x, y, c->fixed ? vx : c->abs && b->scroller && !box_within(c->cb, b) ? ox : cox, c->fixed ? vy : c->abs && b->scroller && !box_within(c->cb, b) ? oy : coy, vx, vy);
             if (h) return h;
         }
         done = best;
@@ -315,7 +317,7 @@ static Box *hit(Box *b, float x, float y, float ox, float oy, float vx, float vy
     for (int layer = 1; layer <= 3; layer++)
         for (Box *c = b->last; c; c = c->prev) {
             if (hit_layer(c) != layer) continue;
-            Box *h = hit(c, x, y, c->fixed ? vx : cox, c->fixed ? vy : coy, vx, vy);
+            Box *h = hit(c, x, y, c->fixed ? vx : c->abs && b->scroller && !box_within(c->cb, b) ? ox : cox, c->fixed ? vy : c->abs && b->scroller && !box_within(c->cb, b) ? oy : coy, vx, vy);
             if (h) return h;
         }
     if (b->kind == BX_INLINE) {

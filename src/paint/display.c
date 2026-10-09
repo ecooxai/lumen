@@ -13,6 +13,7 @@ typedef struct {
     float sx, sy;               /* page scroll */
     bool clip; float cx, cy, cw, ch;
     int order;
+    Box *sb; const void *outer;   /* innermost scroller and the state outside it */
 } PB;
 
 static DItem *emit(PB *p, uint8_t op) { DItem it; memset(&it, 0, sizeof it); it.op = op; it.alpha = 1; vec_push(p->dl->items, it); return &p->dl->items.v[p->dl->items.n - 1]; }
@@ -232,6 +233,7 @@ static void paint_block_content(PB *p, Box *b, DefVec *defs) {
         if (p->clip) { float x1 = LMIN(x + w, p->cx + p->cw), y1 = LMIN(y + h, p->cy + p->ch); x = LMAX(x, p->cx); y = LMAX(y, p->cy); w = LMAX(0, x1 - x); h = LMAX(0, y1 - y); }
         p->clip = true; p->cx = x; p->cy = y; p->cw = w; p->ch = h;
         p->dx -= b->node->scroll_x; p->dy -= box_scroll_y(b);
+        p->sb = b; p->outer = &saved;
     }
     if (s->display == D_LIST_ITEM && vis) paint_marker(p, b);
     paint_flow(p, b, defs);
@@ -243,7 +245,10 @@ static void paint_flow(PB *p, Box *b, DefVec *defs) {
     /* block-level descendants */
     for (Box *c = b->first; c; c = c->next) {
         if (c->kind == BX_TEXT || c->kind == BX_BR || c->kind == BX_INLINE) continue;
-        if (positioned(c) || makes_layer(c)) { Deferred d = { c, p->dx, p->dy, p->clip, p->cx, p->cy, p->cw, p->ch, p->order++ }; vec_push(*defs, d); continue; }
+        if (positioned(c) || makes_layer(c)) {
+            /* an abs box whose containing block is outside a scroller neither scrolls nor clips with it */
+            const PB *q = p; if (c->abs) while (q->sb && !box_within(c->cb, q->sb)) q = q->outer;
+            Deferred d = { c, q->dx, q->dy, q->clip, q->cx, q->cy, q->cw, q->ch, p->order++ }; vec_push(*defs, d); continue; }
         if (c->floated || c->kind == BX_ATOMIC) continue;
         paint_block_content(p, c, defs);
     }
