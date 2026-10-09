@@ -11,6 +11,7 @@ void js_anim_event(Node *n, const char *type, const char *name, double delay_ms,
 bool js_anim_cancel(Node *n, const char *name);
 char *jsg_computed(Node *el, const char *prop);
 bool jsg_rect(Node *n, float r[4]);
+bool jsg_vrect(Node *n, float r[4]);
 bool jsg_scroll(Node *n, float r[4]);   /* scroll x, y, width, height of a scroll container */
 bool jsg_set_scroll(Node *n, float x, float y);  /* NAN keeps an axis; true if it moved */  /* border box, document coordinates */
 bool jsg_media(void *media, const char *q);

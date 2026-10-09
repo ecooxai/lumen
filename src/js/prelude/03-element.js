@@ -84,7 +84,7 @@ methods(Element.prototype, {
     insertAdjacentText(pos, t) { this.insertAdjacentElement(pos, N.textNode(String(t))); },
     matches(s) { return N.matches(this, String(s)); }, webkitMatchesSelector(s) { return N.matches(this, String(s)); },
     closest(s) { s = String(s); for (let e = this; e && N.type(e) === 1; e = N.parent(e)) if (N.matches(e, s)) return e; return null; },
-    getBoundingClientRect() { const r = N.rect(this); if (!r) return new DOMRect(); const v = N.viewport(); return new DOMRect(r[0] - v[2], r[1] - v[3], r[2], r[3]); },
+    getBoundingClientRect() { const r = N.vrect(this); if (!r) return new DOMRect(); const v = N.viewport(); return new DOMRect(r[0] - v[2], r[1] - v[3], r[2], r[3]); },
     getClientRects() { return N.rect(this) ? [this.getBoundingClientRect()] : []; },
     get clientWidth() { if (this === document.documentElement) return N.viewport()[0]; const r = N.rect(this); return r ? Math.round(r[2]) : 0; },
     get clientHeight() { if (this === document.documentElement) return N.viewport()[1]; const r = N.rect(this); return r ? Math.round(r[3]) : 0; },
@@ -168,7 +168,16 @@ methods(HTMLElement.prototype, {
     get innerText() { return innerTextOf(this); }, set innerText(v) { this.textContent = v; }, get outerText() { return N.text(this); },
     get tabIndex() { const v = parseInt(N.attr(this, 'tabindex'), 10); return isNaN(v) ? (/^(a|button|input|select|textarea)$/.test(N.name(this)) ? 0 : -1) : v; },
     set tabIndex(v) { this.setAttribute('tabindex', String(v | 0)); },
-    get offsetParent() { for (let p = N.parent(this); p && N.type(p) === 1; p = N.parent(p)) { if (p === document.body) return p; const pos = N.computed(p, 'position'); if (pos && pos !== 'static') return p; } return null; },
+    get offsetParent() {
+        if (this === document.body || this === document.documentElement || !N.rect(this) || N.computed(this, 'position') === 'fixed') return null;
+        const stat = N.computed(this, 'position') === 'static';
+        for (let p = N.parent(this); p && N.type(p) === 1; p = N.parent(p)) {
+            if (p === document.body) return p;
+            const pos = N.computed(p, 'position');
+            if ((pos && pos !== 'static') || (stat && /^(td|th|table)$/.test(N.name(p)))) return p;
+        }
+        return null;
+    },
     get offsetTop() { const r = N.rect(this); if (!r) return 0; const op = this.offsetParent; const pr = op && op !== document.body ? N.rect(op) : null; return Math.round(r[1] - (pr ? pr[1] : 0)); },
     get offsetLeft() { const r = N.rect(this); if (!r) return 0; const op = this.offsetParent; const pr = op && op !== document.body ? N.rect(op) : null; return Math.round(r[0] - (pr ? pr[0] : 0)); },
     get offsetWidth() { const r = N.rect(this); return r ? Math.round(r[2]) : 0; },
