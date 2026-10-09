@@ -756,6 +756,28 @@ static void img_refetch(const char *u) {
     NetRequest *rq = net_request_new("GET", u); ImgLoad *l = xmalloc(sizeof *l); l->gen = 0; l->u = xstrdup(u);
     rq->done = img_done; rq->ud = l; rq->priority = 2; net_fetch(rq);
 }
+/* external SVG documents referenced by <use href="file.svg#id">, parsed once per URL */
+typedef struct { Document *d; } SvgDoc;
+static HMap g_svgdocs;
+static void svgdoc_done(NetRequest *rq, NetResponse *r, void *ud) {
+    (void)rq; char *u = ud; Document *d = NULL;
+    if (r && r->status == 200 && r->body) { d = doc_new(u); html_parse(d, r->body, r->body_len); }
+    SvgDoc *s = hm_get(&g_svgdocs, u); if (s && !s->d) { s->d = d; d = NULL; }
+    if (d) doc_free(d);
+    g_img_epoch++;
+    if (g_app->t->cur) { g_app->t->cur->img_check = true; g_app->t->relayout = true; }
+    g_app->dirty = true; g_app->vonly = false;
+    free(u);
+}
+static const Node *svg_ext_ref(const char *u, const char *id) {
+    if (!strncmp(u, "blob:", 5) || !strncmp(u, "data:", 5) || !strncmp(u, "javascript:", 11)) return NULL;
+    SvgDoc *s = hm_get(&g_svgdocs, u);
+    if (!s) {
+        s = xcalloc(1, sizeof *s); hm_put(&g_svgdocs, u, s);
+        NetRequest *rq = net_request_new("GET", u); rq->done = svgdoc_done; rq->ud = xstrdup(u); rq->priority = 2; net_fetch(rq);
+    }
+    return s->d ? doc_get_element_by_id(s->d, id) : NULL;
+}
 /* Low-memory mode: drop decoded pixels of images not painted in the last full paint for 3 s; refetched on demand. */
 static void img_evict(void) {
     double now = (double)SDL_GetTicks();
@@ -1424,7 +1446,7 @@ int main(int argc, char **argv) {
     dom_init(); net_init(6); font_init();
     icache_mu = SDL_CreateMutex(); EV_LOADED = SDL_RegisterEvents(1); EV_NET = SDL_RegisterEvents(1); EV_MENU = SDL_RegisterEvents(1);
     net_wakeup = wake; media_wakeup = wake; js_wakeup = wake; js_global_init(argv[0]);
-    paint_image_hook = node_img; paint_url_image_hook = url_img; layout_image_size_hook = img_size;
+    paint_image_hook = node_img; paint_url_image_hook = url_img; svg_ext_ref_hook = svg_ext_ref; layout_image_size_hook = img_size;
     App a; memset(&a, 0, sizeof a); g_app = &a; a.nws = 1; a.wsicon[0] = -1; snprintf(a.wsname[0], sizeof a.wsname[0], "Personal"); a.side = getenv("LUMEN_NO_SIDEBAR") ? 0 : SIDEW; tab_new(&a);
     bool want_gpu = !getenv("LUMEN_NO_GPU");
     int ww = 1280, wh = 840; { const char *e = getenv("LUMEN_WINDOW"); if (e) sscanf(e, "%dx%d", &ww, &wh); }   /* e.g. LUMEN_WINDOW=800x600 */

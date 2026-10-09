@@ -29,6 +29,7 @@ typedef struct DisplayList { VEC(DItem) items; Arena arena; float vw, vh; } Disp
 
 extern Image *(*paint_image_hook)(Node *n);
 extern Image *(*paint_url_image_hook)(const char *url);
+extern const Node *(*svg_ext_ref_hook)(const char *url, const char *id); /* element #id of an external SVG document, NULL while it loads */
 Image *image_decode(const uint8_t *data, size_t n);
 void image_unref(Image *im);
 void image_yuv_materialize(Image *im);
