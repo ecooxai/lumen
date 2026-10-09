@@ -203,3 +203,8 @@ Load (DCL/load): Google 0.53/3.66 s, Bing 1.97/2.23 s, YT watch ~2.2/3.47 s, YT 
   `layout_box()` now treats a forced height equal to the natural one as a hit unless a child resolves
   percentages/insets against it (`hdep`): 490ms -> 7ms. `LUMEN_DEBUG_LAYOUT=2` prints the hottest chain.
 - `LUMEN_DEBUG_JS=1` prints per-event-type dispatch counts and ms each second.
+- contenteditable selection: JS `Selection` is canonical; every range change mirrors to `Document.sel[]/selo[]`
+  (UTF-8 byte offsets) via `N.selSet`. Native clicks/drags/dblclick/triple/Cmd+A/arrows dispatch `lumensel-*`
+  events into the prelude, which moves the JS selection. `edit_sel_sync()` copies it into `g_tsel` so the
+  highlight and Cmd+C reuse the page-selection code; the caret paints at the actual focus offset.
+  Text inside contenteditable counts as selectable even under `user-select: none` (ChatGPT composer).

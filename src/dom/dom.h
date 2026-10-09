@@ -61,6 +61,7 @@ typedef struct Document {
     HMap id_cache; uint64_t id_cache_ver; bool id_cache_ok; /* id -> first element, rebuilt per dom_version */
     void *stylesheets;            /* css engine data */
     struct Node *focus;
+    struct Node *sel[2]; int selo[2]; bool sel_back; uint64_t sel_ver;   /* JS selection start/end (text offsets in bytes) */
     void *browser;                /* owning page */
     void (*on_mutation)(struct Document *, Node *);
 } Document;

@@ -137,6 +137,7 @@ void node_free_tree(Node *n) {
     node_free_one(n);
 }
 void doc_free(Document *d) {
+    for (int i = 0; i < 2; i++) if (d->sel[i]) { node_release(d->sel[i]); d->sel[i] = NULL; }
     hm_free(&d->id_cache, NULL);
     Node *c = d->node.first;
     while (c) { Node *nx = c->next; c->parent = NULL; c->refcount = 0; c->js = NULL; node_free_tree(c); c = nx; }

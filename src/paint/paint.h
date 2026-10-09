@@ -59,5 +59,7 @@ char *tsel_text(Layout *L);
 void tsel_word(Layout *L, Node *n, int off);
 void tsel_block(Layout *L, Node *n);
 void tsel_all(Layout *L);
+bool tsel_dom_point(Node *n, int o, bool end, Node **tn, int *to);   /* element boundary -> nearest text (end: the text before) */
+bool node_within(const Node *n, const Node *anc);
 
 #endif

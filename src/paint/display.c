@@ -241,13 +241,39 @@ static void last_frag_in(Box *b, TextFrag **out, const Box **blk) {
 }
 
 /* contenteditable host: caret after the last text, else at the start of its first (empty) block */
+typedef struct { const Node *n; int o; TextFrag *f; float x; bool exact; } CaretAt;
+static void caret_find(Box *b, CaretAt *k) {
+    for (int i = 0; i < b->nfrags && !k->exact; i++) {
+        TextFrag *f = &b->frags[i]; const Box *t = f->box;
+        if (t->node != k->n || f->g0 >= f->g1) continue;
+        int lo = (int)t->sh.g[f->g0].cluster, hi = f->g1 < t->sh.n ? (int)t->sh.g[f->g1].cluster : t->text_len;
+        if (k->o < lo || k->o > hi) continue;
+        float x = f->x + f->w;
+        for (int g = f->g0; g < f->g1; g++) if ((int)t->sh.g[g].cluster >= k->o) { x = f->x + t->sh.g[g].x - t->sh.g[f->g0].x; break; }
+        k->f = f; k->x = x; k->exact = k->o < hi;
+    }
+    for (Box *c = b->first; c && !k->exact; c = c->next) if (!c->abs) caret_find(c, k);
+}
+
+/* contenteditable host: caret at the selection focus, else after the last text, else at the start of its first (empty) block */
 static void paint_edit_caret(PB *p, Box *b) {
-    TextFrag *f = NULL; const Box *fb = NULL; last_frag_in(b, &f, &fb);
+    TextFrag *f = NULL; const Box *fb = NULL;
     const ComputedStyle *s = b->st;
     float x, y, h;
+    const Document *d = b->node->doc; const Box *eb = NULL;
+    if (d && d->sel[0] && node_within(d->sel[0], b->node)) {
+        if (d->sel[0] != d->sel[1] || d->selo[0] != d->selo[1]) return;   /* a range is shown as a highlight */
+        Node *tn; int to;
+        if (tsel_dom_point(d->sel[0], d->selo[0], false, &tn, &to)) {
+            CaretAt k = { tn, to, NULL, 0, false }; caret_find(b, &k);
+            if (k.f) { DItem *it = emit(p, DO_RECT); it->x = k.x + p->dx; it->y = k.f->y + p->dy; it->w = 1; it->h = k.f->h; s = k.f->box->st;
+                it->color = COLOR_A(s->caret_color) ? s->caret_color : s->color; return; }
+        } else if (d->sel[0]->type == NODE_ELEMENT && d->sel[0]->box) eb = d->sel[0]->box;
+    }
+    if (!eb) last_frag_in(b, &f, &fb);
     if (f) { x = f->x + f->w; y = f->y; h = f->h; s = f->box->st; }
     else {
-        const Box *c = b; while (c->first && !c->first->abs && c->first->kind == BX_BLOCK) c = c->first;
+        const Box *c = eb ? eb : b; while (c->first && !c->first->abs && c->first->kind == BX_BLOCK) c = c->first;
         s = c->st; h = s->font_size * 1.2f;
         x = c->x + c->b[3] + c->p[3]; y = c->y + c->b[0] + c->p[0];
         float ch = c->h - c->b[0] - c->b[2] - c->p[0] - c->p[2]; if (ch > h) y += (ch - h) / 2;

@@ -497,6 +497,17 @@ FN(hit) {
     while (n && n->type != NODE_ELEMENT) n = n->parent;
     RET(jwrap(c, n));
 }
+FN(selSet) {
+    CTX; Document *d = c->doc;
+    if (!d) return;
+    for (int i = 0; i < 2; i++) {
+        Node *n = junwrap(a[2 * i]);
+        if (n) node_retain(n);
+        if (d->sel[i]) node_release(d->sel[i]);
+        d->sel[i] = n; d->selo[i] = n ? (int)NUM(2 * i + 1) : 0;
+    }
+    d->sel_back = BOOL(4); d->sel_ver++;
+}
 FN(ceScan) {
     CTX; ARGN(root, 0);
     v8::Local<v8::Array> r = v8::Array::New(iso);
@@ -838,7 +849,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(histLen); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
     REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove);
     REG(mediaBuffered); REG(mediaEos); REG(mediaSetDuration); REG(mediaPlay); REG(mediaPause); REG(mediaSeek);
-    REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(readyState); REG(quirks);
+    REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(selSet); REG(readyState); REG(quirks);
     REG(currentScript); REG(media); REG(cssSupports); REG(cssSelText); REG(urlParse); REG(encode); REG(decode); REG(random); REG(cDigest); REG(cHmac); REG(cAes); REG(cEcGen); REG(cEcDerive); REG(cEcSign); REG(cEcVerify); REG(cSpki); REG(cSpkiParse); REG(cPkcs8Parse); REG(cEcFromD); REG(cHkdf); REG(cPbkdf2);
     REG(heap); REG(imgSize); REG(userAgent); REG(platform); REG(cpus); REG(makeAll);
 #undef REG

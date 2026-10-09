@@ -340,8 +340,16 @@ for (const [k, v] of [['START_TO_START', 0], ['START_TO_END', 1], ['END_TO_END',
     Object.defineProperty(Range, k, { value: v, enumerable: true });
     Object.defineProperty(Range.prototype, k, { value: v, enumerable: true });
 }
+const utf8Off = (s, o) => { let b = 0; for (let i = 0; i < o && i < s.length; i++) { const c = s.charCodeAt(i); b += c < 0x80 ? 1 : c < 0x800 ? 2 : c >= 0xd800 && c < 0xdc00 ? (i++, 4) : 3; } return b; };
+const utf16Off = (s, b) => { let i = 0; for (let k = 0; i < s.length && k < b; i++) { const c = s.charCodeAt(i); k += c < 0x80 ? 1 : c < 0x800 ? 2 : c >= 0xd800 && c < 0xdc00 ? (i++, 4) : 3; } return i; };
 class Selection {
     constructor() { this._r = null; this._back = false; }
+    get _r() { return this.__r; } set _r(v) { this.__r = v; this._sync(); }
+    get _back() { return this.__back; } set _back(v) { this.__back = v; this._sync(); }
+    _sync() {
+        const r = this.__r, b = (n, o) => n && n.nodeType === 3 ? utf8Off(n.data, o) : o;
+        if (N.selSet) N.selSet(r ? r._sc : null, r ? b(r._sc, r._so) : 0, r ? r._ec : null, r ? b(r._ec, r._eo) : 0, !!this.__back);
+    }
     get rangeCount() { return this._r ? 1 : 0; }
     get anchorNode() { const r = this._r; return r ? (this._back ? r._ec : r._sc) : null; }
     get anchorOffset() { const r = this._r; return r ? (this._back ? r._eo : r._so) : 0; }

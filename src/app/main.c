@@ -1529,6 +1529,43 @@ static void sel_drag(App *a, float x, float y) {
     if (!tsel_point(p->L, px, py, a->t->sy, NULL, &fn, &fo)) return;
     if (fn != g_tsel.fn || fo != g_tsel.fo || !g_tsel.on) { g_tsel.fn = fn; g_tsel.fo = fo; g_tsel.on = fn != g_tsel.an || fo != g_tsel.ao; sel_dirty(a); }
 }
+static bool g_epress;
+static bool edit_text_at(App *a, Node *h, float px, float py, Node **tn, int *off) {
+    Page *p = a->t->cur;
+    return h->box && tsel_point(p->L, px, py, a->t->sy, h->box, tn, off) && node_within(*tn, h);
+}
+static void edit_press(App *a, float x, float y, int clicks) {
+    g_epress = false;
+    Node *h = edit_focus(a); Page *p = a->t->cur;
+    if (!h || !p || !p->L || a->t->asleep) return;
+    float px = x - a->side, py = y - BAR + a->t->sy;
+    Box *b = layout_hit(p->L, px, py); Node *tn; int off;
+    if (!b || edit_host(b->node) != edit_host(h) || !edit_text_at(a, h, px, py, &tn, &off)) return;
+    js_dispatch(p->js, tn, clicks >= 3 ? "lumensel-all" : clicks == 2 ? "lumensel-word" : "lumensel-collapse", "MouseEvent", false, false, off, 0, 0, NULL);
+    g_epress = clicks == 1;
+    sel_dirty(a);
+}
+static void edit_drag(App *a, float x, float y) {
+    static Node *ln; static int lo;
+    Node *h = edit_focus(a), *tn; int off;
+    if (!h || !a->t->cur || !a->t->cur->L || !edit_text_at(a, h, x - a->side, y - BAR + a->t->sy, &tn, &off) || (tn == ln && off == lo)) return;
+    ln = tn; lo = off;
+    js_dispatch(a->t->cur->js, tn, "lumensel-extend", "MouseEvent", false, false, off, 0, 0, NULL);
+    sel_dirty(a);
+}
+/* mirror a ranged selection inside the focused contenteditable into the native highlight (and Cmd+C) */
+static void edit_sel_sync(App *a) {
+    static uint64_t ver; static const Document *dd; static bool mine;
+    Page *p = a->t->cur; Document *d = p ? p->d : NULL;
+    if (!d || !p->L || (d == dd && d->sel_ver == ver)) return;
+    dd = d; ver = d->sel_ver;
+    Node *h = edit_focus(a), *an, *fn; int ao, fo;
+    bool on = h && d->sel[0] && (d->sel[0] != d->sel[1] || d->selo[0] != d->selo[1]) && node_within(d->sel[0], h) && node_within(d->sel[1], h) &&
+              tsel_dom_point(d->sel[0], d->selo[0], false, &an, &ao) && tsel_dom_point(d->sel[1], d->selo[1], true, &fn, &fo);
+    if (on) { g_tsel = (TextSel){ true, p->L, an, fn, ao, fo }; mine = true; }
+    else if (mine) { mine = false; g_tsel.on = false; }
+    if (h || on) sel_dirty(a);
+}
 static void sel_copy(App *a) {
     Node *f = !a->editing ? page_focus(a) : NULL;
     if (a->editing) { if (a->sel_all) SDL_SetClipboardText(a->t->url); return; }
@@ -1993,6 +2030,7 @@ int main(int argc, char **argv) {
                 int h = bar_hit(&a, ev.motion.x, ev.motion.y); if (h != a.hover) { a.hover = h; a.dirty = true; }
                 if (!h && ev.motion.y > BAR && ev.motion.x > a.side) page_move(&a, ev.motion.x - a.side, ev.motion.y - BAR);
                 if (g_press && (ev.motion.state & SDL_BUTTON_LMASK)) sel_drag(&a, ev.motion.x, ev.motion.y);
+                else if (g_epress && (ev.motion.state & SDL_BUTTON_LMASK)) edit_drag(&a, ev.motion.x, ev.motion.y);
                 SDL_SetCursor(SDL_CreateSystemCursor(h == HB_URL ? SDL_SYSTEM_CURSOR_TEXT : over_link(&a, ev.motion.x, ev.motion.y) || (h && h != HB_URL) ? SDL_SYSTEM_CURSOR_POINTER : SDL_SYSTEM_CURSOR_DEFAULT));
                 break; }
             case SDL_EVENT_MOUSE_BUTTON_UP: if (ev.button.button == SDL_BUTTON_LEFT) g_press = g_drag = false; break;
@@ -2014,7 +2052,7 @@ int main(int argc, char **argv) {
                 case HB_STAR: bm_toggle(&a); a.dirty = true; a.vonly = false; break;
                 case HB_RELOAD: if (a.t->hpos >= 0) navigate(&a, a.t->hist[a.t->hpos], false); break;
                 case HB_URL: a.editing = true; a.sel_all = 1; SDL_StartTextInput(a.win); a.dirty = true; break;
-                default: if (a.editing) { a.editing = false; SDL_StopTextInput(a.win); a.dirty = true; } sel_press(&a, ev.button.x, ev.button.y, ev.button.clicks); click_page(&a, ev.button.x, ev.button.y);
+                default: if (a.editing) { a.editing = false; SDL_StopTextInput(a.win); a.dirty = true; } sel_press(&a, ev.button.x, ev.button.y, ev.button.clicks); click_page(&a, ev.button.x, ev.button.y); edit_press(&a, ev.button.x, ev.button.y, ev.button.clicks);
                 }
                 break;
             case SDL_EVENT_TEXT_INPUT: a.caret_t = now_ms();
@@ -2041,6 +2079,9 @@ int main(int argc, char **argv) {
                 if (cmd || (ev.key.mod & (SDL_KMOD_GUI | SDL_KMOD_CTRL))) {
                     if (k == SDLK_A && !a.editing && page_focus(&a)) a.page_sel = 1;
                     else if (k == SDLK_A && !a.editing && !edit_focus(&a) && a.t->cur && a.t->cur->L) { tsel_all(a.t->cur->L); g_tsel.L = a.t->cur->L; a.vonly = false; }
+                    else if (k == SDLK_A && !a.editing && edit_focus(&a)) js_dispatch(a.t->cur->js, edit_focus(&a), "lumensel-all", "MouseEvent", false, false, 0, 0, 0, NULL);
+                    else if ((k == SDLK_LEFT || k == SDLK_RIGHT) && !a.editing && edit_focus(&a))
+                        js_dispatch(a.t->cur->js, edit_focus(&a), k == SDLK_LEFT ? "lumensel-home" : "lumensel-end", "MouseEvent", false, false, 0, (ev.key.mod & SDL_KMOD_SHIFT) ? 1 : 0, 0, NULL);
                     else if (k == SDLK_C) sel_copy(&a);
                     else if (k == SDLK_L) { a.editing = true; a.sel_all = 1; SDL_StartTextInput(a.win); }
                     else if (k == SDLK_R && a.t->hpos >= 0) navigate(&a, a.t->hist[a.t->hpos], false);
@@ -2076,10 +2117,14 @@ int main(int argc, char **argv) {
                 if (edit_focus(&a)) {
                     Node *f = edit_focus(&a); JsCtx *js = a.t->cur->js;
                     const char *kn = k == SDLK_RETURN || k == SDLK_KP_ENTER ? "Enter" : k == SDLK_BACKSPACE ? "Backspace" : k == SDLK_ESCAPE ? "Escape" : k == SDLK_TAB ? "Tab" :
-                        k == SDLK_LEFT ? "ArrowLeft" : k == SDLK_RIGHT ? "ArrowRight" : k == SDLK_UP ? "ArrowUp" : k == SDLK_DOWN ? "ArrowDown" : NULL;
+                        k == SDLK_LEFT ? "ArrowLeft" : k == SDLK_RIGHT ? "ArrowRight" : k == SDLK_UP ? "ArrowUp" : k == SDLK_DOWN ? "ArrowDown" : k == SDLK_HOME ? "Home" : k == SDLK_END ? "End" : NULL;
                     if (kn) {
                         bool ok = js_dispatch(js, f, "keydown", "KeyboardEvent", true, true, 0, 0, 0, kn);
                         if (ok && !strcmp(kn, "Backspace")) js_dispatch(js, f, "lumeneditdel", "KeyboardEvent", false, false, 0, 0, 0, kn);
+                        else if (ok && (!strcmp(kn, "ArrowLeft") || !strcmp(kn, "ArrowRight") || !strcmp(kn, "Home") || !strcmp(kn, "End"))) {
+                            static const char *mv[] = { "lumensel-left", "lumensel-right", "lumensel-home", "lumensel-end" };
+                            js_dispatch(js, f, mv[kn[0] == 'H' ? 2 : kn[0] == 'E' ? 3 : kn[5] == 'L' ? 0 : 1], "MouseEvent", false, false, 0, (ev.key.mod & SDL_KMOD_SHIFT) ? 1 : 0, 0, NULL);
+                        }
                         else if (ok && !strcmp(kn, "Escape")) focus_node(&a, NULL);
                         if (a.t->cur && a.t->cur->js == js) js_dispatch(js, f, "keyup", "KeyboardEvent", true, true, 0, 0, 0, kn);
                         restyle(&a); a.dirty = true;
@@ -2121,6 +2166,7 @@ int main(int argc, char **argv) {
         js_release_pins();
         net_poll();
         { Tab *act = a.t; double tn = now_ms(); for (int i = 0; i < a.ntabs; i++) { a.t = a.tabs[i]; if (a.t->limited) { a.t->budget = LMIN(a.t->budget + a.t->lim * (tn - a.t->bud_t), 100); a.t->bud_t = tn; if (a.t->budget < 0) continue; } if (a.t->cur && a.t->cur->js) { double c0 = now_ms(); js_tick(a.t->cur->js); restyle(&a); fire_img_events(a.t->cur); double c = now_ms() - c0; a.t->cpu_ms += c; if (a.t->limited) a.t->budget -= c; } } a.t = act; if (a.t->cur && a.t->cur->js) frames_tick(&a); }
+        edit_sel_sync(&a);
         if (a.dirty) { double r0 = now_ms(); render(&a); a.t->cpu_ms += now_ms() - r0; }
         cpu_monitor(&a);
         { float want = a.t->info || *g_notice ? INFOH : 0; if (want != g_info_h) { g_info_h = want; for (int i = 0; i < a.ntabs; i++) a.tabs[i]->relayout = true; a.dirty = true; a.vonly = false; } }

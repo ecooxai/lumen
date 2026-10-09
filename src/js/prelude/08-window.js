@@ -393,7 +393,13 @@ function fireAnim(t, type, name, elapsed, anim) {
         const h = editHost(e.target); if (!h) return;
         const s = caret(h), data = del ? null : e.key, type = del ? 'deleteContentBackward' : 'insertText';
         if (!e.lumenExec && !fire(h, 'beforeinput', type, data)) return;
-        if (!s.isCollapsed) s.deleteFromDocument();
+        if (!s.isCollapsed) {
+            const blocks = [...h.children].some(c => /^(P|DIV|LI|H[1-6]|BLOCKQUOTE|PRE)$/.test(c.tagName));
+            s.deleteFromDocument();
+            if (blocks && !h.firstChild) { const p = document.createElement('p'); p.appendChild(document.createElement('br')); h.appendChild(p); s.collapse(p, 0); }
+            else s.collapse(s.anchorNode, s.anchorOffset);
+            if (del) { fire(h, 'input', type, data); document.dispatchEvent(new Event('selectionchange')); return; }
+        }
         const c = s.focusNode, o = s.focusOffset;
         if (del) {
             if (c.nodeType !== 3 || !o) return;
@@ -410,6 +416,50 @@ function fireAnim(t, type, name, elapsed, anim) {
     };
     document.addEventListener('lumenedit', e => edit(e, false), true);
     document.addEventListener('lumeneditdel', e => edit(e, true), true);
+    /* native mouse/keyboard selection in contenteditable: target + byte offset (clientX), extend flag (clientY) */
+    const texts = h => { const a = [], tw = document.createTreeWalker(h, 4); for (let n; (n = tw.nextNode());) a.push(n); return a; };
+    const wordCh = /[\p{L}\p{N}_]/u;
+    const selAt = (type, f) => document.addEventListener('lumensel-' + type, e => {
+        e.stopImmediatePropagation();
+        const n = e.target, h = editHost(n); if (!h) return;
+        f(document.getSelection(), n, n.nodeType === 3 ? utf16Off(n.data, e.clientX | 0) : e.clientX | 0, h, e.clientY > 0);
+        document.dispatchEvent(new Event('selectionchange'));
+    }, true);
+    const to = (s, ext, n, o) => ext ? s.extend(n, o) : s.collapse(n, o);
+    selAt('collapse', (s, n, o) => s.collapse(n, o));
+    selAt('extend', (s, n, o, h) => s.rangeCount && h.contains(s.anchorNode) ? s.extend(n, o) : s.collapse(n, o));
+    selAt('word', (s, n, o) => {
+        if (n.nodeType !== 3) return s.collapse(n, o);
+        const d = n.data; let a = o, b = o;
+        while (a > 0 && wordCh.test(d[a - 1])) a--;
+        while (b < d.length && wordCh.test(d[b])) b++;
+        if (a === b && b < d.length) b++;
+        s.setBaseAndExtent(n, a, n, b);
+    });
+    selAt('all', (s, n, o, h) => s.selectAllChildren(h));
+    selAt('home', (s, n, o, h, ext) => { const t = texts(h); to(s, ext, t.length ? t[0] : h, 0); });
+    selAt('end', (s, n, o, h, ext) => { const t = texts(h), l = t[t.length - 1]; l ? to(s, ext, l, l.data.length) : to(s, ext, h, h.childNodes.length); });
+    const step = (h, n, o, dir) => {
+        const t = texts(h);
+        if (!t.length) return [n, o];
+        if (n.nodeType !== 3) {
+            const c = n.childNodes[o], i = c ? t.findIndex(x => c.contains(x) || (c.compareDocumentPosition(x) & 4)) : -1;
+            if (i < 0) { n = t[t.length - 1]; o = n.data.length; } else { n = t[i]; o = 0; }
+        }
+        const i = t.indexOf(n), d = n.data;
+        if (dir < 0) {
+            if (o > 0) o -= o > 1 && /[\udc00-\udfff]/.test(d[o - 1]) ? 2 : 1;
+            else if (i > 0) { const p = t[i - 1]; o = p.data.length - (p.parentNode === n.parentNode && p.data.length ? 1 : 0); n = p; }
+        } else if (o < d.length) o += /[\ud800-\udbff]/.test(d[o]) ? 2 : 1;
+        else if (i < t.length - 1) { const q = t[i + 1]; o = q.parentNode === n.parentNode && q.data.length ? 1 : 0; n = q; }
+        return [n, o];
+    };
+    const move = dir => (s, n, o, h, ext) => {
+        if (!s.rangeCount || !h.contains(s.focusNode)) caret(h);
+        if (!ext && !s.isCollapsed) { const r = s.getRangeAt(0); return dir < 0 ? s.collapse(r.startContainer, r.startOffset) : s.collapse(r.endContainer, r.endOffset); }
+        to(s, ext, ...step(h, s.focusNode, s.focusOffset, dir));
+    };
+    selAt('left', move(-1)); selAt('right', move(1));
 }
 return { queueMessage, workerEvent, protoFor, dispatch, fire, fireAnim, report, mediaChanged, ceConnected, Event, MouseEvent, PointerEvent, KeyboardEvent, FocusEvent, WheelEvent, InputEvent, PopStateEvent, ErrorEvent };
 })

@@ -17,8 +17,17 @@ static void walk(Box *b, float dx, float dy, float psy, WalkFn fn, void *ud) {
     for (Box *c = b->first; c; c = c->next) walk(c, dx, dy, psy, fn, ud);
 }
 
+static bool editable(const Node *n) {
+    for (; n; n = n->parent) {
+        const char *ce = n->type == NODE_ELEMENT ? node_attr((Node *)n, "contenteditable") : NULL;
+        if (ce) return strcmp(ce, "false") != 0;
+    }
+    return false;
+}
+
 static bool selectable(const Box *t) {
-    return t->kind == BX_TEXT && t->st && !t->st->user_select && t->st->visibility == VIS_VISIBLE && t->text_len > 0;
+    return t->kind == BX_TEXT && t->st && t->st->visibility == VIS_VISIBLE && t->text_len > 0 &&
+           (!t->st->user_select || editable(t->node));
 }
 
 typedef struct Hit { float x, y; Box *scope; int depth_in; float best; Box *bb; int off; } Hit;
@@ -145,4 +154,18 @@ void tsel_all(Layout *L) {
     walk(L->root, 0, 0, 0, find_fn, &g);
     if (!g.first) return;
     g_tsel = (TextSel){ true, L, g.first->node, g.last->node, 0, g.last->text_len };
+}
+
+bool node_within(const Node *n, const Node *anc) { for (; n; n = n->parent) if (n == anc) return true; return false; }
+
+bool tsel_dom_point(Node *n, int o, bool end, Node **tn, int *to) {
+    if (!n) return false;
+    if (n->type == NODE_TEXT) { *tn = n; *to = o; return true; }
+    Node *c = n->first, *before = NULL, *after = NULL;
+    for (int i = 0; c && i < o; i++) c = c->next;
+    for (Node *x = n->first; x && x != c; x = node_next_in_tree(x, n)) if (x->type == NODE_TEXT) before = x;
+    for (Node *x = c; x; x = node_next_in_tree(x, n)) if (x->type == NODE_TEXT) { after = x; break; }
+    if (after && (!end || !before)) { *tn = after; *to = 0; return true; }
+    if (before) { *tn = before; *to = (int)before->text_len; return true; }
+    return false;
 }
