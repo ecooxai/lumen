@@ -65,6 +65,8 @@ class NodeList {
     *keys() { for (let i = 0; i < this.length; i++) yield i; }
     values() { return this[Symbol.iterator](); }
 }
+class AnimationTimeline { get currentTime() { return performance.now(); } get duration() { return null; } }
+class DocumentTimeline extends AnimationTimeline { constructor(o) { super(); def(this, '_origin', +(o && o.originTime) || 0); } get currentTime() { return performance.now() - this._origin; } }
 class HTMLCollection extends NodeList {
     namedItem(k) { k = String(k); if (!k) return null; for (let i = 0; i < this.length; i++) { const e = this[i]; if (e.id === k || (e.getAttribute && e.getAttribute('name') === k)) return e; } return null; }
 }

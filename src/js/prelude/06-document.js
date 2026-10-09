@@ -36,7 +36,7 @@ methods(Document.prototype, {
     get forms() { return htmlColl(N.query(this, 'form', true)); }, get images() { return htmlColl(N.query(this, 'img', true)); },
     get links() { return htmlColl(N.query(this, 'a[href],area[href]', true)); }, get scripts() { return htmlColl(N.query(this, 'script', true)); },
     get styleSheets() { return N.query(this, 'style,link[rel~=stylesheet]', true).map(sheetFor); },
-    get fonts() { return fontSet; }, get fullscreenElement() { return null; }, get fullscreenEnabled() { return false; },
+    get fonts() { return fontSet; }, get timeline() { if (!this.__tl) def(this, '__tl', new DocumentTimeline()); return this.__tl; }, get fullscreenElement() { return null; }, get fullscreenEnabled() { return false; },
     exitFullscreen() { return Promise.resolve(); }, get pictureInPictureEnabled() { return false; },
     get implementation() { if (this === document) return implementation; if (!this.__impl) def(this, '__impl', Object.create(implementation, { _doc: { value: this } })); return this.__impl; },
     createElement(tag, opts) {
