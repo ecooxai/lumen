@@ -1450,7 +1450,7 @@ int main(int argc, char **argv) {
         for (int i = 0; i < a.ntabs; i++) { Tab *tb = a.tabs[i]; if (tb->cur && tb->cur->js) { double dl = js_next_deadline(tb->cur->js) - now_ms(); if (tb->limited && tb->budget < 0) dl = LMAX(dl, -tb->budget / tb->lim - (now_ms() - tb->bud_t)); if (dl < to) to = dl < 0 ? 0 : (int)dl; } }
         if (net_pending() && to > 50) to = 50;
         { int mf = media_tick(); if (mf & 1) { if (!a.dirty && !a.deferred) a.vonly = true; a.dirty = a.vframe = true; } if (mf & 2) a.t->relayout = true; }
-        if (!a.editing && page_focus(&a) && !SDL_TextInputActive(a.win)) SDL_StartTextInput(a.win);
+        if (!a.editing && (page_focus(&a) || edit_focus(&a)) && !SDL_TextInputActive(a.win)) SDL_StartTextInput(a.win);
         if (getenv("LUMEN_MEM_STATS")) {
             static double last_stats; double tn = now_ms();
             if (tn - last_stats > 10000) { last_stats = tn; size_t fr, seg = media_mem_bytes(&fr); size_t jh = 0, je = 0; js_mem_stats(&jh, &je); fprintf(stderr, "lumen-mem: mse=%.1fMB vframes=%.1fMB images=%.1fMB/%d js_heap=%.1fMB js_external=%.1fMB canvases=%.1fMB\n", seg / 1048576.0, fr / 1048576.0, g_icache_bytes / 1048576.0, g_icache_n, jh / 1048576.0, je / 1048576.0, ((double)a.frame.w * a.frame.h + (double)a.page.w * a.page.h) * 4 / 1048576.0); }
