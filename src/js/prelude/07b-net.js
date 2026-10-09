@@ -383,11 +383,11 @@ class WebSocket extends EventTarget {
 }
 installHandlers(WebSocket.prototype, false, ['open', 'message', 'error', 'close']);
 for (const [k, v] of Object.entries({ CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3 })) { Object.defineProperty(WebSocket, k, { value: v, enumerable: true }); Object.defineProperty(WebSocket.prototype, k, { value: v, enumerable: true }); }
-class MessagePort extends EventTarget { constructor() { super(); this.onmessage = null; def(this, '_other', null); } postMessage(d) { const o = this._other; if (o) setTimeout(() => { dispatch(o, new MessageEvent('message', { data: structuredClone(d) }), true); }); } start() {} close() { this._other = null; } }
+class MessagePort extends EventTarget { constructor() { super(); this.onmessage = null; def(this, '_other', null); } postMessage(d) { const r = this._wk || (this._other && this._other._wk); if (r) { N.workerPost(r[0], { __lumenPort: r[1], data: d }); return; } const o = this._other; if (o) setTimeout(() => { dispatch(o, new MessageEvent('message', { data: structuredClone(d) }), true); }); } start() {} close() { this._other = null; } }
 class MessageChannel { constructor() { this.port1 = new MessagePort(); this.port2 = new MessagePort(); this.port1._other = this.port2; this.port2._other = this.port1; } }
 class BroadcastChannel extends EventTarget { constructor(n) { super(); this.name = String(n); } postMessage() {} close() {} }
 
-const workers = new Map();
+const workers = new Map(); let portSeq = 0; const remotePorts = new Map();
 class Worker extends EventTarget {
     constructor(url, opts) {
         super();
@@ -402,12 +402,19 @@ class Worker extends EventTarget {
         def(this, '_id', N.workerNew(u.href, src, N.userAgent(), N.platform(), opts && opts.name != null ? String(opts.name) : ''));
         workers.set(this._id, this);
     }
-    postMessage(m, t) { if (arguments.length < 1) throw new TypeError("Failed to execute 'postMessage' on 'Worker': 1 argument required, but only 0 present."); if (this._id) N.workerPost(this._id, m); }
+    postMessage(m, t) { if (arguments.length < 1) throw new TypeError("Failed to execute 'postMessage' on 'Worker': 1 argument required, but only 0 present."); if (!this._id) return; const ps = (Array.isArray(t) ? t : t && t.transfer || []).filter(p => p instanceof MessagePort); if (!ps.length) return N.workerPost(this._id, m); N.workerPost(this._id, { __lumenXfer: ps.map(p => { const k = ++portSeq; p._wk = [this._id, k]; if (p._other) remotePorts.set(k, p._other); return k; }), data: m }); }
     terminate() { if (this._id) { N.workerTerm(this._id); workers.delete(this._id); this._id = 0; } }
 }
 function workerEvent(id, kind, data, message, filename, lineno, colno) {
     const w = workers.get(id); if (!w) return;
-    if (kind === 0) dispatch(w, new MessageEvent('message', { data }), true);
+    if (kind === 0) {
+        let ports = [];
+        if (data && typeof data === 'object') {
+            if (data.__lumenPort) { const p = remotePorts.get(data.__lumenPort); if (p) dispatch(p, new MessageEvent('message', { data: data.data }), true); return; }
+            if (data.__lumenXfer) { ports = data.__lumenXfer.map(k => { const q = new MessagePort(); q._wk = [id, k]; remotePorts.set(k, q); return q; }); data = data.data; }
+        }
+        dispatch(w, new MessageEvent('message', { data, ports }), true);
+    }
     else if (kind === 1) {
         const e = new ErrorEvent('error', { message, filename, lineno, colno, cancelable: true });
         dispatch(w, e, true);

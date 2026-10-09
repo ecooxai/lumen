@@ -271,9 +271,10 @@ static v8::MaybeLocal<v8::Promise> mod_dynamic(v8::Local<v8::Context> ctx, v8::L
     }
     v8::Local<v8::Promise> p;
     if (!m.IsEmpty() && mod_eval(c, m).ToLocal(&p)) {
-        v8::Local<v8::Array> d = v8::Array::New(iso, 2);
+        v8::Local<v8::Array> d = v8::Array::New(iso, 3);
         (void)d->Set(ctx, 0, R);
         (void)d->Set(ctx, 1, m->GetModuleNamespace());
+        (void)d->Set(ctx, 2, jstr(iso, u.c_str()));
         auto done = [](const v8::FunctionCallbackInfo<v8::Value> &a) {
             v8::Local<v8::Context> cx = a.GetIsolate()->GetCurrentContext();
             v8::Local<v8::Array> d = a.Data().As<v8::Array>();
@@ -282,11 +283,17 @@ static v8::MaybeLocal<v8::Promise> mod_dynamic(v8::Local<v8::Context> ctx, v8::L
         };
         auto fail = [](const v8::FunctionCallbackInfo<v8::Value> &a) {
             v8::Local<v8::Context> cx = a.GetIsolate()->GetCurrentContext();
+            if (getenv("LUMEN_DEBUG_MODULES")) {
+                v8::Local<v8::Value> e = a[0];
+                if (e->IsObject()) { v8::Local<v8::Value> st; if (e.As<v8::Object>()->Get(cx, jstr(a.GetIsolate(), "stack")).ToLocal(&st)) e = st; }
+                fprintf(stderr, "[module] dynamic import rejected %s: %.600s\n", jcstr(a.GetIsolate(), a.Data().As<v8::Array>()->Get(cx, 2).ToLocalChecked()).c_str(), jcstr(a.GetIsolate(), e).c_str());
+            }
             (void)a.Data().As<v8::Array>()->Get(cx, 0).ToLocalChecked().As<v8::Promise::Resolver>()->Reject(cx, a[0]);
         };
         v8::Local<v8::Function> f1, f2;
         if (v8::Function::New(ctx, done, d).ToLocal(&f1) && v8::Function::New(ctx, fail, d).ToLocal(&f2)) (void)p->Then(ctx, f1, f2);
     } else if (tc.HasCaught()) {
+        if (getenv("LUMEN_DEBUG_MODULES")) fprintf(stderr, "[module] dynamic import failed %s: %.600s\n", u.c_str(), jcstr(iso, tc.Exception()).c_str());
         (void)R->Reject(ctx, tc.Exception());
         tc.Reset();
     }

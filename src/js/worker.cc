@@ -329,21 +329,35 @@ const toFn = f => typeof f === 'function' ? f : (0, eval)('(function(){' + Strin
 const performance = { now: () => W.now(), timeOrigin: W.timeOrigin, mark() {}, measure() {}, getEntriesByName() { return []; }, getEntriesByType() { return []; }, toJSON() { return { timeOrigin: W.timeOrigin }; } };
 const fmt = a => a.map(x => typeof x === 'string' ? x : x instanceof Error ? x.stack || String(x) : (() => { try { return JSON.stringify(x); } catch (e) { return String(x); } })()).join(' ');
 const console = { log: (...a) => W.log(1, fmt(a)), info: (...a) => W.log(1, fmt(a)), debug: (...a) => W.log(0, fmt(a)), warn: (...a) => W.log(2, fmt(a)), error: (...a) => W.log(3, fmt(a)), trace() {}, group() {}, groupEnd() {}, time() {}, timeEnd() {}, assert: (c, ...a) => { if (!c) W.log(3, 'Assertion failed: ' + fmt(a)); } };
+const wports = new Map(); let wpseq = 0;
+class MessagePort extends EventTarget {
+    constructor() { super(); this.onmessage = null; this.onmessageerror = null; Object.defineProperty(this, '_other', { value: null, writable: true }); Object.defineProperty(this, '_k', { value: 0, writable: true }); }
+    postMessage(d) { const k = this._k || (this._other && this._other._k); if (k) { W.post({ __lumenPort: k, data: d }); return; } const o = this._other; if (o) setTimeout(() => { const e = new MessageEvent('message', { data: W.clone(d) }); e.isTrusted = true; fireOn(o, e); }); }
+    start() {} close() { this._other = null; }
+}
+class MessageChannel { constructor() { this.port1 = new MessagePort(); this.port2 = new MessagePort(); this.port1._other = this.port2; this.port2._other = this.port1; } }
 const api = {
     self: G, globalThis: G, location, navigator, name: W.name, origin: location.origin, isSecureContext: location.protocol === 'https:', crossOriginIsolated: false,
     onmessage: null, onmessageerror: null, onerror: null, onunhandledrejection: null, onrejectionhandled: null, onlanguagechange: null, onoffline: null, ononline: null,
-    postMessage(m) { if (arguments.length < 1) throw new TypeError("Failed to execute 'postMessage': 1 argument required, but only 0 present."); W.post(m); },
+    postMessage(m, t) { if (arguments.length < 1) throw new TypeError("Failed to execute 'postMessage': 1 argument required, but only 0 present."); const ps = (Array.isArray(t) ? t : t && t.transfer || []).filter(p => p instanceof MessagePort); if (!ps.length) return W.post(m); W.post({ __lumenXfer: ps.map(p => { const k = -(++wpseq); p._k = k; if (p._other) wports.set(k, p._other); return k; }), data: m }); },
     close() { W.close(); },
     importScripts(...urls) { for (const u of urls) W.importScript(String(u)); },
     setTimeout: (f, ms, ...args) => W.timer(toFn(f), +ms || 0, false, args), setInterval: (f, ms, ...args) => W.timer(toFn(f), +ms || 0, true, args),
     clearTimeout: id => W.clear(+id || 0), clearInterval: id => W.clear(+id || 0),
     queueMicrotask: f => { Promise.resolve().then(() => f()); }, structuredClone: v => W.clone(v),
     btoa, atob, TextEncoder, TextDecoder, Blob, File, URL, URLSearchParams, Headers, Response, fetch, performance, console,
-    Event, MessageEvent, ErrorEvent, CustomEvent, PromiseRejectionEvent, EventTarget, DOMException, WorkerGlobalScope, DedicatedWorkerGlobalScope, WorkerLocation, WorkerNavigator,
+    Event, MessageEvent, MessagePort, MessageChannel, ErrorEvent, CustomEvent, PromiseRejectionEvent, EventTarget, DOMException, WorkerGlobalScope, DedicatedWorkerGlobalScope, WorkerLocation, WorkerNavigator,
 };
 for (const k of Object.keys(api)) Object.defineProperty(G, k, { value: api[k], writable: true, configurable: true, enumerable: false });
 return {
-    onmsg(data) { const e = new MessageEvent('message', { data }); e.isTrusted = true; fireOn(G, e); },
+    onmsg(data) {
+        let ports = [];
+        if (data && typeof data === 'object') {
+            if (data.__lumenPort) { const p = wports.get(data.__lumenPort); if (p) { const e = new MessageEvent('message', { data: data.data }); e.isTrusted = true; fireOn(p, e); } return; }
+            if (data.__lumenXfer) { ports = data.__lumenXfer.map(k => { const q = new MessagePort(); q._k = k; wports.set(k, q); return q; }); data = data.data; }
+        }
+        const e = new MessageEvent('message', { data, ports }); e.isTrusted = true; fireOn(G, e);
+    },
     report(error, message, filename, lineno, colno) {
         const e = new ErrorEvent('error', { message, filename, lineno, colno, error, cancelable: true });
         e.isTrusted = true;
