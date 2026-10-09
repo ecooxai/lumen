@@ -23,9 +23,11 @@
 #ifdef __APPLE__
 #define UA_OS "Macintosh; Intel Mac OS X 10_15_7"
 #define UA_FF_OS "Macintosh; Intel Mac OS X 10.15"
+#define UA_CH_OS "macOS"
 #else
 #define UA_OS "X11; Linux x86_64"
 #define UA_FF_OS "X11; Linux x86_64"
+#define UA_CH_OS "Linux"
 #endif
 static const char *const ua_str[UA_COUNT] = {
     "Mozilla/5.0 (" UA_OS ") AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",
@@ -244,7 +246,7 @@ static NetResponse *http_once(const char *method, const URL *u, const Headers *h
     char *pq = url_path_query(u);
     sb_printf(&req, "%s %s HTTP/1.1\r\n", method, pq); free(pq);
     if (u->port != url_default_port(u->scheme)) sb_printf(&req, "Host: %s:%d\r\n", u->host, u->port); else sb_printf(&req, "Host: %s\r\n", u->host);
-    bool has_ua = false, has_accept = false, has_ae = false, has_al = false;
+    bool has_ua = false, has_accept = false, has_ae = false, has_al = false, has_ch = false;
     for (int i = 0; i < hdrs->n; i++) {
         const char *n = hdrs->v[i].name;
         if (str_ieq(n, "host") || str_ieq(n, "content-length") || str_ieq(n, "connection")) continue;
@@ -252,12 +254,16 @@ static NetResponse *http_once(const char *method, const URL *u, const Headers *h
         if (str_ieq(n, "accept")) has_accept = true;
         if (str_ieq(n, "accept-encoding")) has_ae = true;
         if (str_ieq(n, "accept-language")) has_al = true;
+        if (str_ieq(n, "sec-ch-ua")) has_ch = true;
         sb_printf(&req, "%s: %s\r\n", n, hdrs->v[i].value);
     }
     if (!has_ua) sb_printf(&req, "User-Agent: %s\r\n", g_user_agent);
     if (!has_accept) sb_puts(&req, "Accept: */*\r\n");
     if (!has_ae) sb_puts(&req, "Accept-Encoding: gzip, deflate, br, zstd\r\n");
     if (!has_al) sb_puts(&req, "Accept-Language: en-US,en;q=0.9\r\n");
+    if (!has_ch && !strcmp(u->scheme, "https") && strstr(g_user_agent, "Chrome/"))
+        sb_puts(&req, "sec-ch-ua: \"Google Chrome\";v=\"150\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"150\"\r\n"
+                      "sec-ch-ua-mobile: ?0\r\nsec-ch-ua-platform: \"" UA_CH_OS "\"\r\n");
     if (cookies) { char *ck = cookies_get(u, true); if (ck) { sb_printf(&req, "Cookie: %s\r\n", ck); free(ck); } }
     if (body || (strcmp(method, "GET") && strcmp(method, "HEAD"))) sb_printf(&req, "Content-Length: %zu\r\n", body_len);
     sb_puts(&req, "Connection: keep-alive\r\n\r\n");
