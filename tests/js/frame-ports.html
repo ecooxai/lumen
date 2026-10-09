@@ -1,0 +1,11 @@
+<!doctype html><title>frame ports</title>
+<iframe id=f src="frame-ports-child.html"></iframe>
+<script>
+const R = {};
+const ch = new MessageChannel();
+ch.port1.onmessage = e => { if (e.data === 'ready') { R.delivered = 'PASS'; ch.port1.postMessage('x'); } else R.roundTrip = e.data === 'pong:x' ? 'PASS' : 'BAD' + e.data; };
+f.onload = () => f.contentWindow.postMessage('ping', '*', [ch.port2]);
+addEventListener('message', e => { if (e.data === 'self') R.selfPorts = e.ports.length === 1 ? 'PASS' : 'BAD' + e.ports.length; });
+const c2 = new MessageChannel(); postMessage('self', '*', [c2.port2]);
+setTimeout(() => console.log('RESULTS frame-ports ' + ['delivered', 'roundTrip', 'selfPorts'].map(k => k + ':' + (R[k] || 'FAIL')).join(' ')), 1500);
+</script>

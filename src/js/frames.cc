@@ -249,8 +249,8 @@ static void n_postTo(const FCI &a) {
         v8::Local<v8::Value> data, fn;
         if (des.ReadHeader(tc).FromMaybe(false) && des.ReadValue(tc).ToLocal(&data) &&
             t->api.Get(iso)->Get(tc, jstr(iso, "queueMessage")).ToLocal(&fn) && fn->IsFunction()) {
-            v8::Local<v8::Value> argv[3] = { data, jstr(iso, ctx_origin(c).c_str()), win_for(t, c) };
-            (void)jcall(t, fn.As<v8::Function>(), v8::Undefined(iso), 3, argv);
+            v8::Local<v8::Value> argv[4] = { data, jstr(iso, ctx_origin(c).c_str()), win_for(t, c), a[3]->IsArray() ? a[3] : v8::Array::New(iso, 0).As<v8::Value>() };
+            (void)jcall(t, fn.As<v8::Function>(), v8::Undefined(iso), 4, argv);
         }
     }
     free(buf.first);

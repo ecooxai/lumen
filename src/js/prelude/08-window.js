@@ -255,8 +255,9 @@ function structuredClone(v, seen = new Map()) {
     if (v instanceof Set) { const s = new Set(); seen.set(v, s); for (const x of v) s.add(structuredClone(x, seen)); return s; }
     const o = Array.isArray(v) ? [] : {}; seen.set(v, o); for (const k of Object.keys(v)) o[k] = structuredClone(v[k], seen); return o;
 }
-function postMessage(data, origin) { const [src, org] = N.caller(); const d = structuredClone(data); setTimeout(() => dispatch(G, new MessageEvent('message', { data: d, origin: org, source: asWin(src) }), true)); }
-function queueMessage(data, origin, src) { setTimeout(() => dispatch(G, new MessageEvent('message', { data, origin, source: asWin(src) }), true)); }
+const xferPorts = (o, t) => { const tr = o && typeof o === 'object' ? o.transfer : t; return (tr && typeof tr[Symbol.iterator] === 'function' ? [...tr] : []).filter(p => p && typeof p.postMessage === 'function' && typeof p.start === 'function'); };
+function postMessage(data, origin, transfer) { const [src, org] = N.caller(); const d = structuredClone(data), ports = xferPorts(origin, transfer); setTimeout(() => dispatch(G, new MessageEvent('message', { data: d, origin: org, source: asWin(src), ports }), true)); }
+function queueMessage(data, origin, src, ports) { setTimeout(() => dispatch(G, new MessageEvent('message', { data, origin, source: asWin(src), ports: ports ? [...ports] : [] }), true)); }
 const remoteWins = new Map();
 function asWin(v) {
     if (typeof v !== 'number') return v;
@@ -264,7 +265,7 @@ function asWin(v) {
     if (w) return w;
     const nav = u => N.ctxRel(v, 4, String(u));
     w = Object.freeze({
-        postMessage(d, o) { N.postTo(v, d, o && typeof o === 'object' ? String(o.targetOrigin ?? '/') : String(o ?? '/')); },
+        postMessage(d, o, t) { N.postTo(v, d, o && typeof o === 'object' ? String(o.targetOrigin ?? '/') : String(o ?? '/'), xferPorts(o, t)); },
         get window() { return w; }, get self() { return w; }, get frames() { return w; },
         get parent() { return asWin(N.ctxRel(v, 0)) ?? w; }, get top() { return asWin(N.ctxRel(v, 1)) ?? w; },
         get length() { return N.ctxRel(v, 2); }, get closed() { return N.ctxRel(v, 3); }, opener: null,
