@@ -301,9 +301,10 @@ const api = {
 };
 for (const k of Object.keys(api)) Object.defineProperty(G, k, { value: api[k], writable: true, configurable: true, enumerable: false });
 return {
-    onmsg(data) { fireOn(G, new MessageEvent('message', { data })); },
+    onmsg(data) { const e = new MessageEvent('message', { data }); e.isTrusted = true; fireOn(G, e); },
     report(error, message, filename, lineno, colno) {
         const e = new ErrorEvent('error', { message, filename, lineno, colno, error, cancelable: true });
+        e.isTrusted = true;
         if (typeof G.onerror === 'function') { try { if (G.onerror.call(G, message, filename, lineno, colno, error) === true) e.preventDefault(); } catch (x) {} }
         fireOn(G, e, true);
         return e.defaultPrevented;

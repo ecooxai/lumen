@@ -1,0 +1,6 @@
+<!doctype html><script>
+const src = "onmessage = function (e) { postMessage({ trusted: e.isTrusted, origin: e.origin === '', source: e.source === null }); }";
+const w = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+w.onmessage = e => console.log('RESULTS worker-trusted ' + Object.entries(e.data).map(([k, v]) => k + ':' + (v ? 'PASS' : 'FAIL')).join(' '));
+w.postMessage('x');
+</script>
