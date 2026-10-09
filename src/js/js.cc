@@ -1,3 +1,5 @@
+#include <map>
+#include <string>
 /* V8 embedding: platform, per-page isolate/context, node wrappers, script execution, timers, events */
 #include "js_int.h"
 #include <v8-profiler.h>
@@ -697,7 +699,14 @@ bool js_dispatch(JsCtx *c, Node *target, const char *type, const char *kind, boo
     if (kind && !c->api.IsEmpty()) (void)c->api.Get(iso)->Get(ctx, jstr(iso, kind)).ToLocal(&ctor);
     v8::Local<v8::Value> argv[4] = { target ? jwrap(c, target) : v8::Local<v8::Value>(ctx->Global()), jstr(iso, type), init, ctor };
     v8::Local<v8::Value> r;
-    if (!jcall(c, c->fire.Get(iso), v8::Undefined(iso), 4, argv).ToLocal(&r)) return true;
+    static bool dbg = getenv("LUMEN_DEBUG_JS"); double t0 = dbg ? now_ms() : 0;
+    bool ok = jcall(c, c->fire.Get(iso), v8::Undefined(iso), 4, argv).ToLocal(&r);
+    if (dbg) {   /* per event type: dispatches and ms, printed every second */
+        static std::map<std::string, std::pair<int, double>> acc; static double last;
+        auto &e = acc[type]; e.first++; e.second += now_ms() - t0;
+        if (now_ms() - last > 1000) { last = now_ms(); std::string o; char b[96]; for (auto &kv : acc) { snprintf(b, sizeof b, " %s=%d/%.1fms", kv.first.c_str(), kv.second.first, kv.second.second); o += b; } fprintf(stderr, "lumen-js:%s\n", o.c_str()); acc.clear(); }
+    }
+    if (!ok) return true;
     return r->BooleanValue(iso);
 }
 

@@ -173,9 +173,17 @@ static float clamph(const ComputedStyle *s, float h, float cbh, float bp) {
 static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float cbh, FloatCtx *fc, int mode, float fw, float fh);
 /* flex/grid measure a child and then lay it out again, often with identical inputs; nested containers made that exponential */
 int g_lb_calls, g_lb_hits;
+static bool pct_h(const ComputedStyle *s) { return s->height.pctu || s->height.pct || s->min_height.pctu || s->min_height.pct || s->max_height.pctu || s->max_height.pct; }
+static bool hdep(const Box *b) {
+    if (b->has_abs) return true;
+    for (const Box *c = b->first; c; c = c->next) if (c->st && pct_h(c->st)) return true;
+    return false;
+}
 void layout_box(Layout *L, Box *b, float x, float y, float cbw, float cbh, FloatCtx *fc, int mode, float fw, float fh) {
-    g_lb_calls++;
-    if (!fc && b->memo && b->mmode == mode && b->mk[2] == cbw && b->mk[3] == cbh && b->mk[4] == fw && b->mk[5] == fh && b->w == b->mk[6] && b->h == b->mk[7]) {
+    g_lb_calls++; b->dcalls++;
+    /* a forced height equal to the natural one only matters to children that resolve percentages or insets against it */
+    bool fh_same = b->mk[5] == fh || (b->mk[5] < 0 && fh >= 0 && fabsf(fh - b->mk[7]) < 0.01f && !hdep(b));
+    if (!fc && b->memo && b->mmode == mode && b->mk[2] == cbw && b->mk[3] == cbh && b->mk[4] == fw && fh_same && b->w == b->mk[6] && b->h == b->mk[7]) {
         float dx = x + b->mk[0] - b->x, dy = y + b->mk[1] - b->y;
         box_translate(b, dx, dy); g_lb_hits++;
         static unsigned stamp; stamp++;
@@ -306,6 +314,26 @@ static void track_containers(Document *d, Box *b) {
     }
 }
 
+/* LUMEN_DEBUG_LAYOUT=2: boxes whose layout_box count multiplies most relative to their parent */
+typedef struct Hot { Box *b; float r; } Hot;
+static void hot_walk(Box *b, Hot *h, int n) {
+    for (Box *c = b->first; c; c = c->next) {
+        float r = b->dcalls ? (float)c->dcalls / b->dcalls : 0;
+        if (c->dcalls > 50 && r > 1.5f) { int k = n - 1; if (r * c->dcalls > h[k].r) { while (k > 0 && r * c->dcalls > h[k - 1].r) { h[k] = h[k - 1]; k--; } h[k] = (Hot){ c, r * c->dcalls }; } }
+        hot_walk(c, h, n);
+    }
+}
+static void hot_report(Layout *L) {
+    Hot h[8] = {0}; hot_walk(L->root, h, 8);
+    for (Box *b = h[0].b; b && b->parent; b = b->parent) {
+        const Node *n = b->node; const char *cl = n && n->type == NODE_ELEMENT ? node_attr(n, "class") : NULL;
+        if (b->dcalls > b->parent->dcalls) fprintf(stderr, "  chain x%.1f %d fmt=%d pfmt=%d disp=%d <%s class=\"%.70s\">\n", (float)b->dcalls / LMAX(1, b->parent->dcalls), b->dcalls, b->fmt, b->parent->fmt, b->st ? b->st->display : -1, n && n->type == NODE_ELEMENT ? n->tag : "#anon", cl ? cl : "");
+    }
+    for (int i = 0; i < 8 && h[i].b; i++) {
+        Box *b = h[i].b; const Node *n = b->node; const char *cl = n && n->type == NODE_ELEMENT ? node_attr(n, "class") : NULL;
+        fprintf(stderr, "  hot %d calls (parent %d) fmt=%d disp=%d <%s class=\"%.60s\">\n", b->dcalls, b->parent->dcalls, b->fmt, b->st ? b->st->display : -1, n && n->type == NODE_ELEMENT ? n->tag : "#anon", cl ? cl : "");
+    }
+}
 void layout_run(Layout *L, Document *d, float vw, float vh) {
     double t0 = now_ms();
     if (L->root) free_box_data(L->root);
@@ -326,7 +354,8 @@ void layout_run(Layout *L, Document *d, float vw, float vh) {
     track_containers(d, r);
     L->ms = now_ms() - t0;
     static int dbg = -1, nrun; static double tsum, tlast;
-    if (dbg < 0) dbg = getenv("LUMEN_DEBUG_LAYOUT") != NULL;
+    if (dbg < 0) { const char *e = getenv("LUMEN_DEBUG_LAYOUT"); dbg = e ? atoi(e) > 0 ? atoi(e) : 1 : 0; }
+    if (dbg > 1 && L->ms > 50) { fprintf(stderr, "lumen: slow layout %.0fms\n", L->ms); hot_report(L); }
     if (dbg) { nrun++; tsum += L->ms; double t = now_ms(); if (t - tlast > 1000) { fprintf(stderr, "lumen: layout %d runs/s %.1fms avg %d boxes %d calls %d hits\n", nrun, nrun ? tsum / nrun : 0, L->nboxes, nrun ? g_lb_calls / nrun : 0, nrun ? g_lb_hits / nrun : 0); g_lb_calls = g_lb_hits = 0; nrun = 0; tsum = 0; tlast = t; } }
 }
 

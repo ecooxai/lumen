@@ -198,3 +198,8 @@ Load (DCL/load): Google 0.53/3.66 s, Bing 1.97/2.23 s, YT watch ~2.2/3.47 s, YT 
 - Settings > "CPU usage" (`cpu_hud`, off by default, on in debug builds) shows Lumen's CPU and RAM (GB)
   at the bottom of the workspace sidebar every 2 s; clicking opens a popup with host CPU and RAM.
 - Next: ChatGPT composer click-to-caret and selection (paint_edit_caret always draws at the end).
+- Long ChatGPT conversations: nested flex columns measured each item (fh=-1) then laid it out again with
+  fh = the same height, so the memo missed and work doubled per level (~2^11 calls; 490ms layouts, 100% CPU).
+  `layout_box()` now treats a forced height equal to the natural one as a hit unless a child resolves
+  percentages/insets against it (`hdep`): 490ms -> 7ms. `LUMEN_DEBUG_LAYOUT=2` prints the hottest chain.
+- `LUMEN_DEBUG_JS=1` prints per-event-type dispatch counts and ms each second.

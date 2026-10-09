@@ -34,7 +34,7 @@ typedef struct Box {
     int list_index;
     float sx, sy;
     struct Box *cb, *abs_next, *abs_head;
-    float mk[8]; int8_t mmode; bool memo; int alo, ahi; unsigned astamp;   /* inputs of the last layout_box, reused when called again with the same ones */
+    float mk[8]; int8_t mmode; bool memo; int alo, ahi; unsigned astamp; int dcalls;   /* inputs of the last layout_box, reused when called again with the same ones */
 } Box;
 
 typedef struct FRect { float x, y, w, h; uint8_t side; } FRect;
