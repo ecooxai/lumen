@@ -1050,7 +1050,163 @@ static void idx_add(HMap *m, const char *key, Rule *r) {
     vec_push(*v, r);
 }
 static void rv_free(void *p) { RuleVec *v = p; vec_free(*v); free(v); }
-static void idx_clear(RuleIndex *ix) { hm_free(&ix->by_id, rv_free); hm_free(&ix->by_class, rv_free); hm_free(&ix->by_tag, rv_free); vec_free(ix->universal); ix->count = 0; }
+static void nofree(void *p) { (void)p; }
+typedef struct HovDesc { VEC(const char *) keys; bool univ; } HovDesc;
+static void hd_free(void *p) { HovDesc *h = p; if (!h) return; vec_free(h->keys); free(h); }
+static const char *hov_skey; /* subject key of the rule being indexed; NULL = universal */
+static void desc_add(HMap *m, void **u, const char *key, const char *skey) {
+    HovDesc *h = key ? hm_get(m, key) : *u;
+    if (!h) { h = xcalloc(1, sizeof *h); if (key) hm_put(m, key, h); else *u = h; }
+    if (!skey) { h->univ = true; return; }
+    for (int i = 0; i < h->keys.n; i++) if (!strcmp(h->keys.v[i], skey)) return;
+    vec_push(h->keys, skey);
+}
+static void idx_clear(RuleIndex *ix) { hm_free(&ix->by_id, rv_free); hm_free(&ix->by_class, rv_free); hm_free(&ix->by_tag, rv_free); hm_free(&ix->hov, nofree); hm_free(&ix->hov_anc, nofree); hm_free(&ix->hov_ach, nofree); hm_free(&ix->hov_desc, hd_free); hm_free(&ix->anc_desc, hd_free); hd_free(ix->hov_desc_u); hd_free(ix->anc_desc_u); ix->hov_desc_u = ix->anc_desc_u = NULL; vec_free(ix->universal); ix->count = 0; ix->hov_univ = 0; ix->hov_has = ix->hov_sib = false; }
+static bool is_pseudo(const SimpleSel *s, const char *n) { return s->kind == SK_PSEUDO && s->name && !strcmp(s->name, n); }
+static const char *attr_key(const char *name) { char b[128]; snprintf(b, sizeof b, "[%s", name); return atom(b); }
+static const char *cmp_key(const Compound *c) {
+    const char *id = NULL, *cls = NULL, *tag = NULL, *attr = NULL;
+    for (int k = 0; k < c->n; k++) {
+        const SimpleSel *s = &c->s[k];
+        if (s->kind == SK_ID) id = s->name; else if (s->kind == SK_CLASS && !cls) cls = s->name; else if (s->kind == SK_TYPE) tag = s->value;
+        else if (s->kind == SK_ATTR && !attr && s->name) attr = s->name;
+    }
+    if (!id && !cls && !tag)
+        for (int k = 0; k < c->n; k++) {
+            const SimpleSel *s = &c->s[k];
+            if ((is_pseudo(s, "is") || is_pseudo(s, "where")) && s->sub && s->sub->n) {
+                const char *k0 = NULL;
+                for (int j = 0; j < s->sub->n; j++) {
+                    const char *kj = s->sub->v[j].n ? cmp_key(&s->sub->v[j].c[s->sub->v[j].n - 1]) : NULL;
+                    if (!kj || (k0 && strcmp(k0, kj))) { k0 = NULL; break; }
+                    k0 = kj;
+                }
+                if (k0) return k0;
+            }
+        }
+    return id ? id : cls ? cls : tag ? tag : attr ? attr_key(attr) : NULL;
+}
+static bool list_has_hover(const SelList *l) {
+    for (int j = 0; j < l->n; j++)
+        for (int i = 0; i < l->v[j].n; i++)
+            for (int k = 0; k < l->v[j].c[i].n; k++) {
+                const SimpleSel *s = &l->v[j].c[i].s[k];
+                if (is_pseudo(s, "hover") || (s->sub && list_has_hover(s->sub))) return true;
+            }
+    return false;
+}
+static void anc_add(RuleIndex *ix, const char *key, int f) {
+    if (!key) { ix->hov_has = true; return; }
+    if (f & 6) desc_add(&ix->anc_desc, &ix->anc_desc_u, key, hov_skey);
+    if (f & 48) ix->hov_sib = true;
+    HMap *m = f & 64 ? &ix->hov_ach : &ix->hov_anc;
+    hm_put(m, key, (void *)((uintptr_t)hm_get(m, key) | (uintptr_t)(f & ~64)));
+}
+static void hov_add(RuleIndex *ix, const char *key, int f) {
+    if (f & 6) desc_add(&ix->hov_desc, &ix->hov_desc_u, key, hov_skey);
+    if (!key) { ix->hov_univ |= (uint8_t)f; return; }
+    hm_put(&ix->hov, key, (void *)((uintptr_t)hm_get(&ix->hov, key) | (uintptr_t)f));
+}
+/* add c's keys (its own, or every alternative of a keyed :is()/:where() list); false if c has none */
+static bool add_keys(RuleIndex *ix, const Compound *c, int f, void (*add)(RuleIndex *, const char *, int)) {
+    const char *k = cmp_key(c);
+    if (k) { add(ix, k, f); return true; }
+    for (int i = 0; i < c->n; i++) {
+        const SimpleSel *s = &c->s[i];
+        if (!(is_pseudo(s, "is") || is_pseudo(s, "where")) || !s->sub || !s->sub->n) continue;
+        int j = 0;
+        while (j < s->sub->n && s->sub->v[j].n && cmp_key(&s->sub->v[j].c[s->sub->v[j].n - 1])) j++;
+        if (j < s->sub->n) continue;
+        for (j = 0; j < s->sub->n; j++) add(ix, cmp_key(&s->sub->v[j].c[s->sub->v[j].n - 1]), f);
+        return true;
+    }
+    return false;
+}
+/* okey: key of the compound a nested selector list belongs to, used when the nested subject has none */
+static void hov_scan(RuleIndex *ix, const Selector *sel, int outer, const char *okey) {
+    for (int i = 0; i < sel->n; i++) {
+        const Compound *c = &sel->c[i];
+        int f = outer | (i == sel->n - 1 ? (outer ? 0 : 1) : sel->c[i + 1].comb == CB_ADJ || sel->c[i + 1].comb == CB_SIB ? 4 : 2);
+        const char *fk = cmp_key(c);
+        if (!fk && i == sel->n - 1) fk = okey;
+        for (int k = 0; k < c->n; k++) {
+            const SimpleSel *s = &c->s[k];
+            if (is_pseudo(s, "hover") && !add_keys(ix, c, f, hov_add)) hov_add(ix, fk, f);
+            if (is_pseudo(s, "has") && s->sub) {
+                if (!list_has_hover(s->sub)) continue;
+                int g = f;
+                for (int j = 0; j < s->sub->n; j++) if (s->sub->v[j].n) g |= s->sub->v[j].c[0].comb == CB_ADJ ? 16 : s->sub->v[j].c[0].comb == CB_SIB ? 32 : 0;
+                const char *pk;
+                if (add_keys(ix, c, g, anc_add)) continue;
+                if (fk) anc_add(ix, fk, g);
+                else if (i > 0 && c->comb == CB_CHILD && (pk = cmp_key(&sel->c[i - 1]))) anc_add(ix, pk, g | 64);
+                else ix->hov_has = true;
+            } else if (s->kind == SK_PSEUDO && s->sub) for (int j = 0; j < s->sub->n; j++) hov_scan(ix, &s->sub->v[j], f, fk);
+        }
+    }
+}
+static uintptr_t hov_lookup(HMap *m, Node *el) {
+    uintptr_t f = 0;
+    if (el->id) f |= (uintptr_t)hm_get(m, el->id);
+    const char *cls = node_attr(el, "class");
+    if (cls) { const char *p = cls; while (*p) { while (is_ws((unsigned char)*p)) p++; const char *s = p; while (*p && !is_ws((unsigned char)*p)) p++; if (p > s) f |= (uintptr_t)hm_getn(m, s, (size_t)(p - s)); } }
+    if (el->tag) f |= (uintptr_t)hm_get(m, el->tag);
+    for (int i = 0; i < el->nattrs; i++) {
+        char b[128]; int n = snprintf(b, sizeof b, "[%s", el->attrs[i].name);
+        if (n > 0 && n < (int)sizeof b) f |= (uintptr_t)hm_getn(m, b, (size_t)n);
+    }
+    return f;
+}
+int style_hover_affects(StyleEngine *e, Node *el) {
+    RuleIndex *ix = &e->idx;
+    if (e->idx_dirty || ix->hov_has) return 4;
+    return (int)((ix->hov_univ | hov_lookup(&ix->hov, el)) & 7);
+}
+static bool has_key(Node *el, const char *k) {
+    if ((el->id && !strcmp(el->id, k)) || (el->tag && !strcmp(el->tag, k))) return true;
+    if (k[0] == '[') return node_has_attr(el, k + 1);
+    const char *cls = node_attr(el, "class");
+    size_t kn = strlen(k);
+    if (cls) for (const char *p = cls; *p;) { while (is_ws((unsigned char)*p)) p++; const char *s = p; while (*p && !is_ws((unsigned char)*p)) p++; if ((size_t)(p - s) == kn && !memcmp(s, k, kn)) return true; }
+    return false;
+}
+static int desc_collect(HMap *m, Node *el, HovDesc **out, int n) {
+    HovDesc *h;
+    if (el->id && (h = hm_get(m, el->id)) && n < 32) out[n++] = h;
+    const char *cls = node_attr(el, "class");
+    if (cls) for (const char *p = cls; *p;) { while (is_ws((unsigned char)*p)) p++; const char *s = p; while (*p && !is_ws((unsigned char)*p)) p++; if (p > s && (h = hm_getn(m, s, (size_t)(p - s))) && n < 32) out[n++] = h; }
+    if (el->tag && (h = hm_get(m, el->tag)) && n < 32) out[n++] = h;
+    for (int i = 0; i < el->nattrs; i++) {
+        char b[128]; int k = snprintf(b, sizeof b, "[%s", el->attrs[i].name);
+        if (k > 0 && k < (int)sizeof b && (h = hm_getn(m, b, (size_t)k)) && n < 32) out[n++] = h;
+    }
+    return n;
+}
+void style_hover_desc(StyleEngine *e, Document *d, Node *key, Node *root, int which) {
+    RuleIndex *ix = &e->idx;
+    HovDesc *hs[33]; int n = 0;
+    void *u = which ? ix->anc_desc_u : ix->hov_desc_u;
+    if (u && (which || (ix->hov_univ & 6))) hs[n++] = u;
+    n = desc_collect(which ? &ix->anc_desc : &ix->hov_desc, key, hs, n);
+    bool all = e->idx_dirty || ix->hov_has || n >= 32;
+    for (int i = 0; i < n && !all; i++) all = hs[i]->univ;
+    if (all) { doc_mark_style_dirty(d, root); return; }
+    for (Node *c = root->first; c;) {
+        bool hit = false;
+        if (c->type == NODE_ELEMENT)
+            for (int i = 0; i < n && !hit; i++)
+                for (int j = 0; j < hs[i]->keys.n && !hit; j++) hit = has_key(c, hs[i]->keys.v[j]);
+        if (hit) doc_mark_style_dirty(d, c);
+        if (!hit && c->first) { c = c->first; continue; }
+        while (c != root && !c->next) c = c->parent;
+        c = c == root ? NULL : c->next;
+    }
+}
+int style_hover_has(StyleEngine *e, Node *el, bool child) {
+    RuleIndex *ix = &e->idx;
+    if (e->idx_dirty || ix->hov_has) return 0;
+    return (int)hov_lookup(child ? &ix->hov_ach : &ix->hov_anc, el);
+}
 static void idx_build(StyleEngine *e) {
     idx_clear(&e->idx);
     for (int si = 0; si < e->sheets.n; si++) {
@@ -1070,6 +1226,7 @@ static void idx_build(StyleEngine *e) {
             else if (tag) idx_add(&e->idx.by_tag, tag, r);
             else vec_push(e->idx.universal, r);
             e->idx.count++;
+            hov_skey = cmp_key(&r->sel.c[r->sel.n - 1]); hov_scan(&e->idx, &r->sel, 0, NULL);
         }
     }
     e->idx_dirty = false;

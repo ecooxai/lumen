@@ -1458,18 +1458,44 @@ static void submit_form(App *a, Node *ctl) {
 }
 
 static double g_mv_t, g_mv_rep; static float g_mv_x, g_mv_y; static Page *g_mv_p;
+/* f: 1 restyle n, 2 its descendants, 4 its parent's descendants; key/which select the rules that set f */
+static bool hover_mark(Page *p, Node *n, int f, Node *key, int which) {
+    if (!(f & 7)) return false;
+    if (f & 1) doc_mark_style_dirty(p->d, n);
+    if (f & 6) style_hover_desc(p->e, p->d, key, (f & 4) && n->parent && n->parent->type == NODE_ELEMENT ? n->parent : n, which);
+    return true;
+}
+static bool hover_dirty(Page *p, Node *n) { return hover_mark(p, n, style_hover_affects(p->e, n), n, 0); }
+static bool hover_has_dirty(Page *p, Node *q) {   /* :has(...:hover...) subjects: q itself, or q's previous siblings for :has(+ ...) / :has(~ ...) */
+    Node *par = q->parent && q->parent->type == NODE_ELEMENT ? q->parent : NULL;
+    int pg = par ? style_hover_has(p->e, par, true) : 0;
+    bool ch = hover_mark(p, q, style_hover_has(p->e, q, false), q, 1);
+    if (!(pg & 48)) ch |= hover_mark(p, q, pg, par, 1);
+    if (p->e->idx.hov_sib)
+        for (Node *s = q->prev, *adj = NULL; s; s = s->prev) {
+            if (s->type != NODE_ELEMENT) continue;
+            int g = style_hover_has(p->e, s, false);
+            if ((g & 32) || (!adj && (g & 16))) ch |= hover_mark(p, s, g, s, 1);
+            if ((pg & 32) || (!adj && (pg & 16))) ch |= hover_mark(p, s, pg, par, 1);
+            adj = s;
+        }
+    return ch;
+}
 static bool page_hover(Page *p, Node *n) {   /* :hover = the hit element and its ancestors; restyle only the nodes that changed */
     static Node *last; static Page *lastp;
     if (n == last && p == lastp) return false;
     last = n; lastp = p;
-    Document *d = p->d; bool ch = false;
+    Document *d = p->d; bool ch = false, flip = false;
     for (Node *c = d->node.first; c; c = node_next_in_tree(c, &d->node)) {
         if (!(c->flags & NF_HOVER)) continue;
         Node *q = n; while (q && q != c) q = q->parent ? q->parent : q->host;
-        if (!q) { c->flags &= ~(uint32_t)NF_HOVER; doc_mark_style_dirty(d, c); ch = true; }
+        if (!q) { c->flags &= ~(uint32_t)NF_HOVER; flip = true; ch |= hover_dirty(p, c); ch |= hover_has_dirty(p, c); }
     }
     for (Node *q = n; q; q = q->parent ? q->parent : q->host)
-        if (q->type == NODE_ELEMENT && !(q->flags & NF_HOVER)) { q->flags |= NF_HOVER; doc_mark_style_dirty(d, q); ch = true; }
+        if (q->type == NODE_ELEMENT) {
+            if (!(q->flags & NF_HOVER)) { q->flags |= NF_HOVER; flip = true; ch |= hover_dirty(p, q); }
+            if (flip) ch |= hover_has_dirty(p, q);
+        }
     return ch;
 }
 static void page_move(App *a, float x, float y) {   /* pointer moves for page scripts (e.g. YouTube shows its controls on mousemove) */

@@ -159,6 +159,8 @@ typedef struct RuleIndex {
     HMap by_id, by_class, by_tag; /* -> RuleVec* */
     VEC(Rule *) universal;
     uint32_t count;
+    HMap hov_desc, anc_desc; void *hov_desc_u, *anc_desc_u; /* key of a non-subject :hover compound -> subject keys it can affect */
+    HMap hov, hov_anc, hov_ach; /* hov_ach: like hov_anc but keyed by the subject's parent (`.k > :has(...)`) */ uint8_t hov_univ; bool hov_has, hov_sib; /* hov_anc: keys of compounds with :has(...:hover...), | 16 for :has(+ ...), 32 for :has(~ ...) */ /* :hover invalidation: id/class/tag -> 1 self, 2 subtree, 4 parent subtree */
 } RuleIndex;
 
 typedef struct StyleEngine {
@@ -193,6 +195,9 @@ extern void (*css_sheet_added_hook)(StyleSheet *s);
 void style_engine_remove_owner(StyleEngine *e, Node *owner);
 void style_engine_invalidate(StyleEngine *e);
 void style_recalc(StyleEngine *e, Node *root, bool force);
+int style_hover_affects(StyleEngine *e, Node *el); 
+int style_hover_has(StyleEngine *e, Node *el, bool child);
+void style_hover_desc(StyleEngine *e, Document *d, Node *key, Node *root, int which); /* restyle root's descendants that rules keyed on key's :hover (which 0) or :has(:hover) (1) can affect */ /* flags of :has(...:hover...) rules whose subject could be el */ /* restyle scope when el's :hover state flips: 0 none, 1 self, 2 subtree, 4 parent subtree */
 ComputedStyle *style_for_text(Node *text);
 
 ComputedStyle *style_new_default(void);
