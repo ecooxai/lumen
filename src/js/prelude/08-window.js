@@ -1,7 +1,7 @@
 class ResizeObserver {
     constructor(cb) { this._cb = cb; this._t = new Map(); }
-    observe(el) { if (this._t.has(el)) return; this._t.set(el, null); setTimeout(() => this._check()); }
-    unobserve(el) { this._t.delete(el); } disconnect() { this._t.clear(); }
+    observe(el) { if (this._t.has(el)) return; this._t.set(el, null); roAll.add(this); setTimeout(() => this._check()); roKick(); }
+    unobserve(el) { this._t.delete(el); } disconnect() { this._t.clear(); roAll.delete(this); }
     _check() {
         const recs = [];
         for (const [el, old] of this._t) { const r = N.rect(el) || [0, 0, 0, 0]; const k = r[2] + 'x' + r[3]; if (k === old) continue; this._t.set(el, k); const cr = new DOMRect(0, 0, r[2], r[3]); const sz = [{ inlineSize: r[2], blockSize: r[3] }]; recs.push({ target: el, contentRect: cr, borderBoxSize: sz, contentBoxSize: sz, devicePixelContentBoxSize: sz }); }
@@ -14,6 +14,10 @@ class IntersectionObserver {
     _check() { const v = N.viewport(), m = this._m, out = []; for (const [el, prev] of this._t) { const r = el.getBoundingClientRect(); const vis = el.isConnected && r.bottom > -m && r.top < v[1] + m && r.right > -m && r.left < v[0] + m && r.width + r.height > 0; if (vis === prev) continue; this._t.set(el, vis); out.push({ target: el, isIntersecting: vis, intersectionRatio: vis ? 1 : 0, boundingClientRect: r, intersectionRect: vis ? r : new DOMRect(), rootBounds: new DOMRect(0, 0, v[0], v[1]), time: N.now() }); } if (out.length) try { this._cb(out, this); } catch (e) { report(e); } }
     unobserve(el) { this._t.delete(el); } disconnect() { this._t.clear(); ioAll.delete(this); } takeRecords() { return []; }
 }
+const roAll = new Set();
+let roTimer = 0;
+/* sizes change after layout, not only at observe(): re-check every observed element while any observer is live */
+const roKick = () => { if (!roTimer) roTimer = setInterval(() => { if (!roAll.size) { clearInterval(roTimer); roTimer = 0; return; } for (const o of [...roAll]) if (o._t.size) o._check(); else roAll.delete(o); }, 100); };
 const ioAll = new Set();
 let ioPending = false, ioTimer = 0;
 const ioRun = () => { ioPending = false; for (const o of [...ioAll]) if (o._t.size) o._check(); else ioAll.delete(o); };
