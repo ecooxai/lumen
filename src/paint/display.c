@@ -68,7 +68,13 @@ static void paint_rect_deco(PB *p, Box *b, float x, float y, float w, float h, b
         DItem *it = emit(p, DO_SHADOW); it->x = x + s->box_shadow.x; it->y = y + s->box_shadow.y; it->w = w; it->h = h;
         memcpy(it->r, r, sizeof r); it->color = s->box_shadow.color; it->blur = s->box_shadow.blur; it->spread = s->box_shadow.spread;
     }
-    if (COLOR_A(s->bg_color)) { DItem *it = emit(p, DO_RECT); it->x = x; it->y = y; it->w = w; it->h = h; memcpy(it->r, r, sizeof r); it->color = s->bg_color; }
+    if (COLOR_A(s->bg_color)) {
+        Color c = s->bg_color;
+        /* backdrop-filter: blur() isn't rendered; blurred content behind a translucent surface reads as
+           nearly flat, so approximate it by cutting the remaining transparency to a quarter */
+        if (s->backdrop_blur > 0 && COLOR_A(c) < 255) c = (c & 0xffffff) | (Color)(255 - (255 - COLOR_A(c)) / 4) << 24;
+        DItem *it = emit(p, DO_RECT); it->x = x; it->y = y; it->w = w; it->h = h; memcpy(it->r, r, sizeof r); it->color = c;
+    }
     if (s->bg_gradient) { DItem *it = emit(p, DO_GRADIENT); it->x = x; it->y = y; it->w = w; it->h = h; memcpy(it->r, r, sizeof r); it->grad = s->bg_gradient; }
     if (s->bg_image && paint_url_image_hook) {
         Image *im = paint_url_image_hook(s->bg_image);
