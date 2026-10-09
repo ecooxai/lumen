@@ -1,0 +1,21 @@
+<!-- run with build/lumen, then move the mouse over the grey row and off it; expects RESULTS hover row:PASS group:PASS off:PASS -->
+<style>
+.row { width: 300px; height: 40px; background: #ddd; margin: 40px; position: relative; }
+.row:hover { background: rgb(0, 128, 0); }
+.act { opacity: 0; position: absolute; right: 0; top: 0; width: 40px; height: 40px; background: red; }
+:is(:where(.group):hover *) .act, .group:hover .act { opacity: 1; }
+</style>
+<div class="group"><div class="row" id="r"><span class="act" id="a"></span></div></div>
+<p id="out">move the mouse over the grey row, then off it</p>
+<script>
+let row = 'FAIL', group = 'FAIL', off = 'FAIL', seen = false;
+const r = document.getElementById('r'), a = document.getElementById('a');
+setInterval(() => {
+    const on = r.matches(':hover');
+    if (on && getComputedStyle(r).backgroundColor === 'rgb(0, 128, 0)') row = 'PASS';
+    if (on && getComputedStyle(a).opacity === '1') group = 'PASS';
+    if (on) seen = true;
+    if (seen && !on && getComputedStyle(a).opacity === '0' && !document.querySelector('.group:hover')) off = 'PASS';
+    if (off === 'PASS') { console.log('RESULTS hover row:' + row + ' group:' + group + ' off:' + off); seen = false; }
+}, 200);
+</script>

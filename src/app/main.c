@@ -1458,13 +1458,29 @@ static void submit_form(App *a, Node *ctl) {
 }
 
 static double g_mv_t, g_mv_rep; static float g_mv_x, g_mv_y; static Page *g_mv_p;
+static bool page_hover(Page *p, Node *n) {   /* :hover = the hit element and its ancestors; restyle only the nodes that changed */
+    static Node *last; static Page *lastp;
+    if (n == last && p == lastp) return false;
+    last = n; lastp = p;
+    Document *d = p->d; bool ch = false;
+    for (Node *c = d->node.first; c; c = node_next_in_tree(c, &d->node)) {
+        if (!(c->flags & NF_HOVER)) continue;
+        Node *q = n; while (q && q != c) q = q->parent ? q->parent : q->host;
+        if (!q) { c->flags &= ~(uint32_t)NF_HOVER; doc_mark_style_dirty(d, c); ch = true; }
+    }
+    for (Node *q = n; q; q = q->parent ? q->parent : q->host)
+        if (q->type == NODE_ELEMENT && !(q->flags & NF_HOVER)) { q->flags |= NF_HOVER; doc_mark_style_dirty(d, q); ch = true; }
+    return ch;
+}
 static void page_move(App *a, float x, float y) {   /* pointer moves for page scripts (e.g. YouTube shows its controls on mousemove) */
     static double last; static Node *prev; double tn = now_ms();
-    Page *p = a->t->cur; if (!p || !p->js || !p->L || tn - last < 30) return;
-    last = tn; g_mv_t = tn; g_mv_x = x; g_mv_y = y; g_mv_p = p;
+    Page *p = a->t->cur; if (!p || !p->L) return;
     Box *b = layout_hit(p->L, x, y + a->t->sy); Node *n = b ? b->node : NULL;
     while (n && n->type != NODE_ELEMENT) n = n->parent;
-    if (!n) return;
+    if (!n) n = p->d->html;
+    if (page_hover(p, n)) restyle(a);
+    if (!n || !p->js || tn - last < 30) return;
+    last = tn; g_mv_t = tn; g_mv_x = x; g_mv_y = y; g_mv_p = p;
     if (n != prev) { prev = n; js_dispatch(p->js, n, "pointerover", "PointerEvent", true, true, x, y, 0, NULL); js_dispatch(p->js, n, "mouseover", "MouseEvent", true, true, x, y, 0, NULL); }
     js_dispatch(p->js, n, "pointermove", "PointerEvent", true, true, x, y, 0, NULL);
     js_dispatch(p->js, n, "mousemove", "MouseEvent", true, true, x, y, 0, NULL);
@@ -2077,10 +2093,12 @@ int main(int argc, char **argv) {
             case SDL_EVENT_MOUSE_MOTION: {
                 int h = bar_hit(&a, ev.motion.x, ev.motion.y); if (h != a.hover) { a.hover = h; a.dirty = true; }
                 if (!h && ev.motion.y > BAR && ev.motion.x > a.side) page_move(&a, ev.motion.x - a.side, ev.motion.y - BAR);
+                else if (a.t->cur && page_hover(a.t->cur, NULL)) restyle(&a);
                 if (g_press && (ev.motion.state & SDL_BUTTON_LMASK)) sel_drag(&a, ev.motion.x, ev.motion.y);
                 else if (g_epress && (ev.motion.state & SDL_BUTTON_LMASK)) edit_drag(&a, ev.motion.x, ev.motion.y);
                 SDL_SetCursor(SDL_CreateSystemCursor(h == HB_URL ? SDL_SYSTEM_CURSOR_TEXT : over_link(&a, ev.motion.x, ev.motion.y) || (h && h != HB_URL) ? SDL_SYSTEM_CURSOR_POINTER : SDL_SYSTEM_CURSOR_DEFAULT));
                 break; }
+            case SDL_EVENT_WINDOW_MOUSE_LEAVE: if (a.t->cur && page_hover(a.t->cur, NULL)) restyle(&a); break;
             case SDL_EVENT_MOUSE_BUTTON_UP: if (ev.button.button == SDL_BUTTON_LEFT) g_press = g_drag = false; break;
             case SDL_EVENT_MOUSE_BUTTON_DOWN:
                 if (ev.button.button != SDL_BUTTON_LEFT) break;
@@ -2163,7 +2181,7 @@ int main(int argc, char **argv) {
                         else if (ok && !strcmp(kn, "Escape")) focus_node(&a, NULL);
                         if (a.t->cur && a.t->cur->js && page_focus(&a) == f) js_dispatch(a.t->cur->js, f, "keyup", "KeyboardEvent", true, true, 0, 0, 0, kn);
                         restyle(&a); a.dirty = true;
-                    }
+                    } else if (k != SDLK_SPACE && (k < 32 || k >= 127) && !page_key(&a, k, ev.key.mod)) { restyle(&a); a.dirty = true; }
                     break;
                 }
                 if (edit_focus(&a)) {
@@ -2180,7 +2198,7 @@ int main(int argc, char **argv) {
                         else if (ok && !strcmp(kn, "Escape")) focus_node(&a, NULL);
                         if (a.t->cur && a.t->cur->js == js) js_dispatch(js, f, "keyup", "KeyboardEvent", true, true, 0, 0, 0, kn);
                         restyle(&a); a.dirty = true;
-                    }
+                    } else if (k != SDLK_SPACE && (k < 32 || k >= 127) && !page_key(&a, k, ev.key.mod)) { restyle(&a); a.dirty = true; }
                     break;
                 }
                 if (!page_key(&a, k, ev.key.mod)) { restyle(&a); a.dirty = true; a.vonly = false; break; }
