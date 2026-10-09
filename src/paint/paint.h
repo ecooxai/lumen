@@ -25,7 +25,7 @@ typedef struct DItem {
     bool inset;
 } DItem;
 
-typedef struct DisplayList { VEC(DItem) items; Arena arena; float vw, vh; } DisplayList;
+typedef struct DisplayList { VEC(DItem) items; Arena arena; float vw, vh; bool has_fixed; float fix[4]; } DisplayList;   /* fix: viewport bounds of position:fixed items */
 
 extern Image *(*paint_image_hook)(Node *n);
 extern Image *(*paint_url_image_hook)(const char *url);

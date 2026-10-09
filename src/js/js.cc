@@ -751,3 +751,5 @@ void js_set_background(JsCtx *c, bool bg) {
     }
     if (bg && !c->bg_gc && t - c->bg_since > 15000) { c->bg_gc = true; v8::Isolate::Scope is(c->iso); c->iso->LowMemoryNotification(); }
 }
+
+bool js_busy(JsCtx *c) { return c && !c->fetches.empty(); }

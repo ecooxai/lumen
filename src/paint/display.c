@@ -275,14 +275,21 @@ static int def_cmp(const void *a, const void *b) {
 
 static void paint_deferred(PB *p, Deferred *d) {
     PB saved = *p;
-    if (d->b->fixed) { p->dx = -0.0f; p->dy = 0; p->clip = false; }
+    if (d->b->fixed) { p->dx = -0.0f; p->dy = 0; p->clip = false; p->dl->has_fixed = true; }
     else {
         p->dx = d->dx; p->dy = d->dy;
         /* clips of scrollers apply only when the box's containing block is inside them */
         p->clip = d->clip && !(d->b->abs && d->b->cb == p->L->root); p->cx = d->cx; p->cy = d->cy; p->cw = d->cw; p->ch = d->ch;
     }
+    int fi0 = p->dl->items.n;
     if (p->clip) { DItem *c = emit(p, DO_PUSH_CLIP); c->x = p->cx; c->y = p->cy; c->w = p->cw; c->h = p->ch; }
     paint_stacking(p, d->b);
+    if (d->b->fixed)
+        for (int i = fi0; i < p->dl->items.n; i++) {
+            const DItem *it = &p->dl->items.v[i]; float *f = p->dl->fix;
+            if (it->w <= 0 || it->h <= 0) continue;
+            f[0] = LMIN(f[0], it->x); f[1] = LMIN(f[1], it->y); f[2] = LMAX(f[2], it->x + it->w); f[3] = LMAX(f[3], it->y + it->h);
+        }
     if (p->clip) emit(p, DO_POP_CLIP);
     int order = p->order; *p = saved; p->order = order;
 }
@@ -323,7 +330,7 @@ static void paint_stacking(PB *p, Box *b) {
     p->dx -= tx; p->dy -= ty;
 }
 
-void dl_clear(DisplayList *dl) { dl->items.n = 0; arena_reset(&dl->arena); }
+void dl_clear(DisplayList *dl) { dl->items.n = 0; dl->has_fixed = false; dl->fix[0] = dl->fix[1] = 1e9f; dl->fix[2] = dl->fix[3] = -1e9f; arena_reset(&dl->arena); }
 
 void dl_build(DisplayList *dl, Layout *L, float scroll_x, float scroll_y, float vw, float vh) {
     dl_clear(dl); dl->vw = vw; dl->vh = vh;

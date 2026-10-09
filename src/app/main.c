@@ -212,7 +212,7 @@ static void page_free(Page *p) {
 }
 
 typedef struct Tab { Page *cur; bool loading, relayout; char *hist[256]; uint64_t hgen[256]; int nhist, hpos; char url[2048]; float sy; uint64_t lgen; int ws;
-    double cpu_ms, media_ms0, budget, bud_t, unlimit_until; float pct, lim, cpuhist[600]; int ncpu, cpui, cpumode, vctl, vap, lite; uint64_t vgen; bool limited, info; } Tab;
+    double cpu_ms, media_ms0, budget, bud_t, unlimit_until; float pct, lim, cpuhist[600]; int ncpu, cpui, cpumode, vctl, vap, lite; uint64_t vgen; bool limited, info, asleep; double bg_since; } Tab;
 typedef struct App {
     SDL_Window *win; SDL_MetalView mview; Gpu *gpu;
     int pw, ph; float scale, vw, vh;
@@ -227,7 +227,7 @@ typedef struct App {
     bool dirty;
     Font *ui;
     int hover; double frame_ms;
-    bool vonly, deferred, vframe; double last_input, last_full; float last_sy; uint64_t last_ver; Page *last_page; bool gvid_ok; const void *vown; float vrect[4];
+    bool vonly, deferred, vframe; double last_input, last_full; float last_sy; uint64_t last_ver; Page *last_page; bool gvid_ok; const void *vown; float vrect[4]; float srect[4]; bool sdirty;   /* srect: viewport rect of element scrollers to repaint */
 } App;
 static void publish_gens(App *a) { for (int i = 0; i < MAX_TABS; i++) g_tab_gen[i] = i < a->ntabs ? a->tabs[i]->lgen : 0; }
 static Tab *tab_new(App *a) {
@@ -627,7 +627,7 @@ static void render(App *a) {
     int rx0 = pwp, ry0 = ph, rx1 = 0, ry1 = 0;
     if (a->page.w != pwp || a->page.h != ph) { canvas_free(&a->page); canvas_init(&a->page, pwp, ph, a->scale); part = false; }
     bool gskip = false; GpuVideo gvd, *gvp = NULL;
-    Image *fast = part && a->t->cur && a->gpu && a->gvid_ok && a->t->sy == a->last_sy && a->page.w == pwp && a->page.h == ph ? media_owner_frame(a->vown) : NULL;
+    Image *fast = part && !a->sdirty && a->t->cur && a->gpu && a->gvid_ok && a->t->sy == a->last_sy && a->page.w == pwp && a->page.h == ph ? media_owner_frame(a->vown) : NULL;
     if (a->t->cur && (defer || fast)) {   /* nothing but the video changed, or layout may be stale: only swap the video texture */
         Image *im = fast;
         if (!im) { a->dirty = a->vframe = false; return; }
@@ -642,7 +642,12 @@ static void render(App *a) {
             a->t->relayout = false;
         }
         a->t->sy = LCLAMP(a->t->sy, 0, max_scroll(a));
-        if (a->t->sy != a->last_sy && part) { part = false; why = 5; }
+        int blit = 0;   /* page scrolled by whole device pixels: shift the old pixels, raster only the exposed strip */
+        if (a->t->sy != a->last_sy && part) {
+            float sdy = (a->t->sy - a->last_sy) * a->page.scale;
+            if (!a->sdirty && fabsf(sdy - roundf(sdy)) < 0.01f && fabsf(sdy) < ph / 2) blit = (int)roundf(sdy);
+            else { part = false; why = 5; }
+        }
         g_full_paint = (double)SDL_GetTicks(); { double q = now_ms(); dl_clear(&a->pdl); dl_build(&a->pdl, a->t->cur->L, 0, a->t->sy, a->vw - a->side, a->vh - BAR); g_td += now_ms() - q; } a->vbars = video_bars(a, &a->pdl);
         const DItem *vit = NULL; int nv = 0;
         for (int i = 0; i < a->pdl.items.n; i++) {
@@ -655,7 +660,25 @@ static void render(App *a) {
         }
         rx0 = LMAX(rx0, 0); ry0 = LMAX(ry0, 0); rx1 = LMIN(rx1, pwp); ry1 = LMIN(ry1, ph);
         bool gv = a->gpu && nv == 1;
-        if (part && (nv == 0 || (gv && a->gvid_ok))) gskip = true;
+        const float *fb = a->pdl.fix; float s = a->page.scale;
+        int fx0 = LMAX(0, (int)floorf(fb[0] * s)), fx1 = LMIN(pwp, (int)ceilf(fb[2] * s)), fy0 = LMAX(0, (int)floorf(fb[1] * s) - LMAX(blit, 0)), fy1 = LMIN(ph, (int)ceilf(fb[3] * s) - LMIN(blit, 0));
+        bool fixed_area = a->pdl.has_fixed && fx1 > fx0 && fy1 > fy0;
+        if (blit && (nv || (fixed_area && (fy1 - fy0) * 2 > ph))) { blit = 0; part = false; why = 5; }
+        if (blit) {
+            int d = blit, n = ph - abs(d); size_t row = (size_t)a->page.stride;
+            if (d > 0) memmove(a->page.px, a->page.px + (size_t)d * row, (size_t)n * row * 4);
+            else memmove(a->page.px + (size_t)(-d) * row, a->page.px, (size_t)n * row * 4);
+            raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), 0, d > 0 ? n : 0, pwp, d > 0 ? ph : -d);
+            if (fixed_area) raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), fx0, fy0, fx1, fy1);   /* fixed boxes moved with the shift: repaint where they were and are */
+            rx0 = 0; ry0 = 0; rx1 = pwp; ry1 = ph; a->gvid_ok = false;
+        } else if (part && a->sdirty) {
+            float s = a->page.scale;
+            int x0 = (int)floorf(a->srect[0] * s), y0 = (int)floorf(a->srect[1] * s), x1 = (int)ceilf(a->srect[2] * s), y1 = (int)ceilf(a->srect[3] * s);
+            if (nv) { x0 = LMIN(x0, rx0); y0 = LMIN(y0, ry0); x1 = LMAX(x1, rx1); y1 = LMAX(y1, ry1); }
+            x0 = LMAX(x0, 0); y0 = LMAX(y0, 0); x1 = LMIN(x1, pwp); y1 = LMIN(y1, ph);
+            if (x1 > x0 && y1 > y0) raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), x0, y0, x1, y1);
+            rx0 = x0; ry0 = y0; rx1 = LMAX(x1, x0); ry1 = LMAX(y1, y0); a->gvid_ok = false;
+        } else if (part && (nv == 0 || (gv && a->gvid_ok))) gskip = true;
         else if (part && rx1 > rx0 && ry1 > ry0) { a->gvid_ok = false; raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), rx0, ry0, rx1, ry1); }
         else {
             part = false; a->page.punch = gv ? vit->img : NULL; a->page.punched = false;
@@ -696,7 +719,7 @@ static void render(App *a) {
     }
     if (!part) a->last_full = t0;
     a->vframe = false;
-    a->dirty = a->vonly = false;
+    a->dirty = a->vonly = a->sdirty = false;
     a->last_page = a->t->cur; a->last_sy = a->t->sy; if (!defer) a->last_ver = a->t->cur ? a->t->cur->d->dom_version : 0;
 }
 
@@ -710,7 +733,16 @@ static bool wheel_scroll(App *a, float x, float y, float dx, float dy) {
         float lo = box_scroll_from_end(b) ? -maxy : 0, hi = box_scroll_from_end(b) ? 0 : maxy;
         float nx = sx ? LCLAMP(b->node->scroll_x + dx, 0, maxx) : b->node->scroll_x, ny = sy ? LCLAMP(b->node->scroll_y + dy, lo, hi) : b->node->scroll_y;
         if (nx == b->node->scroll_x && ny == b->node->scroll_y) continue;
-        b->node->scroll_x = nx; b->node->scroll_y = ny; a->vonly = false;
+        b->node->scroll_x = nx; b->node->scroll_y = ny;
+        float rx = b->x, ry = b->y; bool fx = b->fixed;
+        for (Box *q = b->parent; q; q = q->parent) { fx |= q->fixed; if (q->scroller && q->node) { rx -= q->node->scroll_x; ry -= q->node->scroll_y; } }
+        if (fx || (a->dirty && !a->vonly)) { a->vonly = a->sdirty = false; }
+        else {
+            float r[4] = { rx, ry - a->t->sy, rx + b->w, ry - a->t->sy + b->h };
+            if (a->sdirty) { r[0] = LMIN(r[0], a->srect[0]); r[1] = LMIN(r[1], a->srect[1]); r[2] = LMAX(r[2], a->srect[2]); r[3] = LMAX(r[3], a->srect[3]); }
+            memcpy(a->srect, r, sizeof r); a->sdirty = a->vonly = true;
+        }
+        a->dirty = true;
         if (p->js) js_dispatch(p->js, b->node, "scroll", "Event", false, false, 0, 0, 0, NULL);
         return true;
     }
@@ -1531,6 +1563,17 @@ int main(int argc, char **argv) {
             if (tb - last_bg > 2000) {
                 last_bg = tb;
                 for (int i = 0; i < a.ntabs; i++) if (a.tabs[i]->cur && a.tabs[i]->cur->js) js_set_background(a.tabs[i]->cur->js, a.tabs[i] != a.t);
+                /* tab sleep (ChatGPT): an idle background chatgpt.com tab drops its JS (the bulk of its RAM) and keeps
+                   its DOM/layout on screen; activating it reloads. LUMEN_TAB_SLEEP_MS: delay, 0 = off; LUMEN_TAB_SLEEP=all: any site */
+                const char *sm = getenv("LUMEN_TAB_SLEEP_MS"); double sleep_ms = sm ? atof(sm) : 60000; bool sleep_all = getenv("LUMEN_TAB_SLEEP") && !strcmp(getenv("LUMEN_TAB_SLEEP"), "all");
+                for (int i = 0; i < a.ntabs; i++) {
+                    Tab *st = a.tabs[i]; Page *sp = st->cur;
+                    if (st == a.t || st->loading || !sp || !sp->js || !sp->url) { st->bg_since = 0; continue; }
+                    if (!st->bg_since) st->bg_since = tb;
+                    bool site = sleep_all || !strncmp(sp->url, "https://chatgpt.com/", 20);
+                    if (sleep_ms > 0 && site && tb - st->bg_since > sleep_ms && !js_busy(sp->js)) { js_free(sp->js); sp->js = NULL; st->asleep = true; }
+                }
+                if (a.t->asleep && !a.t->loading) { a.t->asleep = false; navigate(&a, a.t->url, false); }
                 for (Page *p = g_frames; p; p = p->fnext) if (p->js) { Tab *ft = tab_of_doc(&a, p->d); js_set_background(p->js, ft && ft != a.t); }
             }
         }
@@ -1573,7 +1616,7 @@ int main(int argc, char **argv) {
         else do {
             bool wheel0 = ev.type == SDL_EVENT_MOUSE_WHEEL && !ev.wheel.x && !ev.wheel.y;
             if ((ev.type >= SDL_EVENT_KEY_DOWN && ev.type <= SDL_EVENT_TEXT_INPUT) || (ev.type >= SDL_EVENT_MOUSE_MOTION && ev.type <= SDL_EVENT_MOUSE_WHEEL && !wheel0)) a.last_input = now_ms();
-            if (ev.type != EV_NET && !wheel0) a.vonly = false;
+            if (ev.type != EV_NET && ev.type != SDL_EVENT_MOUSE_WHEEL) a.vonly = false;
             switch (ev.type) {
             case SDL_EVENT_QUIT: quit = true; break;
             case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: case SDL_EVENT_WINDOW_RESIZED: update_size(&a); break;
@@ -1581,7 +1624,7 @@ int main(int argc, char **argv) {
             case SDL_EVENT_MOUSE_WHEEL: {
                 float wdx = ev.wheel.x * 40, wdy = -ev.wheel.y * 40;
                 if (ev.wheel.direction == SDL_MOUSEWHEEL_FLIPPED) { wdx = -wdx; wdy = -wdy; }
-                if (!(ev.wheel.mouse_y > BAR && ev.wheel.mouse_x > a.side && wheel_scroll(&a, ev.wheel.mouse_x - a.side, ev.wheel.mouse_y - BAR, wdx, wdy))) a.t->sy += wdy;
+                if (!(ev.wheel.mouse_y > BAR && ev.wheel.mouse_x > a.side && wheel_scroll(&a, ev.wheel.mouse_x - a.side, ev.wheel.mouse_y - BAR, wdx, wdy))) { if (!(a.dirty && !a.vonly)) a.vonly = true; a.t->sy += wdy; }
                 a.dirty = true; break;
             }
             case SDL_EVENT_MOUSE_MOTION: {
