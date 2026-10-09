@@ -845,6 +845,7 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
             char *end; float x = strtof(val, &end);
             if (str_ieq(val, "normal")) { st->line_height_normal = true; st->line_height_factor = 0; }
             else if (end != val && !*end) { st->line_height_normal = false; st->line_height_factor = x; st->line_height = x * st->font_size; }
+            else if (str_istarts(val, "calc(") && !strpbrk(val + 4, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ%") && css_parse_length(val, &l, st->font_size, c.rem, c.mc) && l.kind == LK_LEN) { st->line_height_normal = false; st->line_height_factor = l.px; st->line_height = l.px * st->font_size; }
             else if (css_parse_length(val, &l, st->font_size, c.rem, c.mc) && l.kind == LK_LEN) { st->line_height_normal = false; st->line_height_factor = 0; st->line_height = l.px + l.pct * st->font_size / 100; }
         }
         else if (!strcmp(P, "letter-spacing")) st->letter_spacing = str_ieq(val, "normal") ? 0 : alen_px(&c, val, 0);
