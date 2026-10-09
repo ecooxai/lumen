@@ -524,8 +524,63 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
     return c;
 }
 
+void (*js_pick_files)(bool, const char *) = nullptr;
+static std::mutex g_pick_mu;
+static JsCtx *g_pick_ctx;
+static bool g_pick_ready;
+static std::vector<std::string> g_pick_paths;
+void js_files_picked(const char *const *paths, int n) {
+    {
+        std::lock_guard<std::mutex> l(g_pick_mu);
+        g_pick_paths.clear();
+        for (int i = 0; i < n; i++) g_pick_paths.push_back(paths[i]);
+        g_pick_ready = true;
+    }
+    if (js_wakeup) js_wakeup();
+}
+void js_pick_begin(JsCtx *c, bool multiple, const char *accept) {
+    { std::lock_guard<std::mutex> l(g_pick_mu); g_pick_ctx = c; g_pick_ready = false; }
+    if (const char *env = getenv("LUMEN_FILE_PICK")) {   /* automation: colon-separated paths instead of a dialog */
+        std::vector<std::string> v; std::string s(env); size_t p = 0, q;
+        while ((q = s.find(':', p)) != std::string::npos) { if (q > p) v.push_back(s.substr(p, q - p)); p = q + 1; }
+        if (p < s.size()) v.push_back(s.substr(p));
+        std::vector<const char *> pv; for (auto &x : v) pv.push_back(x.c_str());
+        js_files_picked(pv.data(), (int)pv.size());
+    } else if (js_pick_files) js_pick_files(multiple, accept);
+    else js_files_picked(nullptr, -1);
+}
+static void pick_deliver(JsCtx *c) {
+    std::vector<std::string> paths;
+    {
+        std::lock_guard<std::mutex> l(g_pick_mu);
+        if (g_pick_ctx != c || !g_pick_ready) return;
+        g_pick_ready = false; g_pick_ctx = nullptr; paths.swap(g_pick_paths);
+    }
+    if (c->pick_cb.IsEmpty()) return;
+    v8::Isolate *iso = c->iso;
+    v8::Local<v8::Context> ctx = c->ctx.Get(iso);
+    v8::Local<v8::Function> fn = c->pick_cb.Get(iso);
+    c->pick_cb.Reset();
+    v8::Local<v8::Array> arr = v8::Array::New(iso);
+    uint32_t k = 0;
+    for (auto &p : paths) {
+        size_t n = 0; char *b = read_file(p.c_str(), &n);
+        if (!b) continue;
+        v8::Local<v8::ArrayBuffer> ab = v8::ArrayBuffer::New(iso, n);
+        if (n) memcpy(ab->Data(), b, n);
+        free(b);
+        size_t sl = p.find_last_of('/');
+        v8::Local<v8::Object> o = v8::Object::New(iso);
+        (void)o->Set(ctx, jstr(iso, "name"), jstr(iso, sl == std::string::npos ? p.c_str() : p.c_str() + sl + 1));
+        (void)o->Set(ctx, jstr(iso, "data"), ab);
+        (void)arr->Set(ctx, k++, o);
+    }
+    v8::Local<v8::Value> argv[1] = { paths.empty() ? v8::Local<v8::Value>(v8::Null(iso)) : v8::Local<v8::Value>(arr) };
+    (void)jcall(c, fn, ctx->Global(), 1, argv);
+}
 void js_free(JsCtx *c) {
     if (!c) return;
+    { std::lock_guard<std::mutex> l(g_pick_mu); if (g_pick_ctx == c) g_pick_ctx = nullptr; }
     workers_kill(c);
     for (JsCtx *k : std::vector<JsCtx *>(c->kids)) js_free(k);
     frames_forget(c);
@@ -678,6 +733,7 @@ void js_tick(JsCtx *c) {
 static void tick_one(JsCtx *c) {
     JS_ENTER(c);
     while (v8::platform::PumpMessageLoop(g_platform.get(), iso)) {}
+    pick_deliver(c);
     double now = now_ms();
     std::vector<std::pair<double, uint32_t>> due;
     for (auto &kv : c->timers) if (kv.second.due <= now) due.push_back({ kv.second.due, kv.first });

@@ -65,16 +65,17 @@ mk('HTMLInputElement', HTMLElement, ['input'], p => {
     reflectBool(p, 'disabled', 'readOnly', 'required', 'multiple'); reflectUrl(p, 'src'); reflectInt(p, 20, 'size'); reflectInt(p, -1, 'maxLength', 'minLength'); formControl(p);
     methods(p, {
         get type() { const t = (N.attr(this, 'type') || 'text').toLowerCase(); return INPUT_TYPES.test(t) ? t : 'text'; }, set type(v) { this.setAttribute('type', v); },
-        get value() { const v = N.value(this); return v != null ? v : (/^(checkbox|radio)$/.test(this.type) ? (N.attr(this, 'value') ?? 'on') : N.attr(this, 'value') ?? ''); },
-        set value(v) { N.setValue(this, v == null ? '' : String(v)); },
+        get value() { if (this.type === 'file') { const f = this.files; return f.length ? 'C:\\fakepath\\' + f[0].name : ''; } const v = N.value(this); return v != null ? v : (/^(checkbox|radio)$/.test(this.type) ? (N.attr(this, 'value') ?? 'on') : N.attr(this, 'value') ?? ''); },
+        set value(v) { if (this.type === 'file') { if (v === '' || v == null) def(this, '_files', new FileList()); return; } N.setValue(this, v == null ? '' : String(v)); },
         get defaultValue() { return N.attr(this, 'value') ?? ''; }, set defaultValue(v) { this.setAttribute('value', v); },
         get checked() { return N.checked(this); }, set checked(v) { N.setChecked(this, !!v); },
         get defaultChecked() { return this.hasAttribute('checked'); }, set defaultChecked(v) { this.toggleAttribute('checked', !!v); },
         get valueAsNumber() { return parseFloat(this.value); }, set valueAsNumber(v) { this.value = String(v); },
-        get files() { return this.type === 'file' ? [] : null; },
+        get files() { if (this.type !== 'file') return null; if (!this._files) def(this, '_files', new FileList()); return this._files; },
+        set files(v) { if (this.type === 'file' && v instanceof FileList) def(this, '_files', v); },
         get selectionStart() { return this.value.length; }, set selectionStart(v) {}, get selectionEnd() { return this.value.length; }, set selectionEnd(v) {},
         get indeterminate() { return !!this.__ind; }, set indeterminate(v) { def(this, '__ind', !!v); },
-        select() {}, setSelectionRange() {}, setRangeText() {}, showPicker() {}, stepUp() {}, stepDown() {},
+        select() {}, setSelectionRange() {}, setRangeText() {}, showPicker() { if (this.type === 'file') pickFiles(this); }, stepUp() {}, stepDown() {},
     });
 });
 mk('HTMLTextAreaElement', HTMLElement, ['textarea'], p => {

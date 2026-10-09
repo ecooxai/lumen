@@ -238,6 +238,13 @@ FN(setChecked) {
     if (b) n->flags |= NF_CHECKED; else n->flags &= ~(uint32_t)NF_CHECKED;
     doc_mark_dirty(n->doc, n);
 }
+FN(pickFiles) {
+    CTX;
+    if (!a[0]->IsFunction()) return;
+    c->pick_cb.Reset(iso, a[0].As<v8::Function>());
+    std::string acc = S(2);
+    js_pick_begin(c, BOOL(1), acc.c_str());
+}
 FN(focus) {
     CTX; Node *n = junwrap(a[0]); Node *old = c->doc->focus;
     if (old == n) return;
@@ -826,7 +833,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(text); REG(setText); REG(attr); REG(setAttr); REG(rmAttr); REG(attrs); REG(insert); REG(remove); REG(newDoc); REG(newXmlDoc); REG(parseDoc); REG(adopt); REG(pi); REG(cdata); REG(doctype); REG(ownerDoc);
     REG(create); REG(textNode); REG(comment); REG(frag); REG(html); REG(setHTML); REG(parseFrag); REG(query);
     REG(matches); REG(byId); REG(clone); REG(doc); REG(contains); REG(connected); REG(host); REG(attachShadow);
-    REG(templateContent); REG(rect); REG(scrollPos); REG(setScroll); REG(computed); REG(value); REG(setValue); REG(checked); REG(setChecked);
+    REG(templateContent); REG(rect); REG(scrollPos); REG(setScroll); REG(computed); REG(value); REG(setValue); REG(checked); REG(setChecked); REG(pickFiles);
     REG(focus); REG(active); REG(cookie); REG(setCookie); REG(url); REG(setUrl); REG(navigate); REG(navigatePost); REG(histGo);
     REG(histLen); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
     REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove);

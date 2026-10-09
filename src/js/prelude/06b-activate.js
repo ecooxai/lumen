@@ -10,6 +10,15 @@ function preActivate(el) {
     N.setChecked(el, t === 'radio' ? true : !was);   /* native: page-installed `checked` setters (React's value tracker) must not see it */
     return { restore() { N.setChecked(el, was); for (const r of prev) N.setChecked(r, true); } };
 }
+const MIME = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', svg: 'image/svg+xml', heic: 'image/heic', bmp: 'image/bmp', pdf: 'application/pdf', txt: 'text/plain', md: 'text/markdown', csv: 'text/csv', json: 'application/json', html: 'text/html', js: 'text/javascript', py: 'text/x-python', mp3: 'audio/mpeg', wav: 'audio/wav', ogg: 'audio/ogg', mp4: 'video/mp4', webm: 'video/webm', zip: 'application/zip', doc: 'application/msword', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' };
+function pickFiles(el) {
+    N.pickFiles(list => {
+        if (!list) { dispatch(el, new Event('cancel', { bubbles: true })); return; }
+        const files = list.map(o => new File([o.data], o.name, { type: MIME[(o.name.split('.').pop() || '').toLowerCase()] || '' }));
+        def(el, '_files', new FileList(el.multiple ? files : files.slice(0, 1)));
+        dispatch(el, new Event('input', { bubbles: true, composed: true })); dispatch(el, new Event('change', { bubbles: true }));
+    }, !!el.multiple, el.accept || '');
+}
 function activate(el, ev, pre) {
     const a = el.closest ? el.closest('a[href]') : null;
     if (a) { const raw = N.attr(a, 'href'); if (/^javascript:/i.test(raw)) { try { (0, eval)(decodeURIComponent(raw.slice(11))); } catch (e) { report(e); } } else if (a.href) location.assign(a.href); return; }
@@ -25,7 +34,8 @@ function activate(el, ev, pre) {
             if (t === 'radio') for (const r of N.query(el.form || document, `input[type=radio][name="${CSS.escape(el.name)}"]`, true)) N.setChecked(r, false);
             el.checked = t === 'radio' ? true : !el.checked;
             dispatch(el, new Event('input', { bubbles: true })); dispatch(el, new Event('change', { bubbles: true }));
-        } else if (t === 'submit' || t === 'image') { const f = el.form; if (f) f.requestSubmit(el); }
+        } else if (t === 'file' && name === 'input') pickFiles(el);
+        else if (t === 'submit' || t === 'image') { const f = el.form; if (f) f.requestSubmit(el); }
         else if (t === 'reset') { const f = el.form; if (f) f.reset(); }
         else if (name === 'input') N.focus(el);
     } else if (name === 'label') { const c = el.control; if (c && c !== el) c.click(); }

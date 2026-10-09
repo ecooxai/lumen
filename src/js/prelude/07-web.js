@@ -12,6 +12,32 @@ class Blob {
     stream() { const b = this._buf; return new ReadableStream({ start(c) { c.enqueue(new Uint8Array(b)); c.close(); } }); }
 }
 class File extends Blob { constructor(p, name, o = {}) { super(p, o); this.name = String(name); this.lastModified = o.lastModified || Date.now(); } }
+class FileList {
+    constructor(files = []) { files.forEach((f, i) => { this[i] = f; }); def(this, 'length', files.length); }
+    item(i) { return this[i] ?? null; }
+    *[Symbol.iterator]() { for (let i = 0; i < this.length; i++) yield this[i]; }
+}
+class DataTransferItem {
+    constructor(kind, type, v) { this.kind = kind; this.type = type; def(this, '_v', v); }
+    getAsFile() { return this.kind === 'file' ? this._v : null; }
+    getAsString(cb) { if (this.kind === 'string' && typeof cb === 'function') setTimeout(() => cb(this._v), 0); }
+    webkitGetAsEntry() { return null; }
+}
+class DataTransferItemList extends Array {
+    static get [Symbol.species]() { return Array; }
+    add(d, type) { const it = d instanceof File ? new DataTransferItem('file', d.type, d) : new DataTransferItem('string', String(type).toLowerCase(), String(d)); this.push(it); return it; }
+    remove(i) { this.splice(i, 1); } clear() { this.length = 0; }
+}
+class DataTransfer {
+    constructor() { def(this, '_items', new DataTransferItemList()); this.dropEffect = 'none'; this.effectAllowed = 'all'; }
+    get items() { return this._items; }
+    get files() { return new FileList(this._items.filter(i => i.kind === 'file').map(i => i._v)); }
+    get types() { const t = this._items.filter(i => i.kind === 'string').map(i => i.type); if (this._items.some(i => i.kind === 'file')) t.push('Files'); return t; }
+    getData(t) { t = String(t).toLowerCase(); if (t === 'text') t = 'text/plain'; const i = this._items.find(x => x.kind === 'string' && x.type === t); return i ? i._v : ''; }
+    setData(t, v) { t = String(t).toLowerCase(); if (t === 'text') t = 'text/plain'; this.clearData(t); this._items.add(String(v), t); }
+    clearData(t) { for (let i = this._items.length - 1; i >= 0; i--) { const x = this._items[i]; if (x.kind === 'string' && (t == null || x.type === String(t).toLowerCase())) this._items.splice(i, 1); } }
+    setDragImage() {}
+}
 class FileReader extends EventTarget {
     constructor() { super(); this.result = null; this.readyState = 0; this.error = null; }
     _read(b, f) { this.readyState = 1; setTimeout(() => { this.result = f(b); this.readyState = 2; for (const t of ['load', 'loadend']) { const ev = new ProgressEvent(t); if (this['on' + t]) this['on' + t](ev); dispatch(this, ev); } }); }

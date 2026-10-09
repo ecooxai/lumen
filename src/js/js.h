@@ -51,7 +51,11 @@ bool js_wants_frame(JsCtx *c);
 /* the live child browsing context's document for an <iframe>, or NULL */
 Document *js_frame_doc(Node *iframe);
 JsCtx *js_frame_ctx(Node *iframe);
-extern void (*js_wakeup)(void);   /* called from worker threads when messages are queued */
+extern void (*js_wakeup)(void);
+/* <input type=file>: host opens a picker and reports the chosen paths with js_files_picked (any thread; n<0 = cancelled) */
+extern void (*js_pick_files)(bool multiple, const char *accept);
+void js_files_picked(const char *const *paths, int n);
+void js_pick_begin(JsCtx *c, bool multiple, const char *accept);   /* called from worker threads when messages are queued */
 void js_frame_navigate(Node *iframe, const char *url);
 
 #ifdef __cplusplus

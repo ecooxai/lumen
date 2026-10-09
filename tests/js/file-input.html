@@ -1,0 +1,15 @@
+<!doctype html><body><input id=f type=file multiple accept=".txt,.json">
+<script>
+// run with LUMEN_FILE_PICK=/path/a.txt:/path/b.json
+const f = document.getElementById('f'), seen = [];
+f.addEventListener('change', async () => {
+  const names = [...f.files].map(x => x.name + ':' + x.type + ':' + x.size);
+  const txt = f.files.length ? await f.files[0].text() : '';
+  const dt = new DataTransfer(); dt.items.add(new File(['x'], 'p.png', { type: 'image/png' })); dt.setData('text/plain', 'hi');
+  const g = document.createElement('input'); g.type = 'file'; g.files = dt.files;
+  const ok = f.files.length === 2 && /^C:\\fakepath\\/.test(f.value) && txt.length > 0 && g.files[0].name === 'p.png' && dt.types.join() === 'text/plain,Files' && dt.getData('text') === 'hi';
+  console.log('file-input ' + names.join(' ') + ' value=' + f.value + ' types=' + dt.types);
+  console.log('RESULTS file-input:' + (ok ? 'PASS' : 'FAIL'));
+});
+f.click();
+</script>

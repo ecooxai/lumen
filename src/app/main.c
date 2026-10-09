@@ -1560,6 +1560,34 @@ static void ws_popup(App *a, int w, float x, float y) {
     (void)w; (void)x; (void)y; menu_cmd(a, MENU_WS_RENAME);
 #endif
 }
+static SDL_Window *g_dialog_win;
+static void pick_done(void *ud, const char *const *list, int filter) {
+    (void)ud; (void)filter;
+    int n = 0;
+    if (list) while (list[n]) n++;
+    js_files_picked(list, list && n ? n : -1);
+}
+/* accept="image/*,.pdf" -> SDL extension filter "png;jpg;...;pdf" */
+static void pick_files(bool multiple, const char *accept) {
+    static char pat[512]; static SDL_DialogFileFilter flt;
+    pat[0] = 0;
+    for (const char *p = accept; p && *p;) {
+        const char *e = strchr(p, ','); size_t n = e ? (size_t)(e - p) : strlen(p);
+        char tok[64]; snprintf(tok, sizeof tok, "%.*s", (int)n, p);
+        char *t = str_trim(tok); const char *ext = NULL;
+        if (t[0] == '.') ext = t + 1;
+        else if (!strcmp(t, "image/*")) ext = "png;jpg;jpeg;gif;webp;heic;bmp;svg";
+        else if (!strcmp(t, "audio/*")) ext = "mp3;wav;ogg;m4a;flac;opus";
+        else if (!strcmp(t, "video/*")) ext = "mp4;webm;mov;mkv";
+        else if (!strcmp(t, "application/pdf")) ext = "pdf";
+        else if (!strcmp(t, "text/plain")) ext = "txt";
+        else if (strchr(t, '/')) { pat[0] = 0; break; }   /* unknown MIME type: don't filter */
+        if (ext && strlen(pat) + strlen(ext) + 2 < sizeof pat) { if (pat[0]) strcat(pat, ";"); strcat(pat, ext); }
+        p = e ? e + 1 : NULL;
+    }
+    flt.name = "Allowed files"; flt.pattern = pat;
+    SDL_ShowOpenFileDialog(pick_done, NULL, g_dialog_win, pat[0] ? &flt : NULL, pat[0] ? 1 : 0, NULL, multiple);
+}
 static SDL_HitTestResult win_hit(SDL_Window *w, const SDL_Point *pt, void *ud) {
     (void)w;
     return pt->y < (g_compact ? TB : TABH) && bar_hit(ud, (float)pt->x, (float)pt->y) == HB_NONE ? SDL_HITTEST_DRAGGABLE : SDL_HITTEST_NORMAL;
@@ -1647,6 +1675,7 @@ int main(int argc, char **argv) {
     int ww = 1280, wh = 840; { const char *e = getenv("LUMEN_WINDOW"); if (e) sscanf(e, "%dx%d", &ww, &wh); }   /* e.g. LUMEN_WINDOW=800x600 */
     a.win = SDL_CreateWindow("Lumen", ww, wh, SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY | (want_gpu && !strcmp(SDL_GetPlatform(), "macOS") ? SDL_WINDOW_METAL : 0));
     if (!a.win) { fprintf(stderr, "SDL_CreateWindow: %s\n", SDL_GetError()); return 1; }
+    g_dialog_win = a.win; js_pick_files = pick_files;
     set_window_icon(a.win);
 #ifdef __APPLE__
     mac_style_window(a.win); mac_install_menu(EV_MENU);

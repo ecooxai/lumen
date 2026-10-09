@@ -56,7 +56,7 @@ struct JsCtx {
     v8::Global<v8::Context> ctx;
     v8::Global<v8::ObjectTemplate> node_tmpl;
     v8::Global<v8::Object> api;
-    v8::Global<v8::Function> protoFor, fire, report, mediaChanged;
+    v8::Global<v8::Function> protoFor, fire, report, mediaChanged, pick_cb;
     std::unordered_map<std::string, v8::Global<v8::Object>> protos;
     Document *doc = nullptr;
     JsHost host{};
