@@ -64,11 +64,17 @@ int main(int argc, char **argv) {
     double t1 = now_ms();
     if (getenv("JSRUN_PRE")) js_eval(js, getenv("JSRUN_PRE"), "jsrun:pre");
     int nscripts = 0;
-    for (Node *n = d->node.first; n; n = node_next_in_tree(n, &d->node)) {
-        if (n->type != NODE_ELEMENT || n->tag != A_script || n->ns != NS_HTML || (n->flags & NF_SCRIPT_STARTED) || !jsg_classic_script(n)) continue;
+    for (int pass = 0; pass < 2; pass++) for (Node *n = d->node.first; n; n = node_next_in_tree(n, &d->node)) {   /* modules are deferred */
+        if (n->type != NODE_ELEMENT || n->tag != A_script || n->ns != NS_HTML || (n->flags & NF_SCRIPT_STARTED)) continue;
+        bool mod = jsg_module_script(n);
+        if (mod != (pass == 1) || (!mod && !jsg_classic_script(n))) continue;
         nscripts++;
         const char *src = node_attr(n, "src");
-        if (src) {
+        if (mod) {
+            char *t = src ? NULL : node_text_content(n), *u = src ? url_join(d->url, src) : NULL;
+            js_run_module(js, n, t ? t : (src ? NULL : ""), t ? strlen(t) : 0, u ? u : d->url);
+            free(t); free(u);
+        } else if (src) {
             char *u = url_join(d->url, src);
             NetResponse *sr = u ? net_fetch_sync(net_request_new("GET", u)) : NULL;
             if (sr && sr->status >= 200 && sr->status < 300) js_run_script(js, n, sr->body ? sr->body : "", sr->body_len, u);

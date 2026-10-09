@@ -3,6 +3,7 @@
 #include "../dom/dom.h"
 #include "../css/css.h"
 #include "../base/util.h"
+#include "../base/url.h"
 #include <math.h>
 #include <ctype.h>
 #include <stdlib.h>
@@ -273,12 +274,21 @@ static bool attr_hidden(const Node *n) {
     return (v = node_attr(n, "style")) && strstr(v, "display:none");
 }
 
+const Node *(*svg_ext_ref_hook)(const char *url, const char *id);
 static const Node *url_ref(const Node *n, const char *v) {
     char id[128]; const char *h = strchr(v, '#'), *e;
     if (!h || !n->doc) return NULL;
     h++; e = h; while (*e && *e != ')' && *e != '"' && *e != '\'') e++;
     if (e == h || e - h >= (int)sizeof id) return NULL;
     memcpy(id, h, (size_t)(e - h)); id[e - h] = 0;
+    const char *s = skipws(v); if (!strncmp(s, "url(", 4)) s = skipws(s + 4); if (*s == '"' || *s == '\'') s++;
+    if (s < h - 1 && svg_ext_ref_hook && n->doc->url) {   /* sprite in another document: <use href="icons.svg#id"> */
+        char *rel = xmalloc((size_t)(h - 1 - s) + 1); memcpy(rel, s, (size_t)(h - 1 - s)); rel[h - 1 - s] = 0;
+        char *u = url_join(n->doc->base_url ? n->doc->base_url : n->doc->url, rel); free(rel);
+        const char *du = n->doc->url; size_t dl = strcspn(du, "#");
+        const Node *r = !u ? NULL : strlen(u) == dl && !strncmp(u, du, dl) ? doc_get_element_by_id(n->doc, id) : svg_ext_ref_hook(u, id);
+        free(u); return r;
+    }
     return doc_get_element_by_id(n->doc, id);
 }
 
@@ -502,6 +512,7 @@ static uint64_t tree_hash(const Node *n, uint64_t h, int depth) {
         if (k->type != NODE_ELEMENT) continue;
         h = hmix(h, k->tag);
         for (int i = 0; keys[i]; i++) h = hmix(h, node_attr(k, keys[i]));
+        if (!strcmp(k->tag, "use")) h = (h ^ (uint64_t)(uintptr_t)href_of(k)) * 1099511628211ull;   /* external sprites resolve later */
         if (k->style) h = (h ^ k->style->fill ^ ((uint64_t)k->style->stroke << 32) ^ ((uint64_t)k->style->display << 8)) * 1099511628211ull;
         h = tree_hash(k, h, depth + 1);
     }

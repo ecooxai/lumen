@@ -24,21 +24,27 @@ enum { WM_MESSAGE, WM_ERROR, WM_LOADFAIL };
 struct OutMsg { int kind; Buf data; std::string msg, file; int line = 0, col = 0; };
 struct Worker {
     uint32_t id = 0; JsCtx *owner = nullptr;
-    std::string url, src, ua, platform, name; bool have_src = false;
+    std::string url, src, ua, platform, name; bool have_src = false, module = false;
     std::mutex mu; std::condition_variable cv;
     std::deque<Buf> in; std::deque<OutMsg> out;
     std::atomic<bool> term{false};
     v8::Isolate *iso = nullptr;
+    std::atomic<size_t> heap{0}, ext{0};
 };
 struct WTimer { double due = 0, interval = 0; bool repeat = false; v8::Global<v8::Function> fn; std::vector<v8::Global<v8::Value>> args; };
 struct WEnv {
     std::shared_ptr<Worker> w; v8::Isolate *iso = nullptr;
     v8::Global<v8::Context> ctx; v8::Global<v8::Function> onmsg, report;
+    std::map<std::string, v8::Global<v8::Module>> mods; std::multimap<int, std::string> murl;
     std::map<uint32_t, WTimer> timers; uint32_t tseq = 0; bool closing = false, reporting = false; double t0 = 0;
 };
 std::map<uint32_t, std::shared_ptr<Worker>> g_workers;   /* main thread only */
 uint32_t g_wseq;
 const int kEnvSlot = 2;
+v8::MaybeLocal<v8::Module> wm_compile(WEnv *E, const std::string &u, const std::string &src);
+bool wm_graph(WEnv *E, v8::Local<v8::Module> m);
+v8::MaybeLocal<v8::Module> wm_resolve_cb(v8::Local<v8::Context>, v8::Local<v8::String>, v8::Local<v8::FixedArray>, v8::Local<v8::Module>);
+void wm_meta(v8::Local<v8::Context> ctx, v8::Local<v8::Module> m, v8::Local<v8::Object> meta);
 
 void wake() { if (js_wakeup) js_wakeup(); }
 
@@ -139,11 +145,27 @@ WFN(fetch) {
     WENV; std::string u = jcstr(iso, a[0]), m = a[1]->IsString() ? jcstr(iso, a[1]) : "GET";
     NetRequest *rq = net_request_new(m.c_str(), u.c_str());
     if (a[2]->IsString()) { std::string b = jcstr(iso, a[2]); rq->body = (char *)malloc(b.size() + 1); memcpy(rq->body, b.c_str(), b.size() + 1); rq->body_len = b.size(); }
+    else if (a[2]->IsArrayBuffer() || a[2]->IsArrayBufferView()) {
+        std::shared_ptr<v8::BackingStore> bs; size_t off = 0, n = 0;
+        if (a[2]->IsArrayBuffer()) { bs = a[2].As<v8::ArrayBuffer>()->GetBackingStore(); n = bs->ByteLength(); }
+        else { v8::Local<v8::ArrayBufferView> v = a[2].As<v8::ArrayBufferView>(); bs = v->Buffer()->GetBackingStore(); off = v->ByteOffset(); n = v->ByteLength(); }
+        rq->body = (char *)malloc(n + 1); if (n) memcpy(rq->body, (char *)bs->Data() + off, n); rq->body[n] = 0; rq->body_len = n;
+    }
+    if (a[3]->IsArray()) {
+        v8::Local<v8::Array> h = a[3].As<v8::Array>();
+        for (uint32_t i = 0; i + 1 < h->Length(); i += 2) {
+            v8::Local<v8::Value> k, v;
+            if (h->Get(ctx, i).ToLocal(&k) && h->Get(ctx, i + 1).ToLocal(&v)) headers_add(&rq->headers, jcstr(iso, k).c_str(), jcstr(iso, v).c_str());
+        }
+    }
+    if (a[4]->IsTrue()) rq->no_cookies = true;
     NetResponse *r = net_fetch_sync(rq);
     if (!r || r->status == 0) { if (r) net_response_free(r); a.GetReturnValue().SetNull(); return; }
-    v8::Local<v8::Value> out[3] = { v8::Integer::New(iso, r->status), jstr(iso, r->url ? r->url : u.c_str()), make_ab(iso, r->body, r->body_len) };
+    v8::Local<v8::Array> hs = v8::Array::New(iso);
+    for (int i = 0; i < r->headers.n; i++) { (void)hs->Set(ctx, (uint32_t)(2 * i), jstr(iso, r->headers.v[i].name)); (void)hs->Set(ctx, (uint32_t)(2 * i + 1), jstr(iso, r->headers.v[i].value)); }
+    v8::Local<v8::Value> out[4] = { v8::Integer::New(iso, r->status), jstr(iso, r->url ? r->url : u.c_str()), make_ab(iso, r->body, r->body_len), hs };
     net_response_free(r);
-    a.GetReturnValue().Set(v8::Array::New(iso, out, 3));
+    a.GetReturnValue().Set(v8::Array::New(iso, out, 4));
 }
 WFN(importScript) {
     WENV; std::string u = resolve(E, jcstr(iso, a[0]));
@@ -156,7 +178,7 @@ WFN(importScript) {
     std::string src(r->body ? r->body : "", r->body_len); net_response_free(r);
     v8::ScriptOrigin origin(jstr(iso, u.c_str()));
     v8::Local<v8::Script> s; v8::Local<v8::Value> res;
-    if (v8::Script::Compile(ctx, jstr(iso, src.data(), (int)src.size()), &origin).ToLocal(&s)) (void)s->Run(ctx).ToLocal(&res);
+    if (v8::Script::Compile(ctx, jsrc(iso, src.data(), src.size()), &origin).ToLocal(&s)) (void)s->Run(ctx).ToLocal(&res);
 }
 WFN(reportErr) { WENV; werr(E, a[0], v8::Exception::CreateMessage(iso, a[0])); }
 
@@ -217,7 +239,11 @@ class URLSearchParams {
 class URL {
     constructor(u, base) { const h = W.resolve(String(u), base === undefined ? undefined : String(base)); if (h == null) throw new TypeError("Failed to construct 'URL': Invalid URL"); Object.assign(this, parts(h)); this.searchParams = new URLSearchParams(this.search); }
     toString() { return this.href; } toJSON() { return this.href; }
+    static createObjectURL(b) { const u = 'blob:' + self.location.origin + '/' + (++URL._seq).toString(16).padStart(8, '0') + '-lumenw'; URL._map.set(u, b); return u; }
+    static revokeObjectURL(u) { URL._map.delete(String(u)); }
+    static canParse(u, b) { try { new URL(u, b); return true; } catch { return false; } }
 }
+URL._seq = 0; URL._map = new Map();
 class WorkerLocation { toString() { return this.href; } }
 const location = Object.assign(Object.create(WorkerLocation.prototype), parts(W.url)); delete location.searchParams;
 class WorkerNavigator {}
@@ -265,6 +291,20 @@ class Headers {
     delete(k) { this._m.delete(String(k).toLowerCase()); } forEach(f) { this._m.forEach((v, k) => f(v, k, this)); }
     entries() { return this._m.entries(); } keys() { return this._m.keys(); } values() { return this._m.values(); } [Symbol.iterator]() { return this._m.entries(); }
 }
+const blobBytes = parts => {
+    const bufs = (parts || []).map(x => x instanceof Blob ? x._b : x instanceof ArrayBuffer ? new Uint8Array(x) : ArrayBuffer.isView(x) ? new Uint8Array(x.buffer, x.byteOffset, x.byteLength) : new TextEncoder().encode(String(x)));
+    const out = new Uint8Array(bufs.reduce((n, b) => n + b.length, 0)); let o = 0; for (const b of bufs) { out.set(b, o); o += b.length; } return out;
+};
+class Blob {
+    constructor(parts, opts) { Object.defineProperty(this, '_b', { value: blobBytes(parts) }); this.type = opts && opts.type ? String(opts.type).toLowerCase() : ''; }
+    get size() { return this._b.length; }
+    slice(a = 0, b = this.size, type = '') { const n = this.size, f = x => x < 0 ? Math.max(n + x, 0) : Math.min(x, n); return new Blob([this._b.slice(f(a), Math.max(f(a), f(b)))], { type }); }
+    arrayBuffer() { return Promise.resolve(this._b.slice().buffer); }
+    bytes() { return Promise.resolve(this._b.slice()); }
+    text() { return Promise.resolve(W.decode(this._b.slice().buffer)); }
+    get [Symbol.toStringTag]() { return 'Blob'; }
+}
+class File extends Blob { constructor(parts, name, opts) { super(parts, opts); this.name = String(name); this.lastModified = opts && opts.lastModified || Date.now(); } }
 class Response {
     constructor(body = null, init = {}) { def(this, '_buf', body); this.status = init.status ?? 200; this.statusText = init.statusText || ''; this.url = init.url || ''; this.headers = new Headers(init.headers); this.bodyUsed = false; this.type = 'basic'; }
     get ok() { return this.status >= 200 && this.status < 300; }
@@ -278,32 +318,55 @@ function fetch(input, init) {
     try {
         const u = W.resolve(String(input && input.url || input));
         if (u == null) throw new TypeError('Failed to fetch: invalid URL');
-        const r = W.fetch(u, init.method ? String(init.method).toUpperCase() : 'GET', init.body == null ? undefined : String(init.body));
+        const method = String(init.method || (input && input.method) || 'GET').toUpperCase();
+        const hdrs = new Headers(init.headers || (input && input.headers) || undefined);
+        let body = init.body == null ? undefined : init.body;
+        if (body instanceof URLSearchParams) { if (!hdrs.has('content-type')) hdrs.set('content-type', 'application/x-www-form-urlencoded;charset=UTF-8'); body = body.toString(); }
+        else if (typeof body === 'string') { if (!hdrs.has('content-type')) hdrs.set('content-type', 'text/plain;charset=UTF-8'); }
+        else if (body !== undefined && !(body instanceof ArrayBuffer) && !ArrayBuffer.isView(body)) body = String(body);
+        const flat = []; hdrs.forEach((v, k) => flat.push(k, v));
+        const r = W.fetch(u, method, body, flat, init.credentials === 'omit');
         if (!r) return Promise.reject(new TypeError('Failed to fetch'));
-        return Promise.resolve(new Response(r[2], { status: r[0], url: r[1] }));
+        const rh = new Headers(); for (let i = 0; i + 1 < r[3].length; i += 2) rh.append(r[3][i], r[3][i + 1]);
+        return Promise.resolve(new Response(r[2], { status: r[0], url: r[1], headers: rh }));
     } catch (e) { return Promise.reject(e); }
 }
 const toFn = f => typeof f === 'function' ? f : (0, eval)('(function(){' + String(f) + '\n})');
 const performance = { now: () => W.now(), timeOrigin: W.timeOrigin, mark() {}, measure() {}, getEntriesByName() { return []; }, getEntriesByType() { return []; }, toJSON() { return { timeOrigin: W.timeOrigin }; } };
 const fmt = a => a.map(x => typeof x === 'string' ? x : x instanceof Error ? x.stack || String(x) : (() => { try { return JSON.stringify(x); } catch (e) { return String(x); } })()).join(' ');
 const console = { log: (...a) => W.log(1, fmt(a)), info: (...a) => W.log(1, fmt(a)), debug: (...a) => W.log(0, fmt(a)), warn: (...a) => W.log(2, fmt(a)), error: (...a) => W.log(3, fmt(a)), trace() {}, group() {}, groupEnd() {}, time() {}, timeEnd() {}, assert: (c, ...a) => { if (!c) W.log(3, 'Assertion failed: ' + fmt(a)); } };
+const wports = new Map(); let wpseq = 0;
+class MessagePort extends EventTarget {
+    constructor() { super(); this.onmessage = null; this.onmessageerror = null; Object.defineProperty(this, '_other', { value: null, writable: true }); Object.defineProperty(this, '_k', { value: 0, writable: true }); }
+    postMessage(d, t) { const ps = (Array.isArray(t) ? t : t && t.transfer || []).filter(p => p instanceof MessagePort), k = this._k || (this._other && this._other._k); if (k) { W.post({ __lumenPort: k, data: d, xfer: ps.map(p => { const j = -(++wpseq); p._k = j; if (p._other) wports.set(j, p._other); return j; }) }); return; } const o = this._other; if (o) { const c = W.clone(d); setTimeout(() => { const e = new MessageEvent('message', { data: c, ports: ps }); e.isTrusted = true; fireOn(o, e); }); } }
+    start() {} close() { this._other = null; }
+}
+class MessageChannel { constructor() { this.port1 = new MessagePort(); this.port2 = new MessagePort(); this.port1._other = this.port2; this.port2._other = this.port1; } }
 const api = {
     self: G, globalThis: G, location, navigator, name: W.name, origin: location.origin, isSecureContext: location.protocol === 'https:', crossOriginIsolated: false,
     onmessage: null, onmessageerror: null, onerror: null, onunhandledrejection: null, onrejectionhandled: null, onlanguagechange: null, onoffline: null, ononline: null,
-    postMessage(m) { if (arguments.length < 1) throw new TypeError("Failed to execute 'postMessage': 1 argument required, but only 0 present."); W.post(m); },
+    postMessage(m, t) { if (arguments.length < 1) throw new TypeError("Failed to execute 'postMessage': 1 argument required, but only 0 present."); const ps = (Array.isArray(t) ? t : t && t.transfer || []).filter(p => p instanceof MessagePort); if (!ps.length) return W.post(m); W.post({ __lumenXfer: ps.map(p => { const k = -(++wpseq); p._k = k; if (p._other) wports.set(k, p._other); return k; }), data: m }); },
     close() { W.close(); },
     importScripts(...urls) { for (const u of urls) W.importScript(String(u)); },
     setTimeout: (f, ms, ...args) => W.timer(toFn(f), +ms || 0, false, args), setInterval: (f, ms, ...args) => W.timer(toFn(f), +ms || 0, true, args),
     clearTimeout: id => W.clear(+id || 0), clearInterval: id => W.clear(+id || 0),
     queueMicrotask: f => { Promise.resolve().then(() => f()); }, structuredClone: v => W.clone(v),
-    btoa, atob, TextEncoder, TextDecoder, URL, URLSearchParams, Headers, Response, fetch, performance, console,
-    Event, MessageEvent, ErrorEvent, CustomEvent, PromiseRejectionEvent, EventTarget, DOMException, WorkerGlobalScope, DedicatedWorkerGlobalScope, WorkerLocation, WorkerNavigator,
+    btoa, atob, TextEncoder, TextDecoder, Blob, File, URL, URLSearchParams, Headers, Response, fetch, performance, console,
+    Event, MessageEvent, MessagePort, MessageChannel, ErrorEvent, CustomEvent, PromiseRejectionEvent, EventTarget, DOMException, WorkerGlobalScope, DedicatedWorkerGlobalScope, WorkerLocation, WorkerNavigator,
 };
 for (const k of Object.keys(api)) Object.defineProperty(G, k, { value: api[k], writable: true, configurable: true, enumerable: false });
 return {
-    onmsg(data) { fireOn(G, new MessageEvent('message', { data })); },
+    onmsg(data) {
+        let ports = [];
+        if (data && typeof data === 'object') {
+            if (data.__lumenPort) { const p = wports.get(data.__lumenPort); if (p) { const e = new MessageEvent('message', { data: data.data, ports: (data.xfer || []).map(k => { const q = new MessagePort(); q._k = k; wports.set(k, q); return q; }) }); e.isTrusted = true; fireOn(p, e); } return; }
+            if (data.__lumenXfer) { ports = data.__lumenXfer.map(k => { const q = new MessagePort(); q._k = k; wports.set(k, q); return q; }); data = data.data; }
+        }
+        const e = new MessageEvent('message', { data, ports }); e.isTrusted = true; fireOn(G, e);
+    },
     report(error, message, filename, lineno, colno) {
         const e = new ErrorEvent('error', { message, filename, lineno, colno, error, cancelable: true });
+        e.isTrusted = true;
         if (typeof G.onerror === 'function') { try { if (G.onerror.call(G, message, filename, lineno, colno, error) === true) e.preventDefault(); } catch (x) {} }
         fireOn(G, e, true);
         return e.defaultPrevented;
@@ -342,6 +405,7 @@ void worker_main(std::shared_ptr<Worker> w) {
     iso->SetMicrotasksPolicy(v8::MicrotasksPolicy::kExplicit);
     WEnv *E = new WEnv; E->w = w; E->iso = iso; E->t0 = now_ms();
     iso->SetData(kEnvSlot, E);
+    iso->SetHostInitializeImportMetaObjectCallback(wm_meta);
     {
         v8::Isolate::Scope is(iso);
         v8::HandleScope hs(iso);
@@ -381,7 +445,16 @@ void worker_main(std::shared_ptr<Worker> w) {
             v8::TryCatch tc(iso);
             v8::ScriptOrigin origin(jstr(iso, w->url.c_str()));
             v8::Local<v8::Script> s; v8::Local<v8::Value> r;
-            if (!v8::Script::Compile(ctx, jstr(iso, src.data(), (int)src.size()), &origin).ToLocal(&s)) {
+            if (w->module) {
+                v8::Local<v8::Module> m;
+                if (!wm_compile(E, w->url, src).ToLocal(&m)) { ok = false; post_out(E, OutMsg{ WM_LOADFAIL, {}, {}, {}, 0, 0 }); }
+                else {
+                    if (wm_graph(E, m) && m->InstantiateModule(ctx, wm_resolve_cb).FromMaybe(false)) (void)m->Evaluate(ctx).ToLocal(&r);
+                    wcheck(E, tc);
+                    iso->PerformMicrotaskCheckpoint();
+                    if (m->GetStatus() == v8::Module::kErrored) { v8::Local<v8::Value> ex = m->GetException(); fprintf(stderr, "lumen: worker module failed: %s\n", jcstr(iso, ex).c_str()); }
+                }
+            } else if (!v8::Script::Compile(ctx, jsrc(iso, src.data(), src.size()), &origin).ToLocal(&s)) {
                 ok = false;   /* classic-script parse errors fire a plain error Event on the Worker */
                 post_out(E, OutMsg{ WM_LOADFAIL, {}, {}, {}, 0, 0 });
             } else {
@@ -390,19 +463,24 @@ void worker_main(std::shared_ptr<Worker> w) {
                 iso->PerformMicrotaskCheckpoint();
             }
         }
+        double last_act = now_ms(); bool idle_gc = false;
         while (ok && !w->term && !E->closing) {
+            { v8::HeapStatistics hs; iso->GetHeapStatistics(&hs); w->heap = hs.total_heap_size(); w->ext = hs.external_memory(); }
+            if (!idle_gc && now_ms() - last_act > 10000) { iso->LowMemoryNotification(); idle_gc = true; continue; }  /* idle worker: give memory back once */
             std::deque<Buf> msgs;
             {
                 std::unique_lock<std::mutex> lk(w->mu);
                 double next = 1e300;
                 for (auto &kv : E->timers) next = std::min(next, kv.second.due);
                 auto ready = [&] { return w->term.load() || !w->in.empty(); };
+                if (!idle_gc) next = std::min(next, last_act + 10001);
                 if (!ready()) {
                     if (next >= 1e299) w->cv.wait(lk, ready);
                     else { double ms = next - now_ms(); if (ms > 0) w->cv.wait_for(lk, std::chrono::microseconds((int64_t)(ms * 1000) + 1), ready); }
                 }
                 msgs.swap(w->in);
             }
+            if (!msgs.empty()) { last_act = now_ms(); idle_gc = false; }
             for (Buf &b : msgs) {
                 if (!w->term && !E->closing) {
                     v8::HandleScope hs2(iso);
@@ -417,7 +495,7 @@ void worker_main(std::shared_ptr<Worker> w) {
             run_timers(E);
             while (v8::platform::PumpMessageLoop(js_platform(), iso)) {}
         }
-        E->timers.clear(); E->onmsg.Reset(); E->report.Reset(); E->ctx.Reset();
+        E->timers.clear(); E->mods.clear(); E->murl.clear(); E->onmsg.Reset(); E->report.Reset(); E->ctx.Reset();
     }
     {
         std::lock_guard<std::mutex> lk(w->mu);
@@ -428,6 +506,57 @@ void worker_main(std::shared_ptr<Worker> w) {
     iso->Dispose();
     delete E;
 }
+
+std::string wm_key(WEnv *E, v8::Local<v8::Module> m);
+void wm_meta(v8::Local<v8::Context> ctx, v8::Local<v8::Module> m, v8::Local<v8::Object> meta) {
+    v8::Isolate *iso = v8::Isolate::GetCurrent();
+    (void)meta->Set(ctx, jstr(iso, "url"), jstr(iso, wm_key((WEnv *)iso->GetData(kEnvSlot), m).c_str()));
+}
+std::string wm_key(WEnv *E, v8::Local<v8::Module> m) {
+    auto r = E->murl.equal_range(m->GetIdentityHash());
+    for (auto it = r.first; it != r.second; ++it) { auto f = E->mods.find(it->second); if (f != E->mods.end() && f->second.Get(E->iso) == m) return it->second; }
+    return E->w->url;
+}
+v8::MaybeLocal<v8::Module> wm_compile(WEnv *E, const std::string &u, const std::string &src) {
+    v8::Isolate *iso = E->iso;
+    v8::ScriptOrigin origin(jstr(iso, u.c_str()), 0, 0, false, -1, v8::Local<v8::Value>(), false, false, true);
+    v8::ScriptCompiler::Source so(jsrc(iso, src.data(), src.size()), origin);
+    v8::Local<v8::Module> m;
+    if (!v8::ScriptCompiler::CompileModule(iso, &so).ToLocal(&m)) return {};
+    E->mods[u].Reset(iso, m); E->murl.emplace(m->GetIdentityHash(), u);
+    return m;
+}
+std::string wm_resolve(const std::string &spec, const std::string &base) {
+    bool rel = !spec.compare(0, 1, "/") || !spec.compare(0, 2, "./") || !spec.compare(0, 3, "../");
+    if (!rel && spec.find(':') == std::string::npos) return "";
+    char *u = url_join(base.c_str(), spec.c_str()); std::string r = u ? u : ""; free(u); return r;
+}
+bool wm_graph(WEnv *E, v8::Local<v8::Module> m) {
+    v8::Isolate *iso = E->iso;
+    std::string base = wm_key(E, m);
+    v8::Local<v8::FixedArray> rq = m->GetModuleRequests();
+    for (int i = 0; i < rq->Length(); i++) {
+        std::string sp = jcstr(iso, rq->Get(i).As<v8::ModuleRequest>()->GetSpecifier()), u = wm_resolve(sp, base);
+        if (u.empty()) { iso->ThrowException(v8::Exception::TypeError(jstr(iso, ("Failed to resolve module specifier \"" + sp + "\"").c_str()))); return false; }
+        if (E->mods.count(u)) continue;
+        NetResponse *r = net_fetch_sync(net_request_new("GET", u.c_str()));
+        bool ok = r && r->status >= 200 && r->status < 300; std::string body;
+        if (ok) body.assign(r->body ? r->body : "", r->body_len);
+        if (r) net_response_free(r);
+        if (!ok) { iso->ThrowException(v8::Exception::TypeError(jstr(iso, ("Failed to fetch module: " + u).c_str()))); return false; }
+        v8::Local<v8::Module> d;
+        if (!wm_compile(E, u, body).ToLocal(&d) || !wm_graph(E, d)) return false;
+    }
+    return true;
+}
+v8::MaybeLocal<v8::Module> wm_resolve_cb(v8::Local<v8::Context>, v8::Local<v8::String> spec, v8::Local<v8::FixedArray>, v8::Local<v8::Module> ref) {
+    v8::Isolate *iso = v8::Isolate::GetCurrent();
+    WEnv *E = (WEnv *)iso->GetData(kEnvSlot);
+    auto it = E->mods.find(wm_resolve(jcstr(iso, spec), wm_key(E, ref)));
+    if (it == E->mods.end()) { iso->ThrowException(v8::Exception::TypeError(jstr(iso, "Failed to resolve module"))); return {}; }
+    return it->second.Get(iso);
+}
+
 void *worker_thread(void *p) {
     std::unique_ptr<std::shared_ptr<Worker>> sp(static_cast<std::shared_ptr<Worker> *>(p));
     worker_main(*sp);
@@ -449,7 +578,7 @@ void n_workerNew(const FCI &a) {
     auto w = std::make_shared<Worker>();
     w->id = ++g_wseq; w->owner = jctx(iso);
     w->url = jcstr(iso, a[0]); w->have_src = a[1]->IsString(); if (w->have_src) w->src = jcstr(iso, a[1]);
-    w->ua = jcstr(iso, a[2]); w->platform = jcstr(iso, a[3]); w->name = a[4]->IsString() ? jcstr(iso, a[4]) : "";
+    w->ua = jcstr(iso, a[2]); w->platform = jcstr(iso, a[3]); w->name = a[4]->IsString() ? jcstr(iso, a[4]) : ""; w->module = a.Length() > 5 && a[5]->IsTrue();
     g_workers[w->id] = w;
     pthread_attr_t at; pthread_attr_init(&at); pthread_attr_setstacksize(&at, 8u << 20); pthread_attr_setdetachstate(&at, PTHREAD_CREATE_DETACHED);
     pthread_t th;
@@ -523,4 +652,9 @@ void workers_kill(JsCtx *c) {
     for (auto it = g_workers.begin(); it != g_workers.end();)
         if (it->second->owner == c) { worker_terminate(it->second.get()); it = g_workers.erase(it); }
         else ++it;
+}
+
+extern "C" void worker_mem_stats(size_t *heap, size_t *ext, int *n) {
+    *heap = *ext = 0; *n = 0;
+    for (auto &kv : g_workers) { *heap += kv.second->heap; *ext += kv.second->ext; ++*n; }
 }

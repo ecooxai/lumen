@@ -14,11 +14,30 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include <openssl/x509v3.h>
+#include <openssl/sha.h>
+#include <openssl/rand.h>
 #include <zlib.h>
 #include <brotli/decode.h>
 #include <zstd.h>
 
-const char *g_user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
+#ifdef __APPLE__
+#define UA_OS "Macintosh; Intel Mac OS X 10_15_7"
+#define UA_FF_OS "Macintosh; Intel Mac OS X 10.15"
+#define UA_CH_OS "macOS"
+#else
+#define UA_OS "X11; Linux x86_64"
+#define UA_FF_OS "X11; Linux x86_64"
+#define UA_CH_OS "Linux"
+#endif
+static const char *const ua_str[UA_COUNT] = {
+    "Mozilla/5.0 (" UA_OS ") AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (" UA_FF_OS "; rv:150.0) Gecko/20100101 Firefox/150.0",
+    "Mozilla/5.0 (" UA_OS ") AppleWebKit/537.36 (KHTML, like Gecko) Lumen/1.0 Safari/537.36",
+};
+static const char *const ua_name[UA_COUNT] = { "Chrome 150", "Firefox 150", "Lumen" };
+const char *g_user_agent = "Mozilla/5.0 (" UA_OS ") AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36";
+void net_set_user_agent(int which) { if (which >= 0 && which < UA_COUNT) g_user_agent = ua_str[which]; }
+const char *net_user_agent_name(int which) { return which >= 0 && which < UA_COUNT ? ua_name[which] : ""; }
 void (*net_wakeup)(void) = NULL;
 
 /* ---------- headers ---------- */
@@ -214,6 +233,63 @@ static bool decompress(const char *enc, SB *body) {
     return true;
 }
 
+/* ---------- streamed responses ---------- */
+typedef struct Ev { int type; NetRequest *req; NetResponse *resp; char *data; size_t n; struct Ev *next; } Ev; /* 0 done 1 head 2 chunk */
+static pthread_mutex_t g_ev_mu = PTHREAD_MUTEX_INITIALIZER;
+static Ev *g_ev, *g_ev_tail;
+static __thread NetRequest *t_stream;
+static __thread const char *t_url;
+static void ev_push(int type, NetRequest *req, NetResponse *resp, char *data, size_t n) {
+    Ev *e = xcalloc(1, sizeof *e); e->type = type; e->req = req; e->resp = resp; e->data = data; e->n = n;
+    pthread_mutex_lock(&g_ev_mu);
+    if (g_ev_tail) g_ev_tail->next = e; else g_ev = e;
+    g_ev_tail = e;
+    pthread_mutex_unlock(&g_ev_mu);
+    if (net_wakeup) net_wakeup();
+}
+typedef struct { int kind; bool started; z_stream z; BrotliDecoderState *br; ZSTD_DStream *zs; } Dec;
+static int enc_kind(const char *enc) {
+    if (!enc) return 0;
+    if (str_ieq(enc, "gzip") || str_ieq(enc, "x-gzip")) return 1;
+    if (str_ieq(enc, "deflate")) return 2;
+    if (str_ieq(enc, "br")) return 3;
+    if (str_ieq(enc, "zstd")) return 4;
+    return 0;
+}
+static void dec_feed(Dec *d, const char *in, size_t n, SB *out) {
+    char buf[65536];
+    if (!n) return;
+    if (d->kind == 1 || d->kind == 2) {
+        if (!d->started) { int wb = d->kind == 1 ? 15 + 16 : ((unsigned char)in[0] & 0x0f) != 8 ? -15 : 15; if (inflateInit2(&d->z, wb) != Z_OK) return; d->started = true; }
+        d->z.next_in = (Bytef *)in; d->z.avail_in = (uInt)n;
+        int r;
+        do { d->z.next_out = (Bytef *)buf; d->z.avail_out = sizeof buf; r = inflate(&d->z, Z_NO_FLUSH); sb_put(out, buf, sizeof buf - d->z.avail_out); }
+        while (r == Z_OK && (d->z.avail_in || !d->z.avail_out));
+    } else if (d->kind == 3) {
+        if (!d->br) d->br = BrotliDecoderCreateInstance(NULL, NULL, NULL);
+        size_t ain = n; const uint8_t *nin = (const uint8_t *)in; BrotliDecoderResult r;
+        do { size_t aout = sizeof buf; uint8_t *nout = (uint8_t *)buf; r = BrotliDecoderDecompressStream(d->br, &ain, &nin, &aout, &nout, NULL); sb_put(out, buf, sizeof buf - aout); }
+        while (r == BROTLI_DECODER_RESULT_NEEDS_MORE_OUTPUT);
+    } else if (d->kind == 4) {
+        if (!d->zs) { d->zs = ZSTD_createDStream(); ZSTD_initDStream(d->zs); }
+        ZSTD_inBuffer ib = { in, n, 0 };
+        for (;;) { ZSTD_outBuffer o = { buf, sizeof buf, 0 }; size_t r = ZSTD_decompressStream(d->zs, &o, &ib); if (ZSTD_isError(r)) break; sb_put(out, buf, o.pos); if (ib.pos >= ib.size && o.pos < sizeof buf) break; }
+    } else sb_put(out, in, n);
+}
+static void dec_free(Dec *d) {
+    if (d->started) inflateEnd(&d->z);
+    if (d->br) BrotliDecoderDestroyInstance(d->br);
+    if (d->zs) ZSTD_freeDStream(d->zs);
+}
+static void stream_out(Dec *d, SB *raw) {
+    if (!raw->n) return;
+    SB o; sb_init(&o);
+    dec_feed(d, raw->s, raw->n, &o);
+    sb_clear(raw);
+    if (o.n) ev_push(2, t_stream, NULL, o.s, o.n); else sb_free(&o);
+}
+static bool stream_cancelled(void) { return t_stream && __atomic_load_n(&t_stream->cancelled, __ATOMIC_RELAXED); }
+
 /* ---------- single HTTP exchange ---------- */
 static NetResponse *http_once(const char *method, const URL *u, const Headers *hdrs, const char *body, size_t body_len, bool cookies, bool *retryable) {
     NetResponse *r = xcalloc(1, sizeof *r);
@@ -227,7 +303,7 @@ static NetResponse *http_once(const char *method, const URL *u, const Headers *h
     char *pq = url_path_query(u);
     sb_printf(&req, "%s %s HTTP/1.1\r\n", method, pq); free(pq);
     if (u->port != url_default_port(u->scheme)) sb_printf(&req, "Host: %s:%d\r\n", u->host, u->port); else sb_printf(&req, "Host: %s\r\n", u->host);
-    bool has_ua = false, has_accept = false, has_ae = false, has_al = false;
+    bool has_ua = false, has_accept = false, has_ae = false, has_al = false, has_ch = false;
     for (int i = 0; i < hdrs->n; i++) {
         const char *n = hdrs->v[i].name;
         if (str_ieq(n, "host") || str_ieq(n, "content-length") || str_ieq(n, "connection")) continue;
@@ -235,12 +311,16 @@ static NetResponse *http_once(const char *method, const URL *u, const Headers *h
         if (str_ieq(n, "accept")) has_accept = true;
         if (str_ieq(n, "accept-encoding")) has_ae = true;
         if (str_ieq(n, "accept-language")) has_al = true;
+        if (str_ieq(n, "sec-ch-ua")) has_ch = true;
         sb_printf(&req, "%s: %s\r\n", n, hdrs->v[i].value);
     }
     if (!has_ua) sb_printf(&req, "User-Agent: %s\r\n", g_user_agent);
     if (!has_accept) sb_puts(&req, "Accept: */*\r\n");
     if (!has_ae) sb_puts(&req, "Accept-Encoding: gzip, deflate, br, zstd\r\n");
     if (!has_al) sb_puts(&req, "Accept-Language: en-US,en;q=0.9\r\n");
+    if (!has_ch && !strcmp(u->scheme, "https") && strstr(g_user_agent, "Chrome/"))
+        sb_puts(&req, "sec-ch-ua: \"Google Chrome\";v=\"150\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"150\"\r\n"
+                      "sec-ch-ua-mobile: ?0\r\nsec-ch-ua-platform: \"" UA_CH_OS "\"\r\n");
     if (cookies) { char *ck = cookies_get(u, true); if (ck) { sb_printf(&req, "Cookie: %s\r\n", ck); free(ck); } }
     if (body || (strcmp(method, "GET") && strcmp(method, "HEAD"))) sb_printf(&req, "Content-Length: %zu\r\n", body_len);
     sb_puts(&req, "Connection: keep-alive\r\n\r\n");
@@ -268,6 +348,15 @@ static NetResponse *http_once(const char *method, const URL *u, const Headers *h
         }
     } while (status >= 100 && status < 200 && status != 101);
     r->status = status;
+    bool streaming = t_stream && !(status >= 300 && status < 400 && status != 304 && headers_get(&r->headers, "location"));
+    Dec dec = {0};
+    if (streaming) {
+        NetResponse *h = xcalloc(1, sizeof *h);
+        h->status = status; h->status_text = xstrdup(r->status_text ? r->status_text : ""); h->url = xstrdup(t_url ? t_url : "");
+        for (int i = 0; i < r->headers.n; i++) headers_add(&h->headers, r->headers.v[i].name, r->headers.v[i].value);
+        ev_push(1, t_stream, h, NULL, 0);
+        dec.kind = enc_kind(headers_get(&r->headers, "content-encoding"));
+    }
 
     SB b; sb_init(&b);
     bool keep = true;
@@ -284,18 +373,26 @@ static NetResponse *http_once(const char *method, const URL *u, const Headers *h
             if (!n) { while (conn_readline(c, &line) && line.n) {} break; }
             if (!conn_readn(c, &b, n)) { ok = false; break; }
             conn_readline(c, &line);
+            if (streaming) { stream_out(&dec, &b); if (stream_cancelled()) { ok = false; break; } }
         }
     } else if (cl) {
         size_t n = strtoull(cl, NULL, 10);
-        ok = conn_readn(c, &b, n);
+        if (!streaming) ok = conn_readn(c, &b, n);
+        else while (n) {
+            if (conn_fill(c) <= 0 || stream_cancelled()) { ok = false; break; }
+            size_t k = LMIN(n, c->rlen - c->rpos);
+            sb_put(&b, c->rbuf + c->rpos, k); c->rpos += k; n -= k;
+            stream_out(&dec, &b);
+        }
     } else {
         keep = false;
-        while (conn_fill(c) > 0) { sb_put(&b, c->rbuf + c->rpos, c->rlen - c->rpos); c->rpos = c->rlen; }
+        while (conn_fill(c) > 0) { sb_put(&b, c->rbuf + c->rpos, c->rlen - c->rpos); c->rpos = c->rlen; if (streaming) { stream_out(&dec, &b); if (stream_cancelled()) break; } }
     }
     sb_free(&line);
     if (!ok) { keep = false; if (!b.n) { r->error = xstrdup("truncated body"); } }
     if (keep) pool_put(c); else conn_close(c);
-    if (!decompress(headers_get(&r->headers, "content-encoding"), &b)) DLOG("decompress failed for %s", u->host);
+    if (streaming) dec_free(&dec);
+    else if (!decompress(headers_get(&r->headers, "content-encoding"), &b)) DLOG("decompress failed for %s", u->host);
     r->body_len = b.n; r->body = b.s ? b.s : xcalloc(1, 1);
     r->t_end = now_ms();
     return r;
@@ -354,6 +451,7 @@ NetResponse *net_fetch_sync(NetRequest *req) {
         if (!strcmp(u.scheme, "file")) { r = file_url(&u, url); url_free(&u); break; }
         if (strcmp(u.scheme, "http") && strcmp(u.scheme, "https")) { r = xcalloc(1, sizeof *r); r->error = xstrdup("unsupported scheme"); url_free(&u); break; }
         bool retry;
+        t_url = url;
         r = http_once(method, &u, &req->headers, body, blen, !req->no_cookies, &retry);
         if (r->error && retry) { net_response_free(r); r = http_once(method, &u, &req->headers, body, blen, !req->no_cookies, &retry); }
         const char *loc = headers_get(&r->headers, "location");
@@ -388,10 +486,10 @@ NetRequest *net_request_new(const char *method, const char *url) {
 static void net_request_free(NetRequest *r) { free(r->method); free(r->url); headers_free(&r->headers); free(r->body); free(r); }
 
 /* ---------- async worker pool ---------- */
-typedef struct Job { NetRequest *req; NetResponse *resp; struct Job *next; } Job;
+typedef struct Job { NetRequest *req; NetResponse *resp; struct Job *next, *rnext; } Job;
 static pthread_mutex_t g_mu = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t g_cv = PTHREAD_COND_INITIALIZER;
-static Job *g_queue, *g_done, *g_done_tail;
+static Job *g_queue, *g_running;
 static int g_pending, g_nthreads;
 static bool g_quit;
 static uint64_t g_next_id = 1;
@@ -406,14 +504,15 @@ static void *worker(void *arg) {
         Job **best = &g_queue;
         for (Job **pp = &g_queue; *pp; pp = &(*pp)->next) if ((*pp)->req->priority < (*best)->req->priority) best = pp;
         Job *j = *best; *best = j->next; j->next = NULL;
+        j->rnext = g_running; g_running = j;
         pthread_mutex_unlock(&g_mu);
         if (j->req->cancelled) { j->resp = xcalloc(1, sizeof *j->resp); j->resp->error = xstrdup("cancelled"); }
-        else j->resp = net_fetch_sync(j->req);
+        else { t_stream = j->req->chunk ? j->req : NULL; j->resp = net_fetch_sync(j->req); t_stream = NULL; }
         pthread_mutex_lock(&g_mu);
-        if (g_done_tail) g_done_tail->next = j; else g_done = j;
-        g_done_tail = j;
+        for (Job **pp = &g_running; *pp; pp = &(*pp)->rnext) if (*pp == j) { *pp = j->rnext; break; }
         pthread_mutex_unlock(&g_mu);
-        if (net_wakeup) net_wakeup();
+        ev_push(0, j->req, j->resp, NULL, 0);
+        free(j);
     }
 }
 
@@ -444,20 +543,204 @@ uint64_t net_fetch(NetRequest *req) {
 void net_cancel(uint64_t id) {
     pthread_mutex_lock(&g_mu);
     for (Job *j = g_queue; j; j = j->next) if (j->req->id == id) j->req->cancelled = true;
+    for (Job *j = g_running; j; j = j->rnext) if (j->req->id == id) __atomic_store_n(&j->req->cancelled, true, __ATOMIC_RELAXED);
     pthread_mutex_unlock(&g_mu);
 }
 int net_pending(void) { pthread_mutex_lock(&g_mu); int n = g_pending; pthread_mutex_unlock(&g_mu); return n; }
+static void ws_poll(void);
 int net_poll(void) {
-    pthread_mutex_lock(&g_mu);
-    Job *list = g_done; g_done = g_done_tail = NULL;
-    pthread_mutex_unlock(&g_mu);
+    ws_poll();
+    pthread_mutex_lock(&g_ev_mu);
+    Ev *list = g_ev; g_ev = g_ev_tail = NULL;
+    pthread_mutex_unlock(&g_ev_mu);
     int n = 0;
     while (list) {
-        Job *j = list; list = j->next;
-        pthread_mutex_lock(&g_mu); g_pending--; pthread_mutex_unlock(&g_mu);
-        if (!j->req->cancelled && j->req->done) j->req->done(j->req, j->resp, j->req->ud);
-        net_response_free(j->resp); net_request_free(j->req); free(j);
-        n++;
+        Ev *e = list; list = e->next;
+        NetRequest *rq = e->req;
+        if (e->type == 0) {
+            pthread_mutex_lock(&g_mu); g_pending--; pthread_mutex_unlock(&g_mu);
+            if (!rq->cancelled && rq->done) rq->done(rq, e->resp, rq->ud);
+            net_response_free(e->resp); net_request_free(rq);
+            n++;
+        } else if (e->type == 1) {
+            if (!rq->cancelled && rq->head) rq->head(rq, e->resp, rq->ud);
+            net_response_free(e->resp);
+        } else {
+            if (!rq->cancelled && rq->chunk) rq->chunk(rq, e->data, e->n, rq->ud);
+            free(e->data);
+        }
+        free(e);
     }
     return n;
+}
+
+/* ---------- WebSocket ---------- */
+typedef struct WsOut { unsigned char *buf; size_t n; struct WsOut *next; } WsOut;
+struct NetWs {
+    int refs; char *url, *protocols, *origin, *protocol;
+    NetWsFn cb; void *ud;
+    pthread_mutex_t mu; WsOut *out, *out_tail; int wake[2];
+};
+typedef struct WsEv { NetWs *ws; int type; char *data; size_t n; int code; struct WsEv *next; } WsEv;
+static pthread_mutex_t g_ws_mu = PTHREAD_MUTEX_INITIALIZER;
+static WsEv *g_ws_ev, *g_ws_ev_tail;
+
+static void ws_unref(NetWs *w) {
+    pthread_mutex_lock(&g_ws_mu); int r = --w->refs; pthread_mutex_unlock(&g_ws_mu);
+    if (r) return;
+    for (WsOut *o = w->out; o;) { WsOut *n = o->next; free(o->buf); free(o); o = n; }
+    close(w->wake[0]); close(w->wake[1]); pthread_mutex_destroy(&w->mu);
+    free(w->url); free(w->protocols); free(w->origin); free(w->protocol); free(w);
+}
+static void ws_emit(NetWs *w, int type, const char *d, size_t n, int code) {
+    WsEv *e = xcalloc(1, sizeof *e); e->ws = w; e->type = type; e->code = code; e->n = n;
+    if (n) { e->data = xmalloc(n); memcpy(e->data, d, n); }
+    pthread_mutex_lock(&g_ws_mu); w->refs++;
+    if (g_ws_ev_tail) g_ws_ev_tail->next = e; else g_ws_ev = e;
+    g_ws_ev_tail = e; pthread_mutex_unlock(&g_ws_mu);
+    if (net_wakeup) net_wakeup();
+}
+static void ws_poll(void) {
+    pthread_mutex_lock(&g_ws_mu); WsEv *e = g_ws_ev; g_ws_ev = g_ws_ev_tail = NULL; pthread_mutex_unlock(&g_ws_mu);
+    while (e) {
+        WsEv *n = e->next;
+        if (e->ws->cb) e->ws->cb(e->ws, e->type, e->data ? e->data : "", e->n, e->code, e->ws->ud);
+        ws_unref(e->ws); free(e->data); free(e); e = n;
+    }
+}
+static WsOut *ws_frame(int op, const char *d, size_t n) {
+    WsOut *o = xcalloc(1, sizeof *o); o->buf = xmalloc(n + 14); size_t h = 0;
+    o->buf[h++] = (unsigned char)(0x80 | op);
+    if (n < 126) o->buf[h++] = (unsigned char)(0x80 | n);
+    else if (n < 65536) { o->buf[h++] = 0x80 | 126; o->buf[h++] = (unsigned char)(n >> 8); o->buf[h++] = (unsigned char)n; }
+    else { o->buf[h++] = 0x80 | 127; for (int i = 7; i >= 0; i--) o->buf[h++] = (unsigned char)((uint64_t)n >> (8 * i)); }
+    unsigned char m[4]; RAND_bytes(m, 4); memcpy(o->buf + h, m, 4); h += 4;
+    for (size_t i = 0; i < n; i++) o->buf[h + i] = (unsigned char)d[i] ^ m[i & 3];
+    o->n = h + n; return o;
+}
+static void ws_queue(NetWs *w, WsOut *o) {
+    pthread_mutex_lock(&w->mu);
+    if (w->out_tail) w->out_tail->next = o; else w->out = o;
+    w->out_tail = o; pthread_mutex_unlock(&w->mu);
+    char b = 1; (void)!write(w->wake[1], &b, 1);
+}
+static void b64enc(const unsigned char *in, size_t n, char *out) {
+    static const char t[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"; size_t o = 0;
+    for (size_t i = 0; i < n; i += 3) {
+        uint32_t v = (uint32_t)in[i] << 16 | (i + 1 < n ? (uint32_t)in[i + 1] << 8 : 0) | (i + 2 < n ? in[i + 2] : 0);
+        out[o++] = t[v >> 18 & 63]; out[o++] = t[v >> 12 & 63];
+        out[o++] = i + 1 < n ? t[v >> 6 & 63] : '='; out[o++] = i + 2 < n ? t[v & 63] : '=';
+    }
+    out[o] = 0;
+}
+static void *ws_thread(void *arg) {
+    NetWs *w = arg; URL u; char *err = NULL; Conn *c = NULL; int code = 1006; bool clean = false, sent_close = false;
+    SB in, msg, line; sb_init(&in); sb_init(&msg); sb_init(&line); int msg_op = 1;
+    bool have_u = url_parse(w->url, &u);
+    if (!have_u || !(c = conn_open(&u, &err))) goto out;
+    struct timeval tv = { 0, 0 };
+    setsockopt(c->fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof tv);
+    unsigned char kr[16]; char key[32], want[32]; RAND_bytes(kr, sizeof kr); b64enc(kr, sizeof kr, key);
+    {
+        char cat[96]; unsigned char dg[SHA_DIGEST_LENGTH];
+        snprintf(cat, sizeof cat, "%s258EAFA5-E914-47DA-95CA-C5AB0DC85B11", key);
+        SHA1((const unsigned char *)cat, strlen(cat), dg); b64enc(dg, sizeof dg, want);
+        SB req; sb_init(&req); char *pq = url_path_query(&u);
+        sb_printf(&req, "GET %s HTTP/1.1\r\n", pq); free(pq);
+        if (u.port != url_default_port(u.scheme)) sb_printf(&req, "Host: %s:%d\r\n", u.host, u.port); else sb_printf(&req, "Host: %s\r\n", u.host);
+        sb_printf(&req, "Connection: Upgrade\r\nPragma: no-cache\r\nCache-Control: no-cache\r\nUser-Agent: %s\r\nUpgrade: websocket\r\n", g_user_agent);
+        if (*w->origin) sb_printf(&req, "Origin: %s\r\n", w->origin);
+        sb_printf(&req, "Sec-WebSocket-Version: 13\r\nAccept-Encoding: gzip, deflate, br, zstd\r\nAccept-Language: en-US,en;q=0.9\r\n");
+        char *ck = cookies_get(&u, true); if (ck) { sb_printf(&req, "Cookie: %s\r\n", ck); free(ck); }
+        sb_printf(&req, "Sec-WebSocket-Key: %s\r\n", key);
+        if (*w->protocols) sb_printf(&req, "Sec-WebSocket-Protocol: %s\r\n", w->protocols);
+        sb_puts(&req, "\r\n");
+        bool ok = conn_write(c, req.s, req.n) >= 0; sb_free(&req);
+        if (!ok || !conn_readline(c, &line) || line.n < 12 || atoi(line.s + 9) != 101) goto out;
+        bool accept_ok = false;
+        while (conn_readline(c, &line) && line.n) {
+            char *col = strchr(line.s, ':'); if (!col) continue;
+            *col = 0; char *v = col + 1; while (*v == ' ' || *v == '\t') v++;
+            if (str_ieq(line.s, "set-cookie")) cookies_set_from_header(&u, v);
+            else if (str_ieq(line.s, "sec-websocket-accept")) accept_ok = !strcmp(v, want);
+            else if (str_ieq(line.s, "sec-websocket-protocol")) { free(w->protocol); w->protocol = xstrdup(v); }
+        }
+        if (!accept_ok) goto out;
+    }
+    ws_emit(w, NET_WS_OPEN, w->protocol ? w->protocol : "", w->protocol ? strlen(w->protocol) : 0, 0);
+    for (;;) {
+        pthread_mutex_lock(&w->mu); WsOut *o = w->out; w->out = w->out_tail = NULL; pthread_mutex_unlock(&w->mu);
+        bool wfail = false;
+        while (o) { WsOut *n = o->next; if (!wfail && !(sent_close && (o->buf[0] & 15) != 8) && conn_write(c, o->buf, o->n) < 0) wfail = true; if ((o->buf[0] & 15) == 8) sent_close = true; free(o->buf); free(o); o = n; }
+        if (wfail) break;
+        if (!(c->rpos < c->rlen || (c->ssl && SSL_pending(c->ssl) > 0))) {
+            struct pollfd pf[2] = { { c->fd, POLLIN, 0 }, { w->wake[0], POLLIN, 0 } };
+            int pr = poll(pf, 2, sent_close ? 5000 : -1);
+            if (pr == 0) break;
+            if (pf[1].revents & POLLIN) { char b[64]; while (read(w->wake[0], b, sizeof b) > 0) {} }
+            if (!(pf[0].revents & (POLLIN | POLLHUP | POLLERR))) continue;
+        }
+        if (conn_fill(c) <= 0) break;
+        sb_put(&in, c->rbuf + c->rpos, c->rlen - c->rpos); c->rpos = c->rlen;
+        size_t p = 0; bool done = false;
+        while (!done && in.n - p >= 2) {
+            unsigned char *b = (unsigned char *)in.s + p;
+            int fin = b[0] & 0x80, op = b[0] & 15; bool masked = b[1] & 0x80; uint64_t len = b[1] & 127; size_t h = 2;
+            if (len == 126) { if (in.n - p < 4) break; len = (uint64_t)b[2] << 8 | b[3]; h = 4; }
+            else if (len == 127) { if (in.n - p < 10) break; len = 0; for (int i = 0; i < 8; i++) len = len << 8 | b[2 + i]; h = 10; }
+            unsigned char mk[4] = { 0 };
+            if (masked) { if (in.n - p < h + 4) break; memcpy(mk, b + h, 4); h += 4; }
+            if (in.n - p < h + len) break;
+            char *pl = in.s + p + h;
+            if (masked) for (uint64_t i = 0; i < len; i++) pl[i] ^= (char)mk[i & 3];
+            p += h + (size_t)len;
+            if (op == 9) { WsOut *pong = ws_frame(10, pl, (size_t)len); if (conn_write(c, pong->buf, pong->n) < 0) done = true; free(pong->buf); free(pong); }
+            else if (op == 8) {
+                code = len >= 2 ? ((unsigned char)pl[0] << 8 | (unsigned char)pl[1]) : 1005;
+                if (len > 2) { sb_clear(&msg); sb_put(&msg, pl + 2, (size_t)len - 2); } else sb_clear(&msg);
+                if (!sent_close) { WsOut *cf = ws_frame(8, pl, len >= 2 ? 2 : 0); (void)conn_write(c, cf->buf, cf->n); free(cf->buf); free(cf); }
+                clean = done = true;
+            } else if (op == 0 || op == 1 || op == 2) {
+                if (op) { sb_clear(&msg); msg_op = op; }
+                sb_put(&msg, pl, (size_t)len);
+                if (fin) { ws_emit(w, msg_op == 2 ? NET_WS_BINARY : NET_WS_TEXT, msg.s, msg.n, 0); sb_clear(&msg); }
+            }
+        }
+        if (p) { memmove(in.s, in.s + p, in.n - p); in.n -= p; }
+        if (done) break;
+    }
+out:
+    if (!clean) { sb_clear(&msg); ws_emit(w, NET_WS_ERROR, err ? err : "", err ? strlen(err) : 0, 0); code = 1006; }
+    ws_emit(w, NET_WS_CLOSE, msg.s, msg.n, code);
+    if (c) conn_close(c);
+    if (have_u) url_free(&u);
+    free(err); sb_free(&in); sb_free(&msg); sb_free(&line);
+    ws_unref(w);
+    return NULL;
+}
+NetWs *net_ws_open(const char *url, const char *protocols, const char *origin, NetWsFn cb, void *ud) {
+    NetWs *w = xcalloc(1, sizeof *w);
+    w->refs = 2; w->cb = cb; w->ud = ud;
+    SB b; sb_init(&b);
+    if (!strncasecmp(url, "wss:", 4)) { sb_puts(&b, "https:"); sb_puts(&b, url + 4); }
+    else if (!strncasecmp(url, "ws:", 3)) { sb_puts(&b, "http:"); sb_puts(&b, url + 3); }
+    else sb_puts(&b, url);
+    w->url = sb_take(&b); w->protocols = xstrdup(protocols ? protocols : ""); w->origin = xstrdup(origin ? origin : "");
+    pthread_mutex_init(&w->mu, NULL);
+    if (pipe(w->wake)) w->wake[0] = w->wake[1] = -1;
+    else fcntl(w->wake[0], F_SETFL, fcntl(w->wake[0], F_GETFL, 0) | O_NONBLOCK);
+    pthread_t t; pthread_create(&t, NULL, ws_thread, w); pthread_detach(t);
+    return w;
+}
+void net_ws_send(NetWs *w, int op, const char *d, size_t n) { ws_queue(w, ws_frame(op, d, n)); }
+void net_ws_close(NetWs *w, int code, const char *reason) {
+    char p[125]; size_t n = 0;
+    if (code) { p[0] = (char)(code >> 8); p[1] = (char)code; n = 2; size_t r = strlen(reason); if (r > 123) r = 123; memcpy(p + 2, reason, r); n += r; }
+    ws_queue(w, ws_frame(8, p, n));
+}
+void net_ws_release(NetWs *w) {
+    if (!w) return;
+    w->cb = NULL;
+    net_ws_close(w, 1001, "");
+    ws_unref(w);
 }

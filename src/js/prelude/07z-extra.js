@@ -11,6 +11,12 @@ class TouchEvent extends UIEvent {
     }
 }
 class CompositionEvent extends UIEvent { constructor(t, i = {}) { super(t, i); this.data = i.data || ''; } }
+class ClipboardItem {
+    constructor(items, o = {}) { this._i = items || {}; this.presentationStyle = o.presentationStyle || 'unspecified'; }
+    get types() { return Object.keys(this._i); }
+    async getType(t) { if (!(t in this._i)) throw new DOMException('type not found', 'NotFoundError'); const v = await this._i[t]; return v instanceof Blob ? v : new Blob([String(v)], { type: t }); }
+    static supports(t) { return /^(text\/plain|text\/html|image\/png)$/.test(t); }
+}
 class ClipboardEvent extends Event { constructor(t, i = {}) { super(t, i); this.clipboardData = i.clipboardData || null; } }
 class DragEvent extends MouseEvent { constructor(t, i = {}) { super(t, i); this.dataTransfer = i.dataTransfer || null; } }
 class StorageEvent extends Event {

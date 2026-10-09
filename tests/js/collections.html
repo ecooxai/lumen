@@ -1,0 +1,12 @@
+<!doctype html><form name=login id=f1></form><form id=f2></form><img name=pic>
+<script>
+const r = {};
+r.formsByName = document.forms.namedItem('login') === document.getElementById('f1');
+r.formsById = document.forms.namedItem('f2') === document.getElementById('f2');
+r.missing = document.forms.namedItem('nope') === null;
+r.images = document.images.namedItem('pic') === document.images[0];
+r.instance = document.forms instanceof HTMLCollection && document.forms.length === 2;
+let got = 0; const o = { get x() { got++; return 1; }, toString() { got++; return 'o'; } };
+console.debug(o); r.lazyConsole = got === 0;
+console.log('RESULTS collections ' + Object.entries(r).map(([k, v]) => k + ':' + (v ? 'PASS' : 'FAIL')).join(' '));
+</script>

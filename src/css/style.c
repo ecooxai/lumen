@@ -8,8 +8,9 @@
 typedef VEC(Rule *) RuleVec;
 
 /* ---------------- style objects ---------------- */
+long g_styles_live;
 ComputedStyle *style_new_default(void) {
-    ComputedStyle *s = xcalloc(1, sizeof *s);
+    ComputedStyle *s = xcalloc(1, sizeof *s); g_styles_live++;
     s->refs = 1; s->anim_iter = 1;
     s->display = D_INLINE; s->font_size = 16; s->font_weight = 400; s->line_height_normal = true;
     s->color = RGBA(0, 0, 0, 255); s->opacity = 1; s->flex_shrink = 1; s->flex_basis = L_auto();
@@ -53,9 +54,11 @@ ComputedStyle *style_inherit(const ComputedStyle *p) {
 void style_ref(ComputedStyle *s) { if (s) s->refs++; }
 void style_free(ComputedStyle *s) {
     if (!s || --s->refs > 0) return;
+    g_styles_live--;
     free(s->bg_image); free(s->mask_image); free(s->bg_gradient); free(s->content); free(s->grid_cols); free(s->grid_rows); free(s->grid_areas); free(s->grid_area);
     custom_unref(s->custom);
     if (s->before) style_free(s->before);
+    if (s->marker) style_free(s->marker);
     if (s->after) style_free(s->after);
     free(s);
 }
@@ -116,12 +119,32 @@ bool css_parse_color(const char *in, Color *out, Color current) {
         *out = RGBA((int)(hue2rgb(p, q, h + 1.f / 3) * 255 + .5f), (int)(hue2rgb(p, q, h) * 255 + .5f), (int)(hue2rgb(p, q, h - 1.f / 3) * 255 + .5f), (int)LCLAMP(a * 255 + .5f, 0, 255));
         return true;
     }
-    if (str_starts(s, "color-mix(")) {
-        /* approximate: take first color */
-        const char *c = strchr(s, ','); if (!c) return false;
-        char t[96]; snprintf(t, sizeof t, "%s", c + 1); char *e = strpbrk(t, " ,"); if (e && *e == ' ' && strchr(t, ',')) { } char *comma = strchr(t, ','); if (comma) *comma = 0;
-        char *pct = strrchr(t, ' '); if (pct && strchr(pct, '%')) *pct = 0;
-        return css_parse_color(t, out, current);
+    if (str_starts(s, "color-mix(")) {   /* color-mix(in <space>, c1 [p1], c2 [p2]): premultiplied sRGB mix */
+        char a[3][128]; int na = 0, d = 0; size_t k = 0;
+        for (const char *q = s + 10; *q && na < 3; q++) {
+            if (*q == '(') d++;
+            else if (*q == ')' && d-- == 0) { a[na][k] = 0; na++; break; }
+            if (*q == ',' && d == 0) { a[na][k] = 0; na++; k = 0; continue; }
+            if (k < sizeof a[0] - 1) a[na][k++] = *q;
+        }
+        if (na != 3) return false;
+        Color c[2]; float w[2]; bool hw[2];
+        for (int i = 0; i < 2; i++) {
+            char *t = a[i + 1]; while (*t == ' ') t++;
+            char *e = t + strlen(t); while (e > t && e[-1] == ' ') *--e = 0;
+            hw[i] = false; w[i] = 0;
+            char *sp = NULL; int dd = 0; for (char *q = t; *q; q++) { if (*q == '(') dd++; else if (*q == ')') dd--; else if (*q == ' ' && !dd) sp = q; }
+            if (sp && e > t && e[-1] == '%') { w[i] = (float)atof(sp + 1) / 100; hw[i] = true; *sp = 0; }
+            else if (*t && isdigit((unsigned char)*t) && (sp = strchr(t, ' ')) && sp[-1] == '%') { w[i] = (float)atof(t) / 100; hw[i] = true; t = sp + 1; }
+            if (!css_parse_color(t, &c[i], current)) return false;
+        }
+        if (!hw[0] && !hw[1]) w[0] = w[1] = .5f; else if (!hw[0]) w[0] = 1 - w[1]; else if (!hw[1]) w[1] = 1 - w[0];
+        float sum = w[0] + w[1]; if (sum <= 0) return false;
+        float mult = sum < 1 ? sum : 1; w[0] /= sum; w[1] /= sum;
+        float a0 = COLOR_A(c[0]) / 255.f * w[0], a1 = COLOR_A(c[1]) / 255.f * w[1], al = a0 + a1;
+        if (al <= 0) { *out = 0; return true; }
+        int r = (int)((COLOR_R(c[0]) * a0 + COLOR_R(c[1]) * a1) / al + .5f), g = (int)((COLOR_G(c[0]) * a0 + COLOR_G(c[1]) * a1) / al + .5f), b = (int)((COLOR_B(c[0]) * a0 + COLOR_B(c[1]) * a1) / al + .5f);
+        *out = RGBA(r, g, b, (int)LCLAMP(al * mult * 255 + .5f, 0, 255)); return true;
     }
     if (str_starts(s, "light-dark(")) { char t[96]; snprintf(t, sizeof t, "%s", s + 11); char *c = strchr(t, ','); if (c) *c = 0; return css_parse_color(t, out, current); }
     if (str_starts(s, "oklch(") || str_starts(s, "lab(") || str_starts(s, "lch(") || str_starts(s, "oklab(")) { float v[4] = {0, 0, 0, 1}; bool pc[4] = {0}; int n = parse_fn_args(strchr(s, '(') + 1, v, pc, 4); if (n < 3) return false; int g = (int)LCLAMP((pc[0] ? v[0] / 100 : (s[0] == 'o' ? v[0] : v[0] / 100)) * 255, 0, 255); *out = RGBA(g, g, g, (int)(LCLAMP(n > 3 ? v[3] : 1, 0, 1) * 255)); return true; }
@@ -133,6 +156,9 @@ bool css_parse_color(const char *in, Color *out, Color current) {
 
 /* ---------------- lengths ---------------- */
 typedef struct { float em, rem; const MediaCtx *mc; } LCtx;
+/* nearest query container's size from the last layout (layout re-marks style when it changes); viewport otherwise */
+static float g_cq[2];
+static float cq_dim(const LCtx *c, int h) { return g_cq[h] > 0 ? g_cq[h] : h ? (c->mc ? c->mc->vh : 768) : (c->mc ? c->mc->vw : 1024); }
 static bool calc_expr(const char **pp, Length *out, LCtx *c);
 static bool parse_dim(const char **pp, Length *out, LCtx *c) {
     const char *p = *pp; while (is_ws((unsigned char)*p)) p++;
@@ -146,9 +172,11 @@ static bool parse_dim(const char **pp, Length *out, LCtx *c) {
         *pp = p;
         /* when percentages are involved we can't resolve; pick a reasonable operand */
         if (kind == 2 && n == 3) { Length r = v[1]; if (!r.pct && !v[0].pct && r.px < v[0].px) r = v[0]; if (!r.pct && !v[2].pct && r.px > v[2].px) r = v[2]; *out = r; return true; }
-        Length best = v[0];
-        for (int i = 1; i < n; i++) { if (v[i].pct || best.pct) { if (kind == 0 && v[i].pct && !best.pct) {} else if (!v[i].pct) best = kind == 0 ? best : v[i]; continue; } if (kind == 0 ? v[i].px < best.px : v[i].px > best.px) best = v[i]; }
-        *out = best; return true;
+        Length best = v[0]; int bi = 0;
+        for (int i = 1; i < n; i++) { if (v[i].pct || best.pct) { if (kind == 0 && v[i].pct && !best.pct) {} else if (!v[i].pct && kind != 0) { best = v[i]; bi = i; } continue; } if (kind == 0 ? v[i].px < best.px : v[i].px > best.px) { best = v[i]; bi = i; } }
+        *out = best;
+        if (n == 2 && (v[0].pct || v[1].pct) && !v[0].mm && !v[1].mm) { const Length *o = &v[1 - bi]; out->mm = (uint8_t)(kind + 1); out->px2 = o->px; out->pct2 = o->pct; }
+        return true;
     }
     if (str_istarts(p, "var(")) return false;
     char *e; float v = strtof(p, &e);
@@ -156,7 +184,7 @@ static bool parse_dim(const char **pp, Length *out, LCtx *c) {
     p = e;
     Length l = { 0, 0, LK_LEN };
     char u[8] = {0}; int k = 0; while (isalpha((unsigned char)*p) && k < 7) u[k++] = (char)lc(*p++);
-    if (*p == '%') { l.pct = v; p++; }
+    if (*p == '%') { l.pct = v; l.pctu = true; p++; }
     else if (!k || !strcmp(u, "px")) l.px = v;
     else if (!strcmp(u, "em")) l.px = v * c->em;
     else if (!strcmp(u, "rem")) l.px = v * c->rem;
@@ -171,6 +199,10 @@ static bool parse_dim(const char **pp, Length *out, LCtx *c) {
     else if (!strcmp(u, "q")) l.px = v * 96 / 101.6f;
     else if (!strcmp(u, "vw") || !strcmp(u, "svw") || !strcmp(u, "lvw") || !strcmp(u, "dvw")) l.px = v * (c->mc ? c->mc->vw : 1024) / 100;
     else if (!strcmp(u, "vh") || !strcmp(u, "svh") || !strcmp(u, "lvh") || !strcmp(u, "dvh")) l.px = v * (c->mc ? c->mc->vh : 768) / 100;
+    else if (!strcmp(u, "cqw") || !strcmp(u, "cqi")) l.px = v * cq_dim(c, 0) / 100;
+    else if (!strcmp(u, "cqh") || !strcmp(u, "cqb")) l.px = v * cq_dim(c, 1) / 100;
+    else if (!strcmp(u, "cqmin")) l.px = v * LMIN(cq_dim(c, 0), cq_dim(c, 1)) / 100;
+    else if (!strcmp(u, "cqmax")) l.px = v * LMAX(cq_dim(c, 0), cq_dim(c, 1)) / 100;
     else if (!strcmp(u, "vmin")) l.px = v * LMIN(c->mc ? c->mc->vw : 1024, c->mc ? c->mc->vh : 768) / 100;
     else if (!strcmp(u, "vmax")) l.px = v * LMAX(c->mc ? c->mc->vw : 1024, c->mc ? c->mc->vh : 768) / 100;
     else if (!strcmp(u, "fr")) { l.px = v; }
@@ -184,8 +216,13 @@ static bool calc_term(const char **pp, Length *out, LCtx *c) {
         const char *p = *pp; while (is_ws((unsigned char)*p)) p++;
         if (*p == '*' || *p == '/') {
             char op = *p++; Length r; if (!parse_dim(&p, &r, c)) return false;
+            if (op == '*' && (out->mm || r.mm)) {
+                if (r.mm && !out->mm && !out->pct) { float k = out->px; *out = r; r.px = k; r.mm = 0; r.pct = 0; }
+                if (!r.mm && !r.pct) { out->px *= r.px; out->pct *= r.px; out->px2 *= r.px; out->pct2 *= r.px; if (r.px < 0) out->mm = (uint8_t)(3 - out->mm); *pp = p; continue; }
+                out->mm = 0;
+            }
             if (op == '*') { float f = r.pct ? 1 : r.px; if (r.pct == 0 && out->pct == 0 && false) {} if (out->pct == 0 && out->px != 0 && r.pct) { float k = out->px; *out = r; out->px *= k; out->pct *= k; } else { out->px *= f; out->pct *= f; } }
-            else { if (r.px) { out->px /= r.px; out->pct /= r.px; } }
+            else { if (r.px) { out->px /= r.px; out->pct /= r.px; out->px2 /= r.px; out->pct2 /= r.px; if (r.px < 0 && out->mm) out->mm = (uint8_t)(3 - out->mm); } }
             *pp = p;
         } else break;
     }
@@ -197,7 +234,10 @@ static bool calc_expr(const char **pp, Length *out, LCtx *c) {
         const char *p = *pp; while (is_ws((unsigned char)*p)) p++;
         if ((*p == '+' || *p == '-') && (p[1] == ' ' || p[1] == '\t' || p[1] == '\n')) {
             char op = *p++; Length r; if (!calc_term(&p, &r, c)) return false;
-            if (op == '+') { out->px += r.px; out->pct += r.pct; } else { out->px -= r.px; out->pct -= r.pct; }
+            if (op == '-') { r.px = -r.px; r.pct = -r.pct; r.px2 = -r.px2; r.pct2 = -r.pct2; if (r.mm) r.mm = (uint8_t)(3 - r.mm); }
+            if (r.mm && !out->mm) { float bx = out->px, bp = out->pct; bool pu = out->pctu; *out = r; out->pctu |= pu; out->px += bx; out->pct += bp; out->px2 += bx; out->pct2 += bp; }
+            else { if (r.mm) out->mm = 0; out->px += r.px; out->pct += r.pct; if (out->mm) { out->px2 += r.px; out->pct2 += r.pct; } }
+            out->pctu |= r.pctu;
             *pp = p;
         } else break;
     }
@@ -217,6 +257,19 @@ bool css_parse_length(const char *s, Length *out, float em, float rem, const Med
 }
 
 /* ---------------- var() substitution ---------------- */
+typedef struct RegProp { char *name, *init; struct RegProp *next; } RegProp;
+static RegProp *g_regprops[256];
+static unsigned regprop_hash(const char *s) { unsigned h = 5381; while (*s) h = h * 33 + (unsigned char)*s++; return h & 255; }
+void css_register_property(const char *name, const char *initial) {
+    if (!name || strncmp(name, "--", 2) || !initial) return;
+    RegProp **b = &g_regprops[regprop_hash(name)];
+    for (RegProp *r = *b; r; r = r->next) if (!strcmp(r->name, name)) { free(r->init); r->init = xstrdup(initial); return; }
+    RegProp *r = xcalloc(1, sizeof *r); r->name = xstrdup(name); r->init = xstrdup(initial); r->next = *b; *b = r;
+}
+const char *css_property_initial(const char *name) {
+    for (RegProp *r = g_regprops[regprop_hash(name)]; r; r = r->next) if (!strcmp(r->name, name)) return r->init;
+    return NULL;
+}
 static char *subst_vars(const char *v, const ComputedStyle *st, int depth) {
     if (!strstr(v, "var(") || depth > 16) return xstrdup(v);
     SB b; sb_init(&b);
@@ -232,6 +285,7 @@ static char *subst_vars(const char *v, const ComputedStyle *st, int depth) {
         if (comma) *comma = 0;
         char *name = str_trim(inner);
         const char *val = custom_get(st->custom, name);
+        if (!val) val = css_property_initial(name);
         char *r = val && *val ? subst_vars(val, st, depth + 1) : comma ? subst_vars(str_trim(comma + 1), st, depth + 1) : NULL;
         free(inner);
         /* unresolvable or runaway expansion: declaration is invalid at computed-value time */
@@ -438,9 +492,10 @@ static void parse_transform(ACtx *c, const char *v) {
         while (is_ws((unsigned char)*p)) p++;
         const char *lp = strchr(p, '('); if (!lp) break;
         char fn[32]; snprintf(fn, sizeof fn, "%.*s", (int)LMIN(lp - p, 31), p);
-        const char *rp = strchr(lp, ')'); if (!rp) break;
+        const char *rp = lp + 1; for (int dp = 1; *rp; rp++) { if (*rp == '(') dp++; else if (*rp == ')' && !--dp) break; }
+        if (!*rp) break;
         char *args = xstrndup(lp + 1, (size_t)(rp - lp - 1));
-        for (char *q = args; *q; q++) if (*q == ',') *q = ' ';
+        { int dp = 0; for (char *q = args; *q; q++) { if (*q == '(') dp++; else if (*q == ')') dp--; else if (*q == ',' && !dp) *q = ' '; } }
         char *t[6]; int n = split_ws(args, t, 6);
         float a = 1, b = 0, cc = 0, d = 1, e = 0, f = 0;
         for (char *q = fn; *q; q++) *q = (char)lc(*q);
@@ -467,11 +522,8 @@ static void parse_transform(ACtx *c, const char *v) {
     memcpy(c->st->transform, m, sizeof m);
     c->st->has_transform = !(m[0] == 1 && m[1] == 0 && m[2] == 0 && m[3] == 1 && m[4] == 0 && m[5] == 0) || c->st->translate_pending[0].pct || c->st->translate_pending[1].pct;
 }
-static void parse_shadow(ACtx *c, const char *v, Shadow *sh, bool *has) {
-    if (str_ieq(v, "none")) { *has = false; return; }
-    /* first shadow only */
-    char *first = xstrdup(v); int d = 0; for (char *q = first; *q; q++) { if (*q == '(') d++; else if (*q == ')') d--; else if (*q == ',' && !d) { *q = 0; break; } }
-    char *t[7]; int n = split_ws(first, t, 7); float nums[4] = {0}; int nn = 0;
+static bool parse_one_shadow(ACtx *c, char *v, Shadow *sh) {
+    char *t[7]; int n = split_ws(v, t, 7); float nums[4] = {0}; int nn = 0;
     memset(sh, 0, sizeof *sh); sh->color = c->st->color;
     for (int i = 0; i < n; i++) {
         Color col;
@@ -480,8 +532,29 @@ static void parse_shadow(ACtx *c, const char *v, Shadow *sh, bool *has) {
         else if (css_parse_color(t[i], &col, c->st->color)) sh->color = col;
     }
     sh->x = nums[0]; sh->y = nums[1]; sh->blur = nums[2]; sh->spread = nums[3];
-    *has = nn >= 2 && COLOR_A(sh->color) > 0;
-    free_toks(t, n); free(first);
+    free_toks(t, n);
+    return nn >= 2 && COLOR_A(sh->color) > 0;
+}
+/* one shadow is painted: the first visible outer one, else the first visible inset one
+   (Tailwind stacks several, most of them `0 0 #0000`) */
+static void parse_shadow(ACtx *c, const char *v, Shadow *sh, bool *has) {
+    *has = false;
+    if (str_ieq(v, "none")) return;
+    char *all = xstrdup(v), *seg = all; int d = 0; Shadow cur, inset = {0}; bool have_inset = false;
+    for (char *q = all; ; q++) {
+        if (*q == '(') d++; else if (*q == ')') d--;
+        else if ((*q == ',' && !d) || !*q) {
+            bool end = !*q; *q = 0;
+            if (parse_one_shadow(c, seg, &cur)) {
+                if (!cur.inset) { *sh = cur; *has = true; break; }
+                if (!have_inset) { inset = cur; have_inset = true; }
+            }
+            if (end) break;
+            seg = q + 1;
+        }
+    }
+    if (!*has && have_inset) { *sh = inset; *has = true; }
+    free(all);
 }
 static int parse_grid_tracks(ACtx *c, const char *v, GridTrack **out) {
     VEC(GridTrack) tr = {0};
@@ -621,6 +694,7 @@ static void anim_decl(ComputedStyle *st, const char *Q, const char *val) {
     free(buf);
 }
 
+static bool custom_defer;
 void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *prop, const char *value_in, StyleEngine *e, Node *el) {
     if (prop[0] == '-' && prop[1] == '-') {
         /* custom property: copy-on-write map */
@@ -636,7 +710,14 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
             st->custom = n;
         }
         char *old = hm_get(&st->custom->map, prop);
-        char *v = subst_vars(value_in, st, 0);
+        char *kb = xstrdup(value_in), *k = str_trim(kb), *v;
+        /* CSS-wide keywords: "" is the guaranteed-invalid value */
+        if (str_ieq(k, "inherit") || str_ieq(k, "unset") || str_ieq(k, "revert") || str_ieq(k, "revert-layer")) {
+            const char *pv = par ? custom_get(par->custom, prop) : NULL; v = xstrdup(pv ? pv : "");
+        } else if (str_ieq(k, "initial")) v = xstrdup("");
+        else if (!*k) v = xstrdup(" ");   /* valid empty value, unlike "" */
+        else v = custom_defer ? xstrdup(value_in) : subst_vars(value_in, st, 0);
+        free(kb);
         hm_put(&st->custom->map, prop, v ? v : xstrdup(""));
         free(old);
         return;
@@ -646,6 +727,9 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
     if (strstr(v, "var(")) { subst = subst_vars(v, st, 0); if (!subst) return; v = subst; }
     char *vbuf = xstrdup(v); char *val = str_trim(vbuf);
     ACtx c = { st, par, e, el, st->font_size, 16, e ? &e->media : NULL };
+    g_cq[0] = g_cq[1] = 0;
+    if (el && strstr(v, "cq")) for (const Node *a = el->parent; a; a = a->parent)
+        if (a->type == NODE_ELEMENT && a->style && a->style->container_type) { g_cq[0] = a->cq_w; g_cq[1] = a->style->container_type == 2 ? a->cq_h : 0; break; }
     if (e && e->doc && e->doc->html && e->doc->html->style && el != e->doc->html) c.rem = e->doc->html->style->font_size;
     const char *P = prop;
     Length l; Color col; int k;
@@ -688,6 +772,14 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         goto out;
     }
     if (!strcmp(P, "mask-size") || !strcmp(P, "-webkit-mask-size")) { st->mask_fit = str_ieq(val, "contain") ? 1 : str_ieq(val, "cover") ? 2 : 0; goto out; }
+    if (!strcmp(P, "container-name") || !strcmp(P, "container")) {
+        char *sl = strchr(val, '/'); size_t nl = sl ? (size_t)(sl - val) : strlen(val);
+        while (nl && isspace((unsigned char)val[nl - 1])) nl--;
+        st->container_name = nl && !str_ieqn(val, "none", 4) ? atomn(val, nl) : NULL;
+        if (P[9] == 0) { const char *ty = sl ? sl + 1 : "normal"; while (isspace((unsigned char)*ty)) ty++; st->container_type = str_istarts(ty, "size") ? 2 : str_istarts(ty, "inline-size") ? 1 : 0; }
+        goto out;
+    }
+    if (!strcmp(P, "container-type")) { st->container_type = str_ieq(val, "size") ? 2 : str_ieq(val, "inline-size") ? 1 : 0; goto out; }
     switch (P[0]) {
     case 'a':
         if (!strcmp(P, "align-items")) st->align_items = parse_align(val);
@@ -789,7 +881,7 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
             else if (str_ieq(val, "auto")) { st->flex_grow = 1; st->flex_shrink = 1; st->flex_basis = L_auto(); }
             else {
                 char *t[3]; int n = split_ws(val, t, 3); int nums = 0;
-                st->flex_grow = 1; st->flex_shrink = 1; st->flex_basis = L_px(0);
+                st->flex_grow = 1; st->flex_shrink = 1; st->flex_basis = L_px(0); st->flex_basis.pctu = true;
                 for (int i = 0; i < n; i++) {
                     char *end; float x = strtof(t[i], &end);
                     if (end != t[i] && !*end && nums < 2) { if (nums == 0) st->flex_grow = x; else st->flex_shrink = x; nums++; }
@@ -845,6 +937,7 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
             char *end; float x = strtof(val, &end);
             if (str_ieq(val, "normal")) { st->line_height_normal = true; st->line_height_factor = 0; }
             else if (end != val && !*end) { st->line_height_normal = false; st->line_height_factor = x; st->line_height = x * st->font_size; }
+            else if (str_istarts(val, "calc(") && !strpbrk(val + 4, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ%") && css_parse_length(val, &l, st->font_size, c.rem, c.mc) && l.kind == LK_LEN) { st->line_height_normal = false; st->line_height_factor = l.px; st->line_height = l.px * st->font_size; }
             else if (css_parse_length(val, &l, st->font_size, c.rem, c.mc) && l.kind == LK_LEN) { st->line_height_normal = false; st->line_height_factor = 0; st->line_height = l.px + l.pct * st->font_size / 100; }
         }
         else if (!strcmp(P, "letter-spacing")) st->letter_spacing = str_ieq(val, "normal") ? 0 : alen_px(&c, val, 0);
@@ -923,7 +1016,7 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         else if (!strcmp(P, "text-overflow")) st->text_overflow = str_ieq(val, "ellipsis") ? TO_ELLIPSIS : TO_CLIP;
         else if (!strcmp(P, "text-shadow")) parse_shadow(&c, val, &st->text_shadow, &st->has_text_shadow);
         else if (!strcmp(P, "transform") || !strcmp(P, "-webkit-transform")) parse_transform(&c, val);
-        else if (!strcmp(P, "translate")) { char buf[96]; snprintf(buf, sizeof buf, "translate(%s)", val); if (!str_ieq(val, "none")) { for (char *q = buf + 10; *q; q++) if (*q == ' ') { *q = ','; break; } parse_transform(&c, buf); } }
+        else if (!strcmp(P, "translate")) { char buf[256]; snprintf(buf, sizeof buf, "translate(%s)", val); if (!str_ieq(val, "none")) parse_transform(&c, buf); }
         else if (!strcmp(P, "transform-origin")) { char *t[2]; int n = split_ws(val, t, 2); for (int i = 0; i < n; i++) { if (str_ieq(t[i], "left") || str_ieq(t[i], "top")) st->transform_origin[i] = (Length){0, 0, LK_LEN}; else if (str_ieq(t[i], "right") || str_ieq(t[i], "bottom")) st->transform_origin[i] = (Length){0, 100, LK_LEN}; else if (str_ieq(t[i], "center")) st->transform_origin[i] = (Length){0, 50, LK_LEN}; else alen(&c, t[i], &st->transform_origin[i]); } free_toks(t, n); }
         else if (!strcmp(P, "table-layout")) st->table_layout = str_ieq(val, "fixed");
         else if (!strcmp(P, "text-wrap") || !strcmp(P, "text-wrap-mode")) { if (str_ieq(val, "nowrap")) st->white_space = WS_NOWRAP; }
@@ -957,7 +1050,163 @@ static void idx_add(HMap *m, const char *key, Rule *r) {
     vec_push(*v, r);
 }
 static void rv_free(void *p) { RuleVec *v = p; vec_free(*v); free(v); }
-static void idx_clear(RuleIndex *ix) { hm_free(&ix->by_id, rv_free); hm_free(&ix->by_class, rv_free); hm_free(&ix->by_tag, rv_free); vec_free(ix->universal); ix->count = 0; }
+static void nofree(void *p) { (void)p; }
+typedef struct HovDesc { VEC(const char *) keys; bool univ; } HovDesc;
+static void hd_free(void *p) { HovDesc *h = p; if (!h) return; vec_free(h->keys); free(h); }
+static const char *hov_skey; /* subject key of the rule being indexed; NULL = universal */
+static void desc_add(HMap *m, void **u, const char *key, const char *skey) {
+    HovDesc *h = key ? hm_get(m, key) : *u;
+    if (!h) { h = xcalloc(1, sizeof *h); if (key) hm_put(m, key, h); else *u = h; }
+    if (!skey) { h->univ = true; return; }
+    for (int i = 0; i < h->keys.n; i++) if (!strcmp(h->keys.v[i], skey)) return;
+    vec_push(h->keys, skey);
+}
+static void idx_clear(RuleIndex *ix) { hm_free(&ix->by_id, rv_free); hm_free(&ix->by_class, rv_free); hm_free(&ix->by_tag, rv_free); hm_free(&ix->hov, nofree); hm_free(&ix->hov_anc, nofree); hm_free(&ix->hov_ach, nofree); hm_free(&ix->hov_desc, hd_free); hm_free(&ix->anc_desc, hd_free); hd_free(ix->hov_desc_u); hd_free(ix->anc_desc_u); ix->hov_desc_u = ix->anc_desc_u = NULL; vec_free(ix->universal); ix->count = 0; ix->hov_univ = 0; ix->hov_has = ix->hov_sib = false; }
+static bool is_pseudo(const SimpleSel *s, const char *n) { return s->kind == SK_PSEUDO && s->name && !strcmp(s->name, n); }
+static const char *attr_key(const char *name) { char b[128]; snprintf(b, sizeof b, "[%s", name); return atom(b); }
+static const char *cmp_key(const Compound *c) {
+    const char *id = NULL, *cls = NULL, *tag = NULL, *attr = NULL;
+    for (int k = 0; k < c->n; k++) {
+        const SimpleSel *s = &c->s[k];
+        if (s->kind == SK_ID) id = s->name; else if (s->kind == SK_CLASS && !cls) cls = s->name; else if (s->kind == SK_TYPE) tag = s->value;
+        else if (s->kind == SK_ATTR && !attr && s->name) attr = s->name;
+    }
+    if (!id && !cls && !tag)
+        for (int k = 0; k < c->n; k++) {
+            const SimpleSel *s = &c->s[k];
+            if ((is_pseudo(s, "is") || is_pseudo(s, "where")) && s->sub && s->sub->n) {
+                const char *k0 = NULL;
+                for (int j = 0; j < s->sub->n; j++) {
+                    const char *kj = s->sub->v[j].n ? cmp_key(&s->sub->v[j].c[s->sub->v[j].n - 1]) : NULL;
+                    if (!kj || (k0 && strcmp(k0, kj))) { k0 = NULL; break; }
+                    k0 = kj;
+                }
+                if (k0) return k0;
+            }
+        }
+    return id ? id : cls ? cls : tag ? tag : attr ? attr_key(attr) : NULL;
+}
+static bool list_has_hover(const SelList *l) {
+    for (int j = 0; j < l->n; j++)
+        for (int i = 0; i < l->v[j].n; i++)
+            for (int k = 0; k < l->v[j].c[i].n; k++) {
+                const SimpleSel *s = &l->v[j].c[i].s[k];
+                if (is_pseudo(s, "hover") || (s->sub && list_has_hover(s->sub))) return true;
+            }
+    return false;
+}
+static void anc_add(RuleIndex *ix, const char *key, int f) {
+    if (!key) { ix->hov_has = true; return; }
+    if (f & 6) desc_add(&ix->anc_desc, &ix->anc_desc_u, key, hov_skey);
+    if (f & 48) ix->hov_sib = true;
+    HMap *m = f & 64 ? &ix->hov_ach : &ix->hov_anc;
+    hm_put(m, key, (void *)((uintptr_t)hm_get(m, key) | (uintptr_t)(f & ~64)));
+}
+static void hov_add(RuleIndex *ix, const char *key, int f) {
+    if (f & 6) desc_add(&ix->hov_desc, &ix->hov_desc_u, key, hov_skey);
+    if (!key) { ix->hov_univ |= (uint8_t)f; return; }
+    hm_put(&ix->hov, key, (void *)((uintptr_t)hm_get(&ix->hov, key) | (uintptr_t)f));
+}
+/* add c's keys (its own, or every alternative of a keyed :is()/:where() list); false if c has none */
+static bool add_keys(RuleIndex *ix, const Compound *c, int f, void (*add)(RuleIndex *, const char *, int)) {
+    const char *k = cmp_key(c);
+    if (k) { add(ix, k, f); return true; }
+    for (int i = 0; i < c->n; i++) {
+        const SimpleSel *s = &c->s[i];
+        if (!(is_pseudo(s, "is") || is_pseudo(s, "where")) || !s->sub || !s->sub->n) continue;
+        int j = 0;
+        while (j < s->sub->n && s->sub->v[j].n && cmp_key(&s->sub->v[j].c[s->sub->v[j].n - 1])) j++;
+        if (j < s->sub->n) continue;
+        for (j = 0; j < s->sub->n; j++) add(ix, cmp_key(&s->sub->v[j].c[s->sub->v[j].n - 1]), f);
+        return true;
+    }
+    return false;
+}
+/* okey: key of the compound a nested selector list belongs to, used when the nested subject has none */
+static void hov_scan(RuleIndex *ix, const Selector *sel, int outer, const char *okey) {
+    for (int i = 0; i < sel->n; i++) {
+        const Compound *c = &sel->c[i];
+        int f = outer | (i == sel->n - 1 ? (outer ? 0 : 1) : sel->c[i + 1].comb == CB_ADJ || sel->c[i + 1].comb == CB_SIB ? 4 : 2);
+        const char *fk = cmp_key(c);
+        if (!fk && i == sel->n - 1) fk = okey;
+        for (int k = 0; k < c->n; k++) {
+            const SimpleSel *s = &c->s[k];
+            if (is_pseudo(s, "hover") && !add_keys(ix, c, f, hov_add)) hov_add(ix, fk, f);
+            if (is_pseudo(s, "has") && s->sub) {
+                if (!list_has_hover(s->sub)) continue;
+                int g = f;
+                for (int j = 0; j < s->sub->n; j++) if (s->sub->v[j].n) g |= s->sub->v[j].c[0].comb == CB_ADJ ? 16 : s->sub->v[j].c[0].comb == CB_SIB ? 32 : 0;
+                const char *pk;
+                if (add_keys(ix, c, g, anc_add)) continue;
+                if (fk) anc_add(ix, fk, g);
+                else if (i > 0 && c->comb == CB_CHILD && (pk = cmp_key(&sel->c[i - 1]))) anc_add(ix, pk, g | 64);
+                else ix->hov_has = true;
+            } else if (s->kind == SK_PSEUDO && s->sub) for (int j = 0; j < s->sub->n; j++) hov_scan(ix, &s->sub->v[j], f, fk);
+        }
+    }
+}
+static uintptr_t hov_lookup(HMap *m, Node *el) {
+    uintptr_t f = 0;
+    if (el->id) f |= (uintptr_t)hm_get(m, el->id);
+    const char *cls = node_attr(el, "class");
+    if (cls) { const char *p = cls; while (*p) { while (is_ws((unsigned char)*p)) p++; const char *s = p; while (*p && !is_ws((unsigned char)*p)) p++; if (p > s) f |= (uintptr_t)hm_getn(m, s, (size_t)(p - s)); } }
+    if (el->tag) f |= (uintptr_t)hm_get(m, el->tag);
+    for (int i = 0; i < el->nattrs; i++) {
+        char b[128]; int n = snprintf(b, sizeof b, "[%s", el->attrs[i].name);
+        if (n > 0 && n < (int)sizeof b) f |= (uintptr_t)hm_getn(m, b, (size_t)n);
+    }
+    return f;
+}
+int style_hover_affects(StyleEngine *e, Node *el) {
+    RuleIndex *ix = &e->idx;
+    if (e->idx_dirty || ix->hov_has) return 4;
+    return (int)((ix->hov_univ | hov_lookup(&ix->hov, el)) & 7);
+}
+static bool has_key(Node *el, const char *k) {
+    if ((el->id && !strcmp(el->id, k)) || (el->tag && !strcmp(el->tag, k))) return true;
+    if (k[0] == '[') return node_has_attr(el, k + 1);
+    const char *cls = node_attr(el, "class");
+    size_t kn = strlen(k);
+    if (cls) for (const char *p = cls; *p;) { while (is_ws((unsigned char)*p)) p++; const char *s = p; while (*p && !is_ws((unsigned char)*p)) p++; if ((size_t)(p - s) == kn && !memcmp(s, k, kn)) return true; }
+    return false;
+}
+static int desc_collect(HMap *m, Node *el, HovDesc **out, int n) {
+    HovDesc *h;
+    if (el->id && (h = hm_get(m, el->id)) && n < 32) out[n++] = h;
+    const char *cls = node_attr(el, "class");
+    if (cls) for (const char *p = cls; *p;) { while (is_ws((unsigned char)*p)) p++; const char *s = p; while (*p && !is_ws((unsigned char)*p)) p++; if (p > s && (h = hm_getn(m, s, (size_t)(p - s))) && n < 32) out[n++] = h; }
+    if (el->tag && (h = hm_get(m, el->tag)) && n < 32) out[n++] = h;
+    for (int i = 0; i < el->nattrs; i++) {
+        char b[128]; int k = snprintf(b, sizeof b, "[%s", el->attrs[i].name);
+        if (k > 0 && k < (int)sizeof b && (h = hm_getn(m, b, (size_t)k)) && n < 32) out[n++] = h;
+    }
+    return n;
+}
+void style_hover_desc(StyleEngine *e, Document *d, Node *key, Node *root, int which) {
+    RuleIndex *ix = &e->idx;
+    HovDesc *hs[33]; int n = 0;
+    void *u = which ? ix->anc_desc_u : ix->hov_desc_u;
+    if (u && (which || (ix->hov_univ & 6))) hs[n++] = u;
+    n = desc_collect(which ? &ix->anc_desc : &ix->hov_desc, key, hs, n);
+    bool all = e->idx_dirty || ix->hov_has || n >= 32;
+    for (int i = 0; i < n && !all; i++) all = hs[i]->univ;
+    if (all) { doc_mark_style_dirty(d, root); return; }
+    for (Node *c = root->first; c;) {
+        bool hit = false;
+        if (c->type == NODE_ELEMENT)
+            for (int i = 0; i < n && !hit; i++)
+                for (int j = 0; j < hs[i]->keys.n && !hit; j++) hit = has_key(c, hs[i]->keys.v[j]);
+        if (hit) doc_mark_style_dirty(d, c);
+        if (!hit && c->first) { c = c->first; continue; }
+        while (c != root && !c->next) c = c->parent;
+        c = c == root ? NULL : c->next;
+    }
+}
+int style_hover_has(StyleEngine *e, Node *el, bool child) {
+    RuleIndex *ix = &e->idx;
+    if (e->idx_dirty || ix->hov_has) return 0;
+    return (int)hov_lookup(child ? &ix->hov_ach : &ix->hov_anc, el);
+}
 static void idx_build(StyleEngine *e) {
     idx_clear(&e->idx);
     for (int si = 0; si < e->sheets.n; si++) {
@@ -977,6 +1226,7 @@ static void idx_build(StyleEngine *e) {
             else if (tag) idx_add(&e->idx.by_tag, tag, r);
             else vec_push(e->idx.universal, r);
             e->idx.count++;
+            hov_skey = cmp_key(&r->sel.c[r->sel.n - 1]); hov_scan(&e->idx, &r->sel, 0, NULL);
         }
     }
     e->idx_dirty = false;
@@ -991,6 +1241,7 @@ StyleEngine *style_engine_new(Document *d) {
     return e;
 }
 void style_engine_free(StyleEngine *e) { for (int i = 0; i < e->sheets.n; i++) css_sheet_free(e->sheets.v[i]); vec_free(e->sheets); idx_clear(&e->idx); free(e); }
+void (*css_sheet_added_hook)(StyleSheet *s);
 void style_engine_add_sheet(StyleEngine *e, StyleSheet *s) {
     /* keep document order of owner nodes */
     int pos = e->sheets.n;
@@ -1005,6 +1256,7 @@ void style_engine_add_sheet(StyleEngine *e, StyleSheet *s) {
     }
     vec_push(e->sheets, s);
     memmove(&e->sheets.v[pos + 1], &e->sheets.v[pos], sizeof(StyleSheet *) * (size_t)(e->sheets.n - 1 - pos));
+    if (css_sheet_added_hook) css_sheet_added_hook(s);
     e->sheets.v[pos] = s;
     e->idx_dirty = true; e->generation++;
 }
@@ -1018,12 +1270,40 @@ void style_engine_invalidate(StyleEngine *e) { e->idx_dirty = true; e->generatio
 typedef struct { Decl *d; uint64_t key; } MDecl;
 static int mdecl_cmp(const void *a, const void *b) { uint64_t x = ((const MDecl *)a)->key, y = ((const MDecl *)b)->key; return x < y ? -1 : x > y; }
 
+static bool name_in(const char *list, const char *name) {
+    size_t n = strlen(name);
+    for (const char *p = list; p && *p; ) {
+        while (isspace((unsigned char)*p)) p++;
+        const char *e = p; while (*e && !isspace((unsigned char)*e)) e++;
+        if ((size_t)(e - p) == n && !strncmp(p, name, n)) return true;
+        p = e;
+    }
+    return false;
+}
+static const char *cq_var(const void *ud, const char *name) { const ComputedStyle *s = ud; return s ? custom_get(s->custom, name) : NULL; }
+static bool container_matches(const ContainerCond *cc, Node *el) {
+    for (; cc; cc = cc->outer) {
+        bool style_q = strstr(cc->query, "style(") != NULL;
+        Node *a = el->parent;
+        for (; a; a = a->parent) {
+            if (a->type != NODE_ELEMENT || !a->style) continue;
+            if (cc->name && !name_in(a->style->container_name, cc->name)) continue;
+            if (style_q || a->style->container_type) break;
+        }
+        if (!a) return false;
+        CQEnv env = { a->cq_w, a->cq_h, a->style->container_type != 0, a->style->container_type == 2, cq_var, a->style };
+        if (!css_container_eval(cc->query, &env)) return false;
+    }
+    return true;
+}
+
 static void collect(StyleEngine *e, Node *el, RuleVec *rv, int pseudo, VEC(MDecl) *out) {
     if (!rv) return;
     for (int i = 0; i < rv->n; i++) {
         Rule *r = rv->v[i];
         if (r->sel.pseudo_el != pseudo) continue;
         if (!css_match_selector(&r->sel, el, NULL)) continue;
+        if (r->cq && !container_matches(r->cq, el)) continue;
         for (int k = 0; k < r->decls->n; k++) {
             Decl *d = &r->decls->v[k];
             /* key: important(1) | origin(1) | spec(30) | order(32) */
@@ -1082,13 +1362,23 @@ static ComputedStyle *compute_pseudo(StyleEngine *e, Node *el, ComputedStyle *ba
     for (int i = 0; i < md.n; i++) if (md.v[i].d->prop[0] == '-' && md.v[i].d->prop[1] == '-') css_apply_decl(st, base, md.v[i].d->prop, md.v[i].d->value, e, el);
     for (int i = 0; i < md.n; i++) if (!(md.v[i].d->prop[0] == '-' && md.v[i].d->prop[1] == '-')) css_apply_decl(st, base, md.v[i].d->prop, md.v[i].d->value, e, el);
     vec_free(md);
-    if (!st->content) { style_free(st); return NULL; }
+    if (!st->content && which != 4) { style_free(st); return NULL; }
     return st;
 }
 
 static void apply_decl_ordered(ComputedStyle *st, const ComputedStyle *par, MDecl *v, int n, StyleEngine *e, Node *el) {
     /* custom properties first, then font-size (em basis), then rest */
+    custom_defer = true;
     for (int i = 0; i < n; i++) if (v[i].d->prop[0] == '-' && v[i].d->prop[1] == '-') css_apply_decl(st, par, v[i].d->prop, v[i].d->value, e, el);
+    custom_defer = false;
+    /* var() in custom properties resolves against the element's final cascaded values */
+    for (int i = 0; i < n; i++) {
+        const char *p = v[i].d->prop; if (p[0] != '-' || p[1] != '-' || !st->custom) continue;
+        char *raw = hm_get(&st->custom->map, p);
+        if (!raw || !strstr(raw, "var(")) continue;
+        char *r = subst_vars(raw, st, 0);
+        hm_put(&st->custom->map, p, r ? r : xstrdup("")); free(raw);
+    }
     for (int i = 0; i < n; i++) { const char *p = v[i].d->prop; if (!strcmp(p, "font-size") || !strcmp(p, "font")) css_apply_decl(st, par, p, v[i].d->value, e, el); }
     for (int i = 0; i < n; i++) { const char *p = v[i].d->prop; if (!strcmp(p, "color")) css_apply_decl(st, par, p, v[i].d->value, e, el); }
     for (int i = 0; i < n; i++) { const char *p = v[i].d->prop; if ((p[0] == '-' && p[1] == '-') || !strcmp(p, "font-size") || !strcmp(p, "font") || !strcmp(p, "color")) continue; css_apply_decl(st, par, p, v[i].d->value, e, el); }
@@ -1120,17 +1410,18 @@ static ComputedStyle *compute(StyleEngine *e, Node *el, const ComputedStyle *par
     /* split normal / important so presentational hints & inline style go between */
     int split = 0; while (split < md.n && (md.v[split].key >> 62) < 2) split++;
     presentational_hints(st, par, el, e);
-    apply_decl_ordered(st, par, md.v, split, e, el);
+    /* one pass so var() in sheet custom properties sees inline custom properties */
+    VEC(MDecl) all = {0};
+    for (int i = 0; i < split; i++) vec_push(all, md.v[i]);
     const char *inl = node_attr(el, "style");
     if (inl) {
         if (!el->inline_style_src || strcmp(el->inline_style_src, inl)) { free(el->inline_style_src); el->inline_style_src = xstrdup(inl); css_decls_free(el->inline_decls); el->inline_decls = css_parse_decls(inl, strlen(inl)); }
         DeclList *dl = el->inline_decls;
-        VEC(MDecl) im = {0};
-        for (int i = 0; i < dl->n; i++) { MDecl m = { &dl->v[i], 0 }; vec_push(im, m); }
-        apply_decl_ordered(st, par, im.v, im.n, e, el);
-        vec_free(im);
+        for (int i = 0; i < dl->n; i++) { MDecl m = { &dl->v[i], 0 }; vec_push(all, m); }
     }
-    apply_decl_ordered(st, par, md.v + split, md.n - split, e, el);
+    for (int i = split; i < md.n; i++) vec_push(all, md.v[i]);
+    apply_decl_ordered(st, par, all.v, all.n, e, el);
+    vec_free(all);
     vec_free(md);
     /* fixups */
     if (st->line_height_factor > 0) st->line_height = st->line_height_factor * st->font_size;
@@ -1164,7 +1455,7 @@ static bool paint_only(const ComputedStyle *a, const ComputedStyle *b) {
     if (a->grid_ncols != b->grid_ncols || a->grid_nrows != b->grid_nrows) return false;
     if (a->grid_ncols && memcmp(a->grid_cols, b->grid_cols, sizeof *a->grid_cols * (size_t)a->grid_ncols)) return false;
     if (a->grid_nrows && memcmp(a->grid_rows, b->grid_rows, sizeof *a->grid_rows * (size_t)a->grid_nrows)) return false;
-    if (!paint_only(a->before, b->before) || !paint_only(a->after, b->after)) return false;
+    if (!paint_only(a->before, b->before) || !paint_only(a->after, b->after) || !paint_only(a->marker, b->marker)) return false;
     ComputedStyle x = *a, y = *b;
 #define PO_Z(f) (memset(&x.f, 0, sizeof x.f), memset(&y.f, 0, sizeof y.f))
     PO_Z(refs); PO_Z(grid_cols); PO_Z(grid_rows); PO_Z(content); PO_Z(grid_areas); PO_Z(grid_area); PO_Z(before); PO_Z(after); PO_Z(custom);
@@ -1180,12 +1471,12 @@ static bool paint_only(const ComputedStyle *a, const ComputedStyle *b) {
 }
 /* moves nw's values into old (keeping old's address, which boxes point at); nw is left holding old's values */
 static void adopt(ComputedStyle *old, ComputedStyle *nw) {
-    ComputedStyle *ob = old->before, *oa = old->after, *nb = nw->before, *na = nw->after;
+    ComputedStyle *ob = old->before, *oa = old->after, *om = old->marker, *nb = nw->before, *na = nw->after, *nm = nw->marker;
     if (ob) adopt(ob, nb);
     if (oa) adopt(oa, na);
     ComputedStyle t = *old; int refs = old->refs;
-    *old = *nw; old->refs = refs; old->before = ob; old->after = oa;
-    *nw = t; nw->refs = 1; nw->before = nb; nw->after = na;
+    *old = *nw; old->refs = refs; old->before = ob; old->after = oa; old->marker = nm;
+    *nw = t; nw->refs = 1; nw->before = nb; nw->after = na; nw->marker = om;
 }
 
 static void recalc(StyleEngine *e, Node *n, const ComputedStyle *par, bool force) {
@@ -1194,7 +1485,7 @@ static void recalc(StyleEngine *e, Node *n, const ComputedStyle *par, bool force
         if (need) {
             ComputedStyle *st = compute(e, n, par);
             if (st->display != D_NONE) {
-                if (e->idx.count) { st->before = compute_pseudo(e, n, st, 1); st->after = compute_pseudo(e, n, st, 2); }
+                if (e->idx.count) { st->before = compute_pseudo(e, n, st, 1); st->after = compute_pseudo(e, n, st, 2); if (st->display == D_LIST_ITEM) st->marker = compute_pseudo(e, n, st, 4); }
             }
             if (css_style_change_hook) css_style_change_hook(n, n->style, st);
             if (n->style && paint_only(n->style, st)) { adopt(n->style, st); style_free(st); e->stats_paint++; }

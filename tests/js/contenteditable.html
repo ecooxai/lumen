@@ -1,0 +1,17 @@
+<!doctype html><div id=ed contenteditable><p><br class=trail></p></div><div id=ro contenteditable=true><span contenteditable=false id=lock>x</span></div>
+<script>
+const r = {}, ed = document.getElementById('ed'); let before = 0, input = 0, muts = 0;
+ed.addEventListener('beforeinput', e => { before++; if (e.data === 'X') e.preventDefault(); });
+ed.addEventListener('input', e => { if (e.inputType) input++; });
+new MutationObserver(m => muts += m.length).observe(ed, { subtree: true, childList: true, characterData: true });
+ed.focus();
+const key = (t, k) => ed.dispatchEvent(new KeyboardEvent(t, { key: k }));
+for (const c of ['h', 'X', 'i', '!']) key('lumenedit', c);
+key('lumeneditdel', 'Backspace');
+r.text = ed.textContent === 'hi';
+r.beforeTrail = ed.firstChild.lastChild.tagName === 'BR' && ed.firstChild.firstChild.nodeType === 3;
+r.events = before === 5 && input === 4;
+const s = getSelection(); r.caret = s.focusNode === ed.firstChild.firstChild && s.focusOffset === 2;
+const lock = document.getElementById('lock'); lock.dispatchEvent(new KeyboardEvent('lumenedit', { key: 'z' })); r.nonEditable = lock.textContent === 'x';
+setTimeout(() => { r.mutations = muts > 0; console.log('RESULTS contenteditable ' + Object.entries(r).map(([k, v]) => k + ':' + (v ? 'PASS' : 'FAIL')).join(' ')); }, 50);
+</script>

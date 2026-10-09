@@ -1,0 +1,15 @@
+<!doctype html>
+<style>
+body{margin:0;font:20px serif}
+.t{display:inline-table}.r{display:table-row}
+.c{display:table-cell;vertical-align:bottom;height:20px;position:relative}
+.c>span{display:block;height:0;position:relative;top:-30px}
+.c2{display:table-cell;vertical-align:middle;height:40px}
+</style>
+<div style="padding-top:60px">x<span class=t><span class=r><span class=c><span id=a><span style="display:inline-block;height:10px;width:5px"></span></span></span></span></span>
+<span class=t><span class=r><span class=c2 id=cell><span id=b style="display:inline-block;height:10px;width:5px"></span></span></span></span></div>
+<script>
+setTimeout(()=>{const y=i=>document.getElementById(i).getBoundingClientRect().top-document.getElementById('cell').getBoundingClientRect().top;
+const av=document.getElementById('a').getBoundingClientRect().top-document.querySelector('.c').getBoundingClientRect().top,bv=y('b');const r='a='+(document.getElementById('a').getBoundingClientRect().top-document.querySelector('.c').getBoundingClientRect().top).toFixed(1)+' b='+y('b').toFixed(1);
+console.log('RESULTS cell-valign:'+(Math.abs(av+10)<0.6&&Math.abs(bv-16.5)<1?'PASS':'FAIL '+r))},500);
+</script>

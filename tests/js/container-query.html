@@ -1,0 +1,20 @@
+<!doctype html>
+<style>
+.c{container-type:inline-size;width:300px}
+.n{container:card / inline-size;width:500px}
+.k{color:rgb(0,0,0)}
+@container (width >= 400px){.k{color:rgb(255,0,0)}}
+@container (width < 400px){.k{background-color:rgb(0,0,255)}}
+@container card (width > 450px){.m{color:rgb(0,128,0)}}
+@container style(--v: dark){.s{color:rgb(1,1,1)}}
+@container not (width >= 400px){.z{color:rgb(2,2,2)}}
+</style>
+<div class=c><i class=k id=a></i><i class=z id=z></i></div>
+<div class=n><div class=c><b class=m id=m></b></div></div>
+<div style="--v:dark"><i class=s id=s></i></div><div style="--v:light"><i class=s id=s2></i></div>
+<script>
+const g=(i,p)=>getComputedStyle(document.getElementById(i))[p];
+const res=()=>({a:g('a','color'),ab:g('a','backgroundColor'),z:g('z','color'),m:g('m','color'),s:g('s','color'),s2:g('s2','color')});
+const ok=r=>r.a==='rgb(0, 0, 0)'&&r.ab==='rgb(0, 0, 255)'&&r.z==='rgb(2, 2, 2)'&&r.m==='rgb(0, 128, 0)'&&r.s==='rgb(1, 1, 1)'&&r.s2!=='rgb(1, 1, 1)';
+let n=0;(function f(){const r=res();if(ok(r)||++n>40)console.log('RESULTS container-query:'+(ok(r)?'PASS':'FAIL '+JSON.stringify(r)));else setTimeout(f,50)})();
+</script>

@@ -1,8 +1,8 @@
 /* Flexbox layout */
 #include "layout.h"
 
-typedef struct { Box *b; float base, hypo, mn, mx, main, cross, mm0, mm1; bool frozen, amA0, amA1; } FItem;
-static int ord_cmp(const void *a, const void *b) { const FItem *x = a, *y = b; int d = x->b->st->order - y->b->st->order; return d ? d : (x->b->list_index - y->b->list_index); }
+typedef struct { Box *b; int ord; float base, hypo, mn, mx, main, cross, mm0, mm1; bool frozen, amA0, amA1; } FItem;
+static int ord_cmp(const void *a, const void *b) { const FItem *x = a, *y = b; int d = x->b->st->order - y->b->st->order; return d ? d : (x->ord - y->ord); }
 
 float layout_flex(Layout *L, Box *b, float cx, float cy, float cw, float chdef) {
     const ComputedStyle *s = b->st;
@@ -12,7 +12,7 @@ float layout_flex(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
     VEC(FItem) it = {0}; int idx = 0;
     for (Box *c = b->first; c; c = c->next) {
         if (c->abs) { c->sx = cx; c->sy = cy; add_abs(L, c); continue; }
-        FItem f; memset(&f, 0, sizeof f); f.b = c; c->list_index = idx++; c->bfc = true;
+        FItem f; memset(&f, 0, sizeof f); f.b = c; f.ord = idx++; c->bfc = true;
         vec_push(it, f);
     }
     if (it.n > 1) qsort(it.v, (size_t)it.n, sizeof(FItem), ord_cmp);
@@ -25,17 +25,22 @@ float layout_flex(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
         float bp = row ? hbp(c) : vbp(c); bool bs = cs->box_sizing == BOX_BORDER;
         Length fb = cs->flex_basis, sz = row ? cs->width : cs->height;
         float mn, mx; intrinsic(L, c, &mn, &mx);
-        if (len_def(fb, mainsz)) f->base = res(fb, mainsz) + (bs ? 0 : bp);
+        float content_h = -1;
+        if (len_def(fb, mainsz) && !(fb.pctu && mainsz < 0)) f->base = res(fb, mainsz) + (bs ? 0 : bp);
         else if (len_def(sz, mainsz) && sz.kind == LK_LEN) f->base = res(sz, mainsz) + (bs ? 0 : bp);
         else if (row) f->base = mx;
         else {
             float w = (cs->width.kind == LK_LEN) ? 0 : cw - c->m[1] - c->m[3];
             layout_box(L, c, cx + c->m[3], cy, cw, -1, NULL, cs->width.kind == LK_LEN ? SZ_FILL : SZ_FORCED, w, -1);
-            f->base = c->h;
+            f->base = content_h = c->h;
         }
         Length mnl = row ? cs->min_width : cs->min_height, mxl = row ? cs->max_width : cs->max_height;
         if (mnl.kind == LK_LEN) f->mn = res(mnl, mainsz) + (bs ? 0 : bp);
         else if (row && cs->overflow_x == OV_VISIBLE) f->mn = LMIN(mn, len_def(sz, mainsz) && sz.kind == LK_LEN ? res(sz, mainsz) + (bs ? 0 : bp) : mn);
+        else if (!row && cs->overflow_y == OV_VISIBLE) {
+            if (content_h < 0) { float w = (cs->width.kind == LK_LEN) ? 0 : cw - c->m[1] - c->m[3]; layout_box(L, c, cx + c->m[3], cy, cw, -1, NULL, cs->width.kind == LK_LEN ? SZ_FILL : SZ_FORCED, w, -1); content_h = c->h; }
+            f->mn = len_def(sz, mainsz) && sz.kind == LK_LEN ? LMIN(content_h, res(sz, mainsz) + (bs ? 0 : bp)) : content_h;
+        }
         else f->mn = bp;
         f->mx = mxl.kind == LK_LEN && len_def(mxl, mainsz) ? res(mxl, mainsz) + (bs ? 0 : bp) : 1e30f;
         if (f->mx < f->mn) f->mx = f->mn;

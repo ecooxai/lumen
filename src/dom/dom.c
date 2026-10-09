@@ -41,7 +41,8 @@ Document *doc_new(const char *url) {
     return d;
 }
 
-static Node *alloc_node(Document *d, int type) { Node *n = xcalloc(1, sizeof *n); n->type = (uint8_t)type; n->doc = d; n->flags = NF_STYLE_DIRTY | NF_LAYOUT_DIRTY; return n; }
+long g_nodes_live;
+static Node *alloc_node(Document *d, int type) { Node *n = xcalloc(1, sizeof *n); g_nodes_live++; n->type = (uint8_t)type; n->doc = d; n->flags = NF_STYLE_DIRTY | NF_LAYOUT_DIRTY; return n; }
 Node *node_new_element(Document *d, const char *tag, int ns) { Node *n = alloc_node(d, NODE_ELEMENT); n->tag = atom(tag); n->ns = (uint8_t)ns; return n; }
 Node *node_new_text(Document *d, const char *s, size_t len) { Node *n = alloc_node(d, NODE_TEXT); n->text = xstrndup(s, len); n->text_len = len; n->tag = atom("#text"); return n; }
 Node *node_new_comment(Document *d, const char *s, size_t len) { Node *n = alloc_node(d, NODE_COMMENT); n->text = xstrndup(s, len); n->text_len = len; n->tag = atom("#comment"); return n; }
@@ -52,7 +53,10 @@ Node *node_new_pi(Document *d, const char *target, const char *s, size_t len) { 
 Node *node_new_cdata(Document *d, const char *s, size_t len) { Node *n = alloc_node(d, NODE_CDATA); n->text = xstrndup(s, len); n->text_len = len; n->tag = atom("#cdata-section"); return n; }
 
 static void mark_connected(Node *n, bool on) {
-    for (Node *c = n; c; c = node_next_in_tree(c, n)) { if (on) c->flags |= NF_CONNECTED; else c->flags &= ~(uint32_t)NF_CONNECTED; }
+    for (Node *c = n; c; c = node_next_in_tree(c, n)) {
+        if (on) c->flags |= NF_CONNECTED; else c->flags &= ~(uint32_t)NF_CONNECTED;
+        if (c->type == NODE_ELEMENT && c->shadow_root) mark_connected(c->shadow_root, on);
+    }
 }
 static bool is_connected(Node *p) { return p->type == NODE_DOCUMENT || (p->flags & NF_CONNECTED); }
 
@@ -120,7 +124,7 @@ static void node_free_one(Node *n) {
     if (n->ext && n->ext_free) n->ext_free(n->ext);
     if (n->style) style_free(n->style);
     if (n->box) box_detach_node(n);
-    free(n);
+    g_nodes_live--; free(n);
 }
 void node_free_tree(Node *n) {
     /* frees n and children not referenced elsewhere (JS wrappers hold a ref) */
@@ -133,6 +137,7 @@ void node_free_tree(Node *n) {
     node_free_one(n);
 }
 void doc_free(Document *d) {
+    for (int i = 0; i < 2; i++) if (d->sel[i]) { node_release(d->sel[i]); d->sel[i] = NULL; }
     hm_free(&d->id_cache, NULL);
     Node *c = d->node.first;
     while (c) { Node *nx = c->next; c->parent = NULL; c->refcount = 0; c->js = NULL; node_free_tree(c); c = nx; }

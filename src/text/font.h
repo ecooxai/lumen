@@ -24,6 +24,10 @@ Font *font_get(const char *family, int weight, bool italic, float size);
 void text_shape(Font *f, const char *s, size_t len, float letter_spacing, ShapedRun *out);
 void shaped_free(ShapedRun *r);
 float text_width(Font *f, const char *s, size_t len, float letter_spacing);
+/* @font-face: declare a face (url must be absolute), drain fetches requested by use, hand back the bytes */
+void font_declare(const char *family, int weight, bool italic, const char *url);
+char *font_next_request(void);
+bool font_loaded(const char *url, const void *data, size_t len);
 /* rasterize a glyph at scale (device pixel ratio) */
 const Glyph *font_glyph(Font *f, uint32_t gid, float scale);
 #endif

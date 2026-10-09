@@ -73,12 +73,12 @@ function preflightOk(url, method, hs, status, finalUrl, hdrs, cred) {
     if (!/^(GET|HEAD|POST)$/.test(method) && !ms.includes(method) && (cred || !ms.includes('*'))) return false;
     return hs.every(h => hl.includes(h) || (!cred && h !== 'authorization' && hl.includes('*')));
 }
-function corsSend(cred, onId, method, url, flat, body, cb) {
+function corsSend(cred, onId, method, url, flat, body, cb, st) {
     const hs = needsPreflight(method, url, flat);
-    if (!hs) return onId(N.fetch(method, url, flat, body, cb));
+    if (!hs) return onId(N.fetch(method, url, flat, body, cb, st && st.head, st && st.chunk));
     onId(N.fetch('OPTIONS', url, preflightHdrs(method, hs), null, (status, st, u, hdrs, b, err) => {
         if (err || !preflightOk(url, method, hs, status, u, hdrs || [], cred)) return cb(0, '', url, [], null, true);
-        onId(N.fetch(method, url, flat, body, cb));
+        onId(N.fetch(method, url, flat, body, cb, st && st.head, st && st.chunk));
     }));
 }
 function corsSendSync(cred, method, url, flat, body) {
@@ -94,12 +94,19 @@ function bodyInit(b, h) {
     if (b instanceof URLSearchParams) { if (h && !h.has('content-type')) h.set('Content-Type', 'application/x-www-form-urlencoded;charset=UTF-8'); return N.encode(b.toString()); }
     if (b instanceof FormData) { const bd = '----LumenFormBoundary' + Math.random().toString(36).slice(2); if (h && !h.has('content-type')) h.set('Content-Type', 'multipart/form-data; boundary=' + bd); let s = ''; for (const [k, v] of b) s += `--${bd}\r\nContent-Disposition: form-data; name="${k}"\r\n\r\n${typeof v === 'string' ? v : ''}\r\n`; return N.encode(s + `--${bd}--\r\n`); }
     if (b instanceof Blob) { if (h && b.type && !h.has('content-type')) h.set('Content-Type', b.type); return b._buf; }
+    if (b instanceof ReadableStream) return b;
     return toBytes(b);
 }
 class Body {
-    _take() { if (this.bodyUsed) return Promise.reject(new TypeError('Body has already been consumed.')); def(this, '_used', true); return Promise.resolve(this._b || new ArrayBuffer(0)); }
+    _take() {
+        if (this.bodyUsed) return Promise.reject(new TypeError('Body has already been consumed.'));
+        def(this, '_used', true);
+        const b = this._b;
+        if (!(b instanceof ReadableStream)) return Promise.resolve(b || new ArrayBuffer(0));
+        return (async () => { const parts = []; let n = 0; for await (const c of b) { const u = typeof c === 'string' ? new Uint8Array(N.encode(c)) : c instanceof ArrayBuffer ? new Uint8Array(c) : new Uint8Array(c.buffer, c.byteOffset, c.byteLength); parts.push(u); n += u.length; } const out = new Uint8Array(n); let o = 0; for (const u of parts) { out.set(u, o); o += u.length; } return out.buffer; })();
+    }
     get bodyUsed() { return !!this._used; }
-    get body() { if (!this._b) return null; const b = this._b; return new ReadableStream({ start(c) { c.enqueue(new Uint8Array(b)); c.close(); } }); }
+    get body() { if (!this._b) return null; const b = this._b; if (b instanceof ReadableStream) return b; return new ReadableStream({ start(c) { c.enqueue(new Uint8Array(b)); c.close(); } }); }
     arrayBuffer() { return this._take(); } text() { return this._take().then(N.decode); } json() { return this.text().then(JSON.parse); }
     blob() { return this._take().then(b => new Blob([b], { type: (this.headers.get('content-type') || '') })); } bytes() { return this._take().then(b => new Uint8Array(b)); }
     formData() { return this.text().then(t => { const f = new FormData(); for (const [k, v] of new URLSearchParams(t)) f.append(k, v); return f; }); }
@@ -119,7 +126,7 @@ class Request extends Body {
 class Response extends Body {
     constructor(body = null, init = {}) { super(); this.headers = new Headers(init.headers); def(this, '_b', bodyInit(body, this.headers)); this.status = init.status ?? 200; this.statusText = init.statusText || ''; this.type = 'default'; this.url = ''; this.redirected = false; }
     get ok() { return this.status >= 200 && this.status < 300; }
-    clone() { const r = new Response(null, this); r._b = this._b; r.url = this.url; r.type = this.type; return r; }
+    clone() { const r = new Response(null, this); if (this._b instanceof ReadableStream) { const [a, b] = this._b.tee(); this._b = a; r._b = b; } else r._b = this._b; r.url = this.url; r.type = this.type; return r; }
     static json(d, i) { const r = new Response(JSON.stringify(d), i); r.headers.set('content-type', 'application/json'); return r; }
     static error() { const r = new Response(null, { status: 0 }); r.type = 'error'; return r; }
     static redirect(u, s = 302) { return new Response(null, { status: s, headers: { location: String(u) } }); }
@@ -149,18 +156,31 @@ function fetch(input, init) {
         if (req.signal.aborted) return reject(req.signal.reason);
         const lb = localBody(req.url);
         if (lb !== undefined) { const br = lb && blobResponse(req.url, lb, req.headers.get('range')); if (!br) return reject(new TypeError('Failed to fetch')); const r = new Response(null, { status: br[0], statusText: br[1], headers: fromFlat(br[2]) }); r._b = br[3]; r.url = req.url; r.type = 'basic'; return resolve(r); }
-        let id = 0; corsSend(req.credentials === 'include', (i) => id = i, req.method, req.url, withOrigin(req.headers._flat(), req.url, req.method, req.mode), req._b, (status, statusText, url, hdrs, body, err) => {
-            if (err) return reject(new TypeError('Failed to fetch'));
+        const build = (status, statusText, url, hdrs) => {
             if (!corsOk(req.url, url, hdrs || [], req.credentials === 'include')) {
-                if (req.mode !== 'no-cors') return reject(new TypeError('Failed to fetch'));
+                if (req.mode !== 'no-cors') return null;
                 const r = new Response(null); r.status = 0; r.url = ''; r.type = 'opaque';
-                return resolve(r);
+                return r;
             }
-            if (req.mode === 'same-origin') { try { if (new URL(url || req.url).origin !== location.origin) return reject(new TypeError('Failed to fetch')); } catch (e) {} }
-            const r = new Response(null, { status, statusText, headers: fromFlat(hdrs) }); r._b = body; r.url = url; r.redirected = url !== req.url; r.type = 'basic';
+            if (req.mode === 'same-origin') { try { if (new URL(url || req.url).origin !== location.origin) return null; } catch (e) {} }
+            const r = new Response(null, { status, statusText, headers: fromFlat(hdrs) }); r.url = url; r.redirected = url !== req.url; r.type = 'basic';
+            return r;
+        };
+        let id = 0, ctl = null, settled = false;
+        const head = (status, statusText, url, hdrs) => {
+            if (settled) return;
+            const r = build(status, statusText, url, hdrs); if (!r || r.type !== 'basic') return;
+            r._b = new ReadableStream({ start(c) { ctl = c; } }); settled = true; resolve(r);
+        };
+        const chunk = (ab) => { if (ctl) try { ctl.enqueue(new Uint8Array(ab)); } catch (e) {} };
+        corsSend(req.credentials === 'include', (i) => id = i, req.method, req.url, withOrigin(req.headers._flat(), req.url, req.method, req.mode), req._b, (status, statusText, url, hdrs, body, err) => {
+            if (settled) { if (ctl) { try { if (err) ctl.error(new TypeError('network error')); else ctl.close(); } catch (e) {} ctl = null; } return; }
+            if (err) return reject(new TypeError('Failed to fetch'));
+            const r = build(status, statusText, url, hdrs); if (!r) return reject(new TypeError('Failed to fetch'));
+            if (r.type === 'basic') r._b = body;
             resolve(r);
-        });
-        req.signal.addEventListener('abort', () => { N.abort(id); reject(req.signal.reason); });
+        }, { head, chunk });
+        req.signal.addEventListener('abort', () => { N.abort(id); if (ctl) { try { ctl.error(req.signal.reason); } catch (e) {} ctl = null; } reject(req.signal.reason); });
     });
 }
 class FormData {
@@ -333,36 +353,103 @@ class XMLHttpRequest extends XMLHttpRequestEventTarget {
 }
 installHandlers(XMLHttpRequest.prototype, false, ['readystatechange']);
 for (const [k, v] of Object.entries({ UNSENT: 0, OPENED: 1, HEADERS_RECEIVED: 2, LOADING: 3, DONE: 4 })) { Object.defineProperty(XMLHttpRequest, k, { value: v, enumerable: true }); Object.defineProperty(XMLHttpRequest.prototype, k, { value: v, enumerable: true }); }
-class WebSocket extends EventTarget {
-    constructor(url) { super(); this.url = String(url); this.readyState = 3; this.protocol = ''; this.extensions = ''; this.bufferedAmount = 0; this.binaryType = 'blob'; setTimeout(() => { for (const t of ['error', 'close']) { const ev = t === 'close' ? Object.assign(new Event('close'), { code: 1006, reason: '', wasClean: false }) : new Event('error'); if (this['on' + t]) this['on' + t](ev); dispatch(this, ev); } }); }
-    send() { throw new DOMException('WebSocket is not supported yet', 'InvalidStateError'); } close() {}
+class CloseEvent extends Event {
+    constructor(t, i = {}) { super(t, i); def(this, '_c', { wasClean: !!i.wasClean, code: i.code | 0, reason: i.reason === undefined ? '' : String(i.reason) }); }
+    get wasClean() { return this._c.wasClean; } get code() { return this._c.code; } get reason() { return this._c.reason; }
 }
-Object.assign(WebSocket, { CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3 });
-class MessagePort extends EventTarget { constructor() { super(); this.onmessage = null; def(this, '_other', null); } postMessage(d) { const o = this._other; if (o) setTimeout(() => { const ev = new MessageEvent('message', { data: structuredClone(d) }); if (o.onmessage) o.onmessage(ev); dispatch(o, ev); }); } start() {} close() { this._other = null; } }
+class WebSocket extends EventTarget {
+    constructor(url, protocols = undefined) {
+        super();
+        if (arguments.length < 1) throw new TypeError("Failed to construct 'WebSocket': 1 argument required, but only 0 present.");
+        let s;
+        try { s = new URL(String(url), location.href).href; } catch { throw new DOMException(`Failed to construct 'WebSocket': The URL '${url}' is invalid.`, 'SyntaxError'); }
+        if (s.includes('#')) throw new DOMException(`Failed to construct 'WebSocket': The URL contains a fragment identifier ('${s.slice(s.indexOf('#'))}'). Fragment identifiers are not allowed in WebSocket URLs.`, 'SyntaxError');
+        s = s.replace(/^http(s?):/, 'ws$1:');
+        if (protocols !== null && typeof protocols === 'object' && typeof protocols[Symbol.iterator] !== 'function') protocols = protocols.protocols;
+        if (!/^wss?:/.test(s)) throw new DOMException(`Failed to construct 'WebSocket': The URL's scheme must be either 'http', 'https', 'ws', or 'wss'. '${s.split(':')[0]}:' is not allowed.`, 'SyntaxError');
+        const ps = protocols === undefined ? [] : typeof protocols === 'string' ? [protocols] : [...protocols].map(String);
+        if (new Set(ps.map(p => p.toLowerCase())).size !== ps.length || ps.some(p => !/^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/.test(p))) throw new DOMException("Failed to construct 'WebSocket': The subprotocol is invalid.", 'SyntaxError');
+        def(this, '_s', { url: s, rs: 0, protocol: '', binaryType: 'blob', ps, buf: 0, dead: false });
+        def(this, '_id', N.wsOpen(s, ps.join(', '), location.origin, (type, data, code) => this._ev(type, data, code)));
+    }
+    get url() { return this._s.url; } get readyState() { return this._s.rs; } get protocol() { return this._s.protocol; }
+    get extensions() { void this._s.url; return ''; } get bufferedAmount() { return this._s.buf; }
+    get binaryType() { return this._s.binaryType; } set binaryType(v) { if (v === 'blob' || v === 'arraybuffer') this._s.binaryType = v; }
+    _ev(type, data, code) {
+        const st = this._s;
+        if (st.dead) return;
+        if (type === 0) {
+            if (st.ps.length ? !st.ps.includes(data) : data) { st.rs = 2; N.wsClose(this._id, 1002, ''); this._fail(); return; }
+            st.rs = 1; st.protocol = data; dispatch(this, new Event('open'));
+        }
+        else if (type === 1 || type === 2) { if (st.rs !== 1) return; dispatch(this, new MessageEvent('message', { data: type === 1 || st.binaryType === 'arraybuffer' ? data : new Blob([data]), origin: new URL(st.url).origin })); }
+        else if (type === 3) dispatch(this, new Event('error'));
+        else if (type === 4) { st.rs = 3; dispatch(this, new CloseEvent('close', { wasClean: code !== 1006, code, reason: data })); }
+    }
+    _fail() {
+        const st = this._s; st.dead = true;
+        setTimeout(() => { dispatch(this, new Event('error')); st.rs = 3; dispatch(this, new CloseEvent('close', { wasClean: false, code: 1006, reason: '' })); });
+    }
+    send(d) {
+        if (arguments.length < 1) throw new TypeError("Failed to execute 'send' on 'WebSocket': 1 argument required, but only 0 present.");
+        if (this._s.rs === 0) throw new DOMException("Failed to execute 'send' on 'WebSocket': Still in CONNECTING state.", 'InvalidStateError');
+        const st = this._s, n = d instanceof Blob ? d.size : d instanceof ArrayBuffer || ArrayBuffer.isView(d) ? d.byteLength : new TextEncoder().encode(String(d)).length;
+        st.buf += n;
+        if (st.rs !== 1) return;
+        setTimeout(() => { st.buf -= n; });
+        if (d instanceof Blob) d.arrayBuffer().then(b => N.wsSend(this._id, b, true));
+        else if (d instanceof ArrayBuffer || ArrayBuffer.isView(d)) N.wsSend(this._id, d, true);
+        else N.wsSend(this._id, String(d), false);
+    }
+    close(code, reason) {
+        if (code !== undefined && code !== 1000 && !(code >= 3000 && code <= 4999)) throw new DOMException(`Failed to execute 'close' on 'WebSocket': The close code must be either 1000, or between 3000 and 4999. ${code} is neither.`, 'InvalidAccessError');
+        if (reason !== undefined && new TextEncoder().encode(String(reason)).length > 123) throw new DOMException("Failed to execute 'close' on 'WebSocket': The close reason must not be greater than 123 UTF-8 bytes.", 'SyntaxError');
+        if (this._s.rs >= 2) return;
+        if (this._s.rs === 0) { this._s.rs = 2; N.wsClose(this._id, 1000, ''); this._fail(); return; }
+        this._s.rs = 2;
+        N.wsClose(this._id, code === undefined ? (reason === undefined ? 0 : 1000) : code, reason === undefined ? '' : String(reason));
+    }
+}
+installHandlers(WebSocket.prototype, false, ['open', 'message', 'error', 'close']);
+for (const k of ['url', 'readyState', 'bufferedAmount', 'onopen', 'onerror', 'onclose', 'extensions', 'protocol', 'close', 'onmessage', 'binaryType', 'send']) {
+    const P = WebSocket.prototype, d = Object.getOwnPropertyDescriptor(P, k);
+    if (d.get && k.startsWith('on')) { const g = d.get; d.get = function () { if (!(this instanceof WebSocket) || !this._s) throw new TypeError('Illegal invocation'); return g.call(this); }; }
+    d.enumerable = true; Object.defineProperty(P, k, d);
+}
+for (const k of ['wasClean', 'code', 'reason']) { const d = Object.getOwnPropertyDescriptor(CloseEvent.prototype, k); d.enumerable = true; Object.defineProperty(CloseEvent.prototype, k, d); }
+for (const [k, v] of Object.entries({ CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3 })) { Object.defineProperty(WebSocket, k, { value: v, enumerable: true }); Object.defineProperty(WebSocket.prototype, k, { value: v, enumerable: true }); }
+const portList = t => (t && typeof t[Symbol.iterator] === 'function' ? [...t] : t && t.transfer ? [...t.transfer] : []).filter(p => p && typeof p.postMessage === 'function' && typeof p.start === 'function');
+class MessagePort extends EventTarget { constructor() { super(); this.onmessage = null; def(this, '_other', null); } postMessage(d, t) { const ps = portList(t), r = this._wk || (this._other && this._other._wk); if (r) { N.workerPost(r[0], { __lumenPort: r[1], data: d, xfer: ps.map(p => { const k = ++portSeq; p._wk = [r[0], k]; if (p._other) remotePorts.set(k, p._other); return k; }) }); return; } const o = this._other; if (o) { const c = structuredClone(d); setTimeout(() => o._deliver(c, ps)); } } _deliver(data, ports) { dispatch(this, new MessageEvent('message', { data, ports: ports || [] }), true); } start() {} close() { this._other = null; } }
 class MessageChannel { constructor() { this.port1 = new MessagePort(); this.port2 = new MessagePort(); this.port1._other = this.port2; this.port2._other = this.port1; } }
 class BroadcastChannel extends EventTarget { constructor(n) { super(); this.name = String(n); } postMessage() {} close() {} }
 
-const workers = new Map();
+const workers = new Map(); let portSeq = 0; const remotePorts = new Map();
 class Worker extends EventTarget {
     constructor(url, opts) {
         super();
         if (arguments.length < 1) throw new TypeError("Failed to construct 'Worker': 1 argument required, but only 0 present.");
         const u = new URL(String(url), document.baseURI || N.url());
-        if (opts && opts.type === 'module') throw new DOMException("Failed to construct 'Worker': Module scripts are not supported in workers yet.", 'NotSupportedError');
         let src = null;
         if (u.protocol === 'blob:') { const b = objectURLs.get(u.href); if (b) src = new TextDecoder().decode(b._buf); }
         else if (u.protocol === 'data:') { const lb = localBody(u.href); if (lb) src = new TextDecoder().decode(lb[0]); }
         else if (u.origin !== location.origin) throw new DOMException(`Failed to construct 'Worker': Script at '${u.href}' cannot be accessed from origin '${location.origin}'.`, 'SecurityError');
         this.onmessage = null; this.onmessageerror = null; this.onerror = null;
-        def(this, '_id', N.workerNew(u.href, src, N.userAgent(), N.platform(), opts && opts.name != null ? String(opts.name) : ''));
+        def(this, '_id', N.workerNew(u.href, src, N.userAgent(), N.platform(), opts && opts.name != null ? String(opts.name) : '', !!opts && opts.type === 'module'));
         workers.set(this._id, this);
     }
-    postMessage(m, t) { if (arguments.length < 1) throw new TypeError("Failed to execute 'postMessage' on 'Worker': 1 argument required, but only 0 present."); if (this._id) N.workerPost(this._id, m); }
+    postMessage(m, t) { if (arguments.length < 1) throw new TypeError("Failed to execute 'postMessage' on 'Worker': 1 argument required, but only 0 present."); if (!this._id) return; const ps = (Array.isArray(t) ? t : t && t.transfer || []).filter(p => p instanceof MessagePort); if (!ps.length) return N.workerPost(this._id, m); N.workerPost(this._id, { __lumenXfer: ps.map(p => { const k = ++portSeq; p._wk = [this._id, k]; if (p._other) remotePorts.set(k, p._other); return k; }), data: m }); }
     terminate() { if (this._id) { N.workerTerm(this._id); workers.delete(this._id); this._id = 0; } }
 }
 function workerEvent(id, kind, data, message, filename, lineno, colno) {
     const w = workers.get(id); if (!w) return;
-    if (kind === 0) dispatch(w, new MessageEvent('message', { data }), true);
+    if (kind === 0) {
+        let ports = [];
+        if (data && typeof data === 'object') {
+            if (data.__lumenPort) { const p = remotePorts.get(data.__lumenPort); if (p) p._deliver(data.data, (data.xfer || []).map(k => { const q = new MessagePort(); q._wk = [id, k]; remotePorts.set(k, q); return q; })); return; }
+            if (data.__lumenXfer) { ports = data.__lumenXfer.map(k => { const q = new MessagePort(); q._wk = [id, k]; remotePorts.set(k, q); return q; }); data = data.data; }
+        }
+        dispatch(w, new MessageEvent('message', { data, ports }), true);
+    }
     else if (kind === 1) {
         const e = new ErrorEvent('error', { message, filename, lineno, colno, cancelable: true });
         dispatch(w, e, true);

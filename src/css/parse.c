@@ -169,6 +169,7 @@ static size_t find_close_paren(const char *s, size_t i, size_t n) {
     for (; i < n; i++) {
         char c = s[i];
         if (q) { if (c == '\\') i++; else if (c == q) q = 0; continue; }
+        if (c == '\\') { i++; continue; }
         if (c == '"' || c == '\'') q = c;
         else if (c == '(') depth++;
         else if (c == ')') { if (--depth == 0) return i; }
@@ -215,7 +216,7 @@ static bool parse_compound(SP *p, Compound *c, Selector *sel) {
             s.name = atom(nm); free(nm);
             if (!el && (s.name == atom("before") || s.name == atom("after") || s.name == atom("first-line") || s.name == atom("first-letter"))) el = true;
             s.kind = el ? SK_PSEUDO_EL : SK_PSEUDO;
-            if (el) sel->pseudo_el = s.name == atom("before") ? 1 : s.name == atom("after") ? 2 : 3;
+            if (el) sel->pseudo_el = s.name == atom("before") ? 1 : s.name == atom("after") ? 2 : s.name == atom("marker") ? 4 : 3;
             if ((p->i >= p->n || p->s[p->i] != '(') && (s.name == atom("not") || s.name == atom("is") || s.name == atom("where") || s.name == atom("has") || str_starts(s.name, "nth-"))) goto fail;
             if (p->i < p->n && p->s[p->i] == '(') {
                 p->i++;
@@ -375,6 +376,7 @@ DeclList *css_parse_decls(const char *s, size_t n) {
         while (i < n) {
             char c = s[i];
             if (q) { if (c == '\\') i++; else if (c == q) q = 0; }
+            else if (c == '\\') i++;
             else if (c == '"' || c == '\'') q = c;
             else if (c == '(' || c == '[' || c == '{') depth++;
             else if (c == ')' || c == ']' || c == '}') { if (!depth) break; depth--; }
@@ -513,6 +515,44 @@ bool css_media_matches(const char *q, const MediaCtx *mc) {
     return any;
 }
 
+bool css_container_eval(const char *q, const CQEnv *env) {
+    char *s = xstrdup(q), *t = str_trim(s); size_t n = strlen(t); bool r = false;
+    if (str_istarts(t, "not ")) { r = !css_container_eval(t + 4, env); free(s); return r; }
+    int depth = 0;
+    for (size_t i = 0; i < n; i++) {
+        if (t[i] == '(') depth++; else if (t[i] == ')') depth--;
+        else if (!depth && (str_ieqn(t + i, " and ", 5) || str_ieqn(t + i, " or ", 4))) {
+            bool isand = str_ieqn(t + i, " and ", 5); t[i] = 0;
+            bool a = css_container_eval(t, env), b = css_container_eval(t + i + (isand ? 5 : 4), env);
+            free(s); return isand ? a && b : a || b;
+        }
+    }
+    if (n && t[n - 1] == ')' && str_istarts(t, "style(")) {
+        t[n - 1] = 0; char *in = t + 6, *colon = strchr(in, ':');
+        if (colon) *colon = 0;
+        const char *v = env->var ? env->var(env->ud, str_trim(in)) : NULL;
+        char vb[256]; snprintf(vb, sizeof vb, "%s", v ? v : ""); char *vt = str_trim(vb);
+        r = colon ? !strcmp(vt, str_trim(colon + 1)) : *vt != 0;
+    } else if (n >= 2 && t[0] == '(' && t[n - 1] == ')') {
+        t[n - 1] = 0; char *in = str_trim(t + 1);
+        if (in[0] == '(' || str_istarts(in, "not ") || str_istarts(in, "style(")) r = css_container_eval(in, env);
+        else if (env->size) {
+            SB b; sb_init(&b);
+            for (const char *p = in; *p; ) {
+                if (!strncmp(p, "inline-size", 11)) { sb_puts(&b, "width"); p += 11; }
+                else if (!strncmp(p, "block-size", 10)) { sb_puts(&b, "height"); p += 10; }
+                else sb_putc(&b, *p++);
+            }
+            bool vert = strstr(b.s, "height") || strstr(b.s, "aspect") || strstr(b.s, "orientation");
+            MediaCtx mc = { env->w, env->h, 1, false };
+            r = (!vert || env->block) && media_feature(b.s, &mc);
+            sb_free(&b);
+        }
+    }
+    free(s);
+    return r;
+}
+
 extern bool css_property_known(const char *prop);
 bool css_supports(const char *cond) {
     char *s = xstrdup(cond); char *t = str_trim(s);
@@ -536,7 +576,7 @@ bool css_supports(const char *cond) {
             *colon = 0; char *p = str_trim(in); char *v = str_trim(colon + 1);
             r = (p[0] == '-' && p[1] == '-') || (css_property_known(p) && !strstr(v, "-webkit-") && !strstr(p, "-webkit-"));
             if (!strcmp(p, "display") && (strstr(v, "contents") || strstr(v, "subgrid"))) r = !strstr(v, "subgrid");
-            if (strstr(p, "backdrop-filter") || strstr(p, "container-type") || strstr(p, "anchor")) r = false;
+            if (strstr(p, "backdrop-filter") || strstr(p, "anchor")) r = false;
         } else r = css_supports(in);
     }
     free(s);
@@ -544,7 +584,7 @@ bool css_supports(const char *cond) {
 }
 
 /* ---------------- stylesheets ---------------- */
-typedef struct { StyleSheet *sh; const MediaCtx *mc; uint32_t order; } PCtx;
+typedef struct { StyleSheet *sh; const MediaCtx *mc; uint32_t order; ContainerCond *cq; } PCtx;
 
 static size_t skip_block(const char *s, size_t i, size_t n) {
     /* s[i] == '{' ; returns index after matching '}' */
@@ -553,6 +593,7 @@ static size_t skip_block(const char *s, size_t i, size_t n) {
         char c = s[i];
         if (q) { if (c == '\\') i++; else if (c == q) q = 0; continue; }
         if (c == '/' && i + 1 < n && s[i + 1] == '*') { const char *e = NULL; for (size_t k = i + 2; k + 1 < n; k++) if (s[k] == '*' && s[k + 1] == '/') { e = s + k; break; } i = e ? (size_t)(e - s) + 1 : n; continue; }
+        if (c == '\\') { i++; continue; }
         if (c == '"' || c == '\'') q = c;
         else if (c == '{') depth++;
         else if (c == '}') { if (--depth == 0) return i + 1; }
@@ -568,7 +609,7 @@ static void add_rules(PCtx *c, const char *prelude, DeclList *decls) {
     vec_push(c->sh->decl_lists, decls);
     for (int i = 0; i < sl.n; i++) {
         Rule r; memset(&r, 0, sizeof r);
-        r.sel = sl.v[i]; r.decls = decls; r.order = c->order++; r.origin = (uint8_t)c->sh->origin;
+        r.sel = sl.v[i]; r.decls = decls; r.order = c->order++; r.origin = (uint8_t)c->sh->origin; r.cq = c->cq;
         vec_push(c->sh->rules, r);
     }
     free(sl.v);
@@ -603,6 +644,7 @@ static void parse_style_block(PCtx *c, const char *sel, const char *body, size_t
     size_t i = 0, st = 0;
     while (i < bn) {
         char ch = body[i];
+        if (ch == '\\') { i += 2; continue; }
         if (ch == '"' || ch == '\'') { char q = ch; i++; while (i < bn && body[i] != q) { if (body[i] == '\\') i++; i++; } i++; continue; }
         if (ch == '(') { i = find_close_paren(body, i + 1, bn) + 1; continue; }
         if (ch == ';') { sb_put(&decls, body + st, i - st + 1); st = i + 1; i++; continue; }
@@ -641,6 +683,7 @@ static void parse_rules(PCtx *c, const char *s, size_t n, const char *parent_sel
         while (i < n) {
             char ch = s[i];
             if (q) { if (ch == '\\') i++; else if (ch == q) q = 0; i++; continue; }
+            if (ch == '\\') { i += 2; continue; }
             if (ch == '"' || ch == '\'') q = ch;
             else if (ch == '(' || ch == '[') depth++;
             else if (ch == ')' || ch == ']') depth--;
@@ -673,13 +716,29 @@ static void parse_rules(PCtx *c, const char *s, size_t n, const char *parent_sel
         if (pt[0] == '@') {
             if (str_istarts(pt, "@media")) { if (css_media_matches(pt + 6, c->mc)) parse_rules(c, body, bn, parent_sel); }
             else if (str_istarts(pt, "@supports")) { if (css_supports(pt + 9)) parse_rules(c, body, bn, parent_sel); }
-            else if (str_istarts(pt, "@layer") || str_istarts(pt, "@document") || str_istarts(pt, "@-moz-document") || str_istarts(pt, "@scope") || str_istarts(pt, "@starting-style") || str_istarts(pt, "@container")) {
-                if (!str_istarts(pt, "@container") || true) parse_rules(c, body, bn, parent_sel);
+            else if (str_istarts(pt, "@container")) {
+                const char *q = pt + 10; while (is_ws((unsigned char)*q)) q++;
+                ContainerCond *cc = xcalloc(1, sizeof *cc);
+                if (*q && *q != '(' && !str_istarts(q, "not ") && !str_istarts(q, "style(")) {
+                    const char *ne = q; while (*ne && !is_ws((unsigned char)*ne) && *ne != '(') ne++;
+                    cc->name = xstrndup(q, (size_t)(ne - q)); q = ne; while (is_ws((unsigned char)*q)) q++;
+                }
+                cc->query = xstrdup(q); cc->outer = c->cq; vec_push(c->sh->conds, cc);
+                ContainerCond *sv = c->cq; c->cq = cc; parse_rules(c, body, bn, parent_sel); c->cq = sv;
+            }
+            else if (str_istarts(pt, "@layer") || str_istarts(pt, "@document") || str_istarts(pt, "@-moz-document") || str_istarts(pt, "@scope") || str_istarts(pt, "@starting-style")) {
+                parse_rules(c, body, bn, parent_sel);
             }
             else if (str_istarts(pt, "@font-face")) {
                 SB ff; sb_init(&ff); sb_put(&ff, body, bn); vec_push(c->sh->font_faces, sb_take(&ff));
             }
-            /* @keyframes, @page, @font-feature-values, @property, @counter-style: ignored */
+            else if (str_istarts(pt, "@property")) {
+                SB nm; sb_init(&nm); sb_puts(&nm, pt + 9); char *name = str_trim(nm.s);
+                char *bd = xstrndup(body, bn), *iv = strstr(bd, "initial-value");
+                if (iv && (iv = strchr(iv, ':'))) { char *e = strchr(++iv, ';'); if (e) *e = 0; css_register_property(name, str_trim(iv)); }
+                free(bd); sb_free(&nm);
+            }
+            /* @keyframes, @page, @font-feature-values, @counter-style: ignored */
         } else if (parent_sel) {
             char *ns = nest_selector(parent_sel, pt); parse_style_block(c, ns, body, bn); free(ns);
         } else parse_style_block(c, pt, body, bn);
@@ -688,8 +747,9 @@ static void parse_rules(PCtx *c, const char *s, size_t n, const char *parent_sel
     }
 }
 
+size_t g_css_parsed_bytes;
 StyleSheet *css_parse_sheet(const char *src, size_t n, const char *base_url, int origin, const MediaCtx *mc) {
-    StyleSheet *sh = xcalloc(1, sizeof *sh);
+    StyleSheet *sh = xcalloc(1, sizeof *sh); g_css_parsed_bytes += n;
     sh->base_url = xstrdup(base_url ? base_url : "about:blank");
     sh->origin = origin;
     PCtx c = { sh, mc, 0 };
@@ -704,6 +764,8 @@ void css_sheet_free(StyleSheet *s) {
     vec_free(s->decl_lists);
     for (int i = 0; i < s->imports.n; i++) free(s->imports.v[i]);
     vec_free(s->imports);
+    for (int i = 0; i < s->conds.n; i++) { free(s->conds.v[i]->name); free(s->conds.v[i]->query); free(s->conds.v[i]); }
+    vec_free(s->conds);
     for (int i = 0; i < s->font_faces.n; i++) free(s->font_faces.v[i]);
     vec_free(s->font_faces);
     free(s->base_url); free(s);

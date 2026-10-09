@@ -16,7 +16,7 @@ class CSSStyleDeclaration {
     item(i) { return [...this._m().keys()][i] || ''; }
     getPropertyValue(p) { const e = this._m().get(camelToKebab(String(p))); return e ? e[0] : ''; }
     getPropertyPriority(p) { const e = this._m().get(camelToKebab(String(p))); return e ? e[1] : ''; }
-    setProperty(p, v, pri) { p = camelToKebab(String(p)); const m = this._m(); if (v == null || v === '') m.delete(p); else m.set(p, [String(v), pri ? 'important' : '']); this._el.setAttribute('style', serDecls(m)); }
+    setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p); const m = this._m(); if (v == null || v === '') m.delete(p); else m.set(p, [String(v), pri ? 'important' : '']); this._el.setAttribute('style', serDecls(m)); }
     removeProperty(p) { p = camelToKebab(String(p)); const m = this._m(); const e = m.get(p); if (e) { m.delete(p); this._el.setAttribute('style', serDecls(m)); } return e ? e[0] : ''; }
 }
 const styleHandler = {
@@ -63,6 +63,10 @@ methods(Element.prototype, {
     toggleAttribute(n, force) { const has = this.hasAttribute(n); if (force === undefined ? has : !force) { if (has) this.removeAttribute(n); return false; } if (!has) this.setAttribute(n, ''); return true; },
     getAttributeNames() { const a = N.attrs(this); const r = []; for (let i = 0; i < a.length; i += 2) r.push(a[i]); return r; },
     getAttributeNode(n) { return this.hasAttribute(n) ? new Attr(this, lcName(this, n)) : null; },
+    getAttributeNodeNS(ns, n) { return this.getAttributeNode(n); },
+    setAttributeNode(a) { const old = this.getAttributeNode(a.name); this.setAttribute(a.name, a.value); def(a, '_el', this); return old; },
+    setAttributeNodeNS(a) { return this.setAttributeNode(a); },
+    removeAttributeNode(a) { if (!a || !this.hasAttribute(a.name)) throw new DOMException("Failed to execute 'removeAttributeNode' on 'Element': The node provided is owned by another element.", 'NotFoundError'); const v = a.value; this.removeAttribute(a.name); const d = new Attr(null, a.name); Object.defineProperty(d, 'value', { value: v, writable: true }); return d; },
     get innerHTML() { return N.html(this, false); }, set innerHTML(v) { setInner(this, v == null ? '' : String(v)); },
     get outerHTML() { return N.html(this, true); },
     set outerHTML(v) { const p = N.parent(this); if (!p) return; insertNode(p, N.parseFrag(p, String(v)), this); removeNode(this); },
@@ -80,16 +84,20 @@ methods(Element.prototype, {
     insertAdjacentText(pos, t) { this.insertAdjacentElement(pos, N.textNode(String(t))); },
     matches(s) { return N.matches(this, String(s)); }, webkitMatchesSelector(s) { return N.matches(this, String(s)); },
     closest(s) { s = String(s); for (let e = this; e && N.type(e) === 1; e = N.parent(e)) if (N.matches(e, s)) return e; return null; },
-    getBoundingClientRect() { const r = N.rect(this); if (!r) return new DOMRect(); const v = N.viewport(); return new DOMRect(r[0] - v[2], r[1] - v[3], r[2], r[3]); },
+    getBoundingClientRect() { const r = N.vrect(this); if (!r) return new DOMRect(); const v = N.viewport(); return new DOMRect(r[0] - v[2], r[1] - v[3], r[2], r[3]); },
     getClientRects() { return N.rect(this) ? [this.getBoundingClientRect()] : []; },
     get clientWidth() { if (this === document.documentElement) return N.viewport()[0]; const r = N.rect(this); return r ? Math.round(r[2]) : 0; },
     get clientHeight() { if (this === document.documentElement) return N.viewport()[1]; const r = N.rect(this); return r ? Math.round(r[3]) : 0; },
     get clientTop() { return 0; }, get clientLeft() { return 0; },
-    get scrollWidth() { return this.clientWidth; }, get scrollHeight() { const r = N.rect(this); return r ? Math.round(r[3]) : 0; },
-    get scrollTop() { return this === document.documentElement || this === document.body ? N.viewport()[3] : (this.__st || 0); },
-    set scrollTop(v) { if (this === document.documentElement || this === document.body) N.scrollTo(N.viewport()[2], +v || 0); else def(this, '__st', +v || 0); },
-    get scrollLeft() { return this.__sl || 0; }, set scrollLeft(v) { def(this, '__sl', +v || 0); },
-    scrollTo() {}, scrollBy() {}, scroll() {},
+    get scrollWidth() { const s = N.scrollPos(this); return s ? Math.round(s[2]) : this.clientWidth; },
+    get scrollHeight() { const s = N.scrollPos(this); if (s) return Math.round(s[3]); const r = N.rect(this); return r ? Math.round(r[3]) : 0; },
+    get scrollTop() { if (this === document.documentElement || this === document.body) return N.viewport()[3]; const s = N.scrollPos(this); return s ? s[1] : 0; },
+    set scrollTop(v) { if (this === document.documentElement || this === document.body) N.scrollTo(N.viewport()[2], +v || 0); else this.__scrollSet(NaN, +v || 0); },
+    get scrollLeft() { const s = N.scrollPos(this); return s ? s[0] : 0; }, set scrollLeft(v) { this.__scrollSet(+v || 0, NaN); },
+    __scrollSet(x, y) { if (N.setScroll(this, x, y)) setTimeout(() => this.dispatchEvent(new Event('scroll'))); },
+    scrollTo(x, y) { if (this === document.documentElement || this === document.body) return window.scrollTo(x, y); const o = x && typeof x === 'object' ? x : { left: x, top: y }; this.__scrollSet(o.left == null ? NaN : +o.left || 0, o.top == null ? NaN : +o.top || 0); },
+    scroll(x, y) { this.scrollTo(x, y); },
+    scrollBy(x, y) { const o = x && typeof x === 'object' ? x : { left: x, top: y }; this.scrollTo({ left: this.scrollLeft + (+o.left || 0), top: this.scrollTop + (+o.top || 0) }); },
     scrollIntoView() { const r = N.rect(this); if (r) N.scrollTo(0, r[1]); }, scrollIntoViewIfNeeded() { this.scrollIntoView(); },
     attachShadow(init) {
         if (this.__shadow) throw new DOMException('Shadow root cannot be created on a host which already hosts a shadow tree.', 'NotSupportedError');
@@ -157,10 +165,19 @@ methods(HTMLElement.prototype, {
         });
         def(this, '__ds', ds); return ds;
     },
-    get innerText() { return N.text(this); }, set innerText(v) { this.textContent = v; }, get outerText() { return N.text(this); },
+    get innerText() { return innerTextOf(this); }, set innerText(v) { this.textContent = v; }, get outerText() { return N.text(this); },
     get tabIndex() { const v = parseInt(N.attr(this, 'tabindex'), 10); return isNaN(v) ? (/^(a|button|input|select|textarea)$/.test(N.name(this)) ? 0 : -1) : v; },
     set tabIndex(v) { this.setAttribute('tabindex', String(v | 0)); },
-    get offsetParent() { for (let p = N.parent(this); p && N.type(p) === 1; p = N.parent(p)) { if (p === document.body) return p; const pos = N.computed(p, 'position'); if (pos && pos !== 'static') return p; } return null; },
+    get offsetParent() {
+        if (this === document.body || this === document.documentElement || !N.rect(this) || N.computed(this, 'position') === 'fixed') return null;
+        const stat = N.computed(this, 'position') === 'static';
+        for (let p = N.parent(this); p && N.type(p) === 1; p = N.parent(p)) {
+            if (p === document.body) return p;
+            const pos = N.computed(p, 'position');
+            if ((pos && pos !== 'static') || (stat && /^(td|th|table)$/.test(N.name(p)))) return p;
+        }
+        return null;
+    },
     get offsetTop() { const r = N.rect(this); if (!r) return 0; const op = this.offsetParent; const pr = op && op !== document.body ? N.rect(op) : null; return Math.round(r[1] - (pr ? pr[1] : 0)); },
     get offsetLeft() { const r = N.rect(this); if (!r) return 0; const op = this.offsetParent; const pr = op && op !== document.body ? N.rect(op) : null; return Math.round(r[0] - (pr ? pr[0] : 0)); },
     get offsetWidth() { const r = N.rect(this); return r ? Math.round(r[2]) : 0; },
@@ -169,7 +186,7 @@ methods(HTMLElement.prototype, {
     get contentEditable() { return N.attr(this, 'contenteditable') ?? 'inherit'; }, set contentEditable(v) { this.setAttribute('contenteditable', v); },
     get draggable() { return N.attr(this, 'draggable') === 'true'; }, set draggable(v) { this.setAttribute('draggable', String(!!v)); },
     focus() { const o = N.active(); if (o === this) return; N.focus(this); if (N.active() !== this) return; if (o) o.dispatchEvent(new FocusEvent('focusout', { bubbles: true, composed: true, relatedTarget: this })); this.dispatchEvent(new FocusEvent('focusin', { bubbles: true, composed: true, relatedTarget: o })); }, blur() { if (N.active() !== this) return; N.focus(null); this.dispatchEvent(new FocusEvent('focusout', { bubbles: true, composed: true, relatedTarget: null })); },
-    click() { if (this.disabled) return; const ev = new MouseEvent('click', { bubbles: true, cancelable: true, composed: true, view: G, detail: 1 }); if (dispatch(this, ev)) activate(this, ev); },
+    click() { if (this.disabled) return; const ev = new MouseEvent('click', { bubbles: true, cancelable: true, composed: true, view: G, detail: 1 }); const pre = preActivate(this); if (dispatch(this, ev)) activate(this, ev, pre); else if (pre && pre.restore) pre.restore(); },
     attachInternals() { return { setFormValue() {}, setValidity() {}, checkValidity() { return true; }, reportValidity() { return true; }, states: new Set(), form: null, labels: [] }; },
     showPopover() {}, hidePopover() {}, togglePopover() {},
 });
@@ -186,3 +203,30 @@ class SVGGraphicsElement extends SVGElement {}
 class SVGSVGElement extends SVGGraphicsElement {}
 methods(SVGSVGElement.prototype, { createSVGPoint() { return { x: 0, y: 0, matrixTransform() { return this; } }; }, createSVGMatrix() { return new DOMMatrix(); }, getScreenCTM() { return new DOMMatrix(); } });
 class MathMLElement extends Element {}
+
+function innerTextOf(el) {
+    const BLK = /^(ADDRESS|ARTICLE|ASIDE|BLOCKQUOTE|CAPTION|DD|DETAILS|DIALOG|DIV|DL|DT|FIELDSET|FIGCAPTION|FIGURE|FOOTER|FORM|H[1-6]|HEADER|HR|LI|MAIN|NAV|OL|PRE|SECTION|SUMMARY|TABLE|TBODY|TFOOT|THEAD|TR|UL)$/;
+    const SKIP = /^(SCRIPT|STYLE|TEMPLATE|NOSCRIPT|HEAD|TITLE)$/i;
+    let out = '', nlc = 0;
+    const add = t => { if (!t) return; out += t; const m = /\n*$/.exec(t)[0].length; nlc = m === t.length ? nlc + m : m; };
+    const nl = k => { if (out && nlc < k) add('\n'.repeat(k - nlc)); };
+    const walk = (n, pre) => {
+        for (let c = n.firstChild; c; c = c.nextSibling) {
+            if (c.nodeType === 3) {
+                let t = c.data;
+                if (!pre) { t = t.replace(/[\t\n\r ]+/g, ' '); const last = out[out.length - 1]; if (!out || last === ' ' || last === '\n' || last === '\t') t = t.replace(/^ /, ''); }
+                add(t);
+            } else if (c.nodeType === 1) {
+                const tg = c.tagName;
+                if (SKIP.test(tg) || c.hasAttribute('hidden')) continue;
+                if (tg === 'BR') { add('\n'); continue; }
+                const k = tg === 'P' ? 2 : BLK.test(tg) ? 1 : 0;
+                if (k) nl(k);
+                walk(c, pre || tg === 'PRE' || tg === 'TEXTAREA');
+                if (k) nl(k); else if ((tg === 'TD' || tg === 'TH') && c.nextElementSibling) add('\t');
+            }
+        }
+    };
+    walk(el, false);
+    return out.replace(/ +\n/g, '\n').replace(/^\n+|[\n ]+$/g, '');
+}

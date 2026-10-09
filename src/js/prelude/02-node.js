@@ -65,6 +65,12 @@ class NodeList {
     *keys() { for (let i = 0; i < this.length; i++) yield i; }
     values() { return this[Symbol.iterator](); }
 }
+class AnimationTimeline { get currentTime() { return performance.now(); } get duration() { return null; } }
+class DocumentTimeline extends AnimationTimeline { constructor(o) { super(); def(this, '_origin', +(o && o.originTime) || 0); } get currentTime() { return performance.now() - this._origin; } }
+class HTMLCollection extends NodeList {
+    namedItem(k) { k = String(k); if (!k) return null; for (let i = 0; i < this.length; i++) { const e = this[i]; if (e.id === k || (e.getAttribute && e.getAttribute('name') === k)) return e; } return null; }
+}
+const htmlColl = (a) => { const o = Object.create(HTMLCollection.prototype); for (let i = 0; i < a.length; i++) o[i] = a[i]; Object.defineProperty(o, 'length', { value: a.length }); return o; };
 const nodeList = (a) => { const o = Object.create(NodeList.prototype); for (let i = 0; i < a.length; i++) o[i] = a[i]; Object.defineProperty(o, 'length', { value: a.length }); return o; };
 const liveIdx = (k) => typeof k === 'string' && /^(0|[1-9]\d*)$/.test(k) ? +k : -1;
 const liveHandler = {
@@ -259,11 +265,20 @@ class Attr {
     get ownerElement() { return this._el; } get nodeType() { return 2; } get nodeName() { return this.name; } get nodeValue() { return this.value; } get textContent() { return this.value; }
 }
 class NamedNodeMap {
-    constructor(el) { def(this, '_el', el); const n = N.attrs(el); for (let i = 0; i < n.length; i += 2) this[i / 2] = new Attr(el, n[i]); def(this, 'length', n.length / 2); }
-    item(i) { return this[i] || null; }
+    constructor(el) {
+        def(this, '_el', el);
+        return new Proxy(this, {
+            get(t, k, r) { if (typeof k === 'string' && /^\d+$/.test(k)) return t.item(+k) ?? undefined; return Reflect.get(t, k, r); },
+            has(t, k) { if (typeof k === 'string' && /^\d+$/.test(k)) return +k < t.length; return Reflect.has(t, k); },
+            ownKeys(t) { return [...Array(t.length).keys()].map(String).concat(Reflect.ownKeys(t)); },
+            getOwnPropertyDescriptor(t, k) { if (typeof k === 'string' && /^\d+$/.test(k) && +k < t.length) return { value: t.item(+k), enumerable: true, configurable: true }; return Reflect.getOwnPropertyDescriptor(t, k); },
+        });
+    }
+    get length() { return N.attrs(this._el).length / 2; }
+    item(i) { const n = N.attrs(this._el); return i >= 0 && 2 * i < n.length ? new Attr(this._el, n[2 * i]) : null; }
     getNamedItem(n) { n = String(n).toLowerCase(); return N.attr(this._el, n) == null ? null : new Attr(this._el, n); }
     setNamedItem(a) { this._el.setAttribute(a.name, a.value); }
-    removeNamedItem(n) { this._el.removeAttribute(n); }
+    removeNamedItem(n) { const a = this.getNamedItem(n); if (!a) throw new DOMException("Failed to execute 'removeNamedItem' on 'NamedNodeMap': No item with name '" + n + "' was found.", 'NotFoundError'); return this._el.removeAttributeNode(a); }
     *[Symbol.iterator]() { for (let i = 0; i < this.length; i++) yield this[i]; }
 }
 class DOMTokenList {

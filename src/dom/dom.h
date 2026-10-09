@@ -34,6 +34,7 @@ typedef struct Node {
     struct ComputedStyle *style;
     struct Box *box;
     float scroll_x, scroll_y;      /* element scroll offsets (kept across relayouts) */
+    float cq_w, cq_h;              /* query-container content size from the last layout */
     void *js;                      /* JS wrapper (v8::Global*) */
     void *ext;                     /* element specific data (img, video, canvas, input) */
     void (*ext_free)(void *);
@@ -60,6 +61,7 @@ typedef struct Document {
     HMap id_cache; uint64_t id_cache_ver; bool id_cache_ok; /* id -> first element, rebuilt per dom_version */
     void *stylesheets;            /* css engine data */
     struct Node *focus;
+    struct Node *sel[2]; int selo[2]; bool sel_back; uint64_t sel_ver;   /* JS selection start/end (text offsets in bytes) */
     void *browser;                /* owning page */
     void (*on_mutation)(struct Document *, Node *);
 } Document;

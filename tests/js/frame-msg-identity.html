@@ -1,0 +1,14 @@
+<!doctype html><div id="host"></div><script>
+const R = {};
+const sr = document.getElementById('host').attachShadow({ mode: 'closed' });
+const f = document.createElement('iframe');
+f.srcdoc = '<script>addEventListener("message", e => parent.postMessage({ back: e.data, srcIsParent: e.source === parent, origin: e.origin }, "*")); parent.postMessage("hello", "*")<\/script>';
+addEventListener('message', e => {
+  if (e.data === "hello") { R.trusted = e.isTrusted; R.sourceIsFrame = e.source === f.contentWindow; R.stable = f.contentWindow === f.contentWindow; e.source.postMessage('ping', '*'); }
+  else if (e.data && e.data.back === 'ping') { R.roundTrip = true; R.childSeesParent = e.data.srcIsParent; R.childOrigin = e.data.origin === location.origin || e.data.origin === 'null'; done(); }
+});
+sr.appendChild(f);
+let fin = false;
+function done() { if (fin) return; fin = true; console.log('RESULTS frame-msg-identity ' + Object.entries(R).map(([k, v]) => k + ':' + (v ? 'PASS' : 'FAIL')).join(' ')); }
+setTimeout(done, 1500);
+</script>

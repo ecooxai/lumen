@@ -1,14 +1,41 @@
-function activate(el, ev) {
+/* legacy-pre-activation: checkbox/radio state flips before click listeners run, reverted if cancelled */
+function preActivate(el) {
+    if (!el || el.nodeType !== 1 || N.name(el) !== 'input' || el.disabled) return null;
+    const t = el.type;
+    if (t !== 'checkbox' && t !== 'radio') return null;
+    const was = el.checked;
+    if (t === 'radio' && was) return { noop: true };
+    const prev = t === 'radio' ? [...N.query(el.form || document, `input[type=radio][name="${CSS.escape(el.name)}"]`, true)].filter(r => r.checked) : [];
+    for (const r of prev) N.setChecked(r, false);
+    N.setChecked(el, t === 'radio' ? true : !was);   /* native: page-installed `checked` setters (React's value tracker) must not see it */
+    return { restore() { N.setChecked(el, was); for (const r of prev) N.setChecked(r, true); } };
+}
+const MIME = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', svg: 'image/svg+xml', heic: 'image/heic', bmp: 'image/bmp', pdf: 'application/pdf', txt: 'text/plain', md: 'text/markdown', csv: 'text/csv', json: 'application/json', html: 'text/html', js: 'text/javascript', py: 'text/x-python', mp3: 'audio/mpeg', wav: 'audio/wav', ogg: 'audio/ogg', mp4: 'video/mp4', webm: 'video/webm', zip: 'application/zip', doc: 'application/msword', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' };
+function pickFiles(el) {
+    N.pickFiles(list => {
+        if (!list) { dispatch(el, new Event('cancel', { bubbles: true })); return; }
+        const files = list.map(o => new File([o.data], o.name, { type: MIME[(o.name.split('.').pop() || '').toLowerCase()] || '' }));
+        def(el, '_files', new FileList(el.multiple ? files : files.slice(0, 1)));
+        dispatch(el, new Event('input', { bubbles: true, composed: true })); dispatch(el, new Event('change', { bubbles: true }));
+    }, !!el.multiple, el.accept || '');
+}
+function activate(el, ev, pre) {
     const a = el.closest ? el.closest('a[href]') : null;
     if (a) { const raw = N.attr(a, 'href'); if (/^javascript:/i.test(raw)) { try { (0, eval)(decodeURIComponent(raw.slice(11))); } catch (e) { report(e); } } else if (a.href) location.assign(a.href); return; }
+    if (el.closest && !/^(input|button|label|summary|textarea|select)$/.test(N.name(el))) {
+        const t = el.closest('button,label,summary');
+        if (t) el = t;
+    }
     const name = N.name(el);
     if (name === 'input' || name === 'button') {
         const t = el.type;
-        if (t === 'checkbox' || (t === 'radio' && !el.checked)) {
+        if (pre) { if (!pre.noop) { dispatch(el, new Event('input', { bubbles: true })); dispatch(el, new Event('change', { bubbles: true })); } }
+        else if (t === 'checkbox' || (t === 'radio' && !el.checked)) {
             if (t === 'radio') for (const r of N.query(el.form || document, `input[type=radio][name="${CSS.escape(el.name)}"]`, true)) N.setChecked(r, false);
             el.checked = t === 'radio' ? true : !el.checked;
             dispatch(el, new Event('input', { bubbles: true })); dispatch(el, new Event('change', { bubbles: true }));
-        } else if (t === 'submit' || t === 'image') { const f = el.form; if (f) f.requestSubmit(el); }
+        } else if (t === 'file' && name === 'input') pickFiles(el);
+        else if (t === 'submit' || t === 'image') { const f = el.form; if (f) f.requestSubmit(el); }
         else if (t === 'reset') { const f = el.form; if (f) f.reset(); }
         else if (name === 'input') N.focus(el);
     } else if (name === 'label') { const c = el.control; if (c && c !== el) c.click(); }
@@ -38,10 +65,11 @@ function cssSplit(s) {
     while (i < n) {
         const c = s[i];
         if (c === '/' && s[i + 1] === '*') { const e = s.indexOf('*/', i + 2); i = e < 0 ? n : e + 2; pre += ' '; continue; }
+        if (c === '\\') { pre += s.slice(i, i + 2); i += 2; continue; }
         if (c === '"' || c === "'") { const j = skipStr(i, c); pre += s.slice(i, j + 1); i = j + 1; continue; }
         if (c === '{') {
             let d = 1, j = i + 1;
-            while (j < n && d) { const k = s[j]; if (k === '"' || k === "'") j = skipStr(j, k); else if (k === '/' && s[j + 1] === '*') { const e = s.indexOf('*/', j + 2); j = e < 0 ? n : e + 1; } else if (k === '{') d++; else if (k === '}') d--; j++; }
+            while (j < n && d) { const k = s[j]; if (k === '\\') j++; else if (k === '"' || k === "'") j = skipStr(j, k); else if (k === '/' && s[j + 1] === '*') { const e = s.indexOf('*/', j + 2); j = e < 0 ? n : e + 1; } else if (k === '{') d++; else if (k === '}') d--; j++; }
             out.push({ pre: pre.trim(), body: s.slice(i + 1, d ? j : j - 1) }); pre = ''; i = j; continue;
         }
         if (c === ';' && pre.trim()[0] === '@') { out.push({ pre: pre.trim(), body: null }); pre = ''; i++; continue; }
@@ -65,7 +93,7 @@ class CSSRuleStyle extends CSSStyleDeclaration {
     _m() { return new Map(this._map); }
     _w(m) { this._map = m; this._rule._changed(); }
     get cssText() { return serDecls(this._map); } set cssText(v) { this._w(parseDecls(String(v))); }
-    setProperty(p, v, pri) { p = camelToKebab(String(p)); const m = this._m(); if (v == null || v === '') m.delete(p); else m.set(p, [String(v), pri ? 'important' : '']); this._w(m); }
+    setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p); const m = this._m(); if (v == null || v === '') m.delete(p); else m.set(p, [String(v), pri ? 'important' : '']); this._w(m); }
     removeProperty(p) { p = camelToKebab(String(p)); const m = this._m(); const e = m.get(p); if (e) { m.delete(p); this._w(m); } return e ? e[0] : ''; }
 }
 class CSSRule {

@@ -70,6 +70,8 @@ void add_abs(Layout *L, Box *c) {
     if (!c->fixed) for (Box *p = c->parent; p; p = p->parent) if (p->st && p->kind != BX_INLINE && (p->st->position != P_STATIC || p->st->has_transform) && p != c) { cb = p; break; }
     if (c->fixed) for (Box *p = c->parent; p; p = p->parent) if (p->st && p->st->has_transform && p->kind != BX_INLINE) { cb = p; break; }
     c->cb = cb; cb->has_abs = true;
+    if (L->nalog == L->calog) { L->calog = L->calog ? L->calog * 2 : 64; L->alog = xrealloc(L->alog, sizeof *L->alog * (size_t)L->calog); }
+    L->alog[L->nalog++] = c;
     for (Box *x = cb->abs_head; x; x = x->abs_next) if (x == c) return;
     c->abs_next = cb->abs_head; cb->abs_head = c;
 }
@@ -168,7 +170,40 @@ static float clamph(const ComputedStyle *s, float h, float cbh, float bp) {
     return h;
 }
 
+static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float cbh, FloatCtx *fc, int mode, float fw, float fh);
+/* flex/grid measure a child and then lay it out again, often with identical inputs; nested containers made that exponential */
+int g_lb_calls, g_lb_hits;
+static bool pct_h(const ComputedStyle *s) { return s->height.pctu || s->height.pct || s->min_height.pctu || s->min_height.pct || s->max_height.pctu || s->max_height.pct; }
+static bool hdep(const Box *b) {
+    if (b->has_abs) return true;
+    for (const Box *c = b->first; c; c = c->next) if (c->st && pct_h(c->st)) return true;
+    return false;
+}
 void layout_box(Layout *L, Box *b, float x, float y, float cbw, float cbh, FloatCtx *fc, int mode, float fw, float fh) {
+    g_lb_calls++; b->dcalls++;
+    /* a forced height equal to the natural one only matters to children that resolve percentages or insets against it */
+    bool fh_same = b->mk[5] == fh || (b->mk[5] < 0 && fh >= 0 && fabsf(fh - b->mk[7]) < 0.01f && !hdep(b));
+    if (!fc && b->memo && b->mmode == mode && b->mk[2] == cbw && b->mk[3] == cbh && b->mk[4] == fw && fh_same && b->w == b->mk[6] && b->h == b->mk[7]) {
+        float dx = x + b->mk[0] - b->x, dy = y + b->mk[1] - b->y;
+        box_translate(b, dx, dy); g_lb_hits++;
+        static unsigned stamp; stamp++;
+        for (int i = b->alo; i < b->ahi; i++) {
+            Box *c = L->alog[i];
+            if (c->astamp == stamp) continue;
+            c->astamp = stamp;
+            if (c->fixed || (c->cb && !within(c->cb, b))) { c->sx += dx; c->sy += dy; }   /* positioned by an outer box: tr left it alone */
+            add_abs(L, c);
+        }
+        return;
+    }
+    int alo = L->nalog;
+    layout_box_in(L, b, x, y, cbw, cbh, fc, mode, fw, fh);
+    /* table parts get adjusted by their table after layout (row heights, vertical-align), so never reuse them */
+    b->alo = alo; b->ahi = L->nalog;
+    b->memo = !fc && b->fmt != FMT_TABLE && b->st->display != D_TABLE_CELL && (!b->parent || b->parent->fmt != FMT_TABLE);
+    b->mmode = (int8_t)mode; b->mk[0] = b->x - x; b->mk[1] = b->y - y; b->mk[2] = cbw; b->mk[3] = cbh; b->mk[4] = fw; b->mk[5] = fh; b->mk[6] = b->w; b->mk[7] = b->h;
+}
+static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float cbh, FloatCtx *fc, int mode, float fw, float fh) {
     const ComputedStyle *s = b->st;
     compute_mbp(b, cbw);
     b->abs_head = NULL;
@@ -188,7 +223,7 @@ void layout_box(Layout *L, Box *b, float x, float y, float cbw, float cbh, Float
     }
     if (b->w < 0) b->w = 0;
     /* auto margins for in-flow blocks */
-    if (mode == SZ_FILL && !b->abs && !b->floated) {
+    if (mode == SZ_FILL && !b->abs && !b->floated && !(b->parent && b->parent->fmt == FMT_FLEX)) {   /* flex items: auto margins are resolved by flex alignment */
         bool mlA = s->margin[3].kind == LK_AUTO, mrA = s->margin[1].kind == LK_AUTO;
         float free = cbw - b->w - (mlA ? 0 : b->m[3]) - (mrA ? 0 : b->m[1]);
         if (free > 0 && (mlA || mrA)) {
@@ -246,7 +281,9 @@ static void post(Layout *L, Box *b, float cbw, float cbh, float clipx, float cli
         for (int i = 0; i < b->nfrags; i++) { r = LMAX(r, b->frags[i].x + b->frags[i].w); btm = LMAX(btm, b->frags[i].y + b->frags[i].h); }
         b->scroll_w = r - b->x; b->scroll_h = btm - b->y + b->p[2];
         float maxx = LMAX(0, b->scroll_w - b->w), maxy = LMAX(0, b->scroll_h - b->h);
-        b->node->scroll_x = LCLAMP(b->node->scroll_x, 0, maxx); b->node->scroll_y = LCLAMP(b->node->scroll_y, 0, maxy);
+        b->node->scroll_x = LCLAMP(b->node->scroll_x, 0, maxx); b->node->scroll_y = box_scroll_from_end(b) ? LCLAMP(b->node->scroll_y, -maxy, 0) : LCLAMP(b->node->scroll_y, 0, maxy);
+        /* abs children of a column-reverse scroller are placed against its scroll origin, which is the end */
+        if (box_scroll_from_end(b) && maxy > 0) for (Box *x = b->abs_head; x; x = x->abs_next) box_translate(x, 0, maxy);
     }
 }
 static void extents(Layout *L, Box *b) {
@@ -264,13 +301,44 @@ static void free_box_data(Box *b) {
 }
 
 Layout *layout_new(void) { Layout *L = xcalloc(1, sizeof *L); L->dpr = 2; return L; }
-void layout_free(Layout *L) { if (L->root) free_box_data(L->root); arena_reset(&L->arena); free(L); }
+void layout_free(Layout *L) { if (L->root) free_box_data(L->root); arena_reset(&L->arena); free(L->alog); free(L); }
 
+static void track_containers(Document *d, Box *b) {
+    for (; b; b = b->next) {
+        Node *n = b->node;
+        if (n && !b->anon && b->st && b->st->container_type && n->style == b->st) {
+            float w = b->w - b->b[1] - b->b[3] - b->p[1] - b->p[3], h = b->h - b->b[0] - b->b[2] - b->p[0] - b->p[2];
+            if (fabsf(w - n->cq_w) > 0.5f || (b->st->container_type == 2 && fabsf(h - n->cq_h) > 0.5f)) { n->cq_w = w; n->cq_h = h; doc_mark_style_dirty(d, n); }
+        }
+        track_containers(d, b->first);
+    }
+}
+
+/* LUMEN_DEBUG_LAYOUT=2: boxes whose layout_box count multiplies most relative to their parent */
+typedef struct Hot { Box *b; float r; } Hot;
+static void hot_walk(Box *b, Hot *h, int n) {
+    for (Box *c = b->first; c; c = c->next) {
+        float r = b->dcalls ? (float)c->dcalls / b->dcalls : 0;
+        if (c->dcalls > 50 && r > 1.5f) { int k = n - 1; if (r * c->dcalls > h[k].r) { while (k > 0 && r * c->dcalls > h[k - 1].r) { h[k] = h[k - 1]; k--; } h[k] = (Hot){ c, r * c->dcalls }; } }
+        hot_walk(c, h, n);
+    }
+}
+static void hot_report(Layout *L) {
+    Hot h[8] = {0}; hot_walk(L->root, h, 8);
+    for (Box *b = h[0].b; b && b->parent; b = b->parent) {
+        const Node *n = b->node; const char *cl = n && n->type == NODE_ELEMENT ? node_attr(n, "class") : NULL;
+        if (b->dcalls > b->parent->dcalls) fprintf(stderr, "  chain x%.1f %d fmt=%d pfmt=%d disp=%d <%s class=\"%.70s\">\n", (float)b->dcalls / LMAX(1, b->parent->dcalls), b->dcalls, b->fmt, b->parent->fmt, b->st ? b->st->display : -1, n && n->type == NODE_ELEMENT ? n->tag : "#anon", cl ? cl : "");
+    }
+    for (int i = 0; i < 8 && h[i].b; i++) {
+        Box *b = h[i].b; const Node *n = b->node; const char *cl = n && n->type == NODE_ELEMENT ? node_attr(n, "class") : NULL;
+        fprintf(stderr, "  hot %d calls (parent %d) fmt=%d disp=%d <%s class=\"%.60s\">\n", b->dcalls, b->parent->dcalls, b->fmt, b->st ? b->st->display : -1, n && n->type == NODE_ELEMENT ? n->tag : "#anon", cl ? cl : "");
+    }
+}
 void layout_run(Layout *L, Document *d, float vw, float vh) {
     double t0 = now_ms();
     if (L->root) free_box_data(L->root);
     arena_reset(&L->arena);
-    L->doc = d; L->vw = vw; L->vh = vh; L->nboxes = 0;
+    L->doc = d; L->vw = vw; L->vh = vh; L->nboxes = 0; L->nalog = 0;
     L->root = build_box_tree(L, d);
     Box *r = L->root;
     r->x = r->y = 0; r->w = vw;
@@ -283,31 +351,41 @@ void layout_run(Layout *L, Document *d, float vw, float vh) {
     L->doc_w = vw; L->doc_h = 0;
     extents(L, r);
     L->doc_h = LMAX(L->doc_h, vh);
+    track_containers(d, r);
     L->ms = now_ms() - t0;
+    static int dbg = -1, nrun; static double tsum, tlast;
+    if (dbg < 0) { const char *e = getenv("LUMEN_DEBUG_LAYOUT"); dbg = e ? atoi(e) > 0 ? atoi(e) : 1 : 0; }
+    if (dbg > 1 && L->ms > 50) { fprintf(stderr, "lumen: slow layout %.0fms\n", L->ms); hot_report(L); }
+    if (dbg) { nrun++; tsum += L->ms; double t = now_ms(); if (t - tlast > 1000) { fprintf(stderr, "lumen: layout %d runs/s %.1fms avg %d boxes %d calls %d hits\n", nrun, nrun ? tsum / nrun : 0, L->nboxes, nrun ? g_lb_calls / nrun : 0, nrun ? g_lb_hits / nrun : 0); g_lb_calls = g_lb_hits = 0; nrun = 0; tsum = 0; tlast = t; } }
 }
 
 /* ---------------- hit testing ---------------- */
 /* Children are tested front to back: positioned z>0 (highest first), positioned z auto/0,
    in-flow, then positioned z<0; ties go to the later sibling. vx/vy map fixed boxes into viewport space. */
 static int hit_layer(const Box *c) {
-    if (!c->st || c->st->position == P_STATIC) return 2;
-    int z = c->st->z_auto ? 0 : c->st->z_index;
+    if (!c->st || (c->st->position == P_STATIC && !c->st->has_transform && c->st->opacity >= 1)) return 2;
+    int z = c->st->z_auto || c->st->position == P_STATIC ? 0 : c->st->z_index;
     return z > 0 ? 0 : z == 0 ? 1 : 3;
 }
 static Box *hit(Box *b, float x, float y, float ox, float oy, float vx, float vy) {
     bool hidden = b->st && b->st->visibility != VIS_VISIBLE;   /* not a target itself, but visible descendants are */
+    if (b->st && b->st->has_transform) {   /* painted shifted by its translation (paint_stacking) */
+        float tx = b->st->transform[4] + b->st->translate_pending[0].pct * b->w / 100;
+        float ty = b->st->transform[5] + b->st->translate_pending[1].pct * b->h / 100;
+        ox -= tx; oy -= ty; vx -= tx; vy -= ty;
+    }
     float lx = x + ox, ly = y + oy;
     bool inside = lx >= b->x && lx < b->x + b->w && ly >= b->y && ly < b->y + b->h;
     if (b->scroller && b->node && !inside) return NULL;
     float cox = ox, coy = oy;
-    if (b->scroller && b->node) { cox += b->node->scroll_x; coy += b->node->scroll_y; }
+    if (b->scroller && b->node) { cox += b->node->scroll_x; coy += box_scroll_y(b); }
     int done = INT32_MAX;   /* z>0 layer: repeatedly take the highest z below the last one taken */
     for (;;) {
         int best = INT32_MIN;
         for (Box *c = b->last; c; c = c->prev) if (hit_layer(c) == 0 && c->st->z_index < done && c->st->z_index > best) best = c->st->z_index;
         if (best == INT32_MIN) break;
         for (Box *c = b->last; c; c = c->prev) if (hit_layer(c) == 0 && c->st->z_index == best) {
-            Box *h = hit(c, x, y, c->fixed ? vx : cox, c->fixed ? vy : coy, vx, vy);
+            Box *h = hit(c, x, y, c->fixed ? vx : c->abs && b->scroller && !box_within(c->cb, b) ? ox : cox, c->fixed ? vy : c->abs && b->scroller && !box_within(c->cb, b) ? oy : coy, vx, vy);
             if (h) return h;
         }
         done = best;
@@ -315,20 +393,22 @@ static Box *hit(Box *b, float x, float y, float ox, float oy, float vx, float vy
     for (int layer = 1; layer <= 3; layer++)
         for (Box *c = b->last; c; c = c->prev) {
             if (hit_layer(c) != layer) continue;
-            Box *h = hit(c, x, y, c->fixed ? vx : cox, c->fixed ? vy : coy, vx, vy);
+            Box *h = hit(c, x, y, c->fixed ? vx : c->abs && b->scroller && !box_within(c->cb, b) ? ox : cox, c->fixed ? vy : c->abs && b->scroller && !box_within(c->cb, b) ? oy : coy, vx, vy);
             if (h) return h;
         }
     if (b->kind == BX_INLINE) {
-        for (int i = 0; i < b->nir; i++) { IRect *r = &b->ir[i]; if (lx >= r->x && lx < r->x + r->w && ly >= r->y && ly < r->y + r->h) return b; }
+        for (int i = 0; i < b->nir; i++) { IRect *r = &b->ir[i]; if (lx >= r->x && lx < r->x + r->w && ly >= r->y && ly < r->y + r->h) return b->st && !b->st->pointer_events ? NULL : b; }
         return NULL;
     }
-    for (int i = 0; i < b->nfrags; i++) { TextFrag *f = &b->frags[i]; if (f->box->kind == BX_TEXT && !(f->box->st && f->box->st->visibility != VIS_VISIBLE) && lx >= f->x && lx < f->x + f->w && ly >= f->y && ly < f->y + f->h) { Box *t = f->box; return t->parent && t->parent->kind == BX_INLINE ? t->parent : b; } }
+    for (int i = 0; i < b->nfrags; i++) { TextFrag *f = &b->frags[i]; if (f->box->kind == BX_TEXT && !(f->box->st && (f->box->st->visibility != VIS_VISIBLE || !f->box->st->pointer_events)) && lx >= f->x && lx < f->x + f->w && ly >= f->y && ly < f->y + f->h) { Box *t = f->box; return t->parent && t->parent->kind == BX_INLINE ? t->parent : b; } }
     if (inside && !hidden && b->node && b->st && b->st->pointer_events) return b;
     return NULL;
 }
 Box *layout_hit(Layout *L, float x, float y) {
     if (!L->root) return NULL;
-    return hit(L->root, x, y, 0, 0, -L->scroll_x, -L->scroll_y);
+    Box *b = hit(L->root, x, y, 0, 0, -L->scroll_x, -L->scroll_y);
+    while (b && !b->node) b = b->parent;   /* anonymous boxes (e.g. a flex item's text run) belong to their parent's node */
+    return b;
 }
 
 void layout_dump(Box *b, int depth, int maxdepth) {

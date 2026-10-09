@@ -25,10 +25,11 @@ typedef struct DItem {
     bool inset;
 } DItem;
 
-typedef struct DisplayList { VEC(DItem) items; Arena arena; float vw, vh; } DisplayList;
+typedef struct DisplayList { VEC(DItem) items; Arena arena; float vw, vh; bool has_fixed; float fix[4]; } DisplayList;   /* fix: viewport bounds of position:fixed items */
 
 extern Image *(*paint_image_hook)(Node *n);
 extern Image *(*paint_url_image_hook)(const char *url);
+extern const Node *(*svg_ext_ref_hook)(const char *url, const char *id); /* element #id of an external SVG document, NULL while it loads */
 Image *image_decode(const uint8_t *data, size_t n);
 void image_unref(Image *im);
 void image_yuv_materialize(Image *im);
@@ -47,4 +48,18 @@ void raster(Canvas *c, const DisplayList *dl, Color clear);
 /* Re-raster only device-pixel rect [x0,x1)x[y0,y1); pixels outside are left untouched. */
 void raster_rect(Canvas *c, const DisplayList *dl, Color clear, int x0, int y0, int x1, int y1);
 bool png_write(const char *path, const uint32_t *px, int w, int h, int stride);
+
+/* native text selection (anchor/focus = text node + byte offset into its layout text) */
+typedef struct TextSel { bool on; const Layout *L; Node *an, *fn; int ao, fo; } TextSel;
+extern TextSel g_tsel;
+bool tsel_point(Layout *L, float x, float y, float page_sy, Box *scope, Node **n, int *off);
+void tsel_prepare(Layout *L);
+bool tsel_range(const Box *t, int *s, int *e);
+char *tsel_text(Layout *L);
+void tsel_word(Layout *L, Node *n, int off);
+void tsel_block(Layout *L, Node *n);
+void tsel_all(Layout *L);
+bool tsel_dom_point(Node *n, int o, bool end, Node **tn, int *to);   /* element boundary -> nearest text (end: the text before) */
+bool node_within(const Node *n, const Node *anc);
+
 #endif

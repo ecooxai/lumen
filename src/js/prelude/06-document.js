@@ -33,10 +33,10 @@ methods(Document.prototype, {
     get visibilityState() { return 'visible'; }, get hidden() { return false; }, get webkitHidden() { return false; }, get prerendering() { return false; },
     get defaultView() { return this === document ? G : null; }, get activeElement() { return N.active() || this.body; },
     get currentScript() { return N.currentScript(); }, get scrollingElement() { return this.documentElement; },
-    get forms() { return nodeList(N.query(this, 'form', true)); }, get images() { return nodeList(N.query(this, 'img', true)); },
-    get links() { return nodeList(N.query(this, 'a[href],area[href]', true)); }, get scripts() { return nodeList(N.query(this, 'script', true)); },
+    get forms() { return htmlColl(N.query(this, 'form', true)); }, get images() { return htmlColl(N.query(this, 'img', true)); },
+    get links() { return htmlColl(N.query(this, 'a[href],area[href]', true)); }, get scripts() { return htmlColl(N.query(this, 'script', true)); },
     get styleSheets() { return N.query(this, 'style,link[rel~=stylesheet]', true).map(sheetFor); },
-    get fonts() { return fontSet; }, get fullscreenElement() { return null; }, get fullscreenEnabled() { return false; },
+    get fonts() { return fontSet; }, get timeline() { if (!this.__tl) def(this, '__tl', new DocumentTimeline()); return this.__tl; }, get fullscreenElement() { return null; }, get fullscreenEnabled() { return false; },
     exitFullscreen() { return Promise.resolve(); }, get pictureInPictureEnabled() { return false; },
     get implementation() { if (this === document) return implementation; if (!this.__impl) def(this, '__impl', Object.create(implementation, { _doc: { value: this } })); return this.__impl; },
     createElement(tag, opts) {
@@ -74,7 +74,31 @@ methods(Document.prototype, {
     elementFromPoint(x, y) { return N.hit(+x, +y); },
     elementsFromPoint(x, y) { const r = []; for (let e = N.hit(+x, +y); e && N.type(e) === 1; e = N.parent(e)) r.push(e); return r; },
     getSelection() { return selection; },
-    execCommand() { return false; }, queryCommandSupported() { return false; },
+    execCommand(cmd, ui, val) {
+        cmd = String(cmd).toLowerCase();
+        const ed = n => { for (; n; n = n.parentNode) if (n.nodeType === 1) { const v = n.getAttribute('contenteditable'); if (v === '' || v === 'true' || v === 'plaintext-only') return n; if (v === 'false') return null; } return null; };
+        const ae = this.activeElement, sel = this.getSelection();
+        let t = sel && sel.anchorNode; if (t && t.nodeType !== 1) t = t.parentNode;
+        if (cmd === 'copy' || cmd === 'cut') {
+            const dt = new DataTransfer(), ev = new ClipboardEvent(cmd, { clipboardData: dt, bubbles: true, cancelable: true, composed: true });
+            (t || ae || this.body || this.documentElement).dispatchEvent(ev);
+            const fld = ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA') ? ae : null;
+            N.clipSet(ev.defaultPrevented ? dt.getData('text/plain') : fld ? String(fld.value).slice(fld.selectionStart, fld.selectionEnd) : String(sel || ''));
+            return true;
+        }
+        if (!ed(t) && ae && ed(ae)) t = ae;
+        if (!ed(t)) {
+            if (cmd !== 'inserttext' || !ae || (ae.tagName !== 'INPUT' && ae.tagName !== 'TEXTAREA')) return false;
+            const str = String(val ?? '');
+            if (ae.setRangeText) ae.setRangeText(str, ae.selectionStart, ae.selectionEnd, 'end'); else ae.value += str;
+            ae.dispatchEvent(new InputEvent('input', { inputType: 'insertText', data: str, bubbles: true }));
+            return true;
+        }
+        if (cmd === 'inserttext') { { const ev = new KeyboardEvent('lumenedit', { key: String(val ?? ''), bubbles: true }); ev.lumenExec = true; t.dispatchEvent(ev); } return true; }
+        if (cmd === 'delete') { { const ev = new KeyboardEvent('lumeneditdel', { key: 'Backspace', bubbles: true }); ev.lumenExec = true; t.dispatchEvent(ev); } return true; }
+        return false;
+    },
+    queryCommandSupported(c) { return /^(inserttext|delete)$/i.test(c); },
     open() { return this; }, close() {},
     write(...s) { docWrite(s.join('')); }, writeln(...s) { docWrite(s.join('') + '\n'); },
 });

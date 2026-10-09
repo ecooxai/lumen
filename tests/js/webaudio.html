@@ -1,0 +1,31 @@
+<!doctype html>
+<script>
+const R = {};
+const ctx = new OfflineAudioContext(1, 4800, 48000), o = ctx.createOscillator(), g = ctx.createGain();
+R.api = typeof AudioContext === 'function' && typeof webkitAudioContext === 'function' && ctx.destination instanceof AudioNode;
+o.frequency.value = 1000; g.gain.setValueAtTime(0, 0); g.gain.linearRampToValueAtTime(1, 0.05);
+R.connectChain = o.connect(g) === g;
+g.connect(ctx.destination); o.start(); o.stop(0.08);
+let ended = false; o.onended = () => { ended = true; };
+ctx.startRendering().then(b => {
+  const d = b.getChannelData(0);
+  let zc = 0, early = 0, late = 0, tail = 0;
+  for (let i = 1; i < d.length; i++) if (d[i - 1] < 0 && d[i] >= 0) zc++;
+  for (let i = 0; i < 96; i++) early = Math.max(early, Math.abs(d[i]));
+  for (let i = 2400; i < 3600; i++) late = Math.max(late, Math.abs(d[i]));
+  for (let i = 3900; i < 4800; i++) tail = Math.max(tail, Math.abs(d[i]));
+  R.length = b.length === 4800 && b.sampleRate === 48000;
+  R.frequency = zc >= 78 && zc <= 81;
+  R.gainRamp = early < 0.05 && late > 0.95;
+  R.stop = tail === 0;
+  return Promise.resolve();
+}).then(() => new Promise(r => setTimeout(r, 0))).then(() => {
+  R.ended = ended;
+  const b = new AudioBuffer({ length: 10, sampleRate: 48000, numberOfChannels: 2 });
+  R.buffer = b.numberOfChannels === 2 && Math.abs(b.duration - 10 / 48000) < 1e-9;
+  return ctx.decodeAudioData(new Uint8Array([1, 2, 3]).buffer).then(() => false, e => e.name === 'EncodingError');
+}).then(v => {
+  R.decodeError = v;
+  console.log('RESULTS webaudio ' + Object.entries(R).map(([k, v]) => k + ':' + (v ? 'PASS' : 'FAIL')).join(' '));
+});
+</script>

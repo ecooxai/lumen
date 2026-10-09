@@ -30,6 +30,45 @@ bool jsg_rect(Node *n, float r[4]) {
     return true;
 }
 
+/* border box as painted: ancestor scroll offsets and translations applied (getBoundingClientRect) */
+bool jsg_vrect(Node *n, float r[4]) {
+    struct Box *b = n->box;
+    if (!b) return false;
+    r[0] = b->x; r[1] = b->y; r[2] = b->w; r[3] = b->h;
+    for (struct Box *a = b; a; ) {
+        const ComputedStyle *s = a->st;
+        if (s && s->has_transform) {
+            r[0] += s->transform[4] + s->translate_pending[0].pct * a->w / 100;
+            r[1] += s->transform[5] + s->translate_pending[1].pct * a->h / 100;
+        }
+        if (a->fixed) break;
+        struct Box *up = a->abs && a->cb ? a->cb : a->parent;
+        if (up && up->scroller && up->node && up->st && (up->st->overflow_x != OV_VISIBLE || up->st->overflow_y != OV_VISIBLE)) {
+            r[0] -= up->node->scroll_x; r[1] -= box_scroll_y(up);
+        }
+        a = up;
+    }
+    return true;
+}
+
+bool jsg_scroll(Node *n, float r[4]) {
+    struct Box *b = n->box;
+    if (!b || !b->scroller) return false;
+    r[0] = n->scroll_x; r[1] = n->scroll_y; r[2] = LMAX(b->scroll_w, b->w); r[3] = LMAX(b->scroll_h, b->h);
+    return true;
+}
+
+bool jsg_set_scroll(Node *n, float x, float y) {
+    struct Box *b = n->box;
+    if (!b || !b->scroller) return false;
+    float maxx = LMAX(0, b->scroll_w - b->w), maxy = LMAX(0, b->scroll_h - b->h);
+    float nx = isnan(x) ? n->scroll_x : LCLAMP(x, 0, maxx);
+    float ny = isnan(y) ? n->scroll_y : box_scroll_from_end(b) ? LCLAMP(y, -maxy, 0) : LCLAMP(y, 0, maxy);
+    if (nx == n->scroll_x && ny == n->scroll_y) return false;
+    n->scroll_x = nx; n->scroll_y = ny; doc_mark_dirty(n->doc, n);
+    return true;
+}
+
 bool jsg_media(void *media, const char *q) { return media && css_media_matches(q, (const MediaCtx *)media); }
 
 bool jsg_valid_selector(const char *sel) {
@@ -45,7 +84,17 @@ bool jsg_img_size(Node *n, float *w, float *h) {
     return layout_image_size_hook && layout_image_size_hook(n, w, h);
 }
 
+bool jsg_module_script(Node *s) {
+    const char *t = node_attr(s, "type");
+    if (!t) return false;
+    while (*t == ' ' || *t == '\t' || *t == '\n') t++;
+    size_t n = strlen(t);
+    while (n && (t[n - 1] == ' ' || t[n - 1] == '\t' || t[n - 1] == '\n')) n--;
+    return n == 6 && str_istarts(t, "module");
+}
+
 bool jsg_classic_script(Node *s) {
+    if (node_has_attr(s, "nomodule")) return false;
     const char *t = node_attr(s, "type");
     if (!t) return true;
     while (*t == ' ' || *t == '\t' || *t == '\n') t++;

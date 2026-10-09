@@ -13,6 +13,7 @@ typedef struct {
     float sx, sy;               /* page scroll */
     bool clip; float cx, cy, cw, ch;
     int order;
+    Box *sb; const void *outer;   /* innermost scroller and the state outside it */
 } PB;
 
 static DItem *emit(PB *p, uint8_t op) { DItem it; memset(&it, 0, sizeof it); it.op = op; it.alpha = 1; vec_push(p->dl->items, it); return &p->dl->items.v[p->dl->items.n - 1]; }
@@ -67,7 +68,13 @@ static void paint_rect_deco(PB *p, Box *b, float x, float y, float w, float h, b
         DItem *it = emit(p, DO_SHADOW); it->x = x + s->box_shadow.x; it->y = y + s->box_shadow.y; it->w = w; it->h = h;
         memcpy(it->r, r, sizeof r); it->color = s->box_shadow.color; it->blur = s->box_shadow.blur; it->spread = s->box_shadow.spread;
     }
-    if (COLOR_A(s->bg_color)) { DItem *it = emit(p, DO_RECT); it->x = x; it->y = y; it->w = w; it->h = h; memcpy(it->r, r, sizeof r); it->color = s->bg_color; }
+    if (COLOR_A(s->bg_color)) {
+        Color c = s->bg_color;
+        /* backdrop-filter: blur() isn't rendered; blurred content behind a translucent surface reads as
+           nearly flat, so approximate it by cutting the remaining transparency to a quarter */
+        if (s->backdrop_blur > 0 && COLOR_A(c) < 255) c = (c & 0xffffff) | (Color)(255 - (255 - COLOR_A(c)) / 4) << 24;
+        DItem *it = emit(p, DO_RECT); it->x = x; it->y = y; it->w = w; it->h = h; memcpy(it->r, r, sizeof r); it->color = c;
+    }
     if (s->bg_gradient) { DItem *it = emit(p, DO_GRADIENT); it->x = x; it->y = y; it->w = w; it->h = h; memcpy(it->r, r, sizeof r); it->grad = s->bg_gradient; }
     if (s->bg_image && paint_url_image_hook) {
         Image *im = paint_url_image_hook(s->bg_image);
@@ -117,6 +124,15 @@ static void paint_text_frag(PB *p, TextFrag *f) {
     Color col = s->color;
     Box *blk = t->parent; while (blk && blk->kind == BX_INLINE) blk = blk->parent;
     if (blk && blk->placeholder) col = RGBA(117, 117, 117, COLOR_A(col));
+    int ss, se;
+    if (tsel_range(t, &ss, &se)) {
+        float x0 = t->sh.g[f->g0].x, a = -1, e = -1;
+        for (int i = f->g0; i < f->g1; i++) {
+            int c = (int)t->sh.g[i].cluster;
+            if (c >= ss && c < se) { float gx = t->sh.g[i].x - x0; if (a < 0) a = gx; e = gx + t->sh.g[i].adv; }
+        }
+        if (a >= 0 && e > a) { DItem *it = emit(p, DO_RECT); it->x = f->x + a + p->dx; it->y = f->y + p->dy; it->w = e - a; it->h = f->h; it->color = RGBA(179, 215, 255, 255); }
+    }
     if (s->has_text_shadow && COLOR_A(s->text_shadow.color)) emit_glyphs(p, t, f, s->text_shadow.x, s->text_shadow.y, s->text_shadow.color);
     emit_glyphs(p, t, f, 0, 0, col);
     /* text-decoration may come from an ancestor inline */
@@ -125,23 +141,30 @@ static void paint_text_frag(PB *p, TextFrag *f) {
     if (deco && t->font) {
         float th = LMAX(1, t->font->underline_thick);
         float x = f->x + p->dx, w = f->w;
-        if (deco & TD_UNDERLINE) { DItem *it = emit(p, DO_LINE); it->x = x; it->y = f->base + p->dy - t->font->underline_pos; it->w = w; it->h = th; it->color = dc; }
+        if (deco & TD_UNDERLINE) { DItem *it = emit(p, DO_LINE); it->x = x; it->y = f->base + p->dy + t->font->underline_pos;   /* underline_pos: distance below the baseline */ it->w = w; it->h = th; it->color = dc; }
         if (deco & TD_LINE_THROUGH) { DItem *it = emit(p, DO_LINE); it->x = x; it->y = f->base + p->dy - t->font->x_height / 2; it->w = w; it->h = th; it->color = dc; }
         if (deco & TD_OVERLINE) { DItem *it = emit(p, DO_LINE); it->x = x; it->y = f->y + p->dy; it->w = w; it->h = th; it->color = dc; }
     }
 }
 
 static void paint_marker(PB *p, Box *b) {
-    const ComputedStyle *s = b->st;
-    if (s->list_style == LST_NONE || !b->nlines) return;
-    Font *f = style_font(s);
-    float base = b->lines[0].base + p->dy, x = b->x + p->dx;
+    const ComputedStyle *s = b->st, *ms = s->marker ? s->marker : s;
+    if (s->list_style == LST_NONE) return;
+    const Box *lb = b;
+    while (lb && !lb->nlines) {
+        const Box *c = lb->first;
+        while (c && (c->abs || c->floated || c->kind == BX_TEXT || c->kind == BX_BR || c->kind == BX_INLINE)) c = c->next;
+        lb = c;
+    }
+    if (!lb) return;
+    Font *f = style_font(ms);
+    float base = lb->lines[0].base + p->dy, x = b->x + p->dx;
     if (s->list_style == LST_DISC || s->list_style == LST_CIRCLE || s->list_style == LST_SQUARE) {
-        float d = LMAX(4, s->font_size * 0.33f), cy = base - (f ? f->x_height / 2 : d / 2);
+        float d = LMAX(4, ms->font_size * 0.33f), cy = base - (f ? f->x_height / 2 : d / 2);
         DItem *it = emit(p, s->list_style == LST_CIRCLE ? DO_BORDER : DO_RECT);
-        it->x = x - d - s->font_size * 0.5f; it->y = cy - d / 2; it->w = d; it->h = d; it->color = s->color;
+        it->x = x - d - ms->font_size * 0.5f; it->y = cy - d / 2; it->w = d; it->h = d; it->color = ms->color;
         if (s->list_style != LST_SQUARE) for (int i = 0; i < 4; i++) it->r[i] = d / 2;
-        if (it->op == DO_BORDER) for (int i = 0; i < 4; i++) { it->bw[i] = 1; it->bc[i] = s->color; it->bs[i] = BS_SOLID; }
+        if (it->op == DO_BORDER) for (int i = 0; i < 4; i++) { it->bw[i] = 1; it->bc[i] = ms->color; it->bs[i] = BS_SOLID; }
         return;
     }
     char buf[32]; int n = b->list_index;
@@ -152,8 +175,8 @@ static void paint_marker(PB *p, Box *b) {
         buf[k++] = '.'; buf[k] = 0;
     } else snprintf(buf, sizeof buf, "%d.", n);
     ShapedRun r; text_shape(f, buf, strlen(buf), 0, &r);
-    DItem *it = emit(p, DO_TEXT); it->g = arena_alloc(&p->dl->arena, sizeof(DGlyph) * (size_t)LMAX(1, r.n)); it->color = s->color;
-    float x0 = x - r.width - s->font_size * 0.4f;
+    DItem *it = emit(p, DO_TEXT); it->g = arena_alloc(&p->dl->arena, sizeof(DGlyph) * (size_t)LMAX(1, r.n)); it->color = ms->color;
+    float x0 = x - r.width - ms->font_size * 0.4f;
     for (int i = 0; i < r.n; i++) { DGlyph *d = &it->g[it->ng++]; d->gid = r.g[i].gid; d->font = r.g[i].font; d->x = x0 + r.g[i].x; d->y = base + r.g[i].y; }
     shaped_free(&r);
 }
@@ -218,6 +241,56 @@ static void paint_caret(PB *p, Box *b) {
     DItem *it = emit(p, DO_RECT); it->x = x + p->dx; it->y = y + p->dy; it->w = 1; it->h = h; it->color = s->color;
 }
 
+static void last_frag_in(Box *b, TextFrag **out, const Box **blk) {
+    for (int i = b->nfrags - 1; i >= 0; i--) if (b->frags[i].box->node) { *out = &b->frags[i]; *blk = b; break; }
+    for (Box *c = b->first; c; c = c->next) if (!c->abs && c->kind != BX_TEXT && c->kind != BX_INLINE) last_frag_in(c, out, blk);
+}
+
+/* contenteditable host: caret after the last text, else at the start of its first (empty) block */
+typedef struct { const Node *n; int o; TextFrag *f; float x; bool exact; } CaretAt;
+static void caret_find(Box *b, CaretAt *k) {
+    for (int i = 0; i < b->nfrags && !k->exact; i++) {
+        TextFrag *f = &b->frags[i]; const Box *t = f->box;
+        if (t->node != k->n || f->g0 >= f->g1) continue;
+        int lo = (int)t->sh.g[f->g0].cluster, hi = f->g1 < t->sh.n ? (int)t->sh.g[f->g1].cluster : t->text_len;
+        if (k->o < lo || k->o > hi) continue;
+        float x = f->x + f->w;
+        for (int g = f->g0; g < f->g1; g++) if ((int)t->sh.g[g].cluster >= k->o) { x = f->x + t->sh.g[g].x - t->sh.g[f->g0].x; break; }
+        k->f = f; k->x = x; k->exact = k->o < hi;
+    }
+    for (Box *c = b->first; c && !k->exact; c = c->next) if (!c->abs) caret_find(c, k);
+}
+
+/* contenteditable host: caret at the selection focus, else after the last text, else at the start of its first (empty) block */
+static void paint_edit_caret(PB *p, Box *b) {
+    TextFrag *f = NULL; const Box *fb = NULL;
+    const ComputedStyle *s = b->st;
+    float x, y, h;
+    const Document *d = b->node->doc; const Box *eb = NULL;
+    if (d && d->sel[0] && node_within(d->sel[0], b->node)) {
+        if (d->sel[0] != d->sel[1] || d->selo[0] != d->selo[1]) return;   /* a range is shown as a highlight */
+        Node *tn; int to;
+        if (tsel_dom_point(d->sel[0], d->selo[0], false, &tn, &to)) {
+            CaretAt k = { tn, to, NULL, 0, false }; caret_find(b, &k);
+            if (k.f) { DItem *it = emit(p, DO_RECT); it->x = k.x + p->dx; it->y = k.f->y + p->dy; it->w = 1; it->h = k.f->h; s = k.f->box->st;
+                it->color = COLOR_A(s->caret_color) ? s->caret_color : s->color; return; }
+        } else if (d->sel[0]->type == NODE_ELEMENT && d->sel[0]->box) eb = d->sel[0]->box;
+    }
+    if (!eb) last_frag_in(b, &f, &fb);
+    if (f) { x = f->x + f->w; y = f->y; h = f->h; s = f->box->st; }
+    else {
+        const Box *c = eb ? eb : b; while (c->first && !c->first->abs && c->first->kind == BX_BLOCK) c = c->first;
+        s = c->st; h = s->font_size * 1.2f;
+        x = c->x + c->b[3] + c->p[3]; y = c->y + c->b[0] + c->p[0];
+        float ch = c->h - c->b[0] - c->b[2] - c->p[0] - c->p[2]; if (ch > h) y += (ch - h) / 2;
+    }
+    DItem *it = emit(p, DO_RECT); it->x = x + p->dx; it->y = y + p->dy; it->w = 1; it->h = h; it->color = COLOR_A(s->caret_color) ? s->caret_color : s->color;
+}
+static bool is_edit_host(const Node *n) {
+    const char *ce = n && n->type == NODE_ELEMENT ? node_attr((Node *)n, "contenteditable") : NULL;
+    return ce && strcmp(ce, "false");
+}
+
 /* paints a non-positioned box's own background and its normal-flow content */
 static void paint_block_content(PB *p, Box *b, DefVec *defs) {
     const ComputedStyle *s = b->st;
@@ -231,11 +304,13 @@ static void paint_block_content(PB *p, Box *b, DefVec *defs) {
         DItem *c = emit(p, DO_PUSH_CLIP); c->x = x; c->y = y; c->w = w; c->h = h;
         if (p->clip) { float x1 = LMIN(x + w, p->cx + p->cw), y1 = LMIN(y + h, p->cy + p->ch); x = LMAX(x, p->cx); y = LMAX(y, p->cy); w = LMAX(0, x1 - x); h = LMAX(0, y1 - y); }
         p->clip = true; p->cx = x; p->cy = y; p->cw = w; p->ch = h;
-        p->dx -= b->node->scroll_x; p->dy -= b->node->scroll_y;
+        p->dx -= b->node->scroll_x; p->dy -= box_scroll_y(b);
+        p->sb = b; p->outer = &saved;
     }
     if (s->display == D_LIST_ITEM && vis) paint_marker(p, b);
     paint_flow(p, b, defs);
     if (vis && dl_caret_on && (b->ctl == CTL_TEXT || b->ctl == CTL_TEXTAREA) && b->node && (b->node->flags & NF_FOCUS)) paint_caret(p, b);
+    else if (vis && dl_caret_on && b->node && (b->node->flags & NF_FOCUS) && is_edit_host(b->node)) paint_edit_caret(p, b);
     if (clips) { int order = p->order; *p = saved; p->order = order; emit(p, DO_POP_CLIP); }
 }
 
@@ -243,7 +318,10 @@ static void paint_flow(PB *p, Box *b, DefVec *defs) {
     /* block-level descendants */
     for (Box *c = b->first; c; c = c->next) {
         if (c->kind == BX_TEXT || c->kind == BX_BR || c->kind == BX_INLINE) continue;
-        if (positioned(c) || makes_layer(c)) { Deferred d = { c, p->dx, p->dy, p->clip, p->cx, p->cy, p->cw, p->ch, p->order++ }; vec_push(*defs, d); continue; }
+        if (positioned(c) || makes_layer(c)) {
+            /* an abs box whose containing block is outside a scroller neither scrolls nor clips with it */
+            const PB *q = p; if (c->abs) while (q->sb && !box_within(c->cb, q->sb)) q = q->outer;
+            Deferred d = { c, q->dx, q->dy, q->clip, q->cx, q->cy, q->cw, q->ch, p->order++ }; vec_push(*defs, d); continue; }
         if (c->floated || c->kind == BX_ATOMIC) continue;
         paint_block_content(p, c, defs);
     }
@@ -270,14 +348,21 @@ static int def_cmp(const void *a, const void *b) {
 
 static void paint_deferred(PB *p, Deferred *d) {
     PB saved = *p;
-    if (d->b->fixed) { p->dx = -0.0f; p->dy = 0; p->clip = false; }
+    if (d->b->fixed) { p->dx = -0.0f; p->dy = 0; p->clip = false; p->dl->has_fixed = true; }
     else {
         p->dx = d->dx; p->dy = d->dy;
         /* clips of scrollers apply only when the box's containing block is inside them */
         p->clip = d->clip && !(d->b->abs && d->b->cb == p->L->root); p->cx = d->cx; p->cy = d->cy; p->cw = d->cw; p->ch = d->ch;
     }
+    int fi0 = p->dl->items.n;
     if (p->clip) { DItem *c = emit(p, DO_PUSH_CLIP); c->x = p->cx; c->y = p->cy; c->w = p->cw; c->h = p->ch; }
     paint_stacking(p, d->b);
+    if (d->b->fixed)
+        for (int i = fi0; i < p->dl->items.n; i++) {
+            const DItem *it = &p->dl->items.v[i]; float *f = p->dl->fix;
+            if (it->w <= 0 || it->h <= 0) continue;
+            f[0] = LMIN(f[0], it->x); f[1] = LMIN(f[1], it->y); f[2] = LMAX(f[2], it->x + it->w); f[3] = LMAX(f[3], it->y + it->h);
+        }
     if (p->clip) emit(p, DO_POP_CLIP);
     int order = p->order; *p = saved; p->order = order;
 }
@@ -318,11 +403,12 @@ static void paint_stacking(PB *p, Box *b) {
     p->dx -= tx; p->dy -= ty;
 }
 
-void dl_clear(DisplayList *dl) { dl->items.n = 0; arena_reset(&dl->arena); }
+void dl_clear(DisplayList *dl) { dl->items.n = 0; dl->has_fixed = false; dl->fix[0] = dl->fix[1] = 1e9f; dl->fix[2] = dl->fix[3] = -1e9f; arena_reset(&dl->arena); }
 
 void dl_build(DisplayList *dl, Layout *L, float scroll_x, float scroll_y, float vw, float vh) {
     dl_clear(dl); dl->vw = vw; dl->vh = vh;
     if (!L->root) return;
+    tsel_prepare(L);
     PB p; memset(&p, 0, sizeof p); p.dl = dl; p.L = L; p.dx = -scroll_x; p.dy = -scroll_y; p.sx = scroll_x; p.sy = scroll_y;
     /* canvas background propagates from html, else body */
     Node *html = L->doc->html, *body = L->doc->body;

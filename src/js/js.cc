@@ -1,6 +1,15 @@
+#include <map>
+#include <string>
 /* V8 embedding: platform, per-page isolate/context, node wrappers, script execution, timers, events */
 #include "js_int.h"
+#include <v8-profiler.h>
 #include <algorithm>
+#include <openssl/evp.h>
+#include <cstring>
+#include <string_view>
+#include <memory>
+#include <unordered_map>
+#include <mutex>
 #include <cmath>
 #include <unistd.h>
 
@@ -149,16 +158,224 @@ void jfire(JsCtx *c, Node *n, const char *type) {
     (void)jcall(c, c->fire.Get(iso), v8::Undefined(iso), 2, argv);
 }
 
+namespace {
+struct SrcBuf { bool one; std::string b; std::u16string w; };
+std::mutex g_src_mu;
+std::unordered_map<std::string, std::weak_ptr<SrcBuf>> g_src;
+struct SrcOne : v8::String::ExternalOneByteStringResource {
+    std::shared_ptr<SrcBuf> p; explicit SrcOne(std::shared_ptr<SrcBuf> q) : p(std::move(q)) {}
+    const char *data() const override { return p->b.data(); } size_t length() const override { return p->b.size(); }
+};
+struct SrcTwo : v8::String::ExternalStringResource {
+    std::shared_ptr<SrcBuf> p; explicit SrcTwo(std::shared_ptr<SrcBuf> q) : p(std::move(q)) {}
+    const uint16_t *data() const override { return (const uint16_t *)p->w.data(); } size_t length() const override { return p->w.size(); }
+};
+std::shared_ptr<SrcBuf> src_buf(const char *s, size_t n) {
+    unsigned char md[32]; unsigned int ml = 0;
+    EVP_Digest(s, n, md, &ml, EVP_sha256(), nullptr);  /* collision-resistant: sources are shared across origins */
+    std::string key((const char *)md, ml); key += std::to_string(n);
+    std::lock_guard<std::mutex> lk(g_src_mu);
+    if (auto p = g_src[key].lock()) return p;
+    auto p = std::make_shared<SrcBuf>(); p->one = true;
+    for (size_t i = 0; i < n; i++) if ((unsigned char)s[i] >= 0x80) { p->one = false; break; }
+    if (p->one) p->b.assign(s, n);
+    else {
+        p->w.reserve(n);
+        const unsigned char *u = (const unsigned char *)s, *e = u + n;
+        while (u < e) {
+            uint32_t c = *u, k = c < 0x80 ? 0 : c >= 0xF0 ? 3 : c >= 0xE0 ? 2 : c >= 0xC0 ? 1 : 9;
+            if (k == 9 || (u + k >= e + (k ? 0 : 1) && k)) { p->w.push_back(0xFFFD); u++; continue; }
+            c &= k ? 0x3F >> k : 0x7F;
+            bool bad = false;
+            for (uint32_t j = 1; j <= k; j++) { if ((u[j] & 0xC0) != 0x80) { bad = true; break; } c = c << 6 | (u[j] & 0x3F); }
+            if (bad) { p->w.push_back(0xFFFD); u++; continue; }
+            u += k + 1;
+            if (c >= 0x10000) { c -= 0x10000; p->w.push_back((char16_t)(0xD800 + (c >> 10))); p->w.push_back((char16_t)(0xDC00 + (c & 0x3FF))); }
+            else p->w.push_back((char16_t)c);
+        }
+    }
+    g_src[key] = p;
+    for (auto it = g_src.begin(); it != g_src.end();) it = it->second.expired() ? g_src.erase(it) : std::next(it);
+    return p;
+}
+}  // namespace
+
+v8::Local<v8::String> jsrc(v8::Isolate *iso, const char *s, size_t n) {
+    if (n < (64u << 10)) return jstr(iso, s, (int)n);
+    auto p = src_buf(s, n);
+    v8::MaybeLocal<v8::String> r = p->one ? v8::String::NewExternalOneByte(iso, new SrcOne(p)) : v8::String::NewExternalTwoByte(iso, new SrcTwo(p));
+    v8::Local<v8::String> out;
+    return r.ToLocal(&out) ? out : jstr(iso, s, (int)n);
+}
+
 static void run_source(JsCtx *c, const char *src, size_t n, const char *name) {
     JS_ENTER(c);
     v8::TryCatch tc(iso);
     v8::ScriptOrigin origin(jstr(iso, name ? name : ""));
     v8::Local<v8::Script> s;
     js_enter(c);
-    if (v8::Script::Compile(ctx, jstr(iso, src, (int)n), &origin).ToLocal(&s)) (void)s->Run(ctx);
+    if (v8::Script::Compile(ctx, jsrc(iso, src, n), &origin).ToLocal(&s)) (void)s->Run(ctx);
     js_leave(c);
     if (tc.HasCaught() && tc.CanContinue()) jreport(c, tc.Exception(), tc.Message());
     settle(c);
+}
+
+/* ---- ES modules: fetched synchronously (graph levels in parallel), no import maps ---- */
+static JsCtx *ctx_of(v8::Local<v8::Context> ctx) { return static_cast<JsCtx *>(ctx->GetAlignedPointerFromEmbedderData(1, kTag)); }
+static void mod_throw(v8::Isolate *iso, const std::string &m) { iso->ThrowException(v8::Exception::TypeError(jstr(iso, m.c_str()))); }
+static std::string mod_resolve(const std::string &spec, const std::string &base) {
+    bool rel = !spec.compare(0, 1, "/") || !spec.compare(0, 2, "./") || !spec.compare(0, 3, "../");
+    bool abs = spec.find("://") != std::string::npos || !spec.compare(0, 5, "data:") || !spec.compare(0, 5, "blob:");
+    if (!rel && !abs) return "";
+    char *u = url_join(base.c_str(), spec.c_str());
+    std::string r = u ? u : "";
+    free(u);
+    return r;
+}
+static bool mod_fetch(const std::string &u, const std::string &ref, std::string &out) {
+    NetRequest *rq = net_request_new("GET", u.c_str());
+    if (!ref.compare(0, 4, "http")) headers_add(&rq->headers, "Referer", ref.c_str());
+    NetResponse *r = net_fetch_sync(rq);
+    bool ok = r && r->status >= 200 && r->status < 300;
+    if (ok) out.assign(r->body ? r->body : "", r->body_len);
+    if (r) net_response_free(r);
+    return ok;
+}
+static std::string mod_key(JsCtx *c, v8::Local<v8::Module> m) {
+    auto r = c->mod_url.equal_range(m->GetIdentityHash());
+    for (auto it = r.first; it != r.second; ++it) {
+        auto f = c->mods.find(it->second);
+        if (f != c->mods.end() && f->second.Get(c->iso) == m) return it->second;
+    }
+    return c->doc && c->doc->url ? c->doc->url : "";
+}
+static v8::MaybeLocal<v8::Module> mod_compile(JsCtx *c, const std::string &key, const std::string &src) {
+    v8::Isolate *iso = c->iso;
+    v8::ScriptOrigin origin(jstr(iso, key.c_str()), 0, 0, false, -1, v8::Local<v8::Value>(), false, false, true);
+    v8::ScriptCompiler::Source s(jsrc(iso, src.data(), src.size()), origin);
+    v8::Local<v8::Module> m;
+    if (!v8::ScriptCompiler::CompileModule(iso, &s).ToLocal(&m)) return {};
+    c->mods[key].Reset(iso, m);
+    c->mod_url.emplace(m->GetIdentityHash(), key);
+    return m;
+}
+static bool mod_graph(JsCtx *c, v8::Local<v8::Module> root) {
+    v8::Isolate *iso = c->iso;
+    std::string ref = c->doc && c->doc->url ? c->doc->url : "";
+    std::vector<v8::Local<v8::Module>> todo{ root };
+    while (!todo.empty()) {
+        std::vector<std::string> need;
+        for (v8::Local<v8::Module> m : todo) {
+            std::string base = mod_key(c, m);
+            v8::Local<v8::FixedArray> rq = m->GetModuleRequests();
+            for (int i = 0; i < rq->Length(); i++) {
+                std::string sp = jcstr(iso, rq->Get(i).As<v8::ModuleRequest>()->GetSpecifier());
+                std::string u = mod_resolve(sp, base);
+                if (u.empty()) return mod_throw(iso, "Failed to resolve module specifier \"" + sp + "\""), false;
+                if (!c->mods.count(u) && std::find(need.begin(), need.end(), u) == need.end()) need.push_back(u);
+            }
+        }
+        todo.clear();
+        std::vector<std::string> body(need.size());
+        std::vector<char> ok(need.size(), 0);
+        double busy = c->busy_since.exchange(0);   /* network time is not script time */
+        for (size_t b = 0; b < need.size(); b += 16) {
+            std::vector<std::thread> th;
+            for (size_t i = b; i < need.size() && i < b + 16; i++) th.emplace_back([&, i] { ok[i] = mod_fetch(need[i], ref, body[i]); });
+            for (std::thread &t : th) t.join();
+        }
+        if (busy > 0) c->busy_since = now_ms();
+        for (size_t i = 0; i < need.size(); i++) {
+            if (!ok[i]) return mod_throw(iso, "Failed to fetch module: " + need[i]), false;
+            v8::Local<v8::Module> m;
+            if (!mod_compile(c, need[i], body[i]).ToLocal(&m)) return false;
+            todo.push_back(m);
+        }
+    }
+    return true;
+}
+static v8::MaybeLocal<v8::Module> mod_resolve_cb(v8::Local<v8::Context> ctx, v8::Local<v8::String> spec, v8::Local<v8::FixedArray>, v8::Local<v8::Module> ref) {
+    v8::Isolate *iso = v8::Isolate::GetCurrent();
+    JsCtx *c = ctx_of(ctx);
+    auto it = c->mods.find(mod_resolve(jcstr(iso, spec), mod_key(c, ref)));
+    if (it == c->mods.end()) return mod_throw(iso, "Failed to resolve module specifier \"" + jcstr(iso, spec) + "\""), v8::MaybeLocal<v8::Module>();
+    return it->second.Get(iso);
+}
+static v8::MaybeLocal<v8::Promise> mod_eval(JsCtx *c, v8::Local<v8::Module> m) {
+    v8::Local<v8::Context> ctx = c->iso->GetCurrentContext();
+    if (!mod_graph(c, m)) return {};
+    if (m->GetStatus() == v8::Module::kUninstantiated && !m->InstantiateModule(ctx, mod_resolve_cb).FromMaybe(false)) return {};
+    return m->Evaluate(ctx);
+}
+static v8::MaybeLocal<v8::Promise> mod_dynamic(v8::Local<v8::Context> ctx, v8::Local<v8::Data>, v8::Local<v8::Value> res, v8::Local<v8::String> spec, v8::Local<v8::FixedArray>) {
+    v8::Isolate *iso = v8::Isolate::GetCurrent();
+    JsCtx *c = ctx_of(ctx);
+    v8::Local<v8::Promise::Resolver> R;
+    if (!v8::Promise::Resolver::New(ctx).ToLocal(&R)) return {};
+    std::string base = res->IsString() ? jcstr(iso, res) : "";
+    if (base.find(':') == std::string::npos || !base.compare(0, 6, "lumen:")) base = c->doc && c->doc->url ? c->doc->url : "";
+    std::string u = mod_resolve(jcstr(iso, spec), base);
+    v8::TryCatch tc(iso);
+    v8::Local<v8::Module> m;
+    std::string body;
+    auto it = c->mods.find(u);
+    if (u.empty()) mod_throw(iso, "Failed to resolve module specifier \"" + jcstr(iso, spec) + "\"");
+    else if (it != c->mods.end()) m = it->second.Get(iso);
+    else {
+        double busy = c->busy_since.exchange(0);
+        bool ok = mod_fetch(u, c->doc && c->doc->url ? c->doc->url : "", body);
+        if (busy > 0) c->busy_since = now_ms();
+        if (ok) (void)mod_compile(c, u, body).ToLocal(&m);
+        else mod_throw(iso, "Failed to fetch dynamically imported module: " + u);
+    }
+    v8::Local<v8::Promise> p;
+    if (!m.IsEmpty() && mod_eval(c, m).ToLocal(&p)) {
+        v8::Local<v8::Array> d = v8::Array::New(iso, 3);
+        (void)d->Set(ctx, 0, R);
+        (void)d->Set(ctx, 1, m->GetModuleNamespace());
+        (void)d->Set(ctx, 2, jstr(iso, u.c_str()));
+        auto done = [](const v8::FunctionCallbackInfo<v8::Value> &a) {
+            v8::Local<v8::Context> cx = a.GetIsolate()->GetCurrentContext();
+            v8::Local<v8::Array> d = a.Data().As<v8::Array>();
+            v8::Local<v8::Promise::Resolver> r = d->Get(cx, 0).ToLocalChecked().As<v8::Promise::Resolver>();
+            (void)r->Resolve(cx, d->Get(cx, 1).ToLocalChecked());
+        };
+        auto fail = [](const v8::FunctionCallbackInfo<v8::Value> &a) {
+            v8::Local<v8::Context> cx = a.GetIsolate()->GetCurrentContext();
+            if (getenv("LUMEN_DEBUG_MODULES")) {
+                v8::Local<v8::Value> e = a[0];
+                if (e->IsObject()) { v8::Local<v8::Value> st; if (e.As<v8::Object>()->Get(cx, jstr(a.GetIsolate(), "stack")).ToLocal(&st)) e = st; }
+                fprintf(stderr, "[module] dynamic import rejected %s: %.600s\n", jcstr(a.GetIsolate(), a.Data().As<v8::Array>()->Get(cx, 2).ToLocalChecked()).c_str(), jcstr(a.GetIsolate(), e).c_str());
+            }
+            (void)a.Data().As<v8::Array>()->Get(cx, 0).ToLocalChecked().As<v8::Promise::Resolver>()->Reject(cx, a[0]);
+        };
+        v8::Local<v8::Function> f1, f2;
+        if (v8::Function::New(ctx, done, d).ToLocal(&f1) && v8::Function::New(ctx, fail, d).ToLocal(&f2)) (void)p->Then(ctx, f1, f2);
+    } else if (tc.HasCaught()) {
+        if (getenv("LUMEN_DEBUG_MODULES")) fprintf(stderr, "[module] dynamic import failed %s: %.600s\n", u.c_str(), jcstr(iso, tc.Exception()).c_str());
+        (void)R->Reject(ctx, tc.Exception());
+        tc.Reset();
+    }
+    return R->GetPromise();
+}
+static void mod_meta(v8::Local<v8::Context> ctx, v8::Local<v8::Module> m, v8::Local<v8::Object> meta) {
+    v8::Isolate *iso = v8::Isolate::GetCurrent();
+    std::string u = mod_key(ctx_of(ctx), m);
+    size_t h = u.find("#lumen-inline-");
+    if (h != std::string::npos) u.resize(h);
+    (void)meta->CreateDataProperty(ctx, jstr(iso, "url"), jstr(iso, u.c_str()));
+    auto resolve = [](const v8::FunctionCallbackInfo<v8::Value> &a) {
+        v8::Isolate *iso = a.GetIsolate();
+        std::string r = mod_resolve(jcstr(iso, a[0]), jcstr(iso, a.Data()));
+        if (r.empty()) return mod_throw(iso, "Failed to resolve module specifier \"" + jcstr(iso, a[0]) + "\"");
+        a.GetReturnValue().Set(jstr(iso, r.c_str()));
+    };
+    v8::Local<v8::Function> f;
+    if (v8::Function::New(ctx, resolve, jstr(iso, u.c_str())).ToLocal(&f)) (void)meta->CreateDataProperty(ctx, jstr(iso, "resolve"), f);
+}
+static void mod_report(const v8::FunctionCallbackInfo<v8::Value> &a) {
+    v8::Isolate *iso = a.GetIsolate();
+    if (JsCtx *c = jctx(iso)) jreport(c, a[0], v8::Exception::CreateMessage(iso, a[0]));
 }
 
 static void on_reject(v8::PromiseRejectMessage m) {
@@ -203,7 +420,34 @@ void js_mem_stats(size_t *heap, size_t *external) {
     size_t h = 0, e = 0; std::vector<v8::Isolate *> seen;
     for (JsCtx *c : g_ctxs) {
         if (!c->iso || std::find(seen.begin(), seen.end(), c->iso) != seen.end()) continue;
-        seen.push_back(c->iso); v8::HeapStatistics hs; c->iso->GetHeapStatistics(&hs); h += hs.used_heap_size(); e += hs.external_memory();
+        seen.push_back(c->iso);
+        if (getenv("LUMEN_MEM_GC")) { v8::Isolate::Scope is(c->iso); c->iso->LowMemoryNotification(); }
+        v8::HeapStatistics hs; c->iso->GetHeapStatistics(&hs); h += hs.used_heap_size(); e += hs.external_memory();
+        if (getenv("LUMEN_MEM_DETAIL")) {
+            std::string sp;
+            for (size_t i = 0; i < c->iso->NumberOfHeapSpaces(); i++) {
+                v8::HeapSpaceStatistics ss; c->iso->GetHeapSpaceStatistics(&ss, i);
+                char b[96]; snprintf(b, sizeof b, " %s=%.1f/%.1f", ss.space_name(), ss.space_used_size() / 1048576.0, ss.physical_space_size() / 1048576.0); sp += b;
+            }
+            static bool snapped;
+            if (seen.size() == 1 && getenv("LUMEN_HEAP_SNAP") && !snapped && now_ms() - c->t0 > 50000) {
+                snapped = true;
+                struct Out : v8::OutputStream { FILE *f; void EndOfStream() override {} WriteResult WriteAsciiChunk(char *d, int n) override { fwrite(d, 1, n, f); return kContinue; } } o;
+                o.f = fopen(getenv("LUMEN_HEAP_SNAP"), "w");
+                if (o.f) { v8::Isolate::Scope is(c->iso); v8::HandleScope hs(c->iso); const v8::HeapSnapshot *hsn = c->iso->GetHeapProfiler()->TakeHeapSnapshot(); hsn->Serialize(&o); fclose(o.f); const_cast<v8::HeapSnapshot *>(hsn)->Delete(); fprintf(stderr, "lumen-mem: heap snapshot written\n"); }
+            }
+            if (seen.size() == 1) {
+                std::vector<std::pair<size_t, std::string>> ty;
+                for (size_t i = 0; i < c->iso->NumberOfTrackedHeapObjectTypes(); i++) {
+                    v8::HeapObjectStatistics os; if (!c->iso->GetHeapObjectStatisticsAtLastGC(&os, i) || !os.object_size()) continue;
+                    ty.push_back({os.object_size(), std::string(os.object_type()) + "/" + os.object_sub_type() + " n=" + std::to_string(os.object_count())});
+                }
+                std::sort(ty.rbegin(), ty.rend());
+                for (size_t i = 0; i < ty.size() && i < 25; i++) fprintf(stderr, "lumen-mem-type: %.2fMB %s\n", ty[i].first / 1048576.0, ty[i].second.c_str());
+            }
+            v8::HeapCodeStatistics cs; c->iso->GetHeapCodeAndMetadataStatistics(&cs);
+            fprintf(stderr, "lumen-mem-iso: %s used=%.1fMB total=%.1fMB phys=%.1fMB ext=%.1fMB code=%.1fMB bc=%.1fMB%s\n", ctx_origin(c).c_str(), hs.used_heap_size() / 1048576.0, hs.total_heap_size() / 1048576.0, hs.total_physical_size() / 1048576.0, hs.external_memory() / 1048576.0, cs.code_and_metadata_size() / 1048576.0, cs.bytecode_and_metadata_size() / 1048576.0, sp.c_str());
+        }
     }
     *heap = h; *external = e;
 }
@@ -235,6 +479,8 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
     c->iso->SetData(0, c);
     c->iso->SetMicrotasksPolicy(v8::MicrotasksPolicy::kExplicit);
     c->iso->SetPromiseRejectCallback(on_reject);
+    c->iso->SetHostImportModuleDynamicallyCallback(mod_dynamic);
+    c->iso->SetHostInitializeImportMetaObjectCallback(mod_meta);
     }
     v8::Isolate *iso = c->iso;
     v8::Isolate::Scope is(iso);
@@ -280,8 +526,63 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
     return c;
 }
 
+void (*js_pick_files)(bool, const char *) = nullptr;
+static std::mutex g_pick_mu;
+static JsCtx *g_pick_ctx;
+static bool g_pick_ready;
+static std::vector<std::string> g_pick_paths;
+void js_files_picked(const char *const *paths, int n) {
+    {
+        std::lock_guard<std::mutex> l(g_pick_mu);
+        g_pick_paths.clear();
+        for (int i = 0; i < n; i++) g_pick_paths.push_back(paths[i]);
+        g_pick_ready = true;
+    }
+    if (js_wakeup) js_wakeup();
+}
+void js_pick_begin(JsCtx *c, bool multiple, const char *accept) {
+    { std::lock_guard<std::mutex> l(g_pick_mu); g_pick_ctx = c; g_pick_ready = false; }
+    if (const char *env = getenv("LUMEN_FILE_PICK")) {   /* automation: colon-separated paths instead of a dialog */
+        std::vector<std::string> v; std::string s(env); size_t p = 0, q;
+        while ((q = s.find(':', p)) != std::string::npos) { if (q > p) v.push_back(s.substr(p, q - p)); p = q + 1; }
+        if (p < s.size()) v.push_back(s.substr(p));
+        std::vector<const char *> pv; for (auto &x : v) pv.push_back(x.c_str());
+        js_files_picked(pv.data(), (int)pv.size());
+    } else if (js_pick_files) js_pick_files(multiple, accept);
+    else js_files_picked(nullptr, -1);
+}
+static void pick_deliver(JsCtx *c) {
+    std::vector<std::string> paths;
+    {
+        std::lock_guard<std::mutex> l(g_pick_mu);
+        if (g_pick_ctx != c || !g_pick_ready) return;
+        g_pick_ready = false; g_pick_ctx = nullptr; paths.swap(g_pick_paths);
+    }
+    if (c->pick_cb.IsEmpty()) return;
+    v8::Isolate *iso = c->iso;
+    v8::Local<v8::Context> ctx = c->ctx.Get(iso);
+    v8::Local<v8::Function> fn = c->pick_cb.Get(iso);
+    c->pick_cb.Reset();
+    v8::Local<v8::Array> arr = v8::Array::New(iso);
+    uint32_t k = 0;
+    for (auto &p : paths) {
+        size_t n = 0; char *b = read_file(p.c_str(), &n);
+        if (!b) continue;
+        v8::Local<v8::ArrayBuffer> ab = v8::ArrayBuffer::New(iso, n);
+        if (n) memcpy(ab->Data(), b, n);
+        free(b);
+        size_t sl = p.find_last_of('/');
+        v8::Local<v8::Object> o = v8::Object::New(iso);
+        (void)o->Set(ctx, jstr(iso, "name"), jstr(iso, sl == std::string::npos ? p.c_str() : p.c_str() + sl + 1));
+        (void)o->Set(ctx, jstr(iso, "data"), ab);
+        (void)arr->Set(ctx, k++, o);
+    }
+    v8::Local<v8::Value> argv[1] = { paths.empty() ? v8::Local<v8::Value>(v8::Null(iso)) : v8::Local<v8::Value>(arr) };
+    (void)jcall(c, fn, ctx->Global(), 1, argv);
+}
 void js_free(JsCtx *c) {
     if (!c) return;
+    { std::lock_guard<std::mutex> l(g_pick_mu); if (g_pick_ctx == c) g_pick_ctx = nullptr; }
     workers_kill(c);
     for (JsCtx *k : std::vector<JsCtx *>(c->kids)) js_free(k);
     frames_forget(c);
@@ -296,6 +597,7 @@ void js_free(JsCtx *c) {
         c->watchdog.join();
     }
     for (auto &kv : c->players) mp_free(kv.second);
+    wa_close_owner(c);
     g_ctxs.erase(std::remove(g_ctxs.begin(), g_ctxs.end(), c), g_ctxs.end());
     c->players.clear();
     std::vector<Node *> roots;
@@ -304,14 +606,15 @@ void js_free(JsCtx *c) {
     {
         v8::Isolate::Scope is(c->iso);
         v8::HandleScope hs(c->iso);
-        for (auto &kv : c->fetches) { net_cancel(kv.first); kv.second->c = nullptr; kv.second->cb.Reset(); }
-        c->fetches.clear();
+        for (auto &kv : c->fetches) { net_cancel(kv.first); kv.second->c = nullptr; kv.second->cb.Reset(); kv.second->head.Reset(); kv.second->chunk.Reset(); }
+        c->fetches.clear(); for (auto &kv : c->sockets) { net_ws_release(kv.second->ws); kv.second->cb.Reset(); delete kv.second; } c->sockets.clear();
         c->timers.clear();
         c->rafs.clear();
         c->anims.clear();
         c->protos.clear();
         c->protoFor.Reset(); c->fire.Reset(); c->report.Reset(); c->mediaChanged.Reset();
         c->api.Reset(); c->node_tmpl.Reset();
+        c->mods.clear(); c->mod_url.clear();
         for (Node *n : c->wrapped) { delete static_cast<v8::Global<v8::Object> *>(n->js); n->js = nullptr; }
         for (Node *n : c->wrapped)
             if (!n->parent && n->type != NODE_DOCUMENT && !n->refcount && !n->host) roots.push_back(n);
@@ -336,12 +639,66 @@ void js_run_script(JsCtx *c, Node *script, const char *src, size_t n, const char
     }
 }
 
+void js_run_module(JsCtx *c, Node *script, const char *src, size_t n, const char *url) {
+    if (!c) return;
+    if (script) script->flags |= NF_SCRIPT_STARTED;
+    bool ext = script && node_attr(script, "src"), ok = false;
+    {
+        JS_ENTER(c);
+        v8::TryCatch tc(iso);
+        std::string key = url ? url : "", body;
+        if (!ext) key += "#lumen-inline-" + std::to_string(++c->mod_seq);
+        v8::Local<v8::Module> m;
+        js_enter(c);
+        auto it = c->mods.find(key);
+        if (it != c->mods.end()) { m = it->second.Get(iso); ok = true; }
+        else {
+            if (src) body.assign(src, n);
+            ok = src || mod_fetch(key, c->doc && c->doc->url ? c->doc->url : "", body);
+            if (ok) (void)mod_compile(c, key, body).ToLocal(&m);
+        }
+        v8::Local<v8::Promise> p;
+        v8::Local<v8::Function> f;
+        if (!m.IsEmpty() && mod_eval(c, m).ToLocal(&p) && v8::Function::New(ctx, mod_report).ToLocal(&f)) (void)p->Catch(ctx, f);
+        js_leave(c);
+        if (tc.HasCaught() && tc.CanContinue()) jreport(c, tc.Exception(), tc.Message());
+        settle(c);
+    }
+    if (ext) { JS_ENTER(c); jfire(c, script, ok ? "load" : "error"); }
+}
+
 void js_eval(JsCtx *c, const char *src, const char *name) {
     if (c && src) run_source(c, src, strlen(src), name);
 }
 
+/* Native callers keep using a dispatch target after its handlers ran; handlers may detach it and a GC may
+   then free it. Targets stay pinned until the host's event batch ends (js_release_pins). */
+static std::vector<Node *> g_pins;
+void js_release_pins(void) {
+    std::vector<Node *> v; v.swap(g_pins);
+    for (Node *n : v) node_release(n);
+}
+int js_key_mods;
+
+/* KeyboardEvent.code for a US layout key value */
+static std::string key_code(const char *k) {
+    if (!strcmp(k, " ")) return "Space";
+    if (!k[0] || k[1]) return k;
+    char c = k[0];
+    if (c >= 'a' && c <= 'z') return std::string("Key") + (char)(c - 32);
+    if (c >= 'A' && c <= 'Z') return std::string("Key") + c;
+    if (c >= '0' && c <= '9') return std::string("Digit") + c;
+    const char *sd = strchr(")!@#$%^&*(", c);
+    if (sd) return std::string("Digit") + (char)('0' + (sd - ")!@#$%^&*("));
+    static const char *punct[][2] = { {"-_", "Minus"}, {"=+", "Equal"}, {"[{", "BracketLeft"}, {"]}", "BracketRight"}, {"\\|", "Backslash"},
+        {";:", "Semicolon"}, {"'\"", "Quote"}, {",<", "Comma"}, {".>", "Period"}, {"/?", "Slash"}, {"`~", "Backquote"} };
+    for (auto &p : punct) if (strchr(p[0], c)) return p[1];
+    return k;
+}
+
 bool js_dispatch(JsCtx *c, Node *target, const char *type, const char *kind, bool bubbles, bool cancelable, double x, double y, int button, const char *key) {
     if (!c || c->fire.IsEmpty()) return true;
+    if (target && target->parent && target->parent->type != NODE_DOCUMENT) { node_retain(target); g_pins.push_back(target); }
     JS_ENTER(c);
     v8::Local<v8::Object> init = v8::Object::New(iso);
     auto set = [&](const char *k, v8::Local<v8::Value> v) { (void)init->Set(ctx, jstr(iso, k), v); };
@@ -354,14 +711,28 @@ bool js_dispatch(JsCtx *c, Node *target, const char *type, const char *kind, boo
     set("screenX", v8::Number::New(iso, x));
     set("screenY", v8::Number::New(iso, y));
     set("button", v8::Integer::New(iso, button));
-    set("buttons", v8::Integer::New(iso, button == 0 ? 1 : button == 2 ? 2 : 4));
+    bool hover = type && (!strcmp(type, "pointermove") || !strcmp(type, "mousemove") || !strcmp(type, "pointerover") || !strcmp(type, "mouseover"));
+    bool released = type && (hover || !strcmp(type, "pointerup") || !strcmp(type, "mouseup") || !strcmp(type, "click") || !strcmp(type, "auxclick") || !strcmp(type, "contextmenu"));
+    set("buttons", v8::Integer::New(iso, released ? 0 : button == 0 ? 1 : button == 2 ? 2 : 4));
+    if (type && !strcmp(type, "pointerdown")) set("pressure", v8::Number::New(iso, 0.5));
     set("detail", v8::Integer::New(iso, 1));
-    if (key) { set("key", jstr(iso, key)); set("code", jstr(iso, key)); }
+    set("shiftKey", v8::Boolean::New(iso, js_key_mods & 1));
+    set("ctrlKey", v8::Boolean::New(iso, js_key_mods & 2));
+    set("altKey", v8::Boolean::New(iso, js_key_mods & 4));
+    set("metaKey", v8::Boolean::New(iso, js_key_mods & 8));
+    if (key) { set("key", jstr(iso, key)); set("code", jstr(iso, key_code(key).c_str())); }
     v8::Local<v8::Value> ctor = v8::Undefined(iso);
     if (kind && !c->api.IsEmpty()) (void)c->api.Get(iso)->Get(ctx, jstr(iso, kind)).ToLocal(&ctor);
     v8::Local<v8::Value> argv[4] = { target ? jwrap(c, target) : v8::Local<v8::Value>(ctx->Global()), jstr(iso, type), init, ctor };
     v8::Local<v8::Value> r;
-    if (!jcall(c, c->fire.Get(iso), v8::Undefined(iso), 4, argv).ToLocal(&r)) return true;
+    static bool dbg = getenv("LUMEN_DEBUG_JS"); double t0 = dbg ? now_ms() : 0;
+    bool ok = jcall(c, c->fire.Get(iso), v8::Undefined(iso), 4, argv).ToLocal(&r);
+    if (dbg) {   /* per event type: dispatches and ms, printed every second */
+        static std::map<std::string, std::pair<int, double>> acc; static double last;
+        auto &e = acc[type]; e.first++; e.second += now_ms() - t0;
+        if (now_ms() - last > 1000) { last = now_ms(); std::string o; char b[96]; for (auto &kv : acc) { snprintf(b, sizeof b, " %s=%d/%.1fms", kv.first.c_str(), kv.second.first, kv.second.second); o += b; } fprintf(stderr, "lumen-js:%s\n", o.c_str()); acc.clear(); }
+    }
+    if (!ok) return true;
     return r->BooleanValue(iso);
 }
 
@@ -397,6 +768,7 @@ void js_tick(JsCtx *c) {
 static void tick_one(JsCtx *c) {
     JS_ENTER(c);
     while (v8::platform::PumpMessageLoop(g_platform.get(), iso)) {}
+    pick_deliver(c);
     double now = now_ms();
     std::vector<std::pair<double, uint32_t>> due;
     for (auto &kv : c->timers) if (kv.second.due <= now) due.push_back({ kv.second.due, kv.first });
@@ -468,3 +840,15 @@ bool js_anim_cancel(Node *n, const char *name) {
 }
 
 }
+
+void js_set_background(JsCtx *c, bool bg) {
+    if (!c || !c->iso) return;
+    double t = now_ms();
+    if (bg != c->bg) {
+        c->bg = bg; c->bg_since = t; c->bg_gc = false;
+        if (bg) c->iso->IsolateInBackgroundNotification(); else c->iso->IsolateInForegroundNotification();
+    }
+    if (bg && !c->bg_gc && t - c->bg_since > 15000) { c->bg_gc = true; v8::Isolate::Scope is(c->iso); c->iso->LowMemoryNotification(); }
+}
+
+bool js_busy(JsCtx *c) { return c && !c->fetches.empty(); }

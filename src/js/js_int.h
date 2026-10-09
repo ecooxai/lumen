@@ -28,6 +28,13 @@ struct Fetch {
     uint64_t id;
     v8::Global<v8::Function> cb;
     Node *script;
+    v8::Global<v8::Function> head, chunk;
+};
+struct WsSock {
+    JsCtx *c;
+    uint32_t id;
+    NetWs *ws;
+    v8::Global<v8::Function> cb;
 };
 struct Timer {
     double due, interval;
@@ -44,11 +51,12 @@ struct AnimEv {
 };
 struct JsCtx {
     v8::Isolate *iso = nullptr;
+    bool bg = false, bg_gc = false; double bg_since = 0;   /* tab in the background: V8 favours memory, one idle GC */
     v8::ArrayBuffer::Allocator *alloc = nullptr;
     v8::Global<v8::Context> ctx;
     v8::Global<v8::ObjectTemplate> node_tmpl;
     v8::Global<v8::Object> api;
-    v8::Global<v8::Function> protoFor, fire, report, mediaChanged;
+    v8::Global<v8::Function> protoFor, fire, report, mediaChanged, pick_cb;
     std::unordered_map<std::string, v8::Global<v8::Object>> protos;
     Document *doc = nullptr;
     JsHost host{};
@@ -59,6 +67,8 @@ struct JsCtx {
     uint32_t next_raf = 1;
     double last_raf = 0, t0 = 0;
     std::map<uint64_t, Fetch *> fetches;
+    std::map<uint32_t, struct WsSock *> sockets;
+    uint32_t next_ws = 1;
     std::vector<Document *> docs;
     Node *current_script = nullptr;
     int depth = 0;
@@ -80,6 +90,9 @@ struct JsCtx {
     uint64_t frame_scan_ver = ~0ull;
     void *host_ud = nullptr;          /* child host data returned by frame_open */
     std::string frame_src;
+    std::unordered_map<std::string, v8::Global<v8::Module>> mods;   /* ES module map, keyed by URL */
+    std::unordered_multimap<int, std::string> mod_url;              /* module identity hash -> key */
+    int mod_seq = 0;
 };
 
 #define JS_ENTER(c)                                         \
@@ -91,6 +104,8 @@ struct JsCtx {
 
 JsCtx *jctx(v8::Isolate *iso);
 v8::Local<v8::String> jstr(v8::Isolate *iso, const char *s, int n = -1);
+/* script source; big ones become external strings shared by every isolate (tabs, frames, workers) */
+v8::Local<v8::String> jsrc(v8::Isolate *iso, const char *s, size_t n);
 std::string jcstr(v8::Isolate *iso, v8::Local<v8::Value> v);
 v8::Local<v8::Value> jwrap(JsCtx *c, Node *n);
 Node *junwrap(v8::Local<v8::Value> v);

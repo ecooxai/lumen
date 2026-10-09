@@ -1,0 +1,8 @@
+<!doctype html>
+<style>#a{color:color-mix(in oklab,rgb(13,13,13) 60%,transparent)}#b{color:color-mix(in srgb,red,blue)}#c{color:color-mix(in srgb,var(--x,#000) 25%,white)}</style>
+<p id=a>a</p><p id=b>b</p><p id=c>c</p>
+<script>
+const g=i=>getComputedStyle(document.getElementById(i)).color;
+const a=g('a'),b=g('b'),c=g('c');
+console.log('RESULTS color-mix alpha:'+(/^rgba\(13, 13, 13, 0\.6\d*\)$/.test(a)?'PASS':'FAIL:'+a)+' half:'+(/^rgb\(128, 0, 128\)$/.test(b)?'PASS':'FAIL:'+b)+' quarter:'+(/^rgb\(191, 191, 191\)$/.test(c)?'PASS':'FAIL:'+c))
+</script>

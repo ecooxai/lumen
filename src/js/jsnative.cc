@@ -50,6 +50,10 @@ static void mark_started(Node *root) {
         if (x->type == NODE_ELEMENT && x->tag == A_script) x->flags |= NF_SCRIPT_STARTED;
 }
 
+void (*js_clip_set)(const char *text);
+char *(*js_clip_get)(void);
+FN(clipSet) { CTX; v8::String::Utf8Value u(iso, a[0]); if (js_clip_set) js_clip_set(*u ? *u : ""); }
+FN(clipGet) { CTX; char *t = js_clip_get ? js_clip_get() : nullptr; RET(jstr(iso, t ? t : "")); free(t); }
 FN(isNode) { CTX; RET(junwrap(a[0]) != nullptr); }
 FN(type) { CTX; ARGN(n, 0); RET((int)n->type); }
 FN(name) { CTX; ARGN(n, 0); RET(jstr(iso, n->type == NODE_ELEMENT || n->type == NODE_PI ? n->tag : n->type == NODE_DOCTYPE ? n->text : "")); }
@@ -200,7 +204,7 @@ FN(connected) { CTX; ARGN(n, 0); RET(n->type == NODE_DOCUMENT || (n->flags & NF_
 FN(host) { CTX; ARGN(n, 0); RET(jwrap(c, n->host)); }
 FN(attachShadow) {
     CTX; ARGN(n, 0);
-    if (!n->shadow_root) { Node *f = node_new_fragment(c->doc); f->host = n; f->refcount = 1; n->shadow_root = f; doc_mark_dirty(c->doc, n); }
+    if (!n->shadow_root) { Node *f = node_new_fragment(c->doc); f->host = n; f->refcount = 1; n->shadow_root = f; if (n->flags & NF_CONNECTED) f->flags |= NF_CONNECTED; doc_mark_dirty(c->doc, n); }
     RET(jwrap(c, n->shadow_root));
 }
 FN(templateContent) {
@@ -216,6 +220,23 @@ FN(rect) {
     for (int i = 0; i < 4; i++) (void)o->Set(ctx, i, v8::Number::New(iso, r[i]));
     RET(o);
 }
+FN(vrect) {
+    CTX; ARGN(n, 0); float r[4];
+    if (c->host.sync) c->host.sync(c->host.ud, c->doc, true);
+    if (!jsg_vrect(n, r)) { RET(v8::Null(iso)); return; }
+    v8::Local<v8::Array> o = v8::Array::New(iso, 4);
+    for (int i = 0; i < 4; i++) (void)o->Set(ctx, i, v8::Number::New(iso, r[i]));
+    RET(o);
+}
+FN(scrollPos) {
+    CTX; ARGN(n, 0); float r[4];
+    if (c->host.sync) c->host.sync(c->host.ud, c->doc, true);
+    if (!jsg_scroll(n, r)) { RET(v8::Null(iso)); return; }
+    v8::Local<v8::Array> o = v8::Array::New(iso, 4);
+    for (int i = 0; i < 4; i++) (void)o->Set(ctx, i, v8::Number::New(iso, r[i]));
+    RET(o);
+}
+FN(setScroll) { CTX; ARGN(n, 0); if (c->host.sync) c->host.sync(c->host.ud, c->doc, true); RET(jsg_set_scroll(n, (float)NUM(1), (float)NUM(2))); }
 FN(computed) { CTX; ARGN(n, 0); if (c->host.sync) c->host.sync(c->host.ud, c->doc, false); std::string p = S(1); char *v = jsg_computed(n, p.c_str()); RET(nstr(iso, v)); free(v); }
 FN(value) { CTX; ARGN(n, 0); RET(nstr(iso, n->value_override)); }
 FN(setValue) { CTX; ARGN(n, 0); free(n->value_override); n->value_override = a[1]->IsNullOrUndefined() ? nullptr : xstrdup(S(1).c_str()); doc_mark_dirty(n->doc, n); }
@@ -228,6 +249,13 @@ FN(setChecked) {
     n->checked_override = b ? 1 : -1;
     if (b) n->flags |= NF_CHECKED; else n->flags &= ~(uint32_t)NF_CHECKED;
     doc_mark_dirty(n->doc, n);
+}
+FN(pickFiles) {
+    CTX;
+    if (!a[0]->IsFunction()) return;
+    c->pick_cb.Reset(iso, a[0].As<v8::Function>());
+    std::string acc = S(2);
+    js_pick_begin(c, BOOL(1), acc.c_str());
 }
 FN(focus) {
     CTX; Node *n = junwrap(a[0]); Node *old = c->doc->focus;
@@ -328,8 +356,27 @@ static void fetch_done(NetRequest *req, NetResponse *r, void *ud) {
         resp_args(iso, r, argv);
         (void)jcall(c, f->cb.Get(iso), v8::Undefined(iso), 6, argv);
     }
-    f->cb.Reset();
+    f->cb.Reset(); f->head.Reset(); f->chunk.Reset();
     delete f;
+}
+static void fetch_head(NetRequest *req, NetResponse *r, void *ud) {
+    (void)req;
+    Fetch *f = static_cast<Fetch *>(ud);
+    JsCtx *c = f->c;
+    if (!c || f->head.IsEmpty()) return;
+    JS_ENTER(c);
+    v8::Local<v8::Value> argv[6];
+    resp_args(iso, r, argv);
+    (void)jcall(c, f->head.Get(iso), v8::Undefined(iso), 4, argv);
+}
+static void fetch_chunk(NetRequest *req, const char *d, size_t n, void *ud) {
+    (void)req;
+    Fetch *f = static_cast<Fetch *>(ud);
+    JsCtx *c = f->c;
+    if (!c || f->chunk.IsEmpty()) return;
+    JS_ENTER(c);
+    v8::Local<v8::Value> argv[1] = { mkab(iso, d, n) };
+    (void)jcall(c, f->chunk.Get(iso), v8::Undefined(iso), 1, argv);
 }
 static uint64_t start_fetch(JsCtx *c, NetRequest *rq, Fetch *f) {
     rq->done = fetch_done;
@@ -342,6 +389,21 @@ static uint64_t start_fetch(JsCtx *c, NetRequest *rq, Fetch *f) {
     auto mpit = c->players.find((uint32_t)NUM(0));                \
     if (mpit == c->players.end()) return;                         \
     MediaPlayer *mp = mpit->second
+FN(waOpen) { CTX; RET((double)wa_open(c)); }
+FN(waPush) {
+    CTX; const char *p; size_t n;
+    if (bytes_of(a[1], &p, &n)) wa_push(c, (int)NUM(0), (const float *)p, (int)(n / 8));
+}
+FN(waQueued) { CTX; RET((double)wa_queued(c, (int)NUM(0))); }
+FN(waPause) { CTX; wa_pause(c, (int)NUM(0), BOOL(1)); }
+FN(waClose) { CTX; wa_close(c, (int)NUM(0)); }
+FN(audioDecode) {
+    CTX; const char *p; size_t n; int frames = 0;
+    if (!bytes_of(a[0], &p, &n) || !n) { RET(v8::Null(iso)); return; }
+    float *s = media_decode_pcm((const uint8_t *)p, n, &frames);
+    if (!s) { RET(v8::Null(iso)); return; }
+    RET(mkab(iso, s, (size_t)frames * 8)); free(s);
+}
 FN(mediaNew) { CTX; ARGN(n, 0); uint32_t id = c->next_player++; c->players[id] = mp_new(n); RET((double)id); }
 FN(mediaFree) { CTX; MP; mp_free(mp); c->players.erase(mpit); }
 FN(mediaOpen) { CTX; MP; mp_open_url(mp, S(1).c_str()); }
@@ -380,7 +442,49 @@ FN(fetch) {
     if (!a[4]->IsFunction()) return;
     Fetch *f = new Fetch{ c, 0, {}, nullptr };
     f->cb.Reset(iso, a[4].As<v8::Function>());
-    RET((double)start_fetch(c, mkreq(c, a), f));
+    NetRequest *rq = mkreq(c, a);
+    if (a.Length() > 6 && a[5]->IsFunction() && a[6]->IsFunction()) {
+        f->head.Reset(iso, a[5].As<v8::Function>()); f->chunk.Reset(iso, a[6].As<v8::Function>());
+        rq->head = fetch_head; rq->chunk = fetch_chunk;
+    }
+    RET((double)start_fetch(c, rq, f));
+}
+static void ws_cb(NetWs *ws, int type, const char *d, size_t n, int code, void *ud) {
+    (void)ws;
+    WsSock *s = static_cast<WsSock *>(ud);
+    JsCtx *c = s->c;
+    JS_ENTER(c);
+    v8::Local<v8::Value> argv[3] = {
+        v8::Integer::New(iso, type),
+        type == NET_WS_BINARY ? v8::Local<v8::Value>(mkab(iso, d, n)) : v8::Local<v8::Value>(v8::String::NewFromUtf8(iso, d, v8::NewStringType::kNormal, (int)n).ToLocalChecked()),
+        v8::Integer::New(iso, code),
+    };
+    v8::Local<v8::Function> f = s->cb.Get(iso);
+    if (type == NET_WS_CLOSE) { c->sockets.erase(s->id); net_ws_release(s->ws); s->cb.Reset(); delete s; }
+    (void)jcall(c, f, v8::Undefined(iso), 3, argv);
+}
+FN(wsOpen) {
+    CTX;
+    if (!a[3]->IsFunction()) return;
+    WsSock *s = new WsSock{ c, c->next_ws++, nullptr, {} };
+    s->cb.Reset(iso, a[3].As<v8::Function>());
+    c->sockets[s->id] = s;
+    s->ws = net_ws_open(S(0).c_str(), S(1).c_str(), S(2).c_str(), ws_cb, s);
+    RET((double)s->id);
+}
+FN(wsSend) {
+    CTX;
+    auto it = c->sockets.find((uint32_t)NUM(0));
+    if (it == c->sockets.end()) return;
+    if (BOOL(2)) { const char *p; size_t n; if (bytes_of(a[1], &p, &n)) net_ws_send(it->second->ws, 2, p, n); }
+    else { std::string t = S(1); net_ws_send(it->second->ws, 1, t.data(), t.size()); }
+}
+FN(wsClose) {
+    CTX;
+    auto it = c->sockets.find((uint32_t)NUM(0));
+    if (it == c->sockets.end()) return;
+    std::string r = S(2);
+    net_ws_close(it->second->ws, (int)NUM(1), r.c_str());
 }
 FN(fetchSync) {
     CTX;
@@ -395,7 +499,7 @@ FN(abort) {
     auto it = c->fetches.find(id);
     if (it == c->fetches.end()) return;
     net_cancel(id);
-    it->second->c = nullptr; it->second->cb.Reset();
+    it->second->c = nullptr; it->second->cb.Reset(); it->second->head.Reset(); it->second->chunk.Reset();
     c->fetches.erase(it);
 }
 FN(log) {
@@ -405,6 +509,7 @@ FN(log) {
     std::string m = S(1);
     fprintf(stderr, "[js %s] %.2000s\n", names[std::clamp(lv, 0, 3)], m.c_str());
 }
+FN(logLevel) { a.GetReturnValue().Set(g_log_level); }
 FN(viewport) {
     CTX; float w = 0, h = 0, sx = 0, sy = 0, dpr = 1;
     if (c->host.viewport) c->host.viewport(c->host.ud, &w, &h, &sx, &sy, &dpr);
@@ -418,6 +523,17 @@ FN(hit) {
     CTX; Node *n = c->host.hit ? c->host.hit(c->host.ud, (float)NUM(0), (float)NUM(1)) : nullptr;
     while (n && n->type != NODE_ELEMENT) n = n->parent;
     RET(jwrap(c, n));
+}
+FN(selSet) {
+    CTX; Document *d = c->doc;
+    if (!d) return;
+    for (int i = 0; i < 2; i++) {
+        Node *n = junwrap(a[2 * i]);
+        if (n) node_retain(n);
+        if (d->sel[i]) node_release(d->sel[i]);
+        d->sel[i] = n; d->selo[i] = n ? (int)NUM(2 * i + 1) : 0;
+    }
+    d->sel_back = BOOL(4); d->sel_ver++;
 }
 FN(ceScan) {
     CTX; ARGN(root, 0);
@@ -719,8 +835,16 @@ void js_run_inserted(JsCtx *c, Node *root) {
         if (x->type == NODE_ELEMENT && x->tag == A_script && x->ns == NS_HTML && !(x->flags & NF_SCRIPT_STARTED)) list.push_back(x);
     for (Node *s : list) {
         s->flags |= NF_SCRIPT_STARTED;
-        if (!jsg_classic_script(s)) continue;
+        bool mod = jsg_module_script(s);
+        if (!mod && !jsg_classic_script(s)) continue;
         const char *src = node_attr(s, "src");
+        if (mod) {
+            char *t = src ? nullptr : node_text_content(s), *u = src && *src ? url_join(c->doc->url, src) : nullptr;
+            if (src && !u) jfire(c, s, "error");
+            else js_run_module(c, s, t ? t : (src ? nullptr : ""), t ? strlen(t) : 0, u ? u : c->doc->url);
+            free(t); free(u);
+            continue;
+        }
         if (!src) {
             char *t = node_text_content(s);
             js_run_script(c, s, t ? t : "", t ? strlen(t) : 0, c->doc->url);
@@ -747,12 +871,12 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(text); REG(setText); REG(attr); REG(setAttr); REG(rmAttr); REG(attrs); REG(insert); REG(remove); REG(newDoc); REG(newXmlDoc); REG(parseDoc); REG(adopt); REG(pi); REG(cdata); REG(doctype); REG(ownerDoc);
     REG(create); REG(textNode); REG(comment); REG(frag); REG(html); REG(setHTML); REG(parseFrag); REG(query);
     REG(matches); REG(byId); REG(clone); REG(doc); REG(contains); REG(connected); REG(host); REG(attachShadow);
-    REG(templateContent); REG(rect); REG(computed); REG(value); REG(setValue); REG(checked); REG(setChecked);
+    REG(templateContent); REG(rect); REG(vrect); REG(clipSet); REG(clipGet); REG(scrollPos); REG(setScroll); REG(computed); REG(value); REG(setValue); REG(checked); REG(setChecked); REG(pickFiles);
     REG(focus); REG(active); REG(cookie); REG(setCookie); REG(url); REG(setUrl); REG(navigate); REG(navigatePost); REG(histGo);
     REG(histLen); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
     REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove);
     REG(mediaBuffered); REG(mediaEos); REG(mediaSetDuration); REG(mediaPlay); REG(mediaPause); REG(mediaSeek);
-    REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(readyState); REG(quirks);
+    REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(readyState); REG(quirks);
     REG(currentScript); REG(media); REG(cssSupports); REG(cssSelText); REG(urlParse); REG(encode); REG(decode); REG(random); REG(cDigest); REG(cHmac); REG(cAes); REG(cEcGen); REG(cEcDerive); REG(cEcSign); REG(cEcVerify); REG(cSpki); REG(cSpkiParse); REG(cPkcs8Parse); REG(cEcFromD); REG(cHkdf); REG(cPbkdf2);
     REG(heap); REG(imgSize); REG(userAgent); REG(platform); REG(cpus); REG(makeAll);
 #undef REG

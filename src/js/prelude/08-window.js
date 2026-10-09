@@ -1,7 +1,7 @@
 class ResizeObserver {
     constructor(cb) { this._cb = cb; this._t = new Map(); }
-    observe(el) { if (this._t.has(el)) return; this._t.set(el, null); setTimeout(() => this._check()); }
-    unobserve(el) { this._t.delete(el); } disconnect() { this._t.clear(); }
+    observe(el) { if (this._t.has(el)) return; this._t.set(el, null); roAll.add(this); setTimeout(() => this._check()); roKick(); }
+    unobserve(el) { this._t.delete(el); } disconnect() { this._t.clear(); roAll.delete(this); }
     _check() {
         const recs = [];
         for (const [el, old] of this._t) { const r = N.rect(el) || [0, 0, 0, 0]; const k = r[2] + 'x' + r[3]; if (k === old) continue; this._t.set(el, k); const cr = new DOMRect(0, 0, r[2], r[3]); const sz = [{ inlineSize: r[2], blockSize: r[3] }]; recs.push({ target: el, contentRect: cr, borderBoxSize: sz, contentBoxSize: sz, devicePixelContentBoxSize: sz }); }
@@ -14,6 +14,10 @@ class IntersectionObserver {
     _check() { const v = N.viewport(), m = this._m, out = []; for (const [el, prev] of this._t) { const r = el.getBoundingClientRect(); const vis = el.isConnected && r.bottom > -m && r.top < v[1] + m && r.right > -m && r.left < v[0] + m && r.width + r.height > 0; if (vis === prev) continue; this._t.set(el, vis); out.push({ target: el, isIntersecting: vis, intersectionRatio: vis ? 1 : 0, boundingClientRect: r, intersectionRect: vis ? r : new DOMRect(), rootBounds: new DOMRect(0, 0, v[0], v[1]), time: N.now() }); } if (out.length) try { this._cb(out, this); } catch (e) { report(e); } }
     unobserve(el) { this._t.delete(el); } disconnect() { this._t.clear(); ioAll.delete(this); } takeRecords() { return []; }
 }
+const roAll = new Set();
+let roTimer = 0;
+/* sizes change after layout, not only at observe(): re-check every observed element while any observer is live */
+const roKick = () => { if (!roTimer) roTimer = setInterval(() => { if (!roAll.size) { clearInterval(roTimer); roTimer = 0; return; } for (const o of [...roAll]) if (o._t.size) o._check(); else roAll.delete(o); }, 100); };
 const ioAll = new Set();
 let ioPending = false, ioTimer = 0;
 const ioRun = () => { ioPending = false; for (const o of [...ioAll]) if (o._t.size) o._check(); else ioAll.delete(o); };
@@ -57,16 +61,28 @@ const history = {
 };
 class BatteryManager extends EventTarget {}
 const battery = Object.assign(Reflect.construct(EventTarget, [], BatteryManager), { charging: true, chargingTime: 0, dischargingTime: Infinity, level: 1, onchargingchange: null, onchargingtimechange: null, ondischargingtimechange: null, onlevelchange: null });
+const __uaChrome = (/ Chrome\/(\d+)/.exec(N.userAgent()) || [])[1];
 const navigator = {
-    userAgent: N.userAgent(), appVersion: N.userAgent().replace(/^Mozilla\//, ''), appName: 'Netscape', appCodeName: 'Mozilla', product: 'Gecko', productSub: '20030107', vendor: 'Google Inc.', vendorSub: '',
+    userAgent: N.userAgent(), appVersion: N.userAgent().replace(/^Mozilla\//, ''), appName: 'Netscape', appCodeName: 'Mozilla', product: 'Gecko', productSub: __uaChrome ? '20030107' : '20100101', vendor: __uaChrome ? 'Google Inc.' : '', vendorSub: '',
     platform: N.platform(), language: 'en-US', languages: ['en-US', 'en'], onLine: true, cookieEnabled: true, doNotTrack: null, webdriver: false, pdfViewerEnabled: false,
     hardwareConcurrency: N.cpus(), deviceMemory: 8, maxTouchPoints: 0, plugins: [], mimeTypes: [],
-    userAgentData: { brands: [{ brand: 'Chromium', version: '131' }, { brand: 'Not_A Brand', version: '24' }], mobile: false, platform: N.platform() === 'MacIntel' ? 'macOS' : 'Linux', getHighEntropyValues() { return Promise.resolve({}); }, toJSON() { return {}; } },
+    userAgentData: __uaChrome ? { brands: [{ brand: 'Google Chrome', version: __uaChrome }, { brand: 'Not?A_Brand', version: '8' }, { brand: 'Chromium', version: __uaChrome }], mobile: false, platform: N.platform() === 'MacIntel' ? 'macOS' : 'Linux', getHighEntropyValues() { return Promise.resolve({}); }, toJSON() { return {}; } } : undefined,
     connection: { effectiveType: '4g', downlink: 10, rtt: 50, saveData: false, addEventListener() {}, removeEventListener() {} },
     javaEnabled() { return false; }, sendBeacon() { return true; }, vibrate() { return false; }, registerProtocolHandler() {},
-    clipboard: { writeText() { return Promise.resolve(); }, readText() { return Promise.resolve(''); } },
+    clipboard: Object.assign(new EventTarget(), {
+        writeText(t) { N.clipSet(String(t)); return Promise.resolve(); },
+        readText() { return Promise.resolve(N.clipGet()); },
+        async write(items) { for (const it of items || []) if (it.types.includes('text/plain')) { N.clipSet(await (await it.getType('text/plain')).text()); return; } },
+        async read() { return [new ClipboardItem({ 'text/plain': new Blob([N.clipGet()], { type: 'text/plain' }) })]; },
+    }),
     permissions: { query() { return Promise.resolve({ state: 'prompt', addEventListener() {} }); } },
-    mediaDevices: Object.assign(new EventTarget(), { enumerateDevices() { return Promise.resolve([]); }, getUserMedia() { return Promise.reject(new DOMException('Capture is not implemented yet', 'NotSupportedError')); }, getDisplayMedia() { return Promise.reject(new DOMException('Capture is not implemented yet', 'NotSupportedError')); }, getSupportedConstraints() { return {}; } }),
+    mediaDevices: Object.assign(new EventTarget(), { enumerateDevices() { return Promise.resolve([]); }, getUserMedia(c) {
+            if (!c || typeof c !== 'object' || (!c.audio && !c.video)) return Promise.reject(new TypeError("Failed to execute 'getUserMedia': At least one of audio and video must be requested"));
+            const t = [];
+            if (c.audio) t.push(new MediaStreamTrack(RTC_INTERNAL, 'audio', 'Fake Default Audio Input'));
+            if (c.video) t.push(new MediaStreamTrack(RTC_INTERNAL, 'video', 'Fake Default Video Input'));
+            return new Promise(r => setTimeout(() => r(new MediaStream(t))));
+        }, getDisplayMedia() { return Promise.reject(new DOMException('Capture is not implemented yet', 'NotSupportedError')); }, getSupportedConstraints() { return {}; } }),
     serviceWorker: Object.assign(new EventTarget(), {
         controller: null, ready: new Promise(() => {}),
         register() { return Promise.reject(new DOMException('Service workers are not supported', 'SecurityError')); },
@@ -248,15 +264,18 @@ const queueMicrotask = (fn) => { Promise.resolve().then(() => { try { fn(); } ca
 function structuredClone(v, seen = new Map()) {
     if (v === null || typeof v !== 'object') { if (typeof v === 'function' || typeof v === 'symbol') throw new DOMException('could not be cloned.', 'DataCloneError'); return v; }
     if (seen.has(v)) return seen.get(v);
-    if (v instanceof Date) return new Date(v); if (v instanceof RegExp) return new RegExp(v.source, v.flags);
-    if (v instanceof ArrayBuffer) return v.slice(0); if (ArrayBuffer.isView(v)) return new v.constructor(v);
-    if (v instanceof Blob) return v; if (N.isNode(v)) throw new DOMException('could not be cloned.', 'DataCloneError');
-    if (v instanceof Map) { const m = new Map(); seen.set(v, m); for (const [k, x] of v) m.set(structuredClone(k, seen), structuredClone(x, seen)); return m; }
-    if (v instanceof Set) { const s = new Set(); seen.set(v, s); for (const x of v) s.add(structuredClone(x, seen)); return s; }
+    const tag = Object.prototype.toString.call(v).slice(8, -1);
+    if (tag === 'Date') return new Date(Date.prototype.getTime.call(v)); if (tag === 'RegExp') return new RegExp(v.source, v.flags);
+    if (tag === 'ArrayBuffer') { const b = new ArrayBuffer(v.byteLength); new Uint8Array(b).set(new Uint8Array(v)); seen.set(v, b); return b; }
+    if (ArrayBuffer.isView(v)) { const b = structuredClone(v.buffer, seen); return tag === 'DataView' ? new DataView(b, v.byteOffset, v.byteLength) : new globalThis[tag](b, v.byteOffset, v.length); }
+    if (v instanceof Blob || tag === 'Blob' || tag === 'File') return v; if (N.isNode(v)) throw new DOMException('could not be cloned.', 'DataCloneError');
+    if (tag === 'Map') { const m = new Map(); seen.set(v, m); for (const [k, x] of v) m.set(structuredClone(k, seen), structuredClone(x, seen)); return m; }
+    if (tag === 'Set') { const s = new Set(); seen.set(v, s); for (const x of v) s.add(structuredClone(x, seen)); return s; }
     const o = Array.isArray(v) ? [] : {}; seen.set(v, o); for (const k of Object.keys(v)) o[k] = structuredClone(v[k], seen); return o;
 }
-function postMessage(data, origin) { const [src, org] = N.caller(); const d = structuredClone(data); setTimeout(() => dispatch(G, new MessageEvent('message', { data: d, origin: org, source: asWin(src) }))); }
-function queueMessage(data, origin, src) { setTimeout(() => dispatch(G, new MessageEvent('message', { data, origin, source: asWin(src) }))); }
+const xferPorts = (o, t) => { const tr = o && typeof o === 'object' ? o.transfer : t; return (tr && typeof tr[Symbol.iterator] === 'function' ? [...tr] : []).filter(p => p && typeof p.postMessage === 'function' && typeof p.start === 'function'); };
+function postMessage(data, origin, transfer) { const [src, org] = N.caller(); const d = structuredClone(data), ports = xferPorts(origin, transfer); setTimeout(() => dispatch(G, new MessageEvent('message', { data: d, origin: org, source: asWin(src), ports }), true)); }
+function queueMessage(data, origin, src, ports) { setTimeout(() => dispatch(G, new MessageEvent('message', { data, origin, source: asWin(src), ports: ports ? [...ports] : [] }), true)); }
 const remoteWins = new Map();
 function asWin(v) {
     if (typeof v !== 'number') return v;
@@ -264,7 +283,7 @@ function asWin(v) {
     if (w) return w;
     const nav = u => N.ctxRel(v, 4, String(u));
     w = Object.freeze({
-        postMessage(d, o) { N.postTo(v, d, o && typeof o === 'object' ? String(o.targetOrigin ?? '/') : String(o ?? '/')); },
+        postMessage(d, o, t) { N.postTo(v, d, o && typeof o === 'object' ? String(o.targetOrigin ?? '/') : String(o ?? '/'), xferPorts(o, t)); },
         get window() { return w; }, get self() { return w; }, get frames() { return w; },
         get parent() { return asWin(N.ctxRel(v, 0)) ?? w; }, get top() { return asWin(N.ctxRel(v, 1)) ?? w; },
         get length() { return N.ctxRel(v, 2); }, get closed() { return N.ctxRel(v, 3); }, opener: null,
@@ -275,12 +294,14 @@ function asWin(v) {
     return w;
 }
 const counts = {}, timers = {};
+const LOG_LEVEL = N.logLevel();
+const clog = (lv, a, pre = '') => { if (lv >= LOG_LEVEL) N.log(lv, pre + fmt(a)); };
 const console = {
-    log: (...a) => N.log(1, fmt(a)), info: (...a) => N.log(1, fmt(a)), debug: (...a) => N.log(0, fmt(a)), trace: (...a) => N.log(0, fmt(a)),
-    warn: (...a) => N.log(2, fmt(a)), error: (...a) => N.log(3, fmt(a)),
-    assert: (c, ...a) => { if (!c) N.log(3, 'Assertion failed: ' + fmt(a)); },
-    dir: (...a) => N.log(1, fmt(a)), dirxml: (...a) => N.log(1, fmt(a)), table: (...a) => N.log(1, fmt(a)),
-    group: (...a) => N.log(1, fmt(a)), groupCollapsed: (...a) => N.log(1, fmt(a)), groupEnd() {},
+    log: (...a) => clog(1, a), info: (...a) => clog(1, a), debug: (...a) => clog(0, a), trace: (...a) => clog(0, a),
+    warn: (...a) => clog(2, a), error: (...a) => clog(3, a),
+    assert: (c, ...a) => { if (!c) clog(3, a, 'Assertion failed: '); },
+    dir: (...a) => clog(1, a), dirxml: (...a) => clog(1, a), table: (...a) => clog(1, a),
+    group: (...a) => clog(1, a), groupCollapsed: (...a) => clog(1, a), groupEnd() {},
     count: (l = 'default') => N.log(1, l + ': ' + (counts[l] = (counts[l] || 0) + 1)), countReset: (l = 'default') => { counts[l] = 0; },
     time: (l = 'default') => { timers[l] = N.now(); }, timeEnd: (l = 'default') => { N.log(1, l + ': ' + (N.now() - (timers[l] || 0)).toFixed(1) + ' ms'); delete timers[l]; }, timeLog: (l = 'default') => N.log(1, l + ': ' + (N.now() - (timers[l] || 0)).toFixed(1) + ' ms'),
     timeStamp() {}, profile() {}, profileEnd() {}, clear() {},
@@ -307,13 +328,14 @@ Object.setPrototypeOf(history, History.prototype); Object.setPrototypeOf(navigat
 Object.setPrototypeOf(performance, Performance.prototype); Object.setPrototypeOf(crypto, Crypto.prototype);
 const globals = {
     CryptoKey, SubtleCrypto,
-    ProcessingInstruction, TouchEvent, CompositionEvent, ClipboardEvent, DragEvent, StorageEvent, PromiseRejectionEvent, SubmitEvent,
+    ProcessingInstruction, TouchEvent, CompositionEvent, ClipboardEvent, ClipboardItem, DragEvent, StorageEvent, PromiseRejectionEvent, SubmitEvent,
     StyleSheet, IdleDeadline, TimeRanges, MediaError, MediaSource, SourceBuffer, SourceBufferList, ImageData, Path2D, CanvasGradient, CanvasPattern, CanvasRenderingContext2D, History, Navigator, Screen, Performance, Crypto, SubtleCrypto,
     DOMException, DOMRectReadOnly, DOMRect, Event, CustomEvent, UIEvent, FocusEvent, MouseEvent, PointerEvent, WheelEvent, KeyboardEvent, InputEvent, ErrorEvent, ProgressEvent, MessageEvent, PopStateEvent, HashChangeEvent, PageTransitionEvent, AnimationEvent, TransitionEvent, MediaQueryListEvent,
-    EventTarget, AbortSignal, AbortController, MutationObserver, MutationRecord, Node, NodeList, HTMLCollection: NodeList, CharacterData, Text, CDATASection, Comment, DocumentType, DocumentFragment, ShadowRoot, Attr, NamedNodeMap, DOMTokenList,
+    EventTarget, AbortSignal, AbortController, MutationObserver, MutationRecord, Node, NodeList, HTMLCollection, AnimationTimeline, DocumentTimeline, CharacterData, Text, CDATASection, Comment, DocumentType, DocumentFragment, ShadowRoot, Attr, NamedNodeMap, DOMTokenList,
     CSSStyleDeclaration, SVGFEBlendElement, SVGFEComponentTransferElement, SVGFEDiffuseLightingElement, SVGFESpecularLightingElement, SVGFEDropShadowElement, SVGFEFloodElement, SVGFEGaussianBlurElement, SVGFEImageElement, SVGFEMergeElement, SVGFEMergeNodeElement, SVGFEOffsetElement, SVGFETileElement, SVGFEDistantLightElement, SVGFEPointLightElement, SVGFESpotLightElement, SVGFEFuncRElement, SVGFEFuncGElement, SVGFEFuncBElement, SVGFEFuncAElement, SVGLength, SVGNumber, SVGAnimatedLength, SVGAnimatedNumber, SVGAnimatedInteger, SVGAnimatedBoolean, SVGAnimatedString, SVGAnimatedEnumeration, SVGRect, SVGAnimatedRect, SVGUnitTypes, SVGGeometryElement, SVGRectElement, SVGCircleElement, SVGEllipseElement, SVGLineElement, SVGPathElement, SVGPolylineElement, SVGPolygonElement, SVGGElement, SVGDefsElement, SVGUseElement, SVGImageElement, SVGForeignObjectElement, SVGAElement, SVGSwitchElement, SVGTextContentElement, SVGTextPositioningElement, SVGTextElement, SVGTSpanElement, SVGTextPathElement, SVGGradientElement, SVGLinearGradientElement, SVGRadialGradientElement, SVGStopElement, SVGClipPathElement, SVGMaskElement, SVGPatternElement, SVGFilterElement, SVGMarkerElement, SVGSymbolElement, SVGTitleElement, SVGDescElement, SVGMetadataElement, SVGStyleElement, SVGScriptElement, SVGFEColorMatrixElement, SVGFECompositeElement, SVGFEMorphologyElement, SVGFETurbulenceElement, SVGFEDisplacementMapElement, SVGFEConvolveMatrixElement, SVGComponentTransferFunctionElement, CSSRuleList, CSSStyleRule, CSSGroupingRule, CSSConditionRule, CSSMediaRule, CSSSupportsRule, CSSContainerRule, CSSLayerBlockRule, CSSLayerStatementRule, CSSImportRule, CSSNamespaceRule, CSSFontFaceRule, CSSPageRule, CSSKeyframeRule, CSSKeyframesRule, MediaList, Element, HTMLElement, SVGElement, SVGGraphicsElement, SVGSVGElement, MathMLElement, Image, Audio, Option, CustomElementRegistry, Document, HTMLDocument, XMLDocument, CSSRule, CSSStyleSheet, CSS, FontFace,
     TreeWalker, NodeIterator, NodeFilter, Range, StaticRange, AbstractRange, Selection, Animation, DOMMatrixReadOnly, DOMMatrix, DOMPoint, DOMParser, XMLSerializer,
-    TextEncoder, TextDecoder, btoa, atob, Blob, File, FileReader, ReadableStream, URLSearchParams, URL, webkitURL: URL, Headers, Request, Response, fetch, FormData, XMLHttpRequestEventTarget, XMLHttpRequestUpload, XMLHttpRequest, WebSocket, MessagePort, MessageChannel, Worker, BroadcastChannel,
+    TextEncoder, TextDecoder, btoa, atob, Blob, File, FileList, DataTransfer, DataTransferItem, DataTransferItemList, FileReader, ReadableStream, ReadableStreamDefaultReader, WritableStream, WritableStreamDefaultWriter, TransformStream, ByteLengthQueuingStrategy, CountQueuingStrategy, TextEncoderStream, TextDecoderStream, URLSearchParams, URL, webkitURL: URL, Headers, Request, Response, fetch, FormData, XMLHttpRequestEventTarget, XMLHttpRequestUpload, XMLHttpRequest, WebSocket, CloseEvent, MessagePort, MessageChannel, Worker, BroadcastChannel,
+    RTCPeerConnection, RTCSessionDescription, RTCIceCandidate, RTCPeerConnectionIceEvent, RTCPeerConnectionIceErrorEvent, RTCDataChannel, RTCDataChannelEvent, RTCTrackEvent, RTCRtpSender, RTCRtpReceiver, RTCRtpTransceiver, RTCIceTransport, RTCDtlsTransport, RTCSctpTransport, RTCCertificate, RTCStatsReport, RTCError, RTCErrorEvent, MediaStream, MediaStreamTrack, MediaStreamTrackEvent,
     ResizeObserver, IntersectionObserver, HTMLAllCollection, PerformanceObserver, Storage, localStorage, sessionStorage, Location, location, history, navigator, screen, performance, crypto, MediaQueryList, matchMedia, getComputedStyle,
     setTimeout, setInterval, clearTimeout, clearInterval, requestAnimationFrame, cancelAnimationFrame, requestIdleCallback, cancelIdleCallback, queueMicrotask, structuredClone, postMessage, console, customElements, Window, document,
     window: G, self: G, globalThis: G, get top() { return asWin(N.topWin()) ?? G; }, get parent() { return asWin(N.parentWin()) ?? G; }, frames: G, opener: null, get frameElement() { return N.frameEl(); }, closed: false, name: '', get length() { return N.frameCount(); }, origin: location.origin, isSecureContext: location.protocol === 'https:', crossOriginIsolated: false,
@@ -340,11 +362,109 @@ for (const k of ['addEventListener', 'removeEventListener', 'dispatchEvent']) {
     const f = EventTarget.prototype[k];
     Object.defineProperty(G, k, { value: function (...a) { return f.apply(this ?? G, a); }, writable: true, configurable: true });
 }
-function fire(target, type, init, Ctor = Event) { return dispatch(target, new Ctor(type, init), true); }
+function fire(target, type, init, Ctor = Event) {
+    const pre = type === 'click' ? preActivate(target) : null;
+    const ev = new Ctor(type, init), ok = dispatch(target, ev, true);
+    if (!ok && pre && pre.restore) pre.restore();
+    if (ok && type === 'click' && target && target.nodeType === 1 && !(target.closest && target.closest('a[href]')) && !(target.disabled || (target.closest && target.closest('button:disabled')))) {
+        try { activate(target, ev, pre); } catch (e) { report(e); }   /* anchors are navigated natively by the shell */
+    }
+    return ok;
+}
 function fireAnim(t, type, name, elapsed, anim) {
     const init = anim ? { bubbles: true, animationName: name, elapsedTime: elapsed } : { bubbles: true, propertyName: name, elapsedTime: elapsed };
     return dispatch(t, new (anim ? AnimationEvent : TransitionEvent)(type, init), true);
 }
+{
+    const editHost = n => {
+        for (; n; n = n.parentNode) if (n.nodeType === 1) {
+            const v = n.getAttribute('contenteditable');
+            if (v === '' || v === 'true' || v === 'plaintext-only') return n;
+            if (v === 'false') return null;
+        }
+        return null;
+    };
+    const caret = h => {
+        const s = document.getSelection();
+        if (s.rangeCount && h.contains(s.anchorNode)) return s;
+        let n = h;
+        while (n.lastChild && !(n.lastChild.nodeType === 1 && n.lastChild.tagName === 'BR')) n = n.lastChild;
+        s.collapse(n, n.nodeType === 3 ? n.data.length : n.childNodes.length);
+        return s;
+    };
+    const fire = (h, type, inputType, data) => h.dispatchEvent(new InputEvent(type, { inputType, data, bubbles: true, cancelable: type === 'beforeinput', composed: true }));
+    const edit = (e, del) => {
+        e.stopImmediatePropagation();
+        const h = editHost(e.target); if (!h) return;
+        const s = caret(h), data = del ? null : e.key, type = del ? 'deleteContentBackward' : 'insertText';
+        if (!e.lumenExec && !fire(h, 'beforeinput', type, data)) return;
+        if (!s.isCollapsed) {
+            const blocks = [...h.children].some(c => /^(P|DIV|LI|H[1-6]|BLOCKQUOTE|PRE)$/.test(c.tagName));
+            s.deleteFromDocument();
+            if (blocks && !h.firstChild) { const p = document.createElement('p'); p.appendChild(document.createElement('br')); h.appendChild(p); s.collapse(p, 0); }
+            else s.collapse(s.anchorNode, s.anchorOffset);
+            if (del) { fire(h, 'input', type, data); document.dispatchEvent(new Event('selectionchange')); return; }
+        }
+        const c = s.focusNode, o = s.focusOffset;
+        if (del) {
+            if (c.nodeType !== 3 || !o) return;
+            const n = o > 1 && /[\udc00-\udfff]/.test(c.data[o - 1]) ? 2 : 1;
+            c.deleteData(o - n, n); s.collapse(c, o - n);
+        } else if (c.nodeType === 3) { c.insertData(o, data); s.collapse(c, o + data.length); }
+        else {
+            let ref = c.childNodes[o] ?? null;
+            if (!ref && c.lastChild && c.lastChild.nodeType === 1 && c.lastChild.tagName === 'BR') ref = c.lastChild;
+            const t = document.createTextNode(data); c.insertBefore(t, ref); s.collapse(t, data.length);
+        }
+        fire(h, 'input', type, data);
+        document.dispatchEvent(new Event('selectionchange'));
+    };
+    document.addEventListener('lumenedit', e => edit(e, false), true);
+    document.addEventListener('lumeneditdel', e => edit(e, true), true);
+    /* native mouse/keyboard selection in contenteditable: target + byte offset (clientX), extend flag (clientY) */
+    const texts = h => { const a = [], tw = document.createTreeWalker(h, 4); for (let n; (n = tw.nextNode());) a.push(n); return a; };
+    const wordCh = /[\p{L}\p{N}_]/u;
+    const selAt = (type, f) => document.addEventListener('lumensel-' + type, e => {
+        e.stopImmediatePropagation();
+        const n = e.target, h = editHost(n); if (!h) return;
+        f(document.getSelection(), n, n.nodeType === 3 ? utf16Off(n.data, e.clientX | 0) : e.clientX | 0, h, e.clientY > 0);
+        document.dispatchEvent(new Event('selectionchange'));
+    }, true);
+    const to = (s, ext, n, o) => ext ? s.extend(n, o) : s.collapse(n, o);
+    selAt('collapse', (s, n, o) => s.collapse(n, o));
+    selAt('extend', (s, n, o, h) => s.rangeCount && h.contains(s.anchorNode) ? s.extend(n, o) : s.collapse(n, o));
+    selAt('word', (s, n, o) => {
+        if (n.nodeType !== 3) return s.collapse(n, o);
+        const d = n.data; let a = o, b = o;
+        while (a > 0 && wordCh.test(d[a - 1])) a--;
+        while (b < d.length && wordCh.test(d[b])) b++;
+        if (a === b && b < d.length) b++;
+        s.setBaseAndExtent(n, a, n, b);
+    });
+    selAt('all', (s, n, o, h) => s.selectAllChildren(h));
+    selAt('home', (s, n, o, h, ext) => { const t = texts(h); to(s, ext, t.length ? t[0] : h, 0); });
+    selAt('end', (s, n, o, h, ext) => { const t = texts(h), l = t[t.length - 1]; l ? to(s, ext, l, l.data.length) : to(s, ext, h, h.childNodes.length); });
+    const step = (h, n, o, dir) => {
+        const t = texts(h);
+        if (!t.length) return [n, o];
+        if (n.nodeType !== 3) {
+            const c = n.childNodes[o], i = c ? t.findIndex(x => c.contains(x) || (c.compareDocumentPosition(x) & 4)) : -1;
+            if (i < 0) { n = t[t.length - 1]; o = n.data.length; } else { n = t[i]; o = 0; }
+        }
+        const i = t.indexOf(n), d = n.data;
+        if (dir < 0) {
+            if (o > 0) o -= o > 1 && /[\udc00-\udfff]/.test(d[o - 1]) ? 2 : 1;
+            else if (i > 0) { const p = t[i - 1]; o = p.data.length - (p.parentNode === n.parentNode && p.data.length ? 1 : 0); n = p; }
+        } else if (o < d.length) o += /[\ud800-\udbff]/.test(d[o]) ? 2 : 1;
+        else if (i < t.length - 1) { const q = t[i + 1]; o = q.parentNode === n.parentNode && q.data.length ? 1 : 0; n = q; }
+        return [n, o];
+    };
+    const move = dir => (s, n, o, h, ext) => {
+        if (!s.rangeCount || !h.contains(s.focusNode)) caret(h);
+        if (!ext && !s.isCollapsed) { const r = s.getRangeAt(0); return dir < 0 ? s.collapse(r.startContainer, r.startOffset) : s.collapse(r.endContainer, r.endOffset); }
+        to(s, ext, ...step(h, s.focusNode, s.focusOffset, dir));
+    };
+    selAt('left', move(-1)); selAt('right', move(1));
+}
 return { queueMessage, workerEvent, protoFor, dispatch, fire, fireAnim, report, mediaChanged, ceConnected, Event, MouseEvent, PointerEvent, KeyboardEvent, FocusEvent, WheelEvent, InputEvent, PopStateEvent, ErrorEvent };
 })
-

@@ -53,8 +53,8 @@ void frame_kill(JsCtx *k) {
     if (k->dead) return;
     k->dead = true;
     for (JsCtx *g : k->kids) frame_kill(g);
-    for (auto &kv : k->fetches) { net_cancel(kv.first); kv.second->c = nullptr; kv.second->cb.Reset(); }
-    k->fetches.clear();
+    for (auto &kv : k->fetches) { net_cancel(kv.first); kv.second->c = nullptr; kv.second->cb.Reset(); kv.second->head.Reset(); kv.second->chunk.Reset(); }
+    k->fetches.clear(); for (auto &kv : k->sockets) { net_ws_release(kv.second->ws); kv.second->cb.Reset(); delete kv.second; } k->sockets.clear();
     k->timers.clear(); k->rafs.clear(); k->anims.clear();
     if (k->host.frame_close && k->host_ud) k->host.frame_close(k->host_ud);
     k->host_ud = nullptr;
@@ -81,10 +81,17 @@ static JsCtx *frame_create(JsCtx *p, Node *f, const char *url, const char *html,
     ch.frame_close = p->host.frame_close;
     JsCtx *k = js_new_ex(d, &ch, p, f);
     k->host_ud = ch.ud;
+    if (const char *fp = getenv("LUMEN_FRAME_PRE")) if (strncmp(url, "about:", 6)) js_eval(k, fp, "lumen:frame-pre");
     for (Node *s = d->node.first; s && !k->dead; s = node_next_in_tree(s, &d->node)) {
-        if (s->type != NODE_ELEMENT || s->tag != A_script || s->ns != NS_HTML || (s->flags & NF_SCRIPT_STARTED) || !jsg_classic_script(s)) continue;
+        if (s->type != NODE_ELEMENT || s->tag != A_script || s->ns != NS_HTML || (s->flags & NF_SCRIPT_STARTED)) continue;
+        bool mod = jsg_module_script(s);
+        if (!mod && !jsg_classic_script(s)) continue;
         const char *src = node_attr(s, "src");
-        if (src) {
+        if (mod) {
+            char *t = src ? nullptr : node_text_content(s), *u = src ? url_join(d->url, src) : nullptr;
+            js_run_module(k, s, t ? t : (src ? nullptr : ""), t ? strlen(t) : 0, u ? u : d->url);
+            free(t); free(u);
+        } else if (src) {
             char *u = url_join(d->url, src);
             NetResponse *sr = u ? net_fetch_sync(net_request_new("GET", u)) : nullptr;
             if (sr && sr->status >= 200 && sr->status < 300) js_run_script(k, s, sr->body ? sr->body : "", sr->body_len, u);
@@ -150,6 +157,12 @@ void frame_nav(JsCtx *k, const char *u) {
 }
 
 static bool is_iframe(Node *n) { return n->type == NODE_ELEMENT && n->ns == NS_HTML && n->tag == A_iframe; }
+static void collect_iframes(Node *root, std::vector<Node *> &out) {
+    for (Node *n = root; n; n = node_next_in_tree(n, root)) {
+        if (is_iframe(n) && !js_frame_ctx(n)) out.push_back(n);
+        if (n->type == NODE_ELEMENT && n->shadow_root) collect_iframes(n->shadow_root, out);
+    }
+}
 
 void frames_scan(JsCtx *c) {
     if (c->dead || c->doc->dom_version == c->frame_scan_ver) return;
@@ -157,7 +170,7 @@ void frames_scan(JsCtx *c) {
     for (JsCtx *k : std::vector<JsCtx *>(c->kids))
         if (!k->dead && (!(k->frame_el->flags & NF_CONNECTED) || k->frame_el->doc != c->doc || src_key(c, k->frame_el) != k->frame_src)) frame_kill(k);
     std::vector<Node *> todo;
-    for (Node *n = c->doc->node.first; n; n = node_next_in_tree(n, &c->doc->node)) if (is_iframe(n) && !js_frame_ctx(n)) todo.push_back(n);
+    collect_iframes(&c->doc->node, todo);
     for (Node *n : todo) if (!js_frame_ctx(n)) frame_start(c, n);
 }
 
@@ -166,7 +179,7 @@ void frames_inserted(JsCtx *c, Node *root) {
     JsCtx *p = owner_ctx(root->doc);
     if (!p) p = c;
     std::vector<Node *> todo;
-    for (Node *x = root; x; x = node_next_in_tree(x, root)) if (is_iframe(x) && !js_frame_ctx(x)) todo.push_back(x);
+    collect_iframes(root, todo);
     for (Node *x : todo) if (!js_frame_ctx(x)) frame_start(p, x);
 }
 
@@ -236,8 +249,8 @@ static void n_postTo(const FCI &a) {
         v8::Local<v8::Value> data, fn;
         if (des.ReadHeader(tc).FromMaybe(false) && des.ReadValue(tc).ToLocal(&data) &&
             t->api.Get(iso)->Get(tc, jstr(iso, "queueMessage")).ToLocal(&fn) && fn->IsFunction()) {
-            v8::Local<v8::Value> argv[3] = { data, jstr(iso, ctx_origin(c).c_str()), win_for(t, c) };
-            (void)jcall(t, fn.As<v8::Function>(), v8::Undefined(iso), 3, argv);
+            v8::Local<v8::Value> argv[4] = { data, jstr(iso, ctx_origin(c).c_str()), win_for(t, c), a[3]->IsArray() ? a[3] : v8::Array::New(iso, 0).As<v8::Value>() };
+            (void)jcall(t, fn.As<v8::Function>(), v8::Undefined(iso), 4, argv);
         }
     }
     free(buf.first);

@@ -82,6 +82,12 @@ RENDER_TEST_SRC := $(LAYOUT_TEST_SRC) $(wildcard src/paint/*.c)
 $(BUILD)/render: $(call OBJ,tests/render.c $(RENDER_TEST_SRC))
 	$(CC) $(OPT) $^ -o $@ $(NETLIBS) -lfreetype -lharfbuzz -lpng -ljpeg -lwebp -lgif
 
+$(BUILD)/src/app/icon.inc: assets/icon/lumen-256.png
+	@mkdir -p $(dir $@)
+	xxd -i < $< > $@
+$(BUILD)/src/app/main.c.o: $(BUILD)/src/app/icon.inc
+$(BUILD)/src/app/main.c.o: CFLAGS += -I$(BUILD)/src/app
+
 PRELUDE_JS := $(sort $(wildcard src/js/prelude/*.js))
 $(BUILD)/src/js/prelude.inc: $(PRELUDE_JS)
 	@mkdir -p $(dir $@)

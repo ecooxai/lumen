@@ -1,0 +1,19 @@
+<!doctype html>
+<script>
+const R = {};
+const done = () => console.log('RESULTS webrtc ' + ['connected', 'channel', 'message', 'close'].map(k => k + ':' + (R[k] || 'FAIL')).join(' '));
+(async () => {
+    const a = new RTCPeerConnection(), b = new RTCPeerConnection();
+    a.onicecandidate = e => b.addIceCandidate(e.candidate);
+    b.onicecandidate = e => a.addIceCandidate(e.candidate);
+    const dc = a.createDataChannel('chat');
+    b.ondatachannel = e => {
+        R.channel = e.channel.label === 'chat' && e.channel.readyState === 'open' ? 'PASS' : 'BAD';
+        e.channel.onmessage = m => { R.message = m.data === 'hi' ? 'PASS' : 'BAD'; e.channel.onclose = () => { R.close = 'PASS'; done(); }; dc.close(); };
+    };
+    dc.onopen = () => { R.connected = a.connectionState === 'connected' && b.connectionState === 'connected' ? 'PASS' : 'BAD:' + a.connectionState; dc.send('hi'); };
+    await a.setLocalDescription(); await b.setRemoteDescription(a.localDescription);
+    await b.setLocalDescription(); await a.setRemoteDescription(b.localDescription);
+})().catch(e => console.log('webrtc error ' + e));
+setTimeout(done, 1500);
+</script>

@@ -53,6 +53,7 @@ def main():
                 done[dst] = r; todo.append(dst)
             if not d.startswith("@rpath/"): run("install_name_tool", "-change", d, "@rpath/" + base, f)
     run("install_name_tool", "-add_rpath", "@executable_path/../Frameworks", exe)
+    shutil.copy2(os.path.join(ROOT, "assets", "icon", "Lumen.icns"), os.path.join(RES, "Lumen.icns"))
     with open(os.path.join(APP, "Contents", "Info.plist"), "w") as p:
         p.write(f"""<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -62,6 +63,7 @@ def main():
 <key>CFBundleIdentifier</key><string>ai.ecoox.lumen</string>
 <key>CFBundleExecutable</key><string>lumen</string>
 <key>CFBundlePackageType</key><string>APPL</string>
+<key>CFBundleIconFile</key><string>Lumen</string>
 <key>CFBundleShortVersionString</key><string>{VER}</string>
 <key>CFBundleVersion</key><string>{VER}</string>
 <key>LSMinimumSystemVersion</key><string>13.0</string>

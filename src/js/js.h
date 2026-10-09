@@ -7,6 +7,11 @@ extern "C" {
 #endif
 
 typedef struct JsCtx JsCtx;
+/* system clipboard, set by the embedder (navigator.clipboard, execCommand copy); get returns malloc'd text */
+extern void (*js_clip_set)(const char *text);
+extern char *(*js_clip_get)(void);
+/* modifier keys held for the next dispatched event: 1 shift, 2 ctrl, 4 alt, 8 meta */
+extern int js_key_mods;
 
 typedef struct JsHost {
     void *ud;
@@ -28,15 +33,20 @@ typedef struct JsHost {
 void js_global_init(const char *argv0);
 JsCtx *js_new(Document *d, const JsHost *host);
 void js_mem_stats(size_t *heap, size_t *external);
+void js_set_background(JsCtx *c, bool bg);
+bool js_busy(JsCtx *c);   /* fetches in flight */
 void js_free(JsCtx *c);
 /* run a parser-inserted script (sets document.currentScript) */
 void js_run_script(JsCtx *c, Node *script, const char *src, size_t n, const char *name);
 void js_eval(JsCtx *c, const char *src, const char *name);
+/* run a <script type=module>; src NULL fetches url. Inline modules pass the document url */
+void js_run_module(JsCtx *c, Node *script, const char *src, size_t n, const char *url);
 /* dispatch a trusted event; kind: "Event", "MouseEvent", "KeyboardEvent", "FocusEvent", "WheelEvent".
    returns false when default was prevented */
 bool js_dispatch(JsCtx *c, Node *target, const char *type, const char *kind, bool bubbles, bool cancelable,
                  double x, double y, int button, const char *key);
 bool js_dispatch_window(JsCtx *c, const char *type);
+void js_release_pins(void);   /* end of a host event batch: unpin js_dispatch targets */
 void js_set_ready_state(JsCtx *c, int state);
 /* ms until the next timer / animation frame is due; <0 if none */
 double js_next_deadline(JsCtx *c);
@@ -46,7 +56,11 @@ bool js_wants_frame(JsCtx *c);
 /* the live child browsing context's document for an <iframe>, or NULL */
 Document *js_frame_doc(Node *iframe);
 JsCtx *js_frame_ctx(Node *iframe);
-extern void (*js_wakeup)(void);   /* called from worker threads when messages are queued */
+extern void (*js_wakeup)(void);
+/* <input type=file>: host opens a picker and reports the chosen paths with js_files_picked (any thread; n<0 = cancelled) */
+extern void (*js_pick_files)(bool multiple, const char *accept);
+void js_files_picked(const char *const *paths, int n);
+void js_pick_begin(JsCtx *c, bool multiple, const char *accept);   /* called from worker threads when messages are queued */
 void js_frame_navigate(Node *iframe, const char *url);
 
 #ifdef __cplusplus

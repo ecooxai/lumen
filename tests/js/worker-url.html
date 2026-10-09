@@ -1,0 +1,6 @@
+<!doctype html><script>
+const src = "const u = URL.createObjectURL(new Blob(['x'])); URL.revokeObjectURL(u); postMessage({ blob: u.startsWith('blob:' + location.origin + '/'), canParse: URL.canParse('https://a.b/') && !URL.canParse('::') });";
+const w = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+w.onmessage = e => console.log('RESULTS worker-url createRevoke:' + (e.data.blob ? 'PASS' : 'FAIL') + ' canParse:' + (e.data.canParse ? 'PASS' : 'FAIL'));
+w.onerror = e => console.log('RESULTS worker-url createRevoke:FAIL ' + e.message);
+</script>

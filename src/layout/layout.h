@@ -34,6 +34,7 @@ typedef struct Box {
     int list_index;
     float sx, sy;
     struct Box *cb, *abs_next, *abs_head;
+    float mk[8]; int8_t mmode; bool memo; int alo, ahi; unsigned astamp; int dcalls;   /* inputs of the last layout_box, reused when called again with the same ones */
 } Box;
 
 typedef struct FRect { float x, y, w, h; uint8_t side; } FRect;
@@ -49,6 +50,7 @@ typedef struct Layout {
     int nboxes;
     float inl_cbh;   /* containing-block height handed to layout_inline (floats/atomics resolve % heights against it) */
     double ms;
+    struct Box **alog; int nalog, calog;   /* every add_abs of this run, so a reused subtree can re-register its abs boxes */
 } Layout;
 
 extern bool (*layout_image_size_hook)(Node *n, float *w, float *h);
@@ -58,6 +60,10 @@ void layout_run(Layout *L, Document *d, float vw, float vh);
 Box *layout_hit(Layout *L, float x, float y);   /* document coordinates */
 Font *style_font(const ComputedStyle *s);
 float style_line_height(const ComputedStyle *s, Font *f);
+/* column-reverse scrollers start at the end: scrollTop 0 is the bottom, negative scrolls up */
+static inline bool box_within(const Box *x, const Box *a) { for (; x; x = x->parent) if (x == a) return true; return false; }
+static inline bool box_scroll_from_end(const Box *b) { return b->st && (b->st->display == D_FLEX || b->st->display == D_INLINE_FLEX) && b->st->flex_direction == FD_COLUMN_REVERSE; }
+static inline float box_scroll_y(const Box *b) { return b->node->scroll_y + (box_scroll_from_end(b) ? LMAX(0, b->scroll_h - b->h) : 0); }
 void layout_dump(Box *b, int depth, int maxdepth);
 
 /* internal */
@@ -82,8 +88,14 @@ void fc_place(FloatCtx *fc, Box *b, float y, float x0, float x1);
 float fc_clear(FloatCtx *fc, int side);
 float fc_bottom(FloatCtx *fc);
 static inline float collapse2(float a, float b) { if (a >= 0 && b >= 0) return LMAX(a, b); if (a < 0 && b < 0) return LMIN(a, b); return a + b; }
-static inline float res(Length l, float ref) { return l.kind == LK_LEN ? l.px + (ref > 0 ? l.pct * ref / 100.f : 0) : 0; }
-static inline bool len_def(Length l, float ref) { return l.kind == LK_LEN && (l.pct == 0 || ref >= 0); }
+static inline float res(Length l, float ref) {
+    if (l.kind != LK_LEN) return 0;
+    float a = l.px + (ref > 0 ? l.pct * ref / 100.f : 0);
+    if (!l.mm) return a;
+    float b = l.px2 + (ref > 0 ? l.pct2 * ref / 100.f : 0);
+    return l.mm == 1 ? (a < b ? a : b) : (a > b ? a : b);
+}
+static inline bool len_def(Length l, float ref) { return l.kind == LK_LEN && ((l.pct == 0 && (!l.mm || l.pct2 == 0)) || ref >= 0); }
 static inline float hbp(const Box *b) { return b->b[1] + b->b[3] + b->p[1] + b->p[3]; }
 static inline float vbp(const Box *b) { return b->b[0] + b->b[2] + b->p[0] + b->p[2]; }
 static inline bool in_flow(const Box *b) { return !b->abs && !b->floated; }

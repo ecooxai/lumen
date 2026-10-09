@@ -1,0 +1,8 @@
+<!doctype html>
+<iframe id="f" src="port-xrealm-child.html"></iframe>
+<script>
+const R = {};
+const done = () => console.log('RESULTS port-xrealm ' + ['buffer'].map(k => k + ':' + (R[k] || 'FAIL')).join(' '));
+f.onload = () => { const c = new MessageChannel(); c.port1.onmessage = e => { const d = e.data.d; try { R.buffer = new DataView(d).getUint32(0) === 7 && d instanceof ArrayBuffer ? 'PASS' : 'BAD'; } catch (x) { R.buffer = 'ERR:' + Object.prototype.toString.call(d); } }; f.contentWindow.postMessage('go', '*', [c.port2]); };
+setTimeout(done, 1500);
+</script>

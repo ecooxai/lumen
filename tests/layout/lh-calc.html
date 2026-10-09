@@ -1,0 +1,3 @@
+<!doctype html><style>:root{--lh:calc(1.25 / 0.875)} p{font-size:14px;line-height:var(--lh);margin:0} span{font-size:20px;line-height:calc(1.5)}</style>
+<p id=a>row one</p><p>row two</p><div><span>bigger</span></div>
+<script>const a=getComputedStyle(document.getElementById('a')).lineHeight, s=getComputedStyle(document.querySelector('span')).lineHeight;console.log('RESULTS lh-calc var:'+(a==='20px'?'PASS':'FAIL:'+a)+' plain:'+(s==='30px'?'PASS':'FAIL:'+s))</script>

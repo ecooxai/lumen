@@ -4,7 +4,8 @@
 
 /* ---------------- values ---------------- */
 enum { LK_LEN, LK_AUTO, LK_NONE, LK_MIN_CONTENT, LK_MAX_CONTENT, LK_FIT_CONTENT };
-typedef struct { float px, pct; uint8_t kind; } Length;  /* value = px + pct/100 * reference */
+typedef struct { float px, pct; uint8_t kind; bool pctu; uint8_t mm; float px2, pct2; } Length;  /* pctu: written with % (so 0% != 0px); mm 1/2: min/max(px+pct, px2+pct2), px/pct alone is a best guess */
+/* Length value = px + pct/100 * reference */  /* value = px + pct/100 * reference */
 static inline Length L_px(float v) { Length l = { v, 0, LK_LEN }; return l; }
 static inline Length L_auto(void) { Length l = { 0, 0, LK_AUTO }; return l; }
 static inline float len_resolve(Length l, float ref) { return l.px + l.pct * ref / 100.f; }
@@ -48,6 +49,9 @@ typedef struct { float x, y, blur, spread; Color color; bool inset; } Shadow;
 
 typedef struct CustomProps { int refs, depth; HMap map; struct CustomProps *parent; } CustomProps; /* own name -> char* value, then parent's */
 const char *custom_get(const CustomProps *c, const char *name);
+/* @property registrations: initial-value used when a custom property is unset */
+void css_register_property(const char *name, const char *initial);
+const char *css_property_initial(const char *name);
 
 typedef struct GridTrack { Length size; float fr; Length min; } GridTrack;
 
@@ -58,7 +62,8 @@ typedef struct ComputedStyle {
     uint8_t flex_direction, flex_wrap, justify_content, align_items, align_self, align_content, justify_items, justify_self;
     uint8_t vertical_align, bg_repeat, bg_size_kind, object_fit, text_overflow, word_break, overflow_wrap, direction;
     uint8_t border_style[4];
-    uint8_t outline_style, user_select, appearance, isolation, table_layout, border_collapse, resize, writing_mode;
+    uint8_t outline_style, user_select, appearance, isolation, table_layout, border_collapse, container_type, resize, writing_mode;
+    const char *container_name; /* atom: space-separated names, or NULL */
     int16_t font_weight;
     int z_index; bool z_auto;
     int order;
@@ -98,7 +103,7 @@ typedef struct ComputedStyle {
     const char *anim_name; float anim_dur, anim_delay, anim_iter; /* first animation layer; name is an atom */
     const char *tr_prop; float tr_dur, tr_delay;                 /* transition-property list atom (NULL = all), max times */
     CustomProps *custom;
-    struct ComputedStyle *before, *after; /* pseudo element styles */
+    struct ComputedStyle *before, *after, *marker; /* pseudo element styles */
 } ComputedStyle;
 
 /* called on every element restyle (old may be NULL); used to fire animation/transition events */
@@ -122,12 +127,18 @@ typedef struct Compound { SimpleSel *s; int n; uint8_t comb; /* combinator to th
 typedef struct Selector { Compound *c; int n; uint32_t spec; uint8_t pseudo_el; /* 0 none 1 before 2 after 3 other */ } Selector;
 struct SelList { Selector *v; int n; };
 
+typedef struct ContainerCond { char *name, *query; struct ContainerCond *outer; } ContainerCond;
+/* container query environment: the container's content size and its custom properties (style()) */
+typedef struct CQEnv { float w, h; bool size, block; const char *(*var)(const void *ud, const char *name); const void *ud; } CQEnv;
+bool css_container_eval(const char *q, const CQEnv *env);
+
 typedef struct Rule {
     Selector sel; /* single selector (selector lists are split) */
     DeclList *decls; /* shared between split selectors */
     uint32_t order;
     uint8_t origin; /* 0 UA, 1 author */
     uint8_t layer;
+    const ContainerCond *cq; /* innermost @container, or NULL */
 } Rule;
 
 typedef struct MediaCtx { float vw, vh, dpr; bool dark; } MediaCtx;
@@ -136,6 +147,7 @@ typedef struct StyleSheet {
     VEC(Rule) rules;
     VEC(DeclList *) decl_lists;
     VEC(char *) imports;
+    VEC(ContainerCond *) conds;
     VEC(char *) font_faces; /* raw @font-face src urls, family pairs */
     char *base_url;
     bool disabled;
@@ -147,6 +159,8 @@ typedef struct RuleIndex {
     HMap by_id, by_class, by_tag; /* -> RuleVec* */
     VEC(Rule *) universal;
     uint32_t count;
+    HMap hov_desc, anc_desc; void *hov_desc_u, *anc_desc_u; /* key of a non-subject :hover compound -> subject keys it can affect */
+    HMap hov, hov_anc, hov_ach; /* hov_ach: like hov_anc but keyed by the subject's parent (`.k > :has(...)`) */ uint8_t hov_univ; bool hov_has, hov_sib; /* hov_anc: keys of compounds with :has(...:hover...), | 16 for :has(+ ...), 32 for :has(~ ...) */ /* :hover invalidation: id/class/tag -> 1 self, 2 subtree, 4 parent subtree */
 } RuleIndex;
 
 typedef struct StyleEngine {
@@ -177,9 +191,13 @@ bool css_supports(const char *cond);
 StyleEngine *style_engine_new(Document *d);
 void style_engine_free(StyleEngine *e);
 void style_engine_add_sheet(StyleEngine *e, StyleSheet *s);
+extern void (*css_sheet_added_hook)(StyleSheet *s);
 void style_engine_remove_owner(StyleEngine *e, Node *owner);
 void style_engine_invalidate(StyleEngine *e);
 void style_recalc(StyleEngine *e, Node *root, bool force);
+int style_hover_affects(StyleEngine *e, Node *el); 
+int style_hover_has(StyleEngine *e, Node *el, bool child);
+void style_hover_desc(StyleEngine *e, Document *d, Node *key, Node *root, int which); /* restyle root's descendants that rules keyed on key's :hover (which 0) or :has(:hover) (1) can affect */ /* flags of :has(...:hover...) rules whose subject could be el */ /* restyle scope when el's :hover state flips: 0 none, 1 self, 2 subtree, 4 parent subtree */
 ComputedStyle *style_for_text(Node *text);
 
 ComputedStyle *style_new_default(void);

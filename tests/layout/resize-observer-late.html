@@ -1,0 +1,8 @@
+<!doctype html><!-- needs layout: LUMEN_CONSOLE=1 ./build/lumen file://$PWD/tests/layout/resize-observer-late.html (build/jsrun has no layout) -->
+<div id=b style="height:10px"></div>
+<script>
+const seen=[];
+new ResizeObserver(es=>{for(const e of es)seen.push(Math.round(e.contentRect.height))}).observe(document.getElementById('b'));
+setTimeout(()=>{document.getElementById('b').style.height='40px'},300);
+setTimeout(()=>console.log('RESULTS resize-observer-late first:'+(seen[0]===10?'PASS':'FAIL:'+seen)+' later:'+(seen.includes(40)?'PASS':'FAIL:'+seen)),1200);
+</script>

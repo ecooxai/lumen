@@ -1,0 +1,13 @@
+<!doctype html>
+<script>
+const n = 1 << 19, u = new Uint8Array(n);
+for (let i = 0; i < n; i++) u[i] = i & 255;
+const r = new FileReader();
+r.onload = () => {
+  const s = r.result, p = 'data:application/octet-stream;base64,';
+  const ok = s.startsWith(p) && s.length === p.length + 4 * Math.ceil(n / 3) && s.slice(p.length, p.length + 8) === 'AAECAwQF';
+  console.log('RESULTS filereader-large dataURL:' + (ok ? 'PASS' : 'FAIL:' + s.length));
+};
+r.onerror = () => console.log('RESULTS filereader-large dataURL:FAIL:error');
+try { r.readAsDataURL(new Blob([u])); } catch (e) { console.log('RESULTS filereader-large dataURL:FAIL:' + e); }
+</script>

@@ -89,13 +89,20 @@ static void fixup_block(Layout *L, Box *b) {
     b->fmt = FMT_FLOW;
 }
 
+/* a flex/grid item wrapping a text run: inherited properties only, everything else initial */
+static ComputedStyle *anon_item_style(Layout *L, const ComputedStyle *p) {
+    ComputedStyle *t = style_inherit(p), *s = arena_alloc(&L->arena, sizeof *s);
+    *s = *t; s->text_decoration = p->text_decoration; s->refs = 1 << 20;
+    style_free(t);
+    return s;
+}
 static void fixup_container_items(Layout *L, Box *b) {
     /* flex/grid: every in-flow child is a block-level item; wrap text runs */
     Box *c = b->first; b->first = b->last = NULL;
     while (c) {
         Box *next = c->next; c->next = c->prev = NULL;
         if (c->kind == BX_TEXT || c->kind == BX_BR) {
-            if (c->kind == BX_TEXT && !is_ws_text(c)) { Box *a = new_box(L, BX_BLOCK, NULL, b->st); a->anon = true; a->fmt = FMT_INLINE; a->bfc = true; append(a, c); append(b, a); }
+            if (c->kind == BX_TEXT && !is_ws_text(c)) { Box *a = new_box(L, BX_BLOCK, NULL, anon_item_style(L, b->st)); a->anon = true; a->fmt = FMT_INLINE; a->bfc = true; append(a, c); append(b, a); }
         } else {
             if (c->kind == BX_INLINE) { c->kind = BX_BLOCK; fixup_block(L, c); }
             else if (c->kind == BX_ATOMIC) c->kind = BX_BLOCK;
@@ -137,7 +144,8 @@ static void build(BState *bs, Box *parent, Node *n, int *li_counter);
 
 static void build_pseudo(BState *bs, Box *parent, Node *el, ComputedStyle *ps) {
     if (!ps || !ps->content || ps->display == D_NONE) return;
-    uint8_t kind = ps->display == D_INLINE ? BX_INLINE : (ps->display == D_INLINE_BLOCK || ps->display == D_INLINE_FLEX) ? BX_ATOMIC : BX_BLOCK;
+    bool blockify = ps->position == P_ABSOLUTE || ps->position == P_FIXED || ps->float_ != F_NONE;
+    uint8_t kind = blockify ? BX_BLOCK : ps->display == D_INLINE ? BX_INLINE : (ps->display == D_INLINE_BLOCK || ps->display == D_INLINE_FLEX) ? BX_ATOMIC : BX_BLOCK;
     Box *b = new_box(bs->L, kind, el, ps); b->anon = true;
     b->fmt = ps->display == D_FLEX || ps->display == D_INLINE_FLEX ? FMT_FLEX : ps->display == D_GRID ? FMT_GRID : FMT_FLOW;
     b->abs = ps->position == P_ABSOLUTE || ps->position == P_FIXED; b->fixed = ps->position == P_FIXED; b->floated = ps->float_ != F_NONE;
@@ -359,7 +367,9 @@ void replaced_size(Layout *L, Box *b, float cbw, float *ow, float *oh) {
         else { nw = nh = 0; const char *aw = node_attr(n, "width"), *ah = node_attr(n, "height"); if (aw) nw = (float)atof(aw); if (ah) nh = (float)atof(ah); have = aw || ah; }
     } else if (n && n->ns == NS_SVG) {
         const char *vb = node_attr(n, "viewBox");
-        float a, c2, w, h; if (vb && sscanf(vb, "%f%*[ ,]%f%*[ ,]%f%*[ ,]%f", &a, &c2, &w, &h) == 4 && h > 0) { ratio = w / h; nw = w; nh = h; }
+        float v[4]; int nv = 0;
+        for (const char *q = vb; q && *q && nv < 4;) { char *e; float f = strtof(q, &e); if (e == q) break; v[nv++] = f; q = e; while (*q == ' ' || *q == ',' || *q == '\t' || *q == '\n') q++; }
+        if (nv == 4 && v[3] > 0) { ratio = v[2] / v[3]; nw = v[2]; nh = v[3]; }
         /* An outer <svg> without width is 100% wide; the viewBox ratio gives its height */
         bool outer = !n->parent || n->parent->type != NODE_ELEMENT || n->parent->ns != NS_SVG;
         if (outer && ratio > 0 && cbw > 0 && !node_attr(n, "width") && !node_attr(n, "height")) { nw = cbw; nh = cbw / ratio; }

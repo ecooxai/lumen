@@ -1,0 +1,14 @@
+<!doctype html><script>
+const r = {}, t = f => { try { f(); return false; } catch (e) { return e.name === 'SyntaxError'; } };
+r.badScheme = t(() => new WebSocket('ftp://x/'));
+r.badProto = t(() => new WebSocket('ws://127.0.0.1:9/', ['a', 'a']));
+r.consts = WebSocket.OPEN === 1 && WebSocket.prototype.CLOSED === 3;
+const w = new WebSocket('ws://127.0.0.1:9/');
+r.connecting = w.readyState === 0 && w.url === 'ws://127.0.0.1:9/';
+r.httpMapped = new WebSocket('http://127.0.0.1:9/x').url === 'ws://127.0.0.1:9/x';
+const ce = new CloseEvent('close', { code: 1000, reason: 'bye', wasClean: true });
+r.closeEvent = ce.code === 1000 && ce.reason === 'bye' && ce.wasClean;
+let err = 0; w.onerror = () => err++;
+w.onclose = e => { r.refusedClose = err === 1 && e.code === 1006 && !e.wasClean && w.readyState === 3;
+  console.log('RESULTS websocket ' + Object.entries(r).map(([k, v]) => k + ':' + (v ? 'PASS' : 'FAIL')).join(' ')); };
+</script>

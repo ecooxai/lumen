@@ -45,7 +45,7 @@ mk('HTMLTitleElement', HTMLElement, ['title'], textProp);
 mk('HTMLBaseElement', HTMLElement, ['base'], p => { reflectUrl(p, 'href'); reflectStr(p, 'target'); });
 mk('HTMLTemplateElement', HTMLElement, ['template'], p => methods(p, { get content() { return N.templateContent(this); } }));
 mk('HTMLSlotElement', HTMLElement, ['slot'], p => { reflectStr(p, 'name'); methods(p, { assignedNodes() { return []; }, assignedElements() { return []; }, assign() {} }); });
-mk('HTMLIFrameElement', HTMLElement, ['iframe'], p => { reflectUrl(p, 'src'); reflectStr(p, 'srcdoc', 'name', 'allow', 'width', 'height', 'referrerPolicy', 'loading', 'sandbox'); methods(p, { get contentWindow() { return asWin(N.frameWin(this)); }, get contentDocument() { return N.frameDoc(this); } }); });
+mk('HTMLIFrameElement', HTMLElement, ['iframe'], p => { reflectUrl(p, 'src'); reflectStr(p, 'srcdoc', 'name', 'allow', 'width', 'height', 'referrerPolicy', 'loading'); methods(p, { get sandbox() { if (!this.__sb) def(this, '__sb', new DOMTokenList(this, 'sandbox')); return this.__sb; }, set sandbox(v) { this.setAttribute('sandbox', v); }, get contentWindow() { return asWin(N.frameWin(this)); }, get contentDocument() { return N.frameDoc(this); } }); });
 mk('HTMLCanvasElement', HTMLElement, ['canvas'], p => { reflectInt(p, 300, 'width'); reflectInt(p, 150, 'height'); methods(p, { getContext(t) { return t === '2d' ? (this._ctx2d || (this._ctx2d = new CanvasRenderingContext2D(this))) : null; }, toDataURL() { return 'data:,'; }, toBlob(cb) { setTimeout(() => cb(null)); } }); });
 mk('HTMLFormElement', HTMLElement, ['form'], p => {
     reflectUrl(p, 'action'); reflectStr(p, 'name', 'target', 'acceptCharset', 'autocomplete'); reflectBool(p, 'noValidate');
@@ -54,7 +54,7 @@ mk('HTMLFormElement', HTMLElement, ['form'], p => {
         get enctype() { return N.attr(this, 'enctype') || 'application/x-www-form-urlencoded'; },
         get elements() { return nodeList(N.query(this, 'input,select,textarea,button,fieldset,output', true)); }, get length() { return this.elements.length; },
         submit() { submitForm(this, null); },
-        requestSubmit(s) { if (dispatch(this, new Event('submit', { bubbles: true, cancelable: true }))) submitForm(this, s); },
+        requestSubmit(s) { if (dispatch(this, new SubmitEvent('submit', { bubbles: true, cancelable: true, submitter: s || null }), true)) submitForm(this, s); },
         reset() { if (dispatch(this, new Event('reset', { bubbles: true, cancelable: true }))) for (const e of this.elements) N.setValue(e, null); },
         checkValidity() { return true; }, reportValidity() { return true; },
     });
@@ -65,16 +65,17 @@ mk('HTMLInputElement', HTMLElement, ['input'], p => {
     reflectBool(p, 'disabled', 'readOnly', 'required', 'multiple'); reflectUrl(p, 'src'); reflectInt(p, 20, 'size'); reflectInt(p, -1, 'maxLength', 'minLength'); formControl(p);
     methods(p, {
         get type() { const t = (N.attr(this, 'type') || 'text').toLowerCase(); return INPUT_TYPES.test(t) ? t : 'text'; }, set type(v) { this.setAttribute('type', v); },
-        get value() { const v = N.value(this); return v != null ? v : (/^(checkbox|radio)$/.test(this.type) ? (N.attr(this, 'value') ?? 'on') : N.attr(this, 'value') ?? ''); },
-        set value(v) { N.setValue(this, v == null ? '' : String(v)); },
+        get value() { if (this.type === 'file') { const f = this.files; return f.length ? 'C:\\fakepath\\' + f[0].name : ''; } const v = N.value(this); return v != null ? v : (/^(checkbox|radio)$/.test(this.type) ? (N.attr(this, 'value') ?? 'on') : N.attr(this, 'value') ?? ''); },
+        set value(v) { if (this.type === 'file') { if (v === '' || v == null) def(this, '_files', new FileList()); return; } N.setValue(this, v == null ? '' : String(v)); },
         get defaultValue() { return N.attr(this, 'value') ?? ''; }, set defaultValue(v) { this.setAttribute('value', v); },
         get checked() { return N.checked(this); }, set checked(v) { N.setChecked(this, !!v); },
-        get defaultChecked() { return this.hasAttribute('checked'); },
+        get defaultChecked() { return this.hasAttribute('checked'); }, set defaultChecked(v) { this.toggleAttribute('checked', !!v); },
         get valueAsNumber() { return parseFloat(this.value); }, set valueAsNumber(v) { this.value = String(v); },
-        get files() { return this.type === 'file' ? [] : null; },
+        get files() { if (this.type !== 'file') return null; if (!this._files) def(this, '_files', new FileList()); return this._files; },
+        set files(v) { if (this.type === 'file' && v instanceof FileList) def(this, '_files', v); },
         get selectionStart() { return this.value.length; }, set selectionStart(v) {}, get selectionEnd() { return this.value.length; }, set selectionEnd(v) {},
         get indeterminate() { return !!this.__ind; }, set indeterminate(v) { def(this, '__ind', !!v); },
-        select() {}, setSelectionRange() {}, setRangeText() {}, showPicker() {}, stepUp() {}, stepDown() {},
+        select() {}, setSelectionRange() {}, setRangeText() {}, showPicker() { if (this.type === 'file') pickFiles(this); }, stepUp() {}, stepDown() {},
     });
 });
 mk('HTMLTextAreaElement', HTMLElement, ['textarea'], p => {
@@ -112,6 +113,7 @@ mk('HTMLOptionElement', HTMLElement, ['option'], p => {
         get selected() { const s = this.closest('select'); return s ? s.options[s.selectedIndex] === this : N.checked(this); },
         set selected(v) { const s = this.closest('select'); if (v && s && !s.multiple) for (const o of s.options) N.setChecked(o, false); N.setChecked(this, !!v); },
         get index() { const s = this.closest('select'); return s ? [...s.options].indexOf(this) : 0; },
+        get defaultSelected() { return this.hasAttribute('selected'); }, set defaultSelected(v) { this.toggleAttribute('selected', !!v); },
     });
 });
 mk('HTMLLabelElement', HTMLElement, ['label'], p => { acc(p, 'htmlFor', function () { return N.attr(this, 'for') ?? ''; }, function (v) { this.setAttribute('for', v); }); methods(p, { get control() { const f = N.attr(this, 'for'); return f ? N.byId(f) : this.querySelector('input,select,textarea,button'); } }); });

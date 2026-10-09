@@ -2,6 +2,11 @@
 #include <math.h>
 #include <ctype.h>
 #include <time.h>
+#include <malloc/malloc.h>
+#include <sys/resource.h>
+#ifdef __APPLE__
+#include <mach/mach.h>
+#endif
 #include <SDL3/SDL.h>
 #include "../paint/paint.h"
 #include "../media/media.h"
@@ -11,9 +16,11 @@
 #include "../js/js.h"
 #include "../js/jsglue.h"
 
-#define TABH 30.f
+static bool g_compact;   /* one tab in the workspace: toolbar lives in the title bar */
+#define TABH (g_compact ? 0.f : 30.f)
 #define TB 44.f
 static float g_info_h;
+static char g_notice[256];   /* dismissable error notice shown in the info bar */
 #define INFOH 36.f
 #define BAR (TABH + TB + g_info_h)
 #ifdef __APPLE__
@@ -23,10 +30,11 @@ static float g_info_h;
 #define TLW 0.f
 #endif
 #define SIDEW 84.f
-#define WSY0 (TABH + 8)
+#define SIDEY (g_compact ? TB : TABH)
+#define WSY0 (SIDEY + 8)
 #define WSRH 40.f
 
-typedef struct { Node *n; char *src; size_t len; char *name; } PScript;
+typedef struct { Node *n; char *src; size_t len; char *name; bool module; } PScript;
 typedef struct { Node *n; uint64_t h; } SheetRef;
 typedef struct Page {
     char *url; Document *d; StyleEngine *e; Layout *L; uint64_t gen; double load_ms;
@@ -51,6 +59,19 @@ static uint64_t load_gen;
 static bool g_lowmem;
 static int g_cpu_on = 1, g_cpu_pct = 80, g_cpu_secs = 60, g_cpu_lim = 40;
 static bool g_vctl;
+static bool g_tab_sleep;
+static bool g_smooth;       /* Smooth scrolling (Settings, off by default): animate wheel notches instead of jumping */
+static float g_sm_dx, g_sm_dy, g_sm_x, g_sm_y;
+#define WHEEL_STEP 120.f
+#ifdef NDEBUG
+static bool g_hud;          /* CPU/RAM readout at the bottom of the workspace sidebar (Settings; on by default in debug builds) */
+#else
+static bool g_hud = true;
+#endif
+static bool g_hud_pop;      /* host CPU/RAM popup opened by clicking the readout */
+static float g_hud_cpu, g_hud_ram, g_host_cpu, g_host_ram, g_pop[4];
+#define HUDH 48.f
+static int g_ua;   /* UA_CHROME / UA_FIREFOX / UA_LUMEN */
 static char g_pref[1024];
 typedef struct { char *url, *title; } Link;
 #define MAX_BM 512
@@ -59,7 +80,7 @@ static Link g_bms[MAX_BM], g_hv[MAX_HV]; static int g_nbm, g_nhv;
 static void pref_path(char *out, size_t n, const char *f) { snprintf(out, n, "%s%s", g_pref, f); }
 static void settings_save(void) {
     char p[1200]; pref_path(p, sizeof p, "settings.txt"); FILE *f = *g_pref ? fopen(p, "w") : NULL; if (!f) return;
-    fprintf(f, "offscreen_media_eviction=%d\ncpu_limit=%d\ncpu_pct=%d\ncpu_secs=%d\ncpu_lim=%d\nvideo_controls=%d\n", g_lowmem, g_cpu_on, g_cpu_pct, g_cpu_secs, g_cpu_lim, g_vctl);
+    fprintf(f, "offscreen_media_eviction=%d\ncpu_limit=%d\ncpu_pct=%d\ncpu_secs=%d\ncpu_lim=%d\nvideo_controls=%d\ntab_sleep=%d\nuser_agent=%d\ncpu_hud=%d\nsmooth_scroll=%d\n", g_lowmem, g_cpu_on, g_cpu_pct, g_cpu_secs, g_cpu_lim, g_vctl, g_tab_sleep, g_ua, g_hud, g_smooth);
     fclose(f);
 }
 static void link_put(Link *v, int *n, int max, const char *url, const char *title) {
@@ -157,8 +178,10 @@ static int loader(void *arg) {
     html_parse(p->d, body, blen);
     if (!getenv("LUMEN_NO_JS")) for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) {
         if (!gen_live(rq->gen)) break;
-        if (n->type != NODE_ELEMENT || n->tag != A_script || n->ns != NS_HTML || !jsg_classic_script(n)) continue;
-        PScript sc = { n, NULL, 0, NULL };
+        if (n->type != NODE_ELEMENT || n->tag != A_script || n->ns != NS_HTML) continue;
+        bool mod = jsg_module_script(n);
+        if (!mod && !jsg_classic_script(n)) continue;
+        PScript sc = { n, NULL, 0, NULL, mod };
         const char *src = node_attr(n, "src");
         if (src) {
             sc.name = url_join(p->d->url, src);
@@ -207,22 +230,23 @@ static void page_free(Page *p) {
 }
 
 typedef struct Tab { Page *cur; bool loading, relayout; char *hist[256]; uint64_t hgen[256]; int nhist, hpos; char url[2048]; float sy; uint64_t lgen; int ws;
-    double cpu_ms, media_ms0, budget, bud_t, unlimit_until; float pct, lim, cpuhist[600]; int ncpu, cpui, cpumode, vctl, vap, lite; uint64_t vgen; bool limited, info; } Tab;
+    double cpu_ms, media_ms0, budget, bud_t, unlimit_until; float pct, lim, cpuhist[600]; int ncpu, cpui, cpumode, vctl, vap, lite; uint64_t vgen; bool limited, info, asleep; double bg_since; int crashes; } Tab;
 typedef struct App {
     SDL_Window *win; SDL_MetalView mview; Gpu *gpu;
     int pw, ph; float scale, vw, vh;
-    Canvas frame, page; DisplayList pdl, cdl;
+    Canvas frame, page; DisplayList pdl, cdl, hdl;
+    struct DSig *osig, *nsig; int nosig, cosig, cnsig; uint64_t chash; bool osig_ok;   /* last page display list, to raster only what changed */
     Tab *t, *tabs[MAX_TABS]; int ntabs, ti;
     char wsname[16][64]; Tab *wslast[16]; int nws, wi; float side;
     int wsicon[16]; Image *icimg[16][2];
-    Image *sym[7][4]; bool vbars;
+    Image *sym[8][4]; bool vbars;
     int tip_tab; double tip_until;     /* CPU-limit dot tooltip pinned by a click */
     bool editing; int sel_all, page_sel;
     double caret_t;
     bool dirty;
     Font *ui;
     int hover; double frame_ms;
-    bool vonly, deferred, vframe; double last_input, last_full; float last_sy; uint64_t last_ver; Page *last_page; bool gvid_ok; const void *vown; float vrect[4];
+    bool vonly, deferred, vframe; double last_input, last_full; float last_sy; uint64_t last_ver; Page *last_page; bool gvid_ok; const void *vown; float vrect[4]; float srect[4]; bool sdirty;   /* srect: viewport rect of element scrollers to repaint */
 } App;
 static void publish_gens(App *a) { for (int i = 0; i < MAX_TABS; i++) g_tab_gen[i] = i < a->ntabs ? a->tabs[i]->lgen : 0; }
 static Tab *tab_new(App *a) {
@@ -304,6 +328,14 @@ static char *internal_page(const char *u) {   /* lumen://newtab?s=bookmarks|hist
             "<div class=sub style=\"padding:0 0 12px\">To set the limit for one tab only, click the tab, then click it again.</div></div>", g_cpu_pct, g_cpu_secs, g_cpu_lim);
         sb_puts(&b, "<div class=card><div class=row><div class=grow><div class=t>Always show video controls</div><div class=sub>Keeps the play controls visible under every video, including YouTube, so they never hide. To change it for one tab only, click the tab, then click it again.</div></div>");
         ip_toggle(&b, "vctl", g_vctl);
+        sb_puts(&b, "</div></div><div class=card><div class=row><div class=grow><div class=t>Sleep background ChatGPT tabs</div><div class=sub>A ChatGPT tab left in the background for a minute stops running and frees most of its memory. It keeps showing its last screen and reloads when you click it. Text you typed but did not send in that tab may be lost.</div></div>");
+        ip_toggle(&b, "sleep", g_tab_sleep);
+        sb_puts(&b, "</div></div><div class=card><div class=row><div class=grow><div class=t>CPU usage</div><div class=sub>Shows how much CPU and memory (GB) Lumen uses at the bottom of the workspace sidebar, updated every 2 seconds. Click it to see the whole computer's CPU and memory use.</div></div>");
+        ip_toggle(&b, "hud", g_hud);
+        sb_puts(&b, "</div></div><div class=card><div class=row><div class=grow><div class=t>Smooth scrolling</div><div class=sub>Animates each mouse-wheel step. When off, each wheel step jumps a fixed, larger distance, which uses less CPU. Trackpad scrolling is not affected.</div></div>");
+        ip_toggle(&b, "smooth", g_smooth);
+        sb_puts(&b, "</div></div><div class=card><div class=row><div class=grow><div class=t>User agent</div><div class=sub>How Lumen identifies itself to websites. Chrome works best on most sites. Reload open pages to apply.</div></div>");
+        for (int i = 0; i < UA_COUNT; i++) sb_printf(&b, "<a class=\"btn%s\" href=\"lumen://set?s=settings&ua=%d\">%s</a>", i == g_ua ? " on" : "", i, net_user_agent_name(i));
         sb_puts(&b, "</div></div><script>function save(){var g=function(i){return parseInt(document.getElementById(i).value,10)||0};location.href='lumen://set?s=settings&cpu_pct='+g('n')+'&cpu_secs='+g('m')+'&cpu_lim='+g('t')}</script>");
     } else {
         bool bm = sec[0] == 'b'; Link *v = bm ? g_bms : g_hv; int n = bm ? g_nbm : g_nhv;
@@ -327,6 +359,10 @@ static void apply_set(App *a, const char *q) {
     if (qparam(q, "lite", v, sizeof v)) { g_lowmem = atoi(v) != 0; media_lowmem = g_lowmem; }
     if (qparam(q, "cpu", v, sizeof v)) g_cpu_on = atoi(v) != 0;
     if (qparam(q, "vctl", v, sizeof v)) g_vctl = atoi(v) != 0;
+    if (qparam(q, "sleep", v, sizeof v)) g_tab_sleep = atoi(v) != 0;
+    if (qparam(q, "smooth", v, sizeof v)) { g_smooth = atoi(v) != 0; g_sm_dx = g_sm_dy = 0; }
+    if (qparam(q, "hud", v, sizeof v)) { g_hud = atoi(v) != 0; g_hud_pop = false; }
+    if (qparam(q, "ua", v, sizeof v)) { g_ua = LCLAMP(atoi(v), 0, UA_COUNT - 1); net_set_user_agent(g_ua); }
     if (qparam(q, "cpu_pct", v, sizeof v)) g_cpu_pct = LCLAMP(atoi(v), 10, 100);
     if (qparam(q, "cpu_secs", v, sizeof v)) g_cpu_secs = LCLAMP(atoi(v), 5, 600);
     if (qparam(q, "cpu_lim", v, sizeof v)) g_cpu_lim = LCLAMP(atoi(v), 5, 95);
@@ -382,13 +418,33 @@ static float push_text(DisplayList *dl, Font *f, const char *s, float x, float b
     return w;
 }
 
-enum { HB_NONE, HB_BACK, HB_FWD, HB_RELOAD, HB_URL, HB_NEWTAB, HB_WSNEW, HB_STAR, HB_TAB = 100, HB_TABX = 200, HB_WS = 300, HB_INFO = 400, HB_TABDOT = 500 };
+enum { HB_NONE, HB_BACK, HB_FWD, HB_RELOAD, HB_URL, HB_NEWTAB, HB_WSNEW, HB_STAR, HB_HUD, HB_TAB = 100, HB_TABX = 200, HB_WS = 300, HB_INFO = 400, HB_TABDOT = 500 };
 static void info_btn(App *a, int k, float *x, float *w) {
     static const float W[4] = { 70, 76, 82, 28 }; float r = a->vw - 12;
     for (int i = 3; i >= k; i--) r -= W[i] + (i < 3 ? 6 : 0);
     *x = r; *w = W[k];
 }
 static int utf8_len(const char *q) { unsigned char c = (unsigned char)*q; int n = c < 0x80 ? 1 : (c & 0xE0) == 0xC0 ? 2 : (c & 0xF0) == 0xE0 ? 3 : 4; for (int k = 1; k < n; k++) if (!q[k]) return k; return n; }
+static const uint8_t app_icon_png[] = {
+#include "icon.inc"
+};
+static void set_window_icon(SDL_Window *w) {
+    Image *im = image_decode(app_icon_png, sizeof app_icon_png);
+    if (!im) return;
+    SDL_Surface *s = SDL_CreateSurface(im->w, im->h, SDL_PIXELFORMAT_ARGB8888);
+    if (s) {
+        for (int y = 0; y < im->h; y++) {
+            uint32_t *row = (uint32_t *)((uint8_t *)s->pixels + (size_t)y * (size_t)s->pitch);
+            for (int x = 0; x < im->w; x++) {
+                uint32_t p = im->px[(size_t)y * (size_t)im->w + (size_t)x], al = p >> 24;
+                row[x] = al ? (al << 24) | (((p >> 16) & 255) * 255 / al) << 16 | (((p >> 8) & 255) * 255 / al) << 8 | ((p & 255) * 255 / al) : 0;
+            }
+        }
+        SDL_SetWindowIcon(w, s);
+        SDL_DestroySurface(s);
+    }
+    image_unref(im);
+}
 static Image *ws_icon(App *a, int ic, bool on) {
 #ifdef __APPLE__
     if (ic < 0 || ic >= MAC_NICONS) return NULL;
@@ -406,7 +462,16 @@ static Image *ws_icon(App *a, int ic, bool on) {
 }
 static int ws_tabs(App *a, int w, int *out) { int n = 0; for (int i = 0; i < a->ntabs; i++) if (a->tabs[i]->ws == w) out[n++] = i; return n; }
 static float tab_w(App *a) { int v[MAX_TABS], n = ws_tabs(a, a->wi, v); float w = (a->vw - TLW - 48) / (n ? n : 1); return w > 220 ? 220 : w; }
+static float bar_x0(App *a) { return g_compact ? TLW : a->side; }
+static float url_w(App *a) { return a->vw - bar_x0(a) - 144 - (g_compact ? 92 : 12); }
 static int bar_hit(App *a, float x, float y) {
+    if (g_compact && y < TB) {
+        x -= TLW;
+        if (x < 0) return HB_NONE;
+        if (x < 40) return HB_BACK; if (x < 72) return HB_FWD; if (x < 104) return HB_RELOAD; if (x < 136) return HB_STAR;
+        float ue = 144 + url_w(a);
+        return x < 144 ? HB_NONE : x < ue ? HB_URL : x >= ue + 4 && x < ue + 32 ? HB_NEWTAB : HB_NONE;
+    }
     if (y < TABH) {
         int v[MAX_TABS], n = ws_tabs(a, a->wi, v), k; float tw = tab_w(a), x0 = TLW + 6; k = (int)((x - x0) / tw);
         if (x >= x0 && k < n) { float lx = x - x0 - k * tw; return lx > tw - 28 ? HB_TABX + v[k] : a->tabs[v[k]]->limited && lx < 26 ? HB_TABDOT + v[k] : HB_TAB + v[k]; }
@@ -414,6 +479,7 @@ static int bar_hit(App *a, float x, float y) {
         return HB_NONE;
     }
     if (x < a->side) {
+        if (g_hud && y >= a->vh - HUDH) return HB_HUD;
         int r = (int)floorf((y - WSY0) / WSRH);
         if (y >= WSY0 && r < a->nws) return HB_WS + r;
         return y >= WSY0 && r == a->nws ? HB_WSNEW : HB_NONE;
@@ -426,9 +492,9 @@ static int bar_hit(App *a, float x, float y) {
 }
 
 static void push_img(DisplayList *dl, Image *im, float x, float y, float w, float h) { DItem it; memset(&it, 0, sizeof it); it.op = DO_IMAGE; it.x = x; it.y = y; it.w = w; it.h = h; it.img = im; it.alpha = 1; vec_push(dl->items, it); }
-static Image *sym_icon(App *a, int k, int c) {   /* k: 0 back 1 forward 2 reload 3 star 4 star.fill 5 play 6 pause; c: 0 dark 1 grey 2 blue 3 white */
+static Image *sym_icon(App *a, int k, int c) {   /* k: 0 back 1 forward 2 reload 3 star 4 star.fill 5 play 6 pause 7 plus; c: 0 dark 1 grey 2 blue 3 white */
 #ifdef __APPLE__
-    static const char *N[7] = { "chevron.left", "chevron.right", "arrow.clockwise", "star", "star.fill", "play.fill", "pause.fill" };
+    static const char *N[8] = { "chevron.left", "chevron.right", "arrow.clockwise", "star", "star.fill", "play.fill", "pause.fill", "plus" };
     static const uint32_t C[4] = { 0x3c4043, 0xbdc1c6, 0x1a73e8, 0xffffff };
     Image **slot = &a->sym[k][c];
     if (!*slot) {
@@ -463,10 +529,50 @@ static void chrome_tip(App *a) {   /* tooltip for a tab's CPU-limit dot (hover o
     push_rect(&a->cdl, x, y, w, 26, 6, RGBA(45, 45, 48, 240));
     push_text(&a->cdl, a->ui, msg, x + 10, y + 13 + (a->ui->ascent - a->ui->descent) / 2, w, RGBA(255, 255, 255, 255));
 }
+static void build_hud_pop(App *a) {
+    DisplayList *dl = &a->hdl; dl_clear(dl);
+    if (!g_hud || !g_hud_pop || a->side <= 0) return;
+    float w = 150, h = 62, x = 8, y = a->vh - HUDH - h - 2, rb = (a->ui->ascent - a->ui->descent) / 2;
+    g_pop[0] = x; g_pop[1] = y; g_pop[2] = x + w; g_pop[3] = y + h;
+    push_rect(dl, x, y, w, h, 0, RGBA(208, 212, 218, 255));
+    push_rect(dl, x + 1, y + 1, w - 2, h - 2, 0, RGBA(255, 255, 255, 255));
+    static const char *lb[2] = { "Host CPU", "Host RAM" };
+    for (int k = 0; k < 2; k++) {
+        char v[16]; float cy = y + 19 + k * 24 + rb;
+        snprintf(v, sizeof v, k ? "%.1f" : "%.0f", k ? g_host_ram : g_host_cpu);
+        push_text(dl, a->ui, lb[k], x + 12, cy, 80, RGBA(95, 99, 104, 255));
+        float tw = text_width(a->ui, v, strlen(v), 0);
+        push_text(dl, a->ui, v, x + w - 12 - tw, cy, 60, RGBA(32, 33, 36, 255));
+    }
+}
+/* this process's CPU (% of one core since the last call) and memory footprint (GB), plus the host's CPU (%) and used memory (GB) */
+static void hud_sample(void) {
+    static double lt; static uint64_t lu, hb, ht; double now = now_ms();
+    struct rusage ru; getrusage(RUSAGE_SELF, &ru);
+    uint64_t us = (uint64_t)ru.ru_utime.tv_sec * 1000000 + (uint64_t)ru.ru_utime.tv_usec + (uint64_t)ru.ru_stime.tv_sec * 1000000 + (uint64_t)ru.ru_stime.tv_usec;
+    if (lt && now > lt) g_hud_cpu = (float)((double)(us - lu) / ((now - lt) * 10.0));
+    lt = now; lu = us;
+#ifdef __APPLE__
+    task_vm_info_data_t vi; mach_msg_type_number_t c = TASK_VM_INFO_COUNT;
+    if (task_info(mach_task_self(), TASK_VM_INFO, (task_info_t)&vi, &c) == KERN_SUCCESS) g_hud_ram = (float)(vi.phys_footprint / 1073741824.0);
+    host_cpu_load_info_data_t cl; c = HOST_CPU_LOAD_INFO_COUNT;
+    if (host_statistics(mach_host_self(), HOST_CPU_LOAD_INFO, (host_info_t)&cl, &c) == KERN_SUCCESS) {
+        uint64_t busy = (uint64_t)cl.cpu_ticks[CPU_STATE_USER] + cl.cpu_ticks[CPU_STATE_SYSTEM] + cl.cpu_ticks[CPU_STATE_NICE], tot = busy + cl.cpu_ticks[CPU_STATE_IDLE];
+        if (ht && tot > ht) g_host_cpu = (float)(100.0 * (double)(busy - hb) / (double)(tot - ht));
+        hb = busy; ht = tot;
+    }
+    vm_statistics64_data_t vs; c = HOST_VM_INFO64_COUNT; vm_size_t pg = 0;
+    if (host_page_size(mach_host_self(), &pg) == KERN_SUCCESS && host_statistics64(mach_host_self(), HOST_VM_INFO64, (host_info64_t)&vs, &c) == KERN_SUCCESS)   /* Activity Monitor's "Memory Used" */
+        g_host_ram = (float)(((double)vs.internal_page_count - vs.purgeable_count + vs.wire_count + vs.compressor_page_count) * (double)pg / 1073741824.0);
+#endif
+}
 static void build_chrome(App *a) {
+    build_hud_pop(a);
     DisplayList *dl = &a->cdl; dl_clear(dl);
-    push_rect(dl, 0, 0, a->vw, TABH, 0, RGBA(222, 225, 230, 255));
-    int vt[MAX_TABS], nvt = ws_tabs(a, a->wi, vt);
+    float x0 = bar_x0(a), tbw = a->vw - x0;
+    if (g_compact) { push_rect(dl, 0, 0, a->vw, TB, 0, RGBA(250, 250, 250, 255)); push_rect(dl, 0, TB - 1, a->vw, 1, 0, RGBA(226, 226, 226, 255)); }
+    else push_rect(dl, 0, 0, a->vw, TABH, 0, RGBA(222, 225, 230, 255));
+    int vt[MAX_TABS], nvt = g_compact ? 0 : ws_tabs(a, a->wi, vt);
     float tabw = tab_w(a), tx0 = TLW + 6, tbase = 4 + (TABH - 4) / 2 + (a->ui->ascent - a->ui->descent) / 2;
     for (int k = 0; k < nvt; k++) {
         int i = vt[k]; Tab *t = a->tabs[i]; float x = tx0 + k * tabw;
@@ -479,13 +585,15 @@ static void build_chrome(App *a) {
         push_text(dl, a->ui, "\xC3\x97", x + tabw - 22, tbase, 16, a->hover == HB_TABX + i ? RGBA(20, 20, 20, 255) : RGBA(110, 110, 110, 255));
         if (t->loading) push_rect(dl, x + 8, TABH - 3, (tabw - 18) * 0.35f, 2, 1, RGBA(66, 133, 244, 255));
     }
-    float npx = tx0 + nvt * tabw + 8;
-    if (a->hover == HB_NEWTAB) push_rect(dl, npx - 4, 6, 24, 20, 10, RGBA(235, 237, 240, 255));
-    push_text(dl, a->ui, "+", npx + 4, tbase, 16, RGBA(60, 60, 60, 255));
+    if (!g_compact) {
+        float npx = tx0 + nvt * tabw + 8;
+        if (a->hover == HB_NEWTAB) push_rect(dl, npx - 4, 6, 24, 20, 10, RGBA(235, 237, 240, 255));
+        push_text(dl, a->ui, "+", npx + 4, tbase, 16, RGBA(60, 60, 60, 255));
+    }
     if (a->side > 0) {
         float rb = (a->ui->ascent - a->ui->descent) / 2, bw = a->side - 20;
-        push_rect(dl, 0, TABH, a->side, a->vh - TABH, 0, RGBA(236, 238, 241, 255));
-        push_rect(dl, a->side - 1, TABH, 1, a->vh - TABH, 0, RGBA(214, 217, 222, 255));
+        push_rect(dl, 0, SIDEY, a->side, a->vh - SIDEY, 0, RGBA(236, 238, 241, 255));
+        push_rect(dl, a->side - 1, SIDEY, 1, a->vh - SIDEY, 0, RGBA(214, 217, 222, 255));
         for (int w = 0; w <= a->nws; w++) {
             float y = WSY0 + w * WSRH;
             bool on = w == a->wi, hov = w < a->nws ? a->hover == HB_WS + w : a->hover == HB_WSNEW;
@@ -504,11 +612,33 @@ static void build_chrome(App *a) {
             if (ici) { DItem it; memset(&it, 0, sizeof it); it.op = DO_IMAGE; it.x = 10 + (bw - 18) / 2; it.y = y + (WSRH - 18) / 2; it.w = it.h = 18; it.img = ici; it.alpha = 1; vec_push(dl->items, it); }
             else push_text(dl, a->ui, lab, 10 + (bw - lw) / 2, y + WSRH / 2 + rb, bw, on ? RGBA(20, 20, 20, 255) : RGBA(90, 94, 100, 255));
         }
+        if (g_hud) {
+            static Font *sf; if (!sf) sf = font_get("system-ui", 400, false, 11.f);
+            float hy = a->vh - HUDH, sb = (sf->ascent - sf->descent) / 2;
+            if (a->hover == HB_HUD || g_hud_pop) push_rect(dl, 6, hy + 4, a->side - 12, HUDH - 10, 8, RGBA(222, 225, 230, 255));
+            static const char *lb[2] = { "CPU", "RAM" };
+            for (int k = 0; k < 2; k++) {
+                char v[16]; float cy = hy + 15 + k * 17 + sb;
+                snprintf(v, sizeof v, k ? "%.1f" : "%.0f", k ? g_hud_ram : g_hud_cpu);
+                push_text(dl, sf, lb[k], 14, cy, 30, RGBA(110, 114, 120, 255));
+                float tw = text_width(sf, v, strlen(v), 0);
+                push_text(dl, sf, v, a->side - 14 - tw, cy, 44, RGBA(32, 33, 36, 255));
+            }
+        }
     }
     if (g_info_h > 0) {
         float y0 = TABH + TB, rb = (a->ui->ascent - a->ui->descent) / 2, cy = y0 + g_info_h / 2 + rb;
         push_rect(dl, a->side, y0, a->vw - a->side, g_info_h, 0, RGBA(254, 247, 224, 255));
         push_rect(dl, a->side, y0 + g_info_h - 1, a->vw - a->side, 1, 0, RGBA(230, 214, 160, 255));
+        if (*g_notice) {
+            push_rect(dl, a->side, y0, a->vw - a->side, g_info_h, 0, RGBA(253, 236, 234, 255));
+            push_rect(dl, a->side, y0 + g_info_h - 1, a->vw - a->side, 1, 0, RGBA(232, 180, 172, 255));
+            push_text(dl, a->ui, g_notice, a->side + 14, cy, a->vw - a->side - 80, RGBA(110, 30, 20, 255));
+            float bx, bwid; info_btn(a, 3, &bx, &bwid);
+            if (a->hover == HB_INFO + 3) push_rect(dl, bx, y0 + 6, bwid, g_info_h - 12, 6, RGBA(245, 210, 204, 255));
+            float lw = text_width(a->ui, "\xC3\x97", 2, 0);
+            push_text(dl, a->ui, "\xC3\x97", bx + (bwid - lw) / 2, cy, bwid, RGBA(110, 30, 20, 255));
+        } else {
         char msg[200]; int lp = (int)(a->t->lim * 100 + 0.5f);
         if (a->t->cpumode == 2) snprintf(msg, sizeof msg, "You limited this tab to %d%% CPU. Remove the limit for:", lp);
         else snprintf(msg, sizeof msg, "This tab used over %d%% CPU for %d s, so Lumen limited it to %d%%. Remove the limit for:", g_cpu_pct, g_cpu_secs, lp);
@@ -520,10 +650,11 @@ static void build_chrome(App *a) {
             float lw = text_width(a->ui, lb[k], strlen(lb[k]), 0);
             push_text(dl, a->ui, lb[k], bx + (bwid - lw) / 2, cy, bwid, RGBA(60, 50, 20, 255));
         }
+        }
     }
     int n0 = dl->items.n;
-    push_rect(dl, 0, 0, (a->vw - a->side), TB, 0, RGBA(250, 250, 250, 255));
-    push_rect(dl, 0, TB - 1, (a->vw - a->side), 1, 0, RGBA(226, 226, 226, 255));
+    push_rect(dl, 0, 0, tbw, TB, 0, RGBA(250, 250, 250, 255));
+    push_rect(dl, 0, TB - 1, tbw, 1, 0, RGBA(226, 226, 226, 255));
     Color on = RGBA(60, 60, 60, 255), off = RGBA(190, 190, 190, 255);
     int hk[3] = { HB_BACK, HB_FWD, HB_RELOAD };
     for (int i = 0; i < 3; i++) {
@@ -538,7 +669,7 @@ static void build_chrome(App *a) {
         Image *si = sym_icon(a, bmd ? 4 : 3, bmd ? 2 : 0);
         if (si) push_img(dl, si, cx - 8, TB / 2 - 8, 16, 16); else push_text(dl, a->ui, bmd ? "\xE2\x98\x85" : "\xE2\x98\x86", cx - 7, TB / 2 + (a->ui->ascent - a->ui->descent) / 2, 16, on);
     }
-    float ux = 144, uw = (a->vw - a->side) - ux - 12;
+    float ux = 144, uw = url_w(a);
     push_rect(dl, ux, 7, uw, TB - 14, (TB - 14) / 2, a->editing ? RGBA(255, 255, 255, 255) : RGBA(238, 238, 238, 255));
     if (a->editing) {
         DItem it; memset(&it, 0, sizeof it); it.op = DO_BORDER; it.x = ux; it.y = 7; it.w = uw; it.h = TB - 14;
@@ -554,15 +685,65 @@ static void build_chrome(App *a) {
     }
     float tw = push_text(dl, a->ui, shown, ux + 16, base, uw - 32, a->editing ? RGBA(20, 20, 20, 255) : RGBA(90, 90, 90, 255));
     if (a->editing && !a->sel_all) push_rect(dl, ux + 16 + tw + 1, 13, 1.5f, TB - 26, 0, RGBA(20, 20, 20, 255));
-    if (a->t->loading) push_rect(dl, 0, TB - 2, (a->vw - a->side) * 0.35f, 2, 0, RGBA(66, 133, 244, 255));
-    for (int i = n0; i < dl->items.n; i++) { DItem *it = &dl->items.v[i]; it->y += TABH; it->x += a->side; if (it->op == DO_TEXT) for (int g = 0; g < it->ng; g++) { it->g[g].y += TABH; it->g[g].x += a->side; } }
+    if (g_compact) {
+        float cx = ux + uw + 18;
+        if (a->hover == HB_NEWTAB) push_rect(dl, cx - 13, TB / 2 - 13, 26, 26, 13, RGBA(232, 232, 232, 255));
+        Image *si = sym_icon(a, 7, 0);
+        if (si) push_img(dl, si, cx - 8, TB / 2 - 8, 16, 16); else { push_rect(dl, cx - 6, TB / 2 - 1, 12, 2, 1, on); push_rect(dl, cx - 1, TB / 2 - 6, 2, 12, 1, on); }
+    }
+    if (a->t->loading) push_rect(dl, 0, TB - 2, tbw * 0.35f, 2, 0, RGBA(66, 133, 244, 255));
+    for (int i = n0; i < dl->items.n; i++) { DItem *it = &dl->items.v[i]; it->y += TABH; it->x += x0; if (it->op == DO_TEXT) for (int g = 0; g < it->ng; g++) { it->g[g].y += TABH; it->g[g].x += x0; } }
 }
 
 static float max_scroll(App *a) { return a->t->cur && a->t->cur->L ? LMAX(0, a->t->cur->L->doc_h - (a->vh - BAR)) : 0; }
 
 static double g_tr, g_tl, g_td, g_tx;
 static bool g_no_paint_only;
+static void update_compact(App *a) {
+    int v[MAX_TABS]; bool c = ws_tabs(a, a->wi, v) <= 1;
+    if (c == g_compact) return;
+    g_compact = c; a->hover = HB_NONE; a->vonly = false;
+    for (int i = 0; i < a->ntabs; i++) a->tabs[i]->relayout = true;
+}
+/* per display item: content hash + device-independent bounds, so a DOM change only rasters the area whose items changed */
+struct DSig { uint64_t h; float b[4]; };
+static uint64_t hmix(uint64_t h, const void *p, size_t n) { const uint8_t *c = p; for (size_t i = 0; i < n; i++) h = (h ^ c[i]) * 1099511628211ull; return h; }
+#define HMIX(h, v) h = hmix(h, &(v), sizeof(v))
+static uint64_t ditem_hash(const DItem *it) {
+    uint64_t h = 1469598103934665603ull;
+    HMIX(h, it->op); HMIX(h, it->x); HMIX(h, it->y); HMIX(h, it->w); HMIX(h, it->h); HMIX(h, it->r); HMIX(h, it->color);
+    HMIX(h, it->bw); HMIX(h, it->bc); HMIX(h, it->bs); HMIX(h, it->img); HMIX(h, it->blur); HMIX(h, it->spread); HMIX(h, it->alpha); HMIX(h, it->inset);
+    if (it->grad) { const Gradient *g = it->grad; HMIX(h, g->type); HMIX(h, g->angle); HMIX(h, g->nstops); HMIX(h, g->repeating); h = hmix(h, g->stops, sizeof g->stops[0] * (size_t)LCLAMP(g->nstops, 0, 8)); }
+    for (int i = 0; i < it->ng; i++) { const DGlyph *g = &it->g[i]; HMIX(h, g->gid); HMIX(h, g->x); HMIX(h, g->y); HMIX(h, g->font); }
+    return h;
+}
+static void bunion(float *a, const float *b) { a[0] = LMIN(a[0], b[0]); a[1] = LMIN(a[1], b[1]); a[2] = LMAX(a[2], b[2]); a[3] = LMAX(a[3], b[3]); }
+static void ditem_box(const DItem *it, float *b) {
+    float x0 = it->x, y0 = it->y, x1 = it->x + it->w, y1 = it->y + it->h, e = 2;
+    if (it->op == DO_SHADOW) e += fabsf(it->spread) + fabsf(it->blur);
+    if (it->op == DO_TEXT) {
+        x0 = y0 = 1e30f; x1 = y1 = -1e30f;
+        for (int i = 0; i < it->ng; i++) { const DGlyph *g = &it->g[i]; float em = g->font ? g->font->size : 16; x0 = LMIN(x0, g->x - em); x1 = LMAX(x1, g->x + 2 * em); y0 = LMIN(y0, g->y - 1.5f * em); y1 = LMAX(y1, g->y + em); }
+    }
+    if (it->op == DO_POP_CLIP || it->op == DO_POP_LAYER || it->op == DO_PUSH_LAYER || x1 <= x0 || y1 <= y0) { b[0] = b[1] = 1e30f; b[2] = b[3] = -1e30f; return; }
+    b[0] = x0 - e; b[1] = y0 - e; b[2] = x1 + e; b[3] = y1 + e;
+}
+static int dl_sigs(const DisplayList *dl, struct DSig **v, int *cap) {
+    int n = dl->items.n, st[64], ns = 0;
+    if (n > *cap) { *cap = n + n / 2 + 16; *v = xrealloc(*v, sizeof **v * (size_t)*cap); }
+    for (int i = 0; i < n; i++) {
+        const DItem *it = &dl->items.v[i]; struct DSig *q = &(*v)[i];
+        q->h = ditem_hash(it); ditem_box(it, q->b);
+        if (it->op == DO_PUSH_LAYER) { if (ns < 64) st[ns++] = i; }   /* a layer covers its contents: an opacity change damages all of them */
+        else if (it->op == DO_POP_LAYER) { if (ns) { int t = st[--ns]; if (ns) bunion((*v)[st[ns - 1]].b, (*v)[t].b); } }
+        else if (ns) bunion((*v)[st[ns - 1]].b, q->b);
+    }
+    return n;
+}
+static uint64_t dl_hash(const DisplayList *dl) { uint64_t h = (uint64_t)dl->items.n; for (int i = 0; i < dl->items.n; i++) h = h * 31 + ditem_hash(&dl->items.v[i]); return h; }
+
 static void render(App *a) {
+    update_compact(a);
     double t0 = now_ms();
     int bar_px = (int)(BAR * a->scale);
     if (a->frame.w != a->pw || a->frame.h != a->ph) { canvas_free(&a->frame); canvas_init(&a->frame, a->pw, a->ph, a->scale); }
@@ -574,9 +755,9 @@ static void render(App *a) {
     if (defer && !a->vframe) { a->dirty = false; return; }
     bool part = !why;
     int rx0 = pwp, ry0 = ph, rx1 = 0, ry1 = 0;
-    if (a->page.w != pwp || a->page.h != ph) { canvas_free(&a->page); canvas_init(&a->page, pwp, ph, a->scale); part = false; }
+    if (a->page.w != pwp || a->page.h != ph) { canvas_free(&a->page); canvas_init(&a->page, pwp, ph, a->scale); part = false; a->osig_ok = false; }
     bool gskip = false; GpuVideo gvd, *gvp = NULL;
-    Image *fast = part && a->t->cur && a->gpu && a->gvid_ok && a->t->sy == a->last_sy && a->page.w == pwp && a->page.h == ph ? media_owner_frame(a->vown) : NULL;
+    Image *fast = part && !a->sdirty && a->t->cur && a->gpu && a->gvid_ok && a->t->sy == a->last_sy && a->page.w == pwp && a->page.h == ph ? media_owner_frame(a->vown) : NULL;
     if (a->t->cur && (defer || fast)) {   /* nothing but the video changed, or layout may be stale: only swap the video texture */
         Image *im = fast;
         if (!im) { a->dirty = a->vframe = false; return; }
@@ -591,8 +772,14 @@ static void render(App *a) {
             a->t->relayout = false;
         }
         a->t->sy = LCLAMP(a->t->sy, 0, max_scroll(a));
-        if (a->t->sy != a->last_sy && part) { part = false; why = 5; }
+        int blit = 0;   /* page scrolled by whole device pixels: shift the old pixels, raster only the exposed strip */
+        if (a->t->sy != a->last_sy && part) {
+            float sdy = (a->t->sy - a->last_sy) * a->page.scale;
+            if (!a->sdirty && fabsf(sdy - roundf(sdy)) < 0.01f && fabsf(sdy) < ph / 2) blit = (int)roundf(sdy);
+            else { part = false; why = 5; }
+        }
         g_full_paint = (double)SDL_GetTicks(); { double q = now_ms(); dl_clear(&a->pdl); dl_build(&a->pdl, a->t->cur->L, 0, a->t->sy, a->vw - a->side, a->vh - BAR); g_td += now_ms() - q; } a->vbars = video_bars(a, &a->pdl);
+        int nn = dl_sigs(&a->pdl, &a->nsig, &a->cnsig);
         const DItem *vit = NULL; int nv = 0;
         for (int i = 0; i < a->pdl.items.n; i++) {
             const DItem *it = &a->pdl.items.v[i];
@@ -604,23 +791,70 @@ static void render(App *a) {
         }
         rx0 = LMAX(rx0, 0); ry0 = LMAX(ry0, 0); rx1 = LMIN(rx1, pwp); ry1 = LMIN(ry1, ph);
         bool gv = a->gpu && nv == 1;
-        if (part && (nv == 0 || (gv && a->gvid_ok))) gskip = true;
+        const float *fb = a->pdl.fix; float s = a->page.scale;
+        int fx0 = LMAX(0, (int)floorf(fb[0] * s)), fx1 = LMIN(pwp, (int)ceilf(fb[2] * s)), fy0 = LMAX(0, (int)floorf(fb[1] * s) - LMAX(blit, 0)), fy1 = LMIN(ph, (int)ceilf(fb[3] * s) - LMIN(blit, 0));
+        bool fixed_area = a->pdl.has_fixed && fx1 > fx0 && fy1 > fy0;
+        if (blit && (nv || (fixed_area && (fy1 - fy0) * 2 > ph))) { blit = 0; part = false; why = 5; }
+        if (blit) {
+            int d = blit, n = ph - abs(d); size_t row = (size_t)a->page.stride;
+            if (d > 0) memmove(a->page.px, a->page.px + (size_t)d * row, (size_t)n * row * 4);
+            else memmove(a->page.px + (size_t)(-d) * row, a->page.px, (size_t)n * row * 4);
+            raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), 0, d > 0 ? n : 0, pwp, d > 0 ? ph : -d);
+            if (fixed_area) raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), fx0, fy0, fx1, fy1);   /* fixed boxes moved with the shift: repaint where they were and are */
+            rx0 = 0; ry0 = 0; rx1 = pwp; ry1 = ph; a->gvid_ok = false;
+        } else if (part && a->sdirty) {
+            float s = a->page.scale;
+            int x0 = (int)floorf(a->srect[0] * s), y0 = (int)floorf(a->srect[1] * s), x1 = (int)ceilf(a->srect[2] * s), y1 = (int)ceilf(a->srect[3] * s);
+            if (nv) { x0 = LMIN(x0, rx0); y0 = LMIN(y0, ry0); x1 = LMAX(x1, rx1); y1 = LMAX(y1, ry1); }
+            x0 = LMAX(x0, 0); y0 = LMAX(y0, 0); x1 = LMIN(x1, pwp); y1 = LMIN(y1, ph);
+            if (x1 > x0 && y1 > y0) raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), x0, y0, x1, y1);
+            rx0 = x0; ry0 = y0; rx1 = LMAX(x1, x0); ry1 = LMAX(y1, y0); a->gvid_ok = false;
+        } else if (part && (nv == 0 || (gv && a->gvid_ok))) gskip = true;
         else if (part && rx1 > rx0 && ry1 > ry0) { a->gvid_ok = false; raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), rx0, ry0, rx1, ry1); }
         else {
-            part = false; a->page.punch = gv ? vit->img : NULL; a->page.punched = false;
-            { double q = now_ms(); raster(&a->page, &a->pdl, RGBA(255, 255, 255, 255)); g_tx += now_ms() - q; }
-            a->gvid_ok = gv && a->page.punched; a->page.punch = NULL;
+            bool dmg = (why == 1 || why == 3 || why == 4) && !nv && a->osig_ok && a->t->sy == a->last_sy && !a->t->loading;
+            if (dmg) {   /* only DOM/layout changed: raster the union of the items that differ from the last frame */
+                build_chrome(a); chrome_tip(a);
+                if (dl_hash(&a->cdl) * 31 + dl_hash(&a->hdl) != a->chash) dmg = false;
+                float dm[4] = { 1e30f, 1e30f, -1e30f, -1e30f };
+                for (int i = 0, m = LMAX(nn, a->nosig); dmg && i < m; i++) {
+                    const struct DSig *o = i < a->nosig ? &a->osig[i] : NULL, *q = i < nn ? &a->nsig[i] : NULL;
+                    if (o && q && o->h == q->h) continue;
+                    if (o) bunion(dm, o->b);
+                    if (q) bunion(dm, q->b);
+                }
+                float s = a->page.scale;
+                int x0 = LMAX(0, (int)floorf(dm[0] * s)), y0 = LMAX(0, (int)floorf(dm[1] * s)), x1 = LMIN(pwp, (int)ceilf(dm[2] * s)), y1 = LMIN(ph, (int)ceilf(dm[3] * s));
+                if (dmg && (x1 <= x0 || y1 <= y0)) { part = true; gskip = true; }
+                else if (dmg && (long)(x1 - x0) * (y1 - y0) * 2 < (long)pwp * ph) {
+                    { double q = now_ms(); raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), x0, y0, x1, y1); g_tx += now_ms() - q; }
+                    part = true; rx0 = x0; ry0 = y0; rx1 = x1; ry1 = y1; a->gvid_ok = false;
+                    if (getenv("LUMEN_CHECK_DAMAGE")) {
+                        Canvas t; canvas_init(&t, pwp, ph, a->page.scale); raster(&t, &a->pdl, RGBA(255, 255, 255, 255));
+                        long bad = 0; for (int y = 0; y < ph; y++) for (int x = 0; x < pwp; x++) bad += t.px[(size_t)y * (size_t)t.stride + (size_t)x] != a->page.px[(size_t)y * (size_t)a->page.stride + (size_t)x];
+                        fprintf(stderr, "lumen: damage %dx%d at %d,%d mismatched px=%ld\n", x1 - x0, y1 - y0, x0, y0, bad); canvas_free(&t);
+                    }
+                }
+                else dmg = false;
+            }
+            if (!dmg) {
+                part = false; a->page.punch = gv ? vit->img : NULL; a->page.punched = false;
+                { double q = now_ms(); raster(&a->page, &a->pdl, RGBA(255, 255, 255, 255)); g_tx += now_ms() - q; }
+                a->gvid_ok = gv && a->page.punched; a->page.punch = NULL;
+            }
         }
+        { struct DSig *t = a->osig; a->osig = a->nsig; a->nsig = t; int c = a->cosig; a->cosig = a->cnsig; a->cnsig = c; a->nosig = nn; a->osig_ok = true; }
         if (gv && a->gvid_ok) {
             const Image *im = vit->img; float s = a->page.scale;
             gvd = (GpuVideo){ im->px, im->w, im->h, im->w, floorf(vit->x * s + 0.5f) + side_px, floorf(vit->y * s + 0.5f) + bar_px, floorf((vit->x + vit->w) * s + 0.5f) + side_px, floorf((vit->y + vit->h) * s + 0.5f) + bar_px };
             gvd.yuv = im->yuv; gvd.mat = im->yuv_mat; gvp = &gvd;
             a->vown = media_owner_of(im); a->vrect[0] = vit->x; a->vrect[1] = vit->y; a->vrect[2] = vit->w; a->vrect[3] = vit->h;
         }
-    } else { a->gvid_ok = false; raster(&a->page, &(DisplayList){0}, RGBA(255, 255, 255, 255)); }
-    if (!part) { build_chrome(a); chrome_tip(a); raster(&a->frame, &a->cdl, RGBA(255, 255, 255, 255)); }
+    } else { a->gvid_ok = false; a->osig_ok = false; raster(&a->page, &(DisplayList){0}, RGBA(255, 255, 255, 255)); }
+    if (!part) { build_chrome(a); chrome_tip(a); a->chash = dl_hash(&a->cdl) * 31 + dl_hash(&a->hdl); raster(&a->frame, &a->cdl, RGBA(255, 255, 255, 255)); }
     if (!gskip) for (int y = part ? ry0 : 0; y < (part ? ry1 : ph) && y + bar_px < a->ph; y++)
         memcpy(a->frame.px + (size_t)(y + bar_px) * (size_t)a->frame.stride + side_px, a->page.px + (size_t)y * (size_t)a->page.stride, (size_t)pwp * 4);
+    if (!gskip && a->hdl.items.n) { float s = a->frame.scale; raster_rect(&a->frame, &a->hdl, RGBA(255, 255, 255, 255), (int)floorf(g_pop[0] * s), (int)floorf(g_pop[1] * s), (int)ceilf(g_pop[2] * s), (int)ceilf(g_pop[3] * s)); }   /* floats over the page */
     if (!(a->gpu && gpu_present_frame(a->gpu, a->frame.px, a->frame.w, a->frame.h, a->frame.stride, gskip ? 0 : part ? bar_px + ry0 : 0, gskip ? 0 : part ? bar_px + ry1 : a->frame.h, gvp))) {
         SDL_Surface *ws = SDL_GetWindowSurface(a->win);
         if (ws) {
@@ -645,10 +879,47 @@ static void render(App *a) {
     }
     if (!part) a->last_full = t0;
     a->vframe = false;
-    a->dirty = a->vonly = false;
+    a->dirty = a->vonly = a->sdirty = false;
     a->last_page = a->t->cur; a->last_sy = a->t->sy; if (!defer) a->last_ver = a->t->cur ? a->t->cur->d->dom_version : 0;
 }
 
+/* scroll the innermost scrollable box under (x,y) that can still move; false = let the page scroll */
+static bool wheel_scroll(App *a, float x, float y, float dx, float dy) {
+    Page *p = a->t->cur; if (!p || !p->L || a->t->asleep) return false;
+    for (Box *b = layout_hit(p->L, x, y + a->t->sy); b; b = b->parent) {
+        if (!b->scroller || !b->node || !b->st) continue;
+        bool sx = b->st->overflow_x == OV_AUTO || b->st->overflow_x == OV_SCROLL, sy = b->st->overflow_y == OV_AUTO || b->st->overflow_y == OV_SCROLL;
+        float maxx = LMAX(0, b->scroll_w - b->w), maxy = LMAX(0, b->scroll_h - b->h);
+        float lo = box_scroll_from_end(b) ? -maxy : 0, hi = box_scroll_from_end(b) ? 0 : maxy;
+        float nx = sx ? LCLAMP(b->node->scroll_x + dx, 0, maxx) : b->node->scroll_x, ny = sy ? LCLAMP(b->node->scroll_y + dy, lo, hi) : b->node->scroll_y;
+        if (nx == b->node->scroll_x && ny == b->node->scroll_y) continue;
+        b->node->scroll_x = nx; b->node->scroll_y = ny;
+        float rx = b->x, ry = b->y; bool fx = b->fixed;
+        for (Box *q = b->parent; q; q = q->parent) { fx |= q->fixed; if (q->scroller && q->node) { rx -= q->node->scroll_x; ry -= q->node->scroll_y; } }
+        if (fx || (a->dirty && !a->vonly)) { a->vonly = a->sdirty = false; }
+        else {
+            float r[4] = { rx, ry - a->t->sy, rx + b->w, ry - a->t->sy + b->h };
+            if (a->sdirty) { r[0] = LMIN(r[0], a->srect[0]); r[1] = LMIN(r[1], a->srect[1]); r[2] = LMAX(r[2], a->srect[2]); r[3] = LMAX(r[3], a->srect[3]); }
+            memcpy(a->srect, r, sizeof r); a->sdirty = a->vonly = true;
+        }
+        a->dirty = true;
+        if (p->js) js_dispatch(p->js, b->node, "scroll", "Event", false, false, 0, 0, 0, NULL);
+        return true;
+    }
+    return false;
+}
+static void wheel_apply(App *a, float mx, float my, float dx, float dy) {
+    if (!(my > BAR && mx > a->side && wheel_scroll(a, mx - a->side, my - BAR, dx, dy))) { if (!(a->dirty && !a->vonly)) a->vonly = true; a->t->sy += dy; }
+    a->dirty = true;
+}
+static Tab *tab_of_doc(App *a, Document *d) {
+    for (int depth = 0; d && depth < 16; depth++) {
+        for (int i = 0; i < a->ntabs; i++) if (a->tabs[i]->cur && a->tabs[i]->cur->d == d) return a->tabs[i];
+        Page *f = NULL; for (Page *p = g_frames; p; p = p->fnext) if (p->d == d) { f = p; break; }
+        d = f && f->frame_el ? f->frame_el->doc : NULL;
+    }
+    return NULL;
+}
 static void update_size(App *a) {
     for (int i = 0; i < a->ntabs; i++) a->tabs[i]->relayout = true;
     int w, h; SDL_GetWindowSize(a->win, &w, &h); SDL_GetWindowSizeInPixels(a->win, &a->pw, &a->ph);
@@ -661,6 +932,17 @@ static App *g_app;
 static uint64_t fnv(const char *s) { uint64_t h = 1469598103934665603ull; for (; s && *s; s++) h = (h ^ (uint8_t)*s) * 1099511628211ull; return h; }
 static bool is_sheet_link(Node *n) { const char *r = node_attr(n, "rel"); return n->tag == A_link && r && strstr(r, "stylesheet") && node_attr(n, "href"); }
 typedef struct { uint64_t gen; Node *n; } LinkLoad;
+static bool is_preload_link(Node *n) {
+    const char *r = node_attr(n, "rel");
+    return n->tag == A_link && r && strstr(r, "preload") && node_attr(n, "href");
+}
+static void preload_done(NetRequest *rq, NetResponse *r, void *ud) {
+    (void)rq; LinkLoad *l = ud; Page *p = g_app->t->cur;
+    if (p && p->gen == l->gen && p->js)
+        js_dispatch(p->js, l->n, r && r->status >= 200 && r->status < 300 ? "load" : "error", "Event", false, false, 0, 0, 0, NULL);
+    node_release(l->n);
+    free(l);
+}
 static void link_done(NetRequest *rq, NetResponse *r, void *ud) {
     (void)rq; LinkLoad *l = ud; Page *p = g_app->t->cur;
     if (p && p->gen == l->gen && r && r->status == 200 && r->body) {
@@ -694,6 +976,28 @@ static void img_done(NetRequest *rq, NetResponse *r, void *ud) {
 static void img_refetch(const char *u) {
     NetRequest *rq = net_request_new("GET", u); ImgLoad *l = xmalloc(sizeof *l); l->gen = 0; l->u = xstrdup(u);
     rq->done = img_done; rq->ud = l; rq->priority = 2; net_fetch(rq);
+}
+/* external SVG documents referenced by <use href="file.svg#id">, parsed once per URL */
+typedef struct { Document *d; } SvgDoc;
+static HMap g_svgdocs;
+static void svgdoc_done(NetRequest *rq, NetResponse *r, void *ud) {
+    (void)rq; char *u = ud; Document *d = NULL;
+    if (r && r->status == 200 && r->body) { d = doc_new(u); html_parse(d, r->body, r->body_len); }
+    SvgDoc *s = hm_get(&g_svgdocs, u); if (s && !s->d) { s->d = d; d = NULL; }
+    if (d) doc_free(d);
+    g_img_epoch++;
+    if (g_app->t->cur) { g_app->t->cur->img_check = true; g_app->t->relayout = true; }
+    g_app->dirty = true; g_app->vonly = false;
+    free(u);
+}
+static const Node *svg_ext_ref(const char *u, const char *id) {
+    if (!strncmp(u, "blob:", 5) || !strncmp(u, "data:", 5) || !strncmp(u, "javascript:", 11)) return NULL;
+    SvgDoc *s = hm_get(&g_svgdocs, u);
+    if (!s) {
+        s = xcalloc(1, sizeof *s); hm_put(&g_svgdocs, u, s);
+        NetRequest *rq = net_request_new("GET", u); rq->done = svgdoc_done; rq->ud = xstrdup(u); rq->priority = 2; net_fetch(rq);
+    }
+    return s->d ? doc_get_element_by_id(s->d, id) : NULL;
 }
 /* Low-memory mode: drop decoded pixels of images not painted in the last full paint for 3 s; refetched on demand. */
 static void img_evict(void) {
@@ -760,7 +1064,7 @@ static void fire_img_events(Page *p) {
 static bool sync_sheets(Page *p, bool seed) {
     SheetRef *cur = NULL; int nc = 0, cap = 0; bool changed = false;
     for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) {
-        if (n->type != NODE_ELEMENT || n->ns != NS_HTML || (n->tag != A_style && !is_sheet_link(n))) continue;
+        if (n->type != NODE_ELEMENT || n->ns != NS_HTML || (n->tag != A_style && !is_sheet_link(n) && !is_preload_link(n))) continue;
         char *t = n->tag == A_style ? node_text_content(n) : NULL;
         uint64_t h = t ? fnv(t) : fnv(node_attr(n, "href"));
         int k = 0; while (k < p->nsref && p->sref[k].n != n) k++;
@@ -770,7 +1074,7 @@ static bool sync_sheets(Page *p, bool seed) {
             if (t) { StyleSheet *sh = css_parse_sheet(t, strlen(t), p->d->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); changed = true; }
             else {
                 char *u = url_join(p->d->url, node_attr(n, "href"));
-                if (u) { NetRequest *rq = net_request_new("GET", u); LinkLoad *l = xmalloc(sizeof *l); l->gen = p->gen; l->n = n; n->refcount++; rq->done = link_done; rq->ud = l; net_fetch(rq); free(u); }
+                if (u) { NetRequest *rq = net_request_new("GET", u); LinkLoad *l = xmalloc(sizeof *l); l->gen = p->gen; l->n = n; n->refcount++; rq->done = is_sheet_link(n) ? link_done : preload_done; rq->ud = l; net_fetch(rq); free(u); }
             }
         }
         free(t);
@@ -818,7 +1122,84 @@ static bool frame_update(Page *p) {
     p->img = (Image){ .w = pw, .h = ph, .refs = 1 << 30, .px = p->cv.px, .scale = s };
     return true;
 }
+/* @font-face: declare faces as sheets arrive; fetch a face only once text asks for it */
+static char *ff_prop(const char *body, const char *name) {
+    size_t nl = strlen(name);
+    for (const char *p = body; (p = strcasestr(p, name)); p += nl) {
+        const char *q = p + nl;
+        while (*q == ' ' || *q == '\t' || *q == '\r' || *q == '\n') q++;
+        if (*q != ':' || (p != body && !strchr("{; \t\r\n", p[-1]))) continue;
+        const char *e = ++q; int par = 0; char qt = 0;
+        for (; *e; e++) {
+            if (qt) { if (*e == qt) qt = 0; continue; }
+            if (*e == '"' || *e == '\'') qt = *e;
+            else if (*e == '(') par++;
+            else if (*e == ')') par--;
+            else if ((*e == ';' || *e == '}') && !par) break;
+        }
+        while (q < e && isspace((unsigned char)*q)) q++;
+        while (e > q && isspace((unsigned char)e[-1])) e--;
+        if (e - q >= 2 && (*q == '"' || *q == '\'') && e[-1] == *q) { q++; e--; }
+        char *r = xmalloc((size_t)(e - q) + 1); memcpy(r, q, (size_t)(e - q)); r[e - q] = 0;
+        return r;
+    }
+    return NULL;
+}
+/* first src entry FreeType can read: TrueType/OpenType/WOFF (no brotli for WOFF2) */
+static char *ff_pick_src(const char *src) {
+    for (const char *p = src; (p = strstr(p, "url(")); ) {
+        p += 4; while (*p == ' ') p++;
+        char qt = *p == '"' || *p == '\'' ? *p++ : 0;
+        const char *e = p; while (*e && (qt ? *e != qt : *e != ')')) e++;
+        size_t n = (size_t)(e - p);
+        const char *nx = e; while (*nx && *nx != ',') nx++;
+        char fmt[32] = ""; const char *f = strstr(e, "format(");
+        if (f && f < nx) { f += 7; size_t k = 0; while (*f && *f != ')' && k < sizeof fmt - 1) { if (*f != '"' && *f != '\'' && *f != ' ') fmt[k++] = (char)tolower((unsigned char)*f); f++; } fmt[k] = 0; }
+        char *u = xmalloc(n + 1); memcpy(u, p, n); u[n] = 0;
+        char *qm = strpbrk(u, "?#"); size_t ul = qm ? (size_t)(qm - u) : n;
+        bool woff2 = strstr(fmt, "woff2") || (!*fmt && ul >= 6 && !strncasecmp(u + ul - 6, ".woff2", 6));
+        bool ok = *fmt ? !woff2 && (strstr(fmt, "truetype") || strstr(fmt, "opentype") || strstr(fmt, "woff")) : !woff2;
+        if (ok && n) return u;
+        free(u); p = nx;
+    }
+    return NULL;
+}
+static void sheet_fonts(StyleSheet *s) {
+    for (int i = 0; i < s->font_faces.n; i++) {
+        const char *b = s->font_faces.v[i];
+        char *fam = ff_prop(b, "font-family"), *src = ff_prop(b, "src"), *wt = ff_prop(b, "font-weight"), *sty = ff_prop(b, "font-style");
+        char *u = src ? ff_pick_src(src) : NULL;
+        char *abs = u && fam && *fam ? url_join(s->base_url, u) : NULL;
+        if (abs) {
+            int w = 400;
+            if (wt && str_ieq(wt, "bold")) w = 700;
+            else if (wt && !strchr(wt, ' ') && atoi(wt) > 0) w = atoi(wt);
+            bool it = sty && (!strncasecmp(sty, "italic", 6) || !strncasecmp(sty, "oblique", 7));
+            font_declare(fam, w, it, abs);
+        }
+        free(abs); free(u); free(fam); free(src); free(wt); free(sty);
+    }
+}
+static HMap g_fontfetch;
+static void font_done(NetRequest *rq, NetResponse *r, void *ud) {
+    (void)rq; char *u = ud;
+    bool got = r && r->status == 200 && r->body && r->body_len;
+    if (font_loaded(u, got ? r->body : NULL, got ? r->body_len : 0)) {
+        g_img_epoch++;
+        for (Page *f = g_frames; f; f = f->fnext) f->frelayout = true;
+        g_app->t->relayout = g_app->dirty = true; g_app->vonly = false;
+    }
+    free(u);
+}
+static void font_pump(void) {
+    for (char *u; (u = font_next_request()); ) {
+        if (hm_get(&g_fontfetch, u)) { free(u); continue; }
+        hm_put(&g_fontfetch, u, (void *)1);
+        NetRequest *rq = net_request_new("GET", u); rq->done = font_done; rq->ud = u; net_fetch(rq);
+    }
+}
 static void frames_tick(App *a) {
+    font_pump();
     for (Page *p = g_frames; p; p = p->fnext) {
         p->js = js_frame_ctx(p->frame_el);
         if (frame_update(p)) { a->dirty = true; a->vonly = false; }
@@ -956,10 +1337,13 @@ static void page_start_js(App *a, Page *p) {
         char *src = xmalloc((size_t)n + 1); size_t got = fread(src, 1, (size_t)n, pf); src[got] = 0; fclose(pf);
         js_eval(p->js, src, "lumen:pre"); free(src);
     }
-    for (int i = 0; i < p->nscripts; i++) {
+    for (int pass = 0; pass < 2; pass++) for (int i = 0; i < p->nscripts; i++) {   /* module scripts are deferred */
         PScript *sc = &p->scripts[i];
-        if ((sc->n->flags & NF_SCRIPT_STARTED) || !(sc->n->flags & NF_CONNECTED)) continue;
-        if (sc->src) { js_run_script(p->js, sc->n, sc->src, sc->len, sc->name); free(sc->src); sc->src = NULL; sc->len = 0; }
+        if (sc->module != (pass == 1) || (sc->n->flags & NF_SCRIPT_STARTED) || !(sc->n->flags & NF_CONNECTED)) continue;
+        if (sc->src) {
+            if (sc->module) js_run_module(p->js, sc->n, sc->src, sc->len, sc->name); else js_run_script(p->js, sc->n, sc->src, sc->len, sc->name);
+            free(sc->src); sc->src = NULL; sc->len = 0;
+        }
         else { sc->n->flags |= NF_SCRIPT_STARTED; js_dispatch(p->js, sc->n, "error", "Event", false, false, 0, 0, 0, NULL); }
     }
     js_set_ready_state(p->js, 1);
@@ -981,6 +1365,40 @@ static bool is_text_ctl(Node *n) {
     for (int i = 0; ok[i]; i++) if (str_ieq(t, ok[i])) return true;
     return false;
 }
+static Node *edit_host(Node *n) {
+    for (; n; n = n->parent) if (n->type == NODE_ELEMENT) {
+        const char *v = node_attr(n, "contenteditable");
+        if (v && (!*v || !strcmp(v, "true") || !strcmp(v, "plaintext-only"))) return n;
+        if (v && !strcmp(v, "false")) return NULL;
+    }
+    return NULL;
+}
+static const char *key_name(SDL_Keycode k, bool shift, char *b) {
+    switch (k) {
+    case SDLK_RETURN: case SDLK_KP_ENTER: return "Enter"; case SDLK_ESCAPE: return "Escape"; case SDLK_BACKSPACE: return "Backspace";
+    case SDLK_TAB: return "Tab"; case SDLK_DELETE: return "Delete"; case SDLK_SPACE: return " ";
+    case SDLK_LEFT: return "ArrowLeft"; case SDLK_RIGHT: return "ArrowRight"; case SDLK_UP: return "ArrowUp"; case SDLK_DOWN: return "ArrowDown";
+    case SDLK_HOME: return "Home"; case SDLK_END: return "End"; case SDLK_PAGEUP: return "PageUp"; case SDLK_PAGEDOWN: return "PageDown";
+    default: break;
+    }
+    if (k >= SDLK_F1 && k <= SDLK_F12) { snprintf(b, 8, "F%d", (int)(k - SDLK_F1) + 1); return b; }
+    if (k < 33 || k >= 127) return NULL;
+    static const char *plain = "1234567890-=[]\\;',./`", *shifted = "!@#$%^&*()_+{}|:\"<>?~";
+    char c = (char)k; const char *p = strchr(plain, c);
+    if (shift) c = c >= 'a' && c <= 'z' ? (char)(c - 32) : p ? shifted[p - plain] : c;
+    b[0] = c; b[1] = 0; return b;
+}
+static int key_mods(SDL_Keymod m) { return (m & SDL_KMOD_SHIFT ? 1 : 0) | (m & SDL_KMOD_CTRL ? 2 : 0) | (m & SDL_KMOD_ALT ? 4 : 0) | (m & SDL_KMOD_GUI ? 8 : 0); }
+/* keydown+keyup to the focused element (or body) for a key the page may handle; false if the page cancelled it */
+static bool page_key(App *a, SDL_Keycode k, SDL_Keymod mod) {
+    Page *p = a->t->cur; char b[8]; const char *kn = key_name(k, mod & SDL_KMOD_SHIFT, b);
+    Node *f = p && p->d ? (p->d->focus ? p->d->focus : p->d->body) : NULL;
+    if (a->editing || !kn || !f || !p->js) return true;
+    bool ok = js_dispatch(p->js, f, "keydown", "KeyboardEvent", true, true, 0, 0, 0, kn);
+    if (a->t->cur == p) js_dispatch(p->js, f, "keyup", "KeyboardEvent", true, true, 0, 0, 0, kn);
+    return ok;
+}
+static Node *edit_focus(App *a) { Node *f = a->t->cur && a->t->cur->d && a->t->cur->js ? a->t->cur->d->focus : NULL; return edit_host(f) ? f : NULL; }
 static Node *page_focus(App *a) { Node *f = a->t->cur && a->t->cur->d ? a->t->cur->d->focus : NULL; return is_text_ctl(f) ? f : NULL; }
 static char *ctl_value(Node *n) {
     if (n->value_override) return xstrdup(n->value_override);
@@ -1000,7 +1418,7 @@ static void focus_node(App *a, Node *n) {
     if (n) { n->flags |= NF_FOCUS; doc_mark_dirty(d, n); }
     if (js && old) { js_dispatch(js, old, "blur", "FocusEvent", false, false, 0, 0, 0, NULL); js_dispatch(js, old, "focusout", "FocusEvent", true, false, 0, 0, 0, NULL); }
     if (js && n) { js_dispatch(js, n, "focus", "FocusEvent", false, false, 0, 0, 0, NULL); js_dispatch(js, n, "focusin", "FocusEvent", true, false, 0, 0, 0, NULL); }
-    if (is_text_ctl(n)) SDL_StartTextInput(a->win);
+    if (is_text_ctl(n) || edit_host(n)) SDL_StartTextInput(a->win);
     a->caret_t = now_ms();
     a->t->relayout = true; a->dirty = true;
 }
@@ -1040,15 +1458,57 @@ static void submit_form(App *a, Node *ctl) {
 }
 
 static double g_mv_t, g_mv_rep; static float g_mv_x, g_mv_y; static Page *g_mv_p;
+/* f: 1 restyle n, 2 its descendants, 4 its parent's descendants; key/which select the rules that set f */
+static bool hover_mark(Page *p, Node *n, int f, Node *key, int which) {
+    if (!(f & 7)) return false;
+    if (f & 1) doc_mark_style_dirty(p->d, n);
+    if (f & 6) style_hover_desc(p->e, p->d, key, (f & 4) && n->parent && n->parent->type == NODE_ELEMENT ? n->parent : n, which);
+    return true;
+}
+static bool hover_dirty(Page *p, Node *n) { return hover_mark(p, n, style_hover_affects(p->e, n), n, 0); }
+static bool hover_has_dirty(Page *p, Node *q) {   /* :has(...:hover...) subjects: q itself, or q's previous siblings for :has(+ ...) / :has(~ ...) */
+    Node *par = q->parent && q->parent->type == NODE_ELEMENT ? q->parent : NULL;
+    int pg = par ? style_hover_has(p->e, par, true) : 0;
+    bool ch = hover_mark(p, q, style_hover_has(p->e, q, false), q, 1);
+    if (!(pg & 48)) ch |= hover_mark(p, q, pg, par, 1);
+    if (p->e->idx.hov_sib)
+        for (Node *s = q->prev, *adj = NULL; s; s = s->prev) {
+            if (s->type != NODE_ELEMENT) continue;
+            int g = style_hover_has(p->e, s, false);
+            if ((g & 32) || (!adj && (g & 16))) ch |= hover_mark(p, s, g, s, 1);
+            if ((pg & 32) || (!adj && (pg & 16))) ch |= hover_mark(p, s, pg, par, 1);
+            adj = s;
+        }
+    return ch;
+}
+static bool page_hover(Page *p, Node *n) {   /* :hover = the hit element and its ancestors; restyle only the nodes that changed */
+    static Node *last; static Page *lastp;
+    if (n == last && p == lastp) return false;
+    last = n; lastp = p;
+    Document *d = p->d; bool ch = false, flip = false;
+    for (Node *c = d->node.first; c; c = node_next_in_tree(c, &d->node)) {
+        if (!(c->flags & NF_HOVER)) continue;
+        Node *q = n; while (q && q != c) q = q->parent ? q->parent : q->host;
+        if (!q) { c->flags &= ~(uint32_t)NF_HOVER; flip = true; ch |= hover_dirty(p, c); ch |= hover_has_dirty(p, c); }
+    }
+    for (Node *q = n; q; q = q->parent ? q->parent : q->host)
+        if (q->type == NODE_ELEMENT) {
+            if (!(q->flags & NF_HOVER)) { q->flags |= NF_HOVER; flip = true; ch |= hover_dirty(p, q); }
+            if (flip) ch |= hover_has_dirty(p, q);
+        }
+    return ch;
+}
 static void page_move(App *a, float x, float y) {   /* pointer moves for page scripts (e.g. YouTube shows its controls on mousemove) */
     static double last; static Node *prev; double tn = now_ms();
-    Page *p = a->t->cur; if (!p || !p->js || !p->L || tn - last < 30) return;
-    last = tn; g_mv_t = tn; g_mv_x = x; g_mv_y = y; g_mv_p = p;
+    Page *p = a->t->cur; if (!p || !p->L) return;
     Box *b = layout_hit(p->L, x, y + a->t->sy); Node *n = b ? b->node : NULL;
     while (n && n->type != NODE_ELEMENT) n = n->parent;
-    if (!n) return;
-    if (n != prev) { prev = n; js_dispatch(p->js, n, "pointerover", "MouseEvent", true, true, x, y, 0, NULL); js_dispatch(p->js, n, "mouseover", "MouseEvent", true, true, x, y, 0, NULL); }
-    js_dispatch(p->js, n, "pointermove", "MouseEvent", true, true, x, y, 0, NULL);
+    if (!n) n = p->d->html;
+    if (page_hover(p, n)) restyle(a);
+    if (!n || !p->js || tn - last < 30) return;
+    last = tn; g_mv_t = tn; g_mv_x = x; g_mv_y = y; g_mv_p = p;
+    if (n != prev) { prev = n; js_dispatch(p->js, n, "pointerover", "PointerEvent", true, true, x, y, 0, NULL); js_dispatch(p->js, n, "mouseover", "MouseEvent", true, true, x, y, 0, NULL); }
+    js_dispatch(p->js, n, "pointermove", "PointerEvent", true, true, x, y, 0, NULL);
     js_dispatch(p->js, n, "mousemove", "MouseEvent", true, true, x, y, 0, NULL);
 }
 static void page_move_keep(App *a) {   /* YouTube hides its controls ~3 s after the pointer stops; keep them up for 8 s */
@@ -1105,9 +1565,96 @@ static bool vbar_click(App *a, float x, float y) {   /* document coordinates */
     }
     return false;
 }
+static float g_px, g_py; static bool g_press, g_drag;   /* text selection by mouse */
+static void sel_dirty(App *a) { a->dirty = true; a->vonly = false; }
+static Box *sel_scope(Layout *L, float x, float y) {
+    Box *b = layout_hit(L, x, y);
+    while (b && (b->kind == BX_INLINE || b->kind == BX_TEXT)) b = b->parent;
+    return b;
+}
+static void sel_press(App *a, float x, float y, int clicks) {
+    bool had = g_tsel.on; g_tsel.on = false; g_press = g_drag = false;
+    Page *p = a->t->cur;
+    if (p && p->L && !a->t->asleep) {
+        float px = x - a->side, py = y - BAR + a->t->sy;
+        Box *b = layout_hit(p->L, px, py);
+        bool ok = !(b && b->st && b->st->user_select);
+        for (Node *k = b ? b->node : NULL; ok && k; k = k->parent) if (is_text_ctl(k)) ok = false;
+        if (ok && b && edit_host(b->node)) ok = false;
+        if (ok) {
+            g_press = true; g_px = px; g_py = py;
+            Node *tn; int off;
+            if (clicks >= 2 && tsel_point(p->L, px, py, a->t->sy, sel_scope(p->L, px, py), &tn, &off)) {
+                if (clicks == 2) tsel_word(p->L, tn, off); else tsel_block(p->L, tn);
+                g_press = false;
+            }
+        }
+    }
+    if (had || g_tsel.on) sel_dirty(a);
+}
+static void sel_drag(App *a, float x, float y) {
+    Page *p = a->t->cur;
+    if (!g_press || !p || !p->L) return;
+    float px = x - a->side, py = y - BAR + a->t->sy;
+    if (!g_drag) {
+        if (fabsf(px - g_px) + fabsf(py - g_py) < 4) return;
+        Node *an; int ao;
+        if (!tsel_point(p->L, g_px, g_py, a->t->sy, sel_scope(p->L, g_px, g_py), &an, &ao)) { g_press = false; return; }
+        g_drag = true; g_tsel = (TextSel){ false, p->L, an, an, ao, ao };
+    }
+    Node *fn; int fo;
+    if (!tsel_point(p->L, px, py, a->t->sy, NULL, &fn, &fo)) return;
+    if (fn != g_tsel.fn || fo != g_tsel.fo || !g_tsel.on) { g_tsel.fn = fn; g_tsel.fo = fo; g_tsel.on = fn != g_tsel.an || fo != g_tsel.ao; sel_dirty(a); }
+}
+static bool g_epress;
+static bool edit_text_at(App *a, Node *h, float px, float py, Node **tn, int *off) {
+    Page *p = a->t->cur;
+    return h->box && tsel_point(p->L, px, py, a->t->sy, h->box, tn, off) && node_within(*tn, h);
+}
+static void edit_press(App *a, float x, float y, int clicks) {
+    g_epress = false;
+    Node *h = edit_focus(a); Page *p = a->t->cur;
+    if (!h || !p || !p->L || a->t->asleep) return;
+    float px = x - a->side, py = y - BAR + a->t->sy;
+    Box *b = layout_hit(p->L, px, py); Node *tn; int off;
+    if (!b || edit_host(b->node) != edit_host(h) || !edit_text_at(a, h, px, py, &tn, &off)) return;
+    js_dispatch(p->js, tn, clicks >= 3 ? "lumensel-all" : clicks == 2 ? "lumensel-word" : "lumensel-collapse", "MouseEvent", false, false, off, 0, 0, NULL);
+    g_epress = clicks == 1;
+    sel_dirty(a);
+}
+static void edit_drag(App *a, float x, float y) {
+    static Node *ln; static int lo;
+    Node *h = edit_focus(a), *tn; int off;
+    if (!h || !a->t->cur || !a->t->cur->L || !edit_text_at(a, h, x - a->side, y - BAR + a->t->sy, &tn, &off) || (tn == ln && off == lo)) return;
+    ln = tn; lo = off;
+    js_dispatch(a->t->cur->js, tn, "lumensel-extend", "MouseEvent", false, false, off, 0, 0, NULL);
+    sel_dirty(a);
+}
+/* mirror a ranged selection inside the focused contenteditable into the native highlight (and Cmd+C) */
+static void edit_sel_sync(App *a) {
+    static uint64_t ver; static const Document *dd; static bool mine;
+    Page *p = a->t->cur; Document *d = p ? p->d : NULL;
+    if (!d || !p->L || (d == dd && d->sel_ver == ver)) return;
+    dd = d; ver = d->sel_ver;
+    Node *h = edit_focus(a), *an, *fn; int ao, fo;
+    bool on = h && d->sel[0] && (d->sel[0] != d->sel[1] || d->selo[0] != d->selo[1]) && node_within(d->sel[0], h) && node_within(d->sel[1], h) &&
+              tsel_dom_point(d->sel[0], d->selo[0], false, &an, &ao) && tsel_dom_point(d->sel[1], d->selo[1], true, &fn, &fo);
+    if (on) { g_tsel = (TextSel){ true, p->L, an, fn, ao, fo }; mine = true; }
+    else if (mine) { mine = false; g_tsel.on = false; }
+    if (h || on) sel_dirty(a);
+}
+static void h_clip_set(const char *t) { SDL_SetClipboardText(t); }
+static char *h_clip_get(void) { char *t = SDL_GetClipboardText(); char *r = strdup(t ? t : ""); SDL_free(t); return r; }
+static void sel_copy(App *a) {
+    Node *f = !a->editing ? page_focus(a) : NULL;
+    if (a->editing) { if (a->sel_all) SDL_SetClipboardText(a->t->url); return; }
+    if (f) { if (a->page_sel) { char *v = ctl_value(f); SDL_SetClipboardText(v); free(v); } return; }
+    if (g_tsel.on && a->t->cur && a->t->cur->L == g_tsel.L) { char *s = tsel_text(a->t->cur->L); if (*s) SDL_SetClipboardText(s); free(s); }
+}
 static void click_page(App *a, float x, float y) {
     x -= a->side;
-    if (!a->t->cur || !a->t->cur->L) return;
+    if (!a->t->cur || !a->t->cur->L || a->t->asleep) return;   /* a sleeping page is only a picture until its reload lands */
+    h_sync_in(a, a->t->cur->d, true);   /* paint may be deferred; hit-test the current DOM, not detached boxes */
     if (vbar_click(a, x, y - BAR + a->t->sy)) return;
     Box *b = layout_hit(a->t->cur->L, x, y - BAR + a->t->sy);
     Node *t = b ? b->node : NULL;
@@ -1143,14 +1690,16 @@ static void click_page(App *a, float x, float y) {
             for (Node *n = a->t->cur->d->node.first; n; n = node_next_in_tree(n, &a->t->cur->d->node))
                 if (is_text_ctl(n) && n->box && px >= n->box->x && px < n->box->x + n->box->w && py >= n->box->y && py < n->box->y + n->box->h) { ctl = n; break; }
         }
-        if (is_text_ctl(ctl)) focus_node(a, ctl); else if (!js_focused && md_ok && page_focus(a)) focus_node(a, NULL);
+        if (is_text_ctl(ctl)) focus_node(a, ctl);
+        else if (edit_host(t)) { if (!js_focused && md_ok) focus_node(a, edit_host(t)); }
+        else if (!js_focused && md_ok && page_focus(a)) focus_node(a, NULL);
         js_dispatch(js, t, "pointerup", "PointerEvent", true, true, x, cy, 0, NULL);
         js_dispatch(js, t, "mouseup", "MouseEvent", true, true, x, cy, 0, NULL);
-        bool ok = js_dispatch(js, t, "click", "MouseEvent", true, true, x, cy, 0, NULL);
+        bool ok = js_dispatch(js, t, "click", "PointerEvent", true, true, x, cy, 0, NULL);
         restyle(a);
         if (!ok) return;
     }
-    for (Node *n = b ? b->node : NULL; n; n = n->parent)
+    for (Node *n = t; n; n = n->parent)   /* not b: handlers and restyle() may have rebuilt the layout and freed it */
         if (n->type == NODE_ELEMENT && n->tag == A_a && node_attr(n, "href")) {
             const char *h = node_attr(n, "href");
             if (!strncmp(h, "javascript:", 11)) return;
@@ -1161,7 +1710,7 @@ static void click_page(App *a, float x, float y) {
 
 static bool over_link(App *a, float x, float y) {
     x -= a->side;
-    if (!a->t->cur || !a->t->cur->L || y < BAR) return false;
+    if (!a->t->cur || !a->t->cur->L || a->t->asleep || y < BAR) return false;
     Box *b = layout_hit(a->t->cur->L, x, y - BAR + a->t->sy);
     for (Node *n = b ? b->node : NULL; n; n = n->parent) if (n->type == NODE_ELEMENT && n->tag == A_a && node_attr(n, "href")) return true;
     return false;
@@ -1170,6 +1719,7 @@ static bool over_link(App *a, float x, float y) {
 static void tab_select(App *a, int i) {
     if (i < 0 || i >= a->ntabs) return;
     a->ti = i; a->t = a->tabs[i]; a->wi = a->t->ws; a->wslast[a->wi] = a->t; a->editing = false; a->t->relayout = true; a->dirty = true; a->vonly = false;
+    if (a->t->asleep && !a->t->loading) navigate(a, a->t->url, false);
     Page *p = a->t->cur;
     SDL_SetWindowTitle(a->win, p && p->d->title && *p->d->title ? p->d->title : "Lumen");
 }
@@ -1247,6 +1797,7 @@ static void menu_cmd(App *a, int c) {
 }
 static void info_click(App *a, int k) {
     Tab *t = a->t;
+    if (*g_notice) { if (k == 3) { g_notice[0] = 0; a->dirty = true; a->vonly = false; } return; }
     if (k < 3) { static const int H[3] = { 1, 4, 10 }; t->unlimit_until = (double)time(NULL) + H[k] * 3600.0; t->limited = false; t->ncpu = t->cpui = 0; t->cpumode = 0; if (t->cur) media_set_limit(t->cur->d, 0); }
     t->info = false; a->dirty = true; a->vonly = false;
 }
@@ -1307,9 +1858,37 @@ static void ws_popup(App *a, int w, float x, float y) {
     (void)w; (void)x; (void)y; menu_cmd(a, MENU_WS_RENAME);
 #endif
 }
+static SDL_Window *g_dialog_win;
+static void pick_done(void *ud, const char *const *list, int filter) {
+    (void)ud; (void)filter;
+    int n = 0;
+    if (list) while (list[n]) n++;
+    js_files_picked(list, list && n ? n : -1);
+}
+/* accept="image/png,.pdf" -> SDL extension filter "png;jpg;...;pdf" */
+static void pick_files(bool multiple, const char *accept) {
+    static char pat[512]; static SDL_DialogFileFilter flt;
+    pat[0] = 0;
+    for (const char *p = accept; p && *p;) {
+        const char *e = strchr(p, ','); size_t n = e ? (size_t)(e - p) : strlen(p);
+        char tok[64]; snprintf(tok, sizeof tok, "%.*s", (int)n, p);
+        char *t = str_trim(tok); const char *ext = NULL;
+        if (t[0] == '.') ext = t + 1;
+        else if (!strcmp(t, "image/*")) ext = "png;jpg;jpeg;gif;webp;heic;bmp;svg";
+        else if (!strcmp(t, "audio/*")) ext = "mp3;wav;ogg;m4a;flac;opus";
+        else if (!strcmp(t, "video/*")) ext = "mp4;webm;mov;mkv";
+        else if (!strcmp(t, "application/pdf")) ext = "pdf";
+        else if (!strcmp(t, "text/plain")) ext = "txt";
+        else if (strchr(t, '/')) { pat[0] = 0; break; }   /* unknown MIME type: don't filter */
+        if (ext && strlen(pat) + strlen(ext) + 2 < sizeof pat) { if (pat[0]) strcat(pat, ";"); strcat(pat, ext); }
+        p = e ? e + 1 : NULL;
+    }
+    flt.name = "Allowed files"; flt.pattern = pat;
+    SDL_ShowOpenFileDialog(pick_done, NULL, g_dialog_win, pat[0] ? &flt : NULL, pat[0] ? 1 : 0, NULL, multiple);
+}
 static SDL_HitTestResult win_hit(SDL_Window *w, const SDL_Point *pt, void *ud) {
     (void)w;
-    return pt->y < TABH && bar_hit(ud, (float)pt->x, (float)pt->y) == HB_NONE ? SDL_HITTEST_DRAGGABLE : SDL_HITTEST_NORMAL;
+    return pt->y < (g_compact ? TB : TABH) && bar_hit(ud, (float)pt->x, (float)pt->y) == HB_NONE ? SDL_HITTEST_DRAGGABLE : SDL_HITTEST_NORMAL;
 }
 static void history_go(App *a, int d) {
     int np = a->t->hpos + d; if (np < 0 || np >= a->t->nhist) return;
@@ -1330,30 +1909,72 @@ static void history_go(App *a, int d) {
 #include <execinfo.h>
 #include <unistd.h>
 #include <signal.h>
+#include <setjmp.h>
+#include <pthread.h>
 #include <mach-o/dyld.h>
-static void crash_handler(int sig) {
+/* A memory fault on the main thread while handling a tab jumps back to the event loop instead of killing
+   Lumen: that tab's page is abandoned (leaked, never touched again), the tab reloads, and a notice is shown. */
+static sigjmp_buf g_recover;
+static volatile sig_atomic_t g_guard;
+static pthread_t g_main_thr;
+static void crash_handler(int sig, siginfo_t *si, void *ucv) {
     void *bt[64]; int n = backtrace(bt, 64);
-    char buf[96]; int k = snprintf(buf, sizeof buf, "lumen: fatal signal %d, load address 0x%lx\n", sig, (unsigned long)(0x100000000UL + (unsigned long)_dyld_get_image_vmaddr_slide(0)));
+    unsigned long pc = 0, lr = 0;
+#if defined(__APPLE__) && defined(__aarch64__)
+    ucontext_t *uc = ucv; if (uc && uc->uc_mcontext) { pc = (unsigned long)uc->uc_mcontext->__ss.__pc; lr = (unsigned long)uc->uc_mcontext->__ss.__lr; }
+#elif defined(__APPLE__) && defined(__x86_64__)
+    ucontext_t *uc = ucv; if (uc && uc->uc_mcontext) pc = (unsigned long)uc->uc_mcontext->__ss.__rip;
+#else
+    (void)ucv;
+#endif
+    char buf[192]; int k = snprintf(buf, sizeof buf, "lumen: fatal signal %d at pc 0x%lx lr 0x%lx addr %p, load address 0x%lx\n", sig, pc, lr, si ? si->si_addr : NULL, (unsigned long)(0x100000000UL + (unsigned long)_dyld_get_image_vmaddr_slide(0)));
     write(2, buf, (size_t)k);
     backtrace_symbols_fd(bt, n, 2);
+    if (g_guard && (sig == SIGSEGV || sig == SIGBUS) && pthread_equal(pthread_self(), g_main_thr)) { g_guard = 0; siglongjmp(g_recover, sig); }
     signal(sig, SIG_DFL); raise(sig);
+}
+static void install_crash_handler(void) {
+    struct sigaction sa; memset(&sa, 0, sizeof sa); sa.sa_sigaction = crash_handler; sa.sa_flags = SA_SIGINFO; sigemptyset(&sa.sa_mask);
+    sigaction(SIGSEGV, &sa, NULL); sigaction(SIGBUS, &sa, NULL); sigaction(SIGABRT, &sa, NULL);
+}
+static void recover_from_crash(App *a, int sig) {
+    Tab *t = a->t, *act = a->ti >= 0 && a->ti < a->ntabs ? a->tabs[a->ti] : t;
+    fprintf(stderr, "lumen: recovered from signal %d in %s\n", sig, *t->url ? t->url : "(blank tab)");
+    js_release_pins();
+    if (t->cur) {
+        Page *drop[256]; int nd = 0;
+        for (Page *p = g_frames; p && nd < 256; p = p->fnext) if (tab_of_doc(a, p->d) == t) drop[nd++] = p;
+        for (int i = 0; i < nd; i++) for (Page **pp = &g_frames; *pp; pp = &(*pp)->fnext) if (*pp == drop[i]) { *pp = drop[i]->fnext; break; }
+        t->cur = NULL;
+    }
+    t->loading = t->asleep = false; t->crashes++;
+    a->last_page = NULL; a->dirty = true; a->vonly = false; a->sdirty = false;
+    for (int i = 0; i < a->ntabs; i++) a->tabs[i]->relayout = true;
+    if (t->crashes <= 3 && *t->url) {
+        snprintf(g_notice, sizeof g_notice, "Something went wrong on this page, so Lumen reloaded the tab instead of quitting.");
+        a->t = t; navigate(a, t->url, false);
+    } else snprintf(g_notice, sizeof g_notice, "This page keeps hitting an error, so Lumen stopped reloading it. Other tabs are not affected.");
+    a->t = act;
 }
 
 int main(int argc, char **argv) {
     g_no_paint_only = getenv("LUMEN_NO_PAINT_ONLY") != NULL;
-    signal(SIGSEGV, crash_handler); signal(SIGBUS, crash_handler); signal(SIGABRT, crash_handler);
+    g_main_thr = pthread_self();
+    install_crash_handler();
     const char *start = argc > 1 ? argv[1] : "https://en.wikipedia.org/wiki/Web_browser";
     SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) { fprintf(stderr, "SDL_Init: %s\n", SDL_GetError()); return 1; }
-    dom_init(); net_init(6); font_init();
+    dom_init(); net_init(6); font_init(); css_sheet_added_hook = sheet_fonts;
     icache_mu = SDL_CreateMutex(); EV_LOADED = SDL_RegisterEvents(1); EV_NET = SDL_RegisterEvents(1); EV_MENU = SDL_RegisterEvents(1);
-    net_wakeup = wake; media_wakeup = wake; js_wakeup = wake; js_global_init(argv[0]);
-    paint_image_hook = node_img; paint_url_image_hook = url_img; layout_image_size_hook = img_size;
+    net_wakeup = wake; media_wakeup = wake; js_wakeup = wake; js_clip_set = h_clip_set; js_clip_get = h_clip_get; js_global_init(argv[0]);
+    paint_image_hook = node_img; paint_url_image_hook = url_img; svg_ext_ref_hook = svg_ext_ref; layout_image_size_hook = img_size;
     App a; memset(&a, 0, sizeof a); g_app = &a; a.nws = 1; a.wsicon[0] = -1; snprintf(a.wsname[0], sizeof a.wsname[0], "Personal"); a.side = getenv("LUMEN_NO_SIDEBAR") ? 0 : SIDEW; tab_new(&a);
     bool want_gpu = !getenv("LUMEN_NO_GPU");
     int ww = 1280, wh = 840; { const char *e = getenv("LUMEN_WINDOW"); if (e) sscanf(e, "%dx%d", &ww, &wh); }   /* e.g. LUMEN_WINDOW=800x600 */
     a.win = SDL_CreateWindow("Lumen", ww, wh, SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY | (want_gpu && !strcmp(SDL_GetPlatform(), "macOS") ? SDL_WINDOW_METAL : 0));
     if (!a.win) { fprintf(stderr, "SDL_CreateWindow: %s\n", SDL_GetError()); return 1; }
+    g_dialog_win = a.win; js_pick_files = pick_files;
+    set_window_icon(a.win);
 #ifdef __APPLE__
     mac_style_window(a.win); mac_install_menu(EV_MENU);
 #endif
@@ -1384,8 +2005,10 @@ int main(int argc, char **argv) {
             if (!strcmp(k, "offscreen_media_eviction")) g_lowmem = v != 0; else if (!strcmp(k, "cpu_limit")) g_cpu_on = v != 0;
             else if (!strcmp(k, "cpu_pct")) g_cpu_pct = LCLAMP(v, 10, 100); else if (!strcmp(k, "cpu_secs")) g_cpu_secs = LCLAMP(v, 5, 600);
             else if (!strcmp(k, "cpu_lim")) g_cpu_lim = LCLAMP(v, 5, 95); else if (!strcmp(k, "video_controls")) g_vctl = v != 0;
+            else if (!strcmp(k, "tab_sleep")) g_tab_sleep = v != 0; else if (!strcmp(k, "cpu_hud")) g_hud = v != 0; else if (!strcmp(k, "smooth_scroll")) g_smooth = v != 0; else if (!strcmp(k, "user_agent")) g_ua = LCLAMP(v, 0, UA_COUNT - 1);
         }
         if (sf) fclose(sf);
+        net_set_user_agent(g_ua);
         links_load("bookmarks.txt", g_bms, &g_nbm, MAX_BM); links_load("history.txt", g_hv, &g_nhv, MAX_HV);
         const char *lm = getenv("LUMEN_LOWMEM"); if (lm) g_lowmem = atoi(lm) != 0;
         fprintf(stderr, "lumen: lite mode %s\n", g_lowmem ? "on" : "off");
@@ -1396,15 +2019,47 @@ int main(int argc, char **argv) {
     a.t = a.tabs[0]; a.ti = 0;
     bool quit = false, cmd = false;
     while (!quit) {
+        { int sig = sigsetjmp(g_recover, 1); if (sig) recover_from_crash(&a, sig); }
+        g_guard = 1;
+        if (getenv("LUMEN_CRASH_TEST")) {   /* test hook: fault once on the main thread after N ms */
+            static double t0; static bool done; if (!t0) t0 = now_ms();
+            if (!done && now_ms() - t0 > atof(getenv("LUMEN_CRASH_TEST"))) { done = true; *(volatile int *)(uintptr_t)8 = 1; }
+        }
         SDL_Event ev;
         int to = a.t->loading ? 120 : 1000;
         for (int i = 0; i < a.ntabs; i++) { Tab *tb = a.tabs[i]; if (tb->cur && tb->cur->js) { double dl = js_next_deadline(tb->cur->js) - now_ms(); if (tb->limited && tb->budget < 0) dl = LMAX(dl, -tb->budget / tb->lim - (now_ms() - tb->bud_t)); if (dl < to) to = dl < 0 ? 0 : (int)dl; } }
         if (net_pending() && to > 50) to = 50;
+        if (g_hud) {
+            static double lh; double th = now_ms();
+            if (th - lh >= 2000) { lh = th; hud_sample(); a.dirty = true; a.vonly = false; }
+            int nx = (int)(2000 - (th - lh)) + 1; if (nx < to) to = nx;
+        }
         { int mf = media_tick(); if (mf & 1) { if (!a.dirty && !a.deferred) a.vonly = true; a.dirty = a.vframe = true; } if (mf & 2) a.t->relayout = true; }
-        if (!a.editing && page_focus(&a) && !SDL_TextInputActive(a.win)) SDL_StartTextInput(a.win);
+        if (!a.editing && (page_focus(&a) || edit_focus(&a)) && !SDL_TextInputActive(a.win)) SDL_StartTextInput(a.win);
+        {
+            static double last_bg; double tb = now_ms();
+            if (tb - last_bg > 2000) {
+                last_bg = tb;
+                for (int i = 0; i < a.ntabs; i++) if (a.tabs[i]->cur && a.tabs[i]->cur->js) js_set_background(a.tabs[i]->cur->js, a.tabs[i] != a.t);
+                /* tab sleep (Settings, off by default): an idle background chatgpt.com tab drops its JS (the bulk of its RAM) and keeps
+                   its DOM/layout on screen; activating it reloads. LUMEN_TAB_SLEEP_MS: delay (overrides the setting), 0 = off; LUMEN_TAB_SLEEP=all: any site */
+                const char *sm = getenv("LUMEN_TAB_SLEEP_MS"); double sleep_ms = sm ? atof(sm) : g_tab_sleep ? 60000 : 0; bool sleep_all = getenv("LUMEN_TAB_SLEEP") && !strcmp(getenv("LUMEN_TAB_SLEEP"), "all");
+                for (int i = 0; i < a.ntabs; i++) {
+                    Tab *st = a.tabs[i]; Page *sp = st->cur;
+                    if (st == a.t || st->loading || !sp || !sp->js || !sp->url) { st->bg_since = 0; continue; }
+                    if (!st->bg_since) st->bg_since = tb;
+                    bool site = sleep_all || !strncmp(sp->url, "https://chatgpt.com/", 20);
+                    if (sleep_ms > 0 && site && tb - st->bg_since > sleep_ms && !js_busy(sp->js)) { js_free(sp->js); sp->js = NULL; st->asleep = true; }
+                }
+                if (a.t->asleep && !a.t->loading) navigate(&a, a.t->url, false);
+                for (Page *p = g_frames; p; p = p->fnext) if (p->js) { Tab *ft = tab_of_doc(&a, p->d); js_set_background(p->js, ft && ft != a.t); }
+            }
+        }
         if (getenv("LUMEN_MEM_STATS")) {
             static double last_stats; double tn = now_ms();
             if (tn - last_stats > 10000) { last_stats = tn; size_t fr, seg = media_mem_bytes(&fr); size_t jh = 0, je = 0; js_mem_stats(&jh, &je); fprintf(stderr, "lumen-mem: mse=%.1fMB vframes=%.1fMB images=%.1fMB/%d js_heap=%.1fMB js_external=%.1fMB canvases=%.1fMB\n", seg / 1048576.0, fr / 1048576.0, g_icache_bytes / 1048576.0, g_icache_n, jh / 1048576.0, je / 1048576.0, ((double)a.frame.w * a.frame.h + (double)a.page.w * a.page.h) * 4 / 1048576.0); }
+            if (last_stats == tn) { extern long g_styles_live, g_nodes_live; extern size_t g_css_parsed_bytes; extern void worker_mem_stats(size_t *, size_t *, int *); size_t wh, wx; int wn; worker_mem_stats(&wh, &wx, &wn); malloc_statistics_t ms = {0}; malloc_zone_statistics(NULL, &ms);
+                fprintf(stderr, "lumen-mem2: malloc_in_use=%.1fMB nodes=%ld (%zuB) styles=%ld (%zuB) css_parsed=%.1fMB workers=%d heap=%.1fMB ext=%.1fMB\n", ms.size_in_use / 1048576.0, g_nodes_live, sizeof(Node), g_styles_live, sizeof(ComputedStyle), g_css_parsed_bytes / 1048576.0, wn, wh / 1048576.0, wx / 1048576.0); }
         }
         g_lite_active = a.t && lite_on(a.t); media_lowmem = g_lite_active;
         if (g_lite_active) {
@@ -1413,13 +2068,18 @@ int main(int argc, char **argv) {
             if (tn - last_evict > 2000) { last_evict = tn; img_evict(); }
         }
         { int mt = media_timeout_ms(); if (mt >= 0 && mt < to) to = mt; }
+        if (g_sm_dx || g_sm_dy) {   /* smooth scrolling: move 30% of what is left each 16ms frame */
+            float sx = fabsf(g_sm_dx) < 2 ? g_sm_dx : g_sm_dx * .3f, sy = fabsf(g_sm_dy) < 2 ? g_sm_dy : g_sm_dy * .3f;
+            g_sm_dx -= sx; g_sm_dy -= sy; wheel_apply(&a, g_sm_x, g_sm_y, sx, sy);
+            if (to > 16) to = 16;
+        }
         page_move_keep(&a); if (g_mv_p && to > 1000) to = 1000;
         if (a.vbars) { static double lb; double tn = now_ms(); if (tn - lb >= 500) { lb = tn; a.dirty = true; a.vonly = false; } if (to > 500) to = 500; }
         if (a.deferred) { double r = 250 - (now_ms() - a.last_full); if (r <= 0) a.dirty = true; else if (r + 1 < to) to = (int)r + 1; }
         if (a.tip_until) { double r = a.tip_until - now_ms(); if (r <= 0) { a.tip_until = 0; a.dirty = true; a.vonly = false; } else if (r + 1 < to) to = (int)r + 1; }
         {
             bool want = false;
-            if (!a.editing && page_focus(&a)) {
+            if (!a.editing && (page_focus(&a) || edit_focus(&a))) {
                 double ph = fmod(now_ms() - a.caret_t, 1060);
                 want = ph < 530;
                 int nx = (int)((want ? 530 : 1060) - ph) + 1; if (nx < to) to = nx;
@@ -1427,24 +2087,50 @@ int main(int argc, char **argv) {
             if (want != dl_caret_on) { dl_caret_on = want; a.vonly = false; a.dirty = true; }
         }
         { double now = now_ms(), gn; if (image_anim_tick(now, &gn)) { a.vonly = false; a.dirty = true; } if (gn > 0 && gn - now < to) to = gn - now < 1 ? 1 : (int)(gn - now); }
-        if (!SDL_WaitEventTimeout(&ev, to)) { if (a.t->loading) a.dirty = true; }
+        if (getenv("LUMEN_AUTOSCROLL")) {
+            /* test hook: "x,y,dy,start_ms,count" pushes one wheel tick every 16ms */
+            static double t0; static int sent; float wx = 0, wy = 0, wdy = 0; double st = 0; int cnt = 0;
+            sscanf(getenv("LUMEN_AUTOSCROLL"), "%f,%f,%f,%lf,%d", &wx, &wy, &wdy, &st, &cnt);
+            if (!t0) t0 = now_ms();
+            if (sent < cnt && now_ms() - t0 > st + sent * 16.0) { SDL_Event we = {0}; we.type = SDL_EVENT_MOUSE_WHEEL; we.wheel.y = wdy; we.wheel.mouse_x = wx; we.wheel.mouse_y = wy; SDL_PushEvent(&we); sent++; }
+            if (sent < cnt && to > 16) to = 16;
+        }
+        if (!SDL_WaitEventTimeout(&ev, to)) { if (a.t->loading || getenv("LUMEN_SHOT")) a.dirty = true; }
         else do {
             bool wheel0 = ev.type == SDL_EVENT_MOUSE_WHEEL && !ev.wheel.x && !ev.wheel.y;
             if ((ev.type >= SDL_EVENT_KEY_DOWN && ev.type <= SDL_EVENT_TEXT_INPUT) || (ev.type >= SDL_EVENT_MOUSE_MOTION && ev.type <= SDL_EVENT_MOUSE_WHEEL && !wheel0)) a.last_input = now_ms();
-            if (ev.type != EV_NET && !wheel0) a.vonly = false;
+            if (ev.type != EV_NET && ev.type != SDL_EVENT_MOUSE_WHEEL) a.vonly = false;
+            js_key_mods = key_mods(SDL_GetModState());
             switch (ev.type) {
             case SDL_EVENT_QUIT: quit = true; break;
             case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: case SDL_EVENT_WINDOW_RESIZED: update_size(&a); break;
             case SDL_EVENT_WINDOW_EXPOSED: a.dirty = true; break;
-            case SDL_EVENT_MOUSE_WHEEL: a.t->sy -= ev.wheel.y * 40; a.dirty = true; break;
+            case SDL_EVENT_MOUSE_WHEEL: {
+                /* whole-number deltas come from a mouse wheel: one fixed step per notch; fractional ones from a trackpad */
+                bool notch = ev.wheel.x == roundf(ev.wheel.x) && ev.wheel.y == roundf(ev.wheel.y);
+                float k = notch ? WHEEL_STEP : 40, wdx = ev.wheel.x * k, wdy = -ev.wheel.y * k;
+                if (ev.wheel.direction == SDL_MOUSEWHEEL_FLIPPED) { wdx = -wdx; wdy = -wdy; }
+                if (notch && g_smooth && (wdx || wdy)) {
+                    if (ev.wheel.mouse_x != g_sm_x || ev.wheel.mouse_y != g_sm_y || (g_sm_dy && (g_sm_dy > 0) != (wdy > 0))) g_sm_dx = g_sm_dy = 0;
+                    g_sm_x = ev.wheel.mouse_x; g_sm_y = ev.wheel.mouse_y; g_sm_dx += wdx; g_sm_dy += wdy; break;
+                }
+                wheel_apply(&a, ev.wheel.mouse_x, ev.wheel.mouse_y, wdx, wdy); break;
+            }
             case SDL_EVENT_MOUSE_MOTION: {
                 int h = bar_hit(&a, ev.motion.x, ev.motion.y); if (h != a.hover) { a.hover = h; a.dirty = true; }
                 if (!h && ev.motion.y > BAR && ev.motion.x > a.side) page_move(&a, ev.motion.x - a.side, ev.motion.y - BAR);
+                else if (a.t->cur && page_hover(a.t->cur, NULL)) restyle(&a);
+                if (g_press && (ev.motion.state & SDL_BUTTON_LMASK)) sel_drag(&a, ev.motion.x, ev.motion.y);
+                else if (g_epress && (ev.motion.state & SDL_BUTTON_LMASK)) edit_drag(&a, ev.motion.x, ev.motion.y);
                 SDL_SetCursor(SDL_CreateSystemCursor(h == HB_URL ? SDL_SYSTEM_CURSOR_TEXT : over_link(&a, ev.motion.x, ev.motion.y) || (h && h != HB_URL) ? SDL_SYSTEM_CURSOR_POINTER : SDL_SYSTEM_CURSOR_DEFAULT));
                 break; }
+            case SDL_EVENT_WINDOW_MOUSE_LEAVE: if (a.t->cur && page_hover(a.t->cur, NULL)) restyle(&a); break;
+            case SDL_EVENT_MOUSE_BUTTON_UP: if (ev.button.button == SDL_BUTTON_LEFT) g_press = g_drag = false; break;
             case SDL_EVENT_MOUSE_BUTTON_DOWN:
                 if (ev.button.button != SDL_BUTTON_LEFT) break;
                 { int bh = bar_hit(&a, ev.button.x, ev.button.y);
+                  if (g_hud_pop) { float x = ev.button.x, y = ev.button.y; bool in = x >= g_pop[0] && x < g_pop[2] && y >= g_pop[1] && y < g_pop[3]; g_hud_pop = false; a.dirty = true; a.vonly = false; if (in || bh == HB_HUD) break; }
+                  if (bh == HB_HUD) { g_hud_pop = true; a.dirty = true; a.vonly = false; break; }
                   if (bh >= HB_TABDOT) { int i = bh - HB_TABDOT; if (i != a.ti) tab_select(&a, i); a.t->info = true; a.dirty = true; a.vonly = false; break; }
                   if (bh >= HB_INFO) { info_click(&a, bh - HB_INFO); break; }
                   if (bh >= HB_WS) { int w = bh - HB_WS; if (w != a.wi) ws_select(&a, w); else ws_popup(&a, w, ev.button.x, ev.button.y); break; }
@@ -1458,7 +2144,7 @@ int main(int argc, char **argv) {
                 case HB_STAR: bm_toggle(&a); a.dirty = true; a.vonly = false; break;
                 case HB_RELOAD: if (a.t->hpos >= 0) navigate(&a, a.t->hist[a.t->hpos], false); break;
                 case HB_URL: a.editing = true; a.sel_all = 1; SDL_StartTextInput(a.win); a.dirty = true; break;
-                default: if (a.editing) { a.editing = false; SDL_StopTextInput(a.win); a.dirty = true; } click_page(&a, ev.button.x, ev.button.y);
+                default: if (a.editing) { a.editing = false; SDL_StopTextInput(a.win); a.dirty = true; } sel_press(&a, ev.button.x, ev.button.y, ev.button.clicks); click_page(&a, ev.button.x, ev.button.y); edit_press(&a, ev.button.x, ev.button.y, ev.button.clicks);
                 }
                 break;
             case SDL_EVENT_TEXT_INPUT: a.caret_t = now_ms();
@@ -1470,14 +2156,29 @@ int main(int argc, char **argv) {
                     }
                     if (a.t->cur->js) js_dispatch(a.t->cur->js, f, "keyup", "KeyboardEvent", true, true, 0, 0, 0, ev.text.text);
                     restyle(&a);
+                } else if (!a.editing && edit_focus(&a)) {
+                    Node *f = edit_focus(&a); JsCtx *js = a.t->cur->js;
+                    if (js_dispatch(js, f, "keydown", "KeyboardEvent", true, true, 0, 0, 0, ev.text.text))
+                        js_dispatch(js, f, "lumenedit", "KeyboardEvent", false, false, 0, 0, 0, ev.text.text);
+                    js_dispatch(js, f, "keyup", "KeyboardEvent", true, true, 0, 0, 0, ev.text.text);
+                    restyle(&a); a.dirty = true;
                 } else if (a.editing) { if (a.sel_all) { a.t->url[0] = 0; a.sel_all = 0; } strncat(a.t->url, ev.text.text, sizeof a.t->url - strlen(a.t->url) - 1); a.dirty = true; }
                 break;
             case SDL_EVENT_KEY_UP: if (ev.key.key == SDLK_LGUI || ev.key.key == SDLK_RGUI || ev.key.key == SDLK_LCTRL || ev.key.key == SDLK_RCTRL) cmd = false; break;
             case SDL_EVENT_KEY_DOWN: { a.caret_t = now_ms();
+                js_key_mods = key_mods(ev.key.mod);
                 SDL_Keycode k = ev.key.key; float page = a.vh - BAR - 40;
                 if (k == SDLK_LGUI || k == SDLK_RGUI || k == SDLK_LCTRL || k == SDLK_RCTRL) { cmd = true; break; }
                 if (cmd || (ev.key.mod & (SDL_KMOD_GUI | SDL_KMOD_CTRL))) {
+                    bool reserved = k == SDLK_Q || k == SDLK_W || k == SDLK_T || k == SDLK_N || k == SDLK_L || k == SDLK_TAB || (k >= SDLK_1 && k <= SDLK_9);
+                    if (cmd) js_key_mods |= (ev.key.mod & SDL_KMOD_CTRL) ? 2 : 8;
+                    if (!reserved && !page_key(&a, k, ev.key.mod)) { restyle(&a); a.dirty = true; a.vonly = false; break; }
                     if (k == SDLK_A && !a.editing && page_focus(&a)) a.page_sel = 1;
+                    else if (k == SDLK_A && !a.editing && !edit_focus(&a) && a.t->cur && a.t->cur->L) { tsel_all(a.t->cur->L); g_tsel.L = a.t->cur->L; a.vonly = false; }
+                    else if (k == SDLK_A && !a.editing && edit_focus(&a)) js_dispatch(a.t->cur->js, edit_focus(&a), "lumensel-all", "MouseEvent", false, false, 0, 0, 0, NULL);
+                    else if ((k == SDLK_LEFT || k == SDLK_RIGHT) && !a.editing && edit_focus(&a))
+                        js_dispatch(a.t->cur->js, edit_focus(&a), k == SDLK_LEFT ? "lumensel-home" : "lumensel-end", "MouseEvent", false, false, 0, (ev.key.mod & SDL_KMOD_SHIFT) ? 1 : 0, 0, NULL);
+                    else if (k == SDLK_C) sel_copy(&a);
                     else if (k == SDLK_L) { a.editing = true; a.sel_all = 1; SDL_StartTextInput(a.win); }
                     else if (k == SDLK_R && a.t->hpos >= 0) navigate(&a, a.t->hist[a.t->hpos], false);
                     else if (k == SDLK_LEFTBRACKET) history_go(&a, -1);
@@ -1506,9 +2207,27 @@ int main(int argc, char **argv) {
                         else if (ok && !strcmp(kn, "Escape")) focus_node(&a, NULL);
                         if (a.t->cur && a.t->cur->js && page_focus(&a) == f) js_dispatch(a.t->cur->js, f, "keyup", "KeyboardEvent", true, true, 0, 0, 0, kn);
                         restyle(&a); a.dirty = true;
-                    }
+                    } else if (k != SDLK_SPACE && (k < 32 || k >= 127) && !page_key(&a, k, ev.key.mod)) { restyle(&a); a.dirty = true; }
                     break;
                 }
+                if (edit_focus(&a)) {
+                    Node *f = edit_focus(&a); JsCtx *js = a.t->cur->js;
+                    const char *kn = k == SDLK_RETURN || k == SDLK_KP_ENTER ? "Enter" : k == SDLK_BACKSPACE ? "Backspace" : k == SDLK_ESCAPE ? "Escape" : k == SDLK_TAB ? "Tab" :
+                        k == SDLK_LEFT ? "ArrowLeft" : k == SDLK_RIGHT ? "ArrowRight" : k == SDLK_UP ? "ArrowUp" : k == SDLK_DOWN ? "ArrowDown" : k == SDLK_HOME ? "Home" : k == SDLK_END ? "End" : NULL;
+                    if (kn) {
+                        bool ok = js_dispatch(js, f, "keydown", "KeyboardEvent", true, true, 0, 0, 0, kn);
+                        if (ok && !strcmp(kn, "Backspace")) js_dispatch(js, f, "lumeneditdel", "KeyboardEvent", false, false, 0, 0, 0, kn);
+                        else if (ok && (!strcmp(kn, "ArrowLeft") || !strcmp(kn, "ArrowRight") || !strcmp(kn, "Home") || !strcmp(kn, "End"))) {
+                            static const char *mv[] = { "lumensel-left", "lumensel-right", "lumensel-home", "lumensel-end" };
+                            js_dispatch(js, f, mv[kn[0] == 'H' ? 2 : kn[0] == 'E' ? 3 : kn[5] == 'L' ? 0 : 1], "MouseEvent", false, false, 0, (ev.key.mod & SDL_KMOD_SHIFT) ? 1 : 0, 0, NULL);
+                        }
+                        else if (ok && !strcmp(kn, "Escape")) focus_node(&a, NULL);
+                        if (a.t->cur && a.t->cur->js == js) js_dispatch(js, f, "keyup", "KeyboardEvent", true, true, 0, 0, 0, kn);
+                        restyle(&a); a.dirty = true;
+                    } else if (k != SDLK_SPACE && (k < 32 || k >= 127) && !page_key(&a, k, ev.key.mod)) { restyle(&a); a.dirty = true; }
+                    break;
+                }
+                if (!page_key(&a, k, ev.key.mod)) { restyle(&a); a.dirty = true; a.vonly = false; break; }
                 if (k == SDLK_DOWN) a.t->sy += 40; else if (k == SDLK_UP) a.t->sy -= 40;
                 else if (k == SDLK_PAGEDOWN || k == SDLK_SPACE) a.t->sy += (ev.key.mod & SDL_KMOD_SHIFT) ? -page : page;
                 else if (k == SDLK_PAGEUP) a.t->sy -= page;
@@ -1528,7 +2247,7 @@ int main(int argc, char **argv) {
         }
                     if (!lt) { page_free(p); break; }
                     Tab *act = a.t; bool fg = lt == act; a.t = lt;
-                    page_free(a.t->cur); a.t->cur = p; a.t->loading = false; a.t->sy = 0; a.t->relayout = true; a.dirty = true;
+                    page_free(a.t->cur); a.t->cur = p; a.t->asleep = false; a.t->loading = false; a.t->sy = 0; a.t->relayout = true; a.dirty = true;
                     if (!a.editing) snprintf(a.t->url, sizeof a.t->url, "%s", p->url);
                     if (a.t->hpos >= 0) { free(a.t->hist[a.t->hpos]); a.t->hist[a.t->hpos] = xstrdup(p->url); }
                     char title[512]; snprintf(title, sizeof title, "%s", p->d->title && *p->d->title ? p->d->title : p->url);
@@ -1541,11 +2260,13 @@ int main(int argc, char **argv) {
                 }
             }
         } while (SDL_PollEvent(&ev));
+        js_release_pins();
         net_poll();
         { Tab *act = a.t; double tn = now_ms(); for (int i = 0; i < a.ntabs; i++) { a.t = a.tabs[i]; if (a.t->limited) { a.t->budget = LMIN(a.t->budget + a.t->lim * (tn - a.t->bud_t), 100); a.t->bud_t = tn; if (a.t->budget < 0) continue; } if (a.t->cur && a.t->cur->js) { double c0 = now_ms(); js_tick(a.t->cur->js); restyle(&a); fire_img_events(a.t->cur); double c = now_ms() - c0; a.t->cpu_ms += c; if (a.t->limited) a.t->budget -= c; } } a.t = act; if (a.t->cur && a.t->cur->js) frames_tick(&a); }
+        edit_sel_sync(&a);
         if (a.dirty) { double r0 = now_ms(); render(&a); a.t->cpu_ms += now_ms() - r0; }
         cpu_monitor(&a);
-        { float want = a.t->info ? INFOH : 0; if (want != g_info_h) { g_info_h = want; for (int i = 0; i < a.ntabs; i++) a.tabs[i]->relayout = true; a.dirty = true; a.vonly = false; } }
+        { float want = a.t->info || *g_notice ? INFOH : 0; if (want != g_info_h) { g_info_h = want; for (int i = 0; i < a.ntabs; i++) a.tabs[i]->relayout = true; a.dirty = true; a.vonly = false; } }
         if (*cookie_path && now_ms() - cookies_saved_at > 5000) { cookies_save(cookie_path); cookies_saved_at = now_ms(); }
     }
     if (*cookie_path) cookies_save(cookie_path);

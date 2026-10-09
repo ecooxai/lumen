@@ -1,0 +1,14 @@
+<!doctype html><script>
+const r = [];
+const done = () => console.log('RESULTS worker-ports blobWorker:' + (r[0] === 'msg:echo:ping' ? 'PASS' : 'FAIL') + ' portsDelivered:' + (r.includes('msg:inited ports=1') ? 'PASS' : 'FAIL') + ' portRoundTrip:' + (r.includes('port:port-echo:hello') ? 'PASS' : 'FAIL'));
+const src = "(self.URL||self.webkitURL).revokeObjectURL(self.location.href); self.onmessage = e => { if (e.data.kind === 'init') { const p = e.ports[0]; p.onmessage = m => p.postMessage('port-echo:' + m.data); self.postMessage('inited ports=' + e.ports.length); } else self.postMessage('echo:' + e.data.kind); };";
+const b = new Blob(["// pre\n", src], { type: 'text/javascript;charset=utf-8' });
+const u = URL.createObjectURL(b);
+const w = new Worker(u, { name: 'dil' });
+w.onerror = e => r.push('err');
+w.onmessage = e => { r.push('msg:' + e.data); if (String(e.data).startsWith('inited')) port.postMessage('hello'); };
+const ch = new MessageChannel(), port = ch.port1;
+port.onmessage = e => { r.push('port:' + e.data); done(); };
+w.postMessage({ kind: 'ping' });
+try { w.postMessage({ kind: 'init' }, [ch.port2]); } catch (e) { r.push('threw'); }
+</script>
