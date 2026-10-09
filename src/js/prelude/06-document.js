@@ -79,6 +79,13 @@ methods(Document.prototype, {
         const ed = n => { for (; n; n = n.parentNode) if (n.nodeType === 1) { const v = n.getAttribute('contenteditable'); if (v === '' || v === 'true' || v === 'plaintext-only') return n; if (v === 'false') return null; } return null; };
         const ae = this.activeElement, sel = this.getSelection();
         let t = sel && sel.anchorNode; if (t && t.nodeType !== 1) t = t.parentNode;
+        if (cmd === 'copy' || cmd === 'cut') {
+            const dt = new DataTransfer(), ev = new ClipboardEvent(cmd, { clipboardData: dt, bubbles: true, cancelable: true, composed: true });
+            (t || ae || this.body || this.documentElement).dispatchEvent(ev);
+            const fld = ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA') ? ae : null;
+            N.clipSet(ev.defaultPrevented ? dt.getData('text/plain') : fld ? String(fld.value).slice(fld.selectionStart, fld.selectionEnd) : String(sel || ''));
+            return true;
+        }
         if (!ed(t) && ae && ed(ae)) t = ae;
         if (!ed(t)) {
             if (cmd !== 'inserttext' || !ae || (ae.tagName !== 'INPUT' && ae.tagName !== 'TEXTAREA')) return false;

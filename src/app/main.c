@@ -1576,6 +1576,8 @@ static void edit_sel_sync(App *a) {
     else if (mine) { mine = false; g_tsel.on = false; }
     if (h || on) sel_dirty(a);
 }
+static void h_clip_set(const char *t) { SDL_SetClipboardText(t); }
+static char *h_clip_get(void) { char *t = SDL_GetClipboardText(); char *r = strdup(t ? t : ""); SDL_free(t); return r; }
 static void sel_copy(App *a) {
     Node *f = !a->editing ? page_focus(a) : NULL;
     if (a->editing) { if (a->sel_all) SDL_SetClipboardText(a->t->url); return; }
@@ -1897,7 +1899,7 @@ int main(int argc, char **argv) {
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) { fprintf(stderr, "SDL_Init: %s\n", SDL_GetError()); return 1; }
     dom_init(); net_init(6); font_init(); css_sheet_added_hook = sheet_fonts;
     icache_mu = SDL_CreateMutex(); EV_LOADED = SDL_RegisterEvents(1); EV_NET = SDL_RegisterEvents(1); EV_MENU = SDL_RegisterEvents(1);
-    net_wakeup = wake; media_wakeup = wake; js_wakeup = wake; js_global_init(argv[0]);
+    net_wakeup = wake; media_wakeup = wake; js_wakeup = wake; js_clip_set = h_clip_set; js_clip_get = h_clip_get; js_global_init(argv[0]);
     paint_image_hook = node_img; paint_url_image_hook = url_img; svg_ext_ref_hook = svg_ext_ref; layout_image_size_hook = img_size;
     App a; memset(&a, 0, sizeof a); g_app = &a; a.nws = 1; a.wsicon[0] = -1; snprintf(a.wsname[0], sizeof a.wsname[0], "Personal"); a.side = getenv("LUMEN_NO_SIDEBAR") ? 0 : SIDEW; tab_new(&a);
     bool want_gpu = !getenv("LUMEN_NO_GPU");

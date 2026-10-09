@@ -1,0 +1,6 @@
+<!-- run with build/lumen (needs the SDL clipboard); expects RESULTS clip PASS PASS PASS PASS -->
+<p id=p>Select me please</p><script>
+(async()=>{const r=[];await navigator.clipboard.writeText('lumen-clip-1');r.push((await navigator.clipboard.readText())==='lumen-clip-1');
+await navigator.clipboard.write([new ClipboardItem({'text/plain':new Blob(['lumen-clip-2'],{type:'text/plain'})})]);r.push((await navigator.clipboard.readText())==='lumen-clip-2');
+document.addEventListener('copy',e=>{e.clipboardData.setData('text/plain','lumen-clip-3');e.preventDefault()},{once:true});r.push(document.execCommand('copy'));r.push((await navigator.clipboard.readText())==='lumen-clip-3');
+console.log('RESULTS clip '+r.map(x=>x?'PASS':'FAIL').join(' '))})().catch(e=>console.log('RESULTS clip ERR '+e))</script>

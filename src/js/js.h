@@ -7,6 +7,9 @@ extern "C" {
 #endif
 
 typedef struct JsCtx JsCtx;
+/* system clipboard, set by the embedder (navigator.clipboard, execCommand copy); get returns malloc'd text */
+extern void (*js_clip_set)(const char *text);
+extern char *(*js_clip_get)(void);
 
 typedef struct JsHost {
     void *ud;

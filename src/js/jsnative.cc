@@ -50,6 +50,10 @@ static void mark_started(Node *root) {
         if (x->type == NODE_ELEMENT && x->tag == A_script) x->flags |= NF_SCRIPT_STARTED;
 }
 
+void (*js_clip_set)(const char *text);
+char *(*js_clip_get)(void);
+FN(clipSet) { CTX; v8::String::Utf8Value u(iso, a[0]); if (js_clip_set) js_clip_set(*u ? *u : ""); }
+FN(clipGet) { CTX; char *t = js_clip_get ? js_clip_get() : nullptr; RET(jstr(iso, t ? t : "")); free(t); }
 FN(isNode) { CTX; RET(junwrap(a[0]) != nullptr); }
 FN(type) { CTX; ARGN(n, 0); RET((int)n->type); }
 FN(name) { CTX; ARGN(n, 0); RET(jstr(iso, n->type == NODE_ELEMENT || n->type == NODE_PI ? n->tag : n->type == NODE_DOCTYPE ? n->text : "")); }
@@ -867,7 +871,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(text); REG(setText); REG(attr); REG(setAttr); REG(rmAttr); REG(attrs); REG(insert); REG(remove); REG(newDoc); REG(newXmlDoc); REG(parseDoc); REG(adopt); REG(pi); REG(cdata); REG(doctype); REG(ownerDoc);
     REG(create); REG(textNode); REG(comment); REG(frag); REG(html); REG(setHTML); REG(parseFrag); REG(query);
     REG(matches); REG(byId); REG(clone); REG(doc); REG(contains); REG(connected); REG(host); REG(attachShadow);
-    REG(templateContent); REG(rect); REG(vrect); REG(scrollPos); REG(setScroll); REG(computed); REG(value); REG(setValue); REG(checked); REG(setChecked); REG(pickFiles);
+    REG(templateContent); REG(rect); REG(vrect); REG(clipSet); REG(clipGet); REG(scrollPos); REG(setScroll); REG(computed); REG(value); REG(setValue); REG(checked); REG(setChecked); REG(pickFiles);
     REG(focus); REG(active); REG(cookie); REG(setCookie); REG(url); REG(setUrl); REG(navigate); REG(navigatePost); REG(histGo);
     REG(histLen); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
     REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove);
