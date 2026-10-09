@@ -1155,17 +1155,18 @@ static ComputedStyle *compute(StyleEngine *e, Node *el, const ComputedStyle *par
     /* split normal / important so presentational hints & inline style go between */
     int split = 0; while (split < md.n && (md.v[split].key >> 62) < 2) split++;
     presentational_hints(st, par, el, e);
-    apply_decl_ordered(st, par, md.v, split, e, el);
+    /* one pass so var() in sheet custom properties sees inline custom properties */
+    VEC(MDecl) all = {0};
+    for (int i = 0; i < split; i++) vec_push(all, md.v[i]);
     const char *inl = node_attr(el, "style");
     if (inl) {
         if (!el->inline_style_src || strcmp(el->inline_style_src, inl)) { free(el->inline_style_src); el->inline_style_src = xstrdup(inl); css_decls_free(el->inline_decls); el->inline_decls = css_parse_decls(inl, strlen(inl)); }
         DeclList *dl = el->inline_decls;
-        VEC(MDecl) im = {0};
-        for (int i = 0; i < dl->n; i++) { MDecl m = { &dl->v[i], 0 }; vec_push(im, m); }
-        apply_decl_ordered(st, par, im.v, im.n, e, el);
-        vec_free(im);
+        for (int i = 0; i < dl->n; i++) { MDecl m = { &dl->v[i], 0 }; vec_push(all, m); }
     }
-    apply_decl_ordered(st, par, md.v + split, md.n - split, e, el);
+    for (int i = split; i < md.n; i++) vec_push(all, md.v[i]);
+    apply_decl_ordered(st, par, all.v, all.n, e, el);
+    vec_free(all);
     vec_free(md);
     /* fixups */
     if (st->line_height_factor > 0) st->line_height = st->line_height_factor * st->font_size;
