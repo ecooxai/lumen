@@ -41,7 +41,8 @@ Document *doc_new(const char *url) {
     return d;
 }
 
-static Node *alloc_node(Document *d, int type) { Node *n = xcalloc(1, sizeof *n); n->type = (uint8_t)type; n->doc = d; n->flags = NF_STYLE_DIRTY | NF_LAYOUT_DIRTY; return n; }
+long g_nodes_live;
+static Node *alloc_node(Document *d, int type) { Node *n = xcalloc(1, sizeof *n); g_nodes_live++; n->type = (uint8_t)type; n->doc = d; n->flags = NF_STYLE_DIRTY | NF_LAYOUT_DIRTY; return n; }
 Node *node_new_element(Document *d, const char *tag, int ns) { Node *n = alloc_node(d, NODE_ELEMENT); n->tag = atom(tag); n->ns = (uint8_t)ns; return n; }
 Node *node_new_text(Document *d, const char *s, size_t len) { Node *n = alloc_node(d, NODE_TEXT); n->text = xstrndup(s, len); n->text_len = len; n->tag = atom("#text"); return n; }
 Node *node_new_comment(Document *d, const char *s, size_t len) { Node *n = alloc_node(d, NODE_COMMENT); n->text = xstrndup(s, len); n->text_len = len; n->tag = atom("#comment"); return n; }
@@ -123,7 +124,7 @@ static void node_free_one(Node *n) {
     if (n->ext && n->ext_free) n->ext_free(n->ext);
     if (n->style) style_free(n->style);
     if (n->box) box_detach_node(n);
-    free(n);
+    g_nodes_live--; free(n);
 }
 void node_free_tree(Node *n) {
     /* frees n and children not referenced elsewhere (JS wrappers hold a ref) */

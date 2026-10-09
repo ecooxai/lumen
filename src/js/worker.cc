@@ -29,6 +29,7 @@ struct Worker {
     std::deque<Buf> in; std::deque<OutMsg> out;
     std::atomic<bool> term{false};
     v8::Isolate *iso = nullptr;
+    std::atomic<size_t> heap{0}, ext{0};
 };
 struct WTimer { double due = 0, interval = 0; bool repeat = false; v8::Global<v8::Function> fn; std::vector<v8::Global<v8::Value>> args; };
 struct WEnv {
@@ -177,7 +178,7 @@ WFN(importScript) {
     std::string src(r->body ? r->body : "", r->body_len); net_response_free(r);
     v8::ScriptOrigin origin(jstr(iso, u.c_str()));
     v8::Local<v8::Script> s; v8::Local<v8::Value> res;
-    if (v8::Script::Compile(ctx, jstr(iso, src.data(), (int)src.size()), &origin).ToLocal(&s)) (void)s->Run(ctx).ToLocal(&res);
+    if (v8::Script::Compile(ctx, jsrc(iso, src.data(), src.size()), &origin).ToLocal(&s)) (void)s->Run(ctx).ToLocal(&res);
 }
 WFN(reportErr) { WENV; werr(E, a[0], v8::Exception::CreateMessage(iso, a[0])); }
 
@@ -453,7 +454,7 @@ void worker_main(std::shared_ptr<Worker> w) {
                     iso->PerformMicrotaskCheckpoint();
                     if (m->GetStatus() == v8::Module::kErrored) { v8::Local<v8::Value> ex = m->GetException(); fprintf(stderr, "lumen: worker module failed: %s\n", jcstr(iso, ex).c_str()); }
                 }
-            } else if (!v8::Script::Compile(ctx, jstr(iso, src.data(), (int)src.size()), &origin).ToLocal(&s)) {
+            } else if (!v8::Script::Compile(ctx, jsrc(iso, src.data(), src.size()), &origin).ToLocal(&s)) {
                 ok = false;   /* classic-script parse errors fire a plain error Event on the Worker */
                 post_out(E, OutMsg{ WM_LOADFAIL, {}, {}, {}, 0, 0 });
             } else {
@@ -462,19 +463,24 @@ void worker_main(std::shared_ptr<Worker> w) {
                 iso->PerformMicrotaskCheckpoint();
             }
         }
+        double last_act = now_ms(); bool idle_gc = false;
         while (ok && !w->term && !E->closing) {
+            { v8::HeapStatistics hs; iso->GetHeapStatistics(&hs); w->heap = hs.total_heap_size(); w->ext = hs.external_memory(); }
+            if (!idle_gc && now_ms() - last_act > 10000) { iso->LowMemoryNotification(); idle_gc = true; continue; }  /* idle worker: give memory back once */
             std::deque<Buf> msgs;
             {
                 std::unique_lock<std::mutex> lk(w->mu);
                 double next = 1e300;
                 for (auto &kv : E->timers) next = std::min(next, kv.second.due);
                 auto ready = [&] { return w->term.load() || !w->in.empty(); };
+                if (!idle_gc) next = std::min(next, last_act + 10001);
                 if (!ready()) {
                     if (next >= 1e299) w->cv.wait(lk, ready);
                     else { double ms = next - now_ms(); if (ms > 0) w->cv.wait_for(lk, std::chrono::microseconds((int64_t)(ms * 1000) + 1), ready); }
                 }
                 msgs.swap(w->in);
             }
+            if (!msgs.empty()) { last_act = now_ms(); idle_gc = false; }
             for (Buf &b : msgs) {
                 if (!w->term && !E->closing) {
                     v8::HandleScope hs2(iso);
@@ -514,7 +520,7 @@ std::string wm_key(WEnv *E, v8::Local<v8::Module> m) {
 v8::MaybeLocal<v8::Module> wm_compile(WEnv *E, const std::string &u, const std::string &src) {
     v8::Isolate *iso = E->iso;
     v8::ScriptOrigin origin(jstr(iso, u.c_str()), 0, 0, false, -1, v8::Local<v8::Value>(), false, false, true);
-    v8::ScriptCompiler::Source so(jstr(iso, src.data(), (int)src.size()), origin);
+    v8::ScriptCompiler::Source so(jsrc(iso, src.data(), src.size()), origin);
     v8::Local<v8::Module> m;
     if (!v8::ScriptCompiler::CompileModule(iso, &so).ToLocal(&m)) return {};
     E->mods[u].Reset(iso, m); E->murl.emplace(m->GetIdentityHash(), u);
@@ -646,4 +652,9 @@ void workers_kill(JsCtx *c) {
     for (auto it = g_workers.begin(); it != g_workers.end();)
         if (it->second->owner == c) { worker_terminate(it->second.get()); it = g_workers.erase(it); }
         else ++it;
+}
+
+extern "C" void worker_mem_stats(size_t *heap, size_t *ext, int *n) {
+    *heap = *ext = 0; *n = 0;
+    for (auto &kv : g_workers) { *heap += kv.second->heap; *ext += kv.second->ext; ++*n; }
 }

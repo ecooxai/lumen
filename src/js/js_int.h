@@ -50,6 +50,7 @@ struct AnimEv {
 };
 struct JsCtx {
     v8::Isolate *iso = nullptr;
+    bool bg = false, bg_gc = false; double bg_since = 0;   /* tab in the background: V8 favours memory, one idle GC */
     v8::ArrayBuffer::Allocator *alloc = nullptr;
     v8::Global<v8::Context> ctx;
     v8::Global<v8::ObjectTemplate> node_tmpl;
@@ -102,6 +103,8 @@ struct JsCtx {
 
 JsCtx *jctx(v8::Isolate *iso);
 v8::Local<v8::String> jstr(v8::Isolate *iso, const char *s, int n = -1);
+/* script source; big ones become external strings shared by every isolate (tabs, frames, workers) */
+v8::Local<v8::String> jsrc(v8::Isolate *iso, const char *s, size_t n);
 std::string jcstr(v8::Isolate *iso, v8::Local<v8::Value> v);
 v8::Local<v8::Value> jwrap(JsCtx *c, Node *n);
 Node *junwrap(v8::Local<v8::Value> v);

@@ -2,6 +2,7 @@
 #include <math.h>
 #include <ctype.h>
 #include <time.h>
+#include <malloc/malloc.h>
 #include <SDL3/SDL.h>
 #include "../paint/paint.h"
 #include "../media/media.h"
@@ -714,6 +715,14 @@ static bool wheel_scroll(App *a, float x, float y, float dx, float dy) {
         return true;
     }
     return false;
+}
+static Tab *tab_of_doc(App *a, Document *d) {
+    for (int depth = 0; d && depth < 16; depth++) {
+        for (int i = 0; i < a->ntabs; i++) if (a->tabs[i]->cur && a->tabs[i]->cur->d == d) return a->tabs[i];
+        Page *f = NULL; for (Page *p = g_frames; p; p = p->fnext) if (p->d == d) { f = p; break; }
+        d = f && f->frame_el ? f->frame_el->doc : NULL;
+    }
+    return NULL;
 }
 static void update_size(App *a) {
     for (int i = 0; i < a->ntabs; i++) a->tabs[i]->relayout = true;
@@ -1517,9 +1526,19 @@ int main(int argc, char **argv) {
         if (net_pending() && to > 50) to = 50;
         { int mf = media_tick(); if (mf & 1) { if (!a.dirty && !a.deferred) a.vonly = true; a.dirty = a.vframe = true; } if (mf & 2) a.t->relayout = true; }
         if (!a.editing && (page_focus(&a) || edit_focus(&a)) && !SDL_TextInputActive(a.win)) SDL_StartTextInput(a.win);
+        {
+            static double last_bg; double tb = now_ms();
+            if (tb - last_bg > 2000) {
+                last_bg = tb;
+                for (int i = 0; i < a.ntabs; i++) if (a.tabs[i]->cur && a.tabs[i]->cur->js) js_set_background(a.tabs[i]->cur->js, a.tabs[i] != a.t);
+                for (Page *p = g_frames; p; p = p->fnext) if (p->js) { Tab *ft = tab_of_doc(&a, p->d); js_set_background(p->js, ft && ft != a.t); }
+            }
+        }
         if (getenv("LUMEN_MEM_STATS")) {
             static double last_stats; double tn = now_ms();
             if (tn - last_stats > 10000) { last_stats = tn; size_t fr, seg = media_mem_bytes(&fr); size_t jh = 0, je = 0; js_mem_stats(&jh, &je); fprintf(stderr, "lumen-mem: mse=%.1fMB vframes=%.1fMB images=%.1fMB/%d js_heap=%.1fMB js_external=%.1fMB canvases=%.1fMB\n", seg / 1048576.0, fr / 1048576.0, g_icache_bytes / 1048576.0, g_icache_n, jh / 1048576.0, je / 1048576.0, ((double)a.frame.w * a.frame.h + (double)a.page.w * a.page.h) * 4 / 1048576.0); }
+            if (last_stats == tn) { extern long g_styles_live, g_nodes_live; extern size_t g_css_parsed_bytes; extern void worker_mem_stats(size_t *, size_t *, int *); size_t wh, wx; int wn; worker_mem_stats(&wh, &wx, &wn); malloc_statistics_t ms = {0}; malloc_zone_statistics(NULL, &ms);
+                fprintf(stderr, "lumen-mem2: malloc_in_use=%.1fMB nodes=%ld (%zuB) styles=%ld (%zuB) css_parsed=%.1fMB workers=%d heap=%.1fMB ext=%.1fMB\n", ms.size_in_use / 1048576.0, g_nodes_live, sizeof(Node), g_styles_live, sizeof(ComputedStyle), g_css_parsed_bytes / 1048576.0, wn, wh / 1048576.0, wx / 1048576.0); }
         }
         g_lite_active = a.t && lite_on(a.t); media_lowmem = g_lite_active;
         if (g_lite_active) {

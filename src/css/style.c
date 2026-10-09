@@ -8,8 +8,9 @@
 typedef VEC(Rule *) RuleVec;
 
 /* ---------------- style objects ---------------- */
+long g_styles_live;
 ComputedStyle *style_new_default(void) {
-    ComputedStyle *s = xcalloc(1, sizeof *s);
+    ComputedStyle *s = xcalloc(1, sizeof *s); g_styles_live++;
     s->refs = 1; s->anim_iter = 1;
     s->display = D_INLINE; s->font_size = 16; s->font_weight = 400; s->line_height_normal = true;
     s->color = RGBA(0, 0, 0, 255); s->opacity = 1; s->flex_shrink = 1; s->flex_basis = L_auto();
@@ -53,6 +54,7 @@ ComputedStyle *style_inherit(const ComputedStyle *p) {
 void style_ref(ComputedStyle *s) { if (s) s->refs++; }
 void style_free(ComputedStyle *s) {
     if (!s || --s->refs > 0) return;
+    g_styles_live--;
     free(s->bg_image); free(s->mask_image); free(s->bg_gradient); free(s->content); free(s->grid_cols); free(s->grid_rows); free(s->grid_areas); free(s->grid_area);
     custom_unref(s->custom);
     if (s->before) style_free(s->before);

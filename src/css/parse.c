@@ -693,8 +693,9 @@ static void parse_rules(PCtx *c, const char *s, size_t n, const char *parent_sel
     }
 }
 
+size_t g_css_parsed_bytes;
 StyleSheet *css_parse_sheet(const char *src, size_t n, const char *base_url, int origin, const MediaCtx *mc) {
-    StyleSheet *sh = xcalloc(1, sizeof *sh);
+    StyleSheet *sh = xcalloc(1, sizeof *sh); g_css_parsed_bytes += n;
     sh->base_url = xstrdup(base_url ? base_url : "about:blank");
     sh->origin = origin;
     PCtx c = { sh, mc, 0 };

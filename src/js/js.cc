@@ -1,6 +1,13 @@
 /* V8 embedding: platform, per-page isolate/context, node wrappers, script execution, timers, events */
 #include "js_int.h"
+#include <v8-profiler.h>
 #include <algorithm>
+#include <openssl/evp.h>
+#include <cstring>
+#include <string_view>
+#include <memory>
+#include <unordered_map>
+#include <mutex>
 #include <cmath>
 #include <unistd.h>
 
@@ -149,13 +156,63 @@ void jfire(JsCtx *c, Node *n, const char *type) {
     (void)jcall(c, c->fire.Get(iso), v8::Undefined(iso), 2, argv);
 }
 
+namespace {
+struct SrcBuf { bool one; std::string b; std::u16string w; };
+std::mutex g_src_mu;
+std::unordered_map<std::string, std::weak_ptr<SrcBuf>> g_src;
+struct SrcOne : v8::String::ExternalOneByteStringResource {
+    std::shared_ptr<SrcBuf> p; explicit SrcOne(std::shared_ptr<SrcBuf> q) : p(std::move(q)) {}
+    const char *data() const override { return p->b.data(); } size_t length() const override { return p->b.size(); }
+};
+struct SrcTwo : v8::String::ExternalStringResource {
+    std::shared_ptr<SrcBuf> p; explicit SrcTwo(std::shared_ptr<SrcBuf> q) : p(std::move(q)) {}
+    const uint16_t *data() const override { return (const uint16_t *)p->w.data(); } size_t length() const override { return p->w.size(); }
+};
+std::shared_ptr<SrcBuf> src_buf(const char *s, size_t n) {
+    unsigned char md[32]; unsigned int ml = 0;
+    EVP_Digest(s, n, md, &ml, EVP_sha256(), nullptr);  /* collision-resistant: sources are shared across origins */
+    std::string key((const char *)md, ml); key += std::to_string(n);
+    std::lock_guard<std::mutex> lk(g_src_mu);
+    if (auto p = g_src[key].lock()) return p;
+    auto p = std::make_shared<SrcBuf>(); p->one = true;
+    for (size_t i = 0; i < n; i++) if ((unsigned char)s[i] >= 0x80) { p->one = false; break; }
+    if (p->one) p->b.assign(s, n);
+    else {
+        p->w.reserve(n);
+        const unsigned char *u = (const unsigned char *)s, *e = u + n;
+        while (u < e) {
+            uint32_t c = *u, k = c < 0x80 ? 0 : c >= 0xF0 ? 3 : c >= 0xE0 ? 2 : c >= 0xC0 ? 1 : 9;
+            if (k == 9 || u + k >= e + (k ? 0 : 1) && k) { p->w.push_back(0xFFFD); u++; continue; }
+            c &= k ? 0x3F >> k : 0x7F;
+            bool bad = false;
+            for (uint32_t j = 1; j <= k; j++) { if ((u[j] & 0xC0) != 0x80) { bad = true; break; } c = c << 6 | (u[j] & 0x3F); }
+            if (bad) { p->w.push_back(0xFFFD); u++; continue; }
+            u += k + 1;
+            if (c >= 0x10000) { c -= 0x10000; p->w.push_back((char16_t)(0xD800 + (c >> 10))); p->w.push_back((char16_t)(0xDC00 + (c & 0x3FF))); }
+            else p->w.push_back((char16_t)c);
+        }
+    }
+    g_src[key] = p;
+    for (auto it = g_src.begin(); it != g_src.end();) it = it->second.expired() ? g_src.erase(it) : std::next(it);
+    return p;
+}
+}  // namespace
+
+v8::Local<v8::String> jsrc(v8::Isolate *iso, const char *s, size_t n) {
+    if (n < (64u << 10)) return jstr(iso, s, (int)n);
+    auto p = src_buf(s, n);
+    v8::MaybeLocal<v8::String> r = p->one ? v8::String::NewExternalOneByte(iso, new SrcOne(p)) : v8::String::NewExternalTwoByte(iso, new SrcTwo(p));
+    v8::Local<v8::String> out;
+    return r.ToLocal(&out) ? out : jstr(iso, s, (int)n);
+}
+
 static void run_source(JsCtx *c, const char *src, size_t n, const char *name) {
     JS_ENTER(c);
     v8::TryCatch tc(iso);
     v8::ScriptOrigin origin(jstr(iso, name ? name : ""));
     v8::Local<v8::Script> s;
     js_enter(c);
-    if (v8::Script::Compile(ctx, jstr(iso, src, (int)n), &origin).ToLocal(&s)) (void)s->Run(ctx);
+    if (v8::Script::Compile(ctx, jsrc(iso, src, n), &origin).ToLocal(&s)) (void)s->Run(ctx);
     js_leave(c);
     if (tc.HasCaught() && tc.CanContinue()) jreport(c, tc.Exception(), tc.Message());
     settle(c);
@@ -193,7 +250,7 @@ static std::string mod_key(JsCtx *c, v8::Local<v8::Module> m) {
 static v8::MaybeLocal<v8::Module> mod_compile(JsCtx *c, const std::string &key, const std::string &src) {
     v8::Isolate *iso = c->iso;
     v8::ScriptOrigin origin(jstr(iso, key.c_str()), 0, 0, false, -1, v8::Local<v8::Value>(), false, false, true);
-    v8::ScriptCompiler::Source s(jstr(iso, src.data(), (int)src.size()), origin);
+    v8::ScriptCompiler::Source s(jsrc(iso, src.data(), src.size()), origin);
     v8::Local<v8::Module> m;
     if (!v8::ScriptCompiler::CompileModule(iso, &s).ToLocal(&m)) return {};
     c->mods[key].Reset(iso, m);
@@ -361,7 +418,34 @@ void js_mem_stats(size_t *heap, size_t *external) {
     size_t h = 0, e = 0; std::vector<v8::Isolate *> seen;
     for (JsCtx *c : g_ctxs) {
         if (!c->iso || std::find(seen.begin(), seen.end(), c->iso) != seen.end()) continue;
-        seen.push_back(c->iso); v8::HeapStatistics hs; c->iso->GetHeapStatistics(&hs); h += hs.used_heap_size(); e += hs.external_memory();
+        seen.push_back(c->iso);
+        if (getenv("LUMEN_MEM_GC")) { v8::Isolate::Scope is(c->iso); c->iso->LowMemoryNotification(); }
+        v8::HeapStatistics hs; c->iso->GetHeapStatistics(&hs); h += hs.used_heap_size(); e += hs.external_memory();
+        if (getenv("LUMEN_MEM_DETAIL")) {
+            std::string sp;
+            for (size_t i = 0; i < c->iso->NumberOfHeapSpaces(); i++) {
+                v8::HeapSpaceStatistics ss; c->iso->GetHeapSpaceStatistics(&ss, i);
+                char b[96]; snprintf(b, sizeof b, " %s=%.1f/%.1f", ss.space_name(), ss.space_used_size() / 1048576.0, ss.physical_space_size() / 1048576.0); sp += b;
+            }
+            static bool snapped;
+            if (seen.size() == 1 && getenv("LUMEN_HEAP_SNAP") && !snapped && now_ms() - c->t0 > 50000) {
+                snapped = true;
+                struct Out : v8::OutputStream { FILE *f; void EndOfStream() override {} WriteResult WriteAsciiChunk(char *d, int n) override { fwrite(d, 1, n, f); return kContinue; } } o;
+                o.f = fopen(getenv("LUMEN_HEAP_SNAP"), "w");
+                if (o.f) { v8::Isolate::Scope is(c->iso); v8::HandleScope hs(c->iso); const v8::HeapSnapshot *hsn = c->iso->GetHeapProfiler()->TakeHeapSnapshot(); hsn->Serialize(&o); fclose(o.f); const_cast<v8::HeapSnapshot *>(hsn)->Delete(); fprintf(stderr, "lumen-mem: heap snapshot written\n"); }
+            }
+            if (seen.size() == 1) {
+                std::vector<std::pair<size_t, std::string>> ty;
+                for (size_t i = 0; i < c->iso->NumberOfTrackedHeapObjectTypes(); i++) {
+                    v8::HeapObjectStatistics os; if (!c->iso->GetHeapObjectStatisticsAtLastGC(&os, i) || !os.object_size()) continue;
+                    ty.push_back({os.object_size(), std::string(os.object_type()) + "/" + os.object_sub_type() + " n=" + std::to_string(os.object_count())});
+                }
+                std::sort(ty.rbegin(), ty.rend());
+                for (size_t i = 0; i < ty.size() && i < 25; i++) fprintf(stderr, "lumen-mem-type: %.2fMB %s\n", ty[i].first / 1048576.0, ty[i].second.c_str());
+            }
+            v8::HeapCodeStatistics cs; c->iso->GetHeapCodeAndMetadataStatistics(&cs);
+            fprintf(stderr, "lumen-mem-iso: %s used=%.1fMB total=%.1fMB phys=%.1fMB ext=%.1fMB code=%.1fMB bc=%.1fMB%s\n", ctx_origin(c).c_str(), hs.used_heap_size() / 1048576.0, hs.total_heap_size() / 1048576.0, hs.total_physical_size() / 1048576.0, hs.external_memory() / 1048576.0, cs.code_and_metadata_size() / 1048576.0, cs.bytecode_and_metadata_size() / 1048576.0, sp.c_str());
+        }
     }
     *heap = h; *external = e;
 }
@@ -656,4 +740,14 @@ bool js_anim_cancel(Node *n, const char *name) {
     return had;
 }
 
+}
+
+void js_set_background(JsCtx *c, bool bg) {
+    if (!c || !c->iso) return;
+    double t = now_ms();
+    if (bg != c->bg) {
+        c->bg = bg; c->bg_since = t; c->bg_gc = false;
+        if (bg) c->iso->IsolateInBackgroundNotification(); else c->iso->IsolateInForegroundNotification();
+    }
+    if (bg && !c->bg_gc && t - c->bg_since > 15000) { c->bg_gc = true; v8::Isolate::Scope is(c->iso); c->iso->LowMemoryNotification(); }
 }
