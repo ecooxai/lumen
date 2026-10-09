@@ -358,9 +358,11 @@ for (const k of ['addEventListener', 'removeEventListener', 'dispatchEvent']) {
     Object.defineProperty(G, k, { value: function (...a) { return f.apply(this ?? G, a); }, writable: true, configurable: true });
 }
 function fire(target, type, init, Ctor = Event) {
+    const pre = type === 'click' ? preActivate(target) : null;
     const ev = new Ctor(type, init), ok = dispatch(target, ev, true);
+    if (!ok && pre && pre.restore) pre.restore();
     if (ok && type === 'click' && target && target.nodeType === 1 && !(target.closest && target.closest('a[href]')) && !(target.disabled || (target.closest && target.closest('button:disabled')))) {
-        try { activate(target, ev); } catch (e) { report(e); }   /* anchors are navigated natively by the shell */
+        try { activate(target, ev, pre); } catch (e) { report(e); }   /* anchors are navigated natively by the shell */
     }
     return ok;
 }

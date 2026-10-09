@@ -1,4 +1,16 @@
-function activate(el, ev) {
+/* legacy-pre-activation: checkbox/radio state flips before click listeners run, reverted if cancelled */
+function preActivate(el) {
+    if (!el || el.nodeType !== 1 || N.name(el) !== 'input' || el.disabled) return null;
+    const t = el.type;
+    if (t !== 'checkbox' && t !== 'radio') return null;
+    const was = el.checked;
+    if (t === 'radio' && was) return { noop: true };
+    const prev = t === 'radio' ? [...N.query(el.form || document, `input[type=radio][name="${CSS.escape(el.name)}"]`, true)].filter(r => r.checked) : [];
+    for (const r of prev) N.setChecked(r, false);
+    N.setChecked(el, t === 'radio' ? true : !was);   /* native: page-installed `checked` setters (React's value tracker) must not see it */
+    return { restore() { N.setChecked(el, was); for (const r of prev) N.setChecked(r, true); } };
+}
+function activate(el, ev, pre) {
     const a = el.closest ? el.closest('a[href]') : null;
     if (a) { const raw = N.attr(a, 'href'); if (/^javascript:/i.test(raw)) { try { (0, eval)(decodeURIComponent(raw.slice(11))); } catch (e) { report(e); } } else if (a.href) location.assign(a.href); return; }
     if (el.closest && !/^(input|button|label|summary|textarea|select)$/.test(N.name(el))) {
@@ -8,7 +20,8 @@ function activate(el, ev) {
     const name = N.name(el);
     if (name === 'input' || name === 'button') {
         const t = el.type;
-        if (t === 'checkbox' || (t === 'radio' && !el.checked)) {
+        if (pre) { if (!pre.noop) { dispatch(el, new Event('input', { bubbles: true })); dispatch(el, new Event('change', { bubbles: true })); } }
+        else if (t === 'checkbox' || (t === 'radio' && !el.checked)) {
             if (t === 'radio') for (const r of N.query(el.form || document, `input[type=radio][name="${CSS.escape(el.name)}"]`, true)) N.setChecked(r, false);
             el.checked = t === 'radio' ? true : !el.checked;
             dispatch(el, new Event('input', { bubbles: true })); dispatch(el, new Event('change', { bubbles: true }));
