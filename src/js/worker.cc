@@ -233,7 +233,11 @@ class URLSearchParams {
 class URL {
     constructor(u, base) { const h = W.resolve(String(u), base === undefined ? undefined : String(base)); if (h == null) throw new TypeError("Failed to construct 'URL': Invalid URL"); Object.assign(this, parts(h)); this.searchParams = new URLSearchParams(this.search); }
     toString() { return this.href; } toJSON() { return this.href; }
+    static createObjectURL(b) { const u = 'blob:' + self.location.origin + '/' + (++URL._seq).toString(16).padStart(8, '0') + '-lumenw'; URL._map.set(u, b); return u; }
+    static revokeObjectURL(u) { URL._map.delete(String(u)); }
+    static canParse(u, b) { try { new URL(u, b); return true; } catch { return false; } }
 }
+URL._seq = 0; URL._map = new Map();
 class WorkerLocation { toString() { return this.href; } }
 const location = Object.assign(Object.create(WorkerLocation.prototype), parts(W.url)); delete location.searchParams;
 class WorkerNavigator {}
@@ -281,6 +285,20 @@ class Headers {
     delete(k) { this._m.delete(String(k).toLowerCase()); } forEach(f) { this._m.forEach((v, k) => f(v, k, this)); }
     entries() { return this._m.entries(); } keys() { return this._m.keys(); } values() { return this._m.values(); } [Symbol.iterator]() { return this._m.entries(); }
 }
+const blobBytes = parts => {
+    const bufs = (parts || []).map(x => x instanceof Blob ? x._b : x instanceof ArrayBuffer ? new Uint8Array(x) : ArrayBuffer.isView(x) ? new Uint8Array(x.buffer, x.byteOffset, x.byteLength) : new TextEncoder().encode(String(x)));
+    const out = new Uint8Array(bufs.reduce((n, b) => n + b.length, 0)); let o = 0; for (const b of bufs) { out.set(b, o); o += b.length; } return out;
+};
+class Blob {
+    constructor(parts, opts) { Object.defineProperty(this, '_b', { value: blobBytes(parts) }); this.type = opts && opts.type ? String(opts.type).toLowerCase() : ''; }
+    get size() { return this._b.length; }
+    slice(a = 0, b = this.size, type = '') { const n = this.size, f = x => x < 0 ? Math.max(n + x, 0) : Math.min(x, n); return new Blob([this._b.slice(f(a), Math.max(f(a), f(b)))], { type }); }
+    arrayBuffer() { return Promise.resolve(this._b.slice().buffer); }
+    bytes() { return Promise.resolve(this._b.slice()); }
+    text() { return Promise.resolve(W.decode(this._b.slice().buffer)); }
+    get [Symbol.toStringTag]() { return 'Blob'; }
+}
+class File extends Blob { constructor(parts, name, opts) { super(parts, opts); this.name = String(name); this.lastModified = opts && opts.lastModified || Date.now(); } }
 class Response {
     constructor(body = null, init = {}) { def(this, '_buf', body); this.status = init.status ?? 200; this.statusText = init.statusText || ''; this.url = init.url || ''; this.headers = new Headers(init.headers); this.bodyUsed = false; this.type = 'basic'; }
     get ok() { return this.status >= 200 && this.status < 300; }
@@ -320,7 +338,7 @@ const api = {
     setTimeout: (f, ms, ...args) => W.timer(toFn(f), +ms || 0, false, args), setInterval: (f, ms, ...args) => W.timer(toFn(f), +ms || 0, true, args),
     clearTimeout: id => W.clear(+id || 0), clearInterval: id => W.clear(+id || 0),
     queueMicrotask: f => { Promise.resolve().then(() => f()); }, structuredClone: v => W.clone(v),
-    btoa, atob, TextEncoder, TextDecoder, URL, URLSearchParams, Headers, Response, fetch, performance, console,
+    btoa, atob, TextEncoder, TextDecoder, Blob, File, URL, URLSearchParams, Headers, Response, fetch, performance, console,
     Event, MessageEvent, ErrorEvent, CustomEvent, PromiseRejectionEvent, EventTarget, DOMException, WorkerGlobalScope, DedicatedWorkerGlobalScope, WorkerLocation, WorkerNavigator,
 };
 for (const k of Object.keys(api)) Object.defineProperty(G, k, { value: api[k], writable: true, configurable: true, enumerable: false });
