@@ -621,6 +621,7 @@ static void anim_decl(ComputedStyle *st, const char *Q, const char *val) {
     free(buf);
 }
 
+static bool custom_defer;
 void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *prop, const char *value_in, StyleEngine *e, Node *el) {
     if (prop[0] == '-' && prop[1] == '-') {
         /* custom property: copy-on-write map */
@@ -636,7 +637,7 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
             st->custom = n;
         }
         char *old = hm_get(&st->custom->map, prop);
-        char *v = subst_vars(value_in, st, 0);
+        char *v = custom_defer ? xstrdup(value_in) : subst_vars(value_in, st, 0);
         hm_put(&st->custom->map, prop, v ? v : xstrdup(""));
         free(old);
         return;
@@ -1089,7 +1090,17 @@ static ComputedStyle *compute_pseudo(StyleEngine *e, Node *el, ComputedStyle *ba
 
 static void apply_decl_ordered(ComputedStyle *st, const ComputedStyle *par, MDecl *v, int n, StyleEngine *e, Node *el) {
     /* custom properties first, then font-size (em basis), then rest */
+    custom_defer = true;
     for (int i = 0; i < n; i++) if (v[i].d->prop[0] == '-' && v[i].d->prop[1] == '-') css_apply_decl(st, par, v[i].d->prop, v[i].d->value, e, el);
+    custom_defer = false;
+    /* var() in custom properties resolves against the element's final cascaded values */
+    for (int i = 0; i < n; i++) {
+        const char *p = v[i].d->prop; if (p[0] != '-' || p[1] != '-' || !st->custom) continue;
+        char *raw = hm_get(&st->custom->map, p);
+        if (!raw || !strstr(raw, "var(")) continue;
+        char *r = subst_vars(raw, st, 0);
+        hm_put(&st->custom->map, p, r ? r : xstrdup("")); free(raw);
+    }
     for (int i = 0; i < n; i++) { const char *p = v[i].d->prop; if (!strcmp(p, "font-size") || !strcmp(p, "font")) css_apply_decl(st, par, p, v[i].d->value, e, el); }
     for (int i = 0; i < n; i++) { const char *p = v[i].d->prop; if (!strcmp(p, "color")) css_apply_decl(st, par, p, v[i].d->value, e, el); }
     for (int i = 0; i < n; i++) { const char *p = v[i].d->prop; if ((p[0] == '-' && p[1] == '-') || !strcmp(p, "font-size") || !strcmp(p, "font") || !strcmp(p, "color")) continue; css_apply_decl(st, par, p, v[i].d->value, e, el); }
