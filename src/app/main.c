@@ -1324,7 +1324,7 @@ static void click_page(App *a, float x, float y) {
         restyle(a);
         if (!ok) return;
     }
-    for (Node *n = b ? b->node : NULL; n; n = n->parent)
+    for (Node *n = t; n; n = n->parent)   /* not b: handlers and restyle() may have rebuilt the layout and freed it */
         if (n->type == NODE_ELEMENT && n->tag == A_a && node_attr(n, "href")) {
             const char *h = node_attr(n, "href");
             if (!strncmp(h, "javascript:", 11)) return;
@@ -1514,13 +1514,25 @@ static void history_go(App *a, int d) {
 static sigjmp_buf g_recover;
 static volatile sig_atomic_t g_guard;
 static pthread_t g_main_thr;
-static void crash_handler(int sig) {
+static void crash_handler(int sig, siginfo_t *si, void *ucv) {
     void *bt[64]; int n = backtrace(bt, 64);
-    char buf[96]; int k = snprintf(buf, sizeof buf, "lumen: fatal signal %d, load address 0x%lx\n", sig, (unsigned long)(0x100000000UL + (unsigned long)_dyld_get_image_vmaddr_slide(0)));
+    unsigned long pc = 0, lr = 0;
+#if defined(__APPLE__) && defined(__aarch64__)
+    ucontext_t *uc = ucv; if (uc && uc->uc_mcontext) { pc = (unsigned long)uc->uc_mcontext->__ss.__pc; lr = (unsigned long)uc->uc_mcontext->__ss.__lr; }
+#elif defined(__APPLE__) && defined(__x86_64__)
+    ucontext_t *uc = ucv; if (uc && uc->uc_mcontext) pc = (unsigned long)uc->uc_mcontext->__ss.__rip;
+#else
+    (void)ucv;
+#endif
+    char buf[192]; int k = snprintf(buf, sizeof buf, "lumen: fatal signal %d at pc 0x%lx lr 0x%lx addr %p, load address 0x%lx\n", sig, pc, lr, si ? si->si_addr : NULL, (unsigned long)(0x100000000UL + (unsigned long)_dyld_get_image_vmaddr_slide(0)));
     write(2, buf, (size_t)k);
     backtrace_symbols_fd(bt, n, 2);
     if (g_guard && (sig == SIGSEGV || sig == SIGBUS) && pthread_equal(pthread_self(), g_main_thr)) { g_guard = 0; siglongjmp(g_recover, sig); }
     signal(sig, SIG_DFL); raise(sig);
+}
+static void install_crash_handler(void) {
+    struct sigaction sa; memset(&sa, 0, sizeof sa); sa.sa_sigaction = crash_handler; sa.sa_flags = SA_SIGINFO; sigemptyset(&sa.sa_mask);
+    sigaction(SIGSEGV, &sa, NULL); sigaction(SIGBUS, &sa, NULL); sigaction(SIGABRT, &sa, NULL);
 }
 static void recover_from_crash(App *a, int sig) {
     Tab *t = a->t, *act = a->ti >= 0 && a->ti < a->ntabs ? a->tabs[a->ti] : t;
@@ -1545,7 +1557,7 @@ static void recover_from_crash(App *a, int sig) {
 int main(int argc, char **argv) {
     g_no_paint_only = getenv("LUMEN_NO_PAINT_ONLY") != NULL;
     g_main_thr = pthread_self();
-    signal(SIGSEGV, crash_handler); signal(SIGBUS, crash_handler); signal(SIGABRT, crash_handler);
+    install_crash_handler();
     const char *start = argc > 1 ? argv[1] : "https://en.wikipedia.org/wiki/Web_browser";
     SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) { fprintf(stderr, "SDL_Init: %s\n", SDL_GetError()); return 1; }
