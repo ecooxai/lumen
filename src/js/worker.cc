@@ -24,7 +24,7 @@ enum { WM_MESSAGE, WM_ERROR, WM_LOADFAIL };
 struct OutMsg { int kind; Buf data; std::string msg, file; int line = 0, col = 0; };
 struct Worker {
     uint32_t id = 0; JsCtx *owner = nullptr;
-    std::string url, src, ua, platform, name; bool have_src = false;
+    std::string url, src, ua, platform, name; bool have_src = false, module = false;
     std::mutex mu; std::condition_variable cv;
     std::deque<Buf> in; std::deque<OutMsg> out;
     std::atomic<bool> term{false};
@@ -34,11 +34,16 @@ struct WTimer { double due = 0, interval = 0; bool repeat = false; v8::Global<v8
 struct WEnv {
     std::shared_ptr<Worker> w; v8::Isolate *iso = nullptr;
     v8::Global<v8::Context> ctx; v8::Global<v8::Function> onmsg, report;
+    std::map<std::string, v8::Global<v8::Module>> mods; std::multimap<int, std::string> murl;
     std::map<uint32_t, WTimer> timers; uint32_t tseq = 0; bool closing = false, reporting = false; double t0 = 0;
 };
 std::map<uint32_t, std::shared_ptr<Worker>> g_workers;   /* main thread only */
 uint32_t g_wseq;
 const int kEnvSlot = 2;
+v8::MaybeLocal<v8::Module> wm_compile(WEnv *E, const std::string &u, const std::string &src);
+bool wm_graph(WEnv *E, v8::Local<v8::Module> m);
+v8::MaybeLocal<v8::Module> wm_resolve_cb(v8::Local<v8::Context>, v8::Local<v8::String>, v8::Local<v8::FixedArray>, v8::Local<v8::Module>);
+void wm_meta(v8::Local<v8::Context> ctx, v8::Local<v8::Module> m, v8::Local<v8::Object> meta);
 
 void wake() { if (js_wakeup) js_wakeup(); }
 
@@ -399,6 +404,7 @@ void worker_main(std::shared_ptr<Worker> w) {
     iso->SetMicrotasksPolicy(v8::MicrotasksPolicy::kExplicit);
     WEnv *E = new WEnv; E->w = w; E->iso = iso; E->t0 = now_ms();
     iso->SetData(kEnvSlot, E);
+    iso->SetHostInitializeImportMetaObjectCallback(wm_meta);
     {
         v8::Isolate::Scope is(iso);
         v8::HandleScope hs(iso);
@@ -438,7 +444,16 @@ void worker_main(std::shared_ptr<Worker> w) {
             v8::TryCatch tc(iso);
             v8::ScriptOrigin origin(jstr(iso, w->url.c_str()));
             v8::Local<v8::Script> s; v8::Local<v8::Value> r;
-            if (!v8::Script::Compile(ctx, jstr(iso, src.data(), (int)src.size()), &origin).ToLocal(&s)) {
+            if (w->module) {
+                v8::Local<v8::Module> m;
+                if (!wm_compile(E, w->url, src).ToLocal(&m)) { ok = false; post_out(E, OutMsg{ WM_LOADFAIL, {}, {}, {}, 0, 0 }); }
+                else {
+                    if (wm_graph(E, m) && m->InstantiateModule(ctx, wm_resolve_cb).FromMaybe(false)) (void)m->Evaluate(ctx).ToLocal(&r);
+                    wcheck(E, tc);
+                    iso->PerformMicrotaskCheckpoint();
+                    if (m->GetStatus() == v8::Module::kErrored) { v8::Local<v8::Value> ex = m->GetException(); fprintf(stderr, "lumen: worker module failed: %s\n", jcstr(iso, ex).c_str()); }
+                }
+            } else if (!v8::Script::Compile(ctx, jstr(iso, src.data(), (int)src.size()), &origin).ToLocal(&s)) {
                 ok = false;   /* classic-script parse errors fire a plain error Event on the Worker */
                 post_out(E, OutMsg{ WM_LOADFAIL, {}, {}, {}, 0, 0 });
             } else {
@@ -485,6 +500,57 @@ void worker_main(std::shared_ptr<Worker> w) {
     iso->Dispose();
     delete E;
 }
+
+std::string wm_key(WEnv *E, v8::Local<v8::Module> m);
+void wm_meta(v8::Local<v8::Context> ctx, v8::Local<v8::Module> m, v8::Local<v8::Object> meta) {
+    v8::Isolate *iso = v8::Isolate::GetCurrent();
+    (void)meta->Set(ctx, jstr(iso, "url"), jstr(iso, wm_key((WEnv *)iso->GetData(kEnvSlot), m).c_str()));
+}
+std::string wm_key(WEnv *E, v8::Local<v8::Module> m) {
+    auto r = E->murl.equal_range(m->GetIdentityHash());
+    for (auto it = r.first; it != r.second; ++it) { auto f = E->mods.find(it->second); if (f != E->mods.end() && f->second.Get(E->iso) == m) return it->second; }
+    return E->w->url;
+}
+v8::MaybeLocal<v8::Module> wm_compile(WEnv *E, const std::string &u, const std::string &src) {
+    v8::Isolate *iso = E->iso;
+    v8::ScriptOrigin origin(jstr(iso, u.c_str()), 0, 0, false, -1, v8::Local<v8::Value>(), false, false, true);
+    v8::ScriptCompiler::Source so(jstr(iso, src.data(), (int)src.size()), origin);
+    v8::Local<v8::Module> m;
+    if (!v8::ScriptCompiler::CompileModule(iso, &so).ToLocal(&m)) return {};
+    E->mods[u].Reset(iso, m); E->murl.emplace(m->GetIdentityHash(), u);
+    return m;
+}
+std::string wm_resolve(const std::string &spec, const std::string &base) {
+    bool rel = !spec.compare(0, 1, "/") || !spec.compare(0, 2, "./") || !spec.compare(0, 3, "../");
+    if (!rel && spec.find(':') == std::string::npos) return "";
+    char *u = url_join(base.c_str(), spec.c_str()); std::string r = u ? u : ""; free(u); return r;
+}
+bool wm_graph(WEnv *E, v8::Local<v8::Module> m) {
+    v8::Isolate *iso = E->iso;
+    std::string base = wm_key(E, m);
+    v8::Local<v8::FixedArray> rq = m->GetModuleRequests();
+    for (int i = 0; i < rq->Length(); i++) {
+        std::string sp = jcstr(iso, rq->Get(i).As<v8::ModuleRequest>()->GetSpecifier()), u = wm_resolve(sp, base);
+        if (u.empty()) { iso->ThrowException(v8::Exception::TypeError(jstr(iso, ("Failed to resolve module specifier \"" + sp + "\"").c_str()))); return false; }
+        if (E->mods.count(u)) continue;
+        NetResponse *r = net_fetch_sync(net_request_new("GET", u.c_str()));
+        bool ok = r && r->status >= 200 && r->status < 300; std::string body;
+        if (ok) body.assign(r->body ? r->body : "", r->body_len);
+        if (r) net_response_free(r);
+        if (!ok) { iso->ThrowException(v8::Exception::TypeError(jstr(iso, ("Failed to fetch module: " + u).c_str()))); return false; }
+        v8::Local<v8::Module> d;
+        if (!wm_compile(E, u, body).ToLocal(&d) || !wm_graph(E, d)) return false;
+    }
+    return true;
+}
+v8::MaybeLocal<v8::Module> wm_resolve_cb(v8::Local<v8::Context>, v8::Local<v8::String> spec, v8::Local<v8::FixedArray>, v8::Local<v8::Module> ref) {
+    v8::Isolate *iso = v8::Isolate::GetCurrent();
+    WEnv *E = (WEnv *)iso->GetData(kEnvSlot);
+    auto it = E->mods.find(wm_resolve(jcstr(iso, spec), wm_key(E, ref)));
+    if (it == E->mods.end()) { iso->ThrowException(v8::Exception::TypeError(jstr(iso, "Failed to resolve module"))); return {}; }
+    return it->second.Get(iso);
+}
+
 void *worker_thread(void *p) {
     std::unique_ptr<std::shared_ptr<Worker>> sp(static_cast<std::shared_ptr<Worker> *>(p));
     worker_main(*sp);
@@ -506,7 +572,7 @@ void n_workerNew(const FCI &a) {
     auto w = std::make_shared<Worker>();
     w->id = ++g_wseq; w->owner = jctx(iso);
     w->url = jcstr(iso, a[0]); w->have_src = a[1]->IsString(); if (w->have_src) w->src = jcstr(iso, a[1]);
-    w->ua = jcstr(iso, a[2]); w->platform = jcstr(iso, a[3]); w->name = a[4]->IsString() ? jcstr(iso, a[4]) : "";
+    w->ua = jcstr(iso, a[2]); w->platform = jcstr(iso, a[3]); w->name = a[4]->IsString() ? jcstr(iso, a[4]) : ""; w->module = a.Length() > 5 && a[5]->IsTrue();
     g_workers[w->id] = w;
     pthread_attr_t at; pthread_attr_init(&at); pthread_attr_setstacksize(&at, 8u << 20); pthread_attr_setdetachstate(&at, PTHREAD_CREATE_DETACHED);
     pthread_t th;
