@@ -125,7 +125,7 @@ static void paint_text_frag(PB *p, TextFrag *f) {
     if (deco && t->font) {
         float th = LMAX(1, t->font->underline_thick);
         float x = f->x + p->dx, w = f->w;
-        if (deco & TD_UNDERLINE) { DItem *it = emit(p, DO_LINE); it->x = x; it->y = f->base + p->dy - t->font->underline_pos; it->w = w; it->h = th; it->color = dc; }
+        if (deco & TD_UNDERLINE) { DItem *it = emit(p, DO_LINE); it->x = x; it->y = f->base + p->dy + t->font->underline_pos;   /* underline_pos: distance below the baseline */ it->w = w; it->h = th; it->color = dc; }
         if (deco & TD_LINE_THROUGH) { DItem *it = emit(p, DO_LINE); it->x = x; it->y = f->base + p->dy - t->font->x_height / 2; it->w = w; it->h = th; it->color = dc; }
         if (deco & TD_OVERLINE) { DItem *it = emit(p, DO_LINE); it->x = x; it->y = f->y + p->dy; it->w = w; it->h = th; it->color = dc; }
     }
