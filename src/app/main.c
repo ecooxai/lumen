@@ -1448,7 +1448,7 @@ int main(int argc, char **argv) {
             if (want != dl_caret_on) { dl_caret_on = want; a.vonly = false; a.dirty = true; }
         }
         { double now = now_ms(), gn; if (image_anim_tick(now, &gn)) { a.vonly = false; a.dirty = true; } if (gn > 0 && gn - now < to) to = gn - now < 1 ? 1 : (int)(gn - now); }
-        if (!SDL_WaitEventTimeout(&ev, to)) { if (a.t->loading) a.dirty = true; }
+        if (!SDL_WaitEventTimeout(&ev, to)) { if (a.t->loading || getenv("LUMEN_SHOT")) a.dirty = true; }
         else do {
             bool wheel0 = ev.type == SDL_EVENT_MOUSE_WHEEL && !ev.wheel.x && !ev.wheel.y;
             if ((ev.type >= SDL_EVENT_KEY_DOWN && ev.type <= SDL_EVENT_TEXT_INPUT) || (ev.type >= SDL_EVENT_MOUSE_MOTION && ev.type <= SDL_EVENT_MOUSE_WHEEL && !wheel0)) a.last_input = now_ms();
