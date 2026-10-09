@@ -28,6 +28,7 @@ struct Fetch {
     uint64_t id;
     v8::Global<v8::Function> cb;
     Node *script;
+    v8::Global<v8::Function> head, chunk;
 };
 struct WsSock {
     JsCtx *c;

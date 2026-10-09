@@ -233,6 +233,63 @@ static bool decompress(const char *enc, SB *body) {
     return true;
 }
 
+/* ---------- streamed responses ---------- */
+typedef struct Ev { int type; NetRequest *req; NetResponse *resp; char *data; size_t n; struct Ev *next; } Ev; /* 0 done 1 head 2 chunk */
+static pthread_mutex_t g_ev_mu = PTHREAD_MUTEX_INITIALIZER;
+static Ev *g_ev, *g_ev_tail;
+static __thread NetRequest *t_stream;
+static __thread const char *t_url;
+static void ev_push(int type, NetRequest *req, NetResponse *resp, char *data, size_t n) {
+    Ev *e = xcalloc(1, sizeof *e); e->type = type; e->req = req; e->resp = resp; e->data = data; e->n = n;
+    pthread_mutex_lock(&g_ev_mu);
+    if (g_ev_tail) g_ev_tail->next = e; else g_ev = e;
+    g_ev_tail = e;
+    pthread_mutex_unlock(&g_ev_mu);
+    if (net_wakeup) net_wakeup();
+}
+typedef struct { int kind; bool started; z_stream z; BrotliDecoderState *br; ZSTD_DStream *zs; } Dec;
+static int enc_kind(const char *enc) {
+    if (!enc) return 0;
+    if (str_ieq(enc, "gzip") || str_ieq(enc, "x-gzip")) return 1;
+    if (str_ieq(enc, "deflate")) return 2;
+    if (str_ieq(enc, "br")) return 3;
+    if (str_ieq(enc, "zstd")) return 4;
+    return 0;
+}
+static void dec_feed(Dec *d, const char *in, size_t n, SB *out) {
+    char buf[65536];
+    if (!n) return;
+    if (d->kind == 1 || d->kind == 2) {
+        if (!d->started) { int wb = d->kind == 1 ? 15 + 16 : ((unsigned char)in[0] & 0x0f) != 8 ? -15 : 15; if (inflateInit2(&d->z, wb) != Z_OK) return; d->started = true; }
+        d->z.next_in = (Bytef *)in; d->z.avail_in = (uInt)n;
+        int r;
+        do { d->z.next_out = (Bytef *)buf; d->z.avail_out = sizeof buf; r = inflate(&d->z, Z_NO_FLUSH); sb_put(out, buf, sizeof buf - d->z.avail_out); }
+        while (r == Z_OK && (d->z.avail_in || !d->z.avail_out));
+    } else if (d->kind == 3) {
+        if (!d->br) d->br = BrotliDecoderCreateInstance(NULL, NULL, NULL);
+        size_t ain = n; const uint8_t *nin = (const uint8_t *)in; BrotliDecoderResult r;
+        do { size_t aout = sizeof buf; uint8_t *nout = (uint8_t *)buf; r = BrotliDecoderDecompressStream(d->br, &ain, &nin, &aout, &nout, NULL); sb_put(out, buf, sizeof buf - aout); }
+        while (r == BROTLI_DECODER_RESULT_NEEDS_MORE_OUTPUT);
+    } else if (d->kind == 4) {
+        if (!d->zs) { d->zs = ZSTD_createDStream(); ZSTD_initDStream(d->zs); }
+        ZSTD_inBuffer ib = { in, n, 0 };
+        for (;;) { ZSTD_outBuffer o = { buf, sizeof buf, 0 }; size_t r = ZSTD_decompressStream(d->zs, &o, &ib); if (ZSTD_isError(r)) break; sb_put(out, buf, o.pos); if (ib.pos >= ib.size && o.pos < sizeof buf) break; }
+    } else sb_put(out, in, n);
+}
+static void dec_free(Dec *d) {
+    if (d->started) inflateEnd(&d->z);
+    if (d->br) BrotliDecoderDestroyInstance(d->br);
+    if (d->zs) ZSTD_freeDStream(d->zs);
+}
+static void stream_out(Dec *d, SB *raw) {
+    if (!raw->n) return;
+    SB o; sb_init(&o);
+    dec_feed(d, raw->s, raw->n, &o);
+    sb_clear(raw);
+    if (o.n) ev_push(2, t_stream, NULL, o.s, o.n); else sb_free(&o);
+}
+static bool stream_cancelled(void) { return t_stream && __atomic_load_n(&t_stream->cancelled, __ATOMIC_RELAXED); }
+
 /* ---------- single HTTP exchange ---------- */
 static NetResponse *http_once(const char *method, const URL *u, const Headers *hdrs, const char *body, size_t body_len, bool cookies, bool *retryable) {
     NetResponse *r = xcalloc(1, sizeof *r);
@@ -291,6 +348,15 @@ static NetResponse *http_once(const char *method, const URL *u, const Headers *h
         }
     } while (status >= 100 && status < 200 && status != 101);
     r->status = status;
+    bool streaming = t_stream && !(status >= 300 && status < 400 && status != 304 && headers_get(&r->headers, "location"));
+    Dec dec = {0};
+    if (streaming) {
+        NetResponse *h = xcalloc(1, sizeof *h);
+        h->status = status; h->status_text = xstrdup(r->status_text ? r->status_text : ""); h->url = xstrdup(t_url ? t_url : "");
+        for (int i = 0; i < r->headers.n; i++) headers_add(&h->headers, r->headers.v[i].name, r->headers.v[i].value);
+        ev_push(1, t_stream, h, NULL, 0);
+        dec.kind = enc_kind(headers_get(&r->headers, "content-encoding"));
+    }
 
     SB b; sb_init(&b);
     bool keep = true;
@@ -307,18 +373,26 @@ static NetResponse *http_once(const char *method, const URL *u, const Headers *h
             if (!n) { while (conn_readline(c, &line) && line.n) {} break; }
             if (!conn_readn(c, &b, n)) { ok = false; break; }
             conn_readline(c, &line);
+            if (streaming) { stream_out(&dec, &b); if (stream_cancelled()) { ok = false; break; } }
         }
     } else if (cl) {
         size_t n = strtoull(cl, NULL, 10);
-        ok = conn_readn(c, &b, n);
+        if (!streaming) ok = conn_readn(c, &b, n);
+        else while (n) {
+            if (conn_fill(c) <= 0 || stream_cancelled()) { ok = false; break; }
+            size_t k = LMIN(n, c->rlen - c->rpos);
+            sb_put(&b, c->rbuf + c->rpos, k); c->rpos += k; n -= k;
+            stream_out(&dec, &b);
+        }
     } else {
         keep = false;
-        while (conn_fill(c) > 0) { sb_put(&b, c->rbuf + c->rpos, c->rlen - c->rpos); c->rpos = c->rlen; }
+        while (conn_fill(c) > 0) { sb_put(&b, c->rbuf + c->rpos, c->rlen - c->rpos); c->rpos = c->rlen; if (streaming) { stream_out(&dec, &b); if (stream_cancelled()) break; } }
     }
     sb_free(&line);
     if (!ok) { keep = false; if (!b.n) { r->error = xstrdup("truncated body"); } }
     if (keep) pool_put(c); else conn_close(c);
-    if (!decompress(headers_get(&r->headers, "content-encoding"), &b)) DLOG("decompress failed for %s", u->host);
+    if (streaming) dec_free(&dec);
+    else if (!decompress(headers_get(&r->headers, "content-encoding"), &b)) DLOG("decompress failed for %s", u->host);
     r->body_len = b.n; r->body = b.s ? b.s : xcalloc(1, 1);
     r->t_end = now_ms();
     return r;
@@ -377,6 +451,7 @@ NetResponse *net_fetch_sync(NetRequest *req) {
         if (!strcmp(u.scheme, "file")) { r = file_url(&u, url); url_free(&u); break; }
         if (strcmp(u.scheme, "http") && strcmp(u.scheme, "https")) { r = xcalloc(1, sizeof *r); r->error = xstrdup("unsupported scheme"); url_free(&u); break; }
         bool retry;
+        t_url = url;
         r = http_once(method, &u, &req->headers, body, blen, !req->no_cookies, &retry);
         if (r->error && retry) { net_response_free(r); r = http_once(method, &u, &req->headers, body, blen, !req->no_cookies, &retry); }
         const char *loc = headers_get(&r->headers, "location");
@@ -411,10 +486,10 @@ NetRequest *net_request_new(const char *method, const char *url) {
 static void net_request_free(NetRequest *r) { free(r->method); free(r->url); headers_free(&r->headers); free(r->body); free(r); }
 
 /* ---------- async worker pool ---------- */
-typedef struct Job { NetRequest *req; NetResponse *resp; struct Job *next; } Job;
+typedef struct Job { NetRequest *req; NetResponse *resp; struct Job *next, *rnext; } Job;
 static pthread_mutex_t g_mu = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t g_cv = PTHREAD_COND_INITIALIZER;
-static Job *g_queue, *g_done, *g_done_tail;
+static Job *g_queue, *g_running;
 static int g_pending, g_nthreads;
 static bool g_quit;
 static uint64_t g_next_id = 1;
@@ -429,14 +504,15 @@ static void *worker(void *arg) {
         Job **best = &g_queue;
         for (Job **pp = &g_queue; *pp; pp = &(*pp)->next) if ((*pp)->req->priority < (*best)->req->priority) best = pp;
         Job *j = *best; *best = j->next; j->next = NULL;
+        j->rnext = g_running; g_running = j;
         pthread_mutex_unlock(&g_mu);
         if (j->req->cancelled) { j->resp = xcalloc(1, sizeof *j->resp); j->resp->error = xstrdup("cancelled"); }
-        else j->resp = net_fetch_sync(j->req);
+        else { t_stream = j->req->chunk ? j->req : NULL; j->resp = net_fetch_sync(j->req); t_stream = NULL; }
         pthread_mutex_lock(&g_mu);
-        if (g_done_tail) g_done_tail->next = j; else g_done = j;
-        g_done_tail = j;
+        for (Job **pp = &g_running; *pp; pp = &(*pp)->rnext) if (*pp == j) { *pp = j->rnext; break; }
         pthread_mutex_unlock(&g_mu);
-        if (net_wakeup) net_wakeup();
+        ev_push(0, j->req, j->resp, NULL, 0);
+        free(j);
     }
 }
 
@@ -467,22 +543,33 @@ uint64_t net_fetch(NetRequest *req) {
 void net_cancel(uint64_t id) {
     pthread_mutex_lock(&g_mu);
     for (Job *j = g_queue; j; j = j->next) if (j->req->id == id) j->req->cancelled = true;
+    for (Job *j = g_running; j; j = j->rnext) if (j->req->id == id) __atomic_store_n(&j->req->cancelled, true, __ATOMIC_RELAXED);
     pthread_mutex_unlock(&g_mu);
 }
 int net_pending(void) { pthread_mutex_lock(&g_mu); int n = g_pending; pthread_mutex_unlock(&g_mu); return n; }
 static void ws_poll(void);
 int net_poll(void) {
     ws_poll();
-    pthread_mutex_lock(&g_mu);
-    Job *list = g_done; g_done = g_done_tail = NULL;
-    pthread_mutex_unlock(&g_mu);
+    pthread_mutex_lock(&g_ev_mu);
+    Ev *list = g_ev; g_ev = g_ev_tail = NULL;
+    pthread_mutex_unlock(&g_ev_mu);
     int n = 0;
     while (list) {
-        Job *j = list; list = j->next;
-        pthread_mutex_lock(&g_mu); g_pending--; pthread_mutex_unlock(&g_mu);
-        if (!j->req->cancelled && j->req->done) j->req->done(j->req, j->resp, j->req->ud);
-        net_response_free(j->resp); net_request_free(j->req); free(j);
-        n++;
+        Ev *e = list; list = e->next;
+        NetRequest *rq = e->req;
+        if (e->type == 0) {
+            pthread_mutex_lock(&g_mu); g_pending--; pthread_mutex_unlock(&g_mu);
+            if (!rq->cancelled && rq->done) rq->done(rq, e->resp, rq->ud);
+            net_response_free(e->resp); net_request_free(rq);
+            n++;
+        } else if (e->type == 1) {
+            if (!rq->cancelled && rq->head) rq->head(rq, e->resp, rq->ud);
+            net_response_free(e->resp);
+        } else {
+            if (!rq->cancelled && rq->chunk) rq->chunk(rq, e->data, e->n, rq->ud);
+            free(e->data);
+        }
+        free(e);
     }
     return n;
 }

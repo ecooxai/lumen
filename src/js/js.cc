@@ -548,7 +548,7 @@ void js_free(JsCtx *c) {
     {
         v8::Isolate::Scope is(c->iso);
         v8::HandleScope hs(c->iso);
-        for (auto &kv : c->fetches) { net_cancel(kv.first); kv.second->c = nullptr; kv.second->cb.Reset(); }
+        for (auto &kv : c->fetches) { net_cancel(kv.first); kv.second->c = nullptr; kv.second->cb.Reset(); kv.second->head.Reset(); kv.second->chunk.Reset(); }
         c->fetches.clear(); for (auto &kv : c->sockets) { net_ws_release(kv.second->ws); kv.second->cb.Reset(); delete kv.second; } c->sockets.clear();
         c->timers.clear();
         c->rafs.clear();

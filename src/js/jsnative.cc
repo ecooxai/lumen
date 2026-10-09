@@ -337,8 +337,27 @@ static void fetch_done(NetRequest *req, NetResponse *r, void *ud) {
         resp_args(iso, r, argv);
         (void)jcall(c, f->cb.Get(iso), v8::Undefined(iso), 6, argv);
     }
-    f->cb.Reset();
+    f->cb.Reset(); f->head.Reset(); f->chunk.Reset();
     delete f;
+}
+static void fetch_head(NetRequest *req, NetResponse *r, void *ud) {
+    (void)req;
+    Fetch *f = static_cast<Fetch *>(ud);
+    JsCtx *c = f->c;
+    if (!c || f->head.IsEmpty()) return;
+    JS_ENTER(c);
+    v8::Local<v8::Value> argv[6];
+    resp_args(iso, r, argv);
+    (void)jcall(c, f->head.Get(iso), v8::Undefined(iso), 4, argv);
+}
+static void fetch_chunk(NetRequest *req, const char *d, size_t n, void *ud) {
+    (void)req;
+    Fetch *f = static_cast<Fetch *>(ud);
+    JsCtx *c = f->c;
+    if (!c || f->chunk.IsEmpty()) return;
+    JS_ENTER(c);
+    v8::Local<v8::Value> argv[1] = { mkab(iso, d, n) };
+    (void)jcall(c, f->chunk.Get(iso), v8::Undefined(iso), 1, argv);
 }
 static uint64_t start_fetch(JsCtx *c, NetRequest *rq, Fetch *f) {
     rq->done = fetch_done;
@@ -389,7 +408,12 @@ FN(fetch) {
     if (!a[4]->IsFunction()) return;
     Fetch *f = new Fetch{ c, 0, {}, nullptr };
     f->cb.Reset(iso, a[4].As<v8::Function>());
-    RET((double)start_fetch(c, mkreq(c, a), f));
+    NetRequest *rq = mkreq(c, a);
+    if (a.Length() > 6 && a[5]->IsFunction() && a[6]->IsFunction()) {
+        f->head.Reset(iso, a[5].As<v8::Function>()); f->chunk.Reset(iso, a[6].As<v8::Function>());
+        rq->head = fetch_head; rq->chunk = fetch_chunk;
+    }
+    RET((double)start_fetch(c, rq, f));
 }
 static void ws_cb(NetWs *ws, int type, const char *d, size_t n, int code, void *ud) {
     (void)ws;
@@ -441,7 +465,7 @@ FN(abort) {
     auto it = c->fetches.find(id);
     if (it == c->fetches.end()) return;
     net_cancel(id);
-    it->second->c = nullptr; it->second->cb.Reset();
+    it->second->c = nullptr; it->second->cb.Reset(); it->second->head.Reset(); it->second->chunk.Reset();
     c->fetches.erase(it);
 }
 FN(log) {

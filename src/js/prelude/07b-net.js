@@ -73,12 +73,12 @@ function preflightOk(url, method, hs, status, finalUrl, hdrs, cred) {
     if (!/^(GET|HEAD|POST)$/.test(method) && !ms.includes(method) && (cred || !ms.includes('*'))) return false;
     return hs.every(h => hl.includes(h) || (!cred && h !== 'authorization' && hl.includes('*')));
 }
-function corsSend(cred, onId, method, url, flat, body, cb) {
+function corsSend(cred, onId, method, url, flat, body, cb, st) {
     const hs = needsPreflight(method, url, flat);
-    if (!hs) return onId(N.fetch(method, url, flat, body, cb));
+    if (!hs) return onId(N.fetch(method, url, flat, body, cb, st && st.head, st && st.chunk));
     onId(N.fetch('OPTIONS', url, preflightHdrs(method, hs), null, (status, st, u, hdrs, b, err) => {
         if (err || !preflightOk(url, method, hs, status, u, hdrs || [], cred)) return cb(0, '', url, [], null, true);
-        onId(N.fetch(method, url, flat, body, cb));
+        onId(N.fetch(method, url, flat, body, cb, st && st.head, st && st.chunk));
     }));
 }
 function corsSendSync(cred, method, url, flat, body) {
@@ -126,7 +126,7 @@ class Request extends Body {
 class Response extends Body {
     constructor(body = null, init = {}) { super(); this.headers = new Headers(init.headers); def(this, '_b', bodyInit(body, this.headers)); this.status = init.status ?? 200; this.statusText = init.statusText || ''; this.type = 'default'; this.url = ''; this.redirected = false; }
     get ok() { return this.status >= 200 && this.status < 300; }
-    clone() { const r = new Response(null, this); r._b = this._b; r.url = this.url; r.type = this.type; return r; }
+    clone() { const r = new Response(null, this); if (this._b instanceof ReadableStream) { const [a, b] = this._b.tee(); this._b = a; r._b = b; } else r._b = this._b; r.url = this.url; r.type = this.type; return r; }
     static json(d, i) { const r = new Response(JSON.stringify(d), i); r.headers.set('content-type', 'application/json'); return r; }
     static error() { const r = new Response(null, { status: 0 }); r.type = 'error'; return r; }
     static redirect(u, s = 302) { return new Response(null, { status: s, headers: { location: String(u) } }); }
@@ -156,18 +156,31 @@ function fetch(input, init) {
         if (req.signal.aborted) return reject(req.signal.reason);
         const lb = localBody(req.url);
         if (lb !== undefined) { const br = lb && blobResponse(req.url, lb, req.headers.get('range')); if (!br) return reject(new TypeError('Failed to fetch')); const r = new Response(null, { status: br[0], statusText: br[1], headers: fromFlat(br[2]) }); r._b = br[3]; r.url = req.url; r.type = 'basic'; return resolve(r); }
-        let id = 0; corsSend(req.credentials === 'include', (i) => id = i, req.method, req.url, withOrigin(req.headers._flat(), req.url, req.method, req.mode), req._b, (status, statusText, url, hdrs, body, err) => {
-            if (err) return reject(new TypeError('Failed to fetch'));
+        const build = (status, statusText, url, hdrs) => {
             if (!corsOk(req.url, url, hdrs || [], req.credentials === 'include')) {
-                if (req.mode !== 'no-cors') return reject(new TypeError('Failed to fetch'));
+                if (req.mode !== 'no-cors') return null;
                 const r = new Response(null); r.status = 0; r.url = ''; r.type = 'opaque';
-                return resolve(r);
+                return r;
             }
-            if (req.mode === 'same-origin') { try { if (new URL(url || req.url).origin !== location.origin) return reject(new TypeError('Failed to fetch')); } catch (e) {} }
-            const r = new Response(null, { status, statusText, headers: fromFlat(hdrs) }); r._b = body; r.url = url; r.redirected = url !== req.url; r.type = 'basic';
+            if (req.mode === 'same-origin') { try { if (new URL(url || req.url).origin !== location.origin) return null; } catch (e) {} }
+            const r = new Response(null, { status, statusText, headers: fromFlat(hdrs) }); r.url = url; r.redirected = url !== req.url; r.type = 'basic';
+            return r;
+        };
+        let id = 0, ctl = null, settled = false;
+        const head = (status, statusText, url, hdrs) => {
+            if (settled) return;
+            const r = build(status, statusText, url, hdrs); if (!r || r.type !== 'basic') return;
+            r._b = new ReadableStream({ start(c) { ctl = c; } }); settled = true; resolve(r);
+        };
+        const chunk = (ab) => { if (ctl) try { ctl.enqueue(new Uint8Array(ab)); } catch (e) {} };
+        corsSend(req.credentials === 'include', (i) => id = i, req.method, req.url, withOrigin(req.headers._flat(), req.url, req.method, req.mode), req._b, (status, statusText, url, hdrs, body, err) => {
+            if (settled) { if (ctl) { try { if (err) ctl.error(new TypeError('network error')); else ctl.close(); } catch (e) {} ctl = null; } return; }
+            if (err) return reject(new TypeError('Failed to fetch'));
+            const r = build(status, statusText, url, hdrs); if (!r) return reject(new TypeError('Failed to fetch'));
+            if (r.type === 'basic') r._b = body;
             resolve(r);
-        });
-        req.signal.addEventListener('abort', () => { N.abort(id); reject(req.signal.reason); });
+        }, { head, chunk });
+        req.signal.addEventListener('abort', () => { N.abort(id); if (ctl) { try { ctl.error(req.signal.reason); } catch (e) {} ctl = null; } reject(req.signal.reason); });
     });
 }
 class FormData {

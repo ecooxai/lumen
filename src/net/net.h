@@ -36,6 +36,8 @@ struct NetRequest {
     bool cancelled;
     int priority;          /* lower = sooner */
     NetDoneFn done;
+    NetDoneFn head;        /* streaming: response head (no body) before the body arrives */
+    NetChunkFn chunk;      /* streaming: decoded body pieces; done then gets an empty body */
     void *ud;
     uint64_t id;
 };
