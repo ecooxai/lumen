@@ -231,7 +231,7 @@ float layout_table(Layout *L, Box *b, float cx, float cy, float cw, float chdef)
         TCell *c = &g.cells.v[i]; Box *cell = c->cell;
         int re = LMIN(c->r + c->rs, nr);
         float h = ry[re] - ry[c->r] - sp;
-        float content = cell->h;
+        float content = cell->st->height.kind == LK_LEN ? LMIN(cell->h, cell->scroll_h + vbp(cell)) : cell->h;   /* specified height only sets the row minimum; align the real content */
         cell->h = LMAX(cell->h, h);
         float off = 0; int va = cell->st->vertical_align;
         if (va == VA_MIDDLE || va == VA_BASELINE) off = (cell->h - content) / 2; else if (va == VA_BOTTOM) off = cell->h - content;
