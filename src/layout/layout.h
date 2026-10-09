@@ -86,8 +86,14 @@ void fc_place(FloatCtx *fc, Box *b, float y, float x0, float x1);
 float fc_clear(FloatCtx *fc, int side);
 float fc_bottom(FloatCtx *fc);
 static inline float collapse2(float a, float b) { if (a >= 0 && b >= 0) return LMAX(a, b); if (a < 0 && b < 0) return LMIN(a, b); return a + b; }
-static inline float res(Length l, float ref) { return l.kind == LK_LEN ? l.px + (ref > 0 ? l.pct * ref / 100.f : 0) : 0; }
-static inline bool len_def(Length l, float ref) { return l.kind == LK_LEN && (l.pct == 0 || ref >= 0); }
+static inline float res(Length l, float ref) {
+    if (l.kind != LK_LEN) return 0;
+    float a = l.px + (ref > 0 ? l.pct * ref / 100.f : 0);
+    if (!l.mm) return a;
+    float b = l.px2 + (ref > 0 ? l.pct2 * ref / 100.f : 0);
+    return l.mm == 1 ? (a < b ? a : b) : (a > b ? a : b);
+}
+static inline bool len_def(Length l, float ref) { return l.kind == LK_LEN && ((l.pct == 0 && (!l.mm || l.pct2 == 0)) || ref >= 0); }
 static inline float hbp(const Box *b) { return b->b[1] + b->b[3] + b->p[1] + b->p[3]; }
 static inline float vbp(const Box *b) { return b->b[0] + b->b[2] + b->p[0] + b->p[2]; }
 static inline bool in_flow(const Box *b) { return !b->abs && !b->floated; }

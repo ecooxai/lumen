@@ -171,9 +171,11 @@ static bool parse_dim(const char **pp, Length *out, LCtx *c) {
         *pp = p;
         /* when percentages are involved we can't resolve; pick a reasonable operand */
         if (kind == 2 && n == 3) { Length r = v[1]; if (!r.pct && !v[0].pct && r.px < v[0].px) r = v[0]; if (!r.pct && !v[2].pct && r.px > v[2].px) r = v[2]; *out = r; return true; }
-        Length best = v[0];
-        for (int i = 1; i < n; i++) { if (v[i].pct || best.pct) { if (kind == 0 && v[i].pct && !best.pct) {} else if (!v[i].pct) best = kind == 0 ? best : v[i]; continue; } if (kind == 0 ? v[i].px < best.px : v[i].px > best.px) best = v[i]; }
-        *out = best; return true;
+        Length best = v[0]; int bi = 0;
+        for (int i = 1; i < n; i++) { if (v[i].pct || best.pct) { if (kind == 0 && v[i].pct && !best.pct) {} else if (!v[i].pct && kind != 0) { best = v[i]; bi = i; } continue; } if (kind == 0 ? v[i].px < best.px : v[i].px > best.px) { best = v[i]; bi = i; } }
+        *out = best;
+        if (n == 2 && (v[0].pct || v[1].pct) && !v[0].mm && !v[1].mm) { const Length *o = &v[1 - bi]; out->mm = (uint8_t)(kind + 1); out->px2 = o->px; out->pct2 = o->pct; }
+        return true;
     }
     if (str_istarts(p, "var(")) return false;
     char *e; float v = strtof(p, &e);
@@ -213,8 +215,13 @@ static bool calc_term(const char **pp, Length *out, LCtx *c) {
         const char *p = *pp; while (is_ws((unsigned char)*p)) p++;
         if (*p == '*' || *p == '/') {
             char op = *p++; Length r; if (!parse_dim(&p, &r, c)) return false;
+            if (op == '*' && (out->mm || r.mm)) {
+                if (r.mm && !out->mm && !out->pct) { float k = out->px; *out = r; r.px = k; r.mm = 0; r.pct = 0; }
+                if (!r.mm && !r.pct) { out->px *= r.px; out->pct *= r.px; out->px2 *= r.px; out->pct2 *= r.px; if (r.px < 0) out->mm = (uint8_t)(3 - out->mm); *pp = p; continue; }
+                out->mm = 0;
+            }
             if (op == '*') { float f = r.pct ? 1 : r.px; if (r.pct == 0 && out->pct == 0 && false) {} if (out->pct == 0 && out->px != 0 && r.pct) { float k = out->px; *out = r; out->px *= k; out->pct *= k; } else { out->px *= f; out->pct *= f; } }
-            else { if (r.px) { out->px /= r.px; out->pct /= r.px; } }
+            else { if (r.px) { out->px /= r.px; out->pct /= r.px; out->px2 /= r.px; out->pct2 /= r.px; if (r.px < 0 && out->mm) out->mm = (uint8_t)(3 - out->mm); } }
             *pp = p;
         } else break;
     }
@@ -226,7 +233,9 @@ static bool calc_expr(const char **pp, Length *out, LCtx *c) {
         const char *p = *pp; while (is_ws((unsigned char)*p)) p++;
         if ((*p == '+' || *p == '-') && (p[1] == ' ' || p[1] == '\t' || p[1] == '\n')) {
             char op = *p++; Length r; if (!calc_term(&p, &r, c)) return false;
-            if (op == '+') { out->px += r.px; out->pct += r.pct; } else { out->px -= r.px; out->pct -= r.pct; }
+            if (op == '-') { r.px = -r.px; r.pct = -r.pct; r.px2 = -r.px2; r.pct2 = -r.pct2; if (r.mm) r.mm = (uint8_t)(3 - r.mm); }
+            if (r.mm && !out->mm) { float bx = out->px, bp = out->pct; bool pu = out->pctu; *out = r; out->pctu |= pu; out->px += bx; out->pct += bp; out->px2 += bx; out->pct2 += bp; }
+            else { if (r.mm) out->mm = 0; out->px += r.px; out->pct += r.pct; if (out->mm) { out->px2 += r.px; out->pct2 += r.pct; } }
             out->pctu |= r.pctu;
             *pp = p;
         } else break;

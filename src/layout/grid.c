@@ -201,7 +201,8 @@ float layout_table(Layout *L, Box *b, float cx, float cy, float cw, float chdef)
     float smn = 0, smx = 0; for (int k = 0; k < nc; k++) { smn += mn[k]; smx += mx[k]; }
     float avail = cw - sp * (nc + 1);
     bool specified = b->st->width.kind == LK_LEN;
-    float target = specified ? avail : LMIN(avail, smx);
+    bool has_min = b->st->min_width.kind == LK_LEN && (b->st->min_width.px > 0 || b->st->min_width.pct > 0);   /* box width already honours min-width */
+    float target = specified || has_min ? avail : LMIN(avail, smx);
     if (target < smn) target = smn;
     float *w = xcalloc((size_t)nc + 1, sizeof(float));
     for (int k = 0; k < nc; k++) {
