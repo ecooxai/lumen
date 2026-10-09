@@ -397,10 +397,10 @@ static Box *hit(Box *b, float x, float y, float ox, float oy, float vx, float vy
             if (h) return h;
         }
     if (b->kind == BX_INLINE) {
-        for (int i = 0; i < b->nir; i++) { IRect *r = &b->ir[i]; if (lx >= r->x && lx < r->x + r->w && ly >= r->y && ly < r->y + r->h) return b; }
+        for (int i = 0; i < b->nir; i++) { IRect *r = &b->ir[i]; if (lx >= r->x && lx < r->x + r->w && ly >= r->y && ly < r->y + r->h) return b->st && !b->st->pointer_events ? NULL : b; }
         return NULL;
     }
-    for (int i = 0; i < b->nfrags; i++) { TextFrag *f = &b->frags[i]; if (f->box->kind == BX_TEXT && !(f->box->st && f->box->st->visibility != VIS_VISIBLE) && lx >= f->x && lx < f->x + f->w && ly >= f->y && ly < f->y + f->h) { Box *t = f->box; return t->parent && t->parent->kind == BX_INLINE ? t->parent : b; } }
+    for (int i = 0; i < b->nfrags; i++) { TextFrag *f = &b->frags[i]; if (f->box->kind == BX_TEXT && !(f->box->st && (f->box->st->visibility != VIS_VISIBLE || !f->box->st->pointer_events)) && lx >= f->x && lx < f->x + f->w && ly >= f->y && ly < f->y + f->h) { Box *t = f->box; return t->parent && t->parent->kind == BX_INLINE ? t->parent : b; } }
     if (inside && !hidden && b->node && b->st && b->st->pointer_events) return b;
     return NULL;
 }

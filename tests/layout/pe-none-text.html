@@ -1,0 +1,11 @@
+<!-- run with build/lumen; expects RESULTS pe-none text:PASS inline:PASS -->
+<!-- ChatGPT's profile row: an absolute inset-0 button, then a later positioned pointer-events:none label on top -->
+<div style="position:relative;width:300px;height:50px">
+  <button id=btn style="position:absolute;inset:0;background:transparent;border:0"></button>
+  <div style="pointer-events:none;position:relative"><span id=t>Profile name text</span> <b id=i>bold</b></div>
+</div>
+<script>
+const at = id => { const r = document.getElementById(id).getBoundingClientRect(); return document.elementFromPoint(r.x + 3, r.y + r.height / 2); };
+const btn = document.getElementById('btn');
+console.log('RESULTS pe-none text:' + (at('t') === btn ? 'PASS' : 'FAIL') + ' inline:' + (at('i') === btn ? 'PASS' : 'FAIL'));
+</script>
