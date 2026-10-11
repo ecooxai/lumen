@@ -818,7 +818,7 @@ static void update_compact(App *a) {
     for (int i = 0; i < a->ntabs; i++) a->tabs[i]->relayout = true;
 }
 /* per display item: content hash + device-independent bounds, so a DOM change only rasters the area whose items changed */
-struct DSig { uint64_t h; float b[4]; };
+struct DSig { uint64_t h; float b[4]; bool vid; };
 static uint64_t hmix(uint64_t h, const void *p, size_t n) { const uint8_t *c = p; for (size_t i = 0; i < n; i++) h = (h ^ c[i]) * 1099511628211ull; return h; }
 #define HMIX(h, v) h = hmix(h, &(v), sizeof(v))
 static uint64_t ditem_hash(const DItem *it) {
@@ -830,6 +830,59 @@ static uint64_t ditem_hash(const DItem *it) {
     return h;
 }
 static void bunion(float *a, const float *b) { a[0] = LMIN(a[0], b[0]); a[1] = LMIN(a[1], b[1]); a[2] = LMAX(a[2], b[2]); a[3] = LMAX(a[3], b[3]); }
+/* union of the bounds of items present in only one of the two display-list signatures: common prefix/suffix are skipped and
+   the middle is compared as a multiset, so inserting one item (e.g. a typed glyph) doesn't dirty everything painted after it.
+   Video frames are left to the caller's per-video rects; only a video that moved or went away adds its old box. */
+/* union only the part of b inside the viewport: off-screen carousel slides and clips must not widen the damage */
+static void vunion(float *dm, float vw, float vh, const float *b) {
+    float c[4] = { LMAX(b[0], 0), LMAX(b[1], 0), LMIN(b[2], vw), LMIN(b[3], vh) };
+    if (c[2] > c[0] && c[3] > c[1]) bunion(dm, c);
+}
+static const DisplayList *g_dbg_dmg;
+static void dsig_damage(const struct DSig *o, int no, const struct DSig *q, int nq, float vw, float vh, float *dm) {
+    int pre = 0, suf = 0;
+    while (pre < no && pre < nq && o[pre].h == q[pre].h) pre++;
+    while (suf < no - pre && suf < nq - pre && o[no - 1 - suf].h == q[nq - 1 - suf].h) suf++;
+    int mo = no - pre - suf, mq = nq - pre - suf;
+    if (!mo && !mq) return;
+    int cap = 16; while (cap < (mo + mq) * 2) cap <<= 1;
+    struct { uint64_t h; int c; } *t = calloc((size_t)cap, sizeof *t);
+    if (!t) { for (int i = pre; i < no - suf; i++) vunion(dm, vw, vh, o[i].b); for (int i = pre; i < nq - suf; i++) vunion(dm, vw, vh, q[i].b); return; }
+    for (int i = pre; i < no - suf; i++) {
+        if (o[i].vid) continue;
+        uint64_t h = o[i].h | 1; size_t k = (size_t)(h * 0x9E3779B97F4A7C15ull) & (size_t)(cap - 1);
+        while (t[k].h && t[k].h != h) k = (k + 1) & (size_t)(cap - 1);
+        t[k].h = h; t[k].c++;
+    }
+    for (int i = pre; i < nq - suf; i++) {
+        if (q[i].vid) continue;
+        uint64_t h = q[i].h | 1; size_t k = (size_t)(h * 0x9E3779B97F4A7C15ull) & (size_t)(cap - 1);
+        while (t[k].h && t[k].h != h) k = (k + 1) & (size_t)(cap - 1);
+        if (t[k].h && t[k].c > 0) t[k].c--;
+        else {
+            vunion(dm, vw, vh, q[i].b);
+            if (g_dbg_dmg && q[i].b[2] > q[i].b[0] && q[i].b[3] > q[i].b[1] && (q[i].b[2] - q[i].b[0]) * (q[i].b[3] - q[i].b[1]) > 3000) fprintf(stderr, "lumen: dmg new #%d op=%d %.0f,%.0f-%.0f,%.0f\n", i, g_dbg_dmg->items.v[i].op, q[i].b[0], q[i].b[1], q[i].b[2], q[i].b[3]);
+        }
+    }
+    for (int i = pre; i < no - suf; i++) {   /* old items left unmatched were removed or changed */
+        if (o[i].vid) continue;
+        uint64_t h = o[i].h | 1; size_t k = (size_t)(h * 0x9E3779B97F4A7C15ull) & (size_t)(cap - 1);
+        while (t[k].h != h) k = (k + 1) & (size_t)(cap - 1);
+        if (t[k].c > 0) {
+            t[k].c--; vunion(dm, vw, vh, o[i].b);
+            if (g_dbg_dmg && o[i].b[2] > o[i].b[0] && o[i].b[3] > o[i].b[1] && (o[i].b[2] - o[i].b[0]) * (o[i].b[3] - o[i].b[1]) > 3000) fprintf(stderr, "lumen: dmg old #%d %.0f,%.0f-%.0f,%.0f\n", i, o[i].b[0], o[i].b[1], o[i].b[2], o[i].b[3]);
+        }
+    }
+    free(t);
+    /* videos are matched by stacking rank (stacked carousel slides share a box): the k-th old video that isn't
+       at the same place as the k-th new one moved or went away, so its old box needs repainting */
+    for (int i = 0, j = 0; i < no; i++) {
+        if (!o[i].vid) continue;
+        while (j < nq && !q[j].vid) j++;
+        if (j >= nq || memcmp(q[j].b, o[i].b, sizeof o[i].b)) vunion(dm, vw, vh, o[i].b);
+        if (j < nq) j++;
+    }
+}
 static void ditem_box(const DItem *it, float *b) {
     float x0 = it->x, y0 = it->y, x1 = it->x + it->w, y1 = it->y + it->h, e = 2;
     if (it->op == DO_SHADOW) e += fabsf(it->spread) + fabsf(it->blur);
@@ -846,7 +899,7 @@ static int dl_sigs(const DisplayList *dl, struct DSig **v, int *cap) {
     if (n > *cap) { *cap = n + n / 2 + 16; *v = xrealloc(*v, sizeof **v * (size_t)*cap); }
     for (int i = 0; i < n; i++) {
         const DItem *it = &dl->items.v[i]; struct DSig *q = &(*v)[i];
-        q->h = ditem_hash(it); ditem_box(it, q->b);
+        q->h = ditem_hash(it); ditem_box(it, q->b); q->vid = it->op == DO_IMAGE && media_is_frame(it->img);
         if (it->op == DO_PUSH_LAYER) { if (ns < 64) st[ns++] = i; }   /* a layer covers its contents: an opacity change damages all of them */
         else if (it->op == DO_POP_LAYER) { if (ns) { int t = st[--ns]; if (ns) bunion((*v)[st[ns - 1]].b, (*v)[t].b); } }
         else if (ns) bunion((*v)[st[ns - 1]].b, q->b);
@@ -910,12 +963,17 @@ static void render(App *a) {
         g_full_paint = (double)SDL_GetTicks(); { double q = now_ms(); dl_clear(&a->pdl); dl_build(&a->pdl, a->t->cur->L, 0, a->t->sy, a->vw - a->side, a->vh - BAR); g_td += now_ms() - q; } a->vbars = video_bars(a, &a->pdl);
         int nn = dl_sigs(&a->pdl, &a->nsig, &a->cnsig);
         const DItem *vit = NULL; int nv = 0, nvr = 0, vr[16][4];
-        bool vsame = a->osig_ok && nn == a->nosig;
+        int ovi = 0;   /* next old video sig, by stacking rank */
         for (int i = 0; i < a->pdl.items.n; i++) {
             const DItem *it = &a->pdl.items.v[i];
             if (it->op != DO_IMAGE || !media_is_frame(it->img)) continue;
             if (!nv++) vit = it;
-            if (vsame && a->osig[i].h == a->nsig[i].h) continue;   /* paused video: same frame as last raster */
+            if (a->osig_ok) {   /* paused video: the same-rank video last frame showed the same frame in the same place */
+                while (ovi < a->nosig && !a->osig[ovi].vid) ovi++;
+                bool same = ovi < a->nosig && a->osig[ovi].h == a->nsig[i].h && !memcmp(a->osig[ovi].b, a->nsig[i].b, sizeof a->nsig[i].b);
+                if (ovi < a->nosig) ovi++;
+                if (same) continue;
+            }
             float s = a->page.scale;
             int q[4] = { (int)floorf(it->x * s), (int)floorf(it->y * s), (int)ceilf((it->x + it->w) * s), (int)ceilf((it->y + it->h) * s) };
             rx0 = LMIN(rx0, q[0]); ry0 = LMIN(ry0, q[1]); rx1 = LMAX(rx1, q[2]); ry1 = LMAX(ry1, q[3]);
@@ -957,21 +1015,30 @@ static void render(App *a) {
                 build_chrome(a); chrome_tip(a);
                 if (dl_hash(&a->cdl) * 31 + dl_hash(&a->hdl) != a->chash) dmg = false;
                 float dm[4] = { 1e30f, 1e30f, -1e30f, -1e30f };
-                for (int i = 0, m = LMAX(nn, a->nosig); dmg && i < m; i++) {
-                    const struct DSig *o = i < a->nosig ? &a->osig[i] : NULL, *q = i < nn ? &a->nsig[i] : NULL;
-                    if (o && q && o->h == q->h) continue;
-                    if (o) bunion(dm, o->b);
-                    if (q) bunion(dm, q->b);
-                }
+                g_dbg_dmg = getenv("LUMEN_DEBUG_DAMAGE") ? &a->pdl : NULL;
+                if (dmg) dsig_damage(a->osig, a->nosig, a->nsig, nn, a->vw - a->side, a->vh - BAR, dm);
                 float s = a->page.scale;
                 int x0 = LMAX(0, (int)floorf(dm[0] * s)), y0 = LMAX(0, (int)floorf(dm[1] * s)), x1 = LMIN(pwp, (int)ceilf(dm[2] * s)), y1 = LMIN(ph, (int)ceilf(dm[3] * s));
-                if (dmg && (x1 <= x0 || y1 <= y0)) { part = true; gskip = true; }
-                else if (dmg && (long)(x1 - x0) * (y1 - y0) * 2 < (long)pwp * ph) {
-                    { double q = now_ms(); raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), x0, y0, x1, y1); g_tx += now_ms() - q; }
+                bool dom = x1 > x0 && y1 > y0, vid = rx1 > rx0 && ry1 > ry0;
+                long area = dom ? (long)(x1 - x0) * (y1 - y0) : 0;
+                if (vid && nvr > 16) area += (long)(rx1 - rx0) * (ry1 - ry0);
+                else if (vid) for (int k = 0; k < nvr; k++) area += (long)LMAX(0, LMIN(vr[k][2], pwp) - LMAX(vr[k][0], 0)) * LMAX(0, LMIN(vr[k][3], ph) - LMAX(vr[k][1], 0));
+                if (dmg && !dom && !vid) { part = true; gskip = true; }
+                else if (dmg && area * 2 < (long)pwp * ph) {   /* DOM damage and each changed video frame are rastered as separate rects */
+                    { double q = now_ms();
+                      if (dom) raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), x0, y0, x1, y1);
+                      if (vid && nvr > 16) raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), rx0, ry0, rx1, ry1);
+                      else if (vid) for (int k = 0; k < nvr; k++) raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), LMAX(vr[k][0], 0), LMAX(vr[k][1], 0), LMIN(vr[k][2], pwp), LMIN(vr[k][3], ph));
+                      g_tx += now_ms() - q; }
+                    if (!dom) { x0 = rx0; y0 = ry0; x1 = rx1; y1 = ry1; }
+                    else if (vid) { x0 = LMIN(x0, rx0); y0 = LMIN(y0, ry0); x1 = LMAX(x1, rx1); y1 = LMAX(y1, ry1); }
                     part = true; rx0 = x0; ry0 = y0; rx1 = x1; ry1 = y1; a->gvid_ok = false;
                     if (getenv("LUMEN_CHECK_DAMAGE")) check_damage(a, pwp, ph, x0, y0, x1, y1, "damage");
                 }
-                else dmg = false;
+                else {
+                    if (dmg && getenv("LUMEN_DEBUG_PAINT")) fprintf(stderr, "lumen: damage too big dom=%d,%d-%d,%d vid=%d,%d-%d,%d nvr=%d area=%ld page=%ld\n", x0, y0, x1, y1, rx0, ry0, rx1, ry1, nvr, area, (long)pwp * ph);
+                    dmg = false;
+                }
             }
             if (!dmg) {
                 if (getenv("LUMEN_DEBUG_PAINT")) fprintf(stderr, "lumen: full raster why=%d nv=%d osig_ok=%d sy_same=%d loading=%d chash_same=%d\n", why, nv, a->osig_ok, a->t->sy == a->last_sy, a->t->loading, dl_hash(&a->cdl) * 31 + dl_hash(&a->hdl) == a->chash);
