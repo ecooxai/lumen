@@ -170,6 +170,16 @@ static float clamph(const ComputedStyle *s, float h, float cbh, float bp) {
     return h;
 }
 
+/* bottom of the n-th line box among b's in-flow block descendants, in document order (line-clamp) */
+static float nth_line_bottom(const Box *b, int *n) {
+    for (int i = 0; i < b->nlines; i++) if (--*n == 0) return b->lines[i].y + b->lines[i].h;
+    for (const Box *c = b->first; c; c = c->next) {
+        if (c->abs || c->floated || c->kind != BX_BLOCK) continue;
+        float r = nth_line_bottom(c, n);
+        if (r >= 0) return r;
+    }
+    return -1;
+}
 static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float cbh, FloatCtx *fc, int mode, float fw, float fh);
 /* flex/grid measure a child and then lay it out again, often with identical inputs; nested containers made that exponential */
 int g_lb_calls, g_lb_hits;
@@ -254,6 +264,7 @@ static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float 
     if (b->bfc && f == &own) { float fb = fc_bottom(&own); if (fb > cy + ch) ch = fb - cy; }
     free(own.v);
     float content_h = ch;
+    if (s->line_clamp >= 1 && hdef < 0 && s->overflow_y != OV_VISIBLE) { int n = (int)s->line_clamp; float lb = nth_line_bottom(b, &n); if (lb >= 0 && lb - cy < ch) ch = LMAX(0, lb - cy); }
     float h = (hdef >= 0 && b->fmt != FMT_REPLACED ? hdef : ch) + vb;
     if (fh < 0) h = clamph(s, h, cbh, vb);
     b->h = LMAX(0, h);
