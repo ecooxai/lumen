@@ -148,7 +148,7 @@ static void build_pseudo(BState *bs, Box *parent, Node *el, ComputedStyle *ps) {
     uint8_t kind = blockify ? BX_BLOCK : ps->display == D_INLINE ? BX_INLINE : (ps->display == D_INLINE_BLOCK || ps->display == D_INLINE_FLEX) ? BX_ATOMIC : BX_BLOCK;
     Box *b = new_box(bs->L, kind, el, ps); b->anon = true;
     b->fmt = ps->display == D_FLEX || ps->display == D_INLINE_FLEX ? FMT_FLEX : ps->display == D_GRID ? FMT_GRID : FMT_FLOW;
-    b->abs = ps->position == P_ABSOLUTE || ps->position == P_FIXED; b->fixed = ps->position == P_FIXED; b->floated = ps->float_ != F_NONE;
+    b->abs = ps->position == P_ABSOLUTE || ps->position == P_FIXED; b->fixed = ps->position == P_FIXED; b->floated = !b->abs && ps->float_ != F_NONE && parent->fmt != FMT_FLEX && parent->fmt != FMT_GRID;
     if (b->abs || b->floated || kind == BX_ATOMIC) b->bfc = true;
     if (*ps->content) { Box *t = new_box(bs->L, BX_TEXT, NULL, ps); t->text = prep_text(bs, ps->content, strlen(ps->content), ps, &t->text_len); append(b, t); }
     if (kind != BX_INLINE) fixup_block(bs->L, b);
@@ -196,7 +196,7 @@ static void build(BState *bs, Box *parent, Node *n, int *li) {
     n->box = b;
     b->ctl = (uint8_t)ctl;
     b->abs = st->position == P_ABSOLUTE || st->position == P_FIXED; b->fixed = st->position == P_FIXED;
-    b->floated = !b->abs && st->float_ != F_NONE;
+    b->floated = !b->abs && st->float_ != F_NONE && parent->fmt != FMT_FLEX && parent->fmt != FMT_GRID;  /* flex/grid items ignore float */
     /* The root's overflow (or body's, when the root's is visible) belongs to the viewport, not the box */
     const ComputedStyle *hs = L->doc->html ? L->doc->html->style : NULL;
     bool to_viewport = n == L->doc->html || (n == L->doc->body && (!hs || (hs->overflow_x == OV_VISIBLE && hs->overflow_y == OV_VISIBLE)));
