@@ -288,3 +288,10 @@ Load (DCL/load): Google 0.53/3.66 s, Bing 1.97/2.23 s, YT watch ~2.2/3.47 s, YT 
   blank in 12 s screenshots on both old and new builds (lazy image loading?).
 - Seen twice: a `timeout 25 lumen https://www.reddit.com/` process outlived its timeout (needed
   kill -9) - exit/shutdown hang worth investigating.
+- `cfc44d7` shadow hosts render only their shadow tree; light children appear only through `<slot>`
+  (named/default, fallback content) - box.c `slot_host`/`slot_takes`. Fixture tests/render/shadow-slots.html.
+  Fixed Reddit's duplicated search bar. `::slotted()` still unsupported, and slotted nodes inherit
+  from the host (not the slot).
+- `2a9dc65` `::placeholder` color (pseudo_el 5 -> ComputedStyle.ph_color/ph_set; display.c uses it).
+- Re-checked after these: YouTube, X, GitHub, BBC, Amazon, Reddit screenshots OK; layout output identical
+  on the 29 older fixtures; WebGL/three.js/WebGPU/Canvas fixtures still 60 fps (software GPU).
