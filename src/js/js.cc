@@ -405,7 +405,8 @@ void js_global_init(const char *argv0) {
     const char *lv = getenv("LUMEN_CONSOLE");
     if (lv) g_log_level = atoi(lv);
     const char *icu = getenv("LUMEN_ICU_DATA");
-    if (!icu && access("/opt/homebrew/opt/v8/libexec/icudtl.dat", R_OK) == 0) icu = "/opt/homebrew/opt/v8/libexec/icudtl.dat";
+    static const char *icu_paths[] = { "/opt/homebrew/opt/v8/libexec/icudtl.dat", "/home/linuxbrew/.linuxbrew/opt/v8/libexec/icudtl.dat", "/usr/local/opt/v8/libexec/icudtl.dat", "/usr/lib/lumen/icudtl.dat" };
+    for (size_t i = 0; !icu && i < sizeof icu_paths / sizeof *icu_paths; i++) if (access(icu_paths[i], R_OK) == 0) icu = icu_paths[i];
     v8::V8::InitializeICUDefaultLocation(argv0, icu);
     v8::V8::InitializeExternalStartupData(argv0);
     g_platform = v8::platform::NewDefaultPlatform();
