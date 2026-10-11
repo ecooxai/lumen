@@ -259,3 +259,9 @@ Load (DCL/load): Google 0.53/3.66 s, Bing 1.97/2.23 s, YT watch ~2.2/3.47 s, YT 
 - Wikipedia search: native form submit takes select value from selected/first option.
 - Open: paused-YouTube idle 6-8% CPU and BBC article ~11% (perf shows raster_rect repaint while idle; find who marks dirty), Amazon sustained ~100% CPU after load, GitHub `adoptedStyleSheets is not iterable` + bare module specifier "react" (import maps?), Google CAPTCHA (no action), service workers unsupported.
 - Test without disturbing DISPLAY=:0: `Xvfb :5 -screen 0 1600x1000x24 &` then DISPLAY=:5; build to a separate dir with `make BUILD=build3 build3/lumen`.
+
+## 2026-10-11 perf/compat follow-up
+- Amazon homepage: full raster at ~24 fps (raster 880 ms/s, ~105% CPU) because the damage-rect path was disabled whenever the page had any video item (`!nv`). Now only GPU-punched video (`gv`) disables it; Amazon raster 22 ms/s, settled CPU 0-13%. Verified pixel-exact with `LUMEN_CHECK_DAMAGE=1` (430 checks, 0 mismatched px).
+- Still open: Amazon layout (hero takes the left column only, product cards missing; `d.removeAttribute is not a function`), Reddit orange placeholder circles, YouTube far-seek `moov atom not found`, Google CAPTCHA from this VM IP.
+- Capture regression: `LUMEN_PERMISSIONS=grant SDL_AUDIO_DRIVER=disk SDL_AUDIO_DISK_INPUT_FILE=~/lumen-tests/mic.raw ./build/lumen file://~/lumen-tests/capture.html` (needs v4l2loopback + ffmpeg testsrc2 on /dev/video10). `LUMEN_PERMISSIONS=allow` is NOT a value: the page then blocks on the SDL prompt.
+- Regression (2026-10-11, build/lumen, LUMEN_ALLOW_SW_GPU=1): webgl/three/webgpu/canvas/capture fixtures all pass, 60 fps.
