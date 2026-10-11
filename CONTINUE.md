@@ -327,3 +327,10 @@ Load (DCL/load): Google 0.53/3.66 s, Bing 1.97/2.23 s, YT watch ~2.2/3.47 s, YT 
   search 9-14% (was 18-24%; remainder is mostly Wikipedia's suggestion JS).
 - Still open from the last site run: Reddit search results clipped, Amazon
   search-icon submit, YouTube drag-seek, X input after layout shift.
+- `window.location = url` / bare `location = url` were no-ops (prelude had a
+  top-level `const location`, which page scripts share). Now a non-configurable
+  accessor on the global (`tests/render/window-location-assign.html`). This was
+  why Amazon search from a results page (Enter or icon) did nothing: its jQuery
+  submit handler prevents default and assigns `window.location`.
+- Reddit `/search/?q=` renders full-width now; the earlier "clipped" report was
+  on an older build.

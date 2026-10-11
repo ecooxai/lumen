@@ -45,7 +45,9 @@ class Location {
     get ancestorOrigins() { return []; }
 }
 URL_KEYS.forEach((k, i) => { if (k !== 'href') acc(Location.prototype, k, function () { return N.urlParse(N.url(), null)[i]; }, k === 'origin' ? undefined : function (v) { const u = new URL(N.url()); u[k] = v; this.assign(u.href); }); });
-const location = new Location();
+const location_ = new Location();
+/* [LegacyUnforgeable]: `window.location = url` and bare `location = url` navigate */
+Object.defineProperty(globalThis, 'location', { get() { return location_; }, set(v) { location_.href = v; }, enumerable: true, configurable: false });
 let histState = null, histIdx = 0;
 const histStates = [null];
 Object.defineProperty(globalThis, '__lumenPopState', { value: d => {
@@ -337,7 +339,7 @@ const globals = {
     TreeWalker, NodeIterator, NodeFilter, Range, StaticRange, AbstractRange, Selection, Animation, DOMMatrixReadOnly, DOMMatrix, DOMPoint, DOMParser, XMLSerializer,
     TextEncoder, TextDecoder, btoa, atob, Blob, File, FileList, DataTransfer, DataTransferItem, DataTransferItemList, FileReader, ReadableStream, ReadableStreamDefaultReader, WritableStream, WritableStreamDefaultWriter, TransformStream, ByteLengthQueuingStrategy, CountQueuingStrategy, TextEncoderStream, TextDecoderStream, URLSearchParams, URL, webkitURL: URL, Headers, Request, Response, fetch, FormData, XMLHttpRequestEventTarget, XMLHttpRequestUpload, XMLHttpRequest, WebSocket, CloseEvent, MessagePort, MessageChannel, Worker, BroadcastChannel,
     RTCPeerConnection, RTCSessionDescription, RTCIceCandidate, RTCPeerConnectionIceEvent, RTCPeerConnectionIceErrorEvent, RTCDataChannel, RTCDataChannelEvent, RTCTrackEvent, RTCRtpSender, RTCRtpReceiver, RTCRtpTransceiver, RTCIceTransport, RTCDtlsTransport, RTCSctpTransport, RTCCertificate, RTCStatsReport, RTCError, RTCErrorEvent, MediaStream, MediaStreamTrack, MediaStreamTrackEvent,
-    ResizeObserver, IntersectionObserver, HTMLAllCollection, PerformanceObserver, Storage, localStorage, sessionStorage, Location, location, history, navigator, screen, performance, crypto, MediaQueryList, matchMedia, getComputedStyle,
+    ResizeObserver, IntersectionObserver, HTMLAllCollection, PerformanceObserver, Storage, localStorage, sessionStorage, Location, history, navigator, screen, performance, crypto, MediaQueryList, matchMedia, getComputedStyle,
     setTimeout, setInterval, clearTimeout, clearInterval, requestAnimationFrame, cancelAnimationFrame, requestIdleCallback, cancelIdleCallback, queueMicrotask, structuredClone, postMessage, console, customElements, Window, document,
     window: G, self: G, globalThis: G, get top() { return asWin(N.topWin()) ?? G; }, get parent() { return asWin(N.parentWin()) ?? G; }, frames: G, opener: null, get frameElement() { return N.frameEl(); }, closed: false, name: '', get length() { return N.frameCount(); }, origin: location.origin, isSecureContext: location.protocol === 'https:', crossOriginIsolated: false,
     get innerWidth() { return N.viewport()[0]; }, get innerHeight() { return N.viewport()[1]; }, get outerWidth() { return N.viewport()[0]; }, get outerHeight() { return N.viewport()[1] + 40; },
