@@ -63,6 +63,25 @@ static const FamilyDef families[] = {
     { "emoji", SYS "Apple Color Emoji.ttc#0", NULL, NULL, NULL },
 };
 static const char *fallbacks[] = { SYS "Helvetica.ttc#0", SUP "Arial Unicode.ttf", SYS "Apple Color Emoji.ttc#0", SYS "Hiragino Sans GB.ttc#0", SYS "AppleSDGothicNeo.ttc#0", SYS "Apple Symbols.ttf", SYS "LastResort.otf", NULL };
+#elif defined(__ANDROID__)
+#define AF "/system/fonts/"
+static const FamilyDef families[] = {
+    { "sans-serif", AF "Roboto-Regular.ttf", NULL, NULL, NULL },
+    { "arial", AF "Roboto-Regular.ttf", NULL, NULL, NULL },
+    { "helvetica", AF "Roboto-Regular.ttf", NULL, NULL, NULL },
+    { "roboto", AF "Roboto-Regular.ttf", NULL, NULL, NULL },
+    { "system-ui", AF "Roboto-Regular.ttf", NULL, NULL, NULL },
+    { "-apple-system", AF "Roboto-Regular.ttf", NULL, NULL, NULL },
+    { "blinkmacsystemfont", AF "Roboto-Regular.ttf", NULL, NULL, NULL },
+    { "segoe ui", AF "Roboto-Regular.ttf", NULL, NULL, NULL },
+    { "serif", AF "NotoSerif-Regular.ttf", AF "NotoSerif-Bold.ttf", AF "NotoSerif-Italic.ttf", AF "NotoSerif-BoldItalic.ttf" },
+    { "times new roman", AF "NotoSerif-Regular.ttf", AF "NotoSerif-Bold.ttf", AF "NotoSerif-Italic.ttf", AF "NotoSerif-BoldItalic.ttf" },
+    { "georgia", AF "NotoSerif-Regular.ttf", AF "NotoSerif-Bold.ttf", AF "NotoSerif-Italic.ttf", AF "NotoSerif-BoldItalic.ttf" },
+    { "monospace", AF "DroidSansMono.ttf", NULL, NULL, NULL },
+    { "courier new", AF "CutiveMono.ttf", NULL, NULL, NULL },
+    { "emoji", AF "NotoColorEmoji.ttf", NULL, NULL, NULL },
+};
+static const char *fallbacks[] = { AF "Roboto-Regular.ttf", AF "NotoSansCJK-Regular.ttc#0", AF "NotoColorEmoji.ttf", AF "NotoSansSymbols-Regular-Subsetted.ttf", AF "NotoSansArabic-Regular.ttf", AF "NotoSansHebrew-Regular.ttf", AF "NotoSansDevanagari-Regular.otf", AF "NotoSansThai-Regular.ttf", NULL };
 #else
 static const FamilyDef families[] = {
     { "sans-serif", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans-Oblique.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans-BoldOblique.ttf" },

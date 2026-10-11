@@ -526,6 +526,35 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
     return c;
 }
 
+void (*js_host_request)(JsCtx *, unsigned, const char *, const char *) = nullptr;
+struct HostReply { JsCtx *c; unsigned id; std::string json; };
+static std::mutex g_reply_mu;
+static std::vector<HostReply> g_replies;
+void js_host_reply(JsCtx *c, unsigned id, const char *json) {
+    { std::lock_guard<std::mutex> l(g_reply_mu); g_replies.push_back({ c, id, json ? json : "null" }); }
+    if (js_wakeup) js_wakeup();
+}
+static void host_deliver(JsCtx *c) {
+    std::vector<HostReply> mine;
+    {
+        std::lock_guard<std::mutex> l(g_reply_mu);
+        for (size_t i = 0; i < g_replies.size();) if (g_replies[i].c == c) { mine.push_back(std::move(g_replies[i])); g_replies.erase(g_replies.begin() + (long)i); } else i++;
+    }
+    if (mine.empty()) return;
+    v8::Isolate *iso = c->iso;
+    v8::Local<v8::Context> ctx = c->ctx.Get(iso);
+    for (auto &r : mine) {
+        auto it = c->host_cbs.find(r.id);
+        if (it == c->host_cbs.end()) continue;
+        v8::Local<v8::Function> fn = it->second.Get(iso);
+        c->host_cbs.erase(it);
+        v8::TryCatch tc(iso);
+        v8::Local<v8::Value> v = v8::Null(iso);
+        v8::Local<v8::String> js;
+        if (v8::String::NewFromUtf8(iso, r.json.c_str()).ToLocal(&js)) { v8::Local<v8::Value> pv; if (v8::JSON::Parse(ctx, js).ToLocal(&pv)) v = pv; }
+        (void)fn->Call(ctx, v8::Undefined(iso), 1, &v);
+    }
+}
 void (*js_pick_files)(bool, const char *) = nullptr;
 static std::mutex g_pick_mu;
 static JsCtx *g_pick_ctx;
@@ -583,6 +612,7 @@ static void pick_deliver(JsCtx *c) {
 void js_free(JsCtx *c) {
     if (!c) return;
     { std::lock_guard<std::mutex> l(g_pick_mu); if (g_pick_ctx == c) g_pick_ctx = nullptr; }
+    { std::lock_guard<std::mutex> l(g_reply_mu); for (size_t i = 0; i < g_replies.size();) if (g_replies[i].c == c) g_replies.erase(g_replies.begin() + (long)i); else i++; }
     workers_kill(c);
     for (JsCtx *k : std::vector<JsCtx *>(c->kids)) js_free(k);
     frames_forget(c);
@@ -769,6 +799,7 @@ static void tick_one(JsCtx *c) {
     JS_ENTER(c);
     while (v8::platform::PumpMessageLoop(g_platform.get(), iso)) {}
     pick_deliver(c);
+    host_deliver(c);
     double now = now_ms();
     std::vector<std::pair<double, uint32_t>> due;
     for (auto &kv : c->timers) if (kv.second.due <= now) due.push_back({ kv.second.due, kv.first });

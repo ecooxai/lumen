@@ -75,7 +75,32 @@ const navigator = {
         async write(items) { for (const it of items || []) if (it.types.includes('text/plain')) { N.clipSet(await (await it.getType('text/plain')).text()); return; } },
         async read() { return [new ClipboardItem({ 'text/plain': new Blob([N.clipGet()], { type: 'text/plain' }) })]; },
     }),
-    permissions: { query() { return Promise.resolve({ state: 'prompt', addEventListener() {} }); } },
+    permissions: { query(d) {
+        const n = d && d.name; if (!n) return Promise.reject(new TypeError("Failed to execute 'query' on 'Permissions': required member name is undefined."));
+        return new Promise(res => N.hostRequest('permission-state', String(n), s => { const st = new EventTarget(); st.name = String(n); st.state = s || 'prompt'; st.onchange = null; res(st); }));
+    } },
+    geolocation: (() => {
+        const watches = new Set(); let wseq = 0;
+        const err = (code, message) => ({ code, message, PERMISSION_DENIED: 1, POSITION_UNAVAILABLE: 2, TIMEOUT: 3 });
+        const pos = p => { const coords = { latitude: p.latitude, longitude: p.longitude, accuracy: p.accuracy, altitude: p.altitude ?? null, altitudeAccuracy: null, heading: p.heading ?? null, speed: p.speed ?? null };
+            coords.toJSON = () => ({ ...coords }); return { coords, timestamp: p.timestamp, toJSON() { return { coords: coords.toJSON(), timestamp: p.timestamp }; } }; };
+        function locate(ok, fail, o, alive) {
+            o = o || {}; const t0 = Date.now(), tmo = o.timeout ?? Infinity, cap = Math.min(tmo, 60000);
+            N.hostRequest('permission', 'geolocation', s => {
+                if (s !== 'granted') { if (fail) fail(err(1, 'User denied Geolocation')); return; }
+                const poll = () => { if (alive && !alive()) return; N.hostRequest('geolocation', o.enableHighAccuracy ? 'high' : '', p => {
+                    if (alive && !alive()) return;
+                    if (p) { ok(pos(p)); if (alive) setTimeout(poll, 1000); return; }
+                    if (Date.now() - t0 >= cap) { if (fail) fail(err(tmo <= 60000 ? 3 : 2, tmo <= 60000 ? 'Timeout expired' : 'Position unavailable')); return; }
+                    setTimeout(poll, 250); }); };
+                poll(); });
+        }
+        return {
+            getCurrentPosition(ok, fail, o) { if (typeof ok !== 'function') throw new TypeError("Failed to execute 'getCurrentPosition' on 'Geolocation': parameter 1 is not of type 'Function'."); locate(ok, fail, o); },
+            watchPosition(ok, fail, o) { const id = ++wseq; watches.add(id); let last = -1; locate(p => { if (p.timestamp !== last) { last = p.timestamp; ok(p); } }, fail, o, () => watches.has(id)); return id; },
+            clearWatch(id) { watches.delete(id); },
+        };
+    })(),
     mediaDevices: Object.assign(new EventTarget(), { enumerateDevices() { return Promise.resolve([]); }, getUserMedia(c) {
             if (!c || typeof c !== 'object' || (!c.audio && !c.video)) return Promise.reject(new TypeError("Failed to execute 'getUserMedia': At least one of audio and video must be requested"));
             const t = [];

@@ -19,23 +19,35 @@
 #include <zlib.h>
 #include <brotli/decode.h>
 #include <zstd.h>
+#ifdef __ANDROID__
+#include <dirent.h>
+#include <openssl/pem.h>
+#endif
 
 #ifdef __APPLE__
 #define UA_OS "Macintosh; Intel Mac OS X 10_15_7"
 #define UA_FF_OS "Macintosh; Intel Mac OS X 10.15"
 #define UA_CH_OS "macOS"
+#elif defined(__ANDROID__)
+#define UA_OS "Linux; Android 14; K"
+#define UA_FF_OS "Android 14; Mobile"
+#define UA_CH_OS "Android"
+#define UA_MOBILE " Mobile"
 #else
 #define UA_OS "X11; Linux x86_64"
 #define UA_FF_OS "X11; Linux x86_64"
 #define UA_CH_OS "Linux"
 #endif
+#ifndef UA_MOBILE
+#define UA_MOBILE ""
+#endif
 static const char *const ua_str[UA_COUNT] = {
-    "Mozilla/5.0 (" UA_OS ") AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (" UA_OS ") AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0" UA_MOBILE " Safari/537.36",
     "Mozilla/5.0 (" UA_FF_OS "; rv:150.0) Gecko/20100101 Firefox/150.0",
-    "Mozilla/5.0 (" UA_OS ") AppleWebKit/537.36 (KHTML, like Gecko) Lumen/1.0 Safari/537.36",
+    "Mozilla/5.0 (" UA_OS ") AppleWebKit/537.36 (KHTML, like Gecko) Lumen/1.0" UA_MOBILE " Safari/537.36",
 };
 static const char *const ua_name[UA_COUNT] = { "Chrome 150", "Firefox 150", "Lumen" };
-const char *g_user_agent = "Mozilla/5.0 (" UA_OS ") AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36";
+const char *g_user_agent = "Mozilla/5.0 (" UA_OS ") AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0" UA_MOBILE " Safari/537.36";
 void net_set_user_agent(int which) { if (which >= 0 && which < UA_COUNT) g_user_agent = ua_str[which]; }
 const char *net_user_agent_name(int which) { return which >= 0 && which < UA_COUNT ? ua_name[which] : ""; }
 void (*net_wakeup)(void) = NULL;
@@ -524,6 +536,19 @@ void net_init(int threads) {
     const char *cands[] = { getenv("SSL_CERT_FILE"), "/opt/homebrew/etc/openssl@3/cert.pem", "/etc/ssl/cert.pem", "/etc/ssl/certs/ca-certificates.crt", "/etc/pki/tls/certs/ca-bundle.crt", "/system/etc/security/cacerts" };
     bool loaded = false;
     for (size_t i = 0; i < ARRLEN(cands) && !loaded; i++) if (cands[i] && access(cands[i], R_OK) == 0) loaded = SSL_CTX_load_verify_locations(g_ssl_ctx, cands[i], NULL) == 1;
+#ifdef __ANDROID__
+    if (!loaded) {   /* Android keeps one PEM per CA under old-style hash names, which OpenSSL 3's CApath lookup cannot use */
+        DIR *dd = opendir("/system/etc/security/cacerts"); struct dirent *de; X509_STORE *st = SSL_CTX_get_cert_store(g_ssl_ctx);
+        while (dd && (de = readdir(dd))) {
+            if (de->d_name[0] == '.') continue;
+            char fp[512]; snprintf(fp, sizeof fp, "/system/etc/security/cacerts/%s", de->d_name);
+            FILE *cf = fopen(fp, "r"); X509 *x = cf ? PEM_read_X509(cf, NULL, NULL, NULL) : NULL;
+            if (x) { if (X509_STORE_add_cert(st, x) == 1) loaded = true; X509_free(x); }
+            if (cf) fclose(cf);
+        }
+        if (dd) closedir(dd);
+    }
+#endif
     if (!loaded) SSL_CTX_set_default_verify_paths(g_ssl_ctx);
     SSL_CTX_set_session_cache_mode(g_ssl_ctx, SSL_SESS_CACHE_CLIENT);
     g_nthreads = threads;

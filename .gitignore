@@ -5,3 +5,4 @@ out/
 build-dev/
 dist/
 build-g/
+build-android/

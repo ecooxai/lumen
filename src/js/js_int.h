@@ -58,6 +58,7 @@ struct JsCtx {
     v8::Global<v8::Object> api;
     v8::Global<v8::Function> protoFor, fire, report, mediaChanged, pick_cb;
     std::unordered_map<std::string, v8::Global<v8::Object>> protos;
+    std::unordered_map<unsigned, v8::Global<v8::Function>> host_cbs; unsigned next_host_id = 1;
     Document *doc = nullptr;
     JsHost host{};
     std::vector<Node *> wrapped;

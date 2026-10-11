@@ -1,5 +1,6 @@
 /* Native functions (the `N` object) backing the JS DOM/Web API prelude */
 #include "js_int.h"
+#include "../net/download.h"
 #include <thread>
 #ifndef __APPLE__
 #include <sys/random.h>
@@ -280,6 +281,20 @@ FN(navigatePost) {
     CTX; std::string u = S(0), b = S(1), t = S(2);
     if (c->host.navigate_post) c->host.navigate_post(c->host.ud, u.c_str(), b.data(), b.size(), t.c_str());
     else if (c->host.navigate) c->host.navigate(c->host.ud, u.c_str());
+}
+FN(hostRequest) {   /* (kind, arg, cb): cb(JSON value) once the host answers */
+    CTX; std::string k = S(0), g = S(1);
+    if (!a[2]->IsFunction()) return;
+    unsigned id = c->next_host_id++;
+    c->host_cbs[id].Reset(iso, a[2].As<v8::Function>());
+    if (js_host_request) js_host_request(c, id, k.c_str(), g.c_str()); else js_host_reply(c, id, "null");
+}
+FN(saveDownload) {   /* (url, filename hint, mime, ArrayBuffer) -> saved path or "" */
+    CTX; std::string u = S(0), h = S(1), t = S(2);
+    if (!a[3]->IsArrayBuffer()) { RET(jstr(iso, "")); return; }
+    auto ab = a[3].As<v8::ArrayBuffer>(); char path[1024];
+    bool ok = download_save(u.c_str(), NULL, t.c_str(), h.c_str(), ab->Data() ? ab->Data() : "", ab->ByteLength(), path, sizeof path);
+    RET(jstr(iso, ok ? path : ""));
 }
 FN(histGo) { CTX; if (c->host.history_go) c->host.history_go(c->host.ud, a[0]->Int32Value(ctx).FromMaybe(0)); }
 FN(histLen) { CTX; RET(c->host.history_len ? c->host.history_len(c->host.ud) : 1); }
@@ -764,7 +779,7 @@ FN(random) {
     if (!a[0]->IsArrayBuffer()) return;
     uint8_t *p = (uint8_t *)a[0].As<v8::ArrayBuffer>()->Data() + (size_t)NUM(1);
     size_t n = (size_t)NUM(2);
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__ANDROID__)
     arc4random_buf(p, n);
 #else
     while (n) { ssize_t k = getrandom(p, n, 0); if (k <= 0) break; p += k; n -= (size_t)k; }
@@ -787,6 +802,8 @@ FN(platform) {
     CTX;
 #ifdef __APPLE__
     RET(jstr(iso, "MacIntel"));
+#elif defined(__ANDROID__) && defined(__aarch64__)
+    RET(jstr(iso, "Linux armv81"));
 #else
     RET(jstr(iso, "Linux x86_64"));
 #endif
@@ -872,7 +889,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(create); REG(textNode); REG(comment); REG(frag); REG(html); REG(setHTML); REG(parseFrag); REG(query);
     REG(matches); REG(byId); REG(clone); REG(doc); REG(contains); REG(connected); REG(host); REG(attachShadow);
     REG(templateContent); REG(rect); REG(vrect); REG(clipSet); REG(clipGet); REG(scrollPos); REG(setScroll); REG(computed); REG(value); REG(setValue); REG(checked); REG(setChecked); REG(pickFiles);
-    REG(focus); REG(active); REG(cookie); REG(setCookie); REG(url); REG(setUrl); REG(navigate); REG(navigatePost); REG(histGo);
+    REG(focus); REG(active); REG(cookie); REG(setCookie); REG(url); REG(setUrl); REG(navigate); REG(navigatePost); REG(saveDownload); REG(hostRequest); REG(histGo);
     REG(histLen); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
     REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove);
     REG(mediaBuffered); REG(mediaEos); REG(mediaSetDuration); REG(mediaPlay); REG(mediaPause); REG(mediaSeek);

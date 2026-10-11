@@ -19,9 +19,15 @@ function pickFiles(el) {
         dispatch(el, new Event('input', { bubbles: true, composed: true })); dispatch(el, new Event('change', { bubbles: true }));
     }, !!el.multiple, el.accept || '');
 }
+function downloadLink(href, name) {
+    const b = href.startsWith('blob:') ? objectURLs.get(href) : null;
+    (b ? Promise.resolve(b) : fetch(href).then(r => r.blob()))
+        .then(blob => blob.arrayBuffer().then(ab => N.saveDownload(href, name || '', blob.type || '', ab)))
+        .catch(e => console.warn('download failed: ' + href + ' ' + e));
+}
 function activate(el, ev, pre) {
     const a = el.closest ? el.closest('a[href]') : null;
-    if (a) { const raw = N.attr(a, 'href'); if (/^javascript:/i.test(raw)) { try { (0, eval)(decodeURIComponent(raw.slice(11))); } catch (e) { report(e); } } else if (a.href) location.assign(a.href); return; }
+    if (a) { const raw = N.attr(a, 'href'); if (/^javascript:/i.test(raw)) { try { (0, eval)(decodeURIComponent(raw.slice(11))); } catch (e) { report(e); } } else if (a.href && a.hasAttribute('download')) downloadLink(a.href, a.getAttribute('download')); else if (a.href) location.assign(a.href); return; }
     if (el.closest && !/^(input|button|label|summary|textarea|select)$/.test(N.name(el))) {
         const t = el.closest('button,label,summary');
         if (t) el = t;

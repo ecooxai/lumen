@@ -57,6 +57,9 @@ bool js_wants_frame(JsCtx *c);
 Document *js_frame_doc(Node *iframe);
 JsCtx *js_frame_ctx(Node *iframe);
 extern void (*js_wakeup)(void);
+/* Host services (permissions, geolocation): the app answers each request with js_host_reply(c, id, json) from any thread. */
+extern void (*js_host_request)(JsCtx *c, unsigned id, const char *kind, const char *arg);
+void js_host_reply(JsCtx *c, unsigned id, const char *json);
 /* <input type=file>: host opens a picker and reports the chosen paths with js_files_picked (any thread; n<0 = cancelled) */
 extern void (*js_pick_files)(bool multiple, const char *accept);
 void js_files_picked(const char *const *paths, int n);

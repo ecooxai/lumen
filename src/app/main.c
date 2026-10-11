@@ -2,7 +2,12 @@
 #include <math.h>
 #include <ctype.h>
 #include <time.h>
+#include <unistd.h>
+#ifdef __APPLE__
 #include <malloc/malloc.h>
+#else
+#include <malloc.h>
+#endif
 #include <sys/resource.h>
 #ifdef __APPLE__
 #include <mach/mach.h>
@@ -11,6 +16,7 @@
 #include "../paint/paint.h"
 #include "../media/media.h"
 #include "../net/net.h"
+#include "../net/download.h"
 #include "../base/url.h"
 #include "../gpu/gpu.h"
 #include "../js/js.h"
@@ -28,6 +34,11 @@ static char g_notice[256];   /* dismissable error notice shown in the info bar *
 #define TLW 78.f
 #else
 #define TLW 0.f
+enum { MENU_WS_NEW = 1, MENU_WS_RENAME, MENU_WS_CLOSE, MENU_WS_NEXT, MENU_WS_PREV, MENU_WS_SIDEBAR, MENU_WS_REFRESH };
+#define MENU_WS_ICON 1000
+#define MAC_NICONS 16
+enum { MENU_TAB_CPU_DEFAULT = 2000, MENU_TAB_CPU_NEVER, MENU_TAB_VCTL, MENU_TAB_LITE };
+#define MENU_TAB_CPU_LIM 2100
 #endif
 #define SIDEW 84.f
 #define SIDEY (g_compact ? TB : TABH)
@@ -44,6 +55,7 @@ typedef struct Page {
     /* <iframe> child browsing context (document owned by the JS layer) */
     Node *frame_el; float fw, fh, fsy; Canvas cv; Image img; DisplayList fdl;
     uint64_t drawn_ver; int drawn_epoch; bool frelayout; struct Page *fnext;
+    bool download;   /* response was saved to disk, not rendered */
 } Page;
 static Page *g_frames;
 static Page *frame_find(Node *f) { for (Page *p = g_frames; p; p = p->fnext) if (p->frame_el == f) return p; return NULL; }
@@ -159,6 +171,14 @@ static bool img_size(Node *n, float *w, float *h) {
 
 typedef struct { char *url; uint64_t gen; float vw, vh; char *body; size_t blen; char *ctype; char *html; } LoadReq;
 
+static Uint32 EV_NOTICE;
+static void dl_notice(const char *pre, const char *path) {
+    const char *b = strrchr(path, '/');
+    size_t n = strlen(pre) + strlen(path) + 1; char *m = malloc(n);
+    snprintf(m, n, "%s%s", pre, *pre == 'S' && b ? b + 1 : path);
+    SDL_Event ev; SDL_zero(ev); ev.type = EV_NOTICE; ev.user.data1 = m; SDL_PushEvent(&ev);
+}
+static void on_download(const char *path) { dl_notice("Saved to Downloads: ", path); }
 static int loader(void *arg) {
     LoadReq *rq = arg; double t0 = now_ms();
     NetRequest *nr = rq->html ? NULL : net_request_new(rq->body ? "POST" : "GET", rq->url);
@@ -168,6 +188,15 @@ static int loader(void *arg) {
     }
     NetResponse *r = rq->html ? NULL : net_fetch_sync(nr);
     Page *p = xcalloc(1, sizeof *p); p->gen = rq->gen;
+    if (r && r->status >= 200 && r->status < 300 && download_wanted(headers_get(&r->headers, "Content-Type"), headers_get(&r->headers, "Content-Disposition"))) {
+        char path[1024];
+        if (!download_save(r->url ? r->url : rq->url, headers_get(&r->headers, "Content-Disposition"), headers_get(&r->headers, "Content-Type"), NULL, r->body ? r->body : "", r->body_len, path, sizeof path))
+            dl_notice("Download failed: couldn't write to ", download_dir());
+        p->download = true;
+        net_response_free(r); free(rq->url); free(rq->body); free(rq->ctype); free(rq->html); free(rq);
+        SDL_Event ev; SDL_zero(ev); ev.type = EV_LOADED; ev.user.data1 = p; SDL_PushEvent(&ev);
+        return 0;
+    }
     const char *body = r && r->body ? r->body : "";
     size_t blen = r && r->body ? r->body_len : 0;
     char *errbuf = NULL;
@@ -564,6 +593,20 @@ static void hud_sample(void) {
     vm_statistics64_data_t vs; c = HOST_VM_INFO64_COUNT; vm_size_t pg = 0;
     if (host_page_size(mach_host_self(), &pg) == KERN_SUCCESS && host_statistics64(mach_host_self(), HOST_VM_INFO64, (host_info64_t)&vs, &c) == KERN_SUCCESS)   /* Activity Monitor's "Memory Used" */
         g_host_ram = (float)(((double)vs.internal_page_count - vs.purgeable_count + vs.wire_count + vs.compressor_page_count) * (double)pg / 1073741824.0);
+#else
+    FILE *f = fopen("/proc/self/statm", "r"); long sz = 0, rss = 0;
+    if (f) { if (fscanf(f, "%ld %ld", &sz, &rss) == 2) g_hud_ram = (float)((double)rss * (double)sysconf(_SC_PAGESIZE) / 1073741824.0); fclose(f); }
+    if ((f = fopen("/proc/stat", "r"))) {
+        unsigned long long u = 0, ni = 0, sy = 0, id = 0, io = 0;
+        if (fscanf(f, "cpu %llu %llu %llu %llu %llu", &u, &ni, &sy, &id, &io) == 5) { uint64_t busy = u + ni + sy, tot = busy + id + io; if (ht && tot > ht) g_host_cpu = (float)(100.0 * (double)(busy - hb) / (double)(tot - ht)); hb = busy; ht = tot; }
+        fclose(f);
+    }
+    if ((f = fopen("/proc/meminfo", "r"))) {
+        char k[64]; unsigned long long v, tot = 0, av = 0;
+        while (fscanf(f, "%63s %llu kB", k, &v) == 2) { if (!strcmp(k, "MemTotal:")) tot = v; else if (!strcmp(k, "MemAvailable:")) av = v; }
+        if (tot) g_host_ram = (float)((double)(tot - av) / 1048576.0);
+        fclose(f);
+    }
 #endif
 }
 static void build_chrome(App *a) {
@@ -1859,10 +1902,30 @@ static void ws_popup(App *a, int w, float x, float y) {
 #endif
 }
 static SDL_Window *g_dialog_win;
+#ifdef __ANDROID__
+char *android_import_content(const char *uri);
+void android_host_request(JsCtx *c, unsigned id, const char *kind, const char *arg);
+#endif
+static void host_request(JsCtx *c, unsigned id, const char *kind, const char *arg) {
+#ifdef __ANDROID__
+    android_host_request(c, id, kind, arg);
+#else
+    if (!strcmp(kind, "permission") || !strcmp(kind, "permission-state")) js_host_reply(c, id, !strcmp(arg, "geolocation") ? "\"denied\"" : "\"granted\"");
+    else js_host_reply(c, id, "null");
+#endif
+}
 static void pick_done(void *ud, const char *const *list, int filter) {
     (void)ud; (void)filter;
     int n = 0;
     if (list) while (list[n]) n++;
+#ifdef __ANDROID__   /* the system picker hands back content:// URIs; copy them to files the engine can read */
+    char *conv[64]; const char *cl[65]; int m = 0;
+    for (int i = 0; i < n && m < 64; i++) if ((conv[m] = strncmp(list[i], "content://", 10) ? xstrdup(list[i]) : android_import_content(list[i]))) { cl[m] = conv[m]; m++; }
+    cl[m] = NULL;
+    js_files_picked(cl, list && m ? m : -1);
+    for (int i = 0; i < m; i++) free(conv[i]);
+    return;
+#endif
     js_files_picked(list, list && n ? n : -1);
 }
 /* accept="image/png,.pdf" -> SDL extension filter "png;jpg;...;pdf" */
@@ -1906,12 +1969,31 @@ static void history_go(App *a, int d) {
     a->t->hpos = np; navigate(a, a->t->hist[np], false); a->t->hgen[np] = load_gen;
 }
 
-#include <execinfo.h>
 #include <unistd.h>
 #include <signal.h>
 #include <setjmp.h>
 #include <pthread.h>
+#ifdef __APPLE__
+#include <execinfo.h>
 #include <mach-o/dyld.h>
+static unsigned long image_load_addr(void) { return (unsigned long)(0x100000000UL + (unsigned long)_dyld_get_image_vmaddr_slide(0)); }
+#else
+#include <dlfcn.h>
+static unsigned long image_load_addr(void) { Dl_info di; return dladdr((void *)image_load_addr, &di) ? (unsigned long)di.dli_fbase : 0; }
+#endif
+#ifdef __ANDROID__
+#include <unwind.h>
+typedef struct { void **bt; int n, max; } BtState;
+static _Unwind_Reason_Code bt_step(struct _Unwind_Context *c, void *u) { BtState *s = u; if (s->n >= s->max) return _URC_END_OF_STACK; s->bt[s->n++] = (void *)_Unwind_GetIP(c); return _URC_NO_REASON; }
+static int backtrace(void **bt, int max) { BtState s = { bt, 0, max }; _Unwind_Backtrace(bt_step, &s); return s.n; }
+static void backtrace_symbols_fd(void *const *bt, int n, int fd) {
+    for (int i = 0; i < n; i++) { Dl_info di; char b[256]; int k = dladdr(bt[i], &di) && di.dli_fname ? snprintf(b, sizeof b, "#%d %p %s+0x%lx %s\n", i, bt[i], di.dli_fname, (unsigned long)((char *)bt[i] - (char *)di.dli_fbase), di.dli_sname ? di.dli_sname : "") : snprintf(b, sizeof b, "#%d %p\n", i, bt[i]); write(fd, b, (size_t)k); }
+}
+#else
+#ifndef __APPLE__
+#include <execinfo.h>
+#endif
+#endif
 /* A memory fault on the main thread while handling a tab jumps back to the event loop instead of killing
    Lumen: that tab's page is abandoned (leaked, never touched again), the tab reloads, and a notice is shown. */
 static sigjmp_buf g_recover;
@@ -1927,7 +2009,7 @@ static void crash_handler(int sig, siginfo_t *si, void *ucv) {
 #else
     (void)ucv;
 #endif
-    char buf[192]; int k = snprintf(buf, sizeof buf, "lumen: fatal signal %d at pc 0x%lx lr 0x%lx addr %p, load address 0x%lx\n", sig, pc, lr, si ? si->si_addr : NULL, (unsigned long)(0x100000000UL + (unsigned long)_dyld_get_image_vmaddr_slide(0)));
+    char buf[192]; int k = snprintf(buf, sizeof buf, "lumen: fatal signal %d at pc 0x%lx lr 0x%lx addr %p, load address 0x%lx\n", sig, pc, lr, si ? si->si_addr : NULL, image_load_addr());
     write(2, buf, (size_t)k);
     backtrace_symbols_fd(bt, n, 2);
     if (g_guard && (sig == SIGSEGV || sig == SIGBUS) && pthread_equal(pthread_self(), g_main_thr)) { g_guard = 0; siglongjmp(g_recover, sig); }
@@ -1965,7 +2047,7 @@ int main(int argc, char **argv) {
     SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) { fprintf(stderr, "SDL_Init: %s\n", SDL_GetError()); return 1; }
     dom_init(); net_init(6); font_init(); css_sheet_added_hook = sheet_fonts;
-    icache_mu = SDL_CreateMutex(); EV_LOADED = SDL_RegisterEvents(1); EV_NET = SDL_RegisterEvents(1); EV_MENU = SDL_RegisterEvents(1);
+    icache_mu = SDL_CreateMutex(); EV_LOADED = SDL_RegisterEvents(1); EV_NET = SDL_RegisterEvents(1); EV_MENU = SDL_RegisterEvents(1); EV_NOTICE = SDL_RegisterEvents(1); download_notify = on_download;
     net_wakeup = wake; media_wakeup = wake; js_wakeup = wake; js_clip_set = h_clip_set; js_clip_get = h_clip_get; js_global_init(argv[0]);
     paint_image_hook = node_img; paint_url_image_hook = url_img; svg_ext_ref_hook = svg_ext_ref; layout_image_size_hook = img_size;
     App a; memset(&a, 0, sizeof a); g_app = &a; a.nws = 1; a.wsicon[0] = -1; snprintf(a.wsname[0], sizeof a.wsname[0], "Personal"); a.side = getenv("LUMEN_NO_SIDEBAR") ? 0 : SIDEW; tab_new(&a);
@@ -1973,7 +2055,7 @@ int main(int argc, char **argv) {
     int ww = 1280, wh = 840; { const char *e = getenv("LUMEN_WINDOW"); if (e) sscanf(e, "%dx%d", &ww, &wh); }   /* e.g. LUMEN_WINDOW=800x600 */
     a.win = SDL_CreateWindow("Lumen", ww, wh, SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY | (want_gpu && !strcmp(SDL_GetPlatform(), "macOS") ? SDL_WINDOW_METAL : 0));
     if (!a.win) { fprintf(stderr, "SDL_CreateWindow: %s\n", SDL_GetError()); return 1; }
-    g_dialog_win = a.win; js_pick_files = pick_files;
+    g_dialog_win = a.win; js_pick_files = pick_files; js_host_request = host_request;
     set_window_icon(a.win);
 #ifdef __APPLE__
     mac_style_window(a.win); mac_install_menu(EV_MENU);
@@ -2058,7 +2140,13 @@ int main(int argc, char **argv) {
         if (getenv("LUMEN_MEM_STATS")) {
             static double last_stats; double tn = now_ms();
             if (tn - last_stats > 10000) { last_stats = tn; size_t fr, seg = media_mem_bytes(&fr); size_t jh = 0, je = 0; js_mem_stats(&jh, &je); fprintf(stderr, "lumen-mem: mse=%.1fMB vframes=%.1fMB images=%.1fMB/%d js_heap=%.1fMB js_external=%.1fMB canvases=%.1fMB\n", seg / 1048576.0, fr / 1048576.0, g_icache_bytes / 1048576.0, g_icache_n, jh / 1048576.0, je / 1048576.0, ((double)a.frame.w * a.frame.h + (double)a.page.w * a.page.h) * 4 / 1048576.0); }
-            if (last_stats == tn) { extern long g_styles_live, g_nodes_live; extern size_t g_css_parsed_bytes; extern void worker_mem_stats(size_t *, size_t *, int *); size_t wh, wx; int wn; worker_mem_stats(&wh, &wx, &wn); malloc_statistics_t ms = {0}; malloc_zone_statistics(NULL, &ms);
+            if (last_stats == tn) { extern long g_styles_live, g_nodes_live; extern size_t g_css_parsed_bytes; extern void worker_mem_stats(size_t *, size_t *, int *); size_t wh, wx; int wn; worker_mem_stats(&wh, &wx, &wn); 
+#ifdef __APPLE__
+                malloc_statistics_t ms = {0}; malloc_zone_statistics(NULL, &ms);
+#else
+                struct { size_t size_in_use; } ms = { (size_t)mallinfo().uordblks };
+#endif
+
                 fprintf(stderr, "lumen-mem2: malloc_in_use=%.1fMB nodes=%ld (%zuB) styles=%ld (%zuB) css_parsed=%.1fMB workers=%d heap=%.1fMB ext=%.1fMB\n", ms.size_in_use / 1048576.0, g_nodes_live, sizeof(Node), g_styles_live, sizeof(ComputedStyle), g_css_parsed_bytes / 1048576.0, wn, wh / 1048576.0, wx / 1048576.0); }
         }
         g_lite_active = a.t && lite_on(a.t); media_lowmem = g_lite_active;
@@ -2237,6 +2325,7 @@ int main(int argc, char **argv) {
                 a.dirty = true; break; }
             default:
                 if (ev.type == EV_MENU) menu_cmd(&a, ev.user.code);
+                if (ev.type == EV_NOTICE) { snprintf(g_notice, sizeof g_notice, "%s", (char *)ev.user.data1); free(ev.user.data1); a.dirty = true; a.vonly = false; }
                 if (ev.type == EV_LOADED) {
                     Page *p = ev.user.data1;
                     Tab *lt = NULL; for (int i = 0; i < a.ntabs; i++) if (a.tabs[i]->lgen == p->gen) lt = a.tabs[i];
@@ -2245,6 +2334,15 @@ int main(int argc, char **argv) {
             if (tour_i < 0) { const char *e = getenv("LUMEN_TAB_TOUR"); tour_ms = e ? atof(e) : 0; tour_i = 0; tour_next = SDL_GetTicks() + tour_ms; }
             if (tour_ms > 0 && tour_i < a.ntabs && SDL_GetTicks() >= tour_next) { tab_select(&a, tour_i++); tour_next = SDL_GetTicks() + tour_ms; }
         }
+                    if (p->download) {
+                        if (lt) {
+                            lt->loading = false;
+                            if (lt->nhist && lt->hpos == lt->nhist - 1 && lt->hgen[lt->hpos] == p->gen) { free(lt->hist[--lt->nhist]); lt->hpos = lt->nhist - 1; }
+                            if (lt->cur && lt->cur->url) snprintf(lt->url, sizeof lt->url, "%s", lt->cur->url);
+                            a.dirty = true;
+                        }
+                        free(p); break;
+                    }
                     if (!lt) { page_free(p); break; }
                     Tab *act = a.t; bool fg = lt == act; a.t = lt;
                     page_free(a.t->cur); a.t->cur = p; a.t->asleep = false; a.t->loading = false; a.t->sy = 0; a.t->relayout = true; a.dirty = true;
