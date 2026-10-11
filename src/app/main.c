@@ -2400,6 +2400,10 @@ int main(int argc, char **argv) {
                 js_key_mods = key_mods(ev.key.mod);
                 SDL_Keycode k = ev.key.key; float page = a.vh - BAR - 40;
                 if (k == SDLK_LGUI || k == SDLK_RGUI || k == SDLK_LCTRL || k == SDLK_RCTRL) { cmd = true; break; }
+                if (!a.editing && (k == SDLK_AC_BACK || k == SDLK_AC_FORWARD ||
+                    ((k == SDLK_LEFT || k == SDLK_RIGHT) && (ev.key.mod & SDL_KMOD_ALT) && !(ev.key.mod & (SDL_KMOD_GUI | SDL_KMOD_CTRL | SDL_KMOD_SHIFT))))) {
+                    history_go(&a, k == SDLK_LEFT || k == SDLK_AC_BACK ? -1 : 1); break;
+                }
                 if (cmd || (ev.key.mod & (SDL_KMOD_GUI | SDL_KMOD_CTRL))) {
                     bool reserved = k == SDLK_Q || k == SDLK_W || k == SDLK_T || k == SDLK_N || k == SDLK_L || k == SDLK_TAB || (k >= SDLK_1 && k <= SDLK_9);
                     if (cmd) js_key_mods |= (ev.key.mod & SDL_KMOD_CTRL) ? 2 : 8;
