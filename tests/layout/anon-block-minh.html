@@ -1,0 +1,6 @@
+<!doctype html>
+<body style="margin:0;font:16px/20px sans-serif">
+<!-- anonymous blocks wrapping inline runs must not copy the parent's min-height/height/width (Reddit search gap) -->
+<div style="min-height:300px;width:50%">text run<div id=blk style="height:10px;background:#c33"></div>tail</div>
+<div style="height:100px">a<div style="height:5px"></div>b</div>
+<p id=after style="margin:0">after</p>

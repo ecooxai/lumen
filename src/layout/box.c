@@ -66,6 +66,7 @@ static bool is_ws_text(const Box *b) { if (b->kind != BX_TEXT) return false; for
 static bool block_level(const Box *b) { return b->kind == BX_BLOCK && in_flow(b); }
 static bool inline_level(const Box *b) { return b->kind == BX_INLINE || b->kind == BX_TEXT || b->kind == BX_ATOMIC || b->kind == BX_BR; }
 
+static ComputedStyle *anon_item_style(Layout *L, const ComputedStyle *p);
 static void fixup_block(Layout *L, Box *b) {
     bool has_block = false;
     for (Box *c = b->first; c; c = c->next) { if (block_level(c)) has_block = true; }
@@ -78,7 +79,7 @@ static void fixup_block(Layout *L, Box *b) {
         Box *run = c, *end = c; bool real = false;
         while (end && !block_level(end)) { if (inline_level(end) && !is_ws_text(end)) real = true; end = end->next; }
         if (real) {
-            Box *a = new_box(L, BX_BLOCK, NULL, b->st); a->anon = true; a->fmt = FMT_INLINE;
+            Box *a = new_box(L, BX_BLOCK, NULL, anon_item_style(L, b->st)); a->anon = true; a->fmt = FMT_INLINE;
             for (Box *x = run; x != end;) { Box *nx = x->next; x->next = x->prev = NULL; append(a, x); x = nx; }
             append(b, a);
         } else {
