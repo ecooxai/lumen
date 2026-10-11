@@ -397,7 +397,7 @@ void replaced_size(Layout *L, Box *b, float cbw, float *ow, float *oh) {
     } else if (n && n->tag == A_canvas) {
         const char *aw = node_attr(n, "width"), *ah = node_attr(n, "height"); if (aw) nw = (float)atof(aw); if (ah) nh = (float)atof(ah);
     } else if (n && n->tag == A_audio) { nw = 300; nh = 54; }
-    if (!ratio && nh > 0) ratio = nw / nh;
+    if (!ratio && nh > 0 && !(n && (n->tag == A_iframe || n->tag == A_embed || n->tag == A_object))) ratio = nw / nh;   /* 300x150 frame default has no intrinsic ratio */
     if (st->aspect_ratio > 0) ratio = st->aspect_ratio;
     bool bs = st->box_sizing == BOX_BORDER; float hb = hbp(b), vb2 = vbp(b);
     float w = -1, h = -1;

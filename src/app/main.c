@@ -1267,7 +1267,7 @@ static bool frame_update(Page *p) {
     if (p->cv.w != pw || p->cv.h != ph || !p->cv.px) { canvas_free(&p->cv); canvas_init(&p->cv, pw, ph, s); p->drawn_ver = ~0ull; }
     if (p->drawn_ver == p->d->dom_version && p->drawn_epoch == g_img_epoch) return false;
     dl_clear(&p->fdl); dl_build(&p->fdl, p->L, 0, p->fsy, w, h);
-    raster(&p->cv, &p->fdl, RGBA(255, 255, 255, 255));
+    raster(&p->cv, &p->fdl, 0);   /* iframes are transparent unless their document paints a background */
     p->drawn_ver = p->d->dom_version; p->drawn_epoch = g_img_epoch;
     p->img = (Image){ .w = pw, .h = ph, .refs = 1 << 30, .px = p->cv.px, .scale = s };
     return true;
