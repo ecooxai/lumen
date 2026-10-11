@@ -22,6 +22,7 @@ typedef struct DItem {
     Image *img;
     Gradient *grad;
     float blur, spread, alpha;
+    float sx, sy;               /* DO_SHADOW: offset from the border box */
     bool inset;
 } DItem;
 

@@ -4,7 +4,7 @@
 #include <zlib.h>
 
 typedef struct { int x0, y0, x1, y1; float fx, fy, fw, fh, r[4]; bool round; } Clip;
-typedef struct { uint32_t *px; float alpha; } LayerSave;
+typedef struct { uint32_t *px; float alpha; int x0, y0, x1, y1; bool clipped; } LayerSave;
 typedef struct {
     Canvas *c; float s;
     Clip clips[64]; int nclip;
@@ -148,10 +148,17 @@ static void shadow(R *r, const DItem *it) {
     float rad[4]; for (int i = 0; i < 4; i++) rad[i] = LMAX(0, it->r[i] * s + sp);
     const Clip *c = clip(r);
     int px0 = LMAX(c->x0, (int)floorf(x0 - bl)), py0 = LMAX(c->y0, (int)floorf(y0 - bl)), px1 = LMIN(c->x1, (int)ceilf(x1 + bl)), py1 = LMIN(c->y1, (int)ceilf(y1 + bl));
+    /* outer shadows are clipped out of the border box (CSS) — and skipping it keeps big cards cheap */
+    float bx0 = (it->x - it->sx) * s, by0 = (it->y - it->sy) * s, bx1 = (it->x - it->sx + it->w) * s, by1 = (it->y - it->sy + it->h) * s, brad[4], mr = 0;
+    for (int i = 0; i < 4; i++) { brad[i] = LMAX(0, it->r[i] * s); mr = LMAX(mr, brad[i]); }
+    int ix0 = (int)ceilf(bx0 + mr), iy0 = (int)ceilf(by0 + mr), ix1 = (int)floorf(bx1 - mr), iy1 = (int)floorf(by1 - mr);
     for (int y = py0; y < py1; y++) for (int x = px0; x < px1; x++) {
+        if (y >= iy0 && y < iy1 && x >= ix0 && x < ix1) { x = ix1 - 1; continue; }
+        float out = LCLAMP(0.5f + sd_rrect(x + 0.5f, y + 0.5f, bx0, by0, bx1, by1, brad), 0, 1);
+        if (out <= 0) continue;
         float d = sd_rrect(x + 0.5f, y + 0.5f, x0, y0, x1, y1, rad);
         float t = LCLAMP((d + bl) / (2 * bl), 0, 1);
-        float cov = 1 - t * t * (3 - 2 * t);
+        float cov = (1 - t * t * (3 - 2 * t)) * out;
         cov *= clip_cov(r, x + 0.5f, y + 0.5f);
         if (cov > 0.002f) over(&r->px[(size_t)y * (size_t)r->c->stride + (size_t)x], premul(it->color, cov));
     }
@@ -182,13 +189,17 @@ static void gradient(R *r, const DItem *it) {
     float cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, R2 = sqrtf(w * w + h * h) / 2;
     const Clip *c = clip(r);
     int px0 = LMAX(c->x0, (int)floorf(x0)), py0 = LMAX(c->y0, (int)floorf(y0)), px1 = LMIN(c->x1, (int)ceilf(x1)), py1 = LMIN(c->y1, (int)ceilf(y1));
+    if (fabsf(dxv) < 1e-6f) { dxv = 0; dyv = dyv < 0 ? -1 : 1; } else if (fabsf(dyv) < 1e-6f) { dyv = 0; dxv = dxv < 0 ? -1 : 1; }
+    float lt = NAN; uint32_t lp = 0; Color lc = 0;   /* axis-aligned gradients repeat t along a row */
     for (int y = py0; y < py1; y++) for (int x = px0; x < px1; x++) {
         float fx = x + 0.5f, fy = y + 0.5f;
         float t = g->type == 1 ? sqrtf((fx - cx) * (fx - cx) + (fy - cy) * (fy - cy)) / LMAX(1, R2) : ((fx - cx) * dxv + (fy - cy) * dyv) / L + 0.5f;
         float cov = span_cov(x0, x1, x) * span_cov(y0, y1, y);
         if (round) cov = LCLAMP(0.5f - sd_rrect(fx, fy, x0, y0, x1, y1, rad), 0, 1);
         cov *= clip_cov(r, fx, fy);
-        if (cov > 0) over(&r->px[(size_t)y * (size_t)r->c->stride + (size_t)x], premul(grad_at(g, t), cov));
+        if (cov <= 0) continue;
+        if (t != lt) { lt = t; lc = grad_at(g, t); lp = premul(lc, 1); }
+        over(&r->px[(size_t)y * (size_t)r->c->stride + (size_t)x], cov >= 1 ? lp : premul(lc, cov));
     }
 }
 
@@ -303,6 +314,28 @@ void raster_rect(Canvas *cv, const DisplayList *dl, Color clearc, int rx0, int r
     fprintf(stderr, "lumen: occlude first=%d %dx%d at %d,%d mismatched px=%ld\n", first, x1 - x0, y1 - y0, x0, y0, bad);
     free(t.px);
 }
+/* device-pixel bounds of what a layer draws (items from its push to the matching pop), or empty; returns the pop index */
+static int layer_bounds(const DisplayList *dl, int i, float s, int *b) {
+    float x0 = 1e30f, y0 = 1e30f, x1 = -1e30f, y1 = -1e30f; int depth = 0;
+    for (i++; i < dl->items.n; i++) {
+        const DItem *it = &dl->items.v[i];
+        if (it->op == DO_PUSH_LAYER) { depth++; continue; }
+        if (it->op == DO_POP_LAYER) { if (!depth--) break; continue; }
+        if (it->op == DO_PUSH_CLIP || it->op == DO_POP_CLIP) continue;
+        float a0 = it->x, b0 = it->y, a1 = it->x + it->w, b1 = it->y + it->h, e = 2;
+        if (it->op == DO_SHADOW) e += fabsf(it->spread) + fabsf(it->blur) + fabsf(it->sx) + fabsf(it->sy);
+        if (it->op == DO_BORDER) e += it->bw[0] + it->bw[1] + it->bw[2] + it->bw[3];
+        if (it->op == DO_TEXT) {
+            a0 = b0 = 1e30f; a1 = b1 = -1e30f;
+            for (int k = 0; k < it->ng; k++) { const DGlyph *g = &it->g[k]; float em = g->font ? g->font->size : 16; a0 = LMIN(a0, g->x - 2 * em); a1 = LMAX(a1, g->x + 3 * em); b0 = LMIN(b0, g->y - 2 * em); b1 = LMAX(b1, g->y + 2 * em); }
+        }
+        if (a1 <= a0 || b1 <= b0) continue;
+        x0 = LMIN(x0, a0 - e); y0 = LMIN(y0, b0 - e); x1 = LMAX(x1, a1 + e); y1 = LMAX(y1, b1 + e);
+    }
+    if (x1 <= x0) { b[0] = b[1] = b[2] = b[3] = 0; return i; }
+    b[0] = (int)floorf(x0 * s) - 1; b[1] = (int)floorf(y0 * s) - 1; b[2] = (int)ceilf(x1 * s) + 1; b[3] = (int)ceilf(y1 * s) + 1;
+    return i;
+}
 static void raster_rect_(Canvas *cv, const DisplayList *dl, Color clearc, int rx0, int ry0, int rx1, int ry1, bool occl) {
     R r; memset(&r, 0, sizeof r); r.c = cv; r.s = cv->scale; r.px = cv->px;
     rx0 = LMAX(rx0, 0); ry0 = LMAX(ry0, 0); rx1 = LMIN(rx1, cv->w); ry1 = LMIN(ry1, cv->h);
@@ -337,20 +370,30 @@ static void raster_rect_(Canvas *cv, const DisplayList *dl, Color clearc, int rx
         case DO_POP_CLIP: if (r.nclip > 1) r.nclip--; break;
         case DO_PUSH_LAYER: {
             if (r.nlayer >= 16) { r.nlayer++; break; }
-            r.layers[r.nlayer].px = r.px; r.layers[r.nlayer].alpha = it->alpha; r.nlayer++;
-            r.px = (uint32_t *)xcalloc((size_t)cv->stride * (size_t)(ry1 - ry0), 4) - (size_t)ry0 * (size_t)cv->stride;   /* rows of the raster rect only */
+            /* the layer only needs the part of the current clip its contents can touch; one that touches nothing is skipped */
+            int lb[4], pop = layer_bounds(dl, i, s, lb); const Clip *p = clip(&r);
+            int lx0 = LMAX(p->x0, lb[0]), ly0 = LMAX(p->y0, lb[1]), lx1 = LMIN(p->x1, lb[2]), ly1 = LMIN(p->y1, lb[3]);
+            if (lx1 <= lx0 || ly1 <= ly0 || it->alpha <= 0) { i = pop; break; }
+            LayerSave *L = &r.layers[r.nlayer++]; L->px = r.px; L->alpha = it->alpha; L->clipped = r.nclip < 64;
+            if (!L->clipped) { lx0 = rx0; ly0 = ry0; lx1 = rx1; ly1 = ry1; }
+            else { Clip c = *p; c.x0 = lx0; c.y0 = ly0; c.x1 = lx1; c.y1 = ly1; r.clips[r.nclip++] = c; }
+            L->x0 = lx0; L->y0 = ly0; L->x1 = lx1; L->y1 = ly1;
+            r.px = (uint32_t *)xcalloc((size_t)cv->stride * (size_t)(ly1 - ly0), 4) - (size_t)ly0 * (size_t)cv->stride;   /* rows the layer can touch only */
             break;
         }
         case DO_POP_LAYER: {
             if (!r.nlayer) break;
             r.nlayer--; if (r.nlayer >= 16) break;
-            uint32_t *dst = r.layers[r.nlayer].px, *src = r.px; uint32_t k = (uint32_t)(r.layers[r.nlayer].alpha * 256);
-            for (int y = ry0; y < ry1; y++) for (int x = rx0; x < rx1; x++) { size_t j = (size_t)y * (size_t)cv->stride + (size_t)x; if (src[j]) over(&dst[j], scale_px(src[j], k)); }
-            free(src + (size_t)ry0 * (size_t)cv->stride); r.px = dst; break;
+            LayerSave *L = &r.layers[r.nlayer];
+            uint32_t *dst = L->px, *src = r.px; uint32_t k = (uint32_t)(L->alpha * 256);
+            for (int y = L->y0; y < L->y1; y++) for (int x = L->x0; x < L->x1; x++) { size_t j = (size_t)y * (size_t)cv->stride + (size_t)x; if (src[j]) over(&dst[j], scale_px(src[j], k)); }
+            free(src + (size_t)L->y0 * (size_t)cv->stride); r.px = dst;
+            if (L->clipped && r.nclip > 1) r.nclip--;
+            break;
         }
         }
     }
-    while (r.nlayer > 0) { r.nlayer--; if (r.nlayer < 16) { free(r.px + (size_t)ry0 * (size_t)cv->stride); r.px = r.layers[r.nlayer].px; } }
+    while (r.nlayer > 0) { r.nlayer--; if (r.nlayer < 16) { free(r.px + (size_t)r.layers[r.nlayer].y0 * (size_t)cv->stride); r.px = r.layers[r.nlayer].px; } }
 }
 
 /* ---------------- PNG writer (for tests/screenshots) ---------------- */

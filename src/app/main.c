@@ -861,7 +861,7 @@ static void dsig_damage(const struct DSig *o, int no, const struct DSig *q, int 
         if (t[k].h && t[k].c > 0) t[k].c--;
         else {
             vunion(dm, vw, vh, q[i].b);
-            if (g_dbg_dmg && q[i].b[2] > q[i].b[0] && q[i].b[3] > q[i].b[1] && (q[i].b[2] - q[i].b[0]) * (q[i].b[3] - q[i].b[1]) > 3000) fprintf(stderr, "lumen: dmg new #%d op=%d %.0f,%.0f-%.0f,%.0f\n", i, g_dbg_dmg->items.v[i].op, q[i].b[0], q[i].b[1], q[i].b[2], q[i].b[3]);
+            if (g_dbg_dmg && q[i].b[2] > q[i].b[0] && q[i].b[3] > q[i].b[1] && (q[i].b[2] - q[i].b[0]) * (q[i].b[3] - q[i].b[1]) > 3000) fprintf(stderr, "lumen: dmg new #%d op=%d a=%.3f %.0f,%.0f-%.0f,%.0f\n", i, g_dbg_dmg->items.v[i].op, g_dbg_dmg->items.v[i].alpha, q[i].b[0], q[i].b[1], q[i].b[2], q[i].b[3]);
         }
     }
     for (int i = pre; i < no - suf; i++) {   /* old items left unmatched were removed or changed */
