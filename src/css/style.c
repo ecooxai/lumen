@@ -1388,7 +1388,7 @@ static ComputedStyle *compute_pseudo(StyleEngine *e, Node *el, ComputedStyle *ba
     for (int i = 0; i < md.n; i++) if (md.v[i].d->prop[0] == '-' && md.v[i].d->prop[1] == '-') css_apply_decl(st, base, md.v[i].d->prop, md.v[i].d->value, e, el);
     for (int i = 0; i < md.n; i++) if (!(md.v[i].d->prop[0] == '-' && md.v[i].d->prop[1] == '-')) css_apply_decl(st, base, md.v[i].d->prop, md.v[i].d->value, e, el);
     vec_free(md);
-    if (!st->content && which != 4) { style_free(st); return NULL; }
+    if (!st->content && which != 4 && which != 5) { style_free(st); return NULL; }
     return st;
 }
 
@@ -1512,7 +1512,8 @@ static void recalc(StyleEngine *e, Node *n, const ComputedStyle *par, bool force
             e->el_scope = tree_scope(n);
             ComputedStyle *st = compute(e, n, par);
             if (st->display != D_NONE) {
-                if (e->idx.count) { st->before = compute_pseudo(e, n, st, 1); st->after = compute_pseudo(e, n, st, 2); if (st->display == D_LIST_ITEM) st->marker = compute_pseudo(e, n, st, 4); }
+                if (e->idx.count) { st->before = compute_pseudo(e, n, st, 1); st->after = compute_pseudo(e, n, st, 2); if (st->display == D_LIST_ITEM) st->marker = compute_pseudo(e, n, st, 4);
+                    if (n->tag == A_input || n->tag == A_textarea) { ComputedStyle *ph = compute_pseudo(e, n, st, 5); if (ph) { st->ph_color = ph->color; st->ph_set = true; style_free(ph); } } }
             }
             if (css_style_change_hook) css_style_change_hook(n, n->style, st);
             if (n->style && paint_only(n->style, st)) { adopt(n->style, st); style_free(st); e->stats_paint++; }

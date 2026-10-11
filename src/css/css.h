@@ -81,6 +81,7 @@ typedef struct ComputedStyle {
     Length border_radius[4]; /* tl tr br bl */
     float outline_width, outline_offset; Color outline_color;
     Color color, bg_color;
+    Color ph_color; bool ph_set; /* ::placeholder color of input/textarea */
     char *bg_image;         /* url (owned) */
     Gradient *bg_gradient;  /* owned */
     char *mask_image;       /* url (owned) */
@@ -124,7 +125,7 @@ typedef struct SimpleSel {
     SelList *sub;         /* :not/:is/:where/:has/nth-of */
 } SimpleSel;
 typedef struct Compound { SimpleSel *s; int n; uint8_t comb; /* combinator to the LEFT (towards previous compound) */ } Compound;
-typedef struct Selector { Compound *c; int n; uint32_t spec; uint8_t pseudo_el; /* 0 none 1 before 2 after 3 other */ } Selector;
+typedef struct Selector { Compound *c; int n; uint32_t spec; uint8_t pseudo_el; /* 0 none 1 before 2 after 3 other 4 marker 5 placeholder */ } Selector;
 struct SelList { Selector *v; int n; };
 
 typedef struct ContainerCond { char *name, *query; struct ContainerCond *outer; } ContainerCond;

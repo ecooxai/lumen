@@ -123,7 +123,7 @@ static void paint_text_frag(PB *p, TextFrag *f) {
     if (!visible(p, f->x + p->dx, f->y + p->dy, f->w, f->h)) return;
     Color col = s->color;
     Box *blk = t->parent; while (blk && blk->kind == BX_INLINE) blk = blk->parent;
-    if (blk && blk->placeholder) col = RGBA(117, 117, 117, COLOR_A(col));
+    if (blk && blk->placeholder) col = blk->st->ph_set ? blk->st->ph_color : RGBA(117, 117, 117, COLOR_A(col));
     int ss, se;
     if (tsel_range(t, &ss, &se)) {
         float x0 = t->sh.g[f->g0].x, a = -1, e = -1;
