@@ -550,5 +550,20 @@ function fireAnim(t, type, name, elapsed, anim) {
     Object.assign(globalThis, { GeolocationCoordinates, GeolocationPosition, GeolocationPositionError, PermissionStatus, Geolocation: function Geolocation() { } });
 })();
 
+/* WebIDL attributes are enumerable accessors: libraries copy events with for-in (video.js fixEvent needs e.type) */
+(() => {
+    const EP = Event.prototype;
+    for (const k of Object.getOwnPropertyNames(globalThis)) {
+        if (!/^[A-Z]/.test(k)) continue;
+        let C; try { C = globalThis[k]; } catch (e) { continue; }
+        if (typeof C !== 'function' || !C.prototype || !(C === Event || EP.isPrototypeOf(C.prototype))) continue;
+        const p = C.prototype;
+        for (const n of Object.getOwnPropertyNames(p)) {
+            const d = Object.getOwnPropertyDescriptor(p, n);
+            if (d && d.get && !d.enumerable && d.configurable) Object.defineProperty(p, n, { get: d.get, set: d.set, enumerable: true, configurable: true });
+        }
+    }
+})();
+
 return { queueMessage, workerEvent, protoFor, dispatch, fire, fireAnim, report, mediaChanged, viewportChanged, ceConnected, Event, MouseEvent, PointerEvent, KeyboardEvent, FocusEvent, WheelEvent, InputEvent, PopStateEvent, ErrorEvent };
 })
