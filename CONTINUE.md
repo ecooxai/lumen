@@ -409,3 +409,7 @@ Load (DCL/load): Google 0.53/3.66 s, Bing 1.97/2.23 s, YT watch ~2.2/3.47 s, YT 
   the property switch is entered on P[0] and '-' skipped them. YouTube's `ytd-player{-webkit-user-select:none}`
   was lost, so seek-bar drags selected page text. getComputedStyle reports user-select.
   `tests/layout/user-select-prefixed.html`.
+- Linux release flow: `tools/mklinpkg.py v<X> buildN/lumen` builds `dist/lumen-<ver>-linux-x86_64.tar.gz`
+  (binary + .so closure + bundled brew glibc ld.so launcher + icudtl + fonts.conf + cert.pem) that runs on any
+  x86_64 distro incl. older glibc. Tag, push, POST /repos/ecooxai/lumen/releases with $GITHUB_TOKEN_ECOOXAI,
+  upload asset to the returned upload_url. v0.2.0-preview released this way.
