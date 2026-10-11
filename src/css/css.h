@@ -94,7 +94,7 @@ typedef struct ComputedStyle {
     Length translate_pending[2]; /* % translate resolved at layout */
     float aspect_ratio;
     char *content;          /* for ::before/::after */
-    int grid_ncols; GridTrack *grid_cols; int grid_nrows; GridTrack *grid_rows; Length grid_auto_rows;
+    int grid_ncols; GridTrack *grid_cols; int grid_nrows; GridTrack *grid_rows; Length grid_auto_rows, grid_auto_cols; bool grid_flow_col;
     int grid_col_start, grid_col_span, grid_row_start, grid_row_span;
     char *grid_areas;       /* template areas: cells space-separated, rows '/'-separated */
     char *grid_area;        /* named grid-area of an item */

@@ -22,7 +22,7 @@ ComputedStyle *style_new_default(void) {
     s->bg_size[0] = s->bg_size[1] = L_auto();
     s->transform_origin[0].pct = 50; s->transform_origin[1].pct = 50;
     s->filter_brightness = 1; s->caret_color = 0; s->fill = RGBA(0, 0, 0, 255); s->stroke_width = 1;
-    s->grid_col_span = s->grid_row_span = 1; s->grid_auto_rows = L_auto();
+    s->grid_col_span = s->grid_row_span = 1; s->grid_auto_rows = L_auto(); s->grid_auto_cols = L_auto();
     s->pointer_events = 1;
     return s;
 }
@@ -910,6 +910,8 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         else if (!strcmp(P, "grid-column-start")) { if (str_istarts(val, "span")) st->grid_col_span = atoi(val + 4); else st->grid_col_start = atoi(val); }
         else if (!strcmp(P, "grid-row-start")) { if (str_istarts(val, "span")) st->grid_row_span = atoi(val + 4); else st->grid_row_start = atoi(val); }
         else if (!strcmp(P, "grid-auto-rows")) alen(&c, val, &st->grid_auto_rows);
+        else if (!strcmp(P, "grid-auto-columns")) alen(&c, val, &st->grid_auto_cols);
+        else if (!strcmp(P, "grid-auto-flow")) st->grid_flow_col = strstr(val, "column") != NULL;
         else if (!strcmp(P, "grid-area")) { free(st->grid_area); st->grid_area = NULL; int a = atoi(val); if (a > 0) st->grid_row_start = a; else if (isalpha((unsigned char)*val) || *val == '_' || *val == '-') { size_t k = strcspn(val, " /"); st->grid_area = xstrndup(val, k); } }
         else if (!strcmp(P, "grid-template-areas")) { free(st->grid_areas); st->grid_areas = parse_grid_areas(val); }
         break;
