@@ -1207,13 +1207,18 @@ static void fire_img_events(Page *p) {
 }
 /* Reconcile engine sheets with <style>/<link rel=stylesheet> currently in the tree; seed only records them. */
 static bool sync_sheets(Page *p, bool seed) {
-    SheetRef *cur = NULL; int nc = 0, cap = 0; bool changed = false;
+    SheetRef *cur = NULL; int nc = 0, cap = 0, hint = 0; bool changed = false;
     for (Node *n = p->d->node.first; n; n = node_next_deep(n, &p->d->node)) {
         if (n->type != NODE_ELEMENT || n->ns != NS_HTML || (n->tag != A_style && !is_sheet_link(n) && !is_preload_link(n))) continue;
-        char *t = n->tag == A_style ? node_text_content(n) : NULL;
-        uint64_t h = t ? fnv(t) : fnv(node_attr(n, "href"));
-        int k = 0; while (k < p->nsref && p->sref[k].n != n) k++;
+        int k = hint < p->nsref && p->sref[hint].n == n ? hint : 0;
+        if (p->sref[k < p->nsref ? k : 0].n != n || k >= p->nsref) { k = 0; while (k < p->nsref && p->sref[k].n != n) k++; }
         bool known = k < p->nsref;
+        hint = k + 1;
+        /* a <style>'s text only changes through its children, which flag it dirty */
+        bool fresh = !known || n->tag != A_style || (n->flags & (NF_STYLE_DIRTY | NF_CHILD_STYLE_DIRTY | NF_STRUCT_DIRTY));
+        if (n->tag == A_style) n->flags &= ~(uint32_t)(NF_STYLE_DIRTY | NF_CHILD_STYLE_DIRTY | NF_STRUCT_DIRTY);
+        char *t = fresh && n->tag == A_style ? node_text_content(n) : NULL;
+        uint64_t h = !fresh ? p->sref[k].h : t ? fnv(t) : fnv(node_attr(n, "href"));
         if (!seed && (!known || p->sref[k].h != h)) {
             if (known) { style_engine_remove_owner(p->e, n); changed = true; }
             if (t) { StyleSheet *sh = css_parse_sheet(t, strlen(t), p->d->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); changed = true; }
