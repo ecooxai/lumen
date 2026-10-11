@@ -295,3 +295,11 @@ Load (DCL/load): Google 0.53/3.66 s, Bing 1.97/2.23 s, YT watch ~2.2/3.47 s, YT 
 - `2a9dc65` `::placeholder` color (pseudo_el 5 -> ComputedStyle.ph_color/ph_set; display.c uses it).
 - Re-checked after these: YouTube, X, GitHub, BBC, Amazon, Reddit screenshots OK; layout output identical
   on the 29 older fixtures; WebGL/three.js/WebGPU/Canvas fixtures still 60 fps (software GPU).
+
+## 2026-10-11 late: AVIF, adopted sheets, font shorthand
+- AVIF images decode via ffmpeg (mov demuxer + libdav1d) through `image_avif_decoder` hook (paint/image.c -> media/media.c). YouTube thumbnails are `image/avif`; they were blank before. Fixture: tests/render/avif.html. `LUMEN_DEBUG_IMG=1` logs magic bytes + MIME of undecodable images.
+- adoptedStyleSheets are mirrored as hidden `<style>` nodes in the scope; `innerHTML`/`textContent`/`replaceChildren` wiped them (lit/Reddit set the sheets before rendering). `readopt()` in 06b-activate.js puts them back.
+- `font: inherit` now inherits family/size/weight/style/line-height, and a `font` shorthand beats lower-priority longhands (UA `textarea{font-family:monospace}` was overriding it). Fixture: tests/render/shadow-font-inherit.html (all true).
+- Checks: tests/layout 21 files 0 diffs vs build3; adopted-sheets 8/8, shadow-slots 6/6; fixtures idle 0% CPU. Reddit post page renders, search placeholder now sans-serif; ~100% CPU while the post video decodes.
+- Testing-agent site run (build3 = bdebe37) predates 49fe249..b864c59; needs a rerun on current HEAD.
+- Open: Reddit textarea text sits a few px high in the search pill; `::slotted()`, `::part()`, `:host-context()`; YouTube 80% seek; Amazon video/scroll CPU ~100%; Google CAPTCHA from VM IP; no physical GPU to measure hardware 3D speed.
