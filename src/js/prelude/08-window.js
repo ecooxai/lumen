@@ -45,7 +45,9 @@ class Location {
     get ancestorOrigins() { return []; }
 }
 URL_KEYS.forEach((k, i) => { if (k !== 'href') acc(Location.prototype, k, function () { return N.urlParse(N.url(), null)[i]; }, k === 'origin' ? undefined : function (v) { const u = new URL(N.url()); u[k] = v; this.assign(u.href); }); });
-const location = new Location();
+const location_ = new Location();
+/* [LegacyUnforgeable]: `window.location = url` and bare `location = url` navigate */
+Object.defineProperty(globalThis, 'location', { get() { return location_; }, set(v) { location_.href = v; }, enumerable: true, configurable: false });
 let histState = null, histIdx = 0;
 const histStates = [null];
 Object.defineProperty(globalThis, '__lumenPopState', { value: d => {
@@ -63,6 +65,7 @@ class BatteryManager extends EventTarget {}
 const battery = Object.assign(Reflect.construct(EventTarget, [], BatteryManager), { charging: true, chargingTime: 0, dischargingTime: Infinity, level: 1, onchargingchange: null, onchargingtimechange: null, ondischargingtimechange: null, onlevelchange: null });
 const __uaChrome = (/ Chrome\/(\d+)/.exec(N.userAgent()) || [])[1];
 const navigator = {
+    gpu: LUMEN_GPU,
     userAgent: N.userAgent(), appVersion: N.userAgent().replace(/^Mozilla\//, ''), appName: 'Netscape', appCodeName: 'Mozilla', product: 'Gecko', productSub: __uaChrome ? '20030107' : '20100101', vendor: __uaChrome ? 'Google Inc.' : '', vendorSub: '',
     platform: N.platform(), language: 'en-US', languages: ['en-US', 'en'], onLine: true, cookieEnabled: true, doNotTrack: null, webdriver: false, pdfViewerEnabled: false,
     hardwareConcurrency: N.cpus(), deviceMemory: 8, maxTouchPoints: 0, plugins: [], mimeTypes: [],
@@ -251,6 +254,7 @@ class MediaQueryList extends EventTarget {
 }
 function matchMedia(q) { const m = new MediaQueryList(String(q)); mqls.push(new WeakRef(m)); return m; }
 function mediaChanged() { for (const r of mqls) { const m = r.deref(); if (!m) continue; const now = N.media(m.media); if (now !== m._m) { m._m = now; dispatch(m, new MediaQueryListEvent('change', { matches: now, media: m.media })); } } }
+function viewportChanged() { mediaChanged(); try { dispatch(G, new Event('resize')); } catch (e) { report(e); } }
 class MediaQueryListEvent extends Event { constructor(t, i = {}) { super(t, i); this.matches = !!i.matches; this.media = i.media || ''; } }
 function getComputedStyle(el) { if (!el || !N.isNode(el) || N.type(el) !== 1) throw new TypeError("Failed to execute 'getComputedStyle': parameter 1 is not of type 'Element'."); return new Proxy(new ComputedStyleDeclaration(el, true), computedHandler); }
 const timerFn = (repeat) => (fn, ms, ...args) => { if (typeof fn !== 'function') { const src = String(fn); fn = () => (0, eval)(src); } return N.timer(() => { try { fn(...args); } catch (e) { report(e); } }, Math.max(0, +ms || 0), repeat); };
@@ -336,7 +340,7 @@ const globals = {
     TreeWalker, NodeIterator, NodeFilter, Range, StaticRange, AbstractRange, Selection, Animation, DOMMatrixReadOnly, DOMMatrix, DOMPoint, DOMParser, XMLSerializer,
     TextEncoder, TextDecoder, btoa, atob, Blob, File, FileList, DataTransfer, DataTransferItem, DataTransferItemList, FileReader, ReadableStream, ReadableStreamDefaultReader, WritableStream, WritableStreamDefaultWriter, TransformStream, ByteLengthQueuingStrategy, CountQueuingStrategy, TextEncoderStream, TextDecoderStream, URLSearchParams, URL, webkitURL: URL, Headers, Request, Response, fetch, FormData, XMLHttpRequestEventTarget, XMLHttpRequestUpload, XMLHttpRequest, WebSocket, CloseEvent, MessagePort, MessageChannel, Worker, BroadcastChannel,
     RTCPeerConnection, RTCSessionDescription, RTCIceCandidate, RTCPeerConnectionIceEvent, RTCPeerConnectionIceErrorEvent, RTCDataChannel, RTCDataChannelEvent, RTCTrackEvent, RTCRtpSender, RTCRtpReceiver, RTCRtpTransceiver, RTCIceTransport, RTCDtlsTransport, RTCSctpTransport, RTCCertificate, RTCStatsReport, RTCError, RTCErrorEvent, MediaStream, MediaStreamTrack, MediaStreamTrackEvent,
-    ResizeObserver, IntersectionObserver, HTMLAllCollection, PerformanceObserver, Storage, localStorage, sessionStorage, Location, location, history, navigator, screen, performance, crypto, MediaQueryList, matchMedia, getComputedStyle,
+    ResizeObserver, IntersectionObserver, HTMLAllCollection, PerformanceObserver, Storage, localStorage, sessionStorage, Location, history, navigator, screen, performance, crypto, MediaQueryList, matchMedia, getComputedStyle,
     setTimeout, setInterval, clearTimeout, clearInterval, requestAnimationFrame, cancelAnimationFrame, requestIdleCallback, cancelIdleCallback, queueMicrotask, structuredClone, postMessage, console, customElements, Window, document,
     window: G, self: G, globalThis: G, get top() { return asWin(N.topWin()) ?? G; }, get parent() { return asWin(N.parentWin()) ?? G; }, frames: G, opener: null, get frameElement() { return N.frameEl(); }, closed: false, name: '', get length() { return N.frameCount(); }, origin: location.origin, isSecureContext: location.protocol === 'https:', crossOriginIsolated: false,
     get innerWidth() { return N.viewport()[0]; }, get innerHeight() { return N.viewport()[1]; }, get outerWidth() { return N.viewport()[0]; }, get outerHeight() { return N.viewport()[1] + 40; },
@@ -362,9 +366,12 @@ for (const k of ['addEventListener', 'removeEventListener', 'dispatchEvent']) {
     const f = EventTarget.prototype[k];
     Object.defineProperty(G, k, { value: function (...a) { return f.apply(this ?? G, a); }, writable: true, configurable: true });
 }
+const CAPTURED_ = new Set(['pointermove', 'pointerup', 'pointercancel', 'mousemove', 'mouseup']);
 function fire(target, type, init, Ctor = Event) {
+    if (pointerCapture_ && CAPTURED_.has(type)) { if (pointerCapture_.isConnected) target = pointerCapture_; else pointerCapture_ = null; }
     const pre = type === 'click' ? preActivate(target) : null;
     const ev = new Ctor(type, init), ok = dispatch(target, ev, true);
+    if ((type === 'pointerup' || type === 'pointercancel') && pointerCapture_) releaseCapture_();
     if (!ok && pre && pre.restore) pre.restore();
     if (ok && type === 'click' && target && target.nodeType === 1 && !(target.closest && target.closest('a[href]')) && !(target.disabled || (target.closest && target.closest('button:disabled')))) {
         try { activate(target, ev, pre); } catch (e) { report(e); }   /* anchors are navigated natively by the shell */
@@ -466,5 +473,97 @@ function fireAnim(t, type, name, elapsed, anim) {
     };
     selAt('left', move(-1)); selAt('right', move(1));
 }
-return { queueMessage, workerEvent, protoFor, dispatch, fire, fireAnim, report, mediaChanged, ceConnected, Event, MouseEvent, PointerEvent, KeyboardEvent, FocusEvent, WheelEvent, InputEvent, PopStateEvent, ErrorEvent };
+/* getUserMedia (real camera/mic), enumerateDevices, permissions, geolocation */
+(() => {
+    const origin = () => { try { return location.origin || 'file://'; } catch { return 'file://'; } };
+    const PN = { camera: 'camera', microphone: 'microphone', geolocation: 'location' };
+    const state = n => { const s = N.capState(PN[n] || n, origin()); return s > 0 ? 'granted' : s < 0 ? 'denied' : 'prompt'; };
+    const ask = n => N.capAsk(PN[n] || n, origin());
+    class PermissionStatus extends EventTarget { constructor(n) { super(); this.name = n; this.onchange = null; } get state() { return state(this.name); } }
+    navigator.permissions.query = d => { const n = d && d.name; if (!n) return Promise.reject(new TypeError('name required')); return Promise.resolve(new PermissionStatus(n)); };
+    const ideal = v => v == null ? 0 : typeof v === 'number' ? v : v.exact || v.ideal || v.max || v.min || 0;
+    const md = navigator.mediaDevices;
+    md.enumerateDevices = () => Promise.resolve([
+        ...N.capCameras().map((l, i) => ({ deviceId: 'cam' + i, groupId: 'g' + i, kind: 'videoinput', label: state('camera') === 'granted' ? l : '', toJSON() { return { ...this }; } })),
+        ...N.capMics().map((l, i) => ({ deviceId: i ? 'mic' + i : 'default', groupId: 'm' + i, kind: 'audioinput', label: state('microphone') === 'granted' ? l : '', toJSON() { return { ...this }; } }))]);
+    md.getSupportedConstraints = () => ({ deviceId: true, width: true, height: true, frameRate: true, aspectRatio: true, facingMode: true, sampleRate: true, channelCount: true, echoCancellation: true, noiseSuppression: true, autoGainControl: true });
+    const NA = () => new DOMException('Permission denied', 'NotAllowedError'), NF = k => new DOMException('Requested device not found (' + k + ')', 'NotFoundError');
+    md.getUserMedia = c => new Promise((res, rej) => setTimeout(() => {
+        if (!c || typeof c !== 'object' || (!c.audio && !c.video)) return rej(new TypeError("Failed to execute 'getUserMedia': At least one of audio and video must be requested"));
+        const tracks = [];
+        try {
+            if (c.video) { const cams = N.capCameras(); if (!cams.length) throw NF('camera'); if (!ask('camera')) throw NA();
+                const v = typeof c.video === 'object' ? c.video : {}; let idx = 0; const did = ideal(v.deviceId); if (typeof did === 'string' && /^cam\d+$/.test(did)) idx = +did.slice(3);
+                const id = N.capCamOpen(idx, ideal(v.width), ideal(v.height), ideal(v.frameRate)); if (id < 0) throw NA(); if (!id) throw new DOMException('Could not start video source', 'NotReadableError');
+                const t = new MediaStreamTrack(RTC_INTERNAL, 'video', cams[idx]); t._.cam = id; t._.dev = 'cam' + idx; tracks.push(t); }
+            if (c.audio) { const mics = N.capMics(); if (!mics.length) throw NF('microphone'); if (!ask('microphone')) throw NA();
+                const a = typeof c.audio === 'object' ? c.audio : {}; const id = N.capMicOpen(ideal(a.sampleRate) || 48000, ideal(a.channelCount) || 1);
+                if (!id) throw new DOMException('Could not start audio source', 'NotReadableError');
+                const t = new MediaStreamTrack(RTC_INTERNAL, 'audio', mics[0]); t._.mic = id; t._.rate = ideal(a.sampleRate) || 48000; t._.ch = ideal(a.channelCount) || 1; tracks.push(t); }
+        } catch (e) { for (const t of tracks) t.stop(); return rej(e); }
+        res(new MediaStream(tracks));
+    }));
+    const TP = MediaStreamTrack.prototype, stop0 = TP.stop, gs0 = TP.getSettings;
+    TP.stop = function () { if (this._.cam) { N.capCamClose(this._.cam); this._.cam = 0; } if (this._.mic) { N.capMicClose(this._.mic); this._.mic = 0; } stop0.call(this); };
+    TP.getSettings = function () { if (this._.cam) { const [w, h, f] = N.capCamInfo(this._.cam); return { deviceId: this._.dev, groupId: '', width: w, height: h, frameRate: f, aspectRatio: h ? w / h : 0, facingMode: 'user', resizeMode: 'none' }; }
+        if (this._.kind === 'audio' && this._.rate) return { deviceId: 'default', groupId: '', sampleRate: this._.rate, channelCount: this._.ch, sampleSize: 32, echoCancellation: false, autoGainControl: false, noiseSuppression: false }; return gs0.call(this); };
+    TP.getCapabilities = function () { return this._.kind === 'video' ? { width: { min: 1, max: 4096 }, height: { min: 1, max: 4096 }, frameRate: { min: 1, max: 60 }, facingMode: ['user'] } : { sampleRate: { min: 8000, max: 96000 }, channelCount: { min: 1, max: 2 } }; };
+    /** pull recorded PCM (Float32Array, interleaved) for an audio track; used by WebAudio / MediaRecorder */
+    TP._readPCM = function () { return this._.mic ? N.capMicRead(this._.mic) || new Float32Array(0) : new Float32Array(0); };
+    /* <video>.srcObject = MediaStream with a camera track */
+    const VP = H.HTMLVideoElement.prototype, MP = H.HTMLMediaElement.prototype;
+    const camOf = el => { const s = el.__so; if (!(s instanceof MediaStream)) return null; return s.getVideoTracks().find(t => t._.cam && t.readyState === 'live') || null; };
+    const desc = (p, k) => { for (let o = p; o; o = Object.getPrototypeOf(o)) { const d = Object.getOwnPropertyDescriptor(o, k); if (d) return d; } return null; };
+    const so = desc(MP, 'srcObject');
+    Object.defineProperty(MP, 'srcObject', { configurable: true, get: so.get, set(v) { so.set.call(this, v); const t = camOf(this); N.capCamBind(t ? t._.cam : 0, this);
+        if (v instanceof MediaStream) setTimeout(() => { for (const e of ['loadstart', 'loadedmetadata', 'loadeddata', 'canplay', 'canplaythrough']) this.dispatchEvent(new Event(e)); if (this.autoplay) this.play(); }); } });
+    for (const [k, i] of [['videoWidth', 0], ['videoHeight', 1]]) { const d = desc(VP, k); Object.defineProperty(VP, k, { configurable: true, get() { const t = camOf(this); return t ? N.capCamInfo(t._.cam)[i] : d.get.call(this); } }); }
+    for (const k of ['readyState', 'paused']) { const d = desc(MP, k); if (d && d.get) Object.defineProperty(MP, k, { configurable: true, get() { if (this.__so instanceof MediaStream) return k === 'readyState' ? 4 : !!this.__spaused; return d.get.call(this); } }); }
+    const play0 = MP.play, pause0 = MP.pause;
+    MP.play = function () { if (this.__so instanceof MediaStream) { this.__spaused = false; setTimeout(() => { this.dispatchEvent(new Event('play')); this.dispatchEvent(new Event('playing')); }); return Promise.resolve(); } return play0.call(this); };
+    MP.pause = function () { if (this.__so instanceof MediaStream) { this.__spaused = true; this.dispatchEvent(new Event('pause')); return; } return pause0.call(this); };
+    /* geolocation */
+    class GeolocationCoordinates { constructor(o) { Object.assign(this, { latitude: o.lat, longitude: o.lon, accuracy: o.acc, altitude: null, altitudeAccuracy: null, heading: null, speed: null }); } toJSON() { return { ...this }; } }
+    class GeolocationPosition { constructor(c) { this.coords = c; this.timestamp = Date.now(); } toJSON() { return { coords: this.coords.toJSON(), timestamp: this.timestamp }; } }
+    class GeolocationPositionError { constructor(code, m) { this.code = code; this.message = m; } }
+    Object.assign(GeolocationPositionError, { PERMISSION_DENIED: 1, POSITION_UNAVAILABLE: 2, TIMEOUT: 3 }); Object.assign(GeolocationPositionError.prototype, { PERMISSION_DENIED: 1, POSITION_UNAVAILABLE: 2, TIMEOUT: 3 });
+    let cache = null;
+    async function locate() {
+        const f = N.geoFixed(); if (f) { const [lat, lon, acc] = f.split(',').map(Number); return { lat, lon, acc: acc || 50 }; }
+        if (cache && Date.now() - cache.t < 600000) return cache.p;
+        for (const [u, pick] of [['https://ipapi.co/json/', j => [j.latitude, j.longitude]], ['https://ipinfo.io/json', j => (j.loc || '').split(',').map(Number)]]) {
+            try { const j = await (await fetch(u)).json(); const [lat, lon] = pick(j); if (isFinite(lat) && isFinite(lon)) { const p = { lat, lon, acc: 5000 }; cache = { t: Date.now(), p }; return p; } } catch { }
+        }
+        throw new GeolocationPositionError(2, 'Position unavailable');
+    }
+    const watches = new Map(); let wid = 0;
+    function get(ok, er, o) {
+        if (!ask('geolocation')) { setTimeout(() => er && er(new GeolocationPositionError(1, 'User denied Geolocation'))); return; }
+        const to = o && o.timeout > 0 && isFinite(o.timeout) ? o.timeout : 0; let done = false;
+        if (to) setTimeout(() => { if (!done) { done = true; er && er(new GeolocationPositionError(3, 'Timeout expired')); } }, to);
+        locate().then(p => { if (!done) { done = true; ok(new GeolocationPosition(new GeolocationCoordinates(p))); } }, e => { if (!done) { done = true; er && er(e); } });
+    }
+    const geolocation = { getCurrentPosition(ok, er, o) { get(ok, er, o); },
+        watchPosition(ok, er, o) { const id = ++wid; get(ok, er, o); watches.set(id, setInterval(() => get(ok, er, o), 60000)); return id; },
+        clearWatch(id) { clearInterval(watches.get(id)); watches.delete(id); } };
+    Object.defineProperty(navigator, 'geolocation', { value: geolocation, configurable: true });
+    Object.assign(globalThis, { GeolocationCoordinates, GeolocationPosition, GeolocationPositionError, PermissionStatus, Geolocation: function Geolocation() { } });
+})();
+
+/* WebIDL attributes are enumerable accessors: libraries copy events with for-in (video.js fixEvent needs e.type) */
+(() => {
+    const EP = Event.prototype;
+    for (const k of Object.getOwnPropertyNames(globalThis)) {
+        if (!/^[A-Z]/.test(k)) continue;
+        let C; try { C = globalThis[k]; } catch (e) { continue; }
+        if (typeof C !== 'function' || !C.prototype || !(C === Event || EP.isPrototypeOf(C.prototype))) continue;
+        const p = C.prototype;
+        for (const n of Object.getOwnPropertyNames(p)) {
+            const d = Object.getOwnPropertyDescriptor(p, n);
+            if (d && d.get && !d.enumerable && d.configurable) Object.defineProperty(p, n, { get: d.get, set: d.set, enumerable: true, configurable: true });
+        }
+    }
+})();
+
+return { queueMessage, workerEvent, protoFor, dispatch, fire, fireAnim, report, mediaChanged, viewportChanged, ceConnected, Event, MouseEvent, PointerEvent, KeyboardEvent, FocusEvent, WheelEvent, InputEvent, PopStateEvent, ErrorEvent };
 })

@@ -42,7 +42,7 @@ Document *doc_new(const char *url) {
 }
 
 long g_nodes_live;
-static Node *alloc_node(Document *d, int type) { Node *n = xcalloc(1, sizeof *n); g_nodes_live++; n->type = (uint8_t)type; n->doc = d; n->flags = NF_STYLE_DIRTY | NF_LAYOUT_DIRTY; return n; }
+static Node *alloc_node(Document *d, int type) { Node *n = xcalloc(1, sizeof *n); n->ncls = -1; g_nodes_live++; n->type = (uint8_t)type; n->doc = d; n->flags = NF_STYLE_DIRTY | NF_LAYOUT_DIRTY; return n; }
 Node *node_new_element(Document *d, const char *tag, int ns) { Node *n = alloc_node(d, NODE_ELEMENT); n->tag = atom(tag); n->ns = (uint8_t)ns; return n; }
 Node *node_new_text(Document *d, const char *s, size_t len) { Node *n = alloc_node(d, NODE_TEXT); n->text = xstrndup(s, len); n->text_len = len; n->tag = atom("#text"); return n; }
 Node *node_new_comment(Document *d, const char *s, size_t len) { Node *n = alloc_node(d, NODE_COMMENT); n->text = xstrndup(s, len); n->text_len = len; n->tag = atom("#comment"); return n; }
@@ -76,6 +76,11 @@ static void mark(Document *d, Node *n, bool layout) {
 }
 void doc_mark_dirty(Document *d, Node *n) { mark(d, n, true); }
 void doc_mark_style_dirty(Document *d, Node *n) { mark(d, n, false); }
+static void mark_struct(Document *d, Node *n) {
+    bool was = n->flags & NF_STYLE_DIRTY;
+    mark(d, n, true);
+    if (!was) { n->flags &= ~(uint32_t)NF_STYLE_DIRTY; n->flags |= NF_STRUCT_DIRTY; }
+}
 static bool style_only_attr(const char *name) { return !strcmp(name, "style") || !strcmp(name, "class"); }
 
 void node_insert_before(Node *parent, Node *child, Node *ref) {
@@ -98,7 +103,7 @@ void node_insert_before(Node *parent, Node *child, Node *ref) {
     if (is_connected(parent)) mark_connected(child, true);
     child->flags |= NF_STYLE_DIRTY;
     doc_mark_dirty(parent->doc, child);
-    doc_mark_dirty(parent->doc, parent);
+    mark_struct(parent->doc, parent);
 }
 void node_append(Node *parent, Node *child) { node_insert_before(parent, child, NULL); }
 
@@ -109,7 +114,7 @@ void node_remove(Node *c) {
     c->parent = c->prev = c->next = NULL;
     mark_connected(c, false);
     if (c->doc && c->doc->focus && node_is_inclusive_ancestor(c, c->doc->focus)) c->doc->focus = NULL;
-    doc_mark_dirty(p->doc, p);
+    mark_struct(p->doc, p);
     if (c->refcount) c->refcount--;
 }
 
@@ -120,7 +125,7 @@ __attribute__((weak)) void style_free(struct ComputedStyle *s) { free(s); }
 __attribute__((weak)) void box_detach_node(Node *n) { n->box = NULL; }
 static void node_free_one(Node *n) {
     for (int i = 0; i < n->nattrs; i++) free(n->attrs[i].value);
-    free(n->attrs); free(n->text); free(n->inline_style_src);
+    free(n->attrs); free(n->text); free(n->inline_style_src); free(n->cls);
     if (n->ext && n->ext_free) n->ext_free(n->ext);
     if (n->style) style_free(n->style);
     if (n->box) box_detach_node(n);
@@ -146,8 +151,7 @@ void doc_free(Document *d) {
 
 static int attr_index(const Node *n, const char *name) {
     for (int i = 0; i < n->nattrs; i++) if (n->attrs[i].name == name) return i;
-    const char *a = atom(name);
-    for (int i = 0; i < n->nattrs; i++) if (n->attrs[i].name == a) return i;
+    for (int i = 0; i < n->nattrs; i++) if (!strcmp(n->attrs[i].name, name)) return i;
     if (n->ns == NS_HTML) { for (int i = 0; i < n->nattrs; i++) if (str_ieq(n->attrs[i].name, name)) return i; }
     return -1;
 }
@@ -161,6 +165,7 @@ void node_set_attr(Node *n, const char *name, const char *value) {
         n->attrs[n->nattrs].name = atom(name); n->attrs[n->nattrs].value = xstrdup(value); i = n->nattrs++;
     }
     if (n->attrs[i].name == A_id) n->id = n->attrs[i].value;
+    if (n->attrs[i].name == A_class) n->ncls = -1;
     /* re-point cached id after realloc */
     for (int k = 0; k < n->nattrs; k++) if (n->attrs[k].name == A_id) n->id = n->attrs[k].value;
     mark(n->doc, n, !style_only_attr(name));
@@ -168,19 +173,30 @@ void node_set_attr(Node *n, const char *name, const char *value) {
 void node_remove_attr(Node *n, const char *name) {
     int i = attr_index(n, name); if (i < 0) return;
     if (n->attrs[i].name == A_id) n->id = NULL;
+    if (n->attrs[i].name == A_class) n->ncls = -1;
     free(n->attrs[i].value);
     memmove(&n->attrs[i], &n->attrs[i + 1], sizeof(Attr) * (size_t)(n->nattrs - i - 1)); n->nattrs--;
     for (int k = 0; k < n->nattrs; k++) if (n->attrs[k].name == A_id) n->id = n->attrs[k].value;
     mark(n->doc, n, !style_only_attr(name));
 }
-bool node_has_class(const Node *n, const char *cls) {
-    const char *c = node_attr(n, "class"); if (!c) return false;
-    size_t L = strlen(cls);
+static void cls_build(Node *n) {
+    free(n->cls); n->cls = NULL; n->ncls = 0;
+    const char *c = node_attr(n, A_class);
+    if (!c) return;
+    int cap = 0;
     while (*c) {
         while (is_ws((unsigned char)*c)) c++;
-        const char *s = c; while (*c && !is_ws((unsigned char)*c)) c++;
-        if ((size_t)(c - s) == L && !memcmp(s, cls, L)) return true;
+        const char *s = c;
+        while (*c && !is_ws((unsigned char)*c)) c++;
+        if (c == s) continue;
+        if (n->ncls == cap) { cap = cap ? cap * 2 : 4; n->cls = xrealloc(n->cls, sizeof *n->cls * (size_t)cap); }
+        n->cls[n->ncls++] = atomn(s, (size_t)(c - s));
     }
+}
+/* cls must be an atom (selector class names are) */
+bool node_has_class(const Node *n, const char *cls) {
+    if (n->ncls < 0) cls_build((Node *)n);
+    for (int i = 0; i < n->ncls; i++) if (n->cls[i] == cls) return true;
     return false;
 }
 
@@ -188,6 +204,19 @@ Node *node_next_in_tree(Node *n, Node *root) {
     if (n->first) return n->first;
     while (n && n != root) { if (n->next) return n->next; n = n->parent; }
     return NULL;
+}
+/* pre-order traversal that also enters shadow trees (shadow tree before the host's light children) */
+Node *node_next_deep(Node *n, Node *root) {
+    if (n->type == NODE_ELEMENT && n->shadow_root && n->shadow_root->first) return n->shadow_root->first;
+    if (n->first) return n->first;
+    for (;;) {
+        if (n == root) return NULL;
+        if (n->next) return n->next;
+        Node *p = n->parent;
+        if (!p) return NULL;
+        if (p->type == NODE_FRAGMENT && p->host) { Node *h = p->host; if (h->first) return h->first; n = h; continue; }
+        n = p;
+    }
 }
 bool node_is_inclusive_ancestor(const Node *a, const Node *b) { for (; b; b = b->parent) if (a == b) return true; return false; }
 

@@ -1,0 +1,18 @@
+<!doctype html><style>
+li { color: rgb(0, 0, 0); } li:last-child { color: rgb(255, 0, 0); } li:nth-child(2) { width: 50px; }
+.a + .b { color: rgb(0, 128, 0); } div:empty { height: 7px; } p:first-child span { color: rgb(0, 0, 255); }
+</style><body>
+<ul id="u"><li id="l1">1</li><li id="l2">2</li></ul>
+<div id="w"><div id="x" class="b">x</div></div><div id="e"></div><div id="pw"><p id="p"><span id="s">s</span></p></div>
+<script>
+const cs = id => getComputedStyle(document.getElementById(id));
+document.body.offsetWidth;
+const u = document.getElementById('u'), n = document.createElement('li'); n.id = 'l3'; n.textContent = '3'; u.insertBefore(n, document.getElementById('l2'));
+const a = document.createElement('div'); a.className = 'a'; document.getElementById('w').prepend(a);
+document.getElementById('e').append('t');
+document.getElementById('pw').prepend(document.createElement('p'));
+document.body.offsetWidth;
+console.log('SRS ' + JSON.stringify([cs('l2').color == 'rgb(255, 0, 0)', cs('l1').color == 'rgb(0, 0, 0)', cs('l3').width == '50px', cs('l2').width != '50px',
+  cs('x').color == 'rgb(0, 128, 0)', cs('e').height != '7px', cs('s').color != 'rgb(0, 0, 255)']));
+setTimeout(() => { document.getElementById('u').lastChild.remove(); document.body.offsetWidth; console.log('SRS2 ' + JSON.stringify([cs('l3').color == 'rgb(255, 0, 0)'])); }, 300);
+</script>

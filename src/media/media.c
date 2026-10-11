@@ -15,6 +15,7 @@
 #include <libswresample/swresample.h>
 #include <libswscale/swscale.h>
 #include <math.h>
+#include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -38,6 +39,7 @@ typedef struct Stream {
     char *mime;
     bool progressive, webm;
     Blob *init;                            /* latest init segment, or the whole file when progressive */
+    uint8_t *ftyp; size_t nftyp;           /* ftyp waiting for its moov, so a half-appended init is never published */
     Seg *segs; int nsegs, capsegs;         /* sorted by t0 */
     uint8_t *pend; size_t npend, cappend;
     uint8_t *moof; size_t nmoof;
@@ -57,9 +59,10 @@ struct MediaPlayer {
     double duration;
     uint64_t epoch; double target; bool seeking;
     bool playing, ended, waiting, error; char err[160];
-    bool expect_audio, audio_failed; SDL_AudioStream *dev;
+    bool expect_audio, audio_failed, a_live; SDL_AudioStream *dev;   /* a_live: the device has started pulling samples */
     float volume; bool muted;
     double aclock, base_t, base_wall;
+    int aq; /* bytes queued in the SDL stream, sampled by audio_cb (the stream lock must not be taken under mu) */
     int w, h;
     VFrame vq[VQ_MAX]; int vqn;
     AChunk *ah, *at; double abuf;
@@ -253,18 +256,82 @@ static Image *to_image(struct SwsContext **sws, AVFrame *f) {
     if (ow <= 0 || oh <= 0) return NULL;
     *sws = sws_getCachedContext(*sws, f->width, f->height, (enum AVPixelFormat)f->format, ow, oh, AV_PIX_FMT_BGRA, SWS_BILINEAR, NULL, NULL, NULL);
     if (!*sws) return NULL;
-    Image *im = xcalloc(1, sizeof *im); im->w = ow; im->h = oh; im->refs = 1;
-    im->px = xmalloc((size_t)ow * (size_t)oh * 4);
+    Image *im = xcalloc(1, sizeof *im); im->w = ow; im->h = oh; im->refs = 1; im->opaque = true;
+    /* swscale's SIMD paths may store past the last row's end; pad the buffer */
+    im->px = xmalloc((size_t)ow * (size_t)oh * 4 + 256);
     uint8_t *dst[4] = { (uint8_t *)im->px }; int ls[4] = { ow * 4 };
     sws_scale(*sws, (const uint8_t *const *)f->data, f->linesize, 0, f->height, dst, ls);
     return im;
 }
+/* ---------------- AVIF still images (decoded with the same ffmpeg/dav1d stack as video) ---------------- */
+typedef struct { const uint8_t *d; size_t n, pos; } MemRd;
+static int memrd_read(void *o, uint8_t *buf, int sz) {
+    MemRd *m = o; size_t left = m->n - m->pos;
+    if (!left) return AVERROR_EOF;
+    if ((size_t)sz > left) sz = (int)left;
+    memcpy(buf, m->d + m->pos, (size_t)sz); m->pos += (size_t)sz; return sz;
+}
+static int64_t memrd_seek(void *o, int64_t off, int wh) {
+    MemRd *m = o;
+    if (wh & AVSEEK_SIZE) return (int64_t)m->n;
+    wh &= ~AVSEEK_FORCE;
+    int64_t p = wh == SEEK_SET ? off : wh == SEEK_CUR ? (int64_t)m->pos + off : (int64_t)m->n + off;
+    if (p < 0 || p > (int64_t)m->n) return -1;
+    m->pos = (size_t)p; return p;
+}
+static Image *avif_frame(AVFrame *f) {
+    int w = f->width, h = f->height;
+    if (w <= 0 || h <= 0 || (int64_t)w * h > (1 << 26)) return NULL;
+    struct SwsContext *sws = sws_getContext(w, h, (enum AVPixelFormat)f->format, w, h, AV_PIX_FMT_BGRA, SWS_BILINEAR, NULL, NULL, NULL);
+    if (!sws) return NULL;
+    Image *im = xcalloc(1, sizeof *im); im->w = w; im->h = h; im->refs = 1; im->opaque = true;
+    im->px = xmalloc((size_t)w * (size_t)h * 4 + 256);
+    uint8_t *dst[4] = { (uint8_t *)im->px }; int ls[4] = { w * 4 };
+    sws_scale(sws, (const uint8_t *const *)f->data, f->linesize, 0, h, dst, ls);
+    sws_freeContext(sws);
+    return im;
+}
+static Image *media_decode_avif(const uint8_t *d, size_t n) {
+    MemRd mr = { d, n, 0 };
+    Image *im = NULL;
+    AVCodecContext *cc = NULL; AVPacket *pk = NULL; AVFrame *f = NULL;
+    uint8_t *iob = av_malloc(16384);
+    AVIOContext *io = iob ? avio_alloc_context(iob, 16384, 0, &mr, memrd_read, NULL, memrd_seek) : NULL;
+    AVFormatContext *fc = io ? avformat_alloc_context() : NULL;
+    if (!fc) { if (io) { av_freep(&io->buffer); avio_context_free(&io); } else av_free(iob); return NULL; }
+    fc->pb = io; fc->flags |= AVFMT_FLAG_CUSTOM_IO;
+    if (avformat_open_input(&fc, "", av_find_input_format("mov"), NULL) < 0) { fc = NULL; goto out; }
+    if (avformat_find_stream_info(fc, NULL) < 0) goto out;
+    int si = av_find_best_stream(fc, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0);
+    if (si < 0) goto out;
+    const AVCodec *codec = avcodec_find_decoder_by_name("libdav1d");
+    if (!codec) codec = avcodec_find_decoder(fc->streams[si]->codecpar->codec_id);
+    if (!codec || !(cc = avcodec_alloc_context3(codec))) goto out;
+    avcodec_parameters_to_context(cc, fc->streams[si]->codecpar);
+    cc->thread_count = 1;
+    if (avcodec_open2(cc, codec, NULL) < 0) goto out;
+    pk = av_packet_alloc(); f = av_frame_alloc();
+    if (!pk || !f) goto out;
+    while (!im && av_read_frame(fc, pk) >= 0) {
+        if (pk->stream_index == si && avcodec_send_packet(cc, pk) >= 0 && avcodec_receive_frame(cc, f) >= 0) im = avif_frame(f);
+        av_packet_unref(pk);
+    }
+    if (!im && avcodec_send_packet(cc, NULL) >= 0 && avcodec_receive_frame(cc, f) >= 0) im = avif_frame(f);
+out:
+    av_frame_free(&f); av_packet_free(&pk); avcodec_free_context(&cc);
+    avformat_close_input(&fc);
+    av_freep(&io->buffer); avio_context_free(&io);
+    return im;
+}
+__attribute__((constructor)) static void avif_hook(void) { image_avif_decoder = media_decode_avif; }
+
 typedef struct { struct SwsContext *sws; SwrContext *swr; double skip; uint64_t epoch; } DecCtx;
 bool media_lowmem;
+bool media_vis_track;
 bool media_yuv;
 static Image *yuv_copy(int w, int h, const uint8_t *p0, size_t s0, const uint8_t *p1, size_t s1, int mat) {
     int cw = (w + 1) / 2, ch = (h + 1) / 2;
-    Image *im = xcalloc(1, sizeof *im); im->w = w; im->h = h; im->refs = 1; im->yuv_mat = mat;
+    Image *im = xcalloc(1, sizeof *im); im->w = w; im->h = h; im->refs = 1; im->yuv_mat = mat; im->opaque = true;
     im->yuv = xmalloc((size_t)w * (size_t)h + (size_t)cw * 2 * (size_t)ch);
     for (int y = 0; y < h; y++) memcpy(im->yuv + (size_t)y * (size_t)w, p0 + (size_t)y * s0, (size_t)w);
     uint8_t *uv = im->yuv + (size_t)w * (size_t)h;
@@ -377,7 +444,10 @@ static int run_demux(Stream *s, DecCtx *d, double start) {
     AVCodecContext *vc = NULL, *ac = NULL; AVPacket *pkt = av_packet_alloc(); AVFrame *f = av_frame_alloc();
     fc->pb = io; fc->flags |= AVFMT_FLAG_CUSTOM_IO;
     const AVInputFormat *fmt = s->progressive ? NULL : av_find_input_format(s->webm ? "matroska" : "mp4");
-    if (avformat_open_input(&fc, NULL, fmt, NULL) < 0) goto done;
+    if (avformat_open_input(&fc, NULL, fmt, NULL) < 0) {
+        if (getenv("LUMEN_MEDIA_DEBUG")) fprintf(stderr, "media: open failed mime=%s rd_init=%zu box=%.4s nsegs=%d rd_pos=%.2f seg0=%.2f-%.2f seg0init=%p init=%p\n", s->mime, s->rd_init ? s->rd_init->n : 0, s->rd_init && s->rd_init->n >= 8 ? (const char *)s->rd_init->p + 4 : "-", s->nsegs, s->rd_pos, s->nsegs ? s->segs[0].t0 : -1, s->nsegs ? s->segs[0].t1 : -1, s->nsegs ? (void *)s->segs[0].init : NULL, (void *)s->init);
+        goto done;
+    }
     if (s->progressive && avformat_find_stream_info(fc, NULL) < 0) goto done;
     int vi = av_find_best_stream(fc, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0);
     int ai = av_find_best_stream(fc, AVMEDIA_TYPE_AUDIO, -1, -1, NULL, 0);
@@ -466,20 +536,22 @@ static void SDLCALL audio_cb(void *ud, SDL_AudioStream *as, int additional, int 
         if (m->playing && !m->seeking) while (w < k && m->ah) {
             AChunk *c = m->ah; int n = c->frames - c->off; if (n > k - w) n = k - w;
             for (int i = 0; i < n * 2; i++) buf[w * 2 + i] = c->s[c->off * 2 + i] * g;
-            c->off += n; w += n; m->abuf -= (double)n / OUT_RATE;
+            c->off += n; w += n; m->abuf -= (double)n / OUT_RATE; m->a_live = true;
             m->aclock = c->pts + (double)c->off / OUT_RATE;
             if (c->off >= c->frames) { m->ah = c->next; if (!m->ah) m->at = NULL; free(c->s); free(c); }
         }
         SDL_PutAudioStreamData(as, buf, k * 8);
         frames -= k;
     }
-    SDL_BroadcastCondition(m->cv);
+    m->aq = SDL_GetAudioStreamQueued(as);
+    if (m->abuf <= AQ_MAX_SEC) SDL_BroadcastCondition(m->cv);
     SDL_UnlockMutex(m->mu);
 }
 static void open_audio(MediaPlayer *m) {
-    if (m->dev || m->audio_failed) return;
+    if (m->dev || m->audio_failed || m->muted) return;   /* muted: no device, the clock runs on wall time */
     if (!(SDL_WasInit(SDL_INIT_AUDIO) & SDL_INIT_AUDIO) && !SDL_InitSubSystem(SDL_INIT_AUDIO)) { m->audio_failed = true; return; }
     SDL_AudioSpec spec = { SDL_AUDIO_F32, 2, OUT_RATE };
+    m->a_live = false;
     m->dev = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, audio_cb, m);
     if (!m->dev) { m->audio_failed = true; return; }
     SDL_ResumeAudioStreamDevice(m->dev);
@@ -611,6 +683,7 @@ int mp_add_buffer(MediaPlayer *m, const char *mime) {
     SDL_UnlockMutex(m->mu);
     return r;
 }
+static bool mdbg(void) { static int v = -1; if (v < 0) v = getenv("LUMEN_MEDIA_DEBUG") != NULL; return v; }
 bool mp_append(MediaPlayer *m, int sb, const uint8_t *p, size_t n) {
     if (sb < 0 || sb >= m->nst) return false;
     SDL_LockMutex(m->mu);
@@ -625,15 +698,15 @@ bool mp_append(MediaPlayer *m, int sb, const uint8_t *p, size_t n) {
         if (!sz) { ok = false; off = s->npend; break; }
         if (sz > (uint64_t)(e - b)) break;
         if (ty == FCC('f', 't', 'y', 'p')) {
-            Blob *nb = xcalloc(1, sizeof *nb); nb->refs = 1; nb->n = sz; nb->p = xmalloc(sz); memcpy(nb->p, b, sz);
-            blob_unref(s->init); s->init = nb;
+            free(s->ftyp); s->ftyp = xmalloc(sz); memcpy(s->ftyp, b, sz); s->nftyp = sz;
         } else if (ty == FCC('m', 'o', 'o', 'v')) {
-            if (!s->init) { s->init = xcalloc(1, sizeof *s->init); s->init->refs = 1; }
-            else if (s->init->refs > 1 || (s->init->n >= 8 && rd32(s->init->p + 4) == FCC('m', 'o', 'o', 'v'))) {
-                Blob *nb = xcalloc(1, sizeof *nb); nb->refs = 1; blob_unref(s->init); s->init = nb;
-            }
-            s->init->p = xrealloc(s->init->p, s->init->n + sz); memcpy(s->init->p + s->init->n, b, sz); s->init->n += sz;
+            Blob *nb = xcalloc(1, sizeof *nb); nb->refs = 1; nb->n = s->nftyp + sz; nb->p = xmalloc(nb->n);
+            if (s->nftyp) memcpy(nb->p, s->ftyp, s->nftyp);
+            memcpy(nb->p + s->nftyp, b, sz);
+            free(s->ftyp); s->ftyp = NULL; s->nftyp = 0;
+            blob_unref(s->init); s->init = nb;
             parse_moov(s, b + h, b + sz);
+            if (mdbg()) fprintf(stderr, "media: sb%d init %zu bytes ntrk=%d\n", sb, nb->n, s->ntrk);
         } else if (ty == FCC('m', 'o', 'o', 'f')) {
             free(s->moof); s->moof = xmalloc(sz); memcpy(s->moof, b, sz); s->nmoof = sz;
         } else if (ty == FCC('m', 'd', 'a', 't') && s->moof) {
@@ -641,6 +714,7 @@ bool mp_append(MediaPlayer *m, int sb, const uint8_t *p, size_t n) {
             if (parse_moof(s, s->moof + 8, s->moof + s->nmoof, &t0, &t1)) {
                 uint8_t *seg = xmalloc(s->nmoof + sz); memcpy(seg, s->moof, s->nmoof); memcpy(seg + s->nmoof, b, sz);
                 add_seg(s, seg, s->nmoof + sz, t0, t1);
+                if (mdbg()) fprintf(stderr, "media: sb%d seg %.2f-%.2f nsegs=%d init=%p\n", sb, t0, t1, s->nsegs, (void *)s->init);
             }
             free(s->moof); s->moof = NULL;
         }
@@ -651,10 +725,19 @@ bool mp_append(MediaPlayer *m, int sb, const uint8_t *p, size_t n) {
     SDL_UnlockMutex(m->mu);
     return ok;
 }
+void mp_abort(MediaPlayer *m, int sb) {   /* SourceBuffer.abort(): reset the segment parser, drop any partial box */
+    if (sb < 0 || sb >= m->nst) return;
+    SDL_LockMutex(m->mu);
+    Stream *s = m->st[sb]; s->npend = 0;
+    if (mdbg()) fprintf(stderr, "media: sb%d abort\n", sb);
+    free(s->moof); s->moof = NULL; s->nmoof = 0; free(s->ftyp); s->ftyp = NULL; s->nftyp = 0;
+    SDL_UnlockMutex(m->mu);
+}
 void mp_remove(MediaPlayer *m, int sb, double a, double z) {
     if (sb < 0 || sb >= m->nst) return;
     SDL_LockMutex(m->mu);
     Stream *s = m->st[sb];
+    if (mdbg()) fprintf(stderr, "media: sb%d remove %.2f-%.2f\n", sb, a, z);
     for (int i = 0; i < s->nsegs;) {
         Seg *g = &s->segs[i];
         if (g->t0 >= a - 1e-3 && g->t1 <= z + 1e-3) { free(g->p); blob_unref(g->init); memmove(g, g + 1, sizeof *g * (size_t)(s->nsegs - i - 1)); s->nsegs--; }
@@ -694,9 +777,11 @@ int mp_buffered(MediaPlayer *m, int sb, double *r, int max) {
 }
 void mp_end_of_stream(MediaPlayer *m) { SDL_LockMutex(m->mu); m->eos = true; SDL_BroadcastCondition(m->cv); SDL_UnlockMutex(m->mu); }
 void mp_set_duration(MediaPlayer *m, double d) { SDL_LockMutex(m->mu); m->duration = d; SDL_UnlockMutex(m->mu); }
+/* the audio clock drives playback only once the device actually consumes samples (device start-up can take seconds) */
+static bool aud_live(const MediaPlayer *m) { return m->expect_audio && m->dev && m->a_live; }
 static double clock_of(MediaPlayer *m) {
-    if (m->expect_audio && m->dev) {
-        double lat = (double)SDL_GetAudioStreamQueued(m->dev) / 8.0 / OUT_RATE;
+    if (aud_live(m)) {
+        double lat = (double)m->aq / 8.0 / OUT_RATE;
         double t = m->aclock - lat; return t < 0 ? 0 : t;
     }
     double t = m->base_t;
@@ -721,15 +806,25 @@ void mp_seek(MediaPlayer *m, double t) {
     if (!isnan(m->duration) && t > m->duration) t = m->duration;
     if (t < 0) t = 0;
     m->epoch++; m->target = t; m->seeking = true; m->ended = false;
+    for (int i = 0; i < m->nst; i++) m->st[i]->eof = false;   /* else a seek after EOF completes (and re-ends) before the reader restarts */
     for (int i = 0; i < m->vqn; i++) image_unref(m->vq[i].im);
     m->vqn = 0;
     while (m->ah) { AChunk *c = m->ah; m->ah = c->next; free(c->s); free(c); }
     m->at = NULL; m->abuf = 0; m->aclock = m->base_t = t; m->base_wall = now_ms();
-    if (m->dev) SDL_ClearAudioStream(m->dev);
+    m->aq = 0;
     SDL_BroadcastCondition(m->cv);
     SDL_UnlockMutex(m->mu);
+    if (m->dev) SDL_ClearAudioStream(m->dev); /* after unlocking: audio_cb holds the stream lock while taking mu */
 }
-void mp_set_volume(MediaPlayer *m, float v, bool muted) { SDL_LockMutex(m->mu); m->volume = v; m->muted = muted; SDL_UnlockMutex(m->mu); }
+void mp_set_volume(MediaPlayer *m, float v, bool muted) {
+    SDL_LockMutex(m->mu);
+    m->volume = v;
+    /* unmuting a playing stream that never opened a device: open it; the wall clock runs until it is live */
+    bool reopen = m->muted && !muted && !m->dev && m->expect_audio && m->playing && !m->audio_failed;
+    m->muted = muted;
+    if (reopen) open_audio(m);
+    SDL_UnlockMutex(m->mu);
+}
 void mp_state(MediaPlayer *m, MpState *o) {
     SDL_LockMutex(m->mu);
     bool meta = false, vid = false;
@@ -751,7 +846,7 @@ void mp_free(MediaPlayer *m) {
         Stream *s = m->st[i];
         SDL_WaitThread(s->th, NULL);
         for (int k = 0; k < s->nsegs; k++) { free(s->segs[k].p); blob_unref(s->segs[k].init); }
-        free(s->segs); free(s->pend); free(s->moof); blob_unref(s->init); blob_unref(s->rd_init); free(s->mime); free(s);
+        free(s->segs); free(s->pend); free(s->moof); free(s->ftyp); blob_unref(s->init); blob_unref(s->rd_init); free(s->mime); free(s);
     }
     for (int i = 0; i < m->vqn; i++) image_unref(m->vq[i].im);
     while (m->ah) { AChunk *c = m->ah; m->ah = c->next; free(c->s); free(c); }
@@ -786,18 +881,18 @@ int media_tick(void) {
             m->base_t = m->aclock = m->target; m->base_wall = now_ms();
         }
         if (!m->cur && m->vqn) { present(m, m->vq[0].im); memmove(m->vq, m->vq + 1, sizeof m->vq[0] * (size_t)--m->vqn); popped = true; }
-        if (m->expect_audio && m->dev && aud_eof && !m->ah) { m->base_t = m->aclock; m->base_wall = now_ms(); m->expect_audio = false; }
+        if (aud_live(m) && aud_eof && !m->ah) { m->base_t = m->aclock; m->base_wall = now_ms(); m->expect_audio = false; }
         if (m->playing && !m->seeking) {
-            bool starve = (m->expect_audio && m->dev) ? (!m->ah && !aud_eof) : (vid && !m->vqn && !all_eof);
+            bool starve = aud_live(m) ? (!m->ah && !aud_eof) : (vid && !m->vqn && !all_eof);
             if (starve && !m->waiting) { m->base_t = clock_of(m); m->waiting = true; }
             else if (!starve && m->waiting) { m->waiting = false; m->base_wall = now_ms(); }
             double t = clock_of(m);
-            if (!(m->expect_audio && m->dev)) while (m->ah && m->ah->pts + (double)m->ah->frames / OUT_RATE <= t) {   /* no audio device: drain by clock */
+            if (!aud_live(m)) while (m->ah && m->ah->pts + (double)m->ah->frames / OUT_RATE <= t) {   /* no audio device: drain by clock */
                 AChunk *c = m->ah; m->ah = c->next; if (!m->ah) m->at = NULL;
                 m->abuf -= (double)(c->frames - c->off) / OUT_RATE; if (m->abuf < 0) m->abuf = 0;
                 free(c->s); free(c); SDL_BroadcastCondition(m->cv);
             }
-            if (all_eof && !(m->expect_audio && m->dev) && !isnan(m->duration) && t >= m->duration - 0.01) while (m->ah) {
+            if (all_eof && !aud_live(m) && !isnan(m->duration) && t >= m->duration - 0.01) while (m->ah) {
                 AChunk *c = m->ah; m->ah = c->next; if (!m->ah) m->at = NULL; free(c->s); free(c); m->abuf = 0;
             }
             if (all_eof && !isnan(m->duration) && t >= m->duration - 0.01) while (m->vqn) { present(m, m->vq[0].im); memmove(m->vq, m->vq + 1, sizeof m->vq[0] * (size_t)--m->vqn); popped = true; }
@@ -806,7 +901,7 @@ int media_tick(void) {
                 m->base_t = isnan(m->duration) ? t : m->duration; m->playing = false; m->ended = true;
             }
         }
-        if (popped) { SDL_BroadcastCondition(m->cv); out |= 1; if (m->cur && (m->cur->w != ow || m->cur->h != oh)) { out |= 2; if (getenv("LUMEN_DEBUG_PAINT")) fprintf(stderr, "media: size %p %dx%d -> %dx%d\n", (void *)m, ow, oh, m->cur->w, m->cur->h); } }
+        if (popped) { SDL_BroadcastCondition(m->cv); if (!media_vis_track || (double)SDL_GetTicks() - m->painted < 1000) out |= 1; if (m->cur && (m->cur->w != ow || m->cur->h != oh)) { out |= 2; if (getenv("LUMEN_DEBUG_PAINT")) fprintf(stderr, "media: size %p %dx%d -> %dx%d\n", (void *)m, ow, oh, m->cur->w, m->cur->h); } }
         SDL_UnlockMutex(m->mu);
     }
     SDL_UnlockMutex(g_mu);
@@ -822,6 +917,8 @@ int media_timeout_ms(void) {
         if (m->playing || m->seeking) {
             int t = 20;
             if (m->vqn && !m->seeking) { double d = (m->vq[0].pts - clock_of(m)) * 1000; t = d < 1 ? 1 : d > 20 ? 20 : (int)d; }
+            /* off-screen: frames aren't painted, so only keep the clock/timeupdate ticking */
+            if (media_vis_track && !m->seeking && (double)SDL_GetTicks() - m->painted >= 1000) t = 250;
             if (to < 0 || t < to) to = t;
         }
         SDL_UnlockMutex(m->mu);
@@ -904,6 +1001,7 @@ int media_can_play(const char *mime, bool mse) {
 
 void media_mark_visible(bool (*vis)(Node *, void *), void *ud) {
     double now = (double)SDL_GetTicks();
+    media_vis_track = true;
     SDL_LockMutex(g_mu);
     for (int i = 0; i < g_np; i++) if (vis(g_pl[i]->node, ud)) g_pl[i]->painted = now;
     SDL_UnlockMutex(g_mu);

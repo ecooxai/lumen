@@ -52,7 +52,7 @@ mk('HTMLFormElement', HTMLElement, ['form'], p => {
     methods(p, {
         get method() { return (N.attr(this, 'method') || 'get').toLowerCase() === 'post' ? 'post' : 'get'; }, set method(v) { this.setAttribute('method', v); },
         get enctype() { return N.attr(this, 'enctype') || 'application/x-www-form-urlencoded'; },
-        get elements() { return nodeList(N.query(this, 'input,select,textarea,button,fieldset,output', true)); }, get length() { return this.elements.length; },
+        get elements() { const l = nodeList(N.query(this, 'input,select,textarea,button,fieldset,output', true)); def(l, 'namedItem', k => { k = String(k); const m = Array.prototype.filter.call(l, e => e.id === k || e.getAttribute('name') === k); return m.length > 1 ? Object.assign(nodeList(m), { get value() { const c = m.find(e => e.checked); return c ? c.value : ''; } }) : m[0] || null; }); for (const e of l) for (const k of [e.id, e.getAttribute('name')]) if (k && !(k in l)) def(l, k, l.namedItem(k)); return l; }, get length() { return this.elements.length; },
         submit() { submitForm(this, null); },
         requestSubmit(s) { if (dispatch(this, new SubmitEvent('submit', { bubbles: true, cancelable: true, submitter: s || null }), true)) submitForm(this, s); },
         reset() { if (dispatch(this, new Event('reset', { bubbles: true, cancelable: true }))) for (const e of this.elements) N.setValue(e, null); },

@@ -81,6 +81,7 @@ typedef struct ComputedStyle {
     Length border_radius[4]; /* tl tr br bl */
     float outline_width, outline_offset; Color outline_color;
     Color color, bg_color;
+    Color ph_color; bool ph_set; /* ::placeholder color of input/textarea */
     char *bg_image;         /* url (owned) */
     Gradient *bg_gradient;  /* owned */
     char *mask_image;       /* url (owned) */
@@ -93,7 +94,7 @@ typedef struct ComputedStyle {
     Length translate_pending[2]; /* % translate resolved at layout */
     float aspect_ratio;
     char *content;          /* for ::before/::after */
-    int grid_ncols; GridTrack *grid_cols; int grid_nrows; GridTrack *grid_rows; Length grid_auto_rows;
+    int grid_ncols; GridTrack *grid_cols; int grid_nrows; GridTrack *grid_rows; Length grid_auto_rows, grid_auto_cols; bool grid_flow_col;
     int grid_col_start, grid_col_span, grid_row_start, grid_row_span;
     char *grid_areas;       /* template areas: cells space-separated, rows '/'-separated */
     char *grid_area;        /* named grid-area of an item */
@@ -124,10 +125,10 @@ typedef struct SimpleSel {
     SelList *sub;         /* :not/:is/:where/:has/nth-of */
 } SimpleSel;
 typedef struct Compound { SimpleSel *s; int n; uint8_t comb; /* combinator to the LEFT (towards previous compound) */ } Compound;
-typedef struct Selector { Compound *c; int n; uint32_t spec; uint8_t pseudo_el; /* 0 none 1 before 2 after 3 other */ } Selector;
+typedef struct Selector { Compound *c; int n; uint32_t spec; uint8_t pseudo_el; /* 0 none 1 before 2 after 3 other 4 marker 5 placeholder */ } Selector;
 struct SelList { Selector *v; int n; };
 
-typedef struct ContainerCond { char *name, *query; struct ContainerCond *outer; } ContainerCond;
+typedef struct ContainerCond { char *name, *query; struct ContainerCond *outer; float mvw, mvh; int8_t mres; bool mdark; } ContainerCond; /* also used for @media (mres caches the last result) */
 /* container query environment: the container's content size and its custom properties (style()) */
 typedef struct CQEnv { float w, h; bool size, block; const char *(*var)(const void *ud, const char *name); const void *ud; } CQEnv;
 bool css_container_eval(const char *q, const CQEnv *env);
@@ -139,6 +140,8 @@ typedef struct Rule {
     uint8_t origin; /* 0 UA, 1 author */
     uint8_t layer;
     const ContainerCond *cq; /* innermost @container, or NULL */
+    ContainerCond *mq;       /* innermost @media, re-evaluated when the viewport changes */
+    Node *scope;             /* shadow root the rule's sheet lives in, NULL for document sheets */
 } Rule;
 
 typedef struct MediaCtx { float vw, vh, dpr; bool dark; } MediaCtx;
@@ -172,6 +175,7 @@ typedef struct StyleEngine {
     uint64_t generation;
     int stats_matched, stats_paint;
     bool layout_dirty;          /* a recalc changed something other than paint-only properties */
+    Node *el_scope;             /* tree scope (shadow root or NULL) of the element being matched */
 } StyleEngine;
 
 StyleSheet *css_parse_sheet(const char *src, size_t n, const char *base_url, int origin, const MediaCtx *mc);
@@ -186,6 +190,7 @@ bool css_match_selector(const Selector *s, Node *el, Node *scope);
 typedef VEC(Node *) NodeVec;
 Node *css_query(Node *root, const char *sel, bool all, NodeVec *out);
 bool css_media_matches(const char *q, const MediaCtx *mc);
+bool css_media_chain(ContainerCond *mq, const MediaCtx *m);
 bool css_supports(const char *cond);
 
 StyleEngine *style_engine_new(Document *d);

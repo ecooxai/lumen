@@ -1,0 +1,20 @@
+<!doctype html><html><head><style>
+body{margin:0;font:14px sans-serif}
+#c{display:flex;white-space:pre-wrap;width:400px}
+#g{display:grid;grid-auto-flow:column;justify-content:start;white-space:pre;width:400px}
+.n{display:none}
+</style></head><body>
+<div id=c>
+    <i class=n></i>
+    <b id=a>1.8B</b>
+    <span id=b> views </span>
+</div>
+<div id=g>
+    <b id=x>16</b>
+    <span id=y>years ago</span>
+</div>
+<script>
+const r = id => document.getElementById(id).getBoundingClientRect();
+const ok = r('a').x === 0 && Math.abs(r('b').x - r('a').right) < 0.5 && r('x').x === 0 && Math.abs(r('y').x - r('x').right) < 0.5;
+console.log('FLEXWS ' + (ok ? 'PASS' : 'FAIL') + ' a=' + r('a').x + '..' + r('a').right + ' b=' + r('b').x + ' x=' + r('x').x + '..' + r('x').right + ' y=' + r('y').x);
+</script></body></html>

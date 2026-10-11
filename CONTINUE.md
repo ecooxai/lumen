@@ -228,3 +228,188 @@ Load (DCL/load): Google 0.53/3.66 s, Bing 1.97/2.23 s, YT watch ~2.2/3.47 s, YT 
 - Hover invalidation (`style_hover_affects` / `style_hover_has` in src/css/style.c): `idx_build` records which id/class/tag keys have `:hover` rules (self, subtree, or parent subtree for `+`/`~`) and which have `:has(...:hover...)`; `page_hover` restyles only those nodes. Without this, every hover change restyled the whole ChatGPT document (~100-350 ms each).
 - Archive and delete verified on throwaway chats (PATCH / DELETE sent, row removed, navigates home).
 - Still to check: model picker/tools, GPT pages.
+
+## Linux port + web graphics (branch devin/linux-x11-vulkan-port, PR #5)
+- Linux build: `make -j8 build/lumen` (Homebrew at /home/linuxbrew/.linuxbrew; gcc-16, v8, sdl3, wgpu-native, ffmpeg...).
+- GPU presentation: Settings > Graphics (Auto/Vulkan/OpenGL/CPU + adapter); env LUMEN_GPU_BACKEND, LUMEN_GPU_ADAPTER; software adapters skipped unless LUMEN_ALLOW_SW_GPU=1.
+- Canvas 2D: src/paint/cvbuf.[ch] (Node.ext backing store, double-buffered Image so damage repaint works), src/js/canvas.cc natives, src/js/prelude/07z1-canvas2d.js. Missing: fillText, gradients (uses mid stop), clip, patterns, toDataURL.
+- WebGPU: src/js/webgpu.cc (shared wgpu device, handle table, command list replay in gpuExec, canvas readback in gpuPresent), src/js/prelude/07z2-webgpu.js. Verified triangle + compute on llvmpipe with LUMEN_ALLOW_SW_GPU=1. Missing: render bundles, query sets, zero-copy compositing (readback per frame).
+- Next: WebGL 1/2 as JS on top of the N.gpu* natives (gpuShader(code, stage) accepts GLSL 450 for naga); camera/mic (SDL3 camera/audio capture), geolocation; site tests (YouTube, X, Google).
+- Test pages live in ~/lumen-tests (served by srv.py on :8765; run.sh <secs> <url> <log> samples CPU).
+
+## WebGL (src/js/prelude/07z3-glsl.js + 07z4-webgl.js)
+- WebGL1/2 contexts on the native WebGPU device; GLSL ES translated to GLSL 450 (naga frontend). three.js r150 PBR+shadows+textures renders (~16 ms/frame on llvmpipe).
+- Missing: MSAA, gl_PointSize, scissored partial clear, compressed textures, transform feedback, queries.
+- Debug: `LUMEN_GL_DEBUG=1` prints link/pipeline errors with generated shader source.
+
+## Camera / mic / geolocation (src/media/capture.c, src/js/capture.cc, end of 08-window.js)
+- getUserMedia opens real SDL3 cameras (V4L2) and recording devices; `<video>.srcObject` shows camera frames (node_img -> cap_frame_for); canvas drawImage(video) works.
+- Audio track `_readPCM()` returns captured Float32 PCM; not yet wired into WebAudio createMediaStreamSource / MediaRecorder.
+- Permissions: SDL message box per origin+kind (session memory); `LUMEN_PERMISSIONS=grant|deny` overrides.
+- Geolocation: `LUMEN_GEO=lat,lon[,acc]` else IP lookup (ipapi.co / ipinfo.io).
+- Prelude gotcha: all prelude files are one `(function (N, G) {...})` closed at the end of 08-window.js; never add a file sorting after it.
+- Test setup: `sudo modprobe v4l2loopback video_nr=10 exclusive_caps=1`, ffmpeg testsrc2 -> /dev/video10; mic via `SDL_AUDIO_DRIVER=disk SDL_AUDIO_DISK_INPUT_FILE=mic.raw`.
+
+## Site-compat fixes from the main-site test run (2026-10-11)
+- YouTube crash: V8 needs icudtl.dat; js.cc now searches Homebrew paths on Linux (LUMEN_ICU_DATA overrides).
+- x.com blank: HTML input NUL -> U+FFFD in html_parser_feed.
+- Reddit loading screen: form.elements.namedItem.
+- Amazon blank: navigation requests now send Chrome document headers (Accept text/html, Sec-Fetch-*); `Accept: */*` got an empty 202 WAF response.
+- YouTube far seek: SourceBuffer.abort() -> mp_abort resets the MP4 box parser; init blob published only when ftyp+moov complete. LUMEN_MEDIA_DEBUG=1 logs demuxer open failures.
+- Wikipedia search: native form submit takes select value from selected/first option.
+- Open: paused-YouTube idle 6-8% CPU and BBC article ~11% (perf shows raster_rect repaint while idle; find who marks dirty), Amazon sustained ~100% CPU after load, GitHub `adoptedStyleSheets is not iterable` + bare module specifier "react" (import maps?), Google CAPTCHA (no action), service workers unsupported.
+- Test without disturbing DISPLAY=:0: `Xvfb :5 -screen 0 1600x1000x24 &` then DISPLAY=:5; build to a separate dir with `make BUILD=build3 build3/lumen`.
+
+## 2026-10-11 perf/compat follow-up
+- Amazon homepage: full raster at ~24 fps (raster 880 ms/s, ~105% CPU) because the damage-rect path was disabled whenever the page had any video item (`!nv`). Now only GPU-punched video (`gv`) disables it; Amazon raster 22 ms/s, settled CPU 0-13%. Verified pixel-exact with `LUMEN_CHECK_DAMAGE=1` (430 checks, 0 mismatched px).
+- Still open: Amazon layout (hero takes the left column only, product cards missing; `d.removeAttribute is not a function`), Reddit orange placeholder circles, YouTube far-seek `moov atom not found`, Google CAPTCHA from this VM IP.
+- Reddit orange circles fixed: `:host` / `:host-context` rules in document-scope sheets were indexed and matched light-DOM hosts (Reddit's shreddit loader `:host::before` 64px orange circle). `idx_build` now skips them unless the sheet lives in a shadow tree (src/css/style.c). Open: a grey search-dropdown placeholder box shows under the Reddit search bar.
+- Amazon layout fixed: carousel tiles now sit in a row and the card grid renders. Block-container max-content now sums adjacent floats (src/layout/box.c `intrinsic`, fixture tests/layout/float-maxcontent.html); all 27 tests/layout|pages|render fixtures give identical layout output vs 6ab454d.
+- Video repaint: only videos whose frame changed are rastered, each in its own rect (was the union of all video rects, incl. paused ones). Opaque video frames (`Image.opaque`) let `raster_rect` skip everything under a frame that fully covers the raster rect (`occluder`; LUMEN_NO_OCCLUDE=1 disables, LUMEN_CHECK_OCCLUDE=1 verifies each use against a normal raster). Layers allocate only the raster rect's rows. LUMEN_CHECK_DAMAGE=1 now also checks the video path (`vdamage`) and prints the mismatch bbox + items there.
+- Amazon CPU now: ~100% for the first ~16 s while the page loads and 2 hero videos autoplay, then 0-7%. Wikipedia idle 0%. YouTube playing ~30-50%.
+- Known flaky: on some Amazon runs LUMEN_CHECK_DAMAGE reports 3-4 mismatches early in load in the tile at x~895 (the occluder never fired in those runs, so it predates it); not reproduced in the last 4 runs. Also seen twice: a YouTube instance that ignored SIGTERM from `timeout` (stuck in S state); not reproduced since, get `gdb -p PID -batch -ex 'thread apply all bt'` if it recurs.
+- Capture regression: `LUMEN_PERMISSIONS=grant SDL_AUDIO_DRIVER=disk SDL_AUDIO_DISK_INPUT_FILE=~/lumen-tests/mic.raw ./build/lumen file://~/lumen-tests/capture.html` (needs v4l2loopback + ffmpeg testsrc2 on /dev/video10). `LUMEN_PERMISSIONS=allow` is NOT a value: the page then blocks on the SDL prompt.
+- Regression (2026-10-11, build/lumen, LUMEN_ALLOW_SW_GPU=1): webgl/three/webgpu/canvas/capture fixtures all pass, 60 fps.
+- YouTube far seek works when driven like a user (`movie_player.seekTo(t, true)`, i.e. progress-bar clicks): a jump to 508 s of 634 s resumed playback within 1 s with fresh segments appended. The remaining "moov atom not found" lines are demuxers aborted by the seek epoch change (harmless). Setting `video.currentTime` directly from script makes YouTube append nothing (no abort/remove/append at all), so the player stays `seeking` forever; making the `seeking` event async did not change that. Test scripts: ~/lumen-tests/ytseek.js (direct) and ytseek-api.js (player API) via LUMEN_PRE_FILE + LUMEN_MEDIA_DEBUG=1 (now logs every MSE init/segment/abort/remove).
+
+## 2026-10-11 later: float-in-flex + shadow DOM styles
+- `9c9e70b` floats that are flex/grid items are no longer treated as floats (box.c). Fixed Amazon nav
+  logo (16px -> 114px) and Wikipedia `.mw-logo` (0 -> 140px). Fixture: tests/layout/float-in-flex.html.
+- `e1f531f` shadow-tree style scoping: `<style>`/`<link>` inside shadow roots are collected via
+  `node_next_deep()` and only match inside their shadow tree (Rule.scope, StyleEngine.el_scope);
+  `:host` rules match the host and `:host ... x` steps up via select.c `host_up()`. Document rules no
+  longer match inside shadow trees (UA rules do). Constructed sheets are mirrored into each adopting
+  Document/ShadowRoot (06b-activate.js `adoptSheets`), not dumped into document <head>.
+  Fixture: tests/render/adopted-sheets.html (all 8 checks true). Reddit wordmark + header now render.
+- Not done: `::slotted()`, `::part()`, `:host-context()`; per-instance mirror sheets are not deduped
+  (each shadow root adopting a sheet gets its own copy in the rule index).
+- Open: Reddit shows a search dropdown panel open under the search bar (likely a shadow component
+  whose closed state relies on ::slotted/popover/other unsupported rule). YouTube home thumbnails
+  blank in 12 s screenshots on both old and new builds (lazy image loading?).
+- Seen twice: a `timeout 25 lumen https://www.reddit.com/` process outlived its timeout (needed
+  kill -9) - exit/shutdown hang worth investigating.
+- `cfc44d7` shadow hosts render only their shadow tree; light children appear only through `<slot>`
+  (named/default, fallback content) - box.c `slot_host`/`slot_takes`. Fixture tests/render/shadow-slots.html.
+  Fixed Reddit's duplicated search bar. `::slotted()` still unsupported, and slotted nodes inherit
+  from the host (not the slot).
+- `2a9dc65` `::placeholder` color (pseudo_el 5 -> ComputedStyle.ph_color/ph_set; display.c uses it).
+- Re-checked after these: YouTube, X, GitHub, BBC, Amazon, Reddit screenshots OK; layout output identical
+  on the 29 older fixtures; WebGL/three.js/WebGPU/Canvas fixtures still 60 fps (software GPU).
+
+## 2026-10-11 late: AVIF, adopted sheets, font shorthand
+- AVIF images decode via ffmpeg (mov demuxer + libdav1d) through `image_avif_decoder` hook (paint/image.c -> media/media.c). YouTube thumbnails are `image/avif`; they were blank before. Fixture: tests/render/avif.html. `LUMEN_DEBUG_IMG=1` logs magic bytes + MIME of undecodable images.
+- adoptedStyleSheets are mirrored as hidden `<style>` nodes in the scope; `innerHTML`/`textContent`/`replaceChildren` wiped them (lit/Reddit set the sheets before rendering). `readopt()` in 06b-activate.js puts them back.
+- `font: inherit` now inherits family/size/weight/style/line-height, and a `font` shorthand beats lower-priority longhands (UA `textarea{font-family:monospace}` was overriding it). Fixture: tests/render/shadow-font-inherit.html (all true).
+- Checks: tests/layout 21 files 0 diffs vs build3; adopted-sheets 8/8, shadow-slots 6/6; fixtures idle 0% CPU. Reddit post page renders, search placeholder now sans-serif; ~100% CPU while the post video decodes.
+- Testing-agent site run (build3 = bdebe37) predates 49fe249..b864c59; needs a rerun on current HEAD.
+- Open: Reddit textarea text sits a few px high in the search pill; `::slotted()`, `::part()`, `:host-context()`; YouTube 80% seek; Amazon video/scroll CPU ~100%; Google CAPTCHA from VM IP; no physical GPU to measure hardware 3D speed.
+
+## 2026-10-11 night: Amazon product page + restyle cost
+- Amazon /dp pages were blank: they embed whole `<html><body>` fragments and
+  `M_AFTER_BODY` dropped every later token. Now re-processed in body mode
+  (`src/html/html.c`, fixture `tests/render/nested-html-end.html`).
+- Style cost (Amazon ~6k elements, full pass was 380-450 ms):
+  - `node_has_class` caches atomized class tokens per node (`Node.cls/ncls`,
+    invalidated on `class` set/remove); rule lookup uses `hm_getn` slices;
+    `attr_index` avoids `atom()`.
+  - Child-list changes mark the parent `NF_STRUCT_DIRTY` instead of a full
+    subtree restyle; `recalc` re-matches the parent + direct children and only
+    descends further if the parent's style changed (`tests/render/struct-restyle.html`).
+  - `sync_sheets` reuses the stored hash for clean `<style>` elements
+    (`tests/render/style-text-update.html`).
+  - `video_bars`/`vbar_click` iterate a per-page `<video>` list (`page_videos`).
+- Linux CPU present: SDL backed the window surface with a GL renderer, so on a
+  GPU-less host every present ran through llvmpipe on all cores (~1/3 of
+  samples). `SDL_HINT_FRAMEBUFFER_ACCELERATION=0` on Linux -> plain XShm.
+- CPU now (1 s samples, no GPU VM): Amazon product load ~100% for ~6 s then
+  5-6% idle; Reddit home idle 2-7%; YouTube home idle 11-14% while the
+  sponsored tile's video plays (dl_build/paint + js_tick); Wikipedia typing in
+  search 9-14% (was 18-24%; remainder is mostly Wikipedia's suggestion JS).
+- Still open from the last site run: Reddit search results clipped, Amazon
+  search-icon submit, YouTube drag-seek, X input after layout shift.
+- `window.location = url` / bare `location = url` were no-ops (prelude had a
+  top-level `const location`, which page scripts share). Now a non-configurable
+  accessor on the global (`tests/render/window-location-assign.html`). This was
+  why Amazon search from a results page (Enter or icon) did nothing: its jQuery
+  submit handler prevents default and assigns `window.location`.
+- Reddit `/search/?q=` renders full-width now; the earlier "clipped" report was
+  on an older build.
+- Mouse: `click_page()` used to fire pointerdown, mousedown, pointerup, mouseup
+  and click all at button-down, so drags (YouTube seek bar, sliders) never saw a
+  held button. Now pointerup/mouseup/click fire on the real release
+  (`click_release()`), click goes to the common ancestor of the press/release
+  targets, moves carry `buttons` (`js_buttons`), and `setPointerCapture` is
+  real (retargets moves/ups until pointerup). Fixtures:
+  `tests/render/pointer-capture.html`, `tests/render/click-seq.html`.
+- `:checked` ignored the `checked`/`selected` content attribute (only script-set
+  state matched), so server-rendered checked boxes (Amazon filters) showed
+  unchecked. `PopStateEvent.state` is now a read-only getter (Reddit's history
+  code threw on construction, breaking Back). Fixtures: `checked-attr.html`,
+  `popstate.html`.
+
+## 2026-10-11 (Linux branch, after 158c600)
+- 86b0eaf: iframes raster onto a transparent canvas (main.c frame_update), have no intrinsic ratio (box.c replaced_size), UA `iframe[frameborder=0]{border:none}`. Fixed Amazon dp title/byline/rating/breadcrumbs hidden under the 1196x600 white ad iframe. Test: tests/render/iframe-transparent.html -> `IFRT [true,true,true,true]`.
+- Note: `ps -o %cpu` is a lifetime average; it decays slowly after a load burst. Use `LUMEN_CPU_DEBUG=1` (per-tab %) or /proc/<pid>/stat deltas for instantaneous CPU. Amazon dp settles ~6-8% (about 80 partial paints/s from banner videos).
+- Debug trick: append a `<script>setTimeout(()=>console.log(...),5000)</script>` probe to a saved page and run with `LUMEN_CONSOLE=1`; raising an element's z-index shows if something is painted over it.
+- e5ce223: Alt+Left/Right and AC_BACK/AC_FORWARD keys -> history_go (main.c KEY_DOWN, skipped while editing the URL bar). Tester verified on Reddit search -> post -> Alt+Left/Alt+Right.
+- Tester (86b0eaf build): YouTube click-seek and held drag-seek both resume playback, no `moov` errors. Reddit post opened directly is full width (main 756 + sidebar 316 grid); 'narrow post' only seen when opened from search results.
+- `LUMEN_PRE_FILE=probe.js` evals a script in every page: handy for probing live sites.
+- Open: Reddit post opened from search may be narrow, X first input after async layout shift (inconclusive), typing CPU on Amazon/YouTube/Wikipedia.
+- f9a6a58: `@media` rules are kept on each Rule (`Rule.mq`, outer chain) and evaluated at match time (`css_media_chain`, cached per viewport); viewport change in main.c layout path -> `style_recalc` + `js_viewport_changed` (matchMedia change + window `resize`). Fixture tests/render/media-resize.html (needs a window resize during the run, e.g. `xdotool windowsize`).
+- Damage repaint while typing (main.c render): display-list diff is now prefix/suffix + multiset (`dsig_damage`), boxes clipped to the viewport (`vunion`; off-screen carousel clips at x=-12605 used to widen damage to x=0), videos matched by stacking rank, and DOM damage + each changed video rect are rastered separately. Amazon search typing: full rasters per keystroke -> none; CPU 17-33% -> 12-20% (/proc interval). `LUMEN_CHECK_DAMAGE=1` gave 0 mismatched px on Amazon typing (~800 frames) and YouTube playback (735 frames). `LUMEN_DEBUG_DAMAGE=1` prints large changed items; `LUMEN_DEBUG_PAINT=1` prints "damage too big" with rects.
+- Amazon typing harness: /tmp/wb/amztype.sh LOG DISPLAY [ENV=..] (clicks the search box found by a LUMEN_PRE_FILE probe, types, logs /proc ticks + ps).
+
+## 2026-10-11 (Linux branch, after 55ddbd0): stacking, Amazon carousel, idle CPU, bg shorthand
+- 1022d8d: positive z-index descendants of a positioned `z-index:auto` box are hoisted into the enclosing
+  stacking context (src/paint/display.c `PB.ctx`). Wikipedia search suggestions no longer show the page
+  links through them. Fixture: tests/render/zindex-hoist.html.
+- 7be42e5: a percentage-width box with overflow-x != visible contributes 0 min-content width
+  (src/layout/box.c). Amazon's sponsored carousel (width:max-content table inside a 100%/overflow:hidden
+  viewport) stays in the results column instead of covering the filter sidebar. Fixture:
+  tests/render/pct-scroll-minwidth.html (logs `PSMW [true,true]`).
+- bb88ea3: animated images only report frame changes when drawn in the viewport during the last second
+  (`image_anim_seen` after every dl_build); video players whose element box is off-viewport don't request
+  repaints (`media_mark_visible(vis_view)` runs every loop now, `media_vis_track`). Amazon results idle
+  went 6-7% -> 2-3%: an offscreen animated image was forcing ~50 full DL rebuilds/s.
+  Fixtures: tests/render/anim-visible.html (animates), anim-offscreen.html (0 paints).
+- fdbf3f3: `background:` shorthand honours `position / size` (also `-80px/160px` tokens). YouTube's
+  seek preview is a sprite cell picked this way. Fixture: tests/render/bg-shorthand-size.html.
+- CPU (native X11, /proc per-second): Amazon home idle 1-3%, Amazon results idle 2-3% with a short
+  spike every ~9 s (page timers), YouTube home 5-6% while its masthead video plays (real decode).
+- Profiling on Linux: perf is blocked (perf_event_paranoid=4) but ptrace works; /tmp/wb/pmp.sh-style
+  gdb `thread apply all bt` sampling is the poor man's profiler. Temporary `fprintf` on each dirty
+  source (anim, frames_tick, media_tick, cvbuf) quickly shows what wakes the loop.
+
+## 2026-10-11: Amazon video-tile CPU (Linux, native CPU raster)
+- 481cbb7 made Amazon's video.js tiles actually play; CPU then sat at ~60-80% because every video frame re-rastered the whole tile (shadows, gradients, layers, 3 stacked 854x1368 images).
+- ffb1003: outer box-shadows clipped out of the border box (CSS-correct; old code painted shadow under transparent boxes), opacity layers sized to their contents ∩ clip and skipped when empty, gradient stop-colour reuse.
+- 5e6feaa: `occluder_inner()` — a video clipped one row short of its box still occludes everything under it; edge strips rastered separately. Horizontal gradients cache per-column colours.
+- Result: Amazon home with 2 tiles playing ~60% -> ~25% CPU; LUMEN_CHECK_DAMAGE: 1399 partial-vs-full checks, 0 mismatched px; layout 21 files 0 diffs; render fixtures identical except the intended shadow-interior change.
+- Debug: `LUMEN_DEBUG_RASTER=1` prints per-raster-rect item counts/areas by op.
+- Next: the hidden stacked video (#224 under #267 in the same tile) is still decoded; remaining main-thread time is video.js JS/style updates (printf of floats, hm_getn).
+
+## 2026-10-11 (later): offscreen media CPU, muted audio, drag selection
+- Muted media no longer opens an audio device (no PulseAudio threads / callbacks); the wall clock drives
+  playback until the device is live (`aud_live()`: `a_live` set once audio_cb consumes samples). Unmuting a
+  playing stream opens the device then. Device start-up on this VM's null sink takes ~2-3 s (pre-existing:
+  build7 also stalled ~2 s at start); the clock then waits on the queued-audio latency.
+- Off-screen playing media caps the loop wait at 250 ms (`media_timeout_ms`). audio_cb only signals the
+  decoder when the audio buffer drops under AQ_MAX_SEC.
+- Amazon home scrolled to the footer: 4-5% -> 2-4% CPU; remaining is Amazon's ~37 setInterval(100) timers.
+- A cancelled `mousedown` starts no text selection (YouTube seek-bar drag selected sidebar text);
+  `tests/layout/mousedown-nosel.html`.
+- `-webkit-line-clamp`/`-webkit-box-orient` parse; line clamp clips overflow boxes (7b9ffd7, `tests/layout/line-clamp.html`).
+- Flex/grid containers drop whitespace-only text runs even under `white-space: pre/pre-wrap` (spec: never
+  rendered). YouTube's view-count/date row had ~16-60px gaps from Polymer template whitespace;
+  `tests/layout/flex-ws-pre.html` (eab948a).
+- `opacity: <non-number>` (YouTube writes `style.opacity = undefined`) is ignored instead of parsing as 0;
+  the channel avatar was invisible. `tests/layout/opacity-invalid.html`. Build dir for main-agent work: build9
+  (build8 is pinned by the testing agent's SHA guard during its run).
+- Vendor-prefixed aliases (`-webkit-/-moz-/-ms-` user-select, appearance, backdrop-filter, transform) were dead:
+  the property switch is entered on P[0] and '-' skipped them. YouTube's `ytd-player{-webkit-user-select:none}`
+  was lost, so seek-bar drags selected page text. getComputedStyle reports user-select.
+  `tests/layout/user-select-prefixed.html`.
+- Linux release flow: `tools/mklinpkg.py v<X> buildN/lumen` builds `dist/lumen-<ver>-linux-x86_64.tar.gz`
+  (binary + .so closure + bundled brew glibc ld.so launcher + icudtl + fonts.conf + cert.pem) that runs on any
+  x86_64 distro incl. older glibc. Tag, push, POST /repos/ecooxai/lumen/releases with $GITHUB_TOKEN_ECOOXAI,
+  upload asset to the returned upload_url. v0.2.0-preview released this way.

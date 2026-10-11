@@ -1,0 +1,5 @@
+<!doctype html><body><script>
+if (location.search == '?went') console.log('WLOC [true,' + (window.location === location) + ',' + (document.location === location) + ']');
+else if (location.search == '?went2') { console.log('WLOC2 [true]'); location = location.pathname + '?went'; }
+else setTimeout(() => { window.location = location.pathname + '?went2'; }, 100);
+</script>

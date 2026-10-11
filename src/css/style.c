@@ -22,7 +22,7 @@ ComputedStyle *style_new_default(void) {
     s->bg_size[0] = s->bg_size[1] = L_auto();
     s->transform_origin[0].pct = 50; s->transform_origin[1].pct = 50;
     s->filter_brightness = 1; s->caret_color = 0; s->fill = RGBA(0, 0, 0, 255); s->stroke_width = 1;
-    s->grid_col_span = s->grid_row_span = 1; s->grid_auto_rows = L_auto();
+    s->grid_col_span = s->grid_row_span = 1; s->grid_auto_rows = L_auto(); s->grid_auto_cols = L_auto();
     s->pointer_events = 1;
     return s;
 }
@@ -436,23 +436,38 @@ static void apply_background(ACtx *c, const char *v) {
     c->st->bg_repeat = BG_REPEAT; c->st->bg_size_kind = BGS_AUTO; c->st->bg_pos[0] = c->st->bg_pos[1] = (Length){0, 0, LK_LEN};
     if (str_ieq(v, "none")) return;
     if (strstr(v, "url(") || strstr(v, "gradient(")) apply_background_image(c, v);
-    const char *p = v; char *t; int pos_n = 0; char posbuf[128] = {0};
+    const char *p = v; char *t; int pos_n = 0, sz_n = 0; char posbuf[128] = {0}, szbuf[128] = {0}; bool after_slash = false;
     while ((t = next_token(&p))) {
         size_t tl = strlen(t);
         char *tt = t; if (tl && tt[tl - 1] == ',') tt[tl - 1] = 0;
-        Color col;
-        if (str_istarts(tt, "url(") || strstr(tt, "gradient(")) {}
-        else if (str_ieq(tt, "no-repeat")) c->st->bg_repeat = BG_NO_REPEAT;
-        else if (str_ieq(tt, "repeat-x")) c->st->bg_repeat = BG_REPEAT_X;
-        else if (str_ieq(tt, "repeat-y")) c->st->bg_repeat = BG_REPEAT_Y;
-        else if (str_ieq(tt, "repeat")) c->st->bg_repeat = BG_REPEAT;
-        else if (str_ieq(tt, "cover") || str_ieq(tt, "contain")) apply_bg_size(c, tt);
-        else if (!strcmp(tt, "/")) {}
-        else if (css_parse_color(tt, &col, c->st->color)) c->st->bg_color = col;
-        else if (pos_n < 2 && (str_ieq(tt, "center") || str_ieq(tt, "left") || str_ieq(tt, "right") || str_ieq(tt, "top") || str_ieq(tt, "bottom") || isdigit((unsigned char)tt[0]) || tt[0] == '-' || tt[0] == '.')) { strncat(posbuf, " ", sizeof posbuf - strlen(posbuf) - 1); strncat(posbuf, tt, sizeof posbuf - strlen(posbuf) - 1); pos_n++; }
+        bool img = str_istarts(tt, "url(") || strstr(tt, "gradient(");
+        char *parts[2] = { tt, NULL }; char *sl = img ? NULL : strchr(tt, '/');
+        if (sl) { *sl = 0; parts[1] = sl + 1; }
+        for (int k = 0; k < 2; k++) {
+            char *w = parts[k];
+            if (k == 1) { if (!w) break; after_slash = true; }
+            if (!*w) continue;
+            Color col;
+            /* `position / size`: up to two size values follow the slash */
+            if (after_slash && sz_n < 2 && (str_ieq(w, "auto") || str_ieq(w, "cover") || str_ieq(w, "contain") || isdigit((unsigned char)w[0]) || w[0] == '.' || w[0] == '-' || str_istarts(w, "calc("))) {
+                strncat(szbuf, " ", sizeof szbuf - strlen(szbuf) - 1); strncat(szbuf, w, sizeof szbuf - strlen(szbuf) - 1); sz_n++; continue;
+            }
+            after_slash = false;
+            if (img) {}
+            else if (str_ieq(w, "no-repeat")) c->st->bg_repeat = BG_NO_REPEAT;
+            else if (str_ieq(w, "repeat-x")) c->st->bg_repeat = BG_REPEAT_X;
+            else if (str_ieq(w, "repeat-y")) c->st->bg_repeat = BG_REPEAT_Y;
+            else if (str_ieq(w, "repeat")) c->st->bg_repeat = BG_REPEAT;
+            else if (str_ieq(w, "cover") || str_ieq(w, "contain")) apply_bg_size(c, w);
+            else if (css_parse_color(w, &col, c->st->color)) c->st->bg_color = col;
+            else if (pos_n < 2 && (str_ieq(w, "center") || str_ieq(w, "left") || str_ieq(w, "right") || str_ieq(w, "top") || str_ieq(w, "bottom") || isdigit((unsigned char)w[0]) || w[0] == '-' || w[0] == '.')) {
+                strncat(posbuf, " ", sizeof posbuf - strlen(posbuf) - 1); strncat(posbuf, w, sizeof posbuf - strlen(posbuf) - 1); pos_n++;
+            }
+        }
         free(t);
     }
     if (pos_n) apply_bg_pos(c, posbuf);
+    if (sz_n) apply_bg_size(c, szbuf + 1);
 }
 static void apply_font(ACtx *c, const char *v) {
     /* [style] [variant] [weight] size[/line-height] family */
@@ -603,7 +618,7 @@ static uint8_t parse_align(const char *v) {
     return (uint8_t)k;
 }
 
-static const char *const known_props[] = { "animation","animation-name","animation-duration","animation-delay","animation-iteration-count","animation-timing-function","animation-fill-mode","animation-direction","animation-play-state","transition","transition-property","transition-duration","transition-delay","transition-timing-function","display","position","float","clear","width","height","min-width","min-height","max-width","max-height","margin","margin-top","margin-right","margin-bottom","margin-left","padding","padding-top","padding-right","padding-bottom","padding-left","border","border-width","border-style","border-color","border-top","border-right","border-bottom","border-left","border-radius","color","background","background-color","background-image","font","font-size","font-weight","font-family","font-style","line-height","text-align","text-decoration","white-space","overflow","overflow-x","overflow-y","visibility","opacity","z-index","top","right","bottom","left","inset","flex","flex-direction","flex-wrap","flex-grow","flex-shrink","flex-basis","justify-content","align-items","align-self","align-content","gap","row-gap","column-gap","order","grid","grid-template-columns","grid-template-rows","grid-column","grid-row","grid-area","transform","transition","animation","box-shadow","text-shadow","box-sizing","cursor","pointer-events","content","list-style","list-style-type","vertical-align","text-transform","letter-spacing","word-spacing","text-indent","text-overflow","word-break","overflow-wrap","word-wrap","object-fit","aspect-ratio","filter","outline","user-select","appearance","will-change","contain","isolation","mix-blend-mode","place-items","place-content","place-self","justify-items","justify-self","table-layout","border-collapse","border-spacing","clip-path","mask","mask-image","mask-size","-webkit-mask","-webkit-mask-image","-webkit-mask-size","resize","scroll-behavior","overscroll-behavior","touch-action","font-variant","text-rendering","-webkit-font-smoothing","fill","stroke","caret-color","accent-color","color-scheme","translate","scale","rotate","container-type","backdrop-filter","line-clamp","-webkit-line-clamp","text-wrap","hyphens","tab-size","direction","unicode-bidi","writing-mode","inset-inline","inset-block","margin-inline","margin-block","padding-inline","padding-block", NULL };
+static const char *const known_props[] = { "animation","animation-name","animation-duration","animation-delay","animation-iteration-count","animation-timing-function","animation-fill-mode","animation-direction","animation-play-state","transition","transition-property","transition-duration","transition-delay","transition-timing-function","display","position","float","clear","width","height","min-width","min-height","max-width","max-height","margin","margin-top","margin-right","margin-bottom","margin-left","padding","padding-top","padding-right","padding-bottom","padding-left","border","border-width","border-style","border-color","border-top","border-right","border-bottom","border-left","border-radius","color","background","background-color","background-image","font","font-size","font-weight","font-family","font-style","line-height","text-align","text-decoration","white-space","overflow","overflow-x","overflow-y","visibility","opacity","z-index","top","right","bottom","left","inset","flex","flex-direction","flex-wrap","flex-grow","flex-shrink","flex-basis","justify-content","align-items","align-self","align-content","gap","row-gap","column-gap","order","grid","grid-template-columns","grid-template-rows","grid-column","grid-row","grid-area","transform","transition","animation","box-shadow","text-shadow","box-sizing","cursor","pointer-events","content","list-style","list-style-type","vertical-align","text-transform","letter-spacing","word-spacing","text-indent","text-overflow","word-break","overflow-wrap","word-wrap","object-fit","aspect-ratio","filter","outline","user-select","appearance","will-change","contain","isolation","mix-blend-mode","place-items","place-content","place-self","justify-items","justify-self","table-layout","border-collapse","border-spacing","clip-path","mask","mask-image","mask-size","-webkit-mask","-webkit-mask-image","-webkit-mask-size","resize","scroll-behavior","overscroll-behavior","touch-action","font-variant","text-rendering","-webkit-font-smoothing","fill","stroke","caret-color","accent-color","color-scheme","translate","scale","rotate","container-type","backdrop-filter","line-clamp","-webkit-line-clamp","-webkit-box-orient","text-wrap","hyphens","tab-size","direction","unicode-bidi","writing-mode","inset-inline","inset-block","margin-inline","margin-block","padding-inline","padding-block", NULL };
 bool css_property_known(const char *p) { return kw(p, known_props) >= 0; }
 
 static char *parse_grid_areas(const char *v) {
@@ -747,6 +762,7 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         else if (!strcmp(P, "font-size")) st->font_size = src->font_size;
         else if (!strcmp(P, "font-weight")) st->font_weight = src->font_weight;
         else if (!strcmp(P, "font-family")) st->font_family = src->font_family;
+        else if (!strcmp(P, "font")) { st->font_family = src->font_family; st->font_size = src->font_size; st->font_weight = src->font_weight; st->font_style = src->font_style; st->line_height = src->line_height; st->line_height_normal = src->line_height_normal; st->line_height_factor = src->line_height_factor; }
         else if (!strcmp(P, "line-height")) { st->line_height = src->line_height; st->line_height_normal = src->line_height_normal; st->line_height_factor = src->line_height_factor; }
         else if (!strcmp(P, "background-color") || !strcmp(P, "background")) { st->bg_color = src->bg_color; if (!strcmp(P, "background")) { free(st->bg_image); st->bg_image = NULL; free(st->bg_gradient); st->bg_gradient = NULL; } }
         else if (!strcmp(P, "display")) st->display = src->display;
@@ -780,7 +796,16 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         goto out;
     }
     if (!strcmp(P, "container-type")) { st->container_type = str_ieq(val, "size") ? 2 : str_ieq(val, "inline-size") ? 1 : 0; goto out; }
+    if (P[0] == '-') {   /* vendor-prefixed aliases of standard properties */
+        static const char *const vend[] = { "user-select", "appearance", "backdrop-filter", "transform", NULL };
+        const char *u = !strncmp(P, "-webkit-", 8) ? P + 8 : !strncmp(P, "-moz-", 5) ? P + 5 : !strncmp(P, "-ms-", 4) ? P + 4 : NULL;
+        for (const char *const *v = vend; u && *v; v++) if (!strcmp(u, *v)) { P = u; break; }
+    }
     switch (P[0]) {
+    case '-':
+        if (!strcmp(P, "-webkit-line-clamp")) st->line_clamp = str_ieq(val, "none") ? 0 : strtof(val, NULL);
+        else if (!strcmp(P, "-webkit-box-orient")) { if (str_ieq(val, "vertical") || str_ieq(val, "block-axis")) st->flex_direction = 2; else if (str_ieq(val, "horizontal") || str_ieq(val, "inline-axis")) st->flex_direction = 0; }
+        break;
     case 'a':
         if (!strcmp(P, "align-items")) st->align_items = parse_align(val);
         else if (!strcmp(P, "align-self")) st->align_self = parse_align(val);
@@ -910,6 +935,8 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         else if (!strcmp(P, "grid-column-start")) { if (str_istarts(val, "span")) st->grid_col_span = atoi(val + 4); else st->grid_col_start = atoi(val); }
         else if (!strcmp(P, "grid-row-start")) { if (str_istarts(val, "span")) st->grid_row_span = atoi(val + 4); else st->grid_row_start = atoi(val); }
         else if (!strcmp(P, "grid-auto-rows")) alen(&c, val, &st->grid_auto_rows);
+        else if (!strcmp(P, "grid-auto-columns")) alen(&c, val, &st->grid_auto_cols);
+        else if (!strcmp(P, "grid-auto-flow")) st->grid_flow_col = strstr(val, "column") != NULL;
         else if (!strcmp(P, "grid-area")) { free(st->grid_area); st->grid_area = NULL; int a = atoi(val); if (a > 0) st->grid_row_start = a; else if (isalpha((unsigned char)*val) || *val == '_' || *val == '-') { size_t k = strcspn(val, " /"); st->grid_area = xstrndup(val, k); } }
         else if (!strcmp(P, "grid-template-areas")) { free(st->grid_areas); st->grid_areas = parse_grid_areas(val); }
         break;
@@ -945,7 +972,7 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
             static const char *const ls[] = { "none", "disc", "circle", "square", "decimal", "lower-alpha", "upper-alpha", "lower-roman", "upper-roman", NULL };
             char *t[3]; int n = split_ws(val, t, 3); for (int i = 0; i < n; i++) { k = kw(t[i], ls); if (k >= 0) st->list_style = (uint8_t)k; else if (str_ieq(t[i], "lower-latin")) st->list_style = LST_LOWER_ALPHA; else if (str_ieq(t[i], "upper-latin")) st->list_style = LST_UPPER_ALPHA; } free_toks(t, n);
         }
-        else if (!strcmp(P, "line-clamp") || !strcmp(P, "-webkit-line-clamp")) st->line_clamp = str_ieq(val, "none") ? 0 : strtof(val, NULL);
+        else if (!strcmp(P, "line-clamp")) st->line_clamp = str_ieq(val, "none") ? 0 : strtof(val, NULL);
         break;
     case 'm':
         if (!strcmp(P, "margin")) set4(st->margin, &c, val);
@@ -965,7 +992,7 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         else if (!strcmp(P, "max-inline-size")) alen(&c, val, &st->max_width);
         break;
     case 'o':
-        if (!strcmp(P, "opacity")) { float x = strtof(val, NULL); if (strchr(val, '%')) x /= 100; st->opacity = LCLAMP(x, 0, 1); }
+        if (!strcmp(P, "opacity")) { char *e; float x = strtof(val, &e); if (e != val) { if (*e == '%') x /= 100; st->opacity = LCLAMP(x, 0, 1); } }
         else if (!strcmp(P, "overflow") || !strcmp(P, "overflow-x") || !strcmp(P, "overflow-y")) {
             static const char *const ov[] = { "visible", "hidden", "scroll", "auto", "clip", NULL };
             char *t[2]; int n = split_ws(val, t, 2);
@@ -1148,7 +1175,7 @@ static void hov_scan(RuleIndex *ix, const Selector *sel, int outer, const char *
 static uintptr_t hov_lookup(HMap *m, Node *el) {
     uintptr_t f = 0;
     if (el->id) f |= (uintptr_t)hm_get(m, el->id);
-    const char *cls = node_attr(el, "class");
+    const char *cls = node_attr(el, A_class);
     if (cls) { const char *p = cls; while (*p) { while (is_ws((unsigned char)*p)) p++; const char *s = p; while (*p && !is_ws((unsigned char)*p)) p++; if (p > s) f |= (uintptr_t)hm_getn(m, s, (size_t)(p - s)); } }
     if (el->tag) f |= (uintptr_t)hm_get(m, el->tag);
     for (int i = 0; i < el->nattrs; i++) {
@@ -1165,7 +1192,7 @@ int style_hover_affects(StyleEngine *e, Node *el) {
 static bool has_key(Node *el, const char *k) {
     if ((el->id && !strcmp(el->id, k)) || (el->tag && !strcmp(el->tag, k))) return true;
     if (k[0] == '[') return node_has_attr(el, k + 1);
-    const char *cls = node_attr(el, "class");
+    const char *cls = node_attr(el, A_class);
     size_t kn = strlen(k);
     if (cls) for (const char *p = cls; *p;) { while (is_ws((unsigned char)*p)) p++; const char *s = p; while (*p && !is_ws((unsigned char)*p)) p++; if ((size_t)(p - s) == kn && !memcmp(s, k, kn)) return true; }
     return false;
@@ -1173,7 +1200,7 @@ static bool has_key(Node *el, const char *k) {
 static int desc_collect(HMap *m, Node *el, HovDesc **out, int n) {
     HovDesc *h;
     if (el->id && (h = hm_get(m, el->id)) && n < 32) out[n++] = h;
-    const char *cls = node_attr(el, "class");
+    const char *cls = node_attr(el, A_class);
     if (cls) for (const char *p = cls; *p;) { while (is_ws((unsigned char)*p)) p++; const char *s = p; while (*p && !is_ws((unsigned char)*p)) p++; if (p > s && (h = hm_getn(m, s, (size_t)(p - s))) && n < 32) out[n++] = h; }
     if (el->tag && (h = hm_get(m, el->tag)) && n < 32) out[n++] = h;
     for (int i = 0; i < el->nattrs; i++) {
@@ -1207,14 +1234,34 @@ int style_hover_has(StyleEngine *e, Node *el, bool child) {
     if (e->idx_dirty || ix->hov_has) return 0;
     return (int)hov_lookup(child ? &ix->hov_ach : &ix->hov_anc, el);
 }
+/* :host only matches from stylesheets inside a shadow tree */
+static Node *tree_scope(Node *n) {   /* shadow root containing n, NULL in the document tree */
+    if (!n) return NULL;
+    while (n->parent) n = n->parent;
+    return n->type == NODE_FRAGMENT && n->host ? n : NULL;
+}
+static bool sheet_in_document_scope(const StyleSheet *sh) { return sh->owner && !tree_scope(sh->owner); }
+static bool sel_has_host(const Selector *sel) {
+    const char *h = atom("host"), *hc = atom("host-context");
+    for (int c = 0; c < sel->n; c++)
+        for (int k = 0; k < sel->c[c].n; k++) {
+            const SimpleSel *s = &sel->c[c].s[k];
+            if (s->kind == SK_PSEUDO && (s->name == h || s->name == hc)) return true;
+        }
+    return false;
+}
 static void idx_build(StyleEngine *e) {
     idx_clear(&e->idx);
     for (int si = 0; si < e->sheets.n; si++) {
         StyleSheet *sh = e->sheets.v[si];
         if (sh->disabled) continue;
+        bool doc_scope = sheet_in_document_scope(sh);
+        Node *scope = tree_scope(sh->owner);
         for (int i = 0; i < sh->rules.n; i++) {
             Rule *r = &sh->rules.v[i];
             r->order = (uint32_t)(si << 20) + (uint32_t)i;
+            r->scope = scope;
+            if (doc_scope && sel_has_host(&r->sel)) continue;
             Compound *last = &r->sel.c[r->sel.n - 1];
             const char *id = NULL, *cls = NULL, *tag = NULL;
             for (int k = 0; k < last->n; k++) {
@@ -1250,7 +1297,7 @@ void style_engine_add_sheet(StyleEngine *e, StyleSheet *s) {
             Node *o = e->sheets.v[i]->owner; if (!o) continue;
             /* is s->owner before o in tree order? */
             bool before = false;
-            for (Node *n = s->owner; n; n = node_next_in_tree(n, NULL)) { if (n == o) { before = true; break; } }
+            for (Node *n = s->owner; n; n = node_next_deep(n, NULL)) { if (n == o) { before = true; break; } }
             if (before) { pos = i; break; }
         }
     }
@@ -1297,11 +1344,27 @@ static bool container_matches(const ContainerCond *cc, Node *el) {
     return true;
 }
 
+bool css_media_chain(ContainerCond *mq, const MediaCtx *m) {
+    for (; mq; mq = mq->outer) {
+        if (!mq->mres || mq->mvw != m->vw || mq->mvh != m->vh || mq->mdark != m->dark) {
+            mq->mres = css_media_matches(mq->query, m) ? 1 : -1; mq->mvw = m->vw; mq->mvh = m->vh; mq->mdark = m->dark;
+        }
+        if (mq->mres < 0) return false;
+    }
+    return true;
+}
+static bool sel_last_has_host(const Selector *sel) {
+    const char *h = atom("host"); const Compound *c = &sel->c[sel->n - 1];
+    for (int k = 0; k < c->n; k++) if (c->s[k].kind == SK_PSEUDO && c->s[k].name == h) return true;
+    return false;
+}
 static void collect(StyleEngine *e, Node *el, RuleVec *rv, int pseudo, VEC(MDecl) *out) {
     if (!rv) return;
     for (int i = 0; i < rv->n; i++) {
         Rule *r = rv->v[i];
         if (r->sel.pseudo_el != pseudo) continue;
+        if (r->origin && r->scope != e->el_scope && !(r->scope && el->shadow_root == r->scope && sel_last_has_host(&r->sel))) continue;
+        if (r->mq && !css_media_chain(r->mq, &e->media)) continue;
         if (!css_match_selector(&r->sel, el, NULL)) continue;
         if (r->cq && !container_matches(r->cq, el)) continue;
         for (int k = 0; k < r->decls->n; k++) {
@@ -1352,7 +1415,7 @@ static ComputedStyle *compute_pseudo(StyleEngine *e, Node *el, ComputedStyle *ba
     VEC(MDecl) md = {0};
     RuleVec *rv;
     if (el->id && (rv = hm_get(&e->idx.by_id, el->id))) collect(e, el, rv, which, (void *)&md);
-    const char *cls = node_attr(el, "class");
+    const char *cls = node_attr(el, A_class);
     if (cls) { const char *p = cls; while (*p) { while (is_ws((unsigned char)*p)) p++; const char *s = p; while (*p && !is_ws((unsigned char)*p)) p++; if (p > s && (rv = hm_getn(&e->idx.by_class, s, (size_t)(p - s)))) collect(e, el, rv, which, (void *)&md); } }
     if ((rv = hm_get(&e->idx.by_tag, el->tag))) collect(e, el, rv, which, (void *)&md);
     { RuleVec u = { e->idx.universal.v, e->idx.universal.n, 0 }; collect(e, el, &u, which, (void *)&md); }
@@ -1362,7 +1425,7 @@ static ComputedStyle *compute_pseudo(StyleEngine *e, Node *el, ComputedStyle *ba
     for (int i = 0; i < md.n; i++) if (md.v[i].d->prop[0] == '-' && md.v[i].d->prop[1] == '-') css_apply_decl(st, base, md.v[i].d->prop, md.v[i].d->value, e, el);
     for (int i = 0; i < md.n; i++) if (!(md.v[i].d->prop[0] == '-' && md.v[i].d->prop[1] == '-')) css_apply_decl(st, base, md.v[i].d->prop, md.v[i].d->value, e, el);
     vec_free(md);
-    if (!st->content && which != 4) { style_free(st); return NULL; }
+    if (!st->content && which != 4 && which != 5) { style_free(st); return NULL; }
     return st;
 }
 
@@ -1381,14 +1444,21 @@ static void apply_decl_ordered(ComputedStyle *st, const ComputedStyle *par, MDec
     }
     for (int i = 0; i < n; i++) { const char *p = v[i].d->prop; if (!strcmp(p, "font-size") || !strcmp(p, "font")) css_apply_decl(st, par, p, v[i].d->value, e, el); }
     for (int i = 0; i < n; i++) { const char *p = v[i].d->prop; if (!strcmp(p, "color")) css_apply_decl(st, par, p, v[i].d->value, e, el); }
-    for (int i = 0; i < n; i++) { const char *p = v[i].d->prop; if ((p[0] == '-' && p[1] == '-') || !strcmp(p, "font-size") || !strcmp(p, "font") || !strcmp(p, "color")) continue; css_apply_decl(st, par, p, v[i].d->value, e, el); }
+    int last_font = -1;   /* longhands cascading below a `font` shorthand must not override it */
+    for (int i = 0; i < n; i++) if (!strcmp(v[i].d->prop, "font")) last_font = i;
+    for (int i = 0; i < n; i++) {
+        const char *p = v[i].d->prop;
+        if ((p[0] == '-' && p[1] == '-') || !strcmp(p, "font-size") || !strcmp(p, "font") || !strcmp(p, "color")) continue;
+        if (i < last_font && (!strcmp(p, "font-family") || !strcmp(p, "font-weight") || !strcmp(p, "font-style") || !strcmp(p, "line-height"))) continue;
+        css_apply_decl(st, par, p, v[i].d->value, e, el);
+    }
 }
 
 static ComputedStyle *compute(StyleEngine *e, Node *el, const ComputedStyle *par) {
     VEC(MDecl) md = {0};
     RuleVec *rv;
     if (el->id && (rv = hm_get(&e->idx.by_id, el->id))) collect(e, el, rv, 0, (void *)&md);
-    const char *cls = node_attr(el, "class");
+    const char *cls = node_attr(el, A_class);
     if (cls) {
         const char *seen[32]; int ns = 0;
         const char *p = cls;
@@ -1396,16 +1466,18 @@ static ComputedStyle *compute(StyleEngine *e, Node *el, const ComputedStyle *par
             while (is_ws((unsigned char)*p)) p++;
             const char *s = p; while (*p && !is_ws((unsigned char)*p)) p++;
             if (p > s) {
-                const char *a = atomn(s, (size_t)(p - s)); bool dup = false;
-                for (int i = 0; i < ns; i++) if (seen[i] == a) dup = true;
-                if (!dup) { if (ns < 32) seen[ns++] = a; if ((rv = hm_get(&e->idx.by_class, a))) collect(e, el, rv, 0, (void *)&md); }
+                if ((rv = hm_getn(&e->idx.by_class, s, (size_t)(p - s)))) {
+                    bool dup = false;
+                    for (int i = 0; i < ns; i++) if (seen[i] == (const char *)rv) dup = true;
+                    if (!dup) { if (ns < 32) seen[ns++] = (const char *)rv; collect(e, el, rv, 0, (void *)&md); }
+                }
             }
         }
     }
     const char *tagkey = el->ns == NS_HTML ? el->tag : atom_lower(el->tag, strlen(el->tag));
     if ((rv = hm_get(&e->idx.by_tag, tagkey))) collect(e, el, rv, 0, (void *)&md);
     { RuleVec u = { e->idx.universal.v, e->idx.universal.n, 0 }; collect(e, el, &u, 0, (void *)&md); }
-    qsort(md.v, (size_t)md.n, sizeof(MDecl), mdecl_cmp);
+    if (md.n) qsort(md.v, (size_t)md.n, sizeof(MDecl), mdecl_cmp);
     ComputedStyle *st = style_inherit(par);
     /* split normal / important so presentational hints & inline style go between */
     int split = 0; while (split < md.n && (md.v[split].key >> 62) < 2) split++;
@@ -1413,7 +1485,7 @@ static ComputedStyle *compute(StyleEngine *e, Node *el, const ComputedStyle *par
     /* one pass so var() in sheet custom properties sees inline custom properties */
     VEC(MDecl) all = {0};
     for (int i = 0; i < split; i++) vec_push(all, md.v[i]);
-    const char *inl = node_attr(el, "style");
+    const char *inl = node_attr(el, A_style_attr);
     if (inl) {
         if (!el->inline_style_src || strcmp(el->inline_style_src, inl)) { free(el->inline_style_src); el->inline_style_src = xstrdup(inl); css_decls_free(el->inline_decls); el->inline_decls = css_parse_decls(inl, strlen(inl)); }
         DeclList *dl = el->inline_decls;
@@ -1481,19 +1553,32 @@ static void adopt(ComputedStyle *old, ComputedStyle *nw) {
 
 static void recalc(StyleEngine *e, Node *n, const ComputedStyle *par, bool force) {
     if (n->type == NODE_ELEMENT) {
-        bool need = force || (n->flags & NF_STYLE_DIRTY) || !n->style;
+        bool need = force || (n->flags & (NF_STYLE_DIRTY | NF_STRUCT_DIRTY | NF_SELF_DIRTY)) || !n->style;
+        bool shallow = !force && n->style && !(n->flags & NF_STYLE_DIRTY);
         if (need) {
+            e->el_scope = tree_scope(n);
             ComputedStyle *st = compute(e, n, par);
             if (st->display != D_NONE) {
-                if (e->idx.count) { st->before = compute_pseudo(e, n, st, 1); st->after = compute_pseudo(e, n, st, 2); if (st->display == D_LIST_ITEM) st->marker = compute_pseudo(e, n, st, 4); }
+                if (e->idx.count) { st->before = compute_pseudo(e, n, st, 1); st->after = compute_pseudo(e, n, st, 2); if (st->display == D_LIST_ITEM) st->marker = compute_pseudo(e, n, st, 4);
+                    if (n->tag == A_input || n->tag == A_textarea) { ComputedStyle *ph = compute_pseudo(e, n, st, 5); if (ph) { st->ph_color = ph->color; st->ph_set = true; style_free(ph); } } }
             }
             if (css_style_change_hook) css_style_change_hook(n, n->style, st);
-            if (n->style && paint_only(n->style, st)) { adopt(n->style, st); style_free(st); e->stats_paint++; }
+            bool same = false;
+            if (n->style && paint_only(n->style, st)) {
+                same = n->style->color == st->color && n->style->visibility == st->visibility && n->style->custom == st->custom;
+                adopt(n->style, st); style_free(st); e->stats_paint++;
+            }
             else { if (n->style) style_free(n->style); n->style = st; e->layout_dirty = true; }
-            force = true; /* children inherit */
+            if (shallow && same) {
+                /* only the child list changed: children re-match (structural pseudos, sibling combinators) but needn't re-inherit */
+                if (n->flags & NF_STRUCT_DIRTY) {
+                    for (Node *c = n->first; c; c = c->next) if (c->type == NODE_ELEMENT && !(c->flags & NF_STYLE_DIRTY)) c->flags |= NF_SELF_DIRTY;
+                    n->flags |= NF_CHILD_STYLE_DIRTY;
+                }
+            } else force = true; /* children inherit */
             e->stats_matched++;
         }
-        n->flags &= ~(uint32_t)(NF_STYLE_DIRTY);
+        n->flags &= ~(uint32_t)(NF_STYLE_DIRTY | NF_STRUCT_DIRTY | NF_SELF_DIRTY);
         if (!force && !(n->flags & NF_CHILD_STYLE_DIRTY)) return;
         n->flags &= ~(uint32_t)NF_CHILD_STYLE_DIRTY;
         if (n->style->display == D_NONE && !force) return;
@@ -1503,7 +1588,7 @@ static void recalc(StyleEngine *e, Node *n, const ComputedStyle *par, bool force
     } else if (n->type == NODE_DOCUMENT || n->type == NODE_FRAGMENT) {
         n->flags &= ~(uint32_t)(NF_STYLE_DIRTY | NF_CHILD_STYLE_DIRTY);
         for (Node *c = n->first; c; c = c->next) recalc(e, c, par, force);
-    } else n->flags &= ~(uint32_t)NF_STYLE_DIRTY;
+    } else n->flags &= ~(uint32_t)(NF_STYLE_DIRTY | NF_STRUCT_DIRTY | NF_SELF_DIRTY);
 }
 
 void style_recalc(StyleEngine *e, Node *root, bool force) {
@@ -1577,6 +1662,7 @@ char *css_get_computed_value(Node *el, const char *prop) {
     else if (!strcmp(prop, "z-index")) { if (s->z_auto) sb_puts(&b, "auto"); else sb_printf(&b, "%d", s->z_index); }
     else if (!strcmp(prop, "direction")) sb_puts(&b, s->direction ? "rtl" : "ltr");
     else if (!strcmp(prop, "pointer-events")) sb_puts(&b, s->pointer_events ? "auto" : "none");
+    else if (!strcmp(prop, "user-select") || !strcmp(prop, "-webkit-user-select") || !strcmp(prop, "webkit-user-select")) sb_puts(&b, s->user_select ? "none" : "auto");
     else if (!strcmp(prop, "box-sizing")) sb_puts(&b, s->box_sizing ? "border-box" : "content-box");
     else if (!strcmp(prop, "transform")) { if (s->has_transform) sb_printf(&b, "matrix(%g, %g, %g, %g, %g, %g)", s->transform[0], s->transform[1], s->transform[2], s->transform[3], s->transform[4], s->transform[5]); else sb_puts(&b, "none"); }
     else if (!strncmp(prop, "margin-", 7) || !strncmp(prop, "padding-", 8)) {

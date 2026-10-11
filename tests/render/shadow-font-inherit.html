@@ -1,0 +1,11 @@
+<!doctype html>
+<body style="font:20px serif">
+<x-in id=h style="font-family:sans-serif;font-size:14px;line-height:20px"></x-in>
+<script>
+const r = h.attachShadow({ mode: 'open' });
+const s = new CSSStyleSheet(); s.replaceSync(':host input, :host textarea { font: inherit; padding: 0 } textarea { border: none }');
+r.adoptedStyleSheets = [s];
+r.innerHTML = '<label><span><textarea rows=1 placeholder="Search"></textarea><input id=i></span></label>';
+requestAnimationFrame(() => { const t = getComputedStyle(r.querySelector('textarea')), i = getComputedStyle(r.querySelector('input'));
+  console.log('SFI ' + JSON.stringify([t.fontFamily == 'sans-serif', t.fontSize == '14px', t.lineHeight == '20px', i.fontFamily == 'sans-serif', i.fontSize == '14px'])); });
+</script>

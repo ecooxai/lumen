@@ -10,7 +10,7 @@ struct Gpu {
     WGPUInstance inst; WGPUSurface surf; WGPUAdapter adapter; WGPUDevice dev; WGPUQueue q;
     WGPUTextureFormat fmt; WGPURenderPipeline pipe; WGPUBindGroupLayout bgl; WGPUSampler samp;
     WGPUTexture tex; WGPUTextureView view; WGPUBindGroup bg; int tw, th; int w, h; bool configured;
-    WGPUBackendType backend;
+    WGPUBackendType backend; char aname[128];
     WGPUSampler vsamp; WGPUBuffer ubuf, vubuf; WGPUTexture vtex; WGPUTextureView vview; WGPUBindGroup vbg; int vtw, vth;
     WGPURenderPipeline ypipe; WGPUBindGroupLayout ybgl; WGPUBuffer yubuf; WGPUTexture yt, ct; WGPUTextureView ytv, ctv; WGPUBindGroup ybg; int ytw, yth;
 };
@@ -62,13 +62,64 @@ static void configure(Gpu *g) {
     wgpuSurfaceConfigure(g->surf, &c); g->configured = true;
 }
 
-Gpu *gpu_create(const GpuSurfSrc *src, int w, int h, bool prefer_vulkan) {
-    if (getenv("LUMEN_NO_GPU")) return NULL;
-    Gpu *g = calloc(1, sizeof *g); g->w = w; g->h = h;
-    WGPUInstanceExtras ex = { 0 }; ex.chain.sType = (WGPUSType)WGPUSType_InstanceExtras;
-    ex.backends = prefer_vulkan ? WGPUInstanceBackend_Vulkan : WGPUInstanceBackend_Primary;
+static WGPUInstanceBackend backend_mask(int b) {
+    switch (b) {
+    case GPU_BACKEND_VULKAN: return WGPUInstanceBackend_Vulkan;
+    case GPU_BACKEND_GL: return WGPUInstanceBackend_GL;
+    case GPU_BACKEND_METAL: return WGPUInstanceBackend_Metal;
+    default: return WGPUInstanceBackend_Primary;
+    }
+}
+static WGPUInstance mk_instance(WGPUInstanceBackend mask, const GpuSurfSrc *src) {
+    WGPUInstanceExtras ex = { 0 }; ex.chain.sType = (WGPUSType)WGPUSType_InstanceExtras; ex.backends = mask;
+    /* the GL (EGL) backend can only present to X11/Wayland windows when it knows the display connection */
+    if (src && src->kind == GPU_SURF_XLIB) { ex.displayHandle.type = WGPUNativeDisplayHandleType_Xlib; ex.displayHandle.data.xlib.display = src->a; ex.displayHandle.data.xlib.screen = (int)(intptr_t)src->b; }
+    else if (src && src->kind == GPU_SURF_WAYLAND) { ex.displayHandle.type = WGPUNativeDisplayHandleType_Wayland; ex.displayHandle.data.wayland.display = src->a; }
     WGPUInstanceDescriptor id = WGPU_INSTANCE_DESCRIPTOR_INIT; id.nextInChain = &ex.chain;
-    if (!(g->inst = wgpuCreateInstance(&id))) goto fail;
+    return wgpuCreateInstance(&id);
+}
+static const char *type_name(WGPUAdapterType t) { return t == WGPUAdapterType_DiscreteGPU ? "discrete" : t == WGPUAdapterType_IntegratedGPU ? "integrated" : t == WGPUAdapterType_CPU ? "software" : "gpu"; }
+static const char *be_name(WGPUBackendType b) { return b == WGPUBackendType_Vulkan ? "vulkan" : b == WGPUBackendType_Metal ? "metal" : b == WGPUBackendType_OpenGL || b == WGPUBackendType_OpenGLES ? "opengl" : "other"; }
+static void adapter_label(WGPUAdapter a, char *out, size_t n, WGPUAdapterType *ty, WGPUBackendType *be) {
+    WGPUAdapterInfo info = WGPU_ADAPTER_INFO_INIT; snprintf(out, n, "GPU");
+    if (wgpuAdapterGetInfo(a, &info) != WGPUStatus_Success) return;
+    if (ty) *ty = info.adapterType;
+    if (be) *be = info.backendType;
+    snprintf(out, n, "%.*s (%s, %s)", (int)(info.device.data ? info.device.length : 0), info.device.data ? info.device.data : "", be_name(info.backendType), type_name(info.adapterType));
+    wgpuAdapterInfoFreeMembers(info);
+}
+static bool sw_ok(const GpuOpts *o) { return (o && o->allow_cpu) || getenv("LUMEN_ALLOW_SW_GPU"); }
+/* hardware adapters for `mask`, in enumeration order (software rasterizers only when allowed) */
+static size_t list_adapters(WGPUInstance inst, WGPUInstanceBackend mask, bool sw, WGPUAdapter *out, size_t max) {
+    WGPUInstanceEnumerateAdapterOptions eo = { 0 }; eo.backends = mask;
+    size_t n = wgpuInstanceEnumerateAdapters(inst, &eo, NULL), k = 0;
+    if (!n) return 0;
+    WGPUAdapter *all = calloc(n, sizeof *all); n = wgpuInstanceEnumerateAdapters(inst, &eo, all);
+    for (size_t i = 0; i < n; i++) {
+        char nm[128]; WGPUAdapterType ty = WGPUAdapterType_Unknown; adapter_label(all[i], nm, sizeof nm, &ty, NULL);
+        if ((ty != WGPUAdapterType_CPU || sw) && k < max) out[k++] = all[i]; else wgpuAdapterRelease(all[i]);
+    }
+    free(all);
+    return k;
+}
+int gpu_adapters(int backend, char (*names)[128], int max) {
+    if (backend == GPU_BACKEND_CPU) return 0;
+#ifdef __APPLE__
+    WGPUInstanceBackend mask = backend == GPU_BACKEND_AUTO ? WGPUInstanceBackend_Metal : backend_mask(backend);
+#else
+    WGPUInstanceBackend mask = backend == GPU_BACKEND_AUTO ? WGPUInstanceBackend_Vulkan | WGPUInstanceBackend_GL : backend_mask(backend);
+#endif
+    WGPUInstance inst = mk_instance(mask, NULL); if (!inst) return 0;
+    WGPUAdapter ad[16]; int n = (int)list_adapters(inst, mask, sw_ok(NULL), ad, max < 16 ? (size_t)max : 16);
+    for (int i = 0; i < n; i++) { adapter_label(ad[i], names[i], 128, NULL, NULL); wgpuAdapterRelease(ad[i]); }
+    wgpuInstanceRelease(inst);
+    return n;
+}
+const char *gpu_adapter_name(Gpu *g) { return g ? g->aname : "CPU"; }
+
+static Gpu *create_one(const GpuSurfSrc *src, int w, int h, WGPUInstanceBackend mask, const GpuOpts *o) {
+    Gpu *g = calloc(1, sizeof *g); g->w = w; g->h = h;
+    if (!(g->inst = mk_instance(mask, src))) goto fail;
 
     WGPUSurfaceSourceMetalLayer ml = WGPU_SURFACE_SOURCE_METAL_LAYER_INIT;
     WGPUSurfaceSourceXlibWindow xl = WGPU_SURFACE_SOURCE_XLIB_WINDOW_INIT;
@@ -83,20 +134,26 @@ Gpu *gpu_create(const GpuSurfSrc *src, int w, int h, bool prefer_vulkan) {
     }
     if (!(g->surf = wgpuInstanceCreateSurface(g->inst, &sd))) goto fail;
 
-    WGPURequestAdapterOptions ao = WGPU_REQUEST_ADAPTER_OPTIONS_INIT;
-    ao.compatibleSurface = g->surf; ao.powerPreference = WGPUPowerPreference_HighPerformance;
-    WGPURequestAdapterCallbackInfo ac = WGPU_REQUEST_ADAPTER_CALLBACK_INFO_INIT;
-    ac.mode = WGPUCallbackMode_AllowProcessEvents; ac.callback = on_adapter; ac.userdata1 = &g->adapter;
-    wgpuInstanceRequestAdapter(g->inst, &ao, ac);
-    wgpuInstanceProcessEvents(g->inst);
-    if (!g->adapter) goto fail;
-    WGPUAdapterInfo info = WGPU_ADAPTER_INFO_INIT;
-    if (wgpuAdapterGetInfo(g->adapter, &info) == WGPUStatus_Success) {
-        g->backend = info.backendType;
-        if (info.adapterType == WGPUAdapterType_CPU) { wgpuAdapterInfoFreeMembers(info); goto fail; }
-        wgpuAdapterInfoFreeMembers(info);
+    if (o && o->adapter >= 0) {
+        WGPUAdapter ad[16]; size_t n = list_adapters(g->inst, mask, sw_ok(o), ad, 16);
+        for (size_t i = 0; i < n; i++) { if ((int)i == o->adapter) g->adapter = ad[i]; else wgpuAdapterRelease(ad[i]); }
+        if (!g->adapter) fprintf(stderr, "gpu: adapter %d not found, using the default\n", o->adapter);
     }
-
+    if (!g->adapter) {
+        WGPURequestAdapterOptions ao = WGPU_REQUEST_ADAPTER_OPTIONS_INIT;
+        ao.compatibleSurface = g->surf; ao.powerPreference = WGPUPowerPreference_HighPerformance;
+        WGPURequestAdapterCallbackInfo ac = WGPU_REQUEST_ADAPTER_CALLBACK_INFO_INIT;
+        ac.mode = WGPUCallbackMode_AllowProcessEvents; ac.callback = on_adapter; ac.userdata1 = &g->adapter;
+        wgpuInstanceRequestAdapter(g->inst, &ao, ac);
+        wgpuInstanceProcessEvents(g->inst);
+    }
+    if (!g->adapter) goto fail;
+    {
+        WGPUAdapterType ty = WGPUAdapterType_Unknown;
+        adapter_label(g->adapter, g->aname, sizeof g->aname, &ty, &g->backend);
+        /* software Vulkan/GL (llvmpipe, lavapipe) is slower than Lumen's own CPU raster + plain blit */
+        if (ty == WGPUAdapterType_CPU && !sw_ok(o)) { fprintf(stderr, "gpu: %s is a software rasterizer, skipping\n", g->aname); goto fail; }
+    }
     WGPUDeviceDescriptor dd = WGPU_DEVICE_DESCRIPTOR_INIT;
     dd.uncapturedErrorCallbackInfo.callback = on_error;
     WGPURequestDeviceCallbackInfo dc = WGPU_REQUEST_DEVICE_CALLBACK_INFO_INIT;
@@ -142,9 +199,22 @@ Gpu *gpu_create(const GpuSurfSrc *src, int w, int h, bool prefer_vulkan) {
     configure(g);
     return g;
 fail:
-    fprintf(stderr, "gpu: unavailable, using CPU presentation\n");
     gpu_destroy(g);
     return NULL;
+}
+Gpu *gpu_create(const GpuSurfSrc *src, int w, int h, const GpuOpts *o) {
+    int b = o ? o->backend : GPU_BACKEND_AUTO;
+    if (getenv("LUMEN_NO_GPU") || b == GPU_BACKEND_CPU) return NULL;
+    Gpu *g = NULL;
+#ifdef __APPLE__
+    g = create_one(src, w, h, b == GPU_BACKEND_AUTO ? WGPUInstanceBackend_Primary : backend_mask(b), o);
+#else
+    if (b == GPU_BACKEND_AUTO) { g = create_one(src, w, h, WGPUInstanceBackend_Vulkan, o); if (!g) g = create_one(src, w, h, WGPUInstanceBackend_GL, o); }
+    else g = create_one(src, w, h, backend_mask(b), o);
+#endif
+    if (g) fprintf(stderr, "gpu: using %s\n", g->aname);
+    else fprintf(stderr, "gpu: unavailable, using CPU presentation\n");
+    return g;
 }
 
 void gpu_resize(Gpu *g, int w, int h) { if (g && (w != g->w || h != g->h)) { g->w = w; g->h = h; configure(g); } }

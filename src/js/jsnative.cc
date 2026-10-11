@@ -277,10 +277,13 @@ FN(setUrl) {
 }
 FN(navigate) { CTX; std::string u = S(0); if (c->parent) { frame_nav(c, u.c_str()); return; } if (c->host.navigate) c->host.navigate(c->host.ud, u.c_str()); }
 FN(navigatePost) {
-    CTX; std::string u = S(0), b = S(1), t = S(2);
+    CTX; std::string u = S(0), t = S(2); const char *bp; size_t bn; std::string b;
+    if (bytes_of(a[1], &bp, &bn)) b.assign(bp, bn); else b = S(1);
     if (c->host.navigate_post) c->host.navigate_post(c->host.ud, u.c_str(), b.data(), b.size(), t.c_str());
     else if (c->host.navigate) c->host.navigate(c->host.ud, u.c_str());
 }
+void (*js_save_file)(const char *, const void *, size_t);
+FN(saveFile) { CTX; std::string nm = S(0); const char *p = nullptr; size_t n = 0; if (!bytes_of(a[1], &p, &n) || !js_save_file) RET(false); js_save_file(nm.c_str(), p, n); RET(true); }
 FN(histGo) { CTX; if (c->host.history_go) c->host.history_go(c->host.ud, a[0]->Int32Value(ctx).FromMaybe(0)); }
 FN(histLen) { CTX; RET(c->host.history_len ? c->host.history_len(c->host.ud) : 1); }
 FN(timer) {
@@ -349,7 +352,7 @@ static void fetch_done(NetRequest *req, NetResponse *r, void *ud) {
     c->fetches.erase(f->id);
     JS_ENTER(c);
     if (f->script) {
-        if (r && r->status >= 200 && r->status < 300) js_run_script(c, f->script, r->body ? r->body : "", r->body ? r->body_len : 0, r->url ? r->url : "");
+        if (r && r->status >= 200 && r->status < 300 && !js_script_mime_blocked(headers_get(&r->headers, "content-type"))) js_run_script(c, f->script, r->body ? r->body : "", r->body ? r->body_len : 0, r->url ? r->url : "");
         else jfire(c, f->script, "error");
     } else {
         v8::Local<v8::Value> argv[6];
@@ -414,6 +417,7 @@ FN(mediaAppend) {
     RET(v8::Boolean::New(iso, mp_append(mp, (int)NUM(1), (const uint8_t *)p, n)));
 }
 FN(mediaRemove) { CTX; MP; mp_remove(mp, (int)NUM(1), NUM(2), NUM(3)); }
+FN(mediaAbort) { CTX; MP; mp_abort(mp, (int)NUM(1)); }
 FN(mediaBuffered) {
     CTX; MP; double r[64]; int n = mp_buffered(mp, (int)NUM(1), r, 32);
     v8::Local<v8::Array> arr = v8::Array::New(iso, n * 2);
@@ -872,13 +876,13 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(create); REG(textNode); REG(comment); REG(frag); REG(html); REG(setHTML); REG(parseFrag); REG(query);
     REG(matches); REG(byId); REG(clone); REG(doc); REG(contains); REG(connected); REG(host); REG(attachShadow);
     REG(templateContent); REG(rect); REG(vrect); REG(clipSet); REG(clipGet); REG(scrollPos); REG(setScroll); REG(computed); REG(value); REG(setValue); REG(checked); REG(setChecked); REG(pickFiles);
-    REG(focus); REG(active); REG(cookie); REG(setCookie); REG(url); REG(setUrl); REG(navigate); REG(navigatePost); REG(histGo);
+    REG(focus); REG(active); REG(cookie); REG(setCookie); REG(url); REG(setUrl); REG(navigate); REG(navigatePost); REG(saveFile); REG(histGo);
     REG(histLen); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
-    REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove);
+    REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove); REG(mediaAbort);
     REG(mediaBuffered); REG(mediaEos); REG(mediaSetDuration); REG(mediaPlay); REG(mediaPause); REG(mediaSeek);
     REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(readyState); REG(quirks);
     REG(currentScript); REG(media); REG(cssSupports); REG(cssSelText); REG(urlParse); REG(encode); REG(decode); REG(random); REG(cDigest); REG(cHmac); REG(cAes); REG(cEcGen); REG(cEcDerive); REG(cEcSign); REG(cEcVerify); REG(cSpki); REG(cSpkiParse); REG(cPkcs8Parse); REG(cEcFromD); REG(cHkdf); REG(cPbkdf2);
     REG(heap); REG(imgSize); REG(userAgent); REG(platform); REG(cpus); REG(makeAll);
 #undef REG
-    js_install_frames(c, N); js_install_workers(c, N);
+    js_install_frames(c, N); js_install_workers(c, N); js_install_canvas(c, N); js_install_webgpu(c, N); js_install_capture(c, N);
 }

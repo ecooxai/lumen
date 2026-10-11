@@ -1,9 +1,17 @@
 /* Lumen: SDL3 window, minimalist chrome, navigation, wgpu/CPU presentation */
 #include <math.h>
 #include <ctype.h>
+#include <strings.h>
 #include <time.h>
+#ifdef __APPLE__
 #include <malloc/malloc.h>
+#define MALLOC_IN_USE(v) malloc_statistics_t ms_ = {0}; malloc_zone_statistics(NULL, &ms_); size_t v = ms_.size_in_use
+#else
+#include <malloc.h>
+#define MALLOC_IN_USE(v) struct mallinfo2 mi_ = mallinfo2(); size_t v = mi_.uordblks
+#endif
 #include <sys/resource.h>
+#include <unistd.h>
 #ifdef __APPLE__
 #include <mach/mach.h>
 #endif
@@ -23,6 +31,8 @@ static float g_info_h;
 static char g_notice[256];   /* dismissable error notice shown in the info bar */
 #define INFOH 36.f
 #define BAR (TABH + TB + g_info_h)
+#include "uicmd.h"
+#include "../paint/cvbuf.h"
 #ifdef __APPLE__
 #include "macui.h"
 #define TLW 78.f
@@ -40,6 +50,7 @@ typedef struct Page {
     char *url; Document *d; StyleEngine *e; Layout *L; uint64_t gen; double load_ms;
     JsCtx *js; PScript *scripts; int nscripts; uint64_t seen_ver, lay_ver;
     SheetRef *sref; int nsref;
+    Node **vids; int nvids, vidcap; uint64_t vids_ver; /* <video> elements, rebuilt when the tree changes */
     HMap img_fired; bool img_check;
     /* <iframe> child browsing context (document owned by the JS layer) */
     Node *frame_el; float fw, fh, fsy; Canvas cv; Image img; DisplayList fdl;
@@ -55,6 +66,7 @@ static HMap icache;
 static size_t g_icache_bytes; static int g_icache_n;
 static int g_img_epoch;
 static Uint32 EV_LOADED, EV_NET, EV_MENU;
+static Uint32 EV_DL;   /* a navigation turned out to be a download: data1 = (void*)gen */
 static uint64_t load_gen;
 static bool g_lowmem;
 static int g_cpu_on = 1, g_cpu_pct = 80, g_cpu_secs = 60, g_cpu_lim = 40;
@@ -72,6 +84,8 @@ static bool g_hud_pop;      /* host CPU/RAM popup opened by clicking the readout
 static float g_hud_cpu, g_hud_ram, g_host_cpu, g_host_ram, g_pop[4];
 #define HUDH 48.f
 static int g_ua;   /* UA_CHROME / UA_FIREFOX / UA_LUMEN */
+static int g_gpu_backend, g_gpu_adapter = -1;   /* Settings > Graphics (GpuBackend, adapter index); applied at startup */
+static const char *g_gpu_active = "CPU";
 static char g_pref[1024];
 typedef struct { char *url, *title; } Link;
 #define MAX_BM 512
@@ -80,7 +94,7 @@ static Link g_bms[MAX_BM], g_hv[MAX_HV]; static int g_nbm, g_nhv;
 static void pref_path(char *out, size_t n, const char *f) { snprintf(out, n, "%s%s", g_pref, f); }
 static void settings_save(void) {
     char p[1200]; pref_path(p, sizeof p, "settings.txt"); FILE *f = *g_pref ? fopen(p, "w") : NULL; if (!f) return;
-    fprintf(f, "offscreen_media_eviction=%d\ncpu_limit=%d\ncpu_pct=%d\ncpu_secs=%d\ncpu_lim=%d\nvideo_controls=%d\ntab_sleep=%d\nuser_agent=%d\ncpu_hud=%d\nsmooth_scroll=%d\n", g_lowmem, g_cpu_on, g_cpu_pct, g_cpu_secs, g_cpu_lim, g_vctl, g_tab_sleep, g_ua, g_hud, g_smooth);
+    fprintf(f, "offscreen_media_eviction=%d\ncpu_limit=%d\ncpu_pct=%d\ncpu_secs=%d\ncpu_lim=%d\nvideo_controls=%d\ntab_sleep=%d\nuser_agent=%d\ncpu_hud=%d\nsmooth_scroll=%d\ngpu_backend=%d\ngpu_adapter=%d\n", g_lowmem, g_cpu_on, g_cpu_pct, g_cpu_secs, g_cpu_lim, g_vctl, g_tab_sleep, g_ua, g_hud, g_smooth, g_gpu_backend, g_gpu_adapter);
     fclose(f);
 }
 static void link_put(Link *v, int *n, int max, const char *url, const char *title) {
@@ -140,9 +154,11 @@ static void cache_fetch(const char *u) {
     ImgSlot *slot = xcalloc(1, sizeof *slot); slot->im = im; slot->done = true;
     SDL_LockMutex(icache_mu); if (!hm_get(&icache, u)) { hm_put(&icache, u, slot); if (im) { g_icache_bytes += (size_t)im->w * (size_t)im->h * 4; g_icache_n++; } } else { image_unref(im); free(slot); } SDL_UnlockMutex(icache_mu);
 }
+Image *cap_frame_for(Node *n);
 static Image *node_img(Node *n) {
     if (n->tag == A_iframe) { Page *fp = frame_find(n); return fp && fp->cv.px ? &fp->img : NULL; }
-    if (n->tag == A_video) { Image *f = media_frame_for(n); if (f) return f; }
+    if (n->tag == A_video) { Image *f = cap_frame_for(n); if (!f) f = media_frame_for(n); if (f) return f; }
+    if (n->tag == A_canvas) return cvbuf_image(n);
     const char *s = node_attr(n, n->tag == A_video ? "poster" : "src"); if (!s) return NULL;
     char *u = url_join(n->doc->url, s); Image *im = cache_get(u); free(u); return im;
 }
@@ -159,6 +175,42 @@ static bool img_size(Node *n, float *w, float *h) {
 
 typedef struct { char *url; uint64_t gen; float vw, vh; char *body; size_t blen; char *ctype; char *html; } LoadReq;
 
+/* Downloads go to $LUMEN_DOWNLOAD_DIR, $XDG_DOWNLOAD_DIR or ~/Downloads; existing files are never overwritten */
+static char g_last_download[1024];
+static void download_save(const char *name, const void *data, size_t n) {
+    char dir[768], nm[256], path[1024];
+    const char *d = getenv("LUMEN_DOWNLOAD_DIR"); if (!d) d = getenv("XDG_DOWNLOAD_DIR");
+    if (d) snprintf(dir, sizeof dir, "%s", d); else snprintf(dir, sizeof dir, "%s/Downloads", getenv("HOME") ? getenv("HOME") : ".");
+    SDL_CreateDirectory(dir);
+    const char *b = name ? strrchr(name, '/') : NULL; b = b ? b + 1 : name;
+    size_t k = 0; for (const char *c = b ? b : ""; *c && k + 1 < sizeof nm; c++) nm[k++] = *c == '\\' || *c == ':' || (unsigned char)*c < 32 ? '_' : *c;
+    nm[k] = 0; while (nm[0] == '.') memmove(nm, nm + 1, strlen(nm));
+    if (!nm[0]) snprintf(nm, sizeof nm, "download");
+    char *dot = strrchr(nm, '.'); int stem = dot && dot != nm ? (int)(dot - nm) : (int)strlen(nm);
+    snprintf(path, sizeof path, "%s/%s", dir, nm);
+    for (int i = 1; access(path, F_OK) == 0 && i < 1000; i++) snprintf(path, sizeof path, "%s/%.*s (%d)%s", dir, stem, nm, i, nm + stem);
+    FILE *f = fopen(path, "wb");
+    bool ok = f && fwrite(data, 1, n, f) == n; if (f) fclose(f);
+    if (ok) { snprintf(g_last_download, sizeof g_last_download, "%s", path); snprintf(g_notice, sizeof g_notice, "Downloaded %s (%.1f KB) to %s", nm, n / 1024.0, dir); }
+    else snprintf(g_notice, sizeof g_notice, "Download of %s failed: could not write to %s", nm, dir);
+    fprintf(stderr, "lumen: download %s %s (%zu bytes)\n", ok ? "saved" : "FAILED", path, n);
+    if (net_wakeup) net_wakeup();
+}
+/* filename from Content-Disposition (filename*=UTF-8''x or filename="x"), else the URL's last path segment */
+static void download_name(const NetResponse *r, const char *url, char *out, size_t n) {
+    const char *cd = headers_get(&r->headers, "content-disposition"), *f; out[0] = 0;
+    if (cd && (f = strstr(cd, "filename*="))) { f += 10; const char *q = strstr(f, "''"); if (q) f = q + 2; size_t k = 0; for (; *f && *f != ';' && k + 1 < n; f++) { if (*f == '%' && isxdigit((unsigned char)f[1]) && isxdigit((unsigned char)f[2])) { char h[3] = { f[1], f[2], 0 }; out[k++] = (char)strtol(h, NULL, 16); f += 2; } else out[k++] = *f; } out[k] = 0; }
+    else if (cd && (f = strstr(cd, "filename="))) { f += 9; bool q = *f == '"'; if (q) f++; size_t k = 0; for (; *f && (q ? *f != '"' : *f != ';') && k + 1 < n; f++) out[k++] = *f; out[k] = 0; }
+    if (!out[0]) { const char *e = strpbrk(url, "?#"), *sl = url; for (const char *c = url; *c && (!e || c < e); c++) if (*c == '/') sl = c + 1; snprintf(out, n, "%.*s", (int)((e ? e : url + strlen(url)) - sl), sl); }
+}
+static bool is_download(const NetResponse *r) {
+    const char *cd = headers_get(&r->headers, "content-disposition");
+    if (cd && !strncasecmp(cd + strspn(cd, " "), "attachment", 10)) return true;
+    const char *ct = headers_get(&r->headers, "content-type"); if (!ct || !*ct) return false;
+    static const char *show[] = { "text/", "image/", "application/xhtml", "application/xml", "application/json", "application/javascript", "application/ld+json", "application/rss", "application/atom", "multipart/", NULL };
+    for (int i = 0; show[i]; i++) if (!strncasecmp(ct, show[i], strlen(show[i]))) return false;
+    return true;
+}
 static int loader(void *arg) {
     LoadReq *rq = arg; double t0 = now_ms();
     NetRequest *nr = rq->html ? NULL : net_request_new(rq->body ? "POST" : "GET", rq->url);
@@ -166,12 +218,34 @@ static int loader(void *arg) {
         nr->body = rq->body; nr->body_len = rq->blen; rq->body = NULL;
         headers_set(&nr->headers, "Content-Type", rq->ctype && *rq->ctype ? rq->ctype : "application/x-www-form-urlencoded");
     }
+    if (nr) {   /* top-level document navigation headers, as Chrome sends them */
+        headers_set(&nr->headers, "Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8");
+        headers_set(&nr->headers, "Upgrade-Insecure-Requests", "1");
+        headers_set(&nr->headers, "Sec-Fetch-Dest", "document");
+        headers_set(&nr->headers, "Sec-Fetch-Mode", "navigate");
+        headers_set(&nr->headers, "Sec-Fetch-Site", "none");
+        headers_set(&nr->headers, "Sec-Fetch-User", "?1");
+    }
     NetResponse *r = rq->html ? NULL : net_fetch_sync(nr);
+    if (r && r->status >= 200 && r->status < 300 && is_download(r)) {
+        char nm[256]; download_name(r, r->url ? r->url : rq->url, nm, sizeof nm);
+        download_save(nm, r->body ? r->body : "", r->body ? r->body_len : 0);
+        SDL_Event ev; SDL_zero(ev); ev.type = EV_DL; ev.user.data1 = (void *)(uintptr_t)rq->gen; SDL_PushEvent(&ev);
+        net_response_free(r); free(rq->url); free(rq->body); free(rq->ctype); free(rq->html); free(rq);
+        return 0;
+    }
     Page *p = xcalloc(1, sizeof *p); p->gen = rq->gen;
+    char *wrapbuf = NULL;   /* a bare image URL shows the image, like other browsers */
+    if (r && r->status >= 200 && r->status < 300 && headers_get(&r->headers, "content-type") && !strncasecmp(headers_get(&r->headers, "content-type"), "image/", 6) && strncasecmp(headers_get(&r->headers, "content-type"), "image/svg", 9)) {
+        wrapbuf = xmalloc(strlen(r->url ? r->url : rq->url) * 6 + 256); char *w = wrapbuf + sprintf(wrapbuf, "<body style='margin:0;background:#0e0e0e;display:flex;align-items:center;justify-content:center;min-height:100vh'><img style='max-width:100%%' src=\"");
+        for (const char *c = r->url ? r->url : rq->url; *c; c++) w += *c == '"' ? sprintf(w, "&quot;") : *c == '&' ? sprintf(w, "&amp;") : sprintf(w, "%c", *c);
+        strcpy(w, "\"></body>");
+    }
     const char *body = r && r->body ? r->body : "";
     size_t blen = r && r->body ? r->body_len : 0;
     char *errbuf = NULL;
     if (rq->html) { body = rq->html; blen = strlen(body); }
+    else if (wrapbuf) { body = wrapbuf; blen = strlen(body); }
     else if (!r || r->status == 0) { errbuf = xmalloc(512); snprintf(errbuf, 512, "<title>Error</title><body style='font:15px system-ui;padding:40px;color:#444'><h2>Can't open this page</h2><p>%s</p>", rq->url); body = errbuf; blen = strlen(errbuf); }
     p->url = xstrdup(r && r->url ? r->url : rq->url);
     p->d = doc_new(p->url);
@@ -187,13 +261,13 @@ static int loader(void *arg) {
             sc.name = url_join(p->d->url, src);
             if (!sc.name) continue;
             NetResponse *sr = net_fetch_sync(net_request_new("GET", sc.name));
-            if (sr && sr->status >= 200 && sr->status < 300) { sc.src = xstrndup(sr->body ? sr->body : "", sr->body_len); sc.len = sr->body_len; }
+            if (sr && sr->status >= 200 && sr->status < 300 && !js_script_mime_blocked(headers_get(&sr->headers, "content-type"))) { sc.src = xstrndup(sr->body ? sr->body : "", sr->body_len); sc.len = sr->body_len; }
             if (sr) net_response_free(sr);
         } else { sc.src = node_text_content(n); sc.len = strlen(sc.src); sc.name = xstrdup(p->url); }
         p->scripts = xrealloc(p->scripts, sizeof *p->scripts * (size_t)(p->nscripts + 1)); p->scripts[p->nscripts++] = sc;
     }
     p->e = style_engine_new(p->d); p->e->media.vw = rq->vw; p->e->media.vh = rq->vh;
-    for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) {
+    for (Node *n = p->d->node.first; n; n = node_next_deep(n, &p->d->node)) {
         if (!gen_live(rq->gen)) break;
         if (n->type != NODE_ELEMENT) continue;
         if (n->tag == A_style) {
@@ -211,7 +285,7 @@ static int loader(void *arg) {
     p->seen_ver = p->d->dom_version;
     p->load_ms = now_ms() - t0;
     if (r) net_response_free(r);
-    free(errbuf); free(rq->url); free(rq->body); free(rq->ctype); free(rq->html); free(rq);
+    free(errbuf); free(wrapbuf); free(rq->url); free(rq->body); free(rq->ctype); free(rq->html); free(rq);
     SDL_Event ev; SDL_zero(ev); ev.type = EV_LOADED; ev.user.data1 = p; SDL_PushEvent(&ev);
     return 0;
 }
@@ -220,7 +294,7 @@ static void page_free(Page *p) {
     if (!p) return;
     js_free(p->js);
     hm_free(&p->img_fired, NULL);
-    free(p->sref);
+    free(p->sref); free(p->vids);
     for (int i = 0; i < p->nscripts; i++) { free(p->scripts[i].src); free(p->scripts[i].name); }
     free(p->scripts);
     if (p->L) layout_free(p->L);
@@ -336,6 +410,24 @@ static char *internal_page(const char *u) {   /* lumen://newtab?s=bookmarks|hist
         ip_toggle(&b, "smooth", g_smooth);
         sb_puts(&b, "</div></div><div class=card><div class=row><div class=grow><div class=t>User agent</div><div class=sub>How Lumen identifies itself to websites. Chrome works best on most sites. Reload open pages to apply.</div></div>");
         for (int i = 0; i < UA_COUNT; i++) sb_printf(&b, "<a class=\"btn%s\" href=\"lumen://set?s=settings&ua=%d\">%s</a>", i == g_ua ? " on" : "", i, net_user_agent_name(i));
+        {
+            static char an[16][128]; static int na = -1, nab = -1;
+            if (nab != g_gpu_backend) { na = gpu_adapters(g_gpu_backend, an, 16); nab = g_gpu_backend; }
+            sb_puts(&b, "</div></div><div class=card><div class=row><div class=grow><div class=t>Graphics</div><div class=sub>How Lumen draws pages and WebGL/WebGPU content. Now using: ");
+            sb_esc(&b, g_gpu_active);
+            sb_puts(&b, ". CPU only never uses a software 3D renderer; Lumen's own rasterizer draws everything. Restart Lumen to apply.</div></div></div><div class=row>");
+#ifdef __APPLE__
+            static const int bk[] = { GPU_BACKEND_AUTO, GPU_BACKEND_METAL, GPU_BACKEND_VULKAN, GPU_BACKEND_CPU }; static const char *bn[] = { "Auto", "Metal", "Vulkan (MoltenVK)", "CPU only" };
+#else
+            static const int bk[] = { GPU_BACKEND_AUTO, GPU_BACKEND_VULKAN, GPU_BACKEND_GL, GPU_BACKEND_CPU }; static const char *bn[] = { "Auto", "Vulkan", "OpenGL", "CPU only" };
+#endif
+            for (int i = 0; i < 4; i++) sb_printf(&b, "<a class=\"btn%s\" href=\"lumen://set?s=settings&gpub=%d\">%s</a>", bk[i] == g_gpu_backend ? " on" : "", bk[i], bn[i]);
+            if (g_gpu_backend != GPU_BACKEND_CPU) {
+                sb_printf(&b, "</div><div class=row><div class=sub>GPU:</div><a class=\"btn%s\" href=\"lumen://set?s=settings&gpua=-1\">Best available</a>", g_gpu_adapter < 0 ? " on" : "");
+                for (int i = 0; i < na; i++) { sb_printf(&b, "<a class=\"btn%s\" href=\"lumen://set?s=settings&gpua=%d\">", i == g_gpu_adapter ? " on" : "", i); sb_esc(&b, an[i]); sb_puts(&b, "</a>"); }
+                if (!na) sb_puts(&b, "<div class=sub>No hardware GPU found for this backend.</div>");
+            }
+        }
         sb_puts(&b, "</div></div><script>function save(){var g=function(i){return parseInt(document.getElementById(i).value,10)||0};location.href='lumen://set?s=settings&cpu_pct='+g('n')+'&cpu_secs='+g('m')+'&cpu_lim='+g('t')}</script>");
     } else {
         bool bm = sec[0] == 'b'; Link *v = bm ? g_bms : g_hv; int n = bm ? g_nbm : g_nhv;
@@ -362,6 +454,8 @@ static void apply_set(App *a, const char *q) {
     if (qparam(q, "sleep", v, sizeof v)) g_tab_sleep = atoi(v) != 0;
     if (qparam(q, "smooth", v, sizeof v)) { g_smooth = atoi(v) != 0; g_sm_dx = g_sm_dy = 0; }
     if (qparam(q, "hud", v, sizeof v)) { g_hud = atoi(v) != 0; g_hud_pop = false; }
+    if (qparam(q, "gpub", v, sizeof v)) { g_gpu_backend = LCLAMP(atoi(v), 0, GPU_BACKEND_METAL); g_gpu_adapter = -1; }
+    if (qparam(q, "gpua", v, sizeof v)) g_gpu_adapter = LCLAMP(atoi(v), -1, 15);
     if (qparam(q, "ua", v, sizeof v)) { g_ua = LCLAMP(atoi(v), 0, UA_COUNT - 1); net_set_user_agent(g_ua); }
     if (qparam(q, "cpu_pct", v, sizeof v)) g_cpu_pct = LCLAMP(atoi(v), 10, 100);
     if (qparam(q, "cpu_secs", v, sizeof v)) g_cpu_secs = LCLAMP(atoi(v), 5, 600);
@@ -564,6 +658,24 @@ static void hud_sample(void) {
     vm_statistics64_data_t vs; c = HOST_VM_INFO64_COUNT; vm_size_t pg = 0;
     if (host_page_size(mach_host_self(), &pg) == KERN_SUCCESS && host_statistics64(mach_host_self(), HOST_VM_INFO64, (host_info64_t)&vs, &c) == KERN_SUCCESS)   /* Activity Monitor's "Memory Used" */
         g_host_ram = (float)(((double)vs.internal_page_count - vs.purgeable_count + vs.wire_count + vs.compressor_page_count) * (double)pg / 1073741824.0);
+#else
+    FILE *f = fopen("/proc/self/statm", "r");
+    if (f) { unsigned long sz = 0, rss = 0, shr = 0; if (fscanf(f, "%lu %lu %lu", &sz, &rss, &shr) == 3) g_hud_ram = (float)((double)(rss - shr) * (double)sysconf(_SC_PAGESIZE) / 1073741824.0); fclose(f); }
+    if ((f = fopen("/proc/stat", "r"))) {
+        unsigned long long u, ni, sy, id, io, ir, so, st;
+        if (fscanf(f, "cpu %llu %llu %llu %llu %llu %llu %llu %llu", &u, &ni, &sy, &id, &io, &ir, &so, &st) == 8) {
+            uint64_t busy = u + ni + sy + ir + so + st, tot = busy + id + io;
+            if (ht && tot > ht) g_host_cpu = (float)(100.0 * (double)(busy - hb) / (double)(tot - ht));
+            hb = busy; ht = tot;
+        }
+        fclose(f);
+    }
+    if ((f = fopen("/proc/meminfo", "r"))) {
+        char ln[128]; unsigned long long tot = 0, avail = 0, v;
+        while (fgets(ln, sizeof ln, f)) { if (sscanf(ln, "MemTotal: %llu", &v) == 1) tot = v; else if (sscanf(ln, "MemAvailable: %llu", &v) == 1) avail = v; }
+        if (tot) g_host_ram = (float)((double)(tot - avail) / 1048576.0);
+        fclose(f);
+    }
 #endif
 }
 static void build_chrome(App *a) {
@@ -706,21 +818,75 @@ static void update_compact(App *a) {
     for (int i = 0; i < a->ntabs; i++) a->tabs[i]->relayout = true;
 }
 /* per display item: content hash + device-independent bounds, so a DOM change only rasters the area whose items changed */
-struct DSig { uint64_t h; float b[4]; };
+struct DSig { uint64_t h; float b[4]; bool vid; };
 static uint64_t hmix(uint64_t h, const void *p, size_t n) { const uint8_t *c = p; for (size_t i = 0; i < n; i++) h = (h ^ c[i]) * 1099511628211ull; return h; }
 #define HMIX(h, v) h = hmix(h, &(v), sizeof(v))
 static uint64_t ditem_hash(const DItem *it) {
     uint64_t h = 1469598103934665603ull;
     HMIX(h, it->op); HMIX(h, it->x); HMIX(h, it->y); HMIX(h, it->w); HMIX(h, it->h); HMIX(h, it->r); HMIX(h, it->color);
-    HMIX(h, it->bw); HMIX(h, it->bc); HMIX(h, it->bs); HMIX(h, it->img); HMIX(h, it->blur); HMIX(h, it->spread); HMIX(h, it->alpha); HMIX(h, it->inset);
+    HMIX(h, it->bw); HMIX(h, it->bc); HMIX(h, it->bs); HMIX(h, it->img); if (it->img && it->img->anim) HMIX(h, it->img->px); HMIX(h, it->blur); HMIX(h, it->spread); HMIX(h, it->alpha); HMIX(h, it->inset);
     if (it->grad) { const Gradient *g = it->grad; HMIX(h, g->type); HMIX(h, g->angle); HMIX(h, g->nstops); HMIX(h, g->repeating); h = hmix(h, g->stops, sizeof g->stops[0] * (size_t)LCLAMP(g->nstops, 0, 8)); }
     for (int i = 0; i < it->ng; i++) { const DGlyph *g = &it->g[i]; HMIX(h, g->gid); HMIX(h, g->x); HMIX(h, g->y); HMIX(h, g->font); }
     return h;
 }
 static void bunion(float *a, const float *b) { a[0] = LMIN(a[0], b[0]); a[1] = LMIN(a[1], b[1]); a[2] = LMAX(a[2], b[2]); a[3] = LMAX(a[3], b[3]); }
+/* union of the bounds of items present in only one of the two display-list signatures: common prefix/suffix are skipped and
+   the middle is compared as a multiset, so inserting one item (e.g. a typed glyph) doesn't dirty everything painted after it.
+   Video frames are left to the caller's per-video rects; only a video that moved or went away adds its old box. */
+/* union only the part of b inside the viewport: off-screen carousel slides and clips must not widen the damage */
+static void vunion(float *dm, float vw, float vh, const float *b) {
+    float c[4] = { LMAX(b[0], 0), LMAX(b[1], 0), LMIN(b[2], vw), LMIN(b[3], vh) };
+    if (c[2] > c[0] && c[3] > c[1]) bunion(dm, c);
+}
+static const DisplayList *g_dbg_dmg;
+static void dsig_damage(const struct DSig *o, int no, const struct DSig *q, int nq, float vw, float vh, float *dm) {
+    int pre = 0, suf = 0;
+    while (pre < no && pre < nq && o[pre].h == q[pre].h) pre++;
+    while (suf < no - pre && suf < nq - pre && o[no - 1 - suf].h == q[nq - 1 - suf].h) suf++;
+    int mo = no - pre - suf, mq = nq - pre - suf;
+    if (!mo && !mq) return;
+    int cap = 16; while (cap < (mo + mq) * 2) cap <<= 1;
+    struct { uint64_t h; int c; } *t = calloc((size_t)cap, sizeof *t);
+    if (!t) { for (int i = pre; i < no - suf; i++) vunion(dm, vw, vh, o[i].b); for (int i = pre; i < nq - suf; i++) vunion(dm, vw, vh, q[i].b); return; }
+    for (int i = pre; i < no - suf; i++) {
+        if (o[i].vid) continue;
+        uint64_t h = o[i].h | 1; size_t k = (size_t)(h * 0x9E3779B97F4A7C15ull) & (size_t)(cap - 1);
+        while (t[k].h && t[k].h != h) k = (k + 1) & (size_t)(cap - 1);
+        t[k].h = h; t[k].c++;
+    }
+    for (int i = pre; i < nq - suf; i++) {
+        if (q[i].vid) continue;
+        uint64_t h = q[i].h | 1; size_t k = (size_t)(h * 0x9E3779B97F4A7C15ull) & (size_t)(cap - 1);
+        while (t[k].h && t[k].h != h) k = (k + 1) & (size_t)(cap - 1);
+        if (t[k].h && t[k].c > 0) t[k].c--;
+        else {
+            vunion(dm, vw, vh, q[i].b);
+            if (g_dbg_dmg && q[i].b[2] > q[i].b[0] && q[i].b[3] > q[i].b[1] && (q[i].b[2] - q[i].b[0]) * (q[i].b[3] - q[i].b[1]) > 3000) fprintf(stderr, "lumen: dmg new #%d op=%d a=%.3f %.0f,%.0f-%.0f,%.0f\n", i, g_dbg_dmg->items.v[i].op, g_dbg_dmg->items.v[i].alpha, q[i].b[0], q[i].b[1], q[i].b[2], q[i].b[3]);
+        }
+    }
+    for (int i = pre; i < no - suf; i++) {   /* old items left unmatched were removed or changed */
+        if (o[i].vid) continue;
+        uint64_t h = o[i].h | 1; size_t k = (size_t)(h * 0x9E3779B97F4A7C15ull) & (size_t)(cap - 1);
+        while (t[k].h != h) k = (k + 1) & (size_t)(cap - 1);
+        if (t[k].c > 0) {
+            t[k].c--; vunion(dm, vw, vh, o[i].b);
+            if (g_dbg_dmg && o[i].b[2] > o[i].b[0] && o[i].b[3] > o[i].b[1] && (o[i].b[2] - o[i].b[0]) * (o[i].b[3] - o[i].b[1]) > 3000) fprintf(stderr, "lumen: dmg old #%d %.0f,%.0f-%.0f,%.0f\n", i, o[i].b[0], o[i].b[1], o[i].b[2], o[i].b[3]);
+        }
+    }
+    free(t);
+    /* videos are matched by stacking rank (stacked carousel slides share a box): the k-th old video that isn't
+       at the same place as the k-th new one moved or went away, so its old box needs repainting */
+    for (int i = 0, j = 0; i < no; i++) {
+        if (!o[i].vid) continue;
+        while (j < nq && !q[j].vid) j++;
+        if (j >= nq || memcmp(q[j].b, o[i].b, sizeof o[i].b)) vunion(dm, vw, vh, o[i].b);
+        if (j < nq) j++;
+    }
+}
 static void ditem_box(const DItem *it, float *b) {
     float x0 = it->x, y0 = it->y, x1 = it->x + it->w, y1 = it->y + it->h, e = 2;
     if (it->op == DO_SHADOW) e += fabsf(it->spread) + fabsf(it->blur);
+    if (it->op == DO_IMAGE) e = 0;   /* images draw exactly within floor/ceil of their rect */
     if (it->op == DO_TEXT) {
         x0 = y0 = 1e30f; x1 = y1 = -1e30f;
         for (int i = 0; i < it->ng; i++) { const DGlyph *g = &it->g[i]; float em = g->font ? g->font->size : 16; x0 = LMIN(x0, g->x - em); x1 = LMAX(x1, g->x + 2 * em); y0 = LMIN(y0, g->y - 1.5f * em); y1 = LMAX(y1, g->y + em); }
@@ -733,7 +899,7 @@ static int dl_sigs(const DisplayList *dl, struct DSig **v, int *cap) {
     if (n > *cap) { *cap = n + n / 2 + 16; *v = xrealloc(*v, sizeof **v * (size_t)*cap); }
     for (int i = 0; i < n; i++) {
         const DItem *it = &dl->items.v[i]; struct DSig *q = &(*v)[i];
-        q->h = ditem_hash(it); ditem_box(it, q->b);
+        q->h = ditem_hash(it); ditem_box(it, q->b); q->vid = it->op == DO_IMAGE && media_is_frame(it->img);
         if (it->op == DO_PUSH_LAYER) { if (ns < 64) st[ns++] = i; }   /* a layer covers its contents: an opacity change damages all of them */
         else if (it->op == DO_POP_LAYER) { if (ns) { int t = st[--ns]; if (ns) bunion((*v)[st[ns - 1]].b, (*v)[t].b); } }
         else if (ns) bunion((*v)[st[ns - 1]].b, q->b);
@@ -741,6 +907,20 @@ static int dl_sigs(const DisplayList *dl, struct DSig **v, int *cap) {
     return n;
 }
 static uint64_t dl_hash(const DisplayList *dl) { uint64_t h = (uint64_t)dl->items.n; for (int i = 0; i < dl->items.n; i++) h = h * 31 + ditem_hash(&dl->items.v[i]); return h; }
+
+static void check_damage(App *a, int pwp, int ph, int x0, int y0, int x1, int y1, const char *what) {
+    Canvas t; canvas_init(&t, pwp, ph, a->page.scale); raster(&t, &a->pdl, RGBA(255, 255, 255, 255));
+    long bad = 0; int b0 = pwp, b1 = ph, b2 = 0, b3 = 0;
+    for (int y = 0; y < ph; y++) for (int x = 0; x < pwp; x++)
+        if (t.px[(size_t)y * (size_t)t.stride + (size_t)x] != a->page.px[(size_t)y * (size_t)a->page.stride + (size_t)x]) { bad++; b0 = LMIN(b0, x); b1 = LMIN(b1, y); b2 = LMAX(b2, x + 1); b3 = LMAX(b3, y + 1); }
+    if (bad) fprintf(stderr, "lumen: %s %dx%d at %d,%d mismatched px=%ld in %d,%d-%d,%d\n", what, x1 - x0, y1 - y0, x0, y0, bad, b0, b1, b2, b3);
+    if (bad) { float s = a->page.scale;
+        for (int i = 0; i < a->pdl.items.n; i++) { const DItem *it = &a->pdl.items.v[i]; float b[4]; ditem_box(it, b);
+            if (b[2] * s < b0 || b[0] * s > b2 || b[3] * s < b1 || b[1] * s > b3) continue;
+            fprintf(stderr, "  item %d op=%d %.1f,%.1f %.1fx%.1f img=%p anim=%d frame=%d alpha=%.2f\n", i, it->op, it->x, it->y, it->w, it->h, (void *)it->img, it->img && it->img->anim ? 1 : 0, it->img ? media_is_frame(it->img) : 0, it->alpha); } }
+    else fprintf(stderr, "lumen: %s %dx%d at %d,%d mismatched px=0\n", what, x1 - x0, y1 - y0, x0, y0);
+    canvas_free(&t);
+}
 
 static void render(App *a) {
     update_compact(a);
@@ -755,6 +935,7 @@ static void render(App *a) {
     if (defer && !a->vframe) { a->dirty = false; return; }
     bool part = !why;
     int rx0 = pwp, ry0 = ph, rx1 = 0, ry1 = 0;
+    if (getenv("LUMEN_DEBUG_PAINT") && (a->page.w != pwp || a->page.h != ph)) fprintf(stderr, "lumen: page canvas resize %dx%d -> %dx%d\n", a->page.w, a->page.h, pwp, ph);
     if (a->page.w != pwp || a->page.h != ph) { canvas_free(&a->page); canvas_init(&a->page, pwp, ph, a->scale); part = false; a->osig_ok = false; }
     bool gskip = false; GpuVideo gvd, *gvp = NULL;
     Image *fast = part && !a->sdirty && a->t->cur && a->gpu && a->gvid_ok && a->t->sy == a->last_sy && a->page.w == pwp && a->page.h == ph ? media_owner_frame(a->vown) : NULL;
@@ -767,7 +948,8 @@ static void render(App *a) {
     } else if (a->t->cur) {
         if (a->t->relayout || !a->t->cur->L) {
             if (!a->t->cur->L) a->t->cur->L = layout_new();
-            a->t->cur->e->media.vw = a->vw - a->side; a->t->cur->e->media.vh = a->vh - BAR;
+            { MediaCtx *m = &a->t->cur->e->media; float nw = a->vw - a->side, nh = a->vh - BAR;
+              if (m->vw != nw || m->vh != nh) { m->vw = nw; m->vh = nh; style_recalc(a->t->cur->e, &a->t->cur->d->node, true); if (a->t->cur->js) js_viewport_changed(a->t->cur->js); } }
             { double q = now_ms(); layout_run(a->t->cur->L, a->t->cur->d, a->vw - a->side, a->vh - BAR); g_tl += now_ms() - q; }
             a->t->relayout = false;
         }
@@ -778,16 +960,25 @@ static void render(App *a) {
             if (!a->sdirty && fabsf(sdy - roundf(sdy)) < 0.01f && fabsf(sdy) < ph / 2) blit = (int)roundf(sdy);
             else { part = false; why = 5; }
         }
-        g_full_paint = (double)SDL_GetTicks(); { double q = now_ms(); dl_clear(&a->pdl); dl_build(&a->pdl, a->t->cur->L, 0, a->t->sy, a->vw - a->side, a->vh - BAR); g_td += now_ms() - q; } a->vbars = video_bars(a, &a->pdl);
+        g_full_paint = (double)SDL_GetTicks(); { double q = now_ms(); dl_clear(&a->pdl); dl_build(&a->pdl, a->t->cur->L, 0, a->t->sy, a->vw - a->side, a->vh - BAR); image_anim_seen(&a->pdl, q); g_td += now_ms() - q; } a->vbars = video_bars(a, &a->pdl);
         int nn = dl_sigs(&a->pdl, &a->nsig, &a->cnsig);
-        const DItem *vit = NULL; int nv = 0;
+        const DItem *vit = NULL; int nv = 0, nvr = 0, vr[16][4];
+        int ovi = 0;   /* next old video sig, by stacking rank */
         for (int i = 0; i < a->pdl.items.n; i++) {
             const DItem *it = &a->pdl.items.v[i];
             if (it->op != DO_IMAGE || !media_is_frame(it->img)) continue;
             if (!nv++) vit = it;
+            if (a->osig_ok) {   /* paused video: the same-rank video last frame showed the same frame in the same place */
+                while (ovi < a->nosig && !a->osig[ovi].vid) ovi++;
+                bool same = ovi < a->nosig && a->osig[ovi].h == a->nsig[i].h && !memcmp(a->osig[ovi].b, a->nsig[i].b, sizeof a->nsig[i].b);
+                if (ovi < a->nosig) ovi++;
+                if (same) continue;
+            }
             float s = a->page.scale;
-            rx0 = LMIN(rx0, (int)floorf(it->x * s)); ry0 = LMIN(ry0, (int)floorf(it->y * s));
-            rx1 = LMAX(rx1, (int)ceilf((it->x + it->w) * s)); ry1 = LMAX(ry1, (int)ceilf((it->y + it->h) * s));
+            int q[4] = { (int)floorf(it->x * s), (int)floorf(it->y * s), (int)ceilf((it->x + it->w) * s), (int)ceilf((it->y + it->h) * s) };
+            rx0 = LMIN(rx0, q[0]); ry0 = LMIN(ry0, q[1]); rx1 = LMAX(rx1, q[2]); ry1 = LMAX(ry1, q[3]);
+            if (nvr < 16) memcpy(vr[nvr], q, sizeof q);
+            nvr++;
         }
         rx0 = LMAX(rx0, 0); ry0 = LMAX(ry0, 0); rx1 = LMIN(rx1, pwp); ry1 = LMIN(ry1, ph);
         bool gv = a->gpu && nv == 1;
@@ -809,35 +1000,48 @@ static void render(App *a) {
             x0 = LMAX(x0, 0); y0 = LMAX(y0, 0); x1 = LMIN(x1, pwp); y1 = LMIN(y1, ph);
             if (x1 > x0 && y1 > y0) raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), x0, y0, x1, y1);
             rx0 = x0; ry0 = y0; rx1 = LMAX(x1, x0); ry1 = LMAX(y1, y0); a->gvid_ok = false;
-        } else if (part && (nv == 0 || (gv && a->gvid_ok))) gskip = true;
-        else if (part && rx1 > rx0 && ry1 > ry0) { a->gvid_ok = false; raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), rx0, ry0, rx1, ry1); }
+        } else if (part && (nv == 0 || (gv && a->gvid_ok) || rx1 <= rx0 || ry1 <= ry0)) gskip = true;   /* off-screen video: nothing visible changed */
+        else if (part && rx1 > rx0 && ry1 > ry0) {   /* only video frames changed: raster each changed video's rect */
+            a->gvid_ok = false;
+            { double q = now_ms();
+              if (nvr > 16) raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), rx0, ry0, rx1, ry1);
+              else for (int k = 0; k < nvr; k++) raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), vr[k][0], vr[k][1], vr[k][2], vr[k][3]);
+              g_tx += now_ms() - q; }
+            if (getenv("LUMEN_CHECK_DAMAGE")) check_damage(a, pwp, ph, rx0, ry0, rx1, ry1, "vdamage");
+        }
         else {
-            bool dmg = (why == 1 || why == 3 || why == 4) && !nv && a->osig_ok && a->t->sy == a->last_sy && !a->t->loading;
+            bool dmg = (why == 1 || why == 3 || why == 4) && !gv && a->osig_ok && a->t->sy == a->last_sy && !a->t->loading;
             if (dmg) {   /* only DOM/layout changed: raster the union of the items that differ from the last frame */
                 build_chrome(a); chrome_tip(a);
                 if (dl_hash(&a->cdl) * 31 + dl_hash(&a->hdl) != a->chash) dmg = false;
                 float dm[4] = { 1e30f, 1e30f, -1e30f, -1e30f };
-                for (int i = 0, m = LMAX(nn, a->nosig); dmg && i < m; i++) {
-                    const struct DSig *o = i < a->nosig ? &a->osig[i] : NULL, *q = i < nn ? &a->nsig[i] : NULL;
-                    if (o && q && o->h == q->h) continue;
-                    if (o) bunion(dm, o->b);
-                    if (q) bunion(dm, q->b);
-                }
+                g_dbg_dmg = getenv("LUMEN_DEBUG_DAMAGE") ? &a->pdl : NULL;
+                if (dmg) dsig_damage(a->osig, a->nosig, a->nsig, nn, a->vw - a->side, a->vh - BAR, dm);
                 float s = a->page.scale;
                 int x0 = LMAX(0, (int)floorf(dm[0] * s)), y0 = LMAX(0, (int)floorf(dm[1] * s)), x1 = LMIN(pwp, (int)ceilf(dm[2] * s)), y1 = LMIN(ph, (int)ceilf(dm[3] * s));
-                if (dmg && (x1 <= x0 || y1 <= y0)) { part = true; gskip = true; }
-                else if (dmg && (long)(x1 - x0) * (y1 - y0) * 2 < (long)pwp * ph) {
-                    { double q = now_ms(); raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), x0, y0, x1, y1); g_tx += now_ms() - q; }
+                bool dom = x1 > x0 && y1 > y0, vid = rx1 > rx0 && ry1 > ry0;
+                long area = dom ? (long)(x1 - x0) * (y1 - y0) : 0;
+                if (vid && nvr > 16) area += (long)(rx1 - rx0) * (ry1 - ry0);
+                else if (vid) for (int k = 0; k < nvr; k++) area += (long)LMAX(0, LMIN(vr[k][2], pwp) - LMAX(vr[k][0], 0)) * LMAX(0, LMIN(vr[k][3], ph) - LMAX(vr[k][1], 0));
+                if (dmg && !dom && !vid) { part = true; gskip = true; }
+                else if (dmg && area * 2 < (long)pwp * ph) {   /* DOM damage and each changed video frame are rastered as separate rects */
+                    { double q = now_ms();
+                      if (dom) raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), x0, y0, x1, y1);
+                      if (vid && nvr > 16) raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), rx0, ry0, rx1, ry1);
+                      else if (vid) for (int k = 0; k < nvr; k++) raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), LMAX(vr[k][0], 0), LMAX(vr[k][1], 0), LMIN(vr[k][2], pwp), LMIN(vr[k][3], ph));
+                      g_tx += now_ms() - q; }
+                    if (!dom) { x0 = rx0; y0 = ry0; x1 = rx1; y1 = ry1; }
+                    else if (vid) { x0 = LMIN(x0, rx0); y0 = LMIN(y0, ry0); x1 = LMAX(x1, rx1); y1 = LMAX(y1, ry1); }
                     part = true; rx0 = x0; ry0 = y0; rx1 = x1; ry1 = y1; a->gvid_ok = false;
-                    if (getenv("LUMEN_CHECK_DAMAGE")) {
-                        Canvas t; canvas_init(&t, pwp, ph, a->page.scale); raster(&t, &a->pdl, RGBA(255, 255, 255, 255));
-                        long bad = 0; for (int y = 0; y < ph; y++) for (int x = 0; x < pwp; x++) bad += t.px[(size_t)y * (size_t)t.stride + (size_t)x] != a->page.px[(size_t)y * (size_t)a->page.stride + (size_t)x];
-                        fprintf(stderr, "lumen: damage %dx%d at %d,%d mismatched px=%ld\n", x1 - x0, y1 - y0, x0, y0, bad); canvas_free(&t);
-                    }
+                    if (getenv("LUMEN_CHECK_DAMAGE")) check_damage(a, pwp, ph, x0, y0, x1, y1, "damage");
                 }
-                else dmg = false;
+                else {
+                    if (dmg && getenv("LUMEN_DEBUG_PAINT")) fprintf(stderr, "lumen: damage too big dom=%d,%d-%d,%d vid=%d,%d-%d,%d nvr=%d area=%ld page=%ld\n", x0, y0, x1, y1, rx0, ry0, rx1, ry1, nvr, area, (long)pwp * ph);
+                    dmg = false;
+                }
             }
             if (!dmg) {
+                if (getenv("LUMEN_DEBUG_PAINT")) fprintf(stderr, "lumen: full raster why=%d nv=%d osig_ok=%d sy_same=%d loading=%d chash_same=%d\n", why, nv, a->osig_ok, a->t->sy == a->last_sy, a->t->loading, dl_hash(&a->cdl) * 31 + dl_hash(&a->hdl) == a->chash);
                 part = false; a->page.punch = gv ? vit->img : NULL; a->page.punched = false;
                 { double q = now_ms(); raster(&a->page, &a->pdl, RGBA(255, 255, 255, 255)); g_tx += now_ms() - q; }
                 a->gvid_ok = gv && a->page.punched; a->page.punch = NULL;
@@ -857,7 +1061,15 @@ static void render(App *a) {
     if (!gskip && a->hdl.items.n) { float s = a->frame.scale; raster_rect(&a->frame, &a->hdl, RGBA(255, 255, 255, 255), (int)floorf(g_pop[0] * s), (int)floorf(g_pop[1] * s), (int)ceilf(g_pop[2] * s), (int)ceilf(g_pop[3] * s)); }   /* floats over the page */
     if (!(a->gpu && gpu_present_frame(a->gpu, a->frame.px, a->frame.w, a->frame.h, a->frame.stride, gskip ? 0 : part ? bar_px + ry0 : 0, gskip ? 0 : part ? bar_px + ry1 : a->frame.h, gvp))) {
         SDL_Surface *ws = SDL_GetWindowSurface(a->win);
-        if (ws) {
+        int y0 = gskip ? 0 : part ? bar_px + ry0 : 0, y1 = gskip ? 0 : part ? bar_px + ry1 : a->frame.h;
+        if (ws && ws->w == a->frame.w && ws->h == a->frame.h && (ws->format == SDL_PIXELFORMAT_XRGB8888 || ws->format == SDL_PIXELFORMAT_ARGB8888)) {
+            /* CPU path: copy only the changed rows straight into the window's shared-memory surface */
+            if (y1 > ws->h) y1 = ws->h;
+            if (y1 > y0) {
+                for (int y = y0; y < y1; y++) memcpy((uint8_t *)ws->pixels + (size_t)y * (size_t)ws->pitch, a->frame.px + (size_t)y * (size_t)a->frame.stride, (size_t)a->frame.w * 4);
+                SDL_Rect r = { 0, y0, ws->w, y1 - y0 }; SDL_UpdateWindowSurfaceRects(a->win, &r, 1);
+            }
+        } else if (ws) {
             SDL_Surface *src = SDL_CreateSurfaceFrom(a->frame.w, a->frame.h, SDL_PIXELFORMAT_ARGB8888, a->frame.px, a->frame.stride * 4);
             SDL_BlitSurfaceScaled(src, NULL, ws, NULL, SDL_SCALEMODE_LINEAR);
             SDL_DestroySurface(src); SDL_UpdateWindowSurface(a->win);
@@ -968,6 +1180,7 @@ static void img_done(NetRequest *rq, NetResponse *r, void *ud) {
     if (slot) { slot->done = true; slot->evicted = slot->refetch = false; }
     SDL_UnlockMutex(icache_mu);
     if (getenv("LUMEN_DEBUG_IMG")) fprintf(stderr, "lumen: img done status=%d len=%zu decoded=%d slot=%d %.80s\n", r ? r->status : -1, r && r->body ? r->body_len : 0, slot && slot->im ? 1 : 0, slot ? 1 : 0, l->u);
+    if (getenv("LUMEN_DEBUG_IMG") && r && r->body && r->body_len >= 12 && !(slot && slot->im)) { fprintf(stderr, "lumen: img magic"); for (int k = 0; k < 12; k++) fprintf(stderr, " %02x", (unsigned char)r->body[k]); fprintf(stderr, " ct=%s\n", headers_get(&r->headers, "content-type") ? headers_get(&r->headers, "content-type") : "?"); }
     if (im) image_unref(im);
     if (g_app->t->cur && g_app->t->cur->gen == l->gen) { g_app->t->cur->img_check = true; g_app->t->relayout = g_app->dirty = true; }
     else if (!l->gen) { g_app->dirty = true; g_app->vonly = false; }
@@ -1018,6 +1231,17 @@ static bool vis_doc(Node *n, void *ud) {
     for (Page *p = g_frames; p; p = p->fnext) if (p->d == n->doc && p->frame_el && (void *)p->frame_el->doc == ud) return true;
     return false;
 }
+/* a player is seen when its element's box meets the scrolled viewport (with a margin); frames, fixed boxes count as seen */
+static bool vis_view(Node *n, void *ud) {
+    App *a = ud;
+    if (!n || !a->t || !a->t->cur) return false;
+    if (n->doc != a->t->cur->d) return vis_doc(n, a->t->cur->d);
+    Box *b = n->box;
+    if (!b) return false;
+    for (Box *q = b; q; q = q->parent) if (q->fixed) return true;
+    float s = a->page.scale > 0 ? a->page.scale : 1, vh = a->page.h / s, vw = a->page.w / s, m = 200;
+    return b->y + b->h >= a->t->sy - m && b->y <= a->t->sy + vh + m && b->x + b->w >= -m && b->x <= vw + m;
+}
 /* Start async loads for <img> sources and CSS background images that appeared after the initial load. */
 static void sync_images(Page *p) {
     for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) {
@@ -1062,13 +1286,18 @@ static void fire_img_events(Page *p) {
 }
 /* Reconcile engine sheets with <style>/<link rel=stylesheet> currently in the tree; seed only records them. */
 static bool sync_sheets(Page *p, bool seed) {
-    SheetRef *cur = NULL; int nc = 0, cap = 0; bool changed = false;
-    for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) {
+    SheetRef *cur = NULL; int nc = 0, cap = 0, hint = 0; bool changed = false;
+    for (Node *n = p->d->node.first; n; n = node_next_deep(n, &p->d->node)) {
         if (n->type != NODE_ELEMENT || n->ns != NS_HTML || (n->tag != A_style && !is_sheet_link(n) && !is_preload_link(n))) continue;
-        char *t = n->tag == A_style ? node_text_content(n) : NULL;
-        uint64_t h = t ? fnv(t) : fnv(node_attr(n, "href"));
-        int k = 0; while (k < p->nsref && p->sref[k].n != n) k++;
+        int k = hint < p->nsref && p->sref[hint].n == n ? hint : 0;
+        if (p->sref[k < p->nsref ? k : 0].n != n || k >= p->nsref) { k = 0; while (k < p->nsref && p->sref[k].n != n) k++; }
         bool known = k < p->nsref;
+        hint = k + 1;
+        /* a <style>'s text only changes through its children, which flag it dirty */
+        bool fresh = !known || n->tag != A_style || (n->flags & (NF_STYLE_DIRTY | NF_CHILD_STYLE_DIRTY | NF_STRUCT_DIRTY));
+        if (n->tag == A_style) n->flags &= ~(uint32_t)(NF_STYLE_DIRTY | NF_CHILD_STYLE_DIRTY | NF_STRUCT_DIRTY);
+        char *t = fresh && n->tag == A_style ? node_text_content(n) : NULL;
+        uint64_t h = !fresh ? p->sref[k].h : t ? fnv(t) : fnv(node_attr(n, "href"));
         if (!seed && (!known || p->sref[k].h != h)) {
             if (known) { style_engine_remove_owner(p->e, n); changed = true; }
             if (t) { StyleSheet *sh = css_parse_sheet(t, strlen(t), p->d->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); changed = true; }
@@ -1116,8 +1345,8 @@ static bool frame_update(Page *p) {
     float s = g_app->scale; int pw = (int)ceilf(w * s), ph = (int)ceilf(h * s);
     if (p->cv.w != pw || p->cv.h != ph || !p->cv.px) { canvas_free(&p->cv); canvas_init(&p->cv, pw, ph, s); p->drawn_ver = ~0ull; }
     if (p->drawn_ver == p->d->dom_version && p->drawn_epoch == g_img_epoch) return false;
-    dl_clear(&p->fdl); dl_build(&p->fdl, p->L, 0, p->fsy, w, h);
-    raster(&p->cv, &p->fdl, RGBA(255, 255, 255, 255));
+    dl_clear(&p->fdl); dl_build(&p->fdl, p->L, 0, p->fsy, w, h); image_anim_seen(&p->fdl, now_ms());
+    raster(&p->cv, &p->fdl, 0);   /* iframes are transparent unless their document paints a background */
     p->drawn_ver = p->d->dom_version; p->drawn_epoch = g_img_epoch;
     p->img = (Image){ .w = pw, .h = ph, .refs = 1 << 30, .px = p->cv.px, .scale = s };
     return true;
@@ -1224,7 +1453,7 @@ static void h_frame_open(void *ud, Node *f, Document *d, JsHost *ch) {
     if (p->fw < 1) p->fw = 300;
     if (p->fh < 1) p->fh = 150;
     p->e = style_engine_new(d); p->e->media.vw = p->fw; p->e->media.vh = p->fh;
-    for (Node *n = d->node.first; n; n = node_next_in_tree(n, &d->node)) {
+    for (Node *n = d->node.first; n; n = node_next_deep(n, &d->node)) {
         if (n->type != NODE_ELEMENT || n->ns != NS_HTML) continue;
         if (n->tag == A_style) {
             char *t = node_text_content(n); StyleSheet *sh = css_parse_sheet(t, strlen(t), d->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); free(t);
@@ -1249,7 +1478,7 @@ static void h_frame_close(void *ud) {
     if (p->L) layout_free(p->L);
     if (p->e) style_engine_free(p->e);
     for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) { n->box = NULL; n->style = NULL; }
-    hm_free(&p->img_fired, NULL); free(p->sref);
+    hm_free(&p->img_fired, NULL); free(p->sref); free(p->vids);
     canvas_free(&p->cv); dl_clear(&p->fdl); free(p->fdl.items.v);
     free(p->url); free(p);
     if (g_app) { g_app->dirty = true; g_app->vonly = false; }
@@ -1280,7 +1509,10 @@ static void restyle(App *a) {
     if (!p || p->d->dom_version == p->seen_ver) return;
     p->seen_ver = p->d->dom_version;
     bool sheets = sync_sheets(p, false);
-    { double q = now_ms(); style_recalc(p->e, &p->d->node, sheets); g_tr += now_ms() - q; }
+    static int dbg = -1; if (dbg < 0) dbg = getenv("LUMEN_DEBUG_STYLE") != NULL;
+    bool idx = p->e->idx_dirty;
+    { double q = now_ms(); style_recalc(p->e, &p->d->node, sheets); g_tr += now_ms() - q;
+      if (dbg) fprintf(stderr, "lumen-style: sheets=%d idx=%d matched=%d paint=%d %.2fms\n", sheets, idx, (int)p->e->stats_matched, (int)p->e->stats_paint, now_ms() - q); }
     sync_images(p);
     p->img_check = true;
     if (sheets || p->e->layout_dirty || p->d->layout_version != p->lay_ver || g_no_paint_only) a->t->relayout = true;
@@ -1403,6 +1635,17 @@ static Node *page_focus(App *a) { Node *f = a->t->cur && a->t->cur->d ? a->t->cu
 static char *ctl_value(Node *n) {
     if (n->value_override) return xstrdup(n->value_override);
     if (n->tag == A_textarea) return node_text_content(n);
+    if (n->tag == A_select) {   /* selectedness: script/user choice, else [selected], else the first option */
+        Node *pick = NULL, *attr = NULL, *first = NULL;
+        for (Node *o = n->first; o; o = node_next_in_tree(o, n)) {
+            if (o->type != NODE_ELEMENT || o->tag != A_option || node_has_attr(o, "disabled")) continue;
+            if (!first) first = o;
+            if (o->checked_override > 0) { pick = o; break; }
+            if (!attr && o->checked_override == 0 && node_has_attr(o, "selected")) attr = o;
+        }
+        Node *o = pick ? pick : attr ? attr : first; if (!o) return xstrdup("");
+        const char *ov = node_attr(o, "value"); return ov ? xstrdup(ov) : node_text_content(o);
+    }
     const char *v = node_attr(n, "value"); return xstrdup(v ? v : "");
 }
 static void ctl_set(App *a, Node *n, char *v) {
@@ -1524,6 +1767,18 @@ static void page_move_keep(App *a) {   /* YouTube hides its controls ~3 s after 
 }
 #define VBH 34.f
 static bool vbar_on(App *a, Node *n) { return n->type == NODE_ELEMENT && n->tag == A_video && n->box && n->box->w >= 120 && (node_attr(n, "controls") || (vctl_on(a->t) && !is_youtube(a->t->url))); }
+static Node **page_videos(Page *p, int *n) {
+    if (p->vids_ver != p->d->layout_version + 1) {
+        p->nvids = 0;
+        for (Node *x = p->d->node.first; x; x = node_next_in_tree(x, &p->d->node)) {
+            if (x->type != NODE_ELEMENT || x->tag != A_video) continue;
+            if (p->nvids == p->vidcap) { p->vidcap = p->vidcap ? p->vidcap * 2 : 4; p->vids = xrealloc(p->vids, sizeof *p->vids * (size_t)p->vidcap); }
+            p->vids[p->nvids++] = x;
+        }
+        p->vids_ver = p->d->layout_version + 1;
+    }
+    *n = p->nvids; return p->vids;
+}
 static float vbar_y(App *a, const Box *b) { return vctl_on(a->t) ? b->y + b->h : b->y + b->h - VBH; }   /* below the video when "always show", else inside its bottom edge */
 static void fmt_t(char *o, size_t n, double s) { int t = s >= 0 && s < 1e7 ? (int)s : 0; if (t >= 3600) snprintf(o, n, "%d:%02d:%02d", t / 3600, t / 60 % 60, t % 60); else snprintf(o, n, "%d:%02d", t / 60, t % 60); }
 static void vbar_layout(App *a, const Box *b, const MpState *s, char *tm, size_t n, float *tx0, float *tx1) {
@@ -1532,7 +1787,8 @@ static void vbar_layout(App *a, const Box *b, const MpState *s, char *tm, size_t
 }
 static bool video_bars(App *a, DisplayList *dl) {   /* control bar under each <video controls> (or every video when "always show video controls" is on) */
     bool playing = false; Document *d = a->t->cur->d; float rb = (a->ui->ascent - a->ui->descent) / 2;
-    for (Node *n = d->node.first; n; n = node_next_in_tree(n, &d->node)) {
+    (void)d; int nv; Node **vs = page_videos(a->t->cur, &nv);
+    for (int vi = 0; vi < nv; vi++) { Node *n = vs[vi];
         if (!vbar_on(a, n)) continue;
         Box *b = n->box; float y = vbar_y(a, b) - a->t->sy;
         if (y < -VBH || y > a->vh) continue;
@@ -1551,7 +1807,8 @@ static bool video_bars(App *a, DisplayList *dl) {   /* control bar under each <v
 }
 static bool vbar_click(App *a, float x, float y) {   /* document coordinates */
     Page *p = a->t->cur; if (!p->js) return false;
-    for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) {
+    int nv; Node **vs = page_videos(p, &nv);
+    for (int vi = 0; vi < nv; vi++) { Node *n = vs[vi];
         if (!vbar_on(a, n)) continue;
         Box *b = n->box; float by = vbar_y(a, b);
         if (x < b->x || x >= b->x + b->w || y < by || y >= by + VBH) continue;
@@ -1651,7 +1908,32 @@ static void sel_copy(App *a) {
     if (f) { if (a->page_sel) { char *v = ctl_value(f); SDL_SetClipboardText(v); free(v); } return; }
     if (g_tsel.on && a->t->cur && a->t->cur->L == g_tsel.L) { char *s = tsel_text(a->t->cur->L); if (*s) SDL_SetClipboardText(s); free(s); }
 }
+static Node *g_down; static Page *g_down_p;   /* element under the pointer at mousedown, until mouseup */
+static void anchor_follow(App *a, Node *t);
+static void click_release(App *a, float x, float y) {
+    Node *d = g_down; Page *p = g_down_p; g_down = NULL; g_down_p = NULL;
+    if (!d) return;
+    Node *root = d; while (root->parent) root = root->parent;
+    if (p != a->t->cur || !p->js || !p->L || d->doc != p->d || root != &p->d->node) { node_release(d); return; }
+    x -= a->side; float cy = y - BAR;
+    h_sync_in(a, p->d, true);
+    Box *b = layout_hit(p->L, x, cy + a->t->sy); Node *u = b ? b->node : NULL;
+    while (u && u->type != NODE_ELEMENT) u = u->parent;
+    if (!u) u = d;
+    js_dispatch(p->js, u, "pointerup", "PointerEvent", true, true, x, cy, 0, NULL);
+    js_dispatch(p->js, u, "mouseup", "MouseEvent", true, true, x, cy, 0, NULL);
+    Node *c = d;   /* click goes to the nearest common ancestor of the press and release targets */
+    for (; c; c = c->parent) { Node *k = u; while (k && k != c) k = k->parent; if (k) break; }
+    for (root = d; root->parent; root = root->parent) {}
+    if (c && c->type == NODE_ELEMENT && a->t->cur == p && root == &p->d->node) {
+        bool ok = js_dispatch(p->js, c, "click", "PointerEvent", true, true, x, cy, 0, NULL);
+        restyle(a);
+        if (ok && a->t->cur == p) anchor_follow(a, c);
+    } else restyle(a);
+    node_release(d);
+}
 static void click_page(App *a, float x, float y) {
+    if (g_down) { node_release(g_down); g_down = NULL; g_down_p = NULL; }
     x -= a->side;
     if (!a->t->cur || !a->t->cur->L || a->t->asleep) return;   /* a sleeping page is only a picture until its reload lands */
     h_sync_in(a, a->t->cur->d, true);   /* paint may be deferred; hit-test the current DOM, not detached boxes */
@@ -1676,6 +1958,7 @@ static void click_page(App *a, float x, float y) {
         Node *before = a->t->cur->d->focus;
         js_dispatch(js, t, "pointerdown", "PointerEvent", true, true, x, cy, 0, NULL);
         bool md_ok = js_dispatch(js, t, "mousedown", "MouseEvent", true, true, x, cy, 0, NULL);
+        if (!md_ok) g_press = g_drag = false;   /* a cancelled mousedown starts no text selection */
         bool js_focused = a->t->cur->d->focus != before;
         Node *ctl = t;
         for (Node *l = t; l; l = l->parent) if (l->type == NODE_ELEMENT && l->tag && !strcmp(l->tag, "label")) {
@@ -1693,12 +1976,13 @@ static void click_page(App *a, float x, float y) {
         if (is_text_ctl(ctl)) focus_node(a, ctl);
         else if (edit_host(t)) { if (!js_focused && md_ok) focus_node(a, edit_host(t)); }
         else if (!js_focused && md_ok && page_focus(a)) focus_node(a, NULL);
-        js_dispatch(js, t, "pointerup", "PointerEvent", true, true, x, cy, 0, NULL);
-        js_dispatch(js, t, "mouseup", "MouseEvent", true, true, x, cy, 0, NULL);
-        bool ok = js_dispatch(js, t, "click", "PointerEvent", true, true, x, cy, 0, NULL);
         restyle(a);
-        if (!ok) return;
+        node_retain(t); g_down = t; g_down_p = a->t->cur;   /* pointerup/mouseup/click wait for the real button release */
+        return;
     }
+    anchor_follow(a, t);
+}
+static void anchor_follow(App *a, Node *t) {
     for (Node *n = t; n; n = n->parent)   /* not b: handlers and restyle() may have rebuilt the layout and freed it */
         if (n->type == NODE_ELEMENT && n->tag == A_a && node_attr(n, "href")) {
             const char *h = node_attr(n, "href");
@@ -1911,7 +2195,14 @@ static void history_go(App *a, int d) {
 #include <signal.h>
 #include <setjmp.h>
 #include <pthread.h>
+#ifdef __APPLE__
 #include <mach-o/dyld.h>
+#define LOAD_ADDR() (0x100000000UL + (unsigned long)_dyld_get_image_vmaddr_slide(0))
+#else
+#include <link.h>
+#include <ucontext.h>
+static unsigned long LOAD_ADDR(void) { return _r_debug.r_map ? (unsigned long)_r_debug.r_map->l_addr : 0UL; }
+#endif
 /* A memory fault on the main thread while handling a tab jumps back to the event loop instead of killing
    Lumen: that tab's page is abandoned (leaked, never touched again), the tab reloads, and a notice is shown. */
 static sigjmp_buf g_recover;
@@ -1924,10 +2215,14 @@ static void crash_handler(int sig, siginfo_t *si, void *ucv) {
     ucontext_t *uc = ucv; if (uc && uc->uc_mcontext) { pc = (unsigned long)uc->uc_mcontext->__ss.__pc; lr = (unsigned long)uc->uc_mcontext->__ss.__lr; }
 #elif defined(__APPLE__) && defined(__x86_64__)
     ucontext_t *uc = ucv; if (uc && uc->uc_mcontext) pc = (unsigned long)uc->uc_mcontext->__ss.__rip;
+#elif defined(__linux__) && defined(__x86_64__)
+    ucontext_t *uc = ucv; if (uc) pc = (unsigned long)uc->uc_mcontext.gregs[REG_RIP];
+#elif defined(__linux__) && defined(__aarch64__)
+    ucontext_t *uc = ucv; if (uc) { pc = (unsigned long)uc->uc_mcontext.pc; lr = (unsigned long)uc->uc_mcontext.regs[30]; }
 #else
     (void)ucv;
 #endif
-    char buf[192]; int k = snprintf(buf, sizeof buf, "lumen: fatal signal %d at pc 0x%lx lr 0x%lx addr %p, load address 0x%lx\n", sig, pc, lr, si ? si->si_addr : NULL, (unsigned long)(0x100000000UL + (unsigned long)_dyld_get_image_vmaddr_slide(0)));
+    char buf[192]; int k = snprintf(buf, sizeof buf, "lumen: fatal signal %d at pc 0x%lx lr 0x%lx addr %p, load address 0x%lx\n", sig, pc, lr, si ? si->si_addr : NULL, LOAD_ADDR());
     write(2, buf, (size_t)k);
     backtrace_symbols_fd(bt, n, 2);
     if (g_guard && (sig == SIGSEGV || sig == SIGBUS) && pthread_equal(pthread_self(), g_main_thr)) { g_guard = 0; siglongjmp(g_recover, sig); }
@@ -1963,13 +2258,37 @@ int main(int argc, char **argv) {
     install_crash_handler();
     const char *start = argc > 1 ? argv[1] : "https://en.wikipedia.org/wiki/Web_browser";
     SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
+#ifdef __linux__
+    /* CPU frames go straight to the X11 window surface (XShm); otherwise SDL backs the surface with a GL
+       renderer, which on a GPU-less host is llvmpipe burning every core per present */
+    SDL_SetHint(SDL_HINT_FRAMEBUFFER_ACCELERATION, "0");
+#endif
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) { fprintf(stderr, "SDL_Init: %s\n", SDL_GetError()); return 1; }
     dom_init(); net_init(6); font_init(); css_sheet_added_hook = sheet_fonts;
-    icache_mu = SDL_CreateMutex(); EV_LOADED = SDL_RegisterEvents(1); EV_NET = SDL_RegisterEvents(1); EV_MENU = SDL_RegisterEvents(1);
+    icache_mu = SDL_CreateMutex(); EV_LOADED = SDL_RegisterEvents(1); EV_DL = SDL_RegisterEvents(1); js_save_file = download_save; EV_NET = SDL_RegisterEvents(1); EV_MENU = SDL_RegisterEvents(1);
     net_wakeup = wake; media_wakeup = wake; js_wakeup = wake; js_clip_set = h_clip_set; js_clip_get = h_clip_get; js_global_init(argv[0]);
     paint_image_hook = node_img; paint_url_image_hook = url_img; svg_ext_ref_hook = svg_ext_ref; layout_image_size_hook = img_size;
     App a; memset(&a, 0, sizeof a); g_app = &a; a.nws = 1; a.wsicon[0] = -1; snprintf(a.wsname[0], sizeof a.wsname[0], "Personal"); a.side = getenv("LUMEN_NO_SIDEBAR") ? 0 : SIDEW; tab_new(&a);
-    bool want_gpu = !getenv("LUMEN_NO_GPU");
+    {
+        char *pref = SDL_GetPrefPath("lumen", "Lumen"); char sp[1024] = "";
+        if (pref) { snprintf(g_pref, sizeof g_pref, "%s", pref); snprintf(sp, sizeof sp, "%ssettings.txt", pref); SDL_free(pref); }
+        FILE *sf = *sp ? fopen(sp, "r") : NULL; char line[256];
+        while (sf && fgets(line, sizeof line, sf)) {
+            char k[64]; int v; if (sscanf(line, "%63[^=]=%d", k, &v) != 2) continue;
+            if (!strcmp(k, "offscreen_media_eviction")) g_lowmem = v != 0; else if (!strcmp(k, "cpu_limit")) g_cpu_on = v != 0;
+            else if (!strcmp(k, "cpu_pct")) g_cpu_pct = LCLAMP(v, 10, 100); else if (!strcmp(k, "cpu_secs")) g_cpu_secs = LCLAMP(v, 5, 600);
+            else if (!strcmp(k, "cpu_lim")) g_cpu_lim = LCLAMP(v, 5, 95); else if (!strcmp(k, "video_controls")) g_vctl = v != 0;
+            else if (!strcmp(k, "tab_sleep")) g_tab_sleep = v != 0; else if (!strcmp(k, "cpu_hud")) g_hud = v != 0; else if (!strcmp(k, "smooth_scroll")) g_smooth = v != 0; else if (!strcmp(k, "user_agent")) g_ua = LCLAMP(v, 0, UA_COUNT - 1);
+            else if (!strcmp(k, "gpu_backend")) g_gpu_backend = LCLAMP(v, 0, GPU_BACKEND_METAL); else if (!strcmp(k, "gpu_adapter")) g_gpu_adapter = LCLAMP(v, -1, 15);
+        }
+        if (sf) fclose(sf);
+        net_set_user_agent(g_ua);
+        links_load("bookmarks.txt", g_bms, &g_nbm, MAX_BM); links_load("history.txt", g_hv, &g_nhv, MAX_HV);
+        const char *lm = getenv("LUMEN_LOWMEM"); if (lm) g_lowmem = atoi(lm) != 0;
+        fprintf(stderr, "lumen: lite mode %s\n", g_lowmem ? "on" : "off");
+        media_lowmem = g_lowmem;
+    }
+    bool want_gpu = !getenv("LUMEN_NO_GPU") && g_gpu_backend != GPU_BACKEND_CPU;
     int ww = 1280, wh = 840; { const char *e = getenv("LUMEN_WINDOW"); if (e) sscanf(e, "%dx%d", &ww, &wh); }   /* e.g. LUMEN_WINDOW=800x600 */
     a.win = SDL_CreateWindow("Lumen", ww, wh, SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY | (want_gpu && !strcmp(SDL_GetPlatform(), "macOS") ? SDL_WINDOW_METAL : 0));
     if (!a.win) { fprintf(stderr, "SDL_CreateWindow: %s\n", SDL_GetError()); return 1; }
@@ -1987,7 +2306,15 @@ int main(int argc, char **argv) {
         else if (SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, NULL)) { src.kind = GPU_SURF_WAYLAND; src.a = SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER, NULL); src.b = SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, NULL); ok = true; }
         else if (SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_X11_DISPLAY_POINTER, NULL)) { src.kind = GPU_SURF_XLIB; src.a = SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_X11_DISPLAY_POINTER, NULL); src.win = (uint64_t)SDL_GetNumberProperty(pr, SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0); ok = true; }
         else if (SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_ANDROID_WINDOW_POINTER, NULL)) { src.kind = GPU_SURF_ANDROID; src.a = SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_ANDROID_WINDOW_POINTER, NULL); ok = true; }
-        if (ok) a.gpu = gpu_create(&src, a.pw, a.ph, getenv("LUMEN_VULKAN") != NULL || strcmp(SDL_GetPlatform(), "macOS"));
+        if (ok) {
+            GpuOpts go = { g_gpu_backend, g_gpu_adapter, false };
+            if (getenv("LUMEN_VULKAN")) go.backend = GPU_BACKEND_VULKAN;
+            const char *eb = getenv("LUMEN_GPU_BACKEND");   /* vulkan | gl | metal | cpu | auto */
+            if (eb) go.backend = !strcmp(eb, "vulkan") ? GPU_BACKEND_VULKAN : !strcmp(eb, "gl") || !strcmp(eb, "opengl") ? GPU_BACKEND_GL : !strcmp(eb, "metal") ? GPU_BACKEND_METAL : !strcmp(eb, "cpu") ? GPU_BACKEND_CPU : GPU_BACKEND_AUTO;
+            if (getenv("LUMEN_GPU_ADAPTER")) go.adapter = atoi(getenv("LUMEN_GPU_ADAPTER"));
+            a.gpu = gpu_create(&src, a.pw, a.ph, &go);
+        }
+        g_gpu_active = a.gpu ? gpu_adapter_name(a.gpu) : "CPU";
         media_yuv = gpu_yuv_ok(a.gpu) && !getenv("LUMEN_NO_YUV");
         if (!a.gpu && a.mview) { SDL_Metal_DestroyView(a.mview); a.mview = NULL; }
     }
@@ -1996,24 +2323,6 @@ int main(int argc, char **argv) {
     char cookie_path[1024] = "";
     { char *pref = SDL_GetPrefPath("lumen", "Lumen"); if (pref) { snprintf(cookie_path, sizeof cookie_path, "%scookies.txt", pref); SDL_free(pref); cookies_load(cookie_path); } }
     double cookies_saved_at = now_ms();
-    {
-        char *pref = SDL_GetPrefPath("lumen", "Lumen"); char sp[1024] = "";
-        if (pref) { snprintf(g_pref, sizeof g_pref, "%s", pref); snprintf(sp, sizeof sp, "%ssettings.txt", pref); SDL_free(pref); }
-        FILE *sf = *sp ? fopen(sp, "r") : NULL; char line[256];
-        while (sf && fgets(line, sizeof line, sf)) {
-            char k[64]; int v; if (sscanf(line, "%63[^=]=%d", k, &v) != 2) continue;
-            if (!strcmp(k, "offscreen_media_eviction")) g_lowmem = v != 0; else if (!strcmp(k, "cpu_limit")) g_cpu_on = v != 0;
-            else if (!strcmp(k, "cpu_pct")) g_cpu_pct = LCLAMP(v, 10, 100); else if (!strcmp(k, "cpu_secs")) g_cpu_secs = LCLAMP(v, 5, 600);
-            else if (!strcmp(k, "cpu_lim")) g_cpu_lim = LCLAMP(v, 5, 95); else if (!strcmp(k, "video_controls")) g_vctl = v != 0;
-            else if (!strcmp(k, "tab_sleep")) g_tab_sleep = v != 0; else if (!strcmp(k, "cpu_hud")) g_hud = v != 0; else if (!strcmp(k, "smooth_scroll")) g_smooth = v != 0; else if (!strcmp(k, "user_agent")) g_ua = LCLAMP(v, 0, UA_COUNT - 1);
-        }
-        if (sf) fclose(sf);
-        net_set_user_agent(g_ua);
-        links_load("bookmarks.txt", g_bms, &g_nbm, MAX_BM); links_load("history.txt", g_hv, &g_nhv, MAX_HV);
-        const char *lm = getenv("LUMEN_LOWMEM"); if (lm) g_lowmem = atoi(lm) != 0;
-        fprintf(stderr, "lumen: lite mode %s\n", g_lowmem ? "on" : "off");
-        media_lowmem = g_lowmem;
-    }
     navigate(&a, start, true);
     for (int i = 2; i < argc; i++) { Tab *nt = tab_new(&a); if (!nt) break; a.t = nt; navigate(&a, argv[i], true); }
     a.t = a.tabs[0]; a.ti = 0;
@@ -2034,6 +2343,7 @@ int main(int argc, char **argv) {
             if (th - lh >= 2000) { lh = th; hud_sample(); a.dirty = true; a.vonly = false; }
             int nx = (int)(2000 - (th - lh)) + 1; if (nx < to) to = nx;
         }
+        if (cvbuf_changed) { cvbuf_changed = 0; a.dirty = true; a.vonly = false; }
         { int mf = media_tick(); if (mf & 1) { if (!a.dirty && !a.deferred) a.vonly = true; a.dirty = a.vframe = true; } if (mf & 2) a.t->relayout = true; }
         if (!a.editing && (page_focus(&a) || edit_focus(&a)) && !SDL_TextInputActive(a.win)) SDL_StartTextInput(a.win);
         {
@@ -2058,13 +2368,13 @@ int main(int argc, char **argv) {
         if (getenv("LUMEN_MEM_STATS")) {
             static double last_stats; double tn = now_ms();
             if (tn - last_stats > 10000) { last_stats = tn; size_t fr, seg = media_mem_bytes(&fr); size_t jh = 0, je = 0; js_mem_stats(&jh, &je); fprintf(stderr, "lumen-mem: mse=%.1fMB vframes=%.1fMB images=%.1fMB/%d js_heap=%.1fMB js_external=%.1fMB canvases=%.1fMB\n", seg / 1048576.0, fr / 1048576.0, g_icache_bytes / 1048576.0, g_icache_n, jh / 1048576.0, je / 1048576.0, ((double)a.frame.w * a.frame.h + (double)a.page.w * a.page.h) * 4 / 1048576.0); }
-            if (last_stats == tn) { extern long g_styles_live, g_nodes_live; extern size_t g_css_parsed_bytes; extern void worker_mem_stats(size_t *, size_t *, int *); size_t wh, wx; int wn; worker_mem_stats(&wh, &wx, &wn); malloc_statistics_t ms = {0}; malloc_zone_statistics(NULL, &ms);
-                fprintf(stderr, "lumen-mem2: malloc_in_use=%.1fMB nodes=%ld (%zuB) styles=%ld (%zuB) css_parsed=%.1fMB workers=%d heap=%.1fMB ext=%.1fMB\n", ms.size_in_use / 1048576.0, g_nodes_live, sizeof(Node), g_styles_live, sizeof(ComputedStyle), g_css_parsed_bytes / 1048576.0, wn, wh / 1048576.0, wx / 1048576.0); }
+            if (last_stats == tn) { extern long g_styles_live, g_nodes_live; extern size_t g_css_parsed_bytes; extern void worker_mem_stats(size_t *, size_t *, int *); size_t wh, wx; int wn; worker_mem_stats(&wh, &wx, &wn); MALLOC_IN_USE(ms);
+                fprintf(stderr, "lumen-mem2: malloc_in_use=%.1fMB nodes=%ld (%zuB) styles=%ld (%zuB) css_parsed=%.1fMB workers=%d heap=%.1fMB ext=%.1fMB\n", ms / 1048576.0, g_nodes_live, sizeof(Node), g_styles_live, sizeof(ComputedStyle), g_css_parsed_bytes / 1048576.0, wn, wh / 1048576.0, wx / 1048576.0); }
         }
         g_lite_active = a.t && lite_on(a.t); media_lowmem = g_lite_active;
+        if (a.t && a.t->cur) { if (g_lite_active) media_mark_visible(vis_doc, a.t->cur->d); else media_mark_visible(vis_view, &a); }
         if (g_lite_active) {
             static double last_evict; double tn = now_ms();
-            if (a.t->cur) media_mark_visible(vis_doc, a.t->cur->d);
             if (tn - last_evict > 2000) { last_evict = tn; img_evict(); }
         }
         { int mt = media_timeout_ms(); if (mt >= 0 && mt < to) to = mt; }
@@ -2101,6 +2411,7 @@ int main(int argc, char **argv) {
             if ((ev.type >= SDL_EVENT_KEY_DOWN && ev.type <= SDL_EVENT_TEXT_INPUT) || (ev.type >= SDL_EVENT_MOUSE_MOTION && ev.type <= SDL_EVENT_MOUSE_WHEEL && !wheel0)) a.last_input = now_ms();
             if (ev.type != EV_NET && ev.type != SDL_EVENT_MOUSE_WHEEL) a.vonly = false;
             js_key_mods = key_mods(SDL_GetModState());
+            { SDL_MouseButtonFlags mb = SDL_GetMouseState(NULL, NULL); js_buttons = (mb & SDL_BUTTON_LMASK ? 1 : 0) | (mb & SDL_BUTTON_RMASK ? 2 : 0) | (mb & SDL_BUTTON_MMASK ? 4 : 0); }
             switch (ev.type) {
             case SDL_EVENT_QUIT: quit = true; break;
             case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: case SDL_EVENT_WINDOW_RESIZED: update_size(&a); break;
@@ -2125,7 +2436,7 @@ int main(int argc, char **argv) {
                 SDL_SetCursor(SDL_CreateSystemCursor(h == HB_URL ? SDL_SYSTEM_CURSOR_TEXT : over_link(&a, ev.motion.x, ev.motion.y) || (h && h != HB_URL) ? SDL_SYSTEM_CURSOR_POINTER : SDL_SYSTEM_CURSOR_DEFAULT));
                 break; }
             case SDL_EVENT_WINDOW_MOUSE_LEAVE: if (a.t->cur && page_hover(a.t->cur, NULL)) restyle(&a); break;
-            case SDL_EVENT_MOUSE_BUTTON_UP: if (ev.button.button == SDL_BUTTON_LEFT) g_press = g_drag = false; break;
+            case SDL_EVENT_MOUSE_BUTTON_UP: if (ev.button.button == SDL_BUTTON_LEFT) { g_press = g_drag = false; click_release(&a, ev.button.x, ev.button.y); } break;
             case SDL_EVENT_MOUSE_BUTTON_DOWN:
                 if (ev.button.button != SDL_BUTTON_LEFT) break;
                 { int bh = bar_hit(&a, ev.button.x, ev.button.y);
@@ -2169,6 +2480,10 @@ int main(int argc, char **argv) {
                 js_key_mods = key_mods(ev.key.mod);
                 SDL_Keycode k = ev.key.key; float page = a.vh - BAR - 40;
                 if (k == SDLK_LGUI || k == SDLK_RGUI || k == SDLK_LCTRL || k == SDLK_RCTRL) { cmd = true; break; }
+                if (!a.editing && (k == SDLK_AC_BACK || k == SDLK_AC_FORWARD ||
+                    ((k == SDLK_LEFT || k == SDLK_RIGHT) && (ev.key.mod & SDL_KMOD_ALT) && !(ev.key.mod & (SDL_KMOD_GUI | SDL_KMOD_CTRL | SDL_KMOD_SHIFT))))) {
+                    history_go(&a, k == SDLK_LEFT || k == SDLK_AC_BACK ? -1 : 1); break;
+                }
                 if (cmd || (ev.key.mod & (SDL_KMOD_GUI | SDL_KMOD_CTRL))) {
                     bool reserved = k == SDLK_Q || k == SDLK_W || k == SDLK_T || k == SDLK_N || k == SDLK_L || k == SDLK_TAB || (k >= SDLK_1 && k <= SDLK_9);
                     if (cmd) js_key_mods |= (ev.key.mod & SDL_KMOD_CTRL) ? 2 : 8;
@@ -2237,6 +2552,15 @@ int main(int argc, char **argv) {
                 a.dirty = true; break; }
             default:
                 if (ev.type == EV_MENU) menu_cmd(&a, ev.user.code);
+                if (ev.type == EV_DL) {   /* the page stays; drop the history entry the download created */
+                    uint64_t g = (uint64_t)(uintptr_t)ev.user.data1;
+                    for (int i = 0; i < a.ntabs; i++) { Tab *t = a.tabs[i]; if (t->lgen != g) continue;
+                        t->loading = false;
+                        if (t->cur && t->hpos > 0 && t->hgen[t->hpos] == g) { free(t->hist[t->hpos]); t->nhist = t->hpos; t->hpos--; }
+                        if (t->cur && !a.editing) snprintf(t->url, sizeof t->url, "%s", t->cur->url);
+                    }
+                    a.dirty = true; a.vonly = false;
+                }
                 if (ev.type == EV_LOADED) {
                     Page *p = ev.user.data1;
                     Tab *lt = NULL; for (int i = 0; i < a.ntabs; i++) if (a.tabs[i]->lgen == p->gen) lt = a.tabs[i];

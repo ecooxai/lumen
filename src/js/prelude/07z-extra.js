@@ -117,7 +117,7 @@ class SourceBuffer extends EventTarget {
         this._op(() => N.mediaAppend(this._ms._id, this._i, copy));
     }
     remove(s, e) { this._op(() => { N.mediaRemove(this._ms._id, this._i, +s, +e); }); }
-    abort() { if (this.updating) { this.updating = false; this.dispatchEvent(new Event('abort')); this.dispatchEvent(new Event('updateend')); } }
+    abort() { N.mediaAbort(this._ms._id, this._i); if (this.updating) { this.updating = false; this.dispatchEvent(new Event('abort')); this.dispatchEvent(new Event('updateend')); } }
     changeType(t) { this._mime = String(t); }
 }
 class MediaSource extends EventTarget {

@@ -1,0 +1,12 @@
+<!doctype html><html><head><style>
+body{margin:0}
+.a{opacity:.5}
+</style></head><body>
+<div id=x class=a style="width:40px;height:40px;background:red">x</div>
+<div id=y style="width:40px;height:40px;background:green">y</div>
+<script>
+y.style.opacity = undefined;
+x.setAttribute('style', x.getAttribute('style') + ';opacity: undefined');
+const ox = getComputedStyle(x).opacity, oy = getComputedStyle(y).opacity;
+console.log('OPAINV ' + (ox === '0.5' && oy === '1' ? 'PASS' : 'FAIL') + ' x=' + ox + ' y=' + oy);
+</script></body></html>

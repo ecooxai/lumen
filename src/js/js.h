@@ -10,8 +10,10 @@ typedef struct JsCtx JsCtx;
 /* system clipboard, set by the embedder (navigator.clipboard, execCommand copy); get returns malloc'd text */
 extern void (*js_clip_set)(const char *text);
 extern char *(*js_clip_get)(void);
+extern void (*js_save_file)(const char *name, const void *data, size_t n);   /* downloads: <a download>, blob/data URLs */
 /* modifier keys held for the next dispatched event: 1 shift, 2 ctrl, 4 alt, 8 meta */
 extern int js_key_mods;
+extern int js_buttons;   /* held mouse buttons, DOM `buttons` mask */
 
 typedef struct JsHost {
     void *ud;
@@ -38,6 +40,8 @@ bool js_busy(JsCtx *c);   /* fetches in flight */
 void js_free(JsCtx *c);
 /* run a parser-inserted script (sets document.currentScript) */
 void js_run_script(JsCtx *c, Node *script, const char *src, size_t n, const char *name);
+/* strict MIME check for classic scripts: image/audio/video/csv responses never execute (Chrome refuses them) */
+bool js_script_mime_blocked(const char *content_type);
 void js_eval(JsCtx *c, const char *src, const char *name);
 /* run a <script type=module>; src NULL fetches url. Inline modules pass the document url */
 void js_run_module(JsCtx *c, Node *script, const char *src, size_t n, const char *url);
@@ -52,6 +56,7 @@ void js_set_ready_state(JsCtx *c, int state);
 double js_next_deadline(JsCtx *c);
 /* run due timers, animation frames and microtasks */
 void js_tick(JsCtx *c);
+void js_viewport_changed(JsCtx *c);   /* re-evaluates matchMedia lists and fires window resize */
 bool js_wants_frame(JsCtx *c);
 /* the live child browsing context's document for an <iframe>, or NULL */
 Document *js_frame_doc(Node *iframe);

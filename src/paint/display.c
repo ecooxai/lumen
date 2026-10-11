@@ -14,6 +14,7 @@ typedef struct {
     bool clip; float cx, cy, cw, ch;
     int order;
     Box *sb; const void *outer;   /* innermost scroller and the state outside it */
+    DefVec *ctx;                  /* deferred list of the enclosing stacking context */
 } PB;
 
 static DItem *emit(PB *p, uint8_t op) { DItem it; memset(&it, 0, sizeof it); it.op = op; it.alpha = 1; vec_push(p->dl->items, it); return &p->dl->items.v[p->dl->items.n - 1]; }
@@ -66,7 +67,7 @@ static void paint_rect_deco(PB *p, Box *b, float x, float y, float w, float h, b
     }
     if (s->has_shadow && !s->box_shadow.inset && COLOR_A(s->box_shadow.color)) {
         DItem *it = emit(p, DO_SHADOW); it->x = x + s->box_shadow.x; it->y = y + s->box_shadow.y; it->w = w; it->h = h;
-        memcpy(it->r, r, sizeof r); it->color = s->box_shadow.color; it->blur = s->box_shadow.blur; it->spread = s->box_shadow.spread;
+        memcpy(it->r, r, sizeof r); it->color = s->box_shadow.color; it->blur = s->box_shadow.blur; it->spread = s->box_shadow.spread; it->sx = s->box_shadow.x; it->sy = s->box_shadow.y;
     }
     if (COLOR_A(s->bg_color)) {
         Color c = s->bg_color;
@@ -123,7 +124,7 @@ static void paint_text_frag(PB *p, TextFrag *f) {
     if (!visible(p, f->x + p->dx, f->y + p->dy, f->w, f->h)) return;
     Color col = s->color;
     Box *blk = t->parent; while (blk && blk->kind == BX_INLINE) blk = blk->parent;
-    if (blk && blk->placeholder) col = RGBA(117, 117, 117, COLOR_A(col));
+    if (blk && blk->placeholder) col = blk->st->ph_set ? blk->st->ph_color : RGBA(117, 117, 117, COLOR_A(col));
     int ss, se;
     if (tsel_range(t, &ss, &se)) {
         float x0 = t->sh.g[f->g0].x, a = -1, e = -1;
@@ -379,15 +380,34 @@ static void paint_stacking(PB *p, Box *b) {
     bool layer = s->opacity < 0.999f;
     if (layer) { DItem *l = emit(p, DO_PUSH_LAYER); l->alpha = s->opacity; }
     DefVec defs = {0};
+    /* positioned z-index:auto boxes don't form a stacking context: their positive-z descendants are
+       ordered against the siblings of the enclosing context (Wikipedia's z-index:2 dropdown inside a
+       relative wrapper must paint above a later z-index:1 box) */
+    DefVec *octx = p->ctx;
+    bool sc = !octx || !s->z_auto || layer || s->has_transform || s->position == P_FIXED || s->position == P_STICKY;
+    if (sc) p->ctx = &defs;
     if (b->kind == BX_INLINE) {
         if (s->visibility == VIS_VISIBLE) for (int i = 0; i < b->nir; i++) { IRect *r = &b->ir[i]; if (r->w > 0) paint_rect_deco(p, b, r->x + p->dx, r->y + p->dy, r->w, r->h, r->first, r->last); }
         /* text of an inline positioned box lives in its block's frags: paint those belonging to it */
         Box *blk = b->parent; while (blk && blk->kind == BX_INLINE) blk = blk->parent;
         if (blk) for (int i = 0; i < blk->nfrags; i++) { TextFrag *f = &blk->frags[i]; Box *o = f->box; while (o && o != b && o != blk) o = o->parent; if (o == b) { if (f->box->kind == BX_TEXT) paint_text_frag(p, f); else paint_block_content(p, f->box, &defs); } }
     } else paint_block_content(p, b, &defs);
+    if (!sc) {
+        int k = 0;
+        for (int i = 0; i < defs.n; i++) {
+            const ComputedStyle *ds = defs.v[i].b->st;
+            if (!ds->z_auto && ds->z_index > 0) vec_push(*octx, defs.v[i]);
+            else defs.v[k++] = defs.v[i];
+        }
+        defs.n = k;
+    }
     if (defs.n > 1) qsort(defs.v, (size_t)defs.n, sizeof(Deferred), def_cmp);
-    for (int i = 0; i < defs.n; i++) paint_deferred(p, &defs.v[i]);
+    for (int i = 0, sorted = defs.n; i < defs.n; i++) {
+        if (defs.n != sorted) { qsort(defs.v + i, (size_t)(defs.n - i), sizeof(Deferred), def_cmp); sorted = defs.n; }   /* hoisted from non-context descendants */
+        Deferred d = defs.v[i]; paint_deferred(p, &d);
+    }
     vec_free(defs);
+    p->ctx = octx;
     if (layer) emit(p, DO_POP_LAYER);
     if (fabsf(ksx - 1) > 1e-4f || fabsf(ksy - 1) > 1e-4f) {
         float ox = b->x + p->dx + s->transform_origin[0].px + s->transform_origin[0].pct * b->w / 100;

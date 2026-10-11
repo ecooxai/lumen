@@ -2,6 +2,7 @@
 #pragma once
 #include <v8.h>
 #include <libplatform/libplatform.h>
+#include <algorithm>
 #include <atomic>
 #include <condition_variable>
 #include <map>
@@ -91,6 +92,8 @@ struct JsCtx {
     void *host_ud = nullptr;          /* child host data returned by frame_open */
     std::string frame_src;
     std::unordered_map<std::string, v8::Global<v8::Module>> mods;   /* ES module map, keyed by URL */
+    std::vector<std::pair<std::string, std::string>> imap;          /* import map "imports" (scopes merged) */
+    size_t imap_seen = 0;
     std::unordered_multimap<int, std::string> mod_url;              /* module identity hash -> key */
     int mod_seq = 0;
 };
@@ -124,6 +127,9 @@ void frame_kill(JsCtx *k);
 void frame_nav(JsCtx *k, const char *u);
 void js_install_frames(JsCtx *c, v8::Local<v8::Object> N);
 void js_install_workers(JsCtx *c, v8::Local<v8::Object> N);
+void js_install_canvas(JsCtx *c, v8::Local<v8::Object> N);
+void js_install_webgpu(JsCtx *c, v8::Local<v8::Object> N);
+void js_install_capture(JsCtx *c, v8::Local<v8::Object> N);
 void workers_pump(JsCtx *c);
 void workers_kill(JsCtx *c);
 double workers_deadline(JsCtx *c);

@@ -25,7 +25,7 @@ function mediaPoll() {
         if (!seeking && o.seeking) { n.tu = time; mediaFire(el, 'timeupdate'); mediaFire(el, 'seeked'); }
         if (playing && !seeking && Math.abs(time - n.tu) >= 0.25) { n.tu = time; mediaFire(el, 'timeupdate'); }
         if (ended && !o.ended) {
-            if (el.loop) { N.mediaSeek(el.__mp, 0); N.mediaPlay(el.__mp); continue; }
+            if (el.loop) { n.ended = false; n.seeking = true; N.mediaSeek(el.__mp, 0); N.mediaPlay(el.__mp); mediaFire(el, 'seeking'); continue; }
             def(el, '__paused', true); mediaFire(el, 'timeupdate'); mediaFire(el, 'pause'); mediaFire(el, 'ended');
         }
     }
@@ -56,7 +56,7 @@ mk('HTMLMediaElement', HTMLElement, [], p => {
         set src(v) { N.setAttr(this, 'src', String(v)); this.load(); },
         get currentSrc() { return this.__src || ''; },
         get paused() { return this.__paused !== false; },
-        get ended() { const s = st(this); return !!(s && s[2]); },
+        get ended() { const s = st(this); return !!(s && s[2]) && !this.loop; },
         get seeking() { const s = st(this); return !!(s && s[3]); },
         get readyState() { const s = st(this); return s ? s[0] : 0; },
         get networkState() { const s = st(this); return s ? (s[0] >= 4 ? 1 : 2) : (N.attr(this, 'src') != null ? 3 : 0); },
