@@ -217,6 +217,14 @@ static int loader(void *arg) {
         nr->body = rq->body; nr->body_len = rq->blen; rq->body = NULL;
         headers_set(&nr->headers, "Content-Type", rq->ctype && *rq->ctype ? rq->ctype : "application/x-www-form-urlencoded");
     }
+    if (nr) {   /* top-level document navigation headers, as Chrome sends them */
+        headers_set(&nr->headers, "Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8");
+        headers_set(&nr->headers, "Upgrade-Insecure-Requests", "1");
+        headers_set(&nr->headers, "Sec-Fetch-Dest", "document");
+        headers_set(&nr->headers, "Sec-Fetch-Mode", "navigate");
+        headers_set(&nr->headers, "Sec-Fetch-Site", "none");
+        headers_set(&nr->headers, "Sec-Fetch-User", "?1");
+    }
     NetResponse *r = rq->html ? NULL : net_fetch_sync(nr);
     if (r && r->status >= 200 && r->status < 300 && is_download(r)) {
         char nm[256]; download_name(r, r->url ? r->url : rq->url, nm, sizeof nm);

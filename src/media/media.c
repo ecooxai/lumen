@@ -39,6 +39,7 @@ typedef struct Stream {
     char *mime;
     bool progressive, webm;
     Blob *init;                            /* latest init segment, or the whole file when progressive */
+    uint8_t *ftyp; size_t nftyp;           /* ftyp waiting for its moov, so a half-appended init is never published */
     Seg *segs; int nsegs, capsegs;         /* sorted by t0 */
     uint8_t *pend; size_t npend, cappend;
     uint8_t *moof; size_t nmoof;
@@ -626,14 +627,13 @@ bool mp_append(MediaPlayer *m, int sb, const uint8_t *p, size_t n) {
         if (!sz) { ok = false; off = s->npend; break; }
         if (sz > (uint64_t)(e - b)) break;
         if (ty == FCC('f', 't', 'y', 'p')) {
-            Blob *nb = xcalloc(1, sizeof *nb); nb->refs = 1; nb->n = sz; nb->p = xmalloc(sz); memcpy(nb->p, b, sz);
-            blob_unref(s->init); s->init = nb;
+            free(s->ftyp); s->ftyp = xmalloc(sz); memcpy(s->ftyp, b, sz); s->nftyp = sz;
         } else if (ty == FCC('m', 'o', 'o', 'v')) {
-            if (!s->init) { s->init = xcalloc(1, sizeof *s->init); s->init->refs = 1; }
-            else if (s->init->refs > 1 || (s->init->n >= 8 && rd32(s->init->p + 4) == FCC('m', 'o', 'o', 'v'))) {
-                Blob *nb = xcalloc(1, sizeof *nb); nb->refs = 1; blob_unref(s->init); s->init = nb;
-            }
-            s->init->p = xrealloc(s->init->p, s->init->n + sz); memcpy(s->init->p + s->init->n, b, sz); s->init->n += sz;
+            Blob *nb = xcalloc(1, sizeof *nb); nb->refs = 1; nb->n = s->nftyp + sz; nb->p = xmalloc(nb->n);
+            if (s->nftyp) memcpy(nb->p, s->ftyp, s->nftyp);
+            memcpy(nb->p + s->nftyp, b, sz);
+            free(s->ftyp); s->ftyp = NULL; s->nftyp = 0;
+            blob_unref(s->init); s->init = nb;
             parse_moov(s, b + h, b + sz);
         } else if (ty == FCC('m', 'o', 'o', 'f')) {
             free(s->moof); s->moof = xmalloc(sz); memcpy(s->moof, b, sz); s->nmoof = sz;
@@ -752,7 +752,7 @@ void mp_free(MediaPlayer *m) {
         Stream *s = m->st[i];
         SDL_WaitThread(s->th, NULL);
         for (int k = 0; k < s->nsegs; k++) { free(s->segs[k].p); blob_unref(s->segs[k].init); }
-        free(s->segs); free(s->pend); free(s->moof); blob_unref(s->init); blob_unref(s->rd_init); free(s->mime); free(s);
+        free(s->segs); free(s->pend); free(s->moof); free(s->ftyp); blob_unref(s->init); blob_unref(s->rd_init); free(s->mime); free(s);
     }
     for (int i = 0; i < m->vqn; i++) image_unref(m->vq[i].im);
     while (m->ah) { AChunk *c = m->ah; m->ah = c->next; free(c->s); free(c); }
