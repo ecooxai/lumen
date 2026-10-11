@@ -228,3 +228,11 @@ Load (DCL/load): Google 0.53/3.66 s, Bing 1.97/2.23 s, YT watch ~2.2/3.47 s, YT 
 - Hover invalidation (`style_hover_affects` / `style_hover_has` in src/css/style.c): `idx_build` records which id/class/tag keys have `:hover` rules (self, subtree, or parent subtree for `+`/`~`) and which have `:has(...:hover...)`; `page_hover` restyles only those nodes. Without this, every hover change restyled the whole ChatGPT document (~100-350 ms each).
 - Archive and delete verified on throwaway chats (PATCH / DELETE sent, row removed, navigates home).
 - Still to check: model picker/tools, GPT pages.
+
+## Linux port + web graphics (branch devin/linux-x11-vulkan-port, PR #5)
+- Linux build: `make -j8 build/lumen` (Homebrew at /home/linuxbrew/.linuxbrew; gcc-16, v8, sdl3, wgpu-native, ffmpeg...).
+- GPU presentation: Settings > Graphics (Auto/Vulkan/OpenGL/CPU + adapter); env LUMEN_GPU_BACKEND, LUMEN_GPU_ADAPTER; software adapters skipped unless LUMEN_ALLOW_SW_GPU=1.
+- Canvas 2D: src/paint/cvbuf.[ch] (Node.ext backing store, double-buffered Image so damage repaint works), src/js/canvas.cc natives, src/js/prelude/07z1-canvas2d.js. Missing: fillText, gradients (uses mid stop), clip, patterns, toDataURL.
+- WebGPU: src/js/webgpu.cc (shared wgpu device, handle table, command list replay in gpuExec, canvas readback in gpuPresent), src/js/prelude/07z2-webgpu.js. Verified triangle + compute on llvmpipe with LUMEN_ALLOW_SW_GPU=1. Missing: render bundles, query sets, zero-copy compositing (readback per frame).
+- Next: WebGL 1/2 as JS on top of the N.gpu* natives (gpuShader(code, stage) accepts GLSL 450 for naga); camera/mic (SDL3 camera/audio capture), geolocation; site tests (YouTube, X, Google).
+- Test pages live in ~/lumen-tests (served by srv.py on :8765; run.sh <secs> <url> <log> samples CPU).
