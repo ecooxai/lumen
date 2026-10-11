@@ -35,6 +35,26 @@ static void radii(const Box *b, float w, float h, float r[4]) {
 /* mask-image is approximated as the background colour shown through the mask's alpha */
 typedef struct { Image *src; Color c; Image *out; } Tint;
 static Tint tints[128]; static int tint_i; static Image *tint_grave[128]; static int tint_grave_i;
+/* image rotated by an orthogonal matrix (a b c d), e.g. a TOC chevron under transform: rotate(-90deg) */
+typedef struct Rot { Image *src, *out; int a, b; } Rot;
+static Rot rots[64]; static int rot_i; static Image *rot_grave[64]; static int rot_grave_i;
+static Image *rotated(Image *src, float fa, float fb, float fc, float fd) {
+    int a = (int)lroundf(fa), b = (int)lroundf(fb), c = (int)lroundf(fc), d = (int)lroundf(fd);
+    for (int i = 0; i < 64; i++) if (rots[i].src == src && rots[i].a == a && rots[i].b == b) return rots[i].out;
+    Rot *t = &rots[rot_i]; rot_i = (rot_i + 1) % 64;
+    if (t->out) { if (rot_grave[rot_grave_i]) image_unref(rot_grave[rot_grave_i]); rot_grave[rot_grave_i] = t->out; rot_grave_i = (rot_grave_i + 1) % 64; image_unref(t->src); }
+    bool q = a == 0;
+    int W = q ? src->h : src->w, H = q ? src->w : src->h;
+    Image *o = xcalloc(1, sizeof *o); o->w = W; o->h = H; o->refs = 1; o->scale = src->scale; o->px = xmalloc((size_t)W * (size_t)H * 4);
+    for (int v = 0; v < H; v++) for (int u = 0; u < W; u++) {
+        float du = u + 0.5f - W / 2.f, dv = v + 0.5f - H / 2.f;
+        int sx = (int)floorf(a * du + b * dv + src->w / 2.f), sy = (int)floorf(c * du + d * dv + src->h / 2.f);
+        o->px[(size_t)v * W + u] = sx >= 0 && sy >= 0 && sx < src->w && sy < src->h ? src->px[(size_t)sy * src->w + sx] : 0;
+    }
+    src->refs++; t->src = src; t->a = a; t->b = b; t->out = o;
+    return o;
+}
+
 static Image *tinted(Image *src, Color c) {
     for (int i = 0; i < 128; i++) if (tints[i].src == src && tints[i].c == c) return tints[i].out;
     Tint *t = &tints[tint_i]; tint_i = (tint_i + 1) % 128;
@@ -59,6 +79,10 @@ static void paint_rect_deco(PB *p, Box *b, float x, float y, float w, float h, b
         if (!mk || !mk->w || !mk->h || !COLOR_A(s->bg_color)) return;
         float iw = image_css_w(mk), ih = image_css_h(mk), ox = x, oy = y;
         if (s->mask_fit) { float k = s->mask_fit == 1 ? LMIN(w / iw, h / ih) : LMAX(w / iw, h / ih); iw *= k; ih *= k; ox += (w - iw) / 2; oy += (h - ih) / 2; }
+        else if (s->mask_w > 0 || s->mask_h > 0) {   /* explicit size; icon masks are centred (mask-position is not parsed) */
+            float nw = s->mask_w > 0 ? s->mask_w : iw * s->mask_h / ih, nh = s->mask_h > 0 ? s->mask_h : ih * nw / iw;
+            iw = nw; ih = nh; ox += (w - iw) / 2; oy += (h - ih) / 2;
+        }
         DItem *c = emit(p, DO_PUSH_CLIP); c->x = x; c->y = y; c->w = w; c->h = h; memcpy(c->r, r, sizeof r);
         DItem *it = emit(p, DO_IMAGE); it->x = ox; it->y = oy; it->w = iw; it->h = ih; it->img = tinted(mk, s->bg_color);
         emit(p, DO_POP_CLIP);
@@ -389,6 +413,21 @@ static void paint_stacking(PB *p, Box *b) {
     for (int i = 0; i < defs.n; i++) paint_deferred(p, &defs.v[i]);
     vec_free(defs);
     if (layer) emit(p, DO_POP_LAYER);
+    const float *m = s->transform;
+    bool qturn = s->has_transform && fabsf(m[0]) < 1e-3f && fabsf(m[3]) < 1e-3f && fabsf(fabsf(m[1]) - 1) < 1e-3f && fabsf(fabsf(m[2]) - 1) < 1e-3f;
+    if (qturn) {   /* quarter turn: rotate the subtree's item rects about transform-origin and turn its images */
+        float ox = b->x + p->dx + s->transform_origin[0].px + s->transform_origin[0].pct * b->w / 100;
+        float oy = b->y + p->dy + s->transform_origin[1].px + s->transform_origin[1].pct * b->h / 100;
+        for (int i = i0; i < p->dl->items.n; i++) {
+            DItem *it = &p->dl->items.v[i];
+            if (it->g) continue;
+            float cx = it->x + it->w / 2 - ox, cy = it->y + it->h / 2 - oy, w = it->w;
+            float nx = m[0] * cx + m[2] * cy, ny = m[1] * cx + m[3] * cy;
+            it->w = it->h; it->h = w; it->x = ox + nx - it->w / 2; it->y = oy + ny - it->h / 2;
+            if (it->op == DO_IMAGE && it->img && it->img->px && !it->img->yuv) it->img = rotated(it->img, m[0], m[1], m[2], m[3]);
+        }
+    }
+    if (ksx < -0.999f && ksy < -0.999f) for (int i = i0; i < p->dl->items.n; i++) { DItem *it = &p->dl->items.v[i]; if (it->op == DO_IMAGE && it->img && it->img->px && !it->img->yuv) it->img = rotated(it->img, -1, 0, 0, -1); }
     if (fabsf(ksx - 1) > 1e-4f || fabsf(ksy - 1) > 1e-4f) {
         float ox = b->x + p->dx + s->transform_origin[0].px + s->transform_origin[0].pct * b->w / 100;
         float oy = b->y + p->dy + s->transform_origin[1].px + s->transform_origin[1].pct * b->h / 100;

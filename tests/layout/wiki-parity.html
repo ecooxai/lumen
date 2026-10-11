@@ -13,3 +13,5 @@
 <!-- 6: a custom property that references itself is invalid, so var() falls back (Wikipedia .vector-icon is 20px) -->
 <style>.vi{--fsm:var(--fsm,1rem);width:calc(var(--fsm,1rem) + 4px);height:4px;min-width:10px;display:block;background:#333}</style>
 <span id=vi class=vi></span><div id=cyc style="--x:var(--x,7px);width:var(--x,30px);height:3px;background:blue"></div>
+<!-- 7: escaped quotes inside url("data:...") and mask-size lengths; 8: rotate(-90deg) turns painted images (Wikipedia TOC chevrons point right) -->
+<button style="border:0;padding:0;width:20px;height:20px;background:none;transform:rotate(-90deg)"><span style="display:block;width:20px;height:20px;background:#202122;-webkit-mask-image:url(&quot;data:image/svg+xml;utf8,<svg xmlns=\&quot;http://www.w3.org/2000/svg\&quot; width=\&quot;20\&quot; height=\&quot;20\&quot; viewBox=\&quot;0 0 20 20\&quot; fill=\&quot;%23000\&quot;><path d=\&quot;m16.7 8-6 6H9.3l-6-6 1.4-1.4 5.3 5.3 5.3-5.3z\&quot;/></svg>&quot;);mask-size:12px"></span></button>

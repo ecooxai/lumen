@@ -397,8 +397,22 @@ static char *extract_url(const char *v) {
     const char *u = strstr(v, "url("); if (!u) return NULL;
     u += 4; while (is_ws((unsigned char)*u)) u++;
     char q = (*u == '"' || *u == '\'') ? *u++ : 0;
-    const char *e = u; while (*e && (q ? *e != q : *e != ')')) e++;
-    char *r = xstrndup(u, (size_t)(e - u)); char *t = str_trim(r); memmove(r, t, strlen(t) + 1); return r;
+    SB b; sb_init(&b);
+    for (const char *e = u; *e && (q ? *e != q : *e != ')'); e++) {
+        if (*e != '\\' || !e[1]) { sb_put(&b, e, 1); continue; }
+        e++;   /* CSS escape: \" inside a quoted data: URL, or \hex */
+        if (!isxdigit((unsigned char)*e)) { sb_put(&b, e, 1); continue; }
+        unsigned cp = 0; int k = 0;
+        while (k < 6 && isxdigit((unsigned char)*e)) { cp = cp * 16 + (unsigned)(isdigit((unsigned char)*e) ? *e - '0' : (tolower((unsigned char)*e) - 'a' + 10)); e++; k++; }
+        if (!is_ws((unsigned char)*e)) e--;
+        char ub[4]; int n = cp < 0x80 ? 1 : cp < 0x800 ? 2 : cp < 0x10000 ? 3 : 4;
+        if (n == 1) ub[0] = (char)cp;
+        else if (n == 2) { ub[0] = (char)(0xC0 | cp >> 6); ub[1] = (char)(0x80 | (cp & 63)); }
+        else if (n == 3) { ub[0] = (char)(0xE0 | cp >> 12); ub[1] = (char)(0x80 | ((cp >> 6) & 63)); ub[2] = (char)(0x80 | (cp & 63)); }
+        else { ub[0] = (char)(0xF0 | cp >> 18); ub[1] = (char)(0x80 | ((cp >> 12) & 63)); ub[2] = (char)(0x80 | ((cp >> 6) & 63)); ub[3] = (char)(0x80 | (cp & 63)); }
+        sb_put(&b, ub, (size_t)n);
+    }
+    char *r = sb_take(&b); char *t = str_trim(r); memmove(r, t, strlen(t) + 1); return r;
 }
 static void apply_background_image(ACtx *c, const char *v) {
     free(c->st->bg_image); c->st->bg_image = NULL; free(c->st->bg_gradient); c->st->bg_gradient = NULL;
@@ -781,7 +795,16 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         if (P[strlen(P) - 1] == 'k') st->mask_fit = strstr(val, "contain") ? 1 : strstr(val, "cover") ? 2 : 0;
         goto out;
     }
-    if (!strcmp(P, "mask-size") || !strcmp(P, "-webkit-mask-size")) { st->mask_fit = str_ieq(val, "contain") ? 1 : str_ieq(val, "cover") ? 2 : 0; goto out; }
+    if (!strcmp(P, "mask-size") || !strcmp(P, "-webkit-mask-size")) {
+        st->mask_fit = str_ieq(val, "contain") ? 1 : str_ieq(val, "cover") ? 2 : 0; st->mask_w = st->mask_h = 0;
+        if (!st->mask_fit) {
+            char *cp = xstrdup(val), *sp = NULL; float *dst[2] = { &st->mask_w, &st->mask_h }; int k = 0;
+            for (char *tk = strtok_r(cp, " ", &sp); tk && k < 2; tk = strtok_r(NULL, " ", &sp), k++) { Length l; if (!str_ieq(tk, "auto") && alen(&c, tk, &l) && !l.pct) *dst[k] = l.px; }
+            if (k == 1) st->mask_h = st->mask_w;   /* one value: second is auto, resolved from the aspect ratio at paint */
+            free(cp);
+        }
+        goto out;
+    }
     if (!strcmp(P, "container-name") || !strcmp(P, "container")) {
         char *sl = strchr(val, '/'); size_t nl = sl ? (size_t)(sl - val) : strlen(val);
         while (nl && isspace((unsigned char)val[nl - 1])) nl--;
@@ -1470,7 +1493,7 @@ static bool paint_only(const ComputedStyle *a, const ComputedStyle *b) {
 #define PO_Z(f) (memset(&x.f, 0, sizeof x.f), memset(&y.f, 0, sizeof y.f))
     PO_Z(refs); PO_Z(grid_cols); PO_Z(grid_rows); PO_Z(content); PO_Z(grid_areas); PO_Z(grid_area); PO_Z(before); PO_Z(after); PO_Z(custom);
     PO_Z(color); PO_Z(bg_color); PO_Z(bg_image); PO_Z(bg_gradient); PO_Z(bg_repeat); PO_Z(bg_size_kind); PO_Z(bg_size); PO_Z(bg_pos);
-    PO_Z(mask_image); PO_Z(mask_fit); PO_Z(border_color); PO_Z(outline_style); PO_Z(outline_width); PO_Z(outline_offset); PO_Z(outline_color);
+    PO_Z(mask_image); PO_Z(mask_fit); PO_Z(mask_w); PO_Z(mask_h); PO_Z(border_color); PO_Z(outline_style); PO_Z(outline_width); PO_Z(outline_offset); PO_Z(outline_color);
     PO_Z(box_shadow); PO_Z(has_shadow); PO_Z(text_shadow); PO_Z(has_text_shadow); PO_Z(text_decoration);
     PO_Z(opacity); PO_Z(transform); PO_Z(transform_origin); PO_Z(translate_pending); PO_Z(visibility); PO_Z(z_index); PO_Z(z_auto); PO_Z(isolation);
     PO_Z(cursor); PO_Z(pointer_events); PO_Z(user_select); PO_Z(caret_color); PO_Z(fill); PO_Z(stroke); PO_Z(stroke_width); PO_Z(object_fit);
