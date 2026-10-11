@@ -19,6 +19,12 @@ typedef struct MpState {
 
 MediaPlayer *mp_new(Node *element);
 void mp_free(MediaPlayer *m);
+/* getUserMedia: show the (front) camera in this player; on=false releases it */
+bool mp_open_capture(MediaPlayer *m, bool on);
+int media_camera_count(void);
+int media_mic_open(int rate);                       /* mono float32 recording stream id, -1 when unavailable */
+int media_mic_read(int id, float *out, int max);    /* samples copied, -1 when closed */
+void media_mic_close(int id);
 void mp_open_url(MediaPlayer *m, const char *url);
 int mp_add_buffer(MediaPlayer *m, const char *mime);   /* SourceBuffer index, -1 if unsupported */
 bool mp_append(MediaPlayer *m, int sb, const uint8_t *p, size_t n);

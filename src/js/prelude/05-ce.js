@@ -36,6 +36,16 @@ function mediaDetach(el) {
     mediaEls.delete(el);
     def(el, '__st', null); def(el, '__err', null); def(el, '__src', '');
 }
+function captureAttach(el, ms) {   /* <video>.srcObject = getUserMedia() stream: live camera preview */
+    const vt = ms.getVideoTracks().find(t => t._.cap === 'camera' && t.readyState === 'live');
+    if (!vt) return;
+    const id = N.mediaNew(el); def(el, '__mp', id); def(el, '__src', '');
+    mediaEls.add(el); if (!mediaPumpId) mediaPumpId = setInterval(mediaPoll, 50);
+    N.mediaCapture(id, true);
+    (vt._.hooks || (vt._.hooks = new Set())).add(() => { if (el.__mp === id) N.mediaCapture(id, false); });
+    mediaLater(el, 'loadstart');
+    if (el.autoplay) el.play();
+}
 function mediaAttach(el, src) {
     const id = N.mediaNew(el); def(el, '__mp', id);
     mediaEls.add(el); if (!mediaPumpId) mediaPumpId = setInterval(mediaPoll, 50);
@@ -83,7 +93,7 @@ mk('HTMLMediaElement', HTMLElement, [], p => {
         get audioTracks() { return Object.assign([], { addEventListener() {}, removeEventListener() {}, getTrackById() { return null; } }); },
         get videoTracks() { return Object.assign([], { addEventListener() {}, removeEventListener() {}, getTrackById() { return null; } }); },
         get srcObject() { return this.__so ?? null; },
-        set srcObject(v) { def(this, '__so', v ?? null); mediaDetach(this); def(this, '__paused', true); if (v instanceof MediaSource) mediaAttach(this, v); },
+        set srcObject(v) { def(this, '__so', v ?? null); mediaDetach(this); def(this, '__paused', true); if (v instanceof MediaSource) mediaAttach(this, v); else if (v instanceof MediaStream) captureAttach(this, v); },
         load() {
             const was = !!this.__mp;
             mediaDetach(this);

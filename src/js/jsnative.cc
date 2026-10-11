@@ -451,6 +451,18 @@ FN(mediaState) {
     };
     RET(v8::Array::New(iso, v, 11));
 }
+FN(mediaCapture) { CTX; MP; RET(mp_open_capture(mp, BOOL(1))); }
+FN(cameraCount) { CTX; RET((double)media_camera_count()); }
+FN(micOpen) { CTX; RET((double)media_mic_open((int)NUM(0))); }
+FN(micClose) { CTX; media_mic_close((int)NUM(0)); }
+FN(micRead) {
+    CTX; int n = (int)NUM(1); if (n <= 0 || n > 16384) n = 128;
+    float buf[16384]; int got = media_mic_read((int)NUM(0), buf, n);
+    if (got < 0) { RET(v8::Null(iso)); return; }
+    v8::Local<v8::ArrayBuffer> ab = v8::ArrayBuffer::New(iso, (size_t)n * sizeof(float));
+    memset(ab->Data(), 0, (size_t)n * sizeof(float)); memcpy(ab->Data(), buf, (size_t)got * sizeof(float));
+    RET(v8::Float32Array::New(ab, 0, (size_t)n));
+}
 FN(mediaCanPlay) { CTX; RET((double)media_can_play(S(0).c_str(), BOOL(1))); }
 FN(fetch) {
     CTX;
@@ -893,7 +905,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(histLen); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
     REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove);
     REG(mediaBuffered); REG(mediaEos); REG(mediaSetDuration); REG(mediaPlay); REG(mediaPause); REG(mediaSeek);
-    REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(readyState); REG(quirks);
+    REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(mediaCapture); REG(cameraCount); REG(micOpen); REG(micClose); REG(micRead); REG(log); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(readyState); REG(quirks);
     REG(currentScript); REG(media); REG(cssSupports); REG(cssSelText); REG(urlParse); REG(encode); REG(decode); REG(random); REG(cDigest); REG(cHmac); REG(cAes); REG(cEcGen); REG(cEcDerive); REG(cEcSign); REG(cEcVerify); REG(cSpki); REG(cSpkiParse); REG(cPkcs8Parse); REG(cEcFromD); REG(cHkdf); REG(cPbkdf2);
     REG(heap); REG(imgSize); REG(userAgent); REG(platform); REG(cpus); REG(makeAll);
 #undef REG

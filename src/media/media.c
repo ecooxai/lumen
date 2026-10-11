@@ -65,6 +65,7 @@ struct MediaPlayer {
     AChunk *ah, *at; double abuf;
     Image *cur, *grave[3]; int ngrave; double painted;
     float limit; double cpu_ms;            /* tab CPU limiter: max share of a core, decoder-thread CPU used */
+    bool capture; SDL_Camera *cam;         /* getUserMedia camera preview instead of a decoded stream */
 };
 
 void (*media_wakeup)(void);
@@ -738,6 +739,7 @@ void mp_state(MediaPlayer *m, MpState *o) {
     o->paused = !m->playing; o->ended = m->ended; o->seeking = m->seeking; o->waiting = m->waiting && m->playing;
     o->error = m->error; o->errmsg = m->err;
     o->time = m->seeking ? m->target : clock_of(m); o->duration = m->duration; o->w = m->w; o->h = m->h;
+    if (m->capture) { o->ready = m->cur ? 4 : m->cam ? 1 : 0; o->time = (now_ms() - m->base_wall) / 1000; o->ended = false; o->error = m->capture && !m->cam && m->error; }
     SDL_UnlockMutex(m->mu);
 }
 void mp_free(MediaPlayer *m) {
@@ -746,6 +748,7 @@ void mp_free(MediaPlayer *m) {
     for (int i = 0; i < g_np; i++) if (g_pl[i] == m) { g_pl[i] = g_pl[--g_np]; break; }
     SDL_UnlockMutex(g_mu);
     if (m->dev) SDL_DestroyAudioStream(m->dev);
+    if (m->cam) SDL_CloseCamera(m->cam);
     SDL_LockMutex(m->mu); m->quit = true; SDL_BroadcastCondition(m->cv); SDL_UnlockMutex(m->mu);
     for (int i = 0; i < m->nst; i++) {
         Stream *s = m->st[i];
@@ -772,6 +775,23 @@ int media_tick(void) {
         MediaPlayer *m = g_pl[i];
         SDL_LockMutex(m->mu);
         bool vid = false, all_eof = m->nst > 0, aud_eof = true; int ow = m->cur ? m->cur->w : 0, oh = m->cur ? m->cur->h : 0;
+        if (m->capture) {
+            SDL_Surface *f = m->cam && m->playing ? SDL_AcquireCameraFrame(m->cam, NULL) : NULL;
+            if (f) {
+                SDL_Surface *c = SDL_ConvertSurface(f, SDL_PIXELFORMAT_ARGB8888);
+                SDL_ReleaseCameraFrame(m->cam, f);
+                if (c) {
+                    Image *im = xcalloc(1, sizeof *im); im->w = c->w; im->h = c->h; im->refs = 1;
+                    im->px = xmalloc((size_t)c->w * (size_t)c->h * 4);
+                    for (int y = 0; y < c->h; y++) memcpy(im->px + (size_t)y * (size_t)c->w, (uint8_t *)c->pixels + (size_t)y * (size_t)c->pitch, (size_t)c->w * 4);
+                    SDL_DestroySurface(c);
+                    present(m, im); m->w = im->w; m->h = im->h;
+                    out |= 1; if (im->w != ow || im->h != oh) out |= 2;
+                }
+            }
+            SDL_UnlockMutex(m->mu);
+            continue;
+        }
         for (int k = 0; k < m->nst; k++) {
             Stream *s = m->st[k];
             if (s->has_video) vid = true;
@@ -907,4 +927,55 @@ void media_mark_visible(bool (*vis)(Node *, void *), void *ud) {
     SDL_LockMutex(g_mu);
     for (int i = 0; i < g_np; i++) if (vis(g_pl[i]->node, ud)) g_pl[i]->painted = now;
     SDL_UnlockMutex(g_mu);
+}
+
+/* ---- live capture for getUserMedia: SDL camera into a player, SDL recording stream for the microphone ---- */
+static bool cam_init(void) { static int ok = -1; if (ok < 0) ok = SDL_InitSubSystem(SDL_INIT_CAMERA) ? 1 : 0; return ok == 1; }
+int media_camera_count(void) {
+    if (!cam_init()) return 0;
+    int n = 0; SDL_CameraID *ids = SDL_GetCameras(&n); SDL_free(ids);
+    return n;
+}
+bool mp_open_capture(MediaPlayer *m, bool on) {
+    SDL_LockMutex(m->mu);
+    m->capture = true;
+    if (!on) { if (m->cam) SDL_CloseCamera(m->cam); m->cam = NULL; m->playing = false; SDL_UnlockMutex(m->mu); return true; }
+    if (!m->cam && cam_init()) {
+        int n = 0; SDL_CameraID *ids = SDL_GetCameras(&n), pick = n ? ids[0] : 0;
+        for (int i = 0; i < n; i++) if (SDL_GetCameraPosition(ids[i]) == SDL_CAMERA_POSITION_FRONT_FACING) { pick = ids[i]; break; }
+        if (pick) m->cam = SDL_OpenCamera(pick, NULL);
+        if (!m->cam) { m->error = true; snprintf(m->err, sizeof m->err, "camera: %s", SDL_GetError()); }
+        SDL_free(ids);
+    }
+    m->duration = INFINITY; m->base_wall = now_ms();
+    bool ok = m->cam != NULL;
+    SDL_UnlockMutex(m->mu);
+    wake();
+    return ok;
+}
+
+#define MIC_MAX 8
+static SDL_AudioStream *g_mic[MIC_MAX]; static int g_mic_rate[MIC_MAX];
+int media_mic_open(int rate) {
+    if (!SDL_InitSubSystem(SDL_INIT_AUDIO)) return -1;
+    int id = -1; for (int i = 0; i < MIC_MAX; i++) if (!g_mic[i]) { id = i; break; }
+    if (id < 0) return -1;
+    SDL_AudioSpec sp = { SDL_AUDIO_F32, 1, rate > 0 ? rate : 48000 };
+    SDL_AudioStream *s = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_RECORDING, &sp, NULL, NULL);
+    if (!s) { fprintf(stderr, "lumen: microphone: %s\n", SDL_GetError()); return -1; }
+    SDL_ResumeAudioStreamDevice(s);
+    g_mic[id] = s; g_mic_rate[id] = sp.freq;
+    return id;
+}
+int media_mic_read(int id, float *out, int max) {
+    if (id < 0 || id >= MIC_MAX || !g_mic[id]) return -1;
+    int avail = SDL_GetAudioStreamAvailable(g_mic[id]) / (int)sizeof(float), keep = g_mic_rate[id] / 5;   /* drop backlog beyond 200 ms */
+    float junk[1024];
+    while (avail > keep + max) { int k = avail - keep - max; if (k > 1024) k = 1024; int got = SDL_GetAudioStreamData(g_mic[id], junk, k * (int)sizeof(float)); if (got <= 0) break; avail -= got / (int)sizeof(float); }
+    int got = SDL_GetAudioStreamData(g_mic[id], out, max * (int)sizeof(float));
+    return got > 0 ? got / (int)sizeof(float) : 0;
+}
+void media_mic_close(int id) {
+    if (id < 0 || id >= MIC_MAX || !g_mic[id]) return;
+    SDL_DestroyAudioStream(g_mic[id]); g_mic[id] = NULL;
 }

@@ -103,9 +103,9 @@ class MediaStreamTrack extends EventTarget {
     }
     get enabled() { return this._.enabled; } set enabled(v) { this._.enabled = !!v; }
     get contentHint() { return this._.contentHint; } set contentHint(v) { this._.contentHint = String(v); }
-    stop() { this._.readyState = 'ended'; }
+    stop() { if (this._.readyState === 'ended') return; this._.readyState = 'ended'; if (this._.hooks) for (const h of this._.hooks) h(); }
     clone() { const t = new MediaStreamTrack(RTC_INTERNAL, this._.kind, this._.label); t._.enabled = this._.enabled; t._.muted = this._.muted; t._.readyState = this._.readyState; return t; }
-    getSettings() { return this._.kind === 'audio' ? { deviceId: 'default', groupId: '', sampleRate: 48000, channelCount: 1 } : { deviceId: 'default', groupId: '', width: 640, height: 480, frameRate: 30 }; }
+    getSettings() { return this._.kind === 'audio' ? { deviceId: 'default', groupId: '', sampleRate: 48000, channelCount: 1, echoCancellation: false, autoGainControl: false, noiseSuppression: false } : { deviceId: 'default', groupId: '', width: this._.w || 640, height: this._.h || 480, frameRate: 30, facingMode: 'user', aspectRatio: (this._.w || 640) / (this._.h || 480) }; }
     getConstraints() { return {}; }
     getCapabilities() { return {}; }
     applyConstraints() { return Promise.resolve(); }

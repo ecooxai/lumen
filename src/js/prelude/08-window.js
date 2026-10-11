@@ -101,12 +101,29 @@ const navigator = {
             clearWatch(id) { watches.delete(id); },
         };
     })(),
-    mediaDevices: Object.assign(new EventTarget(), { enumerateDevices() { return Promise.resolve([]); }, getUserMedia(c) {
+    mediaDevices: Object.assign(new EventTarget(), {
+        enumerateDevices() {
+            const dev = (kind, label, id) => ({ deviceId: id, kind, label, groupId: kind === 'videoinput' ? 'cam' : 'mic', toJSON() { return { deviceId: id, kind, label, groupId: this.groupId }; } });
+            return Promise.all(['camera', 'microphone'].map(k => new Promise(r => N.hostRequest('permission-state', k, s => r(s === 'granted'))))).then(([cam, mic]) => {
+                const out = [];
+                for (let i = 0, n = N.cameraCount(); i < n; i++) out.push(dev('videoinput', cam ? 'Camera ' + (i + 1) : '', cam ? 'camera' + i : ''));
+                out.push(dev('audioinput', mic ? 'Default microphone' : '', mic ? 'default' : ''));
+                out.push(dev('audiooutput', mic ? 'Default speaker' : '', mic ? 'default' : ''));
+                return out;
+            });
+        },
+        getUserMedia(c) {
             if (!c || typeof c !== 'object' || (!c.audio && !c.video)) return Promise.reject(new TypeError("Failed to execute 'getUserMedia': At least one of audio and video must be requested"));
-            const t = [];
-            if (c.audio) t.push(new MediaStreamTrack(RTC_INTERNAL, 'audio', 'Fake Default Audio Input'));
-            if (c.video) t.push(new MediaStreamTrack(RTC_INTERNAL, 'video', 'Fake Default Video Input'));
-            return new Promise(r => setTimeout(() => r(new MediaStream(t))));
+            const ask = k => new Promise(r => N.hostRequest('permission', k, s => r(s === 'granted')));
+            return (async () => {
+                if (c.video && N.cameraCount() < 1) throw new DOMException('Requested device not found', 'NotFoundError');
+                if (c.video && !(await ask('camera'))) throw new DOMException('Permission denied', 'NotAllowedError');
+                if (c.audio && !(await ask('microphone'))) throw new DOMException('Permission denied', 'NotAllowedError');
+                const t = [];
+                if (c.audio) { const a = new MediaStreamTrack(RTC_INTERNAL, 'audio', 'Default microphone'); a._.cap = 'mic'; t.push(a); }
+                if (c.video) { const v = new MediaStreamTrack(RTC_INTERNAL, 'video', 'Camera 1'); v._.cap = 'camera'; t.push(v); }
+                return new MediaStream(t);
+            })();
         }, getDisplayMedia() { return Promise.reject(new DOMException('Capture is not implemented yet', 'NotSupportedError')); }, getSupportedConstraints() { return {}; } }),
     serviceWorker: Object.assign(new EventTarget(), {
         controller: null, ready: new Promise(() => {}),

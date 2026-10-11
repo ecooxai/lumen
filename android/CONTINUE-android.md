@@ -9,5 +9,9 @@ Branch: `devin/android-port-native-engine`. The engine source in `src/` is share
 
 ## Status
 - [x] Portability shims: main.c (malloc/mach/dyld/execinfo), font.c (/system/fonts), http.c (Android UA, system CA dir), jsnative.cc (platform).
-- [ ] Makefile `android` target -> liblumen.so (SDL_main), Gradle project in android/app
+- [x] Makefile `android` target -> liblumen.so (SDL main), Gradle project in android/ (LumenActivity extends SDLActivity). Maven Central returns 429 here, so build.gradle also points at Google's Maven Central mirror.
+- [x] Downloads (src/net/download.c, shared; Android also publishes into MediaStore Downloads), unit test tests/test_download.c
+- [x] Host services: N.hostRequest(kind, arg, cb) -> js_host_request hook (main.c) -> android_host_request (permissions, geolocation via LumenActivity.getLocation)
+- [x] navigator.geolocation, permissions.query, getUserMedia (SDL camera -> <video>.srcObject, SDL recording -> createMediaStreamSource)
+- [x] File upload: SDL picker content:// URIs are copied to the cache dir by LumenActivity.importContent
 - [ ] Run on emulator; then sites (Google/YouTube/X), device APIs, WebGL/WebGPU/WASM

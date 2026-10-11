@@ -115,6 +115,21 @@ class DynamicsCompressorNode extends AudioNode {
     constructor(ctx) { super(ctx); this.threshold = new AudioParam(ctx, -24); this.knee = new AudioParam(ctx, 30); this.ratio = new AudioParam(ctx, 12); this.attack = new AudioParam(ctx, 0.003); this.release = new AudioParam(ctx, 0.25); this.reduction = 0; }
 }
 class ConvolverNode extends AudioNode { constructor(ctx) { super(ctx); this.buffer = null; this.normalize = true; } }
+class MediaStreamAudioSourceNode extends AudioNode {   /* microphone input from getUserMedia */
+    constructor(ctx, o) {
+        const ms = o && o.mediaStream;
+        if (!(ms instanceof MediaStream)) throw new TypeError("Failed to construct 'MediaStreamAudioSourceNode': member mediaStream is not of type 'MediaStream'.");
+        if (!ms.getAudioTracks().length) throw new DOMException('MediaStream has no audio track', 'InvalidStateError');
+        super(ctx, 0, 1); this.mediaStream = ms; this._t = ms.getAudioTracks()[0];
+    }
+    _render(f) {
+        const t = this._t;
+        if (t._.cap !== 'mic' || t.readyState !== 'live' || !t.enabled) return null;
+        if (t._.mic == null) { t._.mic = N.micOpen(RATE); (t._.hooks || (t._.hooks = new Set())).add(() => { if (t._.mic >= 0) N.micClose(t._.mic); t._.mic = -1; }); }
+        const s = t._.mic >= 0 ? N.micRead(t._.mic, Q) : null;
+        return s ? [s, s.slice()] : null;
+    }
+}
 class AnalyserNode extends AudioNode {
     constructor(ctx, o = {}) { super(ctx); this.fftSize = o.fftSize || 2048; this.minDecibels = -100; this.maxDecibels = -30; this.smoothingTimeConstant = 0.8; this._last = new Float32Array(32768); }
     get frequencyBinCount() { return this.fftSize / 2; }
@@ -260,7 +275,7 @@ class BaseAudioContext extends EventTarget {
     createPeriodicWave(real, imag, o = {}) { return new PeriodicWave(this, { real, imag, disableNormalization: o.disableNormalization }); }
     createBuffer(c, n, r) { return new AudioBuffer({ numberOfChannels: c, length: n, sampleRate: r }); }
     createMediaElementSource() { throw new DOMException('createMediaElementSource is not supported', 'NotSupportedError'); }
-    createMediaStreamSource() { throw new DOMException('createMediaStreamSource is not supported', 'NotSupportedError'); }
+    createMediaStreamSource(ms) { return new MediaStreamAudioSourceNode(this, { mediaStream: ms }); }
     decodeAudioData(data, ok, err) {
         return new Promise((res, rej) => setTimeout(() => {
             const pcm = data && N.audioDecode(data);
@@ -355,6 +370,6 @@ class OfflineAudioContext extends BaseAudioContext {
 Object.assign(globalThis, {
     AudioContext, webkitAudioContext: AudioContext, OfflineAudioContext, webkitOfflineAudioContext: OfflineAudioContext, BaseAudioContext,
     AudioNode, AudioParam, AudioBuffer, AudioDestinationNode, AudioScheduledSourceNode, GainNode, OscillatorNode, AudioBufferSourceNode,
-    ConstantSourceNode, StereoPannerNode, DelayNode, BiquadFilterNode, DynamicsCompressorNode, ConvolverNode, AnalyserNode, PeriodicWave,
+    ConstantSourceNode, StereoPannerNode, DelayNode, BiquadFilterNode, DynamicsCompressorNode, ConvolverNode, AnalyserNode, MediaStreamAudioSourceNode, PeriodicWave,
 });
 })();
