@@ -131,7 +131,7 @@ const LGLSL = (() => {
             const s = sig(it.toks);
             if (!s.length) continue;
             if (s[0] === 'precision' || (s[0] === 'invariant' && s.length <= 3)) continue;
-            if (!it.fn && s[0] === 'struct') { const S = structDef(s, R.structs, consts); R.structs[S.name] = S; R.structOrder.push(it.toks.join('')); continue; }
+            if (!it.fn && s[0] === 'struct') { const S = structDef(s, R.structs, consts); R.structs[S.name] = S; R.structOrder.push(it.toks.join('')); (R.structText = R.structText || []).push([S.name, it.toks.join('')]); continue; }
             if (!it.fn && s[0] === 'const') { const d = decl(s, consts); const eq = s.indexOf('='); if (eq > 0 && d.names.length === 1 && PRIM[d.type] && PRIM[d.type][0] === 1) { const v = constEval(s.slice(eq + 1, -1), consts); if (!isNaN(v)) consts.set(d.names[0].name, String(v)); } R.structOrder.push(it.toks.join('')); continue; }
             if (it.fn) { R.body.push(it.toks); continue; }
             const q = new Set(s.filter(t => QUAL.has(t)));
@@ -172,16 +172,33 @@ const LGLSL = (() => {
         const boolU = new Set(members.filter(u => PRIM[u.type] && PRIM[u.type][2] === 'b').map(u => u.name));
         const uboType = t => PRIM[t] && PRIM[t][2] === 'b' ? (PRIM[t][0] === 1 ? 'int' : 'ivec' + PRIM[t][0]) : t;
         function header(R) {
-            let h = '#version 450\n' + R.structOrderAll.join(';\n').replace(/;\s*;/g, ';') + (R.structOrderAll.length ? ';\n' : '');
+            let h = '#version 450\n' + R.structOrderAll.map(x => x.trim()).join('\n') + '\n';
             if (uboSize) h += 'layout(std140, set = 0, binding = 0) uniform _LU {\n' + members.map(u => '  ' + uboType(u.type) + ' ' + (boolU.has(u.name) ? '_ub_' : '') + u.name + (u.arr ? '[' + u.arr + ']' : '') + ';').join('\n') + '\n};\n';
             for (const s of samplers) { const [dim, kind] = SAMPLERS[s.type], tp = (kind === 'i' ? 'i' : kind === 'u' ? 'u' : '') + TEXTYPE[dim];
                 s.binds.forEach((b, k) => { h += `layout(set = 0, binding = ${b}) uniform ${tp} _lt_${s.name}${k};\nlayout(set = 0, binding = ${b + 1}) uniform sampler${kind === 'd' ? 'Shadow' : ''} _ls_${s.name}${k};\n`; }); }
             for (const b of blocks) h += `layout(std140, set = 0, binding = ${b.binding}) uniform ${b.name} { ${b.text} } ${b.inst};\n`;
             return h;
         }
+        const SP = /(?:\b(?:in|const)\s+)*\b([iu]?)sampler(2D|3D|Cube|2DArray)(Shadow)?\s+(\w+)/g;
+        function samplerParams(items) {
+            const fns = new Set();
+            const res = items.map(it => { const b = it.indexOf('('), h = it.indexOf(')'); if (b < 0 || h < b) return it;
+                const head = it.slice(0, b), params = it.slice(b + 1, h); const fm = /(\w+)\s*$/.exec(head); if (!fm || !/\b[iu]?sampler\w*\s+\w+/.test(params) || /[=;]/.test(head)) return it;
+                fns.add(fm[1]); const ren = [];
+                const np = params.replace(SP, (_, k, d, sh, n) => { ren.push([n, k, d, sh || '']); return `${k}texture${d} _pt_${n}, sampler${sh ? 'Shadow' : ''} _ps_${n}`; });
+                let rest = it.slice(h); for (const [n, k, d, sh] of ren) rest = rest.replace(new RegExp('(^|[^.\\w])' + n + '\\b', 'g'), `$1${k}sampler${d}${sh}(_pt_${n}, _ps_${n})`);
+                return head + '(' + np + rest; });
+            if (!fns.size) return res;
+            const COMB = /\b[iu]?sampler(?:2D|3D|Cube|2DArray)(?:Shadow)?\((\w+), (\w+)\)/g;
+            return res.map(it => { let o = '', i = 0; const re = new RegExp('\\b(' + [...fns].join('|') + ')\\s*\\(', 'g'); let m;
+                while ((m = re.exec(it))) { let d = 1, j = m.index + m[0].length; for (; j < it.length && d; j++) { if (it[j] === '(') d++; else if (it[j] === ')') d--; }
+                    const pre = it.slice(0, m.index); if (/\b(?:vec\d|float|int|void|bool|mat\d)\s*$/.test(pre)) continue;
+                    o += it.slice(i, m.index + m[0].length) + it.slice(m.index + m[0].length, j).replace(COMB, '$1, $2'); i = j; re.lastIndex = j; }
+                return o + it.slice(i); });
+        }
         function body(R, extra) {
-            const out = [];
-            for (const toks of R.body) {
+            const items = [];
+            for (const toks of R.body) { const out = [];
                 for (let i = 0; i < toks.length; i++) {
                     const t = toks[i];
                     if (!isId(t)) { out.push(t); continue; }
@@ -195,11 +212,12 @@ const LGLSL = (() => {
                     if (t === 'gl_FragData') { let j = i + 1; while (toks[j] !== '[') j++; let e = j + 1; while (toks[e] !== ']') e++; out.push('_lfc' + toks.slice(j + 1, e).join('').trim()); i = e; continue; }
                     out.push(RENAME[t] || t);
                 }
-                out.push('\n');
+                items.push(out.join('').replace(/\bconst(\s+(?:in|out|inout)\b)/g, '$1'));
             }
-            return out.join('') + (extra || '');
+            return samplerParams(items).join('\n') + (extra || '');
         }
-        V.structOrderAll = V.structOrder; F.structOrderAll = F.structOrder;
+        const miss = (A, B) => A.structOrder.concat((B.structText || []).filter(([n]) => !A.structs[n]).map(([, t]) => t));
+        V.structOrderAll = miss(V, F); F.structOrderAll = miss(F, V);
         const fsHead = header(F) + F.ins.map(v => `layout(location = ${vary.has(v.name) ? vary.get(v.name) : vl++}) ${v.flat ? 'flat ' : ''}in ${v.type} ${v.name}${v.arr ? '[' + v.arr + ']' : ''};\n`).join('') +
             fouts.map(o => `layout(location = ${o.loc}) out ${o.type} ${o.name};\n`).join('') + 'float _lps;\n';
         const fs = fsHead + body(F, '\nvoid main() { _lmain(); }\n');
