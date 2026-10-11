@@ -1,4 +1,4 @@
-/* Image decoding (PNG, JPEG, WebP, animated GIF, SVG) to premultiplied ARGB32 */
+/* Image decoding (PNG, JPEG, WebP, AVIF via media/, animated GIF, SVG) to premultiplied ARGB32 */
 #include "paint.h"
 #include "../dom/dom.h"
 #include "../base/util.h"
@@ -198,8 +198,12 @@ static Image *dec_svg(const uint8_t *d, size_t n) {
     return im;
 }
 
+Image *(*image_avif_decoder)(const uint8_t *data, size_t n);
+
 Image *image_decode(const uint8_t *d, size_t n) {
     if (!d || n < 8) return NULL;
+    if (n > 12 && !memcmp(d + 4, "ftyp", 4) && (!memcmp(d + 8, "avif", 4) || !memcmp(d + 8, "avis", 4) || !memcmp(d + 8, "mif1", 4)))
+        return image_avif_decoder ? image_avif_decoder(d, n) : NULL;
     if (!memcmp(d, "\x89PNG", 4)) return dec_png(d, n);
     if (d[0] == 0xFF && d[1] == 0xD8) return dec_jpeg(d, n);
     if (n > 12 && !memcmp(d, "RIFF", 4) && !memcmp(d + 8, "WEBP", 4)) return dec_webp(d, n);

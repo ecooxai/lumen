@@ -1111,6 +1111,7 @@ static void img_done(NetRequest *rq, NetResponse *r, void *ud) {
     if (slot) { slot->done = true; slot->evicted = slot->refetch = false; }
     SDL_UnlockMutex(icache_mu);
     if (getenv("LUMEN_DEBUG_IMG")) fprintf(stderr, "lumen: img done status=%d len=%zu decoded=%d slot=%d %.80s\n", r ? r->status : -1, r && r->body ? r->body_len : 0, slot && slot->im ? 1 : 0, slot ? 1 : 0, l->u);
+    if (getenv("LUMEN_DEBUG_IMG") && r && r->body && r->body_len >= 12 && !(slot && slot->im)) { fprintf(stderr, "lumen: img magic"); for (int k = 0; k < 12; k++) fprintf(stderr, " %02x", (unsigned char)r->body[k]); fprintf(stderr, " ct=%s\n", headers_get(&r->headers, "content-type") ? headers_get(&r->headers, "content-type") : "?"); }
     if (im) image_unref(im);
     if (g_app->t->cur && g_app->t->cur->gen == l->gen) { g_app->t->cur->img_check = true; g_app->t->relayout = g_app->dirty = true; }
     else if (!l->gen) { g_app->dirty = true; g_app->vonly = false; }

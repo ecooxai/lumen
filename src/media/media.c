@@ -263,6 +263,68 @@ static Image *to_image(struct SwsContext **sws, AVFrame *f) {
     sws_scale(*sws, (const uint8_t *const *)f->data, f->linesize, 0, f->height, dst, ls);
     return im;
 }
+/* ---------------- AVIF still images (decoded with the same ffmpeg/dav1d stack as video) ---------------- */
+typedef struct { const uint8_t *d; size_t n, pos; } MemRd;
+static int memrd_read(void *o, uint8_t *buf, int sz) {
+    MemRd *m = o; size_t left = m->n - m->pos;
+    if (!left) return AVERROR_EOF;
+    if ((size_t)sz > left) sz = (int)left;
+    memcpy(buf, m->d + m->pos, (size_t)sz); m->pos += (size_t)sz; return sz;
+}
+static int64_t memrd_seek(void *o, int64_t off, int wh) {
+    MemRd *m = o;
+    if (wh & AVSEEK_SIZE) return (int64_t)m->n;
+    wh &= ~AVSEEK_FORCE;
+    int64_t p = wh == SEEK_SET ? off : wh == SEEK_CUR ? (int64_t)m->pos + off : (int64_t)m->n + off;
+    if (p < 0 || p > (int64_t)m->n) return -1;
+    m->pos = (size_t)p; return p;
+}
+static Image *avif_frame(AVFrame *f) {
+    int w = f->width, h = f->height;
+    if (w <= 0 || h <= 0 || (int64_t)w * h > (1 << 26)) return NULL;
+    struct SwsContext *sws = sws_getContext(w, h, (enum AVPixelFormat)f->format, w, h, AV_PIX_FMT_BGRA, SWS_BILINEAR, NULL, NULL, NULL);
+    if (!sws) return NULL;
+    Image *im = xcalloc(1, sizeof *im); im->w = w; im->h = h; im->refs = 1; im->opaque = true;
+    im->px = xmalloc((size_t)w * (size_t)h * 4 + 256);
+    uint8_t *dst[4] = { (uint8_t *)im->px }; int ls[4] = { w * 4 };
+    sws_scale(sws, (const uint8_t *const *)f->data, f->linesize, 0, h, dst, ls);
+    sws_freeContext(sws);
+    return im;
+}
+static Image *media_decode_avif(const uint8_t *d, size_t n) {
+    MemRd mr = { d, n, 0 };
+    Image *im = NULL;
+    AVCodecContext *cc = NULL; AVPacket *pk = NULL; AVFrame *f = NULL;
+    uint8_t *iob = av_malloc(16384);
+    AVIOContext *io = iob ? avio_alloc_context(iob, 16384, 0, &mr, memrd_read, NULL, memrd_seek) : NULL;
+    AVFormatContext *fc = io ? avformat_alloc_context() : NULL;
+    if (!fc) { if (io) { av_freep(&io->buffer); avio_context_free(&io); } else av_free(iob); return NULL; }
+    fc->pb = io; fc->flags |= AVFMT_FLAG_CUSTOM_IO;
+    if (avformat_open_input(&fc, "", av_find_input_format("mov"), NULL) < 0) { fc = NULL; goto out; }
+    if (avformat_find_stream_info(fc, NULL) < 0) goto out;
+    int si = av_find_best_stream(fc, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0);
+    if (si < 0) goto out;
+    const AVCodec *codec = avcodec_find_decoder_by_name("libdav1d");
+    if (!codec) codec = avcodec_find_decoder(fc->streams[si]->codecpar->codec_id);
+    if (!codec || !(cc = avcodec_alloc_context3(codec))) goto out;
+    avcodec_parameters_to_context(cc, fc->streams[si]->codecpar);
+    cc->thread_count = 1;
+    if (avcodec_open2(cc, codec, NULL) < 0) goto out;
+    pk = av_packet_alloc(); f = av_frame_alloc();
+    if (!pk || !f) goto out;
+    while (!im && av_read_frame(fc, pk) >= 0) {
+        if (pk->stream_index == si && avcodec_send_packet(cc, pk) >= 0 && avcodec_receive_frame(cc, f) >= 0) im = avif_frame(f);
+        av_packet_unref(pk);
+    }
+    if (!im && avcodec_send_packet(cc, NULL) >= 0 && avcodec_receive_frame(cc, f) >= 0) im = avif_frame(f);
+out:
+    av_frame_free(&f); av_packet_free(&pk); avcodec_free_context(&cc);
+    avformat_close_input(&fc);
+    av_freep(&io->buffer); avio_context_free(&io);
+    return im;
+}
+__attribute__((constructor)) static void avif_hook(void) { image_avif_decoder = media_decode_avif; }
+
 typedef struct { struct SwsContext *sws; SwrContext *swr; double skip; uint64_t epoch; } DecCtx;
 bool media_lowmem;
 bool media_yuv;

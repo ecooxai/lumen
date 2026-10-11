@@ -31,6 +31,7 @@ extern Image *(*paint_image_hook)(Node *n);
 extern Image *(*paint_url_image_hook)(const char *url);
 extern const Node *(*svg_ext_ref_hook)(const char *url, const char *id); /* element #id of an external SVG document, NULL while it loads */
 Image *image_decode(const uint8_t *data, size_t n);
+extern Image *(*image_avif_decoder)(const uint8_t *data, size_t n); /* set by media/ when ffmpeg is linked */
 void image_unref(Image *im);
 void image_yuv_materialize(Image *im);
 /* Advances animated images; true if any frame changed. *next_ms gets the next frame time (0 = none). */
