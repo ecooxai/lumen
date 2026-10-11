@@ -2,6 +2,7 @@
 #pragma once
 #include <v8.h>
 #include <libplatform/libplatform.h>
+#include <algorithm>
 #include <atomic>
 #include <condition_variable>
 #include <map>

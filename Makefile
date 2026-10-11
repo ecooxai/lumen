@@ -18,13 +18,19 @@ ifeq ($(UNAME),Darwin)
   LIBDIRS := $(foreach d,$(DEPS),-L$(BREW)/opt/$(d)/lib)
   PLATLIBS := -framework Cocoa -framework QuartzCore -framework Metal -framework AVFoundation -framework CoreMedia -framework CoreVideo -framework ScreenCaptureKit
 else
-  INC += -I/usr/include/freetype2 -I/usr/include/harfbuzz -I/usr/include/SDL3
-  LIBDIRS :=
-  PLATLIBS := -lpthread -ldl -lm
+  # Linux: every dependency comes from Homebrew (V8/SDL3/wgpu-native bottles need its glibc + gcc runtime)
+  BREW ?= /home/linuxbrew/.linuxbrew
+  CC := $(BREW)/bin/gcc-16
+  CXX := $(BREW)/bin/g++-16
+  export PATH := $(BREW)/bin:$(PATH)
+  DEPS := openssl@3 brotli zstd freetype harfbuzz sdl3 v8 wgpu-native ffmpeg libpng jpeg-turbo webp giflib icu4c fontconfig libx11
+  INC += $(foreach d,$(DEPS),-I$(BREW)/opt/$(d)/include) -I$(BREW)/opt/freetype/include/freetype2 -I$(BREW)/opt/harfbuzz/include/harfbuzz -I$(BREW)/include
+  LIBDIRS := -L$(BREW)/opt/v8/libexec -Wl,-rpath,$(BREW)/opt/v8/libexec $(foreach d,$(DEPS),-L$(BREW)/opt/$(d)/lib -Wl,-rpath,$(BREW)/opt/$(d)/lib) -L$(BREW)/lib -Wl,-rpath,$(BREW)/lib
+  PLATLIBS := -lfontconfig -lX11 -lpthread -ldl -lm
 endif
 CFLAGS := -std=c11 $(OPT) $(WARN) $(INC) -D_GNU_SOURCE -D_DARWIN_C_SOURCE
 CXXFLAGS := -std=c++20 $(OPT) $(WARN) $(INC) -DV8_COMPRESS_POINTERS
-BASELIBS := $(LIBDIRS) -licuuc
+BASELIBS := $(LIBDIRS) -licuuc -lm
 NETLIBS := $(BASELIBS) -lssl -lcrypto -lz -lbrotlidec -lzstd
 
 BASE_SRC := $(wildcard src/base/*.c)

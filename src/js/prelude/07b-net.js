@@ -92,7 +92,7 @@ function bodyInit(b, h) {
     if (b == null) return null;
     if (typeof b === 'string') { if (h && !h.has('content-type')) h.set('Content-Type', 'text/plain;charset=UTF-8'); return N.encode(b); }
     if (b instanceof URLSearchParams) { if (h && !h.has('content-type')) h.set('Content-Type', 'application/x-www-form-urlencoded;charset=UTF-8'); return N.encode(b.toString()); }
-    if (b instanceof FormData) { const bd = '----LumenFormBoundary' + Math.random().toString(36).slice(2); if (h && !h.has('content-type')) h.set('Content-Type', 'multipart/form-data; boundary=' + bd); let s = ''; for (const [k, v] of b) s += `--${bd}\r\nContent-Disposition: form-data; name="${k}"\r\n\r\n${typeof v === 'string' ? v : ''}\r\n`; return N.encode(s + `--${bd}--\r\n`); }
+    if (b instanceof FormData) { const bd = '----LumenFormBoundary' + Math.random().toString(36).slice(2); if (h && !h.has('content-type')) h.set('Content-Type', 'multipart/form-data; boundary=' + bd); return multipartBody([...b], bd).buffer; }
     if (b instanceof Blob) { if (h && b.type && !h.has('content-type')) h.set('Content-Type', b.type); return b._buf; }
     if (b instanceof ReadableStream) return b;
     return toBytes(b);
@@ -183,8 +183,19 @@ function fetch(input, init) {
         req.signal.addEventListener('abort', () => { N.abort(id); if (ctl) { try { ctl.error(req.signal.reason); } catch (e) {} ctl = null; } reject(req.signal.reason); });
     });
 }
+function multipartBody(entries, bd) {
+    const esc = s => String(s).replace(/"/g, '%22').replace(/\r?\n/g, '%0D%0A'), parts = [];
+    for (const [k, v] of entries) {
+        if (v instanceof Blob) { parts.push(new Uint8Array(N.encode(`--${bd}\r\nContent-Disposition: form-data; name="${esc(k)}"; filename="${esc(v.name ?? 'blob')}"\r\nContent-Type: ${v.type || 'application/octet-stream'}\r\n\r\n`))); parts.push(new Uint8Array(v._buf)); parts.push(new Uint8Array(N.encode('\r\n'))); }
+        else parts.push(new Uint8Array(N.encode(`--${bd}\r\nContent-Disposition: form-data; name="${esc(k)}"\r\n\r\n${v}\r\n`)));
+    }
+    parts.push(new Uint8Array(N.encode(`--${bd}--\r\n`)));
+    const out = new Uint8Array(parts.reduce((n, p) => n + p.byteLength, 0)); let o = 0;
+    for (const p of parts) { out.set(p, o); o += p.byteLength; }
+    return out;
+}
 class FormData {
-    constructor(form) { def(this, '_l', []); if (form) for (const e of form.elements) { if (!e.name || e.disabled) continue; const t = e.type; if ((t === 'checkbox' || t === 'radio') && !e.checked) continue; if (/^(submit|button|reset|image|file)$/.test(t)) continue; this._l.push([e.name, e.value]); } }
+    constructor(form) { def(this, '_l', []); if (form) for (const e of form.elements) { if (!e.name || e.disabled) continue; const t = e.type; if ((t === 'checkbox' || t === 'radio') && !e.checked) continue; if (t === 'file') { const fs = [...e.files]; if (!fs.length) this._l.push([e.name, new File([], '', { type: 'application/octet-stream' })]); for (const f of fs) this._l.push([e.name, f]); continue; } if (/^(submit|button|reset|image)$/.test(t)) continue; this._l.push([e.name, e.value]); } }
     append(k, v, fn) { this._l.push([String(k), v instanceof Blob ? (fn ? new File([v], fn, v) : v) : String(v)]); }
     set(k, v, fn) { this.delete(k); this.append(k, v, fn); } delete(k) { this._l = this._l.filter(e => e[0] !== String(k)); }
     get(k) { const e = this._l.find(x => x[0] === String(k)); return e ? e[1] : null; } getAll(k) { return this._l.filter(x => x[0] === String(k)).map(x => x[1]); }

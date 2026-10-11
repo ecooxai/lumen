@@ -1,9 +1,17 @@
 /* Lumen: SDL3 window, minimalist chrome, navigation, wgpu/CPU presentation */
 #include <math.h>
 #include <ctype.h>
+#include <strings.h>
 #include <time.h>
+#ifdef __APPLE__
 #include <malloc/malloc.h>
+#define MALLOC_IN_USE(v) malloc_statistics_t ms_ = {0}; malloc_zone_statistics(NULL, &ms_); size_t v = ms_.size_in_use
+#else
+#include <malloc.h>
+#define MALLOC_IN_USE(v) struct mallinfo2 mi_ = mallinfo2(); size_t v = mi_.uordblks
+#endif
 #include <sys/resource.h>
+#include <unistd.h>
 #ifdef __APPLE__
 #include <mach/mach.h>
 #endif
@@ -23,6 +31,7 @@ static float g_info_h;
 static char g_notice[256];   /* dismissable error notice shown in the info bar */
 #define INFOH 36.f
 #define BAR (TABH + TB + g_info_h)
+#include "uicmd.h"
 #ifdef __APPLE__
 #include "macui.h"
 #define TLW 78.f
@@ -55,6 +64,7 @@ static HMap icache;
 static size_t g_icache_bytes; static int g_icache_n;
 static int g_img_epoch;
 static Uint32 EV_LOADED, EV_NET, EV_MENU;
+static Uint32 EV_DL;   /* a navigation turned out to be a download: data1 = (void*)gen */
 static uint64_t load_gen;
 static bool g_lowmem;
 static int g_cpu_on = 1, g_cpu_pct = 80, g_cpu_secs = 60, g_cpu_lim = 40;
@@ -72,6 +82,8 @@ static bool g_hud_pop;      /* host CPU/RAM popup opened by clicking the readout
 static float g_hud_cpu, g_hud_ram, g_host_cpu, g_host_ram, g_pop[4];
 #define HUDH 48.f
 static int g_ua;   /* UA_CHROME / UA_FIREFOX / UA_LUMEN */
+static int g_gpu_backend, g_gpu_adapter = -1;   /* Settings > Graphics (GpuBackend, adapter index); applied at startup */
+static const char *g_gpu_active = "CPU";
 static char g_pref[1024];
 typedef struct { char *url, *title; } Link;
 #define MAX_BM 512
@@ -80,7 +92,7 @@ static Link g_bms[MAX_BM], g_hv[MAX_HV]; static int g_nbm, g_nhv;
 static void pref_path(char *out, size_t n, const char *f) { snprintf(out, n, "%s%s", g_pref, f); }
 static void settings_save(void) {
     char p[1200]; pref_path(p, sizeof p, "settings.txt"); FILE *f = *g_pref ? fopen(p, "w") : NULL; if (!f) return;
-    fprintf(f, "offscreen_media_eviction=%d\ncpu_limit=%d\ncpu_pct=%d\ncpu_secs=%d\ncpu_lim=%d\nvideo_controls=%d\ntab_sleep=%d\nuser_agent=%d\ncpu_hud=%d\nsmooth_scroll=%d\n", g_lowmem, g_cpu_on, g_cpu_pct, g_cpu_secs, g_cpu_lim, g_vctl, g_tab_sleep, g_ua, g_hud, g_smooth);
+    fprintf(f, "offscreen_media_eviction=%d\ncpu_limit=%d\ncpu_pct=%d\ncpu_secs=%d\ncpu_lim=%d\nvideo_controls=%d\ntab_sleep=%d\nuser_agent=%d\ncpu_hud=%d\nsmooth_scroll=%d\ngpu_backend=%d\ngpu_adapter=%d\n", g_lowmem, g_cpu_on, g_cpu_pct, g_cpu_secs, g_cpu_lim, g_vctl, g_tab_sleep, g_ua, g_hud, g_smooth, g_gpu_backend, g_gpu_adapter);
     fclose(f);
 }
 static void link_put(Link *v, int *n, int max, const char *url, const char *title) {
@@ -159,6 +171,42 @@ static bool img_size(Node *n, float *w, float *h) {
 
 typedef struct { char *url; uint64_t gen; float vw, vh; char *body; size_t blen; char *ctype; char *html; } LoadReq;
 
+/* Downloads go to $LUMEN_DOWNLOAD_DIR, $XDG_DOWNLOAD_DIR or ~/Downloads; existing files are never overwritten */
+static char g_last_download[1024];
+static void download_save(const char *name, const void *data, size_t n) {
+    char dir[768], nm[256], path[1024];
+    const char *d = getenv("LUMEN_DOWNLOAD_DIR"); if (!d) d = getenv("XDG_DOWNLOAD_DIR");
+    if (d) snprintf(dir, sizeof dir, "%s", d); else snprintf(dir, sizeof dir, "%s/Downloads", getenv("HOME") ? getenv("HOME") : ".");
+    SDL_CreateDirectory(dir);
+    const char *b = name ? strrchr(name, '/') : NULL; b = b ? b + 1 : name;
+    size_t k = 0; for (const char *c = b ? b : ""; *c && k + 1 < sizeof nm; c++) nm[k++] = *c == '\\' || *c == ':' || (unsigned char)*c < 32 ? '_' : *c;
+    nm[k] = 0; while (nm[0] == '.') memmove(nm, nm + 1, strlen(nm));
+    if (!nm[0]) snprintf(nm, sizeof nm, "download");
+    char *dot = strrchr(nm, '.'); int stem = dot && dot != nm ? (int)(dot - nm) : (int)strlen(nm);
+    snprintf(path, sizeof path, "%s/%s", dir, nm);
+    for (int i = 1; access(path, F_OK) == 0 && i < 1000; i++) snprintf(path, sizeof path, "%s/%.*s (%d)%s", dir, stem, nm, i, nm + stem);
+    FILE *f = fopen(path, "wb");
+    bool ok = f && fwrite(data, 1, n, f) == n; if (f) fclose(f);
+    if (ok) { snprintf(g_last_download, sizeof g_last_download, "%s", path); snprintf(g_notice, sizeof g_notice, "Downloaded %s (%.1f KB) to %s", nm, n / 1024.0, dir); }
+    else snprintf(g_notice, sizeof g_notice, "Download of %s failed: could not write to %s", nm, dir);
+    fprintf(stderr, "lumen: download %s %s (%zu bytes)\n", ok ? "saved" : "FAILED", path, n);
+    if (net_wakeup) net_wakeup();
+}
+/* filename from Content-Disposition (filename*=UTF-8''x or filename="x"), else the URL's last path segment */
+static void download_name(const NetResponse *r, const char *url, char *out, size_t n) {
+    const char *cd = headers_get(&r->headers, "content-disposition"), *f; out[0] = 0;
+    if (cd && (f = strstr(cd, "filename*="))) { f += 10; const char *q = strstr(f, "''"); if (q) f = q + 2; size_t k = 0; for (; *f && *f != ';' && k + 1 < n; f++) { if (*f == '%' && isxdigit((unsigned char)f[1]) && isxdigit((unsigned char)f[2])) { char h[3] = { f[1], f[2], 0 }; out[k++] = (char)strtol(h, NULL, 16); f += 2; } else out[k++] = *f; } out[k] = 0; }
+    else if (cd && (f = strstr(cd, "filename="))) { f += 9; bool q = *f == '"'; if (q) f++; size_t k = 0; for (; *f && (q ? *f != '"' : *f != ';') && k + 1 < n; f++) out[k++] = *f; out[k] = 0; }
+    if (!out[0]) { const char *e = strpbrk(url, "?#"), *sl = url; for (const char *c = url; *c && (!e || c < e); c++) if (*c == '/') sl = c + 1; snprintf(out, n, "%.*s", (int)((e ? e : url + strlen(url)) - sl), sl); }
+}
+static bool is_download(const NetResponse *r) {
+    const char *cd = headers_get(&r->headers, "content-disposition");
+    if (cd && !strncasecmp(cd + strspn(cd, " "), "attachment", 10)) return true;
+    const char *ct = headers_get(&r->headers, "content-type"); if (!ct || !*ct) return false;
+    static const char *show[] = { "text/", "image/", "application/xhtml", "application/xml", "application/json", "application/javascript", "application/ld+json", "application/rss", "application/atom", "multipart/", NULL };
+    for (int i = 0; show[i]; i++) if (!strncasecmp(ct, show[i], strlen(show[i]))) return false;
+    return true;
+}
 static int loader(void *arg) {
     LoadReq *rq = arg; double t0 = now_ms();
     NetRequest *nr = rq->html ? NULL : net_request_new(rq->body ? "POST" : "GET", rq->url);
@@ -167,11 +215,25 @@ static int loader(void *arg) {
         headers_set(&nr->headers, "Content-Type", rq->ctype && *rq->ctype ? rq->ctype : "application/x-www-form-urlencoded");
     }
     NetResponse *r = rq->html ? NULL : net_fetch_sync(nr);
+    if (r && r->status >= 200 && r->status < 300 && is_download(r)) {
+        char nm[256]; download_name(r, r->url ? r->url : rq->url, nm, sizeof nm);
+        download_save(nm, r->body ? r->body : "", r->body ? r->body_len : 0);
+        SDL_Event ev; SDL_zero(ev); ev.type = EV_DL; ev.user.data1 = (void *)(uintptr_t)rq->gen; SDL_PushEvent(&ev);
+        net_response_free(r); free(rq->url); free(rq->body); free(rq->ctype); free(rq->html); free(rq);
+        return 0;
+    }
     Page *p = xcalloc(1, sizeof *p); p->gen = rq->gen;
+    char *wrapbuf = NULL;   /* a bare image URL shows the image, like other browsers */
+    if (r && r->status >= 200 && r->status < 300 && headers_get(&r->headers, "content-type") && !strncasecmp(headers_get(&r->headers, "content-type"), "image/", 6) && strncasecmp(headers_get(&r->headers, "content-type"), "image/svg", 9)) {
+        wrapbuf = xmalloc(strlen(r->url ? r->url : rq->url) * 6 + 256); char *w = wrapbuf + sprintf(wrapbuf, "<body style='margin:0;background:#0e0e0e;display:flex;align-items:center;justify-content:center;min-height:100vh'><img style='max-width:100%%' src=\"");
+        for (const char *c = r->url ? r->url : rq->url; *c; c++) w += *c == '"' ? sprintf(w, "&quot;") : *c == '&' ? sprintf(w, "&amp;") : sprintf(w, "%c", *c);
+        strcpy(w, "\"></body>");
+    }
     const char *body = r && r->body ? r->body : "";
     size_t blen = r && r->body ? r->body_len : 0;
     char *errbuf = NULL;
     if (rq->html) { body = rq->html; blen = strlen(body); }
+    else if (wrapbuf) { body = wrapbuf; blen = strlen(body); }
     else if (!r || r->status == 0) { errbuf = xmalloc(512); snprintf(errbuf, 512, "<title>Error</title><body style='font:15px system-ui;padding:40px;color:#444'><h2>Can't open this page</h2><p>%s</p>", rq->url); body = errbuf; blen = strlen(errbuf); }
     p->url = xstrdup(r && r->url ? r->url : rq->url);
     p->d = doc_new(p->url);
@@ -211,7 +273,7 @@ static int loader(void *arg) {
     p->seen_ver = p->d->dom_version;
     p->load_ms = now_ms() - t0;
     if (r) net_response_free(r);
-    free(errbuf); free(rq->url); free(rq->body); free(rq->ctype); free(rq->html); free(rq);
+    free(errbuf); free(wrapbuf); free(rq->url); free(rq->body); free(rq->ctype); free(rq->html); free(rq);
     SDL_Event ev; SDL_zero(ev); ev.type = EV_LOADED; ev.user.data1 = p; SDL_PushEvent(&ev);
     return 0;
 }
@@ -336,6 +398,24 @@ static char *internal_page(const char *u) {   /* lumen://newtab?s=bookmarks|hist
         ip_toggle(&b, "smooth", g_smooth);
         sb_puts(&b, "</div></div><div class=card><div class=row><div class=grow><div class=t>User agent</div><div class=sub>How Lumen identifies itself to websites. Chrome works best on most sites. Reload open pages to apply.</div></div>");
         for (int i = 0; i < UA_COUNT; i++) sb_printf(&b, "<a class=\"btn%s\" href=\"lumen://set?s=settings&ua=%d\">%s</a>", i == g_ua ? " on" : "", i, net_user_agent_name(i));
+        {
+            static char an[16][128]; static int na = -1, nab = -1;
+            if (nab != g_gpu_backend) { na = gpu_adapters(g_gpu_backend, an, 16); nab = g_gpu_backend; }
+            sb_puts(&b, "</div></div><div class=card><div class=row><div class=grow><div class=t>Graphics</div><div class=sub>How Lumen draws pages and WebGL/WebGPU content. Now using: ");
+            sb_esc(&b, g_gpu_active);
+            sb_puts(&b, ". CPU only never uses a software 3D renderer; Lumen's own rasterizer draws everything. Restart Lumen to apply.</div></div></div><div class=row>");
+#ifdef __APPLE__
+            static const int bk[] = { GPU_BACKEND_AUTO, GPU_BACKEND_METAL, GPU_BACKEND_VULKAN, GPU_BACKEND_CPU }; static const char *bn[] = { "Auto", "Metal", "Vulkan (MoltenVK)", "CPU only" };
+#else
+            static const int bk[] = { GPU_BACKEND_AUTO, GPU_BACKEND_VULKAN, GPU_BACKEND_GL, GPU_BACKEND_CPU }; static const char *bn[] = { "Auto", "Vulkan", "OpenGL", "CPU only" };
+#endif
+            for (int i = 0; i < 4; i++) sb_printf(&b, "<a class=\"btn%s\" href=\"lumen://set?s=settings&gpub=%d\">%s</a>", bk[i] == g_gpu_backend ? " on" : "", bk[i], bn[i]);
+            if (g_gpu_backend != GPU_BACKEND_CPU) {
+                sb_printf(&b, "</div><div class=row><div class=sub>GPU:</div><a class=\"btn%s\" href=\"lumen://set?s=settings&gpua=-1\">Best available</a>", g_gpu_adapter < 0 ? " on" : "");
+                for (int i = 0; i < na; i++) { sb_printf(&b, "<a class=\"btn%s\" href=\"lumen://set?s=settings&gpua=%d\">", i == g_gpu_adapter ? " on" : "", i); sb_esc(&b, an[i]); sb_puts(&b, "</a>"); }
+                if (!na) sb_puts(&b, "<div class=sub>No hardware GPU found for this backend.</div>");
+            }
+        }
         sb_puts(&b, "</div></div><script>function save(){var g=function(i){return parseInt(document.getElementById(i).value,10)||0};location.href='lumen://set?s=settings&cpu_pct='+g('n')+'&cpu_secs='+g('m')+'&cpu_lim='+g('t')}</script>");
     } else {
         bool bm = sec[0] == 'b'; Link *v = bm ? g_bms : g_hv; int n = bm ? g_nbm : g_nhv;
@@ -362,6 +442,8 @@ static void apply_set(App *a, const char *q) {
     if (qparam(q, "sleep", v, sizeof v)) g_tab_sleep = atoi(v) != 0;
     if (qparam(q, "smooth", v, sizeof v)) { g_smooth = atoi(v) != 0; g_sm_dx = g_sm_dy = 0; }
     if (qparam(q, "hud", v, sizeof v)) { g_hud = atoi(v) != 0; g_hud_pop = false; }
+    if (qparam(q, "gpub", v, sizeof v)) { g_gpu_backend = LCLAMP(atoi(v), 0, GPU_BACKEND_METAL); g_gpu_adapter = -1; }
+    if (qparam(q, "gpua", v, sizeof v)) g_gpu_adapter = LCLAMP(atoi(v), -1, 15);
     if (qparam(q, "ua", v, sizeof v)) { g_ua = LCLAMP(atoi(v), 0, UA_COUNT - 1); net_set_user_agent(g_ua); }
     if (qparam(q, "cpu_pct", v, sizeof v)) g_cpu_pct = LCLAMP(atoi(v), 10, 100);
     if (qparam(q, "cpu_secs", v, sizeof v)) g_cpu_secs = LCLAMP(atoi(v), 5, 600);
@@ -564,6 +646,24 @@ static void hud_sample(void) {
     vm_statistics64_data_t vs; c = HOST_VM_INFO64_COUNT; vm_size_t pg = 0;
     if (host_page_size(mach_host_self(), &pg) == KERN_SUCCESS && host_statistics64(mach_host_self(), HOST_VM_INFO64, (host_info64_t)&vs, &c) == KERN_SUCCESS)   /* Activity Monitor's "Memory Used" */
         g_host_ram = (float)(((double)vs.internal_page_count - vs.purgeable_count + vs.wire_count + vs.compressor_page_count) * (double)pg / 1073741824.0);
+#else
+    FILE *f = fopen("/proc/self/statm", "r");
+    if (f) { unsigned long sz = 0, rss = 0, shr = 0; if (fscanf(f, "%lu %lu %lu", &sz, &rss, &shr) == 3) g_hud_ram = (float)((double)(rss - shr) * (double)sysconf(_SC_PAGESIZE) / 1073741824.0); fclose(f); }
+    if ((f = fopen("/proc/stat", "r"))) {
+        unsigned long long u, ni, sy, id, io, ir, so, st;
+        if (fscanf(f, "cpu %llu %llu %llu %llu %llu %llu %llu %llu", &u, &ni, &sy, &id, &io, &ir, &so, &st) == 8) {
+            uint64_t busy = u + ni + sy + ir + so + st, tot = busy + id + io;
+            if (ht && tot > ht) g_host_cpu = (float)(100.0 * (double)(busy - hb) / (double)(tot - ht));
+            hb = busy; ht = tot;
+        }
+        fclose(f);
+    }
+    if ((f = fopen("/proc/meminfo", "r"))) {
+        char ln[128]; unsigned long long tot = 0, avail = 0, v;
+        while (fgets(ln, sizeof ln, f)) { if (sscanf(ln, "MemTotal: %llu", &v) == 1) tot = v; else if (sscanf(ln, "MemAvailable: %llu", &v) == 1) avail = v; }
+        if (tot) g_host_ram = (float)((double)(tot - avail) / 1048576.0);
+        fclose(f);
+    }
 #endif
 }
 static void build_chrome(App *a) {
@@ -857,7 +957,15 @@ static void render(App *a) {
     if (!gskip && a->hdl.items.n) { float s = a->frame.scale; raster_rect(&a->frame, &a->hdl, RGBA(255, 255, 255, 255), (int)floorf(g_pop[0] * s), (int)floorf(g_pop[1] * s), (int)ceilf(g_pop[2] * s), (int)ceilf(g_pop[3] * s)); }   /* floats over the page */
     if (!(a->gpu && gpu_present_frame(a->gpu, a->frame.px, a->frame.w, a->frame.h, a->frame.stride, gskip ? 0 : part ? bar_px + ry0 : 0, gskip ? 0 : part ? bar_px + ry1 : a->frame.h, gvp))) {
         SDL_Surface *ws = SDL_GetWindowSurface(a->win);
-        if (ws) {
+        int y0 = gskip ? 0 : part ? bar_px + ry0 : 0, y1 = gskip ? 0 : part ? bar_px + ry1 : a->frame.h;
+        if (ws && ws->w == a->frame.w && ws->h == a->frame.h && (ws->format == SDL_PIXELFORMAT_XRGB8888 || ws->format == SDL_PIXELFORMAT_ARGB8888)) {
+            /* CPU path: copy only the changed rows straight into the window's shared-memory surface */
+            if (y1 > ws->h) y1 = ws->h;
+            if (y1 > y0) {
+                for (int y = y0; y < y1; y++) memcpy((uint8_t *)ws->pixels + (size_t)y * (size_t)ws->pitch, a->frame.px + (size_t)y * (size_t)a->frame.stride, (size_t)a->frame.w * 4);
+                SDL_Rect r = { 0, y0, ws->w, y1 - y0 }; SDL_UpdateWindowSurfaceRects(a->win, &r, 1);
+            }
+        } else if (ws) {
             SDL_Surface *src = SDL_CreateSurfaceFrom(a->frame.w, a->frame.h, SDL_PIXELFORMAT_ARGB8888, a->frame.px, a->frame.stride * 4);
             SDL_BlitSurfaceScaled(src, NULL, ws, NULL, SDL_SCALEMODE_LINEAR);
             SDL_DestroySurface(src); SDL_UpdateWindowSurface(a->win);
@@ -1911,7 +2019,14 @@ static void history_go(App *a, int d) {
 #include <signal.h>
 #include <setjmp.h>
 #include <pthread.h>
+#ifdef __APPLE__
 #include <mach-o/dyld.h>
+#define LOAD_ADDR() (0x100000000UL + (unsigned long)_dyld_get_image_vmaddr_slide(0))
+#else
+#include <link.h>
+#include <ucontext.h>
+static unsigned long LOAD_ADDR(void) { return _r_debug.r_map ? (unsigned long)_r_debug.r_map->l_addr : 0UL; }
+#endif
 /* A memory fault on the main thread while handling a tab jumps back to the event loop instead of killing
    Lumen: that tab's page is abandoned (leaked, never touched again), the tab reloads, and a notice is shown. */
 static sigjmp_buf g_recover;
@@ -1924,10 +2039,14 @@ static void crash_handler(int sig, siginfo_t *si, void *ucv) {
     ucontext_t *uc = ucv; if (uc && uc->uc_mcontext) { pc = (unsigned long)uc->uc_mcontext->__ss.__pc; lr = (unsigned long)uc->uc_mcontext->__ss.__lr; }
 #elif defined(__APPLE__) && defined(__x86_64__)
     ucontext_t *uc = ucv; if (uc && uc->uc_mcontext) pc = (unsigned long)uc->uc_mcontext->__ss.__rip;
+#elif defined(__linux__) && defined(__x86_64__)
+    ucontext_t *uc = ucv; if (uc) pc = (unsigned long)uc->uc_mcontext.gregs[REG_RIP];
+#elif defined(__linux__) && defined(__aarch64__)
+    ucontext_t *uc = ucv; if (uc) { pc = (unsigned long)uc->uc_mcontext.pc; lr = (unsigned long)uc->uc_mcontext.regs[30]; }
 #else
     (void)ucv;
 #endif
-    char buf[192]; int k = snprintf(buf, sizeof buf, "lumen: fatal signal %d at pc 0x%lx lr 0x%lx addr %p, load address 0x%lx\n", sig, pc, lr, si ? si->si_addr : NULL, (unsigned long)(0x100000000UL + (unsigned long)_dyld_get_image_vmaddr_slide(0)));
+    char buf[192]; int k = snprintf(buf, sizeof buf, "lumen: fatal signal %d at pc 0x%lx lr 0x%lx addr %p, load address 0x%lx\n", sig, pc, lr, si ? si->si_addr : NULL, LOAD_ADDR());
     write(2, buf, (size_t)k);
     backtrace_symbols_fd(bt, n, 2);
     if (g_guard && (sig == SIGSEGV || sig == SIGBUS) && pthread_equal(pthread_self(), g_main_thr)) { g_guard = 0; siglongjmp(g_recover, sig); }
@@ -1965,11 +2084,30 @@ int main(int argc, char **argv) {
     SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) { fprintf(stderr, "SDL_Init: %s\n", SDL_GetError()); return 1; }
     dom_init(); net_init(6); font_init(); css_sheet_added_hook = sheet_fonts;
-    icache_mu = SDL_CreateMutex(); EV_LOADED = SDL_RegisterEvents(1); EV_NET = SDL_RegisterEvents(1); EV_MENU = SDL_RegisterEvents(1);
+    icache_mu = SDL_CreateMutex(); EV_LOADED = SDL_RegisterEvents(1); EV_DL = SDL_RegisterEvents(1); js_save_file = download_save; EV_NET = SDL_RegisterEvents(1); EV_MENU = SDL_RegisterEvents(1);
     net_wakeup = wake; media_wakeup = wake; js_wakeup = wake; js_clip_set = h_clip_set; js_clip_get = h_clip_get; js_global_init(argv[0]);
     paint_image_hook = node_img; paint_url_image_hook = url_img; svg_ext_ref_hook = svg_ext_ref; layout_image_size_hook = img_size;
     App a; memset(&a, 0, sizeof a); g_app = &a; a.nws = 1; a.wsicon[0] = -1; snprintf(a.wsname[0], sizeof a.wsname[0], "Personal"); a.side = getenv("LUMEN_NO_SIDEBAR") ? 0 : SIDEW; tab_new(&a);
-    bool want_gpu = !getenv("LUMEN_NO_GPU");
+    {
+        char *pref = SDL_GetPrefPath("lumen", "Lumen"); char sp[1024] = "";
+        if (pref) { snprintf(g_pref, sizeof g_pref, "%s", pref); snprintf(sp, sizeof sp, "%ssettings.txt", pref); SDL_free(pref); }
+        FILE *sf = *sp ? fopen(sp, "r") : NULL; char line[256];
+        while (sf && fgets(line, sizeof line, sf)) {
+            char k[64]; int v; if (sscanf(line, "%63[^=]=%d", k, &v) != 2) continue;
+            if (!strcmp(k, "offscreen_media_eviction")) g_lowmem = v != 0; else if (!strcmp(k, "cpu_limit")) g_cpu_on = v != 0;
+            else if (!strcmp(k, "cpu_pct")) g_cpu_pct = LCLAMP(v, 10, 100); else if (!strcmp(k, "cpu_secs")) g_cpu_secs = LCLAMP(v, 5, 600);
+            else if (!strcmp(k, "cpu_lim")) g_cpu_lim = LCLAMP(v, 5, 95); else if (!strcmp(k, "video_controls")) g_vctl = v != 0;
+            else if (!strcmp(k, "tab_sleep")) g_tab_sleep = v != 0; else if (!strcmp(k, "cpu_hud")) g_hud = v != 0; else if (!strcmp(k, "smooth_scroll")) g_smooth = v != 0; else if (!strcmp(k, "user_agent")) g_ua = LCLAMP(v, 0, UA_COUNT - 1);
+            else if (!strcmp(k, "gpu_backend")) g_gpu_backend = LCLAMP(v, 0, GPU_BACKEND_METAL); else if (!strcmp(k, "gpu_adapter")) g_gpu_adapter = LCLAMP(v, -1, 15);
+        }
+        if (sf) fclose(sf);
+        net_set_user_agent(g_ua);
+        links_load("bookmarks.txt", g_bms, &g_nbm, MAX_BM); links_load("history.txt", g_hv, &g_nhv, MAX_HV);
+        const char *lm = getenv("LUMEN_LOWMEM"); if (lm) g_lowmem = atoi(lm) != 0;
+        fprintf(stderr, "lumen: lite mode %s\n", g_lowmem ? "on" : "off");
+        media_lowmem = g_lowmem;
+    }
+    bool want_gpu = !getenv("LUMEN_NO_GPU") && g_gpu_backend != GPU_BACKEND_CPU;
     int ww = 1280, wh = 840; { const char *e = getenv("LUMEN_WINDOW"); if (e) sscanf(e, "%dx%d", &ww, &wh); }   /* e.g. LUMEN_WINDOW=800x600 */
     a.win = SDL_CreateWindow("Lumen", ww, wh, SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY | (want_gpu && !strcmp(SDL_GetPlatform(), "macOS") ? SDL_WINDOW_METAL : 0));
     if (!a.win) { fprintf(stderr, "SDL_CreateWindow: %s\n", SDL_GetError()); return 1; }
@@ -1987,7 +2125,15 @@ int main(int argc, char **argv) {
         else if (SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, NULL)) { src.kind = GPU_SURF_WAYLAND; src.a = SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER, NULL); src.b = SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, NULL); ok = true; }
         else if (SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_X11_DISPLAY_POINTER, NULL)) { src.kind = GPU_SURF_XLIB; src.a = SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_X11_DISPLAY_POINTER, NULL); src.win = (uint64_t)SDL_GetNumberProperty(pr, SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0); ok = true; }
         else if (SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_ANDROID_WINDOW_POINTER, NULL)) { src.kind = GPU_SURF_ANDROID; src.a = SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_ANDROID_WINDOW_POINTER, NULL); ok = true; }
-        if (ok) a.gpu = gpu_create(&src, a.pw, a.ph, getenv("LUMEN_VULKAN") != NULL || strcmp(SDL_GetPlatform(), "macOS"));
+        if (ok) {
+            GpuOpts go = { g_gpu_backend, g_gpu_adapter, false };
+            if (getenv("LUMEN_VULKAN")) go.backend = GPU_BACKEND_VULKAN;
+            const char *eb = getenv("LUMEN_GPU_BACKEND");   /* vulkan | gl | metal | cpu | auto */
+            if (eb) go.backend = !strcmp(eb, "vulkan") ? GPU_BACKEND_VULKAN : !strcmp(eb, "gl") || !strcmp(eb, "opengl") ? GPU_BACKEND_GL : !strcmp(eb, "metal") ? GPU_BACKEND_METAL : !strcmp(eb, "cpu") ? GPU_BACKEND_CPU : GPU_BACKEND_AUTO;
+            if (getenv("LUMEN_GPU_ADAPTER")) go.adapter = atoi(getenv("LUMEN_GPU_ADAPTER"));
+            a.gpu = gpu_create(&src, a.pw, a.ph, &go);
+        }
+        g_gpu_active = a.gpu ? gpu_adapter_name(a.gpu) : "CPU";
         media_yuv = gpu_yuv_ok(a.gpu) && !getenv("LUMEN_NO_YUV");
         if (!a.gpu && a.mview) { SDL_Metal_DestroyView(a.mview); a.mview = NULL; }
     }
@@ -1996,24 +2142,6 @@ int main(int argc, char **argv) {
     char cookie_path[1024] = "";
     { char *pref = SDL_GetPrefPath("lumen", "Lumen"); if (pref) { snprintf(cookie_path, sizeof cookie_path, "%scookies.txt", pref); SDL_free(pref); cookies_load(cookie_path); } }
     double cookies_saved_at = now_ms();
-    {
-        char *pref = SDL_GetPrefPath("lumen", "Lumen"); char sp[1024] = "";
-        if (pref) { snprintf(g_pref, sizeof g_pref, "%s", pref); snprintf(sp, sizeof sp, "%ssettings.txt", pref); SDL_free(pref); }
-        FILE *sf = *sp ? fopen(sp, "r") : NULL; char line[256];
-        while (sf && fgets(line, sizeof line, sf)) {
-            char k[64]; int v; if (sscanf(line, "%63[^=]=%d", k, &v) != 2) continue;
-            if (!strcmp(k, "offscreen_media_eviction")) g_lowmem = v != 0; else if (!strcmp(k, "cpu_limit")) g_cpu_on = v != 0;
-            else if (!strcmp(k, "cpu_pct")) g_cpu_pct = LCLAMP(v, 10, 100); else if (!strcmp(k, "cpu_secs")) g_cpu_secs = LCLAMP(v, 5, 600);
-            else if (!strcmp(k, "cpu_lim")) g_cpu_lim = LCLAMP(v, 5, 95); else if (!strcmp(k, "video_controls")) g_vctl = v != 0;
-            else if (!strcmp(k, "tab_sleep")) g_tab_sleep = v != 0; else if (!strcmp(k, "cpu_hud")) g_hud = v != 0; else if (!strcmp(k, "smooth_scroll")) g_smooth = v != 0; else if (!strcmp(k, "user_agent")) g_ua = LCLAMP(v, 0, UA_COUNT - 1);
-        }
-        if (sf) fclose(sf);
-        net_set_user_agent(g_ua);
-        links_load("bookmarks.txt", g_bms, &g_nbm, MAX_BM); links_load("history.txt", g_hv, &g_nhv, MAX_HV);
-        const char *lm = getenv("LUMEN_LOWMEM"); if (lm) g_lowmem = atoi(lm) != 0;
-        fprintf(stderr, "lumen: lite mode %s\n", g_lowmem ? "on" : "off");
-        media_lowmem = g_lowmem;
-    }
     navigate(&a, start, true);
     for (int i = 2; i < argc; i++) { Tab *nt = tab_new(&a); if (!nt) break; a.t = nt; navigate(&a, argv[i], true); }
     a.t = a.tabs[0]; a.ti = 0;
@@ -2058,8 +2186,8 @@ int main(int argc, char **argv) {
         if (getenv("LUMEN_MEM_STATS")) {
             static double last_stats; double tn = now_ms();
             if (tn - last_stats > 10000) { last_stats = tn; size_t fr, seg = media_mem_bytes(&fr); size_t jh = 0, je = 0; js_mem_stats(&jh, &je); fprintf(stderr, "lumen-mem: mse=%.1fMB vframes=%.1fMB images=%.1fMB/%d js_heap=%.1fMB js_external=%.1fMB canvases=%.1fMB\n", seg / 1048576.0, fr / 1048576.0, g_icache_bytes / 1048576.0, g_icache_n, jh / 1048576.0, je / 1048576.0, ((double)a.frame.w * a.frame.h + (double)a.page.w * a.page.h) * 4 / 1048576.0); }
-            if (last_stats == tn) { extern long g_styles_live, g_nodes_live; extern size_t g_css_parsed_bytes; extern void worker_mem_stats(size_t *, size_t *, int *); size_t wh, wx; int wn; worker_mem_stats(&wh, &wx, &wn); malloc_statistics_t ms = {0}; malloc_zone_statistics(NULL, &ms);
-                fprintf(stderr, "lumen-mem2: malloc_in_use=%.1fMB nodes=%ld (%zuB) styles=%ld (%zuB) css_parsed=%.1fMB workers=%d heap=%.1fMB ext=%.1fMB\n", ms.size_in_use / 1048576.0, g_nodes_live, sizeof(Node), g_styles_live, sizeof(ComputedStyle), g_css_parsed_bytes / 1048576.0, wn, wh / 1048576.0, wx / 1048576.0); }
+            if (last_stats == tn) { extern long g_styles_live, g_nodes_live; extern size_t g_css_parsed_bytes; extern void worker_mem_stats(size_t *, size_t *, int *); size_t wh, wx; int wn; worker_mem_stats(&wh, &wx, &wn); MALLOC_IN_USE(ms);
+                fprintf(stderr, "lumen-mem2: malloc_in_use=%.1fMB nodes=%ld (%zuB) styles=%ld (%zuB) css_parsed=%.1fMB workers=%d heap=%.1fMB ext=%.1fMB\n", ms / 1048576.0, g_nodes_live, sizeof(Node), g_styles_live, sizeof(ComputedStyle), g_css_parsed_bytes / 1048576.0, wn, wh / 1048576.0, wx / 1048576.0); }
         }
         g_lite_active = a.t && lite_on(a.t); media_lowmem = g_lite_active;
         if (g_lite_active) {
@@ -2237,6 +2365,15 @@ int main(int argc, char **argv) {
                 a.dirty = true; break; }
             default:
                 if (ev.type == EV_MENU) menu_cmd(&a, ev.user.code);
+                if (ev.type == EV_DL) {   /* the page stays; drop the history entry the download created */
+                    uint64_t g = (uint64_t)(uintptr_t)ev.user.data1;
+                    for (int i = 0; i < a.ntabs; i++) { Tab *t = a.tabs[i]; if (t->lgen != g) continue;
+                        t->loading = false;
+                        if (t->cur && t->hpos > 0 && t->hgen[t->hpos] == g) { free(t->hist[t->hpos]); t->nhist = t->hpos; t->hpos--; }
+                        if (t->cur && !a.editing) snprintf(t->url, sizeof t->url, "%s", t->cur->url);
+                    }
+                    a.dirty = true; a.vonly = false;
+                }
                 if (ev.type == EV_LOADED) {
                     Page *p = ev.user.data1;
                     Tab *lt = NULL; for (int i = 0; i < a.ntabs; i++) if (a.tabs[i]->lgen == p->gen) lt = a.tabs[i];

@@ -7,7 +7,13 @@ typedef struct Gpu Gpu;
 typedef enum { GPU_SURF_METAL, GPU_SURF_XLIB, GPU_SURF_WAYLAND, GPU_SURF_ANDROID } GpuSurfKind;
 typedef struct { GpuSurfKind kind; void *a; void *b; uint64_t win; } GpuSurfSrc;
 
-Gpu *gpu_create(const GpuSurfSrc *src, int w, int h, bool prefer_vulkan);
+/* backend: user choice from Settings; adapter: index into gpu_adapters() for that backend, -1 = best available */
+typedef enum { GPU_BACKEND_AUTO, GPU_BACKEND_VULKAN, GPU_BACKEND_GL, GPU_BACKEND_CPU, GPU_BACKEND_METAL } GpuBackend;
+typedef struct { int backend, adapter; bool allow_cpu; } GpuOpts;
+Gpu *gpu_create(const GpuSurfSrc *src, int w, int h, const GpuOpts *o);
+/* Hardware adapters usable with `backend` ("name (vulkan, discrete)"); returns the count written. */
+int gpu_adapters(int backend, char (*names)[128], int max);
+const char *gpu_adapter_name(Gpu *g);
 void gpu_resize(Gpu *g, int w, int h);
 bool gpu_present(Gpu *g, const uint32_t *px, int w, int h, int stride);
 /* Like gpu_present but only re-uploads rows [y0,y1); the rest of the texture keeps its previous contents. */

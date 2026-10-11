@@ -15,6 +15,7 @@
 #include <libswresample/swresample.h>
 #include <libswscale/swscale.h>
 #include <math.h>
+#include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

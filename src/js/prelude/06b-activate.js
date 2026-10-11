@@ -19,8 +19,18 @@ function pickFiles(el) {
         dispatch(el, new Event('input', { bubbles: true, composed: true })); dispatch(el, new Event('change', { bubbles: true }));
     }, !!el.multiple, el.accept || '');
 }
+/* <a download>: blob:, data: and same-origin URLs are saved directly; cross-origin ones navigate (the server decides) */
+function downloadLink(a) {
+    let u; try { u = new URL(a.href); } catch { return false; }
+    const nm = a.download || decodeURIComponent(u.pathname.split('/').pop() || '') || 'download';
+    if (u.protocol === 'blob:') { const b = objectURLs.get(u.href); if (!b) return false; N.saveFile(nm, b._buf); return true; }
+    if (u.protocol !== 'data:' && u.origin !== location.origin) return false;
+    fetch(u.href).then(r => r.arrayBuffer()).then(b => N.saveFile(nm, b), () => location.assign(u.href));
+    return true;
+}
 function activate(el, ev, pre) {
     const a = el.closest ? el.closest('a[href]') : null;
+    if (a && a.hasAttribute('download') && downloadLink(a)) return;
     if (a) { const raw = N.attr(a, 'href'); if (/^javascript:/i.test(raw)) { try { (0, eval)(decodeURIComponent(raw.slice(11))); } catch (e) { report(e); } } else if (a.href) location.assign(a.href); return; }
     if (el.closest && !/^(input|button|label|summary|textarea|select)$/.test(N.name(el))) {
         const t = el.closest('button,label,summary');
@@ -52,9 +62,7 @@ function submitForm(form, submitter) {
         const kv = [...fd].filter(([, v]) => typeof v === 'string');
         if (et === 'multipart/form-data') {
             const bd = '----LumenFormBoundary' + Math.random().toString(36).slice(2);
-            const esc = s => s.replace(/"/g, '%22').replace(/\r?\n/g, '%0D%0A');
-            const body = kv.map(([k, v]) => `--${bd}\r\nContent-Disposition: form-data; name="${esc(k)}"\r\n\r\n${v}\r\n`).join('') + `--${bd}--\r\n`;
-            N.navigatePost(u.href, body, 'multipart/form-data; boundary=' + bd);
+            N.navigatePost(u.href, multipartBody([...fd], bd), 'multipart/form-data; boundary=' + bd);
         } else if (et === 'text/plain') N.navigatePost(u.href, kv.map(([k, v]) => `${k}=${v}\r\n`).join(''), 'text/plain');
         else N.navigatePost(u.href, new URLSearchParams(kv).toString(), 'application/x-www-form-urlencoded');
     }

@@ -2,6 +2,7 @@
 /* HTTP/1.1 client with TLS (OpenSSL), keep-alive connection pooling, redirects, decompression. */
 #include "net.h"
 #include <pthread.h>
+#include <signal.h>
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <netdb.h>
