@@ -832,6 +832,7 @@ static void bunion(float *a, const float *b) { a[0] = LMIN(a[0], b[0]); a[1] = L
 static void ditem_box(const DItem *it, float *b) {
     float x0 = it->x, y0 = it->y, x1 = it->x + it->w, y1 = it->y + it->h, e = 2;
     if (it->op == DO_SHADOW) e += fabsf(it->spread) + fabsf(it->blur);
+    if (it->op == DO_IMAGE) e = 0;   /* images draw exactly within floor/ceil of their rect */
     if (it->op == DO_TEXT) {
         x0 = y0 = 1e30f; x1 = y1 = -1e30f;
         for (int i = 0; i < it->ng; i++) { const DGlyph *g = &it->g[i]; float em = g->font ? g->font->size : 16; x0 = LMIN(x0, g->x - em); x1 = LMAX(x1, g->x + 2 * em); y0 = LMIN(y0, g->y - 1.5f * em); y1 = LMAX(y1, g->y + em); }
@@ -852,6 +853,20 @@ static int dl_sigs(const DisplayList *dl, struct DSig **v, int *cap) {
     return n;
 }
 static uint64_t dl_hash(const DisplayList *dl) { uint64_t h = (uint64_t)dl->items.n; for (int i = 0; i < dl->items.n; i++) h = h * 31 + ditem_hash(&dl->items.v[i]); return h; }
+
+static void check_damage(App *a, int pwp, int ph, int x0, int y0, int x1, int y1, const char *what) {
+    Canvas t; canvas_init(&t, pwp, ph, a->page.scale); raster(&t, &a->pdl, RGBA(255, 255, 255, 255));
+    long bad = 0; int b0 = pwp, b1 = ph, b2 = 0, b3 = 0;
+    for (int y = 0; y < ph; y++) for (int x = 0; x < pwp; x++)
+        if (t.px[(size_t)y * (size_t)t.stride + (size_t)x] != a->page.px[(size_t)y * (size_t)a->page.stride + (size_t)x]) { bad++; b0 = LMIN(b0, x); b1 = LMIN(b1, y); b2 = LMAX(b2, x + 1); b3 = LMAX(b3, y + 1); }
+    if (bad) fprintf(stderr, "lumen: %s %dx%d at %d,%d mismatched px=%ld in %d,%d-%d,%d\n", what, x1 - x0, y1 - y0, x0, y0, bad, b0, b1, b2, b3);
+    if (bad) { float s = a->page.scale;
+        for (int i = 0; i < a->pdl.items.n; i++) { const DItem *it = &a->pdl.items.v[i]; float b[4]; ditem_box(it, b);
+            if (b[2] * s < b0 || b[0] * s > b2 || b[3] * s < b1 || b[1] * s > b3) continue;
+            fprintf(stderr, "  item %d op=%d %.1f,%.1f %.1fx%.1f img=%p anim=%d frame=%d alpha=%.2f\n", i, it->op, it->x, it->y, it->w, it->h, (void *)it->img, it->img && it->img->anim ? 1 : 0, it->img ? media_is_frame(it->img) : 0, it->alpha); } }
+    else fprintf(stderr, "lumen: %s %dx%d at %d,%d mismatched px=0\n", what, x1 - x0, y1 - y0, x0, y0);
+    canvas_free(&t);
+}
 
 static void render(App *a) {
     update_compact(a);
@@ -892,14 +907,18 @@ static void render(App *a) {
         }
         g_full_paint = (double)SDL_GetTicks(); { double q = now_ms(); dl_clear(&a->pdl); dl_build(&a->pdl, a->t->cur->L, 0, a->t->sy, a->vw - a->side, a->vh - BAR); g_td += now_ms() - q; } a->vbars = video_bars(a, &a->pdl);
         int nn = dl_sigs(&a->pdl, &a->nsig, &a->cnsig);
-        const DItem *vit = NULL; int nv = 0;
+        const DItem *vit = NULL; int nv = 0, nvr = 0, vr[16][4];
+        bool vsame = a->osig_ok && nn == a->nosig;
         for (int i = 0; i < a->pdl.items.n; i++) {
             const DItem *it = &a->pdl.items.v[i];
             if (it->op != DO_IMAGE || !media_is_frame(it->img)) continue;
             if (!nv++) vit = it;
+            if (vsame && a->osig[i].h == a->nsig[i].h) continue;   /* paused video: same frame as last raster */
             float s = a->page.scale;
-            rx0 = LMIN(rx0, (int)floorf(it->x * s)); ry0 = LMIN(ry0, (int)floorf(it->y * s));
-            rx1 = LMAX(rx1, (int)ceilf((it->x + it->w) * s)); ry1 = LMAX(ry1, (int)ceilf((it->y + it->h) * s));
+            int q[4] = { (int)floorf(it->x * s), (int)floorf(it->y * s), (int)ceilf((it->x + it->w) * s), (int)ceilf((it->y + it->h) * s) };
+            rx0 = LMIN(rx0, q[0]); ry0 = LMIN(ry0, q[1]); rx1 = LMAX(rx1, q[2]); ry1 = LMAX(ry1, q[3]);
+            if (nvr < 16) memcpy(vr[nvr], q, sizeof q);
+            nvr++;
         }
         rx0 = LMAX(rx0, 0); ry0 = LMAX(ry0, 0); rx1 = LMIN(rx1, pwp); ry1 = LMIN(ry1, ph);
         bool gv = a->gpu && nv == 1;
@@ -922,7 +941,14 @@ static void render(App *a) {
             if (x1 > x0 && y1 > y0) raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), x0, y0, x1, y1);
             rx0 = x0; ry0 = y0; rx1 = LMAX(x1, x0); ry1 = LMAX(y1, y0); a->gvid_ok = false;
         } else if (part && (nv == 0 || (gv && a->gvid_ok) || rx1 <= rx0 || ry1 <= ry0)) gskip = true;   /* off-screen video: nothing visible changed */
-        else if (part && rx1 > rx0 && ry1 > ry0) { a->gvid_ok = false; raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), rx0, ry0, rx1, ry1); }
+        else if (part && rx1 > rx0 && ry1 > ry0) {   /* only video frames changed: raster each changed video's rect */
+            a->gvid_ok = false;
+            { double q = now_ms();
+              if (nvr > 16) raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), rx0, ry0, rx1, ry1);
+              else for (int k = 0; k < nvr; k++) raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), vr[k][0], vr[k][1], vr[k][2], vr[k][3]);
+              g_tx += now_ms() - q; }
+            if (getenv("LUMEN_CHECK_DAMAGE")) check_damage(a, pwp, ph, rx0, ry0, rx1, ry1, "vdamage");
+        }
         else {
             bool dmg = (why == 1 || why == 3 || why == 4) && !gv && a->osig_ok && a->t->sy == a->last_sy && !a->t->loading;
             if (dmg) {   /* only DOM/layout changed: raster the union of the items that differ from the last frame */
@@ -941,11 +967,7 @@ static void render(App *a) {
                 else if (dmg && (long)(x1 - x0) * (y1 - y0) * 2 < (long)pwp * ph) {
                     { double q = now_ms(); raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), x0, y0, x1, y1); g_tx += now_ms() - q; }
                     part = true; rx0 = x0; ry0 = y0; rx1 = x1; ry1 = y1; a->gvid_ok = false;
-                    if (getenv("LUMEN_CHECK_DAMAGE")) {
-                        Canvas t; canvas_init(&t, pwp, ph, a->page.scale); raster(&t, &a->pdl, RGBA(255, 255, 255, 255));
-                        long bad = 0; for (int y = 0; y < ph; y++) for (int x = 0; x < pwp; x++) bad += t.px[(size_t)y * (size_t)t.stride + (size_t)x] != a->page.px[(size_t)y * (size_t)a->page.stride + (size_t)x];
-                        fprintf(stderr, "lumen: damage %dx%d at %d,%d mismatched px=%ld\n", x1 - x0, y1 - y0, x0, y0, bad); canvas_free(&t);
-                    }
+                    if (getenv("LUMEN_CHECK_DAMAGE")) check_damage(a, pwp, ph, x0, y0, x1, y1, "damage");
                 }
                 else dmg = false;
             }

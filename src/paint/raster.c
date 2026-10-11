@@ -254,6 +254,7 @@ static void image(R *r, const DItem *it) {
                 uint32_t top = scale_px(ra[k->a], 256 - k->w) + scale_px(ra[k->b], k->w), bot = scale_px(rb[k->a], 256 - k->w) + scale_px(rb[k->b], k->w);
                 p = scale_px(top, 256 - wy) + scale_px(bot, wy);
             }
+            if (im->opaque) p |= 0xff000000u;
             float cov = k->cov * cy; if (rclip) cov *= clip_cov(r, x + 0.5f, y + 0.5f);
             if (cov < 0.999f) p = scale_px(p, (uint32_t)(cov * 256));
             over(&row[x], p);
@@ -262,17 +263,59 @@ static void image(R *r, const DItem *it) {
     free(cols);
 }
 
+/* Index of the last opaque image that fully covers the raster rect (0 = none): everything drawn before it is hidden */
+static int occluder(const Canvas *cv, const DisplayList *dl, float s, int rx0, int ry0, int rx1, int ry1) {
+    int cb[64][4], nc = 1, nl = 0, best = 0; bool rnd[64];
+    cb[0][0] = rx0; cb[0][1] = ry0; cb[0][2] = rx1; cb[0][3] = ry1; rnd[0] = false;
+    for (int i = 0; i < dl->items.n; i++) {
+        const DItem *it = &dl->items.v[i];
+        if (it->op == DO_PUSH_CLIP) {
+            if (nc >= 64) continue;
+            const int *p = cb[nc - 1]; int *c = cb[nc];
+            c[0] = LMAX(p[0], (int)floorf(it->x * s)); c[1] = LMAX(p[1], (int)floorf(it->y * s));
+            c[2] = LMIN(p[2], (int)ceilf((it->x + it->w) * s)); c[3] = LMIN(p[3], (int)ceilf((it->y + it->h) * s));
+            rnd[nc] = rnd[nc - 1] || it->r[0] > 0 || it->r[1] > 0 || it->r[2] > 0 || it->r[3] > 0;
+            nc++;
+        } else if (it->op == DO_POP_CLIP) { if (nc > 1) nc--; }
+        else if (it->op == DO_PUSH_LAYER) nl++;
+        else if (it->op == DO_POP_LAYER) { if (nl) nl--; }
+        else if (it->op == DO_IMAGE && !nl && !rnd[nc - 1] && it->img && it->img->opaque && (const void *)it->img != cv->punch) {
+            const int *c = cb[nc - 1];
+            if (c[0] <= rx0 && c[1] <= ry0 && c[2] >= rx1 && c[3] >= ry1 &&
+                ceilf(it->x * s) <= rx0 && ceilf(it->y * s) <= ry0 && floorf((it->x + it->w) * s) >= rx1 && floorf((it->y + it->h) * s) >= ry1) best = i;
+        }
+    }
+    return best;
+}
+
 void raster(Canvas *cv, const DisplayList *dl, Color clearc) { raster_rect(cv, dl, clearc, 0, 0, cv->w, cv->h); }
+static void raster_rect_(Canvas *cv, const DisplayList *dl, Color clearc, int rx0, int ry0, int rx1, int ry1, bool occl);
 void raster_rect(Canvas *cv, const DisplayList *dl, Color clearc, int rx0, int ry0, int rx1, int ry1) {
+    static int chk = -1; if (chk < 0) chk = getenv("LUMEN_CHECK_OCCLUDE") != NULL;
+    if (!chk) { raster_rect_(cv, dl, clearc, rx0, ry0, rx1, ry1, true); return; }
+    int x0 = LMAX(rx0, 0), y0 = LMAX(ry0, 0), x1 = LMIN(rx1, cv->w), y1 = LMIN(ry1, cv->h);
+    int first = x1 > x0 && y1 > y0 ? occluder(cv, dl, cv->scale, x0, y0, x1, y1) : 0;
+    if (!first) { raster_rect_(cv, dl, clearc, rx0, ry0, rx1, ry1, false); return; }
+    raster_rect_(cv, dl, clearc, rx0, ry0, rx1, ry1, false);
+    Canvas t = *cv; t.px = xmalloc((size_t)cv->stride * (size_t)cv->h * 4); memcpy(t.px, cv->px, (size_t)cv->stride * (size_t)cv->h * 4);
+    raster_rect_(&t, dl, clearc, rx0, ry0, rx1, ry1, true);
+    long bad = 0; for (int y = y0; y < y1; y++) for (int x = x0; x < x1; x++) bad += t.px[(size_t)y * (size_t)cv->stride + (size_t)x] != cv->px[(size_t)y * (size_t)cv->stride + (size_t)x];
+    fprintf(stderr, "lumen: occlude first=%d %dx%d at %d,%d mismatched px=%ld\n", first, x1 - x0, y1 - y0, x0, y0, bad);
+    free(t.px);
+}
+static void raster_rect_(Canvas *cv, const DisplayList *dl, Color clearc, int rx0, int ry0, int rx1, int ry1, bool occl) {
     R r; memset(&r, 0, sizeof r); r.c = cv; r.s = cv->scale; r.px = cv->px;
     rx0 = LMAX(rx0, 0); ry0 = LMAX(ry0, 0); rx1 = LMIN(rx1, cv->w); ry1 = LMIN(ry1, cv->h);
     if (rx1 <= rx0 || ry1 <= ry0) return;
+    static int noocc = -1; if (noocc < 0) noocc = getenv("LUMEN_NO_OCCLUDE") != NULL;
+    int first = noocc || !occl ? 0 : occluder(cv, dl, r.s, rx0, ry0, rx1, ry1);
     uint32_t cl = premul(clearc, 1);
-    for (int y = ry0; y < ry1; y++) for (int x = rx0; x < rx1; x++) cv->px[(size_t)y * (size_t)cv->stride + (size_t)x] = cl;
+    if (!first) for (int y = ry0; y < ry1; y++) for (int x = rx0; x < rx1; x++) cv->px[(size_t)y * (size_t)cv->stride + (size_t)x] = cl;
     r.clips[0] = (Clip){ rx0, ry0, rx1, ry1, 0, 0, (float)cv->w, (float)cv->h, {0}, false }; r.nclip = 1;
     float s = r.s;
     for (int i = 0; i < dl->items.n; i++) {
         const DItem *it = &dl->items.v[i];
+        if (i < first && it->op != DO_PUSH_CLIP && it->op != DO_POP_CLIP) continue;
         switch (it->op) {
         case DO_RECT: case DO_LINE: { float rad[4]; for (int k = 0; k < 4; k++) rad[k] = it->r[k] * s; fill(&r, it->x * s, it->y * s, (it->x + it->w) * s, (it->y + it->h) * s, rad, it->color); break; }
         case DO_BORDER: border(&r, it); break;
@@ -295,7 +338,7 @@ void raster_rect(Canvas *cv, const DisplayList *dl, Color clearc, int rx0, int r
         case DO_PUSH_LAYER: {
             if (r.nlayer >= 16) { r.nlayer++; break; }
             r.layers[r.nlayer].px = r.px; r.layers[r.nlayer].alpha = it->alpha; r.nlayer++;
-            r.px = xcalloc((size_t)cv->stride * (size_t)cv->h, 4);
+            r.px = (uint32_t *)xcalloc((size_t)cv->stride * (size_t)(ry1 - ry0), 4) - (size_t)ry0 * (size_t)cv->stride;   /* rows of the raster rect only */
             break;
         }
         case DO_POP_LAYER: {
@@ -303,11 +346,11 @@ void raster_rect(Canvas *cv, const DisplayList *dl, Color clearc, int rx0, int r
             r.nlayer--; if (r.nlayer >= 16) break;
             uint32_t *dst = r.layers[r.nlayer].px, *src = r.px; uint32_t k = (uint32_t)(r.layers[r.nlayer].alpha * 256);
             for (int y = ry0; y < ry1; y++) for (int x = rx0; x < rx1; x++) { size_t j = (size_t)y * (size_t)cv->stride + (size_t)x; if (src[j]) over(&dst[j], scale_px(src[j], k)); }
-            free(src); r.px = dst; break;
+            free(src + (size_t)ry0 * (size_t)cv->stride); r.px = dst; break;
         }
         }
     }
-    while (r.nlayer > 0) { r.nlayer--; if (r.nlayer < 16) { free(r.px); r.px = r.layers[r.nlayer].px; } }
+    while (r.nlayer > 0) { r.nlayer--; if (r.nlayer < 16) { free(r.px + (size_t)ry0 * (size_t)cv->stride); r.px = r.layers[r.nlayer].px; } }
 }
 
 /* ---------------- PNG writer (for tests/screenshots) ---------------- */

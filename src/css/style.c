@@ -1207,14 +1207,32 @@ int style_hover_has(StyleEngine *e, Node *el, bool child) {
     if (e->idx_dirty || ix->hov_has) return 0;
     return (int)hov_lookup(child ? &ix->hov_ach : &ix->hov_anc, el);
 }
+/* :host only matches from stylesheets inside a shadow tree */
+static bool sheet_in_document_scope(const StyleSheet *sh) {
+    Node *n = sh->owner;
+    if (!n) return false;
+    while (n->parent) n = n->parent;
+    return !n->host;
+}
+static bool sel_has_host(const Selector *sel) {
+    const char *h = atom("host"), *hc = atom("host-context");
+    for (int c = 0; c < sel->n; c++)
+        for (int k = 0; k < sel->c[c].n; k++) {
+            const SimpleSel *s = &sel->c[c].s[k];
+            if (s->kind == SK_PSEUDO && (s->name == h || s->name == hc)) return true;
+        }
+    return false;
+}
 static void idx_build(StyleEngine *e) {
     idx_clear(&e->idx);
     for (int si = 0; si < e->sheets.n; si++) {
         StyleSheet *sh = e->sheets.v[si];
         if (sh->disabled) continue;
+        bool doc_scope = sheet_in_document_scope(sh);
         for (int i = 0; i < sh->rules.n; i++) {
             Rule *r = &sh->rules.v[i];
             r->order = (uint32_t)(si << 20) + (uint32_t)i;
+            if (doc_scope && sel_has_host(&r->sel)) continue;
             Compound *last = &r->sel.c[r->sel.n - 1];
             const char *id = NULL, *cls = NULL, *tag = NULL;
             for (int k = 0; k < last->n; k++) {

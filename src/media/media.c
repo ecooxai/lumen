@@ -255,7 +255,7 @@ static Image *to_image(struct SwsContext **sws, AVFrame *f) {
     if (ow <= 0 || oh <= 0) return NULL;
     *sws = sws_getCachedContext(*sws, f->width, f->height, (enum AVPixelFormat)f->format, ow, oh, AV_PIX_FMT_BGRA, SWS_BILINEAR, NULL, NULL, NULL);
     if (!*sws) return NULL;
-    Image *im = xcalloc(1, sizeof *im); im->w = ow; im->h = oh; im->refs = 1;
+    Image *im = xcalloc(1, sizeof *im); im->w = ow; im->h = oh; im->refs = 1; im->opaque = true;
     im->px = xmalloc((size_t)ow * (size_t)oh * 4);
     uint8_t *dst[4] = { (uint8_t *)im->px }; int ls[4] = { ow * 4 };
     sws_scale(*sws, (const uint8_t *const *)f->data, f->linesize, 0, f->height, dst, ls);
@@ -266,7 +266,7 @@ bool media_lowmem;
 bool media_yuv;
 static Image *yuv_copy(int w, int h, const uint8_t *p0, size_t s0, const uint8_t *p1, size_t s1, int mat) {
     int cw = (w + 1) / 2, ch = (h + 1) / 2;
-    Image *im = xcalloc(1, sizeof *im); im->w = w; im->h = h; im->refs = 1; im->yuv_mat = mat;
+    Image *im = xcalloc(1, sizeof *im); im->w = w; im->h = h; im->refs = 1; im->yuv_mat = mat; im->opaque = true;
     im->yuv = xmalloc((size_t)w * (size_t)h + (size_t)cw * 2 * (size_t)ch);
     for (int y = 0; y < h; y++) memcpy(im->yuv + (size_t)y * (size_t)w, p0 + (size_t)y * s0, (size_t)w);
     uint8_t *uv = im->yuv + (size_t)w * (size_t)h;

@@ -343,9 +343,12 @@ void intrinsic(Layout *L, Box *b, float *omn, float *omx) {
         mn -= bp; mx -= bp;
         if (st->width.kind == LK_LEN && !st->width.pct) { float w = st->width.px - (st->box_sizing == BOX_BORDER ? bp : 0); mn = LMAX(mn, w); mx = LMAX(mx, w); }
     } else {
+        float frow = 0; /* adjacent floats sit side by side in max-content */
         for (Box *c = b->first; c; c = c->next) {
             if (c->abs) continue;
             float a, z; intrinsic_outer(L, c, &a, &z);
+            if (c->floated) { if (c->st->clear) frow = 0; frow += z; z = frow; }
+            else frow = 0;
             mn = LMAX(mn, a); mx = LMAX(mx, z);
         }
     }
