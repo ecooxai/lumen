@@ -451,7 +451,7 @@ static void tree_token(HtmlParser *p) {
             if (table_end(p, t)) return;
             handle_end_body(p, t);
             return;
-        case M_AFTER_BODY: return;
+        case M_AFTER_BODY: if (t == A_body || t == A_html) return; p->mode = M_IN_BODY; tree_token(p); return;   /* stray </body></html> mid-page: keep parsing in body */
         case M_IN_FRAMESET: if (t == A_frameset) pop(p); return;
         default: return;
         }
