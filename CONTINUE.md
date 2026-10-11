@@ -358,3 +358,24 @@ Load (DCL/load): Google 0.53/3.66 s, Bing 1.97/2.23 s, YT watch ~2.2/3.47 s, YT 
 - f9a6a58: `@media` rules are kept on each Rule (`Rule.mq`, outer chain) and evaluated at match time (`css_media_chain`, cached per viewport); viewport change in main.c layout path -> `style_recalc` + `js_viewport_changed` (matchMedia change + window `resize`). Fixture tests/render/media-resize.html (needs a window resize during the run, e.g. `xdotool windowsize`).
 - Damage repaint while typing (main.c render): display-list diff is now prefix/suffix + multiset (`dsig_damage`), boxes clipped to the viewport (`vunion`; off-screen carousel clips at x=-12605 used to widen damage to x=0), videos matched by stacking rank, and DOM damage + each changed video rect are rastered separately. Amazon search typing: full rasters per keystroke -> none; CPU 17-33% -> 12-20% (/proc interval). `LUMEN_CHECK_DAMAGE=1` gave 0 mismatched px on Amazon typing (~800 frames) and YouTube playback (735 frames). `LUMEN_DEBUG_DAMAGE=1` prints large changed items; `LUMEN_DEBUG_PAINT=1` prints "damage too big" with rects.
 - Amazon typing harness: /tmp/wb/amztype.sh LOG DISPLAY [ENV=..] (clicks the search box found by a LUMEN_PRE_FILE probe, types, logs /proc ticks + ps).
+
+## 2026-10-11 (Linux branch, after 55ddbd0): stacking, Amazon carousel, idle CPU, bg shorthand
+- 1022d8d: positive z-index descendants of a positioned `z-index:auto` box are hoisted into the enclosing
+  stacking context (src/paint/display.c `PB.ctx`). Wikipedia search suggestions no longer show the page
+  links through them. Fixture: tests/render/zindex-hoist.html.
+- 7be42e5: a percentage-width box with overflow-x != visible contributes 0 min-content width
+  (src/layout/box.c). Amazon's sponsored carousel (width:max-content table inside a 100%/overflow:hidden
+  viewport) stays in the results column instead of covering the filter sidebar. Fixture:
+  tests/render/pct-scroll-minwidth.html (logs `PSMW [true,true]`).
+- bb88ea3: animated images only report frame changes when drawn in the viewport during the last second
+  (`image_anim_seen` after every dl_build); video players whose element box is off-viewport don't request
+  repaints (`media_mark_visible(vis_view)` runs every loop now, `media_vis_track`). Amazon results idle
+  went 6-7% -> 2-3%: an offscreen animated image was forcing ~50 full DL rebuilds/s.
+  Fixtures: tests/render/anim-visible.html (animates), anim-offscreen.html (0 paints).
+- fdbf3f3: `background:` shorthand honours `position / size` (also `-80px/160px` tokens). YouTube's
+  seek preview is a sprite cell picked this way. Fixture: tests/render/bg-shorthand-size.html.
+- CPU (native X11, /proc per-second): Amazon home idle 1-3%, Amazon results idle 2-3% with a short
+  spike every ~9 s (page timers), YouTube home 5-6% while its masthead video plays (real decode).
+- Profiling on Linux: perf is blocked (perf_event_paranoid=4) but ptrace works; /tmp/wb/pmp.sh-style
+  gdb `thread apply all bt` sampling is the poor man's profiler. Temporary `fprintf` on each dirty
+  source (anim, frames_tick, media_tick, cvbuf) quickly shows what wakes the loop.
