@@ -1958,6 +1958,7 @@ static void click_page(App *a, float x, float y) {
         Node *before = a->t->cur->d->focus;
         js_dispatch(js, t, "pointerdown", "PointerEvent", true, true, x, cy, 0, NULL);
         bool md_ok = js_dispatch(js, t, "mousedown", "MouseEvent", true, true, x, cy, 0, NULL);
+        if (!md_ok) g_press = g_drag = false;   /* a cancelled mousedown starts no text selection */
         bool js_focused = a->t->cur->d->focus != before;
         Node *ctl = t;
         for (Node *l = t; l; l = l->parent) if (l->type == NODE_ELEMENT && l->tag && !strcmp(l->tag, "label")) {

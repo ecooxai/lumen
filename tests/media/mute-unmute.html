@@ -1,0 +1,9 @@
+<!doctype html><body style="margin:0"><video id=v src="test.mp4" muted autoplay loop playsinline width=320 height=240></video><p id=o></p>
+<!-- muted autoplay opens no audio device; currentTime keeps advancing (LUMEN_CONSOLE=1) across unmute, pause and play -->
+<script>
+const t0=performance.now();
+setInterval(()=>{const s=((performance.now()-t0)/1000).toFixed(1); console.log('T '+s+' ct='+v.currentTime.toFixed(2)+' muted='+v.muted+' paused='+v.paused); o.textContent=v.currentTime.toFixed(2);},1000);
+setTimeout(()=>{v.muted=false;console.log('UNMUTE')},1500);
+setTimeout(()=>{v.pause();console.log('PAUSE')},2500);
+setTimeout(()=>{v.play();console.log('PLAY')},3000);
+</script>

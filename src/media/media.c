@@ -59,7 +59,7 @@ struct MediaPlayer {
     double duration;
     uint64_t epoch; double target; bool seeking;
     bool playing, ended, waiting, error; char err[160];
-    bool expect_audio, audio_failed; SDL_AudioStream *dev;
+    bool expect_audio, audio_failed, a_live; SDL_AudioStream *dev;   /* a_live: the device has started pulling samples */
     float volume; bool muted;
     double aclock, base_t, base_wall;
     int aq; /* bytes queued in the SDL stream, sampled by audio_cb (the stream lock must not be taken under mu) */
@@ -536,7 +536,7 @@ static void SDLCALL audio_cb(void *ud, SDL_AudioStream *as, int additional, int 
         if (m->playing && !m->seeking) while (w < k && m->ah) {
             AChunk *c = m->ah; int n = c->frames - c->off; if (n > k - w) n = k - w;
             for (int i = 0; i < n * 2; i++) buf[w * 2 + i] = c->s[c->off * 2 + i] * g;
-            c->off += n; w += n; m->abuf -= (double)n / OUT_RATE;
+            c->off += n; w += n; m->abuf -= (double)n / OUT_RATE; m->a_live = true;
             m->aclock = c->pts + (double)c->off / OUT_RATE;
             if (c->off >= c->frames) { m->ah = c->next; if (!m->ah) m->at = NULL; free(c->s); free(c); }
         }
@@ -544,13 +544,14 @@ static void SDLCALL audio_cb(void *ud, SDL_AudioStream *as, int additional, int 
         frames -= k;
     }
     m->aq = SDL_GetAudioStreamQueued(as);
-    SDL_BroadcastCondition(m->cv);
+    if (m->abuf <= AQ_MAX_SEC) SDL_BroadcastCondition(m->cv);
     SDL_UnlockMutex(m->mu);
 }
 static void open_audio(MediaPlayer *m) {
-    if (m->dev || m->audio_failed) return;
+    if (m->dev || m->audio_failed || m->muted) return;   /* muted: no device, the clock runs on wall time */
     if (!(SDL_WasInit(SDL_INIT_AUDIO) & SDL_INIT_AUDIO) && !SDL_InitSubSystem(SDL_INIT_AUDIO)) { m->audio_failed = true; return; }
     SDL_AudioSpec spec = { SDL_AUDIO_F32, 2, OUT_RATE };
+    m->a_live = false;
     m->dev = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, audio_cb, m);
     if (!m->dev) { m->audio_failed = true; return; }
     SDL_ResumeAudioStreamDevice(m->dev);
@@ -776,8 +777,10 @@ int mp_buffered(MediaPlayer *m, int sb, double *r, int max) {
 }
 void mp_end_of_stream(MediaPlayer *m) { SDL_LockMutex(m->mu); m->eos = true; SDL_BroadcastCondition(m->cv); SDL_UnlockMutex(m->mu); }
 void mp_set_duration(MediaPlayer *m, double d) { SDL_LockMutex(m->mu); m->duration = d; SDL_UnlockMutex(m->mu); }
+/* the audio clock drives playback only once the device actually consumes samples (device start-up can take seconds) */
+static bool aud_live(const MediaPlayer *m) { return m->expect_audio && m->dev && m->a_live; }
 static double clock_of(MediaPlayer *m) {
-    if (m->expect_audio && m->dev) {
+    if (aud_live(m)) {
         double lat = (double)m->aq / 8.0 / OUT_RATE;
         double t = m->aclock - lat; return t < 0 ? 0 : t;
     }
@@ -813,7 +816,15 @@ void mp_seek(MediaPlayer *m, double t) {
     SDL_UnlockMutex(m->mu);
     if (m->dev) SDL_ClearAudioStream(m->dev); /* after unlocking: audio_cb holds the stream lock while taking mu */
 }
-void mp_set_volume(MediaPlayer *m, float v, bool muted) { SDL_LockMutex(m->mu); m->volume = v; m->muted = muted; SDL_UnlockMutex(m->mu); }
+void mp_set_volume(MediaPlayer *m, float v, bool muted) {
+    SDL_LockMutex(m->mu);
+    m->volume = v;
+    /* unmuting a playing stream that never opened a device: open it; the wall clock runs until it is live */
+    bool reopen = m->muted && !muted && !m->dev && m->expect_audio && m->playing && !m->audio_failed;
+    m->muted = muted;
+    if (reopen) open_audio(m);
+    SDL_UnlockMutex(m->mu);
+}
 void mp_state(MediaPlayer *m, MpState *o) {
     SDL_LockMutex(m->mu);
     bool meta = false, vid = false;
@@ -870,18 +881,18 @@ int media_tick(void) {
             m->base_t = m->aclock = m->target; m->base_wall = now_ms();
         }
         if (!m->cur && m->vqn) { present(m, m->vq[0].im); memmove(m->vq, m->vq + 1, sizeof m->vq[0] * (size_t)--m->vqn); popped = true; }
-        if (m->expect_audio && m->dev && aud_eof && !m->ah) { m->base_t = m->aclock; m->base_wall = now_ms(); m->expect_audio = false; }
+        if (aud_live(m) && aud_eof && !m->ah) { m->base_t = m->aclock; m->base_wall = now_ms(); m->expect_audio = false; }
         if (m->playing && !m->seeking) {
-            bool starve = (m->expect_audio && m->dev) ? (!m->ah && !aud_eof) : (vid && !m->vqn && !all_eof);
+            bool starve = aud_live(m) ? (!m->ah && !aud_eof) : (vid && !m->vqn && !all_eof);
             if (starve && !m->waiting) { m->base_t = clock_of(m); m->waiting = true; }
             else if (!starve && m->waiting) { m->waiting = false; m->base_wall = now_ms(); }
             double t = clock_of(m);
-            if (!(m->expect_audio && m->dev)) while (m->ah && m->ah->pts + (double)m->ah->frames / OUT_RATE <= t) {   /* no audio device: drain by clock */
+            if (!aud_live(m)) while (m->ah && m->ah->pts + (double)m->ah->frames / OUT_RATE <= t) {   /* no audio device: drain by clock */
                 AChunk *c = m->ah; m->ah = c->next; if (!m->ah) m->at = NULL;
                 m->abuf -= (double)(c->frames - c->off) / OUT_RATE; if (m->abuf < 0) m->abuf = 0;
                 free(c->s); free(c); SDL_BroadcastCondition(m->cv);
             }
-            if (all_eof && !(m->expect_audio && m->dev) && !isnan(m->duration) && t >= m->duration - 0.01) while (m->ah) {
+            if (all_eof && !aud_live(m) && !isnan(m->duration) && t >= m->duration - 0.01) while (m->ah) {
                 AChunk *c = m->ah; m->ah = c->next; if (!m->ah) m->at = NULL; free(c->s); free(c); m->abuf = 0;
             }
             if (all_eof && !isnan(m->duration) && t >= m->duration - 0.01) while (m->vqn) { present(m, m->vq[0].im); memmove(m->vq, m->vq + 1, sizeof m->vq[0] * (size_t)--m->vqn); popped = true; }
@@ -906,6 +917,8 @@ int media_timeout_ms(void) {
         if (m->playing || m->seeking) {
             int t = 20;
             if (m->vqn && !m->seeking) { double d = (m->vq[0].pts - clock_of(m)) * 1000; t = d < 1 ? 1 : d > 20 ? 20 : (int)d; }
+            /* off-screen: frames aren't painted, so only keep the clock/timeupdate ticking */
+            if (media_vis_track && !m->seeking && (double)SDL_GetTicks() - m->painted >= 1000) t = 250;
             if (to < 0 || t < to) to = t;
         }
         SDL_UnlockMutex(m->mu);

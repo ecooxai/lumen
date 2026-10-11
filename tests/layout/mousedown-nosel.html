@@ -1,0 +1,8 @@
+<!doctype html><body style="margin:20px;font:18px sans-serif">
+<!-- drag from the red bar (mousedown preventDefault) must not select text; drag from the green box must -->
+<div id=bar style="height:30px;background:#c00;width:600px"></div>
+<p>Some text that should not get selected while dragging from the bar above, like YouTube's seek bar.</p>
+<p>Second paragraph of plain selectable text for the drag test.</p>
+<div id=free style="height:30px;background:#0a0;width:600px">plain drag start (selects)</div>
+<p>Third paragraph also selectable when dragging from the green box.</p>
+<script>bar.addEventListener('mousedown', e => e.preventDefault());</script>

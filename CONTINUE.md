@@ -387,3 +387,15 @@ Load (DCL/load): Google 0.53/3.66 s, Bing 1.97/2.23 s, YT watch ~2.2/3.47 s, YT 
 - Result: Amazon home with 2 tiles playing ~60% -> ~25% CPU; LUMEN_CHECK_DAMAGE: 1399 partial-vs-full checks, 0 mismatched px; layout 21 files 0 diffs; render fixtures identical except the intended shadow-interior change.
 - Debug: `LUMEN_DEBUG_RASTER=1` prints per-raster-rect item counts/areas by op.
 - Next: the hidden stacked video (#224 under #267 in the same tile) is still decoded; remaining main-thread time is video.js JS/style updates (printf of floats, hm_getn).
+
+## 2026-10-11 (later): offscreen media CPU, muted audio, drag selection
+- Muted media no longer opens an audio device (no PulseAudio threads / callbacks); the wall clock drives
+  playback until the device is live (`aud_live()`: `a_live` set once audio_cb consumes samples). Unmuting a
+  playing stream opens the device then. Device start-up on this VM's null sink takes ~2-3 s (pre-existing:
+  build7 also stalled ~2 s at start); the clock then waits on the queued-audio latency.
+- Off-screen playing media caps the loop wait at 250 ms (`media_timeout_ms`). audio_cb only signals the
+  decoder when the audio buffer drops under AQ_MAX_SEC.
+- Amazon home scrolled to the footer: 4-5% -> 2-4% CPU; remaining is Amazon's ~37 setInterval(100) timers.
+- A cancelled `mousedown` starts no text selection (YouTube seek-bar drag selected sidebar text);
+  `tests/layout/mousedown-nosel.html`.
+- `-webkit-line-clamp`/`-webkit-box-orient` parse; line clamp clips overflow boxes (7b9ffd7, `tests/layout/line-clamp.html`).
