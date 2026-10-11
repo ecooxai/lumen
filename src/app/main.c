@@ -50,6 +50,7 @@ typedef struct Page {
     char *url; Document *d; StyleEngine *e; Layout *L; uint64_t gen; double load_ms;
     JsCtx *js; PScript *scripts; int nscripts; uint64_t seen_ver, lay_ver;
     SheetRef *sref; int nsref;
+    Node **vids; int nvids, vidcap; uint64_t vids_ver; /* <video> elements, rebuilt when the tree changes */
     HMap img_fired; bool img_check;
     /* <iframe> child browsing context (document owned by the JS layer) */
     Node *frame_el; float fw, fh, fsy; Canvas cv; Image img; DisplayList fdl;
@@ -293,7 +294,7 @@ static void page_free(Page *p) {
     if (!p) return;
     js_free(p->js);
     hm_free(&p->img_fired, NULL);
-    free(p->sref);
+    free(p->sref); free(p->vids);
     for (int i = 0; i < p->nscripts; i++) { free(p->scripts[i].src); free(p->scripts[i].name); }
     free(p->scripts);
     if (p->L) layout_free(p->L);
@@ -1393,7 +1394,7 @@ static void h_frame_close(void *ud) {
     if (p->L) layout_free(p->L);
     if (p->e) style_engine_free(p->e);
     for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) { n->box = NULL; n->style = NULL; }
-    hm_free(&p->img_fired, NULL); free(p->sref);
+    hm_free(&p->img_fired, NULL); free(p->sref); free(p->vids);
     canvas_free(&p->cv); dl_clear(&p->fdl); free(p->fdl.items.v);
     free(p->url); free(p);
     if (g_app) { g_app->dirty = true; g_app->vonly = false; }
@@ -1682,6 +1683,18 @@ static void page_move_keep(App *a) {   /* YouTube hides its controls ~3 s after 
 }
 #define VBH 34.f
 static bool vbar_on(App *a, Node *n) { return n->type == NODE_ELEMENT && n->tag == A_video && n->box && n->box->w >= 120 && (node_attr(n, "controls") || (vctl_on(a->t) && !is_youtube(a->t->url))); }
+static Node **page_videos(Page *p, int *n) {
+    if (p->vids_ver != p->d->layout_version + 1) {
+        p->nvids = 0;
+        for (Node *x = p->d->node.first; x; x = node_next_in_tree(x, &p->d->node)) {
+            if (x->type != NODE_ELEMENT || x->tag != A_video) continue;
+            if (p->nvids == p->vidcap) { p->vidcap = p->vidcap ? p->vidcap * 2 : 4; p->vids = xrealloc(p->vids, sizeof *p->vids * (size_t)p->vidcap); }
+            p->vids[p->nvids++] = x;
+        }
+        p->vids_ver = p->d->layout_version + 1;
+    }
+    *n = p->nvids; return p->vids;
+}
 static float vbar_y(App *a, const Box *b) { return vctl_on(a->t) ? b->y + b->h : b->y + b->h - VBH; }   /* below the video when "always show", else inside its bottom edge */
 static void fmt_t(char *o, size_t n, double s) { int t = s >= 0 && s < 1e7 ? (int)s : 0; if (t >= 3600) snprintf(o, n, "%d:%02d:%02d", t / 3600, t / 60 % 60, t % 60); else snprintf(o, n, "%d:%02d", t / 60, t % 60); }
 static void vbar_layout(App *a, const Box *b, const MpState *s, char *tm, size_t n, float *tx0, float *tx1) {
@@ -1690,7 +1703,8 @@ static void vbar_layout(App *a, const Box *b, const MpState *s, char *tm, size_t
 }
 static bool video_bars(App *a, DisplayList *dl) {   /* control bar under each <video controls> (or every video when "always show video controls" is on) */
     bool playing = false; Document *d = a->t->cur->d; float rb = (a->ui->ascent - a->ui->descent) / 2;
-    for (Node *n = d->node.first; n; n = node_next_in_tree(n, &d->node)) {
+    (void)d; int nv; Node **vs = page_videos(a->t->cur, &nv);
+    for (int vi = 0; vi < nv; vi++) { Node *n = vs[vi];
         if (!vbar_on(a, n)) continue;
         Box *b = n->box; float y = vbar_y(a, b) - a->t->sy;
         if (y < -VBH || y > a->vh) continue;
@@ -1709,7 +1723,8 @@ static bool video_bars(App *a, DisplayList *dl) {   /* control bar under each <v
 }
 static bool vbar_click(App *a, float x, float y) {   /* document coordinates */
     Page *p = a->t->cur; if (!p->js) return false;
-    for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) {
+    int nv; Node **vs = page_videos(p, &nv);
+    for (int vi = 0; vi < nv; vi++) { Node *n = vs[vi];
         if (!vbar_on(a, n)) continue;
         Box *b = n->box; float by = vbar_y(a, b);
         if (x < b->x || x >= b->x + b->w || y < by || y >= by + VBH) continue;
