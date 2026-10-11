@@ -16,3 +16,7 @@ Branch: `devin/android-port-native-engine`. The engine source in `src/` is share
 - [x] File upload: SDL picker content:// URIs are copied to the cache dir by LumenActivity.importContent
 - Tools: node 22 for prelude syntax checks at ~/src/node/node-v22.11.0-linux-x64/bin/node (cat src/js/prelude/*.js > f.js; node --check f.js). Device test page: tests/android/device.html.
 - [ ] Run on emulator; then sites (Google/YouTube/X), device APIs, WebGL/WebGPU/WASM
+
+## Findings for the WebGL/WebGPU branch
+- Canvas 2D is only a JS stub (src/js/prelude/07z-extra.js `CanvasRenderingContext2D`, no native drawing; `getContext` in 04-tags.js returns null for webgl/webgpu).
+- So WebGL/WebGPU need a native canvas surface first: a per-canvas offscreen texture in src/gpu (wgpu-native), composited like video frames (`media_frame_for`-style lookup in main.c:157). Then WebGPU JS bindings onto wgpu, and WebGL on top (GLES via ANGLE-like translation, or WebGL->wgpu).
