@@ -1,0 +1,18 @@
+<!doctype html>
+<body style="margin:0">
+<div id="box" style="height:100px;overflow:auto"><div id="items"></div></div>
+<div style="height:3000px"></div><div id="far" style="height:20px">far</div><div style="height:3000px"></div>
+<script>
+const it = document.getElementById('items');
+for (let i = 0; i < 20; i++) { const d = document.createElement('div'); d.style.height = '30px'; d.textContent = 'item ' + i; it.appendChild(d); }
+setTimeout(() => {
+  const box = document.getElementById('box');
+  it.children[15].scrollIntoView({ block: 'nearest' });
+  const r1 = [box.scrollTop, window.scrollY];
+  it.children[2].scrollIntoView({ block: 'nearest' });
+  const r2 = box.scrollTop;
+  document.getElementById('far').scrollIntoView();
+  const far = Math.round(document.getElementById('far').getBoundingClientRect().top);
+  console.log('SIV ' + JSON.stringify([r1[0] == 380, r1[1] == 0, r2 == 60, far == 0]) + ' ' + JSON.stringify([r1, r2, far]));
+}, 300);
+</script>

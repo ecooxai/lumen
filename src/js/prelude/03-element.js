@@ -101,7 +101,20 @@ methods(Element.prototype, {
     scrollTo(x, y) { if (this === document.documentElement || this === document.body) return window.scrollTo(x, y); const o = x && typeof x === 'object' ? x : { left: x, top: y }; this.__scrollSet(o.left == null ? NaN : +o.left || 0, o.top == null ? NaN : +o.top || 0); },
     scroll(x, y) { this.scrollTo(x, y); },
     scrollBy(x, y) { const o = x && typeof x === 'object' ? x : { left: x, top: y }; this.scrollTo({ left: this.scrollLeft + (+o.left || 0), top: this.scrollTop + (+o.top || 0) }); },
-    scrollIntoView() { const r = N.rect(this); if (r) N.scrollTo(0, r[1]); }, scrollIntoViewIfNeeded() { this.scrollIntoView(); },
+    scrollIntoView(o) {
+        const blk = o === false ? 'end' : (o && typeof o === 'object' && o.block) || 'start';
+        const need = (top, h, vh) => blk === 'start' ? top : blk === 'end' ? top + h - vh : blk === 'center' ? top + h / 2 - vh / 2 :
+            top < 0 ? top : top + h > vh ? (h > vh ? top : top + h - vh) : 0;   /* nearest */
+        for (let p = this.parentElement; p && p !== document.body && p !== document.documentElement; p = p.parentElement) {
+            if (p.scrollHeight <= p.clientHeight + 1) continue;
+            const ov = getComputedStyle(p).overflowY; if (ov !== 'auto' && ov !== 'scroll' && ov !== 'hidden') continue;
+            const er = this.getBoundingClientRect(), pr = p.getBoundingClientRect(), d = Math.round(need(er.top - pr.top, er.height, p.clientHeight));
+            if (d) p.scrollTop = p.scrollTop + d;
+        }
+        const r = this.getBoundingClientRect(), d = Math.round(need(r.top, r.height, window.innerHeight));
+        if (d) window.scrollTo(window.scrollX, window.scrollY + d);
+    },
+    scrollIntoViewIfNeeded(c) { this.scrollIntoView(c === false ? { block: 'nearest' } : { block: 'center' }); },
     attachShadow(init) {
         if (this.__shadow) throw new DOMException('Shadow root cannot be created on a host which already hosts a shadow tree.', 'NotSupportedError');
         const sr = N.attachShadow(this); Object.setPrototypeOf(sr, ShadowRoot.prototype);
