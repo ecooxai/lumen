@@ -39,6 +39,8 @@ bool js_busy(JsCtx *c);   /* fetches in flight */
 void js_free(JsCtx *c);
 /* run a parser-inserted script (sets document.currentScript) */
 void js_run_script(JsCtx *c, Node *script, const char *src, size_t n, const char *name);
+/* strict MIME check for classic scripts: image/audio/video/csv responses never execute (Chrome refuses them) */
+bool js_script_mime_blocked(const char *content_type);
 void js_eval(JsCtx *c, const char *src, const char *name);
 /* run a <script type=module>; src NULL fetches url. Inline modules pass the document url */
 void js_run_module(JsCtx *c, Node *script, const char *src, size_t n, const char *url);

@@ -260,7 +260,7 @@ static int loader(void *arg) {
             sc.name = url_join(p->d->url, src);
             if (!sc.name) continue;
             NetResponse *sr = net_fetch_sync(net_request_new("GET", sc.name));
-            if (sr && sr->status >= 200 && sr->status < 300) { sc.src = xstrndup(sr->body ? sr->body : "", sr->body_len); sc.len = sr->body_len; }
+            if (sr && sr->status >= 200 && sr->status < 300 && !js_script_mime_blocked(headers_get(&sr->headers, "content-type"))) { sc.src = xstrndup(sr->body ? sr->body : "", sr->body_len); sc.len = sr->body_len; }
             if (sr) net_response_free(sr);
         } else { sc.src = node_text_content(n); sc.len = strlen(sc.src); sc.name = xstrdup(p->url); }
         p->scripts = xrealloc(p->scripts, sizeof *p->scripts * (size_t)(p->nscripts + 1)); p->scripts[p->nscripts++] = sc;

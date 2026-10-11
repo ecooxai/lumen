@@ -352,7 +352,7 @@ static void fetch_done(NetRequest *req, NetResponse *r, void *ud) {
     c->fetches.erase(f->id);
     JS_ENTER(c);
     if (f->script) {
-        if (r && r->status >= 200 && r->status < 300) js_run_script(c, f->script, r->body ? r->body : "", r->body ? r->body_len : 0, r->url ? r->url : "");
+        if (r && r->status >= 200 && r->status < 300 && !js_script_mime_blocked(headers_get(&r->headers, "content-type"))) js_run_script(c, f->script, r->body ? r->body : "", r->body ? r->body_len : 0, r->url ? r->url : "");
         else jfire(c, f->script, "error");
     } else {
         v8::Local<v8::Value> argv[6];

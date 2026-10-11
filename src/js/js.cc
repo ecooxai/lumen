@@ -1,4 +1,5 @@
 #include <map>
+#include <strings.h>
 #include <string>
 /* V8 embedding: platform, per-page isolate/context, node wrappers, script execution, timers, events */
 #include "js_int.h"
@@ -126,6 +127,14 @@ static void settle(JsCtx *c) {
 void jreport(JsCtx *c, v8::Local<v8::Value> exc, v8::Local<v8::Message> msg) {
     v8::Isolate *iso = c->iso;
     v8::Local<v8::Context> ctx = iso->GetCurrentContext();
+    static const bool errloc = getenv("LUMEN_JS_ERRLOC");
+    if (errloc && !msg.IsEmpty()) {
+        v8::Local<v8::String> src;
+        std::string line = msg->GetSourceLine(ctx).ToLocal(&src) ? jcstr(iso, src) : "";
+        int col = msg->GetStartColumn(ctx).FromMaybe(0);
+        fprintf(stderr, "[js] error at %s:%d:%d: %.160s\n", jcstr(iso, msg->GetScriptResourceName()).c_str(), msg->GetLineNumber(ctx).FromMaybe(0), col,
+                line.size() > 80 && col > 60 ? line.substr((size_t)col - 60).c_str() : line.c_str());
+    }
     if (!c->report.IsEmpty()) {
         v8::TryCatch tc(iso);
         v8::Local<v8::Value> argv[1] = { exc };
@@ -673,6 +682,11 @@ void js_free(JsCtx *c) {
     delete c;
 }
 
+bool js_script_mime_blocked(const char *ct) {
+    if (!ct) return false;
+    while (*ct == ' ') ct++;
+    return !strncasecmp(ct, "image/", 6) || !strncasecmp(ct, "audio/", 6) || !strncasecmp(ct, "video/", 6) || !strncasecmp(ct, "text/csv", 8);
+}
 void js_run_script(JsCtx *c, Node *script, const char *src, size_t n, const char *name) {
     if (!c) return;
     if (script) script->flags |= NF_SCRIPT_STARTED;
