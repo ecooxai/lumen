@@ -436,23 +436,38 @@ static void apply_background(ACtx *c, const char *v) {
     c->st->bg_repeat = BG_REPEAT; c->st->bg_size_kind = BGS_AUTO; c->st->bg_pos[0] = c->st->bg_pos[1] = (Length){0, 0, LK_LEN};
     if (str_ieq(v, "none")) return;
     if (strstr(v, "url(") || strstr(v, "gradient(")) apply_background_image(c, v);
-    const char *p = v; char *t; int pos_n = 0; char posbuf[128] = {0};
+    const char *p = v; char *t; int pos_n = 0, sz_n = 0; char posbuf[128] = {0}, szbuf[128] = {0}; bool after_slash = false;
     while ((t = next_token(&p))) {
         size_t tl = strlen(t);
         char *tt = t; if (tl && tt[tl - 1] == ',') tt[tl - 1] = 0;
-        Color col;
-        if (str_istarts(tt, "url(") || strstr(tt, "gradient(")) {}
-        else if (str_ieq(tt, "no-repeat")) c->st->bg_repeat = BG_NO_REPEAT;
-        else if (str_ieq(tt, "repeat-x")) c->st->bg_repeat = BG_REPEAT_X;
-        else if (str_ieq(tt, "repeat-y")) c->st->bg_repeat = BG_REPEAT_Y;
-        else if (str_ieq(tt, "repeat")) c->st->bg_repeat = BG_REPEAT;
-        else if (str_ieq(tt, "cover") || str_ieq(tt, "contain")) apply_bg_size(c, tt);
-        else if (!strcmp(tt, "/")) {}
-        else if (css_parse_color(tt, &col, c->st->color)) c->st->bg_color = col;
-        else if (pos_n < 2 && (str_ieq(tt, "center") || str_ieq(tt, "left") || str_ieq(tt, "right") || str_ieq(tt, "top") || str_ieq(tt, "bottom") || isdigit((unsigned char)tt[0]) || tt[0] == '-' || tt[0] == '.')) { strncat(posbuf, " ", sizeof posbuf - strlen(posbuf) - 1); strncat(posbuf, tt, sizeof posbuf - strlen(posbuf) - 1); pos_n++; }
+        bool img = str_istarts(tt, "url(") || strstr(tt, "gradient(");
+        char *parts[2] = { tt, NULL }; char *sl = img ? NULL : strchr(tt, '/');
+        if (sl) { *sl = 0; parts[1] = sl + 1; }
+        for (int k = 0; k < 2; k++) {
+            char *w = parts[k];
+            if (k == 1) { if (!w) break; after_slash = true; }
+            if (!*w) continue;
+            Color col;
+            /* `position / size`: up to two size values follow the slash */
+            if (after_slash && sz_n < 2 && (str_ieq(w, "auto") || str_ieq(w, "cover") || str_ieq(w, "contain") || isdigit((unsigned char)w[0]) || w[0] == '.' || w[0] == '-' || str_istarts(w, "calc("))) {
+                strncat(szbuf, " ", sizeof szbuf - strlen(szbuf) - 1); strncat(szbuf, w, sizeof szbuf - strlen(szbuf) - 1); sz_n++; continue;
+            }
+            after_slash = false;
+            if (img) {}
+            else if (str_ieq(w, "no-repeat")) c->st->bg_repeat = BG_NO_REPEAT;
+            else if (str_ieq(w, "repeat-x")) c->st->bg_repeat = BG_REPEAT_X;
+            else if (str_ieq(w, "repeat-y")) c->st->bg_repeat = BG_REPEAT_Y;
+            else if (str_ieq(w, "repeat")) c->st->bg_repeat = BG_REPEAT;
+            else if (str_ieq(w, "cover") || str_ieq(w, "contain")) apply_bg_size(c, w);
+            else if (css_parse_color(w, &col, c->st->color)) c->st->bg_color = col;
+            else if (pos_n < 2 && (str_ieq(w, "center") || str_ieq(w, "left") || str_ieq(w, "right") || str_ieq(w, "top") || str_ieq(w, "bottom") || isdigit((unsigned char)w[0]) || w[0] == '-' || w[0] == '.')) {
+                strncat(posbuf, " ", sizeof posbuf - strlen(posbuf) - 1); strncat(posbuf, w, sizeof posbuf - strlen(posbuf) - 1); pos_n++;
+            }
+        }
         free(t);
     }
     if (pos_n) apply_bg_pos(c, posbuf);
+    if (sz_n) apply_bg_size(c, szbuf + 1);
 }
 static void apply_font(ACtx *c, const char *v) {
     /* [style] [variant] [weight] size[/line-height] family */
