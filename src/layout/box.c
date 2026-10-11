@@ -155,13 +155,23 @@ static void build_pseudo(BState *bs, Box *parent, Node *el, ComputedStyle *ps) {
     append(parent, b);
 }
 
+static Node *slot_host(Node *slot) { Node *r = slot; while (r->parent) r = r->parent; return r->type == NODE_FRAGMENT ? r->host : NULL; }
+/* light child c of a shadow host goes to the slot named nm (default slot when nm is empty) */
+static bool slot_takes(Node *c, const char *nm) {
+    if (c->type == NODE_TEXT) return !nm || !*nm;
+    if (c->type != NODE_ELEMENT) return false;
+    const char *sa = node_attr(c, "slot");
+    return nm && *nm ? sa && !strcmp(sa, nm) : !sa || !*sa;
+}
 static void build_children(BState *bs, Box *b, Node *n) {
     int li = 0;
     if (n->tag == A_ol) { const char *s = node_attr(n, "start"); li = s ? atoi(s) - 1 : 0; }
     if (n->style) build_pseudo(bs, b, n, n->style->before);
     Node *kids = n->template_content ? NULL : n;
-    if (kids) for (Node *c = n->first; c; c = c->next) build(bs, b, c, &li);
-    if (n->shadow_root) for (Node *c = n->shadow_root->first; c; c = c->next) build(bs, b, c, &li);
+    if (n->shadow_root) {   /* a shadow host renders its shadow tree; light children only appear through <slot>s */
+        for (Node *c = n->first; c; c = node_next_deep(c, n)) c->box = NULL;
+        for (Node *c = n->shadow_root->first; c; c = c->next) build(bs, b, c, &li);
+    } else if (kids) for (Node *c = n->first; c; c = c->next) build(bs, b, c, &li);
     if (n->style) build_pseudo(bs, b, n, n->style->after);
 }
 
@@ -181,7 +191,12 @@ static void build(BState *bs, Box *parent, Node *n, int *li) {
     ComputedStyle *st = n->style;
     n->box = NULL;
     if (!st || st->display == D_NONE) return;
-    if (n->tag == A_slot && n->ns == NS_HTML) { for (Node *c = n->first; c; c = c->next) build(bs, parent, c, li); return; }
+    if (n->tag == A_slot && n->ns == NS_HTML) {
+        Node *h = slot_host(n); const char *nm = node_attr(n, "name"); bool any = false;
+        if (h && h->shadow_root) for (Node *c = h->first; c; c = c->next) if (slot_takes(c, nm)) { any = true; build(bs, parent, c, li); }
+        if (!any) for (Node *c = n->first; c; c = c->next) build(bs, parent, c, li);
+        return;
+    }
     if (st->display == D_CONTENTS) { build_children(bs, parent, n); return; }
     if (n->ns == NS_SVG && n->tag != A_svg) return;
     if (n->tag == A_br && n->ns == NS_HTML) { Box *b = new_box(L, BX_BR, n, st); append(parent, b); n->box = b; bs->last_space = true; return; }

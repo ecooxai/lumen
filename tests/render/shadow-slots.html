@@ -1,0 +1,12 @@
+<!doctype html>
+<body style="margin:0;font:16px sans-serif">
+<div id=h1><span slot=a id=sa style="display:inline-block;width:30px">A</span><b id=bd style="display:inline-block;width:20px">B</b></div>
+<div id=h2><i id=hidden style="display:block;height:50px">not slotted</i></div>
+<div id=h3><span slot=zzz id=nz>no slot named zzz</span></div>
+<script>
+h1.attachShadow({mode:'open'}).innerHTML = '<div id=w style="display:flex"><slot name=a></slot><em style="width:10px;display:block">|</em><slot></slot></div>';
+h2.attachShadow({mode:'open'}).innerHTML = '<div style="height:10px">shadow only</div>';
+h3.attachShadow({mode:'open'}).innerHTML = '<slot name=a><span id=fb style="display:inline-block;width:44px">fallback</span></slot>';
+requestAnimationFrame(() => requestAnimationFrame(() => { const R = e => e.getBoundingClientRect(); const s3 = h3.shadowRoot;
+  console.log('SLOT ' + JSON.stringify([R(sa).left === 0, R(bd).left === 40, R(hidden).height === 0, R(h2).height === 10, R(nz).width === 0, R(s3.getElementById('fb')).width === 44])); }));
+</script>
