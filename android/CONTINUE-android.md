@@ -14,4 +14,5 @@ Branch: `devin/android-port-native-engine`. The engine source in `src/` is share
 - [x] Host services: N.hostRequest(kind, arg, cb) -> js_host_request hook (main.c) -> android_host_request (permissions, geolocation via LumenActivity.getLocation)
 - [x] navigator.geolocation, permissions.query, getUserMedia (SDL camera -> <video>.srcObject, SDL recording -> createMediaStreamSource)
 - [x] File upload: SDL picker content:// URIs are copied to the cache dir by LumenActivity.importContent
+- Tools: node 22 for prelude syntax checks at ~/src/node/node-v22.11.0-linux-x64/bin/node (cat src/js/prelude/*.js > f.js; node --check f.js). Device test page: tests/android/device.html.
 - [ ] Run on emulator; then sites (Google/YouTube/X), device APIs, WebGL/WebGPU/WASM
