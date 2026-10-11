@@ -1019,12 +1019,19 @@ static bool vis_doc(Node *n, void *ud) {
     return false;
 }
 /* Start async loads for <img> sources and CSS background images that appeared after the initial load. */
+static const char *style_img_url(const ComputedStyle *st) {
+    return st && (st->mask_image || st->bg_image) && st->display != D_NONE ? (st->mask_image ? st->mask_image : st->bg_image) : NULL;
+}
 static void sync_images(Page *p) {
     for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) {
         if (n->type != NODE_ELEMENT) continue;
+        /* ::before/::after icons (e.g. Wikipedia's dropdown arrows) load like the element's own image */
+        for (int k = 0; k < 3; k++) {
         char *u = NULL;
-        if (n->style && (n->style->mask_image || n->style->bg_image) && n->style->display != D_NONE) u = xstrdup(n->style->mask_image ? n->style->mask_image : n->style->bg_image);
-        else if (n->ns == NS_HTML && n->tag == A_img && node_attr(n, "src")) u = url_join(p->d->url, node_attr(n, "src"));
+        const ComputedStyle *st = !n->style ? NULL : k == 0 ? n->style : k == 1 ? n->style->before : n->style->after;
+        if (k > 0 && (!st || !st->content || n->style->display == D_NONE)) continue;
+        if (style_img_url(st)) u = xstrdup(style_img_url(st));
+        else if (k == 0 && n->ns == NS_HTML && n->tag == A_img && node_attr(n, "src")) u = url_join(p->d->url, node_attr(n, "src"));
         else continue;
         if (!u || !*u || !strncmp(u, "blob:", 5)) { free(u); continue; }
         SDL_LockMutex(icache_mu);
@@ -1036,6 +1043,7 @@ static void sync_images(Page *p) {
             NetRequest *rq = net_request_new("GET", u); ImgLoad *l = xmalloc(sizeof *l); l->gen = p->gen; l->u = u;
             rq->done = img_done; rq->ud = l; rq->priority = 2; net_fetch(rq);
         } else free(u);
+        }
     }
 }
 /* Fire load/error once per (img node, resolved src) after its fetch completes. */
