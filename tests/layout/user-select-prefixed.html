@@ -1,0 +1,11 @@
+<!doctype html><html><head><style>
+#a{-webkit-user-select:none}
+#b{-moz-user-select:none}
+#d{-webkit-transform:translateX(10px);width:20px;height:5px}
+</style></head><body>
+<div id=a><span id=a2>a</span></div><div id=b>b</div><div id=c>c</div><div id=d></div>
+<script>
+const u = id => getComputedStyle(document.getElementById(id)).userSelect;
+const ok = u('a') === 'none' && u('a2') === 'none' && u('b') === 'none' && u('c') === 'auto' && Math.abs(d.getBoundingClientRect().x - 18) < 0.5;
+console.log('USPFX ' + (ok ? 'PASS' : 'FAIL') + ' a=' + u('a') + ' a2=' + u('a2') + ' b=' + u('b') + ' c=' + u('c') + ' dx=' + d.getBoundingClientRect().x);
+</script></body></html>

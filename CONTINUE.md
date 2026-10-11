@@ -405,3 +405,7 @@ Load (DCL/load): Google 0.53/3.66 s, Bing 1.97/2.23 s, YT watch ~2.2/3.47 s, YT 
 - `opacity: <non-number>` (YouTube writes `style.opacity = undefined`) is ignored instead of parsing as 0;
   the channel avatar was invisible. `tests/layout/opacity-invalid.html`. Build dir for main-agent work: build9
   (build8 is pinned by the testing agent's SHA guard during its run).
+- Vendor-prefixed aliases (`-webkit-/-moz-/-ms-` user-select, appearance, backdrop-filter, transform) were dead:
+  the property switch is entered on P[0] and '-' skipped them. YouTube's `ytd-player{-webkit-user-select:none}`
+  was lost, so seek-bar drags selected page text. getComputedStyle reports user-select.
+  `tests/layout/user-select-prefixed.html`.

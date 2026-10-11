@@ -796,6 +796,11 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         goto out;
     }
     if (!strcmp(P, "container-type")) { st->container_type = str_ieq(val, "size") ? 2 : str_ieq(val, "inline-size") ? 1 : 0; goto out; }
+    if (P[0] == '-') {   /* vendor-prefixed aliases of standard properties */
+        static const char *const vend[] = { "user-select", "appearance", "backdrop-filter", "transform", NULL };
+        const char *u = !strncmp(P, "-webkit-", 8) ? P + 8 : !strncmp(P, "-moz-", 5) ? P + 5 : !strncmp(P, "-ms-", 4) ? P + 4 : NULL;
+        for (const char *const *v = vend; u && *v; v++) if (!strcmp(u, *v)) { P = u; break; }
+    }
     switch (P[0]) {
     case '-':
         if (!strcmp(P, "-webkit-line-clamp")) st->line_clamp = str_ieq(val, "none") ? 0 : strtof(val, NULL);
@@ -1657,6 +1662,7 @@ char *css_get_computed_value(Node *el, const char *prop) {
     else if (!strcmp(prop, "z-index")) { if (s->z_auto) sb_puts(&b, "auto"); else sb_printf(&b, "%d", s->z_index); }
     else if (!strcmp(prop, "direction")) sb_puts(&b, s->direction ? "rtl" : "ltr");
     else if (!strcmp(prop, "pointer-events")) sb_puts(&b, s->pointer_events ? "auto" : "none");
+    else if (!strcmp(prop, "user-select") || !strcmp(prop, "-webkit-user-select") || !strcmp(prop, "webkit-user-select")) sb_puts(&b, s->user_select ? "none" : "auto");
     else if (!strcmp(prop, "box-sizing")) sb_puts(&b, s->box_sizing ? "border-box" : "content-box");
     else if (!strcmp(prop, "transform")) { if (s->has_transform) sb_printf(&b, "matrix(%g, %g, %g, %g, %g, %g)", s->transform[0], s->transform[1], s->transform[2], s->transform[3], s->transform[4], s->transform[5]); else sb_puts(&b, "none"); }
     else if (!strncmp(prop, "margin-", 7) || !strncmp(prop, "padding-", 8)) {
