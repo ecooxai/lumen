@@ -249,3 +249,13 @@ Load (DCL/load): Google 0.53/3.66 s, Bing 1.97/2.23 s, YT watch ~2.2/3.47 s, YT 
 - Geolocation: `LUMEN_GEO=lat,lon[,acc]` else IP lookup (ipapi.co / ipinfo.io).
 - Prelude gotcha: all prelude files are one `(function (N, G) {...})` closed at the end of 08-window.js; never add a file sorting after it.
 - Test setup: `sudo modprobe v4l2loopback video_nr=10 exclusive_caps=1`, ffmpeg testsrc2 -> /dev/video10; mic via `SDL_AUDIO_DRIVER=disk SDL_AUDIO_DISK_INPUT_FILE=mic.raw`.
+
+## Site-compat fixes from the main-site test run (2026-10-11)
+- YouTube crash: V8 needs icudtl.dat; js.cc now searches Homebrew paths on Linux (LUMEN_ICU_DATA overrides).
+- x.com blank: HTML input NUL -> U+FFFD in html_parser_feed.
+- Reddit loading screen: form.elements.namedItem.
+- Amazon blank: navigation requests now send Chrome document headers (Accept text/html, Sec-Fetch-*); `Accept: */*` got an empty 202 WAF response.
+- YouTube far seek: SourceBuffer.abort() -> mp_abort resets the MP4 box parser; init blob published only when ftyp+moov complete. LUMEN_MEDIA_DEBUG=1 logs demuxer open failures.
+- Wikipedia search: native form submit takes select value from selected/first option.
+- Open: paused-YouTube idle 6-8% CPU and BBC article ~11% (perf shows raster_rect repaint while idle; find who marks dirty), Amazon sustained ~100% CPU after load, GitHub `adoptedStyleSheets is not iterable` + bare module specifier "react" (import maps?), Google CAPTCHA (no action), service workers unsupported.
+- Test without disturbing DISPLAY=:0: `Xvfb :5 -screen 0 1600x1000x24 &` then DISPLAY=:5; build to a separate dir with `make BUILD=build3 build3/lumen`.

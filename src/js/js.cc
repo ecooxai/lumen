@@ -220,7 +220,7 @@ static void run_source(JsCtx *c, const char *src, size_t n, const char *name) {
     settle(c);
 }
 
-/* ---- ES modules: fetched synchronously (graph levels in parallel), no import maps ---- */
+/* ---- ES modules: fetched synchronously (graph levels in parallel), with import maps ---- */
 static JsCtx *ctx_of(v8::Local<v8::Context> ctx) { return static_cast<JsCtx *>(ctx->GetAlignedPointerFromEmbedderData(1, kTag)); }
 static void mod_throw(v8::Isolate *iso, const std::string &m) { iso->ThrowException(v8::Exception::TypeError(jstr(iso, m.c_str()))); }
 static std::string mod_resolve(const std::string &spec, const std::string &base) {
@@ -231,6 +231,50 @@ static std::string mod_resolve(const std::string &spec, const std::string &base)
     std::string r = u ? u : "";
     free(u);
     return r;
+}
+static void imap_add(JsCtx *c, v8::Local<v8::Context> ctx, v8::Local<v8::Value> o) {
+    v8::Isolate *iso = c->iso; v8::Local<v8::Array> ks;
+    if (!o->IsObject() || !o.As<v8::Object>()->GetOwnPropertyNames(ctx).ToLocal(&ks)) return;
+    for (uint32_t i = 0; i < ks->Length(); i++) {
+        v8::Local<v8::Value> k, v;
+        if (!ks->Get(ctx, i).ToLocal(&k) || !o.As<v8::Object>()->Get(ctx, k).ToLocal(&v) || !v->IsString()) continue;
+        char *u = url_join(c->doc && c->doc->url ? c->doc->url : "", jcstr(iso, v).c_str());
+        if (u) c->imap.emplace_back(jcstr(iso, k), u);
+        free(u);
+    }
+}
+static void imap_load(JsCtx *c) {   /* (re)read every <script type=importmap> when a new one appears */
+    if (!c->doc) return;
+    std::vector<Node *> maps;
+    for (Node *n = c->doc->node.first; n; n = node_next_in_tree(n, &c->doc->node))
+        if (n->type == NODE_ELEMENT && n->tag == A_script && n->ns == NS_HTML) {
+            const char *t = node_attr(n, "type");
+            if (t && !strcasecmp(t, "importmap")) maps.push_back(n);
+        }
+    if (maps.size() <= c->imap_seen) return;
+    c->imap_seen = maps.size(); c->imap.clear();
+    v8::Isolate *iso = c->iso; v8::Local<v8::Context> ctx = iso->GetCurrentContext();
+    for (Node *n : maps) {
+        v8::TryCatch tc(iso);
+        char *txt = node_text_content(n); v8::Local<v8::Value> j;
+        bool ok = v8::JSON::Parse(ctx, jstr(iso, txt ? txt : "")).ToLocal(&j) && j->IsObject();
+        free(txt);
+        if (!ok) continue;
+        v8::Local<v8::Value> im, sc; v8::Local<v8::Array> sk;
+        if (j.As<v8::Object>()->Get(ctx, jstr(iso, "imports")).ToLocal(&im)) imap_add(c, ctx, im);
+        if (j.As<v8::Object>()->Get(ctx, jstr(iso, "scopes")).ToLocal(&sc) && sc->IsObject() && sc.As<v8::Object>()->GetOwnPropertyNames(ctx).ToLocal(&sk))
+            for (uint32_t i = 0; i < sk->Length(); i++) { v8::Local<v8::Value> k, v; if (sk->Get(ctx, i).ToLocal(&k) && sc.As<v8::Object>()->Get(ctx, k).ToLocal(&v)) imap_add(c, ctx, v); }
+    }
+}
+static std::string mod_resolve_c(JsCtx *c, const std::string &spec, const std::string &base) {
+    size_t bl = 0; const std::string *bv = nullptr;
+    for (auto &kv : c->imap) {
+        const std::string &k = kv.first;
+        if (k == spec) return kv.second;
+        if (!k.empty() && k.back() == '/' && k.size() > bl && !spec.compare(0, k.size(), k)) { bl = k.size(); bv = &kv.second; }
+    }
+    if (bv) return *bv + spec.substr(bl);
+    return mod_resolve(spec, base);
 }
 static bool mod_fetch(const std::string &u, const std::string &ref, std::string &out) {
     NetRequest *rq = net_request_new("GET", u.c_str());
@@ -261,6 +305,7 @@ static v8::MaybeLocal<v8::Module> mod_compile(JsCtx *c, const std::string &key, 
 }
 static bool mod_graph(JsCtx *c, v8::Local<v8::Module> root) {
     v8::Isolate *iso = c->iso;
+    imap_load(c);
     std::string ref = c->doc && c->doc->url ? c->doc->url : "";
     std::vector<v8::Local<v8::Module>> todo{ root };
     while (!todo.empty()) {
@@ -270,7 +315,7 @@ static bool mod_graph(JsCtx *c, v8::Local<v8::Module> root) {
             v8::Local<v8::FixedArray> rq = m->GetModuleRequests();
             for (int i = 0; i < rq->Length(); i++) {
                 std::string sp = jcstr(iso, rq->Get(i).As<v8::ModuleRequest>()->GetSpecifier());
-                std::string u = mod_resolve(sp, base);
+                std::string u = mod_resolve_c(c, sp, base);
                 if (u.empty()) return mod_throw(iso, "Failed to resolve module specifier \"" + sp + "\""), false;
                 if (!c->mods.count(u) && std::find(need.begin(), need.end(), u) == need.end()) need.push_back(u);
             }
@@ -297,7 +342,7 @@ static bool mod_graph(JsCtx *c, v8::Local<v8::Module> root) {
 static v8::MaybeLocal<v8::Module> mod_resolve_cb(v8::Local<v8::Context> ctx, v8::Local<v8::String> spec, v8::Local<v8::FixedArray>, v8::Local<v8::Module> ref) {
     v8::Isolate *iso = v8::Isolate::GetCurrent();
     JsCtx *c = ctx_of(ctx);
-    auto it = c->mods.find(mod_resolve(jcstr(iso, spec), mod_key(c, ref)));
+    auto it = c->mods.find(mod_resolve_c(c, jcstr(iso, spec), mod_key(c, ref)));
     if (it == c->mods.end()) return mod_throw(iso, "Failed to resolve module specifier \"" + jcstr(iso, spec) + "\""), v8::MaybeLocal<v8::Module>();
     return it->second.Get(iso);
 }
@@ -310,11 +355,12 @@ static v8::MaybeLocal<v8::Promise> mod_eval(JsCtx *c, v8::Local<v8::Module> m) {
 static v8::MaybeLocal<v8::Promise> mod_dynamic(v8::Local<v8::Context> ctx, v8::Local<v8::Data>, v8::Local<v8::Value> res, v8::Local<v8::String> spec, v8::Local<v8::FixedArray>) {
     v8::Isolate *iso = v8::Isolate::GetCurrent();
     JsCtx *c = ctx_of(ctx);
+    imap_load(c);
     v8::Local<v8::Promise::Resolver> R;
     if (!v8::Promise::Resolver::New(ctx).ToLocal(&R)) return {};
     std::string base = res->IsString() ? jcstr(iso, res) : "";
     if (base.find(':') == std::string::npos || !base.compare(0, 6, "lumen:")) base = c->doc && c->doc->url ? c->doc->url : "";
-    std::string u = mod_resolve(jcstr(iso, spec), base);
+    std::string u = mod_resolve_c(c, jcstr(iso, spec), base);
     v8::TryCatch tc(iso);
     v8::Local<v8::Module> m;
     std::string body;
@@ -366,7 +412,7 @@ static void mod_meta(v8::Local<v8::Context> ctx, v8::Local<v8::Module> m, v8::Lo
     (void)meta->CreateDataProperty(ctx, jstr(iso, "url"), jstr(iso, u.c_str()));
     auto resolve = [](const v8::FunctionCallbackInfo<v8::Value> &a) {
         v8::Isolate *iso = a.GetIsolate();
-        std::string r = mod_resolve(jcstr(iso, a[0]), jcstr(iso, a.Data()));
+        JsCtx *c = ctx_of(iso->GetCurrentContext()); std::string r = mod_resolve_c(c, jcstr(iso, a[0]), jcstr(iso, a.Data()));
         if (r.empty()) return mod_throw(iso, "Failed to resolve module specifier \"" + jcstr(iso, a[0]) + "\"");
         a.GetReturnValue().Set(jstr(iso, r.c_str()));
     };
