@@ -3,6 +3,7 @@ const mediaEls = new Set();
 let mediaPumpId = 0;
 const mediaFire = (el, t) => el.dispatchEvent(new Event(t));
 const mediaLater = (el, t) => setTimeout(() => mediaFire(el, t), 0);
+const mediaSt = (el) => el.__mp ? N.mediaState(el.__mp) : el.__ms ? capMediaState(el) : null;
 const mediaRanges = (flat) => { const r = []; for (let i = 0; i + 1 < flat.length; i += 2) r.push([flat[i], flat[i + 1]]); return new TimeRanges(r); };
 function mediaPoll() {
     for (const el of mediaEls) {
@@ -50,7 +51,7 @@ function mediaAttach(el, src) {
 }
 mk('HTMLMediaElement', HTMLElement, [], p => {
     reflectStr(p, 'crossOrigin', 'preload'); reflectBool(p, 'autoplay', 'loop', 'controls', 'playsInline', 'defaultMuted');
-    const st = (el) => el.__mp ? N.mediaState(el.__mp) : null;
+    const st = mediaSt;
     methods(p, {
         get src() { const v = N.attr(this, 'src'); return v == null ? '' : new URL(v, document.baseURI).href; },
         set src(v) { N.setAttr(this, 'src', String(v)); this.load(); },
@@ -83,8 +84,9 @@ mk('HTMLMediaElement', HTMLElement, [], p => {
         get audioTracks() { return Object.assign([], { addEventListener() {}, removeEventListener() {}, getTrackById() { return null; } }); },
         get videoTracks() { return Object.assign([], { addEventListener() {}, removeEventListener() {}, getTrackById() { return null; } }); },
         get srcObject() { return this.__so ?? null; },
-        set srcObject(v) { def(this, '__so', v ?? null); mediaDetach(this); def(this, '__paused', true); if (v instanceof MediaSource) mediaAttach(this, v); },
+        set srcObject(v) { def(this, '__so', v ?? null); mediaDetach(this); capVideoDetach(this); def(this, '__paused', true); if (v instanceof MediaSource) mediaAttach(this, v); else if (v instanceof MediaStream) capVideoAttach(this, v); },
         load() {
+            if (this.__ms) return;
             const was = !!this.__mp;
             mediaDetach(this);
             if (was || this.__paused === false) { def(this, '__paused', true); mediaLater(this, 'emptied'); }
@@ -95,6 +97,7 @@ mk('HTMLMediaElement', HTMLElement, [], p => {
             if (this.__ct) { N.mediaSeek(this.__mp, this.__ct); def(this, '__ct', 0); }
         },
         play() {
+            if (this.__ms) { if (this.__paused !== false) { def(this, '__paused', false); mediaLater(this, 'play'); mediaLater(this, 'playing'); } return Promise.resolve(); }
             if (!this.__mp) this.load();
             if (!this.__mp) return Promise.reject(new DOMException('The element has no supported sources.', 'NotSupportedError'));
             if (this.__err) return Promise.reject(new DOMException(this.__err.message || 'playback error', 'NotSupportedError'));
@@ -111,7 +114,7 @@ mk('HTMLMediaElement', HTMLElement, [], p => {
     });
 });
 Object.assign(H.HTMLMediaElement, { NETWORK_EMPTY: 0, NETWORK_IDLE: 1, NETWORK_LOADING: 2, NETWORK_NO_SOURCE: 3, HAVE_NOTHING: 0, HAVE_METADATA: 1, HAVE_CURRENT_DATA: 2, HAVE_FUTURE_DATA: 3, HAVE_ENOUGH_DATA: 4 });
-mk('HTMLVideoElement', H.HTMLMediaElement, ['video'], p => { reflectUrl(p, 'poster'); reflectInt(p, 0, 'width', 'height'); methods(p, { get videoWidth() { return this.__mp ? N.mediaState(this.__mp)[8] : 0; }, get videoHeight() { return this.__mp ? N.mediaState(this.__mp)[9] : 0; }, getVideoPlaybackQuality() { return { totalVideoFrames: 0, droppedVideoFrames: 0, corruptedVideoFrames: 0, creationTime: N.now() }; }, requestVideoFrameCallback() { return 0; }, cancelVideoFrameCallback() {} }); });
+mk('HTMLVideoElement', H.HTMLMediaElement, ['video'], p => { reflectUrl(p, 'poster'); reflectInt(p, 0, 'width', 'height'); methods(p, { get videoWidth() { const s = mediaSt(this); return s ? s[8] : 0; }, get videoHeight() { const s = mediaSt(this); return s ? s[9] : 0; }, getVideoPlaybackQuality() { return { totalVideoFrames: 0, droppedVideoFrames: 0, corruptedVideoFrames: 0, creationTime: N.now() }; }, requestVideoFrameCallback() { return 0; }, cancelVideoFrameCallback() {} }); });
 mk('HTMLAudioElement', H.HTMLMediaElement, ['audio']);
 function Image(w, h) { const e = document.createElement('img'); if (w !== undefined) e.width = w; if (h !== undefined) e.height = h; return e; }
 Image.prototype = H.HTMLImageElement.prototype;

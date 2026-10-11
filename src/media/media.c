@@ -765,8 +765,8 @@ static void present(MediaPlayer *m, Image *im) {
     m->cur = im;
 }
 int media_tick(void) {
-    if (!g_mu) return 0;
-    int out = 0;
+    int out = cap_tick();
+    if (!g_mu) return out;
     SDL_LockMutex(g_mu);
     for (int i = 0; i < g_np; i++) {
         MediaPlayer *m = g_pl[i];
@@ -813,8 +813,8 @@ int media_tick(void) {
     return out;
 }
 int media_timeout_ms(void) {
-    if (!g_mu) return -1;
-    int to = -1;
+    int to = cap_timeout_ms();
+    if (!g_mu) return to;
     SDL_LockMutex(g_mu);
     for (int i = 0; i < g_np; i++) {
         MediaPlayer *m = g_pl[i];
@@ -830,6 +830,7 @@ int media_timeout_ms(void) {
     return to;
 }
 bool media_is_frame(const Image *im) {
+    if (im && cap_owner_of(im)) return true;
     if (!g_mu || !im) return false;
     bool r = false;
     SDL_LockMutex(g_mu);
@@ -838,14 +839,15 @@ bool media_is_frame(const Image *im) {
     return r;
 }
 const void *media_owner_of(const Image *im) {
-    if (!g_mu || !im) return NULL;
-    const void *o = NULL;
+    const void *o = im ? cap_owner_of(im) : NULL;
+    if (o || !g_mu || !im) return o;
     SDL_LockMutex(g_mu);
     for (int i = 0; i < g_np && !o; i++) if (g_pl[i]->cur == im) o = g_pl[i];
     SDL_UnlockMutex(g_mu);
     return o;
 }
 Image *media_owner_frame(const void *owner) {
+    if (cap_is(owner)) return cap_owner_frame(owner);
     if (!g_mu || !owner) return NULL;
     Image *im = NULL;
     SDL_LockMutex(g_mu);
@@ -854,8 +856,8 @@ Image *media_owner_frame(const void *owner) {
     return im;
 }
 Image *media_frame_for(Node *el) {
-    if (!g_mu) return NULL;
-    Image *im = NULL;
+    Image *im = cap_frame_for(el);
+    if (im || !g_mu) return im;
     SDL_LockMutex(g_mu);
     for (int i = 0; i < g_np; i++) if (g_pl[i]->node == el) { im = g_pl[i]->cur; break; }
     SDL_UnlockMutex(g_mu);

@@ -68,6 +68,8 @@ def main():
 <key>CFBundleIconFile</key><string>Lumen</string>
 <key>CFBundleShortVersionString</key><string>{VER}</string>
 <key>CFBundleVersion</key><string>{VER}</string>
+<key>NSCameraUsageDescription</key><string>Websites you allow can use your camera, for example for video calls.</string>
+<key>NSMicrophoneUsageDescription</key><string>Websites you allow can use your microphone, for example for voice chat and dictation.</string>
 <key>LSMinimumSystemVersion</key><string>13.0</string>
 <key>NSHighResolutionCapable</key><true/>
 <key>NSPrincipalClass</key><string>NSApplication</string>

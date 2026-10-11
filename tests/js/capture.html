@@ -1,0 +1,49 @@
+<!doctype html>
+<video id=v autoplay muted></video>
+<script>
+const R = {}, sleep = ms => new Promise(r => setTimeout(r, ms));
+(async () => {
+  R.rejectsEmpty = await navigator.mediaDevices.getUserMedia({}).then(() => false, e => e instanceof TypeError);
+  const s = await navigator.mediaDevices.getUserMedia({ audio: true, video: { width: 320, height: 240 } });
+  const [a] = s.getAudioTracks(), [vt] = s.getVideoTracks();
+  R.tracks = a.kind === 'audio' && vt.kind === 'video' && a.readyState === 'live' && a.label === 'Fake Microphone' && vt.label === 'Fake Camera';
+  const vs = vt.getSettings();
+  R.settings = vs.width === 320 && vs.height === 240 && a.getSettings().sampleRate === 48000 && vs.deviceId.length === 64;
+  const devs = await navigator.mediaDevices.enumerateDevices();
+  R.enumerate = devs.some(d => d.kind === 'audioinput' && d.label === 'Fake Microphone') && devs.some(d => d.kind === 'videoinput' && d.deviceId === vs.deviceId) && devs[0] instanceof MediaDeviceInfo;
+  R.permission = (await navigator.permissions.query({ name: 'camera' })).state === 'granted';
+  const again = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: vs.deviceId } } });
+  R.exactDevice = again.getVideoTracks()[0].getSettings().deviceId === vs.deviceId;
+  R.overconstrained = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: 'nope' } } }).then(() => false, e => e.name === 'OverconstrainedError');
+  again.getTracks().forEach(t => t.stop());
+  const v = document.getElementById('v');
+  let meta = false, playing = false; v.onloadedmetadata = () => { meta = true; }; v.onplaying = () => { playing = true; };
+  v.srcObject = s;
+  await sleep(100);
+  R.video = meta && playing && !v.paused && v.readyState === 4 && v.videoWidth === 320 && v.videoHeight === 240 && v.srcObject === s;
+  const ctx = new AudioContext(), src = ctx.createMediaStreamSource(s), an = ctx.createAnalyser();
+  src.connect(an);
+  R.recTypes = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') && MediaRecorder.isTypeSupported('audio/webm') && !MediaRecorder.isTypeSupported('video/mp4;codecs=avc1');
+  const rec = new MediaRecorder(s, { mimeType: 'audio/webm' }), chunks = [], ev = [];
+  rec.ondataavailable = e => chunks.push(e.data); rec.onstart = () => ev.push('start'); rec.onstop = () => ev.push('stop');
+  rec.start(200);
+  await sleep(700);
+  const d = new Float32Array(an.fftSize); an.getFloatTimeDomainData(d);
+  let peak = 0, zc = 0; for (let i = 1; i < d.length; i++) { peak = Math.max(peak, Math.abs(d[i])); if (d[i - 1] < 0 && d[i] >= 0) zc++; }
+  R.micToWebAudio = peak > 0.2 && peak < 0.4 && zc >= 15 && zc <= 22;   /* 0.3 * sin(440 Hz) over 2048 samples ~ 18.8 cycles */
+  R.recState = rec.state === 'recording' && rec.mimeType === 'audio/webm;codecs=opus';
+  rec.stop();
+  await sleep(50);
+  const blob = new Blob(chunks, { type: rec.mimeType }), head = new Uint8Array(await blob.arrayBuffer()).slice(0, 4);
+  R.recorder = ev.join() === 'start,stop' && chunks.length >= 3 && blob.size > 1500 && head.join() === '26,69,223,163';
+  const pcm = await ctx.decodeAudioData(await blob.arrayBuffer()).catch(() => null);
+  let zc2 = 0; if (pcm) { const x = pcm.getChannelData(0); for (let i = 4801; i < 9600; i++) if (x[i - 1] < 0 && x[i] >= 0) zc2++; }
+  R.recordingDecodes = !!pcm && pcm.duration > 0.5 && pcm.duration < 1 && zc2 >= 42 && zc2 <= 46;   /* 440 Hz over 0.1 s */
+  const c = a.clone(); a.stop();
+  R.stopClone = a.readyState === 'ended' && c.readyState === 'live' && s.active;
+  c.stop(); vt.stop();
+  R.inactive = !s.active;
+  await ctx.close();
+  console.log('RESULTS capture ' + Object.entries(R).map(([k, v]) => k + ':' + (v ? 'PASS' : 'FAIL')).join(' '));
+})().catch(e => console.log('RESULTS capture error:FAIL ' + e + ' ' + e.stack));
+</script>

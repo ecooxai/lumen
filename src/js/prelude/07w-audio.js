@@ -116,7 +116,7 @@ class DynamicsCompressorNode extends AudioNode {
 }
 class ConvolverNode extends AudioNode { constructor(ctx) { super(ctx); this.buffer = null; this.normalize = true; } }
 class AnalyserNode extends AudioNode {
-    constructor(ctx, o = {}) { super(ctx); this.fftSize = o.fftSize || 2048; this.minDecibels = -100; this.maxDecibels = -30; this.smoothingTimeConstant = 0.8; this._last = new Float32Array(32768); }
+    constructor(ctx, o = {}) { super(ctx); ctx._sinks.add(this); this.fftSize = o.fftSize || 2048; this.minDecibels = -100; this.maxDecibels = -30; this.smoothingTimeConstant = 0.8; this._last = new Float32Array(32768); }
     get frequencyBinCount() { return this.fftSize / 2; }
     _render(f) {
         const m = this._mix(f), L = this._last;
@@ -237,16 +237,59 @@ class AudioBuffer {
     copyToChannel(s, i, o = 0) { this.getChannelData(i).set(s.subarray(0, this.length - o), o); }
 }
 
+class MediaStreamAudioSourceNode extends AudioNode {   /* microphone (or any capture track) into the graph, mono on both channels */
+    constructor(ctx, o = {}) {
+        super(ctx, 0, 1);
+        const s = o.mediaStream, t = s instanceof MediaStream && s.getAudioTracks()[0];
+        if (!t) throw new DOMException("Failed to construct 'MediaStreamAudioSourceNode': MediaStream has no audio track", 'InvalidStateError');
+        this.mediaStream = s; this._t = t; this._b = []; this._n = 0; this._off = 0;
+        if (t._.cap) {
+            this._sub = f => {
+                if (!t.enabled) f = new Float32Array(f.length);
+                this._b.push(f); this._n += f.length;
+                while (this._n > RATE / 2 && this._b.length > 1) { this._n -= this._b[0].length - this._off; this._b.shift(); this._off = 0; }
+            };
+            capSubscribe(t._.cap, this._sub);
+        }
+        ctx._activate(this);
+    }
+    _render() {
+        if (this._t.readyState !== 'live') { this.context._active.delete(this); if (this._sub) capUnsubscribe(this._t._.cap, this._sub); return null; }
+        if (this._n < Q) return null;
+        const out = new Float32Array(Q); let k = 0;
+        while (k < Q) {
+            const b = this._b[0], m = Math.min(Q - k, b.length - this._off);
+            out.set(b.subarray(this._off, this._off + m), k); k += m; this._off += m;
+            if (this._off === b.length) { this._b.shift(); this._off = 0; }
+        }
+        this._n -= Q;
+        return [out, out];
+    }
+}
+class MediaStreamAudioDestinationNode extends AudioNode {   /* graph output as a MediaStream (e.g. for MediaRecorder) */
+    constructor(ctx) {
+        super(ctx, 1, 0);
+        const cap = { virtual: true, id: -1, kind: 1, tracks: new Set(), subs: new Set(), els: new Set() };
+        const t = new MediaStreamTrack(RTC_INTERNAL, 'audio', 'MediaStreamAudioDestinationNode'); t._.cap = cap; cap.tracks.add(t);
+        this.stream = new MediaStream([t]); this._cap = cap; ctx._sinks.add(this);
+    }
+    _render(f) {
+        const m = this._mix(f);
+        if (this._cap.subs.size) { const o = new Float32Array(Q); if (m) for (let i = 0; i < Q; i++) o[i] = (m[0][i] + m[1][i]) / 2; for (const s of this._cap.subs) s(o); }
+        return null;
+    }
+}
+
 class BaseAudioContext extends EventTarget {
     constructor(rate) {
-        super(); this.sampleRate = rate; this._f = 0; this._active = new Set(); this._state = 'running';
+        super(); this.sampleRate = rate; this._f = 0; this._active = new Set(); this._sinks = new Set(); this._state = 'running';
         this.destination = new AudioDestinationNode(this); this.listener = {}; this.audioWorklet = { addModule: () => Promise.reject(new DOMException('AudioWorklet is not supported', 'NotSupportedError')) };
     }
     get state() { return this._state; }
     get currentTime() { return this._f / this.sampleRate; }
     _setState(s) { if (this._state !== s) { this._state = s; this.dispatchEvent(new Event('statechange')); } }
     _activate(n) { this._active.add(n); }
-    _quantum() { const o = this.destination._pull(this._f); this._f += Q; return o; }
+    _quantum() { const o = this.destination._pull(this._f); for (const n of this._sinks) if (n._in.size) n._pull(this._f); this._f += Q; return o; }
     createGain() { return new GainNode(this); }
     createOscillator() { return new OscillatorNode(this); }
     createBufferSource() { return new AudioBufferSourceNode(this); }
@@ -260,7 +303,7 @@ class BaseAudioContext extends EventTarget {
     createPeriodicWave(real, imag, o = {}) { return new PeriodicWave(this, { real, imag, disableNormalization: o.disableNormalization }); }
     createBuffer(c, n, r) { return new AudioBuffer({ numberOfChannels: c, length: n, sampleRate: r }); }
     createMediaElementSource() { throw new DOMException('createMediaElementSource is not supported', 'NotSupportedError'); }
-    createMediaStreamSource() { throw new DOMException('createMediaStreamSource is not supported', 'NotSupportedError'); }
+    createMediaStreamSource(s) { return new MediaStreamAudioSourceNode(this, { mediaStream: s }); }
     decodeAudioData(data, ok, err) {
         return new Promise((res, rej) => setTimeout(() => {
             const pcm = data && N.audioDecode(data);
@@ -325,7 +368,7 @@ class AudioContext extends BaseAudioContext {
         return Promise.resolve();
     }
     getOutputTimestamp() { return { contextTime: this.currentTime, performanceTime: performance.now() }; }
-    createMediaStreamDestination() { throw new DOMException('createMediaStreamDestination is not supported', 'NotSupportedError'); }
+    createMediaStreamDestination() { return new MediaStreamAudioDestinationNode(this); }
 }
 
 class OfflineAudioContext extends BaseAudioContext {
@@ -355,6 +398,6 @@ class OfflineAudioContext extends BaseAudioContext {
 Object.assign(globalThis, {
     AudioContext, webkitAudioContext: AudioContext, OfflineAudioContext, webkitOfflineAudioContext: OfflineAudioContext, BaseAudioContext,
     AudioNode, AudioParam, AudioBuffer, AudioDestinationNode, AudioScheduledSourceNode, GainNode, OscillatorNode, AudioBufferSourceNode,
-    ConstantSourceNode, StereoPannerNode, DelayNode, BiquadFilterNode, DynamicsCompressorNode, ConvolverNode, AnalyserNode, PeriodicWave,
+    ConstantSourceNode, StereoPannerNode, DelayNode, BiquadFilterNode, DynamicsCompressorNode, ConvolverNode, AnalyserNode, PeriodicWave, MediaStreamAudioSourceNode, MediaStreamAudioDestinationNode,
 });
 })();

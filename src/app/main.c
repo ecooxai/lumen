@@ -1886,6 +1886,49 @@ static void pick_files(bool multiple, const char *accept) {
     flt.name = "Allowed files"; flt.pattern = pat;
     SDL_ShowOpenFileDialog(pick_done, NULL, g_dialog_win, pat[0] ? &flt : NULL, pat[0] ? 1 : 0, NULL, multiple);
 }
+/* getUserMedia permission per origin and kind (CAP_AUDIO/CAP_VIDEO), remembered in permissions.txt as "origin\tkind\tstate" */
+typedef struct { char origin[256]; int kind, state; } Perm;
+static Perm g_perm[256]; static int g_nperm; static bool g_perm_loaded;
+static void perm_load(void) {
+    if (g_perm_loaded) return;
+    g_perm_loaded = true;
+    char p[1200]; pref_path(p, sizeof p, "permissions.txt"); FILE *f = *g_pref ? fopen(p, "r") : NULL; if (!f) return;
+    char line[512];
+    while (g_nperm < 256 && fgets(line, sizeof line, f)) {
+        Perm *e = &g_perm[g_nperm];
+        if (sscanf(line, "%255[^\t]\t%d\t%d", e->origin, &e->kind, &e->state) == 3) g_nperm++;
+    }
+    fclose(f);
+}
+static int perm_get(const char *origin, int kind) {
+    perm_load();
+    for (int i = 0; i < g_nperm; i++) if (g_perm[i].kind == kind && !strcmp(g_perm[i].origin, origin)) return g_perm[i].state;
+    return 0;
+}
+static void perm_set(const char *origin, int kind, int state) {
+    int i = 0; while (i < g_nperm && !(g_perm[i].kind == kind && !strcmp(g_perm[i].origin, origin))) i++;
+    if (i == g_nperm) { if (g_nperm == 256) return; g_nperm++; snprintf(g_perm[i].origin, sizeof g_perm[i].origin, "%s", origin); g_perm[i].kind = kind; }
+    g_perm[i].state = state;
+    char p[1200]; pref_path(p, sizeof p, "permissions.txt"); FILE *f = *g_pref ? fopen(p, "w") : NULL; if (!f) return;
+    for (int k = 0; k < g_nperm; k++) fprintf(f, "%s\t%d\t%d\n", g_perm[k].origin, g_perm[k].kind, g_perm[k].state);
+    fclose(f);
+}
+static bool cap_prompt(const char *origin, int kinds) {
+    int need = 0;
+    for (int k = CAP_AUDIO; k <= CAP_VIDEO; k <<= 1) if (kinds & k) { int s = perm_get(origin, k); if (s < 0) return false; if (!s) need |= k; }
+    if (!need) return true;
+    const char *env = getenv("LUMEN_MEDIA_PERMIT");   /* tests: allow / deny without the dialog, not remembered */
+    if (env && *env) return strcmp(env, "deny") != 0;
+    const char *host = strstr(origin, "://"); host = host ? host + 3 : origin;
+    char msg[512]; snprintf(msg, sizeof msg, "%s wants to use %s.", host, need == (CAP_AUDIO | CAP_VIDEO) ? "your camera and microphone" : need == CAP_VIDEO ? "your camera" : "your microphone");
+    const SDL_MessageBoxButtonData b[2] = { { SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 0, "Block" }, { SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 1, "Allow" } };
+    const SDL_MessageBoxData d = { SDL_MESSAGEBOX_INFORMATION, g_dialog_win, "Lumen", msg, 2, b, NULL };
+    int id = 0;
+    if (!SDL_ShowMessageBox(&d, &id)) return false;
+    for (int k = CAP_AUDIO; k <= CAP_VIDEO; k <<= 1) if (need & k) perm_set(origin, k, id == 1 ? 1 : -1);
+    return id == 1;
+}
+static int cap_perm_state(const char *origin, int kind) { return perm_get(origin, kind); }
 static SDL_HitTestResult win_hit(SDL_Window *w, const SDL_Point *pt, void *ud) {
     (void)w;
     return pt->y < (g_compact ? TB : TABH) && bar_hit(ud, (float)pt->x, (float)pt->y) == HB_NONE ? SDL_HITTEST_DRAGGABLE : SDL_HITTEST_NORMAL;
@@ -1973,7 +2016,7 @@ int main(int argc, char **argv) {
     int ww = 1280, wh = 840; { const char *e = getenv("LUMEN_WINDOW"); if (e) sscanf(e, "%dx%d", &ww, &wh); }   /* e.g. LUMEN_WINDOW=800x600 */
     a.win = SDL_CreateWindow("Lumen", ww, wh, SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY | (want_gpu && !strcmp(SDL_GetPlatform(), "macOS") ? SDL_WINDOW_METAL : 0));
     if (!a.win) { fprintf(stderr, "SDL_CreateWindow: %s\n", SDL_GetError()); return 1; }
-    g_dialog_win = a.win; js_pick_files = pick_files;
+    g_dialog_win = a.win; js_pick_files = pick_files; capture_permit = cap_prompt; capture_permission = cap_perm_state;
     set_window_icon(a.win);
 #ifdef __APPLE__
     mac_style_window(a.win); mac_install_menu(EV_MENU);

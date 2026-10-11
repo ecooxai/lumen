@@ -63,3 +63,28 @@ void wa_close(const void *owner, int id);
 void wa_close_owner(const void *owner);
 /* decodeAudioData: whole file -> malloc'd interleaved stereo float at 48 kHz, NULL if undecodable */
 float *media_decode_pcm(const uint8_t *p, size_t n, int *frames);
+
+/* getUserMedia capture (capture.c). kinds: bit CAP_AUDIO | CAP_VIDEO */
+enum { CAP_AUDIO = 1, CAP_VIDEO = 2 };
+extern bool (*capture_permit)(const char *origin, int kinds);   /* app prompt; NULL = allow with fake devices */
+extern int (*capture_permission)(const char *origin, int kind);  /* 1 granted, 0 ask, -1 denied */
+bool cap_permit(const char *origin, int kinds);
+int cap_permission(const char *origin, int kind);
+int cap_list(int kind, char *out, size_t n);                     /* device names, '\n'-separated; returns count */
+int cap_open(const void *owner, int kind, int dev, int w, int h); /* -1 when no device */
+void cap_close(const void *owner, int id);
+void cap_close_owner(const void *owner);
+int cap_state(const void *owner, int id, int *w, int *h, const char **label);   /* 0 pending, 1 live, -1 ended */
+int cap_read(const void *owner, int id, float *out, int max);    /* mono float 48 kHz */
+void cap_attach(const void *owner, int id, Node *video);
+void cap_detach(Node *video);
+int cap_tick(void);
+int cap_timeout_ms(void);
+Image *cap_frame_for(Node *el);
+const void *cap_owner_of(const Image *im);
+Image *cap_owner_frame(const void *owner);
+bool cap_is(const void *owner);
+int rec_new(const void *owner, int bitrate);                     /* WebM/Opus encoder for MediaRecorder */
+void rec_push(const void *owner, int id, const float *s, int n);
+uint8_t *rec_take(const void *owner, int id, bool fin, size_t *n);
+void rec_close_owner(const void *owner);

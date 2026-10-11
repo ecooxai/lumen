@@ -389,6 +389,31 @@ static uint64_t start_fetch(JsCtx *c, NetRequest *rq, Fetch *f) {
     auto mpit = c->players.find((uint32_t)NUM(0));                \
     if (mpit == c->players.end()) return;                         \
     MediaPlayer *mp = mpit->second
+FN(capPermit) { CTX; RET(cap_permit(S(0).c_str(), (int)NUM(1))); }
+FN(capPermission) { CTX; RET(cap_permission(S(0).c_str(), (int)NUM(1))); }
+FN(capList) { CTX; char buf[4096]; cap_list((int)NUM(0), buf, sizeof buf); RET(jstr(iso, buf)); }
+FN(capOpen) { CTX; RET((double)cap_open(c, (int)NUM(0), (int)NUM(1), (int)NUM(2), (int)NUM(3))); }
+FN(capClose) { CTX; cap_close(c, (int)NUM(0)); }
+FN(capState) {
+    CTX; int w = 0, h = 0; const char *label = nullptr;
+    int st = cap_state(c, (int)NUM(0), &w, &h, &label);
+    v8::Local<v8::Value> v[4] = { v8::Integer::New(iso, st), v8::Integer::New(iso, w), v8::Integer::New(iso, h), jstr(iso, label ? label : "") };
+    RET(v8::Array::New(iso, v, 4));
+}
+FN(capRead) {
+    CTX; static float buf[48000];
+    int n = cap_read(c, (int)NUM(0), buf, 48000);
+    if (n <= 0) { RET(v8::Null(iso)); return; }
+    RET(mkab(iso, buf, (size_t)n * 4));
+}
+FN(capAttach) { CTX; ARGN(n, 0); cap_attach(c, (int)NUM(1), n); }
+FN(capDetach) { CTX; ARGN(n, 0); cap_detach(n); }
+FN(recNew) { CTX; RET((double)rec_new(c, (int)NUM(0))); }
+FN(recPush) { CTX; const char *p; size_t n; if (bytes_of(a[1], &p, &n)) rec_push(c, (int)NUM(0), (const float *)p, (int)(n / 4)); }
+FN(recTake) {
+    CTX; size_t n = 0; uint8_t *p = rec_take(c, (int)NUM(0), BOOL(1), &n);
+    RET(mkab(iso, p, n)); free(p);
+}
 FN(waOpen) { CTX; RET((double)wa_open(c)); }
 FN(waPush) {
     CTX; const char *p; size_t n;
@@ -876,7 +901,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(histLen); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
     REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove);
     REG(mediaBuffered); REG(mediaEos); REG(mediaSetDuration); REG(mediaPlay); REG(mediaPause); REG(mediaSeek);
-    REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(readyState); REG(quirks);
+    REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(selSet); REG(waOpen); REG(capPermit); REG(capPermission); REG(capList); REG(capOpen); REG(capClose); REG(capState); REG(capRead); REG(capAttach); REG(capDetach); REG(recNew); REG(recPush); REG(recTake); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(readyState); REG(quirks);
     REG(currentScript); REG(media); REG(cssSupports); REG(cssSelText); REG(urlParse); REG(encode); REG(decode); REG(random); REG(cDigest); REG(cHmac); REG(cAes); REG(cEcGen); REG(cEcDerive); REG(cEcSign); REG(cEcVerify); REG(cSpki); REG(cSpkiParse); REG(cPkcs8Parse); REG(cEcFromD); REG(cHkdf); REG(cPbkdf2);
     REG(heap); REG(imgSize); REG(userAgent); REG(platform); REG(cpus); REG(makeAll);
 #undef REG

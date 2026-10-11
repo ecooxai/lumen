@@ -103,12 +103,16 @@ class MediaStreamTrack extends EventTarget {
     }
     get enabled() { return this._.enabled; } set enabled(v) { this._.enabled = !!v; }
     get contentHint() { return this._.contentHint; } set contentHint(v) { this._.contentHint = String(v); }
-    stop() { this._.readyState = 'ended'; }
-    clone() { const t = new MediaStreamTrack(RTC_INTERNAL, this._.kind, this._.label); t._.enabled = this._.enabled; t._.muted = this._.muted; t._.readyState = this._.readyState; return t; }
-    getSettings() { return this._.kind === 'audio' ? { deviceId: 'default', groupId: '', sampleRate: 48000, channelCount: 1 } : { deviceId: 'default', groupId: '', width: 640, height: 480, frameRate: 30 }; }
-    getConstraints() { return {}; }
-    getCapabilities() { return {}; }
-    applyConstraints() { return Promise.resolve(); }
+    stop() { if (this._.readyState === 'ended') return; this._.readyState = 'ended'; if (this._.cap) capRelease(this._.cap, this); }
+    clone() {
+        const t = new MediaStreamTrack(RTC_INTERNAL, this._.kind, this._.label); t._.enabled = this._.enabled; t._.muted = this._.muted; t._.readyState = this._.readyState;
+        if (this._.cap && t._.readyState === 'live') { t._.cap = this._.cap; t._.cons = this._.cons; this._.cap.tracks.add(t); }
+        return t;
+    }
+    getSettings() { if (this._.cap) return capSettings(this); return this._.kind === 'audio' ? { deviceId: 'default', groupId: '', sampleRate: 48000, channelCount: 1 } : { deviceId: 'default', groupId: '', width: 640, height: 480, frameRate: 30 }; }
+    getConstraints() { return this._.cons || {}; }
+    getCapabilities() { return this._.cap ? capCapabilities(this) : {}; }
+    applyConstraints(c) { this._.cons = c || {}; return Promise.resolve(); }
     _mute(m) { if (this._.muted === m) return; this._.muted = m; rtcEv(this, m ? 'mute' : 'unmute'); }
 }
 rtcRO(MediaStreamTrack, ['kind', 'id', 'label', 'muted', 'readyState']);
