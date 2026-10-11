@@ -1,0 +1,7 @@
+<!doctype html><body><script>
+let n = 0;
+addEventListener('popstate', e => { n++; let threw = false; try { 'use strict'; e.state; } catch (x) { threw = true; }
+  console.log('POP ' + JSON.stringify([e.state && e.state.a === 1, !threw, location.search === '?one', e instanceof PopStateEvent, new PopStateEvent('popstate', { state: 5 }).state === 5, new PopStateEvent('x').state === null])); });
+history.pushState({ a: 1 }, '', '?one'); history.pushState({ a: 2 }, '', '?two');
+setTimeout(() => history.back(), 50);
+</script>

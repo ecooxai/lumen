@@ -341,3 +341,8 @@ Load (DCL/load): Google 0.53/3.66 s, Bing 1.97/2.23 s, YT watch ~2.2/3.47 s, YT 
   targets, moves carry `buttons` (`js_buttons`), and `setPointerCapture` is
   real (retargets moves/ups until pointerup). Fixtures:
   `tests/render/pointer-capture.html`, `tests/render/click-seq.html`.
+- `:checked` ignored the `checked`/`selected` content attribute (only script-set
+  state matched), so server-rendered checked boxes (Amazon filters) showed
+  unchecked. `PopStateEvent.state` is now a read-only getter (Reddit's history
+  code threw on construction, breaking Back). Fixtures: `checked-attr.html`,
+  `popstate.html`.

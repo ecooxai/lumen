@@ -107,7 +107,10 @@ static bool match_pseudo(const SimpleSel *s, Node *el, Node *scope) {
     if (n == P_root) return el->parent && el->parent->type == NODE_DOCUMENT;
     if (n == P_scope) return scope ? el == scope : (el->parent && el->parent->type == NODE_DOCUMENT);
     if (n == P_empty) { for (Node *c = el->first; c; c = c->next) if (c->type == NODE_ELEMENT || (c->type == NODE_TEXT && c->text_len)) return false; return true; }
-    if (n == P_checked) return (el->tag == A_input && ((el->flags & NF_CHECKED) || (!(el->flags & NF_PARSER_INSERTED) && false))) || (el->tag == A_option && node_has_attr(el, "selected")) || (el->tag == A_input && node_has_attr(el, "checked") && !(el->flags & NF_CHECKED) && false) || ((el->flags & NF_CHECKED) != 0);
+    if (n == P_checked) {   /* checkedness: script-set state, else the content attribute */
+        if (el->tag != A_input && el->tag != A_option) return false;
+        return el->checked_override ? el->checked_override > 0 : node_has_attr(el, el->tag == A_input ? "checked" : "selected");
+    }
     if (n == P_disabled) return is_disabled(el);
     if (n == P_enabled) return (el->tag == A_button || el->tag == A_input || el->tag == A_select || el->tag == A_textarea) && !is_disabled(el);
     if (n == P_link || n == P_any_link) return is_link(el);
