@@ -191,6 +191,8 @@ static void gradient(R *r, const DItem *it) {
     int px0 = LMAX(c->x0, (int)floorf(x0)), py0 = LMAX(c->y0, (int)floorf(y0)), px1 = LMIN(c->x1, (int)ceilf(x1)), py1 = LMIN(c->y1, (int)ceilf(y1));
     if (fabsf(dxv) < 1e-6f) { dxv = 0; dyv = dyv < 0 ? -1 : 1; } else if (fabsf(dyv) < 1e-6f) { dyv = 0; dxv = dxv < 0 ? -1 : 1; }
     float lt = NAN; uint32_t lp = 0; Color lc = 0;   /* axis-aligned gradients repeat t along a row */
+    Color *colc = g->type != 1 && dyv == 0 && px1 > px0 ? xmalloc(sizeof *colc * (size_t)(px1 - px0)) : NULL;   /* horizontal: t depends on x only */
+    if (colc) for (int x = px0; x < px1; x++) colc[x - px0] = grad_at(g, ((x + 0.5f - cx) * dxv) / L + 0.5f);
     for (int y = py0; y < py1; y++) for (int x = px0; x < px1; x++) {
         float fx = x + 0.5f, fy = y + 0.5f;
         float t = g->type == 1 ? sqrtf((fx - cx) * (fx - cx) + (fy - cy) * (fy - cy)) / LMAX(1, R2) : ((fx - cx) * dxv + (fy - cy) * dyv) / L + 0.5f;
@@ -198,9 +200,11 @@ static void gradient(R *r, const DItem *it) {
         if (round) cov = LCLAMP(0.5f - sd_rrect(fx, fy, x0, y0, x1, y1, rad), 0, 1);
         cov *= clip_cov(r, fx, fy);
         if (cov <= 0) continue;
-        if (t != lt) { lt = t; lc = grad_at(g, t); lp = premul(lc, 1); }
+        if (colc) { Color cc = colc[x - px0]; if (cc != lc || t != lt) { lt = t; lc = cc; lp = premul(lc, 1); } }
+        else if (t != lt) { lt = t; lc = grad_at(g, t); lp = premul(lc, 1); }
         over(&r->px[(size_t)y * (size_t)r->c->stride + (size_t)x], cov >= 1 ? lp : premul(lc, cov));
     }
+    free(colc);
 }
 
 static void text(R *r, const DItem *it) {
@@ -299,11 +303,45 @@ static int occluder(const Canvas *cv, const DisplayList *dl, float s, int rx0, i
     return best;
 }
 
+/* Like occluder(), but for an opaque image that covers most of the rect and misses only its edges (a video whose clip ends
+   a row short of its box): returns its index and the covered part, so the caller can raster that part and the edge strips apart */
+static int occluder_inner(const DisplayList *dl, float s, int rx0, int ry0, int rx1, int ry1, int *ib) {
+    int cb[64][4], nc = 1, nl = 0, best = 0; bool rnd[64]; long need = (long)(rx1 - rx0) * (ry1 - ry0) * 9 / 10;
+    cb[0][0] = rx0; cb[0][1] = ry0; cb[0][2] = rx1; cb[0][3] = ry1; rnd[0] = false;
+    for (int i = 0; i < dl->items.n; i++) {
+        const DItem *it = &dl->items.v[i];
+        if (it->op == DO_PUSH_CLIP) {
+            if (nc >= 64) continue;
+            const int *p = cb[nc - 1]; int *c = cb[nc];
+            c[0] = LMAX(p[0], (int)floorf(it->x * s)); c[1] = LMAX(p[1], (int)floorf(it->y * s));
+            c[2] = LMIN(p[2], (int)ceilf((it->x + it->w) * s)); c[3] = LMIN(p[3], (int)ceilf((it->y + it->h) * s));
+            rnd[nc] = rnd[nc - 1] || it->r[0] > 0 || it->r[1] > 0 || it->r[2] > 0 || it->r[3] > 0;
+            nc++;
+        } else if (it->op == DO_POP_CLIP) { if (nc > 1) nc--; }
+        else if (it->op == DO_PUSH_LAYER) nl++;
+        else if (it->op == DO_POP_LAYER) { if (nl) nl--; }
+        else if (it->op == DO_IMAGE && !nl && !rnd[nc - 1] && it->img && it->img->opaque) {
+            const int *c = cb[nc - 1];
+            int x0 = LMAX(c[0], (int)ceilf(it->x * s)), y0 = LMAX(c[1], (int)ceilf(it->y * s)), x1 = LMIN(c[2], (int)floorf((it->x + it->w) * s)), y1 = LMIN(c[3], (int)floorf((it->y + it->h) * s));
+            if (x1 > x0 && y1 > y0 && (long)(x1 - x0) * (y1 - y0) >= need) { best = i; ib[0] = x0; ib[1] = y0; ib[2] = x1; ib[3] = y1; }
+        }
+    }
+    return best;
+}
 void raster(Canvas *cv, const DisplayList *dl, Color clearc) { raster_rect(cv, dl, clearc, 0, 0, cv->w, cv->h); }
 static void raster_rect_(Canvas *cv, const DisplayList *dl, Color clearc, int rx0, int ry0, int rx1, int ry1, bool occl);
 void raster_rect(Canvas *cv, const DisplayList *dl, Color clearc, int rx0, int ry0, int rx1, int ry1) {
     static int chk = -1; if (chk < 0) chk = getenv("LUMEN_CHECK_OCCLUDE") != NULL;
-    if (!chk) { raster_rect_(cv, dl, clearc, rx0, ry0, rx1, ry1, true); return; }
+    if (!chk) {
+        int x0 = LMAX(rx0, 0), y0 = LMAX(ry0, 0), x1 = LMIN(rx1, cv->w), y1 = LMIN(ry1, cv->h), ib[4];
+        if (x1 > x0 && y1 > y0 && !cv->punch && !occluder(cv, dl, cv->scale, x0, y0, x1, y1) && occluder_inner(dl, cv->scale, x0, y0, x1, y1, ib)) {
+            raster_rect_(cv, dl, clearc, ib[0], ib[1], ib[2], ib[3], true);
+            raster_rect_(cv, dl, clearc, x0, y0, x1, ib[1], true); raster_rect_(cv, dl, clearc, x0, ib[3], x1, y1, true);
+            raster_rect_(cv, dl, clearc, x0, ib[1], ib[0], ib[3], true); raster_rect_(cv, dl, clearc, ib[2], ib[1], x1, ib[3], true);
+            return;
+        }
+        raster_rect_(cv, dl, clearc, rx0, ry0, rx1, ry1, true); return;
+    }
     int x0 = LMAX(rx0, 0), y0 = LMAX(ry0, 0), x1 = LMIN(rx1, cv->w), y1 = LMIN(ry1, cv->h);
     int first = x1 > x0 && y1 > y0 ? occluder(cv, dl, cv->scale, x0, y0, x1, y1) : 0;
     if (!first) { raster_rect_(cv, dl, clearc, rx0, ry0, rx1, ry1, false); return; }
@@ -346,9 +384,13 @@ static void raster_rect_(Canvas *cv, const DisplayList *dl, Color clearc, int rx
     if (!first) for (int y = ry0; y < ry1; y++) for (int x = rx0; x < rx1; x++) cv->px[(size_t)y * (size_t)cv->stride + (size_t)x] = cl;
     r.clips[0] = (Clip){ rx0, ry0, rx1, ry1, 0, 0, (float)cv->w, (float)cv->h, {0}, false }; r.nclip = 1;
     float s = r.s;
+    static int dbg = -1; if (dbg < 0) dbg = getenv("LUMEN_DEBUG_RASTER") != NULL;
+    double area[16] = {0}; int cnt[16] = {0};
     for (int i = 0; i < dl->items.n; i++) {
         const DItem *it = &dl->items.v[i];
         if (i < first && it->op != DO_PUSH_CLIP && it->op != DO_POP_CLIP) continue;
+        if (dbg && it->op < 16) { const Clip *c = clip(&r); float ax0 = LMAX(c->x0, it->x * s), ay0 = LMAX(c->y0, it->y * s), ax1 = LMIN(c->x1, (it->x + it->w) * s), ay1 = LMIN(c->y1, (it->y + it->h) * s);
+            if (ax1 > ax0 && ay1 > ay0) { area[it->op] += (ax1 - ax0) * (ay1 - ay0); cnt[it->op]++; } }
         switch (it->op) {
         case DO_RECT: case DO_LINE: { float rad[4]; for (int k = 0; k < 4; k++) rad[k] = it->r[k] * s; fill(&r, it->x * s, it->y * s, (it->x + it->w) * s, (it->y + it->h) * s, rad, it->color); break; }
         case DO_BORDER: border(&r, it); break;
@@ -393,6 +435,7 @@ static void raster_rect_(Canvas *cv, const DisplayList *dl, Color clearc, int rx
         }
         }
     }
+    if (dbg && (rx1 - rx0) * (ry1 - ry0) > 10000) { fprintf(stderr, "lumen: raster %d,%d-%d,%d first=%d", rx0, ry0, rx1, ry1, first); for (int k = 0; k < 16; k++) if (cnt[k]) fprintf(stderr, " op%d:%d/%.0fk", k, cnt[k], area[k] / 1000); fprintf(stderr, "\n"); }
     while (r.nlayer > 0) { r.nlayer--; if (r.nlayer < 16) { free(r.px + (size_t)r.layers[r.nlayer].y0 * (size_t)cv->stride); r.px = r.layers[r.nlayer].px; } }
 }
 
