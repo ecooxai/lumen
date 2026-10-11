@@ -303,3 +303,27 @@ Load (DCL/load): Google 0.53/3.66 s, Bing 1.97/2.23 s, YT watch ~2.2/3.47 s, YT 
 - Checks: tests/layout 21 files 0 diffs vs build3; adopted-sheets 8/8, shadow-slots 6/6; fixtures idle 0% CPU. Reddit post page renders, search placeholder now sans-serif; ~100% CPU while the post video decodes.
 - Testing-agent site run (build3 = bdebe37) predates 49fe249..b864c59; needs a rerun on current HEAD.
 - Open: Reddit textarea text sits a few px high in the search pill; `::slotted()`, `::part()`, `:host-context()`; YouTube 80% seek; Amazon video/scroll CPU ~100%; Google CAPTCHA from VM IP; no physical GPU to measure hardware 3D speed.
+
+## 2026-10-11 night: Amazon product page + restyle cost
+- Amazon /dp pages were blank: they embed whole `<html><body>` fragments and
+  `M_AFTER_BODY` dropped every later token. Now re-processed in body mode
+  (`src/html/html.c`, fixture `tests/render/nested-html-end.html`).
+- Style cost (Amazon ~6k elements, full pass was 380-450 ms):
+  - `node_has_class` caches atomized class tokens per node (`Node.cls/ncls`,
+    invalidated on `class` set/remove); rule lookup uses `hm_getn` slices;
+    `attr_index` avoids `atom()`.
+  - Child-list changes mark the parent `NF_STRUCT_DIRTY` instead of a full
+    subtree restyle; `recalc` re-matches the parent + direct children and only
+    descends further if the parent's style changed (`tests/render/struct-restyle.html`).
+  - `sync_sheets` reuses the stored hash for clean `<style>` elements
+    (`tests/render/style-text-update.html`).
+  - `video_bars`/`vbar_click` iterate a per-page `<video>` list (`page_videos`).
+- Linux CPU present: SDL backed the window surface with a GL renderer, so on a
+  GPU-less host every present ran through llvmpipe on all cores (~1/3 of
+  samples). `SDL_HINT_FRAMEBUFFER_ACCELERATION=0` on Linux -> plain XShm.
+- CPU now (1 s samples, no GPU VM): Amazon product load ~100% for ~6 s then
+  5-6% idle; Reddit home idle 2-7%; YouTube home idle 11-14% while the
+  sponsored tile's video plays (dl_build/paint + js_tick); Wikipedia typing in
+  search 9-14% (was 18-24%; remainder is mostly Wikipedia's suggestion JS).
+- Still open from the last site run: Reddit search results clipped, Amazon
+  search-icon submit, YouTube drag-seek, X input after layout shift.
