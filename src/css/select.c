@@ -114,7 +114,12 @@ static bool match_pseudo(const SimpleSel *s, Node *el, Node *scope) {
     if (n == P_visited) return false;
     if (n == P_defined) return !strchr(el->tag, '-') || el->ext != NULL || (el->flags & (1u << 20));
     if (n == P_host) { if (!el->shadow_root) return false; if (!s->sub) return true; return css_match_selector_list(s->sub, el); }
-    if (n == P_placeholder_shown) { if (el->tag != A_input && el->tag != A_textarea) return false; const char *v = node_attr(el, "value"); return node_has_attr(el, "placeholder") && (!v || !v[0]); }
+    if (n == P_placeholder_shown) {
+        if ((el->tag != A_input && el->tag != A_textarea) || !node_has_attr(el, "placeholder")) return false;
+        if (el->value_override) return !el->value_override[0];
+        if (el->tag == A_textarea) { for (Node *c = el->first; c; c = c->next) if (c->type == NODE_TEXT && c->text_len) return false; return true; }
+        const char *v = node_attr(el, "value"); return !v || !v[0];
+    }
     if (n == P_required) return node_has_attr(el, "required");
     if (n == P_optional) return (el->tag == A_input || el->tag == A_select || el->tag == A_textarea) && !node_has_attr(el, "required");
     if (n == P_read_only) return !(el->tag == A_input || el->tag == A_textarea) || node_has_attr(el, "readonly");

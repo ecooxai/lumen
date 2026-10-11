@@ -1431,7 +1431,7 @@ static ComputedStyle *compute(StyleEngine *e, Node *el, const ComputedStyle *par
     const char *tagkey = el->ns == NS_HTML ? el->tag : atom_lower(el->tag, strlen(el->tag));
     if ((rv = hm_get(&e->idx.by_tag, tagkey))) collect(e, el, rv, 0, (void *)&md);
     { RuleVec u = { e->idx.universal.v, e->idx.universal.n, 0 }; collect(e, el, &u, 0, (void *)&md); }
-    qsort(md.v, (size_t)md.n, sizeof(MDecl), mdecl_cmp);
+    if (md.n) qsort(md.v, (size_t)md.n, sizeof(MDecl), mdecl_cmp);
     ComputedStyle *st = style_inherit(par);
     /* split normal / important so presentational hints & inline style go between */
     int split = 0; while (split < md.n && (md.v[split].key >> 62) < 2) split++;
