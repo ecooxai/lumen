@@ -32,11 +32,12 @@ class DOMRectReadOnly {
 class DOMRect extends DOMRectReadOnly {}
 
 class Event {
+    get currentTarget() { return this._ct === undefined ? null : this._ct; }
     constructor(type, init) {
         if (arguments.length < 1) throw new TypeError("Failed to construct 'Event': 1 argument required");
         init = init || {};
         def(this, '_type', String(type)); this.bubbles = !!init.bubbles; this.cancelable = !!init.cancelable; this.composed = !!init.composed;
-        this.defaultPrevented = false; this.target = null; this.currentTarget = null; this.eventPhase = 0; this.timeStamp = N.now(); this.isTrusted = false;
+        this.defaultPrevented = false; this.target = null; this._ct = null; this.eventPhase = 0; this.timeStamp = N.now(); this.isTrusted = false;
         def(this, '_stop', false); def(this, '_imm', false); def(this, '_passive', false); def(this, '_path', null);
     }
     get type() { return this._type; }
@@ -127,7 +128,7 @@ function parentForEvent(t, ev) {
 /* Blink fires webkit-prefixed listeners on a target only when it has no unprefixed ones */
 const LEGACY_EV = { animationstart: 'webkitAnimationStart', animationend: 'webkitAnimationEnd', animationiteration: 'webkitAnimationIteration', transitionend: 'webkitTransitionEnd' };
 function invoke(t, ev, phase) {
-    ev.currentTarget = t;
+    ev._ct = t;
     if (phase !== 1) {
         let h = null;
         try { h = t['on' + ev._type]; } catch (e) {}
@@ -167,7 +168,7 @@ function dispatch(target, ev, trusted) {
     for (let i = path.length - 1; i >= 0 && !ev._stop; i--) invoke(path[i], ev, 1);
     if (!ev._stop) { ev.eventPhase = 2; invoke(target, ev, 2); }
     if (ev.bubbles) { ev.eventPhase = 3; for (const t of path) { if (ev._stop) break; invoke(t, ev, 3); } }
-    ev.eventPhase = 0; ev.currentTarget = null;
+    ev.eventPhase = 0; ev._ct = null;
     return !ev.defaultPrevented;
 }
 class AbortSignal extends EventTarget {

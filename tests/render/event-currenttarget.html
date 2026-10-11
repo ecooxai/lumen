@@ -1,0 +1,18 @@
+<!doctype html>
+<body>
+<!-- delegated-events (GitHub) overrides currentTarget per event and restores Event.prototype's getter -->
+<div id=outer><button id=btn class=js-x>x</button></div>
+<script>
+const d = Object.getOwnPropertyDescriptor(Event.prototype, 'currentTarget'), seen = [];
+document.addEventListener('click', ev => {
+  const el = ev.target.closest('.js-x');
+  Object.defineProperty(ev, 'currentTarget', { configurable: true, enumerable: true, get: () => el });
+  seen.push(ev.currentTarget.getAttribute('class'));
+  Object.defineProperty(ev, 'currentTarget', { configurable: true, enumerable: true, get: d.get });
+  seen.push(ev.currentTarget === document);
+});
+outer.addEventListener('click', ev => seen.push(ev.currentTarget === outer));
+btn.click();
+const e = new Event('x');
+console.log('CT ' + JSON.stringify([!!(d && d.get), ...seen, e.currentTarget === null, 'currentTarget' in e]));
+</script>
