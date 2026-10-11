@@ -271,3 +271,20 @@ Load (DCL/load): Google 0.53/3.66 s, Bing 1.97/2.23 s, YT watch ~2.2/3.47 s, YT 
 - Capture regression: `LUMEN_PERMISSIONS=grant SDL_AUDIO_DRIVER=disk SDL_AUDIO_DISK_INPUT_FILE=~/lumen-tests/mic.raw ./build/lumen file://~/lumen-tests/capture.html` (needs v4l2loopback + ffmpeg testsrc2 on /dev/video10). `LUMEN_PERMISSIONS=allow` is NOT a value: the page then blocks on the SDL prompt.
 - Regression (2026-10-11, build/lumen, LUMEN_ALLOW_SW_GPU=1): webgl/three/webgpu/canvas/capture fixtures all pass, 60 fps.
 - YouTube far seek works when driven like a user (`movie_player.seekTo(t, true)`, i.e. progress-bar clicks): a jump to 508 s of 634 s resumed playback within 1 s with fresh segments appended. The remaining "moov atom not found" lines are demuxers aborted by the seek epoch change (harmless). Setting `video.currentTime` directly from script makes YouTube append nothing (no abort/remove/append at all), so the player stays `seeking` forever; making the `seeking` event async did not change that. Test scripts: ~/lumen-tests/ytseek.js (direct) and ytseek-api.js (player API) via LUMEN_PRE_FILE + LUMEN_MEDIA_DEBUG=1 (now logs every MSE init/segment/abort/remove).
+
+## 2026-10-11 later: float-in-flex + shadow DOM styles
+- `9c9e70b` floats that are flex/grid items are no longer treated as floats (box.c). Fixed Amazon nav
+  logo (16px -> 114px) and Wikipedia `.mw-logo` (0 -> 140px). Fixture: tests/layout/float-in-flex.html.
+- `e1f531f` shadow-tree style scoping: `<style>`/`<link>` inside shadow roots are collected via
+  `node_next_deep()` and only match inside their shadow tree (Rule.scope, StyleEngine.el_scope);
+  `:host` rules match the host and `:host ... x` steps up via select.c `host_up()`. Document rules no
+  longer match inside shadow trees (UA rules do). Constructed sheets are mirrored into each adopting
+  Document/ShadowRoot (06b-activate.js `adoptSheets`), not dumped into document <head>.
+  Fixture: tests/render/adopted-sheets.html (all 8 checks true). Reddit wordmark + header now render.
+- Not done: `::slotted()`, `::part()`, `:host-context()`; per-instance mirror sheets are not deduped
+  (each shadow root adopting a sheet gets its own copy in the rule index).
+- Open: Reddit shows a search dropdown panel open under the search bar (likely a shadow component
+  whose closed state relies on ::slotted/popover/other unsupported rule). YouTube home thumbnails
+  blank in 12 s screenshots on both old and new builds (lazy image loading?).
+- Seen twice: a `timeout 25 lumen https://www.reddit.com/` process outlived its timeout (needed
+  kill -9) - exit/shutdown hang worth investigating.
