@@ -960,7 +960,7 @@ static void render(App *a) {
             if (!a->sdirty && fabsf(sdy - roundf(sdy)) < 0.01f && fabsf(sdy) < ph / 2) blit = (int)roundf(sdy);
             else { part = false; why = 5; }
         }
-        g_full_paint = (double)SDL_GetTicks(); { double q = now_ms(); dl_clear(&a->pdl); dl_build(&a->pdl, a->t->cur->L, 0, a->t->sy, a->vw - a->side, a->vh - BAR); g_td += now_ms() - q; } a->vbars = video_bars(a, &a->pdl);
+        g_full_paint = (double)SDL_GetTicks(); { double q = now_ms(); dl_clear(&a->pdl); dl_build(&a->pdl, a->t->cur->L, 0, a->t->sy, a->vw - a->side, a->vh - BAR); image_anim_seen(&a->pdl, q); g_td += now_ms() - q; } a->vbars = video_bars(a, &a->pdl);
         int nn = dl_sigs(&a->pdl, &a->nsig, &a->cnsig);
         const DItem *vit = NULL; int nv = 0, nvr = 0, vr[16][4];
         int ovi = 0;   /* next old video sig, by stacking rank */
@@ -1231,6 +1231,17 @@ static bool vis_doc(Node *n, void *ud) {
     for (Page *p = g_frames; p; p = p->fnext) if (p->d == n->doc && p->frame_el && (void *)p->frame_el->doc == ud) return true;
     return false;
 }
+/* a player is seen when its element's box meets the scrolled viewport (with a margin); frames, fixed boxes count as seen */
+static bool vis_view(Node *n, void *ud) {
+    App *a = ud;
+    if (!n || !a->t || !a->t->cur) return false;
+    if (n->doc != a->t->cur->d) return vis_doc(n, a->t->cur->d);
+    Box *b = n->box;
+    if (!b) return false;
+    for (Box *q = b; q; q = q->parent) if (q->fixed) return true;
+    float s = a->page.scale > 0 ? a->page.scale : 1, vh = a->page.h / s, vw = a->page.w / s, m = 200;
+    return b->y + b->h >= a->t->sy - m && b->y <= a->t->sy + vh + m && b->x + b->w >= -m && b->x <= vw + m;
+}
 /* Start async loads for <img> sources and CSS background images that appeared after the initial load. */
 static void sync_images(Page *p) {
     for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) {
@@ -1334,7 +1345,7 @@ static bool frame_update(Page *p) {
     float s = g_app->scale; int pw = (int)ceilf(w * s), ph = (int)ceilf(h * s);
     if (p->cv.w != pw || p->cv.h != ph || !p->cv.px) { canvas_free(&p->cv); canvas_init(&p->cv, pw, ph, s); p->drawn_ver = ~0ull; }
     if (p->drawn_ver == p->d->dom_version && p->drawn_epoch == g_img_epoch) return false;
-    dl_clear(&p->fdl); dl_build(&p->fdl, p->L, 0, p->fsy, w, h);
+    dl_clear(&p->fdl); dl_build(&p->fdl, p->L, 0, p->fsy, w, h); image_anim_seen(&p->fdl, now_ms());
     raster(&p->cv, &p->fdl, 0);   /* iframes are transparent unless their document paints a background */
     p->drawn_ver = p->d->dom_version; p->drawn_epoch = g_img_epoch;
     p->img = (Image){ .w = pw, .h = ph, .refs = 1 << 30, .px = p->cv.px, .scale = s };
@@ -2360,9 +2371,9 @@ int main(int argc, char **argv) {
                 fprintf(stderr, "lumen-mem2: malloc_in_use=%.1fMB nodes=%ld (%zuB) styles=%ld (%zuB) css_parsed=%.1fMB workers=%d heap=%.1fMB ext=%.1fMB\n", ms / 1048576.0, g_nodes_live, sizeof(Node), g_styles_live, sizeof(ComputedStyle), g_css_parsed_bytes / 1048576.0, wn, wh / 1048576.0, wx / 1048576.0); }
         }
         g_lite_active = a.t && lite_on(a.t); media_lowmem = g_lite_active;
+        if (a.t && a.t->cur) { if (g_lite_active) media_mark_visible(vis_doc, a.t->cur->d); else media_mark_visible(vis_view, &a); }
         if (g_lite_active) {
             static double last_evict; double tn = now_ms();
-            if (a.t->cur) media_mark_visible(vis_doc, a.t->cur->d);
             if (tn - last_evict > 2000) { last_evict = tn; img_evict(); }
         }
         { int mt = media_timeout_ms(); if (mt >= 0 && mt < to) to = mt; }

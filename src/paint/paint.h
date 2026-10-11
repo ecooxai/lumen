@@ -36,6 +36,9 @@ void image_unref(Image *im);
 void image_yuv_materialize(Image *im);
 /* Advances animated images; true if any frame changed. *next_ms gets the next frame time (0 = none). */
 bool image_anim_tick(double now_ms, double *next_ms);
+/* Marks animated images drawn inside dl's viewport as seen; unseen animations don't report frame changes. */
+struct DisplayList;
+void image_anim_seen(const struct DisplayList *dl, double now_ms);
 Image *svg_image(Node *n, float cw, float ch, float dpr);
 void dl_build(DisplayList *dl, Layout *L, float scroll_x, float scroll_y, float vw, float vh);
 extern bool dl_caret_on; /* paint the caret in the focused text control */

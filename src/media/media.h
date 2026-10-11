@@ -51,6 +51,7 @@ size_t media_mem_bytes(size_t *frames);
 struct Document;
 double media_cpu_ms(struct Document *d);
 void media_set_limit(struct Document *d, float lim);
+extern bool media_vis_track;  /* media_mark_visible is in use: frames of unseen players don't request repaints */
 extern bool media_lowmem;   /* hidden players skip RGBA conversion */
 void media_mark_visible(bool (*vis)(Node *, void *), void *ud);
 

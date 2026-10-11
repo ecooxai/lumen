@@ -327,6 +327,7 @@ __attribute__((constructor)) static void avif_hook(void) { image_avif_decoder = 
 
 typedef struct { struct SwsContext *sws; SwrContext *swr; double skip; uint64_t epoch; } DecCtx;
 bool media_lowmem;
+bool media_vis_track;
 bool media_yuv;
 static Image *yuv_copy(int w, int h, const uint8_t *p0, size_t s0, const uint8_t *p1, size_t s1, int mat) {
     int cw = (w + 1) / 2, ch = (h + 1) / 2;
@@ -888,7 +889,7 @@ int media_tick(void) {
                 m->base_t = isnan(m->duration) ? t : m->duration; m->playing = false; m->ended = true;
             }
         }
-        if (popped) { SDL_BroadcastCondition(m->cv); out |= 1; if (m->cur && (m->cur->w != ow || m->cur->h != oh)) { out |= 2; if (getenv("LUMEN_DEBUG_PAINT")) fprintf(stderr, "media: size %p %dx%d -> %dx%d\n", (void *)m, ow, oh, m->cur->w, m->cur->h); } }
+        if (popped) { SDL_BroadcastCondition(m->cv); if (!media_vis_track || (double)SDL_GetTicks() - m->painted < 1000) out |= 1; if (m->cur && (m->cur->w != ow || m->cur->h != oh)) { out |= 2; if (getenv("LUMEN_DEBUG_PAINT")) fprintf(stderr, "media: size %p %dx%d -> %dx%d\n", (void *)m, ow, oh, m->cur->w, m->cur->h); } }
         SDL_UnlockMutex(m->mu);
     }
     SDL_UnlockMutex(g_mu);
@@ -986,6 +987,7 @@ int media_can_play(const char *mime, bool mse) {
 
 void media_mark_visible(bool (*vis)(Node *, void *), void *ud) {
     double now = (double)SDL_GetTicks();
+    media_vis_track = true;
     SDL_LockMutex(g_mu);
     for (int i = 0; i < g_np; i++) if (vis(g_pl[i]->node, ud)) g_pl[i]->painted = now;
     SDL_UnlockMutex(g_mu);

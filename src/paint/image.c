@@ -23,7 +23,7 @@ static Image *img_new(int w, int h) {
     Image *im = xcalloc(1, sizeof *im); im->w = w; im->h = h; im->refs = 1; im->px = xmalloc((size_t)w * (size_t)h * 4); return im;
 }
 /* Animated GIFs keep every composited frame; px points at the current one */
-typedef struct ImgAnim { int n, cur, loops, played; uint32_t **fr; int *delay; double next; } ImgAnim;
+typedef struct ImgAnim { int n, cur, loops, played; uint32_t **fr; int *delay; double next, seen; } ImgAnim;
 static pthread_mutex_t anim_mu = PTHREAD_MUTEX_INITIALIZER;
 static Image **anims; static int nanims, canims;
 
@@ -56,6 +56,17 @@ void image_yuv_materialize(Image *im) {
     im->px = px;
 }
 
+void image_anim_seen(const DisplayList *dl, double now) {
+    pthread_mutex_lock(&anim_mu);
+    for (int i = 0; i < dl->items.n; i++) {
+        const DItem *it = &dl->items.v[i];
+        if (it->op != DO_IMAGE || !it->img || !it->img->anim || it->w <= 0 || it->h <= 0) continue;
+        if (it->x + it->w < 0 || it->y + it->h < 0 || it->x > dl->vw || it->y > dl->vh) continue;
+        it->img->anim->seen = now;
+    }
+    pthread_mutex_unlock(&anim_mu);
+}
+
 bool image_anim_tick(double now, double *next) {
     bool changed = false; *next = 0;
     pthread_mutex_lock(&anim_mu);
@@ -63,15 +74,16 @@ bool image_anim_tick(double now, double *next) {
         Image *im = anims[i]; ImgAnim *a = im->anim;
         if (a->loops >= 0 && a->played > a->loops && a->cur == a->n - 1) continue;
         if (!a->next) a->next = now + a->delay[a->cur];
+        bool vis = now - a->seen < 1000;   /* animations nobody looked at lately advance silently and don't wake the loop */
         int steps = 0;
         while (now >= a->next && steps++ < a->n) {
             if (++a->cur == a->n) { a->cur = 0; a->played++; }
-            im->px = a->fr[a->cur]; changed = true;
+            im->px = a->fr[a->cur]; changed |= vis;
             if (a->loops >= 0 && a->played > a->loops) { a->cur = a->n - 1; im->px = a->fr[a->cur]; break; }
             a->next += a->delay[a->cur];
             if (now - a->next > 1000) a->next = now + a->delay[a->cur];
         }
-        if (!(a->loops >= 0 && a->played > a->loops) && (!*next || a->next < *next)) *next = a->next;
+        if (vis && !(a->loops >= 0 && a->played > a->loops) && (!*next || a->next < *next)) *next = a->next;
     }
     pthread_mutex_unlock(&anim_mu);
     return changed;
