@@ -1,0 +1,7 @@
+<!doctype html><body style="margin:0">
+<video id="v" src="loop-noaudio.mp4" muted loop playsinline autoplay width="96" height="64"></video>
+<script>
+const v = document.getElementById('v'), ts = [];
+const iv = setInterval(() => ts.push(+v.currentTime.toFixed(2)), 500);
+setTimeout(() => { clearInterval(iv); const wrapped = ts.some((t, i) => i && t < ts[i - 1]); console.log('VLOOP ' + JSON.stringify([wrapped, !v.paused, v.currentTime > 0]) + ' ' + JSON.stringify(ts)); }, 5000);
+</script>

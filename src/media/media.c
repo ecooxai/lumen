@@ -803,6 +803,7 @@ void mp_seek(MediaPlayer *m, double t) {
     if (!isnan(m->duration) && t > m->duration) t = m->duration;
     if (t < 0) t = 0;
     m->epoch++; m->target = t; m->seeking = true; m->ended = false;
+    for (int i = 0; i < m->nst; i++) m->st[i]->eof = false;   /* else a seek after EOF completes (and re-ends) before the reader restarts */
     for (int i = 0; i < m->vqn; i++) image_unref(m->vq[i].im);
     m->vqn = 0;
     while (m->ah) { AChunk *c = m->ah; m->ah = c->next; free(c->s); free(c); }
