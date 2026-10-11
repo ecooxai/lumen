@@ -334,3 +334,10 @@ Load (DCL/load): Google 0.53/3.66 s, Bing 1.97/2.23 s, YT watch ~2.2/3.47 s, YT 
   submit handler prevents default and assigns `window.location`.
 - Reddit `/search/?q=` renders full-width now; the earlier "clipped" report was
   on an older build.
+- Mouse: `click_page()` used to fire pointerdown, mousedown, pointerup, mouseup
+  and click all at button-down, so drags (YouTube seek bar, sliders) never saw a
+  held button. Now pointerup/mouseup/click fire on the real release
+  (`click_release()`), click goes to the common ancestor of the press/release
+  targets, moves carry `buttons` (`js_buttons`), and `setPointerCapture` is
+  real (retargets moves/ups until pointerup). Fixtures:
+  `tests/render/pointer-capture.html`, `tests/render/click-seq.html`.

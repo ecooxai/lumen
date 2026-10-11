@@ -740,6 +740,7 @@ void js_release_pins(void) {
     for (Node *n : v) node_release(n);
 }
 int js_key_mods;
+int js_buttons;
 
 /* KeyboardEvent.code for a US layout key value */
 static std::string key_code(const char *k) {
@@ -774,7 +775,7 @@ bool js_dispatch(JsCtx *c, Node *target, const char *type, const char *kind, boo
     set("button", v8::Integer::New(iso, button));
     bool hover = type && (!strcmp(type, "pointermove") || !strcmp(type, "mousemove") || !strcmp(type, "pointerover") || !strcmp(type, "mouseover"));
     bool released = type && (hover || !strcmp(type, "pointerup") || !strcmp(type, "mouseup") || !strcmp(type, "click") || !strcmp(type, "auxclick") || !strcmp(type, "contextmenu"));
-    set("buttons", v8::Integer::New(iso, released ? 0 : button == 0 ? 1 : button == 2 ? 2 : 4));
+    set("buttons", v8::Integer::New(iso, hover ? js_buttons : released ? 0 : button == 0 ? 1 : button == 2 ? 2 : 4));
     if (type && !strcmp(type, "pointerdown")) set("pressure", v8::Number::New(iso, 0.5));
     set("detail", v8::Integer::New(iso, 1));
     set("shiftKey", v8::Boolean::New(iso, js_key_mods & 1));

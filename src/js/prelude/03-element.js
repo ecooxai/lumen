@@ -1,3 +1,6 @@
+/* pointer capture: moves/ups (and their compat mouse events) go to the capturing element until pointerup */
+let pointerCapture_ = null;
+function releaseCapture_() { const t = pointerCapture_; pointerCapture_ = null; if (t) dispatch(t, new PointerEvent('lostpointercapture', { bubbles: true, pointerId: 1 })); }
 const camelToKebab = (p) => p.startsWith('--') ? p : p === 'cssFloat' ? 'float' : p.replace(/^(webkit|moz|ms)(?=[A-Z])/, '-$1').replace(/[A-Z]/g, c => '-' + c.toLowerCase());
 function parseDecls(s) {
     const m = new Map(); if (!s) return m;
@@ -108,7 +111,7 @@ methods(Element.prototype, {
     get shadowRoot() { return this.__shadow && this.__shadow.__mode === 'open' ? this.__shadow : null; },
     get assignedSlot() { return null; },
     requestFullscreen() { return Promise.reject(new DOMException('Fullscreen is not supported yet', 'NotSupportedError')); },
-    requestPointerLock() {}, setPointerCapture() {}, releasePointerCapture() {}, hasPointerCapture() { return false; },
+    requestPointerLock() {}, setPointerCapture() { if (pointerCapture_ !== this) { pointerCapture_ = this; dispatch(this, new PointerEvent('gotpointercapture', { bubbles: true, pointerId: 1 })); } }, releasePointerCapture() { if (pointerCapture_ === this) releaseCapture_(); }, hasPointerCapture() { return pointerCapture_ === this; },
     animate(kf, o) { return new Animation(this, kf, o); }, getAnimations() { return []; },
     checkVisibility() { return !!N.rect(this); },
 });

@@ -1,0 +1,6 @@
+<!doctype html><body style="margin:0"><a id="lnk" href="?nav" style="display:block;height:100px;background:#eee">link</a><div id="btn" style="height:200px;background:#cde"><span id="in">inner</span></div><script>
+if (location.search == '?nav') console.log('CSEQ-NAV [true]');
+else { const L = [], btn = document.getElementById('btn'); let t0 = 0;
+  for (const t of ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click']) btn.addEventListener(t, e => { if (!t0) t0 = performance.now(); L.push(t + (performance.now() - t0 > 300 ? '+' : '')); });
+  btn.addEventListener('click', e => setTimeout(() => console.log('CSEQ ' + JSON.stringify([L.join(), e.target == btn])), 10)); }
+</script>

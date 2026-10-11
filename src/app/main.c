@@ -1829,7 +1829,32 @@ static void sel_copy(App *a) {
     if (f) { if (a->page_sel) { char *v = ctl_value(f); SDL_SetClipboardText(v); free(v); } return; }
     if (g_tsel.on && a->t->cur && a->t->cur->L == g_tsel.L) { char *s = tsel_text(a->t->cur->L); if (*s) SDL_SetClipboardText(s); free(s); }
 }
+static Node *g_down; static Page *g_down_p;   /* element under the pointer at mousedown, until mouseup */
+static void anchor_follow(App *a, Node *t);
+static void click_release(App *a, float x, float y) {
+    Node *d = g_down; Page *p = g_down_p; g_down = NULL; g_down_p = NULL;
+    if (!d) return;
+    Node *root = d; while (root->parent) root = root->parent;
+    if (p != a->t->cur || !p->js || !p->L || d->doc != p->d || root != &p->d->node) { node_release(d); return; }
+    x -= a->side; float cy = y - BAR;
+    h_sync_in(a, p->d, true);
+    Box *b = layout_hit(p->L, x, cy + a->t->sy); Node *u = b ? b->node : NULL;
+    while (u && u->type != NODE_ELEMENT) u = u->parent;
+    if (!u) u = d;
+    js_dispatch(p->js, u, "pointerup", "PointerEvent", true, true, x, cy, 0, NULL);
+    js_dispatch(p->js, u, "mouseup", "MouseEvent", true, true, x, cy, 0, NULL);
+    Node *c = d;   /* click goes to the nearest common ancestor of the press and release targets */
+    for (; c; c = c->parent) { Node *k = u; while (k && k != c) k = k->parent; if (k) break; }
+    for (root = d; root->parent; root = root->parent) {}
+    if (c && c->type == NODE_ELEMENT && a->t->cur == p && root == &p->d->node) {
+        bool ok = js_dispatch(p->js, c, "click", "PointerEvent", true, true, x, cy, 0, NULL);
+        restyle(a);
+        if (ok && a->t->cur == p) anchor_follow(a, c);
+    } else restyle(a);
+    node_release(d);
+}
 static void click_page(App *a, float x, float y) {
+    if (g_down) { node_release(g_down); g_down = NULL; g_down_p = NULL; }
     x -= a->side;
     if (!a->t->cur || !a->t->cur->L || a->t->asleep) return;   /* a sleeping page is only a picture until its reload lands */
     h_sync_in(a, a->t->cur->d, true);   /* paint may be deferred; hit-test the current DOM, not detached boxes */
@@ -1871,12 +1896,13 @@ static void click_page(App *a, float x, float y) {
         if (is_text_ctl(ctl)) focus_node(a, ctl);
         else if (edit_host(t)) { if (!js_focused && md_ok) focus_node(a, edit_host(t)); }
         else if (!js_focused && md_ok && page_focus(a)) focus_node(a, NULL);
-        js_dispatch(js, t, "pointerup", "PointerEvent", true, true, x, cy, 0, NULL);
-        js_dispatch(js, t, "mouseup", "MouseEvent", true, true, x, cy, 0, NULL);
-        bool ok = js_dispatch(js, t, "click", "PointerEvent", true, true, x, cy, 0, NULL);
         restyle(a);
-        if (!ok) return;
+        node_retain(t); g_down = t; g_down_p = a->t->cur;   /* pointerup/mouseup/click wait for the real button release */
+        return;
     }
+    anchor_follow(a, t);
+}
+static void anchor_follow(App *a, Node *t) {
     for (Node *n = t; n; n = n->parent)   /* not b: handlers and restyle() may have rebuilt the layout and freed it */
         if (n->type == NODE_ELEMENT && n->tag == A_a && node_attr(n, "href")) {
             const char *h = node_attr(n, "href");
@@ -2305,6 +2331,7 @@ int main(int argc, char **argv) {
             if ((ev.type >= SDL_EVENT_KEY_DOWN && ev.type <= SDL_EVENT_TEXT_INPUT) || (ev.type >= SDL_EVENT_MOUSE_MOTION && ev.type <= SDL_EVENT_MOUSE_WHEEL && !wheel0)) a.last_input = now_ms();
             if (ev.type != EV_NET && ev.type != SDL_EVENT_MOUSE_WHEEL) a.vonly = false;
             js_key_mods = key_mods(SDL_GetModState());
+            { SDL_MouseButtonFlags mb = SDL_GetMouseState(NULL, NULL); js_buttons = (mb & SDL_BUTTON_LMASK ? 1 : 0) | (mb & SDL_BUTTON_RMASK ? 2 : 0) | (mb & SDL_BUTTON_MMASK ? 4 : 0); }
             switch (ev.type) {
             case SDL_EVENT_QUIT: quit = true; break;
             case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: case SDL_EVENT_WINDOW_RESIZED: update_size(&a); break;
@@ -2329,7 +2356,7 @@ int main(int argc, char **argv) {
                 SDL_SetCursor(SDL_CreateSystemCursor(h == HB_URL ? SDL_SYSTEM_CURSOR_TEXT : over_link(&a, ev.motion.x, ev.motion.y) || (h && h != HB_URL) ? SDL_SYSTEM_CURSOR_POINTER : SDL_SYSTEM_CURSOR_DEFAULT));
                 break; }
             case SDL_EVENT_WINDOW_MOUSE_LEAVE: if (a.t->cur && page_hover(a.t->cur, NULL)) restyle(&a); break;
-            case SDL_EVENT_MOUSE_BUTTON_UP: if (ev.button.button == SDL_BUTTON_LEFT) g_press = g_drag = false; break;
+            case SDL_EVENT_MOUSE_BUTTON_UP: if (ev.button.button == SDL_BUTTON_LEFT) { g_press = g_drag = false; click_release(&a, ev.button.x, ev.button.y); } break;
             case SDL_EVENT_MOUSE_BUTTON_DOWN:
                 if (ev.button.button != SDL_BUTTON_LEFT) break;
                 { int bh = bar_hit(&a, ev.button.x, ev.button.y);

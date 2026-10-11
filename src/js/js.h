@@ -13,6 +13,7 @@ extern char *(*js_clip_get)(void);
 extern void (*js_save_file)(const char *name, const void *data, size_t n);   /* downloads: <a download>, blob/data URLs */
 /* modifier keys held for the next dispatched event: 1 shift, 2 ctrl, 4 alt, 8 meta */
 extern int js_key_mods;
+extern int js_buttons;   /* held mouse buttons, DOM `buttons` mask */
 
 typedef struct JsHost {
     void *ud;

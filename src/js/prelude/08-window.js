@@ -365,9 +365,12 @@ for (const k of ['addEventListener', 'removeEventListener', 'dispatchEvent']) {
     const f = EventTarget.prototype[k];
     Object.defineProperty(G, k, { value: function (...a) { return f.apply(this ?? G, a); }, writable: true, configurable: true });
 }
+const CAPTURED_ = new Set(['pointermove', 'pointerup', 'pointercancel', 'mousemove', 'mouseup']);
 function fire(target, type, init, Ctor = Event) {
+    if (pointerCapture_ && CAPTURED_.has(type)) { if (pointerCapture_.isConnected) target = pointerCapture_; else pointerCapture_ = null; }
     const pre = type === 'click' ? preActivate(target) : null;
     const ev = new Ctor(type, init), ok = dispatch(target, ev, true);
+    if ((type === 'pointerup' || type === 'pointercancel') && pointerCapture_) releaseCapture_();
     if (!ok && pre && pre.restore) pre.restore();
     if (ok && type === 'click' && target && target.nodeType === 1 && !(target.closest && target.closest('a[href]')) && !(target.disabled || (target.closest && target.closest('button:disabled')))) {
         try { activate(target, ev, pre); } catch (e) { report(e); }   /* anchors are navigated natively by the shell */
