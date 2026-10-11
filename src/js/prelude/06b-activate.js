@@ -232,6 +232,8 @@ function adoptSheets(scope, v) {
         if (root) N.insert(root, n, null);
     }
 }
+/* innerHTML/textContent/replaceChildren on an adopting scope drop the mirror <style>s: put them back */
+function readopt(scope) { if (scope.__ass.some(s => { const n = s._mirrors && s._mirrors.get(scope); return !n || !n.parentNode; })) adoptSheets(scope, scope.__ass); }
 function adoptedGet(scope) { return new Proxy((scope.__ass || []).slice(), { set(t, k, val) { t[k] = val; adoptSheets(scope, t); return true; } }); }
 function scopeSheets(scope) { return N.query(scope, 'style,link[rel~=stylesheet]', true).filter(el => !el.__mirror).map(sheetFor); }
 function sheetFor(el) { if (!el.__sheet) { const s = new CSSStyleSheet(); def(s, '_owner', el); def(el, '__sheet', s); } return el.__sheet; }

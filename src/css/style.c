@@ -747,6 +747,7 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         else if (!strcmp(P, "font-size")) st->font_size = src->font_size;
         else if (!strcmp(P, "font-weight")) st->font_weight = src->font_weight;
         else if (!strcmp(P, "font-family")) st->font_family = src->font_family;
+        else if (!strcmp(P, "font")) { st->font_family = src->font_family; st->font_size = src->font_size; st->font_weight = src->font_weight; st->font_style = src->font_style; st->line_height = src->line_height; st->line_height_normal = src->line_height_normal; st->line_height_factor = src->line_height_factor; }
         else if (!strcmp(P, "line-height")) { st->line_height = src->line_height; st->line_height_normal = src->line_height_normal; st->line_height_factor = src->line_height_factor; }
         else if (!strcmp(P, "background-color") || !strcmp(P, "background")) { st->bg_color = src->bg_color; if (!strcmp(P, "background")) { free(st->bg_image); st->bg_image = NULL; free(st->bg_gradient); st->bg_gradient = NULL; } }
         else if (!strcmp(P, "display")) st->display = src->display;
@@ -1409,7 +1410,14 @@ static void apply_decl_ordered(ComputedStyle *st, const ComputedStyle *par, MDec
     }
     for (int i = 0; i < n; i++) { const char *p = v[i].d->prop; if (!strcmp(p, "font-size") || !strcmp(p, "font")) css_apply_decl(st, par, p, v[i].d->value, e, el); }
     for (int i = 0; i < n; i++) { const char *p = v[i].d->prop; if (!strcmp(p, "color")) css_apply_decl(st, par, p, v[i].d->value, e, el); }
-    for (int i = 0; i < n; i++) { const char *p = v[i].d->prop; if ((p[0] == '-' && p[1] == '-') || !strcmp(p, "font-size") || !strcmp(p, "font") || !strcmp(p, "color")) continue; css_apply_decl(st, par, p, v[i].d->value, e, el); }
+    int last_font = -1;   /* longhands cascading below a `font` shorthand must not override it */
+    for (int i = 0; i < n; i++) if (!strcmp(v[i].d->prop, "font")) last_font = i;
+    for (int i = 0; i < n; i++) {
+        const char *p = v[i].d->prop;
+        if ((p[0] == '-' && p[1] == '-') || !strcmp(p, "font-size") || !strcmp(p, "font") || !strcmp(p, "color")) continue;
+        if (i < last_font && (!strcmp(p, "font-family") || !strcmp(p, "font-weight") || !strcmp(p, "font-style") || !strcmp(p, "line-height"))) continue;
+        css_apply_decl(st, par, p, v[i].d->value, e, el);
+    }
 }
 
 static ComputedStyle *compute(StyleEngine *e, Node *el, const ComputedStyle *par) {

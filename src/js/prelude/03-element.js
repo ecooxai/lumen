@@ -119,6 +119,7 @@ function setInner(el, html) {
     const added = kids(el);
     if (removed.length || added.length) notify('childList', el, { removedNodes: removed, addedNodes: added });
     for (const a of added) ceConnected(a, true);
+    if (el.__ass) readopt(el);
 }
 const reflectStr = (p, ...ns) => { for (const n of ns) { const a = n.toLowerCase(); acc(p, n, function () { return N.attr(this, a) ?? ''; }, function (v) { this.setAttribute(a, v); }); } };
 const reflectBool = (p, ...ns) => { for (const n of ns) { const a = n.toLowerCase(); acc(p, n, function () { return N.attr(this, a) != null; }, function (v) { if (v) this.setAttribute(a, ''); else this.removeAttribute(a); }); } };
