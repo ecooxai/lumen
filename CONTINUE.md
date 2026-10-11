@@ -399,3 +399,9 @@ Load (DCL/load): Google 0.53/3.66 s, Bing 1.97/2.23 s, YT watch ~2.2/3.47 s, YT 
 - A cancelled `mousedown` starts no text selection (YouTube seek-bar drag selected sidebar text);
   `tests/layout/mousedown-nosel.html`.
 - `-webkit-line-clamp`/`-webkit-box-orient` parse; line clamp clips overflow boxes (7b9ffd7, `tests/layout/line-clamp.html`).
+- Flex/grid containers drop whitespace-only text runs even under `white-space: pre/pre-wrap` (spec: never
+  rendered). YouTube's view-count/date row had ~16-60px gaps from Polymer template whitespace;
+  `tests/layout/flex-ws-pre.html` (eab948a).
+- `opacity: <non-number>` (YouTube writes `style.opacity = undefined`) is ignored instead of parsing as 0;
+  the channel avatar was invisible. `tests/layout/opacity-invalid.html`. Build dir for main-agent work: build9
+  (build8 is pinned by the testing agent's SHA guard during its run).

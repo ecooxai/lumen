@@ -987,7 +987,7 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         else if (!strcmp(P, "max-inline-size")) alen(&c, val, &st->max_width);
         break;
     case 'o':
-        if (!strcmp(P, "opacity")) { float x = strtof(val, NULL); if (strchr(val, '%')) x /= 100; st->opacity = LCLAMP(x, 0, 1); }
+        if (!strcmp(P, "opacity")) { char *e; float x = strtof(val, &e); if (e != val) { if (*e == '%') x /= 100; st->opacity = LCLAMP(x, 0, 1); } }
         else if (!strcmp(P, "overflow") || !strcmp(P, "overflow-x") || !strcmp(P, "overflow-y")) {
             static const char *const ov[] = { "visible", "hidden", "scroll", "auto", "clip", NULL };
             char *t[2]; int n = split_ws(val, t, 2);
