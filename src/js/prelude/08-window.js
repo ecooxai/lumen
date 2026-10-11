@@ -467,5 +467,82 @@ function fireAnim(t, type, name, elapsed, anim) {
     };
     selAt('left', move(-1)); selAt('right', move(1));
 }
+/* getUserMedia (real camera/mic), enumerateDevices, permissions, geolocation */
+(() => {
+    const origin = () => { try { return location.origin || 'file://'; } catch { return 'file://'; } };
+    const PN = { camera: 'camera', microphone: 'microphone', geolocation: 'location' };
+    const state = n => { const s = N.capState(PN[n] || n, origin()); return s > 0 ? 'granted' : s < 0 ? 'denied' : 'prompt'; };
+    const ask = n => N.capAsk(PN[n] || n, origin());
+    class PermissionStatus extends EventTarget { constructor(n) { super(); this.name = n; this.onchange = null; } get state() { return state(this.name); } }
+    navigator.permissions.query = d => { const n = d && d.name; if (!n) return Promise.reject(new TypeError('name required')); return Promise.resolve(new PermissionStatus(n)); };
+    const ideal = v => v == null ? 0 : typeof v === 'number' ? v : v.exact || v.ideal || v.max || v.min || 0;
+    const md = navigator.mediaDevices;
+    md.enumerateDevices = () => Promise.resolve([
+        ...N.capCameras().map((l, i) => ({ deviceId: 'cam' + i, groupId: 'g' + i, kind: 'videoinput', label: state('camera') === 'granted' ? l : '', toJSON() { return { ...this }; } })),
+        ...N.capMics().map((l, i) => ({ deviceId: i ? 'mic' + i : 'default', groupId: 'm' + i, kind: 'audioinput', label: state('microphone') === 'granted' ? l : '', toJSON() { return { ...this }; } }))]);
+    md.getSupportedConstraints = () => ({ deviceId: true, width: true, height: true, frameRate: true, aspectRatio: true, facingMode: true, sampleRate: true, channelCount: true, echoCancellation: true, noiseSuppression: true, autoGainControl: true });
+    const NA = () => new DOMException('Permission denied', 'NotAllowedError'), NF = k => new DOMException('Requested device not found (' + k + ')', 'NotFoundError');
+    md.getUserMedia = c => new Promise((res, rej) => setTimeout(() => {
+        if (!c || typeof c !== 'object' || (!c.audio && !c.video)) return rej(new TypeError("Failed to execute 'getUserMedia': At least one of audio and video must be requested"));
+        const tracks = [];
+        try {
+            if (c.video) { const cams = N.capCameras(); if (!cams.length) throw NF('camera'); if (!ask('camera')) throw NA();
+                const v = typeof c.video === 'object' ? c.video : {}; let idx = 0; const did = ideal(v.deviceId); if (typeof did === 'string' && /^cam\d+$/.test(did)) idx = +did.slice(3);
+                const id = N.capCamOpen(idx, ideal(v.width), ideal(v.height), ideal(v.frameRate)); if (id < 0) throw NA(); if (!id) throw new DOMException('Could not start video source', 'NotReadableError');
+                const t = new MediaStreamTrack(RTC_INTERNAL, 'video', cams[idx]); t._.cam = id; t._.dev = 'cam' + idx; tracks.push(t); }
+            if (c.audio) { const mics = N.capMics(); if (!mics.length) throw NF('microphone'); if (!ask('microphone')) throw NA();
+                const a = typeof c.audio === 'object' ? c.audio : {}; const id = N.capMicOpen(ideal(a.sampleRate) || 48000, ideal(a.channelCount) || 1);
+                if (!id) throw new DOMException('Could not start audio source', 'NotReadableError');
+                const t = new MediaStreamTrack(RTC_INTERNAL, 'audio', mics[0]); t._.mic = id; t._.rate = ideal(a.sampleRate) || 48000; t._.ch = ideal(a.channelCount) || 1; tracks.push(t); }
+        } catch (e) { for (const t of tracks) t.stop(); return rej(e); }
+        res(new MediaStream(tracks));
+    }));
+    const TP = MediaStreamTrack.prototype, stop0 = TP.stop, gs0 = TP.getSettings;
+    TP.stop = function () { if (this._.cam) { N.capCamClose(this._.cam); this._.cam = 0; } if (this._.mic) { N.capMicClose(this._.mic); this._.mic = 0; } stop0.call(this); };
+    TP.getSettings = function () { if (this._.cam) { const [w, h, f] = N.capCamInfo(this._.cam); return { deviceId: this._.dev, groupId: '', width: w, height: h, frameRate: f, aspectRatio: h ? w / h : 0, facingMode: 'user', resizeMode: 'none' }; }
+        if (this._.kind === 'audio' && this._.rate) return { deviceId: 'default', groupId: '', sampleRate: this._.rate, channelCount: this._.ch, sampleSize: 32, echoCancellation: false, autoGainControl: false, noiseSuppression: false }; return gs0.call(this); };
+    TP.getCapabilities = function () { return this._.kind === 'video' ? { width: { min: 1, max: 4096 }, height: { min: 1, max: 4096 }, frameRate: { min: 1, max: 60 }, facingMode: ['user'] } : { sampleRate: { min: 8000, max: 96000 }, channelCount: { min: 1, max: 2 } }; };
+    /** pull recorded PCM (Float32Array, interleaved) for an audio track; used by WebAudio / MediaRecorder */
+    TP._readPCM = function () { return this._.mic ? N.capMicRead(this._.mic) || new Float32Array(0) : new Float32Array(0); };
+    /* <video>.srcObject = MediaStream with a camera track */
+    const VP = H.HTMLVideoElement.prototype, MP = H.HTMLMediaElement.prototype;
+    const camOf = el => { const s = el.__so; if (!(s instanceof MediaStream)) return null; return s.getVideoTracks().find(t => t._.cam && t.readyState === 'live') || null; };
+    const desc = (p, k) => { for (let o = p; o; o = Object.getPrototypeOf(o)) { const d = Object.getOwnPropertyDescriptor(o, k); if (d) return d; } return null; };
+    const so = desc(MP, 'srcObject');
+    Object.defineProperty(MP, 'srcObject', { configurable: true, get: so.get, set(v) { so.set.call(this, v); const t = camOf(this); N.capCamBind(t ? t._.cam : 0, this);
+        if (v instanceof MediaStream) setTimeout(() => { for (const e of ['loadstart', 'loadedmetadata', 'loadeddata', 'canplay', 'canplaythrough']) this.dispatchEvent(new Event(e)); if (this.autoplay) this.play(); }); } });
+    for (const [k, i] of [['videoWidth', 0], ['videoHeight', 1]]) { const d = desc(VP, k); Object.defineProperty(VP, k, { configurable: true, get() { const t = camOf(this); return t ? N.capCamInfo(t._.cam)[i] : d.get.call(this); } }); }
+    for (const k of ['readyState', 'paused']) { const d = desc(MP, k); if (d && d.get) Object.defineProperty(MP, k, { configurable: true, get() { if (this.__so instanceof MediaStream) return k === 'readyState' ? 4 : !!this.__spaused; return d.get.call(this); } }); }
+    const play0 = MP.play, pause0 = MP.pause;
+    MP.play = function () { if (this.__so instanceof MediaStream) { this.__spaused = false; setTimeout(() => { this.dispatchEvent(new Event('play')); this.dispatchEvent(new Event('playing')); }); return Promise.resolve(); } return play0.call(this); };
+    MP.pause = function () { if (this.__so instanceof MediaStream) { this.__spaused = true; this.dispatchEvent(new Event('pause')); return; } return pause0.call(this); };
+    /* geolocation */
+    class GeolocationCoordinates { constructor(o) { Object.assign(this, { latitude: o.lat, longitude: o.lon, accuracy: o.acc, altitude: null, altitudeAccuracy: null, heading: null, speed: null }); } toJSON() { return { ...this }; } }
+    class GeolocationPosition { constructor(c) { this.coords = c; this.timestamp = Date.now(); } toJSON() { return { coords: this.coords.toJSON(), timestamp: this.timestamp }; } }
+    class GeolocationPositionError { constructor(code, m) { this.code = code; this.message = m; } }
+    Object.assign(GeolocationPositionError, { PERMISSION_DENIED: 1, POSITION_UNAVAILABLE: 2, TIMEOUT: 3 }); Object.assign(GeolocationPositionError.prototype, { PERMISSION_DENIED: 1, POSITION_UNAVAILABLE: 2, TIMEOUT: 3 });
+    let cache = null;
+    async function locate() {
+        const f = N.geoFixed(); if (f) { const [lat, lon, acc] = f.split(',').map(Number); return { lat, lon, acc: acc || 50 }; }
+        if (cache && Date.now() - cache.t < 600000) return cache.p;
+        for (const [u, pick] of [['https://ipapi.co/json/', j => [j.latitude, j.longitude]], ['https://ipinfo.io/json', j => (j.loc || '').split(',').map(Number)]]) {
+            try { const j = await (await fetch(u)).json(); const [lat, lon] = pick(j); if (isFinite(lat) && isFinite(lon)) { const p = { lat, lon, acc: 5000 }; cache = { t: Date.now(), p }; return p; } } catch { }
+        }
+        throw new GeolocationPositionError(2, 'Position unavailable');
+    }
+    const watches = new Map(); let wid = 0;
+    function get(ok, er, o) {
+        if (!ask('geolocation')) { setTimeout(() => er && er(new GeolocationPositionError(1, 'User denied Geolocation'))); return; }
+        const to = o && o.timeout > 0 && isFinite(o.timeout) ? o.timeout : 0; let done = false;
+        if (to) setTimeout(() => { if (!done) { done = true; er && er(new GeolocationPositionError(3, 'Timeout expired')); } }, to);
+        locate().then(p => { if (!done) { done = true; ok(new GeolocationPosition(new GeolocationCoordinates(p))); } }, e => { if (!done) { done = true; er && er(e); } });
+    }
+    const geolocation = { getCurrentPosition(ok, er, o) { get(ok, er, o); },
+        watchPosition(ok, er, o) { const id = ++wid; get(ok, er, o); watches.set(id, setInterval(() => get(ok, er, o), 60000)); return id; },
+        clearWatch(id) { clearInterval(watches.get(id)); watches.delete(id); } };
+    Object.defineProperty(navigator, 'geolocation', { value: geolocation, configurable: true });
+    Object.assign(globalThis, { GeolocationCoordinates, GeolocationPosition, GeolocationPositionError, PermissionStatus, Geolocation: function Geolocation() { } });
+})();
+
 return { queueMessage, workerEvent, protoFor, dispatch, fire, fireAnim, report, mediaChanged, ceConnected, Event, MouseEvent, PointerEvent, KeyboardEvent, FocusEvent, WheelEvent, InputEvent, PopStateEvent, ErrorEvent };
 })

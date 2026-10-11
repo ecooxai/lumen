@@ -236,3 +236,16 @@ Load (DCL/load): Google 0.53/3.66 s, Bing 1.97/2.23 s, YT watch ~2.2/3.47 s, YT 
 - WebGPU: src/js/webgpu.cc (shared wgpu device, handle table, command list replay in gpuExec, canvas readback in gpuPresent), src/js/prelude/07z2-webgpu.js. Verified triangle + compute on llvmpipe with LUMEN_ALLOW_SW_GPU=1. Missing: render bundles, query sets, zero-copy compositing (readback per frame).
 - Next: WebGL 1/2 as JS on top of the N.gpu* natives (gpuShader(code, stage) accepts GLSL 450 for naga); camera/mic (SDL3 camera/audio capture), geolocation; site tests (YouTube, X, Google).
 - Test pages live in ~/lumen-tests (served by srv.py on :8765; run.sh <secs> <url> <log> samples CPU).
+
+## WebGL (src/js/prelude/07z3-glsl.js + 07z4-webgl.js)
+- WebGL1/2 contexts on the native WebGPU device; GLSL ES translated to GLSL 450 (naga frontend). three.js r150 PBR+shadows+textures renders (~16 ms/frame on llvmpipe).
+- Missing: MSAA, gl_PointSize, scissored partial clear, compressed textures, transform feedback, queries.
+- Debug: `LUMEN_GL_DEBUG=1` prints link/pipeline errors with generated shader source.
+
+## Camera / mic / geolocation (src/media/capture.c, src/js/capture.cc, end of 08-window.js)
+- getUserMedia opens real SDL3 cameras (V4L2) and recording devices; `<video>.srcObject` shows camera frames (node_img -> cap_frame_for); canvas drawImage(video) works.
+- Audio track `_readPCM()` returns captured Float32 PCM; not yet wired into WebAudio createMediaStreamSource / MediaRecorder.
+- Permissions: SDL message box per origin+kind (session memory); `LUMEN_PERMISSIONS=grant|deny` overrides.
+- Geolocation: `LUMEN_GEO=lat,lon[,acc]` else IP lookup (ipapi.co / ipinfo.io).
+- Prelude gotcha: all prelude files are one `(function (N, G) {...})` closed at the end of 08-window.js; never add a file sorting after it.
+- Test setup: `sudo modprobe v4l2loopback video_nr=10 exclusive_caps=1`, ffmpeg testsrc2 -> /dev/video10; mic via `SDL_AUDIO_DRIVER=disk SDL_AUDIO_DISK_INPUT_FILE=mic.raw`.

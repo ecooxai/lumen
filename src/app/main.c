@@ -153,9 +153,10 @@ static void cache_fetch(const char *u) {
     ImgSlot *slot = xcalloc(1, sizeof *slot); slot->im = im; slot->done = true;
     SDL_LockMutex(icache_mu); if (!hm_get(&icache, u)) { hm_put(&icache, u, slot); if (im) { g_icache_bytes += (size_t)im->w * (size_t)im->h * 4; g_icache_n++; } } else { image_unref(im); free(slot); } SDL_UnlockMutex(icache_mu);
 }
+Image *cap_frame_for(Node *n);
 static Image *node_img(Node *n) {
     if (n->tag == A_iframe) { Page *fp = frame_find(n); return fp && fp->cv.px ? &fp->img : NULL; }
-    if (n->tag == A_video) { Image *f = media_frame_for(n); if (f) return f; }
+    if (n->tag == A_video) { Image *f = cap_frame_for(n); if (!f) f = media_frame_for(n); if (f) return f; }
     if (n->tag == A_canvas) return cvbuf_image(n);
     const char *s = node_attr(n, n->tag == A_video ? "poster" : "src"); if (!s) return NULL;
     char *u = url_join(n->doc->url, s); Image *im = cache_get(u); free(u); return im;
