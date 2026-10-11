@@ -62,6 +62,7 @@ struct MediaPlayer {
     bool expect_audio, audio_failed; SDL_AudioStream *dev;
     float volume; bool muted;
     double aclock, base_t, base_wall;
+    int aq; /* bytes queued in the SDL stream, sampled by audio_cb (the stream lock must not be taken under mu) */
     int w, h;
     VFrame vq[VQ_MAX]; int vqn;
     AChunk *ah, *at; double abuf;
@@ -479,6 +480,7 @@ static void SDLCALL audio_cb(void *ud, SDL_AudioStream *as, int additional, int 
         SDL_PutAudioStreamData(as, buf, k * 8);
         frames -= k;
     }
+    m->aq = SDL_GetAudioStreamQueued(as);
     SDL_BroadcastCondition(m->cv);
     SDL_UnlockMutex(m->mu);
 }
@@ -713,7 +715,7 @@ void mp_end_of_stream(MediaPlayer *m) { SDL_LockMutex(m->mu); m->eos = true; SDL
 void mp_set_duration(MediaPlayer *m, double d) { SDL_LockMutex(m->mu); m->duration = d; SDL_UnlockMutex(m->mu); }
 static double clock_of(MediaPlayer *m) {
     if (m->expect_audio && m->dev) {
-        double lat = (double)SDL_GetAudioStreamQueued(m->dev) / 8.0 / OUT_RATE;
+        double lat = (double)m->aq / 8.0 / OUT_RATE;
         double t = m->aclock - lat; return t < 0 ? 0 : t;
     }
     double t = m->base_t;
@@ -742,9 +744,10 @@ void mp_seek(MediaPlayer *m, double t) {
     m->vqn = 0;
     while (m->ah) { AChunk *c = m->ah; m->ah = c->next; free(c->s); free(c); }
     m->at = NULL; m->abuf = 0; m->aclock = m->base_t = t; m->base_wall = now_ms();
-    if (m->dev) SDL_ClearAudioStream(m->dev);
+    m->aq = 0;
     SDL_BroadcastCondition(m->cv);
     SDL_UnlockMutex(m->mu);
+    if (m->dev) SDL_ClearAudioStream(m->dev); /* after unlocking: audio_cb holds the stream lock while taking mu */
 }
 void mp_set_volume(MediaPlayer *m, float v, bool muted) { SDL_LockMutex(m->mu); m->volume = v; m->muted = muted; SDL_UnlockMutex(m->mu); }
 void mp_state(MediaPlayer *m, MpState *o) {
