@@ -63,6 +63,7 @@ class BatteryManager extends EventTarget {}
 const battery = Object.assign(Reflect.construct(EventTarget, [], BatteryManager), { charging: true, chargingTime: 0, dischargingTime: Infinity, level: 1, onchargingchange: null, onchargingtimechange: null, ondischargingtimechange: null, onlevelchange: null });
 const __uaChrome = (/ Chrome\/(\d+)/.exec(N.userAgent()) || [])[1];
 const navigator = {
+    gpu: LUMEN_GPU,
     userAgent: N.userAgent(), appVersion: N.userAgent().replace(/^Mozilla\//, ''), appName: 'Netscape', appCodeName: 'Mozilla', product: 'Gecko', productSub: __uaChrome ? '20030107' : '20100101', vendor: __uaChrome ? 'Google Inc.' : '', vendorSub: '',
     platform: N.platform(), language: 'en-US', languages: ['en-US', 'en'], onLine: true, cookieEnabled: true, doNotTrack: null, webdriver: false, pdfViewerEnabled: false,
     hardwareConcurrency: N.cpus(), deviceMemory: 8, maxTouchPoints: 0, plugins: [], mimeTypes: [],
