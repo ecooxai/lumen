@@ -14,6 +14,8 @@ enum {
     NF_CHECKED = 1 << 6, NF_PARSER_INSERTED = 1 << 7, NF_SCRIPT_STARTED = 1 << 8,
     NF_CONNECTED = 1 << 9, NF_DISABLED = 1 << 10,
     NF_INERT = 1 << 11,           /* template content fragment */
+    NF_STRUCT_DIRTY = 1 << 12,    /* children changed: restyle self, children shallowly */
+    NF_SELF_DIRTY = 1 << 13,      /* sibling list changed: re-match self only */
 };
 
 typedef struct { const char *name; char *value; } Attr; /* name is an atom */

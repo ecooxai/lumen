@@ -1424,7 +1424,10 @@ static void restyle(App *a) {
     if (!p || p->d->dom_version == p->seen_ver) return;
     p->seen_ver = p->d->dom_version;
     bool sheets = sync_sheets(p, false);
-    { double q = now_ms(); style_recalc(p->e, &p->d->node, sheets); g_tr += now_ms() - q; }
+    static int dbg = -1; if (dbg < 0) dbg = getenv("LUMEN_DEBUG_STYLE") != NULL;
+    bool idx = p->e->idx_dirty;
+    { double q = now_ms(); style_recalc(p->e, &p->d->node, sheets); g_tr += now_ms() - q;
+      if (dbg) fprintf(stderr, "lumen-style: sheets=%d idx=%d matched=%d paint=%d %.2fms\n", sheets, idx, (int)p->e->stats_matched, (int)p->e->stats_paint, now_ms() - q); }
     sync_images(p);
     p->img_check = true;
     if (sheets || p->e->layout_dirty || p->d->layout_version != p->lay_ver || g_no_paint_only) a->t->relayout = true;

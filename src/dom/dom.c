@@ -76,6 +76,11 @@ static void mark(Document *d, Node *n, bool layout) {
 }
 void doc_mark_dirty(Document *d, Node *n) { mark(d, n, true); }
 void doc_mark_style_dirty(Document *d, Node *n) { mark(d, n, false); }
+static void mark_struct(Document *d, Node *n) {
+    bool was = n->flags & NF_STYLE_DIRTY;
+    mark(d, n, true);
+    if (!was) { n->flags &= ~(uint32_t)NF_STYLE_DIRTY; n->flags |= NF_STRUCT_DIRTY; }
+}
 static bool style_only_attr(const char *name) { return !strcmp(name, "style") || !strcmp(name, "class"); }
 
 void node_insert_before(Node *parent, Node *child, Node *ref) {
@@ -98,7 +103,7 @@ void node_insert_before(Node *parent, Node *child, Node *ref) {
     if (is_connected(parent)) mark_connected(child, true);
     child->flags |= NF_STYLE_DIRTY;
     doc_mark_dirty(parent->doc, child);
-    doc_mark_dirty(parent->doc, parent);
+    mark_struct(parent->doc, parent);
 }
 void node_append(Node *parent, Node *child) { node_insert_before(parent, child, NULL); }
 
@@ -109,7 +114,7 @@ void node_remove(Node *c) {
     c->parent = c->prev = c->next = NULL;
     mark_connected(c, false);
     if (c->doc && c->doc->focus && node_is_inclusive_ancestor(c, c->doc->focus)) c->doc->focus = NULL;
-    doc_mark_dirty(p->doc, p);
+    mark_struct(p->doc, p);
     if (c->refcount) c->refcount--;
 }
 
@@ -146,8 +151,7 @@ void doc_free(Document *d) {
 
 static int attr_index(const Node *n, const char *name) {
     for (int i = 0; i < n->nattrs; i++) if (n->attrs[i].name == name) return i;
-    const char *a = atom(name);
-    for (int i = 0; i < n->nattrs; i++) if (n->attrs[i].name == a) return i;
+    for (int i = 0; i < n->nattrs; i++) if (!strcmp(n->attrs[i].name, name)) return i;
     if (n->ns == NS_HTML) { for (int i = 0; i < n->nattrs; i++) if (str_ieq(n->attrs[i].name, name)) return i; }
     return -1;
 }
@@ -174,7 +178,7 @@ void node_remove_attr(Node *n, const char *name) {
     mark(n->doc, n, !style_only_attr(name));
 }
 bool node_has_class(const Node *n, const char *cls) {
-    const char *c = node_attr(n, "class"); if (!c) return false;
+    const char *c = node_attr(n, A_class); if (!c) return false;
     size_t L = strlen(cls);
     while (*c) {
         while (is_ws((unsigned char)*c)) c++;

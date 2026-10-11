@@ -1151,7 +1151,7 @@ static void hov_scan(RuleIndex *ix, const Selector *sel, int outer, const char *
 static uintptr_t hov_lookup(HMap *m, Node *el) {
     uintptr_t f = 0;
     if (el->id) f |= (uintptr_t)hm_get(m, el->id);
-    const char *cls = node_attr(el, "class");
+    const char *cls = node_attr(el, A_class);
     if (cls) { const char *p = cls; while (*p) { while (is_ws((unsigned char)*p)) p++; const char *s = p; while (*p && !is_ws((unsigned char)*p)) p++; if (p > s) f |= (uintptr_t)hm_getn(m, s, (size_t)(p - s)); } }
     if (el->tag) f |= (uintptr_t)hm_get(m, el->tag);
     for (int i = 0; i < el->nattrs; i++) {
@@ -1168,7 +1168,7 @@ int style_hover_affects(StyleEngine *e, Node *el) {
 static bool has_key(Node *el, const char *k) {
     if ((el->id && !strcmp(el->id, k)) || (el->tag && !strcmp(el->tag, k))) return true;
     if (k[0] == '[') return node_has_attr(el, k + 1);
-    const char *cls = node_attr(el, "class");
+    const char *cls = node_attr(el, A_class);
     size_t kn = strlen(k);
     if (cls) for (const char *p = cls; *p;) { while (is_ws((unsigned char)*p)) p++; const char *s = p; while (*p && !is_ws((unsigned char)*p)) p++; if ((size_t)(p - s) == kn && !memcmp(s, k, kn)) return true; }
     return false;
@@ -1176,7 +1176,7 @@ static bool has_key(Node *el, const char *k) {
 static int desc_collect(HMap *m, Node *el, HovDesc **out, int n) {
     HovDesc *h;
     if (el->id && (h = hm_get(m, el->id)) && n < 32) out[n++] = h;
-    const char *cls = node_attr(el, "class");
+    const char *cls = node_attr(el, A_class);
     if (cls) for (const char *p = cls; *p;) { while (is_ws((unsigned char)*p)) p++; const char *s = p; while (*p && !is_ws((unsigned char)*p)) p++; if (p > s && (h = hm_getn(m, s, (size_t)(p - s))) && n < 32) out[n++] = h; }
     if (el->tag && (h = hm_get(m, el->tag)) && n < 32) out[n++] = h;
     for (int i = 0; i < el->nattrs; i++) {
@@ -1381,7 +1381,7 @@ static ComputedStyle *compute_pseudo(StyleEngine *e, Node *el, ComputedStyle *ba
     VEC(MDecl) md = {0};
     RuleVec *rv;
     if (el->id && (rv = hm_get(&e->idx.by_id, el->id))) collect(e, el, rv, which, (void *)&md);
-    const char *cls = node_attr(el, "class");
+    const char *cls = node_attr(el, A_class);
     if (cls) { const char *p = cls; while (*p) { while (is_ws((unsigned char)*p)) p++; const char *s = p; while (*p && !is_ws((unsigned char)*p)) p++; if (p > s && (rv = hm_getn(&e->idx.by_class, s, (size_t)(p - s)))) collect(e, el, rv, which, (void *)&md); } }
     if ((rv = hm_get(&e->idx.by_tag, el->tag))) collect(e, el, rv, which, (void *)&md);
     { RuleVec u = { e->idx.universal.v, e->idx.universal.n, 0 }; collect(e, el, &u, which, (void *)&md); }
@@ -1424,7 +1424,7 @@ static ComputedStyle *compute(StyleEngine *e, Node *el, const ComputedStyle *par
     VEC(MDecl) md = {0};
     RuleVec *rv;
     if (el->id && (rv = hm_get(&e->idx.by_id, el->id))) collect(e, el, rv, 0, (void *)&md);
-    const char *cls = node_attr(el, "class");
+    const char *cls = node_attr(el, A_class);
     if (cls) {
         const char *seen[32]; int ns = 0;
         const char *p = cls;
@@ -1432,9 +1432,11 @@ static ComputedStyle *compute(StyleEngine *e, Node *el, const ComputedStyle *par
             while (is_ws((unsigned char)*p)) p++;
             const char *s = p; while (*p && !is_ws((unsigned char)*p)) p++;
             if (p > s) {
-                const char *a = atomn(s, (size_t)(p - s)); bool dup = false;
-                for (int i = 0; i < ns; i++) if (seen[i] == a) dup = true;
-                if (!dup) { if (ns < 32) seen[ns++] = a; if ((rv = hm_get(&e->idx.by_class, a))) collect(e, el, rv, 0, (void *)&md); }
+                if ((rv = hm_getn(&e->idx.by_class, s, (size_t)(p - s)))) {
+                    bool dup = false;
+                    for (int i = 0; i < ns; i++) if (seen[i] == (const char *)rv) dup = true;
+                    if (!dup) { if (ns < 32) seen[ns++] = (const char *)rv; collect(e, el, rv, 0, (void *)&md); }
+                }
             }
         }
     }
@@ -1449,7 +1451,7 @@ static ComputedStyle *compute(StyleEngine *e, Node *el, const ComputedStyle *par
     /* one pass so var() in sheet custom properties sees inline custom properties */
     VEC(MDecl) all = {0};
     for (int i = 0; i < split; i++) vec_push(all, md.v[i]);
-    const char *inl = node_attr(el, "style");
+    const char *inl = node_attr(el, A_style_attr);
     if (inl) {
         if (!el->inline_style_src || strcmp(el->inline_style_src, inl)) { free(el->inline_style_src); el->inline_style_src = xstrdup(inl); css_decls_free(el->inline_decls); el->inline_decls = css_parse_decls(inl, strlen(inl)); }
         DeclList *dl = el->inline_decls;
@@ -1517,7 +1519,8 @@ static void adopt(ComputedStyle *old, ComputedStyle *nw) {
 
 static void recalc(StyleEngine *e, Node *n, const ComputedStyle *par, bool force) {
     if (n->type == NODE_ELEMENT) {
-        bool need = force || (n->flags & NF_STYLE_DIRTY) || !n->style;
+        bool need = force || (n->flags & (NF_STYLE_DIRTY | NF_STRUCT_DIRTY | NF_SELF_DIRTY)) || !n->style;
+        bool shallow = !force && n->style && !(n->flags & NF_STYLE_DIRTY);
         if (need) {
             e->el_scope = tree_scope(n);
             ComputedStyle *st = compute(e, n, par);
@@ -1526,12 +1529,22 @@ static void recalc(StyleEngine *e, Node *n, const ComputedStyle *par, bool force
                     if (n->tag == A_input || n->tag == A_textarea) { ComputedStyle *ph = compute_pseudo(e, n, st, 5); if (ph) { st->ph_color = ph->color; st->ph_set = true; style_free(ph); } } }
             }
             if (css_style_change_hook) css_style_change_hook(n, n->style, st);
-            if (n->style && paint_only(n->style, st)) { adopt(n->style, st); style_free(st); e->stats_paint++; }
+            bool same = false;
+            if (n->style && paint_only(n->style, st)) {
+                same = n->style->color == st->color && n->style->visibility == st->visibility && n->style->custom == st->custom;
+                adopt(n->style, st); style_free(st); e->stats_paint++;
+            }
             else { if (n->style) style_free(n->style); n->style = st; e->layout_dirty = true; }
-            force = true; /* children inherit */
+            if (shallow && same) {
+                /* only the child list changed: children re-match (structural pseudos, sibling combinators) but needn't re-inherit */
+                if (n->flags & NF_STRUCT_DIRTY) {
+                    for (Node *c = n->first; c; c = c->next) if (c->type == NODE_ELEMENT && !(c->flags & NF_STYLE_DIRTY)) c->flags |= NF_SELF_DIRTY;
+                    n->flags |= NF_CHILD_STYLE_DIRTY;
+                }
+            } else force = true; /* children inherit */
             e->stats_matched++;
         }
-        n->flags &= ~(uint32_t)(NF_STYLE_DIRTY);
+        n->flags &= ~(uint32_t)(NF_STYLE_DIRTY | NF_STRUCT_DIRTY | NF_SELF_DIRTY);
         if (!force && !(n->flags & NF_CHILD_STYLE_DIRTY)) return;
         n->flags &= ~(uint32_t)NF_CHILD_STYLE_DIRTY;
         if (n->style->display == D_NONE && !force) return;
@@ -1541,7 +1554,7 @@ static void recalc(StyleEngine *e, Node *n, const ComputedStyle *par, bool force
     } else if (n->type == NODE_DOCUMENT || n->type == NODE_FRAGMENT) {
         n->flags &= ~(uint32_t)(NF_STYLE_DIRTY | NF_CHILD_STYLE_DIRTY);
         for (Node *c = n->first; c; c = c->next) recalc(e, c, par, force);
-    } else n->flags &= ~(uint32_t)NF_STYLE_DIRTY;
+    } else n->flags &= ~(uint32_t)(NF_STYLE_DIRTY | NF_STRUCT_DIRTY | NF_SELF_DIRTY);
 }
 
 void style_recalc(StyleEngine *e, Node *root, bool force) {
