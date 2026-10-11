@@ -81,6 +81,9 @@ static bool ensure() {
     bool sw = inf.adapterType == WGPUAdapterType_CPU; wgpuAdapterInfoFreeMembers(inf);
     if (sw && !getenv("LUMEN_ALLOW_SW_GPU")) { fprintf(stderr, "webgpu: %s is a software rasterizer, WebGPU disabled\n", ginfo.c_str()); return false; }
     WGPUDeviceDescriptor dd = WGPU_DEVICE_DESCRIPTOR_INIT; dd.uncapturedErrorCallbackInfo.callback = on_err;
+    WGPUFeatureName want[] = { WGPUFeatureName_Float32Filterable, WGPUFeatureName_DepthClipControl, WGPUFeatureName_Depth32FloatStencil8 }; WGPUFeatureName feats[3]; size_t nf = 0;
+    for (WGPUFeatureName f : want) if (wgpuAdapterHasFeature(ga, f)) feats[nf++] = f;
+    dd.requiredFeatureCount = nf; dd.requiredFeatures = feats; WGPULimits lim = WGPU_LIMITS_INIT; if (wgpuAdapterGetLimits(ga, &lim) == WGPUStatus_Success) dd.requiredLimits = &lim;
     WGPURequestDeviceCallbackInfo dc = WGPU_REQUEST_DEVICE_CALLBACK_INFO_INIT; dc.mode = WGPUCallbackMode_AllowProcessEvents; dc.callback = on_dev; dc.userdata1 = &gd;
     wgpuAdapterRequestDevice(ga, &dd, dc); wgpuInstanceProcessEvents(gi);
     if (!gd) return false;
@@ -89,6 +92,7 @@ static bool ensure() {
     return true;
 }
 FN(gpuInit) { CTX; if (ensure()) a.GetReturnValue().Set(jstr(iso, ginfo.c_str())); else a.GetReturnValue().SetNull(); }
+FN(gpuFeature) { CTX; a.GetReturnValue().Set(gd && wgpuDeviceHasFeature(gd, (WGPUFeatureName)(int)NUM(0))); }
 FN(gpuErr) { CTX; std::string e; e.swap(glast_err); a.GetReturnValue().Set(jstr(iso, e.c_str())); }
 FN(gpuDrop) {
     CTX; int id = (int)NUM(0); if (id <= 0 || id >= (int)H.size() || !H[id]) return;
@@ -283,7 +287,7 @@ FN(gpuExec) { CTX; if (!gd || !a[0]->IsArray()) return; VL cl = a[0]; int n = le
     if (rp) { wgpuRenderPassEncoderEnd(rp); wgpuRenderPassEncoderRelease(rp); } if (cp) { wgpuComputePassEncoderEnd(cp); wgpuComputePassEncoderRelease(cp); }
     WGPUCommandBuffer cb = wgpuCommandEncoderFinish(enc, nullptr); wgpuQueueSubmit(gq, 1, &cb); wgpuCommandBufferRelease(cb); wgpuCommandEncoderRelease(enc); }
 /* gpuPresent(tex, canvasEl, opaque): copy the canvas texture into the element's backing store */
-FN(gpuPresent) { CTX; WGPUTexture t = get<WGPUTexture>((int)NUM(0), T_TEX); CanvasBuf *cb = cvbuf_for(junwrap(a[1]), true); if (!t || !cb) return; bool opaque = a[2]->BooleanValue(iso);
+FN(gpuPresent) { CTX; WGPUTexture t = get<WGPUTexture>((int)NUM(0), T_TEX); CanvasBuf *cb = cvbuf_for(junwrap(a[1]), true); if (!t || !cb) return; bool opaque = a[2]->BooleanValue(iso), flip = a[3]->BooleanValue(iso);
     uint32_t w = wgpuTextureGetWidth(t), h = wgpuTextureGetHeight(t), bpr = (w * 4 + 255) & ~255u; bool rgba = wgpuTextureGetFormat(t) == WGPUTextureFormat_RGBA8Unorm || wgpuTextureGetFormat(t) == WGPUTextureFormat_RGBA8UnormSrgb;
     static WGPUBuffer rb; static uint64_t rbs; uint64_t need = (uint64_t)bpr * h;
     if (!rb || rbs < need) { if (rb) { wgpuBufferDestroy(rb); wgpuBufferRelease(rb); } WGPUBufferDescriptor d = WGPU_BUFFER_DESCRIPTOR_INIT; d.size = need; d.usage = WGPUBufferUsage_MapRead | WGPUBufferUsage_CopyDst; rb = wgpuDeviceCreateBuffer(gd, &d); rbs = need; }
@@ -293,13 +297,13 @@ FN(gpuPresent) { CTX; WGPUTexture t = get<WGPUTexture>((int)NUM(0), T_TEX); Canv
     if (!map_sync(rb, WGPUMapMode_Read, 0, need)) return;
     const uint8_t *p = (const uint8_t *)wgpuBufferGetConstMappedRange(rb, 0, need);
     int W, Hh; uint32_t *px = cvbuf_px(cb, &W, &Hh); if ((uint32_t)W != w || (uint32_t)Hh != h) { cvbuf_resize(cb, (int)w, (int)h); px = cvbuf_px(cb, &W, &Hh); }
-    if (p) for (uint32_t y = 0; y < h; y++) { const uint32_t *src = (const uint32_t *)(p + (size_t)y * bpr); uint32_t *dst = px + (size_t)y * w;
+    if (p) for (uint32_t y = 0; y < h; y++) { const uint32_t *src = (const uint32_t *)(p + (size_t)y * bpr); uint32_t *dst = px + (size_t)(flip ? h - 1 - y : y) * w;
         for (uint32_t x = 0; x < w; x++) { uint32_t v = src[x]; if (rgba) v = (v & 0xff00ff00u) | ((v & 0xff) << 16) | ((v >> 16) & 0xff); if (opaque) v |= 0xff000000u; dst[x] = v; } }
     wgpuBufferUnmap(rb); cvbuf_touch(cb); }
 void js_install_webgpu(JsCtx *c, v8::Local<v8::Object> N) {
     v8::Isolate *iso = c->iso; v8::Local<v8::Context> ctx = iso->GetCurrentContext();
 #define REG(nm) (void)N->Set(ctx, jstr(iso, #nm), v8::Function::New(ctx, n_##nm).ToLocalChecked())
     REG(gpuInit); REG(gpuErr); REG(gpuDrop); REG(gpuBuffer); REG(gpuWriteBuffer); REG(gpuMapRead); REG(gpuUnmapWrite); REG(gpuTexture); REG(gpuView); REG(gpuSampler); REG(gpuShader);
-    REG(gpuBGL); REG(gpuPL); REG(gpuBG); REG(gpuRP); REG(gpuCP); REG(gpuPipeBGL); REG(gpuWriteTexture); REG(gpuExec); REG(gpuPresent);
+    REG(gpuBGL); REG(gpuPL); REG(gpuBG); REG(gpuRP); REG(gpuCP); REG(gpuPipeBGL); REG(gpuWriteTexture); REG(gpuExec); REG(gpuPresent); REG(gpuFeature);
 #undef REG
 }
