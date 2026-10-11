@@ -42,7 +42,7 @@ Document *doc_new(const char *url) {
 }
 
 long g_nodes_live;
-static Node *alloc_node(Document *d, int type) { Node *n = xcalloc(1, sizeof *n); g_nodes_live++; n->type = (uint8_t)type; n->doc = d; n->flags = NF_STYLE_DIRTY | NF_LAYOUT_DIRTY; return n; }
+static Node *alloc_node(Document *d, int type) { Node *n = xcalloc(1, sizeof *n); n->ncls = -1; g_nodes_live++; n->type = (uint8_t)type; n->doc = d; n->flags = NF_STYLE_DIRTY | NF_LAYOUT_DIRTY; return n; }
 Node *node_new_element(Document *d, const char *tag, int ns) { Node *n = alloc_node(d, NODE_ELEMENT); n->tag = atom(tag); n->ns = (uint8_t)ns; return n; }
 Node *node_new_text(Document *d, const char *s, size_t len) { Node *n = alloc_node(d, NODE_TEXT); n->text = xstrndup(s, len); n->text_len = len; n->tag = atom("#text"); return n; }
 Node *node_new_comment(Document *d, const char *s, size_t len) { Node *n = alloc_node(d, NODE_COMMENT); n->text = xstrndup(s, len); n->text_len = len; n->tag = atom("#comment"); return n; }
@@ -125,7 +125,7 @@ __attribute__((weak)) void style_free(struct ComputedStyle *s) { free(s); }
 __attribute__((weak)) void box_detach_node(Node *n) { n->box = NULL; }
 static void node_free_one(Node *n) {
     for (int i = 0; i < n->nattrs; i++) free(n->attrs[i].value);
-    free(n->attrs); free(n->text); free(n->inline_style_src);
+    free(n->attrs); free(n->text); free(n->inline_style_src); free(n->cls);
     if (n->ext && n->ext_free) n->ext_free(n->ext);
     if (n->style) style_free(n->style);
     if (n->box) box_detach_node(n);
@@ -165,6 +165,7 @@ void node_set_attr(Node *n, const char *name, const char *value) {
         n->attrs[n->nattrs].name = atom(name); n->attrs[n->nattrs].value = xstrdup(value); i = n->nattrs++;
     }
     if (n->attrs[i].name == A_id) n->id = n->attrs[i].value;
+    if (n->attrs[i].name == A_class) n->ncls = -1;
     /* re-point cached id after realloc */
     for (int k = 0; k < n->nattrs; k++) if (n->attrs[k].name == A_id) n->id = n->attrs[k].value;
     mark(n->doc, n, !style_only_attr(name));
@@ -172,19 +173,30 @@ void node_set_attr(Node *n, const char *name, const char *value) {
 void node_remove_attr(Node *n, const char *name) {
     int i = attr_index(n, name); if (i < 0) return;
     if (n->attrs[i].name == A_id) n->id = NULL;
+    if (n->attrs[i].name == A_class) n->ncls = -1;
     free(n->attrs[i].value);
     memmove(&n->attrs[i], &n->attrs[i + 1], sizeof(Attr) * (size_t)(n->nattrs - i - 1)); n->nattrs--;
     for (int k = 0; k < n->nattrs; k++) if (n->attrs[k].name == A_id) n->id = n->attrs[k].value;
     mark(n->doc, n, !style_only_attr(name));
 }
-bool node_has_class(const Node *n, const char *cls) {
-    const char *c = node_attr(n, A_class); if (!c) return false;
-    size_t L = strlen(cls);
+static void cls_build(Node *n) {
+    free(n->cls); n->cls = NULL; n->ncls = 0;
+    const char *c = node_attr(n, A_class);
+    if (!c) return;
+    int cap = 0;
     while (*c) {
         while (is_ws((unsigned char)*c)) c++;
-        const char *s = c; while (*c && !is_ws((unsigned char)*c)) c++;
-        if ((size_t)(c - s) == L && !memcmp(s, cls, L)) return true;
+        const char *s = c;
+        while (*c && !is_ws((unsigned char)*c)) c++;
+        if (c == s) continue;
+        if (n->ncls == cap) { cap = cap ? cap * 2 : 4; n->cls = xrealloc(n->cls, sizeof *n->cls * (size_t)cap); }
+        n->cls[n->ncls++] = atomn(s, (size_t)(c - s));
     }
+}
+/* cls must be an atom (selector class names are) */
+bool node_has_class(const Node *n, const char *cls) {
+    if (n->ncls < 0) cls_build((Node *)n);
+    for (int i = 0; i < n->ncls; i++) if (n->cls[i] == cls) return true;
     return false;
 }
 

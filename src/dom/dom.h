@@ -48,6 +48,7 @@ typedef struct Node {
     char *inline_style_src;        /* cached style="" for change detection */
     void *inline_decls;            /* parsed CSS declarations for style attr */
     uint32_t refcount;             /* JS keeps nodes alive */
+    const char **cls; int ncls;    /* atomized class tokens; ncls < 0 when stale */
 } Node;
 
 typedef struct Document {
