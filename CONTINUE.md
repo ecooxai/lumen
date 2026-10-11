@@ -351,4 +351,7 @@ Load (DCL/load): Google 0.53/3.66 s, Bing 1.97/2.23 s, YT watch ~2.2/3.47 s, YT 
 - 86b0eaf: iframes raster onto a transparent canvas (main.c frame_update), have no intrinsic ratio (box.c replaced_size), UA `iframe[frameborder=0]{border:none}`. Fixed Amazon dp title/byline/rating/breadcrumbs hidden under the 1196x600 white ad iframe. Test: tests/render/iframe-transparent.html -> `IFRT [true,true,true,true]`.
 - Note: `ps -o %cpu` is a lifetime average; it decays slowly after a load burst. Use `LUMEN_CPU_DEBUG=1` (per-tab %) or /proc/<pid>/stat deltas for instantaneous CPU. Amazon dp settles ~6-8% (about 80 partial paints/s from banner videos).
 - Debug trick: append a `<script>setTimeout(()=>console.log(...),5000)</script>` probe to a saved page and run with `LUMEN_CONSOLE=1`; raising an element's z-index shows if something is painted over it.
-- Open: YouTube post-seek playback (`moov atom not found`), Reddit opened-post width, typing CPU on Amazon/YouTube/Wikipedia.
+- e5ce223: Alt+Left/Right and AC_BACK/AC_FORWARD keys -> history_go (main.c KEY_DOWN, skipped while editing the URL bar). Tester verified on Reddit search -> post -> Alt+Left/Alt+Right.
+- Tester (86b0eaf build): YouTube click-seek and held drag-seek both resume playback, no `moov` errors. Reddit post opened directly is full width (main 756 + sidebar 316 grid); 'narrow post' only seen when opened from search results.
+- `LUMEN_PRE_FILE=probe.js` evals a script in every page: handy for probing live sites.
+- Open: Reddit post opened from search may be narrow, X first input after async layout shift (inconclusive), typing CPU on Amazon/YouTube/Wikipedia.
