@@ -255,8 +255,8 @@ methods(ShadowRoot.prototype, {
     get host() { return N.host(this); }, get mode() { return this.__mode || 'open'; },
     get innerHTML() { return N.html(this, false); }, set innerHTML(v) { setInner(this, String(v)); },
     get activeElement() { return null; }, get delegatesFocus() { return false; },
-    get adoptedStyleSheets() { return this.__ass || (def(this, '__ass', []), this.__ass); }, set adoptedStyleSheets(v) { def(this, '__ass', Array.from(v)); },
-    get styleSheets() { return []; },
+    get adoptedStyleSheets() { return adoptedGet(this); }, set adoptedStyleSheets(v) { adoptSheets(this, v); },
+    get styleSheets() { return scopeSheets(this); },
 });
 
 class Attr {

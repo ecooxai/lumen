@@ -189,6 +189,19 @@ Node *node_next_in_tree(Node *n, Node *root) {
     while (n && n != root) { if (n->next) return n->next; n = n->parent; }
     return NULL;
 }
+/* pre-order traversal that also enters shadow trees (shadow tree before the host's light children) */
+Node *node_next_deep(Node *n, Node *root) {
+    if (n->type == NODE_ELEMENT && n->shadow_root && n->shadow_root->first) return n->shadow_root->first;
+    if (n->first) return n->first;
+    for (;;) {
+        if (n == root) return NULL;
+        if (n->next) return n->next;
+        Node *p = n->parent;
+        if (!p) return NULL;
+        if (p->type == NODE_FRAGMENT && p->host) { Node *h = p->host; if (h->first) return h->first; n = h; continue; }
+        n = p;
+    }
+}
 bool node_is_inclusive_ancestor(const Node *a, const Node *b) { for (; b; b = b->parent) if (a == b) return true; return false; }
 
 static void text_rec(const Node *n, SB *b) {

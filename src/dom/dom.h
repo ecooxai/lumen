@@ -95,6 +95,7 @@ void node_set_text_content(Node *n, const char *s);
 void node_text_append(Node *n, const char *s, size_t len);
 char *node_serialize(const Node *n, bool outer);  /* innerHTML/outerHTML */
 Node *node_next_in_tree(Node *n, Node *root);     /* pre-order traversal */
+Node *node_next_deep(Node *n, Node *root);        /* pre-order, entering shadow trees */
 Node *doc_get_element_by_id(Document *d, const char *id);
 void doc_mark_dirty(Document *d, Node *n);         /* style + layout dirty */
 void doc_mark_style_dirty(Document *d, Node *n);   /* style only: layout follows from the computed style diff */

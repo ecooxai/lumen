@@ -1208,12 +1208,12 @@ int style_hover_has(StyleEngine *e, Node *el, bool child) {
     return (int)hov_lookup(child ? &ix->hov_ach : &ix->hov_anc, el);
 }
 /* :host only matches from stylesheets inside a shadow tree */
-static bool sheet_in_document_scope(const StyleSheet *sh) {
-    Node *n = sh->owner;
-    if (!n) return false;
+static Node *tree_scope(Node *n) {   /* shadow root containing n, NULL in the document tree */
+    if (!n) return NULL;
     while (n->parent) n = n->parent;
-    return !n->host;
+    return n->type == NODE_FRAGMENT && n->host ? n : NULL;
 }
+static bool sheet_in_document_scope(const StyleSheet *sh) { return sh->owner && !tree_scope(sh->owner); }
 static bool sel_has_host(const Selector *sel) {
     const char *h = atom("host"), *hc = atom("host-context");
     for (int c = 0; c < sel->n; c++)
@@ -1229,9 +1229,11 @@ static void idx_build(StyleEngine *e) {
         StyleSheet *sh = e->sheets.v[si];
         if (sh->disabled) continue;
         bool doc_scope = sheet_in_document_scope(sh);
+        Node *scope = tree_scope(sh->owner);
         for (int i = 0; i < sh->rules.n; i++) {
             Rule *r = &sh->rules.v[i];
             r->order = (uint32_t)(si << 20) + (uint32_t)i;
+            r->scope = scope;
             if (doc_scope && sel_has_host(&r->sel)) continue;
             Compound *last = &r->sel.c[r->sel.n - 1];
             const char *id = NULL, *cls = NULL, *tag = NULL;
@@ -1268,7 +1270,7 @@ void style_engine_add_sheet(StyleEngine *e, StyleSheet *s) {
             Node *o = e->sheets.v[i]->owner; if (!o) continue;
             /* is s->owner before o in tree order? */
             bool before = false;
-            for (Node *n = s->owner; n; n = node_next_in_tree(n, NULL)) { if (n == o) { before = true; break; } }
+            for (Node *n = s->owner; n; n = node_next_deep(n, NULL)) { if (n == o) { before = true; break; } }
             if (before) { pos = i; break; }
         }
     }
@@ -1315,11 +1317,17 @@ static bool container_matches(const ContainerCond *cc, Node *el) {
     return true;
 }
 
+static bool sel_last_has_host(const Selector *sel) {
+    const char *h = atom("host"); const Compound *c = &sel->c[sel->n - 1];
+    for (int k = 0; k < c->n; k++) if (c->s[k].kind == SK_PSEUDO && c->s[k].name == h) return true;
+    return false;
+}
 static void collect(StyleEngine *e, Node *el, RuleVec *rv, int pseudo, VEC(MDecl) *out) {
     if (!rv) return;
     for (int i = 0; i < rv->n; i++) {
         Rule *r = rv->v[i];
         if (r->sel.pseudo_el != pseudo) continue;
+        if (r->origin && r->scope != e->el_scope && !(r->scope && el->shadow_root == r->scope && sel_last_has_host(&r->sel))) continue;
         if (!css_match_selector(&r->sel, el, NULL)) continue;
         if (r->cq && !container_matches(r->cq, el)) continue;
         for (int k = 0; k < r->decls->n; k++) {
@@ -1501,6 +1509,7 @@ static void recalc(StyleEngine *e, Node *n, const ComputedStyle *par, bool force
     if (n->type == NODE_ELEMENT) {
         bool need = force || (n->flags & NF_STYLE_DIRTY) || !n->style;
         if (need) {
+            e->el_scope = tree_scope(n);
             ComputedStyle *st = compute(e, n, par);
             if (st->display != D_NONE) {
                 if (e->idx.count) { st->before = compute_pseudo(e, n, st, 1); st->after = compute_pseudo(e, n, st, 2); if (st->display == D_LIST_ITEM) st->marker = compute_pseudo(e, n, st, 4); }

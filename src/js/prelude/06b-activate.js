@@ -213,12 +213,27 @@ class CSSStyleSheet extends StyleSheet {
     removeRule(i = 0) { this.deleteRule(i); }
     replace(t) { this.replaceSync(t); return Promise.resolve(this); }
     replaceSync(t) { this._list = cssParseList(String(t), this, null); this._sync(); }
-    _sync() {
-        let o = this._owner;
-        if (!o) { o = N.create('style', 0); def(this, '_owner', o); const h = document.head || document.documentElement; if (h) N.insert(h, o, null); }
-        if (N.name(o) === 'style') { const t = this._list.map(r => r.cssText).join('\n'); this._src = t; N.setText(o, t); }
+    _text() { return this._list.map(r => r.cssText).join('\n'); }
+    _sync() {   /* constructed sheets apply only through adoptedStyleSheets: mirror their text into each adopting scope */
+        const o = this._owner;
+        if (!o) { if (this._mirrors) { const t = this._text(); for (const n of this._mirrors.values()) N.setText(n, t); } return; }
+        if (N.name(o) === 'style') { const t = this._text(); this._src = t; N.setText(o, t); }
     }
 }
+function adoptSheets(scope, v) {
+    const list = Array.from(v || []).filter(s => s instanceof CSSStyleSheet && !s._owner), old = scope.__ass || [];
+    for (const s of old) if (!list.includes(s) && s._mirrors) { const n = s._mirrors.get(scope); if (n) { if (n.parentNode) N.remove(n); s._mirrors.delete(scope); } }
+    def(scope, '__ass', list);
+    const root = scope.nodeType === 9 ? (scope.head || scope.documentElement) : scope;
+    for (const s of list) {
+        if (!s._mirrors) def(s, '_mirrors', new Map());
+        let n = s._mirrors.get(scope);
+        if (n) { if (n.parentNode) N.remove(n); } else { n = N.create('style', 0); def(n, '__mirror', true); s._mirrors.set(scope, n); N.setText(n, s._text()); }
+        if (root) N.insert(root, n, null);
+    }
+}
+function adoptedGet(scope) { return new Proxy((scope.__ass || []).slice(), { set(t, k, val) { t[k] = val; adoptSheets(scope, t); return true; } }); }
+function scopeSheets(scope) { return N.query(scope, 'style,link[rel~=stylesheet]', true).filter(el => !el.__mirror).map(sheetFor); }
 function sheetFor(el) { if (!el.__sheet) { const s = new CSSStyleSheet(); def(s, '_owner', el); def(el, '__sheet', s); } return el.__sheet; }
 const CSS = {
     escape(s) { s = String(s); let r = ''; for (let i = 0; i < s.length; i++) { const c = s.charCodeAt(i); if (c === 0) r += '\uFFFD'; else if ((c >= 1 && c <= 31) || c === 127 || (i === 0 && c >= 48 && c <= 57) || (i === 1 && c >= 48 && c <= 57 && s.charCodeAt(0) === 45)) r += '\\' + c.toString(16) + ' '; else if (i === 0 && c === 45 && s.length === 1) r += '\\-'; else if (c >= 128 || c === 45 || c === 95 || (c >= 48 && c <= 57) || (c >= 65 && c <= 90) || (c >= 97 && c <= 122)) r += s[i]; else r += '\\' + s[i]; } return r; },

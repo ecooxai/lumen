@@ -266,7 +266,7 @@ static int loader(void *arg) {
         p->scripts = xrealloc(p->scripts, sizeof *p->scripts * (size_t)(p->nscripts + 1)); p->scripts[p->nscripts++] = sc;
     }
     p->e = style_engine_new(p->d); p->e->media.vw = rq->vw; p->e->media.vh = rq->vh;
-    for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) {
+    for (Node *n = p->d->node.first; n; n = node_next_deep(n, &p->d->node)) {
         if (!gen_live(rq->gen)) break;
         if (n->type != NODE_ELEMENT) continue;
         if (n->tag == A_style) {
@@ -1206,7 +1206,7 @@ static void fire_img_events(Page *p) {
 /* Reconcile engine sheets with <style>/<link rel=stylesheet> currently in the tree; seed only records them. */
 static bool sync_sheets(Page *p, bool seed) {
     SheetRef *cur = NULL; int nc = 0, cap = 0; bool changed = false;
-    for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) {
+    for (Node *n = p->d->node.first; n; n = node_next_deep(n, &p->d->node)) {
         if (n->type != NODE_ELEMENT || n->ns != NS_HTML || (n->tag != A_style && !is_sheet_link(n) && !is_preload_link(n))) continue;
         char *t = n->tag == A_style ? node_text_content(n) : NULL;
         uint64_t h = t ? fnv(t) : fnv(node_attr(n, "href"));
@@ -1367,7 +1367,7 @@ static void h_frame_open(void *ud, Node *f, Document *d, JsHost *ch) {
     if (p->fw < 1) p->fw = 300;
     if (p->fh < 1) p->fh = 150;
     p->e = style_engine_new(d); p->e->media.vw = p->fw; p->e->media.vh = p->fh;
-    for (Node *n = d->node.first; n; n = node_next_in_tree(n, &d->node)) {
+    for (Node *n = d->node.first; n; n = node_next_deep(n, &d->node)) {
         if (n->type != NODE_ELEMENT || n->ns != NS_HTML) continue;
         if (n->tag == A_style) {
             char *t = node_text_content(n); StyleSheet *sh = css_parse_sheet(t, strlen(t), d->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); free(t);

@@ -144,15 +144,25 @@ static bool match_compound(const Compound *c, Node *el, Node *scope) {
     return true;
 }
 
+/* `:host ... x` steps from a shadow tree's top level up to its host */
+static Node *host_up(Node *el, const Compound *c) {
+    Node *p = el->parent;
+    if (!p || p->type != NODE_FRAGMENT || !p->host) return NULL;
+    const char *h = atom("host");
+    for (int k = 0; k < c->n; k++) if (c->s[k].kind == SK_PSEUDO && c->s[k].name == h) return p->host;
+    return NULL;
+}
 static bool match_from(const Selector *s, int ci, Node *el, Node *scope) {
     if (!match_compound(&s->c[ci], el, scope)) return false;
     if (ci == 0) return true;
     uint8_t comb = s->c[ci].comb;
     switch (comb) {
-    case CB_CHILD: { Node *p = parent_el(el); return p && match_from(s, ci - 1, p, scope); }
+    case CB_CHILD: { Node *p = parent_el(el); if (!p) p = host_up(el, &s->c[ci - 1]); return p && match_from(s, ci - 1, p, scope); }
     case CB_DESC: {
-        for (Node *p = parent_el(el); p; p = parent_el(p)) if (match_from(s, ci - 1, p, scope)) return true;
-        return false; }
+        Node *p = parent_el(el), *last = el;
+        for (; p; last = p, p = parent_el(p)) if (match_from(s, ci - 1, p, scope)) return true;
+        p = host_up(last, &s->c[ci - 1]);
+        return p && match_from(s, ci - 1, p, scope); }
     case CB_ADJ: { Node *p = prev_el(el); return p && match_from(s, ci - 1, p, scope); }
     case CB_SIB: { for (Node *p = prev_el(el); p; p = prev_el(p)) if (match_from(s, ci - 1, p, scope)) return true; return false; }
     }

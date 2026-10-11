@@ -139,6 +139,7 @@ typedef struct Rule {
     uint8_t origin; /* 0 UA, 1 author */
     uint8_t layer;
     const ContainerCond *cq; /* innermost @container, or NULL */
+    Node *scope;             /* shadow root the rule's sheet lives in, NULL for document sheets */
 } Rule;
 
 typedef struct MediaCtx { float vw, vh, dpr; bool dark; } MediaCtx;
@@ -172,6 +173,7 @@ typedef struct StyleEngine {
     uint64_t generation;
     int stats_matched, stats_paint;
     bool layout_dirty;          /* a recalc changed something other than paint-only properties */
+    Node *el_scope;             /* tree scope (shadow root or NULL) of the element being matched */
 } StyleEngine;
 
 StyleSheet *css_parse_sheet(const char *src, size_t n, const char *base_url, int origin, const MediaCtx *mc);
