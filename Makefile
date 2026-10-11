@@ -1,6 +1,5 @@
 # Lumen browser build (macOS / Linux)
 UNAME := $(shell uname)
-BREW ?= /opt/homebrew
 BUILD ?= build
 MODE ?= release
 CC ?= clang
@@ -13,6 +12,7 @@ endif
 WARN := -Wall -Wextra -Wno-unused-parameter -Wno-sign-compare -Wno-missing-field-initializers
 INC := -Isrc
 ifeq ($(UNAME),Darwin)
+  BREW ?= /opt/homebrew
   DEPS := openssl@3 brotli zstd freetype harfbuzz sdl3 v8 wgpu-native ffmpeg libpng jpeg-turbo webp giflib icu4c
   INC += $(foreach d,$(DEPS),-I$(BREW)/opt/$(d)/include) -I$(BREW)/opt/freetype/include/freetype2 -I$(BREW)/opt/harfbuzz/include/harfbuzz -I$(BREW)/include
   LIBDIRS := $(foreach d,$(DEPS),-L$(BREW)/opt/$(d)/lib)
@@ -39,6 +39,7 @@ CORE_SRC := $(BASE_SRC) $(NET_SRC) $(wildcard src/html/*.c src/dom/*.c src/css/*
 APP_SRC := $(wildcard src/app/*.c)
 JS_SRC := $(wildcard src/js/*.cc)
 ifeq ($(UNAME),Darwin)
+  BREW ?= /opt/homebrew
   APP_SRC += $(wildcard src/app/*.m)
 endif
 OBJ = $(patsubst %,$(BUILD)/%.o,$(1))

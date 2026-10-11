@@ -32,6 +32,7 @@ static char g_notice[256];   /* dismissable error notice shown in the info bar *
 #define INFOH 36.f
 #define BAR (TABH + TB + g_info_h)
 #include "uicmd.h"
+#include "../paint/cvbuf.h"
 #ifdef __APPLE__
 #include "macui.h"
 #define TLW 78.f
@@ -155,6 +156,7 @@ static void cache_fetch(const char *u) {
 static Image *node_img(Node *n) {
     if (n->tag == A_iframe) { Page *fp = frame_find(n); return fp && fp->cv.px ? &fp->img : NULL; }
     if (n->tag == A_video) { Image *f = media_frame_for(n); if (f) return f; }
+    if (n->tag == A_canvas) return cvbuf_image(n);
     const char *s = node_attr(n, n->tag == A_video ? "poster" : "src"); if (!s) return NULL;
     char *u = url_join(n->doc->url, s); Image *im = cache_get(u); free(u); return im;
 }
@@ -2162,6 +2164,7 @@ int main(int argc, char **argv) {
             if (th - lh >= 2000) { lh = th; hud_sample(); a.dirty = true; a.vonly = false; }
             int nx = (int)(2000 - (th - lh)) + 1; if (nx < to) to = nx;
         }
+        if (cvbuf_changed) { cvbuf_changed = 0; a.dirty = true; a.vonly = false; }
         { int mf = media_tick(); if (mf & 1) { if (!a.dirty && !a.deferred) a.vonly = true; a.dirty = a.vframe = true; } if (mf & 2) a.t->relayout = true; }
         if (!a.editing && (page_focus(&a) || edit_focus(&a)) && !SDL_TextInputActive(a.win)) SDL_StartTextInput(a.win);
         {

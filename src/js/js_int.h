@@ -125,6 +125,8 @@ void frame_kill(JsCtx *k);
 void frame_nav(JsCtx *k, const char *u);
 void js_install_frames(JsCtx *c, v8::Local<v8::Object> N);
 void js_install_workers(JsCtx *c, v8::Local<v8::Object> N);
+void js_install_canvas(JsCtx *c, v8::Local<v8::Object> N);
+void js_install_webgpu(JsCtx *c, v8::Local<v8::Object> N);
 void workers_pump(JsCtx *c);
 void workers_kill(JsCtx *c);
 double workers_deadline(JsCtx *c);
