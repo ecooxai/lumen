@@ -417,6 +417,7 @@ FN(mediaAppend) {
     RET(v8::Boolean::New(iso, mp_append(mp, (int)NUM(1), (const uint8_t *)p, n)));
 }
 FN(mediaRemove) { CTX; MP; mp_remove(mp, (int)NUM(1), NUM(2), NUM(3)); }
+FN(mediaAbort) { CTX; MP; mp_abort(mp, (int)NUM(1)); }
 FN(mediaBuffered) {
     CTX; MP; double r[64]; int n = mp_buffered(mp, (int)NUM(1), r, 32);
     v8::Local<v8::Array> arr = v8::Array::New(iso, n * 2);
@@ -877,7 +878,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(templateContent); REG(rect); REG(vrect); REG(clipSet); REG(clipGet); REG(scrollPos); REG(setScroll); REG(computed); REG(value); REG(setValue); REG(checked); REG(setChecked); REG(pickFiles);
     REG(focus); REG(active); REG(cookie); REG(setCookie); REG(url); REG(setUrl); REG(navigate); REG(navigatePost); REG(saveFile); REG(histGo);
     REG(histLen); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
-    REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove);
+    REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove); REG(mediaAbort);
     REG(mediaBuffered); REG(mediaEos); REG(mediaSetDuration); REG(mediaPlay); REG(mediaPause); REG(mediaSeek);
     REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(readyState); REG(quirks);
     REG(currentScript); REG(media); REG(cssSupports); REG(cssSelText); REG(urlParse); REG(encode); REG(decode); REG(random); REG(cDigest); REG(cHmac); REG(cAes); REG(cEcGen); REG(cEcDerive); REG(cEcSign); REG(cEcVerify); REG(cSpki); REG(cSpkiParse); REG(cPkcs8Parse); REG(cEcFromD); REG(cHkdf); REG(cPbkdf2);

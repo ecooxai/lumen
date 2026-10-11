@@ -1522,6 +1522,17 @@ static Node *page_focus(App *a) { Node *f = a->t->cur && a->t->cur->d ? a->t->cu
 static char *ctl_value(Node *n) {
     if (n->value_override) return xstrdup(n->value_override);
     if (n->tag == A_textarea) return node_text_content(n);
+    if (n->tag == A_select) {   /* selectedness: script/user choice, else [selected], else the first option */
+        Node *pick = NULL, *attr = NULL, *first = NULL;
+        for (Node *o = n->first; o; o = node_next_in_tree(o, n)) {
+            if (o->type != NODE_ELEMENT || o->tag != A_option || node_has_attr(o, "disabled")) continue;
+            if (!first) first = o;
+            if (o->checked_override > 0) { pick = o; break; }
+            if (!attr && o->checked_override == 0 && node_has_attr(o, "selected")) attr = o;
+        }
+        Node *o = pick ? pick : attr ? attr : first; if (!o) return xstrdup("");
+        const char *ov = node_attr(o, "value"); return ov ? xstrdup(ov) : node_text_content(o);
+    }
     const char *v = node_attr(n, "value"); return xstrdup(v ? v : "");
 }
 static void ctl_set(App *a, Node *n, char *v) {

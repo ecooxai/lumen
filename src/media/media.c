@@ -379,7 +379,10 @@ static int run_demux(Stream *s, DecCtx *d, double start) {
     AVCodecContext *vc = NULL, *ac = NULL; AVPacket *pkt = av_packet_alloc(); AVFrame *f = av_frame_alloc();
     fc->pb = io; fc->flags |= AVFMT_FLAG_CUSTOM_IO;
     const AVInputFormat *fmt = s->progressive ? NULL : av_find_input_format(s->webm ? "matroska" : "mp4");
-    if (avformat_open_input(&fc, NULL, fmt, NULL) < 0) goto done;
+    if (avformat_open_input(&fc, NULL, fmt, NULL) < 0) {
+        if (getenv("LUMEN_MEDIA_DEBUG")) fprintf(stderr, "media: open failed mime=%s rd_init=%zu box=%.4s nsegs=%d rd_pos=%.2f seg0=%.2f-%.2f seg0init=%p init=%p\n", s->mime, s->rd_init ? s->rd_init->n : 0, s->rd_init && s->rd_init->n >= 8 ? (const char *)s->rd_init->p + 4 : "-", s->nsegs, s->rd_pos, s->nsegs ? s->segs[0].t0 : -1, s->nsegs ? s->segs[0].t1 : -1, s->nsegs ? (void *)s->segs[0].init : NULL, (void *)s->init);
+        goto done;
+    }
     if (s->progressive && avformat_find_stream_info(fc, NULL) < 0) goto done;
     int vi = av_find_best_stream(fc, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0);
     int ai = av_find_best_stream(fc, AVMEDIA_TYPE_AUDIO, -1, -1, NULL, 0);
@@ -651,6 +654,13 @@ bool mp_append(MediaPlayer *m, int sb, const uint8_t *p, size_t n) {
     SDL_BroadcastCondition(m->cv);
     SDL_UnlockMutex(m->mu);
     return ok;
+}
+void mp_abort(MediaPlayer *m, int sb) {   /* SourceBuffer.abort(): reset the segment parser, drop any partial box */
+    if (sb < 0 || sb >= m->nst) return;
+    SDL_LockMutex(m->mu);
+    Stream *s = m->st[sb]; s->npend = 0;
+    free(s->moof); s->moof = NULL; s->nmoof = 0; free(s->ftyp); s->ftyp = NULL; s->nftyp = 0;
+    SDL_UnlockMutex(m->mu);
 }
 void mp_remove(MediaPlayer *m, int sb, double a, double z) {
     if (sb < 0 || sb >= m->nst) return;
