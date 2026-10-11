@@ -1320,6 +1320,15 @@ static bool container_matches(const ContainerCond *cc, Node *el) {
     return true;
 }
 
+bool css_media_chain(ContainerCond *mq, const MediaCtx *m) {
+    for (; mq; mq = mq->outer) {
+        if (!mq->mres || mq->mvw != m->vw || mq->mvh != m->vh || mq->mdark != m->dark) {
+            mq->mres = css_media_matches(mq->query, m) ? 1 : -1; mq->mvw = m->vw; mq->mvh = m->vh; mq->mdark = m->dark;
+        }
+        if (mq->mres < 0) return false;
+    }
+    return true;
+}
 static bool sel_last_has_host(const Selector *sel) {
     const char *h = atom("host"); const Compound *c = &sel->c[sel->n - 1];
     for (int k = 0; k < c->n; k++) if (c->s[k].kind == SK_PSEUDO && c->s[k].name == h) return true;
@@ -1331,6 +1340,7 @@ static void collect(StyleEngine *e, Node *el, RuleVec *rv, int pseudo, VEC(MDecl
         Rule *r = rv->v[i];
         if (r->sel.pseudo_el != pseudo) continue;
         if (r->origin && r->scope != e->el_scope && !(r->scope && el->shadow_root == r->scope && sel_last_has_host(&r->sel))) continue;
+        if (r->mq && !css_media_chain(r->mq, &e->media)) continue;
         if (!css_match_selector(&r->sel, el, NULL)) continue;
         if (r->cq && !container_matches(r->cq, el)) continue;
         for (int k = 0; k < r->decls->n; k++) {

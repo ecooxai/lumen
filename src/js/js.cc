@@ -821,6 +821,13 @@ double js_next_deadline(JsCtx *c) {
 }
 
 static void tick_one(JsCtx *c);
+void js_viewport_changed(JsCtx *c) {
+    if (!c || c->dead || c->api.IsEmpty()) return;
+    JS_ENTER(c);
+    v8::Local<v8::Value> f;
+    if (c->api.Get(iso)->Get(ctx, jstr(iso, "viewportChanged")).ToLocal(&f) && f->IsFunction())
+        (void)jcall(c, f.As<v8::Function>(), v8::Undefined(iso), 0, nullptr);
+}
 void js_tick(JsCtx *c) {
     if (!c || c->dead) return;
     tick_one(c);

@@ -128,7 +128,7 @@ typedef struct Compound { SimpleSel *s; int n; uint8_t comb; /* combinator to th
 typedef struct Selector { Compound *c; int n; uint32_t spec; uint8_t pseudo_el; /* 0 none 1 before 2 after 3 other 4 marker 5 placeholder */ } Selector;
 struct SelList { Selector *v; int n; };
 
-typedef struct ContainerCond { char *name, *query; struct ContainerCond *outer; } ContainerCond;
+typedef struct ContainerCond { char *name, *query; struct ContainerCond *outer; float mvw, mvh; int8_t mres; bool mdark; } ContainerCond; /* also used for @media (mres caches the last result) */
 /* container query environment: the container's content size and its custom properties (style()) */
 typedef struct CQEnv { float w, h; bool size, block; const char *(*var)(const void *ud, const char *name); const void *ud; } CQEnv;
 bool css_container_eval(const char *q, const CQEnv *env);
@@ -140,6 +140,7 @@ typedef struct Rule {
     uint8_t origin; /* 0 UA, 1 author */
     uint8_t layer;
     const ContainerCond *cq; /* innermost @container, or NULL */
+    ContainerCond *mq;       /* innermost @media, re-evaluated when the viewport changes */
     Node *scope;             /* shadow root the rule's sheet lives in, NULL for document sheets */
 } Rule;
 
@@ -189,6 +190,7 @@ bool css_match_selector(const Selector *s, Node *el, Node *scope);
 typedef VEC(Node *) NodeVec;
 Node *css_query(Node *root, const char *sel, bool all, NodeVec *out);
 bool css_media_matches(const char *q, const MediaCtx *mc);
+bool css_media_chain(ContainerCond *mq, const MediaCtx *m);
 bool css_supports(const char *cond);
 
 StyleEngine *style_engine_new(Document *d);

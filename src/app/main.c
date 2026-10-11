@@ -895,7 +895,8 @@ static void render(App *a) {
     } else if (a->t->cur) {
         if (a->t->relayout || !a->t->cur->L) {
             if (!a->t->cur->L) a->t->cur->L = layout_new();
-            a->t->cur->e->media.vw = a->vw - a->side; a->t->cur->e->media.vh = a->vh - BAR;
+            { MediaCtx *m = &a->t->cur->e->media; float nw = a->vw - a->side, nh = a->vh - BAR;
+              if (m->vw != nw || m->vh != nh) { m->vw = nw; m->vh = nh; style_recalc(a->t->cur->e, &a->t->cur->d->node, true); if (a->t->cur->js) js_viewport_changed(a->t->cur->js); } }
             { double q = now_ms(); layout_run(a->t->cur->L, a->t->cur->d, a->vw - a->side, a->vh - BAR); g_tl += now_ms() - q; }
             a->t->relayout = false;
         }

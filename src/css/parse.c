@@ -584,7 +584,7 @@ bool css_supports(const char *cond) {
 }
 
 /* ---------------- stylesheets ---------------- */
-typedef struct { StyleSheet *sh; const MediaCtx *mc; uint32_t order; ContainerCond *cq; } PCtx;
+typedef struct { StyleSheet *sh; const MediaCtx *mc; uint32_t order; ContainerCond *cq, *mq; } PCtx;
 
 static size_t skip_block(const char *s, size_t i, size_t n) {
     /* s[i] == '{' ; returns index after matching '}' */
@@ -609,7 +609,7 @@ static void add_rules(PCtx *c, const char *prelude, DeclList *decls) {
     vec_push(c->sh->decl_lists, decls);
     for (int i = 0; i < sl.n; i++) {
         Rule r; memset(&r, 0, sizeof r);
-        r.sel = sl.v[i]; r.decls = decls; r.order = c->order++; r.origin = (uint8_t)c->sh->origin; r.cq = c->cq;
+        r.sel = sl.v[i]; r.decls = decls; r.order = c->order++; r.origin = (uint8_t)c->sh->origin; r.cq = c->cq; r.mq = c->mq;
         vec_push(c->sh->rules, r);
     }
     free(sl.v);
@@ -714,7 +714,11 @@ static void parse_rules(PCtx *c, const char *s, size_t n, const char *parent_sel
         const char *body = s + i + 1; size_t bn = be > i + 1 ? be - i - 2 : 0;
         if (be >= n && (be == 0 || s[be - 1] != '}')) bn = n - i - 1;
         if (pt[0] == '@') {
-            if (str_istarts(pt, "@media")) { if (css_media_matches(pt + 6, c->mc)) parse_rules(c, body, bn, parent_sel); }
+            if (str_istarts(pt, "@media")) {
+                ContainerCond *mc = xcalloc(1, sizeof *mc);
+                mc->query = xstrdup(pt + 6); mc->outer = c->mq; vec_push(c->sh->conds, mc);
+                ContainerCond *sv = c->mq; c->mq = mc; parse_rules(c, body, bn, parent_sel); c->mq = sv;
+            }
             else if (str_istarts(pt, "@supports")) { if (css_supports(pt + 9)) parse_rules(c, body, bn, parent_sel); }
             else if (str_istarts(pt, "@container")) {
                 const char *q = pt + 10; while (is_ws((unsigned char)*q)) q++;

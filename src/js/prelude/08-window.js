@@ -254,6 +254,7 @@ class MediaQueryList extends EventTarget {
 }
 function matchMedia(q) { const m = new MediaQueryList(String(q)); mqls.push(new WeakRef(m)); return m; }
 function mediaChanged() { for (const r of mqls) { const m = r.deref(); if (!m) continue; const now = N.media(m.media); if (now !== m._m) { m._m = now; dispatch(m, new MediaQueryListEvent('change', { matches: now, media: m.media })); } } }
+function viewportChanged() { mediaChanged(); try { dispatch(G, new Event('resize')); } catch (e) { report(e); } }
 class MediaQueryListEvent extends Event { constructor(t, i = {}) { super(t, i); this.matches = !!i.matches; this.media = i.media || ''; } }
 function getComputedStyle(el) { if (!el || !N.isNode(el) || N.type(el) !== 1) throw new TypeError("Failed to execute 'getComputedStyle': parameter 1 is not of type 'Element'."); return new Proxy(new ComputedStyleDeclaration(el, true), computedHandler); }
 const timerFn = (repeat) => (fn, ms, ...args) => { if (typeof fn !== 'function') { const src = String(fn); fn = () => (0, eval)(src); } return N.timer(() => { try { fn(...args); } catch (e) { report(e); } }, Math.max(0, +ms || 0), repeat); };
@@ -549,5 +550,5 @@ function fireAnim(t, type, name, elapsed, anim) {
     Object.assign(globalThis, { GeolocationCoordinates, GeolocationPosition, GeolocationPositionError, PermissionStatus, Geolocation: function Geolocation() { } });
 })();
 
-return { queueMessage, workerEvent, protoFor, dispatch, fire, fireAnim, report, mediaChanged, ceConnected, Event, MouseEvent, PointerEvent, KeyboardEvent, FocusEvent, WheelEvent, InputEvent, PopStateEvent, ErrorEvent };
+return { queueMessage, workerEvent, protoFor, dispatch, fire, fireAnim, report, mediaChanged, viewportChanged, ceConnected, Event, MouseEvent, PointerEvent, KeyboardEvent, FocusEvent, WheelEvent, InputEvent, PopStateEvent, ErrorEvent };
 })

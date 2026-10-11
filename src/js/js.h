@@ -56,6 +56,7 @@ void js_set_ready_state(JsCtx *c, int state);
 double js_next_deadline(JsCtx *c);
 /* run due timers, animation frames and microtasks */
 void js_tick(JsCtx *c);
+void js_viewport_changed(JsCtx *c);   /* re-evaluates matchMedia lists and fires window resize */
 bool js_wants_frame(JsCtx *c);
 /* the live child browsing context's document for an <iframe>, or NULL */
 Document *js_frame_doc(Node *iframe);

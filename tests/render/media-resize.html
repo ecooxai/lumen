@@ -1,0 +1,10 @@
+<!doctype html>
+<style>#b{width:100px;height:20px} @media (min-width:1400px){#b{width:300px}}</style>
+<body><div id="b"></div>
+<script>
+const mq = matchMedia('(min-width:1400px)'); let ch = 0, rs = 0;
+mq.addEventListener('change', () => ch++);
+addEventListener('resize', () => rs++);
+const w0 = document.getElementById('b').getBoundingClientRect().width, m0 = mq.matches;
+setTimeout(() => console.log('MQR ' + JSON.stringify([w0 == 100, !m0, document.getElementById('b').getBoundingClientRect().width == 300, mq.matches, ch > 0, rs > 0])), 3000);
+</script>
