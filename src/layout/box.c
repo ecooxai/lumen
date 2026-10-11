@@ -196,7 +196,7 @@ static void build(BState *bs, Box *parent, Node *n, int *li) {
     n->box = b;
     b->ctl = (uint8_t)ctl;
     b->abs = st->position == P_ABSOLUTE || st->position == P_FIXED; b->fixed = st->position == P_FIXED;
-    b->floated = !b->abs && st->float_ != F_NONE;
+    b->floated = !b->abs && st->float_ != F_NONE && !(parent && (parent->fmt == FMT_FLEX || parent->fmt == FMT_GRID));   /* float does not apply to flex/grid items */
     /* The root's overflow (or body's, when the root's is visible) belongs to the viewport, not the box */
     const ComputedStyle *hs = L->doc->html ? L->doc->html->style : NULL;
     bool to_viewport = n == L->doc->html || (n == L->doc->body && (!hs || (hs->overflow_x == OV_VISIBLE && hs->overflow_y == OV_VISIBLE)));

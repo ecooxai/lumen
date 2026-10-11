@@ -228,3 +228,10 @@ Load (DCL/load): Google 0.53/3.66 s, Bing 1.97/2.23 s, YT watch ~2.2/3.47 s, YT 
 - Hover invalidation (`style_hover_affects` / `style_hover_has` in src/css/style.c): `idx_build` records which id/class/tag keys have `:hover` rules (self, subtree, or parent subtree for `+`/`~`) and which have `:has(...:hover...)`; `page_hover` restyles only those nodes. Without this, every hover change restyled the whole ChatGPT document (~100-350 ms each).
 - Archive and delete verified on throwaway chats (PATCH / DELETE sent, row removed, navigates home).
 - Still to check: model picker/tools, GPT pages.
+
+## Camera/mic + Wikipedia parity (branch devin/1791684005-camera-mic-parity)
+- Capture: `src/media/capture.c` (SDL3 camera/recording, FFmpeg opus/webm for MediaRecorder) + `src/js/prelude/07y-capture.js`; per-origin prompt in `src/app/main.c` (`permissions.txt`). Tests: `LUMEN_CONSOLE=1 build/jsrun tests/js/capture.html 3000` (fake devices are automatic in jsrun; GUI needs `LUMEN_FAKE_MEDIA=1 LUMEN_MEDIA_PERMIT=allow`). Not yet tried on real hardware (VM has none).
+- Wikipedia fixes: no line break between an inline run and following punctuation (`glue_after` in inline.c), vertical-align accumulates through nested inlines (`IC.vbase`), empty blocks collapse margins through, float ignored on flex/grid items, outer box-shadow not painted under the box, self-referencing custom properties are invalid (cycle stack in `subst_vars_r`). Fixture: `tests/layout/wiki-parity.html`.
+- Compare with Chrome: `node ~/wpcmp/cdp-eval.mjs URL probe.js` (headless Chrome + CDP, prints rects/computed styles) vs the same probe in the GUI via `LUMEN_PRE_FILE` (jsrun has no layout, rects are 0).
+- Left on Wikipedia: TOC expand chevrons (mask-image icons) render as dots; infobox "Temporal range" wraps earlier than Chrome; missing glyph fallback for Ꞓ in the geologic timescale; toolbar 35px vs 32px.
+- Next: ChatGPT parity pass incl. dictation (MediaRecorder path) with the mic.

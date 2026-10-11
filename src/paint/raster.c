@@ -145,7 +145,8 @@ static void border(R *r, const DItem *it) {
 static void shadow(R *r, const DItem *it) {
     float s = r->s, sp = it->spread * s, bl = LMAX(0.5f, it->blur * s);
     float x0 = it->x * s - sp, y0 = it->y * s - sp, x1 = (it->x + it->w) * s + sp, y1 = (it->y + it->h) * s + sp;
-    float rad[4]; for (int i = 0; i < 4; i++) rad[i] = LMAX(0, it->r[i] * s + sp);
+    float rad[4], brad[4]; for (int i = 0; i < 4; i++) { rad[i] = LMAX(0, it->r[i] * s + sp); brad[i] = it->r[i] * s; }
+    float bx0 = (it->x - it->bw[0]) * s, by0 = (it->y - it->bw[1]) * s, bx1 = bx0 + it->w * s, by1 = by0 + it->h * s;
     const Clip *c = clip(r);
     int px0 = LMAX(c->x0, (int)floorf(x0 - bl)), py0 = LMAX(c->y0, (int)floorf(y0 - bl)), px1 = LMIN(c->x1, (int)ceilf(x1 + bl)), py1 = LMIN(c->y1, (int)ceilf(y1 + bl));
     for (int y = py0; y < py1; y++) for (int x = px0; x < px1; x++) {
@@ -153,6 +154,7 @@ static void shadow(R *r, const DItem *it) {
         float t = LCLAMP((d + bl) / (2 * bl), 0, 1);
         float cov = 1 - t * t * (3 - 2 * t);
         cov *= clip_cov(r, x + 0.5f, y + 0.5f);
+        if (cov > 0.002f && x + 1 > bx0 && x < bx1 && y + 1 > by0 && y < by1) cov *= LCLAMP(sd_rrect(x + 0.5f, y + 0.5f, bx0, by0, bx1, by1, brad) + 0.5f, 0, 1);
         if (cov > 0.002f) over(&r->px[(size_t)y * (size_t)r->c->stride + (size_t)x], premul(it->color, cov));
     }
 }

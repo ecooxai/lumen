@@ -1,0 +1,15 @@
+<!doctype html>
+<style>body{margin:0;font:16px sans-serif} p{margin:0}</style>
+<!-- 1: no break between an inline run and the punctuation that follows it -->
+<p id=glue style="width:12ch;font:16px monospace">aaaa <b>bbbbbbb</b>, cc</p>
+<!-- 2: vertical-align:super applies to text nested in inline children -->
+<p id=sup>x<sup><a id=supa>[1]</a></sup></p>
+<!-- 3: empty block margins collapse through it -->
+<div id=bfc style="display:flow-root"><div style="margin:24px 0"><div></div></div></div>
+<!-- 4: float is ignored on flex items -->
+<a id=fx style="display:flex;width:max-content"><span style="float:left;width:140px;height:10px;display:block"></span></a>
+<!-- 5: outer box-shadow does not paint under the box -->
+<div id=sh style="width:100px;height:30px;box-shadow:0 1px 0 0 rgb(200,0,0)"></div>
+<!-- 6: a custom property that references itself is invalid, so var() falls back (Wikipedia .vector-icon is 20px) -->
+<style>.vi{--fsm:var(--fsm,1rem);width:calc(var(--fsm,1rem) + 4px);height:4px;min-width:10px;display:block;background:#333}</style>
+<span id=vi class=vi></span><div id=cyc style="--x:var(--x,7px);width:var(--x,30px);height:3px;background:blue"></div>

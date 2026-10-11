@@ -270,7 +270,8 @@ const char *css_property_initial(const char *name) {
     for (RegProp *r = g_regprops[regprop_hash(name)]; r; r = r->next) if (!strcmp(r->name, name)) return r->init;
     return NULL;
 }
-static char *subst_vars(const char *v, const ComputedStyle *st, int depth) {
+/* stk holds the custom properties being expanded: a reference back into one of them is a cycle, which makes it invalid */
+static char *subst_vars_r(const char *v, const ComputedStyle *st, int depth, const char **stk) {
     if (!strstr(v, "var(") || depth > 16) return xstrdup(v);
     SB b; sb_init(&b);
     const char *p = v;
@@ -284,9 +285,13 @@ static char *subst_vars(const char *v, const ComputedStyle *st, int depth) {
         char *comma = NULL; int dd = 0; for (char *c = inner; *c; c++) { if (*c == '(') dd++; else if (*c == ')') dd--; else if (*c == ',' && !dd) { comma = c; break; } }
         if (comma) *comma = 0;
         char *name = str_trim(inner);
+        bool cyc = false; for (int k = 0; k <= depth; k++) if (stk[k] && !strcmp(stk[k], name)) cyc = true;
+        if (cyc) { free(inner); sb_free(&b); return NULL; }
         const char *val = custom_get(st->custom, name);
         if (!val) val = css_property_initial(name);
-        char *r = val && *val ? subst_vars(val, st, depth + 1) : comma ? subst_vars(str_trim(comma + 1), st, depth + 1) : NULL;
+        char *r = NULL;
+        if (val && *val) { stk[depth + 1] = name; r = subst_vars_r(val, st, depth + 1, stk); }
+        if (!r && comma) { stk[depth + 1] = NULL; r = subst_vars_r(str_trim(comma + 1), st, depth + 1, stk); }
         free(inner);
         /* unresolvable or runaway expansion: declaration is invalid at computed-value time */
         if (!r || b.n + strlen(r) > (1u << 16)) { free(r); sb_free(&b); return NULL; }
@@ -295,6 +300,11 @@ static char *subst_vars(const char *v, const ComputedStyle *st, int depth) {
     }
     return sb_take(&b);
 }
+static char *subst_vars_self(const char *v, const ComputedStyle *st, const char *self) {
+    const char *stk[18] = { self };
+    return subst_vars_r(v, st, 0, stk);
+}
+static char *subst_vars(const char *v, const ComputedStyle *st, int depth) { (void)depth; return subst_vars_self(v, st, NULL); }
 
 /* ---------------- property application ---------------- */
 static int kw(const char *v, const char *const *list) { for (int i = 0; list[i]; i++) if (str_ieq(v, list[i])) return i; return -1; }
@@ -716,7 +726,7 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
             const char *pv = par ? custom_get(par->custom, prop) : NULL; v = xstrdup(pv ? pv : "");
         } else if (str_ieq(k, "initial")) v = xstrdup("");
         else if (!*k) v = xstrdup(" ");   /* valid empty value, unlike "" */
-        else v = custom_defer ? xstrdup(value_in) : subst_vars(value_in, st, 0);
+        else v = custom_defer ? xstrdup(value_in) : subst_vars_self(value_in, st, prop);
         free(kb);
         hm_put(&st->custom->map, prop, v ? v : xstrdup(""));
         free(old);
@@ -1376,7 +1386,7 @@ static void apply_decl_ordered(ComputedStyle *st, const ComputedStyle *par, MDec
         const char *p = v[i].d->prop; if (p[0] != '-' || p[1] != '-' || !st->custom) continue;
         char *raw = hm_get(&st->custom->map, p);
         if (!raw || !strstr(raw, "var(")) continue;
-        char *r = subst_vars(raw, st, 0);
+        char *r = subst_vars_self(raw, st, p);
         hm_put(&st->custom->map, p, r ? r : xstrdup("")); free(raw);
     }
     for (int i = 0; i < n; i++) { const char *p = v[i].d->prop; if (!strcmp(p, "font-size") || !strcmp(p, "font")) css_apply_decl(st, par, p, v[i].d->value, e, el); }

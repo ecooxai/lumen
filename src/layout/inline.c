@@ -16,6 +16,7 @@ typedef struct {
     float strutA, strutD;
     bool first_line;
     float cbh;
+    float vbase;          /* accumulated vertical-align shift of open inline ancestors */
 } IC;
 
 static TextFrag *push_frag(Box *b) {
@@ -108,13 +109,13 @@ static void finish_line(IC *c, bool forced) {
     new_line_state(c);
 }
 
-static void fix_irects(Box *blk, Box *ib) {
+static void fix_irects(Box *blk, Box *ib, float pshift) {
     /* fill vertical geometry of inline box rects using the owning lines */
-    for (Box *c = ib->first; c; c = c->next) if (c->kind == BX_INLINE) fix_irects(blk, c);
+    float shift = ib->kind == BX_INLINE ? pshift + valign_shift(ib->st, ib->parent && ib->parent->st ? ib->parent->st : ib->st) : 0;
+    for (Box *c = ib->first; c; c = c->next) if (c->kind == BX_INLINE) fix_irects(blk, c, shift);
     if (ib->kind != BX_INLINE) return;
     Font *f = style_font(ib->st);
     float asc = f ? f->ascent : ib->st->font_size * 0.8f, desc = f ? f->descent : ib->st->font_size * 0.2f;
-    float shift = valign_shift(ib->st, ib->parent && ib->parent->st ? ib->parent->st : ib->st);
     float mnx = 1e9f, mny = 1e9f, mxx = -1e9f, mxy = -1e9f;
     for (int i = 0; i < ib->nir; i++) {
         IRect *r = &ib->ir[i];
@@ -131,6 +132,29 @@ static void fix_irects(Box *blk, Box *ib) {
     if (ib->nir) { ib->x = mnx; ib->y = mny; ib->w = mxx - mnx; ib->h = mxy - mny; }
 }
 
+/* width of the text that follows t up to the next break opportunity: a word may continue into the next inline run */
+static float glue_after(const Box *t, const Box *blk) {
+    float w = 0; const Box *b = t;
+    for (int guard = 0; guard < 64; guard++) {
+        if (b != t && b->kind == BX_INLINE && b->first) b = b->first;
+        else {
+            while (b && b != blk && !b->next) b = b->parent;
+            if (!b || b == blk) return w;
+            b = b->next;
+        }
+        if (b->abs || b->floated || b->kind == BX_INLINE) continue;
+        if (b->kind != BX_TEXT) return w;
+        text_ensure_shaped((Box *)b);
+        for (int k = 0; k < b->sh.n; k++) {
+            char ch = b->text[b->sh.g[k].cluster];
+            if (ch == ' ' || ch == '\n') return w;
+            w += b->sh.g[k].adv;
+            if (b->st->word_break == 1 || text_break_after(b, k)) return w;
+        }
+    }
+    return w;
+}
+
 static void place_text(IC *c, Box *t) {
     text_ensure_shaped(t);
     const ComputedStyle *st = t->st;
@@ -138,26 +162,26 @@ static void place_text(IC *c, Box *t) {
     bool wrap = ws != WS_NOWRAP && ws != WS_PRE;
     bool collapsible = ws == WS_NORMAL || ws == WS_NOWRAP || ws == WS_PRE_LINE;
     float A, D; metrics_for(st, t->font, &A, &D);
-    float vshift = valign_shift(st, t->parent && t->parent->st ? t->parent->st : st);
+    float vshift = c->vbase + (t->parent && t->parent->kind == BX_INLINE ? 0 : valign_shift(st, t->parent && t->parent->st ? t->parent->st : st));
     int n = t->sh.n, i = 0;
     TextFrag *cur = NULL;
     while (i < n) {
         /* forced newline */
         if (t->text[t->sh.g[i].cluster] == '\n' && !(ws == WS_NORMAL || ws == WS_NOWRAP)) { c->A = LMAX(c->A, A - vshift); c->D = LMAX(c->D, D + vshift); finish_line(c, true); cur = NULL; i++; continue; }
         /* collect a word: glyphs up to and including a break opportunity */
-        int j = i; float w = 0, trail = 0;
+        int j = i; float w = 0, trail = 0; bool open_end = wrap;
         while (j < n) {
             char ch = t->text[t->sh.g[j].cluster];
-            if (ch == '\n' && !(ws == WS_NORMAL || ws == WS_NOWRAP)) break;
+            if (ch == '\n' && !(ws == WS_NORMAL || ws == WS_NOWRAP)) { open_end = false; break; }
             w += t->sh.g[j].adv;
             if (!wrap) { j++; continue; }
-            if (ch == ' ') { trail = t->sh.g[j].adv; j++; break; }
-            if (st->word_break == 1 || text_break_after(t, j)) { j++; break; }
+            if (ch == ' ') { trail = t->sh.g[j].adv; j++; open_end = false; break; }
+            if (st->word_break == 1 || text_break_after(t, j)) { j++; open_end = false; break; }
             j++;
         }
         bool only_space = (j - i == 1) && trail > 0;
         if (only_space && collapsible && !c->line_has_content && c->pen <= c->left + 0.01f + (c->first_line ? st->text_indent : 0)) { i = j; continue; }
-        if (wrap && c->line_has_content && c->pen + w - trail > c->right + 0.01f) { finish_line(c, false); cur = NULL; if (only_space && collapsible) { i = j; continue; } }
+        if (wrap && c->line_has_content && (c->pen + w - trail > c->right + 0.01f || (open_end && j >= n && c->pen + w + glue_after(t, c->blk) > c->right + 0.01f))) { finish_line(c, false); cur = NULL; if (only_space && collapsible) { i = j; continue; } }
         /* overlong word on an empty line: break inside when allowed */
         if (wrap && !c->line_has_content && c->pen + w - trail > c->right + 0.01f && (st->overflow_wrap || st->word_break)) {
             float x = c->pen; int k = i;
@@ -183,7 +207,7 @@ static void place_atomic(IC *c, Box *a) {
     if (use_bl) itemA = a->baseline - a->y + a->m[0]; else itemA = oh;
     if (a->st->vertical_align == VA_MIDDLE) { Font *pf = style_font(c->blk->st); float xh = pf ? pf->x_height : 4; itemA = oh / 2 + xh / 2; }
     else if (a->st->vertical_align == VA_TEXT_TOP) itemA = c->strutA;
-    itemA -= valign_shift(a->st, c->blk->st);
+    itemA -= valign_shift(a->st, c->blk->st) + c->vbase;
     TextFrag *f = push_frag(c->blk); f->box = a; f->x = c->pen; f->w = ow; f->base = itemA; f->g0 = f->g1 = -1;
     c->pen += ow; c->line_has_content = true;
     if (a->st->vertical_align != VA_TOP && a->st->vertical_align != VA_BOTTOM) { c->A = LMAX(c->A, itemA); c->D = LMAX(c->D, oh - itemA); }
@@ -204,9 +228,11 @@ static void walk(IC *c, Box *p) {
             c->pen += l;
             if (l > 0 || r > 0 || ch->first == NULL) c->line_has_content = c->line_has_content || l > 0;
             float A, D; Font *f = style_font(ch->st); metrics_for(ch->st, f, &A, &D);
-            float vs = valign_shift(ch->st, p->st ? p->st : ch->st);
+            float vs = c->vbase + valign_shift(ch->st, p->st ? p->st : ch->st), saved_vbase = c->vbase;
             c->A = LMAX(c->A, A - vs); c->D = LMAX(c->D, D + vs);
+            c->vbase = vs;
             walk(c, ch);
+            c->vbase = saved_vbase;
             c->pen += r;
             if (r > 0) c->line_has_content = true;
             /* close */
@@ -246,7 +272,7 @@ float layout_inline(Layout *L, Box *b, float x0, float y0, float W, FloatCtx *fc
     walk(&c, b);
     if (c.line_has_content || c.nopen) finish_line(&c, false);
     /* propagate horizontal alignment shifts into inline rects: recompute from frags is complex; rects use pen positions */
-    for (Box *ch = b->first; ch; ch = ch->next) if (ch->kind == BX_INLINE) fix_irects(b, ch);
+    for (Box *ch = b->first; ch; ch = ch->next) if (ch->kind == BX_INLINE) fix_irects(b, ch, 0);
     /* nested inline boxes inside inline boxes */
     if (b->nlines) { b->has_baseline = true; b->baseline = b->lines[b->nlines - 1].base; }
     /* apply text-align shift to inline rects */

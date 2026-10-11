@@ -143,16 +143,17 @@ float layout_flow(Layout *L, Box *b, float cx, float cy, float cw, float cbh, Fl
         float own = c->collapse_top ? 0 : 0; (void)own;
         layout_box(L, c, cx + c->m[3], y, cw, cbh, c->bfc ? NULL : fc, SZ_FILL, 0, -1);
         if (c->collapse_top) { /* child's margins absorbed: nothing */ }
-        bool empty = c->h == 0 && c->nlines == 0 && !c->first && c->fmt != FMT_REPLACED;
-        if (empty) { pending = collapse2(collapse2(first && b->collapse_top ? 0 : pending, mt), c->m[2]); cursor = y - (first && b->collapse_top ? 0 : collapse2(0, 0)); if (!(first && b->collapse_top)) cursor = y - collapse2(pending, 0) + collapse2(pending, 0) - 0; cursor = LMIN(cursor, y); continue; }
+        /* an empty block's top and bottom margins collapse through it into the running margin */
+        bool empty = c->h == 0 && c->nlines == 0 && c->fmt == FMT_FLOW && !c->bfc && c->kind == BX_BLOCK && c->b[0] == 0 && c->b[2] == 0 && c->p[0] == 0 && c->p[2] == 0;
+        if (empty) { pending = first && b->collapse_top ? 0 : collapse2(collapse2(pending, mt), c->eff_mb); continue; }
         cursor = c->y + c->h; pending = c->eff_mb;
         if (c->has_baseline) { b->has_baseline = true; b->baseline = c->baseline; }
         first = false;
     }
     bool cb_bottom = !b->bfc && b->b[2] == 0 && b->p[2] == 0 && b->st->height.kind == LK_AUTO && b->fmt == FMT_FLOW && b->st->display != D_TABLE_CELL;
     float end;
-    if (cb_bottom && !first) { b->eff_mb = collapse2(b->m[2], pending); end = cursor; }
-    else { b->eff_mb = b->m[2]; end = cursor + (first ? 0 : pending); }
+    if (cb_bottom) { b->eff_mb = collapse2(b->m[2], pending); end = cursor; }
+    else { b->eff_mb = b->m[2]; end = cursor + pending; }
     return end - cy;
 }
 

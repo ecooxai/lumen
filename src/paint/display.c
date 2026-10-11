@@ -66,7 +66,7 @@ static void paint_rect_deco(PB *p, Box *b, float x, float y, float w, float h, b
     }
     if (s->has_shadow && !s->box_shadow.inset && COLOR_A(s->box_shadow.color)) {
         DItem *it = emit(p, DO_SHADOW); it->x = x + s->box_shadow.x; it->y = y + s->box_shadow.y; it->w = w; it->h = h;
-        memcpy(it->r, r, sizeof r); it->color = s->box_shadow.color; it->blur = s->box_shadow.blur; it->spread = s->box_shadow.spread;
+        memcpy(it->r, r, sizeof r); it->color = s->box_shadow.color; it->blur = s->box_shadow.blur; it->spread = s->box_shadow.spread; it->bw[0] = s->box_shadow.x; it->bw[1] = s->box_shadow.y;   /* offset back to the border box, which an outer shadow never paints under */
     }
     if (COLOR_A(s->bg_color)) {
         Color c = s->bg_color;
