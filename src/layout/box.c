@@ -63,6 +63,8 @@ static char *prep_text(BState *bs, const char *s, size_t n, const ComputedStyle 
 }
 
 static bool is_ws_text(const Box *b) { if (b->kind != BX_TEXT) return false; for (int i = 0; i < b->text_len; i++) if (b->text[i] != ' ' && b->text[i] != '\n') return false; return b->st->white_space == WS_NORMAL || b->st->white_space == WS_NOWRAP || b->st->white_space == WS_PRE_LINE; }
+/* flex/grid: whitespace-only text runs are never rendered, whatever white-space says */
+static bool all_ws_text(const Box *b) { if (b->kind != BX_TEXT) return false; for (int i = 0; i < b->text_len; i++) { char ch = b->text[i]; if (ch != ' ' && ch != '\n' && ch != '\t' && ch != '\r' && ch != '\f') return false; } return true; }
 static bool block_level(const Box *b) { return b->kind == BX_BLOCK && in_flow(b); }
 static bool inline_level(const Box *b) { return b->kind == BX_INLINE || b->kind == BX_TEXT || b->kind == BX_ATOMIC || b->kind == BX_BR; }
 
@@ -103,7 +105,7 @@ static void fixup_container_items(Layout *L, Box *b) {
     while (c) {
         Box *next = c->next; c->next = c->prev = NULL;
         if (c->kind == BX_TEXT || c->kind == BX_BR) {
-            if (c->kind == BX_TEXT && !is_ws_text(c)) { Box *a = new_box(L, BX_BLOCK, NULL, anon_item_style(L, b->st)); a->anon = true; a->fmt = FMT_INLINE; a->bfc = true; append(a, c); append(b, a); }
+            if (c->kind == BX_TEXT && !all_ws_text(c)) { Box *a = new_box(L, BX_BLOCK, NULL, anon_item_style(L, b->st)); a->anon = true; a->fmt = FMT_INLINE; a->bfc = true; append(a, c); append(b, a); }
         } else {
             if (c->kind == BX_INLINE) { c->kind = BX_BLOCK; fixup_block(L, c); }
             else if (c->kind == BX_ATOMIC) c->kind = BX_BLOCK;
