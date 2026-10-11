@@ -368,6 +368,9 @@ void intrinsic(Layout *L, Box *b, float *omn, float *omx) {
             mn = LMAX(mn, a); mx = LMAX(mx, z);
         }
     }
+    /* a percentage-wide scroll container is compressible: its min-content contribution ignores its
+       contents (Amazon's nowrap carousel in a `width:100%;overflow:hidden` viewport must not widen the column) */
+    if (st->width.kind == LK_LEN && st->width.pct && st->overflow_x != OV_VISIBLE && b->fmt != FMT_REPLACED) mn = 0;
     if (st->max_width.kind == LK_LEN && !st->max_width.pct) { float v = st->max_width.px - (st->box_sizing == BOX_BORDER ? bp : 0); mx = LMIN(mx, v); mn = LMIN(mn, v); }
     if (st->min_width.kind == LK_LEN && !st->min_width.pct) { float v = st->min_width.px - (st->box_sizing == BOX_BORDER ? bp : 0); mx = LMAX(mx, v); mn = LMAX(mn, v); }
     if (mn > mx) mx = mn;
