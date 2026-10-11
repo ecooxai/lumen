@@ -346,3 +346,9 @@ Load (DCL/load): Google 0.53/3.66 s, Bing 1.97/2.23 s, YT watch ~2.2/3.47 s, YT 
   unchecked. `PopStateEvent.state` is now a read-only getter (Reddit's history
   code threw on construction, breaking Back). Fixtures: `checked-attr.html`,
   `popstate.html`.
+
+## 2026-10-11 (Linux branch, after 158c600)
+- 86b0eaf: iframes raster onto a transparent canvas (main.c frame_update), have no intrinsic ratio (box.c replaced_size), UA `iframe[frameborder=0]{border:none}`. Fixed Amazon dp title/byline/rating/breadcrumbs hidden under the 1196x600 white ad iframe. Test: tests/render/iframe-transparent.html -> `IFRT [true,true,true,true]`.
+- Note: `ps -o %cpu` is a lifetime average; it decays slowly after a load burst. Use `LUMEN_CPU_DEBUG=1` (per-tab %) or /proc/<pid>/stat deltas for instantaneous CPU. Amazon dp settles ~6-8% (about 80 partial paints/s from banner videos).
+- Debug trick: append a `<script>setTimeout(()=>console.log(...),5000)</script>` probe to a saved page and run with `LUMEN_CONSOLE=1`; raising an element's z-index shows if something is painted over it.
+- Open: YouTube post-seek playback (`moov atom not found`), Reddit opened-post width, typing CPU on Amazon/YouTube/Wikipedia.
