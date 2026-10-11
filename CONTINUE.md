@@ -379,3 +379,11 @@ Load (DCL/load): Google 0.53/3.66 s, Bing 1.97/2.23 s, YT watch ~2.2/3.47 s, YT 
 - Profiling on Linux: perf is blocked (perf_event_paranoid=4) but ptrace works; /tmp/wb/pmp.sh-style
   gdb `thread apply all bt` sampling is the poor man's profiler. Temporary `fprintf` on each dirty
   source (anim, frames_tick, media_tick, cvbuf) quickly shows what wakes the loop.
+
+## 2026-10-11: Amazon video-tile CPU (Linux, native CPU raster)
+- 481cbb7 made Amazon's video.js tiles actually play; CPU then sat at ~60-80% because every video frame re-rastered the whole tile (shadows, gradients, layers, 3 stacked 854x1368 images).
+- ffb1003: outer box-shadows clipped out of the border box (CSS-correct; old code painted shadow under transparent boxes), opacity layers sized to their contents ∩ clip and skipped when empty, gradient stop-colour reuse.
+- 5e6feaa: `occluder_inner()` — a video clipped one row short of its box still occludes everything under it; edge strips rastered separately. Horizontal gradients cache per-column colours.
+- Result: Amazon home with 2 tiles playing ~60% -> ~25% CPU; LUMEN_CHECK_DAMAGE: 1399 partial-vs-full checks, 0 mismatched px; layout 21 files 0 diffs; render fixtures identical except the intended shadow-interior change.
+- Debug: `LUMEN_DEBUG_RASTER=1` prints per-raster-rect item counts/areas by op.
+- Next: the hidden stacked video (#224 under #267 in the same tile) is still decoded; remaining main-thread time is video.js JS/style updates (printf of floats, hm_getn).
