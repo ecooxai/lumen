@@ -616,6 +616,7 @@ int mp_add_buffer(MediaPlayer *m, const char *mime) {
     SDL_UnlockMutex(m->mu);
     return r;
 }
+static bool mdbg(void) { static int v = -1; if (v < 0) v = getenv("LUMEN_MEDIA_DEBUG") != NULL; return v; }
 bool mp_append(MediaPlayer *m, int sb, const uint8_t *p, size_t n) {
     if (sb < 0 || sb >= m->nst) return false;
     SDL_LockMutex(m->mu);
@@ -638,6 +639,7 @@ bool mp_append(MediaPlayer *m, int sb, const uint8_t *p, size_t n) {
             free(s->ftyp); s->ftyp = NULL; s->nftyp = 0;
             blob_unref(s->init); s->init = nb;
             parse_moov(s, b + h, b + sz);
+            if (mdbg()) fprintf(stderr, "media: sb%d init %zu bytes ntrk=%d\n", sb, nb->n, s->ntrk);
         } else if (ty == FCC('m', 'o', 'o', 'f')) {
             free(s->moof); s->moof = xmalloc(sz); memcpy(s->moof, b, sz); s->nmoof = sz;
         } else if (ty == FCC('m', 'd', 'a', 't') && s->moof) {
@@ -645,6 +647,7 @@ bool mp_append(MediaPlayer *m, int sb, const uint8_t *p, size_t n) {
             if (parse_moof(s, s->moof + 8, s->moof + s->nmoof, &t0, &t1)) {
                 uint8_t *seg = xmalloc(s->nmoof + sz); memcpy(seg, s->moof, s->nmoof); memcpy(seg + s->nmoof, b, sz);
                 add_seg(s, seg, s->nmoof + sz, t0, t1);
+                if (mdbg()) fprintf(stderr, "media: sb%d seg %.2f-%.2f nsegs=%d init=%p\n", sb, t0, t1, s->nsegs, (void *)s->init);
             }
             free(s->moof); s->moof = NULL;
         }
@@ -659,6 +662,7 @@ void mp_abort(MediaPlayer *m, int sb) {   /* SourceBuffer.abort(): reset the seg
     if (sb < 0 || sb >= m->nst) return;
     SDL_LockMutex(m->mu);
     Stream *s = m->st[sb]; s->npend = 0;
+    if (mdbg()) fprintf(stderr, "media: sb%d abort\n", sb);
     free(s->moof); s->moof = NULL; s->nmoof = 0; free(s->ftyp); s->ftyp = NULL; s->nftyp = 0;
     SDL_UnlockMutex(m->mu);
 }
@@ -666,6 +670,7 @@ void mp_remove(MediaPlayer *m, int sb, double a, double z) {
     if (sb < 0 || sb >= m->nst) return;
     SDL_LockMutex(m->mu);
     Stream *s = m->st[sb];
+    if (mdbg()) fprintf(stderr, "media: sb%d remove %.2f-%.2f\n", sb, a, z);
     for (int i = 0; i < s->nsegs;) {
         Seg *g = &s->segs[i];
         if (g->t0 >= a - 1e-3 && g->t1 <= z + 1e-3) { free(g->p); blob_unref(g->init); memmove(g, g + 1, sizeof *g * (size_t)(s->nsegs - i - 1)); s->nsegs--; }
