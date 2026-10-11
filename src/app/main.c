@@ -866,6 +866,7 @@ static void render(App *a) {
     if (defer && !a->vframe) { a->dirty = false; return; }
     bool part = !why;
     int rx0 = pwp, ry0 = ph, rx1 = 0, ry1 = 0;
+    if (getenv("LUMEN_DEBUG_PAINT") && (a->page.w != pwp || a->page.h != ph)) fprintf(stderr, "lumen: page canvas resize %dx%d -> %dx%d\n", a->page.w, a->page.h, pwp, ph);
     if (a->page.w != pwp || a->page.h != ph) { canvas_free(&a->page); canvas_init(&a->page, pwp, ph, a->scale); part = false; a->osig_ok = false; }
     bool gskip = false; GpuVideo gvd, *gvp = NULL;
     Image *fast = part && !a->sdirty && a->t->cur && a->gpu && a->gvid_ok && a->t->sy == a->last_sy && a->page.w == pwp && a->page.h == ph ? media_owner_frame(a->vown) : NULL;
@@ -920,10 +921,10 @@ static void render(App *a) {
             x0 = LMAX(x0, 0); y0 = LMAX(y0, 0); x1 = LMIN(x1, pwp); y1 = LMIN(y1, ph);
             if (x1 > x0 && y1 > y0) raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), x0, y0, x1, y1);
             rx0 = x0; ry0 = y0; rx1 = LMAX(x1, x0); ry1 = LMAX(y1, y0); a->gvid_ok = false;
-        } else if (part && (nv == 0 || (gv && a->gvid_ok))) gskip = true;
+        } else if (part && (nv == 0 || (gv && a->gvid_ok) || rx1 <= rx0 || ry1 <= ry0)) gskip = true;   /* off-screen video: nothing visible changed */
         else if (part && rx1 > rx0 && ry1 > ry0) { a->gvid_ok = false; raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), rx0, ry0, rx1, ry1); }
         else {
-            bool dmg = (why == 1 || why == 3 || why == 4) && !nv && a->osig_ok && a->t->sy == a->last_sy && !a->t->loading;
+            bool dmg = (why == 1 || why == 3 || why == 4) && !gv && a->osig_ok && a->t->sy == a->last_sy && !a->t->loading;
             if (dmg) {   /* only DOM/layout changed: raster the union of the items that differ from the last frame */
                 build_chrome(a); chrome_tip(a);
                 if (dl_hash(&a->cdl) * 31 + dl_hash(&a->hdl) != a->chash) dmg = false;
@@ -949,6 +950,7 @@ static void render(App *a) {
                 else dmg = false;
             }
             if (!dmg) {
+                if (getenv("LUMEN_DEBUG_PAINT")) fprintf(stderr, "lumen: full raster why=%d nv=%d osig_ok=%d sy_same=%d loading=%d chash_same=%d\n", why, nv, a->osig_ok, a->t->sy == a->last_sy, a->t->loading, dl_hash(&a->cdl) * 31 + dl_hash(&a->hdl) == a->chash);
                 part = false; a->page.punch = gv ? vit->img : NULL; a->page.punched = false;
                 { double q = now_ms(); raster(&a->page, &a->pdl, RGBA(255, 255, 255, 255)); g_tx += now_ms() - q; }
                 a->gvid_ok = gv && a->page.punched; a->page.punch = NULL;
