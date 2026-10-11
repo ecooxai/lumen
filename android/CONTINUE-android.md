@@ -23,7 +23,7 @@ Branch: `devin/android-port-native-engine`. The engine source in `src/` is share
 
 ## Status when paused (2026-10-11)
 - Done: V8 x64 monolith (~/src/v8/v8/out/android-x64/obj/libv8_monolith.a), all x86_64 + arm64 deps in ~/android-deps/<abi>. FFmpeg x86_64 rebuilt with --disable-asm (inline cabac asm is not PIC).
-- arm64 V8 build was stopped at ~100/4235 on user request (arm64 later): rerun `~/src/v8/build.sh arm64`.
+- arm64 V8 build was stopped at 1278/4235 on user request (arm64 later): rerun `~/src/v8/build.sh arm64`.
 - `make android ABI=x86_64` now fails only at link, with 4 undefined symbols:
   1. `download_save(...)` C++-mangled: src/net/download.h needs `extern "C"` guards (jsnative.cc includes it).
   2. `__real_getcwd`/`__real_realpath`: from V8's PartitionAlloc allocator_shim_android.o. Either add `-Wl,--wrap=getcwd -Wl,--wrap=realpath` (and the other shim wraps) to the link, or rebuild V8 with `use_partition_alloc_as_malloc=false`. The latter is simpler.
