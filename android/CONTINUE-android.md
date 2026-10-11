@@ -20,3 +20,12 @@ Branch: `devin/android-port-native-engine`. The engine source in `src/` is share
 ## Findings for the WebGL/WebGPU branch
 - Canvas 2D is only a JS stub (src/js/prelude/07z-extra.js `CanvasRenderingContext2D`, no native drawing; `getContext` in 04-tags.js returns null for webgl/webgpu).
 - So WebGL/WebGPU need a native canvas surface first: a per-canvas offscreen texture in src/gpu (wgpu-native), composited like video frames (`media_frame_for`-style lookup in main.c:157). Then WebGPU JS bindings onto wgpu, and WebGL on top (GLES via ANGLE-like translation, or WebGL->wgpu).
+
+## Status when paused (2026-10-11)
+- Done: V8 x64 monolith (~/src/v8/v8/out/android-x64/obj/libv8_monolith.a), all x86_64 + arm64 deps in ~/android-deps/<abi>. FFmpeg x86_64 rebuilt with --disable-asm (inline cabac asm is not PIC).
+- arm64 V8 build was stopped at ~100/4235 on user request (arm64 later): rerun `~/src/v8/build.sh arm64`.
+- `make android ABI=x86_64` now fails only at link, with 4 undefined symbols:
+  1. `download_save(...)` C++-mangled: src/net/download.h needs `extern "C"` guards (jsnative.cc includes it).
+  2. `__real_getcwd`/`__real_realpath`: from V8's PartitionAlloc allocator_shim_android.o. Either add `-Wl,--wrap=getcwd -Wl,--wrap=realpath` (and the other shim wraps) to the link, or rebuild V8 with `use_partition_alloc_as_malloc=false`. The latter is simpler.
+  3. `std::__ndk1::__hash_memory` from allocation-observer.o: V8 built with use_custom_libcxx=false against newer libc++ headers than NDK 28's libc++_static. Try rebuilding with `use_custom_libcxx=false` plus NDK sysroot headers, or provide a small `__hash_memory` shim (murmur2/cityhash like libc++ `__do_string_hash`) in src/platform/android.
+- Next: fix the link, copy liblumen.so + libwgpu_native.so to android/app/src/main/jniLibs/x86_64, `./gradlew assembleDebug`, install on emulator-5554, test tests/android/device.html, Google/YouTube/X (CPU monitor per AGENTS.md).

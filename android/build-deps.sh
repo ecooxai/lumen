@@ -70,7 +70,7 @@ X
 }
 dep_ffmpeg() {
   rm -rf $B/ffmpeg && mkdir -p $B/ffmpeg && cd $B/ffmpeg
-  local asm=""; [ $ABI = x86_64 ] && asm="--disable-x86asm"
+  local asm=""; [ $ABI = x86_64 ] && asm="--disable-asm"   # x86 inline asm (cabac) is not PIC; NDK needs PIC for liblumen.so
   $SRC/ffmpeg-9.0.2/configure --prefix=$PREFIX --target-os=android --arch=$FFARCH --enable-cross-compile --cc=$CC --cxx=$CXX \
     --ar=$TC/bin/llvm-ar --nm=$TC/bin/llvm-nm --ranlib=$TC/bin/llvm-ranlib --strip=$TC/bin/llvm-strip \
     --enable-pic --disable-shared --enable-static --disable-programs --disable-doc --disable-avdevice --disable-avfilter \
