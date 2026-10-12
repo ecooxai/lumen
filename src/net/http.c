@@ -1,6 +1,7 @@
 #include <strings.h>
 /* HTTP/1.1 client with TLS (OpenSSL), keep-alive connection pooling, redirects, decompression. */
 #include "net.h"
+#include "file.h"
 #include <pthread.h>
 #include <sys/socket.h>
 #include <sys/time.h>
@@ -11,6 +12,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <poll.h>
+#include <signal.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include <openssl/x509v3.h>
@@ -423,22 +425,7 @@ static NetResponse *data_url(const char *url) {
     return r;
 }
 
-static NetResponse *file_url(const URL *u, const char *url) {
-    NetResponse *r = xcalloc(1, sizeof *r);
-    char *path = url_decode(u->path, strlen(u->path));
-    size_t n; char *d = read_file(path, &n); free(path);
-    if (!d) { r->status = 404; r->status_text = xstrdup("Not Found"); r->body = xcalloc(1, 1); }
-    else { r->status = 200; r->status_text = xstrdup("OK"); r->body = d; r->body_len = n; }
-    const char *ext = strrchr(u->path, '.');
-    const char *ct = "application/octet-stream";
-    if (ext) { if (!strcmp(ext, ".html") || !strcmp(ext, ".htm")) ct = "text/html"; else if (!strcmp(ext, ".css")) ct = "text/css"; else if (!strcmp(ext, ".js") || !strcmp(ext, ".mjs")) ct = "text/javascript";
-        else if (!strcmp(ext, ".png")) ct = "image/png"; else if (!strcmp(ext, ".jpg") || !strcmp(ext, ".jpeg")) ct = "image/jpeg"; else if (!strcmp(ext, ".svg")) ct = "image/svg+xml"; else if (!strcmp(ext, ".json")) ct = "application/json"; else if (!strcmp(ext, ".txt")) ct = "text/plain"; }
-    headers_add(&r->headers, "content-type", ct);
-    r->url = xstrdup(url);
-    return r;
-}
-
-NetResponse *net_fetch_sync(NetRequest *req) {
+static NetResponse *net_fetch_impl(NetRequest *req) {
     if (str_istarts(req->url, "data:")) return data_url(req->url);
     char *url = xstrdup(req->url);
     char *method = xstrdup(req->method ? req->method : "GET");
@@ -448,7 +435,7 @@ NetResponse *net_fetch_sync(NetRequest *req) {
     for (;;) {
         URL u;
         if (!url_parse(url, &u)) { r = xcalloc(1, sizeof *r); r->error = xstrdup("invalid url"); break; }
-        if (!strcmp(u.scheme, "file")) { r = file_url(&u, url); url_free(&u); break; }
+        if (!strcmp(u.scheme, "file")) { r = net_file_response(&u, url); url_free(&u); break; }
         if (strcmp(u.scheme, "http") && strcmp(u.scheme, "https")) { r = xcalloc(1, sizeof *r); r->error = xstrdup("unsupported scheme"); url_free(&u); break; }
         bool retry;
         t_url = url;
@@ -485,6 +472,12 @@ NetRequest *net_request_new(const char *method, const char *url) {
 }
 static void net_request_free(NetRequest *r) { free(r->method); free(r->url); headers_free(&r->headers); free(r->body); free(r); }
 
+NetResponse *net_fetch_sync(NetRequest *req) {
+    NetResponse *response = net_fetch_impl(req);
+    net_request_free(req);
+    return response;
+}
+
 /* ---------- async worker pool ---------- */
 typedef struct Job { NetRequest *req; NetResponse *resp; struct Job *next, *rnext; } Job;
 static pthread_mutex_t g_mu = PTHREAD_MUTEX_INITIALIZER;
@@ -507,7 +500,7 @@ static void *worker(void *arg) {
         j->rnext = g_running; g_running = j;
         pthread_mutex_unlock(&g_mu);
         if (j->req->cancelled) { j->resp = xcalloc(1, sizeof *j->resp); j->resp->error = xstrdup("cancelled"); }
-        else { t_stream = j->req->chunk ? j->req : NULL; j->resp = net_fetch_sync(j->req); t_stream = NULL; }
+        else { t_stream = j->req->chunk ? j->req : NULL; j->resp = net_fetch_impl(j->req); t_stream = NULL; }
         pthread_mutex_lock(&g_mu);
         for (Job **pp = &g_running; *pp; pp = &(*pp)->rnext) if (*pp == j) { *pp = j->rnext; break; }
         pthread_mutex_unlock(&g_mu);

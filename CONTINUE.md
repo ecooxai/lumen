@@ -1,5 +1,17 @@
 # Lumen: handoff notes
 
+## Android/Linux checkpoint (2026-10-12)
+
+Work is on `codex/android-linux-daily-browser`, following clean-tree checkpoint
+`c742180`. Read `docs/codex-android-linux-status.md` before continuing. Native core
+tests and directory rendering now run on this Linux host; full Lumen still needs
+matching V8 and wgpu-native development dependencies. Android is a same-engine
+SDLActivity/CMake adapter, not a built or tested APK. No Chrome resource comparison
+or personal-account website tests have been performed in this checkpoint.
+Keep the goal open and do not treat older macOS results below as Linux/Android
+verification. Continue test-first with fresh build/test-only agents and one-second
+CPU/RSS monitoring. Main agent owns implementation and debugging.
+
 ## Current goal (user, 2026-10-08)
 Lower RAM/CPU/GPU/load time than Chrome on: YouTube home, 2 YouTube videos playing,
 bing.com, Google search with AI Overview — all loaded and active. Compare with

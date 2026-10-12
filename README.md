@@ -42,3 +42,24 @@ Package a DMG: `python3 tools/mkdmg.py 0.1.0-preview` (output in `dist/`).
 ## Status
 
 Early preview. Expect broken pages and missing features.
+
+## Linux and Android development
+
+The Android adapter builds the same C/C++ engine through SDL3; it does not embed
+Android WebView. It is scaffolding, not a tested APK or a daily-use release.
+See [the portability status and test plan](docs/codex-android-linux-status.md)
+for prerequisites, measured results, and the remaining release gates.
+
+Native core tests can run without V8 or wgpu-native:
+
+```sh
+cmake -S . -B build/codex-core -DLUMEN_BUILD_BROWSER=OFF
+cmake --build build/codex-core -j4
+ctest --test-dir build/codex-core --output-on-failure
+```
+
+Linux additionally uses Fontconfig to discover installed fonts rather than
+assuming Debian font paths. Install system sans/serif/monospace fonts and fonts
+covering the languages and symbols you use (for example Noto CJK and DejaVu Sans).
+`make build/test_font_fallback && build/test_font_fallback` checks Latin, CJK,
+emoji and folder indicators against those installed fonts.

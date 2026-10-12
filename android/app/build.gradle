@@ -1,0 +1,52 @@
+plugins {
+    id 'com.android.application'
+}
+
+def sdlDirectory = providers.gradleProperty('lumenSdlDir').orElse(providers.environmentVariable('LUMEN_SDL_DIR'))
+def dependenciesDirectory = providers.gradleProperty('lumenDepsDir').orElse(providers.environmentVariable('LUMEN_DEPS_DIR'))
+if (!sdlDirectory.isPresent() || !dependenciesDirectory.isPresent()) {
+    throw new GradleException('Set lumenSdlDir and lumenDepsDir to SDL3 sources and ABI-specific native dependency prefixes. This adapter does not use Android WebView.')
+}
+def sdlRoot = file(sdlDirectory.get())
+def depsRoot = file(dependenciesDirectory.get())
+if (!new File(sdlRoot, 'android-project/app/src/main/java/org/libsdl/app/SDLActivity.java').isFile()) {
+    throw new GradleException('lumenSdlDir must contain the SDL3 Android Java sources matching the native SDL build.')
+}
+
+android {
+    namespace 'org.lumen.browser'
+    compileSdk 36
+    ndkVersion '28.2.13676358'
+
+    defaultConfig {
+        applicationId 'org.lumen.browser'
+        minSdk 28
+        targetSdk 36
+        versionCode 1
+        versionName '0.1.0-adapter'
+        ndk {
+            abiFilters 'arm64-v8a', 'x86_64'
+        }
+        externalNativeBuild {
+            cmake {
+                arguments "-DLUMEN_SDL_DIR=${sdlRoot.absolutePath}",
+                    "-DLUMEN_DEPS_DIR=${depsRoot.absolutePath}",
+                    '-DLUMEN_BUILD_TESTS=OFF', '-DANDROID_STL=c++_shared'
+                targets 'main'
+            }
+        }
+    }
+    sourceSets {
+        main.java.srcDir new File(sdlRoot, 'android-project/app/src/main/java')
+    }
+    externalNativeBuild {
+        cmake {
+            path file('../../CMakeLists.txt')
+            version '3.22.1'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

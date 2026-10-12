@@ -2,12 +2,15 @@
 #include <math.h>
 #include <ctype.h>
 #include <time.h>
-#include <malloc/malloc.h>
 #include <sys/resource.h>
-#ifdef __APPLE__
-#include <mach/mach.h>
-#endif
 #include <SDL3/SDL.h>
+#ifdef __ANDROID__
+#include <SDL3/SDL_main.h>
+#endif
+#include "menu.h"
+#include "workspace.h"
+#include "local_viewer.h"
+#include "../base/platform.h"
 #include "../paint/paint.h"
 #include "../media/media.h"
 #include "../net/net.h"
@@ -173,6 +176,10 @@ static int loader(void *arg) {
     char *errbuf = NULL;
     if (rq->html) { body = rq->html; blen = strlen(body); }
     else if (!r || r->status == 0) { errbuf = xmalloc(512); snprintf(errbuf, 512, "<title>Error</title><body style='font:15px system-ui;padding:40px;color:#444'><h2>Can't open this page</h2><p>%s</p>", rq->url); body = errbuf; blen = strlen(errbuf); }
+    if (r && r->status == 200 && !rq->html) {
+        char *viewer = local_viewer_html(r->url, headers_get(&r->headers, "content-type"));
+        if (viewer) { free(r->body); r->body = viewer; r->body_len = strlen(viewer); body = viewer; blen = r->body_len; }
+    }
     p->url = xstrdup(r && r->url ? r->url : rq->url);
     p->d = doc_new(p->url);
     html_parse(p->d, body, blen);
@@ -446,19 +453,20 @@ static void set_window_icon(SDL_Window *w) {
     image_unref(im);
 }
 static Image *ws_icon(App *a, int ic, bool on) {
-#ifdef __APPLE__
-    if (ic < 0 || ic >= MAC_NICONS) return NULL;
+    if (ic < 0 || ic >= WORKSPACE_ICON_COUNT) return NULL;
     Image **slot = &a->icimg[ic][on];
     if (!*slot) {
         int px = (int)(18 * a->scale + 0.5f); Image *im = xcalloc(1, sizeof *im);
         im->w = im->h = px; im->refs = 1; im->scale = a->scale; im->px = xcalloc((size_t)px * (size_t)px, 4);
-        if (!mac_icon_rgba(ic, px, on ? 0x141414 : 0x5a5e64, im->px)) { free(im->px); free(im); return NULL; }
+        bool drawn = false;
+#ifdef __APPLE__
+        drawn = mac_icon_rgba(ic, px, on ? 0x141414 : 0x5a5e64, im->px);
+#endif
+        if (!drawn) drawn = workspace_icon_rgba(px, on ? 0x141414 : 0x5a5e64, im->px);
+        if (!drawn) { free(im->px); free(im); return NULL; }
         *slot = im;
     }
     return *slot;
-#else
-    (void)a; (void)ic; (void)on; return NULL;
-#endif
 }
 static int ws_tabs(App *a, int w, int *out) { int n = 0; for (int i = 0; i < a->ntabs; i++) if (a->tabs[i]->ws == w) out[n++] = i; return n; }
 static float tab_w(App *a) { int v[MAX_TABS], n = ws_tabs(a, a->wi, v); float w = (a->vw - TLW - 48) / (n ? n : 1); return w > 220 ? 220 : w; }
@@ -548,23 +556,16 @@ static void build_hud_pop(App *a) {
 /* this process's CPU (% of one core since the last call) and memory footprint (GB), plus the host's CPU (%) and used memory (GB) */
 static void hud_sample(void) {
     static double lt; static uint64_t lu, hb, ht; double now = now_ms();
-    struct rusage ru; getrusage(RUSAGE_SELF, &ru);
-    uint64_t us = (uint64_t)ru.ru_utime.tv_sec * 1000000 + (uint64_t)ru.ru_utime.tv_usec + (uint64_t)ru.ru_stime.tv_sec * 1000000 + (uint64_t)ru.ru_stime.tv_usec;
+    PlatformStats stats;
+    if (!platform_stats(&stats)) return;
+    uint64_t us = stats.cpu_us;
     if (lt && now > lt) g_hud_cpu = (float)((double)(us - lu) / ((now - lt) * 10.0));
     lt = now; lu = us;
-#ifdef __APPLE__
-    task_vm_info_data_t vi; mach_msg_type_number_t c = TASK_VM_INFO_COUNT;
-    if (task_info(mach_task_self(), TASK_VM_INFO, (task_info_t)&vi, &c) == KERN_SUCCESS) g_hud_ram = (float)(vi.phys_footprint / 1073741824.0);
-    host_cpu_load_info_data_t cl; c = HOST_CPU_LOAD_INFO_COUNT;
-    if (host_statistics(mach_host_self(), HOST_CPU_LOAD_INFO, (host_info_t)&cl, &c) == KERN_SUCCESS) {
-        uint64_t busy = (uint64_t)cl.cpu_ticks[CPU_STATE_USER] + cl.cpu_ticks[CPU_STATE_SYSTEM] + cl.cpu_ticks[CPU_STATE_NICE], tot = busy + cl.cpu_ticks[CPU_STATE_IDLE];
-        if (ht && tot > ht) g_host_cpu = (float)(100.0 * (double)(busy - hb) / (double)(tot - ht));
-        hb = busy; ht = tot;
-    }
-    vm_statistics64_data_t vs; c = HOST_VM_INFO64_COUNT; vm_size_t pg = 0;
-    if (host_page_size(mach_host_self(), &pg) == KERN_SUCCESS && host_statistics64(mach_host_self(), HOST_VM_INFO64, (host_info64_t)&vs, &c) == KERN_SUCCESS)   /* Activity Monitor's "Memory Used" */
-        g_host_ram = (float)(((double)vs.internal_page_count - vs.purgeable_count + vs.wire_count + vs.compressor_page_count) * (double)pg / 1073741824.0);
-#endif
+    g_hud_ram = (float)(stats.rss_bytes / 1073741824.0);
+    g_host_ram = (float)(stats.host_used_bytes / 1073741824.0);
+    if (ht && stats.host_total_ticks > ht && stats.host_busy_ticks >= hb)
+        g_host_cpu = (float)(100.0 * (double)(stats.host_busy_ticks - hb) / (double)(stats.host_total_ticks - ht));
+    hb = stats.host_busy_ticks; ht = stats.host_total_ticks;
 }
 static void build_chrome(App *a) {
     build_hud_pop(a);
@@ -1759,7 +1760,7 @@ static void ws_select(App *a, int w) {
 }
 static void ws_new(App *a, const char *name) {
     if (a->nws == 16) return;
-    snprintf(a->wsname[a->nws], sizeof a->wsname[0], "%s", name); a->wsicon[a->nws] = -1; a->wslast[a->nws++] = NULL;
+    snprintf(a->wsname[a->nws], sizeof a->wsname[0], "%s", name); a->wsicon[a->nws] = WORKSPACE_DEFAULT_ICON; a->wslast[a->nws++] = NULL;
     ws_select(a, a->nws - 1);
 }
 static void ws_close(App *a, int w) {
@@ -1906,20 +1907,29 @@ static void history_go(App *a, int d) {
     a->t->hpos = np; navigate(a, a->t->hist[np], false); a->t->hgen[np] = load_gen;
 }
 
+#ifndef __ANDROID__
 #include <execinfo.h>
+#endif
 #include <unistd.h>
 #include <signal.h>
 #include <setjmp.h>
 #include <pthread.h>
+#ifdef __APPLE__
 #include <mach-o/dyld.h>
+#endif
 /* A memory fault on the main thread while handling a tab jumps back to the event loop instead of killing
    Lumen: that tab's page is abandoned (leaked, never touched again), the tab reloads, and a notice is shown. */
 static sigjmp_buf g_recover;
 static volatile sig_atomic_t g_guard;
 static pthread_t g_main_thr;
 static void crash_handler(int sig, siginfo_t *si, void *ucv) {
+#ifndef __ANDROID__
     void *bt[64]; int n = backtrace(bt, 64);
-    unsigned long pc = 0, lr = 0;
+#endif
+    unsigned long pc = 0, lr = 0, load_address = 0;
+#ifdef __APPLE__
+    load_address = 0x100000000UL + (unsigned long)_dyld_get_image_vmaddr_slide(0);
+#endif
 #if defined(__APPLE__) && defined(__aarch64__)
     ucontext_t *uc = ucv; if (uc && uc->uc_mcontext) { pc = (unsigned long)uc->uc_mcontext->__ss.__pc; lr = (unsigned long)uc->uc_mcontext->__ss.__lr; }
 #elif defined(__APPLE__) && defined(__x86_64__)
@@ -1927,9 +1937,11 @@ static void crash_handler(int sig, siginfo_t *si, void *ucv) {
 #else
     (void)ucv;
 #endif
-    char buf[192]; int k = snprintf(buf, sizeof buf, "lumen: fatal signal %d at pc 0x%lx lr 0x%lx addr %p, load address 0x%lx\n", sig, pc, lr, si ? si->si_addr : NULL, (unsigned long)(0x100000000UL + (unsigned long)_dyld_get_image_vmaddr_slide(0)));
+    char buf[192]; int k = snprintf(buf, sizeof buf, "lumen: fatal signal %d at pc 0x%lx lr 0x%lx addr %p, load address 0x%lx\n", sig, pc, lr, si ? si->si_addr : NULL, load_address);
     write(2, buf, (size_t)k);
+#ifndef __ANDROID__
     backtrace_symbols_fd(bt, n, 2);
+#endif
     if (g_guard && (sig == SIGSEGV || sig == SIGBUS) && pthread_equal(pthread_self(), g_main_thr)) { g_guard = 0; siglongjmp(g_recover, sig); }
     signal(sig, SIG_DFL); raise(sig);
 }
@@ -1968,7 +1980,7 @@ int main(int argc, char **argv) {
     icache_mu = SDL_CreateMutex(); EV_LOADED = SDL_RegisterEvents(1); EV_NET = SDL_RegisterEvents(1); EV_MENU = SDL_RegisterEvents(1);
     net_wakeup = wake; media_wakeup = wake; js_wakeup = wake; js_clip_set = h_clip_set; js_clip_get = h_clip_get; js_global_init(argv[0]);
     paint_image_hook = node_img; paint_url_image_hook = url_img; svg_ext_ref_hook = svg_ext_ref; layout_image_size_hook = img_size;
-    App a; memset(&a, 0, sizeof a); g_app = &a; a.nws = 1; a.wsicon[0] = -1; snprintf(a.wsname[0], sizeof a.wsname[0], "Personal"); a.side = getenv("LUMEN_NO_SIDEBAR") ? 0 : SIDEW; tab_new(&a);
+    App a; memset(&a, 0, sizeof a); g_app = &a; a.nws = 1; a.wsicon[0] = WORKSPACE_DEFAULT_ICON; snprintf(a.wsname[0], sizeof a.wsname[0], "Personal"); a.side = getenv("LUMEN_NO_SIDEBAR") ? 0 : SIDEW; tab_new(&a);
     bool want_gpu = !getenv("LUMEN_NO_GPU");
     int ww = 1280, wh = 840; { const char *e = getenv("LUMEN_WINDOW"); if (e) sscanf(e, "%dx%d", &ww, &wh); }   /* e.g. LUMEN_WINDOW=800x600 */
     a.win = SDL_CreateWindow("Lumen", ww, wh, SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY | (want_gpu && !strcmp(SDL_GetPlatform(), "macOS") ? SDL_WINDOW_METAL : 0));
@@ -2058,8 +2070,8 @@ int main(int argc, char **argv) {
         if (getenv("LUMEN_MEM_STATS")) {
             static double last_stats; double tn = now_ms();
             if (tn - last_stats > 10000) { last_stats = tn; size_t fr, seg = media_mem_bytes(&fr); size_t jh = 0, je = 0; js_mem_stats(&jh, &je); fprintf(stderr, "lumen-mem: mse=%.1fMB vframes=%.1fMB images=%.1fMB/%d js_heap=%.1fMB js_external=%.1fMB canvases=%.1fMB\n", seg / 1048576.0, fr / 1048576.0, g_icache_bytes / 1048576.0, g_icache_n, jh / 1048576.0, je / 1048576.0, ((double)a.frame.w * a.frame.h + (double)a.page.w * a.page.h) * 4 / 1048576.0); }
-            if (last_stats == tn) { extern long g_styles_live, g_nodes_live; extern size_t g_css_parsed_bytes; extern void worker_mem_stats(size_t *, size_t *, int *); size_t wh, wx; int wn; worker_mem_stats(&wh, &wx, &wn); malloc_statistics_t ms = {0}; malloc_zone_statistics(NULL, &ms);
-                fprintf(stderr, "lumen-mem2: malloc_in_use=%.1fMB nodes=%ld (%zuB) styles=%ld (%zuB) css_parsed=%.1fMB workers=%d heap=%.1fMB ext=%.1fMB\n", ms.size_in_use / 1048576.0, g_nodes_live, sizeof(Node), g_styles_live, sizeof(ComputedStyle), g_css_parsed_bytes / 1048576.0, wn, wh / 1048576.0, wx / 1048576.0); }
+            if (last_stats == tn) { extern long g_styles_live, g_nodes_live; extern size_t g_css_parsed_bytes; extern void worker_mem_stats(size_t *, size_t *, int *); size_t wh, wx; int wn; worker_mem_stats(&wh, &wx, &wn);
+                fprintf(stderr, "lumen-mem2: malloc_in_use=%.1fMB nodes=%ld (%zuB) styles=%ld (%zuB) css_parsed=%.1fMB workers=%d heap=%.1fMB ext=%.1fMB\n", platform_heap_bytes() / 1048576.0, g_nodes_live, sizeof(Node), g_styles_live, sizeof(ComputedStyle), g_css_parsed_bytes / 1048576.0, wn, wh / 1048576.0, wx / 1048576.0); }
         }
         g_lite_active = a.t && lite_on(a.t); media_lowmem = g_lite_active;
         if (g_lite_active) {

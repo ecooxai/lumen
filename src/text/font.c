@@ -12,6 +12,9 @@
 #include <math.h>
 #include <pthread.h>
 #include <sys/stat.h>
+#if !defined(__APPLE__) && !defined(__ANDROID__)
+#include <fontconfig/fontconfig.h>
+#endif
 
 struct Face { FT_Face ft; hb_face_t *hb; char *path; int index; int weight; bool italic; bool color; };
 
@@ -63,6 +66,15 @@ static const FamilyDef families[] = {
     { "emoji", SYS "Apple Color Emoji.ttc#0", NULL, NULL, NULL },
 };
 static const char *fallbacks[] = { SYS "Helvetica.ttc#0", SUP "Arial Unicode.ttf", SYS "Apple Color Emoji.ttc#0", SYS "Hiragino Sans GB.ttc#0", SYS "AppleSDGothicNeo.ttc#0", SYS "Apple Symbols.ttf", SYS "LastResort.otf", NULL };
+#elif defined(__ANDROID__)
+static const FamilyDef families[] = {
+    { "sans-serif", "/system/fonts/Roboto-Regular.ttf", "/system/fonts/Roboto-Bold.ttf", "/system/fonts/Roboto-Italic.ttf", "/system/fonts/Roboto-BoldItalic.ttf" },
+    { "system-ui", "/system/fonts/Roboto-Regular.ttf", "/system/fonts/Roboto-Bold.ttf", NULL, NULL },
+    { "serif", "/system/fonts/NotoSerif-Regular.ttf", "/system/fonts/NotoSerif-Bold.ttf", "/system/fonts/NotoSerif-Italic.ttf", "/system/fonts/NotoSerif-BoldItalic.ttf" },
+    { "monospace", "/system/fonts/DroidSansMono.ttf", NULL, NULL, NULL },
+    { "emoji", "/system/fonts/NotoColorEmoji.ttf", NULL, NULL, NULL }
+};
+static const char *fallbacks[] = { "/system/fonts/Roboto-Regular.ttf", "/system/fonts/NotoSans-Regular.ttf", "/system/fonts/NotoSansCJK-Regular.ttc#0", "/system/fonts/NotoColorEmoji.ttf", NULL };
 #else
 static const FamilyDef families[] = {
     { "sans-serif", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans-Oblique.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans-BoldOblique.ttf" },
@@ -97,6 +109,40 @@ static Face *face_load(const char *spec) {
     return f;
 }
 
+#if !defined(__APPLE__) && !defined(__ANDROID__)
+static Face *fontconfig_face(const char *name, int weight, bool italic, uint32_t codepoint) {
+    FcPattern *pattern = FcPatternCreate();
+    if (!pattern) return NULL;
+    FcPatternAddString(pattern, FC_FAMILY, (const FcChar8 *)name);
+    FcPatternAddInteger(pattern, FC_WEIGHT, weight >= 600 ? FC_WEIGHT_BOLD : FC_WEIGHT_REGULAR);
+    FcPatternAddInteger(pattern, FC_SLANT, italic ? FC_SLANT_ITALIC : FC_SLANT_ROMAN);
+    if (codepoint) {
+        FcCharSet *characters = FcCharSetCreate();
+        if (!characters) { FcPatternDestroy(pattern); return NULL; }
+        FcCharSetAddChar(characters, codepoint);
+        FcPatternAddCharSet(pattern, FC_CHARSET, characters);
+        FcCharSetDestroy(characters);
+    }
+    FcConfigSubstitute(NULL, pattern, FcMatchPattern);
+    FcDefaultSubstitute(pattern);
+    FcResult result;
+    FcPattern *match = FcFontMatch(NULL, pattern, &result);
+    Face *matched = NULL;
+    if (match) {
+        FcChar8 *filename = NULL; int index = 0;
+        if (FcPatternGetString(match, FC_FILE, 0, &filename) == FcResultMatch) {
+            FcPatternGetInteger(match, FC_INDEX, 0, &index);
+            char spec[1024]; snprintf(spec, sizeof spec, "%s#%d", filename, index);
+            matched = face_load(spec);
+            if (matched && codepoint && !FT_Get_Char_Index(matched->ft, codepoint)) matched = NULL;
+        }
+        FcPatternDestroy(match);
+    }
+    FcPatternDestroy(pattern);
+    return matched;
+}
+#endif
+
 static Face *resolve_one(const char *name, int weight, bool italic, bool *synth_b, bool *synth_i) {
     char lname[128]; size_t n = 0;
     for (const char *p = name; *p && n < sizeof lname - 1; p++) lname[n++] = (char)lc((unsigned char)*p);
@@ -121,6 +167,14 @@ static Face *resolve_one(const char *name, int weight, bool italic, bool *synth_
         Face *f = face_load(pick);
         if (f) return f;
     }
+#if !defined(__APPLE__) && !defined(__ANDROID__)
+    Face *matched = fontconfig_face(name, weight, italic, 0);
+    if (matched) {
+        *synth_b = weight >= 600 && matched->weight < 600;
+        *synth_i = italic && !matched->italic;
+        return matched;
+    }
+#endif
     /* try a matching file in the supplemental dir: "<Name>.ttf" */
 #ifdef __APPLE__
     char path[512];
@@ -203,7 +257,7 @@ static Font *font_get_slow(const char *family, int weight, bool italic, float si
             if (n) face = resolve_one(name, weight, italic, &sb, &si);
         }
         if (!face) face = resolve_one("sans-serif", weight, italic, &sb, &si);
-        if (!face) face = face_load(fallbacks[0]);
+        for (int index = 0; !face && fallbacks[index]; index++) face = face_load(fallbacks[index]);
         if (!face) { pthread_mutex_unlock(&font_mu); return NULL; }
         flags = (uintptr_t)sb | ((uintptr_t)si << 1);
         Face **slot = xmalloc(sizeof(Face *) * 2); slot[0] = face; slot[1] = (Face *)flags;
@@ -236,6 +290,17 @@ static Font *fallback_for(Font *base, uint32_t cp) {
         if (!fc || fc == base->face) continue;
         if (FT_Get_Char_Index(fc->ft, cp)) return font_for_face(fc, base->size, base->synth_bold, base->synth_italic);
     }
+#if !defined(__APPLE__) && !defined(__ANDROID__)
+    typedef struct { uint32_t codepoint; int weight; bool italic, valid; Face *face; } FallbackMemo;
+    static FallbackMemo memo[512];
+    int weight = base->synth_bold ? 700 : base->face->weight;
+    bool italic = base->synth_italic || base->face->italic;
+    FallbackMemo *entry = &memo[(cp ^ (uint32_t)weight ^ ((uint32_t)italic << 8)) % ARRLEN(memo)];
+    if (!entry->valid || entry->codepoint != cp || entry->weight != weight || entry->italic != italic) {
+        *entry = (FallbackMemo){cp, weight, italic, true, fontconfig_face("sans-serif", weight, italic, cp)};
+    }
+    if (entry->face) return font_for_face(entry->face, base->size, weight >= 600 && entry->face->weight < 600, italic && !entry->face->italic);
+#endif
     return NULL;
 }
 

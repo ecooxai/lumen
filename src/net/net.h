@@ -48,7 +48,7 @@ NetRequest *net_request_new(const char *method, const char *url);
 /* Asynchronous: callbacks fire on the thread calling net_poll(). Ownership of req moves to net. */
 uint64_t net_fetch(NetRequest *req);
 void net_cancel(uint64_t id);
-/* Synchronous fetch (blocking). Caller frees response with net_response_free. */
+/* Synchronous fetch consumes req. Caller frees response with net_response_free. */
 NetResponse *net_fetch_sync(NetRequest *req);
 void net_response_free(NetResponse *r);
 /* Dispatch completed requests. Returns number dispatched. */

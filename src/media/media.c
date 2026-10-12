@@ -3,6 +3,7 @@
  * queue as BGRA Images; audio is resampled to f32 stereo 48 kHz and pulled by an SDL3 audio
  * stream callback whose position is the master clock (wall clock when there is no audio). */
 #include "media/media.h"
+#include <time.h>
 #include "paint/paint.h"
 #include "base/util.h"
 #include "net/net.h"
