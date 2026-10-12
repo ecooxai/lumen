@@ -42,9 +42,9 @@ Static-library licensing/relink requirements must be reviewed before release.
 
 ## Remaining native build inputs
 
-- V8 15.6.75.8, same generation as the existing engine. The source and exact
-  dependency revisions are being prepared in `build/codex-android-v8`. Android
-  compilation, C++ ABI flags, ICU data packaging and startup remain to verify.
+- V8 15.6.75.8, same generation as the existing engine. GN generation passes
+  and Android compilation is underway in `build/codex-android-v8`. A complete
+  archive, C++ ABI integration, ICU data packaging and startup remain to verify.
 - wgpu-native v29.0.1.1 now builds for aarch64-linux-android in
   `build/codex-android-wgpu/prefix`. The actual engine's `gpu.c` cross-compiles and
   links with all 49 imported symbols resolved. Android ELF architecture, system
@@ -57,6 +57,38 @@ Static-library licensing/relink requirements must be reviewed before release.
 The dependency recipe exposes `prefix/arm64-v8a` after a successful foundation
 build, and preserves the matching SDL Java/native source checkout. It does not
 pretend that missing V8 or wgpu artifacts are optional.
+
+### V8 compiler and C++ ABI gates
+
+The NDK-only compiler configuration failed before compilation because V8's
+host snapshot tools need a host compiler-rt archive absent from the NDK.
+Use V8's pinned Clang `llvmorg-24-init-7747-g62397f8b-29`, including its Android
+runtime package. Both archives were checked against the exact SHA256, size
+and object generation in V8's DEPS before extraction:
+
+- Linux compiler: `8039b5c9e7375df3a8082761cd1220223f90344b81d829c949f69224350d9d47`.
+- Android runtime: `b93725013ccd4f91d5ae40afc1a1b495e07c3be645ddbd7a3b48a7281fcecff8`.
+
+The next actual compile exposed NDK libc++19's missing `std::atomic_ref`.
+V8 now builds its exact pinned libc++/libc++abi sources, not a replacement
+atomic implementation or mismatched runtime archive. Native GN is pinned to
+`127dd2a6d582528d6d61c4d838dc17385ef31abd`; Android-only cpu_features and catapult
+resources also match V8 DEPS. Preparation, flags and resource measurements live
+under `build/codex-android-v8`, with iteration-numbered reports.
+
+The active configuration uses Android API28, NDK r28c's sysroot, monolithic PIC
+V8, embedded startup/ICU data, custom libc++, and
+`v8_generate_external_defines_header=true`. Lumen's C++ consumers must use the
+same Clang, custom `__Cr` STL configuration, relative-vtable ABI and generated
+`v8-gn.h` with `V8_GN_HEADER`; the current CMake integration does **not yet
+implement this**.
+Do not link those consumers with NDK STL headers or mix V8's ICU78.2 objects
+with the foundation ICU78.3 archive. The V8 sandbox remains disabled in this
+development probe; this is not a release security configuration.
+
+`tests/android/v8_smoke.cc` is the pending target-link/runtime gate: V8 startup,
+embedded ICU date/number formatting, Wasm execution, BigInt, microtasks and
+teardown. It is a dependency test, not an APK or browser compatibility test.
 
 ## Android HTTPS adapter
 
@@ -90,6 +122,13 @@ still requires APK/device testing.
 
 ## Test evidence and next gates
 
+- Fresh target probes compile 30/34 C sources with NDK API28; four await actual
+  target OpenSSL/JPEG headers. Matching Clang24/custom-STL probes pass for
+  `frames.cc`, `worker.cc` and `tests/android/v8_smoke.cc`; the other two C++
+  sources await OpenSSL. The real smoke link attempt is RED because the V8
+  archive is still building. No runtime assertion has executed. Evidence:
+  `build/codex-android-engine-probe`, including `cycle2-custom-cpp` commands.
+  C checks used 82.19% active CPU / 56.88 MiB peak RSS, not browser CPU/RAM.
 - Android links: FIFO ordering/capacity, wakeup, concurrent transfer and malformed
   inputs pass native unit tests, ASan/UBSan and ThreadSanitizer. Java URI tests,
   SDK36/SDL activity compilation, manifest checks and the registered CMake test

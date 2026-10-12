@@ -9,9 +9,13 @@ and dependency cross-builds are underway under `build/codex-android-*`.
 
 Android link-opening now has cold/warm HTTP(S) intent routing, a bounded native
 FIFO and regression tests; actual APK/activity lifecycle testing remains pending.
-V8's native GN tool is built. Android generation exposed missing generated NDK
-metadata and Android-only cpu_features resources; preparation continues without
-substituting a different engine. Foundation compilation has reached HarfBuzz.
+V8's native GN tool is built and Android generation passes. Actual compilation
+required V8's checksum-pinned Clang24 and custom libc++ (NDK libc++19 lacks
+std::atomic_ref). The active build uses generated v8-gn.h; CMake consumers still
+need matching __Cr STL/ABI and a single consistent ICU before linking. See
+docs/codex-android-build.md. Foundation compilation has reached ICU host tools.
+tests/android/v8_smoke.cc is the new dependency startup/ICU/Wasm runtime gate;
+it must pass on Android before stronger integration claims.
 
 Current branch is `codex/android-phone-engine-port`, after shared-engine
 checkpoint `8cceb05` on `codex/android-linux-daily-browser` and original clean-tree
