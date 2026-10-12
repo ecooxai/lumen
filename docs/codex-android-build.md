@@ -23,10 +23,30 @@ measurements are recorded in that directory's `REPORT.md`.
 ```sh
 source build/codex-android-toolchain/env.sh
 python3 tools/android/build_deps.py --ndk "$ANDROID_NDK_HOME" --abi arm64-v8a --dry-run
-python3 tools/android/build_deps.py --ndk "$ANDROID_NDK_HOME" --abi arm64-v8a --jobs 2 --execute
+python3 tools/codex_compile.py python3 tools/android/build_deps.py --ndk "$ANDROID_NDK_HOME" --abi arm64-v8a --jobs 2 --execute
 ```
 
 The dry-run command prints a plan without creating files or downloading anything.
+All host compilation shares a 140% CPU ceiling (1.4 logical cores) through
+`tools/codex_compile.py`, including parallel V8, dependency, Gradle and test
+builds. This uses one systemd user slice, not a separate quota per command.
+It requires Linux cgroup CPU control and a working systemd user manager; quota
+setup failure must not fall back to an uncapped build. Scoped commands retain
+the caller's environment, working directory and exit status. The quota is
+140000 microseconds per 100000-microsecond period, so very short instantaneous
+samples can exceed 140%; monitor aggregate `cpu.stat` deltas over time.
+This explicit limit is stricter than 30% of this host's eight logical CPUs.
+Keep compiler concurrency at two or less as well for bounded memory.
+Use Gradle `--no-daemon`; a build must not delegate compilation to an existing
+daemon outside the capped slice.
+On this host, `/usr/local/lib/cpulimit/cpulimit_watcher.py` previously moved
+compilers out of explicitly limited scopes into its general-purpose slice.
+Its local integration now preserves this project's slice only when the
+ancestor `cpu.max` is exactly `140000 100000`; other workload mappings remain
+unchanged. The original is backed up alongside it as
+`cpulimit_watcher.py.codex-before-lumen-cap`. Verify process cgroup membership
+across multiple watcher scans, not just immediately after launch, if that host
+service is upgraded or reconfigured. This host adaptation is not APK code.
 Execution requires the exact NDK and an executable Android API 28 compiler.
 It uses repository-local temporary files, bounded compilation concurrency,
 pinned SDL/vcpkg commits, and a release-only Android triplet. Required host tools

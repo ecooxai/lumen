@@ -7,6 +7,14 @@ benchmarks are deferred. An authorized MI 8 (Android API 35, arm64-v8a) is
 connected; no Lumen APK has been built or installed. Android toolchain preparation
 and dependency cross-builds are underway under `build/codex-android-*`.
 
+**Host compiler budget: 140% CPU total, shared across all project builds.**
+V8 and foundation process trees were moved without restarting into the same
+kernel-limited systemd user slice, `codex-lumen-compile.slice` (140000/100000
+microseconds). Future compilation must use `python3 tools/codex_compile.py
+COMMAND ARGS...`; do not give each parallel build its own 140% allowance.
+The live trees reside in `codex-lumen-compile-anchor.service`; stopping that
+anchor would terminate the builds. Leave it running until they finish.
+
 Android link-opening now has cold/warm HTTP(S) intent routing, a bounded native
 FIFO and regression tests; actual APK/activity lifecycle testing remains pending.
 V8's native GN tool is built and Android generation passes. Actual compilation
