@@ -9,10 +9,12 @@ artifact hashes and test reports; the prerequisite sections below include
 historical milestones, not the latest runtime status.
 
 **Not daily-use ready.** Android packaging passes, and the phone renders the
-home page. Fixing SDL's self-waking wait loop reduced measured home idle CPU
-from 101.20% to 9.40%, still above the 0–3% target. Residual sensor and HUD
-work is being corrected and retested. Compilation does not establish website
-compatibility, security, or Chrome parity.
+home page. SDL wait, sensor polling and HUD damage fixes reduce measured home
+idle CPU from 101.20% to 2.47% over the latest 60-second HUD-On window
+(0–6.93%, RSS229.98–232.11 MiB). This bounded idle gate passes, but
+background/resume crashes with SIGABRT and the phone UI remains desktop-sized.
+Pixel-equivalence diagnostics, website compatibility, security and Chrome parity
+remain unverified; an idle or compilation pass does not establish them.
 
 Current branch: `codex/android-phone-engine-port`; the original portability
 branch was `codex/android-linux-daily-browser`. The original clean tree was

@@ -4,6 +4,26 @@
 
 ### Current idle-adapter iteration
 
+**Latest installed combined-fix APK passes the bounded home idle gate:**
+60 complete seconds with HUD On, mean2.47% CPU, range0–6.93%, at most one
+consecutive interval above3%, RSS229.98–232.11 MiB. Activity0.00%, engine2.22%.
+The phone is released, app stopped, HUD On and rotation `free`; installed
+SHA256 is the compact `43b721...` artifact listed below. Main visually
+reviewed its actual home screenshot. Report:
+`build/codex-android-chrome-damage/phone/REPORT.md`.
+No resume retry or fixture/site/interaction acceptance ran. The known SIGABRT
+on background/resume remains a daily-use blocker; mobile UI remains tiny and
+overlaps the status bar. Overall daily-use self-assessment remains25/100.
+
+Pixel equivalence is **unverified**, not a measured mismatch. The attempted
+diagnostic launch used SDL_ENV Intent extras, based on main's mistaken reading;
+pinned SDL getManifestEnvironmentVariables reads manifest metadata instead.
+No comparison or paint logs appeared, so do not claim the checker executed.
+Its fprintf(stderr) output is also not verified as visible in Android logcat.
+Next diagnostic work needs debug-only activation and observable logging (or
+scoped own-app LLDB), not an arbitrary environment-intent bridge. Do not repeat
+ignored extras or treat absent comparisons as zero mismatched pixels.
+
 The Android surface now uses lifecycle-scoped DisplayManager notifications
 instead of SDL's unused game-rate accelerometer to report display rotation.
 Rotation mappings, deduplication, pause/resume, display replacement, resize,
@@ -47,8 +67,8 @@ The oversized GREEN archive is historical evidence, not endorsed for delivery.
 Exact task-only Gradle command/init script and diagnosis are in the correction
 directory's REPORT.md. Future native changes may fragment incremental APKs
 again; compare container size with live payloads before delivery.
-Fresh phone testing of the combined fixes is limited to HUD-On idle and
-separate cached-page/full-raster diagnostics. Resume failure must be fixed
+Fresh phone testing of the combined fixes was limited to HUD-On idle and
+an ineffective cached-page/full-raster diagnostic attempt. Resume failure must be fixed
 before interaction/site/fixture acceptance; no daily-readiness pass is claimed.
 
 Next lifecycle investigation: the presenter captures ANativeWindow once in
