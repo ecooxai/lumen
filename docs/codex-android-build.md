@@ -11,6 +11,29 @@ has been built, installed, or tested on the phone.** Device connection is not
 evidence of browser functionality. Do not import personal profiles or log in
 until the engine's origin/file-access security blockers are repaired.
 
+## Android Back adapter
+
+`LumenActivity` routes API 33+ committed Back gestures through the platform
+`OnBackInvokedDispatcher` and legacy Back through the same native request path.
+The modern callback registers at default priority and unregisters on activity
+destruction. See the [Android dispatcher reference](https://developer.android.com/reference/android/window/OnBackInvokedDispatcher).
+This handles committed navigation, not predictive page-preview animations.
+SDL hardware Back is trapped and handled without key-repeat navigation.
+
+A bounded, mutex-protected 32-request queue wakes the engine thread without a
+polling timer; Java never mutates page state. Before engine readiness or after
+shutdown, requests are rejected. Back dismisses the resource popup, cancels
+address editing, clears page editing focus, traverses history, then backgrounds
+the task at the root rather than destroying its tabs. Android IME activation
+tracks focus transitions instead of reopening a dismissed keyboard every frame;
+tapping the same focused control explicitly requests the keyboard again.
+
+`tests/test_android_back.c` covers action priority, bounded/reentrant/concurrent
+dispatch, shutdown and focus transitions. Actual gesture cancellation, keyboard
+dismissal/reopening, same-document history, background/resume and activity
+recreation still require APK/device tests. Do not treat these native policy
+tests or Java compilation as proof of working phone navigation.
+
 ## Verified local toolchain
 
 Preparation artifacts are ignored, machine-local files under

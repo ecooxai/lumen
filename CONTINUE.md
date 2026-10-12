@@ -18,6 +18,15 @@ V8 concurrency change preserves existing GN outputs; it is not a clean rebuild.
 
 Android link-opening now has cold/warm HTTP(S) intent routing, a bounded native
 FIFO and regression tests; actual APK/activity lifecycle testing remains pending.
+Android Back now has API 33+ callback and legacy/hardware routing, a bounded
+engine-thread queue, popup/address/focus/history/root-task behavior and
+focus-transition IME activation (no automatic reopening after dismissal).
+Test-first native policy/concurrency, ASan/UBSan and ThreadSanitizer tests pass;
+100 threaded stress runs transfer 400,000 requests with exact wake counts.
+The registered CTest passes; actual changed
+Android app/JNI objects and SDK36/SDL Java sources compile. Verification report:
+`build/codex-android-back-test/REPORT.md`. Gesture/IME/history/lifecycle behavior
+still needs device testing; there is no predictive page-preview animation.
 V8's native GN tool is built and Android generation passes. Actual compilation
 required V8's checksum-pinned Clang24 and custom libc++ (NDK libc++19 lacks
 std::atomic_ref). The active build uses generated v8-gn.h; CMake consumers still

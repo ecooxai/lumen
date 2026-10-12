@@ -8,6 +8,7 @@
 #include <SDL3/SDL_main.h>
 #include "android_platform.h"
 #include "android_launch.h"
+#include "android_back.h"
 #endif
 #include "menu.h"
 #include "workspace.h"
@@ -1422,6 +1423,9 @@ static void ctl_set(App *a, Node *n, char *v) {
 }
 static void focus_node(App *a, Node *n) {
     Document *d = a->t->cur->d; Node *old = d->focus; JsCtx *js = a->t->cur->js;
+#ifdef __ANDROID__
+    if (old == n && (is_text_ctl(n) || edit_host(n))) SDL_StartTextInput(a->win);
+#endif
     if (old == n) return;
     if (old) { old->flags &= ~(uint32_t)NF_FOCUS; doc_mark_dirty(d, old); }
     d->focus = n;
@@ -1923,7 +1927,34 @@ static void history_go(App *a, int d) {
     a->t->hpos = np; navigate(a, a->t->hist[np], false); a->t->hgen[np] = load_gen;
 }
 
-#ifndef __ANDROID__
+#ifdef __ANDROID__
+static void android_handle_back(App *app) {
+    switch (android_back_action(g_hud_pop, app->editing,
+        page_focus(app) || edit_focus(app), app->t->hpos > 0)) {
+    case ANDROID_BACK_DISMISS_POPUP:
+        g_hud_pop = false;
+        break;
+    case ANDROID_BACK_CANCEL_ADDRESS:
+        app->editing = false;
+        SDL_StopTextInput(app->win);
+        if (app->t->hpos >= 0) snprintf(app->t->url, sizeof app->t->url, "%s",
+            app->t->cur ? app->t->cur->url : app->t->hist[app->t->hpos]);
+        break;
+    case ANDROID_BACK_CLEAR_FOCUS:
+        SDL_StopTextInput(app->win);
+        focus_node(app, NULL);
+        break;
+    case ANDROID_BACK_HISTORY:
+        history_go(app, -1);
+        break;
+    case ANDROID_BACK_BACKGROUND:
+        SDL_MinimizeWindow(app->win);
+        break;
+    }
+    app->dirty = true;
+    app->vonly = false;
+}
+#else
 #include <execinfo.h>
 #endif
 #include <unistd.h>
@@ -1991,6 +2022,9 @@ int main(int argc, char **argv) {
     install_crash_handler();
     const char *start = argc > 1 ? argv[1] : "https://en.wikipedia.org/wiki/Web_browser";
     SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
+#ifdef __ANDROID__
+    SDL_SetHint(SDL_HINT_ANDROID_TRAP_BACK_BUTTON, "1");
+#endif
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) { fprintf(stderr, "SDL_Init: %s\n", SDL_GetError()); return 1; }
 #ifdef __ANDROID__
     android_platform_init();
@@ -2052,10 +2086,15 @@ int main(int argc, char **argv) {
     for (int i = 2; i < argc; i++) { Tab *nt = tab_new(&a); if (!nt) break; a.t = nt; navigate(&a, argv[i], true); }
     a.t = a.tabs[0]; a.ti = 0;
     bool quit = false, cmd = false;
+#ifdef __ANDROID__
+    AndroidTextInputState android_text_state = {0};
+    android_back_set_wakeup(wake);
+#endif
     while (!quit) {
         { int sig = sigsetjmp(g_recover, 1); if (sig) recover_from_crash(&a, sig); }
         g_guard = 1;
 #ifdef __ANDROID__
+        for (unsigned back_count = 0; back_count < 32 && android_back_take(); back_count++) android_handle_back(&a);
         char *launch_url;
         for (unsigned launch_count = 0; launch_count < 32 && (launch_url = android_launch_take()); launch_count++) {
             if (tab_new(&a)) {
@@ -2083,7 +2122,14 @@ int main(int argc, char **argv) {
             int nx = (int)(2000 - (th - lh)) + 1; if (nx < to) to = nx;
         }
         { int mf = media_tick(); if (mf & 1) { if (!a.dirty && !a.deferred) a.vonly = true; a.dirty = a.vframe = true; } if (mf & 2) a.t->relayout = true; }
+#ifdef __ANDROID__
+        Node *text_focus = page_focus(&a);
+        if (!text_focus) text_focus = edit_focus(&a);
+        if (android_text_input_start(&android_text_state, (uintptr_t)text_focus,
+            a.t->cur ? a.t->cur->gen : 0, a.editing) && !SDL_TextInputActive(a.win)) SDL_StartTextInput(a.win);
+#else
         if (!a.editing && (page_focus(&a) || edit_focus(&a)) && !SDL_TextInputActive(a.win)) SDL_StartTextInput(a.win);
+#endif
         {
             static double last_bg; double tb = now_ms();
             if (tb - last_bg > 2000) {
@@ -2216,6 +2262,9 @@ int main(int argc, char **argv) {
             case SDL_EVENT_KEY_DOWN: { a.caret_t = now_ms();
                 js_key_mods = key_mods(ev.key.mod);
                 SDL_Keycode k = ev.key.key; float page = a.vh - BAR - 40;
+#ifdef __ANDROID__
+                if (k == SDLK_AC_BACK) { if (!ev.key.repeat) android_handle_back(&a); break; }
+#endif
                 if (k == SDLK_LGUI || k == SDLK_RGUI || k == SDLK_LCTRL || k == SDLK_RCTRL) { cmd = true; break; }
                 if (cmd || (ev.key.mod & (SDL_KMOD_GUI | SDL_KMOD_CTRL))) {
                     bool reserved = k == SDLK_Q || k == SDLK_W || k == SDLK_T || k == SDLK_N || k == SDLK_L || k == SDLK_TAB || (k >= SDLK_1 && k <= SDLK_9);
@@ -2320,6 +2369,7 @@ int main(int argc, char **argv) {
     if (*cookie_path) cookies_save(cookie_path);
 #ifdef __ANDROID__
     android_launch_set_wakeup(NULL);
+    android_back_set_wakeup(NULL);
     char *pending_url;
     while ((pending_url = android_launch_take())) free(pending_url);
 #endif

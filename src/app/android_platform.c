@@ -1,11 +1,19 @@
 #ifdef __ANDROID__
 #include "android_platform.h"
 #include "android_launch.h"
+#include "android_back.h"
 #include "../net/trust.h"
 #include <SDL3/SDL.h>
 #include <jni.h>
 #include <stdlib.h>
 #include <string.h>
+
+JNIEXPORT jboolean JNICALL Java_org_lumen_browser_LumenActivity_nativeRequestBack(
+    JNIEnv *environment, jclass activity_class) {
+    (void)environment;
+    (void)activity_class;
+    return android_back_submit() ? JNI_TRUE : JNI_FALSE;
+}
 
 JNIEXPORT jboolean JNICALL Java_org_lumen_browser_LumenActivity_nativeOpenUrl(
     JNIEnv *environment, jclass activity_class, jbyteArray encoded) {

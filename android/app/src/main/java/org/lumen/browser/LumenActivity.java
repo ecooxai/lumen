@@ -3,6 +3,8 @@ package org.lumen.browser;
 import org.libsdl.app.SDLActivity;
 import android.util.Log;
 import android.content.Intent;
+import android.os.Build;
+import android.os.Bundle;
 import android.widget.Toast;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
@@ -15,6 +17,46 @@ import javax.net.ssl.X509TrustManager;
 public final class LumenActivity extends SDLActivity {
     private boolean nativeArgumentsRequested;
     private static native boolean nativeOpenUrl(byte[] url);
+    private static native boolean nativeRequestBack();
+    private Runnable unregisterBack;
+
+    private synchronized void requestBack() {
+        if (!nativeArgumentsRequested || mBrokenLibraries) {
+            moveTaskToBack(true);
+        } else if (!nativeRequestBack()) {
+            Toast.makeText(this, "Unable to go back: browser is busy", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    protected void onCreate(Bundle state) {
+        super.onCreate(state);
+        if (Build.VERSION.SDK_INT >= 33) unregisterBack = Api33.registerBack(this);
+    }
+
+    @Override
+    public void onBackPressed() {
+        requestBack();
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (unregisterBack != null) {
+            unregisterBack.run();
+            unregisterBack = null;
+        }
+        super.onDestroy();
+    }
+
+    @android.annotation.TargetApi(33)
+    private static final class Api33 {
+        static Runnable registerBack(LumenActivity activity) {
+            android.window.OnBackInvokedDispatcher dispatcher = activity.getOnBackInvokedDispatcher();
+            android.window.OnBackInvokedCallback callback = activity::requestBack;
+            dispatcher.registerOnBackInvokedCallback(android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT, callback);
+            return () -> dispatcher.unregisterOnBackInvokedCallback(callback);
+        }
+    }
 
     private String launchUrl(Intent intent) {
         return intent != null && Intent.ACTION_VIEW.equals(intent.getAction())
