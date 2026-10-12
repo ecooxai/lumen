@@ -14,19 +14,55 @@ compilation, 52 total host unit groups and 23 APK packaging gates pass.
 All 293 native objects are unchanged in this sensor-only APK:
 `build/codex-android-idle-adapter/green/codex-android-idle-adapter-debug.apk`,
 SHA256 `9be59756cc14a2b94b840e7b640024bff5f7aee463fd3b210d86f8ab5ede26ca`.
-Phone rotation/lifecycle and CPU verification are in progress; do not infer
-runtime success from the Java stubs or packaging gates.
+Phone verification now establishes Activity CPU at 0.00% and no sampled
+sensor callbacks. HUD-On idle is still FAIL: 4.00% over 60 seconds, engine
+3.80%, RSS232.26–234.34 MiB. Reversible HUD On/Off/restored gives
+3.30%/0.10%/4.20%; disabling the HUD is diagnostic, not acceptance.
+All four requested rotations visibly render, but background/resume FAILS:
+SIGABRT after abandoned Vulkan BufferQueue errors. See
+`build/codex-android-idle-adapter/phone/REPORT.md`; bounded sensor verification
+80/100, not readiness. The agent restored rotation `free`, HUD On, and stopped
+the app before releasing the phone. Main visually reviewed the home screenshot.
 
 A separate native HUD regression test extracts the real damage policy and
 uses UBSan/float-cast-overflow. RED: five failures, three passes; sentinel
 1e30 bounds overflow integer conversion before raster assertions can run.
-The pending fix clamps bounds before conversion and keeps page-cache validity
+The fix clamps bounds before conversion and keeps page-cache validity
 independent of chrome/HUD changes, while still recomposing changed chrome.
 LUMEN_CHECK_DAMAGE now also compares unchanged cached pages with full raster.
-Native GREEN/build results are pending under
-`build/codex-android-chrome-damage/green`; RED evidence is in its sibling `red`.
-The phone currently tests the immutable sensor-only APK, not this later native
-change. No new idle, site-compatibility or daily-readiness pass is claimed.
+All eight cases now pass, together with 60 total host groups, the native build
+and 23 packaging gates under `build/codex-android-chrome-damage/green`.
+These are policy-model checks, not pixel correctness or runtime acceptance.
+Commits: sensor adapter `f9f7820`, native damage fix `5a50ae9`.
+
+Main caught APK growth from 93.1 MB to 168.9 MB despite unchanged live-entry
+sizes. The installed AGP incremental ZIP allocator leaves unused zero-filled
+records after replacing the native library. Packaging-only fresh output and
+incremental state produce identical live payloads in 87,451,924 bytes, with
+no unreferenced gaps and all 23 gates passing; no native/Java compilation.
+Use only the corrected delivery artifact:
+`build/codex-android-chrome-damage/size-correction/codex-android-chrome-damage-compact-debug.apk`,
+SHA256 `43b72133e4628a23b5337a4da9c3dd631665df3018594d88c5842c269742fd2f`.
+The oversized GREEN archive is historical evidence, not endorsed for delivery.
+Exact task-only Gradle command/init script and diagnosis are in the correction
+directory's REPORT.md. Future native changes may fragment incremental APKs
+again; compare container size with live payloads before delivery.
+Fresh phone testing of the combined fixes is limited to HUD-On idle and
+separate cached-page/full-raster diagnostics. Resume failure must be fixed
+before interaction/site/fixture acceptance; no daily-readiness pass is claimed.
+
+Next lifecycle investigation: the presenter captures ANativeWindow once in
+gpu_create. SDL replaces its Android window property on native surfaceCreated,
+and releases the old window on surfaceDestroyed. Lumen handles neither
+background/foreground presentation resources nor native-window rebinding;
+gpu_present_frame instead reconfigures the old WGPUSurface on acquisition
+failure. This strongly supports a stale presentation-surface hypothesis, not
+a symbolized abort stack. Pinned SDL Android_OnPause blocks event pumping after
+queuing lifecycle events and explicitly requires filter/watch handling before
+the block. Test lifecycle surface detach/rebind while preserving device/cache,
+then real repeated background/resume, rotation and post-resume CPU. Do not
+disable Vulkan or replace the existing engine to mask the crash. SDL reference:
+https://wiki.libsdl.org/SDL3/README-android and SDL_GetWindowProperties.
 
 ### Earlier measured phone baseline
 
