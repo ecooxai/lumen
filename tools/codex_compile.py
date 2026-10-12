@@ -11,7 +11,8 @@ def main(arguments):
         print("Usage: python3 tools/codex_compile.py [--v8] COMMAND [ARGS...]", file=sys.stderr)
         return 2
     slice_name = "codex-lumen-v8.slice" if v8_build else "codex-lumen-compile.slice"
-    quota = 70 * (os.cpu_count() or 1) if v8_build else 140
+    quota = 42 * (os.cpu_count() or 1) if v8_build else 140
+    command = ["chrt", "--idle", "0", "nice", "-n", "19", "--", *arguments] if v8_build else arguments
     try:
         subprocess.run([
             "systemctl", "--user", "set-property", "--runtime",
@@ -20,7 +21,7 @@ def main(arguments):
         os.execvp("systemd-run", [
             "systemd-run", "--user", "--scope", "--quiet", "--collect",
             f"--slice={slice_name}", "--expand-environment=no",
-            "--", *arguments,
+            "--", *command,
         ])
     except (OSError, subprocess.CalledProcessError) as error:
         print(f"Cannot launch CPU-limited compilation: {error}", file=sys.stderr)

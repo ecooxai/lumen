@@ -7,14 +7,25 @@ benchmarks are deferred. An authorized MI 8 (Android API 35, arm64-v8a) is
 connected; no Lumen APK has been built or installed. Android toolchain preparation
 and dependency cross-builds are underway under `build/codex-android-*`.
 
-**Latest host compiler budget: V8 may use 70% of all CPUs (560% on eight
-cores); other builds still share 140%.** V8 uses
+**Latest host compiler budget: V8 may use 42% of all CPUs (336% on eight
+cores), with SCHED_IDLE/nice 19; other builds still share 140%.** The user
+reduced V8 to 60% of its previous 70% allowance and requested lowest priority.
+V8 uses
 `python3 tools/codex_compile.py --v8 COMMAND ARGS...` and the separate
 `codex-lumen-v8.slice`, with at most six compiler jobs. Other compilation uses
 the wrapper without `--v8` and retains `codex-lumen-compile.slice` (140000/100000
 microseconds), at most two compiler jobs per build. Do not stop either slice or
 the old anchor service while any build processes remain in it. The authorised
 V8 concurrency change preserves existing GN outputs; it is not a clean rebuild.
+The live iteration-7 scope `run-p3601367-i28741414.scope` now has its own
+`cpu.max=336000 100000`. Its parent remains `560000 100000` solely to preserve
+the running monitor's guard and process ownership; the tighter child quota is
+the effective build limit. Do not change that parent or launch another V8
+wrapper until iteration 7 ends. Its historical `latest.json` records the parent
+quota, not the new effective child limit: inspect both before reporting CPU caps.
+The temporary normal-priority host exemption was reverted; the original
+`dev-workload-priority.service` again enforces idle scheduling. Do not restore
+normal priority without a new user request.
 
 Android link-opening now has cold/warm HTTP(S) intent routing, a bounded native
 FIFO and regression tests; actual APK/activity lifecycle testing remains pending.
@@ -35,6 +46,11 @@ failures to one: the COLR emoji raster path still produces no pixels. Do not
 claim a green font gate. See `docs/codex-android-fonts.md` and
 `build/codex-android-font-followup/font-report.txt`; API 28 device behavior,
 full shaping coverage and browser startup remain unverified.
+The next test-first color-raster cases are now RED on the phone: the original
+Emoji failure plus five size/DPI/color-pixel/cache cases, all with zero visible
+color pixels. Evidence: `build/codex-android-color-font-test/red-cycle1/REPORT.md`.
+No color-raster adapter has been implemented yet; resume that work after the
+latest CPU/priority change is verified. The font matcher checkpoint is `191e800`.
 V8's native GN tool is built and Android generation passes. Actual compilation
 required V8's checksum-pinned Clang24 and custom libc++ (NDK libc++19 lacks
 std::atomic_ref). The active build uses generated v8-gn.h; CMake consumers still
