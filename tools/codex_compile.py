@@ -4,17 +4,22 @@ import sys
 
 
 def main(arguments):
+    v8_build = bool(arguments and arguments[0] == "--v8")
+    if v8_build:
+        arguments = arguments[1:]
     if not arguments:
-        print("Usage: python3 tools/codex_compile.py COMMAND [ARGS...]", file=sys.stderr)
+        print("Usage: python3 tools/codex_compile.py [--v8] COMMAND [ARGS...]", file=sys.stderr)
         return 2
+    slice_name = "codex-lumen-v8.slice" if v8_build else "codex-lumen-compile.slice"
+    quota = 70 * (os.cpu_count() or 1) if v8_build else 140
     try:
         subprocess.run([
             "systemctl", "--user", "set-property", "--runtime",
-            "codex-lumen-compile.slice", "CPUQuota=140%", "CPUQuotaPeriodSec=100ms",
+            slice_name, f"CPUQuota={quota}%", "CPUQuotaPeriodSec=100ms",
         ], check=True)
         os.execvp("systemd-run", [
             "systemd-run", "--user", "--scope", "--quiet", "--collect",
-            "--slice=codex-lumen-compile.slice", "--expand-environment=no",
+            f"--slice={slice_name}", "--expand-environment=no",
             "--", *arguments,
         ])
     except (OSError, subprocess.CalledProcessError) as error:

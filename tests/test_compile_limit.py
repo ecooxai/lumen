@@ -12,6 +12,25 @@ SPEC.loader.exec_module(compile_limit)
 
 
 class CompileLimitTests(unittest.TestCase):
+    def test_v8_gets_separate_seventy_percent_host_quota(self):
+        for processors, expected in [(8, "560%"), (4, "280%"), (None, "70%")]:
+            with self.subTest(processors=processors), \
+                    patch.object(compile_limit.os, "cpu_count", return_value=processors), \
+                    patch.object(compile_limit.subprocess, "run") as configure, \
+                    patch.object(compile_limit.os, "execvp") as execute:
+                self.assertEqual(compile_limit.main(["--v8", "ninja", "-j6"]), 0)
+            self.assertIn("codex-lumen-v8.slice", configure.call_args.args[0])
+            self.assertIn(f"CPUQuota={expected}", configure.call_args.args[0])
+            self.assertIn("--slice=codex-lumen-v8.slice", execute.call_args.args[1])
+            self.assertEqual(execute.call_args.args[1][-3:], ["--", "ninja", "-j6"])
+
+    def test_v8_requires_a_command(self):
+        with patch.object(compile_limit.subprocess, "run") as configure, \
+                patch.object(compile_limit.os, "execvp") as execute:
+            self.assertEqual(compile_limit.main(["--v8"]), 2)
+        configure.assert_not_called()
+        execute.assert_not_called()
+
     def test_shared_quota_is_applied_before_starting_command(self):
         events = []
         with patch.object(compile_limit.subprocess, "run", side_effect=lambda *args, **kwargs: events.append((args, kwargs))), \

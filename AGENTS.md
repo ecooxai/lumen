@@ -4,10 +4,15 @@ See `CONTINUE.md` for project state, build layout and next steps.
 
 ## Host compilation CPU budget
 
-All project compilation on this host, including V8, dependencies, Gradle and
-test binaries, must share a maximum of 140% CPU (1.4 logical cores), not 140%
-per task. Launch build commands through `python3 tools/codex_compile.py COMMAND
-ARGS...`. The wrapper uses the shared systemd user slice
+V8 compilation may use 70% of all host logical CPUs, per the user's latest
+instruction (560% CPU on this eight-core host). Launch it with
+`python3 tools/codex_compile.py --v8 COMMAND ARGS...`; it uses the separate
+`codex-lumen-v8.slice`. Use at most six V8 compiler jobs on this host.
+
+Other project compilation, including dependencies, Gradle and test binaries,
+must share a maximum of 140% CPU (1.4 logical cores), not 140% per task.
+Launch those commands through `python3 tools/codex_compile.py COMMAND ARGS...`.
+The wrapper uses the shared systemd user slice
 `codex-lumen-compile.slice` with `CPUQuota=140%` and a 100 ms period, and fails
 closed if quota setup fails. Retain at most two compiler jobs per build to bound
 memory. Use Gradle `--no-daemon` and do not reuse compiler daemons launched
