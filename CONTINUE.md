@@ -7,6 +7,12 @@ benchmarks are deferred. An authorized MI 8 (Android API 35, arm64-v8a) is
 connected; no Lumen APK has been built or installed. Android toolchain preparation
 and dependency cross-builds are underway under `build/codex-android-*`.
 
+Android link-opening now has cold/warm HTTP(S) intent routing, a bounded native
+FIFO and regression tests; actual APK/activity lifecycle testing remains pending.
+V8's native GN tool is built. Android generation exposed missing generated NDK
+metadata and Android-only cpu_features resources; preparation continues without
+substituting a different engine. Foundation compilation has reached HarfBuzz.
+
 Current branch is `codex/android-phone-engine-port`, after shared-engine
 checkpoint `8cceb05` on `codex/android-linux-daily-browser` and original clean-tree
 checkpoint `c742180`. Read `docs/codex-android-build.md` and

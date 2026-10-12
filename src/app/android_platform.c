@@ -1,8 +1,30 @@
 #ifdef __ANDROID__
 #include "android_platform.h"
+#include "android_launch.h"
 #include "../net/trust.h"
 #include <SDL3/SDL.h>
 #include <jni.h>
+#include <stdlib.h>
+#include <string.h>
+
+JNIEXPORT jboolean JNICALL Java_org_lumen_browser_LumenActivity_nativeOpenUrl(
+    JNIEnv *environment, jclass activity_class, jbyteArray encoded) {
+    (void)activity_class;
+    if (!encoded) return JNI_FALSE;
+    jsize length = (*environment)->GetArrayLength(environment, encoded);
+    if (length <= 0 || length > 65536) return JNI_FALSE;
+    char *url = malloc((size_t)length + 1);
+    if (!url) return JNI_FALSE;
+    (*environment)->GetByteArrayRegion(environment, encoded, 0, length, (jbyte *)url);
+    if ((*environment)->ExceptionCheck(environment)) {
+        free(url);
+        return JNI_FALSE;
+    }
+    url[length] = 0;
+    bool accepted = !memchr(url, 0, (size_t)length) && android_launch_submit(url);
+    free(url);
+    return accepted ? JNI_TRUE : JNI_FALSE;
+}
 
 static bool android_trust_roots(SSL_CTX *context) {
     JNIEnv *environment = SDL_GetAndroidJNIEnv();

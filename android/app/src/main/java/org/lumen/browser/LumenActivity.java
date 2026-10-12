@@ -2,6 +2,9 @@ package org.lumen.browser;
 
 import org.libsdl.app.SDLActivity;
 import android.util.Log;
+import android.content.Intent;
+import android.widget.Toast;
+import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.cert.X509Certificate;
@@ -10,6 +13,28 @@ import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 
 public final class LumenActivity extends SDLActivity {
+    private boolean nativeArgumentsRequested;
+    private static native boolean nativeOpenUrl(byte[] url);
+
+    private String launchUrl(Intent intent) {
+        return intent != null && Intent.ACTION_VIEW.equals(intent.getAction())
+            ? LaunchUrl.sanitize(intent.getDataString()) : null;
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        String url;
+        synchronized (this) {
+            setIntent(intent);
+            url = launchUrl(intent);
+            if (!nativeArgumentsRequested || mBrokenLibraries || url == null) return;
+        }
+        if (!nativeOpenUrl(url.getBytes(StandardCharsets.UTF_8))) {
+            Toast.makeText(this, "Unable to open link: browser is busy", Toast.LENGTH_SHORT).show();
+        }
+    }
+
     public static byte[][] getTrustRoots() {
         try {
             TrustManagerFactory factory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
@@ -35,7 +60,9 @@ public final class LumenActivity extends SDLActivity {
     }
 
     @Override
-    protected String[] getArguments() {
-        return new String[] {"lumen://newtab"};
+    protected synchronized String[] getArguments() {
+        nativeArgumentsRequested = true;
+        String url = launchUrl(getIntent());
+        return new String[] {url != null ? url : "lumen://newtab"};
     }
 }

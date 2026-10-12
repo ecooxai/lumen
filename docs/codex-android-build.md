@@ -73,8 +73,31 @@ prove complete equivalence to Android's per-host `checkServerTrusted` policy,
 certificate transparency or dynamic trust updates. These remain runtime/security
 validation work, not certified features.
 
+## Android link-opening adapter
+
+The activity accepts HTTP/HTTPS `ACTION_VIEW` links on cold launch and queues
+warm-launch links for new tabs in the existing native engine. `singleTask`
+avoids creating a second SDL runtime. URI validation rejects other schemes,
+missing authorities, malformed input and links exceeding 64 KiB; Unicode paths
+are ASCII-encoded before JNI transfer. External `file:` and `content:` intents
+are deliberately not accepted until a scoped Android document adapter exists.
+
+Warm links use a mutex-protected, bounded 32-entry FIFO and SDL wake events,
+not a polling timer or navigation on the Java UI thread. Full queues report
+failure rather than silently replacing another link. Native processing is
+bounded per event-loop iteration. Actual cold/warm activity lifecycle behavior
+still requires APK/device testing.
+
 ## Test evidence and next gates
 
+- Android links: FIFO ordering/capacity, wakeup, concurrent transfer and malformed
+  inputs pass native unit tests, ASan/UBSan and ThreadSanitizer. Java URI tests,
+  SDK36/SDL activity compilation, manifest checks and the registered CMake test
+  pass. NDK API28 syntax checks pass for the queue and actual main loop; JNI
+  syntax still uses copied host OpenSSL headers, not a target TLS link. Evidence:
+  `build/codex-android-launch-green`. Host queue test: 91.88% active CPU / 9.51 MiB
+  peak RSS over 5.2 ms; sanitized: 87.14% / 13.90 MiB over 23.2 ms. One-second
+  sampling plus child resource accounting does not measure Android idle CPU.
 - `tests/test_android_deps.py`: missing implementation RED, fresh-clone index
   regression RED, then five tests GREEN. Seventeen CLI validation checks pass.
   Plans cover both supported ABIs; the active phone build targets arm64 only.

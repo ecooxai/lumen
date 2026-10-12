@@ -7,6 +7,7 @@
 #ifdef __ANDROID__
 #include <SDL3/SDL_main.h>
 #include "android_platform.h"
+#include "android_launch.h"
 #endif
 #include "menu.h"
 #include "workspace.h"
@@ -1996,6 +1997,9 @@ int main(int argc, char **argv) {
 #endif
     dom_init(); net_init(6); font_init(); css_sheet_added_hook = sheet_fonts;
     icache_mu = SDL_CreateMutex(); EV_LOADED = SDL_RegisterEvents(1); EV_NET = SDL_RegisterEvents(1); EV_MENU = SDL_RegisterEvents(1);
+#ifdef __ANDROID__
+    android_launch_set_wakeup(wake);
+#endif
     net_wakeup = wake; media_wakeup = wake; js_wakeup = wake; js_clip_set = h_clip_set; js_clip_get = h_clip_get; js_global_init(argv[0]);
     paint_image_hook = node_img; paint_url_image_hook = url_img; svg_ext_ref_hook = svg_ext_ref; layout_image_size_hook = img_size;
     App a; memset(&a, 0, sizeof a); g_app = &a; a.nws = 1; a.wsicon[0] = WORKSPACE_DEFAULT_ICON; snprintf(a.wsname[0], sizeof a.wsname[0], "Personal"); a.side = getenv("LUMEN_NO_SIDEBAR") ? 0 : SIDEW; tab_new(&a);
@@ -2051,6 +2055,20 @@ int main(int argc, char **argv) {
     while (!quit) {
         { int sig = sigsetjmp(g_recover, 1); if (sig) recover_from_crash(&a, sig); }
         g_guard = 1;
+#ifdef __ANDROID__
+        char *launch_url;
+        for (unsigned launch_count = 0; launch_count < 32 && (launch_url = android_launch_take()); launch_count++) {
+            if (tab_new(&a)) {
+                tab_select(&a, a.ntabs - 1);
+                SDL_StopTextInput(a.win);
+                navigate(&a, launch_url, true);
+            } else {
+                snprintf(g_notice, sizeof g_notice, "Tab limit reached; close a tab before opening another link.");
+                a.dirty = true;
+            }
+            free(launch_url);
+        }
+#endif
         if (getenv("LUMEN_CRASH_TEST")) {   /* test hook: fault once on the main thread after N ms */
             static double t0; static bool done; if (!t0) t0 = now_ms();
             if (!done && now_ms() - t0 > atof(getenv("LUMEN_CRASH_TEST"))) { done = true; *(volatile int *)(uintptr_t)8 = 1; }
@@ -2300,6 +2318,11 @@ int main(int argc, char **argv) {
         if (*cookie_path && now_ms() - cookies_saved_at > 5000) { cookies_save(cookie_path); cookies_saved_at = now_ms(); }
     }
     if (*cookie_path) cookies_save(cookie_path);
+#ifdef __ANDROID__
+    android_launch_set_wakeup(NULL);
+    char *pending_url;
+    while ((pending_url = android_launch_take())) free(pending_url);
+#endif
     for (int i = 0; i < a.ntabs; i++) if (a.tabs[i]->cur) page_free(a.tabs[i]->cur);
     gpu_destroy(a.gpu);
     if (a.mview) SDL_Metal_DestroyView(a.mview);
