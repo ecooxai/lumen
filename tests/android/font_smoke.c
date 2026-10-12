@@ -6,6 +6,34 @@
 
 static unsigned failures;
 
+static void check_color(const char *label, const char *text, float size, float scale) {
+    Font *font = font_get("sans-serif", 400, false, size);
+    ShapedRun run = {0};
+    text_shape(font, text, strlen(text), 0, &run);
+    bool valid = run.n == 1 && run.g[0].gid && isfinite(run.width) && run.width > 0;
+    const Glyph *glyph = valid ? font_glyph(run.g[0].font, run.g[0].gid, scale) : NULL;
+    valid = valid && glyph && glyph->color && glyph->rgba && glyph->w > 0 && glyph->h > 0
+        && glyph->w <= 2048 && glyph->h <= 2048 && glyph->top > 0;
+    unsigned visible = 0, colored = 0;
+    if (valid) {
+        for (int index = 0; index < glyph->w * glyph->h; index++) {
+            uint32_t pixel = glyph->rgba[index];
+            unsigned alpha = pixel >> 24, red = (pixel >> 16) & 255;
+            unsigned green = (pixel >> 8) & 255, blue = pixel & 255;
+            if (alpha) visible++;
+            if (alpha && (red != green || green != blue)) colored++;
+            if (red > alpha || green > alpha || blue > alpha) valid = false;
+        }
+        valid = valid && visible > 0 && colored > 0
+            && font_glyph(run.g[0].font, run.g[0].gid, scale) == glyph;
+    }
+    printf("%s %s size=%.0f scale=%.0f raster=%dx%d visible=%u colored=%u\n",
+        valid ? "PASS" : "FAIL", label, size, scale, glyph ? glyph->w : 0,
+        glyph ? glyph->h : 0, visible, colored);
+    if (!valid) failures++;
+    shaped_free(&run);
+}
+
 static void check_text(const char *label, Font *font, const char *text) {
     if (!font) {
         fprintf(stderr, "FAIL %s: no font\n", label);
@@ -77,6 +105,11 @@ int font_smoke_run(void) {
         fprintf(stderr, "FAIL font cache identity\n");
         failures++;
     }
+    check_color("emoji small", "\xf0\x9f\x98\x80", 12, 1);
+    check_color("emoji regular", "\xf0\x9f\x98\x80", 24, 1);
+    check_color("emoji high-DPI", "\xf0\x9f\x98\x80", 24, 2);
+    check_color("emoji large", "\xf0\x9f\x98\x80", 64, 1);
+    check_color("emoji rocket", "\xf0\x9f\x9a\x80", 24, 1);
     printf("Android engine font smoke: %u failures\n", failures);
     return failures ? 1 : 0;
 }
