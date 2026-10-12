@@ -89,11 +89,19 @@ class AndroidApkTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "size"):
                 self.verify()
 
-    def inspect(self, report=None, dynamic=None, abi="arm64-v8a"):
+    def inspect(self, report=None, dynamic=None, abi="arm64-v8a", min_api=28):
         if dynamic is None:
             dynamic = "0x1 NEEDED Shared library: [libc.so]\n0xe SONAME Library soname: [libmain.so]\n"
         with patch.object(verify_apk, "read_tool", side_effect=[json.dumps(report or elf_report()), dynamic]):
-            return verify_apk.inspect_library(self.root / "libmain.so", Path("readelf"), abi)
+            return verify_apk.inspect_library(self.root / "libmain.so", Path("readelf"), abi, min_api)
+
+    def test_native_tls_requires_api29(self):
+        report = elf_report()
+        report[0]["ProgramHeaders"].append({"ProgramHeader": {
+            "Type": {"Value": 7}, "MemSize": 8}})
+        with self.assertRaisesRegex(ValueError, "TLS.*API29"):
+            self.inspect(report=report)
+        self.assertEqual(self.inspect(report=report, min_api=29), ["libc.so"])
 
     def test_real_readelf_report_shape(self):
         self.assertEqual(self.inspect(), ["libc.so"])

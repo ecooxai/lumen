@@ -6,15 +6,22 @@ Android only, per the user's latest instruction. Use the existing Lumen engine;
 do not substitute WebView. Branch: `codex/android-phone-engine-port`.
 Checkpoint `8cceb05` preserves the previous shared-engine work.
 
-An authorized MI 8 with Android API 35 and arm64-v8a is connected. **No Lumen APK
-browser APK has been built, installed, or tested on the phone.** Device connection is not
+An authorized MI 8 with Android API 35 and arm64-v8a is connected. **No Lumen
+browser APK has been installed or tested on the phone.** Device connection is not
 evidence of browser functionality. Do not import personal profiles or log in
 until the engine's origin/file-access security blockers are repaired.
 
 The separate [Android font adapter and device gate](codex-android-fonts.md)
-now exercise real engine text on the phone. Only the font-test APK exists;
-the browser APK still awaits V8. All 36 grouped font/emoji checks now pass;
+now exercise real engine text on the phone. Only the font-test APK has been tested;
+the browser's native library now links with the verified prebuilt V8, and APK
+packaging is being verified. All 36 grouped font/emoji checks now pass;
 see `CONTINUE.md` for the device evidence and remaining browser gates.
+
+The active route is the [pinned Android prebuilt V8](codex-android-v8-prebuilt.md),
+not the frozen source compilation documented historically below. It requires
+API29 and arm64-v8a. Gradle bounds Ninja compilation to six jobs, serializes
+native links, and limits LLD to two threads; the shared CPU wrapper remains
+required because concurrency limits are not CPU quotas.
 
 ## Android Back adapter
 
@@ -65,7 +72,8 @@ python3 tools/codex_compile.py python3 tools/android/build_deps.py --ndk "$ANDRO
 ```
 
 The dry-run command prints a plan without creating files or downloading anything.
-Dependency, Gradle and test compilation shares a 140% CPU ceiling (1.4 logical
+The following quota/recovery account is historical; use the latest 480% shared
+budget above for new builds. Dependency, Gradle and test compilation shared a 140% CPU ceiling (1.4 logical
 cores) through `tools/codex_compile.py`. This uses one systemd user slice, not a
 separate quota per command. The latest explicit V8 allowance is
 **40% of all host logical CPUs (320% total on this host)**. Use
@@ -96,7 +104,7 @@ cpulimit parent also has a 200% cap. The 320% wrapper/watcher mock tests pass,
 but sustained live acceptance failed. See
 `build/codex-android-v8-forty-percent/REPORT.md` and `CONTINUE.md` before any
 recovery. Do not restart the build or simply SIGCONT the guard-latched monitor.
-**Recovery verified:** the same build now runs in
+**Historical recovery verified:** the same build resumed in
 `/cpulimit.slice/codex-lumen-v8-recovery.scope` with a 320% local ceiling below
 the unchanged shared 200% host ceiling. A new guard supervises it; the original
 monitor retains child exit-status ownership. See
@@ -132,10 +140,10 @@ nonfree optional codecs and FFmpeg command-line applications are not requested.
 This is **foundation dependency preparation, not an APK build command**.
 Static-library licensing/relink requirements must be reviewed before release.
 
-## Remaining native build inputs
+## Source-route build history
 
 - V8 15.6.75.8, same generation as the existing engine. GN generation passes
-  and Android compilation is underway in `build/codex-android-v8`. A complete
+  but Android compilation is safety-frozen in `build/codex-android-v8`. A complete
   archive, C++ ABI integration, ICU data packaging and startup remain to verify.
 - wgpu-native v29.0.1.1 now builds for aarch64-linux-android in
   `build/codex-android-wgpu/prefix`. The actual engine's `gpu.c` cross-compiles and
@@ -168,7 +176,7 @@ atomic implementation or mismatched runtime archive. Native GN is pinned to
 resources also match V8 DEPS. Preparation, flags and resource measurements live
 under `build/codex-android-v8`, with iteration-numbered reports.
 
-The active configuration uses Android API28, NDK r28c's sysroot, monolithic PIC
+The frozen source configuration uses Android API28, NDK r28c's sysroot, monolithic PIC
 V8, embedded startup/ICU data, custom libc++, and
 `v8_generate_external_defines_header=true`. Lumen's C++ consumers must use the
 same Clang, custom `__Cr` STL configuration, relative-vtable ABI and generated

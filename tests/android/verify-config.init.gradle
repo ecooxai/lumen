@@ -5,15 +5,29 @@ gradle.projectsEvaluated {
             def expected = application.providers.gradleProperty('expectedLumenAbis').get().split(',') as Set
             assert application.android.defaultConfig.ndk.abiFilters == expected
             assert application.android.ndkVersion == '28.2.13676358'
-            assert application.android.defaultConfig.minSdk == 28
+            def expectedApi = application.providers.gradleProperty('expectedLumenApi').orElse('28').get().toInteger()
+            assert application.android.defaultConfig.minSdk == expectedApi
             assert application.android.defaultConfig.targetSdk == 36
             assert application.android.defaultConfig.externalNativeBuild.cmake.targets == (['main'] as Set)
             def arguments = application.android.defaultConfig.externalNativeBuild.cmake.arguments
+            assert arguments.contains('-DCMAKE_JOB_POOLS=lumen_compile=6;lumen_link=1')
+            assert arguments.contains('-DCMAKE_JOB_POOL_COMPILE=lumen_compile')
+            assert arguments.contains('-DCMAKE_JOB_POOL_LINK=lumen_link')
+            assert arguments.contains('-DCMAKE_SHARED_LINKER_FLAGS=-Wl,--threads=2')
             def toolchain = new File(gradle.rootProject.projectDir.parentFile, 'cmake/android-v8.toolchain.cmake')
-            def v8Root = application.file(application.providers.gradleProperty('lumenV8Dir').get())
             assert arguments.contains("-DCMAKE_TOOLCHAIN_FILE=${toolchain.absolutePath}".toString())
-            assert arguments.contains("-DLUMEN_V8_DIR=${v8Root.absolutePath}".toString())
-            assert arguments.contains('-DANDROID_STL=c++_shared')
+            if (expectedApi == 29) {
+                def prebuiltRoot = application.file(application.providers.gradleProperty('lumenV8PrebuiltDir').get())
+                def compilerRoot = application.file(application.providers.gradleProperty('lumenV8CompilerDir').get())
+                assert arguments.contains("-DLUMEN_V8_PREBUILT_DIR=${prebuiltRoot.absolutePath}".toString())
+                assert arguments.contains("-DLUMEN_V8_COMPILER_DIR=${compilerRoot.absolutePath}".toString())
+                assert arguments.contains('-DANDROID_STL=none')
+                assert expected == (['arm64-v8a'] as Set)
+            } else {
+                def v8Root = application.file(application.providers.gradleProperty('lumenV8Dir').get())
+                assert arguments.contains("-DLUMEN_V8_DIR=${v8Root.absolutePath}".toString())
+                assert arguments.contains('-DANDROID_STL=c++_shared')
+            }
             println "Android configuration verified: ${expected.sort().join(',')}"
         }
     }

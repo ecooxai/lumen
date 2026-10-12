@@ -18,6 +18,11 @@ function(lumen_import_android_v8)
     if(NOT ANDROID)
         message(FATAL_ERROR "Android V8 cannot be imported for a host build")
     endif()
+    if(LUMEN_V8_PREBUILT_DIR)
+        include("${CMAKE_CURRENT_FUNCTION_LIST_DIR}/AndroidV8Prebuilt.cmake")
+        lumen_import_android_v8_prebuilt()
+        return()
+    endif()
     if(ANDROID_ABI STREQUAL "arm64-v8a")
         set(v8_cpu arm64)
     elseif(ANDROID_ABI STREQUAL "x86_64")
@@ -61,6 +66,7 @@ function(lumen_import_android_v8)
     add_library(lumen_android_v8 STATIC IMPORTED GLOBAL)
     set_target_properties(lumen_android_v8 PROPERTIES
         IMPORTED_LOCATION "${LUMEN_V8_BUILD_DIR}/obj/libv8_monolith.a"
+        LUMEN_ICU_INCLUDE_DIR "${LUMEN_V8_DIR}/third_party/icu/source/common"
         IMPORTED_LINK_INTERFACE_LANGUAGES CXX)
     target_include_directories(lumen_android_v8 SYSTEM INTERFACE
         "${LUMEN_V8_DIR}/include"

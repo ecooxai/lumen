@@ -98,11 +98,39 @@ closure pass. Runs took 0.097–0.106s, CPU 91.38–94.43% of one core, peak RSS
 24.20–24.96 MiB (active smoke, not idle/browser metrics). Report:
 `build/codex-android-v8-prebuilt-probe/phone-api29/REPORT.md`.
 Bounded prebuilt-smoke milestone 95/100; daily browser still 20/100.
-Next: a separately validated, pinned prebuilt CMake import with matching ICU77,
-STL/V8 headers/config, absolute vtables and Temporal, then full native/APK/device
-tests. Do not fake API28 compatibility or silently swap archives: maintained
-CMake/Gradle still target API28 and must consistently select API29 for this
-candidate. Neither candidate is a browser APK. Keep the source fallback frozen.
+An opt-in prebuilt integration is now in the worktree: `AndroidV8Prebuilt.cmake`,
+the SDK/Clang checksum manifest and verifier, ICU77.1 headers, explicit ABI
+definitions/absolute vtables/Temporal, and Gradle prebuilt/compiler properties
+with minSdk29. The source route retains API28. The prepared SDK lives at
+`build/codex-android-v8-prebuilt-sdk`; archive/header pins are verified.
+SDK/APK/compile-limit units pass 37/37. Gradle RED was confirmed before its
+implementation; native CMake's first real configure found that NDK legacy mode
+sets CMAKE_SYSTEM_VERSION=1. Main fixed API detection to use normalized
+ANDROID_PLATFORM_LEVEL. The maintained CMake smoke now links and the actual
+Gradle API29 prebuilt configuration passes. Cycle3 compiled the root objects
+but exposed missing SDL C++ runtime linkage; the private NDK STL fix passes
+cycle4, without leaking NDK headers into the custom-STL engine. Main's final
+link then exposed omitted BZip2 and MediaCodec dependencies. Android-only
+bz2/mediandk linkage fixes that real RED result. Cycle5 now passes the complete
+native link, 37 units and 24 static checks: all 989 strong imports across the
+four native libraries resolve against their API29 providers, and custom C++
+runtime isolation passes. The link reused 289 objects; mean CPU97.74%, peak
+131.40%, sampled peak RSS1015.37 MiB. Report:
+`build/codex-android-prebuilt-integration/cycle5/REPORT.md`.
+Main's bounded native-link milestone score is 95/100, not browser readiness.
+Gradle's Ninja compile6/link1 pools and LLDthreads2 were added after an actual
+configuration RED. Their real Gradle configuration and generated Ninja graph
+now pass. Fresh verifier `01a13216-52aa-7542-af80-35df69939c43` is building and
+verifying the first actual debug APK in `build/codex-android-apk-prebuilt/`.
+Do not duplicate it. No phone browser run is authorized to that build agent.
+Its predecessor's monitor incorrectly included the unrelated nice0 anchor
+sleep; the fresh verifier must inspect only owned scope descendants for
+thread priority/RSS, while using the shared slice for aggregate CPU quota.
+No APK or device-browser startup pass is claimed yet.
+Do not fake API28 compatibility or silently swap archives. Keep the source
+fallback frozen. `tests/android/browser-smoke.html` is the offline DOM/Intl/Wasm/
+Canvas/WebGL/WebGPU/storage/fetch fixture for the next actual browser runtime
+gate; only its syntax has been checked so far.
 The temporary normal-priority host exemption was reverted; the original
 `dev-workload-priority.service` again enforces idle scheduling. Do not restore
 normal priority without a new user request.

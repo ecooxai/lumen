@@ -28,7 +28,7 @@ def library_name(name):
     return re.fullmatch(r"lib[A-Za-z0-9_+.-]+\.so", name) is not None
 
 
-def inspect_library(path, readelf, abi):
+def inspect_library(path, readelf, abi, min_api=28):
     if abi not in MACHINES:
         raise ValueError(f"Unsupported ABI: {abi}")
     report = json.loads(read_tool([str(readelf), "--elf-output-style=JSON",
@@ -41,6 +41,10 @@ def inspect_library(path, readelf, abi):
             header["Ident"]["DataEncoding"]["Value"] != 1 or
             header["Type"] != "SharedObject (0x3)"):
         raise ValueError(f"Wrong ELF architecture/type for {abi}: {path.name}")
+    if min_api < 29 and any(entry["ProgramHeader"]["Type"]["Value"] == 7 and
+                            entry["ProgramHeader"]["MemSize"] > 0
+                            for entry in report[0]["ProgramHeaders"]):
+        raise ValueError(f"Native ELF TLS requires API29 or newer: {path.name}")
     segments = [entry["ProgramHeader"] for entry in report[0]["ProgramHeaders"]
                 if entry["ProgramHeader"]["Type"]["Value"] == 1]
     if not segments:
@@ -100,7 +104,7 @@ def verify_apk(apk, readelf, system_libraries, expected_abis, min_api=28, work_d
                 path = Path(temporary) / name
                 with archive.open(entry) as source, path.open("wb") as destination:
                     shutil.copyfileobj(source, destination, length=1024 * 1024)
-                result[abi][name] = inspect_library(path, readelf, abi)
+                result[abi][name] = inspect_library(path, readelf, abi, min_api)
                 path.unlink()
         for abi, libraries in result.items():
             available = libraries.keys() | system
