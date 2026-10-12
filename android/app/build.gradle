@@ -77,6 +77,9 @@ android {
                     arguments "-DLUMEN_WGPU_DIR=${file(wgpuDirectory.get()).absolutePath}"
                 }
                 targets 'main'
+                if (v8PrebuiltRoot != null) {
+                    targets 'SDL3-shared'
+                }
             }
         }
     }

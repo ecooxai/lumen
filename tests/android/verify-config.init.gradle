@@ -8,7 +8,8 @@ gradle.projectsEvaluated {
             def expectedApi = application.providers.gradleProperty('expectedLumenApi').orElse('28').get().toInteger()
             assert application.android.defaultConfig.minSdk == expectedApi
             assert application.android.defaultConfig.targetSdk == 36
-            assert application.android.defaultConfig.externalNativeBuild.cmake.targets == (['main'] as Set)
+            def expectedTargets = expectedApi == 29 ? ['main', 'SDL3-shared'] : ['main']
+            assert application.android.defaultConfig.externalNativeBuild.cmake.targets == (expectedTargets as Set)
             def arguments = application.android.defaultConfig.externalNativeBuild.cmake.arguments
             assert arguments.contains('-DCMAKE_JOB_POOLS=lumen_compile=6;lumen_link=1')
             assert arguments.contains('-DCMAKE_JOB_POOL_COMPILE=lumen_compile')

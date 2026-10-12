@@ -116,7 +116,7 @@ hashes remain intact. Main reviewed the raw exits, assertion output and ELF
 report; bounded prebuilt-smoke milestone score: **95/100**, not release readiness.
 
 Its newer version and advertised features alone do not establish compatibility,
-security maintenance, or release readiness. It is not yet selected by the
+security maintenance, or release readiness. It is now an opt-in selection in the
 maintained Android toolchain. Only the standalone test executable was deployed
 on the phone, not a browser APK; daily-browser readiness remains **20/100**.
 
@@ -195,8 +195,13 @@ explicitly linked. Cycle5 verifies 24 static gates, including all 989 strong
 imports across main/SDL/wgpu/libc++, API29 provider versions, 16 KiB LOAD
 alignment, and custom-runtime isolation. Evidence:
 `build/codex-android-prebuilt-integration/cycle5/REPORT.md`.
-This is not APK packaging or browser runtime evidence. The earlier hand-linked
-phone smoke also remains a separate, narrower gate.
+APK packaging subsequently passes 23 checks, including 1,093 strong imports
+from the actual stripped packaged libraries, signature, manifest, native/ZIP
+16 KiB alignment and reproduced stripping. Gradle explicitly selects both
+main and SDL3-shared for the prebuilt route so SDL's private NDK runtime is
+packaged. Evidence: `build/codex-android-apk-prebuilt/cycle2/REPORT.md`.
+This is not browser runtime evidence. The earlier hand-linked phone smoke
+also remains a separate, narrower gate.
 
 ## Full-browser verification still required
 

@@ -4,9 +4,11 @@
 
 **Current user priority: Android only.** Linux development and additional desktop
 benchmarks are deferred. An authorized MI 8 (Android API 35, arm64-v8a) is
-connected; no browser APK has been built or installed (only the isolated font
-test APK described below). Android toolchain preparation
-and dependency cross-builds are underway under `build/codex-android-*`.
+connected. The own-engine debug APK now builds and passes all 23 packaging
+gates after fixing SDL's missing libc++_shared.so packaging. Actual browser
+phone testing is in progress; no browser runtime pass is claimed. The isolated
+font test APK was previously installed/tested. Android artifacts are under
+`build/codex-android-*`.
 
 **Latest host compiler budget: all new builds share 60% of all CPUs (480% on
 this eight-core host).** `tools/codex_compile.py` now places both ordinary and
@@ -120,13 +122,26 @@ runtime isolation passes. The link reused 289 objects; mean CPU97.74%, peak
 Main's bounded native-link milestone score is 95/100, not browser readiness.
 Gradle's Ninja compile6/link1 pools and LLDthreads2 were added after an actual
 configuration RED. Their real Gradle configuration and generated Ninja graph
-now pass. Fresh verifier `01a13216-52aa-7542-af80-35df69939c43` is building and
-verifying the first actual debug APK in `build/codex-android-apk-prebuilt/`.
-Do not duplicate it. No phone browser run is authorized to that build agent.
+now pass. The first actual debug APK assembles in 35.58s (mean CPU352.30%,
+sampled peak RSS1460.60 MiB), but APK validation caught missing libc++_shared.so.
+AGP records that runtime on SDL3-shared, not on main. The prebuilt Gradle route
+now explicitly selects both shared targets, without exposing NDK STL to V8.
+Cycle2 passes all 23 packaged-APK checks, including 1,093 strong imports,
+API29 provider versions, debug signature, manifest and 16 KiB ZIP/ELF alignment.
+The shared-library TLS layout is checked separately from executable TLS;
+reproducing stripping matches every packaged library byte-for-byte.
+Assembly took 20s, mean CPU256.37%, peak sampled RSS651.73 MiB. Report and APK:
+`build/codex-android-apk-prebuilt/cycle2/REPORT.md` and
+`build/codex-android-apk-prebuilt/cycle2/codex-android-own-engine-debug.apk`.
+APK SHA256 `54d317853e63527641a051e0a50c2708d74af42e28366236f1ce37f2fab2a514`,
+93,103,068 bytes. Main build/packaging milestone score: 95/100.
+Fresh phone verifier `01a13220-18dc-7eb2-a5be-8a713e5836c1` is installing and
+testing the actual browser in `build/codex-android-browser-phone/cycle1/`.
+Do not duplicate its phone operations; no accounts or Chrome cookies involved.
 Its predecessor's monitor incorrectly included the unrelated nice0 anchor
 sleep; the fresh verifier must inspect only owned scope descendants for
 thread priority/RSS, while using the shared slice for aggregate CPU quota.
-No APK or device-browser startup pass is claimed yet.
+No device-browser startup pass is claimed yet.
 Do not fake API28 compatibility or silently swap archives. Keep the source
 fallback frozen. `tests/android/browser-smoke.html` is the offline DOM/Intl/Wasm/
 Canvas/WebGL/WebGPU/storage/fetch fixture for the next actual browser runtime

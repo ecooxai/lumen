@@ -7,14 +7,14 @@ do not substitute WebView. Branch: `codex/android-phone-engine-port`.
 Checkpoint `8cceb05` preserves the previous shared-engine work.
 
 An authorized MI 8 with Android API 35 and arm64-v8a is connected. **No Lumen
-browser APK has been installed or tested on the phone.** Device connection is not
+browser runtime pass is claimed yet; first phone testing is in progress.** Device connection is not
 evidence of browser functionality. Do not import personal profiles or log in
 until the engine's origin/file-access security blockers are repaired.
 
 The separate [Android font adapter and device gate](codex-android-fonts.md)
 now exercise real engine text on the phone. Only the font-test APK has been tested;
 the browser's native library now links with the verified prebuilt V8, and APK
-packaging is being verified. All 36 grouped font/emoji checks now pass;
+packaging passes all 23 gates. All 36 grouped font/emoji checks now pass;
 see `CONTINUE.md` for the device evidence and remaining browser gates.
 
 The active route is the [pinned Android prebuilt V8](codex-android-v8-prebuilt.md),
