@@ -11,6 +11,16 @@ ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location("verify_apk", ROOT / "tools/android/verify_apk.py")
 verify_apk = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(verify_apk)
+ENTRY_POINTS = (
+    "SDL_main",
+    "Java_org_lumen_browser_LumenActivity_nativeOpenUrl",
+    "Java_org_lumen_browser_LumenActivity_nativeRequestBack",
+    "Java_org_lumen_browser_AndroidFontRaster_nativeInitialize",
+)
+
+
+def entry_symbols():
+    return "\n".join(f"1: 000000001234 64 FUNC GLOBAL DEFAULT 15 {name}" for name in ENTRY_POINTS)
 
 
 def elf_report(machine=183, alignment=16384, offset=0, address=0):
@@ -89,11 +99,27 @@ class AndroidApkTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "size"):
                 self.verify()
 
-    def inspect(self, report=None, dynamic=None, abi="arm64-v8a", min_api=28):
+    def inspect(self, report=None, dynamic=None, abi="arm64-v8a", min_api=28, symbols=None):
         if dynamic is None:
             dynamic = "0x1 NEEDED Shared library: [libc.so]\n0xe SONAME Library soname: [libmain.so]\n"
-        with patch.object(verify_apk, "read_tool", side_effect=[json.dumps(report or elf_report()), dynamic]):
+        if symbols is None:
+            symbols = entry_symbols()
+        with patch.object(verify_apk, "read_tool", side_effect=[json.dumps(report or elf_report()), dynamic, symbols]):
             return verify_apk.inspect_library(self.root / "libmain.so", Path("readelf"), abi, min_api)
+
+    def test_all_native_entry_points_required(self):
+        for name in ENTRY_POINTS:
+            with self.subTest(name=name):
+                symbols = "\n".join(line for line in entry_symbols().splitlines() if not line.endswith(name))
+                with self.assertRaisesRegex(ValueError, "entry points"):
+                    self.inspect(symbols=symbols)
+
+    def test_native_entry_points_must_be_exported_functions(self):
+        for old, new in (("GLOBAL", "LOCAL"), ("DEFAULT", "HIDDEN"),
+                         (" 15 ", " UND "), ("FUNC", "OBJECT")):
+            with self.subTest(new=new):
+                with self.assertRaisesRegex(ValueError, "entry points"):
+                    self.inspect(symbols=entry_symbols().replace(old, new))
 
     def test_native_tls_requires_api29(self):
         report = elf_report()

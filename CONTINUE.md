@@ -5,8 +5,11 @@
 **Current user priority: Android only.** Linux development and additional desktop
 benchmarks are deferred. An authorized MI 8 (Android API 35, arm64-v8a) is
 connected. The own-engine debug APK now builds and passes all 23 packaging
-gates after fixing SDL's missing libc++_shared.so packaging. Actual browser
-phone testing is in progress; no browser runtime pass is claimed. The isolated
+gates after fixing SDL's missing libc++_shared.so packaging. First installation
+passes, but actual launch crashes because the font JNI entry point was hidden
+inside the engine archive. The linker-boundary fix passes its tests and new APK
+packaging; a fresh phone run is in progress. No browser
+runtime pass is claimed. The isolated
 font test APK was previously installed/tested. Android artifacts are under
 `build/codex-android-*`.
 
@@ -135,9 +138,39 @@ Assembly took 20s, mean CPU256.37%, peak sampled RSS651.73 MiB. Report and APK:
 `build/codex-android-apk-prebuilt/cycle2/codex-android-own-engine-debug.apk`.
 APK SHA256 `54d317853e63527641a051e0a50c2708d74af42e28366236f1ce37f2fab2a514`,
 93,103,068 bytes. Main build/packaging milestone score: 95/100.
-Fresh phone verifier `01a13220-18dc-7eb2-a5be-8a713e5836c1` is installing and
-testing the actual browser in `build/codex-android-browser-phone/cycle1/`.
-Do not duplicate its phone operations; no accounts or Chrome cookies involved.
+First phone run in `build/codex-android-browser-phone/cycle1/REPORT.md` installs
+successfully, then crashes with UnsatisfiedLinkError for
+AndroidFontRaster.nativeInitialize. Its symbol is LOCAL inside libmain because
+the engine archive is hidden by --exclude-libs,ALL. The app remains installed
+and force-stopped. Nine 1Hz samples were armed throughout, but the subsecond
+process fell between samples; CPU/RSS/PSS are unavailable, not zero. No browser
+screenshot, idle pass or feature fixture run occurred; no accounts were used.
+Main now compiles the existing Android font bridge directly into main rather
+than the hidden engine archive, retaining custom C++ runtime isolation.
+APK verification now requires all four SDL/JNI entry-point exports. Its two
+new regression groups first failed as intended (16 existing groups passed).
+The JNI fix passes 39 units, rejects the old APK's missing font entry point and
+builds a new APK that passes the maintained native verifier. All 291 existing
+objects were reused; only the bridge's new main-target object was compiled.
+Build mean CPU198.40%, peak sampled RSS1442.03 MiB, all 2705 thread observations
+idle/nice19. New APK SHA256 is
+`0e70d056106b52d8a75e4e0e11d54ce156ff691061477c273afc98bd8023cba5`.
+Expanded packaging stopped twice on host niceness violations (SCHED_IDLE and
+480% remained intact): first apksigner Java, then its retry's bash preflight
+had nice -4. The host's ananicy bash rule uses Doc-View/nice-4, consistent with
+the observations; no syscall trace establishes the actor. No host rules were
+changed. The failed verification scope/controller were identity-safely
+terminated without thawing. One shell-free packaging retry (the same SDK
+apksigner JAR directly under Java with identical verification flags) passes
+23/23 packaging checks and explicit GLOBAL definitions of all four entry points.
+All 359 thread observations pass idle/nice19 and shared480%; mean CPU123.88%,
+peak sampled RSS401.98 MiB. Report and validated APK are in
+`build/codex-android-jni-entrypoints/green/retry2/`.
+Original V8 stays frozen and seven hashes remain unchanged. Main's bounded
+JNI/build milestone score is 95/100; browser readiness is still unproven.
+Fresh phone verifier `01a13230-500d-78d2-9b88-b11bb28dba9b` is running the
+corrected APK in `build/codex-android-browser-phone/cycle2/`.
+Do not duplicate its device operations or claim startup before its result.
 Its predecessor's monitor incorrectly included the unrelated nice0 anchor
 sleep; the fresh verifier must inspect only owned scope descendants for
 thread priority/RSS, while using the shared slice for aggregate CPU quota.

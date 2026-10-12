@@ -18,6 +18,13 @@ shared slice. All builds inherit SCHED_IDLE and nice 19. Use Gradle
 outside the slice. Do not change unrelated host workloads. This is a host build limit,
 not an Android browser runtime performance result.
 
+Avoid unnecessary shell wrappers inside the capped scope. This host's ananicy
+bash rule assigns nice -4, and two packaging checks stopped on that niceness
+violation. Invoke Python/Java tools directly. For SDK apksigner verification,
+use the same SDK's `lib/apksigner.jar` through `java -Xmx1024M -jar`, preserving
+all verification arguments, instead of its shell launcher. Do not change global
+host rules or weaken priority checks to work around this.
+
 ## CPU monitoring during every test
 
 Whenever you run Lumen for a test (GUI, ChatGPT, scrolling, typing, video,

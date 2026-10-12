@@ -14,6 +14,12 @@ import zipfile
 
 MACHINES = {"arm64-v8a": 183, "x86_64": 62}
 REQUIRED_LIBRARIES = {"libmain.so", "libSDL3.so", "libwgpu_native.so"}
+REQUIRED_ENTRY_POINTS = {
+    "SDL_main",
+    "Java_org_lumen_browser_LumenActivity_nativeOpenUrl",
+    "Java_org_lumen_browser_LumenActivity_nativeRequestBack",
+    "Java_org_lumen_browser_AndroidFontRaster_nativeInitialize",
+}
 MAX_LIBRARY_BYTES = 256 * 1024 * 1024
 MAX_TOTAL_BYTES = 1024 * 1024 * 1024
 
@@ -63,6 +69,17 @@ def inspect_library(path, readelf, abi, min_api=28):
     dependencies = re.findall(r"\bNEEDED\)?\s+Shared library: \[([^\]]*)\]", dynamic)
     if any(not library_name(name) for name in dependencies):
         raise ValueError(f"Non-library dependency name: {path.name}")
+    if path.name == "libmain.so":
+        symbols = read_tool([str(readelf), "--dyn-syms", "--wide", str(path)])
+        exports = set()
+        for line in symbols.splitlines():
+            fields = line.split()
+            if (len(fields) >= 8 and fields[3:6] == ["FUNC", "GLOBAL", "DEFAULT"]
+                    and fields[6].isdigit()):
+                exports.add(fields[7])
+        missing = REQUIRED_ENTRY_POINTS - exports
+        if missing:
+            raise ValueError(f"Missing exported native entry points: {', '.join(sorted(missing))}")
     return dependencies
 
 
