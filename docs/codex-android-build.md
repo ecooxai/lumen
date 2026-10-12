@@ -7,13 +7,14 @@ do not substitute WebView. Branch: `codex/android-phone-engine-port`.
 Checkpoint `8cceb05` preserves the previous shared-engine work.
 
 An authorized MI 8 with Android API 35 and arm64-v8a is connected. **No Lumen APK
-has been built, installed, or tested on the phone.** Device connection is not
+browser APK has been built, installed, or tested on the phone.** Device connection is not
 evidence of browser functionality. Do not import personal profiles or log in
 until the engine's origin/file-access security blockers are repaired.
 
 The separate [Android font adapter and device gate](codex-android-fonts.md)
 now exercise real engine text on the phone. Only the font-test APK exists;
-the browser APK still awaits V8. Its Emoji raster test remains a known failure.
+the browser APK still awaits V8. All 36 grouped font/emoji checks now pass;
+see `CONTINUE.md` for the device evidence and remaining browser gates.
 
 ## Android Back adapter
 
@@ -85,6 +86,15 @@ cpulimit parent also has a 200% cap. The 320% wrapper/watcher mock tests pass,
 but sustained live acceptance failed. See
 `build/codex-android-v8-forty-percent/REPORT.md` and `CONTINUE.md` before any
 recovery. Do not restart the build or simply SIGCONT the guard-latched monitor.
+**Recovery verified:** the same build now runs in
+`/cpulimit.slice/codex-lumen-v8-recovery.scope` with a 320% local ceiling below
+the unchanged shared 200% host ceiling. A new guard supervises it; the original
+monitor retains child exit-status ownership. See
+[build guard and limitations](codex-android-build-guard.md) and
+`build/codex-android-v8-recovery-live/REPORT.md` (91 seconds, 10/10 bounded gates).
+This supersedes the disappeared user scope described above, not its compiler
+inputs. The current host watcher also preserves this exact recovery scope only
+when its leaf quota is 320000/100000. Do not raise other host quotas.
 Use Gradle `--no-daemon`; a build must not delegate compilation to an existing
 daemon outside the capped slice.
 On this host, `/usr/local/lib/cpulimit/cpulimit_watcher.py` previously moved

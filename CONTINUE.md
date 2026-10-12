@@ -4,7 +4,8 @@
 
 **Current user priority: Android only.** Linux development and additional desktop
 benchmarks are deferred. An authorized MI 8 (Android API 35, arm64-v8a) is
-connected; no Lumen APK has been built or installed. Android toolchain preparation
+connected; no browser APK has been built or installed (only the isolated font
+test APK described below). Android toolchain preparation
 and dependency cross-builds are underway under `build/codex-android-*`.
 
 **Latest host compiler budget: V8 may use 40% of all CPUs (320% on eight
@@ -23,14 +24,39 @@ However, at 13:11:38 PDT another host configuration change set both Lumen
 parent slices to `200000 100000`; the CPU watcher moved the build into
 `/cpulimit.slice/cpulimit-70.slice` and its safety monitor stopped Ninja and
 six workers. The old scope disappeared. The global cpulimit parent is also
-200%. The same Ninja PID 3601367 remains stopped at 826/2592 steps; do not
-claim the 320% live acceptance gate passed or launch a duplicate build.
-Recovery needs coordination with the concurrent host policy change and safe
-restoration of membership, quotas and monitoring before resuming existing
-processes. The monitor's guard is latched, so merely sending SIGCONT is unsafe.
+200%. Ninja PID 3601367 was stopped at 826/2592 steps; that attempt did not
+pass its 320% live acceptance gate. Do not launch a duplicate build.
+The original monitor's guard is latched, so merely sending SIGCONT is unsafe.
 Evidence: `build/codex-android-v8-forty-percent/REPORT.md` (13 mocked checks
-pass; sustained live verification failed). The user has been asked whether to
-restore 320% and resume. Do not overwrite unrelated host settings.
+pass; sustained live verification failed). Do not overwrite unrelated host settings.
+
+Recovery now preserves the stricter shared host limit rather than raising it.
+The existing seven stopped processes were moved to the system scope
+`/cpulimit.slice/codex-lumen-v8-recovery.scope` with its own `320000 100000`
+ceiling, beneath the unchanged shared `200000 100000` parent. An initial scope
+below `cpulimit-70.slice` failed safely with EUCLEAN (threaded parent); no build
+process resumed during that attempt. The host watcher now preserves only the
+exact new scope with the exact 320% quota; other mappings remain unchanged.
+Original backup: `/usr/local/lib/cpulimit/cpulimit_watcher.py.codex-before-nested-recovery`.
+New guard: `tools/android/build_guard.py`, documented in
+`docs/codex-android-build-guard.md`, run by user service
+`codex-lumen-v8-recovery-guard.service` with Restart=no. It verifies process
+identities, per-thread idle/nice19, quotas, memory, concurrency and input hashes,
+and stops/freezes its own build on failure. The original monitor remains alive
+to reap Ninja and report the actual exit code; its latched alert is historical.
+After guard readiness and stopped placement checks, the same Ninja and six
+workers were resumed via identity-pinned pidfds, without restarting compilation.
+Configuration, placement, resume and per-second CPU/RSS evidence are in
+`build/codex-android-v8-recovery-host/`. Guard/watcher unit and simulated
+fault tests pass 30/30 in `build/codex-android-v8-recovery-test/green-cycle4-q36oL3T3/`.
+Fresh independent live verification passes 10/10 recovery gates over 91.074
+seconds (92 samples): progress 831 to 837/2592, weighted mean CPU 138.45%,
+interval peak 159.65%, peak summed RSS 4.086 GiB, minimum available 20.073 GiB.
+Five priority scans preserve all identities, hashes, quotas and idle/nice19.
+Evidence: `build/codex-android-v8-recovery-live/REPORT.md`. Main bounded recovery
+score: 95/100; this is not a browser-readiness score. Do not claim the full
+archive, native link or browser APK has passed. The current ceiling is 200% shared,
+not guaranteed 320% throughput. Do not stop either monitor or launch another V8.
 The temporary normal-priority host exemption was reverted; the original
 `dev-workload-priority.service` again enforces idle scheduling. Do not restore
 normal priority without a new user request.
@@ -111,7 +137,8 @@ The incremental six-worker build is now iteration 7, initially 2592 pending
 steps, not a clean rebuild. At handoff its Ninja PID is 3601367 and monitor
 service is `codex-lumen-v8-iteration7.service` (`Restart=no`). Current log:
 `build/codex-android-v8/android-v8-monolith-iteration7.log`; read live process
-state and matching `iteration7-latest.json` before reporting progress.
+state and fresh `build/codex-android-v8-recovery-host/guard-latest.json` before
+reporting progress (the original monitor's guard/membership is historical).
 The persistent monitor owns the child and records its eventual exit status;
 it samples every second and retains memory guards without automatic restart.
 
