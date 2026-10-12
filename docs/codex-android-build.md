@@ -56,25 +56,35 @@ python3 tools/codex_compile.py python3 tools/android/build_deps.py --ndk "$ANDRO
 The dry-run command prints a plan without creating files or downloading anything.
 Dependency, Gradle and test compilation shares a 140% CPU ceiling (1.4 logical
 cores) through `tools/codex_compile.py`. This uses one systemd user slice, not a
-separate quota per command. The latest V8 allowance is 60% of its previously
-approved 70% host allowance: **42% of all host logical CPUs**. Use
+separate quota per command. The latest explicit V8 allowance is
+**40% of all host logical CPUs (320% total on this host)**. Use
 `tools/codex_compile.py --v8` for V8 itself. New launches use a separate slice
-capped at 336% on this eight-core host, with at most six compiler jobs, Linux
+capped at 320% on this eight-core host, with at most six compiler jobs, Linux
 SCHED_IDLE and nice 19. Other builds retain their original shared 140% cap.
+The wrapper uses a relative niceness adjustment of 39 to reach nice 19 even
+when launched from a negative-niceness process; children inherit idle scheduling.
 It requires Linux cgroup CPU control and a working systemd user manager; quota
 setup failure must not fall back to an uncapped build. Scoped commands retain
 the caller's environment, working directory and exit status. The quota is
 140000 microseconds per 100000-microsecond period for ordinary builds and
-336000/100000 for new V8 launches on this host, so very short instantaneous
+320000/100000 for new V8 launches on this host, so very short instantaneous
 samples can exceed 140%; monitor aggregate `cpu.stat` deltas over time.
 Keep non-V8 compiler concurrency at two or less for bounded memory.
-For the already-running iteration 7, the tighter quota is applied directly to
+For iteration 7, the tighter quota was applied directly to
 `run-p3601367-i28741414.scope`, without restarting Ninja. Its parent retains
 560000/100000 because the existing owning monitor checks that value. The child
-enforces 336000/100000. Do not launch another V8 wrapper or change that parent
+enforces 320000/100000. Do not launch another V8 wrapper or change that parent
 until this build finishes; the old monitor's displayed parent quota is not the
 effective limit. The original host idle-priority policy is restored, superseding
 the temporary normal-priority experiment. This does not change compiler inputs.
+**Live verification interruption (2026-10-12, 13:11:38 PDT):** another host
+configuration change reset both Lumen parent quotas to 200%, and the watcher
+moved the build out of its scope. Its safety monitor stopped the existing
+Ninja/workers at 826/2592 steps. The scope no longer exists; the global
+cpulimit parent also has a 200% cap. The 320% wrapper/watcher mock tests pass,
+but sustained live acceptance failed. See
+`build/codex-android-v8-forty-percent/REPORT.md` and `CONTINUE.md` before any
+recovery. Do not restart the build or simply SIGCONT the guard-latched monitor.
 Use Gradle `--no-daemon`; a build must not delegate compilation to an existing
 daemon outside the capped slice.
 On this host, `/usr/local/lib/cpulimit/cpulimit_watcher.py` previously moved
@@ -85,9 +95,10 @@ unchanged. The original is backed up alongside it as
 `cpulimit_watcher.py.codex-before-lumen-cap`. Verify process cgroup membership
 across multiple watcher scans, not just immediately after launch, if that host
 service is upgraded or reconfigured. This host adaptation is not APK code.
-The latest watcher also recognizes the new 42% V8 parent quota, retaining the
-legacy 70% parent during iteration 7's child-capped transition. Its pre-change
-backup is `cpulimit_watcher.py.codex-before-v8-42`. No other mappings change.
+The latest watcher also recognizes the new 40% V8 parent quota, retaining the
+earlier 42% and legacy 70% parents during the child-capped transition. Its
+pre-change backup is `cpulimit_watcher.py.codex-before-v8-40`. No other mappings
+change.
 Execution requires the exact NDK and an executable Android API 28 compiler.
 It uses repository-local temporary files, bounded compilation concurrency,
 pinned SDL/vcpkg commits, and a release-only Android triplet. Required host tools

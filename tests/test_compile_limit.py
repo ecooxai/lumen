@@ -12,8 +12,8 @@ SPEC.loader.exec_module(compile_limit)
 
 
 class CompileLimitTests(unittest.TestCase):
-    def test_v8_gets_sixty_percent_of_previous_seventy_percent_allowance(self):
-        for processors, expected in [(8, "336%"), (4, "168%"), (None, "42%")]:
+    def test_v8_gets_forty_percent_host_quota(self):
+        for processors, expected in [(8, "320%"), (4, "160%"), (None, "40%")]:
             with self.subTest(processors=processors), \
                     patch.object(compile_limit.os, "cpu_count", return_value=processors), \
                     patch.object(compile_limit.subprocess, "run") as configure, \
@@ -23,7 +23,7 @@ class CompileLimitTests(unittest.TestCase):
             self.assertIn(f"CPUQuota={expected}", configure.call_args.args[0])
             self.assertIn("--slice=codex-lumen-v8.slice", execute.call_args.args[1])
             self.assertEqual(execute.call_args.args[1][-3:], ["--", "ninja", "-j6"])
-            self.assertEqual(execute.call_args.args[1][-10:-3], ["--", "chrt", "--idle", "0", "nice", "-n", "19"])
+            self.assertEqual(execute.call_args.args[1][-10:-3], ["--", "chrt", "--idle", "0", "nice", "-n", "39"])
 
     def test_v8_requires_a_command(self):
         with patch.object(compile_limit.subprocess, "run") as configure, \
