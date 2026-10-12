@@ -1,6 +1,7 @@
 #include <strings.h>
 /* HTTP/1.1 client with TLS (OpenSSL), keep-alive connection pooling, redirects, decompression. */
 #include "net.h"
+#include "trust.h"
 #include "file.h"
 #include <pthread.h>
 #include <sys/socket.h>
@@ -524,10 +525,15 @@ void net_init(int threads) {
     g_ssl_ctx = SSL_CTX_new(TLS_client_method());
     SSL_CTX_set_min_proto_version(g_ssl_ctx, TLS1_2_VERSION);
     SSL_CTX_set_verify(g_ssl_ctx, SSL_VERIFY_PEER, NULL);
-    const char *cands[] = { getenv("SSL_CERT_FILE"), "/opt/homebrew/etc/openssl@3/cert.pem", "/etc/ssl/cert.pem", "/etc/ssl/certs/ca-certificates.crt", "/etc/pki/tls/certs/ca-bundle.crt", "/system/etc/security/cacerts" };
+#ifdef __ANDROID__
+    if (!net_trust_roots_loader || !net_trust_roots_loader(g_ssl_ctx))
+        fprintf(stderr, "lumen: Android trust store unavailable; HTTPS verification remains enabled\n");
+#else
+    const char *cands[] = { getenv("SSL_CERT_FILE"), "/opt/homebrew/etc/openssl@3/cert.pem", "/etc/ssl/cert.pem", "/etc/ssl/certs/ca-certificates.crt", "/etc/pki/tls/certs/ca-bundle.crt" };
     bool loaded = false;
     for (size_t i = 0; i < ARRLEN(cands) && !loaded; i++) if (cands[i] && access(cands[i], R_OK) == 0) loaded = SSL_CTX_load_verify_locations(g_ssl_ctx, cands[i], NULL) == 1;
     if (!loaded) SSL_CTX_set_default_verify_paths(g_ssl_ctx);
+#endif
     SSL_CTX_set_session_cache_mode(g_ssl_ctx, SSL_SESS_CACHE_CLIENT);
     g_nthreads = threads;
     for (int i = 0; i < threads; i++) { pthread_t t; pthread_create(&t, NULL, worker, NULL); pthread_detach(t); }

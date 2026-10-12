@@ -4,6 +4,10 @@ plugins {
 
 def sdlDirectory = providers.gradleProperty('lumenSdlDir').orElse(providers.environmentVariable('LUMEN_SDL_DIR'))
 def dependenciesDirectory = providers.gradleProperty('lumenDepsDir').orElse(providers.environmentVariable('LUMEN_DEPS_DIR'))
+def requestedAbis = providers.gradleProperty('lumenAbis').orElse('arm64-v8a').get().split(',', -1).collect { it.trim() } as Set
+if (requestedAbis.isEmpty() || !(['arm64-v8a', 'x86_64'] as Set).containsAll(requestedAbis)) {
+    throw new GradleException('lumenAbis must contain arm64-v8a and/or x86_64, separated by commas.')
+}
 if (!sdlDirectory.isPresent() || !dependenciesDirectory.isPresent()) {
     throw new GradleException('Set lumenSdlDir and lumenDepsDir to SDL3 sources and ABI-specific native dependency prefixes. This adapter does not use Android WebView.')
 }
@@ -25,7 +29,7 @@ android {
         versionCode 1
         versionName '0.1.0-adapter'
         ndk {
-            abiFilters 'arm64-v8a', 'x86_64'
+            abiFilters.addAll(requestedAbis)
         }
         externalNativeBuild {
             cmake {

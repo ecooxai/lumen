@@ -7,8 +7,10 @@ benchmarks are deferred. An authorized MI 8 (Android API 35, arm64-v8a) is
 connected; no Lumen APK has been built or installed. Android toolchain preparation
 and dependency cross-builds are underway under `build/codex-android-*`.
 
-Work is on `codex/android-linux-daily-browser`, following clean-tree checkpoint
-`c742180`. Read `docs/codex-android-linux-status.md` before continuing. Native core
+Current branch is `codex/android-phone-engine-port`, after shared-engine
+checkpoint `8cceb05` on `codex/android-linux-daily-browser` and original clean-tree
+checkpoint `c742180`. Read `docs/codex-android-build.md` and
+`docs/codex-android-linux-status.md` before continuing. Native core
 tests and directory rendering now run on this Linux host; full Lumen and jsrun
 now build with pinned V8/wgpu dependencies (see
 `docs/codex-linux-native-dependencies.md`). Bounded offline GUI checks passed

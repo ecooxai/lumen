@@ -1,0 +1,14 @@
+gradle.projectsEvaluated {
+    def application = gradle.rootProject.project(':app')
+    application.tasks.register('verifyLumenAndroidConfiguration') {
+        doLast {
+            def expected = application.providers.gradleProperty('expectedLumenAbis').get().split(',') as Set
+            assert application.android.defaultConfig.ndk.abiFilters == expected
+            assert application.android.ndkVersion == '28.2.13676358'
+            assert application.android.defaultConfig.minSdk == 28
+            assert application.android.defaultConfig.targetSdk == 36
+            assert application.android.defaultConfig.externalNativeBuild.cmake.targets == (['main'] as Set)
+            println "Android configuration verified: ${expected.sort().join(',')}"
+        }
+    }
+}

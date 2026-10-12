@@ -67,7 +67,7 @@ headers are not a supported substitute.
 JDK 17, Gradle 8.13, Android SDK 36, CMake 3.22.1, NDK r28c
 (`28.2.13676358`), and matching SDL3 native/Java sources are required. There is no
 checked-in Gradle wrapper yet. The adapter pins AGP 8.13.0, minSdk 28, targetSdk
-36, and arm64-v8a/x86_64. These are explicit configuration choices, not claims
+36, with arm64-v8a by default and optional x86_64 via `lumenAbis`. These are explicit configuration choices, not claims
 that the whole engine has been compiled or validated on those targets.
 
 All native dependencies must be built for the target ABI and supplied as:
@@ -89,8 +89,10 @@ gradle -PlumenSdlDir=/absolute/SDL3 \
 CMake rejects missing ABI prefixes instead of silently linking host libraries.
 No dependencies are downloaded by this adapter. Building shared dependencies
 also requires checking their packaging, ABI, runtime search paths and licenses.
-The current host has SDK tools but no installed NDK or Android engine dependency
-prefixes. Device/emulator deployment and lifecycle/keyboard/touch tests have not
+The NDK, Gradle and CMake toolchain is now verified under ignored
+`build/codex-android-toolchain`; see `codex-android-build.md`. The Android wgpu
+dependency and the engine's GPU translation unit compile and link, but the full
+engine dependency prefix and APK are not ready. Device/emulator deployment and lifecycle/keyboard/touch tests have not
 run. Android Storage Access Framework, URI grants, runtime permissions,
 MediaProjection consent/foreground-service handling and activity-result bridges
 are not implemented here. Android does not grant unrestricted host-file access.
