@@ -5,11 +5,24 @@
 **Current user priority: Android only.** Linux development and additional desktop
 benchmarks are deferred. An authorized MI 8 (Android API 35, arm64-v8a) is
 connected. The own-engine debug APK now builds and passes all 23 packaging
-gates after fixing SDL's missing libc++_shared.so packaging. First installation
-passes, but actual launch crashes because the font JNI entry point was hidden
-inside the engine archive. The linker-boundary fix passes its tests and new APK
-packaging; a fresh phone run is in progress. No browser
-runtime pass is claimed. The isolated
+gates after fixing SDL's missing libc++_shared.so packaging. The original launch
+crash from a hidden font JNI entry point is fixed: cycle2 visibly renders the
+home page on the phone. Its idle gate fails at 101.20% CPU (one core = 100%)
+and 234.19 MiB RSS over five complete idle intervals. SDLThread consumes
+98–100%. Non-root LLDB snapshots locate that thread in SDL_WaitEventTimeoutNS,
+both its event-read and event-pump paths. See
+`build/codex-android-idle-profile/cycle1/symbolized-stacks.txt`.
+The pinned SDL Android wait loop self-wakes by inserting a poll sentinel every
+iteration. A generated-source fix retains normal poll sentinels but does not
+insert them inside the blocking loop. Its eight behavioral model cases and
+four source-generation checks pass after four behavioral RED failures. The
+39 existing APK/prebuilt/build-limit unit checks also pass, and the corrected
+APK builds incrementally in 23 seconds. Packaging verification and the phone
+CPU gate are still pending.
+The controls are desktop-sized and overlap the Android status bar. Fixture,
+interaction and site checks have not run. Evidence:
+`build/codex-android-browser-phone/cycle2/REPORT.md`.
+No browser runtime pass is claimed. The isolated
 font test APK was previously installed/tested. Android artifacts are under
 `build/codex-android-*`.
 

@@ -6,11 +6,13 @@ Android only, per the user's latest instruction. Use the existing Lumen engine;
 do not substitute WebView. Branch: `codex/android-phone-engine-port`.
 Checkpoint `8cceb05` preserves the previous shared-engine work.
 
-An authorized MI 8 with Android API 35 and arm64-v8a is connected. **No Lumen
-browser runtime pass is claimed yet: first launch exposed a hidden font JNI
-entry point.** That APK installed but crashed before the home page. The fix,
-39 unit tests and new APK entry-point/packaging checks pass; a fresh phone
-run is in progress. Device connection is not
+An authorized MI 8 with Android API 35 and arm64-v8a is connected. **Home now
+renders, but the idle CPU gate fails.** The hidden font JNI entry point is
+fixed, with 39 unit tests and 23 APK packaging checks passing. Cycle2 measures
+101.20% CPU and 234.19 MiB RSS during five complete idle intervals; the hot
+thread is SDLThread. Controls remain desktop-sized with status-bar overlap.
+Fixture and interaction tests were stopped at the idle gate. See
+`build/codex-android-browser-phone/cycle2/REPORT.md`. Device connection is not
 evidence of browser functionality. Do not import personal profiles or log in
 until the engine's origin/file-access security blockers are repaired.
 
@@ -25,6 +27,38 @@ not the frozen source compilation documented historically below. It requires
 API29 and arm64-v8a. Gradle bounds Ninja compilation to six jobs, serializes
 native links, and limits LLD to two threads; the shared CPU wrapper remains
 required because concurrency limits are not CPU quotas.
+
+## Android event-wait regression
+
+The pinned SDL 3.4.10 Android timed-wait loop inserts a poll sentinel on every
+iteration. In that version, inserting any event wakes the Android lifecycle
+semaphore. The sentinel is then discarded by the event read, but its wake
+remains: the supposed blocking wait consumes that wake and immediately loops.
+The actual phone's SDLThread runs at approximately one full core on the static
+home page. Non-root LLDB attach and one resumed snapshot locate the native
+thread in this wait loop's event-read and event-pump paths; these are stack
+snapshots, not statistical profiling percentages. Evidence is in
+`build/codex-android-idle-profile/cycle1/symbolized-stacks.txt`. The corrected
+APK phone gate remains pending.
+
+`cmake/AndroidSdlWait.cmake` generates `codex_android_SDL_events.c` in the build
+directory, replacing only the Android blocking loop's sentinel-producing pump
+with a normal pump. The initial poll setup, polling batch sentinels, lifecycle
+handling and cross-thread wake mechanism are retained. This is a Lumen-local
+modification, not an unmodified upstream SDL source. The dependency checkout
+and its license notice remain intact. The exact input SHA256 is required;
+review the fix explicitly when changing SDL revisions. Only the generated
+translation unit gets its original event-header include directory.
+
+`tests/test_android_sdl_wait.py` compiles the actual wait function against a
+deterministic Android event/lifecycle model. Before the fix, four blocking-wait
+cases fail and four immediate/poll cases pass; the empty timed wait performs
+1,000,001 pumps. All eight cases pass with the generated-source fix. This
+model is not a phone CPU or lifecycle acceptance test.
+`tests/test_android_sdl_patch.py` checks the exact one-site transformation,
+unchanged dependency bytes, stable generated timestamps and input rejection.
+To test the generated function, set `LUMEN_TEST_SDL_EVENTS` to the generated
+source path. All tests/builds still run through `tools/codex_compile.py`.
 
 ## Android Back adapter
 
