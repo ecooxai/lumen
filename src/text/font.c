@@ -12,11 +12,20 @@
 #include <math.h>
 #include <pthread.h>
 #include <sys/stat.h>
+#ifdef __ANDROID__
+#include "android_fonts.h"
+#endif
 #if !defined(__APPLE__) && !defined(__ANDROID__)
 #include <fontconfig/fontconfig.h>
 #endif
 
-struct Face { FT_Face ft; hb_face_t *hb; char *path; int index; int weight; bool italic; bool color; };
+struct Face { FT_Face ft; hb_face_t *hb; char *path; int index; int weight; bool italic; bool color;
+#ifdef __ANDROID__
+    bool android_system;
+    unsigned android_axis_count;
+    hb_variation_t android_axes[ANDROID_FONT_MAX_AXES];
+#endif
+};
 
 static FT_Library ftlib;
 static pthread_mutex_t font_mu = PTHREAD_MUTEX_INITIALIZER;
@@ -109,7 +118,50 @@ static Face *face_load(const char *spec) {
     return f;
 }
 
-#if !defined(__APPLE__) && !defined(__ANDROID__)
+#ifdef __ANDROID__
+static Face *android_system_face(const char *name, int weight, bool italic, uint32_t codepoint) {
+    AndroidFontMatch selected;
+    if (!android_font_match(name, weight, italic, codepoint, &selected)) return NULL;
+    SB identity = {0};
+    sb_printf(&identity, "android:%s#%d/%d/%d/w%d", selected.path, selected.collection_index, selected.weight, selected.italic, weight);
+    for (unsigned axis = 0; axis < selected.axis_count; axis++) {
+        sb_printf(&identity, "/%08x:%a", selected.axes[axis].tag, (double)selected.axes[axis].value);
+    }
+    Face *face = hm_get(&faces, identity.s);
+    if (!face) {
+        FT_Face ft;
+        if (!FT_New_Face(ftlib, selected.path, selected.collection_index, &ft)) {
+            face = xcalloc(1, sizeof *face);
+            face->ft = ft;
+            face->path = xstrdup(selected.path);
+            face->index = selected.collection_index;
+            face->hb = hb_ft_face_create_referenced(ft);
+            face->color = FT_HAS_COLOR(ft);
+            face->weight = selected.weight;
+            face->italic = selected.italic;
+            face->android_system = true;
+            face->android_axis_count = selected.axis_count;
+            for (unsigned axis = 0; axis < selected.axis_count; axis++) {
+                face->android_axes[axis] = (hb_variation_t){selected.axes[axis].tag, selected.axes[axis].value};
+            }
+            hb_ot_var_axis_info_t weight_axis;
+            if (hb_ot_var_find_axis_info(face->hb, HB_TAG('w', 'g', 'h', 't'), &weight_axis)) {
+                unsigned axis = 0;
+                while (axis < face->android_axis_count && face->android_axes[axis].tag != weight_axis.tag) axis++;
+                if (axis < ANDROID_FONT_MAX_AXES) {
+                    float value = LCLAMP((float)weight, weight_axis.min_value, weight_axis.max_value);
+                    face->android_axes[axis] = (hb_variation_t){weight_axis.tag, value};
+                    if (axis == face->android_axis_count) face->android_axis_count++;
+                    face->weight = (int)lroundf(value);
+                }
+            }
+        }
+        hm_put(&faces, identity.s, face ? face : (Face *)1);
+    }
+    free(identity.s);
+    return face == (Face *)1 ? NULL : face;
+}
+#elif !defined(__APPLE__)
 static Face *fontconfig_face(const char *name, int weight, bool italic, uint32_t codepoint) {
     FcPattern *pattern = FcPatternCreate();
     if (!pattern) return NULL;
@@ -158,6 +210,25 @@ static Face *resolve_one(const char *name, int weight, bool italic, bool *synth_
     if (best && !best->state) { best->state = 1; vec_push(webreq, xstrdup(best->url)); }
     if (best && best->face) { *synth_b = weight >= 600 && best->weight < 600; *synth_i = italic && !best->italic; return best->face; }
     if (best) return NULL;
+#ifdef __ANDROID__
+    const char *generic = NULL;
+    static const struct { const char *name, *generic; } android_families[] = {
+        {"sans-serif", "sans-serif"}, {"system-ui", "sans-serif"}, {"ui-sans-serif", "sans-serif"},
+        {"serif", "serif"}, {"ui-serif", "serif"}, {"monospace", "monospace"}, {"ui-monospace", "monospace"},
+        {"cursive", "cursive"}, {"fantasy", "fantasy"}, {"emoji", "emoji"},
+        {"arial", "sans-serif"}, {"helvetica", "sans-serif"}, {"roboto", "sans-serif"},
+        {"times", "serif"}, {"times new roman", "serif"}, {"courier", "monospace"}, {"courier new", "monospace"}
+    };
+    for (unsigned index = 0; index < ARRLEN(android_families); index++) {
+        if (!strcmp(lname, android_families[index].name)) { generic = android_families[index].generic; break; }
+    }
+    Face *matched = generic ? android_system_face(generic, weight, italic, 0) : NULL;
+    if (matched) {
+        *synth_b = weight >= 600 && matched->weight < 600;
+        *synth_i = italic && !matched->italic;
+        return matched;
+    }
+#endif
     for (size_t i = 0; i < ARRLEN(families); i++) {
         if (strcmp(families[i].name, lname)) continue;
         const FamilyDef *d = &families[i];
@@ -207,6 +278,9 @@ static void font_metrics(Font *f) {
 
 static Font *font_for_face(Face *face, float size, bool sb, bool si) {
     char key[600]; snprintf(key, sizeof key, "%s#%d@%.2f/%d%d", face->path, face->index, size, sb, si);
+#ifdef __ANDROID__
+    if (face->android_system) snprintf(key, sizeof key, "android:%p@%.2f/%d%d", (void *)face, size, sb, si);
+#endif
     Font *f = hm_get(&fonts, key);
     if (f) return f;
     f = xcalloc(1, sizeof *f);
@@ -217,6 +291,9 @@ static Font *font_for_face(Face *face, float size, bool sb, bool si) {
     hb_font_set_ptem(hb, size * 0.75f);
     /* variable system font: set weight axis */
     if (hb_ot_var_has_data(face->hb)) { hb_variation_t v = { HB_TAG('w', 'g', 'h', 't'), 400 }; hb_font_set_variations(hb, &v, 1); }
+#ifdef __ANDROID__
+    if (face->android_system) hb_font_set_variations(hb, face->android_axes, face->android_axis_count);
+#endif
     f->hb = hb;
     font_metrics(f);
     hm_put(&fonts, key, f);
@@ -240,6 +317,9 @@ Font *font_get(const char *family, int weight, bool italic, float size) {
 }
 static Font *font_get_slow(const char *family, int weight, bool italic, float size) {
     char ck[512]; snprintf(ck, sizeof ck, "%s|%d|%d", family, weight >= 600 ? 700 : 400, italic);
+#ifdef __ANDROID__
+    snprintf(ck, sizeof ck, "%s|%d|%d", family, weight, italic);
+#endif
     pthread_mutex_lock(&font_mu);
     Face *face = hm_get(&resolve_cache, ck); bool sb = false, si = false;
     uintptr_t flags = 0;
@@ -264,7 +344,11 @@ static Font *font_get_slow(const char *family, int weight, bool italic, float si
         hm_put(&resolve_cache, ck, slot);
     } else { Face **slot = (Face **)face; face = slot[0]; flags = (uintptr_t)slot[1]; }
     Font *f = font_for_face(face, size, flags & 1, flags & 2);
-    if (face->ft->face_flags & FT_FACE_FLAG_MULTIPLE_MASTERS && hb_ot_var_has_data(face->hb)) {
+    if (face->ft->face_flags & FT_FACE_FLAG_MULTIPLE_MASTERS && hb_ot_var_has_data(face->hb)
+#ifdef __ANDROID__
+        && !face->android_system
+#endif
+    ) {
         /* per-weight instance for variable fonts */
         if (weight != 400) {
             char key[600]; snprintf(key, sizeof key, "%s#%d@%.2f/w%d", face->path, face->index, size, weight);
@@ -285,6 +369,19 @@ static Font *font_get_slow(const char *family, int weight, bool italic, float si
 }
 
 static Font *fallback_for(Font *base, uint32_t cp) {
+#ifdef __ANDROID__
+    typedef struct { uint32_t codepoint; int weight; bool italic, valid; Face *face; } AndroidFallbackMemo;
+    static AndroidFallbackMemo memo[512];
+    int weight = base->synth_bold ? 700 : base->face->weight;
+    bool italic = base->synth_italic || base->face->italic;
+    AndroidFallbackMemo *entry = &memo[(cp ^ (uint32_t)weight ^ ((uint32_t)italic << 8)) % ARRLEN(memo)];
+    if (!entry->valid || entry->codepoint != cp || entry->weight != weight || entry->italic != italic) {
+        *entry = (AndroidFallbackMemo){cp, weight, italic, true, android_system_face("sans-serif", weight, italic, cp)};
+    }
+    if (entry->face && FT_Get_Char_Index(entry->face->ft, cp)) {
+        return font_for_face(entry->face, base->size, weight >= 600 && entry->face->weight < 600, italic && !entry->face->italic);
+    }
+#endif
     for (int i = 0; fallbacks[i]; i++) {
         Face *fc = face_load(fallbacks[i]);
         if (!fc || fc == base->face) continue;

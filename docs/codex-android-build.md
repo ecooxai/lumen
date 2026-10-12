@@ -11,6 +11,10 @@ has been built, installed, or tested on the phone.** Device connection is not
 evidence of browser functionality. Do not import personal profiles or log in
 until the engine's origin/file-access security blockers are repaired.
 
+The separate [Android font adapter and device gate](codex-android-fonts.md)
+now exercise real engine text on the phone. Only the font-test APK exists;
+the browser APK still awaits V8. Its Emoji raster test remains a known failure.
+
 ## Android Back adapter
 
 `LumenActivity` routes API 33+ committed Back gestures through the platform

@@ -11,4 +11,7 @@ build-g/
 /android/app/build/
 /android/build/
 /android/local.properties
+/tests/android/fonts/.gradle/
+/tests/android/fonts/.cxx/
+/tests/android/fonts/local.properties
 __pycache__/

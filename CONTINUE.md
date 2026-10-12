@@ -27,6 +27,14 @@ The registered CTest passes; actual changed
 Android app/JNI objects and SDK36/SDL Java sources compile. Verification report:
 `build/codex-android-back-test/REPORT.md`. Gesture/IME/history/lifecycle behavior
 still needs device testing; there is no predictive page-preview animation.
+Android fonts now use the API 29+ platform matcher with copied file/index/axis
+metadata, CSS family fallback and variable-weight handling. The isolated
+`org.lumen.codex.fonttest` APK is installed/tested on the phone; it is NOT the
+browser APK. The real engine font gate improved from four missing-script/emoji
+failures to one: the COLR emoji raster path still produces no pixels. Do not
+claim a green font gate. See `docs/codex-android-fonts.md` and
+`build/codex-android-font-followup/font-report.txt`; API 28 device behavior,
+full shaping coverage and browser startup remain unverified.
 V8's native GN tool is built and Android generation passes. Actual compilation
 required V8's checksum-pinned Clang24 and custom libc++ (NDK libc++19 lacks
 std::atomic_ref). The active build uses generated v8-gn.h; CMake consumers still
