@@ -41,6 +41,16 @@ tests or Java compilation as proof of working phone navigation.
 
 ## Verified local toolchain
 
+Latest host allowance (October 12, after the prebuilt smoke test): **all new
+builds share 60% of logical CPUs, 480% total on this eight-core host**. The
+wrapper's ordinary and compatibility `--v8` modes both use
+`codex-lumen-compile.slice` and inherit SCHED_IDLE/nice19. Use at most six
+compiler jobs and Gradle `--no-daemon`; fewer jobs remain appropriate for
+memory-heavy work. This supersedes the historical 140%/320% split below.
+The original V8 source build is still safety-frozen; do not resume it while
+integrating the tested prebuilt. Global host quotas and unrelated work are
+unchanged.
+
 Preparation artifacts are ignored, machine-local files under
 `build/codex-android-toolchain`. The test agent verified NDK r28c
 (`28.2.13676358`), Gradle 8.13, CMake 3.22.1, SDK platform 36 and OpenJDK 21.0.11.

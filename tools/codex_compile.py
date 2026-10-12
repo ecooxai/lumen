@@ -10,9 +10,9 @@ def main(arguments):
     if not arguments:
         print("Usage: python3 tools/codex_compile.py [--v8] COMMAND [ARGS...]", file=sys.stderr)
         return 2
-    slice_name = "codex-lumen-v8.slice" if v8_build else "codex-lumen-compile.slice"
-    quota = 40 * (os.cpu_count() or 1) if v8_build else 140
-    command = ["chrt", "--idle", "0", "nice", "-n", "39", "--", *arguments] if v8_build else arguments
+    slice_name = "codex-lumen-compile.slice"
+    quota = 60 * (os.cpu_count() or 1)
+    command = ["chrt", "--idle", "0", "nice", "-n", "39", "--", *arguments]
     try:
         subprocess.run([
             "systemctl", "--user", "set-property", "--runtime",

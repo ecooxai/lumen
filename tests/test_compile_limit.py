@@ -12,16 +12,16 @@ SPEC.loader.exec_module(compile_limit)
 
 
 class CompileLimitTests(unittest.TestCase):
-    def test_v8_gets_forty_percent_host_quota(self):
-        for processors, expected in [(8, "320%"), (4, "160%"), (None, "40%")]:
+    def test_all_builds_share_sixty_percent_host_quota(self):
+        for processors, expected in [(8, "480%"), (4, "240%"), (None, "60%")]:
             with self.subTest(processors=processors), \
                     patch.object(compile_limit.os, "cpu_count", return_value=processors), \
                     patch.object(compile_limit.subprocess, "run") as configure, \
                     patch.object(compile_limit.os, "execvp") as execute:
                 self.assertEqual(compile_limit.main(["--v8", "ninja", "-j6"]), 0)
-            self.assertIn("codex-lumen-v8.slice", configure.call_args.args[0])
+            self.assertIn("codex-lumen-compile.slice", configure.call_args.args[0])
             self.assertIn(f"CPUQuota={expected}", configure.call_args.args[0])
-            self.assertIn("--slice=codex-lumen-v8.slice", execute.call_args.args[1])
+            self.assertIn("--slice=codex-lumen-compile.slice", execute.call_args.args[1])
             self.assertEqual(execute.call_args.args[1][-3:], ["--", "ninja", "-j6"])
             self.assertEqual(execute.call_args.args[1][-10:-3], ["--", "chrt", "--idle", "0", "nice", "-n", "39"])
 
@@ -34,17 +34,18 @@ class CompileLimitTests(unittest.TestCase):
 
     def test_shared_quota_is_applied_before_starting_command(self):
         events = []
-        with patch.object(compile_limit.subprocess, "run", side_effect=lambda *args, **kwargs: events.append((args, kwargs))), \
+        with patch.object(compile_limit.os, "cpu_count", return_value=8), \
+                patch.object(compile_limit.subprocess, "run", side_effect=lambda *args, **kwargs: events.append((args, kwargs))), \
                 patch.object(compile_limit.os, "execvp", side_effect=lambda *args: events.append(args)):
             self.assertEqual(compile_limit.main(["ninja", "-j2"]), 0)
         self.assertEqual(events[0], (([
             "systemctl", "--user", "set-property", "--runtime",
-            "codex-lumen-compile.slice", "CPUQuota=140%", "CPUQuotaPeriodSec=100ms",
+            "codex-lumen-compile.slice", "CPUQuota=480%", "CPUQuotaPeriodSec=100ms",
         ],), {"check": True}))
         self.assertEqual(events[1], ("systemd-run", [
             "systemd-run", "--user", "--scope", "--quiet", "--collect",
             "--slice=codex-lumen-compile.slice", "--expand-environment=no",
-            "--", "ninja", "-j2",
+            "--", "chrt", "--idle", "0", "nice", "-n", "39", "--", "ninja", "-j2",
         ]))
 
     def test_arguments_are_not_shell_or_environment_expanded(self):

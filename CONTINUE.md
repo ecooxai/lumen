@@ -8,7 +8,24 @@ connected; no browser APK has been built or installed (only the isolated font
 test APK described below). Android toolchain preparation
 and dependency cross-builds are underway under `build/codex-android-*`.
 
-**Latest host compiler budget: V8 may use 40% of all CPUs (320% on eight
+**Latest host compiler budget: all new builds share 60% of all CPUs (480% on
+this eight-core host).** `tools/codex_compile.py` now places both ordinary and
+`--v8` commands in `codex-lumen-compile.slice`, with SCHED_IDLE/nice19 and a
+100 ms quota period. At most six compiler jobs; prefer fewer for large links.
+The host watcher has one additional narrowly scoped exemption for that slice
+at the exact 480% quota. Its prior backup is
+`/usr/local/lib/cpulimit/cpulimit_watcher.py.codex-before-shared-sixty`.
+Unit/mock checks pass 8+15. A 25-second six-worker loaded interval averaged
+479.06% shared-slice CPU, peaked at 116.15 MiB summed RSS, and recorded all
+182 thread observations as SCHED_IDLE/nice19. Membership and 480000/100000
+held across all 26 saved samples. The raw observer exited 1 on an extra
+post-completion controller check; its unsaved final state prevents claiming
+a clean observer teardown, not the bounded live measurements. See
+`build/codex-android-compile-sixty/green/LIVE_REPORT.md` for that limitation.
+No unrelated quota is raised. The old V8 source scope stays frozen with its historical 320% leaf
+and 200% parent; this allowance does not authorize a duplicate or unsafe resume.
+
+**Earlier host compiler budget: V8 may use 40% of all CPUs (320% on eight
 cores), with SCHED_IDLE/nice 19; other builds still share 140%.** The user
 explicitly requested 40%/320% after the earlier reduction and lowest priority.
 V8 uses

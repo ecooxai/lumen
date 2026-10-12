@@ -4,18 +4,17 @@ See `CONTINUE.md` for project state, build layout and next steps.
 
 ## Host compilation CPU budget
 
-V8 compilation may use 70% of all host logical CPUs, per the user's latest
-instruction (560% CPU on this eight-core host). Launch it with
-`python3 tools/codex_compile.py --v8 COMMAND ARGS...`; it uses the separate
-`codex-lumen-v8.slice`. Use at most six V8 compiler jobs on this host.
-
-Other project compilation, including dependencies, Gradle and test binaries,
-must share a maximum of 140% CPU (1.4 logical cores), not 140% per task.
+All new project compilation may share 60% of all host logical CPUs, per the
+user's latest instruction (480% total on this eight-core host). This is a
+shared budget, not 480% per task. Keep at most six compiler jobs per build;
+use fewer for memory-heavy work. The old V8 source build remains safety-frozen;
+do not resume or restart it while adopting the verified prebuilt.
 Launch those commands through `python3 tools/codex_compile.py COMMAND ARGS...`.
 The wrapper uses the shared systemd user slice
-`codex-lumen-compile.slice` with `CPUQuota=140%` and a 100 ms period, and fails
-closed if quota setup fails. Retain at most two compiler jobs per build to bound
-memory. Use Gradle `--no-daemon` and do not reuse compiler daemons launched
+`codex-lumen-compile.slice` with `CPUQuota=480%` and a 100 ms period, and fails
+closed if quota setup fails. The compatibility `--v8` option uses the same
+shared slice. All builds inherit SCHED_IDLE and nice 19. Use Gradle
+`--no-daemon` and do not reuse compiler daemons launched
 outside the slice. Do not change unrelated host workloads. This is a host build limit,
 not an Android browser runtime performance result.
 
