@@ -35,8 +35,13 @@ headers; 155 graph/header/ABI checks pass. All 11 Gradle configuration cases
 pass, including actual AGP-to-CMake flag forwarding. Reports:
 `build/codex-android-engine-cmake-test/cycle1/REPORT.md` and
 `build/codex-android-gradle-v8-test/REPORT.md`. These are object/configuration
-gates, not a successful native link, APK or device run. SDL shared-library and
-engine archive verification is next while V8 continues building.
+gates, not a successful final native link, APK or device run. The real SDL3
+shared library and engine/base/net archives now also build; all 44 artifact
+checks and 67 SDL Java/native signature matches pass. Report:
+`build/codex-android-sdl-engine-test/REPORT.md`. SDL requires the matching NDK
+`libc++_shared.so` in the APK. Final `libmain.so` linking awaits the real V8
+archive. `tools/android/verify_apk.py` checks actual packaged native dependency
+closure and ELF layout when an APK exists, not signing or runtime behavior.
 
 V8 resumed incrementally with six workers after 1379/4234 completed steps.
 The current log is `build/codex-android-v8/android-v8-monolith-iteration6.log`;

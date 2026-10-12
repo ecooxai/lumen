@@ -143,6 +143,33 @@ does not mean its dependencies or APK are built. Foundation libraries still
 use the NDK shared STL behind their C interfaces; coexistence with the
 monolith's hidden custom C++ runtime must be verified in the final ELF/APK.
 
+## Native APK inspection before installation
+
+After a real APK exists, inspect its packaged libraries, not just loose build
+outputs:
+
+```sh
+python3 tools/android/verify_apk.py android/app/build/outputs/apk/debug/app-debug.apk \
+  --ndk "$ANDROID_NDK_HOME" --abi arm64-v8a
+```
+
+This gate requires `libmain.so`, `libSDL3.so` and `libwgpu_native.so` for every
+requested ABI. It checks ELF64 machine/type, 16 KiB LOAD alignment, matching
+SONAME, absence of RPATH/RUNPATH/text relocations and recursive packaged-library
+dependency closure against the NDK's public system-library list at API28.
+For example, a dependency on `libc++_shared.so` must resolve inside the APK,
+not on the build host. Missing/extra ABIs, duplicate native entries, malformed
+paths and oversized libraries fail. Inspection streams one library at a time
+into a temporary directory beside the APK; `--work-dir` overrides this location.
+The default readelf is the NDK Linux host tool; `--readelf` permits another
+matching LLVM tool path. Repeat `--abi` when checking a multi-ABI package.
+
+This is **not** signature, manifest, ZIP alignment, imported-symbol/API-version
+or runtime verification. Keep those as separate required gates, using the
+SDK's `apksigner`, `aapt2`, and `zipalign` plus actual installation/startup.
+Unit fixture APKs are synthetic test inputs, never distributable artifacts or
+evidence that the browser has been packaged successfully.
+
 ## Android HTTPS adapter
 
 The prior networking initialization treated Android's certificate directory as a
@@ -175,6 +202,22 @@ still requires APK/device testing.
 
 ## Test evidence and next gates
 
+- Native APK verifier: missing implementation RED, then genuine LLVM dynamic
+  tag parsing RED, followed by 15 unit tests, seven negative CLI cases and
+  inspection of the real SDL/wgpu/NDK STL libraries GREEN. Exact dependency
+  lists are asserted, not merely nonempty. Evidence:
+  `build/codex-android-apk-verifier-test/REPORT.md`. Unit/real-ELF runs used
+  82.0%/108.9% command CPU and 21.8/35.8 MiB peak child RSS under the 140%
+  quota. Synthetic fixture packages do not prove actual APK dependency closure.
+- SDL3 shared-library and engine/base/net archive builds pass, reusing the
+  actual configured Android objects. All 44 artifact checks and 67 SDL JNI
+  signature matches pass. Strong dynamic imports resolve against API28
+  dependency exports: SDL 274/274, wgpu 84/84 and NDK STL 160/160. This is static
+  inspection, not a phone loader test. Evidence:
+  `build/codex-android-sdl-engine-test/REPORT.md`. The 81.52-second build used
+  124.59% command CPU, 212.02 MiB peak sampled tree RSS and the default 140%
+  quota, with no sampled membership violations. Final `libmain.so` and APK
+  linking remain pending on V8; package the matching NDK `libc++_shared.so`.
 - The maintained standalone Android V8 CMake gate passes real C/C++ compiler
   ABI linking and smoke-object compilation with Clang24. The linked ABI probes
   and object are AArch64; generated V8 definitions, custom `__Cr` STL,
@@ -191,7 +234,7 @@ still requires APK/device testing.
   Evidence: `build/codex-android-engine-cmake-test/cycle1/REPORT.md`.
   Object compilation took 156.30 seconds, 30.95% command CPU and 231.07 MiB
   peak child RSS; the shared compilation slice averaged 139.53% CPU. This
-  supersedes earlier partial syntax probes, not the pending SDL/shared-engine
+  supersedes earlier partial syntax probes, not the pending final shared-engine
   link or APK gate. The main link stops at the missing real V8 archive.
 - All 11 Gradle/AGP configuration cases pass: seven ABI cases, missing/invalid
   V8 source, optional GPU forwarding and actual AGP-to-CMake configuration.
