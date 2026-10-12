@@ -1,7 +1,9 @@
 package org.lumen.browser;
 
 import org.libsdl.app.SDLActivity;
+import org.libsdl.app.SDLSurface;
 import android.util.Log;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
@@ -19,6 +21,18 @@ public final class LumenActivity extends SDLActivity {
     private static native boolean nativeOpenUrl(byte[] url);
     private static native boolean nativeRequestBack();
     private Runnable unregisterBack;
+    private BrowserSurface browserSurface;
+
+    @Override
+    protected SDLSurface createSDLSurface(Context context) {
+        browserSurface = new BrowserSurface(context, rotation -> {
+            if (mCurrentRotation != rotation) {
+                mCurrentRotation = rotation;
+                onNativeRotationChanged(rotation);
+            }
+        });
+        return browserSurface;
+    }
 
     private synchronized void requestBack() {
         if (!nativeArgumentsRequested || mBrokenLibraries) {
@@ -41,6 +55,7 @@ public final class LumenActivity extends SDLActivity {
 
     @Override
     protected void onDestroy() {
+        if (browserSurface != null) browserSurface.close();
         if (unregisterBack != null) {
             unregisterBack.run();
             unregisterBack = null;

@@ -2,6 +2,34 @@
 
 ## Android/Linux checkpoint (2026-10-12)
 
+### Current idle-adapter iteration
+
+The Android surface now uses lifecycle-scoped DisplayManager notifications
+instead of SDL's unused game-rate accelerometer to report display rotation.
+Rotation mappings, deduplication, pause/resume, display replacement, resize,
+destroy and non-accelerometer delegation have a Java model test. Its initial
+RED was missing implementation (not a behavioral failure); existing phone ART
+and CPU measurements motivated the change. The model, actual Android SDK
+compilation, 52 total host unit groups and 23 APK packaging gates pass.
+All 293 native objects are unchanged in this sensor-only APK:
+`build/codex-android-idle-adapter/green/codex-android-idle-adapter-debug.apk`,
+SHA256 `9be59756cc14a2b94b840e7b640024bff5f7aee463fd3b210d86f8ab5ede26ca`.
+Phone rotation/lifecycle and CPU verification are in progress; do not infer
+runtime success from the Java stubs or packaging gates.
+
+A separate native HUD regression test extracts the real damage policy and
+uses UBSan/float-cast-overflow. RED: five failures, three passes; sentinel
+1e30 bounds overflow integer conversion before raster assertions can run.
+The pending fix clamps bounds before conversion and keeps page-cache validity
+independent of chrome/HUD changes, while still recomposing changed chrome.
+LUMEN_CHECK_DAMAGE now also compares unchanged cached pages with full raster.
+Native GREEN/build results are pending under
+`build/codex-android-chrome-damage/green`; RED evidence is in its sibling `red`.
+The phone currently tests the immutable sensor-only APK, not this later native
+change. No new idle, site-compatibility or daily-readiness pass is claimed.
+
+### Earlier measured phone baseline
+
 **Current user priority: Android only.** Linux development and additional desktop
 benchmarks are deferred. An authorized MI 8 (Android API 35, arm64-v8a) is
 connected. The own-engine debug APK now builds and passes all 23 packaging

@@ -3,14 +3,19 @@
 ## Release status
 
 **Scope update: Android only for the current task.** Further Linux work is
-deferred. An authorized arm64 MI 8 running API 35 is connected, but no Lumen APK
-has been installed or tested on it. New build preparation is Android-targeted.
+deferred. The own-engine APK builds and has been installed and tested on the
+authorized arm64 MI 8 running API 35. See `../CONTINUE.md` for the current
+artifact hashes and test reports; the prerequisite sections below include
+historical milestones, not the latest runtime status.
 
-**Not daily-use ready. A full native Linux browser now builds; no Android APK
-has been produced.** The existing engine remains in place. Compilation does not
-establish website compatibility, security, or Chrome parity.
+**Not daily-use ready.** Android packaging passes, and the phone renders the
+home page. Fixing SDL's self-waking wait loop reduced measured home idle CPU
+from 101.20% to 9.40%, still above the 0–3% target. Residual sensor and HUD
+work is being corrected and retested. Compilation does not establish website
+compatibility, security, or Chrome parity.
 
-Branch: `codex/android-linux-daily-browser`. The original clean tree was
+Current branch: `codex/android-phone-engine-port`; the original portability
+branch was `codex/android-linux-daily-browser`. The original clean tree was
 checkpointed as `c742180` before the branch was created.
 
 ## Implemented scope
