@@ -244,6 +244,9 @@ typedef struct Tab { Page *cur; bool loading, relayout; char *hist[256]; uint64_
     double cpu_ms, media_ms0, budget, bud_t, unlimit_until; float pct, lim, cpuhist[600]; int ncpu, cpui, cpumode, vctl, vap, lite; uint64_t vgen; bool limited, info, asleep; double bg_since; int crashes; } Tab;
 typedef struct App {
     SDL_Window *win; SDL_MetalView mview; Gpu *gpu;
+#ifdef __ANDROID__
+    bool android_suspended;
+#endif
     int pw, ph; float scale, vw, vh;
     Canvas frame, page; DisplayList pdl, cdl, hdl;
     struct DSig *osig, *nsig; int nosig, cosig, cnsig; uint64_t chash; bool osig_ok;   /* last page display list, to raster only what changed */
@@ -754,6 +757,9 @@ static int dl_sigs(const DisplayList *dl, struct DSig **v, int *cap) {
 static uint64_t dl_hash(const DisplayList *dl) { uint64_t h = (uint64_t)dl->items.n; for (int i = 0; i < dl->items.n; i++) h = h * 31 + ditem_hash(&dl->items.v[i]); return h; }
 
 static void render(App *a) {
+#ifdef __ANDROID__
+    if (a->android_suspended) return;
+#endif
     update_compact(a);
     double t0 = now_ms();
     int bar_px = (int)(BAR * a->scale);
@@ -1930,6 +1936,30 @@ static void history_go(App *a, int d) {
 }
 
 #ifdef __ANDROID__
+static bool SDLCALL android_graphics_lifecycle(void *userdata, SDL_Event *event) {
+    App *app = userdata;
+    if (event->type == SDL_EVENT_WILL_ENTER_BACKGROUND) {
+        app->android_suspended = true;
+        gpu_suspend(app->gpu);
+    } else if (event->type == SDL_EVENT_DID_ENTER_FOREGROUND && app->android_suspended) {
+        if (app->gpu) {
+            GpuSurfSrc source = { .kind = GPU_SURF_ANDROID,
+                .a = SDL_GetPointerProperty(SDL_GetWindowProperties(app->win), SDL_PROP_WINDOW_ANDROID_WINDOW_POINTER, NULL) };
+            int width = 0, height = 0;
+            SDL_GetWindowSizeInPixels(app->win, &width, &height);
+            if (!gpu_resume(app->gpu, &source, width, height)) {
+                SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Lumen: unable to restore the Android GPU surface");
+                return true;
+            }
+        }
+        app->android_suspended = false;
+        app->dirty = true;
+        app->vonly = false;
+        app->gvid_ok = false;
+    }
+    return true;
+}
+
 static void android_handle_back(App *app) {
     switch (android_back_action(g_hud_pop, app->editing,
         page_focus(app) || edit_focus(app), app->t->hpos > 0)) {
@@ -2061,6 +2091,15 @@ int main(int argc, char **argv) {
         media_yuv = gpu_yuv_ok(a.gpu) && !getenv("LUMEN_NO_YUV");
         if (!a.gpu && a.mview) { SDL_Metal_DestroyView(a.mview); a.mview = NULL; }
     }
+#ifdef __ANDROID__
+    if (!SDL_AddEventWatch(android_graphics_lifecycle, &a)) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Lumen: unable to register Android graphics lifecycle");
+        gpu_destroy(a.gpu);
+        SDL_DestroyWindow(a.win);
+        SDL_Quit();
+        return 1;
+    }
+#endif
     fprintf(stderr, "lumen: presenting with %s\n", gpu_backend_name(a.gpu));
     a.ui = font_get("system-ui", 400, false, 13.5f);
     char cookie_path[1024] = "";
@@ -2370,6 +2409,7 @@ int main(int argc, char **argv) {
     }
     if (*cookie_path) cookies_save(cookie_path);
 #ifdef __ANDROID__
+    SDL_RemoveEventWatch(android_graphics_lifecycle, &a);
     android_launch_set_wakeup(NULL);
     android_back_set_wakeup(NULL);
     char *pending_url;

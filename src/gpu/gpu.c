@@ -5,6 +5,9 @@
 #include <string.h>
 #include <webgpu.h>
 #include <wgpu.h>
+#ifdef __ANDROID__
+#include <android/native_window.h>
+#endif
 
 struct Gpu {
     WGPUInstance inst; WGPUSurface surf; WGPUAdapter adapter; WGPUDevice dev; WGPUQueue q;
@@ -13,6 +16,9 @@ struct Gpu {
     WGPUBackendType backend;
     WGPUSampler vsamp; WGPUBuffer ubuf, vubuf; WGPUTexture vtex; WGPUTextureView vview; WGPUBindGroup vbg; int vtw, vth;
     WGPURenderPipeline ypipe; WGPUBindGroupLayout ybgl; WGPUBuffer yubuf; WGPUTexture yt, ct; WGPUTextureView ytv, ctv; WGPUBindGroup ybg; int ytw, yth;
+#ifdef __ANDROID__
+    ANativeWindow *native_window;
+#endif
 };
 
 static const char *WGSL =
@@ -54,12 +60,77 @@ static void on_error(WGPUDevice const *d, WGPUErrorType t, WGPUStringView msg, v
 }
 
 static void configure(Gpu *g) {
-    if (g->w <= 0 || g->h <= 0) { g->configured = false; return; }
+    if (!g->surf || g->w <= 0 || g->h <= 0) {
+        if (g->surf && g->configured) wgpuSurfaceUnconfigure(g->surf);
+        g->configured = false;
+        return;
+    }
     WGPUSurfaceConfiguration c = WGPU_SURFACE_CONFIGURATION_INIT;
     c.device = g->dev; c.format = g->fmt; c.usage = WGPUTextureUsage_RenderAttachment;
     c.width = (uint32_t)g->w; c.height = (uint32_t)g->h;
     c.alphaMode = WGPUCompositeAlphaMode_Auto; c.presentMode = WGPUPresentMode_Fifo;
     wgpuSurfaceConfigure(g->surf, &c); g->configured = true;
+}
+
+static WGPUSurface create_surface(Gpu *gpu, const GpuSurfSrc *source) {
+    if (!source || !source->a) return NULL;
+    WGPUSurfaceSourceMetalLayer ml = WGPU_SURFACE_SOURCE_METAL_LAYER_INIT;
+    WGPUSurfaceSourceXlibWindow xl = WGPU_SURFACE_SOURCE_XLIB_WINDOW_INIT;
+    WGPUSurfaceSourceWaylandSurface wl = WGPU_SURFACE_SOURCE_WAYLAND_SURFACE_INIT;
+    WGPUSurfaceSourceAndroidNativeWindow an = WGPU_SURFACE_SOURCE_ANDROID_NATIVE_WINDOW_INIT;
+    WGPUSurfaceDescriptor sd = WGPU_SURFACE_DESCRIPTOR_INIT;
+    switch (source->kind) {
+    case GPU_SURF_METAL: ml.layer = source->a; sd.nextInChain = &ml.chain; break;
+    case GPU_SURF_XLIB: xl.display = source->a; xl.window = source->win; sd.nextInChain = &xl.chain; break;
+    case GPU_SURF_WAYLAND: wl.display = source->a; wl.surface = source->b; sd.nextInChain = &wl.chain; break;
+    case GPU_SURF_ANDROID:
+        an.window = source->a; sd.nextInChain = &an.chain;
+#ifdef __ANDROID__
+        gpu->native_window = source->a;
+        ANativeWindow_acquire(gpu->native_window);
+#endif
+        break;
+    default: return NULL;
+    }
+    WGPUSurface surface = wgpuInstanceCreateSurface(gpu->inst, &sd);
+#ifdef __ANDROID__
+    if (!surface && gpu->native_window) {
+        ANativeWindow_release(gpu->native_window);
+        gpu->native_window = NULL;
+    }
+#endif
+    return surface;
+}
+
+void gpu_suspend(Gpu *gpu) {
+    if (!gpu) return;
+    if (gpu->configured) wgpuSurfaceUnconfigure(gpu->surf);
+    gpu->configured = false;
+    if (gpu->surf) { wgpuSurfaceRelease(gpu->surf); gpu->surf = NULL; }
+#ifdef __ANDROID__
+    if (gpu->native_window) {
+        ANativeWindow_release(gpu->native_window);
+        gpu->native_window = NULL;
+    }
+#endif
+}
+
+bool gpu_resume(Gpu *gpu, const GpuSurfSrc *source, int width, int height) {
+    if (!gpu) return false;
+    gpu_suspend(gpu);
+    if (width <= 0 || height <= 0) return false;
+    if (!(gpu->surf = create_surface(gpu, source))) return false;
+    WGPUSurfaceCapabilities capabilities = WGPU_SURFACE_CAPABILITIES_INIT;
+    bool compatible = false;
+    if (wgpuSurfaceGetCapabilities(gpu->surf, gpu->adapter, &capabilities) == WGPUStatus_Success) {
+        for (size_t index = 0; index < capabilities.formatCount; index++)
+            if (capabilities.formats[index] == gpu->fmt) compatible = true;
+    }
+    wgpuSurfaceCapabilitiesFreeMembers(capabilities);
+    if (!compatible) { gpu_suspend(gpu); return false; }
+    gpu->w = width; gpu->h = height;
+    configure(gpu);
+    return gpu->configured;
 }
 
 Gpu *gpu_create(const GpuSurfSrc *src, int w, int h, bool prefer_vulkan) {
@@ -69,19 +140,7 @@ Gpu *gpu_create(const GpuSurfSrc *src, int w, int h, bool prefer_vulkan) {
     ex.backends = prefer_vulkan ? WGPUInstanceBackend_Vulkan : WGPUInstanceBackend_Primary;
     WGPUInstanceDescriptor id = WGPU_INSTANCE_DESCRIPTOR_INIT; id.nextInChain = &ex.chain;
     if (!(g->inst = wgpuCreateInstance(&id))) goto fail;
-
-    WGPUSurfaceSourceMetalLayer ml = WGPU_SURFACE_SOURCE_METAL_LAYER_INIT;
-    WGPUSurfaceSourceXlibWindow xl = WGPU_SURFACE_SOURCE_XLIB_WINDOW_INIT;
-    WGPUSurfaceSourceWaylandSurface wl = WGPU_SURFACE_SOURCE_WAYLAND_SURFACE_INIT;
-    WGPUSurfaceSourceAndroidNativeWindow an = WGPU_SURFACE_SOURCE_ANDROID_NATIVE_WINDOW_INIT;
-    WGPUSurfaceDescriptor sd = WGPU_SURFACE_DESCRIPTOR_INIT;
-    switch (src->kind) {
-    case GPU_SURF_METAL: ml.layer = src->a; sd.nextInChain = &ml.chain; break;
-    case GPU_SURF_XLIB: xl.display = src->a; xl.window = src->win; sd.nextInChain = &xl.chain; break;
-    case GPU_SURF_WAYLAND: wl.display = src->a; wl.surface = src->b; sd.nextInChain = &wl.chain; break;
-    case GPU_SURF_ANDROID: an.window = src->a; sd.nextInChain = &an.chain; break;
-    }
-    if (!(g->surf = wgpuInstanceCreateSurface(g->inst, &sd))) goto fail;
+    if (!(g->surf = create_surface(g, src))) goto fail;
 
     WGPURequestAdapterOptions ao = WGPU_REQUEST_ADAPTER_OPTIONS_INIT;
     ao.compatibleSurface = g->surf; ao.powerPreference = WGPUPowerPreference_HighPerformance;
@@ -303,11 +362,10 @@ void gpu_destroy(Gpu *g) {
     if (g->vubuf) wgpuBufferRelease(g->vubuf);
     if (g->bgl) wgpuBindGroupLayoutRelease(g->bgl);
     if (g->pipe) wgpuRenderPipelineRelease(g->pipe);
-    if (g->configured) wgpuSurfaceUnconfigure(g->surf);
+    gpu_suspend(g);
     if (g->q) wgpuQueueRelease(g->q);
     if (g->dev) wgpuDeviceRelease(g->dev);
     if (g->adapter) wgpuAdapterRelease(g->adapter);
-    if (g->surf) wgpuSurfaceRelease(g->surf);
     if (g->inst) wgpuInstanceRelease(g->inst);
     free(g);
 }

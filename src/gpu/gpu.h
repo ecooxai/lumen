@@ -8,6 +8,8 @@ typedef enum { GPU_SURF_METAL, GPU_SURF_XLIB, GPU_SURF_WAYLAND, GPU_SURF_ANDROID
 typedef struct { GpuSurfKind kind; void *a; void *b; uint64_t win; } GpuSurfSrc;
 
 Gpu *gpu_create(const GpuSurfSrc *src, int w, int h, bool prefer_vulkan);
+void gpu_suspend(Gpu *gpu);
+bool gpu_resume(Gpu *gpu, const GpuSurfSrc *source, int width, int height);
 void gpu_resize(Gpu *g, int w, int h);
 bool gpu_present(Gpu *g, const uint32_t *px, int w, int h, int stride);
 /* Like gpu_present but only re-uploads rows [y0,y1); the rest of the texture keeps its previous contents. */

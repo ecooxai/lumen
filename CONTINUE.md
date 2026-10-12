@@ -4,6 +4,29 @@
 
 ### Current idle-adapter iteration
 
+**GPU lifecycle candidate (phone verification pending):** synchronous SDL
+background/foreground watch detaches the presentation surface before SDL's
+pause wait and recreates it from the current Android native window on resume.
+It retains the GPU device, pipelines and cached textures, owns a native-window
+reference, rejects incompatible replacement formats and suppresses rendering
+while suspended. This addresses the stale-surface hypothesis below; do not
+claim the prior SIGABRT fixed until real repeated resume succeeds.
+
+Tests were written first: missing APIs/callbacks produced compiler/assertion
+RED, not executed behavioral-model failures. All eight actual-gpu.c mocked
+lifecycle scenarios and two callback/wiring groups now pass with UBSan.
+GREEN totals70 focused groups and23 packaging gates. Only two native objects
+changed,291 reused. Fresh packaging-only state avoids incremental ZIP dead
+space; compact candidate is87,468,308 bytes, mode0444:
+`build/codex-android-gpu-lifecycle/green/codex-android-gpu-lifecycle-compact-debug.apk`,
+SHA256 `f313d6320239574c4322f6382eaf25932c69841fac68054f4dd697455ab7fcb1`.
+Build/report/source pins: `build/codex-android-gpu-lifecycle/green/REPORT.md`.
+Two packaging-harness corrections, no production fixes by the build agent.
+Shared480%/SCHED_IDLE/nice19 held; original V8 remains frozen and unchanged.
+Phone agent has exclusive ownership for narrow HUD-On idle, repeated real
+background/resume, rotation and IME checks with continuous1Hz CPU/RSS.
+Fixture/site acceptance is not yet authorized. Overall readiness remains25/100.
+
 **Latest installed combined-fix APK passes the bounded home idle gate:**
 60 complete seconds with HUD On, mean2.47% CPU, range0–6.93%, at most one
 consecutive interval above3%, RSS229.98–232.11 MiB. Activity0.00%, engine2.22%.
