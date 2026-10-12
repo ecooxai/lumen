@@ -68,18 +68,27 @@ $(BUILD)/test_platform: $(call OBJ,tests/test_platform.c $(BASE_SRC))
 $(BUILD)/test_file: $(call OBJ,tests/test_file.c $(BASE_SRC) $(NET_SRC))
 	$(CC) $(OPT) $^ -o $@ $(NETLIBS) $(PLATLIBS)
 
+$(BUILD)/test_net_redirect: $(call OBJ,tests/test_net_redirect.c $(BASE_SRC) $(NET_SRC))
+	$(CC) $(OPT) $^ -o $@ $(NETLIBS) $(PLATLIBS)
+
 $(BUILD)/test_workspace: $(call OBJ,tests/test_workspace.c src/app/workspace.c)
+	$(CC) $(OPT) $^ -o $@
+
+$(BUILD)/test_media_icon: $(call OBJ,tests/test_media_icon.c src/app/media_icon.c)
 	$(CC) $(OPT) $^ -o $@
 
 $(BUILD)/test_viewer: $(call OBJ,tests/test_viewer.c src/app/local_viewer.c $(BASE_SRC))
 	$(CC) $(OPT) $^ -o $@ $(BASELIBS)
 
-test: $(BUILD)/test_url $(BUILD)/test_platform $(BUILD)/test_file $(BUILD)/test_workspace $(BUILD)/test_viewer
+test: $(BUILD)/test_url $(BUILD)/test_platform $(BUILD)/test_file $(BUILD)/test_net_redirect $(BUILD)/test_workspace $(BUILD)/test_media_icon $(BUILD)/test_viewer
 	$(BUILD)/test_url
 	$(BUILD)/test_platform
 	$(BUILD)/test_file
+	$(BUILD)/test_net_redirect
 	$(BUILD)/test_workspace
-	$(BUILD)/test_viewer
+	$(BUILD)/test_media_icon
+	$(BUILD)/test_viewer $(BUILD)/viewer-test.html
+	@if command -v node >/dev/null 2>&1; then node tests/test_viewer.js $(BUILD)/viewer-test.html; else echo "SKIP viewer script test: Node not installed"; fi
 
 clean:
 	rm -rf $(BUILD)

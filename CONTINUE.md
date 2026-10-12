@@ -2,12 +2,22 @@
 
 ## Android/Linux checkpoint (2026-10-12)
 
+**Current user priority: Android only.** Linux development and additional desktop
+benchmarks are deferred. An authorized MI 8 (Android API 35, arm64-v8a) is
+connected; no Lumen APK has been built or installed. Android toolchain preparation
+and dependency cross-builds are underway under `build/codex-android-*`.
+
 Work is on `codex/android-linux-daily-browser`, following clean-tree checkpoint
 `c742180`. Read `docs/codex-android-linux-status.md` before continuing. Native core
-tests and directory rendering now run on this Linux host; full Lumen still needs
-matching V8 and wgpu-native development dependencies. Android is a same-engine
-SDLActivity/CMake adapter, not a built or tested APK. No Chrome resource comparison
-or personal-account website tests have been performed in this checkpoint.
+tests and directory rendering now run on this Linux host; full Lumen and jsrun
+now build with pinned V8/wgpu dependencies (see
+`docs/codex-linux-native-dependencies.md`). Bounded offline GUI checks passed
+discrete zoom, media controls and workspace switching with the default renderer.
+CPU fallback hung after starting audio; 10% video zoom hides native controls.
+Android is a same-engine
+SDLActivity/CMake adapter, not a built or tested APK. An incomplete offline Chrome
+comparison is recorded in `build/codex-local-chrome-benchmark/REPORT.md`; it is not
+an Android or top-site benchmark. No personal-account tests have been performed.
 Keep the goal open and do not treat older macOS results below as Linux/Android
 verification. Continue test-first with fresh build/test-only agents and one-second
 CPU/RSS monitoring. Main agent owns implementation and debugging.

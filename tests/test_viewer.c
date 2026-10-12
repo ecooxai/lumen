@@ -22,6 +22,9 @@ int main(int argc, char **argv) {
         if (index != 2) {
             CHECK(strstr(html, "[10,25,50,75,100,150,200,300]"));
             CHECK(strstr(html, "devicePixelRatio"));
+            CHECK(strstr(html, "aria-label=\"Media zoom\""));
+            CHECK(strstr(html, "<button type=\"button\" data-zoom=\"100\" aria-pressed=\"true\""));
+            CHECK(!strstr(html, "<select"));
         }
         free(html);
     }

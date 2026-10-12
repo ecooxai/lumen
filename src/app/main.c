@@ -10,6 +10,7 @@
 #include "menu.h"
 #include "workspace.h"
 #include "local_viewer.h"
+#include "media_icon.h"
 #include "../base/platform.h"
 #include "../paint/paint.h"
 #include "../media/media.h"
@@ -501,20 +502,26 @@ static int bar_hit(App *a, float x, float y) {
 
 static void push_img(DisplayList *dl, Image *im, float x, float y, float w, float h) { DItem it; memset(&it, 0, sizeof it); it.op = DO_IMAGE; it.x = x; it.y = y; it.w = w; it.h = h; it.img = im; it.alpha = 1; vec_push(dl->items, it); }
 static Image *sym_icon(App *a, int k, int c) {   /* k: 0 back 1 forward 2 reload 3 star 4 star.fill 5 play 6 pause 7 plus; c: 0 dark 1 grey 2 blue 3 white */
+    if (k < 0 || k >= 8 || c < 0 || c >= 4) return NULL;
 #ifdef __APPLE__
     static const char *N[8] = { "chevron.left", "chevron.right", "arrow.clockwise", "star", "star.fill", "play.fill", "pause.fill", "plus" };
+#else
+    if (k != 5 && k != 6) return NULL;
+#endif
     static const uint32_t C[4] = { 0x3c4043, 0xbdc1c6, 0x1a73e8, 0xffffff };
     Image **slot = &a->sym[k][c];
     if (!*slot) {
         int px = (int)(16 * a->scale + 0.5f); Image *im = xcalloc(1, sizeof *im);
         im->w = im->h = px; im->refs = 1; im->scale = a->scale; im->px = xcalloc((size_t)px * (size_t)px, 4);
-        if (!mac_symbol_rgba(N[k], px, C[c], im->px)) { free(im->px); free(im); return NULL; }
+        bool drawn = false;
+#ifdef __APPLE__
+        drawn = mac_symbol_rgba(N[k], px, C[c], im->px);
+#endif
+        if (!drawn && (k == 5 || k == 6)) drawn = media_icon_rgba(k == 5, px, C[c], im->px);
+        if (!drawn) { free(im->px); free(im); return NULL; }
         *slot = im;
     }
     return *slot;
-#else
-    (void)a; (void)k; (void)c; return NULL;
-#endif
 }
 static void draw_icon(DisplayList *dl, int kind, float cx, float cy, Color c) {
     if (kind == HB_BACK || kind == HB_FWD) {
@@ -1524,8 +1531,15 @@ static void page_move_keep(App *a) {   /* YouTube hides its controls ~3 s after 
     if (n) js_dispatch(p->js, n, "mousemove", "MouseEvent", true, true, g_mv_x + j, g_mv_y, 0, NULL);
 }
 #define VBH 34.f
-static bool vbar_on(App *a, Node *n) { return n->type == NODE_ELEMENT && n->tag == A_video && n->box && n->box->w >= 120 && (node_attr(n, "controls") || (vctl_on(a->t) && !is_youtube(a->t->url))); }
-static float vbar_y(App *a, const Box *b) { return vctl_on(a->t) ? b->y + b->h : b->y + b->h - VBH; }   /* below the video when "always show", else inside its bottom edge */
+static bool vbar_on(App *a, Node *n) {
+    if (n->type != NODE_ELEMENT || !n->box || n->box->w < 120) return false;
+    if (n->tag == A_audio) return node_attr(n, "controls") != NULL;
+    return n->tag == A_video && (node_attr(n, "controls") || (vctl_on(a->t) && !is_youtube(a->t->url)));
+}
+static float vbar_y(App *a, const Box *b) {
+    if (b->node && b->node->tag == A_audio) return b->y + LMAX(0, (b->h - VBH) / 2);
+    return vctl_on(a->t) ? b->y + b->h : b->y + b->h - VBH;
+}
 static void fmt_t(char *o, size_t n, double s) { int t = s >= 0 && s < 1e7 ? (int)s : 0; if (t >= 3600) snprintf(o, n, "%d:%02d:%02d", t / 3600, t / 60 % 60, t % 60); else snprintf(o, n, "%d:%02d", t / 60, t % 60); }
 static void vbar_layout(App *a, const Box *b, const MpState *s, char *tm, size_t n, float *tx0, float *tx1) {
     char c[16], d[16]; fmt_t(c, sizeof c, s->time); fmt_t(d, sizeof d, s->duration); snprintf(tm, n, "%s / %s", c, d);

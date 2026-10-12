@@ -10,14 +10,22 @@ char *local_viewer_html(const char *url, const char *type) {
         "<title>Local media · Lumen</title><style>"
         "body{margin:0;background:#eaf3fc;color:#182b40;font:15px system-ui}"
         "header{padding:12px 16px;background:white;border-bottom:1px solid #ccdbe9}"
-        "label{margin-left:20px}select{font:inherit;padding:5px}main{padding:16px;overflow:auto}"
+        ".zoom{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}"
+        "button{font:inherit;min-width:48px;min-height:36px;padding:6px 10px;border:1px solid #b8c9dc;border-radius:6px;background:white;color:#182b40}"
+        "button[aria-pressed=true]{background:#235c9b;color:white;border-color:#235c9b}"
+        "button:focus{outline:2px solid #235c9b;outline-offset:2px}main{padding:16px;overflow:auto}"
         "img,video{display:block;max-width:none;max-height:none;background:#fff}"
         "audio{width:100%;max-width:640px}p{font-size:13px;color:#476079}"
         "</style></head><body><header><strong>Local media</strong>");
-    if (!audio) sb_puts(&output, "<label>Zoom <select id=\"zoom\" aria-label=\"Media zoom\">"
-        "<option>10%</option><option>25%</option><option>50%</option><option>75%</option>"
-        "<option selected>100%</option><option>150%</option><option>200%</option><option>300%</option>"
-        "</select></label>");
+    if (!audio) {
+        sb_puts(&output, "<div class=\"zoom\" role=\"group\" aria-label=\"Media zoom\">");
+        const int levels[] = {10, 25, 50, 75, 100, 150, 200, 300};
+        for (size_t index = 0; index < sizeof levels / sizeof levels[0]; index++) {
+            sb_printf(&output, "<button type=\"button\" data-zoom=\"%d\" aria-pressed=\"%s\">%d%%</button>",
+                      levels[index], levels[index] == 100 ? "true" : "false", levels[index]);
+        }
+        sb_puts(&output, "</div>");
+    }
     sb_puts(&output, "</header><main>");
     sb_puts(&output, image ? "<img id=\"media\" alt=\"Local image\" src=\"" : video ? "<video id=\"media\" controls playsinline preload=\"metadata\" src=\"" : "<audio id=\"media\" controls preload=\"metadata\" src=\"");
     for (const char *cursor = url; *cursor; cursor++) {
@@ -34,12 +42,14 @@ char *local_viewer_html(const char *url, const char *type) {
         "const media=document.getElementById('media');const status=document.getElementById('status');"
         "media.addEventListener('error',()=>{status.textContent='This file could not be decoded.';});");
     if (audio) sb_puts(&output, "media.addEventListener('loadedmetadata',()=>{status.textContent='Local audio — use the playback controls.';});");
-    else sb_puts(&output, "const levels=[10,25,50,75,100,150,200,300];const zoom=document.getElementById('zoom');"
+    else sb_puts(&output, "const levels=[10,25,50,75,100,150,200,300];const buttons=document.querySelectorAll('[data-zoom]');let percent=100;"
         "function resizeMedia(){const width=media.naturalWidth||media.videoWidth;const height=media.naturalHeight||media.videoHeight;"
-        "if(!width||!height)return;const percent=levels[zoom.selectedIndex]||100;const ratio=window.devicePixelRatio||1;"
+        "if(!width||!height)return;const ratio=window.devicePixelRatio||1;"
         "media.style.width=(width*percent/100/ratio)+'px';media.style.height=(height*percent/100/ratio)+'px';"
         "status.textContent=width+' × '+height+' · '+percent+'% · 100% maps one source pixel to one display pixel';}"
-        "zoom.addEventListener('change',resizeMedia);media.addEventListener('load',resizeMedia);"
+        "buttons.forEach(button=>button.addEventListener('click',()=>{const value=Number(button.getAttribute('data-zoom'));"
+        "if(!levels.includes(value))return;percent=value;buttons.forEach(item=>item.setAttribute('aria-pressed',String(item===button)));resizeMedia();}));"
+        "media.addEventListener('load',resizeMedia);"
         "media.addEventListener('loadedmetadata',resizeMedia);window.addEventListener('resize',resizeMedia);resizeMedia();");
     sb_puts(&output, "</script></body></html>");
     return sb_take(&output);

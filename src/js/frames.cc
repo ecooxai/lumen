@@ -2,6 +2,7 @@
 #include "js_int.h"
 #include "jsglue.h"
 #include "../base/url.h"
+#include <algorithm>
 
 using FCI = v8::FunctionCallbackInfo<v8::Value>;
 

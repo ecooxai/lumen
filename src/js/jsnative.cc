@@ -1,5 +1,6 @@
 /* Native functions (the `N` object) backing the JS DOM/Web API prelude */
 #include "js_int.h"
+#include <algorithm>
 #include <thread>
 #ifndef __APPLE__
 #include <sys/random.h>

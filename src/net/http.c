@@ -447,6 +447,16 @@ static NetResponse *net_fetch_impl(NetRequest *req) {
             if (r->status == 303 || ((r->status == 301 || r->status == 302) && !strcmp(method, "POST"))) { free(method); method = xstrdup("GET"); body = NULL; blen = 0; }
             net_response_free(r); r = NULL; url_free(&u);
             if (!nu) { r = xcalloc(1, sizeof *r); r->error = xstrdup("bad redirect"); break; }
+            URL target;
+            bool parsed = url_parse(nu, &target);
+            bool allowed = parsed && (!strcmp(target.scheme, "http") || !strcmp(target.scheme, "https"));
+            if (parsed) url_free(&target);
+            if (!allowed) {
+                free(nu);
+                r = xcalloc(1, sizeof *r);
+                r->error = xstrdup("unsupported redirect scheme");
+                break;
+            }
             free(url); url = nu;
             if (req->cancelled) { r = xcalloc(1, sizeof *r); r->error = xstrdup("cancelled"); break; }
             continue;

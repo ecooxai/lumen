@@ -10,18 +10,26 @@ const media = {
     addEventListener(name, callback) { handlers[name] = callback; }
 };
 const status = {};
-const zoom = { selectedIndex: 4, addEventListener(name, callback) { handlers[name] = callback; } };
+const levels = [10, 25, 50, 75, 100, 150, 200, 300];
+const buttons = levels.map(percent => ({
+    attributes: { 'data-zoom': String(percent), 'aria-pressed': String(percent === 100) },
+    getAttribute(name) { return this.attributes[name]; },
+    setAttribute(name, value) { this.attributes[name] = String(value); },
+    addEventListener(name, callback) { this[name] = callback; }
+}));
 const window = { devicePixelRatio: 2, addEventListener(name, callback) { handlers[name] = callback; } };
-const document = { getElementById(name) { return { media, status, zoom }[name]; } };
+const document = {
+    getElementById(name) { return { media, status }[name]; },
+    querySelectorAll(selector) { assert.equal(selector, '[data-zoom]'); return buttons; }
+};
 vm.runInNewContext(script, { document, window });
 assert.equal(media.style.width, '800px');
 assert.equal(media.style.height, '450px');
-const levels = [10, 25, 50, 75, 100, 150, 200, 300];
 levels.forEach((percent, index) => {
-    zoom.selectedIndex = index;
-    handlers.change();
+    buttons[index].click();
     assert.equal(media.style.width, `${800 * percent / 100}px`);
     assert.equal(media.style.height, `${450 * percent / 100}px`);
+    buttons.forEach((button, selected) => assert.equal(button.attributes['aria-pressed'], String(selected === index)));
 });
 window.devicePixelRatio = 1;
 handlers.resize();
