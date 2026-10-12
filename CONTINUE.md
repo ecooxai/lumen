@@ -26,6 +26,18 @@ Do not call this an idle pass. The installed APK is
 `1fa9a030fe1a7e85febf46b19ec0c58d9c8970f4c170c5d81205902eabaf667c`.
 See `build/codex-android-sdl-wait/green/REPORT.md` and
 `build/codex-android-browser-phone/cycle3/REPORT.md`.
+Residual diagnostic (`build/codex-android-idle-profile/cycle2/REPORT.md`):
+real-GUI HUD on/off/restored yields 8.56% / 5.58% / 8.55% total CPU; with HUD
+off the native engine samples 0% while SDLActivity averages 4.80%. Main
+visually confirmed HUD removal/restoration. ART sampling captures sensor
+dispatch, SDLSurface.onSensorChanged, Display.getRotation and onNativeAccel;
+app-scoped sensor history confirms successful 20 ms requests, not measured
+delivery frequency. Next fixes to test: avoid full-page repaint for periodic
+HUD updates, and replace unused game-rate accelerometer rotation polling with
+event-driven display rotation tracking while preserving lifecycle/rotation.
+No device-motion/orientation web API is currently wired to that SDL sensor.
+Do not simply disable the HUD or lose rotation to pass idle. Phone is free,
+HUD restored and app force-stopped; no diagnostic process remains active.
 The controls are desktop-sized and overlap the Android status bar. Fixture,
 interaction and site checks have not run. Evidence:
 `build/codex-android-browser-phone/cycle2/REPORT.md`.
