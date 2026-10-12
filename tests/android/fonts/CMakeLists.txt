@@ -10,8 +10,9 @@ if(NOT ANDROID OR NOT EXISTS "${PREFIX}/include/ft2build.h")
     message(FATAL_ERROR "Use the Android toolchain and an ABI-specific native dependency prefix")
 endif()
 add_library(codex_android_font_smoke SHARED
-    font_test_jni.c ../font_smoke.c
-    "${ROOT}/src/text/font.c" "${ROOT}/src/text/android_fonts.c" "${ROOT}/src/base/util.c")
+    font_test_jni.c font_preview.c ../font_smoke.c
+    "${ROOT}/src/text/font.c" "${ROOT}/src/text/android_fonts.c"
+    "${ROOT}/src/text/android_font_raster.c" "${ROOT}/src/base/util.c")
 target_compile_definitions(codex_android_font_smoke PRIVATE LUMEN_FONT_SMOKE_JNI)
 target_include_directories(codex_android_font_smoke PRIVATE "${PREFIX}/include" "${PREFIX}/include/harfbuzz")
 set(FONT_LIBRARIES)

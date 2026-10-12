@@ -49,20 +49,32 @@ still needs device testing; there is no predictive page-preview animation.
 Android fonts now use the API 29+ platform matcher with copied file/index/axis
 metadata, CSS family fallback and variable-weight handling. The isolated
 `org.lumen.codex.fonttest` APK is installed/tested on the phone; it is NOT the
-browser APK. The real engine font gate improved from four missing-script/emoji
-failures to one: the COLR emoji raster path still produces no pixels. Do not
-claim a green font gate. See `docs/codex-android-fonts.md` and
-`build/codex-android-font-followup/font-report.txt`; API 28 device behavior,
-full shaping coverage and browser startup remain unverified.
-The next test-first color-raster cases are now RED on the phone: the original
-Emoji failure plus five size/DPI/color-pixel/cache cases, all with zero visible
-color pixels. Evidence: `build/codex-android-color-font-test/red-cycle1/REPORT.md`.
-The uncommitted shared Android Canvas/JNI color-raster adapter now passes all
-25 grouped phone checks and actual API28 object/SDK36 Java compilation.
-Evidence: `build/codex-android-color-font-green/REPORT.md`; font Activity idle
-CPU was 0–2.02%, RSS 145.26–150.73 MiB. Glyph appearance still needs visual
-review; this is not a browser APK or daily-use validation. The font matcher
-checkpoint is `191e800`.
+browser APK. The shared Android Canvas/JNI color-raster adapter repaired the
+COLR system-font raster failures: 25 grouped phone checks and actual API28
+object/SDK36 Java compilation pass. Evidence:
+`build/codex-android-color-font-green/REPORT.md`; font Activity settled CPU was
+0–2.02%, RSS 145.26–150.73 MiB. API28 runtime, full shaping coverage and browser
+startup remain unverified. The font matcher checkpoint is `191e800`.
+An expanded 30-check sequence gate then exposed keycaps (29/30 passed):
+`build/codex-android-emoji-sequences-red/REPORT.md`. Main added bounded Android
+combining-cluster font selection to prevent splitting the ASCII base from the
+combining keycap, six further regression groups and an actual engine-pixel
+preview chart. These changes form the Android color-font checkpoint, not a
+browser APK or comprehensive standards certification.
+All 36 groups now pass and the clipping counter is zero; root API28 objects
+and real SDK36/SDL Java also compile. Evidence is in
+`build/codex-android-font-visual-green/`. Main visually reviewed the actual
+engine PNG: sizes, colors, scripts and combined emoji look correct. A subsequent
+fresh test-Activity system-bar-insets run in
+`build/codex-android-font-insets-green/` still passes all 36 groups; main
+reviewed the new screenshot (header no longer overlaps) and confirmed the
+native PNG is byte-identical to the earlier verified chart. Browser UI is
+untested. The expanded preview run sampled 0–2% settled CPU and
+151.14–168.95 MiB RSS; these are test-Activity, not browser/Chrome figures.
+The final inset-fixed run measured 0–2% settled CPU (mean 0.20%) and
+161.34–161.47 MiB settled RSS; startup/preview peaked at 103.92% CPU. Main
+review score: 96/100 for this bounded API35 font milestone; daily-browser
+readiness remains 20/100, with V8 linking/startup and site/API tests outstanding.
 V8's native GN tool is built and Android generation passes. Actual compilation
 required V8's checksum-pinned Clang24 and custom libc++ (NDK libc++19 lacks
 std::atomic_ref). The active build uses generated v8-gn.h; CMake consumers still

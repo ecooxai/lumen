@@ -103,6 +103,7 @@ public final class LumenActivity extends SDLActivity {
 
     @Override
     protected synchronized String[] getArguments() {
+        AndroidFontRaster.initialize();
         nativeArgumentsRequested = true;
         String url = launchUrl(getIntent());
         return new String[] {url != null ? url : "lumen://newtab"};

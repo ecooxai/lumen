@@ -55,6 +55,7 @@ android {
     }
     sourceSets {
         main.java.srcDir new File(sdlRoot, 'android-project/app/src/main/java')
+        main.java.srcDir '../platform/src/main/java'
     }
     externalNativeBuild {
         cmake {

@@ -1,10 +1,43 @@
 #include "../../src/text/font.h"
 #include "../../src/text/android_fonts.h"
+#include "../../src/text/android_font_raster.h"
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
 
 static unsigned failures;
+
+static void check_raster_input(void) {
+    AndroidFontMatch match = {0};
+    strcpy(match.path, "/system/fonts/NotoColorEmoji.ttf");
+    Glyph output = {.w = 123, .adv = 7};
+    Glyph unchanged = output;
+    bool valid = !android_font_raster(NULL, 1, 24, &output)
+        && !android_font_raster(&match, 1, 24, NULL)
+        && !android_font_raster(&match, 0, 24, &output)
+        && !android_font_raster(&match, 65536, 24, &output)
+        && !android_font_raster(&match, 1, 0, &output)
+        && !android_font_raster(&match, 1, NAN, &output)
+        && !android_font_raster(&match, 1, INFINITY, &output)
+        && !android_font_raster(&match, 1, 2049, &output);
+    match.collection_index = -1;
+    valid = valid && !android_font_raster(&match, 1, 24, &output);
+    match.collection_index = 0;
+    match.axis_count = ANDROID_FONT_MAX_AXES + 1;
+    valid = valid && !android_font_raster(&match, 1, 24, &output);
+    match.axis_count = 1;
+    match.axes[0].tag = 0x77676874;
+    match.axes[0].value = NAN;
+    valid = valid && !android_font_raster(&match, 1, 24, &output);
+    match.axis_count = 0;
+    memset(match.path, 'x', sizeof match.path);
+    valid = valid && !android_font_raster(&match, 1, 24, &output);
+    strcpy(match.path, "/codex-font-that-does-not-exist.ttf");
+    valid = valid && !android_font_raster(&match, 1, 24, &output)
+        && !memcmp(&output, &unchanged, sizeof output);
+    printf("%s color raster invalid input/output preservation\n", valid ? "PASS" : "FAIL");
+    if (!valid) failures++;
+}
 
 static void check_color(const char *label, const char *text, float size, float scale) {
     Font *font = font_get("sans-serif", 400, false, size);
@@ -58,9 +91,26 @@ static void check_text(const char *label, Font *font, const char *text) {
     shaped_free(&run);
 }
 
+static void check_keycap_context(Font *font) {
+    const char *text = "A1\xef\xb8\x8f\xe2\x83\xa3Z";
+    ShapedRun run = {0};
+    text_shape(font, text, strlen(text), 0, &run);
+    bool valid = run.n == 3 && run.g[0].font == font && run.g[2].font == font
+        && run.g[0].cluster == 0 && run.g[1].cluster == 1 && run.g[2].cluster == 8
+        && run.g[0].gid && run.g[1].gid && run.g[2].gid
+        && run.g[1].x > run.g[0].x && run.g[2].x > run.g[1].x
+        && isfinite(run.width) && run.width > run.g[2].x;
+    const Glyph *glyph = valid ? font_glyph(run.g[1].font, run.g[1].gid, 1) : NULL;
+    valid = valid && glyph && glyph->color && glyph->rgba && glyph->w > 0 && glyph->h > 0;
+    printf("%s keycap surrounding text/clusters glyphs=%d\n", valid ? "PASS" : "FAIL", run.n);
+    if (!valid) failures++;
+    shaped_free(&run);
+}
+
 int font_smoke_run(void) {
     failures = 0;
     font_init();
+    check_raster_input();
     AndroidFontMatch selected;
     memset(&selected, 0x5a, sizeof selected);
     AndroidFontMatch unchanged = selected;
@@ -110,6 +160,17 @@ int font_smoke_run(void) {
     check_color("emoji high-DPI", "\xf0\x9f\x98\x80", 24, 2);
     check_color("emoji large", "\xf0\x9f\x98\x80", 64, 1);
     check_color("emoji rocket", "\xf0\x9f\x9a\x80", 24, 1);
+    check_color("emoji skin tone", "\xf0\x9f\x91\x8d\xf0\x9f\x8f\xbd", 24, 1);
+    check_color("emoji flag", "\xf0\x9f\x87\xba\xf0\x9f\x87\xb8", 24, 1);
+    check_color("emoji ZWJ", "\xf0\x9f\x91\xa9\xe2\x80\x8d\xf0\x9f\x92\xbb", 24, 1);
+    check_color("emoji VS16", "\xe2\x9d\xa4\xef\xb8\x8f", 24, 1);
+    check_color("emoji keycap", "1\xef\xb8\x8f\xe2\x83\xa3", 24, 1);
+    check_color("emoji keycap zero", "0\xef\xb8\x8f\xe2\x83\xa3", 24, 1);
+    check_color("emoji keycap hash", "#\xef\xb8\x8f\xe2\x83\xa3", 24, 1);
+    check_color("emoji keycap star", "*\xef\xb8\x8f\xe2\x83\xa3", 24, 1);
+    check_color("emoji keycap without VS16", "1\xe2\x83\xa3", 24, 1);
+    check_keycap_context(regular);
+    check_text("Latin combining accent", regular, "e\xcc\x81");
     printf("Android engine font smoke: %u failures\n", failures);
     return failures ? 1 : 0;
 }

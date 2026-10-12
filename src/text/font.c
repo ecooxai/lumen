@@ -14,6 +14,7 @@
 #include <sys/stat.h>
 #ifdef __ANDROID__
 #include "android_fonts.h"
+#include "android_font_raster.h"
 #endif
 #if !defined(__APPLE__) && !defined(__ANDROID__)
 #include <fontconfig/fontconfig.h>
@@ -401,6 +402,42 @@ static Font *fallback_for(Font *base, uint32_t cp) {
     return NULL;
 }
 
+#ifdef __ANDROID__
+static Font *android_combining_font(Font *base, Font *selected, uint32_t codepoint,
+    const char *text, size_t length, size_t *end) {
+    uint32_t cluster[32] = {codepoint};
+    unsigned count = 1;
+    size_t cursor = *end;
+    while (cursor < length && count < ARRLEN(cluster)) {
+        if ((unsigned char)text[cursor] < 0x80) break;
+        uint32_t next;
+        size_t bytes = (size_t)utf8_decode(text + cursor, length - cursor, &next);
+        hb_unicode_general_category_t category = hb_unicode_general_category(hb_unicode_funcs_get_default(), next);
+        if (category != HB_UNICODE_GENERAL_CATEGORY_NON_SPACING_MARK
+            && category != HB_UNICODE_GENERAL_CATEGORY_SPACING_MARK
+            && category != HB_UNICODE_GENERAL_CATEGORY_ENCLOSING_MARK) break;
+        cluster[count++] = next;
+        cursor += bytes;
+    }
+    *end = cursor;
+    for (unsigned index = 1; index < count; index++) {
+        uint32_t mark = cluster[index];
+        if ((mark >= 0xfe00 && mark <= 0xfe0f) || (mark >= 0xe0100 && mark <= 0xe01ef)
+            || FT_Get_Char_Index(selected->face->ft, mark)) continue;
+        Font *candidate = fallback_for(base, mark);
+        if (!candidate || candidate == selected) continue;
+        bool covers_cluster = true;
+        for (unsigned member = 0; member < count; member++) {
+            uint32_t scalar = cluster[member];
+            if ((scalar >= 0xfe00 && scalar <= 0xfe0f) || (scalar >= 0xe0100 && scalar <= 0xe01ef)) continue;
+            if (!FT_Get_Char_Index(candidate->face->ft, scalar)) { covers_cluster = false; break; }
+        }
+        if (covers_cluster) return candidate;
+    }
+    return selected;
+}
+#endif
+
 static void shape_segment(Font *f, const char *s, size_t off, size_t len, float ls, VEC(GlyphPos) *out, float *x) {
     hb_buffer_t *buf = hb_buffer_create();
     hb_buffer_add_utf8(buf, s, (int)(off + len), (unsigned)off, (int)len);
@@ -432,6 +469,9 @@ void text_shape(Font *f, const char *s, size_t len, float ls, ShapedRun *out) {
             /* keep combining marks / ZWJ sequences with the previous run */
             Font *fb = fallback_for(f, cp); if (fb) want = fb;
         } else if (cur != f && (cp == 0x200D || (cp >= 0xFE00 && cp <= 0xFE0F) || (cp >= 0x1F3FB && cp <= 0x1F3FF))) want = cur;
+#ifdef __ANDROID__
+        want = android_combining_font(f, want, cp, s, len, &j);
+#endif
         if (want != cur) { if (i > start) shape_segment(cur, s, start, i - start, ls, (void *)&g, &x); start = i; cur = want; }
         i = j;
     }
@@ -491,6 +531,19 @@ const Glyph *font_glyph(Font *f, uint32_t gid, float scale) {
             }
         }
     }
+#ifdef __ANDROID__
+    if (f->face->android_system && f->face->color && !g->rgba && !g->alpha) {
+        AndroidFontMatch match = {0};
+        snprintf(match.path, sizeof match.path, "%s", f->face->path);
+        match.collection_index = f->face->index;
+        match.axis_count = f->face->android_axis_count;
+        for (unsigned axis = 0; axis < match.axis_count; axis++) {
+            match.axes[axis].tag = f->face->android_axes[axis].tag;
+            match.axes[axis].value = f->face->android_axes[axis].value;
+        }
+        android_font_raster(&match, gid, px, g);
+    }
+#endif
     hm_put(&f->glyphs, key, g);
     pthread_mutex_unlock(&font_mu);
     return g;
