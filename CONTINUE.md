@@ -4,13 +4,29 @@
 
 ### Current idle-adapter iteration
 
-**GPU lifecycle candidate (phone verification pending):** synchronous SDL
+**GPU lifecycle fix: three real resume cycles pass; remaining GUI checks pending.**
+Phone candidate SHA256 `f313d632...` passes HUD-On home idle over61 complete
+intervals: mean2.38% CPU, range0–6.25%, RSS232.82 MiB, no sustained excess.
+Three real Home/background/resume cycles retain the same process and visibly
+repaint History/Bookmarks. SDL surface destroy/create logs pass without GPU
+errors. Their20-second settled means are2.15%,2.65%,2.30%, RSS233.34–235.82 MiB.
+Evidence: `build/codex-android-gpu-lifecycle/phone/narrow1` and
+`build/codex-android-gpu-lifecycle/phone/narrow2-resume`.
+Portrait and landscape visibly render. The harness stopped on a90-second
+agent visual-review timeout, not a browser crash; other rotations, background
+rotation and IME checks remain incomplete. A fresh test agent owns those checks
+under `build/codex-android-gpu-lifecycle/rotation-followup` with continuous1Hz
+monitoring. Previous controller cleanup preceded its launch; no device overlap.
+Natural fixed HUD numbers are not stale-frame evidence: actual page touches
+now establish presentation freshness. These checks are not raster equivalence.
+
+The synchronous SDL
 background/foreground watch detaches the presentation surface before SDL's
 pause wait and recreates it from the current Android native window on resume.
 It retains the GPU device, pipelines and cached textures, owns a native-window
 reference, rejects incompatible replacement formats and suppresses rendering
-while suspended. This addresses the stale-surface hypothesis below; do not
-claim the prior SIGABRT fixed until real repeated resume succeeds.
+while suspended. The prior SIGABRT does not recur in the three tested cycles;
+this is not exhaustive device/lifecycle stress coverage. Commit `11e90a6`.
 
 Tests were written first: missing APIs/callbacks produced compiler/assertion
 RED, not executed behavioral-model failures. All eight actual-gpu.c mocked
@@ -23,11 +39,12 @@ SHA256 `f313d6320239574c4322f6382eaf25932c69841fac68054f4dd697455ab7fcb1`.
 Build/report/source pins: `build/codex-android-gpu-lifecycle/green/REPORT.md`.
 Two packaging-harness corrections, no production fixes by the build agent.
 Shared480%/SCHED_IDLE/nice19 held; original V8 remains frozen and unchanged.
-Phone agent has exclusive ownership for narrow HUD-On idle, repeated real
-background/resume, rotation and IME checks with continuous1Hz CPU/RSS.
-Fixture/site acceptance is not yet authorized. Overall readiness remains25/100.
+Fixture testing is prepared but not yet authorized; public-site acceptance is
+unverified. Source inspection confirms canvas getContext supports only2D and
+no navigator.gpu implementation was found. Do not confuse the Vulkan presenter
+with working WebGL/WebGPU web APIs. Overall readiness remains25/100.
 
-**Latest installed combined-fix APK passes the bounded home idle gate:**
+**Previous combined-fix APK passed the bounded home idle gate:**
 60 complete seconds with HUD On, mean2.47% CPU, range0–6.93%, at most one
 consecutive interval above3%, RSS229.98–232.11 MiB. Activity0.00%, engine2.22%.
 The phone is released, app stopped, HUD On and rotation `free`; installed
