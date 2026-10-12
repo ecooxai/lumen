@@ -113,6 +113,29 @@ Do not link those consumers with NDK STL headers or mix V8's ICU78.2 objects
 with the foundation ICU78.3 archive. The V8 sandbox remains disabled in this
 development probe; this is not a release security configuration.
 
+The pinned source needs the local build fix
+`android/native-deps/patches/v8-15.6.75.8-gc-info-guard.patch` when generated
+external definitions are enabled. `gc-info.cc` originally tests
+`CPPGC_ENABLE_OBJECT_SECTION_GCINFO` before including the header that defines
+it. Host snapshot compilation then sees incompatible declarations and fails
+with `EnsureGCInfoIndexTrait` undeclared. The patch only moves that guard below
+the includes; host object-section GC and Android table-based GC keep their
+existing settings. It does not disable either collector or weaken atomics.
+Apply once to the exact pinned source, before compiling:
+
+```sh
+V8_SOURCE="$PWD/build/codex-android-v8/v8-15.6.75.8"
+patch --directory="$V8_SOURCE" --strip=1 --fuzz=0 --forward \
+  < android/native-deps/patches/v8-15.6.75.8-gc-info-guard.patch
+```
+
+The original `src/heap/cppgc-internal/gc-info.cc` SHA256 is
+`91b4eb02dcb27e38fbdae4941096edf148e9ee15b065b462c5464e7a21690495`;
+after applying the patch it is
+`dea9529e89597ebf86c61ae8ce7882b0245a3e579e3b20f580f26bdc1e6de870`.
+An already-patched tree needs no second application or clean rebuild. Keep
+this patch alongside the source pin when reproducing the Android build.
+
 `tests/android/v8_smoke.cc` is the pending target-link/runtime gate: V8 startup,
 embedded ICU date/number formatting, Wasm execution, BigInt, microtasks and
 teardown. It is a dependency test, not an APK or browser compatibility test.
@@ -202,6 +225,17 @@ still requires APK/device testing.
 
 ## Test evidence and next gates
 
+- V8 GC-info build regression: reproduced undeclared `EnsureGCInfoIndexTrait`
+  on the host snapshot target, moved its guard below generated-config includes,
+  then compiled both real host and Android objects. All 19 checks pass: host
+  section-based mode has no table-registration overloads; Android table mode
+  retains all four. Exact patch reproduction and unchanged GN/generated-header
+  hashes pass. Evidence: `build/codex-android-v8-gcinfo-test/REPORT.md`.
+  The targeted GREEN build took 4.007 seconds, with sampled CPU 34.86–94.74%
+  and peak tree RSS 131.18 MiB. The six-worker incremental resume remains
+  capped at 560%; its first measured 31 seconds averaged 420.60% CPU
+  (52.58% of this host), peaking at 948.57 MiB RSS, with no cgroup escapes.
+  These are compilation metrics, not phone or browser performance.
 - Native APK verifier: missing implementation RED, then genuine LLVM dynamic
   tag parsing RED, followed by 15 unit tests, seven negative CLI cases and
   inspection of the real SDL/wgpu/NDK STL libraries GREEN. Exact dependency

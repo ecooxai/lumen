@@ -43,10 +43,20 @@ checks and 67 SDL Java/native signature matches pass. Report:
 archive. `tools/android/verify_apk.py` checks actual packaged native dependency
 closure and ELF layout when an APK exists, not signing or runtime behavior.
 
-V8 resumed incrementally with six workers after 1379/4234 completed steps.
-The current log is `build/codex-android-v8/android-v8-monolith-iteration6.log`;
-its counter covers the remaining 2855 steps, not a clean rebuild. Read live
-process state and the matching `iteration6-latest.json` before reporting status.
+V8 iteration 6 stopped at 263/2855 resumed steps: the pinned `gc-info.cc`
+checked its GC mode before including generated configuration. The minimal
+maintained fix is `android/native-deps/patches/v8-15.6.75.8-gc-info-guard.patch`.
+Both real host and Android objects now compile; all 19 mode/symbol/input/patch
+checks pass (`build/codex-android-v8-gcinfo-test/REPORT.md`). No GC setting, GN
+argument, generated configuration or engine behavior was changed.
+
+The incremental six-worker build is now iteration 7, initially 2592 pending
+steps, not a clean rebuild. At handoff its Ninja PID is 3601367 and monitor
+service is `codex-lumen-v8-iteration7.service` (`Restart=no`). Current log:
+`build/codex-android-v8/android-v8-monolith-iteration7.log`; read live process
+state and matching `iteration7-latest.json` before reporting progress.
+The persistent monitor owns the child and records its eventual exit status;
+it samples every second and retains memory guards without automatic restart.
 
 Current branch is `codex/android-phone-engine-port`, after shared-engine
 checkpoint `8cceb05` on `codex/android-linux-daily-browser` and original clean-tree
