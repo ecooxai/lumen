@@ -57,6 +57,35 @@ Evidence: `build/codex-android-v8-recovery-live/REPORT.md`. Main bounded recover
 score: 95/100; this is not a browser-readiness score. Do not claim the full
 archive, native link or browser APK has passed. The current ceiling is 200% shared,
 not guaranteed 320% throughput. Do not stop either monitor or launch another V8.
+**Subsequent safety stop:** at 13:54:34 PDT the new guard observed seven compiler
+processes and exited 2 after freezing its scope and sending identity-checked
+SIGSTOP. At 14:03 PDT the scope reports `frozen 1`; Ninja remains the same
+process at 891/2592 steps. There are six direct compiler jobs, but the Clang
+driver PID 3942053 spawned `clang -cc1` PID 3942055, so the guard double-counted
+one job. Both wait in `do_freezer_trap`. Fix compiler ancestry counting before
+resuming. `guard-latest.json` is now stale, not live progress evidence. Preserve
+this frozen fallback while evaluating the user-requested prebuilt alternative;
+do not automatically thaw it or restart V8. Prebuilt investigation:
+`docs/codex-android-v8-prebuilt.md` and `build/codex-android-v8-prebuilt-probe/`.
+A V8 15.0.245.2 Android archive now links the unchanged smoke object after
+building only its exact Temporal Rust support library (66 seconds). Candidate
+C++ syntax and the original 15.6 consumer object both pass after the checked
+Module::Evaluate conversion in src/js/js.cc. All 45 Rust registry versions and
+checksums match upstream. However, the first phone run failed before main:
+TLS alignment 8 instead of 64. Main traced this to linking a native-ELF-TLS
+archive with API28 startup objects. Android ELF TLS requires API29; API29's
+NDK crtbegin has the required alignment. The isolated API29 relink now passes
+three actual phone runs: initialization, ICU date/number, Wasm, BigInt,
+microtasks and teardown. TLS64, 16 KiB LOAD alignment and API29 dependency
+closure pass. Runs took 0.097–0.106s, CPU 91.38–94.43% of one core, peak RSS
+24.20–24.96 MiB (active smoke, not idle/browser metrics). Report:
+`build/codex-android-v8-prebuilt-probe/phone-api29/REPORT.md`.
+Bounded prebuilt-smoke milestone 95/100; daily browser still 20/100.
+Next: a separately validated, pinned prebuilt CMake import with matching ICU77,
+STL/V8 headers/config, absolute vtables and Temporal, then full native/APK/device
+tests. Do not fake API28 compatibility or silently swap archives: maintained
+CMake/Gradle still target API28 and must consistently select API29 for this
+candidate. Neither candidate is a browser APK. Keep the source fallback frozen.
 The temporary normal-priority host exemption was reverted; the original
 `dev-workload-priority.service` again enforces idle scheduling. Do not restore
 normal priority without a new user request.

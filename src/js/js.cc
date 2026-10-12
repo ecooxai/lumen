@@ -305,7 +305,10 @@ static v8::MaybeLocal<v8::Promise> mod_eval(JsCtx *c, v8::Local<v8::Module> m) {
     v8::Local<v8::Context> ctx = c->iso->GetCurrentContext();
     if (!mod_graph(c, m)) return {};
     if (m->GetStatus() == v8::Module::kUninstantiated && !m->InstantiateModule(ctx, mod_resolve_cb).FromMaybe(false)) return {};
-    return m->Evaluate(ctx);
+    v8::Local<v8::Value> result;
+    if (!m->Evaluate(ctx).ToLocal(&result)) return {};
+    if (!result->IsPromise()) return mod_throw(c->iso, "Module evaluation did not return a promise"), v8::MaybeLocal<v8::Promise>();
+    return result.As<v8::Promise>();
 }
 static v8::MaybeLocal<v8::Promise> mod_dynamic(v8::Local<v8::Context> ctx, v8::Local<v8::Data>, v8::Local<v8::Value> res, v8::Local<v8::String> spec, v8::Local<v8::FixedArray>) {
     v8::Isolate *iso = v8::Isolate::GetCurrent();
