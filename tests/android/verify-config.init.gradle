@@ -8,6 +8,12 @@ gradle.projectsEvaluated {
             assert application.android.defaultConfig.minSdk == 28
             assert application.android.defaultConfig.targetSdk == 36
             assert application.android.defaultConfig.externalNativeBuild.cmake.targets == (['main'] as Set)
+            def arguments = application.android.defaultConfig.externalNativeBuild.cmake.arguments
+            def toolchain = new File(gradle.rootProject.projectDir.parentFile, 'cmake/android-v8.toolchain.cmake')
+            def v8Root = application.file(application.providers.gradleProperty('lumenV8Dir').get())
+            assert arguments.contains("-DCMAKE_TOOLCHAIN_FILE=${toolchain.absolutePath}".toString())
+            assert arguments.contains("-DLUMEN_V8_DIR=${v8Root.absolutePath}".toString())
+            assert arguments.contains('-DANDROID_STL=c++_shared')
             println "Android configuration verified: ${expected.sort().join(',')}"
         }
     }

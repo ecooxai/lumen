@@ -27,22 +27,25 @@ python3 tools/codex_compile.py python3 tools/android/build_deps.py --ndk "$ANDRO
 ```
 
 The dry-run command prints a plan without creating files or downloading anything.
-All host compilation shares a 140% CPU ceiling (1.4 logical cores) through
-`tools/codex_compile.py`, including parallel V8, dependency, Gradle and test
-builds. This uses one systemd user slice, not a separate quota per command.
+Dependency, Gradle and test compilation shares a 140% CPU ceiling (1.4 logical
+cores) through `tools/codex_compile.py`. This uses one systemd user slice, not a
+separate quota per command. The user subsequently raised V8's allowance to
+70% of all host logical CPUs: use `tools/codex_compile.py --v8` for V8 itself.
+It uses a separate slice capped at 560% on this eight-core host, with six
+compiler jobs. Other builds retain their original shared 140% cap.
 It requires Linux cgroup CPU control and a working systemd user manager; quota
 setup failure must not fall back to an uncapped build. Scoped commands retain
 the caller's environment, working directory and exit status. The quota is
-140000 microseconds per 100000-microsecond period, so very short instantaneous
+140000 microseconds per 100000-microsecond period for ordinary builds and
+560000/100000 for V8 on this host, so very short instantaneous
 samples can exceed 140%; monitor aggregate `cpu.stat` deltas over time.
-This explicit limit is stricter than 30% of this host's eight logical CPUs.
-Keep compiler concurrency at two or less as well for bounded memory.
+Keep non-V8 compiler concurrency at two or less for bounded memory.
 Use Gradle `--no-daemon`; a build must not delegate compilation to an existing
 daemon outside the capped slice.
 On this host, `/usr/local/lib/cpulimit/cpulimit_watcher.py` previously moved
 compilers out of explicitly limited scopes into its general-purpose slice.
-Its local integration now preserves this project's slice only when the
-ancestor `cpu.max` is exactly `140000 100000`; other workload mappings remain
+Its local integration now preserves this project's two slices only when their
+ancestor `cpu.max` matches the corresponding wrapper quota; other workload mappings remain
 unchanged. The original is backed up alongside it as
 `cpulimit_watcher.py.codex-before-lumen-cap`. Verify process cgroup membership
 across multiple watcher scans, not just immediately after launch, if that host
@@ -100,8 +103,12 @@ The active configuration uses Android API28, NDK r28c's sysroot, monolithic PIC
 V8, embedded startup/ICU data, custom libc++, and
 `v8_generate_external_defines_header=true`. Lumen's C++ consumers must use the
 same Clang, custom `__Cr` STL configuration, relative-vtable ABI and generated
-`v8-gn.h` with `V8_GN_HEADER`; the current CMake integration does **not yet
-implement this**.
+`v8-gn.h` with `V8_GN_HEADER`. `cmake/android-v8.toolchain.cmake` selects that
+compiler while retaining the NDK Android sysroot and target atomic/unwind
+libraries. `cmake/AndroidV8.cmake` imports the monolith and matching consumer
+configuration, rejects mismatched GN settings, and supplies its ICU to the
+Android browser's base library. Full archive linking and device startup remain
+pending; compiler configuration is not evidence of a working browser.
 Do not link those consumers with NDK STL headers or mix V8's ICU78.2 objects
 with the foundation ICU78.3 archive. The V8 sandbox remains disabled in this
 development probe; this is not a release security configuration.
@@ -109,6 +116,32 @@ development probe; this is not a release security configuration.
 `tests/android/v8_smoke.cc` is the pending target-link/runtime gate: V8 startup,
 embedded ICU date/number formatting, Wasm execution, BigInt, microtasks and
 teardown. It is a dependency test, not an APK or browser compatibility test.
+
+Build this gate separately from the browser so compiler, STL and startup
+failures remain identifiable. Configuration and object compilation can run
+while the real V8 archive is still building; the executable link must wait for
+that archive, not use a placeholder:
+
+```sh
+source build/codex-android-toolchain/env.sh
+V8_SOURCE="$PWD/build/codex-android-v8/v8-15.6.75.8"
+python3 tools/codex_compile.py cmake -S tests/android/v8 -B build/codex-android-v8-smoke -G Ninja \
+  -DCMAKE_TOOLCHAIN_FILE="$PWD/cmake/android-v8.toolchain.cmake" \
+  -DANDROID_NDK="$ANDROID_NDK_HOME" -DANDROID_ABI=arm64-v8a \
+  -DANDROID_PLATFORM=android-28 -DANDROID_STL=c++_shared \
+  -DLUMEN_V8_DIR="$V8_SOURCE" -DCMAKE_BUILD_TYPE=Release
+python3 tools/codex_compile.py cmake --build build/codex-android-v8-smoke --target v8_smoke_objects --parallel 1
+python3 tools/codex_compile.py cmake --build build/codex-android-v8-smoke --target codex_android_v8_smoke --parallel 1
+```
+
+Gradle requires `-PlumenV8Dir="$V8_SOURCE"` in addition to `lumenSdlDir` and
+`lumenDepsDir`. It forwards the custom toolchain automatically. Set
+`-PlumenWgpuDir="$PWD/build/codex-android-wgpu/prefix"` for the separately built
+GPU library. Each requested ABI needs its own real V8 output under
+`out/android-arm64` or `out/android-x64`; supporting an ABI in configuration
+does not mean its dependencies or APK are built. Foundation libraries still
+use the NDK shared STL behind their C interfaces; coexistence with the
+monolith's hidden custom C++ runtime must be verified in the final ELF/APK.
 
 ## Android HTTPS adapter
 
@@ -142,13 +175,31 @@ still requires APK/device testing.
 
 ## Test evidence and next gates
 
-- Fresh target probes compile 30/34 C sources with NDK API28; four await actual
-  target OpenSSL/JPEG headers. Matching Clang24/custom-STL probes pass for
-  `frames.cc`, `worker.cc` and `tests/android/v8_smoke.cc`; the other two C++
-  sources await OpenSSL. The real smoke link attempt is RED because the V8
-  archive is still building. No runtime assertion has executed. Evidence:
-  `build/codex-android-engine-probe`, including `cycle2-custom-cpp` commands.
-  C checks used 82.19% active CPU / 56.88 MiB peak RSS, not browser CPU/RAM.
+- The maintained standalone Android V8 CMake gate passes real C/C++ compiler
+  ABI linking and smoke-object compilation with Clang24. The linked ABI probes
+  and object are AArch64; generated V8 definitions, custom `__Cr` STL,
+  relative-vtable flags and matching ICU headers are verified. Four negative
+  configurations reject missing/mismatched inputs. The executable link still
+  fails because the real V8 monolith is absent; no startup assertion has run.
+  Evidence: `build/codex-android-v8-cmake-test/cycle5/REPORT.md`.
+  Object compilation used 27.96% command CPU / 109.71 MiB peak child RSS over
+  8.01 seconds, sharing the 140% host build quota; these are not phone metrics.
+- The actual root CMake project now configures and compiles all 38 Android
+  engine/app objects (34 C, four C++), including JNI, with real target
+  OpenSSL/JPEG headers. All 155 graph/header/ABI checks pass. Generated assets,
+  custom `__Cr` symbols, monolith-only ICU and target wgpu linkage are verified.
+  Evidence: `build/codex-android-engine-cmake-test/cycle1/REPORT.md`.
+  Object compilation took 156.30 seconds, 30.95% command CPU and 231.07 MiB
+  peak child RSS; the shared compilation slice averaged 139.53% CPU. This
+  supersedes earlier partial syntax probes, not the pending SDL/shared-engine
+  link or APK gate. The main link stops at the missing real V8 archive.
+- All 11 Gradle/AGP configuration cases pass: seven ABI cases, missing/invalid
+  V8 source, optional GPU forwarding and actual AGP-to-CMake configuration.
+  Generated commands select Clang24 and matching V8/STL/ICU flags. Evidence:
+  `build/codex-android-gradle-v8-test/REPORT.md`. Actual native configuration
+  took 97.10 seconds, averaging 92.80% shared-slice CPU with 619.57 MiB peak
+  process-tree RSS. Every quota sample retained the default 140% limit.
+  No APK or Android runtime assertions have run.
 - Android links: FIFO ordering/capacity, wakeup, concurrent transfer and malformed
   inputs pass native unit tests, ASan/UBSan and ThreadSanitizer. Java URI tests,
   SDK36/SDL activity compilation, manifest checks and the registered CMake test

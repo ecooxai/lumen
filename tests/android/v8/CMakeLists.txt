@@ -1,0 +1,23 @@
+cmake_minimum_required(VERSION 3.22)
+project(LumenAndroidV8Smoke LANGUAGES C CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+include("${CMAKE_CURRENT_LIST_DIR}/../../../cmake/AndroidV8.cmake")
+lumen_import_android_v8()
+
+add_library(v8_smoke_objects OBJECT ../v8_smoke.cc)
+target_link_libraries(v8_smoke_objects PRIVATE lumen_android_v8)
+add_executable(codex_android_v8_smoke $<TARGET_OBJECTS:v8_smoke_objects>)
+target_link_libraries(codex_android_v8_smoke PRIVATE lumen_android_v8)
+
+get_target_property(v8_definitions lumen_android_v8 INTERFACE_COMPILE_DEFINITIONS)
+if(NOT "V8_GN_HEADER" IN_LIST v8_definitions)
+    message(FATAL_ERROR "Consumers must use V8's generated ABI definitions")
+endif()
+get_target_property(v8_libraries lumen_android_v8 INTERFACE_LINK_LIBRARIES)
+foreach(library IN LISTS v8_libraries)
+    if(library MATCHES "libicu|icuuc|icui18n|v8_libplatform|v8_libbase")
+        message(FATAL_ERROR "V8 monolith must supply its own ICU and platform implementation")
+    endif()
+endforeach()

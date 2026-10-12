@@ -7,23 +7,41 @@ benchmarks are deferred. An authorized MI 8 (Android API 35, arm64-v8a) is
 connected; no Lumen APK has been built or installed. Android toolchain preparation
 and dependency cross-builds are underway under `build/codex-android-*`.
 
-**Host compiler budget: 140% CPU total, shared across all project builds.**
-V8 and foundation process trees were moved without restarting into the same
-kernel-limited systemd user slice, `codex-lumen-compile.slice` (140000/100000
-microseconds). Future compilation must use `python3 tools/codex_compile.py
-COMMAND ARGS...`; do not give each parallel build its own 140% allowance.
-The live trees reside in `codex-lumen-compile-anchor.service`; stopping that
-anchor would terminate the builds. Leave it running until they finish.
+**Latest host compiler budget: V8 may use 70% of all CPUs (560% on eight
+cores); other builds still share 140%.** V8 uses
+`python3 tools/codex_compile.py --v8 COMMAND ARGS...` and the separate
+`codex-lumen-v8.slice`, with at most six compiler jobs. Other compilation uses
+the wrapper without `--v8` and retains `codex-lumen-compile.slice` (140000/100000
+microseconds), at most two compiler jobs per build. Do not stop either slice or
+the old anchor service while any build processes remain in it. The authorised
+V8 concurrency change preserves existing GN outputs; it is not a clean rebuild.
 
 Android link-opening now has cold/warm HTTP(S) intent routing, a bounded native
 FIFO and regression tests; actual APK/activity lifecycle testing remains pending.
 V8's native GN tool is built and Android generation passes. Actual compilation
 required V8's checksum-pinned Clang24 and custom libc++ (NDK libc++19 lacks
 std::atomic_ref). The active build uses generated v8-gn.h; CMake consumers still
-need matching __Cr STL/ABI and a single consistent ICU before linking. See
-docs/codex-android-build.md. Foundation compilation has reached ICU host tools.
+need final archive-link verification. The Android CMake adapter now selects
+matching Clang24/__Cr STL/relative-vtable ABI and imports the monolith's ICU;
+Gradle forwards the required `lumenV8Dir` and optional `lumenWgpuDir` inputs.
+See docs/codex-android-build.md. All 23 foundation packages have built; the
+real arm64 prefix is available at `build/codex-android-deps/prefix/arm64-v8a`.
 tests/android/v8_smoke.cc is the new dependency startup/ICU/Wasm runtime gate;
 it must pass on Android before stronger integration claims.
+
+Verified integration checkpoint: the actual root Android CMake project compiles
+all 38 engine/app objects, including JNI, against real target OpenSSL/JPEG
+headers; 155 graph/header/ABI checks pass. All 11 Gradle configuration cases
+pass, including actual AGP-to-CMake flag forwarding. Reports:
+`build/codex-android-engine-cmake-test/cycle1/REPORT.md` and
+`build/codex-android-gradle-v8-test/REPORT.md`. These are object/configuration
+gates, not a successful native link, APK or device run. SDL shared-library and
+engine archive verification is next while V8 continues building.
+
+V8 resumed incrementally with six workers after 1379/4234 completed steps.
+The current log is `build/codex-android-v8/android-v8-monolith-iteration6.log`;
+its counter covers the remaining 2855 steps, not a clean rebuild. Read live
+process state and the matching `iteration6-latest.json` before reporting status.
 
 Current branch is `codex/android-phone-engine-port`, after shared-engine
 checkpoint `8cceb05` on `codex/android-linux-daily-browser` and original clean-tree
