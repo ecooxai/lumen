@@ -17,8 +17,15 @@ iteration. A generated-source fix retains normal poll sentinels but does not
 insert them inside the blocking loop. Its eight behavioral model cases and
 four source-generation checks pass after four behavioral RED failures. The
 39 existing APK/prebuilt/build-limit unit checks also pass, and the corrected
-APK builds incrementally in 23 seconds. Packaging verification and the phone
-CPU gate are still pending.
+APK builds incrementally in 23 seconds. All 23 packaging checks pass. The
+cycle3 phone run drops idle CPU to 9.40% (5.05–14.14%), RSS232.17 MiB, but
+still fails the 0–3% gate after five complete intervals. SDLActivity uses
+4–5% and SDLThread intermittently 0–10%; residual profiling is required.
+Do not call this an idle pass. The installed APK is
+`build/codex-android-sdl-wait/green/codex-android-idle-wait-debug.apk`, SHA256
+`1fa9a030fe1a7e85febf46b19ec0c58d9c8970f4c170c5d81205902eabaf667c`.
+See `build/codex-android-sdl-wait/green/REPORT.md` and
+`build/codex-android-browser-phone/cycle3/REPORT.md`.
 The controls are desktop-sized and overlap the Android status bar. Fixture,
 interaction and site checks have not run. Evidence:
 `build/codex-android-browser-phone/cycle2/REPORT.md`.

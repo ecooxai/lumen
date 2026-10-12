@@ -10,9 +10,10 @@ An authorized MI 8 with Android API 35 and arm64-v8a is connected. **Home now
 renders, but the idle CPU gate fails.** The hidden font JNI entry point is
 fixed, with 39 unit tests and 23 APK packaging checks passing. Cycle2 measures
 101.20% CPU and 234.19 MiB RSS during five complete idle intervals; the hot
-thread is SDLThread. Controls remain desktop-sized with status-bar overlap.
-Fixture and interaction tests were stopped at the idle gate. See
-`build/codex-android-browser-phone/cycle2/REPORT.md`. Device connection is not
+thread is SDLThread. With the SDL wait fix, cycle3 drops to 9.40% CPU and
+232.17 MiB RSS, still above the 0–3% target. Controls remain desktop-sized with
+status-bar overlap. Fixture and interaction tests were stopped at the idle
+gate. See `build/codex-android-browser-phone/cycle3/REPORT.md`. Device connection is not
 evidence of browser functionality. Do not import personal profiles or log in
 until the engine's origin/file-access security blockers are repaired.
 
@@ -39,7 +40,9 @@ home page. Non-root LLDB attach and one resumed snapshot locate the native
 thread in this wait loop's event-read and event-pump paths; these are stack
 snapshots, not statistical profiling percentages. Evidence is in
 `build/codex-android-idle-profile/cycle1/symbolized-stacks.txt`. The corrected
-APK phone gate remains pending.
+APK phone gate shows a reduction to 9.40% idle CPU but still fails after five
+complete intervals; no 60-second idle pass is claimed. Residual native and
+Activity-thread work needs separate profiling.
 
 `cmake/AndroidSdlWait.cmake` generates `codex_android_SDL_events.c` in the build
 directory, replacing only the Android blocking loop's sentinel-producing pump
