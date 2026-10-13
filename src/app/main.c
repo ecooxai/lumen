@@ -48,7 +48,7 @@ typedef struct Page {
     char *url; Document *d; StyleEngine *e; Layout *L; uint64_t gen; double load_ms;
     JsCtx *js; PScript *scripts; int nscripts; uint64_t seen_ver, lay_ver;
     SheetRef *sref; int nsref;
-    HMap img_fired; bool img_check;
+    HMap img_fired; bool img_check, internal_ui;
     /* <iframe> child browsing context (document owned by the JS layer) */
     Node *frame_el; float fw, fh, fsy; Canvas cv; Image img; DisplayList fdl;
     uint64_t drawn_ver; int drawn_epoch; bool frelayout; struct Page *fnext;
@@ -183,7 +183,7 @@ static int loader(void *arg) {
         headers_set(&nr->headers, "Content-Type", rq->ctype && *rq->ctype ? rq->ctype : "application/x-www-form-urlencoded");
     }
     NetResponse *r = rq->html ? NULL : net_fetch_sync(nr);
-    Page *p = xcalloc(1, sizeof *p); p->gen = rq->gen;
+    Page *p = xcalloc(1, sizeof *p); p->gen = rq->gen; p->internal_ui = rq->html != NULL;
     const char *body = r && r->body ? r->body : "";
     size_t blen = r && r->body ? r->body_len : 0;
     char *errbuf = NULL;
@@ -274,6 +274,15 @@ typedef struct App {
     int hover; double frame_ms;
     bool vonly, deferred, vframe; double last_input, last_full; float last_sy; uint64_t last_ver; Page *last_page; bool gvid_ok; const void *vown; float vrect[4]; float srect[4]; bool sdirty;   /* srect: viewport rect of element scrollers to repaint */
 } App;
+static float sidebar_width(float requested) {
+#ifdef __ANDROID__
+    (void)requested;
+    return 0;
+#else
+    return requested;
+#endif
+}
+static bool workspace_action(App *app, const char *url);
 static void publish_gens(App *a) { for (int i = 0; i < MAX_TABS; i++) g_tab_gen[i] = i < a->ntabs ? a->tabs[i]->lgen : 0; }
 static Tab *tab_new(App *a) {
     if (a->ntabs == MAX_TABS) return NULL;
@@ -313,9 +322,15 @@ static void sb_esc(SB *b, const char *s) {
     }
 }
 static void ip_toggle(SB *b, const char *key, bool on) { sb_printf(b, "<a class=\"btn%s\" href=\"lumen://set?s=settings&%s=%d\">%s</a>", on ? " on" : "", key, !on, on ? "On" : "Off"); }
-static char *internal_page(const char *u) {   /* lumen://newtab?s=bookmarks|history|settings */
-    const char *q = strchr(u, '?'); char sec[16] = "bookmarks"; if (q) qparam(q + 1, "s", sec, sizeof sec);
-    if (strcmp(sec, "history") && strcmp(sec, "settings")) strcpy(sec, "bookmarks");
+static char *internal_page(App *app, const char *u) {
+#ifdef __ANDROID__
+    const char *default_section = "workspaces";
+#else
+    const char *default_section = "bookmarks";
+#endif
+    const char *q = strchr(u, '?'); char sec[16]; snprintf(sec, sizeof sec, "%s", default_section);
+    if (q) qparam(q + 1, "s", sec, sizeof sec);
+    if (strcmp(sec, "history") && strcmp(sec, "settings") && strcmp(sec, "bookmarks") && strcmp(sec, "workspaces")) snprintf(sec, sizeof sec, "%s", default_section);
     SB b; sb_init(&b);
     sb_puts(&b, "<!doctype html><html><head><meta charset=utf-8><title>New Tab</title><style>"
         "body{margin:0;font:14px -apple-system,system-ui,sans-serif;color:#202124;background:#f6f7f9;display:flex;min-height:100vh}"
@@ -339,6 +354,18 @@ static char *internal_page(const char *u) {   /* lumen://newtab?s=bookmarks|hist
         ".sub{color:#5f6368;font-size:13px;margin-top:3px;line-height:1.4}"
         "input{width:48px;padding:4px 6px;border:1px solid #dadce0;border-radius:6px;font:14px -apple-system,system-ui,sans-serif;margin:0 4px}"
         ".empty{color:#5f6368;padding:18px 0}"
+        ".workspaces{margin:0 -4px 20px}"
+        "a.workspace{display:inline-block;vertical-align:top;width:72px;height:72px;box-sizing:border-box;margin:4px;padding:10px 8px;background:#fff;border:1px solid #dadce0;border-radius:14px;color:#5f6368;text-align:center;text-decoration:none}"
+        "a.workspace.active{background:#e8f0fe;border-color:#1a73e8;color:#1967d2}"
+        ".workspace-icon{display:inline-block;width:32px;height:32px;font-size:0}"
+        ".workspace-icon i{display:inline-block;width:12px;height:12px;margin:2px;background:currentColor;border-radius:2px}"
+        ".workspace-number{display:block;font-size:11px;line-height:16px}"
+        ".workspace-add{display:block;font-size:28px;line-height:32px}"
+        ".phone{display:block}"
+        ".phone nav{display:flex;width:auto;min-height:0;padding:8px;border-right:0;border-bottom:1px solid #e3e5e8}"
+        ".phone nav h1{display:none}"
+        ".phone nav a{flex:1;min-width:0;min-height:44px;box-sizing:border-box;padding:12px 4px;margin:0;text-align:center}"
+        ".phone main{padding:20px 16px;min-width:0;box-sizing:border-box}"
         "@media(max-width:600px){"
         "body{display:block}"
         "nav{display:flex;width:auto;min-height:0;padding:8px;border-right:0;border-bottom:1px solid #e3e5e8}"
@@ -347,11 +374,36 @@ static char *internal_page(const char *u) {   /* lumen://newtab?s=bookmarks|hist
         "main{padding:20px 16px;min-width:0;box-sizing:border-box}"
         ".card{padding:4px 12px}.t{white-space:normal}.x{padding:10px}"
         "}"
-        "</style></head><body><nav><h1>Lumen</h1>");
+        "</style></head><body");
+#ifdef __ANDROID__
+    sb_puts(&b, " class=phone");
+#endif
+    sb_puts(&b, "><nav><h1>Lumen</h1>");
+#ifdef __ANDROID__
+    sb_printf(&b, "<a href=\"lumen://newtab\" title=Workspaces%s>Home</a>", strcmp(sec, "workspaces") ? "" : " class=on");
+#endif
     static const char *S[3][2] = { { "bookmarks", "Bookmarks" }, { "history", "History" }, { "settings", "Settings" } };
     for (int i = 0; i < 3; i++) sb_printf(&b, "<a href=\"lumen://newtab?s=%s\"%s>%s</a>", S[i][0], strcmp(sec, S[i][0]) ? "" : " class=on", S[i][1]);
     sb_puts(&b, "</nav><main>");
-    if (!strcmp(sec, "settings")) {
+    if (!strcmp(sec, "workspaces")) {
+        sb_puts(&b, "<h2>Workspaces</h2><div class=workspaces>");
+        for (int workspace = 0; workspace < app->nws; workspace++) {
+            sb_printf(&b, "<a class=\"workspace%s\" href=\"lumen://workspace?select=%d\"%s aria-label=\"", workspace == app->wi ? " active" : "", workspace, workspace == app->wi ? " aria-current=\"true\"" : "");
+            sb_esc(&b, app->wsname[workspace]);
+            sb_printf(&b, "\"><span class=workspace-icon aria-hidden=true><i></i><i></i><i></i><i></i></span><span class=workspace-number aria-hidden=true>%d</span></a>", workspace + 1);
+        }
+        if (app->nws < 16 && app->ntabs < MAX_TABS) sb_puts(&b, "<a class=workspace href=\"lumen://workspace?new\" aria-label=\"Add workspace\"><span class=workspace-add aria-hidden=true>+</span><span class=workspace-number>Add</span></a>");
+        sb_puts(&b, "</div><h2>Open tabs</h2><div class=card>");
+        for (int tab = 0; tab < app->ntabs; tab++) {
+            Tab *entry = app->tabs[tab];
+            if (entry->ws != app->wi) continue;
+            const char *title = entry->cur && entry->cur->d && entry->cur->d->title && *entry->cur->d->title ? entry->cur->d->title : *entry->url ? entry->url : "New Tab";
+            sb_printf(&b, "<div class=row><a class=\"l grow\" href=\"lumen://workspace?tab=%d\"><div class=t>", tab);
+            sb_esc(&b, title); sb_puts(&b, "</div><div class=u>"); sb_esc(&b, entry->url); sb_puts(&b, "</div></a></div>");
+        }
+        sb_puts(&b, "</div><p class=sub>Use + in the toolbar to open a tab. Tap a workspace icon to switch.</p>");
+        if (app->nws > 1) sb_puts(&b, "<p><a class=btn href=\"lumen://workspace?close\">Close this workspace</a></p>");
+    } else if (!strcmp(sec, "settings")) {
         sb_puts(&b, "<h2>Settings</h2><div class=card><div class=row><div class=grow><div class=t>Lite mode</div><div class=sub>Uses less memory on heavy pages such as YouTube.</div></div>");
         ip_toggle(&b, "lite", g_lowmem);
         sb_puts(&b, "</div>");
@@ -415,7 +467,7 @@ static void navigate_ex(App *a, const char *url, bool push, const char *body, si
             char sec[16] = "settings"; qparam(u + 12, "s", sec, sizeof sec);
             free(u); u = xmalloc(64); snprintf(u, 64, "lumen://newtab?s=%s", sec); push = false;
         }
-        html = internal_page(u);
+        html = internal_page(a, u);
     }
     if (push) {
         for (int i = a->t->hpos + 1; i < a->t->nhist; i++) free(a->t->hist[i]);
@@ -499,14 +551,26 @@ static Image *ws_icon(App *a, int ic, bool on) {
 static int ws_tabs(App *a, int w, int *out) { int n = 0; for (int i = 0; i < a->ntabs; i++) if (a->tabs[i]->ws == w) out[n++] = i; return n; }
 static float tab_w(App *a) { int v[MAX_TABS], n = ws_tabs(a, a->wi, v); float w = (a->vw - TLW - 48) / (n ? n : 1); return w > 220 ? 220 : w; }
 static float bar_x0(App *a) { return g_compact ? TLW : a->side; }
-static float url_w(App *a) { return a->vw - bar_x0(a) - 144 - (g_compact ? 92 : 12); }
+static float url_w(App *a) {
+#ifdef __ANDROID__
+    return a->vw - bar_x0(a) - 144 - (g_compact ? 48 : 12);
+#else
+    return a->vw - bar_x0(a) - 144 - (g_compact ? 92 : 12);
+#endif
+}
 static int bar_hit(App *a, float x, float y) {
     if (g_compact && y < TB) {
         x -= TLW;
         if (x < 0) return HB_NONE;
         if (x < 40) return HB_BACK; if (x < 72) return HB_FWD; if (x < 104) return HB_RELOAD; if (x < 136) return HB_STAR;
         float ue = 144 + url_w(a);
-        return x < 144 ? HB_NONE : x < ue ? HB_URL : x >= ue + 4 && x < ue + 32 ? HB_NEWTAB : HB_NONE;
+        return x < 144 ? HB_NONE : x < ue ? HB_URL : x >= ue + 4 && x < ue +
+#ifdef __ANDROID__
+            48
+#else
+            32
+#endif
+            ? HB_NEWTAB : HB_NONE;
     }
     if (y < TABH) {
         int v[MAX_TABS], n = ws_tabs(a, a->wi, v), k; float tw = tab_w(a), x0 = TLW + 6; k = (int)((x - x0) / tw);
@@ -722,7 +786,12 @@ static void build_chrome(App *a) {
     float tw = push_text(dl, a->ui, shown, ux + 16, base, uw - 32, a->editing ? RGBA(20, 20, 20, 255) : RGBA(90, 90, 90, 255));
     if (a->editing && !a->sel_all) push_rect(dl, ux + 16 + tw + 1, 13, 1.5f, TB - 26, 0, RGBA(20, 20, 20, 255));
     if (g_compact) {
-        float cx = ux + uw + 18;
+        float cx = ux + uw +
+#ifdef __ANDROID__
+            26;
+#else
+            18;
+#endif
         if (a->hover == HB_NEWTAB) push_rect(dl, cx - 13, TB / 2 - 13, 26, 26, 13, RGBA(232, 232, 232, 255));
         Image *si = sym_icon(a, 7, 0);
         if (si) push_img(dl, si, cx - 8, TB / 2 - 8, 16, 16); else { push_rect(dl, cx - 6, TB / 2 - 1, 12, 2, 1, on); push_rect(dl, cx - 1, TB / 2 - 6, 2, 12, 1, on); }
@@ -1828,6 +1897,7 @@ static void click_page(App *a, float x, float y) {
     for (Node *n = t; n; n = n->parent)   /* not b: handlers and restyle() may have rebuilt the layout and freed it */
         if (n->type == NODE_ELEMENT && n->tag == A_a && node_attr(n, "href")) {
             const char *h = node_attr(n, "href");
+            if (workspace_action(a, h)) return;
             if (!strncmp(h, "javascript:", 11)) return;
             if (h[0] == '#') { Node *t = doc_get_element_by_id(a->t->cur->d, h + 1); if (t && t->box) { a->t->sy = t->box->y; a->dirty = true; } return; }
             char *u = url_join(a->t->cur->d->url, h); navigate(a, u, true); free(u); return;
@@ -1853,7 +1923,11 @@ static void tab_open(App *a) {
     if (!tab_new(a)) return;
     tab_select(a, a->ntabs - 1);
     navigate(a, "lumen://newtab", true);
+#ifdef __ANDROID__
+    SDL_StopTextInput(a->win);
+#else
     a->editing = true; a->sel_all = 1; a->t->url[0] = 0; SDL_StartTextInput(a->win);
+#endif
 }
 static void tab_free(Tab *t) { if (t->cur) page_free(t->cur); for (int k = 0; k < t->nhist; k++) free(t->hist[k]); free(t); }
 static void tab_close(App *a, int i, bool *quit) {
@@ -1900,6 +1974,37 @@ static void ws_close(App *a, int w) {
     a->t = n ? a->tabs[0] : NULL; a->ti = 0;
     ws_select(a, w > 0 ? w - 1 : 0);
 }
+static bool workspace_action(App *app, const char *url) {
+    const char *prefix = "lumen://workspace?";
+    if (strncmp(url, prefix, strlen(prefix))) return false;
+    if (!app->t->cur || !app->t->cur->internal_ui) return true;
+    const char *action = url + strlen(prefix);
+    if (!strcmp(action, "new")) {
+        if (app->nws >= 16 || app->ntabs >= MAX_TABS) return true;
+        char name[64]; snprintf(name, sizeof name, "Workspace %d", app->nws + 1);
+        ws_new(app, name);
+    } else if (!strcmp(action, "close")) {
+        if (app->nws <= 1) return true;
+        ws_close(app, app->wi);
+    } else {
+        bool select_workspace = !strncmp(action, "select=", 7);
+        if (!select_workspace && strncmp(action, "tab=", 4)) return true;
+        const char *digits = action + (select_workspace ? 7 : 4);
+        size_t length = strlen(digits);
+        if (!length || length > 3 || strspn(digits, "0123456789") != length) return true;
+        int index = atoi(digits);
+        if (select_workspace) {
+            if (index >= app->nws) return true;
+            ws_select(app, index);
+        } else {
+            if (index >= app->ntabs || app->tabs[index]->ws != app->wi) return true;
+            tab_select(app, index);
+        }
+    }
+    SDL_StopTextInput(app->win);
+    if (app->t->cur && app->t->cur->internal_ui) navigate(app, "lumen://newtab", false);
+    return true;
+}
 static bool ui_prompt(const char *title, const char *init, char *out, size_t n) {
 #ifdef __APPLE__
     return mac_prompt(title, init, out, n);
@@ -1917,7 +2022,7 @@ static void menu_cmd(App *a, int c) {
     case MENU_WS_REFRESH: { Tab *act = a->t; for (int i = 0; i < a->ntabs; i++) { Tab *t = a->tabs[i]; if (t->ws != a->wi || t->hpos < 0) continue; a->t = t; navigate(a, t->hist[t->hpos], false); } a->t = act; break; }
     case MENU_WS_NEXT: ws_select(a, (a->wi + 1) % a->nws); break;
     case MENU_WS_PREV: ws_select(a, (a->wi + a->nws - 1) % a->nws); break;
-    case MENU_WS_SIDEBAR: a->side = a->side > 0 ? 0 : SIDEW; for (int i = 0; i < a->ntabs; i++) a->tabs[i]->relayout = true; break;
+    case MENU_WS_SIDEBAR: a->side = sidebar_width(a->side > 0 ? 0 : SIDEW); for (int i = 0; i < a->ntabs; i++) a->tabs[i]->relayout = true; break;
     }
     a->dirty = true; a->vonly = false;
 }
@@ -2168,7 +2273,7 @@ int main(int argc, char **argv) {
 #endif
     net_wakeup = wake; media_wakeup = wake; js_wakeup = wake; js_clip_set = h_clip_set; js_clip_get = h_clip_get; js_global_init(argv[0]);
     paint_image_hook = node_img; paint_url_image_hook = url_img; svg_ext_ref_hook = svg_ext_ref; layout_image_size_hook = img_size;
-    App a; memset(&a, 0, sizeof a); g_app = &a; a.nws = 1; a.wsicon[0] = WORKSPACE_DEFAULT_ICON; snprintf(a.wsname[0], sizeof a.wsname[0], "Personal"); a.side = getenv("LUMEN_NO_SIDEBAR") ? 0 : SIDEW; tab_new(&a);
+    App a; memset(&a, 0, sizeof a); g_app = &a; a.nws = 1; a.wsicon[0] = WORKSPACE_DEFAULT_ICON; snprintf(a.wsname[0], sizeof a.wsname[0], "Personal"); a.side = sidebar_width(getenv("LUMEN_NO_SIDEBAR") ? 0 : SIDEW); tab_new(&a);
     bool want_gpu = !getenv("LUMEN_NO_GPU");
     int ww = 1280, wh = 840; { const char *e = getenv("LUMEN_WINDOW"); if (e) sscanf(e, "%dx%d", &ww, &wh); }   /* e.g. LUMEN_WINDOW=800x600 */
     a.win = SDL_CreateWindow("Lumen", ww, wh, SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY | (want_gpu && !strcmp(SDL_GetPlatform(), "macOS") ? SDL_WINDOW_METAL : 0));

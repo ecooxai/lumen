@@ -1358,7 +1358,7 @@ static ComputedStyle *compute_pseudo(StyleEngine *e, Node *el, ComputedStyle *ba
     if ((rv = hm_get(&e->idx.by_tag, el->tag))) collect(e, el, rv, which, (void *)&md);
     { RuleVec u = { e->idx.universal.v, e->idx.universal.n, 0 }; collect(e, el, &u, which, (void *)&md); }
     if (!md.n) { vec_free(md); return NULL; }
-    qsort(md.v, (size_t)md.n, sizeof(MDecl), mdecl_cmp);
+    if (md.n > 1) qsort(md.v, (size_t)md.n, sizeof(MDecl), mdecl_cmp);
     ComputedStyle *st = style_inherit(base);
     for (int i = 0; i < md.n; i++) if (md.v[i].d->prop[0] == '-' && md.v[i].d->prop[1] == '-') css_apply_decl(st, base, md.v[i].d->prop, md.v[i].d->value, e, el);
     for (int i = 0; i < md.n; i++) if (!(md.v[i].d->prop[0] == '-' && md.v[i].d->prop[1] == '-')) css_apply_decl(st, base, md.v[i].d->prop, md.v[i].d->value, e, el);

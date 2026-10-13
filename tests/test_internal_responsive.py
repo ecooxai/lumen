@@ -43,6 +43,9 @@ class InternalResponsiveTests(unittest.TestCase):
     def test_rotation_recomputes_responsive_styles_without_dom_changes(self):
         self.run_scenario("rotation")
 
+    def test_phone_workspace_tiles_and_landscape_navigation(self):
+        self.run_scenario("phone")
+
     def run_scenario(self, scenario):
         result = subprocess.run([str(self.executable), str(self.stylesheet), scenario],
                                 capture_output=True, text=True, timeout=10)

@@ -13,11 +13,14 @@ int main(int argc, char **argv) {
     css[length] = 0;
     dom_init();
     Document *document = doc_new("lumen://newtab");
-    const char *html = "<html><body id=body><nav id=nav><h1 id=brand>Lumen</h1><a id=link>Bookmarks</a></nav><main id=main><h2>Bookmarks</h2></main></body></html>";
+    bool phone = !strcmp(argv[2], "phone");
+    const char *html = phone
+        ? "<html><body id=body class=phone><nav id=nav><h1 id=brand>Lumen</h1><a id=link>Home</a></nav><main id=main><a id=tile class=workspace><span id=icon class=workspace-icon><i></i><i></i><i></i><i></i></span></a></main></body></html>"
+        : "<html><body id=body><nav id=nav><h1 id=brand>Lumen</h1><a id=link>Bookmarks</a></nav><main id=main><h2>Bookmarks</h2></main></body></html>";
     html_parse(document, html, strlen(html));
     StyleEngine *engine = style_engine_new(document);
     bool wide = !strcmp(argv[2], "wide");
-    engine->media = (MediaCtx){wide ? 740 : 336, 700, 2.75f, false};
+    engine->media = (MediaCtx){wide || phone ? 740 : 336, 700, 2.75f, false};
     style_engine_add_sheet(engine, css_parse_sheet(css, length, document->url, 1, &engine->media));
     style_recalc(engine, &document->node, false);
     Node *body = doc_get_element_by_id(document, "body");
@@ -26,6 +29,14 @@ int main(int argc, char **argv) {
     Node *brand = doc_get_element_by_id(document, "brand");
     Node *link = doc_get_element_by_id(document, "link");
     CHECK(body && nav && main && brand && link);
+    if (phone) {
+        Node *tile = doc_get_element_by_id(document, "tile");
+        Node *icon = doc_get_element_by_id(document, "icon");
+        CHECK(tile && icon);
+        CHECK(tile->style->width.px == 72 && tile->style->height.px == 72);
+        CHECK(icon->style->width.px == 32 && icon->style->height.px == 32);
+        CHECK(body->style->display == D_BLOCK && nav->style->display == D_FLEX);
+    }
     if (wide) {
         CHECK(body->style->display == D_FLEX);
         CHECK(nav->style->width.px == 190);
