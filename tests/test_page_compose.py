@@ -15,9 +15,9 @@ class PageComposeTests(unittest.TestCase):
         cls.addClassCleanup(cls.temporary.cleanup)
         work = Path(cls.temporary.name)
         source = (ROOT / "src/app/main.c").read_text()
-        start = source.index("    if (!gskip)", source.index("PAINT_RASTER);"))
-        end = source.index("    if (!gskip && a->hdl.items.n)", start)
-        (work / "page_compose_function.h").write_text(source[start:end].replace("a->", "app->"))
+        start = source.index("static void compose_page(")
+        end = source.index("\n}\n", start) + 3
+        (work / "page_compose_function.h").write_text(source[start:end])
         cls.executable = work / "codex-page-compose-model"
         subprocess.run([os.environ.get("CC", "cc"), "-std=c11", "-Wall", "-Wextra", "-Werror",
                         "-fsanitize=undefined", "-fno-sanitize-recover=all",

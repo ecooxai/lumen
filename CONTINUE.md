@@ -1,5 +1,31 @@
 # Lumen: handoff notes
 
+## Android direct page upload implemented and host-tested (2026-10-13)
+
+Main implements gpu_upload_page into an existing correctly sized GPU texture;
+eligible full-width Android scroll blits now skip page-to-frame memcpy.
+One frame_page_stale bool tracks skipped copies. Normal composition restores
+all page rows before partial/full/skipped paints, screenshots, popups, video,
+software rendering or resize. Failed direct upload/presentation also restores
+the CPU frame before regular upload or SDL fallback. No added application
+framebuffer/texture; existing wgpu staging may allocate. CPU page raster and
+scroll memmove remain. No measured speedup or RAM reduction claim yet.
+
+Test-first RED:23 new scenarios blocked by2 expected missing-implementation
+setup errors;26 adjacent cases pass. GREEN:102 distinct unittest cases pass,
+125 executions including focused rerun after a test-only identifier rename;
+36 distinct ASan/UBSan/float-cast scenarios pass twice (72 executions).
+Both runs include12,270-case composition matrices. Main reviews actual code,
+guard/fallback paths and source-model coverage. Mean sampled hostCPU88.01%,
+peak scopedRSS159.73MiB,shared480%/SCHED_IDLE/nice19;all5 scopes drain,V8 frozen.
+
+Evidence build/codex-android-direct-page/{red,green}. Main catches the agent's
+aggregate arithmetic error: adjacent79,not89;total102,not112. Original report
+and receipt remain unchanged;green/MAIN-COUNT-CORRECTION.md supersedes their
+incorrect112/135 counts using raw per-module summaries. No product failures.
+Host implementation/test scope95/100; overall readiness25/100. Fresh APK build
+and phone comparison are next; installed5963eecd still lacks this optimization.
+
 ## Real render-thread CPU profile complete: target redundant page copies (2026-10-13)
 
 Fresh no-install phone run succeeds on installed5963eecd/source1405612.

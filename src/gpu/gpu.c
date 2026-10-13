@@ -303,6 +303,27 @@ static void ensure_tex(Gpu *g, int w, int h) {
     g->tw = w; g->th = h;
 }
 
+bool gpu_upload_page(Gpu *gpu, const uint32_t *pixels, int width, int height, int stride,
+                     int toolbar, int first_row, int last_row) {
+    if (!gpu || !gpu->configured || !gpu->tex || !gpu->q || !pixels || width <= 0 || height <= 0 ||
+        gpu->tw != width || gpu->th != height || gpu->w != width || gpu->h != height ||
+        stride < width || (uint32_t)stride > UINT32_MAX / 4 || toolbar < 0 || toolbar >= height ||
+        first_row < 0 || last_row <= first_row || last_row > height - toolbar) return false;
+    size_t row_bytes = (size_t)stride * 4;
+    if ((size_t)(height - toolbar) > SIZE_MAX / row_bytes) return false;
+    WGPUTexelCopyTextureInfo destination = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
+    destination.texture = gpu->tex;
+    destination.origin = (WGPUOrigin3D){0, (uint32_t)(toolbar + first_row), 0};
+    WGPUTexelCopyBufferLayout layout = WGPU_TEXEL_COPY_BUFFER_LAYOUT_INIT;
+    layout.bytesPerRow = (uint32_t)row_bytes;
+    layout.rowsPerImage = (uint32_t)(last_row - first_row);
+    WGPUExtent3D extent = {(uint32_t)width, (uint32_t)(last_row - first_row), 1};
+    size_t bytes = (size_t)(last_row - first_row - 1) * row_bytes + (size_t)width * 4;
+    wgpuQueueWriteTexture(gpu->q, &destination, pixels + (size_t)first_row * (size_t)stride,
+                         bytes, &layout, &extent);
+    return true;
+}
+
 bool gpu_present(Gpu *g, const uint32_t *px, int w, int h, int stride) { return gpu_present_frame(g, px, w, h, stride, 0, h, NULL); }
 bool gpu_present_rows(Gpu *g, const uint32_t *px, int w, int h, int stride, int y0, int y1) { return gpu_present_frame(g, px, w, h, stride, y0, y1, NULL); }
 bool gpu_present_frame(Gpu *g, const uint32_t *px, int w, int h, int stride, int y0, int y1, const GpuVideo *v) {

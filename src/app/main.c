@@ -314,6 +314,7 @@ typedef struct App {
 #endif
     int pw, ph, screen_w, screen_h; float scale, vw, vh, input_scale;
     Canvas frame, page; DisplayList pdl, cdl, hdl;
+    bool frame_page_stale;
     struct DSig *osig, *nsig; int nosig, cosig, cnsig; uint64_t chash; bool osig_ok;   /* last page display list, to raster only what changed */
     Tab *t, *tabs[MAX_TABS]; int ntabs, ti;
     char wsname[16][64]; Tab *wslast[16]; int nws, wi; float side;
@@ -1084,6 +1085,20 @@ static void paint_profile_report(const PaintFrame *frame, double start_ms, bool 
     paint_profile_reset(&g_paint_profile, frame->last_ms);
 }
 
+static void compose_page(App *app, int first_row, int last_row, int toolbar, int sidebar) {
+    last_row = LMIN(last_row, LMIN(app->page.h, app->frame.h - toolbar));
+    if (last_row <= first_row) return;
+    int width = app->page.w;
+    if (!sidebar && app->frame.stride == width && app->page.stride == width)
+        memcpy(app->frame.px + (size_t)(first_row + toolbar) * (size_t)app->frame.stride,
+               app->page.px + (size_t)first_row * (size_t)app->page.stride,
+               (size_t)(last_row - first_row) * (size_t)width * sizeof(*app->page.px));
+    else for (int row = first_row; row < last_row; row++)
+        memcpy(app->frame.px + (size_t)(row + toolbar) * (size_t)app->frame.stride + sidebar,
+               app->page.px + (size_t)row * (size_t)app->page.stride,
+               (size_t)width * sizeof(*app->page.px));
+}
+
 static void render(App *a) {
 #ifdef __ANDROID__
     if (!a->win || a->android_suspended) return;
@@ -1214,21 +1229,31 @@ static void render(App *a) {
     } else { a->gvid_ok = false; a->osig_ok = false; raster(&a->page, &(DisplayList){0}, RGBA(255, 255, 255, 255)); }
     paint_profile_stage(&profile_frame, PAINT_RASTER);
     if (!part) { build_chrome(a); chrome_tip(a); a->chash = dl_hash(&a->cdl) * 31 + dl_hash(&a->hdl); raster(&a->frame, &a->cdl, RGBA(255, 255, 255, 255)); }
-    if (!gskip) {
-        int first_row = part ? ry0 : 0, last_row = LMIN(part ? ry1 : ph, a->ph - bar_px);
-        if (last_row > first_row) {
-            if (!side_px && a->frame.stride == pwp && a->page.stride == pwp)
-                memcpy(a->frame.px + (size_t)(first_row + bar_px) * (size_t)a->frame.stride,
-                       a->page.px + (size_t)first_row * (size_t)a->page.stride,
-                       (size_t)(last_row - first_row) * (size_t)pwp * sizeof(*a->page.px));
-            else for (int row = first_row; row < last_row; row++)
-                memcpy(a->frame.px + (size_t)(row + bar_px) * (size_t)a->frame.stride + side_px,
-                       a->page.px + (size_t)row * (size_t)a->page.stride, (size_t)pwp * sizeof(*a->page.px));
-        }
-    }
+    bool direct_page = false;
+#ifdef __ANDROID__
+    direct_page = a->gpu && part && !gskip && profile_frame.blit && !side_px &&
+                  !a->hdl.items.n && !gvp && !getenv("LUMEN_SHOT") &&
+                  a->page.w == a->frame.w && a->page.h == a->frame.h - bar_px;
+#endif
+    if (!direct_page && a->frame_page_stale) { gskip = false; ry0 = 0; ry1 = ph; }
+    if (!direct_page && !gskip) {
+        compose_page(a, part ? ry0 : 0, part ? ry1 : ph, bar_px, side_px);
+        a->frame_page_stale = false;
+    } else if (direct_page) a->frame_page_stale = true;
     if (!gskip && a->hdl.items.n) { float s = a->frame.scale; raster_rect(&a->frame, &a->hdl, RGBA(255, 255, 255, 255), (int)floorf(g_pop[0] * s), (int)floorf(g_pop[1] * s), (int)ceilf(g_pop[2] * s), (int)ceilf(g_pop[3] * s)); }   /* floats over the page */
     paint_profile_stage(&profile_frame, PAINT_COMPOSE);
-    if (!(a->gpu && gpu_present_frame(a->gpu, a->frame.px, a->frame.w, a->frame.h, a->frame.stride, gskip ? 0 : part ? bar_px + ry0 : 0, gskip ? 0 : part ? bar_px + ry1 : a->frame.h, gvp))) {
+    bool page_uploaded = direct_page && gpu_upload_page(a->gpu, a->page.px, a->frame.w, a->frame.h,
+                                                       a->page.stride, bar_px, ry0, ry1);
+    if (direct_page && !page_uploaded) {
+        compose_page(a, 0, ph, bar_px, side_px);
+        a->frame_page_stale = false;
+        gskip = false; ry0 = 0; ry1 = ph;
+    }
+    if (!(a->gpu && gpu_present_frame(a->gpu, a->frame.px, a->frame.w, a->frame.h, a->frame.stride, (gskip || page_uploaded) ? 0 : part ? bar_px + ry0 : 0, (gskip || page_uploaded) ? 0 : part ? bar_px + ry1 : a->frame.h, gvp))) {
+        if (a->frame_page_stale) {
+            compose_page(a, 0, ph, bar_px, side_px);
+            a->frame_page_stale = false;
+        }
         SDL_Surface *ws = SDL_GetWindowSurface(a->win);
         if (ws) {
             SDL_Surface *src = SDL_CreateSurfaceFrom(a->frame.w, a->frame.h, SDL_PIXELFORMAT_ARGB8888, a->frame.px, a->frame.stride * 4);

@@ -59,7 +59,8 @@ stage hooks do not read either clock. No URL, document title or page data is log
   signature-cache updates and video-quad preparation. Video-only or empty-page
   work that skips list building also falls in this stage.
 - `compose_ms`: browser UI, page-to-frame copy and popup composition.
-- `present_ms`: GPU upload/submission/presentation or SDL software fallback.
+- `present_ms`: GPU upload/submission/presentation or SDL software fallback,
+  including CPU-frame recovery when a direct page upload/presentation fails.
 
 These are **wall-clock durations**, including scheduling and presentation
 waits, not thread CPU, GPU execution time, displayed FPS or a statistical
@@ -96,3 +97,30 @@ same process and completed interval before attributing them to an interaction.
 Host model and wiring checks: `tests/test_paint_profile.py` and
 `tests/test_paint_cpu_profile.py`. Phone-stage
 attribution still requires actual opt-in logs from a pinned APK and fixture.
+
+## Android direct page uploads
+
+Eligible full-width Android scroll blits upload the authoritative CPU page
+rows directly into the retained GPU frame texture, below the toolbar. This
+skips the page-to-frame CPU copy, not CPU rasterization or GPU texture upload.
+It adds no framebuffer or texture. Sidebar, popup, video-overlay, screenshot,
+full-paint and non-Android paths retain regular composition.
+
+`gpu_upload_page` only enqueues rows into an already sized, configured texture;
+it does not present, allocate a replacement texture or populate the toolbar.
+Dimensions describe the full frame; source row numbers are page-relative and
+the destination adds the toolbar height. A false return requires regular
+composition/upload. The subsequent `gpu_present_frame` call must request no
+additional frame-row upload after a successful direct upload.
+
+`frame_page_stale` tracks omitted CPU copies. Before returning to regular
+composition, the renderer restores all page rows, not only the next damage
+strip. Failed direct upload or GPU presentation also restores the CPU frame
+before regular upload or software fallback. Screenshots exclude the fast path.
+Do not interpret smaller compose timings alone as a total CPU improvement:
+check presentation/fallback costs and whole-process CPU on the phone.
+
+Host coverage: `tests/test_gpu_page_upload.py`,
+`tests/test_android_page_transfer.py`, and `tests/test_page_compose.py`.
+These use GPU/SDL stand-ins; they do not establish real Vulkan correctness,
+scrolling performance, GPU memory consumption, or a Chrome comparison.

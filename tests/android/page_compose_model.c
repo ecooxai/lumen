@@ -7,8 +7,8 @@
 
 #define LMIN(left, right) ((left) < (right) ? (left) : (right))
 
-typedef struct { uint32_t *px; int stride; } Canvas;
-typedef struct { Canvas frame, page; int ph; } App;
+typedef struct { uint32_t *px; int stride, w, h; } Canvas;
+typedef struct { Canvas frame, page; } App;
 
 static size_t copy_calls, copy_bytes;
 
@@ -18,12 +18,9 @@ static void *counted_copy(void *destination, const void *source, size_t bytes) {
     return memcpy(destination, source, bytes);
 }
 
-static void compose(App *app, bool gskip, bool part, int ry0, int ry1,
-                    int ph, int pwp, int bar_px, int side_px) {
 #define memcpy counted_copy
 #include "page_compose_function.h"
 #undef memcpy
-}
 
 static void check(int width, int height, int toolbar, int sidebar, int page_padding,
                   int frame_padding, int frame_height, bool partial, int first, int last,
@@ -45,9 +42,10 @@ static void check(int width, int height, int toolbar, int sidebar, int page_padd
                page + (size_t)row * (size_t)page_stride, (size_t)width * sizeof(*page));
         rows++;
     }
-    App state = {.frame = {frame, frame_stride}, .page = {page, page_stride}, .ph = frame_height};
+    App state = {.frame = {frame, frame_stride, width + sidebar, frame_height},
+                 .page = {page, page_stride, width, height}};
     copy_calls = copy_bytes = 0;
-    compose(&state, skip, partial, first, last, height, width, toolbar, sidebar);
+    if (!skip) compose_page(&state, partial ? first : 0, partial ? last : height, toolbar, sidebar);
     assert(memcmp(frame, expected, frame_pixels * sizeof(*frame)) == 0);
     for (size_t index = 0; index < page_pixels; index++) assert(page[index] == 0x81000000u + (uint32_t)index);
     assert(copy_bytes == rows * (size_t)width * sizeof(*page));
