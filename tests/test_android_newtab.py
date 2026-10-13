@@ -22,6 +22,7 @@ class AndroidNewTabTests(unittest.TestCase):
             "static char *internal_page("))
         if "static void resolution_text(" in source:
             extracted = function(source, "static void resolution_text(") + "\n" + extracted
+        extracted = function(source, "static const char *renderer_key(") + "\n" + function(source, "static void renderer_text(") + "\n" + extracted
         if "internal_page(App *" not in extracted:
             extracted = extracted.replace("internal_page(const char *u)",
                                           "internal_page(App *a, const char *u)")

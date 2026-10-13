@@ -4,10 +4,12 @@
 #include <stdint.h>
 
 typedef struct Gpu Gpu;
+typedef enum { GPU_BACKEND_AUTO, GPU_BACKEND_VULKAN, GPU_BACKEND_GL, GPU_BACKEND_CPU } GpuBackend;
 typedef enum { GPU_SURF_METAL, GPU_SURF_XLIB, GPU_SURF_WAYLAND, GPU_SURF_ANDROID } GpuSurfKind;
 typedef struct { GpuSurfKind kind; void *a; void *b; uint64_t win; } GpuSurfSrc;
 
 Gpu *gpu_create(const GpuSurfSrc *src, int w, int h, bool prefer_vulkan);
+Gpu *gpu_create_backend(const GpuSurfSrc *src, int w, int h, GpuBackend backend);
 void gpu_suspend(Gpu *gpu);
 bool gpu_resume(Gpu *gpu, const GpuSurfSrc *source, int width, int height);
 void gpu_resize(Gpu *g, int w, int h);

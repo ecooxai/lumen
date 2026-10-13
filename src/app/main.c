@@ -10,6 +10,7 @@
 #include "android_launch.h"
 #include "android_back.h"
 #include "android_touch.h"
+#include "android_fling.h"
 #endif
 #include "menu.h"
 #include "workspace.h"
@@ -91,6 +92,34 @@ static int g_ua;   /* UA_CHROME / UA_FIREFOX / UA_LUMEN */
 static char g_pref[1024];
 #ifdef __ANDROID__
 static int g_pixel_scale_pct = 200;
+static GpuBackend g_renderer = GPU_BACKEND_VULKAN;
+static int renderer_parse(const char *value) {
+    static const char *choices[] = {"auto", "vulkan", "opengl", "software"};
+    for (int index = 0; index < 4; index++) if (!strcmp(value, choices[index])) return index;
+    return -1;
+}
+static const char *renderer_key(GpuBackend backend) {
+    static const char *choices[] = {"auto", "vulkan", "opengl", "software"};
+    return backend >= GPU_BACKEND_AUTO && backend <= GPU_BACKEND_CPU ? choices[backend] : "vulkan";
+}
+static void renderer_load(const char *line) {
+    if (strncmp(line, "renderer=", 9)) return;
+    size_t length = strcspn(line + 9, "\r\n");
+    if (length >= 16) return;
+    char value[16]; memcpy(value, line + 9, length); value[length] = 0;
+    int backend = renderer_parse(value);
+    if (backend >= 0) g_renderer = (GpuBackend)backend;
+}
+static void renderer_read_preferences(void) {
+    char *directory = SDL_GetPrefPath("lumen", "Lumen");
+    if (!directory) return;
+    char path[1200]; snprintf(path, sizeof path, "%ssettings.txt", directory); SDL_free(directory);
+    FILE *settings = fopen(path, "r");
+    if (!settings) return;
+    char line[256];
+    while (fgets(line, sizeof line, settings)) renderer_load(line);
+    fclose(settings);
+}
 static int pixel_scale_parse(const char *value) {
     static const char *choices[] = {"100", "150", "200", "250", "300"};
     for (int index = 0; index < 5; index++) if (!strcmp(value, choices[index])) return 100 + index * 50;
@@ -115,6 +144,7 @@ static void settings_save(void) {
     fprintf(f, "offscreen_media_eviction=%d\ncpu_limit=%d\ncpu_pct=%d\ncpu_secs=%d\ncpu_lim=%d\nvideo_controls=%d\ntab_sleep=%d\nuser_agent=%d\ncpu_hud=%d\nsmooth_scroll=%d\n", g_lowmem, g_cpu_on, g_cpu_pct, g_cpu_secs, g_cpu_lim, g_vctl, g_tab_sleep, g_ua, g_hud, g_smooth);
 #ifdef __ANDROID__
     fprintf(f, "pixel_scale=%d\n", g_pixel_scale_pct);
+    fprintf(f, "renderer=%s\n", renderer_key(g_renderer));
 #endif
     fclose(f);
 }
@@ -275,6 +305,8 @@ typedef struct App {
 #ifdef __ANDROID__
     bool android_suspended;
     AndroidTouch touch;
+    AndroidFling fling;
+    float fling_x, fling_y;
     Tab *touch_tab;
     uint64_t touch_generation;
 #endif
@@ -342,6 +374,29 @@ static void sb_esc(SB *b, const char *s) {
 }
 static void ip_toggle(SB *b, const char *key, bool on) { sb_printf(b, "<a class=\"btn%s\" href=\"lumen://set?s=settings&%s=%d\">%s</a>", on ? " on" : "", key, !on, on ? "On" : "Off"); }
 #ifdef __ANDROID__
+static void renderer_text(App *app, char *text, size_t capacity) {
+    snprintf(text, capacity, "Requested: %s. Active: %s.%s", renderer_key(g_renderer), gpu_backend_name(app->gpu),
+        !app->gpu && g_renderer != GPU_BACKEND_CPU ? " GPU unavailable; software fallback." : "");
+}
+static void update_renderer_readout(App *app) {
+    Page *page = app->t->cur;
+    if (!page || !page->internal_ui || !page->d) return;
+    Node *readout = doc_get_element_by_id(page->d, "lumen-renderer");
+    if (!readout) return;
+    char text[256]; renderer_text(app, text, sizeof text);
+    if (!(readout->first && readout->first == readout->last && readout->first->type == NODE_TEXT && !strcmp(readout->first->text, text))) {
+        node_set_text_content(readout, text);
+        app->t->relayout = true;
+    }
+    for (int backend = GPU_BACKEND_AUTO; backend <= GPU_BACKEND_CPU; backend++) {
+        char id[40]; snprintf(id, sizeof id, "lumen-renderer-%s", renderer_key((GpuBackend)backend));
+        Node *button = doc_get_element_by_id(page->d, id);
+        if (!button) continue;
+        const char *classes = backend == (int)g_renderer ? "btn on" : "btn";
+        const char *current = node_attr(button, "class");
+        if (!current || strcmp(current, classes)) { node_set_attr(button, "class", classes); app->t->relayout = true; }
+    }
+}
 static void resolution_text(App *app, char *text, size_t capacity) {
     char screen[64] = "unavailable";
     if (app->screen_w > 0 && app->screen_h > 0) snprintf(screen, sizeof screen, "%d x %d px", app->screen_w, app->screen_h);
@@ -457,6 +512,14 @@ static char *internal_page(App *app, const char *u) {
             sb_printf(&b, "<a id=\"lumen-pixel-scale-%d\" class=\"btn%s\" href=\"lumen://set?s=settings&pixel_scale=%d\">%gx</a> ", percent, percent == g_pixel_scale_pct ? " on" : "", percent, percent / 100.0);
         sb_puts(&b, "</p><p class=sub id=lumen-resolution>"); sb_esc(&b, resolution);
         sb_puts(&b, "</p><p class=sub>App render excludes system bars and the keyboard. Layout is the app area before pixel scaling.</p></div>");
+        char renderer[256]; renderer_text(app, renderer, sizeof renderer);
+        sb_puts(&b, "<div class=card><div class=t>Graphics backend</div><p class=sub>Vulkan through wgpu is the default. GPU acceleration composites the page and video; page rasterization still uses the CPU. Switch instantly; unavailable backends fall back to software.</p><p>");
+        static const char *backend_labels[] = {"Auto", "Vulkan", "OpenGL ES", "Software"};
+        for (int backend = GPU_BACKEND_AUTO; backend <= GPU_BACKEND_CPU; backend++) {
+            const char *key = renderer_key((GpuBackend)backend);
+            sb_printf(&b, "<a id=\"lumen-renderer-%s\" class=\"btn%s\" href=\"lumen://set?s=settings&renderer=%s\">%s</a> ", key, backend == (int)g_renderer ? " on" : "", key, backend_labels[backend]);
+        }
+        sb_puts(&b, "</p><p class=sub id=lumen-renderer>"); sb_esc(&b, renderer); sb_puts(&b, "</p></div>");
 #endif
         sb_puts(&b, "<div class=card><div class=row><div class=grow><div class=t>Lite mode</div><div class=sub>Uses less memory on heavy pages such as YouTube.</div></div>");
         ip_toggle(&b, "lite", g_lowmem);
@@ -495,14 +558,36 @@ static char *internal_page(App *app, const char *u) {
     return sb_take(&b);
 }
 static void update_size(App *app);
+#ifdef __ANDROID__
+static void renderer_apply(App *app, GpuBackend backend) {
+    android_touch_reset(&app->touch);
+    android_fling_reset(&app->fling);
+    g_sm_dx = g_sm_dy = 0;
+    gpu_destroy(app->gpu); app->gpu = NULL;
+    SDL_DestroyWindowSurface(app->win);
+    g_renderer = backend;
+    GpuSurfSrc source = { .kind = GPU_SURF_ANDROID,
+        .a = SDL_GetPointerProperty(SDL_GetWindowProperties(app->win), SDL_PROP_WINDOW_ANDROID_WINDOW_POINTER, NULL) };
+    if (source.a) app->gpu = gpu_create_backend(&source, app->pw, app->ph, g_renderer);
+    media_yuv = gpu_yuv_ok(app->gpu) && !getenv("LUMEN_NO_YUV");
+    app->vonly = app->sdirty = app->gvid_ok = app->osig_ok = false;
+    app->dirty = true;
+    SDL_Log("Lumen: requested renderer %s, active %s", renderer_key(g_renderer), gpu_backend_name(app->gpu));
+}
+#endif
 static void apply_set(App *a, const char *q) {
     char v[32];
 #ifdef __ANDROID__
+    if (qparam(q, "renderer", v, sizeof v)) {
+        int backend = renderer_parse(v);
+        if (backend >= 0 && (backend != (int)g_renderer || !a->gpu)) renderer_apply(a, (GpuBackend)backend);
+    }
     if (qparam(q, "pixel_scale", v, sizeof v)) {
         int percent = pixel_scale_parse(v);
         if (percent && percent != g_pixel_scale_pct) {
             g_pixel_scale_pct = percent;
             android_touch_reset(&a->touch);
+            android_fling_reset(&a->fling);
             g_sm_dx = g_sm_dy = 0;
             update_size(a);
         }
@@ -917,6 +1002,7 @@ static void render(App *a) {
 #ifdef __ANDROID__
     if (a->android_suspended) return;
     update_resolution_readout(a);
+    update_renderer_readout(a);
 #endif
     update_compact(a);
     double t0 = now_ms();
@@ -1090,6 +1176,27 @@ static void wheel_apply(App *a, float mx, float my, float dx, float dy) {
     a->dirty = true;
 }
 #ifdef __ANDROID__
+static bool android_scroll_apply(App *app, float anchor_x, float anchor_y, float dx, float dy) {
+    if (!app->t->cur || app->t->asleep || app->t->info || !isfinite(dx) || !isfinite(dy) ||
+            anchor_x <= app->side || anchor_y <= BAR || (!dx && !dy)) return false;
+    if (wheel_scroll(app, anchor_x - app->side, anchor_y - BAR, dx, dy)) return true;
+    float next = LCLAMP(roundf((app->t->sy + dy) * app->scale) / app->scale, 0, max_scroll(app));
+    if (next == app->t->sy) return false;
+    app->t->sy = next;
+    if (!(app->dirty && !app->vonly)) app->vonly = true;
+    app->dirty = true;
+    return true;
+}
+static void android_fling_tick(App *app) {
+    if (!app->fling.active) return;
+    if (app->android_suspended || app->touch_tab != app->t || app->touch_generation != app->t->lgen) {
+        android_fling_reset(&app->fling);
+        return;
+    }
+    float dx, dy;
+    if (android_fling_step(&app->fling, now_ms(), app->scale, &dx, &dy) &&
+            !android_scroll_apply(app, app->fling_x, app->fling_y, dx, dy)) android_fling_reset(&app->fling);
+}
 static bool android_touch_input(App *app, SDL_Event *event) {
     switch (event->type) {
     case SDL_EVENT_MOUSE_MOTION: return event->motion.which == SDL_TOUCH_MOUSEID;
@@ -1099,6 +1206,7 @@ static bool android_touch_input(App *app, SDL_Event *event) {
     case SDL_EVENT_KEY_DOWN: case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
     case SDL_EVENT_WINDOW_RESIZED: case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED:
         android_touch_reset(&app->touch);
+        android_fling_reset(&app->fling);
         return false;
     case SDL_EVENT_FINGER_DOWN: case SDL_EVENT_FINGER_MOTION:
     case SDL_EVENT_FINGER_UP: case SDL_EVENT_FINGER_CANCELED:
@@ -1107,13 +1215,16 @@ static bool android_touch_input(App *app, SDL_Event *event) {
     }
     if (event->tfinger.windowID != SDL_GetWindowID(app->win) ||
             event->tfinger.touchID == SDL_MOUSE_TOUCHID) return true;
-    if (app->touch_tab != app->t || app->touch_generation != app->t->lgen)
+    if (app->touch_tab != app->t || app->touch_generation != app->t->lgen) {
         android_touch_reset(&app->touch);
+        android_fling_reset(&app->fling);
+    }
     AndroidTouchPhase phase = event->type == SDL_EVENT_FINGER_DOWN ? ANDROID_TOUCH_DOWN
         : event->type == SDL_EVENT_FINGER_UP ? ANDROID_TOUCH_UP
         : event->type == SDL_EVENT_FINGER_MOTION ? ANDROID_TOUCH_MOVE : ANDROID_TOUCH_CANCEL;
     float pointer_x = event->tfinger.x * app->vw, pointer_y = event->tfinger.y * app->vh;
     if (phase == ANDROID_TOUCH_DOWN) {
+        android_fling_reset(&app->fling);
         if (pointer_x < 0 || pointer_y < 0 || pointer_x > app->vw || pointer_y > app->vh) return true;
         app->touch_tab = app->t;
         app->touch_generation = app->t->lgen;
@@ -1123,8 +1234,18 @@ static bool android_touch_input(App *app, SDL_Event *event) {
     AndroidTouchResult result = android_touch_update(&app->touch, phase,
         event->tfinger.touchID, event->tfinger.fingerID, pointer_x, pointer_y,
         pointer_x > app->side && pointer_y > BAR && !g_hud_pop && !app->t->info);
-    if (result.action == ANDROID_TOUCH_SCROLL)
-        wheel_apply(app, result.anchor_x, result.anchor_y, result.dx, result.dy);
+    double timestamp = (double)event->tfinger.timestamp / 1000000.0;
+    if (phase == ANDROID_TOUCH_DOWN && app->touch.count == 1 && !app->touch.blocked && app->touch.can_scroll)
+        android_fling_begin(&app->fling, timestamp);
+    if (phase == ANDROID_TOUCH_CANCEL || app->touch.blocked) android_fling_reset(&app->fling);
+    if (result.action == ANDROID_TOUCH_SCROLL) {
+        app->fling_x = result.anchor_x; app->fling_y = result.anchor_y;
+        if (android_scroll_apply(app, result.anchor_x, result.anchor_y, result.dx, result.dy)) {
+            if (!app->fling.tracking) android_fling_begin(&app->fling, timestamp);
+            else android_fling_sample(&app->fling, result.dx, result.dy, timestamp);
+        } else android_fling_reset(&app->fling);
+    }
+    if (phase == ANDROID_TOUCH_UP) android_fling_release(&app->fling, timestamp, now_ms());
     if (result.action != ANDROID_TOUCH_TAP) return true;
     SDL_Event click = {0};
     click.button.type = SDL_EVENT_MOUSE_BUTTON_DOWN;
@@ -2354,6 +2475,9 @@ int main(int argc, char **argv) {
     paint_image_hook = node_img; paint_url_image_hook = url_img; svg_ext_ref_hook = svg_ext_ref; layout_image_size_hook = img_size;
     App a; memset(&a, 0, sizeof a); g_app = &a; a.nws = 1; a.wsicon[0] = WORKSPACE_DEFAULT_ICON; snprintf(a.wsname[0], sizeof a.wsname[0], "Personal"); a.side = sidebar_width(getenv("LUMEN_NO_SIDEBAR") ? 0 : SIDEW); tab_new(&a);
     bool want_gpu = !getenv("LUMEN_NO_GPU");
+#ifdef __ANDROID__
+    renderer_read_preferences();
+#endif
     int ww = 1280, wh = 840; { const char *e = getenv("LUMEN_WINDOW"); if (e) sscanf(e, "%dx%d", &ww, &wh); }   /* e.g. LUMEN_WINDOW=800x600 */
     a.win = SDL_CreateWindow("Lumen", ww, wh, SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY | (want_gpu && !strcmp(SDL_GetPlatform(), "macOS") ? SDL_WINDOW_METAL : 0));
     if (!a.win) { fprintf(stderr, "SDL_CreateWindow: %s\n", SDL_GetError()); return 1; }
@@ -2371,7 +2495,11 @@ int main(int argc, char **argv) {
         else if (SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, NULL)) { src.kind = GPU_SURF_WAYLAND; src.a = SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER, NULL); src.b = SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, NULL); ok = true; }
         else if (SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_X11_DISPLAY_POINTER, NULL)) { src.kind = GPU_SURF_XLIB; src.a = SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_X11_DISPLAY_POINTER, NULL); src.win = (uint64_t)SDL_GetNumberProperty(pr, SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0); ok = true; }
         else if (SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_ANDROID_WINDOW_POINTER, NULL)) { src.kind = GPU_SURF_ANDROID; src.a = SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_ANDROID_WINDOW_POINTER, NULL); ok = true; }
+#ifdef __ANDROID__
+        if (ok) a.gpu = gpu_create_backend(&src, a.pw, a.ph, g_renderer);
+#else
         if (ok) a.gpu = gpu_create(&src, a.pw, a.ph, getenv("LUMEN_VULKAN") != NULL || strcmp(SDL_GetPlatform(), "macOS"));
+#endif
         media_yuv = gpu_yuv_ok(a.gpu) && !getenv("LUMEN_NO_YUV");
         if (!a.gpu && a.mview) { SDL_Metal_DestroyView(a.mview); a.mview = NULL; }
     }
@@ -2385,6 +2513,9 @@ int main(int argc, char **argv) {
     }
 #endif
     fprintf(stderr, "lumen: presenting with %s\n", gpu_backend_name(a.gpu));
+#ifdef __ANDROID__
+    SDL_Log("Lumen: requested renderer %s, active %s", renderer_key(g_renderer), gpu_backend_name(a.gpu));
+#endif
     a.ui = font_get("system-ui", 400, false, 13.5f);
     char cookie_path[1024] = "";
     { char *pref = SDL_GetPrefPath("lumen", "Lumen"); if (pref) { snprintf(cookie_path, sizeof cookie_path, "%scookies.txt", pref); SDL_free(pref); cookies_load(cookie_path); } }
@@ -2520,6 +2651,9 @@ int main(int argc, char **argv) {
             if (sent < cnt && now_ms() - t0 > st + sent * 16.0) { SDL_Event we = {0}; we.type = SDL_EVENT_MOUSE_WHEEL; we.wheel.y = wdy; we.wheel.mouse_x = wx / a.input_scale; we.wheel.mouse_y = wy / a.input_scale; SDL_PushEvent(&we); sent++; }
             if (sent < cnt && to > 16) to = 16;
         }
+#ifdef __ANDROID__
+        if (a.fling.active && to > 16) to = 16;
+#endif
         if (!SDL_WaitEventTimeout(&ev, to)) { if (a.t->loading || getenv("LUMEN_SHOT")) a.dirty = true; }
         else do {
             bool wheel0 = ev.type == SDL_EVENT_MOUSE_WHEEL && !ev.wheel.x && !ev.wheel.y;
@@ -2698,6 +2832,9 @@ int main(int argc, char **argv) {
             if (touch_tap) g_press = g_drag = g_epress = false;
 #endif
         } while (SDL_PollEvent(&ev));
+#ifdef __ANDROID__
+        android_fling_tick(&a);
+#endif
         js_release_pins();
         net_poll();
         { Tab *act = a.t; double tn = now_ms(); for (int i = 0; i < a.ntabs; i++) { a.t = a.tabs[i]; if (a.t->limited) { a.t->budget = LMIN(a.t->budget + a.t->lim * (tn - a.t->bud_t), 100); a.t->bud_t = tn; if (a.t->budget < 0) continue; } if (a.t->cur && a.t->cur->js) { double c0 = now_ms(); js_tick(a.t->cur->js); restyle(&a); fire_img_events(a.t->cur); double c = now_ms() - c0; a.t->cpu_ms += c; if (a.t->limited) a.t->budget -= c; } } a.t = act; if (a.t->cur && a.t->cur->js) frames_tick(&a); }

@@ -2,10 +2,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "gpu/gpu.h"
 
 #define CHECK(condition) do { if (!(condition)) { fprintf(stderr, "failed line %d: %s\n", __LINE__, #condition); return 1; } } while (0)
 static char g_pref[1024] = "./";
 static int g_pixel_scale_pct = 200;
+static GpuBackend g_renderer = GPU_BACKEND_VULKAN;
 static bool g_lowmem, g_vctl, g_tab_sleep, g_hud, g_smooth;
 static int g_cpu_on, g_cpu_pct, g_cpu_secs, g_cpu_lim, g_ua;
 #define NODE_TEXT 3

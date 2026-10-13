@@ -1,5 +1,39 @@
 # Lumen: handoff notes
 
+## Android Vulkan and momentum work (2026-10-13)
+
+Branch `codex/android-vulkan-momentum-scroll`, based on6bbf0d6. Tests first:
+standalone fling RED10/12 assertions, then12/12 GREEN plus12 ASan/UBSan;
+renderer selection RED6 expected failures; root-scroll integration RED5 failures
+and1 existing nested-scroll pass. New explicit wgpu backend API preserves the
+desktop wrapper, defaults Android to Vulkan, and adds persisted Auto/Vulkan/
+OpenGL ES/Software selection. Settings reports requested versus actual backend
+and software fallback honestly: GPU composition is not GPU page rasterization.
+Momentum uses event timestamps, bounded exponential decay and physical-pixel
+deltas; cancels on new touch/navigation/resize/background. Boundary scrolling
+must stop without repainting. Focused93 checks pass after correcting a missing
+fling object in the touch-input test link. Physical-grid RED fails before root
+position quantization; runtime renderer-switch RED fails before implementation.
+Main also found Android Debug native compile commands had no optimization flag.
+New CMake policy enables-O2 for Android Debug base/net/engine/app/SDL targets,
+retaining symbols and assertions. Set LUMEN_ANDROID_OPTIMIZED_DEBUG=OFF for
+unoptimized stepping. Desktop and Release flags remain unchanged. Five policy
+tests precede implementation:2 expected failures,3 passes. Full build and phone
+acceptance still pending; earlier phone APK is unoptimized.
+
+Previous pixel-scale phone run is PARTIAL, report
+`build/codex-android-pixel-scale/phone/REPORT.md`: installed candidate83e5987,
+1/1.5/2/3x visual checks and exact toolbar ratio pass,1.5x persists, rotation
+readouts refresh,3x fits360 layout pixels. Formal60.42s Settings idle mean0.199%
+CPU, RSS227.34–227.52MiB.20 repeated450ms swipes yield105.67% mean CPU,
+peak107%, main SDL thread98.78%; no FPS/smooth-scroll pass. Harness incorrectly
+classified preceding active-scroll samples as idle when changing stages and
+aborted; this is not evidence of high post-scroll idle.350 samples, no telemetry
+failures. Backend log inconclusive. App stopped, density/rotation preserved,
+server/reverse removed, locks released; test fixture tab cleanup and final Home
+idle incomplete. Next authorized phone run must correct that stage guard and
+restore original New Tab. Do not claim full acceptance or daily-use readiness.
+
 ## Android physical-pixel scale (2026-10-13)
 
 Android now uses an explicit physical-pixel scale independent of SDL/Android

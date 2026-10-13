@@ -1,4 +1,5 @@
 #include "base/util.h"
+#include "gpu/gpu.h"
 
 #define MAX_TABS 32
 #define CHECK(condition) do { if (!(condition)) { fprintf(stderr, "FAIL line %d: %s\n", __LINE__, #condition); return 1; } } while (0)
@@ -13,11 +14,14 @@ typedef struct {
     Tab *t, *tabs[MAX_TABS];
     bool editing, dirty, vonly;
     void *win;
+    Gpu *gpu;
 } App;
 typedef struct { char *url, *title; } Link;
 static bool g_lowmem, g_cpu_on, g_vctl, g_tab_sleep, g_hud, g_smooth, g_compact = true;
 static int g_cpu_pct, g_cpu_secs, g_cpu_lim, g_ua, g_nbm, g_nhv;
 static int g_pixel_scale_pct = 200;
+static GpuBackend g_renderer = GPU_BACKEND_VULKAN;
+const char *gpu_backend_name(Gpu *gpu) { (void)gpu; return "cpu"; }
 static Link g_bms[1], g_hv[1];
 #define UA_COUNT 1
 static const char *net_user_agent_name(int index) { return "Lumen"; }

@@ -17,7 +17,8 @@ class AndroidPixelSettingsTests(unittest.TestCase):
         cls.addClassCleanup(cls.temporary.cleanup)
         work = Path(cls.temporary.name)
         source = (ROOT / "src/app/main.c").read_text()
-        extracted = "\n".join(function(source, signature) for signature in (
+        extracted = function(source, "static const char *renderer_key(") + "\n"
+        extracted += "\n".join(function(source, signature) for signature in (
             "static void pref_path(", "static void settings_save("))
         for signature, fallback in (
             ("static int pixel_scale_parse(", "static int pixel_scale_parse(const char *value) { return 0; }"),
@@ -30,7 +31,7 @@ class AndroidPixelSettingsTests(unittest.TestCase):
         cls.executable = work / "codex-pixel-settings"
         subprocess.run([os.environ.get("CC", "cc"), "-std=c11", "-D__ANDROID__",
                         "-fsanitize=undefined", "-fno-sanitize-recover=all",
-                        "-I", str(work), str(ROOT / "tests/android/pixel_settings_model.c"),
+                        "-I", str(work), "-I", str(ROOT / "src"), str(ROOT / "tests/android/pixel_settings_model.c"),
                         "-o", str(cls.executable)], check=True, timeout=90)
 
     def run_scenario(self, scenario):

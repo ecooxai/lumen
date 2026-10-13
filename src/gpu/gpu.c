@@ -133,11 +133,24 @@ bool gpu_resume(Gpu *gpu, const GpuSurfSrc *source, int width, int height) {
     return gpu->configured;
 }
 
+static WGPUInstanceBackend gpu_backend_flags(GpuBackend backend) {
+    switch (backend) {
+    case GPU_BACKEND_AUTO: return WGPUInstanceBackend_Primary;
+    case GPU_BACKEND_VULKAN: return WGPUInstanceBackend_Vulkan;
+    case GPU_BACKEND_GL: return WGPUInstanceBackend_GL;
+    default: return 0;
+    }
+}
+
 Gpu *gpu_create(const GpuSurfSrc *src, int w, int h, bool prefer_vulkan) {
-    if (getenv("LUMEN_NO_GPU")) return NULL;
+    return gpu_create_backend(src, w, h, prefer_vulkan ? GPU_BACKEND_VULKAN : GPU_BACKEND_AUTO);
+}
+
+Gpu *gpu_create_backend(const GpuSurfSrc *src, int w, int h, GpuBackend backend) {
+    if (getenv("LUMEN_NO_GPU") || !gpu_backend_flags(backend)) return NULL;
     Gpu *g = calloc(1, sizeof *g); g->w = w; g->h = h;
     WGPUInstanceExtras ex = { 0 }; ex.chain.sType = (WGPUSType)WGPUSType_InstanceExtras;
-    ex.backends = prefer_vulkan ? WGPUInstanceBackend_Vulkan : WGPUInstanceBackend_Primary;
+    ex.backends = gpu_backend_flags(backend);
     WGPUInstanceDescriptor id = WGPU_INSTANCE_DESCRIPTOR_INIT; id.nextInChain = &ex.chain;
     if (!(g->inst = wgpuCreateInstance(&id))) goto fail;
     if (!(g->surf = create_surface(g, src))) goto fail;

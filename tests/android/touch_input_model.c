@@ -1,4 +1,5 @@
 #include "../../src/app/android_touch.h"
+#include "../../src/app/android_fling.h"
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -25,6 +26,8 @@ typedef union {
 typedef struct { uint64_t lgen; bool info; } Tab;
 typedef struct {
     AndroidTouch touch;
+    AndroidFling fling;
+    float fling_x, fling_y;
     Tab *touch_tab, *t;
     uint64_t touch_generation;
     void *win;
@@ -37,10 +40,11 @@ static unsigned wheel_calls;
 static float wheel_x, wheel_y, wheel_dx, wheel_dy;
 static SDL_WindowID SDL_GetWindowID(void *window) { (void)window; return 1; }
 static double now_ms(void) { return 123; }
-static void wheel_apply(App *app, float anchor_x, float anchor_y, float dx, float dy) {
+static bool android_scroll_apply(App *app, float anchor_x, float anchor_y, float dx, float dy) {
     (void)app;
     wheel_calls++;
     wheel_x = anchor_x; wheel_y = anchor_y; wheel_dx = dx; wheel_dy = dy;
+    return true;
 }
 
 #include "touch_input_function.h"

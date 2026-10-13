@@ -80,7 +80,8 @@ class AndroidTouchInputTests(unittest.TestCase):
             os.environ.get("CC", "cc"), "-std=c11", "-Wall", "-Wextra", "-Werror",
             "-fsanitize=undefined,float-cast-overflow", "-fno-sanitize-recover=all",
             "-I", str(work), str(ROOT / "tests/android/touch_input_model.c"),
-            str(ROOT / "src/app/android_touch.c"), "-lm", "-o", str(cls.binary),
+            str(ROOT / "src/app/android_touch.c"), str(ROOT / "src/app/android_fling.c"),
+            "-lm", "-o", str(cls.binary),
         ], capture_output=True, text=True, timeout=60)
         if result.returncode:
             raise AssertionError(result.stdout + result.stderr)
