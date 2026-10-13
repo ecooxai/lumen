@@ -117,10 +117,24 @@ after collection. This is directory-lifetime detection, not numeric errno
 classification; PID/start/cadence checks remain the caller's responsibility.
 Reports: `build/codex-android-proc-sample/{red,green}/REPORT.md`; policy/frozen V8
 checks pass, zero corrections. Scope/usage: `docs/codex-android-telemetry.md`.
-A fresh GUI verifier is preparing the full current-candidate protocol using this
-collector and correct intentional-stop labeling. No new APK build is necessary;
-the installed production bytes do not change. Phone access awaits a new explicit
-grant; historical helpers and failed run remain intact. No further phone access
+A fresh GUI verifier passes49 host checks including33 test groups with this
+collector and correct intentional-stop labeling. One fixture-only quoting
+correction is retained; production collector and sampler command are unchanged.
+Main rehashes APK/collector/tests, reviews preparation and grants exclusive phone
+access for the full current-candidate protocol. No new APK build is necessary;
+the installed production bytes do not change. **The fresh run stops at preflight**:
+`App already running; no takeover`. It performs no install, launch, sampler or
+GUI action. The old guard merges pidof stdout/stderr and failed to save the raw
+response, so a live PID versus an ADB diagnostic cannot be established from this
+evidence. The controller exits1 and releases host locks; it does not force-stop
+or otherwise alter any externally running app. Current phone stopped/released
+state is unverified, distinct from historical successful cleanup. Report:
+`build/codex-android-proc-sample/phone/PREFLIGHT_REPORT.json`.
+Main asks whether Lumen may be closed for a fresh phone test; no reply yet.
+Next verifier must capture separate pidof returncode/stdout/stderr before
+classifying device state, preserve this run, and obtain a fresh exclusive grant.
+The new collector is host-verified only; live Android integration remains untested.
+Historical helpers and failed run remain intact. No further phone access
 is authorized to the completed verifier. Overall daily-use readiness remains25/100;
 public sites, Chrome memory comparison and major graphics/media APIs are not
 validated by these internal-page checks.
