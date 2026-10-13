@@ -1,5 +1,42 @@
 # Lumen: handoff notes
 
+## Caret repair installed; focused idle improves, keyboard reveal next (2026-10-13)
+
+Installed source9e5e520808cad9c23e17f23ba2f1f709dbcab4cc, same branch
+codex/android-vulkan-momentum-scroll. APK in build/codex-android-caret-damage/final:
+codex-agent-android-caret-damage-compact-debug.apk,85240084bytes,0444,
+SHA256dfd784c26aa2096202985581431430aa71836ad492f6b6ecf8e704eaae855853.
+Fresh162 distinct host tests pass,24 focused sanitizer repeats pass; actual
+raster320 baseline/sanitized transitions match full-render pixels. Removing
+structural-context hashing in a throwaway negative control fails3 cases.
+Actual API29 main.c compiles; fresh23 APK checks pass,14 objects rebuilt and281
+reused, verified prebuilts, no V8 source build. Build45.698s,meanCPU242.27%,
+peak450.18%,peakRSS1748.58MiB; shared480%,idle/nice19,all build scopes drained.
+
+Fresh phone owner installs-r once, preserving data/settings. Main and owner
+review actual PNGs: scrolled fixed overlay now opens/closes; full-width edges,
+header/footer and toolbar remain intact. Band2 focus still hides below IME:
+BrowserSurface1080x2112 shrinks to1080x1261. No manual scroll workaround.
+Focused hold60.065s contains59 strict same-stage intervals/59.05s: processCPU
+mean1.591871%,peak2.061856%,renderer mean1.253175%,RSS226.539-226.543MiB.
+Prior failing five-second window was8.2% process/8.0% renderer; durations differ,
+not a matched general benchmark. Current55 complete paint pairs contain110
+partial frames and0 full frames; threadCPU raster52.858ms,compose0.510ms total.
+
+Run is NOT all-pass: screenshot09 Back-recovery review receipt arrives0.243s
+after harness timeout. Actual image shows recovered viewport, but gate fails;
+optional typing/sites NOT executed, no retry. All299 nominal1Hz samples accepted,
+maxdevicegap1.05s. Cleanup app/marker/reverse/server absent,sampler joined,locks
+released,settings/display/rotation unchanged. Owners closed,source freeze lifted.
+Evidence build/codex-android-caret-damage/{green,final,phone},phone/REPORT.txt.
+Bounded phone evidence85/100; overall daily-use readiness25/100.
+
+Next product bug: resize relayouts but never reveals the focused text control.
+Main adds test-first geometry and App integration regressions for one-shot
+post-layout focus reveal, nested/reverse/fixed scrollers and contenteditable.
+These tests are not yet GREEN and no keyboard repair is installed. Latest goal
+turn produces new phone evidence and regression tests, not just a status update.
+
 ## Hit-test repair passes host verification; caret regression in progress (2026-10-13)
 
 Immutable bde548f passes125 distinct cases (9 focused,116 adjacent), plus9
