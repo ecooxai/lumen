@@ -53,6 +53,14 @@ void android_fling_release(AndroidFling *fling, double timestamp, double now) {
     fling->release_ms = fling->frame_ms = now;
 }
 
+int android_fling_wait_ms(const AndroidFling *fling, double now, int timeout) {
+    if (!fling->active) return timeout;
+    double elapsed = now - fling->frame_ms;
+    if (!isfinite(elapsed) || elapsed < 0 || elapsed >= 16) return 0;
+    int remaining = (int)ceil(16 - elapsed);
+    return timeout < 0 || remaining < timeout ? remaining : timeout;
+}
+
 bool android_fling_step(AndroidFling *fling, double now, float scale, float *dx, float *dy) {
     *dx = *dy = 0;
     if (!fling->active) return false;

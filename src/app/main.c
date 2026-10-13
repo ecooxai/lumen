@@ -2714,7 +2714,7 @@ int main(int argc, char **argv) {
             if (sent < cnt && to > 16) to = 16;
         }
 #ifdef __ANDROID__
-        if (a.fling.active && to > 16) to = 16;
+        to = android_fling_wait_ms(&a.fling, now_ms(), to);
 #endif
         if (!SDL_WaitEventTimeout(&ev, to)) { if (a.t->loading || getenv("LUMEN_SHOT")) a.dirty = true; }
         else do {

@@ -1,5 +1,26 @@
 # Lumen: handoff notes
 
+## Android fling deadline pacing (2026-10-13)
+
+Main fixes a source-level pacing delay: the event loop previously slept up to
+16ms AFTER the preceding fling frame's rendering/presentation and other work.
+android_fling_wait_ms now subtracts elapsed time since the last fling step,
+rounds a fractional remainder up, preserves earlier event deadlines and leaves
+inactive-fling waits unchanged. Late frames do not add another16ms sleep.
+This changes Android momentum scheduling, not GPU rasterization or touch speed.
+
+Tests first extract the real Android wait block:9 scenarios initially give
+7 expected assertion failures/2 passes; the existing12 fling checks pass and
+the updated7 scroll checks give1 expected integration failure. After the fix,
+92 focused/adjacent tests pass, plus9 fresh actual-wait-block C executions under
+ASan/UBSan. Evidence: build/codex-android-fling-pacing/{red,green}/.
+No runtime browser runs in these host checks; simulated8ms frame work now uses
+8ms remaining wait instead of16ms. Do NOT claim a measured phone FPS/CPU gain.
+The diagnostic5818949 APK predates this fix and remains the phone baseline;
+build/install and real-device verification of pacing are still required.
+Shared480%/SCHED_IDLE/nice19 remains; source V8 stays frozen. Host-only quality
+95/100; overall daily-use readiness remains25/100 with major release gates open.
+
 ## Android sampler output batching (2026-10-13)
 
 Main isolates a major observer overhead source without running Lumen. The

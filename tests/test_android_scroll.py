@@ -63,7 +63,9 @@ class AndroidScrollTests(unittest.TestCase):
     def test_only_active_fling_requests_frames_after_events(self):
         source = (ROOT / "src/app/main.c").read_text()
         startup = source[source.index("int main("):]
-        self.assertIn("if (a.fling.active && to > 16) to = 16;", startup)
+        self.assertIn("to = android_fling_wait_ms(&a.fling, now_ms(), to);", startup)
+        self.assertLess(startup.index("android_fling_wait_ms(&a.fling"),
+                        startup.index("SDL_WaitEventTimeout"))
         self.assertLess(startup.index("SDL_PollEvent"), startup.index("android_fling_tick(&a)"))
         self.assertIn("android_fling_reset", function(source, "static void apply_set("))
 

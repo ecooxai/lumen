@@ -11,4 +11,5 @@ void android_fling_reset(AndroidFling *fling);
 void android_fling_begin(AndroidFling *fling, double timestamp);
 void android_fling_sample(AndroidFling *fling, float dx, float dy, double timestamp);
 void android_fling_release(AndroidFling *fling, double timestamp, double now);
+int android_fling_wait_ms(const AndroidFling *fling, double now, int timeout);
 bool android_fling_step(AndroidFling *fling, double now, float scale, float *dx, float *dy);
