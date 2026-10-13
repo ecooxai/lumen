@@ -1,5 +1,35 @@
 # Lumen: handoff notes
 
+## Android paint diagnostics APK verified (2026-10-13)
+
+Implementation commit63e74be has a verified optimized Debug APK:
+`build/codex-android-paint-profile/final/codex-agent-android-paint-profile-compact-debug.apk`,
+85,240,084 bytes,0444,SHA256
+`58189497211d5f77a0c6238fc132123851842540db3b0030e081063ffd77d92c`.
+Immutable324-file manifest SHA256
+`6384115eb55b01f774b0ff97a6b435bb6cb7a03efe5d970405cab71a7db5d51c`.
+Main independently verifies artifact/manifest hashes.219 focused checks,
+29 fresh touch/fling/upload sanitizer scenarios,6 JS groups,native cache/V8
+runtime and23 APK gates pass. The10 PaintProfile sanitizer executions are
+explicitly reused from fresh green evidence, not reported as new executions.
+Actual Debug-O2/g/assertions,no-op,payload identity and zero ZIP gaps pass.
+Build45.894s,mean197.61% host CPU,peak1743MiB RSS. Shared480%/SCHED_IDLE/nice19
+retained; source V8 stays frozen. All51 build/test scopes and controller drain,
+258 sampled process identities gone. No build corrections or product failures.
+Prior Home6a969dc unstripped main/SDL symbols are preserved read-only under
+`final/home6a969dc-symbols/`, with matching BuildIDs and packaged hashes.
+Host-only quality95/100. This new APK is NOT yet installed or phone-profiled.
+
+Before another browser run, isolate sampling overhead without launching Lumen.
+Main's independent raw-attempt analysis:259 accepted Home-card samples take
+mean1.0481s,median1.0574s;217 exceed1s. Previous d086 profile and911-sample
+scroll acceptance medians are0.9954s and0.9924s. The raw sampler command is
+identical between Home-card and d086. This is close to the cadence budget even
+before extra delay, not proof of a Lumen hot path or host starvation. Compare
+bounded read-only ADB shell, own-package run-as and own-shell collector timings
+while Lumen stays absent; preserve clock domains and host-pressure evidence.
+Do not relax cadence guards or claim a new performance improvement. Android only.
+
 ## Android paint diagnostics and Home-card phone follow-up (2026-10-13)
 
 The Home-card APK6a969dc is now installed with app data preserved. Main reviews
