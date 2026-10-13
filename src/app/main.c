@@ -54,9 +54,10 @@ typedef struct Page {
 } Page;
 static Page *g_frames;
 static Page *frame_find(Node *f) { for (Page *p = g_frames; p; p = p->fnext) if (p->frame_el == f) return p; return NULL; }
-static bool page_viewport(Page *page, float width, float height) {
-    if (page->e->media.vw == width && page->e->media.vh == height) return false;
+static bool page_viewport(Page *page, float width, float height, float scale) {
+    if (page->e->media.vw == width && page->e->media.vh == height && page->e->media.dpr == scale) return false;
     page->e->media.vw = width; page->e->media.vh = height;
+    page->e->media.dpr = scale;
     style_recalc(page->e, &page->d->node, false);
     page->img_check = true;
     return true;
@@ -254,7 +255,7 @@ typedef struct App {
 #ifdef __ANDROID__
     bool android_suspended;
 #endif
-    int pw, ph; float scale, vw, vh;
+    int pw, ph; float scale, vw, vh, input_scale;
     Canvas frame, page; DisplayList pdl, cdl, hdl;
     struct DSig *osig, *nsig; int nosig, cosig, cnsig; uint64_t chash; bool osig_ok;   /* last page display list, to raster only what changed */
     Tab *t, *tabs[MAX_TABS]; int ntabs, ti;
@@ -334,6 +335,14 @@ static char *internal_page(const char *u) {   /* lumen://newtab?s=bookmarks|hist
         ".sub{color:#5f6368;font-size:13px;margin-top:3px;line-height:1.4}"
         "input{width:48px;padding:4px 6px;border:1px solid #dadce0;border-radius:6px;font:14px -apple-system,system-ui,sans-serif;margin:0 4px}"
         ".empty{color:#5f6368;padding:18px 0}"
+        "@media(max-width:600px){"
+        "body{display:block}"
+        "nav{display:flex;width:auto;min-height:0;padding:8px;border-right:0;border-bottom:1px solid #e3e5e8}"
+        "nav h1{display:none}"
+        "nav a{flex:1;min-width:0;min-height:44px;box-sizing:border-box;padding:12px 4px;margin:0;text-align:center}"
+        "main{padding:20px 16px;min-width:0;box-sizing:border-box}"
+        ".card{padding:4px 12px}.t{white-space:normal}.x{padding:10px}"
+        "}"
         "</style></head><body><nav><h1>Lumen</h1>");
     static const char *S[3][2] = { { "bookmarks", "Bookmarks" }, { "history", "History" }, { "settings", "Settings" } };
     for (int i = 0; i < 3; i++) sb_printf(&b, "<a href=\"lumen://newtab?s=%s\"%s>%s</a>", S[i][0], strcmp(sec, S[i][0]) ? "" : " class=on", S[i][1]);
@@ -469,6 +478,7 @@ static void set_window_icon(SDL_Window *w) {
 static Image *ws_icon(App *a, int ic, bool on) {
     if (ic < 0 || ic >= WORKSPACE_ICON_COUNT) return NULL;
     Image **slot = &a->icimg[ic][on];
+    if (*slot && (*slot)->scale != a->scale) { image_unref(*slot); *slot = NULL; }
     if (!*slot) {
         int px = (int)(18 * a->scale + 0.5f); Image *im = xcalloc(1, sizeof *im);
         im->w = im->h = px; im->refs = 1; im->scale = a->scale; im->px = xcalloc((size_t)px * (size_t)px, 4);
@@ -523,6 +533,7 @@ static Image *sym_icon(App *a, int k, int c) {   /* k: 0 back 1 forward 2 reload
 #endif
     static const uint32_t C[4] = { 0x3c4043, 0xbdc1c6, 0x1a73e8, 0xffffff };
     Image **slot = &a->sym[k][c];
+    if (*slot && (*slot)->scale != a->scale) { image_unref(*slot); *slot = NULL; }
     if (!*slot) {
         int px = (int)(16 * a->scale + 0.5f); Image *im = xcalloc(1, sizeof *im);
         im->w = im->h = px; im->refs = 1; im->scale = a->scale; im->px = xcalloc((size_t)px * (size_t)px, 4);
@@ -770,7 +781,7 @@ static void render(App *a) {
     update_compact(a);
     double t0 = now_ms();
     int bar_px = (int)(BAR * a->scale);
-    if (a->frame.w != a->pw || a->frame.h != a->ph) { canvas_free(&a->frame); canvas_init(&a->frame, a->pw, a->ph, a->scale); }
+    if (a->frame.w != a->pw || a->frame.h != a->ph || a->frame.scale != a->scale) { canvas_free(&a->frame); canvas_init(&a->frame, a->pw, a->ph, a->scale); }
     int ph = a->ph - bar_px; if (ph < 1) ph = 1;
     int side_px = (int)(a->side * a->scale), pwp = a->pw - side_px; if (pwp < 1) pwp = 1;
     int why = !a->vonly ? 1 : !a->t->cur || a->t->cur != a->last_page || !a->t->cur->L ? 2 : a->t->relayout ? 3 : a->t->cur->d->dom_version != a->last_ver ? 4 : 0;
@@ -779,7 +790,7 @@ static void render(App *a) {
     if (defer && !a->vframe) { a->dirty = false; return; }
     bool part = !why;
     int rx0 = pwp, ry0 = ph, rx1 = 0, ry1 = 0;
-    if (a->page.w != pwp || a->page.h != ph) { canvas_free(&a->page); canvas_init(&a->page, pwp, ph, a->scale); part = false; a->osig_ok = false; }
+    if (a->page.w != pwp || a->page.h != ph || a->page.scale != a->scale) { canvas_free(&a->page); canvas_init(&a->page, pwp, ph, a->scale); part = false; a->osig_ok = false; }
     bool gskip = false; GpuVideo gvd, *gvp = NULL;
     Image *fast = part && !a->sdirty && a->t->cur && a->gpu && a->gvid_ok && a->t->sy == a->last_sy && a->page.w == pwp && a->page.h == ph ? media_owner_frame(a->vown) : NULL;
     if (a->t->cur && (defer || fast)) {   /* nothing but the video changed, or layout may be stale: only swap the video texture */
@@ -791,7 +802,7 @@ static void render(App *a) {
     } else if (a->t->cur) {
         if (a->t->relayout || !a->t->cur->L) {
             if (!a->t->cur->L) a->t->cur->L = layout_new();
-            page_viewport(a->t->cur, a->vw - a->side, a->vh - BAR);
+            page_viewport(a->t->cur, a->vw - a->side, a->vh - BAR, a->scale);
             { double q = now_ms(); layout_run(a->t->cur->L, a->t->cur->d, a->vw - a->side, a->vh - BAR); g_tl += now_ms() - q; }
             a->t->relayout = false;
         }
@@ -949,9 +960,33 @@ static Tab *tab_of_doc(App *a, Document *d) {
 static void update_size(App *a) {
     for (int i = 0; i < a->ntabs; i++) a->tabs[i]->relayout = true;
     int w, h; SDL_GetWindowSize(a->win, &w, &h); SDL_GetWindowSizeInPixels(a->win, &a->pw, &a->ph);
-    a->vw = (float)w; a->vh = (float)h; a->scale = w ? (float)a->pw / (float)w : 1;
+    float window_scale = w > 0 && a->pw > 0 ? (float)a->pw / (float)w : 1;
+    a->scale = window_scale;
+#ifdef __ANDROID__
+    float display_scale = SDL_GetWindowDisplayScale(a->win);
+    if (isfinite(display_scale) && display_scale > 0) a->scale = display_scale;
+#endif
+    a->input_scale = window_scale / a->scale;
+    a->vw = (float)w * a->input_scale; a->vh = (float)h * a->input_scale;
+    a->vonly = a->sdirty = a->osig_ok = a->gvid_ok = false;
     if (a->gpu) gpu_resize(a->gpu, a->pw, a->ph);
     a->t->relayout = a->dirty = true;
+}
+
+static void input_coordinates(App *app, SDL_Event *event) {
+    switch (event->type) {
+    case SDL_EVENT_MOUSE_MOTION:
+        event->motion.x *= app->input_scale; event->motion.y *= app->input_scale;
+        event->motion.xrel *= app->input_scale; event->motion.yrel *= app->input_scale;
+        break;
+    case SDL_EVENT_MOUSE_BUTTON_DOWN: case SDL_EVENT_MOUSE_BUTTON_UP:
+        event->button.x *= app->input_scale; event->button.y *= app->input_scale;
+        break;
+    case SDL_EVENT_MOUSE_WHEEL:
+        event->wheel.mouse_x *= app->input_scale; event->wheel.mouse_y *= app->input_scale;
+        break;
+    default: break;
+    }
 }
 
 static App *g_app;
@@ -1124,9 +1159,9 @@ static bool frame_restyle(Page *p) {
     return true;
 }
 static void frame_layout(Page *p) {
+    if (page_viewport(p, p->fw, p->fh, g_app->scale)) p->frelayout = true;
     if (!p->frelayout && p->L) return;
     if (!p->L) p->L = layout_new();
-    page_viewport(p, p->fw, p->fh);
     layout_run(p->L, p->d, p->fw, p->fh);
     p->frelayout = false; p->drawn_ver = ~0ull;
 }
@@ -1140,7 +1175,7 @@ static bool frame_update(Page *p) {
     if (w != p->fw || h != p->fh) { p->fw = w; p->fh = h; p->frelayout = true; }
     frame_layout(p);
     float s = g_app->scale; int pw = (int)ceilf(w * s), ph = (int)ceilf(h * s);
-    if (p->cv.w != pw || p->cv.h != ph || !p->cv.px) { canvas_free(&p->cv); canvas_init(&p->cv, pw, ph, s); p->drawn_ver = ~0ull; }
+    if (p->cv.w != pw || p->cv.h != ph || p->cv.scale != s || !p->cv.px) { canvas_free(&p->cv); canvas_init(&p->cv, pw, ph, s); p->drawn_ver = ~0ull; }
     if (p->drawn_ver == p->d->dom_version && p->drawn_epoch == g_img_epoch) return false;
     dl_clear(&p->fdl); dl_build(&p->fdl, p->L, 0, p->fsy, w, h);
     raster(&p->cv, &p->fdl, RGBA(255, 255, 255, 255));
@@ -1304,7 +1339,7 @@ static void click_frame(App *a, Page *fp, float x, float y) {
 static void restyle(App *a) {
     Page *p = a->t->cur;
     if (!p) return;
-    bool viewport_changed = page_viewport(p, a->vw - a->side, a->vh - BAR);
+    bool viewport_changed = page_viewport(p, a->vw - a->side, a->vh - BAR, a->scale);
     if (!viewport_changed && p->d->dom_version == p->seen_ver) return;
     p->seen_ver = p->d->dom_version;
     bool sheets = sync_sheets(p, false);
@@ -1925,7 +1960,9 @@ static void pick_files(bool multiple, const char *accept) {
 }
 static SDL_HitTestResult win_hit(SDL_Window *w, const SDL_Point *pt, void *ud) {
     (void)w;
-    return pt->y < (g_compact ? TB : TABH) && bar_hit(ud, (float)pt->x, (float)pt->y) == HB_NONE ? SDL_HITTEST_DRAGGABLE : SDL_HITTEST_NORMAL;
+    App *app = ud;
+    float hit_x = (float)pt->x * app->input_scale, hit_y = (float)pt->y * app->input_scale;
+    return hit_y < (g_compact ? TB : TABH) && bar_hit(app, hit_x, hit_y) == HB_NONE ? SDL_HITTEST_DRAGGABLE : SDL_HITTEST_NORMAL;
 }
 static void history_go(App *a, int d) {
     int np = a->t->hpos + d; if (np < 0 || np >= a->t->nhist) return;
@@ -2235,18 +2272,20 @@ int main(int argc, char **argv) {
             static double t0; static int sent; float wx = 0, wy = 0, wdy = 0; double st = 0; int cnt = 0;
             sscanf(getenv("LUMEN_AUTOSCROLL"), "%f,%f,%f,%lf,%d", &wx, &wy, &wdy, &st, &cnt);
             if (!t0) t0 = now_ms();
-            if (sent < cnt && now_ms() - t0 > st + sent * 16.0) { SDL_Event we = {0}; we.type = SDL_EVENT_MOUSE_WHEEL; we.wheel.y = wdy; we.wheel.mouse_x = wx; we.wheel.mouse_y = wy; SDL_PushEvent(&we); sent++; }
+            if (sent < cnt && now_ms() - t0 > st + sent * 16.0) { SDL_Event we = {0}; we.type = SDL_EVENT_MOUSE_WHEEL; we.wheel.y = wdy; we.wheel.mouse_x = wx / a.input_scale; we.wheel.mouse_y = wy / a.input_scale; SDL_PushEvent(&we); sent++; }
             if (sent < cnt && to > 16) to = 16;
         }
         if (!SDL_WaitEventTimeout(&ev, to)) { if (a.t->loading || getenv("LUMEN_SHOT")) a.dirty = true; }
         else do {
             bool wheel0 = ev.type == SDL_EVENT_MOUSE_WHEEL && !ev.wheel.x && !ev.wheel.y;
+            input_coordinates(&a, &ev);
             if ((ev.type >= SDL_EVENT_KEY_DOWN && ev.type <= SDL_EVENT_TEXT_INPUT) || (ev.type >= SDL_EVENT_MOUSE_MOTION && ev.type <= SDL_EVENT_MOUSE_WHEEL && !wheel0)) a.last_input = now_ms();
             if (ev.type != EV_NET && ev.type != SDL_EVENT_MOUSE_WHEEL) a.vonly = false;
             js_key_mods = key_mods(SDL_GetModState());
             switch (ev.type) {
             case SDL_EVENT_QUIT: quit = true; break;
-            case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: case SDL_EVENT_WINDOW_RESIZED: update_size(&a); break;
+            case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: case SDL_EVENT_WINDOW_RESIZED:
+            case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED: update_size(&a); break;
             case SDL_EVENT_WINDOW_EXPOSED: a.dirty = true; break;
             case SDL_EVENT_MOUSE_WHEEL: {
                 /* whole-number deltas come from a mouse wheel: one fixed step per notch; fractional ones from a trackpad */
