@@ -1291,7 +1291,7 @@ static void render(App *a) {
 /* scroll the innermost scrollable box under (x,y) that can still move; false = let the page scroll */
 static bool wheel_scroll(App *a, float x, float y, float dx, float dy) {
     Page *p = a->t->cur; if (!p || !p->L || a->t->asleep) return false;
-    for (Box *b = layout_hit(p->L, x, y + a->t->sy); b; b = b->parent) {
+    for (Box *b = layout_hit(p->L, x, y + a->t->sy, 0, a->t->sy); b; b = b->parent) {
         if (!b->scroller || !b->node || !b->st) continue;
         bool sx = b->st->overflow_x == OV_AUTO || b->st->overflow_x == OV_SCROLL, sy = b->st->overflow_y == OV_AUTO || b->st->overflow_y == OV_SCROLL;
         float maxx = LMAX(0, b->scroll_w - b->w), maxy = LMAX(0, b->scroll_h - b->h);
@@ -1739,7 +1739,7 @@ static void hf_sync(void *ud, Document *d, bool layout) {
 }
 static void hf_viewport(void *ud, float *w, float *h, float *sx, float *sy, float *dpr) { Page *p = ud; *w = p->fw; *h = p->fh; *sx = 0; *sy = p->fsy; *dpr = g_app->scale; }
 static void hf_scroll_to(void *ud, float x, float y) { (void)x; Page *p = ud; p->fsy = y > 0 ? y : 0; p->drawn_ver = ~0ull; }
-static Node *hf_hit(void *ud, float x, float y) { Page *p = ud; if (!p->L) return NULL; Box *b = layout_hit(p->L, x, y + p->fsy); return b ? b->node : NULL; }
+static Node *hf_hit(void *ud, float x, float y) { Page *p = ud; if (!p->L) return NULL; Box *b = layout_hit(p->L, x, y + p->fsy, 0, p->fsy); return b ? b->node : NULL; }
 static void h_frame_close(void *ud);
 static void h_frame_open(void *ud, Node *f, Document *d, JsHost *ch) {
     (void)ud;
@@ -1781,7 +1781,7 @@ static void h_frame_close(void *ud) {
     if (g_app) { g_app->dirty = true; g_app->vonly = false; }
 }
 static void click_frame(App *a, Page *fp, float x, float y) {
-    Box *b = layout_hit(fp->L, x, y + fp->fsy);
+    Box *b = layout_hit(fp->L, x, y + fp->fsy, 0, fp->fsy);
     Node *t = b ? b->node : NULL;
     while (t && t->type != NODE_ELEMENT) t = t->parent;
     JsCtx *js = js_frame_ctx(fp->frame_el);
@@ -1839,7 +1839,7 @@ static void h_history_go_in(void *ud, int d) { (void)ud; history_go(g_app, d); }
 static int h_history_len_in(void *ud) { (void)ud; return g_app->t->nhist; }
 static void h_viewport_in(void *ud, float *w, float *h, float *sx, float *sy, float *dpr) { (void)ud; *w = g_app->vw - g_app->side; *h = g_app->vh - BAR; *sx = 0; *sy = g_app->t->sy; *dpr = g_app->scale; }
 static void h_scroll_to_in(void *ud, float x, float y) { (void)ud; (void)x; g_app->t->sy = y; g_app->dirty = true; }
-static Node *h_hit_in(void *ud, float x, float y) { (void)ud; Page *p = g_app->t->cur; if (!p || !p->L) return NULL; Box *b = layout_hit(p->L, x, y + g_app->t->sy); return b ? b->node : NULL; }
+static Node *h_hit_in(void *ud, float x, float y) { (void)ud; Page *p = g_app->t->cur; if (!p || !p->L) return NULL; Box *b = layout_hit(p->L, x, y + g_app->t->sy, 0, g_app->t->sy); return b ? b->node : NULL; }
 static void h_sync(void *ud, Document *d, bool layout) { TAB_CALL(ud, h_sync_in(g_app, d, layout)); }
 static void h_navigate(void *ud, const char *u) { TAB_CALL(ud, h_navigate_in(ud, u)); }
 static void h_set_url(void *ud, const char *u, bool push) { TAB_CALL(ud, h_set_url_in(ud, u, push)); }
@@ -2031,7 +2031,7 @@ static bool page_hover(Page *p, Node *n) {   /* :hover = the hit element and its
 static void page_move(App *a, float x, float y) {   /* pointer moves for page scripts (e.g. YouTube shows its controls on mousemove) */
     static double last; static Node *prev; double tn = now_ms();
     Page *p = a->t->cur; if (!p || !p->L) return;
-    Box *b = layout_hit(p->L, x, y + a->t->sy); Node *n = b ? b->node : NULL;
+    Box *b = layout_hit(p->L, x, y + a->t->sy, 0, a->t->sy); Node *n = b ? b->node : NULL;
     while (n && n->type != NODE_ELEMENT) n = n->parent;
     if (!n) n = p->d->html;
     if (page_hover(p, n)) restyle(a);
@@ -2047,7 +2047,7 @@ static void page_move_keep(App *a) {   /* YouTube hides its controls ~3 s after 
     if (tn - g_mv_rep < 1000) return;
     g_mv_rep = tn;
     if (a->t->cur != p || !p->js || !p->L) { g_mv_p = NULL; return; }
-    Box *b = layout_hit(p->L, g_mv_x, g_mv_y + a->t->sy); Node *n = b ? b->node : NULL;
+    Box *b = layout_hit(p->L, g_mv_x, g_mv_y + a->t->sy, 0, a->t->sy); Node *n = b ? b->node : NULL;
     while (n && n->type != NODE_ELEMENT) n = n->parent;
     float j = ((long)(tn / 1000) & 1) ? 1 : 0;   /* YouTube ignores moves to the same spot */
     if (n) js_dispatch(p->js, n, "mousemove", "MouseEvent", true, true, g_mv_x + j, g_mv_y, 0, NULL);
@@ -2104,8 +2104,8 @@ static bool vbar_click(App *a, float x, float y) {   /* document coordinates */
 }
 static float g_px, g_py; static bool g_press, g_drag;   /* text selection by mouse */
 static void sel_dirty(App *a) { a->dirty = true; a->vonly = false; }
-static Box *sel_scope(Layout *L, float x, float y) {
-    Box *b = layout_hit(L, x, y);
+static Box *sel_scope(Layout *L, float x, float y, float scroll_y) {
+    Box *b = layout_hit(L, x, y, 0, scroll_y);
     while (b && (b->kind == BX_INLINE || b->kind == BX_TEXT)) b = b->parent;
     return b;
 }
@@ -2114,14 +2114,14 @@ static void sel_press(App *a, float x, float y, int clicks) {
     Page *p = a->t->cur;
     if (p && p->L && !a->t->asleep) {
         float px = x - a->side, py = y - BAR + a->t->sy;
-        Box *b = layout_hit(p->L, px, py);
+        Box *b = layout_hit(p->L, px, py, 0, a->t->sy);
         bool ok = !(b && b->st && b->st->user_select);
         for (Node *k = b ? b->node : NULL; ok && k; k = k->parent) if (is_text_ctl(k)) ok = false;
         if (ok && b && edit_host(b->node)) ok = false;
         if (ok) {
             g_press = true; g_px = px; g_py = py;
             Node *tn; int off;
-            if (clicks >= 2 && tsel_point(p->L, px, py, a->t->sy, sel_scope(p->L, px, py), &tn, &off)) {
+            if (clicks >= 2 && tsel_point(p->L, px, py, a->t->sy, sel_scope(p->L, px, py, a->t->sy), &tn, &off)) {
                 if (clicks == 2) tsel_word(p->L, tn, off); else tsel_block(p->L, tn);
                 g_press = false;
             }
@@ -2136,7 +2136,7 @@ static void sel_drag(App *a, float x, float y) {
     if (!g_drag) {
         if (fabsf(px - g_px) + fabsf(py - g_py) < 4) return;
         Node *an; int ao;
-        if (!tsel_point(p->L, g_px, g_py, a->t->sy, sel_scope(p->L, g_px, g_py), &an, &ao)) { g_press = false; return; }
+        if (!tsel_point(p->L, g_px, g_py, a->t->sy, sel_scope(p->L, g_px, g_py, a->t->sy), &an, &ao)) { g_press = false; return; }
         g_drag = true; g_tsel = (TextSel){ false, p->L, an, an, ao, ao };
     }
     Node *fn; int fo;
@@ -2153,7 +2153,7 @@ static void edit_press(App *a, float x, float y, int clicks) {
     Node *h = edit_focus(a); Page *p = a->t->cur;
     if (!h || !p || !p->L || a->t->asleep) return;
     float px = x - a->side, py = y - BAR + a->t->sy;
-    Box *b = layout_hit(p->L, px, py); Node *tn; int off;
+    Box *b = layout_hit(p->L, px, py, 0, a->t->sy); Node *tn; int off;
     if (!b || edit_host(b->node) != edit_host(h) || !edit_text_at(a, h, px, py, &tn, &off)) return;
     js_dispatch(p->js, tn, clicks >= 3 ? "lumensel-all" : clicks == 2 ? "lumensel-word" : "lumensel-collapse", "MouseEvent", false, false, off, 0, 0, NULL);
     g_epress = clicks == 1;
@@ -2193,7 +2193,7 @@ static void click_page(App *a, float x, float y) {
     if (!a->t->cur || !a->t->cur->L || a->t->asleep) return;   /* a sleeping page is only a picture until its reload lands */
     h_sync_in(a, a->t->cur->d, true);   /* paint may be deferred; hit-test the current DOM, not detached boxes */
     if (vbar_click(a, x, y - BAR + a->t->sy)) return;
-    Box *b = layout_hit(a->t->cur->L, x, y - BAR + a->t->sy);
+    Box *b = layout_hit(a->t->cur->L, x, y - BAR + a->t->sy, 0, a->t->sy);
     Node *t = b ? b->node : NULL;
     if (getenv("LUMEN_DEBUG_CLICK")) {
         fprintf(stderr, "lumen: click %.0f,%.0f box[%.0f,%.0f %.0fx%.0f] ->", x, y, b ? b->x : 0, b ? b->y : 0, b ? b->w : 0, b ? b->h : 0);
@@ -2249,7 +2249,7 @@ static void click_page(App *a, float x, float y) {
 static bool over_link(App *a, float x, float y) {
     x -= a->side;
     if (!a->t->cur || !a->t->cur->L || a->t->asleep || y < BAR) return false;
-    Box *b = layout_hit(a->t->cur->L, x, y - BAR + a->t->sy);
+    Box *b = layout_hit(a->t->cur->L, x, y - BAR + a->t->sy, 0, a->t->sy);
     for (Node *n = b ? b->node : NULL; n; n = n->parent) if (n->type == NODE_ELEMENT && n->tag == A_a && node_attr(n, "href")) return true;
     return false;
 }

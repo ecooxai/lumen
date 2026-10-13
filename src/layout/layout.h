@@ -46,7 +46,6 @@ typedef struct Layout {
     Document *doc;
     float vw, vh, dpr;
     float doc_w, doc_h;
-    float scroll_x, scroll_y;
     int nboxes;
     float inl_cbh;   /* containing-block height handed to layout_inline (floats/atomics resolve % heights against it) */
     double ms;
@@ -57,7 +56,7 @@ extern bool (*layout_image_size_hook)(Node *n, float *w, float *h);
 Layout *layout_new(void);
 void layout_free(Layout *L);
 void layout_run(Layout *L, Document *d, float vw, float vh);
-Box *layout_hit(Layout *L, float x, float y);   /* document coordinates */
+Box *layout_hit(Layout *layout, float x, float y, float scroll_x, float scroll_y);   /* document coordinates */
 Font *style_font(const ComputedStyle *s);
 float style_line_height(const ComputedStyle *s, Font *f);
 /* column-reverse scrollers start at the end: scrollTop 0 is the bottom, negative scrolls up */

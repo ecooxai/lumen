@@ -404,11 +404,11 @@ static Box *hit(Box *b, float x, float y, float ox, float oy, float vx, float vy
     if (inside && !hidden && b->node && b->st && b->st->pointer_events) return b;
     return NULL;
 }
-Box *layout_hit(Layout *L, float x, float y) {
-    if (!L->root) return NULL;
-    Box *b = hit(L->root, x, y, 0, 0, -L->scroll_x, -L->scroll_y);
-    while (b && !b->node) b = b->parent;   /* anonymous boxes (e.g. a flex item's text run) belong to their parent's node */
-    return b;
+Box *layout_hit(Layout *layout, float x, float y, float scroll_x, float scroll_y) {
+    if (!layout->root) return NULL;
+    Box *box = hit(layout->root, x, y, 0, 0, -scroll_x, -scroll_y);
+    while (box && !box->node) box = box->parent;
+    return box;
 }
 
 void layout_dump(Box *b, int depth, int maxdepth) {

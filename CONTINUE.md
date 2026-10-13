@@ -1,5 +1,40 @@
 # Lumen: handoff notes
 
+## Android control regressions reproduced; hit-test repair pending validation (2026-10-13)
+
+Phone baseline remains installed be50a858/source910ef0e. New committed fixture
+and checklist are tests/pages/codex-android-scroll-controls.html and
+docs/codex-android-controls-acceptance.md (e7bec38). Header-only scrolling and
+optional footer separate row-reuse eligibility from full fixed-union fallback.
+
+First controls attempt failed in the harness: startup was labelled before
+am-start returned. Original failure preserved; nine offline tests verify corrected
+ordering. PID31709 was force-stopped by the tester, not a demonstrated crash.
+Fresh owner then runs the unchanged APK for182.558s with183 accepted1Hz samples,
+zero rejects. Both owners verify cleanup/app absence/lock release/settings.
+Evidence: build/codex-android-scroll-controls/{phone,phone-retry}.
+
+Main reviews actual PNGs02/04/05/06/07/08: header and full-width edges survive
+forward/reverse scrolling; footer is visible; yellow overlay opens/closes at
+the top, but the same fixed button tap after scrolling has no effect. Band2
+input near the lower edge is hidden when IME shrinks BrowserSurface from
+1080x2112 to1080x1261. Five idle seconds then average8.2% process CPU, peak8.91%,
+SDLThread8.0%, RSS226.01MiB. Guard stops before typing/Back/formal idle/sites.
+Google/Wikipedia NOT tested. No new APK or general acceptance claim.
+
+Source diagnosis: layout_hit reads Layout.scroll_x/y, which are never assigned.
+Main replaces implicit stale offsets with explicit owning tab/frame offsets at
+all11 call sites, including DOM hit testing, hover, wheel, selection and links.
+New actual-code regression suite first records9 tests:3pass/6behaviorfailures,
+zero compile errors. Main implements the repair after RED; fresh GREEN owner
+checks it. No installed-phone fix claim yet. IME visibility remains unfixed.
+
+Read-only postmortem captures21 complete paint wall/CPU pairs. Latest focused
+idle pairs show two full paints per~1.06s, roughly39-42ms rasterCPU plus26-27ms
+composeCPU per pair. Main is investigating blink-driven display-list insertion
+and index-based damage comparison; thread attribution alone is not the cause.
+Bounded phone coverage55/100; overall daily-use readiness remains25/100.
+
 ## Scroll row reuse verified and installed on Android (2026-10-13)
 
 Installed source910ef0e07bcdd93acd6a014a0850af7e6da451e3, branch
