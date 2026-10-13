@@ -1003,10 +1003,14 @@ static void ditem_box(const DItem *it, float *b) {
 }
 static int dl_sigs(const DisplayList *dl, struct DSig **v, int *cap) {
     int n = dl->items.n, st[64], ns = 0;
+    uint64_t context_hash = 1469598103934665603ull;
     if (n > *cap) { *cap = n + n / 2 + 16; *v = xrealloc(*v, sizeof **v * (size_t)*cap); }
     for (int i = 0; i < n; i++) {
         const DItem *it = &dl->items.v[i]; struct DSig *q = &(*v)[i];
         q->h = ditem_hash(it); ditem_box(it, q->b);
+        if (it->op == DO_PUSH_CLIP || it->op == DO_POP_CLIP ||
+            it->op == DO_PUSH_LAYER || it->op == DO_POP_LAYER) HMIX(context_hash, q->h);
+        HMIX(q->h, context_hash);
         if (it->op == DO_PUSH_LAYER) { if (ns < 64) st[ns++] = i; }   /* a layer covers its contents: an opacity change damages all of them */
         else if (it->op == DO_POP_LAYER) { if (ns) { int t = st[--ns]; if (ns) bunion((*v)[st[ns - 1]].b, (*v)[t].b); } }
         else if (ns) bunion((*v)[st[ns - 1]].b, q->b);
@@ -1194,11 +1198,17 @@ static void render(App *a) {
                 build_chrome(a); chrome_tip(a);
                 bool chrome_changed = dl_hash(&a->cdl) * 31 + dl_hash(&a->hdl) != a->chash;
                 float dm[4] = { 1e30f, 1e30f, -1e30f, -1e30f };
-                for (int i = 0, m = LMAX(nn, a->nosig); dmg && i < m; i++) {
-                    const struct DSig *o = i < a->nosig ? &a->osig[i] : NULL, *q = i < nn ? &a->nsig[i] : NULL;
-                    if (o && q && o->h == q->h) continue;
-                    if (o) bunion(dm, o->b);
-                    if (q) bunion(dm, q->b);
+                int first_changed = 0, old_end = a->nosig, new_end = nn;
+                while (first_changed < old_end && first_changed < new_end &&
+                       a->osig[first_changed].h == a->nsig[first_changed].h) first_changed++;
+                while (old_end > first_changed && new_end > first_changed &&
+                       a->osig[old_end - 1].h == a->nsig[new_end - 1].h) { old_end--; new_end--; }
+                for (int index = first_changed; index < LMAX(old_end, new_end); index++) {
+                    const struct DSig *previous = index < old_end ? &a->osig[index] : NULL;
+                    const struct DSig *current = index < new_end ? &a->nsig[index] : NULL;
+                    if (previous && current && previous->h == current->h) continue;
+                    if (previous) bunion(dm, previous->b);
+                    if (current) bunion(dm, current->b);
                 }
                 float s = a->page.scale;
                 int x0 = (int)fminf(pwp, fmaxf(0, floorf(dm[0] * s))), y0 = (int)fminf(ph, fmaxf(0, floorf(dm[1] * s)));

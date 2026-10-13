@@ -45,6 +45,22 @@ Android density. Record the installed APK hash and actual BrowserSurface bounds.
 - Stop the app, remove only owned server/reverse/diagnostic resources, join the
   sampler and verify both locks are released before reporting completion.
 
+## Focused idle regression
+
+Keep the fixed header and footer visible when testing a focused text input.
+After the keyboard transition settles, record a separate focused-idle interval
+with no typing or scrolling. Correlate the process and renderer-thread samples
+with complete paint CPU/wall pairs inside that interval. A blinking caret must
+not force full-page raster and composition twice per second simply because its
+display-list entry appears or disappears before unchanged fixed controls.
+
+Check visible and offscreen caret transitions separately. Hidden focus is an
+input-visibility failure even if its CPU use is fixed; do not count a repaint
+optimization as repairing keyboard avoidance. Keep the sustained-idle guard
+enabled, and do not claim improved phone CPU from host damage-policy or raster
+pixel tests alone. The original installed baseline recorded 8.2% process CPU
+and 8.0% renderer-thread CPU during the failing five-second hidden-focus window.
+
 This fixture tests controls and rendering transitions. It does not establish
 Chrome layout parity, frame rate, WebGL/WebGPU support, real-site performance
 or the half-Chrome-RAM target.

@@ -10,7 +10,9 @@
 #define RGBA(red, green, blue, alpha) UINT32_MAX
 
 struct DSig { uint64_t h; float b[4]; };
-typedef struct { uint64_t hash; } DisplayList;
+typedef enum { DO_RECT, DO_PUSH_CLIP, DO_POP_CLIP, DO_PUSH_LAYER, DO_POP_LAYER } DrawOp;
+typedef struct { DrawOp op; uint64_t hash; float bounds[4]; } DItem;
+typedef struct { uint64_t hash; struct { DItem *v; int n; } items; } DisplayList;
 typedef struct { float scale; int stride; uint32_t *px; void *punch; bool punched; } Canvas;
 typedef struct { float sy; bool loading; } Tab;
 typedef struct {
@@ -34,6 +36,22 @@ static void bunion(float *dest, const float *source) {
     dest[0] = LMIN(dest[0], source[0]); dest[1] = LMIN(dest[1], source[1]);
     dest[2] = LMAX(dest[2], source[2]); dest[3] = LMAX(dest[3], source[3]);
 }
+static void *xrealloc(void *memory, size_t size) {
+    void *result = realloc(memory, size);
+    assert(result);
+    return result;
+}
+#include "chrome_damage_hash.h"
+
+static uint64_t ditem_hash(const DItem *item) {
+    return hmix((uint64_t)item->op, &item->hash, sizeof item->hash);
+}
+static void ditem_box(const DItem *item, float *result) {
+    for (int index = 0; index < 4; index++) result[index] = item->bounds[index];
+}
+
+#include "chrome_damage_signatures.h"
+
 static void raster(Canvas *canvas, const DisplayList *list, uint32_t color) {
     (void)canvas; (void)list; (void)color; full_calls++;
 }
@@ -53,7 +71,7 @@ int main(int argc, char **argv) {
     int scenario = atoi(argv[1]);
     Tab tab = {0};
     struct DSig old_sig = {1, {10, 20, 30, 40}}, new_sig = old_sig;
-    App state = {.page = {.scale = 1}, .cdl = {1}, .chash = 31,
+    App state = {.page = {.scale = 1}, .cdl = {.hash = 1}, .chash = 31,
                  .osig_ok = true, .t = &tab, .osig = &old_sig, .nsig = &new_sig, .nosig = 1};
     App *a = &state;
     int why = 1, nv = 0, nn = 1, pwp = 100, ph = 100;
@@ -70,6 +88,79 @@ int main(int argc, char **argv) {
         for (int index = 0; index < 4; index++) old_sig.b[index] = new_sig.b[index] = 1e30f;
     }
     if (scenario == 7) state.osig_ok = false;
+    struct DSig *old_items = NULL, *new_items = NULL;
+    if (scenario >= 8) {
+        DItem background = {DO_RECT, 10, {0, 0, 100, 100}};
+        DItem text = {DO_RECT, 11, {10, 20, 30, 40}};
+        DItem caret = {DO_RECT, 12, {30, 20, 32, 40}};
+        DItem header = {DO_RECT, 13, {0, 0, 100, 10}};
+        DItem footer = {DO_RECT, 14, {0, 90, 100, 100}};
+        DItem old_draws[8] = {background, text, header, footer};
+        DItem new_draws[8] = {background, text, caret, header, footer};
+        int old_count = 4, new_count = 5;
+        if (scenario == 10 || scenario == 11) {
+            new_draws[2].bounds[1] = 120;
+            new_draws[2].bounds[3] = 140;
+        }
+        if (scenario == 12) {
+            new_draws[1].hash = 21;
+            new_draws[1].bounds[0] = 5;
+        }
+        if (scenario == 13) {
+            old_draws[2] = caret;
+            old_draws[3] = header;
+            old_draws[4] = footer;
+            old_count = 5;
+            new_draws[1] = caret;
+            new_draws[2] = text;
+        }
+        if (scenario == 14) {
+            old_draws[0] = (DItem){DO_PUSH_LAYER, 30, {1e30f, 1e30f, -1e30f, -1e30f}};
+            old_draws[4] = (DItem){DO_POP_LAYER, 31, {1e30f, 1e30f, -1e30f, -1e30f}};
+            old_count = 5;
+            new_draws[0] = old_draws[0];
+            new_draws[0].hash = 32;
+            new_draws[5] = old_draws[4];
+            new_count = 6;
+        }
+        if (scenario == 15) {
+            old_draws[2] = text;
+            new_draws[3] = text;
+        }
+        if (scenario == 16 || scenario == 18) {
+            old_draws[1] = background;
+            old_count = 2;
+            new_draws[1] = (DItem){DO_PUSH_CLIP, 40, {20, 20, 40, 40}};
+            if (scenario == 18) new_draws[1].op = DO_PUSH_LAYER;
+            new_draws[2] = background;
+            new_count = 3;
+        }
+        if (scenario == 17 || scenario == 19) {
+            old_draws[0] = (DItem){DO_PUSH_CLIP, 40, {20, 20, 40, 40}};
+            old_draws[1] = (DItem){DO_POP_CLIP, 41, {1e30f, 1e30f, -1e30f, -1e30f}};
+            if (scenario == 19) {
+                old_draws[0].op = DO_PUSH_LAYER;
+                old_draws[1].op = DO_POP_LAYER;
+            }
+            old_draws[2] = background;
+            old_count = 3;
+            new_draws[0] = old_draws[0];
+            new_draws[1] = background;
+            new_count = 2;
+        }
+        DisplayList previous = {.items = {old_draws, old_count}};
+        DisplayList current = {.items = {new_draws, new_count}};
+        if (scenario == 9 || scenario == 11) {
+            DisplayList swap = previous;
+            previous = current;
+            current = swap;
+        }
+        int old_capacity = 0, new_capacity = 0;
+        state.nosig = dl_sigs(&previous, &old_items, &old_capacity);
+        nn = dl_sigs(&current, &new_items, &new_capacity);
+        state.osig = old_items;
+        state.nsig = new_items;
+    }
 
 #include "chrome_damage_function.h"
 
@@ -78,7 +169,7 @@ int main(int argc, char **argv) {
             assert(full_calls == 0 && rect_calls == 0);
             assert(!part && !gskip);
             break;
-        case 1: case 5: case 6:
+        case 1: case 5: case 6: case 10: case 11:
             assert(full_calls == 0 && rect_calls == 0);
             assert(part && gskip);
             break;
@@ -89,12 +180,20 @@ int main(int argc, char **argv) {
             assert(rx0 == 10 && ry0 == 20 && rx1 == bounds[2] && ry1 == 40);
             assert(!gskip && part == (scenario == 4));
             break;
-        case 3: case 7:
+        case 3: case 7: case 14: case 16: case 17: case 18: case 19:
             assert(full_calls == 1 && rect_calls == 0);
             assert(!part && !gskip);
             break;
+        case 8: case 9: case 12: case 13: case 15:
+            assert(full_calls == 0 && rect_calls == 1);
+            assert(part && !gskip);
+            assert(bounds[0] == (scenario == 12 ? 5 : scenario == 13 ? 10 : 30));
+            assert(bounds[1] == 20 && bounds[2] == 32 && bounds[3] == 40);
+            break;
         default: abort();
     }
+    free(old_items);
+    free(new_items);
     puts("PASS page-cache damage policy");
     return 0;
 }

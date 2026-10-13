@@ -1,5 +1,33 @@
 # Lumen: handoff notes
 
+## Hit-test repair passes host verification; caret regression in progress (2026-10-13)
+
+Immutable bde548f passes125 distinct cases (9 focused,116 adjacent), plus9
+ASan/UBSan focused repeats. Actual Android API29 main.c/layout/block.c compile
+cleanly. No full link/APK/install/device acceptance from this verification.
+Evidence build/codex-android-hit-scroll/green/REPORT.txt. Host mean CPU93.95%
+tests/92.21% compile/73.69% sanitizers, peak aggregateRSS153.60MiB; shared480%,
+SCHED_IDLE/nice19, scopes drained and frozen V8 unchanged. Both prior test
+owners closed. Installed phone remains source910ef0e/be50a858.
+
+Main adds damage-policy and actual-raster pixel regressions before changing
+product code. Twenty policy cases first execute14pass/6behaviorfailures, zero
+errors: inserting/removing a caret before fixed controls incorrectly damages
+unchanged page regions, including when the caret is outside the viewport.
+Clipping/layer-state changes must still conservatively invalidate affected
+contents. Actual-raster tests compare incremental pixels against a full raster;
+their first compile attempt had a test-only now_ms linkage conflict and missing
+M_PI under strict C11, corrected by using actual util.c and GNU11. A fresh
+owner verifies those tests against immutable bde548f, not modified main.c.
+
+After policy RED, Main trims equal display-list prefixes/suffixes before
+damaging unmatched items. Signatures include accumulated clip/layer operation
+history so matching item content alone cannot hide changed drawing state.
+This is linear-time, adds no signature fields or framebuffers, and retains
+conservative full repaint for large changes. Product GREEN verification and
+phone CPU acceptance are pending. Keyboard focus reveal remains a separate
+unresolved bug. Overall daily-use readiness25/100.
+
 ## Android control regressions reproduced; hit-test repair pending validation (2026-10-13)
 
 Phone baseline remains installed be50a858/source910ef0e. New committed fixture
