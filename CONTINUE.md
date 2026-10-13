@@ -1,5 +1,24 @@
 # Lumen: handoff notes
 
+## Pacing installed; scroll acceptance still pending (2026-10-13)
+
+Phone agent01a1346c installs the immutable058271 APK once with data preserved
+and verifies installed bytes. Its42.17s live attempt stops at the top-image
+review gate timeout BEFORE swipes; this is a harness coordination failure,
+not a renderer failure or completed scroll/idle test. Both agent and Main
+actually view the correct Bands1/2 fixture, full-width single toolbar. Evidence:
+build/codex-android-fling-pacing/phone/LIVE-FAILURE.json and diagnostic-top.png.
+Cleanup proves app/marker absent, server/reverse removed, sampler joined and
+locks released, zero telemetry errors. Do not reinstall merely to retry:
+the next fresh test agent should verify058271, acknowledge its own actual
+visual review in the required receipt schema before gestures, and let Main
+review independently afterwards. Preserve this failed attempt untouched.
+
+Copy-batching commit777b654 remains host-tested, not phone-tested. Fresh
+build-only agent01a13471-9bb8-7e33-b66c-49b4a9642013 prepares its immutable
+APK under build/codex-android-page-compose/final. It has NO phone authority;
+do not install over a live phone test. Source unchanged during its snapshot.
+
 ## Full-width page composition batching (2026-10-13)
 
 Main replaces per-row page-to-frame memcpy calls with one contiguous copy
