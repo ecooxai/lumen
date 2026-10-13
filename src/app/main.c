@@ -498,9 +498,10 @@ static char *internal_page(App *app, const char *u) {
         for (int tab = 0; tab < app->ntabs; tab++) {
             Tab *entry = app->tabs[tab];
             if (entry->ws != app->wi) continue;
-            const char *title = entry->cur && entry->cur->d && entry->cur->d->title && *entry->cur->d->title ? entry->cur->d->title : *entry->url ? entry->url : "New Tab";
+            const char *address = entry == app->t ? u : entry->url;
+            const char *title = entry == app->t ? "New Tab" : entry->cur && entry->cur->d && entry->cur->d->title && *entry->cur->d->title ? entry->cur->d->title : *address ? address : "New Tab";
             sb_printf(&b, "<div class=row><a class=\"l grow\" href=\"lumen://workspace?tab=%d\"><div class=t>", tab);
-            sb_esc(&b, title); sb_puts(&b, "</div><div class=u>"); sb_esc(&b, entry->url); sb_puts(&b, "</div></a></div>");
+            sb_esc(&b, title); sb_puts(&b, "</div><div class=u>"); sb_esc(&b, address); sb_puts(&b, "</div></a></div>");
         }
         sb_puts(&b, "</div><p class=sub>Use + in the toolbar to open a tab. Tap a workspace icon to switch.</p>");
         if (app->nws > 1) sb_puts(&b, "<p><a class=btn href=\"lumen://workspace?close\">Close this workspace</a></p>");

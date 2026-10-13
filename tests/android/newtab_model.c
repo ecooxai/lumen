@@ -68,6 +68,32 @@ int main(int argc, char **argv) {
         CHECK(strstr(html, "<h2>Bookmarks</h2>"));
 #endif
         free(html);
+    } else if (!strcmp(scenario, "home-destination") || !strcmp(scenario, "home-title") ||
+               !strcmp(scenario, "other-tab") || !strcmp(scenario, "home-readonly")) {
+        strcpy(first.url, "lumen://newtab?s=settings");
+        document.title = "Previous website title";
+        Document other_document = {.title = "Other <tab>&"};
+        Page other_page = {.d = &other_document};
+        Tab other = {.cur = &other_page, .url = "https://example.org/?a=1&b=2"};
+        app.tabs[app.ntabs++] = &other;
+        char *html = internal_page(&app, "lumen://newtab");
+        const char *cards = strstr(html, "<h2>Open tabs</h2>");
+        CHECK(cards);
+        if (!strcmp(scenario, "home-destination")) {
+            CHECK(strstr(cards, "<div class=u>lumen://newtab</div>"));
+            CHECK(!strstr(cards, "lumen://newtab?s=settings"));
+        } else if (!strcmp(scenario, "home-title")) {
+            CHECK(strstr(cards, "<div class=t>New Tab</div>"));
+            CHECK(!strstr(cards, "Previous website title"));
+        } else if (!strcmp(scenario, "other-tab")) {
+            CHECK(strstr(cards, "<div class=t>Other &lt;tab&gt;&amp;</div>"));
+            CHECK(strstr(cards, "<div class=u>https://example.org/?a=1&amp;b=2</div>"));
+            CHECK(strstr(cards, "lumen://workspace?tab=1"));
+        } else {
+            CHECK(!strcmp(first.url, "lumen://newtab?s=settings"));
+            CHECK(first.cur == &page && !strcmp(document.title, "Previous website title"));
+        }
+        free(html);
     } else if (!strcmp(scenario, "sections")) {
         const char *sections[] = {"bookmarks", "history", "settings"};
         const char *headings[] = {"<h2>Bookmarks</h2>", "<h2>History</h2>", "<h2>Settings</h2>"};

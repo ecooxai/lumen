@@ -60,6 +60,18 @@ class AndroidNewTabTests(unittest.TestCase):
     def test_default_is_workspace_home(self):
         self.run_scenario("default")
 
+    def test_home_card_uses_destination_instead_of_previous_settings_url(self):
+        self.run_scenario("home-destination")
+
+    def test_home_card_does_not_reuse_previous_website_title(self):
+        self.run_scenario("home-title")
+
+    def test_home_cards_preserve_and_escape_other_tabs(self):
+        self.run_scenario("other-tab")
+
+    def test_home_generation_does_not_mutate_current_navigation(self):
+        self.run_scenario("home-readonly")
+
     def test_physical_pixel_settings_and_resolution_labels(self):
         self.run_scenario("pixel-settings")
 

@@ -1,5 +1,22 @@
 # Lumen: handoff notes
 
+## Android Home-card destination fix (2026-10-13)
+
+Phone GPU/scroll acceptance exposed a stale Settings address in the current
+Home tab card. Internal HTML is generated before navigation replaces the old
+tab URL/document. Render the current card from the requested destination and
+New Tab title; keep other tabs' titles/URLs escaped and leave navigation state
+untouched. Tests first:17 newtab checks yield2 expected assertion failures and
+15 passes, zero errors. Fix passes53 focused adjacent checks and19 ASan/UBSan
+scenario/platform executions (16 distinct scenarios), with no diagnostics.
+Evidence: `build/codex-android-home-card/red/MAIN-REVIEW.md` and
+`build/codex-android-home-card/green/MAIN-REVIEW.md`. Host verification quality
+95/100; real phone verification of this small UI change remains pending.
+The installed d086 GPU/scroll APK does not contain this newer Home-card fix.
+Separate native scroll profiling preparation is in
+`build/codex-android-scroll-profile/prepare/`; no phone grant yet. Preserve
+matching d086 symbols before replacing native build outputs. Android only.
+
 ## Android GPU/scroll phone checkpoint (2026-10-13)
 
 Current Android-only branch: `codex/android-vulkan-momentum-scroll`.
