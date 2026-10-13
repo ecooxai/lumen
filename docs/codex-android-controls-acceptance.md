@@ -8,10 +8,14 @@ Android density. Record the installed APK hash and actual BrowserSurface bounds.
 ## Phone checks
 
 1. Verify Band 1, the green/orange page edges, a single browser toolbar and the
-   fixed top/bottom labels in an actual screenshot.
+   fixed top label in an actual screenshot. The footer starts hidden so the
+   fixed-region union does not span the entire page.
 2. Scroll forward far enough to show later bands, then reverse. Fixed labels
    must remain stationary; exposed rows must have the correct band background
    and edges without stale pixels, duplicated text or a shifted toolbar.
+   Check paint diagnostics for actual blit frames before claiming scroll-ring
+   coverage. Toggle the footer on, then test scrolling again: the top/bottom
+   fixed-region union should exercise the full-repaint fallback, not row reuse.
 3. Open and close the yellow DOM overlay after scrolling. Verify its actual
    appearance and that closing it restores the underlying page.
 4. Position the Band 2 or Band 4 input in the lower part of the visible page.
