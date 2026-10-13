@@ -1,5 +1,40 @@
 # Lumen: handoff notes
 
+## Real render-thread CPU profile complete: target redundant page copies (2026-10-13)
+
+Fresh no-install phone run succeeds on installed5963eecd/source1405612.
+Evidence: build/codex-android-cpu-profile/view-phone. Geometry8 and existing
+CPU-parser29 checks pass. Main independently reviews actual top/end PNGs
+during formal idle: Bands1/2 to23/24,20 exact swipes,full-width edges and one
+toolbar. Own BrowserSurface bounds0,88-1080,2200 measure1080x2112, persisted
+Vulkan200% implies540x1056 layout; this inference is explicitly recorded.
+
+Complete scroll10s/10 process intervals:55.2% meanCPU,56% peak,
+RSS231.3125-231.3164MiB; renderer SDLThread44.1% meanCPU. Formal idle61.01s:
+0.01639% meanCPU,0.9901% peak,RSS229.4375MiB; passes.124 samples/attempts,
+zero errors,max device gap1.04s. App/owned marker/reverse/server absent,
+sampler joined,locks released,display/rotation unchanged. No reinstall.
+
+Seven wholly contained wall/CPU pairs span7050.2ms and406 partial blit paints;
+all406 CPU samples valid,none unavailable or missing. Summed thread CPU ms:
+prepare1.162,layout36.851,signatures4.779,raster746.384,compose584.817,
+present1657.404. Corresponding wall ms:raster798.969,compose593.124,
+present1886.090. Presentation is predominantly calling-thread CPU, not just
+waiting; this does NOT separate texture upload, driver/submission and other
+presentation work, nor measure GPU execution. Compose alone uses about1.44ms
+CPU per paint and8.3% of one core over these contained intervals. No FPS,
+instrumentation-overhead,causal speedup or Chrome comparison claim.
+
+Next product work: eliminate the redundant page-to-frame CPU copy on eligible
+Android full-width GPU partial paints, uploading the authoritative page rows
+directly into the existing GPU texture. Preserve full-frame coherence for
+software fallback, screenshots, overlays, texture recreation and resize;
+test stale-frame transitions first. Avoid adding another full-size buffer.
+Do not just batch memcpy again: that earlier change had no measured gain.
+The larger presentation cost remains a separate target; do not claim upload
+alone is proven to account for it. Validate changes on this same phone fixture
+before broadening site tests. Evidence scope95/100; overall readiness25/100.
+
 ## CPU APK installed; correct inset geometry rejected by test harness (2026-10-13)
 
 5963eecd is now installed once with install-r and verified, preserving data.
