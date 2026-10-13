@@ -4,6 +4,68 @@
 
 ### Current idle-adapter iteration
 
+**Viewport-style fix committed and verified on the API35 phone.**
+Eight new actual-CSS-engine regression scenarios compile and fail behaviorally
+before production changes: viewport units, media activation, nested queries,
+inheritance/pseudo styles, stable viewport caching, independent documents,
+resolution/color scheme and orientation. RED evidence:
+`build/codex-android-viewport/red/REPORT.md` (8 failures, no test errors).
+Two resource/late-sheet cases and three app-wiring assertions were added before
+implementation but were not part of that executed RED run.
+Commit `ae9976d` retains `@media` rule conditions and evaluates them once per
+style environment change or index rebuild. Computed styles invalidate on
+viewport/DPR/color-scheme changes; unchanged clean documents avoid restyling
+and stylesheets are not reparsed on resize. Native page render, synchronous
+style reads and iframe layout update their style viewport before layout.
+Conditional font-face/import/property resource behavior remains parse-time;
+this patch does not claim complete conditional-resource support, JavaScript
+resize/matchMedia notifications, density-aware UI or public-site parity.
+GREEN passes93 focused groups (new13 plus prior80) and23 unchanged packaging
+gates. Actual Android header rebuild:17 rebuilt, five byte-changed,276 reused.
+Compact candidate87,468,308 bytes, mode0444:
+`build/codex-android-viewport/green/codex-android-viewport-compact-debug.apk`,
+SHA256 `7fd5aa1b9f2079500ea82888408b0dcb8be31aef7499613208d223bc04d7b6a2`.
+Report/source pins: `build/codex-android-viewport/green/REPORT.md`.
+Normal assembly averaged234.87% host CPU, sampled peak RSS1737.07 MiB;
+shared480% quota/SCHED_IDLE/nice19 held and original V8 remains frozen with
+seven unchanged input hashes. Two build-harness corrections, no production
+failure/retry; compiler/SDK warnings are retained. Verified prebuilt V8 is used.
+Phone testing completed and released the device. Host-only preparation recorded one unexplained
+priority-check failure before models ran; strict subsequent checks passed,
+but no cause/fix is claimed. The actual runtime's1328 host-policy samples and
+4435 thread observations all retain shared480%/SCHED_IDLE/nice19.
+
+New candidate7fd5aa1b is installed. Evidence under
+`build/codex-android-viewport/phone/run1` verifies the previously stale white
+navigation column now fills the page after IME dismissal and closed-keyboard
+portrait/landscape rotations, without page touches/reloads masking the defect.
+Rotation with an already-visible IME also retains correct surface/column
+geometry and one keyboard inset. Main reviewed actual protected dismissal and
+already-open-IME rotation screenshots. One real Home/background/resume retains
+the same process; fresh History/Bookmarks touches verify presentation.
+Fresh HUD-On baseline60.01-second idle passes: mean2.45% CPU, range0–8%, max
+three consecutive intervals above3%, RSS223.22–225.48 MiB. Final20-second home
+idle passes: mean2.40%, range0–6.12%, max one consecutive interval above3%,
+RSS233.14 MiB. Continuous process/all-thread telemetry covers330 samples over
+329.02 seconds including review/restoration/cleanup; max host gap1.138 seconds.
+Logs retain60 GraphicBufferAllocator and60 AHardwareBuffer errors, undiagnosed;
+no matched fatal pattern does not mean error-free graphics. No site/Chrome
+benchmark, public-site parity, media-query phone fixture or complete web-API
+acceptance is claimed. Conditional media behavior is covered by actual-engine
+host tests; phone visuals establish this home-page viewport regression only.
+Phone restored to Bookmarks/HUD On, portrait, keyboard closed, rotation `free`,
+then force-stopped and released; source pins and frozen V8 remain unchanged.
+Final phone report: `build/codex-android-viewport/phone/REPORT.md`.
+Main-reviewed scores: build/packaging95/100, bounded viewport GUI90/100;
+overall Android daily-use readiness remains25/100, not a compatibility percentage.
+Phone harness corrections: one host-preparation diagnostic, zero runtime;
+the unknown preparation priority failure remains unresolved.
+Next: density-aware mobile controls and responsive internal pages, plus native
+JavaScript resize/matchMedia notification coverage. Missing real graphics and
+device web APIs and unmeasured Chrome comparisons still block daily readiness.
+
+### Previous safe-area checkpoint
+
 **Android safe-area adapter committed and verified in bounded API35 phone tests.**
 `BrowserInsets` pads SDL's shared surface/input parent for system bars, display
 cutouts and the visible IME. It subtracts handled geometry from child insets
