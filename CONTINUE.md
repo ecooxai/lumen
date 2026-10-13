@@ -1,5 +1,26 @@
 # Lumen: handoff notes
 
+## CPU profiler preflight: retain phone security settings (2026-10-13)
+
+Fresh read-only phone preflight completes in1.12s, both locks released and
+agent closed. Evidence: build/codex-android-cpu-profile/preflight/REPORT.md.
+MI8/API35, own run-as UID10196, installed819345 verified and app absent.
+security.perf_harden=1, perf_event_paranoid=3; persistent simpleperf app UID
+and expiration properties are empty. /system/bin/simpleperf is executable,
+but it was NOT invoked, even for help/version. No device changes/app launch.
+One host-only harness correction preserved; scope95/100, not profiling success.
+
+Do not launch app_profiler.py or silently disable perf_harden. AOSP simpleperf
+startup can modify that global property. Next: test-first app-local per-stage
+render-thread CPU-clock diagnostics alongside existing wall timers, disabled
+by default and with explicit unavailable-clock handling. Distinguish render
+thread CPU from process/all-thread CPU and from GPU execution/present waits.
+This avoids a security-setting change and can identify whether presentation
+wall time is CPU work before changing the rendering pipeline. No such CPU
+instrumentation has been implemented yet. Source8be1bce bounds fix is tested
+but still not included in installed819345; combine it with the next diagnostic
+APK instead of rebuilding solely for every small source change.
+
 ## Copy APK phone-tested; supported-scale overflow fixed in source (2026-10-13)
 
 Installed819345 once with data preserved; app now stopped. Main independently
