@@ -4,6 +4,73 @@
 
 ### Current idle-adapter iteration
 
+**Android safe-area adapter committed and verified in bounded API35 phone tests.**
+`BrowserInsets` pads SDL's shared surface/input parent for system bars, display
+cutouts and the visible IME. It subtracts handled geometry from child insets
+while preserving IME visibility, avoids cumulative padding, and explicitly
+uses edge-to-edge layout on API30+ to prevent duplicate framework resizing.
+API28/29 retain guarded legacy handling. Native engine/density/CSS viewport
+invalidation are unchanged; model tests do not prove real keyboard behavior.
+Tests-first RED was missing-class setup and Activity wiring, not seven executed
+behavior failures. Two more legacy scenarios were added before implementation.
+GREEN passes nine Java model scenarios plus wiring and the prior70 groups:
+80 focused groups and23 packaging gates. SDK36 compilation and APK DEX are
+verified, all293 native objects reused, and only classes3.dex changed.
+Candidate: `build/codex-android-insets/green/codex-android-insets-compact-debug.apk`,
+87,468,308 bytes, mode0444, SHA256
+`13c702ca7047f7a0be357cab1ce978d992a132a7d770b3f4a79c4ad76ee177fb`.
+Report/source pins: `build/codex-android-insets/green/REPORT.md`.
+Normal assembly averaged258.03% host CPU, sampled peak RSS923.60 MiB;
+shared480% CPU quota, SCHED_IDLE/nice19 held. Original V8 remains frozen;
+verified prebuilt V8 is still used.
+Phone run2 verifies the toolbar below the status bar, actual visible keyboard,
+and typed `lumen://newtab` in the focused address. Main reviewed both screenshots.
+Home idle passes60.01 seconds at2.33% CPU (range0–9%, at most two consecutive
+intervals above3%), RSS222.02–224.28 MiB. Evidence lives under
+`build/codex-android-insets/phone/run2`. The run stopped on an overstrict harness
+assertion: raw mIsInputViewShown remained true after Back, although mInputShown
+was false and the surface regained its full height. Android15's public
+isInputViewShown uses mDecorViewVisible, not that cached input-view flag:
+https://raw.githubusercontent.com/aosp-mirror/platform_frameworks_base/android-15.0.0_r1/core/java/android/inputmethodservice/InputMethodService.java
+That run has no dismissal screenshot; the fresh follow-up supplies it. No
+production change was made to satisfy the flawed check. API28–34 behavior remains model/SDK-only,
+including ordering against SDL's queued legacy window-style changes.
+Partial runtime report: `build/codex-android-insets/phone/REPORT.md`.
+Run2 retained20 allocator and20 AHardwareBuffer startup errors (not the older
+baseline's32 each), significance still undiagnosed. Telemetry covers the whole
+successful run at0.754–1.260-second cadence. The earlier missing-namespace
+harness run has no live CPU sample and is not represented as a monitored pass.
+
+Commit `656cd64` adds the adapter and tests. Fresh follow-up evidence under
+`build/codex-android-insets/followup` verifies real address typing/submission,
+reopening and Back dismissal, portrait/landscape safe chrome and keyboard
+geometry, and one same-process Home/background/resume with fresh History then
+Bookmarks pixels. Main reviewed actual dismissal, landscape keyboard and
+resumed History screenshots. Back hides the keyboard but leaves address
+editing selected; an actual page touch exits editing. The existing CSS-vh
+invalidation bug also leaves the inner white navigation column too short after
+keyboard dismissal until page navigation. Neither is hidden as a polished
+mobile layout. Rotation while the keyboard is already visible was not tested.
+Post-resume home idle passes20.99 seconds, mean2.24% CPU, range0–6.06%, at most
+one consecutive interval above3%, RSS233.45 MiB. Prior60-second home acceptance
+was not repeated. The follow-up retains56 allocator and56 AHardwareBuffer
+errors throughout its captured log; their significance remains undiagnosed.
+Final restoration confirms Bookmarks, HUD On, portrait, keyboard closed and
+rotation `free`, then force-stop and phone release. Installed APK is13c702ca,
+not the historical f313d632 candidate below. No public-site/Chrome comparison,
+WebGL/WebGPU, real camera/screen capture or daily-use readiness pass is implied.
+Report: `build/codex-android-insets/followup/REPORT.md`. Its320 samples cover
+319.02 seconds, maximum host cadence gap1.118 seconds, through cleanup. Two
+test-harness corrections (visibility criterion and child-stdin isolation), no
+production workaround or retry of a failed CPU gate. Main review scores:
+build/packaging95/100, initial partial GUI coverage60/100, narrowed follow-up
+90/100, Android safe-area milestone90/100. Overall daily-use remains25/100:
+mobile density, viewport-style invalidation and missing real web APIs still
+block the requested browser. Next: test-first viewport-dependent style
+invalidation for Android resize/IME changes, then density-aware mobile controls.
+
+### Previous verified phone baseline
+
 **GPU lifecycle fix verified in bounded phone tests; IME and graphics APIs block daily use.**
 Phone candidate SHA256 `f313d632...` passes HUD-On home idle over61 complete
 intervals: mean2.38% CPU, range0–6.25%, RSS232.82 MiB, no sustained excess.
