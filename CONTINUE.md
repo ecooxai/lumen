@@ -4,7 +4,7 @@
 
 ### Current idle-adapter iteration
 
-**GPU lifecycle fix: three real resume cycles pass; remaining GUI checks pending.**
+**GPU lifecycle fix verified in bounded phone tests; IME and graphics APIs block daily use.**
 Phone candidate SHA256 `f313d632...` passes HUD-On home idle over61 complete
 intervals: mean2.38% CPU, range0–6.25%, RSS232.82 MiB, no sustained excess.
 Three real Home/background/resume cycles retain the same process and visibly
@@ -12,13 +12,28 @@ repaint History/Bookmarks. SDL surface destroy/create logs pass without GPU
 errors. Their20-second settled means are2.15%,2.65%,2.30%, RSS233.34–235.82 MiB.
 Evidence: `build/codex-android-gpu-lifecycle/phone/narrow1` and
 `build/codex-android-gpu-lifecycle/phone/narrow2-resume`.
-Portrait and landscape visibly render. The harness stopped on a90-second
-agent visual-review timeout, not a browser crash; other rotations, background
-rotation and IME checks remain incomplete. A fresh test agent owns those checks
-under `build/codex-android-gpu-lifecycle/rotation-followup` with continuous1Hz
-monitoring. Previous controller cleanup preceded its launch; no device overlap.
+The first harness stopped on a90-second agent visual-review timeout, not a
+browser crash. Fresh verification completes rotations3/2/0 and a9.01-second
+background rotation/resume, retaining process identity and fresh presentation.
+Their20-second settled CPU means are2.20%,2.50%,2.35%,2.20%; resume RSS is
+237.27 MiB. Reports: `build/codex-android-gpu-lifecycle/phone/REPORT.md` and
+`build/codex-android-gpu-lifecycle/rotation-followup/REPORT.md`. Continuous1Hz
+monitoring covered all runtime. Previous controller cleanup preceded the fresh
+launch; no device overlap. Both controllers are finished and released the phone.
 Natural fixed HUD numbers are not stale-frame evidence: actual page touches
 now establish presentation freshness. These checks are not raster equivalence.
+
+IME activation FAILED: address tap[450,22] followed by mInputShown=false and
+mIsInputViewShown=false. Address focus itself is unverified; dismissal/reopen
+were not attempted. Tiny controls and status-bar overlap persist. The inner
+white navigation column also retains landscape height after portrait resize
+until an interaction repaints it. Next main-agent work: test-first Android
+safe-area/input/density integration and viewport-dependent style invalidation;
+do not simply change tap coordinates or call the keyboard working.
+Raw startup logs contain32 GraphicBufferAllocator4x4 format56/59 allocation
+failures and32 corresponding AHardwareBuffer errors. Their significance is
+undiagnosed; the inherited crash regex missed these. Do not claim error-free
+GPU logs merely because no abandoned-window crash recurred.
 
 The synchronous SDL
 background/foreground watch detaches the presentation surface before SDL's
@@ -39,20 +54,35 @@ SHA256 `f313d6320239574c4322f6382eaf25932c69841fac68054f4dd697455ab7fcb1`.
 Build/report/source pins: `build/codex-android-gpu-lifecycle/green/REPORT.md`.
 Two packaging-harness corrections, no production fixes by the build agent.
 Shared480%/SCHED_IDLE/nice19 held; original V8 remains frozen and unchanged.
-Fixture testing is prepared but not yet authorized; public-site acceptance is
-unverified. Source inspection confirms canvas getContext supports only2D and
-no navigator.gpu implementation was found. Do not confuse the Vulkan presenter
-with working WebGL/WebGPU web APIs. Overall readiness remains25/100.
+The exact owned loopback fixture now executes on the phone:7/11 checks PASS
+(DOM, Intl, BigInt, Promise, Wasm, storage, fetch). Actual failures: Canvas2D
+pixel mismatch, unavailable WebGL1/2 contexts and unavailable WebGPU. Main
+visually reviewed all eleven results and the matching server report. Source
+getImageData returns blank pixels, getContext supports only2D, and no
+navigator.gpu implementation was found. The Vulkan presenter is not a working
+WebGL/WebGPU web API. Camera/mic/screen API presence is not functional proof;
+current getUserMedia constructs fake tracks and getDisplayMedia rejects capture.
+Geolocation API is absent in this fixture. No public sites or Chrome RAM
+comparison ran. Overall daily-use assessment remains25/100, not95/100.
+
+Fixture HUD-On idle PASS:60.05 seconds, mean2.48% CPU, range0–13.27%, at most
+one consecutive interval above3%, RSS241.15–245.63 MiB; Activity0%, engine2.21%.
+Report: `build/codex-android-engine-smoke/phone/RUNTIME_REPORT.md`.
+Independent fixture_no_keyboard scope explicitly preserved the failed IME
+result rather than requiring a fake GUI pass. Phone is released, app stopped,
+rotation `free`, HUD On; installed APK remains the compact f313d632 artifact.
+Only the owned reverse/server were removed. Home restoration did not complete:
+Back left the activity; the agent did not relaunch. No full feature pass claimed.
 
 **Previous combined-fix APK passed the bounded home idle gate:**
 60 complete seconds with HUD On, mean2.47% CPU, range0–6.93%, at most one
 consecutive interval above3%, RSS229.98–232.11 MiB. Activity0.00%, engine2.22%.
-The phone is released, app stopped, HUD On and rotation `free`; installed
-SHA256 is the compact `43b721...` artifact listed below. Main visually
+At that earlier checkpoint the phone was released, app stopped, HUD On and
+rotation `free`; installed SHA256 was the compact `43b721...` artifact below. Main visually
 reviewed its actual home screenshot. Report:
 `build/codex-android-chrome-damage/phone/REPORT.md`.
-No resume retry or fixture/site/interaction acceptance ran. The known SIGABRT
-on background/resume remains a daily-use blocker; mobile UI remains tiny and
+No resume retry or fixture/site/interaction acceptance ran at that checkpoint.
+The then-known SIGABRT was a daily-use blocker; mobile UI remains tiny and
 overlaps the status bar. Overall daily-use self-assessment remains25/100.
 
 Pixel equivalence is **unverified**, not a measured mismatch. The attempted
@@ -111,7 +141,7 @@ Fresh phone testing of the combined fixes was limited to HUD-On idle and
 an ineffective cached-page/full-raster diagnostic attempt. Resume failure must be fixed
 before interaction/site/fixture acceptance; no daily-readiness pass is claimed.
 
-Next lifecycle investigation: the presenter captures ANativeWindow once in
+Historical lifecycle investigation (implemented and tested above): the presenter captured ANativeWindow once in
 gpu_create. SDL replaces its Android window property on native surfaceCreated,
 and releases the old window on surfaceDestroyed. Lumen handles neither
 background/foreground presentation resources nor native-window rebinding;
