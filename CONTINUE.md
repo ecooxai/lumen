@@ -1,5 +1,34 @@
 # Lumen: handoff notes
 
+## Copy APK phone-tested; supported-scale overflow fixed in source (2026-10-13)
+
+Installed819345 once with data preserved; app now stopped. Main independently
+reviews actual top/end PNGs under build/codex-android-page-compose/phone:
+Bands1/2 to23/24,20 swipes, intact full-width single toolbar,Vulkan2x.
+Scroll9s:CPU55.667% mean/56.566% peak,RSS230.555-230.574MiB.
+Formal61.03s idle:CPU0.0492% mean/1.0204% peak,RSS228.836MiB;passes.
+124 samples,zero telemetry errors,max device gap1.22s. Cleanup verified,
+locks released, phone agent closed. Compared with058271, composition remains
+about1.47ms/paint and scroll CPU about55%: NO measured CPU/stage-cost gain.
+Copy batching is only a structural call-count reduction, not a proven speedup.
+
+Main finds and fixes real undefined float-to-int casts in fixed-scroll damage:
+empty display lists use +/-1e9 bounds, which overflow int at supported2.5x/3x.
+No-fixed pages now skip this calculation. Actual fixed bounds are clipped as
+floats before int conversion, preserving shifted-in old/new fixed-box damage.
+Tests first:11 actual-block cases yield5 expected float-cast-overflow failures,
+6 passes; adjacent composition13 pass. After fix,73 focused checks +11 fresh
+ASan/UBSan/float-cast-overflow scenarios pass, including10,605 scale/direction
+cases. Evidence: build/codex-android-fixed-scroll-bounds/{red,green}.
+This source fix is NOT in installed819345. Host scope95/100, readiness25/100.
+
+Next performance diagnosis needs CPU attribution, not another wall-time guess.
+NDK simpleperf/docs exist under build/codex-android-toolchain/sdk/ndk/28.2.13676358.
+Do NOT blindly run app_profiler.py: it can request root/change global properties.
+AOSP simpleperf startup can set security.perf_harden=0 even for help/version;
+first use read-only availability/property checks with a fresh phone-test owner.
+No global security changes authorized. App-only thread CPU timing is a fallback.
+
 ## Pacing phone evidence and verified copy APK (2026-10-13)
 
 The fresh no-install pacing test under fling-pacing/view-phone completes20

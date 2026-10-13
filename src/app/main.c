@@ -1109,8 +1109,15 @@ static void render(App *a) {
         rx0 = LMAX(rx0, 0); ry0 = LMAX(ry0, 0); rx1 = LMIN(rx1, pwp); ry1 = LMIN(ry1, ph);
         bool gv = a->gpu && nv == 1;
         const float *fb = a->pdl.fix; float s = a->page.scale;
-        int fx0 = LMAX(0, (int)floorf(fb[0] * s)), fx1 = LMIN(pwp, (int)ceilf(fb[2] * s)), fy0 = LMAX(0, (int)floorf(fb[1] * s) - LMAX(blit, 0)), fy1 = LMIN(ph, (int)ceilf(fb[3] * s) - LMIN(blit, 0));
-        bool fixed_area = a->pdl.has_fixed && fx1 > fx0 && fy1 > fy0;
+        int fx0 = 0, fx1 = 0, fy0 = 0, fy1 = 0;
+        bool fixed_area = false;
+        if (a->pdl.has_fixed) {
+            fx0 = (int)fminf(pwp, fmaxf(0, floorf(fb[0] * s)));
+            fx1 = (int)fminf(pwp, fmaxf(0, ceilf(fb[2] * s)));
+            fy0 = (int)fminf(ph, fmaxf(0, floorf(fb[1] * s) - LMAX(blit, 0)));
+            fy1 = (int)fminf(ph, fmaxf(0, ceilf(fb[3] * s) - LMIN(blit, 0)));
+            fixed_area = fx1 > fx0 && fy1 > fy0;
+        }
         if (blit && (nv || (fixed_area && (fy1 - fy0) * 2 > ph))) { blit = 0; part = false; why = 5; }
         paint_profile_stage(&profile_frame, PAINT_SIGNATURES);
         if (blit) {
