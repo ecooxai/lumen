@@ -1,5 +1,28 @@
 # Lumen: handoff notes
 
+## Pacing APK built; phone still uses diagnostics baseline (2026-10-13)
+
+Commit0f78fd8 has a verified optimized Debug candidate, NOT yet installed:
+build/codex-android-fling-pacing/final/codex-agent-android-fling-pacing-compact-debug.apk
+SHA256058271aaa17e358a40d58f7189c564720a046a4b1dbad6a268532b66a8fa6d89,
+85,240,084 bytes,0444. Main independently verifies artifact and manifest hashes.
+The326-file snapshot manifest SHA256 is
+5e422cd24900f7c65af8269f8abe13f3c4ccd6254880be3f5a2ce66d29a71c48.
+232 fresh focused checks,29 fresh touch/fling/upload sanitizer scenarios,
+6 JS groups, cache/V8 runtime and23 APK gates pass. The9 pacing ASan/UBSan
+executions are explicitly reused from the fresh preceding GREEN verification.
+Only main.c/android_fling.c objects rebuilt; Debug-O2/g/assertions, native
+no-op, payload identity and zero ZIP gaps pass. Build39.194s,mean227.24% host
+CPU,peak1721.53MiB sampled tree RSS; shared480%/SCHED_IDLE/nice19 respected.
+All owned build scopes drain; predecessor581 APK/snapshot and frozen V8 unchanged.
+Host-only quality95/100; no measured pacing improvement or phone acceptance yet.
+
+The fresh phone owner is01a1345b-e8d3-75e2-aa5a-4dc6f75e92ae (Wegener), output
+build/codex-android-paint-profile/view-phone. It has a bounded single-ON
+ACTION_VIEW profiling grant for the INSTALLED581 baseline, not this candidate.
+Do not install over its run or duplicate phone access; poll its tool handle
+and review actual fixture PNGs/stage evidence before the next optimization.
+
 ## Diagnostics phone run: valid baseline, invalid ON navigation (2026-10-13)
 
 The5818949 diagnostics APK is now installed once with data preserved and its
