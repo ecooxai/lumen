@@ -16,6 +16,7 @@ struct Gpu {
     WGPUTextureFormat fmt; WGPURenderPipeline pipe; WGPUBindGroupLayout bgl; WGPUSampler samp;
     WGPUTexture tex; WGPUTextureView view; WGPUBindGroup bg; int tw, th; int w, h; bool configured;
     WGPUBackendType backend;
+    int scroll_toolbar, scroll_height, scroll_offset;
     WGPUSampler vsamp; WGPUBuffer ubuf, vubuf; WGPUTexture vtex; WGPUTextureView vview; WGPUBindGroup vbg; int vtw, vth;
     WGPURenderPipeline ypipe; WGPUBindGroupLayout ybgl; WGPUBuffer yubuf; WGPUTexture yt, ct; WGPUTextureView ytv, ctv; WGPUBindGroup ybg; int ytw, yth;
 #ifdef __ANDROID__
@@ -26,12 +27,24 @@ struct Gpu {
 static const char *WGSL =
     "@group(0) @binding(0) var t: texture_2d<f32>;\n"
     "@group(0) @binding(1) var s: sampler;\n"
-    "@group(0) @binding(2) var<uniform> r: vec4f;\n"
+    "struct Params { rect: vec4f, scroll: vec4u };\n"
+    "@group(0) @binding(2) var<uniform> params: Params;\n"
     "struct V { @builtin(position) p: vec4f, @location(0) uv: vec2f };\n"
     "@vertex fn vs(@builtin(vertex_index) i: u32) -> V {\n"
     "  let uv = vec2f(f32(i & 1u), f32(i >> 1u));\n"
-    "  var o: V; o.p = vec4f(mix(r.xy, r.zw, uv), 0.0, 1.0); o.uv = uv; return o; }\n"
-    "@fragment fn fs(v: V) -> @location(0) vec4f { return textureSample(t, s, v.uv).bgra; }\n";
+    "  var o: V; o.p = vec4f(mix(params.rect.xy, params.rect.zw, uv), 0.0, 1.0); o.uv = uv; return o; }\n"
+    "@fragment fn fs(v: V) -> @location(0) vec4f {\n"
+    "  var uv = v.uv;\n"
+    "  if (params.scroll.y > 0u) {\n"
+    "    let height = textureDimensions(t).y;\n"
+    "    let row = min(u32(uv.y * f32(height)), height - 1u);\n"
+    "    if (row >= params.scroll.x && row - params.scroll.x < params.scroll.y) {\n"
+    "      var mapped = row - params.scroll.x + params.scroll.z;\n"
+    "      if (mapped >= params.scroll.y) { mapped -= params.scroll.y; }\n"
+    "      uv.y = (f32(params.scroll.x + mapped) + 0.5) / f32(height);\n"
+    "    }\n"
+    "  }\n"
+    "  return textureSampleLevel(t, s, uv, 0.0).bgra; }\n";
 
 static const char *WGSL_YUV =
     "@group(0) @binding(0) var ty: texture_2d<f32>;\n"
@@ -230,10 +243,10 @@ Gpu *gpu_create_backend(const GpuSurfSrc *src, int w, int h, GpuBackend backend)
     g->samp = wgpuDeviceCreateSampler(g->dev, &smp);
     WGPUSamplerDescriptor vsmp = WGPU_SAMPLER_DESCRIPTOR_INIT; vsmp.magFilter = WGPUFilterMode_Linear; vsmp.minFilter = WGPUFilterMode_Linear;
     g->vsamp = wgpuDeviceCreateSampler(g->dev, &vsmp);
-    WGPUBufferDescriptor ub = WGPU_BUFFER_DESCRIPTOR_INIT; ub.size = 16; ub.usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst;
+    WGPUBufferDescriptor ub = WGPU_BUFFER_DESCRIPTOR_INIT; ub.size = 32; ub.usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst;
     g->ubuf = wgpuDeviceCreateBuffer(g->dev, &ub); g->vubuf = wgpuDeviceCreateBuffer(g->dev, &ub);
     ub.size = 48; g->yubuf = wgpuDeviceCreateBuffer(g->dev, &ub);
-    float full[4] = { -1, 1, 1, -1 }; wgpuQueueWriteBuffer(g->q, g->ubuf, 0, full, sizeof full);
+    float full[8] = { -1, 1, 1, -1, 0, 0, 0, 0 }; wgpuQueueWriteBuffer(g->q, g->ubuf, 0, full, sizeof full);
     configure(g);
     return g;
 fail:
@@ -246,7 +259,7 @@ void gpu_resize(Gpu *g, int w, int h) { if (g && (w != g->w || h != g->h)) { g->
 
 static WGPUBindGroup make_bg(Gpu *g, WGPUTextureView v, WGPUSampler s, WGPUBuffer b) {
     WGPUBindGroupEntry e[3] = { WGPU_BIND_GROUP_ENTRY_INIT, WGPU_BIND_GROUP_ENTRY_INIT, WGPU_BIND_GROUP_ENTRY_INIT };
-    e[0].binding = 0; e[0].textureView = v; e[1].binding = 1; e[1].sampler = s; e[2].binding = 2; e[2].buffer = b; e[2].size = 16;
+    e[0].binding = 0; e[0].textureView = v; e[1].binding = 1; e[1].sampler = s; e[2].binding = 2; e[2].buffer = b; e[2].size = 32;
     WGPUBindGroupDescriptor bd = WGPU_BIND_GROUP_DESCRIPTOR_INIT; bd.layout = g->bgl; bd.entryCount = 3; bd.entries = e;
     return wgpuDeviceCreateBindGroup(g->dev, &bd);
 }
@@ -288,8 +301,16 @@ static void ensure_ytex(Gpu *g, int w, int h) {
     g->ybg = wgpuDeviceCreateBindGroup(g->dev, &bd); g->ytw = w; g->yth = h;
 }
 bool gpu_yuv_ok(Gpu *g) { return g && g->ypipe && g->ybgl && g->yubuf; }
+static void reset_page_scroll(Gpu *gpu) {
+    if (!gpu->scroll_height) return;
+    uint32_t metadata[4] = {0};
+    wgpuQueueWriteBuffer(gpu->q, gpu->ubuf, 16, metadata, sizeof metadata);
+    gpu->scroll_toolbar = gpu->scroll_height = gpu->scroll_offset = 0;
+}
+
 static void ensure_tex(Gpu *g, int w, int h) {
     if (g->tex && g->tw == w && g->th == h) return;
+    reset_page_scroll(g);
     if (g->bg) wgpuBindGroupRelease(g->bg);
     if (g->view) wgpuTextureViewRelease(g->view);
     if (g->tex) { wgpuTextureDestroy(g->tex); wgpuTextureRelease(g->tex); }
@@ -303,24 +324,65 @@ static void ensure_tex(Gpu *g, int w, int h) {
     g->tw = w; g->th = h;
 }
 
-bool gpu_upload_page(Gpu *gpu, const uint32_t *pixels, int width, int height, int stride,
-                     int toolbar, int first_row, int last_row) {
+static bool page_upload_valid(Gpu *gpu, const uint32_t *pixels, int width, int height, int stride,
+                              int toolbar, int first_row, int last_row) {
     if (!gpu || !gpu->configured || !gpu->tex || !gpu->q || !pixels || width <= 0 || height <= 0 ||
         gpu->tw != width || gpu->th != height || gpu->w != width || gpu->h != height ||
         stride < width || (uint32_t)stride > UINT32_MAX / 4 || toolbar < 0 || toolbar >= height ||
         first_row < 0 || last_row <= first_row || last_row > height - toolbar) return false;
-    size_t row_bytes = (size_t)stride * 4;
-    if ((size_t)(height - toolbar) > SIZE_MAX / row_bytes) return false;
-    WGPUTexelCopyTextureInfo destination = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
-    destination.texture = gpu->tex;
-    destination.origin = (WGPUOrigin3D){0, (uint32_t)(toolbar + first_row), 0};
-    WGPUTexelCopyBufferLayout layout = WGPU_TEXEL_COPY_BUFFER_LAYOUT_INIT;
-    layout.bytesPerRow = (uint32_t)row_bytes;
-    layout.rowsPerImage = (uint32_t)(last_row - first_row);
-    WGPUExtent3D extent = {(uint32_t)width, (uint32_t)(last_row - first_row), 1};
-    size_t bytes = (size_t)(last_row - first_row - 1) * row_bytes + (size_t)width * 4;
-    wgpuQueueWriteTexture(gpu->q, &destination, pixels + (size_t)first_row * (size_t)stride,
-                         bytes, &layout, &extent);
+    if ((size_t)(height - toolbar) > SIZE_MAX / ((size_t)stride * 4)) return false;
+    return !gpu->scroll_height || (gpu->scroll_toolbar == toolbar && gpu->scroll_height == height - toolbar);
+}
+
+static void upload_page_rows(Gpu *gpu, const uint32_t *pixels, int width, int height, int stride,
+                             int toolbar, int first_row, int last_row) {
+    while (first_row < last_row) {
+        int mapped = (int)(((int64_t)first_row + gpu->scroll_offset) % (height - toolbar));
+        int rows = last_row - first_row;
+        if (rows > height - toolbar - mapped) rows = height - toolbar - mapped;
+        size_t row_bytes = (size_t)stride * 4;
+        WGPUTexelCopyTextureInfo destination = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
+        destination.texture = gpu->tex;
+        destination.origin = (WGPUOrigin3D){0, (uint32_t)(toolbar + mapped), 0};
+        WGPUTexelCopyBufferLayout layout = WGPU_TEXEL_COPY_BUFFER_LAYOUT_INIT;
+        layout.bytesPerRow = (uint32_t)row_bytes;
+        layout.rowsPerImage = (uint32_t)rows;
+        WGPUExtent3D extent = {(uint32_t)width, (uint32_t)rows, 1};
+        size_t bytes = (size_t)(rows - 1) * row_bytes + (size_t)width * 4;
+        wgpuQueueWriteTexture(gpu->q, &destination, pixels + (size_t)first_row * (size_t)stride,
+                             bytes, &layout, &extent);
+        first_row += rows;
+    }
+}
+
+bool gpu_upload_page(Gpu *gpu, const uint32_t *pixels, int width, int height, int stride,
+                     int toolbar, int first_row, int last_row) {
+    if (!page_upload_valid(gpu, pixels, width, height, stride, toolbar, first_row, last_row)) return false;
+    upload_page_rows(gpu, pixels, width, height, stride, toolbar, first_row, last_row);
+    return true;
+}
+
+bool gpu_scroll_page(Gpu *gpu, const uint32_t *pixels, int width, int height, int stride,
+                     int toolbar, int delta, int fixed_first, int fixed_last) {
+    if (!page_upload_valid(gpu, pixels, width, height, stride, toolbar, 0,
+                           toolbar >= 0 && height > toolbar ? height - toolbar : 0) || !gpu->ubuf) return false;
+    int page_height = height - toolbar;
+    if (!delta || delta <= -page_height || delta >= page_height || fixed_first < 0 ||
+        fixed_last < fixed_first || fixed_last > page_height) return false;
+    int offset = (int)(((int64_t)gpu->scroll_offset + delta) % page_height);
+    if (offset < 0) offset += page_height;
+    uint32_t metadata[4] = {(uint32_t)toolbar, (uint32_t)page_height, (uint32_t)offset, 0};
+    wgpuQueueWriteBuffer(gpu->q, gpu->ubuf, 16, metadata, sizeof metadata);
+    gpu->scroll_toolbar = toolbar; gpu->scroll_height = page_height; gpu->scroll_offset = offset;
+    int first = delta > 0 ? page_height - delta : 0;
+    int last = delta > 0 ? page_height : -delta;
+    if (fixed_last > fixed_first) {
+        if (fixed_first <= last && fixed_last >= first) {
+            if (fixed_first < first) first = fixed_first;
+            if (fixed_last > last) last = fixed_last;
+        } else upload_page_rows(gpu, pixels, width, height, stride, toolbar, fixed_first, fixed_last);
+    }
+    upload_page_rows(gpu, pixels, width, height, stride, toolbar, first, last);
     return true;
 }
 
@@ -329,6 +391,7 @@ bool gpu_present_rows(Gpu *g, const uint32_t *px, int w, int h, int stride, int 
 bool gpu_present_frame(Gpu *g, const uint32_t *px, int w, int h, int stride, int y0, int y1, const GpuVideo *v) {
     if (!g || !g->configured) return false;
     if (!g->tex || g->tw != w || g->th != h) { y0 = 0; y1 = h; }
+    if (y1 > y0 && g->scroll_height) { reset_page_scroll(g); y0 = 0; y1 = h; }
     ensure_tex(g, w, h);
     if (y0 < 0) y0 = 0;
     if (y1 > h) y1 = h;
@@ -360,7 +423,7 @@ bool gpu_present_frame(Gpu *g, const uint32_t *px, int w, int h, int stride, int
         WGPUTexelCopyBufferLayout lay = WGPU_TEXEL_COPY_BUFFER_LAYOUT_INIT; lay.bytesPerRow = (uint32_t)v->stride * 4; lay.rowsPerImage = (uint32_t)v->h;
         WGPUExtent3D ext = { (uint32_t)v->w, (uint32_t)v->h, 1 };
         wgpuQueueWriteTexture(g->q, &dst, v->px, (size_t)v->stride * 4 * (size_t)v->h, &lay, &ext);
-        float r[4] = { v->x0 / w * 2 - 1, 1 - v->y0 / h * 2, v->x1 / w * 2 - 1, 1 - v->y1 / h * 2 };
+        float r[8] = { v->x0 / w * 2 - 1, 1 - v->y0 / h * 2, v->x1 / w * 2 - 1, 1 - v->y1 / h * 2, 0, 0, 0, 0 };
         wgpuQueueWriteBuffer(g->q, g->vubuf, 0, r, sizeof r);
     }
 

@@ -42,6 +42,12 @@ class AndroidPageTransferTests(unittest.TestCase):
     def test_direct_scroll_does_not_copy_cpu_frame(self):
         self.run_scenario('direct')
 
+    def test_gpu_scroll_upload_bypasses_full_page_upload(self):
+        self.run_scenario('ring')
+
+    def test_gpu_scroll_present_failure_restores_cpu_frame(self):
+        self.run_scenario('ring-failure')
+
     def test_repeated_direct_scroll_keeps_uploading_authoritative_page(self):
         self.run_scenario('repeat')
 

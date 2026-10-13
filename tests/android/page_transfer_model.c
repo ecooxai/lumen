@@ -29,6 +29,9 @@ static unsigned uploads, presents, software_presents, copy_calls;
 static size_t copied_bytes;
 static bool upload_allowed = true, present_allowed = true, surface_available = true;
 static bool shot, recreated;
+static bool scroll_allowed;
+static unsigned scroll_uploads;
+int scroll_delta = 2, scroll_fixed_first = 1, scroll_fixed_last = 3;
 static float g_pop[4] = {0, 3, 1, 4};
 
 static void *counted_memcpy(void *destination, const void *source, size_t size) {
@@ -43,6 +46,17 @@ static const char *test_getenv(const char *name) {
     return shot ? "test.png" : NULL;
 }
 #endif
+
+bool gpu_scroll_page(void *gpu, const uint32_t *pixels, int width, int height,
+                     int stride, int toolbar, int delta, int first, int last) {
+    assert(gpu && width == 4 && height <= 8 && toolbar == 2);
+    assert(delta == 2 && first == 1 && last == 3);
+    scroll_uploads++;
+    if (!scroll_allowed) return false;
+    for (int row = 0; row < height - toolbar; row++)
+        memcpy(gpu_pixels + (row + toolbar) * width, pixels + row * stride, (size_t)width * 4);
+    return true;
+}
 
 static bool gpu_upload_page(void *gpu, const uint32_t *pixels, int width, int height,
                             int stride, int toolbar, int first, int last) {
@@ -133,6 +147,20 @@ int main(int argc, char **argv) {
                  .gpu = (void *)(uintptr_t)1, .win = (void *)(uintptr_t)2};
     PaintFrame profile = {.blit = true};
     const char *scenario = argv[1];
+    if (!strcmp(scenario, "ring") || !strcmp(scenario, "ring-failure")) {
+        scroll_allowed = true;
+        present_allowed = !strcmp(scenario, "ring");
+        transfer(&state, true, false, 2, 0, 6, 0, 6, NULL, profile);
+        assert(scroll_uploads == 1 && uploads == 0);
+        if (present_allowed) {
+            assert(copy_calls == 0 && state.frame_page_stale);
+            assert(memcmp(gpu_pixels + 8, page_pixels, sizeof page_pixels) == 0);
+        } else {
+            assert(copy_calls == 1 && software_presents == 1);
+            verify_frame(&state, 0, false, true);
+        }
+        return 0;
+    }
     if (!strcmp(scenario, "sidebar")) {
         state.page.w = 3;
         transfer(&state, true, false, 2, 1, 6, 0, 6, NULL, profile);

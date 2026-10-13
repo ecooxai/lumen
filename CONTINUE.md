@@ -1,5 +1,36 @@
 # Lumen: handoff notes
 
+## Android scroll texture row reuse implemented (2026-10-13)
+
+Main replaces eligible whole-page scroll uploads with a circular page region
+inside the existing GPU frame texture. gpu_scroll_page advances its row offset
+and transfers only exposed rows plus CPU-repainted fixed-position rows; ranges
+merge and wrap safely. Toolbar pixels are not rotated. The32-byte RGBA uniform
+includes row metadata; shader remapping uses one conditional subtraction rather
+than per-pixel integer modulo. RGBA video uses zero row metadata; NV12 unchanged.
+Normal frame uploads restore the entire coherent CPU frame and reset metadata;
+texture recreation also resets it. Direct page uploads respect active mapping.
+Main retains CPU memmove/raster and existing stale-frame/fallback exclusions.
+No new full-size texture/framebuffer; no Android performance claim yet.
+
+Test-first evidence build/codex-android-scroll-ring/red:40discovered,30executed,
+23pass,7expected assertion failures,1missing-implementation setup error blocking
+10new cases. After implementation, focused-stable42 and adjacent-retry74 cases
+pass (116distinct);63 ASan/UBSan/float-cast scenarios pass. The new two normal
+presentation-prefix regressions supplement the original RED scenarios. Tests
+cover repeated forward/reverse/wrapped rows, fixed ranges, padded inputs,
+full-page and linear-frame recovery, unavailable resources and app fallback.
+Main verifies raw summaries and scenario journal, not a hardcoded aggregate.
+
+Real host Vulkan shader/readback verification is still running with the fresh
+GREEN owner; fresh APK builder and phone tester are offline-prepared, not
+authorized to install. Installed phone APK remains45dc01bb from the preceding
+entry. Do not substitute mock models for shader/driver or phone verification.
+Host scopes retain shared480%/SCHED_IDLE/nice19; source V8 remains frozen.
+Overall daily-use readiness remains25/100; this optimization is not yet accepted
+on Android. Finish the real shader check, build/verify the committed source,
+then repeat matched phone CPU/RSS and image checks before claiming improvement.
+
 ## Direct page upload APK installed and measured on Android (2026-10-13)
 
 Source edc0d87 on codex/android-vulkan-momentum-scroll is now installed on MI8.

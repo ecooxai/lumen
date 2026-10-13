@@ -120,6 +120,33 @@ before regular upload or software fallback. Screenshots exclude the fast path.
 Do not interpret smaller compose timings alone as a total CPU improvement:
 check presentation/fallback costs and whole-process CPU on the phone.
 
+## Android scroll row reuse
+
+Eligible scroll blits now retain the page rows in a circular region of the
+existing frame texture. `gpu_scroll_page` advances the row offset and uploads
+only newly exposed rows plus the CPU-repainted fixed-position row range. It
+merges overlapping ranges and splits transfers at the circular boundary.
+The toolbar is outside that region and remains unchanged. No extra page
+texture or framebuffer is allocated. CPU page memmove/rasterization remains.
+
+The RGBA shader receives a 32-byte uniform: the existing 16-byte rectangle
+followed by unsigned toolbar, page height, row offset and reserved fields.
+It remaps page rows using explicit-LOD sampling; video rectangles use zero
+scroll metadata and retain linear sampling. NV12 uses its separate pipeline.
+`gpu_upload_page` respects the active mapping, including wraparound. A normal
+frame upload resets the mapping and uploads the complete coherent CPU frame,
+even when its caller requests a partial range. Texture recreation also resets
+the metadata. Presentation without an upload preserves the retained mapping.
+
+Main still excludes overlays, video, screenshots, sidebars and non-scroll
+paints from the Android direct path. It restores stale CPU page rows before
+ordinary uploads and software fallback. Invalid geometry, missing textures,
+suspended surfaces and changed toolbar geometry decline optimized uploads.
+These invariants require pixel comparisons across forward/reverse scrolling,
+wraparound, fixed damage, padded source strides and linear-frame recovery.
+Mock tests alone do not validate WGSL or the phone's graphics driver. Verify
+the real shader and measure the same phone fixture before claiming a gain.
+
 Host coverage: `tests/test_gpu_page_upload.py`,
 `tests/test_android_page_transfer.py`, and `tests/test_page_compose.py`.
 These use GPU/SDL stand-ins; they do not establish real Vulkan correctness,

@@ -1118,6 +1118,7 @@ static void render(App *a) {
     if (defer && !a->vframe) { a->dirty = false; return; }
     bool part = !why;
     int rx0 = pwp, ry0 = ph, rx1 = 0, ry1 = 0;
+    int scroll_delta = 0, scroll_fixed_first = 0, scroll_fixed_last = 0;
     if (a->page.w != pwp || a->page.h != ph || a->page.scale != a->scale) { canvas_free(&a->page); canvas_init(&a->page, pwp, ph, a->scale); part = false; a->osig_ok = false; }
     bool gskip = false; GpuVideo gvd, *gvp = NULL;
     Image *fast = part && !a->sdirty && a->t->cur && a->gpu && a->gvid_ok && a->t->sy == a->last_sy && a->page.w == pwp && a->page.h == ph ? media_owner_frame(a->vown) : NULL;
@@ -1170,6 +1171,8 @@ static void render(App *a) {
         paint_profile_stage(&profile_frame, PAINT_SIGNATURES);
         if (blit) {
             profile_frame.blit = true;
+            scroll_delta = blit;
+            if (fixed_area) { scroll_fixed_first = fy0; scroll_fixed_last = fy1; }
             int d = blit, n = ph - abs(d); size_t row = (size_t)a->page.stride;
             if (d > 0) memmove(a->page.px, a->page.px + (size_t)d * row, (size_t)n * row * 4);
             else memmove(a->page.px + (size_t)(-d) * row, a->page.px, (size_t)n * row * 4);
@@ -1242,8 +1245,10 @@ static void render(App *a) {
     } else if (direct_page) a->frame_page_stale = true;
     if (!gskip && a->hdl.items.n) { float s = a->frame.scale; raster_rect(&a->frame, &a->hdl, RGBA(255, 255, 255, 255), (int)floorf(g_pop[0] * s), (int)floorf(g_pop[1] * s), (int)ceilf(g_pop[2] * s), (int)ceilf(g_pop[3] * s)); }   /* floats over the page */
     paint_profile_stage(&profile_frame, PAINT_COMPOSE);
-    bool page_uploaded = direct_page && gpu_upload_page(a->gpu, a->page.px, a->frame.w, a->frame.h,
-                                                       a->page.stride, bar_px, ry0, ry1);
+    bool page_uploaded = direct_page &&
+        (gpu_scroll_page(a->gpu, a->page.px, a->frame.w, a->frame.h, a->page.stride,
+                         bar_px, scroll_delta, scroll_fixed_first, scroll_fixed_last) ||
+         gpu_upload_page(a->gpu, a->page.px, a->frame.w, a->frame.h, a->page.stride, bar_px, ry0, ry1));
     if (direct_page && !page_uploaded) {
         compose_page(a, 0, ph, bar_px, side_px);
         a->frame_page_stale = false;
