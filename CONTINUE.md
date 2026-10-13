@@ -1,5 +1,57 @@
 # Lumen: handoff notes
 
+## Scroll row reuse verified and installed on Android (2026-10-13)
+
+Installed source910ef0e07bcdd93acd6a014a0850af7e6da451e3, branch
+codex/android-vulkan-momentum-scroll. APK:
+build/codex-android-scroll-ring/final/codex-agent-android-scroll-ring-compact-debug.apk
+SHA256be50a8581e6e6dcb5a76faa0285b68bb8630ec4f913e1c4c44b31f47734ad150,
+85,240,084bytes,0444;338-file immutable snapshot. Main verifies hashes/mode,
+builder terminal receipt and release PID absence. Fresh23 APK/API checks pass;
+actual main/gpu compilation and gpu_scroll_page/gpu_upload_page links verified.
+Build42.321s,meanCPU218.93%,peak384.94%,peakRSS1788.22MiB; shared480%,
+SCHED_IDLE/nice19,verified prebuilts,V8 frozen,all owned scopes drained.
+
+Host GREEN116distinct units/179executions and63sanitizer scenarios/63executions
+are reused explicitly by the builder. Real host Vulkan llvmpipe validates the
+actual WGSL/pipeline with38frames/1368exact pixels/36uniform readbacks, including
+wrap,reverse,fixed rows,padded stride,linear reset and RGBA video metadata/alpha.
+This is software Vulkan correctness,not phone GPU performance. Import-path and
+default NVIDIA-ICD loader failures remain preserved; process-local lvp selection
+succeeds. Failed first adjacent phase lacks saved CPU telemetry; not zero.
+
+Fresh phone owner installs exactly once with -r and private settings unchanged.
+Same30-band fixture,HTTP200,Vulkan200%,20swipes,1080x2112 own BrowserSurface,
+inferred540x1056 layout. Main and owner actually inspect top/end PNGs live before
+formal idle: Bands1/2 to23/24,full-width edges and intact toolbar,no obvious
+corruption. Band23 heading is partly clipped at the endpoint: slightly further
+scroll than prior45dc run,NOT pixel-identical endpoint or a pixel-parity test.
+
+Scroll10.01s/10intervals:meanCPU38.5614%,peak41.4141%,RSS229.1016-231.1680MiB;
+renderer SDLThread26.6733%. Prior45dc:50.2%,peak53%,peakRSS230.8984MiB,
+renderer38.4%. Observed23.18% relative process-CPU reduction in this one-run
+comparison; RAM essentially unchanged. Formal idle60.02s/60intervals:meanCPU
+0.01666%,peak1%,RSS229.5859MiB,passes.134samples/attempts,zero rejects/errors,
+maxdevicegap1.04s,process and every live thread sampled through review/cleanup.
+
+Seven complete contained wall/CPU pairs:7016.4ms,406partial blit paints,all406
+measured,none unavailable/missing. ThreadCPU sums(ms):prepare1.493,layout39.951,
+signatures4.676,raster1039.555,compose2.911,present724.051. PresentCPU/paint
+falls4.3373->1.7834ms(58.88%);raster rises1.9969->2.5605ms(28.22%). No claim
+that every stage improves. Current wall sums:raster1105.905,compose5.213,
+present922.848ms. CPU page shifting/raster remains; no FPS/GPU execution timing,
+causal proof,real-site gain or Chrome50%-RAM proof from this fixture.
+
+Evidence build/codex-android-scroll-ring/{green,final,phone}. Phone analysis and
+cleanup pass: app/marker/reverse/server absent,sampler joined,both locks released,
+display/rotation/settings unchanged; no root/global/security/cookie changes.
+Fresh16 phone guard tests pass, prior8geometry+29parser checks explicitly reused.
+Bounded implementation/evidence95/100; overall daily-use readiness25/100.
+Next: on-device fixed content/overlay/backend/resize regression coverage, then
+real-site compatibility tests. Raster-stage CPU remains the largest measured
+render-thread cost; separate its page-shift/strip work before another change.
+The full browser goal,web-facing WebGL/WebGPU and device APIs remain incomplete.
+
 ## Android scroll texture row reuse implemented (2026-10-13)
 
 Main replaces eligible whole-page scroll uploads with a circular page region
