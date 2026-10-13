@@ -1,5 +1,29 @@
 # Lumen: handoff notes
 
+## Pacing phone evidence and verified copy APK (2026-10-13)
+
+The fresh no-install pacing test under fling-pacing/view-phone completes20
+swipes, Bands1/2 to23/24 (owner and Main actual image review). Scroll CPU over
+9.01s is55.383% mean/58% peak,RSS228.129-230.148MiB. Formal61s idle passes:
+0.0328% mean/1% peak,RSS228.543MiB.131 samples,zero telemetry errors,
+max device gap1.03s. App/marker/reverse/server/sampler cleanup and both lock
+releases verified; agent closed. One offline host-priority failure was corrected
+and preserved. Seven contained wall windows show409 partial blits/7080.5ms:
+raster814.408ms,compose603.178ms,present1871.981ms. No measured FPS/speedup.
+
+Copy APK build is complete under build/codex-android-page-compose/final:
+codex-agent-android-page-compose-compact-debug.apk,85240084bytes,0444,
+SHA256819345808e0ef0a04dc63087ab543e59e95432812b95dd7a3013aaff3a6b524e.
+Main independently verifies hash/mode and328-file source777b654 manifest
+887df958100959dd9e6b6b11305627a5d09a0d8dbac25d329cc05f3d1525c6d2.
+Fresh23APK gates pass;61+13 host GREEN explicitly reused with matching pins.
+Only main.c.o rebuilt;27.396s/225.07% mean host CPU/1742.32MiB peak sampled RSS.
+Shared480%/SCHED_IDLE/nice19 retained; all scopes drained, source V8 frozen.
+One missing verifier fixture restored from predecessor, failure retained;
+no product errors. Build agent closed. Phone acceptance pending under
+build/codex-android-page-compose/phone; only its fresh phone agent may install.
+Host-build and pacing-evidence scopes95/100; overall readiness remains25/100.
+
 ## Pacing installed; scroll acceptance still pending (2026-10-13)
 
 Phone agent01a1346c installs the immutable058271 APK once with data preserved
