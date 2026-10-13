@@ -461,6 +461,13 @@ JsCtx *owner_ctx(Document *d) {
 }
 JsCtx *js_new(Document *d, const JsHost *host) { return js_new_ex(d, host, nullptr, nullptr); }
 
+static unsigned viewport_changes(JsCtx *context) {
+    if (!context->host.viewport) return 0;
+    float width = 0, height = 0, scroll_x = 0, scroll_y = 0, dpr = 1;
+    context->host.viewport(context->host.ud, &width, &height, &scroll_x, &scroll_y, &dpr);
+    return context->viewport_state.update(width, height, dpr);
+}
+
 JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
     JsCtx *c = new JsCtx();
     c->id = g_next_ctx_id++;
@@ -469,6 +476,7 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
     if (parent) parent->kids.push_back(c);
     c->doc = d;
     if (host) c->host = *host;
+    viewport_changes(c);
     c->t0 = now_ms();
     c->thread = std::this_thread::get_id();
     g_ctxs.push_back(c);
@@ -514,7 +522,7 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
         get("protoFor", c->protoFor);
         get("fire", c->fire);
         get("report", c->report);
-        get("mediaChanged", c->mediaChanged);
+        get("viewportChanged", c->viewportChanged);
     }
     if (tc.HasCaught()) {
         std::string m = jcstr(iso, tc.Exception());
@@ -615,7 +623,7 @@ void js_free(JsCtx *c) {
         c->rafs.clear();
         c->anims.clear();
         c->protos.clear();
-        c->protoFor.Reset(); c->fire.Reset(); c->report.Reset(); c->mediaChanged.Reset();
+        c->protoFor.Reset(); c->fire.Reset(); c->report.Reset(); c->viewportChanged.Reset();
         c->api.Reset(); c->node_tmpl.Reset();
         c->mods.clear(); c->mod_url.clear();
         for (Node *n : c->wrapped) { delete static_cast<v8::Global<v8::Object> *>(n->js); n->js = nullptr; }
@@ -761,6 +769,15 @@ double js_next_deadline(JsCtx *c) {
     return d;
 }
 
+static void viewport_update(JsCtx *context) {
+    unsigned changes = viewport_changes(context);
+    if (!changes || context->viewportChanged.IsEmpty()) return;
+    if (context->host.sync) context->host.sync(context->host.ud, context->doc, true);
+    JS_ENTER(context);
+    v8::Local<v8::Value> resized = v8::Boolean::New(iso, (changes & JsViewportState::RESIZE) != 0);
+    (void)jcall(context, context->viewportChanged.Get(iso), v8::Undefined(iso), 1, &resized);
+}
+
 static void tick_one(JsCtx *c);
 void js_tick(JsCtx *c) {
     if (!c || c->dead) return;
@@ -784,6 +801,7 @@ static void tick_one(JsCtx *c) {
         else c->timers.erase(it);
         (void)jcall(c, fn, ctx->Global(), 0, nullptr);
     }
+    viewport_update(c);
     if (!c->rafs.empty() && now - c->last_raf >= 15.5) {
         c->last_raf = now;
         std::map<uint32_t, v8::Global<v8::Function>> list;

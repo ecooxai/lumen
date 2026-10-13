@@ -2,6 +2,55 @@
 
 ## Android/Linux checkpoint (2026-10-12)
 
+### Current viewport event iteration
+
+Main implements trusted window/VisualViewport resize notifications and viewport-
+dependent matchMedia change notifications. A per-context native size/DPR snapshot
+coalesces changes in the existing JS tick, after timers and before animation
+frames; unchanged ticks add no JS callback, allocation or polling timer. Changed
+viewports synchronize style/layout before dispatch. VisualViewport now inherits
+EventTarget, exposes live CSS geometry/page offsets and rejects construction.
+Media notification snapshots creation order and prunes dead weak references.
+Reference: https://drafts.csswg.org/cssom-view/#resizing-viewports . This is not
+full CSSOM conformance: separate visual/layout viewport zoom, pinch, visual
+scroll/scrollend production, color-scheme-only notification and listener lifetime
+across weak-reference collection still need work. No WPT or major-site pass is
+claimed.
+
+Tests precede implementation. Fresh RED records6 JS assertion failures, the
+native cache rotation failure and an actual prebuilt-host-V8 VisualViewport
+failure. An initial Node priority failure is preserved: host ananicy assigns
+nice16. A pinned, byte-identical local Node alias avoids that rule while keeping
+shared480%/SCHED_IDLE/nice19; no global policy change. The real engine RED abort
+takes0.195s, mean52.94% CPU, peak RSS69.56 MiB. Report:
+`build/codex-android-viewport-events/red/REPORT.md`.
+
+Fresh GREEN passes6 JS groups, ASan/UBSan cache state, actual V8 runtime,
+140 prior focused regressions,12 gesture sanitizer scenarios and23 APK gates.
+Runtime assertions take0.137s, mean78.00% CPU, peak RSS70.57 MiB. This is startup
+work, not idle evidence. Android assembly takes28.210s, mean241.52% scope CPU,
+sampled peak RSS1766.89 MiB. Four JS objects rebuilt,290 reused; native no-op,
+SDK/DEX, normal-to-compact payload identity and zero ZIP gaps pass. Only
+libmain.so differs from the touch candidate. Warnings remain. All39 owned scopes
+and descendants are gone;300 source pins and frozen V8/seven inputs remain
+unchanged at verifier completion. Main independently checks APK/test hashes and
+accepts95/100 bounded host/build quality; overall daily-use readiness stays25/100.
+Report: `build/codex-android-viewport-events/green/REPORT.md`.
+APK: `build/codex-android-viewport-events/green/codex-android-viewport-events-compact-debug.apk`,
+87,468,308 bytes,0444, SHA256
+`b9ecefe00702597ddf42e471a6ac949166c446c43328017f6e98216a18722098`.
+No phone runtime or installation of this candidate yet. Host runtime uses
+V8 15.6.75.8; Android uses prebuilt15.0.245.2, so device testing is still required.
+
+User now explicitly authorizes closing Lumen, install-r with data preserved and
+phone tests. User also requests a new narrow-phone UI: move workspace controls
+into the default New Tab area and give web content full screen width. Implement
+that test-first next, then use a fresh exclusive phone verifier for the combined
+candidate. Capture pidof stdout/stderr/returncode separately, not the old merged
+preflight check. Preserve previous runs; maintain1Hz process/thread CPU andRSS
+through GUI work/cleanup, restore device settings, and do not access accounts.
+No phone agent currently owns a grant or lock.
+
 ### Current Android touch iteration
 
 The preceding turn made concrete progress: the sampler fix and9 host tests are

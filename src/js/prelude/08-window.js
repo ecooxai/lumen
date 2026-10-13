@@ -250,7 +250,23 @@ class MediaQueryList extends EventTarget {
     addListener(f) { this.addEventListener('change', f); } removeListener(f) { this.removeEventListener('change', f); }
 }
 function matchMedia(q) { const m = new MediaQueryList(String(q)); mqls.push(new WeakRef(m)); return m; }
-function mediaChanged() { for (const r of mqls) { const m = r.deref(); if (!m) continue; const now = N.media(m.media); if (now !== m._m) { m._m = now; dispatch(m, new MediaQueryListEvent('change', { matches: now, media: m.media })); } } }
+function mediaChanged() {
+    const pending = [];
+    let retained = 0;
+    for (const reference of mqls) {
+        const query = reference.deref();
+        if (!query) continue;
+        mqls[retained++] = reference;
+        pending.push(query);
+    }
+    mqls.length = retained;
+    for (const query of pending) {
+        const matches = N.media(query.media);
+        if (matches === query._m) continue;
+        query._m = matches;
+        dispatch(query, new MediaQueryListEvent('change', { matches, media: query.media }), true);
+    }
+}
 class MediaQueryListEvent extends Event { constructor(t, i = {}) { super(t, i); this.matches = !!i.matches; this.media = i.media || ''; } }
 function getComputedStyle(el) { if (!el || !N.isNode(el) || N.type(el) !== 1) throw new TypeError("Failed to execute 'getComputedStyle': parameter 1 is not of type 'Element'."); return new Proxy(new ComputedStyleDeclaration(el, true), computedHandler); }
 const timerFn = (repeat) => (fn, ms, ...args) => { if (typeof fn !== 'function') { const src = String(fn); fn = () => (0, eval)(src); } return N.timer(() => { try { fn(...args); } catch (e) { report(e); } }, Math.max(0, +ms || 0), repeat); };
@@ -355,8 +371,27 @@ for (const k of Object.keys(globals)) {
         Object.defineProperty(v.prototype, Symbol.toStringTag, { value: k, configurable: true });
 }
 for (let i = 0; i < 32; i++) Object.defineProperty(G, i, { get() { return asWin(N.frameAt(i)); }, configurable: true });
-const visual = { get width() { return N.viewport()[0]; }, get height() { return N.viewport()[1]; }, offsetLeft: 0, offsetTop: 0, pageLeft: 0, pageTop: 0, scale: 1, addEventListener() {}, removeEventListener() {} };
+class VisualViewport extends EventTarget {
+    constructor() { super(); throw new TypeError('Illegal constructor'); }
+    get width() { return N.viewport()[0]; }
+    get height() { return N.viewport()[1]; }
+    get offsetLeft() { return 0; }
+    get offsetTop() { return 0; }
+    get pageLeft() { return N.viewport()[2]; }
+    get pageTop() { return N.viewport()[3]; }
+    get scale() { return 1; }
+}
+Object.defineProperty(VisualViewport.prototype, Symbol.toStringTag, { value: 'VisualViewport', configurable: true });
+Object.defineProperty(G, 'VisualViewport', { value: VisualViewport, writable: true, configurable: true });
+const visual = Object.assign(Object.create(VisualViewport.prototype), { onresize: null, onscroll: null, onscrollend: null });
 G.visualViewport = visual;
+function viewportChanged(resized) {
+    if (resized) {
+        dispatch(G, new Event('resize'), true);
+        dispatch(visual, new Event('resize'), true);
+    }
+    mediaChanged();
+}
 // Bare global calls like `addEventListener(...)` run with an undefined receiver in strict code.
 for (const k of ['addEventListener', 'removeEventListener', 'dispatchEvent']) {
     const f = EventTarget.prototype[k];
@@ -466,5 +501,5 @@ function fireAnim(t, type, name, elapsed, anim) {
     };
     selAt('left', move(-1)); selAt('right', move(1));
 }
-return { queueMessage, workerEvent, protoFor, dispatch, fire, fireAnim, report, mediaChanged, ceConnected, Event, MouseEvent, PointerEvent, KeyboardEvent, FocusEvent, WheelEvent, InputEvent, PopStateEvent, ErrorEvent };
+return { queueMessage, workerEvent, protoFor, dispatch, fire, fireAnim, report, mediaChanged, viewportChanged, ceConnected, Event, MouseEvent, PointerEvent, KeyboardEvent, FocusEvent, WheelEvent, InputEvent, PopStateEvent, ErrorEvent };
 })

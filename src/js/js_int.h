@@ -10,6 +10,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include "viewport_state.h"
 extern "C" {
 #include "js.h"
 #include "jsglue.h"
@@ -56,10 +57,11 @@ struct JsCtx {
     v8::Global<v8::Context> ctx;
     v8::Global<v8::ObjectTemplate> node_tmpl;
     v8::Global<v8::Object> api;
-    v8::Global<v8::Function> protoFor, fire, report, mediaChanged, pick_cb;
+    v8::Global<v8::Function> protoFor, fire, report, viewportChanged, pick_cb;
     std::unordered_map<std::string, v8::Global<v8::Object>> protos;
     Document *doc = nullptr;
     JsHost host{};
+    JsViewportState viewport_state;
     std::vector<Node *> wrapped;
     std::map<uint32_t, Timer> timers;
     uint32_t next_timer = 1;
