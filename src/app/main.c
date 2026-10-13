@@ -54,6 +54,13 @@ typedef struct Page {
 } Page;
 static Page *g_frames;
 static Page *frame_find(Node *f) { for (Page *p = g_frames; p; p = p->fnext) if (p->frame_el == f) return p; return NULL; }
+static bool page_viewport(Page *page, float width, float height) {
+    if (page->e->media.vw == width && page->e->media.vh == height) return false;
+    page->e->media.vw = width; page->e->media.vh = height;
+    style_recalc(page->e, &page->d->node, false);
+    page->img_check = true;
+    return true;
+}
 typedef struct { Image *im; bool done, evicted, refetch; double used; float ew, eh; uint8_t *enc; size_t enclen; } ImgSlot;   /* enc: compressed bytes kept in Lite mode for local re-decode */
 static bool g_lite_active;
 
@@ -784,7 +791,7 @@ static void render(App *a) {
     } else if (a->t->cur) {
         if (a->t->relayout || !a->t->cur->L) {
             if (!a->t->cur->L) a->t->cur->L = layout_new();
-            a->t->cur->e->media.vw = a->vw - a->side; a->t->cur->e->media.vh = a->vh - BAR;
+            page_viewport(a->t->cur, a->vw - a->side, a->vh - BAR);
             { double q = now_ms(); layout_run(a->t->cur->L, a->t->cur->d, a->vw - a->side, a->vh - BAR); g_tl += now_ms() - q; }
             a->t->relayout = false;
         }
@@ -1119,7 +1126,7 @@ static bool frame_restyle(Page *p) {
 static void frame_layout(Page *p) {
     if (!p->frelayout && p->L) return;
     if (!p->L) p->L = layout_new();
-    p->e->media.vw = p->fw; p->e->media.vh = p->fh;
+    page_viewport(p, p->fw, p->fh);
     layout_run(p->L, p->d, p->fw, p->fh);
     p->frelayout = false; p->drawn_ver = ~0ull;
 }
@@ -1296,13 +1303,15 @@ static void click_frame(App *a, Page *fp, float x, float y) {
 }
 static void restyle(App *a) {
     Page *p = a->t->cur;
-    if (!p || p->d->dom_version == p->seen_ver) return;
+    if (!p) return;
+    bool viewport_changed = page_viewport(p, a->vw - a->side, a->vh - BAR);
+    if (!viewport_changed && p->d->dom_version == p->seen_ver) return;
     p->seen_ver = p->d->dom_version;
     bool sheets = sync_sheets(p, false);
     { double q = now_ms(); style_recalc(p->e, &p->d->node, sheets); g_tr += now_ms() - q; }
     sync_images(p);
     p->img_check = true;
-    if (sheets || p->e->layout_dirty || p->d->layout_version != p->lay_ver || g_no_paint_only) a->t->relayout = true;
+    if (viewport_changed || sheets || p->e->layout_dirty || p->d->layout_version != p->lay_ver || g_no_paint_only) a->t->relayout = true;
     p->e->layout_dirty = false; p->lay_ver = p->d->layout_version;
     if (a->t == a->tabs[a->ti]) a->dirty = true;
 }
@@ -1313,7 +1322,6 @@ static void h_sync_in(void *ud, Document *d, bool layout) {
     restyle(a);
     if (!layout || !a->t->relayout) return;
     if (!p->L) p->L = layout_new();
-    p->e->media.vw = a->vw - a->side; p->e->media.vh = a->vh - BAR;
     layout_run(p->L, p->d, a->vw - a->side, a->vh - BAR);
     a->t->relayout = false;
 }

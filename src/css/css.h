@@ -128,6 +128,7 @@ typedef struct Selector { Compound *c; int n; uint32_t spec; uint8_t pseudo_el; 
 struct SelList { Selector *v; int n; };
 
 typedef struct ContainerCond { char *name, *query; struct ContainerCond *outer; } ContainerCond;
+typedef struct MediaCond { char *query; struct MediaCond *outer; bool matches; } MediaCond;
 /* container query environment: the container's content size and its custom properties (style()) */
 typedef struct CQEnv { float w, h; bool size, block; const char *(*var)(const void *ud, const char *name); const void *ud; } CQEnv;
 bool css_container_eval(const char *q, const CQEnv *env);
@@ -139,6 +140,7 @@ typedef struct Rule {
     uint8_t origin; /* 0 UA, 1 author */
     uint8_t layer;
     const ContainerCond *cq; /* innermost @container, or NULL */
+    const MediaCond *mq;
 } Rule;
 
 typedef struct MediaCtx { float vw, vh, dpr; bool dark; } MediaCtx;
@@ -148,6 +150,7 @@ typedef struct StyleSheet {
     VEC(DeclList *) decl_lists;
     VEC(char *) imports;
     VEC(ContainerCond *) conds;
+    VEC(MediaCond *) media_conds;
     VEC(char *) font_faces; /* raw @font-face src urls, family pairs */
     char *base_url;
     bool disabled;
@@ -167,6 +170,8 @@ typedef struct StyleEngine {
     VEC(StyleSheet *) sheets;   /* document order */
     RuleIndex idx; bool idx_dirty;
     MediaCtx media;
+    MediaCtx styled_media;
+    bool media_valid;
     uint32_t order_counter;
     Document *doc;
     uint64_t generation;

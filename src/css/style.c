@@ -1302,6 +1302,7 @@ static void collect(StyleEngine *e, Node *el, RuleVec *rv, int pseudo, VEC(MDecl
     for (int i = 0; i < rv->n; i++) {
         Rule *r = rv->v[i];
         if (r->sel.pseudo_el != pseudo) continue;
+        if (r->mq && !r->mq->matches) continue;
         if (!css_match_selector(&r->sel, el, NULL)) continue;
         if (r->cq && !container_matches(r->cq, el)) continue;
         for (int k = 0; k < r->decls->n; k++) {
@@ -1507,9 +1508,25 @@ static void recalc(StyleEngine *e, Node *n, const ComputedStyle *par, bool force
 }
 
 void style_recalc(StyleEngine *e, Node *root, bool force) {
+    bool media_changed = !e->media_valid || e->media.vw != e->styled_media.vw ||
+        e->media.vh != e->styled_media.vh || e->media.dpr != e->styled_media.dpr ||
+        e->media.dark != e->styled_media.dark;
+    if (media_changed || e->idx_dirty) {
+        for (int sheet_index = 0; sheet_index < e->sheets.n; sheet_index++) {
+            StyleSheet *sheet = e->sheets.v[sheet_index];
+            for (int index = 0; index < sheet->media_conds.n; index++) {
+                MediaCond *condition = sheet->media_conds.v[index];
+                condition->matches = (!condition->outer || condition->outer->matches) &&
+                    css_media_matches(condition->query, &e->media);
+            }
+        }
+    }
+    if (media_changed) { force = true; root = &e->doc->node; }
     if (e->idx_dirty) { idx_build(e); force = true; }
     e->stats_matched = e->stats_paint = 0;
     recalc(e, root, NULL, force);
+    e->styled_media = e->media;
+    e->media_valid = true;
 }
 ComputedStyle *style_for_text(Node *t) { Node *p = t->parent; while (p && p->type != NODE_ELEMENT) p = p->parent ? p->parent : p->host; return p ? p->style : NULL; }
 

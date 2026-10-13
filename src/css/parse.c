@@ -584,7 +584,7 @@ bool css_supports(const char *cond) {
 }
 
 /* ---------------- stylesheets ---------------- */
-typedef struct { StyleSheet *sh; const MediaCtx *mc; uint32_t order; ContainerCond *cq; } PCtx;
+typedef struct { StyleSheet *sh; const MediaCtx *mc; uint32_t order; ContainerCond *cq; MediaCond *mq; } PCtx;
 
 static size_t skip_block(const char *s, size_t i, size_t n) {
     /* s[i] == '{' ; returns index after matching '}' */
@@ -610,6 +610,7 @@ static void add_rules(PCtx *c, const char *prelude, DeclList *decls) {
     for (int i = 0; i < sl.n; i++) {
         Rule r; memset(&r, 0, sizeof r);
         r.sel = sl.v[i]; r.decls = decls; r.order = c->order++; r.origin = (uint8_t)c->sh->origin; r.cq = c->cq;
+        r.mq = c->mq;
         vec_push(c->sh->rules, r);
     }
     free(sl.v);
@@ -704,7 +705,7 @@ static void parse_rules(PCtx *c, const char *s, size_t n, const char *parent_sel
                 else if (t.type == CT_FUNC) { free(t.str); CTok u; do { u = clex_next(&l); } while (u.type == CT_WS); if (u.type == CT_STRING) url = u.str; else free(u.str); }
                 else free(t.str);
                 const char *rest = l.s + l.i;
-                if (url && css_media_matches(rest, c->mc)) { char *abs = url_join(c->sh->base_url, url); if (abs) vec_push(c->sh->imports, abs); }
+                if (url && (!c->mq || c->mq->matches) && css_media_matches(rest, c->mc)) { char *abs = url_join(c->sh->base_url, url); if (abs) vec_push(c->sh->imports, abs); }
                 free(url);
             }
             i++; free(pre); continue;
@@ -714,7 +715,15 @@ static void parse_rules(PCtx *c, const char *s, size_t n, const char *parent_sel
         const char *body = s + i + 1; size_t bn = be > i + 1 ? be - i - 2 : 0;
         if (be >= n && (be == 0 || s[be - 1] != '}')) bn = n - i - 1;
         if (pt[0] == '@') {
-            if (str_istarts(pt, "@media")) { if (css_media_matches(pt + 6, c->mc)) parse_rules(c, body, bn, parent_sel); }
+            if (str_istarts(pt, "@media")) {
+                MediaCond *condition = xcalloc(1, sizeof *condition);
+                condition->query = xstrdup(pt + 6); condition->outer = c->mq;
+                condition->matches = (!c->mq || c->mq->matches) && css_media_matches(condition->query, c->mc);
+                vec_push(c->sh->media_conds, condition);
+                c->mq = condition;
+                parse_rules(c, body, bn, parent_sel);
+                c->mq = condition->outer;
+            }
             else if (str_istarts(pt, "@supports")) { if (css_supports(pt + 9)) parse_rules(c, body, bn, parent_sel); }
             else if (str_istarts(pt, "@container")) {
                 const char *q = pt + 10; while (is_ws((unsigned char)*q)) q++;
@@ -729,10 +738,10 @@ static void parse_rules(PCtx *c, const char *s, size_t n, const char *parent_sel
             else if (str_istarts(pt, "@layer") || str_istarts(pt, "@document") || str_istarts(pt, "@-moz-document") || str_istarts(pt, "@scope") || str_istarts(pt, "@starting-style")) {
                 parse_rules(c, body, bn, parent_sel);
             }
-            else if (str_istarts(pt, "@font-face")) {
+            else if (str_istarts(pt, "@font-face") && (!c->mq || c->mq->matches)) {
                 SB ff; sb_init(&ff); sb_put(&ff, body, bn); vec_push(c->sh->font_faces, sb_take(&ff));
             }
-            else if (str_istarts(pt, "@property")) {
+            else if (str_istarts(pt, "@property") && (!c->mq || c->mq->matches)) {
                 SB nm; sb_init(&nm); sb_puts(&nm, pt + 9); char *name = str_trim(nm.s);
                 char *bd = xstrndup(body, bn), *iv = strstr(bd, "initial-value");
                 if (iv && (iv = strchr(iv, ':'))) { char *e = strchr(++iv, ';'); if (e) *e = 0; css_register_property(name, str_trim(iv)); }
@@ -766,6 +775,10 @@ void css_sheet_free(StyleSheet *s) {
     vec_free(s->imports);
     for (int i = 0; i < s->conds.n; i++) { free(s->conds.v[i]->name); free(s->conds.v[i]->query); free(s->conds.v[i]); }
     vec_free(s->conds);
+    for (int index = 0; index < s->media_conds.n; index++) {
+        free(s->media_conds.v[index]->query); free(s->media_conds.v[index]);
+    }
+    vec_free(s->media_conds);
     for (int i = 0; i < s->font_faces.n; i++) free(s->font_faces.v[i]);
     vec_free(s->font_faces);
     free(s->base_url); free(s);
