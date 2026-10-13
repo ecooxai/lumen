@@ -16,6 +16,7 @@
 #include "workspace.h"
 #include "local_viewer.h"
 #include "media_icon.h"
+#include "paint_profile.h"
 #include "../base/platform.h"
 #include "../paint/paint.h"
 #include "../media/media.h"
@@ -1013,6 +1014,43 @@ static int dl_sigs(const DisplayList *dl, struct DSig **v, int *cap) {
 }
 static uint64_t dl_hash(const DisplayList *dl) { uint64_t h = (uint64_t)dl->items.n; for (int i = 0; i < dl->items.n; i++) h = h * 31 + ditem_hash(&dl->items.v[i]); return h; }
 
+static PaintProfile g_paint_profile;
+
+static void paint_profile_configure(void) {
+    const char *value = getenv("LUMEN_DEBUG_PAINT");
+    g_paint_profile.enabled = value && !strcmp(value, "1");
+#if defined(__ANDROID__) && !defined(NDEBUG)
+    if (!g_paint_profile.enabled && *g_pref) {
+        char path[1200]; pref_path(path, sizeof path, "paint-profile.enabled");
+        FILE *marker = fopen(path, "r");
+        if (marker) {
+            int first = fgetc(marker), second = fgetc(marker);
+            g_paint_profile.enabled = first == '1' && second == EOF && !ferror(marker);
+            fclose(marker);
+        }
+    }
+#endif
+}
+
+static void paint_profile_stage(PaintFrame *frame, PaintPhase phase) {
+    if (!g_paint_profile.enabled) return;
+    double stamp = now_ms();
+    frame->phase_ms[phase] += stamp - frame->last_ms;
+    frame->last_ms = stamp;
+}
+
+static void paint_profile_report(const PaintFrame *frame, double start_ms, bool partial) {
+    if (!paint_profile_record(&g_paint_profile, frame, start_ms, partial)) return;
+    char message[1024];
+    paint_profile_format(&g_paint_profile, frame->last_ms, message, sizeof message);
+#ifdef __ANDROID__
+    SDL_Log("%s", message);
+#else
+    fprintf(stderr, "%s\n", message);
+#endif
+    paint_profile_reset(&g_paint_profile, frame->last_ms);
+}
+
 static void render(App *a) {
 #ifdef __ANDROID__
     if (!a->win || a->android_suspended) return;
@@ -1021,6 +1059,7 @@ static void render(App *a) {
 #endif
     update_compact(a);
     double t0 = now_ms();
+    PaintFrame profile_frame = { .last_ms = t0 };
     int bar_px = (int)(BAR * a->scale);
     if (a->frame.w != a->pw || a->frame.h != a->ph || a->frame.scale != a->scale) { canvas_free(&a->frame); canvas_init(&a->frame, a->pw, a->ph, a->scale); }
     int ph = a->ph - bar_px; if (ph < 1) ph = 1;
@@ -1034,6 +1073,7 @@ static void render(App *a) {
     if (a->page.w != pwp || a->page.h != ph || a->page.scale != a->scale) { canvas_free(&a->page); canvas_init(&a->page, pwp, ph, a->scale); part = false; a->osig_ok = false; }
     bool gskip = false; GpuVideo gvd, *gvp = NULL;
     Image *fast = part && !a->sdirty && a->t->cur && a->gpu && a->gvid_ok && a->t->sy == a->last_sy && a->page.w == pwp && a->page.h == ph ? media_owner_frame(a->vown) : NULL;
+    paint_profile_stage(&profile_frame, PAINT_PREPARE);
     if (a->t->cur && (defer || fast)) {   /* nothing but the video changed, or layout may be stale: only swap the video texture */
         Image *im = fast;
         if (!im) { a->dirty = a->vframe = false; return; }
@@ -1055,6 +1095,7 @@ static void render(App *a) {
             else { part = false; why = 5; }
         }
         g_full_paint = (double)SDL_GetTicks(); { double q = now_ms(); dl_clear(&a->pdl); dl_build(&a->pdl, a->t->cur->L, 0, a->t->sy, a->vw - a->side, a->vh - BAR); g_td += now_ms() - q; } a->vbars = video_bars(a, &a->pdl);
+        paint_profile_stage(&profile_frame, PAINT_LAYOUT_DL);
         int nn = dl_sigs(&a->pdl, &a->nsig, &a->cnsig);
         const DItem *vit = NULL; int nv = 0;
         for (int i = 0; i < a->pdl.items.n; i++) {
@@ -1071,7 +1112,9 @@ static void render(App *a) {
         int fx0 = LMAX(0, (int)floorf(fb[0] * s)), fx1 = LMIN(pwp, (int)ceilf(fb[2] * s)), fy0 = LMAX(0, (int)floorf(fb[1] * s) - LMAX(blit, 0)), fy1 = LMIN(ph, (int)ceilf(fb[3] * s) - LMIN(blit, 0));
         bool fixed_area = a->pdl.has_fixed && fx1 > fx0 && fy1 > fy0;
         if (blit && (nv || (fixed_area && (fy1 - fy0) * 2 > ph))) { blit = 0; part = false; why = 5; }
+        paint_profile_stage(&profile_frame, PAINT_SIGNATURES);
         if (blit) {
+            profile_frame.blit = true;
             int d = blit, n = ph - abs(d); size_t row = (size_t)a->page.stride;
             if (d > 0) memmove(a->page.px, a->page.px + (size_t)d * row, (size_t)n * row * 4);
             else memmove(a->page.px + (size_t)(-d) * row, a->page.px, (size_t)n * row * 4);
@@ -1129,10 +1172,12 @@ static void render(App *a) {
             a->vown = media_owner_of(im); a->vrect[0] = vit->x; a->vrect[1] = vit->y; a->vrect[2] = vit->w; a->vrect[3] = vit->h;
         }
     } else { a->gvid_ok = false; a->osig_ok = false; raster(&a->page, &(DisplayList){0}, RGBA(255, 255, 255, 255)); }
+    paint_profile_stage(&profile_frame, PAINT_RASTER);
     if (!part) { build_chrome(a); chrome_tip(a); a->chash = dl_hash(&a->cdl) * 31 + dl_hash(&a->hdl); raster(&a->frame, &a->cdl, RGBA(255, 255, 255, 255)); }
     if (!gskip) for (int y = part ? ry0 : 0; y < (part ? ry1 : ph) && y + bar_px < a->ph; y++)
         memcpy(a->frame.px + (size_t)(y + bar_px) * (size_t)a->frame.stride + side_px, a->page.px + (size_t)y * (size_t)a->page.stride, (size_t)pwp * 4);
     if (!gskip && a->hdl.items.n) { float s = a->frame.scale; raster_rect(&a->frame, &a->hdl, RGBA(255, 255, 255, 255), (int)floorf(g_pop[0] * s), (int)floorf(g_pop[1] * s), (int)ceilf(g_pop[2] * s), (int)ceilf(g_pop[3] * s)); }   /* floats over the page */
+    paint_profile_stage(&profile_frame, PAINT_COMPOSE);
     if (!(a->gpu && gpu_present_frame(a->gpu, a->frame.px, a->frame.w, a->frame.h, a->frame.stride, gskip ? 0 : part ? bar_px + ry0 : 0, gskip ? 0 : part ? bar_px + ry1 : a->frame.h, gvp))) {
         SDL_Surface *ws = SDL_GetWindowSurface(a->win);
         if (ws) {
@@ -1141,13 +1186,15 @@ static void render(App *a) {
             SDL_DestroySurface(src); SDL_UpdateWindowSurface(a->win);
         }
     }
+    paint_profile_stage(&profile_frame, PAINT_PRESENT);
     a->frame_ms = now_ms() - t0;
     if (getenv("LUMEN_SHOT")) {   /* write the presented frame to a PNG after LUMEN_SHOT_MS and exit */
         static double ts; if (!ts) ts = t0;
         const char *d = getenv("LUMEN_SHOT_MS");
         if (t0 - ts >= (d ? atof(d) : 1500)) { png_write(getenv("LUMEN_SHOT"), a->frame.px, a->frame.w, a->frame.h, a->frame.stride); exit(0); }
     }
-    if (getenv("LUMEN_DEBUG_PAINT")) {
+    paint_profile_report(&profile_frame, t0, part);
+    if (g_paint_profile.enabled) {
         static int np, nf, nw[6]; static double tp, tf, t_last;
         if (part) { np++; tp += a->frame_ms; } else { nf++; tf += a->frame_ms; nw[why]++; }
         if (t0 - t_last > 1000) {
@@ -2549,6 +2596,7 @@ int main(int argc, char **argv) {
             else if (!strcmp(k, "tab_sleep")) g_tab_sleep = v != 0; else if (!strcmp(k, "cpu_hud")) g_hud = v != 0; else if (!strcmp(k, "smooth_scroll")) g_smooth = v != 0; else if (!strcmp(k, "user_agent")) g_ua = LCLAMP(v, 0, UA_COUNT - 1);
         }
         if (sf) fclose(sf);
+        paint_profile_configure();
 #ifdef __ANDROID__
         update_size(&a);
 #endif

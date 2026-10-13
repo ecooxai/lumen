@@ -1,5 +1,82 @@
 # Lumen: handoff notes
 
+## Android paint diagnostics and Home-card phone follow-up (2026-10-13)
+
+The Home-card APK6a969dc is now installed with app data preserved. Main reviews
+actual Settings, Settings-to-Home, titled local fixture and fixture-to-Home
+PNGs: New Tab/lumen://newtab replaces the old title/address, pages use full
+width, and Vulkan2x/native resolution remain correct. Initial Home review
+measures0.352% mean CPU,2% peak,227.76MiB RSS over14.22s, NOT formal idle.
+Evidence: `build/codex-android-home-card/phone/REPORT.md`.
+
+Acceptance is PARTIAL: during second fixture navigation the device sampling
+gap reaches1.55s, exceeding the unchanged1.5s guard. The corresponding host
+attempt gap is1.355623s; attribution to host scheduling versus ADB/device delay
+is unresolved. No browser crash is established. Subsequent cleanup rejections
+compare against the retained last-valid sample, not three additional oversized
+inter-attempt gaps. Preserve all259 accepted/4 rejected attempts. App absence,
+sampler join, loopback cleanup and both lock releases are verified; continuous
+valid1Hz sampling through termination, inactive-card acceptance, final60s idle
+and single-Home restoration are not. One new test tab may remain. Four harness
+corrections, no fifth/retry; bounded phone verification70/100.
+
+Main adds opt-in paint-stage wall diagnostics, not a speculative optimization.
+Tests first:8 expected RED assertions, then13 focused and61 adjacent checks
+pass. The same13-test suite also passes with10 actual ASan/UBSan model scenario
+runs, including Debug/Release/desktop configuration. One sanitizer harness
+failure used nonexistent `/usr/bin/time` before any scenario ran; preserve it,
+then reuse the already-built binary with Python wait4/rusage. No product fix or
+scenario retry was needed. Evidence: `build/codex-android-paint-profile/red/`
+and `green/`. Host checks do not prove phone logging or rendering integration.
+
+`src/app/paint_profile.h` aggregates completed paint calls and six wall stages;
+Android output uses SDL_Log at most once per elapsed second during painting.
+Opt-in is LUMEN_DEBUG_PAINT=1 or, only in Android Debug, the app-private
+paint-profile.enabled file containing exactly one byte1. Disabled stage hooks
+do not read the clock; no new wakeups, thread, public URL or settings toggle.
+See `docs/codex-android-telemetry.md` for interpretation and cleanup. The
+currently installed Home-card APK does NOT contain these newer diagnostics.
+Next: build this revision, resolve or isolate the cadence failure without
+weakening guards, then collect stage logs plus independent CPU/RSS on the
+matched scrolling fixture. Do not reattach LLDB or infer hot paths from the
+prior zero-probe run. Broad daily-browser readiness remains25/100/unproven.
+
+## Android Home-card APK and bounded scroll profiling (2026-10-13)
+
+Home-card fix f2a5a2c has a verified optimized Debug APK:
+`build/codex-android-home-card/final/codex-agent-android-home-card-compact-debug.apk`,
+85,240,084 bytes,0444,SHA256
+`6a969dc199c313ad0a6a08052b70daf2f769b612f80886bdfa63f91857a2f488`.
+206 focused checks,29 sanitizer scenarios,6 JS groups, native cache/runtime,
+23 packaging gates, actual O2/g/assertions, no-op, payload identity and zero
+ZIP gaps pass. Build29.655s, mean210.09% host CPU, peak1703.77MiB RSS;
+shared480%/SCHED_IDLE/nice19 retained. Verified prebuilt V8 only; source V8
+remains frozen. All50 owned scopes and209 sampled processes released.
+320-file source manifest SHA256
+`79748128066aee1a31d483ead9a2d3c1b49a511f7cab9b2e118026415c0b8d67`.
+Main independently hashes the artifact and manifest. Host-only quality95/100;
+fresh phone acceptance is separate, not implied by these checks.
+
+Exact installed older d086 scroll reference reproduces47.6138% mean CPU,
+peak50%,RSS232.164-232.176MiB over9 complete intervals/9.01s. Main reviews
+actual top and endpoint PNGs; the endpoint shows Band24/25, not bottom.
+Six planned LLDB probes yield ZERO completed timed probes: an unexpected
+SIGSEGV stops SurfaceSyncGrou before the first requested interrupt. The PC
+0x680719b4 falls in the saved executable `/memfd:jit-cache` mapping; this is
+not a symbolized Lumen frame or a proven root cause. Saved engine stacks show
+lifecycle waiting, not busy scrolling. Do not derive optimization targets or
+symbol percentages from them, suppress signals, or call this a profile pass.
+
+`build/codex-android-scroll-profile/attempt1/REPORT.md` preserves all evidence:
+83 nominal1Hz samples, zero telemetry errors, detach and app-stop verified,
+both locks released, debugger/forward/reverse/server removed, pins unchanged.
+Single-Home restoration was incomplete: one owned fixture tab remains.
+Bounded profiling evidence50/100. A fresh GUI-only owner may close that tab
+and verify the new Home-card APK without attaching a debugger. Next native
+diagnostic approach: opt-in aggregate paint-stage wall timings with Android
+logcat output, paired with the existing independent CPU/RSS sampler. Wall
+timing must not be labeled CPU time, GPU execution time or measured FPS.
+
 ## Android Home-card destination fix (2026-10-13)
 
 Phone GPU/scroll acceptance exposed a stale Settings address in the current
@@ -13,9 +90,9 @@ Evidence: `build/codex-android-home-card/red/MAIN-REVIEW.md` and
 `build/codex-android-home-card/green/MAIN-REVIEW.md`. Host verification quality
 95/100; real phone verification of this small UI change remains pending.
 The installed d086 GPU/scroll APK does not contain this newer Home-card fix.
-Separate native scroll profiling preparation is in
-`build/codex-android-scroll-profile/prepare/`; no phone grant yet. Preserve
-matching d086 symbols before replacing native build outputs. Android only.
+Separate native scroll profiling preparation and archived matching d086
+symbols are in `build/codex-android-scroll-profile/prepare/`. The completed
+bounded run is described above; retain these immutable symbols. Android only.
 
 ## Android GPU/scroll phone checkpoint (2026-10-13)
 
