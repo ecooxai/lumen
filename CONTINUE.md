@@ -4,6 +4,132 @@
 
 ### Current idle-adapter iteration
 
+**Android density/input and focus-highlight fixes committed; phone verification partial.**
+The preceding viewport iteration was concrete progress: committed engine fixes,
+host/build passes and protected API35 resize/IME phone evidence, not a status-only
+turn. This iteration keeps Android as the priority; Linux development is deferred.
+Tests were added before production edits. Density RED executes six extracted
+`update_size` model failures, three missing-input-adapter prerequisites and four
+static-wiring failures; both Android/desktop variants compile without errors.
+The desktop/invalid-scale failures concern the new input-scale contract and do
+not establish a preexisting desktop rendering regression. Responsive RED first
+failed setup because the new fixture omitted HTML sources. Main added the HTML
+sources; a fresh verifier then executes two initial portrait-style failures and
+one wide-style pass using the actual CSS/DOM/HTML engine. The failed rotation
+scenario stops at its portrait prerequisite, not a separately exercised rotation.
+Evidence: `build/codex-android-density/red/REPORT.md` and
+`build/codex-android-density/red-responsive/REPORT.md`. Test compiler errors now
+print diagnostics, with bounded compilation timeouts.
+
+The patch derives Android CSS/UI units from SDL display scale while retaining
+the physical framebuffer size, maps pointer positions and relative motion into
+those units, preserves wheel ticks, and refreshes metrics on scale-change events.
+Desktop SDL logical coordinates remain unchanged. Canvas/icon caches include
+scale; page and iframe style environments receive the presentation DPR. Internal
+pages stack navigation above content below600 CSS pixels, retaining the wide
+sidebar layout above that threshold. Existing native toolbar/workspace sizes are
+not redesigned, nor are touch scrolling or JavaScript resize notifications added.
+SDL contract checked against the pinned local source and official references:
+https://wiki.libsdl.org/SDL3/SDL_GetWindowDisplayScale
+https://wiki.libsdl.org/SDL3/SDL_MouseMotionEvent
+Commit `a640356` passes16 new groups and the previous93 focused checks:109/109,
+plus23/23 unchanged packaging gates. Only `main.c.o` rebuilt,292 objects reused;
+normal assembly29.395 seconds, mean218.13% CPU, sampled peak RSS1785.80 MiB.
+Shared480%/SCHED_IDLE/nice19 held. Normal assembly then fresh packaging yields
+identical live payloads and zero ZIP gaps; only libmain.so changes. Candidate:
+`build/codex-android-density/green/codex-android-density-compact-debug.apk`,
+87,468,308 bytes, mode0444, SHA256
+`f98c99bc16284dcbd47bcb4e84fe357cbdd707e5191a4551cc43c9f3fc02af9e`.
+Report: `build/codex-android-density/green/REPORT.md`. One report-only harness
+correction, no build/test retry; compiler/SDK warnings retained. Main independently
+verified APK and five production/test hashes. Original source V8 remains frozen;
+the Android build continues using verified prebuilt V8. Build score95/100.
+The fresh GUI verifier received explicit current-candidate install/exclusive
+authorization after GREEN. Candidatef98c99bc is installed on the API35 phone.
+Initial main-reviewed portrait screenshots show readable enlarged controls,
+horizontal three-link internal navigation and contained wrapping card content.
+Actual effective device density is320dpi (scale2), not the model's example2.75.
+Fresh60.04-second home idle passes at mean2.015% CPU, range0–6.12%, longest
+above3% streak1, RSS222.75 MiB. Real History/Bookmarks taps select the expected
+content; address tap opens the IME and literal `lumen://newtab` is visible before
+submission. **Phone run1 fails a real visual gate after address submission:**
+the entire SDL surface remains gray-tinted, while system bars remain untinted.
+Main reviewed submission and a second screenshot67.22 seconds later with no
+Back, touch, reload or rotation masking it. IME is hidden, own activity focused,
+resumed/unlocked and unobscured. Normal GUI testing stops here; current-candidate
+rotation/resume/final idle remain untested. Failure cleanup force-stops the app,
+restores free rotation and releases the phone; full final UI restoration was not
+accepted. Evidence: `build/codex-android-density/phone/run1/cleanup-final.json`.
+Main's source-level diagnosis is the platform default focus highlight: SDL's
+TEXTEDIT_HIDE returns focus to its SurfaceView, and the captured hierarchy shows
+focused BrowserSurface in non-touch mode. Android15 draws a default highlight
+over such views unless opted out. This matches the failure but has not yet been
+confirmed by a corrected phone run. Official implementation:
+https://raw.githubusercontent.com/aosp-mirror/platform_frameworks_base/android-15.0.0_r1/core/java/android/view/View.java
+Final failed-run report: `build/codex-android-density/phone/REPORT.md`;
+556 continuous samples through cleanup, host policy/source pins/frozen V8 all
+preserved. Logs retain20 allocator errors,20 AHardwareBuffer errors and one
+IME-hide timeout. Bounded partial GUI score55/100, not an overall pass.
+New BrowserSurface model assertions precede the adapter opt-out. Fresh RED
+compiles Java and fails the constructor focus-highlight assertion; the later
+resize assertion is not reached. Report: `build/codex-android-focus/red/REPORT.md`.
+Main adds `setDefaultFocusHighlightEnabled(false)` in BrowserSurface's constructor,
+without changing keyboard focus, SDL listeners or touch mode. Commit `1d2075a`
+passes109 unique focused groups plus23 unchanged packaging gates. All293 native
+objects are reused; only classes3.dex changes. SDK36 compile and DEX evidence
+verify the actual Android API call. Normal assembly takes18.611 seconds at mean
+275.15% CPU, sampled peak RSS1027.88 MiB; shared480%/SCHED_IDLE/nice19 holds.
+Report: `build/codex-android-focus/green/REPORT.md`; zero harness corrections,
+build score95/100, frozen V8 and allseven hashes unchanged. New candidate:
+`build/codex-android-focus/green/codex-android-focus-compact-debug.apk`,
+87,468,308 bytes, mode0444, SHA256
+`a06cbad1142051177fea1da649bb5eae9b95256039a40a382e2165595be79612`.
+Main independently verifies APK/four source pins and grants the fresh GUI agent
+exclusive phone testing. Its host-only preparation passes34 checks without
+corrections. Corrected candidate is installed on the API35 phone. Main reviews
+initial, protected post-submit and rotated-existing-IME screenshots: all pass.
+After hardware Enter and more than10 seconds without touch/reload, the surface
+has no gray tint, retains keyboard focus and remains in non-touch mode. This
+confirms the focus-highlight correction in the original failing context.
+Fresh61-second home idle averages2.443% CPU, range0–6.122%, RSS223.156 MiB,
+longest above3% streak1. Closed-IME rotation and rotation of an already-visible
+keyboard preserve readable responsive layout and a single keyboard inset.
+**The full phone run is incomplete, not GREEN:** after same-process resume,
+the sampler loses one transient thread's `/proc/1452/task/5203/stat` during
+`resumed-history`. The legacy strict `cat /proc/$process/task/*/stat` collector
+treats normal thread exit as failure. Main inspected the collector and failure
+evidence; this is a monitoring race, not a demonstrated browser failure.
+The pre-cleanup image shows normal History selection, closed keyboard and no
+tint, but final navigation/20-second idle/restoration gates are not completed.
+Cleanup confirms stopped/released/free rotation; full UI restoration remains
+unverified. Evidence: `build/codex-android-focus/phone/run1/FAILURE.json` and
+`build/codex-android-focus/phone/run1/cleanup-final.json`.
+Final partial report: `build/codex-android-focus/phone/REPORT.md`, score65/100
+for verification completion, not production readiness. It preserves507 samples,
+a2.867-second successful-sample gap and a second expected-stop label mismatch
+(`App disappeared during cleanup`); neither error is erased or called a pass.
+The fresh tracked collector `tools/android/codex_proc_sample.sh` now passes9
+host fixture tests. Main wrote tests before seeding the actual legacy cat
+behavior: RED has6 behavioral assertion failures across4 methods, no setup
+errors. The builtin-read fix passes all9 without test changes. It skips vanished
+task directories, not arbitrary read failures, and checks process presence again
+after collection. This is directory-lifetime detection, not numeric errno
+classification; PID/start/cadence checks remain the caller's responsibility.
+Reports: `build/codex-android-proc-sample/{red,green}/REPORT.md`; policy/frozen V8
+checks pass, zero corrections. Scope/usage: `docs/codex-android-telemetry.md`.
+A fresh GUI verifier is preparing the full current-candidate protocol using this
+collector and correct intentional-stop labeling. No new APK build is necessary;
+the installed production bytes do not change. Phone access awaits a new explicit
+grant; historical helpers and failed run remain intact. No further phone access
+is authorized to the completed verifier. Overall daily-use readiness remains25/100;
+public sites, Chrome memory comparison and major graphics/media APIs are not
+validated by these internal-page checks.
+The preceding density host-only preparation passed38 checks after two corrections;
+an initial policy5/nice-4 failure remains unexplained, not claimed fixed. Strict
+runtime priority checks remain required; no global host policy was changed.
+
+### Previous viewport checkpoint
+
 **Viewport-style fix committed and verified on the API35 phone.**
 Eight new actual-CSS-engine regression scenarios compile and fail behaviorally
 before production changes: viewport units, media activation, nested queries,
