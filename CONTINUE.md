@@ -1,5 +1,51 @@
 # Lumen: handoff notes
 
+## Direct page upload APK installed and measured on Android (2026-10-13)
+
+Source edc0d87 on codex/android-vulkan-momentum-scroll is now installed on MI8.
+APK build/codex-android-direct-page/final/codex-agent-android-direct-page-compact-debug.apk
+SHA25645dc01bb411e8471334a8f2e493a83e3bc285f2f7028080bebb5a158bec6dc7c,
+85,240,084bytes,0444;336-file immutable source snapshot. Fresh23 APK/API gates
+pass, actual main.c/gpu.c compile/link verified. Host102 distinct tests and36
+sanitizer scenarios explicitly reused, not rerun. Build42.355s,meanCPU221.22%,
+peak375.84%,peakRSS1729.24MiB; shared480%,SCHED_IDLE/nice19,V8 frozen/prebuilt.
+Two supplemental build-harness audit errors remain preserved: final symbol is
+valid local t,not global T; native commands are in AGP build_stdout_targets.txt,
+not the Gradle log. Corrected evidence audit passes without rebuilding.
+
+Fresh phone owner performs exactly one install-r, preserving private settings,
+then the matched Vulkan2x fixture:20 swipes,1080x2112 BrowserSurface at0,88,
+inferred540x1056 layout. Main and owner actually review top/end PNGs while live,
+before formal idle: Bands1/2 to23/24,full-width edges,unchanged single toolbar.
+No obvious corruption in these images; not comprehensive rendering acceptance.
+
+Scroll10.0s/10intervals:meanCPU50.2%,peak53%,RSS228.8359-230.8984MiB;
+renderer SDLThread38.4%. Prior5963 run:55.2%,peak56%,peakRSS231.3164MiB,
+renderer44.1%. Observed process reduction5 percentage points/about9.1% relative;
+single-run descriptive comparison,not causal proof. RAM essentially unchanged.
+Formal idle61s/61intervals:meanCPU0.04918%,peak1.0101%,RSS229.3281MiB,passes.
+129samples/attempts,zero rejects,maxdevicegap1.05s; all live threads monitored.
+
+Seven wholly contained wall/CPU pairs span7015ms/405partial blit paints,all
+measured with zero missing/unavailable frames. ThreadCPU sums(ms):prepare1.183,
+layout36.070,signatures4.352,raster808.739,compose2.564,present1756.616.
+Compose falls from1.4404 to0.00633ms/paint;present rises4.0823 to4.3373ms/paint
+and raster rises1.8384 to1.9969ms/paint. Do not claim every stage improves.
+Corresponding current wall sums: raster867.603,compose4.529,present1984.982ms.
+Presentation remains the largest measured render-thread CPU stage; its upload,
+driver and submission components are not separately established. GPU execution,
+FPS,real-site performance and Chrome CPU/RAM comparisons remain unmeasured.
+
+Evidence build/codex-android-direct-page/phone/analysis.json and cleanup-live.json:
+app/marker/reverse/server absent,sampler joined,both locks released,settings and
+display/rotation unchanged. No root/security/global setting changes or cookies.
+Fresh12 binding/install guard checks pass; previous8 geometry and29 parser tests
+reused with verified pins. Scope95/100; overall browser readiness25/100.
+Next: reduce remaining scroll presentation/transfer work without replacing the
+engine or sacrificing coherent fallback; validate resize/overlay/backend paths
+on-device and expand real-site compatibility coverage. Do not call the50%-Chrome
+RAM target, page-facing WebGL/WebGPU or daily-use browser goal complete.
+
 ## Android direct page upload implemented and host-tested (2026-10-13)
 
 Main implements gpu_upload_page into an existing correctly sized GPU texture;
