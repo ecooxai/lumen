@@ -34,8 +34,24 @@ Bounded phone evidence85/100; overall daily-use readiness25/100.
 Next product bug: resize relayouts but never reveals the focused text control.
 Main adds test-first geometry and App integration regressions for one-shot
 post-layout focus reveal, nested/reverse/fixed scrollers and contenteditable.
-These tests are not yet GREEN and no keyboard repair is installed. Latest goal
-turn produces new phone evidence and regression tests, not just a status update.
+Initial RED has2 wiring failures and2 setup errors from existing CSS partial
+initializers under-Werror; Main aligns test flags with adjacent suites. Fresh
+corrected RED executes23:5pass/18behavior-or-wiring failures,0errors. MeanCPU
+78.03%,approximate peak104.71%,sampled peakRSS36.40MiB; scopes drained,V8 unchanged.
+Evidence build/codex-android-keyboard-reveal/{red,red-corrected}.
+
+Main implements Android-only one-shot reveal after fresh layout, before display
+list generation. Focus and resize requests reveal the current text control or
+contenteditable selection box, innermost scrollers first, then the document.
+Fixed ancestry stops document scrolling; absolute containing blocks bypass
+unrelated scrollers; column-reverse scroll origins, borders, translations and
+clamping are respected. Visible/spanning oversized fields do not jump. A consumed
+request does not keep overriding later manual scrolling. Non-translation
+transforms are conservatively left unchanged; exact multiline caret/iframe and
+fixed-overlay occlusion behavior are not established by these geometry tests.
+GREEN/Android compilation and new phone acceptance pending; not installed.
+Latest goal turn produces phone evidence,regression tests and a candidate repair,
+not just a status update. Full browser goal remains active and incomplete.
 
 ## Hit-test repair passes host verification; caret regression in progress (2026-10-13)
 

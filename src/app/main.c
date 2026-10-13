@@ -11,6 +11,7 @@
 #include "android_back.h"
 #include "android_touch.h"
 #include "android_fling.h"
+#include "android_focus.h"
 #endif
 #include "menu.h"
 #include "workspace.h"
@@ -305,7 +306,7 @@ typedef struct Tab { Page *cur; bool loading, relayout; char *hist[256]; uint64_
 typedef struct App {
     SDL_Window *win; SDL_MetalView mview; Gpu *gpu;
 #ifdef __ANDROID__
-    bool android_suspended;
+    bool android_suspended, focus_reveal;
     AndroidTouch touch;
     AndroidFling fling;
     float fling_x, fling_y;
@@ -328,6 +329,10 @@ typedef struct App {
     int hover; double frame_ms;
     bool vonly, deferred, vframe; double last_input, last_full; float last_sy; uint64_t last_ver; Page *last_page; bool gvid_ok; const void *vown; float vrect[4]; float srect[4]; bool sdirty;   /* srect: viewport rect of element scrollers to repaint */
 } App;
+#ifdef __ANDROID__
+static Node *page_focus(App *app);
+static Node *edit_focus(App *app);
+#endif
 static float sidebar_width(float requested) {
 #ifdef __ANDROID__
     (void)requested;
@@ -1103,6 +1108,31 @@ static void compose_page(App *app, int first_row, int last_row, int toolbar, int
                (size_t)width * sizeof(*app->page.px));
 }
 
+#ifdef __ANDROID__
+static void android_reveal_focus(App *app) {
+    if (!app->focus_reveal) return;
+    app->focus_reveal = false;
+    if (app->editing || !app->t->cur || !app->t->cur->L || app->t->asleep) return;
+    Node *focus = page_focus(app);
+    bool editable = !focus;
+    if (!focus) focus = edit_focus(app);
+    Box *target = focus ? focus->box : NULL;
+    if (!target) return;
+    if (editable) {
+        Node *selection = app->t->cur->d->sel[1];
+        for (Node *ancestor = selection; ancestor; ancestor = ancestor->parent) if (ancestor == focus) {
+            if (selection->box && box_within(selection->box, target) &&
+                    selection->box->w > 0 && selection->box->h > 0) target = selection->box;
+            break;
+        }
+    }
+    if (android_focus_scroll(app->t->cur->L, target, &app->t->sy)) {
+        app->vonly = app->sdirty = app->osig_ok = app->gvid_ok = false;
+        android_fling_reset(&app->fling);
+    }
+}
+#endif
+
 static void render(App *a) {
 #ifdef __ANDROID__
     if (!a->win || a->android_suspended) return;
@@ -1141,6 +1171,9 @@ static void render(App *a) {
             a->t->relayout = false;
         }
         a->t->sy = LCLAMP(a->t->sy, 0, max_scroll(a));
+#ifdef __ANDROID__
+        if (a->focus_reveal) { android_reveal_focus(a); part = false; }
+#endif
         int blit = 0;   /* page scrolled by whole device pixels: shift the old pixels, raster only the exposed strip */
         if (a->t->sy != a->last_sy && part) {
             float sdy = (a->t->sy - a->last_sy) * a->page.scale;
@@ -1421,6 +1454,9 @@ static Tab *tab_of_doc(App *a, Document *d) {
     return NULL;
 }
 static void update_size(App *a) {
+#ifdef __ANDROID__
+    a->focus_reveal = true;
+#endif
     for (int i = 0; i < a->ntabs; i++) a->tabs[i]->relayout = true;
     int w, h; SDL_GetWindowSize(a->win, &w, &h); SDL_GetWindowSizeInPixels(a->win, &a->pw, &a->ph);
     float window_scale = w > 0 && a->pw > 0 ? (float)a->pw / (float)w : 1;
@@ -1950,6 +1986,8 @@ static void ctl_set(App *a, Node *n, char *v) {
 static void focus_node(App *a, Node *n) {
     Document *d = a->t->cur->d; Node *old = d->focus; JsCtx *js = a->t->cur->js;
 #ifdef __ANDROID__
+    a->focus_reveal = true;
+    a->dirty = true;
     if (old == n && (is_text_ctl(n) || edit_host(n))) SDL_StartTextInput(a->win);
 #endif
     if (old == n) return;
@@ -2740,7 +2778,11 @@ int main(int argc, char **argv) {
         Node *text_focus = page_focus(&a);
         if (!text_focus) text_focus = edit_focus(&a);
         if (android_text_input_start(&android_text_state, (uintptr_t)text_focus,
-            a.t->cur ? a.t->cur->gen : 0, a.editing) && !SDL_TextInputActive(a.win)) SDL_StartTextInput(a.win);
+            a.t->cur ? a.t->cur->gen : 0, a.editing)) {
+            a.focus_reveal = a.dirty = true;
+            a.vonly = false;
+            if (!SDL_TextInputActive(a.win)) SDL_StartTextInput(a.win);
+        }
 #else
         if (!a.editing && (page_focus(&a) || edit_focus(&a)) && !SDL_TextInputActive(a.win)) SDL_StartTextInput(a.win);
 #endif

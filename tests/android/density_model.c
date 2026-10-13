@@ -12,7 +12,7 @@ typedef struct {
     Tab *tabs[2], *t;
     int ntabs, pw, ph, screen_w, screen_h;
     float vw, vh, scale, input_scale;
-    bool dirty, vonly, sdirty, osig_ok, gvid_ok;
+    bool dirty, vonly, sdirty, osig_ok, gvid_ok, focus_reveal;
 } App;
 enum { SDL_EVENT_MOUSE_MOTION, SDL_EVENT_MOUSE_BUTTON_DOWN, SDL_EVENT_MOUSE_BUTTON_UP, SDL_EVENT_MOUSE_WHEEL, SDL_EVENT_KEY_DOWN };
 typedef union {
