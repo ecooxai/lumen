@@ -1,5 +1,61 @@
 # Lumen: handoff notes
 
+## Android GPU/scroll phone checkpoint (2026-10-13)
+
+Current Android-only branch: `codex/android-vulkan-momentum-scroll`.
+Implementation commit377041a contains portable RGBA uploads, shader channel
+correction and Android GPU diagnostics. Final host verification passes202
+focused checks,29 ASan/UBSan scenarios,6 JS viewport groups, native cache and
+verified-prebuilt V8 runtime,23 APK gates, Debug-O2/assertions, native no-op,
+normal/compact payload identity and zero ZIP gaps. Build53.415s, mean198.08%
+host CPU, peak1740MiB RSS; shared480% quota/SCHED_IDLE/nice19 retained.
+Source-built V8 remains frozen; this build uses verified prebuilt archives.
+
+Installed preserving app data and tested on the MI8/API35 phone:
+`build/codex-android-scroll-gpu/rgba-final/codex-agent-android-vulkan-rgba-momentum-compact-debug.apk`
+85,240,084 bytes,0444,SHA256
+`d0868322b5fa7c4bf8d4afe492deeef56e33da8857155c9dff772e705e9d36fa`.
+The APK was built before377041a from the exact same320 pinned source files.
+Manifest SHA256a99c2ceb7b668fe21dfe741dd238c30f054ef4188d8b92b2b7df503101a398bf.
+
+Phone attempt3 verifies actual OpenGL rendering with correct colors and no
+former GL format error, then Vulkan -> Software -> Vulkan -> OpenGL -> Vulkan
+without blank output or crashes. Main independently reviews actual screenshots.
+Rotation, background/foreground, persisted Vulkan2x after relaunch and3x fit
+pass. OpenGL logs CPU-copy PBO performance warnings; Vulkan logs bounded4x4
+format56/59 allocation diagnostics and missing SURFACE_VIEW_FORMATS. Retain
+these limitations: GPU composition works, not full GPU rasterization or web
+WebGPU conformance. Do not describe these as error-free driver logs.
+
+Matched30-band fixture,20 upward450ms swipes: mean48.2222% CPU, peak49%,
+RSS232.99-233.06MiB across9 complete1Hz intervals. Old unoptimized APK mean
+105.6667%:54.36% lower CPU for the complete change bundle, NOT isolated GPU
+benefit, measured FPS, Chrome parity or reduced RAM. Main SDL thread37.11%.
+End screenshot reaches Band23/24, not the document boundary. Timed screenshots
+after input completion visibly show continued momentum and subsequent settling;
+serial capture latency0.455-0.519s prevents any frame-rate claim.
+Formal post-fling idle60.85s: mean0.08217%,peak1.02041%,RSS233.07MiB.
+Formal final Home idle60.64s: mean0.065963%,peak1.02041%,RSS240.70MiB.
+Both have60 intervals, valid cadence and no intervals above3%.
+
+Phone evidence: `build/codex-android-scroll-gpu/phone/attempt3/MAIN-REVIEW.md`
+and `continuation2/` underneath that directory. Original77-sample segment
+stopped on a malformed harness state command; continuation records911 samples.
+Zero telemetry errors in either segment; never claim continuous sampling across
+the stopped gap. Two harness corrections retained (path binding and missing
+command name); no product retry. Final full logs and cleanup are preserved.
+Original single Home restored, Vulkan2x, density/rotation unchanged, app stopped
+and absence verified, sampler joined, server/reverse removed, locks released.
+All source/helper/frozen-V8 pins match at release. Phone owner is offline only.
+
+Next: fix the visually observed stale current-tab URL in the Home card (shows
+the prior Settings address); profile remaining scroll CPU before further
+optimization. Current update quality90/100: measured improvement and lifecycle
+verification, but no frame-time benchmark and residual UI defect. Broad daily-use
+readiness remains unproven; public-site/API compatibility and Chrome CPU/RAM
+comparison are still required. Historical pending notes below are superseded
+only for the explicitly verified GPU/scroll/scale scope above.
+
 ## Android GL texture-upload fix (2026-10-13)
 
 8fd13e3 window recreation passes194 focused checks,24 sanitizer scenarios and23
