@@ -1,5 +1,45 @@
 # Lumen: handoff notes
 
+## Full-width page composition batching (2026-10-13)
+
+Main replaces per-row page-to-frame memcpy calls with one contiguous copy
+when sidebar is zero and both strides equal page width. Partial damage and
+frame-height clipping are preserved; padded strides/sidebar retain row copies.
+Empty/reversed ranges and skipped frames do not copy. No extra allocation or
+GPU API change. Existing CPU rasterization and texture-upload costs remain.
+
+Tests first:13 actual-block cases give3 expected copy-count failures before
+the patch,10 passes; adjacent chrome damage8 pass. After patch,61 focused
+checks and13 additional actual-block ASan/UBSan scenarios pass, including
+12,270 pixel-equivalence combinations. Evidence:
+build/codex-android-page-compose/{red,green}. This proves copy-call reduction
+and pixel preservation in tested cases, NOT a measured phone performance gain.
+Host-only implementation/test quality95/100; overall readiness remains25/100.
+
+Phone-test agent01a1346c-97c2-7a60-b31b-3751ef350b31 owns the next bounded
+run under build/codex-android-fling-pacing/phone, installing the immutable
+058271 pacing APK with data preserved. That APK predates this copy patch.
+It must monitor1Hz through cleanup, use ACTION_VIEW (no keyboard chords),
+review actual fixture images and report measured CPU/RSS before acceptance.
+
+## Valid Android scroll profile acquired (2026-10-13)
+
+The single ACTION_VIEW diagnostics-ON fixture test is complete; main reviews
+actual top/end PNGs (Bands1/2 to23/24). Evidence is under
+build/codex-android-paint-profile/view-phone. Installed APK remains5818949;
+the058271 pacing candidate is NOT installed. Exactly20 swipes,10.01s contained
+scroll CPU mean53.047%/peak55.556%,RSS227.859-227.961MiB. Formal61.01s fixture
+idle passes:CPU mean0.0328%/peak1%,RSS226.066MiB.124 samples,zero errors,
+maximum device gap1.04s. App stopped, marker/reverse/server removed, sampler
+joined and both locks released. Profile scope95/100, daily-use readiness25/100.
+
+Seven wholly contained wall-stage reports show391 partial paints/blits over
+7014.9ms:present1745.713ms,raster775.220ms,compose573.369ms. These are wall
+times, NOT CPU/GPU execution or displayed FPS; present can include waits.
+No paired OFF comparison: the earlier OFF geometry had an extra tab strip.
+Main next tests batching contiguous full-width composition copies; this does
+not remove CPU rasterization or establish any measured phone speedup yet.
+
 ## Pacing APK built; phone still uses diagnostics baseline (2026-10-13)
 
 Commit0f78fd8 has a verified optimized Debug candidate, NOT yet installed:

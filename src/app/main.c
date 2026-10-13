@@ -1174,8 +1174,18 @@ static void render(App *a) {
     } else { a->gvid_ok = false; a->osig_ok = false; raster(&a->page, &(DisplayList){0}, RGBA(255, 255, 255, 255)); }
     paint_profile_stage(&profile_frame, PAINT_RASTER);
     if (!part) { build_chrome(a); chrome_tip(a); a->chash = dl_hash(&a->cdl) * 31 + dl_hash(&a->hdl); raster(&a->frame, &a->cdl, RGBA(255, 255, 255, 255)); }
-    if (!gskip) for (int y = part ? ry0 : 0; y < (part ? ry1 : ph) && y + bar_px < a->ph; y++)
-        memcpy(a->frame.px + (size_t)(y + bar_px) * (size_t)a->frame.stride + side_px, a->page.px + (size_t)y * (size_t)a->page.stride, (size_t)pwp * 4);
+    if (!gskip) {
+        int first_row = part ? ry0 : 0, last_row = LMIN(part ? ry1 : ph, a->ph - bar_px);
+        if (last_row > first_row) {
+            if (!side_px && a->frame.stride == pwp && a->page.stride == pwp)
+                memcpy(a->frame.px + (size_t)(first_row + bar_px) * (size_t)a->frame.stride,
+                       a->page.px + (size_t)first_row * (size_t)a->page.stride,
+                       (size_t)(last_row - first_row) * (size_t)pwp * sizeof(*a->page.px));
+            else for (int row = first_row; row < last_row; row++)
+                memcpy(a->frame.px + (size_t)(row + bar_px) * (size_t)a->frame.stride + side_px,
+                       a->page.px + (size_t)row * (size_t)a->page.stride, (size_t)pwp * sizeof(*a->page.px));
+        }
+    }
     if (!gskip && a->hdl.items.n) { float s = a->frame.scale; raster_rect(&a->frame, &a->hdl, RGBA(255, 255, 255, 255), (int)floorf(g_pop[0] * s), (int)floorf(g_pop[1] * s), (int)ceilf(g_pop[2] * s), (int)ceilf(g_pop[3] * s)); }   /* floats over the page */
     paint_profile_stage(&profile_frame, PAINT_COMPOSE);
     if (!(a->gpu && gpu_present_frame(a->gpu, a->frame.px, a->frame.w, a->frame.h, a->frame.stride, gskip ? 0 : part ? bar_px + ry0 : 0, gskip ? 0 : part ? bar_px + ry1 : a->frame.h, gvp))) {
