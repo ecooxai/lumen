@@ -1,5 +1,34 @@
 # Lumen: handoff notes
 
+## Diagnostics phone run: valid baseline, invalid ON navigation (2026-10-13)
+
+The5818949 diagnostics APK is now installed once with data preserved and its
+installed hash verified. The new batched collector passes an actual own-shell
+preflight and131 consecutive1Hz samples with0 rejected attempts; maximum device
+gap1.21s, host-start gap1.001772s. No cadence guard changed. Two harness binding
+failures were preserved: historical prepare-module collision before device
+access, then reading uptime inside run-as rather than the outer ADB shell.
+The second occurred after install but before app launch; resume verified the
+installed bytes without reinstalling. Evidence: paint-profile/phone under build/.
+
+Main visually verifies OFF fixture Bands1/2 through Band24 after20 swipes.
+Within10 complete same-phase seconds, process CPU averages53.4%, peaks55%,
+RSS250.41-251.40MiB; main SDLThread contributes42.2%. This is not a measured
+pacing-fix result or a comparable Chrome/old-collector benchmark.
+The ON top/end screenshots instead show Home/New Tab, NOT the fixture; Main
+rejects paired profiling, fixture-idle acceptance and stage attribution. The
+automated success labels in raw artifacts are superseded by REPORT.md and
+analysis.json. Settings navigation also stayed Home, and extra tabs appeared.
+Persistent native cmd state after a lost Ctrl release is a source-level
+hypothesis, NOT a proven cause. Successful ADB input is not proof of navigation.
+
+App absence, own-marker removal, server/reverse removal, sampler join and both
+lock releases are verified; correct tab restoration is not. No product retry
+or debugger attachment. Bounded phone evidence quality65/100. A fresh test
+agent owns view-phone for a single diagnostic ACTION_VIEW fixture launch with
+an HTTP request journal and actual visual check BEFORE swipes; it must not use
+the failed Ctrl+L path or claim to fix keyboard navigation. Android only.
+
 ## Android fling deadline pacing (2026-10-13)
 
 Main fixes a source-level pacing delay: the event loop previously slept up to
