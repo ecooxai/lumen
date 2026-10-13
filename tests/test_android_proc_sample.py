@@ -73,6 +73,42 @@ class AndroidProcSampleTests(unittest.TestCase):
         result = self.sample("missing", hook=True)
         self.assertNotEqual(result.returncode, 0)
 
+    def test_failed_collection_does_not_publish_partial_sample(self):
+        result = self.sample("missing", hook=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, "")
+
+    def test_process_exit_does_not_publish_partial_sample(self):
+        result = self.sample("process", hook=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, "")
+
+    def test_complete_sample_uses_one_output_operation(self):
+        calls = Path(self.directory.name) / "output-calls"
+        script = (
+            f". {shlex.quote(str(COLLECTOR))}\n"
+            + "printf() {\n"
+            + f"command printf x >> {shlex.quote(str(calls))}\n"
+            + 'command printf "$@"\n}\n'
+            + f"lumen_read_process_stats {shlex.quote(str(self.process))}\n"
+        )
+        result = subprocess.run(["/bin/sh", "-c", script], capture_output=True,
+                                text=True, timeout=5)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(len(result.stdout.splitlines()), 3)
+        self.assertEqual(calls.read_text(), "x")
+
+    def test_many_threads_preserve_all_records_in_order(self):
+        for thread in range(103, 143):
+            task = self.process / "task" / str(thread)
+            task.mkdir()
+            (task / "stat").write_text(f"{thread} (browser thread) S thread\n")
+        result = self.sample()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        expected = ["101 (browser process) S process"]
+        expected += [f"{thread} (browser thread) S thread" for thread in range(101, 143)]
+        self.assertEqual(result.stdout.splitlines(), expected)
+
     def test_non_readable_task_stat_is_not_ignored(self):
         stat = self.process / "task/102/stat"
         stat.unlink()

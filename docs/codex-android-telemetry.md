@@ -5,7 +5,13 @@ Source it in the authorized app's `run-as` shell, then call the function with
 the selected `/proc/<pid>` directory. It emits the process stat line followed
 by surviving thread stat lines. Discard the entire output on nonzero exit.
 
-The collector uses shell builtins rather than spawning a reader per thread.
+The collector reads stat files with the shell's `read` builtin rather than
+spawning a reader per thread. It buffers records and calls `printf` once after
+the final process-presence check, instead of emitting once per thread. Do not
+assume `printf` itself is a builtin on every Android shell. A validation failure
+emits no partial sample to stdout; callers must still discard output on any
+nonzero exit, including output/transport failures. One `printf` invocation is
+not a guarantee of a single OS write or an atomic transport message.
 A task disappearing between enumeration and reading is skipped only when its
 directory is gone. This is a directory-lifetime check, not numeric errno
 classification. A read failure for a still-present task remains fatal, including

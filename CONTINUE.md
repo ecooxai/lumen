@@ -1,5 +1,37 @@
 # Lumen: handoff notes
 
+## Android sampler output batching (2026-10-13)
+
+Main isolates a major observer overhead source without running Lumen. The
+phone's own-app and outer shell both resolve printf to /system/bin/printf,
+while read/print are builtins. Four alternating40-record comparisons emit the
+same10,040 bytes: per-record printf takes median0.977409s versus0.134994s
+with one batched printf. All8 outputs match byte-for-byte. This demonstrates
+shell-output overhead, NOT faster browser scrolling, lower browser RAM, or
+complete attribution of the earlier1.55s cadence failure. Evidence:
+`build/codex-android-proc-batch/phone-probe/`.
+
+The earlier16-call probe finds median0.070738s for a shell token,0.121849s for
+own-package run-as token,0.151475s for the own-shell collector and0.117388s
+for the no-app sampler branch. Startup alone does not explain the~1s samples.
+All these probes leave Lumen absent, make no device-state writes and release
+both locks; host480%/SCHED_IDLE/nice19 and frozen V8 are retained.
+
+Main changes tools/android/codex_proc_sample.sh to buffer process/thread
+records, validate final process presence, then emit once. Failed validation
+now publishes no partial stdout; callers still reject any nonzero exit.
+Tests first:13 checks give10passes/3expected assertion failures; implementation
+passes13/13 under /bin/sh and13/13 under Bash, plus22 error-stdout checks.
+Local mksh/dash unavailable; do not claim the actual changed collector has
+already passed Android from the fixed-output microbenchmark alone. Host-only
+quality95/100; evidence `build/codex-android-proc-batch/green/TOPMAIN-REVIEW.md`.
+New collector SHA2564b740464fe0357ff00d0d62872fdb7d2ba13cc25784a3a20ac7657c1b3bbbee5;
+test SHA256f1bc3c284c0fe639510b1539976d5c5edcc0f6c92ebd4944cdeec9b61625adda.
+Preserve historical collector approval receipts; a new caller must explicitly
+authorize these two hashes and retain all old cadence/identity/error guards.
+The ready5818949 APK is unchanged: these are external testing tools, not a
+new app build. Next use the new observer for debugger-free paint profiling.
+
 ## Android paint diagnostics APK verified (2026-10-13)
 
 Implementation commit63e74be has a verified optimized Debug APK:

@@ -5,7 +5,7 @@ lumen_read_process_stats() {
         printf '%s\n' 'Cannot read complete process stat' >&2
         return 1
     fi
-    printf '%s\n' "$lumen_process_stat"
+    lumen_sample=$lumen_process_stat
     lumen_thread_count=0
     for lumen_task_dir in "$lumen_process_dir"/task/[0-9]*; do
         [ -d "$lumen_task_dir" ] || continue
@@ -14,7 +14,8 @@ lumen_read_process_stats() {
                 printf '%s\n' 'Empty task stat' >&2
                 return 1
             fi
-            printf '%s\n' "$lumen_task_stat"
+            lumen_sample="$lumen_sample
+$lumen_task_stat"
             lumen_thread_count=$((lumen_thread_count + 1))
         elif [ -d "$lumen_task_dir" ]; then
             printf '%s\n' 'Cannot read complete live task stat' >&2
@@ -30,4 +31,5 @@ lumen_read_process_stats() {
         printf '%s\n' 'Process disappeared during collection' >&2
         return 1
     fi
+    printf '%s\n' "$lumen_sample"
 }
