@@ -20,6 +20,8 @@ class AndroidNewTabTests(unittest.TestCase):
         extracted = "\n".join(function(source, signature) for signature in (
             "static bool qparam(", "static void sb_esc(", "static void ip_toggle(",
             "static char *internal_page("))
+        if "static void resolution_text(" in source:
+            extracted = function(source, "static void resolution_text(") + "\n" + extracted
         if "internal_page(App *" not in extracted:
             extracted = extracted.replace("internal_page(const char *u)",
                                           "internal_page(App *a, const char *u)")
@@ -56,6 +58,9 @@ class AndroidNewTabTests(unittest.TestCase):
 
     def test_default_is_workspace_home(self):
         self.run_scenario("default")
+
+    def test_physical_pixel_settings_and_resolution_labels(self):
+        self.run_scenario("pixel-settings")
 
     def test_desktop_default_stays_bookmarks(self):
         self.run_scenario("default", "desktop")

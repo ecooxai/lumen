@@ -89,6 +89,22 @@ static float g_hud_cpu, g_hud_ram, g_host_cpu, g_host_ram, g_pop[4];
 #define HUDH 48.f
 static int g_ua;   /* UA_CHROME / UA_FIREFOX / UA_LUMEN */
 static char g_pref[1024];
+#ifdef __ANDROID__
+static int g_pixel_scale_pct = 200;
+static int pixel_scale_parse(const char *value) {
+    static const char *choices[] = {"100", "150", "200", "250", "300"};
+    for (int index = 0; index < 5; index++) if (!strcmp(value, choices[index])) return 100 + index * 50;
+    return 0;
+}
+static void pixel_scale_load(const char *line) {
+    if (strncmp(line, "pixel_scale=", 12)) return;
+    size_t length = strcspn(line + 12, "\r\n");
+    if (length != 3) return;
+    char value[4]; memcpy(value, line + 12, 3); value[3] = 0;
+    int percent = pixel_scale_parse(value);
+    if (percent) g_pixel_scale_pct = percent;
+}
+#endif
 typedef struct { char *url, *title; } Link;
 #define MAX_BM 512
 #define MAX_HV 1000
@@ -97,6 +113,9 @@ static void pref_path(char *out, size_t n, const char *f) { snprintf(out, n, "%s
 static void settings_save(void) {
     char p[1200]; pref_path(p, sizeof p, "settings.txt"); FILE *f = *g_pref ? fopen(p, "w") : NULL; if (!f) return;
     fprintf(f, "offscreen_media_eviction=%d\ncpu_limit=%d\ncpu_pct=%d\ncpu_secs=%d\ncpu_lim=%d\nvideo_controls=%d\ntab_sleep=%d\nuser_agent=%d\ncpu_hud=%d\nsmooth_scroll=%d\n", g_lowmem, g_cpu_on, g_cpu_pct, g_cpu_secs, g_cpu_lim, g_vctl, g_tab_sleep, g_ua, g_hud, g_smooth);
+#ifdef __ANDROID__
+    fprintf(f, "pixel_scale=%d\n", g_pixel_scale_pct);
+#endif
     fclose(f);
 }
 static void link_put(Link *v, int *n, int max, const char *url, const char *title) {
@@ -259,7 +278,7 @@ typedef struct App {
     Tab *touch_tab;
     uint64_t touch_generation;
 #endif
-    int pw, ph; float scale, vw, vh, input_scale;
+    int pw, ph, screen_w, screen_h; float scale, vw, vh, input_scale;
     Canvas frame, page; DisplayList pdl, cdl, hdl;
     struct DSig *osig, *nsig; int nosig, cosig, cnsig; uint64_t chash; bool osig_ok;   /* last page display list, to raster only what changed */
     Tab *t, *tabs[MAX_TABS]; int ntabs, ti;
@@ -322,6 +341,32 @@ static void sb_esc(SB *b, const char *s) {
     }
 }
 static void ip_toggle(SB *b, const char *key, bool on) { sb_printf(b, "<a class=\"btn%s\" href=\"lumen://set?s=settings&%s=%d\">%s</a>", on ? " on" : "", key, !on, on ? "On" : "Off"); }
+#ifdef __ANDROID__
+static void resolution_text(App *app, char *text, size_t capacity) {
+    char screen[64] = "unavailable";
+    if (app->screen_w > 0 && app->screen_h > 0) snprintf(screen, sizeof screen, "%d x %d px", app->screen_w, app->screen_h);
+    snprintf(text, capacity, "Screen: %s. App render: %d x %d px. Layout: %.1f x %.1f px.", screen, app->pw, app->ph, app->vw, app->vh);
+}
+static void update_resolution_readout(App *app) {
+    Page *page = app->t->cur;
+    if (!page || !page->internal_ui || !page->d) return;
+    Node *readout = doc_get_element_by_id(page->d, "lumen-resolution");
+    if (!readout) return;
+    char text[256]; resolution_text(app, text, sizeof text);
+    if (!(readout->first && readout->first == readout->last && readout->first->type == NODE_TEXT && !strcmp(readout->first->text, text))) {
+        node_set_text_content(readout, text);
+        app->t->relayout = true;
+    }
+    for (int percent = 100; percent <= 300; percent += 50) {
+        char id[40]; snprintf(id, sizeof id, "lumen-pixel-scale-%d", percent);
+        Node *button = doc_get_element_by_id(page->d, id);
+        if (!button) continue;
+        const char *classes = percent == g_pixel_scale_pct ? "btn on" : "btn";
+        const char *current = node_attr(button, "class");
+        if (!current || strcmp(current, classes)) { node_set_attr(button, "class", classes); app->t->relayout = true; }
+    }
+}
+#endif
 static char *internal_page(App *app, const char *u) {
 #ifdef __ANDROID__
     const char *default_section = "workspaces";
@@ -404,7 +449,16 @@ static char *internal_page(App *app, const char *u) {
         sb_puts(&b, "</div><p class=sub>Use + in the toolbar to open a tab. Tap a workspace icon to switch.</p>");
         if (app->nws > 1) sb_puts(&b, "<p><a class=btn href=\"lumen://workspace?close\">Close this workspace</a></p>");
     } else if (!strcmp(sec, "settings")) {
-        sb_puts(&b, "<h2>Settings</h2><div class=card><div class=row><div class=grow><div class=t>Lite mode</div><div class=sub>Uses less memory on heavy pages such as YouTube.</div></div>");
+        sb_puts(&b, "<h2>Settings</h2>");
+#ifdef __ANDROID__
+        char resolution[256]; resolution_text(app, resolution, sizeof resolution);
+        sb_puts(&b, "<div class=card><div class=t>Physical pixel scale</div><p class=sub>Independent of Android display size. 1x maps one layout pixel to one screen pixel; 2x uses 2 by 2 screen pixels. Default: 2x. Rendering stays at native resolution.</p><p>");
+        for (int percent = 100; percent <= 300; percent += 50)
+            sb_printf(&b, "<a id=\"lumen-pixel-scale-%d\" class=\"btn%s\" href=\"lumen://set?s=settings&pixel_scale=%d\">%gx</a> ", percent, percent == g_pixel_scale_pct ? " on" : "", percent, percent / 100.0);
+        sb_puts(&b, "</p><p class=sub id=lumen-resolution>"); sb_esc(&b, resolution);
+        sb_puts(&b, "</p><p class=sub>App render excludes system bars and the keyboard. Layout is the app area before pixel scaling.</p></div>");
+#endif
+        sb_puts(&b, "<div class=card><div class=row><div class=grow><div class=t>Lite mode</div><div class=sub>Uses less memory on heavy pages such as YouTube.</div></div>");
         ip_toggle(&b, "lite", g_lowmem);
         sb_puts(&b, "</div>");
         if (g_lowmem) sb_puts(&b, "<p class=note>Lite mode is on. Images, video pictures and other media outside the visible part of a page are removed from memory; only the text and layout are kept. They load again when you scroll back to them, so they may appear a moment later. Audio keeps playing.</p>");
@@ -440,8 +494,20 @@ static char *internal_page(App *app, const char *u) {
     sb_puts(&b, "</main></body></html>");
     return sb_take(&b);
 }
+static void update_size(App *app);
 static void apply_set(App *a, const char *q) {
     char v[32];
+#ifdef __ANDROID__
+    if (qparam(q, "pixel_scale", v, sizeof v)) {
+        int percent = pixel_scale_parse(v);
+        if (percent && percent != g_pixel_scale_pct) {
+            g_pixel_scale_pct = percent;
+            android_touch_reset(&a->touch);
+            g_sm_dx = g_sm_dy = 0;
+            update_size(a);
+        }
+    }
+#endif
     if (qparam(q, "lite", v, sizeof v)) { g_lowmem = atoi(v) != 0; media_lowmem = g_lowmem; }
     if (qparam(q, "cpu", v, sizeof v)) g_cpu_on = atoi(v) != 0;
     if (qparam(q, "vctl", v, sizeof v)) g_vctl = atoi(v) != 0;
@@ -462,7 +528,7 @@ static void navigate_ex(App *a, const char *url, bool push, const char *body, si
     char *u = normalize_url(url), *html = NULL;
     if (!strncmp(u, "lumen://", 8)) {
         if (!strncmp(u, "lumen://set?", 12)) {   /* only Lumen's own pages may change settings */
-            if (strncmp(a->t->url, "lumen://", 8)) { free(u); return; }
+            if (!a->t->cur || !a->t->cur->internal_ui) { free(u); return; }
             apply_set(a, u + 12);
             char sec[16] = "settings"; qparam(u + 12, "s", sec, sizeof sec);
             free(u); u = xmalloc(64); snprintf(u, 64, "lumen://newtab?s=%s", sec); push = false;
@@ -850,6 +916,7 @@ static uint64_t dl_hash(const DisplayList *dl) { uint64_t h = (uint64_t)dl->item
 static void render(App *a) {
 #ifdef __ANDROID__
     if (a->android_suspended) return;
+    update_resolution_readout(a);
 #endif
     update_compact(a);
     double t0 = now_ms();
@@ -1086,11 +1153,23 @@ static void update_size(App *a) {
     float window_scale = w > 0 && a->pw > 0 ? (float)a->pw / (float)w : 1;
     a->scale = window_scale;
 #ifdef __ANDROID__
-    float display_scale = SDL_GetWindowDisplayScale(a->win);
-    if (isfinite(display_scale) && display_scale > 0) a->scale = display_scale;
+    a->scale = g_pixel_scale_pct / 100.f;
+    a->screen_w = a->screen_h = 0;
+    const SDL_DisplayMode *mode = SDL_GetCurrentDisplayMode(SDL_GetDisplayForWindow(a->win));
+    if (mode) {
+        double screen_width = floor((double)mode->w * mode->pixel_density + 0.5);
+        double screen_height = floor((double)mode->h * mode->pixel_density + 0.5);
+        if (screen_width > 0 && screen_width <= 2147483647.0 && screen_height > 0 && screen_height <= 2147483647.0) {
+            a->screen_w = (int)screen_width; a->screen_h = (int)screen_height;
+        }
+    }
 #endif
     a->input_scale = window_scale / a->scale;
+#ifdef __ANDROID__
+    a->vw = (float)a->pw / a->scale; a->vh = (float)a->ph / a->scale;
+#else
     a->vw = (float)w * a->input_scale; a->vh = (float)h * a->input_scale;
+#endif
     a->vonly = a->sdirty = a->osig_ok = a->gvid_ok = false;
     if (a->gpu) gpu_resize(a->gpu, a->pw, a->ph);
     a->t->relayout = a->dirty = true;
@@ -2315,6 +2394,9 @@ int main(int argc, char **argv) {
         if (pref) { snprintf(g_pref, sizeof g_pref, "%s", pref); snprintf(sp, sizeof sp, "%ssettings.txt", pref); SDL_free(pref); }
         FILE *sf = *sp ? fopen(sp, "r") : NULL; char line[256];
         while (sf && fgets(line, sizeof line, sf)) {
+#ifdef __ANDROID__
+            pixel_scale_load(line);
+#endif
             char k[64]; int v; if (sscanf(line, "%63[^=]=%d", k, &v) != 2) continue;
             if (!strcmp(k, "offscreen_media_eviction")) g_lowmem = v != 0; else if (!strcmp(k, "cpu_limit")) g_cpu_on = v != 0;
             else if (!strcmp(k, "cpu_pct")) g_cpu_pct = LCLAMP(v, 10, 100); else if (!strcmp(k, "cpu_secs")) g_cpu_secs = LCLAMP(v, 5, 600);
@@ -2322,6 +2404,9 @@ int main(int argc, char **argv) {
             else if (!strcmp(k, "tab_sleep")) g_tab_sleep = v != 0; else if (!strcmp(k, "cpu_hud")) g_hud = v != 0; else if (!strcmp(k, "smooth_scroll")) g_smooth = v != 0; else if (!strcmp(k, "user_agent")) g_ua = LCLAMP(v, 0, UA_COUNT - 1);
         }
         if (sf) fclose(sf);
+#ifdef __ANDROID__
+        update_size(&a);
+#endif
         net_set_user_agent(g_ua);
         links_load("bookmarks.txt", g_bms, &g_nbm, MAX_BM); links_load("history.txt", g_hv, &g_nhv, MAX_HV);
         const char *lm = getenv("LUMEN_LOWMEM"); if (lm) g_lowmem = atoi(lm) != 0;

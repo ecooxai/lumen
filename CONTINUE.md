@@ -1,5 +1,43 @@
 # Lumen: handoff notes
 
+## Android physical-pixel scale (2026-10-13)
+
+Android now uses an explicit physical-pixel scale independent of SDL/Android
+display density. Default2x means one layout pixel occupies2x2 surface pixels;
+1x is1:1, not supersampling. Settings offers1x/1.5x/2x/2.5x/3x and saves the
+selection. Strict parsing rejects malformed/out-of-range values. Screen mode,
+actual app framebuffer and pre-scale layout dimensions are shown separately;
+the render buffer stays at native surface resolution. Readouts refresh on paint,
+including rotation/keyboard resize, without a polling timer. Cached Settings
+tabs refresh selected buttons without repeated DOM mutations. Settings actions
+now require immutable generated-page provenance, not the editable address text.
+Desktop coordinate behavior remains unchanged. SDL contracts checked against
+the pinned source and https://wiki.libsdl.org/SDL3/SDL_DisplayMode and
+https://wiki.libsdl.org/SDL3/SDL_GetWindowSizeInPixels .
+
+Tests first: initial33 cases yield15 expected assertion failures, zero setup
+errors (`build/codex-android-pixel-scale/red/REPORT.md`). Partial hostGREEN161
+passes before main finds stale selection on cached Settings tabs; separate
+selection RED confirms it before the fix. Final GREEN passes162 focused cases,
+12 touch sanitizer scenarios,6 JS viewport groups, native cache sanitizers and
+actual prebuilt-host-V8 runtime, plus23 unchanged APK gates. Normal/fresh compact
+payloads match, zero ZIP gaps, native no-op passes. Build24.112s, mean229.76% CPU,
+peak sampled RSS1724.64MiB; runtime0.262s/51.28%/68.16MiB (startup, not idle).
+Shared480%/SCHED_IDLE/nice19,304 source pins, frozen source-V8 and7 hashes intact;
+41 owned scopes drained. Report: `build/codex-android-pixel-scale/final/REPORT.md`.
+APK: `build/codex-android-pixel-scale/final/codex-agent-android-physical-pixel-scale-compact-debug.apk`,
+87,484,692 bytes,0444, SHA256
+`83e59871d75d4211c653d818a61263b84b363c11cee59051da323f143de3c265`.
+Host/build score95/100; phone acceptance still pending. No broad browser pass.
+
+New user report: Android scrolling is very slow; requests default Vulkan/wgpu
+acceleration and backend switching in Settings. Source already requests wgpu
+Vulkan on Android, but rasterizes page pixels on CPU before GPU composition.
+Actual active phone backend remains unconfirmed. Touch currently has no fling
+momentum. Next phone run should capture own-app startup backend evidence and a
+controlled scrolling baseline after pixel-scale acceptance. Android wgpu build
+metadata includes vulkan,gles,wgsl. No renderer/scroll production changes yet.
+
 ## Android New Tab checkpoint (2026-10-13)
 
 Android web content now uses the full available surface width. Workspace icon

@@ -11,6 +11,9 @@ ROOT = Path(__file__).resolve().parents[1]
 def function(source, signature):
     start = source.index(signature)
     opening = source.index("{", start)
+    while source.index(";", start) < opening:
+        start = source.index(signature, start + len(signature))
+        opening = source.index("{", start)
     depth = 1
     ending = opening + 1
     while depth:
@@ -27,6 +30,9 @@ class AndroidDensityTests(unittest.TestCase):
         work = Path(cls.temporary.name)
         source = (ROOT / "src/app/main.c").read_text()
         extracted = function(source, "static void update_size(App *a)")
+        for signature in ("static bool pixel_scale_valid(", "static void resolution_text("):
+            if signature in source:
+                extracted = function(source, signature) + "\n" + extracted
         cls.has_input_adapter = "static void input_coordinates(" in source
         if cls.has_input_adapter:
             extracted += "\n#define HAVE_INPUT_ADAPTER 1\n" + function(source, "static void input_coordinates(")
@@ -46,7 +52,7 @@ class AndroidDensityTests(unittest.TestCase):
                                 capture_output=True, text=True, timeout=5)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
-    def test_portrait_uses_density_independent_units(self):
+    def test_portrait_uses_default_two_physical_pixels_per_layout_pixel(self):
         self.run_scenario("portrait")
 
     def test_landscape_preserves_physical_surface_size(self):
@@ -55,11 +61,17 @@ class AndroidDensityTests(unittest.TestCase):
     def test_keyboard_resize_preserves_density(self):
         self.run_scenario("keyboard")
 
-    def test_invalid_display_scale_falls_back_to_window_density(self):
+    def test_system_density_never_changes_app_scale(self):
         self.run_scenario("invalid")
 
-    def test_density_change_invalidates_partial_presentation(self):
+    def test_user_scale_change_invalidates_partial_presentation(self):
         self.run_scenario("change")
+
+    def test_one_to_one_pixels_ignore_sdl_logical_size(self):
+        self.run_scenario("physical")
+
+    def test_resolution_readout_matches_screen_and_framebuffer(self):
+        self.run_scenario("resolution")
 
     def test_desktop_retains_sdl_window_coordinates(self):
         self.run_scenario("desktop", "desktop")

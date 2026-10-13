@@ -7,7 +7,8 @@ typedef struct { bool internal_ui; char *url; Document *d; } Page;
 typedef struct { Page *cur; int ws; char url[2048]; } Tab;
 typedef struct {
     int nws, wi, ntabs, ti, sel_all;
-    float vw, side;
+    float vw, vh, scale, side;
+    int pw, ph, screen_w, screen_h;
     char wsname[16][64];
     Tab *t, *tabs[MAX_TABS];
     bool editing, dirty, vonly;
@@ -16,6 +17,7 @@ typedef struct {
 typedef struct { char *url, *title; } Link;
 static bool g_lowmem, g_cpu_on, g_vctl, g_tab_sleep, g_hud, g_smooth, g_compact = true;
 static int g_cpu_pct, g_cpu_secs, g_cpu_lim, g_ua, g_nbm, g_nhv;
+static int g_pixel_scale_pct = 200;
 static Link g_bms[1], g_hv[1];
 #define UA_COUNT 1
 static const char *net_user_agent_name(int index) { return "Lumen"; }
@@ -43,7 +45,16 @@ int main(int argc, char **argv) {
     App app = {.nws = 2, .ntabs = 1, .t = &first, .tabs = {&first}, .vw = 320};
     strcpy(app.wsname[0], "Personal"); strcpy(app.wsname[1], "<script>&\"bad");
     const char *scenario = argv[1];
-    if (!strcmp(scenario, "default")) {
+    if (!strcmp(scenario, "pixel-settings")) {
+        app.pw = 1080; app.ph = 2200; app.screen_w = 1080; app.screen_h = 2248;
+        app.vw = 540; app.vh = 1100; app.scale = 2;
+        char *html = internal_page(&app, "lumen://newtab?s=settings");
+        CHECK(strstr(html, "Physical pixel scale"));
+        CHECK(strstr(html, "pixel_scale=100") && strstr(html, "pixel_scale=200") && strstr(html, "pixel_scale=300"));
+        CHECK(strstr(html, "1080 x 2248 px") && strstr(html, "1080 x 2200 px"));
+        CHECK(strstr(html, "540.0 x 1100.0 px"));
+        free(html);
+    } else if (!strcmp(scenario, "default")) {
         char *html = internal_page(&app, "lumen://newtab");
 #ifdef __ANDROID__
         CHECK(strstr(html, "<h2>Workspaces</h2>"));
