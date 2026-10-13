@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "paint_profile.h"
 
 #ifdef NDEBUG
@@ -18,7 +19,7 @@ static PaintProfile g_paint_profile;
 static char g_pref[16] = "./";
 static int clock_reads, log_count;
 static double clock_ms;
-static char last_log[1024];
+static char last_log[1024], last_wall_log[1024];
 
 static double now_ms(void) { clock_reads++; return clock_ms; }
 
@@ -34,6 +35,7 @@ static void SDL_Log(const char *format, ...) {
     va_start(arguments, format);
     vsnprintf(last_log, sizeof last_log, format, arguments);
     va_end(arguments);
+    if (strstr(last_log, "lumen: paint wall")) snprintf(last_wall_log, sizeof last_wall_log, "%s", last_log);
     log_count++;
 }
 #endif
@@ -101,8 +103,9 @@ int main(int argc, char **argv) {
         frame.last_ms = 1099;
         frame.phase_ms[PAINT_PRESENT] = 9;
         paint_profile_report(&frame, 1090, false);
-        assert(log_count == 1 && strstr(last_log, "frames=2 partial=1 full=1 blits=2"));
-        assert(strstr(last_log, "present_ms=9.000"));
+        assert(log_count == 2 && strstr(last_wall_log, "frames=2 partial=1 full=1 blits=2"));
+        assert(strstr(last_wall_log, "present_ms=9.000"));
+        assert(strstr(last_log, "paint thread_cpu") && strstr(last_log, "measured_frames=0 unavailable_frames=2"));
         assert(g_paint_profile.frames == 0 && g_paint_profile.start_ms == 1099);
         assert(clock_reads == 0);
     } else {

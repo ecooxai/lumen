@@ -43,7 +43,7 @@ class PaintProfileTests(unittest.TestCase):
 
     def run_app_scenario(self, scenario, platform="android"):
         source = (ROOT / "src/app/main.c").read_text()
-        signatures = ("static void paint_profile_configure(",
+        signatures = ("static void paint_profile_configure(", "static double paint_profile_cpu_ms(",
                       "static void paint_profile_stage(", "static void paint_profile_report(")
         for signature in signatures:
             self.assertIn(signature, source)

@@ -1032,17 +1032,50 @@ static void paint_profile_configure(void) {
 #endif
 }
 
+static double paint_profile_cpu_ms(void) {
+#ifdef __ANDROID__
+    struct timespec usage;
+    if (clock_gettime(CLOCK_THREAD_CPUTIME_ID, &usage) == 0 && usage.tv_sec >= 0 &&
+        usage.tv_nsec >= 0 && usage.tv_nsec < 1000000000)
+        return (double)usage.tv_sec * 1000.0 + (double)usage.tv_nsec / 1000000.0;
+#endif
+    return -1;
+}
+
+static PaintFrame paint_profile_begin(double start_ms) {
+    PaintFrame frame = { .last_ms = start_ms };
+    if (g_paint_profile.enabled) {
+        frame.cpu_last_ms = paint_profile_cpu_ms();
+        frame.cpu_valid = frame.cpu_last_ms >= 0;
+    }
+    return frame;
+}
+
 static void paint_profile_stage(PaintFrame *frame, PaintPhase phase) {
     if (!g_paint_profile.enabled) return;
     double stamp = now_ms();
     frame->phase_ms[phase] += stamp - frame->last_ms;
     frame->last_ms = stamp;
+    if (frame->cpu_valid) {
+        double cpu_stamp = paint_profile_cpu_ms();
+        if (cpu_stamp < frame->cpu_last_ms) frame->cpu_valid = false;
+        else {
+            frame->cpu_phase_ms[phase] += cpu_stamp - frame->cpu_last_ms;
+            frame->cpu_last_ms = cpu_stamp;
+        }
+    }
 }
 
 static void paint_profile_report(const PaintFrame *frame, double start_ms, bool partial) {
     if (!paint_profile_record(&g_paint_profile, frame, start_ms, partial)) return;
     char message[1024];
     paint_profile_format(&g_paint_profile, frame->last_ms, message, sizeof message);
+#ifdef __ANDROID__
+    SDL_Log("%s", message);
+#else
+    fprintf(stderr, "%s\n", message);
+#endif
+    paint_profile_cpu_format(&g_paint_profile, frame->last_ms, message, sizeof message);
 #ifdef __ANDROID__
     SDL_Log("%s", message);
 #else
@@ -1059,7 +1092,7 @@ static void render(App *a) {
 #endif
     update_compact(a);
     double t0 = now_ms();
-    PaintFrame profile_frame = { .last_ms = t0 };
+    PaintFrame profile_frame = paint_profile_begin(t0);
     int bar_px = (int)(BAR * a->scale);
     if (a->frame.w != a->pw || a->frame.h != a->ph || a->frame.scale != a->scale) { canvas_free(&a->frame); canvas_init(&a->frame, a->pw, a->ph, a->scale); }
     int ph = a->ph - bar_px; if (ph < 1) ph = 1;

@@ -45,12 +45,12 @@ Activation is checked once after preferences load. Remove only the marker
 created for the test and stop the app after profiling; restarting without it
 disables the additional diagnostics. Do not enable a property or attach LLDB.
 
-Android reports use `SDL_Log`, visible in own-process logcat. Each line starts
+Android reports use `SDL_Log`, visible in own-process logcat. The wall line starts
 `lumen: paint wall` and contains the actual elapsed `interval_ms`, completed
 paint-call counts (`frames`, `partial`, `full`, `blits`), and summed stage
-durations. Reports occur only during rendering, at most once per elapsed
+durations. Report pairs occur only during rendering, at most once per elapsed
 second. There is no periodic profiling thread or idle wakeup, and disabled
-stage hooks do not read the clock. No URL, document title or page data is logged.
+stage hooks do not read either clock. No URL, document title or page data is logged.
 
 - `prepare_ms`: frame/page buffer sizing and partial-paint eligibility setup.
 - `layout_dl_ms`: layout when needed, display-list building and video-bar scan.
@@ -71,5 +71,28 @@ perturb measurements. Pair diagnostics with the uninterrupted 1Hz process and
 thread CPU/RSS sampler, and use a separate diagnostics-off run for comparisons.
 Legacy stderr diagnostics are not a substitute for these Android stage logs.
 
-Host model and wiring checks: `tests/test_paint_profile.py`. Phone-stage
+An accompanying `lumen: paint thread_cpu` line reports the same stages using
+Android's `CLOCK_THREAD_CPUTIME_ID`. This measures CPU consumed by the calling
+render thread, not the whole process, other GPU/driver threads, GPU execution,
+or time waiting for presentation. Its `interval_ms` is still the wall interval;
+stage values are summed thread CPU milliseconds. CPU and wall lines are distinct
+so a wall-only parser cannot silently treat CPU samples as additional frames.
+
+`frames` is the total completed-paint count, `measured_frames` counts paints
+with a valid CPU clock throughout, and `unavailable_frames` counts the rest.
+A failed, malformed, or backward CPU clock invalidates that entire paint's CPU
+sample; its wall sample is retained. No partial CPU sample is accumulated.
+Zero measured frames means unavailable CPU attribution, not zero CPU use.
+Non-Android builds retain wall timing and report unavailable thread CPU timing.
+Resetting an interval clears both CPU and wall sums and counts.
+
+Both clocks are sampled only inside an explicitly enabled render path, with
+no new timers, threads, heap allocations, debugger, perf-event access, root access,
+or Android security-property changes. The clock calls themselves add overhead;
+these timings do not replace a diagnostics-off benchmark or the 1Hz process
+and all-live-thread CPU/RSS measurements. Join CPU and wall reports from the
+same process and completed interval before attributing them to an interaction.
+
+Host model and wiring checks: `tests/test_paint_profile.py` and
+`tests/test_paint_cpu_profile.py`. Phone-stage
 attribution still requires actual opt-in logs from a pinned APK and fixture.

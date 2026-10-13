@@ -1,5 +1,29 @@
 # Lumen: handoff notes
 
+## Opt-in render-thread CPU diagnostics implemented (2026-10-13)
+
+Main adds Android CLOCK_THREAD_CPUTIME_ID alongside existing paint wall clocks.
+paint_profile_begin initializes a per-paint CPU sample only when diagnostics
+are enabled. Failed/malformed/backward clocks invalidate the entire paint's
+CPU sample without dropping its wall sample. Completed valid frames accumulate
+separate phase CPU sums and measured/unavailable frame counts. Report pairs
+retain the unchanged paint-wall line and add a paint-thread_cpu line; no FPS,
+whole-process CPU or GPU execution claim. Non-Android CPU timing is unavailable.
+Disabled hooks read neither diagnostic clock; no extra threads/timers/heap
+allocations, perf events, debugger, root or Android security-property changes.
+
+Tests first:11 expected source-feature absence failures,13 adjacent passes.
+After implementation,72 focused checks and10 additional ASan/UBSan/float-cast
+scenarios pass. Tests extract actual functions but use MOCK clocks, not phone
+measurements. Source review verifies disabled path, units, whole-frame failure
+handling, reset and distinct output; docs updated. Evidence:
+build/codex-android-cpu-profile/{red,green}. GREEN13.437s,mean84.26% host CPU,
+peak sampled RSS152.86MiB; shared480%/SCHED_IDLE/nice19, scopes drained.
+Scope95/100; overall readiness25/100. Build/install/profile still required.
+Installed819345 is unchanged and predates CPU diagnostics and8be1bce bounds fix.
+Next APK should contain both changes and use own-app CPU clocks only; retain
+security.perf_harden=1 and perf_event_paranoid=3.
+
 ## CPU profiler preflight: retain phone security settings (2026-10-13)
 
 Fresh read-only phone preflight completes in1.12s, both locks released and
