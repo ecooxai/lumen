@@ -1,5 +1,26 @@
 # Lumen: handoff notes
 
+## Android renderer-window follow-up (2026-10-13)
+
+3251476 passes194 focused checks,24 sanitizer scenarios and23 APK gates; native
+Debug-O2/-g/assertions verified. Build55.376s/336.53% CPU/1725.92MiB peak RSS.
+Phone candidatebc2c3e4 confirms actual wgpu/vulkan in Settings and own-PID log,
+then switches successfully to Software. Software -> Vulkan aborts with signal6:
+native_window_api_connect reports already connected. No scroll acceptance yet.
+Read-only diagnostic did not recover a backtrace; exact aborting call unknown.
+Pinned SDL source shows its software framebuffer uses an EGL surface owned by
+the SDL window, not by the temporary window surface/renderer. Destroying only
+SDL_DestroyWindowSurface leaves that native connection. Main now destroys and
+recreates the SDL window before selecting a different graphics API, refreshing
+dialog target/viewport and invalidating paint/video caches. Two lifecycle model
+assertions fail before this fix. GREEN/build/phone re-verification pending.
+Previous phone nonformal48.08s review CPU0.187% mean/2% peak; no scroll/formal
+idle pass. App stopped, rotation/density preserved, locks released. Preference
+may remain Software until the next verified UI restoration; no hidden data edit.
+Evidence: `build/codex-android-scroll-gpu/phone/attempt1/REPORT.md`,
+`build/codex-android-scroll-gpu/crash-diagnostic/MAIN-REVIEW.md`,
+`build/codex-android-scroll-gpu/window-red/completion-audit.json`.
+
 ## Android Vulkan and momentum work (2026-10-13)
 
 Branch `codex/android-vulkan-momentum-scroll`, based on6bbf0d6. Tests first:

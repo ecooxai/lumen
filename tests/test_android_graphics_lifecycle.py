@@ -31,7 +31,7 @@ class AndroidGraphicsLifecycleTests(unittest.TestCase):
         self.assertIn("SDL_AddEventWatch(android_graphics_lifecycle, &a)", source)
         self.assertIn("SDL_RemoveEventWatch(android_graphics_lifecycle, &a)", source)
         render = source[source.index("static void render(App *a)"):source.index("static bool wheel_scroll")]
-        self.assertIn("if (a->android_suspended) return;", render)
+        self.assertIn("if (!a->win || a->android_suspended) return;", render)
 
 
 if __name__ == "__main__":

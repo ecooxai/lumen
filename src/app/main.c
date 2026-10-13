@@ -25,6 +25,7 @@
 #include "../js/js.h"
 #include "../js/jsglue.h"
 
+static SDL_Window *g_dialog_win;
 static bool g_compact;   /* one tab in the workspace: toolbar lives in the title bar */
 #define TABH (g_compact ? 0.f : 30.f)
 #define TB 44.f
@@ -565,13 +566,26 @@ static void renderer_apply(App *app, GpuBackend backend) {
     g_sm_dx = g_sm_dy = 0;
     gpu_destroy(app->gpu); app->gpu = NULL;
     SDL_DestroyWindowSurface(app->win);
+    int width = 0, height = 0;
+    SDL_GetWindowSize(app->win, &width, &height);
+    SDL_DestroyWindow(app->win);
+    app->win = g_dialog_win = NULL;
     g_renderer = backend;
+    app->vonly = app->sdirty = app->gvid_ok = app->osig_ok = false;
+    app->dirty = true;
+    media_yuv = false;
+    app->win = SDL_CreateWindow("Lumen", width, height, SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY);
+    if (!app->win) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Lumen: unable to recreate the graphics window: %s", SDL_GetError());
+        SDL_Event quit = {0}; quit.type = SDL_EVENT_QUIT; SDL_PushEvent(&quit);
+        return;
+    }
+    g_dialog_win = app->win;
+    update_size(app);
     GpuSurfSrc source = { .kind = GPU_SURF_ANDROID,
         .a = SDL_GetPointerProperty(SDL_GetWindowProperties(app->win), SDL_PROP_WINDOW_ANDROID_WINDOW_POINTER, NULL) };
     if (source.a) app->gpu = gpu_create_backend(&source, app->pw, app->ph, g_renderer);
     media_yuv = gpu_yuv_ok(app->gpu) && !getenv("LUMEN_NO_YUV");
-    app->vonly = app->sdirty = app->gvid_ok = app->osig_ok = false;
-    app->dirty = true;
     SDL_Log("Lumen: requested renderer %s, active %s", renderer_key(g_renderer), gpu_backend_name(app->gpu));
 }
 #endif
@@ -1000,7 +1014,7 @@ static uint64_t dl_hash(const DisplayList *dl) { uint64_t h = (uint64_t)dl->item
 
 static void render(App *a) {
 #ifdef __ANDROID__
-    if (a->android_suspended) return;
+    if (!a->win || a->android_suspended) return;
     update_resolution_readout(a);
     update_renderer_readout(a);
 #endif
@@ -2289,7 +2303,6 @@ static void ws_popup(App *a, int w, float x, float y) {
     (void)w; (void)x; (void)y; menu_cmd(a, MENU_WS_RENAME);
 #endif
 }
-static SDL_Window *g_dialog_win;
 static void pick_done(void *ud, const char *const *list, int filter) {
     (void)ud; (void)filter;
     int n = 0;
