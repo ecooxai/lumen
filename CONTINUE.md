@@ -2,7 +2,60 @@
 
 ## Android/Linux checkpoint (2026-10-12)
 
-### Current idle-adapter iteration
+### Current Android touch iteration
+
+The preceding turn made concrete progress: the sampler fix and9 host tests are
+committed in `32da8d4`, with honest preflight limitations in `57a7015`. Phone
+takeover permission remains unanswered; no agent has current phone authorization.
+Host development continues rather than treating that as a project-wide blocker.
+
+Main adds Android single-finger drag scrolling using the existing page/nested
+scroll path, rather than a separate renderer. Tests precede production changes:
+12 compiled gesture scenarios fail against a no-op API, plus7 missing wiring
+assertions across3 methods. No setup errors; RED evidence:
+`build/codex-android-touch/red/REPORT.md`. Seven extracted app-adapter model
+scenarios were also written before implementation but not separately run RED.
+The implementation recognizes an8 CSS-unit drag threshold, defers taps until
+release, suppresses duplicate SDL touch-generated mouse events and leaves real
+mouse input intact. It maps normalized fingers to density-independent viewport
+coordinates and cancels gestures on focus/background/resize/key/context changes.
+Multi-touch suppresses taps/scroll rather than misfiring; it is not pinch support.
+Tracking is bounded, with no per-event allocation or polling timer. Direct drag
+does not yet provide fling inertia, long-press selection, DOM touch events or
+touch-action arbitration. Native nested-scroll target capture also needs broader
+site testing. These are remaining daily-use requirements, not declared supported.
+The first verifier passes140 unique focused groups and12 ASan/UBSan gesture
+scenarios, but assembly stops before native compilation because inherited
+`ANDROID_SDK_ROOT=/home/a/Android/Sdk` conflicts with pinned `ANDROID_HOME`.
+Report: `build/codex-android-touch/green/REPORT.md`, explicitly PARTIAL. Failed
+configuration takes20.149s at mean232.65% CPU and peak sampled RSS539.38 MiB;
+480%/SCHED_IDLE/nice19 and frozen V8 remain intact. Main then only renames new
+coordinate locals/parameters/result fields descriptively, without changing the
+gesture behavior. A fresh verifier under `build/codex-android-touch/final` reruns
+the final bytes with `ANDROID_SDK_ROOT` explicitly matched to pinned
+`ANDROID_HOME` after sourcing the environment outside the compile wrapper.
+Final verification passes140/140 unique focused checks,12/12 sanitizer scenarios
+and23/23 unchanged packaging gates. Normal assembly takes48.031s at mean213.82%
+CPU, sampled peak RSS1759.38 MiB. One new touch object and rebuilt main object;
+292 other objects reused. Normal/fresh compact live payloads match with zero
+ZIP gaps; only libmain.so changes. Actual SDL/SDK compilation and native no-op
+checks pass. Shared480%/SCHED_IDLE/nice19 and frozen V8 remain unchanged.
+Candidate: `build/codex-android-touch/final/codex-android-touch-compact-debug.apk`,
+87,468,308 bytes,0444, SHA256
+`d30911ad5f92cd45e8d2c3a99f3984b3a21a1bb67fe828b1862f515a9f3d3991`.
+Report: `build/codex-android-touch/final/REPORT.md`. One report-only correction
+records allowed concurrent documentation drift; warnings remain. Main verifies
+APK/source/test hashes and accepts95/100 bounded build quality, not daily-use
+readiness. No phone runtime or CPU claim for the new adapter yet; it is not
+installed. The previous installed APK remains the focus candidate. Once device
+permission is clarified, use a fresh verifier that first records separate pidof
+returncode/stdout/stderr, then tests this candidate with the corrected collector:
+real taps, direct swipes without accidental link clicks, nested scrolling,
+resize/IME/background regression and1Hz CPU/RSS. Do not overwrite historical
+failed runs or claim the new sampler has already been verified on Android.
+Overall daily-use readiness remains25/100 pending device and major-site evidence.
+
+### Previous density/focus iteration
 
 **Android density/input and focus-highlight fixes committed; phone verification partial.**
 The preceding viewport iteration was concrete progress: committed engine fixes,

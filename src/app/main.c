@@ -9,6 +9,7 @@
 #include "android_platform.h"
 #include "android_launch.h"
 #include "android_back.h"
+#include "android_touch.h"
 #endif
 #include "menu.h"
 #include "workspace.h"
@@ -254,6 +255,9 @@ typedef struct App {
     SDL_Window *win; SDL_MetalView mview; Gpu *gpu;
 #ifdef __ANDROID__
     bool android_suspended;
+    AndroidTouch touch;
+    Tab *touch_tab;
+    uint64_t touch_generation;
 #endif
     int pw, ph; float scale, vw, vh, input_scale;
     Canvas frame, page; DisplayList pdl, cdl, hdl;
@@ -949,6 +953,56 @@ static void wheel_apply(App *a, float mx, float my, float dx, float dy) {
     if (!(my > BAR && mx > a->side && wheel_scroll(a, mx - a->side, my - BAR, dx, dy))) { if (!(a->dirty && !a->vonly)) a->vonly = true; a->t->sy += dy; }
     a->dirty = true;
 }
+#ifdef __ANDROID__
+static bool android_touch_input(App *app, SDL_Event *event) {
+    switch (event->type) {
+    case SDL_EVENT_MOUSE_MOTION: return event->motion.which == SDL_TOUCH_MOUSEID;
+    case SDL_EVENT_MOUSE_BUTTON_DOWN: case SDL_EVENT_MOUSE_BUTTON_UP:
+        return event->button.which == SDL_TOUCH_MOUSEID;
+    case SDL_EVENT_WINDOW_FOCUS_LOST: case SDL_EVENT_WILL_ENTER_BACKGROUND:
+    case SDL_EVENT_KEY_DOWN: case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
+    case SDL_EVENT_WINDOW_RESIZED: case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED:
+        android_touch_reset(&app->touch);
+        return false;
+    case SDL_EVENT_FINGER_DOWN: case SDL_EVENT_FINGER_MOTION:
+    case SDL_EVENT_FINGER_UP: case SDL_EVENT_FINGER_CANCELED:
+        break;
+    default: return false;
+    }
+    if (event->tfinger.windowID != SDL_GetWindowID(app->win) ||
+            event->tfinger.touchID == SDL_MOUSE_TOUCHID) return true;
+    if (app->touch_tab != app->t || app->touch_generation != app->t->lgen)
+        android_touch_reset(&app->touch);
+    AndroidTouchPhase phase = event->type == SDL_EVENT_FINGER_DOWN ? ANDROID_TOUCH_DOWN
+        : event->type == SDL_EVENT_FINGER_UP ? ANDROID_TOUCH_UP
+        : event->type == SDL_EVENT_FINGER_MOTION ? ANDROID_TOUCH_MOVE : ANDROID_TOUCH_CANCEL;
+    float pointer_x = event->tfinger.x * app->vw, pointer_y = event->tfinger.y * app->vh;
+    if (phase == ANDROID_TOUCH_DOWN) {
+        if (pointer_x < 0 || pointer_y < 0 || pointer_x > app->vw || pointer_y > app->vh) return true;
+        app->touch_tab = app->t;
+        app->touch_generation = app->t->lgen;
+        g_sm_dx = g_sm_dy = 0;
+    }
+    app->last_input = now_ms();
+    AndroidTouchResult result = android_touch_update(&app->touch, phase,
+        event->tfinger.touchID, event->tfinger.fingerID, pointer_x, pointer_y,
+        pointer_x > app->side && pointer_y > BAR && !g_hud_pop && !app->t->info);
+    if (result.action == ANDROID_TOUCH_SCROLL)
+        wheel_apply(app, result.anchor_x, result.anchor_y, result.dx, result.dy);
+    if (result.action != ANDROID_TOUCH_TAP) return true;
+    SDL_Event click = {0};
+    click.button.type = SDL_EVENT_MOUSE_BUTTON_DOWN;
+    click.button.timestamp = event->tfinger.timestamp;
+    click.button.windowID = event->tfinger.windowID;
+    click.button.which = SDL_TOUCH_MOUSEID;
+    click.button.button = SDL_BUTTON_LEFT;
+    click.button.down = true;
+    click.button.clicks = 1;
+    click.button.x = result.anchor_x; click.button.y = result.anchor_y;
+    *event = click;
+    return false;
+}
+#endif
 static Tab *tab_of_doc(App *a, Document *d) {
     for (int depth = 0; d && depth < 16; depth++) {
         for (int i = 0; i < a->ntabs; i++) if (a->tabs[i]->cur && a->tabs[i]->cur->d == d) return a->tabs[i];
@@ -2101,6 +2155,7 @@ int main(int argc, char **argv) {
     SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
 #ifdef __ANDROID__
     SDL_SetHint(SDL_HINT_ANDROID_TRAP_BACK_BUTTON, "1");
+    SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
 #endif
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) { fprintf(stderr, "SDL_Init: %s\n", SDL_GetError()); return 1; }
 #ifdef __ANDROID__
@@ -2279,6 +2334,11 @@ int main(int argc, char **argv) {
         else do {
             bool wheel0 = ev.type == SDL_EVENT_MOUSE_WHEEL && !ev.wheel.x && !ev.wheel.y;
             input_coordinates(&a, &ev);
+#ifdef __ANDROID__
+            bool touch_tap = ev.type == SDL_EVENT_FINGER_UP;
+            if (android_touch_input(&a, &ev)) continue;
+            touch_tap = touch_tap && ev.type == SDL_EVENT_MOUSE_BUTTON_DOWN;
+#endif
             if ((ev.type >= SDL_EVENT_KEY_DOWN && ev.type <= SDL_EVENT_TEXT_INPUT) || (ev.type >= SDL_EVENT_MOUSE_MOTION && ev.type <= SDL_EVENT_MOUSE_WHEEL && !wheel0)) a.last_input = now_ms();
             if (ev.type != EV_NET && ev.type != SDL_EVENT_MOUSE_WHEEL) a.vonly = false;
             js_key_mods = key_mods(SDL_GetModState());
@@ -2444,6 +2504,9 @@ int main(int argc, char **argv) {
                     fprintf(stderr, "lumen: %s loaded in %.0fms, first frame %.1fms (layout+paint+present), %d boxes\n", p->url, p->load_ms, now_ms() - t0, p->L ? p->L->nboxes : 0);
                 }
             }
+#ifdef __ANDROID__
+            if (touch_tap) g_press = g_drag = g_epress = false;
+#endif
         } while (SDL_PollEvent(&ev));
         js_release_pins();
         net_poll();
