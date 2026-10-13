@@ -1,5 +1,47 @@
 # Lumen: handoff notes
 
+## Android GL texture-upload fix (2026-10-13)
+
+8fd13e3 window recreation passes194 focused checks,24 sanitizer scenarios and23
+APK gates. Phone attempt2 verifies Software -> Vulkan twice, then OpenGL ES
+shows a blank white app despite active wgpu/gl; process stays alive. No scroll
+or formal idle acceptance yet. Attempt2 quiet-review mean0.165% CPU is not a
+formal idle result. Last persisted renderer is OpenGL ES; app is stopped.
+
+Main adds Android GPU errors and native wgpu warnings to logcat. Logging-only
+build2 passes196 focused checks and23 APK gates, but phone gl-log still shows
+blank output and no GPU errors. Driver diagnostics also require the instance
+Validation flag; enable it only without NDEBUG. Three diagnostics checks and
+eight lifecycle checks plus23 APK gates pass in gl-log-build3. Phone
+gl-validation now captures two GLES API errors: pixel buffer format is not
+compatible with level format. Both diagnostic phones stopped and released
+ownership; no app-data reset. All runs use continuous1Hz process/thread/RSS
+telemetry, shared480% host quota and SCHED_IDLE/nice19. Source V8 remains frozen.
+
+Pinned wgpu-hal29.0.3 maps BGRA8 upload textures to internal RGBA8 with external
+BGRA. The GLES EXT_texture_format_BGRA8888 valid combinations do not include
+that pair: https://registry.khronos.org/OpenGL/extensions/EXT/EXT_texture_format_BGRA8888.txt
+Main switches page and RGBA-video upload storage to portable RGBA8 and swaps
+red/blue in the shared fragment shader, preserving alpha. CPU buffers, upload
+size, caching and YUV-plane path stay unchanged; no CPU conversion/allocation.
+Tests first: new upload model5 yields3 expected failures (page/video/shader),
+2 existing cache/resize passes, zero errors. Fix GREEN/build/phone pending.
+This is GPU composition, not GPU page rasterization or the WebGPU web API.
+
+Evidence: `build/codex-android-scroll-gpu/phone/attempt2/REPORT.md`,
+`build/codex-android-scroll-gpu/gl-log-build2/MAIN-REVIEW.md`,
+`build/codex-android-scroll-gpu/gl-log-build3/MAIN-REVIEW.md`,
+`build/codex-android-scroll-gpu/phone/gl-validation/quiet-full-log.json`,
+`build/codex-android-scroll-gpu/gl-upload-red/red-result.json`.
+Phone attempt3 preparation owns no device until exact new APK grant. Next:
+verify OpenGL output/errors and full backend cycle, then matched scrolling,
+momentum, rotation/scale/persistence and formal fixture/Home idle. Restore
+original Home/Vulkan/2x; never call blank-rendering or unmeasured FPS a pass.
+Keep outer bash alive around tools/codex_compile.py (trailing status/exit),
+otherwise host ananicy can race the exec-reused shell PID to nice-4. No host
+priority rule changes or weakening of the guard. Only one genuine pre-device
+correction was needed for gl-validation; preserve its failed preflight evidence.
+
 ## Android renderer-window follow-up (2026-10-13)
 
 3251476 passes194 focused checks,24 sanitizer scenarios and23 APK gates; native

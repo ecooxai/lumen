@@ -3,10 +3,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 #include <webgpu.h>
 #include <wgpu.h>
 #ifdef __ANDROID__
 #include <android/native_window.h>
+#include <android/log.h>
 #endif
 
 struct Gpu {
@@ -29,7 +31,7 @@ static const char *WGSL =
     "@vertex fn vs(@builtin(vertex_index) i: u32) -> V {\n"
     "  let uv = vec2f(f32(i & 1u), f32(i >> 1u));\n"
     "  var o: V; o.p = vec4f(mix(r.xy, r.zw, uv), 0.0, 1.0); o.uv = uv; return o; }\n"
-    "@fragment fn fs(v: V) -> @location(0) vec4f { return textureSample(t, s, v.uv); }\n";
+    "@fragment fn fs(v: V) -> @location(0) vec4f { return textureSample(t, s, v.uv).bgra; }\n";
 
 static const char *WGSL_YUV =
     "@group(0) @binding(0) var ty: texture_2d<f32>;\n"
@@ -47,16 +49,32 @@ static const char *WGSL_YUV =
 
 static WGPUStringView sv(const char *s) { return (WGPUStringView){ s, WGPU_STRLEN }; }
 
+static void gpu_log(const char *format, ...) {
+    va_list arguments;
+    va_start(arguments, format);
+#ifdef __ANDROID__
+    __android_log_vprint(ANDROID_LOG_WARN, "LumenGPU", format, arguments);
+#else
+    vfprintf(stderr, format, arguments);
+#endif
+    va_end(arguments);
+}
+
+static void on_log(WGPULogLevel level, WGPUStringView message, void *userdata) {
+    (void)level; (void)userdata;
+    gpu_log("wgpu: %.*s\n", (int)(message.data ? message.length : 0), message.data ? message.data : "");
+}
+
 static void on_adapter(WGPURequestAdapterStatus st, WGPUAdapter a, WGPUStringView msg, void *u1, void *u2) {
     (void)u2; if (st == WGPURequestAdapterStatus_Success) *(WGPUAdapter *)u1 = a;
-    else fprintf(stderr, "gpu: adapter request failed: %.*s\n", (int)(msg.data ? msg.length : 0), msg.data ? msg.data : "");
+    else gpu_log("gpu: adapter request failed: %.*s\n", (int)(msg.data ? msg.length : 0), msg.data ? msg.data : "");
 }
 static void on_device(WGPURequestDeviceStatus st, WGPUDevice d, WGPUStringView msg, void *u1, void *u2) {
     (void)u2; if (st == WGPURequestDeviceStatus_Success) *(WGPUDevice *)u1 = d;
-    else fprintf(stderr, "gpu: device request failed: %.*s\n", (int)(msg.data ? msg.length : 0), msg.data ? msg.data : "");
+    else gpu_log("gpu: device request failed: %.*s\n", (int)(msg.data ? msg.length : 0), msg.data ? msg.data : "");
 }
 static void on_error(WGPUDevice const *d, WGPUErrorType t, WGPUStringView msg, void *u1, void *u2) {
-    (void)d; (void)u1; (void)u2; fprintf(stderr, "gpu: error %d: %.*s\n", (int)t, (int)msg.length, msg.data);
+    (void)d; (void)u1; (void)u2; gpu_log("gpu: error %d: %.*s\n", (int)t, (int)(msg.data ? msg.length : 0), msg.data ? msg.data : "");
 }
 
 static void configure(Gpu *g) {
@@ -148,9 +166,14 @@ Gpu *gpu_create(const GpuSurfSrc *src, int w, int h, bool prefer_vulkan) {
 
 Gpu *gpu_create_backend(const GpuSurfSrc *src, int w, int h, GpuBackend backend) {
     if (getenv("LUMEN_NO_GPU") || !gpu_backend_flags(backend)) return NULL;
+    wgpuSetLogCallback(on_log, NULL);
+    wgpuSetLogLevel(WGPULogLevel_Warn);
     Gpu *g = calloc(1, sizeof *g); g->w = w; g->h = h;
     WGPUInstanceExtras ex = { 0 }; ex.chain.sType = (WGPUSType)WGPUSType_InstanceExtras;
     ex.backends = gpu_backend_flags(backend);
+#ifndef NDEBUG
+    ex.flags = WGPUInstanceFlag_Validation;
+#endif
     WGPUInstanceDescriptor id = WGPU_INSTANCE_DESCRIPTOR_INIT; id.nextInChain = &ex.chain;
     if (!(g->inst = wgpuCreateInstance(&id))) goto fail;
     if (!(g->surf = create_surface(g, src))) goto fail;
@@ -214,7 +237,7 @@ Gpu *gpu_create_backend(const GpuSurfSrc *src, int w, int h, GpuBackend backend)
     configure(g);
     return g;
 fail:
-    fprintf(stderr, "gpu: unavailable, using CPU presentation\n");
+    gpu_log("gpu: unavailable, using CPU presentation\n");
     gpu_destroy(g);
     return NULL;
 }
@@ -234,7 +257,7 @@ static void ensure_vtex(Gpu *g, int w, int h) {
     if (g->vtex) { wgpuTextureDestroy(g->vtex); wgpuTextureRelease(g->vtex); }
     WGPUTextureDescriptor td = WGPU_TEXTURE_DESCRIPTOR_INIT;
     td.size = (WGPUExtent3D){ (uint32_t)w, (uint32_t)h, 1 };
-    td.format = WGPUTextureFormat_BGRA8Unorm;
+    td.format = WGPUTextureFormat_RGBA8Unorm;
     td.usage = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopyDst;
     g->vtex = wgpuDeviceCreateTexture(g->dev, &td);
     g->vview = wgpuTextureCreateView(g->vtex, NULL);
@@ -272,7 +295,7 @@ static void ensure_tex(Gpu *g, int w, int h) {
     if (g->tex) { wgpuTextureDestroy(g->tex); wgpuTextureRelease(g->tex); }
     WGPUTextureDescriptor td = WGPU_TEXTURE_DESCRIPTOR_INIT;
     td.size = (WGPUExtent3D){ (uint32_t)w, (uint32_t)h, 1 };
-    td.format = WGPUTextureFormat_BGRA8Unorm;
+    td.format = WGPUTextureFormat_RGBA8Unorm;
     td.usage = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopyDst;
     g->tex = wgpuDeviceCreateTexture(g->dev, &td);
     g->view = wgpuTextureCreateView(g->tex, NULL);
