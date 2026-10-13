@@ -45,6 +45,7 @@ public final class LumenActivity extends SDLActivity {
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
+        if (!mBrokenLibraries && mLayout != null) BrowserInsets.install(getWindow(), mLayout);
         if (Build.VERSION.SDK_INT >= 33) unregisterBack = Api33.registerBack(this);
     }
 
