@@ -35,7 +35,8 @@ gesture behavior. A fresh verifier under `build/codex-android-touch/final` rerun
 the final bytes with `ANDROID_SDK_ROOT` explicitly matched to pinned
 `ANDROID_HOME` after sourcing the environment outside the compile wrapper.
 Final verification passes140/140 unique focused checks,12/12 sanitizer scenarios
-and23/23 unchanged packaging gates. Normal assembly takes48.031s at mean213.82%
+and23/23 unchanged packaging gates. Implementation/tests are committed in
+`0ada96f`. Normal assembly takes48.031s at mean213.82%
 CPU, sampled peak RSS1759.38 MiB. One new touch object and rebuilt main object;
 292 other objects reused. Normal/fresh compact live payloads match with zero
 ZIP gaps; only libmain.so changes. Actual SDL/SDK compilation and native no-op
@@ -53,6 +54,11 @@ returncode/stdout/stderr, then tests this candidate with the corrected collector
 real taps, direct swipes without accidental link clicks, nested scrolling,
 resize/IME/background regression and1Hz CPU/RSS. Do not overwrite historical
 failed runs or claim the new sampler has already been verified on Android.
+The original failed report finalizer remains preserved. Its corrected guarded
+run is `finalize-report-correction1.result.json` (passed, payload/wrapper exit0,
+7 policy samples, no issues); `final-audit.json` records the allowed docs hashes.
+Guard completion drains owned descendants. Main checks this evidence before
+closing the verifier; no post-commit rerun is claimed.
 Overall daily-use readiness remains25/100 pending device and major-site evidence.
 
 ### Previous density/focus iteration
