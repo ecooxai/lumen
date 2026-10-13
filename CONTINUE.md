@@ -1,5 +1,31 @@
 # Lumen: handoff notes
 
+## CPU APK installed; correct inset geometry rejected by test harness (2026-10-13)
+
+5963eecd is now installed once with install-r and verified, preserving data.
+The first CPU-stage run stops before swipes on a new harness predicate:
+it incorrectly expects SDL/SurfaceView at0,0-1080,2112, but the own visible
+org.lumen.browser.BrowserSurface has bounds0,88-1080,2200. Its actual drawable
+is1080x2112; the inset origin is valid. This is not a product layout failure.
+Main and owner independently view the captured correct Bands1/2, single
+toolbar and full-width edges after cleanup. Do not backdate a live review.
+
+Failure evidence remains in build/codex-android-cpu-profile/phone, especially
+FINAL-FAILURE-REPORT.md and final-failure-audit.json.13 samples,zero errors;
+four startup intervals4s:mean8% CPU,peak27.18%,RSS227.21-227.27MiB. No swipes,
+formal idle or emitted stage reports: scroll CPU timing unavailable, not zero.
+App/owned marker/reverse/server absent,sampler joined,locks released;
+display/rotation unchanged,V8 frozen,host scope drained. Owner closed.
+
+Main writes regression tests first in sibling view-phone:8 cases initially
+give10 expected missing-helper errors, then implements browser_geometry to
+select one visible own BrowserSurface and compute bound differences. Tests
+cover inset/zero origin,landscape,wrong/hidden/duplicate surfaces and invalid
+dimensions. Fresh owner must verify GREEN and run the same bounded profile
+WITHOUT reinstalling. Geometry must come from measured bounds, not hardcoded
+expected fields. Reviewed29 CPU-parser checks also require complete contained
+wall/CPU pairs; missing CPU is never zero. Overall readiness remains25/100.
+
 ## CPU-diagnostics APK verified; phone profile pending (2026-10-13)
 
 Source1405612 builds successfully using verified Android V8/wgpu prebuilts.
