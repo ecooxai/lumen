@@ -33,6 +33,9 @@ class AndroidNewTabTests(unittest.TestCase):
             extracted += "\n" + (function(source[definition:], signature) if definition >= 0 else fallback)
         extracted += "\n" + function(source, "static float url_w(")
         extracted += "\n" + function(source, "static void tab_open(").replace("tab_open(", "real_tab_open(", 1)
+        loop = source[source.index("int to = a.t->loading"):]
+        hud = function(loop, "if (g_hud").replace("a.", "app->").replace("now_ms()", "model_now_ms()")
+        extracted += "\nstatic void test_hud_tick(App *app) { int to = 1000; " + hud + " }"
         (work / "newtab_functions.h").write_text(extracted)
         cls.executables = {}
         for platform in ("android", "desktop"):
@@ -82,6 +85,10 @@ class AndroidNewTabTests(unittest.TestCase):
 
     def test_workspace_and_tab_limits_are_enforced(self):
         self.run_scenario("limits")
+
+    def test_hidden_sidebar_does_not_sample_or_repaint_hud(self):
+        self.run_scenario("hidden-hud")
+        self.run_scenario("visible-hud", "desktop")
 
     def test_only_native_link_activation_executes_workspace_actions(self):
         source = (ROOT / "src/app/main.c").read_text()

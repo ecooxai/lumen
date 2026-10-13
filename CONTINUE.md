@@ -1,5 +1,43 @@
 # Lumen: handoff notes
 
+## Android New Tab checkpoint (2026-10-13)
+
+Android web content now uses the full available surface width. Workspace icon
+cards and open tabs live in the default New Tab Home, including landscape;
+new tabs do not automatically open the keyboard. Main implementation is5996691.
+Follow-up fixes center the icon/badge and prevent the invisible sidebar CPU HUD
+from requesting full repaints. Tests preceded both fixes. Final verification:
+153 focused checks,6 viewport JS groups, native sanitizer/runtime checks and23
+APK gates pass. Build26.108s, mean227.91% host CPU, sampled peak1725.81MiB RSS;
+shared480%/SCHED_IDLE/nice19, source pins and frozen source-V8 remain intact.
+Report: `build/codex-android-newtab/final/REPORT.md`.
+
+Installed, data-preserving candidate:
+`build/codex-android-newtab/final/codex-agent-android-newtab-fullwidth-compact-debug.apk`,
+87,484,692 bytes; SHA256
+`5d708cfbd115048c477a8682825235c0029d80057ce023c36ec7e8e992dea2db`.
+Fresh phone acceptance passes default Home, icon containment, workspace add/switch,
+native plus, rotation, edge-to-edge fixture and direct scrolling. Formal idle:
+60.68s, mean0.198% CPU, peak5.56%, longest above3% streak1, RSS226–228MiB.
+215 continuous samples have zero failures; cadence0.98–1.32s. Original59.72s
+duration-only failure is preserved, with one bounded harness correction.
+Prior bad-badge/high-CPU runs and inconclusive old-candidate profiling are
+preserved, not retroactively called passes. Phone is1080x2248 with existing320dpi
+override (~540CSS portrait), not a320CSS physical-phone test. Test-created tabs
+and workspace removed, original New Tab restored, app stopped, rotation/density
+preserved, owned server/reverse removed and locks released. Report:
+`build/codex-android-newtab/acceptance/REPORT.md`.
+
+Bounded phone score90/100: a fixture paragraph appears after the subsequent END
+heading in the scrolled image; this flow anomaly remains undiagnosed and is not
+a layout pass. No public-site/account, typing-CPU or broad daily-use pass.
+Host/build score95/100; overall daily-use readiness remains25/100.
+
+Next user request: use a physical-pixel-based Android scale independent of system
+density, default2x, configurable in Settings, with screen and render resolution
+readouts. Proposed interpretation:1x maps one layout pixel to one physical pixel;
+2x maps it to2x2 physical pixels, without supersampling. Clarification requested.
+
 ## Android/Linux checkpoint (2026-10-12)
 
 ### Current viewport event iteration

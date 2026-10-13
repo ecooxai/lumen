@@ -10,7 +10,7 @@ typedef struct {
     float vw, side;
     char wsname[16][64];
     Tab *t, *tabs[MAX_TABS];
-    bool editing;
+    bool editing, dirty, vonly;
     void *win;
 } App;
 typedef struct { char *url, *title; } Link;
@@ -20,6 +20,9 @@ static Link g_bms[1], g_hv[1];
 #define UA_COUNT 1
 static const char *net_user_agent_name(int index) { return "Lumen"; }
 static int created, selected = -1, closed = -1, input_started, input_stopped, navigated;
+static int hud_samples;
+static double model_now_ms(void) { return 5000; }
+static void hud_sample(void) { hud_samples++; }
 static Tab spare;
 static Tab *tab_new(App *app) { if (app->ntabs == MAX_TABS) return NULL; app->tabs[app->ntabs++] = &spare; return &spare; }
 static void tab_select(App *app, int index) { selected = index; app->ti = index; app->t = app->tabs[index]; app->editing = false; }
@@ -103,6 +106,14 @@ int main(int argc, char **argv) {
         app.nws = 1; app.ntabs = MAX_TABS;
         CHECK(workspace_action(&app, "lumen://workspace?new")); CHECK(created == 0);
         CHECK(workspace_action(&app, "lumen://workspace?close")); CHECK(closed == -1);
+    } else if (!strcmp(scenario, "hidden-hud")) {
+        g_hud = true; app.side = 0; app.vonly = true;
+        test_hud_tick(&app);
+        CHECK(!app.dirty && app.vonly && hud_samples == 0);
+    } else if (!strcmp(scenario, "visible-hud")) {
+        g_hud = true; app.side = 84; app.vonly = true;
+        test_hud_tick(&app);
+        CHECK(app.dirty && !app.vonly && hud_samples == 1);
     } else { CHECK(false); }
     return 0;
 }

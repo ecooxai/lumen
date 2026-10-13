@@ -35,6 +35,8 @@ int main(int argc, char **argv) {
         CHECK(tile && icon);
         CHECK(tile->style->width.px == 72 && tile->style->height.px == 72);
         CHECK(icon->style->width.px == 32 && icon->style->height.px == 32);
+        CHECK(icon->style->display == D_BLOCK);
+        CHECK(icon->style->margin[1].kind == LK_AUTO && icon->style->margin[3].kind == LK_AUTO);
         CHECK(body->style->display == D_BLOCK && nav->style->display == D_FLEX);
     }
     if (wide) {

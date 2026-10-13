@@ -357,7 +357,7 @@ static char *internal_page(App *app, const char *u) {
         ".workspaces{margin:0 -4px 20px}"
         "a.workspace{display:inline-block;vertical-align:top;width:72px;height:72px;box-sizing:border-box;margin:4px;padding:10px 8px;background:#fff;border:1px solid #dadce0;border-radius:14px;color:#5f6368;text-align:center;text-decoration:none}"
         "a.workspace.active{background:#e8f0fe;border-color:#1a73e8;color:#1967d2}"
-        ".workspace-icon{display:inline-block;width:32px;height:32px;font-size:0}"
+        ".workspace-icon{display:block;width:32px;height:32px;margin:0 auto;font-size:0}"
         ".workspace-icon i{display:inline-block;width:12px;height:12px;margin:2px;background:currentColor;border-radius:2px}"
         ".workspace-number{display:block;font-size:11px;line-height:16px}"
         ".workspace-add{display:block;font-size:28px;line-height:32px}"
@@ -2362,7 +2362,7 @@ int main(int argc, char **argv) {
         int to = a.t->loading ? 120 : 1000;
         for (int i = 0; i < a.ntabs; i++) { Tab *tb = a.tabs[i]; if (tb->cur && tb->cur->js) { double dl = js_next_deadline(tb->cur->js) - now_ms(); if (tb->limited && tb->budget < 0) dl = LMAX(dl, -tb->budget / tb->lim - (now_ms() - tb->bud_t)); if (dl < to) to = dl < 0 ? 0 : (int)dl; } }
         if (net_pending() && to > 50) to = 50;
-        if (g_hud) {
+        if (g_hud && a.side > 0) {
             static double lh; double th = now_ms();
             if (th - lh >= 2000) { lh = th; hud_sample(); a.dirty = true; a.vonly = false; }
             int nx = (int)(2000 - (th - lh)) + 1; if (nx < to) to = nx;
