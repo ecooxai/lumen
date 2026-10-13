@@ -19,6 +19,7 @@ public final class BrowserSurfaceTest {
         Context context = new Context(manager, display);
         List<Integer> rotations = new ArrayList<>();
         BrowserSurface surface = new BrowserSurface(context, rotations::add);
+        check(!surface.getDefaultFocusHighlightEnabled(), "platform focus highlight must not cover the browser framebuffer");
         check(manager.registers == 0 && rotations.isEmpty(), "constructor must not start polling");
         surface.enableSensor(Sensor.TYPE_ACCELEROMETER, true);
         surface.enableSensor(Sensor.TYPE_ACCELEROMETER, true);
@@ -57,6 +58,7 @@ public final class BrowserSurfaceTest {
         check(rotations.size() == 7, "invalid display delivered rotation");
         replacement.valid = true;
         surface.surfaceChanged(null, 0, 800, 600);
+        check(!surface.getDefaultFocusHighlightEnabled(), "surface resize must preserve focus-highlight opt-out");
         check(surface.resizeCalls == 1 && rotations.get(7) == 90, "resize did not preserve SDL/update rotation");
         surface.enableSensor(4, true);
         surface.enableSensor(4, false);

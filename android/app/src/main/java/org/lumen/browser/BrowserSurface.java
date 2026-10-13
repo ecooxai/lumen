@@ -20,6 +20,7 @@ final class BrowserSurface extends SDLSurface implements DisplayManager.DisplayL
 
     BrowserSurface(Context context, IntConsumer rotationChanged) {
         super(context);
+        setDefaultFocusHighlightEnabled(false);
         displayManager = (DisplayManager) context.getSystemService(Context.DISPLAY_SERVICE);
         this.rotationChanged = rotationChanged;
     }

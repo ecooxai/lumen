@@ -76,10 +76,13 @@ import android.view.Display;
 import android.view.SurfaceHolder;
 public class SDLSurface {
     protected Display mDisplay;
+    private boolean defaultFocusHighlightEnabled = true;
     public Display attachedDisplay;
     public int sensorCalls, resizeCalls;
     protected SDLSurface(Context context) { mDisplay = context.display; attachedDisplay = context.display; }
     public Display getDisplay() { return attachedDisplay; }
+    public final boolean getDefaultFocusHighlightEnabled() { return defaultFocusHighlightEnabled; }
+    public void setDefaultFocusHighlightEnabled(boolean enabled) { defaultFocusHighlightEnabled = enabled; }
     protected void enableSensor(int sensorType, boolean enabled) { sensorCalls++; }
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) { resizeCalls++; }
 }
