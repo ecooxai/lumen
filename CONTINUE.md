@@ -1,5 +1,29 @@
 # Lumen: handoff notes
 
+## CPU-diagnostics APK verified; phone profile pending (2026-10-13)
+
+Source1405612 builds successfully using verified Android V8/wgpu prebuilts.
+Main independently checks the immutable APK hash, size and mode and reviews
+the terminal receipt. Artifact:
+build/codex-android-cpu-profile/final/codex-agent-android-cpu-profile-compact-debug.apk
+SHA2565963eecd031e8a7a6f3819ff561d1a6621a9f86629cc4ebef65e6cee8221126c,
+85240084 bytes,0444. The332-file manifest hash is
+e7867eec1e5b4f18e00e6a931e7fa68eb3a71a783186b984e370de694ffc813d.
+Fresh23 APK gates and API29 clock_gettime import/export compatibility pass;
+72 focused checks and10 sanitizer scenarios are explicitly reused with
+matching source pins, not rerun. Build59.316s,mean184.96% host CPU,
+peak sampled scoped RSS1738.43MiB; shared480%,SCHED_IDLE,nice19.
+
+Two retained harness errors are not product failures: predecessor receipt
+shape correction and a duplicate gate attempting exclusive log creation.
+All15 gates had completed before the latter; final audit passes without
+rebuilding or rerunning gates. All owned scopes drain; frozen V8 is unchanged.
+Builder closed. Host evidence95/100, overall browser readiness25/100.
+New APK is NOT yet installed. Fresh phone tester prepares separate wall/CPU
+pair parsing and offline negative tests before authorized install/profile.
+The last installed819345 fixture result remains55.67% scroll CPU and0.049%
+idle CPU, approximately231MiB peak RSS; no performance gain is established.
+
 ## Opt-in render-thread CPU diagnostics implemented (2026-10-13)
 
 Main adds Android CLOCK_THREAD_CPUTIME_ID alongside existing paint wall clocks.
