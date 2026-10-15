@@ -17,6 +17,7 @@ App Store acceptance is not a goal (sideload / Xcode run).
 - brew: cmake ninja meson nasm pkgconf (plus desktop deps v8 wgpu-native webp ...).
 - V8 15.6 drumbrake patch (needed to compile the wasm interpreter): in src/debug/debug-wasm-objects.cc add
   `bool DeclaresLocals() override { return false; }` to `DebugWasmInterpreterScopeIterator`.
+- Also `v8_use_metagen_instance_types = false` in every out/*/args.gn (metagen libclang pass cannot find libc++ headers with use_custom_libcxx=false).
 - out/catalyst = ios-simulator args with target_environment = "catalyst". Chain: sim -> device -> catalyst (logs ~/lumen-ios-logs/v8-*.log).
 - wgpu-native for Catalyst: ~/src/wgpu-native @ v29.0.1.1, built with rustup stable (PATH=~/.rustup/toolchains/stable-*/bin,
   RUSTUP_TOOLCHAIN=stable to override its rust-toolchain.toml), target aarch64-apple-ios-macabi.
