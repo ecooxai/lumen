@@ -282,6 +282,12 @@ static int loader(void *arg) {
     else if (!r || r->status == 0) { errbuf = xmalloc(512); snprintf(errbuf, 512, "<title>Error</title><body style='font:15px system-ui;padding:40px;color:#444'><h2>Can't open this page</h2><p>%s</p>", rq->url); body = errbuf; blen = strlen(errbuf); }
     p->url = xstrdup(r && r->url ? r->url : rq->url);
     p->d = doc_new(p->url);
+    if (r && !rq->html) {
+        const char *coop = headers_get(&r->headers, "cross-origin-opener-policy"), *coep = headers_get(&r->headers, "cross-origin-embedder-policy");
+        bool secure = !strncmp(p->url, "https:", 6) || !strncmp(p->url, "http://localhost", 16) || !strncmp(p->url, "http://127.0.0.1", 16);
+        p->d->cross_origin_isolated = secure && coop && coep && !strncasecmp(coop, "same-origin", 11) && strncasecmp(coop, "same-origin-allow-popups", 24)
+            && (!strncasecmp(coep, "require-corp", 12) || !strncasecmp(coep, "credentialless", 14));
+    }
     html_parse(p->d, body, blen);
     if (!getenv("LUMEN_NO_JS")) for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) {
         if (!gen_live(rq->gen)) break;

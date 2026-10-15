@@ -83,8 +83,10 @@ Tested on Mac and the iPad Simulator (JIT and jitless): `validate`, `Module`/`In
 `compileStreaming`/`instantiateStreaming` (needs `application/wasm` over http(s)), `Memory`/`Table`/`Global`/
 `Tag`/`Exception`, JSPI, SIMD + relaxed SIMD, threads/shared memory + Atomics, exceptions, GC, tail calls,
 memory64, bulk memory, and wasm in workers (posting a `WebAssembly.Module` or `SharedArrayBuffer` to a worker).
-Streaming compiles after the whole response has downloaded, and `crossOriginIsolated` is always `false`
-(COOP/COEP headers are not enforced; `SharedArrayBuffer` is available regardless).
+Streaming compiles after the whole response has downloaded. `crossOriginIsolated` is `true` (page and its
+workers) when a secure page is served with `Cross-Origin-Opener-Policy: same-origin` and
+`Cross-Origin-Embedder-Policy: require-corp` (or `credentialless`); `SharedArrayBuffer` is available either way
+and cross-origin subresources are not yet blocked under COEP.
 `LUMEN_NO_WASM_TRAP=1` turns off the wasm guard-region trap handler (jitless builds then cannot run wasm).
 
 ### On a Mac

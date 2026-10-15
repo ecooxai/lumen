@@ -58,6 +58,7 @@ typedef struct Document {
     char *title;
     Node *html, *head, *body;
     bool quirks;
+    bool cross_origin_isolated;   /* COOP same-origin + COEP require-corp/credentialless on a secure origin */
     int ready_state;              /* 0 loading, 1 interactive, 2 complete */
     uint64_t dom_version;         /* bumped on any mutation */
     uint64_t layout_version;      /* bumped on mutations that can change layout beyond computed style */

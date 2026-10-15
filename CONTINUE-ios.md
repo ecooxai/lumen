@@ -114,4 +114,8 @@ App Store acceptance is not a goal (sideload / Xcode run).
   wasm page; 3M JS->wasm calls: jitless 565 ms, JIT 185 ms.
   Desktop (Homebrew V8 15.6) matches d8: 3M calls 263 ms cold, ~25 ms once the wrapper tiers up
   (~/fvtest/wasm/perf3.html). The 1.6 s in index.html is a benchmark artefact (one long top-level async loop).
-  crossOriginIsolated is still always false (COOP/COEP not implemented); SharedArrayBuffer is exposed anyway.
+  HTTP (~/fvtest/wasmhttp, python http.server serves application/wasm): instantiateStreaming/compileStreaming ok;
+  wrong MIME, 404, used body and non-Response all reject with Chrome-style TypeErrors.
+  crossOriginIsolated: Document.cross_origin_isolated set in main.c from COOP same-origin + COEP
+  require-corp/credentialless on https/localhost; N.coi() for window, W.coi for workers (~/fvtest/coi/srv.py).
+  COEP does not block non-CORP subresources yet; SharedArrayBuffer is exposed regardless.
