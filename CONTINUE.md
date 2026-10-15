@@ -1,5 +1,37 @@
 # Lumen: handoff notes
 
+## Android Wasm worker scheduling (2026-10-15)
+
+Daily-browser + FULL browser Wasm goal ACTIVE; Vulkan first. Worker async Wasm
+timeout fixed with a registered foreground task queue, condition-variable wakeup,
+delayed deadlines and post-task microtask delivery. Root page disposal now calls
+NotifyIsolateShutdown. Default platform still handles background compiler jobs and
+page task runners. See docs/android-wasm-worker-20261015.md.
+
+ASan/UBSan queue tests pass, including4,000 posts racing shutdown. Final phone
+fixture8/8PASS: startup/self-close, async compile/instantiate, rejection/recovery,
+12 pending compilations, four workers,20 creation cycles, eight large compilation
+termination cycles, compile after idle GC. Final original audit8/13PASS; fiveFAIL
+remain: compileStreaming, instantiateStreaming, structuredClone(module), compiled
+module postMessage, shared Wasm memory postMessage. Full Wasm NOT complete.
+
+Final verified installed APK:
+build/codex-wasm-worker-20261015/lumen-vulkan-wasm-worker-debug.apk
+SHA256:09eaabc3e581fdcfaeef8266456cf16cb782e8a427d3c56691bb16bd6fd7958a.
+Vulkan confirmed. Worker round trips7.48ms,2.74ms after idle; startup16.25ms.
+Final idle75samplesCPUmean0.174%,peak4.04%,RSSending240.64MiB. Initial stage named
+wasm-worker-settled-idle is INVALID due to phone switching toYouTube; user then
+confirmed phone availability and final test restarted. No comparative RAM gain.
+553whole-process/all-thread1Hz samples, zero cadence/parse errors. Closing worker
+tab succeeds. App stopped, monitor/server joined, reverses removed; no owned job.
+
+Next: implement streaming compiler/Response integration, module clone delegates,
+shared-memory isolation/lifetimes, expand conformance and real-app testing. Useful
+read-only reference exists in sibling /mnt/p3/project/browser/lumen/src/js/wasm.cc
+and worker.cc, but audit it before reuse (worker streaming there is buffered;
+shared-memory support and browser conformance still need work). Vulkan scroll,
+YouTube idle/longplayback, login, zoom and daily features remain unfinished.
+
 ## Android native touch + Wasm audit (2026-10-15)
 
 Full daily-browser goal ACTIVE, Vulkan first. USER ADDED FULL WASM SUPPORT; do not

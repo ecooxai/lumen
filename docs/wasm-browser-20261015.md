@@ -22,16 +22,20 @@ build/codex-native-touch-20261015/server.log. The installed native-touch APK pas
 | compileStreaming(fetch) | FAIL: function absent |
 | instantiateStreaming(fetch) | FAIL: function absent |
 | structuredClone(compiled module) | FAIL: loses module identity |
-| Compilation inside Worker | FAIL:4-second worker timeout |
+| Compilation inside Worker | Initially timed out; PASS after worker task wakeup fix |
 | Compiled module postMessage to Worker | FAIL: module could not be cloned |
 | Shared Wasm memory postMessage to Worker | FAIL: SharedArrayBuffer could not be cloned |
 
+Follow-up: the worker task fix raises this audit to8/13 passing. It registers a
+foreground queue before worker isolate initialization, wakes the worker on task
+posting, preserves delayed deadlines, and runs microtasks after foreground work.
+See android-wasm-worker-20261015.md for implementation and device measurements.
+
 Source corroboration: no Wasm streaming callback is registered. worker.cc uses
 ValueSerializer/Deserializer without delegates for modules/shared backing stores.
-The page structuredClone JS implementation does not handle modules. Worker loop
-pumps V8 foreground tasks only after messages/timers; its condition-variable wait
-is not notified by V8 foreground-task posting. This is a likely explanation for
-the async compilation timeout, not yet a proven fix.
+The page structuredClone JS implementation does not handle modules. The former
+worker loop was not notified by V8 foreground-task posting and omitted the
+post-task microtask checkpoint. The phone now confirms this timeout is fixed.
 
 Next implementation/verification requirements:
 

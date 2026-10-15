@@ -2,6 +2,7 @@
 #include <string>
 /* V8 embedding: platform, per-page isolate/context, node wrappers, script execution, timers, events */
 #include "js_int.h"
+#include "v8_tasks.h"
 #include <v8-profiler.h>
 #include <algorithm>
 #include <openssl/evp.h>
@@ -14,6 +15,7 @@
 #include <unistd.h>
 
 static std::unique_ptr<v8::Platform> g_platform;
+static std::unique_ptr<v8::Platform> g_task_platform;
 v8::Platform *js_platform() { return g_platform.get(); }
 int g_log_level = 3;
 alignas(8) static char kNodeMagic;
@@ -412,7 +414,8 @@ void js_global_init(const char *argv0) {
     v8::V8::InitializeICUDefaultLocation(argv0, icu);
     v8::V8::InitializeExternalStartupData(argv0);
     g_platform = v8::platform::NewDefaultPlatform();
-    v8::V8::InitializePlatform(g_platform.get());
+    g_task_platform = js_task_platform(g_platform.get());
+    v8::V8::InitializePlatform(g_task_platform.get());
     if (const char *vf = getenv("LUMEN_V8_FLAGS")) v8::V8::SetFlagsFromString(vf);
     v8::V8::Initialize();
 }
@@ -632,7 +635,10 @@ void js_free(JsCtx *c) {
             if (!n->parent && n->type != NODE_DOCUMENT && !n->refcount && !n->host) roots.push_back(n);
         c->ctx.Reset();
     }
-    if (!c->parent) { c->iso->Dispose(); delete c->alloc; }
+    if (!c->parent) {
+        v8::platform::NotifyIsolateShutdown(g_platform.get(), c->iso);
+        c->iso->Dispose(); delete c->alloc;
+    }
     for (Node *n : roots) node_free_tree(n);
     for (Document *d : docs) doc_free(d);
     delete c;

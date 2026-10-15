@@ -2,6 +2,7 @@
    Messages cross threads as V8 ValueSerializer buffers. */
 #include "js_int.h"
 #include "jsglue.h"
+#include "v8_tasks.h"
 #include <libplatform/libplatform.h>
 #include <pthread.h>
 #include <algorithm>
@@ -26,6 +27,7 @@ struct Worker {
     uint32_t id = 0; JsCtx *owner = nullptr;
     std::string url, src, ua, platform, name; bool have_src = false, module = false;
     std::mutex mu; std::condition_variable cv;
+    uint64_t task_version = 0;  // protected by mu, prevents lost foreground wakeups
     std::deque<Buf> in; std::deque<OutMsg> out;
     std::atomic<bool> term{false};
     v8::Isolate *iso = nullptr;
@@ -400,7 +402,14 @@ void worker_main(std::shared_ptr<Worker> w) {
     v8::Isolate::CreateParams cp;
     std::unique_ptr<v8::ArrayBuffer::Allocator> al(v8::ArrayBuffer::Allocator::NewDefaultAllocator());
     cp.array_buffer_allocator = al.get();
-    v8::Isolate *iso = v8::Isolate::New(cp);
+    v8::Isolate *iso = v8::Isolate::Allocate();
+    auto tasks = js_register_worker_tasks(iso, [weak = std::weak_ptr<Worker>(w)] {
+        if (auto owner = weak.lock()) {
+            { std::lock_guard<std::mutex> lk(owner->mu); ++owner->task_version; }
+            owner->cv.notify_one();
+        }
+    });
+    v8::Isolate::Initialize(iso, cp);
     { std::lock_guard<std::mutex> lk(w->mu); w->iso = iso; }
     iso->SetMicrotasksPolicy(v8::MicrotasksPolicy::kExplicit);
     WEnv *E = new WEnv; E->w = w; E->iso = iso; E->t0 = now_ms();
@@ -470,9 +479,10 @@ void worker_main(std::shared_ptr<Worker> w) {
             std::deque<Buf> msgs;
             {
                 std::unique_lock<std::mutex> lk(w->mu);
-                double next = 1e300;
+                uint64_t version = w->task_version;
+                double next = std::min(1e300, now_ms() + tasks->NextDelayMs());
                 for (auto &kv : E->timers) next = std::min(next, kv.second.due);
-                auto ready = [&] { return w->term.load() || !w->in.empty(); };
+                auto ready = [&] { return w->term.load() || !w->in.empty() || w->task_version != version; };
                 if (!idle_gc) next = std::min(next, last_act + 10001);
                 if (!ready()) {
                     if (next >= 1e299) w->cv.wait(lk, ready);
@@ -493,7 +503,14 @@ void worker_main(std::shared_ptr<Worker> w) {
             }
             if (w->term) break;
             run_timers(E);
-            while (v8::platform::PumpMessageLoop(js_platform(), iso)) {}
+            while (!w->term && !E->closing) {
+                v8::HandleScope hs2(iso);
+                v8::TryCatch tc(iso);
+                if (!tasks->RunOne()) break;
+                iso->PerformMicrotaskCheckpoint();
+                wcheck(E, tc);
+                last_act = now_ms(); idle_gc = false;
+            }
         }
         E->timers.clear(); E->mods.clear(); E->murl.clear(); E->onmsg.Reset(); E->report.Reset(); E->ctx.Reset();
     }
@@ -503,7 +520,9 @@ void worker_main(std::shared_ptr<Worker> w) {
         for (Buf &b : w->in) free(b.p);
         w->in.clear();
     }
+    tasks->Close();
     iso->Dispose();
+    js_unregister_worker_tasks(iso);
     delete E;
 }
 
