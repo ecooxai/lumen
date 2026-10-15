@@ -46,6 +46,20 @@ static char g_notice[256];   /* dismissable error notice shown in the info bar *
 void ios_wait_init(void);
 bool ios_wait_event(SDL_Event *ev, int to_ms);
 #endif
+/* no auto-capitalisation/autocorrect: iOS keyboards otherwise rewrite typed URLs and queries */
+static void text_input(SDL_Window *w, bool url) {
+#ifdef LUMEN_IOS
+    SDL_PropertiesID p = SDL_CreateProperties();
+    (void)url;
+    SDL_SetNumberProperty(p, SDL_PROP_TEXTINPUT_CAPITALIZATION_NUMBER, SDL_CAPITALIZE_NONE);
+    SDL_SetBooleanProperty(p, SDL_PROP_TEXTINPUT_AUTOCORRECT_BOOLEAN, false);
+    SDL_StartTextInputWithProperties(w, p);
+    SDL_DestroyProperties(p);
+#else
+    (void)url;
+    SDL_StartTextInput(w);
+#endif
+}
 #ifdef LUMEN_IOS
 #define TLW 0.f
 #else
@@ -1676,7 +1690,7 @@ static void focus_node(App *a, Node *n) {
     if (n) { n->flags |= NF_FOCUS; doc_mark_dirty(d, n); }
     if (js && old) { js_dispatch(js, old, "blur", "FocusEvent", false, false, 0, 0, 0, NULL); js_dispatch(js, old, "focusout", "FocusEvent", true, false, 0, 0, 0, NULL); }
     if (js && n) { js_dispatch(js, n, "focus", "FocusEvent", false, false, 0, 0, 0, NULL); js_dispatch(js, n, "focusin", "FocusEvent", true, false, 0, 0, 0, NULL); }
-    if (is_text_ctl(n) || edit_host(n)) SDL_StartTextInput(a->win);
+    if (is_text_ctl(n) || edit_host(n)) text_input(a->win, false);
     a->caret_t = now_ms();
     a->t->relayout = true; a->dirty = true;
 }
@@ -2026,7 +2040,7 @@ static void tab_open(App *a) {
     if (!tab_new(a)) return;
     tab_select(a, a->ntabs - 1);
     navigate(a, "lumen://newtab", true);
-    a->editing = true; a->sel_all = 1; a->t->url[0] = 0; SDL_StartTextInput(a->win);
+    a->editing = true; a->sel_all = 1; a->t->url[0] = 0; text_input(a->win, true);
 }
 static void tab_free(Tab *t) { if (t->cur) page_free(t->cur); for (int k = 0; k < t->nhist; k++) free(t->hist[k]); free(t); }
 static void tab_close(App *a, int i, bool *quit) {
@@ -2428,7 +2442,7 @@ int main(int argc, char **argv) {
         }
         if (cvbuf_changed) { cvbuf_changed = 0; a.dirty = true; a.vonly = false; }
         { int mf = media_tick(); if (mf & 1) { if (!a.dirty && !a.deferred) a.vonly = true; a.dirty = a.vframe = true; } if (mf & 2) a.t->relayout = true; }
-        if (!a.editing && (page_focus(&a) || edit_focus(&a)) && !SDL_TextInputActive(a.win)) SDL_StartTextInput(a.win);
+        if (!a.editing && (page_focus(&a) || edit_focus(&a)) && !SDL_TextInputActive(a.win)) text_input(a.win, false);
         {
             static double last_bg; double tb = now_ms();
             if (tb - last_bg > 2000) {
@@ -2552,7 +2566,7 @@ int main(int argc, char **argv) {
                 case HB_FWD: history_go(&a, 1); break;
                 case HB_STAR: bm_toggle(&a); a.dirty = true; a.vonly = false; break;
                 case HB_RELOAD: if (a.t->hpos >= 0) navigate(&a, a.t->hist[a.t->hpos], false); break;
-                case HB_URL: a.editing = true; a.sel_all = 1; SDL_StartTextInput(a.win); a.dirty = true; break;
+                case HB_URL: a.editing = true; a.sel_all = 1; text_input(a.win, true); a.dirty = true; break;
                 default: if (a.editing) { a.editing = false; SDL_StopTextInput(a.win); a.dirty = true; } sel_press(&a, ev.button.x, ev.button.y, ev.button.clicks); click_page(&a, ev.button.x, ev.button.y); edit_press(&a, ev.button.x, ev.button.y, ev.button.clicks);
                 }
                 break;
@@ -2592,7 +2606,7 @@ int main(int argc, char **argv) {
                     else if ((k == SDLK_LEFT || k == SDLK_RIGHT) && !a.editing && edit_focus(&a))
                         js_dispatch(a.t->cur->js, edit_focus(&a), k == SDLK_LEFT ? "lumensel-home" : "lumensel-end", "MouseEvent", false, false, 0, (ev.key.mod & SDL_KMOD_SHIFT) ? 1 : 0, 0, NULL);
                     else if (k == SDLK_C) sel_copy(&a);
-                    else if (k == SDLK_L) { a.editing = true; a.sel_all = 1; SDL_StartTextInput(a.win); }
+                    else if (k == SDLK_L) { a.editing = true; a.sel_all = 1; text_input(a.win, true); }
                     else if (k == SDLK_R && a.t->hpos >= 0) navigate(&a, a.t->hist[a.t->hpos], false);
                     else if (k == SDLK_LEFTBRACKET) history_go(&a, -1);
                     else if (k == SDLK_RIGHTBRACKET) history_go(&a, 1);
