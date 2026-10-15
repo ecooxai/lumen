@@ -14,8 +14,15 @@
 #include <unistd.h>
 #ifdef __APPLE__
 #include <mach/mach.h>
+#include <TargetConditionals.h>
+#endif
+#if defined(__APPLE__) && TARGET_OS_IPHONE
+#define LUMEN_IOS 1   /* iOS / iPadOS / Mac Catalyst: UIKit shell, touch input */
 #endif
 #include <SDL3/SDL.h>
+#ifdef LUMEN_IOS
+#include <SDL3/SDL_main.h>
+#endif
 #include "../paint/paint.h"
 #include "../media/media.h"
 #include "../net/net.h"
@@ -35,7 +42,11 @@ static char g_notice[256];   /* dismissable error notice shown in the info bar *
 #include "../paint/cvbuf.h"
 #ifdef __APPLE__
 #include "macui.h"
+#ifdef LUMEN_IOS
+#define TLW 0.f
+#else
 #define TLW 78.f
+#endif
 #else
 #define TLW 0.f
 #endif
@@ -2252,12 +2263,75 @@ static void recover_from_crash(App *a, int sig) {
     a->t = act;
 }
 
+static bool g_bg;   /* iOS app in background: no GPU work allowed */
+#ifdef LUMEN_IOS
+/* Touch: one finger pans (with momentum), a short touch is a click, two quick taps a double click. */
+static struct { int n; SDL_FingerID id; float x0, y0, lx, ly, vx, vy; double t0, lt; bool pan; double tap_t; float tap_x, tap_y; } g_tc;
+static struct { float x, y, vx, vy; double t; bool on; } g_fl;
+static void push_mouse(Uint32 type, float x, float y, int clicks) {
+    SDL_Event e; SDL_zero(e); e.type = type;
+    if (type == SDL_EVENT_MOUSE_MOTION) { e.motion.x = x; e.motion.y = y; }
+    else { e.button.button = SDL_BUTTON_LEFT; e.button.x = x; e.button.y = y; e.button.clicks = (Uint8)clicks; e.button.down = type == SDL_EVENT_MOUSE_BUTTON_DOWN; }
+    SDL_PushEvent(&e);
+}
+static void touch_event(App *a, const SDL_Event *ev) {
+    float x = ev->tfinger.x * a->vw, y = ev->tfinger.y * a->vh; double t = now_ms();
+    a->last_input = t;
+    if (ev->type == SDL_EVENT_FINGER_DOWN) {
+        g_fl.on = false;
+        if (g_tc.n++ == 0) { g_tc.id = ev->tfinger.fingerID; g_tc.x0 = g_tc.lx = x; g_tc.y0 = g_tc.ly = y; g_tc.t0 = g_tc.lt = t; g_tc.pan = false; g_tc.vx = g_tc.vy = 0; }
+        else g_tc.pan = true;   /* a second finger: never a tap */
+        return;
+    }
+    if (ev->type == SDL_EVENT_FINGER_MOTION) {
+        if (ev->tfinger.fingerID != g_tc.id || !g_tc.n) return;
+        if (!g_tc.pan && hypotf(x - g_tc.x0, y - g_tc.y0) > 8) { g_tc.pan = true; g_tc.lx = g_tc.x0; g_tc.ly = g_tc.y0; }
+        if (g_tc.pan) {
+            float dx = x - g_tc.lx, dy = y - g_tc.ly; double dt = t - g_tc.lt;
+            if (dx || dy) wheel_apply(a, g_tc.x0, g_tc.y0, -dx, -dy);
+            if (dt > 0) { float k = (float)LMIN(dt / 50.0, 1.0); g_tc.vx += (float)(-dx / dt * 1000 - g_tc.vx) * k; g_tc.vy += (float)(-dy / dt * 1000 - g_tc.vy) * k; }
+            g_tc.lx = x; g_tc.ly = y; g_tc.lt = t;
+        }
+        return;
+    }
+    if (g_tc.n > 0) g_tc.n--;
+    if (ev->tfinger.fingerID != g_tc.id) return;
+    g_tc.n = 0;
+    if (ev->type == SDL_EVENT_FINGER_CANCELED) return;
+    if (g_tc.pan) {
+        if (t - g_tc.lt < 80 && hypotf(g_tc.vx, g_tc.vy) > 120) { g_fl.on = true; g_fl.x = g_tc.x0; g_fl.y = g_tc.y0; g_fl.vx = g_tc.vx; g_fl.vy = g_tc.vy; g_fl.t = t; }
+        return;
+    }
+    int clicks = t - g_tc.tap_t < 350 && hypotf(x - g_tc.tap_x, y - g_tc.tap_y) < 24 ? 2 : 1;
+    g_tc.tap_t = clicks == 2 ? 0 : t; g_tc.tap_x = x; g_tc.tap_y = y;
+    push_mouse(SDL_EVENT_MOUSE_MOTION, x, y, 0); push_mouse(SDL_EVENT_MOUSE_BUTTON_DOWN, x, y, clicks); push_mouse(SDL_EVENT_MOUSE_BUTTON_UP, x, y, clicks);
+}
+/* Momentum scrolling after a flick, UIScrollView-like deceleration; true while still moving. */
+static bool touch_fling(App *a) {
+    if (!g_fl.on) return false;
+    double t = now_ms(), dt = t - g_fl.t; g_fl.t = t;
+    if (dt <= 0) return true;
+    float dec = powf(0.998f, (float)dt);
+    float dx = g_fl.vx * (float)dt / 1000, dy = g_fl.vy * (float)dt / 1000;
+    g_fl.vx *= dec; g_fl.vy *= dec;
+    if (fabsf(dx) >= 0.01f || fabsf(dy) >= 0.01f) wheel_apply(a, g_fl.x, g_fl.y, dx, dy);
+    if (hypotf(g_fl.vx, g_fl.vy) < 20) g_fl.on = false;
+    return g_fl.on;
+}
+#endif
+
 int main(int argc, char **argv) {
     g_no_paint_only = getenv("LUMEN_NO_PAINT_ONLY") != NULL;
     g_main_thr = pthread_self();
     install_crash_handler();
     const char *start = argc > 1 ? argv[1] : "https://en.wikipedia.org/wiki/Web_browser";
     SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
+#ifdef LUMEN_IOS
+    SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");   /* fingers are turned into taps / scrolls below */
+    SDL_SetHint(SDL_HINT_IOS_HIDE_HOME_INDICATOR, "0");
+    { const char *bp = SDL_GetBasePath(); char cp[1024];   /* app bundle ships cacert.pem + icudtl.dat */
+      if (bp) { snprintf(cp, sizeof cp, "%scacert.pem", bp); if (access(cp, R_OK) == 0) setenv("SSL_CERT_FILE", cp, 0); } }
+#endif
 #ifdef __linux__
     /* CPU frames go straight to the X11 window surface (XShm); otherwise SDL backs the surface with a GL
        renderer, which on a GPU-less host is llvmpipe burning every core per present */
@@ -2290,7 +2364,11 @@ int main(int argc, char **argv) {
     }
     bool want_gpu = !getenv("LUMEN_NO_GPU") && g_gpu_backend != GPU_BACKEND_CPU;
     int ww = 1280, wh = 840; { const char *e = getenv("LUMEN_WINDOW"); if (e) sscanf(e, "%dx%d", &ww, &wh); }   /* e.g. LUMEN_WINDOW=800x600 */
-    a.win = SDL_CreateWindow("Lumen", ww, wh, SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY | (want_gpu && !strcmp(SDL_GetPlatform(), "macOS") ? SDL_WINDOW_METAL : 0));
+    a.win = SDL_CreateWindow("Lumen", ww, wh, SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY | (want_gpu && (!strcmp(SDL_GetPlatform(), "macOS") || !strcmp(SDL_GetPlatform(), "iOS")) ? SDL_WINDOW_METAL : 0)
+#ifdef LUMEN_IOS
+        | SDL_WINDOW_BORDERLESS   /* full screen without the status bar */
+#endif
+        );
     if (!a.win) { fprintf(stderr, "SDL_CreateWindow: %s\n", SDL_GetError()); return 1; }
     g_dialog_win = a.win; js_pick_files = pick_files;
     set_window_icon(a.win);
@@ -2302,7 +2380,7 @@ int main(int argc, char **argv) {
     if (want_gpu) {
         GpuSurfSrc src = { 0 }; bool ok = false;
         SDL_PropertiesID pr = SDL_GetWindowProperties(a.win);
-        if (!strcmp(SDL_GetPlatform(), "macOS")) { a.mview = SDL_Metal_CreateView(a.win); if (a.mview) { src.kind = GPU_SURF_METAL; src.a = SDL_Metal_GetLayer(a.mview); ok = src.a != NULL; } }
+        if (!strcmp(SDL_GetPlatform(), "macOS") || !strcmp(SDL_GetPlatform(), "iOS")) { a.mview = SDL_Metal_CreateView(a.win); if (a.mview) { src.kind = GPU_SURF_METAL; src.a = SDL_Metal_GetLayer(a.mview); ok = src.a != NULL; } }
         else if (SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, NULL)) { src.kind = GPU_SURF_WAYLAND; src.a = SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER, NULL); src.b = SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, NULL); ok = true; }
         else if (SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_X11_DISPLAY_POINTER, NULL)) { src.kind = GPU_SURF_XLIB; src.a = SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_X11_DISPLAY_POINTER, NULL); src.win = (uint64_t)SDL_GetNumberProperty(pr, SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0); ok = true; }
         else if (SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_ANDROID_WINDOW_POINTER, NULL)) { src.kind = GPU_SURF_ANDROID; src.a = SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_ANDROID_WINDOW_POINTER, NULL); ok = true; }
@@ -2405,17 +2483,27 @@ int main(int argc, char **argv) {
             if (sent < cnt && now_ms() - t0 > st + sent * 16.0) { SDL_Event we = {0}; we.type = SDL_EVENT_MOUSE_WHEEL; we.wheel.y = wdy; we.wheel.mouse_x = wx; we.wheel.mouse_y = wy; SDL_PushEvent(&we); sent++; }
             if (sent < cnt && to > 16) to = 16;
         }
+#ifdef LUMEN_IOS
+        if (touch_fling(&a) && to > 8) to = 8;
+#endif
         if (!SDL_WaitEventTimeout(&ev, to)) { if (a.t->loading || getenv("LUMEN_SHOT")) a.dirty = true; }
         else do {
             bool wheel0 = ev.type == SDL_EVENT_MOUSE_WHEEL && !ev.wheel.x && !ev.wheel.y;
             if ((ev.type >= SDL_EVENT_KEY_DOWN && ev.type <= SDL_EVENT_TEXT_INPUT) || (ev.type >= SDL_EVENT_MOUSE_MOTION && ev.type <= SDL_EVENT_MOUSE_WHEEL && !wheel0)) a.last_input = now_ms();
-            if (ev.type != EV_NET && ev.type != SDL_EVENT_MOUSE_WHEEL) a.vonly = false;
+            if (ev.type != EV_NET && ev.type != SDL_EVENT_MOUSE_WHEEL && !(ev.type >= SDL_EVENT_FINGER_DOWN && ev.type <= SDL_EVENT_FINGER_CANCELED)) a.vonly = false;
             js_key_mods = key_mods(SDL_GetModState());
             { SDL_MouseButtonFlags mb = SDL_GetMouseState(NULL, NULL); js_buttons = (mb & SDL_BUTTON_LMASK ? 1 : 0) | (mb & SDL_BUTTON_RMASK ? 2 : 0) | (mb & SDL_BUTTON_MMASK ? 4 : 0); }
             switch (ev.type) {
             case SDL_EVENT_QUIT: quit = true; break;
             case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: case SDL_EVENT_WINDOW_RESIZED: update_size(&a); break;
             case SDL_EVENT_WINDOW_EXPOSED: a.dirty = true; break;
+#ifdef LUMEN_IOS
+            case SDL_EVENT_FINGER_DOWN: case SDL_EVENT_FINGER_MOTION: case SDL_EVENT_FINGER_UP: case SDL_EVENT_FINGER_CANCELED: touch_event(&a, &ev); break;
+            case SDL_EVENT_WILL_ENTER_BACKGROUND: if (*cookie_path) { cookies_save(cookie_path); cookies_saved_at = now_ms(); } break;
+            case SDL_EVENT_DID_ENTER_BACKGROUND: g_bg = true; break;
+            case SDL_EVENT_WILL_ENTER_FOREGROUND: case SDL_EVENT_DID_ENTER_FOREGROUND: g_bg = false; update_size(&a); a.dirty = true; a.vonly = false; break;
+            case SDL_EVENT_LOW_MEMORY: g_lowmem = media_lowmem = true; a.dirty = true; break;   /* Lite mode drops off-screen images/media */
+#endif
             case SDL_EVENT_MOUSE_WHEEL: {
                 /* whole-number deltas come from a mouse wheel: one fixed step per notch; fractional ones from a trackpad */
                 bool notch = ev.wheel.x == roundf(ev.wheel.x) && ev.wheel.y == roundf(ev.wheel.y);
@@ -2588,7 +2676,7 @@ int main(int argc, char **argv) {
         net_poll();
         { Tab *act = a.t; double tn = now_ms(); for (int i = 0; i < a.ntabs; i++) { a.t = a.tabs[i]; if (a.t->limited) { a.t->budget = LMIN(a.t->budget + a.t->lim * (tn - a.t->bud_t), 100); a.t->bud_t = tn; if (a.t->budget < 0) continue; } if (a.t->cur && a.t->cur->js) { double c0 = now_ms(); js_tick(a.t->cur->js); restyle(&a); fire_img_events(a.t->cur); double c = now_ms() - c0; a.t->cpu_ms += c; if (a.t->limited) a.t->budget -= c; } } a.t = act; if (a.t->cur && a.t->cur->js) frames_tick(&a); }
         edit_sel_sync(&a);
-        if (a.dirty) { double r0 = now_ms(); render(&a); a.t->cpu_ms += now_ms() - r0; }
+        if (a.dirty && !g_bg) { double r0 = now_ms(); render(&a); a.t->cpu_ms += now_ms() - r0; }
         cpu_monitor(&a);
         { float want = a.t->info || *g_notice ? INFOH : 0; if (want != g_info_h) { g_info_h = want; for (int i = 0; i < a.ntabs; i++) a.tabs[i]->relayout = true; a.dirty = true; a.vonly = false; } }
         if (*cookie_path && now_ms() - cookies_saved_at > 5000) { cookies_save(cookie_path); cookies_saved_at = now_ms(); }
