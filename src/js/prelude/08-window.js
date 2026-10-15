@@ -24,18 +24,21 @@ const ioRun = () => { ioPending = false; for (const o of [...ioAll]) if (o._t.si
 const ioKick = () => { if (!ioPending) { ioPending = true; setTimeout(ioRun, 0); } if (!ioTimer) ioTimer = setInterval(() => { if (!ioAll.size) { clearInterval(ioTimer); ioTimer = 0; } else ioRun(); }, 300); };
 class PerformanceObserver { constructor(cb) { this._cb = cb; } observe() {} disconnect() {} takeRecords() { return []; } static get supportedEntryTypes() { return []; } }
 class Storage {
-    constructor() { def(this, '_m', new Map()); }
+    constructor(save) { def(this, '_m', new Map()); def(this, '_s', save || null); }
     get length() { return this._m.size; } key(i) { return [...this._m.keys()][i] ?? null; }
     getItem(k) { return this._m.has(String(k)) ? this._m.get(String(k)) : null; }
-    setItem(k, v) { this._m.set(String(k), String(v)); } removeItem(k) { this._m.delete(String(k)); } clear() { this._m.clear(); }
+    setItem(k, v) { this._m.set(String(k), String(v)); this._s?.(this._m); } removeItem(k) { if (this._m.delete(String(k))) this._s?.(this._m); } clear() { this._m.clear(); this._s?.(this._m); }
 }
-const storageProxy = () => new Proxy(new Storage(), {
+const storageProxy = (st = new Storage()) => new Proxy(st, {
     get(t, k) { if (typeof k !== 'string' || k in t) { const v = Reflect.get(t, k, t); return typeof v === 'function' ? v.bind(t) : v; } return t.getItem(k) ?? undefined; },
     set(t, k, v) { t.setItem(k, v); return true; }, deleteProperty(t, k) { t.removeItem(k); return true; },
     has(t, k) { return k in t || t._m.has(String(k)); }, ownKeys(t) { return [...t._m.keys()]; },
     getOwnPropertyDescriptor(t, k) { return t._m.has(k) ? { value: t._m.get(k), enumerable: true, configurable: true, writable: true } : undefined; },
 });
-const localStorage = storageProxy(), sessionStorage = storageProxy();
+const ssOrigin = (() => { try { return new URL(N.url()).origin; } catch { return 'null'; } })();
+const sessionStorage = storageProxy(new Storage(ssOrigin === 'null' ? null : m => N.ssSet(ssOrigin, JSON.stringify([...m]))));
+try { const j = ssOrigin !== 'null' && N.ssGet(ssOrigin); if (j) for (const [k, v] of JSON.parse(j)) sessionStorage.setItem(k, v); } catch {}
+const localStorage = storageProxy();
 class Location {
     get href() { return N.url(); } set href(v) { this.assign(v); }
     assign(u) { const n = new URL(String(u), document.baseURI); const cur = new URL(N.url()); if (n.href.split('#')[0] === cur.href.split('#')[0] && n.hash) { const old = cur.href; N.setUrl(n.href, true); setTimeout(() => dispatch(G, new HashChangeEvent('hashchange', { oldURL: old, newURL: n.href }))); } else N.navigate(n.href); }

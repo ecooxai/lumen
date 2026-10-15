@@ -1591,6 +1591,9 @@ static void page_start_js(App *a, Page *p) {
     JsHost h = { a->t, &p->e->media, h_navigate, h_set_url, h_history_go, h_viewport, h_scroll_to, h_hit, h_history_len, h_navigate_post, h_sync, h_frame_open, h_frame_close };
     double t0 = now_ms();
     sync_sheets(p, true);
+    Node **sl = NULL; int nsl = 0;   /* parser-inserted stylesheets were fetched before JS existed: fire their load after DOMContentLoaded */
+    for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node))
+        if (n->type == NODE_ELEMENT && is_sheet_link(n)) { sl = xrealloc(sl, sizeof *sl * (size_t)(nsl + 1)); n->refcount++; sl[nsl++] = n; }
     p->js = js_new(p->d, &h);
     js_eval(p->js, "document.addEventListener('lumenmediactl',function(e){var v=e.target;if(!(v instanceof HTMLMediaElement))return;e.stopImmediatePropagation();"
         "if(e.key==='toggle'){if(v.paused)v.play();else v.pause()}else if(e.key.indexOf('seek:')===0&&v.duration>0)v.currentTime=v.duration*parseFloat(e.key.slice(5))},true)", "lumen:ctl");
@@ -1612,6 +1615,11 @@ static void page_start_js(App *a, Page *p) {
     }
     js_set_ready_state(p->js, 1);
     js_dispatch(p->js, &p->d->node, "DOMContentLoaded", "Event", true, false, 0, 0, 0, NULL);
+    for (int i = 0; i < nsl; i++) {
+        if (sl[i]->flags & NF_CONNECTED) js_dispatch(p->js, sl[i], "load", "Event", false, false, 0, 0, 0, NULL);
+        node_release(sl[i]);
+    }
+    free(sl);
     js_set_ready_state(p->js, 2);
     js_dispatch_window(p->js, "load");
     fprintf(stderr, "lumen: ran %d scripts in %.0fms\n", p->nscripts, now_ms() - t0);
@@ -2055,7 +2063,7 @@ static void tab_open(App *a) {
     navigate(a, "lumen://newtab", true);
     a->editing = true; a->sel_all = 1; a->t->url[0] = 0; text_area(a, NULL); text_input(a->win, true);
 }
-static void tab_free(Tab *t) { if (t->cur) page_free(t->cur); for (int k = 0; k < t->nhist; k++) free(t->hist[k]); free(t); }
+static void tab_free(Tab *t) { js_session_forget(t); if (t->cur) page_free(t->cur); for (int k = 0; k < t->nhist; k++) free(t->hist[k]); free(t); }
 static void tab_close(App *a, int i, bool *quit) {
     if (a->ntabs == 1) { *quit = true; return; }
     Tab *t = a->tabs[i]; int w = t->ws; bool act = i == a->ti;

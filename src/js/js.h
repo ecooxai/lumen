@@ -38,6 +38,7 @@ void js_mem_stats(size_t *heap, size_t *external);
 void js_set_background(JsCtx *c, bool bg);
 bool js_busy(JsCtx *c);   /* fetches in flight */
 void js_free(JsCtx *c);
+void js_session_forget(void *tab_ud);   /* drop a closed tab's sessionStorage */
 /* run a parser-inserted script (sets document.currentScript) */
 void js_run_script(JsCtx *c, Node *script, const char *src, size_t n, const char *name);
 /* strict MIME check for classic scripts: image/audio/video/csv responses never execute (Chrome refuses them) */

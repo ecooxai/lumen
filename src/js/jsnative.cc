@@ -5,6 +5,7 @@
 #include <sys/random.h>
 #endif
 #include <vector>
+#include <map>
 #include <openssl/core_names.h>
 #include <openssl/ecdsa.h>
 #include <openssl/evp.h>
@@ -285,6 +286,13 @@ FN(navigatePost) {
 void (*js_save_file)(const char *, const void *, size_t);
 FN(saveFile) { CTX; std::string nm = S(0); const char *p = nullptr; size_t n = 0; if (!bytes_of(a[1], &p, &n) || !js_save_file) RET(false); js_save_file(nm.c_str(), p, n); RET(true); }
 FN(histGo) { CTX; if (c->host.history_go) c->host.history_go(c->host.ud, a[0]->Int32Value(ctx).FromMaybe(0)); }
+/* sessionStorage outlives page loads within a tab: keyed by (tab, origin) */
+static std::map<std::pair<void *, std::string>, std::string> g_session;
+FN(ssGet) { CTX; auto it = g_session.find({c->host.ud, S(0)}); RET(nstr(iso, it == g_session.end() ? nullptr : it->second.c_str())); }
+FN(ssSet) { CTX; g_session[{c->host.ud, S(0)}] = S(1); }
+extern "C" void js_session_forget(void *ud) {
+    for (auto it = g_session.begin(); it != g_session.end();) it = it->first.first == ud ? g_session.erase(it) : std::next(it);
+}
 FN(histLen) { CTX; RET(c->host.history_len ? c->host.history_len(c->host.ud) : 1); }
 FN(timer) {
     CTX;
@@ -877,7 +885,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(matches); REG(byId); REG(clone); REG(doc); REG(contains); REG(connected); REG(host); REG(attachShadow);
     REG(templateContent); REG(rect); REG(vrect); REG(clipSet); REG(clipGet); REG(scrollPos); REG(setScroll); REG(computed); REG(value); REG(setValue); REG(checked); REG(setChecked); REG(pickFiles);
     REG(focus); REG(active); REG(cookie); REG(setCookie); REG(url); REG(setUrl); REG(navigate); REG(navigatePost); REG(saveFile); REG(histGo);
-    REG(histLen); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
+    REG(histLen); REG(ssGet); REG(ssSet); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
     REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove); REG(mediaAbort);
     REG(mediaBuffered); REG(mediaEos); REG(mediaSetDuration); REG(mediaPlay); REG(mediaPause); REG(mediaSeek);
     REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(readyState); REG(quirks);
