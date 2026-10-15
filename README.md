@@ -94,6 +94,8 @@ and cross-origin subresources are not yet blocked under COEP.
 - **Mac Catalyst** (`make PLAT=cat app`, or `JIT=1`): a native Mac `.app` built from the same sources and UIKit
   shell; JIT works directly (signed with `com.apple.security.cs.allow-jit`). Run it like the desktop build:
   `xattr -dr com.apple.quarantine Lumen.app; open Lumen.app`.
+  To try jitless mode with a JIT build, start it with `LUMEN_V8_FLAGS="--jitless --wasm-jitless"`; it then
+  logs `lumen: V8 jitless (LUMEN_V8_FLAGS)`.
 - **The IPA itself** runs on Apple Silicon Macs as an iPad app. macOS only launches iPad apps with a real Apple
   signature: install it from Xcode (*Devices* → your Mac → *+* with the IPA after re-signing it with your Apple ID,
   e.g. via Sideloadly's re-sign), or use **PlayCover** (open the IPA, it re-signs and runs it). JIT works on the Mac
@@ -108,6 +110,7 @@ make PLAT=sim app              # build-sim/Lumen.app for the iOS Simulator
 make PLAT=ios ipa              # build-ios/Lumen-jitless.ipa for iPad / iPhone
 make PLAT=ios JIT=1 ipa        # build-ios-jit/Lumen-jit.ipa (needs the -jit V8 builds)
 make PLAT=cat app              # build-cat/Lumen.app, Mac Catalyst
+make PLAT=cat JIT=1 app        # build-cat-jit/Lumen.app, Mac Catalyst with JIT
 xcrun simctl install booted build-sim/Lumen.app && xcrun simctl launch booted com.ecooxai.lumen
 ```
 

@@ -101,7 +101,9 @@ App Store acceptance is not a goal (sideload / Xcode run).
 - Then: out/catalyst-jit, out/ios-device-jit (same patches), `make PLAT=cat JIT=1 app`, `make PLAT=ios JIT=1 ipa`.
 - DONE 2026-10-15: out/catalyst-jit built; `make PLAT=cat JIT=1 app` runs (`V8 JIT enabled`, Wikipedia 1.18 s,
   0-2% settled CPU, wasm tests pass with JIT and with `LUMEN_V8_FLAGS="--jitless --wasm-jitless"`).
-  Still open: out/ios-device-jit, `Lumen-jit.ipa`.
+  Still open: out/ios-device-jit (1885 ninja steps left at 11:30 UTC-7, `ninja -C out/ios-device-jit
+  v8_monolith` running), then `make PLAT=ios JIT=1 ipa` -> `Lumen-jit.ipa`. No separate jitless Catalyst V8 is
+  built; the JIT build switches to jitless with `LUMEN_V8_FLAGS="--jitless --wasm-jitless"`.
 - New: workspaces get a default SF Symbol icon (main.c ws_new); file:// viewer (main.c file_page): compact folder
   list, image/video 1:1 device px with zoom steps 10..300%, audio card, OBJ SVG viewer (drag rotate).
   Video frame in LUMEN_SHOT screenshot rendered white – check whether that is the shot path or real.
