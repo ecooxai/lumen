@@ -111,3 +111,28 @@ int mac_tab_menu(SDL_Window *w, float x, float y, int mode, int lim, bool vctl, 
         { @"Lite mode (release off-screen media to save RAM)", MENU_TAB_LITE, lite, nil } };
     return sheet(w, x, y, @"CPU limit for this tab", m, (int)(sizeof m / sizeof *m));
 }
+
+/* SDL's UIKit SDL_WaitEventTimeout polls the run loop every ms; block in CFRunLoop instead and
+   wake it through a signalled source whenever any thread pushes an SDL event. */
+static CFRunLoopSourceRef g_wake_src;
+static void wake_perform(void *info) { (void)info; }
+static bool SDLCALL wake_watch(void *ud, SDL_Event *e) {
+    (void)ud; (void)e;
+    CFRunLoopSourceSignal(g_wake_src);
+    CFRunLoopWakeUp(CFRunLoopGetMain());
+    return true;
+}
+void ios_wait_init(void) {
+    CFRunLoopSourceContext c = {0};
+    c.perform = wake_perform;
+    g_wake_src = CFRunLoopSourceCreate(NULL, 0, &c);
+    CFRunLoopAddSource(CFRunLoopGetMain(), g_wake_src, kCFRunLoopCommonModes);
+    SDL_AddEventWatch(wake_watch, NULL);
+}
+bool ios_wait_event(SDL_Event *ev, int to_ms) {
+    if (SDL_PollEvent(ev)) return true;
+    @autoreleasepool {
+        CFRunLoopRunInMode(kCFRunLoopDefaultMode, to_ms < 0 ? 3600.0 : to_ms / 1000.0, true);
+    }
+    return SDL_PollEvent(ev);
+}

@@ -43,6 +43,10 @@ static char g_notice[256];   /* dismissable error notice shown in the info bar *
 #ifdef __APPLE__
 #include "macui.h"
 #ifdef LUMEN_IOS
+void ios_wait_init(void);
+bool ios_wait_event(SDL_Event *ev, int to_ms);
+#endif
+#ifdef LUMEN_IOS
 #define TLW 0.f
 #else
 #define TLW 78.f
@@ -2328,6 +2332,7 @@ int main(int argc, char **argv) {
     SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
 #ifdef LUMEN_IOS
     SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");   /* fingers are turned into taps / scrolls below */
+    ios_wait_init();
     SDL_SetHint(SDL_HINT_IOS_HIDE_HOME_INDICATOR, "0");
     { const char *bp = SDL_GetBasePath(); char cp[1024];   /* app bundle ships cacert.pem + icudtl.dat */
       if (bp) { snprintf(cp, sizeof cp, "%scacert.pem", bp); if (access(cp, R_OK) == 0) setenv("SSL_CERT_FILE", cp, 0); } }
@@ -2486,7 +2491,12 @@ int main(int argc, char **argv) {
 #ifdef LUMEN_IOS
         if (touch_fling(&a) && to > 8) to = 8;
 #endif
-        if (!SDL_WaitEventTimeout(&ev, to)) { if (a.t->loading || getenv("LUMEN_SHOT")) a.dirty = true; }
+#ifdef LUMEN_IOS
+        if (!ios_wait_event(&ev, to)) {
+#else
+        if (!SDL_WaitEventTimeout(&ev, to)) {
+#endif
+            if (a.t->loading || getenv("LUMEN_SHOT")) a.dirty = true; }
         else do {
             bool wheel0 = ev.type == SDL_EVENT_MOUSE_WHEEL && !ev.wheel.x && !ev.wheel.y;
             if ((ev.type >= SDL_EVENT_KEY_DOWN && ev.type <= SDL_EVENT_TEXT_INPUT) || (ev.type >= SDL_EVENT_MOUSE_MOTION && ev.type <= SDL_EVENT_MOUSE_WHEEL && !wheel0)) a.last_input = now_ms();
