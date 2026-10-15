@@ -1,4 +1,14 @@
 const allColl = new WeakMap(), allMeta = new WeakMap();
+const baseURICache = new WeakMap();
+function documentBaseURI(doc) {
+    const version = N.version(doc), url = N.url(), cached = baseURICache.get(doc);
+    if (cached && cached.version === version && cached.url === url) return cached.value;
+    const base = N.query(doc, 'base[href]', false);
+    const parsed = base && N.urlParse(N.attr(base, 'href'), url);
+    const value = parsed ? parsed[0] : url;
+    baseURICache.set(doc, { version, url, value });
+    return value;
+}
 const allNamed = (l, k) => { for (const e of l) if (e.id === k || (e.getAttribute('name') === k)) return e; return null; };
 class HTMLAllCollection {
     constructor() { illegal(); }
@@ -22,7 +32,7 @@ methods(Document.prototype, {
     get title() { const t = N.query(this, 'title', false); return t ? N.text(t).replace(/\s+/g, ' ').trim() : ''; },
     set title(v) { let t = N.query(this, 'title', false); if (!t) { const h = this.head; if (!h) return; t = N.create('title', 0); insertNode(h, t, null); } t.textContent = v; },
     get URL() { return this.__url ?? N.url(); }, get documentURI() { return this.__url ?? N.url(); },
-    get baseURI() { const b = N.query(this, 'base[href]', false); const u = N.url(); if (b) { const r = N.urlParse(N.attr(b, 'href'), u); if (r) return r[0]; } return u; },
+    get baseURI() { return documentBaseURI(this); },
     get location() { return this === document ? location : null; }, set location(v) { if (this === document) location.href = v; },
     get domain() { const r = N.urlParse(N.url(), null); return r ? r[5] : ''; }, set domain(v) {},
     get referrer() { return ''; },

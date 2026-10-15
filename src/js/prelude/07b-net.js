@@ -73,12 +73,12 @@ function preflightOk(url, method, hs, status, finalUrl, hdrs, cred) {
     if (!/^(GET|HEAD|POST)$/.test(method) && !ms.includes(method) && (cred || !ms.includes('*'))) return false;
     return hs.every(h => hl.includes(h) || (!cred && h !== 'authorization' && hl.includes('*')));
 }
-function corsSend(cred, onId, method, url, flat, body, cb, st) {
+function corsSend(cred, onId, method, url, flat, body, cb, stream) {
     const hs = needsPreflight(method, url, flat);
-    if (!hs) return onId(N.fetch(method, url, flat, body, cb, st && st.head, st && st.chunk));
-    onId(N.fetch('OPTIONS', url, preflightHdrs(method, hs), null, (status, st, u, hdrs, b, err) => {
+    if (!hs) return onId(N.fetch(method, url, flat, body, cb, stream && stream.head, stream && stream.chunk));
+    onId(N.fetch('OPTIONS', url, preflightHdrs(method, hs), null, (status, statusText, u, hdrs, b, err) => {
         if (err || !preflightOk(url, method, hs, status, u, hdrs || [], cred)) return cb(0, '', url, [], null, true);
-        onId(N.fetch(method, url, flat, body, cb, st && st.head, st && st.chunk));
+        onId(N.fetch(method, url, flat, body, cb, stream && stream.head, stream && stream.chunk));
     }));
 }
 function corsSendSync(cred, method, url, flat, body) {

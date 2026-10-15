@@ -1,5 +1,33 @@
 # Lumen: handoff notes
 
+## Vulkan fetch streaming and URL lookup repair (2026-10-15)
+
+Vulkan remains first; OpenGL ES and CPU/software remain deferred. Daily-browser
+goal remains active. See `docs/android-vulkan-fetch-20261015.md` for evidence.
+
+Fixed preflight callback shadowing that buffered streamed fetch responses until
+completion. Actual-phone first data improved from about 3,010 ms to 51–74 ms.
+Both denied-preflight and denied-response checks still pass. Rounded fractional
+JS timer waits upward to avoid premature main-loop polling; this alone did not
+resolve excess YouTube error-page idle CPU (still about 4.43%).
+
+A playback V8 profile found repeated whole-document searches for `baseURI`.
+A WeakMap cache keyed by document, mutation version and page URL reduced 250
+reads on a large device fixture from 215.7 ms to 2.9 ms. All six mutation/history
+correctness checks pass. This is not a whole-site speed or stability result.
+
+26 focused host tests and final device streaming/base-URL fixtures pass.
+Final clean APK installed, native/signature checks pass:
+`build/codex-youtube-20261015/lumen-vulkan-stream-cache-debug.apk`, 85,240,084 bytes,
+SHA256 `7a97676eeea48c2c477e706ed287f4987a5d086927397ef70eca25201510aadc`.
+Temporary native profiling hooks are removed. Credentials were not entered.
+
+YouTube remains intermittent: some diagnostic runs play for minutes, others
+fail near 53–56 s despite healthy native queues and HTTP 200 media requests.
+Final cache APK still needs actual-site acceptance and error-page idle profiling.
+Do not claim YouTube fixed or daily readiness. Next: Vulkan YouTube/scrolling,
+then ChatGPT/Gemini/Google login, composer CPU, zoom and remaining daily features.
+
 ## Vulkan YUV video and audio lifecycle repair (2026-10-15)
 
 User priority remains Vulkan first until solid, then OpenGL ES, then CPU/software.

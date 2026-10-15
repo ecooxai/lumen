@@ -2659,6 +2659,13 @@ static void recover_from_crash(App *a, int sig) {
     a->t = act;
 }
 
+static int deadline_wait_ms(int timeout, double remaining) {
+    if (!(remaining < timeout)) return timeout;
+    /* SDL waits in whole milliseconds. Rounding down spins the main loop
+       during the fractional millisecond before each JavaScript deadline. */
+    return remaining <= 0 ? 0 : (int)ceil(remaining);
+}
+
 int main(int argc, char **argv) {
     g_no_paint_only = getenv("LUMEN_NO_PAINT_ONLY") != NULL;
     g_main_thr = pthread_self();
@@ -2784,7 +2791,7 @@ int main(int argc, char **argv) {
         }
         SDL_Event ev;
         int to = a.t->loading ? 120 : 1000;
-        for (int i = 0; i < a.ntabs; i++) { Tab *tb = a.tabs[i]; if (tb->cur && tb->cur->js) { double dl = js_next_deadline(tb->cur->js) - now_ms(); if (tb->limited && tb->budget < 0) dl = LMAX(dl, -tb->budget / tb->lim - (now_ms() - tb->bud_t)); if (dl < to) to = dl < 0 ? 0 : (int)dl; } }
+        for (int i = 0; i < a.ntabs; i++) { Tab *tb = a.tabs[i]; if (tb->cur && tb->cur->js) { double dl = js_next_deadline(tb->cur->js) - now_ms(); if (tb->limited && tb->budget < 0) dl = LMAX(dl, -tb->budget / tb->lim - (now_ms() - tb->bud_t)); to = deadline_wait_ms(to, dl); } }
         if (net_pending() && to > 50) to = 50;
         if (g_hud && a.side > 0) {
             static double lh; double th = now_ms();
