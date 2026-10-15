@@ -198,6 +198,8 @@ static Image *node_img(Node *n) {
 static Image *url_img(const char *u) { return u ? cache_get(u) : NULL; }
 static bool img_size(Node *n, float *w, float *h) {
     if (n->tag == A_iframe) return false;
+    MpState ms;
+    if (n->tag == A_video && media_state_for(n, &ms) && ms.w > 0 && ms.h > 0) { *w = (float)ms.w; *h = (float)ms.h; return true; }
     g_in_layout = true; Image *im = node_img(n); g_in_layout = false;
     if (!im) {
         const char *s = n->tag == A_img ? node_attr(n, "src") : NULL; char *u = s ? url_join(n->doc->url, s) : NULL;
