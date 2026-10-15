@@ -878,6 +878,7 @@ void js_viewport_changed(JsCtx *c) {
         (void)jcall(c, f.As<v8::Function>(), v8::Undefined(iso), 0, nullptr);
 }
 void js_tick(JsCtx *c) {
+    js_ls_flush(false);
     if (!c || c->dead) return;
     tick_one(c);
     frames_scan(c);
@@ -959,7 +960,7 @@ bool js_anim_cancel(Node *n, const char *name) {
 
 }
 
-void js_set_background(JsCtx *c, bool bg) {
+void js_set_background(JsCtx *c, bool bg) { if (bg) js_ls_flush(true);
     if (!c || !c->iso) return;
     double t = now_ms();
     if (bg != c->bg) {

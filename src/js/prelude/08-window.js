@@ -27,7 +27,7 @@ class Storage {
     constructor(save) { def(this, '_m', new Map()); def(this, '_s', save || null); }
     get length() { return this._m.size; } key(i) { return [...this._m.keys()][i] ?? null; }
     getItem(k) { return this._m.has(String(k)) ? this._m.get(String(k)) : null; }
-    setItem(k, v) { this._m.set(String(k), String(v)); this._s?.(this._m); } removeItem(k) { if (this._m.delete(String(k))) this._s?.(this._m); } clear() { this._m.clear(); this._s?.(this._m); }
+    setItem(k, v) { k = String(k); v = String(v); this._m.set(k, v); this._s?.(this._m, 's', k, v); } removeItem(k) { k = String(k); if (this._m.delete(k)) this._s?.(this._m, 'd', k); } clear() { this._m.clear(); this._s?.(this._m, 'c'); }
 }
 const storageProxy = (st = new Storage()) => new Proxy(st, {
     get(t, k) { if (typeof k !== 'string' || k in t) { const v = Reflect.get(t, k, t); return typeof v === 'function' ? v.bind(t) : v; } return t.getItem(k) ?? undefined; },
@@ -38,7 +38,8 @@ const storageProxy = (st = new Storage()) => new Proxy(st, {
 const ssOrigin = (() => { try { return new URL(N.url()).origin; } catch { return 'null'; } })();
 const sessionStorage = storageProxy(new Storage(ssOrigin === 'null' ? null : m => N.ssSet(ssOrigin, JSON.stringify([...m]))));
 try { const j = ssOrigin !== 'null' && N.ssGet(ssOrigin); if (j) for (const [k, v] of JSON.parse(j)) sessionStorage.setItem(k, v); } catch {}
-const localStorage = storageProxy();
+const localStorage = storageProxy(new Storage(ssOrigin === 'null' ? null : (m, op, k, v) => op === 's' ? N.lsSet(ssOrigin, k, v) : op === 'd' ? N.lsDel(ssOrigin, k) : N.lsDel(ssOrigin)));
+try { if (ssOrigin !== 'null') { const a = N.lsGet(ssOrigin); for (let i = 0; i + 1 < a.length; i += 2) localStorage._m.set(a[i], a[i + 1]); } } catch {}
 class Location {
     get href() { return N.url(); } set href(v) { this.assign(v); }
     assign(u) { const n = new URL(String(u), document.baseURI); const cur = new URL(N.url()); if (n.href.split('#')[0] === cur.href.split('#')[0] && n.hash) { const old = cur.href; N.setUrl(n.href, true); setTimeout(() => dispatch(G, new HashChangeEvent('hashchange', { oldURL: old, newURL: n.href }))); } else N.navigate(n.href); }

@@ -1,4 +1,7 @@
 #include <unistd.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <chrono>
 /* Native functions (the `N` object) backing the JS DOM/Web API prelude */
 #include "js_int.h"
 #include <thread>
@@ -296,6 +299,55 @@ FN(histGo) { CTX; if (c->host.history_go) c->host.history_go(c->host.ud, a[0]->I
 static std::map<std::pair<void *, std::string>, std::string> g_session;
 FN(ssGet) { CTX; auto it = g_session.find({c->host.ud, S(0)}); RET(nstr(iso, it == g_session.end() ? nullptr : it->second.c_str())); }
 FN(ssSet) { CTX; g_session[{c->host.ud, S(0)}] = S(1); }
+
+/* localStorage: one process-wide map per origin (shared by all tabs), loaded lazily from
+ * <profile>/localstorage/ and written back at most every 2 s, on backgrounding and at exit */
+struct LsOrigin { std::map<std::string, std::string> m; bool loaded = false, dirty = false; };
+static std::map<std::string, LsOrigin> g_ls;
+static std::mutex g_ls_mu;
+static std::string g_ls_dir;
+static double g_ls_last;
+static std::string ls_file(const std::string &o) {
+    uint64_t h = 1469598103934665603ull; for (unsigned char ch : o) { h ^= ch; h *= 1099511628211ull; }
+    char b[32]; snprintf(b, sizeof b, "%016llx", (unsigned long long)h); return g_ls_dir + b;
+}
+static LsOrigin &ls_get(const std::string &o) {
+    LsOrigin &L = g_ls[o]; if (L.loaded) return L;
+    L.loaded = true; if (g_ls_dir.empty()) return L;
+    FILE *f = fopen(ls_file(o).c_str(), "rb"); if (!f) return L;
+    auto rd = [&](std::string &s) { uint32_t n; if (fread(&n, 4, 1, f) != 1 || n > (64u << 20)) return false; s.resize(n); return !n || fread(&s[0], 1, n, f) == n; };
+    std::string org, k, v;
+    if (rd(org) && org == o) while (rd(k) && rd(v)) L.m[k] = v;
+    fclose(f); return L;
+}
+static void ls_write(const std::string &o, const LsOrigin &L) {
+    std::string p = ls_file(o), t = p + ".tmp"; int fd = open(t.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0600); FILE *f = fd < 0 ? NULL : fdopen(fd, "wb"); if (!f) { if (fd >= 0) close(fd); return; }
+    auto wr = [&](const std::string &s) { uint32_t n = (uint32_t)s.size(); fwrite(&n, 4, 1, f); fwrite(s.data(), 1, n, f); };
+    wr(o); for (auto &kv : L.m) { wr(kv.first); wr(kv.second); }
+    if (fclose(f) == 0) rename(t.c_str(), p.c_str()); else unlink(t.c_str());
+}
+extern "C" void js_ls_flush(bool force) {
+    std::lock_guard<std::mutex> g(g_ls_mu);
+    double t = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now().time_since_epoch()).count();
+    if (!force && t - g_ls_last < 2000) return;
+    g_ls_last = t;
+    if (g_ls_dir.empty()) return;
+    for (auto &e : g_ls) if (e.second.dirty) { ls_write(e.first, e.second); e.second.dirty = false; }
+}
+static void ls_atexit(void) { js_ls_flush(true); }
+extern "C" void js_set_profile_dir(const char *dir) {
+    if (!dir || !*dir || getenv("LUMEN_NO_PERSIST_STORAGE")) return;
+    g_ls_dir = std::string(dir) + "localstorage/"; mkdir(g_ls_dir.c_str(), 0700); atexit(ls_atexit);
+}
+FN(lsGet) {
+    CTX; std::lock_guard<std::mutex> g(g_ls_mu); LsOrigin &L = ls_get(S(0));
+    v8::Local<v8::Context> cx = iso->GetCurrentContext();
+    v8::Local<v8::Array> r = v8::Array::New(iso, (int)L.m.size() * 2); uint32_t i = 0;
+    for (auto &kv : L.m) { r->Set(cx, i++, nstr(iso, kv.first.c_str())).Check(); r->Set(cx, i++, nstr(iso, kv.second.c_str())).Check(); }
+    a.GetReturnValue().Set(r);
+}
+FN(lsSet) { CTX; std::lock_guard<std::mutex> g(g_ls_mu); LsOrigin &L = ls_get(S(0)); L.m[S(1)] = S(2); L.dirty = true; }
+FN(lsDel) { CTX; std::lock_guard<std::mutex> g(g_ls_mu); LsOrigin &L = ls_get(S(0)); if (a.Length() < 2) L.m.clear(); else L.m.erase(S(1)); L.dirty = true; }
 extern "C" void js_session_forget(void *ud) {
     for (auto it = g_session.begin(); it != g_session.end();) it = it->first.first == ud ? g_session.erase(it) : std::next(it);
 }
@@ -910,7 +962,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(matches); REG(byId); REG(clone); REG(doc); REG(contains); REG(connected); REG(host); REG(attachShadow);
     REG(templateContent); REG(rect); REG(vrect); REG(clipSet); REG(clipGet); REG(scrollPos); REG(setScroll); REG(computed); REG(value); REG(setValue); REG(checked); REG(setChecked); REG(setPseudo); REG(pickFiles);
     REG(focus); REG(active); REG(cookie); REG(setCookie); REG(url); REG(setUrl); REG(navigate); REG(navigatePost); REG(saveFile); REG(histGo);
-    REG(histLen); REG(ssGet); REG(ssSet); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
+    REG(histLen); REG(ssGet); REG(ssSet); REG(lsGet); REG(lsSet); REG(lsDel); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
     REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(blobFile); REG(blobFileFree); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove); REG(mediaAbort);
     REG(mediaBuffered); REG(mediaEos); REG(mediaSetDuration); REG(mediaPlay); REG(mediaPause); REG(mediaSeek);
     REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(readyState); REG(quirks); REG(coi);

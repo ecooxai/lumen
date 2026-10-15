@@ -2526,7 +2526,7 @@ int main(int argc, char **argv) {
     App a; memset(&a, 0, sizeof a); g_app = &a; a.nws = 1; a.wsicon[0] = 2; snprintf(a.wsname[0], sizeof a.wsname[0], "Personal"); a.side = getenv("LUMEN_NO_SIDEBAR") ? 0 : SIDEW; tab_new(&a);
     {
         char *pref = SDL_GetPrefPath("lumen", "Lumen"); char sp[1024] = "";
-        if (pref) { snprintf(g_pref, sizeof g_pref, "%s", pref); snprintf(sp, sizeof sp, "%ssettings.txt", pref); SDL_free(pref); }
+        if (pref) { snprintf(g_pref, sizeof g_pref, "%s", pref); js_set_profile_dir(g_pref); snprintf(sp, sizeof sp, "%ssettings.txt", pref); SDL_free(pref); }
         FILE *sf = *sp ? fopen(sp, "r") : NULL; char line[256];
         while (sf && fgets(line, sizeof line, sf)) {
             char k[64]; int v; if (sscanf(line, "%63[^=]=%d", k, &v) != 2) continue;

@@ -196,3 +196,8 @@ App Store acceptance is not a goal (sideload / Xcode run).
 - KNOWN (test harness): with the GPU on, `LUMEN_SHOT` PNGs show a paused video as a white
   box because the video is drawn as a GPU layer; on screen it is correct. Use
   `LUMEN_NO_GPU=1` when a screenshot must show video frames.
+- FIXED (daily use): `localStorage` was in-memory only, so every site lost its settings on
+  restart. It is now one process-wide map per origin (shared by tabs) in `jsnative.cc`,
+  stored under `<pref>/localstorage/<fnv64(origin)>` (mode 0600), written at most every 2 s
+  from `js_tick`, on backgrounding and at exit. Opaque origins (`file:`) are not persisted;
+  `LUMEN_NO_PERSIST_STORAGE=1` turns it off. No quota and no cross-tab `storage` events yet.
