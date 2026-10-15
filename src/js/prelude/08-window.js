@@ -513,6 +513,33 @@ function fireAnim(t, type, name, elapsed, anim) {
         const t = new MediaStreamTrack(RTC_INTERNAL, 'video', 'web-contents-media-stream://' + id); t._.cam = id; t._.dev = 'screen'; t._.display = true;
         res(new MediaStream([t]));
     }));
+    class BlobEvent extends Event { constructor(t, i = {}) { super(t, i); this.data = i.data; this.timecode = i.timecode || 0; } }
+    class MediaRecorder extends EventTarget {
+        constructor(stream, o = {}) {
+            super(); if (!(stream instanceof MediaStream)) throw new TypeError("Failed to construct 'MediaRecorder': parameter 1 is not of type 'MediaStream'.");
+            if (o.mimeType && !MediaRecorder.isTypeSupported(o.mimeType)) throw new DOMException("Failed to construct 'MediaRecorder': Unsupported mimeType: " + o.mimeType, 'NotSupportedError');
+            def(this, '_', { id: 0 }); this.stream = stream; this.mimeType = o.mimeType || 'video/mp4'; this.state = 'inactive';
+            for (const n of ['start', 'stop', 'dataavailable', 'pause', 'resume', 'error']) this['on' + n] = null;
+            this.videoBitsPerSecond = o.videoBitsPerSecond || o.bitsPerSecond || 0; this.audioBitsPerSecond = o.audioBitsPerSecond || 0; this.videoKeyFrameIntervalDuration = 0;
+        }
+        static isTypeSupported(t) { return /^video\/mp4(;|$)/i.test(String(t).trim()) && !/vp8|vp9|opus/i.test(String(t)); }
+        _ev(n, e) { this.dispatchEvent(e || new Event(n)); }
+        start() {
+            if (this.state !== 'inactive') throw new DOMException("Failed to execute 'start' on 'MediaRecorder': The MediaRecorder's state is '" + this.state + "'.", 'InvalidStateError');
+            const t = this.stream.getVideoTracks().find(t => t._.cam && t.readyState === 'live');
+            if (!t) throw new DOMException("Failed to execute 'start' on 'MediaRecorder': only video tracks from getDisplayMedia/getUserMedia can be recorded", 'NotSupportedError');
+            this._.id = N.recStart(t._.cam, this.videoBitsPerSecond | 0); if (!this._.id) throw new DOMException('Could not start the video encoder', 'NotSupportedError');
+            this.state = 'recording'; setTimeout(() => this._ev('start'));
+        }
+        stop() {
+            if (this.state === 'inactive') return; const ab = N.recStop(this._.id); this._.id = 0; this.state = 'inactive';
+            setTimeout(() => { this._ev('dataavailable', new BlobEvent('dataavailable', { data: new Blob([ab], { type: this.mimeType }), timecode: Date.now() })); this._ev('stop'); });
+        }
+        pause() { if (this.state !== 'recording') return; N.recPause(this._.id, true); this.state = 'paused'; setTimeout(() => this._ev('pause')); }
+        resume() { if (this.state !== 'paused') return; N.recPause(this._.id, false); this.state = 'recording'; setTimeout(() => this._ev('resume')); }
+        requestData() { if (this.state === 'inactive') throw new DOMException("Failed to execute 'requestData' on 'MediaRecorder': The MediaRecorder's state is 'inactive'.", 'InvalidStateError'); }
+    }
+    Object.assign(globalThis, { MediaRecorder, BlobEvent });
     const TP = MediaStreamTrack.prototype, stop0 = TP.stop, gs0 = TP.getSettings;
     TP.stop = function () { if (this._.cam) { N.capCamClose(this._.cam); this._.cam = 0; } if (this._.mic) { N.capMicClose(this._.mic); this._.mic = 0; } stop0.call(this); };
     TP.getSettings = function () { if (this._.cam) { const [w, h, f] = N.capCamInfo(this._.cam); return { deviceId: this._.dev, groupId: '', width: w, height: h, frameRate: f, aspectRatio: h ? w / h : 0, facingMode: 'user', resizeMode: 'none' }; }

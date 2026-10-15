@@ -187,7 +187,7 @@ static void cache_fetch(const char *u) {
     ImgSlot *slot = xcalloc(1, sizeof *slot); slot->im = im; slot->done = true;
     SDL_LockMutex(icache_mu); if (!hm_get(&icache, u)) { hm_put(&icache, u, slot); if (im) { g_icache_bytes += (size_t)im->w * (size_t)im->h * 4; g_icache_n++; } } else { image_unref(im); free(slot); } SDL_UnlockMutex(icache_mu);
 }
-Image *cap_frame_for(Node *n); bool cap_screen_active(void); void cap_screen_push(const uint32_t *px, int w, int h, int stride);
+Image *cap_frame_for(Node *n); bool cap_screen_active(void); void cap_rec_tick(void); void cap_screen_push(const uint32_t *px, int w, int h, int stride);
 static Image *node_img(Node *n) {
     if (n->tag == A_iframe) { Page *fp = frame_find(n); return fp && fp->cv.px ? &fp->img : NULL; }
     if (n->tag == A_video) { Image *f = cap_frame_for(n); if (!f) f = media_frame_for(n); if (f) return f; }
@@ -2588,6 +2588,7 @@ int main(int argc, char **argv) {
             int nx = (int)(2000 - (th - lh)) + 1; if (nx < to) to = nx;
         }
         if (cvbuf_changed) { cvbuf_changed = 0; a.dirty = true; a.vonly = false; }
+        cap_rec_tick();
         { int mf = media_tick(); if (mf & 1) { if (!a.dirty && !a.deferred) a.vonly = true; a.dirty = a.vframe = true; } if (mf & 2) a.t->relayout = true; }
         if (!a.editing && (page_focus(&a) || edit_focus(&a)) && !SDL_TextInputActive(a.win)) text_input(a.win, false);
         {
