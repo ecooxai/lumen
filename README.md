@@ -29,6 +29,10 @@ Goals: high performance, low RAM use, robustness.
 - Per-tab CPU limiter: a tab above 80% CPU for 60 s is limited to 40%, with a top bar to lift the limit for 1, 4 or 10 hours
 - Always-visible video controls (global or per tab)
 
+- `file://` URLs open host files and folders: folders as a compact list; images, video, audio and OBJ models in a built-in viewer (images/video at 1:1 device pixels, zoom steps 10/25/50/75/100/150/200/300% via buttons, `+`/`-`/`0` or Ctrl/Cmd+wheel; drag to rotate OBJ models).
+- Screen recording: `navigator.mediaDevices.getDisplayMedia()` captures the current tab (permission prompt per site) and `MediaRecorder` records it, or a camera track, to `video/mp4` (H.264 via VideoToolbox, mpeg4 fallback). Same code on macOS, iPadOS, Linux and Android. Only the tab contents are captured, not other apps or the system screen.
+- New workspaces get a default icon (change it from the workspace menu).
+
 ## Build from source
 
 ```sh

@@ -83,3 +83,8 @@ App Store acceptance is not a goal (sideload / Xcode run).
 - Pending user asks: top-sites pass (YouTube, Facebook, ChatGPT, Claude, Gemini, X, Google, Bing, Gmail,
   Wikipedia) with RAM/CPU vs Chrome; getDisplayMedia (ReplayKit on iOS, Android); ChatGPT stall: runtime `rn`
   awaits `ve.referenceSheetsDelivery$` status "ready" (never reached in Lumen).
+- Done since: getDisplayMedia (capture.c `cap_screen_*`, fed from main.c present path, page area only; GPU-path
+  video frames are not in `a->frame.px`, so captured/LUMEN_SHOT video shows white unless LUMEN_NO_GPU=1) and
+  MediaRecorder (capture.c `cap_rec_*`, fragmented MP4, `LUMEN_REC_DUMP=file.mp4` writes the result for ffprobe).
+  Tests: ~/fvtest/gdm.html, ~/fvtest/rec.html with LUMEN_PERMISSIONS=grant LUMEN_CONSOLE=1.
+- MediaRecorder: video only (no audio mux), one blob at stop (timeslice ignored).
