@@ -62,11 +62,23 @@ const history = {
 class BatteryManager extends EventTarget {}
 const battery = Object.assign(Reflect.construct(EventTarget, [], BatteryManager), { charging: true, chargingTime: 0, dischargingTime: Infinity, level: 1, onchargingchange: null, onchargingtimechange: null, ondischargingtimechange: null, onlevelchange: null });
 const __uaChrome = (/ Chrome\/(\d+)/.exec(N.userAgent()) || [])[1];
+const __uaMobile = /\bMobile\b/.test(N.userAgent());
+const __uaPlatform = /\bAndroid\b/.test(N.userAgent()) ? 'Android' : N.platform() === 'MacIntel' ? 'macOS' : 'Linux';
+function uaLowEntropy() {
+    return { brands: [{ brand: 'Google Chrome', version: __uaChrome }, { brand: 'Not?A_Brand', version: '8' }, { brand: 'Chromium', version: __uaChrome }], mobile: __uaMobile, platform: __uaPlatform };
+}
+const userAgentData = __uaChrome ? {
+    get brands() { return uaLowEntropy().brands; },
+    get mobile() { return __uaMobile; }, get platform() { return __uaPlatform; },
+    // Do not expose additional device identifiers; low-entropy values are always returned.
+    getHighEntropyValues() { return Promise.resolve(uaLowEntropy()); },
+    toJSON() { return uaLowEntropy(); },
+} : undefined;
 const navigator = {
     userAgent: N.userAgent(), appVersion: N.userAgent().replace(/^Mozilla\//, ''), appName: 'Netscape', appCodeName: 'Mozilla', product: 'Gecko', productSub: __uaChrome ? '20030107' : '20100101', vendor: __uaChrome ? 'Google Inc.' : '', vendorSub: '',
     platform: N.platform(), language: 'en-US', languages: ['en-US', 'en'], onLine: true, cookieEnabled: true, doNotTrack: null, webdriver: false, pdfViewerEnabled: false,
     hardwareConcurrency: N.cpus(), deviceMemory: 8, maxTouchPoints: 0, plugins: [], mimeTypes: [],
-    userAgentData: __uaChrome ? { brands: [{ brand: 'Google Chrome', version: __uaChrome }, { brand: 'Not?A_Brand', version: '8' }, { brand: 'Chromium', version: __uaChrome }], mobile: false, platform: N.platform() === 'MacIntel' ? 'macOS' : 'Linux', getHighEntropyValues() { return Promise.resolve({}); }, toJSON() { return {}; } } : undefined,
+    userAgentData,
     connection: { effectiveType: '4g', downlink: 10, rtt: 50, saveData: false, addEventListener() {}, removeEventListener() {} },
     javaEnabled() { return false; }, sendBeacon() { return true; }, vibrate() { return false; }, registerProtocolHandler() {},
     clipboard: Object.assign(new EventTarget(), {

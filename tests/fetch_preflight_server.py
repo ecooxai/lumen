@@ -36,7 +36,12 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         self.event()
-        page = {'/': 'fetch-preflight-stream.html', '/base-uri-cache': 'base-uri-cache.html', '/request-state': 'request-state.html', '/video-frames': 'video-frame-callback.html', '/media-events': 'media-events.html', '/blob-parts': 'blob-parts.html', '/resize-observer': 'resize-observer.html'}.get(self.path)
+        page = {'/': 'fetch-preflight-stream.html', '/base-uri-cache': 'base-uri-cache.html', '/request-state': 'request-state.html', '/video-frames': 'video-frame-callback.html', '/media-events': 'media-events.html', '/blob-parts': 'blob-parts.html', '/resize-observer': 'resize-observer.html', '/user-agent': 'user-agent.html', '/positioned-drawer': 'positioned-drawer.html'}.get(self.path)
+        if self.path == '/user-agent-headers':
+            data = json.dumps(dict(self.headers)).encode()
+            self.headers_for(len(data))
+            self.wfile.write(data)
+            return
         if self.path == '/video.mp4':
             data = (Path(__file__).parent / 'media' / 'test.mp4').read_bytes()
             self.send_response(200)

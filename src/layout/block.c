@@ -103,7 +103,9 @@ static void layout_abs(Layout *L, Box *cb) {
         float avail = pw - (lA ? 0 : l) - (rA ? 0 : r);
         if (!len_def(s->height, ph) && !tA && !bA) fh = ph - t - bt - a->m[0] - a->m[2];
         if (a->fmt == FMT_REPLACED) fh = -1;
-        layout_box(L, a, 0, 0, mode == SZ_FORCED ? pw : avail, ph, NULL, mode, fw, fh);
+        /* Insets constrain shrink-to-fit space, not the percentage basis of a
+           specified width (or its percentage padding, margins and limits). */
+        layout_box(L, a, 0, 0, mode == SZ_FORCED || wdef ? pw : avail, ph, NULL, mode, fw, fh);
         float ow = a->w, oh = a->h;
         if (!lA && !rA && mlA && mrA) { float m = (pw - l - r - ow) / 2; a->m[1] = a->m[3] = LMAX(0, m); }
         if (!tA && !bA && mtA && mbA) { float m = (ph - t - bt - oh) / 2; a->m[0] = a->m[2] = LMAX(0, m); }

@@ -1,0 +1,21 @@
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Android browser identity</title>
+<pre id="out">Running…</pre>
+<script>
+(async()=>{
+ const results=[],check=(name,pass,detail)=>results.push({name,pass:!!pass,detail});
+ try {
+  const headers=await (await fetch('/user-agent-headers')).json();
+  const ua=Object.entries(headers).find(([k])=>k.toLowerCase()==='user-agent')?.[1];
+  check('network-and-js-agree',ua===navigator.userAgent,{network:ua,js:navigator.userAgent});
+  check('android-mobile',/Android/.test(ua)&&/Mobile/.test(ua),navigator.platform);
+  const hints=navigator.userAgentData,json=JSON.parse(JSON.stringify(hints)),asyncHints=await hints.getHighEntropyValues(['model']);
+  check('android-client-hints',hints.mobile&&hints.platform==='Android',json);
+  check('json-hints',json.mobile&&json.platform==='Android'&&json.brands.length===3,json);
+  check('async-low-entropy',asyncHints.mobile&&asyncHints.platform==='Android'&&asyncHints.brands.length===3,asyncHints);
+  const version=hints.brands[0].version;hints.brands[0].version='1';
+  check('independent-brand-values',hints.brands[0].version===version);
+ }catch(e){check('unexpected-error',false,String(e))}
+ document.getElementById('out').textContent=JSON.stringify(results,null,2);
+ await fetch('/report',{method:'POST',body:JSON.stringify(results)});
+})();
+</script>

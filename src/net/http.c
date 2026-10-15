@@ -23,7 +23,14 @@
 #include <brotli/decode.h>
 #include <zstd.h>
 
-#ifdef __APPLE__
+#ifdef __ANDROID__
+/* Chromium's reduced Android UA freezes the OS/model tokens at 10/K. */
+#define UA_OS "Linux; Android 10; K"
+#define UA_FF_OS "Android 10; Mobile"
+#define UA_CH_OS "Android"
+#define UA_MOBILE " Mobile"
+#define UA_CH_MOBILE "?1"
+#elif defined(__APPLE__)
 #define UA_OS "Macintosh; Intel Mac OS X 10_15_7"
 #define UA_FF_OS "Macintosh; Intel Mac OS X 10.15"
 #define UA_CH_OS "macOS"
@@ -32,13 +39,17 @@
 #define UA_FF_OS "X11; Linux x86_64"
 #define UA_CH_OS "Linux"
 #endif
+#ifndef UA_MOBILE
+#define UA_MOBILE ""
+#define UA_CH_MOBILE "?0"
+#endif
 static const char *const ua_str[UA_COUNT] = {
-    "Mozilla/5.0 (" UA_OS ") AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (" UA_OS ") AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0" UA_MOBILE " Safari/537.36",
     "Mozilla/5.0 (" UA_FF_OS "; rv:150.0) Gecko/20100101 Firefox/150.0",
-    "Mozilla/5.0 (" UA_OS ") AppleWebKit/537.36 (KHTML, like Gecko) Lumen/1.0 Safari/537.36",
+    "Mozilla/5.0 (" UA_OS ") AppleWebKit/537.36 (KHTML, like Gecko) Lumen/1.0" UA_MOBILE " Safari/537.36",
 };
 static const char *const ua_name[UA_COUNT] = { "Chrome 150", "Firefox 150", "Lumen" };
-const char *g_user_agent = "Mozilla/5.0 (" UA_OS ") AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36";
+const char *g_user_agent = "Mozilla/5.0 (" UA_OS ") AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0" UA_MOBILE " Safari/537.36";
 void net_set_user_agent(int which) { if (which >= 0 && which < UA_COUNT) g_user_agent = ua_str[which]; }
 const char *net_user_agent_name(int which) { return which >= 0 && which < UA_COUNT ? ua_name[which] : ""; }
 void (*net_wakeup)(void) = NULL;
@@ -323,7 +334,7 @@ static NetResponse *http_once(const char *method, const URL *u, const Headers *h
     if (!has_al) sb_puts(&req, "Accept-Language: en-US,en;q=0.9\r\n");
     if (!has_ch && !strcmp(u->scheme, "https") && strstr(g_user_agent, "Chrome/"))
         sb_puts(&req, "sec-ch-ua: \"Google Chrome\";v=\"150\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"150\"\r\n"
-                      "sec-ch-ua-mobile: ?0\r\nsec-ch-ua-platform: \"" UA_CH_OS "\"\r\n");
+                      "sec-ch-ua-mobile: " UA_CH_MOBILE "\r\nsec-ch-ua-platform: \"" UA_CH_OS "\"\r\n");
     if (cookies) { char *ck = cookies_get(u, true); if (ck) { sb_printf(&req, "Cookie: %s\r\n", ck); free(ck); } }
     if (body || (strcmp(method, "GET") && strcmp(method, "HEAD"))) sb_printf(&req, "Content-Length: %zu\r\n", body_len);
     sb_puts(&req, "Connection: keep-alive\r\n\r\n");

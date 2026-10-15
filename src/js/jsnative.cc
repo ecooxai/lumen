@@ -827,7 +827,9 @@ FN(imgSize) {
 FN(userAgent) { CTX; RET(jstr(iso, g_user_agent)); }
 FN(platform) {
     CTX;
-#ifdef __APPLE__
+#ifdef __ANDROID__
+    RET(jstr(iso, "Linux armv8l"));
+#elif defined(__APPLE__)
     RET(jstr(iso, "MacIntel"));
 #else
     RET(jstr(iso, "Linux x86_64"));

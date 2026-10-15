@@ -1,5 +1,43 @@
 # Lumen: handoff notes
 
+## Android mobile identity and off-screen drawer (2026-10-15)
+
+Full goal active, Vulkan first. See `docs/android-mobile-drawer-20261015.md`.
+Android now uses mobile Android HTTP/JS identity and consistent low-entropy
+client hints. YouTube selects m.youtube.com. Fixed specified percentage widths
+of positioned elements resolving against inset-reduced space: the hidden drawer
+at left:-100%, width:70% was twice as wide and covered 40% of the viewport.
+Native regression fails before repair and passes after (14 assertions, UBSan).
+Three JS tests and six phone identity checks pass. Real YouTube is now full width.
+
+Vulkan drawer fixture, same six swipes: mean CPU 70.7192% -> 33.4966% (~53% less),
+10 one-second samples each. Full repaint changes to partial/row reuse; example
+40 frames/1005 ms -> 60 frames/1014 ms. Fixture only, not general site FPS.
+Idle 0.3327% -> 0.3323%; RSS 230.34 -> 229.43 MiB. All spikes included.
+
+Clean installed/native/signature-verified APK:
+`build/codex-youtube-detail-20261015/lumen-vulkan-mobile-drawer-debug.apk`, SHA256
+`3a0a9eb9071df9708d568cc8a0b2836c5e0abd809927d7762e1835cf87cdfe5b`.
+Diagnostic native code restored; private probe/log/profile marker removed;
+app stopped; sampler/server joined; adb reverse removed. No credentials entered.
+
+YouTube NOT fixed. Captured exact error in desktop and mobile diagnostics:
+ump.spsrejectfailure / HTML5_SPS_UMP_STATUS_REJECTED. Mobile fails at context
+86.909 s after ~70 s video; desktop at 56.704 s. Public player maps a rejected
+UMP status to this error; early 403s are not proven causal. Brave on same phone
+continued playing, but is a different client. Mobile also throws at
+`mobile-ERsVff.js:1027:199`, class extends undefined `_.EX`; relatedness unproven.
+Clean final page renders/plays; taps remove mute prompt then leave a stationary
+image, with controls absent at 0.5/3/7 s. Pause inferred, not instrumented.
+Final 30 stationary samples mean 3.0287%, peak 4%, RSS 318.89 MiB; earlier window
+3.3985%, peak 12%. Sustained clean playback and controls remain unverified.
+
+Downloaded kevlar.js identifies earlier Xch/_.qE8 activity as generated periodic
+consistency/adblock checks, not ordinary response caching. Do not suppress checks.
+Next diagnose mobile controls/frontend exception and streaming rejection, profile
+remaining CPU, validate real-page scroll. Auth/ChatGPT/Gemini/zoom/full daily use
+remain unfinished. OpenGL ES/software deferred.
+
 ## Media notifications and replay race (2026-10-15)
 
 Full goal active, Vulkan first. See `docs/android-media-notifications-20261015.md`.
