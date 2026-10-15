@@ -159,3 +159,9 @@ App Store acceptance is not a goal (sideload / Xcode run).
   `e.data.port.postMessage.bind` threw, the DIL channel never initialised and React kept
   re-running the effect (the 40-90% CPU loop). `portSub`/`portRes` now swap transferred
   MessagePorts inside data both ways (07b-net.js + worker.cc). After the reply CPU is ~2-5%.
+
+- FIXED (login dialog): ChatGPT's "Log in or sign up" `<dialog>` stayed at opacity 0 because
+  `@starting-style` rules were flattened into normal rules (they pinned the transition's
+  start state). parse.c now skips `@starting-style`. Also added `:modal` / `:popover-open`
+  (NF_MODAL / NF_POPOVER_OPEN set via `N.setPseudo`) and real `showPopover`/`hidePopover`/
+  `togglePopover`. Continue with Google now reaches accounts.google.com/v3/signin/identifier.
