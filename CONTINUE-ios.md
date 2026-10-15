@@ -182,3 +182,17 @@ App Store acceptance is not a goal (sideload / Xcode run).
   YouTube 16.9/5.7%/262MB, Facebook 4.9/1.9/233, ChatGPT 7.9/4.3/170, Claude 13.2/3.7/337,
   Gemini 10.3/2.1/308, X 7.9/1.5/214, Google 5.0/1.2/187, Bing 8.6/2.2/196, Gmail 7.4/2.7/211,
   Wikipedia 5.3/0.8/248.
+- ADDED (screen capture on iOS): `getDisplayMedia` on iOS/iPadOS/Catalyst starts ReplayKit
+  in-app capture (`ios_rp_start` in `iosui.m`, BGRA or 420 YpCbCr -> ARGB via vImage) and
+  `cap_screen_push` records its frames; until ReplayKit delivers it records page pixels.
+  The iPad Simulator reports "ReplayKit capture started" but never delivers a sample, so
+  Simulator recordings are page pixels; ReplayKit frames are still unverified on a device.
+  `LUMEN_NO_REPLAYKIT=1` forces page pixels. No audio track yet; Android untested.
+- FIXED (blob: media): `<video src=blob:...>` (e.g. a MediaRecorder result) now plays: the
+  Blob is written to `$TMPDIR/lumen-blob-*` and opened as `file://`, deleted on
+  `revokeObjectURL` (a never-revoked URL leaks the temp file until reboot).
+- FIXED (video sizing): the UA sheet had `video{width:300px;height:150px}`, so a video with
+  only a CSS width stayed 150 px tall. 300x150 is now only the default object size.
+- KNOWN (test harness): with the GPU on, `LUMEN_SHOT` PNGs show a paused video as a white
+  box because the video is drawn as a GPU layer; on screen it is correct. Use
+  `LUMEN_NO_GPU=1` when a screenshot must show video frames.
