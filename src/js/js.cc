@@ -621,6 +621,7 @@ void js_free(JsCtx *c) {
         c->fetches.clear(); for (auto &kv : c->sockets) { net_ws_release(kv.second->ws); kv.second->cb.Reset(); delete kv.second; } c->sockets.clear();
         c->timers.clear();
         c->rafs.clear();
+        c->video_frame_pump.Reset();
         c->anims.clear();
         c->protos.clear();
         c->protoFor.Reset(); c->fire.Reset(); c->report.Reset(); c->viewportChanged.Reset();
@@ -764,6 +765,7 @@ double js_next_deadline(JsCtx *c) {
     for (auto &kv : c->timers) d = std::min(d, kv.second.due);
     for (auto &e : c->anims) d = std::min(d, e.due);
     if (!c->rafs.empty()) d = std::min(d, c->last_raf + 16);
+    if (!c->video_frame_pump.IsEmpty() && c->video_frame_version != media_frame_version()) d = std::min(d, now_ms());
     for (JsCtx *k : c->kids) if (!k->dead) d = std::min(d, js_next_deadline(k));
     d = std::min(d, workers_deadline(c));
     return d;
@@ -802,6 +804,11 @@ static void tick_one(JsCtx *c) {
         (void)jcall(c, fn, ctx->Global(), 0, nullptr);
     }
     viewport_update(c);
+    if (!c->video_frame_pump.IsEmpty() && c->video_frame_version != media_frame_version()) {
+        c->video_frame_version = media_frame_version();
+        v8::Local<v8::Value> ts = v8::Number::New(iso, now - c->t0);
+        (void)jcall(c, c->video_frame_pump.Get(iso), v8::Undefined(iso), 1, &ts);
+    }
     if (!c->rafs.empty() && now - c->last_raf >= 15.5) {
         c->last_raf = now;
         std::map<uint32_t, v8::Global<v8::Function>> list;

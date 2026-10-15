@@ -31,7 +31,7 @@
 
 typedef struct Blob { int refs; uint8_t *p; size_t n; } Blob;
 typedef struct { double t0, t1; uint8_t *p; size_t n; Blob *init; } Seg;
-typedef struct { double pts; Image *im; } VFrame;
+typedef struct { double pts; Image *im; int w, h; bool hidden; } VFrame;
 typedef struct AChunk { double pts; float *s; int frames, off; struct AChunk *next; } AChunk;
 
 typedef struct Stream {
@@ -67,11 +67,15 @@ struct MediaPlayer {
     VFrame vq[VQ_MAX]; int vqn;
     AChunk *ah, *at; double abuf;
     Image *cur, *grave[3]; int ngrave; double painted;
+    uint64_t frame_serial, presented_frames, dropped_frames;
+    double frame_pts, frame_wall; int frame_w, frame_h; bool frame_hidden;
     float limit; double cpu_ms;            /* tab CPU limiter: max share of a core, decoder-thread CPU used */
 };
 
 void (*media_wakeup)(void);
 static SDL_Mutex *g_mu;
+static uint64_t g_frame_version;
+uint64_t media_frame_version(void) { return g_frame_version; }
 static MediaPlayer **g_pl; static int g_np, g_cap;
 
 static void wake(void) { if (media_wakeup) media_wakeup(); }
@@ -324,7 +328,7 @@ static bool emit_video(Stream *s, DecCtx *d, AVFrame *f, AVRational tb) {
     SDL_LockMutex(m->mu);
     while (m->vqn == VQ_MAX && !m->quit && m->epoch == d->epoch) SDL_WaitCondition(m->cv, m->mu);
     bool ok = !m->quit && m->epoch == d->epoch;
-    if (ok) { m->vq[m->vqn++] = (VFrame){ pts, im }; if (m->w != f->width || m->h != f->height) { m->w = f->width; m->h = f->height; } }
+    if (ok) { m->vq[m->vqn++] = (VFrame){ pts, im, f->width, f->height, hidden }; if (m->w != f->width || m->h != f->height) { m->w = f->width; m->h = f->height; } }
     SDL_UnlockMutex(m->mu);
     if (!ok) image_unref(im); else wake();
     return ok;
@@ -784,6 +788,8 @@ void mp_state(MediaPlayer *m, MpState *o) {
     o->paused = !m->playing; o->ended = m->ended; o->seeking = m->seeking; o->waiting = m->waiting && m->playing;
     o->error = m->error; o->errmsg = m->err;
     o->time = m->seeking ? m->target : clock_of(m); o->duration = m->duration; o->w = m->w; o->h = m->h;
+    o->frame_serial = m->frame_hidden ? 0 : m->frame_serial; o->presented_frames = m->presented_frames; o->dropped_frames = m->dropped_frames;
+    o->frame_pts = m->frame_pts; o->frame_wall = m->frame_wall; o->frame_w = m->frame_w; o->frame_h = m->frame_h;
     SDL_UnlockMutex(m->mu);
 }
 void mp_free(MediaPlayer *m) {
@@ -807,7 +813,9 @@ void mp_free(MediaPlayer *m) {
     SDL_DestroyCondition(m->cv); SDL_DestroyMutex(m->mu); free(m);
 }
 
-static void present(MediaPlayer *m, Image *im) {
+static void present(MediaPlayer *m, const VFrame *frame) {
+    Image *im = frame->im;
+    m->frame_pts = frame->pts; m->frame_w = frame->w; m->frame_h = frame->h; m->frame_hidden = frame->hidden;
     if (m->cur) { if (m->ngrave == 3) { image_unref(m->grave[0]); memmove(m->grave, m->grave + 1, sizeof m->grave[0] * 2); m->ngrave--; } m->grave[m->ngrave++] = m->cur; }
     m->cur = im;
 }
@@ -827,14 +835,14 @@ int media_tick(void) {
             if (!s->eof && (s->has_audio || (!s->opened && !s->progressive &&
                 strncmp(s->mime, "audio/", 6) == 0))) aud_eof = false;
         }
-        bool popped = false;
+        unsigned popped = 0;
         if (getenv("LUMEN_MEDIA_DEBUG")) { static double last; if (now_ms() - last > 500) { last = now_ms(); fprintf(stderr, "mp %p play=%d seek=%d wait=%d eos=%d vqn=%d ah=%p abuf=%.2f clk=%.2f dev=%p ea=%d", (void *)m, m->playing, m->seeking, m->waiting, m->eos, m->vqn, (void *)m->ah, m->abuf, clock_of(m), (void *)m->dev, m->expect_audio); for (int k = 0; k < m->nst; k++) fprintf(stderr, " s%d[eof=%d v=%d a=%d]", k, m->st[k]->eof, m->st[k]->has_video, m->st[k]->has_audio); fprintf(stderr, "\n"); } }
         if (m->seeking && (m->vqn || (!vid && m->abuf > 0) || all_eof)) {
             m->seeking = false;
-            if (m->vqn) { present(m, m->vq[0].im); memmove(m->vq, m->vq + 1, sizeof m->vq[0] * (size_t)--m->vqn); popped = true; }
+            if (m->vqn) { present(m, &m->vq[0]); memmove(m->vq, m->vq + 1, sizeof m->vq[0] * (size_t)--m->vqn); popped++; }
             m->base_t = m->aclock = m->target; m->base_wall = now_ms();
         }
-        if (!m->cur && m->vqn) { present(m, m->vq[0].im); memmove(m->vq, m->vq + 1, sizeof m->vq[0] * (size_t)--m->vqn); popped = true; }
+        if (!m->cur && m->vqn) { present(m, &m->vq[0]); memmove(m->vq, m->vq + 1, sizeof m->vq[0] * (size_t)--m->vqn); popped++; }
         if (m->expect_audio && m->dev && aud_eof && !m->ah) { m->base_t = m->aclock; m->base_wall = now_ms(); m->expect_audio = false; }
         if (m->playing && !m->seeking) {
             bool starve = (m->expect_audio && m->dev) ? (!m->ah && !aud_eof) : (vid && !m->vqn && !all_eof);
@@ -849,11 +857,17 @@ int media_tick(void) {
             if (all_eof && !(m->expect_audio && m->dev) && !isnan(m->duration) && t >= m->duration - 0.01) while (m->ah) {
                 AChunk *c = m->ah; m->ah = c->next; if (!m->ah) m->at = NULL; free(c->s); free(c); m->abuf = 0;
             }
-            if (all_eof && !isnan(m->duration) && t >= m->duration - 0.01) while (m->vqn) { present(m, m->vq[0].im); memmove(m->vq, m->vq + 1, sizeof m->vq[0] * (size_t)--m->vqn); popped = true; }
-            while (m->vqn && m->vq[0].pts <= t + 0.008) { present(m, m->vq[0].im); memmove(m->vq, m->vq + 1, sizeof m->vq[0] * (size_t)--m->vqn); popped = true; }
+            if (all_eof && !isnan(m->duration) && t >= m->duration - 0.01) while (m->vqn) { present(m, &m->vq[0]); memmove(m->vq, m->vq + 1, sizeof m->vq[0] * (size_t)--m->vqn); popped++; }
+            while (m->vqn && m->vq[0].pts <= t + 0.008) { present(m, &m->vq[0]); memmove(m->vq, m->vq + 1, sizeof m->vq[0] * (size_t)--m->vqn); popped++; }
             if (all_eof && !m->vqn && !m->ah && (m->eos || (m->nst && m->st[0]->progressive))) {
                 m->base_t = isnan(m->duration) ? t : m->duration; m->playing = false; m->ended = true;
             }
+        }
+        if (popped) {
+            /* Only the final selected frame reaches composition. Earlier due
+               frames and low-memory hidden placeholders are dropped frames. */
+            m->dropped_frames += popped - (m->frame_hidden ? 0 : 1);
+            if (!m->frame_hidden) { m->presented_frames++; m->frame_serial = ++g_frame_version; m->frame_wall = now_ms(); }
         }
         if (popped) { SDL_BroadcastCondition(m->cv); out |= 1; if (m->cur && (m->cur->w != ow || m->cur->h != oh)) { out |= 2; if (getenv("LUMEN_DEBUG_PAINT")) fprintf(stderr, "media: size %p %dx%d -> %dx%d\n", (void *)m, ow, oh, m->cur->w, m->cur->h); } }
         bool run = m->playing;

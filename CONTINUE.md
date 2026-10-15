@@ -1,5 +1,31 @@
 # Lumen: handoff notes
 
+## Vulkan video frame callbacks and remaining YouTube idle cost (2026-10-15)
+
+Full daily-browser goal remains active, Vulkan first. See
+`docs/android-video-frame-callbacks-20261015.md`. Replaced no-op video frame
+callbacks and zero quality counts with native presentation-driven delivery.
+Cancellation, reentrancy, pause/seek, reload and dropped frames are covered.
+Fixed an additional stale-frame delivery bug found during review: registration
+on an already paused video waits for a new frame. Host regression fails before
+that correction. 17 focused JS tests and both native sanitizer tests pass.
+Final phone fixture passes all 11 checks, averaging 1.4663% CPU over 30 settled
+samples with a paused video and pending callback (257.04 MiB RSS).
+
+Final clean APK installed and native/signature verified:
+`build/codex-vulkan-playback-20261015/lumen-vulkan-frame-callback-debug.apk`,
+SHA256 `f9234ce0f980e4d6ae9812d60d8eb8f71ca60d4a1fa8a86c44b1ea038fd8d41d`.
+No temporary diagnostics in source/APK and no credentials entered.
+
+YouTube still intermittently fails. The first callback build played then showed
+"Something went wrong"; settled error idle averaged 4.8413% CPU, 423.20 MiB RSS.
+Fresh native profiling confirms substantial GC and JSON work; matching symbolized
+report `frame-error-resolved.txt` is preserved. Next investigate JS allocation and
+scheduling on the failed page, then validate playback and prompt controls again.
+The final stale-registration correction has local device coverage; do not conflate
+it with a new YouTube acceptance run. ChatGPT/Gemini/auth/zoom and broader daily
+features are unfinished; OpenGL/software remain deferred.
+
 ## Request state repair and controls diagnosis (2026-10-15)
 
 Vulkan still first; full daily-browser goal active. See

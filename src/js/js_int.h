@@ -67,6 +67,8 @@ struct JsCtx {
     uint32_t next_timer = 1;
     std::map<uint32_t, v8::Global<v8::Function>> rafs;
     uint32_t next_raf = 1;
+    v8::Global<v8::Function> video_frame_pump;
+    uint64_t video_frame_version = 0;
     double last_raf = 0, t0 = 0;
     std::map<uint64_t, Fetch *> fetches;
     std::map<uint32_t, struct WsSock *> sockets;

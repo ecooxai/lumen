@@ -36,7 +36,15 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         self.event()
-        page = {'/': 'fetch-preflight-stream.html', '/base-uri-cache': 'base-uri-cache.html', '/request-state': 'request-state.html'}.get(self.path)
+        page = {'/': 'fetch-preflight-stream.html', '/base-uri-cache': 'base-uri-cache.html', '/request-state': 'request-state.html', '/video-frames': 'video-frame-callback.html'}.get(self.path)
+        if self.path == '/video.mp4':
+            data = (Path(__file__).parent / 'media' / 'test.mp4').read_bytes()
+            self.send_response(200)
+            self.send_header('Content-Type', 'video/mp4')
+            self.send_header('Content-Length', str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+            return
         if not page:
             self.headers_for(0, status=404)
             return

@@ -32,6 +32,8 @@ function mediaPoll() {
     if (!mediaEls.size && mediaPumpId) { clearInterval(mediaPumpId); mediaPumpId = 0; }
 }
 function mediaDetach(el) {
+    const frames = videoFrameStates.get(el);
+    if (frames && el.__mp) { const q = N.videoQuality(el); frames.offset += q[0] - q[1]; }
     if (el.__mp) { N.mediaFree(el.__mp); def(el, '__mp', 0); }
     mediaEls.delete(el);
     def(el, '__st', null); def(el, '__err', null); def(el, '__src', '');
@@ -111,7 +113,60 @@ mk('HTMLMediaElement', HTMLElement, [], p => {
     });
 });
 Object.assign(H.HTMLMediaElement, { NETWORK_EMPTY: 0, NETWORK_IDLE: 1, NETWORK_LOADING: 2, NETWORK_NO_SOURCE: 3, HAVE_NOTHING: 0, HAVE_METADATA: 1, HAVE_CURRENT_DATA: 2, HAVE_FUTURE_DATA: 3, HAVE_ENOUGH_DATA: 4 });
-mk('HTMLVideoElement', H.HTMLMediaElement, ['video'], p => { reflectUrl(p, 'poster'); reflectInt(p, 0, 'width', 'height'); methods(p, { get videoWidth() { return this.__mp ? N.mediaState(this.__mp)[8] : 0; }, get videoHeight() { return this.__mp ? N.mediaState(this.__mp)[9] : 0; }, getVideoPlaybackQuality() { return { totalVideoFrames: 0, droppedVideoFrames: 0, corruptedVideoFrames: 0, creationTime: N.now() }; }, requestVideoFrameCallback() { return 0; }, cancelVideoFrameCallback() {} }); });
+// A pending callback keeps its element alive, but completed registrations do
+// not. The native pump runs before RAF, only after a new presentation (or arm).
+const videoFrameStates = new WeakMap(), videoFramePending = new Set();
+let videoFrameId = 0;
+function videoFramePoll(now) {
+    const frames = [];
+    for (const el of videoFramePending) {
+        const state = videoFrameStates.get(el), frame = N.videoFrameInfo(el, state.last);
+        if (!frame) continue;
+        state.last = frame[0];
+        frames.push({el, state, frame, callbacks:Array.from(state.callbacks)});
+    }
+    for (const {el, state, frame, callbacks} of frames) {
+        const metadata = {presentationTime:frame[2], expectedDisplayTime:Math.max(now,frame[2]),
+            width:frame[3], height:frame[4], mediaTime:frame[1], presentedFrames:state.offset+frame[5]};
+        for (const [id, fn] of callbacks) {
+            if (!state.callbacks.delete(id)) continue; // canceled by an earlier callback
+            try { fn(now, metadata); } catch (e) { report(e); }
+        }
+        if (!state.callbacks.size) videoFramePending.delete(el);
+    }
+    if (!videoFramePending.size) N.videoFramePump(null);
+}
+mk('HTMLVideoElement', H.HTMLMediaElement, ['video'], p => {
+    reflectUrl(p, 'poster'); reflectInt(p, 0, 'width', 'height');
+    methods(p, {
+        get videoWidth() { return this.__mp ? N.mediaState(this.__mp)[8] : 0; },
+        get videoHeight() { return this.__mp ? N.mediaState(this.__mp)[9] : 0; },
+        getVideoPlaybackQuality() {
+            const q = N.videoQuality(this), result = {};
+            for (const [key,value] of [['totalVideoFrames',q[0]],['droppedVideoFrames',q[1]],['creationTime',N.now()]])
+                Object.defineProperty(result, key, {value,enumerable:true});
+            return result;
+        },
+        requestVideoFrameCallback(fn) {
+            const current = N.videoFrameInfo(this, 0); // native video-element brand check
+            if (typeof fn !== 'function') throw new TypeError('Callback must be a function');
+            let state = videoFrameStates.get(this);
+            if (!state) { state = {last:0, offset:0, callbacks:new Map()}; videoFrameStates.set(this,state); }
+            // A registration after an idle gap must not receive an old frame.
+            if (!state.callbacks.size && current) state.last = current[0];
+            const id = videoFrameId = ((videoFrameId + 1) >>> 0) || 1;
+            state.callbacks.set(id,fn); videoFramePending.add(this);
+            N.videoFramePump(videoFramePoll);
+            return id;
+        },
+        cancelVideoFrameCallback(id) {
+            N.videoFrameInfo(this, 0);
+            const state = videoFrameStates.get(this);
+            if (state) { state.callbacks.delete(Number(id) >>> 0); if (!state.callbacks.size) videoFramePending.delete(this); }
+            if (!videoFramePending.size) N.videoFramePump(null);
+        }
+    });
+});
 mk('HTMLAudioElement', H.HTMLMediaElement, ['audio']);
 function Image(w, h) { const e = document.createElement('img'); if (w !== undefined) e.width = w; if (h !== undefined) e.height = h; return e; }
 Image.prototype = H.HTMLImageElement.prototype;

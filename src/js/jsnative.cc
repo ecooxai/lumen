@@ -437,6 +437,32 @@ FN(mediaState) {
     };
     RET(v8::Array::New(iso, v, 11));
 }
+// Frame information is separate from media-state polling: callbacks wake only
+// when media_tick selects a new frame for composition.
+FN(videoFramePump) {
+    CTX;
+    if (!a[0]->IsFunction()) { c->video_frame_pump.Reset(); return; }
+    c->video_frame_version = UINT64_MAX;
+    c->video_frame_pump.Reset(iso, a[0].As<v8::Function>());
+}
+FN(videoFrameInfo) {
+    CTX; ARGN(n, 0);
+    if (n->tag != A_video) { iso->ThrowException(v8::Exception::TypeError(jstr(iso, "Not a video element"))); return; }
+    MpState s{};
+    if (!media_state_for(n, &s) || !s.frame_serial || (double)s.frame_serial == NUM(1)) { RET(v8::Null(iso)); return; }
+    double data[] = { (double)s.frame_serial, s.frame_pts, s.frame_wall - c->t0,
+        (double)s.frame_w, (double)s.frame_h, (double)s.presented_frames };
+    auto out = v8::Array::New(iso, 6);
+    for (uint32_t k = 0; k < 6; k++) (void)out->Set(ctx, k, v8::Number::New(iso, data[k]));
+    RET(out);
+}
+FN(videoQuality) {
+    CTX; ARGN(n, 0);
+    if (n->tag != A_video) { iso->ThrowException(v8::Exception::TypeError(jstr(iso, "Not a video element"))); return; }
+    MpState s{}; media_state_for(n, &s);
+    v8::Local<v8::Value> values[] = { v8::Number::New(iso, (double)(s.presented_frames + s.dropped_frames)), v8::Number::New(iso, (double)s.dropped_frames) };
+    RET(v8::Array::New(iso, values, 2));
+}
 FN(mediaCanPlay) { CTX; RET((double)media_can_play(S(0).c_str(), BOOL(1))); }
 FN(fetch) {
     CTX;
@@ -877,6 +903,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(histLen); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
     REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove);
     REG(mediaBuffered); REG(mediaEos); REG(mediaSetDuration); REG(mediaPlay); REG(mediaPause); REG(mediaSeek);
+    REG(videoFramePump); REG(videoFrameInfo); REG(videoQuality);
     REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(readyState); REG(quirks);
     REG(currentScript); REG(media); REG(cssSupports); REG(cssSelText); REG(urlParse); REG(encode); REG(decode); REG(random); REG(cDigest); REG(cHmac); REG(cAes); REG(cEcGen); REG(cEcDerive); REG(cEcSign); REG(cEcVerify); REG(cSpki); REG(cSpkiParse); REG(cPkcs8Parse); REG(cEcFromD); REG(cHkdf); REG(cPbkdf2);
     REG(heap); REG(imgSize); REG(userAgent); REG(platform); REG(cpus); REG(makeAll);
