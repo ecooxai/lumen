@@ -309,24 +309,70 @@ static std::map<std::string, LsOrigin> g_ls;
 static std::mutex g_ls_mu;
 static std::string g_ls_dir;
 static double g_ls_last;
-static std::string ls_file(const std::string &o) {
+static std::string ohash(const std::string &o) {
     uint64_t h = 1469598103934665603ull; for (unsigned char ch : o) { h ^= ch; h *= 1099511628211ull; }
-    char b[32]; snprintf(b, sizeof b, "%016llx", (unsigned long long)h); return g_ls_dir + b;
+    char b[32]; snprintf(b, sizeof b, "%016llx", (unsigned long long)h); return b;
+}
+static std::string ls_file(const std::string &o) { return g_ls_dir + ohash(o); }
+static void kv_read(const std::string &p, const std::string &o, std::map<std::string, std::string> &m, uint32_t max) {
+    FILE *f = fopen(p.c_str(), "rb"); if (!f) return;
+    auto rd = [&](std::string &s) { uint32_t n; if (fread(&n, 4, 1, f) != 1 || n > max) return false; s.resize(n); return !n || fread(&s[0], 1, n, f) == n; };
+    std::string org, k, v;
+    if (rd(org) && org == o) while (rd(k) && rd(v)) m[k] = v;
+    fclose(f);
+}
+static void kv_write(const std::string &p, const std::string &o, const std::map<std::string, std::string> &m) {
+    std::string t = p + ".tmp"; int fd = open(t.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0600); FILE *f = fd < 0 ? NULL : fdopen(fd, "wb"); if (!f) { if (fd >= 0) close(fd); return; }
+    auto wr = [&](const std::string &s) { uint32_t n = (uint32_t)s.size(); fwrite(&n, 4, 1, f); fwrite(s.data(), 1, n, f); };
+    wr(o); for (auto &kv : m) { wr(kv.first); wr(kv.second); }
+    if (fclose(f) == 0) rename(t.c_str(), p.c_str()); else unlink(t.c_str());
 }
 static LsOrigin &ls_get(const std::string &o) {
     LsOrigin &L = g_ls[o]; if (L.loaded) return L;
-    L.loaded = true; if (g_ls_dir.empty()) return L;
-    FILE *f = fopen(ls_file(o).c_str(), "rb"); if (!f) return L;
-    auto rd = [&](std::string &s) { uint32_t n; if (fread(&n, 4, 1, f) != 1 || n > (64u << 20)) return false; s.resize(n); return !n || fread(&s[0], 1, n, f) == n; };
-    std::string org, k, v;
-    if (rd(org) && org == o) while (rd(k) && rd(v)) L.m[k] = v;
-    fclose(f); return L;
+    L.loaded = true; if (!g_ls_dir.empty()) kv_read(ls_file(o), o, L.m, 64u << 20);
+    return L;
 }
-static void ls_write(const std::string &o, const LsOrigin &L) {
-    std::string p = ls_file(o), t = p + ".tmp"; int fd = open(t.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0600); FILE *f = fd < 0 ? NULL : fdopen(fd, "wb"); if (!f) { if (fd >= 0) close(fd); return; }
-    auto wr = [&](const std::string &s) { uint32_t n = (uint32_t)s.size(); fwrite(&n, 4, 1, f); fwrite(s.data(), 1, n, f); };
-    wr(o); for (auto &kv : L.m) { wr(kv.first); wr(kv.second); }
-    if (fclose(f) == 0) rename(t.c_str(), p.c_str()); else unlink(t.c_str());
+static void ls_write(const std::string &o, const LsOrigin &L) { kv_write(ls_file(o), o, L.m); }
+
+/* IndexedDB: one V8-serialized snapshot per (origin, database) shared by every context of the origin; each
+ * committed write transaction replaces it, and it is persisted under <profile>/indexeddb/ with localStorage */
+struct IdbOrigin { std::map<std::string, std::string> b; std::map<std::string, uint64_t> gen; bool loaded = false, dirty = false; };
+static std::map<std::string, IdbOrigin> g_idb;
+static std::string g_idb_dir;
+static uint64_t g_idb_gen;
+static IdbOrigin &idb_get(const std::string &o) {
+    IdbOrigin &D = g_idb[o]; if (D.loaded) return D;
+    D.loaded = true; if (!g_idb_dir.empty()) kv_read(g_idb_dir + ohash(o), o, D.b, 1u << 30);
+    for (auto &kv : D.b) D.gen[kv.first] = ++g_idb_gen;
+    return D;
+}
+/* IDB requests: run promise reactions while the transaction is still active, as after a browser event dispatch */
+FN(drainMicrotasks) { a.GetIsolate()->PerformMicrotaskCheckpoint(); }
+FN(idbGen) { CTX; std::lock_guard<std::mutex> g(g_ls_mu); IdbOrigin &D = idb_get(S(0)); auto it = D.gen.find(S(1)); a.GetReturnValue().Set(v8::Number::New(iso, it == D.gen.end() ? 0 : (double)it->second)); }
+FN(idbGet) {
+    CTX; std::lock_guard<std::mutex> g(g_ls_mu); IdbOrigin &D = idb_get(S(0)); auto it = D.b.find(S(1));
+    if (it == D.b.end()) { a.GetReturnValue().SetNull(); return; }
+    v8::Local<v8::Context> cx = iso->GetCurrentContext();
+    v8::ValueDeserializer d(iso, (const uint8_t *)it->second.data(), it->second.size());
+    v8::Local<v8::Value> v;
+    if (d.ReadHeader(cx).FromMaybe(false) && d.ReadValue(cx).ToLocal(&v)) a.GetReturnValue().Set(v); else a.GetReturnValue().SetNull();
+}
+FN(idbPut) {
+    CTX; v8::Local<v8::Context> cx = iso->GetCurrentContext();
+    v8::ValueSerializer ser(iso); ser.WriteHeader();
+    if (!ser.WriteValue(cx, a[2]).FromMaybe(false)) return;
+    std::pair<uint8_t *, size_t> r = ser.Release();
+    std::lock_guard<std::mutex> g(g_ls_mu); IdbOrigin &D = idb_get(S(0)); std::string n = S(1);
+    D.b[n].assign((const char *)r.first, r.second); free(r.first);
+    uint64_t gen = D.gen[n] = ++g_idb_gen; D.dirty = true;
+    a.GetReturnValue().Set(v8::Number::New(iso, (double)gen));
+}
+FN(idbDel) { CTX; std::lock_guard<std::mutex> g(g_ls_mu); IdbOrigin &D = idb_get(S(0)); D.b.erase(S(1)); D.gen.erase(S(1)); D.dirty = true; }
+FN(idbNames) {
+    CTX; std::lock_guard<std::mutex> g(g_ls_mu); IdbOrigin &D = idb_get(S(0)); v8::Local<v8::Context> cx = iso->GetCurrentContext();
+    v8::Local<v8::Array> r = v8::Array::New(iso, (int)D.b.size()); uint32_t i = 0;
+    for (auto &kv : D.b) r->Set(cx, i++, nstr(iso, kv.first.c_str())).Check();
+    a.GetReturnValue().Set(r);
 }
 
 /* ---- in-process message bus: BroadcastChannel (pages, iframes, workers) and cross-context localStorage `storage` events ---- */
@@ -407,11 +453,13 @@ extern "C" void js_ls_flush(bool force) {
     g_ls_last = t;
     if (g_ls_dir.empty()) return;
     for (auto &e : g_ls) if (e.second.dirty) { ls_write(e.first, e.second); e.second.dirty = false; }
+    for (auto &e : g_idb) if (e.second.dirty && e.first != "null") { kv_write(g_idb_dir + ohash(e.first), e.first, e.second.b); e.second.dirty = false; }
 }
 static void ls_atexit(void) { js_ls_flush(true); }
 extern "C" void js_set_profile_dir(const char *dir) {
     if (!dir || !*dir || getenv("LUMEN_NO_PERSIST_STORAGE")) return;
-    g_ls_dir = std::string(dir) + "localstorage/"; mkdir(g_ls_dir.c_str(), 0700); atexit(ls_atexit);
+    g_ls_dir = std::string(dir) + "localstorage/"; mkdir(g_ls_dir.c_str(), 0700);
+    g_idb_dir = std::string(dir) + "indexeddb/"; mkdir(g_idb_dir.c_str(), 0700); atexit(ls_atexit);
 }
 FN(lsGet) {
     CTX; std::lock_guard<std::mutex> g(g_ls_mu); LsOrigin &L = ls_get(S(0));
@@ -1052,7 +1100,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(matches); REG(byId); REG(clone); REG(doc); REG(contains); REG(connected); REG(host); REG(attachShadow);
     REG(templateContent); REG(rect); REG(vrect); REG(clipSet); REG(clipGet); REG(scrollPos); REG(setScroll); REG(computed); REG(value); REG(setValue); REG(checked); REG(setChecked); REG(setPseudo); REG(pickFiles);
     REG(focus); REG(active); REG(cookie); REG(setCookie); REG(url); REG(setUrl); REG(navigate); REG(navigatePost); REG(saveFile); REG(histGo);
-    REG(histLen); REG(ssGet); REG(ssSet); REG(lsGet); REG(lsSet); REG(lsDel);
+    REG(histLen); REG(ssGet); REG(ssSet); REG(lsGet); REG(lsSet); REG(lsDel); REG(drainMicrotasks); REG(idbGen); REG(idbGet); REG(idbPut); REG(idbDel); REG(idbNames);
     REG(busPost);
     REG(busOrigin); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
     REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(blobFile); REG(blobFileFree); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove); REG(mediaAbort);

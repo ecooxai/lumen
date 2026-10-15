@@ -1,7 +1,21 @@
-// IndexedDB: in-memory per origin for the life of the process (transactions, indexes, cursors, key ranges)
+// IndexedDB per origin, shared by every tab and saved in the profile (transactions, indexes, cursors, key ranges)
 (() => {
     const dbs = new Map(), conns = new Map();
     const dbKey = n => (globalThis.location ? location.origin : '') + '\u0000' + n;
+    const org = () => globalThis.location ? location.origin : 'null', P = () => org() !== 'null';
+    const setGen = (d, g) => Object.defineProperty(d, '_gen', { value: g, writable: true, configurable: true });
+    function load(key, name) {   /* refresh from the shared copy when another context committed since */
+        let d = dbs.get(key);
+        if (!P()) return d;
+        const g = N.idbGen(org(), name);
+        if (d && d._gen === g) return d;
+        if (!g) { if (d && d._gen) { dbs.delete(key); d = undefined; } return d; }
+        const v = N.idbGet(org(), name);
+        if (!v) return d;
+        if (d) { d.version = v.version; d.stores = v.stores; } else { d = v; dbs.set(key, d); }
+        setGen(d, g); return d;
+    }
+    const save = d => { if (P()) try { setGen(d, N.idbPut(org(), d.name, d)); } catch (e) { console.warn('IndexedDB: not saved: ' + e); } };
     const E = (name, msg) => new DOMException(msg, name);
     const ktype = k => typeof k === 'number' ? (Number.isNaN(k) ? 0 : 1) : k instanceof Date ? (isNaN(k) ? 0 : 2) : typeof k === 'string' ? 3 :
         k instanceof ArrayBuffer || ArrayBuffer.isView(k) ? 4 : Array.isArray(k) ? 5 : 0;
@@ -69,16 +83,16 @@
                 const [r, fn] = this._.q.shift(); let ok = true, v;
                 try { v = fn(); } catch (e) { ok = false; v = e instanceof DOMException ? e : E('UnknownError', String(e)); }
                 r.readyState = 'done';
-                if (ok) { r._.result = v; this._.active = true; fire(r, 'success'); }
+                if (ok) { r._.result = v; this._.active = true; fire(r, 'success'); N.drainMicrotasks(); }
                 else {
                     r._.error = v; r._.result = undefined; this._.active = true;
-                    const e = fire(r, 'error', { bubbles: true, cancelable: true });
+                    const e = fire(r, 'error', { bubbles: true, cancelable: true }); N.drainMicrotasks();
                     if (!e.defaultPrevented) { this.error = v; fire(this, 'error', { bubbles: true }); this.abort(v); }
                 }
             }
             if (this._.done) return;
             this._.active = false;
-            setTimeout(() => { if (this._.done) return; if (this._.q.length) { this._.active = true; return this._run(); } this._.done = true; fire(this, 'complete'); if (this._onfin) this._onfin(true); });
+            setTimeout(() => { if (this._.done) return; if (this._.q.length) { this._.active = true; return this._run(); } this._.done = true; if (this.mode !== 'readonly' && (this._.snap.size || this.mode === 'versionchange')) save(this.db._.d); fire(this, 'complete'); if (this._onfin) this._onfin(true); });
         }
         abort(err) {
             if (this._.done) throw E('InvalidStateError', 'The transaction has finished.');
@@ -201,6 +215,7 @@
         deleteObjectStore(n) { if (!this._.vtx || this._.vtx._.done) throw E('InvalidStateError', 'Not a version change transaction.'); if (!this._.d.stores.delete(n)) throw E('NotFoundError', 'The specified object store was not found.'); }
         transaction(sn, mode = 'readonly', o = {}) {
             if (this._.closed) throw E('InvalidStateError', 'The database connection is closing.');
+            if (!this._.vtx) load(dbKey(this.name), this.name);
             if (mode !== 'readonly' && mode !== 'readwrite') throw new TypeError("Failed to execute 'transaction' on 'IDBDatabase': The provided value '" + mode + "' is not a valid enum value of type IDBTransactionMode.");
             const s = typeof sn === 'string' ? [sn] : [...sn].map(String);
             if (!s.length) throw E('InvalidAccessError', 'The storeNames parameter was empty.');
@@ -215,7 +230,7 @@
             if (version !== undefined && !(version >= 1)) throw new TypeError("Failed to execute 'open' on 'IDBFactory': Value is outside the 'unsigned long long' value range.");
             name = String(name); const req = new IDBOpenDBRequest(), key = dbKey(name);
             setTimeout(() => {
-                let d = dbs.get(key); const old = d ? d.version : 0, nv = version === undefined ? (old || 1) : Math.floor(version);
+                let d = load(key, name); const old = d ? d.version : 0, nv = version === undefined ? (old || 1) : Math.floor(version);
                 req.readyState = 'done';
                 if (nv < old) { req._.error = E('VersionError', 'The requested version (' + nv + ') is less than the existing version (' + old + ').'); fire(req, 'error', { bubbles: true, cancelable: true }); return; }
                 if (!d) { d = { name, version: 0, stores: new Map() }; dbs.set(key, d); }
@@ -235,11 +250,11 @@
         }
         deleteDatabase(name) {
             const req = new IDBOpenDBRequest(), key = dbKey(String(name));
-            setTimeout(() => { const d = dbs.get(key), old = d ? d.version : 0; for (const c of conns.get(key) || []) fire(c, 'versionchange', null, new IDBVersionChangeEvent('versionchange', { oldVersion: old, newVersion: null }));
-                dbs.delete(key); conns.delete(key); req.readyState = 'done'; fire(req, 'success', null, new IDBVersionChangeEvent('success', { oldVersion: old, newVersion: null })); });
+            setTimeout(() => { const d = load(key, String(name)), old = d ? d.version : 0; for (const c of conns.get(key) || []) fire(c, 'versionchange', null, new IDBVersionChangeEvent('versionchange', { oldVersion: old, newVersion: null }));
+                dbs.delete(key); conns.delete(key); if (P()) N.idbDel(org(), String(name)); req.readyState = 'done'; fire(req, 'success', null, new IDBVersionChangeEvent('success', { oldVersion: old, newVersion: null })); });
             return req;
         }
-        databases() { const p = (globalThis.location ? location.origin : '') + '\u0000'; return Promise.resolve([...dbs].filter(([k]) => k.startsWith(p)).map(([, d]) => ({ name: d.name, version: d.version }))); }
+        databases() { const p = (globalThis.location ? location.origin : '') + '\u0000'; if (P()) for (const n of N.idbNames(org())) load(p + n, n); return Promise.resolve([...dbs].filter(([k]) => k.startsWith(p)).map(([, d]) => ({ name: d.name, version: d.version }))); }
         cmp(a, b) { return cmp(ckey(a), ckey(b)); }
     }
     const indexedDB = new IDBFactory();

@@ -230,3 +230,12 @@ App Store acceptance is not a goal (sideload / Xcode run).
   and iframes now see each other's writes live. Test: `~/fvtest/bus/bc.html` over http. Dedicated workers
   join the same bus (`bcw.html`; woken via `js_bus_listen`). Storage quota: 5 Mi UTF-16 code units (keys + values) per area,
   `QuotaExceededError` like Chrome (`~/fvtest/bus/quota.html`).
+- IDB (2026-10-15): IndexedDB is now shared by all contexts of an origin and persisted under
+  `<profile>/indexeddb/` (flushed with localStorage). Each committed write transaction
+  V8-serializes its whole database (`idbPut` in `src/js/jsnative.cc`); other contexts reload it when
+  `idbGen` changes, at `open()`/`transaction()`. Last committer wins if two tabs write the same
+  database in overlapping transactions. Opaque origins (file://) stay in memory, per context. Also
+  fixed: promise-based IDB code (`await` between requests, idb-keyval/Dexie style) hit
+  `TransactionInactiveError`; requests now drain microtasks after each success/error event
+  (`N.drainMicrotasks`). Test: `~/fvtest/bus/idb.html` (run twice; ids keep counting). Lumen
+  instances are separate processes, so two running Lumen apps do not see each other's writes.
