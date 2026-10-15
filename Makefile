@@ -33,17 +33,19 @@ endif
 PLAT ?=
 ifneq ($(filter $(PLAT),sim ios cat),)
   IOS := 1
-  BUILD := build-$(PLAT)
+  JIT ?= 0
+  JITSFX := $(if $(filter 1,$(JIT)),-jit)
+  BUILD := build-$(PLAT)$(JITSFX)
   IOSDEPS ?= $(HOME)/ios-deps/$(PLAT)
   V8DIR ?= $(HOME)/src/v8ios/v8
-  V8OUT ?= $(V8DIR)/out/$(if $(filter ios,$(PLAT)),ios-device,$(if $(filter sim,$(PLAT)),ios-simulator,catalyst))
+  V8OUT ?= $(V8DIR)/out/$(if $(filter ios,$(PLAT)),ios-device,$(if $(filter sim,$(PLAT)),ios-simulator,catalyst))$(JITSFX)
   SDKNAME := $(if $(filter ios,$(PLAT)),iphoneos,$(if $(filter sim,$(PLAT)),iphonesimulator,macosx))
   TRIPLE := arm64-apple-ios16.0$(if $(filter sim,$(PLAT)),-simulator,$(if $(filter cat,$(PLAT)),-macabi,))
   SDK := $(shell xcrun --sdk $(SDKNAME) --show-sdk-path)
   CATSYS := $(if $(filter cat,$(PLAT)),-iframework $(SDK)/System/iOSSupport/System/Library/Frameworks -isystem $(SDK)/System/iOSSupport/usr/include)
   CC := $(shell xcrun --sdk $(SDKNAME) -f clang) -target $(TRIPLE) -isysroot $(SDK) $(CATSYS)
   CXX := $(shell xcrun --sdk $(SDKNAME) -f clang++) -target $(TRIPLE) -isysroot $(SDK) $(CATSYS)
-  INC := -Isrc -I$(IOSDEPS)/include -I$(IOSDEPS)/include/freetype2 -I$(IOSDEPS)/include/harfbuzz -I$(V8DIR)/include -I$(V8DIR)/third_party/icu/source/common
+  INC := $(if $(filter 1,$(JIT)),-DLUMEN_JIT) -Isrc -I$(IOSDEPS)/include -I$(IOSDEPS)/include/freetype2 -I$(IOSDEPS)/include/harfbuzz -I$(V8DIR)/include -I$(V8DIR)/third_party/icu/source/common
   LIBDIRS := -L$(IOSDEPS)/lib -L$(V8OUT)/obj $(if $(filter cat,$(PLAT)),-F$(SDK)/System/iOSSupport/System/Library/Frameworks -L$(SDK)/System/iOSSupport/usr/lib)
   PLATLIBS := -framework UIKit $(if $(filter cat,$(PLAT)),,-framework OpenGLES) -framework Foundation -framework CoreGraphics -framework QuartzCore -framework Metal -framework AVFoundation \
               -framework AudioToolbox -framework CoreAudio -framework CoreMedia -framework CoreVideo -framework VideoToolbox -framework CoreMotion \
@@ -94,24 +96,32 @@ $(BUILD)/test_url: $(call OBJ,tests/test_url.c $(BASE_SRC))
 test: $(BUILD)/test_url
 	$(BUILD)/test_url
 
-# iOS app bundle: flat .app with the binary, Info.plist, ICU data, CA bundle and icon; ad-hoc signed (re-sign to sideload)
+# iOS app bundle: flat .app with the binary, Info.plist, ICU data, CA bundle and icon; ad-hoc signed (re-sign to sideload).
+# Mac Catalyst uses the macOS layout (Contents/MacOS, Contents/Resources). JIT=1 links the JIT V8 and signs with
+# get-task-allow (iOS: JIT once a debugger enables it) / allow-jit (Catalyst).
 APP := $(BUILD)/Lumen.app
+APPRES := $(if $(filter cat,$(PLAT)),$(APP)/Contents/Resources,$(APP))
+APPBIN := $(if $(filter cat,$(PLAT)),$(APP)/Contents/MacOS/Lumen,$(APP)/Lumen)
+APPPL := $(if $(filter cat,$(PLAT)),$(APP)/Contents/Info.plist,$(APP)/Info.plist)
+ENTS := $(if $(filter 1,$(JIT)),$(if $(filter cat,$(PLAT)),ios/jit-mac.entitlements,ios/jit-ios.entitlements))
 CACERT ?= $(firstword $(wildcard /opt/homebrew/etc/ca-certificates/cert.pem /opt/homebrew/etc/openssl@3/cert.pem /etc/ssl/cert.pem))
 app: $(BUILD)/lumen ios/Info.plist
-	@mkdir -p $(APP)
-	cp $(BUILD)/lumen $(APP)/Lumen
-	sed -e 's/@PLATFORM@/$(if $(filter sim,$(PLAT)),iPhoneSimulator,iPhoneOS)/' ios/Info.plist > $(APP)/Info.plist
-	plutil -convert binary1 $(APP)/Info.plist
-	cp $(V8OUT)/icudtl.dat $(APP)/icudtl.dat
-	cp $(CACERT) $(APP)/cacert.pem
-	sips -z 180 180 assets/icon/lumen-256.png --out $(APP)/AppIcon60x60@3x.png >/dev/null
-	sips -z 167 167 assets/icon/lumen-256.png --out $(APP)/AppIcon83.5x83.5@2x~ipad.png >/dev/null
-	sips -z 152 152 assets/icon/lumen-256.png --out $(APP)/AppIcon76x76@2x~ipad.png >/dev/null
-	sips -z 120 120 assets/icon/lumen-256.png --out $(APP)/AppIcon60x60@2x.png >/dev/null
-	codesign --force --sign - --timestamp=none $(APP)
+	@mkdir -p $(APPRES) $(dir $(APPBIN))
+	cp $(BUILD)/lumen $(APPBIN)
+	sed -e 's/@PLATFORM@/$(if $(filter sim,$(PLAT)),iPhoneSimulator,$(if $(filter cat,$(PLAT)),MacOSX,iPhoneOS))/' ios/Info.plist > $(APPPL)
+	$(if $(filter cat,$(PLAT)),plutil -insert LSMinimumSystemVersion -string 13.0 $(APPPL))
+	plutil -convert binary1 $(APPPL)
+	cp $(V8OUT)/icudtl.dat $(APPRES)/icudtl.dat
+	cp $(CACERT) $(APPRES)/cacert.pem
+	sips -z 180 180 assets/icon/lumen-256.png --out $(APPRES)/AppIcon60x60@3x.png >/dev/null
+	sips -z 167 167 assets/icon/lumen-256.png --out $(APPRES)/AppIcon83.5x83.5@2x~ipad.png >/dev/null
+	sips -z 152 152 assets/icon/lumen-256.png --out $(APPRES)/AppIcon76x76@2x~ipad.png >/dev/null
+	sips -z 120 120 assets/icon/lumen-256.png --out $(APPRES)/AppIcon60x60@2x.png >/dev/null
+	codesign --force --sign - --timestamp=none $(if $(ENTS),--entitlements $(ENTS)) $(APP)
+IPA := Lumen$(if $(filter 1,$(JIT)),-jit,-jitless).ipa
 ipa: app
 	rm -rf $(BUILD)/ipa && mkdir -p $(BUILD)/ipa/Payload && cp -R $(APP) $(BUILD)/ipa/Payload/
-	cd $(BUILD)/ipa && zip -qry ../Lumen.ipa Payload
+	cd $(BUILD)/ipa && rm -f ../$(IPA) && zip -qry ../$(IPA) Payload
 .PHONY: app ipa
 
 clean:

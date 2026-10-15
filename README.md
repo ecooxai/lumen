@@ -45,14 +45,46 @@ The same engine runs as a UIKit app on iPadOS (and iPhone). The identical `.ipa`
 "iPad app", and `PLAT=cat` builds a Mac Catalyst app from the same sources. No WebKit is used: HTML/CSS/layout/paint
 are Lumen's own, JavaScript is V8 in jitless mode (iOS forbids JIT for normal apps), GPU is Metal via wgpu-native.
 
-Lumen is not on the App Store. Sideload `Lumen.ipa` with AltStore, Sideloadly or Xcode (free Apple ID works; the
+Lumen is not on the App Store. Sideload the IPA with AltStore, Sideloadly or Xcode (free Apple ID works; the
 signature lasts 7 days).
+
+### JIT and jitless builds
+
+| IPA | JavaScript | When to use |
+| --- | --- | --- |
+| `Lumen-jitless.ipa` | V8 interpreter only (Ignition + optimised builtins) | Always works, no debugger needed. JS-heavy sites (YouTube, ChatGPT) are 2-5x slower |
+| `Lumen-jit.ipa` | V8 with Sparkplug, Maglev and TurboFan | Full speed when iOS allows JIT; otherwise it falls back to jitless by itself |
+
+iOS only gives an app JIT memory while a debugger has attached to it, so with `Lumen-jit.ipa`:
+
+1. Sideload it with a **development** signature (AltStore/SideStore, Sideloadly or Xcode all keep `get-task-allow`).
+2. Enable JIT for each launch with one of:
+   - **StikDebug** (on the iPad, no computer): install StikDebug + its pairing file, open it, pick *Lumen* under
+     *Enable JIT*. Lumen starts with JIT on.
+   - **Xcode** (iPad connected to a Mac): *Window → Devices and Simulators*, or `xcrun devicectl device process
+     launch --start-stopped --device <id> com.ecooxai.lumen` and attach Xcode's debugger (*Debug → Attach to Process*).
+   - **SideStore / AltStore**: long-press Lumen → *Enable JIT* (AltStore needs AltServer running on the same Wi-Fi).
+3. Lumen logs `lumen: V8 JIT enabled` or `lumen: V8 JIT unavailable, running jitless` at start-up (Console.app).
+
+On iOS 26 with the newest chips Apple has restricted debugger-enabled JIT further; if StikDebug cannot enable it,
+Lumen just runs jitless. The Simulator and the Mac builds always have JIT.
+
+### On a Mac
+
+- **Mac Catalyst** (`make PLAT=cat app`, or `JIT=1`): a native Mac `.app` built from the same sources and UIKit
+  shell; JIT works directly (signed with `com.apple.security.cs.allow-jit`). Run it like the desktop build:
+  `xattr -dr com.apple.quarantine Lumen.app; open Lumen.app`.
+- **The IPA itself** runs on Apple Silicon Macs as an iPad app. macOS only launches iPad apps with a real Apple
+  signature: install it from Xcode (*Devices* → your Mac → *+* with the IPA after re-signing it with your Apple ID,
+  e.g. via Sideloadly's re-sign), or use **PlayCover** (open the IPA, it re-signs and runs it). JIT works on the Mac
+  without a debugger. iPad apps cannot run inside macOS virtual machines.
 
 ```sh
 ios/build-deps.sh sim          # also: ios, cat  -> ~/ios-deps/<plat>
 # V8 15.6 jitless monolith -> ~/src/v8ios/v8/out/{ios-simulator,ios-device,catalyst} (see CONTINUE-ios.md)
 make PLAT=sim app              # build-sim/Lumen.app for the iOS Simulator
-make PLAT=ios ipa              # build-ios/Lumen.ipa for iPad / iPhone
+make PLAT=ios ipa              # build-ios/Lumen-jitless.ipa for iPad / iPhone
+make PLAT=ios JIT=1 ipa        # build-ios-jit/Lumen-jit.ipa (needs the -jit V8 builds)
 make PLAT=cat app              # build-cat/Lumen.app, Mac Catalyst
 xcrun simctl install booted build-sim/Lumen.app && xcrun simctl launch booted com.ecooxai.lumen
 ```
