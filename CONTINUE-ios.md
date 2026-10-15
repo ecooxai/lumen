@@ -64,3 +64,8 @@ App Store acceptance is not a goal (sideload / Xcode run).
   of the loaders and shell-shared modules, no unhandled rejections logged.
 - Debug recipe: `LUMEN_PRE_FILE=dump.js LUMEN_CONSOLE=1 LUMEN_DEBUG_MODULES=1` and fetch() the asset text from
   inside Lumen (curl gets a Cloudflare challenge).
+- Narrowed further: `hd` = `pd().then(n(document,true))`; `n` -> runtime `runWithParsedApplicationDocument`, which
+  waits for `octane-application-parsed` / `window.__octaneApplicationParsed` (this IS set to true in Lumen), then
+  `await a()` (the presentation body in shell-shared `function n(e,t,n){let a=L(e);...}` – uses
+  `_earlyVisualKeyboard`, `web-mobile-root`, `[data-octane-shell-layout]`). The pending await is inside that body;
+  next step: dump `String()` of the runtime's `rn` / `createApplicationPresentation` and probe each await.
