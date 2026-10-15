@@ -88,3 +88,9 @@ App Store acceptance is not a goal (sideload / Xcode run).
   MediaRecorder (capture.c `cap_rec_*`, fragmented MP4, `LUMEN_REC_DUMP=file.mp4` writes the result for ffprobe).
   Tests: ~/fvtest/gdm.html, ~/fvtest/rec.html with LUMEN_PERMISSIONS=grant LUMEN_CONSOLE=1.
 - MediaRecorder: video only (no audio mux), one blob at stop (timeslice ignored).
+- Top-sites pass (macOS desktop build, VM loaded by V8 builds): 10 tabs in one Lumen process ~211 MB final /
+  320 MB peak, avg CPU 23% vs Chrome 10 tabs 2.1 GB / 2.37 GB peak, 52% CPU (~/topsites/run.sh, each.sh).
+  All 10 lay out like Chrome (montage ~/topsites/montage.png). Claude stops at Cloudflare's bot check (not
+  bypassed). Fixed: DOMStringMap (Facebook), window.postMessage() arity (Turnstile), WebCrypto algorithm getters,
+  IndexedDB (new 07c-idb.js, in-memory per origin, not persisted across restarts yet; test ~/fvtest/idb.html).
+- Catalyst JIT V8 ninja was SIGSTOPped (kill -CONT 84646 + children) to let ios-simulator-jit finish first.
