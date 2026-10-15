@@ -835,6 +835,14 @@ FN(imgSize) {
     RET(v8::Array::New(iso, v, 2));
 }
 FN(userAgent) { CTX; RET(jstr(iso, g_user_agent)); }
+FN(touchPoints) {
+    CTX;
+#ifdef __ANDROID__
+    RET(v8::Integer::New(iso, 16));
+#else
+    RET(v8::Integer::New(iso, 0));
+#endif
+}
 FN(platform) {
     CTX;
 #ifdef __ANDROID__
@@ -933,7 +941,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(mediaPump); REG(resizePump); REG(intersectionPump); REG(videoFramePump); REG(videoFrameInfo); REG(videoQuality);
     REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(readyState); REG(quirks);
     REG(currentScript); REG(media); REG(cssSupports); REG(cssSelText); REG(urlParse); REG(encode); REG(decode); REG(random); REG(cDigest); REG(cHmac); REG(cAes); REG(cEcGen); REG(cEcDerive); REG(cEcSign); REG(cEcVerify); REG(cSpki); REG(cSpkiParse); REG(cPkcs8Parse); REG(cEcFromD); REG(cHkdf); REG(cPbkdf2);
-    REG(heap); REG(imgSize); REG(userAgent); REG(platform); REG(cpus); REG(makeAll);
+    REG(heap); REG(imgSize); REG(userAgent); REG(platform); REG(touchPoints); REG(cpus); REG(makeAll);
 #undef REG
     js_install_frames(c, N); js_install_workers(c, N);
 }

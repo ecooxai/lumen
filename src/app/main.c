@@ -312,6 +312,7 @@ typedef struct App {
     float fling_x, fling_y;
     Tab *touch_tab;
     uint64_t touch_generation;
+    unsigned touch_dom_flags;
 #endif
     int pw, ph, screen_w, screen_h; float scale, vw, vh, input_scale;
     Canvas frame, page; DisplayList pdl, cdl, hdl;
@@ -1407,6 +1408,7 @@ static void android_fling_tick(App *app) {
     if (android_fling_step(&app->fling, now_ms(), app->scale, &dx, &dy) &&
             !android_scroll_apply(app, app->fling_x, app->fling_y, dx, dy)) android_fling_reset(&app->fling);
 }
+static unsigned android_dom_touch(App *app, const char *phase, const SDL_Event *event);
 static bool android_touch_input(App *app, SDL_Event *event) {
     switch (event->type) {
     case SDL_EVENT_MOUSE_MOTION: return event->motion.which == SDL_TOUCH_MOUSEID;
@@ -1415,6 +1417,7 @@ static bool android_touch_input(App *app, SDL_Event *event) {
     case SDL_EVENT_WINDOW_FOCUS_LOST: case SDL_EVENT_WILL_ENTER_BACKGROUND:
     case SDL_EVENT_KEY_DOWN: case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
     case SDL_EVENT_WINDOW_RESIZED: case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED:
+        android_dom_touch(app, "reset", NULL);
         android_touch_reset(&app->touch);
         android_fling_reset(&app->fling);
         return false;
@@ -1426,6 +1429,7 @@ static bool android_touch_input(App *app, SDL_Event *event) {
     if (event->tfinger.windowID != SDL_GetWindowID(app->win) ||
             event->tfinger.touchID == SDL_MOUSE_TOUCHID) return true;
     if (app->touch_tab != app->t || app->touch_generation != app->t->lgen) {
+        android_dom_touch(app, "reset", NULL);
         android_touch_reset(&app->touch);
         android_fling_reset(&app->fling);
     }
@@ -1433,6 +1437,12 @@ static bool android_touch_input(App *app, SDL_Event *event) {
         : event->type == SDL_EVENT_FINGER_UP ? ANDROID_TOUCH_UP
         : event->type == SDL_EVENT_FINGER_MOTION ? ANDROID_TOUCH_MOVE : ANDROID_TOUCH_CANCEL;
     float pointer_x = event->tfinger.x * app->vw, pointer_y = event->tfinger.y * app->vh;
+    if (!isfinite(pointer_x) || !isfinite(pointer_y)) {
+        android_dom_touch(app, "reset", NULL);
+        android_touch_reset(&app->touch);
+        android_fling_reset(&app->fling);
+        return true;
+    }
     if (phase == ANDROID_TOUCH_DOWN) {
         android_fling_reset(&app->fling);
         if (pointer_x < 0 || pointer_y < 0 || pointer_x > app->vw || pointer_y > app->vh) return true;
@@ -1441,14 +1451,24 @@ static bool android_touch_input(App *app, SDL_Event *event) {
         g_sm_dx = g_sm_dy = 0;
     }
     app->last_input = now_ms();
+    unsigned dom = android_dom_touch(app, phase == ANDROID_TOUCH_DOWN ? "start"
+        : phase == ANDROID_TOUCH_MOVE ? "move" : phase == ANDROID_TOUCH_UP ? "end" : "cancel", event);
+    app->touch_dom_flags = dom;
+    if (app->touch_tab != app->t || app->touch_generation != app->t->lgen) {
+        android_touch_reset(&app->touch);
+        android_fling_reset(&app->fling);
+        return true;
+    }
+    if (dom & 1) app->touch.can_scroll = false;
     AndroidTouchResult result = android_touch_update(&app->touch, phase,
         event->tfinger.touchID, event->tfinger.fingerID, pointer_x, pointer_y,
-        pointer_x > app->side && pointer_y > BAR && !g_hud_pop && !app->t->info);
+        pointer_x > app->side && pointer_y > BAR && !g_hud_pop && !app->t->info && !(dom & 1));
     double timestamp = (double)event->tfinger.timestamp / 1000000.0;
     if (phase == ANDROID_TOUCH_DOWN && app->touch.count == 1 && !app->touch.blocked && app->touch.can_scroll)
         android_fling_begin(&app->fling, timestamp);
     if (phase == ANDROID_TOUCH_CANCEL || app->touch.blocked) android_fling_reset(&app->fling);
     if (result.action == ANDROID_TOUCH_SCROLL) {
+        android_dom_touch(app, "scroll", event);
         app->fling_x = result.anchor_x; app->fling_y = result.anchor_y;
         if (android_scroll_apply(app, result.anchor_x, result.anchor_y, result.dx, result.dy)) {
             if (!app->fling.tracking) android_fling_begin(&app->fling, timestamp);
@@ -1456,7 +1476,7 @@ static bool android_touch_input(App *app, SDL_Event *event) {
         } else android_fling_reset(&app->fling);
     }
     if (phase == ANDROID_TOUCH_UP) android_fling_release(&app->fling, timestamp, now_ms());
-    if (result.action != ANDROID_TOUCH_TAP) return true;
+    if (result.action != ANDROID_TOUCH_TAP || (dom & 4)) return true;
     SDL_Event click = {0};
     click.button.type = SDL_EVENT_MOUSE_BUTTON_DOWN;
     click.button.timestamp = event->tfinger.timestamp;
@@ -1896,6 +1916,30 @@ static void h_sync_in(void *ud, Document *d, bool layout) {
     layout_run(p->L, p->d, a->vw - a->side, a->vh - BAR);
     a->t->relayout = false;
 }
+#ifdef __ANDROID__
+static unsigned android_dom_touch(App *a, const char *phase, const SDL_Event *event) {
+    Page *p = a->t->cur;
+    if (!p || !p->js || a->t->asleep) return 0;
+    Node *target = NULL;
+    float x = event ? event->tfinger.x * a->vw - a->side : 0;
+    float y = event ? event->tfinger.y * a->vh - BAR : 0;
+    if (!strcmp(phase, "start")) {
+        if (x <= 0 || y <= 0 || g_hud_pop || a->t->info) return 0;
+        h_sync_in(a, p->d, true);
+        Box *b = p->L ? layout_hit(p->L, x, y + a->t->sy, 0, a->t->sy) : NULL;
+        target = b ? b->node : NULL;
+        while (target && target->type != NODE_ELEMENT) target = target->parent;
+        /* Frame coordinates are handled by click_frame until contact routing
+           across browsing contexts is implemented. */
+        if (target && target->tag == A_iframe) return 0;
+    }
+    uint64_t version = p->d->dom_version;
+    unsigned flags = js_touch(p->js, target, phase, event ? event->tfinger.touchID : 0,
+        event ? event->tfinger.fingerID : 0, x, y, event ? event->tfinger.pressure : 0);
+    if (a->t->cur == p && version != p->d->dom_version) { a->vonly = false; restyle(a); }
+    return flags;
+}
+#endif
 static void h_navigate_in(void *ud, const char *u) { (void)ud; navigate(g_app, u, true); }
 static void h_set_url_in(void *ud, const char *u, bool push) {
     (void)ud; App *a = g_app;
@@ -2273,7 +2317,7 @@ static void sel_copy(App *a) {
     if (f) { if (a->page_sel) { char *v = ctl_value(f); SDL_SetClipboardText(v); free(v); } return; }
     if (g_tsel.on && a->t->cur && a->t->cur->L == g_tsel.L) { char *s = tsel_text(a->t->cur->L); if (*s) SDL_SetClipboardText(s); free(s); }
 }
-static void click_page(App *a, float x, float y) {
+static void click_page(App *a, float x, float y, unsigned touch_flags) {
     x -= a->side;
     if (!a->t->cur || !a->t->cur->L || a->t->asleep) return;   /* a sleeping page is only a picture until its reload lands */
     h_sync_in(a, a->t->cur->d, true);   /* paint may be deferred; hit-test the current DOM, not detached boxes */
@@ -2296,8 +2340,11 @@ static void click_page(App *a, float x, float y) {
     if (t && a->t->cur->js) {
         JsCtx *js = a->t->cur->js; float cy = y - BAR;
         Node *before = a->t->cur->d->focus;
-        js_dispatch(js, t, "pointerdown", "PointerEvent", true, true, x, cy, 0, NULL);
-        bool md_ok = js_dispatch(js, t, "mousedown", "MouseEvent", true, true, x, cy, 0, NULL);
+        bool touch = (touch_flags & 8) != 0;
+        if (!touch) js_dispatch(js, t, "pointerdown", "PointerEvent", true, true, x, cy, 0, NULL);
+        bool md_ok = !(touch_flags & 2);
+        if (md_ok) md_ok = touch ? js_touch_compat(js, t, "mousedown", "MouseEvent", x, cy)
+            : js_dispatch(js, t, "mousedown", "MouseEvent", true, true, x, cy, 0, NULL);
         bool js_focused = a->t->cur->d->focus != before;
         Node *ctl = t;
         for (Node *l = t; l; l = l->parent) if (l->type == NODE_ELEMENT && l->tag && !strcmp(l->tag, "label")) {
@@ -2315,9 +2362,13 @@ static void click_page(App *a, float x, float y) {
         if (is_text_ctl(ctl)) focus_node(a, ctl);
         else if (edit_host(t)) { if (!js_focused && md_ok) focus_node(a, edit_host(t)); }
         else if (!js_focused && md_ok && page_focus(a)) focus_node(a, NULL);
-        js_dispatch(js, t, "pointerup", "PointerEvent", true, true, x, cy, 0, NULL);
-        js_dispatch(js, t, "mouseup", "MouseEvent", true, true, x, cy, 0, NULL);
-        bool ok = js_dispatch(js, t, "click", "PointerEvent", true, true, x, cy, 0, NULL);
+        if (!touch) js_dispatch(js, t, "pointerup", "PointerEvent", true, true, x, cy, 0, NULL);
+        if (!(touch_flags & 2)) {
+            if (touch) js_touch_compat(js, t, "mouseup", "MouseEvent", x, cy);
+            else js_dispatch(js, t, "mouseup", "MouseEvent", true, true, x, cy, 0, NULL);
+        }
+        bool ok = touch ? js_touch_compat(js, t, "click", "PointerEvent", x, cy)
+            : js_dispatch(js, t, "click", "PointerEvent", true, true, x, cy, 0, NULL);
         restyle(a);
         if (!ok) return;
     }
@@ -2948,15 +2999,13 @@ int main(int argc, char **argv) {
                 case HB_STAR: bm_toggle(&a); a.dirty = true; a.vonly = false; break;
                 case HB_RELOAD: if (a.t->hpos >= 0) navigate(&a, a.t->hist[a.t->hpos], false); break;
                 case HB_URL: a.editing = true; a.sel_all = 1; SDL_StartTextInput(a.win); a.dirty = true; break;
-                default:
+                default: {
+                    unsigned touch_flags = 0;
 #ifdef __ANDROID__
-                    /* Finger events suppress SDL's synthetic mouse motion.
-                       Wake YouTube's controls on a tap, just as a real pointer
-                       does, and arm the existing bounded visibility interval. */
-                    if (touch_tap && a.t->cur && is_youtube(a.t->cur->url) && ev.button.y > BAR && ev.button.x > a.side)
-                        page_move(&a, ev.button.x - a.side, ev.button.y - BAR);
+                    if (touch_tap) touch_flags = a.touch_dom_flags;
 #endif
-                    if (a.editing) { a.editing = false; SDL_StopTextInput(a.win); a.dirty = true; } sel_press(&a, ev.button.x, ev.button.y, ev.button.clicks); click_page(&a, ev.button.x, ev.button.y); edit_press(&a, ev.button.x, ev.button.y, ev.button.clicks);
+                    if (a.editing) { a.editing = false; SDL_StopTextInput(a.win); a.dirty = true; } sel_press(&a, ev.button.x, ev.button.y, ev.button.clicks); click_page(&a, ev.button.x, ev.button.y, touch_flags); edit_press(&a, ev.button.x, ev.button.y, ev.button.clicks);
+                }
                 }
                 break;
             case SDL_EVENT_TEXT_INPUT: a.caret_t = now_ms();

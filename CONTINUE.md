@@ -1,5 +1,44 @@
 # Lumen: handoff notes
 
+## Android native touch + Wasm audit (2026-10-15)
+
+Full daily-browser goal ACTIVE, Vulkan first. USER ADDED FULL WASM SUPPORT; do not
+reduce that requirement to the existing V8 arithmetic smoke test. See
+docs/android-native-touch-20261015.md and docs/wasm-browser-20261015.md.
+
+Native Android pointer/touch start/move/end/cancel now reach top-level pages with
+stable contact identity/targets and touch lists. Touch cancellation suppresses
+native scrolling and duplicate clicks. Native scrolling cancels the pointer stream.
+Touch capability exposed; Android YouTube fake mouse-move tap hook removed.
+Six JS touch tests,24 Android adapter/gesture tests, six viewport tests and desktop
+YouTube visibility test pass. Local phone fixture confirms single click, canceled
+tap/no click, canceled drag/no scroll, native scroll/one pointercancel/no click.
+Iframe contact routing, touch-action/pointer capture/full touch interface conformance,
+mutation-induced click retargeting and pinch zoom remain unfinished.
+
+YouTube off-center tap now reveals controls without pausing: pause icon/time1:09
+visible in screenshots ending1.22/2.24s, hidden by capture ending3.54s. Later long
+playback hit existing error; youtube-touch-idle stage is ERROR, NOT paused evidence.
+Fresh early pause confirmed0:02/play triangle and controls persist. Confirmed paused
+110samplesCPU3.170%,peak24.51%,RSS327.41MiB: NOT clean idle pass; profile periodic
+work before declaring idle target met. Seeking/fullscreen/long playback unfinished.
+
+Wasm PHONE audit7/13PASS: sync/async page compilation, memory growth, BigInt,i64,
+SIMD,bulk memory,traps. FAIL: both streaming APIs absent, module structuredClone
+loses module, Worker compilation times out, compiled module and shared Wasm memory
+cannot be posted to Worker. worker.cc serializer has no delegates; worker taskloop
+wait not woken by V8 foreground tasks is a candidate for async timeout. Next implement
+proper browser Wasm integration and expand conformance/real-app coverage; do not
+claim full support. All source entry points/requirements in Wasm audit doc.
+
+Installed verified APK:
+build/codex-native-touch-20261015/lumen-vulkan-native-touch-debug.apk
+SHA256:219e9ebaea744aeeb976f92a712961b559d6c820071b7d12306aefd1cde97097.
+Evidence build/codex-native-touch-20261015,728whole-process/all-thread1Hz samples,
+zero cadence/parse errors. App stopped, monitor/server verified joined, owned
+reverses removed; no owned live job. No credentials entered. Vulkan renderer
+confirmed in log. RAM/login/daily features/zoom incomplete; GL/software deferred.
+
 ## Android vectorized image spans (2026-10-15)
 
 Full goal ACTIVE, Vulkan first. See docs/android-image-spans-20261015.md.

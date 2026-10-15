@@ -708,7 +708,7 @@ static std::string key_code(const char *k) {
     return k;
 }
 
-bool js_dispatch(JsCtx *c, Node *target, const char *type, const char *kind, bool bubbles, bool cancelable, double x, double y, int button, const char *key) {
+static bool js_dispatch_impl(JsCtx *c, Node *target, const char *type, const char *kind, bool bubbles, bool cancelable, double x, double y, int button, const char *key, bool touch) {
     if (!c || c->fire.IsEmpty()) return true;
     if (target && target->parent && target->parent->type != NODE_DOCUMENT) { node_retain(target); g_pins.push_back(target); }
     JS_ENTER(c);
@@ -718,6 +718,7 @@ bool js_dispatch(JsCtx *c, Node *target, const char *type, const char *kind, boo
     set("cancelable", v8::Boolean::New(iso, cancelable));
     set("composed", v8::True(iso));
     set("view", ctx->Global());
+    if (touch) set("__touch", v8::True(iso));
     set("clientX", v8::Number::New(iso, x));
     set("clientY", v8::Number::New(iso, y));
     set("screenX", v8::Number::New(iso, x));
@@ -746,6 +747,26 @@ bool js_dispatch(JsCtx *c, Node *target, const char *type, const char *kind, boo
     }
     if (!ok) return true;
     return r->BooleanValue(iso);
+}
+
+bool js_dispatch(JsCtx *c, Node *target, const char *type, const char *kind, bool bubbles, bool cancelable, double x, double y, int button, const char *key) {
+    return js_dispatch_impl(c, target, type, kind, bubbles, cancelable, x, y, button, key, false);
+}
+
+bool js_touch_compat(JsCtx *c, Node *target, const char *type, const char *kind, double x, double y) {
+    return js_dispatch_impl(c, target, type, kind, true, true, x, y, 0, nullptr, true);
+}
+
+unsigned js_touch(JsCtx *c, Node *target, const char *phase, uint64_t device, uint64_t finger, double x, double y, double pressure) {
+    if (!c || c->api.IsEmpty()) return 0;
+    JS_ENTER(c);
+    v8::Local<v8::Value> fn, result;
+    if (!c->api.Get(iso)->Get(ctx, jstr(iso, "nativeTouch")).ToLocal(&fn) || !fn->IsFunction()) return 0;
+    char id[64]; snprintf(id, sizeof id, "%llu:%llu", (unsigned long long)device, (unsigned long long)finger);
+    v8::Local<v8::Value> args[] = { target ? jwrap(c, target) : v8::Local<v8::Value>(v8::Null(iso)),
+        jstr(iso, phase), jstr(iso, id), v8::Number::New(iso, x), v8::Number::New(iso, y), v8::Number::New(iso, pressure) };
+    if (!jcall(c, fn.As<v8::Function>(), v8::Undefined(iso), 6, args).ToLocal(&result)) return 0;
+    return result->Uint32Value(ctx).FromMaybe(0);
 }
 
 bool js_dispatch_window(JsCtx *c, const char *type) {

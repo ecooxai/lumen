@@ -24,11 +24,5 @@ class YoutubeControlTests(unittest.TestCase):
             result = subprocess.run([str(executable)], capture_output=True, text=True, timeout=10)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
-    def test_android_taps_wake_controls_before_click(self):
-        source = (ROOT / 'src/app/main.c').read_text()
-        start = source.index('if (touch_tap && a.t->cur && is_youtube')
-        self.assertLess(source.index('page_move(&a', start), source.index('click_page(&a', start))
-        self.assertIn('ev.button.y > BAR', source[start:source.index('page_move(&a', start)])
-
 if __name__ == '__main__':
     unittest.main()

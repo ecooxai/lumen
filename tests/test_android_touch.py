@@ -95,7 +95,7 @@ def input_test(name):
     return run
 
 
-for scenario in ("tap", "scroll", "synthetic", "cancel", "navigation", "chrome", "bounds"):
+for scenario in ("tap", "scroll", "synthetic", "cancel", "navigation", "chrome", "bounds", "dom_cancel", "dom_pointer"):
     setattr(AndroidTouchInputTests, f"test_{scenario}", input_test(scenario))
 
 

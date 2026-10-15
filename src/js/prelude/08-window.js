@@ -78,7 +78,7 @@ const userAgentData = __uaChrome ? {
 const navigator = {
     userAgent: N.userAgent(), appVersion: N.userAgent().replace(/^Mozilla\//, ''), appName: 'Netscape', appCodeName: 'Mozilla', product: 'Gecko', productSub: __uaChrome ? '20030107' : '20100101', vendor: __uaChrome ? 'Google Inc.' : '', vendorSub: '',
     platform: N.platform(), language: 'en-US', languages: ['en-US', 'en'], onLine: true, cookieEnabled: true, doNotTrack: null, webdriver: false, pdfViewerEnabled: false,
-    hardwareConcurrency: N.cpus(), deviceMemory: 8, maxTouchPoints: 0, plugins: [], mimeTypes: [],
+    hardwareConcurrency: N.cpus(), deviceMemory: 8, maxTouchPoints: N.touchPoints ? N.touchPoints() : 0, plugins: [], mimeTypes: [],
     userAgentData,
     connection: { effectiveType: '4g', downlink: 10, rtt: 50, saveData: false, addEventListener() {}, removeEventListener() {} },
     javaEnabled() { return false; }, sendBeacon() { return true; }, vibrate() { return false; }, registerProtocolHandler() {},
@@ -406,17 +406,21 @@ function viewportChanged(resized) {
     mediaChanged();
 }
 // Bare global calls like `addEventListener(...)` run with an undefined receiver in strict code.
+if (navigator.maxTouchPoints) for (const type of ['touchstart', 'touchmove', 'touchend', 'touchcancel']) def(G, 'on' + type, null);
 for (const k of ['addEventListener', 'removeEventListener', 'dispatchEvent']) {
     const f = EventTarget.prototype[k];
     Object.defineProperty(G, k, { value: function (...a) { return f.apply(this ?? G, a); }, writable: true, configurable: true });
 }
 function fire(target, type, init, Ctor = Event) {
+    const touchClick = type === 'click' && init && init.__touch;
+    if (init && init.__touch) init = nativeTouchInit(type, init);
     const pre = type === 'click' ? preActivate(target) : null;
     const ev = new Ctor(type, init), ok = dispatch(target, ev, true);
     if (!ok && pre && pre.restore) pre.restore();
     if (ok && type === 'click' && target && target.nodeType === 1 && !(target.closest && target.closest('a[href]')) && !(target.disabled || (target.closest && target.closest('button:disabled')))) {
         try { activate(target, ev, pre); } catch (e) { report(e); }   /* anchors are navigated natively by the shell */
     }
+    if (touchClick) nativeTap = null;
     return ok;
 }
 function fireAnim(t, type, name, elapsed, anim) {
@@ -514,5 +518,5 @@ function fireAnim(t, type, name, elapsed, anim) {
     };
     selAt('left', move(-1)); selAt('right', move(1));
 }
-return { queueMessage, workerEvent, protoFor, dispatch, fire, fireAnim, report, mediaChanged, viewportChanged, ceConnected, Event, MouseEvent, PointerEvent, KeyboardEvent, FocusEvent, WheelEvent, InputEvent, PopStateEvent, ErrorEvent };
+return { queueMessage, workerEvent, protoFor, dispatch, fire, fireAnim, report, mediaChanged, viewportChanged, ceConnected, nativeTouch, Event, MouseEvent, PointerEvent, KeyboardEvent, FocusEvent, WheelEvent, InputEvent, PopStateEvent, ErrorEvent };
 })

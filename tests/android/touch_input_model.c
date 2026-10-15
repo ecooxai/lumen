@@ -30,6 +30,7 @@ typedef struct {
     float fling_x, fling_y;
     Tab *touch_tab, *t;
     uint64_t touch_generation;
+    unsigned touch_dom_flags;
     void *win;
     float vw, vh, side;
     double last_input;
@@ -38,6 +39,13 @@ static bool g_hud_pop;
 static float g_sm_dx, g_sm_dy;
 static unsigned wheel_calls;
 static float wheel_x, wheel_y, wheel_dx, wheel_dy;
+static unsigned dom_flags, dom_scrolls, dom_resets;
+static unsigned android_dom_touch(App *app, const char *phase, const SDL_Event *event) {
+    (void)app; (void)event;
+    if (!strcmp(phase, "scroll")) dom_scrolls++;
+    if (!strcmp(phase, "reset")) dom_resets++;
+    return dom_flags;
+}
 static SDL_WindowID SDL_GetWindowID(void *window) { (void)window; return 1; }
 static double now_ms(void) { return 123; }
 static bool android_scroll_apply(App *app, float anchor_x, float anchor_y, float dx, float dy) {
@@ -136,6 +144,28 @@ int main(int argc, char **argv) {
         CHECK(android_touch_input(&app, &event) && app.touch.count == 0);
         event = finger(SDL_EVENT_FINGER_DOWN, -.1f, .5f);
         CHECK(android_touch_input(&app, &event) && app.touch.count == 0);
+    } else if (!strcmp(argv[1], "dom_cancel")) {
+        dom_flags = 15;
+        event = finger(SDL_EVENT_FINGER_DOWN, .5f, .5f);
+        CHECK(android_touch_input(&app, &event));
+        event = finger(SDL_EVENT_FINGER_MOTION, .5f, .3f);
+        CHECK(android_touch_input(&app, &event) && !wheel_calls && !dom_scrolls);
+        event = finger(SDL_EVENT_FINGER_UP, .5f, .3f);
+        CHECK(android_touch_input(&app, &event));
+        event = finger(SDL_EVENT_FINGER_DOWN, .5f, .5f);
+        android_touch_input(&app, &event);
+        event = finger(SDL_EVENT_FINGER_UP, .5f, .5f);
+        CHECK(android_touch_input(&app, &event));
+    } else if (!strcmp(argv[1], "dom_pointer")) {
+        dom_flags = 10; /* pointerdown cancellation suppresses mouse, not scroll/click */
+        event = finger(SDL_EVENT_FINGER_DOWN, .5f, .5f);
+        android_touch_input(&app, &event);
+        event = finger(SDL_EVENT_FINGER_UP, .5f, .5f);
+        CHECK(!android_touch_input(&app, &event) && app.touch_dom_flags == 10);
+        event = finger(SDL_EVENT_FINGER_DOWN, .5f, .5f);
+        android_touch_input(&app, &event);
+        event = finger(SDL_EVENT_FINGER_MOTION, .5f, .3f);
+        CHECK(android_touch_input(&app, &event) && wheel_calls == 1 && dom_scrolls == 1);
     } else {
         CHECK(false);
     }

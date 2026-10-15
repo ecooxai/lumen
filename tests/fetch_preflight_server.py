@@ -50,7 +50,24 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         self.event()
-        page = {'/': 'fetch-preflight-stream.html', '/base-uri-cache': 'base-uri-cache.html', '/request-state': 'request-state.html', '/video-frames': 'video-frame-callback.html', '/media-events': 'media-events.html', '/blob-parts': 'blob-parts.html', '/resize-observer': 'resize-observer.html', '/user-agent': 'user-agent.html', '/positioned-drawer': 'positioned-drawer.html', '/player-overlay': 'player-overlay.html', '/intersection-observer': 'intersection-observer.html', '/event-wait': 'event-wait.html', '/opacity-scroll': 'opacity-scroll.html', '/thumbnail-scroll': 'thumbnail-scroll.html'}.get(self.path)
+        if self.path == '/wasm-browser':
+            data = (Path(__file__).parent / 'js' / 'wasm-browser.html').read_bytes()
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/html; charset=utf-8')
+            self.send_header('Content-Length', str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+            return
+        if self.path == '/add.wasm':
+            data = bytes([0,97,115,109,1,0,0,0,1,7,1,96,2,127,127,1,127,
+                          3,2,1,0,7,7,1,3,97,100,100,0,0,10,9,1,7,0,32,0,32,1,106,11])
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/wasm')
+            self.send_header('Content-Length', str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+            return
+        page = {'/': 'fetch-preflight-stream.html', '/base-uri-cache': 'base-uri-cache.html', '/request-state': 'request-state.html', '/video-frames': 'video-frame-callback.html', '/media-events': 'media-events.html', '/blob-parts': 'blob-parts.html', '/resize-observer': 'resize-observer.html', '/user-agent': 'user-agent.html', '/positioned-drawer': 'positioned-drawer.html', '/player-overlay': 'player-overlay.html', '/intersection-observer': 'intersection-observer.html', '/event-wait': 'event-wait.html', '/opacity-scroll': 'opacity-scroll.html', '/thumbnail-scroll': 'thumbnail-scroll.html', '/native-touch': 'native-touch.html'}.get(self.path)
         if self.path == '/user-agent-headers':
             data = json.dumps(dict(self.headers)).encode()
             self.headers_for(len(data))
