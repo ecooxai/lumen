@@ -2286,10 +2286,10 @@ static bool g_bg;   /* iOS app in background: no GPU work allowed */
 /* Touch: one finger pans (with momentum), a short touch is a click, two quick taps a double click. */
 static struct { int n; SDL_FingerID id; float x0, y0, lx, ly, vx, vy; double t0, lt; bool pan; double tap_t; float tap_x, tap_y; } g_tc;
 static struct { float x, y, vx, vy; double t; bool on; } g_fl;
-static void push_mouse(Uint32 type, float x, float y, int clicks) {
+static void push_mouse(Uint32 type, float x, float y, int clicks, Uint8 btn) {
     SDL_Event e; SDL_zero(e); e.type = type;
     if (type == SDL_EVENT_MOUSE_MOTION) { e.motion.x = x; e.motion.y = y; }
-    else { e.button.button = SDL_BUTTON_LEFT; e.button.x = x; e.button.y = y; e.button.clicks = (Uint8)clicks; e.button.down = type == SDL_EVENT_MOUSE_BUTTON_DOWN; }
+    else { e.button.button = btn; e.button.x = x; e.button.y = y; e.button.clicks = (Uint8)clicks; e.button.down = type == SDL_EVENT_MOUSE_BUTTON_DOWN; }
     SDL_PushEvent(&e);
 }
 static void touch_event(App *a, const SDL_Event *ev) {
@@ -2320,9 +2320,14 @@ static void touch_event(App *a, const SDL_Event *ev) {
         if (t - g_tc.lt < 80 && hypotf(g_tc.vx, g_tc.vy) > 120) { g_fl.on = true; g_fl.x = g_tc.x0; g_fl.y = g_tc.y0; g_fl.vx = g_tc.vx; g_fl.vy = g_tc.vy; g_fl.t = t; }
         return;
     }
+    if (t - g_tc.t0 > 500) {   /* long press = right click (context menu) */
+        g_tc.tap_t = 0;
+        push_mouse(SDL_EVENT_MOUSE_MOTION, x, y, 0, 0); push_mouse(SDL_EVENT_MOUSE_BUTTON_DOWN, x, y, 1, SDL_BUTTON_RIGHT); push_mouse(SDL_EVENT_MOUSE_BUTTON_UP, x, y, 1, SDL_BUTTON_RIGHT);
+        return;
+    }
     int clicks = t - g_tc.tap_t < 350 && hypotf(x - g_tc.tap_x, y - g_tc.tap_y) < 24 ? 2 : 1;
     g_tc.tap_t = clicks == 2 ? 0 : t; g_tc.tap_x = x; g_tc.tap_y = y;
-    push_mouse(SDL_EVENT_MOUSE_MOTION, x, y, 0); push_mouse(SDL_EVENT_MOUSE_BUTTON_DOWN, x, y, clicks); push_mouse(SDL_EVENT_MOUSE_BUTTON_UP, x, y, clicks);
+    push_mouse(SDL_EVENT_MOUSE_MOTION, x, y, 0, 0); push_mouse(SDL_EVENT_MOUSE_BUTTON_DOWN, x, y, clicks, SDL_BUTTON_LEFT); push_mouse(SDL_EVENT_MOUSE_BUTTON_UP, x, y, clicks, SDL_BUTTON_LEFT);
 }
 /* Momentum scrolling after a flick, UIScrollView-like deceleration; true while still moving. */
 static bool touch_fling(App *a) {
