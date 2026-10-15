@@ -187,7 +187,7 @@ static void cache_fetch(const char *u) {
     ImgSlot *slot = xcalloc(1, sizeof *slot); slot->im = im; slot->done = true;
     SDL_LockMutex(icache_mu); if (!hm_get(&icache, u)) { hm_put(&icache, u, slot); if (im) { g_icache_bytes += (size_t)im->w * (size_t)im->h * 4; g_icache_n++; } } else { image_unref(im); free(slot); } SDL_UnlockMutex(icache_mu);
 }
-Image *cap_frame_for(Node *n);
+Image *cap_frame_for(Node *n); bool cap_screen_active(void); void cap_screen_push(const uint32_t *px, int w, int h, int stride);
 static Image *node_img(Node *n) {
     if (n->tag == A_iframe) { Page *fp = frame_find(n); return fp && fp->cv.px ? &fp->img : NULL; }
     if (n->tag == A_video) { Image *f = cap_frame_for(n); if (!f) f = media_frame_for(n); if (f) return f; }
@@ -1216,6 +1216,8 @@ static void render(App *a) {
             SDL_DestroySurface(src); SDL_UpdateWindowSurface(a->win);
         }
     }
+    if (cap_screen_active() && a->frame.h > bar_px && a->frame.w > side_px)
+        cap_screen_push(a->frame.px + (size_t)bar_px * (size_t)a->frame.stride + side_px, a->frame.w - side_px, a->frame.h - bar_px, a->frame.stride);
     a->frame_ms = now_ms() - t0;
     if (getenv("LUMEN_SHOT")) {   /* write the presented frame to a PNG after LUMEN_SHOT_MS and exit */
         static double ts; if (!ts) ts = t0;

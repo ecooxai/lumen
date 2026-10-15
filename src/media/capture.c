@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include "../paint/cvbuf.h"
 
-typedef struct { SDL_Camera *cam; Node *node; Image img[2]; int cur, w, h, fps; SDL_Thread *th; SDL_AtomicInt run; } Cam;
+typedef struct { SDL_Camera *cam; Node *node; Image img[2]; int cur, w, h, fps; SDL_Thread *th; SDL_AtomicInt run; bool screen; Uint64 last; } Cam;
 #define NCAM 8
 static Cam g_cam[NCAM + 1];
 static SDL_AudioStream *g_mic[NCAM + 1];
@@ -44,7 +44,7 @@ int cap_cam_open(int idx, int w, int h, int fps) {
             if (best < 0 || d < best) { best = d; spec = *fs[i]; want = &spec; } }
         SDL_free(fs);
     }
-    int slot = 0; for (int i = 1; i <= NCAM; i++) if (!g_cam[i].cam) { slot = i; break; }
+    int slot = 0; for (int i = 1; i <= NCAM; i++) if (!g_cam[i].cam && !g_cam[i].screen) { slot = i; break; }
     if (!slot) { SDL_free(ids); return 0; }
     Cam *c = &g_cam[slot]; memset(c, 0, sizeof *c);
     c->cam = SDL_OpenCamera(ids[idx], want); SDL_free(ids);
@@ -58,17 +58,36 @@ int cap_cam_open(int idx, int w, int h, int fps) {
 void cap_cam_info(int id, int *w, int *h, int *fps) { Cam *c = id > 0 && id <= NCAM ? &g_cam[id] : NULL; *w = c ? c->w : 0; *h = c ? c->h : 0; *fps = c ? c->fps : 0; }
 void cap_cam_bind(int id, Node *n) {
     for (int i = 1; i <= NCAM; i++) if (g_cam[i].node == n) g_cam[i].node = NULL;
-    if (id > 0 && id <= NCAM && g_cam[id].cam) g_cam[id].node = n;
+    if (id > 0 && id <= NCAM && (g_cam[id].cam || g_cam[id].screen)) g_cam[id].node = n;
     cvbuf_changed = 1;
 }
 void cap_cam_close(int id) {
-    if (id <= 0 || id > NCAM || !g_cam[id].cam) return; Cam *c = &g_cam[id];
-    SDL_SetAtomicInt(&c->run, 0); SDL_WaitThread(c->th, NULL); SDL_CloseCamera(c->cam);
+    if (id <= 0 || id > NCAM || !(g_cam[id].cam || g_cam[id].screen)) return; Cam *c = &g_cam[id];
+    if (c->cam) { SDL_SetAtomicInt(&c->run, 0); SDL_WaitThread(c->th, NULL); SDL_CloseCamera(c->cam); }
     free(c->img[0].px); free(c->img[1].px); memset(c, 0, sizeof *c); cvbuf_changed = 1;
 }
 Image *cap_frame_for(Node *n) {
-    for (int i = 1; i <= NCAM; i++) if (g_cam[i].cam && g_cam[i].node == n && g_cam[i].img[g_cam[i].cur].px) return &g_cam[i].img[g_cam[i].cur];
+    for (int i = 1; i <= NCAM; i++) if ((g_cam[i].cam || g_cam[i].screen) && g_cam[i].node == n && g_cam[i].img[g_cam[i].cur].px) return &g_cam[i].img[g_cam[i].cur];
     return NULL;
+}
+
+/* getDisplayMedia: a capture source fed with Lumen's own presented page pixels (same on macOS, iPadOS, Linux, Android) */
+int cap_screen_open(void) {
+    for (int i = 1; i <= NCAM; i++) if (!g_cam[i].cam && !g_cam[i].screen) { Cam *c = &g_cam[i]; memset(c, 0, sizeof *c); c->screen = true; c->fps = 30; return i; }
+    return 0;
+}
+bool cap_screen_active(void) { for (int i = 1; i <= NCAM; i++) if (g_cam[i].screen) return true; return false; }
+void cap_screen_push(const uint32_t *px, int w, int h, int stride) {
+    Uint64 now = SDL_GetTicks();
+    for (int i = 1; i <= NCAM; i++) {
+        Cam *c = &g_cam[i];
+        if (!c->screen || w <= 0 || h <= 0 || (c->last && now - c->last < 1000u / (unsigned)c->fps)) continue;
+        int b = c->cur ^ 1; Image *im = &c->img[b];
+        if (im->w != w || im->h != h) { free(im->px); im->px = malloc((size_t)w * h * 4); im->w = w; im->h = h; im->refs = 1; im->scale = 1; }
+        for (int y = 0; y < h; y++) memcpy(im->px + (size_t)y * w, px + (size_t)y * stride, (size_t)w * 4);
+        c->w = w; c->h = h; c->cur = b; c->last = now;
+        if (c->node) cvbuf_changed = 1;
+    }
 }
 int cap_mics(char (*names)[128], int max) {
     if (!cap_init(SDL_INIT_AUDIO)) return 0;

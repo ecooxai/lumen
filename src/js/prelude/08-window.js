@@ -479,7 +479,7 @@ function fireAnim(t, type, name, elapsed, anim) {
 /* getUserMedia (real camera/mic), enumerateDevices, permissions, geolocation */
 (() => {
     const origin = () => { try { return location.origin || 'file://'; } catch { return 'file://'; } };
-    const PN = { camera: 'camera', microphone: 'microphone', geolocation: 'location' };
+    const PN = { camera: 'camera', microphone: 'microphone', geolocation: 'location', 'display-capture': 'screen' };
     const state = n => { const s = N.capState(PN[n] || n, origin()); return s > 0 ? 'granted' : s < 0 ? 'denied' : 'prompt'; };
     const ask = n => N.capAsk(PN[n] || n, origin());
     class PermissionStatus extends EventTarget { constructor(n) { super(); this.name = n; this.onchange = null; } get state() { return state(this.name); } }
@@ -506,10 +506,18 @@ function fireAnim(t, type, name, elapsed, anim) {
         } catch (e) { for (const t of tracks) t.stop(); return rej(e); }
         res(new MediaStream(tracks));
     }));
+    md.getDisplayMedia = (c = {}) => new Promise((res, rej) => setTimeout(() => {
+        if (c && (c.video === false || c.audio && !c.video && c.video !== undefined)) return rej(new TypeError("Failed to execute 'getDisplayMedia': video must be requested"));
+        if (!ask('display-capture')) return rej(NA());
+        const id = N.capScreenOpen(); if (!id) return rej(new DOMException('Could not start video source', 'NotReadableError'));
+        const t = new MediaStreamTrack(RTC_INTERNAL, 'video', 'web-contents-media-stream://' + id); t._.cam = id; t._.dev = 'screen'; t._.display = true;
+        res(new MediaStream([t]));
+    }));
     const TP = MediaStreamTrack.prototype, stop0 = TP.stop, gs0 = TP.getSettings;
     TP.stop = function () { if (this._.cam) { N.capCamClose(this._.cam); this._.cam = 0; } if (this._.mic) { N.capMicClose(this._.mic); this._.mic = 0; } stop0.call(this); };
     TP.getSettings = function () { if (this._.cam) { const [w, h, f] = N.capCamInfo(this._.cam); return { deviceId: this._.dev, groupId: '', width: w, height: h, frameRate: f, aspectRatio: h ? w / h : 0, facingMode: 'user', resizeMode: 'none' }; }
         if (this._.kind === 'audio' && this._.rate) return { deviceId: 'default', groupId: '', sampleRate: this._.rate, channelCount: this._.ch, sampleSize: 32, echoCancellation: false, autoGainControl: false, noiseSuppression: false }; return gs0.call(this); };
+    { const gs1 = TP.getSettings; TP.getSettings = function () { const r = gs1.call(this); if (this._.display) { delete r.facingMode; r.displaySurface = 'browser'; r.logicalSurface = true; r.cursor = 'never'; } return r; }; }
     TP.getCapabilities = function () { return this._.kind === 'video' ? { width: { min: 1, max: 4096 }, height: { min: 1, max: 4096 }, frameRate: { min: 1, max: 60 }, facingMode: ['user'] } : { sampleRate: { min: 8000, max: 96000 }, channelCount: { min: 1, max: 2 } }; };
     /** pull recorded PCM (Float32Array, interleaved) for an audio track; used by WebAudio / MediaRecorder */
     TP._readPCM = function () { return this._.mic ? N.capMicRead(this._.mic) || new Float32Array(0) : new Float32Array(0); };
