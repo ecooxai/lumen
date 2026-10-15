@@ -368,6 +368,12 @@ FN(idbPut) {
     a.GetReturnValue().Set(v8::Number::New(iso, (double)gen));
 }
 FN(idbDel) { CTX; std::lock_guard<std::mutex> g(g_ls_mu); IdbOrigin &D = idb_get(S(0)); D.b.erase(S(1)); D.gen.erase(S(1)); D.dirty = true; }
+FN(storageUsage) {
+    CTX; std::lock_guard<std::mutex> g(g_ls_mu); std::string o = S(0); double n = 0;
+    for (auto &kv : ls_get(o).m) n += (double)(kv.first.size() + kv.second.size());
+    for (auto &kv : idb_get(o).b) n += (double)kv.second.size();
+    a.GetReturnValue().Set(v8::Number::New(iso, n));
+}
 FN(idbNames) {
     CTX; std::lock_guard<std::mutex> g(g_ls_mu); IdbOrigin &D = idb_get(S(0)); v8::Local<v8::Context> cx = iso->GetCurrentContext();
     v8::Local<v8::Array> r = v8::Array::New(iso, (int)D.b.size()); uint32_t i = 0;
@@ -1100,7 +1106,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(matches); REG(byId); REG(clone); REG(doc); REG(contains); REG(connected); REG(host); REG(attachShadow);
     REG(templateContent); REG(rect); REG(vrect); REG(clipSet); REG(clipGet); REG(scrollPos); REG(setScroll); REG(computed); REG(value); REG(setValue); REG(checked); REG(setChecked); REG(setPseudo); REG(pickFiles);
     REG(focus); REG(active); REG(cookie); REG(setCookie); REG(url); REG(setUrl); REG(navigate); REG(navigatePost); REG(saveFile); REG(histGo);
-    REG(histLen); REG(ssGet); REG(ssSet); REG(lsGet); REG(lsSet); REG(lsDel); REG(drainMicrotasks); REG(idbGen); REG(idbGet); REG(idbPut); REG(idbDel); REG(idbNames);
+    REG(histLen); REG(ssGet); REG(ssSet); REG(lsGet); REG(lsSet); REG(lsDel); REG(drainMicrotasks); REG(idbGen); REG(idbGet); REG(idbPut); REG(idbDel); REG(idbNames); REG(storageUsage);
     REG(busPost);
     REG(busOrigin); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
     REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(blobFile); REG(blobFileFree); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove); REG(mediaAbort);

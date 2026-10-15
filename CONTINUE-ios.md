@@ -239,3 +239,6 @@ App Store acceptance is not a goal (sideload / Xcode run).
   `TransactionInactiveError`; requests now drain microtasks after each success/error event
   (`N.drainMicrotasks`). Test: `~/fvtest/bus/idb.html` (run twice; ids keep counting). Lumen
   instances are separate processes, so two running Lumen apps do not see each other's writes.
+  Verified on the iPad Simulator too (force-quit + relaunch keeps data; 0-0.1% CPU idle).
+- `navigator.storage.estimate()` now reports real usage (localStorage + IndexedDB bytes for the origin,
+  `storageUsage` native); `persisted()` added (always false).

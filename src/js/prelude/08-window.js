@@ -104,7 +104,7 @@ const navigator = {
         getRegistration() { return Promise.resolve(undefined); }, getRegistrations() { return Promise.resolve([]); },
         startMessages() {},
     }),
-    storage: { estimate() { return Promise.resolve({ quota: 1e9, usage: 0 }); }, persist() { return Promise.resolve(false); } },
+    storage: { estimate() { return Promise.resolve({ quota: 1e9, usage: ssOrigin === 'null' ? 0 : N.storageUsage(ssOrigin) }); }, persist() { return Promise.resolve(false); }, persisted() { return Promise.resolve(false); } },
     locks: { request(n, o, cb) { cb = typeof o === 'function' ? o : cb; return Promise.resolve().then(() => cb({ name: n })); } },
     getGamepads() { return []; }, getBattery() { return Promise.resolve(battery); },
 };
