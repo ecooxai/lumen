@@ -289,7 +289,20 @@ static std::string mod_resolve_c(JsCtx *c, const std::string &spec, const std::s
     if (bv) return *bv + spec.substr(bl);
     return mod_resolve(spec, base);
 }
+static std::mutex g_blob_mu;
+static std::unordered_map<std::string, std::string> g_blob_mods;
+void js_blob_mod(const std::string &u, const std::string *src) {
+    std::lock_guard<std::mutex> l(g_blob_mu);
+    if (src) g_blob_mods[u] = *src; else g_blob_mods.erase(u);
+}
 static bool mod_fetch(const std::string &u, const std::string &ref, std::string &out) {
+    if (!u.compare(0, 5, "blob:")) {
+        std::lock_guard<std::mutex> l(g_blob_mu);
+        auto it = g_blob_mods.find(u);
+        if (it == g_blob_mods.end()) return false;
+        out = it->second;
+        return true;
+    }
     NetRequest *rq = net_request_new("GET", u.c_str());
     if (!ref.compare(0, 4, "http")) headers_add(&rq->headers, "Referer", ref.c_str());
     NetResponse *r = net_fetch_sync(rq);

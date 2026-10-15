@@ -30,9 +30,16 @@ FN(capMicRead) { CTX; static float buf[48000 * 2]; int n = cap_mic_read(INT(0), 
 FN(capState) { CTX; a.GetReturnValue().Set(cap_perm_state(jcstr(iso, a[0]).c_str(), jcstr(iso, a[1]).c_str())); }
 FN(capAsk) { CTX; a.GetReturnValue().Set(cap_ask(jcstr(iso, a[0]).c_str(), jcstr(iso, a[1]).c_str()) != 0); }
 FN(geoFixed) { CTX; const char *g = getenv("LUMEN_GEO"); a.GetReturnValue().Set(jstr(iso, g ? g : "")); }
+void js_blob_mod(const std::string &u, const std::string *src);
+FN(blobMod) {
+    v8::Isolate *iso = a.GetIsolate();
+    std::string u = jcstr(iso, a[0]);
+    if (a.Length() > 1 && a[1]->IsString()) { std::string src = jcstr(iso, a[1]); js_blob_mod(u, &src); }
+    else js_blob_mod(u, nullptr);
+}
 void js_install_capture(JsCtx *c, v8::Local<v8::Object> N) {
     v8::Isolate *iso = c->iso; v8::Local<v8::Context> ctx = iso->GetCurrentContext();
 #define REG(nm) (void)N->Set(ctx, jstr(iso, #nm), v8::Function::New(ctx, n_##nm).ToLocalChecked())
-    REG(capCameras); REG(capMics); REG(capCamOpen); REG(capCamInfo); REG(capCamBind); REG(capCamClose); REG(capScreenOpen); REG(recStart); REG(recPause); REG(recStop); REG(capMicOpen); REG(capMicClose); REG(capMicRead); REG(capState); REG(capAsk); REG(geoFixed);
+    REG(blobMod); REG(capCameras); REG(capMics); REG(capCamOpen); REG(capCamInfo); REG(capCamBind); REG(capCamClose); REG(capScreenOpen); REG(recStart); REG(recPause); REG(recStop); REG(capMicOpen); REG(capMicClose); REG(capMicRead); REG(capState); REG(capAsk); REG(geoFixed);
 #undef REG
 }
