@@ -42,6 +42,7 @@ int media_can_play(const char *mime, bool mse);
 /* Main-thread pump: advances clocks and presents frames. Bit 0: a frame changed, bit 1: a video size changed. */
 int media_tick(void);
 uint64_t media_frame_version(void); /* main-thread presentation generation; no timer polling */
+uint64_t media_state_version(void); /* main-thread metadata/playback-state generation */
 extern bool media_yuv;                  /* presenter can draw NV12 frames (Image.yuv) */
 int media_timeout_ms(void);              /* -1 when nothing is playing */
 Image *media_frame_for(Node *element);

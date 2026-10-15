@@ -3,6 +3,7 @@
 #include <v8.h>
 #include <libplatform/libplatform.h>
 #include <atomic>
+#include <cmath>
 #include <condition_variable>
 #include <map>
 #include <mutex>
@@ -69,6 +70,9 @@ struct JsCtx {
     uint32_t next_raf = 1;
     v8::Global<v8::Function> video_frame_pump;
     uint64_t video_frame_version = 0;
+    v8::Global<v8::Function> media_pump;
+    uint64_t media_version = 0;
+    double media_due = INFINITY;
     v8::Global<v8::Function> resize_pump;
     uint64_t resize_version = 0;
     bool resize_pending = false;

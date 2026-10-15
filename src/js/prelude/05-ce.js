@@ -1,6 +1,5 @@
 const timeRanges = (r) => ({ length: r.length, start(i) { return r[i][0]; }, end(i) { return r[i][1]; } });
 const mediaEls = new Set();
-let mediaPumpId = 0;
 const mediaFire = (el, t) => el.dispatchEvent(new Event(t));
 const mediaLater = (el, t) => setTimeout(() => mediaFire(el, t), 0);
 const mediaRanges = (flat) => { const r = []; for (let i = 0; i + 1 < flat.length; i += 2) r.push([flat[i], flat[i + 1]]); return new TimeRanges(r); };
@@ -29,18 +28,21 @@ function mediaPoll() {
             def(el, '__paused', true); mediaFire(el, 'timeupdate'); mediaFire(el, 'pause'); mediaFire(el, 'ended');
         }
     }
-    if (!mediaEls.size && mediaPumpId) { clearInterval(mediaPumpId); mediaPumpId = 0; }
+    if (!mediaEls.size) N.mediaPump(null);
+    for (const el of mediaEls) if (el.__paused === false) return true;
+    return false;
 }
 function mediaDetach(el) {
     const frames = videoFrameStates.get(el);
     if (frames && el.__mp) { const q = N.videoQuality(el); frames.offset += q[0] - q[1]; }
     if (el.__mp) { N.mediaFree(el.__mp); def(el, '__mp', 0); }
     mediaEls.delete(el);
+    if (!mediaEls.size) N.mediaPump(null);
     def(el, '__st', null); def(el, '__err', null); def(el, '__src', '');
 }
 function mediaAttach(el, src) {
     const id = N.mediaNew(el); def(el, '__mp', id);
-    mediaEls.add(el); if (!mediaPumpId) mediaPumpId = setInterval(mediaPoll, 50);
+    mediaEls.add(el); N.mediaPump(mediaPoll);
     N.mediaVolume(id, el.volume, el.muted);
     if (src instanceof MediaSource) { def(el, '__src', ''); src._attach(el, id); }
     else {

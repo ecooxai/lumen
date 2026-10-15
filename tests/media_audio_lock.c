@@ -66,6 +66,8 @@ int main(void) {
     SDL_Delay(40);
     SDL_LockMutex(player->mu);assert(player->audio_wall>wall);SDL_UnlockMutex(player->mu);
     stream.eof=true;player->eos=true;media_tick();
+    assert(!player->ended); /* EOF from before the seek cannot stop playback. */
+    stream.rd_epoch=player->epoch;media_tick();
     assert(player->ended && !player->audio_device && !SDL_GetAudioStreamDevice(player->dev));
     player->nst=0;
     mp_free(player);SDL_DestroySemaphore(locked);SDL_DestroySemaphore(go);SDL_DestroySemaphore(done);

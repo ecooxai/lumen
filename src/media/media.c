@@ -69,6 +69,7 @@ struct MediaPlayer {
     Image *cur, *grave[3]; int ngrave; double painted;
     uint64_t frame_serial, presented_frames, dropped_frames;
     double frame_pts, frame_wall; int frame_w, frame_h; bool frame_hidden;
+    MpState notified_state; bool notified;
     float limit; double cpu_ms;            /* tab CPU limiter: max share of a core, decoder-thread CPU used */
 };
 
@@ -76,6 +77,8 @@ void (*media_wakeup)(void);
 static SDL_Mutex *g_mu;
 static uint64_t g_frame_version;
 uint64_t media_frame_version(void) { return g_frame_version; }
+static uint64_t g_state_version;
+uint64_t media_state_version(void) { return g_state_version; }
 static MediaPlayer **g_pl; static int g_np, g_cap;
 
 static void wake(void) { if (media_wakeup) media_wakeup(); }
@@ -459,6 +462,9 @@ static int dec_thread(void *arg) {
         if (d.swr) swr_free(&d.swr);
         int r = run_demux(s, &d, start);
         SDL_LockMutex(m->mu);
+        /* A seek can arrive while run_demux tears down its codecs. Do not
+           publish the old EOF or wait on the new epoch before decoding it. */
+        if (d.epoch != m->epoch) r = 0;
         if (r == 2) { start = s->reopen_pos; skip = 0; }
         else if (r == 1 || r == -1) {
             if (r == -1 && ++fails > 3) { m->error = true; snprintf(m->err, sizeof m->err, "decode error"); }
@@ -635,6 +641,7 @@ MediaPlayer *mp_new(Node *el) {
     if (g_np == g_cap) { g_cap = g_cap ? g_cap * 2 : 8; g_pl = xrealloc(g_pl, sizeof *g_pl * (size_t)g_cap); }
     g_pl[g_np++] = m;
     SDL_UnlockMutex(g_mu);
+    wake();
     return m;
 }
 static Stream *new_stream(MediaPlayer *m, const char *mime, bool progressive) {
@@ -739,8 +746,8 @@ int mp_buffered(MediaPlayer *m, int sb, double *r, int max) {
     SDL_UnlockMutex(m->mu);
     return n;
 }
-void mp_end_of_stream(MediaPlayer *m) { SDL_LockMutex(m->mu); m->eos = true; SDL_BroadcastCondition(m->cv); SDL_UnlockMutex(m->mu); }
-void mp_set_duration(MediaPlayer *m, double d) { SDL_LockMutex(m->mu); m->duration = d; SDL_UnlockMutex(m->mu); }
+void mp_end_of_stream(MediaPlayer *m) { SDL_LockMutex(m->mu); m->eos = true; SDL_BroadcastCondition(m->cv); SDL_UnlockMutex(m->mu); wake(); }
+void mp_set_duration(MediaPlayer *m, double d) { SDL_LockMutex(m->mu); m->duration = d; SDL_UnlockMutex(m->mu); wake(); }
 static double clock_of(MediaPlayer *m) {
     if (m->expect_audio && m->dev) {
         if (!m->playing || m->seeking) return m->base_t;
@@ -757,17 +764,20 @@ void mp_play(MediaPlayer *m) {
     if (m->ended) { m->ended = false; SDL_UnlockMutex(m->mu); mp_seek(m, 0); SDL_LockMutex(m->mu); }
     if (!m->playing) { m->audio_wall = m->base_wall = now_ms(); m->playing = true; }
     SDL_UnlockMutex(m->mu);
+    wake();
 }
 void mp_pause(MediaPlayer *m) {
     SDL_LockMutex(m->mu);
     if (m->playing) { m->base_t = clock_of(m); m->playing = false; }
     SDL_UnlockMutex(m->mu);
+    wake();
 }
 void mp_seek(MediaPlayer *m, double t) {
     SDL_LockMutex(m->mu);
     if (!isnan(m->duration) && t > m->duration) t = m->duration;
     if (t < 0) t = 0;
     m->epoch++; m->target = t; m->seeking = true; m->ended = false;
+    m->notified = false; /* Seek may complete in one pump while already paused. */
     for (int i = 0; i < m->vqn; i++) image_unref(m->vq[i].im);
     m->vqn = 0;
     while (m->ah) { AChunk *c = m->ah; m->ah = c->next; free(c->s); free(c); }
@@ -778,10 +788,10 @@ void mp_seek(MediaPlayer *m, double t) {
     /* seeking remains true until the main-thread media pump sees new data, so
        a concurrent callback can only supply silence while the queue is reset. */
     if (m->dev) SDL_ClearAudioStream(m->dev);
+    wake();
 }
 void mp_set_volume(MediaPlayer *m, float v, bool muted) { SDL_LockMutex(m->mu); m->volume = v; m->muted = muted; SDL_UnlockMutex(m->mu); }
-void mp_state(MediaPlayer *m, MpState *o) {
-    SDL_LockMutex(m->mu);
+static void state_locked(MediaPlayer *m, MpState *o) {
     bool meta = false, vid = false;
     for (int i = 0; i < m->nst; i++) { if (m->st[i]->opened) meta = true; if (m->st[i]->has_video) vid = true; }
     o->ready = m->error ? 0 : !meta ? 0 : (m->cur || m->vqn || (!vid && m->abuf > 0)) && !m->seeking ? 4 : 1;
@@ -790,7 +800,25 @@ void mp_state(MediaPlayer *m, MpState *o) {
     o->time = m->seeking ? m->target : clock_of(m); o->duration = m->duration; o->w = m->w; o->h = m->h;
     o->frame_serial = m->frame_hidden ? 0 : m->frame_serial; o->presented_frames = m->presented_frames; o->dropped_frames = m->dropped_frames;
     o->frame_pts = m->frame_pts; o->frame_wall = m->frame_wall; o->frame_w = m->frame_w; o->frame_h = m->frame_h;
+}
+void mp_state(MediaPlayer *m, MpState *o) {
+    SDL_LockMutex(m->mu);
+    state_locked(m, o);
     SDL_UnlockMutex(m->mu);
+}
+
+/* Publish on the main thread after decoding/seeking/presentation has settled.
+   Playback position is sampled by JS only while playing; a paused element
+   needs no repeating timer to discover metadata, duration, errors or seek end. */
+static bool notify_state(MediaPlayer *m) {
+    MpState s; state_locked(m, &s);
+    const MpState *o = &m->notified_state;
+    bool changed = !m->notified || s.ready != o->ready || s.paused != o->paused ||
+        s.ended != o->ended || s.seeking != o->seeking || s.waiting != o->waiting ||
+        s.error != o->error || s.w != o->w || s.h != o->h ||
+        (s.duration != o->duration && !(isnan(s.duration) && isnan(o->duration)));
+    m->notified_state = s; m->notified = true;
+    return changed;
 }
 void mp_free(MediaPlayer *m) {
     if (!m) return;
@@ -822,6 +850,7 @@ static void present(MediaPlayer *m, const VFrame *frame) {
 int media_tick(void) {
     if (!g_mu) return 0;
     int out = 0;
+    bool state_changed = false;
     SDL_LockMutex(g_mu);
     for (int i = 0; i < g_np; i++) {
         MediaPlayer *m = g_pl[i];
@@ -831,8 +860,9 @@ int media_tick(void) {
         for (int k = 0; k < m->nst; k++) {
             Stream *s = m->st[k];
             if (s->has_video) vid = true;
-            if (!s->eof) all_eof = false;
-            if (!s->eof && (s->has_audio || (!s->opened && !s->progressive &&
+            bool eof = s->eof && s->rd_epoch == m->epoch;
+            if (!eof) all_eof = false;
+            if (!eof && (s->has_audio || (!s->opened && !s->progressive &&
                 strncmp(s->mime, "audio/", 6) == 0))) aud_eof = false;
         }
         unsigned popped = 0;
@@ -871,10 +901,12 @@ int media_tick(void) {
         }
         if (popped) { SDL_BroadcastCondition(m->cv); out |= 1; if (m->cur && (m->cur->w != ow || m->cur->h != oh)) { out |= 2; if (getenv("LUMEN_DEBUG_PAINT")) fprintf(stderr, "media: size %p %dx%d -> %dx%d\n", (void *)m, ow, oh, m->cur->w, m->cur->h); } }
         bool run = m->playing;
+        state_changed |= notify_state(m);
         SDL_UnlockMutex(m->mu);
         sync_audio_device(m, run);
     }
     SDL_UnlockMutex(g_mu);
+    if (state_changed) { ++g_state_version; wake(); }
     return out;
 }
 int media_timeout_ms(void) {

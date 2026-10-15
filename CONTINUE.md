@@ -1,5 +1,37 @@
 # Lumen: handoff notes
 
+## Media notifications and replay race (2026-10-15)
+
+Full goal active, Vulkan first. See `docs/android-media-notifications-20261015.md`.
+Removed the unconditional 50 ms JS media interval: native state changes wake idle
+players; playing elements retain position updates. Fixed replay-after-ended using
+decoder-epoch-aware EOF and a post-demux epoch check. Native replay regression
+fails before the fix; phone replay changes from fail to pass.
+
+21 focused JS tests, two native sanitizer/lifecycle tests, eight phone media-event
+checks and eleven phone video-frame callback checks pass. Controlled paused
+fixture (video + 24 idle MediaSources): 30 settled samples, mean CPU 1.8632% ->
+0.2017%, RSS 255.29 -> 245.37 MiB. Frame fixture idle 0.3680%. Fixture gains only.
+
+Clean native/signature-verified APK installed:
+`build/codex-vulkan-failure-20261015/lumen-vulkan-media-events-debug.apk`, SHA256
+`93812de67b6b515e61704256139d028e7f2801dcfc5b8490524e8691d7a9d14d`.
+No temporary diagnostic code in source or APK. App stopped, sampler/server joined,
+reverse port removed, private diagnostic files removed. No credentials entered.
+
+YouTube still plays then fails by 90 seconds. Final 30 error-idle samples average
+6.2643%, peak 87% (spike included), RSS 423.42 MiB; above target. No site-wide gain.
+Earlier diagnostic stack proves the site's error handler calls stopVideo/load,
+not that load is the original cause. Detailed-error listener exists in ignored
+`failure-probe.js`, but the runs with it did not fail; capture a failing run next.
+Paused V8 profile confirms remaining recursive object cloning/JSON/GC. Profiling
+itself adds CPU: do not use sampling/dump windows as idle measurements.
+`paused-profile-final.log` is complete; `first-profile.log` is truncated;
+`second-profile.log` covers playback/mixed state. The tap/3s/7s screenshots from an
+earlier successful run show paused controls at 1:53, not broad controls acceptance.
+ChatGPT/Gemini/auth/zoom and full daily-browser acceptance remain unfinished.
+OpenGL ES/software deferred.
+
 ## Layout-driven ResizeObserver; real YouTube still errors (2026-10-15)
 
 Full goal active, Vulkan first. See `docs/android-resize-observer-20261015.md`.

@@ -1,0 +1,33 @@
+<!doctype html><meta charset="utf-8"><title>Media event wakeups</title>
+<video id="v" width="640" height="360" muted controls></video><pre id="out">Running…</pre>
+<script>
+(async()=>{
+ const results=[],v=document.getElementById('v'),wait=ms=>new Promise(r=>setTimeout(r,ms));
+ const check=(name,pass,detail)=>results.push({name,pass:!!pass,detail});
+ const event=(el,type)=>new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error(type+' timeout')),6000);el.addEventListener(type,()=>{clearTimeout(timer);resolve()},{once:true})});
+ try {
+  const ready=event(v,'canplay');v.src='/video.mp4';await ready;
+  check('paused-load-ready',v.paused&&v.readyState>=3&&v.duration>0,{ready:v.readyState,duration:v.duration});
+  let updates=0;v.addEventListener('timeupdate',()=>updates++);
+  const played=event(v,'playing');await v.play();await played;await wait(900);
+  check('playing-timeupdate',updates>=2&&v.currentTime>.5,{updates,time:v.currentTime});
+  const paused=event(v,'pause');v.pause();await paused;await wait(100);const oldTime=v.currentTime,oldUpdates=updates;
+  await wait(700);check('paused-idle',v.currentTime===oldTime&&updates===oldUpdates,{time:v.currentTime,updates});
+  const sought=event(v,'seeked');v.currentTime=2;await sought;check('paused-seek',v.paused&&Math.abs(v.currentTime-2)<.1&&!v.seeking);
+  const finished=event(v,'ended');v.currentTime=v.duration-.5;await v.play();await finished;check('ended',v.ended&&v.paused);
+  const replayed=event(v,'playing');await v.play();await replayed;await wait(200);check('replay-after-end',!v.paused&&!v.ended&&v.currentTime<1);v.pause();
+  const bad=document.createElement('audio'),error=event(bad,'error');bad.src='/missing-audio.wav';await error;check('paused-network-error',bad.paused&&bad.error?.code===2);bad.removeAttribute('src');bad.load();
+  // Keep 24 attached idle media sources, like pages which preload sound effects.
+  const sounds=[];
+  for(let i=0;i<24;i++){
+   const a=document.createElement('audio'),ms=new MediaSource(),opened=event(ms,'sourceopen');
+   a.src=URL.createObjectURL(ms);await opened;sounds.push({a,ms});
+  }
+  const changed=event(sounds[0].a,'durationchange');sounds[0].ms.duration=12;await changed;
+  check('paused-mse-duration',sounds[0].a.paused&&sounds[0].a.duration===12);
+  window.idleSounds=sounds;
+ }catch(e){check('unexpected-error',false,String(e))}
+ document.getElementById('out').textContent=JSON.stringify(results,null,2);
+ await fetch('/report',{method:'POST',body:JSON.stringify(results)});
+})();
+</script>
