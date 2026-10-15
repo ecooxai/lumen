@@ -44,7 +44,7 @@ ifneq ($(filter $(PLAT),sim ios cat),)
   CXX := $(shell xcrun --sdk $(SDKNAME) -f clang++) -target $(TRIPLE) -isysroot $(SDK)
   INC := -Isrc -I$(IOSDEPS)/include -I$(IOSDEPS)/include/freetype2 -I$(IOSDEPS)/include/harfbuzz -I$(V8DIR)/include -I$(V8DIR)/third_party/icu/source/common
   LIBDIRS := -L$(IOSDEPS)/lib -L$(V8OUT)/obj
-  PLATLIBS := -framework UIKit -framework OpenGLES -framework Foundation -framework CoreGraphics -framework QuartzCore -framework Metal -framework AVFoundation \
+  PLATLIBS := -framework UIKit $(if $(filter cat,$(PLAT)),,-framework OpenGLES) -framework Foundation -framework CoreGraphics -framework QuartzCore -framework Metal -framework AVFoundation \
               -framework AudioToolbox -framework CoreAudio -framework CoreMedia -framework CoreVideo -framework VideoToolbox -framework CoreMotion \
               -framework GameController -framework CoreHaptics -framework Security -framework UniformTypeIdentifiers -framework CoreBluetooth \
               -framework CoreText -framework IOSurface -lc++ -lbz2 -liconv

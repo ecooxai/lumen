@@ -94,7 +94,7 @@ dep_ffmpeg() {
     --enable-videotoolbox --enable-audiotoolbox --enable-libdav1d
   make -j$J && make install
 }
-dep_sdl() { cm sdl $SRC/SDL3-3.4.16 -DSDL_SHARED=OFF -DSDL_STATIC=ON -DSDL_TEST_LIBRARY=OFF -DSDL_EXAMPLES=OFF -DSDL_TESTS=OFF; }
+dep_sdl() { cm sdl $SRC/SDL3-3.4.16 $([ $PLAT = cat ] && echo -DCMAKE_SYSTEM_NAME=iOS -DSDL_OPENGLES=OFF -DSDL_OPENGL=OFF) -DSDL_SHARED=OFF -DSDL_STATIC=ON -DSDL_TEST_LIBRARY=OFF -DSDL_EXAMPLES=OFF -DSDL_TESTS=OFF; }
 dep_wgpu() {
   if [ -z "$WGPU" ]; then   # Mac Catalyst: no prebuilt; build wgpu-native from source (rustup target add aarch64-apple-ios-macabi)
     local w=${WGPU_SRC:-$HOME/src/wgpu-native}
