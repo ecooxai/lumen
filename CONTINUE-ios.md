@@ -94,3 +94,10 @@ App Store acceptance is not a goal (sideload / Xcode run).
   bypassed). Fixed: DOMStringMap (Facebook), window.postMessage() arity (Turnstile), WebCrypto algorithm getters,
   IndexedDB (new 07c-idb.js, in-memory per origin, not persisted across restarts yet; test ~/fvtest/idb.html).
 - Catalyst JIT V8 ninja was SIGSTOPped (kill -CONT 84646 + children) to let ios-simulator-jit finish first.
+- JIT Simulator VALIDATED (2026-10-15): `make PLAT=sim JIT=1 app` with the rebuilt out/ios-simulator-jit
+  (lite_mode=false + code-range recommit patch) prints `lumen: V8 JIT enabled`, loads Wikipedia and YouTube
+  (2.2 s) without crashing; idle ~1% CPU, ~280 MB RSS on Wikipedia, ~640 MB on YouTube home.
+- Module scripts / import() from blob: URLs now work (js.cc g_blob_mods, filled by URL.createObjectURL for
+  JS-typed blobs). Bing's remaining `_w is not defined` is site-side (also seen on Chrome-UA HTML).
+- Catalyst: only out/catalyst-jit is being built (jitless catalyst out/ still has ~4000 steps; the JIT build
+  falls back to jitless at runtime anyway, so it covers both).
