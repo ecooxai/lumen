@@ -227,6 +227,6 @@ App Store acceptance is not a goal (sideload / Xcode run).
   through an in-process bus (`busPost`/`js_bus_deliver` in `src/js/jsnative.cc`, delivered from
   `tick_one`). Messages are V8-serialized, same-origin only (opaque origins: own context only), kept
   5 s / 256 messages. Receiving contexts also update their `localStorage` copy, so same-origin tabs
-  and iframes now see each other's writes live. Test: `~/fvtest/bus/bc.html` over http. Workers
-  still have the old stub. Storage quota: 5 Mi UTF-16 code units (keys + values) per area,
+  and iframes now see each other's writes live. Test: `~/fvtest/bus/bc.html` over http. Dedicated workers
+  join the same bus (`bcw.html`; woken via `js_bus_listen`). Storage quota: 5 Mi UTF-16 code units (keys + values) per area,
   `QuotaExceededError` like Chrome (`~/fvtest/bus/quota.html`).

@@ -36,7 +36,8 @@ struct Worker {
 struct WTimer { double due = 0, interval = 0; bool repeat = false; v8::Global<v8::Function> fn; std::vector<v8::Global<v8::Value>> args; };
 struct WEnv {
     std::shared_ptr<Worker> w; v8::Isolate *iso = nullptr;
-    v8::Global<v8::Context> ctx; v8::Global<v8::Function> onmsg, report;
+    v8::Global<v8::Context> ctx; v8::Global<v8::Function> onmsg, report, busfn;
+    uint64_t bus_seen = 0; std::string bus_origin;
     std::map<std::string, v8::Global<v8::Module>> mods; std::multimap<int, std::string> murl;
     std::map<uint32_t, WTimer> timers; uint32_t tseq = 0; bool closing = false, reporting = false; double t0 = 0;
 };
@@ -210,6 +211,12 @@ WFN(importScript) {
     v8::Local<v8::Script> s; v8::Local<v8::Value> res;
     if (v8::Script::Compile(ctx, jsrc(iso, src.data(), src.size()), &origin).ToLocal(&s)) (void)s->Run(ctx).ToLocal(&res);
 }
+WFN(busOrigin) {
+    WENV; E->bus_origin = jcstr(iso, a[0]); E->bus_seen = js_bus_seq();
+    std::shared_ptr<Worker> w = E->w;
+    js_bus_listen(E, [w] { std::lock_guard<std::mutex> lk(w->mu); w->cv.notify_all(); });
+}
+WFN(busPost) { WENV; (void)js_bus_post(iso, ctx, a[2], E->bus_origin, "bc", jcstr(iso, a[0]), E, a[1]->NumberValue(ctx).FromMaybe(0)); }
 WFN(reportErr) { WENV; werr(E, a[0], v8::Exception::CreateMessage(iso, a[0])); }
 
 const char kWorkerPrelude[] = R"JS((function (W, G) {
@@ -381,6 +388,21 @@ const toFn = f => typeof f === 'function' ? f : (0, eval)('(function(){' + Strin
 const performance = { now: () => W.now(), timeOrigin: W.timeOrigin, mark() {}, measure() {}, getEntriesByName() { return []; }, getEntriesByType() { return []; }, toJSON() { return { timeOrigin: W.timeOrigin }; } };
 const fmt = a => a.map(x => typeof x === 'string' ? x : x instanceof Error ? x.stack || String(x) : (() => { try { return JSON.stringify(x); } catch (e) { return String(x); } })()).join(' ');
 const console = { log: (...a) => W.log(1, fmt(a)), info: (...a) => W.log(1, fmt(a)), debug: (...a) => W.log(0, fmt(a)), warn: (...a) => W.log(2, fmt(a)), error: (...a) => W.log(3, fmt(a)), trace() {}, group() {}, groupEnd() {}, time() {}, timeEnd() {}, assert: (c, ...a) => { if (!c) W.log(3, 'Assertion failed: ' + fmt(a)); } };
+const bcAll = new Set(); let bcIds = 0, bcOn = false;
+class BroadcastChannel extends EventTarget {
+    constructor(n) {
+        super();
+        if (!arguments.length) throw new TypeError("Failed to construct 'BroadcastChannel': 1 argument required");
+        Object.defineProperty(this, '_id', { value: ++bcIds }); Object.defineProperty(this, '_closed', { value: false, writable: true });
+        this.name = String(n); this.onmessage = null; this.onmessageerror = null; bcAll.add(this);
+        if (!bcOn) { bcOn = true; W.busOrigin(location.origin); }
+    }
+    postMessage(m) {
+        if (this._closed) throw new DOMException("Failed to execute 'postMessage' on 'BroadcastChannel': Channel is closed", 'InvalidStateError');
+        try { W.busPost(this.name, this._id, m); } catch (e) { throw new DOMException(String(e && e.message || e), 'DataCloneError'); }
+    }
+    close() { this._closed = true; bcAll.delete(this); }
+}
 const portSub = (v, ps, seen = new Set()) => { if (!ps.length || !v || typeof v !== 'object' || seen.has(v)) return v; const i = ps.indexOf(v); if (i >= 0) return { __lumenPortRef: i }; seen.add(v); if (Array.isArray(v)) return v.map(x => portSub(x, ps, seen)); const pr = Object.getPrototypeOf(v); if (pr !== Object.prototype && pr !== null) return v; const o = {}; for (const k of Object.keys(v)) o[k] = portSub(v[k], ps, seen); return o; };
 const portRes = (v, ps, seen = new Set()) => { if (!ps.length || !v || typeof v !== 'object' || seen.has(v)) return v; if (typeof v.__lumenPortRef === 'number' && Object.keys(v).length === 1) return ps[v.__lumenPortRef]; seen.add(v); for (const k of Object.keys(v)) v[k] = portRes(v[k], ps, seen); return v; };
 const wports = new Map(); let wpseq = 0;
@@ -400,10 +422,15 @@ const api = {
     clearTimeout: id => W.clear(+id || 0), clearInterval: id => W.clear(+id || 0),
     queueMicrotask: f => { Promise.resolve().then(() => f()); }, structuredClone: v => W.clone(v),
     btoa, atob, TextEncoder, TextDecoder, Blob, File, URL, URLSearchParams, Headers, Response, fetch, performance, console,
-    Event, MessageEvent, MessagePort, MessageChannel, ErrorEvent, CustomEvent, PromiseRejectionEvent, EventTarget, DOMException, WorkerGlobalScope, DedicatedWorkerGlobalScope, WorkerLocation, WorkerNavigator,
+    Event, MessageEvent, MessagePort, MessageChannel, BroadcastChannel, ErrorEvent, CustomEvent, PromiseRejectionEvent, EventTarget, DOMException, WorkerGlobalScope, DedicatedWorkerGlobalScope, WorkerLocation, WorkerNavigator,
 };
 for (const k of Object.keys(api)) Object.defineProperty(G, k, { value: api[k], writable: true, configurable: true, enumerable: false });
 return {
+    busDeliver(kind, name, data, id, same) {
+        if (kind !== 'bc') return;
+        let first = true;
+        for (const ch of [...bcAll]) if (!ch._closed && ch.name === name && !(same && ch._id === id)) { ch.dispatchEvent(new MessageEvent('message', { data: first ? data : W.clone(data), origin: location.origin })); first = false; }
+    },
     onmsg(data) {
         let ports = [];
         if (data && typeof data === 'object') {
@@ -462,7 +489,7 @@ void worker_main(std::shared_ptr<Worker> w) {
         v8::Context::Scope cs(ctx);
         v8::Local<v8::Object> W = v8::Object::New(iso);
 #define WREG(nm) (void)W->Set(ctx, jstr(iso, #nm), v8::Function::New(ctx, w_##nm).ToLocalChecked())
-        WREG(post); WREG(clone); WREG(timer); WREG(clear); WREG(close); WREG(now); WREG(log); WREG(decode); WREG(resolve); WREG(fetch); WREG(importScript); WREG(reportErr);
+        WREG(post); WREG(clone); WREG(timer); WREG(clear); WREG(close); WREG(now); WREG(log); WREG(decode); WREG(resolve); WREG(fetch); WREG(importScript); WREG(reportErr); WREG(busOrigin); WREG(busPost);
         auto setS = [&](const char *k, const std::string &v) { (void)W->Set(ctx, jstr(iso, k), jstr(iso, v.c_str())); };
         setS("url", w->url); setS("ua", w->ua); setS("platform", w->platform); setS("name", w->name);
         (void)W->Set(ctx, jstr(iso, "coi"), v8::Boolean::New(iso, w->coi));
@@ -479,6 +506,7 @@ void worker_main(std::shared_ptr<Worker> w) {
                 v8::Local<v8::Value> f;
                 if (api.As<v8::Object>()->Get(ctx, jstr(iso, "onmsg")).ToLocal(&f) && f->IsFunction()) E->onmsg.Reset(iso, f.As<v8::Function>());
                 if (api.As<v8::Object>()->Get(ctx, jstr(iso, "report")).ToLocal(&f) && f->IsFunction()) E->report.Reset(iso, f.As<v8::Function>());
+                if (api.As<v8::Object>()->Get(ctx, jstr(iso, "busDeliver")).ToLocal(&f) && f->IsFunction()) E->busfn.Reset(iso, f.As<v8::Function>());
             }
             if (tc.HasCaught()) fprintf(stderr, "lumen: worker prelude failed: %s\n", jcstr(iso, tc.Exception()).c_str());
         }
@@ -524,7 +552,7 @@ void worker_main(std::shared_ptr<Worker> w) {
                 std::unique_lock<std::mutex> lk(w->mu);
                 double next = bg ? now_ms() + 4 : 1e300;
                 for (auto &kv : E->timers) next = std::min(next, kv.second.due);
-                auto ready = [&] { return w->term.load() || !w->in.empty(); };
+                auto ready = [&] { return w->term.load() || !w->in.empty() || (!E->bus_origin.empty() && js_bus_seq() != E->bus_seen); };
                 if (!idle_gc) next = std::min(next, last_act + 10001);
                 if (!ready()) {
                     if (next >= 1e299) w->cv.wait(lk, ready);
@@ -543,10 +571,25 @@ void worker_main(std::shared_ptr<Worker> w) {
                 }
                 free(b.p);
             }
+            if (!E->busfn.IsEmpty() && !w->term && !E->closing) {
+                std::vector<BusMsg> bm;
+                if (js_bus_take(E->bus_origin, E, E->bus_seen, bm)) {
+                    last_act = now_ms(); idle_gc = false;
+                    v8::HandleScope hs3(iso);
+                    v8::Local<v8::Function> bf = E->busfn.Get(iso);
+                    for (auto &m : bm) {
+                        v8::TryCatch tc(iso);
+                        v8::Local<v8::Value> argv[5], r;
+                        if (js_bus_args(iso, ctx, m, E, argv)) { (void)bf->Call(ctx, v8::Undefined(iso), 5, argv).ToLocal(&r); wcheck(E, tc); }
+                        iso->PerformMicrotaskCheckpoint();
+                    }
+                }
+            }
             if (w->term) break;
             run_timers(E);
         }
-        E->timers.clear(); E->mods.clear(); E->murl.clear(); E->onmsg.Reset(); E->report.Reset(); E->ctx.Reset();
+        js_bus_listen(E, nullptr);
+        E->timers.clear(); E->mods.clear(); E->murl.clear(); E->onmsg.Reset(); E->report.Reset(); E->busfn.Reset(); E->ctx.Reset();
     }
     {
         std::lock_guard<std::mutex> lk(w->mu);

@@ -4,6 +4,7 @@
 #include <libplatform/libplatform.h>
 #include <algorithm>
 #include <atomic>
+#include <functional>
 #include <condition_variable>
 #include <map>
 #include <mutex>
@@ -115,6 +116,12 @@ v8::Local<v8::Value> jwrap(JsCtx *c, Node *n);
 Node *junwrap(v8::Local<v8::Value> v);
 void js_bus_deliver(JsCtx *c);
 uint64_t js_bus_seq();
+struct BusMsg { uint64_t seq; double t; std::string origin, kind, name; std::vector<uint8_t> data; const void *sender; double id; };
+bool js_bus_post(v8::Isolate *iso, v8::Local<v8::Context> cx, v8::Local<v8::Value> v, const std::string &origin,
+                 const std::string &kind, const std::string &name, const void *sender, double id);
+bool js_bus_take(const std::string &origin, const void *self, uint64_t &seen, std::vector<BusMsg> &out);
+bool js_bus_args(v8::Isolate *iso, v8::Local<v8::Context> ctx, const BusMsg &m, const void *self, v8::Local<v8::Value> argv[5]);
+void js_bus_listen(const void *key, std::function<void()> wake);   /* worker threads; null wake unregisters */
 v8::MaybeLocal<v8::Value> jcall(JsCtx *c, v8::Local<v8::Function> f, v8::Local<v8::Value> recv, int argc, v8::Local<v8::Value> *argv);
 void jfire(JsCtx *c, Node *n, const char *type);
 void jreport(JsCtx *c, v8::Local<v8::Value> exc, v8::Local<v8::Message> msg);

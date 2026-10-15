@@ -329,45 +329,65 @@ static void ls_write(const std::string &o, const LsOrigin &L) {
     if (fclose(f) == 0) rename(t.c_str(), p.c_str()); else unlink(t.c_str());
 }
 
-/* ---- in-process message bus: BroadcastChannel and cross-context localStorage `storage` events ---- */
-struct BusMsg { uint64_t seq; double t; std::string origin, kind, name; std::vector<uint8_t> data; JsCtx *sender; double id; };
+/* ---- in-process message bus: BroadcastChannel (pages, iframes, workers) and cross-context localStorage `storage` events ---- */
 static std::vector<BusMsg> g_bus;
 static std::mutex g_bus_mu;
-static uint64_t g_bus_seqn;
-uint64_t js_bus_seq() { std::lock_guard<std::mutex> g(g_bus_mu); return g_bus_seqn; }
-FN(busOrigin) { CTX; c->bus_origin = S(0); }
-FN(busPost) {
-    CTX;
-    v8::Local<v8::Context> cx = iso->GetCurrentContext();
+static std::atomic<uint64_t> g_bus_seqn{0};
+static std::map<const void *, std::function<void()>> g_bus_wake;
+uint64_t js_bus_seq() { return g_bus_seqn.load(); }
+void js_bus_listen(const void *key, std::function<void()> wake) {
+    std::lock_guard<std::mutex> g(g_bus_mu);
+    if (wake) g_bus_wake[key] = std::move(wake); else g_bus_wake.erase(key);
+}
+bool js_bus_post(v8::Isolate *iso, v8::Local<v8::Context> cx, v8::Local<v8::Value> v, const std::string &origin,
+                 const std::string &kind, const std::string &name, const void *sender, double id) {
     v8::ValueSerializer ser(iso);
     ser.WriteHeader();
-    if (!ser.WriteValue(cx, a[3]).FromMaybe(false)) return;
+    if (!ser.WriteValue(cx, v).FromMaybe(false)) return false;
     std::pair<uint8_t *, size_t> r = ser.Release();
     BusMsg m;
     m.data.assign(r.first, r.first + r.second);
     free(r.first);
-    m.origin = S(0); m.kind = S(1); m.name = S(2); m.sender = c; m.id = a[4]->NumberValue(cx).FromMaybe(0);
+    m.origin = origin; m.kind = kind; m.name = name; m.sender = sender; m.id = id;
     {
         std::lock_guard<std::mutex> g(g_bus_mu);
         double now = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now().time_since_epoch()).count();
-        m.t = now; m.seq = ++g_bus_seqn;
+        m.t = now; m.seq = g_bus_seqn.load() + 1;
         g_bus.push_back(std::move(m));
+        g_bus_seqn.store(g_bus.back().seq);
         size_t i = 0;   /* every live context drains the bus within a tick; keep 5 s / 256 messages */
         while (i < g_bus.size() && (now - g_bus[i].t > 5000 || g_bus.size() - i > 256)) i++;
         g_bus.erase(g_bus.begin(), g_bus.begin() + (long)i);
+        for (auto &kv : g_bus_wake) kv.second();   /* lock order: g_bus_mu, then the worker's mutex */
     }
     if (js_wakeup) js_wakeup();
+    return true;
+}
+bool js_bus_take(const std::string &origin, const void *self, uint64_t &seen, std::vector<BusMsg> &out) {
+    if (origin.empty() || seen == g_bus_seqn.load()) return false;
+    std::lock_guard<std::mutex> g(g_bus_mu);
+    for (auto &m : g_bus)
+        if (m.seq > seen && m.origin == origin && (origin != "null" || m.sender == self)) out.push_back(m);
+    seen = g_bus_seqn.load();
+    return !out.empty();
+}
+bool js_bus_args(v8::Isolate *iso, v8::Local<v8::Context> ctx, const BusMsg &m, const void *self, v8::Local<v8::Value> argv[5]) {
+    v8::ValueDeserializer d(iso, m.data.data(), m.data.size());
+    v8::Local<v8::Value> v;
+    if (!d.ReadHeader(ctx).FromMaybe(false) || !d.ReadValue(ctx).ToLocal(&v)) return false;
+    argv[0] = jstr(iso, m.kind.c_str()); argv[1] = jstr(iso, m.name.c_str()); argv[2] = v;
+    argv[3] = v8::Number::New(iso, m.id); argv[4] = v8::Boolean::New(iso, m.sender == self);
+    return true;
+}
+FN(busOrigin) { CTX; c->bus_origin = S(0); c->bus_seen = js_bus_seq(); }
+FN(busPost) {
+    CTX;
+    v8::Local<v8::Context> cx = iso->GetCurrentContext();
+    (void)js_bus_post(iso, cx, a[3], S(0), S(1), S(2), c, a[4]->NumberValue(cx).FromMaybe(0));
 }
 void js_bus_deliver(JsCtx *c) {
     std::vector<BusMsg> mine;
-    {
-        std::lock_guard<std::mutex> g(g_bus_mu);
-        if (c->bus_seen == g_bus_seqn) return;
-        for (auto &m : g_bus)
-            if (m.seq > c->bus_seen && m.origin == c->bus_origin && (m.origin != "null" || m.sender == c)) mine.push_back(m);
-        c->bus_seen = g_bus_seqn;
-    }
-    if (mine.empty() || c->api.IsEmpty()) return;
+    if (!js_bus_take(c->bus_origin, c, c->bus_seen, mine) || c->api.IsEmpty()) return;
     v8::Isolate *iso = c->iso;
     v8::HandleScope hs(iso);
     v8::Local<v8::Context> ctx = c->ctx.Get(iso);
@@ -375,11 +395,8 @@ void js_bus_deliver(JsCtx *c) {
     v8::Local<v8::Value> fv;
     if (!c->api.Get(iso)->Get(ctx, jstr(iso, "busDeliver")).ToLocal(&fv) || !fv->IsFunction()) return;
     for (auto &m : mine) {
-        v8::ValueDeserializer d(iso, m.data.data(), m.data.size());
-        v8::Local<v8::Value> v;
-        if (!d.ReadHeader(ctx).FromMaybe(false) || !d.ReadValue(ctx).ToLocal(&v)) continue;
-        v8::Local<v8::Value> argv[5] = { jstr(iso, m.kind.c_str()), jstr(iso, m.name.c_str()), v, v8::Number::New(iso, m.id), v8::Boolean::New(iso, m.sender == c) };
-        (void)jcall(c, fv.As<v8::Function>(), v8::Undefined(iso), 5, argv);
+        v8::Local<v8::Value> argv[5];
+        if (js_bus_args(iso, ctx, m, c, argv)) (void)jcall(c, fv.As<v8::Function>(), v8::Undefined(iso), 5, argv);
     }
 }
 
