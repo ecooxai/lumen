@@ -85,7 +85,8 @@ static void check_image_scanlines(void) {
                    .w=4.7f+(variant%17)*4,.h=3.1f+(variant%19)*3,.img=&im};
         float scale=.75f+(variant%4)*.5f;
         Canvas ca={.w=W,.h=H,.stride=STRIDE,.scale=scale,.px=actual};
-        R r={.c=&ca,.s=scale,.nclip=1,.px=actual,.stride=STRIDE,.height=H};
+        R r={.c=&ca,.s=scale,.nclip=1,.px=actual,.stride=STRIDE,.height=H,
+             .origin_x=variant%2,.origin_y=variant%2?2:0};
         r.clips[0]=(Clip){2,3,W-3,H-4,2.3f,3.1f,W-5.5f,H-7.2f,{4,5,6,7},variant%3==0};
         for(int i=0;i<H*STRIDE;i++) actual[i]=expected[i]=0x80604020;
         image(&r,&item);
@@ -109,8 +110,22 @@ static void check_image_scanlines(void) {
             }
             cov*=clip_cov(&r,x+.5f,y+.5f);
             if(cov<.999f) pixel=scale_px(pixel,(uint32_t)(cov*256));
-            over(&expected[y*STRIDE+x],pixel);
+            over(&expected[(y-r.origin_y)*STRIDE+x-r.origin_x],pixel);
         }
+        assert(memcmp(actual,expected,sizeof actual)==0);
+    }
+}
+
+/* Every interpolation weight, vector tail length and representative alpha
+   endpoint must preserve the scalar source-over result and surrounding pixels. */
+static void check_image_vertical(void) {
+    uint32_t top[71],bottom[71],actual[73],expected[73];
+    const uint32_t colors[]={0,0xffffffff,0x01010101,0x7f604020,0x80604020,0xfe987654,0xff987654};
+    for(int weight=0;weight<=256;weight++) for(int count=0;count<=71;count++) {
+        for(int x=0;x<71;x++) { top[x]=colors[(x+weight)%7];bottom[x]=colors[(x*3+weight/7)%7]; }
+        for(int x=0;x<73;x++) actual[x]=expected[x]=colors[x%7];
+        for(int x=0;x<count;x++) over(&expected[x+1],scale_px(top[x],256-weight)+scale_px(bottom[x],weight));
+        image_vertical(actual+1,top,bottom,count,weight);
         assert(memcmp(actual,expected,sizeof actual)==0);
     }
 }
@@ -119,6 +134,7 @@ int main(int argc, char **argv) {
     (void)argv;
     check_gradient_spans();
     check_image_scanlines();
+    check_image_vertical();
     enum { W=47, H=61, STRIDE=53 };
     Font font = {0};
     DGlyph glyphs[] = {{.x=12, .y=25, .font=&font}, {.gid=1, .x=15, .y=25, .font=&font}};

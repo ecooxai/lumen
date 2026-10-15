@@ -1,0 +1,28 @@
+<!doctype html>
+<meta name="viewport" content="width=device-width">
+<title>Thumbnail scrolling regression</title>
+<style>
+body { margin:0; padding-top:180px; font:16px sans-serif; background:#fff }
+video { position:fixed; top:0; left:0; width:100%; height:160px; object-fit:cover; background:#345; z-index:5 }
+.card { height:340px; margin:10px; border:1px solid #aaa; background:linear-gradient(#bce,#eeb); position:relative }
+</style>
+<video id="video" src="/video.mp4" muted autoplay loop playsinline></video>
+<div id="cards"></div>
+<script>
+const cards=document.getElementById('cards');
+for(let i=0;i<30;i++){
+ const card=document.createElement('div');card.className='card';
+ card.innerHTML='<h2>Thumbnail '+i+'</h2><img width=160 height=90 style="width:100%;height:280px" src="/thumbnail.png">';
+ cards.appendChild(card);
+}
+const video=document.getElementById('video');
+const started=performance.now();
+function ready(){
+ if(video.currentTime>.5 && video.readyState>=2 && Array.from(document.querySelectorAll('img')).every(image=>image.complete && image.naturalWidth===160)){
+  video.pause();
+  setTimeout(()=>fetch('/report',{method:'POST',body:JSON.stringify({fixture:'thumbnail-scroll',ready:video.paused,time:video.currentTime})}),2000);
+ }else if(performance.now()-started<15000) setTimeout(ready,100);
+ else fetch('/report',{method:'POST',body:JSON.stringify({fixture:'thumbnail-scroll',ready:false,error:'media timeout'})});
+}
+ready();
+</script>

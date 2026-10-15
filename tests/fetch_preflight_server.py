@@ -6,10 +6,24 @@ http://127.0.0.1:18765/. JSON events on stdout include the browser's report.
 Responses deliberately pause three seconds between the first and last chunk.
 """
 import json
+import struct
+import zlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 import threading
 import time
+
+
+def thumbnail_png():
+    """Small deterministic RGB thumbnail for scaling/scrolling comparisons."""
+    width, height = 160, 90
+    raw = b''.join(b'\0' + bytes(channel for x in range(width) for channel in
+                   (x * 255 // (width - 1), y * 255 // (height - 1),
+                    40 if (x // 10 + y // 10) % 2 else 210)) for y in range(height))
+    def chunk(kind, data):
+        return struct.pack('>I', len(data)) + kind + data + struct.pack('>I', zlib.crc32(kind + data))
+    return (b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', width, height, 8, 2, 0, 0, 0))
+            + chunk(b'IDAT', zlib.compress(raw, 9)) + chunk(b'IEND', b''))
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -36,10 +50,18 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         self.event()
-        page = {'/': 'fetch-preflight-stream.html', '/base-uri-cache': 'base-uri-cache.html', '/request-state': 'request-state.html', '/video-frames': 'video-frame-callback.html', '/media-events': 'media-events.html', '/blob-parts': 'blob-parts.html', '/resize-observer': 'resize-observer.html', '/user-agent': 'user-agent.html', '/positioned-drawer': 'positioned-drawer.html', '/player-overlay': 'player-overlay.html', '/intersection-observer': 'intersection-observer.html', '/event-wait': 'event-wait.html', '/opacity-scroll': 'opacity-scroll.html'}.get(self.path)
+        page = {'/': 'fetch-preflight-stream.html', '/base-uri-cache': 'base-uri-cache.html', '/request-state': 'request-state.html', '/video-frames': 'video-frame-callback.html', '/media-events': 'media-events.html', '/blob-parts': 'blob-parts.html', '/resize-observer': 'resize-observer.html', '/user-agent': 'user-agent.html', '/positioned-drawer': 'positioned-drawer.html', '/player-overlay': 'player-overlay.html', '/intersection-observer': 'intersection-observer.html', '/event-wait': 'event-wait.html', '/opacity-scroll': 'opacity-scroll.html', '/thumbnail-scroll': 'thumbnail-scroll.html'}.get(self.path)
         if self.path == '/user-agent-headers':
             data = json.dumps(dict(self.headers)).encode()
             self.headers_for(len(data))
+            self.wfile.write(data)
+            return
+        if self.path == '/thumbnail.png':
+            data = thumbnail_png()
+            self.send_response(200)
+            self.send_header('Content-Type', 'image/png')
+            self.send_header('Content-Length', str(len(data)))
+            self.end_headers()
             self.wfile.write(data)
             return
         if self.path == '/video.mp4':

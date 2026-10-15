@@ -1,5 +1,26 @@
 # Lumen: handoff notes
 
+## Android vectorized image spans (2026-10-15)
+
+Full goal ACTIVE, Vulkan first. See docs/android-image-spans-20261015.md.
+Bilinear interior spans now vectorize on ARM64 with exact scalar pixel results.
+Optimized sanitizer tests include18,504 span cases and local-origin image cases;
+2,000 scroll pixel comparisons and4 display damage scenarios pass. APK checks pass.
+Installed: build/codex-image-spans-20261015/lumen-vulkan-image-spans-debug.apk
+SHA256:85de378794a3a362da52a7f50aab1566c599189bd1005b92d8cafb9a63a33368.
+Controlled thumbnails: paint8.832->7.335ms/frame, CPU45.70->39.75%, RSSunchanged.
+YouTube paused0:02:985paintframes, raster10.173ms, total14.234ms, CPU75.26%,
+RSS361.85MiB. Different recommendations from prior run; no controlled speed ratio
+or RAM improvement. Settled paused CPU3.12% is not a clean idle pass.
+SurfaceFlinger short2.20s tail:126intervals, median16.698ms,p9516.806ms,
+five>25ms,max50.106ms. Remaining jank; no sustained60FPS claim.
+968whole-process/all-thread1Hz samples, zero cadence/parse errors. Profile15,487
+samples, zero lost. Evidence/matching symbols under build/codex-image-spans-20261015.
+App stopped; monitor/server joined; private profile files and owned reverses
+removed. No owned live job. No credentials entered. Next investigate native touch
+semantics for YouTube: Android taps currently synthesize mouse clicks and navigator
+reports maxTouchPoints0. Controls/login/zoom/RAM remain unfinished; GL/CPU deferred.
+
 ## Android GPU video scroll reuse (2026-10-15)
 
 Full goal ACTIVE, Vulkan first. See docs/android-video-scroll-20261015.md.

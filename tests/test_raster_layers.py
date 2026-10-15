@@ -12,7 +12,7 @@ class RasterLayerTests(unittest.TestCase):
             exe = Path(temporary) / 'layers'
             subprocess.run([os.environ.get('CC', 'cc'), '-std=gnu11', '-Wall', '-Wextra',
                             '-Wno-misleading-indentation', '-fsanitize=address,undefined',
-                            '-fno-sanitize-recover=all', '-g',
+                            '-fno-sanitize-recover=all', '-g', '-O2',
                             str(ROOT / 'tests/raster_layers.c'), str(ROOT / 'src/base/util.c'),
                             '-lm', '-lz', '-pthread', '-o', str(exe)], check=True,
                            capture_output=True, text=True, timeout=60)

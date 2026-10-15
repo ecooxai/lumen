@@ -251,6 +251,17 @@ static void image_horizontal(uint32_t *dst, const uint32_t *src, const ImgCol *c
         dst[x] = scale_px(src[k->a], 256 - k->w) + scale_px(src[k->b], k->w);
     }
 }
+/* Interior bilinear pixels have full coverage and contiguous cached sources.
+   Keep this loop free of geometry/alpha branches so SIMD can process a span.
+   The packed-channel truncation and source-over factors match the edge path. */
+static void image_vertical(uint32_t *restrict dst, const uint32_t *restrict top,
+                           const uint32_t *restrict bottom, int count, uint32_t weight) {
+    for (int x = 0; x < count; x++) {
+        uint32_t p = scale_px(top[x], 256 - weight) + scale_px(bottom[x], weight);
+        uint32_t alpha = p >> 24;
+        dst[x] = p + scale_px(dst[x], 256 - alpha - (alpha >> 7));
+    }
+}
 static void image(R *r, const DItem *it) {
     const Image *im = it->img; float s = r->s;
     float x0 = it->x * s, y0 = it->y * s, x1 = (it->x + it->w) * s, y1 = (it->y + it->h) * s;
@@ -267,6 +278,7 @@ static void image(R *r, const DItem *it) {
     if (px1 <= px0 || py1 <= py0) return;
     float kx = im->w / (x1 - x0), ky = im->h / (y1 - y0);
     bool down = kx > 1.5f || ky > 1.5f, rclip = c->round;
+    int inner0 = LMAX(px0, (int)ceilf(x0)), inner1 = LMIN(px1, (int)floorf(x1));
     int width = px1 - px0;
     ImgCol *cols = xmalloc((sizeof *cols + (down ? 0 : 2 * sizeof(uint32_t))) * (size_t)width);
     /* Upscaled thumbnails reuse each source row several times. Cache just the
@@ -309,7 +321,11 @@ static void image(R *r, const DItem *it) {
         }
         float cy = span_cov(y0, y1, y);
         uint32_t *row = raster_row(r, y);
+        bool span = !down && !rclip && cy >= 0.999f && inner1 > inner0;
+        if (span) image_vertical(row + inner0 - r->origin_x, ra + inner0 - px0,
+                                 rb + inner0 - px0, inner1 - inner0, wy);
         for (int x = px0; x < px1; x++) {
+            if (span && x == inner0) { x = inner1; if (x >= px1) break; }
             const ImgCol *k = &cols[x - px0];
             uint32_t p;
             if (down) p = ra[k->a];
