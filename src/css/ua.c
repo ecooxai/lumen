@@ -28,5 +28,7 @@ const char *css_ua_sheet =
 "legend{padding:0 2px}summary{display:list-item}details:not([open])>:not(summary){display:none}"
 "ruby{display:ruby}rt{font-size:50%}q::before{content:open-quote}q::after{content:close-quote}"
 "slot{display:contents}dialog[open]{position:absolute;left:0;right:0;margin:auto;border:solid;padding:1em;background:white;color:black;width:fit-content}"
+"dialog:modal{position:fixed;top:0;bottom:0;height:fit-content;max-width:calc(100% - 2em - 6px);max-height:calc(100% - 2em - 6px);overflow:auto;z-index:2147483647}"
+"[popover]:popover-open{position:fixed;top:0;right:0;bottom:0;left:0;width:fit-content;height:fit-content;margin:auto;border:solid;padding:.25em;overflow:auto;color:black;background:white;z-index:2147483647}"
 "[popover]:not(:popover-open){display:none}marquee{display:inline-block}"
 ;

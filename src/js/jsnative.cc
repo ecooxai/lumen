@@ -245,6 +245,11 @@ FN(checked) {
     CTX; ARGN(n, 0);
     RET(n->checked_override ? n->checked_override > 0 : node_has_attr(n, n->tag && !strcmp(n->tag, "option") ? "selected" : "checked"));
 }
+FN(setPseudo) {   /* 0 :modal, 1 :popover-open */
+    CTX; ARGN(n, 0); uint32_t f = NUM(1) == 0 ? NF_MODAL : NF_POPOVER_OPEN;
+    if (BOOL(2)) n->flags |= f; else n->flags &= ~f;
+    doc_mark_dirty(n->doc, n);
+}
 FN(setChecked) {
     CTX; ARGN(n, 0); bool b = BOOL(1);
     n->checked_override = b ? 1 : -1;
@@ -884,7 +889,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(text); REG(setText); REG(attr); REG(setAttr); REG(rmAttr); REG(attrs); REG(insert); REG(remove); REG(newDoc); REG(newXmlDoc); REG(parseDoc); REG(adopt); REG(pi); REG(cdata); REG(doctype); REG(ownerDoc);
     REG(create); REG(textNode); REG(comment); REG(frag); REG(html); REG(setHTML); REG(parseFrag); REG(query);
     REG(matches); REG(byId); REG(clone); REG(doc); REG(contains); REG(connected); REG(host); REG(attachShadow);
-    REG(templateContent); REG(rect); REG(vrect); REG(clipSet); REG(clipGet); REG(scrollPos); REG(setScroll); REG(computed); REG(value); REG(setValue); REG(checked); REG(setChecked); REG(pickFiles);
+    REG(templateContent); REG(rect); REG(vrect); REG(clipSet); REG(clipGet); REG(scrollPos); REG(setScroll); REG(computed); REG(value); REG(setValue); REG(checked); REG(setChecked); REG(setPseudo); REG(pickFiles);
     REG(focus); REG(active); REG(cookie); REG(setCookie); REG(url); REG(setUrl); REG(navigate); REG(navigatePost); REG(saveFile); REG(histGo);
     REG(histLen); REG(ssGet); REG(ssSet); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
     REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove); REG(mediaAbort);

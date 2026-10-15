@@ -16,6 +16,7 @@ enum {
     NF_INERT = 1 << 11,           /* template content fragment */
     NF_STRUCT_DIRTY = 1 << 12,    /* children changed: restyle self, children shallowly */
     NF_SELF_DIRTY = 1 << 13,      /* sibling list changed: re-match self only */
+    NF_MODAL = 1 << 14, NF_POPOVER_OPEN = 1 << 15,
 };
 
 typedef struct { const char *name; char *value; } Attr; /* name is an atom */

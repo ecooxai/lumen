@@ -1,3 +1,4 @@
+const popOpen = new WeakSet();
 /* pointer capture: moves/ups (and their compat mouse events) go to the capturing element until pointerup */
 let pointerCapture_ = null;
 function releaseCapture_() { const t = pointerCapture_; pointerCapture_ = null; if (t) dispatch(t, new PointerEvent('lostpointercapture', { bubbles: true, pointerId: 1 })); }
@@ -206,7 +207,9 @@ methods(HTMLElement.prototype, {
     focus() { const o = N.active(); if (o === this) return; N.focus(this); if (N.active() !== this) return; if (o) o.dispatchEvent(new FocusEvent('focusout', { bubbles: true, composed: true, relatedTarget: this })); this.dispatchEvent(new FocusEvent('focusin', { bubbles: true, composed: true, relatedTarget: o })); }, blur() { if (N.active() !== this) return; N.focus(null); this.dispatchEvent(new FocusEvent('focusout', { bubbles: true, composed: true, relatedTarget: null })); },
     click() { if (this.disabled) return; const ev = new MouseEvent('click', { bubbles: true, cancelable: true, composed: true, view: G, detail: 1 }); const pre = preActivate(this); if (dispatch(this, ev)) activate(this, ev, pre); else if (pre && pre.restore) pre.restore(); },
     attachInternals() { return { setFormValue() {}, setValidity() {}, checkValidity() { return true; }, reportValidity() { return true; }, states: new Set(), form: null, labels: [] }; },
-    showPopover() {}, hidePopover() {}, togglePopover() {},
+    showPopover() { if (!popOpen.has(this)) { popOpen.add(this); N.setPseudo(this, 1, true); } },
+    hidePopover() { if (popOpen.delete(this)) N.setPseudo(this, 1, false); },
+    togglePopover(f) { const cur = popOpen.has(this), o = f === undefined ? !cur : typeof f === 'object' && f ? (f.force === undefined ? !cur : !!f.force) : !!f; if (o) this.showPopover(); else this.hidePopover(); return o; },
 });
 class SVGElement extends Element {}
 installHandlers(SVGElement.prototype, true);
