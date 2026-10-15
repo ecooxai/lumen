@@ -168,3 +168,9 @@ App Store acceptance is not a goal (sideload / Xcode run).
 - Google sign-in (via ChatGPT "Continue with Google"): the identifier page renders and accepts the
   email, then Google redirects to /v3/signin/rejected ("This browser or app may not be secure").
   That is Google's unrecognised-browser check. Do not spoof Chrome to get around it; ask the user.
+- FIXED (idle CPU with paused media): `mediaPoll` in `05-ce.js` ran every 50 ms for as long as
+  any `<video>`/`<audio>` existed, even paused. Each tick re-ran display-list building
+  (Wikipedia's paused poster video: ~23 partial paints/s, 5-25% CPU forever). The poll now stops
+  once no element is playing/seeking/waiting and state has been unchanged for 2 s; `play()`,
+  `currentTime=` and attach restart it. Wikipedia idle: ~13% -> 0.3-3% CPU, RSS 226 -> 116 MB.
+  Fixture: `tests/js/media-idle.html`.
