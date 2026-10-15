@@ -122,9 +122,10 @@ function mkKey(type, extractable, algorithm, usages, data) {
 }
 const ALGS = ['AES-GCM', 'AES-CBC', 'AES-CTR', 'AES-KW', 'HMAC', 'ECDH', 'ECDSA', 'HKDF', 'PBKDF2', 'SHA-1', 'SHA-256', 'SHA-384', 'SHA-512', 'RSA-OAEP', 'RSA-PSS', 'RSASSA-PKCS1-v1_5', 'Ed25519', 'X25519'];
 function normAlg(a) {
-    const o = typeof a === 'string' ? { name: a } : Object.assign({}, a);
+    const o = typeof a === 'string' || a instanceof String ? { name: String(a) } : Object.assign({}, a);
+    if (a && typeof a === 'object') for (const k of ['name', 'hash', 'length', 'namedCurve', 'iv', 'counter', 'additionalData', 'tagLength', 'salt', 'info', 'iterations', 'publicExponent', 'modulusLength', 'saltLength', 'label', 'public']) if (k in a) o[k] = a[k];
     const n = ALGS.find(x => x.toLowerCase() === String(o.name).toLowerCase());
-    if (!n) throw new DOMException('Unrecognized algorithm name', 'NotSupportedError');
+    if (!n) throw new DOMException('Unrecognized algorithm name' + (o.name !== undefined ? ': ' + String(o.name) : ''), 'NotSupportedError');
     o.name = n; return o;
 }
 const hashOf = h => normAlg(h).name;
@@ -281,7 +282,7 @@ function structuredClone(v, seen = new Map()) {
     const o = Array.isArray(v) ? [] : {}; seen.set(v, o); for (const k of Object.keys(v)) o[k] = structuredClone(v[k], seen); return o;
 }
 const xferPorts = (o, t) => { const tr = o && typeof o === 'object' ? o.transfer : t; return (tr && typeof tr[Symbol.iterator] === 'function' ? [...tr] : []).filter(p => p && typeof p.postMessage === 'function' && typeof p.start === 'function'); };
-function postMessage(data, origin, transfer) { const [src, org] = N.caller(); const d = structuredClone(data), ports = xferPorts(origin, transfer); setTimeout(() => dispatch(G, new MessageEvent('message', { data: d, origin: org, source: asWin(src), ports }), true)); }
+function postMessage(data, origin, transfer) { if (!arguments.length) throw new TypeError("Failed to execute 'postMessage' on 'Window': 1 argument required, but only 0 present."); const [src, org] = N.caller(); const d = structuredClone(data), ports = xferPorts(origin, transfer); setTimeout(() => dispatch(G, new MessageEvent('message', { data: d, origin: org, source: asWin(src), ports }), true)); }
 function queueMessage(data, origin, src, ports) { setTimeout(() => dispatch(G, new MessageEvent('message', { data, origin, source: asWin(src), ports: ports ? [...ports] : [] }), true)); }
 const remoteWins = new Map();
 function asWin(v) {

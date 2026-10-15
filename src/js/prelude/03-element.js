@@ -172,7 +172,7 @@ methods(HTMLElement.prototype, {
     get dataset() {
         if (this.__ds) return this.__ds;
         const el = this, toAttr = (k) => 'data-' + k.replace(/[A-Z]/g, c => '-' + c.toLowerCase());
-        const ds = new Proxy({}, {
+        const ds = new Proxy(Object.create(DOMStringMap.prototype), {
             get(t, k) { return typeof k === 'string' ? N.attr(el, toAttr(k)) ?? undefined : undefined; },
             set(t, k, v) { el.setAttribute(toAttr(k), v); return true; },
             deleteProperty(t, k) { el.removeAttribute(toAttr(k)); return true; },
