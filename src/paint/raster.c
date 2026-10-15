@@ -36,6 +36,19 @@ static inline void over(uint32_t *d, uint32_t s) {
     if (!sa && !s) return;
     *d = s + scale_px(*d, 256 - sa - (sa >> 7));
 }
+/* Keep constant-color spans independent of raster/clip metadata. Besides
+   avoiding repeated alpha branches, these loops can be vectorized without
+   reloading potentially aliased coordinates after each pixel store. */
+static void store_span(uint32_t *dst, int count, uint32_t color) {
+    for (int i = 0; i < count; i++) dst[i] = color;
+}
+static void over_span(uint32_t *dst, int count, uint32_t color) {
+    uint32_t alpha = color >> 24;
+    if (alpha == 255) { store_span(dst, count, color); return; }
+    if (!color) return;
+    uint32_t k = 256 - alpha - (alpha >> 7);
+    for (int i = 0; i < count; i++) dst[i] = color + scale_px(dst[i], k);
+}
 static inline const Clip *clip(R *r) { return &r->clips[r->nclip - 1]; }
 
 static float sd_rrect(float px, float py, float x0, float y0, float x1, float y1, const float rad[4]) {
@@ -63,20 +76,18 @@ static void fill(R *r, float x0, float y0, float x1, float y1, const float rad[4
     bool round = rad && (rad[0] > 0 || rad[1] > 0 || rad[2] > 0 || rad[3] > 0);
     uint32_t solid = premul(col, 1);
     if (!round && !c->round) {
-        bool opaque = (solid >> 24) == 255;
         int ax = LMAX(ix0, (int)ceilf(x0)), bx = LMIN(ix1, (int)floorf(x1)); if (bx < ax) bx = ax;
         for (int y = iy0; y < iy1; y++) {
-            uint32_t *row = raster_row(r, y);
+            uint32_t *row = raster_row(r, y) + ix0 - r->origin_x;
             float cy = span_cov(y0, y1, y);
-            bool full = cy >= 0.999f;
-            for (int x = ix0; x < ix1; x++) {
-                if (full && x == ax) {
-                    if (opaque) for (; x < bx; x++) row[x - r->origin_x] = solid; else for (; x < bx; x++) over(&row[x - r->origin_x], solid);
-                    if (x >= ix1) break;
-                }
+            for (int x = ix0; x < ax; x++) {
                 float cov = cy * span_cov(x0, x1, x);
-                if (cov <= 0) continue;
-                over(&row[x - r->origin_x], cov >= 0.999f ? solid : premul(col, cov));
+                if (cov > 0) over(&row[x - ix0], cov >= 0.999f ? solid : premul(col, cov));
+            }
+            over_span(row + ax - ix0, bx - ax, cy >= 0.999f ? solid : premul(col, cy));
+            for (int x = bx; x < ix1; x++) {
+                float cov = cy * span_cov(x0, x1, x);
+                if (cov > 0) over(&row[x - ix0], cov >= 0.999f ? solid : premul(col, cov));
             }
         }
         return;
@@ -183,10 +194,25 @@ static void gradient(R *r, const DItem *it) {
     float rad[4]; for (int i = 0; i < 4; i++) rad[i] = it->r[i] * s;
     bool round = rad[0] > 0 || rad[1] > 0 || rad[2] > 0 || rad[3] > 0;
     float a = g->angle * (float)M_PI / 180.f, dxv = sinf(a), dyv = -cosf(a);
+    /* Cardinal directions are exact. sinf(pi) otherwise leaves a small x
+       component and can change a vertical gradient by a color step across
+       a wide row. Exact vertical gradients also need just one color per row. */
+    float angle = fmodf(g->angle, 360.f); if (angle < 0) angle += 360.f;
+    if (angle == 0) { dxv = 0; dyv = -1; }
+    else if (angle == 180) { dxv = 0; dyv = 1; }
+    else if (angle == 90) { dxv = 1; dyv = 0; }
+    else if (angle == 270) { dxv = -1; dyv = 0; }
     float L = fabsf(w * dxv) + fabsf(h * dyv); if (L < 1e-3f) L = 1;
     float cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, R2 = sqrtf(w * w + h * h) / 2;
     const Clip *c = clip(r);
     int px0 = LMAX(c->x0, (int)floorf(x0)), py0 = LMAX(c->y0, (int)floorf(y0)), px1 = LMIN(c->x1, (int)ceilf(x1)), py1 = LMIN(c->y1, (int)ceilf(y1));
+    if (g->type != 1 && dxv == 0 && !round && !c->round) {
+        for (int y = py0; y < py1; y++) {
+            float t = ((y + .5f - cy) * dyv) / L + .5f;
+            fill(r, x0, LMAX(y0, (float)y), x1, LMIN(y1, (float)y + 1), NULL, grad_at(g, t));
+        }
+        return;
+    }
     for (int y = py0; y < py1; y++) for (int x = px0; x < px1; x++) {
         float fx = x + 0.5f, fy = y + 0.5f;
         float t = g->type == 1 ? sqrtf((fx - cx) * (fx - cx) + (fy - cy) * (fy - cy)) / LMAX(1, R2) : ((fx - cx) * dxv + (fy - cy) * dyv) / L + 0.5f;
@@ -219,6 +245,12 @@ static void text(R *r, const DItem *it) {
 }
 
 typedef struct { int a, b; uint32_t w; float cov; } ImgCol;
+static void image_horizontal(uint32_t *dst, const uint32_t *src, const ImgCol *cols, int count) {
+    for (int x = 0; x < count; x++) {
+        const ImgCol *k = &cols[x];
+        dst[x] = scale_px(src[k->a], 256 - k->w) + scale_px(src[k->b], k->w);
+    }
+}
 static void image(R *r, const DItem *it) {
     const Image *im = it->img; float s = r->s;
     float x0 = it->x * s, y0 = it->y * s, x1 = (it->x + it->w) * s, y1 = (it->y + it->h) * s;
@@ -235,7 +267,15 @@ static void image(R *r, const DItem *it) {
     if (px1 <= px0 || py1 <= py0) return;
     float kx = im->w / (x1 - x0), ky = im->h / (y1 - y0);
     bool down = kx > 1.5f || ky > 1.5f, rclip = c->round;
-    ImgCol *cols = xmalloc(sizeof *cols * (size_t)(px1 - px0));
+    int width = px1 - px0;
+    ImgCol *cols = xmalloc((sizeof *cols + (down ? 0 : 2 * sizeof(uint32_t))) * (size_t)width);
+    /* Upscaled thumbnails reuse each source row several times. Cache just the
+       two horizontally interpolated rows needed by the vertical filter; keep
+       the original integer rounding at both stages. Storage is O(damage width),
+       never a second full-size scaled image. */
+    uint32_t *horizontal[2] = {(uint32_t *)(cols + width), (uint32_t *)(cols + width)};
+    if (!down) horizontal[1] += width;
+    int cached_y[2] = {-1, -1};
     for (int x = px0; x < px1; x++) {
         ImgCol *k = &cols[x - px0];
         float sx = (x + 0.5f - x0) * kx - 0.5f;
@@ -248,17 +288,32 @@ static void image(R *r, const DItem *it) {
         uint32_t wy = (uint32_t)((sy - iy) * 256);
         const uint32_t *ra, *rb;
         if (down) ra = rb = im->px + (size_t)LCLAMP((int)(sy + 0.5f), 0, im->h - 1) * (size_t)im->w;
-        else { ra = im->px + (size_t)LCLAMP(iy, 0, im->h - 1) * (size_t)im->w; rb = im->px + (size_t)LCLAMP(iy + 1, 0, im->h - 1) * (size_t)im->w; }
+        else {
+            int ya = LCLAMP(iy, 0, im->h - 1), yb = LCLAMP(iy + 1, 0, im->h - 1);
+            if (ya != cached_y[0] && ya == cached_y[1]) {
+                uint32_t *swap = horizontal[0]; horizontal[0] = horizontal[1]; horizontal[1] = swap;
+                int old = cached_y[0]; cached_y[0] = cached_y[1]; cached_y[1] = old;
+            }
+            if (ya != cached_y[0]) {
+                image_horizontal(horizontal[0], im->px + (size_t)ya * (size_t)im->w, cols, width);
+                cached_y[0] = ya;
+            }
+            ra = horizontal[0]; rb = ra;
+            if (yb != ya) {
+                if (yb != cached_y[1]) {
+                    image_horizontal(horizontal[1], im->px + (size_t)yb * (size_t)im->w, cols, width);
+                    cached_y[1] = yb;
+                }
+                rb = horizontal[1];
+            }
+        }
         float cy = span_cov(y0, y1, y);
         uint32_t *row = raster_row(r, y);
         for (int x = px0; x < px1; x++) {
             const ImgCol *k = &cols[x - px0];
             uint32_t p;
             if (down) p = ra[k->a];
-            else {
-                uint32_t top = scale_px(ra[k->a], 256 - k->w) + scale_px(ra[k->b], k->w), bot = scale_px(rb[k->a], 256 - k->w) + scale_px(rb[k->b], k->w);
-                p = scale_px(top, 256 - wy) + scale_px(bot, wy);
-            }
+            else p = scale_px(ra[x - px0], 256 - wy) + scale_px(rb[x - px0], wy);
             float cov = k->cov * cy; if (rclip) cov *= clip_cov(r, x + 0.5f, y + 0.5f);
             if (cov < 0.999f) p = scale_px(p, (uint32_t)(cov * 256));
             over(&row[x - r->origin_x], p);
@@ -322,7 +377,9 @@ void raster_rect(Canvas *cv, const DisplayList *dl, Color clearc, int rx0, int r
     rx0 = LMAX(rx0, 0); ry0 = LMAX(ry0, 0); rx1 = LMIN(rx1, cv->w); ry1 = LMIN(ry1, cv->h);
     if (rx1 <= rx0 || ry1 <= ry0) return;
     uint32_t cl = premul(clearc, 1);
-    for (int y = ry0; y < ry1; y++) for (int x = rx0; x < rx1; x++) cv->px[(size_t)y * (size_t)cv->stride + (size_t)x] = cl;
+    uint32_t *clear_row = cv->px + (size_t)ry0 * (size_t)cv->stride + rx0;
+    int clear_stride = cv->stride;
+    for (int y = ry0; y < ry1; y++, clear_row += clear_stride) store_span(clear_row, rx1 - rx0, cl);
     r.clips[0] = (Clip){ rx0, ry0, rx1, ry1, 0, 0, (float)cv->w, (float)cv->h, {0}, false }; r.nclip = 1;
     float s = r.s;
     LayerRect *bounds = layer_bounds(dl, s, (LayerRect){rx0, ry0, rx1, ry1});

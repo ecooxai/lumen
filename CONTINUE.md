@@ -1,5 +1,48 @@
 # Lumen: handoff notes
 
+## Android spans and image scanlines (2026-10-15)
+
+Full goal ACTIVE, Vulkan first. See `docs/android-raster-spans-20261015.md`.
+Constant-color fill/clear loops now operate on spans; vertical gradients compute
+color once per row, with exact cardinal directions. Bilinear images cache only
+2 horizontally interpolated source rows, preserving previous pixel rounding.
+Extra cache is8bytes per damaged horizontal pixel, freed per image.
+ASan/UBSan layer suite passes:12 original golden hashes,100 scalar gradient cases,
+wide-gradient uniformity regression,180 direct-source image comparisons. Four
+existing display-damage tests pass. Old raster fails the new gradient test.
+
+Controlled fixed-video opacity fixture after spans: raster74.84->7.229ms/frame,
+paint86.62->13.66ms,64->359reported frames/~7.9s;CPU80.79->67.24%,RSS252.09->253.24.
+Real YouTube after spans37.03ms raster; final scanline early-pause repeat28.00ms,
+35.46ms totalpaint,463frames/~20s,CPU86.80%,RSS335.26MiB. Different recommendations
+and completed gestures; directional comparison, not controlled real-site speedup.
+Still too slow for consistent60fps and NO demonstrated overall RAM reduction.
+Final paused27sample mean3.87% including settling; do not claim idle CPU pass.
+
+IMPORTANT: first youtube-scanlines run hit the pre-existing playback error; its
+12.61ms/920frame result is INVALID for video-present comparison. Use
+`youtube-scanlines2`, paused0:03 and retained frame/controls throughout. Runtime
+profiles and matching symbols live separately in youtube-layers, youtube-spans,
+youtube-scanlines, youtube-scanlines2 under build/codex-wakeups-20261015.
+Parent symbols are older SDL-only. summarize-youtube.py/opacity-summary.py reproduce
+numbers. New profile17719samples still raster63.93%self/fill12.95%/memmove6.77%.
+
+Final clean APK: build/codex-wakeups-20261015/lumen-vulkan-scanlines-debug.apk
+SHA256:cbaf13370e9f7f121d8ce29fa4c87cdd4993287d4c40440752c95d549e95da76.
+Native/v2 checks pass; packaged libmain directly checked for absence of temporary
+probe paths/counters. Installed. App stopped; monitor/server joined; owned reverse
+18765/18766 and private paint marker/log/perf file removed. No owned live job.
+Whole process + all threads sampled1Hz throughout; no cadence/parse errors.
+
+Controls: resume works, hides controls; center AND off-center taps during playback
+paused video instead of providing a reveal-only timing test. Paused controls stay
+visible. Investigate proper touch event lifecycle next: current Android gesture
+path synthesizes mouse clicks, click_page dispatches no touchstart/end, and
+page_move_keep is a mousemove workaround. Root cause not yet proven with traces.
+Playing hide duration, seeking/fullscreen and long playback remain incomplete.
+ChatGPT/Gemini/Google login/zoom/daily feature coverage and memory goal unfinished;
+no credentials entered; OpenGL ES/software optimization still deferred.
+
 ## Android bounded opacity groups and SDL waits (2026-10-15)
 
 See `docs/android-opacity-layers-20261015.md`. Vulkan first; full goal active.
