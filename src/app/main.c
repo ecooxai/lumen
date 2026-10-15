@@ -1449,7 +1449,8 @@ static bool sync_sheets(Page *p, bool seed) {
         bool fresh = !known || n->tag != A_style || (n->flags & (NF_STYLE_DIRTY | NF_CHILD_STYLE_DIRTY | NF_STRUCT_DIRTY));
         if (n->tag == A_style) n->flags &= ~(uint32_t)(NF_STYLE_DIRTY | NF_CHILD_STYLE_DIRTY | NF_STRUCT_DIRTY);
         char *t = fresh && n->tag == A_style ? node_text_content(n) : NULL;
-        uint64_t h = !fresh ? p->sref[k].h : t ? fnv(t) : fnv(node_attr(n, "href"));
+        /* rel=preload -> stylesheet on the same href must still load and fire "load" */
+        uint64_t h = !fresh ? p->sref[k].h : t ? fnv(t) : fnv(node_attr(n, "href")) ^ (is_sheet_link(n) ? 0x9e3779b97f4a7c15ull : 0);
         if (!seed && (!known || p->sref[k].h != h)) {
             if (known) { style_engine_remove_owner(p->e, n); changed = true; }
             if (t) { StyleSheet *sh = css_parse_sheet(t, strlen(t), p->d->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); changed = true; }

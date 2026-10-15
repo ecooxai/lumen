@@ -81,6 +81,12 @@ App Store acceptance is not a goal (sideload / Xcode run).
   (dump7.js). None of these obviously hangs, so reference-sheets may be a red herring: next, instrument
   `ma.prepare`/`dd` at runtime (patch via LUMEN_PRE_FILE fetch hook) and log which await in `n(e,t,n)` stays
   pending. Asset hashes change between runs (deploy churn); dumps locate files by name prefix.
+  shell-shared `md(doc)` (activation) awaits `ud` (prerendering, false in Lumen) then `xl().restoration`
+  (session-restoration manager). Runtime probe (dump10.js: import shell-shared, call its readable namespace
+  objects): awaitPreparedDocumentActivation + activation.ready RESOLVE; loadApplicationPresentationForStartup
+  stays PENDING. ROOT CAUSE AREA (dump11.js): `To.loadPresentationStyles(document)` never resolves
+  (`arePresentationStylesReady` = false); it awaits `g(link)` for each stylesheet link `_t(doc)`.
+  awaitTextareaFieldSizing resolves. Check `g` (dump12.js): likely link.sheet / late load-event semantics.
 
 ## Status 2026-10-15 (later)
 - Simulator JIT crash #2 (SIGBUS in `MemoryChunk::MemoryChunk`, code page `---`): V8 iOS assumes BrowserEngineKit,
