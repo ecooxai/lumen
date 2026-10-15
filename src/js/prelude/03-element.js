@@ -84,7 +84,7 @@ methods(Element.prototype, {
     insertAdjacentText(pos, t) { this.insertAdjacentElement(pos, N.textNode(String(t))); },
     matches(s) { return N.matches(this, String(s)); }, webkitMatchesSelector(s) { return N.matches(this, String(s)); },
     closest(s) { s = String(s); for (let e = this; e && N.type(e) === 1; e = N.parent(e)) if (N.matches(e, s)) return e; return null; },
-    getBoundingClientRect() { const r = N.vrect(this); if (!r) return new DOMRect(); const v = N.viewport(); return new DOMRect(r[0] - v[2], r[1] - v[3], r[2], r[3]); },
+    getBoundingClientRect() { const r = N.vrect(this); return r ? new DOMRect(r[0], r[1], r[2], r[3]) : new DOMRect(); },
     getClientRects() { return N.rect(this) ? [this.getBoundingClientRect()] : []; },
     get clientWidth() { if (this === document.documentElement) return N.viewport()[0]; const r = N.rect(this); return r ? Math.round(r[2]) : 0; },
     get clientHeight() { if (this === document.documentElement) return N.viewport()[1]; const r = N.rect(this); return r ? Math.round(r[3]) : 0; },

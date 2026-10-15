@@ -1,5 +1,46 @@
 # Lumen: handoff notes
 
+## Android positioned controls and fixed geometry (2026-10-15)
+
+Full goal active, Vulkan first. See `docs/android-player-controls-20261015.md`.
+Fixed hit testing of positioned overlays under static wrappers: the mobile
+YouTube overlay painted above the video but taps went through to the video.
+Layer selection now walks ordinary wrappers with reverse-tree/equal-z ordering,
+without per-event heap allocations. Also fixed hidden inline hit rectangles.
+Phone regression then exposed fixed getBoundingClientRect() subtracting page
+scrolling; viewport geometry now stops document scrolling at fixed ancestors
+and uses the target document's viewport. This is not full CSS conformance.
+
+37 native CSS/layout/geometry assertions under UBSan and nine existing scrolling
+hit tests pass. Initial ordering check failed 12 assertions; hidden-inline check
+failed twice before its fix. Six final phone fixture checks pass, including
+trusted control taps at scrollY 0 and 332.5. The post-scroll computed target
+failed before the geometry fix. Fixture idle: 30 samples mean 0.4552%, peak
+7.8431%, RSS 229.28 MiB, no cadence errors (settling spike retained).
+
+Instrumented real YouTube: actual control receives pause, state paused at
+30.218 s; timeline tap seeks to 79.438 s; resume plays through at least148.015 s.
+No UMP rejection observed in that run, but it included pausing/seeking and does
+NOT prove uninterrupted playback repaired. Final clean APK visually confirms
+controls and paused 0:21/play icon at one/eight seconds. Playing hide duration,
+full touch lifecycle, drag seeking, fullscreen and long playback remain pending.
+No account credentials entered; ChatGPT/Gemini/login/zoom still unfinished.
+
+Final clean paused YouTube idle: 30 unprofiled samples mean3.1673%, peak4.0816%,
+RSS348.34MiB, zero cadence errors. Earlier settled window~4.0%; do not call this
+an idle performance pass or controlled improvement. Native profile839 userspace
+samples/20.0407s/zero lost: js_tick20.26% inclusive/5.60%self,jsg_vrect4.05%self,
+plus SDL main-loop housekeeping. These are profile shares, not processCPU.
+NEXT profile/repair repeated context ticking and geometry callbacks on Vulkan;
+then complete controls/playback/real-page scrolling. OpenGL/software deferred.
+
+Clean installed APK:`build/codex-youtube-controls-20261015/lumen-vulkan-controls-debug.apk`
+SHA256:`ba443a7e6d04d98858ce2edda5bfb406474d2bd66082691acd585b00b895e67f`.
+Native/dependency and v2signature checks pass. Temporary native probe code restored.
+App stopped; monitor/server stopped and joined; reverse removed; private probe,
+log and profile files removed. Raw process/thread samples and profiles preserved
+in the ignored evidence folder. No owned live process/session remains.
+
 ## Android mobile identity and off-screen drawer (2026-10-15)
 
 Full goal active, Vulkan first. See `docs/android-mobile-drawer-20261015.md`.

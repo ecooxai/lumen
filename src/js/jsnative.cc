@@ -225,8 +225,11 @@ FN(rect) {
 }
 FN(vrect) {
     CTX; ARGN(n, 0); float r[4];
-    if (c->host.sync) c->host.sync(c->host.ud, c->doc, true);
-    if (!jsg_vrect(n, r)) { RET(v8::Null(iso)); return; }
+    JsCtx *owner = n->doc != c->doc ? owner_ctx(n->doc) : c;
+    if (owner && owner->host.sync) owner->host.sync(owner->host.ud, n->doc, true);
+    float w = 0, h = 0, sx = 0, sy = 0, dpr = 1;
+    if (owner && owner->host.viewport) owner->host.viewport(owner->host.ud, &w, &h, &sx, &sy, &dpr);
+    if (!jsg_vrect(n, r, sx, sy)) { RET(v8::Null(iso)); return; }
     v8::Local<v8::Array> o = v8::Array::New(iso, 4);
     for (int i = 0; i < 4; i++) (void)o->Set(ctx, i, v8::Number::New(iso, r[i]));
     RET(o);

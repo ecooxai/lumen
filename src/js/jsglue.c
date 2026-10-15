@@ -32,8 +32,9 @@ bool jsg_rect(Node *n, float r[4]) {
     return true;
 }
 
-/* border box as painted: ancestor scroll offsets and translations applied (getBoundingClientRect) */
-bool jsg_vrect(Node *n, float r[4]) {
+/* Viewport border box: a fixed ancestor stops document scrolling, while
+   element scrollers and translations still affect its descendants. */
+bool jsg_vrect(Node *n, float r[4], float scroll_x, float scroll_y) {
     struct Box *b = n->box;
     if (!b) return false;
     r[0] = b->x; r[1] = b->y; r[2] = b->w; r[3] = b->h;
@@ -43,13 +44,14 @@ bool jsg_vrect(Node *n, float r[4]) {
             r[0] += s->transform[4] + s->translate_pending[0].pct * a->w / 100;
             r[1] += s->transform[5] + s->translate_pending[1].pct * a->h / 100;
         }
-        if (a->fixed) break;
+        if (a->fixed) return true;
         struct Box *up = a->abs && a->cb ? a->cb : a->parent;
         if (up && up->scroller && up->node && up->st && (up->st->overflow_x != OV_VISIBLE || up->st->overflow_y != OV_VISIBLE)) {
             r[0] -= up->node->scroll_x; r[1] -= box_scroll_y(up);
         }
         a = up;
     }
+    r[0] -= scroll_x; r[1] -= scroll_y;
     return true;
 }
 
