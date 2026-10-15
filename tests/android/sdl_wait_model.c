@@ -16,7 +16,7 @@ typedef int64_t Sint64;
 typedef struct { unsigned type; } SDL_Event;
 
 static int SDL_sentinel_pending;
-static unsigned queued_event, pump_count;
+static unsigned queued_event, pump_count, sentinel_wakes;
 static bool lifecycle_wake, deliver_event, deliver_lifecycle;
 static Uint64 ticks, scheduled_at;
 
@@ -47,6 +47,7 @@ static void SDL_PumpEventsInternal(bool sentinel) {
     assert(pump_count < 2000000);
     Android_PumpEvents(0);
     if (sentinel) {
+        sentinel_wakes++;
         SDL_sentinel_pending = 1;
         lifecycle_wake = true;
     }
@@ -88,6 +89,7 @@ int main(int argc, char **argv) {
     case 0:
         result = SDL_WaitEventTimeoutNS(&event, 1000000);
         assert(!result && ticks >= 1000000);
+        assert(pump_count == 2 && sentinel_wakes == 0);
         break;
     case 1:
     case 2:
@@ -122,6 +124,22 @@ int main(int argc, char **argv) {
         assert(SDL_WaitEventTimeoutNS(&event, 0) && event.type == 43);
         assert(!SDL_WaitEventTimeoutNS(&event, 0));
         assert(ticks == 0);
+        break;
+    case 8:
+        for (int i = 0; i < 100; i++) {
+            Uint64 before = ticks;
+            assert(!SDL_WaitEventTimeoutNS(&event, 25000));
+            assert(ticks >= before + 25000);
+        }
+        assert(pump_count == 200 && sentinel_wakes == 0);
+        return 0;
+    case 9:
+        SDL_sentinel_pending = 1;
+        lifecycle_wake = true;
+        deliver_event = true;
+        scheduled_at = 10000;
+        assert(SDL_WaitEventTimeoutNS(&event, 1000000) && event.type == 42);
+        assert(ticks < 11000 && !SDL_sentinel_pending && sentinel_wakes == 0);
         break;
     default: return 2;
     }

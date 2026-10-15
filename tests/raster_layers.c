@@ -23,7 +23,8 @@ const Glyph *font_glyph(Font *font, uint32_t gid, float scale) {
 }
 void image_yuv_materialize(Image *image) { (void)image; abort(); }
 
-int main(void) {
+int main(int argc, char **argv) {
+    (void)argv;
     enum { W=47, H=61, STRIDE=53 };
     Font font = {0};
     DGlyph glyphs[] = {{.x=12, .y=25, .font=&font}, {.gid=1, .x=15, .y=25, .font=&font}};
@@ -60,7 +61,7 @@ int main(void) {
                 for (int i=0;i<STRIDE*H;i++) actual[i]=0xdeadbeef;
                 largest_allocation=0; allocation_limit=(size_t)STRIDE*(bottom-y)*4;
                 raster_rect(&partial,&dl,RGBA(255,255,255,255),7,y,W-3,bottom);
-                assert(largest_allocation==allocation_limit);
+                assert(largest_allocation<=allocation_limit);
                 for (int row=0;row<H;row++) for (int x=0;x<STRIDE;x++) {
                     uint32_t want=row>=y && row<bottom && x>=7 && x<W-3 ? ref[row*STRIDE+x] : 0xdeadbeef;
                     assert(actual[row*STRIDE+x]==want);
@@ -68,6 +69,58 @@ int main(void) {
             }
         }
     }
+    /* Golden full-frame pixels from the previous rasterizer, independently of
+       the new layer-bound calculation. Include glyph ink outside item bounds,
+       negative shadow spread, rounded clipping, fractional scale and punch. */
+    const uint64_t golden[] = {
+        0xb65b6cea775e2817ull,
+        0xd6079c45e0f0a8ceull,
+        0xb2f87b699956cd25ull,
+        0x07e1b03d0d2fbfb1ull,
+        0x8a7d59cf9d8182b9ull,
+        0x28d91d342093d558ull,
+        0xd0356de1f26548e6ull,
+        0xe2444f9dec120cfdull,
+        0xfdb228f65e307ffaull,
+        0xb548dc067d18afbbull,
+        0xe7ae8ae60d4af34bull,
+        0x1a7e4de10013b585ull,
+
+    };
+    for (int variant=0; variant<12; variant++) {
+        expected.scale = .75f + (variant % 4) * .5f;
+        expected.punch = variant >= 6 ? &picture : NULL;
+        items[4].alpha = .2f + (variant % 3) * .3f;
+        items[5].spread = variant % 2 ? -1.5f : 3.5f;
+        items[9].x=0; items[9].y=0; items[9].w=0; items[9].h=0;
+        glyphs[0].x = variant % 2 ? -1 : 42;
+        glyphs[1].y = variant % 3 ? 60 : 2;
+        allocation_limit=SIZE_MAX;
+        for (int i=0;i<STRIDE*H;i++) ref[i]=0xdeadbeef;
+        raster(&expected,&dl,RGBA(255,255,255,255));
+        uint64_t hash=1469598103934665603ull;
+        for (int i=0;i<STRIDE*H;i++) { hash^=ref[i];hash*=1099511628211ull; }
+        if (argc>1) printf("0x%016llxull,\n",(unsigned long long)hash);
+        else assert(hash==golden[variant]);
+    }
+    if (argc>1) return 0;
+    /* Full paints of tiny groups must use tiny buffers, including nesting and
+       offscreen/empty groups, regardless of the viewport or padded stride. */
+    DItem small[] = {
+        {.op=DO_PUSH_LAYER,.alpha=.7f},
+        {.op=DO_RECT,.x=35,.y=51,.w=4,.h=3,.color=0xff123456},
+        {.op=DO_PUSH_LAYER,.alpha=.3f},
+        {.op=DO_RECT,.x=36,.y=52,.w=2,.h=1,.color=0xffabcdef},
+        {.op=DO_POP_LAYER}, {.op=DO_POP_LAYER},
+        {.op=DO_PUSH_LAYER,.alpha=.5f},
+        {.op=DO_RECT,.x=100,.y=-10,.w=4,.h=3,.color=0xff123456},
+        {.op=DO_POP_LAYER}, {.op=DO_PUSH_LAYER,.alpha=.5f}, {.op=DO_POP_LAYER}
+    };
+    dl.items.v=small; dl.items.n=sizeof small/sizeof *small;
+    partial.scale=1; partial.punch=NULL;
+    allocation_limit=4*3*4;largest_allocation=0;
+    raster(&partial,&dl,0);
+    assert(largest_allocation==4*3*4);
     /* Unbalanced and overflowed groups must free exactly their own storage. */
     DItem deep[40];
     for(int i=0;i<20;i++) deep[i]=(DItem){.op=DO_PUSH_LAYER,.alpha=.5f};

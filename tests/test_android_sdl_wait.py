@@ -48,6 +48,12 @@ class AndroidSdlWaitTests(unittest.TestCase):
     def test_poll_drains_batch_then_stops_at_sentinel(self):
         self.run_scenario(7)
 
+    def test_repeated_timer_waits_do_not_repeat_maintenance_or_self_wake(self):
+        self.run_scenario(8)
+
+    def test_blocking_wait_consumes_prior_poll_sentinel(self):
+        self.run_scenario(9)
+
     def run_scenario(self, scenario):
         result = subprocess.run([str(self.executable), str(scenario)], capture_output=True,
                                 text=True, timeout=5)

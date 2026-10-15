@@ -1,5 +1,31 @@
 # Lumen: handoff notes
 
+## Android bounded opacity groups and SDL waits (2026-10-15)
+
+See `docs/android-opacity-layers-20261015.md`. Vulkan first; full goal active.
+Opacity group pixel buffers/compositing now bounded to actual visible commands,
+including glyph ink, shadows and nested overflow. ASan/UBSan layer tests and12
+previous-raster golden hashes pass;4 damage tests and14 SDL wait tests pass.
+SDL waits avoid a synthetic sentinel and duplicate initial pump; no meaningful
+phone CPU improvement from SDL alone. Site25ms activity timer preserved.
+
+Phone fixed-video opacity stress: raster2005.6->74.84ms/frame,3->64 reported
+frames in~7.9sec; processCPU96.80->80.79%, RSS246.19->252.09MiB. NOT a RAM gain.
+Corrected after2 run used; first after run had stale-ready matching. YouTube
+paused0:23,20swipes:174 frames,80.03ms raster/frame (earlier230-265ms),CPU84.33%.
+New profile17403 samples: remaining raster/gradient/fill/clear work dominates.
+Next optimize those hot loops while keeping pixel correctness, then remeasure.
+
+Clean native APK c523e97e65f774013cd67bfbd16d63b6169797b4b23056a76962a44cc341575a
+at build/codex-wakeups-20261015/lumen-vulkan-bounded-layers-debug.apk; native/v2
+checks pass. Temporary probes restored and packaged binary strings checked.
+Phone app currently paused;1Hz monitor and fixture server are still active.
+Monitor PID in monitor.ready; verify cmdline before cleanup. Owned reverse18765/
+18766 and private paint-profile.enabled/detail-profile.log/wake-scroll.perf.data
+must be removed on cleanup. Do not remove cookies/settings or enter credentials
+without completing rendering work. Current symbols in youtube-layers/; parent
+libmain.so matches the older pre-layer profile. All evidence in that build folder.
+
 ## Android event-driven visibility observation (2026-10-15)
 
 Full goal active, Vulkan first. See `docs/android-intersection-observer-20261015.md`.

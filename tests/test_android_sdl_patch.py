@@ -23,13 +23,15 @@ class AndroidSdlPatchTests(unittest.TestCase):
     def configure(self):
         return subprocess.run(["cmake", "-P", str(self.script)], capture_output=True, text=True)
 
-    def test_only_android_blocking_loop_changes(self):
+    def test_only_android_wait_changes(self):
         original = self.source.read_bytes()
         result = self.configure()
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         old = "#ifdef SDL_PLATFORM_ANDROID\n    for (;;) {\n        SDL_PumpEventsInternal(true);"
-        new = old.replace("(true)", "(false)")
-        self.assertEqual(self.output.read_text(), original.decode().replace(old, new))
+        new = "#ifdef SDL_PLATFORM_ANDROID\n    for (;;) {\n        if (!entry_pumped) SDL_PumpEventsInternal(false);\n        entry_pumped = false;"
+        entry = "    // If there isn't a poll sentinel event pending, pump events and add one\n    if (SDL_GetAtomicInt(&SDL_sentinel_pending) == 0) {\n        SDL_PumpEventsInternal(true);\n    }"
+        replacement = "#ifdef SDL_PLATFORM_ANDROID\n    bool entry_pumped = false;\n    if (SDL_GetAtomicInt(&SDL_sentinel_pending) == 0) {\n        SDL_PumpEventsInternal(include_sentinel);\n        entry_pumped = true;\n    }\n#else\n" + entry + "\n#endif"
+        self.assertEqual(self.output.read_text(), original.decode().replace(entry, replacement).replace(old, new))
         self.assertEqual(self.source.read_bytes(), original)
 
     def test_reconfigure_keeps_generated_timestamp(self):

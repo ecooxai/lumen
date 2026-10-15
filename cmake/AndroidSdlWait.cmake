@@ -4,8 +4,14 @@ function(lumen_android_sdl_wait_source source output)
         message(FATAL_ERROR "Unreviewed SDL event source: review the Android wait fix before updating SDL")
     endif()
     file(READ "${source}" contents)
+    # A blocking wait neither needs a poll-batch sentinel nor a second pump
+    # immediately after the entry pump. Keep polling behavior and pump again
+    # after every actual wait, so lifecycle and queued input are still handled.
+    set(before "    // If there isn't a poll sentinel event pending, pump events and add one\n    if (SDL_GetAtomicInt(&SDL_sentinel_pending) == 0) {\n        SDL_PumpEventsInternal(true);\n    }")
+    set(after "#ifdef SDL_PLATFORM_ANDROID\n    bool entry_pumped = false;\n    if (SDL_GetAtomicInt(&SDL_sentinel_pending) == 0) {\n        SDL_PumpEventsInternal(include_sentinel);\n        entry_pumped = true;\n    }\n#else\n${before}\n#endif")
+    string(REPLACE "${before}" "${after}" contents "${contents}")
     set(before "#ifdef SDL_PLATFORM_ANDROID\n    for (;;) {\n        SDL_PumpEventsInternal(true);")
-    set(after "#ifdef SDL_PLATFORM_ANDROID\n    for (;;) {\n        SDL_PumpEventsInternal(false);")
+    set(after "#ifdef SDL_PLATFORM_ANDROID\n    for (;;) {\n        if (!entry_pumped) SDL_PumpEventsInternal(false);\n        entry_pumped = false;")
     string(REPLACE "${before}" "${after}" contents "${contents}")
     file(CONFIGURE OUTPUT "${output}" CONTENT "${contents}" @ONLY)
 endfunction()
