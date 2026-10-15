@@ -56,6 +56,7 @@ extern bool (*layout_image_size_hook)(Node *n, float *w, float *h);
 Layout *layout_new(void);
 void layout_free(Layout *L);
 void layout_run(Layout *L, Document *d, float vw, float vh);
+uint64_t layout_generation(void); /* changes after any completed document layout */
 Box *layout_hit(Layout *layout, float x, float y, float scroll_x, float scroll_y);   /* document coordinates */
 Font *style_font(const ComputedStyle *s);
 float style_line_height(const ComputedStyle *s, Font *f);

@@ -1,5 +1,33 @@
 # Lumen: handoff notes
 
+## Layout-driven ResizeObserver; real YouTube still errors (2026-10-15)
+
+Full goal active, Vulkan first. See `docs/android-resize-observer-20261015.md`.
+Replaced 100 ms observer polling with native completed-layout generation and
+initial-registration notifications. Cross-document geometry reads now flush the
+target's owning document; final device iframe initial size is correct (the first
+candidate exposed a zero-before-layout bug). Callback-triggered updates are
+bounded to one delivery per 16 ms; this is not full depth-based spec processing.
+
+21 focused host tests and all 13 final phone fixture checks pass. With 500 observed
+unchanged elements, 30 settled samples: CPU 2.8674% -> 0.3371% (~88% less), RSS
+234.07 -> 227.17 MiB. These are controlled fixture results only.
+
+Clean installed/native/signature-verified APK:
+`build/codex-vulkan-resize-20261015/lumen-vulkan-resize-debug.apk`, SHA256
+`e2aa988ba16551e81191bf989e2f8b28ba35f8d7586387547539da04e2969168`.
+Only comment wording changed after that build; runtime code matches. App stopped,
+owned monitor/server joined, temporary reverse removed. No credentials entered.
+
+Actual YouTube initially plays then still errors. Final 60 settled samples average
+4.2698% CPU, peak 10.1010%, RSS 434.70 MiB; no significant site improvement claimed.
+Next profile remaining error-page work and player failure. Existing mediaPoll
+still polls all attached players every 50 ms and allocates state each time;
+confirm its current contribution before changing it. Prior trace shows player
+error 5 after healthy playback, with native state reset by page load calls.
+ChatGPT/Gemini/auth/zoom and full daily-browser acceptance remain unfinished.
+OpenGL ES/software deferred.
+
 ## Blob allocation improvement; YouTube still fails (2026-10-15)
 
 Vulkan first; full daily-browser goal remains active. See

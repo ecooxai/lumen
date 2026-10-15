@@ -215,7 +215,9 @@ FN(templateContent) {
 }
 FN(rect) {
     CTX; ARGN(n, 0); float r[4];
-    if (c->host.sync) c->host.sync(c->host.ud, c->doc, true);
+    // An observer may belong to the parent realm while its target is in a frame.
+    JsCtx *owner = n->doc != c->doc ? owner_ctx(n->doc) : c;
+    if (owner && owner->host.sync) owner->host.sync(owner->host.ud, n->doc, true);
     if (!jsg_rect(n, r)) { RET(v8::Null(iso)); return; }
     v8::Local<v8::Array> o = v8::Array::New(iso, 4);
     for (int i = 0; i < 4; i++) (void)o->Set(ctx, i, v8::Number::New(iso, r[i]));
@@ -437,8 +439,14 @@ FN(mediaState) {
     };
     RET(v8::Array::New(iso, v, 11));
 }
-// Frame information is separate from media-state polling: callbacks wake only
-// when media_tick selects a new frame for composition.
+// A live size observer waits for layout completion or a new observation.
+FN(resizePump) {
+    CTX;
+    if (!a[0]->IsFunction()) { c->resize_pump.Reset(); c->resize_pending = false; return; }
+    c->resize_pump.Reset(iso, a[0].As<v8::Function>());
+    c->resize_pending = true;
+}
+// Frame callbacks wake only when media_tick selects a frame for composition.
 FN(videoFramePump) {
     CTX;
     if (!a[0]->IsFunction()) { c->video_frame_pump.Reset(); return; }
@@ -903,7 +911,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(histLen); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
     REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove);
     REG(mediaBuffered); REG(mediaEos); REG(mediaSetDuration); REG(mediaPlay); REG(mediaPause); REG(mediaSeek);
-    REG(videoFramePump); REG(videoFrameInfo); REG(videoQuality);
+    REG(resizePump); REG(videoFramePump); REG(videoFrameInfo); REG(videoQuality);
     REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(readyState); REG(quirks);
     REG(currentScript); REG(media); REG(cssSupports); REG(cssSelText); REG(urlParse); REG(encode); REG(decode); REG(random); REG(cDigest); REG(cHmac); REG(cAes); REG(cEcGen); REG(cEcDerive); REG(cEcSign); REG(cEcVerify); REG(cSpki); REG(cSpkiParse); REG(cPkcs8Parse); REG(cEcFromD); REG(cHkdf); REG(cPbkdf2);
     REG(heap); REG(imgSize); REG(userAgent); REG(platform); REG(cpus); REG(makeAll);

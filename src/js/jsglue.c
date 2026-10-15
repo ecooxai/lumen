@@ -23,6 +23,8 @@ bool jsg_matches(Node *el, const char *sel, bool *ok) {
 
 char *jsg_computed(Node *el, const char *prop) { return css_get_computed_value(el, prop); }
 
+uint64_t jsg_layout_generation(void) { return layout_generation(); }
+
 bool jsg_rect(Node *n, float r[4]) {
     struct Box *b = n->box;
     if (!b) return false;

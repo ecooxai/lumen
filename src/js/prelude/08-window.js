@@ -1,7 +1,8 @@
 class ResizeObserver {
     constructor(cb) { this._cb = cb; this._t = new Map(); }
-    observe(el) { if (this._t.has(el)) return; this._t.set(el, null); roAll.add(this); setTimeout(() => this._check()); roKick(); }
-    unobserve(el) { this._t.delete(el); } disconnect() { this._t.clear(); roAll.delete(this); }
+    observe(el) { if (this._t.has(el)) return; this._t.set(el, null); roAll.add(this); N.resizePump(roRun); }
+    unobserve(el) { this._t.delete(el); if (!this._t.size) { roAll.delete(this); roStop(); } }
+    disconnect() { this._t.clear(); roAll.delete(this); roStop(); }
     _check() {
         const recs = [];
         for (const [el, old] of this._t) { const r = N.rect(el) || [0, 0, 0, 0]; const k = r[2] + 'x' + r[3]; if (k === old) continue; this._t.set(el, k); const cr = new DOMRect(0, 0, r[2], r[3]); const sz = [{ inlineSize: r[2], blockSize: r[3] }]; recs.push({ target: el, contentRect: cr, borderBoxSize: sz, contentBoxSize: sz, devicePixelContentBoxSize: sz }); }
@@ -15,9 +16,8 @@ class IntersectionObserver {
     unobserve(el) { this._t.delete(el); } disconnect() { this._t.clear(); ioAll.delete(this); } takeRecords() { return []; }
 }
 const roAll = new Set();
-let roTimer = 0;
-/* sizes change after layout, not only at observe(): re-check every observed element while any observer is live */
-const roKick = () => { if (!roTimer) roTimer = setInterval(() => { if (!roAll.size) { clearInterval(roTimer); roTimer = 0; return; } for (const o of [...roAll]) if (o._t.size) o._check(); else roAll.delete(o); }, 100); };
+const roStop = () => { if (!roAll.size) N.resizePump(null); };
+const roRun = () => { for (const o of [...roAll]) if (o._t.size) o._check(); roStop(); };
 const ioAll = new Set();
 let ioPending = false, ioTimer = 0;
 const ioRun = () => { ioPending = false; for (const o of [...ioAll]) if (o._t.size) o._check(); else ioAll.delete(o); };

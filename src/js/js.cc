@@ -621,7 +621,7 @@ void js_free(JsCtx *c) {
         c->fetches.clear(); for (auto &kv : c->sockets) { net_ws_release(kv.second->ws); kv.second->cb.Reset(); delete kv.second; } c->sockets.clear();
         c->timers.clear();
         c->rafs.clear();
-        c->video_frame_pump.Reset();
+        c->video_frame_pump.Reset(); c->resize_pump.Reset();
         c->anims.clear();
         c->protos.clear();
         c->protoFor.Reset(); c->fire.Reset(); c->report.Reset(); c->viewportChanged.Reset();
@@ -766,6 +766,7 @@ double js_next_deadline(JsCtx *c) {
     for (auto &e : c->anims) d = std::min(d, e.due);
     if (!c->rafs.empty()) d = std::min(d, c->last_raf + 16);
     if (!c->video_frame_pump.IsEmpty() && c->video_frame_version != media_frame_version()) d = std::min(d, now_ms());
+    if (!c->resize_pump.IsEmpty() && (c->resize_pending || c->resize_version != jsg_layout_generation())) d = std::min(d, c->resize_due);
     for (JsCtx *k : c->kids) if (!k->dead) d = std::min(d, js_next_deadline(k));
     d = std::min(d, workers_deadline(c));
     return d;
@@ -828,6 +829,16 @@ static void tick_one(JsCtx *c) {
                 v8::Local<v8::Value> argv[5] = { e.target.Get(iso), jstr(iso, e.type.c_str()), jstr(iso, e.name.c_str()), v8::Number::New(iso, e.elapsed), v8::Boolean::New(iso, e.anim) };
                 (void)jcall(c, fa.As<v8::Function>(), v8::Undefined(iso), 5, argv);
             }
+    }
+    // Layout completion, not a repeating timer, drives size observation. Keep
+    // callback-induced layout changes pending for another frame to bound loops.
+    if (!c->resize_pump.IsEmpty() && now_ms() >= c->resize_due &&
+        (c->resize_pending || c->resize_version != jsg_layout_generation())) {
+        if (c->host.sync) c->host.sync(c->host.ud, c->doc, true);
+        c->resize_version = jsg_layout_generation();
+        c->resize_pending = false;
+        c->resize_due = now_ms() + 16;
+        (void)jcall(c, c->resize_pump.Get(iso), v8::Undefined(iso), 0, nullptr);
     }
     workers_pump(c);
     settle(c);

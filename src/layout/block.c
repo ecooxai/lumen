@@ -1,6 +1,11 @@
 /* Block layout, floats, positioning, driver, hit testing */
 #include "layout.h"
 #include <math.h>
+#include <stdatomic.h>
+
+/* Shared across documents: a parent observer can watch an iframe element. */
+static atomic_uint_fast64_t geometry_version;
+uint64_t layout_generation(void) { return atomic_load_explicit(&geometry_version, memory_order_relaxed); }
 
 void compute_mbp(Box *b, float cbw) {
     const ComputedStyle *s = b->st;
@@ -352,6 +357,7 @@ void layout_run(Layout *L, Document *d, float vw, float vh) {
     extents(L, r);
     L->doc_h = LMAX(L->doc_h, vh);
     track_containers(d, r);
+    atomic_fetch_add_explicit(&geometry_version, 1, memory_order_relaxed);
     L->ms = now_ms() - t0;
     static int dbg = -1, nrun; static double tsum, tlast;
     if (dbg < 0) { const char *e = getenv("LUMEN_DEBUG_LAYOUT"); dbg = e ? atoi(e) > 0 ? atoi(e) : 1 : 0; }
