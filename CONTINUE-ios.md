@@ -86,7 +86,11 @@ App Store acceptance is not a goal (sideload / Xcode run).
   objects): awaitPreparedDocumentActivation + activation.ready RESOLVE; loadApplicationPresentationForStartup
   stays PENDING. ROOT CAUSE AREA (dump11.js): `To.loadPresentationStyles(document)` never resolves
   (`arePresentationStylesReady` = false); it awaits `g(link)` for each stylesheet link `_t(doc)`.
-  awaitTextareaFieldSizing resolves. Check `g` (dump12.js): likely link.sheet / late load-event semantics.
+  awaitTextareaFieldSizing resolves. The awaited link is parser-inserted
+  `<link rel=preload as=style href=/unauth-mweb/assets/stylex-remaining-*.css>`; swapping it to stylesheet by
+  hand makes loadPresentationStyles resolve. Fixed two Lumen bugs: (1) `sync_sheets` keyed by href only, so
+  rel preload->stylesheet never loaded/fired load (relchg.html); (2) parser-inserted rel=preload never fetched
+  or fired load/onload (relchg2.html) -> now fetched in `page_start_js` with `preload_done`.
 
 ## Status 2026-10-15 (later)
 - Simulator JIT crash #2 (SIGBUS in `MemoryChunk::MemoryChunk`, code page `---`): V8 iOS assumes BrowserEngineKit,

@@ -1716,6 +1716,11 @@ static void page_start_js(App *a, Page *p) {
     for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node))
         if (n->type == NODE_ELEMENT && is_sheet_link(n)) { sl = xrealloc(sl, sizeof *sl * (size_t)(nsl + 1)); n->refcount++; sl[nsl++] = n; }
     p->js = js_new(p->d, &h);
+    for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) {   /* parser-inserted rel=preload: fetch so "load"/"error" fire */
+        if (n->type != NODE_ELEMENT || !is_preload_link(n) || is_sheet_link(n)) continue;
+        char *u = url_join(p->d->url, node_attr(n, "href"));
+        if (u) { NetRequest *rq = net_request_new("GET", u); LinkLoad *l = xmalloc(sizeof *l); l->gen = p->gen; l->n = n; n->refcount++; rq->done = preload_done; rq->ud = l; net_fetch(rq); free(u); }
+    }
     js_eval(p->js, "document.addEventListener('lumenmediactl',function(e){var v=e.target;if(!(v instanceof HTMLMediaElement))return;e.stopImmediatePropagation();"
         "if(e.key==='toggle'){if(v.paused)v.play();else v.pause()}else if(e.key.indexOf('seek:')===0&&v.duration>0)v.currentTime=v.duration*parseFloat(e.key.slice(5))},true)", "lumen:ctl");
     const char *pre = getenv("LUMEN_PRE_FILE");
