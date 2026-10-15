@@ -141,3 +141,16 @@ App Store acceptance is not a goal (sideload / Xcode run).
   crossOriginIsolated: Document.cross_origin_isolated set in main.c from COOP same-origin + COEP
   require-corp/credentialless on https/localhost; N.coi() for window, W.coi for workers (~/fvtest/coi/srv.py).
   COEP does not block non-CORP subresources yet; SharedArrayBuffer is exposed regardless.
+
+### ChatGPT after send (2026-10-15)
+- Logged-out send works: `/uc/<id>`, reply "LUMEN OK" (send.js probe).
+- After the reply CPU stays 25-90%: ChatGPT store `update`/`getSnapshot` loop calls
+  `document.cookie` (~hundreds of thousands of reads, `ae` in octane-shell-shared:8914)
+  and `querySelector('input[name="conversationState"]')` repeatedly. LUMEN_SHOT never
+  fires while this runs. Worker `conversation-source-dil.worker` throws `reading 'bind'`.
+- Loop chain (stack at the 4000th `conversationState` read): React commit (`a-DXSTf3Zh.js`
+  kl/Gl/pu/Au/Du) -> passive effect in `conversation-source-dil` (~1114813, deps list incl.
+  ResizeObserver-driven `portalTarget/responseWidth` state) -> `$.update` -> getSnapshot.
+  The conversationState value is stable (no writes), so an effect dep changes every render.
+  Lumen's ResizeObserver reported widths 608,0,656,608,0,... for the portal target: suspect.
+  Tasks come via MessagePort (setTimeout-based), so the JS watchdog never fires.
