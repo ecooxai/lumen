@@ -32,3 +32,12 @@ App Store acceptance is not a goal (sideload / Xcode run).
 - main.c `LUMEN_IOS` (TARGET_OS_IPHONE): touch -> tap/double-tap clicks, one-finger pan scroll with momentum (touch_event/touch_fling),
   background lifecycle (no GPU work when backgrounded, cookies saved), borderless full-screen window, bundled cacert.pem via SSL_CERT_FILE.
 - font.c picks the iOS font table at runtime when /System/Library/Fonts/Core/Helvetica.ttc exists.
+
+## Status (iPad Air 11" M4 Simulator, iOS 26.5)
+- Works: Wikipedia, Hacker News, link taps, touch scroll + momentum, URL typing (hw keyboard), new tab page, tabs,
+  YouTube home/search/watch with ad + skip and MSE playback (software decode: VideoToolbox hwaccel init fails in the
+  Simulator only). Google search hits reCAPTCHA from this VM IP (not solved, by design).
+- CPU: idle ~1% after blocking in CFRunLoop (ios_wait_event); YouTube 1080p-ish lofi playback ~7-70% in Simulator; RSS ~470-600 MB.
+- TODO: pinch zoom (needs a page zoom factor: layout viewport /zoom, page canvas scale *zoom, input coords /zoom),
+  safe-area insets for iPhone notch (iPad full-screen is fine), long-press = context menu (right click),
+  on-screen keyboard avoidance (scroll focused field above keyboard), real-device test of VideoToolbox + perf.
