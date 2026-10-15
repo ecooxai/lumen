@@ -232,6 +232,6 @@ class URL {
     static canParse(u, b) { return !!N.urlParse(String(u), b === undefined ? null : String(b)); }
     static parse(u, b) { try { return new URL(u, b); } catch (e) { return null; } }
     static createObjectURL(b) { const u = 'blob:' + location.origin + '/' + (++objectURLSeq).toString(16).padStart(8, '0') + '-lumen'; objectURLs.set(u, b); if (b && b._buf && b._buf.byteLength < 8e6 && (!b.type || /javascript|ecmascript/i.test(b.type))) N.blobMod(u, new TextDecoder().decode(b._buf)); return u; }
-    static revokeObjectURL(u) { if (objectURLs.delete(u)) N.blobMod(String(u)); }
+    static revokeObjectURL(u) { const b = objectURLs.get(u); if (b && b.__file) { N.blobFileFree(b.__file); b.__file = null; } if (objectURLs.delete(u)) N.blobMod(String(u)); }
 }
 URL_KEYS.forEach((k, i) => acc(URL.prototype, k, function () { return this._p[i]; }, k === 'origin' ? undefined : function (v) { this._set(k, v); }));

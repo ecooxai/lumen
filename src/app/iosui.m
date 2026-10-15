@@ -136,3 +136,83 @@ bool ios_wait_event(SDL_Event *ev, int to_ms) {
     }
     return SDL_PollEvent(ev);
 }
+
+/* getDisplayMedia on iOS/iPadOS/Catalyst: ReplayKit in-app capture (system prompt + recording indicator).
+   Frames arrive on a ReplayKit queue and are staged here for the main loop's capture source. */
+#import <ReplayKit/ReplayKit.h>
+#import <Accelerate/Accelerate.h>
+#include <pthread.h>
+static pthread_mutex_t g_rp_mu = PTHREAD_MUTEX_INITIALIZER;
+static uint32_t *g_rp_px;
+static int g_rp_w, g_rp_h;
+static bool g_rp_on;
+static vImage_YpCbCrToARGB g_rp_conv;
+static OSType g_rp_conv_fmt;
+
+static void rp_frame(CVPixelBufferRef pb) {
+    OSType f = CVPixelBufferGetPixelFormatType(pb);
+    bool full = f == kCVPixelFormatType_420YpCbCr8BiPlanarFullRange;
+    if (f != kCVPixelFormatType_32BGRA && !full && f != kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange) return;
+    int w = (int)CVPixelBufferGetWidth(pb), h = (int)CVPixelBufferGetHeight(pb);
+    CVPixelBufferLockBaseAddress(pb, kCVPixelBufferLock_ReadOnly);
+    pthread_mutex_lock(&g_rp_mu);
+    if (g_rp_on && w > 0 && h > 0) {
+        if (w != g_rp_w || h != g_rp_h) { fprintf(stderr, "lumen: ReplayKit frames %dx%d\n", w, h); free(g_rp_px); g_rp_px = malloc((size_t)w * h * 4); g_rp_w = w; g_rp_h = h; }
+        if (f == kCVPixelFormatType_32BGRA) {
+            const uint8_t *b = CVPixelBufferGetBaseAddress(pb); size_t bpr = CVPixelBufferGetBytesPerRow(pb);
+            for (int y = 0; y < h; y++) memcpy(g_rp_px + (size_t)y * w, b + (size_t)y * bpr, (size_t)w * 4);
+        } else {
+            if (g_rp_conv_fmt != f) {
+                vImage_YpCbCrPixelRange r = full ? (vImage_YpCbCrPixelRange){ 0, 128, 255, 255, 255, 1, 255, 0 }
+                                                 : (vImage_YpCbCrPixelRange){ 16, 128, 235, 240, 255, 0, 255, 1 };
+                g_rp_conv_fmt = vImageConvert_YpCbCrToARGB_GenerateConversion(kvImage_YpCbCrToARGBMatrix_ITU_R_709_2, &r, &g_rp_conv,
+                                    kvImage420Yp8_CbCr8, kvImageARGB8888, kvImageNoFlags) == kvImageNoError ? f : 0;
+            }
+            if (g_rp_conv_fmt == f) {
+                vImage_Buffer yb = { CVPixelBufferGetBaseAddressOfPlane(pb, 0), (vImagePixelCount)h, (vImagePixelCount)w, CVPixelBufferGetBytesPerRowOfPlane(pb, 0) };
+                vImage_Buffer cb = { CVPixelBufferGetBaseAddressOfPlane(pb, 1), (vImagePixelCount)(h / 2), (vImagePixelCount)(w / 2), CVPixelBufferGetBytesPerRowOfPlane(pb, 1) };
+                vImage_Buffer db = { g_rp_px, (vImagePixelCount)h, (vImagePixelCount)w, (size_t)w * 4 };
+                const uint8_t bgra[4] = { 3, 2, 1, 0 };   /* Lumen frames are ARGB8888 words = B,G,R,A bytes */
+                vImageConvert_420Yp8_CbCr8ToARGB8888(&yb, &cb, &db, &g_rp_conv, bgra, 255, kvImageNoFlags);
+            }
+        }
+    }
+    pthread_mutex_unlock(&g_rp_mu);
+    CVPixelBufferUnlockBaseAddress(pb, kCVPixelBufferLock_ReadOnly);
+}
+
+int ios_rp_start(void) {
+    RPScreenRecorder *r = RPScreenRecorder.sharedRecorder;
+    if (getenv("LUMEN_NO_REPLAYKIT") || !r.available) return 0;
+    pthread_mutex_lock(&g_rp_mu); g_rp_on = true; pthread_mutex_unlock(&g_rp_mu);
+    [r startCaptureWithHandler:^(CMSampleBufferRef sb, RPSampleBufferType t, NSError *e) {
+        CVPixelBufferRef pb = e ? NULL : CMSampleBufferGetImageBuffer(sb);
+        static int logged;
+        if (logged++ < 3) {
+            OSType f = pb ? CVPixelBufferGetPixelFormatType(pb) : 0;
+            fprintf(stderr, "lumen: ReplayKit sample type=%d fmt=%c%c%c%c err=%s\n", (int)t, (int)(f >> 24) & 255, (int)(f >> 16) & 255,
+                    (int)(f >> 8) & 255, (int)f & 255, e ? e.localizedDescription.UTF8String : "none");
+        }
+        if (e || t != RPSampleBufferTypeVideo) return;
+        if (pb) rp_frame(pb);
+    } completionHandler:^(NSError *e) {
+        if (!e) { fprintf(stderr, "lumen: ReplayKit capture started\n"); return; }
+        fprintf(stderr, "lumen: ReplayKit capture unavailable (%s), recording page pixels\n", e.localizedDescription.UTF8String);
+        pthread_mutex_lock(&g_rp_mu); g_rp_on = false; pthread_mutex_unlock(&g_rp_mu);
+    }];
+    return 1;
+}
+void ios_rp_stop(void) {
+    pthread_mutex_lock(&g_rp_mu);
+    g_rp_on = false; free(g_rp_px); g_rp_px = NULL; g_rp_w = g_rp_h = 0;
+    pthread_mutex_unlock(&g_rp_mu);
+    [RPScreenRecorder.sharedRecorder stopCaptureWithHandler:nil];
+}
+/* hands the newest ReplayKit frame to `store`; false until ReplayKit has delivered one */
+bool ios_rp_push(void (*store)(const uint32_t *px, int w, int h, int stride)) {
+    pthread_mutex_lock(&g_rp_mu);
+    bool ok = g_rp_on && g_rp_px;
+    if (ok) store(g_rp_px, g_rp_w, g_rp_h, g_rp_w);
+    pthread_mutex_unlock(&g_rp_mu);
+    return ok;
+}

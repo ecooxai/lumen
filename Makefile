@@ -50,7 +50,7 @@ ifneq ($(filter $(PLAT),sim ios cat),)
   PLATLIBS := -framework UIKit $(if $(filter cat,$(PLAT)),,-framework OpenGLES) -framework Foundation -framework CoreGraphics -framework QuartzCore -framework Metal -framework AVFoundation \
               -framework AudioToolbox -framework CoreAudio -framework CoreMedia -framework CoreVideo -framework VideoToolbox -framework CoreMotion \
               -framework GameController -framework CoreHaptics -framework Security -framework UniformTypeIdentifiers -framework CoreBluetooth \
-              -framework CoreText -framework IOSurface -lc++ -lbz2 -liconv
+              -framework CoreText -framework IOSurface -framework ReplayKit -framework Accelerate -lc++ -lbz2 -liconv
 endif
 CFLAGS := -std=c11 $(OPT) $(WARN) $(INC) -D_GNU_SOURCE -D_DARWIN_C_SOURCE
 CXXFLAGS := -std=c++20 $(OPT) $(WARN) $(INC) -DV8_COMPRESS_POINTERS

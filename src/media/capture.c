@@ -8,8 +8,15 @@
 #include <libavformat/avformat.h>
 #include <libavutil/opt.h>
 #include <libswscale/swscale.h>
+#ifdef __APPLE__
+#include <TargetConditionals.h>
+#endif
+#if defined(__APPLE__) && TARGET_OS_IPHONE
+#define LUMEN_REPLAYKIT 1
+int ios_rp_start(void); void ios_rp_stop(void); bool ios_rp_push(void (*store)(const uint32_t *px, int w, int h, int stride));
+#endif
 
-typedef struct { SDL_Camera *cam; Node *node; Image img[2]; int cur, w, h, fps; SDL_Thread *th; SDL_AtomicInt run; bool screen; Uint64 last; unsigned seq; } Cam;
+typedef struct { SDL_Camera *cam; Node *node; Image img[2]; int cur, w, h, fps; SDL_Thread *th; SDL_AtomicInt run; bool screen, rp; Uint64 last; unsigned seq; } Cam;
 #define NCAM 8
 static Cam g_cam[NCAM + 1];
 static SDL_AudioStream *g_mic[NCAM + 1];
@@ -67,6 +74,9 @@ void cap_cam_bind(int id, Node *n) {
 }
 void cap_cam_close(int id) {
     if (id <= 0 || id > NCAM || !(g_cam[id].cam || g_cam[id].screen)) return; Cam *c = &g_cam[id];
+#ifdef LUMEN_REPLAYKIT
+    if (c->rp) ios_rp_stop();
+#endif
     if (c->cam) { SDL_SetAtomicInt(&c->run, 0); SDL_WaitThread(c->th, NULL); SDL_CloseCamera(c->cam); }
     free(c->img[0].px); free(c->img[1].px); memset(c, 0, sizeof *c); cvbuf_changed = 1;
 }
@@ -77,11 +87,15 @@ Image *cap_frame_for(Node *n) {
 
 /* getDisplayMedia: a capture source fed with Lumen's own presented page pixels (same on macOS, iPadOS, Linux, Android) */
 int cap_screen_open(void) {
-    for (int i = 1; i <= NCAM; i++) if (!g_cam[i].cam && !g_cam[i].screen) { Cam *c = &g_cam[i]; memset(c, 0, sizeof *c); c->screen = true; c->fps = 30; return i; }
+    for (int i = 1; i <= NCAM; i++) if (!g_cam[i].cam && !g_cam[i].screen) { Cam *c = &g_cam[i]; memset(c, 0, sizeof *c); c->screen = true; c->fps = 30;
+#ifdef LUMEN_REPLAYKIT
+        c->rp = ios_rp_start();
+#endif
+        return i; }
     return 0;
 }
 bool cap_screen_active(void) { for (int i = 1; i <= NCAM; i++) if (g_cam[i].screen) return true; return false; }
-void cap_screen_push(const uint32_t *px, int w, int h, int stride) {
+static void screen_store(const uint32_t *px, int w, int h, int stride) {
     Uint64 now = SDL_GetTicks();
     for (int i = 1; i <= NCAM; i++) {
         Cam *c = &g_cam[i];
@@ -92,6 +106,12 @@ void cap_screen_push(const uint32_t *px, int w, int h, int stride) {
         c->w = w; c->h = h; c->cur = b; c->last = now; c->seq++;
         if (c->node) cvbuf_changed = 1;
     }
+}
+void cap_screen_push(const uint32_t *px, int w, int h, int stride) {
+#ifdef LUMEN_REPLAYKIT
+    for (int i = 1; i <= NCAM; i++) if (g_cam[i].rp && ios_rp_push(screen_store)) return;
+#endif
+    screen_store(px, w, h, stride);
 }
 int cap_mics(char (*names)[128], int max) {
     if (!cap_init(SDL_INIT_AUDIO)) return 0;

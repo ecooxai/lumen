@@ -1,3 +1,4 @@
+#include <unistd.h>
 /* Native functions (the `N` object) backing the JS DOM/Web API prelude */
 #include "js_int.h"
 #include <thread>
@@ -423,6 +424,24 @@ FN(audioDecode) {
 FN(mediaNew) { CTX; ARGN(n, 0); uint32_t id = c->next_player++; c->players[id] = mp_new(n); RET((double)id); }
 FN(mediaFree) { CTX; MP; mp_free(mp); c->players.erase(mpit); }
 FN(mediaOpen) { CTX; MP; mp_open_url(mp, S(1).c_str()); }
+/* Blob -> temp file so <video>/<audio> play blob: URLs through the ordinary file path */
+FN(blobFile) {
+    CTX; const char *p; size_t n;
+    if (!bytes_of(a[0], &p, &n)) return;
+    const char *td = getenv("TMPDIR"); std::string path = td && *td ? td : "/tmp";
+    if (path.back() != '/') path += '/';
+    path += "lumen-blob-XXXXXX";
+    int fd = mkstemp(&path[0]); if (fd < 0) return;
+    size_t off = 0; ssize_t w;
+    while (off < n && (w = write(fd, p + off, n - off)) > 0) off += (size_t)w;
+    close(fd);
+    if (off < n) { unlink(path.c_str()); return; }
+    a.GetReturnValue().Set(v8::String::NewFromUtf8(iso, ("file://" + path).c_str()).ToLocalChecked());
+}
+FN(blobFileFree) {
+    CTX; std::string u = jcstr(iso, a[0]);
+    if (!u.compare(0, 7, "file://") && u.find("/lumen-blob-") != std::string::npos) unlink(u.c_str() + 7);
+}
 FN(mediaAddBuffer) { CTX; MP; RET((double)mp_add_buffer(mp, S(1).c_str())); }
 FN(mediaAppend) {
     CTX; MP; const char *p; size_t n;
@@ -892,7 +911,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(templateContent); REG(rect); REG(vrect); REG(clipSet); REG(clipGet); REG(scrollPos); REG(setScroll); REG(computed); REG(value); REG(setValue); REG(checked); REG(setChecked); REG(setPseudo); REG(pickFiles);
     REG(focus); REG(active); REG(cookie); REG(setCookie); REG(url); REG(setUrl); REG(navigate); REG(navigatePost); REG(saveFile); REG(histGo);
     REG(histLen); REG(ssGet); REG(ssSet); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
-    REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove); REG(mediaAbort);
+    REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(blobFile); REG(blobFileFree); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove); REG(mediaAbort);
     REG(mediaBuffered); REG(mediaEos); REG(mediaSetDuration); REG(mediaPlay); REG(mediaPause); REG(mediaSeek);
     REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(readyState); REG(quirks); REG(coi);
     REG(currentScript); REG(media); REG(cssSupports); REG(cssSelText); REG(urlParse); REG(encode); REG(decode); REG(random); REG(cDigest); REG(cHmac); REG(cAes); REG(cEcGen); REG(cEcDerive); REG(cEcSign); REG(cEcVerify); REG(cSpki); REG(cSpkiParse); REG(cPkcs8Parse); REG(cEcFromD); REG(cHkdf); REG(cPbkdf2);
