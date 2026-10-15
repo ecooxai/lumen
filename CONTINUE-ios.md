@@ -223,3 +223,9 @@ App Store acceptance is not a goal (sideload / Xcode run).
   snapshotted) and a per-tab part (`N.doc()`, location, storage origin, ~50 top-level `N.*`
   calls) run after `Context::FromSnapshot`; (3) worker isolates (`src/js/worker.cc`) either
   keeping the current path or using a second snapshot. Expect most of the ~65 ms per context.
+- BUS (2026-10-15): `BroadcastChannel` (was a no-op stub) and cross-context `storage` events now go
+  through an in-process bus (`busPost`/`js_bus_deliver` in `src/js/jsnative.cc`, delivered from
+  `tick_one`). Messages are V8-serialized, same-origin only (opaque origins: own context only), kept
+  5 s / 256 messages. Receiving contexts also update their `localStorage` copy, so same-origin tabs
+  and iframes now see each other's writes live. Test: `~/fvtest/bus/bc.html` over http. Workers
+  still have the old stub.

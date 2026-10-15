@@ -27,7 +27,7 @@ class Storage {
     constructor(save) { def(this, '_m', new Map()); def(this, '_s', save || null); }
     get length() { return this._m.size; } key(i) { return [...this._m.keys()][i] ?? null; }
     getItem(k) { return this._m.has(String(k)) ? this._m.get(String(k)) : null; }
-    setItem(k, v) { k = String(k); v = String(v); this._m.set(k, v); this._s?.(this._m, 's', k, v); } removeItem(k) { k = String(k); if (this._m.delete(k)) this._s?.(this._m, 'd', k); } clear() { this._m.clear(); this._s?.(this._m, 'c'); }
+    setItem(k, v) { k = String(k); v = String(v); const o = this._m.get(k) ?? null; this._m.set(k, v); this._s?.(this._m, 's', k, v, o); } removeItem(k) { k = String(k); const o = this._m.get(k); if (this._m.delete(k)) this._s?.(this._m, 'd', k, null, o); } clear() { const n = this._m.size; this._m.clear(); if (n) this._s?.(this._m, 'c'); }
 }
 const storageProxy = (st = new Storage()) => new Proxy(st, {
     get(t, k) { if (typeof k !== 'string' || k in t) { const v = Reflect.get(t, k, t); return typeof v === 'function' ? v.bind(t) : v; } return t.getItem(k) ?? undefined; },
@@ -38,7 +38,11 @@ const storageProxy = (st = new Storage()) => new Proxy(st, {
 const ssOrigin = (() => { try { return new URL(N.url()).origin; } catch { return 'null'; } })();
 const sessionStorage = storageProxy(new Storage(ssOrigin === 'null' ? null : m => N.ssSet(ssOrigin, JSON.stringify([...m]))));
 try { const j = ssOrigin !== 'null' && N.ssGet(ssOrigin); if (j) for (const [k, v] of JSON.parse(j)) sessionStorage.setItem(k, v); } catch {}
-const localStorage = storageProxy(new Storage(ssOrigin === 'null' ? null : (m, op, k, v) => op === 's' ? N.lsSet(ssOrigin, k, v) : op === 'd' ? N.lsDel(ssOrigin, k) : N.lsDel(ssOrigin)));
+const localStorage = storageProxy(new Storage(ssOrigin === 'null' ? null : (m, op, k, v, o) => {
+    op === 's' ? N.lsSet(ssOrigin, k, v) : op === 'd' ? N.lsDel(ssOrigin, k) : N.lsDel(ssOrigin);
+    if (op !== 's' || o !== v) N.busPost(ssOrigin, 'ls', '', [op === 'c' ? null : k, op === 'c' ? null : o, op === 's' ? v : null, N.url()], 0);
+}));
+try { N.busOrigin(ssOrigin); } catch {}
 try { if (ssOrigin !== 'null') { const a = N.lsGet(ssOrigin); for (let i = 0; i + 1 < a.length; i += 2) localStorage._m.set(a[i], a[i + 1]); } } catch {}
 class Location {
     get href() { return N.url(); } set href(v) { this.assign(v); }
@@ -609,5 +613,18 @@ function fireAnim(t, type, name, elapsed, anim) {
     }
 })();
 
-return { queueMessage, workerEvent, protoFor, dispatch, fire, fireAnim, report, mediaChanged, viewportChanged, ceConnected, Event, MouseEvent, PointerEvent, KeyboardEvent, FocusEvent, WheelEvent, InputEvent, PopStateEvent, ErrorEvent };
+function busDeliver(kind, name, data, id, same) {
+    if (kind === 'bc') {
+        let first = true;
+        for (const ch of [...bcAll]) if (!ch._closed && ch.name === name && !(same && ch._id === id)) {
+            ch.dispatchEvent(new MessageEvent('message', { data: first ? data : structuredClone(data), origin: ssOrigin }));
+            first = false;
+        }
+    } else if (kind === 'ls' && !same) {
+        const [k, o, v, url] = data;
+        if (k === null) localStorage._m.clear(); else if (v === null) localStorage._m.delete(k); else localStorage._m.set(k, v);
+        globalThis.dispatchEvent(new StorageEvent('storage', { key: k, oldValue: o, newValue: v, url, storageArea: localStorage }));
+    }
+}
+return { busDeliver, queueMessage, workerEvent, protoFor, dispatch, fire, fireAnim, report, mediaChanged, viewportChanged, ceConnected, Event, MouseEvent, PointerEvent, KeyboardEvent, FocusEvent, WheelEvent, InputEvent, PopStateEvent, ErrorEvent };
 })

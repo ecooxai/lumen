@@ -52,6 +52,7 @@ struct AnimEv {
 };
 struct JsCtx {
     v8::Isolate *iso = nullptr;
+    uint64_t bus_seen = 0; std::string bus_origin;   /* BroadcastChannel / storage-event bus */
     bool bg = false, bg_gc = false; double bg_since = 0;   /* tab in the background: V8 favours memory, one idle GC */
     v8::ArrayBuffer::Allocator *alloc = nullptr;
     v8::Global<v8::Context> ctx;
@@ -112,6 +113,8 @@ v8::Local<v8::String> jsrc(v8::Isolate *iso, const char *s, size_t n);
 std::string jcstr(v8::Isolate *iso, v8::Local<v8::Value> v);
 v8::Local<v8::Value> jwrap(JsCtx *c, Node *n);
 Node *junwrap(v8::Local<v8::Value> v);
+void js_bus_deliver(JsCtx *c);
+uint64_t js_bus_seq();
 v8::MaybeLocal<v8::Value> jcall(JsCtx *c, v8::Local<v8::Function> f, v8::Local<v8::Value> recv, int argc, v8::Local<v8::Value> *argv);
 void jfire(JsCtx *c, Node *n, const char *type);
 void jreport(JsCtx *c, v8::Local<v8::Value> exc, v8::Local<v8::Message> msg);

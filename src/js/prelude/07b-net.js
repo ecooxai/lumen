@@ -432,7 +432,21 @@ for (const [k, v] of Object.entries({ CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED
 const portList = t => (t && typeof t[Symbol.iterator] === 'function' ? [...t] : t && t.transfer ? [...t.transfer] : []).filter(p => p && typeof p.postMessage === 'function' && typeof p.start === 'function');
 class MessagePort extends EventTarget { constructor() { super(); this.onmessage = null; def(this, '_other', null); } postMessage(d, t) { const ps = portList(t), r = this._wk || (this._other && this._other._wk); if (r) { N.workerPost(r[0], { __lumenPort: r[1], data: portSub(d, ps), xfer: ps.map(p => { const k = ++portSeq; p._wk = [r[0], k]; if (p._other) remotePorts.set(k, p._other); return k; }) }); return; } const o = this._other; if (o) { const c = structuredClone(d); setTimeout(() => o._deliver(c, ps)); } } _deliver(data, ports) { dispatch(this, new MessageEvent('message', { data, ports: ports || [] }), true); } start() {} close() { this._other = null; } }
 class MessageChannel { constructor() { this.port1 = new MessagePort(); this.port2 = new MessagePort(); this.port1._other = this.port2; this.port2._other = this.port1; } }
-class BroadcastChannel extends EventTarget { constructor(n) { super(); this.name = String(n); } postMessage() {} close() {} }
+const bcAll = new Set();
+let bcIds = 0;
+class BroadcastChannel extends EventTarget {
+    constructor(n) {
+        super();
+        if (!arguments.length) throw new TypeError("Failed to construct 'BroadcastChannel': 1 argument required");
+        Object.defineProperty(this, '_id', { value: ++bcIds }); Object.defineProperty(this, '_closed', { value: false, writable: true });
+        this.name = String(n); this.onmessage = null; this.onmessageerror = null; bcAll.add(this);
+    }
+    postMessage(m) {
+        if (this._closed) throw new DOMException("Failed to execute 'postMessage' on 'BroadcastChannel': Channel is closed", 'InvalidStateError');
+        try { N.busPost(ssOrigin, 'bc', this.name, m, this._id); } catch (e) { throw new DOMException(String(e && e.message || e), 'DataCloneError'); }
+    }
+    close() { this._closed = true; bcAll.delete(this); }
+}
 
 const portSub = (v, ps, seen = new Set()) => { if (!ps.length || !v || typeof v !== 'object' || seen.has(v)) return v; const i = ps.indexOf(v); if (i >= 0) return { __lumenPortRef: i }; seen.add(v); if (Array.isArray(v)) return v.map(x => portSub(x, ps, seen)); const pr = Object.getPrototypeOf(v); if (pr !== Object.prototype && pr !== null) return v; const o = {}; for (const k of Object.keys(v)) o[k] = portSub(v[k], ps, seen); return o; };
 const portRes = (v, ps, seen = new Set()) => { if (!ps.length || !v || typeof v !== 'object' || seen.has(v)) return v; if (typeof v.__lumenPortRef === 'number' && Object.keys(v).length === 1) return ps[v.__lumenPortRef]; seen.add(v); for (const k of Object.keys(v)) v[k] = portRes(v[k], ps, seen); return v; };

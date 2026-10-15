@@ -577,6 +577,7 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
     c->t0 = now_ms();
     c->thread = std::this_thread::get_id();
     g_ctxs.push_back(c);
+    c->bus_seen = js_bus_seq();
     jsg_install_hooks();
     if (parent) c->iso = parent->iso;
     else {
@@ -891,6 +892,7 @@ static void tick_one(JsCtx *c) {
     JS_ENTER(c);
     while (v8::platform::PumpMessageLoop(g_platform.get(), iso)) {}
     pick_deliver(c);
+    js_bus_deliver(c);
     double now = now_ms();
     std::vector<std::pair<double, uint32_t>> due;
     for (auto &kv : c->timers) if (kv.second.due <= now) due.push_back({ kv.second.due, kv.first });
