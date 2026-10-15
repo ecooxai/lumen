@@ -174,3 +174,11 @@ App Store acceptance is not a goal (sideload / Xcode run).
   once no element is playing/seeking/waiting and state has been unchanged for 2 s; `play()`,
   `currentTime=` and attach restart it. Wikipedia idle: ~13% -> 0.3-3% CPU, RSS 226 -> 116 MB.
   Fixture: `tests/js/media-idle.html`.
+- FIXED (test harness): `LUMEN_SHOT` forced a repaint on every event-loop wakeup, so every
+  run that took a screenshot also repainted on each page timer (YouTube: 2 x 25 ms intervals,
+  ~50 paints/s, 15-25% CPU). It now wakes once at the deadline. Earlier top-site CPU numbers
+  measured with `LUMEN_SHOT` were inflated; re-measure with the fixed hook.
+  Re-measured (each site alone, 30 s, 1 s samples; avg / tail after 20 s / peak RSS):
+  YouTube 16.9/5.7%/262MB, Facebook 4.9/1.9/233, ChatGPT 7.9/4.3/170, Claude 13.2/3.7/337,
+  Gemini 10.3/2.1/308, X 7.9/1.5/214, Google 5.0/1.2/187, Bing 8.6/2.2/196, Gmail 7.4/2.7/211,
+  Wikipedia 5.3/0.8/248.
