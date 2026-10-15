@@ -340,7 +340,7 @@ typedef struct App {
     Canvas frame, page; DisplayList pdl, cdl, hdl;
     struct DSig *osig, *nsig; int nosig, cosig, cnsig; uint64_t chash; bool osig_ok;   /* last page display list, to raster only what changed */
     Tab *t, *tabs[MAX_TABS]; int ntabs, ti;
-    char wsname[16][64]; Tab *wslast[16]; int nws, wi; float side;
+    char wsname[16][64]; Tab *wslast[16]; int nws, wi; float side; bool side_set;
     int wsicon[16]; Image *icimg[16][2];
     Image *sym[8][4]; bool vbars;
     int tip_tab; double tip_until;     /* CPU-limit dot tooltip pinned by a click */
@@ -1165,6 +1165,9 @@ static void update_size(App *a) {
     for (int i = 0; i < a->ntabs; i++) a->tabs[i]->relayout = true;
     int w, h; SDL_GetWindowSize(a->win, &w, &h); SDL_GetWindowSizeInPixels(a->win, &a->pw, &a->ph);
     a->vw = (float)w; a->vh = (float)h; a->scale = w ? (float)a->pw / (float)w : 1;
+#ifdef LUMEN_IOS
+    if (!a->side_set) a->side = w >= 1000 ? SIDEW : 0;   /* iPad portrait: give pages the full 820pt so sites pick their tablet layout */
+#endif
     if (a->gpu) gpu_resize(a->gpu, a->pw, a->ph);
     a->t->relayout = a->dirty = true;
 }
@@ -2114,7 +2117,7 @@ static void menu_cmd(App *a, int c) {
     case MENU_WS_REFRESH: { Tab *act = a->t; for (int i = 0; i < a->ntabs; i++) { Tab *t = a->tabs[i]; if (t->ws != a->wi || t->hpos < 0) continue; a->t = t; navigate(a, t->hist[t->hpos], false); } a->t = act; break; }
     case MENU_WS_NEXT: ws_select(a, (a->wi + 1) % a->nws); break;
     case MENU_WS_PREV: ws_select(a, (a->wi + a->nws - 1) % a->nws); break;
-    case MENU_WS_SIDEBAR: a->side = a->side > 0 ? 0 : SIDEW; for (int i = 0; i < a->ntabs; i++) a->tabs[i]->relayout = true; break;
+    case MENU_WS_SIDEBAR: a->side_set = true; a->side = a->side > 0 ? 0 : SIDEW; for (int i = 0; i < a->ntabs; i++) a->tabs[i]->relayout = true; break;
     }
     a->dirty = true; a->vonly = false;
 }
@@ -2565,6 +2568,7 @@ int main(int argc, char **argv) {
             case SDL_EVENT_WINDOW_MOUSE_LEAVE: if (a.t->cur && page_hover(a.t->cur, NULL)) restyle(&a); break;
             case SDL_EVENT_MOUSE_BUTTON_UP: if (ev.button.button == SDL_BUTTON_LEFT) { g_press = g_drag = false; click_release(&a, ev.button.x, ev.button.y); } break;
             case SDL_EVENT_MOUSE_BUTTON_DOWN:
+                if (ev.button.button == SDL_BUTTON_RIGHT && bar_hit(&a, ev.button.x, ev.button.y) == HB_NEWTAB) { ws_popup(&a, a.wi, ev.button.x, ev.button.y); break; }   /* long-press "+": workspace menu (bar may be hidden) */
                 if (ev.button.button != SDL_BUTTON_LEFT) break;
                 { int bh = bar_hit(&a, ev.button.x, ev.button.y);
                   if (g_hud_pop) { float x = ev.button.x, y = ev.button.y; bool in = x >= g_pop[0] && x < g_pop[2] && y >= g_pop[1] && y < g_pop[3]; g_hud_pop = false; a.dirty = true; a.vonly = false; if (in || bh == HB_HUD) break; }
