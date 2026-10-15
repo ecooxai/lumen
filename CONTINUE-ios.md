@@ -228,4 +228,5 @@ App Store acceptance is not a goal (sideload / Xcode run).
   `tick_one`). Messages are V8-serialized, same-origin only (opaque origins: own context only), kept
   5 s / 256 messages. Receiving contexts also update their `localStorage` copy, so same-origin tabs
   and iframes now see each other's writes live. Test: `~/fvtest/bus/bc.html` over http. Workers
-  still have the old stub.
+  still have the old stub. Storage quota: 5 Mi UTF-16 code units (keys + values) per area,
+  `QuotaExceededError` like Chrome (`~/fvtest/bus/quota.html`).

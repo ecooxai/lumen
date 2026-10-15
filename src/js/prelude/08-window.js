@@ -24,10 +24,14 @@ const ioRun = () => { ioPending = false; for (const o of [...ioAll]) if (o._t.si
 const ioKick = () => { if (!ioPending) { ioPending = true; setTimeout(ioRun, 0); } if (!ioTimer) ioTimer = setInterval(() => { if (!ioAll.size) { clearInterval(ioTimer); ioTimer = 0; } else ioRun(); }, 300); };
 class PerformanceObserver { constructor(cb) { this._cb = cb; } observe() {} disconnect() {} takeRecords() { return []; } static get supportedEntryTypes() { return []; } }
 class Storage {
-    constructor(save) { def(this, '_m', new Map()); def(this, '_s', save || null); }
+    constructor(save) { def(this, '_m', new Map()); def(this, '_s', save || null); Object.defineProperty(this, '_n', { value: 0, writable: true }); }
     get length() { return this._m.size; } key(i) { return [...this._m.keys()][i] ?? null; }
     getItem(k) { return this._m.has(String(k)) ? this._m.get(String(k)) : null; }
-    setItem(k, v) { k = String(k); v = String(v); const o = this._m.get(k) ?? null; this._m.set(k, v); this._s?.(this._m, 's', k, v, o); } removeItem(k) { k = String(k); const o = this._m.get(k); if (this._m.delete(k)) this._s?.(this._m, 'd', k, null, o); } clear() { const n = this._m.size; this._m.clear(); if (n) this._s?.(this._m, 'c'); }
+    setItem(k, v) {
+        k = String(k); v = String(v); const o = this._m.get(k) ?? null, d = v.length + (o === null ? k.length : -o.length);
+        if (this._n + d > 5242880) throw new DOMException(`Failed to execute 'setItem' on 'Storage': Setting the value of '${k}' exceeded the quota.`, 'QuotaExceededError');
+        this._n += d; this._m.set(k, v); this._s?.(this._m, 's', k, v, o); } removeItem(k) { k = String(k); const o = this._m.get(k); if (this._m.delete(k)) { this._n -= k.length + o.length; this._s?.(this._m, 'd', k, null, o); } }
+    _recount() { let n = 0; for (const [k, v] of this._m) n += k.length + v.length; this._n = n; } clear() { const n = this._m.size; this._m.clear(); this._n = 0; if (n) this._s?.(this._m, 'c'); }
 }
 const storageProxy = (st = new Storage()) => new Proxy(st, {
     get(t, k) { if (typeof k !== 'string' || k in t) { const v = Reflect.get(t, k, t); return typeof v === 'function' ? v.bind(t) : v; } return t.getItem(k) ?? undefined; },
@@ -43,7 +47,7 @@ const localStorage = storageProxy(new Storage(ssOrigin === 'null' ? null : (m, o
     if (op !== 's' || o !== v) N.busPost(ssOrigin, 'ls', '', [op === 'c' ? null : k, op === 'c' ? null : o, op === 's' ? v : null, N.url()], 0);
 }));
 try { N.busOrigin(ssOrigin); } catch {}
-try { if (ssOrigin !== 'null') { const a = N.lsGet(ssOrigin); for (let i = 0; i + 1 < a.length; i += 2) localStorage._m.set(a[i], a[i + 1]); } } catch {}
+try { if (ssOrigin !== 'null') { const a = N.lsGet(ssOrigin); for (let i = 0; i + 1 < a.length; i += 2) localStorage._m.set(a[i], a[i + 1]); localStorage._recount(); } } catch {}
 class Location {
     get href() { return N.url(); } set href(v) { this.assign(v); }
     assign(u) { const n = new URL(String(u), document.baseURI); const cur = new URL(N.url()); if (n.href.split('#')[0] === cur.href.split('#')[0] && n.hash) { const old = cur.href; N.setUrl(n.href, true); setTimeout(() => dispatch(G, new HashChangeEvent('hashchange', { oldURL: old, newURL: n.href }))); } else N.navigate(n.href); }
@@ -623,6 +627,7 @@ function busDeliver(kind, name, data, id, same) {
     } else if (kind === 'ls' && !same) {
         const [k, o, v, url] = data;
         if (k === null) localStorage._m.clear(); else if (v === null) localStorage._m.delete(k); else localStorage._m.set(k, v);
+        localStorage._recount();
         globalThis.dispatchEvent(new StorageEvent('storage', { key: k, oldValue: o, newValue: v, url, storageArea: localStorage }));
     }
 }
