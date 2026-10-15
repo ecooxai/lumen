@@ -77,6 +77,10 @@ struct JsCtx {
     uint64_t resize_version = 0;
     bool resize_pending = false;
     double resize_due = 0;
+    v8::Global<v8::Function> intersection_pump;
+    uint64_t intersection_version = 0;
+    bool intersection_pending = false;
+    double intersection_due = 0;
     double last_raf = 0, t0 = 0;
     std::map<uint64_t, Fetch *> fetches;
     std::map<uint32_t, struct WsSock *> sockets;

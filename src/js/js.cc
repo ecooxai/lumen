@@ -465,7 +465,7 @@ static unsigned viewport_changes(JsCtx *context) {
     if (!context->host.viewport) return 0;
     float width = 0, height = 0, scroll_x = 0, scroll_y = 0, dpr = 1;
     context->host.viewport(context->host.ud, &width, &height, &scroll_x, &scroll_y, &dpr);
-    return context->viewport_state.update(width, height, dpr);
+    return context->viewport_state.update(width, height, dpr, scroll_x, scroll_y);
 }
 
 JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
@@ -621,7 +621,7 @@ void js_free(JsCtx *c) {
         c->fetches.clear(); for (auto &kv : c->sockets) { net_ws_release(kv.second->ws); kv.second->cb.Reset(); delete kv.second; } c->sockets.clear();
         c->timers.clear();
         c->rafs.clear();
-        c->video_frame_pump.Reset(); c->resize_pump.Reset(); c->media_pump.Reset();
+        c->video_frame_pump.Reset(); c->resize_pump.Reset(); c->intersection_pump.Reset(); c->media_pump.Reset();
         c->anims.clear();
         c->protos.clear();
         c->protoFor.Reset(); c->fire.Reset(); c->report.Reset(); c->viewportChanged.Reset();
@@ -768,6 +768,7 @@ double js_next_deadline(JsCtx *c) {
     if (!c->media_pump.IsEmpty()) d = std::min(d, c->media_version != media_state_version() ? now_ms() : c->media_due);
     if (!c->video_frame_pump.IsEmpty() && c->video_frame_version != media_frame_version()) d = std::min(d, now_ms());
     if (!c->resize_pump.IsEmpty() && (c->resize_pending || c->resize_version != jsg_layout_generation())) d = std::min(d, c->resize_due);
+    if (!c->intersection_pump.IsEmpty() && (c->intersection_pending || c->intersection_version != jsg_visual_generation())) d = std::min(d, c->intersection_due);
     for (JsCtx *k : c->kids) if (!k->dead) d = std::min(d, js_next_deadline(k));
     d = std::min(d, workers_deadline(c));
     return d;
@@ -775,7 +776,8 @@ double js_next_deadline(JsCtx *c) {
 
 static void viewport_update(JsCtx *context) {
     unsigned changes = viewport_changes(context);
-    if (!changes || context->viewportChanged.IsEmpty()) return;
+    if (changes) jsg_visual_changed();
+    if (!(changes & (JsViewportState::RESIZE | JsViewportState::MEDIA)) || context->viewportChanged.IsEmpty()) return;
     if (context->host.sync) context->host.sync(context->host.ud, context->doc, true);
     JS_ENTER(context);
     v8::Local<v8::Value> resized = v8::Boolean::New(iso, (changes & JsViewportState::RESIZE) != 0);
@@ -847,6 +849,17 @@ static void tick_one(JsCtx *c) {
         c->resize_pending = false;
         c->resize_due = now_ms() + 16;
         (void)jcall(c, c->resize_pump.Get(iso), v8::Undefined(iso), 0, nullptr);
+    }
+    // Snapshot before callbacks: mutations/new observations in a callback must
+    // survive for the next delivery. Bound scanning during continuous scrolling
+    // to 20 Hz; unchanged pages have no timer or geometry reads.
+    if (!c->intersection_pump.IsEmpty() && now_ms() >= c->intersection_due &&
+        (c->intersection_pending || c->intersection_version != jsg_visual_generation())) {
+        if (c->host.sync) c->host.sync(c->host.ud, c->doc, true);
+        c->intersection_version = jsg_visual_generation();
+        c->intersection_pending = false;
+        c->intersection_due = now_ms() + 50;
+        (void)jcall(c, c->intersection_pump.Get(iso), v8::Undefined(iso), 0, nullptr);
     }
     workers_pump(c);
     settle(c);

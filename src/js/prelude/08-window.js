@@ -11,17 +11,18 @@ class ResizeObserver {
 }
 class IntersectionObserver {
     constructor(cb, o = {}) { this._cb = cb; this._t = new Map(); this.root = o.root || null; this.rootMargin = o.rootMargin || '0px'; this.thresholds = [].concat(o.threshold ?? 0); const m = /^\s*(-?[\d.]+)(px|%)?/.exec(this.rootMargin); this._m = m ? +m[1] * (m[2] === '%' ? N.viewport()[1] / 100 : 1) : 0; }
-    observe(el) { if (this._t.has(el)) return; this._t.set(el, null); ioAll.add(this); ioKick(); }
+    observe(el) { if (this._t.has(el)) return; this._t.set(el, null); ioAll.add(this); N.intersectionPump(ioRun); }
     _check() { const v = N.viewport(), m = this._m, out = []; for (const [el, prev] of this._t) { const r = el.getBoundingClientRect(); const vis = el.isConnected && r.bottom > -m && r.top < v[1] + m && r.right > -m && r.left < v[0] + m && r.width + r.height > 0; if (vis === prev) continue; this._t.set(el, vis); out.push({ target: el, isIntersecting: vis, intersectionRatio: vis ? 1 : 0, boundingClientRect: r, intersectionRect: vis ? r : new DOMRect(), rootBounds: new DOMRect(0, 0, v[0], v[1]), time: N.now() }); } if (out.length) try { this._cb(out, this); } catch (e) { report(e); } }
-    unobserve(el) { this._t.delete(el); } disconnect() { this._t.clear(); ioAll.delete(this); } takeRecords() { return []; }
+    unobserve(el) { this._t.delete(el); if (!this._t.size) { ioAll.delete(this); ioStop(); } }
+    disconnect() { this._t.clear(); ioAll.delete(this); ioStop(); } takeRecords() { return []; }
 }
 const roAll = new Set();
 const roStop = () => { if (!roAll.size) N.resizePump(null); };
 const roRun = () => { for (const o of [...roAll]) if (o._t.size) o._check(); roStop(); };
 const ioAll = new Set();
-let ioPending = false, ioTimer = 0;
-const ioRun = () => { ioPending = false; for (const o of [...ioAll]) if (o._t.size) o._check(); else ioAll.delete(o); };
-const ioKick = () => { if (!ioPending) { ioPending = true; setTimeout(ioRun, 0); } if (!ioTimer) ioTimer = setInterval(() => { if (!ioAll.size) { clearInterval(ioTimer); ioTimer = 0; } else ioRun(); }, 300); };
+// Native layout/style/scroll changes drive observation; idle documents do no work.
+const ioStop = () => { if (!ioAll.size) N.intersectionPump(null); };
+const ioRun = () => { for (const o of [...ioAll]) if (o._t.size) o._check(); ioStop(); };
 class PerformanceObserver { constructor(cb) { this._cb = cb; } observe() {} disconnect() {} takeRecords() { return []; } static get supportedEntryTypes() { return []; } }
 class Storage {
     constructor() { def(this, '_m', new Map()); }

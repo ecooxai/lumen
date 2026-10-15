@@ -1525,6 +1525,8 @@ void style_recalc(StyleEngine *e, Node *root, bool force) {
     if (e->idx_dirty) { idx_build(e); force = true; }
     e->stats_matched = e->stats_paint = 0;
     recalc(e, root, NULL, force);
+    // Paint-only transforms can change intersections without running layout.
+    if (e->stats_matched) doc_visual_changed();
     e->styled_media = e->media;
     e->media_valid = true;
 }

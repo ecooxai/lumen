@@ -1348,6 +1348,7 @@ static bool wheel_scroll(App *a, float x, float y, float dx, float dy) {
         float nx = sx ? LCLAMP(b->node->scroll_x + dx, 0, maxx) : b->node->scroll_x, ny = sy ? LCLAMP(b->node->scroll_y + dy, lo, hi) : b->node->scroll_y;
         if (nx == b->node->scroll_x && ny == b->node->scroll_y) continue;
         b->node->scroll_x = nx; b->node->scroll_y = ny;
+        doc_visual_changed();
         float rx = b->x, ry = b->y; bool fx = b->fixed;
         for (Box *q = b->parent; q; q = q->parent) { fx |= q->fixed; if (q->scroller && q->node) { rx -= q->node->scroll_x; ry -= q->node->scroll_y; } }
         if (fx || (a->dirty && !a->vonly)) { a->vonly = a->sdirty = false; }

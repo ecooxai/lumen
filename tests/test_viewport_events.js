@@ -145,7 +145,7 @@ test('engine binds, releases and calls viewport notification before animation fr
     const update = source.slice(source.indexOf('static void viewport_update('), source.indexOf('static void tick_one(JsCtx *c);'));
     assert.match(update, /host\.sync/);
     assert.ok(update.indexOf('host.sync') < update.indexOf('jcall('));
-    assert.match(source, /viewport_state\.update\(width, height, dpr\)/);
+    assert.match(source, /viewport_state\.update\(width, height, dpr, scroll_x, scroll_y\)/);
     const tick = source.slice(source.indexOf('static void tick_one(JsCtx *c) {'));
     assert.ok(tick.indexOf('viewport_update(c)') >= 0);
     assert.ok(tick.indexOf('viewport_update(c)') < tick.indexOf('if (!c->rafs.empty()'));

@@ -456,6 +456,13 @@ FN(resizePump) {
     c->resize_pump.Reset(iso, a[0].As<v8::Function>());
     c->resize_pending = true;
 }
+// New observations receive an asynchronous check even without a layout change.
+FN(intersectionPump) {
+    CTX;
+    if (!a[0]->IsFunction()) { c->intersection_pump.Reset(); c->intersection_pending = false; return; }
+    c->intersection_pump.Reset(iso, a[0].As<v8::Function>());
+    c->intersection_pending = true;
+}
 // Frame callbacks wake only when media_tick selects a frame for composition.
 FN(videoFramePump) {
     CTX;
@@ -923,7 +930,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(histLen); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
     REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove);
     REG(mediaBuffered); REG(mediaEos); REG(mediaSetDuration); REG(mediaPlay); REG(mediaPause); REG(mediaSeek);
-    REG(mediaPump); REG(resizePump); REG(videoFramePump); REG(videoFrameInfo); REG(videoQuality);
+    REG(mediaPump); REG(resizePump); REG(intersectionPump); REG(videoFramePump); REG(videoFrameInfo); REG(videoQuality);
     REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(readyState); REG(quirks);
     REG(currentScript); REG(media); REG(cssSupports); REG(cssSelText); REG(urlParse); REG(encode); REG(decode); REG(random); REG(cDigest); REG(cHmac); REG(cAes); REG(cEcGen); REG(cEcDerive); REG(cEcSign); REG(cEcVerify); REG(cSpki); REG(cSpkiParse); REG(cPkcs8Parse); REG(cEcFromD); REG(cHkdf); REG(cPbkdf2);
     REG(heap); REG(imgSize); REG(userAgent); REG(platform); REG(cpus); REG(makeAll);

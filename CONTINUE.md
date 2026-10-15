@@ -1,5 +1,53 @@
 # Lumen: handoff notes
 
+## Android event-driven visibility observation (2026-10-15)
+
+Full goal active, Vulkan first. See `docs/android-intersection-observer-20261015.md`.
+Removed permanent 300 ms IntersectionObserver polling. A shared document visual
+version now tracks completed style/layout and native/scripted scrolling; viewport
+tracking includes scroll offsets. Observation/disconnect/reentrant delivery use
+native pending state, checks bounded to 20 Hz during changes, no idle timer.
+This does NOT fix existing IO root/clipping/threshold/margin conformance gaps.
+
+Five new JS tests failed before and pass after; 15 combined JS tests, native
+viewport UBSan checks, 22 viewport-style/hit tests, 17 device checks and native
+physical-scroll notification pass. 500-target fixture: 58,000 -> 0 geometry reads
+in 35 seconds; 30-sample idle CPU 1.8978% -> 0.4260%, RSS234.43 ->233.20MiB.
+Six-swipe CPU 28.6844% ->29.9769% (8 samples): modest added scrolling cost, NOT a
+scrolling speedup. Initial 16 ms pump was31.3524%;50ms reduces that cost.
+
+IMPORTANT PACKAGING CORRECTION: the previous controls APK described below as
+clean retained old diagnostic startup paths in cached android_platform.c.o.
+The initial observer APK did too; no preload JS file existed during benchmark
+runs. Touching the restored source forced compilation. Final packaged libmain.so
+was directly checked: both detail-profile.log and detail-probe.js paths absent.
+Source cleanup/ELF checks alone are insufficient after restoring probe backups.
+Clean final APK: build/codex-intersection-20261015/lumen-vulkan-intersection-clean-debug.apk
+SHA256:3c4511a1cf8ff37eae30f2b4d2cc81420aafde81fa307195816d813e02236680.
+Native and v2signature checks pass. Final clean fixture17 checks plus physical
+scroll pass; one-observer settled idle0.0677%,RSS235.08MiB (not500-targetcomparison).
+
+Real YouTube diagnostic confirmed target receives pause at57.419s. Some earlier
+tap attempts only revealed controls and longer playback still reached its error
+screen. Clean final run paused at0:13 and retained controls/frame throughout:
+115 unprofiled samples mean3.2184%,peak28%,RSS315.41MiB; first30mean3.3387%,
+last30mean2.8343%. No cadence errors. Do not claim universal idle pass or real-site
+RAM improvement. New profile657userspace samples/20.0402sec/zero lost: no sampled
+jsg_vrect/n_vrect; js_tick21.46%inclusive/3.20%self; SDL_WaitEventTimeoutNS21.92%.
+NEXT: profile JS timers and main-loop wakeups, then full touch/control timing and
+uninterrupted playback. frames_tick does not double-tick child JS; inspected.
+
+Evidence under build/codex-intersection-20261015: samples/server log,summary,
+whole-idle stats,profile and symbols/callgraph,controls diagnostic/screenshots.
+App-UID simpleperf used without explicit settings changes; perf_harden0 and
+perf_event_paranoid1 read both before/after; no root/app_profiler.py used.
+Preserve matching current native symbols before rebuilding if needed.
+
+Clean APK installed; app stopped; sampler/server stopped and joined; own reverse
+removed; private probes/log/profile files removed. renderer=vulkan,pixel_scale200.
+No credentials entered. ChatGPT/Gemini/Google login/zoom/daily functions unfinished;
+OpenGL ES and software optimization deferred. No owned live job remains.
+
 ## Android positioned controls and fixed geometry (2026-10-15)
 
 Full goal active, Vulkan first. See `docs/android-player-controls-20261015.md`.

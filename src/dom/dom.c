@@ -1,4 +1,9 @@
 #include "dom.h"
+#include <stdatomic.h>
+
+static atomic_uint_fast64_t visual_version;
+uint64_t doc_visual_generation(void) { return atomic_load_explicit(&visual_version, memory_order_relaxed); }
+void doc_visual_changed(void) { atomic_fetch_add_explicit(&visual_version, 1, memory_order_relaxed); }
 
 #define X(n) const char *A_##n;
 X(html) X(head) X(body) X(title) X(meta) X(link) X(style) X(script) X(noscript) X(base) X(div) X(span) X(p) X(a) X(img) X(br) X(hr)

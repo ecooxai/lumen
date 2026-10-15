@@ -24,6 +24,8 @@ bool jsg_matches(Node *el, const char *sel, bool *ok) {
 char *jsg_computed(Node *el, const char *prop) { return css_get_computed_value(el, prop); }
 
 uint64_t jsg_layout_generation(void) { return layout_generation(); }
+uint64_t jsg_visual_generation(void) { return doc_visual_generation(); }
+void jsg_visual_changed(void) { doc_visual_changed(); }
 
 bool jsg_rect(Node *n, float r[4]) {
     struct Box *b = n->box;
@@ -70,6 +72,7 @@ bool jsg_set_scroll(Node *n, float x, float y) {
     float ny = isnan(y) ? n->scroll_y : box_scroll_from_end(b) ? LCLAMP(y, -maxy, 0) : LCLAMP(y, 0, maxy);
     if (nx == n->scroll_x && ny == n->scroll_y) return false;
     n->scroll_x = nx; n->scroll_y = ny; doc_mark_dirty(n->doc, n);
+    doc_visual_changed();
     return true;
 }
 

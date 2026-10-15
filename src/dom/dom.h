@@ -2,6 +2,10 @@
 #define LUMEN_DOM_H
 #include "../base/util.h"
 
+/* Style, layout and scroll updates, shared across documents for observers. */
+uint64_t doc_visual_generation(void);
+void doc_visual_changed(void);
+
 enum { NODE_ELEMENT = 1, NODE_TEXT = 3, NODE_CDATA = 4, NODE_PI = 7, NODE_COMMENT = 8, NODE_DOCUMENT = 9, NODE_DOCTYPE = 10, NODE_FRAGMENT = 11 };
 enum { NS_HTML = 0, NS_SVG = 1, NS_MATHML = 2, NS_NONE = 3 };
 
