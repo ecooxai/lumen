@@ -71,6 +71,7 @@ class ReadableStreamDefaultReader {
     get closed() { return this._closed; }
     read() {
         const s = this._s; if (!s || s._reader !== this) return Promise.reject(new TypeError('Reader released'));
+        s._disturbed = true;
         return new Promise((res, rej) => { s._waits.push([res, rej]); s._flush(); });
     }
     releaseLock() { const s = this._s; if (s && s._reader === this) { s._reader = null; for (const [, j] of s._waits.splice(0)) j(new TypeError('Reader released')); } }
@@ -98,7 +99,7 @@ class ReadableStream {
             Promise.resolve(p).then(() => { this._pulling = false; if (this._waits.length) this._flush(); }, e => { this._pulling = false; this._c.error(e); });
         }
     }
-    _cancel(r) { if (this._done && !this._q.length) return Promise.resolve(); this._q.length = 0; this._done = true; this._flush(); try { return Promise.resolve(this._src.cancel ? this._src.cancel.call(this._src, r) : undefined).then(() => {}); } catch (e) { return Promise.reject(e); } }
+    _cancel(r) { this._disturbed = true; if (this._done && !this._q.length) return Promise.resolve(); this._q.length = 0; this._done = true; this._flush(); try { return Promise.resolve(this._src.cancel ? this._src.cancel.call(this._src, r) : undefined).then(() => {}); } catch (e) { return Promise.reject(e); } }
     get locked() { return !!this._reader; }
     getReader(o) { if (o && o.mode === 'byob') throw new TypeError('BYOB readers are not supported'); return new ReadableStreamDefaultReader(this); }
     cancel(r) { if (this._reader) return Promise.reject(new TypeError('ReadableStream is locked')); return this._cancel(r); }

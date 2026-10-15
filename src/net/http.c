@@ -403,7 +403,9 @@ static NetResponse *http_once(const char *method, const URL *u, const Headers *h
         while (conn_fill(c) > 0) { sb_put(&b, c->rbuf + c->rpos, c->rlen - c->rpos); c->rpos = c->rlen; if (streaming) { stream_out(&dec, &b); if (stream_cancelled()) break; } }
     }
     sb_free(&line);
-    if (!ok) { keep = false; if (!b.n) { r->error = xstrdup("truncated body"); } }
+    // A partial payload is still a network failure, even after headers/chunks
+    // have been delivered. Never report an incomplete Content-Length as EOF.
+    if (!ok) { keep = false; r->error = xstrdup("truncated body"); }
     if (keep) pool_put(c); else conn_close(c);
     if (streaming) dec_free(&dec);
     else if (!decompress(headers_get(&r->headers, "content-encoding"), &b)) DLOG("decompress failed for %s", u->host);

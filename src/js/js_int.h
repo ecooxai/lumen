@@ -140,6 +140,8 @@ void frame_kill(JsCtx *k);
 void frame_nav(JsCtx *k, const char *u);
 void js_install_frames(JsCtx *c, v8::Local<v8::Object> N);
 void js_install_workers(JsCtx *c, v8::Local<v8::Object> N);
+void js_wasm_init(v8::Isolate *iso);
+void js_wasm_install(v8::Local<v8::Context> ctx, v8::Local<v8::Object> native);
 void workers_pump(JsCtx *c);
 void workers_kill(JsCtx *c);
 double workers_deadline(JsCtx *c);

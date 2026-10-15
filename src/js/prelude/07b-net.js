@@ -97,16 +97,43 @@ function bodyInit(b, h) {
     if (b instanceof ReadableStream) return b;
     return toBytes(b);
 }
-class Body {
-    _take() {
-        if (this.bodyUsed) return Promise.reject(new TypeError('Body has already been consumed.'));
-        def(this, '_used', true);
-        const b = this._b;
-        if (!(b instanceof ReadableStream)) return Promise.resolve(b || new ArrayBuffer(0));
-        return (async () => { const parts = []; let n = 0; for await (const c of b) { const u = typeof c === 'string' ? new Uint8Array(N.encode(c)) : c instanceof ArrayBuffer ? new Uint8Array(c) : new Uint8Array(c.buffer, c.byteOffset, c.byteLength); parts.push(u); n += u.length; } const out = new Uint8Array(n); let o = 0; for (const u of parts) { out.set(u, o); o += u.length; } return out.buffer; })();
+const bodyState = new WeakMap();
+const bodyInfo = b => { const s = bodyState.get(b); if (!s) throw new TypeError('Illegal invocation'); return s; };
+const bodyUsed = b => { const s = bodyInfo(b); return s.used || !!(s.body instanceof ReadableStream && s.body._disturbed); };
+function bodyStream(b) {
+    const s = bodyInfo(b);
+    if (s.body === null) return null;
+    if (!(s.body instanceof ReadableStream)) {
+        const bytes = new Uint8Array(s.body);
+        s.body = new ReadableStream({ start(c) { c.enqueue(bytes); c.close(); } });
     }
-    get bodyUsed() { return !!this._used; }
-    get body() { if (!this._b) return null; const b = this._b; if (b instanceof ReadableStream) return b; return new ReadableStream({ start(c) { c.enqueue(new Uint8Array(b)); c.close(); } }); }
+    return s.body;
+}
+function takeBodyReader(b) {
+    const s = bodyInfo(b), stream = bodyStream(b);
+    if (bodyUsed(b) || (stream && stream.locked)) throw new TypeError('Body has already been consumed or locked.');
+    if (!stream) return null;
+    s.used = true;
+    return stream.getReader();
+}
+class Body {
+    constructor() { bodyState.set(this, {body: null, used: false}); }
+    async _take() {
+        const reader = takeBodyReader(this);
+        if (!reader) return new ArrayBuffer(0);
+        {
+            const parts = []; let n = 0;
+            for (;;) { const {value, done} = await reader.read(); if (done) break;
+                if (!(value instanceof Uint8Array)) throw new TypeError('Body stream must contain Uint8Array chunks');
+                const part = value.slice(); parts.push(part); n += part.byteLength;
+            }
+            const out = new Uint8Array(n); let offset = 0;
+            for (const part of parts) { out.set(part, offset); offset += part.byteLength; }
+            return out.buffer;
+        } // Fetch's fully-read algorithm retains its reader lock.
+    }
+    get bodyUsed() { return bodyUsed(this); }
+    get body() { return bodyStream(this); }
     arrayBuffer() { return this._take(); } text() { return this._take().then(N.decode); } json() { return this.text().then(JSON.parse); }
     blob() { return this._take().then(b => new Blob([b], { type: (this.headers.get('content-type') || '') })); } bytes() { return this._take().then(b => new Uint8Array(b)); }
     formData() { return this.text().then(t => { const f = new FormData(); for (const [k, v] of new URLSearchParams(t)) f.append(k, v); return f; }); }
@@ -133,22 +160,44 @@ class Request extends Body {
         for (const k of Object.keys(defaults)) state[k] = init[k] !== undefined ? init[k] : src ? src[k] : defaults[k];
         state.keepalive = !!state.keepalive;
         requestState.set(this, state);
-        def(this, '_b', init.body !== undefined && init.body !== null ? bodyInit(init.body, state.headers) : src ? input._b : null);
-        if (this._b !== null && /^(GET|HEAD)$/.test(state.method)) throw new TypeError('GET and HEAD requests cannot have a body');
+        bodyInfo(this).body = init.body !== undefined && init.body !== null ? bodyInit(init.body, state.headers) : src ? bodyInfo(input).body : null;
+        if (bodyInfo(this).body !== null && /^(GET|HEAD)$/.test(state.method)) throw new TypeError('GET and HEAD requests cannot have a body');
     }
     clone() { requestInfo(this); return new Request(this); }
 }
 for (const key of ['url', 'method', 'headers', 'signal', 'credentials', 'mode', 'cache', 'redirect', 'referrer', 'integrity', 'keepalive', 'priority']) {
     Object.defineProperty(Request.prototype, key, { configurable: true, enumerable: true, get() { return requestInfo(this)[key]; } });
 }
+const responseState = new WeakMap();
+const responseInfo = r => { const s = responseState.get(r); if (!s) throw new TypeError('Expected a Response'); return s; };
 class Response extends Body {
-    constructor(body = null, init = {}) { super(); this.headers = new Headers(init.headers); def(this, '_b', bodyInit(body, this.headers)); this.status = init.status ?? 200; this.statusText = init.statusText || ''; this.type = 'default'; this.url = ''; this.redirected = false; }
-    get ok() { return this.status >= 200 && this.status < 300; }
-    clone() { const r = new Response(null, this); if (this._b instanceof ReadableStream) { const [a, b] = this._b.tee(); this._b = a; r._b = b; } else r._b = this._b; r.url = this.url; r.type = this.type; return r; }
+    constructor(body = null, init = {}) {
+        super();
+        const state = {headers: new Headers(init.headers), status: init.status ?? 200, statusText: init.statusText || '', type: 'default', url: '', redirected: false};
+        responseState.set(this, state);
+        bodyInfo(this).body = bodyInit(body, state.headers);
+        if (N.wasmResponseBrand) N.wasmResponseBrand(this);
+    }
+    get ok() { const s = responseInfo(this); return s.status >= 200 && s.status < 300; }
+    clone() {
+        const state = responseInfo(this), stream = bodyStream(this);
+        if (bodyUsed(this) || (stream && stream.locked)) throw new TypeError('Body has already been consumed or locked.');
+        const r = new Response(null, state);
+        if (stream) { const [a, b] = stream.tee(); bodyInfo(this).body = a; bodyInfo(r).body = b; }
+        Object.assign(responseInfo(r), {url: state.url, type: state.type, redirected: state.redirected});
+        return r;
+    }
     static json(d, i) { const r = new Response(JSON.stringify(d), i); r.headers.set('content-type', 'application/json'); return r; }
-    static error() { const r = new Response(null, { status: 0 }); r.type = 'error'; return r; }
+    static error() { const r = new Response(null, { status: 0 }); responseInfo(r).type = 'error'; return r; }
     static redirect(u, s = 302) { return new Response(null, { status: s, headers: { location: String(u) } }); }
 }
+for (const key of ['status', 'statusText', 'headers', 'type', 'url', 'redirected']) {
+    Object.defineProperty(Response.prototype, key, {configurable: true, enumerable: true, get() { return responseInfo(this)[key]; }});
+}
+if (N.wasmResponse) N.wasmResponse(response => {
+    const state = responseInfo(response);
+    return {mime: Headers.prototype.get.call(state.headers, 'content-type') || '', status: state.status, type: state.type, url: state.url, take: () => takeBodyReader(response)};
+});
 function localBody(url) {
     if (url.startsWith('blob:')) { const b = objectURLs.get(url); return b ? [b._buf, b.type] : null; }
     const m = /^data:([^,]*?)(;base64)?,(.*)$/s.exec(url); if (!m) return undefined;
@@ -169,33 +218,33 @@ function blobResponse(url, lb, range) {
     return [206, 'Partial Content', ['Content-Type', lb[1], 'Content-Length', String(b - a + 1), 'Content-Range', `bytes ${a}-${b}/${n}`], buf.slice(a, b + 1)];
 }
 function fetch(input, init) {
-    let req, body; try { const request = new Request(input, init); req = requestInfo(request); body = request._b; } catch (e) { return Promise.reject(e); }
+    let req, body; try { const request = new Request(input, init); req = requestInfo(request); body = bodyInfo(request).body; } catch (e) { return Promise.reject(e); }
     return new Promise((resolve, reject) => {
         if (req.signal.aborted) return reject(req.signal.reason);
         const lb = localBody(req.url);
-        if (lb !== undefined) { const br = lb && blobResponse(req.url, lb, req.headers.get('range')); if (!br) return reject(new TypeError('Failed to fetch')); const r = new Response(null, { status: br[0], statusText: br[1], headers: fromFlat(br[2]) }); r._b = br[3]; r.url = req.url; r.type = 'basic'; return resolve(r); }
+        if (lb !== undefined) { const br = lb && blobResponse(req.url, lb, req.headers.get('range')); if (!br) return reject(new TypeError('Failed to fetch')); const r = new Response(null, { status: br[0], statusText: br[1], headers: fromFlat(br[2]) }); bodyInfo(r).body = br[3]; responseInfo(r).url = req.url; responseInfo(r).type = 'basic'; return resolve(r); }
         const build = (status, statusText, url, hdrs) => {
             if (!corsOk(req.url, url, hdrs || [], req.credentials === 'include')) {
                 if (req.mode !== 'no-cors') return null;
-                const r = new Response(null); r.status = 0; r.url = ''; r.type = 'opaque';
+                const r = new Response(null); Object.assign(responseInfo(r), {status: 0, url: '', type: 'opaque'});
                 return r;
             }
             if (req.mode === 'same-origin') { try { if (new URL(url || req.url).origin !== location.origin) return null; } catch (e) {} }
-            const r = new Response(null, { status, statusText, headers: fromFlat(hdrs) }); r.url = url; r.redirected = url !== req.url; r.type = 'basic';
+            const r = new Response(null, { status, statusText, headers: fromFlat(hdrs) }); Object.assign(responseInfo(r), {url, redirected: url !== req.url, type: 'basic'});
             return r;
         };
         let id = 0, ctl = null, settled = false;
         const head = (status, statusText, url, hdrs) => {
             if (settled) return;
             const r = build(status, statusText, url, hdrs); if (!r || r.type !== 'basic') return;
-            r._b = new ReadableStream({ start(c) { ctl = c; } }); settled = true; resolve(r);
+            bodyInfo(r).body = new ReadableStream({ start(c) { ctl = c; }, cancel() { N.abort(id); ctl = null; } }); settled = true; resolve(r);
         };
         const chunk = (ab) => { if (ctl) try { ctl.enqueue(new Uint8Array(ab)); } catch (e) {} };
         corsSend(req.credentials === 'include', (i) => id = i, req.method, req.url, withOrigin(req.headers._flat(), req.url, req.method, req.mode), body, (status, statusText, url, hdrs, body, err) => {
             if (settled) { if (ctl) { try { if (err) ctl.error(new TypeError('network error')); else ctl.close(); } catch (e) {} ctl = null; } return; }
             if (err) return reject(new TypeError('Failed to fetch'));
             const r = build(status, statusText, url, hdrs); if (!r) return reject(new TypeError('Failed to fetch'));
-            if (r.type === 'basic') r._b = body;
+            if (r.type === 'basic') bodyInfo(r).body = body;
             resolve(r);
         }, { head, chunk });
         req.signal.addEventListener('abort', () => { N.abort(id); if (ctl) { try { ctl.error(req.signal.reason); } catch (e) {} ctl = null; } reject(req.signal.reason); });

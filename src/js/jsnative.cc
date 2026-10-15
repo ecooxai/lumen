@@ -333,7 +333,7 @@ static NetRequest *mkreq(JsCtx *c, const FCI &a) {
     return rq;
 }
 static void resp_args(v8::Isolate *iso, NetResponse *r, v8::Local<v8::Value> out[6]) {
-    bool err = !r || r->status == 0;
+    bool err = !r || r->status == 0 || r->error;
     out[0] = v8::Integer::New(iso, r ? r->status : 0);
     out[1] = jstr(iso, r && r->status_text ? r->status_text : "");
     out[2] = jstr(iso, r && r->url ? r->url : "");
@@ -355,7 +355,7 @@ static void fetch_done(NetRequest *req, NetResponse *r, void *ud) {
     c->fetches.erase(f->id);
     JS_ENTER(c);
     if (f->script) {
-        if (r && r->status >= 200 && r->status < 300) js_run_script(c, f->script, r->body ? r->body : "", r->body ? r->body_len : 0, r->url ? r->url : "");
+        if (r && !r->error && r->status >= 200 && r->status < 300) js_run_script(c, f->script, r->body ? r->body : "", r->body ? r->body_len : 0, r->url ? r->url : "");
         else jfire(c, f->script, "error");
     } else {
         v8::Local<v8::Value> argv[6];

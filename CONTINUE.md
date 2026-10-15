@@ -1,5 +1,40 @@
 # Lumen: handoff notes
 
+## Android Wasm streaming checkpoint (2026-10-15)
+
+Goal ACTIVE: daily Android browser + full browser Wasm, Vulkan first.
+Implemented V8 compileStreaming/instantiateStreaming bridge with private Response
+brand/state, incremental page response consumption, MIME/status/body-use/error
+checks and cancellation. Fixed truncated download errors after response headers.
+Worker APIs pass but worker fetch still buffers entire downloads internally.
+See docs/android-wasm-streaming-20261015.md and docs/wasm-browser-20261015.md.
+
+Phone final27/27 streaming checks PASS, original audit10/13PASS, worker8/8PASS,
+Fetch6/6PASS, Request5/5PASS; Node17/17PASS. Remaining audit failures: module
+structuredClone, compiled module postMessage, shared Wasm memory postMessage.
+Full Wasm NOT complete. Stable engine/API coverage, WPT, real Wasm applications,
+worker incremental fetch and full Streams/Response conformance still required.
+
+Installed verified Vulkan APK:
+build/codex-wasm-streaming-20261015/lumen-vulkan-wasm-streaming-debug.apk
+SHA256:42af2d0940212a04e9f24e41c726f6887d5b4977be59bf40406c3adf113fa54f.
+Idle82samples (four boundary samples excluded): CPUmean0.319%,peak5.155%,
+RSSending249.78MiB.567whole-process/all-thread1Hz samples, zero errors.
+App stopped, worker tab closed successfully, sampler/server joined, owned
+adb reverses removed. No owned live job. Credentials unused.
+
+NEXT PERFORMANCE BUG: page V8 foreground completion lacks event-loop wakeup
+and deadline integration.800ms delayed fetch compiled in1811.91ms; ordinary
+Fetch chunks arrive on time. Page tick_one pumps libplatform, but main loop
+can sleep1000ms and js_next_deadline omits V8 tasks. Reuse/adapt tested worker
+task runner for page isolates; register before Isolate::Initialize, provide
+js_wakeup with safe lifetime, include delayed deadlines, drain only outermost
+root loop with microtasks, close/unregister before disposal. Preserve worker
+lifecycle and default background compiler jobs. Test latency and idle CPU.
+Then module cloning/shared memory isolation/lifetime and broad Wasm coverage.
+Broader Vulkan scrolling, YouTube, login and zoom remain unfinished; OpenGL ES
+and CPU software deferred. User confirmed phone available; no need reask.
+
 ## Android Wasm worker scheduling (2026-10-15)
 
 Daily-browser + FULL browser Wasm goal ACTIVE; Vulkan first. Worker async Wasm

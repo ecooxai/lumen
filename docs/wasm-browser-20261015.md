@@ -19,8 +19,8 @@ build/codex-native-touch-20261015/server.log. The installed native-touch APK pas
 | SIMD instruction execution | Pass |
 | Bulk memory instruction execution | Pass |
 | Runtime traps | Pass |
-| compileStreaming(fetch) | FAIL: function absent |
-| instantiateStreaming(fetch) | FAIL: function absent |
+| compileStreaming(fetch) | PASS after streaming integration |
+| instantiateStreaming(fetch) | PASS after streaming integration |
 | structuredClone(compiled module) | FAIL: loses module identity |
 | Compilation inside Worker | Initially timed out; PASS after worker task wakeup fix |
 | Compiled module postMessage to Worker | FAIL: module could not be cloned |
@@ -31,7 +31,13 @@ foreground queue before worker isolate initialization, wakes the worker on task
 posting, preserves delayed deadlines, and runs microtasks after foreground work.
 See android-wasm-worker-20261015.md for implementation and device measurements.
 
-Source corroboration: no Wasm streaming callback is registered. worker.cc uses
+Streaming follow-up raises the audit to10/13. All27 focused streaming checks pass
+on the MI8 Vulkan build, including incremental page fetch, MIME/status validation,
+body use/locking, cancellation, malformed/truncated bodies, same-origin frame
+Responses and worker API calls. Worker fetch remains buffered internally. See
+android-wasm-streaming-20261015.md.
+
+Source corroboration: wasm.cc now registers V8 streaming callbacks. worker.cc uses
 ValueSerializer/Deserializer without delegates for modules/shared backing stores.
 The page structuredClone JS implementation does not handle modules. The former
 worker loop was not notified by V8 foreground-task posting and omitted the
@@ -39,10 +45,12 @@ post-task microtask checkpoint. The phone now confirms this timeout is fixed.
 
 Next implementation/verification requirements:
 
-1. Integrate streaming compilation with fetch/Response bodies, including MIME,
-   HTTP/error/body-use checks and cancellation. Avoid claiming actual incremental
-   streaming when only compiling a buffered response.
-2. Correct worker task wakeups/microtask delivery with low idle CPU.
+1. Extend worker fetch to actual incremental network streaming and broaden
+   Response/Streams conformance, including prototype overrides and BYOB. Page
+   streaming integration is implemented; focused checks are not full conformance.
+2. Worker task wakeups are fixed. Page V8 completion still incurs up to the
+   event-loop fallback wait: delayed800ms fetch compiled in1812ms on the phone.
+   Connect page foreground tasks to wakeups/deadlines without polling.
 3. Structured clone and worker message support for modules/shared backing stores,
    including lifetime and isolation checks. Do not silently convert them to plain
    objects or bypass cross-origin isolation requirements.

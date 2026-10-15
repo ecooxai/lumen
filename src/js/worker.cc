@@ -162,7 +162,7 @@ WFN(fetch) {
     }
     if (a[4]->IsTrue()) rq->no_cookies = true;
     NetResponse *r = net_fetch_sync(rq);
-    if (!r || r->status == 0) { if (r) net_response_free(r); a.GetReturnValue().SetNull(); return; }
+    if (!r || r->status == 0 || r->error) { if (r) net_response_free(r); a.GetReturnValue().SetNull(); return; }
     v8::Local<v8::Array> hs = v8::Array::New(iso);
     for (int i = 0; i < r->headers.n; i++) { (void)hs->Set(ctx, (uint32_t)(2 * i), jstr(iso, r->headers.v[i].name)); (void)hs->Set(ctx, (uint32_t)(2 * i + 1), jstr(iso, r->headers.v[i].value)); }
     v8::Local<v8::Value> out[4] = { v8::Integer::New(iso, r->status), jstr(iso, r->url ? r->url : u.c_str()), make_ab(iso, r->body, r->body_len), hs };
@@ -307,14 +307,29 @@ class Blob {
     get [Symbol.toStringTag]() { return 'Blob'; }
 }
 class File extends Blob { constructor(parts, name, opts) { super(parts, opts); this.name = String(name); this.lastModified = opts && opts.lastModified || Date.now(); } }
+const responseState = new WeakMap();
+const responseInfo = r => { const s = responseState.get(r); if (!s) throw new TypeError('Expected a Response'); return s; };
+function responseTake(response) {
+    const s = responseInfo(response);
+    if (s.used) throw new TypeError('Body has already been consumed.');
+    if (s.bytes === null) return null;
+    s.used = true; let done = false;
+    return {read() { if (done) return Promise.resolve({done:true}); done = true; return Promise.resolve({done:false,value:s.bytes.slice()}); }, cancel() { done = true; return Promise.resolve(); }, releaseLock() {}};
+}
 class Response {
-    constructor(body = null, init = {}) { def(this, '_buf', body); this.status = init.status ?? 200; this.statusText = init.statusText || ''; this.url = init.url || ''; this.headers = new Headers(init.headers); this.bodyUsed = false; this.type = 'basic'; }
-    get ok() { return this.status >= 200 && this.status < 300; }
-    arrayBuffer() { this.bodyUsed = true; const b = this._buf; return Promise.resolve(b instanceof ArrayBuffer ? b : ArrayBuffer.isView(b) ? b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) : new TextEncoder().encode(b == null ? '' : String(b)).buffer); }
+    constructor(body = null, init = {}) { responseState.set(this, {bytes: body === null ? null : blobBytes([body]), status: init.status ?? 200, statusText: init.statusText || '', url: init.url || '', headers: new Headers(init.headers), used: false, type: 'basic'}); W.wasmResponseBrand(this); }
+    get ok() { const s = responseInfo(this); return s.status >= 200 && s.status < 300; }
+    get bodyUsed() { return responseInfo(this).used; }
+    async arrayBuffer() { const reader = responseTake(this); return reader ? (await reader.read()).value.buffer : new ArrayBuffer(0); }
     async text() { return W.decode(await this.arrayBuffer()); }
     async json() { return JSON.parse(await this.text()); }
-    clone() { return new Response(this._buf, this); }
+    clone() { const s = responseInfo(this); if (s.used) throw new TypeError('Body has already been consumed.'); return new Response(s.bytes, s); }
 }
+for (const key of ['status','statusText','url','headers','type']) Object.defineProperty(Response.prototype, key, {configurable:true, enumerable:true, get() { return responseInfo(this)[key]; }});
+W.wasmResponse(response => {
+    const s = responseInfo(response);
+    return {mime: Headers.prototype.get.call(s.headers, 'content-type') || '', status: s.status, type: s.type, url: s.url, take: () => responseTake(response)};
+});
 function fetch(input, init) {
     init = init || {};
     try {
@@ -410,6 +425,7 @@ void worker_main(std::shared_ptr<Worker> w) {
         }
     });
     v8::Isolate::Initialize(iso, cp);
+    js_wasm_init(iso);
     { std::lock_guard<std::mutex> lk(w->mu); w->iso = iso; }
     iso->SetMicrotasksPolicy(v8::MicrotasksPolicy::kExplicit);
     WEnv *E = new WEnv; E->w = w; E->iso = iso; E->t0 = now_ms();
@@ -422,6 +438,7 @@ void worker_main(std::shared_ptr<Worker> w) {
         E->ctx.Reset(iso, ctx);
         v8::Context::Scope cs(ctx);
         v8::Local<v8::Object> W = v8::Object::New(iso);
+        js_wasm_install(ctx, W);
 #define WREG(nm) (void)W->Set(ctx, jstr(iso, #nm), v8::Function::New(ctx, w_##nm).ToLocalChecked())
         WREG(post); WREG(clone); WREG(timer); WREG(clear); WREG(close); WREG(now); WREG(log); WREG(decode); WREG(resolve); WREG(fetch); WREG(importScript); WREG(reportErr);
         auto setS = [&](const char *k, const std::string &v) { (void)W->Set(ctx, jstr(iso, k), jstr(iso, v.c_str())); };

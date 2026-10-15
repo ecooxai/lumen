@@ -490,6 +490,7 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
     c->alloc = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
     cp.array_buffer_allocator = c->alloc;
     c->iso = v8::Isolate::New(cp);
+    js_wasm_init(c->iso);
     c->iso->SetData(0, c);
     c->iso->SetMicrotasksPolicy(v8::MicrotasksPolicy::kExplicit);
     c->iso->SetPromiseRejectCallback(on_reject);
@@ -509,6 +510,7 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
     c->node_tmpl.Reset(iso, tmpl);
     v8::Local<v8::Object> N = v8::Object::New(iso);
     js_install_native(c, N);
+    js_wasm_install(ctx, N);
     v8::TryCatch tc(iso);
     v8::ScriptOrigin origin(jstr(iso, "lumen:prelude"));
     v8::Local<v8::Script> s;
