@@ -13,10 +13,11 @@ typedef struct {
     float sx, sy;               /* page scroll */
     bool clip; float cx, cy, cw, ch;
     int order;
+    bool fixed;
     Box *sb; const void *outer;   /* innermost scroller and the state outside it */
 } PB;
 
-static DItem *emit(PB *p, uint8_t op) { DItem it; memset(&it, 0, sizeof it); it.op = op; it.alpha = 1; vec_push(p->dl->items, it); return &p->dl->items.v[p->dl->items.n - 1]; }
+static DItem *emit(PB *p, uint8_t op) { DItem it; memset(&it, 0, sizeof it); it.op = op; it.alpha = 1; it.fixed = p->fixed; vec_push(p->dl->items, it); return &p->dl->items.v[p->dl->items.n - 1]; }
 static bool visible(PB *p, float x, float y, float w, float h) {
     if (x > p->dl->vw || y > p->dl->vh || x + w < 0 || y + h < 0) return false;
     if (p->clip && (x > p->cx + p->cw || y > p->cy + p->ch || x + w < p->cx || y + h < p->cy)) return false;
@@ -348,21 +349,14 @@ static int def_cmp(const void *a, const void *b) {
 
 static void paint_deferred(PB *p, Deferred *d) {
     PB saved = *p;
-    if (d->b->fixed) { p->dx = -0.0f; p->dy = 0; p->clip = false; p->dl->has_fixed = true; }
+    if (d->b->fixed) { p->dx = -0.0f; p->dy = 0; p->clip = false; p->fixed = true; }
     else {
         p->dx = d->dx; p->dy = d->dy;
         /* clips of scrollers apply only when the box's containing block is inside them */
         p->clip = d->clip && !(d->b->abs && d->b->cb == p->L->root); p->cx = d->cx; p->cy = d->cy; p->cw = d->cw; p->ch = d->ch;
     }
-    int fi0 = p->dl->items.n;
     if (p->clip) { DItem *c = emit(p, DO_PUSH_CLIP); c->x = p->cx; c->y = p->cy; c->w = p->cw; c->h = p->ch; }
     paint_stacking(p, d->b);
-    if (d->b->fixed)
-        for (int i = fi0; i < p->dl->items.n; i++) {
-            const DItem *it = &p->dl->items.v[i]; float *f = p->dl->fix;
-            if (it->w <= 0 || it->h <= 0) continue;
-            f[0] = LMIN(f[0], it->x); f[1] = LMIN(f[1], it->y); f[2] = LMAX(f[2], it->x + it->w); f[3] = LMAX(f[3], it->y + it->h);
-        }
     if (p->clip) emit(p, DO_POP_CLIP);
     int order = p->order; *p = saved; p->order = order;
 }
@@ -403,7 +397,7 @@ static void paint_stacking(PB *p, Box *b) {
     p->dx -= tx; p->dy -= ty;
 }
 
-void dl_clear(DisplayList *dl) { dl->items.n = 0; dl->has_fixed = false; dl->fix[0] = dl->fix[1] = 1e9f; dl->fix[2] = dl->fix[3] = -1e9f; arena_reset(&dl->arena); }
+void dl_clear(DisplayList *dl) { dl->items.n = 0; dl->fixed.count = 0; arena_reset(&dl->arena); }
 
 void dl_build(DisplayList *dl, Layout *L, float scroll_x, float scroll_y, float vw, float vh) {
     dl_clear(dl); dl->vw = vw; dl->vh = vh;
@@ -417,4 +411,12 @@ void dl_build(DisplayList *dl, Layout *L, float scroll_x, float scroll_y, float 
     else if (body && body->style && COLOR_A(body->style->bg_color)) bg = body->style->bg_color;
     if (bg) { DItem *it = emit(&p, DO_RECT); it->x = 0; it->y = 0; it->w = vw; it->h = vh; it->color = bg; }
     for (Box *c = L->root->first; c; c = c->next) paint_stacking(&p, c);
+    /* Collect final coordinates after ancestor transforms have been applied. */
+    for (int i = 0; i < dl->items.n; i++) {
+        const DItem *it = &dl->items.v[i];
+        if (!it->fixed || it->w <= 0 || it->h <= 0 || it->op == DO_PUSH_CLIP) continue;
+        float pad = it->op == DO_SHADOW ? LMAX(0, it->spread) + LMAX(0.5f, it->blur) : 0;
+        float bounds[4] = {it->x - pad, it->y - pad, it->x + it->w + pad, it->y + it->h + pad};
+        paint_regions_add(&dl->fixed, bounds);
+    }
 }

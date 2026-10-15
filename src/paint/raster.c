@@ -4,13 +4,18 @@
 #include <zlib.h>
 
 typedef struct { int x0, y0, x1, y1; float fx, fy, fw, fh, r[4]; bool round; } Clip;
-typedef struct { uint32_t *px; float alpha; } LayerSave;
+typedef struct { uint32_t *px; float alpha; int origin_y; } LayerSave;
 typedef struct {
     Canvas *c; float s;
     Clip clips[64]; int nclip;
     LayerSave layers[16]; int nlayer;
     uint32_t *px;
+    int origin_y; /* layer storage starts at the first damaged row */
 } R;
+
+static inline uint32_t *raster_row(R *r, int y) {
+    return r->px + (size_t)(y - r->origin_y) * (size_t)r->c->stride;
+}
 
 void canvas_init(Canvas *c, int w, int h, float scale) { c->w = w; c->h = h; c->stride = w; c->scale = scale; c->punch = NULL; c->punched = false; c->px = xcalloc((size_t)w * (size_t)h, 4); }
 void canvas_free(Canvas *c) { free(c->px); c->px = NULL; }
@@ -56,12 +61,11 @@ static void fill(R *r, float x0, float y0, float x1, float y1, const float rad[4
     if (ix0 >= ix1 || iy0 >= iy1) return;
     bool round = rad && (rad[0] > 0 || rad[1] > 0 || rad[2] > 0 || rad[3] > 0);
     uint32_t solid = premul(col, 1);
-    int W = r->c->stride;
     if (!round && !c->round) {
         bool opaque = (solid >> 24) == 255;
         int ax = LMAX(ix0, (int)ceilf(x0)), bx = LMIN(ix1, (int)floorf(x1)); if (bx < ax) bx = ax;
         for (int y = iy0; y < iy1; y++) {
-            uint32_t *row = r->px + (size_t)y * (size_t)W;
+            uint32_t *row = raster_row(r, y);
             float cy = span_cov(y0, y1, y);
             bool full = cy >= 0.999f;
             for (int x = ix0; x < ix1; x++) {
@@ -77,7 +81,7 @@ static void fill(R *r, float x0, float y0, float x1, float y1, const float rad[4
         return;
     }
     for (int y = iy0; y < iy1; y++) {
-        uint32_t *row = r->px + (size_t)y * (size_t)W;
+        uint32_t *row = raster_row(r, y);
         float cy = span_cov(y0, y1, y);
         float rmax = round ? LMAX(LMAX(rad[0], rad[1]), LMAX(rad[2], rad[3])) : 0;
         bool corner_row = round && (y < y0 + rmax + 1 || y + 1 > y1 - rmax - 1);
@@ -110,7 +114,7 @@ static void border(R *r, const DItem *it) {
             float co = LCLAMP(0.5f - sd_rrect(fx, fy, x0, y0, x1, y1, rad), 0, 1);
             float ci = ix1 > ix0 && iy1 > iy0 ? LCLAMP(0.5f - sd_rrect(fx, fy, ix0, iy0, ix1, iy1, ir), 0, 1) : 0;
             float cov = (co - ci) * clip_cov(r, fx, fy);
-            if (cov > 0) over(&r->px[(size_t)y * (size_t)r->c->stride + (size_t)x], premul(col, cov));
+            if (cov > 0) over(&raster_row(r, y)[x], premul(col, cov));
         }
         return;
     }
@@ -153,7 +157,7 @@ static void shadow(R *r, const DItem *it) {
         float t = LCLAMP((d + bl) / (2 * bl), 0, 1);
         float cov = 1 - t * t * (3 - 2 * t);
         cov *= clip_cov(r, x + 0.5f, y + 0.5f);
-        if (cov > 0.002f) over(&r->px[(size_t)y * (size_t)r->c->stride + (size_t)x], premul(it->color, cov));
+        if (cov > 0.002f) over(&raster_row(r, y)[x], premul(it->color, cov));
     }
 }
 
@@ -188,7 +192,7 @@ static void gradient(R *r, const DItem *it) {
         float cov = span_cov(x0, x1, x) * span_cov(y0, y1, y);
         if (round) cov = LCLAMP(0.5f - sd_rrect(fx, fy, x0, y0, x1, y1, rad), 0, 1);
         cov *= clip_cov(r, fx, fy);
-        if (cov > 0) over(&r->px[(size_t)y * (size_t)r->c->stride + (size_t)x], premul(grad_at(g, t), cov));
+        if (cov > 0) over(&raster_row(r, y)[x], premul(grad_at(g, t), cov));
     }
 }
 
@@ -203,7 +207,7 @@ static void text(R *r, const DItem *it) {
         int ox = (int)lroundf(dg->x * s) + gl->left, oy = (int)lroundf(dg->y * s) - gl->top;
         if (ox >= c->x1 || oy >= c->y1 || ox + gl->w <= c->x0 || oy + gl->h <= c->y0) continue;
         for (int y = LMAX(0, c->y0 - oy); y < gl->h && oy + y < c->y1; y++) {
-            uint32_t *row = r->px + (size_t)(oy + y) * (size_t)r->c->stride;
+            uint32_t *row = raster_row(r, oy + y);
             for (int x = LMAX(0, c->x0 - ox); x < gl->w && ox + x < c->x1; x++) {
                 float cc = clip(r)->round ? clip_cov(r, ox + x + 0.5f, oy + y + 0.5f) : 1;
                 if (gl->color && gl->rgba) { uint32_t p = gl->rgba[y * gl->w + x]; if (p >> 24) over(&row[ox + x], cc < 1 ? scale_px(p, (uint32_t)(cc * 256)) : p); }
@@ -221,7 +225,7 @@ static void image(R *r, const DItem *it) {
     const Clip *c = clip(r);
     if (r->c->punch && (const void *)im == r->c->punch) {
         int qx0 = LMAX(c->x0, (int)floorf(x0 + 0.5f)), qy0 = LMAX(c->y0, (int)floorf(y0 + 0.5f)), qx1 = LMIN(c->x1, (int)floorf(x1 + 0.5f)), qy1 = LMIN(c->y1, (int)floorf(y1 + 0.5f));
-        for (int y = qy0; qx1 > qx0 && y < qy1; y++) memset(r->px + (size_t)y * (size_t)r->c->stride + qx0, 0, (size_t)(qx1 - qx0) * 4);
+        for (int y = qy0; qx1 > qx0 && y < qy1; y++) memset(raster_row(r, y) + qx0, 0, (size_t)(qx1 - qx0) * 4);
         r->c->punched = !r->nlayer && !c->round;
         return;
     }
@@ -245,7 +249,7 @@ static void image(R *r, const DItem *it) {
         if (down) ra = rb = im->px + (size_t)LCLAMP((int)(sy + 0.5f), 0, im->h - 1) * (size_t)im->w;
         else { ra = im->px + (size_t)LCLAMP(iy, 0, im->h - 1) * (size_t)im->w; rb = im->px + (size_t)LCLAMP(iy + 1, 0, im->h - 1) * (size_t)im->w; }
         float cy = span_cov(y0, y1, y);
-        uint32_t *row = r->px + (size_t)y * (size_t)r->c->stride;
+        uint32_t *row = raster_row(r, y);
         for (int x = px0; x < px1; x++) {
             const ImgCol *k = &cols[x - px0];
             uint32_t p;
@@ -294,20 +298,30 @@ void raster_rect(Canvas *cv, const DisplayList *dl, Color clearc, int rx0, int r
         case DO_POP_CLIP: if (r.nclip > 1) r.nclip--; break;
         case DO_PUSH_LAYER: {
             if (r.nlayer >= 16) { r.nlayer++; break; }
-            r.layers[r.nlayer].px = r.px; r.layers[r.nlayer].alpha = it->alpha; r.nlayer++;
-            r.px = xcalloc((size_t)cv->stride * (size_t)cv->h, 4);
+            r.layers[r.nlayer].px = r.px; r.layers[r.nlayer].alpha = it->alpha;
+            r.layers[r.nlayer].origin_y = r.origin_y; r.nlayer++;
+            /* Every primitive is clipped to the damage rectangle. Keep only
+               its rows, including for nested layers, instead of allocating a
+               full viewport for each opacity group on every partial paint. */
+            r.px = xcalloc((size_t)cv->stride * (size_t)(ry1 - ry0), 4);
+            r.origin_y = ry0;
             break;
         }
         case DO_POP_LAYER: {
             if (!r.nlayer) break;
             r.nlayer--; if (r.nlayer >= 16) break;
             uint32_t *dst = r.layers[r.nlayer].px, *src = r.px; uint32_t k = (uint32_t)(r.layers[r.nlayer].alpha * 256);
-            for (int y = ry0; y < ry1; y++) for (int x = rx0; x < rx1; x++) { size_t j = (size_t)y * (size_t)cv->stride + (size_t)x; if (src[j]) over(&dst[j], scale_px(src[j], k)); }
-            free(src); r.px = dst; break;
+            int destination_y = r.layers[r.nlayer].origin_y;
+            for (int y = ry0; y < ry1; y++) for (int x = rx0; x < rx1; x++) {
+                size_t sj = (size_t)(y - r.origin_y) * (size_t)cv->stride + (size_t)x;
+                size_t dj = (size_t)(y - destination_y) * (size_t)cv->stride + (size_t)x;
+                if (src[sj]) over(&dst[dj], scale_px(src[sj], k));
+            }
+            free(src); r.px = dst; r.origin_y = destination_y; break;
         }
         }
     }
-    while (r.nlayer > 0) { r.nlayer--; if (r.nlayer < 16) { free(r.px); r.px = r.layers[r.nlayer].px; } }
+    while (r.nlayer > 0) { r.nlayer--; if (r.nlayer < 16) { free(r.px); r.px = r.layers[r.nlayer].px; r.origin_y = r.layers[r.nlayer].origin_y; } }
 }
 
 /* ---------------- PNG writer (for tests/screenshots) ---------------- */

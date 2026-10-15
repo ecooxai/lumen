@@ -1,3 +1,4 @@
+#include "../../src/paint/regions.h"
 #include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -31,7 +32,8 @@ static bool upload_allowed = true, present_allowed = true, surface_available = t
 static bool shot, recreated;
 static bool scroll_allowed;
 static unsigned scroll_uploads;
-int scroll_delta = 2, scroll_fixed_first = 1, scroll_fixed_last = 3;
+int scroll_delta = 2;
+static PaintRegions scroll_fixed = {.rect = {{0, 1, 4, 3}}, .count = 1};
 static float g_pop[4] = {0, 3, 1, 4};
 
 static void *counted_memcpy(void *destination, const void *source, size_t size) {
@@ -147,6 +149,17 @@ int main(int argc, char **argv) {
                  .gpu = (void *)(uintptr_t)1, .win = (void *)(uintptr_t)2};
     PaintFrame profile = {.blit = true};
     const char *scenario = argv[1];
+    if (!strcmp(scenario, "two-fixed") || !strcmp(scenario, "two-fixed-failure")) {
+        scroll_allowed = true;
+        scroll_fixed.rect[1][1] = 5; scroll_fixed.rect[1][3] = 6; scroll_fixed.count = 2;
+        upload_allowed = !strcmp(scenario, "two-fixed");
+        transfer(&state, true, false, 2, 0, 6, 0, 6, NULL, profile);
+        assert(scroll_uploads == 1);
+        if (upload_allowed) assert(uploads == 1 && copy_calls == 0 && state.frame_page_stale);
+        else { assert(uploads == 2 && copy_calls == 1); verify_frame(&state, 0, false, false); }
+        assert(memcmp(gpu_pixels + 8, page_pixels, sizeof page_pixels) == 0);
+        return 0;
+    }
     if (!strcmp(scenario, "ring") || !strcmp(scenario, "ring-failure")) {
         scroll_allowed = true;
         present_allowed = !strcmp(scenario, "ring");

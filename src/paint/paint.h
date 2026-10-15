@@ -1,6 +1,7 @@
 #ifndef LUMEN_PAINT_H
 #define LUMEN_PAINT_H
 #include "../layout/layout.h"
+#include "regions.h"
 
 /* Decoded image: premultiplied 0xAARRGGBB pixels */
 typedef struct Image { int w, h, refs; uint32_t *px; float scale; /* device px per CSS px, 0 = 1 */ struct ImgAnim *anim; uint8_t *yuv; int yuv_mat; /* NV12 video frame; mat: 1 = BT.709, 2 = full range */ } Image;
@@ -22,10 +23,10 @@ typedef struct DItem {
     Image *img;
     Gradient *grad;
     float blur, spread, alpha;
-    bool inset;
+    bool inset, fixed; /* fixed items keep their viewport position during document scrolling */
 } DItem;
 
-typedef struct DisplayList { VEC(DItem) items; Arena arena; float vw, vh; bool has_fixed; float fix[4]; } DisplayList;   /* fix: viewport bounds of position:fixed items */
+typedef struct DisplayList { VEC(DItem) items; Arena arena; float vw, vh; PaintRegions fixed; } DisplayList;
 
 extern Image *(*paint_image_hook)(Node *n);
 extern Image *(*paint_url_image_hook)(const char *url);

@@ -39,6 +39,12 @@ class AndroidPageTransferTests(unittest.TestCase):
                                 text=True, timeout=5)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
+    def test_separate_fixed_regions_upload_without_composing(self):
+        self.run_scenario('two-fixed')
+
+    def test_failed_second_fixed_upload_recovers_full_frame(self):
+        self.run_scenario('two-fixed-failure')
+
     def test_direct_scroll_does_not_copy_cpu_frame(self):
         self.run_scenario('direct')
 

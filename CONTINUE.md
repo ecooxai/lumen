@@ -1,5 +1,35 @@
 # Lumen: handoff notes
 
+## Vulkan fixed-region scrolling installed (2026-10-15)
+
+User priority: Vulkan first until solid, then OpenGL ES, then CPU/software.
+Daily-browser goal remains active. No delegation requested; this work used one
+agent. See docs/android-vulkan-daily-20261015.md for evidence and limitations.
+
+Separate fixed header/footer damage now preserves partial raster and Vulkan row
+reuse. Matched six-gesture MI 8 fixture samples: 80.31% -> 34.44% process CPU,
+with steady painted intervals roughly40 ->59–60fps (not general site FPS).
+Transient opacity layers allocate only repaint rows. Android YouTube taps now
+wake the bounded control hold, restricted to player descendants. The committed
+keyboard reveal repair was also built and validated on the device.
+
+Fresh95 tests pass, including500 full-vs-partial scroll pixel comparisons and
+sanitizers. Compact APK installed,85,240,084bytes,SHA256
+ d4e94783a57e3e1b1d32a3f2df39e3bcaca22095a93b9cddbd146bba810fd76a
+at build/codex-daily-20261015/lumen-vulkan-daily-debug.apk. Native/signature checks
+pass; all ZIP entries match the tested pre-compaction candidate. Focused idle
+89.02s: mean1.8086%,peak3.9604%,RSS219.211–219.219MiB. Settings preserved; app,
+marker, reverse, server and sampler cleaned up; phone locks released.
+
+Open work: Vulkan real-site profiling/presentation stalls; YouTube playback
+errors around30s prevent full controls acceptance; ChatGPT Google login returns
+home without authentication; Gemini main area blank/sign-in inactive; composer
+CPU and login unvalidated; pinch/page zoom and Chrome parity remain incomplete.
+The user confirmed the test account domain is gmail.com; credentials are only in
+conversation, must not be persisted. No credentials entered yet. window.open()
+is a stub but is not yet proven to cause the login failure. Other backends are
+explicitly deferred. Do not label this browser daily-use ready.
+
 ## Caret repair installed; focused idle improves, keyboard reveal next (2026-10-13)
 
 Installed source9e5e520808cad9c23e17f23ba2f1f709dbcab4cc, same branch

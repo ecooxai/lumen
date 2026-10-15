@@ -1,3 +1,4 @@
+#include "../../src/paint/regions.h"
 #include <assert.h>
 #include <float.h>
 #include <math.h>
@@ -17,8 +18,12 @@ typedef struct {
 typedef struct { bool active; int left, top, right, bottom; } Bounds;
 
 static Bounds actual(App *app, int pwp, int ph, int blit) {
-#include "scroll_fixed_bounds_function.h"
-    return (Bounds){fixed_area, fx0, fy0, fx1, fy1};
+    PaintRegions fixed = {0};
+    if (app->pdl.has_fixed) paint_regions_add(&fixed, app->pdl.fix);
+    PaintRegions damage = paint_scroll_regions(&fixed, app->page.scale, pwp, ph, blit);
+    if (!damage.count) return (Bounds){0};
+    const float *box = damage.rect[0];
+    return (Bounds){true, (int)box[0], (int)box[1], (int)box[2], (int)box[3]};
 }
 
 static int clipped(double value, int limit) {

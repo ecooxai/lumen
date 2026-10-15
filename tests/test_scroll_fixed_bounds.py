@@ -14,10 +14,6 @@ class ScrollFixedBoundsTests(unittest.TestCase):
         cls.temporary = tempfile.TemporaryDirectory()
         cls.addClassCleanup(cls.temporary.cleanup)
         work = Path(cls.temporary.name)
-        source = (ROOT / "src/app/main.c").read_text()
-        start = source.index("        const float *fb = a->pdl.fix;")
-        end = source.index("        if (blit && (nv ||", start)
-        (work / "scroll_fixed_bounds_function.h").write_text(source[start:end].replace("a->", "app->"))
         cls.executable = work / "codex-scroll-fixed-bounds"
         subprocess.run([os.environ.get("CC", "cc"), "-std=c11", "-Wall", "-Wextra", "-Werror",
                         "-fsanitize=undefined,float-cast-overflow", "-fno-sanitize-recover=all",
