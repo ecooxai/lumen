@@ -154,3 +154,8 @@ App Store acceptance is not a goal (sideload / Xcode run).
   The conversationState value is stable (no writes), so an effect dep changes every render.
   Lumen's ResizeObserver reported widths 608,0,656,608,0,... for the portal target: suspect.
   Tasks come via MessagePort (setTimeout-based), so the JS watchdog never fires.
+- FIXED (nested ports): the DIL worker gets `{kind: InitializeChannel, port}` with the port
+  inside the message data. Lumen only delivered transferred ports via `e.ports`, so
+  `e.data.port.postMessage.bind` threw, the DIL channel never initialised and React kept
+  re-running the effect (the 40-90% CPU loop). `portSub`/`portRes` now swap transferred
+  MessagePorts inside data both ways (07b-net.js + worker.cc). After the reply CPU is ~2-5%.
