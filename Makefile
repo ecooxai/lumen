@@ -40,10 +40,11 @@ ifneq ($(filter $(PLAT),sim ios cat),)
   SDKNAME := $(if $(filter ios,$(PLAT)),iphoneos,$(if $(filter sim,$(PLAT)),iphonesimulator,macosx))
   TRIPLE := arm64-apple-ios16.0$(if $(filter sim,$(PLAT)),-simulator,$(if $(filter cat,$(PLAT)),-macabi,))
   SDK := $(shell xcrun --sdk $(SDKNAME) --show-sdk-path)
-  CC := $(shell xcrun --sdk $(SDKNAME) -f clang) -target $(TRIPLE) -isysroot $(SDK)
-  CXX := $(shell xcrun --sdk $(SDKNAME) -f clang++) -target $(TRIPLE) -isysroot $(SDK)
+  CATSYS := $(if $(filter cat,$(PLAT)),-iframework $(SDK)/System/iOSSupport/System/Library/Frameworks -isystem $(SDK)/System/iOSSupport/usr/include)
+  CC := $(shell xcrun --sdk $(SDKNAME) -f clang) -target $(TRIPLE) -isysroot $(SDK) $(CATSYS)
+  CXX := $(shell xcrun --sdk $(SDKNAME) -f clang++) -target $(TRIPLE) -isysroot $(SDK) $(CATSYS)
   INC := -Isrc -I$(IOSDEPS)/include -I$(IOSDEPS)/include/freetype2 -I$(IOSDEPS)/include/harfbuzz -I$(V8DIR)/include -I$(V8DIR)/third_party/icu/source/common
-  LIBDIRS := -L$(IOSDEPS)/lib -L$(V8OUT)/obj
+  LIBDIRS := -L$(IOSDEPS)/lib -L$(V8OUT)/obj $(if $(filter cat,$(PLAT)),-F$(SDK)/System/iOSSupport/System/Library/Frameworks -L$(SDK)/System/iOSSupport/usr/lib)
   PLATLIBS := -framework UIKit $(if $(filter cat,$(PLAT)),,-framework OpenGLES) -framework Foundation -framework CoreGraphics -framework QuartzCore -framework Metal -framework AVFoundation \
               -framework AudioToolbox -framework CoreAudio -framework CoreMedia -framework CoreVideo -framework VideoToolbox -framework CoreMotion \
               -framework GameController -framework CoreHaptics -framework Security -framework UniformTypeIdentifiers -framework CoreBluetooth \
