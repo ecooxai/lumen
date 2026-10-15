@@ -99,6 +99,9 @@ App Store acceptance is not a goal (sideload / Xcode run).
   when V8_HAS_PTHREAD_JIT_WRITE_PROTECT. Simulator: `pthread_jit_write_protect_supported_np()` = 0, MAP_JIT pages
   are plain RWX (tested ~/jittest/t.c, t2.c). Rebuild out/ios-simulator-jit then `make PLAT=sim JIT=1 app`, test.
 - Then: out/catalyst-jit, out/ios-device-jit (same patches), `make PLAT=cat JIT=1 app`, `make PLAT=ios JIT=1 ipa`.
+- DONE 2026-10-15: out/catalyst-jit built; `make PLAT=cat JIT=1 app` runs (`V8 JIT enabled`, Wikipedia 1.18 s,
+  0-2% settled CPU, wasm tests pass with JIT and with `LUMEN_V8_FLAGS="--jitless --wasm-jitless"`).
+  Still open: out/ios-device-jit, `Lumen-jit.ipa`.
 - New: workspaces get a default SF Symbol icon (main.c ws_new); file:// viewer (main.c file_page): compact folder
   list, image/video 1:1 device px with zoom steps 10..300%, audio card, OBJ SVG viewer (drag rotate).
   Video frame in LUMEN_SHOT screenshot rendered white – check whether that is the shot path or real.

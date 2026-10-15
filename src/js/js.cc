@@ -505,9 +505,11 @@ void js_global_init(const char *argv0) {
 #if defined(LUMEN_JIT)
     {   /* JIT build: iOS only grants MAP_JIT pages when a debugger enabled JIT (StikDebug, Xcode); else interpret */
         void *pg = mmap(NULL, 16384, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANON | MAP_JIT, -1, 0);
-        bool jit = pg != MAP_FAILED;
-        if (jit) munmap(pg, 16384); else v8::V8::SetFlagsFromString("--jitless --wasm-jitless");
-        fprintf(stderr, "lumen: V8 %s\n", jit ? "JIT enabled" : "JIT unavailable, running jitless");
+        const char *vf = getenv("LUMEN_V8_FLAGS");
+        bool jit = pg != MAP_FAILED && !(vf && strstr(vf, "--jitless"));
+        if (pg != MAP_FAILED) munmap(pg, 16384);
+        if (!jit) v8::V8::SetFlagsFromString("--jitless --wasm-jitless");
+        fprintf(stderr, "lumen: V8 %s\n", jit ? "JIT enabled" : pg != MAP_FAILED ? "jitless (LUMEN_V8_FLAGS)" : "JIT unavailable, running jitless");
     }
 #endif
 #if defined(__APPLE__) && TARGET_OS_IPHONE && !defined(LUMEN_JIT)
