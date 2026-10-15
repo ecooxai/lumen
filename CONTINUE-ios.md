@@ -211,3 +211,10 @@ App Store acceptance is not a goal (sideload / Xcode run).
   measurable gain (63-68 ms vs 63-70 ms), so it was not kept. Removing `07r-rtc.js` breaks the
   prelude (08-window.js references its classes), so an earlier 'faster without RTC/WebGL' run
   was invalid. Next candidate: a V8 startup snapshot containing the prelude.
+- PRELUDE SNAPSHOT (design, not started): the prelude (`src/js/prelude/*.js`, ~580 KB) is a
+  function `(N, global)` run in every page and iframe context (`js_new_ex` in `src/js/js.cc`).
+  A V8 startup snapshot would need: (1) all ~364 `REG(...)` native callbacks in an external
+  reference table; (2) splitting the prelude into a tab-independent part (class/proto setup,
+  snapshotted) and a per-tab part (`N.doc()`, location, storage origin, ~50 top-level `N.*`
+  calls) run after `Context::FromSnapshot`; (3) worker isolates (`src/js/worker.cc`) either
+  keeping the current path or using a second snapshot. Expect most of the ~65 ms per context.
