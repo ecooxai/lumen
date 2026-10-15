@@ -55,9 +55,8 @@ export PKG_CONFIG_LIBDIR=$PREFIX/lib/pkgconfig PKG_CONFIG_PATH=
 
 dep_openssl() {
   rm -rf $B/openssl && cp -r $SRC/openssl-3.5.4 $B/openssl && cd $B/openssl
-  local extra=""; [ $PLAT = cat ] && extra="$TF"
-  CC=$CC ./Configure $OSSL no-shared no-tests no-docs no-apps -mios-version-min=$MIN --prefix=$PREFIX --libdir=lib $extra 2>/dev/null \
-    || CC=$CC ./Configure $OSSL no-shared no-tests no-docs no-apps --prefix=$PREFIX --libdir=lib $TF
+  if [ $PLAT = cat ]; then CC=$CC CFLAGS="$TF" ./Configure $OSSL no-shared no-tests no-docs no-apps --prefix=$PREFIX --libdir=lib || return 1
+  else CC=$CC ./Configure $OSSL no-shared no-tests no-docs no-apps -mios-version-min=$MIN --prefix=$PREFIX --libdir=lib || return 1; fi
   make -j$J build_libs && make install_dev
 }
 dep_brotli() { cm brotli $SRC/brotli-1.1.0 -DBROTLI_DISABLE_TESTS=ON -DBROTLI_BUNDLED_MODE=OFF; }
@@ -95,13 +94,13 @@ dep_ffmpeg() {
 dep_sdl() { cm sdl $SRC/SDL3-3.4.16 -DSDL_SHARED=OFF -DSDL_STATIC=ON -DSDL_TEST_LIBRARY=OFF -DSDL_EXAMPLES=OFF -DSDL_TESTS=OFF; }
 dep_wgpu() {
   if [ -z "$WGPU" ]; then   # Mac Catalyst: no prebuilt; build wgpu-native from source (rustup target add aarch64-apple-ios-macabi)
-    local w=${WGPU_SRC:-~/src/wgpu-native}
+    local w=${WGPU_SRC:-$HOME/src/wgpu-native}
     (cd $w && PATH=$HOME/.rustup/toolchains/stable-aarch64-apple-darwin/bin:$PATH RUSTUP_TOOLCHAIN=stable cargo build --release --target aarch64-apple-ios-macabi) || return 1
     cp $w/ffi/webgpu-headers/webgpu.h $w/ffi/wgpu.h $PREFIX/include/
     cp $w/target/aarch64-apple-ios-macabi/release/libwgpu_native.a $PREFIX/lib/
     return
   fi
-  local d=${WGPU_DIR:-~/src/wgpu-ios}/$WGPU
+  local d=${WGPU_DIR:-$HOME/src/wgpu-ios}/$WGPU
   cp $d/include/webgpu/*.h $PREFIX/include/ 2>/dev/null || cp -r $d/include/* $PREFIX/include/
   cp $d/lib/libwgpu_native.a $PREFIX/lib/
 }
