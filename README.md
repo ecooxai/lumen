@@ -39,6 +39,27 @@ make -j8
 
 Package a DMG: `python3 tools/mkdmg.py 0.1.0-preview` (output in `dist/`).
 
+## iPad and Mac (iOS/iPadOS port)
+
+The same engine runs as a UIKit app on iPadOS (and iPhone). The identical `.ipa` also runs on Apple Silicon Macs as an
+"iPad app", and `PLAT=cat` builds a Mac Catalyst app from the same sources. No WebKit is used: HTML/CSS/layout/paint
+are Lumen's own, JavaScript is V8 in jitless mode (iOS forbids JIT for normal apps), GPU is Metal via wgpu-native.
+
+Lumen is not on the App Store. Sideload `Lumen.ipa` with AltStore, Sideloadly or Xcode (free Apple ID works; the
+signature lasts 7 days).
+
+```sh
+ios/build-deps.sh sim          # also: ios, cat  -> ~/ios-deps/<plat>
+# V8 15.6 jitless monolith -> ~/src/v8ios/v8/out/{ios-simulator,ios-device,catalyst} (see CONTINUE-ios.md)
+make PLAT=sim app              # build-sim/Lumen.app for the iOS Simulator
+make PLAT=ios ipa              # build-ios/Lumen.ipa for iPad / iPhone
+make PLAT=cat app              # build-cat/Lumen.app, Mac Catalyst
+xcrun simctl install booted build-sim/Lumen.app && xcrun simctl launch booted com.ecooxai.lumen
+```
+
+Touch: tap = click, double tap = double click, one-finger drag scrolls with momentum. Hardware keyboards and the
+on-screen keyboard work for the URL bar and page text fields.
+
 ## Status
 
 Early preview. Expect broken pages and missing features.
