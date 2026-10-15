@@ -73,6 +73,20 @@ iOS only gives an app JIT memory while a debugger has attached to it, so with `L
 On iOS 26 with the newest chips Apple has restricted debugger-enabled JIT further; if StikDebug cannot enable it,
 Lumen just runs jitless. The Simulator and the Mac builds always have JIT.
 
+### WebAssembly
+
+WebAssembly is on in every build (same V8, no WebKit). JIT builds compile wasm to native code (Liftoff +
+TurboFan); jitless builds run it in V8's DrumBrake interpreter, so it works without JIT, only slower
+(3M JS->wasm calls in the iPad Simulator: 185 ms JIT, 565 ms jitless).
+
+Tested on Mac and the iPad Simulator (JIT and jitless): `validate`, `Module`/`Instance`, `compile`/`instantiate`,
+`compileStreaming`/`instantiateStreaming` (needs `application/wasm` over http(s)), `Memory`/`Table`/`Global`/
+`Tag`/`Exception`, JSPI, SIMD + relaxed SIMD, threads/shared memory + Atomics, exceptions, GC, tail calls,
+memory64, bulk memory, and wasm in workers (posting a `WebAssembly.Module` or `SharedArrayBuffer` to a worker).
+Streaming compiles after the whole response has downloaded, and `crossOriginIsolated` is always `false`
+(COOP/COEP headers are not enforced; `SharedArrayBuffer` is available regardless).
+`LUMEN_NO_WASM_TRAP=1` turns off the wasm guard-region trap handler (jitless builds then cannot run wasm).
+
 ### On a Mac
 
 - **Mac Catalyst** (`make PLAT=cat app`, or `JIT=1`): a native Mac `.app` built from the same sources and UIKit

@@ -101,3 +101,15 @@ App Store acceptance is not a goal (sideload / Xcode run).
   JS-typed blobs). Bing's remaining `_w is not defined` is site-side (also seen on Chrome-UA HTML).
 - Catalyst: only out/catalyst-jit is being built (jitless catalyst out/ still has ~4000 steps; the JIT build
   falls back to jitless at runtime anyway, so it covers both).
+- WebAssembly (test pages ~/fvtest/wasm/index.html, wk.html, perf.html): desktop + Simulator JIT pass validate/
+  compile/instantiate, compileStreaming/instantiateStreaming (prelude polyfill, enforces application/wasm for
+  http(s)), SIMD, relaxed SIMD, threads/shared memory, exceptions, GC, tail calls, memory64, JSPI, bulk memory,
+  Module + SharedArrayBuffer postMessage to workers (worker.cc SerDel/DesDel; worker.cc built -fno-rtti because
+  V8 has no RTTI), async compile inside workers (worker loop polls HasPendingBackgroundTasks).
+  Jitless V8 hid `WebAssembly` entirely: V8 only implies --wasm-jitless from --jitless on tvOS, so js.cc now
+  passes --wasm-jitless for jitless iOS builds and the JIT->jitless fallback (DrumBrake interpreter).
+  DrumBrake CHECKs trap_handler::IsTrapHandlerEnabled(), so js_global_init() now calls
+  V8::EnableWebAssemblyTrapHandler(true) on every platform (after main.c's crash handler; V8 restores the old
+  handler for non-wasm faults). LUMEN_NO_WASM_TRAP=1 disables it. Simulator jitless + JIT both pass the full
+  wasm page; 3M JS->wasm calls: jitless 565 ms, JIT 185 ms.
+  crossOriginIsolated is still always false (COOP/COEP not implemented); SharedArrayBuffer is exposed anyway.

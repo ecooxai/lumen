@@ -1,3 +1,6 @@
+#if defined(__APPLE__)
+#include <TargetConditionals.h>
+#endif
 #include <map>
 #include <strings.h>
 #include <string>
@@ -502,11 +505,17 @@ void js_global_init(const char *argv0) {
     {   /* JIT build: iOS only grants MAP_JIT pages when a debugger enabled JIT (StikDebug, Xcode); else interpret */
         void *pg = mmap(NULL, 16384, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANON | MAP_JIT, -1, 0);
         bool jit = pg != MAP_FAILED;
-        if (jit) munmap(pg, 16384); else v8::V8::SetFlagsFromString("--jitless");
+        if (jit) munmap(pg, 16384); else v8::V8::SetFlagsFromString("--jitless --wasm-jitless");
         fprintf(stderr, "lumen: V8 %s\n", jit ? "JIT enabled" : "JIT unavailable, running jitless");
     }
 #endif
+#if defined(__APPLE__) && TARGET_OS_IPHONE && !defined(LUMEN_JIT)
+    v8::V8::SetFlagsFromString("--wasm-jitless");   /* jitless V8: run WebAssembly in the DrumBrake interpreter */
+#endif
     if (const char *vf = getenv("LUMEN_V8_FLAGS")) v8::V8::SetFlagsFromString(vf);
+    /* guard-region bounds checks for wasm memory; required by the DrumBrake interpreter (jitless) */
+    if (!getenv("LUMEN_NO_WASM_TRAP") && !v8::V8::EnableWebAssemblyTrapHandler(true))
+        fprintf(stderr, "lumen: wasm trap handler unavailable\n");
     v8::V8::Initialize();
 }
 
