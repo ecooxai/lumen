@@ -2093,7 +2093,14 @@ static void ws_select(App *a, int w) {
 }
 static void ws_new(App *a, const char *name) {
     if (a->nws == 16) return;
-    snprintf(a->wsname[a->nws], sizeof a->wsname[0], "%s", name); a->wsicon[a->nws] = -1; a->wslast[a->nws++] = NULL;
+    static const int order[MAC_NICONS] = { 0, 9, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 1, 2 };
+    int ic = order[a->nws % MAC_NICONS];
+    for (int k = 0; k < MAC_NICONS; k++) {
+        bool used = false;
+        for (int w = 0; w < a->nws; w++) used |= a->wsicon[w] == order[k];
+        if (!used) { ic = order[k]; break; }
+    }
+    snprintf(a->wsname[a->nws], sizeof a->wsname[0], "%s", name); a->wsicon[a->nws] = ic; a->wslast[a->nws++] = NULL;
     ws_select(a, a->nws - 1);
 }
 static void ws_close(App *a, int w) {
@@ -2387,7 +2394,7 @@ int main(int argc, char **argv) {
     icache_mu = SDL_CreateMutex(); EV_LOADED = SDL_RegisterEvents(1); EV_DL = SDL_RegisterEvents(1); js_save_file = download_save; EV_NET = SDL_RegisterEvents(1); EV_MENU = SDL_RegisterEvents(1);
     net_wakeup = wake; media_wakeup = wake; js_wakeup = wake; js_clip_set = h_clip_set; js_clip_get = h_clip_get; js_global_init(argv[0]);
     paint_image_hook = node_img; paint_url_image_hook = url_img; svg_ext_ref_hook = svg_ext_ref; layout_image_size_hook = img_size;
-    App a; memset(&a, 0, sizeof a); g_app = &a; a.nws = 1; a.wsicon[0] = -1; snprintf(a.wsname[0], sizeof a.wsname[0], "Personal"); a.side = getenv("LUMEN_NO_SIDEBAR") ? 0 : SIDEW; tab_new(&a);
+    App a; memset(&a, 0, sizeof a); g_app = &a; a.nws = 1; a.wsicon[0] = 2; snprintf(a.wsname[0], sizeof a.wsname[0], "Personal"); a.side = getenv("LUMEN_NO_SIDEBAR") ? 0 : SIDEW; tab_new(&a);
     {
         char *pref = SDL_GetPrefPath("lumen", "Lumen"); char sp[1024] = "";
         if (pref) { snprintf(g_pref, sizeof g_pref, "%s", pref); snprintf(sp, sizeof sp, "%ssettings.txt", pref); SDL_free(pref); }
