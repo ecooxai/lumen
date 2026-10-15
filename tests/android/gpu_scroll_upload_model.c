@@ -7,6 +7,10 @@ static uint32_t texture_pixels[1024], page_pixels[1024], scroll_uniform[4];
 static unsigned writes, uploaded_rows, uniform_writes;
 static int active_width, active_height, active_stride, active_toolbar;
 static bool regular_upload;
+static bool present_video;
+static unsigned video_writes, video_uniforms, draw_count;
+static WGPUBindGroup drawn[2], selected_group;
+static Gpu *present_gpu;
 static uint32_t linear_pixels[1024];
 
 WGPUTexture wgpuDeviceCreateTexture(WGPUDevice device, const WGPUTextureDescriptor *descriptor) {
@@ -31,6 +35,14 @@ void wgpuBindGroupRelease(WGPUBindGroup group) { assert(group); }
 
 void wgpuQueueWriteBuffer(WGPUQueue queue, WGPUBuffer buffer, uint64_t offset,
                           const void *data, size_t size) {
+    if (present_video && (buffer == present_gpu->vubuf || buffer == present_gpu->yubuf)) {
+        assert(offset == 0);
+        assert(size == (buffer == present_gpu->vubuf ? 32 : 48));
+        const float *u=data;
+        assert(u[0]==-1 && u[1]==1 && u[2]==1 && u[3]==-1);
+        if(buffer==present_gpu->vubuf) for(int i=4;i<8;i++) assert(u[i]==0);
+        video_uniforms++;return;
+    }
     assert(queue && buffer && offset == 16 && size == sizeof scroll_uniform);
     memcpy(scroll_uniform, data, size);
     uniform_writes++;
@@ -39,6 +51,11 @@ void wgpuQueueWriteBuffer(WGPUQueue queue, WGPUBuffer buffer, uint64_t offset,
 void wgpuQueueWriteTexture(WGPUQueue queue, const WGPUTexelCopyTextureInfo *destination,
                            const void *data, size_t size, const WGPUTexelCopyBufferLayout *layout,
                            const WGPUExtent3D *extent) {
+    if (present_video && destination->texture != present_gpu->tex) {
+        assert(destination->texture==present_gpu->vtex || destination->texture==present_gpu->yt || destination->texture==present_gpu->ct);
+        assert(destination->origin.y==0 && data && size);
+        video_writes++;return;
+    }
     assert(queue && destination->texture && destination->origin.x == 0);
     assert((regular_upload || destination->origin.y >= (unsigned)active_toolbar) && destination->origin.z == 0);
     assert(destination->mipLevel == 0 && layout->offset == 0);
@@ -57,6 +74,38 @@ void wgpuQueueWriteTexture(WGPUQueue queue, const WGPUTexelCopyTextureInfo *dest
     writes++;
     uploaded_rows += extent->height;
 }
+
+/* Exercise the actual presenter, including both video formats, rather than
+   truncating it before the video upload and draw operations. */
+void wgpuSurfaceUnconfigure(WGPUSurface s) { (void)s;abort(); }
+void wgpuSurfaceConfigure(WGPUSurface surface,const WGPUSurfaceConfiguration *config) { (void)surface;(void)config;abort(); }
+void wgpuSurfaceGetCurrentTexture(WGPUSurface surface,WGPUSurfaceTexture *out) {
+    assert(surface);out->status=WGPUSurfaceGetCurrentTextureStatus_SuccessOptimal;
+    out->texture=(WGPUTexture)(uintptr_t)30;
+}
+WGPUCommandEncoder wgpuDeviceCreateCommandEncoder(WGPUDevice device,const WGPUCommandEncoderDescriptor *d) {
+    assert(device && !d);return (WGPUCommandEncoder)(uintptr_t)31;
+}
+WGPURenderPassEncoder wgpuCommandEncoderBeginRenderPass(WGPUCommandEncoder e,const WGPURenderPassDescriptor *d) {
+    assert(e && d->colorAttachmentCount==1);return (WGPURenderPassEncoder)(uintptr_t)32;
+}
+void wgpuRenderPassEncoderSetPipeline(WGPURenderPassEncoder p,WGPURenderPipeline pipeline) { assert(p && pipeline); }
+void wgpuRenderPassEncoderSetBindGroup(WGPURenderPassEncoder p,uint32_t index,WGPUBindGroup group,size_t n,const uint32_t *offsets) {
+    assert(p && index==0 && !n && !offsets);selected_group=group;
+}
+void wgpuRenderPassEncoderDraw(WGPURenderPassEncoder p,uint32_t vertices,uint32_t instances,uint32_t first,uint32_t instance) {
+    assert(p && vertices==4 && instances==1 && !first && !instance && draw_count<2);
+    drawn[draw_count++]=selected_group;
+}
+void wgpuRenderPassEncoderEnd(WGPURenderPassEncoder p) { assert(p); }
+void wgpuRenderPassEncoderRelease(WGPURenderPassEncoder p) { assert(p); }
+WGPUCommandBuffer wgpuCommandEncoderFinish(WGPUCommandEncoder e,const WGPUCommandBufferDescriptor *d) {
+    assert(e && !d);return (WGPUCommandBuffer)(uintptr_t)33;
+}
+void wgpuQueueSubmit(WGPUQueue q,size_t n,const WGPUCommandBuffer *c) { assert(q && n==1 && *c); }
+void wgpuCommandBufferRelease(WGPUCommandBuffer c) { assert(c); }
+void wgpuCommandEncoderRelease(WGPUCommandEncoder e) { assert(e); }
+WGPUStatus wgpuSurfacePresent(WGPUSurface s) { assert(s);return WGPUStatus_Success; }
 
 static Gpu initialize(int width, int page_height, int toolbar, int padding) {
     active_width = width;
@@ -121,7 +170,36 @@ int main(int argc, char **argv) {
     assert(argc == 2);
     const char *scenario = argv[1];
     Gpu gpu = initialize(4, 7, 2, !strcmp(scenario, "padded") ? 3 : 0);
-    if (!strcmp(scenario, "up")) step(&gpu, 2, 0, 0);
+    if (!strcmp(scenario, "video")) {
+        /* Transparent and translucent page texels survive wrapping; the video
+           is drawn first with independent coordinates/uniforms. */
+        for(int row=0;row<7;row++) for(int x=0;x<4;x++) {
+            uint32_t c=x==1?0:x==2?0x80402010:0xff223344;
+            page_pixels[row*4+x]=texture_pixels[(row+2)*4+x]=c;
+        }
+        gpu.dev=(WGPUDevice)(uintptr_t)10;gpu.surf=(WGPUSurface)(uintptr_t)11;
+        gpu.pipe=(WGPURenderPipeline)(uintptr_t)12;gpu.ypipe=(WGPURenderPipeline)(uintptr_t)13;
+        gpu.bg=(WGPUBindGroup)(uintptr_t)14;gpu.vbg=(WGPUBindGroup)(uintptr_t)15;gpu.ybg=(WGPUBindGroup)(uintptr_t)16;
+        gpu.vtex=(WGPUTexture)(uintptr_t)17;gpu.yt=(WGPUTexture)(uintptr_t)18;gpu.ct=(WGPUTexture)(uintptr_t)19;
+        gpu.ybgl=(WGPUBindGroupLayout)(uintptr_t)22;
+        gpu.vubuf=(WGPUBuffer)(uintptr_t)20;gpu.yubuf=(WGPUBuffer)(uintptr_t)21;
+        gpu.vtw=gpu.vth=gpu.ytw=gpu.yth=2;
+        present_gpu=&gpu;present_video=true;
+        uint32_t rgba[4]={0xff112233,0xff445566,0xff778899,0xffaabbcc};uint8_t yuv[6]={16,32,64,128,128,128};
+        GpuVideo video={.px=rgba,.w=2,.h=2,.stride=2,.x1=4,.y1=9};
+        for(int i=0;i<12;i++) {
+            step(&gpu,i%3==0?-2:1,0,0);
+            unsigned before=writes,uniform_before=uniform_writes;
+            video_writes=video_uniforms=draw_count=0;
+            video.yuv=i%2?yuv:NULL;
+            assert(gpu_present_frame(&gpu,linear_pixels,4,9,4,0,0,&video));
+            assert(video_writes==(video.yuv?2u:1u) && video_uniforms==1);
+            assert(draw_count==2 && drawn[0]==(video.yuv?gpu.ybg:gpu.vbg) && drawn[1]==gpu.bg);
+            assert(writes==before && uniform_writes==uniform_before);
+            verify(&gpu);
+        }
+        present_gpu=NULL;present_video=false;
+    } else if (!strcmp(scenario, "up")) step(&gpu, 2, 0, 0);
     else if (!strcmp(scenario, "down")) step(&gpu, -2, 0, 0);
     else if (!strcmp(scenario, "padded")) {
         step(&gpu, 2, 0, 0); step(&gpu, -3, 1, 4); step(&gpu, 3, 0, 2);

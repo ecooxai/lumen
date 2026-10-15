@@ -1,5 +1,36 @@
 # Lumen: handoff notes
 
+## Android GPU video scroll reuse (2026-10-15)
+
+Full goal ACTIVE, Vulkan first. See docs/android-video-scroll-20261015.md.
+Scroll reuse now supports one valid GPU video hole with matching media owner and
+rounded pixel geometry; fixed/exposed strips retain holes. Android page texture
+ring can present separate video. Unsupported/changed cases still fully repaint.
+2,000 sanitizer pixel comparisons,13 GPU scroll scenarios (including complete
+RGBA/YUV presenter),11 fixed bounds and4 display damage tests pass.
+Native/v2 APK checks pass; installed clean APK:
+build/codex-video-scroll-20261015/lumen-vulkan-video-scroll-debug.apk
+SHA256:1bfa49bdd7aca98c46f784a3de24c7f52260b44d42fea836e5f529a88893058b.
+
+Fresh controlled baseline->new: raster7.172->4.398ms/frame, totalpaint13.595->7.721,
+360->364reported frames/~7.9s, CPU76.22->47.45%, RSS253.47->253.13MiB (NO RAM gain).
+Real YouTube confirmed paused0:21,20swipes:861frames/~20s,raster12.853ms,
+totalpaint16.807ms,CPU78.11%,RSS331.54MiB. Prior35.457ms totalpaint comparison is
+DIRECTIONAL (different recommendations/gestures), not stable60FPS proof.
+Settled-paused17samples CPU2.637%. Earlier youtube-video-paused label was before
+pause confirmation; exclude it. Subsequent playing scroll advanced0:21->0:29,
+kept video positioned; controls/long playback not validated. Final screenshot
+shows pause icon, not confirmed paused. App is now force-stopped.
+
+560 whole-process/all-thread1Hz samples, zero cadence/parse errors. Profile16,302
+samples zero lost: raster48.50%,fill13.59%,memmove9.51%. Hot instruction lookup
+points to image vertical interpolation/coverage/blending, raster.c312-319.
+Next Vulkan optimization should target that loop and validate exact pixels.
+Evidence+matching symbols:build/codex-video-scroll-20261015/youtube-video/.
+Monitor/server stopped+joined, owned reverse18765/18766/private profile files
+removed. No owned live job. No credentials entered. Full remaining scope from
+previous checkpoints still applies; OpenGL ES/software deferred.
+
 ## Android spans and image scanlines (2026-10-15)
 
 Full goal ACTIVE, Vulkan first. See `docs/android-raster-spans-20261015.md`.

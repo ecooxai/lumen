@@ -14,6 +14,8 @@ class ScrollRegionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             work = Path(directory)
             (work / 'scroll_raster.h').write_text(source[start:end] + '        }')
+            helper = source.index('static bool video_scroll_matches(')
+            (work / 'video_scroll.h').write_text(source[helper:source.index('static void render(', helper)])
             exe = work / 'scroll-regions'
             subprocess.run([os.environ.get('CC', 'cc'), '-std=gnu11', '-Wall', '-Wextra',
                 '-Wno-misleading-indentation', '-fsanitize=address,undefined',

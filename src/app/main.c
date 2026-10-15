@@ -1133,6 +1133,20 @@ static void android_reveal_focus(App *app) {
 }
 #endif
 
+/* Reuse an existing video hole only when it follows the same pixel movement
+   as the page (or is fixed and covered by fixed-region damage). */
+static bool video_scroll_matches(const DItem *it, const float previous[4], float scale, int delta) {
+    float current[4] = {it->x, it->y, it->x + it->w, it->y + it->h};
+    float old[4] = {previous[0], previous[1], previous[0] + previous[2], previous[1] + previous[3]};
+    if (!(scale > 0) || !isfinite(scale) || !(it->w > 0) || !(it->h > 0)) return false;
+    for (int i = 0; i < 4; i++) {
+        float next = floorf(current[i] * scale + 0.5f), before = floorf(old[i] * scale + 0.5f);
+        if (!isfinite(next) || !isfinite(before) ||
+            next != before - ((i & 1) && !it->fixed ? delta : 0)) return false;
+    }
+    return true;
+}
+
 static void render(App *a) {
 #ifdef __ANDROID__
     if (!a->win || a->android_suspended) return;
@@ -1195,11 +1209,13 @@ static void render(App *a) {
         }
         rx0 = LMAX(rx0, 0); ry0 = LMAX(ry0, 0); rx1 = LMIN(rx1, pwp); ry1 = LMIN(ry1, ph);
         bool gv = a->gpu && nv == 1;
+        bool scroll_video = gv && a->gvid_ok && media_owner_of(vit->img) == a->vown &&
+                            video_scroll_matches(vit, a->vrect, a->page.scale, blit);
         scroll_fixed = paint_scroll_regions(&a->pdl.fixed, a->page.scale, pwp, ph, blit);
         int fixed_rows = 0;
         for (int i = 0; i < scroll_fixed.count; i++)
             fixed_rows += (int)(scroll_fixed.rect[i][3] - scroll_fixed.rect[i][1]);
-        if (blit && (nv || fixed_rows * 2 > ph)) { blit = 0; part = false; why = 5; }
+        if (blit && ((nv && !scroll_video) || fixed_rows * 2 > ph)) { blit = 0; part = false; why = 5; }
         paint_profile_stage(&profile_frame, PAINT_SIGNATURES);
         if (blit) {
             profile_frame.blit = true;
@@ -1207,13 +1223,15 @@ static void render(App *a) {
             int d = blit, n = ph - abs(d); size_t row = (size_t)a->page.stride;
             if (d > 0) memmove(a->page.px, a->page.px + (size_t)d * row, (size_t)n * row * 4);
             else memmove(a->page.px + (size_t)(-d) * row, a->page.px, (size_t)n * row * 4);
+            a->page.punch = scroll_video ? vit->img : NULL;
             raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), 0, d > 0 ? n : 0, pwp, d > 0 ? ph : -d);
             for (int i = 0; i < scroll_fixed.count; i++) {
                 const float *box = scroll_fixed.rect[i];
                 raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255),
                             (int)box[0], (int)box[1], (int)box[2], (int)box[3]);
             }   /* fixed boxes moved with the shift: repaint where they were and are */
-            rx0 = 0; ry0 = 0; rx1 = pwp; ry1 = ph; a->gvid_ok = false;
+            a->page.punch = NULL;
+            rx0 = 0; ry0 = 0; rx1 = pwp; ry1 = ph; a->gvid_ok = scroll_video;
         } else if (part && a->sdirty) {
             float s = a->page.scale;
             int x0 = (int)floorf(a->srect[0] * s), y0 = (int)floorf(a->srect[1] * s), x1 = (int)ceilf(a->srect[2] * s), y1 = (int)ceilf(a->srect[3] * s);
@@ -1276,7 +1294,7 @@ static void render(App *a) {
     bool direct_page = false;
 #ifdef __ANDROID__
     direct_page = a->gpu && part && !gskip && profile_frame.blit && !side_px &&
-                  !a->hdl.items.n && !gvp && !getenv("LUMEN_SHOT") &&
+                  !a->hdl.items.n && !getenv("LUMEN_SHOT") &&
                   a->page.w == a->frame.w && a->page.h == a->frame.h - bar_px;
 #endif
     if (!direct_page && a->frame_page_stale) { gskip = false; ry0 = 0; ry1 = ph; }
