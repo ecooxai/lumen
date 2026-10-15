@@ -201,3 +201,11 @@ App Store acceptance is not a goal (sideload / Xcode run).
   stored under `<pref>/localstorage/<fnv64(origin)>` (mode 0600), written at most every 2 s
   from `js_tick`, on backgrounding and at exit. Opaque origins (`file:`) are not persisted;
   `LUMEN_NO_PERSIST_STORAGE=1` turns it off. No quota and no cross-tab `storage` events yet.
+- PERF (iframe contexts, measured, not fixed): each new frame context costs ~65 ms on this
+  loaded VM (100 about:blank iframes, `~/fvtest/iframes100.html`), almost all in running the
+  prelude in `js_new_ex`; ~70% of that is V8 GC (scavenges and a mark-compact) triggered by
+  `Runtime_DefineClass` allocations. YouTube home spent ~1 s of an 8 s load sample in
+  `frame_done`/`frame_create`. Tried and rejected (no gain beyond noise): forcing the WebGL
+  constant holders into dictionary mode, `--min-semi-space-size=8/16` (+10-20 MB RSS).
+  Real fix: a V8 startup snapshot containing the prelude, or lazily installing rarely used
+  prelude APIs (WebGL, WebGPU, WebAudio, IndexedDB) on first access.
