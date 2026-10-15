@@ -112,4 +112,6 @@ App Store acceptance is not a goal (sideload / Xcode run).
   V8::EnableWebAssemblyTrapHandler(true) on every platform (after main.c's crash handler; V8 restores the old
   handler for non-wasm faults). LUMEN_NO_WASM_TRAP=1 disables it. Simulator jitless + JIT both pass the full
   wasm page; 3M JS->wasm calls: jitless 565 ms, JIT 185 ms.
+  Desktop (Homebrew V8 15.6) matches d8: 3M calls 263 ms cold, ~25 ms once the wrapper tiers up
+  (~/fvtest/wasm/perf3.html). The 1.6 s in index.html is a benchmark artefact (one long top-level async loop).
   crossOriginIsolated is still always false (COOP/COEP not implemented); SharedArrayBuffer is exposed anyway.
