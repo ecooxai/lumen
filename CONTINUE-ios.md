@@ -207,5 +207,7 @@ App Store acceptance is not a goal (sideload / Xcode run).
   `Runtime_DefineClass` allocations. YouTube home spent ~1 s of an 8 s load sample in
   `frame_done`/`frame_create`. Tried and rejected (no gain beyond noise): forcing the WebGL
   constant holders into dictionary mode, `--min-semi-space-size=8/16` (+10-20 MB RSS).
-  Real fix: a V8 startup snapshot containing the prelude, or lazily installing rarely used
-  prelude APIs (WebGL, WebGPU, WebAudio, IndexedDB) on first access.
+  Also tried: lazily running the WebGL setup on first use (works, WebGL tests pass) gave no
+  measurable gain (63-68 ms vs 63-70 ms), so it was not kept. Removing `07r-rtc.js` breaks the
+  prelude (08-window.js references its classes), so an earlier 'faster without RTC/WebGL' run
+  was invalid. Next candidate: a V8 startup snapshot containing the prelude.
