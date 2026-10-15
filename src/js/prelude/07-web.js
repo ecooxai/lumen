@@ -4,8 +4,24 @@ const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 function btoa(s) { s = String(s); let r = ''; for (let i = 0; i < s.length; i += 3) { const a = s.charCodeAt(i), b = s.charCodeAt(i + 1), c = s.charCodeAt(i + 2); if (a > 255 || b > 255 || c > 255) throw new DOMException('The string to be encoded contains characters outside of the Latin1 range.', 'InvalidCharacterError'); const n = (a << 16) | ((b || 0) << 8) | (c || 0); r += B64[n >> 18 & 63] + B64[n >> 12 & 63] + (i + 1 < s.length ? B64[n >> 6 & 63] : '=') + (i + 2 < s.length ? B64[n & 63] : '='); } return r; }
 function atob(s) { s = String(s).replace(/[\t\n\f\r ]/g, ''); if (s.length % 4 === 0) s = s.replace(/==?$/, ''); if (s.length % 4 === 1 || /[^A-Za-z0-9+/]/.test(s)) throw new DOMException('The string to be decoded is not correctly encoded.', 'InvalidCharacterError'); let r = '', bits = 0, n = 0; for (const ch of s) { n = (n << 6) | B64.indexOf(ch); bits += 6; if (bits >= 8) { bits -= 8; r += String.fromCharCode((n >> bits) & 255); } } return r; }
 const toBytes = (p) => typeof p === 'string' ? N.encode(p) : p instanceof ArrayBuffer ? p : ArrayBuffer.isView(p) ? p.buffer.slice(p.byteOffset, p.byteOffset + p.byteLength) : p instanceof Blob ? p._buf : N.encode(String(p));
+const blobPartString = Function.prototype.call.bind(String.prototype.toWellFormed);
 class Blob {
-    constructor(parts = [], o = {}) { const bufs = parts.map(toBytes); const len = bufs.reduce((a, b) => a + b.byteLength, 0); const u = new Uint8Array(len); let off = 0; for (const b of bufs) { u.set(new Uint8Array(b), off); off += b.byteLength; } def(this, '_buf', u.buffer); this.type = String(o.type || '').toLowerCase(); }
+    constructor(parts = [], o = {}) {
+        if (typeof parts === 'string') throw new TypeError('Blob parts must be a sequence');
+        const bufs = [], text = [];
+        const flush = () => { if (text.length) { bufs.push(N.encode(text.join(''))); text.length = 0; } };
+        // Batch adjacent text to avoid an ArrayBuffer/native call per character.
+        // USVString conversion is per part: separate lone surrogates must not pair.
+        for (const p of parts) {
+            if (typeof p === 'string') text.push(blobPartString(p));
+            else { flush(); bufs.push(toBytes(p)); }
+        }
+        flush();
+        const len = bufs.reduce((a, b) => a + b.byteLength, 0), u = new Uint8Array(len);
+        let off = 0;
+        for (const b of bufs) { u.set(new Uint8Array(b), off); off += b.byteLength; }
+        def(this, '_buf', u.buffer); this.type = String(o.type || '').toLowerCase();
+    }
     get size() { return this._buf.byteLength; }
     slice(a = 0, b = this.size, t = '') { return new Blob([this._buf.slice(a, b)], { type: t }); }
     arrayBuffer() { return Promise.resolve(this._buf.slice(0)); } text() { return Promise.resolve(N.decode(this._buf)); } bytes() { return Promise.resolve(new Uint8Array(this._buf.slice(0))); }

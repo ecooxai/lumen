@@ -1,5 +1,28 @@
 # Lumen: handoff notes
 
+## Blob allocation improvement; YouTube still fails (2026-10-15)
+
+Vulkan first; full daily-browser goal remains active. See
+`docs/android-blob-allocation-20261015.md`. A fresh V8 profile exposed YouTube's
+`new Blob(q.split("")).size` allocation cost. Adjacent Blob text parts now share
+one encoding allocation, preserving per-part Unicode conversion and mixed parts.
+17 focused host tests and all seven device fixture checks pass. Actual-phone
+20-construction fixture: 1,180.85 -> 121.49 ms (~9.7x faster), peak RSS
+302.86 -> 241.06 MiB. Settled fixture CPU 0.3340%. These are fixture gains only.
+
+Final clean APK installed, native/signature verified:
+`build/codex-vulkan-tasks-20261015/lumen-vulkan-blob-debug.apk`, SHA256
+`5ca4a8f8a2e8c7ccb174e646aed2acbf28b2cb796ca511a1e700c6769b7338d9`.
+No temporary native profiling remains. Owned phone test processes stopped and
+joined, reverse port removed, app stopped. No credentials entered.
+
+Actual YouTube still errors (`final-4.png`); 30 settled samples average 4.3941%
+CPU, 421.44 MiB RSS, above the idle target. Next continue allocation/scheduling
+investigation and stable playback/controls validation. Navigator currently reports
+zero touch points and desktop client hints; inspect real input support before any
+capability changes. ChatGPT/Gemini/auth/zoom and full daily acceptance remain
+unfinished; OpenGL/software deferred.
+
 ## Vulkan video frame callbacks and remaining YouTube idle cost (2026-10-15)
 
 Full daily-browser goal remains active, Vulkan first. See
