@@ -165,3 +165,6 @@ App Store acceptance is not a goal (sideload / Xcode run).
   start state). parse.c now skips `@starting-style`. Also added `:modal` / `:popover-open`
   (NF_MODAL / NF_POPOVER_OPEN set via `N.setPseudo`) and real `showPopover`/`hidePopover`/
   `togglePopover`. Continue with Google now reaches accounts.google.com/v3/signin/identifier.
+- Google sign-in (via ChatGPT "Continue with Google"): the identifier page renders and accepts the
+  email, then Google redirects to /v3/signin/rejected ("This browser or app may not be secure").
+  That is Google's unrecognised-browser check. Do not spoof Chrome to get around it; ask the user.
