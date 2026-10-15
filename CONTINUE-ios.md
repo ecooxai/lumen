@@ -70,6 +70,18 @@ App Store acceptance is not a goal (sideload / Xcode run).
   `_earlyVisualKeyboard`, `web-mobile-root`, `[data-octane-shell-layout]`). The pending await is inside that body;
   next step: dump `String()` of the runtime's `rn` / `createApplicationPresentation` and probe each await.
 
+- 2026-10-15 later: runtime `Ka(onUser,..., n, cb, ma.prepare)` builds the presentation model; its
+  `referenceSheetsDelivery$` = `X(o,"reference-sheets-delivery",()=>requested?u(null):Z)` where `u` awaits the 6th
+  arg `s` = `ma.prepare`. So the stall is whatever `ma.prepare` awaits. Verified OK in Lumen: dynamic
+  `<link rel=stylesheet|modulepreload|preload>` fire load/error (~/fvtest/cgpt/preload.html). Dump scripts:
+  ~/fvtest/cgpt/dump*.js (LUMEN_PRE_FILE). Sample CPU with `pgrep -n lumen`, not `$!` (that is the env wrapper).
+  `ma = dt(()=>U("content-reference-sheets",()=>rt(()=>import("./content-reference-sheets-*.js"),[],..)))`;
+  importing that chunk directly in Lumen resolves in ~245 ms (dump5.js). `U` = shell-shared `dd` (per-name
+  cached module loader with retry), `dt` = lazy `{component,prepare}` wrapper, `rt` = vite preload (deps `[]`)
+  (dump7.js). None of these obviously hangs, so reference-sheets may be a red herring: next, instrument
+  `ma.prepare`/`dd` at runtime (patch via LUMEN_PRE_FILE fetch hook) and log which await in `n(e,t,n)` stays
+  pending. Asset hashes change between runs (deploy churn); dumps locate files by name prefix.
+
 ## Status 2026-10-15 (later)
 - Simulator JIT crash #2 (SIGBUS in `MemoryChunk::MemoryChunk`, code page `---`): V8 iOS assumes BrowserEngineKit,
   `OS::RecommitPages` only madvises. Local V8 patches: `src/base/platform/platform-posix.cc` RecommitPages on
