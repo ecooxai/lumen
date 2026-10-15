@@ -2687,7 +2687,7 @@ int main(int argc, char **argv) {
             case SDL_EVENT_WINDOW_EXPOSED: a.dirty = true; break;
 #ifdef LUMEN_IOS
             case SDL_EVENT_FINGER_DOWN: case SDL_EVENT_FINGER_MOTION: case SDL_EVENT_FINGER_UP: case SDL_EVENT_FINGER_CANCELED: touch_event(&a, &ev); break;
-            case SDL_EVENT_WILL_ENTER_BACKGROUND: if (*cookie_path) { cookies_save(cookie_path); cookies_saved_at = now_ms(); } break;
+            case SDL_EVENT_WILL_ENTER_BACKGROUND: js_ls_flush(true); if (*cookie_path) { cookies_save(cookie_path); cookies_saved_at = now_ms(); } break;
             case SDL_EVENT_DID_ENTER_BACKGROUND: g_bg = true; break;
             case SDL_EVENT_WILL_ENTER_FOREGROUND: case SDL_EVENT_DID_ENTER_FOREGROUND: g_bg = false; update_size(&a); a.dirty = true; a.vonly = false; break;
             case SDL_EVENT_LOW_MEMORY: g_lowmem = media_lowmem = true; a.dirty = true; break;   /* Lite mode drops off-screen images/media */
