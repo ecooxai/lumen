@@ -476,6 +476,7 @@ static void on_reject(v8::PromiseRejectMessage m) {
 extern "C" {
 
 void js_global_init(const char *argv0) {
+    js_blob_cleanup();
     if (g_platform) return;
     const char *lv = getenv("LUMEN_CONSOLE");
     if (lv) g_log_level = atoi(lv);

@@ -40,6 +40,7 @@ bool js_busy(JsCtx *c);   /* fetches in flight */
 void js_free(JsCtx *c);
 void js_set_profile_dir(const char *dir);   /* persist localStorage under dir */
 void js_ls_flush(bool force);
+void js_blob_cleanup(void);   /* drop stale blob: media temp files */
 void js_session_forget(void *tab_ud);   /* drop a closed tab's sessionStorage */
 /* run a parser-inserted script (sets document.currentScript) */
 void js_run_script(JsCtx *c, Node *script, const char *src, size_t n, const char *name);

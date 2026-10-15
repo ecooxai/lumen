@@ -1,6 +1,8 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <dirent.h>
+#include <time.h>
 #include <chrono>
 /* Native functions (the `N` object) backing the JS DOM/Web API prelude */
 #include "js_int.h"
@@ -490,6 +492,22 @@ FN(blobFile) {
     if (off < n) { unlink(path.c_str()); return; }
     a.GetReturnValue().Set(v8::String::NewFromUtf8(iso, ("file://" + path).c_str()).ToLocalChecked());
 }
+/* blob: media temp files whose object URL was never revoked; skip recent ones another
+ * running Lumen may still be playing */
+extern "C" void js_blob_cleanup(void) {
+    const char *td = getenv("TMPDIR");
+    std::string d = td && *td ? td : "/tmp";
+    if (d.back() != '/') d += '/';
+    DIR *dir = opendir(d.c_str()); if (!dir) return;
+    time_t now = time(NULL);
+    for (struct dirent *e; (e = readdir(dir));) {
+        if (strncmp(e->d_name, "lumen-blob-", 11)) continue;
+        std::string p = d + e->d_name; struct stat st;
+        if (!stat(p.c_str(), &st) && S_ISREG(st.st_mode) && now - st.st_mtime > 24 * 3600) unlink(p.c_str());
+    }
+    closedir(dir);
+}
+
 FN(blobFileFree) {
     CTX; std::string u = jcstr(iso, a[0]);
     if (!u.compare(0, 7, "file://") && u.find("/lumen-blob-") != std::string::npos) unlink(u.c_str() + 7);
