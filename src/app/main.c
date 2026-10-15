@@ -1682,6 +1682,16 @@ static void ctl_set(App *a, Node *n, char *v) {
     if (a->t->cur->js) js_dispatch(a->t->cur->js, n, "input", "InputEvent", true, false, 0, 0, 0, NULL);
     a->t->relayout = true; a->dirty = true;
 }
+/* where the edited field is on screen, so the on-screen keyboard is kept clear of it */
+static void text_area(App *a, Node *n) {
+#ifdef LUMEN_IOS
+    SDL_Rect r = { 0, 0, (int)a->vw, (int)BAR };
+    if (n && n->box) r = (SDL_Rect){ (int)(n->box->x + a->side), (int)(n->box->y - a->t->sy + BAR), (int)n->box->w, (int)n->box->h };
+    SDL_SetTextInputArea(a->win, &r, 0);
+#else
+    (void)a; (void)n;
+#endif
+}
 static void focus_node(App *a, Node *n) {
     Document *d = a->t->cur->d; Node *old = d->focus; JsCtx *js = a->t->cur->js;
     if (old == n) return;
@@ -1690,7 +1700,7 @@ static void focus_node(App *a, Node *n) {
     if (n) { n->flags |= NF_FOCUS; doc_mark_dirty(d, n); }
     if (js && old) { js_dispatch(js, old, "blur", "FocusEvent", false, false, 0, 0, 0, NULL); js_dispatch(js, old, "focusout", "FocusEvent", true, false, 0, 0, 0, NULL); }
     if (js && n) { js_dispatch(js, n, "focus", "FocusEvent", false, false, 0, 0, 0, NULL); js_dispatch(js, n, "focusin", "FocusEvent", true, false, 0, 0, 0, NULL); }
-    if (is_text_ctl(n) || edit_host(n)) text_input(a->win, false);
+    if (is_text_ctl(n) || edit_host(n)) { text_area(a, n); text_input(a->win, false); }
     a->caret_t = now_ms();
     a->t->relayout = true; a->dirty = true;
 }
@@ -2040,7 +2050,7 @@ static void tab_open(App *a) {
     if (!tab_new(a)) return;
     tab_select(a, a->ntabs - 1);
     navigate(a, "lumen://newtab", true);
-    a->editing = true; a->sel_all = 1; a->t->url[0] = 0; text_input(a->win, true);
+    a->editing = true; a->sel_all = 1; a->t->url[0] = 0; text_area(a, NULL); text_input(a->win, true);
 }
 static void tab_free(Tab *t) { if (t->cur) page_free(t->cur); for (int k = 0; k < t->nhist; k++) free(t->hist[k]); free(t); }
 static void tab_close(App *a, int i, bool *quit) {
@@ -2571,7 +2581,7 @@ int main(int argc, char **argv) {
                 case HB_FWD: history_go(&a, 1); break;
                 case HB_STAR: bm_toggle(&a); a.dirty = true; a.vonly = false; break;
                 case HB_RELOAD: if (a.t->hpos >= 0) navigate(&a, a.t->hist[a.t->hpos], false); break;
-                case HB_URL: a.editing = true; a.sel_all = 1; text_input(a.win, true); a.dirty = true; break;
+                case HB_URL: a.editing = true; a.sel_all = 1; text_area(&a, NULL); text_input(a.win, true); a.dirty = true; break;
                 default: if (a.editing) { a.editing = false; SDL_StopTextInput(a.win); a.dirty = true; } sel_press(&a, ev.button.x, ev.button.y, ev.button.clicks); click_page(&a, ev.button.x, ev.button.y); edit_press(&a, ev.button.x, ev.button.y, ev.button.clicks);
                 }
                 break;
@@ -2611,7 +2621,7 @@ int main(int argc, char **argv) {
                     else if ((k == SDLK_LEFT || k == SDLK_RIGHT) && !a.editing && edit_focus(&a))
                         js_dispatch(a.t->cur->js, edit_focus(&a), k == SDLK_LEFT ? "lumensel-home" : "lumensel-end", "MouseEvent", false, false, 0, (ev.key.mod & SDL_KMOD_SHIFT) ? 1 : 0, 0, NULL);
                     else if (k == SDLK_C) sel_copy(&a);
-                    else if (k == SDLK_L) { a.editing = true; a.sel_all = 1; text_input(a.win, true); }
+                    else if (k == SDLK_L) { a.editing = true; a.sel_all = 1; text_area(&a, NULL); text_input(a.win, true); }
                     else if (k == SDLK_R && a.t->hpos >= 0) navigate(&a, a.t->hist[a.t->hpos], false);
                     else if (k == SDLK_LEFTBRACKET) history_go(&a, -1);
                     else if (k == SDLK_RIGHTBRACKET) history_go(&a, 1);
