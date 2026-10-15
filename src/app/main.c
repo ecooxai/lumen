@@ -1069,6 +1069,8 @@ static void check_damage(App *a, int pwp, int ph, int x0, int y0, int x1, int y1
     canvas_free(&t);
 }
 
+static double g_shot_t0;   /* first frame time, for the LUMEN_SHOT test hook */
+static double shot_left(void) { const char *d = getenv("LUMEN_SHOT_MS"); return g_shot_t0 ? g_shot_t0 + (d ? atof(d) : 1500) - now_ms() : 0; }
 static void render(App *a) {
     update_compact(a);
     double t0 = now_ms();
@@ -1226,9 +1228,8 @@ static void render(App *a) {
         cap_screen_push(a->frame.px + (size_t)bar_px * (size_t)a->frame.stride + side_px, a->frame.w - side_px, a->frame.h - bar_px, a->frame.stride);
     a->frame_ms = now_ms() - t0;
     if (getenv("LUMEN_SHOT")) {   /* write the presented frame to a PNG after LUMEN_SHOT_MS and exit */
-        static double ts; if (!ts) ts = t0;
-        const char *d = getenv("LUMEN_SHOT_MS");
-        if (t0 - ts >= (d ? atof(d) : 1500)) { png_write(getenv("LUMEN_SHOT"), a->frame.px, a->frame.w, a->frame.h, a->frame.stride); exit(0); }
+        if (!g_shot_t0) g_shot_t0 = t0;
+        if (shot_left() <= 0) { png_write(getenv("LUMEN_SHOT"), a->frame.px, a->frame.w, a->frame.h, a->frame.stride); exit(0); }
     }
     if (getenv("LUMEN_DEBUG_PAINT")) {
         static int np, nf, nw[6]; static double tp, tf, t_last;
@@ -2665,12 +2666,13 @@ int main(int argc, char **argv) {
 #ifdef LUMEN_IOS
         if (touch_fling(&a) && to > 8) to = 8;
 #endif
+        if (getenv("LUMEN_SHOT")) { double r = shot_left(); if (r <= 0) { a.dirty = true; to = 0; } else if (r + 1 < to) to = (int)r + 1; }
 #ifdef LUMEN_IOS
         if (!ios_wait_event(&ev, to)) {
 #else
         if (!SDL_WaitEventTimeout(&ev, to)) {
 #endif
-            if (a.t->loading || getenv("LUMEN_SHOT")) a.dirty = true; }
+            if (a.t->loading) a.dirty = true; }
         else do {
             bool wheel0 = ev.type == SDL_EVENT_MOUSE_WHEEL && !ev.wheel.x && !ev.wheel.y;
             if ((ev.type >= SDL_EVENT_KEY_DOWN && ev.type <= SDL_EVENT_TEXT_INPUT) || (ev.type >= SDL_EVENT_MOUSE_MOTION && ev.type <= SDL_EVENT_MOUSE_WHEEL && !wheel0)) a.last_input = now_ms();
