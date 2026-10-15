@@ -85,6 +85,7 @@ dep_dav1d() {
 }
 dep_ffmpeg() {
   rm -rf $B/ffmpeg && mkdir -p $B/ffmpeg && cd $B/ffmpeg
+  sed -i '' 's/^#if TARGET_OS_IPHONE$/#if TARGET_OS_IPHONE \&\& !TARGET_OS_MACCATALYST/' $SRC/ffmpeg-9.0.2/libavcodec/videotoolbox.c
   $SRC/ffmpeg-9.0.2/configure --prefix=$PREFIX --target-os=darwin --arch=aarch64 --enable-cross-compile --cc="$CC" --cxx="$CXX" \
     --sysroot=$SDK --extra-cflags="$TF" --extra-ldflags="$TF" --pkg-config=pkg-config --pkg-config-flags=--static \
     --enable-pic --disable-shared --enable-static --disable-programs --disable-doc --disable-avdevice --disable-avfilter \
