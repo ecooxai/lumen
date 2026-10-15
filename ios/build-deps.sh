@@ -94,7 +94,13 @@ dep_ffmpeg() {
 }
 dep_sdl() { cm sdl $SRC/SDL3-3.4.16 -DSDL_SHARED=OFF -DSDL_STATIC=ON -DSDL_TEST_LIBRARY=OFF -DSDL_EXAMPLES=OFF -DSDL_TESTS=OFF; }
 dep_wgpu() {
-  [ -n "$WGPU" ] || { echo "no wgpu prebuilt for $PLAT"; return 1; }
+  if [ -z "$WGPU" ]; then   # Mac Catalyst: no prebuilt; build wgpu-native from source (rustup target add aarch64-apple-ios-macabi)
+    local w=${WGPU_SRC:-~/src/wgpu-native}
+    (cd $w && PATH=$HOME/.rustup/toolchains/stable-aarch64-apple-darwin/bin:$PATH RUSTUP_TOOLCHAIN=stable cargo build --release --target aarch64-apple-ios-macabi) || return 1
+    cp $w/ffi/webgpu-headers/webgpu.h $w/ffi/wgpu.h $PREFIX/include/
+    cp $w/target/aarch64-apple-ios-macabi/release/libwgpu_native.a $PREFIX/lib/
+    return
+  fi
   local d=${WGPU_DIR:-~/src/wgpu-ios}/$WGPU
   cp $d/include/webgpu/*.h $PREFIX/include/ 2>/dev/null || cp -r $d/include/* $PREFIX/include/
   cp $d/lib/libwgpu_native.a $PREFIX/lib/

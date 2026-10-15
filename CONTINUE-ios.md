@@ -15,3 +15,19 @@ App Store acceptance is not a goal (sideload / Xcode run).
   Build: `third_party/ninja/ninja -C out/ios-simulator v8_monolith` (depot_tools in ~/src/depot_tools on PATH for gn).
   gn gotcha: with v8_jitless you must also set v8_enable_sparkplug/maglev/turbofan=false explicitly.
 - brew: cmake ninja meson nasm pkgconf (plus desktop deps v8 wgpu-native webp ...).
+- V8 15.6 drumbrake patch (needed to compile the wasm interpreter): in src/debug/debug-wasm-objects.cc add
+  `bool DeclaresLocals() override { return false; }` to `DebugWasmInterpreterScopeIterator`.
+- out/catalyst = ios-simulator args with target_environment = "catalyst". Chain: sim -> device -> catalyst (logs ~/lumen-ios-logs/v8-*.log).
+- wgpu-native for Catalyst: ~/src/wgpu-native @ v29.0.1.1, built with rustup stable (PATH=~/.rustup/toolchains/stable-*/bin,
+  RUSTUP_TOOLCHAIN=stable to override its rust-toolchain.toml), target aarch64-apple-ios-macabi.
+
+## Build / run
+- `make PLAT=sim app` -> build-sim/Lumen.app ; `xcrun simctl install booted build-sim/Lumen.app && xcrun simctl launch --console booted com.ecooxai.lumen`
+- `make PLAT=ios ipa` -> build-ios/Lumen.ipa (ad-hoc signed; re-sign with Sideloadly/AltStore/Xcode for a real iPad)
+- `make PLAT=cat app` -> Mac Catalyst build of the same UIKit app.
+
+## Code
+- src/app/iosui.m implements the macui.h hooks with UIKit (alerts/action sheets, SF Symbols); macui.m stays for the AppKit build.
+- main.c `LUMEN_IOS` (TARGET_OS_IPHONE): touch -> tap/double-tap clicks, one-finger pan scroll with momentum (touch_event/touch_fling),
+  background lifecycle (no GPU work when backgrounded, cookies saved), borderless full-screen window, bundled cacert.pem via SSL_CERT_FILE.
+- font.c picks the iOS font table at runtime when /System/Library/Fonts/Core/Helvetica.ttc exists.
