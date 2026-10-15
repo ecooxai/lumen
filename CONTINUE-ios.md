@@ -51,3 +51,16 @@ App Store acceptance is not a goal (sideload / Xcode run).
 - Typing: ~0-1% CPU between keys, single-second 25-45% spikes when the keyboard animates in/out.
 - TODO: pinch zoom (needs a page zoom factor: layout viewport /zoom, page canvas scale *zoom, input coords /zoom),
   safe-area insets for iPhone notch (iPad full-screen is fine), real-device test of VideoToolbox + perf.
+
+## ChatGPT unauth landing: open investigation (2026-10-15)
+- Loads, renders, composer accepts typing; but the octane home client never marks ready
+  (`documentElement.dataset.octaneHomeBehaviorReady` stays unset, `__webMobileStartupRecovery.complete()` never
+  runs), so submit falls through to native form submission -> "Method Not Allowed".
+- Chain: home-client `Ie = Promise.all([E(document), loaders import])`; `E` = shell-shared export `dn` =
+  `hd` -> `pd()` = `id("application-presentation-runtime", () => v(() => import(runtime), deps r([0..32])))`.
+  `pd()` stays pending forever in Lumen although `import(runtime)` itself resolves at once -> suspect the
+  vite preload helper (`v`, waits on modulepreload/stylesheet deps) or `id`'s retry path.
+- Verified fine in Lumen: rIC, rAF, MessageChannel, postMessage, microtasks, fonts.ready, TLA, dynamic import
+  of the loaders and shell-shared modules, no unhandled rejections logged.
+- Debug recipe: `LUMEN_PRE_FILE=dump.js LUMEN_CONSOLE=1 LUMEN_DEBUG_MODULES=1` and fetch() the asset text from
+  inside Lumen (curl gets a Cloudflare challenge).
