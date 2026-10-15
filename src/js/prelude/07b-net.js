@@ -111,17 +111,35 @@ class Body {
     blob() { return this._take().then(b => new Blob([b], { type: (this.headers.get('content-type') || '') })); } bytes() { return this._take().then(b => new Uint8Array(b)); }
     formData() { return this.text().then(t => { const f = new FormData(); for (const [k, v] of new URLSearchParams(t)) f.append(k, v); return f; }); }
 }
+// Request construction and fetch copy internal request state, never script-visible
+// property overrides (e.g. an own `url` getter on a Request subclass).
+const requestState = new WeakMap();
+const requestInfo = r => {
+    const state = requestState.get(r);
+    if (!state) throw new TypeError('Illegal invocation');
+    return state;
+};
 class Request extends Body {
     constructor(input, init = {}) {
-        super(); const src = input instanceof Request ? input : null;
-        this.url = new URL(src ? src.url : String(input), document.baseURI).href;
-        this.method = String(init.method || (src && src.method) || 'GET').toUpperCase();
-        this.headers = new Headers(init.headers || (src && src.headers));
-        def(this, '_b', init.body !== undefined ? bodyInit(init.body, this.headers) : src ? src._b : null);
-        this.signal = init.signal || (src && src.signal) || new AbortController().signal;
-        Object.assign(this, { credentials: init.credentials || 'same-origin', mode: init.mode || 'cors', cache: init.cache || 'default', redirect: init.redirect || 'follow', referrer: 'about:client', integrity: '', keepalive: !!init.keepalive, priority: init.priority || 'auto' });
+        super();
+        const src = requestState.get(input);
+        const state = { url: src ? src.url : new URL(String(input), document.baseURI).href };
+        state.method = String(init.method ?? (src ? src.method : 'GET'));
+        if (!/^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/.test(state.method) || /^(CONNECT|TRACE|TRACK)$/i.test(state.method)) throw new TypeError('Invalid request method');
+        if (/^(DELETE|GET|HEAD|OPTIONS|POST|PUT)$/i.test(state.method)) state.method = state.method.toUpperCase();
+        state.headers = new Headers(init.headers !== undefined ? init.headers : src && src.headers);
+        state.signal = init.signal || (src && src.signal) || new AbortController().signal;
+        const defaults = { credentials: 'same-origin', mode: 'cors', cache: 'default', redirect: 'follow', referrer: 'about:client', integrity: '', keepalive: false, priority: 'auto' };
+        for (const k of Object.keys(defaults)) state[k] = init[k] !== undefined ? init[k] : src ? src[k] : defaults[k];
+        state.keepalive = !!state.keepalive;
+        requestState.set(this, state);
+        def(this, '_b', init.body !== undefined && init.body !== null ? bodyInit(init.body, state.headers) : src ? input._b : null);
+        if (this._b !== null && /^(GET|HEAD)$/.test(state.method)) throw new TypeError('GET and HEAD requests cannot have a body');
     }
-    clone() { return new Request(this); }
+    clone() { requestInfo(this); return new Request(this); }
+}
+for (const key of ['url', 'method', 'headers', 'signal', 'credentials', 'mode', 'cache', 'redirect', 'referrer', 'integrity', 'keepalive', 'priority']) {
+    Object.defineProperty(Request.prototype, key, { configurable: true, enumerable: true, get() { return requestInfo(this)[key]; } });
 }
 class Response extends Body {
     constructor(body = null, init = {}) { super(); this.headers = new Headers(init.headers); def(this, '_b', bodyInit(body, this.headers)); this.status = init.status ?? 200; this.statusText = init.statusText || ''; this.type = 'default'; this.url = ''; this.redirected = false; }
@@ -151,7 +169,7 @@ function blobResponse(url, lb, range) {
     return [206, 'Partial Content', ['Content-Type', lb[1], 'Content-Length', String(b - a + 1), 'Content-Range', `bytes ${a}-${b}/${n}`], buf.slice(a, b + 1)];
 }
 function fetch(input, init) {
-    let req; try { req = new Request(input, init); } catch (e) { return Promise.reject(e); }
+    let req, body; try { const request = new Request(input, init); req = requestInfo(request); body = request._b; } catch (e) { return Promise.reject(e); }
     return new Promise((resolve, reject) => {
         if (req.signal.aborted) return reject(req.signal.reason);
         const lb = localBody(req.url);
@@ -173,7 +191,7 @@ function fetch(input, init) {
             r._b = new ReadableStream({ start(c) { ctl = c; } }); settled = true; resolve(r);
         };
         const chunk = (ab) => { if (ctl) try { ctl.enqueue(new Uint8Array(ab)); } catch (e) {} };
-        corsSend(req.credentials === 'include', (i) => id = i, req.method, req.url, withOrigin(req.headers._flat(), req.url, req.method, req.mode), req._b, (status, statusText, url, hdrs, body, err) => {
+        corsSend(req.credentials === 'include', (i) => id = i, req.method, req.url, withOrigin(req.headers._flat(), req.url, req.method, req.mode), body, (status, statusText, url, hdrs, body, err) => {
             if (settled) { if (ctl) { try { if (err) ctl.error(new TypeError('network error')); else ctl.close(); } catch (e) {} ctl = null; } return; }
             if (err) return reject(new TypeError('Failed to fetch'));
             const r = build(status, statusText, url, hdrs); if (!r) return reject(new TypeError('Failed to fetch'));

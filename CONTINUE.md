@@ -1,5 +1,20 @@
 # Lumen: handoff notes
 
+## Request state repair and controls diagnosis (2026-10-15)
+
+Vulkan still first; full daily-browser goal active. See
+`docs/android-request-state-20261015.md`. Request copies/fetch now use private
+metadata rather than overridden public getters. 12 focused host checks pass;
+phone Request fixture 1/5 -> 5/5, streaming 6/6. Local idle 0.166% CPU.
+Clean Request APK saved in `build/codex-vulkan-playback-20261015/`.
+YouTube still errors, including while paused; error idle remains above target.
+Temporary controls probe confirms tap removes auto-hide and opacity becomes 1;
+controls appeared by the 4-second screenshot and remained at 7 seconds in one
+paused run. This does not prove prompt control response or stable playback.
+Next investigate advertised no-op video-frame callbacks/quality counters and
+remaining idle work. ChatGPT/Gemini/auth/zoom and full feature acceptance remain
+unfinished; OpenGL/software deferred. No credentials entered.
+
 ## Vulkan fetch streaming and URL lookup repair (2026-10-15)
 
 Vulkan remains first; OpenGL ES and CPU/software remain deferred. Daily-browser
