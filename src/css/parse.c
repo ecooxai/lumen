@@ -730,9 +730,12 @@ static void parse_rules(PCtx *c, const char *s, size_t n, const char *parent_sel
                 cc->query = xstrdup(q); cc->outer = c->cq; vec_push(c->sh->conds, cc);
                 ContainerCond *sv = c->cq; c->cq = cc; parse_rules(c, body, bn, parent_sel); c->cq = sv;
             }
-            else if (str_istarts(pt, "@layer") || str_istarts(pt, "@document") || str_istarts(pt, "@-moz-document") || str_istarts(pt, "@scope") || str_istarts(pt, "@starting-style")) {
+            else if (str_istarts(pt, "@layer") || str_istarts(pt, "@document") || str_istarts(pt, "@-moz-document") || str_istarts(pt, "@scope")) {
                 parse_rules(c, body, bn, parent_sel);
             }
+            /* @starting-style only seeds the "before" state of a transition; flattening
+               it would pin elements to that state, so skip it */
+            else if (str_istarts(pt, "@starting-style")) {}
             else if (str_istarts(pt, "@font-face")) {
                 SB ff; sb_init(&ff); sb_put(&ff, body, bn); vec_push(c->sh->font_faces, sb_take(&ff));
             }
