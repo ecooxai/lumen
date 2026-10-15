@@ -82,6 +82,8 @@ Lumen just runs jitless. The Simulator and the Mac builds always have JIT.
 ```sh
 ios/build-deps.sh sim          # also: ios, cat  -> ~/ios-deps/<plat>
 # V8 15.6 jitless monolith -> ~/src/v8ios/v8/out/{ios-simulator,ios-device,catalyst} (see CONTINUE-ios.md)
+# JIT=1 builds use out/<same>-jit: same args.gn minus the v8_jitless/sparkplug/maglev/turbofan lines,
+# plus v8_enable_lite_mode = false (V8 forces lite = jitless on iOS otherwise)
 make PLAT=sim app              # build-sim/Lumen.app for the iOS Simulator
 make PLAT=ios ipa              # build-ios/Lumen-jitless.ipa for iPad / iPhone
 make PLAT=ios JIT=1 ipa        # build-ios-jit/Lumen-jit.ipa (needs the -jit V8 builds)

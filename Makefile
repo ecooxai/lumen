@@ -103,7 +103,8 @@ APP := $(BUILD)/Lumen.app
 APPRES := $(if $(filter cat,$(PLAT)),$(APP)/Contents/Resources,$(APP))
 APPBIN := $(if $(filter cat,$(PLAT)),$(APP)/Contents/MacOS/Lumen,$(APP)/Lumen)
 APPPL := $(if $(filter cat,$(PLAT)),$(APP)/Contents/Info.plist,$(APP)/Info.plist)
-ENTS := $(if $(filter 1,$(JIT)),$(if $(filter cat,$(PLAT)),ios/jit-mac.entitlements,ios/jit-ios.entitlements))
+# Simulator: AMFI rejects ad-hoc entitlements, and sim processes may JIT anyway
+ENTS := $(if $(filter 1,$(JIT)),$(if $(filter cat,$(PLAT)),ios/jit-mac.entitlements,$(if $(filter ios,$(PLAT)),ios/jit-ios.entitlements)))
 CACERT ?= $(firstword $(wildcard /opt/homebrew/etc/ca-certificates/cert.pem /opt/homebrew/etc/openssl@3/cert.pem /etc/ssl/cert.pem))
 app: $(BUILD)/lumen ios/Info.plist
 	@mkdir -p $(APPRES) $(dir $(APPBIN))

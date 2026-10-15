@@ -18,6 +18,14 @@ App Store acceptance is not a goal (sideload / Xcode run).
 - V8 15.6 drumbrake patch (needed to compile the wasm interpreter): in src/debug/debug-wasm-objects.cc add
   `bool DeclaresLocals() override { return false; }` to `DebugWasmInterpreterScopeIterator`.
 - Also `v8_use_metagen_instance_types = false` in every out/*/args.gn (metagen libclang pass cannot find libc++ headers with use_custom_libcxx=false).
+- JIT builds (`JIT=1`): out/{ios-simulator,ios-device,catalyst}-jit = same args.gn minus v8_jitless and the
+  sparkplug/maglev/turbofan=false lines, plus `v8_enable_lite_mode = false` (gni/v8.gni forces lite = jitless for
+  target_os=ios unless use_blink; without it the target lib is jitless while host mksnapshot is not, and start-up
+  dies in `Deserializer: magic_number_ == kMagicNumber`). Local V8 patches: src/base/build_config.h enables
+  V8_HAS_PTHREAD_JIT_WRITE_PROTECT for iOS, src/base/platform/platform-darwin.cc resolves
+  pthread_jit_write_protect_np via dlsym on iOS (SDK marks it unavailable).
+- Simulator JIT app is signed without entitlements: AMFI refuses ad-hoc entitlements in the Simulator
+  (`Launchd job spawn failed`, `Security policy issue`) and Simulator processes may map MAP_JIT anyway.
 - out/catalyst = ios-simulator args with target_environment = "catalyst". Chain: sim -> device -> catalyst (logs ~/lumen-ios-logs/v8-*.log).
 - wgpu-native for Catalyst: ~/src/wgpu-native @ v29.0.1.1, built with rustup stable (PATH=~/.rustup/toolchains/stable-*/bin,
   RUSTUP_TOOLCHAIN=stable to override its rust-toolchain.toml), target aarch64-apple-ios-macabi.
