@@ -1,5 +1,50 @@
 # Lumen: handoff notes
 
+## Vulkan YUV video and audio lifecycle repair (2026-10-15)
+
+User priority remains Vulkan first until solid, then OpenGL ES, then CPU/software.
+Daily-browser goal remains active. No delegation. See
+`docs/android-vulkan-media-20261015.md` for measurements and remaining limits.
+
+Planar YUV420 frames now feed the existing GPU NV12 presenter, avoiding CPU RGB
+conversion and reducing queued-frame allocations. Handles signed/padded strides,
+odd dimensions and BT.601/709 limited/full range; other formats use the old fallback.
+Matched MI 8 Vulkan 720p30 video sample: mean CPU 81.8409% -> 56.4167%, mean RSS
+318.6978 -> 300.9188 MiB. This is a fixture result, not general-site performance.
+
+Fixed a reproduced SDL/player mutex inversion in clock reads and seek. The audio
+callback records queue latency so clock reads need no SDL stream lock. Paused output
+now releases its device while retaining queued stream samples; resume rebinds it.
+Logical pause alone still consumed 5% CPU on Android. Final actual-device paused
+sample is 1.3108% mean, 4% peak over 28.99 s, versus 7.3448% before lifecycle fix.
+Delayed MSE audio metadata no longer prematurely disables the audio clock.
+
+14 focused tests pass (YUV packing/color sanitizers, actual SDL concurrency and
+device lifecycle, GPU upload, controls, raster layers and damage pixels). Old
+clock and seek lock-order negative controls both fail as intended. Final APK
+native dependency/signature checks pass; compiled only via capped wrapper and
+verified V8 prebuilt. APK installed at
+`build/codex-media-20261015/lumen-vulkan-media-debug.apk`, 85,240,084 bytes, SHA256
+`767a83df50ec227b786aa094cfaeab80d24ad8f49b1bbd8f8ea4f792d6b82b16`.
+Final local playback, seek, pause and resume pass; paused PNGs match across 30 s.
+Temporary native/script diagnostic hooks are absent from final source/APK.
+
+Final YouTube acceptance FAILS: independent final APK run loads slowly (blank at
+25 s, video by 55 s), then shows "Something went wrong" at video time 0:56.
+Controls/settings respond on the error screen, not evidence of healthy playback.
+Next work should investigate this on Vulkan. Settings unchanged; app, sampler,
+fixture server/reverse and private diagnostic files cleaned after capture.
+
+YouTube diagnostic candidate played through 356.32 s; controls stayed visible
+7 s after resume and settings opened correctly. Some runs still fail; HTTP400
+FAILED_PRECONDITION and some403 responses occur on both successful/failed runs,
+so their causality is unproven. Do not declare YouTube fully fixed or daily-ready.
+Open work: further Vulkan real-site profiling, hardware decode, actual video-frame
+callbacks/quality statistics, touch control semantics, ChatGPT/Gemini/Google login,
+composer CPU, pinch/page zoom and remaining daily-browser features. The test email
+domain was confirmed as gmail.com; credentials stay in conversation. None were
+entered this pass. OpenGL/CPU acceptance remains deferred.
+
 ## Vulkan fixed-region scrolling installed (2026-10-15)
 
 User priority: Vulkan first until solid, then OpenGL ES, then CPU/software.

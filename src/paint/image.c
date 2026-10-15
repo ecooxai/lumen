@@ -40,6 +40,28 @@ void image_unref(Image *im) {
     free(im);
 }
 
+Image *image_yuv420p(int w, int h, const uint8_t *const planes[3], const int strides[3], int mat) {
+    if (w <= 0 || h <= 0 || (size_t)w > (64u * 1024 * 1024) / (size_t)h || !planes || !strides) return NULL;
+    int cw = (w + 1) / 2, ch = (h + 1) / 2;
+    for (int i = 0; i < 3; i++) {
+        int row = i ? cw : w;
+        if (!planes[i] || (strides[i] < row && strides[i] > -row)) return NULL;
+    }
+    Image *im = xcalloc(1, sizeof *im);
+    im->w = w; im->h = h; im->refs = 1; im->yuv_mat = mat;
+    size_t luma = (size_t)w * (size_t)h;
+    im->yuv = xmalloc(luma + (size_t)cw * 2 * (size_t)ch);
+    for (int y = 0; y < h; y++)
+        memcpy(im->yuv + (size_t)y * w, planes[0] + (ptrdiff_t)y * strides[0], (size_t)w);
+    for (int y = 0; y < ch; y++) {
+        const uint8_t *u = planes[1] + (ptrdiff_t)y * strides[1];
+        const uint8_t *v = planes[2] + (ptrdiff_t)y * strides[2];
+        uint8_t *uv = im->yuv + luma + (size_t)y * cw * 2;
+        for (int x = 0; x < cw; x++) { uv[2 * x] = u[x]; uv[2 * x + 1] = v[x]; }
+    }
+    return im;
+}
+
 static inline uint32_t c8(float v) { return v < 0 ? 0 : v > 255 ? 255 : (uint32_t)v; }
 void image_yuv_materialize(Image *im) {
     if (im->px || !im->yuv) return;

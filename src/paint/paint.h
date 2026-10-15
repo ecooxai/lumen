@@ -34,6 +34,9 @@ extern const Node *(*svg_ext_ref_hook)(const char *url, const char *id); /* elem
 Image *image_decode(const uint8_t *data, size_t n);
 void image_unref(Image *im);
 void image_yuv_materialize(Image *im);
+/* Copy planar 8-bit 4:2:0 into the presenter's NV12 layout, without RGB conversion.
+ * Plane pointers address the first displayed row; strides may be negative. */
+Image *image_yuv420p(int w, int h, const uint8_t *const planes[3], const int strides[3], int mat);
 /* Advances animated images; true if any frame changed. *next_ms gets the next frame time (0 = none). */
 bool image_anim_tick(double now_ms, double *next_ms);
 Image *svg_image(Node *n, float cw, float ch, float dpr);
