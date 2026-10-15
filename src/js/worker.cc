@@ -10,6 +10,7 @@
 #include <cstring>
 #include <deque>
 #include <map>
+#include <vector>
 #include <memory>
 extern "C" {
 #include "../net/net.h"
@@ -19,7 +20,8 @@ extern "C" {
 void (*js_wakeup)(void) = nullptr;
 
 namespace {
-struct Buf { uint8_t *p = nullptr; size_t n = 0; };
+struct Side { std::vector<v8::CompiledWasmModule> wasm; std::vector<std::shared_ptr<v8::BackingStore>> sab; };
+struct Buf { uint8_t *p = nullptr; size_t n = 0; std::shared_ptr<Side> side; };
 enum { WM_MESSAGE, WM_ERROR, WM_LOADFAIL };
 struct OutMsg { int kind; Buf data; std::string msg, file; int line = 0, col = 0; };
 struct Worker {
@@ -48,14 +50,42 @@ void wm_meta(v8::Local<v8::Context> ctx, v8::Local<v8::Module> m, v8::Local<v8::
 
 void wake() { if (js_wakeup) js_wakeup(); }
 
+/* WebAssembly.Module and SharedArrayBuffer cross threads by reference (compiled code / backing store). */
+struct SerDel : v8::ValueSerializer::Delegate {
+    v8::Isolate *iso; std::shared_ptr<Side> side = std::make_shared<Side>();
+    explicit SerDel(v8::Isolate *i) : iso(i) {}
+    void ThrowDataCloneError(v8::Local<v8::String> m) override { iso->ThrowException(v8::Exception::Error(m)); }
+    v8::Maybe<uint32_t> GetWasmModuleTransferId(v8::Isolate *, v8::Local<v8::WasmModuleObject> m) override {
+        side->wasm.push_back(m->GetCompiledModule()); return v8::Just<uint32_t>((uint32_t)side->wasm.size() - 1);
+    }
+    v8::Maybe<uint32_t> GetSharedArrayBufferId(v8::Isolate *, v8::Local<v8::SharedArrayBuffer> b) override {
+        side->sab.push_back(b->GetBackingStore()); return v8::Just<uint32_t>((uint32_t)side->sab.size() - 1);
+    }
+};
+struct DesDel : v8::ValueDeserializer::Delegate {
+    std::shared_ptr<Side> side;
+    explicit DesDel(std::shared_ptr<Side> s) : side(std::move(s)) {}
+    v8::MaybeLocal<v8::WasmModuleObject> GetWasmModuleFromId(v8::Isolate *iso, uint32_t id) override {
+        if (!side || id >= side->wasm.size()) return {};
+        return v8::WasmModuleObject::FromCompiledModule(iso, side->wasm[id]);
+    }
+    v8::MaybeLocal<v8::SharedArrayBuffer> GetSharedArrayBufferFromId(v8::Isolate *iso, uint32_t id) override {
+        if (!side || id >= side->sab.size()) return {};
+        return v8::SharedArrayBuffer::New(iso, side->sab[id]);
+    }
+};
 bool ser(v8::Isolate *iso, v8::Local<v8::Context> ctx, v8::Local<v8::Value> v, Buf &out) {
-    v8::ValueSerializer s(iso);   /* no delegate: V8 throws DataCloneError itself (V8 is built without RTTI) */
+    SerDel del(iso);
+    v8::ValueSerializer s(iso, &del);
     s.WriteHeader();
     if (!s.WriteValue(ctx, v).FromMaybe(false)) return false;
-    auto r = s.Release(); out.p = r.first; out.n = r.second; return true;
+    auto r = s.Release(); out.p = r.first; out.n = r.second;
+    if (!del.side->wasm.empty() || !del.side->sab.empty()) out.side = del.side;
+    return true;
 }
 v8::MaybeLocal<v8::Value> deser(v8::Isolate *iso, v8::Local<v8::Context> ctx, const Buf &b) {
-    v8::ValueDeserializer d(iso, b.p, b.n);
+    DesDel del(b.side);
+    v8::ValueDeserializer d(iso, b.p, b.n, &del);
     if (!d.ReadHeader(ctx).FromMaybe(false)) return {};
     return d.ReadValue(ctx);
 }
@@ -183,6 +213,22 @@ WFN(importScript) {
 WFN(reportErr) { WENV; werr(E, a[0], v8::Exception::CreateMessage(iso, a[0])); }
 
 const char kWorkerPrelude[] = R"JS((function (W, G) {
+if (typeof WebAssembly === 'object' && !WebAssembly.compileStreaming) {
+    const wasmBody = async (src, fn) => {
+        const r = await src;
+        const err = m => new TypeError('WebAssembly.' + fn + '(): ' + m);
+        if (!(r instanceof Response)) throw err('Argument 0 must be provided and must be a Response');
+        if (/^https?:/.test(r.url || '') && !/^application\/wasm\s*(;|$)/i.test(r.headers.get('content-type') || ''))
+            throw err("Incorrect response MIME type. Expected 'application/wasm'.");
+        if (!r.ok) throw err('HTTP status code is not ok');
+        if (r.bodyUsed) throw err('Response body has already been used');
+        return r.arrayBuffer();
+    };
+    Object.defineProperties(WebAssembly, {
+        compileStreaming: { value: async function compileStreaming(src) { return WebAssembly.compile(await wasmBody(src, 'compileStreaming')); }, writable: true, configurable: true },
+        instantiateStreaming: { value: async function instantiateStreaming(src, imports) { return WebAssembly.instantiate(await wasmBody(src, 'instantiateStreaming'), imports); }, writable: true, configurable: true },
+    });
+}
 'use strict';
 const def = (o, k, v) => Object.defineProperty(o, k, { value: v, writable: true, configurable: true, enumerable: false });
 const codes = { IndexSizeError: 1, HierarchyRequestError: 3, WrongDocumentError: 4, InvalidCharacterError: 5, NotFoundError: 8, NotSupportedError: 9, InvalidStateError: 11, SyntaxError: 12, InvalidModificationError: 13, NamespaceError: 14, InvalidAccessError: 15, SecurityError: 18, NetworkError: 19, AbortError: 20, URLMismatchError: 21, QuotaExceededError: 22, TimeoutError: 23, DataCloneError: 25 };
@@ -468,9 +514,12 @@ void worker_main(std::shared_ptr<Worker> w) {
             { v8::HeapStatistics hs; iso->GetHeapStatistics(&hs); w->heap = hs.total_heap_size(); w->ext = hs.external_memory(); }
             if (!idle_gc && now_ms() - last_act > 10000) { iso->LowMemoryNotification(); idle_gc = true; continue; }  /* idle worker: give memory back once */
             std::deque<Buf> msgs;
+            bool bg = iso->HasPendingBackgroundTasks();   /* e.g. async WebAssembly compile: poll until it posts back */
+            while (v8::platform::PumpMessageLoop(js_platform(), iso)) {}
+            iso->PerformMicrotaskCheckpoint();
             {
                 std::unique_lock<std::mutex> lk(w->mu);
-                double next = 1e300;
+                double next = bg ? now_ms() + 4 : 1e300;
                 for (auto &kv : E->timers) next = std::min(next, kv.second.due);
                 auto ready = [&] { return w->term.load() || !w->in.empty(); };
                 if (!idle_gc) next = std::min(next, last_act + 10001);
@@ -493,7 +542,6 @@ void worker_main(std::shared_ptr<Worker> w) {
             }
             if (w->term) break;
             run_timers(E);
-            while (v8::platform::PumpMessageLoop(js_platform(), iso)) {}
         }
         E->timers.clear(); E->mods.clear(); E->murl.clear(); E->onmsg.Reset(); E->report.Reset(); E->ctx.Reset();
     }
