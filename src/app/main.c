@@ -11,6 +11,10 @@
 #define MALLOC_IN_USE(v) struct mallinfo2 mi_ = mallinfo2(); size_t v = mi_.uordblks
 #endif
 #include <sys/resource.h>
+#include <sys/stat.h>
+#include <dirent.h>
+#include <strings.h>
+#include <time.h>
 #include <unistd.h>
 #ifdef __APPLE__
 #include <mach/mach.h>
@@ -495,6 +499,114 @@ static void apply_set(App *a, const char *q) {
     settings_save();
 }
 
+static const char *file_kind(const char *name) {
+    static const char *const K[][2] = { { ".png", "image" }, { ".jpg", "image" }, { ".jpeg", "image" }, { ".gif", "image" }, { ".webp", "image" },
+        { ".bmp", "image" }, { ".svg", "image" }, { ".avif", "image" }, { ".mp4", "video" }, { ".m4v", "video" }, { ".mov", "video" },
+        { ".webm", "video" }, { ".mkv", "video" }, { ".mp3", "audio" }, { ".m4a", "audio" }, { ".aac", "audio" }, { ".wav", "audio" },
+        { ".ogg", "audio" }, { ".opus", "audio" }, { ".flac", "audio" }, { ".obj", "model" } };
+    const char *e = strrchr(name, '.');
+    if (e) for (size_t i = 0; i < sizeof K / sizeof K[0]; i++) if (!strcasecmp(e, K[i][0])) return K[i][1];
+    return NULL;
+}
+static int dirent_cmp(const void *x, const void *y) {
+    const char *const *a = x, *const *b = y;
+    if ((*a)[0] != (*b)[0]) return (*a)[0] == 'd' ? -1 : 1;
+    return strcasecmp(*a + 1, *b + 1);
+}
+static void sb_size(SB *b, double n) {
+    static const char *u[] = { "B", "KB", "MB", "GB", "TB" }; int k = 0;
+    while (n >= 1024 && k < 4) { n /= 1024; k++; }
+    sb_printf(b, k ? "%.1f %s" : "%.0f %s", n, u[k]);
+}
+#define FV_CSS "<style>*{box-sizing:border-box}body{margin:0;font:13px -apple-system,system-ui,sans-serif;background:#1c1c1e;color:#e5e5e7}" \
+    ".bar{position:fixed;top:0;left:0;right:0;height:40px;display:flex;align-items:center;gap:6px;padding:0 12px;background:#2c2c2e;border-bottom:1px solid #3a3a3c;z-index:2}" \
+    ".bar .t{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}.bar .s{color:#98989d;margin-right:8px}" \
+    ".z{border:0;border-radius:6px;padding:4px 8px;background:#3a3a3c;color:#e5e5e7;font:12px system-ui;cursor:pointer}.z.on{background:#0a84ff;color:#fff}" \
+    ".stage{position:absolute;top:40px;left:0;right:0;bottom:0;overflow:auto;display:flex}.stage>*{margin:auto;flex:none}" \
+    "img,video{display:block;image-rendering:auto}.aud{padding:40px;border-radius:14px;background:#2c2c2e;text-align:center;min-width:360px}.aud b{display:block;margin-bottom:18px;font-size:15px}</style>"
+static char *file_page(const char *u) {
+    if (strncmp(u, "file://", 7)) return NULL;
+    const char *rp = u + 7, *qs = strpbrk(rp, "?#");
+    char *path = url_decode(rp, qs ? (size_t)(qs - rp) : strlen(rp));
+    struct stat st; char *html = NULL;
+    if (stat(path, &st)) { free(path); return NULL; }
+    const char *base = strrchr(path, '/'); base = base && base[1] ? base + 1 : path;
+    SB b; sb_init(&b);
+    if (S_ISDIR(st.st_mode)) {
+        DIR *d = opendir(path);
+        char **ents = NULL; int ne = 0;
+        for (struct dirent *de; d && (de = readdir(d));) {
+            if (de->d_name[0] == '.') continue;
+            char full[2048]; struct stat es; snprintf(full, sizeof full, "%s/%s", path, de->d_name);
+            bool dir = !stat(full, &es) && S_ISDIR(es.st_mode);
+            ents = xrealloc(ents, sizeof *ents * (size_t)(ne + 1));
+            size_t nl = strlen(de->d_name); char *e = xmalloc(nl + 40);
+            snprintf(e, nl + 40, "%c%s\t%lld\t%lld", dir ? 'd' : 'f', de->d_name, dir ? -1LL : (long long)es.st_size, (long long)es.st_mtime);
+            ents[ne++] = e;
+        }
+        if (d) closedir(d);
+        qsort(ents, (size_t)ne, sizeof *ents, dirent_cmp);
+        sb_puts(&b, "<!doctype html><meta charset=utf-8><title>"); sb_esc(&b, path); sb_puts(&b, "</title>" FV_CSS
+            "<style>.list{position:absolute;top:40px;left:0;right:0;padding:6px 10px}.r{display:flex;align-items:center;gap:8px;padding:3px 8px;border-radius:5px;color:#e5e5e7;text-decoration:none;line-height:20px}"
+            ".r:hover{background:#2c2c2e}.r .n{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.r .m{color:#98989d;font-size:12px;width:90px;text-align:right}"
+            ".i{width:16px;height:16px;border-radius:3px;flex:none;font-size:9px;line-height:16px;text-align:center;color:#fff;font-weight:700}"
+            ".i.d{background:#0a84ff}.i.image{background:#30d158}.i.video{background:#ff375f}.i.audio{background:#ff9f0a}.i.model{background:#bf5af2}.i.f{background:#636366}</style>");
+        sb_puts(&b, "<div class=bar><span class=t>"); sb_esc(&b, path); sb_printf(&b, "</span><span class=s>%d items</span></div><div class=list>", ne);
+        if (strcmp(path, "/")) sb_puts(&b, "<a class=r href=\"..\"><span class=\"i d\">\xe2\x86\x91</span><span class=n>..</span></a>");
+        for (int i = 0; i < ne; i++) {
+            char *nm = ents[i] + 1, *t1 = strchr(nm, '\t'); *t1 = 0;
+            long long sz = atoll(t1 + 1); time_t mt = (time_t)atoll(strchr(t1 + 1, '\t') + 1);
+            bool dir = ents[i][0] == 'd'; const char *k = dir ? "d" : file_kind(nm);
+            sb_puts(&b, "<a class=r href=\"");
+            for (const unsigned char *c = (const unsigned char *)nm; *c; c++)
+                if (isalnum(*c) || strchr("-_.~", *c)) sb_putc(&b, (char)*c); else sb_printf(&b, "%%%02X", *c);
+            sb_printf(&b, "%s\"><span class=\"i %s\"></span><span class=n>", dir ? "/" : "", k ? k : "f");
+            sb_esc(&b, nm); sb_puts(&b, "</span><span class=m>");
+            if (!dir) sb_size(&b, (double)sz);
+            char tb[32]; struct tm tmv; localtime_r(&mt, &tmv); strftime(tb, sizeof tb, "%Y-%m-%d %H:%M", &tmv);
+            sb_printf(&b, "</span><span class=m style=width:120px>%s</span></a>", tb);
+            free(ents[i]);
+        }
+        free(ents);
+        sb_puts(&b, "</div>");
+        html = sb_take(&b);
+    } else if (file_kind(base)) {
+        const char *k = file_kind(base);
+        sb_puts(&b, "<!doctype html><meta charset=utf-8><title>"); sb_esc(&b, base); sb_puts(&b, "</title>" FV_CSS "<div class=bar><span class=t>");
+        sb_esc(&b, base); sb_puts(&b, "</span><span class=s id=info>"); sb_size(&b, (double)st.st_size); sb_puts(&b, "</span><span id=zb></span></div><div class=stage id=st>");
+        if (!strcmp(k, "image")) { sb_puts(&b, "<img id=m src=\""); sb_esc(&b, base); sb_puts(&b, "\">"); }
+        else if (!strcmp(k, "video")) { sb_puts(&b, "<video id=m controls autoplay src=\""); sb_esc(&b, base); sb_puts(&b, "\"></video>"); }
+        else if (!strcmp(k, "audio")) { sb_puts(&b, "<div class=aud><b>"); sb_esc(&b, base); sb_puts(&b, "</b><audio controls autoplay src=\""); sb_esc(&b, base); sb_puts(&b, "\"></audio></div>"); }
+        else { sb_puts(&b, "<svg id=m xmlns=\"http://www.w3.org/2000/svg\"></svg>"); }
+        sb_printf(&b, "</div><script>var KIND='%s',SRC=", k);
+        sb_putc(&b, '\''); sb_esc(&b, base); sb_putc(&b, '\'');
+        sb_puts(&b, ";\n"
+            "var Z=[10,25,50,75,100,150,200,300],z=100,m=document.getElementById('m'),zb=document.getElementById('zb'),dpr=window.devicePixelRatio||1,nw=0,nh=0;\n"
+            "function draw(){if(KIND=='model')return obj.render();if(!nw)return;m.style.width=(nw/dpr*z/100)+'px';m.style.height=(nh/dpr*z/100)+'px'}\n"
+            "function setZ(v){z=v;[].forEach.call(zb.children,function(b){b.className='z'+(+b.dataset.z==z?' on':'')});draw()}\n"
+            "function step(d){var i=Z.indexOf(z)+d;if(i>=0&&i<Z.length)setZ(Z[i])}\n"
+            "if(KIND!='audio')Z.forEach(function(v){var b=document.createElement('button');b.className='z';b.dataset.z=v;b.textContent=v+'%';b.onclick=function(){setZ(v)};zb.appendChild(b)});\n"
+            "document.addEventListener('keydown',function(e){if(e.key=='+'||e.key=='=')step(1);else if(e.key=='-')step(-1);else if(e.key=='0')setZ(100)});\n"
+            "document.addEventListener('wheel',function(e){if(e.ctrlKey||e.metaKey){e.preventDefault();step(e.deltaY<0?1:-1)}},{passive:false});\n"
+            "function info(t){document.getElementById('info').textContent+=' \\u00b7 '+t}\n"
+            "if(KIND=='image')m.onload=function(){nw=m.naturalWidth;nh=m.naturalHeight;info(nw+'\\u00d7'+nh);setZ(100)};\n"
+            "if(KIND=='video')m.addEventListener('loadedmetadata',function(){nw=m.videoWidth;nh=m.videoHeight;info(nw+'\\u00d7'+nh);setZ(100)});\n"
+            "var obj={v:[],f:[],ry:0.6,rx:-0.4,render:function(){var W=Math.max(200,innerWidth*z/100),H=Math.max(200,(innerHeight-40)*z/100),s=Math.min(W,H)*0.4/this.r,cy=Math.cos(this.ry),sy=Math.sin(this.ry),cx=Math.cos(this.rx),sx=Math.sin(this.rx),P=[],self=this;\n"
+            " m.setAttribute('width',W);m.setAttribute('height',H);m.setAttribute('viewBox','0 0 '+W+' '+H);\n"
+            " this.v.forEach(function(p){var x=p[0]-self.c[0],y=p[1]-self.c[1],q=p[2]-self.c[2],X=x*cy+q*sy,Q=-x*sy+q*cy,Y=y*cx-Q*sx;Q=y*sx+Q*cx;P.push([W/2+X*s,H/2-Y*s,Q])});\n"
+            " var L=[];this.f.forEach(function(f){var a=P[f[0]],b=P[f[1]],c=P[f[2]];if(!a||!b||!c)return;var n=(b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]);var z0=0;f.forEach(function(i){z0+=P[i]?P[i][2]:0});L.push([z0/f.length,f,n])});\n"
+            " L.sort(function(a,b){return a[0]-b[0]});var o=[];L.forEach(function(e){var ux=0,uy=0,uz=0,f=e[1],a=P[f[0]],b=P[f[1]],c=P[f[2]];var v1=[b[0]-a[0],b[1]-a[1],b[2]-a[2]],v2=[c[0]-a[0],c[1]-a[1],c[2]-a[2]];ux=v1[1]*v2[2]-v1[2]*v2[1];uy=v1[2]*v2[0]-v1[0]*v2[2];uz=v1[0]*v2[1]-v1[1]*v2[0];var l=Math.sqrt(ux*ux+uy*uy+uz*uz)||1,sh=Math.abs(uz/l)*0.75+0.2,g=Math.round(70+150*sh);\n"
+            "  o.push('<polygon points=\"'+f.map(function(i){return P[i][0].toFixed(1)+','+P[i][1].toFixed(1)}).join(' ')+'\" fill=\"rgb('+g+','+g+','+Math.round(g*1.08)+')\" stroke=\"rgba(0,0,0,.15)\" stroke-width=\".5\"/>')});m.innerHTML=o.join('')}};\n"
+            "if(KIND=='model'){fetch(SRC).then(function(r){return r.text()}).then(function(t){var mn=[1e9,1e9,1e9],mx=[-1e9,-1e9,-1e9];t.split('\\n').forEach(function(l){var p=l.trim().split(/\\s+/);if(p[0]=='v'){var v=[+p[1],+p[2],+p[3]];for(var k=0;k<3;k++){mn[k]=Math.min(mn[k],v[k]);mx[k]=Math.max(mx[k],v[k])}obj.v.push(v)}else if(p[0]=='f'){var f=p.slice(1).map(function(s){var i=parseInt(s,10);return i<0?obj.v.length+i:i-1});for(var k=1;k+1<f.length;k++)obj.f.push([f[0],f[k],f[k+1]])}});\n"
+            " obj.c=[0,1,2].map(function(k){return (mn[k]+mx[k])/2});obj.r=Math.max(mx[0]-mn[0],mx[1]-mn[1],mx[2]-mn[2])/2||1;info(obj.v.length+' vertices, '+obj.f.length+' triangles');setZ(100);\n"
+            " var dg=null,pend=false;m.addEventListener('pointerdown',function(e){dg=[e.clientX,e.clientY]});addEventListener('pointerup',function(){dg=null});addEventListener('pointermove',function(e){if(!dg)return;obj.ry+=(e.clientX-dg[0])*0.01;obj.rx+=(e.clientY-dg[1])*0.01;dg=[e.clientX,e.clientY];if(!pend){pend=true;requestAnimationFrame(function(){pend=false;obj.render()})}})})}\n"
+            "</script>");
+        html = sb_take(&b);
+    } else sb_free(&b);
+    free(path);
+    return html;
+}
+
 static void navigate_ex(App *a, const char *url, bool push, const char *body, size_t blen, const char *ctype) {
     char *u = normalize_url(url), *html = NULL;
     if (!strncmp(u, "lumen://", 8)) {
@@ -505,7 +617,7 @@ static void navigate_ex(App *a, const char *url, bool push, const char *body, si
             free(u); u = xmalloc(64); snprintf(u, 64, "lumen://newtab?s=%s", sec); push = false;
         }
         html = internal_page(u);
-    }
+    } else if (!body) html = file_page(u);
     if (push) {
         for (int i = a->t->hpos + 1; i < a->t->nhist; i++) free(a->t->hist[i]);
         a->t->nhist = a->t->hpos + 1;

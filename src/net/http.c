@@ -433,7 +433,11 @@ static NetResponse *file_url(const URL *u, const char *url) {
     const char *ext = strrchr(u->path, '.');
     const char *ct = "application/octet-stream";
     if (ext) { if (!strcmp(ext, ".html") || !strcmp(ext, ".htm")) ct = "text/html"; else if (!strcmp(ext, ".css")) ct = "text/css"; else if (!strcmp(ext, ".js") || !strcmp(ext, ".mjs")) ct = "text/javascript";
-        else if (!strcmp(ext, ".png")) ct = "image/png"; else if (!strcmp(ext, ".jpg") || !strcmp(ext, ".jpeg")) ct = "image/jpeg"; else if (!strcmp(ext, ".svg")) ct = "image/svg+xml"; else if (!strcmp(ext, ".json")) ct = "application/json"; else if (!strcmp(ext, ".txt")) ct = "text/plain"; }
+        else if (!strcmp(ext, ".png")) ct = "image/png"; else if (!strcmp(ext, ".jpg") || !strcmp(ext, ".jpeg")) ct = "image/jpeg"; else if (!strcmp(ext, ".svg")) ct = "image/svg+xml"; else if (!strcmp(ext, ".json")) ct = "application/json"; else if (!strcmp(ext, ".txt")) ct = "text/plain";
+        else if (!strcasecmp(ext, ".mp4") || !strcasecmp(ext, ".m4v")) ct = "video/mp4"; else if (!strcasecmp(ext, ".mov")) ct = "video/quicktime"; else if (!strcasecmp(ext, ".webm")) ct = "video/webm";
+        else if (!strcasecmp(ext, ".mkv")) ct = "video/x-matroska"; else if (!strcasecmp(ext, ".mp3")) ct = "audio/mpeg"; else if (!strcasecmp(ext, ".m4a") || !strcasecmp(ext, ".aac")) ct = "audio/mp4";
+        else if (!strcasecmp(ext, ".wav")) ct = "audio/wav"; else if (!strcasecmp(ext, ".ogg") || !strcasecmp(ext, ".opus")) ct = "audio/ogg"; else if (!strcasecmp(ext, ".flac")) ct = "audio/flac";
+        else if (!strcasecmp(ext, ".gif")) ct = "image/gif"; else if (!strcasecmp(ext, ".webp")) ct = "image/webp"; else if (!strcasecmp(ext, ".obj")) ct = "text/plain"; }
     headers_add(&r->headers, "content-type", ct);
     r->url = xstrdup(url);
     return r;

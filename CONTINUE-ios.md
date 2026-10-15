@@ -69,3 +69,17 @@ App Store acceptance is not a goal (sideload / Xcode run).
   `await a()` (the presentation body in shell-shared `function n(e,t,n){let a=L(e);...}` – uses
   `_earlyVisualKeyboard`, `web-mobile-root`, `[data-octane-shell-layout]`). The pending await is inside that body;
   next step: dump `String()` of the runtime's `rn` / `createApplicationPresentation` and probe each await.
+
+## Status 2026-10-15 (later)
+- Simulator JIT crash #2 (SIGBUS in `MemoryChunk::MemoryChunk`, code page `---`): V8 iOS assumes BrowserEngineKit,
+  `OS::RecommitPages` only madvises. Local V8 patches: `src/base/platform/platform-posix.cc` RecommitPages on
+  V8_OS_IOS also mprotects to the requested access; `src/heap/code-range.cc` keeps the kRecommitOnly RWX commit
+  when V8_HAS_PTHREAD_JIT_WRITE_PROTECT. Simulator: `pthread_jit_write_protect_supported_np()` = 0, MAP_JIT pages
+  are plain RWX (tested ~/jittest/t.c, t2.c). Rebuild out/ios-simulator-jit then `make PLAT=sim JIT=1 app`, test.
+- Then: out/catalyst-jit, out/ios-device-jit (same patches), `make PLAT=cat JIT=1 app`, `make PLAT=ios JIT=1 ipa`.
+- New: workspaces get a default SF Symbol icon (main.c ws_new); file:// viewer (main.c file_page): compact folder
+  list, image/video 1:1 device px with zoom steps 10..300%, audio card, OBJ SVG viewer (drag rotate).
+  Video frame in LUMEN_SHOT screenshot rendered white – check whether that is the shot path or real.
+- Pending user asks: top-sites pass (YouTube, Facebook, ChatGPT, Claude, Gemini, X, Google, Bing, Gmail,
+  Wikipedia) with RAM/CPU vs Chrome; getDisplayMedia (ReplayKit on iOS, Android); ChatGPT stall: runtime `rn`
+  awaits `ve.referenceSheetsDelivery$` status "ready" (never reached in Lumen).
