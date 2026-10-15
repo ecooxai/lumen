@@ -38,6 +38,8 @@ App Store acceptance is not a goal (sideload / Xcode run).
   YouTube home/search/watch with ad + skip and MSE playback (software decode: VideoToolbox hwaccel init fails in the
   Simulator only). Google search hits reCAPTCHA from this VM IP (not solved, by design).
 - CPU: idle ~1% after blocking in CFRunLoop (ios_wait_event); YouTube 1080p-ish lofi playback ~7-70% in Simulator; RSS ~470-600 MB.
+- Long press (>500 ms) = right click. Focused fields call SDL_SetTextInputArea (text_area), so SDL's UIKit view
+  controller slides the view up to keep the field above the on-screen keyboard (verified in Simulator).
+- Typing: ~0-1% CPU between keys, single-second 25-45% spikes when the keyboard animates in/out.
 - TODO: pinch zoom (needs a page zoom factor: layout viewport /zoom, page canvas scale *zoom, input coords /zoom),
-  safe-area insets for iPhone notch (iPad full-screen is fine), long-press = context menu (right click),
-  on-screen keyboard avoidance (scroll focused field above keyboard), real-device test of VideoToolbox + perf.
+  safe-area insets for iPhone notch (iPad full-screen is fine), real-device test of VideoToolbox + perf.
