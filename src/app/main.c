@@ -51,7 +51,7 @@ typedef struct { Node *n; char *src; size_t len; char *name; bool module; } PScr
 typedef struct { Node *n; uint64_t h; } SheetRef;
 typedef struct Page {
     char *url; Document *d; StyleEngine *e; Layout *L; uint64_t gen; double load_ms;
-    JsCtx *js; PScript *scripts; int nscripts; uint64_t seen_ver, lay_ver, seen_sheet_ver, seen_paint_ver;
+    JsCtx *js; PScript *scripts; int nscripts; uint64_t seen_ver, lay_ver, seen_sheet_ver, seen_paint_ver, seen_res; bool res_seen;
     SheetRef *sref; int nsref;
     HMap img_fired; bool img_check, internal_ui;
     /* <iframe> child browsing context (document owned by the JS layer) */
@@ -1699,7 +1699,10 @@ static bool vis_doc(Node *n, void *ud) {
     return false;
 }
 /* Start async loads for <img> sources and CSS background images that appeared after the initial load. */
-static void sync_images(Page *p) {
+/* Walks the whole tree, so it runs only after image-relevant changes. */
+static bool sync_images(Page *p) {
+    if (p->res_seen && p->seen_res == p->d->resource_version) return false;
+    p->res_seen = true; p->seen_res = p->d->resource_version;
     for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) {
         if (n->type != NODE_ELEMENT) continue;
         char *u = NULL;
@@ -1717,6 +1720,7 @@ static void sync_images(Page *p) {
             rq->done = img_done; rq->ud = l; rq->priority = 2; net_fetch(rq);
         } else free(u);
     }
+    return true;
 }
 /* Fire load/error once per (img node, resolved src) after its fetch completes. */
 static void fire_img_events(Page *p) {
@@ -1777,8 +1781,8 @@ static bool frame_restyle(Page *p) {
     p->seen_ver = p->d->dom_version;
     bool sheets = sync_sheets(p, false);
     style_recalc(p->e, &p->d->node, sheets);
-    sync_images(p);
-    p->img_check = p->frelayout = true;
+    if (sync_images(p)) p->img_check = true;
+    p->frelayout = true;
     return true;
 }
 static float frame_scale(Page *p) { return g_app->scale * tab_zoom(tab_of_doc(g_app, p->d)); }
@@ -1978,8 +1982,7 @@ static void restyle(App *a) {
     p->seen_ver = p->d->dom_version;
     bool sheets = sync_sheets(p, false);
     { double q = now_ms(); style_recalc(p->e, &p->d->node, sheets); g_tr += now_ms() - q; }
-    sync_images(p);
-    p->img_check = true;
+    if (sync_images(p)) p->img_check = true;
     if (viewport_changed || sheets || p->e->layout_dirty || p->d->layout_version != p->lay_ver || g_no_paint_only) a->t->relayout = true;
     p->e->layout_dirty = false; p->lay_ver = p->d->layout_version;
     if (a->t == a->tabs[a->ti]) a->dirty = true;
@@ -2057,8 +2060,8 @@ static void debug_layout_geometry(App *a) {
     for (Node *n = p->d->node.first; n; n = node_next_deep(n, &p->d->node)) {
         Box *b = n->box; const ComputedStyle *s = n->style;
         if (n->type != NODE_ELEMENT || !b || !s) continue;
-        fprintf(f, "%p parent=%p <%s> class=%s box=%.1f,%.1f,%.1f,%.1f scroll=%.1f/%.1f scroller=%d display=%d pos=%d overflow=%d,%d flex=%d,%.1f,%.1f height=%d:%.1f:%.1f min=%d:%.1f:%.1f max=%d:%.1f:%.1f\n",
-            (void *)n, (void *)n->parent, n->tag, n->class_name ? n->class_name : "", b->x,b->y,b->w,b->h,n->scroll_y,b->scroll_h,b->scroller,s->display,s->position,s->overflow_x,s->overflow_y,s->flex_direction,s->flex_grow,s->flex_shrink,s->height.kind,s->height.px,s->height.pct,s->min_height.kind,s->min_height.px,s->min_height.pct,s->max_height.kind,s->max_height.px,s->max_height.pct);
+        fprintf(f, "%p parent=%p <%s> class=%s box=%.1f,%.1f,%.1f,%.1f scroll=%.1f/%.1f scroll_x=%.1f/%.1f scroller=%d display=%d pos=%d overflow=%d,%d flex=%d,%.1f,%.1f height=%d:%.1f:%.1f min=%d:%.1f:%.1f max=%d:%.1f:%.1f\n",
+            (void *)n, (void *)n->parent, n->tag, n->class_name ? n->class_name : "", b->x,b->y,b->w,b->h,n->scroll_y,b->scroll_h,n->scroll_x,b->scroll_w,b->scroller,s->display,s->position,s->overflow_x,s->overflow_y,s->flex_direction,s->flex_grow,s->flex_shrink,s->height.kind,s->height.px,s->height.pct,s->min_height.kind,s->min_height.px,s->min_height.pct,s->max_height.kind,s->max_height.px,s->max_height.pct);
     }
     fclose(f);
 }

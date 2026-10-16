@@ -23,6 +23,8 @@ void font_init(void);
 Font *font_get(const char *family, int weight, bool italic, float size);
 void text_shape(Font *f, const char *s, size_t len, float letter_spacing, ShapedRun *out);
 void shaped_free(ShapedRun *r);
+/* changes whenever font resolution may change (a web font loaded), so cached shaping must not be reused */
+unsigned font_generation(void);
 float text_width(Font *f, const char *s, size_t len, float letter_spacing);
 /* @font-face: declare a face (url must be absolute), drain fetches requested by use, hand back the bytes */
 void font_declare(const char *family, int weight, bool italic, const char *url);

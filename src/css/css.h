@@ -189,6 +189,11 @@ typedef struct RuleIndex {
     void *ancestor_buckets[1024]; /* RuleVecs, indexed by necessary class bloom bit */
     uint64_t ancestor_bucket_bits[16];
     uint32_t count;
+    /* Compounds left of + / ~: keys whose change can alter a following sibling's
+     * match. sib_state: a keyless compound tests element state; sib_desc: a
+     * descendant follows the sibling relation, so sibling subtrees reselect;
+     * sib_style: such a compound reads the style attribute. */
+    uint64_t sib_keys[16]; bool sib_any, sib_state, sib_desc, sib_style;
     HMap hov_desc, anc_desc; void *hov_desc_u, *anc_desc_u; /* key of a non-subject :hover compound -> subject keys it can affect */
     HMap hov, hov_anc, hov_ach; /* hov_ach: like hov_anc but keyed by the subject's parent (`.k > :has(...)`) */ uint8_t hov_univ; bool hov_has, hov_sib; /* hov_anc: keys of compounds with :has(...:hover...), | 16 for :has(+ ...), 32 for :has(~ ...) */ /* :hover invalidation: id/class/tag -> 1 self, 2 subtree, 4 parent subtree */
 } RuleIndex;
@@ -217,7 +222,7 @@ typedef struct StyleEngine {
     uint64_t seen_sheet_version;
     uint64_t seen_inheritance_version;
     bool reuse_inherited, collect_dynamic;
-    int stats_matched, stats_paint, stats_reused;
+    int stats_matched, stats_paint, stats_reused, stats_memo_hits;
     uint64_t stats_tree_tests; /* structural dependency candidates examined */
     int debug_style_passes; /* debug-only device profiling, armed by F8 */
     bool layout_dirty;          /* a recalc changed something other than paint-only properties */

@@ -720,6 +720,94 @@ static void test_tree_subject_index(void) {
     }
 }
 
+/* The page's whole-tree image scan runs only when this version moves. */
+static void test_resource_version(void) {
+    Document *d = doc_new("https://resource-version.test/");
+    const char *html = "<html><body><div id='box'>a</div><img id='pic' src='a.png'></body></html>";
+    html_parse(d, html, strlen(html));
+    StyleEngine *e = style_engine_new(d);
+    const char *css = ".bg {background-image:url(b.png)} .hide {display:none}";
+    style_engine_add_sheet(e, css_parse_sheet(css, strlen(css), d->url, 1, &e->media));
+    style_recalc(e, &d->node, true);
+    Node *box = doc_get_element_by_id(d, "box"), *pic = doc_get_element_by_id(d, "pic");
+    uint64_t v = d->resource_version;
+    assert(v > 0);                                   /* first style of an <img> */
+    for (int i = 0; i < 8; i++) {                    /* inline layout churn is not an image change */
+        node_set_attr(box, "style", i % 2 ? "height:10px" : "height:20px");
+        style_recalc(e, &d->node, false);
+    }
+    assert(d->resource_version == v);
+    node_set_attr(box, "class", "bg"); style_recalc(e, &d->node, false);
+    assert(d->resource_version > v); v = d->resource_version;
+    node_set_attr(box, "class", "bg hide"); style_recalc(e, &d->node, false);
+    assert(d->resource_version > v); v = d->resource_version;
+    node_set_attr(pic, "src", "c.png");
+    assert(d->resource_version > v); v = d->resource_version;
+    Node *img = node_new_element(d, "img", NS_HTML); node_append(d->body, img); style_recalc(e, &d->node, false);
+    assert(d->resource_version > v);
+    style_engine_free(e); doc_free(d);
+}
+static void test_match_memo(void) {
+    Document *d = doc_new("https://match-memo.test/");
+    const char *html = "<html><body><div id='box' class='a' style='left:1px'>x</div><div id='q' style='left:1px'>y</div></body></html>";
+    html_parse(d, html, strlen(html));
+    StyleEngine *e = style_engine_new(d);
+    const char *css = ".a{position:relative;width:30px} .a::before{content:'b'} .b{width:40px}"
+        "@media (min-width:900px){.a{width:50px}} [style*='top'] + #q{width:70px} [title=t] + #q{height:5px} .k + #q{min-width:6px}";
+    style_engine_add_sheet(e, css_parse_sheet(css, strlen(css), d->url, 1, &e->media));
+    e->media.vw = 800;
+    style_recalc(e, &d->node, true);
+    Node *box = doc_get_element_by_id(d, "box"), *q = doc_get_element_by_id(d, "q");
+    assert(box->style->width.px == 30 && box->style->before && !box->match_memo);
+    for (int i = 0; i < 4; i++) {                     /* inline churn reuses matched rules */
+        char st[32]; snprintf(st, sizeof st, "left:%dpx", i + 2);
+        node_set_attr(box, "style", st);
+        style_recalc(e, &d->node, false);
+        assert(box->style->width.px == 30 && box->style->before && box->style->inset[3].px == i + 2);
+        if (i) assert(e->stats_memo_hits >= 2);
+    }
+    assert(box->match_memo);
+    node_set_attr(box, "class", "a b"); node_set_attr(box, "style", "left:9px");
+    style_recalc(e, &d->node, false);
+    assert(box->style->width.px == 40 && box->style->inset[3].px == 9);
+    e->media.vw = 1000; style_recalc(e, &d->node, false);  /* media changes matching */
+    node_set_attr(box, "style", "left:8px"); style_recalc(e, &d->node, false);
+    assert(box->style->width.px == 50);                /* the later @media rule now wins over .b */
+    e->media.vw = 800; style_recalc(e, &d->node, false);
+    node_set_attr(box, "style", "left:7px"); style_recalc(e, &d->node, false);
+    assert(box->style->width.px == 40);
+    node_set_attr(box, "class", "a"); style_recalc(e, &d->node, false);
+    assert(box->style->width.px == 30);
+    node_set_attr(q, "style", "left:3px"); style_recalc(e, &d->node, false);
+    node_set_attr(box, "class", "a k"); style_recalc(e, &d->node, false);
+    assert(q->style->min_width.px == 6);                /* sibling combinators follow class changes */
+    node_set_attr(box, "title", "t"); style_recalc(e, &d->node, false);
+    assert(q->style->height.px == 5);                  /* ... and other attributes */
+    node_set_attr(box, "class", "a"); style_recalc(e, &d->node, false);
+    assert(q->style->min_width.px == 0);
+    node_set_attr(box, "style", "top:1px"); style_recalc(e, &d->node, false);
+    assert(q->style->width.px == 70);                   /* [style] selectors are never memoized */
+    style_engine_free(e); doc_free(d);
+}
+static void test_sibling_state(void) {
+    Document *d = doc_new("https://sibling-state.test/");
+    const char *html = "<html><body><input id='c' type='checkbox' class='peer'><span>s</span><div id='t' class='tgt'>t</div></body></html>";
+    html_parse(d, html, strlen(html));
+    StyleEngine *e = style_engine_new(d);
+    const char *css = ".peer:checked ~ .tgt{width:9px} :focus + span{height:4px}";
+    style_engine_add_sheet(e, css_parse_sheet(css, strlen(css), d->url, 1, &e->media));
+    style_recalc(e, &d->node, true);
+    Node *c = doc_get_element_by_id(d, "c"), *t = doc_get_element_by_id(d, "t");
+    assert(t->style->width.px == 0);
+    c->checked_override = 1; c->flags |= NF_CHECKED; doc_mark_dirty(d, c);
+    style_recalc(e, &d->node, false);
+    assert(t->style->width.px == 9);
+    c->checked_override = -1; c->flags &= ~(uint32_t)NF_CHECKED; doc_mark_dirty(d, c);
+    style_recalc(e, &d->node, false);
+    assert(t->style->width.px == 0);
+    assert(e->idx.sib_state);                          /* keyless :focus compound */
+    style_engine_free(e); doc_free(d);
+}
 int main(void) {
     test_tree_subject_index();
     dom_init();
@@ -728,6 +816,9 @@ int main(void) {
     test_attribute_subject_invalidation();
     test_character_data_invalidation();
     test_style_cache_lifetime();
+    test_resource_version();
+    test_match_memo();
+    test_sibling_state();
     test_empty_dependency_selectors();
     test_inherited_custom_updates();
     test_deep_custom_rebase();

@@ -2,6 +2,9 @@
 #include "layout.h"
 #include <math.h>
 #include <stdatomic.h>
+#if defined(__ANDROID__) && !defined(NDEBUG)
+#include <android/log.h>
+#endif
 
 /* Shared across documents: a parent observer can watch an iframe element. */
 static atomic_uint_fast64_t geometry_version;
@@ -314,7 +317,7 @@ static void extents(Layout *L, Box *b) {
 
 static void free_box_data(Box *b) {
     for (Box *c = b->first; c; c = c->next) free_box_data(c);
-    free(b->frags); free(b->lines); free(b->ir); if (b->shaped) shaped_free(&b->sh);
+    free(b->frags); free(b->lines); free(b->ir); text_release_shaped(b);
     if (b->node && b->node->box == b) b->node->box = NULL;
 }
 
@@ -371,9 +374,18 @@ void layout_run(Layout *L, Document *d, float vw, float vh) {
     extents(L, r);
     L->doc_h = LMAX(L->doc_h, vh);
     track_containers(d, r);
+    text_shape_cache_sweep();
     atomic_fetch_add_explicit(&geometry_version, 1, memory_order_relaxed);
     doc_visual_changed();
     L->ms = now_ms() - t0;
+#if defined(__ANDROID__) && !defined(NDEBUG)
+    if (d->debug_mutations) {
+        unsigned hits, misses; size_t entries; text_shape_cache_stats(&hits, &misses, &entries);
+        __android_log_print(ANDROID_LOG_INFO, "LumenLayout", "layout ms=%.2f boxes=%d calls=%d hits=%d shape_hits=%u shape_misses=%u shape_entries=%zu",
+            L->ms, L->nboxes, g_lb_calls, g_lb_hits, hits, misses, entries);
+        g_lb_calls = g_lb_hits = 0;
+    }
+#endif
     static int dbg = -1, nrun; static double tsum, tlast;
     if (dbg < 0) { const char *e = getenv("LUMEN_DEBUG_LAYOUT"); dbg = e ? atoi(e) > 0 ? atoi(e) : 1 : 0; }
     if (dbg > 1 && L->ms > 50) { fprintf(stderr, "lumen: slow layout %.0fms\n", L->ms); hot_report(L); }

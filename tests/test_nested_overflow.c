@@ -47,6 +47,17 @@ int main(void) {
     node_set_attr(content, "style", "height:10px;width:10px");
     style_recalc(e, &d->node, false); layout_run(l, d, 540, 400);
     assert(scroll->box->scroll_h == 200); /* no phantom overflow from padding */
+    /* a clip axis beside a scrollable axis computes to hidden, so touch cannot pan it */
+    node_set_attr(wrapper, "style", "overflow-x:clip;overflow-y:auto");
+    node_set_attr(content, "style", "height:10px;width:900px");
+    style_recalc(e, &d->node, false); layout_run(l, d, 540, 400);
+    assert(wrapper->style->overflow_x == OV_HIDDEN && wrapper->style->overflow_y == OV_AUTO);
+    node_set_attr(wrapper, "style", "overflow-y:auto");
+    style_recalc(e, &d->node, false);
+    assert(wrapper->style->overflow_x == OV_AUTO);
+    node_set_attr(wrapper, "style", "overflow:clip");
+    style_recalc(e, &d->node, false);
+    assert(wrapper->style->overflow_x == OV_CLIP && wrapper->style->overflow_y == OV_CLIP);
     layout_free(l); style_engine_free(e); doc_free(d);
     puts("Nested visible overflow, clipping, resizing and fixed descendants passed");
 }

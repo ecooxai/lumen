@@ -61,6 +61,7 @@ typedef struct Node {
     struct Node *template_content; /* for <template> */
     char *inline_style_src;        /* cached style="" for change detection */
     void *inline_decls;            /* parsed CSS declarations for style attr */
+    void *match_memo;              /* style engine: matched rules, valid per selector_version */
     uint32_t refcount;             /* JS keeps nodes alive */
 } Node;
 
@@ -85,6 +86,7 @@ typedef struct Document {
     uint64_t sheet_version;       /* stylesheet content, attributes, tree membership/order */
     uint64_t layout_version;      /* bumped on mutations that can change layout beyond computed style */
     uint64_t paint_version;       /* visual changes without DOM/style/layout invalidation */
+    uint64_t resource_version;    /* img src and computed background/mask image changes */
     float layout_vw, layout_vh;   /* viewport of the current box tree */
     HMap id_cache; uint64_t id_cache_ver; bool id_cache_ok; /* id -> first element, rebuilt per dom_version */
     void *selector_cache; void (*selector_cache_free)(void *); /* bounded parsed query syntax */

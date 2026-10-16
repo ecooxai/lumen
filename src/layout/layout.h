@@ -24,7 +24,7 @@ typedef struct Box {
     float x, y, w, h;           /* border box, document coordinates */
     float m[4], b[4], p[4];     /* top right bottom left */
     float eff_mb;
-    char *text; int text_len; Font *font; ShapedRun sh; bool shaped;
+    char *text; int text_len; Font *font; ShapedRun sh; bool shaped; struct ShapeEntry *shape_ref;   /* sh is shared with the shaping cache */
     TextFrag *frags; int nfrags, fcap;
     Line *lines; int nlines, lcap;
     IRect *ir; int nir, ircap;
@@ -84,6 +84,9 @@ void replaced_size(Layout *L, Box *b, float cbw, float *w, float *h);
 void box_translate(Box *b, float dx, float dy);
 void add_abs(Layout *L, Box *c);
 void text_ensure_shaped(Box *t);
+void text_release_shaped(Box *t);
+void text_shape_cache_sweep(void);   /* after a layout pass: free shaped runs no box used recently */
+void text_shape_cache_stats(unsigned *hits, unsigned *misses, size_t *entries); /* resets the counters */
 void fc_avail(FloatCtx *fc, float y, float h, float x0, float x1, float *l, float *r);
 void fc_place(FloatCtx *fc, Box *b, float y, float x0, float x1);
 float fc_clear(FloatCtx *fc, int side);

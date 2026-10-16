@@ -480,6 +480,7 @@ void text_shape(Font *f, const char *s, size_t len, float ls, ShapedRun *out) {
     out->g = g.v; out->n = g.n; out->width = x;
 }
 void shaped_free(ShapedRun *r) { free(r->g); r->g = NULL; r->n = 0; }
+unsigned font_generation(void) { return __atomic_load_n(&font_gen, __ATOMIC_RELAXED); }
 
 float text_width(Font *f, const char *s, size_t len, float ls) {
     ShapedRun r; text_shape(f, s, len, ls, &r); float w = r.width; shaped_free(&r); return w;

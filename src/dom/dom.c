@@ -108,6 +108,8 @@ static void mark_sheet_content(Document *d, Node *n) {
     }
 }
 
+/* The style engine marks following siblings that sibling combinators relate. */
+__attribute__((weak)) void node_sibling_selectors_changed(Node *n, int mode) { (void)n; (void)mode; }
 static void mark_impl(Document *d, Node *n, bool layout, bool selectors, bool keys_known, bool style) {
     if (!d) return;
     d->dom_version++;
@@ -133,20 +135,24 @@ static void mark_impl(Document *d, Node *n, bool layout, bool selectors, bool ke
     if (d->on_mutation) d->on_mutation(d, n);
 }
 static void mark(Document *d, Node *n, bool layout, bool selectors) { mark_impl(d, n, layout, selectors, false, true); }
-void doc_mark_dirty(Document *d, Node *n) { mark(d, n, true, true); }
-void doc_mark_style_dirty(Document *d, Node *n) { mark(d, n, false, true); }
+void doc_mark_dirty(Document *d, Node *n) { mark(d, n, true, true); if (n) node_sibling_selectors_changed(n, 0); }
+void doc_mark_style_dirty(Document *d, Node *n) { mark(d, n, false, true); if (n) node_sibling_selectors_changed(n, 0); }
 static bool style_only_attr(const char *name) { return !strcmp(name, "style") || !strcmp(name, "class"); }
 /* CSS may precisely invalidate attribute-selector subjects. DOM-only users
  * retain the conservative behavior without linking the style engine. */
 __attribute__((weak)) bool node_attribute_style_changed(Node *n, const char *name) { (void)n; (void)name; return false; }
 static void mark_attribute(Node *n, const char *name) {
     Document *d = n->doc;
+    if (d && str_ieq(name, "src")) d->resource_version++;
     if (d && node_attribute_style_changed(n, name)) {
         d->dom_version++; d->selector_version++;
         mark_sheet_content(d, n);
         if (d->on_mutation) d->on_mutation(d, n);
-    } else mark_impl(d, n, !style_only_attr(name), !str_ieq(name, "style"),
-        str_ieq(name, "class") || str_ieq(name, "id"), true);
+    } else {
+        bool inline_style = str_ieq(name, "style");
+        mark_impl(d, n, !style_only_attr(name), !inline_style, str_ieq(name, "class") || str_ieq(name, "id"), true);
+        if (d) node_sibling_selectors_changed(n, inline_style ? 2 : 1);
+    }
 }
 static bool prevents_empty(const Node *n) {
     return n->type == NODE_ELEMENT || ((n->type == NODE_TEXT || n->type == NODE_CDATA) && n->text_len);
@@ -320,6 +326,7 @@ static bool class_value_contains(const char *value, const char *key) {
 static void record_selector_attribute(Node *n, const char *name, const char *value) {
     if (!n->doc || !is_connected(n)) return;
     Document *d = n->doc;
+    selector_change_key(d, atom_lower(name, strlen(name)));
     if (str_ieq(name, "id")) {
         selector_change_key(d, "id"); selector_change_key(d, n->id); selector_change_key(d, value);
     } else if (str_ieq(name, "class")) {

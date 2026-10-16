@@ -12,7 +12,8 @@ typedef VEC(Rule *) RuleVec;
 
 /* ---------------- style objects ---------------- */
 long g_styles_live;
-void node_free_inline_style(Node *n) { css_decls_free(n->inline_decls); n->inline_decls = NULL; }
+static void match_memo_free(void *memo);
+void node_free_inline_style(Node *n) { css_decls_free(n->inline_decls); n->inline_decls = NULL; match_memo_free(n->match_memo); n->match_memo = NULL; }
 ComputedStyle *style_new_default(void) {
     ComputedStyle *s = xcalloc(1, sizeof *s); g_styles_live++;
     s->refs = 1; s->anim_iter = 1;
@@ -984,7 +985,8 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
             char *t[2]; int n = split_ws(val, t, 2);
             int a = n ? kw(t[0], ov) : -1, b = n > 1 ? kw(t[1], ov) : a;
             if (n && str_ieq(t[0], "overlay")) a = b = OV_AUTO;
-            if (a >= 0) { if (P[8] != 'y') st->overflow_x = (uint8_t)a; if (P[8] != 'x') st->overflow_y = (uint8_t)(P[8] == 'y' ? a : b >= 0 ? b : a); }
+            char axis = P[8] == '-' ? P[9] : 0;
+            if (a >= 0) { if (axis != 'y') st->overflow_x = (uint8_t)a; if (axis != 'x') st->overflow_y = (uint8_t)(axis == 'y' ? a : b >= 0 ? b : a); }
             free_toks(t, n);
         }
         else if (!strcmp(P, "order")) st->order = atoi(val);
@@ -1114,7 +1116,8 @@ static void idx_clear(RuleIndex *ix) {
     hm_free(&ix->attribute_subjects, hd_free); hm_free(&ix->self_attributes, NULL);
     hm_free(&ix->empty_ids, NULL); hm_free(&ix->empty_classes, NULL); hm_free(&ix->empty_tags, NULL); ix->empty_universal = false;
     for (int i = 0; i < 1024; i++) if (ix->ancestor_buckets[i]) { rv_free(ix->ancestor_buckets[i]); ix->ancestor_buckets[i] = NULL; }
-    memset(ix->ancestor_bucket_bits, 0, sizeof ix->ancestor_bucket_bits); hm_free(&ix->by_id, rv_free); hm_free(&ix->by_class, rv_free); hm_free(&ix->by_tag, rv_free); hm_free(&ix->hov, nofree); hm_free(&ix->hov_anc, nofree); hm_free(&ix->hov_ach, nofree); hm_free(&ix->hov_desc, hd_free); hm_free(&ix->anc_desc, hd_free); hd_free(ix->hov_desc_u); hd_free(ix->anc_desc_u); ix->hov_desc_u = ix->anc_desc_u = NULL; vec_free(ix->universal); ix->count = 0; ix->hov_univ = 0; ix->hov_has = ix->hov_sib = false; }
+    memset(ix->ancestor_bucket_bits, 0, sizeof ix->ancestor_bucket_bits); hm_free(&ix->by_id, rv_free); hm_free(&ix->by_class, rv_free); hm_free(&ix->by_tag, rv_free); hm_free(&ix->hov, nofree); hm_free(&ix->hov_anc, nofree); hm_free(&ix->hov_ach, nofree); hm_free(&ix->hov_desc, hd_free); hm_free(&ix->anc_desc, hd_free); hd_free(ix->hov_desc_u); hd_free(ix->anc_desc_u); ix->hov_desc_u = ix->anc_desc_u = NULL; vec_free(ix->universal); ix->count = 0; ix->hov_univ = 0; ix->hov_has = ix->hov_sib = false;
+    memset(ix->sib_keys, 0, sizeof ix->sib_keys); ix->sib_any = ix->sib_state = ix->sib_desc = ix->sib_style = false; }
 static bool is_pseudo(const SimpleSel *s, const char *n) { return s->kind == SK_PSEUDO && s->name && !strcmp(s->name, n); }
 static const char *attr_key(const char *name) { char b[128]; snprintf(b, sizeof b, "[%s", name); return atom(b); }
 static const char *cmp_key(const Compound *c) {
@@ -1660,6 +1663,75 @@ static void mark_style_subject(Node *n) {
     for (Node *p = n->parent ? n->parent : n->host; p; p = p->parent ? p->parent : p->host)
         p->flags |= NF_CHILD_STYLE_DIRTY;
 }
+/* Sibling combinators: a selector-relevant change to an element can alter
+ * the match of its following siblings (`.peer:checked ~ .x`, `[title] + p`). */
+static void sib_key(RuleIndex *ix, const char *key) {
+    unsigned bit = dom_tree_key_bit(key);
+    ix->sib_keys[bit >> 6] |= UINT64_C(1) << (bit & 63);
+}
+static bool sib_logical(const SimpleSel *s) {
+    static const char *const names[] = { "not", "is", "where", "matches", "-webkit-any", "-moz-any",
+        "nth-child", "nth-last-child", "nth-of-type", "nth-last-of-type", "first-child", "last-child",
+        "only-child", "first-of-type", "last-of-type", "only-of-type", "root", "scope", "host",
+        "hover", "link", "any-link", "visited" }; /* structure has the tree index; :hover its own */
+    for (size_t i = 0; i < sizeof names / sizeof *names; i++) if (!strcmp(s->name, names[i])) return true;
+    return false;
+}
+static void sib_referenced(RuleIndex *ix, const Compound *c, bool keys) {
+    for (int k = 0; k < c->n; k++) {
+        const SimpleSel *x = &c->s[k];
+        if (x->kind == SK_ATTR && str_ieq(x->name, "style")) ix->sib_style = true;
+        if (!keys) ;
+        else if (x->kind == SK_TYPE) sib_key(ix, atom_lower(x->name, strlen(x->name)));
+        else if (x->kind == SK_ID || x->kind == SK_CLASS) sib_key(ix, x->name);
+        else if (x->kind == SK_ATTR) sib_key(ix, atom_lower(x->name, strlen(x->name)));
+        else if (x->kind == SK_PSEUDO && x->name && !sib_logical(x)) ix->sib_state = true;
+        if (x->sub && !is_pseudo(x, "has")) for (int i = 0; i < x->sub->n; i++)
+            for (int j = 0; j < x->sub->v[i].n; j++) sib_referenced(ix, &x->sub->v[i].c[j], keys);
+    }
+}
+static void sib_scan(RuleIndex *ix, const Selector *sel, bool outer_desc) {
+    for (int i = 0; i < sel->n; i++) {
+        const Compound *c = &sel->c[i];
+        for (int k = 0; k < c->n; k++) if (c->s[k].sub && !is_pseudo(&c->s[k], "has"))
+            for (int j = 0; j < c->s[k].sub->n; j++) sib_scan(ix, &c->s[k].sub->v[j], outer_desc || i < sel->n - 1);
+        if (i == sel->n - 1 || (sel->c[i + 1].comb != CB_ADJ && sel->c[i + 1].comb != CB_SIB)) continue;
+        ix->sib_any = true;
+        for (int j = i + 2; j < sel->n; j++) if (sel->c[j].comb == CB_DESC || sel->c[j].comb == CB_CHILD) ix->sib_desc = true;
+        if (outer_desc) ix->sib_desc = true;
+        /* A required id/class/tag bounds the elements whose match can flip. */
+        bool required = false;
+        for (int k = 0; k < c->n; k++) {
+            const SimpleSel *x = &c->s[k];
+            if (x->kind == SK_TYPE) { sib_key(ix, atom_lower(x->name, strlen(x->name))); required = true; }
+            else if (x->kind == SK_ID || x->kind == SK_CLASS) { sib_key(ix, x->name); required = true; }
+        }
+        sib_referenced(ix, c, !required);
+    }
+}
+static bool sib_bit(const RuleIndex *ix, const char *key) {
+    unsigned bit = dom_tree_key_bit(key);
+    return (ix->sib_keys[bit >> 6] >> (bit & 63)) & 1;
+}
+/* mode 0: element state (focus, checked, value); 1: attribute; 2: inline style */
+void node_sibling_selectors_changed(Node *n, int mode) {
+    Document *d = n->doc;
+    StyleEngine *e = d ? d->stylesheets : NULL;
+    if (!e || e->idx_dirty || !e->idx.sib_any || n->type != NODE_ELEMENT || !(n->flags & NF_CONNECTED) || !n->next) return;
+    const RuleIndex *ix = &e->idx;
+    if (mode == 2 && !ix->sib_style) return;
+    bool hit = mode == 0 ? ix->sib_state : mode == 2 && sib_bit(ix, "style");
+    for (int k = 0; !hit && mode && k < 16; k++) hit = (ix->sib_keys[k] & d->selector_change_keys[k]) != 0;
+    if (!hit) hit = sib_bit(ix, n->ns == NS_HTML ? n->tag : atom_lower(n->tag, strlen(n->tag))) || (n->id && sib_bit(ix, n->id));
+    for (int i = 0; !hit && i < n->nclasses; i++) hit = sib_bit(ix, n->classes[i]);
+    if (!hit) return;
+    bool any = false;
+    for (Node *s = n->next; s; s = s->next) if (s->type == NODE_ELEMENT) {
+        s->flags |= NF_STYLE_DIRTY | (ix->sib_desc ? NF_RESELECT_SUBTREE : 0);
+        any = true;
+    }
+    if (any) for (Node *p = n->parent ? n->parent : n->host; p; p = p->parent ? p->parent : p->host) p->flags |= NF_CHILD_STYLE_DIRTY;
+}
 /* data-/aria- attributes have no built-in layout/presentation behavior. Their
  * stylesheet uses can affect ancestors, siblings and shadow trees, so collect
  * conservative subjects over the whole tree instead of just the changed node.
@@ -1759,6 +1831,7 @@ static void idx_build(StyleEngine *e) {
             } else vec_push(e->idx.universal, r);
             e->idx.count++;
             hov_skey = cmp_key(&r->sel.c[r->sel.n - 1]); hov_scan(&e->idx, &r->sel, 0, NULL);
+            sib_scan(&e->idx, &r->sel, false);
         }
     }
     e->idx_dirty = false;
@@ -1876,6 +1949,58 @@ static void collect_universal(StyleEngine *e, Node *el, int pseudo, VEC(MDecl) *
     }
 }
 
+/* Sorted matched declarations per element and pseudo-element. Matching only
+ * changes with selector_version, the rule index or media (g_match_epoch),
+ * text emptiness or custom-element definition, so inline-style restyles reuse
+ * them. Results that consulted container queries or [style] are not kept.
+ * Only restyled elements with a style attribute keep a memo, bounding memory. */
+typedef struct MatchMemo {
+    const Document *doc; uint64_t selector_version, epoch, emptiness; bool ext;
+    uint8_t have; int n[4]; MDecl *v[4];
+} MatchMemo;
+static uint64_t g_match_epoch = 1;
+static void match_memo_free(void *memo) {
+    MatchMemo *m = memo; if (!m) return;
+    for (int i = 0; i < 4; i++) free(m->v[i]);
+    free(m);
+}
+static MatchMemo *match_memo_valid(Node *el) {
+    MatchMemo *m = el->match_memo; const Document *d = el->doc;
+    if (!m) return NULL;
+    if (d && m->doc == d && m->selector_version == d->selector_version && m->epoch == g_match_epoch &&
+            m->emptiness == d->text_emptiness_version && m->ext == (el->ext != NULL)) return m;
+    match_memo_free(m); el->match_memo = NULL;
+    return NULL;
+}
+/* Returns sorted matches for pseudo (0 element, 1 before, 2 after, 4 marker);
+ * *owned tells the caller to free the array. */
+static MDecl *matched_decls(StyleEngine *e, Node *el, int pseudo, int *count, bool *owned) {
+    int slot = pseudo == 4 ? 3 : pseudo;
+    MatchMemo *m = match_memo_valid(el);
+    if (m && (m->have >> slot & 1)) { e->stats_memo_hits++; *count = m->n[slot]; *owned = false; return m->v[slot]; }
+    VEC(MDecl) md = {0};
+    RuleVec *rv;
+    bool dynamic = e->collect_dynamic; e->collect_dynamic = false;
+    if (el->id && (rv = hm_get(&e->idx.by_id, el->id))) collect(e, el, rv, pseudo, (void *)&md);
+    for (int i = 0; i < el->nclasses; i++) if ((rv = hm_get(&e->idx.by_class, el->classes[i]))) collect(e, el, rv, pseudo, (void *)&md);
+    const char *tagkey = el->ns == NS_HTML ? el->tag : atom_lower(el->tag, strlen(el->tag));
+    if ((rv = hm_get(&e->idx.by_tag, tagkey))) collect(e, el, rv, pseudo, (void *)&md);
+    collect_universal(e, el, pseudo, (void *)&md);
+    if (md.n > 1) qsort(md.v, (size_t)md.n, sizeof(MDecl), mdecl_cmp);
+    bool keep = !e->collect_dynamic && el->doc && el->style && node_attr_atom(el, A_style);
+    e->collect_dynamic |= dynamic;
+    *count = md.n; *owned = !keep;
+    if (keep) {
+        if (!m) {
+            m = xcalloc(1, sizeof *m); el->match_memo = m;
+            m->doc = el->doc; m->selector_version = el->doc->selector_version; m->epoch = g_match_epoch;
+            m->emptiness = el->doc->text_emptiness_version; m->ext = el->ext != NULL;
+        }
+        m->v[slot] = md.v; m->n[slot] = md.n; m->have |= (uint8_t)(1u << slot);
+    }
+    return md.v;
+}
+
 static void presentational_hints(ComputedStyle *st, const ComputedStyle *par, Node *el, StyleEngine *e) {
     if (el->ns != NS_HTML) {
         if (el->ns == NS_SVG) {
@@ -1910,18 +2035,13 @@ static void presentational_hints(ComputedStyle *st, const ComputedStyle *par, No
 }
 
 static ComputedStyle *compute_pseudo(StyleEngine *e, Node *el, ComputedStyle *base, int which) {
-    VEC(MDecl) md = {0};
-    RuleVec *rv;
-    if (el->id && (rv = hm_get(&e->idx.by_id, el->id))) collect(e, el, rv, which, (void *)&md);
-    for (int i = 0; i < el->nclasses; i++) if ((rv = hm_get(&e->idx.by_class, el->classes[i]))) collect(e, el, rv, which, (void *)&md);
-    if ((rv = hm_get(&e->idx.by_tag, el->tag))) collect(e, el, rv, which, (void *)&md);
-    collect_universal(e, el, which, (void *)&md);
-    if (!md.n) { vec_free(md); return NULL; }
-    if (md.n > 1) qsort(md.v, (size_t)md.n, sizeof(MDecl), mdecl_cmp);
+    int n; bool owned;
+    MDecl *md = matched_decls(e, el, which, &n, &owned);
+    if (!n) { if (owned) free(md); return NULL; }
     ComputedStyle *st = style_inherit(base);
-    for (int i = 0; i < md.n; i++) if (md.v[i].d->prop[0] == '-' && md.v[i].d->prop[1] == '-') css_apply_decl(st, base, md.v[i].d->prop, md.v[i].d->value, e, el);
-    for (int i = 0; i < md.n; i++) if (!(md.v[i].d->prop[0] == '-' && md.v[i].d->prop[1] == '-')) css_apply_decl(st, base, md.v[i].d->prop, md.v[i].d->value, e, el);
-    vec_free(md);
+    for (int i = 0; i < n; i++) if (md[i].d->prop[0] == '-' && md[i].d->prop[1] == '-') css_apply_decl(st, base, md[i].d->prop, md[i].d->value, e, el);
+    for (int i = 0; i < n; i++) if (!(md[i].d->prop[0] == '-' && md[i].d->prop[1] == '-')) css_apply_decl(st, base, md[i].d->prop, md[i].d->value, e, el);
+    if (owned) free(md);
     /* An absent pseudo can become visible when a consulted variable changes. */
     base->custom_dependencies |= st->custom_dependencies;
     base->attribute_dependencies |= st->attribute_dependencies;
@@ -1950,31 +2070,25 @@ static void apply_decl_ordered(ComputedStyle *st, const ComputedStyle *par, MDec
 }
 
 static ComputedStyle *compute(StyleEngine *e, Node *el, const ComputedStyle *par) {
-    VEC(MDecl) md = {0};
-    RuleVec *rv;
-    if (el->id && (rv = hm_get(&e->idx.by_id, el->id))) collect(e, el, rv, 0, (void *)&md);
-    for (int i = 0; i < el->nclasses; i++) if ((rv = hm_get(&e->idx.by_class, el->classes[i]))) collect(e, el, rv, 0, (void *)&md);
-    const char *tagkey = el->ns == NS_HTML ? el->tag : atom_lower(el->tag, strlen(el->tag));
-    if ((rv = hm_get(&e->idx.by_tag, tagkey))) collect(e, el, rv, 0, (void *)&md);
-    collect_universal(e, el, 0, (void *)&md);
-    if (md.n > 1) qsort(md.v, (size_t)md.n, sizeof(MDecl), mdecl_cmp);
+    int mn; bool owned;
+    MDecl *md = matched_decls(e, el, 0, &mn, &owned);
     ComputedStyle *st = style_inherit(par);
     /* split normal / important so presentational hints & inline style go between */
-    int split = 0; while (split < md.n && (md.v[split].key >> 62) < 2) split++;
+    int split = 0; while (split < mn && (md[split].key >> 62) < 2) split++;
     presentational_hints(st, par, el, e);
     /* one pass so var() in sheet custom properties sees inline custom properties */
     VEC(MDecl) all = {0};
-    for (int i = 0; i < split; i++) vec_push(all, md.v[i]);
+    for (int i = 0; i < split; i++) vec_push(all, md[i]);
     const char *inl = node_attr_atom(el, A_style);
     if (inl) {
         if (!el->inline_style_src || strcmp(el->inline_style_src, inl)) { free(el->inline_style_src); el->inline_style_src = xstrdup(inl); css_decls_free(el->inline_decls); el->inline_decls = css_parse_decls(inl, strlen(inl)); }
         DeclList *dl = el->inline_decls;
         for (int i = 0; i < dl->n; i++) { MDecl m = { &dl->v[i], 0 }; vec_push(all, m); }
     }
-    for (int i = split; i < md.n; i++) vec_push(all, md.v[i]);
+    for (int i = split; i < mn; i++) vec_push(all, md[i]);
     apply_decl_ordered(st, par, all.v, all.n, e, el);
     vec_free(all);
-    vec_free(md);
+    if (owned) free(md);
     /* fixups */
     if (st->line_height_factor > 0) st->line_height = st->line_height_factor * st->font_size;
     if (st->position == P_ABSOLUTE || st->position == P_FIXED || st->float_ != F_NONE) {
@@ -1984,6 +2098,12 @@ static ComputedStyle *compute(StyleEngine *e, Node *el, const ComputedStyle *par
         else if (st->display == D_INLINE_TABLE) st->display = D_TABLE;
     }
     if (st->position == P_ABSOLUTE || st->position == P_FIXED) st->float_ = F_NONE;
+    /* css-overflow-3: visible/clip compute to auto/hidden beside a scrollable axis */
+    bool ox = st->overflow_x == OV_VISIBLE || st->overflow_x == OV_CLIP, oy = st->overflow_y == OV_VISIBLE || st->overflow_y == OV_CLIP;
+    if (ox != oy) {
+        uint8_t *v = ox ? &st->overflow_x : &st->overflow_y;
+        *v = *v == OV_CLIP ? OV_HIDDEN : OV_AUTO;
+    }
     if (el->parent && el->parent->type == NODE_DOCUMENT && (st->display == D_INLINE || st->display == D_CONTENTS)) st->display = D_BLOCK;
     if (par && (par->display == D_FLEX || par->display == D_INLINE_FLEX || par->display == D_GRID || par->display == D_INLINE_GRID)) {
         if (st->display == D_INLINE || st->display == D_INLINE_BLOCK) st->display = D_BLOCK;
@@ -2021,6 +2141,26 @@ static bool paint_only(const ComputedStyle *a, const ComputedStyle *b) {
     PO_Z(anim_name); PO_Z(anim_dur); PO_Z(anim_delay); PO_Z(anim_iter); PO_Z(tr_prop); PO_Z(tr_dur); PO_Z(tr_delay);
 #undef PO_Z
     return !memcmp(&x, &y, sizeof x);
+}
+#if defined(__ANDROID__) && !defined(NDEBUG)
+/* Property names only: no values. Explains why a restyle forced layout. */
+static void debug_layout_change(const ComputedStyle *a, const ComputedStyle *b, const Node *node) {
+    char out[512]; size_t n = 0; out[0] = 0;
+#define F(f) if (n < sizeof out - 40 && memcmp(&a->f, &b->f, sizeof a->f)) n += (size_t)snprintf(out + n, sizeof out - n, " %s", #f);
+    F(display) F(position) F(float_) F(clear) F(overflow_x) F(overflow_y) F(box_sizing) F(text_align) F(white_space) F(text_transform) F(font_style) F(list_style) F(flex_direction) F(flex_wrap) F(justify_content) F(align_items) F(align_self) F(align_content) F(justify_items) F(justify_self) F(vertical_align) F(text_overflow) F(word_break) F(overflow_wrap) F(direction) F(border_style) F(appearance) F(table_layout) F(border_collapse) F(container_type) F(resize) F(writing_mode) F(container_name) F(font_weight) F(order) F(font_size) F(line_height) F(line_height_normal) F(line_height_factor) F(letter_spacing) F(word_spacing) F(text_indent) F(flex_grow) F(flex_shrink) F(flex_basis) F(row_gap) F(column_gap) F(row_gap_l) F(column_gap_l) F(vertical_align_len) F(width) F(height) F(min_width) F(min_height) F(max_width) F(max_height) F(margin) F(padding) F(inset) F(border_width) F(border_radius) F(font_family) F(aspect_ratio) F(grid_auto_rows) F(grid_col_start) F(grid_col_span) F(grid_row_start) F(grid_row_span) F(line_clamp)
+#undef F
+    if (a->has_transform != b->has_transform) n += (size_t)snprintf(out + n, sizeof out - n, " has_transform");
+    if ((a->before != NULL) != (b->before != NULL) || (a->after != NULL) != (b->after != NULL)) n += (size_t)snprintf(out + n, sizeof out - n, " pseudo");
+    __android_log_print(ANDROID_LOG_INFO, "LumenStyle", "lumen-style layout tag=%s parent=%.120s fields=%s\n", node->tag,
+        node->parent && node->parent->class_name ? node->parent->class_name : "", n ? out : " other");
+}
+#endif
+/* Inputs of the page's image fetch scan: <img> elements and image URLs of rendered boxes. */
+static bool image_inputs_changed(const Node *n, const ComputedStyle *a, const ComputedStyle *b) {
+    bool img = n->ns == NS_HTML && n->tag == A_img;
+    if (!a) return img || b->bg_image || b->mask_image;
+    if (!str_same(a->bg_image, b->bg_image) || !str_same(a->mask_image, b->mask_image)) return true;
+    return (b->bg_image || b->mask_image) && (a->display == D_NONE) != (b->display == D_NONE);
 }
 /* moves nw's values into old (keeping old's address, which boxes point at); nw is left holding old's values */
 static void adopt(ComputedStyle *old, ComputedStyle *nw) {
@@ -2127,8 +2267,14 @@ static void recalc(StyleEngine *e, Node *n, const ComputedStyle *par, bool force
             if (e->reuse_inherited) child_changed = custom_changes(old_custom, st->custom,
                 old_parent, par ? par->custom : NULL, changed);
             if (css_style_change_hook) css_style_change_hook(n, n->style, st);
+            if (n->doc && image_inputs_changed(n, n->style, st)) n->doc->resource_version++;
             if (n->style && paint_only(n->style, st)) { adopt(n->style, st); style_free(st); e->stats_paint++; }
-            else { if (n->style) style_free(n->style); n->style = st; e->layout_dirty = true; }
+            else {
+#if defined(__ANDROID__) && !defined(NDEBUG)
+                if (e->debug_style_passes && n->style) debug_layout_change(n->style, st, n);
+#endif
+                if (n->style) style_free(n->style); n->style = st; e->layout_dirty = true;
+            }
             force = true; /* children inherit */
             e->stats_matched++;
         }
@@ -2267,6 +2413,7 @@ void style_recalc(StyleEngine *e, Node *root, bool force) {
         e->media.vh != e->styled_media.vh || e->media.dpr != e->styled_media.dpr ||
         e->media.dark != e->styled_media.dark;
     if (media_changed || e->idx_dirty) {
+        g_match_epoch++;
         for (int sheet_index = 0; sheet_index < e->sheets.n; sheet_index++) {
             StyleSheet *sheet = e->sheets.v[sheet_index];
             for (int index = 0; index < sheet->media_conds.n; index++) {
@@ -2326,7 +2473,7 @@ void style_recalc(StyleEngine *e, Node *root, bool force) {
         e->seen_text_emptiness = e->doc->text_emptiness_version;
         root = &e->doc->node;
     }
-    e->stats_matched = e->stats_paint = e->stats_reused = 0;
+    e->stats_matched = e->stats_paint = e->stats_reused = e->stats_memo_hits = 0;
     e->reuse_inherited = !force && e->seen_inheritance_version == e->doc->inheritance_version;
     uint64_t ancestors[16] = {0};
     for (Node *n = root->parent ? root->parent : root->host; n; n = n->parent ? n->parent : n->host) add_class_filter(ancestors, n);
@@ -2337,7 +2484,7 @@ void style_recalc(StyleEngine *e, Node *root, bool force) {
     e->seen_sheet_version = e->doc->sheet_version;
     e->ancestor_classes = NULL;
 #if defined(__ANDROID__) && !defined(NDEBUG)
-    if (e->debug_style_passes) { __android_log_print(ANDROID_LOG_INFO, "LumenStyle", "lumen-style pass matched=%d reused=%d eligible=%d force=%d\n", e->stats_matched, e->stats_reused, e->reuse_inherited, force); e->debug_style_passes--; }
+    if (e->debug_style_passes) { __android_log_print(ANDROID_LOG_INFO, "LumenStyle", "lumen-style pass matched=%d reused=%d memo=%d eligible=%d force=%d\n", e->stats_matched, e->stats_reused, e->stats_memo_hits, e->reuse_inherited, force); e->debug_style_passes--; }
 #endif
     css_match_cache_end(previous_cache);
     // Paint-only transforms can change intersections without running layout.

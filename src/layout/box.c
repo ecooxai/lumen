@@ -1,6 +1,7 @@
 /* Box tree construction, text preparation, intrinsic sizes */
 #include "layout.h"
 #include <math.h>
+#include <pthread.h>
 
 struct ArenaChunk { ArenaChunk *next; size_t cap, used; char data[]; };
 void *arena_alloc(Arena *a, size_t n) {
@@ -250,13 +251,98 @@ Box *build_box_tree(Layout *L, Document *d) {
     return root;
 }
 
-/* ---------------- text shaping ---------------- */
+/* ---------------- text shaping ----------------
+   Every layout pass rebuilds the box tree, so without reuse all text of the document is shaped
+   by HarfBuzz again whenever a script reads geometry after a mutation. Shaped runs are immutable
+   once built and shared by refcount, keyed by font, spacing, font generation and the exact text.
+   Runs no box references are kept for a few layout passes so the next pass finds them. */
+typedef struct ShapeEntry {
+    struct ShapeEntry *next;
+    uint64_t hash; Font *font; float ls, ws; unsigned gen, stamp; int len, refs;
+    ShapedRun run; char text[];
+} ShapeEntry;
+static struct {
+    ShapeEntry **slot; size_t nslot, count, idle_bytes; unsigned stamp, hits, misses;
+    pthread_mutex_t mu;
+} shape_cache = { .mu = PTHREAD_MUTEX_INITIALIZER };
+enum { SHAPE_KEEP_PASSES = 4 };
+static const size_t SHAPE_IDLE_LIMIT = (size_t)4 << 20;   /* unreferenced bytes kept for reuse */
+
+static size_t shape_bytes(const ShapeEntry *e) { return sizeof *e + (size_t)e->len + 1 + (size_t)e->run.n * sizeof *e->run.g; }
+static uint64_t shape_hash(const Font *f, float ls, float ws, unsigned gen, const char *s, int len) {
+    uint64_t h = 1469598103934665603ull ^ (uint64_t)(uintptr_t)f;
+    uint32_t bits[3]; memcpy(&bits[0], &ls, 4); memcpy(&bits[1], &ws, 4); bits[2] = gen;
+    for (int i = 0; i < 3; i++) h = (h ^ bits[i]) * 1099511628211ull;
+    for (int i = 0; i < len; i++) h = (h ^ (uint8_t)s[i]) * 1099511628211ull;
+    return h ^ h >> 29;
+}
+static void shape_cache_grow(void) {
+    size_t n = shape_cache.nslot ? shape_cache.nslot * 2 : 1024;
+    ShapeEntry **slot = xcalloc(n, sizeof *slot);
+    for (size_t i = 0; i < shape_cache.nslot; i++)
+        for (ShapeEntry *e = shape_cache.slot[i], *next; e; e = next) { next = e->next; ShapeEntry **b = &slot[e->hash & (n - 1)]; e->next = *b; *b = e; }
+    free(shape_cache.slot); shape_cache.slot = slot; shape_cache.nslot = n;
+}
+
 void text_ensure_shaped(Box *t) {
     if (t->shaped) return;
     t->font = style_font(t->st);
-    text_shape(t->font, t->text, (size_t)t->text_len, t->st->letter_spacing, &t->sh);
-    if (t->st->word_spacing) for (int i = 0; i < t->sh.n; i++) if (t->text[t->sh.g[i].cluster] == ' ') t->sh.g[i].adv += t->st->word_spacing;
-    t->shaped = true;
+    float ls = t->st->letter_spacing, ws = t->st->word_spacing;
+    unsigned gen = font_generation();
+    uint64_t h = shape_hash(t->font, ls, ws, gen, t->text, t->text_len);
+    pthread_mutex_lock(&shape_cache.mu);
+    ShapeEntry *e = NULL;
+    if (shape_cache.nslot)
+        for (e = shape_cache.slot[h & (shape_cache.nslot - 1)]; e; e = e->next)
+            if (e->hash == h && e->font == t->font && e->len == t->text_len && e->ls == ls && e->ws == ws &&
+                    e->gen == gen && !memcmp(e->text, t->text, (size_t)t->text_len)) break;
+    if (!e) {
+        shape_cache.misses++;
+        pthread_mutex_unlock(&shape_cache.mu);
+        ShapedRun run; text_shape(t->font, t->text, (size_t)t->text_len, ls, &run);
+        if (ws) for (int i = 0; i < run.n; i++) if (t->text[run.g[i].cluster] == ' ') run.g[i].adv += ws;
+        e = xmalloc(sizeof *e + (size_t)t->text_len + 1);
+        *e = (ShapeEntry){ .hash = h, .font = t->font, .ls = ls, .ws = ws, .gen = gen, .len = t->text_len, .run = run };
+        memcpy(e->text, t->text, (size_t)t->text_len); e->text[t->text_len] = 0;
+        pthread_mutex_lock(&shape_cache.mu);
+        if (shape_cache.count >= shape_cache.nslot) shape_cache_grow();
+        ShapeEntry **b = &shape_cache.slot[h & (shape_cache.nslot - 1)]; e->next = *b; *b = e; shape_cache.count++;
+    } else { shape_cache.hits++; if (!e->refs) shape_cache.idle_bytes -= shape_bytes(e); }
+    e->refs++; e->stamp = shape_cache.stamp;
+    pthread_mutex_unlock(&shape_cache.mu);
+    t->sh = e->run; t->shape_ref = e; t->shaped = true;
+}
+
+void text_release_shaped(Box *t) {
+    if (!t->shaped) return;
+    ShapeEntry *e = t->shape_ref;
+    if (e) {
+        pthread_mutex_lock(&shape_cache.mu);
+        if (!--e->refs) { shape_cache.idle_bytes += shape_bytes(e); e->stamp = shape_cache.stamp; }
+        pthread_mutex_unlock(&shape_cache.mu);
+    } else shaped_free(&t->sh);
+    t->sh = (ShapedRun){0}; t->shape_ref = NULL; t->shaped = false;
+}
+
+void text_shape_cache_stats(unsigned *hits, unsigned *misses, size_t *entries) {
+    pthread_mutex_lock(&shape_cache.mu);
+    *hits = shape_cache.hits; *misses = shape_cache.misses; *entries = shape_cache.count;
+    shape_cache.hits = shape_cache.misses = 0;
+    pthread_mutex_unlock(&shape_cache.mu);
+}
+
+void text_shape_cache_sweep(void) {
+    pthread_mutex_lock(&shape_cache.mu);
+    unsigned now = ++shape_cache.stamp;
+    /* over the idle budget, also drop runs released during the pass that just finished */
+    unsigned keep = shape_cache.idle_bytes > SHAPE_IDLE_LIMIT ? 0 : SHAPE_KEEP_PASSES;
+    for (size_t i = 0; i < shape_cache.nslot; i++)
+        for (ShapeEntry **p = &shape_cache.slot[i], *e; (e = *p);) {
+            if (e->refs || now - e->stamp <= keep) { p = &e->next; continue; }
+            *p = e->next; shape_cache.count--; shape_cache.idle_bytes -= shape_bytes(e);
+            shaped_free(&e->run); free(e);
+        }
+    pthread_mutex_unlock(&shape_cache.mu);
 }
 
 /* ---------------- intrinsic sizes ---------------- */
