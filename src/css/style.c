@@ -1845,7 +1845,7 @@ StyleEngine *style_engine_new(Document *d) {
     e->idx_dirty = true;
     return e;
 }
-void style_engine_free(StyleEngine *e) { if (e->doc->stylesheets == e) e->doc->stylesheets = NULL; for (int i = 0; i < e->sheets.n; i++) css_sheet_free(e->sheets.v[i]); vec_free(e->sheets); idx_clear(&e->idx); css_match_cache_free(e->match_cache); free(e); }
+void style_engine_free(StyleEngine *e) { if (e->doc->stylesheets == e) e->doc->stylesheets = NULL; for (int i = 0; i < e->sheets.n; i++) css_sheet_free(e->sheets.v[i]); vec_free(e->sheets); idx_clear(&e->idx); css_match_cache_free(e->match_cache); free(e->moves); free(e); }
 void (*css_sheet_added_hook)(StyleSheet *s);
 void style_engine_add_sheet(StyleEngine *e, StyleSheet *s) {
     /* keep document order of owner nodes */
@@ -2142,6 +2142,12 @@ static bool paint_only(const ComputedStyle *a, const ComputedStyle *b) {
 #undef PO_Z
     return !memcmp(&x, &y, sizeof x);
 }
+/* Differs at most in paint-only properties and inset (geometry: a translation). */
+static bool inset_only(const ComputedStyle *a, const ComputedStyle *b) {
+    ComputedStyle y = *b;
+    memcpy(y.inset, a->inset, sizeof y.inset);
+    return paint_only(a, &y);
+}
 #if defined(__ANDROID__) && !defined(NDEBUG)
 /* Property names only: no values. Explains why a restyle forced layout. */
 static void debug_layout_change(const ComputedStyle *a, const ComputedStyle *b, const Node *node) {
@@ -2269,7 +2275,12 @@ static void recalc(StyleEngine *e, Node *n, const ComputedStyle *par, bool force
             if (css_style_change_hook) css_style_change_hook(n, n->style, st);
             if (n->doc && image_inputs_changed(n, n->style, st)) n->doc->resource_version++;
             if (n->style && paint_only(n->style, st)) { adopt(n->style, st); style_free(st); e->stats_paint++; }
-            else {
+            else if (n->style && e->allow_moves && inset_only(n->style, st)) {
+                if (e->nmoves == e->cmoves) { e->cmoves = e->cmoves ? e->cmoves * 2 : 16; e->moves = xrealloc(e->moves, sizeof *e->moves * (size_t)e->cmoves); }
+                struct StyleMove *m = &e->moves[e->nmoves++];
+                m->node = n; memcpy(m->old, n->style->inset, sizeof m->old);
+                adopt(n->style, st); style_free(st); e->stats_moved++;
+            } else {
 #if defined(__ANDROID__) && !defined(NDEBUG)
                 if (e->debug_style_passes && n->style) debug_layout_change(n->style, st, n);
 #endif
@@ -2473,7 +2484,7 @@ void style_recalc(StyleEngine *e, Node *root, bool force) {
         e->seen_text_emptiness = e->doc->text_emptiness_version;
         root = &e->doc->node;
     }
-    e->stats_matched = e->stats_paint = e->stats_reused = e->stats_memo_hits = 0;
+    e->stats_matched = e->stats_paint = e->stats_reused = e->stats_memo_hits = e->stats_moved = 0;
     e->reuse_inherited = !force && e->seen_inheritance_version == e->doc->inheritance_version;
     uint64_t ancestors[16] = {0};
     for (Node *n = root->parent ? root->parent : root->host; n; n = n->parent ? n->parent : n->host) add_class_filter(ancestors, n);
@@ -2484,7 +2495,7 @@ void style_recalc(StyleEngine *e, Node *root, bool force) {
     e->seen_sheet_version = e->doc->sheet_version;
     e->ancestor_classes = NULL;
 #if defined(__ANDROID__) && !defined(NDEBUG)
-    if (e->debug_style_passes) { __android_log_print(ANDROID_LOG_INFO, "LumenStyle", "lumen-style pass matched=%d reused=%d memo=%d eligible=%d force=%d\n", e->stats_matched, e->stats_reused, e->stats_memo_hits, e->reuse_inherited, force); e->debug_style_passes--; }
+    if (e->debug_style_passes) { __android_log_print(ANDROID_LOG_INFO, "LumenStyle", "lumen-style pass matched=%d reused=%d memo=%d moved=%d eligible=%d force=%d\n", e->stats_matched, e->stats_reused, e->stats_memo_hits, e->stats_moved, e->reuse_inherited, force); e->debug_style_passes--; }
 #endif
     css_match_cache_end(previous_cache);
     // Paint-only transforms can change intersections without running layout.

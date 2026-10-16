@@ -226,6 +226,12 @@ typedef struct StyleEngine {
     uint64_t stats_tree_tests; /* structural dependency candidates examined */
     int debug_style_passes; /* debug-only device profiling, armed by F8 */
     bool layout_dirty;          /* a recalc changed something other than paint-only properties */
+    /* With allow_moves set, an element whose style changed only in inset is
+     * recorded here (with its old insets) instead of setting layout_dirty; the
+     * caller must apply each with layout_move or run layout, then clear nmoves. */
+    bool allow_moves;
+    struct StyleMove { Node *node; Length old[4]; } *moves;
+    int nmoves, cmoves, stats_moved;
     Node *el_scope; /* tree scope of the element being matched */
     const uint64_t *ancestor_classes;
     CssMatchCache *match_cache;

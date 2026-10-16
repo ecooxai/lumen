@@ -1981,9 +1981,15 @@ static void restyle(App *a) {
     if (!viewport_changed && p->d->dom_version == p->seen_ver) return;
     p->seen_ver = p->d->dom_version;
     bool sheets = sync_sheets(p, false);
+    /* inset-only changes translate the current boxes instead of relaying out */
+    p->e->allow_moves = p->L && !a->t->relayout && !viewport_changed && !sheets && p->d->layout_version == p->lay_ver && !g_no_paint_only;
     { double q = now_ms(); style_recalc(p->e, &p->d->node, sheets); g_tr += now_ms() - q; }
+    p->e->allow_moves = false;
     if (sync_images(p)) p->img_check = true;
     if (viewport_changed || sheets || p->e->layout_dirty || p->d->layout_version != p->lay_ver || g_no_paint_only) a->t->relayout = true;
+    for (int i = 0; i < p->e->nmoves && !a->t->relayout; i++)
+        if (!layout_move(p->L, p->e->moves[i].node, p->e->moves[i].old)) a->t->relayout = true;
+    p->e->nmoves = 0;
     p->e->layout_dirty = false; p->lay_ver = p->d->layout_version;
     if (a->t == a->tabs[a->ti]) a->dirty = true;
 }

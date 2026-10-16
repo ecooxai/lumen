@@ -82,6 +82,7 @@ void intrinsic(Layout *L, Box *b, float *mn, float *mx);
 void intrinsic_outer(Layout *L, Box *b, float *mn, float *mx);
 void replaced_size(Layout *L, Box *b, float cbw, float *w, float *h);
 void box_translate(Box *b, float dx, float dy);
+bool layout_move(Layout *L, Node *n, const Length old[4]);
 void add_abs(Layout *L, Box *c);
 void text_ensure_shaped(Box *t);
 void text_release_shaped(Box *t);

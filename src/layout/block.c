@@ -275,34 +275,41 @@ static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float 
 }
 
 /* ---------------- relative offsets + extents ---------------- */
+static void rel_offset(const Length in[4], float cbw, float cbh, float *dx, float *dy) {
+    *dx = in[3].kind == LK_LEN ? res(in[3], cbw) : in[1].kind == LK_LEN ? -res(in[1], cbw) : 0;
+    *dy = in[0].kind == LK_LEN ? res(in[0], cbh) : in[2].kind == LK_LEN ? -res(in[2], cbh) : 0;
+}
+/* Visible overflow propagates through constrained flex/block wrappers.
+ * Looking only at immediate border boxes makes long conversations appear
+ * to have no scroll range. Compute bottom-up once, stopping at clips. */
+static void overflow(Box *b) {
+    float r = b->x + b->w, btm = b->y + b->h - b->p[2];
+    for (Box *c = b->first; c; c = c->next) {
+        if (c->fixed || (c->abs && c->cb && !box_within(c->cb, b))) continue;
+        float w = c->w, h = c->h;
+        if (!c->st || c->st->overflow_x == OV_VISIBLE) w = LMAX(w, c->scroll_w);
+        if (!c->st || c->st->overflow_y == OV_VISIBLE) h = LMAX(h, c->scroll_h);
+        r = LMAX(r, c->x + w + c->m[1]); btm = LMAX(btm, c->y + h + c->m[2]);
+    }
+    for (int i = 0; i < b->nfrags; i++) { r = LMAX(r, b->frags[i].x + b->frags[i].w); btm = LMAX(btm, b->frags[i].y + b->frags[i].h); }
+    b->scroll_w = r - b->x; b->scroll_h = btm - b->y + b->p[2];
+}
+static void clamp_scroll(Box *b, float maxx, float maxy) {
+    b->node->scroll_x = LCLAMP(b->node->scroll_x, 0, maxx); b->node->scroll_y = box_scroll_from_end(b) ? LCLAMP(b->node->scroll_y, -maxy, 0) : LCLAMP(b->node->scroll_y, 0, maxy);
+}
 static void post(Layout *L, Box *b, float cbw, float cbh, float clipx, float clipy) {
     const ComputedStyle *s = b->st;
-    if (s && s->position == P_RELATIVE && b->node) {
-        float dx = 0, dy = 0;
-        if (s->inset[3].kind == LK_LEN) dx = res(s->inset[3], cbw); else if (s->inset[1].kind == LK_LEN) dx = -res(s->inset[1], cbw);
-        if (s->position == P_RELATIVE) { if (s->inset[0].kind == LK_LEN) dy = res(s->inset[0], cbh); else if (s->inset[2].kind == LK_LEN) dy = -res(s->inset[2], cbh); }
+    /* text boxes share their element's style but are not positioned themselves */
+    if (s && s->position == P_RELATIVE && b->node && b->kind != BX_TEXT) {
+        float dx, dy; rel_offset(s->inset, cbw, cbh, &dx, &dy);
         box_translate(b, dx, dy);
     }
     float cw = b->w - hbp(b);
     for (Box *c = b->first; c; c = c->next) post(L, c, cw, b->h, clipx, clipy);
-    /* Visible overflow propagates through constrained flex/block wrappers.
-     * Looking only at immediate border boxes makes long conversations appear
-     * to have no scroll range. Compute bottom-up once, stopping at clips. */
-    {
-        float r = b->x + b->w, btm = b->y + b->h - b->p[2];
-        for (Box *c = b->first; c; c = c->next) {
-            if (c->fixed || (c->abs && c->cb && !box_within(c->cb, b))) continue;
-            float w = c->w, h = c->h;
-            if (!c->st || c->st->overflow_x == OV_VISIBLE) w = LMAX(w, c->scroll_w);
-            if (!c->st || c->st->overflow_y == OV_VISIBLE) h = LMAX(h, c->scroll_h);
-            r = LMAX(r, c->x + w + c->m[1]); btm = LMAX(btm, c->y + h + c->m[2]);
-        }
-        for (int i = 0; i < b->nfrags; i++) { r = LMAX(r, b->frags[i].x + b->frags[i].w); btm = LMAX(btm, b->frags[i].y + b->frags[i].h); }
-        b->scroll_w = r - b->x; b->scroll_h = btm - b->y + b->p[2];
-    }
+    overflow(b);
     if (b->scroller && b->node) {
         float maxx = LMAX(0, b->scroll_w - b->w), maxy = LMAX(0, b->scroll_h - b->h);
-        b->node->scroll_x = LCLAMP(b->node->scroll_x, 0, maxx); b->node->scroll_y = box_scroll_from_end(b) ? LCLAMP(b->node->scroll_y, -maxy, 0) : LCLAMP(b->node->scroll_y, 0, maxy);
+        clamp_scroll(b, maxx, maxy);
         /* abs children of a column-reverse scroller are placed against its scroll origin, which is the end */
         if (box_scroll_from_end(b) && maxy > 0) for (Box *x = b->abs_head; x; x = x->abs_next) box_translate(x, 0, maxy);
     }
@@ -313,6 +320,65 @@ static void extents(Layout *L, Box *b) {
     if (b->scroller && b->node && b != L->root) return;
     for (int i = 0; i < b->nfrags; i++) { L->doc_w = LMAX(L->doc_w, b->frags[i].x + b->frags[i].w); L->doc_h = LMAX(L->doc_h, b->frags[i].y + b->frags[i].h); }
     for (Box *c = b->first; c; c = c->next) extents(L, c);
+}
+
+static void finish_extents(Layout *L) {
+    L->doc_w = L->vw; L->doc_h = 0;
+    extents(L, L->root);
+    L->doc_h = LMAX(L->doc_h, L->vh);
+}
+
+/* An inset-only style change moves a positioned box without resizing anything,
+ * so translating the laid-out box gives the same geometry as layout_run. `old`
+ * holds the insets the box was laid out with. Returns false when that cannot
+ * be shown cheaply; the caller must then run layout. */
+bool layout_move(Layout *L, Node *n, const Length old[4]) {
+    Box *b = n->box;
+    const ComputedStyle *s = b ? b->st : NULL;
+    if (!L->root || !b || b->anon || b->kind == BX_TEXT || !s || s != n->style || !box_within(b, L->root)) return false;
+    float dx = 0, dy = 0;
+    if (s->position == P_RELATIVE) {
+        Box *p = b->parent;
+        float cbw = p ? p->w - hbp(p) : L->vw, cbh = p ? p->h : L->vh, ox, oy;
+        rel_offset(old, cbw, cbh, &ox, &oy); rel_offset(s->inset, cbw, cbh, &dx, &dy);
+        dx -= ox; dy -= oy;
+    } else if (b->abs) {
+        Box *cb = b->cb;
+        if (!cb) return false;
+        float pw = cb == L->root ? L->vw : cb->w - cb->b[1] - cb->b[3], ph = cb == L->root ? L->vh : cb->h - cb->b[0] - cb->b[2];
+        const Length *in = s->inset;
+        for (int axis = 0; axis < 2; axis++) {
+            int lo = axis ? 0 : 3, hi = axis ? 2 : 1;   /* top/bottom, left/right */
+            if (!memcmp(&old[lo], &in[lo], sizeof *in) && !memcmp(&old[hi], &in[hi], sizeof *in)) continue;
+            bool loA = in[lo].kind != LK_LEN, hiA = in[hi].kind != LK_LEN;
+            /* both sides set: insets size the box; a side switching to or from auto changes the anchor */
+            if ((old[lo].kind != LK_LEN) != loA || (old[hi].kind != LK_LEN) != hiA || (!loA && !hiA)) return false;
+            float ref = axis ? ph : pw;
+            /* one horizontal inset narrows the shrink-to-fit width unless the width is definite */
+            if (!axis && !len_def(s->width, pw)) return false;
+            float d = !loA ? res(in[lo], ref) - res(old[lo], ref) : -(res(in[hi], ref) - res(old[hi], ref));
+            if (axis) dy = d; else dx = d;
+        }
+    } else if (s->position != P_STATIC && s->position != P_STICKY) return false;
+    /* static boxes ignore insets; sticky offsets are applied at paint from the current style */
+    if (dx || dy) {
+        box_translate(b, dx, dy);
+        for (Box *a = b->parent; a; a = a->parent) {
+            float ow = a->scroll_w, oh = a->scroll_h;
+            overflow(a);
+            if (a->scroll_w == ow && a->scroll_h == oh) break;
+            if (a->scroller && a->node) {
+                float maxy = LMAX(0, a->scroll_h - a->h);
+                /* positioned children of a column-reverse scroller are placed against its end */
+                if (box_scroll_from_end(a) && a->abs_head && maxy != LMAX(0, oh - a->h)) return false;
+                clamp_scroll(a, LMAX(0, a->scroll_w - a->w), maxy);
+            }
+        }
+        finish_extents(L);
+    }
+    atomic_fetch_add_explicit(&geometry_version, 1, memory_order_relaxed);
+    doc_visual_changed();
+    return true;
 }
 
 static void free_box_data(Box *b) {
@@ -370,9 +436,7 @@ void layout_run(Layout *L, Document *d, float vw, float vh) {
     r->h = LMAX(vh, h);
     if (r->abs_head) layout_abs(L, r);
     post(L, r, vw, vh, 0, 0);
-    L->doc_w = vw; L->doc_h = 0;
-    extents(L, r);
-    L->doc_h = LMAX(L->doc_h, vh);
+    finish_extents(L);
     track_containers(d, r);
     text_shape_cache_sweep();
     atomic_fetch_add_explicit(&geometry_version, 1, memory_order_relaxed);
