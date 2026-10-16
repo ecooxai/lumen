@@ -318,6 +318,12 @@ static bool parse_selector(SP *p, Selector *sel, bool relative) {
     }
     if (cs.n && cs.n < cs.cap) cs.v = xrealloc(cs.v, sizeof *cs.v * (size_t)cs.n);
     sel->c = cs.v; sel->n = cs.n;
+    for (int i = 0; i < sel->n; i++) for (int j = 0; j < sel->c[i].n; j++) {
+        const SimpleSel *s = &sel->c[i].s[j];
+        if (s->kind == SK_ATTR && str_ieq(s->name, "style")) sel->reads_style_attribute = true;
+        if (s->sub) for (int k = 0; k < s->sub->n; k++)
+            if (s->sub->v[k].reads_style_attribute) sel->reads_style_attribute = true;
+    }
     sel->spec = compute_spec(sel);
     return true;
 fail:
@@ -735,7 +741,7 @@ static void parse_rules(PCtx *c, const char *s, size_t n, const char *parent_sel
                 cc->query = xstrdup(q); cc->outer = c->cq; vec_push(c->sh->conds, cc);
                 ContainerCond *sv = c->cq; c->cq = cc; parse_rules(c, body, bn, parent_sel); c->cq = sv;
             }
-            else if (str_istarts(pt, "@layer") || str_istarts(pt, "@document") || str_istarts(pt, "@-moz-document") || str_istarts(pt, "@scope") || str_istarts(pt, "@starting-style")) {
+            else if (str_istarts(pt, "@layer") || str_istarts(pt, "@document") || str_istarts(pt, "@-moz-document") || str_istarts(pt, "@scope")) {
                 parse_rules(c, body, bn, parent_sel);
             }
             else if (str_istarts(pt, "@font-face") && (!c->mq || c->mq->matches)) {
@@ -747,6 +753,8 @@ static void parse_rules(PCtx *c, const char *s, size_t n, const char *parent_sel
                 if (iv && (iv = strchr(iv, ':'))) { char *e = strchr(++iv, ';'); if (e) *e = 0; css_register_property(name, str_trim(iv)); }
                 free(bd); sb_free(&nm);
             }
+            /* @starting-style describes transition entry values, not the final
+               cascade. Ignore it until entry transitions are implemented. */
             /* @keyframes, @page, @font-feature-values, @counter-style: ignored */
         } else if (parent_sel) {
             char *ns = nest_selector(parent_sel, pt); parse_style_block(c, ns, body, bn); free(ns);

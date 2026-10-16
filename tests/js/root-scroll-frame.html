@@ -1,0 +1,9 @@
+<!doctype html><style>body{margin:0}button{position:fixed;left:0;top:0;width:100px;height:40px}div{height:600px}</style>
+<button>Frame scroll</button><div>Frame extent</div>
+<script>
+function report(kind,e){parent.postMessage({frameScroll:true,kind,scrollY,target:e&&e.target===document?'document':null,trusted:e&&e.isTrusted,bubbles:e&&e.bubbles},'*')}
+document.addEventListener('scroll',e=>report('document-scroll',e));
+addEventListener('scroll',e=>report('window-scroll',e));
+document.querySelector('button').onclick=()=>{scrollTo(0,75);report('api-frame')};
+report('load');
+</script>

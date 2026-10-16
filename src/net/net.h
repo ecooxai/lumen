@@ -40,6 +40,11 @@ struct NetRequest {
     NetChunkFn chunk;      /* streaming: decoded body pieces; done then gets an empty body */
     void *ud;
     uint64_t id;
+#if defined(__ANDROID__) && !defined(NDEBUG)
+    bool debug_stream;
+    size_t debug_chunks, debug_bytes;
+    double debug_started, debug_max_queue_ms;
+#endif
 };
 
 void net_init(int threads);
@@ -54,6 +59,8 @@ void net_response_free(NetResponse *r);
 /* Dispatch completed requests. Returns number dispatched. */
 int net_poll(void);
 int net_pending(void);
+/* Bounded debug transport counters; never logs URLs, headers or payloads. */
+void net_debug_streams(unsigned seconds);
 /* Called from worker threads when a result is ready, to wake the UI loop. */
 extern void (*net_wakeup)(void);
 
@@ -75,6 +82,8 @@ void cookies_load(const char *path);
 bool cookies_save(const char *path); /* writes only when the jar changed */
 
 extern const char *g_user_agent;
+/* Authentication providers must see Lumen's own identity, including after redirects. */
+const char *net_user_agent_for_url(const char *url);
 enum { UA_CHROME, UA_FIREFOX, UA_LUMEN, UA_COUNT };
 void net_set_user_agent(int which);   /* UA_CHROME (default), UA_FIREFOX or UA_LUMEN */
 const char *net_user_agent_name(int which);

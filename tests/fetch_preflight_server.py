@@ -50,7 +50,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         self.event()
-        if self.path in ('/wasm-browser', '/wasm-worker', '/wasm-streaming'):
+        if self.path in ('/wasm-browser', '/wasm-worker', '/wasm-streaming', '/wasm-page-wakeup', '/wasm-clone'):
             data = (Path(__file__).parent / 'js' / (self.path[1:] + '.html')).read_bytes()
             self.send_response(200)
             self.send_header('Content-Type', 'text/html; charset=utf-8')
@@ -83,6 +83,8 @@ class Handler(BaseHTTPRequestHandler):
                     self.event(canceled=True)
             return
         page = {'/': 'fetch-preflight-stream.html', '/base-uri-cache': 'base-uri-cache.html', '/request-state': 'request-state.html', '/video-frames': 'video-frame-callback.html', '/media-events': 'media-events.html', '/blob-parts': 'blob-parts.html', '/resize-observer': 'resize-observer.html', '/user-agent': 'user-agent.html', '/positioned-drawer': 'positioned-drawer.html', '/player-overlay': 'player-overlay.html', '/intersection-observer': 'intersection-observer.html', '/event-wait': 'event-wait.html', '/opacity-scroll': 'opacity-scroll.html', '/thumbnail-scroll': 'thumbnail-scroll.html', '/native-touch': 'native-touch.html'}.get(self.path)
+        page = {'/touch-overlay-removal': 'touch-overlay-removal.html', '/page-zoom': 'page-zoom.html', '/root-scroll': 'root-scroll.html',
+                '/root-scroll-frame.html': 'root-scroll-frame.html'}.get(self.path, page)
         if self.path == '/user-agent-headers':
             data = json.dumps(dict(self.headers)).encode()
             self.headers_for(len(data))

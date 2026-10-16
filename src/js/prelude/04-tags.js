@@ -90,7 +90,34 @@ mk('HTMLTextAreaElement', HTMLElement, ['textarea'], p => {
 });
 mk('HTMLButtonElement', HTMLElement, ['button'], p => {
     reflectStr(p, 'name', 'value'); reflectBool(p, 'disabled'); formControl(p);
-    methods(p, { get type() { const t = (N.attr(this, 'type') || 'submit').toLowerCase(); return t === 'reset' || t === 'button' ? t : 'submit'; }, set type(v) { this.setAttribute('type', v); } });
+    methods(p, {
+        get type() {
+            const t = (N.attr(this, 'type') || '').toLowerCase();
+            if (['submit', 'reset', 'button'].includes(t)) return t;
+            return this.hasAttribute('command') || this.hasAttribute('commandfor') || this.parentElement?.localName === 'select' ? 'button' : 'submit';
+        },
+        set type(v) { this.setAttribute('type', v); },
+        get command() {
+            const raw = N.attr(this, 'command') || '', lower = raw.toLowerCase();
+            return raw.startsWith('--') ? raw : ['show-modal', 'close', 'request-close', 'toggle-popover', 'show-popover', 'hide-popover'].includes(lower) ? lower : '';
+        },
+        set command(v) { this.setAttribute('command', v); },
+        get commandForElement() {
+            const explicit = commandTargets.get(this), root = this.getRootNode();
+            if (explicit) {
+                const targetRoot = explicit.getRootNode();
+                for (let scope = root; scope; scope = scope.host?.getRootNode()) if (scope === targetRoot) return explicit;
+                return null;
+            }
+            const id = N.attr(this, 'commandfor');
+            return id ? root.querySelector?.('#' + CSS.escape(id)) || null : null;
+        },
+        set commandForElement(v) {
+            if (v == null) { this.removeAttribute('commandfor'); commandTargets.delete(this); return; }
+            if (!(v instanceof Element)) throw new TypeError('commandForElement must be an Element');
+            this.setAttribute('commandfor', ''); commandTargets.set(this, v);
+        },
+    });
 });
 mk('HTMLSelectElement', HTMLElement, ['select'], p => {
     reflectStr(p, 'name'); reflectBool(p, 'disabled', 'multiple', 'required'); formControl(p);
@@ -119,5 +146,53 @@ mk('HTMLOptionElement', HTMLElement, ['option'], p => {
 mk('HTMLLabelElement', HTMLElement, ['label'], p => { acc(p, 'htmlFor', function () { return N.attr(this, 'for') ?? ''; }, function (v) { this.setAttribute('for', v); }); methods(p, { get control() { const f = N.attr(this, 'for'); return f ? N.byId(f) : this.querySelector('input,select,textarea,button'); } }); });
 mk('HTMLFieldSetElement', HTMLElement, ['fieldset'], p => reflectBool(p, 'disabled'));
 mk('HTMLDetailsElement', HTMLElement, ['details'], p => acc(p, 'open', function () { return N.attr(this, 'open') != null; }, function (v) { const was = this.open; this.toggleAttribute('open', !!v); if (was !== !!v) setTimeout(() => dispatch(this, new Event('toggle'))); }));
-mk('HTMLDialogElement', HTMLElement, ['dialog'], p => { reflectBool(p, 'open'); methods(p, { show() { this.open = true; }, showModal() { this.open = true; }, close(rv) { if (!this.open) return; this.open = false; if (rv !== undefined) this.returnValue = rv; dispatch(this, new Event('close')); } }); });
+const dialogStates = new WeakMap();
+function dialogState(d) {
+    let s = dialogStates.get(d);
+    if (!s) { s = { returnValue: '', previousFocus: null, toggle: null }; dialogStates.set(d, s); }
+    return s;
+}
+function dialogToggle(d, oldState, newState, source) {
+    const s = dialogState(d);
+    if (s.toggle) { s.toggle.newState = newState; s.toggle.source = source; return; }
+    s.toggle = { oldState, newState, source };
+    setTimeout(() => { const init = s.toggle; s.toggle = null; dispatch(d, new ToggleEvent('toggle', init), true); }, 0);
+}
+function dialogShow(d, modal, source = null) {
+    if (d.open) {
+        if (!!N.modal(d) !== modal) throw new DOMException('Dialog is already open in another mode', 'InvalidStateError');
+        return;
+    }
+    if (modal && !d.isConnected) throw new DOMException('Dialog is not connected', 'InvalidStateError');
+    if (!dispatch(d, new ToggleEvent('beforetoggle', { oldState: 'closed', newState: 'open', source, cancelable: true }), true)) return;
+    if (d.open || (modal && !d.isConnected)) return;
+    const s = dialogState(d); s.previousFocus = document.activeElement;
+    dialogToggle(d, 'closed', 'open', source);
+    d.open = true; N.modal(d, modal);
+    const focus = d.hasAttribute('autofocus') ? d : d.querySelector('[autofocus]') || d.querySelector('button:not(:disabled),input:not(:disabled):not([type=hidden]),select:not(:disabled),textarea:not(:disabled),a[href],[tabindex]') || d;
+    focus.focus();
+}
+function dialogClose(d, value, source = null) {
+    if (!d.open) return;
+    dispatch(d, new ToggleEvent('beforetoggle', { oldState: 'open', newState: 'closed', source }), true);
+    if (!d.open) return;
+    const modal = N.modal(d), s = dialogState(d);
+    dialogToggle(d, 'open', 'closed', source);
+    d.open = false;
+    if (value !== undefined) s.returnValue = String(value);
+    if (s.previousFocus?.isConnected && (modal || d.contains(document.activeElement))) s.previousFocus.focus();
+    s.previousFocus = null;
+    setTimeout(() => dispatch(d, new Event('close'), true), 0);
+}
+function dialogRequestClose(d, value, source = null) {
+    if (d.open && dispatch(d, new Event('cancel', { cancelable: true }), true)) dialogClose(d, value, source);
+}
+mk('HTMLDialogElement', HTMLElement, ['dialog'], p => {
+    reflectBool(p, 'open');
+    methods(p, {
+        get returnValue() { return dialogState(this).returnValue; }, set returnValue(v) { dialogState(this).returnValue = String(v); },
+        show() { dialogShow(this, false); }, showModal() { dialogShow(this, true); },
+        close(rv) { dialogClose(this, rv); }, requestClose(rv) { dialogRequestClose(this, rv); },
+    });
+});
 mk('HTMLUnknownElement', HTMLElement, []);

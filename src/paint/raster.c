@@ -2,6 +2,10 @@
 #include "paint.h"
 #include <math.h>
 #include <zlib.h>
+#if defined(__aarch64__) && defined(__ARM_NEON) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#include <arm_neon.h>
+#define IMAGE_NEON 1
+#endif
 
 typedef struct { int x0, y0, x1, y1; float fx, fy, fw, fh, r[4]; bool round; } Clip;
 typedef struct { int x0, y0, x1, y1; } LayerRect;
@@ -15,10 +19,11 @@ typedef struct {
 } R;
 
 static inline uint32_t *raster_row(R *r, int y) {
+    if (!r->nlayer && r->c->row_offset) return canvas_row(r->c, y);
     return r->px + (size_t)(y - r->origin_y) * (size_t)r->stride;
 }
 
-void canvas_init(Canvas *c, int w, int h, float scale) { c->w = w; c->h = h; c->stride = w; c->scale = scale; c->punch = NULL; c->punched = false; c->px = xcalloc((size_t)w * (size_t)h, 4); }
+void canvas_init(Canvas *c, int w, int h, float scale) { c->w = w; c->h = h; c->stride = w; c->scale = scale; c->punch = NULL; c->punched = false; c->row_offset = 0; c->px = xcalloc((size_t)w * (size_t)h, 4); }
 void canvas_free(Canvas *c) { free(c->px); c->px = NULL; }
 
 static inline uint32_t premul(Color c, float cov) {
@@ -256,7 +261,32 @@ static void image_horizontal(uint32_t *dst, const uint32_t *src, const ImgCol *c
    The packed-channel truncation and source-over factors match the edge path. */
 static void image_vertical(uint32_t *restrict dst, const uint32_t *restrict top,
                            const uint32_t *restrict bottom, int count, uint32_t weight) {
-    for (int x = 0; x < count; x++) {
+    int x = 0;
+#ifdef IMAGE_NEON
+    /* Deinterleave eight premultiplied pixels: each lane is one channel,
+       avoiding repeated packed-channel masks. Truncate each interpolation
+       product separately, exactly as scale_px does. A 16-bit blend factor
+       also represents 256, preserving the destination for transparent pixels. */
+    uint8x8_t wa = vdup_n_u8((uint8_t)(256 - weight)), wb = vdup_n_u8((uint8_t)weight);
+    for (; x + 8 <= count; x += 8) {
+        uint8x8x4_t p;
+        if (!weight || weight == 256) p = vld4_u8((const uint8_t *)(weight ? bottom + x : top + x));
+        else {
+            uint8x8x4_t a = vld4_u8((const uint8_t *)(top + x));
+            uint8x8x4_t b = vld4_u8((const uint8_t *)(bottom + x));
+            for (int c = 0; c < 4; c++)
+                p.val[c] = vadd_u8(vshrn_n_u16(vmull_u8(a.val[c], wa), 8),
+                                   vshrn_n_u16(vmull_u8(b.val[c], wb), 8));
+        }
+        uint16x8_t alpha = vmovl_u8(p.val[3]);
+        uint16x8_t k = vsubq_u16(vsubq_u16(vdupq_n_u16(256), alpha), vshrq_n_u16(alpha, 7));
+        uint8x8x4_t d = vld4_u8((const uint8_t *)(dst + x));
+        for (int c = 0; c < 4; c++)
+            d.val[c] = vadd_u8(p.val[c], vshrn_n_u16(vmulq_u16(vmovl_u8(d.val[c]), k), 8));
+        vst4_u8((uint8_t *)(dst + x), d);
+    }
+#endif
+    for (; x < count; x++) {
         uint32_t p = scale_px(top[x], 256 - weight) + scale_px(bottom[x], weight);
         uint32_t alpha = p >> 24;
         dst[x] = p + scale_px(dst[x], 256 - alpha - (alpha >> 7));
@@ -393,9 +423,7 @@ void raster_rect(Canvas *cv, const DisplayList *dl, Color clearc, int rx0, int r
     rx0 = LMAX(rx0, 0); ry0 = LMAX(ry0, 0); rx1 = LMIN(rx1, cv->w); ry1 = LMIN(ry1, cv->h);
     if (rx1 <= rx0 || ry1 <= ry0) return;
     uint32_t cl = premul(clearc, 1);
-    uint32_t *clear_row = cv->px + (size_t)ry0 * (size_t)cv->stride + rx0;
-    int clear_stride = cv->stride;
-    for (int y = ry0; y < ry1; y++, clear_row += clear_stride) store_span(clear_row, rx1 - rx0, cl);
+    for (int y = ry0; y < ry1; y++) store_span(canvas_row(cv, y) + rx0, rx1 - rx0, cl);
     r.clips[0] = (Clip){ rx0, ry0, rx1, ry1, 0, 0, (float)cv->w, (float)cv->h, {0}, false }; r.nclip = 1;
     float s = r.s;
     LayerRect *bounds = layer_bounds(dl, s, (LayerRect){rx0, ry0, rx1, ry1});
@@ -439,7 +467,10 @@ void raster_rect(Canvas *cv, const DisplayList *dl, Color clearc, int rx0, int r
             for (int y = b.y0; y < b.y1; y++) for (int x = b.x0; x < b.x1; x++) {
                 size_t sj = (size_t)(y - r.origin_y) * (size_t)r.stride + (size_t)(x - r.origin_x);
                 size_t dj = (size_t)(y - saved.origin_y) * (size_t)saved.stride + (size_t)(x - saved.origin_x);
-                if (src[sj]) over(&saved.px[dj], scale_px(src[sj], k));
+                if (src[sj]) {
+                    uint32_t *dst = !r.nlayer ? canvas_row(cv, y) + x : &saved.px[dj];
+                    over(dst, scale_px(src[sj], k));
+                }
             }
             free(src); r.px = saved.px; r.origin_x = saved.origin_x;
             r.origin_y = saved.origin_y; r.stride = saved.stride; r.height = saved.height; break;

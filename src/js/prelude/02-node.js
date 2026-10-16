@@ -145,6 +145,7 @@ methods(Node.prototype, {
         if (liveRanges.size || liveIters.size) for (let i = removed.length - 1; i >= 0; i--) rangePreRemove(removed[i]);
         for (const r of removed) ceConnected(r, false);
         N.setText(this, v);
+        if (this.__ass) readopt(this);
         if (removed.length || N.first(this)) notify('childList', this, { removedNodes: removed, addedNodes: kids(this) });
     },
     get nodeValue() { return isCD(this) ? N.text(this) : null; },
@@ -198,7 +199,7 @@ const ParentNode = {
     get lastElementChild() { for (let c = N.last(this); c; c = N.prev(c)) if (N.type(c) === 1) return c; return null; },
     append(...ns) { for (const n of ns) insertNode(this, toNode(n), null); },
     prepend(...ns) { const f = N.first(this); for (const n of ns) insertNode(this, toNode(n), f); },
-    replaceChildren(...ns) { for (const c of kids(this)) removeNode(c); this.append(...ns); },
+    replaceChildren(...ns) { for (const c of kids(this)) removeNode(c); this.append(...ns); if (this.__ass) readopt(this); },
     querySelector(s) { return N.query(this, String(s), false); },
     querySelectorAll(s) { return nodeList(N.query(this, String(s), true)); },
     getElementsByTagName(t) { t = String(t); const sel = t === '*' ? '*' : t.replace(/[^\w-]/g, ''); return liveList(this, () => sel ? N.query(this, sel, true) : []); },
@@ -255,8 +256,8 @@ methods(ShadowRoot.prototype, {
     get host() { return N.host(this); }, get mode() { return this.__mode || 'open'; },
     get innerHTML() { return N.html(this, false); }, set innerHTML(v) { setInner(this, String(v)); },
     get activeElement() { return null; }, get delegatesFocus() { return false; },
-    get adoptedStyleSheets() { return this.__ass || []; }, set adoptedStyleSheets(v) { def(this, '__ass', v); },
-    get styleSheets() { return []; },
+    get adoptedStyleSheets() { return adoptedGet(this); }, set adoptedStyleSheets(v) { adoptSheets(this, v); },
+    get styleSheets() { return scopeSheets(this); },
 });
 
 class Attr {

@@ -103,15 +103,15 @@ class DensityWiringTests(unittest.TestCase):
     def test_canvas_caches_include_scale(self):
         source = (ROOT / "src/app/main.c").read_text()
         self.assertIn("a->frame.scale != a->scale", source)
-        self.assertIn("a->page.scale != a->scale", source)
+        self.assertIn("a->page.scale != page_scale(a)", source)
         self.assertIn("p->cv.scale != s", source)
 
     def test_css_viewports_receive_device_pixel_ratio(self):
         source = (ROOT / "src/app/main.c").read_text()
         helper = function(source, "static bool page_viewport(")
         self.assertIn("page->e->media.dpr", helper)
-        self.assertIn("page_viewport(p, p->fw, p->fh, g_app->scale)", source)
-        self.assertIn("page_viewport(p, a->vw - a->side, a->vh - BAR, a->scale)", source)
+        self.assertIn("page_viewport(p, p->fw, p->fh, frame_scale(p))", source)
+        self.assertIn("page_viewport(p, page_width(a), page_height(a), page_scale(a))", source)
 
 
 if __name__ == "__main__":

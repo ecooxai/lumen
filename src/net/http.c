@@ -22,6 +22,18 @@
 #include <zlib.h>
 #include <brotli/decode.h>
 #include <zstd.h>
+#if defined(__ANDROID__) && !defined(NDEBUG)
+#include <android/log.h>
+static double g_debug_stream_until;
+#endif
+
+void net_debug_streams(unsigned seconds) {
+#if defined(__ANDROID__) && !defined(NDEBUG)
+    g_debug_stream_until = seconds ? now_ms() + LMIN(seconds, 120u) * 1000.0 : 0;
+#else
+    (void)seconds;
+#endif
+}
 
 #ifdef __ANDROID__
 /* Chromium's reduced Android UA freezes the OS/model tokens at 10/K. */
@@ -52,6 +64,18 @@ static const char *const ua_name[UA_COUNT] = { "Chrome 150", "Firefox 150", "Lum
 const char *g_user_agent = "Mozilla/5.0 (" UA_OS ") AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0" UA_MOBILE " Safari/537.36";
 void net_set_user_agent(int which) { if (which >= 0 && which < UA_COUNT) g_user_agent = ua_str[which]; }
 const char *net_user_agent_name(int which) { return which >= 0 && which < UA_COUNT ? ua_name[which] : ""; }
+static const char *user_agent_for_host(const char *host) {
+    /* Google requires a distinct browser identity on its authentication origin.
+       Keep the normal compatibility preference for other sites. */
+    return host && str_ieq(host, "accounts.google.com") ? ua_str[UA_LUMEN] : g_user_agent;
+}
+const char *net_user_agent_for_url(const char *url) {
+    URL u;
+    if (!url || !url_parse(url, &u)) return g_user_agent;
+    const char *ua = user_agent_for_host(u.host);
+    url_free(&u);
+    return ua;
+}
 void (*net_wakeup)(void) = NULL;
 
 /* ---------- headers ---------- */
@@ -248,13 +272,20 @@ static bool decompress(const char *enc, SB *body) {
 }
 
 /* ---------- streamed responses ---------- */
-typedef struct Ev { int type; NetRequest *req; NetResponse *resp; char *data; size_t n; struct Ev *next; } Ev; /* 0 done 1 head 2 chunk */
+typedef struct Ev { int type; NetRequest *req; NetResponse *resp; char *data; size_t n; struct Ev *next;
+#if defined(__ANDROID__) && !defined(NDEBUG)
+    double queued;
+#endif
+} Ev; /* 0 done 1 head 2 chunk */
 static pthread_mutex_t g_ev_mu = PTHREAD_MUTEX_INITIALIZER;
 static Ev *g_ev, *g_ev_tail;
 static __thread NetRequest *t_stream;
 static __thread const char *t_url;
 static void ev_push(int type, NetRequest *req, NetResponse *resp, char *data, size_t n) {
     Ev *e = xcalloc(1, sizeof *e); e->type = type; e->req = req; e->resp = resp; e->data = data; e->n = n;
+#if defined(__ANDROID__) && !defined(NDEBUG)
+    e->queued = now_ms();
+#endif
     pthread_mutex_lock(&g_ev_mu);
     if (g_ev_tail) g_ev_tail->next = e; else g_ev = e;
     g_ev_tail = e;
@@ -306,6 +337,7 @@ static bool stream_cancelled(void) { return t_stream && __atomic_load_n(&t_strea
 
 /* ---------- single HTTP exchange ---------- */
 static NetResponse *http_once(const char *method, const URL *u, const Headers *hdrs, const char *body, size_t body_len, bool cookies, bool *retryable) {
+    const char *ua = user_agent_for_host(u->host);
     NetResponse *r = xcalloc(1, sizeof *r);
     r->t_start = now_ms();
     char *err = NULL;
@@ -328,11 +360,11 @@ static NetResponse *http_once(const char *method, const URL *u, const Headers *h
         if (str_ieq(n, "sec-ch-ua")) has_ch = true;
         sb_printf(&req, "%s: %s\r\n", n, hdrs->v[i].value);
     }
-    if (!has_ua) sb_printf(&req, "User-Agent: %s\r\n", g_user_agent);
+    if (!has_ua) sb_printf(&req, "User-Agent: %s\r\n", ua);
     if (!has_accept) sb_puts(&req, "Accept: */*\r\n");
     if (!has_ae) sb_puts(&req, "Accept-Encoding: gzip, deflate, br, zstd\r\n");
     if (!has_al) sb_puts(&req, "Accept-Language: en-US,en;q=0.9\r\n");
-    if (!has_ch && !strcmp(u->scheme, "https") && strstr(g_user_agent, "Chrome/"))
+    if (!has_ch && !strcmp(u->scheme, "https") && strstr(ua, "Chrome/"))
         sb_puts(&req, "sec-ch-ua: \"Google Chrome\";v=\"150\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"150\"\r\n"
                       "sec-ch-ua-mobile: " UA_CH_MOBILE "\r\nsec-ch-ua-platform: \"" UA_CH_OS "\"\r\n");
     if (cookies) { char *ck = cookies_get(u, true); if (ck) { sb_printf(&req, "Cookie: %s\r\n", ck); free(ck); } }
@@ -579,6 +611,45 @@ int net_poll(void) {
     while (list) {
         Ev *e = list; list = e->next;
         NetRequest *rq = e->req;
+        /* A busy UI can accumulate many chunks from one stream. Their byte
+         * boundaries are transport details: deliver an already-queued run in
+         * one callback instead of forcing a JS/microtask/layout cycle for each
+         * socket read. Never wait for more data or cross another request/event.
+         * Bound the combined allocation even when a long response backed up. */
+        if (e->type == 2 && list && list->type == 2 && list->req == rq) {
+            size_t total = e->n;
+            Ev *end = list;
+            while (end && end->type == 2 && end->req == rq &&
+                    total <= 256 * 1024 && end->n <= 256 * 1024 - total) {
+                total += end->n; end = end->next;
+            }
+            if (end != list) {
+                e->data = xrealloc(e->data, total);
+                while (list != end) {
+                    Ev *part = list; list = part->next;
+                    memcpy(e->data + e->n, part->data, part->n); e->n += part->n;
+                    free(part->data); free(part);
+                }
+            }
+        }
+#if defined(__ANDROID__) && !defined(NDEBUG)
+        if (e->type == 1 && now_ms() < g_debug_stream_until) {
+            rq->debug_stream = true;
+            rq->debug_started = e->queued;
+            const char *ct = headers_get(&e->resp->headers, "content-type");
+            __android_log_print(ANDROID_LOG_INFO, "LumenStream", "head id=%llu status=%d event_stream=%d encoding=%d",
+                (unsigned long long)rq->id, e->resp->status, ct && strstr(ct, "text/event-stream") != NULL,
+                enc_kind(headers_get(&e->resp->headers, "content-encoding")));
+        }
+        if (rq->debug_stream) {
+            rq->debug_max_queue_ms = LMAX(rq->debug_max_queue_ms, now_ms() - e->queued);
+            if (e->type == 2) { rq->debug_chunks++; rq->debug_bytes += e->n; }
+            if (e->type == 0) __android_log_print(ANDROID_LOG_INFO, "LumenStream",
+                "done id=%llu status=%d error=%d cancelled=%d chunks=%zu bytes=%zu elapsed_ms=%.0f max_queue_ms=%.0f",
+                (unsigned long long)rq->id, e->resp->status, e->resp->error != NULL, rq->cancelled,
+                rq->debug_chunks, rq->debug_bytes, e->queued - rq->debug_started, rq->debug_max_queue_ms);
+        }
+#endif
         if (e->type == 0) {
             pthread_mutex_lock(&g_mu); g_pending--; pthread_mutex_unlock(&g_mu);
             if (!rq->cancelled && rq->done) rq->done(rq, e->resp, rq->ud);
@@ -670,7 +741,7 @@ static void *ws_thread(void *arg) {
         SB req; sb_init(&req); char *pq = url_path_query(&u);
         sb_printf(&req, "GET %s HTTP/1.1\r\n", pq); free(pq);
         if (u.port != url_default_port(u.scheme)) sb_printf(&req, "Host: %s:%d\r\n", u.host, u.port); else sb_printf(&req, "Host: %s\r\n", u.host);
-        sb_printf(&req, "Connection: Upgrade\r\nPragma: no-cache\r\nCache-Control: no-cache\r\nUser-Agent: %s\r\nUpgrade: websocket\r\n", g_user_agent);
+        sb_printf(&req, "Connection: Upgrade\r\nPragma: no-cache\r\nCache-Control: no-cache\r\nUser-Agent: %s\r\nUpgrade: websocket\r\n", user_agent_for_host(u.host));
         if (*w->origin) sb_printf(&req, "Origin: %s\r\n", w->origin);
         sb_printf(&req, "Sec-WebSocket-Version: 13\r\nAccept-Encoding: gzip, deflate, br, zstd\r\nAccept-Language: en-US,en;q=0.9\r\n");
         char *ck = cookies_get(&u, true); if (ck) { sb_printf(&req, "Cookie: %s\r\n", ck); free(ck); }

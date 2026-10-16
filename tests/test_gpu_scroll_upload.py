@@ -34,8 +34,15 @@ class GpuScrollUploadTests(unittest.TestCase):
                                 text=True, timeout=30)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
+    def test_circular_cpu_source_and_gpu_destination_wrap_independently(self):
+        self.run_scenario('cpu-ring')
+        self.run_scenario('cpu-ring-full')
+
     def test_video_present_preserves_page_ring_and_draw_order(self):
         self.run_scenario('video')
+
+    def test_video_pixels_upload_once_per_frame_but_geometry_updates(self):
+        self.run_scenario('video-cache')
 
     def test_up_scroll_only_uploads_exposed_rows(self):
         self.run_scenario('up')

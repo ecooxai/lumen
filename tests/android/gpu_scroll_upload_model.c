@@ -4,6 +4,9 @@
 #include "prepare_present_test.h"
 
 static uint32_t texture_pixels[1024], page_pixels[1024], scroll_uniform[4];
+static uint32_t ring_pixels[1024];
+static const uint32_t *active_source=page_pixels;
+static bool circular_source;
 static unsigned writes, uploaded_rows, uniform_writes;
 static int active_width, active_height, active_stride, active_toolbar;
 static bool regular_upload;
@@ -12,10 +15,13 @@ static unsigned video_writes, video_uniforms, draw_count;
 static WGPUBindGroup drawn[2], selected_group;
 static Gpu *present_gpu;
 static uint32_t linear_pixels[1024];
+static float expected_rect[4] = {-1, 1, 1, -1}, video_parameters[12];
+static uint8_t rgba_uploaded[128], y_uploaded[128], uv_uploaded[128];
 
 WGPUTexture wgpuDeviceCreateTexture(WGPUDevice device, const WGPUTextureDescriptor *descriptor) {
     assert(device && descriptor && descriptor->size.width > 0);
-    return (WGPUTexture)(uintptr_t)4;
+    static uintptr_t next = 50;
+    return (WGPUTexture)next++;
 }
 
 WGPUTextureView wgpuTextureCreateView(WGPUTexture texture, const WGPUTextureViewDescriptor *descriptor) {
@@ -24,7 +30,7 @@ WGPUTextureView wgpuTextureCreateView(WGPUTexture texture, const WGPUTextureView
 }
 
 WGPUBindGroup wgpuDeviceCreateBindGroup(WGPUDevice device, const WGPUBindGroupDescriptor *descriptor) {
-    assert(device && descriptor && descriptor->entries[2].size == 32);
+    assert(device && descriptor && (descriptor->entries[2].size == 32 || descriptor->entries[2].size == 48));
     return (WGPUBindGroup)(uintptr_t)5;
 }
 
@@ -39,7 +45,8 @@ void wgpuQueueWriteBuffer(WGPUQueue queue, WGPUBuffer buffer, uint64_t offset,
         assert(offset == 0);
         assert(size == (buffer == present_gpu->vubuf ? 32 : 48));
         const float *u=data;
-        assert(u[0]==-1 && u[1]==1 && u[2]==1 && u[3]==-1);
+        for(int i=0;i<4;i++) assert(u[i]==expected_rect[i]);
+        memcpy(video_parameters, data, size);
         if(buffer==present_gpu->vubuf) for(int i=4;i<8;i++) assert(u[i]==0);
         video_uniforms++;return;
     }
@@ -54,6 +61,9 @@ void wgpuQueueWriteTexture(WGPUQueue queue, const WGPUTexelCopyTextureInfo *dest
     if (present_video && destination->texture != present_gpu->tex) {
         assert(destination->texture==present_gpu->vtex || destination->texture==present_gpu->yt || destination->texture==present_gpu->ct);
         assert(destination->origin.y==0 && data && size);
+        assert(size <= 128);
+        memcpy(destination->texture==present_gpu->vtex ? rgba_uploaded :
+               destination->texture==present_gpu->yt ? y_uploaded : uv_uploaded, data, size);
         video_writes++;return;
     }
     assert(queue && destination->texture && destination->origin.x == 0);
@@ -67,7 +77,7 @@ void wgpuQueueWriteTexture(WGPUQueue queue, const WGPUTexelCopyTextureInfo *dest
     const uint32_t *source = data;
     if (regular_upload) {
         assert(source == linear_pixels && extent->height == (unsigned)active_height && destination->origin.y == 0);
-    } else assert(source >= page_pixels && source + (size + 3) / 4 <= page_pixels + 1024);
+    } else assert(source >= active_source && source + (size + 3) / 4 <= active_source + 1024);
     for (unsigned row = 0; row < extent->height; row++)
         memcpy(texture_pixels + (destination->origin.y + row) * (unsigned)active_width,
                source + row * (unsigned)active_stride, (size_t)active_width * 4);
@@ -157,7 +167,15 @@ static void step(Gpu *gpu, int delta, int fixed_first, int fixed_last) {
             page_pixels[row * active_stride + column] = 0xff400000u + uniform_writes * 1000u + (unsigned)(row * active_width + column);
     }
     unsigned before = uploaded_rows;
-    assert(gpu_scroll_page(gpu, page_pixels, active_width, active_height, active_stride,
+    if (circular_source) {
+        int offset=(uniform_writes*3+height-1)%height;
+        for(int y=0;y<height;y++) memcpy(ring_pixels+((y+offset)%height)*active_stride,
+                                       page_pixels+y*active_stride,(size_t)active_stride*4);
+        active_source=ring_pixels;
+        assert(gpu_scroll_page_ring(gpu,ring_pixels,active_width,active_height,active_stride,
+                                   active_toolbar,delta,fixed_first,fixed_last,offset));
+        active_source=page_pixels;
+    } else assert(gpu_scroll_page(gpu, page_pixels, active_width, active_height, active_stride,
                            active_toolbar, delta, fixed_first, fixed_last));
     int overlap_first = first > fixed_first ? first : fixed_first;
     int overlap_last = last < fixed_last ? last : fixed_last;
@@ -166,11 +184,19 @@ static void step(Gpu *gpu, int delta, int fixed_first, int fixed_last) {
     verify(gpu);
 }
 
+static void present_cached(Gpu *gpu, GpuVideo *video, unsigned expected_writes) {
+    video_writes=video_uniforms=draw_count=0;
+    assert(gpu_present_frame(gpu,linear_pixels,4,9,4,0,0,video));
+    assert(video_writes==expected_writes && video_uniforms==1);
+    assert(draw_count==2 && drawn[0]==(video->yuv?gpu->ybg:gpu->vbg) && drawn[1]==gpu->bg);
+    verify(gpu);
+}
+
 int main(int argc, char **argv) {
     assert(argc == 2);
     const char *scenario = argv[1];
     Gpu gpu = initialize(4, 7, 2, !strcmp(scenario, "padded") ? 3 : 0);
-    if (!strcmp(scenario, "video")) {
+    if (!strcmp(scenario, "video") || !strcmp(scenario, "video-cache")) {
         /* Transparent and translucent page texels survive wrapping; the video
            is drawn first with independent coordinates/uniforms. */
         for(int row=0;row<7;row++) for(int x=0;x<4;x++) {
@@ -185,7 +211,7 @@ int main(int argc, char **argv) {
         gpu.vubuf=(WGPUBuffer)(uintptr_t)20;gpu.yubuf=(WGPUBuffer)(uintptr_t)21;
         gpu.vtw=gpu.vth=gpu.ytw=gpu.yth=2;
         present_gpu=&gpu;present_video=true;
-        uint32_t rgba[4]={0xff112233,0xff445566,0xff778899,0xffaabbcc};uint8_t yuv[6]={16,32,64,128,128,128};
+        uint32_t rgba[16]={0xff112233,0xff445566,0xff778899,0xffaabbcc};uint8_t yuv[32]={16,32,64,128,128,128};
         GpuVideo video={.px=rgba,.w=2,.h=2,.stride=2,.x1=4,.y1=9};
         for(int i=0;i<12;i++) {
             step(&gpu,i%3==0?-2:1,0,0);
@@ -198,6 +224,52 @@ int main(int argc, char **argv) {
             assert(writes==before && uniform_writes==uniform_before);
             verify(&gpu);
         }
+        if (!strcmp(scenario, "video-cache")) {
+            for(int format=0;format<2;format++) {
+                video.yuv=format?yuv:NULL;
+                video.serial=100+(unsigned)format*10;
+                unsigned count=format?2:1;
+                present_cached(&gpu,&video,count);
+                /* Scrolling and resize of the displayed rectangle update
+                   uniforms, without re-uploading the paused decoded frame. */
+                for(int i=0;i<60;i++) {
+                    step(&gpu,i%2?1:-1,0,0);
+                    video.x0=(float)(i%2); video.y0=(float)(i%3);
+                    video.x1=3;video.y1=8;
+                    expected_rect[0]=video.x0/4*2-1;expected_rect[1]=1-video.y0/9*2;
+                    expected_rect[2]=video.x1/4*2-1;expected_rect[3]=1-video.y1/9*2;
+                    present_cached(&gpu,&video,0);
+                }
+                /* Reused source addresses with a new decoded frame must upload. */
+                rgba[0]++; yuv[0]++; video.serial++;
+                present_cached(&gpu,&video,count);
+                assert(format ? y_uploaded[0]==yuv[0] && uv_uploaded[0]==yuv[4] :
+                       !memcmp(rgba_uploaded,rgba,16));
+                present_cached(&gpu,&video,0);
+                if(format) {
+                    float previous=video_parameters[4];video.mat=3;
+                    present_cached(&gpu,&video,0);
+                    assert(video_parameters[4]!=previous && video_parameters[8]==0 && video_parameters[9]==1);
+                }
+                /* Callers without identity remain conservative, including
+                   switching back from unknown data to an earlier identity. */
+                uint64_t serial=video.serial;video.serial=0;
+                present_cached(&gpu,&video,count);present_cached(&gpu,&video,count);
+                video.serial=serial;present_cached(&gpu,&video,count);
+                /* Texture replacement invalidates content even if the caller
+                   retains the same serial. Both planes use odd-size extents. */
+                video.w=video.h=video.stride=3;
+                present_cached(&gpu,&video,count);present_cached(&gpu,&video,0);
+                video.w=video.h=video.stride=2;
+                present_cached(&gpu,&video,count);
+                draw_count=0;
+                assert(gpu_present_frame(&gpu,linear_pixels,4,9,4,0,0,NULL));
+                assert(draw_count==1 && drawn[0]==gpu.bg);
+                present_cached(&gpu,&video,0);
+                video.x0=video.y0=0;video.x1=4;video.y1=9;
+                expected_rect[0]=-1;expected_rect[1]=1;expected_rect[2]=1;expected_rect[3]=-1;
+            }
+        }
         present_gpu=NULL;present_video=false;
     } else if (!strcmp(scenario, "up")) step(&gpu, 2, 0, 0);
     else if (!strcmp(scenario, "down")) step(&gpu, -2, 0, 0);
@@ -205,7 +277,8 @@ int main(int argc, char **argv) {
         step(&gpu, 2, 0, 0); step(&gpu, -3, 1, 4); step(&gpu, 3, 0, 2);
     } else if (!strcmp(scenario, "fixed")) {
         step(&gpu, 2, 4, 7); step(&gpu, -3, 0, 4); step(&gpu, 1, 2, 4);
-    } else if (!strcmp(scenario, "matrix")) {
+    } else if ((!strcmp(scenario, "matrix") || !strcmp(scenario,"cpu-ring"))) {
+        circular_source=!strcmp(scenario,"cpu-ring");
         for (int height = 2; height <= 17; height++) for (int delta = 1 - height; delta < height; delta++) {
             if (!delta) continue;
             for (int first = 0; first <= height; first++) for (int last = first; last <= height; last++) {
@@ -215,6 +288,26 @@ int main(int argc, char **argv) {
                 step(&gpu, -delta, first, last);
             }
         }
+    } else if (!strcmp(scenario,"cpu-ring-full")) {
+        step(&gpu,2,0,0);
+        for(int offset=0;offset<7;offset++) {
+            for(int y=0;y<7;y++) for(int x=0;x<4;x++) {
+                page_pixels[y*4+x]^=0x00ffff00u;
+                ring_pixels[((y+offset)%7)*4+x]=page_pixels[y*4+x];
+            }
+            active_source=ring_pixels;
+            unsigned old_rows=uploaded_rows;
+            assert(gpu_upload_page_ring(&gpu,ring_pixels,4,9,4,2,0,7,offset));
+            assert(uploaded_rows-old_rows==7);
+            verify(&gpu);
+        }
+        unsigned old_writes=writes,old_uniforms=uniform_writes;
+        assert(!gpu_upload_page_ring(&gpu,ring_pixels,4,9,4,2,0,7,-1));
+        assert(!gpu_upload_page_ring(&gpu,ring_pixels,4,9,4,2,0,7,7));
+        assert(!gpu_scroll_page_ring(&gpu,ring_pixels,4,9,4,2,2,0,0,-1));
+        assert(!gpu_scroll_page_ring(&gpu,ring_pixels,4,9,4,2,2,0,0,7));
+        assert(writes==old_writes && uniform_writes==old_uniforms);
+        active_source=page_pixels;
     } else if (!strcmp(scenario, "full-page")) {
         step(&gpu, 2, 0, 0);
         for (int index = 0; index < 28; index++) page_pixels[index] ^= 0x00ffffffu;

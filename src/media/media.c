@@ -942,6 +942,17 @@ const void *media_owner_of(const Image *im) {
     SDL_UnlockMutex(g_mu);
     return o;
 }
+uint64_t media_image_serial(const Image *im) {
+    if (!g_mu || !im) return 0;
+    uint64_t serial = 0;
+    SDL_LockMutex(g_mu);
+    for (int i = 0; i < g_np; i++) if (g_pl[i]->cur == im) {
+        if (!g_pl[i]->frame_hidden) serial = g_pl[i]->frame_serial;
+        break;
+    }
+    SDL_UnlockMutex(g_mu);
+    return serial;
+}
 Image *media_owner_frame(const void *owner) {
     if (!g_mu || !owner) return NULL;
     Image *im = NULL;

@@ -39,6 +39,10 @@ class AndroidPageTransferTests(unittest.TestCase):
                                 text=True, timeout=5)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
+    def test_circular_cpu_page_direct_and_fallback(self):
+        self.run_scenario('cpu-ring')
+        self.run_scenario('cpu-ring-fallback')
+
     def test_separate_fixed_regions_upload_without_composing(self):
         self.run_scenario('two-fixed')
 
@@ -69,7 +73,7 @@ class AndroidPageTransferTests(unittest.TestCase):
     def test_popup_excludes_direct_upload_and_composes_after_restore(self):
         self.run_scenario('popup')
 
-    def test_video_excludes_direct_upload(self):
+    def test_video_keeps_direct_upload_and_reaches_presenter(self):
         self.run_scenario('video')
 
     def test_screenshot_excludes_direct_upload(self):

@@ -116,6 +116,7 @@ function setInner(el, html) {
     const removed = kids(el);
     for (const r of removed) ceConnected(r, false);
     N.setHTML(el, html);
+    if (el.__ass) readopt(el);
     const added = kids(el);
     if (removed.length || added.length) notify('childList', el, { removedNodes: removed, addedNodes: added });
     for (const a of added) ceConnected(a, true);

@@ -1,0 +1,36 @@
+<!doctype html><meta name="viewport" content="width=device-width">
+<title>Wasm page wakeup</title><h2>Wasm page wakeup</h2><pre id="results">Running…</pre>
+<script>
+(async()=>{
+ const add=[0,97,115,109,1,0,0,0,1,7,1,96,2,127,127,1,127,3,2,1,0,7,7,1,3,97,100,100,0,0,10,9,1,7,0,32,0,32,1,106,11];
+ let nonce=0;const bytes=()=>new Uint8Array([...add,0,5,0,++nonce&255,(nonce>>8)&255,0,0]);
+ const results=[],assert=(v,m)=>{if(!v)throw Error(m)},value=m=>new WebAssembly.Instance(m).exports.add(20,22);
+ async function check(name,fn){let timer;try{const detail=await Promise.race([fn(),new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('timeout')),15000)})]);results.push({name,pass:!detail || detail.prompt!==false,detail})}catch(e){results.push({name,pass:false,error:String(e)})}finally{clearTimeout(timer)}document.getElementById('results').textContent=JSON.stringify(results,null,2)}
+ // Let loading/paint settle. During compilation only the distant watchdog is
+ // scheduled; no interval/rAF/input may accidentally wake the browser.
+ await new Promise(r=>setTimeout(r,1500));
+ await check('six cold page compilations wake promptly',async()=>{
+  const elapsed=[];for(let i=0;i<6;i++){const start=performance.now();assert(value(await WebAssembly.compile(bytes()))===42,'execution');elapsed.push(performance.now()-start)}
+  const worstMs=Math.max(...elapsed);return {elapsed,worstMs,prompt:worstMs<250};
+ });
+ await check('stream completion wakes page after final network chunk',async()=>{
+  const elapsed=[];for(let i=0;i<3;i++){const start=performance.now();assert(value(await WebAssembly.compileStreaming(fetch('/slow.wasm')))===42,'stream execution');elapsed.push(performance.now()-start)}
+  return {elapsed,worstMs:Math.max(...elapsed),prompt:elapsed.every(t=>t<1100)};
+ });
+ await check('promise microtasks run after foreground completion',async()=>{
+  let ran=false;await WebAssembly.compile(bytes()).then(m=>{assert(value(m)===42,'execution');queueMicrotask(()=>ran=true)});assert(ran,'microtask missing');
+ });
+ await check('rejection and compilation recovery',async()=>{
+  let rejected=false;try{await WebAssembly.compile(new Uint8Array([0,1,2]))}catch(e){rejected=e instanceof WebAssembly.CompileError}assert(rejected,'wrong rejection');assert(value(await WebAssembly.compile(bytes()))===42,'recovery');
+ });
+ await check('24 pending page compilations',async()=>{const ms=await Promise.all(Array.from({length:24},()=>WebAssembly.compile(bytes())));assert(ms.every(m=>value(m)===42),'batch');});
+ await check('iframe shares task queue and survives removal',async()=>{
+  for(let i=0;i<8;i++){const f=document.createElement('iframe');try{
+   await new Promise(resolve=>{f.onload=resolve;f.srcdoc='<!doctype html><p>Wasm realm</p>';document.body.appendChild(f)});
+   const m=await f.contentWindow.WebAssembly.compile(bytes());assert(value(m)===42,'frame execution');
+  }finally{f.remove()}}
+  assert(value(await WebAssembly.compile(bytes()))===42,'root after frame removal');
+ });
+ await fetch('/report',{method:'POST',body:JSON.stringify({fixture:'wasm-page-wakeup',complete:true,results})});
+})();
+</script>

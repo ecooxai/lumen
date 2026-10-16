@@ -22,7 +22,9 @@ class AndroidScrollTests(unittest.TestCase):
             function(source, "static void wheel_apply(") +
             "\nstatic bool android_scroll_apply(App *app, float x, float y, float dx, float dy) {"
             " wheel_apply(app, x, y, dx, dy); return true; }\n")
-        (work / "scroll_functions.h").write_text(extracted)
+        helpers = "\n".join(function(source, signature) for signature in (
+            "static float tab_zoom(", "static float page_scale(", "static float page_x(", "static float page_y("))
+        (work / "scroll_functions.h").write_text(helpers + "\n" + extracted)
         cls.executable = work / "codex-agent-android-scroll"
         subprocess.run([os.environ.get("CC", "cc"), "-std=c11", "-fsanitize=undefined",
                         "-fno-sanitize-recover=all", "-I", str(work),
@@ -48,6 +50,9 @@ class AndroidScrollTests(unittest.TestCase):
 
     def test_root_scroll_stays_on_physical_pixel_grid(self):
         self.scenario("pixels")
+
+    def test_zoom_preserves_finger_distance_and_nested_hit_coordinates(self):
+        self.scenario("zoom")
 
     def test_event_timestamps_drive_velocity_and_cancellation(self):
         source = (ROOT / "src/app/main.c").read_text()

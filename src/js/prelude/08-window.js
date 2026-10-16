@@ -290,17 +290,27 @@ const cancelAnimationFrame = (id) => N.cancelRaf(id);
 const requestIdleCallback = (fn, o) => setTimeout(() => fn({ didTimeout: false, timeRemaining() { return 10; } }), 1);
 const cancelIdleCallback = clearTimeout;
 const queueMicrotask = (fn) => { Promise.resolve().then(() => { try { fn(); } catch (e) { report(e); } }); };
-function structuredClone(v, seen = new Map()) {
+N.cloneError(DOMException);
+function structuredClone(v, options) {
+    // Modules are serializable, never transferable. Validate even when the
+    // transfer-list entry is not reachable from the value being cloned.
+    if (options && options.transfer) for (const item of options.transfer)
+        if (N.isWasmModule(item)) throw new DOMException('WebAssembly.Module is not transferable.', 'DataCloneError');
+    return cloneValue(v, new Map());
+}
+function cloneValue(v, seen) {
     if (v === null || typeof v !== 'object') { if (typeof v === 'function' || typeof v === 'symbol') throw new DOMException('could not be cloned.', 'DataCloneError'); return v; }
     if (seen.has(v)) return seen.get(v);
+    const moduleCopy = N.cloneWasm(v);
+    if (moduleCopy !== undefined) { seen.set(v, moduleCopy); return moduleCopy; }
     const tag = Object.prototype.toString.call(v).slice(8, -1);
     if (tag === 'Date') return new Date(Date.prototype.getTime.call(v)); if (tag === 'RegExp') return new RegExp(v.source, v.flags);
     if (tag === 'ArrayBuffer') { const b = new ArrayBuffer(v.byteLength); new Uint8Array(b).set(new Uint8Array(v)); seen.set(v, b); return b; }
-    if (ArrayBuffer.isView(v)) { const b = structuredClone(v.buffer, seen); return tag === 'DataView' ? new DataView(b, v.byteOffset, v.byteLength) : new globalThis[tag](b, v.byteOffset, v.length); }
+    if (ArrayBuffer.isView(v)) { const b = cloneValue(v.buffer, seen); return tag === 'DataView' ? new DataView(b, v.byteOffset, v.byteLength) : new globalThis[tag](b, v.byteOffset, v.length); }
     if (v instanceof Blob || tag === 'Blob' || tag === 'File') return v; if (N.isNode(v)) throw new DOMException('could not be cloned.', 'DataCloneError');
-    if (tag === 'Map') { const m = new Map(); seen.set(v, m); for (const [k, x] of v) m.set(structuredClone(k, seen), structuredClone(x, seen)); return m; }
-    if (tag === 'Set') { const s = new Set(); seen.set(v, s); for (const x of v) s.add(structuredClone(x, seen)); return s; }
-    const o = Array.isArray(v) ? [] : {}; seen.set(v, o); for (const k of Object.keys(v)) o[k] = structuredClone(v[k], seen); return o;
+    if (tag === 'Map') { const m = new Map(); seen.set(v, m); for (const [k, x] of v) m.set(cloneValue(k, seen), cloneValue(x, seen)); return m; }
+    if (tag === 'Set') { const s = new Set(); seen.set(v, s); for (const x of v) s.add(cloneValue(x, seen)); return s; }
+    const o = Array.isArray(v) ? [] : {}; seen.set(v, o); for (const k of Object.keys(v)) o[k] = cloneValue(v[k], seen); return o;
 }
 const xferPorts = (o, t) => { const tr = o && typeof o === 'object' ? o.transfer : t; return (tr && typeof tr[Symbol.iterator] === 'function' ? [...tr] : []).filter(p => p && typeof p.postMessage === 'function' && typeof p.start === 'function'); };
 function postMessage(data, origin, transfer) { const [src, org] = N.caller(); const d = structuredClone(data), ports = xferPorts(origin, transfer); setTimeout(() => dispatch(G, new MessageEvent('message', { data: d, origin: org, source: asWin(src), ports }), true)); }
@@ -359,7 +369,7 @@ const globals = {
     CryptoKey, SubtleCrypto,
     ProcessingInstruction, TouchEvent, CompositionEvent, ClipboardEvent, ClipboardItem, DragEvent, StorageEvent, PromiseRejectionEvent, SubmitEvent,
     StyleSheet, IdleDeadline, TimeRanges, MediaError, MediaSource, SourceBuffer, SourceBufferList, ImageData, Path2D, CanvasGradient, CanvasPattern, CanvasRenderingContext2D, History, Navigator, Screen, Performance, Crypto, SubtleCrypto,
-    DOMException, DOMRectReadOnly, DOMRect, Event, CustomEvent, UIEvent, FocusEvent, MouseEvent, PointerEvent, WheelEvent, KeyboardEvent, InputEvent, ErrorEvent, ProgressEvent, MessageEvent, PopStateEvent, HashChangeEvent, PageTransitionEvent, AnimationEvent, TransitionEvent, MediaQueryListEvent,
+    DOMException, DOMRectReadOnly, DOMRect, Event, CustomEvent, CommandEvent, ToggleEvent, UIEvent, FocusEvent, MouseEvent, PointerEvent, WheelEvent, KeyboardEvent, InputEvent, ErrorEvent, ProgressEvent, MessageEvent, PopStateEvent, HashChangeEvent, PageTransitionEvent, AnimationEvent, TransitionEvent, MediaQueryListEvent,
     EventTarget, AbortSignal, AbortController, MutationObserver, MutationRecord, Node, NodeList, HTMLCollection, AnimationTimeline, DocumentTimeline, CharacterData, Text, CDATASection, Comment, DocumentType, DocumentFragment, ShadowRoot, Attr, NamedNodeMap, DOMTokenList,
     CSSStyleDeclaration, SVGFEBlendElement, SVGFEComponentTransferElement, SVGFEDiffuseLightingElement, SVGFESpecularLightingElement, SVGFEDropShadowElement, SVGFEFloodElement, SVGFEGaussianBlurElement, SVGFEImageElement, SVGFEMergeElement, SVGFEMergeNodeElement, SVGFEOffsetElement, SVGFETileElement, SVGFEDistantLightElement, SVGFEPointLightElement, SVGFESpotLightElement, SVGFEFuncRElement, SVGFEFuncGElement, SVGFEFuncBElement, SVGFEFuncAElement, SVGLength, SVGNumber, SVGAnimatedLength, SVGAnimatedNumber, SVGAnimatedInteger, SVGAnimatedBoolean, SVGAnimatedString, SVGAnimatedEnumeration, SVGRect, SVGAnimatedRect, SVGUnitTypes, SVGGeometryElement, SVGRectElement, SVGCircleElement, SVGEllipseElement, SVGLineElement, SVGPathElement, SVGPolylineElement, SVGPolygonElement, SVGGElement, SVGDefsElement, SVGUseElement, SVGImageElement, SVGForeignObjectElement, SVGAElement, SVGSwitchElement, SVGTextContentElement, SVGTextPositioningElement, SVGTextElement, SVGTSpanElement, SVGTextPathElement, SVGGradientElement, SVGLinearGradientElement, SVGRadialGradientElement, SVGStopElement, SVGClipPathElement, SVGMaskElement, SVGPatternElement, SVGFilterElement, SVGMarkerElement, SVGSymbolElement, SVGTitleElement, SVGDescElement, SVGMetadataElement, SVGStyleElement, SVGScriptElement, SVGFEColorMatrixElement, SVGFECompositeElement, SVGFEMorphologyElement, SVGFETurbulenceElement, SVGFEDisplacementMapElement, SVGFEConvolveMatrixElement, SVGComponentTransferFunctionElement, CSSRuleList, CSSStyleRule, CSSGroupingRule, CSSConditionRule, CSSMediaRule, CSSSupportsRule, CSSContainerRule, CSSLayerBlockRule, CSSLayerStatementRule, CSSImportRule, CSSNamespaceRule, CSSFontFaceRule, CSSPageRule, CSSKeyframeRule, CSSKeyframesRule, MediaList, Element, HTMLElement, SVGElement, SVGGraphicsElement, SVGSVGElement, MathMLElement, Image, Audio, Option, CustomElementRegistry, Document, HTMLDocument, XMLDocument, CSSRule, CSSStyleSheet, CSS, FontFace,
     TreeWalker, NodeIterator, NodeFilter, Range, StaticRange, AbstractRange, Selection, Animation, DOMMatrixReadOnly, DOMMatrix, DOMPoint, DOMParser, XMLSerializer,
@@ -398,12 +408,13 @@ Object.defineProperty(VisualViewport.prototype, Symbol.toStringTag, { value: 'Vi
 Object.defineProperty(G, 'VisualViewport', { value: VisualViewport, writable: true, configurable: true });
 const visual = Object.assign(Object.create(VisualViewport.prototype), { onresize: null, onscroll: null, onscrollend: null });
 G.visualViewport = visual;
-function viewportChanged(resized) {
+function viewportChanged(resized, scrolled, media = true) {
     if (resized) {
         dispatch(G, new Event('resize'), true);
         dispatch(visual, new Event('resize'), true);
     }
-    mediaChanged();
+    if (scrolled) dispatch(document, new Event('scroll', { bubbles: true }), true);
+    if (media) mediaChanged();
 }
 // Bare global calls like `addEventListener(...)` run with an undefined receiver in strict code.
 if (navigator.maxTouchPoints) for (const type of ['touchstart', 'touchmove', 'touchend', 'touchcancel']) def(G, 'on' + type, null);

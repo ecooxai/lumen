@@ -14,26 +14,65 @@ const visualSource = windowSource.slice(windowSource.indexOf(visualStart), windo
 
 function fixture() {
     let viewport = [412, 800, 0, 0, 2];
+    let document;
     const errors = [];
     const native = {
         viewport: () => viewport.slice(),
         now: () => 100,
-        isNode: () => false,
+        isNode: target => target === document,
+        parent: () => null,
+        type: () => 9,
         log: (...args) => errors.push(args),
         media: query => query.includes('resolution') ? viewport[4] >= 3 : viewport[0] >= 600,
     };
     const result = vm.runInNewContext(`(function(N) {
         const G = {};
         ${eventSource}
+        const document = new EventTarget();
         ${mediaSource}
         ${visualSource}
         Object.setPrototypeOf(G, EventTarget.prototype);
-        return { G, Event, EventTarget, matchMedia,
+        return { G, document, Event, EventTarget, matchMedia,
             VisualViewport: typeof VisualViewport === 'undefined' ? null : VisualViewport,
             update: typeof viewportChanged === 'undefined' ? () => {} : viewportChanged };
     })`, {})(native);
+    document = result.document;
     return { ...result, errors, setViewport: next => { viewport = next; } };
 }
+
+test('root scroll targets the document and bubbles to window without resize or visual pan', () => {
+    const env = fixture(), order = [];
+    env.G.addEventListener('scroll', () => order.push('capture'), true);
+    env.document.addEventListener('scroll', event => {
+        order.push('document');
+        assert.equal(event.target, env.document);
+        assert.equal(event.currentTarget, env.document);
+        assert.equal(event.bubbles, true);
+        assert.equal(event.cancelable, false);
+        assert.equal(event.isTrusted, true);
+        assert.equal(env.G.visualViewport.pageTop, 123);
+    });
+    env.G.addEventListener('scroll', event => {
+        order.push('window');
+        assert.equal(event.target, env.document);
+        assert.equal(event.currentTarget, env.G);
+    });
+    env.G.onresize = env.G.visualViewport.onscroll = () => order.push('unexpected');
+    env.setViewport([412, 800, 0, 123, 2]);
+    env.update(false, true, false);
+    assert.deepEqual(order, ['capture', 'document', 'window']);
+    assert.deepEqual(env.errors, []);
+});
+
+test('scroll propagation honors stopPropagation and reports listener errors', () => {
+    const env = fixture(), order = [];
+    env.document.addEventListener('scroll', event => { order.push('document'); event.stopPropagation(); });
+    env.document.addEventListener('scroll', () => { throw new Error('scroll listener'); });
+    env.G.onscroll = () => order.push('window');
+    env.update(false, true, false);
+    assert.deepEqual(order, ['document']);
+    assert.equal(env.errors.length, 1);
+});
 
 test('visual viewport is a stable EventTarget with read-only CSS geometry', () => {
     const env = fixture();

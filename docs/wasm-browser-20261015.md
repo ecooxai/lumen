@@ -37,23 +37,30 @@ body use/locking, cancellation, malformed/truncated bodies, same-origin frame
 Responses and worker API calls. Worker fetch remains buffered internally. See
 android-wasm-streaming-20261015.md.
 
-Source corroboration: wasm.cc now registers V8 streaming callbacks. worker.cc uses
-ValueSerializer/Deserializer without delegates for modules/shared backing stores.
-The page structuredClone JS implementation does not handle modules. The former
-worker loop was not notified by V8 foreground-task posting and omitted the
-post-task microtask checkpoint. The phone now confirms this timeout is fixed.
+Host-only cloning follow-up: the uninstalled candidate passes12/13 broad checks,
+15/15 focused module cloning checks,27/27 streaming and8/8 worker checks.
+clone.cc retains compiled modules through dedicated-worker serialization and
+provides native module cloning to the page prelude. Shared memory transport still
+fails. See android-wasm-clone-20261015.md. The installed phone remains at10/13;
+do not report the host result as Android verification.
+
+Source corroboration: wasm.cc registers V8 streaming callbacks. The former
+worker loop lacked V8 foreground-task wakeups and post-task microtask checkpoints;
+the phone confirms that timeout is fixed. Page wakeup/deadline integration is
+also implemented in the current candidate, but Android timing verification is
+pending an uncontested testing window.
 
 Next implementation/verification requirements:
 
 1. Extend worker fetch to actual incremental network streaming and broaden
    Response/Streams conformance, including prototype overrides and BYOB. Page
    streaming integration is implemented; focused checks are not full conformance.
-2. Worker task wakeups are fixed. Page V8 completion still incurs up to the
-   event-loop fallback wait: delayed800ms fetch compiled in1812ms on the phone.
-   Connect page foreground tasks to wakeups/deadlines without polling.
-3. Structured clone and worker message support for modules/shared backing stores,
-   including lifetime and isolation checks. Do not silently convert them to plain
-   objects or bypass cross-origin isolation requirements.
+2. Verify the candidate's page foreground wakeups/deadlines on Android. The old
+   event-loop fallback can delay completion by1000ms; repeat the uncontested
+   baseline before claiming a measured improvement.
+3. Verify implemented module cloning on Android, extend frame/transfer conformance,
+   and implement shared backing stores with lifetime and isolation checks. Do not
+   silently convert them to plain objects or bypass cross-origin isolation.
 4. Broader engine/API conformance: imports/exports, tables/globals, reference types,
    exceptions, GC, supported memory64/multi-memory features, atomic instructions,
    shared-memory threads, invalid binaries and error classes. Compare against

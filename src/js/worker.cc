@@ -3,6 +3,7 @@
 #include "js_int.h"
 #include "jsglue.h"
 #include "v8_tasks.h"
+#include "clone.h"
 #include <libplatform/libplatform.h>
 #include <pthread.h>
 #include <algorithm>
@@ -20,7 +21,7 @@ extern "C" {
 void (*js_wakeup)(void) = nullptr;
 
 namespace {
-struct Buf { uint8_t *p = nullptr; size_t n = 0; };
+using Buf = JsSerializedValue;
 enum { WM_MESSAGE, WM_ERROR, WM_LOADFAIL };
 struct OutMsg { int kind; Buf data; std::string msg, file; int line = 0, col = 0; };
 struct Worker {
@@ -50,17 +51,6 @@ void wm_meta(v8::Local<v8::Context> ctx, v8::Local<v8::Module> m, v8::Local<v8::
 
 void wake() { if (js_wakeup) js_wakeup(); }
 
-bool ser(v8::Isolate *iso, v8::Local<v8::Context> ctx, v8::Local<v8::Value> v, Buf &out) {
-    v8::ValueSerializer s(iso);   /* no delegate: V8 throws DataCloneError itself (V8 is built without RTTI) */
-    s.WriteHeader();
-    if (!s.WriteValue(ctx, v).FromMaybe(false)) return false;
-    auto r = s.Release(); out.p = r.first; out.n = r.second; return true;
-}
-v8::MaybeLocal<v8::Value> deser(v8::Isolate *iso, v8::Local<v8::Context> ctx, const Buf &b) {
-    v8::ValueDeserializer d(iso, b.p, b.n);
-    if (!d.ReadHeader(ctx).FromMaybe(false)) return {};
-    return d.ReadValue(ctx);
-}
 bool bytes_of(v8::Local<v8::Value> v, const char *&p, size_t &n) {
     if (v->IsArrayBuffer()) { auto ab = v.As<v8::ArrayBuffer>(); p = (const char *)ab->Data(); n = ab->ByteLength(); return true; }
     if (v->IsArrayBufferView()) { auto av = v.As<v8::ArrayBufferView>(); p = (const char *)av->Buffer()->Data() + av->ByteOffset(); n = av->ByteLength(); return true; }
@@ -116,8 +106,8 @@ std::string resolve(WEnv *E, const std::string &rel, const char *base = nullptr)
 typedef v8::FunctionCallbackInfo<v8::Value> FCI;
 #define WFN(nm) void w_##nm(const FCI &a)
 #define WENV WEnv *E = wenv(a.GetIsolate()); v8::Isolate *iso = E->iso; v8::Local<v8::Context> ctx = iso->GetCurrentContext(); (void)ctx
-WFN(post) { WENV; Buf b; if (ser(iso, ctx, a[0], b)) post_out(E, OutMsg{ WM_MESSAGE, b, {}, {}, 0, 0 }); }
-WFN(clone) { WENV; Buf b; if (!ser(iso, ctx, a[0], b)) return; v8::Local<v8::Value> v; if (deser(iso, ctx, b).ToLocal(&v)) a.GetReturnValue().Set(v); free(b.p); }
+WFN(post) { WENV; Buf b; if (js_serialize(iso, ctx, a[0], b)) post_out(E, OutMsg{ WM_MESSAGE, std::move(b), {}, {}, 0, 0 }); }
+WFN(clone) { WENV; Buf b; if (!js_serialize(iso, ctx, a[0], b)) return; v8::Local<v8::Value> v; if (js_deserialize(iso, ctx, b).ToLocal(&v)) a.GetReturnValue().Set(v); }
 WFN(timer) {
     WENV; if (!a[0]->IsFunction()) return;
     uint32_t id = ++E->tseq; WTimer &t = E->timers[id];
@@ -189,6 +179,7 @@ const char kWorkerPrelude[] = R"JS((function (W, G) {
 const def = (o, k, v) => Object.defineProperty(o, k, { value: v, writable: true, configurable: true, enumerable: false });
 const codes = { IndexSizeError: 1, HierarchyRequestError: 3, WrongDocumentError: 4, InvalidCharacterError: 5, NotFoundError: 8, NotSupportedError: 9, InvalidStateError: 11, SyntaxError: 12, InvalidModificationError: 13, NamespaceError: 14, InvalidAccessError: 15, SecurityError: 18, NetworkError: 19, AbortError: 20, URLMismatchError: 21, QuotaExceededError: 22, TimeoutError: 23, DataCloneError: 25 };
 class DOMException extends Error { constructor(message = '', name = 'Error') { super(String(message)); def(this, 'name', String(name)); } get code() { return codes[this.name] || 0; } }
+W.cloneError(DOMException);
 class Event {
     constructor(type, init) { init = init || {}; this.type = String(type); this.bubbles = !!init.bubbles; this.cancelable = !!init.cancelable; this.composed = !!init.composed; this.defaultPrevented = false; this.target = null; this.currentTarget = null; this.eventPhase = 0; this.isTrusted = false; this.timeStamp = W.now(); def(this, '_stop', false); }
     preventDefault() { if (this.cancelable) this.defaultPrevented = true; }
@@ -362,12 +353,12 @@ class MessageChannel { constructor() { this.port1 = new MessagePort(); this.port
 const api = {
     self: G, globalThis: G, location, navigator, name: W.name, origin: location.origin, isSecureContext: location.protocol === 'https:', crossOriginIsolated: false,
     onmessage: null, onmessageerror: null, onerror: null, onunhandledrejection: null, onrejectionhandled: null, onlanguagechange: null, onoffline: null, ononline: null,
-    postMessage(m, t) { if (arguments.length < 1) throw new TypeError("Failed to execute 'postMessage': 1 argument required, but only 0 present."); const ps = (Array.isArray(t) ? t : t && t.transfer || []).filter(p => p instanceof MessagePort); if (!ps.length) return W.post(m); W.post({ __lumenXfer: ps.map(p => { const k = -(++wpseq); p._k = k; if (p._other) wports.set(k, p._other); return k; }), data: m }); },
+    postMessage(m, t) { if (arguments.length < 1) throw new TypeError("Failed to execute 'postMessage': 1 argument required, but only 0 present."); const transfer = Array.isArray(t) ? t : t && t.transfer || []; for (const item of transfer) if (W.isWasmModule(item)) throw new DOMException('WebAssembly.Module is not transferable.', 'DataCloneError'); const ps = transfer.filter(p => p instanceof MessagePort); if (!ps.length) return W.post(m); W.post({ __lumenXfer: ps.map(p => { const k = -(++wpseq); p._k = k; if (p._other) wports.set(k, p._other); return k; }), data: m }); },
     close() { W.close(); },
     importScripts(...urls) { for (const u of urls) W.importScript(String(u)); },
     setTimeout: (f, ms, ...args) => W.timer(toFn(f), +ms || 0, false, args), setInterval: (f, ms, ...args) => W.timer(toFn(f), +ms || 0, true, args),
     clearTimeout: id => W.clear(+id || 0), clearInterval: id => W.clear(+id || 0),
-    queueMicrotask: f => { Promise.resolve().then(() => f()); }, structuredClone: v => W.clone(v),
+    queueMicrotask: f => { Promise.resolve().then(() => f()); }, structuredClone: (v, options) => { if (options && options.transfer) for (const item of options.transfer) if (W.isWasmModule(item)) throw new DOMException('WebAssembly.Module is not transferable.', 'DataCloneError'); return W.clone(v); },
     btoa, atob, TextEncoder, TextDecoder, Blob, File, URL, URLSearchParams, Headers, Response, fetch, performance, console,
     Event, MessageEvent, MessagePort, MessageChannel, ErrorEvent, CustomEvent, PromiseRejectionEvent, EventTarget, DOMException, WorkerGlobalScope, DedicatedWorkerGlobalScope, WorkerLocation, WorkerNavigator,
 };
@@ -418,7 +409,7 @@ void worker_main(std::shared_ptr<Worker> w) {
     std::unique_ptr<v8::ArrayBuffer::Allocator> al(v8::ArrayBuffer::Allocator::NewDefaultAllocator());
     cp.array_buffer_allocator = al.get();
     v8::Isolate *iso = v8::Isolate::Allocate();
-    auto tasks = js_register_worker_tasks(iso, [weak = std::weak_ptr<Worker>(w)] {
+    auto tasks = js_register_foreground_tasks(iso, [weak = std::weak_ptr<Worker>(w)] {
         if (auto owner = weak.lock()) {
             { std::lock_guard<std::mutex> lk(owner->mu); ++owner->task_version; }
             owner->cv.notify_one();
@@ -439,6 +430,7 @@ void worker_main(std::shared_ptr<Worker> w) {
         v8::Context::Scope cs(ctx);
         v8::Local<v8::Object> W = v8::Object::New(iso);
         js_wasm_install(ctx, W);
+        js_clone_install(ctx, W);
 #define WREG(nm) (void)W->Set(ctx, jstr(iso, #nm), v8::Function::New(ctx, w_##nm).ToLocalChecked())
         WREG(post); WREG(clone); WREG(timer); WREG(clear); WREG(close); WREG(now); WREG(log); WREG(decode); WREG(resolve); WREG(fetch); WREG(importScript); WREG(reportErr);
         auto setS = [&](const char *k, const std::string &v) { (void)W->Set(ctx, jstr(iso, k), jstr(iso, v.c_str())); };
@@ -513,10 +505,9 @@ void worker_main(std::shared_ptr<Worker> w) {
                     v8::HandleScope hs2(iso);
                     v8::TryCatch tc(iso);
                     v8::Local<v8::Value> v;
-                    if (deser(iso, ctx, b).ToLocal(&v) && !E->onmsg.IsEmpty()) { (void)E->onmsg.Get(iso)->Call(ctx, v8::Undefined(iso), 1, &v); wcheck(E, tc); }
+                    if (js_deserialize(iso, ctx, b).ToLocal(&v) && !E->onmsg.IsEmpty()) { (void)E->onmsg.Get(iso)->Call(ctx, v8::Undefined(iso), 1, &v); wcheck(E, tc); }
                     iso->PerformMicrotaskCheckpoint();
                 }
-                free(b.p);
             }
             if (w->term) break;
             run_timers(E);
@@ -531,15 +522,16 @@ void worker_main(std::shared_ptr<Worker> w) {
         }
         E->timers.clear(); E->mods.clear(); E->murl.clear(); E->onmsg.Reset(); E->report.Reset(); E->ctx.Reset();
     }
+    std::deque<Buf> abandoned;
     {
         std::lock_guard<std::mutex> lk(w->mu);
         w->iso = nullptr;
-        for (Buf &b : w->in) free(b.p);
-        w->in.clear();
+        abandoned.swap(w->in);
     }
+    abandoned.clear(); // Release retained native code outside the worker lock.
     tasks->Close();
     iso->Dispose();
-    js_unregister_worker_tasks(iso);
+    js_unregister_foreground_tasks(iso);
     delete E;
 }
 
@@ -600,11 +592,13 @@ void *worker_thread(void *p) {
 }
 
 void worker_terminate(Worker *w) {
-    std::lock_guard<std::mutex> lk(w->mu);
-    w->term = true;
-    if (w->iso) w->iso->TerminateExecution();
-    for (OutMsg &m : w->out) free(m.data.p);
-    w->out.clear();
+    std::deque<OutMsg> abandoned;
+    {
+        std::lock_guard<std::mutex> lk(w->mu);
+        w->term = true;
+        if (w->iso) w->iso->TerminateExecution();
+        abandoned.swap(w->out);
+    }
     w->cv.notify_all();
 }
 
@@ -625,18 +619,22 @@ void n_workerNew(const FCI &a) {
 }
 void n_workerPost(const FCI &a) {
     v8::Isolate *iso = a.GetIsolate(); v8::Local<v8::Context> ctx = iso->GetCurrentContext();
-    auto it = g_workers.find(a[0]->Uint32Value(ctx).FromMaybe(0));
+    auto id = a[0]->Uint32Value(ctx);
+    if (id.IsNothing()) return;
     Buf b;
-    if (!ser(iso, ctx, a[1], b)) return;
-    if (it == g_workers.end() || it->second->term) { free(b.p); return; }
+    if (!js_serialize(iso, ctx, a[1], b)) return;
+    // Serialization invokes author getters, which can terminate this worker.
+    // Never retain a map iterator across that reentrant JavaScript.
+    auto it = g_workers.find(id.FromJust());
+    if (it == g_workers.end() || it->second->term || it->second->owner != jctx(iso)) return;
     Worker *w = it->second.get();
-    { std::lock_guard<std::mutex> lk(w->mu); w->in.push_back(b); }
+    { std::lock_guard<std::mutex> lk(w->mu); w->in.push_back(std::move(b)); }
     w->cv.notify_all();
 }
 void n_workerTerm(const FCI &a) {
     v8::Isolate *iso = a.GetIsolate(); v8::Local<v8::Context> ctx = iso->GetCurrentContext();
     auto it = g_workers.find(a[0]->Uint32Value(ctx).FromMaybe(0));
-    if (it == g_workers.end()) return;
+    if (it == g_workers.end() || it->second->owner != jctx(iso)) return;
     worker_terminate(it->second.get());
     g_workers.erase(it);
 }
@@ -659,7 +657,7 @@ double workers_deadline(JsCtx *c) {
 }
 
 void workers_pump(JsCtx *c) {
-    std::vector<std::pair<uint32_t, std::deque<OutMsg>>> batch;
+    std::deque<std::pair<uint32_t, std::deque<OutMsg>>> batch;
     for (auto &kv : g_workers) {
         if (kv.second->owner != c) continue;
         std::deque<OutMsg> q;
@@ -676,11 +674,10 @@ void workers_pump(JsCtx *c) {
                 v8::HandleScope hs(iso);
                 v8::Local<v8::Value> data = v8::Undefined(iso);
                 int kind = m.kind;
-                if (kind == WM_MESSAGE) { v8::TryCatch tc(iso); if (!deser(iso, ctx, m.data).ToLocal(&data)) { data = v8::Undefined(iso); kind = 3; } }
+                if (kind == WM_MESSAGE) { v8::TryCatch tc(iso); if (!js_deserialize(iso, ctx, m.data).ToLocal(&data)) { data = v8::Undefined(iso); kind = 3; } }
                 v8::Local<v8::Value> argv[7] = { v8::Integer::NewFromUnsigned(iso, b.first), v8::Integer::New(iso, kind), data, jstr(iso, m.msg.c_str()), jstr(iso, m.file.c_str()), v8::Integer::New(iso, m.line), v8::Integer::New(iso, m.col) };
                 (void)jcall(c, fv.As<v8::Function>(), v8::Undefined(iso), 7, argv);
             }
-            free(m.data.p);
         }
 }
 

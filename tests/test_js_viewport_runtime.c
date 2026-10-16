@@ -3,12 +3,18 @@
 #include "../src/js/js.h"
 #include <assert.h>
 #include <string.h>
+#include <math.h>
 
 typedef struct ViewportFixture {
     float width, height, dpr, scroll_x, scroll_y;
     MediaCtx media;
     unsigned syncs;
 } ViewportFixture;
+
+static void scroll_to(void *userdata, float x, float y) {
+    ViewportFixture *fixture = userdata;
+    fixture->scroll_x = x; fixture->scroll_y = y;
+}
 
 static void viewport(void *userdata, float *width, float *height,
                      float *scroll_x, float *scroll_y, float *dpr) {
@@ -52,7 +58,7 @@ int main(int argc, char **argv) {
     ViewportFixture fixture = { .width = 412, .height = 800, .dpr = 2,
                                 .media = { .vw = 412, .vh = 800, .dpr = 2 } };
     JsHost host = { .ud = &fixture, .media = &fixture.media,
-                    .viewport = viewport, .sync = sync_viewport };
+                    .viewport = viewport, .sync = sync_viewport, .scroll_to = scroll_to };
     Document *document = doc_new("https://viewport.test/");
     const char *html = "<!doctype html><html><head></head><body></body></html>";
     html_parse(document, html, strlen(html));
@@ -89,8 +95,37 @@ int main(int argc, char **argv) {
     assert(fixture.syncs == 1);
     fixture.scroll_y = 123;
     fixture.scroll_x = 12;
+    js_eval(context,
+            "document.addEventListener('scroll', event => {"
+            "order.push('document-scroll');"
+            "if (!event.isTrusted || event.target !== document || event.currentTarget !== document || !event.bubbles || event.cancelable) viewportErrors.push('document-scroll');"
+            "});"
+            "addEventListener('scroll', event => {"
+            "order.push('window-scroll');"
+            "if (event.target !== document || event.currentTarget !== window) viewportErrors.push('window-scroll');"
+            "});"
+            "visualViewport.onscroll = () => viewportErrors.push('unexpected-visual-pan');",
+            "viewport:scroll-setup");
     js_tick(context);
-    expect(context, document, "visualViewport.pageTop === 123 && visualViewport.pageLeft === 12 && order.length === 0");
+    expect(context, document, "visualViewport.pageTop === 123 && visualViewport.pageLeft === 12 && order.join(',') === 'document-scroll,window-scroll'");
+    assert(fixture.syncs == 1);
+    js_eval(context, "order.length = 0", "viewport:reset");
+    for (int iteration = 0; iteration < 100; iteration++) js_tick(context);
+    expect(context, document, "order.length === 0");
+    js_eval(context,
+            "document.addEventListener('scroll', () => scrollTo(12, 250), {once:true});"
+            "scrollTo(12, 200); scrollTo(12, 220);",
+            "viewport:reentrant-scroll");
+    expect(context, document, "order.length === 0");
+    js_tick(context);
+    expect(context, document, "order.join(',') === 'document-scroll,window-scroll' && scrollY === 250");
+    assert(isfinite(js_next_deadline(context)) && js_next_deadline(context) <= now_ms() + 17);
+    js_eval(context, "order.length = 0", "viewport:reset");
+    js_tick(context);
+    expect(context, document, "order.join(',') === 'document-scroll,window-scroll'");
+    js_eval(context, "order.length = 0", "viewport:reset");
+    js_tick(context);
+    expect(context, document, "order.length === 0");
     assert(fixture.syncs == 1);
     fixture.dpr = 3;
     js_tick(context);

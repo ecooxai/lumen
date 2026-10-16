@@ -3,6 +3,7 @@
 /* V8 embedding: platform, per-page isolate/context, node wrappers, script execution, timers, events */
 #include "js_int.h"
 #include "v8_tasks.h"
+#include "clone.h"
 #include <v8-profiler.h>
 #include <algorithm>
 #include <openssl/evp.h>
@@ -464,11 +465,12 @@ JsCtx *owner_ctx(Document *d) {
 }
 JsCtx *js_new(Document *d, const JsHost *host) { return js_new_ex(d, host, nullptr, nullptr); }
 
-static unsigned viewport_changes(JsCtx *context) {
+static unsigned viewport_changes(JsCtx *context, bool commit = true) {
     if (!context->host.viewport) return 0;
     float width = 0, height = 0, scroll_x = 0, scroll_y = 0, dpr = 1;
     context->host.viewport(context->host.ud, &width, &height, &scroll_x, &scroll_y, &dpr);
-    return context->viewport_state.update(width, height, dpr, scroll_x, scroll_y);
+    return commit ? context->viewport_state.update(width, height, dpr, scroll_x, scroll_y)
+                  : context->viewport_state.changes(width, height, dpr, scroll_x, scroll_y);
 }
 
 JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
@@ -489,7 +491,11 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
     v8::Isolate::CreateParams cp;
     c->alloc = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
     cp.array_buffer_allocator = c->alloc;
-    c->iso = v8::Isolate::New(cp);
+    c->iso = v8::Isolate::Allocate();
+    // V8 caches its foreground runner during initialization. The callback
+    // captures only the process-lifetime wake function, never a page pointer.
+    c->foreground_tasks = js_register_foreground_tasks(c->iso, [wake = js_wakeup] { if (wake) wake(); });
+    v8::Isolate::Initialize(c->iso, cp);
     js_wasm_init(c->iso);
     c->iso->SetData(0, c);
     c->iso->SetMicrotasksPolicy(v8::MicrotasksPolicy::kExplicit);
@@ -511,6 +517,7 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
     v8::Local<v8::Object> N = v8::Object::New(iso);
     js_install_native(c, N);
     js_wasm_install(ctx, N);
+    js_clone_install(ctx, N);
     v8::TryCatch tc(iso);
     v8::ScriptOrigin origin(jstr(iso, "lumen:prelude"));
     v8::Local<v8::Script> s;
@@ -638,8 +645,12 @@ void js_free(JsCtx *c) {
         c->ctx.Reset();
     }
     if (!c->parent) {
-        v8::platform::NotifyIsolateShutdown(g_platform.get(), c->iso);
-        c->iso->Dispose(); delete c->alloc;
+        c->foreground_tasks->Close();
+        // This isolate never owns a libplatform foreground runner. Its shutdown
+        // helper assumes one exists; close our runner and unregister it instead.
+        c->iso->Dispose();
+        js_unregister_foreground_tasks(c->iso);
+        delete c->alloc;
     }
     for (Node *n : roots) node_free_tree(n);
     for (Document *d : docs) doc_free(d);
@@ -716,6 +727,24 @@ static std::string key_code(const char *k) {
     return k;
 }
 
+/* Legacy keyCode describes a key, not its Unicode character. In particular,
+ * '.' must not become 46 (Delete) in editors using legacy keyboard handlers. */
+static int legacy_key_code(const std::string &code) {
+    if (code.size() == 4 && code.compare(0, 3, "Key") == 0) return code[3];
+    if (code.size() == 6 && code.compare(0, 5, "Digit") == 0) return code[5];
+    static const struct { const char *code; int value; } keys[] = {
+        {"Backspace",8}, {"Tab",9}, {"Enter",13}, {"Shift",16}, {"Control",17}, {"Alt",18},
+        {"Pause",19}, {"CapsLock",20}, {"Escape",27}, {"Space",32}, {"PageUp",33},
+        {"PageDown",34}, {"End",35}, {"Home",36}, {"ArrowLeft",37}, {"ArrowUp",38},
+        {"ArrowRight",39}, {"ArrowDown",40}, {"Insert",45}, {"Delete",46}, {"Meta",91},
+        {"Semicolon",186}, {"Equal",187}, {"Comma",188}, {"Minus",189}, {"Period",190},
+        {"Slash",191}, {"Backquote",192}, {"BracketLeft",219}, {"Backslash",220},
+        {"BracketRight",221}, {"Quote",222}
+    };
+    for (const auto &k : keys) if (code == k.code) return k.value;
+    return 0;
+}
+
 static bool js_dispatch_impl(JsCtx *c, Node *target, const char *type, const char *kind, bool bubbles, bool cancelable, double x, double y, int button, const char *key, bool touch) {
     if (!c || c->fire.IsEmpty()) return true;
     if (target && target->parent && target->parent->type != NODE_DOCUMENT) { node_retain(target); g_pins.push_back(target); }
@@ -741,7 +770,12 @@ static bool js_dispatch_impl(JsCtx *c, Node *target, const char *type, const cha
     set("ctrlKey", v8::Boolean::New(iso, js_key_mods & 2));
     set("altKey", v8::Boolean::New(iso, js_key_mods & 4));
     set("metaKey", v8::Boolean::New(iso, js_key_mods & 8));
-    if (key) { set("key", jstr(iso, key)); set("code", jstr(iso, key_code(key).c_str())); }
+    if (key) {
+        std::string code = key_code(key);
+        set("key", jstr(iso, key)); set("code", jstr(iso, code.c_str()));
+        set("keyCode", v8::Integer::New(iso, legacy_key_code(code)));
+        set("which", v8::Integer::New(iso, legacy_key_code(code)));
+    }
     v8::Local<v8::Value> ctor = v8::Undefined(iso);
     if (kind && !c->api.IsEmpty()) (void)c->api.Get(iso)->Get(ctx, jstr(iso, kind)).ToLocal(&ctor);
     v8::Local<v8::Value> argv[4] = { target ? jwrap(c, target) : v8::Local<v8::Value>(ctx->Global()), jstr(iso, type), init, ctor };
@@ -791,6 +825,11 @@ void js_set_ready_state(JsCtx *c, int state) {
 double js_next_deadline(JsCtx *c) {
     if (!c) return INFINITY;
     double d = INFINITY;
+    // A scroll/resize callback or animation frame can move the viewport after
+    // its notification snapshot. Schedule the next notification without an
+    // idle timer or waiting for the shell's one-second fallback.
+    if (viewport_changes(c, false)) d = std::min(d, c->viewport_due);
+    if (c->foreground_tasks) d = std::min(d, now_ms() + c->foreground_tasks->NextDelayMs());
     for (auto &kv : c->timers) d = std::min(d, kv.second.due);
     for (auto &e : c->anims) d = std::min(d, e.due);
     if (!c->rafs.empty()) d = std::min(d, c->last_raf + 16);
@@ -806,11 +845,17 @@ double js_next_deadline(JsCtx *c) {
 static void viewport_update(JsCtx *context) {
     unsigned changes = viewport_changes(context);
     if (changes) jsg_visual_changed();
-    if (!(changes & (JsViewportState::RESIZE | JsViewportState::MEDIA)) || context->viewportChanged.IsEmpty()) return;
-    if (context->host.sync) context->host.sync(context->host.ud, context->doc, true);
+    if (!changes || context->viewportChanged.IsEmpty()) return;
+    context->viewport_due = now_ms() + 16;
+    bool media = (changes & (JsViewportState::RESIZE | JsViewportState::MEDIA)) != 0;
+    if (media && context->host.sync) context->host.sync(context->host.ud, context->doc, true);
     JS_ENTER(context);
-    v8::Local<v8::Value> resized = v8::Boolean::New(iso, (changes & JsViewportState::RESIZE) != 0);
-    (void)jcall(context, context->viewportChanged.Get(iso), v8::Undefined(iso), 1, &resized);
+    v8::Local<v8::Value> args[] = {
+        v8::Boolean::New(iso, (changes & JsViewportState::RESIZE) != 0),
+        v8::Boolean::New(iso, (changes & JsViewportState::SCROLL) != 0),
+        v8::Boolean::New(iso, media)
+    };
+    (void)jcall(context, context->viewportChanged.Get(iso), v8::Undefined(iso), 3, args);
 }
 
 static void tick_one(JsCtx *c);
@@ -822,7 +867,9 @@ void js_tick(JsCtx *c) {
 }
 static void tick_one(JsCtx *c) {
     JS_ENTER(c);
-    while (v8::platform::PumpMessageLoop(g_platform.get(), iso)) {}
+    // Frames share the root isolate. Drain once at the root event-loop level,
+    // including a checkpoint after each task so promise completions run now.
+    if (c->foreground_tasks) while (c->foreground_tasks->RunOne()) iso->PerformMicrotaskCheckpoint();
     pick_deliver(c);
     double now = now_ms();
     std::vector<std::pair<double, uint32_t>> due;

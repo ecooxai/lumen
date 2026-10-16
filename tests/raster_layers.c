@@ -128,6 +128,25 @@ static void check_image_vertical(void) {
         image_vertical(actual+1,top,bottom,count,weight);
         assert(memcmp(actual,expected,sizeof actual)==0);
     }
+    /* Exercise every alpha, different lane alignment and random premultiplied
+       colors. This catches byte-lane/carry errors in the ARM channel loop. */
+    uint32_t seed = 0x6194be31;
+    for (int alpha = 0; alpha < 256; alpha++) for (int weight = 0; weight <= 256; weight++) {
+        for (int x = 0; x < 71; x++) {
+            uint32_t *targets[] = { &top[x], &bottom[x], &actual[x + 1] };
+            for (int j = 0; j < 3; j++) {
+                seed = seed * 1664525u + 1013904223u;
+                uint32_t a = j == 0 ? (uint32_t)alpha : seed >> 24;
+                *targets[j] = (a << 24) | (((seed >> 16 & 255) * a / 255) << 16) |
+                              (((seed >> 8 & 255) * a / 255) << 8) | ((seed & 255) * a / 255);
+            }
+        }
+        actual[0] = actual[72] = 0x98765432;
+        memcpy(expected, actual, sizeof actual);
+        for (int x = 0; x < 71; x++) over(&expected[x + 1], scale_px(top[x], 256 - weight) + scale_px(bottom[x], weight));
+        image_vertical(actual + 1, top, bottom, 71, weight);
+        assert(memcmp(actual, expected, sizeof actual) == 0);
+    }
 }
 
 int main(int argc, char **argv) {
@@ -161,7 +180,8 @@ int main(int argc, char **argv) {
     uint32_t ref[STRIDE*H], actual[STRIDE*H];
     Canvas expected={.w=W,.h=H,.stride=STRIDE,.scale=1,.px=ref};
     Canvas partial=expected; partial.px=actual;
-    for (int punch=0;punch<2;punch++) {
+    for (int offset=0;offset<H;offset+=7) for (int punch=0;punch<2;punch++) {
+        partial.row_offset=offset;
         expected.punch=partial.punch=punch ? &picture : NULL;
         for (int i=0;i<STRIDE*H;i++) ref[i]=0xdeadbeef;
         allocation_limit=SIZE_MAX; raster(&expected,&dl,RGBA(255,255,255,255));
@@ -174,7 +194,7 @@ int main(int argc, char **argv) {
                 assert(largest_allocation<=allocation_limit);
                 for (int row=0;row<H;row++) for (int x=0;x<STRIDE;x++) {
                     uint32_t want=row>=y && row<bottom && x>=7 && x<W-3 ? ref[row*STRIDE+x] : 0xdeadbeef;
-                    assert(actual[row*STRIDE+x]==want);
+                    assert(canvas_row(&partial,row)[x]==want);
                 }
             }
         }

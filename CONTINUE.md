@@ -1,5 +1,353 @@
 # Lumen: handoff notes
 
+## IN PROGRESS: Android long ChatGPT sessions (2026-10-15)
+
+Priority: CPU below 50% during typing/streaming in long sessions, Vulkan first.
+Target remains UNMET. Twenty completed long replies persisted in the same conversation,
+Google sign-in/session persistence confirmed. Do not claim full ChatGPT,
+Chrome or Wasm conformance. Preserve all prior uncommitted work.
+
+Last usable baseline: `build/codex-auth-20261015/lumen-empty-candidates-debug.apk`
+(`empty-candidates-symbols/libmain.so`). Later `lumen-empty-host-debug.apk` has
+its verified :host boundary correction and is a fallback artifact. Baseline
+reply 9 diagnostic stream: 104.94% mean /184.85% peak, with logging; completed.
+A later idle window was 4.47% mean /6.06% peak, RSS 618.4 MiB. Prior settled
+long-history typing: 40.00% mean /102.91% peak; punctuation visibly fixed.
+
+Child-list style reuse remains under validation. Reject these performance
+candidates: tree-dependencies (97.46% queued typing), tree-anchored (4,307
+matched elements/~1.1 seconds per cascade), tree-keyed (loading trace still
+widens an unkeyed nested menu :where dependency to all elements).
+
+Current installed candidate: `lumen-subject-index-debug.apk`, matching symbols
+`subject-index-symbols`. Subject-key indexed structural candidate scan, native0.21s/sanitizer1.61s/Android18.84s/verified install-r. Prior hover-keys: Adds token-key attribute dependency filtering and safe
+hover/active witness filtering (native0.19s,sanitizer2.68s,Android24.95s,APK verified).
+Previous unchanged-keys candidate: Adds versioned caching during invalidation and retains
+unchanged positive class/ID constraints in coalesced invalidation. Native style
+PASS0.18s, sanitizer PASS1.80s, Android PASS19.06s, APK closure/signature PASS.
+Previous child-layout candidate contains coalesced class/ID filtering plus avoiding
+parent computed-style dirtiness for ordinary child-list edits. Layout/descendant
+flags still propagate; structural selector subjects are indexed; parent's own
+:empty transitions remain explicit. DOM-only fallback remains conservative.
+Native style PASS0.20s; sanitizer PASS1.34s; Android PASS16.67s; native23/23
+PASS2.08s; scroll parent/direct/nested PASS; APK closure/signature and install-r PASS.
+
+Previous coalesced-keys candidate: draft17 mean62.862374%/peak138.834951%
+(17samples), full correct. Reply17 completed LIVE with conclusion/controls:
+mean105.979029%/peak176.237624% (36samples). SSE200,28batched callbacks,
+620268bytes/33.777seconds,maxqueue5.581seconds,no error/cancellation.
+Profile draft17:55.75%style_recalc,39.85%recalc,22.63%collect,14.94%invalidation.
+Seventeen completed replies in same conversation. No material CPU improvement
+established. Under50% target remains UNMET. A short quiet15sample window before
+this test averaged0.333400%CPU; does not prove interaction performance.
+
+Phone monitor/server remain active; current installed hover-keys, rehydrating19long
+replies completed LIVE. Same18reply-history typing pair59.661807 ->42.694148%
+mean, peaks101.960784/102.061856%; candidate full draft correct. Reply19
+106.384030%mean/179.591837%peak,SSE200,noerror,complete conclusion/controls.
+New token-key dependency index fixes another native1000history cost failure;
+native/sanitizer/Android passed, token-keys artifact retained, not installed.
+Hover-keys native/sanitizer/Android pass and installed. Baseline history19-a typing64.933533%mean/103.030303%peak; full draft correct then cleared. Candidate identical typing mean39.629295%,peak100.990099%,18samples,fullcorrect. Reply20 LIVE complete,mean108.031710%,peak183.505155%. Subject-index installed, rehydrating20history before matching draft test. Native regression/scroll fixture passed. All details in performance doc. No commits.
+
+Android debug F7(137) arms120second numeric-only transport diagnostics; F9(139)
+disarms. Never log request URLs, headers, payloads or credentials. Transport
+trace retained in stream-trace-reply13-transport.log. F8(138) bounded style
+trace; F9 disarms both. Current new process debug flags initially OFF.
+
+Phone one-second app/all-thread monitor remains active, holding both ownership
+locks. Fixture server remains active. All other completed build/profile sessions
+were joined; check any pending commands before cleanup. See
+`docs/android-chatgpt-performance-20261015.md` for artifacts and evidence.
+
+## PROGRESS: Android Google / ChatGPT authentication (2026-10-15)
+
+Latest priority is Google login and ChatGPT via Google. Clean candidate installed:
+`build/codex-auth-20261015/lumen-auth-debug.apk`, SHA256
+`c75e6c01ea642bdbd47f730f7a856d0964a7c413cf7b1ed1373115f59d8e8810`.
+See `docs/android-auth-20261015.md` for changes, validation and limitations.
+17 native tests + 8 adopted-sheet rendering checks + preload rendering check pass.
+ChatGPT login dialog and Google OAuth navigation work. Google initially rejected
+the Chrome identity after email; identifying Lumen on accounts.google.com now
+advances through email/password to account verification on the user's iPad.
+Owner verification completed. Signed-in ChatGPT replies and session persistence
+across replacement APKs work. Current priority is CPU below 50% during streaming
+and long sessions; this target is NOT met yet. See
+`docs/android-chatgpt-performance-20261015.md`. Credentials were used only for the
+authorized Google sign-in flow. Never persist credentials or complete OAuth URLs.
+
+Phone monitor `build/codex-vulkan-pacing-20261015/monitor.py` is still active;
+its monitor.ready identifies the owning PID. It holds both phone ownership locks.
+Fixture server from that directory is also active on 18765/18766. Check exact
+cmdlines before cleanup; another checkout has an unrelated monitor. Temporary
+auth-debug startup hooks, device marker/script/log were removed. Preserve all
+prior uncommitted work. Goal remains active; full browser parity is not achieved.
+
+Earlier unrecorded work: YouTube controls now remain visible for eight seconds
+after a player tap (excluding ads); controls fixture and Android touch tests pass.
+Ad Skip reproduction deferred at user's request. Vulkan presentation-latency=1
+experiment had no material benefit and was reverted; see
+`docs/android-vulkan-presentation-20261015.md`. GL/CPU optimization still deferred.
+
+## PROGRESS: Vulkan ARM64 image blending (2026-10-15)
+
+Previous turn PROGRESS: circular CPU page cache. This turn PROGRESS: NEON
+deinterleaved eight-pixel image blend preserves existing interpolation/alpha
+results with less packed-channel arithmetic. No extra pixel allocation.
+See docs/android-vulkan-image-blend-20261015.md. All prior pending work preserved.
+
+Two alternating MI8 Vulkan comparisons against28a773cb...: scroll CPU47.20 ->
+44.35% and47.03 ->44.95% (4–6% less), raster threadCPU3.782 ->3.160 and3.844 ->
+3.169ms/frame (16–18% less). Presenter timings increased; RAM unchanged~254MiB.
+Idle0.266–0.459% candidate; another67samples0.074%,peak2%. No generalwebsite/FPS
+claim. Both paired1,690,200pixel content comparisons exact. Midpage wrap good.
+Host rasterASan/UBSan and realphone ARM64 rasterUBSan PASS: allweights/alphas,
+randompremul, tails, fractionalimages, layers, damage and circularrows. Native/
+Android builds, API29/arm64/dependencies/v2signature PASS. Compilation capped.
+
+Candidate installed and hash verified, Vulkan active:
+build/codex-vulkan-neon-20261015/lumen-vulkan-neon-debug.apk
+SHA2564af25ce3e5242b8ea9aab899d09c96ba29b5afd06a360e069ba7d2a4b7a0226e.
+Artifacts build/codex-vulkan-neon-20261015. Current libmain symbols matchcandidate.
+Sampled hotspots raster_rect30.86%,fill12.82%,memmove12.53%. SurfaceFlinger BLAST
+latency works:127frame candidate tail,median16.707ms,6/126intervals>25ms,max33.422.
+No baseline; underprofiler; not droppedframe/smoothness proof. NEXT: matched
+presentation timing traces and remaining Vulkan raster/uploadcost, then real
+YouTube/ChatGPT/Gemini/login, pinch/sessionrestoration/fullWasm. GL/CPU deferred.
+Goal ACTIVE, worktree uncommitted, no permission blocker. Credentials unused.
+Cleanup complete: all owned build/test/profile/comparison/monitor/server sessions
+joined; reverse18765, standalone test executable and app profile marker/data
+removed. Google URL+three blanktabs recreated, Google selected; cookies/settings
+not cleared. FinalGoogle30samples CPUmean2.331%,peak5.051%,RSS388.93MiB after
+heavy page loading. 506 total samples, zero parse/cadence errors. Google loadcost
+remains open; exact tab scroll/history cannot be restored without persistence.
+
+## PROGRESS: Vulkan circular CPU page cache (2026-10-15)
+
+Previous turn PROGRESS: integrated phone validation. This turn PROGRESS:
+profiled the Vulkan scroll path, removed its whole-page CPU memmove using a
+circular row offset in the existing allocation, and adapted raster/layers,
+GPU uploads, damage comparisons and fallback composition. No extra bitmap.
+See docs/android-vulkan-cpu-ring-20261015.md. Worktree remains uncommitted.
+
+Controlled MI8 comparison: process scroll CPU52.97% ->49.42% (~6.7% lower),
+raster threadCPU4.737 ->3.688ms/frame (~22% lower). Presenter threadCPU increased
+2.177 ->2.379ms/frame; wall3.120 ->2.852ms. RSS~255MiB scrolling/~251MiB idle,
+essentially unchanged. Paired30sample idle0.334% ->0.301%. One short fixture
+comparison; no FPS/general website/RAM improvement claim. Separate simpleperf:
+memmove sample share26.29% ->10.17%; scaled-image raster remains largest hotspot.
+Use controlled-idle.json, not aggregate ring-after-idle (includes later reload).
+
+GPU upload15/15, page transfer20/20 UBSan and raster ASan/UBSan PASS. Native and
+Android builds, APK dependencies/API29/arm64/v2 signature PASS. 1,690,200 content
+pixels match baseline exactly after20swipes. Phone wrapped scroll, zoom/reset,
+background/resume visually PASS; post-check idle40samples mean0.150%,peak1.980%.
+Full runtime process/all-thread1Hz monitoring: no parse/cadence errors.
+
+Installed and hash-verified candidate:
+build/codex-vulkan-raster-20261015/lumen-vulkan-cpu-ring-debug.apk
+SHA25628a773cbb46b0212e8837e75d2404c3eaba9219dfff79156b7045d136b38071b.
+Vulkan active. Google URL+three blanks recreated, Google selected; exact tab
+scroll/history not restorable. Owned sessions stopped/joined, reverse18765 and
+app perf marker/data removed. Credentials unused. No permission blocker.
+Follow-up Google settling check: initial28s load averaged67.3% CPU, final30s
+2.200%,peak3.030%,RSS367.70MiB. Sampled settled userCPU350.7ms/15s; js_tick largest
+named symbol. One transient56% V8-worker interval accompanied~13MiB RSS drop,
+consistent with reclamation (not conclusively attributed). Follow-up monitor
+and profile joined, app perfdata removed. Real-page load cost remains open.
+NEXT: scaled-image raster optimization for Vulkan, then real YouTube/ChatGPT/
+Gemini/login, pinch/session persistence and shared-memory isolation/full Wasm.
+OpenGL/CPU optimization still deferred. Goal ACTIVE; not daily-browser complete.
+
+## PROGRESS: Android integrated validation (2026-10-15)
+
+User confirmed phone availability; fresh preflight found Lumen foreground and
+no user input for >1 hour. The older pending-phone-window restriction is
+superseded. See docs/android-device-integrated-20261015.md for full measurements.
+Vulkan first; OpenGL/CPU optimization remains deferred. Worktree uncommitted.
+
+Installed and verified latest combined APK0e5dac825a86ac3f741c5a4f0ae57502fcc23057f981b4b3ce21b4c1bae33a33
+(build/codex-scroll-events-20261015/lumen-vulkan-scroll-events-debug.apk).
+Standalone page-wakeup comparison: cold compile1003–1008ms →1.1–4.1ms;
+800ms streams1815–1827ms →808–826ms. Candidate6/6. IdleCPU0.325%, RSS246.60MiB;
+brief6% peak from Android housekeeping. Baseline0.264%, RSS244.59MiB.
+Combined phone: wakeup6/6, streaming27/27, workers8/8 (including idle GC),
+module clone15/15, broad Wasm12/13; shared Wasm memory to worker fails because
+SharedArrayBuffer cannot be cloned. Do not claim full Wasm support.
+
+Isolated Vulkan GPU-video-upload comparison ebc5...→c1bf...: identical20swipes
+on paused-video thumbnail fixture. Presenter threadCPU2.336→2.178ms/frame,
+wall3.622→2.641ms/frame, but totalCPU52.94→53.47% (no overall reduction),
+raster4.707→4.720ms/frame. Idle~0.36%, RSS~251MiB. One short comparison;
+no FPS/drop-frame or RAM improvement claim. Screenshots aligned. Marker removed.
+
+Phone200% page zoom validates page/frame touch targets, DPR, nested scrolling,
+and reset. Root trusted bubbling document/window events, handler follow-up,
+boundary silence, bottom clamp, fixed click, frame75px isolation PASS. Final
+root idle59samples mean0.102%, peak1.010%, RSS233.26MiB. Fixture server now serves
+zoom/root/frame routes; fixtures additionally POST results (console absent from
+logcat). HTTP reports can wake loop; not independent16ms deadline evidence.
+
+All owned automation/server/monitor sessions exited; test reverses removed.
+Google URL and three blank tabs recreated; cookies/settings/history untouched.
+Exact tab scroll/history state cannot be restored: session persistence remains
+missing. Latest APK left running, Vulkan active. Credentials unused.
+NEXT: profile/reduce raster work during Vulkan scrolling (current largest cost),
+then YouTube controls/playback and real ChatGPT/Gemini/login; finish pinch and
+session restoration, shared-memory isolation/full Wasm. Keep all prior pending
+source changes. No new build needed this turn: only fixtures/docs changed.
+Goal ACTIVE and making progress; no blocker/permission question pending.
+
+## IN-PROGRESS root scroll notifications (2026-10-15)
+
+Previous goal turn PROGRESS: page zoom built/host-tested. This turn PROGRESS:
+root viewport scroll now dispatches trusted bubbling document events to its
+window; scroll-only changes avoid layout/media scans. Non-consuming viewport
+checks schedule callback-induced changes at16ms instead of1000ms fallback, with
+no idle timer. Root API positions clamp after layout; viewport reporting clamps
+transient wheel/key boundary overshoot. Worktree remains uncommitted.
+
+Node viewport8/8, native V8 runtime assertions, viewport state, fixed bounds11/11
+and hit tests9/9 PASS. Real isolated Vulkan GUI at150%: trusted document/window
+notifications, boundary silence, bottom clamp, handler120→240 follow-up16.522ms,
+iframe75px scroll isolation, fixed visual/click position all PASS. Final GUI
+CPUmean0.222%,peak1.000%,RSS176.32MiB over9 settled samples;23 whole-process/
+all-thread1Hz samples total. Host-only evidence, not Android performance proof.
+See docs/android-scroll-events-20261015.md. Native+Android build, APK dependencies
+and v2 signature PASS. Uninstalled combined candidate:
+build/codex-scroll-events-20261015/lumen-vulkan-scroll-events-debug.apk
+SHA2560e5dac825a86ac3f741c5a4f0ae57502fcc23057f981b4b3ce21b4c1bae33a33.
+Includes prior V8 wakeup/module clone/GPU video reuse/page zoom changes.
+
+CORRECTION: fixed-button disappearance was overlapping iframe stacking in the
+page-zoom fixture. Isolated old-binary100%/150% tests pass; old-binary original
+fixture with only z-index:1 also passes screenshot/click after scroll. No fixed
+renderer change needed; do not keep this as an open rendering defect.
+
+All owned runtime/server/sampler/build/verification sessions finished and joined.
+No phone interaction or new adb reverses. Separate uncontested-phone-window
+question still pending; phone installed42af2d... streaming. Goal ACTIVE; meaningful
+host progress continues, not blocked. Credentials unused. Full browser/Wasm not
+complete. NEXT: broaden scroll queue conformance (net-zero changes between
+snapshots, element ordering, scrollend), then Vulkan phone comparison once the
+pending test window is resolved. Vulkan smoothness/RAM, YouTube, ChatGPT/Gemini/
+Google login, pinch and Wasm shared-memory isolation remain outstanding. OpenGL
+ES/CPU optimization deferred. Do not claim this checkpoint is full CSSOM support.
+
+## IN-PROGRESS page zoom candidate (2026-10-15)
+
+Previous turn PROGRESS: Vulkan redundant video uploads removed; uninstalled
+candidate built. This turn PROGRESS: implemented 50–300% persistent default page
+zoom, tab keyboard/Ctrl-wheel overrides, scaled layout/DPR/iframe paint and input,
+Android finger-distance preservation and cache/gesture invalidation. Pinch and
+per-site persistence remain unfinished. Worktree intentionally remains uncommitted.
+
+Host full browser and Android build/native dependency/v2 signature PASS.
+Scroll8/8, touch24/24, density15/15, viewport13/13 PASS (60 total). Real isolated
+host Vulkan GUI checks confirm200% page/frame clicks and nested scrolling,
+Settings150% persistence across restart, override/reset, and root scrolling80CSS
+with correct iframe clicks afterward. Host settled CPUmean0.111–0.333%, peak~1%;
+whole-process/all-thread1Hz samples retained. NOT phone performance evidence.
+See docs/android-page-zoom-20261015.md for limitations and artifacts.
+
+Candidate NOT installed:
+build/codex-page-zoom-20261015/lumen-vulkan-page-zoom-debug.apk
+SHA2563b326f001c8773dddc1edfa2ee6fdd54ac1e60450a5dca80a0d7305a32eed6be.
+Includes pending page V8 wakeup, Wasm module clone and GPU video upload reuse.
+Phone untouched, still42af2d... streaming; separate uncontested-window answer
+pending. All owned build/test/server/sampler sessions finished and joined; no
+new adb reverses. Goal ACTIVE; meaningful host progress, not blocked.
+
+NEW FINDINGS: root scroll changes position but does not dispatch window scroll
+notifications. src/js/js.cc viewport_update gates out SCROLL-only changes; fix
+trusted document/window scroll event delivery with ordering/reentrancy coverage
+and no idle polling. Fixed-position fixture button also disappears after root
+scrolling; compare baseline and audit paint/layout/hit coordinates. Fixture
+initial plain-path invocation loaded an HTTPS error page, not valid evidence;
+all accepted tests use owned local HTTP servers. Native tests monitored at1Hz.
+NEXT: these scroll compatibility gaps, then uncontested device baseline/candidate
+comparison once pending phone window resolved. Full Wasm shared-memory isolation,
+real apps, Vulkan smoothness/RAM, YouTube controls, ChatGPT/Gemini/login remain open.
+OpenGL ES/CPU optimization stays deferred.
+
+## IN-PROGRESS Vulkan video upload reuse (2026-10-15)
+
+Previous goal turn PROGRESS: module-clone host checks/build completed. This turn
+PROGRESS: removed redundant video pixel uploads during repaint/scroll using the
+media pump's globally unique visible-frame serial. Both main render paths pass
+identity; GPU retains separate RGBA/NV12 upload serials, resets on texture resize,
+and keeps geometry/color uniforms live. Zero identity uploads conservatively.
+No extra bitmap/texture allocation; two uint64_t cache values in Gpu.
+
+GPU suite14/14 UBSan PASS; media presentation ASan/UBSan PASS; page transfer19/19
+UBSan PASS. Fixed stale pre-video-scroll fallback expectation in page transfer
+test after verifying its extracted production block matches HEAD exactly.
+Android build/native dependency/v2 signature PASS. NO device performance claim.
+See docs/android-video-upload-reuse-20261015.md. Candidate NOT installed:
+build/codex-video-upload-reuse-20261015/lumen-vulkan-video-reuse-debug.apk
+SHA256 c1bf28eb2f039c1f0fb5a0d5eae938148e42bb5cbd665ba687ff82ee537bdea9.
+Includes pending page-wakeup + module-clone changes; all remain uncommitted.
+
+Phone untouched this turn; separate uncontested-testing-window answer still
+pending. Installed build remains42af2d... streaming. No owned build/test/server
+session remains; no adb reverses created. Goal ACTIVE; meaningful host progress
+continues, not blocked. For device comparison use module-clone candidate
+ebc5d77a... as GPU baseline after completing the earlier wakeup/clone tests.
+Full daily-browser and Wasm requirements remain open, Vulkan first.
+
+## IN-PROGRESS Wasm module cloning candidate (2026-10-15)
+
+Goal ACTIVE, Vulkan first. Host work progressed while the separate untouched-phone
+window question remains unanswered. Implemented native compiled-module clone
+delegates, ownership-safe worker messages, page module cloning/transfer rejection,
+and worker lookup safety when a serialization getter terminates its worker.
+Worktree includes the prior page-wakeup candidate and remains uncommitted pending
+device verification. See docs/android-wasm-clone-20261015.md.
+
+Host results: clone15/15, streaming27/27, worker8/8, worker-ports3/3 PASS;
+broad Wasm12/13 (shared memory transport still fails). Whole-process/all-thread
+1Hz monitoring: settled host CPUmean0.444–0.778%, peak2.001%, no runtime crashes.
+These are NOT Android measurements or proof of UI wakeup latency improvement.
+Android build/native dependency/v2 signature checks PASS. Combined candidate:
+build/codex-wasm-clone-20261015/lumen-vulkan-wasm-clone-debug.apk
+SHA256 ebc5d77a87414133d867ec0756b5677cd75087196e5e1e24672ca88dd052242b.
+NOT installed. Phone remains on42af2d... streaming build; no phone interaction
+this turn. Credentials unused. Device contention is unresolved; do not interrupt
+phone use. Meaningful host progress continues, so this is not an impasse.
+All owned host test/build/server sessions finished and joined; no owned runtime
+test, compiler or fixture server remains. No adb reverses were created this turn.
+
+NEXT: uncontested old-build timing baseline, standalone page-wakeup candidate,
+then combined clone candidate with all regressions, Vulkan CPU/RAM and tab/worker
+lifecycle checks. Shared memory/isolation, frame channels, generic structured
+clone and transfer conformance, worker incremental fetch, real Wasm applications,
+Vulkan scrolling, YouTube, login and zoom remain unfinished.
+
+## IN-PROGRESS page V8 wakeup candidate (2026-10-15)
+
+Previous goal turn PROGRESS: streaming committed1ac3260. This turn PROGRESS:
+implemented page foreground queue/deadline/wakeup integration; built corrected
+candidate, ASan/UBSan queue tests and APK native/v2 signature checks PASS.
+Worktree intentionally uncommitted pending phone test. See
+ docs/android-wasm-page-wakeup-20261015.md for evidence and next commands.
+Candidate hash76b1031a246f1f237b9e4d7517d8cf341e6a68e3acccb0d340a159262f1c7be5,
+build/codex-wasm-page-wakeup-20261015/lumen-vulkan-page-wakeup-debug.apk.
+Candidate NOT installed. Phone still has42af2d... streaming APK.
+
+DEVICE CONTENTION: phone opened new tabs and moved to Settings during baseline.
+Asked asynchronously for three-minute untouched test window; answer pending.
+Do not interrupt user phone use. This is the first contested-device turn, not
+three-consecutive-turn blocker. Meaningful host work completed; goal ACTIVE.
+Initial latency1003–1009ms/cold compile,1818–1886ms/800ms stream is provisional;
+repeat old-build fixture uncontested before comparing. baseline-idle CPU INVALID.
+
+Host tests+build are done. No owned compile/monitor/server job remains; monitor
+and server joined, reverses removed. App left running for user use, not stopped.
+Next after reply: restart sampler/server, repeat old-build /wasm-page-wakeup,
+install candidate, repeat fixture, streaming/worker regressions, close/reopen root
+tab, record idle CPU/RAM. Source audit removed default NotifyIsolateShutdown
+because it dereferences a nonexistent default runner with our custom page queue.
+The old source V8 build remains frozen. Broader browser/Wasm goal unchanged.
+
 ## Android Wasm streaming checkpoint (2026-10-15)
 
 Goal ACTIVE: daily Android browser + full browser Wasm, Vulkan first.

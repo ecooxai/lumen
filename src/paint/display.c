@@ -366,6 +366,10 @@ static void paint_stacking(PB *p, Box *b) {
     if (s->opacity <= 0.001f) return;
     float tx = 0, ty = 0;
     if (s->has_transform) { tx = s->transform[4]; ty = s->transform[5]; if (s->translate_pending[0].pct) tx += s->translate_pending[0].pct * b->w / 100; if (s->translate_pending[1].pct) ty += s->translate_pending[1].pct * b->h / 100; }
+    float sticky_x, sticky_y; box_sticky_offset(b, p->sx, p->sy, &sticky_x, &sticky_y);
+    tx += sticky_x; ty += sticky_y;
+    bool was_fixed = p->fixed;
+    if (s->position == P_STICKY) p->fixed = true; /* include in scroll damage */
     p->dx += tx; p->dy += ty;
     /* axis-aligned scale (e.g. progress bars using scaleX): scale the subtree's non-text items about transform-origin */
     float ksx = s->has_transform && !s->transform[1] && !s->transform[2] ? s->transform[0] : 1, ksy = s->has_transform && !s->transform[1] && !s->transform[2] ? s->transform[3] : 1;
@@ -395,6 +399,7 @@ static void paint_stacking(PB *p, Box *b) {
         }
     }
     p->dx -= tx; p->dy -= ty;
+    p->fixed = was_fixed;
 }
 
 void dl_clear(DisplayList *dl) { dl->items.n = 0; dl->fixed.count = 0; arena_reset(&dl->arena); }

@@ -25,6 +25,7 @@ constexpr v8::EmbedderDataTypeTag kTag = v8::kEmbedderDataTypeTagDefault;
 extern int g_log_level;
 
 struct JsCtx;
+class JsForegroundTasks;
 struct Fetch {
     JsCtx *c;
     uint64_t id;
@@ -53,6 +54,7 @@ struct AnimEv {
 };
 struct JsCtx {
     v8::Isolate *iso = nullptr;
+    std::shared_ptr<JsForegroundTasks> foreground_tasks; // Root owns the shared frame isolate.
     bool bg = false, bg_gc = false; double bg_since = 0;   /* tab in the background: V8 favours memory, one idle GC */
     v8::ArrayBuffer::Allocator *alloc = nullptr;
     v8::Global<v8::Context> ctx;
@@ -63,6 +65,7 @@ struct JsCtx {
     Document *doc = nullptr;
     JsHost host{};
     JsViewportState viewport_state;
+    double viewport_due = 0;
     std::vector<Node *> wrapped;
     std::map<uint32_t, Timer> timers;
     uint32_t next_timer = 1;

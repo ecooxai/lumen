@@ -72,8 +72,7 @@ FN(text) {
 FN(setText) {
     CTX; ARGN(n, 0); std::string s = S(1);
     if (is_textish(n)) {
-        free(n->text); n->text = xstrndup(s.data(), s.size()); n->text_len = s.size();
-        doc_mark_dirty(n->doc, n->parent ? n->parent : n);
+        node_set_character_data(n, s.data(), s.size());
         return;
     }
     clear_children(n);
@@ -262,6 +261,13 @@ FN(pickFiles) {
     c->pick_cb.Reset(iso, a[0].As<v8::Function>());
     std::string acc = S(2);
     js_pick_begin(c, BOOL(1), acc.c_str());
+}
+FN(modal) {
+    CTX; ARGN(n, 0);
+    if (a.Length() > 1) {
+        node_set_modal(n, BOOL(1));
+    }
+    RET(!!(n->flags & NF_MODAL));
 }
 FN(focus) {
     CTX; Node *n = junwrap(a[0]); Node *old = c->doc->focus;
@@ -834,7 +840,7 @@ FN(imgSize) {
     v8::Local<v8::Value> v[2] = { v8::Number::New(iso, w), v8::Number::New(iso, h) };
     RET(v8::Array::New(iso, v, 2));
 }
-FN(userAgent) { CTX; RET(jstr(iso, g_user_agent)); }
+FN(userAgent) { CTX; RET(jstr(iso, net_user_agent_for_url(c->doc->url))); }
 FN(touchPoints) {
     CTX;
 #ifdef __ANDROID__
@@ -934,7 +940,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(create); REG(textNode); REG(comment); REG(frag); REG(html); REG(setHTML); REG(parseFrag); REG(query);
     REG(matches); REG(byId); REG(clone); REG(doc); REG(contains); REG(connected); REG(host); REG(attachShadow);
     REG(templateContent); REG(rect); REG(vrect); REG(clipSet); REG(clipGet); REG(scrollPos); REG(setScroll); REG(computed); REG(value); REG(setValue); REG(checked); REG(setChecked); REG(pickFiles);
-    REG(focus); REG(active); REG(cookie); REG(setCookie); REG(url); REG(setUrl); REG(navigate); REG(navigatePost); REG(histGo);
+    REG(modal); REG(focus); REG(active); REG(cookie); REG(setCookie); REG(url); REG(setUrl); REG(navigate); REG(navigatePost); REG(histGo);
     REG(histLen); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
     REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove);
     REG(mediaBuffered); REG(mediaEos); REG(mediaSetDuration); REG(mediaPlay); REG(mediaPause); REG(mediaSeek);

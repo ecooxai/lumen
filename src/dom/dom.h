@@ -2,6 +2,8 @@
 #define LUMEN_DOM_H
 #include "../base/util.h"
 
+static inline unsigned dom_tree_key_bit(const char *key) { return hash_str(key, strlen(key)) & 1023u; }
+
 /* Style, layout and scroll updates, shared across documents for observers. */
 uint64_t doc_visual_generation(void);
 void doc_visual_changed(void);
@@ -17,6 +19,13 @@ enum {
     NF_HOVER = 1 << 3, NF_ACTIVE = 1 << 4, NF_FOCUS = 1 << 5,
     NF_CHECKED = 1 << 6, NF_PARSER_INSERTED = 1 << 7, NF_SCRIPT_STARTED = 1 << 8,
     NF_CONNECTED = 1 << 9, NF_DISABLED = 1 << 10,
+    NF_ATTR_MIXED_CASE = 1 << 12, /* conservative: an HTML attribute name contained ASCII uppercase */
+    NF_MODAL = 1 << 14,          /* dialog opened with showModal */
+    NF_RESELECT_SUBTREE = 1 << 15, /* ancestry/selector changes cannot reuse descendant matches */
+    NF_CHILD_LIST_DIRTY = 1 << 16, /* structural selector invalidation pending */
+    NF_TREE_ANCESTOR = 1 << 17, /* scratch: ancestor of a pending child-list change */
+    NF_TREE_RELATED = 1 << 18,  /* scratch: also preceding siblings / changed parent's children */
+    NF_TREE_CHILD = 1 << 19,    /* scratch: direct child of a pending child-list change */
     NF_INERT = 1 << 11,           /* template content fragment */
 };
 
@@ -33,6 +42,9 @@ typedef struct Node {
     struct Document *doc;
     const char *tag;               /* atom; lower-case for HTML */
     const char *id;                /* cached id attr (points into attrs) */
+    const char *class_name;        /* cached class attr (points into attrs) */
+    const char **classes; int nclasses;
+    uint64_t class_bits;           /* negative filter; positive hits compare atoms */
     Attr *attrs; int nattrs, attrcap;
     char *text; size_t text_len;   /* text / comment / doctype name */
     struct ComputedStyle *style;
@@ -61,10 +73,24 @@ typedef struct Document {
     bool quirks;
     int ready_state;              /* 0 loading, 1 interactive, 2 complete */
     uint64_t dom_version;         /* bumped on any mutation */
+    uint64_t selector_version;    /* excludes inline CSS and nonempty text edits */
+    uint64_t inheritance_version; /* unindexed connected selector changes; excludes precise attributes/tree edits */
+    uint64_t text_emptiness_version;
+    uint64_t tree_version;        /* child-list mutations, coalesced by the style engine */
+    uint64_t tree_change_keys[16]; /* conservative keys in inserted/removed connected subtrees */
+    uint64_t selector_change_keys[16]; /* changed class tokens/IDs and their attribute names */
+    bool selector_changes_unknown; /* non-keyed connected selector/state changes */
+    bool tree_focus_changed; /* a child-list change moved/removed the focused node */
+    unsigned debug_mutations;     /* bounded debug trace, explicitly armed on device */
+    uint64_t sheet_version;       /* stylesheet content, attributes, tree membership/order */
     uint64_t layout_version;      /* bumped on mutations that can change layout beyond computed style */
+    uint64_t paint_version;       /* visual changes without DOM/style/layout invalidation */
+    float layout_vw, layout_vh;   /* viewport of the current box tree */
     HMap id_cache; uint64_t id_cache_ver; bool id_cache_ok; /* id -> first element, rebuilt per dom_version */
+    void *selector_cache; void (*selector_cache_free)(void *); /* bounded parsed query syntax */
     void *stylesheets;            /* css engine data */
     struct Node *focus;
+    VEC(Node *) modals;
     struct Node *sel[2]; int selo[2]; bool sel_back; uint64_t sel_ver;   /* JS selection start/end (text offsets in bytes) */
     void *browser;                /* owning page */
     void (*on_mutation)(struct Document *, Node *);
@@ -87,18 +113,33 @@ void node_retain(Node *n);
 void node_release(Node *n);
 Node *node_clone(Node *n, bool deep, Document *into);
 
+/* Caller supplies an interned name, ASCII lowercase for HTML. */
+const char *node_attr_atom(const Node *n, const char *name);
 const char *node_attr(const Node *n, const char *name);  /* name: atom or plain string */
 bool node_has_attr(const Node *n, const char *name);
 void node_set_attr(Node *n, const char *name, const char *value);
 void node_remove_attr(Node *n, const char *name);
+void node_set_modal(Node *n, bool modal);
 bool node_has_class(const Node *n, const char *cls);
+static inline uint64_t node_class_bit(const char *cls) {
+    uintptr_t p = (uintptr_t)cls;
+    return UINT64_C(1) << (((p >> 4) ^ (p >> 10)) & 63);
+}
+/* Selector names and cached class tokens are interned. No string scan/lock. */
+static inline bool node_has_class_atom(const Node *n, const char *cls) {
+    if (!n || !(n->class_bits & node_class_bit(cls))) return false;
+    for (int i = 0; i < n->nclasses; i++) if (n->classes[i] == cls) return true;
+    return false;
+}
 static inline bool node_is(const Node *n, const char *tag_atom) { return n && n->type == NODE_ELEMENT && n->tag == tag_atom && n->ns == NS_HTML; }
 
 char *node_text_content(const Node *n);
 void node_set_text_content(Node *n, const char *s);
+void node_set_character_data(Node *n, const char *s, size_t len);
 void node_text_append(Node *n, const char *s, size_t len);
 char *node_serialize(const Node *n, bool outer);  /* innerHTML/outerHTML */
 Node *node_next_in_tree(Node *n, Node *root);     /* pre-order traversal */
+Node *node_next_deep(Node *n, Node *root);        /* pre-order, entering shadow trees */
 Node *doc_get_element_by_id(Document *d, const char *id);
 void doc_mark_dirty(Document *d, Node *n);         /* style + layout dirty */
 void doc_mark_style_dirty(Document *d, Node *n);   /* style only: layout follows from the computed style diff */

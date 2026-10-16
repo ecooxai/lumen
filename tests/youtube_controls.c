@@ -16,6 +16,10 @@ static float g_mv_x,g_mv_y;
 static Page *g_mv_p;
 static Box box;
 static int events;
+static int holds;
+static void js_eval(void *js,const char *source,const char *name) {
+    assert(js && strstr(source,"player-control-overlay") && !strcmp(name,"lumen:touch-controls")); holds++;
+}
 static double now_ms(void) { return clock_ms; }
 static const char *node_attr(Node *n,const char *name) { assert(!strcmp(name,"id")); return n->id; }
 static Box *layout_hit(void *l,float x,float y,float sx,float sy) {(void)l;(void)x;(void)y;(void)sx;(void)sy;return &box;}
@@ -49,5 +53,15 @@ int main(void) {
     page.url="https://example.com/";clock_ms=13000;page_move(&app,20,30);assert(!g_mv_p);
     page.url="https://www.youtube.com/";box.node=&other;
     clock_ms=14000;page_move(&app,20,30);assert(!g_mv_p);
+    page.url="https://m.youtube.com/watch?v=test";player.id="player-container-id";box.node=&button;
+    previous=events;clock_ms=15000;page_touch_controls(&app,20,30);
+    assert(!g_mv_p && events==previous && holds==1); /* No extra click/touch. */
+    clock_ms=16000;page_move_keep(&app);assert(events==previous);
+    clock_ms=23001;page_move_keep(&app);assert(!g_mv_p);
+    clock_ms=24000;page_touch_controls(&app,20,30);assert(!g_mv_p);
+    box.node=&other;page_touch_controls(&app,20,30);assert(!g_mv_p);
+    box.node=&button;page_touch_controls(&app,20,-1);assert(!g_mv_p);
+    page.url="https://example.com/";page_touch_controls(&app,20,30);assert(!g_mv_p);
+    assert(holds==2); /* Outside-player taps must not inject the hold. */
     puts("YouTube player targeting, touch wiring, cadence, timeout and navigation cancellation pass");
 }

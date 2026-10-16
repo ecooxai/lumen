@@ -13,7 +13,8 @@
 #define SDL_SCALEMODE_LINEAR 1
 #define PAINT_COMPOSE 1
 
-typedef struct { int w, h, stride; uint32_t *px; float scale; } Canvas;
+typedef struct { int w, h, stride; uint32_t *px; float scale; int row_offset; } Canvas;
+static uint32_t *canvas_row(const Canvas *c,int y) { return c->px+(size_t)((y+c->row_offset)%c->h)*c->stride; }
 typedef struct { struct { int n; } items; } DisplayList;
 typedef struct { int unused; } GpuVideo;
 typedef struct { bool blit; } PaintFrame;
@@ -32,6 +33,7 @@ static bool upload_allowed = true, present_allowed = true, surface_available = t
 static bool shot, recreated;
 static bool scroll_allowed;
 static unsigned scroll_uploads;
+static const GpuVideo *presented_video;
 int scroll_delta = 2;
 static PaintRegions scroll_fixed = {.rect = {{0, 1, 4, 3}}, .count = 1};
 static float g_pop[4] = {0, 3, 1, 4};
@@ -49,31 +51,31 @@ static const char *test_getenv(const char *name) {
 }
 #endif
 
-bool gpu_scroll_page(void *gpu, const uint32_t *pixels, int width, int height,
-                     int stride, int toolbar, int delta, int first, int last) {
+bool gpu_scroll_page_ring(void *gpu, const uint32_t *pixels, int width, int height,
+                     int stride, int toolbar, int delta, int first, int last, int source_offset) {
     assert(gpu && width == 4 && height <= 8 && toolbar == 2);
     assert(delta == 2 && first == 1 && last == 3);
     scroll_uploads++;
     if (!scroll_allowed) return false;
     for (int row = 0; row < height - toolbar; row++)
-        memcpy(gpu_pixels + (row + toolbar) * width, pixels + row * stride, (size_t)width * 4);
+        memcpy(gpu_pixels + (row + toolbar) * width, pixels + ((row + source_offset) % (height-toolbar)) * stride, (size_t)width * 4);
     return true;
 }
 
-static bool gpu_upload_page(void *gpu, const uint32_t *pixels, int width, int height,
-                            int stride, int toolbar, int first, int last) {
+static bool gpu_upload_page_ring(void *gpu, const uint32_t *pixels, int width, int height,
+                            int stride, int toolbar, int first, int last, int source_offset) {
     assert(gpu && width == 4 && height <= 8 && toolbar == 2);
     uploads++;
     if (!upload_allowed) return false;
     for (int row = first; row < last; row++)
-        memcpy(gpu_pixels + (row + toolbar) * width, pixels + row * stride, (size_t)width * 4);
+        memcpy(gpu_pixels + (row + toolbar) * width, pixels + ((row + source_offset) % (height-toolbar)) * stride, (size_t)width * 4);
     return true;
 }
 
 static bool gpu_present_frame(void *gpu, const uint32_t *pixels, int width, int height,
                               int stride, int first, int last, const GpuVideo *video) {
     assert(gpu && width == 4 && height <= 8);
-    (void)video;
+    presented_video = video;
     presents++;
     if (recreated) { first = 0; last = height; }
     for (int row = first; row < last; row++)
@@ -132,7 +134,7 @@ static void verify_frame(const App *app, int sidebar, bool popup, bool software)
     for (int row = 0; row < app->frame.h; row++) for (int column = 0; column < app->frame.w; column++) {
         uint32_t expected = 0x12000000u + (uint32_t)(row * 4 + column);
         if (row >= 2 && column >= sidebar)
-            expected = app->page.px[(row - 2) * app->page.stride + column - sidebar];
+            expected = canvas_row(&app->page,row-2)[column-sidebar];
         if (popup && row == 3 && column == 0) expected = 0xff123456u;
         assert(app->frame.px[row * app->frame.stride + column] == expected);
         assert((software ? software_pixels : gpu_pixels)[row * 4 + column] == expected);
@@ -145,10 +147,21 @@ int main(int argc, char **argv) {
     uint32_t frame_pixels[32], page_pixels[24];
     for (size_t index = 0; index < 32; index++) frame_pixels[index] = gpu_pixels[index] = 0x12000000u + (uint32_t)index;
     for (size_t index = 0; index < 24; index++) page_pixels[index] = 0x81000000u + (uint32_t)index;
-    App state = {.frame = {4, 8, 4, frame_pixels, 1}, .page = {4, 6, 4, page_pixels, 1},
+    App state = {.frame = {4, 8, 4, frame_pixels, 1, 0}, .page = {4, 6, 4, page_pixels, 1, 0},
                  .gpu = (void *)(uintptr_t)1, .win = (void *)(uintptr_t)2};
     PaintFrame profile = {.blit = true};
     const char *scenario = argv[1];
+    if (!strcmp(scenario,"cpu-ring") || !strcmp(scenario,"cpu-ring-fallback")) {
+        state.page.row_offset=5;
+        scroll_allowed=true;
+        present_allowed=strcmp(scenario,"cpu-ring-fallback")!=0;
+        transfer(&state,true,false,2,0,6,0,6,NULL,profile);
+        if (present_allowed) {
+            assert(copy_calls==0 && state.frame_page_stale);
+            for(int y=0;y<6;y++) assert(!memcmp(gpu_pixels+(y+2)*4,canvas_row(&state.page,y),16));
+        } else { assert(copy_calls==6);verify_frame(&state,0,false,true); }
+        return 0;
+    }
     if (!strcmp(scenario, "two-fixed") || !strcmp(scenario, "two-fixed-failure")) {
         scroll_allowed = true;
         scroll_fixed.rect[1][1] = 5; scroll_fixed.rect[1][3] = 6; scroll_fixed.count = 2;
@@ -211,9 +224,10 @@ int main(int argc, char **argv) {
     else if (!strcmp(scenario, "resize")) { partial = false; state.frame.h = 7; state.page.h = last = 5; recreated = true; }
     else assert(false);
     transfer(&state, partial, skip, 2, 0, state.page.h, first, last, video_ptr, profile);
-    if (!strcmp(scenario, "repeat")) {
+    if (!strcmp(scenario, "repeat") || !strcmp(scenario, "video")) {
         assert(uploads == 2 && copy_calls == 0 && state.frame_page_stale);
         assert(memcmp(gpu_pixels + 8, page_pixels, sizeof page_pixels) == 0);
+        assert(presented_video == video_ptr);
     } else {
         bool software = !present_allowed || !state.gpu;
         assert(copy_calls == 1 && copied_bytes == (size_t)state.page.w * (size_t)state.page.h * 4);

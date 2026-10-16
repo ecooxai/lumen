@@ -51,6 +51,8 @@ $(BUILD)/%.cc.o: %.cc
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -MMD -c $< -o $@
 
+$(BUILD)/src/js/clone.cc.o: CXXFLAGS += -fno-rtti
+
 LIBS := $(NETLIBS) $(FONTLIBS) -lSDL3 -lv8 -lv8_libplatform -lv8_libbase -lwgpu_native \
         -lavcodec -lavformat -lavutil -lswscale -lswresample -lpng -ljpeg -lwebp -lwebpdemux -lgif $(PLATLIBS)
 

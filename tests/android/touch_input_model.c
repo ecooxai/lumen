@@ -40,6 +40,13 @@ static float g_sm_dx, g_sm_dy;
 static unsigned wheel_calls;
 static float wheel_x, wheel_y, wheel_dx, wheel_dy;
 static unsigned dom_flags, dom_scrolls, dom_resets;
+static unsigned controls_taps;
+static float controls_x, controls_y;
+static float page_x(const App *a, float x) { return x - a->side; }
+static float page_y(const App *a, float y) { (void)a; return y - BAR; }
+static void page_touch_controls(App *a, float x, float y) {
+    (void)a; controls_taps++; controls_x=x; controls_y=y;
+}
 static unsigned android_dom_touch(App *app, const char *phase, const SDL_Event *event) {
     (void)app; (void)event;
     if (!strcmp(phase, "scroll")) dom_scrolls++;
@@ -82,6 +89,7 @@ int main(int argc, char **argv) {
         CHECK(event.button.timestamp == 42 && event.button.windowID == 1);
         CHECK(event.button.clicks == 1 && event.button.button == SDL_BUTTON_LEFT);
         CHECK(event.button.which == SDL_TOUCH_MOUSEID && app.last_input == 123);
+        CHECK(controls_taps == 0); /* Normal tap hold runs after compatibility click. */
     } else if (!strcmp(argv[1], "scroll")) {
         g_sm_dx = g_sm_dy = 100;
         event = finger(SDL_EVENT_FINGER_DOWN, .5f, .5f);
@@ -93,6 +101,7 @@ int main(int argc, char **argv) {
         CHECK(fabsf(wheel_dx - 20) < .001f && fabsf(wheel_dy - 60) < .001f);
         event = finger(SDL_EVENT_FINGER_UP, .45f, .4f);
         CHECK(android_touch_input(&app, &event) && wheel_calls == 1);
+        CHECK(controls_taps == 0);
     } else if (!strcmp(argv[1], "synthetic")) {
         event = (SDL_Event){.button = {.type = SDL_EVENT_MOUSE_BUTTON_DOWN, .which = SDL_TOUCH_MOUSEID}};
         CHECK(android_touch_input(&app, &event));
@@ -152,10 +161,12 @@ int main(int argc, char **argv) {
         CHECK(android_touch_input(&app, &event) && !wheel_calls && !dom_scrolls);
         event = finger(SDL_EVENT_FINGER_UP, .5f, .3f);
         CHECK(android_touch_input(&app, &event));
+        CHECK(controls_taps == 0);
         event = finger(SDL_EVENT_FINGER_DOWN, .5f, .5f);
         android_touch_input(&app, &event);
         event = finger(SDL_EVENT_FINGER_UP, .5f, .5f);
         CHECK(android_touch_input(&app, &event));
+        CHECK(controls_taps == 1); /* A suppressed compatibility click is still a tap. */
     } else if (!strcmp(argv[1], "dom_pointer")) {
         dom_flags = 10; /* pointerdown cancellation suppresses mouse, not scroll/click */
         event = finger(SDL_EVENT_FINGER_DOWN, .5f, .5f);

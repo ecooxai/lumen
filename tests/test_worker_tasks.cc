@@ -18,12 +18,13 @@ struct Task final : v8::Task {
 int main() {
     alarm(15);
     int wakes = 0;
-    JsWorkerTasks tasks([&] { ++wakes; });
+    JsForegroundTasks tasks([&] { ++wakes; });
     std::vector<int> order;
     tasks.PostDelayedTask(std::make_unique<Task>([&] { order.push_back(3); }), .04);
     tasks.PostTask(std::make_unique<Task>([&] {
         order.push_back(1);
         tasks.PostNonNestableTask(std::make_unique<Task>([&] { order.push_back(2); }));
+        assert(!tasks.RunOne()); // A nested event loop must not run this task.
     }));
     assert(tasks.RunOne() && tasks.RunOne() && !tasks.RunOne());
     assert((order == std::vector<int>{1, 2}));
@@ -38,7 +39,7 @@ int main() {
     std::mutex mutex;
     std::condition_variable cv;
     unsigned version = 0;
-    JsWorkerTasks waiting([&] {
+    JsForegroundTasks waiting([&] {
         { std::lock_guard<std::mutex> lock(mutex); ++version; }
         cv.notify_one();
     });
@@ -63,7 +64,7 @@ int main() {
 
     // Background compilation may finish concurrently with isolate shutdown.
     std::atomic<int> freed{0}, executed{0};
-    JsWorkerTasks closing([] {});
+    JsForegroundTasks closing([] {});
     std::vector<std::thread> producers;
     for (int i = 0; i < 4; ++i) producers.emplace_back([&] {
         for (int j = 0; j < 1000; ++j)
@@ -72,5 +73,5 @@ int main() {
     closing.Close();
     for (auto &p : producers) p.join();
     assert(freed == 4000 && executed == 0 && !closing.RunOne());
-    puts("worker task queue: ordering, deadlines, wakeup, reentrancy, concurrent shutdown passed");
+    puts("foreground task queue: ordering, deadlines, wakeup, non-nesting, reentrancy, concurrent shutdown passed");
 }

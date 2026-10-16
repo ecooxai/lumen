@@ -51,6 +51,25 @@ class Event {
 }
 Object.assign(Event, { NONE: 0, CAPTURING_PHASE: 1, AT_TARGET: 2, BUBBLING_PHASE: 3 });
 class CustomEvent extends Event { constructor(t, i) { super(t, i); this.detail = i && i.detail !== undefined ? i.detail : null; } initCustomEvent(t, b, c, d) { this.initEvent(t, b, c); this.detail = d; } }
+class CommandEvent extends Event {
+    constructor(t, i = {}) {
+        super(t, i); i = i || {};
+        if (i.source != null && !(i.source instanceof Element)) throw new TypeError('source must be an Element');
+        def(this, '_source', i.source ?? null); def(this, '_command', String(i.command ?? ''));
+    }
+    get source() { return this._source; } get command() { return this._command; }
+}
+class ToggleEvent extends Event {
+    constructor(t, i = {}) {
+        super(t, i); i = i || {};
+        if (i.source != null && !(i.source instanceof Element)) throw new TypeError('source must be an Element');
+        def(this, '_source', i.source ?? null);
+        def(this, '_oldState', String(i.oldState ?? '')); def(this, '_newState', String(i.newState ?? ''));
+    }
+    get source() { return this._source; }
+    get oldState() { return this._oldState; } get newState() { return this._newState; }
+}
+const commandTargets = new WeakMap();
 class UIEvent extends Event { constructor(t, i) { super(t, i); i = i || {}; this.view = i.view || null; this.detail = i.detail || 0; this.sourceCapabilities = i.sourceCapabilities || null; } }
 class FocusEvent extends UIEvent { constructor(t, i) { super(t, i); this.relatedTarget = (i && i.relatedTarget) || null; } }
 class MouseEvent extends UIEvent {
@@ -73,8 +92,8 @@ class KeyboardEvent extends UIEvent {
         super(t, i); i = i || {};
         this.key = i.key || ''; this.code = i.code || ''; this.location = i.location || 0; this.repeat = !!i.repeat; this.isComposing = !!i.isComposing;
         for (const k of ['ctrlKey', 'shiftKey', 'altKey', 'metaKey']) this[k] = !!i[k];
-        this.keyCode = i.keyCode || (this.key.length === 1 ? this.key.toUpperCase().charCodeAt(0) : ({ Enter: 13, Escape: 27, Backspace: 8, Tab: 9, ArrowLeft: 37, ArrowUp: 38, ArrowRight: 39, ArrowDown: 40, Delete: 46 })[this.key] || 0);
-        this.which = this.keyCode; this.charCode = i.charCode || 0;
+        this.keyCode = i.keyCode || 0; this.charCode = i.charCode || 0;
+        this.which = i.which || 0;
     }
     getModifierState(k) { return MouseEvent.prototype.getModifierState.call(this, k); }
 }
@@ -198,6 +217,7 @@ class MutationObserver {
     takeRecords() { const r = this._records; this._records = []; return r; }
 }
 function notify(type, target, extra) {
+    if (type === 'attributes' && extra.attributeName === 'commandfor') commandTargets.delete(target);
     if (!observers.length) return;
     for (const mo of observers) {
         for (const { t, o } of mo._targets) {

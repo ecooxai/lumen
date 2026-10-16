@@ -18,12 +18,19 @@ bool gpu_present(Gpu *g, const uint32_t *px, int w, int h, int stride);
 bool gpu_present_rows(Gpu *g, const uint32_t *px, int w, int h, int stride, int y0, int y1);
 /* A video frame drawn by the GPU under the page texture at device rect (x0,y0)-(x1,y1); the page shows it through alpha-0 holes. */
 /* yuv, when set, replaces px: NV12 planes (Y, then interleaved UV); mat bit 1 = BT.709, bit 2 = full range. */
-typedef struct { const uint32_t *px; int w, h, stride; float x0, y0, x1, y1; const uint8_t *yuv; int mat; } GpuVideo;
+/* A nonzero serial identifies immutable frame pixels across all video owners.
+   Zero keeps unconditional uploads for callers without frame identity. */
+typedef struct { const uint32_t *px; int w, h, stride; float x0, y0, x1, y1; const uint8_t *yuv; int mat; uint64_t serial; } GpuVideo;
 bool gpu_yuv_ok(Gpu *g);
 bool gpu_upload_page(Gpu *gpu, const uint32_t *pixels, int width, int height, int stride,
                      int toolbar, int first_row, int last_row);
 bool gpu_scroll_page(Gpu *gpu, const uint32_t *pixels, int width, int height, int stride,
                      int toolbar, int delta, int fixed_first, int fixed_last);
+/* source_offset maps logical row zero into a circular CPU page allocation. */
+bool gpu_upload_page_ring(Gpu *gpu, const uint32_t *pixels, int width, int height, int stride,
+                          int toolbar, int first_row, int last_row, int source_offset);
+bool gpu_scroll_page_ring(Gpu *gpu, const uint32_t *pixels, int width, int height, int stride,
+                          int toolbar, int delta, int fixed_first, int fixed_last, int source_offset);
 bool gpu_present_frame(Gpu *g, const uint32_t *px, int w, int h, int stride, int y0, int y1, const GpuVideo *v);
 const char *gpu_backend_name(Gpu *g);
 void gpu_destroy(Gpu *g);

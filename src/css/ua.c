@@ -28,5 +28,6 @@ const char *css_ua_sheet =
 "legend{padding:0 2px}summary{display:list-item}details:not([open])>:not(summary){display:none}"
 "ruby{display:ruby}rt{font-size:50%}q::before{content:open-quote}q::after{content:close-quote}"
 "slot{display:contents}dialog[open]{position:absolute;left:0;right:0;margin:auto;border:solid;padding:1em;background:white;color:black;width:fit-content}"
+"dialog:modal{position:fixed;inset:0;margin:auto;width:fit-content;height:fit-content}"
 "[popover]:not(:popover-open){display:none}marquee{display:inline-block}"
 ;

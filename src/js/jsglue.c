@@ -13,11 +13,11 @@ int jsg_query(Node *root, const char *sel, bool all, Node ***out) {
 }
 
 bool jsg_matches(Node *el, const char *sel, bool *ok) {
-    SelList l = {0};
-    *ok = css_parse_selector_list(sel, &l);
-    if (!*ok) return false;
-    bool m = css_match_selector_list(&l, el);
-    css_sellist_free(&l);
+    SelList scratch = {0};
+    const SelList *parsed = css_query_syntax(el->doc, sel, &scratch);
+    *ok = parsed != NULL;
+    bool m = parsed && css_match_selector_list(parsed, el);
+    css_sellist_free(&scratch);
     return m;
 }
 
@@ -42,6 +42,9 @@ bool jsg_vrect(Node *n, float r[4], float scroll_x, float scroll_y) {
     r[0] = b->x; r[1] = b->y; r[2] = b->w; r[3] = b->h;
     for (struct Box *a = b; a; ) {
         const ComputedStyle *s = a->st;
+        float sticky_x, sticky_y;
+        box_sticky_offset(a, scroll_x, scroll_y, &sticky_x, &sticky_y);
+        r[0] += sticky_x; r[1] += sticky_y;
         if (s && s->has_transform) {
             r[0] += s->transform[4] + s->translate_pending[0].pct * a->w / 100;
             r[1] += s->transform[5] + s->translate_pending[1].pct * a->h / 100;
@@ -71,7 +74,10 @@ bool jsg_set_scroll(Node *n, float x, float y) {
     float nx = isnan(x) ? n->scroll_x : LCLAMP(x, 0, maxx);
     float ny = isnan(y) ? n->scroll_y : box_scroll_from_end(b) ? LCLAMP(y, -maxy, 0) : LCLAMP(y, 0, maxy);
     if (nx == n->scroll_x && ny == n->scroll_y) return false;
-    n->scroll_x = nx; n->scroll_y = ny; doc_mark_dirty(n->doc, n);
+    /* Scrolling changes geometry in viewport coordinates, not computed styles
+       or layout. Autoscrolling a streamed reply must not restyle its subtree. */
+    n->scroll_x = nx; n->scroll_y = ny;
+    if (n->doc) n->doc->paint_version++;
     doc_visual_changed();
     return true;
 }

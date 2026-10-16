@@ -18,6 +18,7 @@
 #include "local_viewer.h"
 #include "media_icon.h"
 #include "paint_profile.h"
+#include "page_zoom.h"
 #include "../base/platform.h"
 #include "../paint/paint.h"
 #include "../media/media.h"
@@ -50,12 +51,12 @@ typedef struct { Node *n; char *src; size_t len; char *name; bool module; } PScr
 typedef struct { Node *n; uint64_t h; } SheetRef;
 typedef struct Page {
     char *url; Document *d; StyleEngine *e; Layout *L; uint64_t gen; double load_ms;
-    JsCtx *js; PScript *scripts; int nscripts; uint64_t seen_ver, lay_ver;
+    JsCtx *js; PScript *scripts; int nscripts; uint64_t seen_ver, lay_ver, seen_sheet_ver, seen_paint_ver;
     SheetRef *sref; int nsref;
     HMap img_fired; bool img_check, internal_ui;
     /* <iframe> child browsing context (document owned by the JS layer) */
     Node *frame_el; float fw, fh, fsy; Canvas cv; Image img; DisplayList fdl;
-    uint64_t drawn_ver; int drawn_epoch; bool frelayout; struct Page *fnext;
+    uint64_t drawn_ver, drawn_paint_ver; int drawn_epoch; bool frelayout; struct Page *fnext;
 } Page;
 static Page *g_frames;
 static Page *frame_find(Node *f) { for (Page *p = g_frames; p; p = p->fnext) if (p->frame_el == f) return p; return NULL; }
@@ -82,6 +83,7 @@ static bool g_vctl;
 static bool g_tab_sleep;
 static bool g_smooth;       /* Smooth scrolling (Settings, off by default): animate wheel notches instead of jumping */
 static float g_sm_dx, g_sm_dy, g_sm_x, g_sm_y;
+static int g_page_zoom_pct = 100;
 #define WHEEL_STEP 120.f
 #ifdef NDEBUG
 static bool g_hud;          /* CPU/RAM readout at the bottom of the workspace sidebar (Settings; on by default in debug builds) */
@@ -145,6 +147,7 @@ static void pref_path(char *out, size_t n, const char *f) { snprintf(out, n, "%s
 static void settings_save(void) {
     char p[1200]; pref_path(p, sizeof p, "settings.txt"); FILE *f = *g_pref ? fopen(p, "w") : NULL; if (!f) return;
     fprintf(f, "offscreen_media_eviction=%d\ncpu_limit=%d\ncpu_pct=%d\ncpu_secs=%d\ncpu_lim=%d\nvideo_controls=%d\ntab_sleep=%d\nuser_agent=%d\ncpu_hud=%d\nsmooth_scroll=%d\n", g_lowmem, g_cpu_on, g_cpu_pct, g_cpu_secs, g_cpu_lim, g_vctl, g_tab_sleep, g_ua, g_hud, g_smooth);
+    fprintf(f, "page_zoom=%d\n", g_page_zoom_pct);
 #ifdef __ANDROID__
     fprintf(f, "pixel_scale=%d\n", g_pixel_scale_pct);
     fprintf(f, "renderer=%s\n", renderer_key(g_renderer));
@@ -225,7 +228,7 @@ static bool img_size(Node *n, float *w, float *h) {
     }
     *w = image_css_w(im); *h = image_css_h(im); return true; }
 
-typedef struct { char *url; uint64_t gen; float vw, vh; char *body; size_t blen; char *ctype; char *html; } LoadReq;
+typedef struct { char *url; uint64_t gen; float vw, vh, dpr; char *body; size_t blen; char *ctype; char *html; } LoadReq;
 
 static int loader(void *arg) {
     LoadReq *rq = arg; double t0 = now_ms();
@@ -264,8 +267,8 @@ static int loader(void *arg) {
         } else { sc.src = node_text_content(n); sc.len = strlen(sc.src); sc.name = xstrdup(p->url); }
         p->scripts = xrealloc(p->scripts, sizeof *p->scripts * (size_t)(p->nscripts + 1)); p->scripts[p->nscripts++] = sc;
     }
-    p->e = style_engine_new(p->d); p->e->media.vw = rq->vw; p->e->media.vh = rq->vh;
-    for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) {
+    p->e = style_engine_new(p->d); p->e->media.vw = rq->vw; p->e->media.vh = rq->vh; p->e->media.dpr = rq->dpr;
+    for (Node *n = p->d->node.first; n; n = node_next_deep(n, &p->d->node)) {
         if (!gen_live(rq->gen)) break;
         if (n->type != NODE_ELEMENT) continue;
         if (n->tag == A_style) {
@@ -302,6 +305,7 @@ static void page_free(Page *p) {
 }
 
 typedef struct Tab { Page *cur; bool loading, relayout; char *hist[256]; uint64_t hgen[256]; int nhist, hpos; char url[2048]; float sy; uint64_t lgen; int ws;
+    int zoom_pct; /* zero inherits the default; browser pages always use 100%. */
     double cpu_ms, media_ms0, budget, bud_t, unlimit_until; float pct, lim, cpuhist[600]; int ncpu, cpui, cpumode, vctl, vap, lite; uint64_t vgen; bool limited, info, asleep; double bg_since; int crashes; } Tab;
 typedef struct App {
     SDL_Window *win; SDL_MetalView mview; Gpu *gpu;
@@ -330,6 +334,36 @@ typedef struct App {
     int hover; double frame_ms;
     bool vonly, deferred, vframe; double last_input, last_full; float last_sy; uint64_t last_ver; Page *last_page; bool gvid_ok; const void *vown; float vrect[4]; float srect[4]; bool sdirty;   /* srect: viewport rect of element scrollers to repaint */
 } App;
+static float tab_zoom(const Tab *tab) {
+    if (tab && tab->cur && tab->cur->internal_ui) return 1;
+    return (tab && tab->zoom_pct ? tab->zoom_pct : g_page_zoom_pct) / 100.f;
+}
+static float page_width(const App *a) { return (a->vw - a->side) / tab_zoom(a->t); }
+static float page_height(const App *a) { return (a->vh - BAR) / tab_zoom(a->t); }
+static float page_scale(const App *a) { return a->scale * tab_zoom(a->t); }
+static float page_x(const App *a, float x) { return (x - a->side) / tab_zoom(a->t); }
+static float page_y(const App *a, float y) { return (y - BAR) / tab_zoom(a->t); }
+static void page_input_reset(void);
+static void page_zoom_changed(App *a) {
+    page_input_reset();
+    for (int i = 0; i < a->ntabs; i++) a->tabs[i]->relayout = true;
+    a->dirty = true;
+    a->vonly = a->sdirty = a->osig_ok = a->gvid_ok = false;
+    g_sm_dx = g_sm_dy = 0;
+#ifdef __ANDROID__
+    if (a->t && a->t->cur && a->t->cur->js) js_touch(a->t->cur->js, NULL, "reset", 0, 0, 0, 0, 0);
+    android_touch_reset(&a->touch);
+    android_fling_reset(&a->fling);
+#endif
+}
+static void page_zoom_adjust(App *a, int direction) {
+    if (!a->t || (a->t->cur && a->t->cur->internal_ui)) return;
+    int current = a->t->zoom_pct ? a->t->zoom_pct : g_page_zoom_pct;
+    int next = direction ? page_zoom_step(current, direction) : 0;
+    if (a->t->zoom_pct == next) return;
+    a->t->zoom_pct = next;
+    page_zoom_changed(a);
+}
 #ifdef __ANDROID__
 static Node *page_focus(App *app);
 static Node *edit_focus(App *app);
@@ -515,6 +549,12 @@ static char *internal_page(App *app, const char *u) {
         if (app->nws > 1) sb_puts(&b, "<p><a class=btn href=\"lumen://workspace?close\">Close this workspace</a></p>");
     } else if (!strcmp(sec, "settings")) {
         sb_puts(&b, "<h2>Settings</h2>");
+        sb_puts(&b, "<div class=card><div class=t>Default page zoom</div><p class=sub>Make website text and images larger or smaller. Browser controls keep their usual size.</p><p>");
+        for (size_t i = 0; i < sizeof page_zoom_levels / sizeof *page_zoom_levels; i++) {
+            int percent = page_zoom_levels[i];
+            sb_printf(&b, "<a class=\"btn%s\" href=\"lumen://set?s=settings&page_zoom=%d\">%d%%</a> ", percent == g_page_zoom_pct ? " on" : "", percent, percent);
+        }
+        sb_puts(&b, "</p></div>");
 #ifdef __ANDROID__
         char resolution[256]; resolution_text(app, resolution, sizeof resolution);
         sb_puts(&b, "<div class=card><div class=t>Physical pixel scale</div><p class=sub>Independent of Android display size. 1x maps one layout pixel to one screen pixel; 2x uses 2 by 2 screen pixels. Default: 2x. Rendering stays at native resolution.</p><p>");
@@ -600,6 +640,10 @@ static void renderer_apply(App *app, GpuBackend backend) {
 #endif
 static void apply_set(App *a, const char *q) {
     char v[32];
+    if (qparam(q, "page_zoom", v, sizeof v)) {
+        int percent = page_zoom_parse(v);
+        if (percent && percent != g_page_zoom_pct) { g_page_zoom_pct = percent; page_zoom_changed(a); }
+    }
 #ifdef __ANDROID__
     if (qparam(q, "renderer", v, sizeof v)) {
         int backend = renderer_parse(v);
@@ -651,7 +695,7 @@ static void navigate_ex(App *a, const char *url, bool push, const char *body, si
     }
     snprintf(a->t->url, sizeof a->t->url, "%s", u);
     a->editing = false; a->t->loading = true; a->dirty = true;
-    LoadReq *rq = xcalloc(1, sizeof *rq); rq->url = u; rq->html = html; rq->gen = ++load_gen; rq->vw = a->vw - a->side; rq->vh = a->vh - BAR; a->t->lgen = rq->gen; publish_gens(a);
+    LoadReq *rq = xcalloc(1, sizeof *rq); rq->url = u; rq->html = html; rq->gen = ++load_gen; float zoom = html ? 1 : (a->t->zoom_pct ? a->t->zoom_pct : g_page_zoom_pct) / 100.f; rq->vw = (a->vw - a->side) / zoom; rq->vh = (a->vh - BAR) / zoom; rq->dpr = a->scale * zoom; a->t->lgen = rq->gen; publish_gens(a);
     if (push) a->t->hgen[a->t->hpos] = rq->gen;
     if (body) { rq->body = xmalloc(blen + 1); memcpy(rq->body, body, blen); rq->body[blen] = 0; rq->blen = blen; rq->ctype = xstrdup(ctype ? ctype : ""); }
     SDL_Thread *t = SDL_CreateThread(loader, "loader", rq); SDL_DetachThread(t);
@@ -974,7 +1018,7 @@ static void build_chrome(App *a) {
     for (int i = n0; i < dl->items.n; i++) { DItem *it = &dl->items.v[i]; it->y += TABH; it->x += x0; if (it->op == DO_TEXT) for (int g = 0; g < it->ng; g++) { it->g[g].y += TABH; it->g[g].x += x0; } }
 }
 
-static float max_scroll(App *a) { return a->t->cur && a->t->cur->L ? LMAX(0, a->t->cur->L->doc_h - (a->vh - BAR)) : 0; }
+static float max_scroll(App *a) { return a->t->cur && a->t->cur->L ? LMAX(0, a->t->cur->L->doc_h - page_height(a)) : 0; }
 
 static double g_tr, g_tl, g_td, g_tx;
 static bool g_no_paint_only;
@@ -992,6 +1036,7 @@ static uint64_t ditem_hash(const DItem *it) {
     uint64_t h = 1469598103934665603ull;
     HMIX(h, it->op); HMIX(h, it->x); HMIX(h, it->y); HMIX(h, it->w); HMIX(h, it->h); HMIX(h, it->r); HMIX(h, it->color);
     HMIX(h, it->bw); HMIX(h, it->bc); HMIX(h, it->bs); HMIX(h, it->img); HMIX(h, it->blur); HMIX(h, it->spread); HMIX(h, it->alpha); HMIX(h, it->inset);
+    if (it->img) HMIX(h, it->img->content_version);
     if (it->grad) { const Gradient *g = it->grad; HMIX(h, g->type); HMIX(h, g->angle); HMIX(h, g->nstops); HMIX(h, g->repeating); h = hmix(h, g->stops, sizeof g->stops[0] * (size_t)LCLAMP(g->nstops, 0, 8)); }
     for (int i = 0; i < it->ng; i++) { const DGlyph *g = &it->g[i]; HMIX(h, g->gid); HMIX(h, g->x); HMIX(h, g->y); HMIX(h, g->font); }
     return h;
@@ -1099,13 +1144,13 @@ static void compose_page(App *app, int first_row, int last_row, int toolbar, int
     last_row = LMIN(last_row, LMIN(app->page.h, app->frame.h - toolbar));
     if (last_row <= first_row) return;
     int width = app->page.w;
-    if (!sidebar && app->frame.stride == width && app->page.stride == width)
+    if (!app->page.row_offset && !sidebar && app->frame.stride == width && app->page.stride == width)
         memcpy(app->frame.px + (size_t)(first_row + toolbar) * (size_t)app->frame.stride,
                app->page.px + (size_t)first_row * (size_t)app->page.stride,
                (size_t)(last_row - first_row) * (size_t)width * sizeof(*app->page.px));
     else for (int row = first_row; row < last_row; row++)
         memcpy(app->frame.px + (size_t)(row + toolbar) * (size_t)app->frame.stride + sidebar,
-               app->page.px + (size_t)row * (size_t)app->page.stride,
+               canvas_row(&app->page, row),
                (size_t)width * sizeof(*app->page.px));
 }
 
@@ -1169,7 +1214,7 @@ static void render(App *a) {
     int rx0 = pwp, ry0 = ph, rx1 = 0, ry1 = 0;
     int scroll_delta = 0;
     PaintRegions scroll_fixed = {0};
-    if (a->page.w != pwp || a->page.h != ph || a->page.scale != a->scale) { canvas_free(&a->page); canvas_init(&a->page, pwp, ph, a->scale); part = false; a->osig_ok = false; }
+    if (a->page.w != pwp || a->page.h != ph || a->page.scale != page_scale(a)) { canvas_free(&a->page); canvas_init(&a->page, pwp, ph, page_scale(a)); part = false; a->osig_ok = false; }
     bool gskip = false; GpuVideo gvd, *gvp = NULL;
     Image *fast = part && !a->sdirty && a->t->cur && a->gpu && a->gvid_ok && a->t->sy == a->last_sy && a->page.w == pwp && a->page.h == ph ? media_owner_frame(a->vown) : NULL;
     paint_profile_stage(&profile_frame, PAINT_PREPARE);
@@ -1178,12 +1223,12 @@ static void render(App *a) {
         if (!im) { a->dirty = a->vframe = false; return; }
         float s = a->page.scale; const float *r = a->vrect;
         gvd = (GpuVideo){ im->px, im->w, im->h, im->w, floorf(r[0] * s + 0.5f) + side_px, floorf(r[1] * s + 0.5f) + bar_px, floorf((r[0] + r[2]) * s + 0.5f) + side_px, floorf((r[1] + r[3]) * s + 0.5f) + bar_px };
-        gvd.yuv = im->yuv; gvd.mat = im->yuv_mat; gvp = &gvd; gskip = true;
+        gvd.yuv = im->yuv; gvd.mat = im->yuv_mat; gvd.serial = media_image_serial(im); gvp = &gvd; gskip = true;
     } else if (a->t->cur) {
         if (a->t->relayout || !a->t->cur->L) {
             if (!a->t->cur->L) a->t->cur->L = layout_new();
-            page_viewport(a->t->cur, a->vw - a->side, a->vh - BAR, a->scale);
-            { double q = now_ms(); layout_run(a->t->cur->L, a->t->cur->d, a->vw - a->side, a->vh - BAR); g_tl += now_ms() - q; }
+            page_viewport(a->t->cur, page_width(a), page_height(a), page_scale(a));
+            { double q = now_ms(); layout_run(a->t->cur->L, a->t->cur->d, page_width(a), page_height(a)); g_tl += now_ms() - q; }
             a->t->relayout = false;
         }
         a->t->sy = LCLAMP(a->t->sy, 0, max_scroll(a));
@@ -1196,7 +1241,7 @@ static void render(App *a) {
             if (!a->sdirty && fabsf(sdy - roundf(sdy)) < 0.01f && fabsf(sdy) < ph / 2) blit = (int)roundf(sdy);
             else { part = false; why = 5; }
         }
-        g_full_paint = (double)SDL_GetTicks(); { double q = now_ms(); dl_clear(&a->pdl); dl_build(&a->pdl, a->t->cur->L, 0, a->t->sy, a->vw - a->side, a->vh - BAR); g_td += now_ms() - q; } a->vbars = video_bars(a, &a->pdl);
+        g_full_paint = (double)SDL_GetTicks(); { double q = now_ms(); dl_clear(&a->pdl); dl_build(&a->pdl, a->t->cur->L, 0, a->t->sy, page_width(a), page_height(a)); g_td += now_ms() - q; } a->vbars = video_bars(a, &a->pdl);
         paint_profile_stage(&profile_frame, PAINT_LAYOUT_DL);
         int nn = dl_sigs(&a->pdl, &a->nsig, &a->cnsig);
         const DItem *vit = NULL; int nv = 0;
@@ -1222,6 +1267,14 @@ static void render(App *a) {
             profile_frame.blit = true;
             scroll_delta = blit;
             int d = blit, n = ph - abs(d); size_t row = (size_t)a->page.stride;
+#ifdef __ANDROID__
+            if (a->gpu || a->page.row_offset) {
+                int offset = a->page.row_offset + d;
+                if (offset < 0) offset += ph;
+                else if (offset >= ph) offset -= ph;
+                a->page.row_offset = offset;
+            } else
+#endif
             if (d > 0) memmove(a->page.px, a->page.px + (size_t)d * row, (size_t)n * row * 4);
             else memmove(a->page.px + (size_t)(-d) * row, a->page.px, (size_t)n * row * 4);
             a->page.punch = scroll_video ? vit->img : NULL;
@@ -1271,7 +1324,7 @@ static void render(App *a) {
                 else dmg = false;
                 if (dmg && getenv("LUMEN_CHECK_DAMAGE")) {
                     Canvas t; canvas_init(&t, pwp, ph, a->page.scale); raster(&t, &a->pdl, RGBA(255, 255, 255, 255));
-                    long bad = 0; for (int y = 0; y < ph; y++) for (int x = 0; x < pwp; x++) bad += t.px[(size_t)y * (size_t)t.stride + (size_t)x] != a->page.px[(size_t)y * (size_t)a->page.stride + (size_t)x];
+                    long bad = 0; for (int y = 0; y < ph; y++) for (int x = 0; x < pwp; x++) bad += t.px[(size_t)y * (size_t)t.stride + (size_t)x] != canvas_row(&a->page, y)[x];
                     fprintf(stderr, "lumen: damage %dx%d at %d,%d mismatched px=%ld\n", LMAX(0, x1 - x0), LMAX(0, y1 - y0), x0, y0, bad); canvas_free(&t);
                 }
                 if (dmg && chrome_changed) { part = false; gskip = false; }
@@ -1286,7 +1339,7 @@ static void render(App *a) {
         if (gv && a->gvid_ok) {
             const Image *im = vit->img; float s = a->page.scale;
             gvd = (GpuVideo){ im->px, im->w, im->h, im->w, floorf(vit->x * s + 0.5f) + side_px, floorf(vit->y * s + 0.5f) + bar_px, floorf((vit->x + vit->w) * s + 0.5f) + side_px, floorf((vit->y + vit->h) * s + 0.5f) + bar_px };
-            gvd.yuv = im->yuv; gvd.mat = im->yuv_mat; gvp = &gvd;
+            gvd.yuv = im->yuv; gvd.mat = im->yuv_mat; gvd.serial = media_image_serial(im); gvp = &gvd;
             a->vown = media_owner_of(im); a->vrect[0] = vit->x; a->vrect[1] = vit->y; a->vrect[2] = vit->w; a->vrect[3] = vit->h;
         }
     } else { a->gvid_ok = false; a->osig_ok = false; raster(&a->page, &(DisplayList){0}, RGBA(255, 255, 255, 255)); }
@@ -1306,17 +1359,17 @@ static void render(App *a) {
     if (!gskip && a->hdl.items.n) { float s = a->frame.scale; raster_rect(&a->frame, &a->hdl, RGBA(255, 255, 255, 255), (int)floorf(g_pop[0] * s), (int)floorf(g_pop[1] * s), (int)ceilf(g_pop[2] * s), (int)ceilf(g_pop[3] * s)); }   /* floats over the page */
     paint_profile_stage(&profile_frame, PAINT_COMPOSE);
     bool page_uploaded = direct_page &&
-        gpu_scroll_page(a->gpu, a->page.px, a->frame.w, a->frame.h, a->page.stride,
+        gpu_scroll_page_ring(a->gpu, a->page.px, a->frame.w, a->frame.h, a->page.stride,
                         bar_px, scroll_delta,
                         scroll_fixed.count ? (int)scroll_fixed.rect[0][1] : 0,
-                        scroll_fixed.count ? (int)scroll_fixed.rect[0][3] : 0);
+                        scroll_fixed.count ? (int)scroll_fixed.rect[0][3] : 0, a->page.row_offset);
     for (int i = 1; page_uploaded && i < scroll_fixed.count; i++)
-        page_uploaded = gpu_upload_page(a->gpu, a->page.px, a->frame.w, a->frame.h,
+        page_uploaded = gpu_upload_page_ring(a->gpu, a->page.px, a->frame.w, a->frame.h,
                                         a->page.stride, bar_px,
-                                        (int)scroll_fixed.rect[i][1], (int)scroll_fixed.rect[i][3]);
+                                        (int)scroll_fixed.rect[i][1], (int)scroll_fixed.rect[i][3], a->page.row_offset);
     if (direct_page && !page_uploaded)
-        page_uploaded = gpu_upload_page(a->gpu, a->page.px, a->frame.w, a->frame.h,
-                                        a->page.stride, bar_px, ry0, ry1);
+        page_uploaded = gpu_upload_page_ring(a->gpu, a->page.px, a->frame.w, a->frame.h,
+                                        a->page.stride, bar_px, ry0, ry1, a->page.row_offset);
     if (direct_page && !page_uploaded) {
         compose_page(a, 0, ph, bar_px, side_px);
         a->frame_page_stale = false;
@@ -1383,15 +1436,18 @@ static bool wheel_scroll(App *a, float x, float y, float dx, float dy) {
     return false;
 }
 static void wheel_apply(App *a, float mx, float my, float dx, float dy) {
-    if (!(my > BAR && mx > a->side && wheel_scroll(a, mx - a->side, my - BAR, dx, dy))) { if (!(a->dirty && !a->vonly)) a->vonly = true; a->t->sy += dy; }
+    float zoom = tab_zoom(a->t); dx /= zoom; dy /= zoom;
+    if (!(my > BAR && mx > a->side && wheel_scroll(a, page_x(a, mx), page_y(a, my), dx, dy))) { if (!(a->dirty && !a->vonly)) a->vonly = true; a->t->sy += dy; }
     a->dirty = true;
 }
 #ifdef __ANDROID__
 static bool android_scroll_apply(App *app, float anchor_x, float anchor_y, float dx, float dy) {
     if (!app->t->cur || app->t->asleep || app->t->info || !isfinite(dx) || !isfinite(dy) ||
             anchor_x <= app->side || anchor_y <= BAR || (!dx && !dy)) return false;
-    if (wheel_scroll(app, anchor_x - app->side, anchor_y - BAR, dx, dy)) return true;
-    float next = LCLAMP(roundf((app->t->sy + dy) * app->scale) / app->scale, 0, max_scroll(app));
+    float zoom = tab_zoom(app->t); dx /= zoom; dy /= zoom;
+    if (wheel_scroll(app, page_x(app, anchor_x), page_y(app, anchor_y), dx, dy)) return true;
+    float scale = page_scale(app);
+    float next = LCLAMP(roundf((app->t->sy + dy) * scale) / scale, 0, max_scroll(app));
     if (next == app->t->sy) return false;
     app->t->sy = next;
     if (!(app->dirty && !app->vonly)) app->vonly = true;
@@ -1409,6 +1465,7 @@ static void android_fling_tick(App *app) {
             !android_scroll_apply(app, app->fling_x, app->fling_y, dx, dy)) android_fling_reset(&app->fling);
 }
 static unsigned android_dom_touch(App *app, const char *phase, const SDL_Event *event);
+static void page_touch_controls(App *a, float x, float y);
 static bool android_touch_input(App *app, SDL_Event *event) {
     switch (event->type) {
     case SDL_EVENT_MOUSE_MOTION: return event->motion.which == SDL_TOUCH_MOUSEID;
@@ -1476,7 +1533,13 @@ static bool android_touch_input(App *app, SDL_Event *event) {
         } else android_fling_reset(&app->fling);
     }
     if (phase == ANDROID_TOUCH_UP) android_fling_release(&app->fling, timestamp, now_ms());
-    if (result.action != ANDROID_TOUCH_TAP || (dom & 4)) return true;
+    if (result.action != ANDROID_TOUCH_TAP) return true;
+    /* A handled touchend can suppress compatibility clicks. It still counts
+       as interaction with the player for the control visibility timer. */
+    if (dom & 4) {
+        page_touch_controls(app, page_x(app, result.anchor_x), page_y(app, result.anchor_y));
+        return true;
+    }
     SDL_Event click = {0};
     click.button.type = SDL_EVENT_MOUSE_BUTTON_DOWN;
     click.button.timestamp = event->tfinger.timestamp;
@@ -1679,14 +1742,18 @@ static void fire_img_events(Page *p) {
 }
 /* Reconcile engine sheets with <style>/<link rel=stylesheet> currently in the tree; seed only records them. */
 static bool sync_sheets(Page *p, bool seed) {
+    if (!seed && p->seen_sheet_ver == p->d->sheet_version) return false;
+    p->seen_sheet_ver = p->d->sheet_version;
     SheetRef *cur = NULL; int nc = 0, cap = 0; bool changed = false;
-    for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) {
+    for (Node *n = p->d->node.first; n; n = node_next_deep(n, &p->d->node)) {
         if (n->type != NODE_ELEMENT || n->ns != NS_HTML || (n->tag != A_style && !is_sheet_link(n) && !is_preload_link(n))) continue;
         char *t = n->tag == A_style ? node_text_content(n) : NULL;
         uint64_t h = t ? fnv(t) : fnv(node_attr(n, "href"));
+        if (!t && is_sheet_link(n)) h ^= 0x9e3779b97f4a7c15ull;
         int k = 0; while (k < p->nsref && p->sref[k].n != n) k++;
         bool known = k < p->nsref;
-        if (!seed && (!known || p->sref[k].h != h)) {
+        if ((!seed && (!known || p->sref[k].h != h)) ||
+            (seed && !known && is_preload_link(n) && !is_sheet_link(n))) {
             if (known) { style_engine_remove_owner(p->e, n); changed = true; }
             if (t) { StyleSheet *sh = css_parse_sheet(t, strlen(t), p->d->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); changed = true; }
             else {
@@ -1714,8 +1781,9 @@ static bool frame_restyle(Page *p) {
     p->img_check = p->frelayout = true;
     return true;
 }
+static float frame_scale(Page *p) { return g_app->scale * tab_zoom(tab_of_doc(g_app, p->d)); }
 static void frame_layout(Page *p) {
-    if (page_viewport(p, p->fw, p->fh, g_app->scale)) p->frelayout = true;
+    if (page_viewport(p, p->fw, p->fh, frame_scale(p))) p->frelayout = true;
     if (!p->frelayout && p->L) return;
     if (!p->L) p->L = layout_new();
     layout_run(p->L, p->d, p->fw, p->fh);
@@ -1730,13 +1798,18 @@ static bool frame_update(Page *p) {
     frame_restyle(p);
     if (w != p->fw || h != p->fh) { p->fw = w; p->fh = h; p->frelayout = true; }
     frame_layout(p);
-    float s = g_app->scale; int pw = (int)ceilf(w * s), ph = (int)ceilf(h * s);
+    float s = frame_scale(p); int pw = (int)ceilf(w * s), ph = (int)ceilf(h * s);
     if (p->cv.w != pw || p->cv.h != ph || p->cv.scale != s || !p->cv.px) { canvas_free(&p->cv); canvas_init(&p->cv, pw, ph, s); p->drawn_ver = ~0ull; }
-    if (p->drawn_ver == p->d->dom_version && p->drawn_epoch == g_img_epoch) return false;
+    if (p->drawn_ver == p->d->dom_version && p->drawn_paint_ver == p->d->paint_version && p->drawn_epoch == g_img_epoch) return false;
     dl_clear(&p->fdl); dl_build(&p->fdl, p->L, 0, p->fsy, w, h);
     raster(&p->cv, &p->fdl, RGBA(255, 255, 255, 255));
-    p->drawn_ver = p->d->dom_version; p->drawn_epoch = g_img_epoch;
-    p->img = (Image){ .w = pw, .h = ph, .refs = 1 << 30, .px = p->cv.px, .scale = s };
+    p->drawn_ver = p->d->dom_version; p->drawn_paint_ver = p->d->paint_version; p->drawn_epoch = g_img_epoch;
+    uint64_t content_version = p->img.content_version + 1;
+    p->img = (Image){ .w = pw, .h = ph, .refs = 1 << 30, .px = p->cv.px, .scale = s, .content_version = content_version };
+    /* The image pointer stays stable. Invalidate its enclosing frame's cached
+     * raster too, without invalidating styles or layout. */
+    if (p->frame_el->doc) p->frame_el->doc->paint_version++;
+    doc_visual_changed();
     return true;
 }
 /* @font-face: declare faces as sheets arrive; fetch a face only once text asks for it */
@@ -1828,7 +1901,7 @@ static void hf_sync(void *ud, Document *d, bool layout) {
     frame_restyle(p);
     if (layout && p->fw > 0) frame_layout(p);
 }
-static void hf_viewport(void *ud, float *w, float *h, float *sx, float *sy, float *dpr) { Page *p = ud; *w = p->fw; *h = p->fh; *sx = 0; *sy = p->fsy; *dpr = g_app->scale; }
+static void hf_viewport(void *ud, float *w, float *h, float *sx, float *sy, float *dpr) { Page *p = ud; *w = p->fw; *h = p->fh; *sx = 0; *sy = p->fsy; *dpr = frame_scale(p); }
 static void hf_scroll_to(void *ud, float x, float y) { (void)x; Page *p = ud; p->fsy = y > 0 ? y : 0; p->drawn_ver = ~0ull; }
 static Node *hf_hit(void *ud, float x, float y) { Page *p = ud; if (!p->L) return NULL; Box *b = layout_hit(p->L, x, y + p->fsy, 0, p->fsy); return b ? b->node : NULL; }
 static void h_frame_close(void *ud);
@@ -1841,7 +1914,8 @@ static void h_frame_open(void *ud, Node *f, Document *d, JsHost *ch) {
     if (p->fw < 1) p->fw = 300;
     if (p->fh < 1) p->fh = 150;
     p->e = style_engine_new(d); p->e->media.vw = p->fw; p->e->media.vh = p->fh;
-    for (Node *n = d->node.first; n; n = node_next_in_tree(n, &d->node)) {
+    p->e->media.dpr = g_app->scale * tab_zoom(tab_of_doc(g_app, f->doc));
+    for (Node *n = d->node.first; n; n = node_next_deep(n, &d->node)) {
         if (n->type != NODE_ELEMENT || n->ns != NS_HTML) continue;
         if (n->tag == A_style) {
             char *t = node_text_content(n); StyleSheet *sh = css_parse_sheet(t, strlen(t), d->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); free(t);
@@ -1895,7 +1969,11 @@ static void click_frame(App *a, Page *fp, float x, float y) {
 static void restyle(App *a) {
     Page *p = a->t->cur;
     if (!p) return;
-    bool viewport_changed = page_viewport(p, a->vw - a->side, a->vh - BAR, a->scale);
+    if (p->seen_paint_ver != p->d->paint_version) {
+        p->seen_paint_ver = p->d->paint_version;
+        if (a->t == a->tabs[a->ti]) { a->dirty = true; a->vonly = false; }
+    }
+    bool viewport_changed = page_viewport(p, page_width(a), page_height(a), page_scale(a));
     if (!viewport_changed && p->d->dom_version == p->seen_ver) return;
     p->seen_ver = p->d->dom_version;
     bool sheets = sync_sheets(p, false);
@@ -1913,7 +1991,7 @@ static void h_sync_in(void *ud, Document *d, bool layout) {
     restyle(a);
     if (!layout || !a->t->relayout) return;
     if (!p->L) p->L = layout_new();
-    layout_run(p->L, p->d, a->vw - a->side, a->vh - BAR);
+    layout_run(p->L, p->d, page_width(a), page_height(a));
     a->t->relayout = false;
 }
 #ifdef __ANDROID__
@@ -1921,8 +1999,8 @@ static unsigned android_dom_touch(App *a, const char *phase, const SDL_Event *ev
     Page *p = a->t->cur;
     if (!p || !p->js || a->t->asleep) return 0;
     Node *target = NULL;
-    float x = event ? event->tfinger.x * a->vw - a->side : 0;
-    float y = event ? event->tfinger.y * a->vh - BAR : 0;
+    float x = event ? page_x(a, event->tfinger.x * a->vw) : 0;
+    float y = event ? page_y(a, event->tfinger.y * a->vh) : 0;
     if (!strcmp(phase, "start")) {
         if (x <= 0 || y <= 0 || g_hud_pop || a->t->info) return 0;
         h_sync_in(a, p->d, true);
@@ -1952,10 +2030,39 @@ static void h_set_url_in(void *ud, const char *u, bool push) {
 static void h_navigate_post_in(void *ud, const char *u, const char *body, size_t len, const char *ctype) { (void)ud; navigate_ex(g_app, u, true, body, len, ctype); }
 static void h_history_go_in(void *ud, int d) { (void)ud; history_go(g_app, d); }
 static int h_history_len_in(void *ud) { (void)ud; return g_app->t->nhist; }
-static void h_viewport_in(void *ud, float *w, float *h, float *sx, float *sy, float *dpr) { (void)ud; *w = g_app->vw - g_app->side; *h = g_app->vh - BAR; *sx = 0; *sy = g_app->t->sy; *dpr = g_app->scale; }
-static void h_scroll_to_in(void *ud, float x, float y) { (void)ud; (void)x; g_app->t->sy = y; g_app->dirty = true; }
+static void h_viewport_in(void *ud, float *w, float *h, float *sx, float *sy, float *dpr) { (void)ud; *w = page_width(g_app); *h = page_height(g_app); *sx = 0; *sy = LCLAMP(g_app->t->sy, 0, max_scroll(g_app)); *dpr = page_scale(g_app); }
+static void h_scroll_to_in(void *ud, float x, float y) {
+    (void)ud; (void)x;
+    App *a = g_app; Page *p = a->t->cur;
+    if (!p) return;
+    h_sync_in(a, p->d, true);
+    float next = LCLAMP(isfinite(y) ? y : 0, 0, max_scroll(a));
+    if (a->t->sy == next) return;
+    a->t->sy = next; a->dirty = true;
+}
 static Node *h_hit_in(void *ud, float x, float y) { (void)ud; Page *p = g_app->t->cur; if (!p || !p->L) return NULL; Box *b = layout_hit(p->L, x, y + g_app->t->sy, 0, g_app->t->sy); return b ? b->node : NULL; }
 static void h_sync(void *ud, Document *d, bool layout) { TAB_CALL(ud, h_sync_in(g_app, d, layout)); }
+#if defined(__ANDROID__) && !defined(NDEBUG)
+/* Local developer diagnostic: geometry/CSS only, never page text, URLs or form values. */
+static void debug_layout_geometry(App *a) {
+    Page *p = a->t->cur;
+    if (!p) return;
+    h_sync_in(a, p->d, true);
+    p->e->debug_style_passes = 80;
+    p->e->doc->debug_mutations = 160;
+    char path[1200]; pref_path(path, sizeof path, "layout-geometry.txt");
+    FILE *f = fopen(path, "w");
+    if (!f) return;
+    fprintf(f, "viewport %.1f %.1f document %.1f scroll %.1f\n", page_width(a), page_height(a), p->L->doc_h, a->t->sy);
+    for (Node *n = p->d->node.first; n; n = node_next_deep(n, &p->d->node)) {
+        Box *b = n->box; const ComputedStyle *s = n->style;
+        if (n->type != NODE_ELEMENT || !b || !s) continue;
+        fprintf(f, "%p parent=%p <%s> class=%s box=%.1f,%.1f,%.1f,%.1f scroll=%.1f/%.1f scroller=%d display=%d pos=%d overflow=%d,%d flex=%d,%.1f,%.1f height=%d:%.1f:%.1f min=%d:%.1f:%.1f max=%d:%.1f:%.1f\n",
+            (void *)n, (void *)n->parent, n->tag, n->class_name ? n->class_name : "", b->x,b->y,b->w,b->h,n->scroll_y,b->scroll_h,b->scroller,s->display,s->position,s->overflow_x,s->overflow_y,s->flex_direction,s->flex_grow,s->flex_shrink,s->height.kind,s->height.px,s->height.pct,s->min_height.kind,s->min_height.px,s->min_height.pct,s->max_height.kind,s->max_height.px,s->max_height.pct);
+    }
+    fclose(f);
+}
+#endif
 static void h_navigate(void *ud, const char *u) { TAB_CALL(ud, h_navigate_in(ud, u)); }
 static void h_set_url(void *ud, const char *u, bool push) { TAB_CALL(ud, h_set_url_in(ud, u, push)); }
 static void h_navigate_post(void *ud, const char *u, const char *body, size_t len, const char *ctype) { TAB_CALL(ud, h_navigate_post_in(ud, u, body, len, ctype)); }
@@ -2150,7 +2257,7 @@ static bool youtube_controls_target(Page *page, Node *node) {
     for (; node; node = node->parent) {
         if (node->tag == A_video) return true;
         const char *id = node_attr(node, "id");
-        if (id && !strcmp(id, "movie_player")) return true;
+        if (id && (!strcmp(id, "movie_player") || !strcmp(id, "player-container-id"))) return true;
     }
     return false;
 }
@@ -2169,6 +2276,27 @@ static void page_move(App *a, float x, float y) {   /* pointer moves for page sc
     js_dispatch(p->js, n, "pointermove", "PointerEvent", true, true, x, y, 0, NULL);
     js_dispatch(p->js, n, "mousemove", "MouseEvent", true, true, x, y, 0, NULL);
 }
+#ifdef __ANDROID__
+static void page_touch_controls(App *a, float x, float y) {
+    Page *p = a->t->cur;
+    g_mv_p = NULL;
+    if (!p || !p->L || !p->js || x < 0 || y < 0) return;
+    Box *b = layout_hit(p->L, x, y + a->t->sy, 0, a->t->sy);
+    if (!b || !youtube_controls_target(p, b->node)) return;
+    /* The caller finishes compatibility clicks before changing visibility.
+       Mobile YouTube hides the inner content, not the overlay itself. Do not
+       cover ad controls or synthesize repeated mouse events for a touch.
+       The page owns the expiry timer, which is destroyed on navigation. */
+    js_eval(p->js,
+        "setTimeout(function(){if(!document.getElementById('player-control-overlay'))return;"
+        "var s=document.getElementById('__lumen_touch_vctl');"
+        "if(!s){s=document.createElement('style');s.id='__lumen_touch_vctl';"
+        "s.textContent='#player-container-id:not(:has(.ad-showing)) #player-control-overlay .player-controls-content{opacity:1!important;visibility:visible!important}';"
+        "(document.head||document.documentElement).appendChild(s)}"
+        "clearTimeout(s.__lumenTimer);s.__lumenTimer=setTimeout(function(){s.remove()},8000)},0)",
+        "lumen:touch-controls");
+}
+#endif
 static void page_move_keep(App *a) {   /* YouTube hides its controls ~3 s after the pointer stops; keep them up for 8 s */
     double tn = now_ms(); Page *p = g_mv_p;
     if (!p || tn - g_mv_t > 8000) { g_mv_p = NULL; return; }
@@ -2201,7 +2329,7 @@ static bool video_bars(App *a, DisplayList *dl) {   /* control bar under each <v
     for (Node *n = d->node.first; n; n = node_next_in_tree(n, &d->node)) {
         if (!vbar_on(a, n)) continue;
         Box *b = n->box; float y = vbar_y(a, b) - a->t->sy;
-        if (y < -VBH || y > a->vh) continue;
+        if (y < -VBH || y > page_height(a)) continue;
         MpState s; memset(&s, 0, sizeof s); if (!media_state_for(n, &s)) s.paused = true;
         playing |= !s.paused;
         char tm[48]; float tx0, tx1; vbar_layout(a, b, &s, tm, sizeof tm, &tx0, &tx1);
@@ -2242,7 +2370,7 @@ static void sel_press(App *a, float x, float y, int clicks) {
     bool had = g_tsel.on; g_tsel.on = false; g_press = g_drag = false;
     Page *p = a->t->cur;
     if (p && p->L && !a->t->asleep) {
-        float px = x - a->side, py = y - BAR + a->t->sy;
+        float px = page_x(a, x), py = page_y(a, y) + a->t->sy;
         Box *b = layout_hit(p->L, px, py, 0, a->t->sy);
         bool ok = !(b && b->st && b->st->user_select);
         for (Node *k = b ? b->node : NULL; ok && k; k = k->parent) if (is_text_ctl(k)) ok = false;
@@ -2261,7 +2389,7 @@ static void sel_press(App *a, float x, float y, int clicks) {
 static void sel_drag(App *a, float x, float y) {
     Page *p = a->t->cur;
     if (!g_press || !p || !p->L) return;
-    float px = x - a->side, py = y - BAR + a->t->sy;
+    float px = page_x(a, x), py = page_y(a, y) + a->t->sy;
     if (!g_drag) {
         if (fabsf(px - g_px) + fabsf(py - g_py) < 4) return;
         Node *an; int ao;
@@ -2273,6 +2401,10 @@ static void sel_drag(App *a, float x, float y) {
     if (fn != g_tsel.fn || fo != g_tsel.fo || !g_tsel.on) { g_tsel.fn = fn; g_tsel.fo = fo; g_tsel.on = fn != g_tsel.an || fo != g_tsel.ao; sel_dirty(a); }
 }
 static bool g_epress;
+static void page_input_reset(void) {
+    g_press = g_drag = g_epress = g_tsel.on = false;
+    g_mv_p = NULL;
+}
 static bool edit_text_at(App *a, Node *h, float px, float py, Node **tn, int *off) {
     Page *p = a->t->cur;
     return h->box && tsel_point(p->L, px, py, a->t->sy, h->box, tn, off) && node_within(*tn, h);
@@ -2281,7 +2413,7 @@ static void edit_press(App *a, float x, float y, int clicks) {
     g_epress = false;
     Node *h = edit_focus(a); Page *p = a->t->cur;
     if (!h || !p || !p->L || a->t->asleep) return;
-    float px = x - a->side, py = y - BAR + a->t->sy;
+    float px = page_x(a, x), py = page_y(a, y) + a->t->sy;
     Box *b = layout_hit(p->L, px, py, 0, a->t->sy); Node *tn; int off;
     if (!b || edit_host(b->node) != edit_host(h) || !edit_text_at(a, h, px, py, &tn, &off)) return;
     js_dispatch(p->js, tn, clicks >= 3 ? "lumensel-all" : clicks == 2 ? "lumensel-word" : "lumensel-collapse", "MouseEvent", false, false, off, 0, 0, NULL);
@@ -2291,7 +2423,7 @@ static void edit_press(App *a, float x, float y, int clicks) {
 static void edit_drag(App *a, float x, float y) {
     static Node *ln; static int lo;
     Node *h = edit_focus(a), *tn; int off;
-    if (!h || !a->t->cur || !a->t->cur->L || !edit_text_at(a, h, x - a->side, y - BAR + a->t->sy, &tn, &off) || (tn == ln && off == lo)) return;
+    if (!h || !a->t->cur || !a->t->cur->L || !edit_text_at(a, h, page_x(a, x), page_y(a, y) + a->t->sy, &tn, &off) || (tn == ln && off == lo)) return;
     ln = tn; lo = off;
     js_dispatch(a->t->cur->js, tn, "lumensel-extend", "MouseEvent", false, false, off, 0, 0, NULL);
     sel_dirty(a);
@@ -2318,11 +2450,12 @@ static void sel_copy(App *a) {
     if (g_tsel.on && a->t->cur && a->t->cur->L == g_tsel.L) { char *s = tsel_text(a->t->cur->L); if (*s) SDL_SetClipboardText(s); free(s); }
 }
 static void click_page(App *a, float x, float y, unsigned touch_flags) {
-    x -= a->side;
+    if (x < a->side || y < BAR) return;
+    x = page_x(a, x); y = page_y(a, y);
     if (!a->t->cur || !a->t->cur->L || a->t->asleep) return;   /* a sleeping page is only a picture until its reload lands */
     h_sync_in(a, a->t->cur->d, true);   /* paint may be deferred; hit-test the current DOM, not detached boxes */
-    if (vbar_click(a, x, y - BAR + a->t->sy)) return;
-    Box *b = layout_hit(a->t->cur->L, x, y - BAR + a->t->sy, 0, a->t->sy);
+    if (vbar_click(a, x, y + a->t->sy)) return;
+    Box *b = layout_hit(a->t->cur->L, x, y + a->t->sy, 0, a->t->sy);
     Node *t = b ? b->node : NULL;
     if (getenv("LUMEN_DEBUG_CLICK")) {
         fprintf(stderr, "lumen: click %.0f,%.0f box[%.0f,%.0f %.0fx%.0f] ->", x, y, b ? b->x : 0, b ? b->y : 0, b ? b->w : 0, b ? b->h : 0);
@@ -2334,11 +2467,11 @@ static void click_page(App *a, float x, float y, unsigned touch_flags) {
     Page *fp = t && t->tag == A_iframe ? frame_find(t) : NULL;
     if (fp && fp->L && t->box) {
         Box *fb = t->box;
-        click_frame(a, fp, x - (fb->x + fb->b[3] + fb->p[3]), y - BAR + a->t->sy - (fb->y + fb->b[0] + fb->p[0]));
+        click_frame(a, fp, x - (fb->x + fb->b[3] + fb->p[3]), y + a->t->sy - (fb->y + fb->b[0] + fb->p[0]));
         return;
     }
     if (t && a->t->cur->js) {
-        JsCtx *js = a->t->cur->js; float cy = y - BAR;
+        JsCtx *js = a->t->cur->js; float cy = y;
         Node *before = a->t->cur->d->focus;
         bool touch = (touch_flags & 8) != 0;
         if (!touch) js_dispatch(js, t, "pointerdown", "PointerEvent", true, true, x, cy, 0, NULL);
@@ -2355,7 +2488,7 @@ static void click_page(App *a, float x, float y, unsigned touch_flags) {
             break;
         }
         if (!is_text_ctl(ctl) && !js_focused) {   /* overlays (floating labels etc.) above a text field */
-            float px = x, py = y - BAR + a->t->sy;
+            float px = x, py = y + a->t->sy;
             for (Node *n = a->t->cur->d->node.first; n; n = node_next_in_tree(n, &a->t->cur->d->node))
                 if (is_text_ctl(n) && n->box && px >= n->box->x && px < n->box->x + n->box->w && py >= n->box->y && py < n->box->y + n->box->h) { ctl = n; break; }
         }
@@ -2383,9 +2516,10 @@ static void click_page(App *a, float x, float y, unsigned touch_flags) {
 }
 
 static bool over_link(App *a, float x, float y) {
-    x -= a->side;
-    if (!a->t->cur || !a->t->cur->L || a->t->asleep || y < BAR) return false;
-    Box *b = layout_hit(a->t->cur->L, x, y - BAR + a->t->sy, 0, a->t->sy);
+    if (x < a->side || y < BAR) return false;
+    x = page_x(a, x); y = page_y(a, y);
+    if (!a->t->cur || !a->t->cur->L || a->t->asleep) return false;
+    Box *b = layout_hit(a->t->cur->L, x, y + a->t->sy, 0, a->t->sy);
     for (Node *n = b ? b->node : NULL; n; n = n->parent) if (n->type == NODE_ELEMENT && n->tag == A_a && node_attr(n, "href")) return true;
     return false;
 }
@@ -2813,7 +2947,8 @@ int main(int argc, char **argv) {
             pixel_scale_load(line);
 #endif
             char k[64]; int v; if (sscanf(line, "%63[^=]=%d", k, &v) != 2) continue;
-            if (!strcmp(k, "offscreen_media_eviction")) g_lowmem = v != 0; else if (!strcmp(k, "cpu_limit")) g_cpu_on = v != 0;
+            if (!strcmp(k, "page_zoom") && page_zoom_valid(v)) g_page_zoom_pct = v;
+            else if (!strcmp(k, "offscreen_media_eviction")) g_lowmem = v != 0; else if (!strcmp(k, "cpu_limit")) g_cpu_on = v != 0;
             else if (!strcmp(k, "cpu_pct")) g_cpu_pct = LCLAMP(v, 10, 100); else if (!strcmp(k, "cpu_secs")) g_cpu_secs = LCLAMP(v, 5, 600);
             else if (!strcmp(k, "cpu_lim")) g_cpu_lim = LCLAMP(v, 5, 95); else if (!strcmp(k, "video_controls")) g_vctl = v != 0;
             else if (!strcmp(k, "tab_sleep")) g_tab_sleep = v != 0; else if (!strcmp(k, "cpu_hud")) g_hud = v != 0; else if (!strcmp(k, "smooth_scroll")) g_smooth = v != 0; else if (!strcmp(k, "user_agent")) g_ua = LCLAMP(v, 0, UA_COUNT - 1);
@@ -2961,6 +3096,10 @@ int main(int argc, char **argv) {
             case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED: update_size(&a); break;
             case SDL_EVENT_WINDOW_EXPOSED: a.dirty = true; break;
             case SDL_EVENT_MOUSE_WHEEL: {
+                if ((SDL_GetModState() & SDL_KMOD_CTRL) && ev.wheel.y) {
+                    page_zoom_adjust(&a, (ev.wheel.direction == SDL_MOUSEWHEEL_FLIPPED ? -ev.wheel.y : ev.wheel.y) > 0 ? 1 : -1);
+                    break;
+                }
                 /* whole-number deltas come from a mouse wheel: one fixed step per notch; fractional ones from a trackpad */
                 bool notch = ev.wheel.x == roundf(ev.wheel.x) && ev.wheel.y == roundf(ev.wheel.y);
                 float k = notch ? WHEEL_STEP : 40, wdx = ev.wheel.x * k, wdy = -ev.wheel.y * k;
@@ -2973,7 +3112,7 @@ int main(int argc, char **argv) {
             }
             case SDL_EVENT_MOUSE_MOTION: {
                 int h = bar_hit(&a, ev.motion.x, ev.motion.y); if (h != a.hover) { a.hover = h; a.dirty = true; }
-                if (!h && ev.motion.y > BAR && ev.motion.x > a.side) page_move(&a, ev.motion.x - a.side, ev.motion.y - BAR);
+                if (!h && ev.motion.y > BAR && ev.motion.x > a.side) page_move(&a, page_x(&a, ev.motion.x), page_y(&a, ev.motion.y));
                 else if (a.t->cur && page_hover(a.t->cur, NULL)) restyle(&a);
                 if (g_press && (ev.motion.state & SDL_BUTTON_LMASK)) sel_drag(&a, ev.motion.x, ev.motion.y);
                 else if (g_epress && (ev.motion.state & SDL_BUTTON_LMASK)) edit_drag(&a, ev.motion.x, ev.motion.y);
@@ -3005,6 +3144,9 @@ int main(int argc, char **argv) {
                     if (touch_tap) touch_flags = a.touch_dom_flags;
 #endif
                     if (a.editing) { a.editing = false; SDL_StopTextInput(a.win); a.dirty = true; } sel_press(&a, ev.button.x, ev.button.y, ev.button.clicks); click_page(&a, ev.button.x, ev.button.y, touch_flags); edit_press(&a, ev.button.x, ev.button.y, ev.button.clicks);
+#ifdef __ANDROID__
+                    if (touch_tap) page_touch_controls(&a, page_x(&a, ev.button.x), page_y(&a, ev.button.y));
+#endif
                 }
                 }
                 break;
@@ -3028,12 +3170,24 @@ int main(int argc, char **argv) {
             case SDL_EVENT_KEY_UP: if (ev.key.key == SDLK_LGUI || ev.key.key == SDLK_RGUI || ev.key.key == SDLK_LCTRL || ev.key.key == SDLK_RCTRL) cmd = false; break;
             case SDL_EVENT_KEY_DOWN: { a.caret_t = now_ms();
                 js_key_mods = key_mods(ev.key.mod);
-                SDL_Keycode k = ev.key.key; float page = a.vh - BAR - 40;
+                SDL_Keycode k = ev.key.key; float page = page_height(&a) - 40;
+#if defined(__ANDROID__) && !defined(NDEBUG)
+                if (k == SDLK_F7) { net_debug_streams(120); break; }
+                if (k == SDLK_F8) { debug_layout_geometry(&a); break; }
+                if (k == SDLK_F9) {
+                    net_debug_streams(0);
+                    Page *p = a.t->cur;
+                    if (p) { p->e->debug_style_passes = 0; p->d->debug_mutations = 0; }
+                    break;
+                }
+#endif
 #ifdef __ANDROID__
                 if (k == SDLK_AC_BACK) { if (!ev.key.repeat) android_handle_back(&a); break; }
 #endif
                 if (k == SDLK_LGUI || k == SDLK_RGUI || k == SDLK_LCTRL || k == SDLK_RCTRL) { cmd = true; break; }
                 if (cmd || (ev.key.mod & (SDL_KMOD_GUI | SDL_KMOD_CTRL))) {
+                    bool zoom_key = k == SDLK_EQUALS || k == SDLK_PLUS || k == SDLK_MINUS || k == SDLK_0;
+                    if (zoom_key) { page_zoom_adjust(&a, k == SDLK_0 ? 0 : k == SDLK_MINUS ? -1 : 1); break; }
                     bool reserved = k == SDLK_Q || k == SDLK_W || k == SDLK_T || k == SDLK_N || k == SDLK_L || k == SDLK_TAB || (k >= SDLK_1 && k <= SDLK_9);
                     if (cmd) js_key_mods |= (ev.key.mod & SDL_KMOD_CTRL) ? 2 : 8;
                     if (!reserved && !page_key(&a, k, ev.key.mod)) { restyle(&a); a.dirty = true; a.vonly = false; break; }

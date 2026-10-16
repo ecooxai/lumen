@@ -504,7 +504,7 @@ class Worker extends EventTarget {
         def(this, '_id', N.workerNew(u.href, src, N.userAgent(), N.platform(), opts && opts.name != null ? String(opts.name) : '', !!opts && opts.type === 'module'));
         workers.set(this._id, this);
     }
-    postMessage(m, t) { if (arguments.length < 1) throw new TypeError("Failed to execute 'postMessage' on 'Worker': 1 argument required, but only 0 present."); if (!this._id) return; const ps = (Array.isArray(t) ? t : t && t.transfer || []).filter(p => p instanceof MessagePort); if (!ps.length) return N.workerPost(this._id, m); N.workerPost(this._id, { __lumenXfer: ps.map(p => { const k = ++portSeq; p._wk = [this._id, k]; if (p._other) remotePorts.set(k, p._other); return k; }), data: m }); }
+    postMessage(m, t) { if (arguments.length < 1) throw new TypeError("Failed to execute 'postMessage' on 'Worker': 1 argument required, but only 0 present."); if (!this._id) return; const transfer = Array.isArray(t) ? t : t && t.transfer || []; for (const item of transfer) if (N.isWasmModule(item)) throw new DOMException('WebAssembly.Module is not transferable.', 'DataCloneError'); const ps = transfer.filter(p => p instanceof MessagePort); if (!ps.length) return N.workerPost(this._id, m); N.workerPost(this._id, { __lumenXfer: ps.map(p => { const k = ++portSeq; p._wk = [this._id, k]; if (p._other) remotePorts.set(k, p._other); return k; }), data: m }); }
     terminate() { if (this._id) { N.workerTerm(this._id); workers.delete(this._id); this._id = 0; } }
 }
 function workerEvent(id, kind, data, message, filename, lineno, colno) {

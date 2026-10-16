@@ -1,5 +1,20 @@
 #include "dom.h"
 #include <stdatomic.h>
+#if defined(__ANDROID__) && !defined(NDEBUG)
+#include <android/log.h>
+#endif
+
+static void trace_mutation(Document *d, Node *n, const char *kind, const char *attribute) {
+#if defined(__ANDROID__) && !defined(NDEBUG)
+    if (d && d->debug_mutations) {
+        d->debug_mutations--;
+        __android_log_print(ANDROID_LOG_INFO, "LumenMutation", "kind=%s tag=%s attr=%s selector=%llu",
+            kind, n && n->tag ? n->tag : "-", attribute ? attribute : "-", (unsigned long long)d->selector_version);
+    }
+#else
+    (void)d; (void)n; (void)kind; (void)attribute;
+#endif
+}
 
 static atomic_uint_fast64_t visual_version;
 uint64_t doc_visual_generation(void) { return atomic_load_explicit(&visual_version, memory_order_relaxed); }
@@ -47,7 +62,7 @@ Document *doc_new(const char *url) {
 }
 
 long g_nodes_live;
-static Node *alloc_node(Document *d, int type) { Node *n = xcalloc(1, sizeof *n); g_nodes_live++; n->type = (uint8_t)type; n->doc = d; n->flags = NF_STYLE_DIRTY | NF_LAYOUT_DIRTY; return n; }
+static Node *alloc_node(Document *d, int type) { Node *n = xcalloc(1, sizeof *n); g_nodes_live++; if (d) d->selector_version++; /* invalidate cached addresses reused by detached nodes; existing inheritance is unchanged */ n->type = (uint8_t)type; n->doc = d; n->flags = NF_STYLE_DIRTY | NF_LAYOUT_DIRTY; return n; }
 Node *node_new_element(Document *d, const char *tag, int ns) { Node *n = alloc_node(d, NODE_ELEMENT); n->tag = atom(tag); n->ns = (uint8_t)ns; return n; }
 Node *node_new_text(Document *d, const char *s, size_t len) { Node *n = alloc_node(d, NODE_TEXT); n->text = xstrndup(s, len); n->text_len = len; n->tag = atom("#text"); return n; }
 Node *node_new_comment(Document *d, const char *s, size_t len) { Node *n = alloc_node(d, NODE_COMMENT); n->text = xstrndup(s, len); n->text_len = len; n->tag = atom("#comment"); return n; }
@@ -57,20 +72,58 @@ Node *node_new_doctype(Document *d, const char *name) { Node *n = alloc_node(d, 
 Node *node_new_pi(Document *d, const char *target, const char *s, size_t len) { Node *n = alloc_node(d, NODE_PI); n->text = xstrndup(s, len); n->text_len = len; n->tag = atom(target); return n; }
 Node *node_new_cdata(Document *d, const char *s, size_t len) { Node *n = alloc_node(d, NODE_CDATA); n->text = xstrndup(s, len); n->text_len = len; n->tag = atom("#cdata-section"); return n; }
 
+void node_set_modal(Node *n, bool modal) {
+    if (!n->doc || modal == !!(n->flags & NF_MODAL)) return;
+    Document *d = n->doc;
+    if (modal) {
+        if (!(n->flags & NF_CONNECTED) || !node_is(n, A_dialog) || !node_has_attr(n, "open")) return;
+        vec_push(d->modals, n);
+        n->flags |= NF_MODAL;
+    } else {
+        for (int i = 0; i < d->modals.n; i++) if (d->modals.v[i] == n) {
+            memmove(d->modals.v + i, d->modals.v + i + 1, sizeof(Node *) * (size_t)(d->modals.n - i - 1));
+            d->modals.n--;
+            break;
+        }
+        n->flags &= ~(uint32_t)NF_MODAL;
+    }
+    doc_mark_dirty(d, n);
+}
+
 static void mark_connected(Node *n, bool on) {
     for (Node *c = n; c; c = node_next_in_tree(c, n)) {
-        if (on) c->flags |= NF_CONNECTED; else c->flags &= ~(uint32_t)NF_CONNECTED;
+        if (c->doc && (node_is(c, A_style) || node_is(c, A_link))) c->doc->sheet_version++;
+        if (!on && (c->flags & NF_MODAL)) node_set_modal(c, false);
+        if (on) c->flags |= NF_CONNECTED; else c->flags &= ~(uint32_t)(NF_CONNECTED | NF_MODAL);
         if (c->type == NODE_ELEMENT && c->shadow_root) mark_connected(c->shadow_root, on);
     }
 }
 static bool is_connected(Node *p) { return p->type == NODE_DOCUMENT || (p->flags & NF_CONNECTED); }
 
-static void mark(Document *d, Node *n, bool layout) {
+/* Ordinary text/input changes must not rehash every stylesheet in a long page.
+ * Include ancestors because a style element's textContent can contain elements. */
+static void mark_sheet_content(Document *d, Node *n) {
+    for (; n; n = n->parent) {
+        if (node_is(n, A_style) || node_is(n, A_link)) { d->sheet_version++; return; }
+    }
+}
+
+static void mark_impl(Document *d, Node *n, bool layout, bool selectors, bool keys_known, bool style) {
     if (!d) return;
     d->dom_version++;
+    if (selectors) {
+        d->selector_version++;
+        if (!n || is_connected(n)) {
+            d->inheritance_version++;
+            if (!keys_known) d->selector_changes_unknown = true;
+        }
+        if (n) n->flags |= NF_RESELECT_SUBTREE;
+    }
+    if (selectors) trace_mutation(d, n, "selector", NULL);
+    mark_sheet_content(d, n);
     if (layout) d->layout_version++;
     if (n) {
-        n->flags |= NF_STYLE_DIRTY | NF_LAYOUT_DIRTY;
+        n->flags |= (style ? NF_STYLE_DIRTY : NF_CHILD_STYLE_DIRTY) | NF_LAYOUT_DIRTY;
         for (Node *p = n->parent; p; p = p->parent ? p->parent : p->host) {
             if ((p->flags & (NF_CHILD_STYLE_DIRTY | NF_LAYOUT_DIRTY)) == (NF_CHILD_STYLE_DIRTY | NF_LAYOUT_DIRTY)) break;
             p->flags |= NF_CHILD_STYLE_DIRTY | NF_LAYOUT_DIRTY;
@@ -79,9 +132,59 @@ static void mark(Document *d, Node *n, bool layout) {
     }
     if (d->on_mutation) d->on_mutation(d, n);
 }
-void doc_mark_dirty(Document *d, Node *n) { mark(d, n, true); }
-void doc_mark_style_dirty(Document *d, Node *n) { mark(d, n, false); }
+static void mark(Document *d, Node *n, bool layout, bool selectors) { mark_impl(d, n, layout, selectors, false, true); }
+void doc_mark_dirty(Document *d, Node *n) { mark(d, n, true, true); }
+void doc_mark_style_dirty(Document *d, Node *n) { mark(d, n, false, true); }
 static bool style_only_attr(const char *name) { return !strcmp(name, "style") || !strcmp(name, "class"); }
+/* CSS may precisely invalidate attribute-selector subjects. DOM-only users
+ * retain the conservative behavior without linking the style engine. */
+__attribute__((weak)) bool node_attribute_style_changed(Node *n, const char *name) { (void)n; (void)name; return false; }
+static void mark_attribute(Node *n, const char *name) {
+    Document *d = n->doc;
+    if (d && node_attribute_style_changed(n, name)) {
+        d->dom_version++; d->selector_version++;
+        mark_sheet_content(d, n);
+        if (d->on_mutation) d->on_mutation(d, n);
+    } else mark_impl(d, n, !style_only_attr(name), !str_ieq(name, "style"),
+        str_ieq(name, "class") || str_ieq(name, "id"), true);
+}
+static bool prevents_empty(const Node *n) {
+    return n->type == NODE_ELEMENT || ((n->type == NODE_TEXT || n->type == NODE_CDATA) && n->text_len);
+}
+static bool has_empty_content(const Node *n) {
+    for (const Node *c = n->first; c; c = c->next) if (prevents_empty(c)) return false;
+    return true;
+}
+static void tree_change_key(Document *d, const char *key) {
+    if (!key) return;
+    unsigned bit = dom_tree_key_bit(key);
+    d->tree_change_keys[bit >> 6] |= UINT64_C(1) << (bit & 63);
+}
+/* Capture removed keys before nodes can be freed, and moved descendants as
+ * well as the subtree root. Bloom collisions only cause extra invalidation. */
+static void record_tree_change(Document *d, Node *n) {
+    if (!d) return;
+    if (n == d->focus) d->tree_focus_changed = true;
+    if (n->type == NODE_ELEMENT) {
+        tree_change_key(d, atom_lower(n->tag, strlen(n->tag)));
+        tree_change_key(d, n->id);
+        for (int i = 0; i < n->nclasses; i++) tree_change_key(d, n->classes[i]);
+        for (int i = 0; i < n->nattrs; i++) tree_change_key(d, atom_lower(n->attrs[i].name, strlen(n->attrs[i].name)));
+    }
+    for (Node *c = n->first; c; c = c->next) record_tree_change(d, c);
+    if (n->shadow_root) record_tree_change(d, n->shadow_root);
+}
+static void mark_child_list(Node *parent) {
+    Document *d = parent->doc;
+    bool connected = is_connected(parent);
+    if (d) { if (connected) d->tree_version++; d->selector_version++; }
+    if (!connected) parent->flags |= NF_RESELECT_SUBTREE;
+    parent->flags |= NF_CHILD_LIST_DIRTY;
+    /* Structural selector invalidation selects affected parents separately.
+     * A child-list edit alone changes layout, not inherited computed style.
+     * DOM-only clients without a style engine retain conservative dirtiness. */
+    mark_impl(d, parent, true, false, false, !d || !d->stylesheets);
+}
 
 void node_insert_before(Node *parent, Node *child, Node *ref) {
     if (child->type == NODE_FRAGMENT) {
@@ -89,6 +192,10 @@ void node_insert_before(Node *parent, Node *child, Node *ref) {
         return;
     }
     if (child->parent) node_remove(child);
+    if (prevents_empty(child) && has_empty_content(parent)) {
+        parent->flags |= NF_STYLE_DIRTY; /* the parent's own :empty may change */
+        if (parent->doc && is_connected(parent)) parent->doc->text_emptiness_version++;
+    }
     child->parent = parent;
     if (ref && ref->parent == parent) {
         child->next = ref; child->prev = ref->prev;
@@ -100,21 +207,28 @@ void node_insert_before(Node *parent, Node *child, Node *ref) {
         parent->last = child;
     }
     child->refcount++;
-    if (is_connected(parent)) mark_connected(child, true);
-    child->flags |= NF_STYLE_DIRTY;
-    doc_mark_dirty(parent->doc, child);
-    doc_mark_dirty(parent->doc, parent);
+    if (is_connected(parent)) { mark_connected(child, true); record_tree_change(parent->doc, child); }
+    /* A moved subtree has new ancestry. Existing siblings only need the
+     * structural selector dependencies, not a fresh cascade for every leaf. */
+    child->flags |= NF_STYLE_DIRTY | NF_RESELECT_SUBTREE;
+    mark(parent->doc, child, true, false);
+    mark_child_list(parent);
 }
 void node_append(Node *parent, Node *child) { node_insert_before(parent, child, NULL); }
 
 void node_remove(Node *c) {
     Node *p = c->parent; if (!p) return;
+    if (is_connected(p)) record_tree_change(p->doc, c);
     if (c->prev) c->prev->next = c->next; else p->first = c->next;
     if (c->next) c->next->prev = c->prev; else p->last = c->prev;
     c->parent = c->prev = c->next = NULL;
+    if (prevents_empty(c) && has_empty_content(p)) {
+        p->flags |= NF_STYLE_DIRTY;
+        if (p->doc && is_connected(p)) p->doc->text_emptiness_version++;
+    }
     mark_connected(c, false);
     if (c->doc && c->doc->focus && node_is_inclusive_ancestor(c, c->doc->focus)) c->doc->focus = NULL;
-    doc_mark_dirty(p->doc, p);
+    mark_child_list(p);
     if (c->refcount) c->refcount--;
 }
 
@@ -122,10 +236,12 @@ void node_retain(Node *n) { n->refcount++; }
 void node_release(Node *n) { if (n->refcount) n->refcount--; if (!n->refcount && !n->parent) node_free_tree(n); }
 
 __attribute__((weak)) void style_free(struct ComputedStyle *s) { free(s); }
+__attribute__((weak)) void node_free_inline_style(Node *n) { (void)n; }
 __attribute__((weak)) void box_detach_node(Node *n) { n->box = NULL; }
 static void node_free_one(Node *n) {
     for (int i = 0; i < n->nattrs; i++) free(n->attrs[i].value);
-    free(n->attrs); free(n->text); free(n->inline_style_src);
+    free(n->attrs); free(n->text); free(n->inline_style_src); free(n->classes);
+    node_free_inline_style(n);
     if (n->ext && n->ext_free) n->ext_free(n->ext);
     if (n->style) style_free(n->style);
     if (n->box) box_detach_node(n);
@@ -142,6 +258,8 @@ void node_free_tree(Node *n) {
     node_free_one(n);
 }
 void doc_free(Document *d) {
+    if (d->selector_cache_free) d->selector_cache_free(d->selector_cache);
+    free(d->modals.v); d->modals.v = NULL; d->modals.n = d->modals.cap = 0;
     for (int i = 0; i < 2; i++) if (d->sel[i]) { node_release(d->sel[i]); d->sel[i] = NULL; }
     hm_free(&d->id_cache, NULL);
     Node *c = d->node.first;
@@ -157,42 +275,119 @@ static int attr_index(const Node *n, const char *name) {
     return -1;
 }
 const char *node_attr(const Node *n, const char *name) { if (!n || (n->type != NODE_ELEMENT && n->type != NODE_DOCTYPE)) return NULL; int i = attr_index(n, name); return i >= 0 ? n->attrs[i].value : NULL; }
+const char *node_attr_atom(const Node *n, const char *name) {
+    if (!n || (n->type != NODE_ELEMENT && n->type != NODE_DOCTYPE)) return NULL;
+    for (int i = 0; i < n->nattrs; i++) if (n->attrs[i].name == name) return n->attrs[i].value;
+    if (n->ns == NS_HTML && (n->flags & NF_ATTR_MIXED_CASE))
+        for (int i = 0; i < n->nattrs; i++) if (str_ieq(n->attrs[i].name, name)) return n->attrs[i].value;
+    return NULL;
+}
 bool node_has_attr(const Node *n, const char *name) { return node_attr(n, name) != NULL; }
+static void cache_classes(Node *n, const char *value) {
+    n->class_name = value;
+    n->nclasses = 0; n->class_bits = 0;
+    free(n->classes); n->classes = NULL;
+    int cap = 0;
+    for (const char *p = value; p && *p;) {
+        while (is_ws((unsigned char)*p)) p++;
+        const char *start = p;
+        while (*p && !is_ws((unsigned char)*p)) p++;
+        if (p == start) break;
+        const char *cls = atomn(start, (size_t)(p - start));
+        if (node_has_class_atom(n, cls)) continue;
+        if (n->nclasses == cap) { cap = cap ? cap * 2 : 4; n->classes = xrealloc(n->classes, (size_t)cap * sizeof *n->classes); }
+        n->classes[n->nclasses++] = cls;
+        n->class_bits |= node_class_bit(cls);
+    }
+}
+static void selector_change_key(Document *d, const char *key) {
+    if (!key) return;
+    unsigned bit = dom_tree_key_bit(key);
+    d->selector_change_keys[bit >> 6] |= UINT64_C(1) << (bit & 63);
+}
+static bool class_value_contains(const char *value, const char *key) {
+    size_t len = strlen(key);
+    for (const char *p = value; p && *p;) {
+        while (is_ws((unsigned char)*p)) p++;
+        const char *start = p;
+        while (*p && !is_ws((unsigned char)*p)) p++;
+        if ((size_t)(p - start) == len && !memcmp(start, key, len)) return true;
+    }
+    return false;
+}
+/* Keep removed keys before freeing attribute storage. Unchanged class tokens
+ * need not disable an unrelated :has witness filter during a coalesced edit. */
+static void record_selector_attribute(Node *n, const char *name, const char *value) {
+    if (!n->doc || !is_connected(n)) return;
+    Document *d = n->doc;
+    if (str_ieq(name, "id")) {
+        selector_change_key(d, "id"); selector_change_key(d, n->id); selector_change_key(d, value);
+    } else if (str_ieq(name, "class")) {
+        selector_change_key(d, "class");
+        for (int i = 0; i < n->nclasses; i++)
+            if (!class_value_contains(value, n->classes[i])) selector_change_key(d, n->classes[i]);
+        for (const char *p = value; p && *p;) {
+            while (is_ws((unsigned char)*p)) p++;
+            const char *start = p;
+            while (*p && !is_ws((unsigned char)*p)) p++;
+            if (p == start) break;
+            const char *key = atomn(start, (size_t)(p - start));
+            if (!node_has_class_atom(n, key)) selector_change_key(d, key);
+        }
+    }
+}
 void node_set_attr(Node *n, const char *name, const char *value) {
+    if (n->ns == NS_HTML && !(n->flags & NF_ATTR_MIXED_CASE))
+        for (const unsigned char *p = (const unsigned char *)name; *p; p++)
+            if (*p >= 'A' && *p <= 'Z') { n->flags |= NF_ATTR_MIXED_CASE; break; }
     int i = attr_index(n, name);
+    if (i >= 0 && !strcmp(n->attrs[i].value, value)) return;
+    record_selector_attribute(n, name, value);
     if (i >= 0) { if (!strcmp(n->attrs[i].value, value)) return; free(n->attrs[i].value); n->attrs[i].value = xstrdup(value); }
     else {
         if (n->nattrs >= n->attrcap) { n->attrcap = n->attrcap ? n->attrcap * 2 : 4; n->attrs = xrealloc(n->attrs, sizeof(Attr) * (size_t)n->attrcap); }
         n->attrs[n->nattrs].name = atom(name); n->attrs[n->nattrs].value = xstrdup(value); i = n->nattrs++;
     }
     if (n->attrs[i].name == A_id) n->id = n->attrs[i].value;
+    if (n->attrs[i].name == A_class || (n->ns == NS_HTML && str_ieq(name, "class"))) cache_classes(n, n->attrs[i].value);
     /* re-point cached id after realloc */
     for (int k = 0; k < n->nattrs; k++) if (n->attrs[k].name == A_id) n->id = n->attrs[k].value;
-    mark(n->doc, n, !style_only_attr(name));
+    trace_mutation(n->doc, n, "set", name);
+    mark_attribute(n, name);
 }
 void node_remove_attr(Node *n, const char *name) {
+    if (!strcmp(name, "open")) node_set_modal(n, false);
     int i = attr_index(n, name); if (i < 0) return;
+    record_selector_attribute(n, name, NULL);
     if (n->attrs[i].name == A_id) n->id = NULL;
+    if (n->attrs[i].name == A_class || (n->ns == NS_HTML && str_ieq(name, "class"))) cache_classes(n, NULL);
     free(n->attrs[i].value);
     memmove(&n->attrs[i], &n->attrs[i + 1], sizeof(Attr) * (size_t)(n->nattrs - i - 1)); n->nattrs--;
     for (int k = 0; k < n->nattrs; k++) if (n->attrs[k].name == A_id) n->id = n->attrs[k].value;
-    mark(n->doc, n, !style_only_attr(name));
+    trace_mutation(n->doc, n, "remove", name);
+    mark_attribute(n, name);
 }
 bool node_has_class(const Node *n, const char *cls) {
-    const char *c = node_attr(n, "class"); if (!c) return false;
-    size_t L = strlen(cls);
-    while (*c) {
-        while (is_ws((unsigned char)*c)) c++;
-        const char *s = c; while (*c && !is_ws((unsigned char)*c)) c++;
-        if ((size_t)(c - s) == L && !memcmp(s, cls, L)) return true;
-    }
-    return false;
+    return n && n->nclasses && node_has_class_atom(n, atom(cls));
 }
 
 Node *node_next_in_tree(Node *n, Node *root) {
     if (n->first) return n->first;
     while (n && n != root) { if (n->next) return n->next; n = n->parent; }
     return NULL;
+}
+/* pre-order traversal that also enters shadow trees (shadow tree before the host's light children) */
+Node *node_next_deep(Node *n, Node *root) {
+    if (n->type == NODE_ELEMENT && n->shadow_root && n->shadow_root->first) return n->shadow_root->first;
+    if (n->first) return n->first;
+    for (;;) {
+        if (n == root) return NULL;
+        if (n->next) return n->next;
+        Node *p = n->parent;
+        if (!p) return NULL;
+        if (p->type == NODE_FRAGMENT && p->host) { Node *h = p->host; if (h->first) return h->first; n = h; continue; }
+        n = p;
+    }
 }
 bool node_is_inclusive_ancestor(const Node *a, const Node *b) { for (; b; b = b->parent) if (a == b) return true; return false; }
 
@@ -206,13 +401,27 @@ char *node_text_content(const Node *n) {
     if (n->type == NODE_TEXT || n->type == NODE_COMMENT || n->type == NODE_CDATA || n->type == NODE_PI) return xstrndup(n->text, n->text_len);
     SB b; sb_init(&b); text_rec(n, &b); return sb_take(&b);
 }
+void node_set_character_data(Node *n, const char *s, size_t len) {
+    bool emptiness_changed = !n->text_len != !len;
+    char *replacement = xstrndup(s, len);
+    free(n->text); n->text = replacement; n->text_len = len;
+    /* Ordinary edits only affect layout. The style engine tracks selectors
+     * that depend on another element's emptiness (:has and combinators). */
+    Node *dirty = n;
+    if (emptiness_changed && (n->type == NODE_TEXT || n->type == NODE_CDATA) && n->parent) {
+        dirty = n->parent;
+        if (n->doc && is_connected(n->parent)) n->doc->text_emptiness_version++;
+    }
+    mark(n->doc, dirty, true, dirty != n);
+}
 void node_set_text_content(Node *n, const char *s) {
-    if (n->type == NODE_TEXT || n->type == NODE_COMMENT || n->type == NODE_CDATA || n->type == NODE_PI) { free(n->text); n->text = xstrdup(s); n->text_len = strlen(s); doc_mark_dirty(n->doc, n); return; }
+    if (n->type == NODE_TEXT || n->type == NODE_COMMENT || n->type == NODE_CDATA || n->type == NODE_PI) { node_set_character_data(n, s ? s : "", s ? strlen(s) : 0); return; }
     while (n->first) { Node *c = n->first; node_remove(c); node_free_tree(c); }
     if (s && *s) node_append(n, node_new_text(n->doc, s, strlen(s)));
 }
 void node_text_append(Node *n, const char *s, size_t len) {
     n->text = xrealloc(n->text, n->text_len + len + 1); memcpy(n->text + n->text_len, s, len); n->text_len += len; n->text[n->text_len] = 0;
+    if (len && n->doc) mark_sheet_content(n->doc, n);
 }
 
 Node *node_clone(Node *n, bool deep, Document *d) {

@@ -103,6 +103,9 @@ typedef struct ComputedStyle {
     const char *anim_name; float anim_dur, anim_delay, anim_iter; /* first animation layer; name is an atom */
     const char *tr_prop; float tr_dur, tr_delay;                 /* transition-property list atom (NULL = all), max times */
     CustomProps *custom;
+    uint64_t custom_dependencies; /* bloom filter of var() names actually consulted */
+    uint64_t attribute_dependencies; /* attr() names consulted, including pseudos */
+    bool parent_sensitive, inherited_dynamic; /* explicit inherit, container/style-attribute rules */
     struct ComputedStyle *before, *after, *marker; /* pseudo element styles */
 } ComputedStyle;
 
@@ -113,7 +116,8 @@ extern void (*css_style_change_hook)(Node *n, const ComputedStyle *old, const Co
 typedef struct Decl { const char *prop; char *value; bool important; } Decl;
 typedef VEC(Decl) DeclList;
 
-enum SelKind { SK_TYPE, SK_UNIVERSAL, SK_ID, SK_CLASS, SK_ATTR, SK_PSEUDO, SK_PSEUDO_EL };
+enum SelKind { SK_TYPE, SK_UNIVERSAL, SK_ID, SK_CLASS, SK_ATTR, SK_PSEUDO, SK_PSEUDO_EL,
+    SK_TREE_RELATED, SK_CHANGED_KEY /* invalidation-only; never emitted by the CSS parser */ };
 enum Combinator { CB_NONE, CB_DESC, CB_CHILD, CB_ADJ, CB_SIB };
 typedef struct SelList SelList;
 typedef struct SimpleSel {
@@ -124,7 +128,7 @@ typedef struct SimpleSel {
     SelList *sub;         /* :not/:is/:where/:has/nth-of */
 } SimpleSel;
 typedef struct Compound { SimpleSel *s; int n; uint8_t comb; /* combinator to the LEFT (towards previous compound) */ } Compound;
-typedef struct Selector { Compound *c; int n; uint32_t spec; uint8_t pseudo_el; /* 0 none 1 before 2 after 3 other */ } Selector;
+typedef struct Selector { Compound *c; int n; uint32_t spec; uint8_t pseudo_el; /* 0 none 1 before 2 after 3 other */ bool reads_style_attribute; uint16_t required_class_filter; /* encoded bloom bit + 1, 0 = none */ } Selector;
 struct SelList { Selector *v; int n; };
 
 typedef struct ContainerCond { char *name, *query; struct ContainerCond *outer; } ContainerCond;
@@ -140,7 +144,10 @@ typedef struct Rule {
     uint8_t origin; /* 0 UA, 1 author */
     uint8_t layer;
     const ContainerCond *cq; /* innermost @container, or NULL */
+    Node *scope; /* shadow root containing the stylesheet; NULL for document */
     const MediaCond *mq;
+    uint16_t ancestor_class_filter2; /* additional necessary ancestor class */
+    uint16_t ancestor_class_filter; /* 0..1023 bloom bit, 1024 = no necessary class */
 } Rule;
 
 typedef struct MediaCtx { float vw, vh, dpr; bool dark; } MediaCtx;
@@ -158,13 +165,43 @@ typedef struct StyleSheet {
     int origin;
 } StyleSheet;
 
+typedef struct EmptyDependency { Selector candidate; Node *scope; } EmptyDependency;
+typedef struct TreeDependency {
+    Selector candidate; Node *scope; bool global;
+    const char *subject; uint8_t subject_kind;
+    const Selector *source; /* borrowed, for bounded selector-shape diagnostics */
+    bool witness_filter, focus_tree_filter; uint64_t witness_keys[16];
+    uint64_t selector_keys[16]; /* class/ID dependencies anywhere in the source selector */
+    Selector changed_candidate; /* lazily widened for coalesced class/ID changes */
+    bool selector_changed;
+} TreeDependency;
 typedef struct RuleIndex {
     HMap by_id, by_class, by_tag; /* -> RuleVec* */
+    HMap empty_ids, empty_classes, empty_tags;
+    HMap attribute_subjects; /* attribute name -> conservative rule subject keys */
+    HMap attribute_candidates; /* attribute name -> widened selectors retaining independent constraints */
+    HMap self_attributes;   /* attribute selectors that only depend on their subject */
+    bool empty_universal;
+    VEC(EmptyDependency) empty_candidates; /* shallow selectors with emptiness-dependent tests removed */
+    VEC(TreeDependency) tree_candidates; /* structural tests removed; payloads borrowed from sheets */
+    VEC(SelList *) tree_candidate_lists; /* owned nested positive alternatives; leaf payloads borrowed */
     VEC(Rule *) universal;
+    void *ancestor_buckets[1024]; /* RuleVecs, indexed by necessary class bloom bit */
+    uint64_t ancestor_bucket_bits[16];
     uint32_t count;
     HMap hov_desc, anc_desc; void *hov_desc_u, *anc_desc_u; /* key of a non-subject :hover compound -> subject keys it can affect */
     HMap hov, hov_anc, hov_ach; /* hov_ach: like hov_anc but keyed by the subject's parent (`.k > :has(...)`) */ uint8_t hov_univ; bool hov_has, hov_sib; /* hov_anc: keys of compounds with :has(...:hover...), | 16 for :has(+ ...), 32 for :has(~ ...) */ /* :hover invalidation: id/class/tag -> 1 self, 2 subtree, 4 parent subtree */
 } RuleIndex;
+
+typedef struct CssMatchCache CssMatchCache;
+/* Bounded memoization, active during synchronous style passes. Generation
+ * checks allow reuse across selector-neutral inline CSS and text edits. */
+CssMatchCache *css_match_cache_begin(CssMatchCache **cache);
+CssMatchCache *css_match_cache_begin_style(CssMatchCache **cache, Document *doc,
+    uint64_t generation, bool force);
+void css_match_cache_subject(Node *subject, const uint64_t ancestor_classes[16]);
+void css_match_cache_end(CssMatchCache *previous);
+void css_match_cache_free(CssMatchCache *cache);
 
 typedef struct StyleEngine {
     VEC(StyleSheet *) sheets;   /* document order */
@@ -175,8 +212,18 @@ typedef struct StyleEngine {
     uint32_t order_counter;
     Document *doc;
     uint64_t generation;
-    int stats_matched, stats_paint;
+    uint64_t seen_text_emptiness;
+    uint64_t seen_tree_version;
+    uint64_t seen_sheet_version;
+    uint64_t seen_inheritance_version;
+    bool reuse_inherited, collect_dynamic;
+    int stats_matched, stats_paint, stats_reused;
+    uint64_t stats_tree_tests; /* structural dependency candidates examined */
+    int debug_style_passes; /* debug-only device profiling, armed by F8 */
     bool layout_dirty;          /* a recalc changed something other than paint-only properties */
+    Node *el_scope; /* tree scope of the element being matched */
+    const uint64_t *ancestor_classes;
+    CssMatchCache *match_cache;
 } StyleEngine;
 
 StyleSheet *css_parse_sheet(const char *src, size_t n, const char *base_url, int origin, const MediaCtx *mc);
@@ -186,6 +233,8 @@ void css_decls_free(DeclList *d);
 bool css_parse_selector_list(const char *src, SelList *out);
 void css_sellist_free(SelList *l);
 char *css_selector_text(const char *src); /* canonical CSSOM serialization; NULL if invalid */
+/* Syntax only: matching always observes live DOM/state. Caller frees scratch. */
+const SelList *css_query_syntax(Document *d, const char *text, SelList *scratch);
 bool css_match_selector_list(const SelList *l, Node *el);
 bool css_match_selector(const Selector *s, Node *el, Node *scope);
 typedef VEC(Node *) NodeVec;

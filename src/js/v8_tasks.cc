@@ -3,11 +3,10 @@
 
 namespace {
 std::mutex registry_mutex;
-std::unordered_map<v8::Isolate *, std::shared_ptr<JsWorkerTasks>> workers;
+std::unordered_map<v8::Isolate *, std::shared_ptr<JsForegroundTasks>> runners;
 
-/* Keep libplatform's background compiler jobs and page task runners. Workers
- * use their own queue because their condition-variable loop must wake when an
- * asynchronous compiler posts its completion task. */
+/* Keep libplatform's background compiler jobs. Page and worker foreground
+ * queues notify their owning event loops when asynchronous work completes. */
 class Platform final : public v8::Platform {
     v8::Platform *base_;
 public:
@@ -20,14 +19,14 @@ public:
     std::shared_ptr<v8::TaskRunner> GetForegroundTaskRunner(v8::Isolate *iso, v8::TaskPriority priority) override {
         {
             std::lock_guard<std::mutex> lock(registry_mutex);
-            auto it = workers.find(iso);
-            if (it != workers.end()) return it->second;
+            auto it = runners.find(iso);
+            if (it != runners.end()) return it->second;
         }
         return base_->GetForegroundTaskRunner(iso, priority);
     }
     bool IdleTasksEnabled(v8::Isolate *iso) override {
         std::lock_guard<std::mutex> lock(registry_mutex);
-        return workers.count(iso) ? false : base_->IdleTasksEnabled(iso);
+        return runners.count(iso) ? false : base_->IdleTasksEnabled(iso);
     }
     std::unique_ptr<v8::ScopedBoostablePriority> CreateBoostablePriorityScope() override { return base_->CreateBoostablePriorityScope(); }
     std::unique_ptr<v8::ScopedBlockingCall> CreateBlockingScope(v8::BlockingType type) override { return base_->CreateBlockingScope(type); }
@@ -47,13 +46,13 @@ protected:
 }
 
 std::unique_ptr<v8::Platform> js_task_platform(v8::Platform *base) { return std::make_unique<Platform>(base); }
-std::shared_ptr<JsWorkerTasks> js_register_worker_tasks(v8::Isolate *iso, std::function<void()> wake) {
-    auto tasks = std::make_shared<JsWorkerTasks>(std::move(wake));
+std::shared_ptr<JsForegroundTasks> js_register_foreground_tasks(v8::Isolate *iso, std::function<void()> wake) {
+    auto tasks = std::make_shared<JsForegroundTasks>(std::move(wake));
     std::lock_guard<std::mutex> lock(registry_mutex);
-    workers.emplace(iso, tasks);
+    runners.emplace(iso, tasks);
     return tasks;
 }
-void js_unregister_worker_tasks(v8::Isolate *iso) {
+void js_unregister_foreground_tasks(v8::Isolate *iso) {
     std::lock_guard<std::mutex> lock(registry_mutex);
-    workers.erase(iso);
+    runners.erase(iso);
 }

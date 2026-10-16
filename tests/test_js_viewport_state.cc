@@ -15,6 +15,8 @@ int main() {
         assert(state.update(412, 412, 2) == 0);
     assert(state.update(412, 412, 2, 0, 200) == JsViewportState::SCROLL);
     assert(state.update(412, 412, 2, 0, 200) == 0);
+    assert(state.changes(412, 412, 2, 20, 200) == JsViewportState::SCROLL);
+    assert(state.changes(412, 412, 2, 0, 200) == 0);
     assert(state.update(412, 412, 2, 20, 200) == JsViewportState::SCROLL);
     assert(state.update(500, 412, 3, 20, 0) == (JsViewportState::SCROLL | JsViewportState::RESIZE | JsViewportState::MEDIA));
     assert(state.update(412, 412, 2) == (JsViewportState::SCROLL | JsViewportState::RESIZE | JsViewportState::MEDIA));
