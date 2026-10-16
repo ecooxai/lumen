@@ -208,12 +208,12 @@ static void gradient(R *r, const DItem *it) {
 }
 
 static void text(R *r, const DItem *it) {
-    float s = r->s; const Clip *c = clip(r);
+    float s = r->s, gs = s * (it->ts > 0 ? it->ts : 1); const Clip *c = clip(r);
     uint32_t ca = COLOR_A(it->color);
     for (int i = 0; i < it->ng; i++) {
         const DGlyph *dg = &it->g[i];
         if (!dg->font) continue;
-        const Glyph *gl = font_glyph(dg->font, dg->gid, s);
+        const Glyph *gl = font_glyph(dg->font, dg->gid, gs);
         if (!gl || !gl->w) continue;
         int ox = (int)lroundf(dg->x * s) + gl->left, oy = (int)lroundf(dg->y * s) - gl->top;
         if (ox >= c->x1 || oy >= c->y1 || ox + gl->w <= c->x0 || oy + gl->h <= c->y0) continue;

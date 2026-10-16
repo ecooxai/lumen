@@ -18,7 +18,7 @@ typedef struct DItem {
     float r[4];                 /* corner radii tl tr br bl */
     Color color;
     float bw[4]; Color bc[4]; uint8_t bs[4];
-    DGlyph *g; int ng;
+    DGlyph *g; int ng; float ts;   /* DO_TEXT: glyph scale from an ancestor scale() transform (0 = 1) */
     Image *img;
     Gradient *grad;
     float blur, spread, alpha;

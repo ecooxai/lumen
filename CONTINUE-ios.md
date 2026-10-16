@@ -173,6 +173,12 @@ App Store acceptance is not a goal (sideload / Xcode run).
 - Google sign-in (via ChatGPT "Continue with Google"): the identifier page renders and accepts the
   email, then Google redirects to /v3/signin/rejected ("This browser or app may not be secure").
   That is Google's unrecognised-browser check. Do not spoof Chrome to get around it; ask the user.
+  Rejection is the same with the honest Lumen UA; the page's `Error: ge`/`Error: int32` come from BotGuard
+  (google.com/js/bg/). The user rejected importing Chrome cookies as a workaround.
+- Google sign-in layout fixes: `box-sizing: inherit` (Google's `*{box-sizing:inherit}` reset) now inherits, so
+  the two 50% columns sit side by side; `transform-origin: bottom left` (vertical keyword first) maps to the right
+  axes; uniform scale() transforms now scale text too (DItem.ts); SVG `<image>` (base64 data: and loaded URLs)
+  draws, and clipPath/`url(#id)` resolves inside SVGs decoded for `<img>` (Google "G" logo).
 - FIXED (idle CPU with paused media): `mediaPoll` in `05-ce.js` ran every 50 ms for as long as
   any `<video>`/`<audio>` existed, even paused. Each tick re-ran display-list building
   (Wikipedia's paused poster video: ~23 partial paints/s, 5-25% CPU forever). The poll now stops

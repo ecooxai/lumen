@@ -757,7 +757,7 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         static ComputedStyle *def; if (!def) def = style_new_default();
         const ComputedStyle *src = inherit ? (par ? par : def) : def;
         /* unset: inherited props inherit, others initial -- approximate: inherit color/font/text props */
-        if (unset && par && (strstr(P, "color") == P || strstr(P, "font") || strstr(P, "text") || strstr(P, "line-height") || strstr(P, "white-space") || strstr(P, "visibility") || strstr(P, "cursor") || strstr(P, "letter"))) src = par;
+        if (unset && par && (strstr(P, "color") == P || strstr(P, "font") || strstr(P, "text") || strstr(P, "line-height") || strstr(P, "white-space") || strstr(P, "visibility") || strstr(P, "cursor") || strstr(P, "letter") || strstr(P, "word") || !strcmp(P, "overflow-wrap") || !strcmp(P, "direction") || !strcmp(P, "pointer-events"))) src = par;
         if (!strcmp(P, "color")) st->color = src->color;
         else if (!strcmp(P, "font-size")) st->font_size = src->font_size;
         else if (!strcmp(P, "font-weight")) st->font_weight = src->font_weight;
@@ -777,6 +777,17 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         else if (!strcmp(P, "position")) st->position = src->position;
         else if (!strcmp(P, "cursor")) st->cursor = src->cursor;
         else if (!strcmp(P, "fill")) st->fill = src->fill;
+        else if (!strcmp(P, "box-sizing")) st->box_sizing = src->box_sizing;
+        else if (!strcmp(P, "font-style")) st->font_style = src->font_style;
+        else if (!strcmp(P, "text-transform")) st->text_transform = src->text_transform;
+        else if (!strcmp(P, "letter-spacing")) st->letter_spacing = src->letter_spacing;
+        else if (!strcmp(P, "word-spacing")) st->word_spacing = src->word_spacing;
+        else if (!strcmp(P, "text-indent")) st->text_indent = src->text_indent;
+        else if (!strcmp(P, "word-break")) st->word_break = src->word_break;
+        else if (!strcmp(P, "overflow-wrap") || !strcmp(P, "word-wrap")) st->overflow_wrap = src->overflow_wrap;
+        else if (!strcmp(P, "direction")) st->direction = src->direction;
+        else if (!strcmp(P, "pointer-events")) st->pointer_events = src->pointer_events;
+        else if (!strcmp(P, "opacity")) st->opacity = src->opacity;
         else if (!strcmp(P, "all")) {}
         goto out;
     }
@@ -1044,7 +1055,10 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         else if (!strcmp(P, "text-shadow")) parse_shadow(&c, val, &st->text_shadow, &st->has_text_shadow);
         else if (!strcmp(P, "transform") || !strcmp(P, "-webkit-transform")) parse_transform(&c, val);
         else if (!strcmp(P, "translate")) { char buf[256]; snprintf(buf, sizeof buf, "translate(%s)", val); if (!str_ieq(val, "none")) parse_transform(&c, buf); }
-        else if (!strcmp(P, "transform-origin")) { char *t[2]; int n = split_ws(val, t, 2); for (int i = 0; i < n; i++) { if (str_ieq(t[i], "left") || str_ieq(t[i], "top")) st->transform_origin[i] = (Length){0, 0, LK_LEN}; else if (str_ieq(t[i], "right") || str_ieq(t[i], "bottom")) st->transform_origin[i] = (Length){0, 100, LK_LEN}; else if (str_ieq(t[i], "center")) st->transform_origin[i] = (Length){0, 50, LK_LEN}; else alen(&c, t[i], &st->transform_origin[i]); } free_toks(t, n); }
+        else if (!strcmp(P, "transform-origin")) { char *t[2] = {0}; int n = split_ws(val, t, 2);
+            if ((n >= 1 && (str_ieq(t[0], "top") || str_ieq(t[0], "bottom"))) || (n == 2 && (str_ieq(t[1], "left") || str_ieq(t[1], "right")))) { char *sw = t[0]; t[0] = t[1]; t[1] = sw; if (n == 1) { t[0] = NULL; t[1] = sw; } }
+            if (n == 1) n = 2;
+            for (int i = 0; i < n; i++) { if (!t[i]) { st->transform_origin[i] = (Length){0, 50, LK_LEN}; continue; } if (str_ieq(t[i], "left") || str_ieq(t[i], "top")) st->transform_origin[i] = (Length){0, 0, LK_LEN}; else if (str_ieq(t[i], "right") || str_ieq(t[i], "bottom")) st->transform_origin[i] = (Length){0, 100, LK_LEN}; else if (str_ieq(t[i], "center")) st->transform_origin[i] = (Length){0, 50, LK_LEN}; else alen(&c, t[i], &st->transform_origin[i]); } free_toks(t, n); }
         else if (!strcmp(P, "table-layout")) st->table_layout = str_ieq(val, "fixed");
         else if (!strcmp(P, "text-wrap") || !strcmp(P, "text-wrap-mode")) { if (str_ieq(val, "nowrap")) st->white_space = WS_NOWRAP; }
         break;

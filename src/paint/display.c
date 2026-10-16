@@ -414,7 +414,11 @@ static void paint_stacking(PB *p, Box *b) {
         float oy = b->y + p->dy + s->transform_origin[1].px + s->transform_origin[1].pct * b->h / 100;
         for (int i = i0; i < p->dl->items.n; i++) {
             DItem *it = &p->dl->items.v[i];
-            if (it->g) continue;
+            if (it->g) {
+                if (fabsf(ksx - ksy) > 1e-3f || ksx <= 0) continue;
+                for (int k = 0; k < it->ng; k++) { it->g[k].x = ox + (it->g[k].x - ox) * ksx; it->g[k].y = oy + (it->g[k].y - oy) * ksy; }
+                it->ts = (it->ts ? it->ts : 1) * ksx;
+            }
             it->x = ox + (it->x - ox) * ksx; it->y = oy + (it->y - oy) * ksy; it->w *= ksx; it->h *= ksy;
             if (it->w < 0) { it->x += it->w; it->w = -it->w; }
             if (it->h < 0) { it->y += it->h; it->h = -it->h; }
