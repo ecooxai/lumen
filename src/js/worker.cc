@@ -27,6 +27,7 @@ struct OutMsg { int kind; Buf data; std::string msg, file; int line = 0, col = 0
 struct Worker {
     uint32_t id = 0; JsCtx *owner = nullptr;
     std::string url, src, ua, platform, name, top; bool have_src = false, module = false, coi = false;
+    std::string ocsp, odoc; bool has_ocsp = false;   /* creator document's CSP: worker-src check, inherited by blob:/data: workers */
     std::mutex mu; std::condition_variable cv;
     std::deque<Buf> in; std::deque<OutMsg> out;
     std::atomic<bool> term{false};
@@ -38,6 +39,7 @@ struct WEnv {
     std::shared_ptr<Worker> w; v8::Isolate *iso = nullptr;
     v8::Global<v8::Context> ctx; v8::Global<v8::Function> onmsg, report, busfn;
     uint64_t bus_seen = 0; std::string bus_origin;
+    std::string csp, cspdoc; bool has_csp = false;   /* the worker's own enforced CSP */
     std::map<std::string, v8::Global<v8::Module>> mods; std::multimap<int, std::string> murl;
     std::map<uint32_t, WTimer> timers; uint32_t tseq = 0; bool closing = false, reporting = false; double t0 = 0;
 };
@@ -175,6 +177,7 @@ WFN(resolve) {
 WFN(fetch) {
     WENV; std::string u = jcstr(iso, a[0]), m = a[1]->IsString() ? jcstr(iso, a[1]) : "GET";
     NetRequest *rq = net_request_ctx(m.c_str(), u.c_str(), E->w->top.empty() ? nullptr : E->w->top.c_str());
+    if (E->has_csp) { rq->csp = strdup(E->csp.c_str()); rq->csp_doc = strdup(E->cspdoc.c_str()); rq->csp_dir = "connect-src"; }
     if (a[2]->IsString()) { std::string b = jcstr(iso, a[2]); rq->body = (char *)malloc(b.size() + 1); memcpy(rq->body, b.c_str(), b.size() + 1); rq->body_len = b.size(); }
     else if (a[2]->IsArrayBuffer() || a[2]->IsArrayBufferView()) {
         std::shared_ptr<v8::BackingStore> bs; size_t off = 0, n = 0;
@@ -201,6 +204,10 @@ WFN(fetch) {
 WFN(importScript) {
     WENV; std::string u = resolve(E, jcstr(iso, a[0]));
     if (u.empty()) { throw_dom(iso, ctx, "Failed to execute 'importScripts': The URL '" + jcstr(iso, a[0]) + "' is invalid.", "SyntaxError"); return; }
+    if (E->has_csp && !csp_allows_url(E->csp.c_str(), E->cspdoc.c_str(), u.c_str(), "script-src")) {
+        fprintf(stderr, "lumen: CSP script-src blocked importScripts %.120s\n", u.c_str());
+        throw_dom(iso, ctx, "Failed to execute 'importScripts': The script at '" + u + "' failed to load.", "NetworkError"); return;
+    }
     NetResponse *r = net_fetch_sync(net_request_new("GET", u.c_str()));
     if (!r || r->status < 200 || r->status >= 300) {
         if (r) net_response_free(r);
@@ -471,6 +478,19 @@ void run_timers(WEnv *E) {
     }
 }
 
+static v8::ModifyCodeGenerationFromStringsResult w_eval_cb(v8::Local<v8::Context>, v8::Local<v8::Value>, bool) {
+    WEnv *E = (WEnv *)v8::Isolate::GetCurrent()->GetData(kEnvSlot);
+    v8::ModifyCodeGenerationFromStringsResult r;
+    r.codegen_allowed = !E || !E->has_csp || csp_allows_eval(E->csp.c_str(), false);
+    if (!r.codegen_allowed) fprintf(stderr, "lumen: CSP blocked eval in worker\n");
+    return r;
+}
+static bool w_wasm_cb(v8::Local<v8::Context>, v8::Local<v8::String>) {
+    WEnv *E = (WEnv *)v8::Isolate::GetCurrent()->GetData(kEnvSlot);
+    bool ok = !E || !E->has_csp || csp_allows_eval(E->csp.c_str(), true);
+    if (!ok) fprintf(stderr, "lumen: CSP blocked WebAssembly compile in worker\n");
+    return ok;
+}
 void worker_main(std::shared_ptr<Worker> w) {
     v8::Isolate::CreateParams cp;
     std::unique_ptr<v8::ArrayBuffer::Allocator> al(v8::ArrayBuffer::Allocator::NewDefaultAllocator());
@@ -481,11 +501,14 @@ void worker_main(std::shared_ptr<Worker> w) {
     WEnv *E = new WEnv; E->w = w; E->iso = iso; E->t0 = now_ms();
     iso->SetData(kEnvSlot, E);
     iso->SetHostInitializeImportMetaObjectCallback(wm_meta);
+    iso->SetModifyCodeGenerationFromStringsCallback(w_eval_cb);
+    iso->SetAllowWasmCodeGenerationCallback(w_wasm_cb);
     {
         v8::Isolate::Scope is(iso);
         v8::HandleScope hs(iso);
         v8::Local<v8::Context> ctx = v8::Context::New(iso);
         E->ctx.Reset(iso, ctx);
+        ctx->AllowCodeGenerationFromStrings(false);
         v8::Context::Scope cs(ctx);
         v8::Local<v8::Object> W = v8::Object::New(iso);
 #define WREG(nm) (void)W->Set(ctx, jstr(iso, #nm), v8::Function::New(ctx, w_##nm).ToLocalChecked())
@@ -511,9 +534,15 @@ void worker_main(std::shared_ptr<Worker> w) {
             if (tc.HasCaught()) fprintf(stderr, "lumen: worker prelude failed: %s\n", jcstr(iso, tc.Exception()).c_str());
         }
         std::string src = w->src; bool ok = w->have_src;
-        if (!ok && !w->term) {
+        if (w->has_ocsp && !csp_allows_url(w->ocsp.c_str(), w->odoc.c_str(), w->url.c_str(), "worker-src")) {
+            fprintf(stderr, "lumen: CSP worker-src blocked %.120s\n", w->url.c_str()); ok = false;
+        } else if (ok) { E->csp = w->ocsp; E->cspdoc = w->odoc; E->has_csp = w->has_ocsp; }
+        else if (!w->term) {
             NetResponse *r = net_fetch_sync(net_request_new("GET", w->url.c_str()));
-            if (r && r->status >= 200 && r->status < 300) { src.assign(r->body ? r->body : "", r->body_len); ok = true; }
+            if (r && r->status >= 200 && r->status < 300) {
+                src.assign(r->body ? r->body : "", r->body_len); ok = true;
+                if (const char *h = headers_get(&r->headers, "content-security-policy")) { E->csp = h; E->cspdoc = w->url; E->has_csp = true; }
+            }
             if (r) net_response_free(r);
         }
         if (!ok) post_out(E, OutMsg{ WM_LOADFAIL, {}, {}, {}, 0, 0 });
@@ -633,6 +662,10 @@ bool wm_graph(WEnv *E, v8::Local<v8::Module> m) {
         std::string sp = jcstr(iso, rq->Get(i).As<v8::ModuleRequest>()->GetSpecifier()), u = wm_resolve(sp, base);
         if (u.empty()) { iso->ThrowException(v8::Exception::TypeError(jstr(iso, ("Failed to resolve module specifier \"" + sp + "\"").c_str()))); return false; }
         if (E->mods.count(u)) continue;
+        if (E->has_csp && !csp_allows_url(E->csp.c_str(), E->cspdoc.c_str(), u.c_str(), "script-src")) {
+            fprintf(stderr, "lumen: CSP script-src blocked module %.120s\n", u.c_str());
+            iso->ThrowException(v8::Exception::TypeError(jstr(iso, ("Failed to fetch module: " + u).c_str()))); return false;
+        }
         NetResponse *r = net_fetch_sync(net_request_new("GET", u.c_str()));
         bool ok = r && r->status >= 200 && r->status < 300; std::string body;
         if (ok) body.assign(r->body ? r->body : "", r->body_len);
@@ -672,6 +705,7 @@ void n_workerNew(const FCI &a) {
     auto w = std::make_shared<Worker>();
     w->id = ++g_wseq; w->owner = jctx(iso); w->coi = w->owner && w->owner->doc && w->owner->doc->cross_origin_isolated;
     if (const char *t = js_top_url(w->owner)) w->top = t;
+    if (w->owner && w->owner->doc && w->owner->doc->csp) { w->ocsp = w->owner->doc->csp; w->odoc = w->owner->doc->url ? w->owner->doc->url : ""; w->has_ocsp = true; }
     w->url = jcstr(iso, a[0]); w->have_src = a[1]->IsString(); if (w->have_src) w->src = jcstr(iso, a[1]);
     w->ua = jcstr(iso, a[2]); w->platform = jcstr(iso, a[3]); w->name = a[4]->IsString() ? jcstr(iso, a[4]) : ""; w->module = a.Length() > 5 && a[5]->IsTrue();
     g_workers[w->id] = w;

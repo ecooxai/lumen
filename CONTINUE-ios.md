@@ -302,3 +302,7 @@ in-flow content (display.c dl_move_items). This removed the empty grey box on Go
   /r1 /r2 on ~/fvtest/sec/csp.py (request log /tmp/csp-req.txt).
 - CSP 'strict-dynamic' also allows script-inserted (non-parser) *inline* scripts without nonce, matching Chrome
   (verified with headless Chrome on ~/fvtest/sec/sd.py, port 8771). Bing's includeScript() relies on this.
+- Worker CSP (src/js/worker.cc): creator's CSP checks the worker URL against worker-src (-> child-src -> script-src ->
+  default-src; blocked = error event). blob:/data: workers inherit the creator's CSP; http workers enforce their own
+  response CSP: eval/new Function, WebAssembly compile, importScripts + module imports (script-src), fetch (connect-src).
+  Matches headless Chrome on ~/fvtest/sec/sd.py /w1 /w2.
