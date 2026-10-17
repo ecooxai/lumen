@@ -73,6 +73,34 @@ int main(void) {
             CHECK(ok); free(r);
         }
     }
+    {   /* CSP script-src */
+        const char *d = "https://a.test/p";
+        CHECK(csp_allows_script(NULL, d, NULL, NULL, "x", 1, true));
+        CHECK(csp_allows_script("img-src 'none'", d, NULL, NULL, "x", 1, true));
+        CHECK(!csp_allows_script("script-src 'self'", d, NULL, NULL, "x", 1, true));
+        CHECK(csp_allows_script("script-src 'self' 'unsafe-inline'", d, NULL, NULL, "x", 1, true));
+        CHECK(!csp_allows_script("script-src 'unsafe-inline' 'nonce-abc'", d, NULL, NULL, "x", 1, true));
+        CHECK(csp_allows_script("script-src 'nonce-abc'", d, NULL, "abc", "x", 1, true));
+        CHECK(!csp_allows_script("script-src 'nonce-abc'", d, NULL, "abd", "x", 1, true));
+        CHECK(csp_allows_script("script-src 'sha256-bhHHL3z2vDgxUt0W3dWQOrprscmda2Y5pLsLg4GF+pI='", d, NULL, NULL, "alert(1)", 8, true));
+        CHECK(!csp_allows_script("script-src 'sha256-bhHHL3z2vDgxUt0W3dWQOrprscmda2Y5pLsLg4GF+pI='", d, NULL, NULL, "alert(2)", 8, true));
+        const char *pol = "default-src 'none'; script-src 'self' https://cdn.test *.ok.test";
+        CHECK(csp_allows_script(pol, d, "https://a.test/x.js", NULL, NULL, 0, true));
+        CHECK(csp_allows_script(pol, d, "https://cdn.test/y.js", NULL, NULL, 0, true));
+        CHECK(csp_allows_script(pol, d, "https://s.ok.test/y.js", NULL, NULL, 0, true));
+        CHECK(!csp_allows_script(pol, d, "https://ok.test/y.js", NULL, NULL, 0, true));
+        CHECK(!csp_allows_script(pol, d, "https://evil.test/z.js", NULL, NULL, 0, true));
+        CHECK(!csp_allows_script(pol, d, "https://cdn.test:8443/y.js", NULL, NULL, 0, true));
+        CHECK(csp_allows_script("default-src https:", d, "https://any.test/y.js", NULL, NULL, 0, true));
+        CHECK(!csp_allows_script("default-src https:", d, "http://any.test/y.js", NULL, NULL, 0, true));
+        CHECK(!csp_allows_script("script-src 'nonce-n' 'strict-dynamic' https://cdn.test", d, "https://cdn.test/y.js", NULL, NULL, 0, true));
+        CHECK(csp_allows_script("script-src 'nonce-n' 'strict-dynamic'", d, "https://e.test/y.js", NULL, NULL, 0, false));
+        CHECK(csp_allows_script("script-src 'nonce-n' 'strict-dynamic'", d, "https://e.test/y.js", "n", NULL, 0, true));
+        char *two = csp_append(csp_append(NULL, "script-src *"), "script-src 'self', img-src *");
+        CHECK(csp_allows_script(two, d, "https://a.test/x.js", NULL, NULL, 0, true));
+        CHECK(!csp_allows_script(two, d, "https://b.test/x.js", NULL, NULL, 0, true));
+        free(two);
+    }
     if (fails) return 1;
     printf("net tests ok\n");
     return 0;

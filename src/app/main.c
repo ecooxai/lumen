@@ -310,11 +310,16 @@ static int loader(void *arg) {
             && (!strncasecmp(coep, "require-corp", 12) || !strncasecmp(coep, "credentialless", 14));
         const char *rp = headers_get(&r->headers, "referrer-policy");
         if (rp) snprintf(p->d->referrer_policy, sizeof p->d->referrer_policy, "%s", rp);
+        for (int i = 0; i < r->headers.n; i++)
+            if (!strcasecmp(r->headers.v[i].name, "content-security-policy")) p->d->csp = csp_append(p->d->csp, r->headers.v[i].value);
     }
     html_parse(p->d, body, blen);
-    for (Node *m = p->d->node.first; m; m = node_next_in_tree(m, &p->d->node))   /* <meta name=referrer> overrides the header */
-        if (m->type == NODE_ELEMENT && m->tag == A_meta && node_attr(m, "name") && !strcasecmp(node_attr(m, "name"), "referrer") && node_attr(m, "content"))
-            snprintf(p->d->referrer_policy, sizeof p->d->referrer_policy, "%s", node_attr(m, "content"));
+    for (Node *m = p->d->node.first; m; m = node_next_in_tree(m, &p->d->node)) {  /* <meta name=referrer> overrides the header */
+        if (m->type != NODE_ELEMENT || m->tag != A_meta || !node_attr(m, "content")) continue;
+        const char *nm = node_attr(m, "name"), *he = node_attr(m, "http-equiv");
+        if (nm && !strcasecmp(nm, "referrer")) snprintf(p->d->referrer_policy, sizeof p->d->referrer_policy, "%s", node_attr(m, "content"));
+        if (he && !strcasecmp(he, "content-security-policy")) p->d->csp = csp_append(p->d->csp, node_attr(m, "content"));
+    }
     if (!getenv("LUMEN_NO_JS")) for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) {
         if (!gen_live(rq->gen)) break;
         if (n->type != NODE_ELEMENT || n->tag != A_script || n->ns != NS_HTML) continue;

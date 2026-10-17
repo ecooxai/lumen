@@ -279,3 +279,9 @@ in-flow content (display.c dl_move_items). This removed the empty grey box on Go
   (main.c doc_req). Not yet: per-element referrerpolicy attr, fetch init.referrerPolicy, document.referrer ('').
   Test server ~/fvtest/sec/ref.py (port 8767, logs Referer to /tmp/ref-log.txt).
 - ChatGPT home: "Where should we begin?" sits on the header row; same in 9666225 (pre-existing, not a regression).
+- CSP (src/net/csp.c csp_allows_script; Document.csp = header + <meta http-equiv>, one policy per line; frames get
+  their response's CSP, about:/srcdoc frames inherit the parent's): enforced in js_run_script/js_run_module for
+  script-src-elem > script-src > default-src: nonces, sha256/384/512 hashes, 'unsafe-inline' (ignored when a nonce/
+  hash/'strict-dynamic' is present), 'strict-dynamic' (only non-parser-inserted scripts), host/scheme/'self'/*.
+  Not yet: inline on* handlers (script-src-attr), eval ('unsafe-eval'), img/style/connect/font/frame-src,
+  report-only, Trusted Types. Test server ~/fvtest/sec/csp.py (port 8768, /c1../c5, log /tmp/csp-log.txt).

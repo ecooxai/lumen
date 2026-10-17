@@ -71,9 +71,12 @@ static std::string src_key(JsCtx *p, Node *f) {
     return r;
 }
 
+static std::string g_next_csp;   /* CSP of the response frame_create is about to build a document from */
 static JsCtx *frame_create(JsCtx *p, Node *f, const char *url, const char *html, size_t n, bool fire_load) {
     if (JsCtx *old = js_frame_ctx(f)) frame_kill(old);
     Document *d = doc_new(url);
+    if (!g_next_csp.empty()) { d->csp = csp_append(nullptr, g_next_csp.c_str()); g_next_csp.clear(); }
+    else if (!strncmp(url, "about:", 6) && p->doc && p->doc->csp) d->csp = strdup(p->doc->csp);
     html_parse(d, html ? html : "", html ? n : 0);
     JsHost ch{};
     ch.viewport = p->host.viewport;
@@ -186,6 +189,8 @@ static void frame_done(NetRequest *rq, NetResponse *r, void *ud) {
             return;
         }
         const char *body = ok && r->body ? r->body : "";
+        if (ok) for (int i = 0; i < r->headers.n; i++)
+            if (str_ieq(r->headers.v[i].name, "content-security-policy")) { if (!g_next_csp.empty()) g_next_csp += '\n'; g_next_csp += r->headers.v[i].value; }
         JsCtx *k = frame_create(p, l->f, ok && r->url ? r->url : l->url.c_str(), body, ok && r->body ? r->body_len : 0, true);
         k->frame_src = key;
     }

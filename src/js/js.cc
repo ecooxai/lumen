@@ -755,9 +755,19 @@ bool js_script_mime_blocked(const char *ct) {
     while (*ct == ' ') ct++;
     return !strncasecmp(ct, "image/", 6) || !strncasecmp(ct, "audio/", 6) || !strncasecmp(ct, "video/", 6) || !strncasecmp(ct, "text/csv", 8);
 }
+static bool csp_script_ok(JsCtx *c, Node *script, const char *url, const char *src, size_t n) {
+    if (!script || !c->doc || !c->doc->csp) return true;
+    bool ext = node_attr(script, "src") != nullptr;
+    if (csp_allows_script(c->doc->csp, c->doc->url, ext ? url : nullptr, node_attr(script, "nonce"), src, n, script->flags & NF_PARSER_INSERTED)) return true;
+    fprintf(stderr, "lumen: CSP blocked %s script %.120s\n", ext ? "external" : "inline", ext && url ? url : "");
+    if (ext) { JS_ENTER(c); jfire(c, script, "error"); }
+    return false;
+}
+
 void js_run_script(JsCtx *c, Node *script, const char *src, size_t n, const char *name) {
     if (!c) return;
     if (script) script->flags |= NF_SCRIPT_STARTED;
+    if (!csp_script_ok(c, script, name, src, n)) return;
     Node *prev = c->current_script;
     c->current_script = script;
     run_source(c, src, n, name);
@@ -771,6 +781,7 @@ void js_run_script(JsCtx *c, Node *script, const char *src, size_t n, const char
 void js_run_module(JsCtx *c, Node *script, const char *src, size_t n, const char *url) {
     if (!c) return;
     if (script) script->flags |= NF_SCRIPT_STARTED;
+    if (!csp_script_ok(c, script, url, src, n)) return;
     bool ext = script && node_attr(script, "src"), ok = false;
     {
         JS_ENTER(c);

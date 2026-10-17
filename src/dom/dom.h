@@ -59,6 +59,7 @@ typedef struct Document {
     char *title;
     Node *html, *head, *body;
     bool quirks;
+    char *csp;                    /* enforced Content-Security-Policy, one policy per line (NULL = none) */
     char referrer_policy[40];     /* Referrer-Policy response header / <meta name=referrer>; "" = default */
     bool cross_origin_isolated;   /* COOP same-origin + COEP require-corp/credentialless on a secure origin */
     int ready_state;              /* 0 loading, 1 interactive, 2 complete */

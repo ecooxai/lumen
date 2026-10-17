@@ -93,8 +93,8 @@ $(BUILD)/fetch: $(call OBJ,tests/fetch.c $(BASE_SRC) $(NET_SRC))
 $(BUILD)/test_url: $(call OBJ,tests/test_url.c $(BASE_SRC))
 	$(CC) $(OPT) $^ -o $@ $(BASELIBS)
 
-$(BUILD)/test_net: $(call OBJ,tests/test_net.c $(BASE_SRC) src/net/cookies.c src/net/hsts.c src/net/referrer.c)
-	$(CC) $(OPT) $^ -o $@ $(BASELIBS)
+$(BUILD)/test_net: $(call OBJ,tests/test_net.c $(BASE_SRC) src/net/cookies.c src/net/hsts.c src/net/referrer.c src/net/csp.c)
+	$(CC) $(OPT) $^ -o $@ $(NETLIBS)
 
 test: $(BUILD)/test_url $(BUILD)/test_net
 	$(BUILD)/test_url

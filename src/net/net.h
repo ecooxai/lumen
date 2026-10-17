@@ -88,6 +88,12 @@ char *net_secure_upgrade(const char *top_url, const char *url);
 /* Referer value doc_url may send to target under a Referrer-Policy (NULL/unknown = strict-origin-when-cross-origin);
    NULL = send none. Caller frees. */
 char *net_referrer(const char *doc_url, const char *target, const char *policy);
+
+/* Content-Security-Policy: csp = enforced policies, one per line. csp_append adds a header value (realloc). */
+char *csp_append(char *csp, const char *policy);
+/* may this <script> run? src_url NULL = inline (body/n hashed). */
+bool csp_allows_script(const char *csp, const char *doc_url, const char *src_url, const char *nonce,
+                       const char *body, size_t n, bool parser_inserted);
 void hsts_load(const char *path);
 bool hsts_save(const char *path);
 void cookies_load(const char *path);
