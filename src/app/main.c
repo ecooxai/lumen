@@ -195,11 +195,12 @@ static Image *cache_get(const char *u) {
     if (want) img_refetch(u);
     return im;
 }
-static void cache_fetch(const char *u) {
+static const char *page_top_url(Page *p);
+static void cache_fetch(Page *p, const char *u) {
     if (!u || !*u || !strncmp(u, "blob:", 5)) return;
     SDL_LockMutex(icache_mu); bool have = hm_get(&icache, u) != NULL; SDL_UnlockMutex(icache_mu);
     if (have) return;
-    NetResponse *r = net_fetch_sync(net_request_new("GET", u));
+    NetResponse *r = net_fetch_sync(doc_req(p->d, u, page_top_url(p)));
     Image *im = r && r->status == 200 ? image_decode((const uint8_t *)r->body, r->body_len) : NULL;
     if (r) net_response_free(r);
     ImgSlot *slot = xcalloc(1, sizeof *slot); slot->im = im; slot->done = true;
@@ -342,7 +343,7 @@ static int loader(void *arg) {
             if (cr && cr->status == 200) { StyleSheet *s = css_parse_sheet(cr->body, cr->body_len, cr->url, 1, &p->e->media); s->owner = n; style_engine_add_sheet(p->e, s); }
             if (cr) net_response_free(cr); free(u);
         } else if (n->tag == A_img && node_attr(n, "src")) {
-            char *u = url_join(p->d->url, node_attr(n, "src")); cache_fetch(u); free(u);
+            char *u = url_join(p->d->url, node_attr(n, "src")); cache_fetch(p, u); free(u);
         }
     }
     style_recalc(p->e, &p->d->node, true);
