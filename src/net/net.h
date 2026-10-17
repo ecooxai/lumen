@@ -43,6 +43,8 @@ struct NetRequest {
     char *site_for_cookies;   /* top-level document URL; NULL = same-site (top-level navigation) */
     char *no_cors_origin;     /* initiating document URL of a no-cors subresource load: enables CORP checks */
     bool coep_require_corp;   /* initiator has COEP require-corp: cross-origin responses need CORP */
+    char *csp, *csp_doc;      /* enforced CSP of the initiating document, checked on every hop against csp_dir */
+    const char *csp_dir;
 };
 
 void net_init(int threads);
@@ -96,6 +98,7 @@ char *csp_append(char *csp, const char *policy);
 /* Cross-Origin-Resource-Policy: would a no-cors response from resp_url be blocked for initiator? */
 bool net_corp_blocked(const char *initiator, const char *resp_url, const char *corp, bool require_corp);
 /* may this <script> run? src_url NULL = inline (body/n hashed). */
+bool csp_allows_url(const char *csp, const char *doc_url, const char *url, const char *dir);   /* img-src, style-src, connect-src, frame-src, ... */
 bool csp_allows_attr(const char *csp, const char *body, size_t n);   /* inline event handler (script-src-attr) */
 bool csp_allows_eval(const char *csp, bool wasm);                     /* eval/new Function, or WebAssembly compile */
 bool csp_allows_script(const char *csp, const char *doc_url, const char *src_url, const char *nonce,

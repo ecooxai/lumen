@@ -444,7 +444,15 @@ static NetResponse *file_url(const URL *u, const char *url) {
     return r;
 }
 
+static NetResponse *csp_block(NetRequest *req, const char *url) {
+    if (!req->csp || !req->csp_dir || csp_allows_url(req->csp, req->csp_doc, url, req->csp_dir)) return NULL;
+    fprintf(stderr, "lumen: CSP %s blocked %.120s\n", req->csp_dir, url);
+    NetResponse *e = xcalloc(1, sizeof *e); e->error = xstrdup("blocked by Content-Security-Policy"); e->url = xstrdup(url); e->body = xcalloc(1, 1);
+    return e;
+}
+
 NetResponse *net_fetch_sync(NetRequest *req) {
+    { NetResponse *b = csp_block(req, req->url); if (b) return b; }
     if (str_istarts(req->url, "data:")) return data_url(req->url);
     char *url = xstrdup(req->url);
     char *method = xstrdup(req->method ? req->method : "GET");
@@ -470,6 +478,7 @@ NetResponse *net_fetch_sync(NetRequest *req) {
             net_response_free(r); r = NULL; url_free(&u);
             if (!nu) { r = xcalloc(1, sizeof *r); r->error = xstrdup("bad redirect"); break; }
             free(url); url = nu;
+            if ((r = csp_block(req, url))) break;
             if (req->cancelled) { r = xcalloc(1, sizeof *r); r->error = xstrdup("cancelled"); break; }
             continue;
         }
@@ -502,7 +511,7 @@ NetRequest *net_request_ctx(const char *method, const char *url, const char *top
     if (top_url && *top_url) r->site_for_cookies = xstrdup(top_url);
     return r;
 }
-static void net_request_free(NetRequest *r) { free(r->method); free(r->url); headers_free(&r->headers); free(r->body); free(r->site_for_cookies); free(r->no_cors_origin); free(r); }
+static void net_request_free(NetRequest *r) { free(r->method); free(r->url); headers_free(&r->headers); free(r->body); free(r->site_for_cookies); free(r->no_cors_origin); free(r->csp); free(r->csp_doc); free(r); }
 
 /* ---------- async worker pool ---------- */
 typedef struct Job { NetRequest *req; NetResponse *resp; struct Job *next, *rnext; } Job;

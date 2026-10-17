@@ -122,6 +122,16 @@ int main(void) {
         CHECK(csp_allows_attr("script-src 'unsafe-hashes' 'sha256-LXEWQrcmsEQBYnyp+6wy9chTD7GQPMTbAiWHF5IaSIE='", "x", 1));
         CHECK(!csp_allows_attr("script-src 'unsafe-hashes' 'sha256-LXEWQrcmsEQBYnyp+6wy9chTD7GQPMTbAiWHF5IaSIE='", "y", 1));
         CHECK(csp_allows_script("script-src-attr 'none'", "https://a.test/", NULL, NULL, "x", 1, true));
+        CHECK(csp_allows_url(NULL, d, "https://b.test/i.png", "img-src"));
+        CHECK(!csp_allows_url("img-src 'self'", d, "https://b.test/i.png", "img-src"));
+        CHECK(csp_allows_url("img-src 'self' data:", d, "data:image/png;base64,AA", "img-src"));
+        CHECK(!csp_allows_url("default-src 'self'", d, "https://b.test/s.css", "style-src"));
+        CHECK(csp_allows_url("default-src 'none'; style-src https://b.test", d, "https://b.test/s.css", "style-src"));
+        CHECK(csp_allows_url("script-src 'none'", d, "https://b.test/i.png", "img-src"));
+        CHECK(!csp_allows_url("child-src 'none'", d, "https://b.test/f", "frame-src"));
+        CHECK(csp_allows_url("child-src 'none'; frame-src *", d, "https://b.test/f", "frame-src"));
+        CHECK(!csp_allows_url("connect-src 'self'", d, "wss://b.test/ws", "connect-src"));
+        CHECK(csp_allows_url("connect-src 'self'", d, "https://a.test/api", "connect-src"));
         CHECK(csp_allows_eval(NULL, false));
         CHECK(csp_allows_eval("img-src *", false));
         CHECK(!csp_allows_eval("script-src 'self'", false));

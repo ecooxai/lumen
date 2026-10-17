@@ -173,11 +173,12 @@ static bool gen_live(uint64_t g) { for (int i = 0; i < MAX_TABS; i++) if (g_tab_
 
 static void img_refetch(const char *u);
 /* subresource request from document d: SameSite/mixed-content context + Referer under d's Referrer-Policy */
-static NetRequest *doc_req(Document *d, const char *u, const char *top) {
+static NetRequest *doc_req(Document *d, const char *u, const char *top, const char *csp_dir) {
     NetRequest *rq = net_request_ctx("GET", u, top);
     char *ref = d ? net_referrer(d->url, u, d->referrer_policy) : NULL;
     if (ref) { headers_add(&rq->headers, "Referer", ref); free(ref); }
     if (d && d->url) { rq->no_cors_origin = xstrdup(d->url); rq->coep_require_corp = d->coep_require_corp; }
+    if (d && d->csp && csp_dir) { rq->csp = xstrdup(d->csp); rq->csp_doc = xstrdup(d->url ? d->url : ""); rq->csp_dir = csp_dir; }
     return rq;
 }
 static Image *cache_get(const char *u) {
@@ -201,7 +202,7 @@ static void cache_fetch(Page *p, const char *u) {
     if (!u || !*u || !strncmp(u, "blob:", 5)) return;
     SDL_LockMutex(icache_mu); bool have = hm_get(&icache, u) != NULL; SDL_UnlockMutex(icache_mu);
     if (have) return;
-    NetResponse *r = net_fetch_sync(doc_req(p->d, u, page_top_url(p)));
+    NetResponse *r = net_fetch_sync(doc_req(p->d, u, page_top_url(p), "img-src"));
     Image *im = r && r->status == 200 ? image_decode((const uint8_t *)r->body, r->body_len) : NULL;
     if (r) net_response_free(r);
     ImgSlot *slot = xcalloc(1, sizeof *slot); slot->im = im; slot->done = true;
@@ -332,7 +333,7 @@ static int loader(void *arg) {
         if (src) {
             sc.name = url_join(p->d->url, src);
             if (!sc.name) continue;
-            NetResponse *sr = net_fetch_sync(doc_req(p->d, sc.name, page_top_url(p)));
+            NetResponse *sr = net_fetch_sync(doc_req(p->d, sc.name, page_top_url(p), NULL));
             if (sr && sr->status >= 200 && sr->status < 300 && !js_script_mime_blocked(headers_get(&sr->headers, "content-type"))) { sc.src = xstrndup(sr->body ? sr->body : "", sr->body_len); sc.len = sr->body_len; }
             if (sr) net_response_free(sr);
         } else { sc.src = node_text_content(n); sc.len = strlen(sc.src); sc.name = xstrdup(p->url); }
@@ -346,7 +347,7 @@ static int loader(void *arg) {
             char *t = node_text_content(n); StyleSheet *s = css_parse_sheet(t, strlen(t), p->d->url, 1, &p->e->media); s->owner = n; style_engine_add_sheet(p->e, s); free(t);
         } else if (n->tag == A_link && node_attr(n, "rel") && strstr(node_attr(n, "rel"), "stylesheet") && node_attr(n, "href")) {
             char *u = url_join(p->d->url, node_attr(n, "href"));
-            NetResponse *cr = net_fetch_sync(doc_req(p->d, u, page_top_url(p)));
+            NetResponse *cr = net_fetch_sync(doc_req(p->d, u, page_top_url(p), "style-src"));
             if (cr && cr->status == 200) { StyleSheet *s = css_parse_sheet(cr->body, cr->body_len, cr->url, 1, &p->e->media); s->owner = n; style_engine_add_sheet(p->e, s); }
             if (cr) net_response_free(cr); free(u);
         } else if (n->tag == A_img && node_attr(n, "src")) {
@@ -1444,7 +1445,7 @@ static void sync_images(Page *p) {
         SDL_UnlockMutex(icache_mu);
         if (!have) {
             if (getenv("LUMEN_DEBUG_IMG")) fprintf(stderr, "lumen: img fetch %.80s\n", u);
-            NetRequest *rq = doc_req(p->d, u, page_top_url(p)); ImgLoad *l = xmalloc(sizeof *l); l->gen = p->gen; l->u = u;
+            NetRequest *rq = doc_req(p->d, u, page_top_url(p), "img-src"); ImgLoad *l = xmalloc(sizeof *l); l->gen = p->gen; l->u = u;
             rq->done = img_done; rq->ud = l; rq->priority = 2; net_fetch(rq);
         } else free(u);
     }
@@ -1491,7 +1492,7 @@ static bool sync_sheets(Page *p, bool seed) {
             if (t) { StyleSheet *sh = css_parse_sheet(t, strlen(t), p->d->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); changed = true; }
             else {
                 char *u = url_join(p->d->url, node_attr(n, "href"));
-                if (u) { NetRequest *rq = doc_req(p->d, u, page_top_url(p)); LinkLoad *l = xmalloc(sizeof *l); l->gen = p->gen; l->n = n; n->refcount++; rq->done = is_sheet_link(n) ? link_done : preload_done; rq->ud = l; net_fetch(rq); free(u); }
+                if (u) { NetRequest *rq = doc_req(p->d, u, page_top_url(p), is_sheet_link(n) ? "style-src" : NULL); LinkLoad *l = xmalloc(sizeof *l); l->gen = p->gen; l->n = n; n->refcount++; rq->done = is_sheet_link(n) ? link_done : preload_done; rq->ud = l; net_fetch(rq); free(u); }
             }
         }
         free(t);
@@ -1648,7 +1649,7 @@ static void h_frame_open(void *ud, Node *f, Document *d, JsHost *ch) {
             char *t = node_text_content(n); StyleSheet *sh = css_parse_sheet(t, strlen(t), d->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); free(t);
         } else if (is_sheet_link(n)) {
             char *u = url_join(d->url, node_attr(n, "href"));
-            NetResponse *cr = u ? net_fetch_sync(doc_req(f->doc, u, frame_top_url(f))) : NULL;
+            NetResponse *cr = u ? net_fetch_sync(doc_req(f->doc, u, frame_top_url(f), "style-src")) : NULL;
             if (cr && cr->status == 200 && cr->body) { StyleSheet *sh = css_parse_sheet(cr->body, cr->body_len, cr->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); }
             if (cr) net_response_free(cr);
             free(u);
@@ -1755,7 +1756,7 @@ static void page_start_js(App *a, Page *p) {
     for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) {   /* parser-inserted rel=preload: fetch so "load"/"error" fire */
         if (n->type != NODE_ELEMENT || !is_preload_link(n) || is_sheet_link(n)) continue;
         char *u = url_join(p->d->url, node_attr(n, "href"));
-        if (u) { NetRequest *rq = doc_req(p->d, u, page_top_url(p)); LinkLoad *l = xmalloc(sizeof *l); l->gen = p->gen; l->n = n; n->refcount++; rq->done = preload_done; rq->ud = l; net_fetch(rq); free(u); }
+        if (u) { NetRequest *rq = doc_req(p->d, u, page_top_url(p), NULL); LinkLoad *l = xmalloc(sizeof *l); l->gen = p->gen; l->n = n; n->refcount++; rq->done = preload_done; rq->ud = l; net_fetch(rq); free(u); }
     }
     js_eval(p->js, "document.addEventListener('lumenmediactl',function(e){var v=e.target;if(!(v instanceof HTMLMediaElement))return;e.stopImmediatePropagation();"
         "if(e.key==='toggle'){if(v.paused)v.play();else v.pause()}else if(e.key.indexOf('seek:')===0&&v.duration>0)v.currentTime=v.duration*parseFloat(e.key.slice(5))},true)", "lumen:ctl");

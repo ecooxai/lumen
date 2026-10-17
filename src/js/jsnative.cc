@@ -512,6 +512,7 @@ static NetRequest *mkreq(JsCtx *c, const FCI &a) {
     v8::Local<v8::Context> ctx = iso->GetCurrentContext();
     std::string m = S(0), u = S(1);
     NetRequest *rq = net_request_ctx(m.c_str(), u.c_str(), js_top_url(c));
+    if (c->doc && c->doc->csp) { rq->csp = strdup(c->doc->csp); rq->csp_doc = strdup(c->doc->url ? c->doc->url : ""); rq->csp_dir = "connect-src"; }   /* fetch / XHR */
     bool referer = false;
     if (a[2]->IsArray()) {
         v8::Local<v8::Array> h = a[2].As<v8::Array>();
@@ -706,6 +707,12 @@ FN(wsOpen) {
     WsSock *s = new WsSock{ c, c->next_ws++, nullptr, {} };
     s->cb.Reset(iso, a[3].As<v8::Function>());
     c->sockets[s->id] = s;
+    if (c->doc && c->doc->csp && !csp_allows_url(c->doc->csp, c->doc->url, S(0).c_str(), "connect-src")) {
+        fprintf(stderr, "lumen: CSP connect-src blocked %.120s\n", S(0).c_str());
+        c->sockets.erase(s->id); s->cb.Reset(); delete s;
+        iso->ThrowException(v8::Exception::Error(jstr(iso, "SecurityError: Refused to connect because it violates the document's Content Security Policy.")));
+        return;
+    }
     s->ws = net_ws_open(S(0).c_str(), S(1).c_str(), S(2).c_str(), ws_cb, s);
     RET((double)s->id);
 }

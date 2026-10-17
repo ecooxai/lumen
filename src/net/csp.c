@@ -149,6 +149,42 @@ static bool csp_all(const char *csp, const char *body, size_t n, int kind) {
 bool csp_allows_attr(const char *csp, const char *body, size_t n) { return csp_all(csp, body, n, 1); }
 bool csp_allows_eval(const char *csp, bool wasm) { return csp_all(csp, NULL, 0, wasm ? 3 : 2); }
 
+/* Fetch directives: dir is the most specific directive; falls back per CSP3 (e.g. style-src-elem -> style-src -> default-src). */
+static bool url_policy_allows(const char *p, const char *e, const char *doc_url, const URL *a, const char *dir) {
+    static const char *chains[][4] = {
+        { "style-src", "style-src-elem", "style-src", "default-src" }, { "frame-src", "frame-src", "child-src", "default-src" },
+        { "worker-src", "worker-src", "child-src", "script-src" }, { NULL },
+    };
+    const char *ve = NULL, *v = NULL;
+    const char **ch = NULL;
+    for (int i = 0; chains[i][0]; i++) if (!strcmp(chains[i][0], dir)) ch = chains[i] + 1;
+    if (ch) { for (int i = 0; i < 3 && !v; i++) v = find_dir(p, e, ch[i], &ve); if (!v && !strcmp(dir, "worker-src")) v = find_dir(p, e, "default-src", &ve); }
+    else v = find_dir(p, e, dir, &ve);
+    if (!v) v = find_dir(p, e, "default-src", &ve);
+    if (!v) return true;
+    for (const char *q = v; q < ve;) {
+        while (q < ve && isspace((unsigned char)*q)) q++;
+        const char *te = q; while (te < ve && !isspace((unsigned char)*te)) te++;
+        if (te == q) break;
+        if (src_match(q, (size_t)(te - q), a, doc_url)) return true;
+        q = te;
+    }
+    return false;
+}
+
+bool csp_allows_url(const char *csp, const char *doc_url, const char *url, const char *dir) {
+    if (!csp || !*csp || !url || !dir) return true;
+    URL a; if (!url_parse(url, &a)) return true;
+    bool ok = true;
+    for (const char *p = csp; ok && *p;) {
+        const char *e = strchr(p, '\n'); if (!e) e = p + strlen(p);
+        ok = url_policy_allows(p, e, doc_url ? doc_url : "", &a, dir);
+        p = *e ? e + 1 : e;
+    }
+    url_free(&a);
+    return ok;
+}
+
 bool net_corp_blocked(const char *initiator, const char *resp_url, const char *corp, bool require_corp) {
     URL a, b;
     if (!initiator || !resp_url || !url_parse(initiator, &a)) return false;

@@ -295,3 +295,8 @@ in-flow content (display.c dl_move_items). This removed the empty grey box on Go
   compile (V8 code-gen callbacks in js.cc; contexts are created with AllowCodeGenerationFromStrings(false)).
   Workers don't track their own CSP yet. Test pages /c6../c9 on ~/fvtest/sec/csp.py (port 8768).
 - SIGTERM/SIGINT/SIGHUP now quit promptly while idle (quit_sig_thread in main.c, desktop only).
+- CSP fetch directives (csp_allows_url in src/net/csp.c; NetRequest.csp/csp_doc/csp_dir checked on every hop in
+  net_fetch_sync): img-src, style-src(-elem) for <link> sheets, connect-src for fetch/XHR/WebSocket (WebSocket throws
+  SecurityError), frame-src/child-src for iframes. Not yet: font-src (fonts are fetched globally, without a document),
+  media-src, worker-src, inline <style>/style= (style-src 'unsafe-inline'), report-only, Trusted Types. Test pages
+  /r1 /r2 on ~/fvtest/sec/csp.py (request log /tmp/csp-req.txt).

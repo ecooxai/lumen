@@ -204,6 +204,7 @@ static void frame_load(JsCtx *p, Node *f, const char *u, const std::string &key)
     JsCtx *k = frame_create(p, f, "about:blank", "", 0, !remote);
     k->frame_src = key;
     if (!remote) return;
+    if (p->doc && p->doc->csp && !csp_allows_url(p->doc->csp, p->doc->url, u, "frame-src")) { fprintf(stderr, "lumen: CSP frame-src blocked %.120s\n", u); return; }
     NetRequest *rq = net_request_ctx("GET", u, js_top_url(p));
     if (char *ref = net_referrer(p->doc->url, u, p->doc->referrer_policy)) { headers_add(&rq->headers, "Referer", ref); free(ref); }
     FrameLoad *l = new FrameLoad{ p, f, k->id, u };
