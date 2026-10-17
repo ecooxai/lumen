@@ -5,8 +5,11 @@ import org.libsdl.app.SDLSurface;
 import android.util.Log;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
+import android.system.ErrnoException;
+import android.system.Os;
 import android.widget.Toast;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
@@ -17,6 +20,7 @@ import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 
 public final class LumenActivity extends SDLActivity {
+    private static final String PROXY_EXTRA = "org.lumen.browser.PROXY";
     private boolean nativeArgumentsRequested;
     private static native boolean nativeOpenUrl(byte[] url);
     private static native boolean nativeRequestBack();
@@ -117,10 +121,46 @@ public final class LumenActivity extends SDLActivity {
         return new String[] {"SDL3", "main"};
     }
 
+    /* HTTP proxy for the native network stack, read once at startup. Launch with
+       `--es org.lumen.browser.PROXY host:port` to save one ("direct" clears it);
+       otherwise the system proxy of the active network applies. */
+    private void applyProxy(Intent intent) {
+        SharedPreferences prefs = getSharedPreferences("lumen", MODE_PRIVATE);
+        String extra = intent != null ? intent.getStringExtra(PROXY_EXTRA) : null;
+        if (extra != null) {
+            extra = extra.trim();
+            if (extra.isEmpty() || extra.equalsIgnoreCase("direct")) prefs.edit().remove("proxy").apply();
+            else prefs.edit().putString("proxy", extra).apply();
+        }
+        String proxy = prefs.getString("proxy", null), bypass = null;
+        if (proxy == null) {
+            String host = System.getProperty("https.proxyHost"), port = System.getProperty("https.proxyPort");
+            if (host == null || host.isEmpty()) {
+                host = System.getProperty("http.proxyHost");
+                port = System.getProperty("http.proxyPort");
+            }
+            if (host != null && !host.isEmpty()) {
+                proxy = host + ":" + (port != null && !port.isEmpty() ? port : "8080");
+                String hosts = System.getProperty("http.nonProxyHosts");
+                if (hosts != null) bypass = hosts.replace('|', ',');
+            }
+        }
+        try {
+            if (proxy != null) {
+                Os.setenv("LUMEN_PROXY", proxy, true);
+                if (bypass != null) Os.setenv("NO_PROXY", bypass, true);
+                Log.i("Lumen", "Using an HTTP proxy");
+            }
+        } catch (ErrnoException exception) {
+            Log.e("Lumen", "Unable to set the proxy", exception);
+        }
+    }
+
     @Override
     protected synchronized String[] getArguments() {
         AndroidFontRaster.initialize();
         nativeArgumentsRequested = true;
+        applyProxy(getIntent());
         String url = launchUrl(getIntent());
         return new String[] {url != null ? url : "lumen://newtab"};
     }

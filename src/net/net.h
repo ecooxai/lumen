@@ -48,6 +48,9 @@ struct NetRequest {
 };
 
 void net_init(int threads);
+/* HTTP proxy for all connections: "host:port", "http://[user:pass@]host:port", or NULL/"" for direct.
+   net_init reads LUMEN_PROXY, then https_proxy/http_proxy (and NO_PROXY) from the environment. */
+void net_set_proxy(const char *spec);
 /* Private disk cache for GET responses in dir (created if missing), bounded to max_bytes. */
 void net_cache_init(const char *dir, size_t max_bytes);
 void net_shutdown(void);

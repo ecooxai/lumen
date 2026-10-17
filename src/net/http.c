@@ -110,6 +110,7 @@ void headers_free(Headers *h) { for (int i = 0; i < h->n; i++) { free(h->v[i].na
 /* ---------- connections ---------- */
 typedef struct Conn {
     int fd; SSL *ssl;
+    bool proxied; /* plain http through the proxy: requests use absolute-form targets */
     char *key; /* scheme://host:port */
     char rbuf[16384]; size_t rpos, rlen;
     double last_used;
@@ -197,6 +198,95 @@ static int connect_tcp(const char *host, int port, char **err) {
     return fd;
 }
 
+/* ---------- proxy ---------- */
+static pthread_mutex_t g_proxy_mu = PTHREAD_MUTEX_INITIALIZER;
+static char g_proxy_host[256], g_proxy_auth[384], g_no_proxy[1024];
+static int g_proxy_port;
+static void b64enc(const unsigned char *in, size_t n, char *out);
+
+void net_set_proxy(const char *spec) {
+    pthread_mutex_lock(&g_proxy_mu);
+    g_proxy_host[0] = g_proxy_auth[0] = 0; g_proxy_port = 0;
+    const char *s = spec ? spec : "";
+    while (*s == ' ') s++;
+    if (!strncasecmp(s, "http://", 7)) s += 7;
+    char buf[512]; snprintf(buf, sizeof buf, "%s", s);
+    char *slash = strchr(buf, '/'); if (slash) *slash = 0;
+    char *hp = buf, *at = strrchr(buf, '@');
+    if (at) {
+        *at = 0; hp = at + 1;
+        b64enc((const unsigned char *)buf, strlen(buf), g_proxy_auth);
+    }
+    char *colon = hp[0] == '[' ? strstr(hp, "]:") : strrchr(hp, ':');
+    int port = 8080;
+    if (colon) { if (*colon == ']') colon++; *colon = 0; port = atoi(colon + 1); }
+    if (*hp && port > 0 && port < 65536) { snprintf(g_proxy_host, sizeof g_proxy_host, "%s", hp); g_proxy_port = port; }
+    else g_proxy_auth[0] = 0;
+    pthread_mutex_unlock(&g_proxy_mu);
+}
+
+/* Loopback and NO_PROXY hosts (comma-separated suffixes, "*" for all) go direct. */
+static bool proxy_bypass(const char *host) {
+    if (!strcasecmp(host, "localhost") || !strncmp(host, "127.", 4) || !strcmp(host, "[::1]")) return true;
+    size_t hl = strlen(host);
+    if (hl > 10 && !strcasecmp(host + hl - 10, ".localhost")) return true;
+    for (const char *m = g_no_proxy; *m;) {
+        while (*m == ',' || *m == ' ') m++;
+        const char *end = m; while (*end && *end != ',' && *end != ' ') end++;
+        const char *p = m; if (*p == '*' && end - p == 1) return true;
+        if (*p == '*') p++;
+        if (*p == '.') p++;
+        size_t sl = (size_t)(end - p);
+        if (sl && (hl == sl || (hl > sl && host[hl - sl - 1] == '.')) && !strncasecmp(host + hl - sl, p, sl)) return true;
+        m = end;
+    }
+    return false;
+}
+
+/* Reads a proxy reply head on a raw socket without consuming bytes past it; returns the status code. */
+static int proxy_read_head(int fd) {
+    char buf[4096]; size_t n = 0;
+    while (n < sizeof buf - 1) {
+        ssize_t r = recv(fd, buf + n, 1, 0);
+        if (r <= 0) return -1;
+        n++;
+        if (n >= 4 && !memcmp(buf + n - 4, "\r\n\r\n", 4)) break;
+    }
+    buf[n] = 0;
+    return n > 12 && !strncmp(buf, "HTTP/1.", 7) ? atoi(buf + 9) : -1;
+}
+
+static int conn_proxy_connect(const URL *u, bool tunnel, bool *proxied, char **err) {
+    *proxied = false;
+    pthread_mutex_lock(&g_proxy_mu);
+    char ph[256], auth[384]; int pp = g_proxy_port;
+    snprintf(ph, sizeof ph, "%s", g_proxy_host); snprintf(auth, sizeof auth, "%s", g_proxy_auth);
+    bool use = pp && !proxy_bypass(u->host);
+    pthread_mutex_unlock(&g_proxy_mu);
+    if (!use) return connect_tcp(u->host, u->port, err);
+    char *perr = NULL;
+    int fd = connect_tcp(ph, pp, &perr);
+    if (fd < 0) {
+        /* proxy unreachable: fall back to a direct connection, like a "PROXY x; DIRECT" list */
+        static bool warned; if (!warned) { warned = true; fprintf(stderr, "lumen: proxy unreachable (%s); connecting directly\n", perr ? perr : "?"); }
+        free(perr);
+        return connect_tcp(u->host, u->port, err);
+    }
+    if (!tunnel) { *proxied = true; return fd; }
+    SB req; sb_init(&req);
+    sb_printf(&req, "CONNECT %s:%d HTTP/1.1\r\nHost: %s:%d\r\n", u->host, u->port, u->host, u->port);
+    if (*auth) sb_printf(&req, "Proxy-Authorization: Basic %s\r\n", auth);
+    sb_puts(&req, "\r\n");
+    bool ok = send(fd, req.s, req.n, 0) == (ssize_t)req.n; sb_free(&req);
+    int st = ok ? proxy_read_head(fd) : -1;
+    if (st / 100 != 2) {
+        close(fd);
+        SB b; sb_init(&b); sb_printf(&b, "proxy CONNECT failed (%d)", st); *err = sb_take(&b);
+        return -1;
+    }
+    return fd;
+}
+
 static Conn *conn_open(const URL *u, char **err) {
     char key[512]; snprintf(key, sizeof key, "%s://%s:%d", u->scheme, u->host, u->port);
     Conn *c = pool_take(key);
@@ -204,13 +294,14 @@ static Conn *conn_open(const URL *u, char **err) {
 #if defined(__ANDROID__) && !defined(NDEBUG)
     double tc0 = now_ms();
 #endif
-    int fd = connect_tcp(u->host, u->port, err);
+    bool proxied = false;
+    int fd = conn_proxy_connect(u, strcmp(u->scheme, "http") != 0, &proxied, err);
     if (fd < 0) return NULL;
 #if defined(__ANDROID__) && !defined(NDEBUG)
     double tc1 = now_ms();
     t_tr.connect_ms += tc1 - tc0; t_tr.new_conns++;
 #endif
-    c = xcalloc(1, sizeof *c); c->fd = fd; c->key = xstrdup(key);
+    c = xcalloc(1, sizeof *c); c->fd = fd; c->key = xstrdup(key); c->proxied = proxied;
     if (!strcmp(u->scheme, "https") || !strcmp(u->scheme, "wss")) {
         c->ssl = SSL_new(g_ssl_ctx);
         SSL_set_fd(c->ssl, fd);
@@ -377,7 +468,14 @@ static NetResponse *http_once(const char *method, const URL *u, const Headers *h
     bool reused = c->last_used > 0;
     SB req; sb_init(&req);
     char *pq = url_path_query(u);
-    sb_printf(&req, "%s %s HTTP/1.1\r\n", method, pq); free(pq);
+    if (c->proxied) {
+        if (u->port != url_default_port(u->scheme)) sb_printf(&req, "%s http://%s:%d%s HTTP/1.1\r\n", method, u->host, u->port, pq);
+        else sb_printf(&req, "%s http://%s%s HTTP/1.1\r\n", method, u->host, pq);
+        pthread_mutex_lock(&g_proxy_mu);
+        if (*g_proxy_auth) sb_printf(&req, "Proxy-Authorization: Basic %s\r\n", g_proxy_auth);
+        pthread_mutex_unlock(&g_proxy_mu);
+    } else sb_printf(&req, "%s %s HTTP/1.1\r\n", method, pq);
+    free(pq);
     if (u->port != url_default_port(u->scheme)) sb_printf(&req, "Host: %s:%d\r\n", u->host, u->port); else sb_printf(&req, "Host: %s\r\n", u->host);
     bool has_ua = false, has_accept = false, has_ae = false, has_al = false, has_ch = false;
     for (int i = 0; i < hdrs->n; i++) {
@@ -687,6 +785,12 @@ void net_init(int threads) {
     if (!loaded) SSL_CTX_set_default_verify_paths(g_ssl_ctx);
 #endif
     SSL_CTX_set_session_cache_mode(g_ssl_ctx, SSL_SESS_CACHE_CLIENT);
+    const char *px = NULL, *np = getenv("NO_PROXY");
+    const char *pvars[] = { "LUMEN_PROXY", "https_proxy", "HTTPS_PROXY", "http_proxy", "HTTP_PROXY" };
+    for (size_t i = 0; i < ARRLEN(pvars) && !px; i++) px = getenv(pvars[i]);
+    if (!np) np = getenv("no_proxy");
+    snprintf(g_no_proxy, sizeof g_no_proxy, "%s", np ? np : "");
+    net_set_proxy(px);
     g_nthreads = threads;
     for (int i = 0; i < threads; i++) { pthread_t t; pthread_create(&t, NULL, worker, NULL); pthread_detach(t); }
 }
