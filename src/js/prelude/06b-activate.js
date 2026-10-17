@@ -217,7 +217,7 @@ class CSSStyleSheet extends StyleSheet {
     _sync() {   /* constructed sheets apply only through adoptedStyleSheets: mirror their text into each adopting scope */
         const o = this._owner;
         if (!o) { if (this._mirrors) { const t = this._text(); for (const n of this._mirrors.values()) N.setText(n, t); } return; }
-        if (N.name(o) === 'style') { const t = this._text(); this._src = t; N.setText(o, t); }
+        if (N.name(o) === 'style') { const t = this._text(); this._src = t; N.cspExempt(o); N.setText(o, t); }
     }
 }
 function adoptSheets(scope, v) {
@@ -228,7 +228,7 @@ function adoptSheets(scope, v) {
     for (const s of list) {
         if (!s._mirrors) def(s, '_mirrors', new Map());
         let n = s._mirrors.get(scope);
-        if (n) { if (n.parentNode) N.remove(n); } else { n = N.create('style', 0); def(n, '__mirror', true); s._mirrors.set(scope, n); N.setText(n, s._text()); }
+        if (n) { if (n.parentNode) N.remove(n); } else { n = N.create('style', 0); def(n, '__mirror', true); N.cspExempt(n); s._mirrors.set(scope, n); N.setText(n, s._text()); }
         if (root) N.insert(root, n, null);
     }
 }

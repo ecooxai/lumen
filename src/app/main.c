@@ -174,8 +174,9 @@ static bool gen_live(uint64_t g) { for (int i = 0; i < MAX_TABS; i++) if (g_tab_
 static void img_refetch(const char *u);
 /* subresource request from document d: SameSite/mixed-content context + Referer under d's Referrer-Policy */
 static bool style_csp_ok(Document *d, Node *n, const char *t) {
-    if (!d || !d->csp || !(n->flags & NF_PARSER_INSERTED)) return true;
+    if (!d || !d->csp) return true;
     if (!(n->flags & NF_CSP_STYLE_CHECKED)) {
+        if (!*t) return true;   /* script-created and still empty: decide once it has text */
         n->flags |= NF_CSP_STYLE_CHECKED;
         if (!csp_allows_style(d->csp, node_attr(n, "nonce"), t, strlen(t))) { n->flags |= NF_CSP_STYLE_BLOCKED; fprintf(stderr, "lumen: CSP style-src blocked inline <style>\n"); }
     }

@@ -310,4 +310,7 @@ in-flow content (display.c dl_move_items). This removed the empty grey box on Go
   'unsafe-inline', nonce, hashes; decided once per parser-inserted <style> (NF_CSP_STYLE_CHECKED/BLOCKED) so CSSOM
   rewrites of the sheet text stay allowed. style= attributes: kind 5 (style-src-attr -> style-src ->
   default-src; hashes need 'unsafe-hashes'); CSSOM writes (el.style.*, cssText, el.style=) use cssomSet() -> N.setAttr(..., true)
-  which sets NF_STYLE_CSSOM and are exempt like Chrome; setAttribute('style') is checked. Not yet: script-created <style>. Matches Chrome on sd.py /st1 /st2.
+  which sets NF_STYLE_CSSOM and are exempt like Chrome; setAttribute('style') is checked. Script-created <style>
+  is checked too (decided once it first has text); constructed/adopted sheet mirrors and CSSOM insertRule/_sync call
+  N.cspExempt() so they stay allowed (lenient vs Chrome for an empty no-nonce <style> later filled by insertRule).
+  Matches Chrome on sd.py /sd1 /sd2. Matches Chrome on sd.py /st1 /st2.
