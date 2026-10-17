@@ -265,3 +265,6 @@ in-flow content (display.c dl_move_items). This removed the empty grey box on Go
   top-level page are upgraded to https/wss (Chrome autoupgrades images/media and blocks the rest; upgrading is the
   secure equivalent). localhost/127.x are exempt. Applied on every redirect hop.
 - tests/test_net.c (`make test`) covers these.
+- X-Frame-Options / CSP frame-ancestors (src/js/frames.cc frame_embed_blocked): checked against every ancestor
+  document; frame-ancestors wins over XFO; blocked frames get an empty about:blank and a stderr line. Test server:
+  ~/fvtest/sec/srv.py (port 8765, localhost vs 127.0.0.1 = cross-origin), check with LUMEN_CONSOLE=log.

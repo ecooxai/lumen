@@ -113,6 +113,61 @@ static JsCtx *frame_create(JsCtx *p, Node *f, const char *url, const char *html,
     return k;
 }
 
+/* ---- X-Frame-Options / CSP frame-ancestors ---- */
+static bool fa_source_match(std::string src, const char *anc, const std::string &self) {
+    for (auto &ch : src) ch = (char)tolower((unsigned char)ch);
+    URL a; if (!anc || !url_parse(anc, &a)) return false;
+    bool web = a.scheme && (!strcmp(a.scheme, "http") || !strcmp(a.scheme, "https")), ok = false;
+    if (src == "*") ok = web;
+    else if (src == "'self'") ok = origin_of(anc) == self;
+    else if (src.size() > 1 && src.back() == ':' && src.find('/') == std::string::npos) {
+        std::string sch = src.substr(0, src.size() - 1);
+        ok = a.scheme && (sch == a.scheme || (sch == "http" && !strcmp(a.scheme, "https")));
+    } else if (a.host && src[0] != '\'') {
+        std::string sch, rest = src; size_t ss = rest.find("://");
+        if (ss != std::string::npos) { sch = rest.substr(0, ss); rest = rest.substr(ss + 3); }
+        size_t sl = rest.find('/'); if (sl != std::string::npos) rest = rest.substr(0, sl);
+        std::string host = rest, port; size_t co = rest.rfind(':');
+        if (co != std::string::npos && rest.find(']') == std::string::npos) { host = rest.substr(0, co); port = rest.substr(co + 1); }
+        bool sch_ok = sch.empty() ? web : (sch == a.scheme || (sch == "http" && !strcmp(a.scheme, "https")));
+        std::string ah = a.host; bool host_ok;
+        if (host.size() > 2 && host[0] == '*' && host[1] == '.') { std::string suf = host.substr(1); host_ok = ah.size() > suf.size() && !ah.compare(ah.size() - suf.size(), suf.size(), suf); }
+        else host_ok = host == ah;
+        bool port_ok = port == "*" || (port.empty() ? a.port == url_default_port(a.scheme) : atoi(port.c_str()) == a.port);
+        ok = sch_ok && host_ok && port_ok;
+    }
+    url_free(&a);
+    return ok;
+}
+/* true if the response forbids being shown in this frame (checked against every ancestor document) */
+static bool frame_embed_blocked(JsCtx *p, const NetResponse *r, const char *url) {
+    std::string self = origin_of(url);
+    for (int i = 0; i < r->headers.n; i++) {
+        if (!str_ieq(r->headers.v[i].name, "content-security-policy")) continue;
+        std::string pol = r->headers.v[i].value;
+        size_t st = 0;
+        while (st <= pol.size()) {
+            size_t en = pol.find(';', st); if (en == std::string::npos) en = pol.size();
+            std::string d = pol.substr(st, en - st); st = en + 1;
+            std::vector<std::string> tok; size_t q = 0;
+            while (q < d.size()) { while (q < d.size() && isspace((unsigned char)d[q])) q++; size_t e = q; while (e < d.size() && !isspace((unsigned char)d[e])) e++; if (e > q) tok.push_back(d.substr(q, e - q)); q = e; }
+            if (tok.empty() || !str_ieq(tok[0].c_str(), "frame-ancestors")) continue;
+            for (JsCtx *a = p; a; a = a->parent) {
+                const char *au = a->doc ? a->doc->url : nullptr; bool any = false;
+                for (size_t k = 1; k < tok.size() && !any; k++) any = !str_ieq(tok[k].c_str(), "'none'") && fa_source_match(tok[k], au, self);
+                if (!any) return true;
+            }
+            return false;   /* frame-ancestors present and satisfied: X-Frame-Options is ignored */
+        }
+    }
+    const char *xfo = headers_get(&r->headers, "x-frame-options");
+    if (!xfo) return false;
+    while (*xfo == ' ') xfo++;
+    if (!strncasecmp(xfo, "deny", 4)) return true;
+    if (!strncasecmp(xfo, "sameorigin", 10)) { for (JsCtx *a = p; a; a = a->parent) if (origin_of(a->doc ? a->doc->url : nullptr) != self) return true; }
+    return false;
+}
+
 static void frame_done(NetRequest *rq, NetResponse *r, void *ud) {
     (void)rq;
     FrameLoad *l = static_cast<FrameLoad *>(ud);
@@ -122,6 +177,13 @@ static void frame_done(NetRequest *rq, NetResponse *r, void *ud) {
     if (blank) {
         std::string key = blank->frame_src;
         bool ok = r && r->status > 0;
+        if (ok && frame_embed_blocked(p, r, r->url ? r->url : l->url.c_str())) {
+            fprintf(stderr, "lumen: refused to display '%s' in a frame (X-Frame-Options / frame-ancestors)\n", r->url ? r->url : l->url.c_str());
+            JsCtx *k = frame_create(p, l->f, "about:blank", "", 0, true);
+            k->frame_src = key;
+            delete l;
+            return;
+        }
         const char *body = ok && r->body ? r->body : "";
         JsCtx *k = frame_create(p, l->f, ok && r->url ? r->url : l->url.c_str(), body, ok && r->body ? r->body_len : 0, true);
         k->frame_src = key;
