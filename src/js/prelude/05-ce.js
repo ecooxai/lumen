@@ -50,6 +50,7 @@ function mediaAttach(el, src) {
     else {
         const ms = objectURLs.get(src);
         def(el, '__src', src);
+        if (!N.cspMedia((() => { try { return new URL(src, document.baseURI).href; } catch (e) { return String(src); } })())) { mediaLater(el, 'loadstart'); mediaLater(el, 'error'); return; }
         if (ms instanceof MediaSource) ms._attach(el, id);
         else if (ms && ms._buf) { if (!ms.__file) ms.__file = N.blobFile(ms._buf); N.mediaOpen(id, ms.__file || src); }
         else N.mediaOpen(id, src);

@@ -1592,6 +1592,8 @@ static char *ff_pick_src(const char *src) {
     }
     return NULL;
 }
+typedef struct { char *csp, *doc; } FontCsp;
+static HMap g_fontcsp;   /* font url -> CSP of the first document that declared it (rechecked on redirects) */
 static void sheet_fonts(StyleSheet *s, Document *d) {
     for (int i = 0; i < s->font_faces.n; i++) {
         const char *b = s->font_faces.v[i];
@@ -1607,6 +1609,10 @@ static void sheet_fonts(StyleSheet *s, Document *d) {
             if (wt && str_ieq(wt, "bold")) w = 700;
             else if (wt && !strchr(wt, ' ') && atoi(wt) > 0) w = atoi(wt);
             bool it = sty && (!strncasecmp(sty, "italic", 6) || !strncasecmp(sty, "oblique", 7));
+            if (d && d->csp && !hm_get(&g_fontcsp, abs)) {
+                FontCsp *fc = xcalloc(1, sizeof *fc); fc->csp = xstrdup(d->csp); fc->doc = xstrdup(d->url ? d->url : "");
+                hm_put(&g_fontcsp, abs, fc);
+            }
             font_declare(fam, w, it, abs);
         }
         free(abs); free(u); free(fam); free(src); free(wt); free(sty);
@@ -1627,7 +1633,10 @@ static void font_pump(void) {
     for (char *u; (u = font_next_request()); ) {
         if (hm_get(&g_fontfetch, u)) { free(u); continue; }
         hm_put(&g_fontfetch, u, (void *)1);
-        NetRequest *rq = net_request_new("GET", u); rq->done = font_done; rq->ud = u; net_fetch(rq);
+        NetRequest *rq = net_request_new("GET", u); rq->done = font_done; rq->ud = u;
+        FontCsp *fc = hm_get(&g_fontcsp, u);
+        if (fc) { rq->csp = xstrdup(fc->csp); rq->csp_doc = xstrdup(fc->doc); rq->csp_dir = "font-src"; }
+        net_fetch(rq);
     }
 }
 static void frames_tick(App *a) {

@@ -314,3 +314,7 @@ in-flow content (display.c dl_move_items). This removed the empty grey box on Go
   is checked too (decided once it first has text); constructed/adopted sheet mirrors and CSSOM insertRule/_sync call
   N.cspExempt() so they stay allowed (lenient vs Chrome for an empty no-nonce <style> later filled by insertRule).
   Matches Chrome on sd.py /sd1 /sd2. Matches Chrome on sd.py /st1 /st2.
+- CSP media-src: <video>/<audio> src (incl. blob:/MediaSource URLs) checked in mediaAttach via N.cspMedia(); blocked ->
+  loadstart + error, as in Chrome (sd.py /m1 /m2). Not yet: media redirects (media.c stream fetches carry no CSP), <source>
+  elements if selected elsewhere, <track>. Font fetches now carry the declaring document's CSP (g_fontcsp) so redirects
+  are rechecked against font-src (sd.py /f3). Report-only CSP headers are ignored (never block); no violation reports/events yet.

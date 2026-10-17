@@ -613,6 +613,7 @@ FN(audioDecode) {
 }
 FN(mediaNew) { CTX; ARGN(n, 0); uint32_t id = c->next_player++; c->players[id] = mp_new(n); RET((double)id); }
 FN(mediaFree) { CTX; MP; mp_free(mp); c->players.erase(mpit); }
+FN(cspMedia) { CTX; std::string u = S(0); bool ok = !c->doc || !c->doc->csp || csp_allows_url(c->doc->csp, c->doc->url ? c->doc->url : "", u.c_str(), "media-src"); if (!ok) fprintf(stderr, "lumen: CSP media-src blocked %.120s\n", u.c_str()); RET(ok); }
 FN(mediaOpen) { CTX; MP; mp_open_url(mp, S(1).c_str()); }
 /* Blob -> temp file so <video>/<audio> play blob: URLs through the ordinary file path */
 FN(blobFile) {
@@ -1131,7 +1132,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
 #define REG(nm) (void)N->Set(ctx, jstr(iso, #nm), v8::Function::New(ctx, n_##nm).ToLocalChecked())
     REG(isNode); REG(version);
     REG(inert); REG(type); REG(name); REG(ns); REG(parent); REG(first); REG(last); REG(next); REG(prev);
-    REG(text); REG(setText); REG(attr); REG(setAttr); REG(rmAttr); REG(cspExempt); REG(attrs); REG(insert); REG(remove); REG(newDoc); REG(newXmlDoc); REG(parseDoc); REG(adopt); REG(pi); REG(cdata); REG(doctype); REG(ownerDoc);
+    REG(text); REG(setText); REG(attr); REG(setAttr); REG(rmAttr); REG(cspExempt); REG(cspMedia); REG(attrs); REG(insert); REG(remove); REG(newDoc); REG(newXmlDoc); REG(parseDoc); REG(adopt); REG(pi); REG(cdata); REG(doctype); REG(ownerDoc);
     REG(create); REG(textNode); REG(comment); REG(frag); REG(html); REG(setHTML); REG(parseFrag); REG(query);
     REG(matches); REG(byId); REG(clone); REG(doc); REG(contains); REG(connected); REG(host); REG(attachShadow);
     REG(templateContent); REG(rect); REG(vrect); REG(clipSet); REG(clipGet); REG(scrollPos); REG(setScroll); REG(computed); REG(value); REG(setValue); REG(checked); REG(setChecked); REG(setPseudo); REG(pickFiles);
