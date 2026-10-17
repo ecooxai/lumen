@@ -3,6 +3,7 @@
 #include "net.h"
 #include "trust.h"
 #include "file.h"
+#include "cache.h"
 #include <pthread.h>
 #include <sys/socket.h>
 #include <sys/time.h>
@@ -25,6 +26,25 @@
 #if defined(__ANDROID__) && !defined(NDEBUG)
 #include <android/log.h>
 static double g_debug_stream_until;
+/* Page-load trace: one numeric line per request while armed; never URLs or headers. */
+static double g_trace_until;
+static pthread_t g_main_thread;
+static int g_trace_seq;
+static __thread struct { double connect_ms, tls_ms, ttfb_ms; int new_conns; } t_tr;
+void net_trace_load(unsigned seconds) {
+    g_main_thread = pthread_self();
+    g_trace_until = seconds ? now_ms() + LMIN(seconds, 180u) * 1000.0 : 0;
+}
+static const char *trace_kind(const NetResponse *r) {
+    const char *ct = r ? headers_get(&r->headers, "content-type") : NULL;
+    if (!ct) return "none";
+    static const char *const k[][2] = { { "javascript", "js" }, { "css", "css" }, { "json", "json" }, { "html", "html" },
+        { "image/", "img" }, { "font", "font" }, { "event-stream", "sse" }, { "wasm", "wasm" } };
+    for (size_t i = 0; i < ARRLEN(k); i++) if (strstr(ct, k[i][0])) return k[i][1];
+    return "other";
+}
+#else
+void net_trace_load(unsigned seconds) { (void)seconds; }
 #endif
 
 void net_debug_streams(unsigned seconds) {
@@ -181,8 +201,15 @@ static Conn *conn_open(const URL *u, char **err) {
     char key[512]; snprintf(key, sizeof key, "%s://%s:%d", u->scheme, u->host, u->port);
     Conn *c = pool_take(key);
     if (c) return c;
+#if defined(__ANDROID__) && !defined(NDEBUG)
+    double tc0 = now_ms();
+#endif
     int fd = connect_tcp(u->host, u->port, err);
     if (fd < 0) return NULL;
+#if defined(__ANDROID__) && !defined(NDEBUG)
+    double tc1 = now_ms();
+    t_tr.connect_ms += tc1 - tc0; t_tr.new_conns++;
+#endif
     c = xcalloc(1, sizeof *c); c->fd = fd; c->key = xstrdup(key);
     if (!strcmp(u->scheme, "https") || !strcmp(u->scheme, "wss")) {
         c->ssl = SSL_new(g_ssl_ctx);
@@ -197,6 +224,9 @@ static Conn *conn_open(const URL *u, char **err) {
             SB b; sb_init(&b); sb_printf(&b, "TLS handshake failed: %s (verify=%s)", eb, X509_verify_cert_error_string(vr));
             *err = sb_take(&b); conn_close(c); return NULL;
         }
+#if defined(__ANDROID__) && !defined(NDEBUG)
+        t_tr.tls_ms += now_ms() - tc1;
+#endif
     }
     return c;
 }
@@ -374,6 +404,9 @@ static NetResponse *http_once(const char *method, const URL *u, const Headers *h
         sb_free(&req); conn_close(c); r->error = xstrdup("write failed"); *retryable = reused; return r;
     }
     sb_free(&req);
+#if defined(__ANDROID__) && !defined(NDEBUG)
+    double tw = now_ms();
+#endif
 
     SB line; sb_init(&line);
     int status = 0;
@@ -393,6 +426,9 @@ static NetResponse *http_once(const char *method, const URL *u, const Headers *h
             if (cookies && str_ieq(line.s, "set-cookie")) cookies_set_from_header(u, v);
         }
     } while (status >= 100 && status < 200 && status != 101);
+#if defined(__ANDROID__) && !defined(NDEBUG)
+    t_tr.ttfb_ms += now_ms() - tw;
+#endif
     r->status = status;
     bool streaming = t_stream && !(status >= 300 && status < 400 && status != 304 && headers_get(&r->headers, "location"));
     Dec dec = {0};
@@ -471,7 +507,53 @@ static NetResponse *data_url(const char *url) {
     return r;
 }
 
+/* Cacheable GETs for a URL already being downloaded wait for that download and
+ * then read the stored copy (preloads and module graphs ask for the same files). */
+static pthread_mutex_t g_fly_mu = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t g_fly_cv = PTHREAD_COND_INITIALIZER;
+static VEC(uint64_t) g_fly;
+static uint64_t fly_hash(const char *url) { uint64_t h = 1469598103934665603ull; for (; *url; url++) h = (h ^ (uint8_t)*url) * 1099511628211ull; return h; }
+static int fly_find(uint64_t h) { for (int i = 0; i < g_fly.n; i++) if (g_fly.v[i] == h) return i; return -1; }
+/* Returns true once this thread owns the download; false after waiting for another one. */
+static bool fly_begin(uint64_t h) {
+    pthread_mutex_lock(&g_fly_mu);
+    bool waited = false;
+    while (fly_find(h) >= 0) { pthread_cond_wait(&g_fly_cv, &g_fly_mu); waited = true; }
+    if (!waited) vec_push(g_fly, h);
+    pthread_mutex_unlock(&g_fly_mu);
+    return !waited;
+}
+static void fly_end(uint64_t h) {
+    pthread_mutex_lock(&g_fly_mu);
+    int i = fly_find(h);
+    if (i >= 0) g_fly.v[i] = g_fly.v[--g_fly.n];
+    pthread_cond_broadcast(&g_fly_cv);
+    pthread_mutex_unlock(&g_fly_mu);
+}
+
+static NetResponse *net_fetch_impl2(NetRequest *req, char *cache_state);
 static NetResponse *net_fetch_impl(NetRequest *req) {
+#if defined(__ANDROID__) && !defined(NDEBUG)
+    double t0 = now_ms();
+    bool trace = t0 < g_trace_until;
+    memset(&t_tr, 0, sizeof t_tr);
+    char cs = '-';
+    NetResponse *r = net_fetch_impl2(req, &cs);
+    if (trace && r) {
+        double ms = now_ms() - t0;
+        bool main = pthread_equal(pthread_self(), g_main_thread);
+        __android_log_print(ANDROID_LOG_INFO, "LumenNet", "req=%d %s %s status=%d cache=%c kind=%s bytes=%zu ms=%.0f conns=%d connect_ms=%.0f tls_ms=%.0f ttfb_ms=%.0f%s",
+            __atomic_add_fetch(&g_trace_seq, 1, __ATOMIC_RELAXED), main ? "MAIN" : "bg", req->method ? req->method : "GET", r->status, cs, trace_kind(r),
+            r->body_len, ms, t_tr.new_conns, t_tr.connect_ms, t_tr.tls_ms, t_tr.ttfb_ms, t_stream ? " stream" : "");
+    }
+    return r;
+#else
+    char cs;
+    return net_fetch_impl2(req, &cs);
+#endif
+}
+/* cache_state: F fresh hit, R revalidated, S stored, M miss not stored, - uncacheable */
+static NetResponse *net_fetch_impl2(NetRequest *req, char *cache_state) {
     if (str_istarts(req->url, "data:")) return data_url(req->url);
     char *url = xstrdup(req->url);
     char *method = xstrdup(req->method ? req->method : "GET");
@@ -483,10 +565,35 @@ static NetResponse *net_fetch_impl(NetRequest *req) {
         if (!url_parse(url, &u)) { r = xcalloc(1, sizeof *r); r->error = xstrdup("invalid url"); break; }
         if (!strcmp(u.scheme, "file")) { r = net_file_response(&u, url); url_free(&u); break; }
         if (strcmp(u.scheme, "http") && strcmp(u.scheme, "https")) { r = xcalloc(1, sizeof *r); r->error = xstrdup("unsupported scheme"); url_free(&u); break; }
+        /* Streamed fetches deliver the live response head and body to script as they arrive. */
+        bool get = !strcmp(method, "GET") && !body;
+        bool cacheable = get && !t_stream && http_cache_enabled() && !headers_get(&req->headers, "range");
+        Headers cond = {0}; bool fresh = false;
+        NetResponse *cached = cacheable ? http_cache_lookup(url, &req->headers, &fresh, &cond) : NULL;
+        if (cached && fresh) { r = cached; url_free(&u); *cache_state = 'F'; break; }
+        uint64_t fly = 0;
+        if (cacheable && !fly_begin(fly = fly_hash(url))) {
+            /* another thread just fetched it: use what it stored, else fetch as usual */
+            fly = 0;
+            headers_free(&cond); net_response_free(cached);
+            cached = http_cache_lookup(url, &req->headers, &fresh, &cond);
+            if (cached && fresh) { r = cached; url_free(&u); *cache_state = 'F'; break; }
+            if (!fly_begin(fly = fly_hash(url))) fly = 0;
+        }
+        const Headers *hdrs = cached ? &cond : &req->headers;
         bool retry;
         t_url = url;
-        r = http_once(method, &u, &req->headers, body, blen, !req->no_cookies, &retry);
-        if (r->error && retry) { net_response_free(r); r = http_once(method, &u, &req->headers, body, blen, !req->no_cookies, &retry); }
+        r = http_once(method, &u, hdrs, body, blen, !req->no_cookies, &retry);
+        if (r->error && retry) { net_response_free(r); r = http_once(method, &u, hdrs, body, blen, !req->no_cookies, &retry); }
+        if (cached && r->status == 304) { NetResponse *m = http_cache_revalidated(url, &req->headers, cached, r); net_response_free(r); r = m; *cache_state = 'R'; }
+        else {
+            net_response_free(cached);
+            if (cacheable) *cache_state = 'M';
+            if (cacheable && r->status == 200) { http_cache_store(url, &req->headers, r); *cache_state = 'S'; }
+            else if (!get && strcmp(method, "HEAD") && strcmp(method, "OPTIONS") && r->status >= 200 && r->status < 400) http_cache_invalidate(url);
+        }
+        if (fly) fly_end(fly);
+        headers_free(&cond);
         const char *loc = headers_get(&r->headers, "location");
         if (r->status >= 300 && r->status < 400 && r->status != 304 && loc && redirects-- > 0) {
             char *nu = url_join(url, loc);

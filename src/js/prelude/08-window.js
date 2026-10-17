@@ -281,7 +281,7 @@ function mediaChanged() {
     }
 }
 class MediaQueryListEvent extends Event { constructor(t, i = {}) { super(t, i); this.matches = !!i.matches; this.media = i.media || ''; } }
-function getComputedStyle(el) { if (!el || !N.isNode(el) || N.type(el) !== 1) throw new TypeError("Failed to execute 'getComputedStyle': parameter 1 is not of type 'Element'."); return new Proxy(new ComputedStyleDeclaration(el, true), computedHandler); }
+function getComputedStyle(el) { if (!el || !N.isNode(el) || N.type(el) !== 1) throw new TypeError("Failed to execute 'getComputedStyle': parameter 1 is not of type 'Element'."); if (!el.__cstyle) def(el, '__cstyle', new Proxy(new ComputedStyleDeclaration(el, true), computedHandler)); return el.__cstyle; }   /* live, so one per element */
 const timerFn = (repeat) => (fn, ms, ...args) => { if (typeof fn !== 'function') { const src = String(fn); fn = () => (0, eval)(src); } return N.timer(() => { try { fn(...args); } catch (e) { report(e); } }, Math.max(0, +ms || 0), repeat); };
 const setTimeout = timerFn(false), setInterval = timerFn(true);
 const clearTimeout = (id) => { if (id) N.clearTimer(id); }, clearInterval = clearTimeout;

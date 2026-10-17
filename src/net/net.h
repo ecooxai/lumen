@@ -48,7 +48,11 @@ struct NetRequest {
 };
 
 void net_init(int threads);
+/* Private disk cache for GET responses in dir (created if missing), bounded to max_bytes. */
+void net_cache_init(const char *dir, size_t max_bytes);
 void net_shutdown(void);
+/* Debug Android builds: log numeric timings of each request for the next seconds (0 disarms). Call on the main thread. */
+void net_trace_load(unsigned seconds);
 NetRequest *net_request_new(const char *method, const char *url);
 /* Asynchronous: callbacks fire on the thread calling net_poll(). Ownership of req moves to net. */
 uint64_t net_fetch(NetRequest *req);

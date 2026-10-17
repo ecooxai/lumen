@@ -12,8 +12,15 @@
 #include <memory>
 #include <unordered_map>
 #include <mutex>
+#include <condition_variable>
+#include <deque>
+#include <functional>
+#include <unordered_set>
 #include <cmath>
 #include <unistd.h>
+#include <dirent.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 
 static std::unique_ptr<v8::Platform> g_platform;
 static std::unique_ptr<v8::Platform> g_task_platform;
@@ -211,19 +218,109 @@ v8::Local<v8::String> jsrc(v8::Isolate *iso, const char *s, size_t n) {
     return r.ToLocal(&out) ? out : jstr(iso, s, (int)n);
 }
 
-static void run_source(JsCtx *c, const char *src, size_t n, const char *name) {
+/* ---- V8 code cache: bytecode of large external scripts and modules on disk, named by
+   a hash of the source text (never the URL), plus the prelude's in memory. Inline
+   scripts are not cached: they can embed user data. ---- */
+static std::string g_code_dir;
+static size_t g_code_max;
+static std::atomic<int64_t> g_code_bytes{ -1 };
+static std::atomic<bool> g_code_trimming{ false };
+enum { kCodeCacheMin = 16 << 10 };
+/* Least recently used files go first, down to 80% of the limit. Returns the bytes kept. */
+static int64_t code_trim(void) {
+    struct F { std::string name; time_t mtime; off_t size; };
+    std::vector<F> v;
+    int64_t total = 0;
+    if (DIR *d = opendir(g_code_dir.c_str())) {
+        for (struct dirent *e; (e = readdir(d));) {
+            if (e->d_name[0] == '.') continue;
+            std::string p = g_code_dir + "/" + e->d_name;
+            struct stat st;
+            if (stat(p.c_str(), &st) || !S_ISREG(st.st_mode)) continue;
+            if (strchr(e->d_name, '~')) { if (time(nullptr) - st.st_mtime > 600) unlink(p.c_str()); continue; }
+            v.push_back({ e->d_name, st.st_mtime, st.st_size });
+            total += st.st_size;
+        }
+        closedir(d);
+    }
+    if (total > (int64_t)g_code_max) {
+        std::sort(v.begin(), v.end(), [](const F &a, const F &b) { return a.mtime < b.mtime; });
+        for (size_t i = 0; i < v.size() && total > (int64_t)(g_code_max / 10 * 8); i++)
+            if (!unlink((g_code_dir + "/" + v[i].name).c_str())) total -= v[i].size;
+    }
+    return total;
+}
+void js_code_cache_init(const char *dir, size_t max_bytes) {
+    if (!dir || !g_code_dir.empty()) return;
+    mkdir(dir, 0700);
+    g_code_dir = dir; g_code_max = max_bytes;
+    std::thread([] { g_code_bytes = code_trim(); }).detach();
+}
+static std::string code_path(const char *s, size_t n) {
+    uint64_t h = 0x9e3779b97f4a7c15ull ^ n;
+    size_t i = 0;
+    for (; i + 8 <= n; i += 8) { uint64_t w; memcpy(&w, s + i, 8); h = (h ^ w) * 0x100000001b3ull; h ^= h >> 29; }
+    for (; i < n; i++) h = (h ^ (uint8_t)s[i]) * 0x100000001b3ull;
+    char b[48];
+    snprintf(b, sizeof b, "/%016llx-%zx", (unsigned long long)h, n);
+    return g_code_dir + b;
+}
+/* Cached bytecode for a source, or null; the Source that receives it owns it. */
+static v8::ScriptCompiler::CachedData *code_load(const std::string &path) {
+    FILE *f = fopen(path.c_str(), "rb");
+    if (!f) return nullptr;
+    struct stat st;
+    if (fstat(fileno(f), &st) || st.st_size <= 0 || st.st_size > (64 << 20)) { fclose(f); return nullptr; }
+    uint8_t *b = new uint8_t[(size_t)st.st_size];
+    bool ok = fread(b, 1, (size_t)st.st_size, f) == (size_t)st.st_size;
+    fclose(f);
+    if (!ok) { delete[] b; return nullptr; }
+    utimensat(AT_FDCWD, path.c_str(), nullptr, 0);   /* recently used */
+    return new v8::ScriptCompiler::CachedData(b, (int)st.st_size, v8::ScriptCompiler::CachedData::BufferOwned);
+}
+/* Writes cd (consumed) atomically off the main thread. */
+static void code_store(const std::string &path, v8::ScriptCompiler::CachedData *cd) {
+    if (!cd) return;
+    std::string bytes((const char *)cd->data, (size_t)cd->length);
+    delete cd;
+    std::thread([path, bytes = std::move(bytes)] {
+        static std::atomic<unsigned> seq{ 0 };
+        std::string tmp = path + "~" + std::to_string(getpid()) + "." + std::to_string(++seq);
+        FILE *f = fopen(tmp.c_str(), "wb");
+        bool ok = f && fwrite(bytes.data(), 1, bytes.size(), f) == bytes.size();
+        if (f && fclose(f)) ok = false;
+        if (!ok || rename(tmp.c_str(), path.c_str())) { unlink(tmp.c_str()); return; }
+        if (g_code_bytes >= 0 && (g_code_bytes += (int64_t)bytes.size()) > (int64_t)g_code_max && !g_code_trimming.exchange(true)) {
+            g_code_bytes = code_trim();
+            g_code_trimming = false;
+        }
+    }).detach();
+}
+/* Large external module sources compiled without usable cache, serialised once their
+   graph has evaluated so that the functions it ran are included. */
+static thread_local std::vector<std::pair<v8::Global<v8::Module>, std::string>> t_code_pending;
+
+static void run_source(JsCtx *c, const char *src, size_t n, const char *name, bool cache) {
     JS_ENTER(c);
     v8::TryCatch tc(iso);
     v8::ScriptOrigin origin(jstr(iso, name ? name : ""));
     v8::Local<v8::Script> s;
     js_enter(c);
-    if (v8::Script::Compile(ctx, jsrc(iso, src, n), &origin).ToLocal(&s)) (void)s->Run(ctx);
+    cache = cache && n >= kCodeCacheMin && !g_code_dir.empty();
+    std::string path = cache ? code_path(src, n) : std::string();
+    v8::ScriptCompiler::CachedData *cd = cache ? code_load(path) : nullptr;
+    v8::ScriptCompiler::Source source(jsrc(iso, src, n), origin, cd);
+    if (v8::ScriptCompiler::Compile(ctx, &source, cd ? v8::ScriptCompiler::kConsumeCodeCache : v8::ScriptCompiler::kNoCompileOptions).ToLocal(&s)) {
+        (void)s->Run(ctx);
+        if (cache && (!cd || source.GetCachedData()->rejected)) code_store(path, v8::ScriptCompiler::CreateCodeCache(s->GetUnboundScript()));
+    }
     js_leave(c);
     if (tc.HasCaught() && tc.CanContinue()) jreport(c, tc.Exception(), tc.Message());
     settle(c);
 }
 
-/* ---- ES modules: fetched synchronously (graph levels in parallel), no import maps ---- */
+/* ---- ES modules: no import maps. A graph is fetched in parallel ahead of compilation
+   (static imports found by a lexical scan), then compiled and linked on the main thread. ---- */
 static JsCtx *ctx_of(v8::Local<v8::Context> ctx) { return static_cast<JsCtx *>(ctx->GetAlignedPointerFromEmbedderData(1, kTag)); }
 static void mod_throw(v8::Isolate *iso, const std::string &m) { iso->ThrowException(v8::Exception::TypeError(jstr(iso, m.c_str()))); }
 static std::string mod_resolve(const std::string &spec, const std::string &base) {
@@ -244,6 +341,101 @@ static bool mod_fetch(const std::string &u, const std::string &ref, std::string 
     if (r) net_response_free(r);
     return ok;
 }
+
+/* Static import specifiers: `from "x"` and `import "x"`. A miss only costs a later
+   synchronous fetch, and a false hit one wasted request. */
+static std::vector<std::string> mod_scan(const std::string &src) {
+    std::vector<std::string> out;
+    auto ident = [](char ch) { return isalnum((unsigned char)ch) || ch == '_' || ch == '$' || (unsigned char)ch >= 0x80; };
+    const char *b = src.data(), *e = b + src.size();
+    for (const char *p = b; p < e; p++) {
+        size_t k = *p == 'f' ? 4 : *p == 'i' ? 6 : 0;
+        if (!k || (size_t)(e - p) < k + 2 || memcmp(p, k == 4 ? "from" : "import", k) || (p > b && (ident(p[-1]) || p[-1] == '.'))) continue;
+        const char *q = p + k;
+        while (q < e && (*q == ' ' || *q == '\t' || *q == '\n' || *q == '\r')) q++;
+        if (q >= e || (*q != '"' && *q != '\'')) continue;
+        const char *t = (const char *)memchr(q + 1, *q, (size_t)std::min<ptrdiff_t>(e - q - 1, 2048));
+        if (t && !memchr(q + 1, '\n', (size_t)(t - q - 1))) out.emplace_back(q + 1, t);
+        p = t ? t : q;
+    }
+    return out;
+}
+
+/* Fetched module sources awaiting compilation, shared by every context and the page
+   loader thread. Each is consumed once; leftovers (false scan hits, modules another
+   context compiled) expire. */
+namespace {
+struct ModSrc { std::string body; std::vector<std::string> kids; bool ok = false; double at = 0; };
+std::mutex g_msrc_mu;
+std::condition_variable g_msrc_cv;
+std::unordered_map<std::string, std::shared_ptr<ModSrc>> g_msrc;
+std::unordered_set<std::string> g_msrc_flying;
+}  // namespace
+/* retry: refetch a source whose earlier fetch failed (prefetch walks reuse the failure) */
+static std::shared_ptr<ModSrc> msrc_get(const std::string &u, const std::string &ref, bool retry) {
+    std::unique_lock<std::mutex> lk(g_msrc_mu);
+    g_msrc_cv.wait(lk, [&] { return !g_msrc_flying.count(u); });
+    auto it = g_msrc.find(u);
+    if (it != g_msrc.end() && (it->second->ok || !retry)) return it->second;
+    g_msrc_flying.insert(u);
+    lk.unlock();
+    auto m = std::make_shared<ModSrc>();
+    m->ok = mod_fetch(u, ref, m->body);
+    if (m->ok) for (const std::string &sp : mod_scan(m->body)) { std::string k = mod_resolve(sp, u); if (!k.empty()) m->kids.push_back(k); }
+    m->at = now_ms();
+    lk.lock();
+    for (auto i = g_msrc.begin(); i != g_msrc.end();) i = m->at - i->second->at > 120000 ? g_msrc.erase(i) : std::next(i);
+    g_msrc[u] = m;
+    g_msrc_flying.erase(u);
+    g_msrc_cv.notify_all();
+    return m;
+}
+/* Fetches roots and everything they statically import, eight at a time; known() prunes. */
+static void mod_prefetch(const std::vector<std::string> &roots, const std::string &ref, const std::function<bool(const std::string &)> &known) {
+    std::mutex mu; std::condition_variable cv;
+    std::deque<std::string> q; std::unordered_set<std::string> seen; int active = 0;
+    auto push = [&](const std::string &u) { if (seen.size() < 4000 && !known(u) && seen.insert(u).second) q.push_back(u); };
+    for (const std::string &u : roots) push(u);
+    auto work = [&] {
+        std::unique_lock<std::mutex> lk(mu);
+        for (;;) {
+            cv.wait(lk, [&] { return !q.empty() || !active; });
+            if (q.empty()) return;
+            std::string u = std::move(q.front()); q.pop_front(); active++;
+            lk.unlock();
+            std::shared_ptr<ModSrc> m = msrc_get(u, ref, false);
+            lk.lock();
+            active--;
+            for (const std::string &k : m->kids) push(k);
+            cv.notify_all();
+        }
+    };
+    if (q.empty()) return;
+    std::vector<std::thread> th;
+    for (int i = 1; i < 8; i++) th.emplace_back(work);
+    work();
+    for (std::thread &t : th) t.join();
+}
+/* Takes a module's source, fetching it now if no prefetch has. */
+static bool mod_take(const std::string &u, const std::string &ref, std::string &out) {
+    std::shared_ptr<ModSrc> m = msrc_get(u, ref, true);
+    { std::lock_guard<std::mutex> lk(g_msrc_mu); auto it = g_msrc.find(u); if (it != g_msrc.end() && it->second == m) g_msrc.erase(it); }
+    if (m->ok) out = m.use_count() == 1 ? std::move(m->body) : m->body;
+    return m->ok;
+}
+void js_module_prefetch(const char *const *urls, int n, const char *ref) {
+    std::vector<std::string> roots;
+    for (int i = 0; i < n; i++) if (urls[i]) roots.emplace_back(urls[i]);
+    mod_prefetch(roots, ref ? ref : "", [](const std::string &) { return false; });
+}
+char *js_module_take(const char *url, const char *ref, size_t *len) {
+    std::string body;
+    if (!mod_take(url, ref ? ref : "", body)) return nullptr;
+    char *r = (char *)xmalloc(body.size() + 1);
+    memcpy(r, body.data(), body.size()); r[body.size()] = 0;
+    *len = body.size();
+    return r;
+}
 static std::string mod_key(JsCtx *c, v8::Local<v8::Module> m) {
     auto r = c->mod_url.equal_range(m->GetIdentityHash());
     for (auto it = r.first; it != r.second; ++it) {
@@ -255,9 +447,13 @@ static std::string mod_key(JsCtx *c, v8::Local<v8::Module> m) {
 static v8::MaybeLocal<v8::Module> mod_compile(JsCtx *c, const std::string &key, const std::string &src) {
     v8::Isolate *iso = c->iso;
     v8::ScriptOrigin origin(jstr(iso, key.c_str()), 0, 0, false, -1, v8::Local<v8::Value>(), false, false, true);
-    v8::ScriptCompiler::Source s(jsrc(iso, src.data(), src.size()), origin);
+    bool cache = src.size() >= kCodeCacheMin && !g_code_dir.empty() && key.find("#lumen-inline-") == std::string::npos;
+    std::string path = cache ? code_path(src.data(), src.size()) : std::string();
+    v8::ScriptCompiler::CachedData *cd = cache ? code_load(path) : nullptr;
+    v8::ScriptCompiler::Source s(jsrc(iso, src.data(), src.size()), origin, cd);
     v8::Local<v8::Module> m;
-    if (!v8::ScriptCompiler::CompileModule(iso, &s).ToLocal(&m)) return {};
+    if (!v8::ScriptCompiler::CompileModule(iso, &s, cd ? v8::ScriptCompiler::kConsumeCodeCache : v8::ScriptCompiler::kNoCompileOptions).ToLocal(&m)) return {};
+    if (cache && (!cd || s.GetCachedData()->rejected)) t_code_pending.emplace_back(v8::Global<v8::Module>(iso, m), path);
     c->mods[key].Reset(iso, m);
     c->mod_url.emplace(m->GetIdentityHash(), key);
     return m;
@@ -279,19 +475,14 @@ static bool mod_graph(JsCtx *c, v8::Local<v8::Module> root) {
             }
         }
         todo.clear();
-        std::vector<std::string> body(need.size());
-        std::vector<char> ok(need.size(), 0);
         double busy = c->busy_since.exchange(0);   /* network time is not script time */
-        for (size_t b = 0; b < need.size(); b += 16) {
-            std::vector<std::thread> th;
-            for (size_t i = b; i < need.size() && i < b + 16; i++) th.emplace_back([&, i] { ok[i] = mod_fetch(need[i], ref, body[i]); });
-            for (std::thread &t : th) t.join();
-        }
+        mod_prefetch(need, ref, [c](const std::string &u) { return c->mods.count(u) > 0; });
         if (busy > 0) c->busy_since = now_ms();
         for (size_t i = 0; i < need.size(); i++) {
-            if (!ok[i]) return mod_throw(iso, "Failed to fetch module: " + need[i]), false;
+            std::string body;
+            if (!mod_take(need[i], ref, body)) return mod_throw(iso, "Failed to fetch module: " + need[i]), false;
             v8::Local<v8::Module> m;
-            if (!mod_compile(c, need[i], body[i]).ToLocal(&m)) return false;
+            if (!mod_compile(c, need[i], body).ToLocal(&m)) return false;
             todo.push_back(m);
         }
     }
@@ -309,27 +500,42 @@ static v8::MaybeLocal<v8::Promise> mod_eval(JsCtx *c, v8::Local<v8::Module> m) {
     if (!mod_graph(c, m)) return {};
     if (m->GetStatus() == v8::Module::kUninstantiated && !m->InstantiateModule(ctx, mod_resolve_cb).FromMaybe(false)) return {};
     v8::Local<v8::Value> result;
-    if (!m->Evaluate(ctx).ToLocal(&result)) return {};
+    bool evaluated = m->Evaluate(ctx).ToLocal(&result);
+    for (auto &p : t_code_pending) {
+        v8::Local<v8::Module> pm = p.first.Get(c->iso);
+        if (pm->GetStatus() != v8::Module::kErrored) code_store(p.second, v8::ScriptCompiler::CreateCodeCache(pm->GetUnboundModuleScript()));
+    }
+    t_code_pending.clear();
+    if (!evaluated) return {};
     if (!result->IsPromise()) return mod_throw(c->iso, "Module evaluation did not return a promise"), v8::MaybeLocal<v8::Promise>();
     return result.As<v8::Promise>();
 }
-static v8::MaybeLocal<v8::Promise> mod_dynamic(v8::Local<v8::Context> ctx, v8::Local<v8::Data>, v8::Local<v8::Value> res, v8::Local<v8::String> spec, v8::Local<v8::FixedArray>) {
-    v8::Isolate *iso = v8::Isolate::GetCurrent();
-    JsCtx *c = ctx_of(ctx);
-    v8::Local<v8::Promise::Resolver> R;
-    if (!v8::Promise::Resolver::New(ctx).ToLocal(&R)) return {};
-    std::string base = res->IsString() ? jcstr(iso, res) : "";
-    if (base.find(':') == std::string::npos || !base.compare(0, 6, "lumen:")) base = c->doc && c->doc->url ? c->doc->url : "";
-    std::string u = mod_resolve(jcstr(iso, spec), base);
+/* Starts fetching u's graph on a background thread; the page keeps running meanwhile. */
+static void mod_job_start(JsCtx *c, std::unique_ptr<ModJob> j) {
+    std::string ref = c->doc && c->doc->url ? c->doc->url : "";
+    auto known = std::make_shared<std::unordered_set<std::string>>();
+    for (auto &kv : c->mods) known->insert(kv.first);
+    std::thread([u = j->url, ref, known, done = j->done] {
+        mod_prefetch({ u }, ref, [&known](const std::string &k) { return known->count(k) > 0; });
+        *done = true;
+        if (js_wakeup) js_wakeup();
+    }).detach();
+    c->mod_jobs.push_back(std::move(j));
+}
+/* Compiles, links and evaluates u (its sources normally prefetched) and settles R with it. */
+static void import_finish(JsCtx *c, v8::Local<v8::Promise::Resolver> R, const std::string &u) {
+    v8::Isolate *iso = c->iso;
+    v8::Local<v8::Context> ctx = iso->GetCurrentContext();
     v8::TryCatch tc(iso);
     v8::Local<v8::Module> m;
     std::string body;
     auto it = c->mods.find(u);
-    if (u.empty()) mod_throw(iso, "Failed to resolve module specifier \"" + jcstr(iso, spec) + "\"");
-    else if (it != c->mods.end()) m = it->second.Get(iso);
+    if (it != c->mods.end()) m = it->second.Get(iso);
     else {
         double busy = c->busy_since.exchange(0);
-        bool ok = mod_fetch(u, c->doc && c->doc->url ? c->doc->url : "", body);
+        std::string ref = c->doc && c->doc->url ? c->doc->url : "";
+        mod_prefetch({ u }, ref, [c](const std::string &k) { return c->mods.count(k) > 0; });
+        bool ok = mod_take(u, ref, body);
         if (busy > 0) c->busy_since = now_ms();
         if (ok) (void)mod_compile(c, u, body).ToLocal(&m);
         else mod_throw(iso, "Failed to fetch dynamically imported module: " + u);
@@ -361,6 +567,26 @@ static v8::MaybeLocal<v8::Promise> mod_dynamic(v8::Local<v8::Context> ctx, v8::L
         if (getenv("LUMEN_DEBUG_MODULES")) fprintf(stderr, "[module] dynamic import failed %s: %.600s\n", u.c_str(), jcstr(iso, tc.Exception()).c_str());
         (void)R->Reject(ctx, tc.Exception());
         tc.Reset();
+    }
+}
+static v8::MaybeLocal<v8::Promise> mod_dynamic(v8::Local<v8::Context> ctx, v8::Local<v8::Data>, v8::Local<v8::Value> res, v8::Local<v8::String> spec, v8::Local<v8::FixedArray>) {
+    v8::Isolate *iso = v8::Isolate::GetCurrent();
+    JsCtx *c = ctx_of(ctx);
+    v8::Local<v8::Promise::Resolver> R;
+    if (!v8::Promise::Resolver::New(ctx).ToLocal(&R)) return {};
+    std::string base = res->IsString() ? jcstr(iso, res) : "";
+    if (base.find(':') == std::string::npos || !base.compare(0, 6, "lumen:")) base = c->doc && c->doc->url ? c->doc->url : "";
+    std::string u = mod_resolve(jcstr(iso, spec), base);
+    if (u.empty()) {
+        v8::TryCatch tc(iso);
+        mod_throw(iso, "Failed to resolve module specifier \"" + jcstr(iso, spec) + "\"");
+        (void)R->Reject(ctx, tc.Exception());
+    } else if (c->mods.count(u)) import_finish(c, R, u);
+    else {
+        auto j = std::make_unique<ModJob>();
+        j->url = u;
+        j->R.Reset(iso, R);
+        mod_job_start(c, std::move(j));
     }
     return R->GetPromise();
 }
@@ -523,8 +749,20 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
     v8::Local<v8::Script> s;
     v8::Local<v8::Value> fv, api;
     v8::Local<v8::Value> argv[2] = { N, ctx->Global() };
-    if (v8::Script::Compile(ctx, jstr(iso, kPrelude, (int)sizeof kPrelude - 1), &origin).ToLocal(&s) && s->Run(ctx).ToLocal(&fv) && fv->IsFunction() &&
+    /* The prelude's bytecode, made by the first context, spares every later page compiling it. */
+    static std::mutex prelude_mu;
+    static std::shared_ptr<std::string> prelude_code;
+    std::shared_ptr<std::string> code;
+    { std::lock_guard<std::mutex> lk(prelude_mu); code = prelude_code; }
+    v8::ScriptCompiler::Source psrc(jstr(iso, kPrelude, (int)sizeof kPrelude - 1), origin,
+        code ? new v8::ScriptCompiler::CachedData((const uint8_t *)code->data(), (int)code->size()) : nullptr);
+    bool compiled = v8::ScriptCompiler::Compile(ctx, &psrc, code ? v8::ScriptCompiler::kConsumeCodeCache : v8::ScriptCompiler::kNoCompileOptions).ToLocal(&s);
+    if (compiled && s->Run(ctx).ToLocal(&fv) && fv->IsFunction() &&
         fv.As<v8::Function>()->Call(ctx, v8::Undefined(iso), 2, argv).ToLocal(&api) && api->IsObject()) {
+        if (!code || psrc.GetCachedData()->rejected) {
+            std::unique_ptr<v8::ScriptCompiler::CachedData> cd(v8::ScriptCompiler::CreateCodeCache(s->GetUnboundScript()));
+            if (cd) { std::lock_guard<std::mutex> lk(prelude_mu); prelude_code = std::make_shared<std::string>((const char *)cd->data, (size_t)cd->length); }
+        }
         v8::Local<v8::Object> ao = api.As<v8::Object>();
         c->api.Reset(iso, ao);
         auto get = [&](const char *k, v8::Global<v8::Function> &dst) {
@@ -638,7 +876,7 @@ void js_free(JsCtx *c) {
         c->protos.clear();
         c->protoFor.Reset(); c->fire.Reset(); c->report.Reset(); c->viewportChanged.Reset();
         c->api.Reset(); c->node_tmpl.Reset();
-        c->mods.clear(); c->mod_url.clear();
+        c->mods.clear(); c->mod_url.clear(); c->mod_jobs.clear();
         for (Node *n : c->wrapped) { delete static_cast<v8::Global<v8::Object> *>(n->js); n->js = nullptr; }
         for (Node *n : c->wrapped)
             if (!n->parent && n->type != NODE_DOCUMENT && !n->refcount && !n->host) roots.push_back(n);
@@ -662,7 +900,7 @@ void js_run_script(JsCtx *c, Node *script, const char *src, size_t n, const char
     if (script) script->flags |= NF_SCRIPT_STARTED;
     Node *prev = c->current_script;
     c->current_script = script;
-    run_source(c, src, n, name);
+    run_source(c, src, n, name, script && node_attr(script, "src"));
     c->current_script = prev;
     if (script && node_attr(script, "src")) {
         JS_ENTER(c);
@@ -670,10 +908,20 @@ void js_run_script(JsCtx *c, Node *script, const char *src, size_t n, const char
     }
 }
 
-void js_run_module(JsCtx *c, Node *script, const char *src, size_t n, const char *url) {
+/* may_defer: an external module whose graph is not loaded yet is fetched in the
+   background and run from tick_one, instead of blocking the page on the network. */
+static void module_script_run(JsCtx *c, Node *script, const char *src, size_t n, const char *url, bool may_defer) {
     if (!c) return;
     if (script) script->flags |= NF_SCRIPT_STARTED;
     bool ext = script && node_attr(script, "src"), ok = false;
+    if (may_defer && ext && !src && url && !c->mods.count(url)) {
+        { JS_ENTER(c); jwrap(c, script); }   /* keeps the element alive until it runs */
+        auto j = std::make_unique<ModJob>();
+        j->url = url;
+        j->script = script;
+        mod_job_start(c, std::move(j));
+        return;
+    }
     {
         JS_ENTER(c);
         v8::TryCatch tc(iso);
@@ -685,7 +933,13 @@ void js_run_module(JsCtx *c, Node *script, const char *src, size_t n, const char
         if (it != c->mods.end()) { m = it->second.Get(iso); ok = true; }
         else {
             if (src) body.assign(src, n);
-            ok = src || mod_fetch(key, c->doc && c->doc->url ? c->doc->url : "", body);
+            if (!src) {
+                double busy = c->busy_since.exchange(0);
+                std::string ref = c->doc && c->doc->url ? c->doc->url : "";
+                mod_prefetch({ key }, ref, [c](const std::string &k) { return c->mods.count(k) > 0; });
+                ok = mod_take(key, ref, body);
+                if (busy > 0) c->busy_since = now_ms();
+            } else ok = true;
             if (ok) (void)mod_compile(c, key, body).ToLocal(&m);
         }
         v8::Local<v8::Promise> p;
@@ -697,9 +951,30 @@ void js_run_module(JsCtx *c, Node *script, const char *src, size_t n, const char
     }
     if (ext) { JS_ENTER(c); jfire(c, script, ok ? "load" : "error"); }
 }
+void js_run_module(JsCtx *c, Node *script, const char *src, size_t n, const char *url) {
+    module_script_run(c, script, src, n, url, false);
+}
+void js_run_module_inserted(JsCtx *c, Node *script, const char *src, size_t n, const char *url) {
+    module_script_run(c, script, src, n, url, true);
+}
+/* Runs the module loads whose background fetches have completed, in start order. */
+static void mod_jobs_finish(JsCtx *c) {
+    std::vector<std::unique_ptr<ModJob>> ready;
+    for (auto it = c->mod_jobs.begin(); it != c->mod_jobs.end();)
+        if (*(*it)->done) { ready.push_back(std::move(*it)); it = c->mod_jobs.erase(it); }
+        else ++it;
+    for (auto &j : ready) {
+        if (c->dead) return;
+        if (j->script) { module_script_run(c, j->script, nullptr, 0, j->url.c_str(), false); continue; }
+        JS_ENTER(c);
+        js_enter(c);
+        import_finish(c, j->R.Get(iso), j->url);
+        js_leave(c);
+    }
+}
 
 void js_eval(JsCtx *c, const char *src, const char *name) {
-    if (c && src) run_source(c, src, strlen(src), name);
+    if (c && src) run_source(c, src, strlen(src), name, false);
 }
 
 /* Native callers keep using a dispatch target after its handlers ran; handlers may detach it and a GC may
@@ -870,6 +1145,7 @@ static void tick_one(JsCtx *c) {
     // Frames share the root isolate. Drain once at the root event-loop level,
     // including a checkpoint after each task so promise completions run now.
     if (c->foreground_tasks) while (c->foreground_tasks->RunOne()) iso->PerformMicrotaskCheckpoint();
+    if (!c->mod_jobs.empty()) { mod_jobs_finish(c); settle(c); }
     pick_deliver(c);
     double now = now_ms();
     std::vector<std::pair<double, uint32_t>> due;
@@ -987,4 +1263,4 @@ void js_set_background(JsCtx *c, bool bg) {
     if (bg && !c->bg_gc && t - c->bg_since > 15000) { c->bg_gc = true; v8::Isolate::Scope is(c->iso); c->iso->LowMemoryNotification(); }
 }
 
-bool js_busy(JsCtx *c) { return c && !c->fetches.empty(); }
+bool js_busy(JsCtx *c) { return c && (!c->fetches.empty() || !c->mod_jobs.empty()); }

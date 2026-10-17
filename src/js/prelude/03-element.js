@@ -1,4 +1,11 @@
-const camelToKebab = (p) => p.startsWith('--') ? p : p === 'cssFloat' ? 'float' : p.replace(/^(webkit|moz|ms)(?=[A-Z])/, '-$1').replace(/[A-Z]/g, c => '-' + c.toLowerCase());
+const kebabCache = new Map();
+const camelToKebab = (p) => {
+    let r = kebabCache.get(p);
+    if (r !== undefined) return r;
+    r = p.startsWith('--') ? p : p === 'cssFloat' ? 'float' : p.replace(/^(webkit|moz|ms)(?=[A-Z])/, '-$1').replace(/[A-Z]/g, c => '-' + c.toLowerCase());
+    if (kebabCache.size < 4096) kebabCache.set(p, r);
+    return r;
+};
 function parseDecls(s) {
     const m = new Map(); if (!s) return m;
     let depth = 0, q = 0, start = 0; const parts = [];
@@ -9,15 +16,20 @@ function parseDecls(s) {
 }
 const serDecls = (m) => [...m].map(([k, [v, i]]) => k + ': ' + v + (i ? ' !important' : '') + ';').join(' ');
 class CSSStyleDeclaration {
-    constructor(el, ro) { def(this, '_el', el); def(this, '_ro', ro); }
-    _m() { return parseDecls(this._el ? N.attr(this._el, 'style') : ''); }
+    constructor(el, ro) { def(this, '_el', el); def(this, '_ro', ro); def(this, '_src', null); def(this, '_map', null); }
+    /* parsed declarations of the current style attribute; callers that modify take a copy */
+    _m() {
+        const s = this._el ? N.attr(this._el, 'style') : '';
+        if (s !== this._src || !this._map) { this._map = parseDecls(s); this._src = s; }
+        return this._map;
+    }
     get cssText() { return serDecls(this._m()); } set cssText(v) { this._el.setAttribute('style', String(v)); }
     get length() { return this._m().size; }
     item(i) { return [...this._m().keys()][i] || ''; }
     getPropertyValue(p) { const e = this._m().get(camelToKebab(String(p))); return e ? e[0] : ''; }
     getPropertyPriority(p) { const e = this._m().get(camelToKebab(String(p))); return e ? e[1] : ''; }
-    setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p); const m = this._m(); if (v == null || v === '') m.delete(p); else m.set(p, [String(v), pri ? 'important' : '']); this._el.setAttribute('style', serDecls(m)); }
-    removeProperty(p) { p = camelToKebab(String(p)); const m = this._m(); const e = m.get(p); if (e) { m.delete(p); this._el.setAttribute('style', serDecls(m)); } return e ? e[0] : ''; }
+    setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p); const m = new Map(this._m()); if (v == null || v === '') m.delete(p); else m.set(p, [String(v), pri ? 'important' : '']); this._el.setAttribute('style', serDecls(m)); }
+    removeProperty(p) { p = camelToKebab(String(p)); const m = new Map(this._m()); const e = m.get(p); if (e) { m.delete(p); this._el.setAttribute('style', serDecls(m)); } return e ? e[0] : ''; }
 }
 const styleHandler = {
     get(t, p) { if (typeof p !== 'string' || p in t) return Reflect.get(t, p, t); if (/^\d+$/.test(p)) return t.item(+p); return t.getPropertyValue(p); },

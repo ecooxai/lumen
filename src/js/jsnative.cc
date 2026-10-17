@@ -909,7 +909,7 @@ void js_run_inserted(JsCtx *c, Node *root) {
         if (mod) {
             char *t = src ? nullptr : node_text_content(s), *u = src && *src ? url_join(c->doc->url, src) : nullptr;
             if (src && !u) jfire(c, s, "error");
-            else js_run_module(c, s, t ? t : (src ? nullptr : ""), t ? strlen(t) : 0, u ? u : c->doc->url);
+            else js_run_module_inserted(c, s, t ? t : (src ? nullptr : ""), t ? strlen(t) : 0, u ? u : c->doc->url);
             free(t); free(u);
             continue;
         }

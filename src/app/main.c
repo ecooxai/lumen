@@ -3,6 +3,9 @@
 #include <ctype.h>
 #include <time.h>
 #include <sys/resource.h>
+#if defined(__ANDROID__) && !defined(NDEBUG)
+#include <android/log.h>
+#endif
 #include <SDL3/SDL.h>
 #ifdef __ANDROID__
 #include <SDL3/SDL_main.h>
@@ -201,16 +204,6 @@ static Image *cache_get(const char *u) {
     if (want) img_refetch(u);
     return im;
 }
-static void cache_fetch(const char *u) {
-    if (!u || !*u || !strncmp(u, "blob:", 5)) return;
-    SDL_LockMutex(icache_mu); bool have = hm_get(&icache, u) != NULL; SDL_UnlockMutex(icache_mu);
-    if (have) return;
-    NetResponse *r = net_fetch_sync(net_request_new("GET", u));
-    Image *im = r && r->status == 200 ? image_decode((const uint8_t *)r->body, r->body_len) : NULL;
-    if (r) net_response_free(r);
-    ImgSlot *slot = xcalloc(1, sizeof *slot); slot->im = im; slot->done = true;
-    SDL_LockMutex(icache_mu); if (!hm_get(&icache, u)) { hm_put(&icache, u, slot); if (im) { g_icache_bytes += (size_t)im->w * (size_t)im->h * 4; g_icache_n++; } } else { image_unref(im); free(slot); } SDL_UnlockMutex(icache_mu);
-}
 static Image *node_img(Node *n) {
     if (n->tag == A_iframe) { Page *fp = frame_find(n); return fp && fp->cv.px ? &fp->img : NULL; }
     if (n->tag == A_video) { Image *f = media_frame_for(n); if (f) return f; }
@@ -230,6 +223,32 @@ static bool img_size(Node *n, float *w, float *h) {
 
 typedef struct { char *url; uint64_t gen; float vw, vh, dpr; char *body; size_t blen; char *ctype; char *html; } LoadReq;
 
+/* Page-load phase timings in debug Android builds (numbers only, never URLs). */
+#if defined(__ANDROID__) && !defined(NDEBUG)
+#define LOAD_TRACE(...) __android_log_print(ANDROID_LOG_INFO, "LumenLoad", __VA_ARGS__)
+#else
+#define LOAD_TRACE(...) do { if (0) fprintf(stderr, __VA_ARGS__); } while (0)
+#endif
+static double g_load_trace_until;   /* main-loop stalls are logged until then */
+
+/* Downloads a page's blocking subresources concurrently, like a browser's preload scanner. */
+typedef struct { char **urls; NetResponse **out; int n; SDL_AtomicInt next; } FetchBatch;
+static int batch_worker(void *arg) {
+    FetchBatch *b = arg;
+    for (int i; (i = SDL_AddAtomicInt(&b->next, 1)) < b->n;)
+        if (b->urls[i]) b->out[i] = net_fetch_sync(net_request_new("GET", b->urls[i]));
+    return 0;
+}
+typedef struct { char **urls; int n; const char *ref; } ModBatch;
+static int module_worker(void *arg) { ModBatch *m = arg; js_module_prefetch((const char *const *)m->urls, m->n, m->ref); return 0; }
+static void fetch_batch(char **urls, NetResponse **out, int n) {
+    FetchBatch b = { urls, out, n, { 0 } };
+    SDL_Thread *th[12]; int nt = 0;
+    for (; nt < LMIN(n - 1, 12); nt++) if (!(th[nt] = SDL_CreateThread(batch_worker, "lumen-fetch", &b))) break;
+    batch_worker(&b);
+    for (int i = 0; i < nt; i++) SDL_WaitThread(th[i], NULL);
+}
+
 static int loader(void *arg) {
     LoadReq *rq = arg; double t0 = now_ms();
     NetRequest *nr = rq->html ? NULL : net_request_new(rq->body ? "POST" : "GET", rq->url);
@@ -238,6 +257,7 @@ static int loader(void *arg) {
         headers_set(&nr->headers, "Content-Type", rq->ctype && *rq->ctype ? rq->ctype : "application/x-www-form-urlencoded");
     }
     NetResponse *r = rq->html ? NULL : net_fetch_sync(nr);
+    double t_html = now_ms();
     Page *p = xcalloc(1, sizeof *p); p->gen = rq->gen; p->internal_ui = rq->html != NULL;
     const char *body = r && r->body ? r->body : "";
     size_t blen = r && r->body ? r->body_len : 0;
@@ -251,6 +271,32 @@ static int loader(void *arg) {
     p->url = xstrdup(r && r->url ? r->url : rq->url);
     p->d = doc_new(p->url);
     html_parse(p->d, body, blen);
+    double t_parse = now_ms();
+    /* Classic scripts and stylesheets in document order, fetched together; module scripts
+     * and modulepreloads with their whole static import graphs alongside. */
+    char **urls = NULL, **mods = NULL; NetResponse **got = NULL; int nurl = 0, ui = 0, nmod = 0;
+    bool js = !getenv("LUMEN_NO_JS");
+    for (Node *n = p->d->node.first; n; n = node_next_deep(n, &p->d->node)) {
+        if (n->type != NODE_ELEMENT) continue;
+        const char *rel = n->tag == A_link ? node_attr(n, "rel") : NULL, *href = NULL;
+        bool module = false;
+        if (n->tag == A_script && n->ns == NS_HTML && js && (module = jsg_module_script(n), module || jsg_classic_script(n))) href = node_attr(n, "src");
+        else if (rel && strstr(rel, "modulepreload")) { href = js ? node_attr(n, "href") : NULL; module = true; }
+        else if (rel && strstr(rel, "stylesheet")) href = node_attr(n, "href");
+        char *u = href ? url_join(p->d->url, href) : NULL;
+        if (!u) continue;
+        char ***v = module ? &mods : &urls; int *k = module ? &nmod : &nurl;
+        *v = xrealloc(*v, sizeof **v * (size_t)(*k + 1)); (*v)[(*k)++] = u;
+    }
+    got = xcalloc((size_t)nurl + 1, sizeof *got);
+    if (gen_live(rq->gen)) {
+        ModBatch mb = { mods, nmod, p->url };
+        SDL_Thread *mt = nmod ? SDL_CreateThread(module_worker, "lumen-modules", &mb) : NULL;
+        if (nmod && !mt) module_worker(&mb);
+        fetch_batch(urls, got, nurl);
+        if (mt) SDL_WaitThread(mt, NULL);
+    }
+    double t_batch = now_ms();
     if (!getenv("LUMEN_NO_JS")) for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) {
         if (!gen_live(rq->gen)) break;
         if (n->type != NODE_ELEMENT || n->tag != A_script || n->ns != NS_HTML) continue;
@@ -261,12 +307,20 @@ static int loader(void *arg) {
         if (src) {
             sc.name = url_join(p->d->url, src);
             if (!sc.name) continue;
-            NetResponse *sr = net_fetch_sync(net_request_new("GET", sc.name));
-            if (sr && sr->status >= 200 && sr->status < 300) { sc.src = xstrndup(sr->body ? sr->body : "", sr->body_len); sc.len = sr->body_len; }
+            if (mod) {   /* prefetched above; js_run_module compiles it and its imports */
+                sc.src = js_module_take(sc.name, p->url, &sc.len);
+                p->scripts = xrealloc(p->scripts, sizeof *p->scripts * (size_t)(p->nscripts + 1)); p->scripts[p->nscripts++] = sc;
+                continue;
+            }
+            NetResponse *sr = NULL;
+            for (int i = ui; i < nurl; i++) if (got[i] && urls[i] && !strcmp(urls[i], sc.name)) { sr = got[i]; got[i] = NULL; ui = i + 1; break; }
+            if (!sr) sr = net_fetch_sync(net_request_new("GET", sc.name));
+            if (sr && sr->status >= 200 && sr->status < 300) { sc.src = sr->body; sc.len = sr->body_len; sr->body = NULL; }
             if (sr) net_response_free(sr);
         } else { sc.src = node_text_content(n); sc.len = strlen(sc.src); sc.name = xstrdup(p->url); }
         p->scripts = xrealloc(p->scripts, sizeof *p->scripts * (size_t)(p->nscripts + 1)); p->scripts[p->nscripts++] = sc;
     }
+    double t_scripts = now_ms();
     p->e = style_engine_new(p->d); p->e->media.vw = rq->vw; p->e->media.vh = rq->vh; p->e->media.dpr = rq->dpr;
     for (Node *n = p->d->node.first; n; n = node_next_deep(n, &p->d->node)) {
         if (!gen_live(rq->gen)) break;
@@ -275,16 +329,22 @@ static int loader(void *arg) {
             char *t = node_text_content(n); StyleSheet *s = css_parse_sheet(t, strlen(t), p->d->url, 1, &p->e->media); s->owner = n; style_engine_add_sheet(p->e, s); free(t);
         } else if (n->tag == A_link && node_attr(n, "rel") && strstr(node_attr(n, "rel"), "stylesheet") && node_attr(n, "href")) {
             char *u = url_join(p->d->url, node_attr(n, "href"));
-            NetResponse *cr = net_fetch_sync(net_request_new("GET", u));
+            NetResponse *cr = NULL;
+            for (int i = 0; u && i < nurl; i++) if (got[i] && urls[i] && !strcmp(urls[i], u)) { cr = got[i]; got[i] = NULL; break; }
+            if (!cr && u) cr = net_fetch_sync(net_request_new("GET", u));
             if (cr && cr->status == 200) { StyleSheet *s = css_parse_sheet(cr->body, cr->body_len, cr->url, 1, &p->e->media); s->owner = n; style_engine_add_sheet(p->e, s); }
             if (cr) net_response_free(cr); free(u);
-        } else if (n->tag == A_img && node_attr(n, "src")) {
-            char *u = url_join(p->d->url, node_attr(n, "src")); cache_fetch(u); free(u);
-        }
+        }   /* images load asynchronously once the page is shown (sync_images) */
     }
+    for (int i = 0; i < nurl; i++) { free(urls[i]); net_response_free(got[i]); }
+    for (int i = 0; i < nmod; i++) free(mods[i]);
+    free(urls); free(got); free(mods);
+    double t_css = now_ms();
     style_recalc(p->e, &p->d->node, true);
     p->seen_ver = p->d->dom_version;
     p->load_ms = now_ms() - t0;
+    LOAD_TRACE("loader html_ms=%.0f html_bytes=%zu parse_ms=%.0f batch_ms=%.0f classic_css=%d modules=%d scripts_ms=%.0f css_ms=%.0f style_ms=%.0f",
+        t_html - t0, blen, t_parse - t_html, t_batch - t_parse, nurl, nmod, t_scripts - t_batch, t_css - t_scripts, now_ms() - t_css);
     if (r) net_response_free(r);
     free(errbuf); free(rq->url); free(rq->body); free(rq->ctype); free(rq->html); free(rq);
     SDL_Event ev; SDL_zero(ev); ev.type = EV_LOADED; ev.user.data1 = p; SDL_PushEvent(&ev);
@@ -698,6 +758,7 @@ static void navigate_ex(App *a, const char *url, bool push, const char *body, si
     LoadReq *rq = xcalloc(1, sizeof *rq); rq->url = u; rq->html = html; rq->gen = ++load_gen; float zoom = html ? 1 : (a->t->zoom_pct ? a->t->zoom_pct : g_page_zoom_pct) / 100.f; rq->vw = (a->vw - a->side) / zoom; rq->vh = (a->vh - BAR) / zoom; rq->dpr = a->scale * zoom; a->t->lgen = rq->gen; publish_gens(a);
     if (push) a->t->hgen[a->t->hpos] = rq->gen;
     if (body) { rq->body = xmalloc(blen + 1); memcpy(rq->body, body, blen); rq->body[blen] = 0; rq->blen = blen; rq->ctype = xstrdup(ctype ? ctype : ""); }
+    if (!html) { net_trace_load(120); g_load_trace_until = now_ms() + 120000; }
     SDL_Thread *t = SDL_CreateThread(loader, "loader", rq); SDL_DetachThread(t);
 }
 static void navigate(App *a, const char *url, bool push) { navigate_ex(a, url, push, NULL, 0, NULL); }
@@ -2086,6 +2147,7 @@ static void page_start_js(App *a, Page *p) {
     double t0 = now_ms();
     sync_sheets(p, true);
     p->js = js_new(p->d, &h);
+    LOAD_TRACE("js_new_ms=%.0f", now_ms() - t0);
     js_eval(p->js, "document.addEventListener('lumenmediactl',function(e){var v=e.target;if(!(v instanceof HTMLMediaElement))return;e.stopImmediatePropagation();"
         "if(e.key==='toggle'){if(v.paused)v.play();else v.pause()}else if(e.key.indexOf('seek:')===0&&v.duration>0)v.currentTime=v.duration*parseFloat(e.key.slice(5))},true)", "lumen:ctl");
     const char *pre = getenv("LUMEN_PRE_FILE");
@@ -2099,16 +2161,23 @@ static void page_start_js(App *a, Page *p) {
         PScript *sc = &p->scripts[i];
         if (sc->module != (pass == 1) || (sc->n->flags & NF_SCRIPT_STARTED) || !(sc->n->flags & NF_CONNECTED)) continue;
         if (sc->src) {
+            double ts = now_ms(); size_t len = sc->len;
             if (sc->module) js_run_module(p->js, sc->n, sc->src, sc->len, sc->name); else js_run_script(p->js, sc->n, sc->src, sc->len, sc->name);
             free(sc->src); sc->src = NULL; sc->len = 0;
+            if (now_ms() - ts >= 50) LOAD_TRACE("script=%d module=%d bytes=%zu ms=%.0f", i, sc->module, len, now_ms() - ts);
         }
         else { sc->n->flags |= NF_SCRIPT_STARTED; js_dispatch(p->js, sc->n, "error", "Event", false, false, 0, 0, 0, NULL); }
     }
+    double t_dcl = now_ms();
     js_set_ready_state(p->js, 1);
     js_dispatch(p->js, &p->d->node, "DOMContentLoaded", "Event", true, false, 0, 0, 0, NULL);
+    LOAD_TRACE("dcl_ms=%.0f", now_ms() - t_dcl);
     js_set_ready_state(p->js, 2);
     js_dispatch_window(p->js, "load");
     fprintf(stderr, "lumen: ran %d scripts in %.0fms\n", p->nscripts, now_ms() - t0);
+#if defined(__ANDROID__) && !defined(NDEBUG)
+    __android_log_print(ANDROID_LOG_INFO, "LumenLoad", "scripts=%d run_ms=%.0f", p->nscripts, now_ms() - t0);   /* timing only, no URLs */
+#endif
     restyle(a);
 }
 static void wake(void) { SDL_Event e; SDL_zero(e); e.type = EV_NET; SDL_PushEvent(&e); }
@@ -2945,7 +3014,9 @@ int main(int argc, char **argv) {
 #endif
     a.ui = font_get("system-ui", 400, false, 13.5f);
     char cookie_path[1024] = "";
-    { char *pref = SDL_GetPrefPath("lumen", "Lumen"); if (pref) { snprintf(cookie_path, sizeof cookie_path, "%scookies.txt", pref); SDL_free(pref); cookies_load(cookie_path); } }
+    { char *pref = SDL_GetPrefPath("lumen", "Lumen"); if (pref) { snprintf(cookie_path, sizeof cookie_path, "%scookies.txt", pref); cookies_load(cookie_path);
+        char cache_dir[1100]; snprintf(cache_dir, sizeof cache_dir, "%shttpcache", pref); net_cache_init(cache_dir, 256u << 20);
+        snprintf(cache_dir, sizeof cache_dir, "%sv8cache", pref); js_code_cache_init(cache_dir, 96u << 20); SDL_free(pref); } }
     double cookies_saved_at = now_ms();
     {
         char *pref = SDL_GetPrefPath("lumen", "Lumen"); char sp[1024] = "";
@@ -3284,6 +3355,9 @@ int main(int argc, char **argv) {
                     page_start_js(&a, p);
                     a.t = act; double t0 = now_ms(); if (fg) render(&a); else a.dirty = true;
                     fprintf(stderr, "lumen: %s loaded in %.0fms, first frame %.1fms (layout+paint+present), %d boxes\n", p->url, p->load_ms, now_ms() - t0, p->L ? p->L->nboxes : 0);
+#if defined(__ANDROID__) && !defined(NDEBUG)
+                    __android_log_print(ANDROID_LOG_INFO, "LumenLoad", "loader_ms=%.0f first_frame_ms=%.1f boxes=%d", p->load_ms, now_ms() - t0, p->L ? p->L->nboxes : 0);
+#endif
                 }
             }
 #ifdef __ANDROID__
@@ -3294,10 +3368,14 @@ int main(int argc, char **argv) {
         android_fling_tick(&a);
 #endif
         js_release_pins();
+        double lt0 = now_ms();
         net_poll();
+        double lt1 = now_ms();
         { Tab *act = a.t; double tn = now_ms(); for (int i = 0; i < a.ntabs; i++) { a.t = a.tabs[i]; if (a.t->limited) { a.t->budget = LMIN(a.t->budget + a.t->lim * (tn - a.t->bud_t), 100); a.t->bud_t = tn; if (a.t->budget < 0) continue; } if (a.t->cur && a.t->cur->js) { double c0 = now_ms(); js_tick(a.t->cur->js); restyle(&a); fire_img_events(a.t->cur); double c = now_ms() - c0; a.t->cpu_ms += c; if (a.t->limited) a.t->budget -= c; } } a.t = act; if (a.t->cur && a.t->cur->js) frames_tick(&a); }
         edit_sel_sync(&a);
+        double lt2 = now_ms();
         if (a.dirty) { double r0 = now_ms(); render(&a); a.t->cpu_ms += now_ms() - r0; }
+        if (lt0 < g_load_trace_until && now_ms() - lt0 >= 100) LOAD_TRACE("stall_ms=%.0f net_poll_ms=%.0f js_style_ms=%.0f render_ms=%.0f", now_ms() - lt0, lt1 - lt0, lt2 - lt1, now_ms() - lt2);
         cpu_monitor(&a);
         { float want = a.t->info || *g_notice ? INFOH : 0; if (want != g_info_h) { g_info_h = want; for (int i = 0; i < a.ntabs; i++) a.tabs[i]->relayout = true; a.dirty = true; a.vonly = false; } }
         if (*cookie_path && now_ms() - cookies_saved_at > 5000) { cookies_save(cookie_path); cookies_saved_at = now_ms(); }

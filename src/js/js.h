@@ -41,6 +41,13 @@ void js_run_script(JsCtx *c, Node *script, const char *src, size_t n, const char
 void js_eval(JsCtx *c, const char *src, const char *name);
 /* run a <script type=module>; src NULL fetches url. Inline modules pass the document url */
 void js_run_module(JsCtx *c, Node *script, const char *src, size_t n, const char *url);
+/* Fetches module scripts and their static import graphs in parallel (blocking, any thread)
+   so that later module loads find the sources ready. */
+void js_module_prefetch(const char *const *urls, int n, const char *referrer);
+/* Keeps compiled bytecode of large external scripts in dir, bounded to max_bytes. */
+void js_code_cache_init(const char *dir, size_t max_bytes);
+/* A prefetched (or now fetched) module source, consumed; NULL on failure. Caller frees. */
+char *js_module_take(const char *url, const char *referrer, size_t *len);
 /* dispatch a trusted event; kind: "Event", "MouseEvent", "KeyboardEvent", "FocusEvent", "WheelEvent".
    returns false when default was prevented */
 bool js_dispatch(JsCtx *c, Node *target, const char *type, const char *kind, bool bubbles, bool cancelable,

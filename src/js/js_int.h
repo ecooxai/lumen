@@ -6,6 +6,7 @@
 #include <cmath>
 #include <condition_variable>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <thread>
 #include <string>
@@ -51,6 +52,14 @@ struct AnimEv {
     std::string type, name;
     double elapsed;
     bool anim;
+};
+/* A module graph being fetched off the main thread, for import() (R) or an inserted
+   external module script (script); tick_one finishes it once done is set. */
+struct ModJob {
+    std::shared_ptr<std::atomic<bool>> done = std::make_shared<std::atomic<bool>>(false);
+    std::string url;
+    v8::Global<v8::Promise::Resolver> R;
+    Node *script = nullptr;
 };
 struct JsCtx {
     v8::Isolate *iso = nullptr;
@@ -112,6 +121,7 @@ struct JsCtx {
     std::unordered_map<std::string, v8::Global<v8::Module>> mods;   /* ES module map, keyed by URL */
     std::unordered_multimap<int, std::string> mod_url;              /* module identity hash -> key */
     int mod_seq = 0;
+    std::vector<std::unique_ptr<ModJob>> mod_jobs;
 };
 
 #define JS_ENTER(c)                                         \
@@ -133,6 +143,8 @@ void jfire(JsCtx *c, Node *n, const char *type);
 void jreport(JsCtx *c, v8::Local<v8::Value> exc, v8::Local<v8::Message> msg);
 void js_install_native(JsCtx *c, v8::Local<v8::Object> N);
 void js_run_inserted(JsCtx *c, Node *root);
+/* js_run_module for script-inserted modules: an external graph not loaded yet runs later, once fetched */
+extern "C" void js_run_module_inserted(JsCtx *c, Node *script, const char *src, size_t n, const char *url);
 extern "C" JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame);
 extern "C" JsCtx *owner_ctx(Document *d);
 std::string ctx_origin(JsCtx *c);
