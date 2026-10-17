@@ -1583,12 +1583,16 @@ static char *ff_pick_src(const char *src) {
     }
     return NULL;
 }
-static void sheet_fonts(StyleSheet *s) {
+static void sheet_fonts(StyleSheet *s, Document *d) {
     for (int i = 0; i < s->font_faces.n; i++) {
         const char *b = s->font_faces.v[i];
         char *fam = ff_prop(b, "font-family"), *src = ff_prop(b, "src"), *wt = ff_prop(b, "font-weight"), *sty = ff_prop(b, "font-style");
         char *u = src ? ff_pick_src(src) : NULL;
         char *abs = u && fam && *fam ? url_join(s->base_url, u) : NULL;
+        if (abs && d && d->csp && !csp_allows_url(d->csp, d->url ? d->url : "", abs, "font-src")) {
+            fprintf(stderr, "lumen: CSP font-src blocked %.120s\n", abs);
+            free(abs); abs = NULL;
+        }
         if (abs) {
             int w = 400;
             if (wt && str_ieq(wt, "bold")) w = 700;

@@ -297,8 +297,8 @@ in-flow content (display.c dl_move_items). This removed the empty grey box on Go
 - SIGTERM/SIGINT/SIGHUP now quit promptly while idle (quit_sig_thread in main.c, desktop only).
 - CSP fetch directives (csp_allows_url in src/net/csp.c; NetRequest.csp/csp_doc/csp_dir checked on every hop in
   net_fetch_sync): img-src, style-src(-elem) for <link> sheets, connect-src for fetch/XHR/WebSocket (WebSocket throws
-  SecurityError), frame-src/child-src for iframes. Not yet: font-src (fonts are fetched globally, without a document),
-  media-src, worker-src, inline <style>/style= (style-src 'unsafe-inline'), report-only, Trusted Types. Test pages
+  SecurityError), frame-src/child-src for iframes. font-src is checked in sheet_fonts() when
+  @font-face is declared (font cache is global, redirects not re-checked). Not yet: media-src, worker-src, inline <style>/style= (style-src 'unsafe-inline'), report-only, Trusted Types. Test pages
   /r1 /r2 on ~/fvtest/sec/csp.py (request log /tmp/csp-req.txt).
 - CSP 'strict-dynamic' also allows script-inserted (non-parser) *inline* scripts without nonce, matching Chrome
   (verified with headless Chrome on ~/fvtest/sec/sd.py, port 8771). Bing's includeScript() relies on this.

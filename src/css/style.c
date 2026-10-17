@@ -1302,7 +1302,7 @@ StyleEngine *style_engine_new(Document *d) {
     return e;
 }
 void style_engine_free(StyleEngine *e) { for (int i = 0; i < e->sheets.n; i++) css_sheet_free(e->sheets.v[i]); vec_free(e->sheets); idx_clear(&e->idx); free(e); }
-void (*css_sheet_added_hook)(StyleSheet *s);
+void (*css_sheet_added_hook)(StyleSheet *s, Document *d);
 void style_engine_add_sheet(StyleEngine *e, StyleSheet *s) {
     /* keep document order of owner nodes */
     int pos = e->sheets.n;
@@ -1317,7 +1317,7 @@ void style_engine_add_sheet(StyleEngine *e, StyleSheet *s) {
     }
     vec_push(e->sheets, s);
     memmove(&e->sheets.v[pos + 1], &e->sheets.v[pos], sizeof(StyleSheet *) * (size_t)(e->sheets.n - 1 - pos));
-    if (css_sheet_added_hook) css_sheet_added_hook(s);
+    if (css_sheet_added_hook) css_sheet_added_hook(s, e->doc);
     e->sheets.v[pos] = s;
     e->idx_dirty = true; e->generation++;
 }
