@@ -984,7 +984,7 @@ static uint64_t hmix(uint64_t h, const void *p, size_t n) { const uint8_t *c = p
 static uint64_t ditem_hash(const DItem *it) {
     uint64_t h = 1469598103934665603ull;
     HMIX(h, it->op); HMIX(h, it->x); HMIX(h, it->y); HMIX(h, it->w); HMIX(h, it->h); HMIX(h, it->r); HMIX(h, it->color);
-    HMIX(h, it->bw); HMIX(h, it->bc); HMIX(h, it->bs); HMIX(h, it->img); if (it->img && it->img->anim) HMIX(h, it->img->px); HMIX(h, it->blur); HMIX(h, it->spread); HMIX(h, it->alpha); HMIX(h, it->inset);
+    HMIX(h, it->bw); HMIX(h, it->bc); HMIX(h, it->bs); HMIX(h, it->img); if (it->img && it->img->anim) HMIX(h, it->img->px); if (it->img) HMIX(h, it->img->ver); HMIX(h, it->blur); HMIX(h, it->spread); HMIX(h, it->alpha); HMIX(h, it->inset);
     if (it->grad) { const Gradient *g = it->grad; HMIX(h, g->type); HMIX(h, g->angle); HMIX(h, g->nstops); HMIX(h, g->repeating); h = hmix(h, g->stops, sizeof g->stops[0] * (size_t)LCLAMP(g->nstops, 0, 8)); }
     for (int i = 0; i < it->ng; i++) { const DGlyph *g = &it->g[i]; HMIX(h, g->gid); HMIX(h, g->x); HMIX(h, g->y); HMIX(h, g->font); }
     HMIX(h, it->ts);
@@ -1516,7 +1516,8 @@ static bool frame_update(Page *p) {
     dl_clear(&p->fdl); dl_build(&p->fdl, p->L, 0, p->fsy, w, h); image_anim_seen(&p->fdl, now_ms());
     raster(&p->cv, &p->fdl, 0);   /* iframes are transparent unless their document paints a background */
     p->drawn_ver = p->d->dom_version; p->drawn_epoch = g_img_epoch;
-    p->img = (Image){ .w = pw, .h = ph, .refs = 1 << 30, .px = p->cv.px, .scale = s };
+    static uint32_t fver;
+    p->img = (Image){ .w = pw, .h = ph, .refs = 1 << 30, .px = p->cv.px, .scale = s, .ver = ++fver };
     return true;
 }
 /* @font-face: declare faces as sheets arrive; fetch a face only once text asks for it */
