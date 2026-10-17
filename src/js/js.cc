@@ -776,7 +776,8 @@ static bool csp_script_ok(JsCtx *c, Node *script, const char *url, const char *s
     if (!script || !c->doc || !c->doc->csp) return true;
     bool ext = node_attr(script, "src") != nullptr;
     if (csp_allows_script(c->doc->csp, c->doc->url, ext ? url : nullptr, node_attr(script, "nonce"), src, n, script->flags & NF_PARSER_INSERTED)) return true;
-    fprintf(stderr, "lumen: CSP blocked %s script %.120s\n", ext ? "external" : "inline", ext && url ? url : "");
+    fprintf(stderr, "lumen: CSP blocked %s script %.120s nonce=%s parser=%d %.60s\n", ext ? "external" : "inline", ext && url ? url : "",
+            node_attr(script, "nonce") ? "yes" : "no", (script->flags & NF_PARSER_INSERTED) ? 1 : 0, ext ? "" : src);
     if (ext) { JS_ENTER(c); jfire(c, script, "error"); }
     return false;
 }
