@@ -2533,7 +2533,27 @@ static bool touch_fling(App *a) {
 }
 #endif
 
+#ifndef LUMEN_IOS
+/* SIGTERM/SIGINT/SIGHUP -> SDL quit event. SDL's own handler only queues the quit on the next event pump, which never
+   comes while an idle page sleeps in SDL_WaitEventTimeout; pushing from a thread wakes the wait. A second signal exits. */
+static void *quit_sig_thread(void *arg) {
+    sigset_t *ss = arg; int sig, n = 0;
+    while (!sigwait(ss, &sig)) {
+        if (n++ || !SDL_WasInit(SDL_INIT_EVENTS)) _exit(128 + sig);
+        SDL_Event e; SDL_zero(e); e.type = SDL_EVENT_QUIT; SDL_PushEvent(&e);
+    }
+    return NULL;
+}
+#endif
 int main(int argc, char **argv) {
+#ifndef LUMEN_IOS
+    {
+        static sigset_t ss; sigemptyset(&ss); sigaddset(&ss, SIGTERM); sigaddset(&ss, SIGINT); sigaddset(&ss, SIGHUP);
+        pthread_sigmask(SIG_BLOCK, &ss, NULL);   /* before any thread starts, so only quit_sig_thread receives them */
+        pthread_t th; if (!pthread_create(&th, NULL, quit_sig_thread, &ss)) pthread_detach(th);
+        SDL_SetHint(SDL_HINT_NO_SIGNAL_HANDLERS, "1");
+    }
+#endif
     g_no_paint_only = getenv("LUMEN_NO_PAINT_ONLY") != NULL;
     g_main_thr = pthread_self();
     install_crash_handler();
