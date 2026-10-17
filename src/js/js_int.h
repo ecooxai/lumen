@@ -93,6 +93,7 @@ struct JsCtx {
     uint64_t frame_scan_ver = ~0ull;
     void *host_ud = nullptr;          /* child host data returned by frame_open */
     std::string frame_src;
+    bool sb_opaque = false, sb_noscript = false;   /* <iframe sandbox> without allow-same-origin / allow-scripts */
     std::unordered_map<std::string, v8::Global<v8::Module>> mods;   /* ES module map, keyed by URL */
     std::vector<std::pair<std::string, std::string>> imap;          /* import map "imports" (scopes merged) */
     size_t imap_seen = 0;

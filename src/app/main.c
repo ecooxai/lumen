@@ -204,7 +204,7 @@ static Image *node_img(Node *n) {
     if (n->tag == A_video) { Image *f = cap_frame_for(n); if (!f) f = media_frame_for(n); if (f) return f; }
     if (n->tag == A_canvas) return cvbuf_image(n);
     const char *s = node_attr(n, n->tag == A_video ? "poster" : "src"); if (!s) return NULL;
-    char *u = url_join(n->doc->url, s); Image *im = cache_get(u); free(u); return im;
+    char *u = url_join(n->doc->url, s); Image *im = u ? cache_get(u) : NULL; free(u); return im;
 }
 static Image *url_img(const char *u) { return u ? cache_get(u) : NULL; }
 static bool img_size(Node *n, float *w, float *h) {

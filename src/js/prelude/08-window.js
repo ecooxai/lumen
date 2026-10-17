@@ -39,7 +39,7 @@ const storageProxy = (st = new Storage()) => new Proxy(st, {
     has(t, k) { return k in t || t._m.has(String(k)); }, ownKeys(t) { return [...t._m.keys()]; },
     getOwnPropertyDescriptor(t, k) { return t._m.has(k) ? { value: t._m.get(k), enumerable: true, configurable: true, writable: true } : undefined; },
 });
-const ssOrigin = (() => { try { return new URL(N.url()).origin; } catch { return 'null'; } })();
+const ssOrigin = (() => { try { return N.ctxOrigin(); } catch { return 'null'; } })();
 const sessionStorage = storageProxy(new Storage(ssOrigin === 'null' ? null : m => N.ssSet(ssOrigin, JSON.stringify([...m]))));
 try { const j = ssOrigin !== 'null' && N.ssGet(ssOrigin); if (j) for (const [k, v] of JSON.parse(j)) sessionStorage.setItem(k, v); } catch {}
 const localStorage = storageProxy(new Storage(ssOrigin === 'null' ? null : (m, op, k, v, o) => {
@@ -359,7 +359,7 @@ const globals = {
     RTCPeerConnection, RTCSessionDescription, RTCIceCandidate, RTCPeerConnectionIceEvent, RTCPeerConnectionIceErrorEvent, RTCDataChannel, RTCDataChannelEvent, RTCTrackEvent, RTCRtpSender, RTCRtpReceiver, RTCRtpTransceiver, RTCIceTransport, RTCDtlsTransport, RTCSctpTransport, RTCCertificate, RTCStatsReport, RTCError, RTCErrorEvent, MediaStream, MediaStreamTrack, MediaStreamTrackEvent,
     ResizeObserver, IntersectionObserver, HTMLAllCollection, PerformanceObserver, PerformanceEntry, PerformanceNavigationTiming, Storage, localStorage, sessionStorage, Location, history, navigator, screen, performance, crypto, MediaQueryList, matchMedia, getComputedStyle,
     setTimeout, setInterval, clearTimeout, clearInterval, requestAnimationFrame, cancelAnimationFrame, requestIdleCallback, cancelIdleCallback, queueMicrotask, structuredClone, postMessage, console, customElements, Window, document,
-    window: G, self: G, globalThis: G, get top() { return asWin(N.topWin()) ?? G; }, get parent() { return asWin(N.parentWin()) ?? G; }, frames: G, opener: null, get frameElement() { return N.frameEl(); }, closed: false, name: '', get length() { return N.frameCount(); }, origin: location.origin, isSecureContext: location.protocol === 'https:', get crossOriginIsolated() { return N.coi(); },
+    window: G, self: G, globalThis: G, get top() { return asWin(N.topWin()) ?? G; }, get parent() { return asWin(N.parentWin()) ?? G; }, frames: G, opener: null, get frameElement() { return N.frameEl(); }, closed: false, name: '', get length() { return N.frameCount(); }, origin: ssOrigin, isSecureContext: location.protocol === 'https:', get crossOriginIsolated() { return N.coi(); },
     get innerWidth() { return N.viewport()[0]; }, get innerHeight() { return N.viewport()[1]; }, get outerWidth() { return N.viewport()[0]; }, get outerHeight() { return N.viewport()[1] + 40; },
     get scrollX() { return N.viewport()[2]; }, get scrollY() { return N.viewport()[3]; }, get pageXOffset() { return N.viewport()[2]; }, get pageYOffset() { return N.viewport()[3]; }, get devicePixelRatio() { return N.viewport()[4]; },
     screenX: 0, screenY: 0, screenLeft: 0, screenTop: 0,

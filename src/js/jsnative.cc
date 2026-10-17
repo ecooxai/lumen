@@ -279,8 +279,13 @@ FN(focus) {
     if (n) jfire(c, n, "focus");
 }
 FN(active) { CTX; RET(jwrap(c, c->doc->focus)); }
-FN(cookie) { CTX; char *s = cookies_get_document(c->doc->url, js_top_url(c)); RET(jstr(iso, s ? s : "")); free(s); }
-FN(setCookie) { CTX; std::string s = S(0); cookies_set_document(c->doc->url, js_top_url(c), s.c_str()); }
+/* about:blank / about:srcdoc documents use their creator's URL for origin-bound state (cookies) */
+static const char *origin_url(JsCtx *c) {
+    while (c->parent && (!c->doc->url || !strncmp(c->doc->url, "about:", 6))) c = c->parent;
+    return c->doc->url;
+}
+FN(cookie) { CTX; if (c->sb_opaque) { RET(jstr(iso, "")); return; } char *s = cookies_get_document(origin_url(c), js_top_url(c)); RET(jstr(iso, s ? s : "")); free(s); }
+FN(setCookie) { CTX; if (c->sb_opaque) return; std::string s = S(0); cookies_set_document(origin_url(c), js_top_url(c), s.c_str()); }
 FN(url) { CTX; RET(jstr(iso, c->doc->url ? c->doc->url : "about:blank")); }
 FN(setUrl) {
     CTX; std::string u = S(0);
@@ -778,6 +783,8 @@ FN(ceScan) {
 FN(readyState) { CTX; RET(c->doc->ready_state); }
 FN(quirks) { CTX; RET(c->doc->quirks); }
 FN(coi) { CTX; RET(c->doc->cross_origin_isolated); }
+FN(ctxOrigin) { CTX; RET(jstr(iso, ctx_origin(c).c_str())); }
+FN(sbFlags) { CTX; RET((int)(c->sb_opaque ? 1 : 0) | (c->sb_noscript ? 2 : 0)); }
 FN(currentScript) { CTX; RET(jwrap(c, c->current_script)); }
 FN(media) { CTX; std::string q = S(0); RET(jsg_media(c->host.media, q.c_str())); }
 FN(cssSelText) { CTX; std::string q = S(0); char *r = css_selector_text(q.c_str()); RET(nstr(iso, r)); free(r); }
@@ -1111,7 +1118,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(busOrigin); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
     REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(blobFile); REG(blobFileFree); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove); REG(mediaAbort);
     REG(mediaBuffered); REG(mediaEos); REG(mediaSetDuration); REG(mediaPlay); REG(mediaPause); REG(mediaSeek);
-    REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(readyState); REG(quirks); REG(coi);
+    REG(sbFlags); REG(ctxOrigin); REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(readyState); REG(quirks); REG(coi);
     REG(currentScript); REG(media); REG(cssSupports); REG(cssSelText); REG(urlParse); REG(encode); REG(decode); REG(random); REG(cDigest); REG(cHmac); REG(cAes); REG(cEcGen); REG(cEcDerive); REG(cEcSign); REG(cEcVerify); REG(cSpki); REG(cSpkiParse); REG(cPkcs8Parse); REG(cEcFromD); REG(cHkdf); REG(cPbkdf2);
     REG(heap); REG(imgSize); REG(userAgent); REG(platform); REG(cpus); REG(makeAll);
 #undef REG

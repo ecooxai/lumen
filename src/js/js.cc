@@ -573,6 +573,21 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
     if (frame) frame->refcount++;
     if (parent) parent->kids.push_back(c);
     c->doc = d;
+    if (parent) { c->sb_opaque = parent->sb_opaque; c->sb_noscript = parent->sb_noscript; }
+    if (const char *sb = frame ? node_attr(frame, "sandbox") : nullptr) {
+        auto has = [sb](const char *tok) {
+            size_t n = strlen(tok);
+            for (const char *p = sb; *p;) {
+                while (*p && isspace((unsigned char)*p)) p++;
+                const char *e = p; while (*e && !isspace((unsigned char)*e)) e++;
+                if ((size_t)(e - p) == n && !strncasecmp(p, tok, n)) return true;
+                p = e;
+            }
+            return false;
+        };
+        if (!has("allow-same-origin")) c->sb_opaque = true;
+        if (!has("allow-scripts")) c->sb_noscript = true;
+    }
     if (host) c->host = *host;
     c->t0 = now_ms();
     c->thread = std::this_thread::get_id();
@@ -597,7 +612,7 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
     v8::Local<v8::Context> ctx = v8::Context::New(iso);
     c->ctx.Reset(iso, ctx);
     ctx->SetAlignedPointerInEmbedderData(1, c, kTag);
-    ctx->SetSecurityToken(v8::String::NewFromUtf8(iso, ctx_origin(c).c_str(), v8::NewStringType::kInternalized).ToLocalChecked());
+    ctx->SetSecurityToken(v8::String::NewFromUtf8(iso, (c->sb_opaque ? "null#" + std::to_string(c->id) : ctx_origin(c)).c_str(), v8::NewStringType::kInternalized).ToLocalChecked());
     v8::Context::Scope cs(ctx);
     v8::Local<v8::ObjectTemplate> tmpl = v8::ObjectTemplate::New(iso);
     tmpl->SetInternalFieldCount(2);

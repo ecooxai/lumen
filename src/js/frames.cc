@@ -17,10 +17,11 @@ static std::string origin_of(const char *u) {
     return r;
 }
 std::string ctx_origin(JsCtx *c) {
+    if (c->sb_opaque) return "null";
     if (c->parent && (!c->doc->url || !strncmp(c->doc->url, "about:", 6))) return ctx_origin(c->parent);
     return origin_of(c->doc->url);
 }
-static bool same_origin(JsCtx *a, JsCtx *b) { return a == b || ctx_origin(a) == ctx_origin(b); }
+static bool same_origin(JsCtx *a, JsCtx *b) { return a == b || (!a->sb_opaque && !b->sb_opaque && ctx_origin(a) == ctx_origin(b)); }
 
 static v8::Local<v8::Value> win_for(JsCtx *v, JsCtx *t) {
     v8::Isolate *iso = v->iso;
@@ -82,7 +83,7 @@ static JsCtx *frame_create(JsCtx *p, Node *f, const char *url, const char *html,
     JsCtx *k = js_new_ex(d, &ch, p, f);
     k->host_ud = ch.ud;
     if (const char *fp = getenv("LUMEN_FRAME_PRE")) if (strncmp(url, "about:", 6)) js_eval(k, fp, "lumen:frame-pre");
-    for (Node *s = d->node.first; s && !k->dead; s = node_next_in_tree(s, &d->node)) {
+    for (Node *s = d->node.first; s && !k->dead && !k->sb_noscript; s = node_next_in_tree(s, &d->node)) {
         if (s->type != NODE_ELEMENT || s->tag != A_script || s->ns != NS_HTML || (s->flags & NF_SCRIPT_STARTED)) continue;
         bool mod = jsg_module_script(s);
         if (!mod && !jsg_classic_script(s)) continue;
