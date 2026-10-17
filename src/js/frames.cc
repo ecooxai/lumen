@@ -198,7 +198,7 @@ static void frame_load(JsCtx *p, Node *f, const char *u, const std::string &key)
     k->frame_src = key;
     if (!remote) return;
     NetRequest *rq = net_request_ctx("GET", u, js_top_url(p));
-    if (p->doc->url && !strncmp(p->doc->url, "http", 4)) headers_add(&rq->headers, "Referer", p->doc->url);
+    if (char *ref = net_referrer(p->doc->url, u, p->doc->referrer_policy)) { headers_add(&rq->headers, "Referer", ref); free(ref); }
     FrameLoad *l = new FrameLoad{ p, f, k->id, u };
     g_loads.push_back(l);
     rq->done = frame_done; rq->ud = l;

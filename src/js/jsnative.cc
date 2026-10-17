@@ -523,7 +523,7 @@ static NetRequest *mkreq(JsCtx *c, const FCI &a) {
             headers_add(&rq->headers, ks.c_str(), vs.c_str());
         }
     }
-    if (!referer && c->doc->url && !strncmp(c->doc->url, "http", 4)) headers_add(&rq->headers, "Referer", c->doc->url);
+    if (!referer) if (char *ref = net_referrer(c->doc->url, u.c_str(), c->doc->referrer_policy)) { headers_add(&rq->headers, "Referer", ref); free(ref); }
     const char *p; size_t n;
     if (a.Length() > 3 && bytes_of(a[3], &p, &n) && n) { rq->body = (char *)xmalloc(n); memcpy(rq->body, p, n); rq->body_len = n; }
     return rq;
@@ -1095,7 +1095,7 @@ void js_run_inserted(JsCtx *c, Node *root) {
         if (!u) { jfire(c, s, "error"); continue; }
         jwrap(c, s);
         NetRequest *rq = net_request_ctx("GET", u, js_top_url(c));
-        if (c->doc->url && !strncmp(c->doc->url, "http", 4)) headers_add(&rq->headers, "Referer", c->doc->url);
+        if (char *ref = net_referrer(c->doc->url, u, c->doc->referrer_policy)) { headers_add(&rq->headers, "Referer", ref); free(ref); }
         start_fetch(c, rq, new Fetch{ c, 0, {}, s });
         free(u);
     }

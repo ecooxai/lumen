@@ -49,6 +49,30 @@ int main(void) {
     CHECK(!net_secure_upgrade("http://page.test/", "http://cdn.test/a.png"));
     CHECK(!net_secure_upgrade(NULL, "http://cdn.test/a.png"));
     CHECK(!net_secure_upgrade("https://page.test/", "https://cdn.test/a.png"));
+    {   /* Referrer-Policy */
+        struct { const char *doc, *tgt, *pol, *want; } t[] = {
+            { "https://a.test/p?q#f", "https://a.test/x", NULL, "https://a.test/p?q" },
+            { "https://a.test/p?q", "https://b.test/x", NULL, "https://a.test/" },
+            { "https://a.test/p", "http://b.test/x", NULL, NULL },
+            { "https://u:pw@a.test:443/p", "https://a.test/x", "unsafe-url", "https://a.test/p" },
+            { "https://a.test/p", "https://b.test/", "no-referrer", NULL },
+            { "https://a.test/p", "https://b.test/", "same-origin", NULL },
+            { "https://a.test/p", "https://a.test/", "same-origin", "https://a.test/p" },
+            { "https://a.test/p", "https://a.test/", "origin", "https://a.test/" },
+            { "https://a.test/p", "http://b.test/", "no-referrer-when-downgrade", NULL },
+            { "https://a.test/p", "https://b.test/", "no-referrer-when-downgrade", "https://a.test/p" },
+            { "https://a.test/p", "http://b.test/", "strict-origin", NULL },
+            { "http://a.test:8080/p", "http://b.test/", "origin-when-cross-origin", "http://a.test:8080/" },
+            { "https://a.test/p", "https://b.test/", "bogus, unsafe-url, nonsense", "https://a.test/p" },
+            { "file:///x", "https://b.test/", "unsafe-url", NULL },
+        };
+        for (size_t i = 0; i < sizeof t / sizeof *t; i++) {
+            char *r = net_referrer(t[i].doc, t[i].tgt, t[i].pol);
+            bool ok = t[i].want ? r && !strcmp(r, t[i].want) : !r;
+            if (!ok) printf("referrer case %zu: got %s\n", i, r ? r : "(null)");
+            CHECK(ok); free(r);
+        }
+    }
     if (fails) return 1;
     printf("net tests ok\n");
     return 0;

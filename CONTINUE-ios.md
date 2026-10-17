@@ -270,3 +270,12 @@ in-flow content (display.c dl_move_items). This removed the empty grey box on Go
   ~/fvtest/sec/srv.py (port 8765, localhost vs 127.0.0.1 = cross-origin), check with LUMEN_CONSOLE=log.
 - Iframe repaint: frame canvases are redrawn in place, so Image.ver (paint.h) is bumped per raster and hashed in
   ditem_hash; before, iframes loaded after the parent's first paint stayed blank ~50% of runs (pre-existing race).
+- iframe sandbox (js.cc js_new_ex, JsCtx sb_opaque/sb_noscript, inherited by nested frames): no allow-same-origin ->
+  ctx_origin "null", unique V8 security token, no cookies, parent can't reach contentDocument; no allow-scripts ->
+  frame scripts and inline on* handlers don't run. Not enforced yet: allow-forms/popups/top-navigation/modals.
+  Test page ~/fvtest/sec/sb.html (serve with `python3 -m http.server 8766`).
+- Referrer-Policy (src/net/referrer.c net_referrer): default strict-origin-when-cross-origin; Referrer-Policy header
+  and <meta name=referrer> set Document.referrer_policy; applied to fetch/XHR, scripts, frames, images, CSS
+  (main.c doc_req). Not yet: per-element referrerpolicy attr, fetch init.referrerPolicy, document.referrer ('').
+  Test server ~/fvtest/sec/ref.py (port 8767, logs Referer to /tmp/ref-log.txt).
+- ChatGPT home: "Where should we begin?" sits on the header row; same in 9666225 (pre-existing, not a regression).

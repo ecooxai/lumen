@@ -84,6 +84,10 @@ char *hsts_upgrade(const char *url);   /* https URL if the host is HSTS-known, e
 /* https URL for an http(s)/ws(s) url that must not load insecurely: HSTS host, or a subresource of an https
    top-level page (mixed content is upgraded, like Chrome's autoupgrade); NULL if no change. ws: maps to wss:. */
 char *net_secure_upgrade(const char *top_url, const char *url);
+
+/* Referer value doc_url may send to target under a Referrer-Policy (NULL/unknown = strict-origin-when-cross-origin);
+   NULL = send none. Caller frees. */
+char *net_referrer(const char *doc_url, const char *target, const char *policy);
 void hsts_load(const char *path);
 bool hsts_save(const char *path);
 void cookies_load(const char *path);

@@ -307,7 +307,7 @@ static bool mod_fetch(const std::string &u, const std::string &ref, std::string 
         return true;
     }
     NetRequest *rq = net_request_new("GET", u.c_str());
-    if (!ref.compare(0, 4, "http")) headers_add(&rq->headers, "Referer", ref.c_str());
+    if (char *rv = net_referrer(ref.c_str(), u.c_str(), nullptr)) { headers_add(&rq->headers, "Referer", rv); free(rv); }
     NetResponse *r = net_fetch_sync(rq);
     bool ok = r && r->status >= 200 && r->status < 300;
     if (ok) out.assign(r->body ? r->body : "", r->body_len);
