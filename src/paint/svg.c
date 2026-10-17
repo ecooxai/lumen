@@ -289,7 +289,12 @@ static const Node *url_ref(const Node *n, const char *v) {
         const Node *r = !u ? NULL : strlen(u) == dl && !strncmp(u, du, dl) ? doc_get_element_by_id(n->doc, id) : svg_ext_ref_hook(u, id);
         free(u); return r;
     }
-    return doc_get_element_by_id(n->doc, id);
+    const Node *r = doc_get_element_by_id(n->doc, id);
+    if (r) return r;
+    const Node *root = n; while (root->parent) root = root->parent;   /* detached trees (SVG decoded for <img>) */
+    for (const Node *k = root; k; k = node_next_in_tree((Node *)k, (Node *)root))
+        if (k->type == NODE_ELEMENT && k->id && !strcmp(k->id, id)) return k;
+    return NULL;
 }
 
 static bool has_geometry(const Node *n, int depth) {
@@ -426,6 +431,68 @@ static void clip_add(Ctx *c, const Node *n, Mat m, float *dst, int depth) {
     }
 }
 
+/* <image>: data: (base64) or loaded URL images, drawn through the current matrix and clip */
+static Image *href_image(const Node *k, bool *owned) {
+    const char *h = node_attr(k, "href"); if (!h) h = node_attr(k, "xlink:href");
+    *owned = false; if (!h) return NULL;
+    while (isspace((unsigned char)*h)) h++;
+    if (!strncasecmp(h, "data:", 5)) {
+        const char *comma = strchr(h, ','); bool b64 = false;
+        if (!comma) return NULL;
+        for (const char *q = h; q < comma; q++) if (!strncasecmp(q, ";base64", 7)) b64 = true;
+        if (!b64) return NULL;
+        uint8_t *out = xmalloc(strlen(comma + 1) / 4 * 3 + 4); size_t o = 0; uint32_t acc = 0; int bits = 0;
+        for (const char *q = comma + 1; *q && *q != '='; q++) {
+            int ch = (unsigned char)*q, v;
+            if (ch >= 'A' && ch <= 'Z') v = ch - 'A'; else if (ch >= 'a' && ch <= 'z') v = ch - 'a' + 26; else if (ch >= '0' && ch <= '9') v = ch - '0' + 52;
+            else if (ch == '+' || ch == '-') v = 62; else if (ch == '/' || ch == '_') v = 63; else continue;
+            acc = acc << 6 | (uint32_t)v; bits += 6;
+            if (bits >= 8) { bits -= 8; out[o++] = (uint8_t)(acc >> bits); }
+        }
+        Image *im = image_decode(out, o); free(out); *owned = im != NULL; return im;
+    }
+    if (!paint_url_image_hook || !k->doc) return NULL;
+    char *u = url_join(k->doc->base_url ? k->doc->base_url : k->doc->url, h);
+    Image *im = u ? paint_url_image_hook(u) : NULL; free(u); return im;
+}
+
+static void draw_image(Ctx *c, const Node *k, Mat m, float op) {
+    bool owned; Image *im = href_image(k, &owned);
+    if (!im || !im->px || im->w <= 0 || im->h <= 0) { if (owned) image_unref(im); return; }
+    float x = fattr(k, "x"), y = fattr(k, "y"), w = fattr(k, "width"), h = fattr(k, "height"), iw = image_css_w(im), ih = image_css_h(im);
+    if (w <= 0) w = iw; if (h <= 0) h = ih;
+    float dx = x, dy = y, dw = w, dh = h; const char *par = node_attr(k, "preserveAspectRatio");
+    if (!par || strncmp(par, "none", 4)) {
+        float kk = par && strstr(par, "slice") ? LMAX(w / iw, h / ih) : LMIN(w / iw, h / ih);
+        float ax = !par || strstr(par, "xMid") ? 0.5f : strstr(par, "xMax") ? 1 : 0, ay = !par || strstr(par, "YMid") ? 0.5f : strstr(par, "YMax") ? 1 : 0;
+        dw = iw * kk; dh = ih * kk; dx = x + (w - dw) * ax; dy = y + (h - dh) * ay;
+    }
+    float det = m.a * m.d - m.b * m.c;
+    if (fabsf(det) < 1e-9f || dw <= 0 || dh <= 0) { if (owned) image_unref(im); return; }
+    float px[4] = { x, x + w, x, x + w }, py[4] = { y, y, y + h, y + h }, X0 = 1e30f, Y0 = 1e30f, X1 = -1e30f, Y1 = -1e30f;
+    for (int i = 0; i < 4; i++) { float X = m.a * px[i] + m.c * py[i] + m.e, Y = m.b * px[i] + m.d * py[i] + m.f; X0 = LMIN(X0, X); X1 = LMAX(X1, X); Y0 = LMIN(Y0, Y); Y1 = LMAX(Y1, Y); }
+    int x0 = LMAX(0, (int)floorf(X0)), y0 = LMAX(0, (int)floorf(Y0)), x1 = LMIN(c->w, (int)ceilf(X1)), y1 = LMIN(c->h, (int)ceilf(Y1));
+    float ia = m.d / det, ib = -m.b / det, ic = -m.c / det, id = m.a / det;
+    for (int Y = y0; Y < y1; Y++) for (int X = x0; X < x1; X++) {
+        float qx = X + 0.5f - m.e, qy = Y + 0.5f - m.f, ux = ia * qx + ic * qy, uy = ib * qx + id * qy;
+        if (ux < x || uy < y || ux >= x + w || uy >= y + h || ux < dx || uy < dy || ux >= dx + dw || uy >= dy + dh) continue;
+        float k = op * (c->clip ? c->clip[(size_t)Y * c->w + X] : 1);
+        if (k < 1 / 512.f) continue;
+        float sx = (ux - dx) / dw * im->w - 0.5f, sy = (uy - dy) / dh * im->h - 0.5f;
+        int ix = (int)floorf(sx), iy = (int)floorf(sy); float fx = sx - ix, fy = sy - iy, acc4[4] = { 0 };
+        for (int j = 0; j < 4; j++) {
+            int xx = LCLAMP(ix + (j & 1), 0, im->w - 1), yy = LCLAMP(iy + (j >> 1), 0, im->h - 1);
+            float wt = ((j & 1) ? fx : 1 - fx) * ((j >> 1) ? fy : 1 - fy); uint32_t sp = im->px[(size_t)yy * im->w + xx];
+            for (int ch = 0; ch < 4; ch++) acc4[ch] += wt * ((sp >> (24 - 8 * ch)) & 255);
+        }
+        float sa = acc4[0] * k / 255; if (sa < 1 / 512.f) continue;
+        uint32_t *d = &c->px[(size_t)Y * c->w + X], dp = *d; float inv = 1 - sa; uint32_t o = 0;
+        for (int ch = 0; ch < 4; ch++) { float v = acc4[ch] * k + ((dp >> (24 - 8 * ch)) & 255) * inv; o |= (uint32_t)LMIN(255.f, v + 0.5f) << (24 - 8 * ch); }
+        *d = o;
+    }
+    if (owned) image_unref(im);
+}
+
 static void walk(Ctx *c, const Node *n, Mat m, Paint pt, int depth);
 
 static void draw_el(Ctx *c, const Node *k, Mat m, Paint pt, int depth) {
@@ -485,7 +552,8 @@ static void draw_el(Ctx *c, const Node *k, Mat m, Paint pt, int depth) {
                 walk(c, r, um, q, depth + 1);
             } else draw_el(c, r, um, q, depth + 1);
         }
-    } else {
+    } else if (!strcmp(t, "image")) draw_image(c, k, km, q.op);
+    else {
         PathB p = { 0 }; p.m = km; p.sc = sqrtf(fabsf(km.a * km.d - km.b * km.c));
         build_shape(&p, k);
         if (p.xy.n >= 4) {

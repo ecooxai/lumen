@@ -1,0 +1,13 @@
+<!doctype html><title>@starting-style is not applied as a normal rule</title>
+<style>
+dialog{opacity:0;transform:scale(.98);transition:opacity .2s,transform .2s}
+dialog[open]{opacity:1;transform:none}
+@starting-style{dialog[open]{opacity:0;transform:scale(.98)}}
+.b{color:rgb(0,0,255)} @starting-style{.b{color:rgb(255,0,0)}}
+</style>
+<p class=b>blue text</p><dialog id=d><p>Hello dialog</p></dialog>
+<script>
+const d = document.getElementById('d');
+d.showModal();
+setTimeout(() => { const c = getComputedStyle(d); console.log('SS op=' + c.opacity + ' tf=' + c.transform + ' b=' + getComputedStyle(document.querySelector('.b')).color); }, 800);
+</script>

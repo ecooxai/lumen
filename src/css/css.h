@@ -196,7 +196,7 @@ bool css_supports(const char *cond);
 StyleEngine *style_engine_new(Document *d);
 void style_engine_free(StyleEngine *e);
 void style_engine_add_sheet(StyleEngine *e, StyleSheet *s);
-extern void (*css_sheet_added_hook)(StyleSheet *s);
+extern void (*css_sheet_added_hook)(StyleSheet *s, Document *d);
 void style_engine_remove_owner(StyleEngine *e, Node *owner);
 void style_engine_invalidate(StyleEngine *e);
 void style_recalc(StyleEngine *e, Node *root, bool force);

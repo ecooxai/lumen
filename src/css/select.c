@@ -129,7 +129,9 @@ static bool match_pseudo(const SimpleSel *s, Node *el, Node *scope) {
     if (n == P_read_write) return (el->tag == A_input || el->tag == A_textarea) && !node_has_attr(el, "readonly");
     if (n == P_lang) { for (Node *x = el; x && x->type == NODE_ELEMENT; x = x->parent) { const char *l = node_attr(x, "lang"); if (l) return s->value && str_istarts(l, s->value); } return false; }
     if (n == P_dir) return s->value && !strcmp(s->value, "ltr");
-    if (n == P_target || n == P_default || n == P_popover_open || n == P_modal || n == P_fullscreen) return false;
+    if (n == P_modal) return el->flags & NF_MODAL;
+    if (n == P_popover_open) return el->flags & NF_POPOVER_OPEN;
+    if (n == P_target || n == P_default || n == P_fullscreen) return false;
     if (n == P_playing || n == P_paused) return n == P_paused;
     /* vendor / unknown pseudo-classes never match */
     return false;

@@ -17,7 +17,7 @@ const char *css_ua_sheet =
 "small{font-size:smaller}big{font-size:larger}sub{vertical-align:sub;font-size:smaller}sup{vertical-align:super;font-size:smaller}"
 "a:any-link{color:#0000ee;text-decoration:underline;cursor:pointer}mark{background-color:yellow;color:black}"
 "hr{border:1px inset #eee;margin:.5em auto;color:gray;overflow:hidden}center{text-align:center}nobr{white-space:nowrap}"
-"img,video,canvas,iframe,embed,object,svg{display:inline-block}iframe{border:2px inset #eee}iframe[frameborder=\"0\"],iframe[frameborder=no i]{border:none}video{width:300px;height:150px;object-fit:contain}"
+"img,video,canvas,iframe,embed,object,svg{display:inline-block}iframe{border:2px inset #eee}iframe[frameborder=\"0\"],iframe[frameborder=no i]{border:none}video{object-fit:contain}"
 "svg:not(:root){overflow:hidden}audio:not([controls]){display:none}audio{width:300px;height:54px;display:inline-block}"
 "input,select,button,textarea{display:inline-block;font-size:13.333px;font-family:system-ui;margin:0;color:black}"
 "input{padding:1px 2px;border:2px inset #767676;background:white;width:150px;height:auto;line-height:normal}input[type=hidden]{display:none}"
@@ -28,5 +28,7 @@ const char *css_ua_sheet =
 "legend{padding:0 2px}summary{display:list-item}details:not([open])>:not(summary){display:none}"
 "ruby{display:ruby}rt{font-size:50%}q::before{content:open-quote}q::after{content:close-quote}"
 "slot{display:contents}dialog[open]{position:absolute;left:0;right:0;margin:auto;border:solid;padding:1em;background:white;color:black;width:fit-content}"
+"dialog:modal{position:fixed;top:0;bottom:0;height:fit-content;max-width:calc(100% - 2em - 6px);max-height:calc(100% - 2em - 6px);overflow:auto;z-index:2147483647}"
+"[popover]:popover-open{position:fixed;top:0;right:0;bottom:0;left:0;width:fit-content;height:fit-content;margin:auto;border:solid;padding:.25em;overflow:auto;color:black;background:white;z-index:2147483647}"
 "[popover]:not(:popover-open){display:none}marquee{display:inline-block}"
 ;
