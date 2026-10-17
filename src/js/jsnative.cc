@@ -1096,6 +1096,7 @@ void js_run_inserted(JsCtx *c, Node *root) {
         jwrap(c, s);
         NetRequest *rq = net_request_ctx("GET", u, js_top_url(c));
         if (char *ref = net_referrer(c->doc->url, u, c->doc->referrer_policy)) { headers_add(&rq->headers, "Referer", ref); free(ref); }
+        if (c->doc->url && !node_attr(s, "crossorigin")) { rq->no_cors_origin = strdup(c->doc->url); rq->coep_require_corp = c->doc->coep_require_corp; }
         start_fetch(c, rq, new Fetch{ c, 0, {}, s });
         free(u);
     }

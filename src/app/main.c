@@ -177,6 +177,7 @@ static NetRequest *doc_req(Document *d, const char *u, const char *top) {
     NetRequest *rq = net_request_ctx("GET", u, top);
     char *ref = d ? net_referrer(d->url, u, d->referrer_policy) : NULL;
     if (ref) { headers_add(&rq->headers, "Referer", ref); free(ref); }
+    if (d && d->url) { rq->no_cors_origin = xstrdup(d->url); rq->coep_require_corp = d->coep_require_corp; }
     return rq;
 }
 static Image *cache_get(const char *u) {
@@ -306,6 +307,7 @@ static int loader(void *arg) {
     if (r && !rq->html) {
         const char *coop = headers_get(&r->headers, "cross-origin-opener-policy"), *coep = headers_get(&r->headers, "cross-origin-embedder-policy");
         bool secure = !strncmp(p->url, "https:", 6) || !strncmp(p->url, "http://localhost", 16) || !strncmp(p->url, "http://127.0.0.1", 16);
+        p->d->coep_require_corp = secure && coep && !strncasecmp(coep, "require-corp", 12);
         p->d->cross_origin_isolated = secure && coop && coep && !strncasecmp(coop, "same-origin", 11) && strncasecmp(coop, "same-origin-allow-popups", 24)
             && (!strncasecmp(coep, "require-corp", 12) || !strncasecmp(coep, "credentialless", 14));
         const char *rp = headers_get(&r->headers, "referrer-policy");

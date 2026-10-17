@@ -101,6 +101,18 @@ int main(void) {
         CHECK(!csp_allows_script(two, d, "https://b.test/x.js", NULL, NULL, 0, true));
         free(two);
     }
+    {   /* CORP / COEP */
+        const char *d = "https://a.test/p";
+        CHECK(!net_corp_blocked(d, "https://a.test/i.png", "same-origin", true));
+        CHECK(net_corp_blocked(d, "https://cdn.a.test/i.png", "same-origin", false));
+        CHECK(!net_corp_blocked(d, "https://cdn.a.test/i.png", "same-site", false));
+        CHECK(net_corp_blocked(d, "https://b.test/i.png", "same-site", false));
+        CHECK(net_corp_blocked(d, "http://cdn.a.test/i.png", " same-site ", false));
+        CHECK(!net_corp_blocked(d, "https://b.test/i.png", "cross-origin", true));
+        CHECK(!net_corp_blocked(d, "https://b.test/i.png", NULL, false));
+        CHECK(net_corp_blocked(d, "https://b.test/i.png", NULL, true));
+        CHECK(!net_corp_blocked("about:blank", "https://b.test/i.png", "same-origin", true));
+    }
     if (fails) return 1;
     printf("net tests ok\n");
     return 0;

@@ -478,6 +478,11 @@ NetResponse *net_fetch_sync(NetRequest *req) {
     }
     if (!r->url) r->url = url; else free(url);
     free(method);
+    if (req->no_cors_origin && !r->error && r->status && net_corp_blocked(req->no_cors_origin, r->url, headers_get(&r->headers, "cross-origin-resource-policy"), req->coep_require_corp)) {
+        fprintf(stderr, "lumen: blocked by Cross-Origin-Resource-Policy%s: %.120s\n", req->coep_require_corp ? " (COEP require-corp)" : "", r->url);
+        NetResponse *e = xcalloc(1, sizeof *e); e->error = xstrdup("blocked by Cross-Origin-Resource-Policy"); e->url = xstrdup(r->url);
+        net_response_free(r); r = e;
+    }
     if (!r->body) r->body = xcalloc(1, 1);
     return r;
 }
@@ -497,7 +502,7 @@ NetRequest *net_request_ctx(const char *method, const char *url, const char *top
     if (top_url && *top_url) r->site_for_cookies = xstrdup(top_url);
     return r;
 }
-static void net_request_free(NetRequest *r) { free(r->method); free(r->url); headers_free(&r->headers); free(r->body); free(r->site_for_cookies); free(r); }
+static void net_request_free(NetRequest *r) { free(r->method); free(r->url); headers_free(&r->headers); free(r->body); free(r->site_for_cookies); free(r->no_cors_origin); free(r); }
 
 /* ---------- async worker pool ---------- */
 typedef struct Job { NetRequest *req; NetResponse *resp; struct Job *next, *rnext; } Job;

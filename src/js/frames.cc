@@ -97,7 +97,9 @@ static JsCtx *frame_create(JsCtx *p, Node *f, const char *url, const char *html,
             free(t); free(u);
         } else if (src) {
             char *u = url_join(d->url, src);
-            NetResponse *sr = u ? net_fetch_sync(net_request_ctx("GET", u, js_top_url(k))) : nullptr;
+            NetRequest *srq = u ? net_request_ctx("GET", u, js_top_url(k)) : nullptr;
+            if (srq && d->url) { srq->no_cors_origin = strdup(d->url); srq->coep_require_corp = d->coep_require_corp; }
+            NetResponse *sr = srq ? net_fetch_sync(srq) : nullptr;
             if (sr && sr->status >= 200 && sr->status < 300) js_run_script(k, s, sr->body ? sr->body : "", sr->body_len, u);
             else { s->flags |= NF_SCRIPT_STARTED; js_dispatch(k, s, "error", "Event", false, false, 0, 0, 0, NULL); }
             if (sr) net_response_free(sr);

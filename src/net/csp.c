@@ -129,3 +129,21 @@ bool csp_allows_script(const char *csp, const char *doc_url, const char *src_url
     if (have) url_free(&su);
     return ok;
 }
+
+bool net_corp_blocked(const char *initiator, const char *resp_url, const char *corp, bool require_corp) {
+    URL a, b;
+    if (!initiator || !resp_url || !url_parse(initiator, &a)) return false;
+    if (!url_parse(resp_url, &b)) { url_free(&a); return false; }
+    bool web = a.scheme && (!strcmp(a.scheme, "http") || !strcmp(a.scheme, "https"));
+    char *oa = url_origin(&a), *ob = url_origin(&b);
+    bool same_origin = oa && ob && !strcmp(oa, ob), a_secure = a.scheme && !strcmp(a.scheme, "https"), b_secure = b.scheme && !strcmp(b.scheme, "https");
+    free(oa); free(ob); url_free(&a); url_free(&b);
+    if (!web || same_origin) return false;
+    while (corp && isspace((unsigned char)*corp)) corp++;
+    size_t n = corp ? strlen(corp) : 0;
+    while (n && isspace((unsigned char)corp[n - 1])) n--;
+    if (n && tok_eq(corp, n, "same-origin")) return true;
+    if (n && tok_eq(corp, n, "same-site")) return !net_url_same_site(initiator, resp_url) || (a_secure && !b_secure);
+    if (n && tok_eq(corp, n, "cross-origin")) return false;
+    return require_corp;
+}

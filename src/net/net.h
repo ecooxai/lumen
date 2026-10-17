@@ -41,6 +41,8 @@ struct NetRequest {
     void *ud;
     uint64_t id;
     char *site_for_cookies;   /* top-level document URL; NULL = same-site (top-level navigation) */
+    char *no_cors_origin;     /* initiating document URL of a no-cors subresource load: enables CORP checks */
+    bool coep_require_corp;   /* initiator has COEP require-corp: cross-origin responses need CORP */
 };
 
 void net_init(int threads);
@@ -91,6 +93,8 @@ char *net_referrer(const char *doc_url, const char *target, const char *policy);
 
 /* Content-Security-Policy: csp = enforced policies, one per line. csp_append adds a header value (realloc). */
 char *csp_append(char *csp, const char *policy);
+/* Cross-Origin-Resource-Policy: would a no-cors response from resp_url be blocked for initiator? */
+bool net_corp_blocked(const char *initiator, const char *resp_url, const char *corp, bool require_corp);
 /* may this <script> run? src_url NULL = inline (body/n hashed). */
 bool csp_allows_script(const char *csp, const char *doc_url, const char *src_url, const char *nonce,
                        const char *body, size_t n, bool parser_inserted);

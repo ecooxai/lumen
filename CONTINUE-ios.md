@@ -285,3 +285,8 @@ in-flow content (display.c dl_move_items). This removed the empty grey box on Go
   hash/'strict-dynamic' is present), 'strict-dynamic' (only non-parser-inserted scripts), host/scheme/'self'/*.
   Not yet: inline on* handlers (script-src-attr), eval ('unsafe-eval'), img/style/connect/font/frame-src,
   report-only, Trusted Types. Test server ~/fvtest/sec/csp.py (port 8768, /c1../c5, log /tmp/csp-log.txt).
+- CORP/COEP (net_corp_blocked in src/net/csp.c, checked in net_fetch_sync when NetRequest.no_cors_origin is set):
+  no-cors subresources (img, CSS, classic scripts without crossorigin; main.c doc_req, frames.cc, jsnative.cc)
+  are blocked for CORP same-origin/same-site mismatches, and with Document.coep_require_corp any cross-origin
+  response without CORP is blocked. Not yet: COEP credentialless, nested-frame COEP, CORS-mode exemptions for
+  crossorigin images. Test server ~/fvtest/sec/corp.py (port 8769, /page and /coep, log /tmp/corp-log.txt).
