@@ -93,7 +93,7 @@ static JsCtx *frame_create(JsCtx *p, Node *f, const char *url, const char *html,
             free(t); free(u);
         } else if (src) {
             char *u = url_join(d->url, src);
-            NetResponse *sr = u ? net_fetch_sync(net_request_new("GET", u)) : nullptr;
+            NetResponse *sr = u ? net_fetch_sync(net_request_ctx("GET", u, js_top_url(k))) : nullptr;
             if (sr && sr->status >= 200 && sr->status < 300) js_run_script(k, s, sr->body ? sr->body : "", sr->body_len, u);
             else { s->flags |= NF_SCRIPT_STARTED; js_dispatch(k, s, "error", "Event", false, false, 0, 0, 0, NULL); }
             if (sr) net_response_free(sr);
@@ -134,7 +134,7 @@ static void frame_load(JsCtx *p, Node *f, const char *u, const std::string &key)
     JsCtx *k = frame_create(p, f, "about:blank", "", 0, !remote);
     k->frame_src = key;
     if (!remote) return;
-    NetRequest *rq = net_request_new("GET", u);
+    NetRequest *rq = net_request_ctx("GET", u, js_top_url(p));
     if (p->doc->url && !strncmp(p->doc->url, "http", 4)) headers_add(&rq->headers, "Referer", p->doc->url);
     FrameLoad *l = new FrameLoad{ p, f, k->id, u };
     g_loads.push_back(l);

@@ -40,11 +40,17 @@ struct NetRequest {
     NetChunkFn chunk;      /* streaming: decoded body pieces; done then gets an empty body */
     void *ud;
     uint64_t id;
+    char *site_for_cookies;   /* top-level document URL; NULL = same-site (top-level navigation) */
 };
 
 void net_init(int threads);
 void net_shutdown(void);
 NetRequest *net_request_new(const char *method, const char *url);
+/* request made on behalf of a page whose top-level document is top_url (drives SameSite cookies) */
+NetRequest *net_request_ctx(const char *method, const char *url, const char *top_url);
+/* registrable-domain ("site") comparison of two hosts; approximate eTLD+1 without the full public suffix list */
+bool net_same_site(const char *host_a, const char *host_b);
+bool net_url_same_site(const char *url_a, const char *url_b);
 /* Asynchronous: callbacks fire on the thread calling net_poll(). Ownership of req moves to net. */
 uint64_t net_fetch(NetRequest *req);
 void net_cancel(uint64_t id);
@@ -67,10 +73,16 @@ void net_ws_send(NetWs *ws, int opcode, const char *data, size_t n);
 void net_ws_close(NetWs *ws, int code, const char *reason);
 void net_ws_release(NetWs *ws); /* drop the owner reference; no further callbacks */
 
-void cookies_set_from_header(const URL *u, const char *set_cookie);
-char *cookies_get(const URL *u, bool for_http); /* "a=b; c=d" or NULL */
-void cookies_set_document(const char *url, const char *cookie_str);
-char *cookies_get_document(const char *url);
+void cookies_set_from_header(const URL *u, const char *set_cookie, bool cross_site);
+char *cookies_get(const URL *u, bool for_http, bool cross_site); /* "a=b; c=d" or NULL */
+/* top_url: the top-level document (NULL = same as url); cross-site frames only see SameSite=None cookies */
+void cookies_set_document(const char *url, const char *top_url, const char *cookie_str);
+char *cookies_get_document(const char *url, const char *top_url);
+/* HSTS (RFC 6797): known hosts are upgraded from http to https */
+void hsts_note(const URL *u, const char *sts_header);
+char *hsts_upgrade(const char *url);   /* https URL if the host is HSTS-known, else NULL */
+void hsts_load(const char *path);
+bool hsts_save(const char *path);
 void cookies_load(const char *path);
 bool cookies_save(const char *path); /* writes only when the jar changed */
 

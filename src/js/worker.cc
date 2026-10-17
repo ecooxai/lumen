@@ -26,7 +26,7 @@ enum { WM_MESSAGE, WM_ERROR, WM_LOADFAIL };
 struct OutMsg { int kind; Buf data; std::string msg, file; int line = 0, col = 0; };
 struct Worker {
     uint32_t id = 0; JsCtx *owner = nullptr;
-    std::string url, src, ua, platform, name; bool have_src = false, module = false, coi = false;
+    std::string url, src, ua, platform, name, top; bool have_src = false, module = false, coi = false;
     std::mutex mu; std::condition_variable cv;
     std::deque<Buf> in; std::deque<OutMsg> out;
     std::atomic<bool> term{false};
@@ -174,7 +174,7 @@ WFN(resolve) {
 }
 WFN(fetch) {
     WENV; std::string u = jcstr(iso, a[0]), m = a[1]->IsString() ? jcstr(iso, a[1]) : "GET";
-    NetRequest *rq = net_request_new(m.c_str(), u.c_str());
+    NetRequest *rq = net_request_ctx(m.c_str(), u.c_str(), E->w->top.empty() ? nullptr : E->w->top.c_str());
     if (a[2]->IsString()) { std::string b = jcstr(iso, a[2]); rq->body = (char *)malloc(b.size() + 1); memcpy(rq->body, b.c_str(), b.size() + 1); rq->body_len = b.size(); }
     else if (a[2]->IsArrayBuffer() || a[2]->IsArrayBufferView()) {
         std::shared_ptr<v8::BackingStore> bs; size_t off = 0, n = 0;
@@ -671,6 +671,7 @@ void n_workerNew(const FCI &a) {
     v8::Isolate *iso = a.GetIsolate();
     auto w = std::make_shared<Worker>();
     w->id = ++g_wseq; w->owner = jctx(iso); w->coi = w->owner && w->owner->doc && w->owner->doc->cross_origin_isolated;
+    if (const char *t = js_top_url(w->owner)) w->top = t;
     w->url = jcstr(iso, a[0]); w->have_src = a[1]->IsString(); if (w->have_src) w->src = jcstr(iso, a[1]);
     w->ua = jcstr(iso, a[2]); w->platform = jcstr(iso, a[3]); w->name = a[4]->IsString() ? jcstr(iso, a[4]) : ""; w->module = a.Length() > 5 && a[5]->IsTrue();
     g_workers[w->id] = w;

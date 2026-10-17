@@ -252,3 +252,13 @@ in-flow content (display.c dl_move_items). This removed the empty grey box on Go
   Verified on the iPad Simulator too (force-quit + relaunch keeps data; 0-0.1% CPU idle).
 - `navigator.storage.estimate()` now reports real usage (localStorage + IndexedDB bytes for the origin,
   `storageUsage` native); `persisted()` added (always false).
+
+## Security features (in progress, order: SameSite/HSTS -> mixed content -> XFO/frame-ancestors -> iframe sandbox -> Referrer-Policy -> CSP -> CORP/COEP)
+- Cookies (src/net/cookies.c): SameSite=None/Lax/Strict; unset = Lax (Chrome default). Requests carry
+  `site_for_cookies` (top-level doc URL, `net_request_ctx`); cross-site requests and cross-site frames'
+  document.cookie only see/set SameSite=None cookies. SameSite=None needs Secure; `__Secure-`/`__Host-` prefixes
+  enforced. Site = approximate eTLD+1 (small two-level suffix table, no full PSL). Top-level navigations are treated as
+  same-site (initiator isn't tracked), so Strict cookies are sent on cross-site navigations — known gap.
+- HSTS (src/net/hsts.c): Strict-Transport-Security over https is recorded (includeSubDomains, max-age=0 clears),
+  persisted to `<pref>/hsts.txt`; http:// URLs to known hosts (incl. redirects) are upgraded before connecting. No preload list.
+- tests/test_net.c (`make test`) covers both.

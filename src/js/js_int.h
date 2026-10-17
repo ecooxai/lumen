@@ -129,6 +129,8 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N);
 void js_run_inserted(JsCtx *c, Node *root);
 extern "C" JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame);
 extern "C" JsCtx *owner_ctx(Document *d);
+/* URL of the top-level document this context belongs to (site for cookies) */
+static inline const char *js_top_url(const JsCtx *c) { while (c && c->parent) c = c->parent; return c && c->doc ? c->doc->url : nullptr; }
 std::string ctx_origin(JsCtx *c);
 void frames_scan(JsCtx *c);
 void frames_inserted(JsCtx *c, Node *root);

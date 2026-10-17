@@ -93,8 +93,12 @@ $(BUILD)/fetch: $(call OBJ,tests/fetch.c $(BASE_SRC) $(NET_SRC))
 $(BUILD)/test_url: $(call OBJ,tests/test_url.c $(BASE_SRC))
 	$(CC) $(OPT) $^ -o $@ $(BASELIBS)
 
-test: $(BUILD)/test_url
+$(BUILD)/test_net: $(call OBJ,tests/test_net.c $(BASE_SRC) src/net/cookies.c src/net/hsts.c)
+	$(CC) $(OPT) $^ -o $@ $(BASELIBS)
+
+test: $(BUILD)/test_url $(BUILD)/test_net
 	$(BUILD)/test_url
+	$(BUILD)/test_net
 
 # iOS app bundle: flat .app with the binary, Info.plist, ICU data, CA bundle and icon; ad-hoc signed (re-sign to sideload).
 # Mac Catalyst uses the macOS layout (Contents/MacOS, Contents/Resources). JIT=1 links the JIT V8 and signs with

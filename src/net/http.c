@@ -240,6 +240,7 @@ static pthread_mutex_t g_ev_mu = PTHREAD_MUTEX_INITIALIZER;
 static Ev *g_ev, *g_ev_tail;
 static __thread NetRequest *t_stream;
 static __thread const char *t_url;
+static __thread bool t_cross;   /* request is cross-site to its top-level document (SameSite) */
 static void ev_push(int type, NetRequest *req, NetResponse *resp, char *data, size_t n) {
     Ev *e = xcalloc(1, sizeof *e); e->type = type; e->req = req; e->resp = resp; e->data = data; e->n = n;
     pthread_mutex_lock(&g_ev_mu);
@@ -322,7 +323,7 @@ static NetResponse *http_once(const char *method, const URL *u, const Headers *h
     if (!has_ch && !strcmp(u->scheme, "https") && strstr(g_user_agent, "Chrome/"))
         sb_puts(&req, "sec-ch-ua: \"Google Chrome\";v=\"150\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"150\"\r\n"
                       "sec-ch-ua-mobile: ?0\r\nsec-ch-ua-platform: \"" UA_CH_OS "\"\r\n");
-    if (cookies) { char *ck = cookies_get(u, true); if (ck) { sb_printf(&req, "Cookie: %s\r\n", ck); free(ck); } }
+    if (cookies) { char *ck = cookies_get(u, true, t_cross); if (ck) { sb_printf(&req, "Cookie: %s\r\n", ck); free(ck); } }
     if (body || (strcmp(method, "GET") && strcmp(method, "HEAD"))) sb_printf(&req, "Content-Length: %zu\r\n", body_len);
     sb_puts(&req, "Connection: keep-alive\r\n\r\n");
     if (conn_write(c, req.s, req.n) < 0 || (body_len && conn_write(c, body, body_len) < 0)) {
@@ -345,7 +346,7 @@ static NetResponse *http_once(const char *method, const URL *u, const Headers *h
             *colon = 0; char *v = colon + 1; while (*v == ' ' || *v == '\t') v++;
             for (char *e = v + strlen(v); e > v && (e[-1] == ' ' || e[-1] == '\t'); ) *--e = 0;
             headers_add(&r->headers, line.s, v);
-            if (cookies && str_ieq(line.s, "set-cookie")) cookies_set_from_header(u, v);
+            if (cookies && str_ieq(line.s, "set-cookie")) cookies_set_from_header(u, v, t_cross);
         }
     } while (status >= 100 && status < 200 && status != 101);
     r->status = status;
@@ -452,13 +453,16 @@ NetResponse *net_fetch_sync(NetRequest *req) {
     NetResponse *r = NULL;
     for (;;) {
         URL u;
+        { char *up = hsts_upgrade(url); if (up) { free(url); url = up; } }
         if (!url_parse(url, &u)) { r = xcalloc(1, sizeof *r); r->error = xstrdup("invalid url"); break; }
         if (!strcmp(u.scheme, "file")) { r = file_url(&u, url); url_free(&u); break; }
         if (strcmp(u.scheme, "http") && strcmp(u.scheme, "https")) { r = xcalloc(1, sizeof *r); r->error = xstrdup("unsupported scheme"); url_free(&u); break; }
         bool retry;
         t_url = url;
+        t_cross = req->site_for_cookies && !net_url_same_site(req->site_for_cookies, url);
         r = http_once(method, &u, &req->headers, body, blen, !req->no_cookies, &retry);
         if (r->error && retry) { net_response_free(r); r = http_once(method, &u, &req->headers, body, blen, !req->no_cookies, &retry); }
+        if (!r->error && r->status) hsts_note(&u, headers_get(&r->headers, "strict-transport-security"));
         const char *loc = headers_get(&r->headers, "location");
         if (r->status >= 300 && r->status < 400 && r->status != 304 && loc && redirects-- > 0) {
             char *nu = url_join(url, loc);
@@ -488,7 +492,12 @@ NetRequest *net_request_new(const char *method, const char *url) {
     r->method = xstrdup(method ? method : "GET"); r->url = xstrdup(url);
     return r;
 }
-static void net_request_free(NetRequest *r) { free(r->method); free(r->url); headers_free(&r->headers); free(r->body); free(r); }
+NetRequest *net_request_ctx(const char *method, const char *url, const char *top_url) {
+    NetRequest *r = net_request_new(method, url);
+    if (top_url && *top_url) r->site_for_cookies = xstrdup(top_url);
+    return r;
+}
+static void net_request_free(NetRequest *r) { free(r->method); free(r->url); headers_free(&r->headers); free(r->body); free(r->site_for_cookies); free(r); }
 
 /* ---------- async worker pool ---------- */
 typedef struct Job { NetRequest *req; NetResponse *resp; struct Job *next, *rnext; } Job;
@@ -642,6 +651,7 @@ static void *ws_thread(void *arg) {
     NetWs *w = arg; URL u; char *err = NULL; Conn *c = NULL; int code = 1006; bool clean = false, sent_close = false;
     SB in, msg, line; sb_init(&in); sb_init(&msg); sb_init(&line); int msg_op = 1;
     bool have_u = url_parse(w->url, &u);
+    bool wcross = *w->origin && !net_url_same_site(w->origin, w->url);
     if (!have_u || !(c = conn_open(&u, &err))) goto out;
     struct timeval tv = { 0, 0 };
     setsockopt(c->fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof tv);
@@ -656,7 +666,7 @@ static void *ws_thread(void *arg) {
         sb_printf(&req, "Connection: Upgrade\r\nPragma: no-cache\r\nCache-Control: no-cache\r\nUser-Agent: %s\r\nUpgrade: websocket\r\n", g_user_agent);
         if (*w->origin) sb_printf(&req, "Origin: %s\r\n", w->origin);
         sb_printf(&req, "Sec-WebSocket-Version: 13\r\nAccept-Encoding: gzip, deflate, br, zstd\r\nAccept-Language: en-US,en;q=0.9\r\n");
-        char *ck = cookies_get(&u, true); if (ck) { sb_printf(&req, "Cookie: %s\r\n", ck); free(ck); }
+        char *ck = cookies_get(&u, true, wcross); if (ck) { sb_printf(&req, "Cookie: %s\r\n", ck); free(ck); }
         sb_printf(&req, "Sec-WebSocket-Key: %s\r\n", key);
         if (*w->protocols) sb_printf(&req, "Sec-WebSocket-Protocol: %s\r\n", w->protocols);
         sb_puts(&req, "\r\n");
@@ -666,7 +676,7 @@ static void *ws_thread(void *arg) {
         while (conn_readline(c, &line) && line.n) {
             char *col = strchr(line.s, ':'); if (!col) continue;
             *col = 0; char *v = col + 1; while (*v == ' ' || *v == '\t') v++;
-            if (str_ieq(line.s, "set-cookie")) cookies_set_from_header(&u, v);
+            if (str_ieq(line.s, "set-cookie")) cookies_set_from_header(&u, v, wcross);
             else if (str_ieq(line.s, "sec-websocket-accept")) accept_ok = !strcmp(v, want);
             else if (str_ieq(line.s, "sec-websocket-protocol")) { free(w->protocol); w->protocol = xstrdup(v); }
         }

@@ -279,8 +279,8 @@ FN(focus) {
     if (n) jfire(c, n, "focus");
 }
 FN(active) { CTX; RET(jwrap(c, c->doc->focus)); }
-FN(cookie) { CTX; char *s = cookies_get_document(c->doc->url); RET(jstr(iso, s ? s : "")); free(s); }
-FN(setCookie) { CTX; std::string s = S(0); cookies_set_document(c->doc->url, s.c_str()); }
+FN(cookie) { CTX; char *s = cookies_get_document(c->doc->url, js_top_url(c)); RET(jstr(iso, s ? s : "")); free(s); }
+FN(setCookie) { CTX; std::string s = S(0); cookies_set_document(c->doc->url, js_top_url(c), s.c_str()); }
 FN(url) { CTX; RET(jstr(iso, c->doc->url ? c->doc->url : "about:blank")); }
 FN(setUrl) {
     CTX; std::string u = S(0);
@@ -506,7 +506,7 @@ static NetRequest *mkreq(JsCtx *c, const FCI &a) {
     v8::Isolate *iso = c->iso;
     v8::Local<v8::Context> ctx = iso->GetCurrentContext();
     std::string m = S(0), u = S(1);
-    NetRequest *rq = net_request_new(m.c_str(), u.c_str());
+    NetRequest *rq = net_request_ctx(m.c_str(), u.c_str(), js_top_url(c));
     bool referer = false;
     if (a[2]->IsArray()) {
         v8::Local<v8::Array> h = a[2].As<v8::Array>();
@@ -1087,7 +1087,7 @@ void js_run_inserted(JsCtx *c, Node *root) {
         char *u = *src ? url_join(c->doc->url, src) : nullptr;
         if (!u) { jfire(c, s, "error"); continue; }
         jwrap(c, s);
-        NetRequest *rq = net_request_new("GET", u);
+        NetRequest *rq = net_request_ctx("GET", u, js_top_url(c));
         if (c->doc->url && !strncmp(c->doc->url, "http", 4)) headers_add(&rq->headers, "Referer", c->doc->url);
         start_fetch(c, rq, new Fetch{ c, 0, {}, s });
         free(u);
