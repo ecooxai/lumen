@@ -12,17 +12,18 @@ function parseDecls(s) {
     return m;
 }
 const serDecls = (m) => [...m].map(([k, [v, i]]) => k + ': ' + v + (i ? ' !important' : '') + ';').join(' ');
+const cssomSet = (el, v) => { const old = N.attr(el, 'style'); v = String(v); N.setAttr(el, 'style', v, true); notify('attributes', el, { attributeName: 'style', oldValue: old }); ceAttr(el, 'style', old, v); };
 class CSSStyleDeclaration {
     constructor(el, ro) { def(this, '_el', el); def(this, '_ro', ro); }
     _m() { return parseDecls(this._el ? N.attr(this._el, 'style') : ''); }
-    get cssText() { return serDecls(this._m()); } set cssText(v) { this._el.setAttribute('style', String(v)); }
+    get cssText() { return serDecls(this._m()); } set cssText(v) { cssomSet(this._el, v); }
     get length() { return this._m().size; }
     item(i) { return [...this._m().keys()][i] || ''; }
     *[Symbol.iterator]() { for (let i = 0, n = this.length; i < n; i++) yield this.item(i); }
     getPropertyValue(p) { const e = this._m().get(camelToKebab(String(p))); return e ? e[0] : ''; }
     getPropertyPriority(p) { const e = this._m().get(camelToKebab(String(p))); return e ? e[1] : ''; }
-    setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p); const m = this._m(); if (v == null || v === '') m.delete(p); else m.set(p, [String(v), pri ? 'important' : '']); this._el.setAttribute('style', serDecls(m)); }
-    removeProperty(p) { p = camelToKebab(String(p)); const m = this._m(); const e = m.get(p); if (e) { m.delete(p); this._el.setAttribute('style', serDecls(m)); } return e ? e[0] : ''; }
+    setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p); const m = this._m(); if (v == null || v === '') m.delete(p); else m.set(p, [String(v), pri ? 'important' : '']); cssomSet(this._el, serDecls(m)); }
+    removeProperty(p) { p = camelToKebab(String(p)); const m = this._m(); const e = m.get(p); if (e) { m.delete(p); cssomSet(this._el, serDecls(m)); } return e ? e[0] : ''; }
 }
 const styleHandler = {
     get(t, p) { if (typeof p !== 'string' || p in t) return Reflect.get(t, p, t); if (/^\d+$/.test(p)) return t.item(+p); return t.getPropertyValue(p); },
@@ -172,7 +173,7 @@ reflectBool(HTMLElement.prototype, 'hidden', 'inert', 'autofocus');
 installHandlers(HTMLElement.prototype, true);
 methods(HTMLElement.prototype, {
     get style() { if (!this.__style) def(this, '__style', makeStyle(this)); return this.__style; },
-    set style(v) { this.setAttribute('style', v); },
+    set style(v) { cssomSet(this, v); },
     get dataset() {
         if (this.__ds) return this.__ds;
         const el = this, toAttr = (k) => 'data-' + k.replace(/[A-Z]/g, c => '-' + c.toLowerCase());

@@ -18,6 +18,8 @@ enum {
     NF_SELF_DIRTY = 1 << 13,      /* sibling list changed: re-match self only */
     NF_MODAL = 1 << 14, NF_POPOVER_OPEN = 1 << 15,
     NF_CSP_STYLE_CHECKED = 1 << 16, NF_CSP_STYLE_BLOCKED = 1 << 17,   /* parser-inserted <style>: CSP decided once */
+    NF_STYLE_CSSOM = 1 << 18,     /* style attribute last written through CSSOM (el.style): exempt from CSP */
+    NF_CSP_SATTR_CHECKED = 1 << 19, NF_CSP_SATTR_BLOCKED = 1 << 20,   /* style= attribute CSP decision for inline_style_src */
 };
 
 typedef struct { const char *name; char *value; } Attr; /* name is an atom */

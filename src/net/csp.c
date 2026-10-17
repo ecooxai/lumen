@@ -90,9 +90,9 @@ static bool hash_match(const char *t, size_t n, const char *body, size_t bn) {
 
 static bool policy_allows(const char *p, const char *e, const char *doc_url, const char *src_url, const URL *su,
                           const char *nonce, const char *body, size_t bn, bool parser, int kind) {
-    /* kind: 0 <script>, 1 inline event handler attribute, 2 eval/new Function, 3 WebAssembly compile, 4 inline <style> */
-    const char *ve, *v = kind == 0 ? find_dir(p, e, "script-src-elem", &ve) : kind == 1 ? find_dir(p, e, "script-src-attr", &ve) : kind == 4 ? find_dir(p, e, "style-src-elem", &ve) : NULL;
-    if (!v) v = find_dir(p, e, kind == 4 ? "style-src" : "script-src", &ve);
+    /* kind: 0 <script>, 1 inline event handler attribute, 2 eval/new Function, 3 WebAssembly compile, 4 inline <style>, 5 style= attribute */
+    const char *ve, *v = kind == 0 ? find_dir(p, e, "script-src-elem", &ve) : kind == 1 ? find_dir(p, e, "script-src-attr", &ve) : kind == 4 ? find_dir(p, e, "style-src-elem", &ve) : kind == 5 ? find_dir(p, e, "style-src-attr", &ve) : NULL;
+    if (!v) v = find_dir(p, e, kind >= 4 ? "style-src" : "script-src", &ve);
     if (!v) v = find_dir(p, e, "default-src", &ve);
     if (!v) return true;
     bool ui = false, sd = false, nh = false, host = false, uh = false, ue = false, we = false, hm = false;
@@ -116,6 +116,7 @@ static bool policy_allows(const char *p, const char *e, const char *doc_url, con
         q = te;
     }
     if (kind == 4) return ui && !nh;
+    if (kind == 5) return (hm && uh) || (ui && !nh);
     if (kind == 2) return ue;
     if (kind == 3) return ue || we;
     if (kind == 1) return (hm && uh) || (ui && !nh && !sd);
@@ -156,6 +157,7 @@ bool csp_allows_style(const char *csp, const char *nonce, const char *body, size
     }
     return ok;
 }
+bool csp_allows_style_attr(const char *csp, const char *body, size_t n) { return csp_all(csp, body, n, 5); }
 bool csp_allows_attr(const char *csp, const char *body, size_t n) { return csp_all(csp, body, n, 1); }
 bool csp_allows_eval(const char *csp, bool wasm) { return csp_all(csp, NULL, 0, wasm ? 3 : 2); }
 

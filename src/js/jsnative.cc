@@ -86,7 +86,10 @@ FN(setText) {
     if (!s.empty()) node_append(n, node_new_text(c->doc, s.data(), s.size()));
 }
 FN(attr) { CTX; ARGN(n, 0); std::string k = S(1); RET(nstr(iso, n->type == NODE_ELEMENT || n->type == NODE_DOCTYPE ? node_attr(n, k.c_str()) : nullptr)); }
-FN(setAttr) { CTX; ARGN(n, 0); std::string k = S(1), v = S(2); node_set_attr(n, atom(k.c_str()), v.c_str()); }
+FN(setAttr) {
+    CTX; ARGN(n, 0); std::string k = S(1), v = S(2); node_set_attr(n, atom(k.c_str()), v.c_str());
+    if (k == "style") { if (a.Length() > 3 && a[3]->IsTrue()) n->flags |= NF_STYLE_CSSOM; else n->flags &= ~(uint32_t)NF_STYLE_CSSOM; }
+}
 FN(rmAttr) { CTX; ARGN(n, 0); std::string k = S(1); if (node_has_attr(n, k.c_str())) node_remove_attr(n, k.c_str()); }
 FN(attrs) {
     CTX; ARGN(n, 0);

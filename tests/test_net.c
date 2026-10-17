@@ -108,6 +108,13 @@ int main(void) {
         CHECK(csp_allows_style("script-src 'none'", NULL, "a{}", 3));
         CHECK(!csp_allows_style("default-src 'self'", NULL, "a{}", 3));
         CHECK(csp_allows_style("default-src 'self'; style-src-elem 'unsafe-inline'", NULL, "a{}", 3));
+        CHECK(!csp_allows_style_attr("style-src 'self'", "color:red", 9));
+        CHECK(csp_allows_style_attr("style-src 'unsafe-inline'", "color:red", 9));
+        CHECK(csp_allows_style_attr("style-src 'self'; style-src-attr 'unsafe-inline'", "color:red", 9));
+        CHECK(!csp_allows_style_attr("style-src 'unsafe-inline'; style-src-attr 'none'", "color:red", 9));
+        CHECK(csp_allows_style_attr("style-src 'unsafe-hashes' 'sha256-8f935d27GvUutRyY9yWScUMiFUk4WTdZURISiYfPOeQ='", "color:red", 9));
+        CHECK(!csp_allows_style_attr("style-src 'sha256-8f935d27GvUutRyY9yWScUMiFUk4WTdZURISiYfPOeQ='", "color:red", 9));
+        CHECK(csp_allows_style_attr("script-src 'none'", "color:red", 9));
         char *two = csp_append(csp_append(NULL, "script-src *"), "script-src 'self', img-src *");
         CHECK(csp_allows_script(two, d, "https://a.test/x.js", NULL, NULL, 0, true));
         CHECK(!csp_allows_script(two, d, "https://b.test/x.js", NULL, NULL, 0, true));

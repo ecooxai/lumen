@@ -308,5 +308,6 @@ in-flow content (display.c dl_move_items). This removed the empty grey box on Go
   Matches headless Chrome on ~/fvtest/sec/sd.py /w1 /w2.
 - CSP inline <style> (csp_allows_style, kind 4 in policy_allows): style-src-elem -> style-src -> default-src with
   'unsafe-inline', nonce, hashes; decided once per parser-inserted <style> (NF_CSP_STYLE_CHECKED/BLOCKED) so CSSOM
-  rewrites of the sheet text stay allowed. Not yet: script-created <style>, style= attributes (CSSOM writes go through
-  setAttribute('style'), so they need a separate path first). Matches Chrome on sd.py /st1 /st2.
+  rewrites of the sheet text stay allowed. style= attributes: kind 5 (style-src-attr -> style-src ->
+  default-src; hashes need 'unsafe-hashes'); CSSOM writes (el.style.*, cssText, el.style=) use cssomSet() -> N.setAttr(..., true)
+  which sets NF_STYLE_CSSOM and are exempt like Chrome; setAttribute('style') is checked. Not yet: script-created <style>. Matches Chrome on sd.py /st1 /st2.

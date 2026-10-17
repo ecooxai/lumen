@@ -2,6 +2,7 @@
 #include "css.h"
 #include "../layout/layout.h"
 #include "../base/url.h"
+bool csp_allows_style_attr(const char *csp, const char *body, size_t n);
 #include <math.h>
 #include <ctype.h>
 
@@ -1501,9 +1502,17 @@ static ComputedStyle *compute(StyleEngine *e, Node *el, const ComputedStyle *par
     for (int i = 0; i < split; i++) vec_push(all, md.v[i]);
     const char *inl = node_attr(el, A_style_attr);
     if (inl) {
-        if (!el->inline_style_src || strcmp(el->inline_style_src, inl)) { free(el->inline_style_src); el->inline_style_src = xstrdup(inl); css_decls_free(el->inline_decls); el->inline_decls = css_parse_decls(inl, strlen(inl)); }
+        if (!el->inline_style_src || strcmp(el->inline_style_src, inl)) { free(el->inline_style_src); el->inline_style_src = xstrdup(inl); css_decls_free(el->inline_decls); el->inline_decls = css_parse_decls(inl, strlen(inl)); el->flags &= ~(uint32_t)NF_CSP_SATTR_CHECKED; }
+        bool ok = true;
+        if (e->doc && e->doc->csp && !(el->flags & NF_STYLE_CSSOM)) {
+            if (!(el->flags & NF_CSP_SATTR_CHECKED)) {
+                el->flags = (el->flags | NF_CSP_SATTR_CHECKED) & ~(uint32_t)NF_CSP_SATTR_BLOCKED;
+                if (!csp_allows_style_attr(e->doc->csp, inl, strlen(inl))) { el->flags |= NF_CSP_SATTR_BLOCKED; fprintf(stderr, "lumen: CSP style-src blocked style attribute\n"); }
+            }
+            ok = !(el->flags & NF_CSP_SATTR_BLOCKED);
+        }
         DeclList *dl = el->inline_decls;
-        for (int i = 0; i < dl->n; i++) { MDecl m = { &dl->v[i], 0 }; vec_push(all, m); }
+        for (int i = 0; ok && i < dl->n; i++) { MDecl m = { &dl->v[i], 0 }; vec_push(all, m); }
     }
     for (int i = split; i < md.n; i++) vec_push(all, md.v[i]);
     apply_decl_ordered(st, par, all.v, all.n, e, el);
