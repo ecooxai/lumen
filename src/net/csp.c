@@ -118,7 +118,7 @@ static bool policy_allows(const char *p, const char *e, const char *doc_url, con
     if (kind == 2) return ue;
     if (kind == 3) return ue || we;
     if (kind == 1) return (hm && uh) || (ui && !nh && !sd);
-    if (!src_url) return ui && !nh && !sd;
+    if (!src_url) return (sd && !parser) || (ui && !nh && !sd);
     if (sd) return !parser;
     return host;
 }

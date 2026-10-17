@@ -96,6 +96,9 @@ int main(void) {
         CHECK(!csp_allows_script("script-src 'nonce-n' 'strict-dynamic' https://cdn.test", d, "https://cdn.test/y.js", NULL, NULL, 0, true));
         CHECK(csp_allows_script("script-src 'nonce-n' 'strict-dynamic'", d, "https://e.test/y.js", NULL, NULL, 0, false));
         CHECK(csp_allows_script("script-src 'nonce-n' 'strict-dynamic'", d, "https://e.test/y.js", "n", NULL, 0, true));
+        CHECK(csp_allows_script("script-src 'nonce-n' 'strict-dynamic'", d, NULL, NULL, "x()", 3, false));
+        CHECK(!csp_allows_script("script-src 'nonce-n' 'strict-dynamic'", d, NULL, NULL, "x()", 3, true));
+        CHECK(!csp_allows_script("script-src 'nonce-n' 'strict-dynamic' 'unsafe-inline'", d, NULL, NULL, "x()", 3, true));
         char *two = csp_append(csp_append(NULL, "script-src *"), "script-src 'self', img-src *");
         CHECK(csp_allows_script(two, d, "https://a.test/x.js", NULL, NULL, 0, true));
         CHECK(!csp_allows_script(two, d, "https://b.test/x.js", NULL, NULL, 0, true));
