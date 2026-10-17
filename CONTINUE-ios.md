@@ -179,6 +179,10 @@ App Store acceptance is not a goal (sideload / Xcode run).
   the two 50% columns sit side by side; `transform-origin: bottom left` (vertical keyword first) maps to the right
   axes; uniform scale() transforms now scale text too (DItem.ts); SVG `<image>` (base64 data: and loaded URLs)
   draws, and clipPath/`url(#id)` resolves inside SVGs decoded for `<img>` (Google "G" logo).
+Negative z-index: positioned boxes with z-index < 0 (including ones hoisted from non-context positioned
+ancestors like `body{position:relative}`) now paint after their stacking context's background and before its
+in-flow content (display.c dl_move_items). This removed the empty grey box on Google's sign-in page (a
+`z-index:-1` accounts.youtube.com CheckConnection iframe that should sit under the body background).
 - FIXED (idle CPU with paused media): `mediaPoll` in `05-ce.js` ran every 50 ms for as long as
   any `<video>`/`<audio>` existed, even paused. Each tick re-ran display-list building
   (Wikipedia's paused poster video: ~23 partial paints/s, 5-25% CPU forever). The poll now stops

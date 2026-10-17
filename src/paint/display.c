@@ -15,6 +15,7 @@ typedef struct {
     int order;
     Box *sb; const void *outer;   /* innermost scroller and the state outside it */
     DefVec *ctx;                  /* deferred list of the enclosing stacking context */
+    int *deco_mark;   /* paint_block_content stores the item index right after the box's own background */
 } PB;
 
 static DItem *emit(PB *p, uint8_t op) { DItem it; memset(&it, 0, sizeof it); it.op = op; it.alpha = 1; vec_push(p->dl->items, it); return &p->dl->items.v[p->dl->items.n - 1]; }
@@ -296,7 +297,9 @@ static bool is_edit_host(const Node *n) {
 static void paint_block_content(PB *p, Box *b, DefVec *defs) {
     const ComputedStyle *s = b->st;
     bool vis = s->visibility == VIS_VISIBLE;
+    int *mk = p->deco_mark; p->deco_mark = NULL;
     if (vis && b->node && b->kind != BX_INLINE && b->node != p->L->doc->html) paint_rect_deco(p, b, b->x + p->dx, b->y + p->dy, b->w, b->h, true, true);
+    if (mk) *mk = p->dl->items.n;
     if (b->fmt == FMT_REPLACED) { if (vis) paint_replaced(p, b); return; }
     bool clips = b->scroller && b->node && (s->overflow_x != OV_VISIBLE || s->overflow_y != OV_VISIBLE);
     PB saved = *p;
@@ -368,6 +371,17 @@ static void paint_deferred(PB *p, Deferred *d) {
     int order = p->order; *p = saved; p->order = order;
 }
 
+/* move items [from, to) so they start at index at (at <= from) */
+static void dl_move_items(DisplayList *dl, int at, int from, int to) {
+    int m = to - from;
+    if (m <= 0 || from <= at) return;
+    DItem *tmp = xmalloc((size_t)m * sizeof *tmp), *v = dl->items.v;
+    memcpy(tmp, v + from, (size_t)m * sizeof *tmp);
+    memmove(v + at + m, v + at, (size_t)(from - at) * sizeof *tmp);
+    memcpy(v + at, tmp, (size_t)m * sizeof *tmp);
+    free(tmp);
+}
+
 static void paint_stacking(PB *p, Box *b) {
     const ComputedStyle *s = b->st;
     if (s->opacity <= 0.001f) return;
@@ -379,6 +393,7 @@ static void paint_stacking(PB *p, Box *b) {
     int i0 = p->dl->items.n;
     bool layer = s->opacity < 0.999f;
     if (layer) { DItem *l = emit(p, DO_PUSH_LAYER); l->alpha = s->opacity; }
+    int ins = p->dl->items.n;
     DefVec defs = {0};
     /* positioned z-index:auto boxes don't form a stacking context: their positive-z descendants are
        ordered against the siblings of the enclosing context (Wikipedia's z-index:2 dropdown inside a
@@ -391,20 +406,24 @@ static void paint_stacking(PB *p, Box *b) {
         /* text of an inline positioned box lives in its block's frags: paint those belonging to it */
         Box *blk = b->parent; while (blk && blk->kind == BX_INLINE) blk = blk->parent;
         if (blk) for (int i = 0; i < blk->nfrags; i++) { TextFrag *f = &blk->frags[i]; Box *o = f->box; while (o && o != b && o != blk) o = o->parent; if (o == b) { if (f->box->kind == BX_TEXT) paint_text_frag(p, f); else paint_block_content(p, f->box, &defs); } }
-    } else paint_block_content(p, b, &defs);
+    } else { p->deco_mark = &ins; paint_block_content(p, b, &defs); p->deco_mark = NULL; }
     if (!sc) {
         int k = 0;
         for (int i = 0; i < defs.n; i++) {
             const ComputedStyle *ds = defs.v[i].b->st;
-            if (!ds->z_auto && ds->z_index > 0) vec_push(*octx, defs.v[i]);
+            if (!ds->z_auto && ds->z_index) vec_push(*octx, defs.v[i]);
             else defs.v[k++] = defs.v[i];
         }
         defs.n = k;
     }
     if (defs.n > 1) qsort(defs.v, (size_t)defs.n, sizeof(Deferred), def_cmp);
+    /* negative z-index children (including ones hoisted later from non-context positioned descendants)
+       paint after this context's background but before its in-flow content */
+    int negend = ins;
     for (int i = 0, sorted = defs.n; i < defs.n; i++) {
         if (defs.n != sorted) { qsort(defs.v + i, (size_t)(defs.n - i), sizeof(Deferred), def_cmp); sorted = defs.n; }   /* hoisted from non-context descendants */
-        Deferred d = defs.v[i]; paint_deferred(p, &d);
+        Deferred d = defs.v[i]; int n0 = p->dl->items.n; paint_deferred(p, &d);
+        if (!d.b->st->z_auto && d.b->st->z_index < 0) { dl_move_items(p->dl, negend, n0, p->dl->items.n); negend += p->dl->items.n - n0; }
     }
     vec_free(defs);
     p->ctx = octx;
