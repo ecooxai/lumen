@@ -101,8 +101,8 @@ App Store acceptance is not a goal (sideload / Xcode run).
 - Then: out/catalyst-jit, out/ios-device-jit (same patches), `make PLAT=cat JIT=1 app`, `make PLAT=ios JIT=1 ipa`.
 - DONE 2026-10-15: out/catalyst-jit built; `make PLAT=cat JIT=1 app` runs (`V8 JIT enabled`, Wikipedia 1.18 s,
   0-2% settled CPU, wasm tests pass with JIT and with `LUMEN_V8_FLAGS="--jitless --wasm-jitless"`).
-  Still open: out/ios-device-jit (1885 ninja steps left at 11:30 UTC-7, `ninja -C out/ios-device-jit
-  v8_monolith` running), then `make PLAT=ios JIT=1 ipa` -> `Lumen-jit.ipa`. No separate jitless Catalyst V8 is
+  DONE 2026-10-16: out/ios-device-jit v8_monolith finished (4238/4238); `make PLAT=ios JIT=1 ipa` ->
+  build-ios-jit/Lumen-jit.ipa (arm64, iOS device, get-task-allow; 4.2 MB zipped). Not run on a real device yet. No separate jitless Catalyst V8 is
   built; the JIT build switches to jitless with `LUMEN_V8_FLAGS="--jitless --wasm-jitless"`.
 - New: workspaces get a default SF Symbol icon (main.c ws_new); file:// viewer (main.c file_page): compact folder
   list, image/video 1:1 device px with zoom steps 10..300%, audio card, OBJ SVG viewer (drag rotate).
@@ -268,3 +268,5 @@ in-flow content (display.c dl_move_items). This removed the empty grey box on Go
 - X-Frame-Options / CSP frame-ancestors (src/js/frames.cc frame_embed_blocked): checked against every ancestor
   document; frame-ancestors wins over XFO; blocked frames get an empty about:blank and a stderr line. Test server:
   ~/fvtest/sec/srv.py (port 8765, localhost vs 127.0.0.1 = cross-origin), check with LUMEN_CONSOLE=log.
+- Iframe repaint: frame canvases are redrawn in place, so Image.ver (paint.h) is bumped per raster and hashed in
+  ditem_hash; before, iframes loaded after the parent's first paint stayed blank ~50% of runs (pre-existing race).
