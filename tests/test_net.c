@@ -99,6 +99,15 @@ int main(void) {
         CHECK(csp_allows_script("script-src 'nonce-n' 'strict-dynamic'", d, NULL, NULL, "x()", 3, false));
         CHECK(!csp_allows_script("script-src 'nonce-n' 'strict-dynamic'", d, NULL, NULL, "x()", 3, true));
         CHECK(!csp_allows_script("script-src 'nonce-n' 'strict-dynamic' 'unsafe-inline'", d, NULL, NULL, "x()", 3, true));
+        CHECK(csp_allows_style(NULL, NULL, "a{}", 3));
+        CHECK(!csp_allows_style("style-src 'self'", NULL, "a{}", 3));
+        CHECK(csp_allows_style("style-src 'self' 'unsafe-inline'", NULL, "a{}", 3));
+        CHECK(!csp_allows_style("style-src 'unsafe-inline' 'nonce-n'", NULL, "a{}", 3));
+        CHECK(csp_allows_style("style-src 'nonce-n'", "n", "a{}", 3));
+        CHECK(csp_allows_style("style-src 'sha256-X1RutGBrXCt9KkSaXMK7tHftWiRscFHOhxsS8tv8hBk='", NULL, "a{}", 3));
+        CHECK(csp_allows_style("script-src 'none'", NULL, "a{}", 3));
+        CHECK(!csp_allows_style("default-src 'self'", NULL, "a{}", 3));
+        CHECK(csp_allows_style("default-src 'self'; style-src-elem 'unsafe-inline'", NULL, "a{}", 3));
         char *two = csp_append(csp_append(NULL, "script-src *"), "script-src 'self', img-src *");
         CHECK(csp_allows_script(two, d, "https://a.test/x.js", NULL, NULL, 0, true));
         CHECK(!csp_allows_script(two, d, "https://b.test/x.js", NULL, NULL, 0, true));

@@ -306,3 +306,7 @@ in-flow content (display.c dl_move_items). This removed the empty grey box on Go
   default-src; blocked = error event). blob:/data: workers inherit the creator's CSP; http workers enforce their own
   response CSP: eval/new Function, WebAssembly compile, importScripts + module imports (script-src), fetch (connect-src).
   Matches headless Chrome on ~/fvtest/sec/sd.py /w1 /w2.
+- CSP inline <style> (csp_allows_style, kind 4 in policy_allows): style-src-elem -> style-src -> default-src with
+  'unsafe-inline', nonce, hashes; decided once per parser-inserted <style> (NF_CSP_STYLE_CHECKED/BLOCKED) so CSSOM
+  rewrites of the sheet text stay allowed. Not yet: script-created <style>, style= attributes (CSSOM writes go through
+  setAttribute('style'), so they need a separate path first). Matches Chrome on sd.py /st1 /st2.

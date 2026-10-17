@@ -173,6 +173,14 @@ static bool gen_live(uint64_t g) { for (int i = 0; i < MAX_TABS; i++) if (g_tab_
 
 static void img_refetch(const char *u);
 /* subresource request from document d: SameSite/mixed-content context + Referer under d's Referrer-Policy */
+static bool style_csp_ok(Document *d, Node *n, const char *t) {
+    if (!d || !d->csp || !(n->flags & NF_PARSER_INSERTED)) return true;
+    if (!(n->flags & NF_CSP_STYLE_CHECKED)) {
+        n->flags |= NF_CSP_STYLE_CHECKED;
+        if (!csp_allows_style(d->csp, node_attr(n, "nonce"), t, strlen(t))) { n->flags |= NF_CSP_STYLE_BLOCKED; fprintf(stderr, "lumen: CSP style-src blocked inline <style>\n"); }
+    }
+    return !(n->flags & NF_CSP_STYLE_BLOCKED);
+}
 static NetRequest *doc_req(Document *d, const char *u, const char *top, const char *csp_dir) {
     NetRequest *rq = net_request_ctx("GET", u, top);
     char *ref = d ? net_referrer(d->url, u, d->referrer_policy) : NULL;
@@ -344,7 +352,7 @@ static int loader(void *arg) {
         if (!gen_live(rq->gen)) break;
         if (n->type != NODE_ELEMENT) continue;
         if (n->tag == A_style) {
-            char *t = node_text_content(n); StyleSheet *s = css_parse_sheet(t, strlen(t), p->d->url, 1, &p->e->media); s->owner = n; style_engine_add_sheet(p->e, s); free(t);
+            char *t = node_text_content(n); if (style_csp_ok(p->d, n, t)) { StyleSheet *s = css_parse_sheet(t, strlen(t), p->d->url, 1, &p->e->media); s->owner = n; style_engine_add_sheet(p->e, s); } free(t);
         } else if (n->tag == A_link && node_attr(n, "rel") && strstr(node_attr(n, "rel"), "stylesheet") && node_attr(n, "href")) {
             char *u = url_join(p->d->url, node_attr(n, "href"));
             NetResponse *cr = net_fetch_sync(doc_req(p->d, u, page_top_url(p), "style-src"));
@@ -1489,7 +1497,7 @@ static bool sync_sheets(Page *p, bool seed) {
         uint64_t h = !fresh ? p->sref[k].h : t ? fnv(t) : fnv(node_attr(n, "href")) ^ (is_sheet_link(n) ? 0x9e3779b97f4a7c15ull : 0);
         if (!seed && (!known || p->sref[k].h != h)) {
             if (known) { style_engine_remove_owner(p->e, n); changed = true; }
-            if (t) { StyleSheet *sh = css_parse_sheet(t, strlen(t), p->d->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); changed = true; }
+            if (t) { if (style_csp_ok(p->d, n, t)) { StyleSheet *sh = css_parse_sheet(t, strlen(t), p->d->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); changed = true; } }
             else {
                 char *u = url_join(p->d->url, node_attr(n, "href"));
                 if (u) { NetRequest *rq = doc_req(p->d, u, page_top_url(p), is_sheet_link(n) ? "style-src" : NULL); LinkLoad *l = xmalloc(sizeof *l); l->gen = p->gen; l->n = n; n->refcount++; rq->done = is_sheet_link(n) ? link_done : preload_done; rq->ud = l; net_fetch(rq); free(u); }
@@ -1650,7 +1658,7 @@ static void h_frame_open(void *ud, Node *f, Document *d, JsHost *ch) {
     for (Node *n = d->node.first; n; n = node_next_deep(n, &d->node)) {
         if (n->type != NODE_ELEMENT || n->ns != NS_HTML) continue;
         if (n->tag == A_style) {
-            char *t = node_text_content(n); StyleSheet *sh = css_parse_sheet(t, strlen(t), d->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); free(t);
+            char *t = node_text_content(n); if (style_csp_ok(d, n, t)) { StyleSheet *sh = css_parse_sheet(t, strlen(t), d->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); } free(t);
         } else if (is_sheet_link(n)) {
             char *u = url_join(d->url, node_attr(n, "href"));
             NetResponse *cr = u ? net_fetch_sync(doc_req(f->doc, u, frame_top_url(f), "style-src")) : NULL;

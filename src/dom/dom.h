@@ -17,6 +17,7 @@ enum {
     NF_STRUCT_DIRTY = 1 << 12,    /* children changed: restyle self, children shallowly */
     NF_SELF_DIRTY = 1 << 13,      /* sibling list changed: re-match self only */
     NF_MODAL = 1 << 14, NF_POPOVER_OPEN = 1 << 15,
+    NF_CSP_STYLE_CHECKED = 1 << 16, NF_CSP_STYLE_BLOCKED = 1 << 17,   /* parser-inserted <style>: CSP decided once */
 };
 
 typedef struct { const char *name; char *value; } Attr; /* name is an atom */

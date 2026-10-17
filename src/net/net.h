@@ -99,6 +99,7 @@ char *csp_append(char *csp, const char *policy);
 bool net_corp_blocked(const char *initiator, const char *resp_url, const char *corp, bool require_corp);
 /* may this <script> run? src_url NULL = inline (body/n hashed). */
 bool csp_allows_url(const char *csp, const char *doc_url, const char *url, const char *dir);   /* img-src, style-src, connect-src, frame-src, ... */
+bool csp_allows_style(const char *csp, const char *nonce, const char *body, size_t n);   /* inline <style> */
 bool csp_allows_attr(const char *csp, const char *body, size_t n);   /* inline event handler (script-src-attr) */
 bool csp_allows_eval(const char *csp, bool wasm);                     /* eval/new Function, or WebAssembly compile */
 bool csp_allows_script(const char *csp, const char *doc_url, const char *src_url, const char *nonce,

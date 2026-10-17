@@ -90,9 +90,9 @@ static bool hash_match(const char *t, size_t n, const char *body, size_t bn) {
 
 static bool policy_allows(const char *p, const char *e, const char *doc_url, const char *src_url, const URL *su,
                           const char *nonce, const char *body, size_t bn, bool parser, int kind) {
-    /* kind: 0 <script>, 1 inline event handler attribute, 2 eval/new Function, 3 WebAssembly compile */
-    const char *ve, *v = kind == 0 ? find_dir(p, e, "script-src-elem", &ve) : kind == 1 ? find_dir(p, e, "script-src-attr", &ve) : NULL;
-    if (!v) v = find_dir(p, e, "script-src", &ve);
+    /* kind: 0 <script>, 1 inline event handler attribute, 2 eval/new Function, 3 WebAssembly compile, 4 inline <style> */
+    const char *ve, *v = kind == 0 ? find_dir(p, e, "script-src-elem", &ve) : kind == 1 ? find_dir(p, e, "script-src-attr", &ve) : kind == 4 ? find_dir(p, e, "style-src-elem", &ve) : NULL;
+    if (!v) v = find_dir(p, e, kind == 4 ? "style-src" : "script-src", &ve);
     if (!v) v = find_dir(p, e, "default-src", &ve);
     if (!v) return true;
     bool ui = false, sd = false, nh = false, host = false, uh = false, ue = false, we = false, hm = false;
@@ -108,13 +108,14 @@ static bool policy_allows(const char *p, const char *e, const char *doc_url, con
         else if (tok_eq(q, n, "'wasm-unsafe-eval'")) we = true;
         else if (tok_pre(q, n, "'nonce-") && q[n - 1] == '\'') {
             nh = true;
-            if (!kind && nonce && *nonce && strlen(nonce) == n - 8 && !strncmp(nonce, q + 7, n - 8)) return true;
+            if ((kind == 0 || kind == 4) && nonce && *nonce && strlen(nonce) == n - 8 && !strncmp(nonce, q + 7, n - 8)) return true;
         } else if (tok_pre(q, n, "'sha256-") || tok_pre(q, n, "'sha384-") || tok_pre(q, n, "'sha512-")) {
             nh = true;
-            if (!src_url && body && hash_match(q, n, body, bn)) { if (!kind) return true; hm = true; }
+            if (!src_url && body && hash_match(q, n, body, bn)) { if (kind == 0 || kind == 4) return true; hm = true; }
         } else if (!kind && src_url && su && src_match(q, n, su, doc_url)) host = true;
         q = te;
     }
+    if (kind == 4) return ui && !nh;
     if (kind == 2) return ue;
     if (kind == 3) return ue || we;
     if (kind == 1) return (hm && uh) || (ui && !nh && !sd);
@@ -142,6 +143,15 @@ static bool csp_all(const char *csp, const char *body, size_t n, int kind) {
     for (const char *p = csp ? csp : ""; ok && *p;) {
         const char *e = strchr(p, '\n'); if (!e) e = p + strlen(p);
         ok = policy_allows(p, e, "", NULL, NULL, NULL, body, n, false, kind);
+        p = *e ? e + 1 : e;
+    }
+    return ok;
+}
+bool csp_allows_style(const char *csp, const char *nonce, const char *body, size_t n) {
+    bool ok = true;
+    for (const char *p = csp ? csp : ""; ok && *p;) {
+        const char *e = strchr(p, '\n'); if (!e) e = p + strlen(p);
+        ok = policy_allows(p, e, "", NULL, NULL, nonce, body, n, true, 4);
         p = *e ? e + 1 : e;
     }
     return ok;
