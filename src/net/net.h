@@ -96,6 +96,8 @@ char *csp_append(char *csp, const char *policy);
 /* Cross-Origin-Resource-Policy: would a no-cors response from resp_url be blocked for initiator? */
 bool net_corp_blocked(const char *initiator, const char *resp_url, const char *corp, bool require_corp);
 /* may this <script> run? src_url NULL = inline (body/n hashed). */
+bool csp_allows_attr(const char *csp, const char *body, size_t n);   /* inline event handler (script-src-attr) */
+bool csp_allows_eval(const char *csp, bool wasm);                     /* eval/new Function, or WebAssembly compile */
 bool csp_allows_script(const char *csp, const char *doc_url, const char *src_url, const char *nonce,
                        const char *body, size_t n, bool parser_inserted);
 void hsts_load(const char *path);

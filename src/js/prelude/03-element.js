@@ -150,7 +150,7 @@ function compileHandler(el, k, src) {
     const c = el.__hc || (def(el, '__hc', {}), el.__hc);
     if (c[k] && c[k].src === src) return c[k].fn;
     let fn = null;
-    try { fn = new Function('event', src); } catch (e) { report(e); }
+    try { fn = N.compileHandler(src); } catch (e) { report(e); }
     c[k] = { src, fn };
     return fn;
 }

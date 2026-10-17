@@ -89,12 +89,13 @@ static bool hash_match(const char *t, size_t n, const char *body, size_t bn) {
 }
 
 static bool policy_allows(const char *p, const char *e, const char *doc_url, const char *src_url, const URL *su,
-                          const char *nonce, const char *body, size_t bn, bool parser) {
-    const char *ve, *v = find_dir(p, e, "script-src-elem", &ve);
+                          const char *nonce, const char *body, size_t bn, bool parser, int kind) {
+    /* kind: 0 <script>, 1 inline event handler attribute, 2 eval/new Function, 3 WebAssembly compile */
+    const char *ve, *v = kind == 0 ? find_dir(p, e, "script-src-elem", &ve) : kind == 1 ? find_dir(p, e, "script-src-attr", &ve) : NULL;
     if (!v) v = find_dir(p, e, "script-src", &ve);
     if (!v) v = find_dir(p, e, "default-src", &ve);
     if (!v) return true;
-    bool ui = false, sd = false, nh = false, host = false;
+    bool ui = false, sd = false, nh = false, host = false, uh = false, ue = false, we = false, hm = false;
     for (const char *q = v; q < ve;) {
         while (q < ve && isspace((unsigned char)*q)) q++;
         const char *te = q; while (te < ve && !isspace((unsigned char)*te)) te++;
@@ -102,15 +103,21 @@ static bool policy_allows(const char *p, const char *e, const char *doc_url, con
         if (!n) break;
         if (tok_eq(q, n, "'unsafe-inline'")) ui = true;
         else if (tok_eq(q, n, "'strict-dynamic'")) sd = true;
+        else if (tok_eq(q, n, "'unsafe-hashes'")) uh = true;
+        else if (tok_eq(q, n, "'unsafe-eval'")) ue = true;
+        else if (tok_eq(q, n, "'wasm-unsafe-eval'")) we = true;
         else if (tok_pre(q, n, "'nonce-") && q[n - 1] == '\'') {
             nh = true;
-            if (nonce && *nonce && strlen(nonce) == n - 8 && !strncmp(nonce, q + 7, n - 8)) return true;
+            if (!kind && nonce && *nonce && strlen(nonce) == n - 8 && !strncmp(nonce, q + 7, n - 8)) return true;
         } else if (tok_pre(q, n, "'sha256-") || tok_pre(q, n, "'sha384-") || tok_pre(q, n, "'sha512-")) {
             nh = true;
-            if (!src_url && hash_match(q, n, body, bn)) return true;
-        } else if (src_url && su && src_match(q, n, su, doc_url)) host = true;
+            if (!src_url && body && hash_match(q, n, body, bn)) { if (!kind) return true; hm = true; }
+        } else if (!kind && src_url && su && src_match(q, n, su, doc_url)) host = true;
         q = te;
     }
+    if (kind == 2) return ue;
+    if (kind == 3) return ue || we;
+    if (kind == 1) return (hm && uh) || (ui && !nh && !sd);
     if (!src_url) return ui && !nh && !sd;
     if (sd) return !parser;
     return host;
@@ -123,12 +130,24 @@ bool csp_allows_script(const char *csp, const char *doc_url, const char *src_url
     bool ok = true;
     for (const char *p = csp; ok && *p;) {
         const char *e = strchr(p, '\n'); if (!e) e = p + strlen(p);
-        ok = policy_allows(p, e, doc_url ? doc_url : "", src_url, have ? &su : NULL, nonce, body, n, parser_inserted);
+        ok = policy_allows(p, e, doc_url ? doc_url : "", src_url, have ? &su : NULL, nonce, body, n, parser_inserted, 0);
         p = *e ? e + 1 : e;
     }
     if (have) url_free(&su);
     return ok;
 }
+
+static bool csp_all(const char *csp, const char *body, size_t n, int kind) {
+    bool ok = true;
+    for (const char *p = csp ? csp : ""; ok && *p;) {
+        const char *e = strchr(p, '\n'); if (!e) e = p + strlen(p);
+        ok = policy_allows(p, e, "", NULL, NULL, NULL, body, n, false, kind);
+        p = *e ? e + 1 : e;
+    }
+    return ok;
+}
+bool csp_allows_attr(const char *csp, const char *body, size_t n) { return csp_all(csp, body, n, 1); }
+bool csp_allows_eval(const char *csp, bool wasm) { return csp_all(csp, NULL, 0, wasm ? 3 : 2); }
 
 bool net_corp_blocked(const char *initiator, const char *resp_url, const char *corp, bool require_corp) {
     URL a, b;

@@ -112,6 +112,24 @@ int main(void) {
         CHECK(!net_corp_blocked(d, "https://b.test/i.png", NULL, false));
         CHECK(net_corp_blocked(d, "https://b.test/i.png", NULL, true));
         CHECK(!net_corp_blocked("about:blank", "https://b.test/i.png", "same-origin", true));
+        CHECK(csp_allows_attr(NULL, "x", 1));
+        CHECK(!csp_allows_attr("script-src 'self'", "x", 1));
+        CHECK(csp_allows_attr("script-src 'unsafe-inline'", "x", 1));
+        CHECK(!csp_allows_attr("script-src 'unsafe-inline' 'nonce-a'", "x", 1));
+        CHECK(csp_allows_attr("script-src 'nonce-a'; script-src-attr 'unsafe-inline'", "x", 1));
+        CHECK(!csp_allows_attr("script-src-attr 'none'", "x", 1));
+        CHECK(!csp_allows_attr("script-src 'sha256-LXEWQrcmsEQBYnyp+6wy9chTD7GQPMTbAiWHF5IaSIE='", "x", 1));
+        CHECK(csp_allows_attr("script-src 'unsafe-hashes' 'sha256-LXEWQrcmsEQBYnyp+6wy9chTD7GQPMTbAiWHF5IaSIE='", "x", 1));
+        CHECK(!csp_allows_attr("script-src 'unsafe-hashes' 'sha256-LXEWQrcmsEQBYnyp+6wy9chTD7GQPMTbAiWHF5IaSIE='", "y", 1));
+        CHECK(csp_allows_script("script-src-attr 'none'", "https://a.test/", NULL, NULL, "x", 1, true));
+        CHECK(csp_allows_eval(NULL, false));
+        CHECK(csp_allows_eval("img-src *", false));
+        CHECK(!csp_allows_eval("script-src 'self'", false));
+        CHECK(csp_allows_eval("script-src 'unsafe-eval'", false));
+        CHECK(!csp_allows_eval("default-src 'self'", true));
+        CHECK(csp_allows_eval("script-src 'wasm-unsafe-eval'", true));
+        CHECK(!csp_allows_eval("script-src 'wasm-unsafe-eval'", false));
+        CHECK(!csp_allows_eval("script-src 'unsafe-eval'\nscript-src 'self'", false));
     }
     if (fails) return 1;
     printf("net tests ok\n");

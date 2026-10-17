@@ -290,3 +290,8 @@ in-flow content (display.c dl_move_items). This removed the empty grey box on Go
   are blocked for CORP same-origin/same-site mismatches, and with Document.coep_require_corp any cross-origin
   response without CORP is blocked. Not yet: COEP credentialless, nested-frame COEP, CORS-mode exemptions for
   crossorigin images. Test server ~/fvtest/sec/corp.py (port 8769, /page and /coep, log /tmp/corp-log.txt).
+- CSP script-src-attr / 'unsafe-hashes' for inline event handlers (N.compileHandler in jsnative.cc, via
+  ScriptCompiler::CompileFunction), and 'unsafe-eval' / 'wasm-unsafe-eval' for eval, new Function and WebAssembly
+  compile (V8 code-gen callbacks in js.cc; contexts are created with AllowCodeGenerationFromStrings(false)).
+  Workers don't track their own CSP yet. Test pages /c6../c9 on ~/fvtest/sec/csp.py (port 8768).
+- SIGTERM/SIGINT/SIGHUP now quit promptly while idle (quit_sig_thread in main.c, desktop only).

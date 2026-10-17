@@ -38,6 +38,20 @@ JsCtx *jctx(v8::Isolate *iso) {
     return static_cast<JsCtx *>(iso->GetData(0));
 }
 
+static JsCtx *csp_ctx(v8::Local<v8::Context> cx) { return static_cast<JsCtx *>(cx->GetAlignedPointerFromEmbedderData(1, kTag)); }
+static v8::ModifyCodeGenerationFromStringsResult csp_eval_cb(v8::Local<v8::Context> cx, v8::Local<v8::Value>, bool) {
+    JsCtx *c = csp_ctx(cx);
+    v8::ModifyCodeGenerationFromStringsResult r;
+    r.codegen_allowed = !c || !c->doc || csp_allows_eval(c->doc->csp, false);
+    if (!r.codegen_allowed) fprintf(stderr, "lumen: CSP blocked eval\n");
+    return r;
+}
+static bool csp_wasm_cb(v8::Local<v8::Context> cx, v8::Local<v8::String>) {
+    JsCtx *c = csp_ctx(cx);
+    bool ok = !c || !c->doc || csp_allows_eval(c->doc->csp, true);
+    if (!ok) fprintf(stderr, "lumen: CSP blocked WebAssembly compile\n");
+    return ok;
+}
 v8::Local<v8::String> jstr(v8::Isolate *iso, const char *s, int n) {
     v8::Local<v8::String> r;
     if (!v8::String::NewFromUtf8(iso, s ? s : "", v8::NewStringType::kNormal, s ? n : 0).ToLocal(&r)) return v8::String::Empty(iso);
@@ -605,6 +619,8 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
     c->iso->SetPromiseRejectCallback(on_reject);
     c->iso->SetHostImportModuleDynamicallyCallback(mod_dynamic);
     c->iso->SetHostInitializeImportMetaObjectCallback(mod_meta);
+    c->iso->SetModifyCodeGenerationFromStringsCallback(csp_eval_cb);
+    c->iso->SetAllowWasmCodeGenerationCallback(csp_wasm_cb);
     }
     v8::Isolate *iso = c->iso;
     v8::Isolate::Scope is(iso);
@@ -612,6 +628,7 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
     v8::Local<v8::Context> ctx = v8::Context::New(iso);
     c->ctx.Reset(iso, ctx);
     ctx->SetAlignedPointerInEmbedderData(1, c, kTag);
+    ctx->AllowCodeGenerationFromStrings(false);   /* routes eval/new Function through csp_eval_cb */
     ctx->SetSecurityToken(v8::String::NewFromUtf8(iso, (c->sb_opaque ? "null#" + std::to_string(c->id) : ctx_origin(c)).c_str(), v8::NewStringType::kInternalized).ToLocalChecked());
     v8::Context::Scope cs(ctx);
     v8::Local<v8::ObjectTemplate> tmpl = v8::ObjectTemplate::New(iso);

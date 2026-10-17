@@ -785,6 +785,17 @@ FN(quirks) { CTX; RET(c->doc->quirks); }
 FN(coi) { CTX; RET(c->doc->cross_origin_isolated); }
 FN(ctxOrigin) { CTX; RET(jstr(iso, ctx_origin(c).c_str())); }
 FN(sbFlags) { CTX; RET((int)(c->sb_opaque ? 1 : 0) | (c->sb_noscript ? 2 : 0)); }
+FN(compileHandler) {
+    CTX; std::string s = S(0);
+    if (c->doc && c->doc->csp && !csp_allows_attr(c->doc->csp, s.c_str(), s.size())) {
+        fprintf(stderr, "lumen: CSP blocked inline event handler %.80s\n", s.c_str());
+        RET(v8::Null(iso)); return;
+    }
+    v8::ScriptCompiler::Source src(jstr(iso, s.c_str(), (int)s.size()));
+    v8::Local<v8::String> args[1] = { jstr(iso, "event") };
+    v8::Local<v8::Function> f;
+    if (v8::ScriptCompiler::CompileFunction(ctx, &src, 1, args).ToLocal(&f)) RET(f);
+}
 FN(currentScript) { CTX; RET(jwrap(c, c->current_script)); }
 FN(media) { CTX; std::string q = S(0); RET(jsg_media(c->host.media, q.c_str())); }
 FN(cssSelText) { CTX; std::string q = S(0); char *r = css_selector_text(q.c_str()); RET(nstr(iso, r)); free(r); }
@@ -1119,7 +1130,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(busOrigin); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
     REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(blobFile); REG(blobFileFree); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove); REG(mediaAbort);
     REG(mediaBuffered); REG(mediaEos); REG(mediaSetDuration); REG(mediaPlay); REG(mediaPause); REG(mediaSeek);
-    REG(sbFlags); REG(ctxOrigin); REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(readyState); REG(quirks); REG(coi);
+    REG(sbFlags); REG(compileHandler); REG(ctxOrigin); REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(readyState); REG(quirks); REG(coi);
     REG(currentScript); REG(media); REG(cssSupports); REG(cssSelText); REG(urlParse); REG(encode); REG(decode); REG(random); REG(cDigest); REG(cHmac); REG(cAes); REG(cEcGen); REG(cEcDerive); REG(cEcSign); REG(cEcVerify); REG(cSpki); REG(cSpkiParse); REG(cPkcs8Parse); REG(cEcFromD); REG(cHkdf); REG(cPbkdf2);
     REG(heap); REG(imgSize); REG(userAgent); REG(platform); REG(cpus); REG(makeAll);
 #undef REG
