@@ -43,6 +43,12 @@ int main(void) {
     CHECK(!hsts_upgrade("http://plain.test/"));
     url_parse("https://secure.test/", &u); hsts_note(&u, "max-age=0"); url_free(&u);
     CHECK(!hsts_upgrade("http://secure.test/"));
+    up = net_secure_upgrade("https://page.test/", "http://cdn.test/a.png"); CHECK(up && !strcmp(up, "https://cdn.test/a.png")); free(up);
+    up = net_secure_upgrade("https://page.test/", "ws://chat.test/s"); CHECK(up && !strcmp(up, "wss://chat.test/s")); free(up);
+    CHECK(!net_secure_upgrade("https://page.test/", "http://localhost:8000/x"));
+    CHECK(!net_secure_upgrade("http://page.test/", "http://cdn.test/a.png"));
+    CHECK(!net_secure_upgrade(NULL, "http://cdn.test/a.png"));
+    CHECK(!net_secure_upgrade("https://page.test/", "https://cdn.test/a.png"));
     if (fails) return 1;
     printf("net tests ok\n");
     return 0;

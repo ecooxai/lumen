@@ -81,6 +81,9 @@ char *cookies_get_document(const char *url, const char *top_url);
 /* HSTS (RFC 6797): known hosts are upgraded from http to https */
 void hsts_note(const URL *u, const char *sts_header);
 char *hsts_upgrade(const char *url);   /* https URL if the host is HSTS-known, else NULL */
+/* https URL for an http(s)/ws(s) url that must not load insecurely: HSTS host, or a subresource of an https
+   top-level page (mixed content is upgraded, like Chrome's autoupgrade); NULL if no change. ws: maps to wss:. */
+char *net_secure_upgrade(const char *top_url, const char *url);
 void hsts_load(const char *path);
 bool hsts_save(const char *path);
 void cookies_load(const char *path);

@@ -261,4 +261,7 @@ in-flow content (display.c dl_move_items). This removed the empty grey box on Go
   same-site (initiator isn't tracked), so Strict cookies are sent on cross-site navigations — known gap.
 - HSTS (src/net/hsts.c): Strict-Transport-Security over https is recorded (includeSubDomains, max-age=0 clears),
   persisted to `<pref>/hsts.txt`; http:// URLs to known hosts (incl. redirects) are upgraded before connecting. No preload list.
-- tests/test_net.c (`make test`) covers both.
+- Mixed content (`net_secure_upgrade`, hsts.c): http:// subresources, iframes, fetch/XHR, workers and ws:// of an https
+  top-level page are upgraded to https/wss (Chrome autoupgrades images/media and blocks the rest; upgrading is the
+  secure equivalent). localhost/127.x are exempt. Applied on every redirect hop.
+- tests/test_net.c (`make test`) covers these.

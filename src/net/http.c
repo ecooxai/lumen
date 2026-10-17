@@ -453,7 +453,7 @@ NetResponse *net_fetch_sync(NetRequest *req) {
     NetResponse *r = NULL;
     for (;;) {
         URL u;
-        { char *up = hsts_upgrade(url); if (up) { free(url); url = up; } }
+        { char *up = net_secure_upgrade(req->site_for_cookies, url); if (up) { free(url); url = up; } }   /* HSTS + mixed content */
         if (!url_parse(url, &u)) { r = xcalloc(1, sizeof *r); r->error = xstrdup("invalid url"); break; }
         if (!strcmp(u.scheme, "file")) { r = file_url(&u, url); url_free(&u); break; }
         if (strcmp(u.scheme, "http") && strcmp(u.scheme, "https")) { r = xcalloc(1, sizeof *r); r->error = xstrdup("unsupported scheme"); url_free(&u); break; }
@@ -737,9 +737,11 @@ NetWs *net_ws_open(const char *url, const char *protocols, const char *origin, N
     NetWs *w = xcalloc(1, sizeof *w);
     w->refs = 2; w->cb = cb; w->ud = ud;
     SB b; sb_init(&b);
+    char *sec = net_secure_upgrade(origin, url); if (sec) url = sec;
     if (!strncasecmp(url, "wss:", 4)) { sb_puts(&b, "https:"); sb_puts(&b, url + 4); }
     else if (!strncasecmp(url, "ws:", 3)) { sb_puts(&b, "http:"); sb_puts(&b, url + 3); }
     else sb_puts(&b, url);
+    free(sec);
     w->url = sb_take(&b); w->protocols = xstrdup(protocols ? protocols : ""); w->origin = xstrdup(origin ? origin : "");
     pthread_mutex_init(&w->mu, NULL);
     if (pipe(w->wake)) w->wake[0] = w->wake[1] = -1;

@@ -62,6 +62,26 @@ char *hsts_upgrade(const char *url) {
     return out;
 }
 
+static bool local_host(const char *url) {
+    URL u; if (!url_parse(url, &u)) return false;
+    bool r = u.host && (!strcmp(u.host, "localhost") || !strncmp(u.host, "127.", 4) || !strcmp(u.host, "[::1]") || !strcmp(u.host, "::1"));
+    url_free(&u);
+    return r;
+}
+char *net_secure_upgrade(const char *top, const char *url) {
+    if (!url) return NULL;
+    bool ws = !strncasecmp(url, "ws:", 3);
+    if (!ws && strncasecmp(url, "http:", 5)) return NULL;
+    SB b; sb_init(&b); sb_puts(&b, "http:"); sb_puts(&b, url + (ws ? 3 : 5));
+    char *h = sb_take(&b), *up = hsts_upgrade(h);
+    if (!up && top && !strncasecmp(top, "https:", 6) && !local_host(h)) {
+        URL u; if (url_parse(h, &u)) { free(u.scheme); u.scheme = xstrdup("https"); if (u.port == 80) u.port = 443; up = url_to_string(&u); url_free(&u); }
+    }
+    free(h);
+    if (up && ws) { SB w; sb_init(&w); sb_puts(&w, "wss:"); sb_puts(&w, up + 6); free(up); up = sb_take(&w); }
+    return up;
+}
+
 /* one host per line: host expires include_subdomains */
 void hsts_load(const char *path) {
     FILE *f = fopen(path, "r");
