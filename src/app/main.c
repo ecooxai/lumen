@@ -238,7 +238,7 @@ static bool img_size(Node *n, float *w, float *h) {
     }
     *w = image_css_w(im); *h = image_css_h(im); return true; }
 
-typedef struct { char *url; uint64_t gen; float vw, vh; char *body; size_t blen; char *ctype; char *html; } LoadReq;
+typedef struct { char *url; uint64_t gen; float vw, vh; char *body; size_t blen; char *ctype; char *html; char *ref; } LoadReq;
 
 /* Downloads go to $LUMEN_DOWNLOAD_DIR, $XDG_DOWNLOAD_DIR or ~/Downloads; existing files are never overwritten */
 static char g_last_download[1024];
@@ -290,13 +290,14 @@ static int loader(void *arg) {
         headers_set(&nr->headers, "Sec-Fetch-Mode", "navigate");
         headers_set(&nr->headers, "Sec-Fetch-Site", "none");
         headers_set(&nr->headers, "Sec-Fetch-User", "?1");
+        if (rq->ref) headers_set(&nr->headers, "Referer", rq->ref);
     }
     NetResponse *r = rq->html ? NULL : net_fetch_sync(nr);
     if (r && r->status >= 200 && r->status < 300 && is_download(r)) {
         char nm[256]; download_name(r, r->url ? r->url : rq->url, nm, sizeof nm);
         download_save(nm, r->body ? r->body : "", r->body ? r->body_len : 0);
         SDL_Event ev; SDL_zero(ev); ev.type = EV_DL; ev.user.data1 = (void *)(uintptr_t)rq->gen; SDL_PushEvent(&ev);
-        net_response_free(r); free(rq->url); free(rq->body); free(rq->ctype); free(rq->html); free(rq);
+        net_response_free(r); free(rq->url); free(rq->body); free(rq->ctype); free(rq->html); free(rq->ref); free(rq);
         return 0;
     }
     Page *p = xcalloc(1, sizeof *p); p->gen = rq->gen;
@@ -313,7 +314,7 @@ static int loader(void *arg) {
     else if (wrapbuf) { body = wrapbuf; blen = strlen(body); }
     else if (!r || r->status == 0) { errbuf = xmalloc(512); snprintf(errbuf, 512, "<title>Error</title><body style='font:15px system-ui;padding:40px;color:#444'><h2>Can't open this page</h2><p>%s</p>", rq->url); body = errbuf; blen = strlen(errbuf); }
     p->url = xstrdup(r && r->url ? r->url : rq->url);
-    p->d = doc_new(p->url);
+    p->d = doc_new(p->url); p->d->referrer = rq->ref; rq->ref = NULL;
     if (r && !rq->html) {
         const char *coop = headers_get(&r->headers, "cross-origin-opener-policy"), *coep = headers_get(&r->headers, "cross-origin-embedder-policy");
         bool secure = !strncmp(p->url, "https:", 6) || !strncmp(p->url, "http://localhost", 16) || !strncmp(p->url, "http://127.0.0.1", 16);
@@ -367,7 +368,7 @@ static int loader(void *arg) {
     p->seen_ver = p->d->dom_version;
     p->load_ms = now_ms() - t0;
     if (r) net_response_free(r);
-    free(errbuf); free(wrapbuf); free(rq->url); free(rq->body); free(rq->ctype); free(rq->html); free(rq);
+    free(errbuf); free(wrapbuf); free(rq->url); free(rq->body); free(rq->ctype); free(rq->html); free(rq->ref); free(rq);
     SDL_Event ev; SDL_zero(ev); ev.type = EV_LOADED; ev.user.data1 = p; SDL_PushEvent(&ev);
     return 0;
 }
@@ -656,11 +657,13 @@ static char *file_page(const char *u) {
     return html;
 }
 
+static char *g_nav_ref;   /* Referer for the next navigate_ex, set by page-initiated navigations */
+static void nav_from(Document *d, const char *u) { free(g_nav_ref); g_nav_ref = d && d->url && u ? net_referrer(d->url, u, d->referrer_policy) : NULL; }
 static void navigate_ex(App *a, const char *url, bool push, const char *body, size_t blen, const char *ctype) {
-    char *u = normalize_url(url), *html = NULL;
+    char *u = normalize_url(url), *html = NULL, *ref = g_nav_ref; g_nav_ref = NULL;
     if (!strncmp(u, "lumen://", 8)) {
         if (!strncmp(u, "lumen://set?", 12)) {   /* only Lumen's own pages may change settings */
-            if (strncmp(a->t->url, "lumen://", 8)) { free(u); return; }
+            if (strncmp(a->t->url, "lumen://", 8)) { free(u); free(ref); return; }
             apply_set(a, u + 12);
             char sec[16] = "settings"; qparam(u + 12, "s", sec, sizeof sec);
             free(u); u = xmalloc(64); snprintf(u, 64, "lumen://newtab?s=%s", sec); push = false;
@@ -675,7 +678,7 @@ static void navigate_ex(App *a, const char *url, bool push, const char *body, si
     }
     snprintf(a->t->url, sizeof a->t->url, "%s", u);
     a->editing = false; a->t->loading = true; a->dirty = true;
-    LoadReq *rq = xcalloc(1, sizeof *rq); rq->url = u; rq->html = html; rq->gen = ++load_gen; rq->vw = a->vw - a->side; rq->vh = a->vh - BAR; a->t->lgen = rq->gen; publish_gens(a);
+    LoadReq *rq = xcalloc(1, sizeof *rq); rq->url = u; rq->ref = ref; rq->html = html; rq->gen = ++load_gen; rq->vw = a->vw - a->side; rq->vh = a->vh - BAR; a->t->lgen = rq->gen; publish_gens(a);
     if (push) a->t->hgen[a->t->hpos] = rq->gen;
     if (body) { rq->body = xmalloc(blen + 1); memcpy(rq->body, body, blen); rq->body[blen] = 0; rq->blen = blen; rq->ctype = xstrdup(ctype ? ctype : ""); }
     SDL_Thread *t = SDL_CreateThread(loader, "loader", rq); SDL_DetachThread(t);
@@ -1711,7 +1714,7 @@ static void click_frame(App *a, Page *fp, float x, float y) {
             const char *h = node_attr(n, "href"), *tg = node_attr(n, "target");
             if (!strncmp(h, "javascript:", 11) || h[0] == '#') return;
             char *u = url_join(fp->d->url, h);
-            if (u && tg && (!strcmp(tg, "_top") || !strcmp(tg, "_blank"))) navigate(a, u, true);
+            if (u && tg && (!strcmp(tg, "_top") || !strcmp(tg, "_blank"))) { nav_from(fp->d, u); navigate(a, u, true); }
             else if (u) js_frame_navigate(fp->frame_el, u);
             free(u); return;
         }
@@ -1742,7 +1745,7 @@ static void h_sync_in(void *ud, Document *d, bool layout) {
     layout_run(p->L, p->d, a->vw - a->side, a->vh - BAR);
     a->t->relayout = false;
 }
-static void h_navigate_in(void *ud, const char *u) { (void)ud; navigate(g_app, u, true); }
+static void h_navigate_in(void *ud, const char *u) { (void)ud; nav_from(g_app->t->cur ? g_app->t->cur->d : NULL, u); navigate(g_app, u, true); }
 static void h_set_url_in(void *ud, const char *u, bool push) {
     (void)ud; App *a = g_app;
     if (push && a->t->nhist < 256) { for (int i = a->t->hpos + 1; i < a->t->nhist; i++) free(a->t->hist[i]); a->t->nhist = a->t->hpos + 1; a->t->hist[a->t->nhist++] = xstrdup(u); a->t->hpos = a->t->nhist - 1; a->t->hgen[a->t->hpos] = a->t->cur ? a->t->cur->gen : 0; }
@@ -1751,7 +1754,7 @@ static void h_set_url_in(void *ud, const char *u, bool push) {
     if (!a->editing) snprintf(a->t->url, sizeof a->t->url, "%s", u);
     a->dirty = true;
 }
-static void h_navigate_post_in(void *ud, const char *u, const char *body, size_t len, const char *ctype) { (void)ud; navigate_ex(g_app, u, true, body, len, ctype); }
+static void h_navigate_post_in(void *ud, const char *u, const char *body, size_t len, const char *ctype) { (void)ud; nav_from(g_app->t->cur ? g_app->t->cur->d : NULL, u); navigate_ex(g_app, u, true, body, len, ctype); }
 static void h_history_go_in(void *ud, int d) { (void)ud; history_go(g_app, d); }
 static int h_history_len_in(void *ud) { (void)ud; return g_app->t->nhist; }
 static void h_viewport_in(void *ud, float *w, float *h, float *sx, float *sy, float *dpr) { (void)ud; *w = g_app->vw - g_app->side; *h = g_app->vh - BAR; *sx = 0; *sy = g_app->t->sy; *dpr = g_app->scale; }
@@ -2223,7 +2226,7 @@ static void anchor_follow(App *a, Node *t) {
             const char *h = node_attr(n, "href");
             if (!strncmp(h, "javascript:", 11)) return;
             if (h[0] == '#') { Node *t = doc_get_element_by_id(a->t->cur->d, h + 1); if (t && t->box) { a->t->sy = t->box->y; a->dirty = true; } return; }
-            char *u = url_join(a->t->cur->d->url, h); navigate(a, u, true); free(u); return;
+            char *u = url_join(a->t->cur->d->url, h); nav_from(a->t->cur->d, u); navigate(a, u, true); free(u); return;
         }
 }
 

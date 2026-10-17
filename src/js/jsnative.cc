@@ -291,6 +291,7 @@ static const char *origin_url(JsCtx *c) {
 FN(cookie) { CTX; if (c->sb_opaque) { RET(jstr(iso, "")); return; } char *s = cookies_get_document(origin_url(c), js_top_url(c)); RET(jstr(iso, s ? s : "")); free(s); }
 FN(setCookie) { CTX; if (c->sb_opaque) return; std::string s = S(0); cookies_set_document(origin_url(c), js_top_url(c), s.c_str()); }
 FN(url) { CTX; RET(jstr(iso, c->doc->url ? c->doc->url : "about:blank")); }
+FN(referrer) { CTX; RET(jstr(iso, c->doc && c->doc->referrer ? c->doc->referrer : "")); }
 FN(setUrl) {
     CTX; std::string u = S(0);
     free(c->doc->url); c->doc->url = xstrdup(u.c_str());
@@ -1132,7 +1133,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
 #define REG(nm) (void)N->Set(ctx, jstr(iso, #nm), v8::Function::New(ctx, n_##nm).ToLocalChecked())
     REG(isNode); REG(version);
     REG(inert); REG(type); REG(name); REG(ns); REG(parent); REG(first); REG(last); REG(next); REG(prev);
-    REG(text); REG(setText); REG(attr); REG(setAttr); REG(rmAttr); REG(cspExempt); REG(cspMedia); REG(attrs); REG(insert); REG(remove); REG(newDoc); REG(newXmlDoc); REG(parseDoc); REG(adopt); REG(pi); REG(cdata); REG(doctype); REG(ownerDoc);
+    REG(text); REG(setText); REG(attr); REG(setAttr); REG(rmAttr); REG(cspExempt); REG(cspMedia); REG(referrer); REG(attrs); REG(insert); REG(remove); REG(newDoc); REG(newXmlDoc); REG(parseDoc); REG(adopt); REG(pi); REG(cdata); REG(doctype); REG(ownerDoc);
     REG(create); REG(textNode); REG(comment); REG(frag); REG(html); REG(setHTML); REG(parseFrag); REG(query);
     REG(matches); REG(byId); REG(clone); REG(doc); REG(contains); REG(connected); REG(host); REG(attachShadow);
     REG(templateContent); REG(rect); REG(vrect); REG(clipSet); REG(clipGet); REG(scrollPos); REG(setScroll); REG(computed); REG(value); REG(setValue); REG(checked); REG(setChecked); REG(setPseudo); REG(pickFiles);

@@ -25,7 +25,7 @@ methods(Document.prototype, {
     get baseURI() { const b = N.query(this, 'base[href]', false); const u = N.url(); if (b) { const r = N.urlParse(N.attr(b, 'href'), u); if (r) return r[0]; } return u; },
     get location() { return this === document ? location : null; }, set location(v) { if (this === document) location.href = v; },
     get domain() { const r = N.urlParse(N.url(), null); return r ? r[5] : ''; }, set domain(v) {},
-    get referrer() { return ''; },
+    get referrer() { return N.referrer(); },
     get cookie() { return N.cookie(); }, set cookie(v) { N.setCookie(String(v)); },
     get readyState() { return ['loading', 'interactive', 'complete'][N.readyState()]; },
     get characterSet() { return 'UTF-8'; }, get charset() { return 'UTF-8'; }, get inputEncoding() { return 'UTF-8'; }, get contentType() { return this.__ct ?? (N.ns(this) === 3 ? 'application/xml' : 'text/html'); },

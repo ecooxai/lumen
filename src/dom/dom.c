@@ -146,7 +146,7 @@ void doc_free(Document *d) {
     hm_free(&d->id_cache, NULL);
     Node *c = d->node.first;
     while (c) { Node *nx = c->next; c->parent = NULL; c->refcount = 0; c->js = NULL; node_free_tree(c); c = nx; }
-    free(d->url); free(d->base_url); free(d->title); free(d->csp); free(d);
+    free(d->url); free(d->base_url); free(d->title); free(d->csp); free(d->referrer); free(d);
 }
 
 static int attr_index(const Node *n, const char *name) {

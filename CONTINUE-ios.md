@@ -318,3 +318,7 @@ in-flow content (display.c dl_move_items). This removed the empty grey box on Go
   loadstart + error, as in Chrome (sd.py /m1 /m2). Not yet: media redirects (media.c stream fetches carry no CSP), <source>
   elements if selected elsewhere, <track>. Font fetches now carry the declaring document's CSP (g_fontcsp) so redirects
   are rechecked against font-src (sd.py /f3). Report-only CSP headers are ignored (never block); no violation reports/events yet.
+- document.referrer: Document.referrer = Referer sent for its navigation. Top-level: page-initiated navigations (link click,
+  JS location, _top links in frames, form POST) call nav_from() -> g_nav_ref -> LoadReq.ref -> Referer header + doc;
+  typed URLs/reload/history send none. Frames: FrameLoad.ref -> g_next_ref -> frame_create. sd.py /r0 matches Chrome.
+  Not yet: per-element referrerpolicy, rel=noreferrer, reload/history keeping the original referrer.
