@@ -282,6 +282,8 @@ class NamedNodeMap {
     removeNamedItem(n) { const a = this.getNamedItem(n); if (!a) throw new DOMException("Failed to execute 'removeNamedItem' on 'NamedNodeMap': No item with name '" + n + "' was found.", 'NotFoundError'); return this._el.removeAttributeNode(a); }
     *[Symbol.iterator]() { for (let i = 0; i < this.length; i++) yield this[i]; }
 }
+class DOMStringMap {}
+globalThis.DOMStringMap = DOMStringMap;
 class DOMTokenList {
     constructor(el, attr) { def(this, '_el', el); def(this, '_attr', attr); }
     _get() { const v = N.attr(this._el, this._attr); return v ? [...new Set(v.split(/[\t\n\f\r ]+/).filter(Boolean))] : []; }

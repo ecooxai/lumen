@@ -10,6 +10,7 @@
 #include <cstring>
 #include <deque>
 #include <map>
+#include <vector>
 #include <memory>
 extern "C" {
 #include "../net/net.h"
@@ -19,12 +20,14 @@ extern "C" {
 void (*js_wakeup)(void) = nullptr;
 
 namespace {
-struct Buf { uint8_t *p = nullptr; size_t n = 0; };
+struct Side { std::vector<v8::CompiledWasmModule> wasm; std::vector<std::shared_ptr<v8::BackingStore>> sab; };
+struct Buf { uint8_t *p = nullptr; size_t n = 0; std::shared_ptr<Side> side; };
 enum { WM_MESSAGE, WM_ERROR, WM_LOADFAIL };
 struct OutMsg { int kind; Buf data; std::string msg, file; int line = 0, col = 0; };
 struct Worker {
     uint32_t id = 0; JsCtx *owner = nullptr;
-    std::string url, src, ua, platform, name; bool have_src = false, module = false;
+    std::string url, src, ua, platform, name, top; bool have_src = false, module = false, coi = false;
+    std::string ocsp, odoc; bool has_ocsp = false;   /* creator document's CSP: worker-src check, inherited by blob:/data: workers */
     std::mutex mu; std::condition_variable cv;
     std::deque<Buf> in; std::deque<OutMsg> out;
     std::atomic<bool> term{false};
@@ -34,7 +37,9 @@ struct Worker {
 struct WTimer { double due = 0, interval = 0; bool repeat = false; v8::Global<v8::Function> fn; std::vector<v8::Global<v8::Value>> args; };
 struct WEnv {
     std::shared_ptr<Worker> w; v8::Isolate *iso = nullptr;
-    v8::Global<v8::Context> ctx; v8::Global<v8::Function> onmsg, report;
+    v8::Global<v8::Context> ctx; v8::Global<v8::Function> onmsg, report, busfn;
+    uint64_t bus_seen = 0; std::string bus_origin;
+    std::string csp, cspdoc; bool has_csp = false;   /* the worker's own enforced CSP */
     std::map<std::string, v8::Global<v8::Module>> mods; std::multimap<int, std::string> murl;
     std::map<uint32_t, WTimer> timers; uint32_t tseq = 0; bool closing = false, reporting = false; double t0 = 0;
 };
@@ -48,14 +53,42 @@ void wm_meta(v8::Local<v8::Context> ctx, v8::Local<v8::Module> m, v8::Local<v8::
 
 void wake() { if (js_wakeup) js_wakeup(); }
 
+/* WebAssembly.Module and SharedArrayBuffer cross threads by reference (compiled code / backing store). */
+struct SerDel : v8::ValueSerializer::Delegate {
+    v8::Isolate *iso; std::shared_ptr<Side> side = std::make_shared<Side>();
+    explicit SerDel(v8::Isolate *i) : iso(i) {}
+    void ThrowDataCloneError(v8::Local<v8::String> m) override { iso->ThrowException(v8::Exception::Error(m)); }
+    v8::Maybe<uint32_t> GetWasmModuleTransferId(v8::Isolate *, v8::Local<v8::WasmModuleObject> m) override {
+        side->wasm.push_back(m->GetCompiledModule()); return v8::Just<uint32_t>((uint32_t)side->wasm.size() - 1);
+    }
+    v8::Maybe<uint32_t> GetSharedArrayBufferId(v8::Isolate *, v8::Local<v8::SharedArrayBuffer> b) override {
+        side->sab.push_back(b->GetBackingStore()); return v8::Just<uint32_t>((uint32_t)side->sab.size() - 1);
+    }
+};
+struct DesDel : v8::ValueDeserializer::Delegate {
+    std::shared_ptr<Side> side;
+    explicit DesDel(std::shared_ptr<Side> s) : side(std::move(s)) {}
+    v8::MaybeLocal<v8::WasmModuleObject> GetWasmModuleFromId(v8::Isolate *iso, uint32_t id) override {
+        if (!side || id >= side->wasm.size()) return {};
+        return v8::WasmModuleObject::FromCompiledModule(iso, side->wasm[id]);
+    }
+    v8::MaybeLocal<v8::SharedArrayBuffer> GetSharedArrayBufferFromId(v8::Isolate *iso, uint32_t id) override {
+        if (!side || id >= side->sab.size()) return {};
+        return v8::SharedArrayBuffer::New(iso, side->sab[id]);
+    }
+};
 bool ser(v8::Isolate *iso, v8::Local<v8::Context> ctx, v8::Local<v8::Value> v, Buf &out) {
-    v8::ValueSerializer s(iso);   /* no delegate: V8 throws DataCloneError itself (V8 is built without RTTI) */
+    SerDel del(iso);
+    v8::ValueSerializer s(iso, &del);
     s.WriteHeader();
     if (!s.WriteValue(ctx, v).FromMaybe(false)) return false;
-    auto r = s.Release(); out.p = r.first; out.n = r.second; return true;
+    auto r = s.Release(); out.p = r.first; out.n = r.second;
+    if (!del.side->wasm.empty() || !del.side->sab.empty()) out.side = del.side;
+    return true;
 }
 v8::MaybeLocal<v8::Value> deser(v8::Isolate *iso, v8::Local<v8::Context> ctx, const Buf &b) {
-    v8::ValueDeserializer d(iso, b.p, b.n);
+    DesDel del(b.side);
+    v8::ValueDeserializer d(iso, b.p, b.n, &del);
     if (!d.ReadHeader(ctx).FromMaybe(false)) return {};
     return d.ReadValue(ctx);
 }
@@ -143,7 +176,8 @@ WFN(resolve) {
 }
 WFN(fetch) {
     WENV; std::string u = jcstr(iso, a[0]), m = a[1]->IsString() ? jcstr(iso, a[1]) : "GET";
-    NetRequest *rq = net_request_new(m.c_str(), u.c_str());
+    NetRequest *rq = net_request_ctx(m.c_str(), u.c_str(), E->w->top.empty() ? nullptr : E->w->top.c_str());
+    if (E->has_csp) { rq->csp = strdup(E->csp.c_str()); rq->csp_doc = strdup(E->cspdoc.c_str()); rq->csp_dir = "connect-src"; }
     if (a[2]->IsString()) { std::string b = jcstr(iso, a[2]); rq->body = (char *)malloc(b.size() + 1); memcpy(rq->body, b.c_str(), b.size() + 1); rq->body_len = b.size(); }
     else if (a[2]->IsArrayBuffer() || a[2]->IsArrayBufferView()) {
         std::shared_ptr<v8::BackingStore> bs; size_t off = 0, n = 0;
@@ -170,6 +204,10 @@ WFN(fetch) {
 WFN(importScript) {
     WENV; std::string u = resolve(E, jcstr(iso, a[0]));
     if (u.empty()) { throw_dom(iso, ctx, "Failed to execute 'importScripts': The URL '" + jcstr(iso, a[0]) + "' is invalid.", "SyntaxError"); return; }
+    if (E->has_csp && !csp_allows_url(E->csp.c_str(), E->cspdoc.c_str(), u.c_str(), "script-src")) {
+        fprintf(stderr, "lumen: CSP script-src blocked importScripts %.120s\n", u.c_str());
+        throw_dom(iso, ctx, "Failed to execute 'importScripts': The script at '" + u + "' failed to load.", "NetworkError"); return;
+    }
     NetResponse *r = net_fetch_sync(net_request_new("GET", u.c_str()));
     if (!r || r->status < 200 || r->status >= 300) {
         if (r) net_response_free(r);
@@ -180,9 +218,31 @@ WFN(importScript) {
     v8::Local<v8::Script> s; v8::Local<v8::Value> res;
     if (v8::Script::Compile(ctx, jsrc(iso, src.data(), src.size()), &origin).ToLocal(&s)) (void)s->Run(ctx).ToLocal(&res);
 }
+WFN(busOrigin) {
+    WENV; E->bus_origin = jcstr(iso, a[0]); E->bus_seen = js_bus_seq();
+    std::shared_ptr<Worker> w = E->w;
+    js_bus_listen(E, [w] { std::lock_guard<std::mutex> lk(w->mu); w->cv.notify_all(); });
+}
+WFN(busPost) { WENV; (void)js_bus_post(iso, ctx, a[2], E->bus_origin, "bc", jcstr(iso, a[0]), E, a[1]->NumberValue(ctx).FromMaybe(0)); }
 WFN(reportErr) { WENV; werr(E, a[0], v8::Exception::CreateMessage(iso, a[0])); }
 
 const char kWorkerPrelude[] = R"JS((function (W, G) {
+if (typeof WebAssembly === 'object' && !WebAssembly.compileStreaming) {
+    const wasmBody = async (src, fn) => {
+        const r = await src;
+        const err = m => new TypeError('WebAssembly.' + fn + '(): ' + m);
+        if (!(r instanceof Response)) throw err('Argument 0 must be provided and must be a Response');
+        if (/^https?:/.test(r.url || '') && !/^application\/wasm\s*(;|$)/i.test(r.headers.get('content-type') || ''))
+            throw err("Incorrect response MIME type. Expected 'application/wasm'.");
+        if (!r.ok) throw err('HTTP status code is not ok');
+        if (r.bodyUsed) throw err('Response body has already been used');
+        return r.arrayBuffer();
+    };
+    Object.defineProperties(WebAssembly, {
+        compileStreaming: { value: async function compileStreaming(src) { return WebAssembly.compile(await wasmBody(src, 'compileStreaming')); }, writable: true, configurable: true },
+        instantiateStreaming: { value: async function instantiateStreaming(src, imports) { return WebAssembly.instantiate(await wasmBody(src, 'instantiateStreaming'), imports); }, writable: true, configurable: true },
+    });
+}
 'use strict';
 const def = (o, k, v) => Object.defineProperty(o, k, { value: v, writable: true, configurable: true, enumerable: false });
 const codes = { IndexSizeError: 1, HierarchyRequestError: 3, WrongDocumentError: 4, InvalidCharacterError: 5, NotFoundError: 8, NotSupportedError: 9, InvalidStateError: 11, SyntaxError: 12, InvalidModificationError: 13, NamespaceError: 14, InvalidAccessError: 15, SecurityError: 18, NetworkError: 19, AbortError: 20, URLMismatchError: 21, QuotaExceededError: 22, TimeoutError: 23, DataCloneError: 25 };
@@ -335,32 +395,54 @@ const toFn = f => typeof f === 'function' ? f : (0, eval)('(function(){' + Strin
 const performance = { now: () => W.now(), timeOrigin: W.timeOrigin, mark() {}, measure() {}, getEntriesByName() { return []; }, getEntriesByType() { return []; }, toJSON() { return { timeOrigin: W.timeOrigin }; } };
 const fmt = a => a.map(x => typeof x === 'string' ? x : x instanceof Error ? x.stack || String(x) : (() => { try { return JSON.stringify(x); } catch (e) { return String(x); } })()).join(' ');
 const console = { log: (...a) => W.log(1, fmt(a)), info: (...a) => W.log(1, fmt(a)), debug: (...a) => W.log(0, fmt(a)), warn: (...a) => W.log(2, fmt(a)), error: (...a) => W.log(3, fmt(a)), trace() {}, group() {}, groupEnd() {}, time() {}, timeEnd() {}, assert: (c, ...a) => { if (!c) W.log(3, 'Assertion failed: ' + fmt(a)); } };
+const bcAll = new Set(); let bcIds = 0, bcOn = false;
+class BroadcastChannel extends EventTarget {
+    constructor(n) {
+        super();
+        if (!arguments.length) throw new TypeError("Failed to construct 'BroadcastChannel': 1 argument required");
+        Object.defineProperty(this, '_id', { value: ++bcIds }); Object.defineProperty(this, '_closed', { value: false, writable: true });
+        this.name = String(n); this.onmessage = null; this.onmessageerror = null; bcAll.add(this);
+        if (!bcOn) { bcOn = true; W.busOrigin(location.origin); }
+    }
+    postMessage(m) {
+        if (this._closed) throw new DOMException("Failed to execute 'postMessage' on 'BroadcastChannel': Channel is closed", 'InvalidStateError');
+        try { W.busPost(this.name, this._id, m); } catch (e) { throw new DOMException(String(e && e.message || e), 'DataCloneError'); }
+    }
+    close() { this._closed = true; bcAll.delete(this); }
+}
+const portSub = (v, ps, seen = new Set()) => { if (!ps.length || !v || typeof v !== 'object' || seen.has(v)) return v; const i = ps.indexOf(v); if (i >= 0) return { __lumenPortRef: i }; seen.add(v); if (Array.isArray(v)) return v.map(x => portSub(x, ps, seen)); const pr = Object.getPrototypeOf(v); if (pr !== Object.prototype && pr !== null) return v; const o = {}; for (const k of Object.keys(v)) o[k] = portSub(v[k], ps, seen); return o; };
+const portRes = (v, ps, seen = new Set()) => { if (!ps.length || !v || typeof v !== 'object' || seen.has(v)) return v; if (typeof v.__lumenPortRef === 'number' && Object.keys(v).length === 1) return ps[v.__lumenPortRef]; seen.add(v); for (const k of Object.keys(v)) v[k] = portRes(v[k], ps, seen); return v; };
 const wports = new Map(); let wpseq = 0;
 class MessagePort extends EventTarget {
     constructor() { super(); this.onmessage = null; this.onmessageerror = null; Object.defineProperty(this, '_other', { value: null, writable: true }); Object.defineProperty(this, '_k', { value: 0, writable: true }); }
-    postMessage(d, t) { const ps = (Array.isArray(t) ? t : t && t.transfer || []).filter(p => p instanceof MessagePort), k = this._k || (this._other && this._other._k); if (k) { W.post({ __lumenPort: k, data: d, xfer: ps.map(p => { const j = -(++wpseq); p._k = j; if (p._other) wports.set(j, p._other); return j; }) }); return; } const o = this._other; if (o) { const c = W.clone(d); setTimeout(() => { const e = new MessageEvent('message', { data: c, ports: ps }); e.isTrusted = true; fireOn(o, e); }); } }
+    postMessage(d, t) { const ps = (Array.isArray(t) ? t : t && t.transfer || []).filter(p => p instanceof MessagePort), k = this._k || (this._other && this._other._k); if (k) { W.post({ __lumenPort: k, data: portSub(d, ps), xfer: ps.map(p => { const j = -(++wpseq); p._k = j; if (p._other) wports.set(j, p._other); return j; }) }); return; } const o = this._other; if (o) { const c = W.clone(d); setTimeout(() => { const e = new MessageEvent('message', { data: c, ports: ps }); e.isTrusted = true; fireOn(o, e); }); } }
     start() {} close() { this._other = null; }
 }
 class MessageChannel { constructor() { this.port1 = new MessagePort(); this.port2 = new MessagePort(); this.port1._other = this.port2; this.port2._other = this.port1; } }
 const api = {
-    self: G, globalThis: G, location, navigator, name: W.name, origin: location.origin, isSecureContext: location.protocol === 'https:', crossOriginIsolated: false,
+    self: G, globalThis: G, location, navigator, name: W.name, origin: location.origin, isSecureContext: location.protocol === 'https:', crossOriginIsolated: !!W.coi,
     onmessage: null, onmessageerror: null, onerror: null, onunhandledrejection: null, onrejectionhandled: null, onlanguagechange: null, onoffline: null, ononline: null,
-    postMessage(m, t) { if (arguments.length < 1) throw new TypeError("Failed to execute 'postMessage': 1 argument required, but only 0 present."); const ps = (Array.isArray(t) ? t : t && t.transfer || []).filter(p => p instanceof MessagePort); if (!ps.length) return W.post(m); W.post({ __lumenXfer: ps.map(p => { const k = -(++wpseq); p._k = k; if (p._other) wports.set(k, p._other); return k; }), data: m }); },
+    postMessage(m, t) { if (arguments.length < 1) throw new TypeError("Failed to execute 'postMessage': 1 argument required, but only 0 present."); const ps = (Array.isArray(t) ? t : t && t.transfer || []).filter(p => p instanceof MessagePort); if (!ps.length) return W.post(m); W.post({ __lumenXfer: ps.map(p => { const k = -(++wpseq); p._k = k; if (p._other) wports.set(k, p._other); return k; }), data: portSub(m, ps) }); },
     close() { W.close(); },
     importScripts(...urls) { for (const u of urls) W.importScript(String(u)); },
     setTimeout: (f, ms, ...args) => W.timer(toFn(f), +ms || 0, false, args), setInterval: (f, ms, ...args) => W.timer(toFn(f), +ms || 0, true, args),
     clearTimeout: id => W.clear(+id || 0), clearInterval: id => W.clear(+id || 0),
     queueMicrotask: f => { Promise.resolve().then(() => f()); }, structuredClone: v => W.clone(v),
     btoa, atob, TextEncoder, TextDecoder, Blob, File, URL, URLSearchParams, Headers, Response, fetch, performance, console,
-    Event, MessageEvent, MessagePort, MessageChannel, ErrorEvent, CustomEvent, PromiseRejectionEvent, EventTarget, DOMException, WorkerGlobalScope, DedicatedWorkerGlobalScope, WorkerLocation, WorkerNavigator,
+    Event, MessageEvent, MessagePort, MessageChannel, BroadcastChannel, ErrorEvent, CustomEvent, PromiseRejectionEvent, EventTarget, DOMException, WorkerGlobalScope, DedicatedWorkerGlobalScope, WorkerLocation, WorkerNavigator,
 };
 for (const k of Object.keys(api)) Object.defineProperty(G, k, { value: api[k], writable: true, configurable: true, enumerable: false });
 return {
+    busDeliver(kind, name, data, id, same) {
+        if (kind !== 'bc') return;
+        let first = true;
+        for (const ch of [...bcAll]) if (!ch._closed && ch.name === name && !(same && ch._id === id)) { ch.dispatchEvent(new MessageEvent('message', { data: first ? data : W.clone(data), origin: location.origin })); first = false; }
+    },
     onmsg(data) {
         let ports = [];
         if (data && typeof data === 'object') {
-            if (data.__lumenPort) { const p = wports.get(data.__lumenPort); if (p) { const e = new MessageEvent('message', { data: data.data, ports: (data.xfer || []).map(k => { const q = new MessagePort(); q._k = k; wports.set(k, q); return q; }) }); e.isTrusted = true; fireOn(p, e); } return; }
-            if (data.__lumenXfer) { ports = data.__lumenXfer.map(k => { const q = new MessagePort(); q._k = k; wports.set(k, q); return q; }); data = data.data; }
+            if (data.__lumenPort) { const p = wports.get(data.__lumenPort); if (p) { const qs = (data.xfer || []).map(k => { const q = new MessagePort(); q._k = k; wports.set(k, q); return q; }); const e = new MessageEvent('message', { data: portRes(data.data, qs), ports: qs }); e.isTrusted = true; fireOn(p, e); } return; }
+            if (data.__lumenXfer) { ports = data.__lumenXfer.map(k => { const q = new MessagePort(); q._k = k; wports.set(k, q); return q; }); data = portRes(data.data, ports); }
         }
         const e = new MessageEvent('message', { data, ports }); e.isTrusted = true; fireOn(G, e);
     },
@@ -396,6 +478,19 @@ void run_timers(WEnv *E) {
     }
 }
 
+static v8::ModifyCodeGenerationFromStringsResult w_eval_cb(v8::Local<v8::Context>, v8::Local<v8::Value>, bool) {
+    WEnv *E = (WEnv *)v8::Isolate::GetCurrent()->GetData(kEnvSlot);
+    v8::ModifyCodeGenerationFromStringsResult r;
+    r.codegen_allowed = !E || !E->has_csp || csp_allows_eval(E->csp.c_str(), false);
+    if (!r.codegen_allowed) fprintf(stderr, "lumen: CSP blocked eval in worker\n");
+    return r;
+}
+static bool w_wasm_cb(v8::Local<v8::Context>, v8::Local<v8::String>) {
+    WEnv *E = (WEnv *)v8::Isolate::GetCurrent()->GetData(kEnvSlot);
+    bool ok = !E || !E->has_csp || csp_allows_eval(E->csp.c_str(), true);
+    if (!ok) fprintf(stderr, "lumen: CSP blocked WebAssembly compile in worker\n");
+    return ok;
+}
 void worker_main(std::shared_ptr<Worker> w) {
     v8::Isolate::CreateParams cp;
     std::unique_ptr<v8::ArrayBuffer::Allocator> al(v8::ArrayBuffer::Allocator::NewDefaultAllocator());
@@ -406,17 +501,21 @@ void worker_main(std::shared_ptr<Worker> w) {
     WEnv *E = new WEnv; E->w = w; E->iso = iso; E->t0 = now_ms();
     iso->SetData(kEnvSlot, E);
     iso->SetHostInitializeImportMetaObjectCallback(wm_meta);
+    iso->SetModifyCodeGenerationFromStringsCallback(w_eval_cb);
+    iso->SetAllowWasmCodeGenerationCallback(w_wasm_cb);
     {
         v8::Isolate::Scope is(iso);
         v8::HandleScope hs(iso);
         v8::Local<v8::Context> ctx = v8::Context::New(iso);
         E->ctx.Reset(iso, ctx);
+        ctx->AllowCodeGenerationFromStrings(false);
         v8::Context::Scope cs(ctx);
         v8::Local<v8::Object> W = v8::Object::New(iso);
 #define WREG(nm) (void)W->Set(ctx, jstr(iso, #nm), v8::Function::New(ctx, w_##nm).ToLocalChecked())
-        WREG(post); WREG(clone); WREG(timer); WREG(clear); WREG(close); WREG(now); WREG(log); WREG(decode); WREG(resolve); WREG(fetch); WREG(importScript); WREG(reportErr);
+        WREG(post); WREG(clone); WREG(timer); WREG(clear); WREG(close); WREG(now); WREG(log); WREG(decode); WREG(resolve); WREG(fetch); WREG(importScript); WREG(reportErr); WREG(busOrigin); WREG(busPost);
         auto setS = [&](const char *k, const std::string &v) { (void)W->Set(ctx, jstr(iso, k), jstr(iso, v.c_str())); };
         setS("url", w->url); setS("ua", w->ua); setS("platform", w->platform); setS("name", w->name);
+        (void)W->Set(ctx, jstr(iso, "coi"), v8::Boolean::New(iso, w->coi));
         (void)W->Set(ctx, jstr(iso, "cores"), v8::Integer::New(iso, (int)std::max(1u, std::thread::hardware_concurrency())));
         double wall = (double)std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count() / 1000.0;
         (void)W->Set(ctx, jstr(iso, "timeOrigin"), v8::Number::New(iso, wall));
@@ -430,13 +529,20 @@ void worker_main(std::shared_ptr<Worker> w) {
                 v8::Local<v8::Value> f;
                 if (api.As<v8::Object>()->Get(ctx, jstr(iso, "onmsg")).ToLocal(&f) && f->IsFunction()) E->onmsg.Reset(iso, f.As<v8::Function>());
                 if (api.As<v8::Object>()->Get(ctx, jstr(iso, "report")).ToLocal(&f) && f->IsFunction()) E->report.Reset(iso, f.As<v8::Function>());
+                if (api.As<v8::Object>()->Get(ctx, jstr(iso, "busDeliver")).ToLocal(&f) && f->IsFunction()) E->busfn.Reset(iso, f.As<v8::Function>());
             }
             if (tc.HasCaught()) fprintf(stderr, "lumen: worker prelude failed: %s\n", jcstr(iso, tc.Exception()).c_str());
         }
         std::string src = w->src; bool ok = w->have_src;
-        if (!ok && !w->term) {
+        if (w->has_ocsp && !csp_allows_url(w->ocsp.c_str(), w->odoc.c_str(), w->url.c_str(), "worker-src")) {
+            fprintf(stderr, "lumen: CSP worker-src blocked %.120s\n", w->url.c_str()); ok = false;
+        } else if (ok) { E->csp = w->ocsp; E->cspdoc = w->odoc; E->has_csp = w->has_ocsp; }
+        else if (!w->term) {
             NetResponse *r = net_fetch_sync(net_request_new("GET", w->url.c_str()));
-            if (r && r->status >= 200 && r->status < 300) { src.assign(r->body ? r->body : "", r->body_len); ok = true; }
+            if (r && r->status >= 200 && r->status < 300) {
+                src.assign(r->body ? r->body : "", r->body_len); ok = true;
+                if (const char *h = headers_get(&r->headers, "content-security-policy")) { E->csp = h; E->cspdoc = w->url; E->has_csp = true; }
+            }
             if (r) net_response_free(r);
         }
         if (!ok) post_out(E, OutMsg{ WM_LOADFAIL, {}, {}, {}, 0, 0 });
@@ -468,11 +574,14 @@ void worker_main(std::shared_ptr<Worker> w) {
             { v8::HeapStatistics hs; iso->GetHeapStatistics(&hs); w->heap = hs.total_heap_size(); w->ext = hs.external_memory(); }
             if (!idle_gc && now_ms() - last_act > 10000) { iso->LowMemoryNotification(); idle_gc = true; continue; }  /* idle worker: give memory back once */
             std::deque<Buf> msgs;
+            bool bg = iso->HasPendingBackgroundTasks();   /* e.g. async WebAssembly compile: poll until it posts back */
+            while (v8::platform::PumpMessageLoop(js_platform(), iso)) {}
+            iso->PerformMicrotaskCheckpoint();
             {
                 std::unique_lock<std::mutex> lk(w->mu);
-                double next = 1e300;
+                double next = bg ? now_ms() + 4 : 1e300;
                 for (auto &kv : E->timers) next = std::min(next, kv.second.due);
-                auto ready = [&] { return w->term.load() || !w->in.empty(); };
+                auto ready = [&] { return w->term.load() || !w->in.empty() || (!E->bus_origin.empty() && js_bus_seq() != E->bus_seen); };
                 if (!idle_gc) next = std::min(next, last_act + 10001);
                 if (!ready()) {
                     if (next >= 1e299) w->cv.wait(lk, ready);
@@ -491,11 +600,25 @@ void worker_main(std::shared_ptr<Worker> w) {
                 }
                 free(b.p);
             }
+            if (!E->busfn.IsEmpty() && !w->term && !E->closing) {
+                std::vector<BusMsg> bm;
+                if (js_bus_take(E->bus_origin, E, E->bus_seen, bm)) {
+                    last_act = now_ms(); idle_gc = false;
+                    v8::HandleScope hs3(iso);
+                    v8::Local<v8::Function> bf = E->busfn.Get(iso);
+                    for (auto &m : bm) {
+                        v8::TryCatch tc(iso);
+                        v8::Local<v8::Value> argv[5], r;
+                        if (js_bus_args(iso, ctx, m, E, argv)) { (void)bf->Call(ctx, v8::Undefined(iso), 5, argv).ToLocal(&r); wcheck(E, tc); }
+                        iso->PerformMicrotaskCheckpoint();
+                    }
+                }
+            }
             if (w->term) break;
             run_timers(E);
-            while (v8::platform::PumpMessageLoop(js_platform(), iso)) {}
         }
-        E->timers.clear(); E->mods.clear(); E->murl.clear(); E->onmsg.Reset(); E->report.Reset(); E->ctx.Reset();
+        js_bus_listen(E, nullptr);
+        E->timers.clear(); E->mods.clear(); E->murl.clear(); E->onmsg.Reset(); E->report.Reset(); E->busfn.Reset(); E->ctx.Reset();
     }
     {
         std::lock_guard<std::mutex> lk(w->mu);
@@ -539,6 +662,10 @@ bool wm_graph(WEnv *E, v8::Local<v8::Module> m) {
         std::string sp = jcstr(iso, rq->Get(i).As<v8::ModuleRequest>()->GetSpecifier()), u = wm_resolve(sp, base);
         if (u.empty()) { iso->ThrowException(v8::Exception::TypeError(jstr(iso, ("Failed to resolve module specifier \"" + sp + "\"").c_str()))); return false; }
         if (E->mods.count(u)) continue;
+        if (E->has_csp && !csp_allows_url(E->csp.c_str(), E->cspdoc.c_str(), u.c_str(), "script-src")) {
+            fprintf(stderr, "lumen: CSP script-src blocked module %.120s\n", u.c_str());
+            iso->ThrowException(v8::Exception::TypeError(jstr(iso, ("Failed to fetch module: " + u).c_str()))); return false;
+        }
         NetResponse *r = net_fetch_sync(net_request_new("GET", u.c_str()));
         bool ok = r && r->status >= 200 && r->status < 300; std::string body;
         if (ok) body.assign(r->body ? r->body : "", r->body_len);
@@ -576,7 +703,9 @@ void worker_terminate(Worker *w) {
 void n_workerNew(const FCI &a) {
     v8::Isolate *iso = a.GetIsolate();
     auto w = std::make_shared<Worker>();
-    w->id = ++g_wseq; w->owner = jctx(iso);
+    w->id = ++g_wseq; w->owner = jctx(iso); w->coi = w->owner && w->owner->doc && w->owner->doc->cross_origin_isolated;
+    if (const char *t = js_top_url(w->owner)) w->top = t;
+    if (w->owner && w->owner->doc && w->owner->doc->csp) { w->ocsp = w->owner->doc->csp; w->odoc = w->owner->doc->url ? w->owner->doc->url : ""; w->has_ocsp = true; }
     w->url = jcstr(iso, a[0]); w->have_src = a[1]->IsString(); if (w->have_src) w->src = jcstr(iso, a[1]);
     w->ua = jcstr(iso, a[2]); w->platform = jcstr(iso, a[3]); w->name = a[4]->IsString() ? jcstr(iso, a[4]) : ""; w->module = a.Length() > 5 && a[5]->IsTrue();
     g_workers[w->id] = w;

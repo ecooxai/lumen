@@ -11,11 +11,22 @@
 #define MALLOC_IN_USE(v) struct mallinfo2 mi_ = mallinfo2(); size_t v = mi_.uordblks
 #endif
 #include <sys/resource.h>
+#include <sys/stat.h>
+#include <dirent.h>
+#include <strings.h>
+#include <time.h>
 #include <unistd.h>
 #ifdef __APPLE__
 #include <mach/mach.h>
+#include <TargetConditionals.h>
+#endif
+#if defined(__APPLE__) && TARGET_OS_IPHONE
+#define LUMEN_IOS 1   /* iOS / iPadOS / Mac Catalyst: UIKit shell, touch input */
 #endif
 #include <SDL3/SDL.h>
+#ifdef LUMEN_IOS
+#include <SDL3/SDL_main.h>
+#endif
 #include "../paint/paint.h"
 #include "../media/media.h"
 #include "../net/net.h"
@@ -35,7 +46,29 @@ static char g_notice[256];   /* dismissable error notice shown in the info bar *
 #include "../paint/cvbuf.h"
 #ifdef __APPLE__
 #include "macui.h"
+#ifdef LUMEN_IOS
+void ios_wait_init(void);
+bool ios_wait_event(SDL_Event *ev, int to_ms);
+#endif
+/* no auto-capitalisation/autocorrect: iOS keyboards otherwise rewrite typed URLs and queries */
+static void text_input(SDL_Window *w, bool url) {
+#ifdef LUMEN_IOS
+    SDL_PropertiesID p = SDL_CreateProperties();
+    (void)url;
+    SDL_SetNumberProperty(p, SDL_PROP_TEXTINPUT_CAPITALIZATION_NUMBER, SDL_CAPITALIZE_NONE);
+    SDL_SetBooleanProperty(p, SDL_PROP_TEXTINPUT_AUTOCORRECT_BOOLEAN, false);
+    SDL_StartTextInputWithProperties(w, p);
+    SDL_DestroyProperties(p);
+#else
+    (void)url;
+    SDL_StartTextInput(w);
+#endif
+}
+#ifdef LUMEN_IOS
+#define TLW 0.f
+#else
 #define TLW 78.f
+#endif
 #else
 #define TLW 0.f
 #endif
@@ -58,6 +91,17 @@ typedef struct Page {
 } Page;
 static Page *g_frames;
 static Page *frame_find(Node *f) { for (Page *p = g_frames; p; p = p->fnext) if (p->frame_el == f) return p; return NULL; }
+/* URL of the top-level document a frame element belongs to (SameSite / mixed-content context) */
+static const char *frame_top_url(Node *f) {
+    Document *d = f ? f->doc : NULL;
+    for (int guard = 0; d && guard < 64; guard++) {
+        Page *fp = NULL; for (Page *q = g_frames; q; q = q->fnext) if (q->d == d) { fp = q; break; }
+        if (!fp || !fp->frame_el) break;
+        d = fp->frame_el->doc;
+    }
+    return d ? d->url : NULL;
+}
+static const char *page_top_url(Page *p) { return p->frame_el ? frame_top_url(p->frame_el) : p->url; }
 typedef struct { Image *im; bool done, evicted, refetch; double used; float ew, eh; uint8_t *enc; size_t enclen; } ImgSlot;   /* enc: compressed bytes kept in Lite mode for local re-decode */
 static bool g_lite_active;
 
@@ -128,6 +172,24 @@ static volatile uint64_t g_tab_gen[MAX_TABS];
 static bool gen_live(uint64_t g) { for (int i = 0; i < MAX_TABS; i++) if (g_tab_gen[i] == g) return true; return false; }
 
 static void img_refetch(const char *u);
+/* subresource request from document d: SameSite/mixed-content context + Referer under d's Referrer-Policy */
+static bool style_csp_ok(Document *d, Node *n, const char *t) {
+    if (!d || !d->csp) return true;
+    if (!(n->flags & NF_CSP_STYLE_CHECKED)) {
+        if (!*t) return true;   /* script-created and still empty: decide once it has text */
+        n->flags |= NF_CSP_STYLE_CHECKED;
+        if (!csp_allows_style(d->csp, node_attr(n, "nonce"), t, strlen(t))) { n->flags |= NF_CSP_STYLE_BLOCKED; fprintf(stderr, "lumen: CSP style-src blocked inline <style>\n"); }
+    }
+    return !(n->flags & NF_CSP_STYLE_BLOCKED);
+}
+static NetRequest *doc_req(Document *d, const char *u, const char *top, const char *csp_dir) {
+    NetRequest *rq = net_request_ctx("GET", u, top);
+    char *ref = d ? net_referrer(d->url, u, d->referrer_policy) : NULL;
+    if (ref) { headers_add(&rq->headers, "Referer", ref); free(ref); }
+    if (d && d->url) { rq->no_cors_origin = xstrdup(d->url); rq->coep_require_corp = d->coep_require_corp; }
+    if (d && d->csp && csp_dir) { rq->csp = xstrdup(d->csp); rq->csp_doc = xstrdup(d->url ? d->url : ""); rq->csp_dir = csp_dir; }
+    return rq;
+}
 static Image *cache_get(const char *u) {
     SDL_LockMutex(icache_mu); ImgSlot *s = hm_get(&icache, u); Image *im = s ? s->im : NULL; bool want = false; const uint8_t *enc = NULL; size_t en = 0;
     if (s && !g_in_layout) { s->used = (double)SDL_GetTicks(); if (s->evicted && !s->refetch) { s->refetch = true; if (s->enc) { enc = s->enc; en = s->enclen; } else want = true; } }
@@ -144,27 +206,30 @@ static Image *cache_get(const char *u) {
     if (want) img_refetch(u);
     return im;
 }
-static void cache_fetch(const char *u) {
+static const char *page_top_url(Page *p);
+static void cache_fetch(Page *p, const char *u) {
     if (!u || !*u || !strncmp(u, "blob:", 5)) return;
     SDL_LockMutex(icache_mu); bool have = hm_get(&icache, u) != NULL; SDL_UnlockMutex(icache_mu);
     if (have) return;
-    NetResponse *r = net_fetch_sync(net_request_new("GET", u));
+    NetResponse *r = net_fetch_sync(doc_req(p->d, u, page_top_url(p), "img-src"));
     Image *im = r && r->status == 200 ? image_decode((const uint8_t *)r->body, r->body_len) : NULL;
     if (r) net_response_free(r);
     ImgSlot *slot = xcalloc(1, sizeof *slot); slot->im = im; slot->done = true;
     SDL_LockMutex(icache_mu); if (!hm_get(&icache, u)) { hm_put(&icache, u, slot); if (im) { g_icache_bytes += (size_t)im->w * (size_t)im->h * 4; g_icache_n++; } } else { image_unref(im); free(slot); } SDL_UnlockMutex(icache_mu);
 }
-Image *cap_frame_for(Node *n);
+Image *cap_frame_for(Node *n); bool cap_screen_active(void); void cap_rec_tick(void); void cap_screen_push(const uint32_t *px, int w, int h, int stride);
 static Image *node_img(Node *n) {
     if (n->tag == A_iframe) { Page *fp = frame_find(n); return fp && fp->cv.px ? &fp->img : NULL; }
     if (n->tag == A_video) { Image *f = cap_frame_for(n); if (!f) f = media_frame_for(n); if (f) return f; }
     if (n->tag == A_canvas) return cvbuf_image(n);
     const char *s = node_attr(n, n->tag == A_video ? "poster" : "src"); if (!s) return NULL;
-    char *u = url_join(n->doc->url, s); Image *im = cache_get(u); free(u); return im;
+    char *u = url_join(n->doc->url, s); Image *im = u ? cache_get(u) : NULL; free(u); return im;
 }
 static Image *url_img(const char *u) { return u ? cache_get(u) : NULL; }
 static bool img_size(Node *n, float *w, float *h) {
     if (n->tag == A_iframe) return false;
+    MpState ms;
+    if (n->tag == A_video && media_state_for(n, &ms) && ms.w > 0 && ms.h > 0) { *w = (float)ms.w; *h = (float)ms.h; return true; }
     g_in_layout = true; Image *im = node_img(n); g_in_layout = false;
     if (!im) {
         const char *s = n->tag == A_img ? node_attr(n, "src") : NULL; char *u = s ? url_join(n->doc->url, s) : NULL;
@@ -173,7 +238,7 @@ static bool img_size(Node *n, float *w, float *h) {
     }
     *w = image_css_w(im); *h = image_css_h(im); return true; }
 
-typedef struct { char *url; uint64_t gen; float vw, vh; char *body; size_t blen; char *ctype; char *html; } LoadReq;
+typedef struct { char *url; uint64_t gen; float vw, vh; char *body; size_t blen; char *ctype; char *html; char *ref; } LoadReq;
 
 /* Downloads go to $LUMEN_DOWNLOAD_DIR, $XDG_DOWNLOAD_DIR or ~/Downloads; existing files are never overwritten */
 static char g_last_download[1024];
@@ -225,13 +290,14 @@ static int loader(void *arg) {
         headers_set(&nr->headers, "Sec-Fetch-Mode", "navigate");
         headers_set(&nr->headers, "Sec-Fetch-Site", "none");
         headers_set(&nr->headers, "Sec-Fetch-User", "?1");
+        if (rq->ref) headers_set(&nr->headers, "Referer", rq->ref);
     }
     NetResponse *r = rq->html ? NULL : net_fetch_sync(nr);
     if (r && r->status >= 200 && r->status < 300 && is_download(r)) {
         char nm[256]; download_name(r, r->url ? r->url : rq->url, nm, sizeof nm);
         download_save(nm, r->body ? r->body : "", r->body ? r->body_len : 0);
         SDL_Event ev; SDL_zero(ev); ev.type = EV_DL; ev.user.data1 = (void *)(uintptr_t)rq->gen; SDL_PushEvent(&ev);
-        net_response_free(r); free(rq->url); free(rq->body); free(rq->ctype); free(rq->html); free(rq);
+        net_response_free(r); free(rq->url); free(rq->body); free(rq->ctype); free(rq->html); free(rq->ref); free(rq);
         return 0;
     }
     Page *p = xcalloc(1, sizeof *p); p->gen = rq->gen;
@@ -248,8 +314,25 @@ static int loader(void *arg) {
     else if (wrapbuf) { body = wrapbuf; blen = strlen(body); }
     else if (!r || r->status == 0) { errbuf = xmalloc(512); snprintf(errbuf, 512, "<title>Error</title><body style='font:15px system-ui;padding:40px;color:#444'><h2>Can't open this page</h2><p>%s</p>", rq->url); body = errbuf; blen = strlen(errbuf); }
     p->url = xstrdup(r && r->url ? r->url : rq->url);
-    p->d = doc_new(p->url);
+    p->d = doc_new(p->url); p->d->referrer = rq->ref; rq->ref = NULL;
+    if (r && !rq->html) {
+        const char *coop = headers_get(&r->headers, "cross-origin-opener-policy"), *coep = headers_get(&r->headers, "cross-origin-embedder-policy");
+        bool secure = !strncmp(p->url, "https:", 6) || !strncmp(p->url, "http://localhost", 16) || !strncmp(p->url, "http://127.0.0.1", 16);
+        p->d->coep_require_corp = secure && coep && !strncasecmp(coep, "require-corp", 12);
+        p->d->cross_origin_isolated = secure && coop && coep && !strncasecmp(coop, "same-origin", 11) && strncasecmp(coop, "same-origin-allow-popups", 24)
+            && (!strncasecmp(coep, "require-corp", 12) || !strncasecmp(coep, "credentialless", 14));
+        const char *rp = headers_get(&r->headers, "referrer-policy");
+        if (rp) snprintf(p->d->referrer_policy, sizeof p->d->referrer_policy, "%s", rp);
+        for (int i = 0; i < r->headers.n; i++)
+            if (!strcasecmp(r->headers.v[i].name, "content-security-policy")) p->d->csp = csp_append(p->d->csp, r->headers.v[i].value);
+    }
     html_parse(p->d, body, blen);
+    for (Node *m = p->d->node.first; m; m = node_next_in_tree(m, &p->d->node)) {  /* <meta name=referrer> overrides the header */
+        if (m->type != NODE_ELEMENT || m->tag != A_meta || !node_attr(m, "content")) continue;
+        const char *nm = node_attr(m, "name"), *he = node_attr(m, "http-equiv");
+        if (nm && !strcasecmp(nm, "referrer")) snprintf(p->d->referrer_policy, sizeof p->d->referrer_policy, "%s", node_attr(m, "content"));
+        if (he && !strcasecmp(he, "content-security-policy")) p->d->csp = csp_append(p->d->csp, node_attr(m, "content"));
+    }
     if (!getenv("LUMEN_NO_JS")) for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) {
         if (!gen_live(rq->gen)) break;
         if (n->type != NODE_ELEMENT || n->tag != A_script || n->ns != NS_HTML) continue;
@@ -260,7 +343,7 @@ static int loader(void *arg) {
         if (src) {
             sc.name = url_join(p->d->url, src);
             if (!sc.name) continue;
-            NetResponse *sr = net_fetch_sync(net_request_new("GET", sc.name));
+            NetResponse *sr = net_fetch_sync(doc_req(p->d, sc.name, page_top_url(p), NULL));
             if (sr && sr->status >= 200 && sr->status < 300 && !js_script_mime_blocked(headers_get(&sr->headers, "content-type"))) { sc.src = xstrndup(sr->body ? sr->body : "", sr->body_len); sc.len = sr->body_len; }
             if (sr) net_response_free(sr);
         } else { sc.src = node_text_content(n); sc.len = strlen(sc.src); sc.name = xstrdup(p->url); }
@@ -271,21 +354,21 @@ static int loader(void *arg) {
         if (!gen_live(rq->gen)) break;
         if (n->type != NODE_ELEMENT) continue;
         if (n->tag == A_style) {
-            char *t = node_text_content(n); StyleSheet *s = css_parse_sheet(t, strlen(t), p->d->url, 1, &p->e->media); s->owner = n; style_engine_add_sheet(p->e, s); free(t);
+            char *t = node_text_content(n); if (style_csp_ok(p->d, n, t)) { StyleSheet *s = css_parse_sheet(t, strlen(t), p->d->url, 1, &p->e->media); s->owner = n; style_engine_add_sheet(p->e, s); } free(t);
         } else if (n->tag == A_link && node_attr(n, "rel") && strstr(node_attr(n, "rel"), "stylesheet") && node_attr(n, "href")) {
             char *u = url_join(p->d->url, node_attr(n, "href"));
-            NetResponse *cr = net_fetch_sync(net_request_new("GET", u));
+            NetResponse *cr = net_fetch_sync(doc_req(p->d, u, page_top_url(p), "style-src"));
             if (cr && cr->status == 200) { StyleSheet *s = css_parse_sheet(cr->body, cr->body_len, cr->url, 1, &p->e->media); s->owner = n; style_engine_add_sheet(p->e, s); }
             if (cr) net_response_free(cr); free(u);
         } else if (n->tag == A_img && node_attr(n, "src")) {
-            char *u = url_join(p->d->url, node_attr(n, "src")); cache_fetch(u); free(u);
+            char *u = url_join(p->d->url, node_attr(n, "src")); cache_fetch(p, u); free(u);
         }
     }
     style_recalc(p->e, &p->d->node, true);
     p->seen_ver = p->d->dom_version;
     p->load_ms = now_ms() - t0;
     if (r) net_response_free(r);
-    free(errbuf); free(wrapbuf); free(rq->url); free(rq->body); free(rq->ctype); free(rq->html); free(rq);
+    free(errbuf); free(wrapbuf); free(rq->url); free(rq->body); free(rq->ctype); free(rq->html); free(rq->ref); free(rq);
     SDL_Event ev; SDL_zero(ev); ev.type = EV_LOADED; ev.user.data1 = p; SDL_PushEvent(&ev);
     return 0;
 }
@@ -311,7 +394,7 @@ typedef struct App {
     Canvas frame, page; DisplayList pdl, cdl, hdl;
     struct DSig *osig, *nsig; int nosig, cosig, cnsig; uint64_t chash; bool osig_ok;   /* last page display list, to raster only what changed */
     Tab *t, *tabs[MAX_TABS]; int ntabs, ti;
-    char wsname[16][64]; Tab *wslast[16]; int nws, wi; float side;
+    char wsname[16][64]; Tab *wslast[16]; int nws, wi; float side; bool side_set;
     int wsicon[16]; Image *icimg[16][2];
     Image *sym[8][4]; bool vbars;
     int tip_tab; double tip_until;     /* CPU-limit dot tooltip pinned by a click */
@@ -466,17 +549,127 @@ static void apply_set(App *a, const char *q) {
     settings_save();
 }
 
+static const char *file_kind(const char *name) {
+    static const char *const K[][2] = { { ".png", "image" }, { ".jpg", "image" }, { ".jpeg", "image" }, { ".gif", "image" }, { ".webp", "image" },
+        { ".bmp", "image" }, { ".svg", "image" }, { ".avif", "image" }, { ".mp4", "video" }, { ".m4v", "video" }, { ".mov", "video" },
+        { ".webm", "video" }, { ".mkv", "video" }, { ".mp3", "audio" }, { ".m4a", "audio" }, { ".aac", "audio" }, { ".wav", "audio" },
+        { ".ogg", "audio" }, { ".opus", "audio" }, { ".flac", "audio" }, { ".obj", "model" } };
+    const char *e = strrchr(name, '.');
+    if (e) for (size_t i = 0; i < sizeof K / sizeof K[0]; i++) if (!strcasecmp(e, K[i][0])) return K[i][1];
+    return NULL;
+}
+static int dirent_cmp(const void *x, const void *y) {
+    const char *const *a = x, *const *b = y;
+    if ((*a)[0] != (*b)[0]) return (*a)[0] == 'd' ? -1 : 1;
+    return strcasecmp(*a + 1, *b + 1);
+}
+static void sb_size(SB *b, double n) {
+    static const char *u[] = { "B", "KB", "MB", "GB", "TB" }; int k = 0;
+    while (n >= 1024 && k < 4) { n /= 1024; k++; }
+    sb_printf(b, k ? "%.1f %s" : "%.0f %s", n, u[k]);
+}
+#define FV_CSS "<style>*{box-sizing:border-box}body{margin:0;font:13px -apple-system,system-ui,sans-serif;background:#1c1c1e;color:#e5e5e7}" \
+    ".bar{position:fixed;top:0;left:0;right:0;height:40px;display:flex;align-items:center;gap:6px;padding:0 12px;background:#2c2c2e;border-bottom:1px solid #3a3a3c;z-index:2}" \
+    ".bar .t{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}.bar .s{color:#98989d;margin-right:8px}" \
+    ".z{border:0;border-radius:6px;padding:4px 8px;background:#3a3a3c;color:#e5e5e7;font:12px system-ui;cursor:pointer}.z.on{background:#0a84ff;color:#fff}" \
+    ".stage{position:absolute;top:40px;left:0;right:0;bottom:0;overflow:auto;display:flex}.stage>*{margin:auto;flex:none}" \
+    "img,video{display:block;image-rendering:auto}.aud{padding:40px;border-radius:14px;background:#2c2c2e;text-align:center;min-width:360px}.aud b{display:block;margin-bottom:18px;font-size:15px}</style>"
+static char *file_page(const char *u) {
+    if (strncmp(u, "file://", 7)) return NULL;
+    const char *rp = u + 7, *qs = strpbrk(rp, "?#");
+    char *path = url_decode(rp, qs ? (size_t)(qs - rp) : strlen(rp));
+    struct stat st; char *html = NULL;
+    if (stat(path, &st)) { free(path); return NULL; }
+    const char *base = strrchr(path, '/'); base = base && base[1] ? base + 1 : path;
+    SB b; sb_init(&b);
+    if (S_ISDIR(st.st_mode)) {
+        DIR *d = opendir(path);
+        char **ents = NULL; int ne = 0;
+        for (struct dirent *de; d && (de = readdir(d));) {
+            if (de->d_name[0] == '.') continue;
+            char full[2048]; struct stat es; snprintf(full, sizeof full, "%s/%s", path, de->d_name);
+            bool dir = !stat(full, &es) && S_ISDIR(es.st_mode);
+            ents = xrealloc(ents, sizeof *ents * (size_t)(ne + 1));
+            size_t nl = strlen(de->d_name); char *e = xmalloc(nl + 40);
+            snprintf(e, nl + 40, "%c%s\t%lld\t%lld", dir ? 'd' : 'f', de->d_name, dir ? -1LL : (long long)es.st_size, (long long)es.st_mtime);
+            ents[ne++] = e;
+        }
+        if (d) closedir(d);
+        qsort(ents, (size_t)ne, sizeof *ents, dirent_cmp);
+        sb_puts(&b, "<!doctype html><meta charset=utf-8><title>"); sb_esc(&b, path); sb_puts(&b, "</title>" FV_CSS
+            "<style>.list{position:absolute;top:40px;left:0;right:0;padding:6px 10px}.r{display:flex;align-items:center;gap:8px;padding:3px 8px;border-radius:5px;color:#e5e5e7;text-decoration:none;line-height:20px}"
+            ".r:hover{background:#2c2c2e}.r .n{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.r .m{color:#98989d;font-size:12px;width:90px;text-align:right}"
+            ".i{width:16px;height:16px;border-radius:3px;flex:none;font-size:9px;line-height:16px;text-align:center;color:#fff;font-weight:700}"
+            ".i.d{background:#0a84ff}.i.image{background:#30d158}.i.video{background:#ff375f}.i.audio{background:#ff9f0a}.i.model{background:#bf5af2}.i.f{background:#636366}</style>");
+        sb_puts(&b, "<div class=bar><span class=t>"); sb_esc(&b, path); sb_printf(&b, "</span><span class=s>%d items</span></div><div class=list>", ne);
+        if (strcmp(path, "/")) sb_puts(&b, "<a class=r href=\"..\"><span class=\"i d\">\xe2\x86\x91</span><span class=n>..</span></a>");
+        for (int i = 0; i < ne; i++) {
+            char *nm = ents[i] + 1, *t1 = strchr(nm, '\t'); *t1 = 0;
+            long long sz = atoll(t1 + 1); time_t mt = (time_t)atoll(strchr(t1 + 1, '\t') + 1);
+            bool dir = ents[i][0] == 'd'; const char *k = dir ? "d" : file_kind(nm);
+            sb_puts(&b, "<a class=r href=\"");
+            for (const unsigned char *c = (const unsigned char *)nm; *c; c++)
+                if (isalnum(*c) || strchr("-_.~", *c)) sb_putc(&b, (char)*c); else sb_printf(&b, "%%%02X", *c);
+            sb_printf(&b, "%s\"><span class=\"i %s\"></span><span class=n>", dir ? "/" : "", k ? k : "f");
+            sb_esc(&b, nm); sb_puts(&b, "</span><span class=m>");
+            if (!dir) sb_size(&b, (double)sz);
+            char tb[32]; struct tm tmv; localtime_r(&mt, &tmv); strftime(tb, sizeof tb, "%Y-%m-%d %H:%M", &tmv);
+            sb_printf(&b, "</span><span class=m style=width:120px>%s</span></a>", tb);
+            free(ents[i]);
+        }
+        free(ents);
+        sb_puts(&b, "</div>");
+        html = sb_take(&b);
+    } else if (file_kind(base)) {
+        const char *k = file_kind(base);
+        sb_puts(&b, "<!doctype html><meta charset=utf-8><title>"); sb_esc(&b, base); sb_puts(&b, "</title>" FV_CSS "<div class=bar><span class=t>");
+        sb_esc(&b, base); sb_puts(&b, "</span><span class=s id=info>"); sb_size(&b, (double)st.st_size); sb_puts(&b, "</span><span id=zb></span></div><div class=stage id=st>");
+        if (!strcmp(k, "image")) { sb_puts(&b, "<img id=m src=\""); sb_esc(&b, base); sb_puts(&b, "\">"); }
+        else if (!strcmp(k, "video")) { sb_puts(&b, "<video id=m controls autoplay src=\""); sb_esc(&b, base); sb_puts(&b, "\"></video>"); }
+        else if (!strcmp(k, "audio")) { sb_puts(&b, "<div class=aud><b>"); sb_esc(&b, base); sb_puts(&b, "</b><audio controls autoplay src=\""); sb_esc(&b, base); sb_puts(&b, "\"></audio></div>"); }
+        else { sb_puts(&b, "<svg id=m xmlns=\"http://www.w3.org/2000/svg\"></svg>"); }
+        sb_printf(&b, "</div><script>var KIND='%s',SRC=", k);
+        sb_putc(&b, '\''); sb_esc(&b, base); sb_putc(&b, '\'');
+        sb_puts(&b, ";\n"
+            "var Z=[10,25,50,75,100,150,200,300],z=100,m=document.getElementById('m'),zb=document.getElementById('zb'),dpr=window.devicePixelRatio||1,nw=0,nh=0;\n"
+            "function draw(){if(KIND=='model')return obj.render();if(!nw)return;m.style.width=(nw/dpr*z/100)+'px';m.style.height=(nh/dpr*z/100)+'px'}\n"
+            "function setZ(v){z=v;[].forEach.call(zb.children,function(b){b.className='z'+(+b.dataset.z==z?' on':'')});draw()}\n"
+            "function step(d){var i=Z.indexOf(z)+d;if(i>=0&&i<Z.length)setZ(Z[i])}\n"
+            "if(KIND!='audio')Z.forEach(function(v){var b=document.createElement('button');b.className='z';b.dataset.z=v;b.textContent=v+'%';b.onclick=function(){setZ(v)};zb.appendChild(b)});\n"
+            "document.addEventListener('keydown',function(e){if(e.key=='+'||e.key=='=')step(1);else if(e.key=='-')step(-1);else if(e.key=='0')setZ(100)});\n"
+            "document.addEventListener('wheel',function(e){if(e.ctrlKey||e.metaKey){e.preventDefault();step(e.deltaY<0?1:-1)}},{passive:false});\n"
+            "function info(t){document.getElementById('info').textContent+=' \\u00b7 '+t}\n"
+            "if(KIND=='image')m.onload=function(){nw=m.naturalWidth;nh=m.naturalHeight;info(nw+'\\u00d7'+nh);setZ(100)};\n"
+            "if(KIND=='video')m.addEventListener('loadedmetadata',function(){nw=m.videoWidth;nh=m.videoHeight;info(nw+'\\u00d7'+nh);setZ(100)});\n"
+            "var obj={v:[],f:[],ry:0.6,rx:-0.4,render:function(){var W=Math.max(200,innerWidth*z/100),H=Math.max(200,(innerHeight-40)*z/100),s=Math.min(W,H)*0.4/this.r,cy=Math.cos(this.ry),sy=Math.sin(this.ry),cx=Math.cos(this.rx),sx=Math.sin(this.rx),P=[],self=this;\n"
+            " m.setAttribute('width',W);m.setAttribute('height',H);m.setAttribute('viewBox','0 0 '+W+' '+H);\n"
+            " this.v.forEach(function(p){var x=p[0]-self.c[0],y=p[1]-self.c[1],q=p[2]-self.c[2],X=x*cy+q*sy,Q=-x*sy+q*cy,Y=y*cx-Q*sx;Q=y*sx+Q*cx;P.push([W/2+X*s,H/2-Y*s,Q])});\n"
+            " var L=[];this.f.forEach(function(f){var a=P[f[0]],b=P[f[1]],c=P[f[2]];if(!a||!b||!c)return;var n=(b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]);var z0=0;f.forEach(function(i){z0+=P[i]?P[i][2]:0});L.push([z0/f.length,f,n])});\n"
+            " L.sort(function(a,b){return a[0]-b[0]});var o=[];L.forEach(function(e){var ux=0,uy=0,uz=0,f=e[1],a=P[f[0]],b=P[f[1]],c=P[f[2]];var v1=[b[0]-a[0],b[1]-a[1],b[2]-a[2]],v2=[c[0]-a[0],c[1]-a[1],c[2]-a[2]];ux=v1[1]*v2[2]-v1[2]*v2[1];uy=v1[2]*v2[0]-v1[0]*v2[2];uz=v1[0]*v2[1]-v1[1]*v2[0];var l=Math.sqrt(ux*ux+uy*uy+uz*uz)||1,sh=Math.abs(uz/l)*0.75+0.2,g=Math.round(70+150*sh);\n"
+            "  o.push('<polygon points=\"'+f.map(function(i){return P[i][0].toFixed(1)+','+P[i][1].toFixed(1)}).join(' ')+'\" fill=\"rgb('+g+','+g+','+Math.round(g*1.08)+')\" stroke=\"rgba(0,0,0,.15)\" stroke-width=\".5\"/>')});m.innerHTML=o.join('')}};\n"
+            "if(KIND=='model'){fetch(SRC).then(function(r){return r.text()}).then(function(t){var mn=[1e9,1e9,1e9],mx=[-1e9,-1e9,-1e9];t.split('\\n').forEach(function(l){var p=l.trim().split(/\\s+/);if(p[0]=='v'){var v=[+p[1],+p[2],+p[3]];for(var k=0;k<3;k++){mn[k]=Math.min(mn[k],v[k]);mx[k]=Math.max(mx[k],v[k])}obj.v.push(v)}else if(p[0]=='f'){var f=p.slice(1).map(function(s){var i=parseInt(s,10);return i<0?obj.v.length+i:i-1});for(var k=1;k+1<f.length;k++)obj.f.push([f[0],f[k],f[k+1]])}});\n"
+            " obj.c=[0,1,2].map(function(k){return (mn[k]+mx[k])/2});obj.r=Math.max(mx[0]-mn[0],mx[1]-mn[1],mx[2]-mn[2])/2||1;info(obj.v.length+' vertices, '+obj.f.length+' triangles');setZ(100);\n"
+            " var dg=null,pend=false;m.addEventListener('pointerdown',function(e){dg=[e.clientX,e.clientY]});addEventListener('pointerup',function(){dg=null});addEventListener('pointermove',function(e){if(!dg)return;obj.ry+=(e.clientX-dg[0])*0.01;obj.rx+=(e.clientY-dg[1])*0.01;dg=[e.clientX,e.clientY];if(!pend){pend=true;requestAnimationFrame(function(){pend=false;obj.render()})}})})}\n"
+            "</script>");
+        html = sb_take(&b);
+    } else sb_free(&b);
+    free(path);
+    return html;
+}
+
+static char *g_nav_ref;   /* Referer for the next navigate_ex, set by page-initiated navigations */
+static void nav_from(Document *d, const char *u) { free(g_nav_ref); g_nav_ref = d && d->url && u ? net_referrer(d->url, u, d->referrer_policy) : NULL; }
 static void navigate_ex(App *a, const char *url, bool push, const char *body, size_t blen, const char *ctype) {
-    char *u = normalize_url(url), *html = NULL;
+    char *u = normalize_url(url), *html = NULL, *ref = g_nav_ref; g_nav_ref = NULL;
     if (!strncmp(u, "lumen://", 8)) {
         if (!strncmp(u, "lumen://set?", 12)) {   /* only Lumen's own pages may change settings */
-            if (strncmp(a->t->url, "lumen://", 8)) { free(u); return; }
+            if (strncmp(a->t->url, "lumen://", 8)) { free(u); free(ref); return; }
             apply_set(a, u + 12);
             char sec[16] = "settings"; qparam(u + 12, "s", sec, sizeof sec);
             free(u); u = xmalloc(64); snprintf(u, 64, "lumen://newtab?s=%s", sec); push = false;
         }
         html = internal_page(u);
-    }
+    } else if (!body) html = file_page(u);
     if (push) {
         for (int i = a->t->hpos + 1; i < a->t->nhist; i++) free(a->t->hist[i]);
         a->t->nhist = a->t->hpos + 1;
@@ -485,7 +678,7 @@ static void navigate_ex(App *a, const char *url, bool push, const char *body, si
     }
     snprintf(a->t->url, sizeof a->t->url, "%s", u);
     a->editing = false; a->t->loading = true; a->dirty = true;
-    LoadReq *rq = xcalloc(1, sizeof *rq); rq->url = u; rq->html = html; rq->gen = ++load_gen; rq->vw = a->vw - a->side; rq->vh = a->vh - BAR; a->t->lgen = rq->gen; publish_gens(a);
+    LoadReq *rq = xcalloc(1, sizeof *rq); rq->url = u; rq->ref = ref; rq->html = html; rq->gen = ++load_gen; rq->vw = a->vw - a->side; rq->vh = a->vh - BAR; a->t->lgen = rq->gen; publish_gens(a);
     if (push) a->t->hgen[a->t->hpos] = rq->gen;
     if (body) { rq->body = xmalloc(blen + 1); memcpy(rq->body, body, blen); rq->body[blen] = 0; rq->blen = blen; rq->ctype = xstrdup(ctype ? ctype : ""); }
     SDL_Thread *t = SDL_CreateThread(loader, "loader", rq); SDL_DetachThread(t);
@@ -824,9 +1017,10 @@ static uint64_t hmix(uint64_t h, const void *p, size_t n) { const uint8_t *c = p
 static uint64_t ditem_hash(const DItem *it) {
     uint64_t h = 1469598103934665603ull;
     HMIX(h, it->op); HMIX(h, it->x); HMIX(h, it->y); HMIX(h, it->w); HMIX(h, it->h); HMIX(h, it->r); HMIX(h, it->color);
-    HMIX(h, it->bw); HMIX(h, it->bc); HMIX(h, it->bs); HMIX(h, it->img); if (it->img && it->img->anim) HMIX(h, it->img->px); HMIX(h, it->blur); HMIX(h, it->spread); HMIX(h, it->alpha); HMIX(h, it->inset);
+    HMIX(h, it->bw); HMIX(h, it->bc); HMIX(h, it->bs); HMIX(h, it->img); if (it->img && it->img->anim) HMIX(h, it->img->px); if (it->img) HMIX(h, it->img->ver); HMIX(h, it->blur); HMIX(h, it->spread); HMIX(h, it->alpha); HMIX(h, it->inset);
     if (it->grad) { const Gradient *g = it->grad; HMIX(h, g->type); HMIX(h, g->angle); HMIX(h, g->nstops); HMIX(h, g->repeating); h = hmix(h, g->stops, sizeof g->stops[0] * (size_t)LCLAMP(g->nstops, 0, 8)); }
     for (int i = 0; i < it->ng; i++) { const DGlyph *g = &it->g[i]; HMIX(h, g->gid); HMIX(h, g->x); HMIX(h, g->y); HMIX(h, g->font); }
+    HMIX(h, it->ts);
     return h;
 }
 static void bunion(float *a, const float *b) { a[0] = LMIN(a[0], b[0]); a[1] = LMIN(a[1], b[1]); a[2] = LMAX(a[2], b[2]); a[3] = LMAX(a[3], b[3]); }
@@ -922,6 +1116,8 @@ static void check_damage(App *a, int pwp, int ph, int x0, int y0, int x1, int y1
     canvas_free(&t);
 }
 
+static double g_shot_t0;   /* first frame time, for the LUMEN_SHOT test hook */
+static double shot_left(void) { const char *d = getenv("LUMEN_SHOT_MS"); return g_shot_t0 ? g_shot_t0 + (d ? atof(d) : 1500) - now_ms() : 0; }
 static void render(App *a) {
     update_compact(a);
     double t0 = now_ms();
@@ -1075,11 +1271,12 @@ static void render(App *a) {
             SDL_DestroySurface(src); SDL_UpdateWindowSurface(a->win);
         }
     }
+    if (cap_screen_active() && a->frame.h > bar_px && a->frame.w > side_px)
+        cap_screen_push(a->frame.px + (size_t)bar_px * (size_t)a->frame.stride + side_px, a->frame.w - side_px, a->frame.h - bar_px, a->frame.stride);
     a->frame_ms = now_ms() - t0;
     if (getenv("LUMEN_SHOT")) {   /* write the presented frame to a PNG after LUMEN_SHOT_MS and exit */
-        static double ts; if (!ts) ts = t0;
-        const char *d = getenv("LUMEN_SHOT_MS");
-        if (t0 - ts >= (d ? atof(d) : 1500)) { png_write(getenv("LUMEN_SHOT"), a->frame.px, a->frame.w, a->frame.h, a->frame.stride); exit(0); }
+        if (!g_shot_t0) g_shot_t0 = t0;
+        if (shot_left() <= 0) { png_write(getenv("LUMEN_SHOT"), a->frame.px, a->frame.w, a->frame.h, a->frame.stride); exit(0); }
     }
     if (getenv("LUMEN_DEBUG_PAINT")) {
         static int np, nf, nw[6]; static double tp, tf, t_last;
@@ -1136,6 +1333,9 @@ static void update_size(App *a) {
     for (int i = 0; i < a->ntabs; i++) a->tabs[i]->relayout = true;
     int w, h; SDL_GetWindowSize(a->win, &w, &h); SDL_GetWindowSizeInPixels(a->win, &a->pw, &a->ph);
     a->vw = (float)w; a->vh = (float)h; a->scale = w ? (float)a->pw / (float)w : 1;
+#ifdef LUMEN_IOS
+    if (!a->side_set) a->side = w >= 1000 ? SIDEW : 0;   /* iPad portrait: give pages the full 820pt so sites pick their tablet layout */
+#endif
     if (a->gpu) gpu_resize(a->gpu, a->pw, a->ph);
     a->t->relayout = a->dirty = true;
 }
@@ -1257,7 +1457,7 @@ static void sync_images(Page *p) {
         SDL_UnlockMutex(icache_mu);
         if (!have) {
             if (getenv("LUMEN_DEBUG_IMG")) fprintf(stderr, "lumen: img fetch %.80s\n", u);
-            NetRequest *rq = net_request_new("GET", u); ImgLoad *l = xmalloc(sizeof *l); l->gen = p->gen; l->u = u;
+            NetRequest *rq = doc_req(p->d, u, page_top_url(p), "img-src"); ImgLoad *l = xmalloc(sizeof *l); l->gen = p->gen; l->u = u;
             rq->done = img_done; rq->ud = l; rq->priority = 2; net_fetch(rq);
         } else free(u);
     }
@@ -1297,13 +1497,14 @@ static bool sync_sheets(Page *p, bool seed) {
         bool fresh = !known || n->tag != A_style || (n->flags & (NF_STYLE_DIRTY | NF_CHILD_STYLE_DIRTY | NF_STRUCT_DIRTY));
         if (n->tag == A_style) n->flags &= ~(uint32_t)(NF_STYLE_DIRTY | NF_CHILD_STYLE_DIRTY | NF_STRUCT_DIRTY);
         char *t = fresh && n->tag == A_style ? node_text_content(n) : NULL;
-        uint64_t h = !fresh ? p->sref[k].h : t ? fnv(t) : fnv(node_attr(n, "href"));
+        /* rel=preload -> stylesheet on the same href must still load and fire "load" */
+        uint64_t h = !fresh ? p->sref[k].h : t ? fnv(t) : fnv(node_attr(n, "href")) ^ (is_sheet_link(n) ? 0x9e3779b97f4a7c15ull : 0);
         if (!seed && (!known || p->sref[k].h != h)) {
             if (known) { style_engine_remove_owner(p->e, n); changed = true; }
-            if (t) { StyleSheet *sh = css_parse_sheet(t, strlen(t), p->d->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); changed = true; }
+            if (t) { if (style_csp_ok(p->d, n, t)) { StyleSheet *sh = css_parse_sheet(t, strlen(t), p->d->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); changed = true; } }
             else {
                 char *u = url_join(p->d->url, node_attr(n, "href"));
-                if (u) { NetRequest *rq = net_request_new("GET", u); LinkLoad *l = xmalloc(sizeof *l); l->gen = p->gen; l->n = n; n->refcount++; rq->done = is_sheet_link(n) ? link_done : preload_done; rq->ud = l; net_fetch(rq); free(u); }
+                if (u) { NetRequest *rq = doc_req(p->d, u, page_top_url(p), is_sheet_link(n) ? "style-src" : NULL); LinkLoad *l = xmalloc(sizeof *l); l->gen = p->gen; l->n = n; n->refcount++; rq->done = is_sheet_link(n) ? link_done : preload_done; rq->ud = l; net_fetch(rq); free(u); }
             }
         }
         free(t);
@@ -1348,7 +1549,8 @@ static bool frame_update(Page *p) {
     dl_clear(&p->fdl); dl_build(&p->fdl, p->L, 0, p->fsy, w, h); image_anim_seen(&p->fdl, now_ms());
     raster(&p->cv, &p->fdl, 0);   /* iframes are transparent unless their document paints a background */
     p->drawn_ver = p->d->dom_version; p->drawn_epoch = g_img_epoch;
-    p->img = (Image){ .w = pw, .h = ph, .refs = 1 << 30, .px = p->cv.px, .scale = s };
+    static uint32_t fver;
+    p->img = (Image){ .w = pw, .h = ph, .refs = 1 << 30, .px = p->cv.px, .scale = s, .ver = ++fver };
     return true;
 }
 /* @font-face: declare faces as sheets arrive; fetch a face only once text asks for it */
@@ -1393,17 +1595,27 @@ static char *ff_pick_src(const char *src) {
     }
     return NULL;
 }
-static void sheet_fonts(StyleSheet *s) {
+typedef struct { char *csp, *doc; } FontCsp;
+static HMap g_fontcsp;   /* font url -> CSP of the first document that declared it (rechecked on redirects) */
+static void sheet_fonts(StyleSheet *s, Document *d) {
     for (int i = 0; i < s->font_faces.n; i++) {
         const char *b = s->font_faces.v[i];
         char *fam = ff_prop(b, "font-family"), *src = ff_prop(b, "src"), *wt = ff_prop(b, "font-weight"), *sty = ff_prop(b, "font-style");
         char *u = src ? ff_pick_src(src) : NULL;
         char *abs = u && fam && *fam ? url_join(s->base_url, u) : NULL;
+        if (abs && d && d->csp && !csp_allows_url(d->csp, d->url ? d->url : "", abs, "font-src")) {
+            fprintf(stderr, "lumen: CSP font-src blocked %.120s\n", abs);
+            free(abs); abs = NULL;
+        }
         if (abs) {
             int w = 400;
             if (wt && str_ieq(wt, "bold")) w = 700;
             else if (wt && !strchr(wt, ' ') && atoi(wt) > 0) w = atoi(wt);
             bool it = sty && (!strncasecmp(sty, "italic", 6) || !strncasecmp(sty, "oblique", 7));
+            if (d && d->csp && !hm_get(&g_fontcsp, abs)) {
+                FontCsp *fc = xcalloc(1, sizeof *fc); fc->csp = xstrdup(d->csp); fc->doc = xstrdup(d->url ? d->url : "");
+                hm_put(&g_fontcsp, abs, fc);
+            }
             font_declare(fam, w, it, abs);
         }
         free(abs); free(u); free(fam); free(src); free(wt); free(sty);
@@ -1424,7 +1636,10 @@ static void font_pump(void) {
     for (char *u; (u = font_next_request()); ) {
         if (hm_get(&g_fontfetch, u)) { free(u); continue; }
         hm_put(&g_fontfetch, u, (void *)1);
-        NetRequest *rq = net_request_new("GET", u); rq->done = font_done; rq->ud = u; net_fetch(rq);
+        NetRequest *rq = net_request_new("GET", u); rq->done = font_done; rq->ud = u;
+        FontCsp *fc = hm_get(&g_fontcsp, u);
+        if (fc) { rq->csp = xstrdup(fc->csp); rq->csp_doc = xstrdup(fc->doc); rq->csp_dir = "font-src"; }
+        net_fetch(rq);
     }
 }
 static void frames_tick(App *a) {
@@ -1456,10 +1671,10 @@ static void h_frame_open(void *ud, Node *f, Document *d, JsHost *ch) {
     for (Node *n = d->node.first; n; n = node_next_deep(n, &d->node)) {
         if (n->type != NODE_ELEMENT || n->ns != NS_HTML) continue;
         if (n->tag == A_style) {
-            char *t = node_text_content(n); StyleSheet *sh = css_parse_sheet(t, strlen(t), d->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); free(t);
+            char *t = node_text_content(n); if (style_csp_ok(d, n, t)) { StyleSheet *sh = css_parse_sheet(t, strlen(t), d->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); } free(t);
         } else if (is_sheet_link(n)) {
             char *u = url_join(d->url, node_attr(n, "href"));
-            NetResponse *cr = u ? net_fetch_sync(net_request_new("GET", u)) : NULL;
+            NetResponse *cr = u ? net_fetch_sync(doc_req(f->doc, u, frame_top_url(f), "style-src")) : NULL;
             if (cr && cr->status == 200 && cr->body) { StyleSheet *sh = css_parse_sheet(cr->body, cr->body_len, cr->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); }
             if (cr) net_response_free(cr);
             free(u);
@@ -1499,7 +1714,7 @@ static void click_frame(App *a, Page *fp, float x, float y) {
             const char *h = node_attr(n, "href"), *tg = node_attr(n, "target");
             if (!strncmp(h, "javascript:", 11) || h[0] == '#') return;
             char *u = url_join(fp->d->url, h);
-            if (u && tg && (!strcmp(tg, "_top") || !strcmp(tg, "_blank"))) navigate(a, u, true);
+            if (u && tg && (!strcmp(tg, "_top") || !strcmp(tg, "_blank"))) { nav_from(fp->d, u); navigate(a, u, true); }
             else if (u) js_frame_navigate(fp->frame_el, u);
             free(u); return;
         }
@@ -1530,7 +1745,7 @@ static void h_sync_in(void *ud, Document *d, bool layout) {
     layout_run(p->L, p->d, a->vw - a->side, a->vh - BAR);
     a->t->relayout = false;
 }
-static void h_navigate_in(void *ud, const char *u) { (void)ud; navigate(g_app, u, true); }
+static void h_navigate_in(void *ud, const char *u) { (void)ud; nav_from(g_app->t->cur ? g_app->t->cur->d : NULL, u); navigate(g_app, u, true); }
 static void h_set_url_in(void *ud, const char *u, bool push) {
     (void)ud; App *a = g_app;
     if (push && a->t->nhist < 256) { for (int i = a->t->hpos + 1; i < a->t->nhist; i++) free(a->t->hist[i]); a->t->nhist = a->t->hpos + 1; a->t->hist[a->t->nhist++] = xstrdup(u); a->t->hpos = a->t->nhist - 1; a->t->hgen[a->t->hpos] = a->t->cur ? a->t->cur->gen : 0; }
@@ -1539,7 +1754,7 @@ static void h_set_url_in(void *ud, const char *u, bool push) {
     if (!a->editing) snprintf(a->t->url, sizeof a->t->url, "%s", u);
     a->dirty = true;
 }
-static void h_navigate_post_in(void *ud, const char *u, const char *body, size_t len, const char *ctype) { (void)ud; navigate_ex(g_app, u, true, body, len, ctype); }
+static void h_navigate_post_in(void *ud, const char *u, const char *body, size_t len, const char *ctype) { (void)ud; nav_from(g_app->t->cur ? g_app->t->cur->d : NULL, u); navigate_ex(g_app, u, true, body, len, ctype); }
 static void h_history_go_in(void *ud, int d) { (void)ud; history_go(g_app, d); }
 static int h_history_len_in(void *ud) { (void)ud; return g_app->t->nhist; }
 static void h_viewport_in(void *ud, float *w, float *h, float *sx, float *sy, float *dpr) { (void)ud; *w = g_app->vw - g_app->side; *h = g_app->vh - BAR; *sx = 0; *sy = g_app->t->sy; *dpr = g_app->scale; }
@@ -1559,7 +1774,15 @@ static void page_start_js(App *a, Page *p) {
     JsHost h = { a->t, &p->e->media, h_navigate, h_set_url, h_history_go, h_viewport, h_scroll_to, h_hit, h_history_len, h_navigate_post, h_sync, h_frame_open, h_frame_close };
     double t0 = now_ms();
     sync_sheets(p, true);
+    Node **sl = NULL; int nsl = 0;   /* parser-inserted stylesheets were fetched before JS existed: fire their load after DOMContentLoaded */
+    for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node))
+        if (n->type == NODE_ELEMENT && is_sheet_link(n)) { sl = xrealloc(sl, sizeof *sl * (size_t)(nsl + 1)); n->refcount++; sl[nsl++] = n; }
     p->js = js_new(p->d, &h);
+    for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) {   /* parser-inserted rel=preload: fetch so "load"/"error" fire */
+        if (n->type != NODE_ELEMENT || !is_preload_link(n) || is_sheet_link(n)) continue;
+        char *u = url_join(p->d->url, node_attr(n, "href"));
+        if (u) { NetRequest *rq = doc_req(p->d, u, page_top_url(p), NULL); LinkLoad *l = xmalloc(sizeof *l); l->gen = p->gen; l->n = n; n->refcount++; rq->done = preload_done; rq->ud = l; net_fetch(rq); free(u); }
+    }
     js_eval(p->js, "document.addEventListener('lumenmediactl',function(e){var v=e.target;if(!(v instanceof HTMLMediaElement))return;e.stopImmediatePropagation();"
         "if(e.key==='toggle'){if(v.paused)v.play();else v.pause()}else if(e.key.indexOf('seek:')===0&&v.duration>0)v.currentTime=v.duration*parseFloat(e.key.slice(5))},true)", "lumen:ctl");
     const char *pre = getenv("LUMEN_PRE_FILE");
@@ -1580,6 +1803,11 @@ static void page_start_js(App *a, Page *p) {
     }
     js_set_ready_state(p->js, 1);
     js_dispatch(p->js, &p->d->node, "DOMContentLoaded", "Event", true, false, 0, 0, 0, NULL);
+    for (int i = 0; i < nsl; i++) {
+        if (sl[i]->flags & NF_CONNECTED) js_dispatch(p->js, sl[i], "load", "Event", false, false, 0, 0, 0, NULL);
+        node_release(sl[i]);
+    }
+    free(sl);
     js_set_ready_state(p->js, 2);
     js_dispatch_window(p->js, "load");
     fprintf(stderr, "lumen: ran %d scripts in %.0fms\n", p->nscripts, now_ms() - t0);
@@ -1653,6 +1881,16 @@ static void ctl_set(App *a, Node *n, char *v) {
     if (a->t->cur->js) js_dispatch(a->t->cur->js, n, "input", "InputEvent", true, false, 0, 0, 0, NULL);
     a->t->relayout = true; a->dirty = true;
 }
+/* where the edited field is on screen, so the on-screen keyboard is kept clear of it */
+static void text_area(App *a, Node *n) {
+#ifdef LUMEN_IOS
+    SDL_Rect r = { 0, 0, (int)a->vw, (int)BAR };
+    if (n && n->box) r = (SDL_Rect){ (int)(n->box->x + a->side), (int)(n->box->y - a->t->sy + BAR), (int)n->box->w, (int)n->box->h };
+    SDL_SetTextInputArea(a->win, &r, 0);
+#else
+    (void)a; (void)n;
+#endif
+}
 static void focus_node(App *a, Node *n) {
     Document *d = a->t->cur->d; Node *old = d->focus; JsCtx *js = a->t->cur->js;
     if (old == n) return;
@@ -1661,7 +1899,7 @@ static void focus_node(App *a, Node *n) {
     if (n) { n->flags |= NF_FOCUS; doc_mark_dirty(d, n); }
     if (js && old) { js_dispatch(js, old, "blur", "FocusEvent", false, false, 0, 0, 0, NULL); js_dispatch(js, old, "focusout", "FocusEvent", true, false, 0, 0, 0, NULL); }
     if (js && n) { js_dispatch(js, n, "focus", "FocusEvent", false, false, 0, 0, 0, NULL); js_dispatch(js, n, "focusin", "FocusEvent", true, false, 0, 0, 0, NULL); }
-    if (is_text_ctl(n) || edit_host(n)) SDL_StartTextInput(a->win);
+    if (is_text_ctl(n) || edit_host(n)) { text_area(a, n); text_input(a->win, false); }
     a->caret_t = now_ms();
     a->t->relayout = true; a->dirty = true;
 }
@@ -1988,7 +2226,7 @@ static void anchor_follow(App *a, Node *t) {
             const char *h = node_attr(n, "href");
             if (!strncmp(h, "javascript:", 11)) return;
             if (h[0] == '#') { Node *t = doc_get_element_by_id(a->t->cur->d, h + 1); if (t && t->box) { a->t->sy = t->box->y; a->dirty = true; } return; }
-            char *u = url_join(a->t->cur->d->url, h); navigate(a, u, true); free(u); return;
+            char *u = url_join(a->t->cur->d->url, h); nav_from(a->t->cur->d, u); navigate(a, u, true); free(u); return;
         }
 }
 
@@ -2011,9 +2249,9 @@ static void tab_open(App *a) {
     if (!tab_new(a)) return;
     tab_select(a, a->ntabs - 1);
     navigate(a, "lumen://newtab", true);
-    a->editing = true; a->sel_all = 1; a->t->url[0] = 0; SDL_StartTextInput(a->win);
+    a->editing = true; a->sel_all = 1; a->t->url[0] = 0; text_area(a, NULL); text_input(a->win, true);
 }
-static void tab_free(Tab *t) { if (t->cur) page_free(t->cur); for (int k = 0; k < t->nhist; k++) free(t->hist[k]); free(t); }
+static void tab_free(Tab *t) { js_session_forget(t); if (t->cur) page_free(t->cur); for (int k = 0; k < t->nhist; k++) free(t->hist[k]); free(t); }
 static void tab_close(App *a, int i, bool *quit) {
     if (a->ntabs == 1) { *quit = true; return; }
     Tab *t = a->tabs[i]; int w = t->ws; bool act = i == a->ti;
@@ -2043,7 +2281,14 @@ static void ws_select(App *a, int w) {
 }
 static void ws_new(App *a, const char *name) {
     if (a->nws == 16) return;
-    snprintf(a->wsname[a->nws], sizeof a->wsname[0], "%s", name); a->wsicon[a->nws] = -1; a->wslast[a->nws++] = NULL;
+    static const int order[MAC_NICONS] = { 0, 9, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 1, 2 };
+    int ic = order[a->nws % MAC_NICONS];
+    for (int k = 0; k < MAC_NICONS; k++) {
+        bool used = false;
+        for (int w = 0; w < a->nws; w++) used |= a->wsicon[w] == order[k];
+        if (!used) { ic = order[k]; break; }
+    }
+    snprintf(a->wsname[a->nws], sizeof a->wsname[0], "%s", name); a->wsicon[a->nws] = ic; a->wslast[a->nws++] = NULL;
     ws_select(a, a->nws - 1);
 }
 static void ws_close(App *a, int w) {
@@ -2075,7 +2320,7 @@ static void menu_cmd(App *a, int c) {
     case MENU_WS_REFRESH: { Tab *act = a->t; for (int i = 0; i < a->ntabs; i++) { Tab *t = a->tabs[i]; if (t->ws != a->wi || t->hpos < 0) continue; a->t = t; navigate(a, t->hist[t->hpos], false); } a->t = act; break; }
     case MENU_WS_NEXT: ws_select(a, (a->wi + 1) % a->nws); break;
     case MENU_WS_PREV: ws_select(a, (a->wi + a->nws - 1) % a->nws); break;
-    case MENU_WS_SIDEBAR: a->side = a->side > 0 ? 0 : SIDEW; for (int i = 0; i < a->ntabs; i++) a->tabs[i]->relayout = true; break;
+    case MENU_WS_SIDEBAR: a->side_set = true; a->side = a->side > 0 ? 0 : SIDEW; for (int i = 0; i < a->ntabs; i++) a->tabs[i]->relayout = true; break;
     }
     a->dirty = true; a->vonly = false;
 }
@@ -2252,12 +2497,101 @@ static void recover_from_crash(App *a, int sig) {
     a->t = act;
 }
 
+static bool g_bg;   /* iOS app in background: no GPU work allowed */
+#ifdef LUMEN_IOS
+/* Touch: one finger pans (with momentum), a short touch is a click, two quick taps a double click. */
+static struct { int n; SDL_FingerID id; float x0, y0, lx, ly, vx, vy; double t0, lt; bool pan; double tap_t; float tap_x, tap_y; } g_tc;
+static struct { float x, y, vx, vy; double t; bool on; } g_fl;
+static void push_mouse(Uint32 type, float x, float y, int clicks, Uint8 btn) {
+    SDL_Event e; SDL_zero(e); e.type = type;
+    if (type == SDL_EVENT_MOUSE_MOTION) { e.motion.x = x; e.motion.y = y; }
+    else { e.button.button = btn; e.button.x = x; e.button.y = y; e.button.clicks = (Uint8)clicks; e.button.down = type == SDL_EVENT_MOUSE_BUTTON_DOWN; }
+    SDL_PushEvent(&e);
+}
+static void touch_event(App *a, const SDL_Event *ev) {
+    float x = ev->tfinger.x * a->vw, y = ev->tfinger.y * a->vh; double t = now_ms();
+    a->last_input = t;
+    if (ev->type == SDL_EVENT_FINGER_DOWN) {
+        g_fl.on = false;
+        if (g_tc.n++ == 0) { g_tc.id = ev->tfinger.fingerID; g_tc.x0 = g_tc.lx = x; g_tc.y0 = g_tc.ly = y; g_tc.t0 = g_tc.lt = t; g_tc.pan = false; g_tc.vx = g_tc.vy = 0; }
+        else g_tc.pan = true;   /* a second finger: never a tap */
+        return;
+    }
+    if (ev->type == SDL_EVENT_FINGER_MOTION) {
+        if (ev->tfinger.fingerID != g_tc.id || !g_tc.n) return;
+        if (!g_tc.pan && hypotf(x - g_tc.x0, y - g_tc.y0) > 8) { g_tc.pan = true; g_tc.lx = g_tc.x0; g_tc.ly = g_tc.y0; }
+        if (g_tc.pan) {
+            float dx = x - g_tc.lx, dy = y - g_tc.ly; double dt = t - g_tc.lt;
+            if (dx || dy) wheel_apply(a, g_tc.x0, g_tc.y0, -dx, -dy);
+            if (dt > 0) { float k = (float)LMIN(dt / 50.0, 1.0); g_tc.vx += (float)(-dx / dt * 1000 - g_tc.vx) * k; g_tc.vy += (float)(-dy / dt * 1000 - g_tc.vy) * k; }
+            g_tc.lx = x; g_tc.ly = y; g_tc.lt = t;
+        }
+        return;
+    }
+    if (g_tc.n > 0) g_tc.n--;
+    if (ev->tfinger.fingerID != g_tc.id) return;
+    g_tc.n = 0;
+    if (ev->type == SDL_EVENT_FINGER_CANCELED) return;
+    if (g_tc.pan) {
+        if (t - g_tc.lt < 80 && hypotf(g_tc.vx, g_tc.vy) > 120) { g_fl.on = true; g_fl.x = g_tc.x0; g_fl.y = g_tc.y0; g_fl.vx = g_tc.vx; g_fl.vy = g_tc.vy; g_fl.t = t; }
+        return;
+    }
+    if (t - g_tc.t0 > 500) {   /* long press = right click (context menu) */
+        g_tc.tap_t = 0;
+        push_mouse(SDL_EVENT_MOUSE_MOTION, x, y, 0, 0); push_mouse(SDL_EVENT_MOUSE_BUTTON_DOWN, x, y, 1, SDL_BUTTON_RIGHT); push_mouse(SDL_EVENT_MOUSE_BUTTON_UP, x, y, 1, SDL_BUTTON_RIGHT);
+        return;
+    }
+    int clicks = t - g_tc.tap_t < 350 && hypotf(x - g_tc.tap_x, y - g_tc.tap_y) < 24 ? 2 : 1;
+    g_tc.tap_t = clicks == 2 ? 0 : t; g_tc.tap_x = x; g_tc.tap_y = y;
+    push_mouse(SDL_EVENT_MOUSE_MOTION, x, y, 0, 0); push_mouse(SDL_EVENT_MOUSE_BUTTON_DOWN, x, y, clicks, SDL_BUTTON_LEFT); push_mouse(SDL_EVENT_MOUSE_BUTTON_UP, x, y, clicks, SDL_BUTTON_LEFT);
+}
+/* Momentum scrolling after a flick, UIScrollView-like deceleration; true while still moving. */
+static bool touch_fling(App *a) {
+    if (!g_fl.on) return false;
+    double t = now_ms(), dt = t - g_fl.t; g_fl.t = t;
+    if (dt <= 0) return true;
+    float dec = powf(0.998f, (float)dt);
+    float dx = g_fl.vx * (float)dt / 1000, dy = g_fl.vy * (float)dt / 1000;
+    g_fl.vx *= dec; g_fl.vy *= dec;
+    if (fabsf(dx) >= 0.01f || fabsf(dy) >= 0.01f) wheel_apply(a, g_fl.x, g_fl.y, dx, dy);
+    if (hypotf(g_fl.vx, g_fl.vy) < 20) g_fl.on = false;
+    return g_fl.on;
+}
+#endif
+
+#ifndef LUMEN_IOS
+/* SIGTERM/SIGINT/SIGHUP -> SDL quit event. SDL's own handler only queues the quit on the next event pump, which never
+   comes while an idle page sleeps in SDL_WaitEventTimeout; pushing from a thread wakes the wait. A second signal exits. */
+static void *quit_sig_thread(void *arg) {
+    sigset_t *ss = arg; int sig, n = 0;
+    while (!sigwait(ss, &sig)) {
+        if (n++ || !SDL_WasInit(SDL_INIT_EVENTS)) _exit(128 + sig);
+        SDL_Event e; SDL_zero(e); e.type = SDL_EVENT_QUIT; SDL_PushEvent(&e);
+    }
+    return NULL;
+}
+#endif
 int main(int argc, char **argv) {
+#ifndef LUMEN_IOS
+    {
+        static sigset_t ss; sigemptyset(&ss); sigaddset(&ss, SIGTERM); sigaddset(&ss, SIGINT); sigaddset(&ss, SIGHUP);
+        pthread_sigmask(SIG_BLOCK, &ss, NULL);   /* before any thread starts, so only quit_sig_thread receives them */
+        pthread_t th; if (!pthread_create(&th, NULL, quit_sig_thread, &ss)) pthread_detach(th);
+        SDL_SetHint(SDL_HINT_NO_SIGNAL_HANDLERS, "1");
+    }
+#endif
     g_no_paint_only = getenv("LUMEN_NO_PAINT_ONLY") != NULL;
     g_main_thr = pthread_self();
     install_crash_handler();
     const char *start = argc > 1 ? argv[1] : "https://en.wikipedia.org/wiki/Web_browser";
     SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
+#ifdef LUMEN_IOS
+    SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");   /* fingers are turned into taps / scrolls below */
+    ios_wait_init();
+    SDL_SetHint(SDL_HINT_IOS_HIDE_HOME_INDICATOR, "0");
+    { const char *bp = SDL_GetBasePath(); char cp[1024];   /* app bundle ships cacert.pem + icudtl.dat */
+      if (bp) { snprintf(cp, sizeof cp, "%scacert.pem", bp); if (access(cp, R_OK) == 0) setenv("SSL_CERT_FILE", cp, 0); } }
+#endif
 #ifdef __linux__
     /* CPU frames go straight to the X11 window surface (XShm); otherwise SDL backs the surface with a GL
        renderer, which on a GPU-less host is llvmpipe burning every core per present */
@@ -2268,10 +2602,10 @@ int main(int argc, char **argv) {
     icache_mu = SDL_CreateMutex(); EV_LOADED = SDL_RegisterEvents(1); EV_DL = SDL_RegisterEvents(1); js_save_file = download_save; EV_NET = SDL_RegisterEvents(1); EV_MENU = SDL_RegisterEvents(1);
     net_wakeup = wake; media_wakeup = wake; js_wakeup = wake; js_clip_set = h_clip_set; js_clip_get = h_clip_get; js_global_init(argv[0]);
     paint_image_hook = node_img; paint_url_image_hook = url_img; svg_ext_ref_hook = svg_ext_ref; layout_image_size_hook = img_size;
-    App a; memset(&a, 0, sizeof a); g_app = &a; a.nws = 1; a.wsicon[0] = -1; snprintf(a.wsname[0], sizeof a.wsname[0], "Personal"); a.side = getenv("LUMEN_NO_SIDEBAR") ? 0 : SIDEW; tab_new(&a);
+    App a; memset(&a, 0, sizeof a); g_app = &a; a.nws = 1; a.wsicon[0] = 2; snprintf(a.wsname[0], sizeof a.wsname[0], "Personal"); a.side = getenv("LUMEN_NO_SIDEBAR") ? 0 : SIDEW; tab_new(&a);
     {
         char *pref = SDL_GetPrefPath("lumen", "Lumen"); char sp[1024] = "";
-        if (pref) { snprintf(g_pref, sizeof g_pref, "%s", pref); snprintf(sp, sizeof sp, "%ssettings.txt", pref); SDL_free(pref); }
+        if (pref) { snprintf(g_pref, sizeof g_pref, "%s", pref); js_set_profile_dir(g_pref); snprintf(sp, sizeof sp, "%ssettings.txt", pref); SDL_free(pref); }
         FILE *sf = *sp ? fopen(sp, "r") : NULL; char line[256];
         while (sf && fgets(line, sizeof line, sf)) {
             char k[64]; int v; if (sscanf(line, "%63[^=]=%d", k, &v) != 2) continue;
@@ -2290,7 +2624,11 @@ int main(int argc, char **argv) {
     }
     bool want_gpu = !getenv("LUMEN_NO_GPU") && g_gpu_backend != GPU_BACKEND_CPU;
     int ww = 1280, wh = 840; { const char *e = getenv("LUMEN_WINDOW"); if (e) sscanf(e, "%dx%d", &ww, &wh); }   /* e.g. LUMEN_WINDOW=800x600 */
-    a.win = SDL_CreateWindow("Lumen", ww, wh, SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY | (want_gpu && !strcmp(SDL_GetPlatform(), "macOS") ? SDL_WINDOW_METAL : 0));
+    a.win = SDL_CreateWindow("Lumen", ww, wh, SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY | (want_gpu && (!strcmp(SDL_GetPlatform(), "macOS") || !strcmp(SDL_GetPlatform(), "iOS")) ? SDL_WINDOW_METAL : 0)
+#ifdef LUMEN_IOS
+        | SDL_WINDOW_BORDERLESS   /* full screen without the status bar */
+#endif
+        );
     if (!a.win) { fprintf(stderr, "SDL_CreateWindow: %s\n", SDL_GetError()); return 1; }
     g_dialog_win = a.win; js_pick_files = pick_files;
     set_window_icon(a.win);
@@ -2302,7 +2640,7 @@ int main(int argc, char **argv) {
     if (want_gpu) {
         GpuSurfSrc src = { 0 }; bool ok = false;
         SDL_PropertiesID pr = SDL_GetWindowProperties(a.win);
-        if (!strcmp(SDL_GetPlatform(), "macOS")) { a.mview = SDL_Metal_CreateView(a.win); if (a.mview) { src.kind = GPU_SURF_METAL; src.a = SDL_Metal_GetLayer(a.mview); ok = src.a != NULL; } }
+        if (!strcmp(SDL_GetPlatform(), "macOS") || !strcmp(SDL_GetPlatform(), "iOS")) { a.mview = SDL_Metal_CreateView(a.win); if (a.mview) { src.kind = GPU_SURF_METAL; src.a = SDL_Metal_GetLayer(a.mview); ok = src.a != NULL; } }
         else if (SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, NULL)) { src.kind = GPU_SURF_WAYLAND; src.a = SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER, NULL); src.b = SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, NULL); ok = true; }
         else if (SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_X11_DISPLAY_POINTER, NULL)) { src.kind = GPU_SURF_XLIB; src.a = SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_X11_DISPLAY_POINTER, NULL); src.win = (uint64_t)SDL_GetNumberProperty(pr, SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0); ok = true; }
         else if (SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_ANDROID_WINDOW_POINTER, NULL)) { src.kind = GPU_SURF_ANDROID; src.a = SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_ANDROID_WINDOW_POINTER, NULL); ok = true; }
@@ -2320,8 +2658,8 @@ int main(int argc, char **argv) {
     }
     fprintf(stderr, "lumen: presenting with %s\n", gpu_backend_name(a.gpu));
     a.ui = font_get("system-ui", 400, false, 13.5f);
-    char cookie_path[1024] = "";
-    { char *pref = SDL_GetPrefPath("lumen", "Lumen"); if (pref) { snprintf(cookie_path, sizeof cookie_path, "%scookies.txt", pref); SDL_free(pref); cookies_load(cookie_path); } }
+    char cookie_path[1024] = "", hsts_path[1024] = "";
+    { char *pref = SDL_GetPrefPath("lumen", "Lumen"); if (pref) { snprintf(cookie_path, sizeof cookie_path, "%scookies.txt", pref); snprintf(hsts_path, sizeof hsts_path, "%shsts.txt", pref); SDL_free(pref); cookies_load(cookie_path); hsts_load(hsts_path); } }
     double cookies_saved_at = now_ms();
     navigate(&a, start, true);
     for (int i = 2; i < argc; i++) { Tab *nt = tab_new(&a); if (!nt) break; a.t = nt; navigate(&a, argv[i], true); }
@@ -2344,8 +2682,9 @@ int main(int argc, char **argv) {
             int nx = (int)(2000 - (th - lh)) + 1; if (nx < to) to = nx;
         }
         if (cvbuf_changed) { cvbuf_changed = 0; a.dirty = true; a.vonly = false; }
+        cap_rec_tick();
         { int mf = media_tick(); if (mf & 1) { if (!a.dirty && !a.deferred) a.vonly = true; a.dirty = a.vframe = true; } if (mf & 2) a.t->relayout = true; }
-        if (!a.editing && (page_focus(&a) || edit_focus(&a)) && !SDL_TextInputActive(a.win)) SDL_StartTextInput(a.win);
+        if (!a.editing && (page_focus(&a) || edit_focus(&a)) && !SDL_TextInputActive(a.win)) text_input(a.win, false);
         {
             static double last_bg; double tb = now_ms();
             if (tb - last_bg > 2000) {
@@ -2405,17 +2744,33 @@ int main(int argc, char **argv) {
             if (sent < cnt && now_ms() - t0 > st + sent * 16.0) { SDL_Event we = {0}; we.type = SDL_EVENT_MOUSE_WHEEL; we.wheel.y = wdy; we.wheel.mouse_x = wx; we.wheel.mouse_y = wy; SDL_PushEvent(&we); sent++; }
             if (sent < cnt && to > 16) to = 16;
         }
-        if (!SDL_WaitEventTimeout(&ev, to)) { if (a.t->loading || getenv("LUMEN_SHOT")) a.dirty = true; }
+#ifdef LUMEN_IOS
+        if (touch_fling(&a) && to > 8) to = 8;
+#endif
+        if (getenv("LUMEN_SHOT")) { double r = shot_left(); if (r <= 0) { a.dirty = true; to = 0; } else if (r + 1 < to) to = (int)r + 1; }
+#ifdef LUMEN_IOS
+        if (!ios_wait_event(&ev, to)) {
+#else
+        if (!SDL_WaitEventTimeout(&ev, to)) {
+#endif
+            if (a.t->loading) a.dirty = true; }
         else do {
             bool wheel0 = ev.type == SDL_EVENT_MOUSE_WHEEL && !ev.wheel.x && !ev.wheel.y;
             if ((ev.type >= SDL_EVENT_KEY_DOWN && ev.type <= SDL_EVENT_TEXT_INPUT) || (ev.type >= SDL_EVENT_MOUSE_MOTION && ev.type <= SDL_EVENT_MOUSE_WHEEL && !wheel0)) a.last_input = now_ms();
-            if (ev.type != EV_NET && ev.type != SDL_EVENT_MOUSE_WHEEL) a.vonly = false;
+            if (ev.type != EV_NET && ev.type != SDL_EVENT_MOUSE_WHEEL && !(ev.type >= SDL_EVENT_FINGER_DOWN && ev.type <= SDL_EVENT_FINGER_CANCELED)) a.vonly = false;
             js_key_mods = key_mods(SDL_GetModState());
             { SDL_MouseButtonFlags mb = SDL_GetMouseState(NULL, NULL); js_buttons = (mb & SDL_BUTTON_LMASK ? 1 : 0) | (mb & SDL_BUTTON_RMASK ? 2 : 0) | (mb & SDL_BUTTON_MMASK ? 4 : 0); }
             switch (ev.type) {
             case SDL_EVENT_QUIT: quit = true; break;
             case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: case SDL_EVENT_WINDOW_RESIZED: update_size(&a); break;
             case SDL_EVENT_WINDOW_EXPOSED: a.dirty = true; break;
+#ifdef LUMEN_IOS
+            case SDL_EVENT_FINGER_DOWN: case SDL_EVENT_FINGER_MOTION: case SDL_EVENT_FINGER_UP: case SDL_EVENT_FINGER_CANCELED: touch_event(&a, &ev); break;
+            case SDL_EVENT_WILL_ENTER_BACKGROUND: js_ls_flush(true); if (*cookie_path) { cookies_save(cookie_path); hsts_save(hsts_path); cookies_saved_at = now_ms(); } break;
+            case SDL_EVENT_DID_ENTER_BACKGROUND: g_bg = true; break;
+            case SDL_EVENT_WILL_ENTER_FOREGROUND: case SDL_EVENT_DID_ENTER_FOREGROUND: g_bg = false; update_size(&a); a.dirty = true; a.vonly = false; break;
+            case SDL_EVENT_LOW_MEMORY: g_lowmem = media_lowmem = true; a.dirty = true; break;   /* Lite mode drops off-screen images/media */
+#endif
             case SDL_EVENT_MOUSE_WHEEL: {
                 /* whole-number deltas come from a mouse wheel: one fixed step per notch; fractional ones from a trackpad */
                 bool notch = ev.wheel.x == roundf(ev.wheel.x) && ev.wheel.y == roundf(ev.wheel.y);
@@ -2438,6 +2793,7 @@ int main(int argc, char **argv) {
             case SDL_EVENT_WINDOW_MOUSE_LEAVE: if (a.t->cur && page_hover(a.t->cur, NULL)) restyle(&a); break;
             case SDL_EVENT_MOUSE_BUTTON_UP: if (ev.button.button == SDL_BUTTON_LEFT) { g_press = g_drag = false; click_release(&a, ev.button.x, ev.button.y); } break;
             case SDL_EVENT_MOUSE_BUTTON_DOWN:
+                if (ev.button.button == SDL_BUTTON_RIGHT && bar_hit(&a, ev.button.x, ev.button.y) == HB_NEWTAB) { ws_popup(&a, a.wi, ev.button.x, ev.button.y); break; }   /* long-press "+": workspace menu (bar may be hidden) */
                 if (ev.button.button != SDL_BUTTON_LEFT) break;
                 { int bh = bar_hit(&a, ev.button.x, ev.button.y);
                   if (g_hud_pop) { float x = ev.button.x, y = ev.button.y; bool in = x >= g_pop[0] && x < g_pop[2] && y >= g_pop[1] && y < g_pop[3]; g_hud_pop = false; a.dirty = true; a.vonly = false; if (in || bh == HB_HUD) break; }
@@ -2454,7 +2810,7 @@ int main(int argc, char **argv) {
                 case HB_FWD: history_go(&a, 1); break;
                 case HB_STAR: bm_toggle(&a); a.dirty = true; a.vonly = false; break;
                 case HB_RELOAD: if (a.t->hpos >= 0) navigate(&a, a.t->hist[a.t->hpos], false); break;
-                case HB_URL: a.editing = true; a.sel_all = 1; SDL_StartTextInput(a.win); a.dirty = true; break;
+                case HB_URL: a.editing = true; a.sel_all = 1; text_area(&a, NULL); text_input(a.win, true); a.dirty = true; break;
                 default: if (a.editing) { a.editing = false; SDL_StopTextInput(a.win); a.dirty = true; } sel_press(&a, ev.button.x, ev.button.y, ev.button.clicks); click_page(&a, ev.button.x, ev.button.y); edit_press(&a, ev.button.x, ev.button.y, ev.button.clicks);
                 }
                 break;
@@ -2494,7 +2850,7 @@ int main(int argc, char **argv) {
                     else if ((k == SDLK_LEFT || k == SDLK_RIGHT) && !a.editing && edit_focus(&a))
                         js_dispatch(a.t->cur->js, edit_focus(&a), k == SDLK_LEFT ? "lumensel-home" : "lumensel-end", "MouseEvent", false, false, 0, (ev.key.mod & SDL_KMOD_SHIFT) ? 1 : 0, 0, NULL);
                     else if (k == SDLK_C) sel_copy(&a);
-                    else if (k == SDLK_L) { a.editing = true; a.sel_all = 1; SDL_StartTextInput(a.win); }
+                    else if (k == SDLK_L) { a.editing = true; a.sel_all = 1; text_area(&a, NULL); text_input(a.win, true); }
                     else if (k == SDLK_R && a.t->hpos >= 0) navigate(&a, a.t->hist[a.t->hpos], false);
                     else if (k == SDLK_LEFTBRACKET) history_go(&a, -1);
                     else if (k == SDLK_RIGHTBRACKET) history_go(&a, 1);
@@ -2588,12 +2944,12 @@ int main(int argc, char **argv) {
         net_poll();
         { Tab *act = a.t; double tn = now_ms(); for (int i = 0; i < a.ntabs; i++) { a.t = a.tabs[i]; if (a.t->limited) { a.t->budget = LMIN(a.t->budget + a.t->lim * (tn - a.t->bud_t), 100); a.t->bud_t = tn; if (a.t->budget < 0) continue; } if (a.t->cur && a.t->cur->js) { double c0 = now_ms(); js_tick(a.t->cur->js); restyle(&a); fire_img_events(a.t->cur); double c = now_ms() - c0; a.t->cpu_ms += c; if (a.t->limited) a.t->budget -= c; } } a.t = act; if (a.t->cur && a.t->cur->js) frames_tick(&a); }
         edit_sel_sync(&a);
-        if (a.dirty) { double r0 = now_ms(); render(&a); a.t->cpu_ms += now_ms() - r0; }
+        if (a.dirty && !g_bg) { double r0 = now_ms(); render(&a); a.t->cpu_ms += now_ms() - r0; }
         cpu_monitor(&a);
         { float want = a.t->info || *g_notice ? INFOH : 0; if (want != g_info_h) { g_info_h = want; for (int i = 0; i < a.ntabs; i++) a.tabs[i]->relayout = true; a.dirty = true; a.vonly = false; } }
-        if (*cookie_path && now_ms() - cookies_saved_at > 5000) { cookies_save(cookie_path); cookies_saved_at = now_ms(); }
+        if (*cookie_path && now_ms() - cookies_saved_at > 5000) { cookies_save(cookie_path); hsts_save(hsts_path); cookies_saved_at = now_ms(); }
     }
-    if (*cookie_path) cookies_save(cookie_path);
+    if (*cookie_path) { cookies_save(cookie_path); hsts_save(hsts_path); }
     for (int i = 0; i < a.ntabs; i++) if (a.tabs[i]->cur) page_free(a.tabs[i]->cur);
     gpu_destroy(a.gpu);
     if (a.mview) SDL_Metal_DestroyView(a.mview);

@@ -16,6 +16,10 @@ enum {
     NF_INERT = 1 << 11,           /* template content fragment */
     NF_STRUCT_DIRTY = 1 << 12,    /* children changed: restyle self, children shallowly */
     NF_SELF_DIRTY = 1 << 13,      /* sibling list changed: re-match self only */
+    NF_MODAL = 1 << 14, NF_POPOVER_OPEN = 1 << 15,
+    NF_CSP_STYLE_CHECKED = 1 << 16, NF_CSP_STYLE_BLOCKED = 1 << 17,   /* parser-inserted <style>: CSP decided once */
+    NF_STYLE_CSSOM = 1 << 18,     /* style attribute last written through CSSOM (el.style): exempt from CSP */
+    NF_CSP_SATTR_CHECKED = 1 << 19, NF_CSP_SATTR_BLOCKED = 1 << 20,   /* style= attribute CSP decision for inline_style_src */
 };
 
 typedef struct { const char *name; char *value; } Attr; /* name is an atom */
@@ -58,6 +62,11 @@ typedef struct Document {
     char *title;
     Node *html, *head, *body;
     bool quirks;
+    char *csp;                    /* enforced Content-Security-Policy, one policy per line (NULL = none) */
+    char *referrer;               /* document.referrer: the Referer sent for this navigation (NULL = none) */
+    char referrer_policy[40];     /* Referrer-Policy response header / <meta name=referrer>; "" = default */
+    bool coep_require_corp;       /* COEP require-corp (secure context): cross-origin no-cors loads need CORP */
+    bool cross_origin_isolated;   /* COOP same-origin + COEP require-corp/credentialless on a secure origin */
     int ready_state;              /* 0 loading, 1 interactive, 2 complete */
     uint64_t dom_version;         /* bumped on any mutation */
     uint64_t layout_version;      /* bumped on mutations that can change layout beyond computed style */

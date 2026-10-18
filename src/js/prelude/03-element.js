@@ -1,3 +1,4 @@
+const popOpen = new WeakSet();
 /* pointer capture: moves/ups (and their compat mouse events) go to the capturing element until pointerup */
 let pointerCapture_ = null;
 function releaseCapture_() { const t = pointerCapture_; pointerCapture_ = null; if (t) dispatch(t, new PointerEvent('lostpointercapture', { bubbles: true, pointerId: 1 })); }
@@ -11,16 +12,18 @@ function parseDecls(s) {
     return m;
 }
 const serDecls = (m) => [...m].map(([k, [v, i]]) => k + ': ' + v + (i ? ' !important' : '') + ';').join(' ');
+const cssomSet = (el, v) => { const old = N.attr(el, 'style'); v = String(v); N.setAttr(el, 'style', v, true); notify('attributes', el, { attributeName: 'style', oldValue: old }); ceAttr(el, 'style', old, v); };
 class CSSStyleDeclaration {
     constructor(el, ro) { def(this, '_el', el); def(this, '_ro', ro); }
     _m() { return parseDecls(this._el ? N.attr(this._el, 'style') : ''); }
-    get cssText() { return serDecls(this._m()); } set cssText(v) { this._el.setAttribute('style', String(v)); }
+    get cssText() { return serDecls(this._m()); } set cssText(v) { cssomSet(this._el, v); }
     get length() { return this._m().size; }
     item(i) { return [...this._m().keys()][i] || ''; }
+    *[Symbol.iterator]() { for (let i = 0, n = this.length; i < n; i++) yield this.item(i); }
     getPropertyValue(p) { const e = this._m().get(camelToKebab(String(p))); return e ? e[0] : ''; }
     getPropertyPriority(p) { const e = this._m().get(camelToKebab(String(p))); return e ? e[1] : ''; }
-    setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p); const m = this._m(); if (v == null || v === '') m.delete(p); else m.set(p, [String(v), pri ? 'important' : '']); this._el.setAttribute('style', serDecls(m)); }
-    removeProperty(p) { p = camelToKebab(String(p)); const m = this._m(); const e = m.get(p); if (e) { m.delete(p); this._el.setAttribute('style', serDecls(m)); } return e ? e[0] : ''; }
+    setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p); const m = this._m(); if (v == null || v === '') m.delete(p); else m.set(p, [String(v), pri ? 'important' : '']); cssomSet(this._el, serDecls(m)); }
+    removeProperty(p) { p = camelToKebab(String(p)); const m = this._m(); const e = m.get(p); if (e) { m.delete(p); cssomSet(this._el, serDecls(m)); } return e ? e[0] : ''; }
 }
 const styleHandler = {
     get(t, p) { if (typeof p !== 'string' || p in t) return Reflect.get(t, p, t); if (/^\d+$/.test(p)) return t.item(+p); return t.getPropertyValue(p); },
@@ -142,11 +145,13 @@ const reflectBool = (p, ...ns) => { for (const n of ns) { const a = n.toLowerCas
 const reflectUrl = (p, ...ns) => { for (const n of ns) { const a = n.toLowerCase(); acc(p, n, function () { const v = N.attr(this, a); if (v == null) return ''; const r = N.urlParse(v, document.baseURI); return r ? r[0] : v; }, function (v) { this.setAttribute(a, v); }); } };
 const reflectInt = (p, d, ...ns) => { for (const n of ns) { const a = n.toLowerCase(); acc(p, n, function () { const v = parseInt(N.attr(this, a), 10); return isNaN(v) ? d : v; }, function (v) { this.setAttribute(a, String(v | 0)); }); } };
 const EVENT_HANDLERS = 'abort animationend animationiteration animationstart auxclick beforeinput blur cancel canplay canplaythrough change click close contextmenu copy cut dblclick drag dragend dragenter dragleave dragover dragstart drop durationchange emptied ended error focus focusin focusout input invalid keydown keypress keyup load loadeddata loadedmetadata loadstart mousedown mouseenter mouseleave mousemove mouseout mouseover mouseup paste pause play playing pointercancel pointerdown pointerenter pointerleave pointermove pointerout pointerover pointerup progress ratechange reset resize scroll seeked seeking select selectionchange selectstart stalled submit suspend timeupdate toggle touchcancel touchend touchmove touchstart transitionend volumechange waiting wheel'.split(' ');
+const SB_NOSCRIPT = (N.sbFlags() & 2) !== 0;   /* <iframe sandbox> without allow-scripts: inline handlers don't run */
 function compileHandler(el, k, src) {
+    if (SB_NOSCRIPT) return null;
     const c = el.__hc || (def(el, '__hc', {}), el.__hc);
     if (c[k] && c[k].src === src) return c[k].fn;
     let fn = null;
-    try { fn = new Function('event', src); } catch (e) { report(e); }
+    try { fn = N.compileHandler(src); } catch (e) { report(e); }
     c[k] = { src, fn };
     return fn;
 }
@@ -168,11 +173,11 @@ reflectBool(HTMLElement.prototype, 'hidden', 'inert', 'autofocus');
 installHandlers(HTMLElement.prototype, true);
 methods(HTMLElement.prototype, {
     get style() { if (!this.__style) def(this, '__style', makeStyle(this)); return this.__style; },
-    set style(v) { this.setAttribute('style', v); },
+    set style(v) { cssomSet(this, v); },
     get dataset() {
         if (this.__ds) return this.__ds;
         const el = this, toAttr = (k) => 'data-' + k.replace(/[A-Z]/g, c => '-' + c.toLowerCase());
-        const ds = new Proxy({}, {
+        const ds = new Proxy(Object.create(DOMStringMap.prototype), {
             get(t, k) { return typeof k === 'string' ? N.attr(el, toAttr(k)) ?? undefined : undefined; },
             set(t, k, v) { el.setAttribute(toAttr(k), v); return true; },
             deleteProperty(t, k) { el.removeAttribute(toAttr(k)); return true; },
@@ -205,7 +210,9 @@ methods(HTMLElement.prototype, {
     focus() { const o = N.active(); if (o === this) return; N.focus(this); if (N.active() !== this) return; if (o) o.dispatchEvent(new FocusEvent('focusout', { bubbles: true, composed: true, relatedTarget: this })); this.dispatchEvent(new FocusEvent('focusin', { bubbles: true, composed: true, relatedTarget: o })); }, blur() { if (N.active() !== this) return; N.focus(null); this.dispatchEvent(new FocusEvent('focusout', { bubbles: true, composed: true, relatedTarget: null })); },
     click() { if (this.disabled) return; const ev = new MouseEvent('click', { bubbles: true, cancelable: true, composed: true, view: G, detail: 1 }); const pre = preActivate(this); if (dispatch(this, ev)) activate(this, ev, pre); else if (pre && pre.restore) pre.restore(); },
     attachInternals() { return { setFormValue() {}, setValidity() {}, checkValidity() { return true; }, reportValidity() { return true; }, states: new Set(), form: null, labels: [] }; },
-    showPopover() {}, hidePopover() {}, togglePopover() {},
+    showPopover() { if (!popOpen.has(this)) { popOpen.add(this); N.setPseudo(this, 1, true); } },
+    hidePopover() { if (popOpen.delete(this)) N.setPseudo(this, 1, false); },
+    togglePopover(f) { const cur = popOpen.has(this), o = f === undefined ? !cur : typeof f === 'object' && f ? (f.force === undefined ? !cur : !!f.force) : !!f; if (o) this.showPopover(); else this.hidePopover(); return o; },
 });
 class SVGElement extends Element {}
 installHandlers(SVGElement.prototype, true);

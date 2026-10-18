@@ -5,7 +5,7 @@
 
 using FCI = v8::FunctionCallbackInfo<v8::Value>;
 
-struct FrameLoad { JsCtx *p; Node *f; uint32_t kid; std::string url; };
+struct FrameLoad { JsCtx *p; Node *f; uint32_t kid; std::string url; std::string ref; };
 static std::vector<FrameLoad *> g_loads;
 
 static std::string origin_of(const char *u) {
@@ -17,10 +17,11 @@ static std::string origin_of(const char *u) {
     return r;
 }
 std::string ctx_origin(JsCtx *c) {
+    if (c->sb_opaque) return "null";
     if (c->parent && (!c->doc->url || !strncmp(c->doc->url, "about:", 6))) return ctx_origin(c->parent);
     return origin_of(c->doc->url);
 }
-static bool same_origin(JsCtx *a, JsCtx *b) { return a == b || ctx_origin(a) == ctx_origin(b); }
+static bool same_origin(JsCtx *a, JsCtx *b) { return a == b || (!a->sb_opaque && !b->sb_opaque && ctx_origin(a) == ctx_origin(b)); }
 
 static v8::Local<v8::Value> win_for(JsCtx *v, JsCtx *t) {
     v8::Isolate *iso = v->iso;
@@ -70,9 +71,14 @@ static std::string src_key(JsCtx *p, Node *f) {
     return r;
 }
 
+static std::string g_next_csp;   /* CSP of the response frame_create is about to build a document from */
+static std::string g_next_ref;   /* Referer sent for the frame navigation frame_create is about to build */
 static JsCtx *frame_create(JsCtx *p, Node *f, const char *url, const char *html, size_t n, bool fire_load) {
     if (JsCtx *old = js_frame_ctx(f)) frame_kill(old);
     Document *d = doc_new(url);
+    if (!g_next_csp.empty()) { d->csp = csp_append(nullptr, g_next_csp.c_str()); g_next_csp.clear(); }
+    if (!g_next_ref.empty()) { d->referrer = strdup(g_next_ref.c_str()); g_next_ref.clear(); }
+    else if (!strncmp(url, "about:", 6) && p->doc && p->doc->csp) d->csp = strdup(p->doc->csp);
     html_parse(d, html ? html : "", html ? n : 0);
     JsHost ch{};
     ch.viewport = p->host.viewport;
@@ -82,7 +88,7 @@ static JsCtx *frame_create(JsCtx *p, Node *f, const char *url, const char *html,
     JsCtx *k = js_new_ex(d, &ch, p, f);
     k->host_ud = ch.ud;
     if (const char *fp = getenv("LUMEN_FRAME_PRE")) if (strncmp(url, "about:", 6)) js_eval(k, fp, "lumen:frame-pre");
-    for (Node *s = d->node.first; s && !k->dead; s = node_next_in_tree(s, &d->node)) {
+    for (Node *s = d->node.first; s && !k->dead && !k->sb_noscript; s = node_next_in_tree(s, &d->node)) {
         if (s->type != NODE_ELEMENT || s->tag != A_script || s->ns != NS_HTML || (s->flags & NF_SCRIPT_STARTED)) continue;
         bool mod = jsg_module_script(s);
         if (!mod && !jsg_classic_script(s)) continue;
@@ -93,7 +99,9 @@ static JsCtx *frame_create(JsCtx *p, Node *f, const char *url, const char *html,
             free(t); free(u);
         } else if (src) {
             char *u = url_join(d->url, src);
-            NetResponse *sr = u ? net_fetch_sync(net_request_new("GET", u)) : nullptr;
+            NetRequest *srq = u ? net_request_ctx("GET", u, js_top_url(k)) : nullptr;
+            if (srq && d->url) { srq->no_cors_origin = strdup(d->url); srq->coep_require_corp = d->coep_require_corp; }
+            NetResponse *sr = srq ? net_fetch_sync(srq) : nullptr;
             if (sr && sr->status >= 200 && sr->status < 300) js_run_script(k, s, sr->body ? sr->body : "", sr->body_len, u);
             else { s->flags |= NF_SCRIPT_STARTED; js_dispatch(k, s, "error", "Event", false, false, 0, 0, 0, NULL); }
             if (sr) net_response_free(sr);
@@ -113,6 +121,61 @@ static JsCtx *frame_create(JsCtx *p, Node *f, const char *url, const char *html,
     return k;
 }
 
+/* ---- X-Frame-Options / CSP frame-ancestors ---- */
+static bool fa_source_match(std::string src, const char *anc, const std::string &self) {
+    for (auto &ch : src) ch = (char)tolower((unsigned char)ch);
+    URL a; if (!anc || !url_parse(anc, &a)) return false;
+    bool web = a.scheme && (!strcmp(a.scheme, "http") || !strcmp(a.scheme, "https")), ok = false;
+    if (src == "*") ok = web;
+    else if (src == "'self'") ok = origin_of(anc) == self;
+    else if (src.size() > 1 && src.back() == ':' && src.find('/') == std::string::npos) {
+        std::string sch = src.substr(0, src.size() - 1);
+        ok = a.scheme && (sch == a.scheme || (sch == "http" && !strcmp(a.scheme, "https")));
+    } else if (a.host && src[0] != '\'') {
+        std::string sch, rest = src; size_t ss = rest.find("://");
+        if (ss != std::string::npos) { sch = rest.substr(0, ss); rest = rest.substr(ss + 3); }
+        size_t sl = rest.find('/'); if (sl != std::string::npos) rest = rest.substr(0, sl);
+        std::string host = rest, port; size_t co = rest.rfind(':');
+        if (co != std::string::npos && rest.find(']') == std::string::npos) { host = rest.substr(0, co); port = rest.substr(co + 1); }
+        bool sch_ok = sch.empty() ? web : (sch == a.scheme || (sch == "http" && !strcmp(a.scheme, "https")));
+        std::string ah = a.host; bool host_ok;
+        if (host.size() > 2 && host[0] == '*' && host[1] == '.') { std::string suf = host.substr(1); host_ok = ah.size() > suf.size() && !ah.compare(ah.size() - suf.size(), suf.size(), suf); }
+        else host_ok = host == ah;
+        bool port_ok = port == "*" || (port.empty() ? a.port == url_default_port(a.scheme) : atoi(port.c_str()) == a.port);
+        ok = sch_ok && host_ok && port_ok;
+    }
+    url_free(&a);
+    return ok;
+}
+/* true if the response forbids being shown in this frame (checked against every ancestor document) */
+static bool frame_embed_blocked(JsCtx *p, const NetResponse *r, const char *url) {
+    std::string self = origin_of(url);
+    for (int i = 0; i < r->headers.n; i++) {
+        if (!str_ieq(r->headers.v[i].name, "content-security-policy")) continue;
+        std::string pol = r->headers.v[i].value;
+        size_t st = 0;
+        while (st <= pol.size()) {
+            size_t en = pol.find(';', st); if (en == std::string::npos) en = pol.size();
+            std::string d = pol.substr(st, en - st); st = en + 1;
+            std::vector<std::string> tok; size_t q = 0;
+            while (q < d.size()) { while (q < d.size() && isspace((unsigned char)d[q])) q++; size_t e = q; while (e < d.size() && !isspace((unsigned char)d[e])) e++; if (e > q) tok.push_back(d.substr(q, e - q)); q = e; }
+            if (tok.empty() || !str_ieq(tok[0].c_str(), "frame-ancestors")) continue;
+            for (JsCtx *a = p; a; a = a->parent) {
+                const char *au = a->doc ? a->doc->url : nullptr; bool any = false;
+                for (size_t k = 1; k < tok.size() && !any; k++) any = !str_ieq(tok[k].c_str(), "'none'") && fa_source_match(tok[k], au, self);
+                if (!any) return true;
+            }
+            return false;   /* frame-ancestors present and satisfied: X-Frame-Options is ignored */
+        }
+    }
+    const char *xfo = headers_get(&r->headers, "x-frame-options");
+    if (!xfo) return false;
+    while (*xfo == ' ') xfo++;
+    if (!strncasecmp(xfo, "deny", 4)) return true;
+    if (!strncasecmp(xfo, "sameorigin", 10)) { for (JsCtx *a = p; a; a = a->parent) if (origin_of(a->doc ? a->doc->url : nullptr) != self) return true; }
+    return false;
+}
+
 static void frame_done(NetRequest *rq, NetResponse *r, void *ud) {
     (void)rq;
     FrameLoad *l = static_cast<FrameLoad *>(ud);
@@ -122,7 +185,17 @@ static void frame_done(NetRequest *rq, NetResponse *r, void *ud) {
     if (blank) {
         std::string key = blank->frame_src;
         bool ok = r && r->status > 0;
+        if (ok && frame_embed_blocked(p, r, r->url ? r->url : l->url.c_str())) {
+            fprintf(stderr, "lumen: refused to display '%s' in a frame (X-Frame-Options / frame-ancestors)\n", r->url ? r->url : l->url.c_str());
+            JsCtx *k = frame_create(p, l->f, "about:blank", "", 0, true);
+            k->frame_src = key;
+            delete l;
+            return;
+        }
         const char *body = ok && r->body ? r->body : "";
+        if (ok) for (int i = 0; i < r->headers.n; i++)
+            if (str_ieq(r->headers.v[i].name, "content-security-policy")) { if (!g_next_csp.empty()) g_next_csp += '\n'; g_next_csp += r->headers.v[i].value; }
+        if (ok) g_next_ref = l->ref;
         JsCtx *k = frame_create(p, l->f, ok && r->url ? r->url : l->url.c_str(), body, ok && r->body ? r->body_len : 0, true);
         k->frame_src = key;
     }
@@ -134,9 +207,11 @@ static void frame_load(JsCtx *p, Node *f, const char *u, const std::string &key)
     JsCtx *k = frame_create(p, f, "about:blank", "", 0, !remote);
     k->frame_src = key;
     if (!remote) return;
-    NetRequest *rq = net_request_new("GET", u);
-    if (p->doc->url && !strncmp(p->doc->url, "http", 4)) headers_add(&rq->headers, "Referer", p->doc->url);
-    FrameLoad *l = new FrameLoad{ p, f, k->id, u };
+    if (p->doc && p->doc->csp && !csp_allows_url(p->doc->csp, p->doc->url, u, "frame-src")) { fprintf(stderr, "lumen: CSP frame-src blocked %.120s\n", u); return; }
+    NetRequest *rq = net_request_ctx("GET", u, js_top_url(p));
+    std::string refs;
+    if (char *ref = net_referrer(p->doc->url, u, p->doc->referrer_policy)) { headers_add(&rq->headers, "Referer", ref); refs = ref; free(ref); }
+    FrameLoad *l = new FrameLoad{ p, f, k->id, u, refs };
     g_loads.push_back(l);
     rq->done = frame_done; rq->ud = l;
     net_fetch(rq);

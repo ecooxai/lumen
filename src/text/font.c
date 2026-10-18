@@ -1,5 +1,6 @@
 /* Font discovery, shaping (HarfBuzz) and glyph rasterization (FreeType) */
 #include "font.h"
+#include <unistd.h>
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include FT_TRUETYPE_TABLES_H
@@ -34,7 +35,7 @@ typedef struct { const char *name; const char *regular, *bold, *italic, *boldita
 #define SUP "/System/Library/Fonts/Supplemental/"
 #define SYS "/System/Library/Fonts/"
 #ifdef __APPLE__
-static const FamilyDef families[] = {
+static const FamilyDef families_mac[] = {
     { "sans-serif", SYS "Helvetica.ttc#0", SYS "Helvetica.ttc#1", SYS "Helvetica.ttc#2", SYS "Helvetica.ttc#3" },
     { "helvetica", SYS "Helvetica.ttc#0", SYS "Helvetica.ttc#1", SYS "Helvetica.ttc#2", SYS "Helvetica.ttc#3" },
     { "arial", SUP "Arial.ttf", SUP "Arial Bold.ttf", SUP "Arial Italic.ttf", SUP "Arial Bold Italic.ttf" },
@@ -62,8 +63,44 @@ static const FamilyDef families[] = {
     { "lucida grande", SYS "LucidaGrande.ttc#0", SYS "LucidaGrande.ttc#1", NULL, NULL },
     { "emoji", SYS "Apple Color Emoji.ttc#0", NULL, NULL, NULL },
 };
-static const char *fallbacks[] = { SYS "Helvetica.ttc#0", SUP "Arial Unicode.ttf", SYS "Apple Color Emoji.ttc#0", SYS "Hiragino Sans GB.ttc#0", SYS "AppleSDGothicNeo.ttc#0", SYS "Apple Symbols.ttf", SYS "LastResort.otf", NULL };
+static const char *fallbacks_mac[] = { SYS "Helvetica.ttc#0", SUP "Arial Unicode.ttf", SYS "Apple Color Emoji.ttc#0", SYS "Hiragino Sans GB.ttc#0", SYS "AppleSDGothicNeo.ttc#0", SYS "Apple Symbols.ttf", SYS "LastResort.otf", NULL };
+/* iOS / iPadOS system fonts (an iOS build running on a Mac sees the macOS layout above instead) */
+#define IC "/System/Library/Fonts/Core/"
+#define IU "/System/Library/Fonts/CoreUI/"
+#define IW "/System/Library/Fonts/WebFonts/"
+static const FamilyDef families_ios[] = {
+    { "sans-serif", IC "Helvetica.ttc#0", IC "Helvetica.ttc#1", IC "Helvetica.ttc#2", IC "Helvetica.ttc#3" },
+    { "helvetica", IC "Helvetica.ttc#0", IC "Helvetica.ttc#1", IC "Helvetica.ttc#2", IC "Helvetica.ttc#3" },
+    { "arial", IW "Arial.ttf", IW "ArialBold.ttf", IW "ArialItalic.ttf", IW "ArialBoldItalic.ttf" },
+    { "helvetica neue", IC "HelveticaNeue.ttc#0", IC "HelveticaNeue.ttc#1", IC "HelveticaNeue.ttc#2", IC "HelveticaNeue.ttc#3" },
+    { "system-ui", IC "SFUI.ttf", IC "SFUI.ttf", IC "SFUIItalic.ttf", IC "SFUIItalic.ttf" },
+    { "-apple-system", IC "SFUI.ttf", IC "SFUI.ttf", IC "SFUIItalic.ttf", IC "SFUIItalic.ttf" },
+    { "blinkmacsystemfont", IC "SFUI.ttf", IC "SFUI.ttf", IC "SFUIItalic.ttf", IC "SFUIItalic.ttf" },
+    { "ui-sans-serif", IC "SFUI.ttf", IC "SFUI.ttf", IC "SFUIItalic.ttf", IC "SFUIItalic.ttf" },
+    { "serif", IC "TimesNewRoman.ttf", IC "TimesNewRomanBold.ttf", IC "TimesNewRomanItalic.ttf", IC "TimesNewRomanBoldItalic.ttf" },
+    { "times new roman", IC "TimesNewRoman.ttf", IC "TimesNewRomanBold.ttf", IC "TimesNewRomanItalic.ttf", IC "TimesNewRomanBoldItalic.ttf" },
+    { "times", IC "TimesNewRoman.ttf", IC "TimesNewRomanBold.ttf", IC "TimesNewRomanItalic.ttf", IC "TimesNewRomanBoldItalic.ttf" },
+    { "georgia", IW "Georgia.ttf", IW "GeorgiaBold.ttf", IW "GeorgiaItalic.ttf", IW "GeorgiaBoldItalic.ttf" },
+    { "monospace", IU "Menlo.ttc#0", IU "Menlo.ttc#1", IU "Menlo.ttc#2", IU "Menlo.ttc#3" },
+    { "menlo", IU "Menlo.ttc#0", IU "Menlo.ttc#1", IU "Menlo.ttc#2", IU "Menlo.ttc#3" },
+    { "ui-monospace", IC "SFUIMono.ttf", IC "SFUIMono.ttf", IC "SFUIMonoItalic.ttf", IC "SFUIMonoItalic.ttf" },
+    { "sfmono-regular", IC "SFUIMono.ttf", IC "SFUIMono.ttf", IC "SFUIMonoItalic.ttf", IC "SFUIMonoItalic.ttf" },
+    { "consolas", IU "Menlo.ttc#0", IU "Menlo.ttc#1", IU "Menlo.ttc#2", IU "Menlo.ttc#3" },
+    { "courier new", IC "CourierNew.ttf", IC "CourierNewBold.ttf", IC "CourierNewItalic.ttf", IC "CourierNewBoldItalic.ttf" },
+    { "courier", IC "Courier.ttc#0", IC "Courier.ttc#1", IC "Courier.ttc#2", IC "Courier.ttc#3" },
+    { "verdana", IW "Verdana.ttf", IW "VerdanaBold.ttf", IW "VerdanaItalic.ttf", IW "VerdanaBoldItalic.ttf" },
+    { "trebuchet ms", IU "TrebuchetMS.ttf", IU "TrebuchetMSBold.ttf", IU "TrebuchetMSItalic.ttf", IU "TrebuchetMSBoldItalic.ttf" },
+    { "avenir", IC "Avenir.ttc#0", IC "Avenir.ttc#4", IC "Avenir.ttc#1", IC "Avenir.ttc#5" },
+    { "emoji", "/System/Library/Fonts/CoreAddition/AppleColorEmoji-160px.ttc#0", NULL, NULL, NULL },
+};
+static const char *fallbacks_ios[] = { IC "Helvetica.ttc#0", IC "ArialHB.ttc#0", "/System/Library/Fonts/CoreAddition/AppleColorEmoji-160px.ttc#0", IC "HiraginoKakuGothic.ttc#0",
+    IC "AppleSDGothicNeo.ttc#0", IC "CJKSymbolsFallback.ttc#0", IC "AppleSymbols.ttf", IC "Thonburi.ttc#0", IC "GeezaPro.ttc#0", IC "SFHebrew.ttf", IC "SFIndia.ttc#0",
+    IC "Kailasa.ttc#0", IC "Fallback.ttf", IC "LastResort.otf", NULL };
+static const FamilyDef *families = families_mac; static size_t nfamilies = ARRLEN(families_mac);
+static const char **fallbacks = fallbacks_mac;
+#define NFAMILIES nfamilies
 #else
+#define NFAMILIES ARRLEN(families)
 static const FamilyDef families[] = {
     { "sans-serif", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans-Oblique.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans-BoldOblique.ttf" },
     { "arial", "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf", "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf", "/usr/share/fonts/truetype/liberation/LiberationSans-Italic.ttf", "/usr/share/fonts/truetype/liberation/LiberationSans-BoldItalic.ttf" },
@@ -77,7 +114,12 @@ static const FamilyDef families[] = {
 static const char *fallbacks[] = { "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc#0", "/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf", NULL };
 #endif
 
-void font_init(void) { if (!ftlib) FT_Init_FreeType(&ftlib); }
+void font_init(void) {
+    if (!ftlib) FT_Init_FreeType(&ftlib);
+#ifdef __APPLE__
+    if (access(IC "Helvetica.ttc", R_OK) == 0) { families = families_ios; nfamilies = ARRLEN(families_ios); fallbacks = fallbacks_ios; }
+#endif
+}
 
 static Face *face_load(const char *spec) {
     Face *f = hm_get(&faces, spec);
@@ -112,7 +154,7 @@ static Face *resolve_one(const char *name, int weight, bool italic, bool *synth_
     if (best && !best->state) { best->state = 1; vec_push(webreq, xstrdup(best->url)); }
     if (best && best->face) { *synth_b = weight >= 600 && best->weight < 600; *synth_i = italic && !best->italic; return best->face; }
     if (best) return NULL;
-    for (size_t i = 0; i < ARRLEN(families); i++) {
+    for (size_t i = 0; i < NFAMILIES; i++) {
         if (strcmp(families[i].name, lname)) continue;
         const FamilyDef *d = &families[i];
         bool bold = weight >= 600;

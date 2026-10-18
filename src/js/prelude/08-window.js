@@ -24,18 +24,30 @@ const ioRun = () => { ioPending = false; for (const o of [...ioAll]) if (o._t.si
 const ioKick = () => { if (!ioPending) { ioPending = true; setTimeout(ioRun, 0); } if (!ioTimer) ioTimer = setInterval(() => { if (!ioAll.size) { clearInterval(ioTimer); ioTimer = 0; } else ioRun(); }, 300); };
 class PerformanceObserver { constructor(cb) { this._cb = cb; } observe() {} disconnect() {} takeRecords() { return []; } static get supportedEntryTypes() { return []; } }
 class Storage {
-    constructor() { def(this, '_m', new Map()); }
+    constructor(save) { def(this, '_m', new Map()); def(this, '_s', save || null); Object.defineProperty(this, '_n', { value: 0, writable: true }); }
     get length() { return this._m.size; } key(i) { return [...this._m.keys()][i] ?? null; }
     getItem(k) { return this._m.has(String(k)) ? this._m.get(String(k)) : null; }
-    setItem(k, v) { this._m.set(String(k), String(v)); } removeItem(k) { this._m.delete(String(k)); } clear() { this._m.clear(); }
+    setItem(k, v) {
+        k = String(k); v = String(v); const o = this._m.get(k) ?? null, d = v.length + (o === null ? k.length : -o.length);
+        if (this._n + d > 5242880) throw new DOMException(`Failed to execute 'setItem' on 'Storage': Setting the value of '${k}' exceeded the quota.`, 'QuotaExceededError');
+        this._n += d; this._m.set(k, v); this._s?.(this._m, 's', k, v, o); } removeItem(k) { k = String(k); const o = this._m.get(k); if (this._m.delete(k)) { this._n -= k.length + o.length; this._s?.(this._m, 'd', k, null, o); } }
+    _recount() { let n = 0; for (const [k, v] of this._m) n += k.length + v.length; this._n = n; } clear() { const n = this._m.size; this._m.clear(); this._n = 0; if (n) this._s?.(this._m, 'c'); }
 }
-const storageProxy = () => new Proxy(new Storage(), {
+const storageProxy = (st = new Storage()) => new Proxy(st, {
     get(t, k) { if (typeof k !== 'string' || k in t) { const v = Reflect.get(t, k, t); return typeof v === 'function' ? v.bind(t) : v; } return t.getItem(k) ?? undefined; },
     set(t, k, v) { t.setItem(k, v); return true; }, deleteProperty(t, k) { t.removeItem(k); return true; },
     has(t, k) { return k in t || t._m.has(String(k)); }, ownKeys(t) { return [...t._m.keys()]; },
     getOwnPropertyDescriptor(t, k) { return t._m.has(k) ? { value: t._m.get(k), enumerable: true, configurable: true, writable: true } : undefined; },
 });
-const localStorage = storageProxy(), sessionStorage = storageProxy();
+const ssOrigin = (() => { try { return N.ctxOrigin(); } catch { return 'null'; } })();
+const sessionStorage = storageProxy(new Storage(ssOrigin === 'null' ? null : m => N.ssSet(ssOrigin, JSON.stringify([...m]))));
+try { const j = ssOrigin !== 'null' && N.ssGet(ssOrigin); if (j) for (const [k, v] of JSON.parse(j)) sessionStorage.setItem(k, v); } catch {}
+const localStorage = storageProxy(new Storage(ssOrigin === 'null' ? null : (m, op, k, v, o) => {
+    op === 's' ? N.lsSet(ssOrigin, k, v) : op === 'd' ? N.lsDel(ssOrigin, k) : N.lsDel(ssOrigin);
+    if (op !== 's' || o !== v) N.busPost(ssOrigin, 'ls', '', [op === 'c' ? null : k, op === 'c' ? null : o, op === 's' ? v : null, N.url()], 0);
+}));
+try { N.busOrigin(ssOrigin); } catch {}
+try { if (ssOrigin !== 'null') { const a = N.lsGet(ssOrigin); for (let i = 0; i + 1 < a.length; i += 2) localStorage._m.set(a[i], a[i + 1]); localStorage._recount(); } } catch {}
 class Location {
     get href() { return N.url(); } set href(v) { this.assign(v); }
     assign(u) { const n = new URL(String(u), document.baseURI); const cur = new URL(N.url()); if (n.href.split('#')[0] === cur.href.split('#')[0] && n.hash) { const old = cur.href; N.setUrl(n.href, true); setTimeout(() => dispatch(G, new HashChangeEvent('hashchange', { oldURL: old, newURL: n.href }))); } else N.navigate(n.href); }
@@ -92,20 +104,24 @@ const navigator = {
         getRegistration() { return Promise.resolve(undefined); }, getRegistrations() { return Promise.resolve([]); },
         startMessages() {},
     }),
-    storage: { estimate() { return Promise.resolve({ quota: 1e9, usage: 0 }); }, persist() { return Promise.resolve(false); } },
+    storage: { estimate() { return Promise.resolve({ quota: 1e9, usage: ssOrigin === 'null' ? 0 : N.storageUsage(ssOrigin) }); }, persist() { return Promise.resolve(false); }, persisted() { return Promise.resolve(false); } },
     locks: { request(n, o, cb) { cb = typeof o === 'function' ? o : cb; return Promise.resolve().then(() => cb({ name: n })); } },
     getGamepads() { return []; }, getBattery() { return Promise.resolve(battery); },
 };
 const screen = { get width() { return N.viewport()[5]; }, get height() { return N.viewport()[6]; }, get availWidth() { return N.viewport()[5]; }, get availHeight() { return N.viewport()[6]; }, colorDepth: 24, pixelDepth: 24, orientation: { type: 'landscape-primary', angle: 0, addEventListener() {} } };
 const T0 = Date.now() - N.now();
 const marks = [];
+class PerformanceEntry { toJSON() { return Object.assign({}, this); } }
+class PerformanceNavigationTiming extends PerformanceEntry {}
+const navEntry = Object.assign(new PerformanceNavigationTiming(), { name: location.href, entryType: 'navigation', startTime: 0, duration: 0, initiatorType: 'navigation', type: 'navigate', redirectCount: 0, fetchStart: 0, requestStart: 0, responseStart: 0, responseEnd: 0, domInteractive: 0, domContentLoadedEventStart: 0, domContentLoadedEventEnd: 0, domComplete: 0, loadEventStart: 0, loadEventEnd: 0, transferSize: 0, encodedBodySize: 0, decodedBodySize: 0, nextHopProtocol: 'h2', activationStart: 0 });
+const allEntries = () => [navEntry, ...marks];
 const performance = Object.assign(new EventTarget(), {
     now() { return N.now(); }, timeOrigin: T0,
     timing: { navigationStart: T0, fetchStart: T0, domLoading: T0, responseStart: T0 },
     navigation: { type: 0, redirectCount: 0 },
     mark(n, o) { const e = { name: n, entryType: 'mark', startTime: o && o.startTime != null ? o.startTime : N.now(), duration: 0, detail: o && o.detail }; marks.push(e); return e; },
     measure(n, s, e) { const f = (x) => typeof x === 'string' ? (marks.findLast(m => m.name === x) || { startTime: 0 }).startTime : x ?? N.now(); const st = typeof s === 'object' && s ? f(s.start) : f(s ?? 0); const en = typeof s === 'object' && s ? f(s.end) : f(e); const m = { name: n, entryType: 'measure', startTime: st, duration: en - st }; marks.push(m); return m; },
-    getEntries() { return marks.slice(); }, getEntriesByType(t) { return marks.filter(m => m.entryType === t); }, getEntriesByName(n) { return marks.filter(m => m.name === n); },
+    getEntries() { return allEntries(); }, getEntriesByType(t) { return allEntries().filter(m => m.entryType === t); }, getEntriesByName(n, t) { return allEntries().filter(m => m.name === n && (!t || m.entryType === t)); },
     clearMarks() { marks.length = 0; }, clearMeasures() {}, clearResourceTimings() {}, setResourceTimingBufferSize() {},
     get memory() { const h = N.heap(); return { usedJSHeapSize: h[0], totalJSHeapSize: h[1], jsHeapSizeLimit: h[2] }; },
     toJSON() { return { timeOrigin: T0 }; },
@@ -119,9 +135,10 @@ function mkKey(type, extractable, algorithm, usages, data) {
 }
 const ALGS = ['AES-GCM', 'AES-CBC', 'AES-CTR', 'AES-KW', 'HMAC', 'ECDH', 'ECDSA', 'HKDF', 'PBKDF2', 'SHA-1', 'SHA-256', 'SHA-384', 'SHA-512', 'RSA-OAEP', 'RSA-PSS', 'RSASSA-PKCS1-v1_5', 'Ed25519', 'X25519'];
 function normAlg(a) {
-    const o = typeof a === 'string' ? { name: a } : Object.assign({}, a);
+    const o = typeof a === 'string' || a instanceof String ? { name: String(a) } : Object.assign({}, a);
+    if (a && typeof a === 'object') for (const k of ['name', 'hash', 'length', 'namedCurve', 'iv', 'counter', 'additionalData', 'tagLength', 'salt', 'info', 'iterations', 'publicExponent', 'modulusLength', 'saltLength', 'label', 'public']) if (k in a) o[k] = a[k];
     const n = ALGS.find(x => x.toLowerCase() === String(o.name).toLowerCase());
-    if (!n) throw new DOMException('Unrecognized algorithm name', 'NotSupportedError');
+    if (!n) throw new DOMException('Unrecognized algorithm name' + (o.name !== undefined ? ': ' + String(o.name) : ''), 'NotSupportedError');
     o.name = n; return o;
 }
 const hashOf = h => normAlg(h).name;
@@ -278,7 +295,7 @@ function structuredClone(v, seen = new Map()) {
     const o = Array.isArray(v) ? [] : {}; seen.set(v, o); for (const k of Object.keys(v)) o[k] = structuredClone(v[k], seen); return o;
 }
 const xferPorts = (o, t) => { const tr = o && typeof o === 'object' ? o.transfer : t; return (tr && typeof tr[Symbol.iterator] === 'function' ? [...tr] : []).filter(p => p && typeof p.postMessage === 'function' && typeof p.start === 'function'); };
-function postMessage(data, origin, transfer) { const [src, org] = N.caller(); const d = structuredClone(data), ports = xferPorts(origin, transfer); setTimeout(() => dispatch(G, new MessageEvent('message', { data: d, origin: org, source: asWin(src), ports }), true)); }
+function postMessage(data, origin, transfer) { if (!arguments.length) throw new TypeError("Failed to execute 'postMessage' on 'Window': 1 argument required, but only 0 present."); const [src, org] = N.caller(); const d = structuredClone(data), ports = xferPorts(origin, transfer); setTimeout(() => dispatch(G, new MessageEvent('message', { data: d, origin: org, source: asWin(src), ports }), true)); }
 function queueMessage(data, origin, src, ports) { setTimeout(() => dispatch(G, new MessageEvent('message', { data, origin, source: asWin(src), ports: ports ? [...ports] : [] }), true)); }
 const remoteWins = new Map();
 function asWin(v) {
@@ -340,9 +357,9 @@ const globals = {
     TreeWalker, NodeIterator, NodeFilter, Range, StaticRange, AbstractRange, Selection, Animation, DOMMatrixReadOnly, DOMMatrix, DOMPoint, DOMParser, XMLSerializer,
     TextEncoder, TextDecoder, btoa, atob, Blob, File, FileList, DataTransfer, DataTransferItem, DataTransferItemList, FileReader, ReadableStream, ReadableStreamDefaultReader, WritableStream, WritableStreamDefaultWriter, TransformStream, ByteLengthQueuingStrategy, CountQueuingStrategy, TextEncoderStream, TextDecoderStream, URLSearchParams, URL, webkitURL: URL, Headers, Request, Response, fetch, FormData, XMLHttpRequestEventTarget, XMLHttpRequestUpload, XMLHttpRequest, WebSocket, CloseEvent, MessagePort, MessageChannel, Worker, BroadcastChannel,
     RTCPeerConnection, RTCSessionDescription, RTCIceCandidate, RTCPeerConnectionIceEvent, RTCPeerConnectionIceErrorEvent, RTCDataChannel, RTCDataChannelEvent, RTCTrackEvent, RTCRtpSender, RTCRtpReceiver, RTCRtpTransceiver, RTCIceTransport, RTCDtlsTransport, RTCSctpTransport, RTCCertificate, RTCStatsReport, RTCError, RTCErrorEvent, MediaStream, MediaStreamTrack, MediaStreamTrackEvent,
-    ResizeObserver, IntersectionObserver, HTMLAllCollection, PerformanceObserver, Storage, localStorage, sessionStorage, Location, history, navigator, screen, performance, crypto, MediaQueryList, matchMedia, getComputedStyle,
+    ResizeObserver, IntersectionObserver, HTMLAllCollection, PerformanceObserver, PerformanceEntry, PerformanceNavigationTiming, Storage, localStorage, sessionStorage, Location, history, navigator, screen, performance, crypto, MediaQueryList, matchMedia, getComputedStyle,
     setTimeout, setInterval, clearTimeout, clearInterval, requestAnimationFrame, cancelAnimationFrame, requestIdleCallback, cancelIdleCallback, queueMicrotask, structuredClone, postMessage, console, customElements, Window, document,
-    window: G, self: G, globalThis: G, get top() { return asWin(N.topWin()) ?? G; }, get parent() { return asWin(N.parentWin()) ?? G; }, frames: G, opener: null, get frameElement() { return N.frameEl(); }, closed: false, name: '', get length() { return N.frameCount(); }, origin: location.origin, isSecureContext: location.protocol === 'https:', crossOriginIsolated: false,
+    window: G, self: G, globalThis: G, get top() { return asWin(N.topWin()) ?? G; }, get parent() { return asWin(N.parentWin()) ?? G; }, frames: G, opener: null, get frameElement() { return N.frameEl(); }, closed: false, name: '', get length() { return N.frameCount(); }, origin: ssOrigin, isSecureContext: location.protocol === 'https:', get crossOriginIsolated() { return N.coi(); },
     get innerWidth() { return N.viewport()[0]; }, get innerHeight() { return N.viewport()[1]; }, get outerWidth() { return N.viewport()[0]; }, get outerHeight() { return N.viewport()[1] + 40; },
     get scrollX() { return N.viewport()[2]; }, get scrollY() { return N.viewport()[3]; }, get pageXOffset() { return N.viewport()[2]; }, get pageYOffset() { return N.viewport()[3]; }, get devicePixelRatio() { return N.viewport()[4]; },
     screenX: 0, screenY: 0, screenLeft: 0, screenTop: 0,
@@ -476,7 +493,7 @@ function fireAnim(t, type, name, elapsed, anim) {
 /* getUserMedia (real camera/mic), enumerateDevices, permissions, geolocation */
 (() => {
     const origin = () => { try { return location.origin || 'file://'; } catch { return 'file://'; } };
-    const PN = { camera: 'camera', microphone: 'microphone', geolocation: 'location' };
+    const PN = { camera: 'camera', microphone: 'microphone', geolocation: 'location', 'display-capture': 'screen' };
     const state = n => { const s = N.capState(PN[n] || n, origin()); return s > 0 ? 'granted' : s < 0 ? 'denied' : 'prompt'; };
     const ask = n => N.capAsk(PN[n] || n, origin());
     class PermissionStatus extends EventTarget { constructor(n) { super(); this.name = n; this.onchange = null; } get state() { return state(this.name); } }
@@ -503,10 +520,45 @@ function fireAnim(t, type, name, elapsed, anim) {
         } catch (e) { for (const t of tracks) t.stop(); return rej(e); }
         res(new MediaStream(tracks));
     }));
+    md.getDisplayMedia = (c = {}) => new Promise((res, rej) => setTimeout(() => {
+        if (c && (c.video === false || c.audio && !c.video && c.video !== undefined)) return rej(new TypeError("Failed to execute 'getDisplayMedia': video must be requested"));
+        if (!ask('display-capture')) return rej(NA());
+        const id = N.capScreenOpen(); if (!id) return rej(new DOMException('Could not start video source', 'NotReadableError'));
+        const t = new MediaStreamTrack(RTC_INTERNAL, 'video', 'web-contents-media-stream://' + id); t._.cam = id; t._.dev = 'screen'; t._.display = true;
+        res(new MediaStream([t]));
+    }));
+    class BlobEvent extends Event { constructor(t, i = {}) { super(t, i); this.data = i.data; this.timecode = i.timecode || 0; } }
+    class MediaRecorder extends EventTarget {
+        constructor(stream, o = {}) {
+            super(); if (!(stream instanceof MediaStream)) throw new TypeError("Failed to construct 'MediaRecorder': parameter 1 is not of type 'MediaStream'.");
+            if (o.mimeType && !MediaRecorder.isTypeSupported(o.mimeType)) throw new DOMException("Failed to construct 'MediaRecorder': Unsupported mimeType: " + o.mimeType, 'NotSupportedError');
+            def(this, '_', { id: 0 }); this.stream = stream; this.mimeType = o.mimeType || 'video/mp4'; this.state = 'inactive';
+            for (const n of ['start', 'stop', 'dataavailable', 'pause', 'resume', 'error']) this['on' + n] = null;
+            this.videoBitsPerSecond = o.videoBitsPerSecond || o.bitsPerSecond || 0; this.audioBitsPerSecond = o.audioBitsPerSecond || 0; this.videoKeyFrameIntervalDuration = 0;
+        }
+        static isTypeSupported(t) { return /^video\/mp4(;|$)/i.test(String(t).trim()) && !/vp8|vp9|opus/i.test(String(t)); }
+        _ev(n, e) { this.dispatchEvent(e || new Event(n)); }
+        start() {
+            if (this.state !== 'inactive') throw new DOMException("Failed to execute 'start' on 'MediaRecorder': The MediaRecorder's state is '" + this.state + "'.", 'InvalidStateError');
+            const t = this.stream.getVideoTracks().find(t => t._.cam && t.readyState === 'live');
+            if (!t) throw new DOMException("Failed to execute 'start' on 'MediaRecorder': only video tracks from getDisplayMedia/getUserMedia can be recorded", 'NotSupportedError');
+            this._.id = N.recStart(t._.cam, this.videoBitsPerSecond | 0); if (!this._.id) throw new DOMException('Could not start the video encoder', 'NotSupportedError');
+            this.state = 'recording'; setTimeout(() => this._ev('start'));
+        }
+        stop() {
+            if (this.state === 'inactive') return; const ab = N.recStop(this._.id); this._.id = 0; this.state = 'inactive';
+            setTimeout(() => { this._ev('dataavailable', new BlobEvent('dataavailable', { data: new Blob([ab], { type: this.mimeType }), timecode: Date.now() })); this._ev('stop'); });
+        }
+        pause() { if (this.state !== 'recording') return; N.recPause(this._.id, true); this.state = 'paused'; setTimeout(() => this._ev('pause')); }
+        resume() { if (this.state !== 'paused') return; N.recPause(this._.id, false); this.state = 'recording'; setTimeout(() => this._ev('resume')); }
+        requestData() { if (this.state === 'inactive') throw new DOMException("Failed to execute 'requestData' on 'MediaRecorder': The MediaRecorder's state is 'inactive'.", 'InvalidStateError'); }
+    }
+    Object.assign(globalThis, { MediaRecorder, BlobEvent });
     const TP = MediaStreamTrack.prototype, stop0 = TP.stop, gs0 = TP.getSettings;
     TP.stop = function () { if (this._.cam) { N.capCamClose(this._.cam); this._.cam = 0; } if (this._.mic) { N.capMicClose(this._.mic); this._.mic = 0; } stop0.call(this); };
     TP.getSettings = function () { if (this._.cam) { const [w, h, f] = N.capCamInfo(this._.cam); return { deviceId: this._.dev, groupId: '', width: w, height: h, frameRate: f, aspectRatio: h ? w / h : 0, facingMode: 'user', resizeMode: 'none' }; }
         if (this._.kind === 'audio' && this._.rate) return { deviceId: 'default', groupId: '', sampleRate: this._.rate, channelCount: this._.ch, sampleSize: 32, echoCancellation: false, autoGainControl: false, noiseSuppression: false }; return gs0.call(this); };
+    { const gs1 = TP.getSettings; TP.getSettings = function () { const r = gs1.call(this); if (this._.display) { delete r.facingMode; r.displaySurface = 'browser'; r.logicalSurface = true; r.cursor = 'never'; } return r; }; }
     TP.getCapabilities = function () { return this._.kind === 'video' ? { width: { min: 1, max: 4096 }, height: { min: 1, max: 4096 }, frameRate: { min: 1, max: 60 }, facingMode: ['user'] } : { sampleRate: { min: 8000, max: 96000 }, channelCount: { min: 1, max: 2 } }; };
     /** pull recorded PCM (Float32Array, interleaved) for an audio track; used by WebAudio / MediaRecorder */
     TP._readPCM = function () { return this._.mic ? N.capMicRead(this._.mic) || new Float32Array(0) : new Float32Array(0); };
@@ -565,5 +617,19 @@ function fireAnim(t, type, name, elapsed, anim) {
     }
 })();
 
-return { queueMessage, workerEvent, protoFor, dispatch, fire, fireAnim, report, mediaChanged, viewportChanged, ceConnected, Event, MouseEvent, PointerEvent, KeyboardEvent, FocusEvent, WheelEvent, InputEvent, PopStateEvent, ErrorEvent };
+function busDeliver(kind, name, data, id, same) {
+    if (kind === 'bc') {
+        let first = true;
+        for (const ch of [...bcAll]) if (!ch._closed && ch.name === name && !(same && ch._id === id)) {
+            ch.dispatchEvent(new MessageEvent('message', { data: first ? data : structuredClone(data), origin: ssOrigin }));
+            first = false;
+        }
+    } else if (kind === 'ls' && !same) {
+        const [k, o, v, url] = data;
+        if (k === null) localStorage._m.clear(); else if (v === null) localStorage._m.delete(k); else localStorage._m.set(k, v);
+        localStorage._recount();
+        globalThis.dispatchEvent(new StorageEvent('storage', { key: k, oldValue: o, newValue: v, url, storageArea: localStorage }));
+    }
+}
+return { busDeliver, queueMessage, workerEvent, protoFor, dispatch, fire, fireAnim, report, mediaChanged, viewportChanged, ceConnected, Event, MouseEvent, PointerEvent, KeyboardEvent, FocusEvent, WheelEvent, InputEvent, PopStateEvent, ErrorEvent };
 })

@@ -1,3 +1,6 @@
+#if defined(__APPLE__)
+#include <TargetConditionals.h>
+#endif
 #include <map>
 #include <strings.h>
 #include <string>
@@ -13,6 +16,10 @@
 #include <mutex>
 #include <cmath>
 #include <unistd.h>
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#include <sys/mman.h>
+#endif
 
 static std::unique_ptr<v8::Platform> g_platform;
 v8::Platform *js_platform() { return g_platform.get(); }
@@ -31,6 +38,20 @@ JsCtx *jctx(v8::Isolate *iso) {
     return static_cast<JsCtx *>(iso->GetData(0));
 }
 
+static JsCtx *csp_ctx(v8::Local<v8::Context> cx) { return static_cast<JsCtx *>(cx->GetAlignedPointerFromEmbedderData(1, kTag)); }
+static v8::ModifyCodeGenerationFromStringsResult csp_eval_cb(v8::Local<v8::Context> cx, v8::Local<v8::Value>, bool) {
+    JsCtx *c = csp_ctx(cx);
+    v8::ModifyCodeGenerationFromStringsResult r;
+    r.codegen_allowed = !c || !c->doc || csp_allows_eval(c->doc->csp, false);
+    if (!r.codegen_allowed) fprintf(stderr, "lumen: CSP blocked eval\n");
+    return r;
+}
+static bool csp_wasm_cb(v8::Local<v8::Context> cx, v8::Local<v8::String>) {
+    JsCtx *c = csp_ctx(cx);
+    bool ok = !c || !c->doc || csp_allows_eval(c->doc->csp, true);
+    if (!ok) fprintf(stderr, "lumen: CSP blocked WebAssembly compile\n");
+    return ok;
+}
 v8::Local<v8::String> jstr(v8::Isolate *iso, const char *s, int n) {
     v8::Local<v8::String> r;
     if (!v8::String::NewFromUtf8(iso, s ? s : "", v8::NewStringType::kNormal, s ? n : 0).ToLocal(&r)) return v8::String::Empty(iso);
@@ -285,9 +306,22 @@ static std::string mod_resolve_c(JsCtx *c, const std::string &spec, const std::s
     if (bv) return *bv + spec.substr(bl);
     return mod_resolve(spec, base);
 }
+static std::mutex g_blob_mu;
+static std::unordered_map<std::string, std::string> g_blob_mods;
+void js_blob_mod(const std::string &u, const std::string *src) {
+    std::lock_guard<std::mutex> l(g_blob_mu);
+    if (src) g_blob_mods[u] = *src; else g_blob_mods.erase(u);
+}
 static bool mod_fetch(const std::string &u, const std::string &ref, std::string &out) {
+    if (!u.compare(0, 5, "blob:")) {
+        std::lock_guard<std::mutex> l(g_blob_mu);
+        auto it = g_blob_mods.find(u);
+        if (it == g_blob_mods.end()) return false;
+        out = it->second;
+        return true;
+    }
     NetRequest *rq = net_request_new("GET", u.c_str());
-    if (!ref.compare(0, 4, "http")) headers_add(&rq->headers, "Referer", ref.c_str());
+    if (char *rv = net_referrer(ref.c_str(), u.c_str(), nullptr)) { headers_add(&rq->headers, "Referer", rv); free(rv); }
     NetResponse *r = net_fetch_sync(rq);
     bool ok = r && r->status >= 200 && r->status < 300;
     if (ok) out.assign(r->body ? r->body : "", r->body_len);
@@ -456,17 +490,49 @@ static void on_reject(v8::PromiseRejectMessage m) {
 extern "C" {
 
 void js_global_init(const char *argv0) {
+    js_blob_cleanup();
     if (g_platform) return;
     const char *lv = getenv("LUMEN_CONSOLE");
     if (lv) g_log_level = atoi(lv);
     const char *icu = getenv("LUMEN_ICU_DATA");
+    std::string bundled;
+#ifdef __APPLE__
+    if (!icu) {
+        char exe[4096]; uint32_t sz = sizeof exe;
+        if (_NSGetExecutablePath(exe, &sz) == 0) {
+            std::string dir = exe;
+            dir = dir.substr(0, dir.rfind('/'));
+            for (const char *rel : { "/../Resources/icudtl.dat", "/icudtl.dat" }) {
+                bundled = dir + rel;
+                if (access(bundled.c_str(), R_OK) == 0) { icu = bundled.c_str(); break; }
+            }
+        }
+    }
+#endif
     static const char *icu_paths[] = { "/opt/homebrew/opt/v8/libexec/icudtl.dat", "/home/linuxbrew/.linuxbrew/opt/v8/libexec/icudtl.dat", "/usr/local/opt/v8/libexec/icudtl.dat", "/usr/lib/lumen/icudtl.dat" };
     for (size_t i = 0; !icu && i < sizeof icu_paths / sizeof *icu_paths; i++) if (access(icu_paths[i], R_OK) == 0) icu = icu_paths[i];
-    v8::V8::InitializeICUDefaultLocation(argv0, icu);
+    if (!v8::V8::InitializeICUDefaultLocation(argv0, icu))
+        fprintf(stderr, "lumen: ICU data not found (%s); Intl APIs will abort\n", icu ? icu : "no icudtl.dat");
     v8::V8::InitializeExternalStartupData(argv0);
     g_platform = v8::platform::NewDefaultPlatform();
     v8::V8::InitializePlatform(g_platform.get());
+#if defined(LUMEN_JIT)
+    {   /* JIT build: iOS only grants MAP_JIT pages when a debugger enabled JIT (StikDebug, Xcode); else interpret */
+        void *pg = mmap(NULL, 16384, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANON | MAP_JIT, -1, 0);
+        const char *vf = getenv("LUMEN_V8_FLAGS");
+        bool jit = pg != MAP_FAILED && !(vf && strstr(vf, "--jitless"));
+        if (pg != MAP_FAILED) munmap(pg, 16384);
+        if (!jit) v8::V8::SetFlagsFromString("--jitless --wasm-jitless");
+        fprintf(stderr, "lumen: V8 %s\n", jit ? "JIT enabled" : pg != MAP_FAILED ? "jitless (LUMEN_V8_FLAGS)" : "JIT unavailable, running jitless");
+    }
+#endif
+#if defined(__APPLE__) && TARGET_OS_IPHONE && !defined(LUMEN_JIT)
+    v8::V8::SetFlagsFromString("--wasm-jitless");   /* jitless V8: run WebAssembly in the DrumBrake interpreter */
+#endif
     if (const char *vf = getenv("LUMEN_V8_FLAGS")) v8::V8::SetFlagsFromString(vf);
+    /* guard-region bounds checks for wasm memory; required by the DrumBrake interpreter (jitless) */
+    if (!getenv("LUMEN_NO_WASM_TRAP") && !v8::V8::EnableWebAssemblyTrapHandler(true))
+        fprintf(stderr, "lumen: wasm trap handler unavailable\n");
     v8::V8::Initialize();
 }
 
@@ -521,10 +587,26 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
     if (frame) frame->refcount++;
     if (parent) parent->kids.push_back(c);
     c->doc = d;
+    if (parent) { c->sb_opaque = parent->sb_opaque; c->sb_noscript = parent->sb_noscript; }
+    if (const char *sb = frame ? node_attr(frame, "sandbox") : nullptr) {
+        auto has = [sb](const char *tok) {
+            size_t n = strlen(tok);
+            for (const char *p = sb; *p;) {
+                while (*p && isspace((unsigned char)*p)) p++;
+                const char *e = p; while (*e && !isspace((unsigned char)*e)) e++;
+                if ((size_t)(e - p) == n && !strncasecmp(p, tok, n)) return true;
+                p = e;
+            }
+            return false;
+        };
+        if (!has("allow-same-origin")) c->sb_opaque = true;
+        if (!has("allow-scripts")) c->sb_noscript = true;
+    }
     if (host) c->host = *host;
     c->t0 = now_ms();
     c->thread = std::this_thread::get_id();
     g_ctxs.push_back(c);
+    c->bus_seen = js_bus_seq();
     jsg_install_hooks();
     if (parent) c->iso = parent->iso;
     else {
@@ -537,6 +619,8 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
     c->iso->SetPromiseRejectCallback(on_reject);
     c->iso->SetHostImportModuleDynamicallyCallback(mod_dynamic);
     c->iso->SetHostInitializeImportMetaObjectCallback(mod_meta);
+    c->iso->SetModifyCodeGenerationFromStringsCallback(csp_eval_cb);
+    c->iso->SetAllowWasmCodeGenerationCallback(csp_wasm_cb);
     }
     v8::Isolate *iso = c->iso;
     v8::Isolate::Scope is(iso);
@@ -544,7 +628,8 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
     v8::Local<v8::Context> ctx = v8::Context::New(iso);
     c->ctx.Reset(iso, ctx);
     ctx->SetAlignedPointerInEmbedderData(1, c, kTag);
-    ctx->SetSecurityToken(v8::String::NewFromUtf8(iso, ctx_origin(c).c_str(), v8::NewStringType::kInternalized).ToLocalChecked());
+    ctx->AllowCodeGenerationFromStrings(false);   /* routes eval/new Function through csp_eval_cb */
+    ctx->SetSecurityToken(v8::String::NewFromUtf8(iso, (c->sb_opaque ? "null#" + std::to_string(c->id) : ctx_origin(c)).c_str(), v8::NewStringType::kInternalized).ToLocalChecked());
     v8::Context::Scope cs(ctx);
     v8::Local<v8::ObjectTemplate> tmpl = v8::ObjectTemplate::New(iso);
     tmpl->SetInternalFieldCount(2);
@@ -687,9 +772,20 @@ bool js_script_mime_blocked(const char *ct) {
     while (*ct == ' ') ct++;
     return !strncasecmp(ct, "image/", 6) || !strncasecmp(ct, "audio/", 6) || !strncasecmp(ct, "video/", 6) || !strncasecmp(ct, "text/csv", 8);
 }
+static bool csp_script_ok(JsCtx *c, Node *script, const char *url, const char *src, size_t n) {
+    if (!script || !c->doc || !c->doc->csp) return true;
+    bool ext = node_attr(script, "src") != nullptr;
+    if (csp_allows_script(c->doc->csp, c->doc->url, ext ? url : nullptr, node_attr(script, "nonce"), src, n, script->flags & NF_PARSER_INSERTED)) return true;
+    fprintf(stderr, "lumen: CSP blocked %s script %.120s nonce=%s parser=%d %.60s\n", ext ? "external" : "inline", ext && url ? url : "",
+            node_attr(script, "nonce") ? "yes" : "no", (script->flags & NF_PARSER_INSERTED) ? 1 : 0, ext ? "" : src);
+    if (ext) { JS_ENTER(c); jfire(c, script, "error"); }
+    return false;
+}
+
 void js_run_script(JsCtx *c, Node *script, const char *src, size_t n, const char *name) {
     if (!c) return;
     if (script) script->flags |= NF_SCRIPT_STARTED;
+    if (!csp_script_ok(c, script, name, src, n)) return;
     Node *prev = c->current_script;
     c->current_script = script;
     run_source(c, src, n, name);
@@ -703,6 +799,7 @@ void js_run_script(JsCtx *c, Node *script, const char *src, size_t n, const char
 void js_run_module(JsCtx *c, Node *script, const char *src, size_t n, const char *url) {
     if (!c) return;
     if (script) script->flags |= NF_SCRIPT_STARTED;
+    if (!csp_script_ok(c, script, url, src, n)) return;
     bool ext = script && node_attr(script, "src"), ok = false;
     {
         JS_ENTER(c);
@@ -829,6 +926,7 @@ void js_viewport_changed(JsCtx *c) {
         (void)jcall(c, f.As<v8::Function>(), v8::Undefined(iso), 0, nullptr);
 }
 void js_tick(JsCtx *c) {
+    js_ls_flush(false);
     if (!c || c->dead) return;
     tick_one(c);
     frames_scan(c);
@@ -838,6 +936,7 @@ static void tick_one(JsCtx *c) {
     JS_ENTER(c);
     while (v8::platform::PumpMessageLoop(g_platform.get(), iso)) {}
     pick_deliver(c);
+    js_bus_deliver(c);
     double now = now_ms();
     std::vector<std::pair<double, uint32_t>> due;
     for (auto &kv : c->timers) if (kv.second.due <= now) due.push_back({ kv.second.due, kv.first });
@@ -910,7 +1009,7 @@ bool js_anim_cancel(Node *n, const char *name) {
 
 }
 
-void js_set_background(JsCtx *c, bool bg) {
+void js_set_background(JsCtx *c, bool bg) { if (bg) js_ls_flush(true);
     if (!c || !c->iso) return;
     double t = now_ms();
     if (bg != c->bg) {
