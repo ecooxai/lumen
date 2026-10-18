@@ -112,7 +112,10 @@ static Mat parse_transform(const char *s, Mat m) {
     return m;
 }
 
-typedef struct { float *acc; int w, h; uint32_t *px; float *clip, vw, vh; } Ctx;
+typedef struct {
+    float *acc; int w, h; uint32_t *px; float *clip, vw, vh;
+    const Node *references[32]; unsigned reference_count;
+} Ctx;
 /* Paint source: solid colour or gradient (inv maps device pixels into gradient space; LUT is non-premultiplied) */
 typedef struct { Color col; int kind, spread; Mat inv; float x1, y1, x2, y2, r; Color lut[256]; } Src;
 
@@ -311,14 +314,7 @@ static bool has_geometry(const Node *n, int depth) {
     return false;
 }
 
-typedef struct { Color fill, stroke; float sw, op, fop, sop; bool eo, used; const Node *fg, *sg; } Paint;
-
-static Color attr_color(const Node *n, const char *k, Color def, Color cur) {
-    const char *v = node_attr(n, k); Color c;
-    if (!v) return def;
-    if (str_ieq(v, "none")) return 0;
-    return css_parse_color(v, &c, cur) ? c : def;
-}
+typedef struct { Color fill, stroke, color; Length sw; float op, fop, sop; bool eo, used; uint8_t current; const Node *fg, *sg; } Paint;
 
 /* A declaration from the style attribute, which overrides the presentation attribute of the same name */
 static const char *prop(const Node *n, const char *name, char *buf, size_t bn) {
@@ -495,32 +491,66 @@ static void draw_image(Ctx *c, const Node *k, Mat m, float op) {
 
 static void walk(Ctx *c, const Node *n, Mat m, Paint pt, int depth);
 
+/* Reused graphics inherit through their use host. Specified declarations stay
+   on the referenced element; inherited source-tree colors do not. No DOM or
+   computed style object is mutated to render another instance. */
+static Paint element_paint(const Node *k, Paint pt) {
+    Paint q = pt; const ComputedStyle *s = k->style;
+    const char *v; char buf[256]; Color color;
+    if (s) {
+        if (!pt.used || (s->svg_paint_set & CSS_SVG_COLOR)) q.color = s->color;
+        if (!pt.used || (s->svg_paint_set & CSS_SVG_FILL)) {
+            q.fill = s->fill;
+            if (s->svg_paint_set & CSS_SVG_FILL) q.fg = NULL;
+            q.current = (uint8_t)((q.current & ~CSS_SVG_FILL) | (s->svg_paint_current & CSS_SVG_FILL));
+        }
+        if (!pt.used || (s->svg_paint_set & CSS_SVG_STROKE)) {
+            q.stroke = s->stroke;
+            if (s->svg_paint_set & CSS_SVG_STROKE) q.sg = NULL;
+            q.current = (uint8_t)((q.current & ~CSS_SVG_STROKE) | (s->svg_paint_current & CSS_SVG_STROKE));
+        }
+        if (!pt.used || (s->svg_paint_set & CSS_SVG_STROKE_WIDTH)) q.sw = s->stroke_width;
+        q.op *= s->opacity;
+    } else {
+        if ((v = prop(k, "color", buf, sizeof buf)) && css_parse_color(v, &color, q.color)) q.color = color;
+        if ((v = prop(k, "fill", buf, sizeof buf)) && (css_parse_color(v, &color, q.color) || (str_ieq(v, "none") && (color = 0, true)))) {
+            q.fill = color; q.fg = NULL;
+            q.current = (uint8_t)((q.current & ~CSS_SVG_FILL) | (str_ieq(v, "currentColor") ? CSS_SVG_FILL : 0));
+        }
+        if ((v = prop(k, "stroke", buf, sizeof buf)) && (css_parse_color(v, &color, q.color) || (str_ieq(v, "none") && (color = 0, true)))) {
+            q.stroke = color; q.sg = NULL;
+            q.current = (uint8_t)((q.current & ~CSS_SVG_STROKE) | (str_ieq(v, "currentColor") ? CSS_SVG_STROKE : 0));
+        }
+        if ((v = prop(k, "stroke-width", buf, sizeof buf))) {
+            Length width;
+            if (css_parse_length(v, &width, 16, 16, NULL) && width.kind == LK_LEN &&
+                isfinite(width.px) && isfinite(width.pct) && isfinite(width.px2) && isfinite(width.pct2) &&
+                (strchr(v, '(') || (width.px >= 0 && width.pct >= 0))) q.sw = width;
+        }
+    }
+    if (q.current & CSS_SVG_FILL) q.fill = q.color;
+    if (q.current & CSS_SVG_STROKE) q.stroke = q.color;
+    /* Opacity presentation attributes are not in the native style hints yet. */
+    if ((v = node_attr(k, "opacity"))) q.op *= (float)atof(v);
+    if ((v = prop(k, "fill-rule", buf, sizeof buf))) q.eo = !strcmp(v, "evenodd");
+    if ((v = prop(k, "fill-opacity", buf, sizeof buf))) q.fop = (float)atof(v);
+    if ((v = prop(k, "stroke-opacity", buf, sizeof buf))) q.sop = (float)atof(v);
+    paint_server(k, "fill", &q.fg, &q.fill);
+    paint_server(k, "stroke", &q.sg, &q.stroke);
+    return q;
+}
+
 static void draw_el(Ctx *c, const Node *k, Mat m, Paint pt, int depth) {
     static const char *const skip[] = { "defs", "clipPath", "mask", "symbol", "linearGradient", "radialGradient", "pattern", "filter", "title", "desc", "style", "script", "foreignObject", "metadata", "marker", NULL };
     if (depth > 32) return;
     const char *t = k->tag;
     for (int i = 0; skip[i]; i++) if (!strcmp(t, skip[i])) return;
-    Paint q = pt; const ComputedStyle *s = k->style; Color cur = s ? s->color : RGBA(0, 0, 0, 255);
-    char pb[64];
-    if (s) {
-        if (s->display == D_NONE) return;
-        if (!q.used || prop(k, "fill", pb, sizeof pb)) q.fill = s->fill;
-        if (!q.used || prop(k, "stroke", pb, sizeof pb)) q.stroke = s->stroke;
-        if (!q.used || prop(k, "stroke-width", pb, sizeof pb)) q.sw = s->stroke_width;
-        q.op = pt.op * s->opacity;
-    }
-    else { const char *d = node_attr(k, "display"); if (d && !strcmp(d, "none")) return; q.fill = attr_color(k, "fill", q.fill, cur); const char *o = node_attr(k, "opacity"); if (o) q.op *= (float)atof(o); }
-    if (!s || !COLOR_A(q.stroke)) q.stroke = attr_color(k, "stroke", q.stroke, cur);
-    if (s && q.used && (!strcmp(t, "use") || prop(k, "fill", pb, sizeof pb))) q.fill = attr_color(k, "fill", q.fill, cur);
-    paint_server(k, "fill", &q.fg, &q.fill);
-    paint_server(k, "stroke", &q.sg, &q.stroke);
+    if (attr_hidden(k)) return;
+    Paint q = element_paint(k, pt);
     const char *av; char buf[256];
-    if (s && (av = node_attr(k, "opacity"))) q.op *= (float)atof(av);
     if ((av = node_attr(k, "visibility")) && !strcmp(av, "hidden")) return;
-    if (s && (av = node_attr(k, "display")) && !strcmp(av, "none")) return;
     if (q.op <= 0.002f) return;
     if ((av = node_attr(k, "mask")) && strstr(av, "url(")) { const Node *mk = url_ref(k, av); if (mk && !has_geometry(mk, 0)) return; }
-    if (node_attr(k, "stroke-width") && (!s || s->stroke_width == 1)) q.sw = fattr(k, "stroke-width");
     const char *v;
     if ((v = node_attr(k, "fill-rule"))) q.eo = !strcmp(v, "evenodd");
     if ((v = node_attr(k, "fill-opacity"))) q.fop = (float)atof(v);
@@ -540,17 +570,25 @@ static void draw_el(Ctx *c, const Node *k, Mat m, Paint pt, int depth) {
     if (!strcmp(t, "g") || !strcmp(t, "a") || !strcmp(t, "svg") || !strcmp(t, "switch")) walk(c, k, km, q, depth + 1);
     else if (!strcmp(t, "use")) {
         const Node *r = href_of(k);
-        if (r && r != k) {
+        bool cycle = r == k;
+        for (unsigned i = 0; r && i < c->reference_count; i++) if (c->references[i] == r) cycle = true;
+        if (r && !cycle && c->reference_count < ARRLEN(c->references)) {
+            c->references[c->reference_count++] = r;
             Mat um = mmul(km, (Mat){ 1, 0, 0, 1, fattr(k, "x"), fattr(k, "y") });
             q.used = true;
             if (!strcmp(r->tag, "symbol") || !strcmp(r->tag, "svg")) {
+                float old_vw = c->vw, old_vh = c->vh;
                 float vx, vy, vw, vh, w = fattr(k, "width"), h = fattr(k, "height"); const char *vb = node_attr(r, "viewBox");
                 if (vb && w > 0 && h > 0 && sscanf(vb, "%f%*[ ,]%f%*[ ,]%f%*[ ,]%f", &vx, &vy, &vw, &vh) == 4 && vw > 0 && vh > 0) {
                     float kk = LMIN(w / vw, h / vh);
                     um = mmul(um, (Mat){ kk, 0, 0, kk, (w - vw * kk) / 2 - vx * kk, (h - vh * kk) / 2 - vy * kk });
+                    c->vw = vw; c->vh = vh;
                 }
-                walk(c, r, um, q, depth + 1);
+                if ((v = node_attr(r, "transform"))) um = parse_transform(v, um);
+                walk(c, r, um, element_paint(r, q), depth + 1);
+                c->vw = old_vw; c->vh = old_vh;
             } else draw_el(c, r, um, q, depth + 1);
+            c->reference_count--;
         }
     } else if (!strcmp(t, "image")) draw_image(c, k, km, q.op);
     else {
@@ -559,7 +597,17 @@ static void draw_el(Ctx *c, const Node *k, Mat m, Paint pt, int depth) {
         if (p.xy.n >= 4) {
             Src sr;
             if ((q.fg || COLOR_A(q.fill)) && strcmp(t, "line") && make_src(&sr, q.fg, q.fill, c, &p)) fill_path(c, &p, &sr, q.op * q.fop, q.eo);
-            if ((q.sg || COLOR_A(q.stroke)) && q.sw > 0 && make_src(&sr, q.sg, q.stroke, c, &p)) stroke_path(c, &p, &sr, LMAX(0.5f, q.sw * p.sc / 2), q.op * q.sop);
+            if (q.sg || COLOR_A(q.stroke)) {
+                /* Percentages remain unresolved through inheritance and use
+                   the normalized diagonal of the shape's current viewport. */
+                float diagonal = q.sw.pct || (q.sw.mm && q.sw.pct2) ? hypotf(c->vw, c->vh) * 0.7071067811865475f : 0;
+                float sw = len_resolve(q.sw, diagonal);
+                if (q.sw.mm) {
+                    float other = q.sw.px2 + q.sw.pct2 * diagonal / 100.f;
+                    sw = q.sw.mm == 1 ? LMIN(sw, other) : LMAX(sw, other);
+                }
+                if (sw > 0 && isfinite(sw) && make_src(&sr, q.sg, q.stroke, c, &p)) stroke_path(c, &p, &sr, LMAX(0.5f, sw * p.sc / 2), q.op * q.sop);
+            }
         }
         free(p.xy.v); free(p.st.v); free(p.cl.v);
     }
@@ -573,16 +621,57 @@ static void walk(Ctx *c, const Node *n, Mat m, Paint pt, int depth) {
 }
 
 static uint64_t hmix(uint64_t h, const char *s) { if (!s) return h * 1099511628211ull; while (*s) h = (h ^ (uint8_t)*s++) * 1099511628211ull; return (h ^ 0xff) * 1099511628211ull; }
-static uint64_t tree_hash(const Node *n, uint64_t h, int depth) {
-    static const char *const keys[] = { "d", "points", "x", "y", "width", "height", "r", "rx", "ry", "cx", "cy", "x1", "y1", "x2", "y2", "transform", "fill", "stroke", "stroke-width", "viewBox", "opacity", "fill-rule", "display", "visibility", "fill-opacity", "stroke-opacity", "style", "mask", "href", "xlink:href", "clip-path", "offset", "stop-color", "stop-opacity", "gradientTransform", "gradientUnits", NULL };
-    if (depth > 32) return h;
-    for (const Node *k = n->first; k; k = k->next) {
-        if (k->type != NODE_ELEMENT) continue;
-        h = hmix(h, k->tag);
-        for (int i = 0; keys[i]; i++) h = hmix(h, node_attr(k, keys[i]));
-        if (!strcmp(k->tag, "use")) h = (h ^ (uint64_t)(uintptr_t)href_of(k)) * 1099511628211ull;   /* external sprites resolve later */
-        if (k->style) h = (h ^ k->style->fill ^ ((uint64_t)k->style->stroke << 32) ^ ((uint64_t)k->style->display << 8)) * 1099511628211ull;
-        h = tree_hash(k, h, depth + 1);
+typedef struct {
+    const Node *references[64]; uint64_t hashes[64]; bool active[64]; unsigned depths[64], count;
+    unsigned visits; bool exhausted;
+} SvgHash;
+static uint64_t hword(uint64_t h, uint64_t word) { return (h ^ word) * 1099511628211ull; }
+static uint64_t hfloat(uint64_t h, float value) { uint32_t word; memcpy(&word, &value, sizeof word); return hword(h, word); }
+static uint64_t node_hash(const Node *n, SvgHash *state, unsigned depth);
+static uint64_t reference_hash(const Node *n, SvgHash *state, unsigned depth) {
+    if (!n) return 0;
+    unsigned index;
+    for (index = 0; index < state->count; index++) if (state->references[index] == n) break;
+    if (index < state->count) {
+        if (state->active[index]) return 0;
+        /* A deep first use may have exhausted the recursion budget before a
+           later shallow use reaches content that is actually visible. */
+        if (state->depths[index] <= depth) return state->hashes[index];
+    } else {
+        /* The fixed memo table owns no DOM references. Shared symbol graphs
+           reuse a completed hash with at least the requested depth budget. */
+        if (state->count == ARRLEN(state->references)) return node_hash(n, state, depth);
+        state->count++; state->references[index] = n;
+    }
+    state->depths[index] = depth; state->active[index] = true;
+    uint64_t h = node_hash(n, state, depth);
+    state->hashes[index] = h; state->active[index] = false;
+    return h;
+}
+static uint64_t node_hash(const Node *n, SvgHash *state, unsigned depth) {
+    static const char *const keys[] = { "d", "points", "x", "y", "width", "height", "r", "rx", "ry", "cx", "cy", "x1", "y1", "x2", "y2", "transform", "color", "fill", "stroke", "stroke-width", "viewBox", "preserveAspectRatio", "opacity", "fill-rule", "display", "visibility", "fill-opacity", "stroke-opacity", "style", "mask", "href", "xlink:href", "clip-path", "offset", "stop-color", "stop-opacity", "gradientTransform", "gradientUnits", NULL };
+    /* Rendering admits 32 levels and up to 32 use references. Hashing counts
+       the referenced symbol root as an extra edge, so allow both plus root. */
+    if (depth > 66) return 0;
+    if (++state->visits > 65536) { state->exhausted = true; return 0; }
+    uint64_t h = hmix(1469598103934665603ull, n->tag);
+    for (int i = 0; keys[i]; i++) h = hmix(h, node_attr(n, keys[i]));
+    const ComputedStyle *s = n->style;
+    if (s) {
+        h = hword(h, s->color); h = hword(h, s->fill); h = hword(h, s->stroke);
+        h = hword(h, s->display | ((uint64_t)s->svg_paint_set << 8) | ((uint64_t)s->svg_paint_current << 16));
+        h = hfloat(h, s->opacity);
+        h = hfloat(h, s->stroke_width.px); h = hfloat(h, s->stroke_width.pct);
+        h = hword(h, s->stroke_width.mm); h = hfloat(h, s->stroke_width.px2); h = hfloat(h, s->stroke_width.pct2);
+    }
+    if (!strcmp(n->tag, "use")) {
+        const Node *target = href_of(n);
+        h = hword(h, (uint64_t)(uintptr_t)target); /* an external sprite may resolve later */
+        h = hword(h, reference_hash(target, state, depth + 1));
+    }
+    for (const Node *child = n->first; child; child = child->next) {
+        if (state->exhausted) break;
+        if (child->type == NODE_ELEMENT) h = hword(h, node_hash(child, state, depth + 1));
     }
     return h;
 }
@@ -597,11 +686,11 @@ Image *svg_image(Node *n, float cw, float ch, float dpr) {
     float k = dpr; if (cw * k > 1024 || ch * k > 1024) k = 1024 / LMAX(cw, ch);
     int W = (int)ceilf(cw * k), H = (int)ceilf(ch * k);
     const ComputedStyle *s = n->style;
-    uint64_t key = tree_hash(n, 1469598103934665603ull, 0);
-    key = hmix(key, node_attr(n, "viewBox")); key = hmix(key, node_attr(n, "preserveAspectRatio"));
+    SvgHash hash = {0};
+    uint64_t key = node_hash(n, &hash, 0);
     key = (key ^ (uint64_t)W ^ ((uint64_t)H << 16) ^ (s ? (uint64_t)s->fill << 32 ^ s->stroke : 0)) * 1099511628211ull;
     SvgCache *sc = n->ext_free == svgc_free ? n->ext : NULL;
-    if (sc && sc->im && sc->key == key) return sc->im;
+    if (sc && sc->im && sc->key == key && !hash.exhausted) return sc->im;
     if (!sc) { if (n->ext) return NULL; sc = xcalloc(1, sizeof *sc); n->ext = sc; n->ext_free = svgc_free; }
     Image *im = xcalloc(1, sizeof *im); im->w = W; im->h = H; im->refs = 1; im->px = xcalloc((size_t)W * (size_t)H, 4);
     float vx = 0, vy = 0, vw = cw, vh = ch; const char *vb = node_attr(n, "viewBox"), *par = node_attr(n, "preserveAspectRatio");
@@ -613,8 +702,10 @@ Image *svg_image(Node *n, float cw, float ch, float dpr) {
         tx = (W - vw * kk) * ax; ty = (H - vh * kk) * ay; kx = ky = kk;
     }
     Mat m = { kx, 0, 0, ky, tx - vx * kx, ty - vy * ky };
-    Ctx c = { xcalloc((size_t)(W + 2) * (size_t)H, sizeof(float)), W, H, im->px, NULL, vw, vh };
-    Paint pt = { s ? s->fill : RGBA(0, 0, 0, 255), s ? s->stroke : 0, s ? s->stroke_width : 1, 1, 1, 1, false };
+    Ctx c = { .acc = xcalloc((size_t)(W + 2) * (size_t)H, sizeof(float)), .w = W, .h = H, .px = im->px, .vw = vw, .vh = vh };
+    Paint pt = { .fill = 0xff000000u, .color = 0xff000000u, .sw = L_px(1), .op = 1, .fop = 1, .sop = 1 };
+    pt = element_paint(n, pt);
+    if (s) pt.op = 1; /* the display list composites the root SVG opacity */
     walk(&c, n, m, pt, 0);
     free(c.acc);
     if (sc->im) bury(sc->im);

@@ -22,7 +22,7 @@ ComputedStyle *style_new_default(void) {
     s->list_style = LST_DISC; s->align_items = AL_NORMAL; s->align_self = AL_AUTO; s->justify_content = AL_NORMAL; s->align_content = AL_NORMAL;
     s->bg_size[0] = s->bg_size[1] = L_auto();
     s->transform_origin[0].pct = 50; s->transform_origin[1].pct = 50;
-    s->filter_brightness = 1; s->caret_color = 0; s->fill = RGBA(0, 0, 0, 255); s->stroke_width = 1;
+    s->filter_brightness = 1; s->caret_color = 0; s->fill = RGBA(0, 0, 0, 255); s->stroke_width = L_px(1);
     s->grid_col_span = s->grid_row_span = 1; s->grid_auto_rows = L_auto(); s->grid_auto_cols = L_auto();
     s->pointer_events = 1;
     return s;
@@ -46,6 +46,7 @@ ComputedStyle *style_inherit(const ComputedStyle *p) {
     s->letter_spacing = p->letter_spacing; s->word_spacing = p->word_spacing; s->text_indent = p->text_indent; s->list_style = p->list_style;
     s->cursor = p->cursor; s->pointer_events = p->pointer_events; s->word_break = p->word_break; s->overflow_wrap = p->overflow_wrap; s->direction = p->direction;
     s->has_text_shadow = p->has_text_shadow; s->text_shadow = p->text_shadow; s->caret_color = p->caret_color; s->fill = p->fill; s->stroke = p->stroke; s->stroke_width = p->stroke_width;
+    s->svg_paint_current = p->svg_paint_current;
     s->user_select = p->user_select; s->border_collapse = p->border_collapse; s->writing_mode = p->writing_mode;
     s->custom = custom_ref(p->custom);
     for (int i = 0; i < 4; i++) s->border_color[i] = s->color;
@@ -351,6 +352,15 @@ static int split_ws(const char *v, char **out, int max) { int n = 0; const char 
 static void free_toks(char **t, int n) { for (int i = 0; i < n; i++) free(t[i]); }
 
 typedef struct { ComputedStyle *st; const ComputedStyle *par; StyleEngine *e; Node *el; float em, rem; const MediaCtx *mc; } ACtx;
+static void resolve_current_paint(ComputedStyle *st) {
+    if (st->svg_paint_current & CSS_SVG_FILL) st->fill = st->color;
+    if (st->svg_paint_current & CSS_SVG_STROKE) st->stroke = st->color;
+}
+static int radius_corner(const char *property) {
+    static const char *const names[] = { "border-top-left-radius", "border-top-right-radius", "border-bottom-right-radius", "border-bottom-left-radius" };
+    for (int i = 0; i < 4; i++) if (!strcmp(property, names[i])) return i;
+    return -1;
+}
 static bool alen(ACtx *c, const char *v, Length *out) { return css_parse_length(v, out, c->em, c->rem, c->mc); }
 static float alen_px(ACtx *c, const char *v, float def) { Length l; if (alen(c, v, &l) && l.kind == LK_LEN) return l.px; return def; }
 
@@ -932,8 +942,12 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         static ComputedStyle *def; if (!def) def = style_new_default();
         const ComputedStyle *src = inherit ? (par ? par : def) : def;
         /* unset: inherited props inherit, others initial -- approximate: inherit color/font/text props */
-        if (unset && par && (strstr(P, "color") == P || strstr(P, "font") || strstr(P, "text") || strstr(P, "line-height") || strstr(P, "white-space") || strstr(P, "visibility") || strstr(P, "cursor") || strstr(P, "letter") || strstr(P, "word") || !strcmp(P, "overflow-wrap") || !strcmp(P, "direction") || !strcmp(P, "pointer-events"))) src = par;
-        if (!strcmp(P, "color")) st->color = src->color;
+        if (unset && par && (strstr(P, "color") == P || strstr(P, "font") || strstr(P, "text") || strstr(P, "line-height") || strstr(P, "white-space") || strstr(P, "visibility") || strstr(P, "cursor") || strstr(P, "letter") || strstr(P, "word") || !strcmp(P, "overflow-wrap") || !strcmp(P, "direction") || !strcmp(P, "pointer-events") || !strcmp(P, "fill") || !strcmp(P, "stroke") || !strcmp(P, "stroke-width"))) src = par;
+        if (!strcmp(P, "color")) {
+            st->color = src->color;
+            st->svg_paint_set = (uint8_t)((st->svg_paint_set & ~CSS_SVG_COLOR) | (inherit || unset ? 0 : CSS_SVG_COLOR));
+            resolve_current_paint(st);
+        }
         else if (!strcmp(P, "font-size")) st->font_size = src->font_size;
         else if (!strcmp(P, "font-weight")) st->font_weight = src->font_weight;
         else if (!strcmp(P, "font-family")) st->font_family = src->font_family;
@@ -947,11 +961,23 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         else if (!strcmp(P, "margin")) memcpy(st->margin, src->margin, sizeof st->margin);
         else if (!strcmp(P, "padding")) memcpy(st->padding, src->padding, sizeof st->padding);
         else if (!strcmp(P, "border")) { memcpy(st->border_style, src->border_style, 4); }
+        else if (!strcmp(P, "border-radius")) memcpy(st->border_radius, src->border_radius, sizeof st->border_radius);
+        else if ((k = radius_corner(P)) >= 0) st->border_radius[k] = src->border_radius[k];
         else if (!strcmp(P, "white-space")) st->white_space = src->white_space;
         else if (!strcmp(P, "visibility")) st->visibility = src->visibility;
         else if (!strcmp(P, "position")) st->position = src->position;
         else if (!strcmp(P, "cursor")) st->cursor = src->cursor;
-        else if (!strcmp(P, "fill")) st->fill = src->fill;
+        else if (!strcmp(P, "fill") || !strcmp(P, "stroke")) {
+            uint8_t bit = !strcmp(P, "fill") ? CSS_SVG_FILL : CSS_SVG_STROKE;
+            if (bit == CSS_SVG_FILL) st->fill = src->fill; else st->stroke = src->stroke;
+            st->svg_paint_set = (uint8_t)((st->svg_paint_set & ~bit) | (inherit || unset ? 0 : bit));
+            st->svg_paint_current = (uint8_t)((st->svg_paint_current & ~bit) | (src->svg_paint_current & bit));
+            resolve_current_paint(st);
+        }
+        else if (!strcmp(P, "stroke-width")) {
+            st->stroke_width = src->stroke_width;
+            st->svg_paint_set = (uint8_t)((st->svg_paint_set & ~CSS_SVG_STROKE_WIDTH) | (inherit || unset ? 0 : CSS_SVG_STROKE_WIDTH));
+        }
         else if (!strcmp(P, "box-sizing")) st->box_sizing = src->box_sizing;
         else if (!strcmp(P, "font-style")) st->font_style = src->font_style;
         else if (!strcmp(P, "text-transform")) st->text_transform = src->text_transform;
@@ -1048,7 +1074,13 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         else if (!strcmp(P, "backdrop-filter") || !strcmp(P, "-webkit-backdrop-filter")) { const char *b = strstr(val, "blur("); st->backdrop_blur = b ? alen_px(&c, b + 5, 0) : 0; }
         break;
     case 'c':
-        if (!strcmp(P, "color")) { if (css_parse_color(val, &col, par ? par->color : st->color)) { st->color = col; } }
+        if (!strcmp(P, "color")) {
+            if (css_parse_color(val, &col, par ? par->color : st->color)) {
+                st->color = col;
+                st->svg_paint_set = (uint8_t)((st->svg_paint_set & ~CSS_SVG_COLOR) | (str_ieq(val, "currentColor") ? 0 : CSS_SVG_COLOR));
+                resolve_current_paint(st);
+            }
+        }
         else if (!strcmp(P, "clear")) { static const char *const cl[] = { "none", "left", "right", "both", NULL }; k = kw(val, cl); if (k >= 0) st->clear = (uint8_t)k; else if (str_ieq(val, "inline-start")) st->clear = CLEAR_LEFT; }
         else if (!strcmp(P, "cursor")) { st->cursor = str_ieq(val, "pointer") ? CUR_POINTER : str_ieq(val, "text") ? CUR_TEXT : str_ieq(val, "move") ? CUR_MOVE : str_ieq(val, "not-allowed") ? CUR_NOT_ALLOWED : str_istarts(val, "grab") ? CUR_GRAB : CUR_DEFAULT; }
         else if (!strcmp(P, "content")) { free(st->content); st->content = NULL; if (!str_ieq(val, "none") && !str_ieq(val, "normal")) { SB b; sb_init(&b); const char *q = val; while (*q) { if (*q == '"' || *q == '\'') { char qc = *q++; while (*q && *q != qc) { if (*q == '\\' && q[1]) { q++; if (isxdigit((unsigned char)*q)) { uint32_t cp = (uint32_t)strtoul(q, (char **)&q, 16); sb_utf8(&b, cp); if (*q == ' ') q++; continue; } } sb_putc(&b, *q++); } if (*q) q++; } else if (str_istarts(q, "attr(")) { const char *e2 = strchr(q, ')'); char an[64]; snprintf(an, sizeof an, "%.*s", (int)(e2 ? e2 - q - 5 : 0), q + 5); const char *av = el ? node_attr(el, str_trim(an)) : NULL; if (av) sb_puts(&b, av); q = e2 ? e2 + 1 : q + strlen(q); } else if (str_istarts(q, "open-quote")) { sb_puts(&b, "\xe2\x80\x9c"); q += 10; } else if (str_istarts(q, "close-quote")) { sb_puts(&b, "\xe2\x80\x9d"); q += 11; } else q++; } st->content = sb_take(&b); } }
@@ -1108,7 +1140,12 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         else if (!strcmp(P, "flex-direction")) { static const char *const fd[] = { "row", "row-reverse", "column", "column-reverse", NULL }; k = kw(val, fd); if (k >= 0) st->flex_direction = (uint8_t)k; }
         else if (!strcmp(P, "flex-wrap")) st->flex_wrap = str_ieq(val, "wrap") ? 1 : str_ieq(val, "wrap-reverse") ? 2 : 0;
         else if (!strcmp(P, "flex-flow")) { char *t[2]; int n = split_ws(val, t, 2); for (int i = 0; i < n; i++) { if (strstr(t[i], "wrap")) css_apply_decl(st, par, "flex-wrap", t[i], e, el); else css_apply_decl(st, par, "flex-direction", t[i], e, el); } free_toks(t, n); }
-        else if (!strcmp(P, "fill")) { if (css_parse_color(val, &col, st->color)) st->fill = col; else if (str_ieq(val, "none")) st->fill = 0; }
+        else if (!strcmp(P, "fill")) {
+            if (css_parse_color(val, &col, st->color) || (str_ieq(val, "none") && (col = 0, true))) {
+                st->fill = col; st->svg_paint_set |= CSS_SVG_FILL;
+                st->svg_paint_current = (uint8_t)((st->svg_paint_current & ~CSS_SVG_FILL) | (str_ieq(val, "currentColor") ? CSS_SVG_FILL : 0));
+            }
+        }
         else if (!strcmp(P, "filter")) { const char *b = strstr(val, "blur("); st->filter_blur = b ? alen_px(&c, b + 5, 0) : 0; const char *br = strstr(val, "brightness("); st->filter_brightness = br ? strtof(br + 11, NULL) : 1; }
         break;
     case 'g':
@@ -1215,8 +1252,19 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         else if (!strcmp(P, "row-gap")) { if (alen(&c, val, &l)) { st->row_gap = l.px; st->row_gap_l = l; } }
         break;
     case 's':
-        if (!strcmp(P, "stroke")) { if (css_parse_color(val, &col, st->color)) st->stroke = col; else st->stroke = 0; }
-        else if (!strcmp(P, "stroke-width")) st->stroke_width = alen_px(&c, val, 1);
+        if (!strcmp(P, "stroke")) {
+            if (css_parse_color(val, &col, st->color) || (str_ieq(val, "none") && (col = 0, true))) {
+                st->stroke = col; st->svg_paint_set |= CSS_SVG_STROKE;
+                st->svg_paint_current = (uint8_t)((st->svg_paint_current & ~CSS_SVG_STROKE) | (str_ieq(val, "currentColor") ? CSS_SVG_STROKE : 0));
+            }
+        }
+        else if (!strcmp(P, "stroke-width")) {
+            bool math = strchr(val, '(') != NULL;
+            if (alen(&c, val, &l) && l.kind == LK_LEN && isfinite(l.px) && isfinite(l.pct) &&
+                isfinite(l.px2) && isfinite(l.pct2) && (math || (l.px >= 0 && l.pct >= 0))) {
+                st->stroke_width = l; st->svg_paint_set |= CSS_SVG_STROKE_WIDTH;
+            }
+        }
         break;
     case 't':
         if (!strcmp(P, "top")) alen(&c, val, &st->inset[0]);
@@ -1570,10 +1618,14 @@ static void collect(StyleEngine *e, Node *el, RuleVec *rv, int pseudo, VEC(MDecl
 static void presentational_hints(ComputedStyle *st, const ComputedStyle *par, Node *el, StyleEngine *e) {
     if (el->ns != NS_HTML) {
         if (el->ns == NS_SVG) {
-            const char *w = node_attr(el, "width"), *h = node_attr(el, "height"), *f = node_attr(el, "fill");
+            const char *w = node_attr(el, "width"), *h = node_attr(el, "height");
             if (w && el->tag == A_svg) css_apply_decl(st, par, "width", w, e, el);
             if (h && el->tag == A_svg) css_apply_decl(st, par, "height", h, e, el);
-            if (f) css_apply_decl(st, par, "fill", f, e, el);
+            static const char *const paints[] = { "color", "fill", "stroke", "stroke-width" };
+            for (size_t i = 0; i < ARRLEN(paints); i++) {
+                const char *v = node_attr(el, paints[i]);
+                if (v) css_apply_decl(st, par, paints[i], v, e, el);
+            }
             if (el->tag != A_svg) st->display = D_NONE + 0 == st->display ? D_NONE : st->display;
         }
         return;
@@ -1748,6 +1800,7 @@ static bool paint_only(const ComputedStyle *a, const ComputedStyle *b) {
     PO_Z(box_shadow); PO_Z(has_shadow); PO_Z(text_shadow); PO_Z(has_text_shadow); PO_Z(text_decoration);
     PO_Z(opacity); PO_Z(transform); PO_Z(transform_origin); PO_Z(translate_pending); PO_Z(transform_state); PO_Z(visibility); PO_Z(z_index); PO_Z(z_auto); PO_Z(isolation);
     PO_Z(cursor); PO_Z(pointer_events); PO_Z(user_select); PO_Z(caret_color); PO_Z(fill); PO_Z(stroke); PO_Z(stroke_width); PO_Z(object_fit);
+    PO_Z(svg_paint_set); PO_Z(svg_paint_current);
     PO_Z(filter_blur); PO_Z(filter_brightness); PO_Z(backdrop_blur);
     PO_Z(anim_name); PO_Z(anim_dur); PO_Z(anim_delay); PO_Z(anim_iter); PO_Z(tr_prop); PO_Z(tr_dur); PO_Z(tr_delay);
 #undef PO_Z

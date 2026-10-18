@@ -2,14 +2,14 @@
 
 Model: GPT-6 Astra Pro. Coordinator: ChatGPT built-in agents; native execution: devinmac3d.
 Branch: `gpt-6-astra-chatgpt-apple-compat-20261018`.
-Date: 2026-10-18. **Intermediate verified checkpoint: 78/100 against the requested 98/100 goal.**
-This is not a completed release or a claim of Safari equivalence. The full original request is preserved in `task.md`.
+Date: 2026-10-18. **Fourth implementation wave: 82/100 against the requested 98/100 goal.**
+The score is a subjective engineering completeness estimate for the whole requested goal, not a test-pass percentage. This is not a completed release or a claim of Safari equivalence. The full original request is preserved in `task.md`.
 
 ## Architecture and delivery
 
 The C/C++/V8/SDL3/wgpu/FFmpeg browser engine remains intact. An isolated, nonpersistent WebKit reference utility was used for standards/geometry comparisons only. Device and simulator builds use the pinned jitless V8 configuration. Native desktop measurements below use the desktop V8 configuration and do not establish iOS jitless performance.
 
-The current simulator app and universal iPhone/iPad device IPA both build successfully. The device IPA is `build-ios/Lumen-jitless.ipa`: 29,620,349 bytes at this checkpoint, iPhoneOS platform, arm64 device executable, device families 1 and 2, minimum iOS16.0, bundle identifier `com.ecooxai.lumen`. It is explicitly a **local, unprovisioned package**. The Mac reports **zero valid code-signing identities**. Physical installation, Apple-provisioned export and running the same device IPA on Apple Silicon Mac remain unverified; neither a simulator nor a Catalyst binary substitutes for that evidence.
+The current simulator app and universal iPhone/iPad device IPA both build successfully. The device IPA is `build-ios/Lumen-jitless.ipa`: 29,655,600 bytes at this checkpoint, iPhoneOS platform, arm64 device executable, device families 1 and 2, minimum iOS16.0, bundle identifier `com.ecooxai.lumen`. It is explicitly a **local, unprovisioned package**. The Mac reports **zero valid code-signing identities**. Physical installation, Apple-provisioned export and running the same device IPA on Apple Silicon Mac remain unverified; neither a simulator nor a Catalyst binary substitutes for that evidence.
 
 The new `ios/package-ipa.py` and `ios/signing/` project provide a supported Xcode archive/export route when a matching valid identity and provisioning profile are supplied. Validation checks device Mach-O platform, app metadata, identifier/team/certificate/expiry/device scope, and JIT entitlement compatibility. It rejects disguised simulator/Catalyst packages and external symlinks, publishes output atomically and leaves a previous IPA intact on export failure. It does not import credentials or bypass Apple signing. The promoted signing project also completed a real unsigned Xcode archive; signed export and installation are separate outstanding gates.
 
@@ -55,7 +55,12 @@ The current full `make -j3 test` gate passes after the final raster correction. 
 | Sticky geometry and repaint | 125 checks |
 | App viewport / touch contacts / presentation retry | 34 / 29 / 31 checks |
 | Socket cancellation | 32/32, including held headers/body/TLS |
-| Worker lifecycle | 29/29 |
+| Worker lifecycle and shared backing-store ownership | 55/55, plus process-exit cleanup |
+| Auxiliary window lifecycle and messages, real V8 | 445/445 |
+| Actual native App window host | 146/146 |
+| Bounded native window queue | 58/58, also Apple ASan/UBSan |
+| History URL/origin restrictions | 79/79 |
+| Composer CSS/SVG raster behavior | 93/93 |
 | Promise native retention | 16/16, including collection of a 32 MiB reason |
 | Existing URL, network, CSS viewport, overflow and media lifecycle | Pass |
 | IPA packaging / V8-link helper / monitor / UI-fixture Python tests | 11 / 9 / 3 / 5 tests |
@@ -72,9 +77,14 @@ These are fresh, isolated native macOS engine runs at430×932, with no user cred
 
 | Public page / activity | Duration | Settled CPU mean | Peak RSS | Final RSS | Observation |
 | --- | --- | --- | --- | --- | --- |
-| ChatGPT public composer | 26s; settle12s | 0.679% | 201.156 MiB | 201.156 MiB | Correct centered mobile composer; textarea at64.5,403 with305×24 geometry; editable APIs exposed; no message sent |
-| Google public sign-in | 27s; settle12s | 0.500% | 235.375 MiB | 234.156 MiB | Email/phone field renders at26,218 with378×52 geometry; no login attempt |
-| YouTube fresh-profile playback/pause/seek | 34s; settle10s | 10.067% | 457.703 MiB | 390.719 MiB | Native window captures show different decoded forest frames before pause and after seek; media error remains null |
+| ChatGPT public composer, fourth-wave run | 46s; settle15s | 1.113% | 200.953 MiB | 182.391 MiB | Initial and settled native images show the centered composer and correct rounded SVG send button; no message sent |
+| Google public sign-in, latest build | 31s; settle12s | 0.437% | 235.062 MiB | 235.062 MiB | Email/phone field at26,218 with378×52 geometry; settled RSS growth +0.047 MiB; no login attempt |
+| YouTube playback/pause/seek, historical f75 checkpoint | 34s; settle10s | 10.067% | 457.703 MiB | 390.719 MiB | Native captures show different decoded forest frames before pause and after seek; media error remains null |
+| YouTube latest-build attempt | 41s | Not a playback sample | Not a playback sample | Not a playback sample | Google unusual-traffic CAPTCHA appeared before any video element was created; current playback validation is blocked |
+
+The fresh ChatGPT run contained46 samples,31 after the15s settling period, and its reported settled RSS growth was −18.484 MiB. The latest Google run contained31 samples,19 settled. Both processes exited normally. These runs showed no sustained memory ramp within the observed intervals. The ChatGPT visual/resource check preceded only the final worker shared-allocator correction; Google and the blocked YouTube check used the relinked final desktop binary.
+
+The latest YouTube attempt exited normally, but its native captures show Google's unusual-traffic CAPTCHA at the redirect destination. There was no player or video element throughout the probe. Its low CPU/RSS values therefore describe a blocked page and are not video-performance evidence. The following playback details are explicitly historical evidence from the earlier f75 checkpoint and do not prove playback on the latest source revision.
 
 YouTube's measured clock advanced3.813→7.814→11.819 seconds, paused at13.813, sought to23.813 and resumed through31.638 with readyState4 after buffering. These controls were programmatic page/media operations, not native touch interactions. Both actual native window screenshots and GPU/page-alpha diagnostics were inspected; the CPU-only screenshot hook alone cannot prove a GPU video's visible output.
 
@@ -82,7 +92,7 @@ The earlier occluded-surface regression queued about464 MiB of texture uploads d
 
 An earlier live YouTube native capture was black despite valid source frames and an opaque CPU page center. Subsequent runs with the old probe, the ancestor probe and a fresh profile show visible video with a transparent page hole. The original failing profile/flags were not fully preserved, so the old black incident is not falsely attributed to the separate rounded/opacity fix. That fix and the empty-clip fix have their own reproducible RED/GREEN evidence.
 
-Simulator build: about6s,606 MiB peak compiler-tree RSS. Device IPA build: about9s,672 MiB peak. These incremental build measurements are not clean-build timing claims.
+The final native suite completed in9.026s with330.5 MiB sampled build/test RSS; the simulator build completed in7.033s with576.031 MiB peak, and the device IPA build completed in9.047s with626.781 MiB peak. These incremental build measurements are not clean-build timing or browser-performance claims. The full commands and logs appear in the fourth-wave section below.
 
 ## Apple UI and access limits
 
@@ -107,8 +117,61 @@ make -j3 PLAT=ios IOSDEPS=build-apple-toolchain/ios V8DIR=build-apple-toolchain/
 
 Ignored native evidence is under `out/apple-compat/`: `third-wave-final-native-gate.log`, `native-control-final-results.json`, `empty-video-clip-red.log`, `empty-video-clip-green.log`, `third-wave-tooling-results.json`, `third-wave-simulator-build.*`, `third-wave-device-build.*`, `youtube-cold-final-*`, `chatgpt-controls-final*`, `google-controls-final*`, and `fresh-ipad-recovery.jsonl`. The public website run manifest records its flags/probe/profile and distinguishes native desktop from iOS runtime.
 
-The next concrete login feature is auxiliary tabs for `window.open`, `opener`, directed `postMessage`, navigation and close. At this checkpoint those top-level APIs are still stubs. Each top-level page has an independent V8 isolate; sharing isolates without an explicit agent/retired-document lifetime would risk dangling native DOM objects. The planned bounded implementation preserves separate isolates and stable handles, with explicit limits on arbitrary synchronous same-origin object access. It must not be described as full WindowProxy parity.
+The auxiliary-tab feature is now implemented and covered by the real-V8 and actual-App fixtures described below. Each top-level page retains an independent V8 isolate with stable context identities, document epochs, immutable principals and bounded deferred host commands/messages. This supplies real opener/message/close/navigation behavior needed by popup-based flows, while arbitrary synchronous foreign object/DOM access and several cross-isolate transfer types remain unsupported. It is not full WindowProxy parity, and authenticated provider compatibility still requires a completed live flow.
 
-Further outstanding gates: completed authenticated Google/ChatGPT flows; actual native typing and submission; iPhone/iPad keyboard/rotation/dismissal tests; valid Apple export and same-IPA Mac installation; long-session and jitless-device CPU/memory. IME composition, full grapheme/bidi editing, undo, clipboard events, transformed control hit testing, Service Workers and broader browser API compatibility remain outside the proven scope.
+Further outstanding gates: current YouTube playback through a permitted session that can reach a video; completed authenticated Google/ChatGPT flows; actual native typing and submission; iPhone/iPad keyboard/rotation/dismissal tests; valid Apple export and same-IPA Mac installation; long-session and jitless-device CPU/memory. IME composition, full grapheme/bidi editing, undo, clipboard events, transformed control hit testing, Service Workers and broader browser API compatibility remain outside the proven scope.
+
+Fourth-wave native evidence is also under `out/apple-compat/`: `apple-fourth-native-gate.log`, `apple-fourth-sim-build.log`, `apple-fourth-device-build.log`, `chatgpt-popup-final-*`, `google-popup-final-*`, `youtube-popup-final-*`, `worker-sab-red.log`, `worker-sab-green.log`, `worker-sab-exit.log`, `frame-click-red.log`, `frame-click-green.log`, `frame-close-red.log` and `frame-close-green.log`. The latest device package has9 ZIP entries, iPhoneOS platform, families1/2 and no embedded provisioning profile.
 
 The canonical repository is on the native Mac. Agents have a local scratch mirror whose base commits are older; apply only reviewed incremental exports, never its entire diff over the canonical repository. Root owns native runs and final integration. No push, deployment, final AGENTS.md rewrite or release completion is claimed here; the user's post-task instructions are conditional on reaching the goal.
+
+## Fourth-wave checkpoint: auxiliary windows, lifecycle and composer rendering
+
+**Overall score remains 82/100, below the requested goal.** This checkpoint records verified native functionality and successful Apple compilation. It does not establish iOS simulator execution, a signed device/Mac installation, authenticated provider login or complete Safari compatibility. The coordinator reviewed this evidence before integrating the checkpoint.
+
+### What changed
+
+Real auxiliary browser tabs replace the old popup stubs. Registry-owned monotonic browsing-context IDs survive document replacement, while separate document epochs prevent a queued message from migrating to a later page. Native App callbacks reserve and coalesce bounded commands; actual tab creation, navigation and destruction occur after the active native event/JavaScript batch. Top-level tabs retain separate V8 isolates. Stable handles support opener, postMessage, close/closed, focus, named target reuse and bounded location navigation.
+
+Document principals are immutable, with distinct opaque-origin identities. History push/replace validates the permitted URL rewrite before changing either history state or the native URL. Initial real about:blank documents inherit the actual creator's origin, base, CSP and referrer state; public document.baseURI uses the inherited fallback and current base element. Same-origin iframe creators inherit the top active COOP policy. Strict top COOP forces independent creation for cross-origin frame creators only in the new-window branch; existing target reuse follows its separate rules. COOP transitions, sandbox propagation, noopener/noreferrer and trusted activation are enforced. Actual iframe opener identity survives frame navigation.
+
+Directed messages capture the source ID, send-time origin and destination document epoch. Accepted messages survive sender close/navigation, including postMessage followed immediately by close; destination close/replacement frees queued payloads. Limits are 8 MiB per message, 32 MiB globally across pending/staging allocations, 1,024 queued messages globally and 256 per destination. Accounting includes serializer allocation capacity and transferred backing-store maximum size during serialization, including reentrant getters. Remaining queued messages stay counted during delivery; each dispatched native payload is released before its receiver handler runs. Page and worker V8 isolates now use shared ArrayBuffer allocator ownership so a transferred ArrayBuffer or shared worker buffer can safely outlive its source isolate.
+
+Iframe click dispatch pins its native targets and revalidates the active frame context, document and connected target after every callback. It also rejects a synchronously closing browsing-context identity, preventing stale mouse events/default navigation while physical teardown remains deferred. Worker shutdown retains prompt per-tab cancellation plus the bounded process-exit drain/backstop before static teardown.
+
+Composer fixes are generic CSS/SVG behavior: border-radius inherit/initial/unset, currentColor resolved through each SVG use instance, inherited gradient fill/stroke, reference-aware cache invalidation after color or referenced-shape changes, and percentage stroke widths retained through inheritance then resolved against the current SVG viewport's normalized diagonal. Cycle/depth/visit guards keep reference traversal bounded; insufficient hash traversal does not reuse an incomplete cached image. The regression covers nested/deep references, independent instances, square/non-square viewports and scaled viewBox rendering.
+
+### Native proof and regression gates
+
+| Gate | Latest verified result |
+| --- | --- |
+| Real-V8 auxiliary lifecycle/messages | 445 / 445 |
+| Actual native App window host | 146 / 146 |
+| Bounded native queue on Apple, ASan/UBSan | 58 / 58, including 10,000 coalesced requests |
+| History URL/origin restrictions | 79 / 79 |
+| Composer CSS/SVG raster checks | 93 / 93 |
+| Worker lifecycle/default shared-buffer ownership | 55 / 55, plus process-exit observer/backstop |
+
+The proof sequence includes real failing behavior. History was 27/79 before its guard and 79/79 afterward. The first auxiliary fixture reported the inherited-base failure and then crashed after transfer-delivery check 48 during source-before-receiver teardown. Shared page allocator ownership removed that crash, yielding 298/299 with only baseURI still failing; the base/policy follow-ups reached 409/409, and the final expanded fixture reached 445/445. Frame-event fixtures reproduced a native crash and stale tail dispatch before reentry/closing guards. Worker native run 724 crashed when collecting a default shared backing store after its source worker exited; the unchanged fixture passed 55/55 in run 726 after the shared-allocator correction. The worker cases separately cover source exit before delivery, termination after delivery, and owner close with an undelivered 2 MiB buffer.
+
+The V8 fixture results are normal native runs. The installed V8/PartitionAlloc build aborts at allocator-zone initialization under ASan; the separate portable native queue is the Apple ASan/UBSan gate.
+
+### Completed native suite and Apple cross-builds
+
+Root's native run 727 verified all three commands:
+
+| Command | Outcome | Elapsed | Sampled build/test peak RSS |
+| --- | --- | ---: | ---: |
+| `make -j3 test` | PASS | 9.026s | 330.5 MiB |
+| `make -j3 PLAT=sim IOSDEPS=build-apple-toolchain/sim V8DIR=build-apple-toolchain/v8 app` | PASS | 7.033s | 576.031 MiB |
+| `make -j3 PLAT=ios IOSDEPS=build-apple-toolchain/ios V8DIR=build-apple-toolchain/v8 ipa` | PASS; unprovisioned IPA | 9.047s | 626.781 MiB |
+
+Logs: out/apple-compat/apple-fourth-native-gate.log, out/apple-compat/apple-fourth-sim-build.log and out/apple-compat/apple-fourth-device-build.log. The device output is build-ios/Lumen-jitless.ipa (29,655,600 bytes,9 ZIP entries) and is explicitly unprovisioned, with no embedded.mobileprovision. Remaining warnings are the known capture/WebGPU unused-context and duplicate-lc++ warnings; the dangling-else/braces warning is gone. These RSS values measure build/test processes, not the running browser.
+
+### Limits and next-agent starting point
+
+The implementation deliberately exposes a bounded auxiliary-window API. Arbitrary foreign DOM/object access across separate top-level isolates raises NotSupportedError; prohibited cross-origin access raises SecurityError. Cross-isolate MessagePort/SAB/Wasm transfer and cross-tab iframe navigation remain explicitly unsupported, while ordinary ArrayBuffer transfer works. Auxiliary navigation supports HTTP, HTTPS and about:blank. Popup requests create real browser tabs, not separate OS windows or complete popup geometry semantics.
+
+The overall 82/100 score remains constrained by simulator boot failure after20 recovery attempts, absent signing identities/profiles, no authenticated Google/YouTube/ChatGPT login, the latest YouTube CAPTCHA blocker and unavailable remote OS event-post permission. No access-control settings were changed. Successful simulator/device compilation must not be reported as successful UIKit runtime validation or signed installation of the same IPA on iPhone, iPad and Mac.
+
+An ignored manual-only loopback target is available at out/apple-compat/GPT6AstraPro_builtin_apple_browser_review_exec_popup_ui_smoke.py. It uses two local origins, no provider/account endpoints, and checks the real popup's origin/source identity/closed state. Python and embedded JavaScript syntax passed; no remote OS-input execution is claimed. Source ownership: windows.cc/windows.h and JS/frame bridges hold registry/security/message behavior; main.c/window_queue.h hold the deferred host; independent fixtures are test_window_lifecycle.cc, test_app_windows.c, test_history_origin.cc, test_worker_lifecycle.cc and test_composer_paint.c. Continue from the current integrated source; do not reapply earlier full or incremental patches.

@@ -101,12 +101,17 @@ typedef struct ComputedStyle {
     char *grid_area;        /* named grid-area of an item */
     float filter_blur; float filter_brightness; float backdrop_blur;
     float line_clamp;
-    Color caret_color, fill, stroke; float stroke_width;
+    Color caret_color, fill, stroke; Length stroke_width;
+    /* Keep specified paint separate from inherited values so SVG use instances
+       can inherit from their host without changing the referenced DOM tree. */
+    uint8_t svg_paint_set, svg_paint_current;
     const char *anim_name; float anim_dur, anim_delay, anim_iter; /* first animation layer; name is an atom */
     const char *tr_prop; float tr_dur, tr_delay;                 /* transition-property list atom (NULL = all), max times */
     CustomProps *custom;
     struct ComputedStyle *before, *after, *marker; /* pseudo element styles */
 } ComputedStyle;
+
+enum { CSS_SVG_COLOR = 1, CSS_SVG_FILL = 2, CSS_SVG_STROKE = 4, CSS_SVG_STROKE_WIDTH = 8 };
 
 /* Resolve the composed translation after the border-box size is known. A
    rotation can move a width-based percentage to y (or height-based one to x). */

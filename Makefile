@@ -116,7 +116,12 @@ $(BUILD)/test_net_cancel: $(call OBJ,tests/test_net_cancel.c $(BASE_SRC) $(NET_S
 $(BUILD)/test_grid_rows: $(call OBJ,tests/test_grid_rows.c $(CORE_SRC) $(JS_SRC))
 	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
 
-test: $(BUILD)/test_gpu_present $(BUILD)/test_device_capabilities $(BUILD)/test_js_device_capabilities $(BUILD)/test_present_retry $(BUILD)/test_css_transforms $(BUILD)/test_url $(BUILD)/test_net $(BUILD)/test_net_cancel $(BUILD)/test_grid_rows $(BUILD)/test_css_viewport $(BUILD)/test_overflow_clip $(BUILD)/test_sticky_position $(BUILD)/test_app_viewport $(BUILD)/test_touch_contacts $(BUILD)/test_media_lifecycle $(BUILD)/test_worker_lifecycle $(BUILD)/test_promise_rejections $(BUILD)/test_control $(BUILD)/test_js_control_selection $(BUILD)/test_js_control_input $(BUILD)/test_app_control $(BUILD)/test_control_paint $(BUILD)/test_control_geometry $(BUILD)/test_video_punch
+test: $(BUILD)/test_gpu_present $(BUILD)/test_device_capabilities $(BUILD)/test_js_device_capabilities $(BUILD)/test_present_retry $(BUILD)/test_css_transforms $(BUILD)/test_url $(BUILD)/test_net $(BUILD)/test_net_cancel $(BUILD)/test_grid_rows $(BUILD)/test_css_viewport $(BUILD)/test_overflow_clip $(BUILD)/test_sticky_position $(BUILD)/test_app_viewport $(BUILD)/test_touch_contacts $(BUILD)/test_media_lifecycle $(BUILD)/test_worker_lifecycle $(BUILD)/test_promise_rejections $(BUILD)/test_control $(BUILD)/test_js_control_selection $(BUILD)/test_js_control_input $(BUILD)/test_app_control $(BUILD)/test_control_paint $(BUILD)/test_control_geometry $(BUILD)/test_video_punch $(BUILD)/test_history_origin $(BUILD)/test_app_window_queue $(BUILD)/test_composer_paint $(BUILD)/test_window_lifecycle $(BUILD)/test_app_windows
+	$(BUILD)/test_history_origin
+	$(BUILD)/test_app_window_queue
+	$(BUILD)/test_composer_paint
+	$(BUILD)/test_window_lifecycle
+	$(BUILD)/test_app_windows
 	$(BUILD)/test_control
 	$(BUILD)/test_js_control_selection
 	$(BUILD)/test_js_control_input
@@ -267,6 +272,11 @@ $(BUILD)/test_js_control_selection: $(call OBJ,tests/test_js_control_selection.c
 # Canonical controls and video overlay regressions.
 $(BUILD)/test_control: $(call OBJ,tests/test_control.c src/dom/control.c src/dom/dom.c src/base/util.c)
 	$(CC) $(OPT) $^ -o $@ -lm -lpthread
+$(BUILD)/test_composer_paint: $(call OBJ,tests/test_composer_paint.c $(CORE_SRC) $(JS_SRC)) $(V8LINK_RSP)
+	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
+$(BUILD)/tests/test_history_origin.cc.o: CXXFLAGS += -fno-rtti -UNDEBUG
+$(BUILD)/test_history_origin: $(call OBJ,tests/test_history_origin.cc $(CORE_SRC) $(JS_SRC)) $(V8LINK_RSP)
+	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
 $(BUILD)/tests/test_js_control_input.cc.o: CXXFLAGS += -fno-rtti -UNDEBUG
 $(BUILD)/test_js_control_input: $(call OBJ,tests/test_js_control_input.cc $(CORE_SRC) $(JS_SRC)) $(V8LINK_RSP)
 	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
@@ -279,4 +289,16 @@ $(BUILD)/test_app_control: $(call OBJ,tests/test_app_control.c $(CORE_SRC) $(JS_
 	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
 
 $(BUILD)/test_control_geometry: $(call OBJ,tests/test_control_geometry.c $(CORE_SRC) $(JS_SRC)) $(V8LINK_RSP)
+	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
+
+# Native auxiliary contexts: V8 wire ownership and actual deferred tab lifecycle.
+$(BUILD)/src/js/windows.cc.o: CXXFLAGS += -fno-rtti
+$(BUILD)/test_app_window_queue: $(call OBJ,tests/test_app_window_queue.c)
+	$(CC) $(OPT) $^ -o $@
+$(BUILD)/tests/test_window_lifecycle.cc.o: CXXFLAGS += -fno-rtti -UNDEBUG
+$(BUILD)/test_window_lifecycle: $(call OBJ,tests/test_window_lifecycle.cc $(CORE_SRC) $(JS_SRC)) $(V8LINK_RSP)
+	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
+$(BUILD)/tests/test_app_windows.c.o: CFLAGS += -I$(BUILD)/src/app
+$(BUILD)/tests/test_app_windows.c.o: $(BUILD)/src/app/icon.inc
+$(BUILD)/test_app_windows: $(call OBJ,tests/test_app_windows.c $(CORE_SRC) $(JS_SRC) $(filter-out src/app/main.c,$(APP_SRC))) $(V8LINK_RSP)
 	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)

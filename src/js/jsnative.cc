@@ -328,19 +328,40 @@ FN(focus) {
 FN(active) { CTX; RET(jwrap(c, c->doc->focus)); }
 /* about:blank / about:srcdoc documents use their creator's URL for origin-bound state (cookies) */
 static const char *origin_url(JsCtx *c) {
+    if ((!c->doc->url || !strncmp(c->doc->url, "about:", 6)) && !c->inherited_origin_url.empty()) return c->inherited_origin_url.c_str();
     while (c->parent && (!c->doc->url || !strncmp(c->doc->url, "about:", 6))) c = c->parent;
     return c->doc->url;
 }
 FN(cookie) { CTX; if (c->sb_opaque) { RET(jstr(iso, "")); return; } char *s = cookies_get_document(origin_url(c), js_top_url(c)); RET(jstr(iso, s ? s : "")); free(s); }
 FN(setCookie) { CTX; if (c->sb_opaque) return; std::string s = S(0); cookies_set_document(origin_url(c), js_top_url(c), s.c_str()); }
 FN(url) { CTX; RET(jstr(iso, c->doc->url ? c->doc->url : "about:blank")); }
+FN(baseUrl) { CTX; RET(jstr(iso, js_windows_base_url(c, false).c_str())); }
 FN(referrer) { CTX; RET(jstr(iso, c->doc && c->doc->referrer ? c->doc->referrer : "")); }
+/* HTML "can have its URL rewritten": same origin alone is insufficient for
+ * credentials, file paths and opaque URLs. The bridge returns admission before
+ * the prelude commits the corresponding history state/index. */
+static bool history_url_allowed(const char *current, const char *next) {
+    URL before{}, after{};
+    bool ok = current && next && url_parse(current, &before) && url_parse(next, &after);
+    auto eq = [](const char *a, const char *b) { return !strcmp(a ? a : "", b ? b : ""); };
+    if (ok) ok = eq(before.scheme, after.scheme) && eq(before.host, after.host) &&
+                 before.port == after.port && eq(before.userinfo, after.userinfo);
+    if (ok && strcmp(before.scheme, "http") && strcmp(before.scheme, "https")) {
+        ok = eq(before.path, after.path);
+        if (ok && strcmp(before.scheme, "file"))
+            ok = (before.query == nullptr) == (after.query == nullptr) && eq(before.query, after.query);
+    }
+    url_free(&before); url_free(&after);
+    return ok;
+}
 FN(setUrl) {
     CTX; std::string u = S(0);
+    if (!history_url_allowed(c->doc->url, u.c_str())) { RET(false); return; }
     free(c->doc->url); c->doc->url = xstrdup(u.c_str());
     if (c->host.set_url) c->host.set_url(c->host.ud, u.c_str(), BOOL(1));
+    RET(true);
 }
-FN(navigate) { CTX; std::string u = S(0); if (c->parent) { frame_nav(c, u.c_str()); return; } if (c->host.navigate) c->host.navigate(c->host.ud, u.c_str()); }
+FN(navigate) { CTX; std::string u = S(0); if (js_windows_navigate(js_window_caller(iso), c, u, BOOL(1))) return; if (c->parent) { frame_nav(c, u.c_str()); return; } if (c->host.navigate) c->host.navigate(c->host.ud, u.c_str()); }
 FN(navigatePost) {
     CTX; std::string u = S(0), t = S(2); const char *bp; size_t bn; std::string b;
     if (bytes_of(a[1], &bp, &bn)) b.assign(bp, bn); else b = S(1);
@@ -350,10 +371,10 @@ FN(navigatePost) {
 void (*js_save_file)(const char *, const void *, size_t);
 FN(saveFile) { CTX; std::string nm = S(0); const char *p = nullptr; size_t n = 0; if (!bytes_of(a[1], &p, &n) || !js_save_file) RET(false); js_save_file(nm.c_str(), p, n); RET(true); }
 FN(histGo) { CTX; if (c->host.history_go) c->host.history_go(c->host.ud, a[0]->Int32Value(ctx).FromMaybe(0)); }
-/* sessionStorage outlives page loads within a tab: keyed by (tab, origin) */
-static std::map<std::pair<void *, std::string>, std::string> g_session;
-FN(ssGet) { CTX; auto it = g_session.find({c->host.ud, S(0)}); RET(nstr(iso, it == g_session.end() ? nullptr : it->second.c_str())); }
-FN(ssSet) { CTX; g_session[{c->host.ud, S(0)}] = S(1); }
+/* A stable top context owns the namespace across documents. Frames share it;
+ * an auxiliary receives one independent snapshot at creation unless noopener. */
+FN(ssGet) { CTX; RET(nstr(iso, js_window_session_get(c, S(0)))); }
+FN(ssSet) { CTX; js_window_session_set(c, S(0), S(1)); }
 
 /* localStorage: one process-wide map per origin (shared by all tabs), loaded lazily from
  * <profile>/localstorage/ and written back at most every 2 s, on backgrounding and at exit */
@@ -530,7 +551,7 @@ FN(lsGet) {
 FN(lsSet) { CTX; std::lock_guard<std::mutex> g(g_ls_mu); LsOrigin &L = ls_get(S(0)); L.m[S(1)] = S(2); L.dirty = true; }
 FN(lsDel) { CTX; std::lock_guard<std::mutex> g(g_ls_mu); LsOrigin &L = ls_get(S(0)); if (a.Length() < 2) L.m.clear(); else L.m.erase(S(1)); L.dirty = true; }
 extern "C" void js_session_forget(void *ud) {
-    for (auto it = g_session.begin(); it != g_session.end();) it = it->first.first == ud ? g_session.erase(it) : std::next(it);
+    js_window_session_forget(ud);
 }
 FN(histLen) { CTX; RET(c->host.history_len ? c->host.history_len(c->host.ud) : 1); }
 FN(timer) {
@@ -1205,7 +1226,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(matches); REG(byId); REG(clone); REG(doc); REG(contains); REG(connected); REG(host); REG(attachShadow);
     REG(templateContent); REG(rect); REG(vrect); REG(clipSet); REG(clipGet); REG(scrollPos); REG(setScroll); REG(computed); REG(value); REG(setValue); REG(checked); REG(setChecked); REG(setPseudo); REG(pickFiles);
     REG(controlSelection); REG(controlSetSelection); REG(controlSetRangeText); REG(controlSelect); REG(controlEditable);
-    REG(focus); REG(active); REG(cookie); REG(setCookie); REG(url); REG(setUrl); REG(navigate); REG(navigatePost); REG(saveFile); REG(histGo);
+    REG(focus); REG(active); REG(cookie); REG(setCookie); REG(url); REG(baseUrl); REG(setUrl); REG(navigate); REG(navigatePost); REG(saveFile); REG(histGo);
     REG(histLen); REG(ssGet); REG(ssSet); REG(lsGet); REG(lsSet); REG(lsDel); REG(drainMicrotasks); REG(idbGen); REG(idbGet); REG(idbPut); REG(idbDel); REG(idbNames); REG(storageUsage);
     REG(busPost);
     REG(busOrigin); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
@@ -1215,5 +1236,5 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(currentScript); REG(media); REG(cssSupports); REG(cssSelText); REG(urlParse); REG(encode); REG(decode); REG(random); REG(cDigest); REG(cHmac); REG(cAes); REG(cEcGen); REG(cEcDerive); REG(cEcSign); REG(cEcVerify); REG(cSpki); REG(cSpkiParse); REG(cPkcs8Parse); REG(cEcFromD); REG(cHkdf); REG(cPbkdf2);
     REG(heap); REG(imgSize); REG(userAgent); REG(platform); REG(cpus); REG(makeAll);
 #undef REG
-    js_install_frames(c, N); js_install_workers(c, N); js_install_canvas(c, N); js_install_webgpu(c, N); js_install_capture(c, N);
+    js_install_frames(c, N); js_install_windows(c, N); js_install_workers(c, N); js_install_canvas(c, N); js_install_webgpu(c, N); js_install_capture(c, N);
 }

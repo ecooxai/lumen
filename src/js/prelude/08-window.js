@@ -40,6 +40,7 @@ const storageProxy = (st = new Storage()) => new Proxy(st, {
     getOwnPropertyDescriptor(t, k) { return t._m.has(k) ? { value: t._m.get(k), enumerable: true, configurable: true, writable: true } : undefined; },
 });
 const ssOrigin = (() => { try { return N.ctxOrigin(); } catch { return 'null'; } })();
+const localWindowId = N.winId();
 const sessionStorage = storageProxy(new Storage(ssOrigin === 'null' ? null : m => N.ssSet(ssOrigin, JSON.stringify([...m]))));
 try { const j = ssOrigin !== 'null' && N.ssGet(ssOrigin); if (j) for (const [k, v] of JSON.parse(j)) sessionStorage.setItem(k, v); } catch {}
 const localStorage = storageProxy(new Storage(ssOrigin === 'null' ? null : (m, op, k, v, o) => {
@@ -51,7 +52,7 @@ try { if (ssOrigin !== 'null') { const a = N.lsGet(ssOrigin); for (let i = 0; i 
 class Location {
     get href() { return N.url(); } set href(v) { this.assign(v); }
     assign(u) { const n = new URL(String(u), document.baseURI); const cur = new URL(N.url()); if (n.href.split('#')[0] === cur.href.split('#')[0] && n.hash) { const old = cur.href; N.setUrl(n.href, true); setTimeout(() => dispatch(G, new HashChangeEvent('hashchange', { oldURL: old, newURL: n.href }))); } else N.navigate(n.href); }
-    replace(u) { N.navigate(new URL(String(u), document.baseURI).href); }
+    replace(u) { N.navigate(new URL(String(u), document.baseURI).href, true); }
     reload() { N.navigate(N.url()); }
     toString() { return N.url(); }
     get ancestorOrigins() { return []; }
@@ -67,10 +68,26 @@ Object.defineProperty(globalThis, '__lumenPopState', { value: d => {
     histState = histStates[histIdx] ?? null;
     globalThis.dispatchEvent(new PopStateEvent('popstate', { state: histState }));
 } });
+function historyURL(value) {
+    if (value == null) return N.url();
+    const text = String(value);
+    try { return new URL(text, document.baseURI).href; }
+    catch { throw new DOMException('The history URL is invalid.', 'SecurityError'); }
+}
 const history = {
     get length() { return N.histLen(); }, get state() { return histState; }, scrollRestoration: 'auto',
-    pushState(s, t, u) { if (this !== history && this && typeof this.pushState === 'function' && this.pushState !== history.pushState) return this.pushState(s, t, u); histState = structuredClone(s); histStates.length = ++histIdx; histStates[histIdx] = histState; N.setUrl(u != null ? new URL(String(u), N.url()).href : N.url(), true); },
-    replaceState(s, t, u) { if (this !== history && this && typeof this.replaceState === 'function' && this.replaceState !== history.replaceState) return this.replaceState(s, t, u); histState = structuredClone(s); histStates[histIdx] = histState; if (u != null) N.setUrl(new URL(String(u), N.url()).href, false); },
+    pushState(s, t, u) {
+        if (this !== history && this && typeof this.pushState === 'function' && this.pushState !== history.pushState) return this.pushState(s, t, u);
+        const state = structuredClone(s), url = historyURL(u);
+        if (!N.setUrl(url, true)) throw new DOMException('The history URL cannot be rewritten to this URL.', 'SecurityError');
+        histState = state; histStates.length = ++histIdx; histStates[histIdx] = state;
+    },
+    replaceState(s, t, u) {
+        if (this !== history && this && typeof this.replaceState === 'function' && this.replaceState !== history.replaceState) return this.replaceState(s, t, u);
+        const state = structuredClone(s), url = historyURL(u);
+        if (!N.setUrl(url, false)) throw new DOMException('The history URL cannot be rewritten to this URL.', 'SecurityError');
+        histState = state; histStates[histIdx] = state;
+    },
     back() { N.histGo(-1); }, forward() { N.histGo(1); }, go(d) { N.histGo(d | 0); },
 };
 class BatteryManager extends EventTarget {}
@@ -107,6 +124,7 @@ const navigator = {
     storage: { estimate() { return Promise.resolve({ quota: 1e9, usage: ssOrigin === 'null' ? 0 : N.storageUsage(ssOrigin) }); }, persist() { return Promise.resolve(false); }, persisted() { return Promise.resolve(false); } },
     locks: { request(n, o, cb) { cb = typeof o === 'function' ? o : cb; return Promise.resolve().then(() => cb({ name: n })); } },
     getGamepads() { return []; }, getBattery() { return Promise.resolve(battery); },
+    userActivation: Object.freeze({ get hasBeenActive() { return !!N.winOp(localWindowId, 15)?.[0]; }, get isActive() { return !!N.winOp(localWindowId, 15)?.[1]; } }),
 };
 const screenOrientationTypes = ['portrait-primary', 'portrait-secondary', 'landscape-primary', 'landscape-secondary'];
 class ScreenOrientation extends EventTarget {
@@ -310,23 +328,86 @@ function structuredClone(v, seen = new Map()) {
     const o = Array.isArray(v) ? [] : {}; seen.set(v, o); for (const k of Object.keys(v)) o[k] = structuredClone(v[k], seen); return o;
 }
 const xferPorts = (o, t) => { const tr = o && typeof o === 'object' ? o.transfer : t; return (tr && typeof tr[Symbol.iterator] === 'function' ? [...tr] : []).filter(p => p && typeof p.postMessage === 'function' && typeof p.start === 'function'); };
-function postMessage(data, origin, transfer) { if (!arguments.length) throw new TypeError("Failed to execute 'postMessage' on 'Window': 1 argument required, but only 0 present."); const [src, org] = N.caller(); const d = structuredClone(data), ports = xferPorts(origin, transfer); setTimeout(() => dispatch(G, new MessageEvent('message', { data: d, origin: org, source: asWin(src), ports }), true)); }
+function windowString(value) { if (typeof value === 'symbol') throw new TypeError('A Symbol cannot be converted to a string.'); return String(value); }
+function windowPost(id, data, options, transfer, count) {
+    if (!count) throw new TypeError("Failed to execute 'postMessage' on 'Window': 1 argument required, but only 0 present.");
+    const dictionary = options !== null && (typeof options === 'object' || typeof options === 'function');
+    const target = dictionary ? options.targetOrigin : options;
+    const wanted = target === undefined || options === null ? '/' : windowString(target);
+    const raw = dictionary ? options.transfer : transfer, list = raw === undefined ? [] : [...raw];
+    for (const item of list) if (item === null || (typeof item !== 'object' && typeof item !== 'function')) throw new TypeError('A transferable must be an object.');
+    const ports = list.filter(item => item && typeof item.postMessage === 'function' && typeof item.start === 'function');
+    if (ports.length && ports.length === list.length && N.winOp(id, 14)) return N.postTo(id, data, wanted, ports);
+    return N.winPost(id, data, wanted, list);
+}
+function postMessage(data, origin, transfer) { return windowPost(localWindowId, data, origin, transfer, arguments.length); }
 function queueMessage(data, origin, src, ports) { setTimeout(() => dispatch(G, new MessageEvent('message', { data, origin, source: asWin(src), ports: ports ? [...ports] : [] }), true)); }
+function receiveWindowMessage(data, origin, src, failed) { dispatch(G, new MessageEvent(failed ? 'messageerror' : 'message', { data, origin, source: asWin(src), ports: [] }), true); }
 const remoteWins = new Map();
+const remoteFinalizer = new FinalizationRegistry(({ id, ref }) => { if (remoteWins.get(id) === ref) { remoteWins.delete(id); N.winOp(id, 18); } });
 function asWin(v) {
-    if (typeof v !== 'number') return v;
-    let w = remoteWins.get(v);
+    if (typeof v !== 'bigint') return v;
+    if (v === localWindowId) return G;
+    let w = remoteWins.get(v)?.deref();
     if (w) return w;
-    const nav = u => N.ctxRel(v, 4, String(u));
-    w = Object.freeze({
-        postMessage(d, o, t) { N.postTo(v, d, o && typeof o === 'object' ? String(o.targetOrigin ?? '/') : String(o ?? '/'), xferPorts(o, t)); },
-        get window() { return w; }, get self() { return w; }, get frames() { return w; },
-        get parent() { return asWin(N.ctxRel(v, 0)) ?? w; }, get top() { return asWin(N.ctxRel(v, 1)) ?? w; },
-        get length() { return N.ctxRel(v, 2); }, get closed() { return N.ctxRel(v, 3); }, opener: null,
-        location: Object.freeze({ set href(u) { nav(u); }, replace: nav, assign: nav }),
-        focus() {}, blur() {}, close() {},
+    const nav = (u, replace = false) => N.winOp(v, 12, windowString(u), replace);
+    const denied = () => { const sameOrigin = N.winOp(v, 4); throw new DOMException(sameOrigin ? 'Arbitrary objects in another tab are not supported.' : 'Cross-origin window access is not allowed.', sameOrigin ? 'NotSupportedError' : 'SecurityError'); };
+    const same = () => { if (!N.winOp(v, 4)) throw new DOMException('Cross-origin location access is not allowed.', 'SecurityError'); };
+    const location = new Proxy(Object.create(null), {
+        get(_, key) {
+            if (key === 'then') return undefined;
+            if (key === Symbol.toStringTag) return 'Location';
+            if (key === 'replace') return replaceLocation;
+            same();
+            if (key === 'assign') return assignLocation;
+            if (key === 'toString' || key === Symbol.toPrimitive) return stringifyLocation;
+            if (key === 'href') return N.winOp(v, 5);
+            if (URL_KEYS.includes(key)) return new URL(N.winOp(v, 5))[key];
+            return denied();
+        },
+        set(_, key, value) {
+            if (key === 'href') { nav(value); return true; }
+            same();
+            if (typeof key === 'string' && URL_KEYS.includes(key) && key !== 'origin') { const u = new URL(N.winOp(v, 5)); u[key] = value; nav(u.href); return true; }
+            return denied();
+        },
+        defineProperty() { return denied(); }, deleteProperty() { return denied(); }, setPrototypeOf() { return denied(); }, preventExtensions() { return denied(); },
     });
-    remoteWins.set(v, w);
+    const assignLocation = value => { same(); nav(value); }, replaceLocation = value => nav(value, true), stringifyLocation = () => { same(); return N.winOp(v, 5); };
+    const methods = {
+        postMessage(data, options, transfer) { return windowPost(v, data, options, transfer, arguments.length); },
+        focus() { N.winOp(v, 11); }, blur() {}, close() { N.winOp(v, 10); },
+    };
+    const allowed = ['window', 'self', 'frames', 'parent', 'top', 'length', 'closed', 'opener', 'location', 'postMessage', 'focus', 'blur', 'close'];
+    const get = key => {
+        if (key === 'then' || key === Symbol.hasInstance || key === Symbol.isConcatSpreadable) return undefined;
+        if (key === Symbol.toStringTag) return 'Window';
+        if (key === 'window' || key === 'self' || key === 'frames') return w;
+        if (Object.prototype.hasOwnProperty.call(methods, key)) return methods[key];
+        if (key === 'parent') return asWin(N.winOp(v, 0)) ?? w;
+        if (key === 'top') return asWin(N.winOp(v, 1)) ?? w;
+        if (key === 'length') return N.winOp(v, 2);
+        if (key === 'closed') return N.winOp(v, 3);
+        if (key === 'opener') return asWin(N.winOp(v, 6));
+        if (key === 'location') return location;
+        if (key === 'name') return N.winOp(v, 7);
+        if (key === 'origin') return N.winOp(v, 17);
+        return denied();
+    };
+    w = new Proxy(Object.create(null), {
+        get(_, key) { return get(key); },
+        set(_, key, value) {
+            if (key === 'location') { nav(value); return true; }
+            if (key === 'name') { N.winOp(v, 8, windowString(value)); return true; }
+            if (key === 'opener' && value === null) { N.winOp(v, 9); return true; }
+            return denied();
+        },
+        has(_, key) { if (allowed.includes(key) || key === 'then') return true; return denied(); },
+        ownKeys() { return allowed; },
+        getOwnPropertyDescriptor(_, key) { if (allowed.includes(key)) return { value: get(key), enumerable: false, configurable: true }; return denied(); },
+        defineProperty() { return denied(); }, deleteProperty() { return denied(); }, setPrototypeOf() { return denied(); }, preventExtensions() { return denied(); },
+    });
+    const ref = new WeakRef(w); remoteWins.set(v, ref); remoteFinalizer.register(w, { id: v, ref });
     return w;
 }
 const counts = {}, timers = {};
@@ -374,13 +455,13 @@ const globals = {
     RTCPeerConnection, RTCSessionDescription, RTCIceCandidate, RTCPeerConnectionIceEvent, RTCPeerConnectionIceErrorEvent, RTCDataChannel, RTCDataChannelEvent, RTCTrackEvent, RTCRtpSender, RTCRtpReceiver, RTCRtpTransceiver, RTCIceTransport, RTCDtlsTransport, RTCSctpTransport, RTCCertificate, RTCStatsReport, RTCError, RTCErrorEvent, MediaStream, MediaStreamTrack, MediaStreamTrackEvent,
     ResizeObserver, IntersectionObserver, HTMLAllCollection, PerformanceObserver, PerformanceEntry, PerformanceNavigationTiming, Storage, localStorage, sessionStorage, Location, history, navigator, screen, ScreenOrientation, performance, crypto, MediaQueryList, matchMedia, getComputedStyle,
     setTimeout, setInterval, clearTimeout, clearInterval, requestAnimationFrame, cancelAnimationFrame, requestIdleCallback, cancelIdleCallback, queueMicrotask, structuredClone, postMessage, console, customElements, Window, document,
-    window: G, self: G, globalThis: G, get top() { return asWin(N.topWin()) ?? G; }, get parent() { return asWin(N.parentWin()) ?? G; }, frames: G, opener: null, get frameElement() { return N.frameEl(); }, closed: false, name: '', get length() { return N.frameCount(); }, origin: ssOrigin, isSecureContext: location.protocol === 'https:', get crossOriginIsolated() { return N.coi(); },
+    window: G, self: G, globalThis: G, get top() { return asWin(N.topWin()) ?? G; }, get parent() { return asWin(N.parentWin()) ?? G; }, frames: G, get opener() { return asWin(N.winOp(localWindowId, 6)); }, set opener(value) { if (value === null) N.winOp(localWindowId, 9); else Object.defineProperty(G, 'opener', { value, writable: true, configurable: true }); }, get frameElement() { return N.frameEl(); }, get closed() { return N.winOp(localWindowId, 3); }, get name() { return N.winOp(localWindowId, 7); }, set name(value) { N.winOp(localWindowId, 8, windowString(value)); }, get length() { return N.frameCount(); }, origin: ssOrigin, isSecureContext: N.winOp(localWindowId, 16), get crossOriginIsolated() { return N.coi(); },
     get innerWidth() { return N.viewport()[0]; }, get innerHeight() { return N.viewport()[1]; }, get outerWidth() { return N.deviceInfo()[7]; }, get outerHeight() { return N.deviceInfo()[8]; },
     get scrollX() { return N.viewport()[2]; }, get scrollY() { return N.viewport()[3]; }, get pageXOffset() { return N.viewport()[2]; }, get pageYOffset() { return N.viewport()[3]; }, get devicePixelRatio() { return N.viewport()[4]; },
     screenX: 0, screenY: 0, screenLeft: 0, screenTop: 0,
     scrollTo(x, y) { if (typeof x === 'object' && x) { y = x.top ?? N.viewport()[3]; x = x.left ?? N.viewport()[2]; } N.scrollTo(+x || 0, +y || 0); }, scroll(x, y) { G.scrollTo(x, y); },
     scrollBy(x, y) { if (typeof x === 'object' && x) { y = x.top || 0; x = x.left || 0; } const v = N.viewport(); N.scrollTo(v[2] + (+x || 0), v[3] + (+y || 0)); },
-    alert(m) { N.log(1, 'alert: ' + m); }, confirm() { return false; }, prompt() { return null; }, print() {}, focus() {}, blur() {}, close() {}, stop() {}, open() { return null; },
+    alert(m) { N.log(1, 'alert: ' + m); }, confirm() { return false; }, prompt() { return null; }, print() {}, focus() { N.winOp(localWindowId, 11); }, blur() {}, close() { N.winOp(localWindowId, 10); }, stop() {}, open(url = '', target = '_blank', features = '') { return asWin(N.winOpen(windowString(url), windowString(target), windowString(features))); },
     getSelection() { return selection; }, reportError: report, visualViewport: null, speechSynthesis: undefined,
 };
 for (const k of Object.keys(H)) globals[k] = H[k];
@@ -646,5 +727,6 @@ function busDeliver(kind, name, data, id, same) {
         globalThis.dispatchEvent(new StorageEvent('storage', { key: k, oldValue: o, newValue: v, url, storageArea: localStorage }));
     }
 }
-return { busDeliver, queueMessage, workerEvent, protoFor, dispatch, fire, fireAnim, report, controlSelectionChanged, mediaChanged, deviceChanged, viewportChanged, ceConnected, Event, MouseEvent, PointerEvent, KeyboardEvent, FocusEvent, WheelEvent, InputEvent, PopStateEvent, ErrorEvent };
+const windowCloneBlocked = Object.entries(globals).filter(([name, value]) => /^[A-Z]/.test(name) && name !== 'DOMException' && typeof value === 'function' && value.prototype).map(([, value]) => value.prototype);
+return { DOMException, windowCloneBlocked, receiveWindowMessage, busDeliver, queueMessage, workerEvent, protoFor, dispatch, fire, fireAnim, report, controlSelectionChanged, mediaChanged, deviceChanged, viewportChanged, ceConnected, Event, MouseEvent, PointerEvent, KeyboardEvent, FocusEvent, WheelEvent, InputEvent, PopStateEvent, ErrorEvent };
 })

@@ -3,6 +3,7 @@
 #define LUMEN_JS_H
 #include "../dom/dom.h"
 #include "../base/device.h"
+#include "windows.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -32,6 +33,7 @@ typedef struct JsHost {
     void (*frame_open)(void *ud, Node *iframe, Document *d, struct JsHost *child);
     void (*frame_close)(void *child_ud);
     void (*device_info)(void *ud, DeviceInfo *out); /* cached native screen/input info, shared by frames */
+    JsWindowId window_id; /* stable browsing context; zero for a standalone host */
 } JsHost;
 
 void js_global_init(const char *argv0);

@@ -86,6 +86,89 @@ static void check_exit_worker() {
     if (!complete) std::_Exit(EXIT_FAILURE);
 }
 
+/* Use worker-created default backing stores, rather than a custom deleter:
+ * their lifetime includes the worker isolate's ArrayBuffer allocator. A native
+ * weak pointer observes release without keeping the store or allocator alive.
+ */
+static void check_shared_buffer_lifetime(int order) {
+    static const char *names[] = {
+        "source closes before delivery", "source terminates after delivery",
+        "owner closes with an undelivered buffer"
+    };
+    printf("CASE worker-shared-buffer %s\n", names[order]);
+    fflush(stdout);
+    Document *d = doc_new("https://worker.test/shared-buffer.html");
+    d->cross_origin_isolated = true;
+    const char *html = "<!doctype html><html><body></body></html>";
+    html_parse(d, html, strlen(html));
+    JsHost host{};
+    JsCtx *c = js_new(d, &host);
+    uint32_t previous = g_wseq;
+    std::string source =
+        "globalThis.receivedShared = null;"
+        "globalThis.sharedWorker = new Worker(URL.createObjectURL(new Blob([\""
+        "globalThis.payload = new SharedArrayBuffer(2*1024*1024);"
+        "const bytes = new Uint8Array(payload); bytes[0] = 23; bytes[bytes.length-1] = 199;"
+        "postMessage(payload);";
+    source += order == 1 ? "onmessage = () => {};" : "close();";
+    source += "\"], {type:'text/javascript'}))); sharedWorker.onmessage = e => { receivedShared = e.data; };";
+    js_eval(c, source.c_str(), "test:worker-shared-buffer");
+    auto it = g_workers.find(g_wseq);
+    std::shared_ptr<Worker> w = g_wseq != previous && it != g_workers.end() ? it->second : nullptr;
+    CHECK("isolated owner creates a shared-buffer worker", w && w->coi);
+    std::weak_ptr<v8::BackingStore> backing;
+    bool queued = false;
+    double end = now_ms() + 5000;
+    while (w && now_ms() < end) {
+        {
+            std::lock_guard<std::mutex> lock(w->mu);
+            if (!w->out.empty() && (order == 1 || w->finished)) {
+                const OutMsg &message = w->out.front();
+                queued = w->out.size() == 1 && message.kind == WM_MESSAGE && message.data.side &&
+                    message.data.side->sab.size() == 1 && message.data.side->sab[0]->ByteLength() == (2u << 20);
+                if (queued) backing = message.data.side->sab[0];
+                break;
+            }
+            if (w->finished && w->out.empty()) break;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+    CHECK("message owns the worker-created two-MiB shared backing store", queued && !backing.expired());
+    CHECK("source completion matches the delivery order", w && (order == 1 ? !w->finished.load() : w->finished.load()));
+    if (order != 1) CHECK("source thread cleanup completes before delivery or discard", wait_worker_threads(5000));
+    if (queued && order != 2) {
+        js_tick(c);
+        js_eval(c,
+            "document.documentElement.setAttribute('data-shared-buffer', String("
+            "receivedShared instanceof SharedArrayBuffer && receivedShared.byteLength === 2*1024*1024 && "
+            "new Uint8Array(receivedShared)[0] === 23 && new Uint8Array(receivedShared)[receivedShared.byteLength-1] === 199));",
+            "test:worker-shared-buffer-delivery");
+        const char *valid = node_attr(d->html, "data-shared-buffer");
+        CHECK("owner receives the intact shared buffer", valid && !strcmp(valid, "true"));
+        if (order == 1) {
+            js_eval(c, "sharedWorker.terminate();", "test:worker-shared-buffer-terminate");
+            CHECK("worker termination finishes while the owner retains its buffer", wait_worker_threads(5000) && w->finished);
+        }
+        CHECK("shared backing store survives its source isolate", !backing.expired());
+        {
+            std::lock_guard<std::mutex> lock(w->mu);
+            CHECK("delivery releases native queue ownership", w->out.empty());
+        }
+        js_eval(c, "sharedWorker.terminate(); receivedShared = null; sharedWorker = null;",
+            "test:worker-shared-buffer-release");
+        fflush(stdout); /* Preserve the exact release boundary if old code crashes. */
+        {
+            v8::Isolate::Scope isolate_scope(c->iso);
+            for (int n = 0; n < 3 && !backing.expired(); ++n) c->iso->LowMemoryNotification();
+        }
+        CHECK("collection releases the default shared backing store after its source exits", backing.expired());
+    }
+    fflush(stdout);
+    js_free(c); doc_free(d);
+    CHECK("owner teardown drains any remaining worker thread", wait_worker_threads(5000));
+    CHECK("owner teardown releases delivered and undelivered shared buffers", backing.expired());
+}
+
 int main(int argc, char **argv) {
     dom_init(); net_init(2); font_init(); js_global_init(argv[0]);
     Document *d = doc_new("file:///worker-lifecycle.html");
@@ -197,6 +280,7 @@ int main(int argc, char **argv) {
     terminated->out.clear();
     for (Buf &b : w->in) free(b.p);
     w->in.clear();
+    for (int order = 0; order < 3; ++order) check_shared_buffer_lifetime(order);
     js_free(c); doc_free(d);
     CHECK("explicit process shutdown completes before subsystem teardown", js_workers_shutdown(5000));
     net_shutdown();

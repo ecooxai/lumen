@@ -648,6 +648,7 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
         if (!has("allow-scripts")) c->sb_noscript = true;
     }
     if (host) c->host = *host;
+    js_windows_attach(c); /* immutable origin and stable browsing-context identity precede the prelude */
     c->t0 = now_ms();
     c->thread = std::this_thread::get_id();
     g_ctxs.push_back(c);
@@ -656,8 +657,8 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
     if (parent) c->iso = parent->iso;
     else {
     v8::Isolate::CreateParams cp;
-    c->alloc = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
-    cp.array_buffer_allocator = c->alloc;
+    c->alloc.reset(v8::ArrayBuffer::Allocator::NewDefaultAllocator());
+    cp.array_buffer_allocator_shared = c->alloc;
     c->iso = v8::Isolate::New(cp);
     c->iso->SetData(0, c);
     c->iso->SetMicrotasksPolicy(v8::MicrotasksPolicy::kExplicit);
@@ -674,7 +675,7 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
     c->ctx.Reset(iso, ctx);
     ctx->SetAlignedPointerInEmbedderData(1, c, kTag);
     ctx->AllowCodeGenerationFromStrings(false);   /* routes eval/new Function through csp_eval_cb */
-    ctx->SetSecurityToken(v8::String::NewFromUtf8(iso, (c->sb_opaque ? "null#" + std::to_string(c->id) : ctx_origin(c)).c_str(), v8::NewStringType::kInternalized).ToLocalChecked());
+    ctx->SetSecurityToken(v8::String::NewFromUtf8(iso, (c->opaque_origin ? "opaque#" + std::to_string(c->opaque_origin) : ctx_origin(c)).c_str(), v8::NewStringType::kInternalized).ToLocalChecked());
     v8::Context::Scope cs(ctx);
     v8::Local<v8::ObjectTemplate> tmpl = v8::ObjectTemplate::New(iso);
     tmpl->SetInternalFieldCount(2);
@@ -768,6 +769,7 @@ static void pick_deliver(JsCtx *c) {
 }
 void js_free(JsCtx *c) {
     if (!c) return;
+    js_windows_detach(c, c->parent != nullptr); /* only this exact installed realm may detach its destination */
     { std::lock_guard<std::mutex> l(g_pick_mu); if (g_pick_ctx == c) g_pick_ctx = nullptr; }
     workers_kill(c);
     for (JsCtx *k : std::vector<JsCtx *>(c->kids)) js_free(k);
@@ -807,7 +809,7 @@ void js_free(JsCtx *c) {
             if (!n->parent && n->type != NODE_DOCUMENT && !n->refcount && !n->host) roots.push_back(n);
         c->ctx.Reset();
     }
-    if (!c->parent) { c->iso->Dispose(); delete c->alloc; }
+    if (!c->parent) c->iso->Dispose(); /* the last isolate/backing store releases its shared allocator */
     for (Node *n : roots) node_free_tree(n);
     for (Document *d : docs) doc_free(d);
     delete c;
@@ -831,6 +833,7 @@ static bool csp_script_ok(JsCtx *c, Node *script, const char *url, const char *s
 void js_run_script(JsCtx *c, Node *script, const char *src, size_t n, const char *name) {
     if (!c) return;
     if (script) script->flags |= NF_SCRIPT_STARTED;
+    if (c->dead || c->sb_noscript || js_window_is_closed(c->window_id)) return;
     if (!csp_script_ok(c, script, name, src, n)) return;
     Node *prev = c->current_script;
     c->current_script = script;
@@ -845,6 +848,7 @@ void js_run_script(JsCtx *c, Node *script, const char *src, size_t n, const char
 void js_run_module(JsCtx *c, Node *script, const char *src, size_t n, const char *url) {
     if (!c) return;
     if (script) script->flags |= NF_SCRIPT_STARTED;
+    if (c->dead || c->sb_noscript || js_window_is_closed(c->window_id)) return;
     if (!csp_script_ok(c, script, url, src, n)) return;
     bool ext = script && node_attr(script, "src"), ok = false;
     {
@@ -985,6 +989,7 @@ double js_next_deadline(JsCtx *c) {
     if (!c->rafs.empty()) d = std::min(d, c->last_raf + 16);
     for (JsCtx *k : c->kids) if (!k->dead) d = std::min(d, js_next_deadline(k));
     d = std::min(d, workers_deadline(c));
+    d = std::min(d, js_windows_deadline(c));
     return d;
 }
 
@@ -1009,7 +1014,7 @@ void js_device_changed(JsCtx *c) {
 }
 void js_tick(JsCtx *c) {
     js_ls_flush(false);
-    if (!c || c->dead) return;
+    if (!c || c->dead || js_window_is_closed(c->window_id)) return;
     tick_one(c);
     frames_scan(c);
     for (JsCtx *k : std::vector<JsCtx *>(c->kids)) if (!k->dead) js_tick(k);
@@ -1019,6 +1024,7 @@ static void tick_one(JsCtx *c) {
     while (v8::platform::PumpMessageLoop(g_platform.get(), iso)) {}
     pick_deliver(c);
     js_bus_deliver(c);
+    js_windows_deliver(c);
     double now = now_ms();
     std::vector<std::pair<double, uint32_t>> due;
     for (auto &kv : c->timers) if (kv.second.due <= now) due.push_back({ kv.second.due, kv.first });

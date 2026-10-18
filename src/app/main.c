@@ -39,6 +39,7 @@
 #include "../gpu/gpu.h"
 #include "../js/js.h"
 #include "../js/jsglue.h"
+#include "window_queue.h"
 
 static bool g_compact;   /* one tab in the workspace: toolbar lives in the title bar */
 #define TABH (g_compact ? 0.f : 30.f)
@@ -86,6 +87,7 @@ typedef struct { Node *n; char *src; size_t len; char *name; bool module; } PScr
 typedef struct { Node *n; uint64_t h; } SheetRef;
 typedef struct Page {
     char *url; Document *d; StyleEngine *e; Layout *L; uint64_t gen; double load_ms, scroll_due;
+    JsWindowCoop coop; /* response policy survives the loader until document commit */
     JsCtx *js; PScript *scripts; int nscripts; uint64_t seen_ver, lay_ver;
     SheetRef *sref; int nsref;
     Node **vids; int nvids, vidcap; uint64_t vids_ver; /* <video> elements, rebuilt when the tree changes */
@@ -191,7 +193,7 @@ static void hist_add(const char *url, const char *title) {
     if (f) { fprintf(f, "%s\t%s\n", g_hv[g_nhv - 1].url, g_hv[g_nhv - 1].title); fclose(f); }
 }
 static double g_full_paint; static bool g_in_layout;
-#define MAX_TABS 32
+#define MAX_TABS APP_WINDOW_LIMIT
 static volatile uint64_t g_tab_gen[MAX_TABS];
 static bool gen_live(uint64_t g) { for (int i = 0; i < MAX_TABS; i++) if (g_tab_gen[i] == g) return true; return false; }
 
@@ -348,10 +350,10 @@ static int loader(void *arg) {
     p->d = doc_new(p->url); p->d->referrer = rq->ref; rq->ref = NULL;
     if (r && !rq->html) {
         const char *coop = headers_get(&r->headers, "cross-origin-opener-policy"), *coep = headers_get(&r->headers, "cross-origin-embedder-policy");
+        p->coop = js_window_coop(p->url, coop, coep);
         bool secure = !strncmp(p->url, "https:", 6) || !strncmp(p->url, "http://localhost", 16) || !strncmp(p->url, "http://127.0.0.1", 16);
         p->d->coep_require_corp = secure && coep && !strncasecmp(coep, "require-corp", 12);
-        p->d->cross_origin_isolated = secure && coop && coep && !strncasecmp(coop, "same-origin", 11) && strncasecmp(coop, "same-origin-allow-popups", 24)
-            && (!strncasecmp(coep, "require-corp", 12) || !strncasecmp(coep, "credentialless", 14));
+        p->d->cross_origin_isolated = p->coop == JS_COOP_SAME_ORIGIN_PLUS_COEP;
         const char *rp = headers_get(&r->headers, "referrer-policy");
         if (rp) snprintf(p->d->referrer_policy, sizeof p->d->referrer_policy, "%s", rp);
         for (int i = 0; i < r->headers.n; i++)
@@ -404,8 +406,10 @@ static int loader(void *arg) {
     return 0;
 }
 
+static void page_input_forget(Page *p);
 static void page_free(Page *p) {
     if (!p) return;
+    page_input_forget(p);
     js_free(p->js);
     hm_free(&p->img_fired, NULL);
     free(p->sref); free(p->vids);
@@ -418,6 +422,7 @@ static void page_free(Page *p) {
 }
 
 typedef struct Tab { Page *cur; bool loading, relayout; char *hist[256]; uint64_t hgen[256]; int nhist, hpos; char url[2048]; float sy; uint64_t lgen; int ws;
+    JsWindowId window_id; /* stable across document navigation, replaced only on a COOP split */
     double cpu_ms, media_ms0, budget, bud_t, unlimit_until; float pct, lim, cpuhist[600]; int ncpu, cpui, cpumode, vctl, vap, lite; uint64_t vgen; bool limited, info, asleep; double bg_since; int crashes; } Tab;
 typedef struct App {
     SDL_Window *win; SDL_MetalView mview; Gpu *gpu;
@@ -429,6 +434,7 @@ typedef struct App {
     Canvas frame, page; DisplayList pdl, cdl, hdl;
     struct DSig *osig, *nsig; int nosig, cosig, cnsig; uint64_t chash; bool osig_ok;   /* last page display list, to raster only what changed */
     Tab *t, *tabs[MAX_TABS]; int ntabs, ti;
+    AppWindowQueue windows;
     char wsname[16][64]; Tab *wslast[16]; int nws, wi; float side; bool side_set;
     int wsicon[16]; Image *icimg[16][2];
     Image *sym[8][4]; bool vbars;
@@ -463,12 +469,54 @@ static void set_cursor(App *a, int kind) {
     if (a->cursors[kind] && SDL_GetCursor() != a->cursors[kind]) SDL_SetCursor(a->cursors[kind]);
 }
 static void publish_gens(App *a) { for (int i = 0; i < MAX_TABS; i++) g_tab_gen[i] = i < a->ntabs ? a->tabs[i]->lgen : 0; }
-static Tab *tab_new(App *a) {
+static void wake(void);
+static bool h_window_open(void *ud, const JsWindowOpen *request) {
+    App *a = ud; bool pending = app_windows_pending(&a->windows);
+    bool ok = request && !js_window_is_closed(request->id) && app_windows_open(&a->windows, request);
+    if (ok && !pending) wake();
+    return ok;
+}
+static bool h_window_navigate(void *ud, const JsWindowNavigate *request) {
+    App *a = ud; bool pending = app_windows_pending(&a->windows);
+    bool ok = request && !js_window_is_closed(request->id) && app_windows_navigate(&a->windows, request);
+    if (ok && !pending) wake();
+    return ok;
+}
+static bool h_window_close(void *ud, JsWindowId id) {
+    App *a = ud; bool pending = app_windows_pending(&a->windows);
+    bool ok = app_windows_close(&a->windows, id);
+    if (ok && !pending) wake();
+    return ok;
+}
+static bool h_window_focus(void *ud, JsWindowId id) {
+    App *a = ud; bool pending = app_windows_pending(&a->windows);
+    bool ok = !js_window_is_closed(id) && app_windows_focus(&a->windows, id);
+    if (ok && !pending) wake();
+    return ok;
+}
+static int tab_window_index(const App *a, JsWindowId id) {
+    for (int i = 0; i < a->ntabs; i++) if (a->tabs[i]->window_id == id) return i;
+    return -1;
+}
+static JsWindowHost app_window_host(App *a) {
+    return (JsWindowHost){a, h_window_open, h_window_navigate, h_window_close, h_window_focus};
+}
+static Tab *tab_new_window(App *a, JsWindowId id, int workspace) {
     if (a->ntabs == MAX_TABS) return NULL;
-    Tab *t = xcalloc(1, sizeof *t); t->hpos = -1; t->ws = a->wi; t->vctl = -1; t->lite = -1; t->lim = 0.4f; a->tabs[a->ntabs++] = t;
+    if (id) {
+        if (!app_windows_realize(&a->windows, id)) return NULL;
+    } else {
+        JsWindowHost host = app_window_host(a);
+        id = js_window_new(&host);
+        if (!id) return NULL;
+        if (!app_windows_track(&a->windows, id)) { js_window_destroy(id); return NULL; }
+    }
+    Tab *t = xcalloc(1, sizeof *t); t->window_id = id;
+    t->hpos = -1; t->ws = workspace; t->vctl = -1; t->lite = -1; t->lim = 0.4f; a->tabs[a->ntabs++] = t;
     if (!a->t) a->t = t;
     return t;
 }
+static Tab *tab_new(App *a) { return tab_new_window(a, 0, a->wi); }
 static bool is_youtube(const char *u) { const char *h = strstr(u, "://"); if (!h) return false; h += 3; size_t n = strcspn(h, "/?#:"); return n >= 11 && !strncmp(h + n - 11, "youtube.com", 11); }
 static bool vctl_on(const Tab *t) { return t->vctl >= 0 ? t->vctl : g_vctl; }
 static bool lite_on(const Tab *t) { return t->lite >= 0 ? t->lite : g_lowmem; }
@@ -1858,6 +1906,7 @@ static void h_frame_open(void *ud, Node *f, Document *d, JsHost *ch) {
 }
 static void h_frame_close(void *ud) {
     Page *p = ud;
+    page_input_forget(p);
     for (Page **pp = &g_frames; *pp; pp = &(*pp)->fnext) if (*pp == p) { *pp = p->fnext; break; }
     if (p->L) layout_free(p->L);
     if (p->e) style_engine_free(p->e);
@@ -1867,26 +1916,43 @@ static void h_frame_close(void *ud) {
     free(p->url); free(p);
     if (g_app) { g_app->dirty = true; g_app->vonly = false; }
 }
+/* An event handler may synchronously replace a child realm and free its Page.
+ * Resolve the host again after JS, before dereferencing any cached Page. The
+ * retired frame document remains owned until its top-level realm is freed. */
+static Page *frame_click_page(Node *frame, JsCtx *original, Document *document, Node *target) {
+    if (!(frame->flags & NF_CONNECTED) || js_frame_ctx(frame) != original ||
+        js_window_is_closed(js_window_id(original))) return NULL;
+    Page *page = frame_find(frame);
+    return page && page->d == document && target->doc == document && (target->flags & NF_CONNECTED) ? page : NULL;
+}
 static void click_frame(App *a, Page *fp, float x, float y) {
     Box *b = layout_hit(fp->L, x, y + fp->fsy);
     Node *t = b ? b->node : NULL;
     while (t && t->type != NODE_ELEMENT) t = t->parent;
-    JsCtx *js = js_frame_ctx(fp->frame_el);
+    Node *frame = fp->frame_el; Document *document = fp->d;
+    JsCtx *js = js_frame_ctx(frame);
     if (!t || !js) return;
-    js_dispatch(js, t, "mousedown", "MouseEvent", true, true, x, y, 0, NULL);
-    js_dispatch(js, t, "mouseup", "MouseEvent", true, true, x, y, 0, NULL);
-    bool ok = js_dispatch(js, t, "click", "MouseEvent", true, true, x, y, 0, NULL);
+    node_retain(frame); node_retain(t);
     a->dirty = true; a->vonly = false;
-    if (!ok) return;
+    js_window_activate(js); /* native page press, including a real tap forwarded by UIKit */
+    js_dispatch(js, t, "mousedown", "MouseEvent", true, true, x, y, 0, NULL);
+    if (!frame_click_page(frame, js, document, t)) goto done;
+    js_dispatch(js, t, "mouseup", "MouseEvent", true, true, x, y, 0, NULL);
+    if (!frame_click_page(frame, js, document, t)) goto done;
+    bool ok = js_dispatch(js, t, "click", "MouseEvent", true, true, x, y, 0, NULL);
+    fp = frame_click_page(frame, js, document, t);
+    if (!ok || !fp) goto done;
     for (Node *n = t; n; n = n->parent)
         if (n->type == NODE_ELEMENT && n->tag == A_a && node_attr(n, "href")) {
             const char *h = node_attr(n, "href"), *tg = node_attr(n, "target");
-            if (!strncmp(h, "javascript:", 11) || h[0] == '#') return;
+            if (!strncmp(h, "javascript:", 11) || h[0] == '#') goto done;
             char *u = url_join(fp->d->url, h);
             if (u && tg && (!strcmp(tg, "_top") || !strcmp(tg, "_blank"))) { nav_from(fp->d, u); navigate(a, u, true); }
-            else if (u) js_frame_navigate(fp->frame_el, u);
-            free(u); return;
+            else if (u) js_frame_navigate(frame, u);
+            free(u); goto done;
         }
+done:
+    node_release(t); node_release(frame);
 }
 static void restyle(App *a) {
     Page *p = a->t->cur;
@@ -1947,7 +2013,11 @@ static Node *h_hit(void *ud, float x, float y) { Node *r = NULL; TAB_CALL(ud, r 
 static void page_start_js(App *a, Page *p) {
     if (getenv("LUMEN_NO_JS")) return;
     page_media(a, p, a->vw - a->side, a->vh - BAR);
-    JsHost h = { a->t, &p->e->media, h_navigate, h_set_url, h_history_go, h_viewport, h_scroll_to, h_hit, h_history_len, h_navigate_post, h_sync, h_frame_open, h_frame_close, h_device_info };
+    JsHost h = { .ud = a->t, .media = &p->e->media, .navigate = h_navigate, .set_url = h_set_url,
+        .history_go = h_history_go, .viewport = h_viewport, .scroll_to = h_scroll_to, .hit = h_hit,
+        .history_len = h_history_len, .navigate_post = h_navigate_post, .sync = h_sync,
+        .frame_open = h_frame_open, .frame_close = h_frame_close, .device_info = h_device_info,
+        .window_id = a->t->window_id };
     double t0 = now_ms();
     sync_sheets(p, true);
     Node **sl = NULL; int nsl = 0;   /* parser-inserted stylesheets were fetched before JS existed: fire their load after DOMContentLoaded */
@@ -1988,6 +2058,43 @@ static void page_start_js(App *a, Page *p) {
     js_dispatch_window(p->js, "load");
     fprintf(stderr, "lumen: ran %d scripts in %.0fms\n", p->nscripts, now_ms() - t0);
     restyle(a);
+}
+/* A load generation chooses a document; its window identity belongs to the tab.
+ * Commit the new principal before freeing old JS, so old teardown cannot detach
+ * the replacement and COOP cannot leave an old opener handle usable. */
+static bool tab_install_page(App *a, Tab *t, Page *p) {
+    AppWindowRequest *slot = app_windows_find(&a->windows, t->window_id);
+    if (!p || p->gen != t->lgen || !slot || slot->closing) return false;
+    JsWindowId id = js_window_commit(t->window_id, p->d, p->coop);
+    if (!id) return false;
+    if (!app_windows_rebind(&a->windows, t->window_id, id)) {
+        js_window_destroy(id); return false;
+    }
+    t->window_id = id;
+    page_free(t->cur); t->cur = p; t->asleep = false; t->loading = false;
+    t->sy = 0; t->relayout = true; a->dirty = true; a->vonly = false;
+    return true;
+}
+/* Actual loader completion, also used by the native host regression. This is
+ * outside any JS entry: callbacks can queue the next navigation or closure but
+ * cannot tear down this document before its startup batch has returned. */
+static Tab *app_install_loaded(App *a, Page *p) {
+    Tab *t = NULL;
+    for (int i = 0; i < a->ntabs; i++) if (a->tabs[i]->lgen == p->gen) t = a->tabs[i];
+    if (!t) { page_free(p); return NULL; }
+    Tab *act = a->t; bool fg = t == act; a->t = t;
+    js_release_pins();
+    if (!tab_install_page(a, t, p)) { a->t = act; page_free(p); return NULL; }
+    if (!fg || !a->editing) snprintf(t->url, sizeof t->url, "%s", p->url);
+    if (t->hpos >= 0) { free(t->hist[t->hpos]); t->hist[t->hpos] = xstrdup(p->url); t->hgen[t->hpos] = p->gen; }
+    char title[512]; snprintf(title, sizeof title, "%s", p->d->title && *p->d->title ? p->d->title : p->url);
+    if (strncmp(p->url, "lumen:", 6) && strncmp(p->url, "about:", 6) && strncmp(p->url, "data:", 5)) hist_add(p->url, title);
+    if (fg) SDL_SetWindowTitle(a->win, title);
+    sync_images(p);
+    page_start_js(a, p);
+    if (p->js) js_set_background(p->js, !fg);
+    a->t = act;
+    return t;
 }
 static void wake(void) { SDL_Event e; SDL_zero(e); e.type = EV_NET; SDL_PushEvent(&e); }
 
@@ -2479,6 +2586,19 @@ static void sel_copy(App *a) {
     if (g_tsel.on && a->t->cur && a->t->cur->L == g_tsel.L) { char *s = tsel_text(a->t->cur->L); if (*s) SDL_SetClipboardText(s); free(s); }
 }
 static Node *g_down; static Page *g_down_p;   /* element under the pointer at mousedown, until mouseup */
+static void page_input_forget(Page *p) {
+    if (g_down_p == p) {
+        if (g_down) node_release(g_down);
+        g_down = NULL; g_down_p = NULL;
+    }
+    if (g_control_page == p) { g_control_press = NULL; g_control_page = NULL; g_cpress = false; }
+    if (g_mv_p == p) g_mv_p = NULL;
+    if (p->L && g_tsel.L == p->L) { memset(&g_tsel, 0, sizeof g_tsel); g_press = g_drag = false; }
+    if (g_app && g_app->t && g_app->t->cur == p) g_press = g_drag = g_epress = g_cpress = false;
+    if (g_app && g_app->last_page == p) {
+        g_app->last_page = NULL; g_app->osig_ok = false; g_app->sdirty = false; g_app->vonly = false;
+    }
+}
 static void anchor_follow(App *a, Node *t);
 static void click_release(App *a, float x, float y) {
     Node *d = g_down; Page *p = g_down_p; g_down = NULL; g_down_p = NULL;
@@ -2527,6 +2647,7 @@ static void click_page(App *a, float x, float y, int clicks) {
     if (t && a->t->cur->js) {
         Page *p = a->t->cur; JsCtx *js = p->js; float cy = y - BAR;
         Node *before = p->d->focus; node_retain(t);
+        js_window_activate(js); /* native mousedown, never HTMLElement.click() */
         js_dispatch(js, t, "pointerdown", "PointerEvent", true, true, x, cy, 0, NULL);
         if (a->t->cur != p || t->doc != p->d || !(t->flags & NF_CONNECTED)) { node_release(t); return; }
         bool md_ok = js_dispatch(js, t, "mousedown", "MouseEvent", true, true, x, cy, 0, NULL);
@@ -2584,10 +2705,20 @@ static bool over_link(App *a, float x, float y) {
 
 static void tab_select(App *a, int i) {
     if (i < 0 || i >= a->ntabs) return;
+    if (a->t != a->tabs[i]) {
+        if (a->t && a->t->cur) page_input_forget(a->t->cur);
+        g_sm_dx = g_sm_dy = 0;
+#ifdef LUMEN_IOS
+        touch_cancel();
+#endif
+    }
     a->ti = i; a->t = a->tabs[i]; a->wi = a->t->ws; a->wslast[a->wi] = a->t; a->editing = false; a->t->relayout = true; a->dirty = true; a->vonly = false;
     if (a->t->asleep && !a->t->loading) navigate(a, a->t->url, false);
     Page *p = a->t->cur;
     SDL_SetWindowTitle(a->win, p && p->d->title && *p->d->title ? p->d->title : "Lumen");
+    Node *input = page_focus(a); if (!input) input = edit_focus(a);
+    text_area(a, input);
+    if (input) text_input(a->win, false); else SDL_StopTextInput(a->win);
 }
 static void tab_open(App *a) {
     if (!tab_new(a)) return;
@@ -2595,12 +2726,35 @@ static void tab_open(App *a) {
     navigate(a, "lumen://newtab", true);
     a->editing = true; a->sel_all = 1; a->t->url[0] = 0; text_area(a, NULL); text_input(a->win, true);
 }
-static void tab_free(Tab *t) { js_session_forget(t); if (t->cur) page_free(t->cur); for (int k = 0; k < t->nhist; k++) free(t->hist[k]); free(t); }
+static void tab_free(App *a, Tab *t) {
+    js_window_destroy(t->window_id); app_windows_forget(&a->windows, t->window_id);
+    js_release_pins();
+    js_session_forget(t); if (t->cur) page_free(t->cur);
+    if (a->t == t) a->t = NULL;
+    for (int k = 0; k < t->nhist; k++) free(t->hist[k]);
+    free(t);
+}
 static void tab_close(App *a, int i, bool *quit) {
-    if (a->ntabs == 1) { *quit = true; return; }
+    if (i < 0 || i >= a->ntabs) return;
+    if (a->ntabs == 1) {
+        JsWindowId id = a->tabs[i]->window_id;
+        /* A script can open its successor and close itself in one batch. The
+         * accepted reservation must reach a real Page before deciding that
+         * the app is empty. Keep only the native Page until the next safe
+         * drain; its public identity is closed immediately and never reused. */
+        for (unsigned k = 0; k < APP_WINDOW_LIMIT; k++) {
+            const AppWindowRequest *r = &a->windows.slots[k];
+            if (r->id != id && r->reserved && !r->closing && !js_window_is_closed(r->id)) {
+                h_window_close(a, id); js_window_destroy(id);
+                return;
+            }
+        }
+        js_window_destroy(id); app_windows_forget(&a->windows, id);
+        *quit = true; return;
+    }
     Tab *t = a->tabs[i]; int w = t->ws; bool act = i == a->ti;
     for (int k = 0; k < 16; k++) if (a->wslast[k] == t) a->wslast[k] = NULL;
-    tab_free(t);
+    tab_free(a, t);
     memmove(a->tabs + i, a->tabs + i + 1, sizeof(Tab *) * (size_t)(a->ntabs - i - 1)); a->ntabs--;
     publish_gens(a);
     if (!act) { if (a->ti > i) a->ti--; a->t = a->tabs[a->ti]; a->dirty = true; return; }
@@ -2609,6 +2763,71 @@ static void tab_close(App *a, int i, bool *quit) {
     for (int k = i - 1; k >= 0 && j < 0; k--) if (a->tabs[k]->ws == w) j = k;
     a->ti = 0; a->t = a->tabs[0];
     if (j >= 0) tab_select(a, j); else { a->wi = w; tab_open(a); }
+}
+/* Every accepted auxiliary starts with a real inherited blank realm. The
+ * pending reservation already owns its registry epoch, opener and policy. */
+static bool tab_install_blank(App *a, Tab *t) {
+    static const char html[] = "<!doctype html><html><head></head><body></body></html>";
+    if (t->cur || t->nhist) return false;
+    Page *p = xcalloc(1, sizeof *p); p->url = xstrdup("about:blank");
+    p->d = doc_new(p->url); html_parse(p->d, html, sizeof html - 1);
+    p->e = style_engine_new(p->d);
+    p->e->media = (MediaCtx){.vw = a->vw - a->side, .vh = a->vh - BAR, .dpr = a->scale,
+        .touch = a->device.max_touch_points > 0, .any_fine = a->device.any_fine};
+    p->gen = t->lgen = ++load_gen; publish_gens(a);
+    if (!tab_install_page(a, t, p)) { page_free(p); return false; }
+    style_recalc(p->e, &p->d->node, true); p->seen_ver = p->d->dom_version;
+    t->hist[0] = xstrdup(p->url); t->hgen[0] = p->gen; t->nhist = 1; t->hpos = 0;
+    snprintf(t->url, sizeof t->url, "%s", p->url);
+    Tab *act = a->t; bool editing = a->editing; a->t = t;
+    page_start_js(a, p);
+    if (p->js) js_set_background(p->js, t != a->tabs[a->ti]);
+    a->t = act; a->editing = editing;
+    return true;
+}
+/* Drain one snapshot after all current JavaScript batches. New callbacks stay
+ * queued for the next turn, and slots remain reserved throughout materializing
+ * a blank page, so startup callbacks cannot overbook the tab limit. */
+static void app_windows_drain(App *a, bool *quit) {
+    AppWindowBatch batch; app_windows_take(&a->windows, &batch);
+    for (unsigned n = 0; n < batch.count && !*quit; n++) {
+        AppWindowRequest *r = &batch.items[n], *slot = app_windows_find(&a->windows, r->id);
+        if (!slot) continue; /* user closure / COOP commit superseded this ID */
+        int i = tab_window_index(a, r->id);
+        if (r->close || slot->closing || js_window_is_closed(r->id)) {
+            if (i >= 0) tab_close(a, i, quit);
+            else { js_window_destroy(r->id); app_windows_forget(&a->windows, r->id); }
+            continue;
+        }
+        Tab *t = i >= 0 ? a->tabs[i] : NULL;
+        if (r->create) {
+            int from = tab_window_index(a, r->source_top);
+            t = tab_new_window(a, r->id, from >= 0 ? a->tabs[from]->ws : a->wi);
+            if (!t) { js_window_destroy(r->id); app_windows_forget(&a->windows, r->id); continue; }
+            if (!tab_install_blank(a, t)) { tab_close(a, a->ntabs - 1, quit); continue; }
+        }
+        slot = app_windows_find(&a->windows, r->id);
+        if (!t || !slot || slot->closing || js_window_is_closed(r->id)) continue;
+        /* A callback from blank startup may have requested a newer destination.
+         * Never overwrite it with the URL captured by the original open. */
+        if (r->navigate && r->url && !slot->navigate && !(r->create && t->loading) &&
+            !(r->create && !strcmp(r->url, "about:blank"))) {
+            Tab *act = a->t; bool editing = a->editing; a->t = t;
+            free(g_nav_ref); g_nav_ref = r->referrer; r->referrer = NULL;
+            navigate_ex(a, r->url, !r->replace && !r->create, NULL, 0, NULL);
+            if (t->hpos >= 0) t->hgen[t->hpos] = t->lgen;
+            a->t = act;
+            if (t != a->tabs[a->ti]) a->editing = editing;
+        }
+    }
+    /* A later focus request wins over the snapshot, just like a later URL. */
+    if (!*quit && batch.focus && !a->windows.focus && !js_window_is_closed(batch.focus)) {
+        AppWindowRequest *slot = app_windows_find(&a->windows, batch.focus);
+        int i = tab_window_index(a, batch.focus);
+        if (slot && !slot->closing && i >= 0) tab_select(a, i);
+    }
+    app_windows_batch_free(&batch);
+    js_release_pins();
 }
 static void tab_cycle(App *a, int d) {
     int v[MAX_TABS], n = ws_tabs(a, a->wi, v), cur = 0;
@@ -2638,7 +2857,7 @@ static void ws_new(App *a, const char *name) {
 static void ws_close(App *a, int w) {
     if (a->nws == 1) return;
     int n = 0;
-    for (int i = 0; i < a->ntabs; i++) { Tab *t = a->tabs[i]; if (t->ws == w) tab_free(t); else { if (t->ws > w) t->ws--; a->tabs[n++] = t; } }
+    for (int i = 0; i < a->ntabs; i++) { Tab *t = a->tabs[i]; if (t->ws == w) tab_free(a, t); else { if (t->ws > w) t->ws--; a->tabs[n++] = t; } }
     a->ntabs = n;
     memmove(a->wsname + w, a->wsname + w + 1, sizeof a->wsname[0] * (size_t)(a->nws - w - 1));
     memmove(a->wsicon + w, a->wsicon + w + 1, sizeof(int) * (size_t)(a->nws - w - 1));
@@ -2827,6 +3046,15 @@ static void recover_from_crash(App *a, int sig) {
     Tab *t = a->t, *act = a->ti >= 0 && a->ti < a->ntabs ? a->tabs[a->ti] : t;
     fprintf(stderr, "lumen: recovered from signal %d in %s\n", sig, *t->url ? t->url : "(blank tab)");
     js_release_pins();
+    /* The faulted realm is deliberately not destructed after longjmp. Retire
+     * its public identity without entering V8 before accepting another load. */
+    JsWindowId old_id = t->window_id; js_window_destroy(old_id);
+    JsWindowHost host = app_window_host(a);
+    JsWindowId new_id = js_window_new(&host);
+    if (!app_windows_rebind(&a->windows, old_id, new_id)) {
+        js_window_destroy(new_id); new_id = 0; app_windows_forget(&a->windows, old_id);
+    }
+    t->window_id = new_id;
     if (t->cur) {
         Page *drop[256]; int nd = 0;
         for (Page *p = g_frames; p && nd < 256; p = p->fnext) if (tab_of_doc(a, p->d) == t) drop[nd++] = p;
@@ -2836,7 +3064,7 @@ static void recover_from_crash(App *a, int sig) {
     t->loading = t->asleep = false; t->crashes++;
     a->last_page = NULL; a->dirty = true; a->vonly = false; a->sdirty = false;
     for (int i = 0; i < a->ntabs; i++) a->tabs[i]->relayout = true;
-    if (t->crashes <= 3 && *t->url) {
+    if (new_id && t->crashes <= 3 && *t->url) {
         snprintf(g_notice, sizeof g_notice, "Something went wrong on this page, so Lumen reloaded the tab instead of quitting.");
         a->t = t; navigate(a, t->url, false);
     } else snprintf(g_notice, sizeof g_notice, "This page keeps hitting an error, so Lumen stopped reloading it. Other tabs are not affected.");
@@ -3033,6 +3261,7 @@ int main(int argc, char **argv) {
         }
         SDL_Event ev;
         int to = a.t->loading ? 120 : 1000;
+        if (app_windows_pending(&a.windows)) to = 0;
         for (int i = 0; i < a.ntabs; i++) { Tab *tb = a.tabs[i]; if (tb->cur && tb->cur->js) { double now = now_ms(), dl = js_next_deadline(tb->cur->js) - now; if (tb->cur->scroll_pending) dl = LMIN(dl, tb->cur->scroll_due - now); if (tb->limited && tb->budget < 0) dl = LMAX(dl, -tb->budget / tb->lim - (now - tb->bud_t)); if (dl < to) to = dl <= 0 ? 0 : (int)ceil(dl); } }
         if (net_pending() && to > 50) to = 50;
         if (g_hud) {
@@ -3057,7 +3286,7 @@ int main(int argc, char **argv) {
                     if (st == a.t || st->loading || !sp || !sp->js || !sp->url) { st->bg_since = 0; continue; }
                     if (!st->bg_since) st->bg_since = tb;
                     bool site = sleep_all || !strncmp(sp->url, "https://chatgpt.com/", 20);
-                    if (sleep_ms > 0 && site && tb - st->bg_since > sleep_ms && !js_busy(sp->js)) { js_free(sp->js); sp->js = NULL; st->asleep = true; }
+                    if (sleep_ms > 0 && site && tb - st->bg_since > sleep_ms && !js_busy(sp->js) && js_window_can_sleep(st->window_id)) { js_free(sp->js); sp->js = NULL; st->asleep = true; }
                 }
                 if (a.t->asleep && !a.t->loading) navigate(&a, a.t->url, false);
                 for (Page *p = g_frames; p; p = p->fnext) if (p->js) { Tab *ft = tab_of_doc(&a, p->d); js_set_background(p->js, ft && ft != a.t); }
@@ -3223,6 +3452,8 @@ int main(int argc, char **argv) {
                 if (cmd || (ev.key.mod & (SDL_KMOD_GUI | SDL_KMOD_CTRL))) {
                     bool reserved = k == SDLK_Q || k == SDLK_W || k == SDLK_T || k == SDLK_N || k == SDLK_L || k == SDLK_TAB || (k >= SDLK_1 && k <= SDLK_9);
                     if (cmd) js_key_mods |= (ev.key.mod & SDL_KMOD_CTRL) ? 2 : 8;
+                    if (!reserved && k != SDLK_ESCAPE && k != SDLK_R && k != SDLK_LEFTBRACKET && k != SDLK_RIGHTBRACKET && !a.editing && a.t->cur)
+                        js_window_activate(a.t->cur->js);
                     if (!reserved && !a.editing && ctl_key(&a, k, ev.key.mod, true)) break;
                     if (!reserved && !page_key(&a, k, ev.key.mod)) { restyle(&a); a.dirty = true; a.vonly = false; break; }
                     if (k == SDLK_A && !a.editing && !edit_focus(&a) && a.t->cur && a.t->cur->L) { tsel_all(a.t->cur->L); g_tsel.L = a.t->cur->L; a.vonly = false; }
@@ -3247,6 +3478,10 @@ int main(int argc, char **argv) {
                     else if (k == SDLK_BACKSPACE) { if (a.sel_all) { a.t->url[0] = 0; a.sel_all = 0; } else { size_t n = strlen(a.t->url); while (n && (a.t->url[n - 1] & 0xC0) == 0x80) n--; if (n) n--; a.t->url[n] = 0; } }
                     else if (k == SDLK_LEFT || k == SDLK_RIGHT) a.sel_all = 0;
                     a.dirty = true; break;
+                }
+                if (k != SDLK_ESCAPE && a.t->cur) {
+                    char name[8];
+                    if (key_name(k, ev.key.mod & SDL_KMOD_SHIFT, name)) js_window_activate(a.t->cur->js);
                 }
                 if (page_focus(&a)) {
                     if (!ctl_key(&a, k, ev.key.mod, false) && k != SDLK_SPACE && (k < 32 || k >= 127) && !page_key(&a, k, ev.key.mod)) { restyle(&a); a.dirty = true; }
@@ -3290,28 +3525,20 @@ int main(int argc, char **argv) {
                 }
                 if (ev.type == EV_LOADED) {
                     Page *p = ev.user.data1;
-                    Tab *lt = NULL; for (int i = 0; i < a.ntabs; i++) if (a.tabs[i]->lgen == p->gen) lt = a.tabs[i];
         {   /* LUMEN_TAB_TOUR=ms: benchmark aid, activates each tab in turn once like a user would */
             static int tour_i = -1; static double tour_next, tour_ms;
             if (tour_i < 0) { const char *e = getenv("LUMEN_TAB_TOUR"); tour_ms = e ? atof(e) : 0; tour_i = 0; tour_next = SDL_GetTicks() + tour_ms; }
             if (tour_ms > 0 && tour_i < a.ntabs && SDL_GetTicks() >= tour_next) { tab_select(&a, tour_i++); tour_next = SDL_GetTicks() + tour_ms; }
         }
-                    if (!lt) { page_free(p); break; }
-                    Tab *act = a.t; bool fg = lt == act; a.t = lt;
-                    page_free(a.t->cur); a.t->cur = p; a.t->asleep = false; a.t->loading = false; a.t->sy = 0; a.t->relayout = true; a.dirty = true;
-                    if (!a.editing) snprintf(a.t->url, sizeof a.t->url, "%s", p->url);
-                    if (a.t->hpos >= 0) { free(a.t->hist[a.t->hpos]); a.t->hist[a.t->hpos] = xstrdup(p->url); }
-                    char title[512]; snprintf(title, sizeof title, "%s", p->d->title && *p->d->title ? p->d->title : p->url);
-                    if (strncmp(p->url, "lumen:", 6) && strncmp(p->url, "about:", 6) && strncmp(p->url, "data:", 5)) hist_add(p->url, title);
-                    if (fg) SDL_SetWindowTitle(a.win, title);
-                    sync_images(p);
-                    page_start_js(&a, p);
-                    a.t = act; double t0 = now_ms(); if (fg) render(&a); else a.dirty = true;
+                    Tab *lt = app_install_loaded(&a, p);
+                    if (!lt) break;
+                    double t0 = now_ms(); if (lt == a.t) render(&a); else a.dirty = true;
                     fprintf(stderr, "lumen: %s loaded in %.0fms, first frame %.1fms (layout+paint+present), %d boxes\n", p->url, p->load_ms, now_ms() - t0, p->L ? p->L->nboxes : 0);
                 }
             }
-        } while (SDL_PollEvent(&ev));
+        } while (!quit && SDL_PollEvent(&ev));
         js_release_pins();
+        if (quit) break;
         net_poll();
         { Tab *act = a.t; double tn = now_ms(); for (int i = 0; i < a.ntabs; i++) { a.t = a.tabs[i]; if (a.t->limited) { a.t->budget = LMIN(a.t->budget + a.t->lim * (tn - a.t->bud_t), 100); a.t->bud_t = tn; if (a.t->budget < 0) continue; } if (a.t->cur && a.t->cur->js) { double c0 = now_ms();
             Page *p = a.t->cur;
@@ -3321,6 +3548,9 @@ int main(int argc, char **argv) {
                 js_dispatch(p->js, &p->d->node, "scroll", "Event", true, false, 0, 0, 0, NULL);
             }
             js_tick(a.t->cur->js); restyle(&a); fire_img_events(a.t->cur); double c = now_ms() - c0; a.t->cpu_ms += c; if (a.t->limited) a.t->budget -= c; } } a.t = act; if (a.t->cur && a.t->cur->js) frames_tick(&a); }
+        js_release_pins();
+        if (app_windows_pending(&a.windows)) app_windows_drain(&a, &quit);
+        if (quit) break;
         edit_sel_sync(&a);
         if (!g_bg && present_retry_due(&a.present_retry, now_ms())) { if (!a.dirty) a.vonly = true; a.dirty = true; }
         if (a.dirty && !g_bg) { double r0 = now_ms(); render(&a); a.t->cpu_ms += now_ms() - r0; }
@@ -3329,7 +3559,10 @@ int main(int argc, char **argv) {
         if (*cookie_path && now_ms() - cookies_saved_at > 5000) { cookies_save(cookie_path); hsts_save(hsts_path); cookies_saved_at = now_ms(); }
     }
     if (*cookie_path) { cookies_save(cookie_path); hsts_save(hsts_path); }
-    for (int i = 0; i < a.ntabs; i++) if (a.tabs[i]->cur) page_free(a.tabs[i]->cur);
+    for (unsigned i = 0; i < APP_WINDOW_LIMIT; i++) if (a.windows.slots[i].reserved) js_window_destroy(a.windows.slots[i].id);
+    for (int i = 0; i < a.ntabs; i++) tab_free(&a, a.tabs[i]);
+    a.ntabs = 0; publish_gens(&a);
+    app_windows_clear(&a.windows);
     if (!js_workers_shutdown(5000)) {
         fprintf(stderr, "lumen: worker cleanup exceeded 5 seconds during shutdown\n");
         fflush(stderr);

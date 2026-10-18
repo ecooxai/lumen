@@ -576,8 +576,10 @@ static bool w_wasm_cb(v8::Local<v8::Context>, v8::Local<v8::String>) {
 void worker_main(std::shared_ptr<Worker> w) {
     if (w->term) return;
     v8::Isolate::CreateParams cp;
-    std::unique_ptr<v8::ArrayBuffer::Allocator> al(v8::ArrayBuffer::Allocator::NewDefaultAllocator());
-    cp.array_buffer_allocator = al.get();
+    /* SharedArrayBuffer messages can outlive this worker's isolate and thread.
+     * Let each backing store retain the allocator until its final receiver or
+     * undelivered message releases it. */
+    cp.array_buffer_allocator_shared.reset(v8::ArrayBuffer::Allocator::NewDefaultAllocator());
     v8::Isolate *iso = v8::Isolate::New(cp);
     bool stopped;
     { std::lock_guard<std::mutex> lk(w->mu); stopped = w->term; if (!stopped) w->iso = iso; }

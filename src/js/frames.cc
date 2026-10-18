@@ -16,18 +16,13 @@ static std::string origin_of(const char *u) {
     free(o); url_free(&x);
     return r;
 }
-std::string ctx_origin(JsCtx *c) {
-    if (c->sb_opaque) return "null";
-    if (c->parent && (!c->doc->url || !strncmp(c->doc->url, "about:", 6))) return ctx_origin(c->parent);
-    return origin_of(c->doc->url);
-}
-static bool same_origin(JsCtx *a, JsCtx *b) { return a == b || (!a->sb_opaque && !b->sb_opaque && ctx_origin(a) == ctx_origin(b)); }
+std::string ctx_origin(JsCtx *c) { return c ? c->origin : "null"; }
+static bool same_origin(JsCtx *a, JsCtx *b) { return js_windows_same_origin(a, b); }
 
 static v8::Local<v8::Value> win_for(JsCtx *v, JsCtx *t) {
     v8::Isolate *iso = v->iso;
     if (!t || t->dead || t->ctx.IsEmpty()) return v8::Null(iso);
-    if (same_origin(v, t)) return t->ctx.Get(iso)->Global();
-    return v8::Number::New(iso, t->id);
+    return js_window_value(v, t->window_id);
 }
 static JsCtx *root_of(JsCtx *c) { while (c->parent) c = c->parent; return c; }
 static JsCtx *by_id(JsCtx *any, uint32_t id) {
@@ -52,6 +47,7 @@ Document *js_frame_doc(Node *f) { JsCtx *k = js_frame_ctx(f); return k ? k->doc 
 
 void frame_kill(JsCtx *k) {
     if (k->dead) return;
+    js_windows_detach(k, true); /* removal closes the frame; replacement already advanced its epoch */
     k->dead = true;
     for (JsCtx *g : k->kids) frame_kill(g);
     for (auto &kv : k->fetches) { net_cancel(kv.first); kv.second->c = nullptr; kv.second->cb.Reset(); kv.second->head.Reset(); kv.second->chunk.Reset(); }
@@ -74,17 +70,22 @@ static std::string src_key(JsCtx *p, Node *f) {
 static std::string g_next_csp;   /* CSP of the response frame_create is about to build a document from */
 static std::string g_next_ref;   /* Referer sent for the frame navigation frame_create is about to build */
 static JsCtx *frame_create(JsCtx *p, Node *f, const char *url, const char *html, size_t n, bool fire_load) {
-    if (JsCtx *old = js_frame_ctx(f)) frame_kill(old);
+    JsCtx *old = js_frame_ctx(f);
     Document *d = doc_new(url);
     if (!g_next_csp.empty()) { d->csp = csp_append(nullptr, g_next_csp.c_str()); g_next_csp.clear(); }
     if (!g_next_ref.empty()) { d->referrer = strdup(g_next_ref.c_str()); g_next_ref.clear(); }
     else if (!strncmp(url, "about:", 6) && p->doc && p->doc->csp) d->csp = strdup(p->doc->csp);
     html_parse(d, html ? html : "", html ? n : 0);
+    /* A document replacement retains the iframe browsing context. Commit before
+     * retiring the old realm so its detach cannot close the successor's ID. */
+    JsWindowId window_id = old ? js_window_commit(old->window_id, d, JS_COOP_UNSAFE_NONE) : 0;
+    if (old) frame_kill(old);
     JsHost ch{};
     ch.viewport = p->host.viewport;
     if (p->host.frame_open) p->host.frame_open(p->host.ud, f, d, &ch);
     if (!ch.frame_open) ch.frame_open = p->host.frame_open;
     ch.frame_close = p->host.frame_close;
+    ch.window_id = window_id;
     JsCtx *k = js_new_ex(d, &ch, p, f);
     k->host_ud = ch.ud;
     if (const char *fp = getenv("LUMEN_FRAME_PRE")) if (strncmp(url, "about:", 6)) js_eval(k, fp, "lumen:frame-pre");
@@ -243,8 +244,11 @@ static void collect_iframes(Node *root, std::vector<Node *> &out) {
 void frames_scan(JsCtx *c) {
     if (c->dead || c->doc->dom_version == c->frame_scan_ver) return;
     c->frame_scan_ver = c->doc->dom_version;
-    for (JsCtx *k : std::vector<JsCtx *>(c->kids))
-        if (!k->dead && (!(k->frame_el->flags & NF_CONNECTED) || k->frame_el->doc != c->doc || src_key(c, k->frame_el) != k->frame_src)) frame_kill(k);
+    for (JsCtx *k : std::vector<JsCtx *>(c->kids)) {
+        if (k->dead) continue;
+        if (!(k->frame_el->flags & NF_CONNECTED) || k->frame_el->doc != c->doc) frame_kill(k);
+        else if (src_key(c, k->frame_el) != k->frame_src) frame_start(c, k->frame_el);
+    }
     std::vector<Node *> todo;
     collect_iframes(&c->doc->node, todo);
     for (Node *n : todo) if (!js_frame_ctx(n)) frame_start(c, n);
@@ -292,13 +296,6 @@ static void n_ctxRel(const FCI &a) {
     case 4: if (t) { std::string u = jcstr(iso, a[2]); frame_nav(t, u.c_str()); } break;
     }
 }
-static JsCtx *ctx_of_value(v8::Isolate *iso, JsCtx *c, v8::Local<v8::Value> v) {
-    if (v->IsNumber()) return by_id(c, (uint32_t)v.As<v8::Number>()->Value());
-    if (!v->IsObject()) return nullptr;
-    v8::Local<v8::Context> cx;
-    if (!v.As<v8::Object>()->GetCreationContext(iso).ToLocal(&cx)) return nullptr;
-    return static_cast<JsCtx *>(cx->GetAlignedPointerFromEmbedderData(1, kTag));
-}
 static void n_caller(const FCI &a) {
     FCTX;
     v8::Local<v8::Context> ec = iso->GetEnteredOrMicrotaskContext();
@@ -308,28 +305,36 @@ static void n_caller(const FCI &a) {
     a.GetReturnValue().Set(v8::Array::New(iso, v, 2));
 }
 static void n_postTo(const FCI &a) {
-    FCTX; v8::Local<v8::Context> cx = iso->GetCurrentContext();
-    JsCtx *t = ctx_of_value(iso, c, a[0]);
-    if (!t || t->dead || t->api.IsEmpty()) return;
-    std::string want = jcstr(iso, a[2]);
-    if (want == "/") want = ctx_origin(c);
-    if (want != "*" && origin_of(want.c_str()) != ctx_origin(t)) return;
-    v8::ValueSerializer ser(iso);
-    ser.WriteHeader();
-    if (!ser.WriteValue(cx, a[1]).FromMaybe(false)) return;
-    std::pair<uint8_t *, size_t> buf = ser.Release();
-    {
-        v8::Local<v8::Context> tc = t->ctx.Get(iso);
+    /* Existing MessagePort delivery is confined to frames in this same isolate.
+     * All ordinary Window messages use the bounded directed queue instead. */
+    v8::Isolate *iso = a.GetIsolate(); JsCtx *source = js_window_caller(iso);
+    v8::Local<v8::Context> cx = iso->GetCurrentContext();
+    JsCtx *target = js_window_context(source, a[0]);
+    std::string wanted = jcstr(iso, a[2]); bool valid = false;
+    (void)js_windows_target_origin(source, target, wanted, &valid);
+    if (!valid || !target || target->dead || target->api.IsEmpty()) return;
+    const JsWindowId source_id = source->window_id;
+    const std::string origin = ctx_origin(source);
+    v8::ValueSerializer serializer(iso);
+    serializer.WriteHeader();
+    if (!serializer.WriteValue(cx, a[1]).FromMaybe(false)) return;
+    auto bytes = serializer.Release();
+    /* Payload getters can navigate/remove the destination or close the sender.
+     * The target must still be this exact installed realm; a closed sender's
+     * already serialized message keeps its send-time origin and stable ID. */
+    if (!target->dead && !target->api.IsEmpty() && js_windows_target_origin(source, target, wanted, &valid)) {
+        v8::Local<v8::Context> tc = target->ctx.Get(iso);
         v8::Context::Scope cs(tc);
-        v8::ValueDeserializer des(iso, buf.first, buf.second);
+        v8::ValueDeserializer deserializer(iso, bytes.first, bytes.second);
         v8::Local<v8::Value> data, fn;
-        if (des.ReadHeader(tc).FromMaybe(false) && des.ReadValue(tc).ToLocal(&data) &&
-            t->api.Get(iso)->Get(tc, jstr(iso, "queueMessage")).ToLocal(&fn) && fn->IsFunction()) {
-            v8::Local<v8::Value> argv[4] = { data, jstr(iso, ctx_origin(c).c_str()), win_for(t, c), a[3]->IsArray() ? a[3] : v8::Array::New(iso, 0).As<v8::Value>() };
-            (void)jcall(t, fn.As<v8::Function>(), v8::Undefined(iso), 4, argv);
+        if (deserializer.ReadHeader(tc).FromMaybe(false) && deserializer.ReadValue(tc).ToLocal(&data) &&
+            target->api.Get(iso)->Get(tc, jstr(iso, "queueMessage")).ToLocal(&fn) && fn->IsFunction()) {
+            v8::Local<v8::Value> args[] = {data, jstr(iso, origin.c_str()), js_window_value(target, source_id),
+                a[3]->IsArray() ? a[3] : v8::Array::New(iso, 0).As<v8::Value>()};
+            (void)jcall(target, fn.As<v8::Function>(), v8::Undefined(iso), 4, args);
         }
     }
-    free(buf.first);
+    free(bytes.first);
 }
 
 void js_install_frames(JsCtx *c, v8::Local<v8::Object> N) {

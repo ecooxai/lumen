@@ -7,10 +7,12 @@
 #include <functional>
 #include <condition_variable>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <thread>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 extern "C" {
 #include "js.h"
@@ -59,7 +61,7 @@ struct JsCtx {
     v8::Isolate *iso = nullptr;
     uint64_t bus_seen = 0; std::string bus_origin;   /* BroadcastChannel / storage-event bus */
     bool bg = false, bg_gc = false; double bg_since = 0;   /* tab in the background: V8 favours memory, one idle GC */
-    v8::ArrayBuffer::Allocator *alloc = nullptr;
+    std::shared_ptr<v8::ArrayBuffer::Allocator> alloc; /* transferred backing stores may outlive this isolate */
     v8::Global<v8::Context> ctx;
     v8::Global<v8::ObjectTemplate> node_tmpl;
     v8::Global<v8::Object> api;
@@ -97,6 +99,12 @@ struct JsCtx {
     Node *frame_el = nullptr;         /* the <iframe> in the parent document */
     std::vector<JsCtx *> kids;
     uint32_t id = 0;
+    JsWindowId window_id = 0;
+    uint64_t window_epoch = 0, opaque_origin = 0;
+    std::string origin, inherited_origin_url; /* immutable document principal; never derived from pushState */
+    std::string inherited_base_url; /* initial about:blank/srcdoc fallback before dynamic <base> resolution */
+    uint32_t sandbox_flags = 0;
+    std::unordered_set<JsWindowId> window_refs;
     bool dead = false;
     uint64_t frame_scan_ver = ~0ull;
     void *host_ud = nullptr;          /* child host data returned by frame_open */
@@ -147,6 +155,21 @@ void frames_forget(JsCtx *c);
 void frame_kill(JsCtx *k);
 void frame_nav(JsCtx *k, const char *u);
 void js_install_frames(JsCtx *c, v8::Local<v8::Object> N);
+void js_install_windows(JsCtx *c, v8::Local<v8::Object> N);
+void js_windows_attach(JsCtx *c);
+void js_windows_detach(JsCtx *c, bool close_frame = false);
+void js_windows_deliver(JsCtx *c);
+double js_windows_deadline(JsCtx *c);
+bool js_windows_same_origin(const JsCtx *a, const JsCtx *b);
+JsCtx *js_window_caller(v8::Isolate *iso);
+std::string js_windows_base_url(JsCtx *c, bool include_element);
+bool js_windows_navigate(JsCtx *source, JsCtx *target, const std::string &url, bool replace);
+bool js_windows_target_origin(JsCtx *source, JsCtx *target, const std::string &wanted, bool *valid);
+v8::Local<v8::Value> js_window_value(JsCtx *viewer, JsWindowId id);
+JsCtx *js_window_context(JsCtx *viewer, v8::Local<v8::Value> value);
+const char *js_window_session_get(JsCtx *c, const std::string &origin);
+void js_window_session_set(JsCtx *c, const std::string &origin, const std::string &value);
+void js_window_session_forget(void *host_ud);
 void js_install_workers(JsCtx *c, v8::Local<v8::Object> N);
 void js_install_canvas(JsCtx *c, v8::Local<v8::Object> N);
 void js_install_webgpu(JsCtx *c, v8::Local<v8::Object> N);
