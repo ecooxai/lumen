@@ -62,8 +62,11 @@ Font *style_font(const ComputedStyle *s);
 float style_line_height(const ComputedStyle *s, Font *f);
 /* column-reverse scrollers start at the end: scrollTop 0 is the bottom, negative scrolls up */
 static inline bool box_within(const Box *x, const Box *a) { for (; x; x = x->parent) if (x == a) return true; return false; }
+/* scroller also marks boxes that paint a clip; overflow:clip never scrolls. */
+static inline bool box_scrollable_x(const Box *b) { return b->scroller && b->st && b->st->overflow_x != OV_VISIBLE && b->st->overflow_x != OV_CLIP; }
+static inline bool box_scrollable_y(const Box *b) { return b->scroller && b->st && b->st->overflow_y != OV_VISIBLE && b->st->overflow_y != OV_CLIP; }
 static inline bool box_scroll_from_end(const Box *b) { return b->st && (b->st->display == D_FLEX || b->st->display == D_INLINE_FLEX) && b->st->flex_direction == FD_COLUMN_REVERSE; }
-static inline float box_scroll_y(const Box *b) { return b->node->scroll_y + (box_scroll_from_end(b) ? LMAX(0, b->scroll_h - b->h) : 0); }
+static inline float box_scroll_y(const Box *b) { return box_scrollable_y(b) ? b->node->scroll_y + (box_scroll_from_end(b) ? LMAX(0, b->scroll_h - b->h) : 0) : 0; }
 void layout_dump(Box *b, int depth, int maxdepth);
 
 /* internal */

@@ -144,7 +144,7 @@ typedef struct Rule {
     Node *scope;             /* shadow root the rule's sheet lives in, NULL for document sheets */
 } Rule;
 
-typedef struct MediaCtx { float vw, vh, dpr; bool dark; } MediaCtx;
+typedef struct MediaCtx { float vw, vh, dpr; bool dark, root_vertical; } MediaCtx;
 
 typedef struct StyleSheet {
     VEC(Rule) rules;

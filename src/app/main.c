@@ -24,8 +24,10 @@
 #define LUMEN_IOS 1   /* iOS / iPadOS / Mac Catalyst: UIKit shell, touch input */
 #endif
 #include <SDL3/SDL.h>
+#include "viewport.h"
 #ifdef LUMEN_IOS
 #include <SDL3/SDL_main.h>
+#include "touch_contacts.h"
 #endif
 #include "../paint/paint.h"
 #include "../media/media.h"
@@ -131,6 +133,25 @@ static int g_ua;   /* UA_CHROME / UA_FIREFOX / UA_LUMEN */
 static int g_gpu_backend, g_gpu_adapter = -1;   /* Settings > Graphics (GpuBackend, adapter index); applied at startup */
 static const char *g_gpu_active = "CPU";
 static char g_pref[1024];
+/* One profile root for cookies, HSTS, storage, history and settings. An invalid
+   explicit test profile must fail instead of silently reading the user's data. */
+static bool profile_init(void) {
+    const char *override = getenv("LUMEN_PROFILE_DIR");
+    char *pref = override ? NULL : SDL_GetPrefPath("lumen", "Lumen");
+    const char *path = override ? override : pref;
+    size_t len = path ? strlen(path) : 0;
+    if (override && (!len || len + 2 > sizeof g_pref || !SDL_CreateDirectory(path))) {
+        fprintf(stderr, "lumen: cannot use LUMEN_PROFILE_DIR: %s\n", !len ? "empty path" : len + 2 > sizeof g_pref ? "path too long" : SDL_GetError());
+        SDL_free(pref); return false;
+    }
+    if (len && len + 2 <= sizeof g_pref) {
+        memcpy(g_pref, path, len);
+        if (g_pref[len - 1] != '/') g_pref[len++] = '/';
+        g_pref[len] = 0;
+    }
+    SDL_free(pref);
+    return true;
+}
 typedef struct { char *url, *title; } Link;
 #define MAX_BM 512
 #define MAX_HV 1000
@@ -391,6 +412,8 @@ typedef struct Tab { Page *cur; bool loading, relayout; char *hist[256]; uint64_
 typedef struct App {
     SDL_Window *win; SDL_MetalView mview; Gpu *gpu;
     int pw, ph; float scale, vw, vh;
+    UiViewport view;   /* safe content area within the full-size SDL window */
+    SDL_Cursor *cursors[3]; bool cursor_tried[3];
     Canvas frame, page; DisplayList pdl, cdl, hdl;
     struct DSig *osig, *nsig; int nosig, cosig, cnsig; uint64_t chash; bool osig_ok;   /* last page display list, to raster only what changed */
     Tab *t, *tabs[MAX_TABS]; int ntabs, ti;
@@ -405,6 +428,16 @@ typedef struct App {
     int hover; double frame_ms;
     bool vonly, deferred, vframe; double last_input, last_full; float last_sy; uint64_t last_ver; Page *last_page; bool gvid_ok; const void *vown; float vrect[4]; float srect[4]; bool sdirty;   /* srect: viewport rect of element scrollers to repaint */
 } App;
+static bool g_bg;   /* UIKit disallows GPU work while the app is backgrounded. */
+static void text_area(App *a, Node *n);
+#ifdef LUMEN_IOS
+static void touch_cancel(void);
+#endif
+static void set_cursor(App *a, int kind) {
+    static const SDL_SystemCursor ids[] = { SDL_SYSTEM_CURSOR_DEFAULT, SDL_SYSTEM_CURSOR_TEXT, SDL_SYSTEM_CURSOR_POINTER };
+    if (!a->cursor_tried[kind]) { a->cursor_tried[kind] = true; a->cursors[kind] = SDL_CreateSystemCursor(ids[kind]); }
+    if (a->cursors[kind] && SDL_GetCursor() != a->cursors[kind]) SDL_SetCursor(a->cursors[kind]);
+}
 static void publish_gens(App *a) { for (int i = 0; i < MAX_TABS; i++) g_tab_gen[i] = i < a->ntabs ? a->tabs[i]->lgen : 0; }
 static Tab *tab_new(App *a) {
     if (a->ntabs == MAX_TABS) return NULL;
@@ -752,6 +785,7 @@ static float tab_w(App *a) { int v[MAX_TABS], n = ws_tabs(a, a->wi, v); float w 
 static float bar_x0(App *a) { return g_compact ? TLW : a->side; }
 static float url_w(App *a) { return a->vw - bar_x0(a) - 144 - (g_compact ? 92 : 12); }
 static int bar_hit(App *a, float x, float y) {
+    if (x < 0 || y < 0 || x >= a->vw || y >= a->vh) return HB_NONE;
     if (g_compact && y < TB) {
         x -= TLW;
         if (x < 0) return HB_NONE;
@@ -1119,12 +1153,21 @@ static void check_damage(App *a, int pwp, int ph, int x0, int y0, int x1, int y1
 static double g_shot_t0;   /* first frame time, for the LUMEN_SHOT test hook */
 static double shot_left(void) { const char *d = getenv("LUMEN_SHOT_MS"); return g_shot_t0 ? g_shot_t0 + (d ? atof(d) : 1500) - now_ms() : 0; }
 static void render(App *a) {
+    if (g_bg) { a->dirty = true; return; }
     update_compact(a);
     double t0 = now_ms();
-    int bar_px = (int)(BAR * a->scale);
+    int toolbar_px = LMIN((int)(BAR * a->scale), a->view.px_h - 1);
+    int bar_px = a->view.px_y + toolbar_px;
     if (a->frame.w != a->pw || a->frame.h != a->ph) { canvas_free(&a->frame); canvas_init(&a->frame, a->pw, a->ph, a->scale); }
-    int ph = a->ph - bar_px; if (ph < 1) ph = 1;
-    int side_px = (int)(a->side * a->scale), pwp = a->pw - side_px; if (pwp < 1) pwp = 1;
+    a->frame.scale = a->scale;
+    /* Paint chrome directly into a framebuffer subview: safe-area padding adds
+       no full-screen allocation or copy, and the page/GPU share these offsets. */
+    Canvas chrome = a->frame;
+    chrome.px += (size_t)a->view.px_y * (size_t)chrome.stride + a->view.px_x;
+    chrome.w = a->view.px_w; chrome.h = a->view.px_h;
+    int ph = a->view.px_h - toolbar_px; if (ph < 1) ph = 1;
+    int sidebar_px = LMIN((int)(a->side * a->scale), a->view.px_w - 1);
+    int side_px = a->view.px_x + sidebar_px, pwp = a->view.px_w - sidebar_px; if (pwp < 1) pwp = 1;
     int why = !a->vonly ? 1 : !a->t->cur || a->t->cur != a->last_page || !a->t->cur->L ? 2 : a->t->relayout ? 3 : a->t->cur->d->dom_version != a->last_ver ? 4 : 0;
     bool defer = why && why != 2 && !a->t->loading && a->t->cur && a->t->cur->L && t0 - a->last_input > 1000 && t0 - a->last_full < 250 && media_timeout_ms() >= 0 && a->page.w == pwp && a->page.h == ph;
     a->deferred = defer; if (defer) why = 0;
@@ -1132,7 +1175,7 @@ static void render(App *a) {
     bool part = !why;
     int rx0 = pwp, ry0 = ph, rx1 = 0, ry1 = 0;
     if (getenv("LUMEN_DEBUG_PAINT") && (a->page.w != pwp || a->page.h != ph)) fprintf(stderr, "lumen: page canvas resize %dx%d -> %dx%d\n", a->page.w, a->page.h, pwp, ph);
-    if (a->page.w != pwp || a->page.h != ph) { canvas_free(&a->page); canvas_init(&a->page, pwp, ph, a->scale); part = false; a->osig_ok = false; }
+    if (a->page.w != pwp || a->page.h != ph || a->page.scale != a->scale) { canvas_free(&a->page); canvas_init(&a->page, pwp, ph, a->scale); part = false; a->osig_ok = false; }
     bool gskip = false; GpuVideo gvd, *gvp = NULL;
     Image *fast = part && !a->sdirty && a->t->cur && a->gpu && a->gvid_ok && a->t->sy == a->last_sy && a->page.w == pwp && a->page.h == ph ? media_owner_frame(a->vown) : NULL;
     if (a->t->cur && (defer || fast)) {   /* nothing but the video changed, or layout may be stale: only swap the video texture */
@@ -1251,10 +1294,21 @@ static void render(App *a) {
             a->vown = media_owner_of(im); a->vrect[0] = vit->x; a->vrect[1] = vit->y; a->vrect[2] = vit->w; a->vrect[3] = vit->h;
         }
     } else { a->gvid_ok = false; a->osig_ok = false; raster(&a->page, &(DisplayList){0}, RGBA(255, 255, 255, 255)); }
-    if (!part) { build_chrome(a); chrome_tip(a); a->chash = dl_hash(&a->cdl) * 31 + dl_hash(&a->hdl); raster(&a->frame, &a->cdl, RGBA(255, 255, 255, 255)); }
+    if (!part) {
+        build_chrome(a); chrome_tip(a); a->chash = dl_hash(&a->cdl) * 31 + dl_hash(&a->hdl);
+        if (chrome.w != a->frame.w || chrome.h != a->frame.h) {
+            DisplayList empty = {0}; Color bg = RGBA(250, 250, 250, 255);
+            int x = a->view.px_x, y = a->view.px_y, ex = x + chrome.w, ey = y + chrome.h;
+            raster_rect(&a->frame, &empty, bg, 0, 0, a->pw, y);
+            raster_rect(&a->frame, &empty, bg, 0, ey, a->pw, a->ph);
+            raster_rect(&a->frame, &empty, bg, 0, y, x, ey);
+            raster_rect(&a->frame, &empty, bg, ex, y, a->pw, ey);
+        }
+        raster(&chrome, &a->cdl, RGBA(255, 255, 255, 255));
+    }
     if (!gskip) for (int y = part ? ry0 : 0; y < (part ? ry1 : ph) && y + bar_px < a->ph; y++)
         memcpy(a->frame.px + (size_t)(y + bar_px) * (size_t)a->frame.stride + side_px, a->page.px + (size_t)y * (size_t)a->page.stride, (size_t)pwp * 4);
-    if (!gskip && a->hdl.items.n) { float s = a->frame.scale; raster_rect(&a->frame, &a->hdl, RGBA(255, 255, 255, 255), (int)floorf(g_pop[0] * s), (int)floorf(g_pop[1] * s), (int)ceilf(g_pop[2] * s), (int)ceilf(g_pop[3] * s)); }   /* floats over the page */
+    if (!gskip && a->hdl.items.n) { float s = chrome.scale; raster_rect(&chrome, &a->hdl, RGBA(255, 255, 255, 255), (int)floorf(g_pop[0] * s), (int)floorf(g_pop[1] * s), (int)ceilf(g_pop[2] * s), (int)ceilf(g_pop[3] * s)); }   /* floats over the page */
     if (!(a->gpu && gpu_present_frame(a->gpu, a->frame.px, a->frame.w, a->frame.h, a->frame.stride, gskip ? 0 : part ? bar_px + ry0 : 0, gskip ? 0 : part ? bar_px + ry1 : a->frame.h, gvp))) {
         SDL_Surface *ws = SDL_GetWindowSurface(a->win);
         int y0 = gskip ? 0 : part ? bar_px + ry0 : 0, y1 = gskip ? 0 : part ? bar_px + ry1 : a->frame.h;
@@ -1271,8 +1325,11 @@ static void render(App *a) {
             SDL_DestroySurface(src); SDL_UpdateWindowSurface(a->win);
         }
     }
-    if (cap_screen_active() && a->frame.h > bar_px && a->frame.w > side_px)
-        cap_screen_push(a->frame.px + (size_t)bar_px * (size_t)a->frame.stride + side_px, a->frame.w - side_px, a->frame.h - bar_px, a->frame.stride);
+    if (cap_screen_active() && a->frame.h >= bar_px + ph && a->frame.w >= side_px + pwp)
+        cap_screen_push(a->frame.px + (size_t)bar_px * (size_t)a->frame.stride + side_px, pwp, ph, a->frame.stride);
+#ifdef LUMEN_IOS
+    if (SDL_TextInputActive(a->win)) text_area(a, a->editing || !a->t->cur ? NULL : a->t->cur->d->focus);
+#endif
     a->frame_ms = now_ms() - t0;
     if (getenv("LUMEN_SHOT")) {   /* write the presented frame to a PNG after LUMEN_SHOT_MS and exit */
         if (!g_shot_t0) g_shot_t0 = t0;
@@ -1317,9 +1374,14 @@ static bool wheel_scroll(App *a, float x, float y, float dx, float dy) {
     }
     return false;
 }
-static void wheel_apply(App *a, float mx, float my, float dx, float dy) {
-    if (!(my > BAR && mx > a->side && wheel_scroll(a, mx - a->side, my - BAR, dx, dy))) { if (!(a->dirty && !a->vonly)) a->vonly = true; a->t->sy += dy; }
-    a->dirty = true;
+static bool wheel_apply(App *a, float mx, float my, float dx, float dy) {
+    if (mx < a->side || mx >= a->vw || my <= BAR || my >= a->vh) return false;
+    if (wheel_scroll(a, mx - a->side, my - BAR, dx, dy)) return true;
+    float sy = LCLAMP(a->t->sy + dy, 0, max_scroll(a));
+    if (sy == a->t->sy) return false;
+    if (!(a->dirty && !a->vonly)) a->vonly = true;
+    a->t->sy = sy; a->dirty = true;
+    return true;
 }
 static Tab *tab_of_doc(App *a, Document *d) {
     for (int depth = 0; d && depth < 16; depth++) {
@@ -1332,11 +1394,19 @@ static Tab *tab_of_doc(App *a, Document *d) {
 static void update_size(App *a) {
     for (int i = 0; i < a->ntabs; i++) a->tabs[i]->relayout = true;
     int w, h; SDL_GetWindowSize(a->win, &w, &h); SDL_GetWindowSizeInPixels(a->win, &a->pw, &a->ph);
-    a->vw = (float)w; a->vh = (float)h; a->scale = w ? (float)a->pw / (float)w : 1;
+    SDL_Rect safe = { 0, 0, w, h };
 #ifdef LUMEN_IOS
-    if (!a->side_set) a->side = w >= 1000 ? SIDEW : 0;   /* iPad portrait: give pages the full 820pt so sites pick their tablet layout */
+    SDL_GetWindowSafeArea(a->win, &safe);
+    touch_cancel();
 #endif
-    if (a->gpu) gpu_resize(a->gpu, a->pw, a->ph);
+    a->view = ui_viewport(w, h, a->pw, a->ph, safe.x, safe.y, safe.w, safe.h);
+    a->vw = a->view.w; a->vh = a->view.h; a->scale = a->view.scale;
+#ifdef LUMEN_IOS
+    if (!a->side_set) a->side = a->vw >= 1000 ? SIDEW : 0;   /* iPad portrait: give pages the full tablet width */
+#endif
+    g_sm_dx = g_sm_dy = 0;
+    a->vonly = a->gvid_ok = a->osig_ok = false;
+    if (a->gpu && !g_bg) gpu_resize(a->gpu, a->pw, a->ph);
     a->t->relayout = a->dirty = true;
 }
 
@@ -1885,7 +1955,13 @@ static void ctl_set(App *a, Node *n, char *v) {
 static void text_area(App *a, Node *n) {
 #ifdef LUMEN_IOS
     SDL_Rect r = { 0, 0, (int)a->vw, (int)BAR };
-    if (n && n->box) r = (SDL_Rect){ (int)(n->box->x + a->side), (int)(n->box->y - a->t->sy + BAR), (int)n->box->w, (int)n->box->h };
+    float box[4];
+    if (n && jsg_vrect(n, box)) {
+        bool fixed = false;
+        for (Box *b = n->box; b; b = b->abs && b->cb ? b->cb : b->parent) if (b->fixed) { fixed = true; break; }
+        r = (SDL_Rect){ (int)(box[0] + a->side), (int)(box[1] - (fixed ? 0 : a->t->sy) + BAR), (int)LMAX(1, box[2]), (int)LMAX(1, box[3]) };
+    }
+    r.x += (int)a->view.x; r.y += (int)a->view.y;
     SDL_SetTextInputArea(a->win, &r, 0);
 #else
     (void)a; (void)n;
@@ -2368,7 +2444,7 @@ static void tab_popup(App *a, int i, float x, float y) {
 #ifdef __APPLE__
     Tab *t = a->tabs[i]; char def[96];
     if (g_cpu_on) snprintf(def, sizeof def, "Default (over %d%% for %d s \xE2\x86\x92 %d%%)", g_cpu_pct, g_cpu_secs, g_cpu_lim); else snprintf(def, sizeof def, "Default (limit off)");
-    int c = mac_tab_menu(a->win, x, y, t->cpumode, (int)(t->lim * 100 + 0.5f), vctl_on(t), lite_on(t), def);
+    int c = mac_tab_menu(a->win, x + a->view.x, y + a->view.y, t->cpumode, (int)(t->lim * 100 + 0.5f), vctl_on(t), lite_on(t), def);
     if (c == MENU_TAB_VCTL) t->vctl = !vctl_on(t);
     else if (c == MENU_TAB_LITE) t->lite = !lite_on(t);
     else if (c == MENU_TAB_CPU_DEFAULT || c == MENU_TAB_CPU_NEVER) { t->cpumode = c == MENU_TAB_CPU_NEVER; tab_unlimit(t); t->unlimit_until = 0; }
@@ -2380,7 +2456,7 @@ static void tab_popup(App *a, int i, float x, float y) {
 }
 static void ws_popup(App *a, int w, float x, float y) {
 #ifdef __APPLE__
-    int c = mac_ws_menu(a->win, x, y);
+    int c = mac_ws_menu(a->win, x + a->view.x, y + a->view.y);
     if (c >= MENU_WS_ICON) { int ic = c - MENU_WS_ICON; a->wsicon[w] = ic >= MAC_NICONS ? -1 : ic; a->dirty = true; a->vonly = false; }
     else if (c) menu_cmd(a, c);
 #else
@@ -2417,7 +2493,9 @@ static void pick_files(bool multiple, const char *accept) {
 }
 static SDL_HitTestResult win_hit(SDL_Window *w, const SDL_Point *pt, void *ud) {
     (void)w;
-    return pt->y < (g_compact ? TB : TABH) && bar_hit(ud, (float)pt->x, (float)pt->y) == HB_NONE ? SDL_HITTEST_DRAGGABLE : SDL_HITTEST_NORMAL;
+    App *a = ud; float x, y;
+    bool inside = ui_viewport_point(&a->view, (float)pt->x, (float)pt->y, &x, &y);
+    return inside && y < (g_compact ? TB : TABH) && bar_hit(a, x, y) == HB_NONE ? SDL_HITTEST_DRAGGABLE : SDL_HITTEST_NORMAL;
 }
 static void history_go(App *a, int d) {
     int np = a->t->hpos + d; if (np < 0 || np >= a->t->nhist) return;
@@ -2497,29 +2575,43 @@ static void recover_from_crash(App *a, int sig) {
     a->t = act;
 }
 
-static bool g_bg;   /* iOS app in background: no GPU work allowed */
 #ifdef LUMEN_IOS
 /* Touch: one finger pans (with momentum), a short touch is a click, two quick taps a double click. */
-static struct { int n; SDL_FingerID id; float x0, y0, lx, ly, vx, vy; double t0, lt; bool pan; double tap_t; float tap_x, tap_y; } g_tc;
+static TouchContacts g_contacts;
+static struct { float x0, y0, lx, ly, vx, vy; double t0, lt; bool pan; double tap_t; float tap_x, tap_y; } g_tc;
 static struct { float x, y, vx, vy; double t; bool on; } g_fl;
-static void push_mouse(Uint32 type, float x, float y, int clicks, Uint8 btn) {
+static void touch_cancel(void) {
+    touch_contacts_cancel(&g_contacts); memset(&g_tc, 0, sizeof g_tc); g_fl.on = false;
+    g_sm_dx = g_sm_dy = 0;
+    g_press = g_drag = g_epress = false;
+    if (g_down) { node_release(g_down); g_down = NULL; g_down_p = NULL; }
+}
+static void push_mouse(App *a, Uint32 type, float x, float y, int clicks, Uint8 btn) {
+    /* Synthetic mouse events follow SDL's window-coordinate convention. */
+    x += a->view.x; y += a->view.y;
     SDL_Event e; SDL_zero(e); e.type = type;
-    if (type == SDL_EVENT_MOUSE_MOTION) { e.motion.x = x; e.motion.y = y; }
-    else { e.button.button = btn; e.button.x = x; e.button.y = y; e.button.clicks = (Uint8)clicks; e.button.down = type == SDL_EVENT_MOUSE_BUTTON_DOWN; }
+    if (type == SDL_EVENT_MOUSE_MOTION) { e.motion.windowID = SDL_GetWindowID(a->win); e.motion.which = SDL_TOUCH_MOUSEID; e.motion.x = x; e.motion.y = y; }
+    else { e.button.windowID = SDL_GetWindowID(a->win); e.button.which = SDL_TOUCH_MOUSEID; e.button.button = btn; e.button.x = x; e.button.y = y; e.button.clicks = (Uint8)clicks; e.button.down = type == SDL_EVENT_MOUSE_BUTTON_DOWN; }
     SDL_PushEvent(&e);
 }
 static void touch_event(App *a, const SDL_Event *ev) {
-    float x = ev->tfinger.x * a->vw, y = ev->tfinger.y * a->vh; double t = now_ms();
+    float x, y; double t = now_ms();
+    bool inside = ui_viewport_point(&a->view, ev->tfinger.x * a->view.window_w, ev->tfinger.y * a->view.window_h, &x, &y);
+    uint64_t id = (uint64_t)ev->tfinger.fingerID;
     a->last_input = t;
+    if (ev->type == SDL_EVENT_FINGER_CANCELED) { touch_cancel(); return; }
     if (ev->type == SDL_EVENT_FINGER_DOWN) {
         g_fl.on = false;
-        if (g_tc.n++ == 0) { g_tc.id = ev->tfinger.fingerID; g_tc.x0 = g_tc.lx = x; g_tc.y0 = g_tc.ly = y; g_tc.t0 = g_tc.lt = t; g_tc.pan = false; g_tc.vx = g_tc.vy = 0; }
-        else g_tc.pan = true;   /* a second finger: never a tap */
+        if (touch_contacts_down(&g_contacts, id)) {
+            g_tc.x0 = g_tc.lx = x; g_tc.y0 = g_tc.ly = y; g_tc.t0 = g_tc.lt = t; g_tc.pan = false; g_tc.vx = g_tc.vy = 0;
+        }
+        if (!inside) g_contacts.blocked = true;
+        if (g_contacts.blocked) g_tc.tap_t = 0;
         return;
     }
     if (ev->type == SDL_EVENT_FINGER_MOTION) {
-        if (ev->tfinger.fingerID != g_tc.id || !g_tc.n) return;
-        if (!g_tc.pan && hypotf(x - g_tc.x0, y - g_tc.y0) > 8) { g_tc.pan = true; g_tc.lx = g_tc.x0; g_tc.ly = g_tc.y0; }
+        if (id != g_contacts.primary || !g_contacts.n || g_contacts.blocked) return;
+        if (!g_tc.pan && hypotf(x - g_tc.x0, y - g_tc.y0) > 8) { g_tc.pan = true; g_tc.tap_t = 0; g_tc.lx = g_tc.x0; g_tc.ly = g_tc.y0; }
         if (g_tc.pan) {
             float dx = x - g_tc.lx, dy = y - g_tc.ly; double dt = t - g_tc.lt;
             if (dx || dy) wheel_apply(a, g_tc.x0, g_tc.y0, -dx, -dy);
@@ -2528,32 +2620,30 @@ static void touch_event(App *a, const SDL_Event *ev) {
         }
         return;
     }
-    if (g_tc.n > 0) g_tc.n--;
-    if (ev->tfinger.fingerID != g_tc.id) return;
-    g_tc.n = 0;
-    if (ev->type == SDL_EVENT_FINGER_CANCELED) return;
+    if (!touch_contacts_up(&g_contacts, id) || !inside) return;
     if (g_tc.pan) {
         if (t - g_tc.lt < 80 && hypotf(g_tc.vx, g_tc.vy) > 120) { g_fl.on = true; g_fl.x = g_tc.x0; g_fl.y = g_tc.y0; g_fl.vx = g_tc.vx; g_fl.vy = g_tc.vy; g_fl.t = t; }
         return;
     }
     if (t - g_tc.t0 > 500) {   /* long press = right click (context menu) */
         g_tc.tap_t = 0;
-        push_mouse(SDL_EVENT_MOUSE_MOTION, x, y, 0, 0); push_mouse(SDL_EVENT_MOUSE_BUTTON_DOWN, x, y, 1, SDL_BUTTON_RIGHT); push_mouse(SDL_EVENT_MOUSE_BUTTON_UP, x, y, 1, SDL_BUTTON_RIGHT);
+        push_mouse(a, SDL_EVENT_MOUSE_MOTION, x, y, 0, 0); push_mouse(a, SDL_EVENT_MOUSE_BUTTON_DOWN, x, y, 1, SDL_BUTTON_RIGHT); push_mouse(a, SDL_EVENT_MOUSE_BUTTON_UP, x, y, 1, SDL_BUTTON_RIGHT);
         return;
     }
-    int clicks = t - g_tc.tap_t < 350 && hypotf(x - g_tc.tap_x, y - g_tc.tap_y) < 24 ? 2 : 1;
+    int clicks = g_tc.tap_t > 0 && t - g_tc.tap_t < 350 && hypotf(x - g_tc.tap_x, y - g_tc.tap_y) < 24 ? 2 : 1;
     g_tc.tap_t = clicks == 2 ? 0 : t; g_tc.tap_x = x; g_tc.tap_y = y;
-    push_mouse(SDL_EVENT_MOUSE_MOTION, x, y, 0, 0); push_mouse(SDL_EVENT_MOUSE_BUTTON_DOWN, x, y, clicks, SDL_BUTTON_LEFT); push_mouse(SDL_EVENT_MOUSE_BUTTON_UP, x, y, clicks, SDL_BUTTON_LEFT);
+    push_mouse(a, SDL_EVENT_MOUSE_MOTION, x, y, 0, 0); push_mouse(a, SDL_EVENT_MOUSE_BUTTON_DOWN, x, y, clicks, SDL_BUTTON_LEFT); push_mouse(a, SDL_EVENT_MOUSE_BUTTON_UP, x, y, clicks, SDL_BUTTON_LEFT);
 }
 /* Momentum scrolling after a flick, UIScrollView-like deceleration; true while still moving. */
 static bool touch_fling(App *a) {
     if (!g_fl.on) return false;
     double t = now_ms(), dt = t - g_fl.t; g_fl.t = t;
     if (dt <= 0) return true;
+    if (dt > 80) { g_fl.on = false; return false; }   /* a paused/resumed run loop must not jump the page */
     float dec = powf(0.998f, (float)dt);
     float dx = g_fl.vx * (float)dt / 1000, dy = g_fl.vy * (float)dt / 1000;
     g_fl.vx *= dec; g_fl.vy *= dec;
-    if (fabsf(dx) >= 0.01f || fabsf(dy) >= 0.01f) wheel_apply(a, g_fl.x, g_fl.y, dx, dy);
+    if ((fabsf(dx) >= 0.01f || fabsf(dy) >= 0.01f) && !wheel_apply(a, g_fl.x, g_fl.y, dx, dy)) g_fl.on = false;
     if (hypotf(g_fl.vx, g_fl.vy) < 20) g_fl.on = false;
     return g_fl.on;
 }
@@ -2598,14 +2688,15 @@ int main(int argc, char **argv) {
     SDL_SetHint(SDL_HINT_FRAMEBUFFER_ACCELERATION, "0");
 #endif
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) { fprintf(stderr, "SDL_Init: %s\n", SDL_GetError()); return 1; }
+    if (!profile_init()) { SDL_Quit(); return 1; }
     dom_init(); net_init(6); font_init(); css_sheet_added_hook = sheet_fonts;
     icache_mu = SDL_CreateMutex(); EV_LOADED = SDL_RegisterEvents(1); EV_DL = SDL_RegisterEvents(1); js_save_file = download_save; EV_NET = SDL_RegisterEvents(1); EV_MENU = SDL_RegisterEvents(1);
     net_wakeup = wake; media_wakeup = wake; js_wakeup = wake; js_clip_set = h_clip_set; js_clip_get = h_clip_get; js_global_init(argv[0]);
     paint_image_hook = node_img; paint_url_image_hook = url_img; svg_ext_ref_hook = svg_ext_ref; layout_image_size_hook = img_size;
     App a; memset(&a, 0, sizeof a); g_app = &a; a.nws = 1; a.wsicon[0] = 2; snprintf(a.wsname[0], sizeof a.wsname[0], "Personal"); a.side = getenv("LUMEN_NO_SIDEBAR") ? 0 : SIDEW; tab_new(&a);
     {
-        char *pref = SDL_GetPrefPath("lumen", "Lumen"); char sp[1024] = "";
-        if (pref) { snprintf(g_pref, sizeof g_pref, "%s", pref); js_set_profile_dir(g_pref); snprintf(sp, sizeof sp, "%ssettings.txt", pref); SDL_free(pref); }
+        char sp[1200] = "";
+        if (*g_pref) { js_set_profile_dir(g_pref); pref_path(sp, sizeof sp, "settings.txt"); }
         FILE *sf = *sp ? fopen(sp, "r") : NULL; char line[256];
         while (sf && fgets(line, sizeof line, sf)) {
             char k[64]; int v; if (sscanf(line, "%63[^=]=%d", k, &v) != 2) continue;
@@ -2658,8 +2749,8 @@ int main(int argc, char **argv) {
     }
     fprintf(stderr, "lumen: presenting with %s\n", gpu_backend_name(a.gpu));
     a.ui = font_get("system-ui", 400, false, 13.5f);
-    char cookie_path[1024] = "", hsts_path[1024] = "";
-    { char *pref = SDL_GetPrefPath("lumen", "Lumen"); if (pref) { snprintf(cookie_path, sizeof cookie_path, "%scookies.txt", pref); snprintf(hsts_path, sizeof hsts_path, "%shsts.txt", pref); SDL_free(pref); cookies_load(cookie_path); hsts_load(hsts_path); } }
+    char cookie_path[1200] = "", hsts_path[1200] = "";
+    if (*g_pref) { pref_path(cookie_path, sizeof cookie_path, "cookies.txt"); pref_path(hsts_path, sizeof hsts_path, "hsts.txt"); cookies_load(cookie_path); hsts_load(hsts_path); }
     double cookies_saved_at = now_ms();
     navigate(&a, start, true);
     for (int i = 2; i < argc; i++) { Tab *nt = tab_new(&a); if (!nt) break; a.t = nt; navigate(&a, argv[i], true); }
@@ -2755,23 +2846,34 @@ int main(int argc, char **argv) {
 #endif
             if (a.t->loading) a.dirty = true; }
         else do {
+            bool pointer_inside = true;
+            if (ev.type == SDL_EVENT_MOUSE_MOTION) pointer_inside = ui_viewport_point(&a.view, ev.motion.x, ev.motion.y, &ev.motion.x, &ev.motion.y);
+            else if (ev.type == SDL_EVENT_MOUSE_BUTTON_DOWN || ev.type == SDL_EVENT_MOUSE_BUTTON_UP) pointer_inside = ui_viewport_point(&a.view, ev.button.x, ev.button.y, &ev.button.x, &ev.button.y);
+            else if (ev.type == SDL_EVENT_MOUSE_WHEEL) pointer_inside = ui_viewport_point(&a.view, ev.wheel.mouse_x, ev.wheel.mouse_y, &ev.wheel.mouse_x, &ev.wheel.mouse_y);
             bool wheel0 = ev.type == SDL_EVENT_MOUSE_WHEEL && !ev.wheel.x && !ev.wheel.y;
             if ((ev.type >= SDL_EVENT_KEY_DOWN && ev.type <= SDL_EVENT_TEXT_INPUT) || (ev.type >= SDL_EVENT_MOUSE_MOTION && ev.type <= SDL_EVENT_MOUSE_WHEEL && !wheel0)) a.last_input = now_ms();
             if (ev.type != EV_NET && ev.type != SDL_EVENT_MOUSE_WHEEL && !(ev.type >= SDL_EVENT_FINGER_DOWN && ev.type <= SDL_EVENT_FINGER_CANCELED)) a.vonly = false;
             js_key_mods = key_mods(SDL_GetModState());
             { SDL_MouseButtonFlags mb = SDL_GetMouseState(NULL, NULL); js_buttons = (mb & SDL_BUTTON_LMASK ? 1 : 0) | (mb & SDL_BUTTON_RMASK ? 2 : 0) | (mb & SDL_BUTTON_MMASK ? 4 : 0); }
+            if (ev.type == SDL_EVENT_MOUSE_BUTTON_DOWN || ev.type == SDL_EVENT_MOUSE_BUTTON_UP) {
+                int b = ev.button.button == SDL_BUTTON_LEFT ? 1 : ev.button.button == SDL_BUTTON_RIGHT ? 2 : ev.button.button == SDL_BUTTON_MIDDLE ? 4 : 0;
+                if (ev.type == SDL_EVENT_MOUSE_BUTTON_DOWN) js_buttons |= b; else js_buttons &= ~b;
+            }
             switch (ev.type) {
             case SDL_EVENT_QUIT: quit = true; break;
-            case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: case SDL_EVENT_WINDOW_RESIZED: update_size(&a); break;
+            case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: case SDL_EVENT_WINDOW_RESIZED:
+            case SDL_EVENT_WINDOW_SAFE_AREA_CHANGED: case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED: update_size(&a); break;
             case SDL_EVENT_WINDOW_EXPOSED: a.dirty = true; break;
 #ifdef LUMEN_IOS
             case SDL_EVENT_FINGER_DOWN: case SDL_EVENT_FINGER_MOTION: case SDL_EVENT_FINGER_UP: case SDL_EVENT_FINGER_CANCELED: touch_event(&a, &ev); break;
-            case SDL_EVENT_WILL_ENTER_BACKGROUND: js_ls_flush(true); if (*cookie_path) { cookies_save(cookie_path); hsts_save(hsts_path); cookies_saved_at = now_ms(); } break;
+            case SDL_EVENT_WINDOW_FOCUS_LOST: touch_cancel(); cmd = false; break;
+            case SDL_EVENT_WILL_ENTER_BACKGROUND: g_bg = true; touch_cancel(); js_ls_flush(true); if (*cookie_path) { cookies_save(cookie_path); hsts_save(hsts_path); cookies_saved_at = now_ms(); } break;
             case SDL_EVENT_DID_ENTER_BACKGROUND: g_bg = true; break;
             case SDL_EVENT_WILL_ENTER_FOREGROUND: case SDL_EVENT_DID_ENTER_FOREGROUND: g_bg = false; update_size(&a); a.dirty = true; a.vonly = false; break;
             case SDL_EVENT_LOW_MEMORY: g_lowmem = media_lowmem = true; a.dirty = true; break;   /* Lite mode drops off-screen images/media */
 #endif
             case SDL_EVENT_MOUSE_WHEEL: {
+                if (!pointer_inside) break;
                 /* whole-number deltas come from a mouse wheel: one fixed step per notch; fractional ones from a trackpad */
                 bool notch = ev.wheel.x == roundf(ev.wheel.x) && ev.wheel.y == roundf(ev.wheel.y);
                 float k = notch ? WHEEL_STEP : 40, wdx = ev.wheel.x * k, wdy = -ev.wheel.y * k;
@@ -2784,15 +2886,22 @@ int main(int argc, char **argv) {
             }
             case SDL_EVENT_MOUSE_MOTION: {
                 int h = bar_hit(&a, ev.motion.x, ev.motion.y); if (h != a.hover) { a.hover = h; a.dirty = true; }
-                if (!h && ev.motion.y > BAR && ev.motion.x > a.side) page_move(&a, ev.motion.x - a.side, ev.motion.y - BAR);
+                if (pointer_inside && !h && ev.motion.y > BAR && ev.motion.x > a.side) page_move(&a, ev.motion.x - a.side, ev.motion.y - BAR);
                 else if (a.t->cur && page_hover(a.t->cur, NULL)) restyle(&a);
                 if (g_press && (ev.motion.state & SDL_BUTTON_LMASK)) sel_drag(&a, ev.motion.x, ev.motion.y);
                 else if (g_epress && (ev.motion.state & SDL_BUTTON_LMASK)) edit_drag(&a, ev.motion.x, ev.motion.y);
-                SDL_SetCursor(SDL_CreateSystemCursor(h == HB_URL ? SDL_SYSTEM_CURSOR_TEXT : over_link(&a, ev.motion.x, ev.motion.y) || (h && h != HB_URL) ? SDL_SYSTEM_CURSOR_POINTER : SDL_SYSTEM_CURSOR_DEFAULT));
+                set_cursor(&a, h == HB_URL ? 1 : pointer_inside && (over_link(&a, ev.motion.x, ev.motion.y) || h) ? 2 : 0);
                 break; }
             case SDL_EVENT_WINDOW_MOUSE_LEAVE: if (a.t->cur && page_hover(a.t->cur, NULL)) restyle(&a); break;
-            case SDL_EVENT_MOUSE_BUTTON_UP: if (ev.button.button == SDL_BUTTON_LEFT) { g_press = g_drag = false; click_release(&a, ev.button.x, ev.button.y); } break;
+            case SDL_EVENT_MOUSE_BUTTON_UP:
+                if (ev.button.button == SDL_BUTTON_LEFT) {
+                    g_press = g_drag = g_epress = false;
+                    if (pointer_inside) click_release(&a, ev.button.x, ev.button.y);
+                    else if (g_down) { node_release(g_down); g_down = NULL; g_down_p = NULL; }
+                }
+                break;
             case SDL_EVENT_MOUSE_BUTTON_DOWN:
+                if (!pointer_inside) break;
                 if (ev.button.button == SDL_BUTTON_RIGHT && bar_hit(&a, ev.button.x, ev.button.y) == HB_NEWTAB) { ws_popup(&a, a.wi, ev.button.x, ev.button.y); break; }   /* long-press "+": workspace menu (bar may be hidden) */
                 if (ev.button.button != SDL_BUTTON_LEFT) break;
                 { int bh = bar_hit(&a, ev.button.x, ev.button.y);
@@ -2953,6 +3062,7 @@ int main(int argc, char **argv) {
     for (int i = 0; i < a.ntabs; i++) if (a.tabs[i]->cur) page_free(a.tabs[i]->cur);
     gpu_destroy(a.gpu);
     if (a.mview) SDL_Metal_DestroyView(a.mview);
+    for (int i = 0; i < 3; i++) SDL_DestroyCursor(a.cursors[i]);
     SDL_DestroyWindow(a.win); SDL_Quit();
     return 0;
 }

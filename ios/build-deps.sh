@@ -9,7 +9,8 @@ PLAT=${1:?plat}; shift || true
 MIN=${IOS_MIN:-16.0}
 SRC=${DEPS_SRC:-~/src/deps}
 PREFIX=${PREFIX:-~/ios-deps/$PLAT}
-J=$(sysctl -n hw.ncpu)
+J=${JOBS:-3}
+case $J in *[!0-9]*|""|0) echo "JOBS must be a positive integer" >&2; exit 2;; esac
 case $PLAT in
   ios) SDKN=iphoneos; TRIPLE=arm64-apple-ios$MIN; OSSL=ios64-xcrun; CMSYS=iOS; MESYS=ios; WGPU=wgpu-ios-aarch64-release;;
   sim) SDKN=iphonesimulator; TRIPLE=arm64-apple-ios$MIN-simulator; OSSL=iossimulator-arm64-xcrun; CMSYS=iOS; MESYS=ios; WGPU=wgpu-ios-aarch64-simulator-release;;
@@ -21,8 +22,8 @@ CC="$(xcrun -f clang)"; CXX="$(xcrun -f clang++)"
 TF="-target $TRIPLE -isysroot $SDK"
 [ $PLAT = cat ] && TF="$TF -iframework $SDK/System/iOSSupport/System/Library/Frameworks -isystem $SDK/System/iOSSupport/usr/include"
 export CFLAGS="$TF -O2" CXXFLAGS="$TF -O2" LDFLAGS="$TF"
-mkdir -p $PREFIX/{lib,include,lib/pkgconfig} ~/ios-deps/build/$PLAT
-B=~/ios-deps/build/$PLAT
+B=${DEPS_BUILD_DIR:-$HOME/ios-deps/build/$PLAT}
+mkdir -p "$PREFIX"/{lib,include,lib/pkgconfig} "$B"
 CMK=(-DCMAKE_SYSTEM_NAME=$CMSYS -DCMAKE_OSX_SYSROOT=$SDK -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX
      -DCMAKE_C_FLAGS="$TF" -DCMAKE_CXX_FLAGS="$TF" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$PREFIX -DCMAKE_PREFIX_PATH=$PREFIX
      -DCMAKE_FIND_ROOT_PATH=$PREFIX -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ONLY -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY
@@ -75,13 +76,13 @@ dep_harfbuzz() {
   meson_cross; rm -rf $B/harfbuzz
   meson setup $B/harfbuzz $SRC/harfbuzz-11.2.1 --cross-file $B/meson-cross.txt --prefix=$PREFIX --libdir=lib --default-library=static --buildtype=release \
     -Dfreetype=enabled -Dglib=disabled -Dgobject=disabled -Dcairo=disabled -Dicu=disabled -Dcoretext=disabled -Dtests=disabled -Ddocs=disabled -Dutilities=disabled -Dintrospection=disabled --wrap-mode=nofallback
-  ninja -C $B/harfbuzz && ninja -C $B/harfbuzz install
+  ninja -j$J -C $B/harfbuzz && ninja -j$J -C $B/harfbuzz install
 }
 dep_dav1d() {
   meson_cross; rm -rf $B/dav1d
   meson setup $B/dav1d $SRC/dav1d-1.5.1 --cross-file $B/meson-cross.txt --prefix=$PREFIX --libdir=lib --default-library=static --buildtype=release \
     -Denable_tools=false -Denable_tests=false -Denable_examples=false
-  ninja -C $B/dav1d && ninja -C $B/dav1d install
+  ninja -j$J -C $B/dav1d && ninja -j$J -C $B/dav1d install
 }
 dep_ffmpeg() {
   rm -rf $B/ffmpeg && mkdir -p $B/ffmpeg && cd $B/ffmpeg
@@ -98,7 +99,7 @@ dep_sdl() { cm sdl $SRC/SDL3-3.4.16 $([ $PLAT = cat ] && echo -DCMAKE_SYSTEM_NAM
 dep_wgpu() {
   if [ -z "$WGPU" ]; then   # Mac Catalyst: no prebuilt; build wgpu-native from source (rustup target add aarch64-apple-ios-macabi)
     local w=${WGPU_SRC:-$HOME/src/wgpu-native}
-    (cd $w && PATH=$HOME/.rustup/toolchains/stable-aarch64-apple-darwin/bin:$PATH RUSTUP_TOOLCHAIN=stable cargo build --release --target aarch64-apple-ios-macabi) || return 1
+    (cd $w && PATH=$HOME/.rustup/toolchains/stable-aarch64-apple-darwin/bin:$PATH RUSTUP_TOOLCHAIN=stable cargo build -j$J --release --target aarch64-apple-ios-macabi) || return 1
     cp $w/ffi/webgpu-headers/webgpu.h $w/ffi/wgpu.h $PREFIX/include/
     cp $w/target/aarch64-apple-ios-macabi/release/libwgpu_native.a $PREFIX/lib/
     return

@@ -1,0 +1,40 @@
+<!doctype html><title>Unmuted media pause and resume</title>
+<video id="v" controls playsinline></video>
+<pre id="result">Waiting for media</pre>
+<script>
+const video = document.getElementById('v');
+const lines = [];
+const report = (name, ok, detail = '') => {
+    const line = name + ':' + (ok ? 'PASS' : 'FAIL') + (detail ? ' ' + detail : '');
+    lines.push(line); result.textContent = lines.join('\n');
+    console.log('RESULTS pause-resume ' + line);
+};
+let started = false;
+video.addEventListener('error', () => report('load', false));
+video.addEventListener('canplay', async () => {
+    if (started) return;
+    started = true;
+    await video.play();
+    console.log('PHASE pause-resume playing');
+    setTimeout(() => {
+        report('initial-playback', video.currentTime > 0.3);
+        video.pause();
+        const pausedAt = video.currentTime;
+        console.log('PHASE pause-resume paused (six seconds for CPU/RSS sampling)');
+        setTimeout(async () => {
+            report('paused-clock', video.paused && Math.abs(video.currentTime - pausedAt) < 0.03);
+            await video.play();
+            console.log('PHASE pause-resume resumed');
+            setTimeout(() => {
+                report('resume', !video.paused && video.currentTime > pausedAt + 0.25);
+                video.pause();
+                video.removeAttribute('src'); video.load();
+                report('release', video.readyState === 0 && video.paused);
+                console.log('PHASE pause-resume released');
+            }, 700);
+        }, 6000);
+    }, 800);
+});
+video.src = 'test.mp4';
+setTimeout(() => { if (!started) report('load-timeout', false); }, 5000);
+</script>

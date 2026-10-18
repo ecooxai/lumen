@@ -219,7 +219,7 @@ static void build(BState *bs, Box *parent, Node *n, int *li) {
     const ComputedStyle *hs = L->doc->html ? L->doc->html->style : NULL;
     bool to_viewport = n == L->doc->html || (n == L->doc->body && (!hs || (hs->overflow_x == OV_VISIBLE && hs->overflow_y == OV_VISIBLE)));
     b->scroller = !to_viewport && (st->overflow_x != OV_VISIBLE || st->overflow_y != OV_VISIBLE);
-    b->bfc = b->abs || b->floated || atomic || b->scroller || st->display == D_FLOW_ROOT || st->display == D_TABLE_CELL || st->display == D_TABLE_CAPTION || n == L->doc->html;
+    b->bfc = b->abs || b->floated || atomic || box_scrollable_x(b) || box_scrollable_y(b) || st->display == D_FLOW_ROOT || st->display == D_TABLE_CELL || st->display == D_TABLE_CAPTION || n == L->doc->html;
     switch (st->display) {
     case D_FLEX: case D_INLINE_FLEX: b->fmt = FMT_FLEX; break;
     case D_GRID: case D_INLINE_GRID: b->fmt = FMT_GRID; break;

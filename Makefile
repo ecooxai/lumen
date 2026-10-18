@@ -71,6 +71,9 @@ OBJ = $(patsubst %,$(BUILD)/%.o,$(1))
 
 all: $(BUILD)/lumen
 
+# Test assertions must remain active even in release builds.
+$(BUILD)/tests/%.c.o: CFLAGS += -UNDEBUG
+
 $(BUILD)/%.c.o: %.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -MMD -c $< -o $@
@@ -96,9 +99,15 @@ $(BUILD)/test_url: $(call OBJ,tests/test_url.c $(BASE_SRC))
 $(BUILD)/test_net: $(call OBJ,tests/test_net.c $(BASE_SRC) src/net/cookies.c src/net/hsts.c src/net/referrer.c src/net/csp.c)
 	$(CC) $(OPT) $^ -o $@ $(NETLIBS)
 
-test: $(BUILD)/test_url $(BUILD)/test_net
+test: $(BUILD)/test_url $(BUILD)/test_net $(BUILD)/test_css_viewport $(BUILD)/test_overflow_clip $(BUILD)/test_app_viewport $(BUILD)/test_touch_contacts $(BUILD)/test_media_lifecycle $(BUILD)/test_worker_lifecycle
 	$(BUILD)/test_url
 	$(BUILD)/test_net
+	$(BUILD)/test_css_viewport
+	$(BUILD)/test_overflow_clip
+	$(BUILD)/test_app_viewport
+	$(BUILD)/test_touch_contacts
+	$(BUILD)/test_media_lifecycle
+	$(BUILD)/test_worker_lifecycle
 
 # iOS app bundle: flat .app with the binary, Info.plist, ICU data, CA bundle and icon; ad-hoc signed (re-sign to sideload).
 # Mac Catalyst uses the macOS layout (Contents/MacOS, Contents/Resources). JIT=1 links the JIT V8 and signs with
@@ -163,3 +172,21 @@ $(BUILD)/src/js/worker.cc.o: CXXFLAGS += -fno-rtti
 $(BUILD)/src/js/js.cc.o: CXXFLAGS += -I$(BUILD)/src/js
 $(BUILD)/jsrun: $(call OBJ,tests/jsrun.c $(CORE_SRC) $(JS_SRC))
 	$(CXX) $(OPT) $^ -o $@ $(LIBS)
+
+$(BUILD)/test_css_viewport: $(call OBJ,tests/test_css_viewport.c $(CSS_TEST_SRC))
+	$(CC) $(OPT) $^ -o $@ $(NETLIBS)
+
+$(BUILD)/test_overflow_clip: $(call OBJ,tests/test_overflow_clip.c $(CORE_SRC) $(JS_SRC))
+	$(CXX) $(OPT) $^ -o $@ $(LIBS)
+
+$(BUILD)/test_media_lifecycle: $(call OBJ,tests/test_media_lifecycle.c $(filter-out src/media/media.c,$(CORE_SRC)) $(JS_SRC))
+	$(CXX) $(OPT) $^ -o $@ $(LIBS)
+
+$(BUILD)/tests/test_worker_lifecycle.cc.o: CXXFLAGS += -fno-rtti -UNDEBUG
+$(BUILD)/test_worker_lifecycle: $(call OBJ,tests/test_worker_lifecycle.cc $(CORE_SRC) $(filter-out src/js/worker.cc,$(JS_SRC)))
+	$(CXX) $(OPT) $^ -o $@ $(LIBS)
+
+$(BUILD)/test_app_viewport: $(call OBJ,tests/test_app_viewport.c)
+	$(CC) $(OPT) $^ -o $@ -lm
+$(BUILD)/test_touch_contacts: $(call OBJ,tests/test_touch_contacts.c)
+	$(CC) $(OPT) $^ -o $@

@@ -11,13 +11,40 @@ static UIViewController *root_vc(SDL_Window *w) {
 }
 static SDL_Window *g_win;
 
+/* iPad action sheets also dismiss by tapping outside the popover (or Escape on
+   Mac). That path does not invoke a UIAlertAction, so it must end the modal loop. */
+@interface LumenModalDismissObserver : NSObject <UIPopoverPresentationControllerDelegate, UIAdaptivePresentationControllerDelegate>
+@property(nonatomic, assign) volatile int *done;
+@end
+@implementation LumenModalDismissObserver
+- (void)popoverPresentationControllerDidDismissPopover:(UIPopoverPresentationController *)popoverPresentationController {
+    (void)popoverPresentationController; if (self.done && !*self.done) *self.done = 2;
+}
+- (void)presentationControllerDidDismiss:(UIPresentationController *)presentationController {
+    (void)presentationController; if (self.done && !*self.done) *self.done = 2;
+}
+@end
+
 /* Runs the UIKit run loop until the presented controller reports a result (SDL's loop is on this thread). */
 static int run_modal(UIViewController *vc, UIAlertController *ac, float x, float y, volatile int *done) {
-    if (!vc) return 0;
+    if (!vc || !vc.view.window || vc.isBeingDismissed) return 0;
+    __attribute__((objc_precise_lifetime)) LumenModalDismissObserver *observer = [LumenModalDismissObserver new];
+    observer.done = done;
     UIPopoverPresentationController *pop = ac.popoverPresentationController;
-    if (pop) { pop.sourceView = vc.view; pop.sourceRect = CGRectMake(x, y, 1, 1); }
+    if (pop) {
+        CGPoint p = [vc.view convertPoint:CGPointMake(x, y) fromView:vc.view.window];
+        CGRect bounds = vc.view.bounds;
+        p.x = MAX(CGRectGetMinX(bounds), MIN(p.x, CGRectGetMaxX(bounds) - 1));
+        p.y = MAX(CGRectGetMinY(bounds), MIN(p.y, CGRectGetMaxY(bounds) - 1));
+        pop.sourceView = vc.view; pop.sourceRect = CGRectMake(p.x, p.y, 1, 1); pop.delegate = observer;
+    }
+    ac.presentationController.delegate = observer;
     [vc presentViewController:ac animated:YES completion:nil];
-    while (!*done) CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, true);
+    while (!*done) {
+        CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, true);
+        if (!*done && !ac.presentingViewController && !ac.isBeingPresented) *done = 2;
+    }
+    observer.done = NULL;
     return *done;
 }
 

@@ -31,6 +31,7 @@ struct Worker {
     std::mutex mu; std::condition_variable cv;
     std::deque<Buf> in; std::deque<OutMsg> out;
     std::atomic<bool> term{false};
+    bool accepting = true;  /* protected by mu; close() stops incoming tasks without aborting the current task */
     v8::Isolate *iso = nullptr;
     std::atomic<size_t> heap{0}, ext{0};
 };
@@ -106,7 +107,21 @@ v8::Local<v8::ArrayBuffer> make_ab(v8::Isolate *iso, const char *p, size_t n) {
 /* ---- worker thread ---- */
 WEnv *wenv(v8::Isolate *iso) { return static_cast<WEnv *>(iso->GetData(kEnvSlot)); }
 
-void post_out(WEnv *E, OutMsg &&m) { { std::lock_guard<std::mutex> lk(E->w->mu); E->w->out.push_back(std::move(m)); } wake(); }
+/* Caller holds mu. Pending serializer buffers own native allocations, not V8
+ * handles, so they must be released even when no worker thread remains. */
+void close_input_locked(Worker *w) {
+    w->accepting = false;
+    for (Buf &b : w->in) free(b.p);
+    w->in.clear();
+}
+void post_out(WEnv *E, OutMsg &&m) {
+    {
+        std::lock_guard<std::mutex> lk(E->w->mu);
+        if (E->w->term) { free(m.data.p); return; }
+        E->w->out.push_back(std::move(m));
+    }
+    wake();
+}
 
 /* An uncaught worker exception: the worker's own onerror/listeners may handle it, else it goes to the Worker object */
 void werr(WEnv *E, v8::Local<v8::Value> exc, v8::Local<v8::Message> m) {
@@ -159,7 +174,11 @@ WFN(timer) {
     a.GetReturnValue().Set(id);
 }
 WFN(clear) { WENV; E->timers.erase(a[0]->Uint32Value(ctx).FromMaybe(0)); }
-WFN(close) { WENV; E->closing = true; }
+WFN(close) {
+    WENV; E->closing = true;
+    std::lock_guard<std::mutex> lk(E->w->mu);
+    close_input_locked(E->w.get());
+}
 WFN(now) { WENV; a.GetReturnValue().Set(now_ms() - E->t0); }
 WFN(log) { WENV; if (getenv("LUMEN_CONSOLE")) fprintf(stderr, "[worker %d] %.2000s\n", a[0]->Int32Value(ctx).FromMaybe(1), jcstr(iso, a[1]).c_str()); }
 WFN(decode) {
@@ -623,10 +642,10 @@ void worker_main(std::shared_ptr<Worker> w) {
     {
         std::lock_guard<std::mutex> lk(w->mu);
         w->iso = nullptr;
-        for (Buf &b : w->in) free(b.p);
-        w->in.clear();
+        close_input_locked(w.get());
     }
     iso->Dispose();
+    w->heap = 0; w->ext = 0;
     delete E;
 }
 
@@ -693,6 +712,7 @@ void *worker_thread(void *p) {
 void worker_terminate(Worker *w) {
     std::lock_guard<std::mutex> lk(w->mu);
     w->term = true;
+    close_input_locked(w);
     if (w->iso) w->iso->TerminateExecution();
     for (OutMsg &m : w->out) free(m.data.p);
     w->out.clear();
@@ -719,11 +739,18 @@ void n_workerNew(const FCI &a) {
 void n_workerPost(const FCI &a) {
     v8::Isolate *iso = a.GetIsolate(); v8::Local<v8::Context> ctx = iso->GetCurrentContext();
     auto it = g_workers.find(a[0]->Uint32Value(ctx).FromMaybe(0));
+    /* Serialization invokes getters; one can call terminate() and erase the
+     * registry entry. Keep the Worker alive, never retain an iterator across JS. */
+    std::shared_ptr<Worker> w = it == g_workers.end() ? nullptr : it->second;
     Buf b;
     if (!ser(iso, ctx, a[1], b)) return;
-    if (it == g_workers.end() || it->second->term) { free(b.p); return; }
-    Worker *w = it->second.get();
-    { std::lock_guard<std::mutex> lk(w->mu); w->in.push_back(b); }
+    if (!w) { free(b.p); return; }
+    {
+        std::lock_guard<std::mutex> lk(w->mu);
+        /* Recheck under the queue lock: close/exit may race serialization. */
+        if (w->term || !w->accepting) { free(b.p); return; }
+        w->in.push_back(std::move(b));
+    }
     w->cv.notify_all();
 }
 void n_workerTerm(const FCI &a) {

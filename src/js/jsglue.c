@@ -61,7 +61,8 @@ bool jsg_scroll(Node *n, float r[4]) {
 bool jsg_set_scroll(Node *n, float x, float y) {
     struct Box *b = n->box;
     if (!b || !b->scroller) return false;
-    float maxx = LMAX(0, b->scroll_w - b->w), maxy = LMAX(0, b->scroll_h - b->h);
+    float maxx = box_scrollable_x(b) ? LMAX(0, b->scroll_w - b->w) : 0;
+    float maxy = box_scrollable_y(b) ? LMAX(0, b->scroll_h - b->h) : 0;
     float nx = isnan(x) ? n->scroll_x : LCLAMP(x, 0, maxx);
     float ny = isnan(y) ? n->scroll_y : box_scroll_from_end(b) ? LCLAMP(y, -maxy, 0) : LCLAMP(y, 0, maxy);
     if (nx == n->scroll_x && ny == n->scroll_y) return false;

@@ -62,6 +62,37 @@ bool net_url_same_site(const char *ua, const char *ub) {
 
 static void cookie_free(Cookie *c) { free(c->name); free(c->value); free(c->domain); free(c->path); }
 
+/* Keep request-header order in the jar: longest path first, then oldest cookie.
+   Insertion/deletion is uncommon compared with reads, so avoid sorting every request. */
+static void cookie_insert(Cookie c) {
+    int at = 0, n = g_jar.n; size_t len = strlen(c.path);
+    while (at < n && strlen(g_jar.v[at].path) >= len) at++;
+    vec_push(g_jar, c);
+    memmove(g_jar.v + at + 1, g_jar.v + at, (size_t)(n - at) * sizeof c);
+    g_jar.v[at] = c;
+}
+static void cookies_prune(double now) {
+    int n = 0;
+    for (int i = 0; i < g_jar.n; i++) {
+        Cookie *c = &g_jar.v[i];
+        if (c->expires >= 0 && c->expires <= now) { cookie_free(c); g_dirty = true; }
+        else g_jar.v[n++] = *c;
+    }
+    g_jar.n = n;
+}
+
+static bool parse_max_age(const char *s, double now, double *expires) {
+    const char *p = s;
+    if (*p == '-') p++;
+    if (!*p) return false;
+    for (; *p; p++) if (*p < '0' || *p > '9') return false;
+    /* strtoll saturates on overflow; unlike atof it cannot turn malformed data
+       into Max-Age=0 and discard an otherwise valid session cookie. */
+    long long age = strtoll(s, NULL, 10);
+    *expires = age <= 0 ? 0 : now + (double)age;
+    return true;
+}
+
 static double parse_http_date(const char *s) {
     struct tm tm = {0}; char mon[4] = {0}; int d, y, H, M, S;
     static const char *mons = "JanFebMarAprMayJunJulAugSepOctNovDec";
@@ -75,6 +106,7 @@ static double parse_http_date(const char *s) {
 }
 
 static void set_cookie(const char *host, const char *rpath, const char *sc, bool from_http, bool cross_site) {
+    double now = (double)time(NULL);
     char *s = xstrdup(sc);
     char *semi = strchr(s, ';'); if (semi) *semi = 0;
     char *eq = strchr(s, '=');
@@ -92,7 +124,7 @@ static void set_cookie(const char *host, const char *rpath, const char *sc, bool
         else if (str_ieq(an, "secure")) c.secure = true;
         else if (str_ieq(an, "httponly")) c.http_only = true;
         else if (str_ieq(an, "samesite")) c.same_site = str_ieq(av, "none") ? SS_NONE : str_ieq(av, "strict") ? SS_STRICT : str_ieq(av, "lax") ? SS_LAX : SS_UNSET;
-        else if (str_ieq(an, "max-age")) c.expires = (double)time(NULL) + atof(av);
+        else if (str_ieq(an, "max-age")) parse_max_age(av, now, &c.expires);
         else if (str_ieq(an, "expires") && c.expires < 0) { double t = parse_http_date(av); if (t) c.expires = t; }
         attrs = next;
     }
@@ -111,14 +143,24 @@ static void set_cookie(const char *host, const char *rpath, const char *sc, bool
     if (!strncmp(c.name, "__Secure-", 9) && !c.secure) { cookie_free(&c); return; }
     if (!strncmp(c.name, "__Host-", 7) && (!c.secure || !c.host_only || strcmp(c.path, "/"))) { cookie_free(&c); return; }
     pthread_mutex_lock(&g_mu);
+    cookies_prune(now);
     for (int i = 0; i < g_jar.n; i++) {
         Cookie *o = &g_jar.v[i];
         if (!strcmp(o->name, c.name) && !strcmp(o->domain, c.domain) && !strcmp(o->path, c.path)) {
             if (!from_http && o->http_only) { pthread_mutex_unlock(&g_mu); cookie_free(&c); return; }
-            cookie_free(o); g_jar.v[i] = g_jar.v[--g_jar.n]; break;
+            cookie_free(o);
+            if (c.expires < 0 || c.expires > now) *o = c;   /* retain creation order on replacement */
+            else {
+                cookie_free(&c);
+                memmove(o, o + 1, (size_t)(g_jar.n - i - 1) * sizeof *o);
+                g_jar.n--;
+            }
+            g_dirty = true;
+            pthread_mutex_unlock(&g_mu);
+            return;
         }
     }
-    if (c.expires < 0 || c.expires > (double)time(NULL)) vec_push(g_jar, c); else cookie_free(&c);
+    if (c.expires < 0 || c.expires > now) cookie_insert(c); else cookie_free(&c);
     g_dirty = true;
     pthread_mutex_unlock(&g_mu);
 }
@@ -130,9 +172,9 @@ char *cookies_get(const URL *u, bool for_http, bool cross_site) {
     double now = (double)time(NULL);
     bool secure = !strcmp(u->scheme, "https") || !strcmp(u->scheme, "wss");
     pthread_mutex_lock(&g_mu);
+    cookies_prune(now);
     for (int i = 0; i < g_jar.n; i++) {
         Cookie *c = &g_jar.v[i];
-        if (c->expires >= 0 && c->expires < now) continue;
         if (c->host_only ? strcmp(u->host, c->domain) : !domain_match(u->host, c->domain)) continue;
         if (!path_match(u->path ? u->path : "/", c->path)) continue;
         if (c->secure && !secure) continue;
@@ -170,22 +212,23 @@ void cookies_load(const char *path) {
         for (char *p = line; n < 9; n++) { fld[n] = p; char *t = strchr(p, '\t'); if (!t) { n++; break; } *t = 0; p = t + 1; }
         if (n != 8 && n != 9) continue;
         Cookie c = { xstrdup(fld[6]), xstrdup(fld[7]), xstrdup(fld[0]), xstrdup(fld[2]), fld[1][0] == '1', fld[3][0] == '1', fld[4][0] == '1', atof(fld[5]), n == 9 ? atoi(fld[8]) : SS_UNSET };
-        if (c.expires >= 0 && c.expires < now) { cookie_free(&c); continue; }
-        vec_push(g_jar, c);
+        if (!c.path[0] || c.path[0] != '/' || (c.expires >= 0 && c.expires <= now)) { cookie_free(&c); continue; }
+        cookie_insert(c);
     }
     pthread_mutex_unlock(&g_mu);
     fclose(f);
 }
 bool cookies_save(const char *path) {
     pthread_mutex_lock(&g_mu);
+    double now = (double)time(NULL);
+    cookies_prune(now);
     if (!g_dirty) { pthread_mutex_unlock(&g_mu); return true; }
     char tmp[4096]; snprintf(tmp, sizeof tmp, "%s.tmp", path);
     FILE *f = fopen(tmp, "w");
     if (!f) { pthread_mutex_unlock(&g_mu); return false; }
-    double now = (double)time(NULL);
     for (int i = 0; i < g_jar.n; i++) {
         Cookie *c = &g_jar.v[i];
-        if ((c->expires >= 0 && c->expires < now) || strpbrk(c->name, "\t\n") || strpbrk(c->value, "\t\n")) continue;
+        if (strpbrk(c->name, "\t\n") || strpbrk(c->value, "\t\n")) continue;
         fprintf(f, "%s\t%d\t%s\t%d\t%d\t%.0f\t%s\t%s\t%d\n", c->domain, c->host_only, c->path, c->secure, c->http_only, c->expires, c->name, c->value, c->same_site);
     }
     bool ok = fclose(f) == 0 && rename(tmp, path) == 0;

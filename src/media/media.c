@@ -59,7 +59,7 @@ struct MediaPlayer {
     double duration;
     uint64_t epoch; double target; bool seeking;
     bool playing, ended, waiting, error; char err[160];
-    bool expect_audio, audio_failed, a_live; SDL_AudioStream *dev;   /* a_live: the device has started pulling samples */
+    bool expect_audio, audio_failed, a_live, a_running; SDL_AudioStream *dev;   /* a_live: the device has started pulling samples */
     float volume; bool muted;
     double aclock, base_t, base_wall;
     int aq; /* bytes queued in the SDL stream, sampled by audio_cb (the stream lock must not be taken under mu) */
@@ -435,7 +435,6 @@ static bool decode_pkt(Stream *s, DecCtx *d, AVCodecContext *cc, AVPacket *pkt, 
     }
     return true;
 }
-static void open_audio(MediaPlayer *m);
 /* returns 0: epoch change/quit, 1: eof, 2: reopen with a new init segment, -1: error */
 static int run_demux(Stream *s, DecCtx *d, double start) {
     MediaPlayer *m = s->m; int ret = -1;
@@ -456,7 +455,7 @@ static int run_demux(Stream *s, DecCtx *d, double start) {
     if (vi < 0 && ai < 0) goto done;
     SDL_LockMutex(m->mu);
     s->has_video = vi >= 0; s->has_audio = ai >= 0; s->opened = true;
-    if (s->has_audio && s->progressive) { m->expect_audio = true; if (m->playing) open_audio(m); }
+    if (s->has_audio && s->progressive) m->expect_audio = true;   /* main-thread media_tick opens/resumes the device */
     if (vi >= 0 && !m->w) { m->w = fc->streams[vi]->codecpar->width; m->h = fc->streams[vi]->codecpar->height; }
     if (s->progressive && isnan(m->duration) && fc->duration > 0) m->duration = (double)fc->duration / AV_TIME_BASE;
     SDL_UnlockMutex(m->mu); wake();
@@ -529,6 +528,9 @@ static void SDLCALL audio_cb(void *ud, SDL_AudioStream *as, int additional, int 
     (void)total; MediaPlayer *m = ud; int frames = additional / 8;
     float buf[2048];
     SDL_LockMutex(m->mu);
+    /* SDL supplies silence on underrun. After a pause/end, do not keep filling
+     * the queue with silent buffers: the existing audio tail needs to drain. */
+    if (!m->playing || m->quit) { m->aq = SDL_GetAudioStreamQueued(as); SDL_UnlockMutex(m->mu); return; }
     float g = m->muted ? 0 : m->volume;
     while (frames > 0) {
         int k = frames < 1024 ? frames : 1024, w = 0;
@@ -554,7 +556,25 @@ static void open_audio(MediaPlayer *m) {
     m->a_live = false;
     m->dev = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, audio_cb, m);
     if (!m->dev) { m->audio_failed = true; return; }
-    SDL_ResumeAudioStreamDevice(m->dev);
+    /* OpenAudioDeviceStream returns a paused device. Resume outside mu. */
+    m->a_running = false;
+}
+/* Media-player lifecycle calls and media_tick run on the main thread. Decoder
+ * threads only announce metadata and wake it; they never create/resume devices.
+ * SDL operations can lock the stream, while audio_cb locks that stream before
+ * mu, so pause/resume/queue queries must happen after releasing mu. */
+static void sync_audio_device(MediaPlayer *m, bool drain) {
+    SDL_LockMutex(m->mu);
+    if (m->playing && m->expect_audio && !m->quit) open_audio(m);
+    SDL_AudioStream *dev = m->dev;
+    bool playing = m->playing && !m->quit, running = m->a_running;
+    SDL_UnlockMutex(m->mu);
+    if (!dev || playing == running) return;
+    if (!playing && drain && SDL_GetAudioStreamQueued(dev) > 0) return;
+    bool ok = playing ? SDL_ResumeAudioStreamDevice(dev) : SDL_PauseAudioStreamDevice(dev);
+    SDL_LockMutex(m->mu);
+    if (ok) m->a_running = playing;
+    SDL_UnlockMutex(m->mu);
 }
 
 /* ---------------- Web Audio: pages push interleaved stereo float at OUT_RATE ---------------- */
@@ -678,9 +698,10 @@ int mp_add_buffer(MediaPlayer *m, const char *mime) {
     if (media_can_play(mime, true) == 0) return -1;
     SDL_LockMutex(m->mu);
     Stream *s = new_stream(m, mime, false);
-    if (s && strncmp(mime, "audio/", 6) == 0) { m->expect_audio = true; if (m->playing) open_audio(m); }
+    if (s && strncmp(mime, "audio/", 6) == 0) m->expect_audio = true;
     int r = s ? m->nst - 1 : -1;
     SDL_UnlockMutex(m->mu);
+    sync_audio_device(m, false);
     return r;
 }
 static bool mdbg(void) { static int v = -1; if (v < 0) v = getenv("LUMEN_MEDIA_DEBUG") != NULL; return v; }
@@ -780,6 +801,7 @@ void mp_set_duration(MediaPlayer *m, double d) { SDL_LockMutex(m->mu); m->durati
 /* the audio clock drives playback only once the device actually consumes samples (device start-up can take seconds) */
 static bool aud_live(const MediaPlayer *m) { return m->expect_audio && m->dev && m->a_live; }
 static double clock_of(MediaPlayer *m) {
+    if (!m->playing) return m->base_t;
     if (aud_live(m)) {
         double lat = (double)m->aq / 8.0 / OUT_RATE;
         double t = m->aclock - lat; return t < 0 ? 0 : t;
@@ -793,13 +815,15 @@ void mp_play(MediaPlayer *m) {
     SDL_LockMutex(m->mu);
     if (m->ended) { m->ended = false; SDL_UnlockMutex(m->mu); mp_seek(m, 0); SDL_LockMutex(m->mu); }
     if (!m->playing) { m->base_wall = now_ms(); m->playing = true; }
-    if (m->expect_audio) open_audio(m);
     SDL_UnlockMutex(m->mu);
+    sync_audio_device(m, false);
 }
 void mp_pause(MediaPlayer *m) {
     SDL_LockMutex(m->mu);
     if (m->playing) { m->base_t = clock_of(m); m->playing = false; }
     SDL_UnlockMutex(m->mu);
+    /* A flag alone leaves SDL calling audio_cb to produce silence forever. */
+    sync_audio_device(m, false);
 }
 void mp_seek(MediaPlayer *m, double t) {
     SDL_LockMutex(m->mu);
@@ -819,11 +843,10 @@ void mp_seek(MediaPlayer *m, double t) {
 void mp_set_volume(MediaPlayer *m, float v, bool muted) {
     SDL_LockMutex(m->mu);
     m->volume = v;
-    /* unmuting a playing stream that never opened a device: open it; the wall clock runs until it is live */
-    bool reopen = m->muted && !muted && !m->dev && m->expect_audio && m->playing && !m->audio_failed;
     m->muted = muted;
-    if (reopen) open_audio(m);
     SDL_UnlockMutex(m->mu);
+    /* Unmuting a playing stream that never opened a device: open/resume it. */
+    sync_audio_device(m, false);
 }
 void mp_state(MediaPlayer *m, MpState *o) {
     SDL_LockMutex(m->mu);
@@ -840,8 +863,14 @@ void mp_free(MediaPlayer *m) {
     SDL_LockMutex(g_mu);
     for (int i = 0; i < g_np; i++) if (g_pl[i] == m) { g_pl[i] = g_pl[--g_np]; break; }
     SDL_UnlockMutex(g_mu);
-    if (m->dev) SDL_DestroyAudioStream(m->dev);
-    SDL_LockMutex(m->mu); m->quit = true; SDL_BroadcastCondition(m->cv); SDL_UnlockMutex(m->mu);
+    SDL_LockMutex(m->mu);
+    m->quit = true; m->playing = false; m->a_running = false;
+    SDL_AudioStream *dev = m->dev; m->dev = NULL;
+    SDL_BroadcastCondition(m->cv);
+    SDL_UnlockMutex(m->mu);
+    /* Stop producers before destroying the device; a pending metadata fetch
+     * or decode must observe teardown before its next playback update. */
+    if (dev) SDL_DestroyAudioStream(dev);
     for (int i = 0; i < m->nst; i++) {
         Stream *s = m->st[i];
         SDL_WaitThread(s->th, NULL);
@@ -903,6 +932,8 @@ int media_tick(void) {
         }
         if (popped) { SDL_BroadcastCondition(m->cv); if (!media_vis_track || (double)SDL_GetTicks() - m->painted < 1000) out |= 1; if (m->cur && (m->cur->w != ow || m->cur->h != oh)) { out |= 2; if (getenv("LUMEN_DEBUG_PAINT")) fprintf(stderr, "media: size %p %dx%d -> %dx%d\n", (void *)m, ow, oh, m->cur->w, m->cur->h); } }
         SDL_UnlockMutex(m->mu);
+        /* Natural end lets the final queued samples play before suspending. */
+        sync_audio_device(m, true);
     }
     SDL_UnlockMutex(g_mu);
     return out;
@@ -920,6 +951,10 @@ int media_timeout_ms(void) {
             /* off-screen: frames aren't painted, so only keep the clock/timeupdate ticking */
             if (media_vis_track && !m->seeking && (double)SDL_GetTicks() - m->painted >= 1000) t = 250;
             if (to < 0 || t < to) to = t;
+        } else if (m->dev && m->a_running) {
+            /* Only the finite audio tail remains; stop this deadline as soon
+             * as media_tick observes an empty queue and suspends the device. */
+            if (to < 0 || to > 20) to = 20;
         }
         SDL_UnlockMutex(m->mu);
     }

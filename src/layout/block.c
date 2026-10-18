@@ -291,7 +291,8 @@ static void post(Layout *L, Box *b, float cbw, float cbh, float clipx, float cli
         for (Box *c = b->first; c; c = c->next) { r = LMAX(r, c->x + c->w + c->m[1]); btm = LMAX(btm, c->y + c->h + c->m[2]); }
         for (int i = 0; i < b->nfrags; i++) { r = LMAX(r, b->frags[i].x + b->frags[i].w); btm = LMAX(btm, b->frags[i].y + b->frags[i].h); }
         b->scroll_w = r - b->x; b->scroll_h = btm - b->y + b->p[2];
-        float maxx = LMAX(0, b->scroll_w - b->w), maxy = LMAX(0, b->scroll_h - b->h);
+        float maxx = box_scrollable_x(b) ? LMAX(0, b->scroll_w - b->w) : 0;
+        float maxy = box_scrollable_y(b) ? LMAX(0, b->scroll_h - b->h) : 0;
         b->node->scroll_x = LCLAMP(b->node->scroll_x, 0, maxx); b->node->scroll_y = box_scroll_from_end(b) ? LCLAMP(b->node->scroll_y, -maxy, 0) : LCLAMP(b->node->scroll_y, 0, maxy);
         /* abs children of a column-reverse scroller are placed against its scroll origin, which is the end */
         if (box_scroll_from_end(b) && maxy > 0) for (Box *x = b->abs_head; x; x = x->abs_next) box_translate(x, 0, maxy);

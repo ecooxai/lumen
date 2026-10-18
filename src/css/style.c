@@ -200,12 +200,19 @@ static bool parse_dim(const char **pp, Length *out, LCtx *c) {
     else if (!strcmp(u, "q")) l.px = v * 96 / 101.6f;
     else if (!strcmp(u, "vw") || !strcmp(u, "svw") || !strcmp(u, "lvw") || !strcmp(u, "dvw")) l.px = v * (c->mc ? c->mc->vw : 1024) / 100;
     else if (!strcmp(u, "vh") || !strcmp(u, "svh") || !strcmp(u, "lvh") || !strcmp(u, "dvh")) l.px = v * (c->mc ? c->mc->vh : 768) / 100;
+    /* vi/vb use the root writing mode, independent of the styled element.
+       Lumen's viewport is the available page area; small/large/dynamic variants
+       currently share it, as the existing svh/lvh/dvh units do. */
+    else if (!strcmp(u, "vi") || !strcmp(u, "svi") || !strcmp(u, "lvi") || !strcmp(u, "dvi"))
+        l.px = v * (c->mc ? (c->mc->root_vertical ? c->mc->vh : c->mc->vw) : 1024) / 100;
+    else if (!strcmp(u, "vb") || !strcmp(u, "svb") || !strcmp(u, "lvb") || !strcmp(u, "dvb"))
+        l.px = v * (c->mc ? (c->mc->root_vertical ? c->mc->vw : c->mc->vh) : 768) / 100;
     else if (!strcmp(u, "cqw") || !strcmp(u, "cqi")) l.px = v * cq_dim(c, 0) / 100;
     else if (!strcmp(u, "cqh") || !strcmp(u, "cqb")) l.px = v * cq_dim(c, 1) / 100;
     else if (!strcmp(u, "cqmin")) l.px = v * LMIN(cq_dim(c, 0), cq_dim(c, 1)) / 100;
     else if (!strcmp(u, "cqmax")) l.px = v * LMAX(cq_dim(c, 0), cq_dim(c, 1)) / 100;
-    else if (!strcmp(u, "vmin")) l.px = v * LMIN(c->mc ? c->mc->vw : 1024, c->mc ? c->mc->vh : 768) / 100;
-    else if (!strcmp(u, "vmax")) l.px = v * LMAX(c->mc ? c->mc->vw : 1024, c->mc ? c->mc->vh : 768) / 100;
+    else if (!strcmp(u, "vmin") || !strcmp(u, "svmin") || !strcmp(u, "lvmin") || !strcmp(u, "dvmin")) l.px = v * LMIN(c->mc ? c->mc->vw : 1024, c->mc ? c->mc->vh : 768) / 100;
+    else if (!strcmp(u, "vmax") || !strcmp(u, "svmax") || !strcmp(u, "lvmax") || !strcmp(u, "dvmax")) l.px = v * LMAX(c->mc ? c->mc->vw : 1024, c->mc ? c->mc->vh : 768) / 100;
     else if (!strcmp(u, "fr")) { l.px = v; }
     else if (!strcmp(u, "deg") || !strcmp(u, "s") || !strcmp(u, "ms")) l.px = v;
     else return false;
@@ -1618,6 +1625,12 @@ void style_recalc(StyleEngine *e, Node *root, bool force) {
     if (e->idx_dirty) { idx_build(e); force = true; }
     e->stats_matched = e->stats_paint = 0;
     recalc(e, root, NULL, force);
+    bool vertical = e->doc->html && e->doc->html->style && e->doc->html->style->writing_mode;
+    if (e->media.root_vertical != vertical) {
+        e->media.root_vertical = vertical;
+        /* A root writing-mode change affects viewport units across the document. */
+        recalc(e, &e->doc->node, NULL, true);
+    }
 }
 ComputedStyle *style_for_text(Node *t) { Node *p = t->parent; while (p && p->type != NODE_ELEMENT) p = p->parent ? p->parent : p->host; return p ? p->style : NULL; }
 

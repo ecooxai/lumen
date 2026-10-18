@@ -1,5 +1,6 @@
 /* Cookie SameSite/prefix rules, site comparison and HSTS (no network). */
 #include "../src/net/net.h"
+#include <unistd.h>
 static int fails;
 #define CHECK(c) do { if (!(c)) { printf("FAIL %s:%d %s\n", __FILE__, __LINE__, #c); fails++; } } while (0)
 static bool has(const char *jar, const char *name) { return jar && strstr(jar, name); }
@@ -33,6 +34,67 @@ int main(void) {
     CHECK(has(d, "none=1") && !has(d, "lax=1")); free(d);
     d = cookies_get_document("https://a.example/", "https://www.a.example/");
     CHECK(has(d, "lax=1")); free(d);
+
+    {   /* A more specific session cookie must precede an older root-path cookie. */
+        const char *url = "https://cookie-order.test/auth/login/callback";
+        set(url, "sid=root; Path=/", false);
+        set(url, "sid=auth; Path=/auth", false);
+        set(url, "sid=login; Path=/auth/login", false);
+        char *r = get(url, false);
+        CHECK(r && !strcmp(r, "sid=login; sid=auth; sid=root")); free(r);
+        set(url, "sid=auth2; Path=/auth", false);
+        r = get(url, false);
+        CHECK(r && !strcmp(r, "sid=login; sid=auth2; sid=root")); free(r);
+        r = get("https://cookie-order.test/authentic", false);
+        CHECK(r && !strcmp(r, "sid=root")); free(r);
+    }
+    {   /* Replacement and deletion preserve creation order for equal-length paths. */
+        const char *url = "https://cookie-age.test/";
+        set(url, "first=1; Path=/", false);
+        set(url, "second=2; Path=/", false);
+        set(url, "third=3; Path=/", false);
+        set(url, "first=updated; Path=/", false);
+        char *r = get(url, false);
+        CHECK(r && !strcmp(r, "first=updated; second=2; third=3")); free(r);
+        set(url, "first=deleted; Path=/; Max-Age=0", false);
+        r = get(url, false);
+        CHECK(r && !strcmp(r, "second=2; third=3")); free(r);
+    }
+    {   /* Malformed Max-Age attributes are ignored, not interpreted as deletion. */
+        const char *url = "https://cookie-expiry.test/";
+        set(url, "invalid=session; Max-Age=not-a-number", false);
+        set(url, "empty=session; Max-Age=", false);
+        set(url, "future=retained; Expires=Wed, 21 Oct 2037 07:28:00 GMT; Max-Age=invalid", false);
+        set(url, "future_first=retained; Max-Age=invalid; Expires=Wed, 21 Oct 2037 07:28:00 GMT", false);
+        set(url, "duplicate=retained; Max-Age=3600; Max-Age=invalid", false);
+        char *r = get(url, false);
+        CHECK(has(r, "invalid=session") && has(r, "empty=session"));
+        CHECK(has(r, "future=retained") && has(r, "future_first=retained") && has(r, "duplicate=retained")); free(r);
+        set(url, "negative=deleted; Max-Age=-1", false);
+        set(url, "zero=deleted; Max-Age=0; Expires=Wed, 21 Oct 2037 07:28:00 GMT", false);
+        r = get(url, false);
+        CHECK(!has(r, "negative=") && !has(r, "zero=")); free(r);
+    }
+    {   /* Older profiles may store cookies in arbitrary path order. */
+        char path[4096]; const char *tmp = getenv("TMPDIR");
+        snprintf(path, sizeof path, "%s/lumen-cookie-tests-XXXXXX", tmp && *tmp ? tmp : "/tmp");
+        int fd = mkstemp(path); CHECK(fd >= 0);
+        if (fd >= 0) {
+            FILE *f = fdopen(fd, "w"); CHECK(f != NULL);
+            if (f) {
+                fputs("cookie-load.test\t1\t/\t1\t0\t-1\tsid\troot\t0\n"
+                      "cookie-load.test\t1\t/auth\t1\t0\t-1\tsid\tauth\t0\n"
+                      "cookie-load.test\t1\t/auth\t1\t0\t-1\tother\tvalue\t0\n"
+                      "cookie-load.test\t1\t\t1\t0\t-1\tbadpath\tignored\t0\n"
+                      "cookie-load.test\t1\t/\t1\t0\t1\texpired\tignored\t0\n", f);
+                CHECK(fclose(f) == 0);
+                cookies_load(path);
+                char *r = get("https://cookie-load.test/auth/callback", false);
+                CHECK(r && !strcmp(r, "sid=auth; other=value; sid=root")); free(r);
+            } else close(fd);
+            unlink(path);
+        }
+    }
 
     URL u; url_parse("https://secure.test/", &u);
     hsts_note(&u, "max-age=31536000; includeSubDomains"); url_free(&u);

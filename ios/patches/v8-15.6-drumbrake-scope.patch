@@ -1,0 +1,11 @@
+--- a/src/debug/debug-wasm-objects.cc
++++ b/src/debug/debug-wasm-objects.cc
+@@ -774,6 +774,8 @@
+ #if V8_ENABLE_DRUMBRAKE
+ class DebugWasmInterpreterScopeIterator final : public debug::ScopeIterator {
+  public:
++  bool DeclaresLocals() override { return false; }
++
+   explicit DebugWasmInterpreterScopeIterator(WasmInterpreterEntryFrame* frame)
+       : frame_(frame), type_(debug::ScopeIterator::ScopeTypeModule) {
+     // TODO(paolosev@microsoft.com) -  Enable local scopes and expression stack
