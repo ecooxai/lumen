@@ -26,11 +26,13 @@
 #include <SDL3/SDL.h>
 #include "viewport.h"
 #include "present_retry.h"
+#include "control_edit.h"
 #ifdef LUMEN_IOS
 #include <SDL3/SDL_main.h>
 #include "touch_contacts.h"
 #endif
 #include "../paint/paint.h"
+#include "../paint/control.h"
 #include "../media/media.h"
 #include "../net/net.h"
 #include "../base/url.h"
@@ -266,7 +268,7 @@ static bool img_size(Node *n, float *w, float *h) {
     }
     *w = image_css_w(im); *h = image_css_h(im); return true; }
 
-typedef struct { char *url; uint64_t gen; float vw, vh; char *body; size_t blen; char *ctype; char *html; char *ref; } LoadReq;
+typedef struct { char *url; uint64_t gen; MediaCtx media; char *body; size_t blen; char *ctype; char *html; char *ref; } LoadReq;
 
 /* Downloads go to $LUMEN_DOWNLOAD_DIR, $XDG_DOWNLOAD_DIR or ~/Downloads; existing files are never overwritten */
 static char g_last_download[1024];
@@ -378,7 +380,7 @@ static int loader(void *arg) {
         } else { sc.src = node_text_content(n); sc.len = strlen(sc.src); sc.name = xstrdup(p->url); }
         p->scripts = xrealloc(p->scripts, sizeof *p->scripts * (size_t)(p->nscripts + 1)); p->scripts[p->nscripts++] = sc;
     }
-    p->e = style_engine_new(p->d); p->e->media.vw = rq->vw; p->e->media.vh = rq->vh;
+    p->e = style_engine_new(p->d); p->e->media = rq->media;
     for (Node *n = p->d->node.first; n; n = node_next_deep(n, &p->d->node)) {
         if (!gen_live(rq->gen)) break;
         if (n->type != NODE_ELEMENT) continue;
@@ -421,6 +423,7 @@ typedef struct App {
     SDL_Window *win; SDL_MetalView mview; Gpu *gpu;
     int pw, ph; float scale, vw, vh;
     UiViewport view;   /* safe content area within the full-size SDL window */
+    DeviceInfo device; /* refreshed on native size/display/input changes; no UIKit queries from JS getters */
     PresentRetry present_retry;
     SDL_Cursor *cursors[3]; bool cursor_tried[3];
     Canvas frame, page; DisplayList pdl, cdl, hdl;
@@ -430,7 +433,7 @@ typedef struct App {
     int wsicon[16]; Image *icimg[16][2];
     Image *sym[8][4]; bool vbars;
     int tip_tab; double tip_until;     /* CPU-limit dot tooltip pinned by a click */
-    bool editing; int sel_all, page_sel;
+    bool editing; int sel_all;
     double caret_t;
     bool dirty;
     Font *ui;
@@ -438,6 +441,18 @@ typedef struct App {
     bool vonly, deferred, vframe; double last_input, last_full; float last_sy; uint64_t last_ver; Page *last_page; bool gvid_ok; const void *vown; float vrect[4]; float srect[4]; bool sdirty;   /* srect: viewport rect of element scrollers to repaint */
 } App;
 static bool g_bg;   /* UIKit disallows GPU work while the app is backgrounded. */
+/* Return 1 for viewport size changes, 2 for other media changes. Styles must be
+   current before resize/matchMedia callbacks ask for layout or computed style. */
+static int page_media(App *a, Page *p, float w, float h) {
+    if (!p || !p->e) return 0;
+    MediaCtx *m = &p->e->media;
+    bool resized = m->vw != w || m->vh != h;
+    bool touch = a->device.max_touch_points > 0;
+    if (!resized && m->dpr == a->scale && m->touch == touch && m->any_fine == a->device.any_fine) return 0;
+    m->vw = w; m->vh = h; m->dpr = a->scale; m->touch = touch; m->any_fine = a->device.any_fine;
+    style_recalc(p->e, &p->d->node, true); p->frelayout = true;
+    return resized ? 1 : 2;
+}
 static void text_area(App *a, Node *n);
 #ifdef LUMEN_IOS
 static void touch_cancel(void);
@@ -722,7 +737,10 @@ static void navigate_ex(App *a, const char *url, bool push, const char *body, si
     }
     snprintf(a->t->url, sizeof a->t->url, "%s", u);
     a->editing = false; a->t->loading = true; a->dirty = true;
-    LoadReq *rq = xcalloc(1, sizeof *rq); rq->url = u; rq->ref = ref; rq->html = html; rq->gen = ++load_gen; rq->vw = a->vw - a->side; rq->vh = a->vh - BAR; a->t->lgen = rq->gen; publish_gens(a);
+    LoadReq *rq = xcalloc(1, sizeof *rq); rq->url = u; rq->ref = ref; rq->html = html; rq->gen = ++load_gen;
+    rq->media = (MediaCtx){ .vw = a->vw - a->side, .vh = a->vh - BAR, .dpr = a->scale,
+        .touch = a->device.max_touch_points > 0, .any_fine = a->device.any_fine };
+    a->t->lgen = rq->gen; publish_gens(a);
     if (push) a->t->hgen[a->t->hpos] = rq->gen;
     if (body) { rq->body = xmalloc(blen + 1); memcpy(rq->body, body, blen); rq->body[blen] = 0; rq->blen = blen; rq->ctype = xstrdup(ctype ? ctype : ""); }
     SDL_Thread *t = SDL_CreateThread(loader, "loader", rq); SDL_DetachThread(t);
@@ -1210,8 +1228,8 @@ static void render(App *a) {
     } else if (a->t->cur) {
         if (a->t->relayout || !a->t->cur->L) {
             if (!a->t->cur->L) a->t->cur->L = layout_new();
-            { MediaCtx *m = &a->t->cur->e->media; float nw = a->vw - a->side, nh = a->vh - BAR;
-              if (m->vw != nw || m->vh != nh) { m->vw = nw; m->vh = nh; style_recalc(a->t->cur->e, &a->t->cur->d->node, true); if (a->t->cur->js) js_viewport_changed(a->t->cur->js); } }
+            { int changed = page_media(a, a->t->cur, a->vw - a->side, a->vh - BAR);
+              if (changed && a->t->cur->js) { if (changed == 1) js_viewport_changed(a->t->cur->js); else js_device_changed(a->t->cur->js); } }
             { double q = now_ms(); layout_run(a->t->cur->L, a->t->cur->d, a->vw - a->side, a->vh - BAR); g_tl += now_ms() - q; }
             a->t->relayout = false;
         }
@@ -1417,6 +1435,46 @@ static Tab *tab_of_doc(App *a, Document *d) {
     }
     return NULL;
 }
+static void update_device(App *a) {
+    DeviceInfo d; memset(&d, 0, sizeof d);
+    SDL_GetWindowSize(a->win, &d.outer_w, &d.outer_h);
+    SDL_DisplayID id = SDL_GetDisplayForWindow(a->win);
+    SDL_Rect bounds = {0, 0, d.outer_w, d.outer_h}, usable;
+    if (id) SDL_GetDisplayBounds(id, &bounds);
+    usable = bounds; if (id) SDL_GetDisplayUsableBounds(id, &usable);
+    d.screen_w = bounds.w; d.screen_h = bounds.h; d.avail_w = usable.w; d.avail_h = usable.h;
+    d.any_fine = true;
+    d.orientation = bounds.w > bounds.h ? DEVICE_LANDSCAPE_PRIMARY : DEVICE_PORTRAIT_PRIMARY;
+    SDL_DisplayOrientation natural = id ? SDL_GetNaturalDisplayOrientation(id) : SDL_ORIENTATION_UNKNOWN;
+    bool landscape = natural == SDL_ORIENTATION_LANDSCAPE || natural == SDL_ORIENTATION_LANDSCAPE_FLIPPED;
+    switch (id ? SDL_GetCurrentDisplayOrientation(id) : SDL_ORIENTATION_UNKNOWN) {
+    case SDL_ORIENTATION_PORTRAIT: d.orientation = DEVICE_PORTRAIT_PRIMARY; d.angle = landscape ? 270 : 0; break;
+    case SDL_ORIENTATION_PORTRAIT_FLIPPED: d.orientation = DEVICE_PORTRAIT_SECONDARY; d.angle = landscape ? 90 : 180; break;
+    case SDL_ORIENTATION_LANDSCAPE: d.orientation = DEVICE_LANDSCAPE_PRIMARY; d.angle = landscape ? 0 : 90; break;
+    case SDL_ORIENTATION_LANDSCAPE_FLIPPED: d.orientation = DEVICE_LANDSCAPE_SECONDARY; d.angle = landscape ? 180 : 270; break;
+    default: break;
+    }
+#ifdef LUMEN_IOS
+    ios_device_info(a->win, &d);
+#endif
+    bool changed = memcmp(&a->device, &d, sizeof d) != 0;
+    a->device = d;
+    int changes[MAX_TABS] = {0}; JsCtx *contexts[MAX_TABS] = {0}; int count = a->ntabs;
+    /* Update every media context before dispatch: a parent listener can query a
+       child or remove its iframe. JS propagation skips contexts removed by it. */
+    for (int i = 0; i < count; i++) {
+        Page *p = a->tabs[i]->cur;
+        if (!p) continue;
+        a->tabs[i]->relayout = true;
+        changes[i] = page_media(a, p, a->vw - a->side, a->vh - BAR); contexts[i] = p->js;
+    }
+    for (Page *p = g_frames; p; p = p->fnext) page_media(a, p, p->fw, p->fh);
+    for (int i = 0; i < count; i++) if (contexts[i]) {
+        if (changes[i] == 1) js_viewport_changed(contexts[i]);
+        else if (changes[i] || changed) js_device_changed(contexts[i]);
+    }
+    if (changed) { a->dirty = true; a->vonly = false; }
+}
 static void update_size(App *a) {
     present_retry_clear(&a->present_retry);
     for (int i = 0; i < a->ntabs; i++) a->tabs[i]->relayout = true;
@@ -1431,6 +1489,7 @@ static void update_size(App *a) {
 #ifdef LUMEN_IOS
     if (!a->side_set) a->side = a->vw >= 1000 ? SIDEW : 0;   /* iPad portrait: give pages the full tablet width */
 #endif
+    update_device(a);
     g_sm_dx = g_sm_dy = 0;
     a->vonly = a->gvid_ok = a->osig_ok = false;
     if (a->gpu && !g_bg) gpu_resize(a->gpu, a->pw, a->ph);
@@ -1630,7 +1689,7 @@ static bool frame_restyle(Page *p) {
 static void frame_layout(Page *p) {
     if (!p->frelayout && p->L) return;
     if (!p->L) p->L = layout_new();
-    p->e->media.vw = p->fw; p->e->media.vh = p->fh;
+    page_media(g_app, p, p->fw, p->fh);
     layout_run(p->L, p->d, p->fw, p->fh);
     p->fsy = isfinite(p->fsy) ? LCLAMP(p->fsy, 0, LMAX(0, p->L->doc_h - p->fh)) : 0;
     p->L->scroll_x = 0; p->L->scroll_y = p->fsy;
@@ -1642,8 +1701,9 @@ static bool frame_update(Page *p) {
     if (!b || !(p->frame_el->flags & NF_CONNECTED)) return false;
     float w = b->w - (b->b[1] + b->b[3] + b->p[1] + b->p[3]), h = b->h - (b->b[0] + b->b[2] + b->p[0] + b->p[2]);
     if (w < 1 || h < 1) return false;
-    frame_restyle(p);
     if (w != p->fw || h != p->fh) { p->fw = w; p->fh = h; p->frelayout = true; }
+    page_media(g_app, p, p->fw, p->fh);
+    frame_restyle(p);
     frame_layout(p);
     float s = g_app->scale; int pw = (int)ceilf(w * s), ph = (int)ceilf(h * s);
     if (p->cv.w != pw || p->cv.h != ph || !p->cv.px) { canvas_free(&p->cv); canvas_init(&p->cv, pw, ph, s); p->drawn_ver = ~0ull; }
@@ -1758,6 +1818,7 @@ static void hf_sync(void *ud, Document *d, bool layout) {
     if (layout && p->fw > 0) frame_layout(p);
 }
 static void hf_viewport(void *ud, float *w, float *h, float *sx, float *sy, float *dpr) { Page *p = ud; *w = p->fw; *h = p->fh; *sx = 0; *sy = p->fsy; *dpr = g_app->scale; }
+static void h_device_info(void *ud, DeviceInfo *out) { (void)ud; *out = g_app->device; }
 static void hf_scroll_to(void *ud, float x, float y) {
     (void)x; Page *p = ud; frame_restyle(p); frame_layout(p);
     y = isfinite(y) ? LCLAMP(y, 0, LMAX(0, p->L->doc_h - p->fh)) : 0;
@@ -1775,6 +1836,7 @@ static void h_frame_open(void *ud, Node *f, Document *d, JsHost *ch) {
     if (p->fw < 1) p->fw = 300;
     if (p->fh < 1) p->fh = 150;
     p->e = style_engine_new(d); p->e->media.vw = p->fw; p->e->media.vh = p->fh;
+    p->e->media.dpr = g_app->scale; p->e->media.touch = g_app->device.max_touch_points > 0; p->e->media.any_fine = g_app->device.any_fine;
     for (Node *n = d->node.first; n; n = node_next_deep(n, &d->node)) {
         if (n->type != NODE_ELEMENT || n->ns != NS_HTML) continue;
         if (n->tag == A_style) {
@@ -1792,7 +1854,7 @@ static void h_frame_open(void *ud, Node *f, Document *d, JsHost *ch) {
     sync_images(p);
     p->seen_ver = d->dom_version; p->frelayout = true;
     p->fnext = g_frames; g_frames = p;
-    *ch = (JsHost){ .ud = p, .media = &p->e->media, .viewport = hf_viewport, .scroll_to = hf_scroll_to, .hit = hf_hit, .sync = hf_sync, .frame_open = h_frame_open, .frame_close = h_frame_close };
+    *ch = (JsHost){ .ud = p, .media = &p->e->media, .viewport = hf_viewport, .scroll_to = hf_scroll_to, .hit = hf_hit, .sync = hf_sync, .frame_open = h_frame_open, .frame_close = h_frame_close, .device_info = h_device_info };
 }
 static void h_frame_close(void *ud) {
     Page *p = ud;
@@ -1845,6 +1907,7 @@ static void history_go(App *a, int d);
 static void h_sync_in(void *ud, Document *d, bool layout) {
     App *a = ud; Page *p = a->t->cur;
     if (!p || p->d != d) return;
+    if (page_media(a, p, a->vw - a->side, a->vh - BAR)) a->t->relayout = true;
     restyle(a);
     if (!layout || !a->t->relayout) return;
     if (!p->L) p->L = layout_new();
@@ -1883,7 +1946,8 @@ static void h_scroll_to(void *ud, float x, float y) { TAB_CALL(ud, h_scroll_to_i
 static Node *h_hit(void *ud, float x, float y) { Node *r = NULL; TAB_CALL(ud, r = h_hit_in(ud, x, y)); return r; }
 static void page_start_js(App *a, Page *p) {
     if (getenv("LUMEN_NO_JS")) return;
-    JsHost h = { a->t, &p->e->media, h_navigate, h_set_url, h_history_go, h_viewport, h_scroll_to, h_hit, h_history_len, h_navigate_post, h_sync, h_frame_open, h_frame_close };
+    page_media(a, p, a->vw - a->side, a->vh - BAR);
+    JsHost h = { a->t, &p->e->media, h_navigate, h_set_url, h_history_go, h_viewport, h_scroll_to, h_hit, h_history_len, h_navigate_post, h_sync, h_frame_open, h_frame_close, h_device_info };
     double t0 = now_ms();
     sync_sheets(p, true);
     Node **sl = NULL; int nsl = 0;   /* parser-inserted stylesheets were fetched before JS existed: fire their load after DOMContentLoaded */
@@ -1928,14 +1992,7 @@ static void page_start_js(App *a, Page *p) {
 static void wake(void) { SDL_Event e; SDL_zero(e); e.type = EV_NET; SDL_PushEvent(&e); }
 
 static bool is_text_ctl(Node *n) {
-    if (!n || n->type != NODE_ELEMENT || n->ns != NS_HTML) return false;
-    if (n->tag == A_textarea) return true;
-    if (n->tag != A_input) return false;
-    const char *t = node_attr(n, "type");
-    if (!t || !*t) return true;
-    static const char *const ok[] = { "text", "email", "password", "search", "tel", "url", "number", NULL };
-    for (int i = 0; ok[i]; i++) if (str_ieq(t, ok[i])) return true;
-    return false;
+    return control_is_text(n);
 }
 static Node *edit_host(Node *n) {
     for (; n; n = n->parent) if (n->type == NODE_ELEMENT) {
@@ -1966,13 +2023,16 @@ static bool page_key(App *a, SDL_Keycode k, SDL_Keymod mod) {
     Page *p = a->t->cur; char b[8]; const char *kn = key_name(k, mod & SDL_KMOD_SHIFT, b);
     Node *f = p && p->d ? (p->d->focus ? p->d->focus : p->d->body) : NULL;
     if (a->editing || !kn || !f || !p->js) return true;
+    node_retain(f);
     bool ok = js_dispatch(p->js, f, "keydown", "KeyboardEvent", true, true, 0, 0, 0, kn);
     if (a->t->cur == p) js_dispatch(p->js, f, "keyup", "KeyboardEvent", true, true, 0, 0, 0, kn);
+    node_release(f);
     return ok;
 }
 static Node *edit_focus(App *a) { Node *f = a->t->cur && a->t->cur->d && a->t->cur->js ? a->t->cur->d->focus : NULL; return edit_host(f) ? f : NULL; }
 static Node *page_focus(App *a) { Node *f = a->t->cur && a->t->cur->d ? a->t->cur->d->focus : NULL; return is_text_ctl(f) ? f : NULL; }
 static char *ctl_value(Node *n) {
+    if (control_is_text(n)) return control_value_utf8(n);
     if (n->value_override) return xstrdup(n->value_override);
     if (n->tag == A_textarea) return node_text_content(n);
     if (n->tag == A_select) {   /* selectedness: script/user choice, else [selected], else the first option */
@@ -1988,10 +2048,36 @@ static char *ctl_value(Node *n) {
     }
     const char *v = node_attr(n, "value"); return xstrdup(v ? v : "");
 }
-static void ctl_set(App *a, Node *n, char *v) {
-    free(n->value_override); n->value_override = v; doc_mark_dirty(n->doc, n);
-    if (a->t->cur->js) js_dispatch(a->t->cur->js, n, "input", "InputEvent", true, false, 0, 0, 0, NULL);
-    a->t->relayout = true; a->dirty = true;
+typedef struct { App *app; Page *page; } ControlHostContext;
+static bool ctl_active(void *context, Node *n) {
+    ControlHostContext *c = context;
+    return !c->app->editing && c->app->t->cur == c->page && n->doc == c->page->d &&
+           (n->flags & NF_CONNECTED) && c->page->d->focus == n;
+}
+static bool ctl_input_event(void *context, Node *n, const char *type, const char *input_type, const char *data) {
+    ControlHostContext *c = context;
+    if (c->app->t->cur != c->page) return false;
+    return !c->page->js || js_dispatch_input(c->page->js, n, type, input_type, data);
+}
+static void ctl_selection_event(void *context, Node *n) {
+    ControlHostContext *c = context;
+    if (c->app->t->cur == c->page && c->page->js) js_control_selection_changed(c->page->js, n);
+}
+static AppControlHost ctl_host(App *a, ControlHostContext *context) {
+    *context = (ControlHostContext){a, a->t->cur};
+    return (AppControlHost){context, ctl_active, ctl_input_event, ctl_selection_event};
+}
+static void ctl_extend_to(const AppControlHost *host, Node *n, uint32_t index, bool extend) {
+    ControlSelection selection = control_selection(n);
+    uint32_t anchor = extend ? (selection.direction == CONTROL_DIR_BACKWARD ? selection.end : selection.start) : index;
+    app_control_select(host, n, LMIN(anchor, index), LMAX(anchor, index), index < anchor ? CONTROL_DIR_BACKWARD : extend ? CONTROL_DIR_FORWARD : CONTROL_DIR_NONE);
+}
+static void ctl_copy(Node *n) {
+    ControlSelection s = control_selection(n);
+    if (s.start == s.end) return;
+    char *value = control_value_utf8(n);
+    size_t start = control_byte_offset(n, s.start), end = control_byte_offset(n, s.end);
+    value[end] = 0; SDL_SetClipboardText(value + start); free(value);
 }
 /* where the edited field is on screen, so the on-screen keyboard is kept clear of it */
 static void text_area(App *a, Node *n) {
@@ -2010,15 +2096,26 @@ static void text_area(App *a, Node *n) {
 #endif
 }
 static void focus_node(App *a, Node *n) {
-    Document *d = a->t->cur->d; Node *old = d->focus; JsCtx *js = a->t->cur->js;
+    Page *p = a->t->cur; Document *d = p->d; Node *old = d->focus; JsCtx *js = p->js;
     if (old == n) return;
+    if (old) node_retain(old);
+    if (n) node_retain(n);
     if (old) { old->flags &= ~(uint32_t)NF_FOCUS; doc_mark_dirty(d, old); }
     d->focus = n;
     if (n) { n->flags |= NF_FOCUS; doc_mark_dirty(d, n); }
-    if (js && old) { js_dispatch(js, old, "blur", "FocusEvent", false, false, 0, 0, 0, NULL); js_dispatch(js, old, "focusout", "FocusEvent", true, false, 0, 0, 0, NULL); }
-    if (js && n) { js_dispatch(js, n, "focus", "FocusEvent", false, false, 0, 0, 0, NULL); js_dispatch(js, n, "focusin", "FocusEvent", true, false, 0, 0, 0, NULL); }
-    if (is_text_ctl(n) || edit_host(n)) { text_area(a, n); text_input(a->win, false); }
+    if (js && old) {
+        js_dispatch(js, old, "blur", "FocusEvent", false, false, 0, 0, 0, NULL);
+        if (a->t->cur == p) js_dispatch(js, old, "focusout", "FocusEvent", true, false, 0, 0, 0, NULL);
+    }
+    if (js && n && a->t->cur == p && d->focus == n && (n->flags & NF_CONNECTED)) {
+        js_dispatch(js, n, "focus", "FocusEvent", false, false, 0, 0, 0, NULL);
+        if (a->t->cur == p && d->focus == n && (n->flags & NF_CONNECTED)) js_dispatch(js, n, "focusin", "FocusEvent", true, false, 0, 0, 0, NULL);
+    }
+    Node *active = a->t->cur && a->t->cur->d ? a->t->cur->d->focus : NULL;
+    if (is_text_ctl(active) || edit_host(active)) { text_area(a, active); text_input(a->win, false); }
     else if (!a->editing) SDL_StopTextInput(a->win);
+    if (old) node_release(old);
+    if (n) node_release(n);
     a->caret_t = now_ms();
     a->t->relayout = true; a->dirty = true;
 }
@@ -2055,6 +2152,78 @@ static void submit_form(App *a, Node *ctl) {
     SB full; sb_init(&full); sb_puts(&full, u); sb_putc(&full, '?'); if (qs) sb_puts(&full, qs);
     free(u); free(qs);
     char *dest = sb_take(&full); navigate(a, dest, true); free(dest);
+}
+
+static void ctl_text_input(App *a, const char *text) {
+    Node *n = page_focus(a); if (!n) return;
+    ControlHostContext context; AppControlHost host = ctl_host(a, &context);
+    node_retain(n);
+    bool allowed = !context.page->js || js_dispatch(context.page->js, n, "keydown", "KeyboardEvent", true, true, 0, 0, 0, text);
+    if (allowed && app_control_edit(&host, n, APP_CONTROL_INSERT, text, "insertText") && a->t->cur == context.page) a->t->relayout = true;
+    if (ctl_active(&context, n) && context.page->js) js_dispatch(context.page->js, n, "keyup", "KeyboardEvent", true, true, 0, 0, 0, text);
+    node_release(n);
+    restyle(a); a->dirty = true; a->vonly = false;
+}
+/* Default actions run only after the page's keydown and beforeinput handlers.
+ * The internal caret is also available for email/number, whose public DOM
+ * selection properties intentionally remain unsupported. */
+static bool ctl_key(App *a, SDL_Keycode key, SDL_Keymod mod, bool command) {
+    Node *n = page_focus(a); if (!n) return false;
+    bool shortcut = key == SDLK_A || key == SDLK_C || key == SDLK_X || key == SDLK_V || key == SDLK_LEFT || key == SDLK_RIGHT;
+    bool special = key == SDLK_LEFT || key == SDLK_RIGHT || key == SDLK_UP || key == SDLK_DOWN || key == SDLK_HOME || key == SDLK_END ||
+                   key == SDLK_BACKSPACE || key == SDLK_DELETE || key == SDLK_RETURN || key == SDLK_KP_ENTER || key == SDLK_TAB || key == SDLK_ESCAPE;
+    if (!(command ? shortcut : special)) return false;
+    char buffer[8]; const char *name = key_name(key, mod & SDL_KMOD_SHIFT, buffer);
+    ControlHostContext context; AppControlHost host = ctl_host(a, &context);
+    node_retain(n);
+    bool changed = false, extend = (mod & SDL_KMOD_SHIFT) != 0;
+    bool allowed = !context.page->js || js_dispatch(context.page->js, n, "keydown", "KeyboardEvent", true, true, 0, 0, 0, name);
+    if (allowed && ctl_active(&context, n)) {
+        if (command && key == SDLK_A) app_control_select(&host, n, 0, UINT32_MAX, CONTROL_DIR_NONE);
+        else if (command && key == SDLK_C) ctl_copy(n);
+        else if (command && key == SDLK_X) {
+            ControlSelection selection = control_selection(n);
+            if (selection.start != selection.end && control_user_editable(n)) { ctl_copy(n); changed = app_control_edit(&host, n, APP_CONTROL_BACKSPACE, NULL, "deleteByCut"); }
+        } else if (command && key == SDLK_V) {
+            char *text = SDL_GetClipboardText();
+            if (text && *text) changed = app_control_edit(&host, n, APP_CONTROL_INSERT, text, "insertFromPaste");
+            SDL_free(text);
+        } else if (!command && n->tag == A_textarea && (key == SDLK_UP || key == SDLK_DOWN || key == SDLK_HOME || key == SDLK_END)) {
+            h_sync_in(a, n->doc, true);
+            ControlSelection selection = control_selection(n); ControlCaret caret;
+            uint32_t index = selection.direction == CONTROL_DIR_BACKWARD ? selection.start : selection.end;
+            if (n->box && control_paint_caret(n->box, index, &caret)) {
+                float x = key == SDLK_HOME ? n->box->x - 1 : key == SDLK_END ? n->box->x + n->box->w + n->box->scroll_w + 1 : caret.x;
+                float y = caret.y + caret.h * .5f;
+                if ((key == SDLK_UP || key == SDLK_DOWN) && n->box->nlines) {
+                    Box *b = n->box; int line = 0; float distance = INFINITY;
+                    for (int i = 0; i < b->nlines; i++) { float d = fabsf(y - b->lines[i].y - b->lines[i].h * .5f); if (d < distance) { line = i; distance = d; } }
+                    Line *last = &b->lines[b->nlines - 1];
+                    if (caret.y >= last->y + last->h) line = b->nlines; /* terminal empty line */
+                    line += key == SDLK_UP ? -1 : 1;
+                    if (line < 0) y = b->lines[0].y - 1;
+                    else if (line >= b->nlines) y = last->y + last->h * 1.5f;
+                    else y = b->lines[line].y + b->lines[line].h * .5f;
+                }
+                ctl_extend_to(&host, n, control_paint_hit(n->box, x, y), extend);
+            }
+        } else if (key == SDLK_LEFT || key == SDLK_RIGHT || key == SDLK_HOME || key == SDLK_END) {
+            ControlMove move = key == SDLK_HOME || (command && key == SDLK_LEFT) ? CONTROL_HOME :
+                               key == SDLK_END || (command && key == SDLK_RIGHT) ? CONTROL_END_OF_VALUE : key == SDLK_LEFT ? CONTROL_LEFT : CONTROL_RIGHT;
+            app_control_move(&host, n, move, extend);
+        } else if (key == SDLK_BACKSPACE || key == SDLK_DELETE) {
+            changed = app_control_edit(&host, n, key == SDLK_BACKSPACE ? APP_CONTROL_BACKSPACE : APP_CONTROL_DELETE, NULL,
+                                       key == SDLK_BACKSPACE ? "deleteContentBackward" : "deleteContentForward");
+        } else if (key == SDLK_RETURN || key == SDLK_KP_ENTER) {
+            if (n->tag == A_textarea) changed = app_control_edit(&host, n, APP_CONTROL_INSERT, "\n", "insertLineBreak");
+            else submit_form(a, n);
+        } else if (key == SDLK_ESCAPE) focus_node(a, NULL);
+    }
+    if (changed && a->t->cur == context.page) a->t->relayout = true;
+    if (ctl_active(&context, n) && context.page->js) js_dispatch(context.page->js, n, "keyup", "KeyboardEvent", true, true, 0, 0, 0, name);
+    node_release(n);
+    restyle(a); a->dirty = true; a->vonly = false;
+    return true;
 }
 
 static double g_mv_t, g_mv_rep; static float g_mv_x, g_mv_y; static Page *g_mv_p;
@@ -2220,7 +2389,51 @@ static void sel_drag(App *a, float x, float y) {
     if (!tsel_point(p->L, px, py, a->t->sy, NULL, &fn, &fo)) return;
     if (fn != g_tsel.fn || fo != g_tsel.fo || !g_tsel.on) { g_tsel.fn = fn; g_tsel.fo = fo; g_tsel.on = fn != g_tsel.an || fo != g_tsel.ao; sel_dirty(a); }
 }
-static bool g_epress;
+static bool g_epress, g_cpress;
+static Node *g_control_press; static Page *g_control_page; static uint32_t g_control_anchor;
+static bool ctl_point(App *a, Node *n, float x, float y, bool require_inside, uint32_t *index) {
+    if (!control_user_selectable(n) || !n->box) return false;
+    float rect[4]; if (!jsg_vrect(n, rect)) return false;
+    bool fixed = false;
+    for (Box *b = n->box; b; b = b->abs && b->cb ? b->cb : b->parent) if (b->fixed) { fixed = true; break; }
+    float px = x - a->side, py = y - BAR + (fixed ? 0 : a->t->sy);
+    if (require_inside && (px < rect[0] || py < rect[1] || px >= rect[0] + rect[2] || py >= rect[1] + rect[3])) return false;
+    Box *b = n->box;
+    *index = control_paint_hit(b, px - rect[0] + b->x + (b->scroller ? n->scroll_x : 0),
+                              py - rect[1] + b->y + box_scroll_y(b));
+    return true;
+}
+static bool ctl_word_char(uint16_t cp) { return cp >= 0x80 || (cp >= 'a' && cp <= 'z') || (cp >= 'A' && cp <= 'Z') || (cp >= '0' && cp <= '9') || cp == '_'; }
+static void ctl_press(App *a, Node *n, float x, float y, int clicks) {
+    uint32_t index; g_cpress = false;
+    if (page_focus(a) != n || !ctl_point(a, n, x, y, true, &index)) return;
+    ControlHostContext context; AppControlHost host = ctl_host(a, &context);
+    ControlSelection selection = control_selection(n);
+    bool extend = (SDL_GetModState() & SDL_KMOD_SHIFT) != 0;
+    if (clicks >= 3) app_control_select(&host, n, 0, UINT32_MAX, CONTROL_DIR_NONE);
+    else if (clicks == 2) {
+        size_t length; const uint16_t *value = control_value_utf16(n, &length);
+        uint32_t start = index, end = index;
+        if (start == length && start) start--;
+        bool word = start < length && ctl_word_char(value[start]); end = start;
+        while (start && ctl_word_char(value[start - 1]) == word && value[start - 1] != '\n') start--;
+        while (end < length && ctl_word_char(value[end]) == word && value[end] != '\n') end++;
+        app_control_select(&host, n, start, end, CONTROL_DIR_NONE);
+    } else {
+        g_control_anchor = extend ? (selection.direction == CONTROL_DIR_BACKWARD ? selection.end : selection.start) : index;
+        ctl_extend_to(&host, n, index, extend);
+        g_control_press = n; g_control_page = a->t->cur; g_cpress = true;
+    }
+    g_press = g_drag = false; a->caret_t = now_ms(); sel_dirty(a);
+}
+static void ctl_drag(App *a, float x, float y) {
+    Node *n = page_focus(a); uint32_t index;
+    if (!g_cpress || a->t->cur != g_control_page || n != g_control_press || !ctl_point(a, n, x, y, false, &index)) { g_cpress = false; return; }
+    ControlHostContext context; AppControlHost host = ctl_host(a, &context);
+    if (app_control_select(&host, n, LMIN(g_control_anchor, index), LMAX(g_control_anchor, index), index < g_control_anchor ? CONTROL_DIR_BACKWARD : CONTROL_DIR_FORWARD)) {
+        a->caret_t = now_ms(); sel_dirty(a);
+    }
+}
 static bool edit_text_at(App *a, Node *h, float px, float py, Node **tn, int *off) {
     Page *p = a->t->cur;
     return h->box && tsel_point(p->L, px, py, a->t->sy, h->box, tn, off) && node_within(*tn, h);
@@ -2262,7 +2475,7 @@ static char *h_clip_get(void) { char *t = SDL_GetClipboardText(); char *r = strd
 static void sel_copy(App *a) {
     Node *f = !a->editing ? page_focus(a) : NULL;
     if (a->editing) { if (a->sel_all) SDL_SetClipboardText(a->t->url); return; }
-    if (f) { if (a->page_sel) { char *v = ctl_value(f); SDL_SetClipboardText(v); free(v); } return; }
+    if (f) { ctl_copy(f); return; }
     if (g_tsel.on && a->t->cur && a->t->cur->L == g_tsel.L) { char *s = tsel_text(a->t->cur->L); if (*s) SDL_SetClipboardText(s); free(s); }
 }
 static Node *g_down; static Page *g_down_p;   /* element under the pointer at mousedown, until mouseup */
@@ -2289,7 +2502,8 @@ static void click_release(App *a, float x, float y) {
     } else restyle(a);
     node_release(d);
 }
-static void click_page(App *a, float x, float y) {
+static void click_page(App *a, float x, float y, int clicks) {
+    g_cpress = false;
     if (g_down) { node_release(g_down); g_down = NULL; g_down_p = NULL; }
     x -= a->side;
     if (!a->t->cur || !a->t->cur->L || a->t->asleep) return;   /* a sleeping page is only a picture until its reload lands */
@@ -2311,12 +2525,14 @@ static void click_page(App *a, float x, float y) {
         return;
     }
     if (t && a->t->cur->js) {
-        JsCtx *js = a->t->cur->js; float cy = y - BAR;
-        Node *before = a->t->cur->d->focus;
+        Page *p = a->t->cur; JsCtx *js = p->js; float cy = y - BAR;
+        Node *before = p->d->focus; node_retain(t);
         js_dispatch(js, t, "pointerdown", "PointerEvent", true, true, x, cy, 0, NULL);
+        if (a->t->cur != p || t->doc != p->d || !(t->flags & NF_CONNECTED)) { node_release(t); return; }
         bool md_ok = js_dispatch(js, t, "mousedown", "MouseEvent", true, true, x, cy, 0, NULL);
+        if (a->t->cur != p || t->doc != p->d || !(t->flags & NF_CONNECTED)) { node_release(t); return; }
         if (!md_ok) g_press = g_drag = false;   /* a cancelled mousedown starts no text selection */
-        bool js_focused = a->t->cur->d->focus != before;
+        bool js_focused = p->d->focus != before;
         Node *ctl = t;
         for (Node *l = t; l; l = l->parent) if (l->type == NODE_ELEMENT && l->tag && !strcmp(l->tag, "label")) {
             const char *fo = node_attr(l, "for");
@@ -2326,18 +2542,27 @@ static void click_page(App *a, float x, float y) {
             break;
         }
         if (!is_text_ctl(ctl) && !js_focused) {   /* overlays (floating labels etc.) above a text field */
-            float px = x, py = y - BAR + a->t->sy;
+            h_sync_in(a, p->d, true); uint32_t index;
             for (Node *n = a->t->cur->d->node.first; n; n = node_next_in_tree(n, &a->t->cur->d->node))
-                if (is_text_ctl(n) && n->box && px >= n->box->x && px < n->box->x + n->box->w && py >= n->box->y && py < n->box->y + n->box->h) { ctl = n; break; }
+                if (is_text_ctl(n) && ctl_point(a, n, x + a->side, y, true, &index)) { ctl = n; break; }
         }
-        if (is_text_ctl(ctl)) focus_node(a, ctl);
+        if (control_user_selectable(ctl) && md_ok) {
+            node_retain(ctl); focus_node(a, ctl);
+            if (a->t->cur == p && page_focus(a) == ctl && (ctl->flags & NF_CONNECTED)) {
+                h_sync_in(a, ctl->doc, true);
+                ctl_press(a, ctl, x + a->side, y, clicks);
+            }
+            node_release(ctl);
+        }
         else if (edit_host(t)) { if (!js_focused && md_ok) focus_node(a, edit_host(t)); }
         else if (!js_focused && md_ok && page_focus(a)) focus_node(a, NULL);
         restyle(a);
-        node_retain(t); g_down = t; g_down_p = a->t->cur;   /* pointerup/mouseup/click wait for the real button release */
+        if (a->t->cur == p && (t->flags & NF_CONNECTED)) { g_down = t; g_down_p = p; } /* retained until the real release */
+        else node_release(t);
         return;
     }
-    anchor_follow(a, t);
+    if (control_user_selectable(t)) { focus_node(a, t); ctl_press(a, t, x + a->side, y, clicks); }
+    else anchor_follow(a, t);
 }
 static void anchor_follow(App *a, Node *t) {
     for (Node *n = t; n; n = n->parent)   /* not b: handlers and restyle() may have rebuilt the layout and freed it */
@@ -2626,7 +2851,7 @@ static struct { float x, y, vx, vy; double t; bool on; } g_fl;
 static void touch_cancel(void) {
     touch_contacts_cancel(&g_contacts); memset(&g_tc, 0, sizeof g_tc); g_fl.on = false;
     g_sm_dx = g_sm_dy = 0;
-    g_press = g_drag = g_epress = false;
+    g_press = g_drag = g_epress = g_cpress = false;
     if (g_down) { node_release(g_down); g_down = NULL; g_down_p = NULL; }
 }
 static void push_mouse(App *a, Uint32 type, float x, float y, int clicks, Uint8 btn) {
@@ -2907,6 +3132,12 @@ int main(int argc, char **argv) {
             case SDL_EVENT_QUIT: quit = true; break;
             case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: case SDL_EVENT_WINDOW_RESIZED:
             case SDL_EVENT_WINDOW_SAFE_AREA_CHANGED: case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED: update_size(&a); break;
+            case SDL_EVENT_WINDOW_DISPLAY_CHANGED: update_size(&a); break;
+            case SDL_EVENT_MOUSE_ADDED: case SDL_EVENT_MOUSE_REMOVED: update_device(&a); break;
+            case SDL_EVENT_DISPLAY_ORIENTATION: case SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED:
+            case SDL_EVENT_DISPLAY_DESKTOP_MODE_CHANGED: case SDL_EVENT_DISPLAY_USABLE_BOUNDS_CHANGED:
+                if (ev.display.displayID == SDL_GetDisplayForWindow(a.win)) update_device(&a);
+                break;
             case SDL_EVENT_WINDOW_EXPOSED: a.dirty = true; break;
 #ifdef LUMEN_IOS
             case SDL_EVENT_FINGER_DOWN: case SDL_EVENT_FINGER_MOTION: case SDL_EVENT_FINGER_UP: case SDL_EVENT_FINGER_CANCELED: touch_event(&a, &ev); break;
@@ -2933,14 +3164,15 @@ int main(int argc, char **argv) {
                 int h = bar_hit(&a, ev.motion.x, ev.motion.y); if (h != a.hover) { a.hover = h; a.dirty = true; }
                 if (pointer_inside && !h && ev.motion.y > BAR && ev.motion.x > a.side) page_move(&a, ev.motion.x - a.side, ev.motion.y - BAR);
                 else if (a.t->cur && page_hover(a.t->cur, NULL)) restyle(&a);
-                if (g_press && (ev.motion.state & SDL_BUTTON_LMASK)) sel_drag(&a, ev.motion.x, ev.motion.y);
+                if (g_cpress && (ev.motion.state & SDL_BUTTON_LMASK)) ctl_drag(&a, ev.motion.x, ev.motion.y);
+                else if (g_press && (ev.motion.state & SDL_BUTTON_LMASK)) sel_drag(&a, ev.motion.x, ev.motion.y);
                 else if (g_epress && (ev.motion.state & SDL_BUTTON_LMASK)) edit_drag(&a, ev.motion.x, ev.motion.y);
                 set_cursor(&a, h == HB_URL ? 1 : pointer_inside && (over_link(&a, ev.motion.x, ev.motion.y) || h) ? 2 : 0);
                 break; }
             case SDL_EVENT_WINDOW_MOUSE_LEAVE: if (a.t->cur && page_hover(a.t->cur, NULL)) restyle(&a); break;
             case SDL_EVENT_MOUSE_BUTTON_UP:
                 if (ev.button.button == SDL_BUTTON_LEFT) {
-                    g_press = g_drag = g_epress = false;
+                    g_press = g_drag = g_epress = g_cpress = false;
                     if (pointer_inside) click_release(&a, ev.button.x, ev.button.y);
                     else if (g_down) { node_release(g_down); g_down = NULL; g_down_p = NULL; }
                 }
@@ -2965,18 +3197,12 @@ int main(int argc, char **argv) {
                 case HB_STAR: bm_toggle(&a); a.dirty = true; a.vonly = false; break;
                 case HB_RELOAD: if (a.t->hpos >= 0) navigate(&a, a.t->hist[a.t->hpos], false); break;
                 case HB_URL: a.editing = true; a.sel_all = 1; text_area(&a, NULL); text_input(a.win, true); a.dirty = true; break;
-                default: if (a.editing) { a.editing = false; SDL_StopTextInput(a.win); a.dirty = true; } sel_press(&a, ev.button.x, ev.button.y, ev.button.clicks); click_page(&a, ev.button.x, ev.button.y); edit_press(&a, ev.button.x, ev.button.y, ev.button.clicks);
+                default: if (a.editing) { a.editing = false; SDL_StopTextInput(a.win); a.dirty = true; } sel_press(&a, ev.button.x, ev.button.y, ev.button.clicks); click_page(&a, ev.button.x, ev.button.y, ev.button.clicks); edit_press(&a, ev.button.x, ev.button.y, ev.button.clicks);
                 }
                 break;
             case SDL_EVENT_TEXT_INPUT: a.caret_t = now_ms();
                 if (!a.editing && page_focus(&a)) {
-                    Node *f = page_focus(&a);
-                    if (!a.t->cur->js || js_dispatch(a.t->cur->js, f, "keydown", "KeyboardEvent", true, true, 0, 0, 0, ev.text.text)) {
-                        char *v = ctl_value(f); SB b; sb_init(&b); if (!a.page_sel) sb_puts(&b, v); a.page_sel = 0; sb_puts(&b, ev.text.text); free(v);
-                        ctl_set(&a, f, sb_take(&b));
-                    }
-                    if (a.t->cur->js) js_dispatch(a.t->cur->js, f, "keyup", "KeyboardEvent", true, true, 0, 0, 0, ev.text.text);
-                    restyle(&a);
+                    ctl_text_input(&a, ev.text.text);
                 } else if (!a.editing && edit_focus(&a)) {
                     Node *f = edit_focus(&a); JsCtx *js = a.t->cur->js;
                     if (js_dispatch(js, f, "keydown", "KeyboardEvent", true, true, 0, 0, 0, ev.text.text))
@@ -2991,15 +3217,15 @@ int main(int argc, char **argv) {
                 SDL_Keycode k = ev.key.key; float page = a.vh - BAR - 40;
                 if (k == SDLK_LGUI || k == SDLK_RGUI || k == SDLK_LCTRL || k == SDLK_RCTRL) { cmd = true; break; }
                 if (!a.editing && (k == SDLK_AC_BACK || k == SDLK_AC_FORWARD ||
-                    ((k == SDLK_LEFT || k == SDLK_RIGHT) && (ev.key.mod & SDL_KMOD_ALT) && !(ev.key.mod & (SDL_KMOD_GUI | SDL_KMOD_CTRL | SDL_KMOD_SHIFT))))) {
+                    ((k == SDLK_LEFT || k == SDLK_RIGHT) && !page_focus(&a) && !edit_focus(&a) && (ev.key.mod & SDL_KMOD_ALT) && !(ev.key.mod & (SDL_KMOD_GUI | SDL_KMOD_CTRL | SDL_KMOD_SHIFT))))) {
                     history_go(&a, k == SDLK_LEFT || k == SDLK_AC_BACK ? -1 : 1); break;
                 }
                 if (cmd || (ev.key.mod & (SDL_KMOD_GUI | SDL_KMOD_CTRL))) {
                     bool reserved = k == SDLK_Q || k == SDLK_W || k == SDLK_T || k == SDLK_N || k == SDLK_L || k == SDLK_TAB || (k >= SDLK_1 && k <= SDLK_9);
                     if (cmd) js_key_mods |= (ev.key.mod & SDL_KMOD_CTRL) ? 2 : 8;
+                    if (!reserved && !a.editing && ctl_key(&a, k, ev.key.mod, true)) break;
                     if (!reserved && !page_key(&a, k, ev.key.mod)) { restyle(&a); a.dirty = true; a.vonly = false; break; }
-                    if (k == SDLK_A && !a.editing && page_focus(&a)) a.page_sel = 1;
-                    else if (k == SDLK_A && !a.editing && !edit_focus(&a) && a.t->cur && a.t->cur->L) { tsel_all(a.t->cur->L); g_tsel.L = a.t->cur->L; a.vonly = false; }
+                    if (k == SDLK_A && !a.editing && !edit_focus(&a) && a.t->cur && a.t->cur->L) { tsel_all(a.t->cur->L); g_tsel.L = a.t->cur->L; a.vonly = false; }
                     else if (k == SDLK_A && !a.editing && edit_focus(&a)) js_dispatch(a.t->cur->js, edit_focus(&a), "lumensel-all", "MouseEvent", false, false, 0, 0, 0, NULL);
                     else if ((k == SDLK_LEFT || k == SDLK_RIGHT) && !a.editing && edit_focus(&a))
                         js_dispatch(a.t->cur->js, edit_focus(&a), k == SDLK_LEFT ? "lumensel-home" : "lumensel-end", "MouseEvent", false, false, 0, (ev.key.mod & SDL_KMOD_SHIFT) ? 1 : 0, 0, NULL);
@@ -3023,16 +3249,7 @@ int main(int argc, char **argv) {
                     a.dirty = true; break;
                 }
                 if (page_focus(&a)) {
-                    Node *f = page_focus(&a); const char *kn = k == SDLK_RETURN || k == SDLK_KP_ENTER ? "Enter" : k == SDLK_BACKSPACE ? "Backspace" : k == SDLK_ESCAPE ? "Escape" : k == SDLK_TAB ? "Tab" : k == SDLK_LEFT ? "ArrowLeft" : k == SDLK_RIGHT ? "ArrowRight" : k == SDLK_UP ? "ArrowUp" : k == SDLK_DOWN ? "ArrowDown" : NULL;
-                    if (kn) {
-                        if (strcmp(kn, "Backspace")) a.page_sel = 0;
-                        bool ok = !a.t->cur->js || js_dispatch(a.t->cur->js, f, "keydown", "KeyboardEvent", true, true, 0, 0, 0, kn);
-                        if (ok && !strcmp(kn, "Backspace")) { char *v = ctl_value(f); size_t n = a.page_sel ? 1 : strlen(v); if (a.page_sel) v[0] = 0, n = 0, a.page_sel = 0; while (n && (v[n - 1] & 0xC0) == 0x80) n--; if (n) n--; v[n] = 0; ctl_set(&a, f, v); }
-                        else if (ok && !strcmp(kn, "Enter") && f->tag == A_input) submit_form(&a, f);
-                        else if (ok && !strcmp(kn, "Escape")) focus_node(&a, NULL);
-                        if (a.t->cur && a.t->cur->js && page_focus(&a) == f) js_dispatch(a.t->cur->js, f, "keyup", "KeyboardEvent", true, true, 0, 0, 0, kn);
-                        restyle(&a); a.dirty = true;
-                    } else if (k != SDLK_SPACE && (k < 32 || k >= 127) && !page_key(&a, k, ev.key.mod)) { restyle(&a); a.dirty = true; }
+                    if (!ctl_key(&a, k, ev.key.mod, false) && k != SDLK_SPACE && (k < 32 || k >= 127) && !page_key(&a, k, ev.key.mod)) { restyle(&a); a.dirty = true; }
                     break;
                 }
                 if (edit_focus(&a)) {

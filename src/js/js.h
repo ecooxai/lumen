@@ -2,6 +2,7 @@
 #ifndef LUMEN_JS_H
 #define LUMEN_JS_H
 #include "../dom/dom.h"
+#include "../base/device.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -30,6 +31,7 @@ typedef struct JsHost {
     /* nested browsing context for <iframe>: fill *child (its ud is the frame's host data) */
     void (*frame_open)(void *ud, Node *iframe, Document *d, struct JsHost *child);
     void (*frame_close)(void *child_ud);
+    void (*device_info)(void *ud, DeviceInfo *out); /* cached native screen/input info, shared by frames */
 } JsHost;
 
 void js_global_init(const char *argv0);
@@ -58,6 +60,9 @@ void js_run_module(JsCtx *c, Node *script, const char *src, size_t n, const char
    returns false when default was prevented */
 bool js_dispatch(JsCtx *c, Node *target, const char *type, const char *kind, bool bubbles, bool cancelable,
                  double x, double y, int button, const char *key);
+/* Trusted native beforeinput/input; NULL data represents deletion. */
+bool js_dispatch_input(JsCtx *c, Node *target, const char *type, const char *input_type, const char *data);
+void js_control_selection_changed(JsCtx *c, Node *target); /* queue select and coalesced selectionchange */
 bool js_dispatch_window(JsCtx *c, const char *type);
 void js_release_pins(void);   /* end of a host event batch: unpin js_dispatch targets */
 void js_set_ready_state(JsCtx *c, int state);
@@ -66,6 +71,7 @@ double js_next_deadline(JsCtx *c);
 /* run due timers, animation frames and microtasks */
 void js_tick(JsCtx *c);
 void js_viewport_changed(JsCtx *c);   /* re-evaluates matchMedia lists and fires window resize */
+void js_device_changed(JsCtx *c);     /* display/input changed without inventing a window resize */
 bool js_wants_frame(JsCtx *c);
 /* the live child browsing context's document for an <iframe>, or NULL */
 Document *js_frame_doc(Node *iframe);

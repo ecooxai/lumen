@@ -94,7 +94,7 @@ $(V8LINK_RSP): FORCE ios/prepare-v8-link.py $(V8OUT)/obj/libv8_monolith.a $(V8OU
 	python3 ios/prepare-v8-link.py --v8-dir "$(V8DIR)" --v8-out "$(V8OUT)" --output "$@" --jobs 3
 FORCE:
 .PHONY: FORCE
-$(addprefix $(BUILD)/,lumen jsrun test_overflow_clip test_sticky_position test_media_lifecycle test_worker_lifecycle test_promise_rejections): $(V8LINK_RSP)
+$(addprefix $(BUILD)/,lumen jsrun test_js_device_capabilities test_grid_rows test_overflow_clip test_sticky_position test_media_lifecycle test_worker_lifecycle test_promise_rejections): $(V8LINK_RSP)
 endif
 LIBS := $(NETLIBS) -lfreetype -lharfbuzz -lSDL3 $(V8LIBS) -lwgpu_native \
         -lavcodec -lavformat -lavutil -lswscale -lswresample -lpng -ljpeg -lwebp -lwebpdemux -lsharpyuv -lgif $(if $(IOS),-ldav1d) $(PLATLIBS)
@@ -113,22 +113,37 @@ $(BUILD)/test_net: $(call OBJ,tests/test_net.c $(BASE_SRC) src/net/cookies.c src
 $(BUILD)/test_net_cancel: $(call OBJ,tests/test_net_cancel.c $(BASE_SRC) $(NET_SRC))
 	$(CC) $(OPT) $(filter %.o,$^) -o $@ $(NETLIBS) -lpthread
 
-test: $(BUILD)/test_present_retry $(BUILD)/test_css_transforms $(BUILD)/test_url $(BUILD)/test_net $(BUILD)/test_net_cancel $(BUILD)/test_css_viewport $(BUILD)/test_overflow_clip $(BUILD)/test_sticky_position $(BUILD)/test_app_viewport $(BUILD)/test_touch_contacts $(BUILD)/test_media_lifecycle $(BUILD)/test_worker_lifecycle $(BUILD)/test_promise_rejections
+$(BUILD)/test_grid_rows: $(call OBJ,tests/test_grid_rows.c $(CORE_SRC) $(JS_SRC))
+	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
+
+test: $(BUILD)/test_gpu_present $(BUILD)/test_device_capabilities $(BUILD)/test_js_device_capabilities $(BUILD)/test_present_retry $(BUILD)/test_css_transforms $(BUILD)/test_url $(BUILD)/test_net $(BUILD)/test_net_cancel $(BUILD)/test_grid_rows $(BUILD)/test_css_viewport $(BUILD)/test_overflow_clip $(BUILD)/test_sticky_position $(BUILD)/test_app_viewport $(BUILD)/test_touch_contacts $(BUILD)/test_media_lifecycle $(BUILD)/test_worker_lifecycle $(BUILD)/test_promise_rejections $(BUILD)/test_control $(BUILD)/test_js_control_selection $(BUILD)/test_js_control_input $(BUILD)/test_app_control $(BUILD)/test_control_paint $(BUILD)/test_control_geometry $(BUILD)/test_video_punch
+	$(BUILD)/test_control
+	$(BUILD)/test_js_control_selection
+	$(BUILD)/test_js_control_input
+	$(BUILD)/test_app_control
+	$(BUILD)/test_control_paint
+	$(BUILD)/test_control_geometry
+	$(BUILD)/test_video_punch
+	$(BUILD)/test_device_capabilities
+	$(BUILD)/test_js_device_capabilities
 	$(BUILD)/test_url
 	$(BUILD)/test_net
 	$(BUILD)/test_net_cancel
+	$(BUILD)/test_grid_rows
 	$(BUILD)/test_css_viewport
 	$(BUILD)/test_css_transforms
 	$(BUILD)/test_overflow_clip
 	$(BUILD)/test_sticky_position
 	$(BUILD)/test_app_viewport
 	$(BUILD)/test_touch_contacts
+	$(BUILD)/test_gpu_present
 	$(BUILD)/test_present_retry
 	$(BUILD)/test_media_lifecycle
 	$(BUILD)/test_worker_lifecycle
 	$(BUILD)/test_promise_rejections
 
-# iOS app bundle: flat .app with the binary, Info.plist, ICU data, CA bundle and icon; ad-hoc signed (re-sign to sideload).
+# iOS app bundle: flat .app with executable/resources, locally ad-hoc signed.
+# Device installation uses the explicit Xcode-managed signing/export options on `ipa`.
 # Mac Catalyst uses the macOS layout (Contents/MacOS, Contents/Resources). JIT=1 links the JIT V8 and signs with
 # get-task-allow (iOS: JIT once a debugger enables it) / allow-jit (Catalyst).
 APP := $(BUILD)/Lumen.app
@@ -152,10 +167,15 @@ app: $(BUILD)/lumen ios/Info.plist
 	sips -z 120 120 assets/icon/lumen-256.png --out $(APPRES)/AppIcon60x60@2x.png >/dev/null
 	codesign --force --sign - --timestamp=none $(if $(ENTS),--entitlements $(ENTS)) $(APP)
 IPA := Lumen$(if $(filter 1,$(JIT)),-jit,-jitless).ipa
+# These values travel through the environment, preserving identity/profile names
+# with spaces without inserting their contents into a shell command.
+IOS_SIGNING_IDENTITY ?=
+IOS_PROVISIONING_PROFILE ?=
+IOS_DEVICE_UDID ?=
+export IOS_SIGNING_IDENTITY IOS_PROVISIONING_PROFILE IOS_DEVICE_UDID
 ifeq ($(PLAT),ios)
 ipa: app
-	rm -rf $(BUILD)/ipa && mkdir -p $(BUILD)/ipa/Payload && cp -R $(APP) $(BUILD)/ipa/Payload/
-	cd $(BUILD)/ipa && rm -f ../$(IPA) && zip -qry ../$(IPA) Payload
+	python3 ios/package-ipa.py --app "$(APP)" --output "$(BUILD)/$(IPA)" $(if $(filter 1,$(JIT)),--jit)
 else
 ipa:
 	@echo "IPA packaging requires PLAT=ios; simulator and Catalyst binaries are separate targets." >&2
@@ -168,9 +188,9 @@ clean:
 
 -include $(shell find $(BUILD) -name '*.d' 2>/dev/null)
 .PHONY: all clean test
-$(BUILD)/parse: $(call OBJ,tests/parse.c $(BASE_SRC) $(NET_SRC) src/dom/dom.c src/html/html.c src/html/entities.c)
+$(BUILD)/parse: $(call OBJ,tests/parse.c $(BASE_SRC) $(NET_SRC) $(wildcard src/dom/*.c) src/html/html.c src/html/entities.c)
 	$(CC) $(OPT) $^ -o $@ $(NETLIBS)
-CSS_TEST_SRC := $(BASE_SRC) $(NET_SRC) src/dom/dom.c src/html/html.c src/html/entities.c $(wildcard src/css/*.c)
+CSS_TEST_SRC := $(BASE_SRC) $(NET_SRC) $(wildcard src/dom/*.c) src/html/html.c src/html/entities.c $(wildcard src/css/*.c)
 $(BUILD)/style: $(call OBJ,tests/style.c $(CSS_TEST_SRC))
 	$(CC) $(OPT) $^ -o $@ $(NETLIBS)
 $(BUILD)/text: $(call OBJ,tests/text.c $(BASE_SRC) src/text/font.c)
@@ -227,4 +247,36 @@ $(BUILD)/test_present_retry: $(call OBJ,tests/test_present_retry.c)
 	$(CC) $(OPT) $^ -o $@ -lm
 
 $(BUILD)/test_sticky_position: $(call OBJ,tests/test_sticky_position.c $(CORE_SRC) $(JS_SRC))
+	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
+
+$(BUILD)/test_device_capabilities: $(call OBJ,tests/test_device_capabilities.c $(CSS_TEST_SRC))
+	$(CC) $(OPT) $(filter %.o,$^) -o $@ $(NETLIBS)
+
+$(BUILD)/tests/test_js_device_capabilities.cc.o: CXXFLAGS += -fno-rtti -UNDEBUG
+$(BUILD)/test_js_device_capabilities: $(call OBJ,tests/test_js_device_capabilities.cc $(CORE_SRC) $(JS_SRC))
+	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
+
+# Exercise real GPU presentation using deterministic surface failures.
+$(BUILD)/test_gpu_present: $(call OBJ,tests/test_gpu_present.c)
+	$(CC) $^ $(LIBDIRS) -lwgpu_native -lSDL3 $(PLATLIBS) -o $@
+
+$(BUILD)/tests/test_js_control_selection.cc.o: CXXFLAGS += -fno-rtti -UNDEBUG
+$(BUILD)/test_js_control_selection: $(call OBJ,tests/test_js_control_selection.cc $(CORE_SRC) $(JS_SRC)) $(V8LINK_RSP)
+	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
+
+# Canonical controls and video overlay regressions.
+$(BUILD)/test_control: $(call OBJ,tests/test_control.c src/dom/control.c src/dom/dom.c src/base/util.c)
+	$(CC) $(OPT) $^ -o $@ -lm -lpthread
+$(BUILD)/tests/test_js_control_input.cc.o: CXXFLAGS += -fno-rtti -UNDEBUG
+$(BUILD)/test_js_control_input: $(call OBJ,tests/test_js_control_input.cc $(CORE_SRC) $(JS_SRC)) $(V8LINK_RSP)
+	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
+$(BUILD)/test_control_paint: $(call OBJ,tests/test_control_paint.c $(CORE_SRC) $(JS_SRC)) $(V8LINK_RSP)
+	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
+$(BUILD)/test_video_punch: $(call OBJ,tests/test_video_punch.c $(CORE_SRC) $(JS_SRC)) $(V8LINK_RSP)
+	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
+
+$(BUILD)/test_app_control: $(call OBJ,tests/test_app_control.c $(CORE_SRC) $(JS_SRC)) $(V8LINK_RSP)
+	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
+
+$(BUILD)/test_control_geometry: $(call OBJ,tests/test_control_geometry.c $(CORE_SRC) $(JS_SRC)) $(V8LINK_RSP)
 	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)

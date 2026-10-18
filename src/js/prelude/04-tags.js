@@ -59,34 +59,85 @@ mk('HTMLFormElement', HTMLElement, ['form'], p => {
         checkValidity() { return true; }, reportValidity() { return true; },
     });
 });
+const controlDirections = ['none', 'forward', 'backward'];
+const controlSelectionPending = new WeakSet();
+function controlSelectionChanged(element) {
+    setTimeout(() => fire(element, 'select', { bubbles: true, cancelable: false }, Event), 0);
+    if (!controlSelectionPending.has(element)) {
+        controlSelectionPending.add(element);
+        setTimeout(() => { controlSelectionPending.delete(element); fire(element, 'selectionchange', { bubbles: true, cancelable: false }, Event); }, 0);
+    }
+}
+function controlString(value) {
+    if (typeof value === 'symbol') throw new TypeError('Cannot convert a Symbol value to a string');
+    return String(value);
+}
+function controlSelectionProperties(proto, tag) {
+    const brand = element => { if (!N.isNode(element) || N.type(element) !== 1 || N.ns(element) !== 0 || N.name(element) !== tag) throw new TypeError('Illegal invocation'); };
+    const selection = (element, required) => {
+        brand(element); const range = N.controlSelection(element);
+        if (!range && required) throw new DOMException('The input type does not support selection.', 'InvalidStateError');
+        return range;
+    };
+    const update = (element, start, end, direction) => { if (N.controlSetSelection(element, start, end, direction)) controlSelectionChanged(element); };
+    methods(proto, {
+        get selectionStart() { const s = selection(this, false); return s ? s[0] : null; },
+        set selectionStart(value) { value = value >>> 0; const s = selection(this, true); update(this, value, Math.max(value, s[1]), s[2]); },
+        get selectionEnd() { const s = selection(this, false); return s ? s[1] : null; },
+        set selectionEnd(value) { value = value >>> 0; const s = selection(this, true); update(this, s[0], value, s[2]); },
+        get selectionDirection() { const s = selection(this, false); return s ? controlDirections[s[2]] : null; },
+        set selectionDirection(value) { value = controlString(value); const s = selection(this, true); update(this, s[0], s[1], Math.max(0, controlDirections.indexOf(value))); },
+        setSelectionRange(start, end, direction) {
+            brand(this);
+            if (arguments.length < 2) throw new TypeError('setSelectionRange requires two offsets.');
+            start = start >>> 0; end = end >>> 0; direction = direction === undefined ? 'none' : controlString(direction);
+            selection(this, true); update(this, start, end, Math.max(0, controlDirections.indexOf(direction)));
+        },
+        setRangeText(replacement, start, end, mode) {
+            brand(this);
+            if (!arguments.length || arguments.length === 2) throw new TypeError('setRangeText requires one or at least three arguments.');
+            replacement = controlString(replacement);
+            if (arguments.length > 1) { start = start >>> 0; end = end >>> 0; }
+            mode = mode === undefined ? 'preserve' : controlString(mode);
+            const modes = ['preserve', 'select', 'start', 'end'], index = modes.indexOf(mode);
+            if (index < 0) throw new TypeError('Invalid selection mode.');
+            const s = selection(this, true);
+            if (arguments.length === 1) { start = s[0]; end = s[1]; }
+            const changed = N.controlSetRangeText(this, replacement, start, end, index);
+            if (start > end) throw new DOMException('The start offset exceeds the end offset.', 'IndexSizeError');
+            if (changed) controlSelectionChanged(this);
+        },
+        select() { brand(this); if (N.controlSelect(this)) controlSelectionChanged(this); },
+    });
+}
 const INPUT_TYPES = /^(hidden|text|search|tel|url|email|password|date|month|week|time|datetime-local|number|range|color|checkbox|radio|file|submit|image|reset|button)$/;
+const INPUT_DEFAULT_VALUE_TYPES = /^(hidden|submit|image|reset|button|checkbox|radio)$/;
 mk('HTMLInputElement', HTMLElement, ['input'], p => {
     reflectStr(p, 'name', 'placeholder', 'accept', 'alt', 'autocomplete', 'inputMode', 'max', 'min', 'pattern', 'step', 'enterKeyHint');
     reflectBool(p, 'disabled', 'readOnly', 'required', 'multiple'); reflectUrl(p, 'src'); reflectInt(p, 20, 'size'); reflectInt(p, -1, 'maxLength', 'minLength'); formControl(p);
     methods(p, {
         get type() { const t = (N.attr(this, 'type') || 'text').toLowerCase(); return INPUT_TYPES.test(t) ? t : 'text'; }, set type(v) { this.setAttribute('type', v); },
-        get value() { if (this.type === 'file') { const f = this.files; return f.length ? 'C:\\fakepath\\' + f[0].name : ''; } const v = N.value(this); return v != null ? v : (/^(checkbox|radio)$/.test(this.type) ? (N.attr(this, 'value') ?? 'on') : N.attr(this, 'value') ?? ''); },
-        set value(v) { if (this.type === 'file') { if (v === '' || v == null) def(this, '_files', new FileList()); return; } N.setValue(this, v == null ? '' : String(v)); },
+        get value() { const type = this.type; if (type === 'file') { const f = this.files; return f.length ? 'C:\\fakepath\\' + f[0].name : ''; } if (INPUT_DEFAULT_VALUE_TYPES.test(type)) return N.attr(this, 'value') ?? (type === 'checkbox' || type === 'radio' ? 'on' : ''); const v = N.value(this); return v != null ? v : N.attr(this, 'value') ?? ''; },
+        set value(v) { v = v === null ? '' : controlString(v); const type = this.type; if (type === 'file') { if (v === '') def(this, '_files', new FileList()); return; } if (INPUT_DEFAULT_VALUE_TYPES.test(type)) this.setAttribute('value', v); else N.setValue(this, v); },
         get defaultValue() { return N.attr(this, 'value') ?? ''; }, set defaultValue(v) { this.setAttribute('value', v); },
         get checked() { return N.checked(this); }, set checked(v) { N.setChecked(this, !!v); },
         get defaultChecked() { return this.hasAttribute('checked'); }, set defaultChecked(v) { this.toggleAttribute('checked', !!v); },
         get valueAsNumber() { return parseFloat(this.value); }, set valueAsNumber(v) { this.value = String(v); },
         get files() { if (this.type !== 'file') return null; if (!this._files) def(this, '_files', new FileList()); return this._files; },
         set files(v) { if (this.type === 'file' && v instanceof FileList) def(this, '_files', v); },
-        get selectionStart() { return this.value.length; }, set selectionStart(v) {}, get selectionEnd() { return this.value.length; }, set selectionEnd(v) {},
         get indeterminate() { return !!this.__ind; }, set indeterminate(v) { def(this, '__ind', !!v); },
-        select() {}, setSelectionRange() {}, setRangeText() {}, showPicker() { if (this.type === 'file') pickFiles(this); }, stepUp() {}, stepDown() {},
+        showPicker() { if (this.type === 'file') pickFiles(this); }, stepUp() {}, stepDown() {},
     });
+    controlSelectionProperties(p, 'input');
 });
 mk('HTMLTextAreaElement', HTMLElement, ['textarea'], p => {
     reflectStr(p, 'name', 'placeholder', 'autocomplete', 'wrap'); reflectBool(p, 'disabled', 'readOnly', 'required'); reflectInt(p, 20, 'cols'); reflectInt(p, 2, 'rows'); formControl(p);
     methods(p, {
         get type() { return 'textarea'; },
-        get value() { const v = N.value(this); return v != null ? v : N.text(this); }, set value(v) { N.setValue(this, v == null ? '' : String(v)); },
+        get value() { const v = N.value(this); return v != null ? v : N.text(this); }, set value(v) { N.setValue(this, v === null ? '' : controlString(v)); },
         get defaultValue() { return N.text(this); }, set defaultValue(v) { this.textContent = v; },
-        get selectionStart() { return this.value.length; }, set selectionStart(v) {}, get selectionEnd() { return this.value.length; }, set selectionEnd(v) {},
-        select() {}, setSelectionRange() {},
     });
+    controlSelectionProperties(p, 'textarea');
 });
 mk('HTMLButtonElement', HTMLElement, ['button'], p => {
     reflectStr(p, 'name', 'value'); reflectBool(p, 'disabled'); formControl(p);

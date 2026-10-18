@@ -434,7 +434,9 @@ static bool media_feature(const char *f, const MediaCtx *mc) {
                 switch (op) { case 0: return fv >= v; case 1: return fv <= v; case 2: return fv > v; case 3: return fv < v; default: return fabsf(fv - v) < 0.5f; }
             }
         }
-        if (!strcmp(s, "color") || !strcmp(s, "hover") || !strcmp(s, "pointer")) return true;
+        if (!strcmp(s, "hover")) return !mc->touch;
+        if (!strcmp(s, "any-hover")) return !mc->touch || mc->any_fine;
+        if (!strcmp(s, "color") || !strcmp(s, "pointer") || !strcmp(s, "any-pointer")) return true;
         if (!strcmp(s, "grid")) return false;
         return true;
     }
@@ -445,13 +447,19 @@ static bool media_feature(const char *f, const MediaCtx *mc) {
     if (!strcmp(name, "min-height")) return css_parse_length(val, &l, em, em, mc) && mc->vh >= l.px;
     if (!strcmp(name, "max-height")) return css_parse_length(val, &l, em, em, mc) && mc->vh <= l.px;
     if (!strcmp(name, "width")) return css_parse_length(val, &l, em, em, mc) && fabsf(mc->vw - l.px) < 0.5f;
-    if (!strcmp(name, "orientation")) return !strcmp(val, mc->vw >= mc->vh ? "landscape" : "portrait");
+    if (!strcmp(name, "orientation")) return !strcmp(val, mc->vw > mc->vh ? "landscape" : "portrait");
     if (!strcmp(name, "prefers-color-scheme")) return !strcmp(val, mc->dark ? "dark" : "light");
     if (!strcmp(name, "prefers-reduced-motion")) return !strcmp(val, "no-preference");
     if (!strcmp(name, "prefers-contrast")) return !strcmp(val, "no-preference");
     if (!strcmp(name, "forced-colors")) return !strcmp(val, "none");
-    if (!strcmp(name, "hover") || !strcmp(name, "any-hover")) return !strcmp(val, "hover");
-    if (!strcmp(name, "pointer") || !strcmp(name, "any-pointer")) return !strcmp(val, "fine");
+    if (!strcmp(name, "hover")) return !strcmp(val, mc->touch ? "none" : "hover");
+    if (!strcmp(name, "any-hover")) return !strcmp(val, !mc->touch || mc->any_fine ? "hover" : "none");
+    if (!strcmp(name, "pointer")) return !strcmp(val, mc->touch ? "coarse" : "fine");
+    if (!strcmp(name, "any-pointer")) {
+        if (!strcmp(val, "coarse")) return mc->touch;
+        if (!strcmp(val, "fine")) return !mc->touch || mc->any_fine;
+        return false;
+    }
     if (!strcmp(name, "display-mode")) return !strcmp(val, "browser");
     if (strstr(name, "device-pixel-ratio") || !strcmp(name, "min-resolution") || !strcmp(name, "max-resolution") || !strcmp(name, "resolution")) {
         float v = (float)atof(val); if (strstr(val, "dpi")) v /= 96.f; else if (strstr(val, "x") || strstr(val, "dppx")) {}

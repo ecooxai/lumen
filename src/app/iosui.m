@@ -1,7 +1,9 @@
 /* UIKit implementation of the macui.h platform hooks for iOS / iPadOS (and the same build on Apple Silicon Macs). */
 #import <UIKit/UIKit.h>
 #import <QuartzCore/CAMetalLayer.h>
+#import <GameController/GameController.h>
 #include "macui.h"
+#include "../base/device.h"
 
 static Uint32 g_menu_ev;
 static UIViewController *root_vc(SDL_Window *w) {
@@ -51,6 +53,44 @@ static int run_modal(UIViewController *vc, UIAlertController *ac, float x, float
 
 void mac_style_window(SDL_Window *w) { g_win = w; }
 void mac_install_menu(Uint32 ev) { g_menu_ev = ev; }
+
+void ios_device_info(SDL_Window *w, DeviceInfo *out) {
+    @autoreleasepool {
+        NSProcessInfo *process = NSProcessInfo.processInfo;
+        UIUserInterfaceIdiom idiom = UIDevice.currentDevice.userInterfaceIdiom;
+        bool app_on_mac = process.isiOSAppOnMac || process.isMacCatalystApp;
+        device_apple_input(out, idiom == UIUserInterfaceIdiomPhone || idiom == UIUserInterfaceIdiomPad,
+                           app_on_mac, GCMouse.mice.count > 0);
+        if (app_on_mac) {
+            /* SDL's UIKit backend assumes a portrait-native phone display. A
+               Mac window has no mobile device rotation, even with iPad idiom. */
+            out->orientation = out->screen_w > out->screen_h ? DEVICE_LANDSCAPE_PRIMARY : DEVICE_PORTRAIT_PRIMARY;
+            out->angle = 0;
+        }
+        if (!out->max_touch_points) return; /* retain desktop display data for the same IPA on Mac */
+        UIWindow *win = w ? (__bridge UIWindow *)SDL_GetPointerProperty(SDL_GetWindowProperties(w), SDL_PROP_WINDOW_UIKIT_WINDOW_POINTER, NULL) : nil;
+        UIWindowScene *scene = win.windowScene;
+        UIScreen *screen = scene.screen ?: win.screen;
+        UIInterfaceOrientation orientation = scene.interfaceOrientation;
+        if (!screen) return;
+        CGSize size = screen.bounds.size;
+        /* Screen dimensions describe the display, even in an iPad split-screen
+           scene whose window is smaller or has a different aspect ratio. */
+        if (orientation != UIInterfaceOrientationUnknown) {
+            CGFloat small = MIN(size.width, size.height), large = MAX(size.width, size.height);
+            size = UIInterfaceOrientationIsLandscape(orientation) ? CGSizeMake(large, small) : CGSizeMake(small, large);
+        }
+        out->screen_w = out->avail_w = (int)size.width;
+        out->screen_h = out->avail_h = (int)size.height;
+        switch (orientation) {
+        case UIInterfaceOrientationPortrait: out->orientation = DEVICE_PORTRAIT_PRIMARY; out->angle = 0; break;
+        case UIInterfaceOrientationPortraitUpsideDown: out->orientation = DEVICE_PORTRAIT_SECONDARY; out->angle = 180; break;
+        case UIInterfaceOrientationLandscapeRight: out->orientation = DEVICE_LANDSCAPE_PRIMARY; out->angle = 90; break;
+        case UIInterfaceOrientationLandscapeLeft: out->orientation = DEVICE_LANDSCAPE_SECONDARY; out->angle = 270; break;
+        default: break;
+        }
+    }
+}
 
 static NSString *view_geometry(UIView *v) {
     if (!v) return @"none";

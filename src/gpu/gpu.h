@@ -16,9 +16,11 @@ int gpu_adapters(int backend, char (*names)[128], int max);
 const char *gpu_adapter_name(Gpu *g);
 void gpu_resize(Gpu *g, int w, int h);
 bool gpu_present(Gpu *g, const uint32_t *px, int w, int h, int stride);
-/* Like gpu_present but only re-uploads rows [y0,y1); the rest of the texture keeps its previous contents. */
+/* Like gpu_present but only re-uploads rows [y0,y1); the rest keeps its previous contents.
+   Missed uploads retain their damage for a later call, using that call's current pixels. */
 bool gpu_present_rows(Gpu *g, const uint32_t *px, int w, int h, int stride, int y0, int y1);
-/* A video frame drawn by the GPU under the page texture at device rect (x0,y0)-(x1,y1); the page shows it through alpha-0 holes. */
+/* A video frame drawn by the GPU under the page texture at device rect (x0,y0)-(x1,y1); the page shows it through alpha-0 holes.
+   Frame data is borrowed only for the call, so retries must pass the current frame. */
 /* yuv, when set, replaces px: NV12 planes (Y, then interleaved UV); mat bit 1 = BT.709, bit 2 = full range. */
 typedef struct { const uint32_t *px; int w, h, stride; float x0, y0, x1, y1; const uint8_t *yuv; int mat; } GpuVideo;
 bool gpu_yuv_ok(Gpu *g);

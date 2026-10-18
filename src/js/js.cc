@@ -945,6 +945,31 @@ bool js_dispatch_window(JsCtx *c, const char *type) {
     return js_dispatch(c, nullptr, type, "Event", false, false, 0, 0, 0, nullptr);
 }
 
+bool js_dispatch_input(JsCtx *c, Node *target, const char *type, const char *input_type, const char *data) {
+    if (!c || c->dead || c->fire.IsEmpty()) return true;
+    if (target && target->parent && target->parent->type != NODE_DOCUMENT) { node_retain(target); g_pins.push_back(target); }
+    JS_ENTER(c);
+    auto init = v8::Object::New(iso);
+    auto set = [&](const char *name, v8::Local<v8::Value> value) { (void)init->Set(ctx, jstr(iso, name), value); };
+    set("bubbles", v8::True(iso)); set("composed", v8::True(iso));
+    set("cancelable", v8::Boolean::New(iso, !strcmp(type, "beforeinput")));
+    set("inputType", jstr(iso, input_type ? input_type : ""));
+    set("data", data ? v8::Local<v8::Value>(jstr(iso, data)) : v8::Local<v8::Value>(v8::Null(iso)));
+    set("view", ctx->Global());
+    v8::Local<v8::Value> ctor = v8::Undefined(iso), result;
+    if (!c->api.IsEmpty()) (void)c->api.Get(iso)->Get(ctx, jstr(iso, "InputEvent")).ToLocal(&ctor);
+    v8::Local<v8::Value> args[] = {target ? jwrap(c, target) : v8::Local<v8::Value>(ctx->Global()), jstr(iso, type), init, ctor};
+    return !jcall(c, c->fire.Get(iso), v8::Undefined(iso), 4, args).ToLocal(&result) || result->BooleanValue(iso);
+}
+void js_control_selection_changed(JsCtx *c, Node *target) {
+    if (!c || c->dead || !target || c->api.IsEmpty()) return;
+    JS_ENTER(c);
+    v8::Local<v8::Value> function;
+    if (!c->api.Get(iso)->Get(ctx, jstr(iso, "controlSelectionChanged")).ToLocal(&function) || !function->IsFunction()) return;
+    v8::Local<v8::Value> args[] = {jwrap(c, target)};
+    (void)jcall(c, function.As<v8::Function>(), v8::Undefined(iso), 1, args);
+}
+
 void js_set_ready_state(JsCtx *c, int state) {
     if (!c) return;
     c->doc->ready_state = state;
@@ -970,6 +995,17 @@ void js_viewport_changed(JsCtx *c) {
     v8::Local<v8::Value> f;
     if (c->api.Get(iso)->Get(ctx, jstr(iso, "viewportChanged")).ToLocal(&f) && f->IsFunction())
         (void)jcall(c, f.As<v8::Function>(), v8::Undefined(iso), 0, nullptr);
+    auto kids = c->kids;
+    for (JsCtx *child : kids) js_device_changed(child);
+}
+void js_device_changed(JsCtx *c) {
+    if (!c || c->dead || c->api.IsEmpty()) return;
+    JS_ENTER(c);
+    v8::Local<v8::Value> f;
+    if (c->api.Get(iso)->Get(ctx, jstr(iso, "deviceChanged")).ToLocal(&f) && f->IsFunction())
+        (void)jcall(c, f.As<v8::Function>(), v8::Undefined(iso), 0, nullptr);
+    auto kids = c->kids;
+    for (JsCtx *child : kids) js_device_changed(child);
 }
 void js_tick(JsCtx *c) {
     js_ls_flush(false);

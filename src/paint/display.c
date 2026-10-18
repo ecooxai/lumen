@@ -1,5 +1,6 @@
 /* Display list construction: CSS painting order over the box tree */
 #include "paint.h"
+#include "control.h"
 #include <math.h>
 
 Image *(*paint_image_hook)(Node *n);
@@ -16,6 +17,7 @@ typedef struct {
     Box *sb; const void *outer;   /* innermost scroller and the state outside it */
     DefVec *ctx;                  /* deferred list of the enclosing stacking context */
     int *deco_mark;   /* paint_block_content stores the item index right after the box's own background */
+    const Box *control; int control_start, control_end; /* one projection per focused control, not per fragment */
 } PB;
 
 static DItem *emit(PB *p, uint8_t op) { DItem it; memset(&it, 0, sizeof it); it.op = op; it.alpha = 1; vec_push(p->dl->items, it); return &p->dl->items.v[p->dl->items.n - 1]; }
@@ -126,8 +128,17 @@ static void paint_text_frag(PB *p, TextFrag *f) {
     Color col = s->color;
     Box *blk = t->parent; while (blk && blk->kind == BX_INLINE) blk = blk->parent;
     if (blk && blk->placeholder) col = blk->st->ph_set ? blk->st->ph_color : RGBA(117, 117, 117, COLOR_A(col));
-    int ss, se;
-    if (tsel_range(t, &ss, &se)) {
+    int ss, se; bool selected = tsel_range(t, &ss, &se);
+    if (blk && (blk->ctl == CTL_TEXT || blk->ctl == CTL_TEXTAREA) && !blk->placeholder && blk->node && (blk->node->flags & NF_FOCUS)) {
+        if (p->control != blk) {
+            ControlSelection range = control_selection(blk->node);
+            p->control = blk;
+            p->control_start = (int)control_paint_byte(blk, range.start);
+            p->control_end = (int)control_paint_byte(blk, range.end);
+        }
+        ss = p->control_start; se = p->control_end; selected = ss != se;
+    }
+    if (selected) {
         float x0 = t->sh.g[f->g0].x, a = -1, e = -1;
         for (int i = f->g0; i < f->g1; i++) {
             int c = (int)t->sh.g[i].cluster;
@@ -234,13 +245,12 @@ bool dl_caret_on;
 
 static void paint_caret(PB *p, Box *b) {
     const ComputedStyle *s = b->st;
-    float x = b->x + b->b[3] + b->p[3], y = b->y + b->b[0] + b->p[0], h = s->font_size * 1.2f;
-    float ch = b->h - b->b[0] - b->b[2] - b->p[0] - b->p[2];
-    TextFrag *last = b->nfrags ? &b->frags[b->nfrags - 1] : NULL;
-    for (Box *c = b->first; c; c = c->next) if (c->nfrags) last = &c->frags[c->nfrags - 1];
-    if (last) { y = last->y; h = last->h; if (!b->placeholder) x = last->x + last->w; }
-    else if (b->ctl == CTL_TEXT && ch > h) y += (ch - h) / 2;
-    DItem *it = emit(p, DO_RECT); it->x = x + p->dx; it->y = y + p->dy; it->w = 1; it->h = h; it->color = s->color;
+    ControlSelection selection = control_selection(b->node);
+    if (selection.start != selection.end) return;
+    ControlCaret caret;
+    if (!control_paint_caret(b, selection.start, &caret)) return;
+    DItem *it = emit(p, DO_RECT); it->x = caret.x + p->dx; it->y = caret.y + p->dy; it->w = 1; it->h = caret.h;
+    it->color = COLOR_A(s->caret_color) ? s->caret_color : s->color;
 }
 
 static void last_frag_in(Box *b, TextFrag **out, const Box **blk) {

@@ -1,5 +1,7 @@
 /* wgpu-native presenter: uploads the composited frame and blits it to the surface */
 #include "gpu.h"
+#include "../base/util.h"
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,10 +12,30 @@ struct Gpu {
     WGPUInstance inst; WGPUSurface surf; WGPUAdapter adapter; WGPUDevice dev; WGPUQueue q;
     WGPUTextureFormat fmt; WGPURenderPipeline pipe; WGPUBindGroupLayout bgl; WGPUSampler samp;
     WGPUTexture tex; WGPUTextureView view; WGPUBindGroup bg; int tw, th; int w, h; bool configured, present_pending;
+    /* Damage stays on the CPU until a drawable exists. No caller-owned pixels are retained. */
+    int upload_y0, upload_y1; bool upload_full;
     WGPUBackendType backend; char aname[128];
     WGPUSampler vsamp; WGPUBuffer ubuf, vubuf; WGPUTexture vtex; WGPUTextureView vview; WGPUBindGroup vbg; int vtw, vth;
     WGPURenderPipeline ypipe; WGPUBindGroupLayout ybgl; WGPUBuffer yubuf; WGPUTexture yt, ct; WGPUTextureView ytv, ctv; WGPUBindGroup ybg; int ytw, yth;
+    bool stats; unsigned stats_other_status; double stats_start, stats_next;
+    uint64_t stats_success, stats_timeout, stats_outdated, stats_lost, stats_other, stats_submits, stats_uploads, stats_upload_bytes;
 };
+
+/* Diagnostic counters only. Existing presentation calls drive reporting; this
+   adds no timer, device polling, submit, or rendering retry. */
+static void gpu_stats_report(Gpu *g, bool final) {
+    if (!g || !g->stats) return;
+    double now = now_ms();
+    if (!final && now < g->stats_next) return;
+    g->stats_next = now + 1000;
+    fprintf(stderr, "gpu: stats elapsed_ms=%.0f final=%d acquire_success=%llu timeout=%llu outdated=%llu lost=%llu other=%llu last_other_status=%u submits=%llu texture_uploads=%llu texture_upload_mib=%.3f\n",
+        now - g->stats_start, final, (unsigned long long)g->stats_success, (unsigned long long)g->stats_timeout,
+        (unsigned long long)g->stats_outdated, (unsigned long long)g->stats_lost, (unsigned long long)g->stats_other,
+        g->stats_other_status, (unsigned long long)g->stats_submits, (unsigned long long)g->stats_uploads, (double)g->stats_upload_bytes / (1024 * 1024));
+}
+static void gpu_stats_upload(Gpu *g, size_t bytes) {
+    if (g->stats) { ++g->stats_uploads; g->stats_upload_bytes += bytes; }
+}
 
 static const char *WGSL =
     "@group(0) @binding(0) var t: texture_2d<f32>;\n"
@@ -119,6 +141,8 @@ const char *gpu_adapter_name(Gpu *g) { return g ? g->aname : "CPU"; }
 
 static Gpu *create_one(const GpuSurfSrc *src, int w, int h, WGPUInstanceBackend mask, const GpuOpts *o) {
     Gpu *g = calloc(1, sizeof *g); g->w = w; g->h = h;
+    const char *stats = getenv("LUMEN_GPU_STATS"); g->stats = stats && *stats && strcmp(stats, "0");
+    if (g->stats) { g->stats_start = now_ms(); g->stats_next = g->stats_start + 1000; }
     if (!(g->inst = mk_instance(mask, src))) goto fail;
 
     WGPUSurfaceSourceMetalLayer ml = WGPU_SURFACE_SOURCE_METAL_LAYER_INIT;
@@ -263,6 +287,27 @@ static void ensure_ytex(Gpu *g, int w, int h) {
     g->ybg = wgpuDeviceCreateBindGroup(g->dev, &bd); g->ytw = w; g->yth = h;
 }
 bool gpu_yuv_ok(Gpu *g) { return g && g->ypipe && g->ybgl && g->yubuf; }
+/* Inspect borrowed inputs on the existing stats cadence; no readback or timer.
+   This distinguishes opaque page overdraw from a black decoded video sample. */
+static void gpu_stats_video(Gpu *g, const uint32_t *px, int w, int h, int stride, const GpuVideo *v, bool yuv) {
+    if (!g->stats || !v) return;
+    double now = now_ms();
+    if (now < g->stats_next) return;
+    double cx = ((double)v->x0 + v->x1) * 0.5, cy = ((double)v->y0 + v->y1) * 0.5;
+    bool page_ok = px && w > 0 && h > 0 && stride >= w && isfinite(cx) && isfinite(cy);
+    int x = page_ok ? (int)LCLAMP(cx, 0, w - 1) : 0, y = page_ok ? (int)LCLAMP(cy, 0, h - 1) : 0;
+    uint32_t page = page_ok ? px[(size_t)y * (size_t)stride + (size_t)x] : 0;
+    int sx = v->w / 2, sy = v->h / 2;
+    unsigned yy = 0, u = 0, vv = 0; uint32_t bgra = 0;
+    if (yuv) {
+        size_t cw = (size_t)v->w / 2 + (size_t)v->w % 2;
+        size_t uv = (size_t)v->w * (size_t)v->h + (size_t)(sy / 2) * cw * 2 + (size_t)(sx / 2) * 2;
+        yy = v->yuv[(size_t)sy * (size_t)v->w + (size_t)sx]; u = v->yuv[uv]; vv = v->yuv[uv + 1];
+    } else if (v->stride >= v->w) bgra = v->px[(size_t)sy * (size_t)v->stride + (size_t)sx];
+    fprintf(stderr, "gpu: video elapsed_ms=%.0f mode=%s rect=%.2f,%.2f-%.2f,%.2f canvas=%dx%d video=%dx%d cpu_valid=%d cpu_center=%d,%d cpu_argb=%08x cpu_alpha=%u source_center=%d,%d source_yuv=%u,%u,%u source_argb=%08x matrix=%d\n",
+        now - g->stats_start, yuv ? "nv12" : "bgra", v->x0, v->y0, v->x1, v->y1, w, h, v->w, v->h,
+        page_ok, x, y, page, page >> 24, sx, sy, yy, u, vv, bgra, v->mat);
+}
 static void ensure_tex(Gpu *g, int w, int h) {
     if (g->tex && g->tw == w && g->th == h) return;
     if (g->bg) wgpuBindGroupRelease(g->bg);
@@ -282,19 +327,49 @@ bool gpu_present(Gpu *g, const uint32_t *px, int w, int h, int stride) { return 
 bool gpu_present_rows(Gpu *g, const uint32_t *px, int w, int h, int stride, int y0, int y1) { return gpu_present_frame(g, px, w, h, stride, y0, y1, NULL); }
 bool gpu_present_pending(Gpu *g) { return g && g->present_pending; }
 bool gpu_present_frame(Gpu *g, const uint32_t *px, int w, int h, int stride, int y0, int y1, const GpuVideo *v) {
-    if (g) g->present_pending = false;
-    if (!g || !g->configured) return false;
-    if (!g->tex || g->tw != w || g->th != h) { y0 = 0; y1 = h; }
-    ensure_tex(g, w, h);
+    if (!g) return false;
+    g->present_pending = false;
+    if (!g->tex || g->tw != w || g->th != h) g->upload_full = true;
     if (y0 < 0) y0 = 0;
     if (y1 > h) y1 = h;
+    if (y1 > y0) {
+        if (g->upload_y1 <= g->upload_y0) { g->upload_y0 = y0; g->upload_y1 = y1; }
+        else { g->upload_y0 = LMIN(g->upload_y0, y0); g->upload_y1 = LMAX(g->upload_y1, y1); }
+    }
+    if (!g->configured) return false;
+
+    /* Queue writes retain staging memory until submission. Acquire first so an
+       occluded/lost surface cannot accumulate uploads on every decoded frame. */
+    WGPUSurfaceTexture st = WGPU_SURFACE_TEXTURE_INIT;
+    wgpuSurfaceGetCurrentTexture(g->surf, &st);
+    if (g->stats) switch (st.status) {
+    case WGPUSurfaceGetCurrentTextureStatus_SuccessOptimal: case WGPUSurfaceGetCurrentTextureStatus_SuccessSuboptimal: ++g->stats_success; break;
+    case WGPUSurfaceGetCurrentTextureStatus_Timeout: ++g->stats_timeout; break;
+    case WGPUSurfaceGetCurrentTextureStatus_Outdated: ++g->stats_outdated; break;
+    case WGPUSurfaceGetCurrentTextureStatus_Lost: ++g->stats_lost; break;
+    default: ++g->stats_other; g->stats_other_status = (unsigned)st.status; break;
+    }
+    if (st.status != WGPUSurfaceGetCurrentTextureStatus_SuccessOptimal && st.status != WGPUSurfaceGetCurrentTextureStatus_SuccessSuboptimal) {
+        if (st.texture) wgpuTextureRelease(st.texture);
+        if (st.status == WGPUSurfaceGetCurrentTextureStatus_Outdated || st.status == WGPUSurfaceGetCurrentTextureStatus_Lost) configure(g);
+        g->present_pending = st.status == WGPUSurfaceGetCurrentTextureStatus_Timeout || st.status == WGPUSurfaceGetCurrentTextureStatus_Outdated || st.status == WGPUSurfaceGetCurrentTextureStatus_Lost ||
+            st.status == (WGPUSurfaceGetCurrentTextureStatus)WGPUSurfaceGetCurrentTextureStatus_Occluded;
+        gpu_stats_report(g, false);
+        return false;   /* Keep CPU damage for a later frame; no GPU upload was queued. */
+    }
+
+    y0 = g->upload_full ? 0 : g->upload_y0;
+    y1 = g->upload_full ? h : LMIN(g->upload_y1, h);
+    ensure_tex(g, w, h);
     if (y1 > y0) {
         WGPUTexelCopyTextureInfo dst = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT; dst.texture = g->tex; dst.origin = (WGPUOrigin3D){ 0, (uint32_t)y0, 0 };
         WGPUTexelCopyBufferLayout lay = WGPU_TEXEL_COPY_BUFFER_LAYOUT_INIT; lay.bytesPerRow = (uint32_t)stride * 4; lay.rowsPerImage = (uint32_t)(y1 - y0);
         WGPUExtent3D ext = { (uint32_t)w, (uint32_t)(y1 - y0), 1 };
         wgpuQueueWriteTexture(g->q, &dst, px + (size_t)y0 * (size_t)stride, (size_t)stride * 4 * (size_t)(y1 - y0), &lay, &ext);
+        gpu_stats_upload(g, (size_t)stride * 4 * (size_t)(y1 - y0));
     }
     bool yv = v && v->yuv && gpu_yuv_ok(g) && v->w > 0 && v->h > 0, vid = !yv && v && v->px && v->w > 0 && v->h > 0;
+    if (yv || vid) gpu_stats_video(g, px, w, h, stride, v, yv);
     if (yv) {
         ensure_ytex(g, v->w, v->h);
         int cw = (v->w + 1) / 2, ch = (v->h + 1) / 2;
@@ -302,8 +377,10 @@ bool gpu_present_frame(Gpu *g, const uint32_t *px, int w, int h, int stride, int
         WGPUTexelCopyBufferLayout lay = WGPU_TEXEL_COPY_BUFFER_LAYOUT_INIT; lay.bytesPerRow = (uint32_t)v->w; lay.rowsPerImage = (uint32_t)v->h;
         WGPUExtent3D ext = { (uint32_t)v->w, (uint32_t)v->h, 1 };
         wgpuQueueWriteTexture(g->q, &dst, v->yuv, (size_t)v->w * (size_t)v->h, &lay, &ext);
+        gpu_stats_upload(g, (size_t)v->w * (size_t)v->h);
         dst.texture = g->ct; lay.bytesPerRow = (uint32_t)cw * 2; lay.rowsPerImage = (uint32_t)ch; ext = (WGPUExtent3D){ (uint32_t)cw, (uint32_t)ch, 1 };
         wgpuQueueWriteTexture(g->q, &dst, v->yuv + (size_t)v->w * (size_t)v->h, (size_t)cw * 2 * (size_t)ch, &lay, &ext);
+        gpu_stats_upload(g, (size_t)cw * 2 * (size_t)ch);
         bool b709 = v->mat & 1, full = v->mat & 2;
         float u[12] = { v->x0 / w * 2 - 1, 1 - v->y0 / h * 2, v->x1 / w * 2 - 1, 1 - v->y1 / h * 2,
                         b709 ? 1.5748f : 1.402f, b709 ? 0.1873f : 0.344136f, b709 ? 0.4681f : 0.714136f, b709 ? 1.8556f : 1.772f,
@@ -316,18 +393,11 @@ bool gpu_present_frame(Gpu *g, const uint32_t *px, int w, int h, int stride, int
         WGPUTexelCopyBufferLayout lay = WGPU_TEXEL_COPY_BUFFER_LAYOUT_INIT; lay.bytesPerRow = (uint32_t)v->stride * 4; lay.rowsPerImage = (uint32_t)v->h;
         WGPUExtent3D ext = { (uint32_t)v->w, (uint32_t)v->h, 1 };
         wgpuQueueWriteTexture(g->q, &dst, v->px, (size_t)v->stride * 4 * (size_t)v->h, &lay, &ext);
+        gpu_stats_upload(g, (size_t)v->stride * 4 * (size_t)v->h);
         float r[4] = { v->x0 / w * 2 - 1, 1 - v->y0 / h * 2, v->x1 / w * 2 - 1, 1 - v->y1 / h * 2 };
         wgpuQueueWriteBuffer(g->q, g->vubuf, 0, r, sizeof r);
     }
 
-    WGPUSurfaceTexture st = WGPU_SURFACE_TEXTURE_INIT;
-    wgpuSurfaceGetCurrentTexture(g->surf, &st);
-    if (st.status != WGPUSurfaceGetCurrentTextureStatus_SuccessOptimal && st.status != WGPUSurfaceGetCurrentTextureStatus_SuccessSuboptimal) {
-        if (st.texture) wgpuTextureRelease(st.texture);
-        if (st.status == WGPUSurfaceGetCurrentTextureStatus_Outdated || st.status == WGPUSurfaceGetCurrentTextureStatus_Lost) configure(g);
-        g->present_pending = st.status == WGPUSurfaceGetCurrentTextureStatus_Timeout || st.status == WGPUSurfaceGetCurrentTextureStatus_Outdated || st.status == WGPUSurfaceGetCurrentTextureStatus_Lost;
-        return false;   /* The pixels are cached, but no frame reached the native surface. */
-    }
     WGPUTextureView tv = wgpuTextureCreateView(st.texture, NULL);
     WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(g->dev, NULL);
     WGPURenderPassColorAttachment ca = WGPU_RENDER_PASS_COLOR_ATTACHMENT_INIT;
@@ -342,9 +412,12 @@ bool gpu_present_frame(Gpu *g, const uint32_t *px, int w, int h, int stride, int
     wgpuRenderPassEncoderEnd(pass); wgpuRenderPassEncoderRelease(pass);
     WGPUCommandBuffer cb = wgpuCommandEncoderFinish(enc, NULL);
     wgpuQueueSubmit(g->q, 1, &cb);
+    g->upload_y0 = g->upload_y1 = 0; g->upload_full = false;
+    if (g->stats) ++g->stats_submits;
     wgpuCommandBufferRelease(cb); wgpuCommandEncoderRelease(enc);
     wgpuSurfacePresent(g->surf);
     wgpuTextureViewRelease(tv); wgpuTextureRelease(st.texture);
+    gpu_stats_report(g, false);
     return true;
 }
 
@@ -360,6 +433,7 @@ const char *gpu_backend_name(Gpu *g) {
 
 void gpu_destroy(Gpu *g) {
     if (!g) return;
+    gpu_stats_report(g, true);
     if (g->bg) wgpuBindGroupRelease(g->bg);
     if (g->view) wgpuTextureViewRelease(g->view);
     if (g->tex) { wgpuTextureDestroy(g->tex); wgpuTextureRelease(g->tex); }

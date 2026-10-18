@@ -6,6 +6,7 @@
 #include <chrono>
 /* Native functions (the `N` object) backing the JS DOM/Web API prelude */
 #include "js_int.h"
+#include "../dom/control.h"
 #include <thread>
 #ifndef __APPLE__
 #include <sys/random.h>
@@ -249,8 +250,50 @@ FN(scrollPos) {
 }
 FN(setScroll) { CTX; ARGN(n, 0); if (c->host.sync) c->host.sync(c->host.ud, c->doc, true); RET(jsg_set_scroll(n, (float)NUM(1), (float)NUM(2))); }
 FN(computed) { CTX; ARGN(n, 0); if (c->host.sync) c->host.sync(c->host.ud, c->doc, false); std::string p = S(1); char *v = jsg_computed(n, p.c_str()); RET(nstr(iso, v)); free(v); }
-FN(value) { CTX; ARGN(n, 0); RET(nstr(iso, n->value_override)); }
-FN(setValue) { CTX; ARGN(n, 0); free(n->value_override); n->value_override = a[1]->IsNullOrUndefined() ? nullptr : xstrdup(S(1).c_str()); doc_mark_dirty(n->doc, n); }
+FN(value) {
+    CTX; ARGN(n, 0);
+    if (control_is_text(n)) {
+        size_t length; const uint16_t *value = control_value_utf16(n, &length);
+        RET(v8::String::NewFromTwoByte(iso, value, v8::NewStringType::kNormal, (int)length).ToLocalChecked());
+    } else RET(nstr(iso, n->value_override));
+}
+FN(setValue) {
+    CTX; ARGN(n, 0);
+    if (control_is_text(n)) {
+        if (a[1]->IsNullOrUndefined()) control_set_value_utf8(n, nullptr);
+        else { v8::String::Value value(iso, a[1]); if (*value) control_set_value_utf16(n, *value, (size_t)value.length()); }
+    } else {
+        free(n->value_override); n->value_override = a[1]->IsNullOrUndefined() ? nullptr : xstrdup(S(1).c_str()); doc_mark_dirty(n->doc, n);
+    }
+}
+FN(controlSelection) {
+    CTX; ARGN(n, 0);
+    if (!control_supports_selection(n)) { RET(v8::Null(iso)); return; }
+    ControlSelection selection = control_selection(n); auto out = v8::Array::New(iso, 3);
+    (void)out->Set(ctx, 0, v8::Integer::NewFromUnsigned(iso, selection.start));
+    (void)out->Set(ctx, 1, v8::Integer::NewFromUnsigned(iso, selection.end));
+    (void)out->Set(ctx, 2, v8::Integer::New(iso, (int)selection.direction));
+    RET(out);
+}
+FN(controlSetSelection) {
+    CTX; ARGN(n, 0);
+    RET(control_supports_selection(n) && control_set_selection(n, a[1]->Uint32Value(ctx).FromMaybe(0), a[2]->Uint32Value(ctx).FromMaybe(0), (ControlDirection)a[3]->Int32Value(ctx).FromMaybe(0)));
+}
+FN(controlSetRangeText) {
+    CTX; ARGN(n, 0);
+    if (!control_supports_selection(n)) { RET(false); return; }
+    v8::String::Value value(iso, a[1]); if (!*value) return;
+    ControlSelection before = control_selection(n);
+    control_replace_range_utf16(n, *value, (size_t)value.length(), a[2]->Uint32Value(ctx).FromMaybe(0), a[3]->Uint32Value(ctx).FromMaybe(0), (ControlSelectionMode)a[4]->Int32Value(ctx).FromMaybe(0));
+    ControlSelection after = control_selection(n);
+    RET(before.start != after.start || before.end != after.end || before.direction != after.direction);
+}
+FN(controlSelect) {
+    CTX; ARGN(n, 0); size_t length;
+    (void)control_value_utf16(n, &length);
+    RET(control_is_text(n) && control_set_selection(n, 0, (uint32_t)length, CONTROL_DIR_NONE));
+}
+FN(controlEditable) { CTX; ARGN(n, 0); RET(control_user_editable(n)); }
 FN(checked) {
     CTX; ARGN(n, 0);
     RET(n->checked_override ? n->checked_override > 0 : node_has_attr(n, n->tag && !strcmp(n->tag, "option") ? "selected" : "checked"));
@@ -768,9 +811,28 @@ FN(logLevel) { a.GetReturnValue().Set(g_log_level); }
 FN(viewport) {
     CTX; float w = 0, h = 0, sx = 0, sy = 0, dpr = 1;
     if (c->host.viewport) c->host.viewport(c->host.ud, &w, &h, &sx, &sy, &dpr);
-    double v[7] = { w, h, sx, sy, dpr, std::max(w, 1440.f), std::max(h, 900.f) };
-    v8::Local<v8::Array> r = v8::Array::New(iso, 7);
-    for (int i = 0; i < 7; i++) (void)r->Set(ctx, i, v8::Number::New(iso, v[i]));
+    double v[5] = { w, h, sx, sy, dpr };
+    v8::Local<v8::Array> r = v8::Array::New(iso, 5);
+    for (int i = 0; i < 5; i++) (void)r->Set(ctx, i, v8::Number::New(iso, v[i]));
+    RET(r);
+}
+FN(deviceInfo) {
+    CTX;
+    DeviceInfo d{};
+    if (c->host.device_info) c->host.device_info(c->host.ud, &d);
+    else {
+        float w = 0, h = 0, sx = 0, sy = 0, dpr = 1;
+        if (c->host.viewport) c->host.viewport(c->host.ud, &w, &h, &sx, &sy, &dpr);
+        d.screen_w = d.avail_w = d.outer_w = (int)std::max(w, 0.f);
+        d.screen_h = d.avail_h = d.outer_h = (int)std::max(h, 0.f);
+        d.orientation = w > h ? DEVICE_LANDSCAPE_PRIMARY : DEVICE_PORTRAIT_PRIMARY;
+        d.any_fine = true;
+    }
+    double v[9] = { (double)d.screen_w, (double)d.screen_h,
+        (double)d.avail_w, (double)d.avail_h, (double)d.max_touch_points,
+        (double)d.orientation, (double)d.angle, (double)d.outer_w, (double)d.outer_h };
+    v8::Local<v8::Array> r = v8::Array::New(iso, 9);
+    for (int i = 0; i < 9; i++) (void)r->Set(ctx, i, v8::Number::New(iso, v[i]));
     RET(r);
 }
 FN(scrollTo) { CTX; if (c->host.scroll_to) c->host.scroll_to(c->host.ud, (float)NUM(0), (float)NUM(1)); }
@@ -1142,13 +1204,14 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(create); REG(textNode); REG(comment); REG(frag); REG(html); REG(setHTML); REG(parseFrag); REG(query);
     REG(matches); REG(byId); REG(clone); REG(doc); REG(contains); REG(connected); REG(host); REG(attachShadow);
     REG(templateContent); REG(rect); REG(vrect); REG(clipSet); REG(clipGet); REG(scrollPos); REG(setScroll); REG(computed); REG(value); REG(setValue); REG(checked); REG(setChecked); REG(setPseudo); REG(pickFiles);
+    REG(controlSelection); REG(controlSetSelection); REG(controlSetRangeText); REG(controlSelect); REG(controlEditable);
     REG(focus); REG(active); REG(cookie); REG(setCookie); REG(url); REG(setUrl); REG(navigate); REG(navigatePost); REG(saveFile); REG(histGo);
     REG(histLen); REG(ssGet); REG(ssSet); REG(lsGet); REG(lsSet); REG(lsDel); REG(drainMicrotasks); REG(idbGen); REG(idbGet); REG(idbPut); REG(idbDel); REG(idbNames); REG(storageUsage);
     REG(busPost);
     REG(busOrigin); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
     REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(blobFile); REG(blobFileFree); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove); REG(mediaAbort);
     REG(mediaBuffered); REG(mediaEos); REG(mediaSetDuration); REG(mediaPlay); REG(mediaPause); REG(mediaSeek);
-    REG(sbFlags); REG(compileHandler); REG(ctxOrigin); REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(readyState); REG(quirks); REG(coi);
+    REG(sbFlags); REG(compileHandler); REG(ctxOrigin); REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(deviceInfo); REG(scrollTo); REG(hit); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(readyState); REG(quirks); REG(coi);
     REG(currentScript); REG(media); REG(cssSupports); REG(cssSelText); REG(urlParse); REG(encode); REG(decode); REG(random); REG(cDigest); REG(cHmac); REG(cAes); REG(cEcGen); REG(cEcDerive); REG(cEcSign); REG(cEcVerify); REG(cSpki); REG(cSpkiParse); REG(cPkcs8Parse); REG(cEcFromD); REG(cHkdf); REG(cPbkdf2);
     REG(heap); REG(imgSize); REG(userAgent); REG(platform); REG(cpus); REG(makeAll);
 #undef REG

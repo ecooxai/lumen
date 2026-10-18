@@ -45,33 +45,29 @@ Package a DMG: `python3 tools/mkdmg.py 0.1.0-preview` (output in `dist/`).
 
 ## iPad and Mac (iOS/iPadOS port)
 
-The same engine runs as a UIKit app on iPadOS (and iPhone). The identical `.ipa` also runs on Apple Silicon Macs as an
-"iPad app", and `PLAT=cat` builds a Mac Catalyst app from the same sources. No WebKit is used: HTML/CSS/layout/paint
-are Lumen's own, JavaScript is V8 in jitless mode (iOS forbids JIT for normal apps), GPU is Metal via wgpu-native.
+The same engine runs as a UIKit app on iPadOS and iPhone. Apple's
+[Designed for iPad on Mac](https://developer.apple.com/documentation/apple-silicon/running-your-ios-apps-in-macos)
+support provides an installation route for the same appropriately signed device IPA on Apple Silicon Macs.
+`PLAT=cat` builds a separate Mac Catalyst app. HTML/CSS/layout/paint are Lumen's own, JavaScript runs in V8,
+and the GPU backend uses Metal via wgpu-native.
 
-Lumen is not on the App Store. Sideload the IPA with AltStore, Sideloadly or Xcode (free Apple ID works; the
-signature lasts 7 days).
+Lumen is not on the App Store. The default `make PLAT=ios ipa` produces a **local, unprovisioned package**;
+it does not supply an Apple development identity or make the app installable on a device or Mac.
+Use the explicit Xcode signing/export options below for a provisioned IPA.
 
 ### JIT and jitless builds
 
 | IPA | JavaScript | When to use |
 | --- | --- | --- |
-| `Lumen-jitless.ipa` | V8 interpreter only (Ignition + optimised builtins) | Always works, no debugger needed. JS-heavy sites (YouTube, ChatGPT) are 2-5x slower |
-| `Lumen-jit.ipa` | V8 with Sparkplug, Maglev and TurboFan | Full speed when iOS allows JIT; otherwise it falls back to jitless by itself |
+| `Lumen-jitless.ipa` | V8 interpreter only (Ignition + optimised builtins) | Default device build; does not need debugger-enabled JIT |
+| `Lumen-jit.ipa` | V8 with Sparkplug, Maglev and TurboFan | Optional development build; attempts JIT and falls back to jitless if unavailable |
 
-iOS only gives an app JIT memory while a debugger has attached to it, so with `Lumen-jit.ipa`:
-
-1. Sideload it with a **development** signature (AltStore/SideStore, Sideloadly or Xcode all keep `get-task-allow`).
-2. Enable JIT for each launch with one of:
-   - **StikDebug** (on the iPad, no computer): install StikDebug + its pairing file, open it, pick *Lumen* under
-     *Enable JIT*. Lumen starts with JIT on.
-   - **Xcode** (iPad connected to a Mac): *Window → Devices and Simulators*, or `xcrun devicectl device process
-     launch --start-stopped --device <id> com.ecooxai.lumen` and attach Xcode's debugger (*Debug → Attach to Process*).
-   - **SideStore / AltStore**: long-press Lumen → *Enable JIT* (AltStore needs AltServer running on the same Wi-Fi).
-3. Lumen logs `lumen: V8 JIT enabled` or `lumen: V8 JIT unavailable, running jitless` at start-up (Console.app).
-
-On iOS 26 with the newest chips Apple has restricted debugger-enabled JIT further; if StikDebug cannot enable it,
-Lumen just runs jitless. The Simulator and the Mac builds always have JIT.
+The optional device `JIT=1` export requires a development profile authorizing `get-task-allow`.
+Use Xcode's device debugger for development; for example, launch the installed app with
+`xcrun devicectl device process launch --start-stopped --device <id> com.ecooxai.lumen`, then attach Xcode's
+debugger (*Debug → Attach to Process*). Lumen checks JIT availability at startup and logs either
+`lumen: V8 JIT enabled` or `lumen: V8 JIT unavailable, running jitless`. A development signature does not
+guarantee JIT availability on every OS/device. Simulator and Mac JIT builds also require the matching V8 variant.
 
 ### WebAssembly
 
@@ -93,13 +89,16 @@ and cross-origin subresources are not yet blocked under COEP.
 
 - **Mac Catalyst** (`make PLAT=cat app`, or `JIT=1`): a native Mac `.app` built from the same sources and UIKit
   shell; JIT works directly (signed with `com.apple.security.cs.allow-jit`). Run it like the desktop build:
-  `xattr -dr com.apple.quarantine Lumen.app; open Lumen.app`.
+  `open build-cat/Lumen.app`.
   To try jitless mode with a JIT build, start it with `LUMEN_V8_FLAGS="--jitless --wasm-jitless"`; it then
   logs `lumen: V8 jitless (LUMEN_V8_FLAGS)`.
-- **The IPA itself** runs on Apple Silicon Macs as an iPad app. macOS only launches iPad apps with a real Apple
-  signature: install it from Xcode (*Devices* → your Mac → *+* with the IPA after re-signing it with your Apple ID,
-  e.g. via Sideloadly's re-sign), or use **PlayCover** (open the IPA, it re-signs and runs it). JIT works on the Mac
-  without a debugger. iPad apps cannot run inside macOS virtual machines.
+- **The same device IPA** uses the Designed for iPad on Mac route. For development or device distribution,
+  include the Mac's **Provisioning UDID** in the profile, alongside the intended iPhone/iPad devices.
+  Apple documents [where to find and register that UDID](https://developer.apple.com/help/account/devices/register-a-single-device/).
+  Export the provisioned IPA with Xcode as below, then double-click the IPA on the Mac; Apple's installer handles
+  its app wrapper ([Apple DTS guidance](https://developer.apple.com/forums/thread/766744)). Opening the raw
+  `build-ios/Lumen.app` is not the IPA installation workflow. This project does not construct wrappers or rewrite
+  Mach-O platform headers. Signed installation must be tested on the intended Mac, including a VM if applicable.
 
 ```sh
 ios/build-deps.sh sim          # also: ios, cat  -> ~/ios-deps/<plat>
@@ -107,12 +106,41 @@ ios/build-deps.sh sim          # also: ios, cat  -> ~/ios-deps/<plat>
 # JIT=1 builds use out/<same>-jit: same args.gn minus the v8_jitless/sparkplug/maglev/turbofan lines,
 # plus v8_enable_lite_mode = false (V8 forces lite = jitless on iOS otherwise)
 make PLAT=sim app              # build-sim/Lumen.app for the iOS Simulator
-make PLAT=ios ipa              # build-ios/Lumen-jitless.ipa for iPad / iPhone
-make PLAT=ios JIT=1 ipa        # build-ios-jit/Lumen-jit.ipa (needs the -jit V8 builds)
+make PLAT=ios ipa              # local unprovisioned build-ios/Lumen-jitless.ipa
+make PLAT=ios JIT=1 ipa        # local unprovisioned build-ios-jit/Lumen-jit.ipa (needs -jit V8)
 make PLAT=cat app              # build-cat/Lumen.app, Mac Catalyst
 make PLAT=cat JIT=1 app        # build-cat-jit/Lumen.app, Mac Catalyst with JIT
 xcrun simctl install booted build-sim/Lumen.app && xcrun simctl launch booted com.ecooxai.lumen
 ```
+
+### Sign and export one device IPA with Xcode
+
+Create/import a valid Apple signing identity and a matching iOS provisioning profile in Xcode. The profile must
+authorize `com.ecooxai.lumen`, include that signing certificate, and cover each intended device. Import the downloaded
+profile into Xcode before exporting. Find the identity's fingerprint with `security find-identity -v -p codesigning`.
+
+```sh
+make PLAT=ios ipa \
+  IOS_SIGNING_IDENTITY='<40-character certificate SHA-1>' \
+  IOS_PROVISIONING_PROFILE="$HOME/Downloads/Lumen_Development.mobileprovision" \
+  IOS_DEVICE_UDID='<optional Mac Provisioning UDID or iPhone/iPad UDID>'
+```
+
+Omit `IOS_DEVICE_UDID` to skip the optional single-device membership check. Both signing options are required together;
+an exact, unambiguous identity name is also accepted. `ios/package-ipa.py` checks the actual arm64 iOS executable,
+profile app identifier/prefix, team, expiry, certificate and optional UDID. It then archives the existing executable
+and resources through `ios/signing/Lumen.xcodeproj` and runs Xcode's export operation. Xcode performs signing and
+entitlement authorization. The helper does not import credentials or manually re-sign an iOS app.
+
+The export method follows the profile: `debugging`, `release-testing`, or `enterprise`. App Store profiles use Xcode's
+separate App Store distribution workflow. Export uses `thinning=<none>` to retain one universal iPhone/iPad device IPA.
+The prior IPA is replaced only after a successful export; complete Xcode logs and export options remain under
+`build-ios/signing/` (or `build-ios-jit/signing/`). Temporary archives and DerivedData are removed after each attempt.
+Run the helper with the same options plus `--check-only` to inspect metadata without signing/exporting.
+
+The unsigned Xcode archive path has been validated. The development Mac used for this work had no valid Apple signing
+identity, so signed export and installation of the same IPA on a physical iPhone/iPad or Apple Silicon Mac remain
+unverified. Metadata preflight alone does not establish successful signing or installation.
 
 Touch: tap = click, double tap = double click, one-finger drag scrolls with momentum. Hardware keyboards and the
 on-screen keyboard work for the URL bar and page text fields.

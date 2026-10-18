@@ -1,5 +1,6 @@
 /* Box tree construction, text preparation, intrinsic sizes */
 #include "layout.h"
+#include "../dom/control.h"
 #include <math.h>
 
 struct ArenaChunk { ArenaChunk *next; size_t cap, used; char data[]; };
@@ -115,8 +116,8 @@ static void fixup_container_items(Layout *L, Box *b) {
     }
 }
 
-static const char *ctl_text(Node *n, int *ctl, bool *ph) {
-    *ph = false;
+static const char *ctl_text(Node *n, int *ctl, bool *ph, char **owned) {
+    *ph = false; *owned = NULL;
     if (n->tag == A_input) {
         const char *t = node_attr(n, "type");
         if (t && (str_ieq(t, "checkbox"))) { *ctl = CTL_CHECK; return NULL; }
@@ -125,15 +126,15 @@ static const char *ctl_text(Node *n, int *ctl, bool *ph) {
         if (t && (str_ieq(t, "submit") || str_ieq(t, "button") || str_ieq(t, "reset"))) { *ctl = CTL_BUTTON; const char *v = node_attr(n, "value"); return v ? v : str_ieq(t, "submit") ? "Submit" : str_ieq(t, "reset") ? "Reset" : ""; }
         if (t && (str_ieq(t, "image") || str_ieq(t, "file") || str_ieq(t, "color"))) { *ctl = CTL_BUTTON; return str_ieq(t, "file") ? "Choose File" : ""; }
         *ctl = CTL_TEXT;
-        const char *v = n->value_override ? n->value_override : node_attr(n, "value");
+        const char *v = control_is_text(n) ? (*owned = control_value_utf8(n)) : n->value_override ? n->value_override : node_attr(n, "value");
         if (v && *v) return v;
         *ph = true; v = node_attr(n, "placeholder"); return v ? v : "";
     }
-    if (n->tag == A_textarea) { *ctl = CTL_TEXTAREA; if (n->value_override) return n->value_override; char *t = node_text_content(n); if (*t) return t; free(t); *ph = true; const char *p = node_attr(n, "placeholder"); return p ? p : ""; }
+    if (n->tag == A_textarea) { *ctl = CTL_TEXTAREA; *owned = control_value_utf8(n); if (**owned) return *owned; *ph = true; const char *p = node_attr(n, "placeholder"); return p ? p : ""; }
     if (n->tag == A_select) {
         *ctl = CTL_SELECT; Node *first = NULL;
         for (Node *o = n->first; o; o = node_next_in_tree(o, n)) if (o->type == NODE_ELEMENT && o->tag == A_option) { if (!first) first = o; if (node_has_attr(o, "selected")) { first = o; break; } }
-        return first ? node_text_content(first) : "";
+        return first ? (*owned = node_text_content(first)) : "";
     }
     return NULL;
 }
@@ -206,8 +207,8 @@ static void build(BState *bs, Box *parent, Node *n, int *li) {
     if (n->tag == A_input) { const char *t = node_attr(n, "type"); if (t && str_ieq(t, "hidden")) return; }
     bool inl = st->display == D_INLINE;
     bool atomic = st->display == D_INLINE_BLOCK || st->display == D_INLINE_FLEX || st->display == D_INLINE_GRID || st->display == D_INLINE_TABLE;
-    int ctl = CTL_NONE; bool ph = false;
-    const char *ct = (n->tag == A_input || n->tag == A_select || n->tag == A_textarea) && n->ns == NS_HTML ? ctl_text(n, &ctl, &ph) : NULL;
+    int ctl = CTL_NONE; bool ph = false; char *ct_owned = NULL;
+    const char *ct = (n->tag == A_input || n->tag == A_select || n->tag == A_textarea) && n->ns == NS_HTML ? ctl_text(n, &ctl, &ph, &ct_owned) : NULL;
     bool repl = (is_replaced(n) && n->ns != NS_MATHML) || ctl == CTL_CHECK || ctl == CTL_RADIO || ctl == CTL_RANGE;
     if ((repl || ctl) && inl) { inl = false; atomic = true; }
     Box *b = new_box(L, inl ? BX_INLINE : atomic ? BX_ATOMIC : BX_BLOCK, n, st);
@@ -239,7 +240,7 @@ static void build(BState *bs, Box *parent, Node *n, int *li) {
             free(masked);
             append(b, t);
         }
-        append(parent, b); bs->last_space = false; return;
+        free(ct_owned); append(parent, b); bs->last_space = false; return;
     }
     bool saved = bs->last_space;
     if (!inl) bs->last_space = true;

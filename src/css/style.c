@@ -166,6 +166,39 @@ static bool parse_dim(const char **pp, Length *out, LCtx *c) {
     const char *p = *pp; while (is_ws((unsigned char)*p)) p++;
     if (*p == '(') { p++; if (!calc_expr(&p, out, c)) return false; while (is_ws((unsigned char)*p)) p++; if (*p == ')') p++; *pp = p; return true; }
     if (str_istarts(p, "calc(") || str_istarts(p, "-webkit-calc(")) { p = strchr(p, '(') + 1; if (!calc_expr(&p, out, c)) return false; while (is_ws((unsigned char)*p)) p++; if (*p == ')') p++; *pp = p; return true; }
+    if (str_istarts(p, "env(")) {
+        const char *name = p + 4, *end = name, *comma = NULL; int depth = 1;
+        for (; *end; end++) {
+            if (*end == '\"' || *end == '\'') {
+                char quote = *end++;
+                while (*end && *end != quote) { if (*end == '\\' && end[1]) end++; end++; }
+                if (!*end) return false;
+            } else if (*end == '(') depth++;
+            else if (*end == ')' && --depth == 0) break;
+            else if (*end == ',' && depth == 1 && !comma) comma = end;
+        }
+        if (!*end) return false;
+        const char *name_end = comma ? comma : end;
+        while (name < name_end && is_ws((unsigned char)*name)) name++;
+        while (name_end > name && is_ws((unsigned char)name_end[-1])) name_end--;
+        if (name == name_end) return false;
+        static const char *const safe[] = { "safe-area-inset-top", "safe-area-inset-right", "safe-area-inset-bottom", "safe-area-inset-left",
+            "safe-area-max-inset-top", "safe-area-max-inset-right", "safe-area-max-inset-bottom", "safe-area-max-inset-left" };
+        bool known = false;
+        for (size_t i = 0; i < ARRLEN(safe); i++)
+            if (strlen(safe[i]) == (size_t)(name_end - name) && !memcmp(name, safe[i], (size_t)(name_end - name))) { known = true; break; }
+        Length value = L_px(0);
+        /* Native chrome confines the page viewport to the safe rectangle.
+           Subtracting the device's insets again here would shrink it twice. */
+        if (!known) {
+            if (!comma) return false;
+            const char *fallback = comma + 1;
+            if (!calc_expr(&fallback, &value, c)) return false;
+            while (is_ws((unsigned char)*fallback)) fallback++;
+            if (fallback != end) return false;
+        }
+        *out = value; *pp = end + 1; return true;
+    }
     if (str_istarts(p, "min(") || str_istarts(p, "max(") || str_istarts(p, "clamp(")) {
         int kind = lc(p[1]) == 'i' ? 0 : lc(p[1]) == 'a' ? 1 : 2;
         p = strchr(p, '(') + 1; Length v[3]; int n = 0;
@@ -691,13 +724,26 @@ static void parse_shadow(ACtx *c, const char *v, Shadow *sh, bool *has) {
     if (!*has && have_inset) { *sh = inset; *has = true; }
     free(all);
 }
+static char *grid_arg_comma(char *value) {
+    int depth = 0;
+    for (char *p = value; *p; p++) {
+        if (*p == '\"' || *p == '\'') {
+            char quote = *p++;
+            while (*p && *p != quote) { if (*p == '\\' && p[1]) p++; p++; }
+            if (!*p) return NULL;
+        } else if (*p == '(') depth++;
+        else if (*p == ')') depth--;
+        else if (*p == ',' && !depth) return p;
+    }
+    return NULL;
+}
 static int parse_grid_tracks(ACtx *c, const char *v, GridTrack **out) {
     VEC(GridTrack) tr = {0};
     const char *p = v; char *t;
     while ((t = next_token(&p))) {
         if (t[0] == '[') { free(t); continue; }
         if (str_istarts(t, "repeat(")) {
-            char *inner = xstrndup(t + 7, strlen(t) - 8); char *comma = strchr(inner, ',');
+            char *inner = xstrndup(t + 7, strlen(t) - 8); char *comma = grid_arg_comma(inner);
             if (comma) {
                 *comma = 0; int cnt = atoi(inner); if (cnt <= 0) cnt = str_istarts(str_trim(inner), "auto") ? -1 : 1;
                 GridTrack *sub = NULL; int ns = parse_grid_tracks(c, comma + 1, &sub);
@@ -710,9 +756,9 @@ static int parse_grid_tracks(ACtx *c, const char *v, GridTrack **out) {
         }
         GridTrack g; memset(&g, 0, sizeof g); g.size = L_auto(); g.min = L_auto();
         size_t tl = strlen(t);
-        if (tl > 2 && !strcmp(t + tl - 2, "fr")) { g.fr = strtof(t, NULL); g.min.kind = LK_LEN; }
+        if (tl > 2 && !strcmp(t + tl - 2, "fr")) { g.fr = strtof(t, NULL); } /* bare fr has an auto minimum, unlike minmax(0,fr) */
         else if (str_istarts(t, "minmax(")) {
-            char *inner = xstrndup(t + 7, tl - 8); char *comma = strchr(inner, ',');
+            char *inner = xstrndup(t + 7, tl - 8); char *comma = grid_arg_comma(inner);
             if (comma) { *comma = 0; alen(c, str_trim(inner), &g.min); char *mx = str_trim(comma + 1); size_t ml = strlen(mx); if (ml > 2 && !strcmp(mx + ml - 2, "fr")) g.fr = strtof(mx, NULL); else alen(c, mx, &g.size); }
             free(inner);
         } else alen(c, t, &g.size);
@@ -1484,9 +1530,13 @@ static bool container_matches(const ContainerCond *cc, Node *el) {
 }
 
 bool css_media_chain(ContainerCond *mq, const MediaCtx *m) {
+    /* Stylesheet queries and matchMedia must see the same device state even
+       when an input accessory, display scale or root writing mode changes
+       without resizing the page. Pack boolean inputs into the existing cache. */
+    uint8_t flags = (m->dark ? 1 : 0) | (m->root_vertical ? 2 : 0) | (m->touch ? 4 : 0) | (m->any_fine ? 8 : 0);
     for (; mq; mq = mq->outer) {
-        if (!mq->mres || mq->mvw != m->vw || mq->mvh != m->vh || mq->mdark != m->dark) {
-            mq->mres = css_media_matches(mq->query, m) ? 1 : -1; mq->mvw = m->vw; mq->mvh = m->vh; mq->mdark = m->dark;
+        if (!mq->mres || mq->mvw != m->vw || mq->mvh != m->vh || mq->mdpr != m->dpr || mq->mflags != flags) {
+            mq->mres = css_media_matches(mq->query, m) ? 1 : -1; mq->mvw = m->vw; mq->mvh = m->vh; mq->mdpr = m->dpr; mq->mflags = flags;
         }
         if (mq->mres < 0) return false;
     }
@@ -1781,7 +1831,7 @@ static void tracks_str(SB *b, const GridTrack *t, int n) {
     if (!n) { sb_puts(b, "none"); return; }
     for (int i = 0; i < n; i++, t++) {
         if (i) sb_putc(b, ' ');
-        if (t->fr > 0 && t->min.kind == LK_LEN && (t->min.px || t->min.pct)) { sb_puts(b, "minmax("); len_str(b, t->min, "auto"); sb_printf(b, ", %gfr)", t->fr); }
+        if (t->fr > 0 && t->min.kind == LK_LEN) { sb_puts(b, "minmax("); len_str(b, t->min, "auto"); sb_printf(b, ", %gfr)", t->fr); }
         else if (t->fr > 0) sb_printf(b, "%gfr", t->fr);
         else if (t->size.kind == LK_LEN && t->min.kind == LK_LEN) { sb_puts(b, "minmax("); len_str(b, t->min, "auto"); sb_puts(b, ", "); len_str(b, t->size, "auto"); sb_putc(b, ')'); }
         else len_str(b, t->size, "auto");

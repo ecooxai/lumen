@@ -1,4 +1,5 @@
 #include "dom.h"
+#include "control.h"
 
 #define X(n) const char *A_##n;
 X(html) X(head) X(body) X(title) X(meta) X(link) X(style) X(script) X(noscript) X(base) X(div) X(span) X(p) X(a) X(img) X(br) X(hr)
@@ -125,7 +126,7 @@ __attribute__((weak)) void style_free(struct ComputedStyle *s) { free(s); }
 __attribute__((weak)) void box_detach_node(Node *n) { n->box = NULL; }
 static void node_free_one(Node *n) {
     for (int i = 0; i < n->nattrs; i++) free(n->attrs[i].value);
-    free(n->attrs); free(n->text); free(n->inline_style_src); free(n->cls);
+    free(n->attrs); free(n->text); free(n->inline_style_src); free(n->cls); free(n->value_override);
     if (n->ext && n->ext_free) n->ext_free(n->ext);
     if (n->style) style_free(n->style);
     if (n->box) box_detach_node(n);
@@ -158,6 +159,8 @@ static int attr_index(const Node *n, const char *name) {
 const char *node_attr(const Node *n, const char *name) { if (!n || (n->type != NODE_ELEMENT && n->type != NODE_DOCTYPE)) return NULL; int i = attr_index(n, name); return i >= 0 ? n->attrs[i].value : NULL; }
 bool node_has_attr(const Node *n, const char *name) { return node_attr(n, name) != NULL; }
 void node_set_attr(Node *n, const char *name, const char *value) {
+    bool control_type = node_is(n, A_input) && str_ieq(name, "type");
+    unsigned previous_type = control_type ? control_type_snapshot(n) : 0;
     int i = attr_index(n, name);
     if (i >= 0) { if (!strcmp(n->attrs[i].value, value)) return; free(n->attrs[i].value); n->attrs[i].value = xstrdup(value); }
     else {
@@ -168,15 +171,19 @@ void node_set_attr(Node *n, const char *name, const char *value) {
     if (n->attrs[i].name == A_class) n->ncls = -1;
     /* re-point cached id after realloc */
     for (int k = 0; k < n->nattrs; k++) if (n->attrs[k].name == A_id) n->id = n->attrs[k].value;
+    if (control_type) control_type_changed(n, previous_type);
     mark(n->doc, n, !style_only_attr(name));
 }
 void node_remove_attr(Node *n, const char *name) {
     int i = attr_index(n, name); if (i < 0) return;
+    bool control_type = node_is(n, A_input) && str_ieq(name, "type");
+    unsigned previous_type = control_type ? control_type_snapshot(n) : 0;
     if (n->attrs[i].name == A_id) n->id = NULL;
     if (n->attrs[i].name == A_class) n->ncls = -1;
     free(n->attrs[i].value);
     memmove(&n->attrs[i], &n->attrs[i + 1], sizeof(Attr) * (size_t)(n->nattrs - i - 1)); n->nattrs--;
     for (int k = 0; k < n->nattrs; k++) if (n->attrs[k].name == A_id) n->id = n->attrs[k].value;
+    if (control_type) control_type_changed(n, previous_type);
     mark(n->doc, n, !style_only_attr(name));
 }
 static void cls_build(Node *n) {
@@ -252,6 +259,7 @@ Node *node_clone(Node *n, bool deep, Document *d) {
     }
     if (n->template_content) { c->template_content = node_clone(n->template_content, true, d); c->template_content->refcount = 1; c->template_content->flags |= NF_INERT; }
     if (deep) for (Node *k = n->first; k; k = k->next) node_append(c, node_clone(k, true, d));
+    control_clone_state(c, n);
     return c;
 }
 

@@ -48,6 +48,7 @@ typedef struct Stream {
     uint64_t rd_epoch; Blob *rd_init; bool rd_in_init; size_t rd_off;
     bool rd_have_seg; double rd_t0, rd_pos; bool reopen; double reopen_pos;
     bool opened, eof, has_video, has_audio;
+    NetRequest *request;                   /* progressive fetch; kept alive under m->mu until it returns */
     SDL_Thread *th;
 } Stream;
 
@@ -248,7 +249,11 @@ static int64_t seek_cb(void *opaque, int64_t off, int whence) {
 
 /* ---------------- decoder thread ---------------- */
 static void set_error(MediaPlayer *m, const char *msg) {
-    SDL_LockMutex(m->mu); m->error = true; snprintf(m->err, sizeof m->err, "%s", msg); SDL_UnlockMutex(m->mu); wake();
+    SDL_LockMutex(m->mu);
+    bool report = !m->quit;
+    if (report) { m->error = true; snprintf(m->err, sizeof m->err, "%s", msg); }
+    SDL_UnlockMutex(m->mu);
+    if (report) wake();
 }
 static Image *to_image(struct SwsContext **sws, AVFrame *f) {
     int ow = f->width, oh = f->height;
@@ -492,12 +497,22 @@ static int dec_thread(void *arg) {
     Stream *s = arg; MediaPlayer *m = s->m;
     if (s->progressive && !s->init) {
         NetRequest *rq = net_request_new("GET", s->mime);
+        SDL_LockMutex(m->mu);
+        if (m->quit) { SDL_UnlockMutex(m->mu); net_request_free(rq); return 0; }
+        s->request = rq;
+        SDL_UnlockMutex(m->mu);
         NetResponse *r = net_fetch_sync(rq);
+        SDL_LockMutex(m->mu);
+        s->request = NULL; bool quit = m->quit;
+        SDL_UnlockMutex(m->mu);
         net_request_free(rq);
+        if (quit) { net_response_free(r); return 0; }
         if (!r || r->status < 200 || r->status >= 300 || !r->body) { set_error(m, "network error"); if (r) net_response_free(r); return 0; }
         Blob *b = xcalloc(1, sizeof *b); b->refs = 1; b->n = r->body_len; b->p = xmalloc(r->body_len); memcpy(b->p, r->body, r->body_len);
         net_response_free(r);
-        SDL_LockMutex(m->mu); s->init = b; SDL_BroadcastCondition(m->cv); SDL_UnlockMutex(m->mu);
+        SDL_LockMutex(m->mu);
+        if (m->quit) blob_unref(b); else s->init = b;
+        SDL_BroadcastCondition(m->cv); SDL_UnlockMutex(m->mu);
     }
     DecCtx d = { 0 }; double start = 0, skip = 0; int fails = 0;
     for (;;) {
@@ -868,6 +883,10 @@ void mp_free(MediaPlayer *m) {
     SDL_LockMutex(m->mu);
     m->quit = true; m->playing = false; m->a_running = false;
     SDL_AudioStream *dev = m->dev; m->dev = NULL;
+    /* Keep each request owned until the decoder clears it under this lock.
+     * Socket cancellation wakes HTTP/TLS I/O before the main-thread join;
+     * a system DNS lookup remains outside the network client's control. */
+    for (int i = 0; i < m->nst; i++) if (m->st[i]->request) net_request_cancel(m->st[i]->request);
     SDL_BroadcastCondition(m->cv);
     SDL_UnlockMutex(m->mu);
     /* Stop producers before destroying the device; a pending metadata fetch

@@ -234,15 +234,18 @@ static void image(R *r, const DItem *it) {
     float x0 = it->x * s, y0 = it->y * s, x1 = (it->x + it->w) * s, y1 = (it->y + it->h) * s;
     if (x1 - x0 < 0.5f || y1 - y0 < 0.5f) return;
     const Clip *c = clip(r);
-    if (r->c->punch && (const void *)im == r->c->punch) {
+    /* The GPU underlay cannot reproduce rounded clipping or group opacity.
+       Keep the ordinary image when either prevents an actual alpha hole. */
+    if (r->c->punch && (const void *)im == r->c->punch && !r->nlayer && !c->round) {
         int qx0 = LMAX(c->x0, (int)floorf(x0 + 0.5f)), qy0 = LMAX(c->y0, (int)floorf(y0 + 0.5f)), qx1 = LMIN(c->x1, (int)floorf(x1 + 0.5f)), qy1 = LMIN(c->y1, (int)floorf(y1 + 0.5f));
-        for (int y = qy0; qx1 > qx0 && y < qy1; y++) memset(r->px + (size_t)y * (size_t)r->c->stride + qx0, 0, (size_t)(qx1 - qx0) * 4);
-        r->c->punched = !r->nlayer && !c->round;
+        if (qx1 <= qx0 || qy1 <= qy0) return;
+        for (int y = qy0; y < qy1; y++) memset(r->px + (size_t)y * (size_t)r->c->stride + qx0, 0, (size_t)(qx1 - qx0) * 4);
+        r->c->punched = true;
         return;
     }
-    if (!im->px) { if (!im->yuv) return; image_yuv_materialize((Image *)im); }
     int px0 = LMAX(c->x0, (int)floorf(x0)), py0 = LMAX(c->y0, (int)floorf(y0)), px1 = LMIN(c->x1, (int)ceilf(x1)), py1 = LMIN(c->y1, (int)ceilf(y1));
     if (px1 <= px0 || py1 <= py0) return;
+    if (!im->px) { if (!im->yuv) return; image_yuv_materialize((Image *)im); }
     float kx = im->w / (x1 - x0), ky = im->h / (y1 - y0);
     bool down = kx > 1.5f || ky > 1.5f, rclip = c->round;
     ImgCol *cols = xmalloc(sizeof *cols * (size_t)(px1 - px0));
@@ -384,11 +387,34 @@ static void raster_rect_(Canvas *cv, const DisplayList *dl, Color clearc, int rx
     if (!first) for (int y = ry0; y < ry1; y++) for (int x = rx0; x < rx1; x++) cv->px[(size_t)y * (size_t)cv->stride + (size_t)x] = cl;
     r.clips[0] = (Clip){ rx0, ry0, rx1, ry1, 0, 0, (float)cv->w, (float)cv->h, {0}, false }; r.nclip = 1;
     float s = r.s;
+    /* Opt-in single-pixel paint-order evidence, at most once per second. The
+       page buffer is always owned here, including while a temporary layer is
+       active. Do not inspect layer storage outside that layer's allocation. */
+    static int video_trace = -1; static double video_trace_next;
+    if (video_trace < 0) { const char *e = getenv("LUMEN_VIDEO_PAINT_TRACE"); video_trace = e && *e && strcmp(e, "0"); }
+    bool trace = false; int tx = 0, ty = 0, trace_changes = 0;
+    if (video_trace && cv->punch && now_ms() >= video_trace_next) {
+        for (int i = 0; i < dl->items.n; i++) {
+            const DItem *it = &dl->items.v[i];
+            if (it->op != DO_IMAGE || (const void *)it->img != cv->punch) continue;
+            double x = ((double)it->x + it->w * .5) * s, y = ((double)it->y + it->h * .5) * s;
+            if (!isfinite(x) || !isfinite(y)) break;
+            tx = (int)LCLAMP(x, 0, cv->w - 1); ty = (int)LCLAMP(y, 0, cv->h - 1);
+            trace = tx >= rx0 && tx < rx1 && ty >= ry0 && ty < ry1;
+            break;
+        }
+        if (trace) {
+            video_trace_next = now_ms() + 1000;
+            fprintf(stderr, "lumen-video-paint: begin center=%d,%d dirty=%d,%d-%d,%d items=%d first=%d\n", tx, ty, rx0, ry0, rx1, ry1, dl->items.n, first);
+        }
+    }
     static int dbg = -1; if (dbg < 0) dbg = getenv("LUMEN_DEBUG_RASTER") != NULL;
     double area[16] = {0}; int cnt[16] = {0};
     for (int i = 0; i < dl->items.n; i++) {
         const DItem *it = &dl->items.v[i];
         if (i < first && it->op != DO_PUSH_CLIP && it->op != DO_POP_CLIP) continue;
+        uint32_t before = 0; Clip before_clip = {0}; int before_layers = 0;
+        if (trace) { before = cv->px[(size_t)ty * (size_t)cv->stride + (size_t)tx]; before_clip = *clip(&r); before_layers = r.nlayer; }
         if (dbg && it->op < 16) { const Clip *c = clip(&r); float ax0 = LMAX(c->x0, it->x * s), ay0 = LMAX(c->y0, it->y * s), ax1 = LMIN(c->x1, (it->x + it->w) * s), ay1 = LMIN(c->y1, (it->y + it->h) * s);
             if (ax1 > ax0 && ay1 > ay0) { area[it->op] += (ax1 - ax0) * (ay1 - ay0); cnt[it->op]++; } }
         switch (it->op) {
@@ -434,7 +460,17 @@ static void raster_rect_(Canvas *cv, const DisplayList *dl, Color clearc, int rx
             break;
         }
         }
+        if (trace) {
+            uint32_t after = cv->px[(size_t)ty * (size_t)cv->stride + (size_t)tx];
+            bool punched_item = it->op == DO_IMAGE && (const void *)it->img == cv->punch;
+            if (after != before) trace_changes++;
+            if (punched_item || (after != before && trace_changes <= 12))
+                fprintf(stderr, "lumen-video-paint: item=%d op=%u punch=%d box=%.2f,%.2f,%.2f,%.2f color=%08x clip=%d,%d-%d,%d round=%d layers=%d argb=%08x->%08x\n",
+                    i, (unsigned)it->op, punched_item, it->x, it->y, it->w, it->h, it->color,
+                    before_clip.x0, before_clip.y0, before_clip.x1, before_clip.y1, before_clip.round, before_layers, before, after);
+        }
     }
+    if (trace) fprintf(stderr, "lumen-video-paint: end punched=%d changes=%d argb=%08x\n", cv->punched, trace_changes, cv->px[(size_t)ty * (size_t)cv->stride + (size_t)tx]);
     if (dbg && (rx1 - rx0) * (ry1 - ry0) > 10000) { fprintf(stderr, "lumen: raster %d,%d-%d,%d first=%d", rx0, ry0, rx1, ry1, first); for (int k = 0; k < 16; k++) if (cnt[k]) fprintf(stderr, " op%d:%d/%.0fk", k, cnt[k], area[k] / 1000); fprintf(stderr, "\n"); }
     while (r.nlayer > 0) { r.nlayer--; if (r.nlayer < 16) { free(r.px + (size_t)r.layers[r.nlayer].y0 * (size_t)cv->stride); r.px = r.layers[r.nlayer].px; } }
 }

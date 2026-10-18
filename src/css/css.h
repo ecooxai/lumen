@@ -138,7 +138,7 @@ typedef struct Compound { SimpleSel *s; int n; uint8_t comb; /* combinator to th
 typedef struct Selector { Compound *c; int n; uint32_t spec; uint8_t pseudo_el; /* 0 none 1 before 2 after 3 other 4 marker 5 placeholder */ } Selector;
 struct SelList { Selector *v; int n; };
 
-typedef struct ContainerCond { char *name, *query; struct ContainerCond *outer; float mvw, mvh; int8_t mres; bool mdark; } ContainerCond; /* also used for @media (mres caches the last result) */
+typedef struct ContainerCond { char *name, *query; struct ContainerCond *outer; float mvw, mvh, mdpr; int8_t mres; uint8_t mflags; } ContainerCond; /* also used for @media (mres caches the last result) */
 /* container query environment: the container's content size and its custom properties (style()) */
 typedef struct CQEnv { float w, h; bool size, block; const char *(*var)(const void *ud, const char *name); const void *ud; } CQEnv;
 bool css_container_eval(const char *q, const CQEnv *env);
@@ -154,7 +154,11 @@ typedef struct Rule {
     Node *scope;             /* shadow root the rule's sheet lives in, NULL for document sheets */
 } Rule;
 
-typedef struct MediaCtx { float vw, vh, dpr; bool dark, root_vertical; } MediaCtx;
+typedef struct MediaCtx {
+    float vw, vh, dpr;
+    bool dark, root_vertical;
+    bool touch, any_fine; /* primary touchscreen; optional mouse/trackpad. Zero-init preserves desktop input. */
+} MediaCtx;
 
 typedef struct StyleSheet {
     VEC(Rule) rules;
@@ -226,7 +230,7 @@ char *css_get_computed_value(Node *el, const char *prop);
 extern const char *css_ua_sheet;
 
 /* tokenizer (exposed for value parsing) */
-enum CTok { CT_EOF, CT_IDENT, CT_FUNC, CT_AT, CT_HASH, CT_STRING, CT_URL, CT_DELIM, CT_NUMBER, CT_PERCENT, CT_DIM, CT_WS, CT_COLON, CT_SEMI, CT_COMMA,
+enum CTokenType { CT_EOF, CT_IDENT, CT_FUNC, CT_AT, CT_HASH, CT_STRING, CT_URL, CT_DELIM, CT_NUMBER, CT_PERCENT, CT_DIM, CT_WS, CT_COLON, CT_SEMI, CT_COMMA,
     CT_LBRACK, CT_RBRACK, CT_LPAREN, CT_RPAREN, CT_LBRACE, CT_RBRACE, CT_CDO, CT_CDC, CT_BAD };
 typedef struct { int type; const char *start; size_t len; double num; char unit[12]; char *str; bool is_int; } CTok;
 typedef struct { const char *s; size_t n, i; } CLexer;
