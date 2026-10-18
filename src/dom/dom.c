@@ -110,18 +110,20 @@ static void mark_sheet_content(Document *d, Node *n) {
 
 /* The style engine marks following siblings that sibling combinators relate. */
 __attribute__((weak)) void node_sibling_selectors_changed(Node *n, int mode) { (void)n; (void)mode; }
-static void mark_impl(Document *d, Node *n, bool layout, bool selectors, bool keys_known, bool style) {
+/* reason names an unknown change; NULL marks known keys. subtree reselects
+ * n's descendants even for known keys. */
+static void mark_impl(Document *d, Node *n, bool layout, bool selectors, const char *reason, bool subtree, bool style) {
     if (!d) return;
     d->dom_version++;
     if (selectors) {
         d->selector_version++;
         if (!n || is_connected(n)) {
             d->inheritance_version++;
-            if (!keys_known) d->selector_changes_unknown = true;
+            if (reason) { d->selector_changes_unknown = true; if (!d->unknown_reason) d->unknown_reason = reason; }
         }
-        if (n) n->flags |= NF_RESELECT_SUBTREE;
+        if (n) n->flags |= reason || subtree ? NF_RESELECT_SUBTREE : NF_RESELECT_KEYED;
     }
-    if (selectors) trace_mutation(d, n, "selector", NULL);
+    if (selectors) trace_mutation(d, n, "selector", reason ? reason : subtree ? "subtree" : "keyed");
     mark_sheet_content(d, n);
     if (layout) d->layout_version++;
     if (n) {
@@ -134,9 +136,37 @@ static void mark_impl(Document *d, Node *n, bool layout, bool selectors, bool ke
     }
     if (d->on_mutation) d->on_mutation(d, n);
 }
-static void mark(Document *d, Node *n, bool layout, bool selectors) { mark_impl(d, n, layout, selectors, false, true); }
-void doc_mark_dirty(Document *d, Node *n) { mark(d, n, true, true); if (n) node_sibling_selectors_changed(n, 0); }
-void doc_mark_style_dirty(Document *d, Node *n) { mark(d, n, false, true); if (n) node_sibling_selectors_changed(n, 0); }
+static void mark(Document *d, Node *n, bool layout, bool selectors, const char *reason) { mark_impl(d, n, layout, selectors, reason, true, true); }
+void doc_mark_dirty(Document *d, Node *n) { mark(d, n, true, true, "dirty"); if (n) node_sibling_selectors_changed(n, 0); }
+void doc_mark_style_dirty(Document *d, Node *n) { mark(d, n, false, true, "style"); if (n) node_sibling_selectors_changed(n, 0); }
+void doc_mark_state_dirty(Document *d, Node *n, bool subtree) {
+    mark_impl(d, n, true, true, NULL, subtree, true);
+    if (n) node_sibling_selectors_changed(n, 0);
+}
+/* The style engine reports whether any rule tests :focus-within. */
+__attribute__((weak)) bool doc_uses_focus_within(Document *d) { (void)d; return true; }
+/* ... and may restyle exactly the elements whose :focus-within-dependent matches change. */
+__attribute__((weak)) bool doc_focus_within_moved(Document *d, Node *old, Node *n) { (void)d; (void)old; (void)n; return false; }
+static void selector_change_key(Document *d, const char *key);
+void doc_set_focus(Document *d, Node *n) {
+    Node *old = d->focus;
+    if (old == n) return;
+    if (doc_uses_focus_within(d)) {
+        /* Only ancestors on one side of the common ancestor change state. */
+        if (!doc_focus_within_moved(d, old, n)) selector_change_key(d, ":focus-within");
+        for (int side = 0; side < 2; side++)
+            for (Node *a = side ? n : old; a; a = a->parent ? a->parent : a->host) {
+                if (a->type != NODE_ELEMENT) continue;
+                Node *other = side ? old : n;
+                if (other && node_is_inclusive_ancestor(a, other)) break;
+                mark_impl(d, a, true, true, NULL, false, true);
+                node_sibling_selectors_changed(a, 0);
+            }
+    }
+    if (old) { old->flags &= ~(uint32_t)NF_FOCUS; doc_mark_state_dirty(d, old, true); }
+    d->focus = n;
+    if (n) { n->flags |= NF_FOCUS; doc_mark_state_dirty(d, n, true); }
+}
 static bool style_only_attr(const char *name) { return !strcmp(name, "style") || !strcmp(name, "class"); }
 /* CSS may precisely invalidate attribute-selector subjects. DOM-only users
  * retain the conservative behavior without linking the style engine. */
@@ -150,7 +180,7 @@ static void mark_attribute(Node *n, const char *name) {
         if (d->on_mutation) d->on_mutation(d, n);
     } else {
         bool inline_style = str_ieq(name, "style");
-        mark_impl(d, n, !style_only_attr(name), !inline_style, str_ieq(name, "class") || str_ieq(name, "id"), true);
+        mark_impl(d, n, !style_only_attr(name), !inline_style, str_ieq(name, "class") || str_ieq(name, "id") ? NULL : atom_lower(name, strlen(name)), false, true);
         if (d) node_sibling_selectors_changed(n, inline_style ? 2 : 1);
     }
 }
@@ -189,7 +219,7 @@ static void mark_child_list(Node *parent) {
     /* Structural selector invalidation selects affected parents separately.
      * A child-list edit alone changes layout, not inherited computed style.
      * DOM-only clients without a style engine retain conservative dirtiness. */
-    mark_impl(d, parent, true, false, false, !d || !d->stylesheets);
+    mark_impl(d, parent, true, false, "children", true, !d || !d->stylesheets);
 }
 
 void node_insert_before(Node *parent, Node *child, Node *ref) {
@@ -217,7 +247,7 @@ void node_insert_before(Node *parent, Node *child, Node *ref) {
     /* A moved subtree has new ancestry. Existing siblings only need the
      * structural selector dependencies, not a fresh cascade for every leaf. */
     child->flags |= NF_STYLE_DIRTY | NF_RESELECT_SUBTREE;
-    mark(parent->doc, child, true, false);
+    mark(parent->doc, child, true, false, NULL);
     mark_child_list(parent);
 }
 void node_append(Node *parent, Node *child) { node_insert_before(parent, child, NULL); }
@@ -306,11 +336,16 @@ static void cache_classes(Node *n, const char *value) {
         n->class_bits |= node_class_bit(cls);
     }
 }
-static void selector_change_key(Document *d, const char *key) {
+static void selector_change_key_in(Document *d, const char *key, bool reselect) {
     if (!key) return;
     unsigned bit = dom_tree_key_bit(key);
     d->selector_change_keys[bit >> 6] |= UINT64_C(1) << (bit & 63);
+    if (reselect) d->reselect_change_keys[bit >> 6] |= UINT64_C(1) << (bit & 63);
+#if defined(__ANDROID__) && !defined(NDEBUG)
+    if (reselect && d->debug_mutations) { char b[24]; snprintf(b, sizeof b, "rkey bit=%u", bit); trace_mutation(d, NULL, b, key); }
+#endif
 }
+static void selector_change_key(Document *d, const char *key) { selector_change_key_in(d, key, true); }
 static bool class_value_contains(const char *value, const char *key) {
     size_t len = strlen(key);
     for (const char *p = value; p && *p;) {
@@ -326,7 +361,10 @@ static bool class_value_contains(const char *value, const char *key) {
 static void record_selector_attribute(Node *n, const char *name, const char *value) {
     if (!n->doc || !is_connected(n)) return;
     Document *d = n->doc;
-    selector_change_key(d, atom_lower(name, strlen(name)));
+    /* node_attribute_style_changed marks these subjects by candidate; their
+     * keys must not widen the descendant reselect of unrelated changes. */
+    bool precise = d->stylesheets && n->ns == NS_HTML && (str_istarts(name, "data-") || str_istarts(name, "aria-"));
+    selector_change_key_in(d, atom_lower(name, strlen(name)), !precise);
     if (str_ieq(name, "id")) {
         selector_change_key(d, "id"); selector_change_key(d, n->id); selector_change_key(d, value);
     } else if (str_ieq(name, "class")) {
@@ -419,7 +457,7 @@ void node_set_character_data(Node *n, const char *s, size_t len) {
         dirty = n->parent;
         if (n->doc && is_connected(n->parent)) n->doc->text_emptiness_version++;
     }
-    mark(n->doc, dirty, true, dirty != n);
+    mark(n->doc, dirty, true, dirty != n, "text");
 }
 void node_set_text_content(Node *n, const char *s) {
     if (n->type == NODE_TEXT || n->type == NODE_COMMENT || n->type == NODE_CDATA || n->type == NODE_PI) { node_set_character_data(n, s ? s : "", s ? strlen(s) : 0); return; }

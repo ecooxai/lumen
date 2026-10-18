@@ -26,6 +26,7 @@ enum {
     NF_TREE_ANCESTOR = 1 << 17, /* scratch: ancestor of a pending child-list change */
     NF_TREE_RELATED = 1 << 18,  /* scratch: also preceding siblings / changed parent's children */
     NF_TREE_CHILD = 1 << 19,    /* scratch: direct child of a pending child-list change */
+    NF_RESELECT_KEYED = 1 << 20, /* class/ID change: descendants reselect only if a rule tests those keys above its subject */
     NF_INERT = 1 << 11,           /* template content fragment */
 };
 
@@ -80,7 +81,9 @@ typedef struct Document {
     uint64_t tree_version;        /* child-list mutations, coalesced by the style engine */
     uint64_t tree_change_keys[16]; /* conservative keys in inserted/removed connected subtrees */
     uint64_t selector_change_keys[16]; /* changed class tokens/IDs and their attribute names */
+    uint64_t reselect_change_keys[16]; /* the same, less data-/aria- attributes the style engine invalidates by candidate */
     bool selector_changes_unknown; /* non-keyed connected selector/state changes */
+    const char *unknown_reason; /* debug: first source of this batch's unknown changes */
     bool tree_focus_changed; /* a child-list change moved/removed the focused node */
     unsigned debug_mutations;     /* bounded debug trace, explicitly armed on device */
     uint64_t sheet_version;       /* stylesheet content, attributes, tree membership/order */
@@ -94,6 +97,7 @@ typedef struct Document {
     struct Node *focus;
     VEC(Node *) modals;
     struct Node *sel[2]; int selo[2]; bool sel_back; uint64_t sel_ver;   /* JS selection start/end (text offsets in bytes) */
+    struct Node *csel_n; int csel[2];   /* <input>/<textarea> selection: the control it belongs to, anchor/focus in codepoints of its value */
     void *browser;                /* owning page */
     void (*on_mutation)(struct Document *, Node *);
 } Document;
@@ -145,6 +149,11 @@ Node *node_next_deep(Node *n, Node *root);        /* pre-order, entering shadow 
 Node *doc_get_element_by_id(Document *d, const char *id);
 void doc_mark_dirty(Document *d, Node *n);         /* style + layout dirty */
 void doc_mark_style_dirty(Document *d, Node *n);   /* style only: layout follows from the computed style diff */
+/* n's own selector state (hover, focus, form value, container size) changed
+ * and the caller invalidated everything else that state reaches: restyle n,
+ * and with subtree its descendants, without an unknown document-wide change. */
+void doc_mark_state_dirty(Document *d, Node *n, bool subtree);
+void doc_set_focus(Document *d, Node *n);         /* moves focus, invalidating :focus and :focus-within */
 void dom_dump(const Node *n, int depth, FILE *f);
 bool node_is_inclusive_ancestor(const Node *a, const Node *b);
 

@@ -1,13 +1,14 @@
 #include "local_viewer.h"
 #include "../base/util.h"
 
-char *local_viewer_html(const char *url, const char *type) {
-    if (!url || !str_istarts(url, "file:") || !type) return NULL;
+char *local_viewer_html(const char *url, const char *type, bool remote) {
+    if (!url || !type || !(remote ? str_istarts(url, "http:") || str_istarts(url, "https:") : str_istarts(url, "file:"))) return NULL;
+    if (remote && str_istarts(type, "image/svg")) return NULL;
     bool image = str_istarts(type, "image/"), video = str_istarts(type, "video/"), audio = str_istarts(type, "audio/");
     if (!image && !video && !audio) return NULL;
     SB output; sb_init(&output);
     sb_puts(&output, "<!doctype html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
-        "<title>Local media · Lumen</title><style>"
+        "<title>Media · Lumen</title><style>"
         "body{margin:0;background:#eaf3fc;color:#182b40;font:15px system-ui}"
         "header{padding:12px 16px;background:white;border-bottom:1px solid #ccdbe9}"
         ".zoom{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}"
@@ -16,7 +17,12 @@ char *local_viewer_html(const char *url, const char *type) {
         "button:focus{outline:2px solid #235c9b;outline-offset:2px}main{padding:16px;overflow:auto}"
         "img,video{display:block;max-width:none;max-height:none;background:#fff}"
         "audio{width:100%;max-width:640px}p{font-size:13px;color:#476079}"
-        "</style></head><body><header><strong>Local media</strong>");
+        "</style></head><body><header><strong>");
+    const char *leaf = strrchr(url, '/'); leaf = leaf && leaf[1] ? leaf + 1 : url;
+    for (const char *cursor = leaf; *cursor && *cursor != '?' && *cursor != '#'; cursor++) {
+        if (*cursor == '<') sb_puts(&output, "&lt;"); else if (*cursor == '&') sb_puts(&output, "&amp;"); else sb_putc(&output, *cursor);
+    }
+    sb_puts(&output, "</strong>");
     if (!audio) {
         sb_puts(&output, "<div class=\"zoom\" role=\"group\" aria-label=\"Media zoom\">");
         const int levels[] = {10, 25, 50, 75, 100, 150, 200, 300};
@@ -38,10 +44,10 @@ char *local_viewer_html(const char *url, const char *type) {
         }
     }
     sb_puts(&output, image ? "\">" : video ? "\"></video>" : "\"></audio>");
-    sb_puts(&output, "<p id=\"status\" role=\"status\">Loading local media…</p></main><script>"
+    sb_puts(&output, "<p id=\"status\" role=\"status\">Loading media…</p></main><script>"
         "const media=document.getElementById('media');const status=document.getElementById('status');"
         "media.addEventListener('error',()=>{status.textContent='This file could not be decoded.';});");
-    if (audio) sb_puts(&output, "media.addEventListener('loadedmetadata',()=>{status.textContent='Local audio — use the playback controls.';});");
+    if (audio) sb_puts(&output, "media.addEventListener('loadedmetadata',()=>{status.textContent='Audio — use the playback controls.';});");
     else sb_puts(&output, "const levels=[10,25,50,75,100,150,200,300];const buttons=document.querySelectorAll('[data-zoom]');let percent=100;"
         "function resizeMedia(){const width=media.naturalWidth||media.videoWidth;const height=media.naturalHeight||media.videoHeight;"
         "if(!width||!height)return;const ratio=window.devicePixelRatio||1;"
@@ -50,6 +56,8 @@ char *local_viewer_html(const char *url, const char *type) {
         "buttons.forEach(button=>button.addEventListener('click',()=>{const value=Number(button.getAttribute('data-zoom'));"
         "if(!levels.includes(value))return;percent=value;buttons.forEach(item=>item.setAttribute('aria-pressed',String(item===button)));resizeMedia();}));"
         "media.addEventListener('load',resizeMedia);"
+        "if(media.tagName==='VIDEO'){media.addEventListener('click',()=>{if(media.paused)media.play();else media.pause();});"
+        "const state=()=>{document.title=(media.paused?'Paused':'Playing')+' · Lumen';};media.addEventListener('play',state);media.addEventListener('pause',state);}"
         "media.addEventListener('loadedmetadata',resizeMedia);window.addEventListener('resize',resizeMedia);resizeMedia();");
     sb_puts(&output, "</script></body></html>");
     return sb_take(&output);

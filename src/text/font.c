@@ -486,8 +486,20 @@ float text_width(Font *f, const char *s, size_t len, float ls) {
     ShapedRun r; text_shape(f, s, len, ls, &r); float w = r.width; shaped_free(&r); return w;
 }
 
+/* "<gid hex>@<scale x100>": built by hand, snprintf showed up in scroll profiles */
+static void glyph_key(char key[32], uint32_t gid, float scale) {
+    static const char hx[] = "0123456789abcdef";
+    char t[24]; int n = 0, o = 0;
+    do { t[n++] = hx[gid & 15]; gid >>= 4; } while (gid);
+    while (n) key[o++] = t[--n];
+    key[o++] = '@';
+    long k = lroundf(scale * 100); if (k < 0) { key[o++] = '-'; k = -k; }
+    do { t[n++] = (char)('0' + k % 10); k /= 10; } while (k && n < 20);
+    while (n) key[o++] = t[--n];
+    key[o] = 0;
+}
 const Glyph *font_glyph(Font *f, uint32_t gid, float scale) {
-    char key[32]; snprintf(key, sizeof key, "%u@%.2f", gid, scale);
+    char key[32]; glyph_key(key, gid, scale);
     pthread_mutex_lock(&font_mu);
     Glyph *g = hm_get(&f->glyphs, key);
     if (g) { pthread_mutex_unlock(&font_mu); return g; }

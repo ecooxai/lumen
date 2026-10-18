@@ -18,9 +18,86 @@ mk('HTMLTrackElement', HTMLElement, ['track'], p => { reflectUrl(p, 'src'); refl
 mk('HTMLObjectElement', HTMLElement, ['object'], p => { reflectUrl(p, 'data'); reflectStr(p, 'type', 'name', 'width', 'height'); });
 mk('HTMLEmbedElement', HTMLElement, ['embed'], p => { reflectUrl(p, 'src'); reflectStr(p, 'type', 'width', 'height'); });
 mk('HTMLSourceElement', HTMLElement, ['source'], p => { reflectUrl(p, 'src'); reflectStr(p, 'type', 'srcset', 'sizes', 'media'); });
-mk('HTMLTableElement', HTMLElement, ['table'], p => methods(p, { get rows() { return nodeList(N.query(this, 'tr', true)); }, get tBodies() { return nodeList(elKids(this).filter(e => N.name(e) === 'tbody')); } }));
-mk('HTMLTableSectionElement', HTMLElement, ['tbody', 'thead', 'tfoot'], p => methods(p, { get rows() { return nodeList(elKids(this).filter(e => N.name(e) === 'tr')); } }));
-mk('HTMLTableRowElement', HTMLElement, ['tr'], p => methods(p, { get cells() { return nodeList(elKids(this).filter(e => /^t[dh]$/.test(N.name(e)))); }, insertCell(i = -1) { const td = N.create('td', 0); const c = this.cells; insertNode(this, td, i < 0 || i >= c.length ? null : c[i]); return td; } }));
+/* table DOM: rows in thead, body and tfoot order; insertRow/insertCell/deleteRow/deleteCell and the section helpers */
+const tableKid = (t, name) => elKids(t).find(e => N.name(e) === name) || null;
+const rowsOf = p => elKids(p).filter(e => N.name(e) === 'tr');
+const tableRows = t => {
+    const kids = elKids(t), out = [];
+    for (const k of kids) if (N.name(k) === 'thead') out.push(...rowsOf(k));
+    for (const k of kids) { const n = N.name(k); if (n === 'tr') out.push(k); else if (n === 'tbody') out.push(...rowsOf(k)); }
+    for (const k of kids) if (N.name(k) === 'tfoot') out.push(...rowsOf(k));
+    return out;
+};
+const indexError = (what, i, n) => new DOMException(`Failed to execute '${what}': The index provided (${i}) is outside the range [-1, ${n}].`, 'IndexSizeError');
+const sectionInsertRow = (sec, i, what) => {
+    i = i === undefined ? -1 : Math.trunc(+i) || 0;
+    const rows = rowsOf(sec);
+    if (i < -1 || i > rows.length) throw indexError(what, i, rows.length);
+    const tr = N.create('tr', 0);
+    insertNode(sec, tr, i === -1 || i === rows.length ? null : rows[i]);
+    return tr;
+};
+const deleteFrom = (rows, i, what) => {
+    i = Math.trunc(+i) || 0;
+    if (i === -1) { if (rows.length) rows[rows.length - 1].remove(); return; }
+    if (i < 0 || i >= rows.length) throw indexError(what, i, rows.length);
+    rows[i].remove();
+};
+mk('HTMLTableElement', HTMLElement, ['table'], p => methods(p, {
+    get rows() { return nodeList(tableRows(this)); },
+    get tBodies() { return nodeList(elKids(this).filter(e => N.name(e) === 'tbody')); },
+    get caption() { return tableKid(this, 'caption'); }, get tHead() { return tableKid(this, 'thead'); }, get tFoot() { return tableKid(this, 'tfoot'); },
+    createCaption() { let c = this.caption; if (!c) { c = N.create('caption', 0); insertNode(this, c, N.first(this)); } return c; },
+    deleteCaption() { const c = this.caption; if (c) c.remove(); },
+    createTHead() {
+        let h = this.tHead;
+        if (!h) { h = N.create('thead', 0); insertNode(this, h, elKids(this).find(e => N.name(e) !== 'caption' && N.name(e) !== 'colgroup') || null); }
+        return h;
+    },
+    deleteTHead() { const h = this.tHead; if (h) h.remove(); },
+    createTFoot() { let f = this.tFoot; if (!f) { f = N.create('tfoot', 0); insertNode(this, f, null); } return f; },
+    deleteTFoot() { const f = this.tFoot; if (f) f.remove(); },
+    createTBody() {
+        const b = N.create('tbody', 0), bodies = elKids(this).filter(e => N.name(e) === 'tbody'), last = bodies[bodies.length - 1];
+        insertNode(this, b, last ? N.next(last) : null);
+        return b;
+    },
+    insertRow(i) {
+        i = i === undefined ? -1 : Math.trunc(+i) || 0;
+        const rows = tableRows(this);
+        if (i < -1 || i > rows.length) throw indexError("insertRow' on 'HTMLTableElement", i, rows.length);
+        const tr = N.create('tr', 0);
+        if (!rows.length) {
+            const bodies = elKids(this).filter(e => N.name(e) === 'tbody');
+            if (bodies.length) insertNode(bodies[bodies.length - 1], tr, null);
+            else { const b = N.create('tbody', 0); insertNode(b, tr, null); insertNode(this, b, null); }
+        } else if (i === -1 || i === rows.length) { const last = rows[rows.length - 1]; insertNode(N.parent(last), tr, null); }
+        else insertNode(N.parent(rows[i]), tr, rows[i]);
+        return tr;
+    },
+    deleteRow(i) { deleteFrom(tableRows(this), i, "deleteRow' on 'HTMLTableElement"); },
+}));
+mk('HTMLTableSectionElement', HTMLElement, ['tbody', 'thead', 'tfoot'], p => methods(p, {
+    get rows() { return nodeList(rowsOf(this)); },
+    insertRow(i) { return sectionInsertRow(this, i, "insertRow' on 'HTMLTableSectionElement"); },
+    deleteRow(i) { deleteFrom(rowsOf(this), i, "deleteRow' on 'HTMLTableSectionElement"); },
+}));
+const cellsOf = r => elKids(r).filter(e => /^t[dh]$/.test(N.name(e)));
+mk('HTMLTableRowElement', HTMLElement, ['tr'], p => methods(p, {
+    get cells() { return nodeList(cellsOf(this)); },
+    get rowIndex() {
+        let t = N.parent(this); if (t && /^t(head|body|foot)$/.test(N.name(t))) t = N.parent(t);
+        return t && N.name(t) === 'table' ? tableRows(t).indexOf(this) : -1;
+    },
+    get sectionRowIndex() { const s = N.parent(this); return s ? rowsOf(s).indexOf(this) : -1; },
+    insertCell(i) {
+        i = i === undefined ? -1 : Math.trunc(+i) || 0;
+        const c = cellsOf(this);
+        if (i < -1 || i > c.length) throw indexError("insertCell' on 'HTMLTableRowElement", i, c.length);
+        const td = N.create('td', 0); insertNode(this, td, i === -1 || i === c.length ? null : c[i]); return td;
+    },
+    deleteCell(i) { deleteFrom(cellsOf(this), i, "deleteCell' on 'HTMLTableRowElement"); },
+}));
 mk('HTMLTableCellElement', HTMLElement, ['td', 'th'], p => reflectInt(p, 1, 'colSpan', 'rowSpan'));
 mk('HTMLAnchorElement', HTMLElement, ['a'], p => { reflectStr(p, 'target', 'download', 'rel', 'hreflang', 'type', 'referrerPolicy'); urlParts(p, 'href'); textProp(p); methods(p, { get relList() { return new DOMTokenList(this, 'rel'); } }); });
 mk('HTMLAreaElement', HTMLElement, ['area'], p => { urlParts(p, 'href'); reflectStr(p, 'alt', 'target'); });
@@ -59,6 +136,54 @@ mk('HTMLFormElement', HTMLElement, ['form'], p => {
         checkValidity() { return true; }, reportValidity() { return true; },
     });
 });
+/* text selection of <input>/<textarea>: native keeps [anchor, focus] in codepoints, the DOM API speaks UTF-16 */
+const cpU16 = (v, cp) => { let i = 0; for (; cp > 0 && i < v.length; cp--) i += v.codePointAt(i) > 0xffff ? 2 : 1; return i; };
+const u16Cp = (v, o) => { let n = 0; for (let i = 0; i < o && i < v.length; n++) i += v.codePointAt(i) > 0xffff ? 2 : 1; return n; };
+const SEL_TYPES = /^(text|search|url|tel|password)$/;
+const selOk = el => el.localName === 'textarea' || SEL_TYPES.test(el.type);
+const selGet = el => {
+    const v = el.value, r = N.ctlSel(el);
+    if (!r) return [v.length, v.length, 'none'];
+    const a = Math.min(cpU16(v, r[0]), v.length), f = Math.min(cpU16(v, r[1]), v.length);
+    return [Math.min(a, f), Math.max(a, f), f < a ? 'backward' : 'forward'];
+};
+const selSet = (el, s, e, dir) => {
+    const v = el.value, n = v.length;
+    s = Math.min(Math.max(0, Math.trunc(+s) || 0), n); e = Math.min(Math.max(0, Math.trunc(+e) || 0), n); if (e < s) s = e;
+    const back = dir === 'backward';
+    N.setCtlSel(el, u16Cp(v, back ? e : s), u16Cp(v, back ? s : e));
+};
+const selNo = () => { throw new DOMException("The input element's type does not support selection.", 'InvalidStateError'); };
+const textSelection = {
+    get selectionStart() { return selOk(this) ? selGet(this)[0] : null; },
+    set selectionStart(v) { if (!selOk(this)) selNo(); const r = selGet(this); selSet(this, v, Math.max(+v || 0, r[1]), r[2]); },
+    get selectionEnd() { return selOk(this) ? selGet(this)[1] : null; },
+    set selectionEnd(v) { if (!selOk(this)) selNo(); const r = selGet(this); selSet(this, Math.min(r[0], +v || 0), v, r[2]); },
+    get selectionDirection() { return selOk(this) ? selGet(this)[2] : null; },
+    set selectionDirection(d) { if (!selOk(this)) selNo(); const r = selGet(this); selSet(this, r[0], r[1], d); },
+    setSelectionRange(s, e, dir) { if (!selOk(this)) selNo(); selSet(this, s, e, dir); },
+    select() { if (!selOk(this)) return; selSet(this, 0, this.value.length); setTimeout(() => this.dispatchEvent(new Event('select', { bubbles: true }))); },
+    setRangeText(text, start, end, mode = 'preserve') {
+        if (!selOk(this)) selNo();
+        text = String(text);
+        let [ss, se] = selGet(this);
+        if (start === undefined) { start = ss; end = se; }
+        const v = this.value, n = v.length;
+        start = Math.min(Math.max(0, Math.trunc(+start) || 0), n); end = Math.min(Math.max(0, Math.trunc(+end) || 0), n);
+        if (start > end) throw new DOMException('The provided start value is larger than the end.', 'IndexSizeError');
+        this.value = v.slice(0, start) + text + v.slice(end);
+        const nl = start + text.length;
+        if (mode === 'select') { ss = start; se = nl; }
+        else if (mode === 'start') ss = se = start;
+        else if (mode === 'end') ss = se = nl;
+        else {   /* preserve */
+            const d = text.length - (end - start);
+            if (ss > end) ss += d; else if (ss > start) ss = start;
+            if (se > end) se += d; else if (se > start) se = nl;
+        }
+        selSet(this, ss, se);
+    },
+};
 const INPUT_TYPES = /^(hidden|text|search|tel|url|email|password|date|month|week|time|datetime-local|number|range|color|checkbox|radio|file|submit|image|reset|button)$/;
 mk('HTMLInputElement', HTMLElement, ['input'], p => {
     reflectStr(p, 'name', 'placeholder', 'accept', 'alt', 'autocomplete', 'inputMode', 'max', 'min', 'pattern', 'step', 'enterKeyHint');
@@ -73,10 +198,10 @@ mk('HTMLInputElement', HTMLElement, ['input'], p => {
         get valueAsNumber() { return parseFloat(this.value); }, set valueAsNumber(v) { this.value = String(v); },
         get files() { if (this.type !== 'file') return null; if (!this._files) def(this, '_files', new FileList()); return this._files; },
         set files(v) { if (this.type === 'file' && v instanceof FileList) def(this, '_files', v); },
-        get selectionStart() { return this.value.length; }, set selectionStart(v) {}, get selectionEnd() { return this.value.length; }, set selectionEnd(v) {},
         get indeterminate() { return !!this.__ind; }, set indeterminate(v) { def(this, '__ind', !!v); },
-        select() {}, setSelectionRange() {}, setRangeText() {}, showPicker() { if (this.type === 'file') pickFiles(this); }, stepUp() {}, stepDown() {},
+        showPicker() { if (this.type === 'file') pickFiles(this); }, stepUp() {}, stepDown() {},
     });
+    methods(p, textSelection);
 });
 mk('HTMLTextAreaElement', HTMLElement, ['textarea'], p => {
     reflectStr(p, 'name', 'placeholder', 'autocomplete', 'wrap'); reflectBool(p, 'disabled', 'readOnly', 'required'); reflectInt(p, 20, 'cols'); reflectInt(p, 2, 'rows'); formControl(p);
@@ -84,9 +209,8 @@ mk('HTMLTextAreaElement', HTMLElement, ['textarea'], p => {
         get type() { return 'textarea'; },
         get value() { const v = N.value(this); return v != null ? v : N.text(this); }, set value(v) { N.setValue(this, v == null ? '' : String(v)); },
         get defaultValue() { return N.text(this); }, set defaultValue(v) { this.textContent = v; },
-        get selectionStart() { return this.value.length; }, set selectionStart(v) {}, get selectionEnd() { return this.value.length; }, set selectionEnd(v) {},
-        select() {}, setSelectionRange() {},
     });
+    methods(p, textSelection);
 });
 mk('HTMLButtonElement', HTMLElement, ['button'], p => {
     reflectStr(p, 'name', 'value'); reflectBool(p, 'disabled'); formControl(p);

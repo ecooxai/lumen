@@ -5,7 +5,13 @@ import org.libsdl.app.SDLSurface;
 import android.util.Log;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.SharedPreferences;
+import android.database.Cursor;
+import android.net.Uri;
+import android.os.ParcelFileDescriptor;
+import android.provider.MediaStore;
 import android.os.Build;
 import android.os.Bundle;
 import android.system.ErrnoException;
@@ -24,6 +30,7 @@ public final class LumenActivity extends SDLActivity {
     private boolean nativeArgumentsRequested;
     private static native boolean nativeOpenUrl(byte[] url);
     private static native boolean nativeRequestBack();
+    private static native void nativeUiAction(int code, int value, byte[] first, byte[] second);
     private Runnable unregisterBack;
     private BrowserSurface browserSurface;
 
@@ -95,6 +102,136 @@ public final class LumenActivity extends SDLActivity {
         if (!nativeOpenUrl(url.getBytes(StandardCharsets.UTF_8))) {
             Toast.makeText(this, "Unable to open link: browser is busy", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    /* the system share sheet for UTF-8 text, from the native thread */
+    public static void shareText(byte[] text) {
+        final SDLActivity activity = mSingleton;
+        if (activity == null || text == null) return;
+        final String value = new String(text, StandardCharsets.UTF_8);
+        activity.runOnUiThread(() -> {
+            Intent send = new Intent(Intent.ACTION_SEND);
+            send.setType("text/plain");
+            send.putExtra(Intent.EXTRA_TEXT, value);
+            try {
+                activity.startActivity(Intent.createChooser(send, null));
+            } catch (RuntimeException exception) {
+                Log.e("Lumen", "Unable to share", exception);
+            }
+        });
+    }
+
+    private static String utf8(byte[] value) {
+        return value != null ? new String(value, StandardCharsets.UTF_8) : null;
+    }
+    private static byte[] bytes(String value) {
+        return value != null ? value.getBytes(StandardCharsets.UTF_8) : null;
+    }
+    private static String[] utf8(byte[][] values) {
+        String[] out = new String[values != null ? values.length : 0];
+        for (int index = 0; index < out.length; index++) out[index] = values[index] != null ? utf8(values[index]) : "";
+        return out;
+    }
+    private static final BrowserMenus.Action UI_ACTION =
+        (code, value, first, second) -> nativeUiAction(code, value, bytes(first), bytes(second));
+
+    /* the browser menus, asked for by the native thread and shown on the UI thread */
+    public static void showToast(byte[] text) {
+        final SDLActivity activity = mSingleton;
+        if (activity == null || text == null) return;
+        final String value = utf8(text);
+        activity.runOnUiThread(() -> BrowserMenus.toast(activity, value));
+    }
+
+    public static void showMenu(int[] state) {
+        final SDLActivity activity = mSingleton;
+        if (activity == null || state == null || state.length < 7) return;
+        final int[] copy = state.clone();
+        activity.runOnUiThread(() -> BrowserMenus.showMenu(activity, copy, UI_ACTION));
+    }
+
+    public static void showBookmarks(byte[][] titles, byte[][] urls, byte[] pageTitle, byte[] pageUrl) {
+        final SDLActivity activity = mSingleton;
+        if (activity == null) return;
+        final String[] names = utf8(titles), targets = utf8(urls);
+        if (names.length != targets.length) return;
+        final String title = utf8(pageTitle), url = utf8(pageUrl);
+        activity.runOnUiThread(() -> BrowserMenus.showBookmarks(activity, names, targets, title, url, UI_ACTION));
+    }
+
+    public static void showWorkspaces(byte[][] names, int[] tabs, int current) {
+        final SDLActivity activity = mSingleton;
+        if (activity == null || tabs == null) return;
+        final String[] labels = utf8(names);
+        if (labels.length != tabs.length) return;
+        final int[] counts = tabs.clone();
+        activity.runOnUiThread(() -> BrowserMenus.showWorkspaces(activity, labels, counts, current, UI_ACTION));
+    }
+
+    /* Downloads go to the shared Downloads collection: a pending entry the native side writes
+       through the returned descriptor, published or deleted by downloadFinish. */
+    public static String[] downloadCreate(byte[] name, byte[] mime) {
+        final SDLActivity activity = mSingleton;
+        if (activity == null || name == null) return null;
+        ContentResolver resolver = activity.getContentResolver();
+        ContentValues values = new ContentValues();
+        String type = mime != null ? new String(mime, StandardCharsets.UTF_8) : "";
+        values.put(MediaStore.MediaColumns.DISPLAY_NAME, new String(name, StandardCharsets.UTF_8));
+        if (!type.isEmpty()) values.put(MediaStore.MediaColumns.MIME_TYPE, type);
+        values.put(MediaStore.MediaColumns.RELATIVE_PATH, "Download/");
+        values.put(MediaStore.MediaColumns.IS_PENDING, 1);
+        Uri uri = null;
+        try {
+            uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+            if (uri == null) return null;
+            String shown = new String(name, StandardCharsets.UTF_8);
+            try (Cursor cursor = resolver.query(uri, new String[] {MediaStore.MediaColumns.DISPLAY_NAME}, null, null, null)) {
+                if (cursor != null && cursor.moveToFirst() && cursor.getString(0) != null) shown = cursor.getString(0);
+            }
+            ParcelFileDescriptor descriptor = resolver.openFileDescriptor(uri, "rw");
+            if (descriptor == null) throw new java.io.IOException("no descriptor");
+            return new String[] {uri.toString(), shown, Integer.toString(descriptor.detachFd())};
+        } catch (Exception exception) {
+            Log.e("Lumen", "Unable to create a download", exception);
+            if (uri != null) {
+                try { resolver.delete(uri, null, null); } catch (RuntimeException ignored) { }
+            }
+            return null;
+        }
+    }
+
+    public static void downloadFinish(byte[] uri, boolean keep) {
+        final SDLActivity activity = mSingleton;
+        if (activity == null || uri == null) return;
+        Uri target = Uri.parse(new String(uri, StandardCharsets.UTF_8));
+        try {
+            if (keep) {
+                ContentValues values = new ContentValues();
+                values.put(MediaStore.MediaColumns.IS_PENDING, 0);
+                activity.getContentResolver().update(target, values, null, null);
+            } else {
+                activity.getContentResolver().delete(target, null, null);
+            }
+        } catch (RuntimeException exception) {
+            Log.e("Lumen", "Unable to finish a download", exception);
+        }
+    }
+
+    public static void downloadOpen(byte[] uri, byte[] mime) {
+        final SDLActivity activity = mSingleton;
+        if (activity == null || uri == null) return;
+        final Uri target = Uri.parse(new String(uri, StandardCharsets.UTF_8));
+        final String type = mime != null && mime.length > 0 ? new String(mime, StandardCharsets.UTF_8) : null;
+        activity.runOnUiThread(() -> {
+            Intent view = new Intent(Intent.ACTION_VIEW);
+            if (type != null) view.setDataAndType(target, type); else view.setData(target);
+            view.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+            try {
+                activity.startActivity(Intent.createChooser(view, null));
+            } catch (RuntimeException exception) {
+                Toast.makeText(activity, "No app can open this file", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     public static byte[][] getTrustRoots() {

@@ -38,6 +38,11 @@ struct NetRequest {
     NetDoneFn done;
     NetDoneFn head;        /* streaming: response head (no body) before the body arrives */
     NetChunkFn chunk;      /* streaming: decoded body pieces; done then gets an empty body */
+    /* Downloads, on the fetching thread: on_head sees the final (non-redirect) response head and
+       returns true to pass the decoded body to sink instead of keeping it; sink returns false to stop. */
+    bool (*on_head)(NetRequest *req, const NetResponse *head, void *ud);
+    bool (*sink)(NetRequest *req, const char *data, size_t n, void *ud);
+    void *sink_ud;
     void *ud;
     uint64_t id;
 #if defined(__ANDROID__) && !defined(NDEBUG)
@@ -94,4 +99,8 @@ const char *net_user_agent_for_url(const char *url);
 enum { UA_CHROME, UA_FIREFOX, UA_LUMEN, UA_COUNT };
 void net_set_user_agent(int which);   /* UA_CHROME (default), UA_FIREFOX or UA_LUMEN */
 const char *net_user_agent_name(int which);
+/* "Desktop site" per site (host and its subdomains, www. ignored): desktop UA and client hints. */
+bool net_desktop_host(const char *host);
+void net_set_desktop_host(const char *host, bool on);
+void net_desktop_hosts(char *out, size_t n);   /* space-separated, for saving */
 #endif

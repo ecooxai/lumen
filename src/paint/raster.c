@@ -80,9 +80,18 @@ static void fill(R *r, float x0, float y0, float x1, float y1, const float rad[4
     if (ix0 >= ix1 || iy0 >= iy1) return;
     bool round = rad && (rad[0] > 0 || rad[1] > 0 || rad[2] > 0 || rad[3] > 0);
     uint32_t solid = premul(col, 1);
-    if (!round && !c->round) {
+    float rmax = round ? LMAX(LMAX(rad[0], rad[1]), LMAX(rad[2], rad[3])) : 0;
+    if (!c->round) {   /* rows clear of the corners are plain spans */
         int ax = LMAX(ix0, (int)ceilf(x0)), bx = LMIN(ix1, (int)floorf(x1)); if (bx < ax) bx = ax;
         for (int y = iy0; y < iy1; y++) {
+            if (round && (y < y0 + rmax + 1 || y + 1 > y1 - rmax - 1)) {
+                uint32_t *row = raster_row(r, y);
+                for (int x = ix0; x < ix1; x++) {
+                    float cov = LCLAMP(0.5f - sd_rrect(x + 0.5f, y + 0.5f, x0, y0, x1, y1, rad), 0, 1);
+                    if (cov > 0) over(&row[x - r->origin_x], cov >= 0.999f ? solid : premul(col, cov));
+                }
+                continue;
+            }
             uint32_t *row = raster_row(r, y) + ix0 - r->origin_x;
             float cy = span_cov(y0, y1, y);
             for (int x = ix0; x < ax; x++) {
@@ -100,7 +109,6 @@ static void fill(R *r, float x0, float y0, float x1, float y1, const float rad[4
     for (int y = iy0; y < iy1; y++) {
         uint32_t *row = raster_row(r, y);
         float cy = span_cov(y0, y1, y);
-        float rmax = round ? LMAX(LMAX(rad[0], rad[1]), LMAX(rad[2], rad[3])) : 0;
         bool corner_row = round && (y < y0 + rmax + 1 || y + 1 > y1 - rmax - 1);
         for (int x = ix0; x < ix1; x++) {
             float cov;
@@ -167,14 +175,29 @@ static void shadow(R *r, const DItem *it) {
     float s = r->s, sp = it->spread * s, bl = LMAX(0.5f, it->blur * s);
     float x0 = it->x * s - sp, y0 = it->y * s - sp, x1 = (it->x + it->w) * s + sp, y1 = (it->y + it->h) * s + sp;
     float rad[4]; for (int i = 0; i < 4; i++) rad[i] = LMAX(0, it->r[i] * s + sp);
+    /* An outer shadow is clipped out inside the border box. Skipping its
+     * straight interior avoids a distance evaluation for most pixels. */
+    float bx0 = (it->x - it->ox) * s, by0 = (it->y - it->oy) * s, bx1 = bx0 + it->w * s, by1 = by0 + it->h * s;
+    float brad[4], bmax = 0; for (int i = 0; i < 4; i++) { brad[i] = it->r[i] * s; bmax = LMAX(bmax, brad[i]); }
     const Clip *c = clip(r);
     int px0 = LMAX(c->x0, (int)floorf(x0 - bl)), py0 = LMAX(c->y0, (int)floorf(y0 - bl)), px1 = LMIN(c->x1, (int)ceilf(x1 + bl)), py1 = LMIN(c->y1, (int)ceilf(y1 + bl));
-    for (int y = py0; y < py1; y++) for (int x = px0; x < px1; x++) {
-        float d = sd_rrect(x + 0.5f, y + 0.5f, x0, y0, x1, y1, rad);
-        float t = LCLAMP((d + bl) / (2 * bl), 0, 1);
-        float cov = 1 - t * t * (3 - 2 * t);
-        cov *= clip_cov(r, x + 0.5f, y + 0.5f);
-        if (cov > 0.002f) over(&raster_row(r, y)[x - r->origin_x], premul(it->color, cov));
+    for (int y = py0; y < py1; y++) {
+        float fy = y + 0.5f;
+        int skip0 = px1, skip1 = px1;
+        if (y >= by0 + bmax && y + 1 <= by1 - bmax) { skip0 = LMAX(px0, (int)ceilf(bx0 + bmax)); skip1 = LMIN(px1, (int)floorf(bx1 - bmax)); }
+        bool box_row = fy > by0 - 0.5f && fy < by1 + 0.5f;
+        uint32_t *row = raster_row(r, y);
+        for (int x = px0; x < px1; x++) {
+            if (x == skip0 && skip1 > skip0) { x = skip1 - 1; continue; }
+            float fx = x + 0.5f;
+            float d = sd_rrect(fx, fy, x0, y0, x1, y1, rad);
+            float t = LCLAMP((d + bl) / (2 * bl), 0, 1);
+            float cov = 1 - t * t * (3 - 2 * t);
+            if (box_row && fx > bx0 - 0.5f && fx < bx1 + 0.5f) cov *= 1 - LCLAMP(0.5f - sd_rrect(fx, fy, bx0, by0, bx1, by1, brad), 0, 1);
+            if (cov <= 0.002f) continue;
+            cov *= clip_cov(r, fx, fy);
+            if (cov > 0.002f) over(&row[x - r->origin_x], premul(it->color, cov));
+        }
     }
 }
 
@@ -228,9 +251,25 @@ static void gradient(R *r, const DItem *it) {
     }
 }
 
+/* premultiplied pixel per glyph coverage for one text color (same values premul() gives) */
+static const uint32_t *text_lut(Color color) {
+    static uint32_t lut[256]; static Color have; static bool ok;
+    if (ok && have == color) return lut;
+    uint32_t ca = COLOR_A(color);
+    for (uint32_t a = 0; a < 256; a++) lut[a] = premul(color | 0xff000000u, (a * ca / 255) / 255.f);
+    have = color; ok = true; return lut;
+}
+/* a text item whose fragment box, padded by twice its font size for ink overflow, misses [x0,x1)x[y0,y1) device px */
+static bool text_outside(const DItem *it, float s, float x0, float y0, float x1, float y1) {
+    if (!(it->w > 0) || !(it->h > 0) || !it->ng) return false;   /* list markers carry no box */
+    float em = 2 * (it->g[0].font ? it->g[0].font->size : 16);
+    return (it->x - em) * s >= x1 || (it->x + it->w + em) * s <= x0 || (it->y - em) * s >= y1 || (it->y + it->h + em) * s <= y0;
+}
 static void text(R *r, const DItem *it) {
     float s = r->s; const Clip *c = clip(r);
+    if (text_outside(it, s, c->x0, c->y0, c->x1, c->y1)) return;
     uint32_t ca = COLOR_A(it->color);
+    const uint32_t *lut = NULL;
     for (int i = 0; i < it->ng; i++) {
         const DGlyph *dg = &it->g[i];
         if (!dg->font) continue;
@@ -238,10 +277,20 @@ static void text(R *r, const DItem *it) {
         if (!gl || !gl->w) continue;
         int ox = (int)lroundf(dg->x * s) + gl->left, oy = (int)lroundf(dg->y * s) - gl->top;
         if (ox >= c->x1 || oy >= c->y1 || ox + gl->w <= c->x0 || oy + gl->h <= c->y0) continue;
+        int xs = LMAX(0, c->x0 - ox), xe = LMIN(gl->w, c->x1 - ox);
+        if (!c->round && !(gl->color && gl->rgba) && gl->alpha) {   /* the common case: integer coverage through a lookup */
+            if (!lut) lut = text_lut(it->color);
+            for (int y = LMAX(0, c->y0 - oy); y < gl->h && oy + y < c->y1; y++) {
+                uint32_t *row = raster_row(r, oy + y) + ox - r->origin_x;
+                const uint8_t *src = gl->alpha + y * gl->w;
+                for (int x = xs; x < xe; x++) { uint32_t a = src[x]; if (a) over(&row[x], lut[a]); }
+            }
+            continue;
+        }
         for (int y = LMAX(0, c->y0 - oy); y < gl->h && oy + y < c->y1; y++) {
             uint32_t *row = raster_row(r, oy + y);
-            for (int x = LMAX(0, c->x0 - ox); x < gl->w && ox + x < c->x1; x++) {
-                float cc = clip(r)->round ? clip_cov(r, ox + x + 0.5f, oy + y + 0.5f) : 1;
+            for (int x = xs; x < xe; x++) {
+                float cc = c->round ? clip_cov(r, ox + x + 0.5f, oy + y + 0.5f) : 1;
                 if (gl->color && gl->rgba) { uint32_t p = gl->rgba[y * gl->w + x]; if (p >> 24) over(&row[ox + x - r->origin_x], cc < 1 ? scale_px(p, (uint32_t)(cc * 256)) : p); }
                 else if (gl->alpha) { uint32_t a = gl->alpha[y * gl->w + x]; if (a) { a = a * ca / 255; over(&row[ox + x - r->origin_x], premul(it->color | 0xff000000u, a / 255.f * cc)); } }
             }
@@ -399,6 +448,7 @@ static LayerRect *layer_bounds(const DisplayList *dl, float scale, LayerRect dam
             depth++;
         } else if (it->op == DO_POP_LAYER) { if (depth) depth--; }
         else if (depth && it->op == DO_TEXT) {
+            if (text_outside(it, scale, damage.x0, damage.y0, damage.x1, damage.y1)) continue;
             for (int j = 0; j < it->ng; j++) {
                 const DGlyph *dg = &it->g[j];
                 if (!dg->font) continue;
@@ -417,11 +467,14 @@ static LayerRect *layer_bounds(const DisplayList *dl, float scale, LayerRect dam
     return bounds;
 }
 
+unsigned long long g_raster_px, g_layer_px;
+unsigned g_raster_calls, g_layer_n;
 void raster(Canvas *cv, const DisplayList *dl, Color clearc) { raster_rect(cv, dl, clearc, 0, 0, cv->w, cv->h); }
 void raster_rect(Canvas *cv, const DisplayList *dl, Color clearc, int rx0, int ry0, int rx1, int ry1) {
     R r; memset(&r, 0, sizeof r); r.c = cv; r.s = cv->scale; r.px = cv->px; r.stride = cv->stride; r.height = cv->h;
     rx0 = LMAX(rx0, 0); ry0 = LMAX(ry0, 0); rx1 = LMIN(rx1, cv->w); ry1 = LMIN(ry1, cv->h);
     if (rx1 <= rx0 || ry1 <= ry0) return;
+    g_raster_calls++; g_raster_px += (unsigned long long)(rx1 - rx0) * (unsigned long long)(ry1 - ry0);
     uint32_t cl = premul(clearc, 1);
     for (int y = ry0; y < ry1; y++) store_span(canvas_row(cv, y) + rx0, rx1 - rx0, cl);
     r.clips[0] = (Clip){ rx0, ry0, rx1, ry1, 0, 0, (float)cv->w, (float)cv->h, {0}, false }; r.nclip = 1;
@@ -455,6 +508,7 @@ void raster_rect(Canvas *cv, const DisplayList *dl, Color clearc, int rx0, int r
             LayerRect b = bounds[i];
             r.stride = b.x1 - b.x0; r.height = b.y1 - b.y0;
             r.px = xcalloc((size_t)r.stride * (size_t)(b.y1 - b.y0), 4);
+            g_layer_n++; g_layer_px += (unsigned long long)LMAX(r.stride, 0) * (unsigned long long)LMAX(r.height, 0);
             r.origin_x = b.x0; r.origin_y = b.y0;
             break;
         }
@@ -464,13 +518,13 @@ void raster_rect(Canvas *cv, const DisplayList *dl, Color clearc, int rx0, int r
             LayerSave saved = r.layers[r.nlayer];
             uint32_t *src = r.px, k = (uint32_t)(saved.alpha * 256);
             LayerRect b = {r.origin_x, r.origin_y, r.origin_x + r.stride, r.origin_y + r.height};
-            for (int y = b.y0; y < b.y1; y++) for (int x = b.x0; x < b.x1; x++) {
-                size_t sj = (size_t)(y - r.origin_y) * (size_t)r.stride + (size_t)(x - r.origin_x);
-                size_t dj = (size_t)(y - saved.origin_y) * (size_t)saved.stride + (size_t)(x - saved.origin_x);
-                if (src[sj]) {
-                    uint32_t *dst = !r.nlayer ? canvas_row(cv, y) + x : &saved.px[dj];
-                    over(dst, scale_px(src[sj], k));
-                }
+            for (int y = b.y0; y < b.y1; y++) {
+                const uint32_t *sr = src + (size_t)(y - r.origin_y) * (size_t)r.stride;
+                uint32_t *dr = !r.nlayer ? canvas_row(cv, y) + b.x0
+                                         : saved.px + (size_t)(y - saved.origin_y) * (size_t)saved.stride + (size_t)(b.x0 - saved.origin_x);
+                int w = b.x1 - b.x0;
+                if (k >= 256) { for (int x = 0; x < w; x++) if (sr[x]) over(&dr[x], sr[x]); }
+                else for (int x = 0; x < w; x++) if (sr[x]) over(&dr[x], scale_px(sr[x], k));
             }
             free(src); r.px = saved.px; r.origin_x = saved.origin_x;
             r.origin_y = saved.origin_y; r.stride = saved.stride; r.height = saved.height; break;

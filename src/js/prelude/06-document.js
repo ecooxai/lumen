@@ -113,9 +113,17 @@ methods(Document.prototype, {
     open() { return this; }, close() {},
     write(...s) { docWrite(s.join('')); }, writeln(...s) { docWrite(s.join('') + '\n'); },
 });
+/* Each script's writes follow one another: insert before what followed the script at its first write. */
+const docWriteRef = new WeakMap();
 function docWrite(html) {
     const s = N.currentScript(), parent = s ? N.parent(s) : document.body;
-    if (parent) insertNode(parent, N.parseFrag(parent, html), s ? N.next(s) : null);
+    if (!parent) return;
+    let ref = s ? N.next(s) : null;
+    if (s) {
+        if (docWriteRef.has(s)) { const r = docWriteRef.get(s); ref = r && N.parent(r) === parent ? r : null; }
+        else docWriteRef.set(s, ref);
+    }
+    insertNode(parent, N.parseFrag(parent, html), ref);
 }
 const implementation = { hasFeature() { return true; }, createHTMLDocument(t) { const d = N.newDoc(t === undefined ? null : String(t)); Object.setPrototypeOf(d, HTMLDocument.prototype); def(d, '__url', 'about:blank'); return d; }, createDocumentType(n, p, s) { n = String(n); if (/[\t\n\f\r >\x00]/.test(n)) throw new DOMException(`The qualified name provided ('${n}') contains the invalid name-start character.`, 'InvalidCharacterError'); return N.doctype(n, String(p), String(s), this._doc || document); },
     createDocument(ns, q, dt = null) { const d = N.newXmlDoc(); def(d, '__url', 'about:blank'); if (ns === NSURI[0]) def(d, '__ct', 'application/xhtml+xml'); else if (ns === NSURI[1]) def(d, '__ct', 'image/svg+xml'); q = q == null ? '' : String(q); const el = q ? Document.prototype.createElementNS.call(d, ns, q) : null; if (dt) insertNode(d, dt, null); if (el) insertNode(d, el, null); return d; } };

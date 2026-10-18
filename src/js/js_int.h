@@ -17,6 +17,7 @@ extern "C" {
 #include "js.h"
 #include "jsglue.h"
 #include "../net/net.h"
+#include "../net/download.h"
 #include "../base/url.h"
 #include "../media/media.h"
 extern const char *g_user_agent;
@@ -122,6 +123,11 @@ struct JsCtx {
     std::unordered_multimap<int, std::string> mod_url;              /* module identity hash -> key */
     int mod_seq = 0;
     std::vector<std::unique_ptr<ModJob>> mod_jobs;
+    /* Cached modules re-serialised once the page has been quiet, so the cache also holds
+       functions compiled lazily after evaluation: {script, cache path, bytes loaded}. */
+    struct CodeRefresh { v8::Global<v8::UnboundModuleScript> s; std::string path; int had; };
+    std::vector<CodeRefresh> code_refresh;
+    double code_refresh_due = 0;
 };
 
 #define JS_ENTER(c)                                         \

@@ -1,5 +1,6 @@
 #if defined(__ANDROID__) && !defined(NDEBUG)
 #include <android/log.h>
+#include <time.h>
 #endif
 /* Cascade, inheritance and computed values */
 #include "css.h"
@@ -35,11 +36,20 @@ static CustomProps *custom_ref(CustomProps *c) { if (c) c->refs++; return c; }
 static void custom_unref(CustomProps *c) {
     while (c && --c->refs == 0) { CustomProps *up = c->parent; hm_free(&c->map, free); free(c); c = up; }
 }
-const char *custom_get(const CustomProps *c, const char *name) {
-    for (; c; c = c->parent) { const char *v = hm_get((HMap *)&c->map, name); if (v) return v; }
+/* Debug counters for the pass log: custom_changes calls, non-local calls,
+ * calls without a shared map, entries visited, largest map, lookup levels,
+ * most changed-mask bits at a custom-dependency block. */
+static uint64_t g_cc[7];
+static const char *custom_geth(const CustomProps *c, const char *name, size_t n, uint32_t hash) {
+    for (; c; c = c->parent) { g_cc[5]++; const char *v = hm_geth((HMap *)&c->map, name, n, hash); if (v) return v; }
     return NULL;
 }
-#define CUSTOM_MAX_DEPTH 24
+const char *custom_get(const CustomProps *c, const char *name) {
+    if (!c) return NULL;
+    size_t n = strlen(name);
+    return custom_geth(c, name, n, hash_str(name, n));
+}
+#define CUSTOM_MAX_DEPTH 64
 
 ComputedStyle *style_inherit(const ComputedStyle *p) {
     ComputedStyle *s = style_new_default();
@@ -264,22 +274,31 @@ bool css_parse_length(const char *s, Length *out, float em, float rem, const Med
 /* ---------------- var() substitution ---------------- */
 typedef struct RegProp { char *name, *init; struct RegProp *next; } RegProp;
 static RegProp *g_regprops[256];
+static uint64_t g_regprop_version; /* a sheet's @property can change any unset var() */
 static unsigned regprop_hash(const char *s) { unsigned h = 5381; while (*s) h = h * 33 + (unsigned char)*s++; return h & 255; }
 void css_register_property(const char *name, const char *initial) {
     if (!name || strncmp(name, "--", 2) || !initial) return;
     RegProp **b = &g_regprops[regprop_hash(name)];
-    for (RegProp *r = *b; r; r = r->next) if (!strcmp(r->name, name)) { free(r->init); r->init = xstrdup(initial); return; }
+    for (RegProp *r = *b; r; r = r->next) if (!strcmp(r->name, name)) {
+        if (strcmp(r->init, initial)) { free(r->init); r->init = xstrdup(initial); g_regprop_version++; }
+        return;
+    }
+    g_regprop_version++;
     RegProp *r = xcalloc(1, sizeof *r); r->name = xstrdup(name); r->init = xstrdup(initial); r->next = *b; *b = r;
 }
 const char *css_property_initial(const char *name) {
     for (RegProp *r = g_regprops[regprop_hash(name)]; r; r = r->next) if (!strcmp(r->name, name)) return r->init;
     return NULL;
 }
-static uint64_t custom_bit(const char *name) {
-    uint32_t hash = 2166136261u;
-    for (const unsigned char *p = (const unsigned char *)name; *p; p++) hash = (hash ^ *p) * 16777619u;
-    return UINT64_C(1) << ((hash ^ (hash >> 16)) & 63);
+static uint64_t custom_bit(const char *name) { uint32_t h = hash_str(name, strlen(name)); return UINT64_C(1) << ((h ^ (h >> 16)) & 63); }
+/* 256 bits keep false var() dependency hits rare for Tailwind elements reading ~20 names. */
+static void cm_add(CustomMask *m, uint32_t hash) { unsigned b = (hash ^ (hash >> 16)) & 255; m->w[b >> 6] |= UINT64_C(1) << (b & 63); }
+static bool cm_has(const CustomMask *m, uint32_t hash) { unsigned b = (hash ^ (hash >> 16)) & 255; return (m->w[b >> 6] >> (b & 63)) & 1; }
+static void cm_add_name(CustomMask *m, const char *name) { cm_add(m, hash_str(name, strlen(name))); }
+static bool cm_any(const CustomMask *a, const CustomMask *b) {
+    return ((a->w[0] & b->w[0]) | (a->w[1] & b->w[1]) | (a->w[2] & b->w[2]) | (a->w[3] & b->w[3])) != 0;
 }
+static void cm_or(CustomMask *a, const CustomMask *b) { for (int i = 0; i < 4; i++) a->w[i] |= b->w[i]; }
 static char *subst_vars(const char *v, ComputedStyle *st, int depth) {
     if (!strstr(v, "var(") || depth > 16) return xstrdup(v);
     SB b; sb_init(&b);
@@ -294,7 +313,7 @@ static char *subst_vars(const char *v, ComputedStyle *st, int depth) {
         char *comma = NULL; int dd = 0; for (char *c = inner; *c; c++) { if (*c == '(') dd++; else if (*c == ')') dd--; else if (*c == ',' && !dd) { comma = c; break; } }
         if (comma) *comma = 0;
         char *name = str_trim(inner);
-        st->custom_dependencies |= custom_bit(name);
+        cm_add_name(&st->custom_dependencies, name);
         const char *val = custom_get(st->custom, name);
         if (!val) val = css_property_initial(name);
         char *r = val && *val ? subst_vars(val, st, depth + 1) : comma ? subst_vars(str_trim(comma + 1), st, depth + 1) : NULL;
@@ -614,6 +633,34 @@ static uint8_t parse_align(const char *v) {
     return (uint8_t)k;
 }
 
+/* Independent inherited properties: no other value derives from them, so a
+ * parent change reaches children that did not set them without rematching. */
+enum { INDEP_POINTER = 1, INDEP_VISIBILITY = 2, INDEP_CURSOR = 4, INDEP_USER_SELECT = 8,
+    INDEP_WHITE_SPACE = 16, INDEP_TEXT_TRANSFORM = 32, INDEP_WORD_BREAK = 64, INDEP_OVERFLOW_WRAP = 128,
+    INH_OTHER = 256 };
+static unsigned indep_bit(const char *P) {
+    switch (P[0]) {
+    case 'p': return !strcmp(P, "pointer-events") ? INDEP_POINTER : 0;
+    case 'v': return !strcmp(P, "visibility") ? INDEP_VISIBILITY : 0;
+    case 'c': return !strcmp(P, "cursor") ? INDEP_CURSOR : 0;
+    case 'u': return !strcmp(P, "user-select") ? INDEP_USER_SELECT : 0;
+    case '-': return !strcmp(P, "-webkit-user-select") ? INDEP_USER_SELECT : 0;
+    case 'w': return !strncmp(P, "white-space", 11) ? INDEP_WHITE_SPACE : !strcmp(P, "word-break") ? INDEP_WORD_BREAK :
+        !strcmp(P, "word-wrap") ? INDEP_OVERFLOW_WRAP : 0;
+    case 't': return !strcmp(P, "text-transform") ? INDEP_TEXT_TRANSFORM : !strncmp(P, "text-wrap", 9) ? INDEP_WHITE_SPACE : 0;
+    case 'o': return !strcmp(P, "overflow-wrap") ? INDEP_OVERFLOW_WRAP : 0;
+    case 'a': return !strcmp(P, "all") ? 0xff : 0;
+    }
+    return 0;
+}
+/* The non-inherited fields an explicit inherit copies from the parent below;
+ * inherited_diff() doesn't compare them. inherit of the remaining properties
+ * either copies a compared field or is ignored, so it adds no dependency. */
+static bool inherit_copies_uncompared(const char *P) {
+    static const char *const props[] = { "background-color","background","width","height","margin","padding","border","position", NULL };
+    for (int i = 0; props[i]; i++) if (!strcmp(P, props[i])) return true;
+    return false;
+}
 static const char *const known_props[] = { "animation","animation-name","animation-duration","animation-delay","animation-iteration-count","animation-timing-function","animation-fill-mode","animation-direction","animation-play-state","transition","transition-property","transition-duration","transition-delay","transition-timing-function","display","position","float","clear","width","height","min-width","min-height","max-width","max-height","margin","margin-top","margin-right","margin-bottom","margin-left","padding","padding-top","padding-right","padding-bottom","padding-left","border","border-width","border-style","border-color","border-top","border-right","border-bottom","border-left","border-radius","color","background","background-color","background-image","font","font-size","font-weight","font-family","font-style","line-height","text-align","text-decoration","white-space","overflow","overflow-x","overflow-y","visibility","opacity","z-index","top","right","bottom","left","inset","flex","flex-direction","flex-wrap","flex-grow","flex-shrink","flex-basis","justify-content","align-items","align-self","align-content","gap","row-gap","column-gap","order","grid","grid-template-columns","grid-template-rows","grid-column","grid-row","grid-area","transform","transition","animation","box-shadow","text-shadow","box-sizing","cursor","pointer-events","content","list-style","list-style-type","vertical-align","text-transform","letter-spacing","word-spacing","text-indent","text-overflow","word-break","overflow-wrap","word-wrap","object-fit","aspect-ratio","filter","outline","user-select","appearance","will-change","contain","isolation","mix-blend-mode","place-items","place-content","place-self","justify-items","justify-self","table-layout","border-collapse","border-spacing","clip-path","mask","mask-image","mask-size","-webkit-mask","-webkit-mask-image","-webkit-mask-size","resize","scroll-behavior","overscroll-behavior","touch-action","font-variant","text-rendering","-webkit-font-smoothing","fill","stroke","caret-color","accent-color","color-scheme","translate","scale","rotate","container-type","backdrop-filter","line-clamp","-webkit-line-clamp","text-wrap","hyphens","tab-size","direction","unicode-bidi","writing-mode","inset-inline","inset-block","margin-inline","margin-block","padding-inline","padding-block", NULL };
 bool css_property_known(const char *p) { return kw(p, known_props) >= 0; }
 
@@ -708,29 +755,38 @@ static void anim_decl(ComputedStyle *st, const char *Q, const char *val) {
 static bool custom_defer;
 void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *prop, const char *value_in, StyleEngine *e, Node *el) {
     if (prop[0] == '-' && prop[1] == '-') {
+        char *kb = xstrdup(value_in), *k = str_trim(kb), *v;
+        /* CSS-wide keywords: "" is the guaranteed-invalid value */
+        if (str_ieq(k, "inherit") || str_ieq(k, "unset") || str_ieq(k, "revert") || str_ieq(k, "revert-layer")) {
+            cm_add_name(&st->custom_dependencies, prop);
+            const char *pv = par ? custom_get(par->custom, prop) : NULL; v = xstrdup(pv ? pv : "");
+        } else if (str_ieq(k, "initial")) v = xstrdup("");
+        else if (!*k) v = xstrdup(" ");   /* valid empty value, unlike "" */
+        else v = custom_defer ? xstrdup(value_in) : subst_vars(value_in, st, 0);
+        free(kb);
+        if (!v) v = xstrdup("");
+        /* Re-declaring the value already in effect (Tailwind's universal --tw-* resets on every
+           element) changes nothing: keep sharing the inherited map instead of copying it. */
+        const char *cur = custom_get(st->custom, prop);
+        if (cur && !strcmp(cur, v) && !strstr(v, "var(")) { free(v); return; }
         /* custom property: copy-on-write map */
         if (!st->custom || st->custom->refs > 1 || (par && st->custom == par->custom)) {
             CustomProps *n = xcalloc(1, sizeof *n); n->refs = 1;
             if (st->custom && st->custom->depth < CUSTOM_MAX_DEPTH) { n->parent = st->custom; n->depth = st->custom->depth + 1; }
             else if (st->custom) {
-                const CustomProps *chain[CUSTOM_MAX_DEPTH + 1]; int nc = 0;
-                for (const CustomProps *c = st->custom; c && nc <= CUSTOM_MAX_DEPTH; c = c->parent) chain[nc++] = c;
+                /* Flatten below the chain's root map (usually :root's design tokens):
+                 * copying stays small and old and new chains keep a shared ancestor. */
+                const CustomProps *chain[CUSTOM_MAX_DEPTH + 1], *c = st->custom; int nc = 0;
+                for (; c && c->parent && nc <= CUSTOM_MAX_DEPTH; c = c->parent) chain[nc++] = c;
+                if (c && c->parent) { c = NULL; nc = 0; for (const CustomProps *x = st->custom; x && nc <= CUSTOM_MAX_DEPTH; x = x->parent) chain[nc++] = x; }
+                if (c) { n->parent = custom_ref((CustomProps *)c); n->depth = c->depth + 1; }
                 while (nc-- > 0) hm_foreach((HMap *)&chain[nc]->map, ent) { char *prev = hm_get(&n->map, ent->key); hm_put(&n->map, ent->key, xstrdup((char *)ent->val)); free(prev); }
                 custom_unref(st->custom);
             }
             st->custom = n;
         }
         char *old = hm_get(&st->custom->map, prop);
-        char *kb = xstrdup(value_in), *k = str_trim(kb), *v;
-        /* CSS-wide keywords: "" is the guaranteed-invalid value */
-        if (str_ieq(k, "inherit") || str_ieq(k, "unset") || str_ieq(k, "revert") || str_ieq(k, "revert-layer")) {
-            st->custom_dependencies |= custom_bit(prop);
-            const char *pv = par ? custom_get(par->custom, prop) : NULL; v = xstrdup(pv ? pv : "");
-        } else if (str_ieq(k, "initial")) v = xstrdup("");
-        else if (!*k) v = xstrdup(" ");   /* valid empty value, unlike "" */
-        else v = custom_defer ? xstrdup(value_in) : subst_vars(value_in, st, 0);
-        free(kb);
-        hm_put(&st->custom->map, prop, v ? v : xstrdup(""));
+        hm_put(&st->custom->map, prop, v);
         free(old);
         return;
     }
@@ -746,8 +802,9 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
     if (e && e->doc && e->doc->html && e->doc->html->style && el != e->doc->html) c.rem = e->doc->html->style->font_size;
     const char *P = prop;
     Length l; Color col; int k;
+    st->indep_set |= indep_bit(P);
     bool inherit = str_ieq(val, "inherit"), initial = str_ieq(val, "initial") || str_ieq(val, "revert") || str_ieq(val, "revert-layer"), unset = str_ieq(val, "unset");
-    if (inherit) st->parent_sensitive = true;
+    if (inherit && inherit_copies_uncompared(P)) st->parent_sensitive = true;
     {
         const char *Q = strncmp(P, "-webkit-", 8) ? P : P + 8;
         if (!strncmp(Q, "animation", 9) || !strncmp(Q, "transition", 10)) { anim_decl(st, Q, inherit || initial || unset ? "" : val); free(vbuf); free(subst); return; }
@@ -1067,7 +1124,7 @@ static void idx_add(HMap *m, const char *key, Rule *r) {
 static void rv_free(void *p) { RuleVec *v = p; vec_free(*v); free(v); }
 static void nofree(void *p) { (void)p; }
 typedef struct HovDesc { VEC(const char *) keys; bool univ; } HovDesc;
-typedef struct AttributeCandidate { Selector candidate; const Rule *source; } AttributeCandidate;
+typedef struct AttributeCandidate { Selector candidate; const Rule *source; const char *subject; } AttributeCandidate;
 typedef VEC(AttributeCandidate) AttributeCandidates;
 static void attribute_candidates_free(void *p) {
     AttributeCandidates *v = p;
@@ -1116,8 +1173,11 @@ static void idx_clear(RuleIndex *ix) {
     hm_free(&ix->attribute_subjects, hd_free); hm_free(&ix->self_attributes, NULL);
     hm_free(&ix->empty_ids, NULL); hm_free(&ix->empty_classes, NULL); hm_free(&ix->empty_tags, NULL); ix->empty_universal = false;
     for (int i = 0; i < 1024; i++) if (ix->ancestor_buckets[i]) { rv_free(ix->ancestor_buckets[i]); ix->ancestor_buckets[i] = NULL; }
-    memset(ix->ancestor_bucket_bits, 0, sizeof ix->ancestor_bucket_bits); hm_free(&ix->by_id, rv_free); hm_free(&ix->by_class, rv_free); hm_free(&ix->by_tag, rv_free); hm_free(&ix->hov, nofree); hm_free(&ix->hov_anc, nofree); hm_free(&ix->hov_ach, nofree); hm_free(&ix->hov_desc, hd_free); hm_free(&ix->anc_desc, hd_free); hd_free(ix->hov_desc_u); hd_free(ix->anc_desc_u); ix->hov_desc_u = ix->anc_desc_u = NULL; vec_free(ix->universal); ix->count = 0; ix->hov_univ = 0; ix->hov_has = ix->hov_sib = false;
-    memset(ix->sib_keys, 0, sizeof ix->sib_keys); ix->sib_any = ix->sib_state = ix->sib_desc = ix->sib_style = false; }
+    memset(ix->ancestor_bucket_bits, 0, sizeof ix->ancestor_bucket_bits); hm_free(&ix->by_id, rv_free); hm_free(&ix->by_class, rv_free); hm_free(&ix->by_tag, rv_free); hm_free(&ix->by_attr, rv_free); hm_free(&ix->by_parent_tag, rv_free); hm_free(&ix->by_parent_class, rv_free); hm_free(&ix->by_parent_attr, rv_free); vec_free(ix->root_rules); vec_free(ix->fw_rules); ix->fw_complex = false; hm_free(&ix->hov, nofree); hm_free(&ix->hov_anc, nofree); hm_free(&ix->hov_ach, nofree); hm_free(&ix->hov_desc, hd_free); hm_free(&ix->anc_desc, hd_free); hd_free(ix->hov_desc_u); hd_free(ix->anc_desc_u); ix->hov_desc_u = ix->anc_desc_u = NULL; vec_free(ix->universal); ix->count = 0; ix->hov_univ = 0; ix->hov_has = ix->hov_sib = ix->focus_within = false;
+    memset(ix->has_keys, 0, sizeof ix->has_keys); memset(ix->reselect_keys, 0, sizeof ix->reselect_keys);
+    for (int i = 0; i < 1024; i++) vec_free(ix->reselect_subjects[i]);
+    memset(ix->sib_keys, 0, sizeof ix->sib_keys); ix->sib_any = ix->sib_state = ix->sib_desc = ix->sib_style = false;
+    memset(ix->sib_general_keys, 0, sizeof ix->sib_general_keys); ix->sib_general_state = ix->sib_general_style = false; }
 static bool is_pseudo(const SimpleSel *s, const char *n) { return s->kind == SK_PSEUDO && s->name && !strcmp(s->name, n); }
 static const char *attr_key(const char *name) { char b[128]; snprintf(b, sizeof b, "[%s", name); return atom(b); }
 static const char *cmp_key(const Compound *c) {
@@ -1213,9 +1273,13 @@ static uintptr_t hov_lookup(HMap *m, Node *el) {
     }
     return f;
 }
+static void idx_build(StyleEngine *e);
+/* Shortcuts consult the current rules; the next pass restyles what changed. */
+static void idx_ensure(StyleEngine *e) { if (e->idx_dirty) idx_build(e); }
 int style_hover_affects(StyleEngine *e, Node *el) {
     RuleIndex *ix = &e->idx;
-    if (e->idx_dirty || ix->hov_has) return 4;
+    idx_ensure(e);
+    if (ix->hov_has) return 4;
     return (int)((ix->hov_univ | hov_lookup(&ix->hov, el)) & 7);
 }
 static bool has_key(Node *el, const char *k) {
@@ -1240,19 +1304,20 @@ static int desc_collect(HMap *m, Node *el, HovDesc **out, int n) {
 }
 void style_hover_desc(StyleEngine *e, Document *d, Node *key, Node *root, int which) {
     RuleIndex *ix = &e->idx;
+    idx_ensure(e);
     HovDesc *hs[33]; int n = 0;
     void *u = which ? ix->anc_desc_u : ix->hov_desc_u;
     if (u && (which || (ix->hov_univ & 6))) hs[n++] = u;
     n = desc_collect(which ? &ix->anc_desc : &ix->hov_desc, key, hs, n);
-    bool all = e->idx_dirty || ix->hov_has || n >= 32;
+    bool all = ix->hov_has || n >= 32;
     for (int i = 0; i < n && !all; i++) all = hs[i]->univ;
-    if (all) { doc_mark_style_dirty(d, root); return; }
+    if (all) { doc_mark_state_dirty(d, root, true); return; }
     for (Node *c = root->first; c;) {
         bool hit = false;
         if (c->type == NODE_ELEMENT)
             for (int i = 0; i < n && !hit; i++)
                 for (int j = 0; j < hs[i]->keys.n && !hit; j++) hit = has_key(c, hs[i]->keys.v[j]);
-        if (hit) doc_mark_style_dirty(d, c);
+        if (hit) doc_mark_state_dirty(d, c, true);
         if (!hit && c->first) { c = c->first; continue; }
         while (c != root && !c->next) c = c->parent;
         c = c == root ? NULL : c->next;
@@ -1260,13 +1325,41 @@ void style_hover_desc(StyleEngine *e, Document *d, Node *key, Node *root, int wh
 }
 int style_hover_has(StyleEngine *e, Node *el, bool child) {
     RuleIndex *ix = &e->idx;
-    if (e->idx_dirty || ix->hov_has) return 0;
+    idx_ensure(e);
+    if (ix->hov_has) return 0;
     return (int)hov_lookup(child ? &ix->hov_ach : &ix->hov_anc, el);
 }
 static Node *tree_scope(Node *n) {
     if (!n) return NULL;
     while (n->parent) n = n->parent;
     return n->type == NODE_FRAGMENT && n->host ? n : NULL;
+}
+static bool sel_uses_pseudo(const Selector *sel, const char *name) {
+    for (int i = 0; i < sel->n; i++) for (int j = 0; j < sel->c[i].n; j++) {
+        const SimpleSel *s = &sel->c[i].s[j];
+        if (is_pseudo(s, name)) return true;
+        if (s->sub) for (int k = 0; k < s->sub->n; k++) if (sel_uses_pseudo(&s->sub->v[k], name)) return true;
+    }
+    return false;
+}
+/* A :focus-within dependency that the old/new comparison in doc_focus_within_moved
+ * cannot bound to the subtrees of the elements whose state changed. */
+static bool fw_needs_more(const Selector *sel) {
+    for (int i = 0; i < sel->n; i++) {
+        if (sel->c[i].comb == CB_ADJ || sel->c[i].comb == CB_SIB) return true;
+        for (int j = 0; j < sel->c[i].n; j++) {
+            const SimpleSel *s = &sel->c[i].s[j];
+            if (is_pseudo(s, "has") || is_pseudo(s, "host") || is_pseudo(s, "host-context") || is_pseudo(s, "slotted")) return true;
+            if (s->sub) for (int k = 0; k < s->sub->n; k++) if (fw_needs_more(&s->sub->v[k])) return true;
+        }
+    }
+    return false;
+}
+bool doc_uses_focus_within(Document *d) {
+    StyleEngine *e = d ? d->stylesheets : NULL;
+    if (!e) return false;
+    idx_ensure(e);
+    return e->idx.focus_within;
 }
 static bool sel_has_host(const Selector *sel) {
     const char *host = atom("host"), *context = atom("host-context");
@@ -1275,12 +1368,15 @@ static bool sel_has_host(const Selector *sel) {
     return false;
 }
 /* A positive class required on the subject or an ancestor. Never infer a
-   requirement from :not/:has, and stop before crossing a sibling combinator.
-   :is/:where alternatives only provide a requirement when they all agree. */
+   requirement from :not/:has. A compound left of a sibling combinator is a
+   sibling, not an ancestor, so it is skipped; a compound left of a
+   descendant/child combinator is always an ancestor (in `A > B + C`, A is C's
+   parent too). :is/:where alternatives only provide a requirement when they all agree. */
 static const char *required_class(const Selector *sel, bool ancestors) {
     const char *required = NULL;
     for (int i = sel->n - 1; i >= 0; i--) {
         const Compound *c = &sel->c[i];
+        if (i < sel->n - 1 && (sel->c[i + 1].comb == CB_ADJ || sel->c[i + 1].comb == CB_SIB)) continue;
         /* Prefer ancestors over the subject: the ordinary rule index already
            guarantees a subject class, whereas a missing ancestor rejects the
            entire otherwise-expensive ancestor walk. Positive nested selectors
@@ -1293,7 +1389,6 @@ static const char *required_class(const Selector *sel, bool ancestors) {
             for (int j = 1; key && j < s->sub->n; j++) if (required_class(&s->sub->v[j], ancestors) != key) key = NULL;
             if (key) { required = key; if (!ancestors) return required; }
         }
-        if (c->comb == CB_ADJ || c->comb == CB_SIB) break;
     }
     return required;
 }
@@ -1319,6 +1414,28 @@ static void prepare_nested_filters(Selector *sel) {
 typedef struct { const char *name; uint8_t kind; } SubjectKey;
 /* A positive functional selector can supply an ordinary subject index key.
    Every alternative must guarantee the same key on its rightmost compound. */
+/* Unkeyed subjects the element itself still narrows: 1 never matches (a
+ * vendor pseudo-class), 2 :root, 3 a required attribute, 4 a parent type. */
+typedef struct { int kind; const char *name; } LocalKey;
+static bool vendor_pseudo(const SimpleSel *s) {
+    return s->kind == SK_PSEUDO && s->name && (str_starts(s->name, "-moz-") || str_starts(s->name, "-webkit-") ||
+        str_starts(s->name, "-ms-")) && strcmp(s->name, "-moz-any") && strcmp(s->name, "-webkit-any");
+}
+static LocalKey local_key(const Selector *sel) {
+    for (int i = 0; i < sel->n; i++) for (int k = 0; k < sel->c[i].n; k++)
+        if (vendor_pseudo(&sel->c[i].s[k])) return (LocalKey){1, NULL};
+    const Compound *last = &sel->c[sel->n - 1];
+    for (int k = 0; k < last->n; k++) if (is_pseudo(&last->s[k], "root")) return (LocalKey){2, NULL};
+    for (int k = 0; k < last->n; k++)
+        if (last->s[k].kind == SK_ATTR) return (LocalKey){3, atom_lower(last->s[k].name, strlen(last->s[k].name))};
+    if (sel->n > 1 && last->comb == CB_CHILD) {
+        const Compound *up = &sel->c[sel->n - 2];
+        for (int k = 0; k < up->n; k++) if (up->s[k].kind == SK_CLASS) return (LocalKey){5, up->s[k].name};
+        for (int k = 0; k < up->n; k++) if (up->s[k].kind == SK_TYPE) return (LocalKey){4, up->s[k].value};
+        for (int k = 0; k < up->n; k++) if (up->s[k].kind == SK_ATTR) return (LocalKey){6, atom_lower(up->s[k].name, strlen(up->s[k].name))};
+    }
+    return (LocalKey){0};
+}
 static SubjectKey subject_key(const Selector *sel) {
     SubjectKey key = {0};
     if (!sel->n) return key;
@@ -1341,6 +1458,30 @@ static SubjectKey subject_key(const Selector *sel) {
         if (key.name) return key;
     }
     return (SubjectKey){0};
+}
+/* Keys of a subject :is()/:where() whose every branch is keyed: the rule
+ * can match only elements carrying one of them. */
+static int subject_keys(const Selector *sel, SubjectKey out[8]) {
+    if (!sel->n) return 0;
+    const Compound *last = &sel->c[sel->n - 1];
+    for (int k = 0; k < last->n; k++) {
+        const SimpleSel *s = &last->s[k];
+        if (!(is_pseudo(s, "is") || is_pseudo(s, "where")) || !s->sub || !s->sub->n) continue;
+        int n = 0;
+        for (int j = 0; j < s->sub->n; j++) {
+            SubjectKey alt = subject_key(&s->sub->v[j]);
+            if (!alt.name) {
+                LocalKey local = local_key(&s->sub->v[j]);
+                if (local.kind == 3) alt = (SubjectKey){local.name, SK_ATTR};
+            }
+            bool dup = false;
+            for (int i = 0; alt.name && i < n; i++) dup |= out[i].name == alt.name && out[i].kind == alt.kind;
+            if (!alt.name || (!dup && n == 8)) { n = 0; break; }
+            if (!dup) out[n++] = alt;
+        }
+        if (n) return n;
+    }
+    return 0;
 }
 /* Bit 1: subject emptiness; bit 2: another element's emptiness. A text
  * transition already dirties its parent, so only bit 2 needs wider work. */
@@ -1527,14 +1668,63 @@ static const char *selector_attribute_key(const SimpleSel *s) {
              (str_ieq(s->name, "id") && s->op == '='))) return atom(s->value);
     return atom_lower(s->name, strlen(s->name));
 }
-static void selector_change_dependencies(const Selector *sel, uint64_t keys[16]) {
+/* subject: skip the subject compound's own keys. Changing them marks the
+ * subject element itself, which then rematches against the current tree. */
+static void selector_change_dependencies(const Selector *sel, uint64_t keys[16], bool subject) {
     for (int i = 0; i < sel->n; i++) for (int j = 0; j < sel->c[i].n; j++) {
         const SimpleSel *s = &sel->c[i].s[j];
-        const char *key = s->kind == SK_CLASS || s->kind == SK_ID ? s->name :
-            s->kind == SK_ATTR ? selector_attribute_key(s) :
-            is_pseudo(s, "target") ? "id" : NULL;
+        bool self = subject && i == sel->n - 1;
+        const char *key = is_pseudo(s, "target") ? "id" : self ? NULL : is_pseudo(s, "focus-within") ? ":focus-within" :
+            s->kind == SK_CLASS || s->kind == SK_ID ? s->name :
+            s->kind == SK_ATTR ? selector_attribute_key(s) : NULL;
         if (key) { unsigned bit = dom_tree_key_bit(key); keys[bit >> 6] |= UINT64_C(1) << (bit & 63); }
-        if (s->sub) for (int k = 0; k < s->sub->n; k++) selector_change_dependencies(&s->sub->v[k], keys);
+        if (s->sub) for (int k = 0; k < s->sub->n; k++) selector_change_dependencies(&s->sub->v[k], keys, false);
+    }
+}
+/* Keys whose change on an element can alter its descendants' or following
+ * siblings' matches: tests left of the subject compound, outside :has(). */
+static void reselect_dependencies(const Selector *sel, uint64_t keys[16], bool subject) {
+    for (int i = 0; i < sel->n; i++) for (int j = 0; j < sel->c[i].n; j++) {
+        const SimpleSel *s = &sel->c[i].s[j];
+        bool self = subject && i == sel->n - 1;
+        const char *key = is_pseudo(s, "target") ? "id" : self ? NULL : is_pseudo(s, "focus-within") ? ":focus-within" :
+            s->kind == SK_CLASS || s->kind == SK_ID ? s->name :
+            s->kind == SK_ATTR ? selector_attribute_key(s) : NULL;
+        if (key) { unsigned bit = dom_tree_key_bit(key); keys[bit >> 6] |= UINT64_C(1) << (bit & 63); }
+        if (s->sub && !is_pseudo(s, "has")) for (int k = 0; k < s->sub->n; k++) reselect_dependencies(&s->sub->v[k], keys, self);
+    }
+}
+/* Descendant invalidation sets: a change of key K rematches, below the
+ * changed element, only subjects of rules that test K left of the subject. */
+static void reselect_subjects_add(RuleIndex *ix, const uint64_t keys[16], unsigned subject) {
+    for (int k = 0; k < 16; k++) for (uint64_t bits = keys[k]; bits; bits &= bits - 1) {
+        unsigned bit = (unsigned)k * 64 + (unsigned)__builtin_ctzll(bits);
+        ix->reselect_keys[k] |= bits & -bits;
+        if (!ix->reselect_subjects[bit].n || ix->reselect_subjects[bit].v[ix->reselect_subjects[bit].n - 1] != subject)
+            vec_push(ix->reselect_subjects[bit], (uint16_t)subject);
+    }
+}
+static bool keyed_bit(const StyleEngine *e, const char *key) {
+    unsigned bit = dom_tree_key_bit(key);
+    return e->keyed_subjects[bit >> 6] >> (bit & 63) & 1;
+}
+static bool keyed_hit(const StyleEngine *e, const Node *n) {
+    if (e->keyed_whole) return true;
+    if (n->id && keyed_bit(e, n->id)) return true;
+    for (int i = 0; i < n->nclasses; i++) if (keyed_bit(e, n->classes[i])) return true;
+    if (keyed_bit(e, n->ns == NS_HTML ? n->tag : atom_lower(n->tag, strlen(n->tag)))) return true;
+    for (int i = 0; i < n->nattrs; i++) if (keyed_bit(e, atom_lower(n->attrs[i].name, strlen(n->attrs[i].name)))) return true;
+    return false;
+}
+/* Class/ID keys a :has() argument tests. Without a tree edit, their change
+ * reaches subjects outside the changed element's subtree only through :has. */
+static void has_argument_keys(const Selector *sel, uint64_t keys[16], bool inside) {
+    for (int i = 0; i < sel->n; i++) for (int j = 0; j < sel->c[i].n; j++) {
+        const SimpleSel *s = &sel->c[i].s[j];
+        if (inside && (s->kind == SK_CLASS || s->kind == SK_ID)) {
+            unsigned bit = dom_tree_key_bit(s->name); keys[bit >> 6] |= UINT64_C(1) << (bit & 63);
+        }
+        if (s->sub) for (int k = 0; k < s->sub->n; k++) has_argument_keys(&s->sub->v[k], keys, inside || is_pseudo(s, "has"));
     }
 }
 static Selector tree_candidate(RuleIndex *ix, const Selector *sel, bool global, int anchor, unsigned scope) {
@@ -1633,11 +1823,11 @@ static Selector attribute_candidate(RuleIndex *ix, const Selector *sel, const ch
     }
     return out;
 }
-static void add_attribute_candidate(RuleIndex *ix, const char *name, const Rule *rule) {
+static void add_attribute_candidate(RuleIndex *ix, const char *name, const Rule *rule, const char *subject) {
     AttributeCandidates *v = hm_get(&ix->attribute_candidates, name);
     if (!v) { v = xcalloc(1, sizeof *v); hm_put(&ix->attribute_candidates, name, v); }
     for (int i = 0; i < v->n; i++) if (v->v[i].source == rule) return;
-    AttributeCandidate candidate = {attribute_candidate(ix, &rule->sel, name), rule};
+    AttributeCandidate candidate = {attribute_candidate(ix, &rule->sel, name), rule, subject};
     vec_push(*v, candidate);
 }
 static void index_attribute_subjects(RuleIndex *ix, const Selector *sel, const char *subject, bool relative, const Rule *rule) {
@@ -1648,7 +1838,7 @@ static void index_attribute_subjects(RuleIndex *ix, const Selector *sel, const c
             const char *name = atom_lower(s->name, strlen(s->name));
             if (relative || i != sel->n - 1) {
                 desc_add(&ix->attribute_subjects, NULL, name, subject);
-                add_attribute_candidate(ix, name, rule);
+                add_attribute_candidate(ix, name, rule, subject);
             }
             else hm_put(&ix->self_attributes, name, (void *)1);
         }
@@ -1663,11 +1853,62 @@ static void mark_style_subject(Node *n) {
     for (Node *p = n->parent ? n->parent : n->host; p; p = p->parent ? p->parent : p->host)
         p->flags |= NF_CHILD_STYLE_DIRTY;
 }
+/* Focus moves from old to n. Rules testing :focus-within left of their subject
+ * (`.group:focus-within .x`, `:focus-within > *`) can only change below the
+ * elements whose :focus-within state flips. Rematch just those rules there, with
+ * the old and the new focus, and restyle the elements whose result differs;
+ * an unkeyed subject would otherwise restyle the whole changed subtree. False:
+ * not bounded this way, the caller falls back to the reselect key. */
+bool doc_focus_within_moved(Document *d, Node *old, Node *n) {
+    StyleEngine *e = d ? d->stylesheets : NULL;
+    if (!e) return false;
+    idx_ensure(e);
+    RuleIndex *ix = &e->idx;
+    if (ix->fw_complex || ix->fw_rules.n > 64) return false;
+    if (!ix->fw_rules.n) return true;
+    Node *tops[2] = {NULL, NULL};
+    for (int side = 0; side < 2; side++)
+        for (Node *a = side ? n : old; a; a = a->parent) {
+            if (!a->parent && a->host) return false;   /* crosses a shadow boundary */
+            Node *other = side ? old : n;
+            if (other && node_is_inclusive_ancestor(a, other)) break;
+            if (a->type == NODE_ELEMENT) tops[side] = a;
+        }
+    if (tops[0] && tops[1] && (node_is_inclusive_ancestor(tops[0], tops[1]) || node_is_inclusive_ancestor(tops[1], tops[0]))) return false;
+    CssMatchCache *cache = css_match_cache_suspend();
+    Node *focus = d->focus;
+    for (int side = 0; side < 2; side++) {
+        Node *top = tops[side];
+        for (Node *el = top; el; ) {
+            if (el->type == NODE_ELEMENT) {
+                uint64_t was = 0, now = 0;
+                d->focus = old;
+                for (int i = 0; i < ix->fw_rules.n; i++) {
+                    Rule *r = ix->fw_rules.v[i];
+                    if (!r->dead && css_match_selector(&r->sel, el, NULL)) was |= UINT64_C(1) << i;
+                }
+                d->focus = n;
+                for (int i = 0; i < ix->fw_rules.n; i++) {
+                    Rule *r = ix->fw_rules.v[i];
+                    if (!r->dead && css_match_selector(&r->sel, el, NULL)) now |= UINT64_C(1) << i;
+                }
+                if (was != now) mark_style_subject(el);
+            }
+            if (el->first && el->type == NODE_ELEMENT) { el = el->first; continue; }
+            while (el != top && !el->next) el = el->parent;
+            el = el == top ? NULL : el->next;
+        }
+    }
+    d->focus = focus;
+    css_match_cache_end(cache);
+    return true;
+}
 /* Sibling combinators: a selector-relevant change to an element can alter
  * the match of its following siblings (`.peer:checked ~ .x`, `[title] + p`). */
-static void sib_key(RuleIndex *ix, const char *key) {
+static void sib_key(RuleIndex *ix, const char *key, bool general) {
     unsigned bit = dom_tree_key_bit(key);
     ix->sib_keys[bit >> 6] |= UINT64_C(1) << (bit & 63);
+    if (general) ix->sib_general_keys[bit >> 6] |= UINT64_C(1) << (bit & 63);
 }
 static bool sib_logical(const SimpleSel *s) {
     static const char *const names[] = { "not", "is", "where", "matches", "-webkit-any", "-moz-any",
@@ -1677,17 +1918,17 @@ static bool sib_logical(const SimpleSel *s) {
     for (size_t i = 0; i < sizeof names / sizeof *names; i++) if (!strcmp(s->name, names[i])) return true;
     return false;
 }
-static void sib_referenced(RuleIndex *ix, const Compound *c, bool keys) {
+static void sib_referenced(RuleIndex *ix, const Compound *c, bool keys, bool general) {
     for (int k = 0; k < c->n; k++) {
         const SimpleSel *x = &c->s[k];
-        if (x->kind == SK_ATTR && str_ieq(x->name, "style")) ix->sib_style = true;
+        if (x->kind == SK_ATTR && str_ieq(x->name, "style")) { ix->sib_style = true; ix->sib_general_style |= general; }
         if (!keys) ;
-        else if (x->kind == SK_TYPE) sib_key(ix, atom_lower(x->name, strlen(x->name)));
-        else if (x->kind == SK_ID || x->kind == SK_CLASS) sib_key(ix, x->name);
-        else if (x->kind == SK_ATTR) sib_key(ix, atom_lower(x->name, strlen(x->name)));
-        else if (x->kind == SK_PSEUDO && x->name && !sib_logical(x)) ix->sib_state = true;
+        else if (x->kind == SK_TYPE) sib_key(ix, atom_lower(x->name, strlen(x->name)), general);
+        else if (x->kind == SK_ID || x->kind == SK_CLASS) sib_key(ix, x->name, general);
+        else if (x->kind == SK_ATTR) sib_key(ix, atom_lower(x->name, strlen(x->name)), general);
+        else if (x->kind == SK_PSEUDO && x->name && !sib_logical(x)) { ix->sib_state = true; ix->sib_general_state |= general; }
         if (x->sub && !is_pseudo(x, "has")) for (int i = 0; i < x->sub->n; i++)
-            for (int j = 0; j < x->sub->v[i].n; j++) sib_referenced(ix, &x->sub->v[i].c[j], keys);
+            for (int j = 0; j < x->sub->v[i].n; j++) sib_referenced(ix, &x->sub->v[i].c[j], keys, general);
     }
 }
 static void sib_scan(RuleIndex *ix, const Selector *sel, bool outer_desc) {
@@ -1699,48 +1940,74 @@ static void sib_scan(RuleIndex *ix, const Selector *sel, bool outer_desc) {
         ix->sib_any = true;
         for (int j = i + 2; j < sel->n; j++) if (sel->c[j].comb == CB_DESC || sel->c[j].comb == CB_CHILD) ix->sib_desc = true;
         if (outer_desc) ix->sib_desc = true;
+        /* `a + b` reaches only the next element; `~` or a chain reaches any later one */
+        bool general = sel->c[i + 1].comb == CB_SIB || outer_desc ||
+            (i + 2 < sel->n && (sel->c[i + 2].comb == CB_ADJ || sel->c[i + 2].comb == CB_SIB));
         /* A required id/class/tag bounds the elements whose match can flip. */
         bool required = false;
         for (int k = 0; k < c->n; k++) {
             const SimpleSel *x = &c->s[k];
-            if (x->kind == SK_TYPE) { sib_key(ix, atom_lower(x->name, strlen(x->name))); required = true; }
-            else if (x->kind == SK_ID || x->kind == SK_CLASS) { sib_key(ix, x->name); required = true; }
+            if (x->kind == SK_TYPE) { sib_key(ix, atom_lower(x->name, strlen(x->name)), general); required = true; }
+            else if (x->kind == SK_ID || x->kind == SK_CLASS) { sib_key(ix, x->name, general); required = true; }
         }
-        sib_referenced(ix, c, !required);
+        sib_referenced(ix, c, !required, general);
     }
 }
-static bool sib_bit(const RuleIndex *ix, const char *key) {
+static bool sib_bit(const uint64_t keys[16], const char *key) {
     unsigned bit = dom_tree_key_bit(key);
-    return (ix->sib_keys[bit >> 6] >> (bit & 63)) & 1;
+    return (keys[bit >> 6] >> (bit & 63)) & 1;
+}
+/* 1: a sibling relation can see n's change; 2: beyond the next element */
+static int sib_hit(const RuleIndex *ix, const Document *d, const Node *n, int mode) {
+    int hit = 0;
+    for (int pass = 0; pass < 2; pass++) {
+        const uint64_t *keys = pass ? ix->sib_general_keys : ix->sib_keys;
+        bool h = mode == 0 ? (pass ? ix->sib_general_state : ix->sib_state) :
+            mode == 2 && (pass ? ix->sib_general_style : ix->sib_style) && sib_bit(keys, "style");
+        for (int k = 0; !h && mode && k < 16; k++) h = (keys[k] & d->selector_change_keys[k]) != 0;
+        if (!h) h = sib_bit(keys, n->ns == NS_HTML ? n->tag : atom_lower(n->tag, strlen(n->tag))) || (n->id && sib_bit(keys, n->id));
+        for (int i = 0; !h && i < n->nclasses; i++) h = sib_bit(keys, n->classes[i]);
+        if (!h) break;
+        hit = pass + 1;
+    }
+    return hit;
 }
 /* mode 0: element state (focus, checked, value); 1: attribute; 2: inline style */
 void node_sibling_selectors_changed(Node *n, int mode) {
     Document *d = n->doc;
     StyleEngine *e = d ? d->stylesheets : NULL;
-    if (!e || e->idx_dirty || !e->idx.sib_any || n->type != NODE_ELEMENT || !(n->flags & NF_CONNECTED) || !n->next) return;
+    if (e) idx_ensure(e);
+    if (!e || !e->idx.sib_any || n->type != NODE_ELEMENT || !(n->flags & NF_CONNECTED) || !n->next) return;
     const RuleIndex *ix = &e->idx;
     if (mode == 2 && !ix->sib_style) return;
-    bool hit = mode == 0 ? ix->sib_state : mode == 2 && sib_bit(ix, "style");
-    for (int k = 0; !hit && mode && k < 16; k++) hit = (ix->sib_keys[k] & d->selector_change_keys[k]) != 0;
-    if (!hit) hit = sib_bit(ix, n->ns == NS_HTML ? n->tag : atom_lower(n->tag, strlen(n->tag))) || (n->id && sib_bit(ix, n->id));
-    for (int i = 0; !hit && i < n->nclasses; i++) hit = sib_bit(ix, n->classes[i]);
+    int hit = sib_hit(ix, d, n, mode);
     if (!hit) return;
     bool any = false;
+#if defined(__ANDROID__) && !defined(NDEBUG)
+    if (d->debug_mutations) __android_log_print(ANDROID_LOG_INFO, "LumenMutation", "kind=sibling mode=%d hit=%d desc=%d tag=%s next=%s",
+        mode, hit, ix->sib_desc, n->tag ? n->tag : "-", n->next->tag ? n->next->tag : "-");
+#endif
     for (Node *s = n->next; s; s = s->next) if (s->type == NODE_ELEMENT) {
         s->flags |= NF_STYLE_DIRTY | (ix->sib_desc ? NF_RESELECT_SUBTREE : 0);
         any = true;
+        if (hit == 1) break;
     }
     if (any) for (Node *p = n->parent ? n->parent : n->host; p; p = p->parent ? p->parent : p->host) p->flags |= NF_CHILD_STYLE_DIRTY;
 }
 /* data-/aria- attributes have no built-in layout/presentation behavior. Their
  * stylesheet uses can affect ancestors, siblings and shadow trees, so collect
  * conservative subjects over the whole tree instead of just the changed node.
- * Other attributes and stale indexes retain the ordinary invalidation path. */
+ * Other attributes retain the ordinary invalidation path. */
+static bool subject_key_on(const Node *el, const char *tag, const char *k) {
+    return tag == k || (el->id && !strcmp(el->id, k)) || node_has_class_atom(el, k);
+}
 bool node_attribute_style_changed(Node *n, const char *name) {
     Document *d = n->doc;
     StyleEngine *e = d ? d->stylesheets : NULL;
-    if (!e || e->idx_dirty || e->seen_sheet_version != d->sheet_version ||
-            n->ns != NS_HTML || !(n->flags & NF_CONNECTED) || !n->style ||
+    if (e) idx_ensure(e);
+    /* A pending sheet change needs no fallback: the current index covers the
+     * current rules and sheet_delta marks every subject of the new ones. */
+    if (!e || n->ns != NS_HTML || !(n->flags & NF_CONNECTED) ||
             !(str_istarts(name, "data-") || str_istarts(name, "aria-"))) return false;
     const char *key = atom_lower(name, strlen(name));
     HovDesc *subjects = hm_get(&e->idx.attribute_subjects, key);
@@ -1751,38 +2018,54 @@ bool node_attribute_style_changed(Node *n, const char *name) {
         if (el->type != NODE_ELEMENT) continue;
         bool affected = subjects->univ;
         const char *tag = el->ns == NS_HTML ? el->tag : atom_lower(el->tag, strlen(el->tag));
-        for (int i = 0; !affected && i < subjects->keys.n; i++) {
-            const char *k = subjects->keys.v[i];
-            affected = tag == k || (el->id && !strcmp(el->id, k)) || node_has_class_atom(el, k);
-        }
+        for (int i = 0; !affected && i < subjects->keys.n; i++) affected = subject_key_on(el, tag, subjects->keys.v[i]);
         if (affected) {
             AttributeCandidates *candidates = hm_get(&e->idx.attribute_candidates, key);
             bool match = !candidates; /* conservative fallback */
-            for (int i = 0; candidates && !match && i < candidates->n; i++)
-                match = css_match_selector(&candidates->v[i].candidate, el, candidates->v[i].source->scope);
+            for (int i = 0; candidates && !match && i < candidates->n; i++)   /* a keyed subject skips other elements */
+                match = (!candidates->v[i].subject || subject_key_on(el, tag, candidates->v[i].subject)) &&
+                    css_match_selector(&candidates->v[i].candidate, el, candidates->v[i].source->scope);
             if (match) mark_style_subject(el);
         }
     }
-    if (hm_get(&e->idx.self_attributes, key) || (n->style->attribute_dependencies & custom_bit(key))) mark_style_subject(n);
+    if (!n->style || hm_get(&e->idx.self_attributes, key) || (n->style->attribute_dependencies & custom_bit(key))) mark_style_subject(n);
     return true;
 }
-static void idx_build(StyleEngine *e) {
-    idx_clear(&e->idx);
-    for (int si = 0; si < e->sheets.n; si++) {
-        StyleSheet *sh = e->sheets.v[si];
-        if (sh->disabled) continue;
+/* Index one sheet's rules after everything indexed so far in the cascade. */
+static void idx_add_sheet(StyleEngine *e, StyleSheet *sh) {
+    if (sh->disabled) return;
+    unsigned fw_bit = dom_tree_key_bit(":focus-within");
+    {
         for (int i = 0; i < sh->rules.n; i++) {
             Rule *r = &sh->rules.v[i];
-            prepare_nested_filters(&r->sel);
-            const char *required = required_class(&r->sel, false);
-            const char *ancestor = required_class(&r->sel, true);
-            r->ancestor_class_filter2 = ancestor && ancestor != required ? (uint16_t)class_filter_bit(ancestor) : 1024;
-            r->ancestor_class_filter = required ? (uint16_t)class_filter_bit(required) : 1024;
-            r->order = (uint32_t)(si << 20) + (uint32_t)i;
+            if (!r->filters_ready) {   /* sheets come and go; rebuilding the index keeps these */
+                prepare_nested_filters(&r->sel);
+                const char *required = required_class(&r->sel, false);
+                const char *ancestor = required_class(&r->sel, true);
+                r->ancestor_class_filter2 = ancestor && ancestor != required ? (uint16_t)class_filter_bit(ancestor) : 1024;
+                r->ancestor_class_filter = required ? (uint16_t)class_filter_bit(required) : 1024;
+                r->filters_ready = true;
+            }
+            r->order = (uint64_t)sh->rank << 32 | (uint64_t)LMIN(i, 0xffffff) << 8;
             r->scope = tree_scope(sh->owner);
             if (sh->owner && !r->scope && sel_has_host(&r->sel)) continue;
             SubjectKey key = subject_key(&r->sel);
+            LocalKey local = key.name ? (LocalKey){0} : local_key(&r->sel);
+            if (local.kind == 1) continue;
             index_attribute_subjects(&e->idx, &r->sel, key.name, false, r);
+            if (!e->idx.focus_within && sel_uses_pseudo(&r->sel, "focus-within")) e->idx.focus_within = true;
+            uint64_t reselect[16] = {0};
+            reselect_dependencies(&r->sel, reselect, true);
+            if (sel_uses_pseudo(&r->sel, "focus-within") && (reselect[fw_bit >> 6] >> (fw_bit & 63) & 1)) {
+                vec_push(e->idx.fw_rules, r);
+                if (r->scope || fw_needs_more(&r->sel)) e->idx.fw_complex = true;
+            }
+            SubjectKey keys[8]; int nkeys = key.name ? 0 : subject_keys(&r->sel, keys);
+            r->multi_key = nkeys > 1;
+            if (key.name) { keys[0] = key; nkeys = 1; }
+            for (int j = 0; j < nkeys; j++)
+                reselect_subjects_add(&e->idx, reselect, dom_tree_key_bit(keys[j].kind == SK_TYPE ? atom_lower(keys[j].name, strlen(keys[j].name)) : keys[j].name));
+            if (!nkeys) reselect_subjects_add(&e->idx, reselect, local.kind == 3 ? dom_tree_key_bit(local.name) : 1024);
             unsigned tree = tree_dependencies(&r->sel);
             if (tree & 1) for (int j = 0; j < r->sel.n; j++) {
                 Compound *c = &r->sel.c[j];
@@ -1790,7 +2073,7 @@ static void idx_build(StyleEngine *e) {
                 for (int k = 0; k < c->n; k++) scope |= tree_local_scope(&c->s[k]);
                 if (!scope) continue;
                 TreeDependency dependency = {tree_candidate(&e->idx, &r->sel, false, j, scope), r->scope, false, key.name, key.kind, &r->sel};
-                selector_change_dependencies(&r->sel, dependency.selector_keys);
+                selector_change_dependencies(&r->sel, dependency.selector_keys, true);
                 vec_push(e->idx.tree_candidates, dependency);
             }
             if (tree & 2) for (int j = 0; j < r->sel.n; j++) {
@@ -1802,7 +2085,8 @@ static void idx_build(StyleEngine *e) {
                 TreeDependency dependency = {.candidate = tree_candidate(&e->idx, &r->sel, true, j, scope),
                     .scope = r->scope, .global = true, .subject = key.name, .subject_kind = key.kind, .source = &r->sel,
                     .witness_filter = true, .focus_tree_filter = true};
-                selector_change_dependencies(&r->sel, dependency.selector_keys);
+                selector_change_dependencies(&r->sel, dependency.selector_keys, true);
+                has_argument_keys(&r->sel, e->idx.has_keys, false);
                 for (int k = 0; k < r->sel.c[j].n; k++) {
                     SimpleSel *part = &r->sel.c[j].s[k];
                     if (!(tree_simple_dependencies(part) & 2)) continue;
@@ -1819,9 +2103,14 @@ static void idx_build(StyleEngine *e) {
                 else if (key.kind == SK_CLASS) hm_put(&e->idx.empty_classes, key.name, (void *)1);
                 else if (key.kind == SK_TYPE) hm_put(&e->idx.empty_tags, key.name, (void *)1);
             }
-            if (key.name && key.kind == SK_ID) idx_add(&e->idx.by_id, key.name, r);
-            else if (key.name && key.kind == SK_CLASS) idx_add(&e->idx.by_class, key.name, r);
-            else if (key.name && key.kind == SK_TYPE) idx_add(&e->idx.by_tag, key.name, r);
+            if (nkeys) for (int j = 0; j < nkeys; j++)
+                idx_add(keys[j].kind == SK_ID ? &e->idx.by_id : keys[j].kind == SK_CLASS ? &e->idx.by_class :
+                    keys[j].kind == SK_ATTR ? &e->idx.by_attr : &e->idx.by_tag, keys[j].name, r);
+            else if (local.kind == 2) vec_push(e->idx.root_rules, r);
+            else if (local.kind == 3) idx_add(&e->idx.by_attr, local.name, r);
+            else if (local.kind == 4) idx_add(&e->idx.by_parent_tag, local.name, r);
+            else if (local.kind == 5) idx_add(&e->idx.by_parent_class, local.name, r);
+            else if (local.kind == 6) idx_add(&e->idx.by_parent_attr, local.name, r);
             else if (r->ancestor_class_filter < 1024) {
                 unsigned bit = r->ancestor_class_filter;
                 RuleVec *bucket = e->idx.ancestor_buckets[bit];
@@ -1834,25 +2123,107 @@ static void idx_build(StyleEngine *e) {
             sib_scan(&e->idx, &r->sel, false);
         }
     }
-    e->idx_dirty = false;
+}
+static void idx_build(StyleEngine *e) {
+    idx_clear(&e->idx);
+    for (int i = 0; i < e->dead_sheets.n; i++) css_sheet_free(e->dead_sheets.v[i]);
+    e->dead_sheets.n = 0;
+    uint32_t gap = (uint32_t)(UINT32_MAX / ((uint32_t)e->sheets.n + 1));
+    for (int si = 0; si < e->sheets.n; si++) { e->sheets.v[si]->rank = gap * (uint32_t)(si + 1); idx_add_sheet(e, e->sheets.v[si]); }
+    e->idx_dirty = false; e->idx_changed = true;
 }
 
+static void sheet_delta_clear(StyleEngine *e);
 StyleEngine *style_engine_new(Document *d) {
     StyleEngine *e = xcalloc(1, sizeof *e);
     e->doc = d; d->stylesheets = e; e->media.vw = 1280; e->media.vh = 800; e->media.dpr = 2;
     StyleSheet *ua = css_parse_sheet(css_ua_sheet, strlen(css_ua_sheet), NULL, 0, &e->media);
     vec_push(e->sheets, ua);
-    e->idx_dirty = true;
+    e->idx_dirty = true; e->delta_all = true;
     return e;
 }
-void style_engine_free(StyleEngine *e) { if (e->doc->stylesheets == e) e->doc->stylesheets = NULL; for (int i = 0; i < e->sheets.n; i++) css_sheet_free(e->sheets.v[i]); vec_free(e->sheets); idx_clear(&e->idx); css_match_cache_free(e->match_cache); free(e->moves); free(e); }
+void style_engine_free(StyleEngine *e) { if (e->doc->stylesheets == e) e->doc->stylesheets = NULL; for (int i = 0; i < e->sheets.n; i++) css_sheet_free(e->sheets.v[i]); vec_free(e->sheets); for (int i = 0; i < e->dead_sheets.n; i++) css_sheet_free(e->dead_sheets.v[i]); vec_free(e->dead_sheets); idx_clear(&e->idx); sheet_delta_clear(e); css_match_cache_free(e->match_cache); free(e->moves); free(e); }
+static bool compound_has_root(const Compound *c) {
+    for (int k = 0; k < c->n; k++) if (is_pseudo(&c->s[k], "root")) return true;
+    return false;
+}
+/* Record the index keys of a sheet's rules, mirroring matched_decls' buckets. */
+static void sheet_delta(StyleEngine *e, const StyleSheet *s) {
+    e->delta_any = true;
+    if (s->disabled || e->delta_all) return;
+    for (int i = 0; i < s->rules.n && !e->delta_all; i++) {
+        const Rule *r = &s->rules.v[i];
+        if (!r->sel.n) continue;
+        SubjectKey key = subject_key(&r->sel), keys[8];
+        LocalKey local; int nkeys;
+        if (!key.name && (nkeys = subject_keys(&r->sel, keys))) {
+            for (int j = 0; j < nkeys; j++)
+                hm_put(keys[j].kind == SK_ID ? &e->delta_ids : keys[j].kind == SK_CLASS ? &e->delta_classes :
+                    keys[j].kind == SK_ATTR ? &e->delta_attrs : &e->delta_tags, keys[j].name, (void *)1);
+        }
+        else if (key.name && key.kind == SK_ID) hm_put(&e->delta_ids, key.name, (void *)1);
+        else if (key.name && key.kind == SK_CLASS) hm_put(&e->delta_classes, key.name, (void *)1);
+        else if (key.name && key.kind == SK_TYPE) hm_put(&e->delta_tags, key.name, (void *)1);
+        else if (compound_has_root(&r->sel.c[r->sel.n - 1])) e->delta_root = true;
+        else if ((local = local_key(&r->sel)).kind == 1) continue;
+        else if (local.kind == 3) hm_put(&e->delta_attrs, local.name, (void *)1);
+        else if (local.kind == 4) hm_put(&e->delta_parent_tags, local.name, (void *)1);
+        else if (local.kind == 5) hm_put(&e->delta_parent_classes, local.name, (void *)1);
+        else if (local.kind == 6) hm_put(&e->delta_parent_attrs, local.name, (void *)1);
+        else {
+            const char *required = required_class(&r->sel, true);
+            if (!required) { e->delta_all = true; break; }
+            unsigned bit = class_filter_bit(required);
+            e->delta_ancestors[bit >> 6] |= UINT64_C(1) << (bit & 63);
+        }
+    }
+}
+static void sheet_delta_clear(StyleEngine *e) {
+    hm_free(&e->delta_ids, NULL); hm_free(&e->delta_classes, NULL); hm_free(&e->delta_tags, NULL);
+    hm_free(&e->delta_attrs, NULL); hm_free(&e->delta_parent_tags, NULL); hm_free(&e->delta_parent_classes, NULL); hm_free(&e->delta_parent_attrs, NULL);
+    memset(e->delta_ancestors, 0, sizeof e->delta_ancestors);
+    e->delta_any = e->delta_all = e->delta_root = false;
+}
+static bool sheet_delta_hit(StyleEngine *e, Node *n, const uint64_t classes[16]) {
+    if (n->id && hm_get(&e->delta_ids, n->id)) return true;
+    for (int i = 0; i < n->nclasses; i++) if (hm_get(&e->delta_classes, n->classes[i])) return true;
+    if (e->delta_tags.n && hm_get(&e->delta_tags, n->ns == NS_HTML ? n->tag : atom_lower(n->tag, strlen(n->tag)))) return true;
+    if (e->delta_root && n->parent && n->parent->type == NODE_DOCUMENT) return true;
+    for (int i = 0; e->delta_attrs.n && i < n->nattrs; i++)
+        if (hm_get(&e->delta_attrs, atom_lower(n->attrs[i].name, strlen(n->attrs[i].name)))) return true;
+    Node *p = n->parent;
+    if (e->delta_parent_tags.n && p && p->type == NODE_ELEMENT &&
+            hm_get(&e->delta_parent_tags, p->ns == NS_HTML ? p->tag : atom_lower(p->tag, strlen(p->tag)))) return true;
+    if (p && p->type == NODE_ELEMENT) {
+        for (int i = 0; e->delta_parent_classes.n && i < p->nclasses; i++) if (hm_get(&e->delta_parent_classes, p->classes[i])) return true;
+        for (int i = 0; e->delta_parent_attrs.n && i < p->nattrs; i++)
+            if (hm_get(&e->delta_parent_attrs, atom_lower(p->attrs[i].name, strlen(p->attrs[i].name)))) return true;
+    }
+    for (int k = 0; k < 16; k++) if (classes[k] & e->delta_ancestors[k]) return true;
+    return false;
+}
+/* Marks matching elements; returns whether any descendant of n was marked. */
+static bool sheet_delta_mark(StyleEngine *e, Node *n, const uint64_t ancestors[16]) {
+    uint64_t classes[16]; memcpy(classes, ancestors, sizeof classes);
+    bool any = false;
+    if (n->type == NODE_ELEMENT) {
+        add_class_filter(classes, n);
+        if (sheet_delta_hit(e, n, classes)) { n->flags |= NF_STYLE_DIRTY; any = true; }
+    }
+    bool below = false;
+    for (Node *c = n->first; c; c = c->next) below |= sheet_delta_mark(e, c, classes);
+    if (n->shadow_root) below |= sheet_delta_mark(e, n->shadow_root, classes);
+    if (below) n->flags |= NF_CHILD_STYLE_DIRTY;
+    return any || below;
+}
+
 void (*css_sheet_added_hook)(StyleSheet *s);
 void style_engine_add_sheet(StyleEngine *e, StyleSheet *s) {
     /* keep document order of owner nodes */
     int pos = e->sheets.n;
     if (s->owner) {
         for (int i = 1; i < e->sheets.n; i++) {
-            Node *o = e->sheets.v[i]->owner; if (!o) continue;
+            Node *o = e->sheets.v[i]->owner; if (!o || o == s->owner) continue;   /* a sheet's appended tail goes after it */
             /* is s->owner before o in tree order? */
             bool before = false;
             for (Node *n = s->owner; n; n = node_next_deep(n, NULL)) { if (n == o) { before = true; break; } }
@@ -1863,17 +2234,40 @@ void style_engine_add_sheet(StyleEngine *e, StyleSheet *s) {
     memmove(&e->sheets.v[pos + 1], &e->sheets.v[pos], sizeof(StyleSheet *) * (size_t)(e->sheets.n - 1 - pos));
     if (css_sheet_added_hook) css_sheet_added_hook(s);
     e->sheets.v[pos] = s;
-    e->idx_dirty = true; e->generation++;
+    sheet_delta(e, s);
+    /* rank the sheet between its neighbours and extend the index; renumber everything once no rank is left between them */
+    uint32_t lo = pos ? e->sheets.v[pos - 1]->rank : 0, hi = pos + 1 < e->sheets.n ? e->sheets.v[pos + 1]->rank : UINT32_MAX;
+    if (!e->idx_dirty && hi > lo && hi - lo >= 2) {
+        s->rank = lo + (pos == e->sheets.n - 1 ? LMIN((hi - lo) / 2, 1u << 20) : (hi - lo) / 2);   /* appends keep room for more */
+        idx_add_sheet(e, s); e->idx_changed = true;
+    }
+    else e->idx_dirty = true;
+    e->generation++;
 }
 void style_engine_remove_owner(StyleEngine *e, Node *owner) {
-    for (int i = 0; i < e->sheets.n; i++) if (e->sheets.v[i]->owner == owner) { css_sheet_free(e->sheets.v[i]); memmove(&e->sheets.v[i], &e->sheets.v[i + 1], sizeof(StyleSheet *) * (size_t)(e->sheets.n - i - 1)); e->sheets.n--; i--; }
-    e->idx_dirty = true; e->generation++;
+    bool removed = false;
+    for (int i = 0; i < e->sheets.n; i++) if (e->sheets.v[i]->owner == owner) {
+        StyleSheet *sh = e->sheets.v[i];
+        sheet_delta(e, sh);
+        /* small sheets (scroll locks, toggled overlays) leave dead rules in the index instead of rebuilding it */
+        if (!e->idx_dirty && sh->rules.n <= 256 && e->dead_sheets.n < 64) { for (int k = 0; k < sh->rules.n; k++) sh->rules.v[k].dead = true; vec_push(e->dead_sheets, sh); }
+        else { css_sheet_free(sh); e->idx_dirty = true; }
+        memmove(&e->sheets.v[i], &e->sheets.v[i + 1], sizeof(StyleSheet *) * (size_t)(e->sheets.n - i - 1)); e->sheets.n--; i--;
+        removed = true;
+    }
+    if (!removed) return;
+    if (!e->idx_dirty) e->idx_changed = true;
+    e->generation++;
 }
-void style_engine_invalidate(StyleEngine *e) { e->idx_dirty = true; e->generation++; }
+void style_engine_invalidate(StyleEngine *e) { e->idx_dirty = true; e->delta_all = true; e->generation++; }
 
 /* ---------------- cascade ---------------- */
-typedef struct { Decl *d; uint64_t key; } MDecl;
-static int mdecl_cmp(const void *a, const void *b) { uint64_t x = ((const MDecl *)a)->key, y = ((const MDecl *)b)->key; return x < y ? -1 : x > y; }
+typedef struct { Decl *d; uint64_t key, order; } MDecl;   /* key: importance and origin | specificity; then cascade order */
+static int mdecl_cmp(const void *a, const void *b) {
+    const MDecl *x = a, *y = b;
+    if (x->key != y->key) return x->key < y->key ? -1 : 1;
+    return x->order < y->order ? -1 : x->order > y->order;
+}
 
 static bool name_in(const char *list, const char *name) {
     size_t n = strlen(name);
@@ -1907,11 +2301,14 @@ static bool sel_last_has_host(const Selector *sel) {
     for (int k = 0; k < c->n; k++) if (c->s[k].kind == SK_PSEUDO && c->s[k].name == h) return true;
     return false;
 }
+static uint64_t g_collect_stamp; /* one per matched_decls call */
 static void collect(StyleEngine *e, Node *el, RuleVec *rv, int pseudo, VEC(MDecl) *out) {
     if (!rv) return;
+    e->stats_rule_iter += (uint64_t)rv->n;
     for (int i = 0; i < rv->n; i++) {
         Rule *r = rv->v[i];
-        if (r->sel.pseudo_el != pseudo) continue;
+        if (r->sel.pseudo_el != pseudo || r->dead) continue;
+        if (r->multi_key) { if (r->collect_stamp == g_collect_stamp) continue; r->collect_stamp = g_collect_stamp; }
         if (r->origin && r->scope != e->el_scope && !(r->scope && el->shadow_root == r->scope && sel_last_has_host(&r->sel))) continue;
         if (r->mq && !r->mq->matches) continue;
         unsigned bit = r->ancestor_class_filter;
@@ -1919,15 +2316,23 @@ static void collect(StyleEngine *e, Node *el, RuleVec *rv, int pseudo, VEC(MDecl
         bit = r->ancestor_class_filter2;
         if (bit < 1024 && e->ancestor_classes && !(e->ancestor_classes[bit >> 6] & (UINT64_C(1) << (bit & 63)))) continue;
         if (r->sel.reads_style_attribute) e->collect_dynamic = true;
+        e->stats_rule_tests++;
+#if defined(__ANDROID__) && !defined(NDEBUG)
+        r->dbg_tests++;
+#endif
         if (!css_match_selector(&r->sel, el, NULL)) continue;
+        e->stats_rule_hits++;
+#if defined(__ANDROID__) && !defined(NDEBUG)
+        r->dbg_hits++;
+#endif
         if (r->cq) e->collect_dynamic = true;
         if (r->cq && !container_matches(r->cq, el)) continue;
         for (int k = 0; k < r->decls->n; k++) {
             Decl *d = &r->decls->v[k];
-            /* key: important(1) | origin(1) | spec(30) | order(32) */
+            /* key: important(1) | origin(1) | spec(30); order: sheet rank | rule | declaration */
             uint64_t imp = d->important ? 1 : 0;
             uint64_t level = imp ? (r->origin == 0 ? 3 : 2) : (r->origin == 0 ? 0 : 1);
-            MDecl m = { d, (level << 62) | ((uint64_t)r->sel.spec << 32) | ((uint64_t)r->order << 8) | (uint64_t)(k & 0xff) };
+            MDecl m = { d, (level << 62) | ((uint64_t)r->sel.spec << 32), r->order | (uint64_t)(k & 0xff) };
             vec_push(*out, m);
         }
     }
@@ -1943,6 +2348,7 @@ static void collect_universal(StyleEngine *e, Node *el, int pseudo, VEC(MDecl) *
         if (e->ancestor_classes) bits &= e->ancestor_classes[word];
         while (bits) {
             unsigned bit = (unsigned)__builtin_ctzll(bits);
+            e->stats_anc_iter += (uint64_t)((RuleVec *)e->idx.ancestor_buckets[word * 64 + bit])->n;
             collect(e, el, e->idx.ancestor_buckets[word * 64 + bit], pseudo, (void *)out);
             bits &= bits - 1;
         }
@@ -1981,10 +2387,33 @@ static MDecl *matched_decls(StyleEngine *e, Node *el, int pseudo, int *count, bo
     VEC(MDecl) md = {0};
     RuleVec *rv;
     bool dynamic = e->collect_dynamic; e->collect_dynamic = false;
+    g_collect_stamp++;
     if (el->id && (rv = hm_get(&e->idx.by_id, el->id))) collect(e, el, rv, pseudo, (void *)&md);
     for (int i = 0; i < el->nclasses; i++) if ((rv = hm_get(&e->idx.by_class, el->classes[i]))) collect(e, el, rv, pseudo, (void *)&md);
     const char *tagkey = el->ns == NS_HTML ? el->tag : atom_lower(el->tag, strlen(el->tag));
     if ((rv = hm_get(&e->idx.by_tag, tagkey))) collect(e, el, rv, pseudo, (void *)&md);
+    if (e->idx.by_attr.n) for (int i = 0; i < el->nattrs; i++) {
+        const char *name = el->attrs[i].name;
+        if (el->ns != NS_HTML || (el->flags & NF_ATTR_MIXED_CASE)) name = atom_lower(name, strlen(name));
+        if ((rv = hm_get(&e->idx.by_attr, name))) collect(e, el, rv, pseudo, (void *)&md);
+    }
+    Node *parent = el->parent;
+    if (e->idx.by_parent_tag.n && parent && parent->type == NODE_ELEMENT &&
+            (rv = hm_get(&e->idx.by_parent_tag, parent->ns == NS_HTML ? parent->tag : atom_lower(parent->tag, strlen(parent->tag)))))
+        collect(e, el, rv, pseudo, (void *)&md);
+    if (parent && parent->type == NODE_ELEMENT) {
+        for (int i = 0; e->idx.by_parent_class.n && i < parent->nclasses; i++)
+            if ((rv = hm_get(&e->idx.by_parent_class, parent->classes[i]))) collect(e, el, rv, pseudo, (void *)&md);
+        for (int i = 0; e->idx.by_parent_attr.n && i < parent->nattrs; i++) {
+            const char *name = parent->attrs[i].name;
+            if (parent->ns != NS_HTML || (parent->flags & NF_ATTR_MIXED_CASE)) name = atom_lower(name, strlen(name));
+            if ((rv = hm_get(&e->idx.by_parent_attr, name))) collect(e, el, rv, pseudo, (void *)&md);
+        }
+    }
+    if (e->idx.root_rules.n && parent && parent->type == NODE_DOCUMENT) {
+        RuleVec root = { e->idx.root_rules.v, e->idx.root_rules.n, 0 };
+        collect(e, el, &root, pseudo, (void *)&md);
+    }
     collect_universal(e, el, pseudo, (void *)&md);
     if (md.n > 1) qsort(md.v, (size_t)md.n, sizeof(MDecl), mdecl_cmp);
     bool keep = !e->collect_dynamic && el->doc && el->style && node_attr_atom(el, A_style);
@@ -2037,13 +2466,16 @@ static void presentational_hints(ComputedStyle *st, const ComputedStyle *par, No
 static ComputedStyle *compute_pseudo(StyleEngine *e, Node *el, ComputedStyle *base, int which) {
     int n; bool owned;
     MDecl *md = matched_decls(e, el, which, &n, &owned);
-    if (!n) { if (owned) free(md); return NULL; }
+    /* without a content declaration ::before/::after stay content:none (it is not inherited) */
+    bool content = which == 4;
+    for (int i = 0; i < n && !content; i++) content = !strcmp(md[i].d->prop, "content");
+    if (!content) { if (owned) free(md); return NULL; }
     ComputedStyle *st = style_inherit(base);
     for (int i = 0; i < n; i++) if (md[i].d->prop[0] == '-' && md[i].d->prop[1] == '-') css_apply_decl(st, base, md[i].d->prop, md[i].d->value, e, el);
     for (int i = 0; i < n; i++) if (!(md[i].d->prop[0] == '-' && md[i].d->prop[1] == '-')) css_apply_decl(st, base, md[i].d->prop, md[i].d->value, e, el);
     if (owned) free(md);
     /* An absent pseudo can become visible when a consulted variable changes. */
-    base->custom_dependencies |= st->custom_dependencies;
+    cm_or(&base->custom_dependencies, &st->custom_dependencies);
     base->attribute_dependencies |= st->attribute_dependencies;
     base->parent_sensitive |= st->parent_sensitive;
     base->inherited_dynamic |= st->inherited_dynamic;
@@ -2057,8 +2489,8 @@ static void apply_decl_ordered(ComputedStyle *st, const ComputedStyle *par, MDec
     for (int i = 0; i < n; i++) if (v[i].d->prop[0] == '-' && v[i].d->prop[1] == '-') css_apply_decl(st, par, v[i].d->prop, v[i].d->value, e, el);
     custom_defer = false;
     /* var() in custom properties resolves against the element's final cascaded values */
-    for (int i = 0; i < n; i++) {
-        const char *p = v[i].d->prop; if (p[0] != '-' || p[1] != '-' || !st->custom) continue;
+    for (int i = 0; i < n && st->custom && (!par || st->custom != par->custom); i++) {
+        const char *p = v[i].d->prop; if (p[0] != '-' || p[1] != '-') continue;
         char *raw = hm_get(&st->custom->map, p);
         if (!raw || !strstr(raw, "var(")) continue;
         char *r = subst_vars(raw, st, 0);
@@ -2083,7 +2515,7 @@ static ComputedStyle *compute(StyleEngine *e, Node *el, const ComputedStyle *par
     if (inl) {
         if (!el->inline_style_src || strcmp(el->inline_style_src, inl)) { free(el->inline_style_src); el->inline_style_src = xstrdup(inl); css_decls_free(el->inline_decls); el->inline_decls = css_parse_decls(inl, strlen(inl)); }
         DeclList *dl = el->inline_decls;
-        for (int i = 0; i < dl->n; i++) { MDecl m = { &dl->v[i], 0 }; vec_push(all, m); }
+        for (int i = 0; i < dl->n; i++) { MDecl m = { &dl->v[i], 0, 0 }; vec_push(all, m); }
     }
     for (int i = split; i < mn; i++) vec_push(all, md[i]);
     apply_decl_ordered(st, par, all.v, all.n, e, el);
@@ -2131,7 +2563,7 @@ static bool paint_only(const ComputedStyle *a, const ComputedStyle *b) {
     ComputedStyle x = *a, y = *b;
 #define PO_Z(f) (memset(&x.f, 0, sizeof x.f), memset(&y.f, 0, sizeof y.f))
     PO_Z(refs); PO_Z(grid_cols); PO_Z(grid_rows); PO_Z(content); PO_Z(grid_areas); PO_Z(grid_area); PO_Z(before); PO_Z(after); PO_Z(custom);
-    PO_Z(custom_dependencies); PO_Z(attribute_dependencies); PO_Z(parent_sensitive); PO_Z(inherited_dynamic);
+    PO_Z(custom_dependencies); PO_Z(attribute_dependencies); PO_Z(parent_sensitive); PO_Z(inherited_dynamic); PO_Z(indep_set);
     PO_Z(color); PO_Z(bg_color); PO_Z(bg_image); PO_Z(bg_gradient); PO_Z(bg_repeat); PO_Z(bg_size_kind); PO_Z(bg_size); PO_Z(bg_pos);
     PO_Z(mask_image); PO_Z(mask_fit); PO_Z(border_color); PO_Z(outline_style); PO_Z(outline_width); PO_Z(outline_offset); PO_Z(outline_color);
     PO_Z(box_shadow); PO_Z(has_shadow); PO_Z(text_shadow); PO_Z(has_text_shadow); PO_Z(text_decoration);
@@ -2182,14 +2614,22 @@ static void adopt(ComputedStyle *old, ComputedStyle *nw) {
  * descendants and getComputedStyle. Rebase immutable maps; never mutate maps
  * retained by another computed style. Flattened maps take the normal path. */
 static bool can_rebase(const ComputedStyle *s, const CustomProps *old_parent,
-        const CustomProps *new_parent, uint64_t changed) {
+        const CustomProps *new_parent, const CustomMask *changed) {
     if (!s) return true;
-    if (s->parent_sensitive || s->inherited_dynamic || (s->custom_dependencies & changed)) return false;
+    if (s->parent_sensitive || s->inherited_dynamic || cm_any(&s->custom_dependencies, changed)) return false;
     if (s->custom != old_parent && (!s->custom || s->custom->parent != old_parent ||
             (new_parent && new_parent->depth >= CUSTOM_MAX_DEPTH))) return false;
     return can_rebase(s->before, s->custom, s->custom, changed) &&
         can_rebase(s->after, s->custom, s->custom, changed) &&
         can_rebase(s->marker, s->custom, s->custom, changed);
+}
+static int rebase_block_reason(const ComputedStyle *s, const CustomProps *old_parent, const CustomProps *new_parent, const CustomMask *changed) {
+    if (s->parent_sensitive) return 0;
+    if (s->inherited_dynamic) return 1;
+    if (cm_any(&s->custom_dependencies, changed)) return 2;
+    if (s->custom != old_parent && (!s->custom || s->custom->parent != old_parent ||
+            (new_parent && new_parent->depth >= CUSTOM_MAX_DEPTH))) return 3;
+    return 4;
 }
 static void rebase_custom(ComputedStyle *s, CustomProps *old_parent, CustomProps *new_parent) {
     if (!s) return;
@@ -2206,52 +2646,111 @@ static void rebase_custom(ComputedStyle *s, CustomProps *old_parent, CustomProps
     rebase_custom(s->marker, old, next);
     custom_unref(old);
 }
-static uint64_t custom_changes(const CustomProps *a, const CustomProps *b,
-        const CustomProps *old_parent, const CustomProps *new_parent, uint64_t inherited) {
-    if (a == b) return 0;
-    bool local = (a == old_parent || (a && a->parent == old_parent)) &&
-        (b == new_parent || (b && b->parent == new_parent));
-    uint64_t changed = local ? inherited : 0;
-    const CustomProps *chains[] = {a, b};
-    const CustomProps *parents[] = {old_parent, new_parent};
-    for (int i = 0; i < 2; i++) for (const CustomProps *c = chains[i]; c && (!local || c != parents[i]); c = c->parent)
+static bool custom_reaches(const CustomProps *c, const CustomProps *stop) {
+    for (; c; c = c->parent) if (c == stop) return true;
+    return !stop;
+}
+/* Entries at and above the parents' maps differ only as inherited says.
+ * Otherwise entries above the chains' first shared map are identical unless
+ * shadowed below it, and the walk visits every shadowing entry. */
+static CustomMask custom_changes(const CustomProps *a, const CustomProps *b,
+        const CustomProps *old_parent, const CustomProps *new_parent, const CustomMask *inherited) {
+    CustomMask changed = {{0}};
+    if (a == b) return changed;
+    bool local = custom_reaches(a, old_parent) && custom_reaches(b, new_parent);
+    g_cc[0]++; g_cc[1] += !local;
+    if (local) changed = *inherited;
+    const CustomProps *stops[] = {old_parent, new_parent};
+    if (!local) {
+        const CustomProps *shared = NULL;
+        for (const CustomProps *x = a; x && !shared; x = x->parent) if (custom_reaches(b, x)) shared = x;
+        stops[0] = stops[1] = shared;
+        g_cc[2] += !shared;
+    }
+    for (int i = 0; i < 2; i++) for (const CustomProps *c = i ? b : a; c && c != stops[i]; c = c->parent) {
+        g_cc[3] += (uint64_t)c->map.n; if ((uint64_t)c->map.n > g_cc[4]) g_cc[4] = (uint64_t)c->map.n;
         hm_foreach((HMap *)&c->map, ent) {
-            uint64_t bit = custom_bit(ent->key);
-            if (!(changed & bit) && !str_same(custom_get(a, ent->key), custom_get(b, ent->key))) changed |= bit;
+            if (cm_has(&changed, ent->hash)) continue;
+            size_t n = strlen(ent->key);
+            if (!str_same(custom_geth(a, ent->key, n, ent->hash), custom_geth(b, ent->key, n, ent->hash))) cm_add(&changed, ent->hash);
         }
+    }
     return changed;
 }
-static bool inherited_equal(const ComputedStyle *a, const ComputedStyle *b) {
-    if (!a || !b) return false;
-#define INHERITED_EQ(f) if (memcmp(&a->f, &b->f, sizeof a->f)) return false
+/* 0 when children inherit the same values; INDEP_* bits when only
+ * independent properties differ; INH_OTHER otherwise. */
+static const char *g_inh_field; /* debug: first non-independent inherited difference */
+static unsigned inherited_diff(const ComputedStyle *a, const ComputedStyle *b) {
+    if (!a || !b) return INH_OTHER;
+#define INHERITED_EQ(f) if (memcmp(&a->f, &b->f, sizeof a->f)) { g_inh_field = #f; return INH_OTHER; }
     INHERITED_EQ(display); /* flex/grid blockification depends on the parent */
     INHERITED_EQ(color); INHERITED_EQ(font_size); INHERITED_EQ(font_weight); INHERITED_EQ(font_style); INHERITED_EQ(font_family);
     INHERITED_EQ(line_height); INHERITED_EQ(line_height_normal); INHERITED_EQ(line_height_factor);
-    INHERITED_EQ(text_align); INHERITED_EQ(white_space); INHERITED_EQ(text_transform); INHERITED_EQ(visibility);
+    INHERITED_EQ(text_align);
     INHERITED_EQ(letter_spacing); INHERITED_EQ(word_spacing); INHERITED_EQ(text_indent); INHERITED_EQ(list_style);
-    INHERITED_EQ(cursor); INHERITED_EQ(pointer_events); INHERITED_EQ(word_break); INHERITED_EQ(overflow_wrap); INHERITED_EQ(direction);
+    INHERITED_EQ(direction);
     INHERITED_EQ(has_text_shadow); INHERITED_EQ(text_shadow); INHERITED_EQ(caret_color); INHERITED_EQ(fill); INHERITED_EQ(stroke); INHERITED_EQ(stroke_width);
-    INHERITED_EQ(user_select); INHERITED_EQ(border_collapse); INHERITED_EQ(writing_mode);
+    INHERITED_EQ(border_collapse); INHERITED_EQ(writing_mode);
 #undef INHERITED_EQ
-    return true;
+    return (a->pointer_events != b->pointer_events ? INDEP_POINTER : 0) | (a->visibility != b->visibility ? INDEP_VISIBILITY : 0) |
+        (a->cursor != b->cursor ? INDEP_CURSOR : 0) | (a->user_select != b->user_select ? INDEP_USER_SELECT : 0) |
+        (a->white_space != b->white_space ? INDEP_WHITE_SPACE : 0) | (a->text_transform != b->text_transform ? INDEP_TEXT_TRANSFORM : 0) |
+        (a->word_break != b->word_break ? INDEP_WORD_BREAK : 0) | (a->overflow_wrap != b->overflow_wrap ? INDEP_OVERFLOW_WRAP : 0);
 }
-static void recalc(StyleEngine *e, Node *n, const ComputedStyle *par, bool force, bool reselect,
-        const uint64_t ancestors[16], CustomProps *old_parent, uint64_t changed, bool parent_equal) {
+static bool indep_free(const ComputedStyle *s, unsigned diff) {
+    return !s || (!(s->indep_set & diff) && indep_free(s->before, diff) && indep_free(s->after, diff) && indep_free(s->marker, diff));
+}
+/* Copies the changed independent values from par into s and its pseudo-elements. */
+static void indep_inherit(ComputedStyle *s, const ComputedStyle *par, unsigned diff) {
+    if (!s) return;
+    if (diff & INDEP_POINTER) s->pointer_events = par->pointer_events;
+    if (diff & INDEP_VISIBILITY) s->visibility = par->visibility;
+    if (diff & INDEP_CURSOR) s->cursor = par->cursor;
+    if (diff & INDEP_USER_SELECT) s->user_select = par->user_select;
+    if (diff & INDEP_WHITE_SPACE) s->white_space = par->white_space;
+    if (diff & INDEP_TEXT_TRANSFORM) s->text_transform = par->text_transform;
+    if (diff & INDEP_WORD_BREAK) s->word_break = par->word_break;
+    if (diff & INDEP_OVERFLOW_WRAP) s->overflow_wrap = par->overflow_wrap;
+    indep_inherit(s->before, s, diff); indep_inherit(s->after, s, diff); indep_inherit(s->marker, s, diff);
+}
+#ifdef __ANDROID__
+static int inl_has_color(Node *n) { const char *v = node_attr_atom(n, A_style); return v && strstr(v, "color") != NULL; }
+#endif
+static void recalc(StyleEngine *e, Node *n, const ComputedStyle *par, bool force, bool reselect, bool keyed,
+        const uint64_t ancestors[16], CustomProps *old_parent, const CustomMask *changed, unsigned parent_diff) {
     uint64_t classes[16]; memcpy(classes, ancestors, sizeof classes);
     add_class_filter(classes, n);
+    unsigned own = (n->flags & NF_RESELECT_SUBTREE ? 1 : 0) | (n->flags & NF_RESELECT_KEYED ? 2 : 0) | (reselect ? 4 : 0) | (keyed ? 8 : 0);
     reselect |= (n->flags & NF_RESELECT_SUBTREE) != 0;
-    n->flags &= ~(uint32_t)(NF_RESELECT_SUBTREE | NF_CHILD_LIST_DIRTY);
+    keyed |= (n->flags & NF_RESELECT_KEYED) && e->keyed_reselect;
+    n->flags &= ~(uint32_t)(NF_RESELECT_SUBTREE | NF_RESELECT_KEYED | NF_CHILD_LIST_DIRTY);
     if (n->type == NODE_ELEMENT) {
+        bool sub_root = !force && ((n->flags & NF_STYLE_DIRTY) || !n->style); int m0 = e->stats_matched;
         CustomProps *old_custom = n->style ? custom_ref(n->style->custom) : NULL;
-        bool child_equal = true;
-        uint64_t child_changed = 0;
+        unsigned child_diff = 0;
+        CustomMask child_changed = {{0}};
         bool need = force || (n->flags & NF_STYLE_DIRTY) || !n->style;
-        if (need && force && !reselect && !(n->flags & NF_STYLE_DIRTY) && n->style && par && parent_equal &&
-                e->reuse_inherited && e->seen_inheritance_version == e->doc->inheritance_version &&
-                can_rebase(n->style, old_parent, par->custom, changed)) {
+        bool resel = reselect || (keyed && need && keyed_hit(e, n));
+        bool inherit_only = need && force && !resel && !(n->flags & NF_STYLE_DIRTY) && n->style && par &&
+            !(parent_diff & INH_OTHER) && e->reuse_inherited;
+        bool indep = inherit_only && indep_free(n->style, parent_diff);
+        if (inherit_only && !indep) e->stats_indep_block++;
+        else if (indep && !can_rebase(n->style, old_parent, par->custom, changed)) {
+            e->stats_rebase_block++; int why = rebase_block_reason(n->style, old_parent, par->custom, changed);
+            e->stats_rebase_why[why]++; indep = false;
+            if (why == 2) { uint64_t bits = 0; for (int i = 0; i < 4; i++) bits += (uint64_t)__builtin_popcountll(changed->w[i]); if (bits > g_cc[6]) g_cc[6] = bits; }
+        }
+        if (indep) {
             rebase_custom(n->style, old_parent, par->custom);
+            if (parent_diff) {
+                ComputedStyle old = *n->style;
+                indep_inherit(n->style, par, parent_diff);
+                if (css_style_change_hook) css_style_change_hook(n, &old, n->style);
+                if (parent_diff & (INDEP_WHITE_SPACE | INDEP_TEXT_TRANSFORM | INDEP_WORD_BREAK | INDEP_OVERFLOW_WRAP)) e->layout_dirty = true;
+            }
             e->stats_reused++;
-            child_changed = changed; /* over-invalidation is safe when a local variable shadows it */
+            child_diff = parent_diff;
+            child_changed = *changed; /* over-invalidation is safe when a local variable shadows it */
         } else if (need) {
 #if defined(__ANDROID__) && !defined(NDEBUG)
             if (e->debug_style_passes && !force) __android_log_print(ANDROID_LOG_INFO, "LumenStyle", "lumen-style root tag=%s classes=%.180s inline=%d\n", n->tag, n->class_name ? n->class_name : "", node_has_attr(n, "style"));
@@ -2269,7 +2768,22 @@ static void recalc(StyleEngine *e, Node *n, const ComputedStyle *par, bool force
              * ancestors even after intermediate inherited values stabilize. */
             if (n->style && (((n->style->display == D_NONE) != (st->display == D_NONE)) ||
                     (n == e->doc->html && n->style->font_size != st->font_size))) e->reuse_inherited = false;
-            child_equal = e->reuse_inherited && inherited_equal(n->style, st);
+            child_diff = e->reuse_inherited ? inherited_diff(n->style, st) : INH_OTHER;
+#ifdef __ANDROID__
+            /* Why a page-wide inherited value moved: values and selector shapes only. */
+            if ((n == e->doc->body || n == e->doc->html) && n->style && n->style->color != st->color) {
+                int mn; bool owned; MDecl *md = matched_decls(e, n, 0, &mn, &owned);
+                const char *val = "", *var = NULL; char vname[64] = "";
+                for (int i = 0; i < mn; i++) if (!strcmp(md[i].d->prop, "color")) val = md[i].d->value;
+                if ((var = strstr(val, "var(--"))) { int j = 0; for (var += 4; *var && *var != ')' && *var != ',' && j < 63; ) vname[j++] = *var++; vname[j] = 0; }
+                const char *ov = *vname ? custom_get(n->style->custom, vname) : NULL, *nv = *vname ? custom_get(st->custom, vname) : NULL;
+                SB attrs; sb_init(&attrs);
+                for (int i = 0; i < n->nattrs; i++) { sb_puts(&attrs, n->attrs[i].name); sb_puts(&attrs, " "); }
+                __android_log_print(ANDROID_LOG_INFO, "LumenStyle", "inh_color tag=%s old=%08x new=%08x decl=%.80s old_var=%.60s new_var=%.60s inline_color=%d par_old=%08x attrs=%.200s",
+                    n->tag, n->style->color, st->color, val, ov ? ov : "-", nv ? nv : "-", inl_has_color(n), par ? par->color : 0, attrs.s ? attrs.s : "");
+                sb_free(&attrs); if (owned) free(md);
+            }
+#endif
             if (e->reuse_inherited) child_changed = custom_changes(old_custom, st->custom,
                 old_parent, par ? par->custom : NULL, changed);
             if (css_style_change_hook) css_style_change_hook(n, n->style, st);
@@ -2294,13 +2808,20 @@ static void recalc(StyleEngine *e, Node *n, const ComputedStyle *par, bool force
         n->flags &= ~(uint32_t)NF_CHILD_STYLE_DIRTY;
         if (n->style->display == D_NONE && !force) { custom_unref(old_custom); return; }
         Node *kids = n->template_content ? NULL : n;
-        if (kids) for (Node *c = n->first; c; c = c->next) recalc(e, c, n->style, force, reselect, classes, old_custom, child_changed, child_equal);
-        if (n->shadow_root) for (Node *c = n->shadow_root->first; c; c = c->next) recalc(e, c, n->style, force, reselect, classes, old_custom, child_changed, child_equal);
+        if (kids) for (Node *c = n->first; c; c = c->next) recalc(e, c, n->style, force, reselect, keyed, classes, old_custom, &child_changed, child_diff);
+        if (n->shadow_root) for (Node *c = n->shadow_root->first; c; c = c->next) recalc(e, c, n->style, force, reselect, keyed, classes, old_custom, &child_changed, child_diff);
+#if defined(__ANDROID__) && !defined(NDEBUG)
+        if (e->debug_style_passes && e->stats_matched - m0 >= 1000 && (own & 3) && !(own & 4))   /* where a large reselect starts: own flags 1 subtree, 2 keyed; 8 keyed from above */
+            __android_log_print(ANDROID_LOG_INFO, "LumenStyle", "lumen-style big_reselect tag=%s matched=%d own=%u whole=%d", n->tag ? n->tag : "-", e->stats_matched - m0, own, e->keyed_whole);
+#else
+        (void)own;
+#endif
+        if (sub_root) { e->stats_roots++; if (e->stats_matched - m0 > e->stats_big_root) { e->stats_big_root = e->stats_matched - m0; e->stats_big_tag = n->tag; e->stats_big_reselect = resel; e->stats_big_inh = (int)child_diff; e->stats_inh_field = child_diff & INH_OTHER ? g_inh_field : ""; } }
         custom_unref(old_custom);
     } else if (n->type == NODE_DOCUMENT || n->type == NODE_FRAGMENT) {
         force = force || (n->flags & NF_STYLE_DIRTY);
         n->flags &= ~(uint32_t)(NF_STYLE_DIRTY | NF_CHILD_STYLE_DIRTY);
-        for (Node *c = n->first; c; c = c->next) recalc(e, c, par, force, reselect, classes, old_parent, changed, parent_equal);
+        for (Node *c = n->first; c; c = c->next) recalc(e, c, par, force, reselect, keyed, classes, old_parent, changed, parent_diff);
     } else n->flags &= ~(uint32_t)NF_STYLE_DIRTY;
 }
 
@@ -2337,30 +2858,91 @@ static void debug_selector_shape(const Selector *s, SB *out) {
 /* One compact index per mutation batch avoids scanning every active rule for
  * every element in a long conversation. Collisions only add exact-key checks.
  * Coalesced changes that can remove the subject key stay in the universal list. */
-typedef struct { TreeDependency *dep; int next; } ActiveTreeEntry;
+typedef struct { TreeDependency *dep; const char *key; unsigned kind; uint32_t need; int next; } ActiveTreeEntry;
 typedef struct {
     ActiveTreeEntry *entries;
-    int heads[1024], universal, count;
+    int heads[1024], universal, count, unkeyed;
+    int global_heads[1024], global_universal; /* outside changed subtrees only these can hit */
+    bool any_global;
 } ActiveTreeIndex;
 static unsigned tree_subject_hash(unsigned kind, const char *key) {
     uint32_t h = 2166136261u ^ kind;
-    for (; *key; key++) h = (h ^ (kind == SK_TYPE ? lc((unsigned char)*key) : (unsigned char)*key)) * 16777619u;
+    bool fold = kind == SK_TYPE || kind == SK_ATTR;
+    for (; *key; key++) h = (h ^ (fold ? lc((unsigned char)*key) : (unsigned char)*key)) * 16777619u;
     return h & 1023;
 }
-static void active_tree_add(ActiveTreeIndex *index, TreeDependency *dep) {
-    bool keyed = dep->subject && (!dep->selector_changed || dep->subject_kind == SK_TYPE);
-    int *head = keyed ? &index->heads[tree_subject_hash(dep->subject_kind, dep->subject)] : &index->universal;
-    index->entries[index->count] = (ActiveTreeEntry){dep, *head};
+/* A widened class/ID key (SK_CHANGED_KEY) is still required unless that key
+ * itself changed in this batch; widening drops class/id attribute tests. */
+static bool tree_key_kept(const Document *d, const TreeDependency *dep, SubjectKey key) {
+    if (!dep->selector_changed || key.kind == SK_TYPE) return true;
+    if (key.kind == SK_ATTR) return !str_ieq(key.name, "class") && !str_ieq(key.name, "id");
+    unsigned bit = dom_tree_key_bit(key.name);
+    return !d->selector_changes_unknown && !(d->selector_change_keys[bit >> 6] >> (bit & 63) & 1);
+}
+/* Every element the dependency can match carries one of these keys. */
+static int tree_dep_keys(const Document *d, const TreeDependency *dep, SubjectKey out[8]) {
+    int n = 0;
+    if (dep->subject) out[n++] = (SubjectKey){dep->subject, dep->subject_kind};
+    else if (dep->source && !(n = subject_keys(dep->source, out))) {
+        LocalKey local = local_key(dep->source);
+        if (local.kind == 3) out[n++] = (SubjectKey){local.name, SK_ATTR};
+    }
+    for (int i = 0; i < n; i++) if (!tree_key_kept(d, dep, out[i])) return 0;
+    return n;
+}
+/* Tree flags the candidate's subject compound requires: most positional and
+ * sibling dependencies anchor on the subject, so other elements fail a bit test. */
+static uint32_t tree_subject_flags(const TreeDependency *dep) {
+    if (dep->selector_changed || !dep->candidate.n) return 0;   /* the widened candidate drops anchors */
+    const Compound *last = &dep->candidate.c[dep->candidate.n - 1];
+    uint32_t need = 0;
+    for (int k = 0; k < last->n; k++) if (last->s[k].kind == SK_TREE_RELATED)
+        need |= last->s[k].op == 2 ? NF_TREE_CHILD : last->s[k].op ? NF_TREE_RELATED : NF_TREE_ANCESTOR;
+    return need;
+}
+static void active_tree_push(ActiveTreeIndex *index, int *head, TreeDependency *dep, SubjectKey key) {
+    index->entries[index->count] = (ActiveTreeEntry){dep, key.name, key.kind, tree_subject_flags(dep), *head};
     *head = index->count++;
 }
+static void active_tree_add(ActiveTreeIndex *index, TreeDependency *dep, const Document *d) {
+    SubjectKey keys[8]; int n = tree_dep_keys(d, dep, keys);
+    bool global = dep->global || dep->selector_changed;
+    index->unkeyed += !n;
+    index->any_global |= global;
+    if (!n) {
+        active_tree_push(index, &index->universal, dep, (SubjectKey){0});
+        if (global) active_tree_push(index, &index->global_universal, dep, (SubjectKey){0});
+    }
+    for (int i = 0; i < n; i++) {
+        unsigned hash = tree_subject_hash(keys[i].kind, keys[i].name);
+        active_tree_push(index, &index->heads[hash], dep, keys[i]);
+        if (global) active_tree_push(index, &index->global_heads[hash], dep, keys[i]);
+    }
+}
+#if defined(__ANDROID__) && !defined(NDEBUG)
+static int *g_dep_hits;   /* debug: tree-dependency hits per candidate during one pass */
+static int *g_dep_tests;  /* debug: selector tests per candidate */
+static uint64_t g_tt[3];  /* debug: key mismatches, selector tests, tests inside changed subtrees */
+#endif
 static bool invalidate_tree_bucket(StyleEngine *e, Node *n, bool local, int *logged,
         const ActiveTreeIndex *index, int head, unsigned kind, const char *key) {
     for (int i = head; i >= 0; i = index->entries[i].next) {
-        TreeDependency *dep = index->entries[i].dep;
+        const ActiveTreeEntry *entry = &index->entries[i];
+        TreeDependency *dep = entry->dep;
         e->stats_tree_tests++;
         if (!local && !dep->global && !dep->selector_changed) continue;
-        if (key && (dep->subject_kind != kind ||
-                (kind == SK_TYPE ? !str_ieq(dep->subject, key) : strcmp(dep->subject, key)))) continue;
+        if ((n->flags & entry->need) != entry->need) continue;
+        if (key && (entry->kind != kind ||
+                (kind == SK_TYPE || kind == SK_ATTR ? !str_ieq(entry->key, key) : strcmp(entry->key, key)))) {
+#if defined(__ANDROID__) && !defined(NDEBUG)
+            g_tt[0]++;
+#endif
+            continue;
+        }
+#if defined(__ANDROID__) && !defined(NDEBUG)
+        g_tt[1]++; g_tt[2] += local;
+        if (g_dep_tests) g_dep_tests[dep - e->idx.tree_candidates.v]++;
+#endif
         if (!css_match_selector(dep->selector_changed ? &dep->changed_candidate : &dep->candidate, n, dep->scope)) continue;
 #if defined(__ANDROID__) && !defined(NDEBUG)
         if (e->debug_style_passes && *logged < 3) {
@@ -2369,6 +2951,7 @@ static bool invalidate_tree_bucket(StyleEngine *e, Node *n, bool local, int *log
             __android_log_print(ANDROID_LOG_INFO, "LumenStyle", "lumen-style tree hit=%d global=%d tag=%s source=%.6000s", (int)(dep - e->idx.tree_candidates.v), dep->global, n->tag, shape.s ? shape.s : "");
             sb_free(&shape);
         }
+        if (g_dep_hits) g_dep_hits[dep - e->idx.tree_candidates.v]++;
 #endif
         mark_style_subject(n);
         return true;
@@ -2377,15 +2960,21 @@ static bool invalidate_tree_bucket(StyleEngine *e, Node *n, bool local, int *log
 }
 static int invalidate_tree_dependents(StyleEngine *e, Node *n, bool local, int *logged, const ActiveTreeIndex *index) {
     int affected = 0;
+    /* annotate_tree_changes flagged every ancestor of an edited child list */
+    if (!local && !(n->flags & NF_TREE_ANCESTOR) && !index->any_global) return 0;
     if (n->type == NODE_ELEMENT) {
-        bool hit = invalidate_tree_bucket(e, n, local, logged, index, index->universal, 0, NULL);
+        const int *heads = local ? index->heads : index->global_heads;
+        bool hit = invalidate_tree_bucket(e, n, local, logged, index, local ? index->universal : index->global_universal, 0, NULL);
         if (!hit && n->id) hit = invalidate_tree_bucket(e, n, local, logged, index,
-            index->heads[tree_subject_hash(SK_ID, n->id)], SK_ID, n->id);
+            heads[tree_subject_hash(SK_ID, n->id)], SK_ID, n->id);
         if (!hit && n->tag) hit = invalidate_tree_bucket(e, n, local, logged, index,
-            index->heads[tree_subject_hash(SK_TYPE, n->tag)], SK_TYPE, n->tag);
+            heads[tree_subject_hash(SK_TYPE, n->tag)], SK_TYPE, n->tag);
         for (int i = 0; !hit && i < n->nclasses; i++)
             hit = invalidate_tree_bucket(e, n, local, logged, index,
-                index->heads[tree_subject_hash(SK_CLASS, n->classes[i])], SK_CLASS, n->classes[i]);
+                heads[tree_subject_hash(SK_CLASS, n->classes[i])], SK_CLASS, n->classes[i]);
+        for (int i = 0; !hit && i < n->nattrs; i++)
+            hit = invalidate_tree_bucket(e, n, local, logged, index,
+                heads[tree_subject_hash(SK_ATTR, n->attrs[i].name)], SK_ATTR, n->attrs[i].name);
         affected += hit;
     }
     local |= (n->flags & NF_CHILD_LIST_DIRTY) != 0;
@@ -2420,10 +3009,18 @@ static void invalidate_empty_dependents(StyleEngine *e) {
 }
 void style_recalc(StyleEngine *e, Node *root, bool force) {
     e->stats_tree_tests = 0;
+#if defined(__ANDROID__) && !defined(NDEBUG)
+    struct timespec dbg_t0; clock_gettime(CLOCK_MONOTONIC, &dbg_t0);
+    bool dbg_force = force, dbg_idx = e->idx_dirty || e->idx_changed, dbg_tree = e->seen_tree_version != e->doc->tree_version,
+         dbg_empty = e->seen_text_emptiness != e->doc->text_emptiness_version, dbg_inh = e->seen_inheritance_version != e->doc->inheritance_version;
+    int dbg_affected = -1, dbg_unkeyed = -1;
+    const char *dbg_unknown = e->doc->selector_changes_unknown ? (e->doc->unknown_reason ? e->doc->unknown_reason : "?") : "";
+#endif
     bool media_changed = !e->media_valid || e->media.vw != e->styled_media.vw ||
         e->media.vh != e->styled_media.vh || e->media.dpr != e->styled_media.dpr ||
         e->media.dark != e->styled_media.dark;
-    if (media_changed || e->idx_dirty) {
+    if (e->idx_dirty) idx_build(e);
+    if (media_changed || e->idx_changed) {
         g_match_epoch++;
         for (int sheet_index = 0; sheet_index < e->sheets.n; sheet_index++) {
             StyleSheet *sheet = e->sheets.v[sheet_index];
@@ -2435,19 +3032,36 @@ void style_recalc(StyleEngine *e, Node *root, bool force) {
         }
     }
     if (media_changed) { force = true; root = &e->doc->node; }
-    if (e->idx_dirty) { idx_build(e); force = true; }
+    if (e->idx_changed) {
+        e->idx_changed = false;
+        /* Unchanged rules keep their matches: restyle only what the added or
+         * removed rules can match. Unkeyed rules fall back to every element. */
+        if (!force && e->delta_any && !e->delta_all && e->seen_regprop_version == g_regprop_version) {
+            uint64_t none[16] = {0};
+            sheet_delta_mark(e, &e->doc->node, none);
+            root = &e->doc->node;
+        } else force = true;
+        sheet_delta_clear(e);
+        e->seen_regprop_version = g_regprop_version;
+    }
     /* Structural/empty invalidation repeatedly matches the same ancestor
      * compounds too. DOM selector versions invalidate old results before this
      * pass; annotate_tree_changes establishes the flags before any matching. */
     CssMatchCache *previous_cache = css_match_cache_begin_style(&e->match_cache,
         e->doc, e->generation, force);
-    if (e->seen_tree_version != e->doc->tree_version) {
+    /* A class/ID change inside a :has() argument, without a tree edit, needs
+     * only the :has dependencies; its own subtree already reselects. */
+    bool has_changed = false;
+    for (int k = 0; k < 16; k++) has_changed |= (e->idx.has_keys[k] & e->doc->selector_change_keys[k]) != 0;
+    has_changed &= !force && e->seen_tree_version == e->doc->tree_version &&
+        e->seen_inheritance_version != e->doc->inheritance_version && !e->doc->selector_changes_unknown;
+    if (e->seen_tree_version != e->doc->tree_version || has_changed) {
         if (!force) {
             int logged = 0, affected = 0;
-            if (annotate_tree_changes(&e->doc->node)) {
-                ActiveTreeIndex active = {.universal = -1};
-                for (int i = 0; i < 1024; i++) active.heads[i] = -1;
-                active.entries = xmalloc((size_t)e->idx.tree_candidates.n * sizeof *active.entries);
+            if (annotate_tree_changes(&e->doc->node) || has_changed) {
+                ActiveTreeIndex active = {.universal = -1, .global_universal = -1};
+                for (int i = 0; i < 1024; i++) active.heads[i] = active.global_heads[i] = -1;
+                active.entries = xmalloc((size_t)e->idx.tree_candidates.n * 16 * sizeof *active.entries + 1);
                 for (int i = 0; i < e->idx.tree_candidates.n; i++) {
                     TreeDependency *dep = &e->idx.tree_candidates.v[i];
                     bool selectors_changed = e->seen_inheritance_version != e->doc->inheritance_version;
@@ -2458,15 +3072,50 @@ void style_recalc(StyleEngine *e, Node *root, bool force) {
                             selectors_changed = (dep->selector_keys[k] & e->doc->selector_change_keys[k]) != 0;
                         dep->selector_changed = selectors_changed;
                     }
+                    if (has_changed && (!dep->global || !dep->selector_changed)) continue;
                     if (dep->selector_changed && !dep->changed_candidate.c)
                         dep->changed_candidate = attribute_candidate(&e->idx, &dep->candidate, NULL);
                     if (dep->focus_tree_filter && !selectors_changed && !e->doc->tree_focus_changed) continue;
                     bool hit = !dep->witness_filter || selectors_changed;
                     for (int k = 0; !hit && k < 16; k++) hit = (dep->witness_keys[k] & e->doc->tree_change_keys[k]) != 0;
-                    if (hit) active_tree_add(&active, dep);
+                    if (hit) active_tree_add(&active, dep, e->doc);
                 }
+#if defined(__ANDROID__) && !defined(NDEBUG)
+                g_dep_hits = xcalloc((size_t)e->idx.tree_candidates.n + 1, sizeof *g_dep_hits);
+                g_dep_tests = xcalloc((size_t)e->idx.tree_candidates.n + 1, sizeof *g_dep_tests);
+                memset(g_tt, 0, sizeof g_tt);
+#endif
+#if defined(__ANDROID__) && !defined(NDEBUG)
+                dbg_unkeyed = active.unkeyed;
+#endif
                 affected = invalidate_tree_dependents(e, &e->doc->node, false, &logged, &active);
                 free(active.entries);
+#if defined(__ANDROID__) && !defined(NDEBUG)
+                dbg_affected = affected;
+                if (affected >= 300) for (int round = 0; round < 3; round++) {   /* the widest deps, as selector shapes */
+                    int best = -1; for (int i = 0; i < e->idx.tree_candidates.n; i++) if (g_dep_hits[i] && (best < 0 || g_dep_hits[i] > g_dep_hits[best])) best = i;
+                    if (best < 0) break;
+                    TreeDependency *dep = &e->idx.tree_candidates.v[best];
+                    SB shape; sb_init(&shape); debug_selector_shape(dep->source, &shape);
+                    __android_log_print(ANDROID_LOG_INFO, "LumenStyle", "tree_dep hits=%d global=%d changed=%d kind=%d subject=%s shape=%.400s", g_dep_hits[best], dep->global, dep->selector_changed, dep->subject_kind, dep->subject ? dep->subject : "*", shape.s ? shape.s : "");
+                    sb_free(&shape); g_dep_hits[best] = 0;
+                }
+                free(g_dep_hits); g_dep_hits = NULL;
+                if (g_tt[1] >= 200000) {
+                    __android_log_print(ANDROID_LOG_INFO, "LumenStyle", "tree_tests mismatch=%llu tests=%llu local=%llu active=%d unkeyed=%d",
+                        (unsigned long long)g_tt[0], (unsigned long long)g_tt[1], (unsigned long long)g_tt[2], active.count, active.unkeyed);
+                    for (int round = 0; round < 12; round++) {   /* the most-tested deps, as selector shapes */
+                        int best = -1; for (int i = 0; i < e->idx.tree_candidates.n; i++) if (g_dep_tests[i] && (best < 0 || g_dep_tests[i] > g_dep_tests[best])) best = i;
+                        if (best < 0) break;
+                        TreeDependency *dep = &e->idx.tree_candidates.v[best];
+                        SubjectKey keys[8]; int nk = tree_dep_keys(e->doc, dep, keys);
+                        SB shape; sb_init(&shape); debug_selector_shape(dep->source, &shape);
+                        __android_log_print(ANDROID_LOG_INFO, "LumenStyle", "tree_tested tests=%d global=%d changed=%d nkeys=%d key0=%d:%s shape=%.300s", g_dep_tests[best], dep->global, dep->selector_changed, nk, nk ? keys[0].kind : 0, nk ? keys[0].name : "*", shape.s ? shape.s : "");
+                        sb_free(&shape); g_dep_tests[best] = 0;
+                    }
+                }
+                free(g_dep_tests); g_dep_tests = NULL;
+#endif
             }
 #if defined(__ANDROID__) && !defined(NDEBUG)
             if (e->debug_style_passes) __android_log_print(ANDROID_LOG_INFO, "LumenStyle", "lumen-style tree candidates=%d affected=%d\n", e->idx.tree_candidates.n, affected);
@@ -2485,19 +3134,78 @@ void style_recalc(StyleEngine *e, Node *root, bool force) {
         root = &e->doc->node;
     }
     e->stats_matched = e->stats_paint = e->stats_reused = e->stats_memo_hits = e->stats_moved = 0;
-    e->reuse_inherited = !force && e->seen_inheritance_version == e->doc->inheritance_version;
+    e->stats_roots = e->stats_big_root = e->stats_big_reselect = e->stats_big_inh = 0; e->stats_big_tag = "";
+    memset(e->stats_rebase_why, 0, sizeof e->stats_rebase_why);
+    e->stats_indep_block = e->stats_rebase_block = 0; e->stats_inh_field = ""; e->stats_anc_iter = 0; memset(g_cc, 0, sizeof g_cc);
+    e->stats_rule_iter = e->stats_rule_tests = e->stats_rule_hits = 0;
+    /* Class/ID changes invalidate their own subjects: subtree, siblings and
+     * :has. Unkeyed state and attribute changes may reach unforced descendants. */
+    e->reuse_inherited = !force && (e->seen_inheritance_version == e->doc->inheritance_version ||
+        !e->doc->selector_changes_unknown);
+    /* The batch's keys bound each changed element's own keys. */
+    e->keyed_reselect = e->doc->selector_changes_unknown;
+    for (int k = 0; k < 16; k++) e->keyed_reselect |= (e->idx.reselect_keys[k] & e->doc->reselect_change_keys[k]) != 0;
+    e->keyed_whole = e->doc->selector_changes_unknown;
+    memset(e->keyed_subjects, 0, sizeof e->keyed_subjects);
+    for (int k = 0; k < 16 && e->keyed_reselect && !e->keyed_whole; k++)
+        for (uint64_t bits = e->idx.reselect_keys[k] & e->doc->reselect_change_keys[k]; bits; bits &= bits - 1) {
+            const uint16_t *v = e->idx.reselect_subjects[k * 64 + __builtin_ctzll(bits)].v;
+            for (int i = 0, n = e->idx.reselect_subjects[k * 64 + __builtin_ctzll(bits)].n; i < n; i++) {
+                if (v[i] == 1024) {
+                    e->keyed_whole = true;
+#if defined(__ANDROID__) && !defined(NDEBUG)
+                    if (e->debug_style_passes) __android_log_print(ANDROID_LOG_INFO, "LumenStyle", "lumen-style keyed_whole bit=%d", k * 64 + __builtin_ctzll(bits));
+#endif
+                }
+                else e->keyed_subjects[v[i] >> 6] |= UINT64_C(1) << (v[i] & 63);
+            }
+        }
+#if defined(__ANDROID__) && !defined(NDEBUG)
+    if (e->debug_style_passes && e->keyed_whole) __android_log_print(ANDROID_LOG_INFO, "LumenStyle", "lumen-style keyed_whole unknown=%d", e->doc->selector_changes_unknown);
+#endif
     uint64_t ancestors[16] = {0};
     for (Node *n = root->parent ? root->parent : root->host; n; n = n->parent ? n->parent : n->host) add_class_filter(ancestors, n);
-    recalc(e, root, NULL, force, force, ancestors, NULL, 0, false);
+    recalc(e, root, NULL, force, force, false, ancestors, NULL, &(CustomMask){{0}}, INH_OTHER);
     e->seen_inheritance_version = e->doc->inheritance_version;
     memset(e->doc->selector_change_keys, 0, sizeof e->doc->selector_change_keys);
-    e->doc->selector_changes_unknown = false;
+    memset(e->doc->reselect_change_keys, 0, sizeof e->doc->reselect_change_keys);
+    e->doc->selector_changes_unknown = false; e->doc->unknown_reason = NULL;
     e->seen_sheet_version = e->doc->sheet_version;
     e->ancestor_classes = NULL;
 #if defined(__ANDROID__) && !defined(NDEBUG)
     if (e->debug_style_passes) { __android_log_print(ANDROID_LOG_INFO, "LumenStyle", "lumen-style pass matched=%d reused=%d memo=%d moved=%d eligible=%d force=%d\n", e->stats_matched, e->stats_reused, e->stats_memo_hits, e->stats_moved, e->reuse_inherited, force); e->debug_style_passes--; }
 #endif
     css_match_cache_end(previous_cache);
+#if defined(__ANDROID__) && !defined(NDEBUG)
+    {   /* Debug Android: why a slow style pass ran and how much it matched. Counts and tag names only. */
+        struct timespec t1; clock_gettime(CLOCK_MONOTONIC, &t1);
+        double ms = (t1.tv_sec - dbg_t0.tv_sec) * 1e3 + (t1.tv_nsec - dbg_t0.tv_nsec) / 1e6;
+        if (ms >= 15) __android_log_print(ANDROID_LOG_INFO, "LumenStyle", "pass_ms=%.0f matched=%d reused=%d memo=%d paint=%d roots=%d big=%d big_tag=%s big_reselect=%d big_inh=%d force=%d/%d media=%d idx=%d tree=%d affected=%d empty=%d inh=%d tree_tests=%llu rules_iter=%llu tested=%llu hit=%llu idx_rules=%d universal=%d indep_block=%d rebase_block=%d inh_field=%s anc_iter=%llu why=%d/%d/%d/%d/%d unknown=%s cc=%llu/%llu/%llu/%llu/%llu/%llu chg=%llu tu=%d",
+            ms, e->stats_matched, e->stats_reused, e->stats_memo_hits, e->stats_paint, e->stats_roots, e->stats_big_root, e->stats_big_tag ? e->stats_big_tag : "", e->stats_big_reselect, e->stats_big_inh,
+            dbg_force, force, media_changed, dbg_idx, dbg_tree, dbg_affected, dbg_empty, dbg_inh, (unsigned long long)e->stats_tree_tests,
+            (unsigned long long)e->stats_rule_iter, (unsigned long long)e->stats_rule_tests, (unsigned long long)e->stats_rule_hits, (int)e->idx.count, e->idx.universal.n,
+            e->stats_indep_block, e->stats_rebase_block, e->stats_inh_field ? e->stats_inh_field : "", (unsigned long long)e->stats_anc_iter,
+            e->stats_rebase_why[0], e->stats_rebase_why[1], e->stats_rebase_why[2], e->stats_rebase_why[3], e->stats_rebase_why[4], dbg_unknown,
+            (unsigned long long)g_cc[0], (unsigned long long)g_cc[1], (unsigned long long)g_cc[2], (unsigned long long)g_cc[3], (unsigned long long)g_cc[4], (unsigned long long)g_cc[5], (unsigned long long)g_cc[6], dbg_unkeyed);
+        /* The rules that cost the most failed selector tests, as selector shapes. */
+        for (int round = 0; ms >= 90 && round < 10; round++) {
+            Rule *best = NULL;
+            for (int si = 0; si < e->sheets.n; si++) for (int i = 0; i < e->sheets.v[si]->rules.n; i++) {
+                Rule *r = &e->sheets.v[si]->rules.v[i];
+                if (r->dbg_tests > r->dbg_hits && (!best || r->dbg_tests - r->dbg_hits > best->dbg_tests - best->dbg_hits)) best = r;
+            }
+            if (!best) break;
+            SubjectKey key = subject_key(&best->sel);
+            SB shape; sb_init(&shape); debug_selector_shape(&best->sel, &shape);
+            __android_log_print(ANDROID_LOG_INFO, "LumenStyle", "rule_cost tests=%u hits=%u key=%d:%s anc=%d/%d pseudo=%d mq=%d shape=%.300s",
+                best->dbg_tests, best->dbg_hits, key.kind, key.name ? key.name : "*", best->ancestor_class_filter < 1024, best->ancestor_class_filter2 < 1024,
+                best->sel.pseudo_el, best->mq != NULL, shape.s ? shape.s : "");
+            sb_free(&shape); best->dbg_tests = best->dbg_hits = 0;
+        }
+        for (int si = 0; si < e->sheets.n; si++) for (int i = 0; i < e->sheets.v[si]->rules.n; i++)
+            e->sheets.v[si]->rules.v[i].dbg_tests = e->sheets.v[si]->rules.v[i].dbg_hits = 0;
+    }
+#endif
     // Paint-only transforms can change intersections without running layout.
     if (e->stats_matched) doc_visual_changed();
     e->styled_media = e->media;

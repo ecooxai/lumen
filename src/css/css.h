@@ -47,6 +47,7 @@ typedef struct Gradient { uint8_t type; /* 0 linear 1 radial */ float angle; int
 
 typedef struct { float x, y, blur, spread; Color color; bool inset; } Shadow;
 
+typedef struct { uint64_t w[4]; } CustomMask; /* 256-bit bloom of custom property names */
 typedef struct CustomProps { int refs, depth; HMap map; struct CustomProps *parent; } CustomProps; /* own name -> char* value, then parent's */
 const char *custom_get(const CustomProps *c, const char *name);
 /* @property registrations: initial-value used when a custom property is unset */
@@ -103,9 +104,10 @@ typedef struct ComputedStyle {
     const char *anim_name; float anim_dur, anim_delay, anim_iter; /* first animation layer; name is an atom */
     const char *tr_prop; float tr_dur, tr_delay;                 /* transition-property list atom (NULL = all), max times */
     CustomProps *custom;
-    uint64_t custom_dependencies; /* bloom filter of var() names actually consulted */
+    CustomMask custom_dependencies; /* bloom filter of var() names actually consulted */
     uint64_t attribute_dependencies; /* attr() names consulted, including pseudos */
     bool parent_sensitive, inherited_dynamic; /* explicit inherit, container/style-attribute rules */
+    uint8_t indep_set; /* independent inherited properties the cascade set (style.c INDEP_*) */
     struct ComputedStyle *before, *after, *marker; /* pseudo element styles */
 } ComputedStyle;
 
@@ -140,7 +142,7 @@ bool css_container_eval(const char *q, const CQEnv *env);
 typedef struct Rule {
     Selector sel; /* single selector (selector lists are split) */
     DeclList *decls; /* shared between split selectors */
-    uint32_t order;
+    uint64_t order; /* cascade position once indexed: sheet rank << 32 | rule index << 8 */
     uint8_t origin; /* 0 UA, 1 author */
     uint8_t layer;
     const ContainerCond *cq; /* innermost @container, or NULL */
@@ -148,6 +150,13 @@ typedef struct Rule {
     const MediaCond *mq;
     uint16_t ancestor_class_filter2; /* additional necessary ancestor class */
     uint16_t ancestor_class_filter; /* 0..1023 bloom bit, 1024 = no necessary class */
+    bool multi_key; /* indexed under each :is()/:where() subject alternative */
+    bool filters_ready; /* class filters above depend only on the selector; computed once */
+    bool dead; /* its sheet was removed; still indexed (never matched) until the next index rebuild */
+    uint64_t collect_stamp; /* last matched_decls call that collected a multi-key rule */
+#if defined(__ANDROID__) && !defined(NDEBUG)
+    uint32_t dbg_tests, dbg_hits; /* debug: selector tests per style pass */
+#endif
 } Rule;
 
 typedef struct MediaCtx { float vw, vh, dpr; bool dark; } MediaCtx;
@@ -163,6 +172,7 @@ typedef struct StyleSheet {
     bool disabled;
     Node *owner;
     int origin;
+    uint32_t rank; /* cascade order among the engine's sheets; gaps let a sheet be indexed between two others */
 } StyleSheet;
 
 typedef struct EmptyDependency { Selector candidate; Node *scope; } EmptyDependency;
@@ -185,6 +195,8 @@ typedef struct RuleIndex {
     VEC(EmptyDependency) empty_candidates; /* shallow selectors with emptiness-dependent tests removed */
     VEC(TreeDependency) tree_candidates; /* structural tests removed; payloads borrowed from sheets */
     VEC(SelList *) tree_candidate_lists; /* owned nested positive alternatives; leaf payloads borrowed */
+    HMap by_attr, by_parent_tag, by_parent_class, by_parent_attr; /* unkeyed subjects: a required attribute; a required parent type, class or attribute (a > *) */
+    VEC(Rule *) root_rules; /* :root subjects */
     VEC(Rule *) universal;
     void *ancestor_buckets[1024]; /* RuleVecs, indexed by necessary class bloom bit */
     uint64_t ancestor_bucket_bits[16];
@@ -194,14 +206,20 @@ typedef struct RuleIndex {
      * descendant follows the sibling relation, so sibling subtrees reselect;
      * sib_style: such a compound reads the style attribute. */
     uint64_t sib_keys[16]; bool sib_any, sib_state, sib_desc, sib_style;
+    uint64_t sib_general_keys[16]; bool sib_general_state, sib_general_style; /* the same, reaching past the next element */
+    uint64_t reselect_keys[16]; /* class/ID/attribute keys tested left of a rule's subject compound */
+    VEC(uint16_t) reselect_subjects[1024]; /* per reselect key bit: subject key bits of its rules, 1024 = any element */
+    uint64_t has_keys[16]; /* class/ID keys inside :has() arguments: their change can restyle distant subjects */
+    VEC(Rule *) fw_rules; bool fw_complex; /* rules testing :focus-within left of the subject; fw_complex: one also needs siblings, :has or a shadow scope */
     HMap hov_desc, anc_desc; void *hov_desc_u, *anc_desc_u; /* key of a non-subject :hover compound -> subject keys it can affect */
-    HMap hov, hov_anc, hov_ach; /* hov_ach: like hov_anc but keyed by the subject's parent (`.k > :has(...)`) */ uint8_t hov_univ; bool hov_has, hov_sib; /* hov_anc: keys of compounds with :has(...:hover...), | 16 for :has(+ ...), 32 for :has(~ ...) */ /* :hover invalidation: id/class/tag -> 1 self, 2 subtree, 4 parent subtree */
+    HMap hov, hov_anc, hov_ach; /* hov_ach: like hov_anc but keyed by the subject's parent (`.k > :has(...)`) */ uint8_t hov_univ; bool hov_has, hov_sib, focus_within; /* hov_anc: keys of compounds with :has(...:hover...), | 16 for :has(+ ...), 32 for :has(~ ...) */ /* :hover invalidation: id/class/tag -> 1 self, 2 subtree, 4 parent subtree */
 } RuleIndex;
 
 typedef struct CssMatchCache CssMatchCache;
 /* Bounded memoization, active during synchronous style passes. Generation
  * checks allow reuse across selector-neutral inline CSS and text edits. */
 CssMatchCache *css_match_cache_begin(CssMatchCache **cache);
+CssMatchCache *css_match_cache_suspend(void);   /* match uncached until css_match_cache_end(returned) */
 CssMatchCache *css_match_cache_begin_style(CssMatchCache **cache, Document *doc,
     uint64_t generation, bool force);
 void css_match_cache_subject(Node *subject, const uint64_t ancestor_classes[16]);
@@ -210,7 +228,12 @@ void css_match_cache_free(CssMatchCache *cache);
 
 typedef struct StyleEngine {
     VEC(StyleSheet *) sheets;   /* document order */
-    RuleIndex idx; bool idx_dirty;
+    RuleIndex idx; bool idx_dirty, idx_changed; /* changed: rebuilt or extended since the last pass */
+    VEC(StyleSheet *) dead_sheets; /* removed, but their rules stay in the index until it is rebuilt */
+    /* Subjects of rules in sheets added/removed since the last pass, so a sheet
+     * change restyles only elements those rules can match. */
+    HMap delta_ids, delta_classes, delta_tags, delta_attrs, delta_parent_tags, delta_parent_classes, delta_parent_attrs; uint64_t delta_ancestors[16];
+    bool delta_any, delta_all, delta_root; uint64_t seen_regprop_version;
     MediaCtx media;
     MediaCtx styled_media;
     bool media_valid;
@@ -221,8 +244,14 @@ typedef struct StyleEngine {
     uint64_t seen_tree_version;
     uint64_t seen_sheet_version;
     uint64_t seen_inheritance_version;
-    bool reuse_inherited, collect_dynamic;
+    bool reuse_inherited, collect_dynamic, keyed_reselect;
+    bool keyed_whole; uint64_t keyed_subjects[16]; /* descendants a keyed change can rematch */
     int stats_matched, stats_paint, stats_reused, stats_memo_hits;
+    uint64_t stats_rule_iter, stats_rule_tests, stats_rule_hits; /* debug: collect() work per pass */
+    int stats_roots, stats_big_root, stats_big_reselect, stats_big_inh; const char *stats_big_tag; /* debug: dirty subtree roots */
+    uint64_t stats_anc_iter;
+    int stats_rebase_why[5]; /* debug: parent_sensitive, dynamic, custom deps, custom chain, pseudo */
+    int stats_indep_block, stats_rebase_block; const char *stats_inh_field; /* debug: why inherited-only children rematched */
     uint64_t stats_tree_tests; /* structural dependency candidates examined */
     int debug_style_passes; /* debug-only device profiling, armed by F8 */
     bool layout_dirty;          /* a recalc changed something other than paint-only properties */

@@ -2,8 +2,9 @@
 #include <unordered_map>
 
 namespace {
-std::mutex registry_mutex;
-std::unordered_map<v8::Isolate *, std::shared_ptr<JsForegroundTasks>> runners;
+/* Never destroyed: V8 worker threads can ask for runners during process exit. */
+std::mutex &registry_mutex = *new std::mutex;
+std::unordered_map<v8::Isolate *, std::shared_ptr<JsForegroundTasks>> &runners = *new std::unordered_map<v8::Isolate *, std::shared_ptr<JsForegroundTasks>>;
 
 /* Keep libplatform's background compiler jobs. Page and worker foreground
  * queues notify their owning event loops when asynchronous work completes. */
@@ -22,7 +23,14 @@ public:
             auto it = runners.find(iso);
             if (it != runners.end()) return it->second;
         }
-        return base_->GetForegroundTaskRunner(iso, priority);
+        (void)priority;
+        /* Every Lumen isolate registers its own runner, so an unknown isolate
+         * was disposed. The shared memory pool's release task can still post
+         * for it from a worker; libplatform has no runner there and crashes. */
+        static const std::shared_ptr<JsForegroundTasks> &disposed = *new std::shared_ptr<JsForegroundTasks>([] {
+            auto tasks = std::make_shared<JsForegroundTasks>(nullptr); tasks->Close(); return tasks;
+        }());
+        return disposed;
     }
     bool IdleTasksEnabled(v8::Isolate *iso) override {
         std::lock_guard<std::mutex> lock(registry_mutex);

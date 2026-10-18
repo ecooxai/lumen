@@ -22,9 +22,10 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
-static std::unique_ptr<v8::Platform> g_platform;
-static std::unique_ptr<v8::Platform> g_task_platform;
-v8::Platform *js_platform() { return g_platform.get(); }
+/* Process lifetime: V8 worker threads may still run while static destructors do. */
+static v8::Platform *g_platform;
+static v8::Platform *g_task_platform;
+v8::Platform *js_platform() { return g_platform; }
 int g_log_level = 3;
 alignas(8) static char kNodeMagic;
 
@@ -444,6 +445,20 @@ static std::string mod_key(JsCtx *c, v8::Local<v8::Module> m) {
     }
     return c->doc && c->doc->url ? c->doc->url : "";
 }
+static constexpr double kCodeRefreshQuietMs = 10000;   /* after the last module compile */
+/* Re-serialises cached modules in small slices once module loading has been quiet; a cache
+   that grew (functions compiled since) replaces the stored one. */
+static void code_refresh_tick(JsCtx *c) {
+    if (c->code_refresh.empty() || now_ms() < c->code_refresh_due) return;
+    double t0 = now_ms();
+    while (!c->code_refresh.empty() && now_ms() - t0 < 8) {
+        JsCtx::CodeRefresh r = std::move(c->code_refresh.back());
+        c->code_refresh.pop_back();
+        v8::ScriptCompiler::CachedData *cd = v8::ScriptCompiler::CreateCodeCache(r.s.Get(c->iso));
+        if (cd && cd->length > r.had + r.had / 8 + 1024) code_store(r.path, cd);
+        else delete cd;
+    }
+}
 static v8::MaybeLocal<v8::Module> mod_compile(JsCtx *c, const std::string &key, const std::string &src) {
     v8::Isolate *iso = c->iso;
     v8::ScriptOrigin origin(jstr(iso, key.c_str()), 0, 0, false, -1, v8::Local<v8::Value>(), false, false, true);
@@ -454,6 +469,11 @@ static v8::MaybeLocal<v8::Module> mod_compile(JsCtx *c, const std::string &key, 
     v8::Local<v8::Module> m;
     if (!v8::ScriptCompiler::CompileModule(iso, &s, cd ? v8::ScriptCompiler::kConsumeCodeCache : v8::ScriptCompiler::kNoCompileOptions).ToLocal(&m)) return {};
     if (cache && (!cd || s.GetCachedData()->rejected)) t_code_pending.emplace_back(v8::Global<v8::Module>(iso, m), path);
+    if (cache) {
+        int had = cd && !s.GetCachedData()->rejected ? s.GetCachedData()->length : 0;
+        c->code_refresh.push_back({ v8::Global<v8::UnboundModuleScript>(iso, m->GetUnboundModuleScript()), path, had });
+        c->code_refresh_due = now_ms() + kCodeRefreshQuietMs;
+    }
     c->mods[key].Reset(iso, m);
     c->mod_url.emplace(m->GetIdentityHash(), key);
     return m;
@@ -630,6 +650,63 @@ static void on_reject(v8::PromiseRejectMessage m) {
     fprintf(stderr, "[js warn] Unhandled promise rejection: %.900s\n", s.c_str());
 }
 
+#if defined(__ANDROID__) && !defined(NDEBUG)
+#include <android/log.h>
+/* Debug Android diagnostic, armed by an empty "jsprof" file next to v8cache: samples each new
+   top-level page's JS for 45 s and logs ticks per Lumen prelude function. Page code is only
+   counted in aggregate; its function names and script URLs are never logged. */
+static v8::CpuProfiler *g_prof; static JsCtx *g_prof_ctx; static double g_prof_end;
+static void jsprof_walk(const v8::CpuProfileNode *n, std::unordered_map<std::string, int> &self,
+                        std::unordered_map<std::string, int> &incl, std::vector<std::string> &stack, int &total) {
+    std::string sn = *v8::String::Utf8Value(g_prof_ctx->iso, n->GetScriptResourceName());
+    std::string fn = n->GetFunctionNameStr();
+    std::string k = sn == "lumen:prelude" ? "P " + (fn.empty() ? std::string("(anon)") : fn) + ":" + std::to_string(n->GetLineNumber())
+                  : sn.empty() && !fn.empty() ? "V " + fn : "<page>";
+    int hits = (int)n->GetHitCount(); self[k] += hits; total += hits;
+    bool fresh = std::find(stack.begin(), stack.end(), k) == stack.end();
+    if (fresh) stack.push_back(k);
+    int before = total;
+    for (int i = 0; i < n->GetChildrenCount(); i++) jsprof_walk(n->GetChild(i), self, incl, stack, total);
+    if (fresh) { incl[k] += hits + (total - before); stack.pop_back(); }
+}
+static void jsprof_stop(bool report) {
+    if (!g_prof) return;
+    v8::Isolate *iso = g_prof_ctx->iso;
+    v8::Isolate::Scope is(iso); v8::HandleScope hs(iso);
+    v8::CpuProfile *pr = g_prof->StopProfiling(jstr(iso, "lumen"));
+    if (pr && report) {
+        std::unordered_map<std::string, int> self, incl; std::vector<std::string> stack; int total = 0;
+        jsprof_walk(pr->GetTopDownRoot(), self, incl, stack, total);
+        auto top = [&](std::unordered_map<std::string, int> &m, const char *what, size_t lim) {
+            std::vector<std::pair<int, std::string>> v; for (auto &kv : m) v.push_back({ kv.second, kv.first });
+            std::sort(v.rbegin(), v.rend());
+            for (size_t i = 0; i < v.size() && i < lim; i++)
+                __android_log_print(ANDROID_LOG_INFO, "LumenProf", "%s %5.1f%% %d %s", what, v[i].first * 100.0 / (total ? total : 1), v[i].first, v[i].second.c_str());
+        };
+        __android_log_print(ANDROID_LOG_INFO, "LumenProf", "jsprof ticks=%d ms=%.0f", total, (pr->GetEndTime() - pr->GetStartTime()) / 1000.0);
+        top(self, "self", 60);
+        incl.erase("<page>");
+        top(incl, "incl", 60);
+    }
+    if (pr) pr->Delete();
+    g_prof->Dispose(); g_prof = nullptr; g_prof_ctx = nullptr;
+}
+static void jsprof_start(JsCtx *c) {
+    if (g_prof) jsprof_stop(now_ms() > g_prof_end - 40000);
+    if (g_code_dir.size() < 7 || access((g_code_dir.substr(0, g_code_dir.size() - 7) + "jsprof").c_str(), F_OK)) return;
+    v8::Isolate::Scope is(c->iso); v8::HandleScope hs(c->iso);
+    g_prof = v8::CpuProfiler::New(c->iso); g_prof_ctx = c; g_prof_end = now_ms() + 45000;
+    g_prof->SetSamplingInterval(500);
+    g_prof->StartProfiling(jstr(c->iso, "lumen"), v8::CpuProfilingOptions(v8::kLeafNodeLineNumbers));
+}
+static void jsprof_tick(JsCtx *c) { if (g_prof && g_prof_ctx == c && now_ms() > g_prof_end) jsprof_stop(true); }
+static void jsprof_free(JsCtx *c) { if (g_prof && g_prof_ctx == c) jsprof_stop(true); }
+#else
+static void jsprof_start(JsCtx *) {}
+static void jsprof_tick(JsCtx *) {}
+static void jsprof_free(JsCtx *) {}
+#endif
+
 extern "C" {
 
 void js_global_init(const char *argv0) {
@@ -640,9 +717,11 @@ void js_global_init(const char *argv0) {
     if (!icu && access("/opt/homebrew/opt/v8/libexec/icudtl.dat", R_OK) == 0) icu = "/opt/homebrew/opt/v8/libexec/icudtl.dat";
     v8::V8::InitializeICUDefaultLocation(argv0, icu);
     v8::V8::InitializeExternalStartupData(argv0);
-    g_platform = v8::platform::NewDefaultPlatform();
-    g_task_platform = js_task_platform(g_platform.get());
-    v8::V8::InitializePlatform(g_task_platform.get());
+    g_platform = v8::platform::NewDefaultPlatform().release();
+    g_task_platform = js_task_platform(g_platform).release();
+    v8::V8::InitializePlatform(g_task_platform);
+    /* page loads allocate in bursts: start the young generation at 4 MB instead of growing from 1 MB through many scavenges */
+    v8::V8::SetFlagsFromString("--min-semi-space-size=4");
     if (const char *vf = getenv("LUMEN_V8_FLAGS")) v8::V8::SetFlagsFromString(vf);
     v8::V8::Initialize();
 }
@@ -735,6 +814,7 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
     v8::Local<v8::Context> ctx = v8::Context::New(iso);
     c->ctx.Reset(iso, ctx);
     ctx->SetAlignedPointerInEmbedderData(1, c, kTag);
+    if (!parent) jsprof_start(c);
     ctx->SetSecurityToken(v8::String::NewFromUtf8(iso, ctx_origin(c).c_str(), v8::NewStringType::kInternalized).ToLocalChecked());
     v8::Context::Scope cs(ctx);
     v8::Local<v8::ObjectTemplate> tmpl = v8::ObjectTemplate::New(iso);
@@ -841,8 +921,10 @@ static void pick_deliver(JsCtx *c) {
     v8::Local<v8::Value> argv[1] = { paths.empty() ? v8::Local<v8::Value>(v8::Null(iso)) : v8::Local<v8::Value>(arr) };
     (void)jcall(c, fn, ctx->Global(), 1, argv);
 }
+void js_debug_profile(JsCtx *c) { if (c && !c->parent) jsprof_start(c); }
 void js_free(JsCtx *c) {
     if (!c) return;
+    jsprof_free(c);
     { std::lock_guard<std::mutex> l(g_pick_mu); if (g_pick_ctx == c) g_pick_ctx = nullptr; }
     workers_kill(c);
     for (JsCtx *k : std::vector<JsCtx *>(c->kids)) js_free(k);
@@ -858,7 +940,7 @@ void js_free(JsCtx *c) {
         c->watchdog.join();
     }
     for (auto &kv : c->players) mp_free(kv.second);
-    wa_close_owner(c);
+    wa_close_owner(c); mic_close_owner(c); rec_close_owner(c);
     g_ctxs.erase(std::remove(g_ctxs.begin(), g_ctxs.end(), c), g_ctxs.end());
     c->players.clear();
     std::vector<Node *> roots;
@@ -876,7 +958,7 @@ void js_free(JsCtx *c) {
         c->protos.clear();
         c->protoFor.Reset(); c->fire.Reset(); c->report.Reset(); c->viewportChanged.Reset();
         c->api.Reset(); c->node_tmpl.Reset();
-        c->mods.clear(); c->mod_url.clear(); c->mod_jobs.clear();
+        c->mods.clear(); c->mod_url.clear(); c->mod_jobs.clear(); c->code_refresh.clear();
         for (Node *n : c->wrapped) { delete static_cast<v8::Global<v8::Object> *>(n->js); n->js = nullptr; }
         for (Node *n : c->wrapped)
             if (!n->parent && n->type != NODE_DOCUMENT && !n->refcount && !n->host) roots.push_back(n);
@@ -975,6 +1057,32 @@ static void mod_jobs_finish(JsCtx *c) {
 
 void js_eval(JsCtx *c, const char *src, const char *name) {
     if (c && src) run_source(c, src, strlen(src), name, false);
+}
+char *js_eval_result(JsCtx *c, const char *src, const char *name, bool *failed) {
+    *failed = false;
+    if (!c || !src) return NULL;
+    JS_ENTER(c);
+    v8::TryCatch tc(iso);
+    v8::ScriptOrigin origin(jstr(iso, name ? name : ""));
+    v8::Local<v8::Script> s; v8::Local<v8::Value> v;
+    js_enter(c);
+    bool ok = v8::Script::Compile(ctx, jstr(iso, src), &origin).ToLocal(&s) && s->Run(ctx).ToLocal(&v);
+    js_leave(c);
+    std::string out;
+    if (!ok && tc.HasCaught()) {
+        *failed = true;
+        v8::String::Utf8Value m(iso, tc.Exception());
+        out = *m ? *m : "Error";
+        if (tc.CanContinue()) jreport(c, tc.Exception(), tc.Message());
+    } else if (ok && !v->IsUndefined()) {
+        v8::Local<v8::String> t;
+        if (v->ToString(ctx).ToLocal(&t)) { v8::String::Utf8Value m(iso, t); if (*m) out = *m; }
+    }
+    settle(c);
+    if (out.empty() && !*failed) return NULL;
+    if (out.size() > 200) { out.resize(200); while (!out.empty() && ((unsigned char)out.back() & 0xC0) == 0x80) out.pop_back(); if (!out.empty() && (unsigned char)out.back() >= 0xC0) out.pop_back(); out += "\xE2\x80\xA6"; }
+    char *r = (char *)malloc(out.size() + 1); memcpy(r, out.c_str(), out.size() + 1);
+    return r;
 }
 
 /* Native callers keep using a dispatch target after its handlers ran; handlers may detach it and a GC may
@@ -1136,16 +1244,34 @@ static void viewport_update(JsCtx *context) {
 static void tick_one(JsCtx *c);
 void js_tick(JsCtx *c) {
     if (!c || c->dead) return;
+    jsprof_tick(c);
     tick_one(c);
     frames_scan(c);
     for (JsCtx *k : std::vector<JsCtx *>(c->kids)) if (!k->dead) js_tick(k);
 }
+#if defined(__ANDROID__) && !defined(NDEBUG)
+#include <android/log.h>
+/* Debug Android: phases of a JS tick that took >=100 ms (tasks, module jobs, pick+timers,
+   viewport, media, raf, anims, resize, intersection, then settle). Numbers only. */
+#define TICK_BEGIN() double tk_t[10]; int tk_i = 0; tk_t[0] = now_ms(); size_t tk_mods = c->mod_jobs.size()
+#define TICK_MARK(i) (tk_t[++tk_i] = now_ms())
+#define TICK_END(ntimers) do { double tk_e = now_ms(); if (tk_e - tk_t[0] >= 100) { char tk_b[256]; int tk_o = 0; \
+        for (int k = 1; k <= tk_i; k++) tk_o += snprintf(tk_b + tk_o, sizeof tk_b - (size_t)tk_o, " %.0f", tk_t[k] - tk_t[k - 1]); \
+        __android_log_print(ANDROID_LOG_INFO, "LumenLoad", "tick_ms=%.0f mods=%zu timers=%zu phases=%s settle=%.0f", tk_e - tk_t[0], tk_mods, (size_t)(ntimers), tk_b, tk_e - tk_t[tk_i]); } } while (0)
+#else
+#define TICK_BEGIN() do {} while (0)
+#define TICK_MARK(i) do {} while (0)
+#define TICK_END(ntimers) do { (void)(ntimers); } while (0)
+#endif
 static void tick_one(JsCtx *c) {
     JS_ENTER(c);
+    TICK_BEGIN();
     // Frames share the root isolate. Drain once at the root event-loop level,
     // including a checkpoint after each task so promise completions run now.
     if (c->foreground_tasks) while (c->foreground_tasks->RunOne()) iso->PerformMicrotaskCheckpoint();
+    TICK_MARK(0);
     if (!c->mod_jobs.empty()) { mod_jobs_finish(c); settle(c); }
+    TICK_MARK(1);
     pick_deliver(c);
     double now = now_ms();
     std::vector<std::pair<double, uint32_t>> due;
@@ -1159,7 +1285,9 @@ static void tick_one(JsCtx *c) {
         else c->timers.erase(it);
         (void)jcall(c, fn, ctx->Global(), 0, nullptr);
     }
+    TICK_MARK(2);
     viewport_update(c);
+    TICK_MARK(3);
     if (!c->media_pump.IsEmpty() && (c->media_version != media_state_version() || now >= c->media_due)) {
         c->media_version = media_state_version();
         c->media_due = INFINITY;
@@ -1172,6 +1300,7 @@ static void tick_one(JsCtx *c) {
         v8::Local<v8::Value> ts = v8::Number::New(iso, now - c->t0);
         (void)jcall(c, c->video_frame_pump.Get(iso), v8::Undefined(iso), 1, &ts);
     }
+    TICK_MARK(4);
     if (!c->rafs.empty() && now - c->last_raf >= 15.5) {
         c->last_raf = now;
         std::map<uint32_t, v8::Global<v8::Function>> list;
@@ -1179,6 +1308,7 @@ static void tick_one(JsCtx *c) {
         v8::Local<v8::Value> ts = v8::Number::New(iso, now - c->t0);
         for (auto &kv : list) (void)jcall(c, kv.second.Get(iso), ctx->Global(), 1, &ts);
     }
+    TICK_MARK(5);
     if (!c->anims.empty()) {
         std::vector<AnimEv> due_ev;
         for (size_t i = 0; i < c->anims.size();)
@@ -1192,6 +1322,7 @@ static void tick_one(JsCtx *c) {
                 (void)jcall(c, fa.As<v8::Function>(), v8::Undefined(iso), 5, argv);
             }
     }
+    TICK_MARK(6);
     // Layout completion, not a repeating timer, drives size observation. Keep
     // callback-induced layout changes pending for another frame to bound loops.
     if (!c->resize_pump.IsEmpty() && now_ms() >= c->resize_due &&
@@ -1202,6 +1333,7 @@ static void tick_one(JsCtx *c) {
         c->resize_due = now_ms() + 16;
         (void)jcall(c, c->resize_pump.Get(iso), v8::Undefined(iso), 0, nullptr);
     }
+    TICK_MARK(7);
     // Snapshot before callbacks: mutations/new observations in a callback must
     // survive for the next delivery. Bound scanning during continuous scrolling
     // to 20 Hz; unchanged pages have no timer or geometry reads.
@@ -1213,8 +1345,11 @@ static void tick_one(JsCtx *c) {
         c->intersection_due = now_ms() + 50;
         (void)jcall(c, c->intersection_pump.Get(iso), v8::Undefined(iso), 0, nullptr);
     }
+    TICK_MARK(8);
+    code_refresh_tick(c);
     workers_pump(c);
     settle(c);
+    TICK_END(due.size());
 }
 
 bool js_wants_frame(JsCtx *c) {

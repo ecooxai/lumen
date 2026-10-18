@@ -34,6 +34,26 @@ JNIEXPORT jboolean JNICALL Java_org_lumen_browser_LumenActivity_nativeOpenUrl(
     return accepted ? JNI_TRUE : JNI_FALSE;
 }
 
+void android_share_text(const char *text) {
+    JNIEnv *environment = SDL_GetAndroidJNIEnv();
+    if (!environment || !text) return;
+    if ((*environment)->PushLocalFrame(environment, 8) < 0) {
+        (*environment)->ExceptionClear(environment);
+        return;
+    }
+    jobject activity = SDL_GetAndroidActivity();
+    jclass activity_class = activity ? (*environment)->GetObjectClass(environment, activity) : NULL;
+    jmethodID method = activity_class ? (*environment)->GetStaticMethodID(environment, activity_class, "shareText", "([B)V") : NULL;
+    jsize length = (jsize)strlen(text);
+    jbyteArray bytes = method ? (*environment)->NewByteArray(environment, length) : NULL;
+    if (bytes) {
+        (*environment)->SetByteArrayRegion(environment, bytes, 0, length, (const jbyte *)text);
+        (*environment)->CallStaticVoidMethod(environment, activity_class, method, bytes);
+    }
+    if ((*environment)->ExceptionCheck(environment)) (*environment)->ExceptionClear(environment);
+    (*environment)->PopLocalFrame(environment, NULL);
+}
+
 static bool android_trust_roots(SSL_CTX *context) {
     JNIEnv *environment = SDL_GetAndroidJNIEnv();
     if (!environment) return false;

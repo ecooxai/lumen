@@ -68,4 +68,20 @@ void wa_pause(const void *owner, int id, bool paused);
 void wa_close(const void *owner, int id);
 void wa_close_owner(const void *owner);
 /* decodeAudioData: whole file -> malloc'd interleaved stereo float at 48 kHz, NULL if undecodable */
+/* microphone (mono float at 48 kHz) and MediaRecorder encoding, per owning JS context */
+int mic_open(const void *owner);                 /* -1 without audio; Android asks for permission first */
+int mic_permission(void);                        /* 1 granted, 0 not asked yet, -1 denied */
+int mic_state(const void *owner, int id);        /* 0 waiting for permission, 1 capturing, -1 denied or failed */
+int mic_read(const void *owner, int id, float *out, int max);
+int mic_available(const void *owner, int id);
+void mic_close(const void *owner, int id);
+void mic_close_owner(const void *owner);
+bool mic_active(void);
+int rec_kind(const char *mime);                  /* 1 webm/opus, 2 ogg/opus, 3 mp4/aac, 0 unsupported */
+int rec_open(const void *owner, const char *mime, int bits_per_second);
+void rec_push(const void *owner, int id, const float *pcm, int frames);
+void rec_finish(const void *owner, int id);      /* encoder flush and container trailer */
+uint8_t *rec_take(const void *owner, int id, size_t *n);   /* muxed bytes since the last take (malloc), NULL if none */
+void rec_close(const void *owner, int id);
+void rec_close_owner(const void *owner);
 float *media_decode_pcm(const uint8_t *p, size_t n, int *frames);

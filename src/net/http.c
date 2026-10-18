@@ -25,6 +25,7 @@
 #include <zstd.h>
 #if defined(__ANDROID__) && !defined(NDEBUG)
 #include <android/log.h>
+#include <dlfcn.h>
 static double g_debug_stream_until;
 /* Page-load trace: one numeric line per request while armed; never URLs or headers. */
 static double g_trace_until;
@@ -84,10 +85,51 @@ static const char *const ua_name[UA_COUNT] = { "Chrome 150", "Firefox 150", "Lum
 const char *g_user_agent = "Mozilla/5.0 (" UA_OS ") AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0" UA_MOBILE " Safari/537.36";
 void net_set_user_agent(int which) { if (which >= 0 && which < UA_COUNT) g_user_agent = ua_str[which]; }
 const char *net_user_agent_name(int which) { return which >= 0 && which < UA_COUNT ? ua_name[which] : ""; }
+/* "Desktop site": these sites (and their subdomains) see a desktop Chrome on Linux. */
+#define UA_DESKTOP "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+#define MAX_DESKTOP 64
+static char g_desktop[MAX_DESKTOP][128]; static int g_ndesktop;
+static pthread_mutex_t g_desktop_mu = PTHREAD_MUTEX_INITIALIZER;
+static const char *site_of(const char *host) { return !strncasecmp(host, "www.", 4) ? host + 4 : host; }
+bool net_desktop_host(const char *host) {
+    if (!host || !*host) return false;
+    host = site_of(host);
+    size_t hn = strlen(host); bool on = false;
+    pthread_mutex_lock(&g_desktop_mu);
+    for (int i = 0; i < g_ndesktop && !on; i++) {
+        size_t n = strlen(g_desktop[i]);
+        on = hn >= n && !strcasecmp(host + hn - n, g_desktop[i]) && (hn == n || host[hn - n - 1] == '.');
+    }
+    pthread_mutex_unlock(&g_desktop_mu);
+    return on;
+}
+void net_set_desktop_host(const char *host, bool on) {
+    if (!host || !*host) return;
+    host = site_of(host);
+    if (strlen(host) >= sizeof g_desktop[0]) return;
+    pthread_mutex_lock(&g_desktop_mu);
+    int i = 0; while (i < g_ndesktop && strcasecmp(g_desktop[i], host)) i++;
+    if (on && i == g_ndesktop && g_ndesktop < MAX_DESKTOP) snprintf(g_desktop[g_ndesktop++], sizeof g_desktop[0], "%s", host);
+    size_t hn = strlen(host);
+    for (int k = 0; !on && k < g_ndesktop;) {   /* off: also the parent sites that cover host */
+        size_t n = strlen(g_desktop[k]);
+        if (hn >= n && !strcasecmp(host + hn - n, g_desktop[k]) && (hn == n || host[hn - n - 1] == '.')) {
+            memmove(g_desktop[k], g_desktop[k + 1], sizeof g_desktop[0] * (size_t)(g_ndesktop - k - 1)); g_ndesktop--;
+        } else k++;
+    }
+    pthread_mutex_unlock(&g_desktop_mu);
+}
+void net_desktop_hosts(char *out, size_t n) {   /* space separated */
+    size_t o = 0; if (n) out[0] = 0;
+    pthread_mutex_lock(&g_desktop_mu);
+    for (int i = 0; i < g_ndesktop && o + strlen(g_desktop[i]) + 2 < n; i++) o += (size_t)snprintf(out + o, n - o, "%s%s", o ? " " : "", g_desktop[i]);
+    pthread_mutex_unlock(&g_desktop_mu);
+}
 static const char *user_agent_for_host(const char *host) {
     /* Google requires a distinct browser identity on its authentication origin.
        Keep the normal compatibility preference for other sites. */
-    return host && str_ieq(host, "accounts.google.com") ? ua_str[UA_LUMEN] : g_user_agent;
+    if (host && str_ieq(host, "accounts.google.com")) return ua_str[UA_LUMEN];
+    return net_desktop_host(host) ? UA_DESKTOP : g_user_agent;
 }
 const char *net_user_agent_for_url(const char *url) {
     URL u;
@@ -401,6 +443,8 @@ typedef struct Ev { int type; NetRequest *req; NetResponse *resp; char *data; si
 static pthread_mutex_t g_ev_mu = PTHREAD_MUTEX_INITIALIZER;
 static Ev *g_ev, *g_ev_tail;
 static __thread NetRequest *t_stream;
+static __thread NetRequest *t_sink;   /* fetch whose body goes to its download sink */
+static __thread bool t_sink_stop;
 static __thread const char *t_url;
 static void ev_push(int type, NetRequest *req, NetResponse *resp, char *data, size_t n) {
     Ev *e = xcalloc(1, sizeof *e); e->type = type; e->req = req; e->resp = resp; e->data = data; e->n = n;
@@ -454,7 +498,15 @@ static void stream_out(Dec *d, SB *raw) {
     sb_clear(raw);
     if (o.n) ev_push(2, t_stream, NULL, o.s, o.n); else sb_free(&o);
 }
-static bool stream_cancelled(void) { return t_stream && __atomic_load_n(&t_stream->cancelled, __ATOMIC_RELAXED); }
+static void sink_out(Dec *d, SB *raw) {
+    if (!raw->n || t_sink_stop) { sb_clear(raw); return; }
+    SB o; sb_init(&o);
+    dec_feed(d, raw->s, raw->n, &o);
+    sb_clear(raw);
+    if (o.n && !t_sink->sink(t_sink, o.s, o.n, t_sink->sink_ud)) t_sink_stop = true;
+    sb_free(&o);
+}
+static bool stream_cancelled(void) { return t_sink_stop || (t_stream && __atomic_load_n(&t_stream->cancelled, __ATOMIC_RELAXED)); }
 
 /* ---------- single HTTP exchange ---------- */
 static NetResponse *http_once(const char *method, const URL *u, const Headers *hdrs, const char *body, size_t body_len, bool cookies, bool *retryable) {
@@ -492,9 +544,11 @@ static NetResponse *http_once(const char *method, const URL *u, const Headers *h
     if (!has_accept) sb_puts(&req, "Accept: */*\r\n");
     if (!has_ae) sb_puts(&req, "Accept-Encoding: gzip, deflate, br, zstd\r\n");
     if (!has_al) sb_puts(&req, "Accept-Language: en-US,en;q=0.9\r\n");
-    if (!has_ch && !strcmp(u->scheme, "https") && strstr(ua, "Chrome/"))
-        sb_puts(&req, "sec-ch-ua: \"Google Chrome\";v=\"150\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"150\"\r\n"
-                      "sec-ch-ua-mobile: " UA_CH_MOBILE "\r\nsec-ch-ua-platform: \"" UA_CH_OS "\"\r\n");
+    if (!has_ch && !strcmp(u->scheme, "https") && strstr(ua, "Chrome/")) {
+        bool desk = !strcmp(ua, UA_DESKTOP);
+        sb_puts(&req, "sec-ch-ua: \"Google Chrome\";v=\"150\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"150\"\r\n");
+        sb_puts(&req, desk ? "sec-ch-ua-mobile: ?0\r\nsec-ch-ua-platform: \"Linux\"\r\n" : "sec-ch-ua-mobile: " UA_CH_MOBILE "\r\nsec-ch-ua-platform: \"" UA_CH_OS "\"\r\n");
+    }
     if (cookies) { char *ck = cookies_get(u, true); if (ck) { sb_printf(&req, "Cookie: %s\r\n", ck); free(ck); } }
     if (body || (strcmp(method, "GET") && strcmp(method, "HEAD"))) sb_printf(&req, "Content-Length: %zu\r\n", body_len);
     sb_puts(&req, "Connection: keep-alive\r\n\r\n");
@@ -528,8 +582,16 @@ static NetResponse *http_once(const char *method, const URL *u, const Headers *h
     t_tr.ttfb_ms += now_ms() - tw;
 #endif
     r->status = status;
-    bool streaming = t_stream && !(status >= 300 && status < 400 && status != 304 && headers_get(&r->headers, "location"));
+    bool redirect = status >= 300 && status < 400 && status != 304 && headers_get(&r->headers, "location");
+    bool streaming = t_stream && !redirect;
     Dec dec = {0};
+    NetRequest *sinkreq = t_sink;
+    bool sinking = false;
+    if (sinkreq && !redirect && !t_stream && strcmp(method, "HEAD")) {
+        r->url = xstrdup(t_url ? t_url : "");
+        sinking = sinkreq->on_head(sinkreq, r, sinkreq->ud);
+        if (sinking) { dec.kind = enc_kind(headers_get(&r->headers, "content-encoding")); t_sink_stop = false; }
+    }
     if (streaming) {
         NetResponse *h = xcalloc(1, sizeof *h);
         h->status = status; h->status_text = xstrdup(r->status_text ? r->status_text : ""); h->url = xstrdup(t_url ? t_url : "");
@@ -553,27 +615,30 @@ static NetResponse *http_once(const char *method, const URL *u, const Headers *h
             if (!n) { while (conn_readline(c, &line) && line.n) {} break; }
             if (!conn_readn(c, &b, n)) { ok = false; break; }
             conn_readline(c, &line);
-            if (streaming) { stream_out(&dec, &b); if (stream_cancelled()) { ok = false; break; } }
+            if (streaming || sinking) { if (sinking) sink_out(&dec, &b); else stream_out(&dec, &b); if (stream_cancelled()) { ok = false; break; } }
         }
     } else if (cl) {
         size_t n = strtoull(cl, NULL, 10);
-        if (!streaming) ok = conn_readn(c, &b, n);
+        if (!streaming && !sinking) ok = conn_readn(c, &b, n);
         else while (n) {
             if (conn_fill(c) <= 0 || stream_cancelled()) { ok = false; break; }
             size_t k = LMIN(n, c->rlen - c->rpos);
             sb_put(&b, c->rbuf + c->rpos, k); c->rpos += k; n -= k;
-            stream_out(&dec, &b);
+            if (sinking) sink_out(&dec, &b); else stream_out(&dec, &b);
         }
     } else {
         keep = false;
-        while (conn_fill(c) > 0) { sb_put(&b, c->rbuf + c->rpos, c->rlen - c->rpos); c->rpos = c->rlen; if (streaming) { stream_out(&dec, &b); if (stream_cancelled()) break; } }
+        while (conn_fill(c) > 0) {
+            sb_put(&b, c->rbuf + c->rpos, c->rlen - c->rpos); c->rpos = c->rlen;
+            if (streaming || sinking) { if (sinking) sink_out(&dec, &b); else stream_out(&dec, &b); if (stream_cancelled()) { ok = !t_sink_stop; break; } }
+        }
     }
     sb_free(&line);
     // A partial payload is still a network failure, even after headers/chunks
     // have been delivered. Never report an incomplete Content-Length as EOF.
     if (!ok) { keep = false; r->error = xstrdup("truncated body"); }
     if (keep) pool_put(c); else conn_close(c);
-    if (streaming) dec_free(&dec);
+    if (streaming || sinking) dec_free(&dec);
     else if (!decompress(headers_get(&r->headers, "content-encoding"), &b)) DLOG("decompress failed for %s", u->host);
     r->body_len = b.n; r->body = b.s ? b.s : xcalloc(1, 1);
     r->t_end = now_ms();
@@ -665,7 +730,7 @@ static NetResponse *net_fetch_impl2(NetRequest *req, char *cache_state) {
         if (strcmp(u.scheme, "http") && strcmp(u.scheme, "https")) { r = xcalloc(1, sizeof *r); r->error = xstrdup("unsupported scheme"); url_free(&u); break; }
         /* Streamed fetches deliver the live response head and body to script as they arrive. */
         bool get = !strcmp(method, "GET") && !body;
-        bool cacheable = get && !t_stream && http_cache_enabled() && !headers_get(&req->headers, "range");
+        bool cacheable = get && !t_stream && !req->on_head && http_cache_enabled() && !headers_get(&req->headers, "range");
         Headers cond = {0}; bool fresh = false;
         NetResponse *cached = cacheable ? http_cache_lookup(url, &req->headers, &fresh, &cond) : NULL;
         if (cached && fresh) { r = cached; url_free(&u); *cache_state = 'F'; break; }
@@ -680,9 +745,10 @@ static NetResponse *net_fetch_impl2(NetRequest *req, char *cache_state) {
         }
         const Headers *hdrs = cached ? &cond : &req->headers;
         bool retry;
-        t_url = url;
+        t_url = url; t_sink = req->on_head && req->sink ? req : NULL; t_sink_stop = false;
         r = http_once(method, &u, hdrs, body, blen, !req->no_cookies, &retry);
         if (r->error && retry) { net_response_free(r); r = http_once(method, &u, hdrs, body, blen, !req->no_cookies, &retry); }
+        t_sink = NULL;
         if (cached && r->status == 304) { NetResponse *m = http_cache_revalidated(url, &req->headers, cached, r); net_response_free(r); r = m; *cache_state = 'R'; }
         else {
             net_response_free(cached);
@@ -813,8 +879,38 @@ void net_cancel(uint64_t id) {
 }
 int net_pending(void) { pthread_mutex_lock(&g_mu); int n = g_pending; pthread_mutex_unlock(&g_mu); return n; }
 static void ws_poll(void);
+#if defined(__ANDROID__) && !defined(NDEBUG)
+/* Per-poll callback cost while a load trace is armed, keyed by callback address
+   (library offset, symbolize with the unstripped libmain.so). */
+typedef struct { void *fn; int type, n; double ms, max; size_t bytes; } PollCost;
+static PollCost g_pc[16]; static int g_npc;
+static void poll_cost(void *fn, int type, double ms, size_t bytes) {
+    int i = 0; while (i < g_npc && (g_pc[i].fn != fn || g_pc[i].type != type)) i++;
+    if (i == g_npc) { if (g_npc == ARRLEN(g_pc)) return; g_pc[g_npc++] = (PollCost){ fn, type, 0, 0, 0, 0 }; }
+    g_pc[i].n++; g_pc[i].ms += ms; g_pc[i].bytes += bytes; if (ms > g_pc[i].max) g_pc[i].max = ms;
+}
+static void poll_cost_flush(double t0, double ws_ms) {
+    double total = now_ms() - t0;
+    if (total >= 100) {
+        __android_log_print(ANDROID_LOG_INFO, "LumenNet", "poll_ms=%.0f ws_ms=%.0f groups=%d", total, ws_ms, g_npc);
+        for (int i = 0; i < g_npc; i++) {
+            Dl_info di; uintptr_t off = (uintptr_t)g_pc[i].fn;
+            if (dladdr(g_pc[i].fn, &di) && di.dli_fbase) off -= (uintptr_t)di.dli_fbase;
+            if (g_pc[i].ms >= 20) __android_log_print(ANDROID_LOG_INFO, "LumenNet", "poll cb=0x%zx type=%d n=%d ms=%.0f max_ms=%.0f bytes=%zu",
+                (size_t)off, g_pc[i].type, g_pc[i].n, g_pc[i].ms, g_pc[i].max, g_pc[i].bytes);
+        }
+    }
+    g_npc = 0;
+}
+#endif
 int net_poll(void) {
+#if defined(__ANDROID__) && !defined(NDEBUG)
+    bool tr = now_ms() < g_trace_until; double pt0 = now_ms();
+#endif
     ws_poll();
+#if defined(__ANDROID__) && !defined(NDEBUG)
+    double ws_ms = now_ms() - pt0;
+#endif
     pthread_mutex_lock(&g_ev_mu);
     Ev *list = g_ev; g_ev = g_ev_tail = NULL;
     pthread_mutex_unlock(&g_ev_mu);
@@ -822,6 +918,12 @@ int net_poll(void) {
     while (list) {
         Ev *e = list; list = e->next;
         NetRequest *rq = e->req;
+#if defined(__ANDROID__) && !defined(NDEBUG)
+        double ct0 = tr ? now_ms() : 0;
+        void *cfn = e->type == 0 ? (void *)rq->done : e->type == 1 ? (void *)rq->head : (void *)rq->chunk;
+        size_t cbytes = e->type == 0 && e->resp ? e->resp->body_len : e->type == 2 ? e->n : 0;
+        int e_type_saved = e->type;
+#endif
         /* A busy UI can accumulate many chunks from one stream. Their byte
          * boundaries are transport details: deliver an already-queued run in
          * one callback instead of forcing a JS/microtask/layout cycle for each
@@ -874,7 +976,13 @@ int net_poll(void) {
             free(e->data);
         }
         free(e);
+#if defined(__ANDROID__) && !defined(NDEBUG)
+        if (tr) poll_cost(cfn, e_type_saved, now_ms() - ct0, cbytes);
+#endif
     }
+#if defined(__ANDROID__) && !defined(NDEBUG)
+    if (tr) poll_cost_flush(pt0, ws_ms);
+#endif
     return n;
 }
 

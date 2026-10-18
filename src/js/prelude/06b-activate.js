@@ -29,9 +29,23 @@ function buttonCommand(el) {
     else if (command === 'close') dialogClose(target, el.getAttribute('value') ?? undefined, el);
     else dialogRequestClose(target, el.getAttribute('value') ?? undefined, el);
 }
+// <a download>, blob: and data: links become downloads; http(s) ones go to the download manager with cookies
+function saveHref(href, name) {
+    if (/^https?:/i.test(href)) { N.download(href, name != null && new URL(href).origin === location.origin ? String(name) : ''); return; }
+    const body = localBody(href);
+    if (!body) return;
+    N.downloadBytes(name ? String(name) : 'download', String(body[1] || '').split(';')[0], body[0]);
+}
+Object.defineProperty(globalThis, '__lumenSaveHref', { value: saveHref });
 function activate(el, ev, pre) {
     const a = el.closest ? el.closest('a[href]') : null;
-    if (a) { const raw = N.attr(a, 'href'); if (/^javascript:/i.test(raw)) { try { (0, eval)(decodeURIComponent(raw.slice(11))); } catch (e) { report(e); } } else if (a.href) location.assign(a.href); return; }
+    if (a) {
+        const raw = N.attr(a, 'href');
+        if (/^javascript:/i.test(raw)) { try { (0, eval)(decodeURIComponent(raw.slice(11))); } catch (e) { report(e); } }
+        else if (a.href && (a.hasAttribute('download') || /^(blob|data):/i.test(a.href))) saveHref(a.href, a.getAttribute('download'));
+        else if (a.href) location.assign(a.href);
+        return;
+    }
     if (el.closest && !/^(input|button|label|summary|textarea|select)$/.test(N.name(el))) {
         const t = el.closest('button,label,summary');
         if (t) el = t;
@@ -219,7 +233,13 @@ class CSSStyleSheet extends StyleSheet {
     get media() { return this._media; }
     _load() { const o = this._owner; if (o && N.name(o) === 'style') { const t = N.text(o); if (t !== this._src) { this._src = t; this._list = cssParseList(t, this, null); } } }
     get cssRules() { this._load(); return this._list; } get rules() { return this.cssRules; }
-    insertRule(rule, i = 0) { this._load(); const r = cssInsert(this._list, rule, i, this, null); this._sync(); return r; }
+    insertRule(rule, i = 0) {
+        this._load(); const r = cssInsert(this._list, rule, i, this, null), o = this._owner;
+        /* appending to a <style>: extend its text so the engine parses only the new rule */
+        if (o && r === this._list.length - 1 && N.name(o) === 'style' && /^\s*$|\}\s*$/.test(this._src || '')) { const t = (this._src || '') + '\n' + this._list[r].cssText; this._src = t; N.setText(o, t); }
+        else this._sync();
+        return r;
+    }
     deleteRule(i) { this._load(); cssDelete(this._list, i); this._sync(); }
     addRule(sel = 'undefined', style = 'undefined', i) { this._load(); this.insertRule(`${sel} { ${style} }`, i === undefined ? this._list.length : i); return -1; }
     removeRule(i = 0) { this.deleteRule(i); }

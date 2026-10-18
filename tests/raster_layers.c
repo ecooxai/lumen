@@ -149,9 +149,51 @@ static void check_image_vertical(void) {
     }
 }
 
+/* Outer box-shadows are clipped out inside the border box. The oracle
+   evaluates both distances at every pixel; the rasterizer skips the
+   straight interior, so equality checks that the skipped span is exact. */
+static void check_shadow_clip(void) {
+    enum { W=71, H=59, STRIDE=73 };
+    uint32_t actual[H*STRIDE], expected[H*STRIDE];
+    for (int variant = 0; variant < 120; variant++) {
+        float scale = .75f + (variant % 4) * .5f, rr = (float)(variant % 5) * 1.7f;
+        DItem item = {.op=DO_SHADOW, .x=6.3f + (variant % 7) * .4f, .y=5.1f + (variant % 3), .w=18.5f + (variant % 6),
+                      .h=21.2f - (variant % 4), .r={rr, rr * .5f, rr, 0}, .blur=(float)(variant % 6),
+                      .spread=(float)(variant % 5) - 1.5f, .color=RGBA(10, 30, 60, 200)};
+        item.ox = (float)(variant % 9) - 4; item.oy = (float)(variant % 7) - 2.5f;
+        item.x += item.ox; item.y += item.oy;
+        if (variant % 13 == 0) item.w = .4f;
+        Canvas canvas = {.w=W, .h=H, .stride=STRIDE, .scale=scale, .px=actual};
+        R r = {.c=&canvas, .s=scale, .nclip=1, .px=actual, .stride=STRIDE, .height=H};
+        r.clips[0] = (Clip){2, 3, W - 2, H - 4, 1, 2, W - 3, H - 5, {6, 6, 6, 6}, variant % 2 == 0};
+        for (int i = 0; i < H*STRIDE; i++) expected[i] = actual[i] = 0x80604020;
+        shadow(&r, &item);
+        float s = scale, sp = item.spread * s, bl = LMAX(.5f, item.blur * s);
+        float x0 = item.x * s - sp, y0 = item.y * s - sp, x1 = (item.x + item.w) * s + sp, y1 = (item.y + item.h) * s + sp;
+        float bx0 = (item.x - item.ox) * s, by0 = (item.y - item.oy) * s, bx1 = bx0 + item.w * s, by1 = by0 + item.h * s;
+        float rad[4], brad[4]; for (int i = 0; i < 4; i++) { rad[i] = LMAX(0, item.r[i] * s + sp); brad[i] = item.r[i] * s; }
+        for (int y = 3; y < H - 4; y++) for (int x = 2; x < W - 2; x++) {
+            float fx = x + .5f, fy = y + .5f;
+            if (fx < x0 - bl - 1 || fx > x1 + bl + 1 || fy < y0 - bl - 1 || fy > y1 + bl + 1) continue;
+            float t = LCLAMP((sd_rrect(fx, fy, x0, y0, x1, y1, rad) + bl) / (2 * bl), 0, 1);
+            float cov = (1 - t * t * (3 - 2 * t)) * (1 - LCLAMP(.5f - sd_rrect(fx, fy, bx0, by0, bx1, by1, brad), 0, 1));
+            if (cov <= .002f) continue;
+            cov *= clip_cov(&r, fx, fy);
+            if (cov > .002f) over(&expected[y*STRIDE + x], premul(item.color, cov));
+        }
+        assert(memcmp(actual, expected, sizeof actual) == 0);
+        /* the centre of a box larger than its radii stays unpainted */
+        if (item.w > 4 && item.h > 4) {
+            int cx = (int)((bx0 + bx1) / 2), cy = (int)((by0 + by1) / 2);
+            assert(actual[cy*STRIDE + cx] == 0x80604020);
+        }
+    }
+}
+
 int main(int argc, char **argv) {
     (void)argv;
     check_gradient_spans();
+    check_shadow_clip();
     check_image_scanlines();
     check_image_vertical();
     enum { W=47, H=61, STRIDE=53 };
@@ -200,21 +242,22 @@ int main(int argc, char **argv) {
         }
     }
     /* Golden full-frame pixels from the previous rasterizer, independently of
-       the new layer-bound calculation. Include glyph ink outside item bounds,
+       the new layer-bound calculation (regenerated once when outer shadows
+       became clipped to outside their border box). Include glyph ink outside item bounds,
        negative shadow spread, rounded clipping, fractional scale and punch. */
     const uint64_t golden[] = {
-        0xb65b6cea775e2817ull,
-        0xd6079c45e0f0a8ceull,
-        0xb2f87b699956cd25ull,
-        0x07e1b03d0d2fbfb1ull,
-        0x8a7d59cf9d8182b9ull,
-        0x28d91d342093d558ull,
-        0xd0356de1f26548e6ull,
-        0xe2444f9dec120cfdull,
-        0xfdb228f65e307ffaull,
-        0xb548dc067d18afbbull,
-        0xe7ae8ae60d4af34bull,
-        0x1a7e4de10013b585ull,
+        0xac1b9841eb26b0ffull,
+        0xd2919cc3e0c6e3efull,
+        0x3c00bddca1d6dc14ull,
+        0x0cc6d1d7432a0bc5ull,
+        0x1886e0b75e735828ull,
+        0x418260ad99718ebdull,
+        0x9f8fa8a840de087eull,
+        0x9c225d6cccd8348dull,
+        0x23aa68835221cf02ull,
+        0xb21ec2badfc5db47ull,
+        0x5fb5e224ffb25047ull,
+        0x1e9b6f94f8a0694cull,
     };
     for (int variant=0; variant<12; variant++) {
         expected.scale = .75f + (variant % 4) * .5f;

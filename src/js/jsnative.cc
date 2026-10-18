@@ -244,7 +244,35 @@ FN(scrollPos) {
 FN(setScroll) { CTX; ARGN(n, 0); if (c->host.sync) c->host.sync(c->host.ud, c->doc, true); RET(jsg_set_scroll(n, (float)NUM(1), (float)NUM(2))); }
 FN(computed) { CTX; ARGN(n, 0); if (c->host.sync) c->host.sync(c->host.ud, c->doc, false); std::string p = S(1); char *v = jsg_computed(n, p.c_str()); RET(nstr(iso, v)); free(v); }
 FN(value) { CTX; ARGN(n, 0); RET(nstr(iso, n->value_override)); }
-FN(setValue) { CTX; ARGN(n, 0); free(n->value_override); n->value_override = a[1]->IsNullOrUndefined() ? nullptr : xstrdup(S(1).c_str()); doc_mark_dirty(n->doc, n); }
+static int cp_count(const char *s) { int k = 0; for (; s && *s; s++) if (((unsigned char)*s & 0xC0) != 0x80) k++; return k; }
+FN(setValue) {
+    CTX; ARGN(n, 0);
+    char *v = a[1]->IsNullOrUndefined() ? nullptr : xstrdup(S(1).c_str());
+    Document *d = n->doc;
+    if (d && d->csel_n == n) {   /* a changed value puts the caret at its end, as in Chrome */
+        const char *old = n->value_override ? n->value_override : node_attr(n, "value");
+        int len = cp_count(v);
+        if (strcmp(old ? old : "", v ? v : "")) d->csel[0] = d->csel[1] = len;
+        else { d->csel[0] = d->csel[0] < len ? d->csel[0] : len; d->csel[1] = d->csel[1] < len ? d->csel[1] : len; }
+        d->paint_version++;
+    }
+    free(n->value_override); n->value_override = v; doc_mark_state_dirty(n->doc, n, true);
+}
+/* <input>/<textarea> selection as [anchor, focus] codepoints of the value; null when never set */
+FN(ctlSel) {
+    CTX; ARGN(n, 0);
+    Document *d = n->doc;
+    if (!d || d->csel_n != n) { RET(v8::Null(iso)); return; }
+    v8::Local<v8::Array> o = v8::Array::New(iso, 2);
+    for (int i = 0; i < 2; i++) (void)o->Set(ctx, i, v8::Integer::New(iso, d->csel[i]));
+    RET(o);
+}
+FN(setCtlSel) {
+    CTX; ARGN(n, 0);
+    Document *d = n->doc;
+    if (!d) return;
+    d->csel_n = n; d->csel[0] = (int)NUM(1); d->csel[1] = (int)NUM(2); d->paint_version++;
+}
 FN(checked) {
     CTX; ARGN(n, 0);
     RET(n->checked_override ? n->checked_override > 0 : node_has_attr(n, n->tag && !strcmp(n->tag, "option") ? "selected" : "checked"));
@@ -253,7 +281,7 @@ FN(setChecked) {
     CTX; ARGN(n, 0); bool b = BOOL(1);
     n->checked_override = b ? 1 : -1;
     if (b) n->flags |= NF_CHECKED; else n->flags &= ~(uint32_t)NF_CHECKED;
-    doc_mark_dirty(n->doc, n);
+    doc_mark_state_dirty(n->doc, n, true);
 }
 FN(pickFiles) {
     CTX;
@@ -272,9 +300,7 @@ FN(modal) {
 FN(focus) {
     CTX; Node *n = junwrap(a[0]); Node *old = c->doc->focus;
     if (old == n) return;
-    if (old) { old->flags &= ~(uint32_t)NF_FOCUS; doc_mark_dirty(c->doc, old); }
-    c->doc->focus = n;
-    if (n) { n->flags |= NF_FOCUS; doc_mark_dirty(c->doc, n); }
+    doc_set_focus(c->doc, n);
     if (old) jfire(c, old, "blur");
     if (n) jfire(c, n, "focus");
 }
@@ -409,6 +435,32 @@ FN(waPush) {
 FN(waQueued) { CTX; RET((double)wa_queued(c, (int)NUM(0))); }
 FN(waPause) { CTX; wa_pause(c, (int)NUM(0), BOOL(1)); }
 FN(waClose) { CTX; wa_close(c, (int)NUM(0)); }
+FN(micOpen) { CTX; RET((double)mic_open(c)); }
+FN(micPermission) { RET((double)mic_permission()); }
+FN(micState) { CTX; RET((double)mic_state(c, (int)NUM(0))); }
+FN(micRead) {   /* mono float32 PCM captured since the last read, or null */
+    CTX; int id = (int)NUM(0), n = mic_available(c, id);
+    if (n <= 0) { RET(v8::Null(iso)); return; }
+    if (n > 48000 * 4) n = 48000 * 4;
+    v8::Local<v8::ArrayBuffer> ab = v8::ArrayBuffer::New(iso, (size_t)n * sizeof(float));
+    int got = mic_read(c, id, (float *)ab->Data(), n);
+    if (got <= 0) { RET(v8::Null(iso)); return; }
+    RET(v8::Float32Array::New(ab, 0, (size_t)got));
+}
+FN(micClose) { CTX; mic_close(c, (int)NUM(0)); }
+FN(recKind) { CTX; (void)c; RET((double)rec_kind(S(0).c_str())); }
+FN(recOpen) { CTX; RET((double)rec_open(c, S(0).c_str(), (int)NUM(1))); }
+FN(recPush) {
+    CTX; const char *p; size_t n;
+    if (bytes_of(a[1], &p, &n)) rec_push(c, (int)NUM(0), (const float *)p, (int)(n / sizeof(float)));
+}
+FN(recFinish) { CTX; rec_finish(c, (int)NUM(0)); }
+FN(recTake) {
+    CTX; size_t n; uint8_t *p = rec_take(c, (int)NUM(0), &n);
+    if (!p) { RET(v8::Null(iso)); return; }
+    RET(mkab(iso, p, n)); free(p);
+}
+FN(recClose) { CTX; rec_close(c, (int)NUM(0)); }
 FN(audioDecode) {
     CTX; const char *p; size_t n; int frames = 0;
     if (!bytes_of(a[0], &p, &n) || !n) { RET(v8::Null(iso)); return; }
@@ -849,10 +901,22 @@ FN(touchPoints) {
     RET(v8::Integer::New(iso, 0));
 #endif
 }
+FN(download) {   /* url, file name hint */
+    CTX;
+    std::string url = S(0), name = a.Length() > 1 ? S(1) : std::string();
+    if (!url.compare(0, 5, "http:") || !url.compare(0, 6, "https:")) dl_start(url.c_str(), c->doc->url, name.empty() ? NULL : name.c_str());
+}
+FN(downloadBytes) {   /* name, MIME type, bytes */
+    CTX;
+    const char *p = NULL; size_t n = 0;
+    if (a.Length() < 3 || !bytes_of(a[2], &p, &n)) return;
+    std::string name = S(0), mime = S(1);
+    dl_save_bytes(name.c_str(), mime.c_str(), p, n);
+}
 FN(platform) {
     CTX;
 #ifdef __ANDROID__
-    RET(jstr(iso, "Linux armv8l"));
+    RET(jstr(iso, strstr(net_user_agent_for_url(c->doc->url), "Android") ? "Linux armv8l" : "Linux x86_64"));
 #elif defined(__APPLE__)
     RET(jstr(iso, "MacIntel"));
 #else
@@ -939,15 +1003,15 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(text); REG(setText); REG(attr); REG(setAttr); REG(rmAttr); REG(attrs); REG(insert); REG(remove); REG(newDoc); REG(newXmlDoc); REG(parseDoc); REG(adopt); REG(pi); REG(cdata); REG(doctype); REG(ownerDoc);
     REG(create); REG(textNode); REG(comment); REG(frag); REG(html); REG(setHTML); REG(parseFrag); REG(query);
     REG(matches); REG(byId); REG(clone); REG(doc); REG(contains); REG(connected); REG(host); REG(attachShadow);
-    REG(templateContent); REG(rect); REG(vrect); REG(clipSet); REG(clipGet); REG(scrollPos); REG(setScroll); REG(computed); REG(value); REG(setValue); REG(checked); REG(setChecked); REG(pickFiles);
+    REG(templateContent); REG(rect); REG(vrect); REG(clipSet); REG(clipGet); REG(scrollPos); REG(setScroll); REG(computed); REG(value); REG(setValue); REG(ctlSel); REG(setCtlSel); REG(checked); REG(setChecked); REG(pickFiles);
     REG(modal); REG(focus); REG(active); REG(cookie); REG(setCookie); REG(url); REG(setUrl); REG(navigate); REG(navigatePost); REG(histGo);
     REG(histLen); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
     REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove);
     REG(mediaBuffered); REG(mediaEos); REG(mediaSetDuration); REG(mediaPlay); REG(mediaPause); REG(mediaSeek);
     REG(mediaPump); REG(resizePump); REG(intersectionPump); REG(videoFramePump); REG(videoFrameInfo); REG(videoQuality);
-    REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(readyState); REG(quirks);
+    REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(micOpen); REG(micPermission); REG(micState); REG(micRead); REG(micClose); REG(recKind); REG(recOpen); REG(recPush); REG(recFinish); REG(recTake); REG(recClose); REG(readyState); REG(quirks);
     REG(currentScript); REG(media); REG(cssSupports); REG(cssSelText); REG(urlParse); REG(encode); REG(decode); REG(random); REG(cDigest); REG(cHmac); REG(cAes); REG(cEcGen); REG(cEcDerive); REG(cEcSign); REG(cEcVerify); REG(cSpki); REG(cSpkiParse); REG(cPkcs8Parse); REG(cEcFromD); REG(cHkdf); REG(cPbkdf2);
-    REG(heap); REG(imgSize); REG(userAgent); REG(platform); REG(touchPoints); REG(cpus); REG(makeAll);
+    REG(heap); REG(imgSize); REG(userAgent); REG(platform); REG(download); REG(downloadBytes); REG(touchPoints); REG(cpus); REG(makeAll);
 #undef REG
     js_install_frames(c, N); js_install_workers(c, N);
 }

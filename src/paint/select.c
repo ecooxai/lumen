@@ -4,10 +4,11 @@
 #include <string.h>
 
 TextSel g_tsel;
+TselCaret g_tsel_caret[2];
+bool g_tsel_fwd = true;
 
 typedef struct SelR { const Box *b; int s, e; } SelR;
 static SelR *g_r; static int g_nr, g_cr;
-static const Layout *g_rl;
 
 typedef void (*WalkFn)(Box *b, float dx, float dy, void *ud);
 static void walk(Box *b, float dx, float dy, float psy, WalkFn fn, void *ud) {
@@ -57,11 +58,15 @@ static void hit_fn(Box *b, float dx, float dy, void *ud) {
 }
 
 bool tsel_point(Layout *L, float x, float y, float psy, Box *scope, Node **n, int *off) {
+    return tsel_point_near(L, x, y, psy, scope, 1e30f, n, off);
+}
+
+bool tsel_point_near(Layout *L, float x, float y, float psy, Box *scope, float maxd, Node **n, int *off) {
     if (!L || !L->root) return false;
     Hit h = { x, y, scope, 0, 1e30f, NULL, 0 };
     walk(L->root, 0, 0, psy, hit_fn, &h);
     if (!h.bb && scope) { h.scope = NULL; walk(L->root, 0, 0, psy, hit_fn, &h); }
-    if (!h.bb) return false;
+    if (!h.bb || h.best > maxd) return false;
     *n = h.bb->node; *off = h.off;
     return true;
 }
@@ -77,8 +82,8 @@ static void ord_fn(Box *b, float dx, float dy, void *ud) {
     if (b->kind != BX_TEXT || o->phase > 1) return;
     bool isa = b->node && b->node == g_tsel.an, isf = b->node && b->node == g_tsel.fn;
     if (o->phase == 0 && (isa || isf)) {
-        if (isa && isf) { int s = LMIN(g_tsel.ao, g_tsel.fo), e = LMAX(g_tsel.ao, g_tsel.fo); if (selectable(b)) push_r(b, s, LMIN(e, b->text_len)); o->phase = 2; return; }
-        o->phase = 1; o->n[1] = isa ? g_tsel.fn : g_tsel.an; o->o[1] = isa ? g_tsel.fo : g_tsel.ao;
+        if (isa && isf) { int s = LMIN(g_tsel.ao, g_tsel.fo), e = LMAX(g_tsel.ao, g_tsel.fo); if (selectable(b)) push_r(b, s, LMIN(e, b->text_len)); o->phase = 2; g_tsel_fwd = g_tsel.ao <= g_tsel.fo; return; }
+        o->phase = 1; g_tsel_fwd = isa; o->n[1] = isa ? g_tsel.fn : g_tsel.an; o->o[1] = isa ? g_tsel.fo : g_tsel.ao;
         if (selectable(b)) push_r(b, LMIN(isa ? g_tsel.ao : g_tsel.fo, b->text_len), b->text_len);
         return;
     }
@@ -89,13 +94,17 @@ static void ord_fn(Box *b, float dx, float dy, void *ud) {
 }
 
 void tsel_prepare(Layout *L) {
-    g_nr = 0; g_rl = L;
+    g_nr = 0;
     if (!g_tsel.on || !L || !L->root || g_tsel.L != L) return;
     Ord o; memset(&o, 0, sizeof o);
     walk(L->root, 0, 0, 0, ord_fn, &o);
     if (o.phase != 2) g_nr = 0;   /* an end vanished from the tree: draw nothing */
 }
 
+
+int tsel_edge(const Box *t) {
+    return !g_nr ? 0 : (g_r[0].b == t) | (g_r[g_nr - 1].b == t) << 1;
+}
 
 bool tsel_range(const Box *t, int *s, int *e) {
     for (int i = 0; i < g_nr; i++) if (g_r[i].b == t) { *s = g_r[i].s; *e = g_r[i].e; return true; }
@@ -168,4 +177,100 @@ bool tsel_dom_point(Node *n, int o, bool end, Node **tn, int *to) {
     if (after && (!end || !before)) { *tn = after; *to = 0; return true; }
     if (before) { *tn = before; *to = (int)before->text_len; return true; }
     return false;
+}
+
+/* ---- <input>/<textarea>: the focused control's selection lives in its Document as codepoints of the value;
+   the shown text has one codepoint per value codepoint (a bullet each for passwords) ---- */
+int u8_cp_byte(const char *s, int len, int cp) {
+    int i = 0;
+    for (; i < len && cp > 0; cp--) { i++; while (i < len && ((unsigned char)s[i] & 0xC0) == 0x80) i++; }
+    return i;
+}
+int u8_byte_cp(const char *s, int byte) {
+    int n = 0;
+    for (int i = 0; i < byte && s[i]; i++) if (((unsigned char)s[i] & 0xC0) != 0x80) n++;
+    return n;
+}
+
+const Box *ctl_text_box(const Box *cb) {
+    if (!cb || cb->placeholder || (cb->ctl != CTL_TEXT && cb->ctl != CTL_TEXTAREA)) return NULL;
+    for (const Box *c = cb->first; c; c = c->next) if (c->kind == BX_TEXT && !c->node) return c;
+    return NULL;
+}
+
+static void ctl_off(const Box *cb, float psy, float *dx, float *dy) {
+    *dx = *dy = 0;
+    for (const Box *a = cb; a; a = a->parent) {
+        if (a->fixed) *dy += psy;
+        if (a->scroller && a->node) { *dx -= a->node->scroll_x; *dy -= box_scroll_y(a); }
+    }
+}
+
+static int ctl_hit_at(const Box *cb, float x, float y, float dx, float dy) {
+    const Box *t = ctl_text_box(cb);
+    if (!t) return 0;
+    float best = 1e30f; int off = t->text_len;
+    for (int i = 0; i < cb->nfrags; i++) {
+        const TextFrag *f = &cb->frags[i];
+        if (f->box != t || f->g1 <= f->g0) continue;
+        float fx = f->x + dx, fy = f->y + dy;
+        float d = (y < fy ? fy - y : y >= fy + f->h ? y - fy - f->h : 0) * 1000 + (x < fx ? fx - x : x > fx + f->w ? x - fx - f->w : 0);
+        if (d >= best) continue;
+        best = d;
+        float x0 = t->sh.g[f->g0].x;
+        off = f->g1 < t->sh.n ? (int)t->sh.g[f->g1].cluster : t->text_len;
+        for (int g = f->g0; g < f->g1; g++) {
+            float gx = fx + t->sh.g[g].x - x0;
+            if (x < gx + t->sh.g[g].adv / 2) { off = t->sh.g[g].cluster; break; }
+        }
+        if (off > 0 && off == (f->g1 < t->sh.n ? (int)t->sh.g[f->g1].cluster : -1) && t->text[off - 1] == '\n') off--;   /* stay on this line */
+    }
+    return u8_byte_cp(t->text, off);
+}
+int ctl_hit(const Box *cb, float x, float y, float psy) {
+    float dx, dy; ctl_off(cb, psy, &dx, &dy);
+    return ctl_hit_at(cb, x, y, dx, dy);
+}
+
+bool ctl_caret(const Box *cb, int cp, float *x, float *y, float *h) {
+    const Box *t = ctl_text_box(cb);
+    if (!t) return false;
+    int off = u8_cp_byte(t->text, t->text_len, cp);
+    const TextFrag *last = NULL;
+    for (int i = 0; i < cb->nfrags; i++) {
+        const TextFrag *f = &cb->frags[i];
+        if (f->box != t || f->g1 <= f->g0) continue;
+        int lo = (int)t->sh.g[f->g0].cluster, hi = f->g1 < t->sh.n ? (int)t->sh.g[f->g1].cluster : t->text_len;
+        if (off < lo) break;
+        last = f;
+        if (off >= hi) continue;
+        float x0 = t->sh.g[f->g0].x;
+        *x = f->x + f->w;
+        for (int g = f->g0; g < f->g1; g++) if ((int)t->sh.g[g].cluster >= off) { *x = f->x + t->sh.g[g].x - x0; break; }
+        *y = f->y; *h = f->h;
+        return true;
+    }
+    if (!last) return false;
+    *x = last->x + last->w; *y = last->y; *h = last->h;
+    return true;
+}
+
+bool ctl_range(const Box *t, int *s, int *e) {
+    const Box *cb = t->node ? NULL : t->parent;
+    const Node *n = cb ? cb->node : NULL;
+    if (!n || !n->doc || n != n->doc->csel_n || !(n->flags & NF_FOCUS) || ctl_text_box(cb) != t) return false;
+    int a = n->doc->csel[0], b = n->doc->csel[1];
+    if (a == b) return false;
+    *s = u8_cp_byte(t->text, t->text_len, LMIN(a, b)); *e = u8_cp_byte(t->text, t->text_len, LMAX(a, b));
+    return *e > *s;
+}
+/* Up/Down from codepoint cp: the nearest caret on the line above or below, else the start or end of the text */
+int ctl_vmove(const Box *cb, int cp, int dir) {
+    const Box *t = ctl_text_box(cb);
+    float x, y, h;
+    if (!t || !ctl_caret(cb, cp, &x, &y, &h)) return cp;
+    int to = ctl_hit_at(cb, x, dir < 0 ? y - h / 2 : y + h * 1.5f, 0, 0);
+    float x2, y2, h2;
+    if (ctl_caret(cb, to, &x2, &y2, &h2) && fabsf(y2 - y) < 0.5f) return dir < 0 ? 0 : u8_byte_cp(t->text, t->text_len);
+    return to;
 }

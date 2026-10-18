@@ -1,0 +1,341 @@
+package org.lumen.browser;
+
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.Context;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.GradientDrawable;
+import android.text.InputType;
+import android.text.TextUtils;
+import android.util.TypedValue;
+import android.view.Gravity;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.WindowInsets;
+import android.widget.BaseAdapter;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.ListView;
+import android.widget.PopupWindow;
+import android.widget.ScrollView;
+import android.widget.SeekBar;
+import android.widget.TextView;
+import android.widget.Toast;
+
+/* The browser's own menus, built from Android views over the page: the toolbar's more menu,
+ * the bookmarks and workspaces panels. Choices go back to the native side as UI actions. */
+final class BrowserMenus {
+    interface Action { void send(int code, int value, String first, String second); }
+
+    /* mirrors android_ui.h */
+    static final int NEW_TAB = 1, FORWARD = 2, BOOKMARKS = 3, DOWNLOADS = 4, HISTORY = 5, WORKSPACES = 6, SETTINGS = 7,
+        DESKTOP = 8, ZOOM = 9, BM_TOGGLE = 10, BM_OPEN = 11, BM_SAVE = 12, BM_DELETE = 13,
+        WS_SELECT = 14, WS_NEW = 15, WS_RENAME = 16, WS_CLOSE = 17;
+    private static final int MAX_WORKSPACES = 16, ZOOM_MIN = 50, ZOOM_MAX = 300, ZOOM_STEP = 5;
+    private static final int TEXT = 0xff202124, SUBTLE = 0xff5f6368, DISABLED = 0xffbdc1c6, DIVIDER = 0xffe8eaed;
+    private static PopupWindow menu;
+
+    private BrowserMenus() { }
+
+    private static int dp(Context context, float value) {
+        return Math.round(value * context.getResources().getDisplayMetrics().density);
+    }
+
+    private static void ripple(View view, boolean borderless) {
+        TypedValue value = new TypedValue();
+        int attribute = borderless ? android.R.attr.selectableItemBackgroundBorderless : android.R.attr.selectableItemBackground;
+        if (view.getContext().getTheme().resolveAttribute(attribute, value, true)) view.setBackgroundResource(value.resourceId);
+    }
+
+    private static TextView label(Context context, String text, float size, int color) {
+        TextView view = new TextView(context);
+        view.setText(text);
+        view.setTextSize(TypedValue.COMPLEX_UNIT_SP, size);
+        view.setTextColor(color);
+        return view;
+    }
+
+    private static View divider(Context context) {
+        View line = new View(context);
+        line.setBackgroundColor(DIVIDER);
+        line.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Math.max(1, dp(context, 1))));
+        return line;
+    }
+
+    static void toast(Activity activity, String text) {
+        Toast.makeText(activity, text, text.length() > 48 ? Toast.LENGTH_LONG : Toast.LENGTH_SHORT).show();
+    }
+
+    /* state: can go forward, desktop site on, desktop site possible, zoom possible, zoom percent,
+       page bookmarked, page can be bookmarked */
+    static void showMenu(Activity activity, int[] state, Action action) {
+        if (menu != null) { menu.dismiss(); menu = null; }
+        final Context context = activity;
+        LinearLayout root = new LinearLayout(context);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(0, dp(context, 4), 0, dp(context, 6));
+        final PopupWindow popup = new PopupWindow(context);
+
+        LinearLayout icons = new LinearLayout(context);
+        icons.setOrientation(LinearLayout.HORIZONTAL);
+        String[] glyphs = { "→", state[5] != 0 ? "★" : "☆", "⤓" };
+        String[] names = { "Forward", state[5] != 0 ? "Remove bookmark" : "Bookmark this page", "Downloads" };
+        int[] codes = { FORWARD, BM_TOGGLE, DOWNLOADS };
+        boolean[] enabled = { state[0] != 0, state[6] != 0, true };
+        for (int i = 0; i < glyphs.length; i++) {
+            TextView icon = label(context, glyphs[i], 22, enabled[i] ? (codes[i] == BM_TOGGLE && state[5] != 0 ? 0xff1a73e8 : TEXT) : DISABLED);
+            icon.setGravity(Gravity.CENTER);
+            icon.setContentDescription(names[i]);
+            icon.setEnabled(enabled[i]);
+            ripple(icon, true);
+            final int code = codes[i];
+            icon.setOnClickListener(view -> { popup.dismiss(); action.send(code, 0, null, null); });
+            icons.addView(icon, new LinearLayout.LayoutParams(0, dp(context, 48), 1));
+        }
+        root.addView(icons);
+        root.addView(divider(context));
+
+        String[] rows = { "New tab", "Bookmarks", "History", "Downloads", "Workspaces" };
+        int[] rowCodes = { NEW_TAB, BOOKMARKS, HISTORY, DOWNLOADS, WORKSPACES };
+        for (int i = 0; i < rows.length; i++) {
+            TextView row = label(context, rows[i], 16, TEXT);
+            row.setGravity(Gravity.CENTER_VERTICAL);
+            row.setPadding(dp(context, 18), 0, dp(context, 18), 0);
+            ripple(row, false);
+            final int code = rowCodes[i];
+            row.setOnClickListener(view -> { popup.dismiss(); action.send(code, 0, null, null); });
+            root.addView(row, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(context, 48)));
+        }
+        root.addView(divider(context));
+
+        /* page zoom: the value follows the slider, the page relayouts when the thumb is let go */
+        boolean canZoom = state[3] != 0;
+        LinearLayout zoom = new LinearLayout(context);
+        zoom.setOrientation(LinearLayout.HORIZONTAL);
+        zoom.setGravity(Gravity.CENTER_VERTICAL);
+        zoom.setPadding(dp(context, 18), 0, dp(context, 8), 0);
+        zoom.addView(label(context, "Zoom", 16, canZoom ? TEXT : DISABLED));
+        final TextView value = label(context, "", 14, canZoom ? SUBTLE : DISABLED);
+        value.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
+        final SeekBar slider = new SeekBar(context);
+        slider.setMax((ZOOM_MAX - ZOOM_MIN) / ZOOM_STEP);
+        int start = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, state[4]));
+        slider.setProgress((start - ZOOM_MIN) / ZOOM_STEP);
+        slider.setEnabled(canZoom);
+        slider.setContentDescription("Page zoom");
+        value.setText(start + "%");
+        slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(SeekBar bar, int progress, boolean user) {
+                value.setText((ZOOM_MIN + progress * ZOOM_STEP) + "%");
+            }
+            @Override public void onStartTrackingTouch(SeekBar bar) { }
+            @Override public void onStopTrackingTouch(SeekBar bar) {
+                action.send(ZOOM, ZOOM_MIN + bar.getProgress() * ZOOM_STEP, null, null);
+            }
+        });
+        LinearLayout.LayoutParams sliderLayout = new LinearLayout.LayoutParams(0, dp(context, 48), 1);
+        zoom.addView(slider, sliderLayout);
+        zoom.addView(value, new LinearLayout.LayoutParams(dp(context, 48), dp(context, 48)));
+        TextView reset = label(context, "Reset", 14, canZoom ? 0xff1a73e8 : DISABLED);
+        reset.setGravity(Gravity.CENTER);
+        reset.setEnabled(canZoom);
+        ripple(reset, true);
+        reset.setOnClickListener(view -> {
+            slider.setProgress((100 - ZOOM_MIN) / ZOOM_STEP);
+            action.send(ZOOM, 100, null, null);
+        });
+        zoom.addView(reset, new LinearLayout.LayoutParams(dp(context, 56), dp(context, 48)));
+        root.addView(zoom, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(context, 52)));
+
+        boolean canDesktop = state[2] != 0;
+        LinearLayout desktop = new LinearLayout(context);
+        desktop.setOrientation(LinearLayout.HORIZONTAL);
+        desktop.setGravity(Gravity.CENTER_VERTICAL);
+        desktop.setPadding(dp(context, 18), 0, dp(context, 10), 0);
+        TextView desktopLabel = label(context, "Desktop site", 16, canDesktop ? TEXT : DISABLED);
+        desktop.addView(desktopLabel, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+        final CheckBox check = new CheckBox(context);
+        check.setChecked(state[1] != 0);
+        check.setEnabled(canDesktop);
+        check.setClickable(false);
+        check.setFocusable(false);
+        desktop.addView(check);
+        desktop.setEnabled(canDesktop);
+        ripple(desktop, false);
+        final boolean desktopOn = state[1] != 0;
+        desktop.setOnClickListener(view -> { popup.dismiss(); action.send(DESKTOP, desktopOn ? 0 : 1, null, null); });
+        root.addView(desktop, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(context, 48)));
+        root.addView(divider(context));
+
+        TextView settings = label(context, "Settings", 16, TEXT);
+        settings.setGravity(Gravity.CENTER_VERTICAL);
+        settings.setPadding(dp(context, 18), 0, dp(context, 18), 0);
+        ripple(settings, false);
+        settings.setOnClickListener(view -> { popup.dismiss(); action.send(SETTINGS, 0, null, null); });
+        root.addView(settings, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(context, 48)));
+
+        ScrollView scroll = new ScrollView(context);
+        scroll.addView(root);
+        GradientDrawable background = new GradientDrawable();
+        background.setColor(Color.WHITE);
+        background.setCornerRadius(dp(context, 10));
+        popup.setContentView(scroll);
+        popup.setBackgroundDrawable(background);
+        popup.setElevation(dp(context, 10));
+        popup.setWidth(dp(context, 280));
+        popup.setHeight(ViewGroup.LayoutParams.WRAP_CONTENT);
+        popup.setFocusable(true);
+        popup.setOutsideTouchable(true);
+        popup.setOnDismissListener(() -> { if (menu == popup) menu = null; });
+        View decor = activity.getWindow().getDecorView();
+        int top = 0;
+        WindowInsets insets = decor.getRootWindowInsets();
+        if (insets != null) top = insets.getSystemWindowInsetTop();
+        menu = popup;
+        popup.showAtLocation(decor, Gravity.TOP | Gravity.END, dp(context, 4), top + dp(context, 4));
+    }
+
+    private static final class Bookmarks extends BaseAdapter {
+        final String[] titles, urls;
+        Bookmarks(String[] titles, String[] urls) { this.titles = titles; this.urls = urls; }
+        @Override public int getCount() { return titles.length; }
+        @Override public Object getItem(int position) { return urls[position]; }
+        @Override public long getItemId(int position) { return position; }
+        @Override public View getView(int position, View reuse, ViewGroup parent) {
+            Context context = parent.getContext();
+            LinearLayout row = new LinearLayout(context);
+            row.setOrientation(LinearLayout.VERTICAL);
+            row.setPadding(dp(context, 24), dp(context, 10), dp(context, 24), dp(context, 10));
+            TextView title = label(context, titles[position], 16, TEXT);
+            title.setSingleLine(true);
+            title.setEllipsize(TextUtils.TruncateAt.END);
+            boolean script = urls[position].regionMatches(true, 0, "javascript:", 0, 11);
+            TextView address = label(context, script ? "Script · " + urls[position].substring(11) : urls[position], 12, SUBTLE);
+            address.setSingleLine(true);
+            address.setEllipsize(TextUtils.TruncateAt.END);
+            row.addView(title);
+            row.addView(address);
+            return row;
+        }
+    }
+
+    static void showBookmarks(Activity activity, String[] titles, String[] urls, String pageTitle, String pageUrl, Action action) {
+        if (menu != null) { menu.dismiss(); menu = null; }
+        AlertDialog.Builder builder = new AlertDialog.Builder(activity).setTitle("Bookmarks");
+        ListView list = null;
+        if (titles.length == 0) {
+            builder.setMessage("No bookmarks yet. Add the current page, or create one whose URL starts with javascript: to run code on the page you are viewing.");
+        } else {
+            list = new ListView(activity);
+            list.setAdapter(new Bookmarks(titles, urls));
+            list.setDivider(new ColorDrawable(DIVIDER));
+            list.setDividerHeight(Math.max(1, dp(activity, 1)));
+            builder.setView(list);
+        }
+        if (pageUrl != null) builder.setPositiveButton("Add current page", (dialog, which) -> edit(activity, -1, pageTitle, pageUrl, action));
+        builder.setNeutralButton("New", (dialog, which) -> edit(activity, -1, "", "javascript:", action));
+        builder.setNegativeButton("Close", null);
+        final AlertDialog dialog = builder.show();
+        if (list == null) return;
+        list.setOnItemClickListener((parent, view, position, id) -> {
+            dialog.dismiss();
+            action.send(BM_OPEN, position, null, urls[position]);
+        });
+        list.setOnItemLongClickListener((parent, view, position, id) -> {
+            new AlertDialog.Builder(activity)
+                .setTitle(titles[position])
+                .setItems(new String[] { "Edit", "Delete" }, (options, which) -> {
+                    dialog.dismiss();
+                    if (which == 0) edit(activity, position, titles[position], urls[position], action);
+                    else action.send(BM_DELETE, position, null, urls[position]);
+                })
+                .show();
+            return true;
+        });
+    }
+
+    private static void edit(Activity activity, int index, String title, String url, Action action) {
+        LinearLayout form = new LinearLayout(activity);
+        form.setOrientation(LinearLayout.VERTICAL);
+        int pad = dp(activity, 22);
+        form.setPadding(pad, dp(activity, 8), pad, 0);
+        final EditText name = new EditText(activity);
+        name.setHint("Name");
+        name.setSingleLine(true);
+        name.setText(title != null ? title : "");
+        final EditText address = new EditText(activity);
+        address.setHint("URL, or javascript: code");
+        address.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE
+            | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS | InputType.TYPE_TEXT_VARIATION_URI);
+        address.setMaxLines(8);
+        address.setText(url != null ? url : "");
+        TextView note = label(activity, "A bookmark whose URL starts with javascript: runs that code on the page you are viewing when you open it.", 12, SUBTLE);
+        note.setPadding(0, dp(activity, 6), 0, 0);
+        form.addView(name);
+        form.addView(address);
+        form.addView(note);
+        new AlertDialog.Builder(activity)
+            .setTitle(index < 0 ? "Add bookmark" : "Edit bookmark")
+            .setView(form)
+            .setPositiveButton("Save", (dialog, which) -> {
+                String target = address.getText().toString().trim();
+                if (target.isEmpty()) { toast(activity, "A bookmark needs a URL"); return; }
+                action.send(BM_SAVE, index, name.getText().toString().trim(), target);
+            })
+            .setNegativeButton("Cancel", null)
+            .show();
+    }
+
+    private interface Named { void done(String name); }
+    private static void promptName(Activity activity, String title, String initial, Named done) {
+        final EditText name = new EditText(activity);
+        name.setSingleLine(true);
+        name.setText(initial);
+        name.setSelectAllOnFocus(true);
+        LinearLayout box = new LinearLayout(activity);
+        int pad = dp(activity, 22);
+        box.setPadding(pad, dp(activity, 8), pad, 0);
+        box.addView(name, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        new AlertDialog.Builder(activity)
+            .setTitle(title)
+            .setView(box)
+            .setPositiveButton("OK", (dialog, which) -> {
+                String value = name.getText().toString().trim();
+                if (!value.isEmpty()) done.done(value);
+            })
+            .setNegativeButton("Cancel", null)
+            .show();
+    }
+
+    static void showWorkspaces(Activity activity, String[] names, int[] tabs, int current, Action action) {
+        if (menu != null) { menu.dismiss(); menu = null; }
+        String[] items = new String[names.length];
+        for (int i = 0; i < names.length; i++) items[i] = names[i] + "  ·  " + tabs[i] + (tabs[i] == 1 ? " tab" : " tabs");
+        AlertDialog.Builder builder = new AlertDialog.Builder(activity)
+            .setTitle("Workspaces")
+            .setSingleChoiceItems(items, current, (dialog, which) -> {
+                dialog.dismiss();
+                if (which != current) action.send(WS_SELECT, which, null, null);
+            })
+            .setNegativeButton("Close", null);
+        if (names.length < MAX_WORKSPACES) {
+            builder.setPositiveButton("New workspace", (dialog, which) ->
+                promptName(activity, "New workspace", "Workspace " + (names.length + 1), name -> action.send(WS_NEW, 0, name, null)));
+        }
+        final AlertDialog dialog = builder.show();
+        dialog.getListView().setOnItemLongClickListener((parent, view, position, id) -> {
+            String[] options = names.length > 1 ? new String[] { "Rename", "Close workspace" } : new String[] { "Rename" };
+            new AlertDialog.Builder(activity)
+                .setTitle(names[position])
+                .setItems(options, (choices, which) -> {
+                    dialog.dismiss();
+                    if (which == 0) promptName(activity, "Rename workspace", names[position], name -> action.send(WS_RENAME, position, name, null));
+                    else action.send(WS_CLOSE, position, null, null);
+                })
+                .show();
+            return true;
+        });
+    }
+}

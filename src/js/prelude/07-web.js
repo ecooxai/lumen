@@ -216,7 +216,7 @@ const URL_KEYS = ['href', 'protocol', 'username', 'password', 'host', 'hostname'
 class URL {
     constructor(u, base) { const r = N.urlParse(String(u), base === undefined ? null : String(base)); if (!r) throw new TypeError(`Failed to construct 'URL': Invalid URL`); def(this, '_p', r); def(this, '_sp', null); }
     _set(k, v) {
-        const p = this._p, i = URL_KEYS.indexOf(k);
+        const p = this._p.slice(), i = URL_KEYS.indexOf(k);
         if (k === 'href') { const r = N.urlParse(String(v), null); if (!r) throw new TypeError('Invalid URL'); this._p = r; }
         else {
             v = String(v);
@@ -224,7 +224,7 @@ class URL {
             if (k === 'pathname' && v[0] !== '/') v = '/' + v;
             p[i] = v; if (k === 'hostname' || k === 'port') p[4] = p[5] + (p[6] ? ':' + p[6] : '');
             const auth = p[2] ? p[2] + (p[3] ? ':' + p[3] : '') + '@' : '';
-            const r = N.urlParse(p[1] + '//' + auth + p[4] + p[7] + p[8] + p[9], null); if (r) this._p = r;
+            this._p = N.urlParse(p[1] + '//' + auth + p[4] + p[7] + p[8] + p[9], null) || p;
         }
         if (this._sp && k !== 'search') { this._sp._l = new URLSearchParams(this._p[8])._l; }
     }

@@ -36,9 +36,13 @@ void js_mem_stats(size_t *heap, size_t *external);
 void js_set_background(JsCtx *c, bool bg);
 bool js_busy(JsCtx *c);   /* fetches in flight */
 void js_free(JsCtx *c);
+void js_debug_profile(JsCtx *c);   /* debug Android: restart the armed JS profile (no-op otherwise) */
 /* run a parser-inserted script (sets document.currentScript) */
 void js_run_script(JsCtx *c, Node *script, const char *src, size_t n, const char *name);
 void js_eval(JsCtx *c, const char *src, const char *name);
+/* Runs src as a classic script; returns its completion value as text (NULL for undefined), or the
+   exception message with *failed set. Caller frees. */
+char *js_eval_result(JsCtx *c, const char *src, const char *name, bool *failed);
 /* run a <script type=module>; src NULL fetches url. Inline modules pass the document url */
 void js_run_module(JsCtx *c, Node *script, const char *src, size_t n, const char *url);
 /* Fetches module scripts and their static import graphs in parallel (blocking, any thread)

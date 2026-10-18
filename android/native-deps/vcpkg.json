@@ -13,14 +13,31 @@
     {
       "name": "ffmpeg",
       "default-features": false,
-      "features": ["avcodec", "avformat", "swresample", "swscale"]
+      "features": [
+        "avcodec",
+        "avformat",
+        "swresample",
+        "swscale"
+      ]
     },
     "libpng",
     "libjpeg-turbo",
     "libwebp",
-    "giflib"
+    "giflib",
+    "opus",
+    {
+      "name": "libdatachannel",
+      "default-features": false,
+      "features": [
+        "srtp"
+      ]
+    }
   ],
   "overrides": [
-    {"name": "ffmpeg", "version": "8.1.2", "port-version": 3}
+    {
+      "name": "ffmpeg",
+      "version": "8.1.2",
+      "port-version": 3
+    }
   ]
 }

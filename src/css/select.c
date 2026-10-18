@@ -46,6 +46,7 @@ void css_match_cache_subject(Node *subject, const uint64_t ancestor_classes[16])
     active_match_cache->ancestor_classes = ancestor_classes;
 }
 void css_match_cache_end(CssMatchCache *previous) { active_match_cache = previous; }
+CssMatchCache *css_match_cache_suspend(void) { CssMatchCache *previous = active_match_cache; active_match_cache = NULL; return previous; }
 void css_match_cache_free(CssMatchCache *cache) { free(cache); }
 
 static Node *parent_el(Node *n) { Node *p = n->parent; return p && p->type == NODE_ELEMENT ? p : NULL; }
@@ -186,11 +187,13 @@ static bool match_simple(const SimpleSel *s, Node *el, Node *scope) {
     case SK_PSEUDO_EL: return true; /* handled by caller */
     case SK_TREE_RELATED: return (el->flags & (s->op == 2 ? NF_TREE_CHILD : s->op ? NF_TREE_RELATED : NF_TREE_ANCESTOR)) != 0;
     case SK_CHANGED_KEY: {
-        /* Widen a coalesced class/ID constraint only when that key changed.
+        /* Widen a coalesced class/ID constraint only when that key changed,
+         * and only on elements whose selector inputs changed in this batch.
          * Unrelated ancestor classes must still restrict invalidation. */
         unsigned bit = dom_tree_key_bit(s->name);
-        if (!el->doc || el->doc->selector_changes_unknown ||
-                (el->doc->selector_change_keys[bit >> 6] & (UINT64_C(1) << (bit & 63)))) return true;
+        if (!el->doc || el->doc->selector_changes_unknown) return true;
+        if ((el->doc->selector_change_keys[bit >> 6] & (UINT64_C(1) << (bit & 63))) &&
+                (el->flags & (NF_RESELECT_KEYED | NF_RESELECT_SUBTREE))) return true;
         return s->op == SK_CLASS ? node_has_class_atom(el, s->name) :
             el->id && !strcmp(el->id, s->name);
     }
@@ -210,27 +213,27 @@ static Node *host_up(Node *el, const Compound *c) {
     for (int k = 0; k < c->n; k++) if (c->s[k].kind == SK_PSEUDO && c->s[k].name == h) return p->host;
     return NULL;
 }
-static bool match_from(const Selector *s, int ci, Node *el, Node *scope);
-static bool match_from_uncached(const Selector *s, int ci, Node *el, Node *scope) {
+/* The active cache is passed down: thread-local access is slow in a dlopen()ed library. */
+static bool match_from(CssMatchCache *cache, const Selector *s, int ci, Node *el, Node *scope);
+static bool match_from_uncached(CssMatchCache *cache, const Selector *s, int ci, Node *el, Node *scope) {
     if (!match_compound(&s->c[ci], el, scope)) return false;
     if (ci == 0) return true;
     uint8_t comb = s->c[ci].comb;
     switch (comb) {
-    case CB_CHILD: { Node *p = parent_el(el); if (!p) p = host_up(el, &s->c[ci - 1]); return p && match_from(s, ci - 1, p, scope); }
+    case CB_CHILD: { Node *p = parent_el(el); if (!p) p = host_up(el, &s->c[ci - 1]); return p && match_from(cache, s, ci - 1, p, scope); }
     case CB_DESC: {
         Node *p = parent_el(el), *last = el;
-        for (; p; last = p, p = parent_el(p)) if (match_from(s, ci - 1, p, scope)) return true;
+        for (; p; last = p, p = parent_el(p)) if (match_from(cache, s, ci - 1, p, scope)) return true;
         p = host_up(last, &s->c[ci - 1]);
-        return p && match_from(s, ci - 1, p, scope); }
-    case CB_ADJ: { Node *p = prev_el(el); return p && match_from(s, ci - 1, p, scope); }
-    case CB_SIB: { for (Node *p = prev_el(el); p; p = prev_el(p)) if (match_from(s, ci - 1, p, scope)) return true; return false; }
+        return p && match_from(cache, s, ci - 1, p, scope); }
+    case CB_ADJ: { Node *p = prev_el(el); return p && match_from(cache, s, ci - 1, p, scope); }
+    case CB_SIB: { for (Node *p = prev_el(el); p; p = prev_el(p)) if (match_from(cache, s, ci - 1, p, scope)) return true; return false; }
     }
     return false;
 }
 
-static bool match_from(const Selector *s, int ci, Node *el, Node *scope) {
-    CssMatchCache *cache = active_match_cache;
-    if (!cache) return match_from_uncached(s, ci, el, scope);
+static bool match_from(CssMatchCache *cache, const Selector *s, int ci, Node *el, Node *scope) {
+    if (!cache) return match_from_uncached(cache, s, ci, el, scope);
     const Compound *compound = &s->c[ci];
     uintptr_t hash = ((uintptr_t)compound >> 4) * 0x9e3779b1u;
     hash ^= ((uintptr_t)el >> 4) * 0x85ebca6bu;
@@ -241,7 +244,7 @@ static bool match_from(const Selector *s, int ci, Node *el, Node *scope) {
         version = el->doc->selector_version;
     if (entry->epoch == cache->epoch && entry->compound == compound &&
             entry->element == el && entry->scope == scope && entry->version == version) return entry->result;
-    bool result = match_from_uncached(s, ci, el, scope);
+    bool result = match_from_uncached(cache, s, ci, el, scope);
     *entry = (MatchEntry){compound, el, scope, version, cache->epoch, result};
     return result;
 }
@@ -255,7 +258,7 @@ bool css_match_selector(const Selector *s, Node *el, Node *scope) {
         unsigned bit = s->required_class_filter - 1;
         if (!(cache->ancestor_classes[bit >> 6] & (UINT64_C(1) << (bit & 63)))) return false;
     }
-    return match_from(s, s->n - 1, el, scope);
+    return match_from(cache, s, s->n - 1, el, scope);
 }
 bool css_match_selector_list(const SelList *l, Node *el) {
     for (int i = 0; i < l->n; i++) if (!l->v[i].pseudo_el && css_match_selector(&l->v[i], el, NULL)) return true;

@@ -1,0 +1,30 @@
+<!doctype html>
+<table id=a><thead><tr><th>h</th></tr></thead><tfoot><tr><td>f</td></tr></tfoot><tbody><tr><td>b0</td></tr><tr><td>b1</td></tr></tbody></table>
+<table id=e></table>
+<script>
+const R = {}, a = document.getElementById('a'), e = document.getElementById('e');
+const txt = t => [...t.rows].map(r => r.cells[0] ? r.cells[0].textContent : '').join(',');
+R.order = txt(a) === 'h,b0,b1,f';
+R.sections = a.tHead && a.tHead.tagName === 'THEAD' && a.tFoot.tagName === 'TFOOT' && a.tBodies.length === 1 && a.caption === null;
+const r = a.insertRow(2); r.insertCell().textContent = 'x';
+R.insertMiddle = txt(a) === 'h,b0,x,b1,f' && r.parentNode === a.tBodies[0] && r.rowIndex === 2 && r.sectionRowIndex === 1;
+const end = a.insertRow(); end.insertCell().textContent = 'z';
+R.insertEnd = txt(a) === 'h,b0,x,b1,z,f' || txt(a) === 'h,b0,x,b1,f,z';
+a.deleteRow(-1); a.deleteRow(1);
+R.deleteRow = a.rows.length === 4;
+const n = e.insertRow(); const c0 = n.insertCell(), c1 = n.insertCell(0); c0.textContent = 'second'; c1.textContent = 'first';
+R.emptyTable = e.tBodies.length === 1 && e.rows.length === 1 && n.cells[0].textContent === 'first' && n.cells.length === 2;
+n.deleteCell(0); R.deleteCell = n.cells.length === 1 && n.cells[0].textContent === 'second';
+let thrown = '';
+try { e.insertRow(5); } catch (x) { thrown = x.name; }
+R.indexError = thrown === 'IndexSizeError';
+const cap = e.createCaption(); cap.textContent = 'c';
+R.caption = e.firstElementChild === cap && e.caption === cap && e.createCaption() === cap;
+const th = e.createTHead(); R.createTHead = th.previousElementSibling === cap && e.tHead === th && e.rows.length === 1;
+const sb = e.createTBody(); R.createTBody = e.tBodies.length === 2 && e.tBodies[1] === sb;
+const sr = sb.insertRow(); R.sectionInsert = sb.rows.length === 1 && sr.rowIndex === 1;
+sb.deleteRow(0); R.sectionDelete = sb.rows.length === 0;
+e.deleteTHead(); e.deleteCaption(); R.deleteParts = !e.tHead && !e.caption;
+const tf = e.createTFoot(); R.createTFoot = e.lastElementChild === tf;
+console.log('RESULTS table-dom ' + Object.entries(R).map(([k, v]) => k + ':' + (v ? 'PASS' : 'FAIL')).join(' '));
+</script>

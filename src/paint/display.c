@@ -5,7 +5,7 @@
 Image *(*paint_image_hook)(Node *n);
 Image *(*paint_url_image_hook)(const char *url);
 
-typedef struct { Box *b; float dx, dy; bool clip; float cx, cy, cw, ch; int order; } Deferred;
+typedef struct { Box *b; float dx, dy; bool clip; float cx, cy, cw, ch; int order; const Box *mv, *mv_out; } Deferred;
 typedef VEC(Deferred) DefVec;
 typedef struct {
     DisplayList *dl; Layout *L;
@@ -15,9 +15,10 @@ typedef struct {
     int order;
     bool fixed;
     Box *sb; const void *outer;   /* innermost scroller and the state outside it */
+    const Box *mv, *mv_out;       /* scroller painted items move with, and the one outside it (for sticky boxes) */
 } PB;
 
-static DItem *emit(PB *p, uint8_t op) { DItem it; memset(&it, 0, sizeof it); it.op = op; it.alpha = 1; it.fixed = p->fixed; vec_push(p->dl->items, it); return &p->dl->items.v[p->dl->items.n - 1]; }
+static DItem *emit(PB *p, uint8_t op) { DItem it; memset(&it, 0, sizeof it); it.op = op; it.alpha = 1; it.fixed = p->fixed; it.mv = p->mv; vec_push(p->dl->items, it); return &p->dl->items.v[p->dl->items.n - 1]; }
 static bool visible(PB *p, float x, float y, float w, float h) {
     if (x > p->dl->vw || y > p->dl->vh || x + w < 0 || y + h < 0) return false;
     if (p->clip && (x > p->cx + p->cw || y > p->cy + p->ch || x + w < p->cx || y + h < p->cy)) return false;
@@ -68,6 +69,7 @@ static void paint_rect_deco(PB *p, Box *b, float x, float y, float w, float h, b
     if (s->has_shadow && !s->box_shadow.inset && COLOR_A(s->box_shadow.color)) {
         DItem *it = emit(p, DO_SHADOW); it->x = x + s->box_shadow.x; it->y = y + s->box_shadow.y; it->w = w; it->h = h;
         memcpy(it->r, r, sizeof r); it->color = s->box_shadow.color; it->blur = s->box_shadow.blur; it->spread = s->box_shadow.spread;
+        it->ox = s->box_shadow.x; it->oy = s->box_shadow.y;
     }
     if (COLOR_A(s->bg_color)) {
         Color c = s->bg_color;
@@ -125,14 +127,25 @@ static void paint_text_frag(PB *p, TextFrag *f) {
     Color col = s->color;
     Box *blk = t->parent; while (blk && blk->kind == BX_INLINE) blk = blk->parent;
     if (blk && blk->placeholder) col = RGBA(117, 117, 117, COLOR_A(col));
-    int ss, se;
-    if (tsel_range(t, &ss, &se)) {
+    int ss, se, edge = 0;
+    bool sel = tsel_range(t, &ss, &se) ? (edge = tsel_edge(t), true) : ctl_range(t, &ss, &se) ? (edge = 3, true) : false;
+    if (sel) {
         float x0 = t->sh.g[f->g0].x, a = -1, e = -1;
         for (int i = f->g0; i < f->g1; i++) {
             int c = (int)t->sh.g[i].cluster;
             if (c >= ss && c < se) { float gx = t->sh.g[i].x - x0; if (a < 0) a = gx; e = gx + t->sh.g[i].adv; }
         }
         if (a >= 0 && e > a) { DItem *it = emit(p, DO_RECT); it->x = f->x + a + p->dx; it->y = f->y + p->dy; it->w = e - a; it->h = f->h; it->color = RGBA(179, 215, 255, 255); }
+        if (edge) {   /* touch handles sit under the first and last selected glyphs */
+            for (int i = f->g0; i < f->g1; i++) {
+                int c = (int)t->sh.g[i].cluster; float gx = f->x + t->sh.g[i].x - x0 + p->dx;
+                if (c < ss || c >= se) continue;
+                TselCaret *k = &g_tsel_caret[0];
+                if ((edge & 1) && (!k->ok || c < k->cluster)) *k = (TselCaret){ true, gx, f->y + p->dy, f->h, c };
+                k = &g_tsel_caret[1];
+                if ((edge & 2) && (!k->ok || c >= k->cluster)) *k = (TselCaret){ true, gx + t->sh.g[i].adv, f->y + p->dy, f->h, c };
+            }
+        }
     }
     if (s->has_text_shadow && COLOR_A(s->text_shadow.color)) emit_glyphs(p, t, f, s->text_shadow.x, s->text_shadow.y, s->text_shadow.color);
     emit_glyphs(p, t, f, 0, 0, col);
@@ -224,7 +237,7 @@ static void paint_inline_decos(PB *p, Box *ib) {
 }
 static void collect_inline_positioned(PB *p, Box *ib, DefVec *defs) {
     for (Box *c = ib->first; c; c = c->next) {
-        if (positioned(c) || c->abs) { Deferred d = { c, p->dx, p->dy, p->clip, p->cx, p->cy, p->cw, p->ch, p->order++ }; vec_push(*defs, d); continue; }
+        if (positioned(c) || c->abs) { Deferred d = { c, p->dx, p->dy, p->clip, p->cx, p->cy, p->cw, p->ch, p->order++, p->mv, p->mv_out }; vec_push(*defs, d); continue; }
         if (c->kind == BX_INLINE) collect_inline_positioned(p, c, defs);
     }
 }
@@ -237,6 +250,12 @@ static void paint_caret(PB *p, Box *b) {
     float ch = b->h - b->b[0] - b->b[2] - b->p[0] - b->p[2];
     TextFrag *last = b->nfrags ? &b->frags[b->nfrags - 1] : NULL;
     for (Box *c = b->first; c; c = c->next) if (c->nfrags) last = &c->frags[c->nfrags - 1];
+    const Document *d = b->node->doc;
+    if (d && b->node == d->csel_n) {   /* at the selection focus; a range shows as a highlight instead */
+        float cx, cy, cht;
+        if (d->csel[0] != d->csel[1]) return;
+        if (ctl_caret(b, d->csel[1], &cx, &cy, &cht)) { DItem *it = emit(p, DO_RECT); it->x = cx + p->dx; it->y = cy + p->dy; it->w = 1; it->h = cht; it->color = s->color; return; }
+    }
     if (last) { y = last->y; h = last->h; if (!b->placeholder) x = last->x + last->w; }
     else if (b->ctl == CTL_TEXT && ch > h) y += (ch - h) / 2;
     DItem *it = emit(p, DO_RECT); it->x = x + p->dx; it->y = y + p->dy; it->w = 1; it->h = h; it->color = s->color;
@@ -302,11 +321,11 @@ static void paint_block_content(PB *p, Box *b, DefVec *defs) {
     PB saved = *p;
     if (clips) {
         float x = b->x + p->dx + b->b[3], y = b->y + p->dy + b->b[0], w = b->w - b->b[1] - b->b[3], h = b->h - b->b[0] - b->b[2];
-        DItem *c = emit(p, DO_PUSH_CLIP); c->x = x; c->y = y; c->w = w; c->h = h;
+        DItem *c = emit(p, DO_PUSH_CLIP); c->x = x; c->y = y; c->w = w; c->h = h; c->sc = b;
         if (p->clip) { float x1 = LMIN(x + w, p->cx + p->cw), y1 = LMIN(y + h, p->cy + p->ch); x = LMAX(x, p->cx); y = LMAX(y, p->cy); w = LMAX(0, x1 - x); h = LMAX(0, y1 - y); }
         p->clip = true; p->cx = x; p->cy = y; p->cw = w; p->ch = h;
         p->dx -= b->node->scroll_x; p->dy -= box_scroll_y(b);
-        p->sb = b; p->outer = &saved;
+        p->sb = b; p->outer = &saved; p->mv_out = p->mv; p->mv = b;
     }
     if (s->display == D_LIST_ITEM && vis) paint_marker(p, b);
     paint_flow(p, b, defs);
@@ -322,7 +341,7 @@ static void paint_flow(PB *p, Box *b, DefVec *defs) {
         if (positioned(c) || makes_layer(c)) {
             /* an abs box whose containing block is outside a scroller neither scrolls nor clips with it */
             const PB *q = p; if (c->abs) while (q->sb && !box_within(c->cb, q->sb)) q = q->outer;
-            Deferred d = { c, q->dx, q->dy, q->clip, q->cx, q->cy, q->cw, q->ch, p->order++ }; vec_push(*defs, d); continue; }
+            Deferred d = { c, q->dx, q->dy, q->clip, q->cx, q->cy, q->cw, q->ch, p->order++, q->mv, q->mv_out }; vec_push(*defs, d); continue; }
         if (c->floated || c->kind == BX_ATOMIC) continue;
         paint_block_content(p, c, defs);
     }
@@ -349,9 +368,9 @@ static int def_cmp(const void *a, const void *b) {
 
 static void paint_deferred(PB *p, Deferred *d) {
     PB saved = *p;
-    if (d->b->fixed) { p->dx = -0.0f; p->dy = 0; p->clip = false; p->fixed = true; }
+    if (d->b->fixed) { p->dx = -0.0f; p->dy = 0; p->clip = false; p->fixed = true; p->mv = p->mv_out = NULL; }
     else {
-        p->dx = d->dx; p->dy = d->dy;
+        p->dx = d->dx; p->dy = d->dy; p->mv = d->mv; p->mv_out = d->mv_out;
         /* clips of scrollers apply only when the box's containing block is inside them */
         p->clip = d->clip && !(d->b->abs && d->b->cb == p->L->root); p->cx = d->cx; p->cy = d->cy; p->cw = d->cw; p->ch = d->ch;
     }
@@ -368,8 +387,8 @@ static void paint_stacking(PB *p, Box *b) {
     if (s->has_transform) { tx = s->transform[4]; ty = s->transform[5]; if (s->translate_pending[0].pct) tx += s->translate_pending[0].pct * b->w / 100; if (s->translate_pending[1].pct) ty += s->translate_pending[1].pct * b->h / 100; }
     float sticky_x, sticky_y; box_sticky_offset(b, p->sx, p->sy, &sticky_x, &sticky_y);
     tx += sticky_x; ty += sticky_y;
-    bool was_fixed = p->fixed;
-    if (s->position == P_STICKY) p->fixed = true; /* include in scroll damage */
+    bool was_fixed = p->fixed; const Box *was_mv = p->mv;
+    if (s->position == P_STICKY) { p->fixed = true; p->mv = p->mv_out; } /* include in scroll damage */
     p->dx += tx; p->dy += ty;
     /* axis-aligned scale (e.g. progress bars using scaleX): scale the subtree's non-text items about transform-origin */
     float ksx = s->has_transform && !s->transform[1] && !s->transform[2] ? s->transform[0] : 1, ksy = s->has_transform && !s->transform[1] && !s->transform[2] ? s->transform[3] : 1;
@@ -399,13 +418,14 @@ static void paint_stacking(PB *p, Box *b) {
         }
     }
     p->dx -= tx; p->dy -= ty;
-    p->fixed = was_fixed;
+    p->fixed = was_fixed; p->mv = was_mv;
 }
 
 void dl_clear(DisplayList *dl) { dl->items.n = 0; dl->fixed.count = 0; arena_reset(&dl->arena); }
 
 void dl_build(DisplayList *dl, Layout *L, float scroll_x, float scroll_y, float vw, float vh) {
     dl_clear(dl); dl->vw = vw; dl->vh = vh;
+    if (L == g_tsel.L || (L->doc && L->doc->csel_n)) memset(g_tsel_caret, 0, sizeof g_tsel_caret);
     if (!L->root) return;
     tsel_prepare(L);
     PB p; memset(&p, 0, sizeof p); p.dl = dl; p.L = L; p.dx = -scroll_x; p.dy = -scroll_y; p.sx = scroll_x; p.sy = scroll_y;

@@ -75,6 +75,24 @@ const userAgentData = __uaChrome ? {
     getHighEntropyValues() { return Promise.resolve(uaLowEntropy()); },
     toJSON() { return uaLowEntropy(); },
 } : undefined;
+/* Permissions API: the microphone reflects the Android grant; its statuses fire change once getUserMedia settles it */
+class PermissionStatus extends EventTarget {
+    constructor(name, state) { super(); def(this, '_', { name, state }); this.onchange = null; }
+    get name() { return this._.name; }
+    get state() { return this._.state; }
+}
+const micStatuses = new Set();
+const micPermState = () => { const p = N.micPermission ? N.micPermission() : 0; return p > 0 ? 'granted' : p < 0 ? 'denied' : 'prompt'; };
+function micPermChanged() {
+    const state = micPermState();
+    for (const r of [...micStatuses]) {
+        const p = r.deref();
+        if (!p) { micStatuses.delete(r); continue; }
+        if (p._.state === state) continue;
+        p._.state = state;
+        dispatch(p, new Event('change'), true);
+    }
+}
 const navigator = {
     userAgent: N.userAgent(), appVersion: N.userAgent().replace(/^Mozilla\//, ''), appName: 'Netscape', appCodeName: 'Mozilla', product: 'Gecko', productSub: __uaChrome ? '20030107' : '20100101', vendor: __uaChrome ? 'Google Inc.' : '', vendorSub: '',
     platform: N.platform(), language: 'en-US', languages: ['en-US', 'en'], onLine: true, cookieEnabled: true, doNotTrack: null, webdriver: false, pdfViewerEnabled: false,
@@ -88,13 +106,38 @@ const navigator = {
         async write(items) { for (const it of items || []) if (it.types.includes('text/plain')) { N.clipSet(await (await it.getType('text/plain')).text()); return; } },
         async read() { return [new ClipboardItem({ 'text/plain': new Blob([N.clipGet()], { type: 'text/plain' }) })]; },
     }),
-    permissions: { query() { return Promise.resolve({ state: 'prompt', addEventListener() {} }); } },
-    mediaDevices: Object.assign(new EventTarget(), { enumerateDevices() { return Promise.resolve([]); }, getUserMedia(c) {
+    permissions: { query(d) {
+        if (!d || typeof d !== 'object' || d.name === undefined) return Promise.reject(new TypeError("Failed to execute 'query' on 'Permissions': required member name is undefined."));
+        const name = String(d.name);
+        if (name === 'microphone') { const p = new PermissionStatus(name, micPermState()); micStatuses.add(new WeakRef(p)); return Promise.resolve(p); }
+        return Promise.resolve(new PermissionStatus(name, 'prompt'));
+    } },
+    mediaDevices: Object.assign(new EventTarget(), {
+        enumerateDevices() {
+            /* like Chrome, labels only once the microphone was granted (sites read an empty label as "no permission") */
+            const mic = { deviceId: 'default', groupId: 'default', kind: 'audioinput', label: micPermState() === 'granted' ? 'Default' : '' };
+            mic.toJSON = () => ({ deviceId: mic.deviceId, groupId: mic.groupId, kind: mic.kind, label: mic.label });
+            return Promise.resolve(N.micOpen ? [mic] : []);
+        },
+        getUserMedia(c) {
             if (!c || typeof c !== 'object' || (!c.audio && !c.video)) return Promise.reject(new TypeError("Failed to execute 'getUserMedia': At least one of audio and video must be requested"));
-            const t = [];
-            if (c.audio) t.push(new MediaStreamTrack(RTC_INTERNAL, 'audio', 'Fake Default Audio Input'));
-            if (c.video) t.push(new MediaStreamTrack(RTC_INTERNAL, 'video', 'Fake Default Video Input'));
-            return new Promise(r => setTimeout(() => r(new MediaStream(t))));
+            const video = () => c.video ? [new MediaStreamTrack(RTC_INTERNAL, 'video', 'Fake Default Video Input')] : [];
+            if (!c.audio || !N.micOpen) {
+                const t = c.audio ? [new MediaStreamTrack(RTC_INTERNAL, 'audio', 'Fake Default Audio Input')] : [];
+                return new Promise(r => setTimeout(() => r(new MediaStream(t.concat(video())))));
+            }
+            return new Promise((res, rej) => {   /* the device opens once Android grants the microphone */
+                const id = N.micOpen();
+                if (id < 0) { rej(new DOMException('Requested device not found', 'NotFoundError')); return; }
+                const wait = () => {
+                    const st = N.micState(id);
+                    if (st === 0) { setTimeout(wait, 50); return; }
+                    if (st < 0) { N.micClose(id); micPermChanged(); rej(new DOMException('Permission denied', 'NotAllowedError')); return; }
+                    micPermChanged();
+                    res(new MediaStream([micTrack(id)].concat(video())));
+                };
+                wait();
+            });
         }, getDisplayMedia() { return Promise.reject(new DOMException('Capture is not implemented yet', 'NotSupportedError')); }, getSupportedConstraints() { return {}; } }),
     serviceWorker: Object.assign(new EventTarget(), {
         controller: null, ready: new Promise(() => {}),
@@ -374,8 +417,8 @@ const globals = {
     CSSStyleDeclaration, SVGFEBlendElement, SVGFEComponentTransferElement, SVGFEDiffuseLightingElement, SVGFESpecularLightingElement, SVGFEDropShadowElement, SVGFEFloodElement, SVGFEGaussianBlurElement, SVGFEImageElement, SVGFEMergeElement, SVGFEMergeNodeElement, SVGFEOffsetElement, SVGFETileElement, SVGFEDistantLightElement, SVGFEPointLightElement, SVGFESpotLightElement, SVGFEFuncRElement, SVGFEFuncGElement, SVGFEFuncBElement, SVGFEFuncAElement, SVGLength, SVGNumber, SVGAnimatedLength, SVGAnimatedNumber, SVGAnimatedInteger, SVGAnimatedBoolean, SVGAnimatedString, SVGAnimatedEnumeration, SVGRect, SVGAnimatedRect, SVGUnitTypes, SVGGeometryElement, SVGRectElement, SVGCircleElement, SVGEllipseElement, SVGLineElement, SVGPathElement, SVGPolylineElement, SVGPolygonElement, SVGGElement, SVGDefsElement, SVGUseElement, SVGImageElement, SVGForeignObjectElement, SVGAElement, SVGSwitchElement, SVGTextContentElement, SVGTextPositioningElement, SVGTextElement, SVGTSpanElement, SVGTextPathElement, SVGGradientElement, SVGLinearGradientElement, SVGRadialGradientElement, SVGStopElement, SVGClipPathElement, SVGMaskElement, SVGPatternElement, SVGFilterElement, SVGMarkerElement, SVGSymbolElement, SVGTitleElement, SVGDescElement, SVGMetadataElement, SVGStyleElement, SVGScriptElement, SVGFEColorMatrixElement, SVGFECompositeElement, SVGFEMorphologyElement, SVGFETurbulenceElement, SVGFEDisplacementMapElement, SVGFEConvolveMatrixElement, SVGComponentTransferFunctionElement, CSSRuleList, CSSStyleRule, CSSGroupingRule, CSSConditionRule, CSSMediaRule, CSSSupportsRule, CSSContainerRule, CSSLayerBlockRule, CSSLayerStatementRule, CSSImportRule, CSSNamespaceRule, CSSFontFaceRule, CSSPageRule, CSSKeyframeRule, CSSKeyframesRule, MediaList, Element, HTMLElement, SVGElement, SVGGraphicsElement, SVGSVGElement, MathMLElement, Image, Audio, Option, CustomElementRegistry, Document, HTMLDocument, XMLDocument, CSSRule, CSSStyleSheet, CSS, FontFace,
     TreeWalker, NodeIterator, NodeFilter, Range, StaticRange, AbstractRange, Selection, Animation, DOMMatrixReadOnly, DOMMatrix, DOMPoint, DOMParser, XMLSerializer,
     TextEncoder, TextDecoder, btoa, atob, Blob, File, FileList, DataTransfer, DataTransferItem, DataTransferItemList, FileReader, ReadableStream, ReadableStreamDefaultReader, WritableStream, WritableStreamDefaultWriter, TransformStream, ByteLengthQueuingStrategy, CountQueuingStrategy, TextEncoderStream, TextDecoderStream, URLSearchParams, URL, webkitURL: URL, Headers, Request, Response, fetch, FormData, XMLHttpRequestEventTarget, XMLHttpRequestUpload, XMLHttpRequest, WebSocket, CloseEvent, MessagePort, MessageChannel, Worker, BroadcastChannel,
-    RTCPeerConnection, RTCSessionDescription, RTCIceCandidate, RTCPeerConnectionIceEvent, RTCPeerConnectionIceErrorEvent, RTCDataChannel, RTCDataChannelEvent, RTCTrackEvent, RTCRtpSender, RTCRtpReceiver, RTCRtpTransceiver, RTCIceTransport, RTCDtlsTransport, RTCSctpTransport, RTCCertificate, RTCStatsReport, RTCError, RTCErrorEvent, MediaStream, MediaStreamTrack, MediaStreamTrackEvent,
-    ResizeObserver, IntersectionObserver, HTMLAllCollection, PerformanceObserver, Storage, localStorage, sessionStorage, Location, location, history, navigator, screen, performance, crypto, MediaQueryList, matchMedia, getComputedStyle,
+    MediaRecorder, BlobEvent, RTCPeerConnection, RTCSessionDescription, RTCIceCandidate, RTCPeerConnectionIceEvent, RTCPeerConnectionIceErrorEvent, RTCDataChannel, RTCDataChannelEvent, RTCTrackEvent, RTCRtpSender, RTCRtpReceiver, RTCRtpTransceiver, RTCIceTransport, RTCDtlsTransport, RTCSctpTransport, RTCCertificate, RTCStatsReport, RTCError, RTCErrorEvent, MediaStream, MediaStreamTrack, MediaStreamTrackEvent,
+    ResizeObserver, IntersectionObserver, HTMLAllCollection, PerformanceObserver, Storage, localStorage, sessionStorage, Location, location, history, navigator, screen, performance, crypto, MediaQueryList, matchMedia, getComputedStyle, PermissionStatus,
     setTimeout, setInterval, clearTimeout, clearInterval, requestAnimationFrame, cancelAnimationFrame, requestIdleCallback, cancelIdleCallback, queueMicrotask, structuredClone, postMessage, console, customElements, Window, document,
     window: G, self: G, globalThis: G, get top() { return asWin(N.topWin()) ?? G; }, get parent() { return asWin(N.parentWin()) ?? G; }, frames: G, opener: null, get frameElement() { return N.frameEl(); }, closed: false, name: '', get length() { return N.frameCount(); }, origin: location.origin, isSecureContext: location.protocol === 'https:', crossOriginIsolated: false,
     get innerWidth() { return N.viewport()[0]; }, get innerHeight() { return N.viewport()[1]; }, get outerWidth() { return N.viewport()[0]; }, get outerHeight() { return N.viewport()[1] + 40; },

@@ -26,6 +26,31 @@ ctx.startRendering().then(b => {
   return ctx.decodeAudioData(new Uint8Array([1, 2, 3]).buffer).then(() => false, e => e.name === 'EncodingError');
 }).then(v => {
   R.decodeError = v;
+  /* a script processor over the rendered graph */
+  const oc = new OfflineAudioContext(1, 4096, 48000), cs = oc.createConstantSource(), sp = oc.createScriptProcessor(1024, 1, 1);
+  let calls = 0, seen = 0;
+  sp.onaudioprocess = e => { calls++; seen = Math.max(seen, e.inputBuffer.getChannelData(0)[100]); e.outputBuffer.getChannelData(0).fill(0.25); };
+  cs.offset.value = 0.5; cs.connect(sp); sp.connect(oc.destination); cs.start();
+  R.processorSize = sp.bufferSize === 1024 && oc.createScriptProcessor().bufferSize > 0 && (() => { try { oc.createScriptProcessor(1000); return false; } catch (e) { return e.name === 'IndexSizeError'; } })();
+  return oc.startRendering().then(b => { R.processorGraph = calls >= 3 && seen === 0.5 && b.getChannelData(0)[3000] === 0.25; });
+}).then(() => {
+  /* microphone-style PCM pushed through a stream: source -> gain -> processor, and into a recorder's stream destination */
+  const ac = new AudioContext(), dst = ac.createMediaStreamDestination(), src = ac.createMediaStreamSource(dst.stream), g = ac.createGain(), sp = ac.createScriptProcessor(1024, 1, 1);
+  const out = ac.createMediaStreamDestination(), an = ac.createAnalyser();
+  const got = [];
+  sp.onaudioprocess = e => got.push(e.inputBuffer.getChannelData(0)[0]);
+  src.connect(g); g.connect(sp); sp.connect(ac.destination); src.connect(an); an.connect(out);
+  let relayed = 0; out.stream.getAudioTracks()[0]._.hub.subs.add(p => { relayed += p.length; });
+  for (let k = 0; k < 3; k++) dst._feed(new Float32Array(960).fill(0.125 * (k + 1)));
+  R.processorMic = got.length === 2 && got[0] === 0.125 && got[1] === 0.25;
+  R.streamDestination = dst.stream instanceof MediaStream && dst.stream.getAudioTracks().length === 1 && relayed === 2880;
+  const f = new Float32Array(1024); an.getFloatTimeDomainData(f); R.analyserMic = f[1023] === 0.375;
+  ac.close();
+  /* resampling through an OfflineAudioContext at another rate */
+  const src48 = new AudioBuffer({ length: 4800, sampleRate: 48000, numberOfChannels: 1 }); src48.getChannelData(0).fill(0.5);
+  const oc = new OfflineAudioContext(1, 1600, 16000), bs = oc.createBufferSource(); bs.buffer = src48; bs.connect(oc.destination); bs.start(0);
+  return oc.startRendering().then(b => { const d = b.getChannelData(0); R.resample = b.sampleRate === 16000 && d[0] === 0.5 && d[1599] === 0.5; });
+}).then(() => {
   console.log('RESULTS webaudio ' + Object.entries(R).map(([k, v]) => k + ':' + (v ? 'PASS' : 'FAIL')).join(' '));
 });
 </script>

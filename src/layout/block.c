@@ -395,7 +395,7 @@ static void track_containers(Document *d, Box *b) {
         Node *n = b->node;
         if (n && !b->anon && b->st && b->st->container_type && n->style == b->st) {
             float w = b->w - b->b[1] - b->b[3] - b->p[1] - b->p[3], h = b->h - b->b[0] - b->b[2] - b->p[0] - b->p[2];
-            if (fabsf(w - n->cq_w) > 0.5f || (b->st->container_type == 2 && fabsf(h - n->cq_h) > 0.5f)) { n->cq_w = w; n->cq_h = h; doc_mark_style_dirty(d, n); }
+            if (fabsf(w - n->cq_w) > 0.5f || (b->st->container_type == 2 && fabsf(h - n->cq_h) > 0.5f)) { n->cq_w = w; n->cq_h = h; doc_mark_state_dirty(d, n, true); }
         }
         track_containers(d, b->first);
     }

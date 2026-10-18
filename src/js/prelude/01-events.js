@@ -1,6 +1,15 @@
 /* Lumen DOM/Web API layer on top of the native bridge N. Runs once per page context. */
 (function (N, G) {
 'use strict';
+{   /* href reflection, baseURI and new URL() re-parse the same (url, base) pairs; parsed parts are never mutated, so share them */
+    const parse = N.urlParse, memo = new Map();
+    N.urlParse = (u, b) => {
+        const k = b == null ? 'a' + u : b.length + ':' + b + u;
+        let r = memo.get(k);
+        if (r === undefined) { r = parse(u, b); if (memo.size >= 2048) memo.clear(); memo.set(k, r); }
+        return r;
+    };
+}
 const def = (o, k, v) => Object.defineProperty(o, k, { value: v, writable: true, configurable: true, enumerable: false });
 const acc = (proto, name, get, set) => Object.defineProperty(proto, name, { get, set, configurable: true, enumerable: true });
 const methods = (proto, obj) => { for (const k of Object.getOwnPropertyNames(obj)) { const d = Object.getOwnPropertyDescriptor(obj, k); d.enumerable = false; Object.defineProperty(proto, k, d); } };

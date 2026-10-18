@@ -103,8 +103,12 @@ class MediaStreamTrack extends EventTarget {
     }
     get enabled() { return this._.enabled; } set enabled(v) { this._.enabled = !!v; }
     get contentHint() { return this._.contentHint; } set contentHint(v) { this._.contentHint = String(v); }
-    stop() { this._.readyState = 'ended'; }
-    clone() { const t = new MediaStreamTrack(RTC_INTERNAL, this._.kind, this._.label); t._.enabled = this._.enabled; t._.muted = this._.muted; t._.readyState = this._.readyState; return t; }
+    stop() { if (this._.readyState === 'live' && this._.hub) this._.hub.release(); this._.readyState = 'ended'; }
+    clone() {
+        const t = new MediaStreamTrack(RTC_INTERNAL, this._.kind, this._.label); t._.enabled = this._.enabled; t._.muted = this._.muted; t._.readyState = this._.readyState;
+        if (this._.hub && this._.readyState === 'live') { t._.hub = this._.hub; this._.hub.refs++; }
+        return t;
+    }
     getSettings() { return this._.kind === 'audio' ? { deviceId: 'default', groupId: '', sampleRate: 48000, channelCount: 1 } : { deviceId: 'default', groupId: '', width: 640, height: 480, frameRate: 30 }; }
     getConstraints() { return {}; }
     getCapabilities() { return {}; }
@@ -113,6 +117,17 @@ class MediaStreamTrack extends EventTarget {
 }
 rtcRO(MediaStreamTrack, ['kind', 'id', 'label', 'muted', 'readyState']);
 rtcOn(MediaStreamTrack, ['mute', 'unmute', 'ended']);
+/* a microphone capture (N.mic*) shared by the tracks cloned from it; a 40 ms poll fans its mono 48 kHz PCM out to recorders and audio sources */
+class MicHub {
+    constructor(id) { this.id = id; this.refs = 1; this.subs = new Set(); this.timer = setInterval(() => this.poll(), 40); }
+    poll() {
+        if (this.refs <= 0) return;
+        const pcm = N.micRead(this.id);
+        if (pcm) for (const f of [...this.subs]) try { f(pcm); } catch (e) { setTimeout(() => { throw e; }); }
+    }
+    release() { if (--this.refs > 0) return; clearInterval(this.timer); N.micClose(this.id); this.subs.clear(); }
+}
+const micTrack = id => { const t = new MediaStreamTrack(RTC_INTERNAL, 'audio', 'Default'); t._.hub = new MicHub(id); return t; };
 class MediaStreamTrackEvent extends Event {
     constructor(t, i) { if (!i || !(i.track instanceof MediaStreamTrack)) throw new TypeError("Failed to construct 'MediaStreamTrackEvent': required member track is undefined."); super(t, i); def(this, '_', { track: i.track }); }
 }
@@ -133,6 +148,69 @@ class MediaStream extends EventTarget {
     removeTrack(t) { this._.tracks = this._.tracks.filter(x => x !== t); }
     clone() { return new MediaStream(this._.tracks.map(t => t.clone())); }
 }
+class BlobEvent extends Event {
+    constructor(t, i) {
+        if (!i || !(i.data instanceof Blob)) throw new TypeError("Failed to construct 'BlobEvent': required member data is undefined.");
+        super(t, i); def(this, '_', { data: i.data, timecode: i.timecode === undefined ? performance.now() : +i.timecode });
+    }
+}
+rtcRO(BlobEvent, ['data', 'timecode']);
+/* MediaRecorder over the native encoder (N.rec*): Opus in WebM/Ogg or AAC in MP4, audio tracks only */
+class MediaRecorder extends EventTarget {
+    constructor(stream, o) {
+        if (!(stream instanceof MediaStream)) throw new TypeError("Failed to construct 'MediaRecorder': parameter 1 is not of type 'MediaStream'.");
+        super();
+        const mime = o && o.mimeType ? String(o.mimeType) : '';
+        if (mime && !MediaRecorder.isTypeSupported(mime)) throw new DOMException(`Failed to construct 'MediaRecorder': Unsupported mimeType: ${mime}`, 'NotSupportedError');
+        def(this, '_', { stream, mimeType: mime, state: 'inactive', audioBitsPerSecond: o && o.audioBitsPerSecond ? +o.audioBitsPerSecond : o && o.bitsPerSecond ? +o.bitsPerSecond : 0,
+            videoBitsPerSecond: 0, audioBitrateMode: 'variable', id: -1, timer: 0, silent: 0, sub: null, track: null });
+    }
+    static isTypeSupported(t) { return !!N.recKind && String(t) !== '' && N.recKind(String(t)) > 0; }
+    start(slice) {
+        const _ = this._;
+        if (_.state !== 'inactive') throw new DOMException(`Failed to execute 'start' on 'MediaRecorder': The MediaRecorder's state is '${_.state}'.`, 'InvalidStateError');
+        const track = _.stream.getAudioTracks().find(t => t.readyState === 'live');
+        if (!track || !N.recOpen) throw new DOMException("Failed to execute 'start' on 'MediaRecorder': The MediaRecorder cannot start because there are no audio or video tracks available.", 'NotSupportedError');
+        const mime = _.mimeType || 'audio/webm;codecs=opus', id = N.recOpen(mime, _.audioBitsPerSecond);
+        if (id < 0) throw new DOMException(`Failed to execute 'start' on 'MediaRecorder': There was an error starting the MediaRecorder.`, 'NotSupportedError');
+        _.id = id; _.mimeType = /^audio\/webm$/i.test(mime) ? 'audio/webm;codecs=opus' : mime; _.state = 'recording'; _.track = track;
+        _.sub = pcm => { if (_.state === 'recording') N.recPush(id, track.enabled ? pcm : new Float32Array(pcm.length)); };
+        if (track._.hub) track._.hub.subs.add(_.sub);
+        else _.silent = setInterval(() => _.sub(new Float32Array(1920)), 40);   /* a track without a device records silence in real time */
+        const ms = slice === undefined ? 0 : Number(slice) || 0;
+        if (ms > 0) _.timer = setInterval(() => this._emit(false), Math.max(ms, 100));
+        rtcTask(() => rtcEv(this, 'start'));
+    }
+    _emit(always) {
+        const _ = this._, b = _.id >= 0 ? N.recTake(_.id) : null;
+        if (b || always) rtcFire(this, new BlobEvent('dataavailable', { data: new Blob(b ? [b] : [], { type: _.mimeType }) }));
+    }
+    stop() {
+        const _ = this._;
+        if (_.state === 'inactive') return;
+        const hub = _.track && _.track._.hub;
+        if (hub) { hub.poll(); hub.subs.delete(_.sub); }
+        clearInterval(_.timer); clearInterval(_.silent); _.timer = _.silent = 0; _.state = 'inactive';
+        N.recFinish(_.id); const b = N.recTake(_.id); N.recClose(_.id); _.id = -1;
+        rtcTask(() => { rtcFire(this, new BlobEvent('dataavailable', { data: new Blob(b ? [b] : [], { type: _.mimeType }) })); rtcEv(this, 'stop'); });
+    }
+    pause() {
+        const _ = this._;
+        if (_.state === 'inactive') throw new DOMException("Failed to execute 'pause' on 'MediaRecorder': The MediaRecorder's state is 'inactive'.", 'InvalidStateError');
+        if (_.state === 'recording') { _.state = 'paused'; rtcTask(() => rtcEv(this, 'pause')); }
+    }
+    resume() {
+        const _ = this._;
+        if (_.state === 'inactive') throw new DOMException("Failed to execute 'resume' on 'MediaRecorder': The MediaRecorder's state is 'inactive'.", 'InvalidStateError');
+        if (_.state === 'paused') { _.state = 'recording'; rtcTask(() => rtcEv(this, 'resume')); }
+    }
+    requestData() {
+        if (this._.state === 'inactive') throw new DOMException("Failed to execute 'requestData' on 'MediaRecorder': The MediaRecorder's state is 'inactive'.", 'InvalidStateError');
+        rtcTask(() => this._emit(true));
+    }
+}
+rtcRO(MediaRecorder, ['stream', 'mimeType', 'state', 'audioBitsPerSecond', 'videoBitsPerSecond', 'audioBitrateMode']);
+rtcOn(MediaRecorder, ['start', 'stop', 'dataavailable', 'pause', 'resume', 'error']);
 rtcRO(MediaStream, ['id']);
 rtcOn(MediaStream, ['addtrack', 'removetrack']);
 

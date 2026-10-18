@@ -65,7 +65,7 @@ class AudioNode extends EventTarget {
     _render(f) { return this._mix(f); }
 }
 const paramIn = (p, f) => {   /* audio-rate modulation summed into a param, averaged per quantum */
-    let v = p._at(f / RATE);
+    let v = p._at(f / p._c.sampleRate);
     if (p._in) for (const s of p._in) { const o = s._pull(f); if (o) { let t = 0; for (let i = 0; i < Q; i++) t += o[0][i]; v += t / Q; } }
     return v;
 };
@@ -94,9 +94,9 @@ class StereoPannerNode extends AudioNode {
     }
 }
 class DelayNode extends AudioNode {
-    constructor(ctx, o = {}) { super(ctx); this._max = o.maxDelayTime ?? 1; this.delayTime = new AudioParam(ctx, o.delayTime ?? 0, 0, this._max); this._b = [new Float32Array(Math.ceil(this._max * RATE) + Q + 1), null]; this._b[1] = new Float32Array(this._b[0].length); this._w = 0; }
+    constructor(ctx, o = {}) { super(ctx); this._max = o.maxDelayTime ?? 1; this.delayTime = new AudioParam(ctx, o.delayTime ?? 0, 0, this._max); this._b = [new Float32Array(Math.ceil(this._max * ctx.sampleRate) + Q + 1), null]; this._b[1] = new Float32Array(this._b[0].length); this._w = 0; }
     _render(f) {
-        const m = this._mix(f) || [silence, silence], n = this._b[0].length, d = Math.min(Math.round(paramIn(this.delayTime, f) * RATE), n - Q - 1);
+        const m = this._mix(f) || [silence, silence], n = this._b[0].length, d = Math.min(Math.round(paramIn(this.delayTime, f) * this.context.sampleRate), n - Q - 1);
         const l = new Float32Array(Q), r = new Float32Array(Q);
         for (let i = 0; i < Q; i++) {
             const w = (this._w + i) % n; this._b[0][w] = m[0][i]; this._b[1][w] = m[1][i];
@@ -118,8 +118,13 @@ class ConvolverNode extends AudioNode { constructor(ctx) { super(ctx); this.buff
 class AnalyserNode extends AudioNode {
     constructor(ctx, o = {}) { super(ctx); this.fftSize = o.fftSize || 2048; this.minDecibels = -100; this.maxDecibels = -30; this.smoothingTimeConstant = 0.8; this._last = new Float32Array(32768); }
     get frequencyBinCount() { return this.fftSize / 2; }
+    _feed(p) {   /* microphone PCM straight from a MediaStreamAudioSourceNode */
+        const L = this._last, n = Math.min(p.length, L.length);
+        L.copyWithin(0, n); L.set(n < p.length ? p.subarray(p.length - n) : p, L.length - n); this._fed = true;
+    }
     _render(f) {
         const m = this._mix(f), L = this._last;
+        if (this._fed) return m;
         L.copyWithin(0, Q);
         if (m) for (let i = 0; i < Q; i++) L[L.length - Q + i] = (m[0][i] + m[1][i]) / 2; else L.fill(0, L.length - Q);
         return m;
@@ -140,6 +145,77 @@ class AnalyserNode extends AudioNode {
     }
 }
 
+/* a microphone track feeds the analysers, script processors and stream destinations downstream of it directly
+   (level meters, dictation); it is not mixed into the output */
+const feedMic = (n, pcm, depth) => {
+    if (n._feed) n._feed(pcm);
+    if (depth > 8 || !n._out || n instanceof ScriptProcessorNode) return;
+    let p = pcm;
+    if (n instanceof GainNode && n.gain.value !== 1) { const g = n.gain.value; p = new Float32Array(pcm.length); for (let i = 0; i < p.length; i++) p[i] = pcm[i] * g; }
+    for (const o of n._out) if (o instanceof AudioNode) feedMic(o, p, depth + 1);
+};
+class MediaStreamAudioSourceNode extends AudioNode {
+    constructor(ctx, o = {}) {
+        super(ctx, 0, 1);
+        const s = o.mediaStream;
+        if (!(s instanceof MediaStream)) throw new TypeError("Failed to construct 'MediaStreamAudioSourceNode': required member mediaStream is undefined.");
+        const t = s.getAudioTracks()[0];
+        if (!t) throw new DOMException("Failed to construct 'MediaStreamAudioSourceNode': MediaStream has no audio track", 'InvalidStateError');
+        this.mediaStream = s;
+        this._sub = pcm => { for (const n of this._out) if (n instanceof AudioNode) feedMic(n, pcm, 0); };
+        if (t._.hub) t._.hub.subs.add(this._sub);
+    }
+    _render() { return null; }
+}
+class AudioProcessingEvent extends Event {
+    constructor(t, i = {}) { super(t, i); this.playbackTime = +i.playbackTime || 0; this.inputBuffer = i.inputBuffer || null; this.outputBuffer = i.outputBuffer || null; }
+}
+/* onaudioprocess per bufferSize frames: microphone input arrives through _feed as it is captured, other input from the rendered graph */
+class ScriptProcessorNode extends AudioNode {
+    constructor(ctx, size, ins, outs) {
+        size = +size || 1024; ins = ins === undefined ? 2 : ins | 0; outs = outs === undefined ? 2 : outs | 0;
+        if (![256, 512, 1024, 2048, 4096, 8192, 16384].includes(size)) throw new DOMException(`Failed to execute 'createScriptProcessor' on 'BaseAudioContext': buffer size (${size}) must be 0 or a power of two between 256 and 16384.`, 'IndexSizeError');
+        if (ins < 0 || outs < 0 || ins > 32 || outs > 32 || (!ins && !outs)) throw new DOMException("Failed to execute 'createScriptProcessor' on 'BaseAudioContext': number of input and output channels must be between 0 and 32, and not both zero.", 'IndexSizeError');
+        super(ctx); this.bufferSize = size; this.channelCount = ins || 1; this.channelCountMode = 'explicit';
+        this._nin = Math.max(ins, 1); this._nout = Math.max(outs, 1); this._acc = [new Float32Array(size), new Float32Array(size)]; this._n = 0; this._fed = false; this._ob = null; this._op = 0;
+    }
+    _feed(pcm) {
+        this._fed = true;
+        for (let i = 0; i < pcm.length;) {
+            const k = Math.min(pcm.length - i, this.bufferSize - this._n), part = pcm.subarray(i, i + k);
+            this._acc[0].set(part, this._n); this._acc[1].set(part, this._n); this._n += k; i += k;
+            if (this._n === this.bufferSize) this._fire();
+        }
+    }
+    _fire() {
+        const sr = this.context.sampleRate, n = this.bufferSize;
+        const ib = new AudioBuffer({ numberOfChannels: this._nin, length: n, sampleRate: sr }), ob = new AudioBuffer({ numberOfChannels: this._nout, length: n, sampleRate: sr });
+        for (let c = 0; c < this._nin; c++) ib._ch[c].set(this._acc[Math.min(c, 1)]);
+        this._n = 0; this._ob = ob; this._op = 0;
+        this.dispatchEvent(new AudioProcessingEvent('audioprocess', { playbackTime: this.context.currentTime, inputBuffer: ib, outputBuffer: ob }));
+    }
+    _render(f) {
+        if (!this._fed) {
+            const m = this._mix(f);
+            this._acc[0].set(m ? m[0] : silence, this._n); this._acc[1].set(m ? m[1] : silence, this._n); this._n += Q;
+            if (this._n >= this.bufferSize) this._fire();
+        }
+        const ob = this._ob;
+        if (!ob || this._op >= ob.length) return null;
+        const l = ob._ch[0].slice(this._op, this._op + Q), r = ob._ch[ob._ch.length > 1 ? 1 : 0].slice(this._op, this._op + Q);
+        this._op += Q;
+        return [l, r];
+    }
+}
+/* a MediaStream of the microphone audio reaching it, for MediaRecorder */
+class MediaStreamAudioDestinationNode extends AudioNode {
+    constructor(ctx) {
+        super(ctx, 1, 0);
+        const t = new MediaStreamTrack(RTC_INTERNAL, 'audio', 'MediaStreamAudioDestinationNode'), hub = { refs: 1, subs: new Set(), release() { if (--this.refs <= 0) this.subs.clear(); } };
+        t._.hub = hub; this._hub = hub; this.stream = new MediaStream([t]);
+    }
+    _feed(pcm) { for (const f of [...this._hub.subs]) f(pcm); }
+}
 class AudioScheduledSourceNode extends AudioNode {
     constructor(ctx) { super(ctx, 0, 1); this._start = -1; this._stop = Infinity; this._done = false; }
     start(when = 0) {
@@ -156,10 +232,10 @@ class AudioScheduledSourceNode extends AudioNode {
     }
     _render(f) {
         if (this._start < 0 || this._done) return null;
-        const t0 = f / RATE, t1 = (f + Q) / RATE;
+        const sr = this.context.sampleRate, t0 = f / sr, t1 = (f + Q) / sr;
         if (t1 <= this._start) return null;
         if (t0 >= this._stop) { this._end(); return null; }
-        const out = new Float32Array(Q), a = Math.max(0, Math.ceil((this._start - t0) * RATE)), b = Math.min(Q, Math.ceil((this._stop - t0) * RATE));
+        const out = new Float32Array(Q), a = Math.max(0, Math.ceil((this._start - t0) * sr)), b = Math.min(Q, Math.ceil((this._stop - t0) * sr));
         const r = this._gen(out, a, b, f);
         if (b < Q || r === false) this._end();
         return [out, out];
@@ -171,7 +247,7 @@ class OscillatorNode extends AudioScheduledSourceNode {
     set type(t) { if (['sine', 'square', 'sawtooth', 'triangle'].includes(t)) this._type = t; }
     setPeriodicWave(w) { this._wave = w; this._type = 'custom'; }
     _gen(out, a, b, f) {
-        const hz = paramIn(this.frequency, f) * Math.pow(2, paramIn(this.detune, f) / 1200), d = hz / RATE, t = this._type, w = this._wave;
+        const hz = paramIn(this.frequency, f) * Math.pow(2, paramIn(this.detune, f) / 1200), d = hz / this.context.sampleRate, t = this._type, w = this._wave;
         let ph = this._ph;
         for (let i = a; i < b; i++) {
             out[i] = t === 'sine' ? Math.sin(2 * Math.PI * ph) : t === 'square' ? (ph < 0.5 ? 1 : -1) : t === 'sawtooth' ? 2 * ph - 1 : t === 'triangle' ? 1 - 4 * Math.abs(ph - 0.5) : w ? w._at(ph) : 0;
@@ -198,18 +274,18 @@ class ConstantSourceNode extends AudioScheduledSourceNode {
 }
 class AudioBufferSourceNode extends AudioScheduledSourceNode {
     constructor(ctx, o = {}) { super(ctx); this.buffer = o.buffer || null; this.loop = !!o.loop; this.loopStart = o.loopStart || 0; this.loopEnd = o.loopEnd || 0; this.playbackRate = new AudioParam(ctx, o.playbackRate ?? 1); this.detune = new AudioParam(ctx, 0); this._pos = -1; this._left = Infinity; }
-    start(when = 0, offset = 0, dur) { super.start(when); this._off = Math.max(0, +offset || 0); if (dur !== undefined) this._left = Math.max(0, +dur) * RATE; }
+    start(when = 0, offset = 0, dur) { super.start(when); this._off = Math.max(0, +offset || 0); if (dur !== undefined) this._left = Math.max(0, +dur) * this.context.sampleRate; }
     _render(f) {
         const buf = this.buffer;
         if (!buf || this._start < 0 || this._done) return super._render(f);
-        const t0 = f / RATE;
-        if ((f + Q) / RATE <= this._start) return null;
+        const sr = this.context.sampleRate, t0 = f / sr;
+        if ((f + Q) / sr <= this._start) return null;
         if (t0 >= this._stop) { this._end(); return null; }
         if (this._pos < 0) this._pos = this._off * buf.sampleRate;
         const l = new Float32Array(Q), r = new Float32Array(Q), L = buf._ch[0], R = buf._ch[buf._ch.length > 1 ? 1 : 0], n = buf.length;
-        const step = paramIn(this.playbackRate, f) * Math.pow(2, paramIn(this.detune, f) / 1200) * buf.sampleRate / RATE;
+        const step = paramIn(this.playbackRate, f) * Math.pow(2, paramIn(this.detune, f) / 1200) * buf.sampleRate / sr;
         const ls = this.loopStart * buf.sampleRate, le = this.loopEnd > this.loopStart ? Math.min(n, this.loopEnd * buf.sampleRate) : n;
-        const a = Math.max(0, Math.ceil((this._start - t0) * RATE)), b = Math.min(Q, Math.ceil((this._stop - t0) * RATE));
+        const a = Math.max(0, Math.ceil((this._start - t0) * sr)), b = Math.min(Q, Math.ceil((this._stop - t0) * sr));
         let p = this._pos, ended = b < Q;
         for (let i = a; i < b; i++) {
             if (this.loop && p >= le) p = ls + (p - le) % Math.max(le - ls, 1);
@@ -260,7 +336,8 @@ class BaseAudioContext extends EventTarget {
     createPeriodicWave(real, imag, o = {}) { return new PeriodicWave(this, { real, imag, disableNormalization: o.disableNormalization }); }
     createBuffer(c, n, r) { return new AudioBuffer({ numberOfChannels: c, length: n, sampleRate: r }); }
     createMediaElementSource() { throw new DOMException('createMediaElementSource is not supported', 'NotSupportedError'); }
-    createMediaStreamSource() { throw new DOMException('createMediaStreamSource is not supported', 'NotSupportedError'); }
+    createMediaStreamSource(s) { return new MediaStreamAudioSourceNode(this, { mediaStream: s }); }
+    createScriptProcessor(size = 0, ins = 2, outs = 2) { return new ScriptProcessorNode(this, size, ins, outs); }
     decodeAudioData(data, ok, err) {
         return new Promise((res, rej) => setTimeout(() => {
             const pcm = data && N.audioDecode(data);
@@ -325,14 +402,13 @@ class AudioContext extends BaseAudioContext {
         return Promise.resolve();
     }
     getOutputTimestamp() { return { contextTime: this.currentTime, performanceTime: performance.now() }; }
-    createMediaStreamDestination() { throw new DOMException('createMediaStreamDestination is not supported', 'NotSupportedError'); }
+    createMediaStreamDestination() { return new MediaStreamAudioDestinationNode(this); }
 }
 
 class OfflineAudioContext extends BaseAudioContext {
     constructor(c, n, r) {
         const o = typeof c === 'object' ? c : { numberOfChannels: c, length: n, sampleRate: r };
         super(o.sampleRate || RATE); this.length = o.length; this._chn = o.numberOfChannels || 1; this._state = 'suspended';
-        if (this.sampleRate !== RATE) console.warn('OfflineAudioContext renders at 48000 Hz');
     }
     startRendering() {
         return new Promise(res => setTimeout(() => {
@@ -355,6 +431,7 @@ class OfflineAudioContext extends BaseAudioContext {
 Object.assign(globalThis, {
     AudioContext, webkitAudioContext: AudioContext, OfflineAudioContext, webkitOfflineAudioContext: OfflineAudioContext, BaseAudioContext,
     AudioNode, AudioParam, AudioBuffer, AudioDestinationNode, AudioScheduledSourceNode, GainNode, OscillatorNode, AudioBufferSourceNode,
-    ConstantSourceNode, StereoPannerNode, DelayNode, BiquadFilterNode, DynamicsCompressorNode, ConvolverNode, AnalyserNode, PeriodicWave,
+    ConstantSourceNode, StereoPannerNode, DelayNode, BiquadFilterNode, DynamicsCompressorNode, ConvolverNode, AnalyserNode, PeriodicWave, MediaStreamAudioSourceNode,
+    ScriptProcessorNode, AudioProcessingEvent, MediaStreamAudioDestinationNode,
 });
 })();

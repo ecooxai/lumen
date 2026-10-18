@@ -19,6 +19,9 @@
 #include "menu.h"
 #include "workspace.h"
 #include "local_viewer.h"
+#include "download_store.h"
+#include "android_ui.h"
+#include "../net/download.h"
 #include "media_icon.h"
 #include "paint_profile.h"
 #include "page_zoom.h"
@@ -51,10 +54,11 @@ static char g_notice[256];   /* dismissable error notice shown in the info bar *
 #define WSRH 40.f
 
 typedef struct { Node *n; char *src; size_t len; char *name; bool module; } PScript;
-typedef struct { Node *n; uint64_t h; } SheetRef;
+typedef struct { Node *n; uint64_t h; size_t len; } SheetRef;   /* len: <style> text length, 0 for links */
 typedef struct Page {
     char *url; Document *d; StyleEngine *e; Layout *L; uint64_t gen; double load_ms;
     JsCtx *js; PScript *scripts; int nscripts; uint64_t seen_ver, lay_ver, seen_sheet_ver, seen_paint_ver, seen_res; bool res_seen;
+    bool sheets_pending; /* a fetched stylesheet was added: next restyle recomputes everything once */
     SheetRef *sref; int nsref;
     HMap img_fired; bool img_check, internal_ui;
     /* <iframe> child browsing context (document owned by the JS layer) */
@@ -78,7 +82,7 @@ static SDL_Mutex *icache_mu;
 static HMap icache;
 static size_t g_icache_bytes; static int g_icache_n;
 static int g_img_epoch;
-static Uint32 EV_LOADED, EV_NET, EV_MENU;
+static Uint32 EV_LOADED, EV_NET, EV_MENU, EV_DL, EV_UI;
 static uint64_t load_gen;
 static bool g_lowmem;
 static int g_cpu_on = 1, g_cpu_pct = 80, g_cpu_secs = 60, g_cpu_lim = 40;
@@ -221,7 +225,7 @@ static bool img_size(Node *n, float *w, float *h) {
     }
     *w = image_css_w(im); *h = image_css_h(im); return true; }
 
-typedef struct { char *url; uint64_t gen; float vw, vh, dpr; char *body; size_t blen; char *ctype; char *html; } LoadReq;
+typedef struct { char *url; uint64_t gen; float vw, vh, dpr; char *body; size_t blen; char *ctype; char *html; char *ref; } LoadReq;
 
 /* Page-load phase timings in debug Android builds (numbers only, never URLs). */
 #if defined(__ANDROID__) && !defined(NDEBUG)
@@ -249,6 +253,17 @@ static void fetch_batch(char **urls, NetResponse **out, int n) {
     for (int i = 0; i < nt; i++) SDL_WaitThread(th[i], NULL);
 }
 
+/* a navigation's response turned out to be a file: the tab stops loading and stays on its page */
+static void nav_download_started(uint64_t id, void *ud) {
+    SDL_Event ev; SDL_zero(ev); ev.type = EV_DL; ev.user.code = 1; ev.user.data1 = ud; ev.user.data2 = (void *)(uintptr_t)id; SDL_PushEvent(&ev);
+}
+static SDL_AtomicInt g_dl_posted;
+static void dl_changed(uint64_t id, bool started) {   /* download threads: one pending wakeup at a time */
+    (void)id; (void)started;
+    if (!SDL_CompareAndSwapAtomicInt(&g_dl_posted, 0, 1)) return;
+    SDL_Event ev; SDL_zero(ev); ev.type = EV_DL; SDL_PushEvent(&ev);
+}
+static void loader_done(LoadReq *rq) { free(rq->url); free(rq->body); free(rq->ctype); free(rq->html); free(rq->ref); free(rq); }
 static int loader(void *arg) {
     LoadReq *rq = arg; double t0 = now_ms();
     NetRequest *nr = rq->html ? NULL : net_request_new(rq->body ? "POST" : "GET", rq->url);
@@ -256,7 +271,10 @@ static int loader(void *arg) {
         nr->body = rq->body; nr->body_len = rq->blen; rq->body = NULL;
         headers_set(&nr->headers, "Content-Type", rq->ctype && *rq->ctype ? rq->ctype : "application/x-www-form-urlencoded");
     }
+    DlProbe *probe = nr && !strncmp(rq->url, "http", 4) ? dl_probe(nr, rq->ref, nav_download_started, (void *)(uintptr_t)rq->gen) : NULL;
     NetResponse *r = rq->html ? NULL : net_fetch_sync(nr);
+    int kind = probe ? dl_probe_finish(probe, r) : 0;
+    if (kind == 1) { if (r) net_response_free(r); loader_done(rq); return 0; }   /* the download carries on by itself */
     double t_html = now_ms();
     Page *p = xcalloc(1, sizeof *p); p->gen = rq->gen; p->internal_ui = rq->html != NULL;
     const char *body = r && r->body ? r->body : "";
@@ -265,7 +283,7 @@ static int loader(void *arg) {
     if (rq->html) { body = rq->html; blen = strlen(body); }
     else if (!r || r->status == 0) { errbuf = xmalloc(512); snprintf(errbuf, 512, "<title>Error</title><body style='font:15px system-ui;padding:40px;color:#444'><h2>Can't open this page</h2><p>%s</p>", rq->url); body = errbuf; blen = strlen(errbuf); }
     if (r && r->status == 200 && !rq->html) {
-        char *viewer = local_viewer_html(r->url, headers_get(&r->headers, "content-type"));
+        char *viewer = local_viewer_html(r->url, headers_get(&r->headers, "content-type"), kind == 2);
         if (viewer) { free(r->body); r->body = viewer; r->body_len = strlen(viewer); body = viewer; blen = r->body_len; }
     }
     p->url = xstrdup(r && r->url ? r->url : rq->url);
@@ -346,7 +364,7 @@ static int loader(void *arg) {
     LOAD_TRACE("loader html_ms=%.0f html_bytes=%zu parse_ms=%.0f batch_ms=%.0f classic_css=%d modules=%d scripts_ms=%.0f css_ms=%.0f style_ms=%.0f",
         t_html - t0, blen, t_parse - t_html, t_batch - t_parse, nurl, nmod, t_scripts - t_batch, t_css - t_scripts, now_ms() - t_css);
     if (r) net_response_free(r);
-    free(errbuf); free(rq->url); free(rq->body); free(rq->ctype); free(rq->html); free(rq);
+    free(errbuf); loader_done(rq);
     SDL_Event ev; SDL_zero(ev); ev.type = EV_LOADED; ev.user.data1 = p; SDL_PushEvent(&ev);
     return 0;
 }
@@ -364,7 +382,7 @@ static void page_free(Page *p) {
     free(p->url); free(p);
 }
 
-typedef struct Tab { Page *cur; bool loading, relayout; char *hist[256]; uint64_t hgen[256]; int nhist, hpos; char url[2048]; float sy; uint64_t lgen; int ws;
+typedef struct Tab { Page *cur; bool loading, relayout, desktop;   /* desktop: the site is in "Desktop site" mode */ char *hist[256]; uint64_t hgen[256]; int nhist, hpos; char url[2048]; float sy; uint64_t lgen; int ws;
     int zoom_pct; /* zero inherits the default; browser pages always use 100%. */
     double cpu_ms, media_ms0, budget, bud_t, unlimit_until; float pct, lim, cpuhist[600]; int ncpu, cpui, cpumode, vctl, vap, lite; uint64_t vgen; bool limited, info, asleep; double bg_since; int crashes; } Tab;
 typedef struct App {
@@ -385,18 +403,28 @@ typedef struct App {
     Tab *t, *tabs[MAX_TABS]; int ntabs, ti;
     char wsname[16][64]; Tab *wslast[16]; int nws, wi; float side;
     int wsicon[16]; Image *icimg[16][2];
-    Image *sym[8][4]; bool vbars;
+    Image *sym[8][4]; bool vbars, vbar_any; uint64_t vbar_msv;
     int tip_tab; double tip_until;     /* CPU-limit dot tooltip pinned by a click */
-    bool editing; int sel_all, page_sel;
+    bool editing; int us[2]; float uscroll; bool umenu;   /* URL field: anchor/focus bytes of t->url, text scroll, Android Copy/Paste/Share menu */
     double caret_t;
     bool dirty;
     Font *ui;
     int hover; double frame_ms;
     bool vonly, deferred, vframe; double last_input, last_full; float last_sy; uint64_t last_ver; Page *last_page; bool gvid_ok; const void *vown; float vrect[4]; float srect[4]; bool sdirty;   /* srect: viewport rect of element scrollers to repaint */
+    const Box *sbox; float sbox_x0, sbox_y0;   /* the one scroller moved since the last frame (NULL: several) and its painted offsets */
 } App;
-static float tab_zoom(const Tab *tab) {
-    if (tab && tab->cur && tab->cur->internal_ui) return 1;
-    return (tab && tab->zoom_pct ? tab->zoom_pct : g_page_zoom_pct) / 100.f;
+static App *g_app;
+#define DESKTOP_W 980.f   /* "Desktop site" pages lay out this wide, scaled to fit */
+static float tab_zoom_for(const Tab *tab, bool internal) {
+    if (internal) return 1;
+    float z = (tab && tab->zoom_pct ? tab->zoom_pct : g_page_zoom_pct) / 100.f;
+    if (tab && tab->desktop && g_app) { float w = g_app->vw - g_app->side; if (w > 0 && w < DESKTOP_W) z *= w / DESKTOP_W; }
+    return z;
+}
+static float tab_zoom(const Tab *tab) { return tab_zoom_for(tab, tab && tab->cur && tab->cur->internal_ui); }
+static bool url_desktop(const char *url) {
+    URL u; if (!url || strncmp(url, "http", 4) || !url_parse(url, &u)) return false;
+    bool on = net_desktop_host(u.host); url_free(&u); return on;
 }
 static float page_width(const App *a) { return (a->vw - a->side) / tab_zoom(a->t); }
 static float page_height(const App *a) { return (a->vh - BAR) / tab_zoom(a->t); }
@@ -404,6 +432,10 @@ static float page_scale(const App *a) { return a->scale * tab_zoom(a->t); }
 static float page_x(const App *a, float x) { return (x - a->side) / tab_zoom(a->t); }
 static float page_y(const App *a, float y) { return (y - BAR) / tab_zoom(a->t); }
 static void page_input_reset(void);
+#ifdef __ANDROID__
+static bool tsel_ui(App *a);
+static void tsel_overlay(App *a, DisplayList *dl);
+#endif
 static void page_zoom_changed(App *a) {
     page_input_reset();
     for (int i = 0; i < a->ntabs; i++) a->tabs[i]->relayout = true;
@@ -525,6 +557,79 @@ static void update_resolution_readout(App *app) {
     }
 }
 #endif
+/* ---------- downloads page ---------- */
+static void dl_size_text(int64_t n, char *out, size_t cap) {
+    if (n < 1024) snprintf(out, cap, "%lld B", (long long)n);
+    else if (n < 1024 * 1024) snprintf(out, cap, "%.0f KB", n / 1024.0);
+    else if (n < 1024LL * 1024 * 1024) snprintf(out, cap, "%.1f MB", n / 1048576.0);
+    else snprintf(out, cap, "%.2f GB", n / 1073741824.0);
+}
+static void dl_status_text(const DlInfo *d, char *out, size_t cap) {
+    char done[24], total[24], rate[24];
+    dl_size_text(d->done, done, sizeof done); dl_size_text(d->total, total, sizeof total); dl_size_text((int64_t)d->bps, rate, sizeof rate);
+    switch (d->state) {
+    case DL_RUNNING:
+        if (!d->conns && !d->done) { snprintf(out, cap, "Starting\xE2\x80\xA6"); break; }
+        if (d->total >= 0) snprintf(out, cap, "%s of %s \xC2\xB7 %s/s \xC2\xB7 %d connection%s", done, total, rate, d->conns, d->conns == 1 ? "" : "s");
+        else snprintf(out, cap, "%s \xC2\xB7 %s/s", done, rate);
+        break;
+    case DL_PAUSED: if (d->total >= 0) snprintf(out, cap, "Paused \xC2\xB7 %s of %s", done, total); else snprintf(out, cap, "Paused \xC2\xB7 %s", done); break;
+    case DL_DONE: snprintf(out, cap, "%s \xC2\xB7 Done", d->total >= 0 ? total : done); break;
+    case DL_FAILED: snprintf(out, cap, "Failed: %s", *d->error ? d->error : "network error"); break;
+    default: snprintf(out, cap, "Cancelled"); break;
+    }
+}
+static int dl_percent(const DlInfo *d) { return d->state == DL_DONE ? 100 : d->total > 0 ? (int)(d->done * 100 / d->total) : 0; }
+static uint64_t g_dl_page_sver;   /* the download list the open Downloads page shows */
+static void downloads_section(SB *b) {
+    DlInfo v[100]; int n = dl_list(v, 100);
+    g_dl_page_sver = dl_state_version();
+    sb_puts(b, "<h2>Downloads</h2><p class=sub style=\"margin:-8px 0 14px\">"
+#ifdef __ANDROID__
+        "Files are saved to the Download folder. "
+#else
+        "Files are saved to your Downloads folder. "
+#endif
+        "Large files use several connections when the server allows it; paused downloads continue where they stopped.</p><div class=card>");
+    if (!n) sb_puts(b, "<div class=empty>No downloads yet.</div>");
+    bool finished = false;
+    for (int i = 0; i < n; i++) {
+        DlInfo *d = &v[i]; char st[160]; dl_status_text(d, st, sizeof st);
+        finished |= d->state != DL_RUNNING && d->state != DL_PAUSED;
+        sb_printf(b, "<div class=row><div class=grow><div class=t>"); sb_esc(b, d->name);
+        sb_printf(b, "</div><div class=u id=dl-%llu-s>", (unsigned long long)d->id); sb_esc(b, st); sb_puts(b, "</div>");
+        if (d->state == DL_RUNNING || d->state == DL_PAUSED)
+            sb_printf(b, "<div class=dlbar><i id=dl-%llu-b style=\"width:%d%%\"></i></div>", (unsigned long long)d->id, dl_percent(d));
+        sb_puts(b, "</div>");
+        unsigned long long id = (unsigned long long)d->id;
+        if (d->state == DL_RUNNING) sb_printf(b, "<a class=btn href=\"lumen://set?s=downloads&dl_pause=%llu\">Pause</a>", id);
+        if (d->state == DL_PAUSED) sb_printf(b, "<a class=btn href=\"lumen://set?s=downloads&dl_resume=%llu\">Resume</a>", id);
+        if (d->state == DL_FAILED && d->resumable) sb_printf(b, "<a class=btn href=\"lumen://set?s=downloads&dl_resume=%llu\">Retry</a>", id);
+        if (d->state == DL_DONE) sb_printf(b, "<a class=btn href=\"lumen://set?s=downloads&dl_open=%llu\">Open</a>", id);
+        if (d->state == DL_RUNNING || d->state == DL_PAUSED) sb_printf(b, "<a class=x title=Cancel href=\"lumen://set?s=downloads&dl_cancel=%llu\">\xC3\x97</a>", id);
+        else sb_printf(b, "<a class=x title=\"Remove from list\" href=\"lumen://set?s=downloads&dl_forget=%llu\">\xC3\x97</a>", id);
+        sb_puts(b, "</div>");
+    }
+    sb_puts(b, "</div>");
+    if (finished) sb_puts(b, "<p><a class=btn href=\"lumen://set?s=downloads&dl_clear=1\">Clear finished</a></p><p class=sub>Removing a download from the list keeps the file.</p>");
+}
+/* the Downloads page follows progress in place and re-renders when the list or a state changes */
+static void navigate(App *a, const char *url, bool push);
+static void downloads_page_update(App *a) {
+    Page *page = a->t->cur;
+    if (!page || !page->internal_ui || !page->d || !strstr(page->url, "s=downloads")) return;
+    if (dl_state_version() != g_dl_page_sver) { navigate(a, "lumen://newtab?s=downloads", false); return; }
+    DlInfo v[100]; int n = dl_list(v, 100);
+    for (int i = 0; i < n; i++) {
+        if (v[i].state != DL_RUNNING) continue;
+        char id[48], st[160], w[32]; Node *e;
+        snprintf(id, sizeof id, "dl-%llu-s", (unsigned long long)v[i].id); dl_status_text(&v[i], st, sizeof st);
+        if ((e = doc_get_element_by_id(page->d, id))) { char *cur = node_text_content(e); if (strcmp(cur, st)) { node_set_text_content(e, st); a->t->relayout = true; } free(cur); }
+        snprintf(id, sizeof id, "dl-%llu-b", (unsigned long long)v[i].id); snprintf(w, sizeof w, "width:%d%%", dl_percent(&v[i]));
+        if ((e = doc_get_element_by_id(page->d, id)) && strcmp(node_attr(e, "style") ? node_attr(e, "style") : "", w)) { node_set_attr(e, "style", w); a->t->relayout = true; }
+    }
+    a->dirty = true; a->vonly = false;
+}
 static char *internal_page(App *app, const char *u) {
 #ifdef __ANDROID__
     const char *default_section = "workspaces";
@@ -533,7 +638,7 @@ static char *internal_page(App *app, const char *u) {
 #endif
     const char *q = strchr(u, '?'); char sec[16]; snprintf(sec, sizeof sec, "%s", default_section);
     if (q) qparam(q + 1, "s", sec, sizeof sec);
-    if (strcmp(sec, "history") && strcmp(sec, "settings") && strcmp(sec, "bookmarks") && strcmp(sec, "workspaces")) snprintf(sec, sizeof sec, "%s", default_section);
+    if (strcmp(sec, "history") && strcmp(sec, "settings") && strcmp(sec, "bookmarks") && strcmp(sec, "workspaces") && strcmp(sec, "downloads")) snprintf(sec, sizeof sec, "%s", default_section);
     SB b; sb_init(&b);
     sb_puts(&b, "<!doctype html><html><head><meta charset=utf-8><title>New Tab</title><style>"
         "body{margin:0;font:14px -apple-system,system-ui,sans-serif;color:#202124;background:#f6f7f9;display:flex;min-height:100vh}"
@@ -557,6 +662,8 @@ static char *internal_page(App *app, const char *u) {
         ".sub{color:#5f6368;font-size:13px;margin-top:3px;line-height:1.4}"
         "input{width:48px;padding:4px 6px;border:1px solid #dadce0;border-radius:6px;font:14px -apple-system,system-ui,sans-serif;margin:0 4px}"
         ".empty{color:#5f6368;padding:18px 0}"
+        ".dlbar{height:4px;background:#e8eaed;border-radius:2px;margin-top:8px;overflow:hidden}.dlbar i{display:block;height:4px;background:#1a73e8}"
+        ".row .btn{margin-left:6px}"
         ".workspaces{margin:0 -4px 20px}"
         "a.workspace{display:inline-block;vertical-align:top;width:72px;height:72px;box-sizing:border-box;margin:4px;padding:10px 8px;background:#fff;border:1px solid #dadce0;border-radius:14px;color:#5f6368;text-align:center;text-decoration:none}"
         "a.workspace.active{background:#e8f0fe;border-color:#1a73e8;color:#1967d2}"
@@ -585,8 +692,8 @@ static char *internal_page(App *app, const char *u) {
 #ifdef __ANDROID__
     sb_printf(&b, "<a href=\"lumen://newtab\" title=Workspaces%s>Home</a>", strcmp(sec, "workspaces") ? "" : " class=on");
 #endif
-    static const char *S[3][2] = { { "bookmarks", "Bookmarks" }, { "history", "History" }, { "settings", "Settings" } };
-    for (int i = 0; i < 3; i++) sb_printf(&b, "<a href=\"lumen://newtab?s=%s\"%s>%s</a>", S[i][0], strcmp(sec, S[i][0]) ? "" : " class=on", S[i][1]);
+    static const char *S[4][2] = { { "bookmarks", "Bookmarks" }, { "history", "History" }, { "downloads", "Downloads" }, { "settings", "Settings" } };
+    for (int i = 0; i < 4; i++) sb_printf(&b, "<a href=\"lumen://newtab?s=%s\"%s>%s</a>", S[i][0], strcmp(sec, S[i][0]) ? "" : " class=on", S[i][1]);
     sb_puts(&b, "</nav><main>");
     if (!strcmp(sec, "workspaces")) {
         sb_puts(&b, "<h2>Workspaces</h2><div class=workspaces>");
@@ -607,6 +714,8 @@ static char *internal_page(App *app, const char *u) {
         }
         sb_puts(&b, "</div><p class=sub>Use + in the toolbar to open a tab. Tap a workspace icon to switch.</p>");
         if (app->nws > 1) sb_puts(&b, "<p><a class=btn href=\"lumen://workspace?close\">Close this workspace</a></p>");
+    } else if (!strcmp(sec, "downloads")) {
+        downloads_section(&b);
     } else if (!strcmp(sec, "settings")) {
         sb_puts(&b, "<h2>Settings</h2>");
         sb_puts(&b, "<div class=card><div class=t>Default page zoom</div><p class=sub>Make website text and images larger or smaller. Browser controls keep their usual size.</p><p>");
@@ -655,10 +764,20 @@ static char *internal_page(App *app, const char *u) {
         sb_printf(&b, "<h2>%s</h2>", bm ? "Bookmarks" : "History");
         if (!bm && n) sb_puts(&b, "<p><a class=btn href=\"lumen://set?s=history&clearhist=1\">Clear history</a></p>");
         sb_puts(&b, "<div class=card>");
-        if (!n) sb_printf(&b, "<div class=empty>%s</div>", bm ? "No bookmarks yet. Click the star next to the address bar to bookmark a page." : "No pages visited yet.");
+#ifdef __ANDROID__
+        const char *bm_empty = "No bookmarks yet. Open the \xE2\x8B\xAE menu next to the address bar, then Bookmarks, to add the current page.";
+#else
+        const char *bm_empty = "No bookmarks yet. Click the star next to the address bar to bookmark a page.";
+#endif
+        if (!n) sb_printf(&b, "<div class=empty>%s</div>", bm ? bm_empty : "No pages visited yet.");
+        if (bm && n) sb_puts(&b, "<p class=sub style=\"margin:8px 0\">JavaScript bookmarks run on the page you are viewing: open them from the \xE2\x8B\xAE menu.</p>");
         for (int i = n - 1, k = 0; i >= 0 && k < 300; i--, k++) {
+            bool script = !strncasecmp(v[i].url, "javascript:", 11);
+            if (script) { sb_puts(&b, "<div class=row><div class=grow><div class=t>"); sb_esc(&b, v[i].title); sb_puts(&b, "</div><div class=u>"); sb_esc(&b, v[i].url); sb_puts(&b, "</div></div>"); }
+            else {
             sb_puts(&b, "<div class=row><a class=\"l grow\" href=\""); sb_esc(&b, v[i].url); sb_puts(&b, "\"><div class=t>"); sb_esc(&b, v[i].title);
             sb_puts(&b, "</div><div class=u>"); sb_esc(&b, v[i].url); sb_puts(&b, "</div></a>");
+            }
             if (bm) sb_printf(&b, "<a class=x title=Remove href=\"lumen://set?s=bookmarks&unbm=%d\">\xC3\x97</a>", i);
             sb_puts(&b, "</div>");
         }
@@ -732,11 +851,19 @@ static void apply_set(App *a, const char *q) {
     if (qparam(q, "cpu_lim", v, sizeof v)) g_cpu_lim = LCLAMP(atoi(v), 5, 95);
     for (int i = 0; i < a->ntabs; i++) { Tab *t = a->tabs[i]; t->ncpu = t->cpui = 0; if (!g_cpu_on && !t->cpumode && t->limited) tab_unlimit(t); }
     if (qparam(q, "unbm", v, sizeof v)) { int i = atoi(v); if (i >= 0 && i < g_nbm) { link_del(g_bms, &g_nbm, i); links_save("bookmarks.txt", g_bms, g_nbm); } }
+    if (qparam(q, "dl_pause", v, sizeof v)) dl_pause(strtoull(v, NULL, 10));
+    if (qparam(q, "dl_resume", v, sizeof v)) dl_resume(strtoull(v, NULL, 10));
+    if (qparam(q, "dl_cancel", v, sizeof v)) dl_cancel(strtoull(v, NULL, 10));
+    if (qparam(q, "dl_open", v, sizeof v)) dl_open(strtoull(v, NULL, 10));
+    if (qparam(q, "dl_forget", v, sizeof v)) dl_forget(strtoull(v, NULL, 10));
+    if (qparam(q, "dl_clear", v, sizeof v)) { DlInfo d[100]; int n = dl_list(d, 100); for (int i = 0; i < n; i++) if (d[i].state != DL_RUNNING && d[i].state != DL_PAUSED) dl_forget(d[i].id); }
     if (qparam(q, "clearhist", v, sizeof v)) { while (g_nhv) link_del(g_hv, &g_nhv, g_nhv - 1); links_save("history.txt", g_hv, 0); }
     settings_save();
 }
 
+static bool is_js_url(const char *u);
 static void navigate_ex(App *a, const char *url, bool push, const char *body, size_t blen, const char *ctype) {
+    if (is_js_url(url)) return;   /* page scripts run their own; the address bar and bookmarks use run_js_url */
     char *u = normalize_url(url), *html = NULL;
     if (!strncmp(u, "lumen://", 8)) {
         if (!strncmp(u, "lumen://set?", 12)) {   /* only Lumen's own pages may change settings */
@@ -755,8 +882,9 @@ static void navigate_ex(App *a, const char *url, bool push, const char *body, si
     }
     snprintf(a->t->url, sizeof a->t->url, "%s", u);
     a->editing = false; a->t->loading = true; a->dirty = true;
-    LoadReq *rq = xcalloc(1, sizeof *rq); rq->url = u; rq->html = html; rq->gen = ++load_gen; float zoom = html ? 1 : (a->t->zoom_pct ? a->t->zoom_pct : g_page_zoom_pct) / 100.f; rq->vw = (a->vw - a->side) / zoom; rq->vh = (a->vh - BAR) / zoom; rq->dpr = a->scale * zoom; a->t->lgen = rq->gen; publish_gens(a);
+    LoadReq *rq = xcalloc(1, sizeof *rq); rq->url = u; rq->html = html; rq->gen = ++load_gen; a->t->desktop = !html && url_desktop(u); float zoom = tab_zoom_for(a->t, html != NULL); rq->vw = (a->vw - a->side) / zoom; rq->vh = (a->vh - BAR) / zoom; rq->dpr = a->scale * zoom; a->t->lgen = rq->gen; publish_gens(a);
     if (push) a->t->hgen[a->t->hpos] = rq->gen;
+    if (!html && a->t->cur && !a->t->cur->internal_ui && !strncmp(a->t->cur->url, "http", 4)) rq->ref = xstrdup(a->t->cur->url);
     if (body) { rq->body = xmalloc(blen + 1); memcpy(rq->body, body, blen); rq->body[blen] = 0; rq->blen = blen; rq->ctype = xstrdup(ctype ? ctype : ""); }
     if (!html) { net_trace_load(120); g_load_trace_until = now_ms() + 120000; }
     SDL_Thread *t = SDL_CreateThread(loader, "loader", rq); SDL_DetachThread(t);
@@ -782,8 +910,33 @@ static float push_text(DisplayList *dl, Font *f, const char *s, float x, float b
     vec_push(dl->items, it); shaped_free(&sr);
     return w;
 }
+/* the glyphs of s that fall in [skip, skip + w) of its run, drawn from x */
+static void push_text_window(DisplayList *dl, Font *f, const char *s, float x, float base, float skip, float w, Color c) {
+    ShapedRun sr; memset(&sr, 0, sizeof sr); text_shape(f, s, strlen(s), 0, &sr);
+    DItem it; memset(&it, 0, sizeof it); it.op = DO_TEXT; it.color = c;
+    it.g = arena_alloc(&dl->arena, sizeof(DGlyph) * (size_t)(sr.n + 1));
+    float x1 = 0;
+    for (int i = 0; i < sr.n; i++) {
+        float gx = sr.g[i].x - skip;
+        if (gx < -0.5f) continue;
+        if (gx + sr.g[i].adv > w) break;
+        DGlyph *g = &it.g[it.ng++]; g->gid = sr.g[i].gid; g->font = sr.g[i].font; g->x = x + gx; g->y = base + sr.g[i].y;
+        x1 = gx + sr.g[i].adv;
+    }
+    it.x = x; it.y = base - f->ascent; it.w = x1; it.h = f->ascent + f->descent;
+    vec_push(dl->items, it); shaped_free(&sr);
+}
+/* the byte offset of s nearest x px into its run */
+static int text_hit_x(Font *f, const char *s, float x) {
+    ShapedRun sr; memset(&sr, 0, sizeof sr); text_shape(f, s, strlen(s), 0, &sr);
+    int off = (int)strlen(s);
+    for (int i = 0; i < sr.n; i++) if (x < sr.g[i].x + sr.g[i].adv / 2) { off = (int)sr.g[i].cluster; break; }
+    shaped_free(&sr);
+    return off;
+}
+static void url_sel_clamp(App *a) { int n = (int)strlen(a->t->url); for (int k = 0; k < 2; k++) a->us[k] = LCLAMP(a->us[k], 0, n); }
 
-enum { HB_NONE, HB_BACK, HB_FWD, HB_RELOAD, HB_URL, HB_NEWTAB, HB_WSNEW, HB_STAR, HB_HUD, HB_TAB = 100, HB_TABX = 200, HB_WS = 300, HB_INFO = 400, HB_TABDOT = 500 };
+enum { HB_NONE, HB_BACK, HB_FWD, HB_RELOAD, HB_URL, HB_NEWTAB, HB_WSNEW, HB_STAR, HB_HUD, HB_MENU, HB_TAB = 100, HB_TABX = 200, HB_WS = 300, HB_INFO = 400, HB_TABDOT = 500 };
 static void info_btn(App *a, int k, float *x, float *w) {
     static const float W[4] = { 70, 76, 82, 28 }; float r = a->vw - 12;
     for (int i = 3; i >= k; i--) r -= W[i] + (i < 3 ? 6 : 0);
@@ -830,16 +983,38 @@ static Image *ws_icon(App *a, int ic, bool on) {
 static int ws_tabs(App *a, int w, int *out) { int n = 0; for (int i = 0; i < a->ntabs; i++) if (a->tabs[i]->ws == w) out[n++] = i; return n; }
 static float tab_w(App *a) { int v[MAX_TABS], n = ws_tabs(a, a->wi, v); float w = (a->vw - TLW - 48) / (n ? n : 1); return w > 220 ? 220 : w; }
 static float bar_x0(App *a) { return g_compact ? TLW : a->side; }
+/* Android toolbar: back | URL | reload | menu; elsewhere back, forward, reload and star sit left of the URL */
+static float url_x(App *a) {
+    (void)a;
+#ifdef __ANDROID__
+    return 46;
+#else
+    return 144;
+#endif
+}
 static float url_w(App *a) {
 #ifdef __ANDROID__
-    return a->vw - bar_x0(a) - 144 - (g_compact ? 48 : 12);
+    return a->vw - bar_x0(a) - url_x(a) - 90;
 #else
     return a->vw - bar_x0(a) - 144 - (g_compact ? 92 : 12);
 #endif
 }
+#ifdef __ANDROID__
+static int android_bar_hit(App *a, float x) {   /* x from the toolbar's left edge */
+    float w = a->vw - bar_x0(a);
+    if (x < 0) return HB_NONE;
+    if (x < 44) return HB_BACK;
+    if (x >= w - 44) return HB_MENU;
+    if (x >= w - 88) return HB_RELOAD;
+    return x >= url_x(a) ? HB_URL : HB_NONE;
+}
+#endif
 static int bar_hit(App *a, float x, float y) {
     if (g_compact && y < TB) {
         x -= TLW;
+#ifdef __ANDROID__
+        return android_bar_hit(a, x);
+#endif
         if (x < 0) return HB_NONE;
         if (x < 40) return HB_BACK; if (x < 72) return HB_FWD; if (x < 104) return HB_RELOAD; if (x < 136) return HB_STAR;
         float ue = 144 + url_w(a);
@@ -866,6 +1041,9 @@ static int bar_hit(App *a, float x, float y) {
     if (y > BAR) return HB_NONE;
     if (y >= TABH + TB) { for (int k = 0; k < 4; k++) { float bx, bw; info_btn(a, k, &bx, &bw); if (x >= bx && x < bx + bw) return HB_INFO + k; } return HB_NONE; }
     x -= a->side;
+#ifdef __ANDROID__
+    return android_bar_hit(a, x);
+#endif
     if (x < 40) return HB_BACK; if (x < 72) return HB_FWD; if (x < 104) return HB_RELOAD; if (x < 136) return HB_STAR;
     return HB_URL;
 }
@@ -915,11 +1093,46 @@ static void chrome_tip(App *a) {   /* tooltip for a tab's CPU-limit dot (hover o
     push_rect(&a->cdl, x, y, w, 26, 6, RGBA(45, 45, 48, 240));
     push_text(&a->cdl, a->ui, msg, x + 10, y + 13 + (a->ui->ascent - a->ui->descent) / 2, w, RGBA(255, 255, 255, 255));
 }
+#ifdef __ANDROID__
+/* the URL field's touch menu, under the field: Copy | Paste | Share [| Select all] */
+enum { UM_COPY, UM_PASTE, UM_SHARE, UM_ALL };
+static float g_umenu[4], g_umenu_end[4]; static int g_umenu_n, g_umenu_act[4];
+static void url_menu_build(App *a, DisplayList *dl) {
+    g_umenu_n = 0;
+    if (!a->editing || !a->umenu) return;
+    static const char *label[4] = { "Copy", "Paste", "Share", "Select all" };
+    url_sel_clamp(a);
+    bool all = LMIN(a->us[0], a->us[1]) == 0 && LMAX(a->us[0], a->us[1]) == (int)strlen(a->t->url);
+    int n = 0; g_umenu_act[n++] = UM_COPY; g_umenu_act[n++] = UM_PASTE; g_umenu_act[n++] = UM_SHARE;
+    if (!all) g_umenu_act[n++] = UM_ALL;
+    Font *f = a->ui; float pad = 16, h = 40, w = 0, bw[4];
+    for (int i = 0; i < n; i++) { bw[i] = text_width(f, label[g_umenu_act[i]], strlen(label[g_umenu_act[i]]), 0) + 2 * pad; w += bw[i]; }
+    float x = LCLAMP(url_x(a), 4, LMAX(4, a->vw - 4 - w)), y = TABH + TB + 4, base = y + h / 2 + (f->ascent - f->descent) / 2;
+    push_rect(dl, x - 1, y, w + 2, h + 2, 9, RGBA(0, 0, 0, 38));
+    push_rect(dl, x, y, w, h, 8, RGBA(255, 255, 255, 255));
+    for (int i = 0, bx = 0; i < n; bx += (int)bw[i], i++) {
+        if (i) push_rect(dl, x + bx, y + 10, 1, h - 20, 0, RGBA(218, 220, 224, 255));
+        push_text(dl, f, label[g_umenu_act[i]], x + bx + pad, base, bw[i], RGBA(32, 33, 36, 255));
+        g_umenu_end[i] = x + bx + bw[i];
+    }
+    g_umenu[0] = x; g_umenu[1] = y; g_umenu[2] = x + w; g_umenu[3] = y + h; g_umenu_n = n;
+    g_pop[0] = x - 1; g_pop[1] = y; g_pop[2] = x + w + 1; g_pop[3] = y + h + 2;
+}
+static int url_menu_hit(float x, float y) {
+    if (!g_umenu_n || x < g_umenu[0] || x >= g_umenu[2] || y < g_umenu[1] || y >= g_umenu[3]) return -1;
+    for (int i = 0; i < g_umenu_n; i++) if (x < g_umenu_end[i]) return i;
+    return g_umenu_n - 1;
+}
+#endif
 static void build_hud_pop(App *a) {
     DisplayList *dl = &a->hdl; dl_clear(dl);
+#ifdef __ANDROID__
+    url_menu_build(a, dl);
+#endif
     if (!g_hud || !g_hud_pop || a->side <= 0) return;
     float w = 150, h = 62, x = 8, y = a->vh - HUDH - h - 2, rb = (a->ui->ascent - a->ui->descent) / 2;
-    g_pop[0] = x; g_pop[1] = y; g_pop[2] = x + w; g_pop[3] = y + h;
+    if (dl->items.n) { g_pop[0] = LMIN(g_pop[0], x); g_pop[1] = LMIN(g_pop[1], y); g_pop[2] = LMAX(g_pop[2], x + w); g_pop[3] = LMAX(g_pop[3], y + h); }
+    else { g_pop[0] = x; g_pop[1] = y; g_pop[2] = x + w; g_pop[3] = y + h; }
     push_rect(dl, x, y, w, h, 0, RGBA(208, 212, 218, 255));
     push_rect(dl, x + 1, y + 1, w - 2, h - 2, 0, RGBA(255, 255, 255, 255));
     static const char *lb[2] = { "Host CPU", "Host RAM" };
@@ -1035,6 +1248,16 @@ static void build_chrome(App *a) {
     push_rect(dl, 0, 0, tbw, TB, 0, RGBA(250, 250, 250, 255));
     push_rect(dl, 0, TB - 1, tbw, 1, 0, RGBA(226, 226, 226, 255));
     Color on = RGBA(60, 60, 60, 255), off = RGBA(190, 190, 190, 255);
+#ifdef __ANDROID__
+    {
+        float bx[3] = { 22.f, tbw - 66.f, tbw - 22.f }; int bk[3] = { HB_BACK, HB_RELOAD, HB_MENU };
+        for (int i = 0; i < 3; i++) {
+            if (a->hover == bk[i]) push_rect(dl, bx[i] - 15, TB / 2 - 15, 30, 30, 15, RGBA(232, 232, 232, 255));
+            if (bk[i] == HB_MENU) for (int d = -1; d <= 1; d++) push_rect(dl, bx[i] - 2, TB / 2 + d * 6 - 2, 4, 4, 2, on);
+            else draw_icon(dl, bk[i], bx[i], TB / 2, bk[i] != HB_BACK || a->t->hpos > 0 ? on : off);
+        }
+    }
+#else
     int hk[3] = { HB_BACK, HB_FWD, HB_RELOAD };
     for (int i = 0; i < 3; i++) {
         float cx = 22.f + i * 32.f;
@@ -1048,7 +1271,8 @@ static void build_chrome(App *a) {
         Image *si = sym_icon(a, bmd ? 4 : 3, bmd ? 2 : 0);
         if (si) push_img(dl, si, cx - 8, TB / 2 - 8, 16, 16); else push_text(dl, a->ui, bmd ? "\xE2\x98\x85" : "\xE2\x98\x86", cx - 7, TB / 2 + (a->ui->ascent - a->ui->descent) / 2, 16, on);
     }
-    float ux = 144, uw = url_w(a);
+#endif
+    float ux = url_x(a), uw = url_w(a);
     push_rect(dl, ux, 7, uw, TB - 14, (TB - 14) / 2, a->editing ? RGBA(255, 255, 255, 255) : RGBA(238, 238, 238, 255));
     if (a->editing) {
         DItem it; memset(&it, 0, sizeof it); it.op = DO_BORDER; it.x = ux; it.y = 7; it.w = uw; it.h = TB - 14;
@@ -1057,24 +1281,29 @@ static void build_chrome(App *a) {
     }
     const char *shown = a->t->url;
     if (!a->editing) { const char *p = strstr(shown, "://"); if (p) shown = p + 3; }
-    float base = TB / 2 + (a->ui->ascent - a->ui->descent) / 2;
-    if (a->editing && a->sel_all && *shown) {
-        float w = text_width(a->ui, shown, strlen(shown), 0);
-        push_rect(dl, ux + 16, 12, LMIN(w, uw - 32), TB - 24, 2, RGBA(200, 220, 255, 255));
-    }
-    float tw = push_text(dl, a->ui, shown, ux + 16, base, uw - 32, a->editing ? RGBA(20, 20, 20, 255) : RGBA(90, 90, 90, 255));
-    if (a->editing && !a->sel_all) push_rect(dl, ux + 16 + tw + 1, 13, 1.5f, TB - 26, 0, RGBA(20, 20, 20, 255));
+    float base = TB / 2 + (a->ui->ascent - a->ui->descent) / 2, room = uw - 32;
+    if (a->editing) {   /* scroll the text so the caret stays in the field */
+        url_sel_clamp(a);
+        float cx = text_width(a->ui, shown, (size_t)a->us[1], 0), tw = text_width(a->ui, shown, strlen(shown), 0);
+        if (cx - a->uscroll > room) a->uscroll = cx - room;
+        if (cx < a->uscroll) a->uscroll = cx;
+        a->uscroll = LCLAMP(a->uscroll, 0, LMAX(0, tw - room));
+        int lo = LMIN(a->us[0], a->us[1]), hi = LMAX(a->us[0], a->us[1]);
+        if (lo < hi) {
+            float x0 = LMAX(0, text_width(a->ui, shown, (size_t)lo, 0) - a->uscroll), x1 = LMIN(room, text_width(a->ui, shown, (size_t)hi, 0) - a->uscroll);
+            if (x1 > x0) push_rect(dl, ux + 16 + x0, 12, x1 - x0, TB - 24, 2, RGBA(200, 220, 255, 255));
+        }
+    } else a->uscroll = 0;
+    push_text_window(dl, a->ui, shown, ux + 16, base, a->uscroll, room, a->editing ? RGBA(20, 20, 20, 255) : RGBA(90, 90, 90, 255));
+    if (a->editing && a->us[0] == a->us[1]) push_rect(dl, ux + 16 + text_width(a->ui, shown, (size_t)a->us[1], 0) - a->uscroll, 13, 1.5f, TB - 26, 0, RGBA(20, 20, 20, 255));
+#ifndef __ANDROID__
     if (g_compact) {
-        float cx = ux + uw +
-#ifdef __ANDROID__
-            26;
-#else
-            18;
-#endif
+        float cx = ux + uw + 18;
         if (a->hover == HB_NEWTAB) push_rect(dl, cx - 13, TB / 2 - 13, 26, 26, 13, RGBA(232, 232, 232, 255));
         Image *si = sym_icon(a, 7, 0);
         if (si) push_img(dl, si, cx - 8, TB / 2 - 8, 16, 16); else { push_rect(dl, cx - 6, TB / 2 - 1, 12, 2, 1, on); push_rect(dl, cx - 1, TB / 2 - 6, 2, 12, 1, on); }
     }
+#endif
     if (a->t->loading) push_rect(dl, 0, TB - 2, tbw * 0.35f, 2, 0, RGBA(66, 133, 244, 255));
     for (int i = n0; i < dl->items.n; i++) { DItem *it = &dl->items.v[i]; it->y += TABH; it->x += x0; if (it->op == DO_TEXT) for (int g = 0; g < it->ng; g++) { it->g[g].y += TABH; it->g[g].x += x0; } }
 }
@@ -1132,6 +1361,11 @@ static int dl_sigs(const DisplayList *dl, struct DSig **v, int *cap) {
 static uint64_t dl_hash(const DisplayList *dl) { uint64_t h = (uint64_t)dl->items.n; for (int i = 0; i < dl->items.n; i++) h = h * 31 + ditem_hash(&dl->items.v[i]); return h; }
 
 static PaintProfile g_paint_profile;
+/* paint profile: frames per render path, then why the scroller blit was not taken */
+enum { PP_BLIT, PP_SBLIT, PP_SDIRTY, PP_SKIP, PP_RECT, PP_DMG, PP_FULL, PP_NOSBOX, PP_SB_UI, PP_SB_CLIP, PP_SB_X, PP_SB_D, PP_SB_AREA, PP_N };
+static unsigned g_pp[PP_N], g_pp_why[6];
+static long g_sb_big[6], g_sb_dmg; static unsigned g_sb_rects;   /* scroller blit damage: largest unmoved item (area op w h mv fixed), total px, rects */   /* g_pp_why: frames that neither blitted nor skipped, by render()'s why */
+#define SB_FAIL(k) do { g_pp[k]++; return false; } while (0)
 
 static void paint_profile_configure(void) {
     const char *value = getenv("LUMEN_DEBUG_PAINT");
@@ -1198,6 +1432,15 @@ static void paint_profile_report(const PaintFrame *frame, double start_ms, bool 
 #else
     fprintf(stderr, "%s\n", message);
 #endif
+    snprintf(message, sizeof message, "lumen: paint paths blit=%u sblit=%u sdirty=%u skip=%u rect=%u dmg=%u full=%u sb_fail nosbox=%u ui=%u clip=%u x=%u d=%u area=%u why=%u/%u/%u/%u/%u/%u raster calls=%u kpx=%llu layers=%u layer_kpx=%llu sb_dmg kpx=%ld rects=%u big=%ld/op%ld/%ldx%ld/mv%ld/f%ld",
+             g_pp[0], g_pp[1], g_pp[2], g_pp[3], g_pp[4], g_pp[5], g_pp[6], g_pp[7], g_pp[8], g_pp[9], g_pp[10], g_pp[11], g_pp[12], g_pp_why[0], g_pp_why[1], g_pp_why[2], g_pp_why[3], g_pp_why[4], g_pp_why[5], g_raster_calls, g_raster_px / 1000, g_layer_n, g_layer_px / 1000,
+             g_sb_dmg / 1000, g_sb_rects, g_sb_big[0], g_sb_big[1], g_sb_big[2], g_sb_big[3], g_sb_big[4], g_sb_big[5]);
+#ifdef __ANDROID__
+    SDL_Log("%s", message);
+#else
+    fprintf(stderr, "%s\n", message);
+#endif
+    memset(g_pp, 0, sizeof g_pp); memset(g_pp_why, 0, sizeof g_pp_why); g_raster_calls = g_layer_n = 0; g_raster_px = g_layer_px = 0; memset(g_sb_big, 0, sizeof g_sb_big); g_sb_dmg = 0; g_sb_rects = 0;
     paint_profile_reset(&g_paint_profile, frame->last_ms);
 }
 
@@ -1254,6 +1497,130 @@ static bool video_scroll_matches(const DItem *it, const float previous[4], float
     return true;
 }
 
+/* Only one element scroller moved, by whole device pixels: shift the pixels inside its clip, then raster the exposed
+   strip and wherever something that does not move with it (overlays, sticky headers, backgrounds) was or is.
+   False when that is not cheaper than rastering the scroller. Uses the signatures dl_sigs just computed. */
+static bool scroller_blit(App *a, int pwp, int ph, int *ox0, int *oy0, int *ox1, int *oy1) {
+    const DisplayList *dl = &a->pdl; const Box *sb = a->sbox; float s = a->page.scale;
+    if (!sb) SB_FAIL(PP_NOSBOX);
+#ifdef __ANDROID__
+    if (tsel_ui(a)) SB_FAIL(PP_SB_UI);
+#endif
+    int cs[64][4]; bool cround[64]; int nc = 0, found = 0, R[4] = {0};
+    cs[0][0] = 0; cs[0][1] = 0; cs[0][2] = pwp; cs[0][3] = ph; cround[0] = false; nc = 1;
+    for (int i = 0; i < dl->items.n && found < 2; i++) {   /* the scroller's clip as rastered, inside its ancestors' */
+        const DItem *it = &dl->items.v[i];
+        if (it->op == DO_POP_CLIP) { if (nc > 1) nc--; continue; }
+        if (it->op != DO_PUSH_CLIP || nc >= 64) continue;
+        const int *p = cs[nc - 1]; int *c = cs[nc];
+        c[0] = LMAX(p[0], (int)floorf(it->x * s)); c[1] = LMAX(p[1], (int)floorf(it->y * s));
+        c[2] = LMIN(p[2], (int)ceilf((it->x + it->w) * s)); c[3] = LMIN(p[3], (int)ceilf((it->y + it->h) * s));
+        cround[nc] = cround[nc - 1] || it->r[0] > 0 || it->r[1] > 0 || it->r[2] > 0 || it->r[3] > 0;
+        if (it->sc == sb) { found++; if (cround[nc]) SB_FAIL(PP_SB_CLIP); memcpy(R, c, sizeof R); }
+        nc++;
+    }
+    if (found != 1 || R[2] <= R[0] || R[3] <= R[1]) SB_FAIL(PP_SB_CLIP);
+    if (!sb->node || sb->node->scroll_x != a->sbox_x0) SB_FAIL(PP_SB_X);
+    float fd = (box_scroll_y(sb) - a->sbox_y0) * s; int d = (int)roundf(fd);
+    if (!d || fabsf(fd - d) > 0.01f || abs(d) * 2 >= R[3] - R[1]) SB_FAIL(PP_SB_D);
+    /* Opaque rects that do not move with the scroller (a fixed composer bar) keep their pixels when only unmoved items
+       paint over them: put those back after the shift instead of rastering them and whatever scrolls beneath. */
+    int cov[4][4], ncov = 0, depth = 0;
+    nc = 1; cround[0] = false; cs[0][0] = R[0]; cs[0][1] = R[1]; cs[0][2] = R[2]; cs[0][3] = R[3];
+    for (int i = 0; i < dl->items.n && ncov < 4; i++) {
+        const DItem *it = &dl->items.v[i];
+        if (it->op == DO_PUSH_CLIP) {
+            if (nc < 64) {
+                const int *p = cs[nc - 1]; int *c = cs[nc];
+                c[0] = LMAX(p[0], (int)ceilf(it->x * s)); c[1] = LMAX(p[1], (int)ceilf(it->y * s));
+                c[2] = LMIN(p[2], (int)floorf((it->x + it->w) * s)); c[3] = LMIN(p[3], (int)floorf((it->y + it->h) * s));
+                cround[nc] = cround[nc - 1] || it->r[0] > 0 || it->r[1] > 0 || it->r[2] > 0 || it->r[3] > 0; nc++;
+            }
+            continue;
+        }
+        if (it->op == DO_POP_CLIP) { if (nc > 1) nc--; continue; }
+        if (it->op == DO_PUSH_LAYER) { depth++; continue; }
+        if (it->op == DO_POP_LAYER) { if (depth) depth--; continue; }
+        if (it->op != DO_RECT || depth || nc >= 64 || cround[nc - 1] || (it->color >> 24) != 255 ||
+            it->r[0] > 0 || it->r[1] > 0 || it->r[2] > 0 || it->r[3] > 0 || (it->mv && (it->mv == sb || box_within(it->mv, sb)))) continue;
+        const int *c = cs[nc - 1];
+        int x0 = LMAX(c[0], (int)ceilf(it->x * s)), y0 = LMAX(c[1], (int)ceilf(it->y * s));
+        int x1 = LMIN(c[2], (int)floorf((it->x + it->w) * s)), y1 = LMIN(c[3], (int)floorf((it->y + it->h) * s));
+        if (x1 <= x0 || y1 <= y0 || (long)(x1 - x0) * (y1 - y0) < 16384) continue;
+        bool ok = true;   /* nothing that moves paints over it, before or after the shift */
+        for (int j = i + 1; ok && j < dl->items.n; j++) {
+            const DItem *o = &dl->items.v[j];
+            if (o->op >= DO_PUSH_CLIP || !o->mv || (o->mv != sb && !box_within(o->mv, sb))) continue;
+            const float *b = a->nsig[j].b;
+            ok = !(floorf(b[0] * s) < x1 && ceilf(b[2] * s) > x0 && floorf(b[1] * s) - abs(d) < y1 && ceilf(b[3] * s) + abs(d) > y0);
+        }
+        if (ok) { int *v = cov[ncov++]; v[0] = x0; v[1] = y0; v[2] = x1; v[3] = y1; }
+    }
+    PaintRegions dmg = {0}; long area = 0, limit = (long)(R[2] - R[0]) * (R[3] - R[1]) / 2;
+    nc = 1; cround[0] = false;
+    for (int i = 0; i < dl->items.n; i++) {
+        const DItem *it = &dl->items.v[i];
+        if (it->op == DO_PUSH_CLIP) { if (nc < 64) { cround[nc] = cround[nc - 1] || it->r[0] > 0 || it->r[1] > 0 || it->r[2] > 0 || it->r[3] > 0; nc++; } continue; }
+        if (it->op == DO_POP_CLIP) { if (nc > 1) nc--; continue; }
+        if (it->op == DO_PUSH_LAYER || it->op == DO_POP_LAYER) continue;
+        const Box *mv = it->mv;
+        if (mv && (mv == sb || box_within(mv, sb))) continue;   /* shifted with the pixels */
+        const float *b = a->nsig[i].b;
+        float x0 = LMAX(R[0], floorf(b[0] * s)), x1 = LMIN(R[2], ceilf(b[2] * s));
+        float y0 = LMAX(R[1], floorf(b[1] * s) - (d > 0 ? d : 0)), y1 = LMIN(R[3], ceilf(b[3] * s) - (d < 0 ? d : 0));
+        if (x1 <= x0 || y1 <= y0) continue;
+        if (it->op == DO_RECT && !cround[nc - 1] && !it->r[0] && !it->r[1] && !it->r[2] && !it->r[3] &&
+            it->y * s <= R[1] && (it->y + it->h) * s >= R[3]) continue;   /* the same in every row of the scroller */
+        for (int k = 0; k < ncov; k++) {   /* restored, not rastered */
+            const int *c = cov[k];
+            if (x0 < c[0] || x1 > c[2]) continue;
+            if (y0 >= c[1] && y1 <= c[3]) { y1 = y0; break; }
+            if (y0 >= c[1] && y0 < c[3]) y0 = c[3];
+            else if (y1 > c[1] && y1 <= c[3]) y1 = c[1];
+        }
+        if (y1 <= y0) continue;
+        long ia = (long)((x1 - x0) * (y1 - y0)); area += ia;
+        if (g_paint_profile.enabled && ia > g_sb_big[0]) {   /* the largest item that does not move with the scroller */
+            g_sb_big[0] = ia; g_sb_big[1] = it->op; g_sb_big[2] = (long)it->w; g_sb_big[3] = (long)it->h;
+            g_sb_big[4] = !mv ? 0 : box_within(sb, mv) ? 1 : 2; g_sb_big[5] = it->fixed;
+        }
+        if (area > limit) SB_FAIL(PP_SB_AREA);
+        paint_regions_add(&dmg, (float[4]){ x0, y0, x1, y1 });
+    }
+    static uint32_t *saved; static size_t saved_cap; size_t need = 0;
+    for (int k = 0; k < ncov; k++) need += (size_t)(cov[k][2] - cov[k][0]) * (size_t)(cov[k][3] - cov[k][1]);
+    if (need > saved_cap) { saved = xrealloc(saved, need * 4); saved_cap = need; }
+    uint32_t *sp = saved;
+    for (int k = 0; k < ncov; k++) for (int y = cov[k][1]; y < cov[k][3]; y++, sp += cov[k][2] - cov[k][0])
+        memcpy(sp, canvas_row(&a->page, y) + cov[k][0], (size_t)(cov[k][2] - cov[k][0]) * 4);
+    int w = R[2] - R[0], n = R[3] - R[1] - abs(d);
+    if (d > 0) for (int y = R[1]; y < R[1] + n; y++) memcpy(canvas_row(&a->page, y) + R[0], canvas_row(&a->page, y + d) + R[0], (size_t)w * 4);
+    else for (int y = R[3] - 1; y >= R[3] - n; y--) memcpy(canvas_row(&a->page, y) + R[0], canvas_row(&a->page, y + d) + R[0], (size_t)w * 4);
+    sp = saved;
+    for (int k = 0; k < ncov; k++) for (int y = cov[k][1]; y < cov[k][3]; y++, sp += cov[k][2] - cov[k][0])
+        memcpy(canvas_row(&a->page, y) + cov[k][0], sp, (size_t)(cov[k][2] - cov[k][0]) * 4);
+    int e0 = d > 0 ? R[3] - d : R[1], e1 = d > 0 ? R[3] : R[1] - d;   /* the exposed strip, less full-width covers */
+    for (int k = 0; k < ncov; k++) {
+        const int *c = cov[k];
+        if (c[0] > R[0] || c[2] < R[2]) continue;
+        if (e0 >= c[1] && e1 <= c[3]) e1 = e0;
+        else if (e0 >= c[1] && e0 < c[3]) e0 = c[3];
+        else if (e1 > c[1] && e1 <= c[3]) e1 = c[1];
+    }
+    if (e1 > e0) raster_rect(&a->page, dl, RGBA(255, 255, 255, 255), R[0], e0, R[2], e1);
+    for (int i = 0; i < dmg.count; i++) {
+        const float *r = dmg.rect[i];
+        raster_rect(&a->page, dl, RGBA(255, 255, 255, 255), (int)r[0], (int)r[1], (int)r[2], (int)r[3]);
+    }
+    if (getenv("LUMEN_CHECK_DAMAGE")) {
+        Canvas t; canvas_init(&t, pwp, ph, s); raster(&t, dl, RGBA(255, 255, 255, 255));
+        long bad = 0; for (int y = 0; y < ph; y++) for (int x = 0; x < pwp; x++) bad += t.px[(size_t)y * (size_t)t.stride + (size_t)x] != canvas_row(&a->page, y)[x];
+        fprintf(stderr, "lumen: scroller blit d=%d damage=%d px=%ld covers=%d mismatched px=%ld\n", d, dmg.count, area, ncov, bad); canvas_free(&t);
+    }
+    g_sb_dmg += area; g_sb_rects += (unsigned)dmg.count;
+    *ox0 = R[0]; *oy0 = R[1]; *ox1 = R[2]; *oy1 = R[3];
+    return true;
+}
 static void render(App *a) {
 #ifdef __ANDROID__
     if (!a->win || a->android_suspended) return;
@@ -1299,10 +1666,17 @@ static void render(App *a) {
         int blit = 0;   /* page scrolled by whole device pixels: shift the old pixels, raster only the exposed strip */
         if (a->t->sy != a->last_sy && part) {
             float sdy = (a->t->sy - a->last_sy) * a->page.scale;
-            if (!a->sdirty && fabsf(sdy - roundf(sdy)) < 0.01f && fabsf(sdy) < ph / 2) blit = (int)roundf(sdy);
+            bool overlay = false;
+#ifdef __ANDROID__
+            overlay = tsel_ui(a);   /* the selection bar is clamped to the viewport, so old pixels cannot be shifted */
+#endif
+            if (!a->sdirty && !overlay && fabsf(sdy - roundf(sdy)) < 0.01f && fabsf(sdy) < ph / 2) blit = (int)roundf(sdy);
             else { part = false; why = 5; }
         }
         g_full_paint = (double)SDL_GetTicks(); { double q = now_ms(); dl_clear(&a->pdl); dl_build(&a->pdl, a->t->cur->L, 0, a->t->sy, page_width(a), page_height(a)); g_td += now_ms() - q; } a->vbars = video_bars(a, &a->pdl);
+#ifdef __ANDROID__
+        tsel_overlay(a, &a->pdl);
+#endif
         paint_profile_stage(&profile_frame, PAINT_LAYOUT_DL);
         int nn = dl_sigs(&a->pdl, &a->nsig, &a->cnsig);
         const DItem *vit = NULL; int nv = 0;
@@ -1346,17 +1720,21 @@ static void render(App *a) {
                             (int)box[0], (int)box[1], (int)box[2], (int)box[3]);
             }   /* fixed boxes moved with the shift: repaint where they were and are */
             a->page.punch = NULL;
-            rx0 = 0; ry0 = 0; rx1 = pwp; ry1 = ph; a->gvid_ok = scroll_video;
+            rx0 = 0; ry0 = 0; rx1 = pwp; ry1 = ph; a->gvid_ok = scroll_video; g_pp[PP_BLIT]++;
+        } else if (part && a->sdirty && !nv && scroller_blit(a, pwp, ph, &rx0, &ry0, &rx1, &ry1)) {
+            a->gvid_ok = false; g_pp[PP_SBLIT]++;
         } else if (part && a->sdirty) {
+            g_pp[PP_SDIRTY]++;
             float s = a->page.scale;
             int x0 = (int)floorf(a->srect[0] * s), y0 = (int)floorf(a->srect[1] * s), x1 = (int)ceilf(a->srect[2] * s), y1 = (int)ceilf(a->srect[3] * s);
             if (nv) { x0 = LMIN(x0, rx0); y0 = LMIN(y0, ry0); x1 = LMAX(x1, rx1); y1 = LMAX(y1, ry1); }
             x0 = LMAX(x0, 0); y0 = LMAX(y0, 0); x1 = LMIN(x1, pwp); y1 = LMIN(y1, ph);
             if (x1 > x0 && y1 > y0) raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), x0, y0, x1, y1);
             rx0 = x0; ry0 = y0; rx1 = LMAX(x1, x0); ry1 = LMAX(y1, y0); a->gvid_ok = false;
-        } else if (part && (nv == 0 || (gv && a->gvid_ok))) gskip = true;
-        else if (part && rx1 > rx0 && ry1 > ry0) { a->gvid_ok = false; raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), rx0, ry0, rx1, ry1); }
+        } else if (part && (nv == 0 || (gv && a->gvid_ok))) { gskip = true; g_pp[PP_SKIP]++; }
+        else if (part && rx1 > rx0 && ry1 > ry0) { a->gvid_ok = false; g_pp[PP_RECT]++; raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), rx0, ry0, rx1, ry1); }
         else {
+            g_pp_why[LCLAMP(why, 0, 5)]++;
             bool dmg = (why == 1 || why == 3 || why == 4) && !nv && a->osig_ok && a->t->sy == a->last_sy && !a->t->loading;
             if (dmg) {   /* only DOM/layout changed: raster the union of the items that differ from the last frame */
                 build_chrome(a); chrome_tip(a);
@@ -1380,7 +1758,7 @@ static void render(App *a) {
                 if (dmg && (x1 <= x0 || y1 <= y0)) { part = true; gskip = true; }
                 else if (dmg && (long)(x1 - x0) * (y1 - y0) * 2 < (long)pwp * ph) {
                     { double q = now_ms(); raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), x0, y0, x1, y1); g_tx += now_ms() - q; }
-                    part = true; rx0 = x0; ry0 = y0; rx1 = x1; ry1 = y1; a->gvid_ok = false;
+                    part = true; rx0 = x0; ry0 = y0; rx1 = x1; ry1 = y1; a->gvid_ok = false; g_pp[PP_DMG]++;
                 }
                 else dmg = false;
                 if (dmg && getenv("LUMEN_CHECK_DAMAGE")) {
@@ -1391,7 +1769,7 @@ static void render(App *a) {
                 if (dmg && chrome_changed) { part = false; gskip = false; }
             }
             if (!dmg) {
-                part = false; a->page.punch = gv ? vit->img : NULL; a->page.punched = false;
+                part = false; a->page.punch = gv ? vit->img : NULL; a->page.punched = false; g_pp[PP_FULL]++;
                 { double q = now_ms(); raster(&a->page, &a->pdl, RGBA(255, 255, 255, 255)); g_tx += now_ms() - q; }
                 a->gvid_ok = gv && a->page.punched; a->page.punch = NULL;
             }
@@ -1479,7 +1857,12 @@ static bool wheel_scroll(App *a, float x, float y, float dx, float dy) {
         float maxx = LMAX(0, b->scroll_w - b->w), maxy = LMAX(0, b->scroll_h - b->h);
         float lo = box_scroll_from_end(b) ? -maxy : 0, hi = box_scroll_from_end(b) ? 0 : maxy;
         float nx = sx ? LCLAMP(b->node->scroll_x + dx, 0, maxx) : b->node->scroll_x, ny = sy ? LCLAMP(b->node->scroll_y + dy, lo, hi) : b->node->scroll_y;
+        if (ny != b->node->scroll_y) {   /* whole device pixels, so the next frame can shift the scroller's pixels */
+            float s = page_scale(a), end = box_scroll_from_end(b) ? maxy : 0, snapped = LCLAMP(roundf((ny + end) * s) / s - end, lo, hi);
+            if (snapped != b->node->scroll_y) ny = snapped;
+        }
         if (nx == b->node->scroll_x && ny == b->node->scroll_y) continue;
+        float painted_x = b->node->scroll_x, painted_y = box_scroll_y(b);
         b->node->scroll_x = nx; b->node->scroll_y = ny;
         doc_visual_changed();
         float rx = b->x, ry = b->y; bool fx = b->fixed;
@@ -1488,6 +1871,8 @@ static bool wheel_scroll(App *a, float x, float y, float dx, float dy) {
         else {
             float r[4] = { rx, ry - a->t->sy, rx + b->w, ry - a->t->sy + b->h };
             if (a->sdirty) { r[0] = LMIN(r[0], a->srect[0]); r[1] = LMIN(r[1], a->srect[1]); r[2] = LMAX(r[2], a->srect[2]); r[3] = LMAX(r[3], a->srect[3]); }
+            if (!a->sdirty) { a->sbox = b; a->sbox_x0 = painted_x; a->sbox_y0 = painted_y; }
+            else if (a->sbox != b) a->sbox = NULL;
             memcpy(a->srect, r, sizeof r); a->sdirty = a->vonly = true;
         }
         a->dirty = true;
@@ -1527,6 +1912,8 @@ static void android_fling_tick(App *app) {
 }
 static unsigned android_dom_touch(App *app, const char *phase, const SDL_Event *event);
 static void page_touch_controls(App *a, float x, float y);
+static bool tsel_touch(App *a, AndroidTouchPhase phase, const SDL_Event *ev, float x, float y);
+static void tsel_touch_reset(void);
 static bool android_touch_input(App *app, SDL_Event *event) {
     switch (event->type) {
     case SDL_EVENT_MOUSE_MOTION: return event->motion.which == SDL_TOUCH_MOUSEID;
@@ -1538,6 +1925,7 @@ static bool android_touch_input(App *app, SDL_Event *event) {
         android_dom_touch(app, "reset", NULL);
         android_touch_reset(&app->touch);
         android_fling_reset(&app->fling);
+        tsel_touch_reset();
         return false;
     case SDL_EVENT_FINGER_DOWN: case SDL_EVENT_FINGER_MOTION:
     case SDL_EVENT_FINGER_UP: case SDL_EVENT_FINGER_CANCELED:
@@ -1569,6 +1957,7 @@ static bool android_touch_input(App *app, SDL_Event *event) {
         g_sm_dx = g_sm_dy = 0;
     }
     app->last_input = now_ms();
+    if (tsel_touch(app, phase, event, pointer_x, pointer_y)) return true;
     unsigned dom = android_dom_touch(app, phase == ANDROID_TOUCH_DOWN ? "start"
         : phase == ANDROID_TOUCH_MOVE ? "move" : phase == ANDROID_TOUCH_UP ? "end" : "cancel", event);
     app->touch_dom_flags = dom;
@@ -1671,6 +2060,20 @@ static void input_coordinates(App *app, SDL_Event *event) {
 
 static App *g_app;
 static uint64_t fnv(const char *s) { uint64_t h = 1469598103934665603ull; for (; s && *s; s++) h = (h ^ (uint8_t)*s) * 1099511628211ull; return h; }
+static uint64_t fnvn(const char *s, size_t n) { uint64_t h = 1469598103934665603ull; for (size_t i = 0; i < n; i++) h = (h ^ (uint8_t)s[i]) * 1099511628211ull; return h; }
+/* Does CSS text end between top-level rules (braces balanced outside strings and comments, last token '}')? */
+static bool css_rule_boundary(const char *s, size_t n) {
+    int depth = 0; char last = 0;
+    for (size_t i = 0; i < n; i++) {
+        char c = s[i];
+        if (c == '/' && i + 1 < n && s[i + 1] == '*') { for (i += 2; i + 1 < n && !(s[i] == '*' && s[i + 1] == '/'); i++) {} if (i + 1 >= n) return false; i++; continue; }
+        if (c == '"' || c == '\'') { for (i++; i < n && s[i] != c; i++) if (s[i] == '\\') i++; if (i >= n) return false; last = c; continue; }
+        if (c == '\\') { i++; last = 'x'; continue; }
+        if (c == '{') depth++; else if (c == '}' && --depth < 0) return false;
+        if (!isspace((unsigned char)c)) last = c;
+    }
+    return depth == 0 && last == '}';
+}
 static bool is_sheet_link(Node *n) { const char *r = node_attr(n, "rel"); return n->tag == A_link && r && strstr(r, "stylesheet") && node_attr(n, "href"); }
 typedef struct { uint64_t gen; Node *n; } LinkLoad;
 static bool is_preload_link(Node *n) {
@@ -1688,7 +2091,8 @@ static void link_done(NetRequest *rq, NetResponse *r, void *ud) {
     (void)rq; LinkLoad *l = ud; Page *p = g_app->t->cur;
     if (p && p->gen == l->gen && r && r->status == 200 && r->body) {
         StyleSheet *s = css_parse_sheet(r->body, r->body_len, r->url, 1, &p->e->media); s->owner = l->n; style_engine_add_sheet(p->e, s);
-        style_recalc(p->e, &p->d->node, true); g_app->t->relayout = g_app->dirty = true;
+        /* sheets arriving together share one full recalc (restyle runs after net_poll or on a JS style read) */
+        p->sheets_pending = true; g_app->t->relayout = g_app->dirty = true;
     }
     if (p && p->gen == l->gen && p->js)
         js_dispatch(p->js, l->n, r && r->status == 200 && r->body ? "load" : "error", "Event", false, false, 0, 0, 0, NULL);
@@ -1810,6 +2214,7 @@ static bool sync_sheets(Page *p, bool seed) {
     if (!seed && p->seen_sheet_ver == p->d->sheet_version) return false;
     p->seen_sheet_ver = p->d->sheet_version;
     SheetRef *cur = NULL; int nc = 0, cap = 0; bool changed = false;
+    int n_tail = 0, n_full = 0, n_gone = 0; size_t parsed = 0;
     for (Node *n = p->d->node.first; n; n = node_next_deep(n, &p->d->node)) {
         if (n->type != NODE_ELEMENT || n->ns != NS_HTML || (n->tag != A_style && !is_sheet_link(n) && !is_preload_link(n))) continue;
         char *t = n->tag == A_style ? node_text_content(n) : NULL;
@@ -1817,10 +2222,15 @@ static bool sync_sheets(Page *p, bool seed) {
         if (!t && is_sheet_link(n)) h ^= 0x9e3779b97f4a7c15ull;
         int k = 0; while (k < p->nsref && p->sref[k].n != n) k++;
         bool known = k < p->nsref;
-        if ((!seed && (!known || p->sref[k].h != h)) ||
+        size_t len = t ? strlen(t) : 0, old = known ? p->sref[k].len : 0;
+        if (!seed && known && t && old && len > old && p->sref[k].h != h && fnvn(t, old) == p->sref[k].h && css_rule_boundary(t, old)) {
+            /* appended rules (CSS-in-JS text appends, insertRule at the end): parse only the new tail */
+            StyleSheet *sh = css_parse_sheet(t + old, len - old, p->d->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); changed = true;
+            n_tail++; parsed += len - old;
+        } else if ((!seed && (!known || p->sref[k].h != h)) ||
             (seed && !known && is_preload_link(n) && !is_sheet_link(n))) {
             if (known) { style_engine_remove_owner(p->e, n); changed = true; }
-            if (t) { StyleSheet *sh = css_parse_sheet(t, strlen(t), p->d->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); changed = true; }
+            if (t) { StyleSheet *sh = css_parse_sheet(t, strlen(t), p->d->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); changed = true; n_full++; parsed += len; }
             else {
                 char *u = url_join(p->d->url, node_attr(n, "href"));
                 if (u) { NetRequest *rq = net_request_new("GET", u); LinkLoad *l = xmalloc(sizeof *l); l->gen = p->gen; l->n = n; n->refcount++; rq->done = is_sheet_link(n) ? link_done : preload_done; rq->ud = l; net_fetch(rq); free(u); }
@@ -1828,20 +2238,21 @@ static bool sync_sheets(Page *p, bool seed) {
         }
         free(t);
         if (nc == cap) { cap = cap ? cap * 2 : 16; cur = xrealloc(cur, sizeof *cur * (size_t)cap); }
-        cur[nc++] = (SheetRef){ n, h };
+        cur[nc++] = (SheetRef){ n, h, len };
     }
     if (!seed) for (int i = 0; i < p->nsref; i++) {
         int k = 0; while (k < nc && cur[k].n != p->sref[i].n) k++;
-        if (k == nc) { style_engine_remove_owner(p->e, p->sref[i].n); changed = true; }
+        if (k == nc) { style_engine_remove_owner(p->e, p->sref[i].n); changed = true; n_gone++; }
     }
+    if (changed && g_load_trace_until > now_ms()) LOAD_TRACE("sheets tail=%d full=%d gone=%d parsed_kb=%zu refs=%d", n_tail, n_full, n_gone, parsed >> 10, nc);
     free(p->sref); p->sref = cur; p->nsref = nc;
     return changed;
 }
 static bool frame_restyle(Page *p) {
     if (p->d->dom_version == p->seen_ver) return false;
     p->seen_ver = p->d->dom_version;
-    bool sheets = sync_sheets(p, false);
-    style_recalc(p->e, &p->d->node, sheets);
+    sync_sheets(p, false);
+    style_recalc(p->e, &p->d->node, false); /* sheet changes restyle only what their rules can match */
     if (sync_images(p)) p->img_check = true;
     p->frelayout = true;
     return true;
@@ -2039,12 +2450,13 @@ static void restyle(App *a) {
         if (a->t == a->tabs[a->ti]) { a->dirty = true; a->vonly = false; }
     }
     bool viewport_changed = page_viewport(p, page_width(a), page_height(a), page_scale(a));
-    if (!viewport_changed && p->d->dom_version == p->seen_ver) return;
+    if (!viewport_changed && p->d->dom_version == p->seen_ver && !p->sheets_pending) return;
     p->seen_ver = p->d->dom_version;
-    bool sheets = sync_sheets(p, false);
+    bool sheets = sync_sheets(p, false) | p->sheets_pending;
+    p->sheets_pending = false;
     /* inset-only changes translate the current boxes instead of relaying out */
     p->e->allow_moves = p->L && !a->t->relayout && !viewport_changed && !sheets && p->d->layout_version == p->lay_ver && !g_no_paint_only;
-    { double q = now_ms(); style_recalc(p->e, &p->d->node, sheets); g_tr += now_ms() - q; }
+    { double q = now_ms(); style_recalc(p->e, &p->d->node, false); g_tr += now_ms() - q; }
     p->e->allow_moves = false;
     if (sync_images(p)) p->img_check = true;
     if (viewport_changed || sheets || p->e->layout_dirty || p->d->layout_version != p->lay_ver || g_no_paint_only) a->t->relayout = true;
@@ -2119,7 +2531,7 @@ static void debug_layout_geometry(App *a) {
     if (!p) return;
     h_sync_in(a, p->d, true);
     p->e->debug_style_passes = 80;
-    p->e->doc->debug_mutations = 160;
+    p->e->doc->debug_mutations = 600;
     char path[1200]; pref_path(path, sizeof path, "layout-geometry.txt");
     FILE *f = fopen(path, "w");
     if (!f) return;
@@ -2233,10 +2645,177 @@ static char *ctl_value(Node *n) {
     const char *v = node_attr(n, "value"); return xstrdup(v ? v : "");
 }
 static void ctl_set(App *a, Node *n, char *v) {
-    free(n->value_override); n->value_override = v; doc_mark_dirty(n->doc, n);
+    free(n->value_override); n->value_override = v; doc_mark_state_dirty(n->doc, n, true);
     if (a->t->cur->js) js_dispatch(a->t->cur->js, n, "input", "InputEvent", true, false, 0, 0, 0, NULL);
     a->t->relayout = true; a->dirty = true;
 }
+/* native editing of <input>/<textarea> at its selection (Document.csel: anchor/focus codepoints of the value);
+   a control that never had one keeps its caret at the end */
+static bool word_byte(unsigned char c) { return isalnum(c) || c == '_' || c >= 0x80; }
+static int u8_prev(const char *v, int i) { if (i > 0) i--; while (i > 0 && ((unsigned char)v[i] & 0xC0) == 0x80) i--; return i; }
+static int u8_next(const char *v, int n, int i) { if (i < n) i++; while (i < n && ((unsigned char)v[i] & 0xC0) == 0x80) i++; return i; }
+static void ctl_sel(Node *f, const char *v, int *an, int *fo) {
+    const Document *d = f->doc; int n = u8_byte_cp(v, (int)strlen(v));
+    if (d && d->csel_n == f) { *an = LCLAMP(d->csel[0], 0, n); *fo = LCLAMP(d->csel[1], 0, n); }
+    else *an = *fo = n;
+}
+static void ctl_sel_set(App *a, Node *f, int an, int fo) {
+    Document *d = f->doc;
+    if (!d) return;
+    d->csel_n = f; d->csel[0] = an; d->csel[1] = fo; d->paint_version++;
+    a->caret_t = now_ms(); a->dirty = true; a->vonly = false;
+}
+/* the codepoint (or with word, the word) before (dir < 0) or after the caret */
+static int ctl_step(const char *v, int cp, int dir, bool word) {
+    int n = (int)strlen(v), i = u8_cp_byte(v, n, cp);
+    if (dir < 0 && !word) i = u8_prev(v, i);
+    else if (dir < 0) {
+        while (i > 0 && !word_byte((unsigned char)v[u8_prev(v, i)])) i = u8_prev(v, i);
+        while (i > 0 && word_byte((unsigned char)v[u8_prev(v, i)])) i = u8_prev(v, i);
+    } else if (!word) i = u8_next(v, n, i);
+    else {
+        while (i < n && !word_byte((unsigned char)v[i])) i = u8_next(v, n, i);
+        while (i < n && word_byte((unsigned char)v[i])) i = u8_next(v, n, i);
+    }
+    return u8_byte_cp(v, i);
+}
+/* the word around codepoint cp, else the character there */
+static void text_word(const char *v, int cp, int *s, int *e) {
+    int n = (int)strlen(v), i = u8_cp_byte(v, n, cp), lo = i, hi = i;
+    while (lo > 0 && word_byte((unsigned char)v[u8_prev(v, lo)])) lo = u8_prev(v, lo);
+    while (hi < n && word_byte((unsigned char)v[hi])) hi = u8_next(v, n, hi);
+    if (lo == hi) { if (hi < n) hi = u8_next(v, n, hi); else lo = u8_prev(v, lo); }
+    *s = u8_byte_cp(v, lo); *e = u8_byte_cp(v, hi);
+}
+/* the start (dir < 0) or end of cp's line */
+static int text_line_edge(const char *v, int cp, int dir) {
+    int n = (int)strlen(v), i = u8_cp_byte(v, n, cp);
+    if (dir < 0) while (i > 0 && v[i - 1] != '\n') i--;
+    else while (i < n && v[i] != '\n') i++;
+    return u8_byte_cp(v, i);
+}
+static char *ctl_selected(Node *f) {
+    char *v = ctl_value(f); int an, fo, n = (int)strlen(v); ctl_sel(f, v, &an, &fo);
+    int s = u8_cp_byte(v, n, LMIN(an, fo)), e = u8_cp_byte(v, n, LMAX(an, fo));
+    memmove(v, v + s, (size_t)(e - s)); v[e - s] = 0;
+    return v;
+}
+/* replace the codepoints [lo, hi) with s and put the caret after it; an <input> drops line breaks, as in Chrome */
+static void ctl_splice(App *a, Node *f, int lo, int hi, const char *s) {
+    char *v = ctl_value(f); int n = (int)strlen(v), bl = u8_cp_byte(v, n, lo), bh = u8_cp_byte(v, n, hi);
+    SB b; sb_init(&b); sb_put(&b, v, (size_t)bl);
+    size_t k0 = b.n;
+    for (const char *p = s; *p; p++) if (f->tag != A_input || (*p != '\n' && *p != '\r')) sb_putc(&b, *p);
+    int caret = lo + (b.n > k0 ? u8_byte_cp(b.s + k0, (int)(b.n - k0)) : 0);
+    sb_puts(&b, v + bh); free(v);
+    ctl_sel_set(a, f, caret, caret);   /* before the input event, so its handlers see the new caret */
+    ctl_set(a, f, sb_take(&b));
+}
+static void ctl_insert(App *a, Node *f, const char *s) {
+    char *v = ctl_value(f); int an, fo; ctl_sel(f, v, &an, &fo); free(v);
+    ctl_splice(a, f, LMIN(an, fo), LMAX(an, fo), s);
+}
+/* Backspace (dir < 0) / Delete: the selection, else the codepoint or word beside the caret */
+static void ctl_delete(App *a, Node *f, int dir, bool word) {
+    char *v = ctl_value(f); int an, fo; ctl_sel(f, v, &an, &fo);
+    int lo = LMIN(an, fo), hi = LMAX(an, fo);
+    if (lo == hi) { int t = ctl_step(v, lo, dir, word); if (dir < 0) lo = t; else hi = t; }
+    free(v);
+    if (lo != hi) ctl_splice(a, f, lo, hi, "");
+}
+/* caret movement keys; with shift the focus end moves and the anchor stays */
+static void ctl_move(App *a, Node *f, SDL_Keycode k, bool shift, bool word) {
+    char *v = ctl_value(f); int an, fo, n = u8_byte_cp(v, (int)strlen(v)); ctl_sel(f, v, &an, &fo);
+    int to = fo;
+    if ((k == SDLK_LEFT || k == SDLK_RIGHT) && an != fo && !shift) to = k == SDLK_LEFT ? LMIN(an, fo) : LMAX(an, fo);
+    else if (k == SDLK_LEFT || k == SDLK_RIGHT) to = ctl_step(v, fo, k == SDLK_LEFT ? -1 : 1, word);
+    else if (k == SDLK_HOME || k == SDLK_END) to = word || f->tag == A_input ? (k == SDLK_HOME ? 0 : n) : text_line_edge(v, fo, k == SDLK_HOME ? -1 : 1);
+    else if ((k == SDLK_UP || k == SDLK_DOWN) && f->box) to = ctl_vmove(f->box, fo, k == SDLK_UP ? -1 : 1);
+    free(v);
+    ctl_sel_set(a, f, shift ? an : to, to);
+}
+static void ctl_select_all(App *a, Node *f) { char *v = ctl_value(f); ctl_sel_set(a, f, 0, u8_byte_cp(v, (int)strlen(v))); free(v); }
+static void ctl_cut(App *a, Node *f) {
+    char *t = ctl_selected(f);
+    if (*t) { SDL_SetClipboardText(t); ctl_insert(a, f, ""); }
+    free(t);
+}
+static void ctl_paste(App *a, Node *f) { char *t = SDL_GetClipboardText(); if (t && *t) ctl_insert(a, f, t); SDL_free(t); }
+
+/* URL field editing at its selection (a->us: anchor/focus bytes of t->url) */
+static void url_changed(App *a) { a->caret_t = now_ms(); a->dirty = true; a->vonly = false; }
+static void url_begin(App *a) { if (!a->editing) { a->editing = true; a->uscroll = 0; SDL_StartTextInput(a->win); } url_changed(a); }
+static void url_cancel(App *a) {
+    a->editing = a->umenu = false; SDL_StopTextInput(a->win);
+    if (a->t->hpos >= 0) snprintf(a->t->url, sizeof a->t->url, "%s", a->t->cur ? a->t->cur->url : a->t->hist[a->t->hpos]);
+    url_changed(a);
+}
+static void url_select_all(App *a) { a->us[0] = 0; a->us[1] = (int)strlen(a->t->url); url_changed(a); }
+static char *url_selected(App *a) {
+    url_sel_clamp(a);
+    int lo = LMIN(a->us[0], a->us[1]), hi = LMAX(a->us[0], a->us[1]);
+    char *r = xmalloc((size_t)(hi - lo) + 1); memcpy(r, a->t->url + lo, (size_t)(hi - lo)); r[hi - lo] = 0;
+    return r;
+}
+/* replace the selection with s on one line, caret after it; what does not fit the buffer is dropped */
+static void url_insert(App *a, const char *s) {
+    url_sel_clamp(a);
+    char *u = a->t->url; size_t cap = sizeof a->t->url;
+    int lo = LMIN(a->us[0], a->us[1]), hi = LMAX(a->us[0], a->us[1]);
+    SB b; sb_init(&b); sb_put(&b, u, (size_t)lo);
+    for (const char *p = s; *p; p++) if (*p != '\n' && *p != '\r') sb_putc(&b, *p == '\t' ? ' ' : *p);
+    size_t caret = b.n; sb_puts(&b, u + hi);
+    size_t n = b.n;
+    if (n >= cap) { n = cap - 1; while (n && ((unsigned char)b.s[n] & 0xC0) == 0x80) n--; }
+    memcpy(u, b.s, n); u[n] = 0; sb_free(&b);
+    a->us[0] = a->us[1] = (int)LMIN(caret, n);
+    url_changed(a);
+}
+static int url_step(const char *u, int i, int dir, bool word) { return u8_cp_byte(u, (int)strlen(u), ctl_step(u, u8_byte_cp(u, i), dir, word)); }
+static void url_delete(App *a, int dir, bool word) {
+    url_sel_clamp(a);
+    if (a->us[0] == a->us[1]) a->us[1] = url_step(a->t->url, a->us[1], dir, word);
+    url_insert(a, "");
+}
+static void url_move(App *a, SDL_Keycode k, bool shift, bool word) {
+    url_sel_clamp(a);
+    int n = (int)strlen(a->t->url), lo = LMIN(a->us[0], a->us[1]), hi = LMAX(a->us[0], a->us[1]), to = a->us[1];
+    if ((k == SDLK_LEFT || k == SDLK_RIGHT) && lo != hi && !shift) to = k == SDLK_LEFT ? lo : hi;
+    else if (k == SDLK_LEFT || k == SDLK_RIGHT) to = url_step(a->t->url, to, k == SDLK_LEFT ? -1 : 1, word);
+    else if (k == SDLK_HOME || k == SDLK_UP) to = 0;
+    else if (k == SDLK_END || k == SDLK_DOWN) to = n;
+    a->us[1] = to; if (!shift) a->us[0] = to;
+    url_changed(a);
+}
+static void url_word(App *a, int o) {
+    const char *u = a->t->url; int n = (int)strlen(u), s, e;
+    text_word(u, u8_byte_cp(u, o), &s, &e);
+    a->us[0] = u8_cp_byte(u, n, s); a->us[1] = u8_cp_byte(u, n, e);
+    url_changed(a);
+}
+/* the byte of t->url under window x; before editing the field shows it without its scheme */
+static int url_at(App *a, float x) {
+    const char *u = a->t->url, *shown = u;
+    if (!a->editing) { const char *p = strstr(u, "://"); if (p) shown = p + 3; }
+    return (int)(shown - u) + text_hit_x(a->ui, shown, x - (url_x(a) + 16) + a->uscroll);
+}
+static bool g_upress;   /* mouse selecting in the URL field */
+/* first press selects the whole URL (on Android with a Copy/Paste/Share menu); a press in the editing field places the caret */
+static void url_press(App *a, float x, int clicks) {
+    if (!a->editing) {
+        url_begin(a); url_select_all(a);
+#ifdef __ANDROID__
+        a->umenu = true;
+#endif
+        return;
+    }
+    int o = url_at(a, x);
+    if (clicks >= 3) url_select_all(a);
+    else if (clicks == 2) url_word(a, o);
+    else { a->us[0] = a->us[1] = o; g_upress = true; url_changed(a); }
+    a->umenu = false;
+}
+static void url_drag(App *a, float x) { int o = url_at(a, x); if (o != a->us[1]) { a->us[1] = o; url_changed(a); } }
 static void focus_node(App *a, Node *n) {
     Document *d = a->t->cur->d; Node *old = d->focus; JsCtx *js = a->t->cur->js;
 #ifdef __ANDROID__
@@ -2245,9 +2824,7 @@ static void focus_node(App *a, Node *n) {
     if (old == n && (is_text_ctl(n) || edit_host(n))) SDL_StartTextInput(a->win);
 #endif
     if (old == n) return;
-    if (old) { old->flags &= ~(uint32_t)NF_FOCUS; doc_mark_dirty(d, old); }
-    d->focus = n;
-    if (n) { n->flags |= NF_FOCUS; doc_mark_dirty(d, n); }
+    doc_set_focus(d, n);
     if (js && old) { js_dispatch(js, old, "blur", "FocusEvent", false, false, 0, 0, 0, NULL); js_dispatch(js, old, "focusout", "FocusEvent", true, false, 0, 0, 0, NULL); }
     if (js && n) { js_dispatch(js, n, "focus", "FocusEvent", false, false, 0, 0, 0, NULL); js_dispatch(js, n, "focusin", "FocusEvent", true, false, 0, 0, 0, NULL); }
     if (is_text_ctl(n) || edit_host(n)) SDL_StartTextInput(a->win);
@@ -2293,7 +2870,7 @@ static double g_mv_t, g_mv_rep; static float g_mv_x, g_mv_y; static Page *g_mv_p
 /* f: 1 restyle n, 2 its descendants, 4 its parent's descendants; key/which select the rules that set f */
 static bool hover_mark(Page *p, Node *n, int f, Node *key, int which) {
     if (!(f & 7)) return false;
-    if (f & 1) doc_mark_style_dirty(p->d, n);
+    if (f & 1) doc_mark_state_dirty(p->d, n, false); /* descendants: f & 2 */
     if (f & 6) style_hover_desc(p->e, p->d, key, (f & 4) && n->parent && n->parent->type == NODE_ELEMENT ? n->parent : n, which);
     return true;
 }
@@ -2403,13 +2980,13 @@ static void vbar_layout(App *a, const Box *b, const MpState *s, char *tm, size_t
     *tx0 = b->x + 44; *tx1 = b->x + b->w - text_width(a->ui, tm, strlen(tm), 0) - 26;
 }
 static bool video_bars(App *a, DisplayList *dl) {   /* control bar under each <video controls> (or every video when "always show video controls" is on) */
-    bool playing = false; Document *d = a->t->cur->d; float rb = (a->ui->ascent - a->ui->descent) / 2;
+    bool playing = false; a->vbar_any = false; a->vbar_msv = media_state_version(); Document *d = a->t->cur->d; float rb = (a->ui->ascent - a->ui->descent) / 2;
     for (Node *n = d->node.first; n; n = node_next_in_tree(n, &d->node)) {
         if (!vbar_on(a, n)) continue;
         Box *b = n->box; float y = vbar_y(a, b) - a->t->sy;
         if (y < -VBH || y > page_height(a)) continue;
         MpState s; memset(&s, 0, sizeof s); if (!media_state_for(n, &s)) s.paused = true;
-        playing |= !s.paused;
+        playing |= !s.paused; a->vbar_any = true;
         char tm[48]; float tx0, tx1; vbar_layout(a, b, &s, tm, sizeof tm, &tx0, &tx1);
         push_rect(dl, b->x, y, b->w, VBH, 0, RGBA(32, 33, 36, 240));
         Image *ic = sym_icon(a, s.paused ? 5 : 6, 3); if (ic) push_img(dl, ic, b->x + 14, y + (VBH - 16) / 2, 16, 16);
@@ -2478,9 +3055,9 @@ static void sel_drag(App *a, float x, float y) {
     if (!tsel_point(p->L, px, py, a->t->sy, NULL, &fn, &fo)) return;
     if (fn != g_tsel.fn || fo != g_tsel.fo || !g_tsel.on) { g_tsel.fn = fn; g_tsel.fo = fo; g_tsel.on = fn != g_tsel.an || fo != g_tsel.ao; sel_dirty(a); }
 }
-static bool g_epress;
+static bool g_epress, g_cpress;
 static void page_input_reset(void) {
-    g_press = g_drag = g_epress = g_tsel.on = false;
+    g_press = g_drag = g_epress = g_cpress = g_tsel.on = false;
     g_mv_p = NULL;
 }
 static bool edit_text_at(App *a, Node *h, float px, float py, Node **tn, int *off) {
@@ -2506,6 +3083,26 @@ static void edit_drag(App *a, float x, float y) {
     js_dispatch(a->t->cur->js, tn, "lumensel-extend", "MouseEvent", false, false, off, 0, 0, NULL);
     sel_dirty(a);
 }
+/* a press in the focused <input>/<textarea>: the caret goes under it, a double press selects the word, a triple all */
+static void ctl_press(App *a, float x, float y, int clicks) {
+    g_cpress = false;
+    Node *f = page_focus(a); Page *p = a->t->cur;
+    if (!f || !f->box || !p || !p->L || a->t->asleep || x < a->side || y < BAR) return;
+    float px = page_x(a, x), py = page_y(a, y) + a->t->sy;
+    Box *b = layout_hit(p->L, px, py, 0, a->t->sy);
+    if (!b || !b->node || !node_within(b->node, f)) return;
+    int cp = ctl_hit(f->box, px, py, a->t->sy);
+    if (clicks >= 3) { ctl_select_all(a, f); return; }
+    if (clicks == 2) { char *v = ctl_value(f); int s, e; text_word(v, cp, &s, &e); free(v); ctl_sel_set(a, f, s, e); return; }
+    ctl_sel_set(a, f, cp, cp);
+    g_cpress = true;
+}
+static void ctl_drag(App *a, float x, float y) {
+    Node *f = page_focus(a);
+    if (!g_cpress || !f || !f->box || f->doc->csel_n != f) return;
+    int cp = ctl_hit(f->box, page_x(a, x), page_y(a, y) + a->t->sy, a->t->sy);
+    if (cp != f->doc->csel[1]) ctl_sel_set(a, f, f->doc->csel[0], cp);
+}
 /* mirror a ranged selection inside the focused contenteditable into the native highlight (and Cmd+C) */
 static void edit_sel_sync(App *a) {
     static uint64_t ver; static const Document *dd; static bool mine;
@@ -2523,9 +3120,327 @@ static void h_clip_set(const char *t) { SDL_SetClipboardText(t); }
 static char *h_clip_get(void) { char *t = SDL_GetClipboardText(); char *r = strdup(t ? t : ""); SDL_free(t); return r; }
 static void sel_copy(App *a) {
     Node *f = !a->editing ? page_focus(a) : NULL;
-    if (a->editing) { if (a->sel_all) SDL_SetClipboardText(a->t->url); return; }
-    if (f) { if (a->page_sel) { char *v = ctl_value(f); SDL_SetClipboardText(v); free(v); } return; }
+    if (a->editing) { char *s = url_selected(a); if (*s) SDL_SetClipboardText(s); free(s); return; }
+    if (f) { char *s = ctl_selected(f); if (*s) SDL_SetClipboardText(s); free(s); return; }
     if (g_tsel.on && a->t->cur && a->t->cur->L == g_tsel.L) { char *s = tsel_text(a->t->cur->L); if (*s) SDL_SetClipboardText(s); free(s); }
+}
+#ifdef __ANDROID__
+/* Touch text selection, as in Chrome: a long press selects the word under the
+   finger (dragging on extends it), handles move either end, and a small bar
+   offers Copy / Select all. */
+enum { LONG_PRESS_MS = 500 };
+/* what the touch selection is in: page text (g_tsel), the focused <input>/<textarea> (Document.csel),
+   or the focused contenteditable (its JS selection, mirrored into g_tsel) */
+enum { TK_PAGE, TK_CTL, TK_EDIT };
+enum { TA_CUT, TA_COPY, TA_PASTE, TA_ALL };
+static struct {
+    bool armed, ui, url; int mode, kind;   /* mode 1: the long-press finger extends from its word; 2: a handle is dragged */
+    double down; float x, y;      /* armed long press, window px; url: it is on the URL field */
+    uint64_t device, finger;      /* the contact this state belongs to */
+    Node *wn[2]; int wo[2];       /* the long-pressed word */
+    Node *cn; int cw[2], cs[2], fixed;   /* TK_CTL: the control, its word and the selection shown (codepoints), the held end */
+    float gx, gy;                 /* handle grab: finger minus the caret point */
+    float ax, ay;                 /* where the bar goes with no handles (an empty control), page viewport px */
+    float bar[4], bend[4]; int bact[4], nb;   /* selection bar rect, its button ends and actions, page viewport px */
+    int bar_hit;                  /* bar button held, 1-based */
+    int umenu_hit;                /* URL menu button held, 1-based */
+} g_ts;
+static void tsel_touch_reset(void) { g_ts.armed = false; g_ts.mode = g_ts.bar_hit = g_ts.umenu_hit = 0; }
+static Node *tsel_ctl(App *a) {
+    Node *f = page_focus(a);
+    return f && f == g_ts.cn && f->doc->csel_n == f && f->doc->csel[0] == g_ts.cs[0] && f->doc->csel[1] == g_ts.cs[1] ? f : NULL;
+}
+static bool tsel_ui(App *a) {
+    if (!g_ts.ui) return false;
+    bool ok = g_ts.kind == TK_CTL ? tsel_ctl(a) != NULL : g_tsel.on && a->t->cur && g_tsel.L == a->t->cur->L && (g_ts.kind == TK_PAGE || edit_focus(a));
+    if (!ok) g_ts.ui = false;
+    return g_ts.ui;
+}
+static void tsel_clear(App *a) {
+    if (g_ts.kind == TK_PAGE) g_tsel.on = false;
+    g_ts.ui = false; g_ts.mode = g_ts.bar_hit = 0; sel_dirty(a);
+}
+static void tsel_ctl_set(App *a, Node *f, int an, int fo) { ctl_sel_set(a, f, an, fo); g_ts.cs[0] = an; g_ts.cs[1] = fo; }
+/* tell the contenteditable's JS selection about g_tsel */
+static void tsel_edit_push(App *a) {
+    Page *p = a->t->cur;
+    if (!p || !p->js || !g_tsel.an || !g_tsel.fn) return;
+    js_dispatch(p->js, g_tsel.an, "lumensel-collapse", "MouseEvent", false, false, g_tsel.ao, 0, 0, NULL);
+    js_dispatch(p->js, g_tsel.fn, "lumensel-extend", "MouseEvent", false, false, g_tsel.fo, 0, 0, NULL);
+}
+static void tsel_overlay(App *a, DisplayList *dl) {
+    g_ts.bar[2] = g_ts.bar[0]; g_ts.nb = 0;
+    if (!tsel_ui(a)) return;
+    const TselCaret *c = g_tsel_caret;
+    const float r = 11; const Color blue = RGBA(26, 115, 232, 255);
+    for (int k = 0; k < 2; k++) {   /* teardrops hanging under the ends, the point at the caret */
+        if (!c[k].ok) continue;
+        DItem it; memset(&it, 0, sizeof it); it.op = DO_RECT; it.color = blue;
+        it.x = k ? c[k].x : c[k].x - 2 * r; it.y = c[k].y + c[k].h; it.w = it.h = 2 * r;
+        for (int i = 0; i < 4; i++) it.r[i] = i == (k ? 0 : 1) ? 0 : r;
+        vec_push(dl->items, it);
+    }
+    if (g_ts.mode || (!c[0].ok && !c[1].ok && g_ts.kind != TK_CTL)) return;
+    Node *f = g_ts.kind == TK_CTL ? tsel_ctl(a) : NULL;
+    bool any = f ? f->doc->csel[0] != f->doc->csel[1] : true, secret = f && f->tag == A_input && node_attr(f, "type") && !strcasecmp(node_attr(f, "type"), "password");
+    int n = 0;
+    if (g_ts.kind != TK_PAGE && any && !secret) g_ts.bact[n++] = TA_CUT;
+    if (any && !secret) g_ts.bact[n++] = TA_COPY;
+    if (g_ts.kind != TK_PAGE) g_ts.bact[n++] = TA_PASTE;
+    g_ts.bact[n++] = TA_ALL;
+    Font *ft = a->ui; static const char *label[4] = { "Cut", "Copy", "Paste", "Select all" };
+    float pad = 16, h = 40, w = 0, bw[4], vw = page_width(a), vh = page_height(a);
+    for (int i = 0; i < n; i++) { bw[i] = text_width(ft, label[g_ts.bact[i]], strlen(label[g_ts.bact[i]]), 0) + 2 * pad; w += bw[i]; }
+    TselCaret anchor = { true, g_ts.ax, g_ts.ay - 20, 40, 0 };
+    const TselCaret *top = c[0].ok ? &c[0] : c[1].ok ? &c[1] : &anchor, *bot = c[1].ok ? &c[1] : c[0].ok ? &c[0] : &anchor;
+    float cx = c[0].ok && c[1].ok && fabsf(c[0].y - c[1].y) < 1 ? (c[0].x + c[1].x) / 2 : top->x;
+    float x = LCLAMP(cx - w / 2, 4, LMAX(4, vw - 4 - w)), y = top->y - 10 - h;
+    if (y < 4) y = LMIN(bot->y + bot->h + 2 * r + 10, vh - 4 - h);
+    push_rect(dl, x - 1, y, w + 2, h + 2, 9, RGBA(0, 0, 0, 38));
+    push_rect(dl, x, y, w, h, 8, RGBA(255, 255, 255, 255));
+    float base = y + h / 2 + (ft->ascent - ft->descent) / 2, bx = x;
+    for (int i = 0; i < n; bx += bw[i], i++) {
+        if (i) push_rect(dl, bx, y + 10, 1, h - 20, 0, RGBA(218, 220, 224, 255));
+        push_text(dl, ft, label[g_ts.bact[i]], bx + pad, base, bw[i], RGBA(32, 33, 36, 255));
+        g_ts.bend[i] = bx + bw[i];
+    }
+    g_ts.bar[0] = x; g_ts.bar[1] = y; g_ts.bar[2] = x + w; g_ts.bar[3] = y + h; g_ts.nb = n;
+}
+static void tsel_action(App *a, int act) {
+    Page *p = a->t->cur; Node *f = g_ts.kind == TK_CTL ? tsel_ctl(a) : NULL, *h = g_ts.kind == TK_EDIT ? edit_focus(a) : NULL;
+    if (!p || !p->L || (g_ts.kind == TK_CTL && !f) || (g_ts.kind == TK_EDIT && !h)) return;
+    if (act == TA_ALL) {
+        if (f) { char *v = ctl_value(f); tsel_ctl_set(a, f, 0, u8_byte_cp(v, (int)strlen(v))); free(v); }
+        else if (h) js_dispatch(p->js, h, "lumensel-all", "MouseEvent", false, false, 0, 0, 0, NULL);
+        else tsel_all(p->L);
+        sel_dirty(a);
+        return;
+    }
+    if (act == TA_COPY || act == TA_CUT) { char *t = f ? ctl_selected(f) : tsel_text(p->L); if (*t) SDL_SetClipboardText(t); free(t); }
+    if (act == TA_CUT && f) ctl_insert(a, f, "");
+    else if (act == TA_CUT && h) js_dispatch(p->js, h, "lumeneditdel", "KeyboardEvent", false, false, 0, 0, 0, "Backspace");
+    else if (act == TA_PASTE) {
+        char *t = SDL_GetClipboardText();
+        if (t && *t) { if (f) ctl_insert(a, f, t); else js_dispatch(p->js, h, "lumenedit", "KeyboardEvent", false, false, 0, 0, 0, t); }
+        SDL_free(t);
+    }
+    tsel_clear(a);
+    if (act != TA_COPY) { restyle(a); a->dirty = true; }
+}
+/* move the dragged end to the finger (window px) */
+static void tsel_extend(App *a, float x, float y) {
+    Page *p = a->t->cur; Node *n; int o;
+    if (!p || !p->L) return;
+    float px = page_x(a, x) - g_ts.gx, py = page_y(a, y) - g_ts.gy + a->t->sy;
+    if (g_ts.kind == TK_CTL) {
+        Node *f = tsel_ctl(a);
+        if (!f || !f->box) return;
+        int cp = ctl_hit(f->box, px, py, a->t->sy), an, fo;
+        if (g_ts.mode == 1) {
+            if (cp >= g_ts.cw[1]) an = g_ts.cw[0], fo = cp;
+            else if (cp <= g_ts.cw[0]) an = g_ts.cw[1], fo = cp;
+            else an = g_ts.cw[0], fo = g_ts.cw[1];
+        } else an = g_ts.fixed, fo = cp;
+        if (an != fo && (an != g_ts.cs[0] || fo != g_ts.cs[1])) tsel_ctl_set(a, f, an, fo);
+        return;
+    }
+    if (!tsel_point(p->L, px, py, a->t->sy, NULL, &n, &o)) return;
+    if (g_ts.kind == TK_EDIT && (!edit_focus(a) || !node_within(n, edit_focus(a)))) return;
+    TextSel was = g_tsel;
+    if (g_ts.mode == 1) {   /* the word stays selected; the far end follows the finger */
+        g_tsel = (TextSel){ true, p->L, g_ts.wn[1], n, g_ts.wo[1], o };
+        tsel_prepare(p->L);
+        if (!g_tsel_fwd) {
+            g_tsel.an = g_ts.wn[0]; g_tsel.ao = g_ts.wo[0];
+            tsel_prepare(p->L);
+            if (g_tsel_fwd) { g_tsel.fn = g_ts.wn[1]; g_tsel.fo = g_ts.wo[1]; }   /* inside the word */
+        }
+    } else { g_tsel.fn = n; g_tsel.fo = o; }
+    if (g_tsel.an == g_tsel.fn && g_tsel.ao == g_tsel.fo) { g_tsel = was; return; }   /* never collapse to nothing */
+    if (memcmp(&was, &g_tsel, sizeof was)) { if (g_ts.kind == TK_EDIT) tsel_edit_push(a); sel_dirty(a); }
+}
+static void url_menu_action(App *a, int act) {
+    if (act == UM_COPY) { char *s = url_selected(a); if (*s) SDL_SetClipboardText(s); free(s); a->umenu = false; }
+    else if (act == UM_PASTE) { char *t = SDL_GetClipboardText(); if (t && *t) url_insert(a, t); SDL_free(t); a->umenu = false; }
+    else if (act == UM_ALL) url_select_all(a);
+    else if (act == UM_SHARE) {
+        char *s = url_selected(a);
+        const char *page = a->t->cur ? a->t->cur->url : a->t->hpos >= 0 ? a->t->hist[a->t->hpos] : "";
+        android_share_text(*s ? s : page);
+        free(s);
+        url_cancel(a);
+    }
+    a->dirty = true; a->vonly = false;
+}
+static bool tsel_touch(App *a, AndroidTouchPhase phase, const SDL_Event *ev, float x, float y) {
+    uint64_t device = ev->tfinger.touchID, finger = ev->tfinger.fingerID;
+    if (!tsel_ui(a)) g_ts.mode = g_ts.bar_hit = 0;   /* the selection went away under the gesture */
+    bool mine = device == g_ts.device && finger == g_ts.finger;
+    if (phase == ANDROID_TOUCH_DOWN) {
+        g_ts.armed = g_ts.url = false;
+        if (g_ts.mode || g_ts.bar_hit || g_ts.umenu_hit) return true;   /* other fingers wait for the selection gesture */
+        if (a->touch.count) return false;
+        int um = url_menu_hit(x, y);
+        if (um >= 0) { g_ts.device = device; g_ts.finger = finger; g_ts.umenu_hit = um + 1; return true; }
+        if (a->umenu) { a->umenu = false; a->dirty = true; a->vonly = false; }
+        if (y < BAR && bar_hit(a, x, y) == HB_URL) {
+            g_ts.device = device; g_ts.finger = finger;
+            g_ts.armed = g_ts.url = true; g_ts.down = now_ms(); g_ts.x = x; g_ts.y = y;
+            return false;
+        }
+        if (x <= a->side || y <= BAR || a->t->info || g_hud_pop) return false;
+        g_ts.device = device; g_ts.finger = finger;
+        float px = page_x(a, x), py = page_y(a, y);
+        if (tsel_ui(a)) {
+            if (g_ts.nb && px >= g_ts.bar[0] && px < g_ts.bar[2] && py >= g_ts.bar[1] && py < g_ts.bar[3]) {
+                int i = 0; while (i < g_ts.nb - 1 && px >= g_ts.bend[i]) i++;
+                g_ts.bar_hit = i + 1;
+                return true;
+            }
+            for (int k = 1; k >= 0; k--) {
+                const TselCaret *c = &g_tsel_caret[k];
+                float hx = k ? c->x + 11 : c->x - 11, hy = c->y + c->h + 11;
+                if (!c->ok || fabsf(px - hx) > 26 || py < c->y || py > hy + 26) continue;
+                if (g_ts.kind == TK_CTL) g_ts.fixed = k ? LMIN(g_ts.cs[0], g_ts.cs[1]) : LMAX(g_ts.cs[0], g_ts.cs[1]);
+                else {
+                    tsel_prepare(a->t->cur->L);
+                    if ((k == 0) == g_tsel_fwd) {   /* the held end becomes the focus */
+                        Node *n = g_tsel.an; int o = g_tsel.ao;
+                        g_tsel.an = g_tsel.fn; g_tsel.ao = g_tsel.fo; g_tsel.fn = n; g_tsel.fo = o;
+                    }
+                }
+                g_ts.mode = 2; g_ts.gx = px - c->x; g_ts.gy = py - (c->y + c->h / 2);
+                sel_dirty(a);
+                return true;
+            }
+        }
+        g_ts.armed = true; g_ts.down = now_ms(); g_ts.x = x; g_ts.y = y;
+        return false;
+    }
+    if (g_ts.umenu_hit) {
+        if (!mine) return true;
+        if (phase == ANDROID_TOUCH_UP && url_menu_hit(x, y) == g_ts.umenu_hit - 1) url_menu_action(a, g_umenu_act[g_ts.umenu_hit - 1]);
+        if (phase != ANDROID_TOUCH_MOVE) g_ts.umenu_hit = 0;
+        return true;
+    }
+    if (g_ts.bar_hit || g_ts.mode) {
+        if (!mine) return true;
+        if (g_ts.bar_hit && phase == ANDROID_TOUCH_UP) {
+            float px = page_x(a, x), py = page_y(a, y);
+            bool in = px >= g_ts.bar[0] && px < g_ts.bar[2] && py >= g_ts.bar[1] && py < g_ts.bar[3];
+            int i = 0; while (i < g_ts.nb - 1 && px >= g_ts.bend[i]) i++;
+            if (in && i == g_ts.bar_hit - 1) tsel_action(a, g_ts.bact[i]);
+        }
+        if (g_ts.mode && phase == ANDROID_TOUCH_MOVE) tsel_extend(a, x, y);
+        else if (phase != ANDROID_TOUCH_MOVE) { g_ts.mode = g_ts.bar_hit = 0; g_ts.gx = g_ts.gy = 0; sel_dirty(a); }
+        return true;
+    }
+    if (g_ts.armed && (!mine || phase != ANDROID_TOUCH_MOVE || (x - g_ts.x) * (x - g_ts.x) + (y - g_ts.y) * (y - g_ts.y) >= 64))
+        g_ts.armed = false;
+    return false;
+}
+static int tsel_wait_ms(int to) {
+    if (!g_ts.armed) return to;
+    double left = LONG_PRESS_MS - (now_ms() - g_ts.down);
+    return left <= 0 ? 0 : left + 1 < to ? (int)left + 1 : to;
+}
+/* the long press owns this contact now: the page sees it cancelled, and it neither scrolls nor clicks */
+static void tsel_take_touch(App *a, bool page) {
+    if (page) {
+        SDL_Event cancel = {0};
+        cancel.tfinger.touchID = g_ts.device; cancel.tfinger.fingerID = g_ts.finger;
+        cancel.tfinger.x = g_ts.x / a->vw; cancel.tfinger.y = g_ts.y / a->vh;
+        android_dom_touch(a, "cancel", &cancel);
+    }
+    android_touch_reset(&a->touch);
+    android_fling_reset(&a->fling);
+    g_press = g_drag = g_epress = false;
+}
+static void tsel_long_press(App *a) {
+    if (!g_ts.armed || now_ms() - g_ts.down < LONG_PRESS_MS) return;
+    g_ts.armed = false;
+    if (g_ts.url) {   /* the URL field: select the word under the finger, with the Copy/Paste/Share menu */
+        if (a->touch.count != 1 || a->touch.dragged) return;
+        int o = url_at(a, g_ts.x);
+        url_begin(a); url_word(a, o); a->umenu = true;
+        tsel_take_touch(a, false);
+        return;
+    }
+    Page *p = a->t->cur;
+    if (a->touch.count != 1 || a->touch.blocked || a->touch.dragged || (a->touch_dom_flags & 1) ||
+            a->touch_tab != a->t || !p || !p->L || a->t->asleep) return;
+    float px = page_x(a, g_ts.x), py = page_y(a, g_ts.y);
+    h_sync_in(a, p->d, true);
+    Box *b = layout_hit(p->L, px, py + a->t->sy, 0, a->t->sy);
+    Node *target = b ? b->node : NULL;
+    while (target && target->type != NODE_ELEMENT) target = target->parent;
+    if (target && p->js && !js_dispatch(p->js, target, "contextmenu", "MouseEvent", true, true, px, py, 2, NULL)) return;
+    if (a->t->cur != p || !p->L) return;
+    h_sync_in(a, p->d, true);
+    b = layout_hit(p->L, px, py + a->t->sy, 0, a->t->sy);
+    Node *ctl = NULL;
+    for (Node *k = b ? b->node : NULL; k; k = k->parent) if (is_text_ctl(k)) { ctl = k; break; }
+    if (ctl) {   /* a text control: focus it and select the word, or offer Paste when it is empty */
+        if (!ctl->box) return;
+        int cp = ctl_hit(ctl->box, px, py + a->t->sy, a->t->sy), s = 0, e = 0;
+        char *v = ctl_value(ctl);
+        if (*v) text_word(v, cp, &s, &e);
+        free(v);
+        focus_node(a, ctl);
+        if (page_focus(a) != ctl) return;
+        tsel_take_touch(a, true);
+        g_tsel.on = false;
+        tsel_ctl_set(a, ctl, s, e);
+        g_ts.kind = TK_CTL; g_ts.cn = ctl; g_ts.cw[0] = s; g_ts.cw[1] = e;
+        g_ts.ax = px; g_ts.ay = py;
+        g_ts.mode = s != e ? 1 : 0; g_ts.ui = true; g_ts.gx = g_ts.gy = 0;
+        sel_dirty(a);
+        return;
+    }
+    Node *host = b ? edit_host(b->node) : NULL;
+    if (!host && b && b->st && b->st->user_select) return;
+    if (host && edit_focus(a) != host) { focus_node(a, host); if (edit_focus(a) != host || !p->L) return; h_sync_in(a, p->d, true); }
+    Node *n; int o;
+    Box *scope = host && host->box ? host->box : sel_scope(p->L, px, py + a->t->sy, a->t->sy);
+    if (!tsel_point_near(p->L, px, py + a->t->sy, a->t->sy, scope, 24, &n, &o)) return;
+    if (host && !node_within(n, host)) return;
+    tsel_word(p->L, n, o);
+    if (!g_tsel.on || (g_tsel.an == g_tsel.fn && g_tsel.ao == g_tsel.fo)) { g_tsel.on = false; return; }
+    tsel_take_touch(a, true);
+    g_ts.kind = host ? TK_EDIT : TK_PAGE;
+    if (host) tsel_edit_push(a);
+    g_ts.wn[0] = g_tsel.an; g_ts.wo[0] = g_tsel.ao; g_ts.wn[1] = g_tsel.fn; g_ts.wo[1] = g_tsel.fo;
+    g_ts.mode = 1; g_ts.ui = true; g_ts.gx = g_ts.gy = 0;
+    sel_dirty(a);
+}
+#endif
+static void js_quote(SB *b, const char *s) {
+    sb_putc(b, '"');
+    for (const unsigned char *c = (const unsigned char *)(s ? s : ""); *c; c++) {
+        if (*c == '"' || *c == '\\') { sb_putc(b, '\\'); sb_putc(b, (char)*c); }
+        else if (*c < 0x20) sb_printf(b, "\\u%04x", *c);
+        else sb_putc(b, (char)*c);
+    }
+    sb_putc(b, '"');
+}
+static bool same_origin(const char *x, const char *y) {
+    URL p, q; bool same = false;
+    if (!url_parse(x, &p)) return false;
+    if (url_parse(y, &q)) { same = !strcmp(p.scheme, q.scheme) && p.host && q.host && !strcmp(p.host, q.host) && p.port == q.port; url_free(&q); }
+    url_free(&p); return same;
+}
+/* <a download>, blob: and data: links are saved, not navigated: http(s) through the download
+   manager with the page's cookies, page-made data by the page's script context */
+static void link_save(App *a, Node *n, const char *h) {
+    Page *p = a->t->cur;
+    char *u = url_join(p->d->url, h); if (!u) return;
+    const char *name = node_attr(n, "download");
+    if (!strncmp(u, "http:", 5) || !strncmp(u, "https:", 6)) dl_start(u, p->url, name && same_origin(u, p->d->url) ? name : NULL);
+    else if (p->js) {
+        SB b; sb_init(&b); sb_puts(&b, "__lumenSaveHref("); js_quote(&b, u); sb_putc(&b, ','); js_quote(&b, name); sb_putc(&b, ')');
+        char *src = sb_take(&b); js_eval(p->js, src, "lumen:save"); free(src);
+    }
+    free(u);
 }
 static void click_page(App *a, float x, float y, unsigned touch_flags) {
     if (x < a->side || y < BAR) return;
@@ -2589,6 +3504,7 @@ static void click_page(App *a, float x, float y, unsigned touch_flags) {
             if (workspace_action(a, h)) return;
             if (!strncmp(h, "javascript:", 11)) return;
             if (h[0] == '#') { Node *t = doc_get_element_by_id(a->t->cur->d, h + 1); if (t && t->box) { a->t->sy = t->box->y; a->dirty = true; } return; }
+            if (node_attr(n, "download") || !strncmp(h, "blob:", 5) || !strncmp(h, "data:", 5)) { link_save(a, n, h); return; }
             char *u = url_join(a->t->cur->d->url, h); navigate(a, u, true); free(u); return;
         }
 }
@@ -2616,7 +3532,7 @@ static void tab_open(App *a) {
 #ifdef __ANDROID__
     SDL_StopTextInput(a->win);
 #else
-    a->editing = true; a->sel_all = 1; a->t->url[0] = 0; SDL_StartTextInput(a->win);
+    a->editing = true; a->t->url[0] = 0; a->us[0] = a->us[1] = 0; SDL_StartTextInput(a->win);
 #endif
 }
 static void tab_free(Tab *t) { if (t->cur) page_free(t->cur); for (int k = 0; k < t->nhist; k++) free(t->hist[k]); free(t); }
@@ -2828,6 +3744,189 @@ static void history_go(App *a, int d) {
     a->t->hpos = np; navigate(a, a->t->hist[np], false); a->t->hgen[np] = load_gen;
 }
 
+/* short confirmations: an Android toast; elsewhere the notice bar */
+static void ui_toast(App *a, const char *text) {
+#ifdef __ANDROID__
+    (void)a; android_ui_toast(text);
+#else
+    snprintf(g_notice, sizeof g_notice, "%s", text); a->dirty = true; a->vonly = false;
+#endif
+    fprintf(stderr, "lumen: %s\n", text);
+}
+static bool is_js_url(const char *u) { while (*u == ' ') u++; return !strncasecmp(u, "javascript:", 11); }
+/* A javascript: URL typed in the address bar or opened from a bookmark runs on the page being viewed. */
+static void run_js_url(App *a, const char *url) {
+    while (*url == ' ') url++;
+    Page *p = a->t->cur;
+    a->editing = a->umenu = false;
+    snprintf(a->t->url, sizeof a->t->url, "%s", p ? p->url : a->t->hpos >= 0 ? a->t->hist[a->t->hpos] : "");
+    a->dirty = true; a->vonly = false;
+    if (!p || !p->js || p->internal_ui) { ui_toast(a, "JavaScript runs on web pages only"); return; }
+    char *src = url_decode(url + 11, strlen(url + 11)), *result = NULL, msg[300];
+    bool failed = false;
+    TAB_CALL(a->t, result = js_eval_result(p->js, src, "javascript:", &failed));
+    if (failed) snprintf(msg, sizeof msg, "JavaScript error: %s", result ? result : "unknown");
+    else if (result) snprintf(msg, sizeof msg, "JavaScript ran: %s", result);
+    else snprintf(msg, sizeof msg, "JavaScript ran");
+    ui_toast(a, msg);
+    free(src); free(result);
+    restyle(a);
+}
+static void desktop_sites_load(void) {
+    char p[1200]; pref_path(p, sizeof p, "desktop_sites.txt"); FILE *f = *g_pref ? fopen(p, "r") : NULL; if (!f) return;
+    char line[256];
+    while (fgets(line, sizeof line, f)) { line[strcspn(line, "\r\n \t")] = 0; if (*line) net_set_desktop_host(line, true); }
+    fclose(f);
+}
+#ifdef __ANDROID__
+/* bookmark files are one "url<TAB>title" per line: code in javascript: bookmarks keeps its line breaks escaped */
+static char *bm_url_clean(const char *u) {
+    while (*u == ' ' || *u == '\n' || *u == '\r' || *u == '\t') u++;
+    SB b; sb_init(&b);
+    for (; *u; u++) {
+        if (*u == '\n') sb_puts(&b, "%0A"); else if (*u == '\r') sb_puts(&b, "%0D"); else if (*u == '\t') sb_puts(&b, "%09");
+        else sb_putc(&b, *u);
+    }
+    char *r = sb_take(&b);
+    size_t n = strlen(r); while (n && r[n - 1] == ' ') r[--n] = 0;
+    if (*r && !is_js_url(r)) { char *full = normalize_url(r); free(r); r = full; }
+    return r;
+}
+static void desktop_sites_save(void) {
+    char hosts[64 * 130]; net_desktop_hosts(hosts, sizeof hosts);
+    char p[1200]; pref_path(p, sizeof p, "desktop_sites.txt"); FILE *f = *g_pref ? fopen(p, "w") : NULL; if (!f) return;
+    for (char *h = strtok(hosts, " "); h; h = strtok(NULL, " ")) fprintf(f, "%s\n", h);
+    fclose(f);
+}
+static bool page_is_web(const Tab *t) { return t->cur && !t->cur->internal_ui && !strncmp(t->url, "http", 4); }
+static void show_more_menu(App *a) {
+    Tab *t = a->t; bool web = page_is_web(t);
+    AndroidMenuState st = {
+        .can_forward = t->hpos < t->nhist - 1, .desktop = t->desktop, .can_desktop = web,
+        .can_zoom = t->cur && !t->cur->internal_ui, .zoom_pct = t->zoom_pct ? t->zoom_pct : g_page_zoom_pct,
+        .bookmarked = bm_find(t->url) >= 0, .can_bookmark = t->cur && *t->url && strncmp(t->url, "lumen:", 6),
+    };
+    android_ui_menu(&st);
+}
+static void show_bookmarks(App *a) {
+    const char *titles[MAX_BM], *urls[MAX_BM];
+    for (int i = 0; i < g_nbm; i++) { titles[i] = g_bms[i].title; urls[i] = g_bms[i].url; }
+    Tab *t = a->t; bool page = t->cur && *t->url && strncmp(t->url, "lumen:", 6);
+    const char *title = page && t->cur->d->title && *t->cur->d->title ? t->cur->d->title : t->url;
+    android_ui_bookmarks(titles, urls, g_nbm, page ? title : NULL, page ? t->url : NULL);
+}
+static void show_workspaces(App *a) {
+    const char *names[16]; int tabs[16], v[MAX_TABS];
+    for (int i = 0; i < a->nws; i++) { names[i] = a->wsname[i]; tabs[i] = ws_tabs(a, i, v); }
+    android_ui_workspaces(names, tabs, a->nws, a->wi);
+}
+typedef struct { int code, value; char *s1, *s2; } UiAction;
+static void ui_action_post(int code, int value, char *s1, char *s2) {   /* Android UI thread */
+    UiAction *u = malloc(sizeof *u);
+    if (!u) { free(s1); free(s2); return; }
+    u->code = code; u->value = value; u->s1 = s1; u->s2 = s2;
+    SDL_Event ev; SDL_zero(ev); ev.type = EV_UI; ev.user.data1 = u;
+    if (!SDL_PushEvent(&ev)) { free(s1); free(s2); free(u); }
+}
+static void ui_action(App *a, UiAction *u, bool *quit) {
+    (void)quit;
+    Tab *t = a->t;
+    switch (u->code) {
+    case UI_NEW_TAB: tab_open(a); break;
+    case UI_FORWARD: history_go(a, 1); break;
+    case UI_BOOKMARKS: show_bookmarks(a); break;
+    case UI_WORKSPACES: show_workspaces(a); break;
+    case UI_DOWNLOADS: navigate(a, "lumen://newtab?s=downloads", true); break;
+    case UI_HISTORY: navigate(a, "lumen://newtab?s=history", true); break;
+    case UI_SETTINGS: navigate(a, "lumen://newtab?s=settings", true); break;
+    case UI_DESKTOP: {
+        URL pu; if (!page_is_web(t) || !url_parse(t->url, &pu)) break;
+        net_set_desktop_host(pu.host, u->value != 0); url_free(&pu);
+        desktop_sites_save();
+        if (t->hpos >= 0) navigate(a, t->hist[t->hpos], false);
+        break; }
+    case UI_ZOOM:
+        if (!t->cur || t->cur->internal_ui) break;
+        { int pct = LCLAMP(u->value, 50, 300), want = pct == g_page_zoom_pct ? 0 : pct;
+          if (want != t->zoom_pct) { t->zoom_pct = want; page_zoom_changed(a); } }
+        break;
+    case UI_BM_TOGGLE: {
+        bool was = bm_find(t->url) >= 0; bm_toggle(a);
+        if ((bm_find(t->url) >= 0) != was) ui_toast(a, was ? "Bookmark removed" : "Bookmarked");
+        break; }
+    case UI_BM_OPEN:
+        if (!u->s2 || !*u->s2) break;
+        if (is_js_url(u->s2)) run_js_url(a, u->s2); else { SDL_StopTextInput(a->win); navigate(a, u->s2, true); }
+        break;
+    case UI_BM_SAVE: {
+        char *url = u->s2 ? bm_url_clean(u->s2) : NULL;
+        if (!url || !*url) { free(url); break; }
+        const char *title = u->s1 && *u->s1 ? u->s1 : url;
+        int i = u->value >= 0 && u->value < g_nbm ? u->value : bm_find(url);
+        if (i >= 0) {
+            free(g_bms[i].url); free(g_bms[i].title);
+            g_bms[i].url = url; g_bms[i].title = xstrdup(title);
+            for (char *c = g_bms[i].title; *c; c++) if (*c == '\t' || *c == '\n' || *c == '\r') *c = ' ';
+        } else if (g_nbm < MAX_BM) { link_put(g_bms, &g_nbm, MAX_BM, url, title); free(url); }
+        else { free(url); ui_toast(a, "Bookmark limit reached"); break; }
+        links_save("bookmarks.txt", g_bms, g_nbm);
+        ui_toast(a, "Bookmark saved");
+        show_bookmarks(a);
+        break; }
+    case UI_BM_DELETE: {
+        int i = u->value >= 0 && u->value < g_nbm && u->s2 && !strcmp(g_bms[u->value].url, u->s2) ? u->value : u->s2 ? bm_find(u->s2) : -1;
+        if (i < 0) break;
+        link_del(g_bms, &g_nbm, i); links_save("bookmarks.txt", g_bms, g_nbm);
+        ui_toast(a, "Bookmark deleted");
+        show_bookmarks(a);
+        break; }
+    case UI_WS_SELECT: if (u->value != a->wi) ws_select(a, u->value); break;
+    case UI_WS_NEW:
+        if (a->nws >= 16 || a->ntabs >= MAX_TABS) { ui_toast(a, "Workspace limit reached"); break; }
+        ws_new(a, u->s1 && *u->s1 ? u->s1 : "Workspace");
+        break;
+    case UI_WS_RENAME: if (u->value >= 0 && u->value < a->nws && u->s1 && *u->s1) snprintf(a->wsname[u->value], sizeof a->wsname[0], "%s", u->s1); break;
+    case UI_WS_CLOSE: if (u->value >= 0 && u->value < a->nws && a->nws > 1) ws_close(a, u->value); break;
+    }
+    a->dirty = true; a->vonly = false;
+}
+#endif
+/* Download events: a navigation that became a download leaves the tab where it was; the
+   Downloads page follows progress; starts, completions and failures get a toast. */
+static struct { uint64_t id; int state; } g_dl_seen[64]; static int g_dl_nseen, g_dl_seen_next;
+static void dl_track(App *a, bool announce) {
+    DlInfo v[32]; int n = dl_list(v, 32);
+    for (int i = n - 1; i >= 0; i--) {
+        int k = 0; while (k < g_dl_nseen && g_dl_seen[k].id != v[i].id) k++;
+        bool known = k < g_dl_nseen;
+        if (!known) { if (g_dl_nseen < 64) k = g_dl_nseen++; else { k = g_dl_seen_next; g_dl_seen_next = (g_dl_seen_next + 1) % 64; } g_dl_seen[k].id = v[i].id; g_dl_seen[k].state = -1; }
+        if (g_dl_seen[k].state == v[i].state) continue;
+        g_dl_seen[k].state = v[i].state;
+        if (!announce) continue;
+        char msg[320];
+        if (v[i].state == DL_RUNNING && !known) snprintf(msg, sizeof msg, "Downloading %s", v[i].name);
+        else if (v[i].state == DL_DONE) snprintf(msg, sizeof msg, "Downloaded %s", v[i].name);
+        else if (v[i].state == DL_FAILED) snprintf(msg, sizeof msg, "Download failed: %s", v[i].name);
+        else continue;
+        ui_toast(a, msg);
+    }
+}
+static void dl_event(App *a, const SDL_Event *ev) {
+    if (ev->user.code == 1) {
+        uint64_t gen = (uint64_t)(uintptr_t)ev->user.data1;
+        for (int i = 0; i < a->ntabs; i++) {
+            Tab *t = a->tabs[i];
+            if (t->lgen != gen) continue;
+            t->loading = false;
+            if (t->cur && t->hpos > 0 && t->hpos == t->nhist - 1 && t->hgen[t->hpos] == gen) { free(t->hist[t->hpos]); t->nhist--; t->hpos--; }
+            if (t->cur && !(a->editing && t == a->t)) snprintf(t->url, sizeof t->url, "%s", t->cur->url);
+        }
+    } else SDL_SetAtomicInt(&g_dl_posted, 0);
+    dl_track(a, true);
+    downloads_page_update(a);
+    a->dirty = true; a->vonly = false;
+}
+
 #ifdef __ANDROID__
 static bool SDLCALL android_graphics_lifecycle(void *userdata, SDL_Event *event) {
     App *app = userdata;
@@ -2854,6 +3953,7 @@ static bool SDLCALL android_graphics_lifecycle(void *userdata, SDL_Event *event)
 }
 
 static void android_handle_back(App *app) {
+    if (tsel_ui(app)) { tsel_clear(app); return; }
     switch (android_back_action(g_hud_pop, app->editing,
         page_focus(app) || edit_focus(app), app->t->hpos > 0)) {
     case ANDROID_BACK_DISMISS_POPUP:
@@ -2963,7 +4063,7 @@ int main(int argc, char **argv) {
     android_platform_init();
 #endif
     dom_init(); net_init(6); font_init(); css_sheet_added_hook = sheet_fonts;
-    icache_mu = SDL_CreateMutex(); EV_LOADED = SDL_RegisterEvents(1); EV_NET = SDL_RegisterEvents(1); EV_MENU = SDL_RegisterEvents(1);
+    icache_mu = SDL_CreateMutex(); EV_LOADED = SDL_RegisterEvents(1); EV_NET = SDL_RegisterEvents(1); EV_MENU = SDL_RegisterEvents(1); EV_DL = SDL_RegisterEvents(1); EV_UI = SDL_RegisterEvents(1);
 #ifdef __ANDROID__
     android_launch_set_wakeup(wake);
 #endif
@@ -3040,6 +4140,13 @@ int main(int argc, char **argv) {
 #endif
         net_set_user_agent(g_ua);
         links_load("bookmarks.txt", g_bms, &g_nbm, MAX_BM); links_load("history.txt", g_hv, &g_nhv, MAX_HV);
+        desktop_sites_load();
+        download_store_init(g_pref);
+        dl_track(&a, false);
+        dl_notify = dl_changed;
+#ifdef __ANDROID__
+        android_ui_action = ui_action_post;
+#endif
         const char *lm = getenv("LUMEN_LOWMEM"); if (lm) g_lowmem = atoi(lm) != 0;
         fprintf(stderr, "lumen: lite mode %s\n", g_lowmem ? "on" : "off");
         media_lowmem = g_lowmem;
@@ -3134,6 +4241,7 @@ int main(int argc, char **argv) {
             if (to > 16) to = 16;
         }
         page_move_keep(&a); if (g_mv_p && to > 1000) to = 1000;
+        if (a.vbar_any && !a.vbars && media_state_version() != a.vbar_msv) { a.dirty = true; a.vonly = false; }   /* a bar's play state changed (e.g. play() from a page script) */
         if (a.vbars) { static double lb; double tn = now_ms(); if (tn - lb >= 500) { lb = tn; a.dirty = true; a.vonly = false; } if (to > 500) to = 500; }
         if (a.deferred) { double r = 250 - (now_ms() - a.last_full); if (r <= 0) a.dirty = true; else if (r + 1 < to) to = (int)r + 1; }
         if (a.tip_until) { double r = a.tip_until - now_ms(); if (r <= 0) { a.tip_until = 0; a.dirty = true; a.vonly = false; } else if (r + 1 < to) to = (int)r + 1; }
@@ -3157,6 +4265,7 @@ int main(int argc, char **argv) {
         }
 #ifdef __ANDROID__
         to = android_fling_wait_ms(&a.fling, now_ms(), to);
+        to = tsel_wait_ms(to);
 #endif
         if (!SDL_WaitEventTimeout(&ev, to)) { if (a.t->loading || getenv("LUMEN_SHOT")) a.dirty = true; }
         else do {
@@ -3164,6 +4273,10 @@ int main(int argc, char **argv) {
             input_coordinates(&a, &ev);
 #ifdef __ANDROID__
             bool touch_tap = ev.type == SDL_EVENT_FINGER_UP;
+#ifndef NDEBUG
+            /* in-page route changes (taps) also get a load trace window */
+            if (touch_tap) { if (a.t->cur && a.t->cur->js) js_debug_profile(a.t->cur->js); if (now_ms() + 30000 > g_load_trace_until) { net_trace_load(30); g_load_trace_until = now_ms() + 30000; } }
+#endif
             if (android_touch_input(&a, &ev)) continue;
             touch_tap = touch_tap && ev.type == SDL_EVENT_MOUSE_BUTTON_DOWN;
 #endif
@@ -3196,10 +4309,12 @@ int main(int argc, char **argv) {
                 else if (a.t->cur && page_hover(a.t->cur, NULL)) restyle(&a);
                 if (g_press && (ev.motion.state & SDL_BUTTON_LMASK)) sel_drag(&a, ev.motion.x, ev.motion.y);
                 else if (g_epress && (ev.motion.state & SDL_BUTTON_LMASK)) edit_drag(&a, ev.motion.x, ev.motion.y);
+                else if (g_cpress && (ev.motion.state & SDL_BUTTON_LMASK)) ctl_drag(&a, ev.motion.x, ev.motion.y);
+                else if (g_upress && (ev.motion.state & SDL_BUTTON_LMASK)) url_drag(&a, ev.motion.x);
                 SDL_SetCursor(SDL_CreateSystemCursor(h == HB_URL ? SDL_SYSTEM_CURSOR_TEXT : over_link(&a, ev.motion.x, ev.motion.y) || (h && h != HB_URL) ? SDL_SYSTEM_CURSOR_POINTER : SDL_SYSTEM_CURSOR_DEFAULT));
                 break; }
             case SDL_EVENT_WINDOW_MOUSE_LEAVE: if (a.t->cur && page_hover(a.t->cur, NULL)) restyle(&a); break;
-            case SDL_EVENT_MOUSE_BUTTON_UP: if (ev.button.button == SDL_BUTTON_LEFT) g_press = g_drag = false; break;
+            case SDL_EVENT_MOUSE_BUTTON_UP: if (ev.button.button == SDL_BUTTON_LEFT) g_press = g_drag = g_cpress = g_upress = false; break;
             case SDL_EVENT_MOUSE_BUTTON_DOWN:
                 if (ev.button.button != SDL_BUTTON_LEFT) break;
                 { int bh = bar_hit(&a, ev.button.x, ev.button.y);
@@ -3216,14 +4331,17 @@ int main(int argc, char **argv) {
                 case HB_BACK: history_go(&a, -1); break;
                 case HB_FWD: history_go(&a, 1); break;
                 case HB_STAR: bm_toggle(&a); a.dirty = true; a.vonly = false; break;
+#ifdef __ANDROID__
+                case HB_MENU: if (a.editing) url_cancel(&a); show_more_menu(&a); a.dirty = true; break;
+#endif
                 case HB_RELOAD: if (a.t->hpos >= 0) navigate(&a, a.t->hist[a.t->hpos], false); break;
-                case HB_URL: a.editing = true; a.sel_all = 1; SDL_StartTextInput(a.win); a.dirty = true; break;
+                case HB_URL: url_press(&a, ev.button.x, ev.button.clicks); break;
                 default: {
                     unsigned touch_flags = 0;
 #ifdef __ANDROID__
                     if (touch_tap) touch_flags = a.touch_dom_flags;
 #endif
-                    if (a.editing) { a.editing = false; SDL_StopTextInput(a.win); a.dirty = true; } sel_press(&a, ev.button.x, ev.button.y, ev.button.clicks); click_page(&a, ev.button.x, ev.button.y, touch_flags); edit_press(&a, ev.button.x, ev.button.y, ev.button.clicks);
+                    if (a.editing) { a.editing = a.umenu = false; SDL_StopTextInput(a.win); a.dirty = true; } sel_press(&a, ev.button.x, ev.button.y, ev.button.clicks); click_page(&a, ev.button.x, ev.button.y, touch_flags); edit_press(&a, ev.button.x, ev.button.y, ev.button.clicks); ctl_press(&a, ev.button.x, ev.button.y, ev.button.clicks);
 #ifdef __ANDROID__
                     if (touch_tap) page_touch_controls(&a, page_x(&a, ev.button.x), page_y(&a, ev.button.y));
 #endif
@@ -3234,8 +4352,7 @@ int main(int argc, char **argv) {
                 if (!a.editing && page_focus(&a)) {
                     Node *f = page_focus(&a);
                     if (!a.t->cur->js || js_dispatch(a.t->cur->js, f, "keydown", "KeyboardEvent", true, true, 0, 0, 0, ev.text.text)) {
-                        char *v = ctl_value(f); SB b; sb_init(&b); if (!a.page_sel) sb_puts(&b, v); a.page_sel = 0; sb_puts(&b, ev.text.text); free(v);
-                        ctl_set(&a, f, sb_take(&b));
+                        ctl_insert(&a, f, ev.text.text);
                     }
                     if (a.t->cur->js) js_dispatch(a.t->cur->js, f, "keyup", "KeyboardEvent", true, true, 0, 0, 0, ev.text.text);
                     restyle(&a);
@@ -3245,7 +4362,7 @@ int main(int argc, char **argv) {
                         js_dispatch(js, f, "lumenedit", "KeyboardEvent", false, false, 0, 0, 0, ev.text.text);
                     js_dispatch(js, f, "keyup", "KeyboardEvent", true, true, 0, 0, 0, ev.text.text);
                     restyle(&a); a.dirty = true;
-                } else if (a.editing) { if (a.sel_all) { a.t->url[0] = 0; a.sel_all = 0; } strncat(a.t->url, ev.text.text, sizeof a.t->url - strlen(a.t->url) - 1); a.dirty = true; }
+                } else if (a.editing) { a.umenu = false; url_insert(&a, ev.text.text); }
                 break;
             case SDL_EVENT_KEY_UP: if (ev.key.key == SDLK_LGUI || ev.key.key == SDLK_RGUI || ev.key.key == SDLK_LCTRL || ev.key.key == SDLK_RCTRL) cmd = false; break;
             case SDL_EVENT_KEY_DOWN: { a.caret_t = now_ms();
@@ -3271,13 +4388,37 @@ int main(int argc, char **argv) {
                     bool reserved = k == SDLK_Q || k == SDLK_W || k == SDLK_T || k == SDLK_N || k == SDLK_L || k == SDLK_TAB || (k >= SDLK_1 && k <= SDLK_9);
                     if (cmd) js_key_mods |= (ev.key.mod & SDL_KMOD_CTRL) ? 2 : 8;
                     if (!reserved && !page_key(&a, k, ev.key.mod)) { restyle(&a); a.dirty = true; a.vonly = false; break; }
-                    if (k == SDLK_A && !a.editing && page_focus(&a)) a.page_sel = 1;
+                    bool shift = ev.key.mod & SDL_KMOD_SHIFT;
+                    if (a.editing && (k == SDLK_A || k == SDLK_X || k == SDLK_V || k == SDLK_LEFT || k == SDLK_RIGHT || k == SDLK_BACKSPACE || k == SDLK_DELETE)) {
+                        a.umenu = false;
+                        if (k == SDLK_A) url_select_all(&a);
+                        else if (k == SDLK_X) { char *t = url_selected(&a); if (*t) { SDL_SetClipboardText(t); url_insert(&a, ""); } free(t); }
+                        else if (k == SDLK_V) { char *t = SDL_GetClipboardText(); if (t && *t) url_insert(&a, t); SDL_free(t); }
+                        else if (k == SDLK_BACKSPACE || k == SDLK_DELETE) url_delete(&a, k == SDLK_DELETE ? 1 : -1, true);
+                        else url_move(&a, k, shift, true);
+                    }
+                    else if (k == SDLK_A && !a.editing && page_focus(&a)) ctl_select_all(&a, page_focus(&a));
+                    else if (k == SDLK_X && !a.editing && page_focus(&a)) { ctl_cut(&a, page_focus(&a)); restyle(&a); }
+                    else if (k == SDLK_V && !a.editing && page_focus(&a)) { ctl_paste(&a, page_focus(&a)); restyle(&a); }
+                    else if ((k == SDLK_BACKSPACE || k == SDLK_DELETE) && !a.editing && page_focus(&a)) { ctl_delete(&a, page_focus(&a), k == SDLK_DELETE ? 1 : -1, true); restyle(&a); }
+                    else if ((k == SDLK_LEFT || k == SDLK_RIGHT || k == SDLK_HOME || k == SDLK_END || k == SDLK_UP || k == SDLK_DOWN) && !a.editing && page_focus(&a))
+                        ctl_move(&a, page_focus(&a), k == SDLK_UP ? SDLK_HOME : k == SDLK_DOWN ? SDLK_END : k, shift, k == SDLK_LEFT || k == SDLK_RIGHT);
+                    else if (k == SDLK_V && !a.editing && edit_focus(&a)) {
+                        char *t = SDL_GetClipboardText();
+                        if (t && *t) js_dispatch(a.t->cur->js, edit_focus(&a), "lumenedit", "KeyboardEvent", false, false, 0, 0, 0, t);
+                        SDL_free(t); restyle(&a);
+                    }
+                    else if (k == SDLK_X && !a.editing && edit_focus(&a) && g_tsel.on && a.t->cur->L == g_tsel.L) {
+                        char *t = tsel_text(a.t->cur->L);
+                        if (*t) { SDL_SetClipboardText(t); js_dispatch(a.t->cur->js, edit_focus(&a), "lumeneditdel", "KeyboardEvent", false, false, 0, 0, 0, "Backspace"); }
+                        free(t); restyle(&a);
+                    }
                     else if (k == SDLK_A && !a.editing && !edit_focus(&a) && a.t->cur && a.t->cur->L) { tsel_all(a.t->cur->L); g_tsel.L = a.t->cur->L; a.vonly = false; }
                     else if (k == SDLK_A && !a.editing && edit_focus(&a)) js_dispatch(a.t->cur->js, edit_focus(&a), "lumensel-all", "MouseEvent", false, false, 0, 0, 0, NULL);
                     else if ((k == SDLK_LEFT || k == SDLK_RIGHT) && !a.editing && edit_focus(&a))
                         js_dispatch(a.t->cur->js, edit_focus(&a), k == SDLK_LEFT ? "lumensel-home" : "lumensel-end", "MouseEvent", false, false, 0, (ev.key.mod & SDL_KMOD_SHIFT) ? 1 : 0, 0, NULL);
                     else if (k == SDLK_C) sel_copy(&a);
-                    else if (k == SDLK_L) { a.editing = true; a.sel_all = 1; SDL_StartTextInput(a.win); }
+                    else if (k == SDLK_L) { url_begin(&a); url_select_all(&a); }
                     else if (k == SDLK_R && a.t->hpos >= 0) navigate(&a, a.t->hist[a.t->hpos], false);
                     else if (k == SDLK_LEFTBRACKET) history_go(&a, -1);
                     else if (k == SDLK_RIGHTBRACKET) history_go(&a, 1);
@@ -3289,18 +4430,21 @@ int main(int argc, char **argv) {
                     a.dirty = true; break;
                 }
                 if (a.editing) {
-                    if (k == SDLK_RETURN || k == SDLK_KP_ENTER) { SDL_StopTextInput(a.win); navigate(&a, a.t->url, true); }
-                    else if (k == SDLK_ESCAPE) { a.editing = false; SDL_StopTextInput(a.win); if (a.t->hpos >= 0) snprintf(a.t->url, sizeof a.t->url, "%s", a.t->cur ? a.t->cur->url : a.t->hist[a.t->hpos]); }
-                    else if (k == SDLK_BACKSPACE) { if (a.sel_all) { a.t->url[0] = 0; a.sel_all = 0; } else { size_t n = strlen(a.t->url); while (n && (a.t->url[n - 1] & 0xC0) == 0x80) n--; if (n) n--; a.t->url[n] = 0; } }
-                    else if (k == SDLK_LEFT || k == SDLK_RIGHT) a.sel_all = 0;
+                    if (k == SDLK_RETURN || k == SDLK_KP_ENTER) { SDL_StopTextInput(a.win); if (is_js_url(a.t->url)) { char js[sizeof a.t->url]; snprintf(js, sizeof js, "%s", a.t->url); run_js_url(&a, js); } else navigate(&a, a.t->url, true); }
+                    else if (k == SDLK_ESCAPE) url_cancel(&a);
+                    else if (k == SDLK_BACKSPACE || k == SDLK_DELETE) url_delete(&a, k == SDLK_DELETE ? 1 : -1, false);
+                    else if (k == SDLK_LEFT || k == SDLK_RIGHT || k == SDLK_HOME || k == SDLK_END || k == SDLK_UP || k == SDLK_DOWN) url_move(&a, k, ev.key.mod & SDL_KMOD_SHIFT, false);
+                    a.umenu = false;
                     a.dirty = true; break;
                 }
                 if (page_focus(&a)) {
-                    Node *f = page_focus(&a); const char *kn = k == SDLK_RETURN || k == SDLK_KP_ENTER ? "Enter" : k == SDLK_BACKSPACE ? "Backspace" : k == SDLK_ESCAPE ? "Escape" : k == SDLK_TAB ? "Tab" : k == SDLK_LEFT ? "ArrowLeft" : k == SDLK_RIGHT ? "ArrowRight" : k == SDLK_UP ? "ArrowUp" : k == SDLK_DOWN ? "ArrowDown" : NULL;
+                    Node *f = page_focus(&a); const char *kn = k == SDLK_RETURN || k == SDLK_KP_ENTER ? "Enter" : k == SDLK_BACKSPACE ? "Backspace" : k == SDLK_DELETE ? "Delete" : k == SDLK_ESCAPE ? "Escape" : k == SDLK_TAB ? "Tab" :
+                        k == SDLK_LEFT ? "ArrowLeft" : k == SDLK_RIGHT ? "ArrowRight" : k == SDLK_UP ? "ArrowUp" : k == SDLK_DOWN ? "ArrowDown" : k == SDLK_HOME ? "Home" : k == SDLK_END ? "End" : NULL;
                     if (kn) {
-                        if (strcmp(kn, "Backspace")) a.page_sel = 0;
                         bool ok = !a.t->cur->js || js_dispatch(a.t->cur->js, f, "keydown", "KeyboardEvent", true, true, 0, 0, 0, kn);
-                        if (ok && !strcmp(kn, "Backspace")) { char *v = ctl_value(f); size_t n = a.page_sel ? 1 : strlen(v); if (a.page_sel) v[0] = 0, n = 0, a.page_sel = 0; while (n && (v[n - 1] & 0xC0) == 0x80) n--; if (n) n--; v[n] = 0; ctl_set(&a, f, v); }
+                        if (ok && (k == SDLK_BACKSPACE || k == SDLK_DELETE)) ctl_delete(&a, f, k == SDLK_DELETE ? 1 : -1, false);
+                        else if (ok && (k == SDLK_LEFT || k == SDLK_RIGHT || k == SDLK_UP || k == SDLK_DOWN || k == SDLK_HOME || k == SDLK_END)) ctl_move(&a, f, k, ev.key.mod & SDL_KMOD_SHIFT, false);
+                        else if (ok && !strcmp(kn, "Enter") && f->tag == A_textarea) ctl_insert(&a, f, "\n");
                         else if (ok && !strcmp(kn, "Enter") && f->tag == A_input) submit_form(&a, f);
                         else if (ok && !strcmp(kn, "Escape")) focus_node(&a, NULL);
                         if (a.t->cur && a.t->cur->js && page_focus(&a) == f) js_dispatch(a.t->cur->js, f, "keyup", "KeyboardEvent", true, true, 0, 0, 0, kn);
@@ -3335,6 +4479,10 @@ int main(int argc, char **argv) {
                 a.dirty = true; break; }
             default:
                 if (ev.type == EV_MENU) menu_cmd(&a, ev.user.code);
+                if (ev.type == EV_DL) dl_event(&a, &ev);
+#ifdef __ANDROID__
+                if (ev.type == EV_UI) { UiAction *u = ev.user.data1; ui_action(&a, u, &quit); free(u->s1); free(u->s2); free(u); }
+#endif
                 if (ev.type == EV_LOADED) {
                     Page *p = ev.user.data1;
                     Tab *lt = NULL; for (int i = 0; i < a.ntabs; i++) if (a.tabs[i]->lgen == p->gen) lt = a.tabs[i];
@@ -3345,7 +4493,10 @@ int main(int argc, char **argv) {
         }
                     if (!lt) { page_free(p); break; }
                     Tab *act = a.t; bool fg = lt == act; a.t = lt;
-                    page_free(a.t->cur); a.t->cur = p; a.t->asleep = false; a.t->loading = false; a.t->sy = 0; a.t->relayout = true; a.dirty = true;
+                    bool rerender = a.t->cur && a.t->cur->internal_ui && p->internal_ui && !strcmp(a.t->cur->url, p->url);
+                    float keep_sy = rerender ? a.t->sy : 0;
+                    page_free(a.t->cur); a.t->cur = p; a.t->asleep = false; a.t->loading = false; a.t->sy = keep_sy; a.t->relayout = true; a.dirty = true;
+                    if (!p->internal_ui) a.t->desktop = url_desktop(p->url);
                     if (!a.editing) snprintf(a.t->url, sizeof a.t->url, "%s", p->url);
                     if (a.t->hpos >= 0) { free(a.t->hist[a.t->hpos]); a.t->hist[a.t->hpos] = xstrdup(p->url); }
                     char title[512]; snprintf(title, sizeof title, "%s", p->d->title && *p->d->title ? p->d->title : p->url);
@@ -3361,21 +4512,24 @@ int main(int argc, char **argv) {
                 }
             }
 #ifdef __ANDROID__
-            if (touch_tap) g_press = g_drag = g_epress = false;
+            if (touch_tap) g_press = g_drag = g_epress = g_cpress = g_upress = false;
 #endif
         } while (SDL_PollEvent(&ev));
 #ifdef __ANDROID__
         android_fling_tick(&a);
+        tsel_long_press(&a);
 #endif
         js_release_pins();
-        double lt0 = now_ms();
+        double lt0 = now_ms(), tr_js = 0, tr_restyle = 0, tr_img = 0;
         net_poll();
+        if (a.t->cur && a.t->cur->sheets_pending) restyle(&a);
         double lt1 = now_ms();
-        { Tab *act = a.t; double tn = now_ms(); for (int i = 0; i < a.ntabs; i++) { a.t = a.tabs[i]; if (a.t->limited) { a.t->budget = LMIN(a.t->budget + a.t->lim * (tn - a.t->bud_t), 100); a.t->bud_t = tn; if (a.t->budget < 0) continue; } if (a.t->cur && a.t->cur->js) { double c0 = now_ms(); js_tick(a.t->cur->js); restyle(&a); fire_img_events(a.t->cur); double c = now_ms() - c0; a.t->cpu_ms += c; if (a.t->limited) a.t->budget -= c; } } a.t = act; if (a.t->cur && a.t->cur->js) frames_tick(&a); }
+        { Tab *act = a.t; double tn = now_ms(); for (int i = 0; i < a.ntabs; i++) { a.t = a.tabs[i]; if (a.t->limited) { a.t->budget = LMIN(a.t->budget + a.t->lim * (tn - a.t->bud_t), 100); a.t->bud_t = tn; if (a.t->budget < 0) continue; } if (a.t->cur && a.t->cur->js) { double c0 = now_ms(); js_tick(a.t->cur->js); double c1 = now_ms(); restyle(&a); double c2 = now_ms(); fire_img_events(a.t->cur); double c = now_ms() - c0; tr_js += c1 - c0; tr_restyle += c2 - c1; tr_img += now_ms() - c2; a.t->cpu_ms += c; if (a.t->limited) a.t->budget -= c; } } a.t = act; if (a.t->cur && a.t->cur->js) frames_tick(&a); }
         edit_sel_sync(&a);
         double lt2 = now_ms();
         if (a.dirty) { double r0 = now_ms(); render(&a); a.t->cpu_ms += now_ms() - r0; }
-        if (lt0 < g_load_trace_until && now_ms() - lt0 >= 100) LOAD_TRACE("stall_ms=%.0f net_poll_ms=%.0f js_style_ms=%.0f render_ms=%.0f", now_ms() - lt0, lt1 - lt0, lt2 - lt1, now_ms() - lt2);
+        if (lt0 < g_load_trace_until && now_ms() - lt0 >= 100) LOAD_TRACE("stall_ms=%.0f net_poll_ms=%.0f js_style_ms=%.0f (js=%.0f restyle=%.0f img=%.0f) render_ms=%.0f", now_ms() - lt0, lt1 - lt0, lt2 - lt1, tr_js, tr_restyle, tr_img, now_ms() - lt2);
+        (void)tr_js; (void)tr_restyle; (void)tr_img;
         cpu_monitor(&a);
         { float want = a.t->info || *g_notice ? INFOH : 0; if (want != g_info_h) { g_info_h = want; for (int i = 0; i < a.ntabs; i++) a.tabs[i]->relayout = true; a.dirty = true; a.vonly = false; } }
         if (*cookie_path && now_ms() - cookies_saved_at > 5000) { cookies_save(cookie_path); cookies_saved_at = now_ms(); }

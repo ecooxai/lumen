@@ -23,7 +23,10 @@ typedef struct DItem {
     Image *img;
     Gradient *grad;
     float blur, spread, alpha;
+    float ox, oy;               /* DO_SHADOW offset: the border box is at (x - ox, y - oy) */
     bool inset, fixed; /* fixed items keep their viewport position during document scrolling */
+    const void *mv;             /* innermost scroller box the item moves with when it scrolls; NULL = the document */
+    const void *sc;             /* DO_PUSH_CLIP: the scroller box whose clip this is */
 } DItem;
 
 typedef struct DisplayList { VEC(DItem) items; Arena arena; float vw, vh; PaintRegions fixed; } DisplayList;
@@ -57,12 +60,21 @@ void canvas_free(Canvas *c);
 void raster(Canvas *c, const DisplayList *dl, Color clear);
 /* Re-raster only device-pixel rect [x0,x1)x[y0,y1); pixels outside are left untouched. */
 void raster_rect(Canvas *c, const DisplayList *dl, Color clear, int x0, int y0, int x1, int y1);
+extern unsigned long long g_raster_px, g_layer_px;   /* paint profile: pixels rastered / composited from opacity layers */
+extern unsigned g_raster_calls, g_layer_n;
 bool png_write(const char *path, const uint32_t *px, int w, int h, int stride);
 
 /* native text selection (anchor/focus = text node + byte offset into its layout text) */
 typedef struct TextSel { bool on; const Layout *L; Node *an, *fn; int ao, fo; } TextSel;
 extern TextSel g_tsel;
+extern bool g_tsel_fwd;   /* after tsel_prepare: the anchor comes first in document order */
+/* selection start/end carets in viewport CSS px from the last dl_build of g_tsel.L; ok = painted */
+typedef struct TselCaret { bool ok; float x, y, h; int cluster; } TselCaret;
+extern TselCaret g_tsel_caret[2];
 bool tsel_point(Layout *L, float x, float y, float page_sy, Box *scope, Node **n, int *off);
+/* like tsel_point, but fails unless text is on the point's line within maxd px horizontally */
+bool tsel_point_near(Layout *L, float x, float y, float page_sy, Box *scope, float maxd, Node **n, int *off);
+int tsel_edge(const Box *t);   /* bit 0: t holds the selection start, bit 1: the end */
 void tsel_prepare(Layout *L);
 bool tsel_range(const Box *t, int *s, int *e);
 char *tsel_text(Layout *L);
@@ -71,5 +83,13 @@ void tsel_block(Layout *L, Node *n);
 void tsel_all(Layout *L);
 bool tsel_dom_point(Node *n, int o, bool end, Node **tn, int *to);   /* element boundary -> nearest text (end: the text before) */
 bool node_within(const Node *n, const Node *anc);
+/* <input>/<textarea> selection (Document.csel, codepoints of the value) */
+int u8_cp_byte(const char *s, int len, int cp);   /* codepoint index -> byte offset, clamped to len */
+int u8_byte_cp(const char *s, int byte);
+const Box *ctl_text_box(const Box *cb);   /* the control's shown value text; NULL when empty (placeholder) */
+int ctl_hit(const Box *cb, float x, float y, float page_sy);   /* caret position nearest the layout point */
+bool ctl_caret(const Box *cb, int cp, float *x, float *y, float *h);   /* caret rect, box coordinates */
+int ctl_vmove(const Box *cb, int cp, int dir);   /* Up (dir < 0) / Down from caret cp */
+bool ctl_range(const Box *t, int *s, int *e);   /* t is the focused control's text: selected bytes */
 
 #endif
