@@ -25,7 +25,7 @@ char *jsg_computed(Node *el, const char *prop) { return css_get_computed_value(e
 
 bool jsg_rect(Node *n, float r[4]) {
     struct Box *b = n->box;
-    if (!b) return false;
+    if (!b || b->w < -1e8f || b->h < -1e8f) return false;   /* no real box (e.g. display:contents placeholder) */
     r[0] = b->x; r[1] = b->y; r[2] = b->w; r[3] = b->h;
     return true;
 }
@@ -33,7 +33,7 @@ bool jsg_rect(Node *n, float r[4]) {
 /* border box as painted: ancestor scroll offsets and translations applied (getBoundingClientRect) */
 bool jsg_vrect(Node *n, float r[4]) {
     struct Box *b = n->box;
-    if (!b) return false;
+    if (!b || b->w < -1e8f || b->h < -1e8f) return false;   /* no real box (e.g. display:contents placeholder) */
     r[0] = b->x; r[1] = b->y; r[2] = b->w; r[3] = b->h;
     for (struct Box *a = b; a; ) {
         const ComputedStyle *s = a->st;

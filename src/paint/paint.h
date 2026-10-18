@@ -3,7 +3,7 @@
 #include "../layout/layout.h"
 
 /* Decoded image: premultiplied 0xAARRGGBB pixels */
-typedef struct Image { int w, h, refs; uint32_t *px; float scale; /* device px per CSS px, 0 = 1 */ struct ImgAnim *anim; uint8_t *yuv; int yuv_mat; /* NV12 video frame; mat: 1 = BT.709, 2 = full range */ } Image;
+typedef struct Image { int w, h, refs; uint32_t *px; float scale; /* device px per CSS px, 0 = 1 */ struct ImgAnim *anim; uint8_t *yuv; int yuv_mat; /* NV12 video frame; mat: 1 = BT.709, 2 = full range */ bool opaque; uint32_t ver; /* bumped when px is redrawn in place (iframes) */ } Image;
 static inline float image_css_w(const Image *im) { return im->scale > 0 ? im->w / im->scale : (float)im->w; }
 static inline float image_css_h(const Image *im) { return im->scale > 0 ? im->h / im->scale : (float)im->h; }
 
@@ -18,10 +18,11 @@ typedef struct DItem {
     float r[4];                 /* corner radii tl tr br bl */
     Color color;
     float bw[4]; Color bc[4]; uint8_t bs[4];
-    DGlyph *g; int ng;
+    DGlyph *g; int ng; float ts;   /* DO_TEXT: glyph scale from an ancestor scale() transform (0 = 1) */
     Image *img;
     Gradient *grad;
     float blur, spread, alpha;
+    float sx, sy;               /* DO_SHADOW: offset from the border box */
     bool inset;
 } DItem;
 
@@ -31,10 +32,14 @@ extern Image *(*paint_image_hook)(Node *n);
 extern Image *(*paint_url_image_hook)(const char *url);
 extern const Node *(*svg_ext_ref_hook)(const char *url, const char *id); /* element #id of an external SVG document, NULL while it loads */
 Image *image_decode(const uint8_t *data, size_t n);
+extern Image *(*image_avif_decoder)(const uint8_t *data, size_t n); /* set by media/ when ffmpeg is linked */
 void image_unref(Image *im);
 void image_yuv_materialize(Image *im);
 /* Advances animated images; true if any frame changed. *next_ms gets the next frame time (0 = none). */
 bool image_anim_tick(double now_ms, double *next_ms);
+/* Marks animated images drawn inside dl's viewport as seen; unseen animations don't report frame changes. */
+struct DisplayList;
+void image_anim_seen(const struct DisplayList *dl, double now_ms);
 Image *svg_image(Node *n, float cw, float ch, float dpr);
 void dl_build(DisplayList *dl, Layout *L, float scroll_x, float scroll_y, float vw, float vh);
 extern bool dl_caret_on; /* paint the caret in the focused text control */

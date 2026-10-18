@@ -5,3 +5,5 @@ out/
 build-dev/
 dist/
 build-g/
+dist/
+build-*/

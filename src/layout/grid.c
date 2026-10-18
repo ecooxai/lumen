@@ -46,6 +46,12 @@ float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
         }
         vec_push(cols, t);
     }
+    if (s->grid_flow_col && !s->grid_areas) { /* column flow: implicit columns sized by grid-auto-columns */
+        int cnt = 0, nr0 = LMAX(1, s->grid_nrows);
+        for (Box *c = b->first; c; c = c->next) if (!c->abs && c->st->grid_col_start <= 0 && c->st->grid_row_start <= 0) cnt++;
+        GridTrack at = { s->grid_auto_cols.kind == LK_LEN ? s->grid_auto_cols : L_auto(), 0, L_auto() };
+        while (cols.n < (cnt + nr0 - 1) / nr0) vec_push(cols, at);
+    }
     if (!cols.n) vec_push(cols, one);
     if (s->grid_areas) { int an = area_cols(s->grid_areas); GridTrack at = { L_auto(), 0, L_auto() }; while (cols.n < an) vec_push(cols, at); }
     nc = cols.n;
@@ -73,6 +79,16 @@ float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
         if (g->r < 0 || g->c >= 0) continue;
         int x = 0; while (x + g->cs <= nc && !occ_free(&oc, g->r, x, g->rs, g->cs)) x++;
         g->c = x + g->cs <= nc ? x : 0; occ_mark(&oc, g->r, g->c, g->rs, g->cs);
+    }
+    if (s->grid_flow_col) {
+        int nr0 = LMAX(1, s->grid_nrows), fr0 = 0, fc = 0;
+        for (int k = 0; k < items.n; k++) {
+            GI *g = &items.v[k];
+            if (g->r >= 0 || g->c >= 0) continue;
+            for (;;) { if (fr0 > 0 && fr0 + g->rs > nr0) { fr0 = 0; fc++; } if (fc + g->cs > nc || occ_free(&oc, fr0, fc, g->rs, g->cs)) break; fr0++; }
+            if (fc + g->cs > nc) { g->c = 0; continue; }
+            g->r = fr0; g->c = fc; occ_mark(&oc, g->r, g->c, g->rs, g->cs); fr0 += g->rs;
+        }
     }
     int ar = 0, ac = 0;
     for (int k = 0; k < items.n; k++) {

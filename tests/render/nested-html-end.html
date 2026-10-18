@@ -1,0 +1,7 @@
+<!doctype html><body>
+<div id="outer"><div id="a"><div id="b"><html><head></head><body><span>inner</span></body></html></div></div><div id="sib">sibling</div></div>
+<div id="after">after</div>
+<script>
+const s = document.getElementById('sib'), f = document.getElementById('after');
+console.log('NHE ' + JSON.stringify([s.parentElement.id == 'outer', f.parentElement == document.body, document.getElementById('b').contains(s) == false]));
+</script>

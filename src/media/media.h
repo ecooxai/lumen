@@ -23,6 +23,7 @@ void mp_open_url(MediaPlayer *m, const char *url);
 int mp_add_buffer(MediaPlayer *m, const char *mime);   /* SourceBuffer index, -1 if unsupported */
 bool mp_append(MediaPlayer *m, int sb, const uint8_t *p, size_t n);
 void mp_remove(MediaPlayer *m, int sb, double start, double end);
+void mp_abort(MediaPlayer *m, int sb);
 int mp_buffered(MediaPlayer *m, int sb, double *ranges, int max);  /* sb < 0: whole element */
 void mp_end_of_stream(MediaPlayer *m);
 void mp_set_duration(MediaPlayer *m, double d);
@@ -50,6 +51,7 @@ size_t media_mem_bytes(size_t *frames);
 struct Document;
 double media_cpu_ms(struct Document *d);
 void media_set_limit(struct Document *d, float lim);
+extern bool media_vis_track;  /* media_mark_visible is in use: frames of unseen players don't request repaints */
 extern bool media_lowmem;   /* hidden players skip RGBA conversion */
 void media_mark_visible(bool (*vis)(Node *, void *), void *ud);
 

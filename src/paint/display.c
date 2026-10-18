@@ -14,6 +14,8 @@ typedef struct {
     bool clip; float cx, cy, cw, ch;
     int order;
     Box *sb; const void *outer;   /* innermost scroller and the state outside it */
+    DefVec *ctx;                  /* deferred list of the enclosing stacking context */
+    int *deco_mark;   /* paint_block_content stores the item index right after the box's own background */
 } PB;
 
 static DItem *emit(PB *p, uint8_t op) { DItem it; memset(&it, 0, sizeof it); it.op = op; it.alpha = 1; vec_push(p->dl->items, it); return &p->dl->items.v[p->dl->items.n - 1]; }
@@ -66,7 +68,7 @@ static void paint_rect_deco(PB *p, Box *b, float x, float y, float w, float h, b
     }
     if (s->has_shadow && !s->box_shadow.inset && COLOR_A(s->box_shadow.color)) {
         DItem *it = emit(p, DO_SHADOW); it->x = x + s->box_shadow.x; it->y = y + s->box_shadow.y; it->w = w; it->h = h;
-        memcpy(it->r, r, sizeof r); it->color = s->box_shadow.color; it->blur = s->box_shadow.blur; it->spread = s->box_shadow.spread;
+        memcpy(it->r, r, sizeof r); it->color = s->box_shadow.color; it->blur = s->box_shadow.blur; it->spread = s->box_shadow.spread; it->sx = s->box_shadow.x; it->sy = s->box_shadow.y;
     }
     if (COLOR_A(s->bg_color)) {
         Color c = s->bg_color;
@@ -123,7 +125,7 @@ static void paint_text_frag(PB *p, TextFrag *f) {
     if (!visible(p, f->x + p->dx, f->y + p->dy, f->w, f->h)) return;
     Color col = s->color;
     Box *blk = t->parent; while (blk && blk->kind == BX_INLINE) blk = blk->parent;
-    if (blk && blk->placeholder) col = RGBA(117, 117, 117, COLOR_A(col));
+    if (blk && blk->placeholder) col = blk->st->ph_set ? blk->st->ph_color : RGBA(117, 117, 117, COLOR_A(col));
     int ss, se;
     if (tsel_range(t, &ss, &se)) {
         float x0 = t->sh.g[f->g0].x, a = -1, e = -1;
@@ -295,7 +297,9 @@ static bool is_edit_host(const Node *n) {
 static void paint_block_content(PB *p, Box *b, DefVec *defs) {
     const ComputedStyle *s = b->st;
     bool vis = s->visibility == VIS_VISIBLE;
+    int *mk = p->deco_mark; p->deco_mark = NULL;
     if (vis && b->node && b->kind != BX_INLINE && b->node != p->L->doc->html) paint_rect_deco(p, b, b->x + p->dx, b->y + p->dy, b->w, b->h, true, true);
+    if (mk) *mk = p->dl->items.n;
     if (b->fmt == FMT_REPLACED) { if (vis) paint_replaced(p, b); return; }
     bool clips = b->scroller && b->node && (s->overflow_x != OV_VISIBLE || s->overflow_y != OV_VISIBLE);
     PB saved = *p;
@@ -367,6 +371,17 @@ static void paint_deferred(PB *p, Deferred *d) {
     int order = p->order; *p = saved; p->order = order;
 }
 
+/* move items [from, to) so they start at index at (at <= from) */
+static void dl_move_items(DisplayList *dl, int at, int from, int to) {
+    int m = to - from;
+    if (m <= 0 || from <= at) return;
+    DItem *tmp = xmalloc((size_t)m * sizeof *tmp), *v = dl->items.v;
+    memcpy(tmp, v + from, (size_t)m * sizeof *tmp);
+    memmove(v + at + m, v + at, (size_t)(from - at) * sizeof *tmp);
+    memcpy(v + at, tmp, (size_t)m * sizeof *tmp);
+    free(tmp);
+}
+
 static void paint_stacking(PB *p, Box *b) {
     const ComputedStyle *s = b->st;
     if (s->opacity <= 0.001f) return;
@@ -378,23 +393,51 @@ static void paint_stacking(PB *p, Box *b) {
     int i0 = p->dl->items.n;
     bool layer = s->opacity < 0.999f;
     if (layer) { DItem *l = emit(p, DO_PUSH_LAYER); l->alpha = s->opacity; }
+    int ins = p->dl->items.n;
     DefVec defs = {0};
+    /* positioned z-index:auto boxes don't form a stacking context: their positive-z descendants are
+       ordered against the siblings of the enclosing context (Wikipedia's z-index:2 dropdown inside a
+       relative wrapper must paint above a later z-index:1 box) */
+    DefVec *octx = p->ctx;
+    bool sc = !octx || !s->z_auto || layer || s->has_transform || s->position == P_FIXED || s->position == P_STICKY;
+    if (sc) p->ctx = &defs;
     if (b->kind == BX_INLINE) {
         if (s->visibility == VIS_VISIBLE) for (int i = 0; i < b->nir; i++) { IRect *r = &b->ir[i]; if (r->w > 0) paint_rect_deco(p, b, r->x + p->dx, r->y + p->dy, r->w, r->h, r->first, r->last); }
         /* text of an inline positioned box lives in its block's frags: paint those belonging to it */
         Box *blk = b->parent; while (blk && blk->kind == BX_INLINE) blk = blk->parent;
         if (blk) for (int i = 0; i < blk->nfrags; i++) { TextFrag *f = &blk->frags[i]; Box *o = f->box; while (o && o != b && o != blk) o = o->parent; if (o == b) { if (f->box->kind == BX_TEXT) paint_text_frag(p, f); else paint_block_content(p, f->box, &defs); } }
-    } else paint_block_content(p, b, &defs);
+    } else { p->deco_mark = &ins; paint_block_content(p, b, &defs); p->deco_mark = NULL; }
+    if (!sc) {
+        int k = 0;
+        for (int i = 0; i < defs.n; i++) {
+            const ComputedStyle *ds = defs.v[i].b->st;
+            if (!ds->z_auto && ds->z_index) vec_push(*octx, defs.v[i]);
+            else defs.v[k++] = defs.v[i];
+        }
+        defs.n = k;
+    }
     if (defs.n > 1) qsort(defs.v, (size_t)defs.n, sizeof(Deferred), def_cmp);
-    for (int i = 0; i < defs.n; i++) paint_deferred(p, &defs.v[i]);
+    /* negative z-index children (including ones hoisted later from non-context positioned descendants)
+       paint after this context's background but before its in-flow content */
+    int negend = ins;
+    for (int i = 0, sorted = defs.n; i < defs.n; i++) {
+        if (defs.n != sorted) { qsort(defs.v + i, (size_t)(defs.n - i), sizeof(Deferred), def_cmp); sorted = defs.n; }   /* hoisted from non-context descendants */
+        Deferred d = defs.v[i]; int n0 = p->dl->items.n; paint_deferred(p, &d);
+        if (!d.b->st->z_auto && d.b->st->z_index < 0) { dl_move_items(p->dl, negend, n0, p->dl->items.n); negend += p->dl->items.n - n0; }
+    }
     vec_free(defs);
+    p->ctx = octx;
     if (layer) emit(p, DO_POP_LAYER);
     if (fabsf(ksx - 1) > 1e-4f || fabsf(ksy - 1) > 1e-4f) {
         float ox = b->x + p->dx + s->transform_origin[0].px + s->transform_origin[0].pct * b->w / 100;
         float oy = b->y + p->dy + s->transform_origin[1].px + s->transform_origin[1].pct * b->h / 100;
         for (int i = i0; i < p->dl->items.n; i++) {
             DItem *it = &p->dl->items.v[i];
-            if (it->g) continue;
+            if (it->g) {
+                if (fabsf(ksx - ksy) > 1e-3f || ksx <= 0) continue;
+                for (int k = 0; k < it->ng; k++) { it->g[k].x = ox + (it->g[k].x - ox) * ksx; it->g[k].y = oy + (it->g[k].y - oy) * ksy; }
+                it->ts = (it->ts ? it->ts : 1) * ksx;
+            }
             it->x = ox + (it->x - ox) * ksx; it->y = oy + (it->y - oy) * ksy; it->w *= ksx; it->h *= ksy;
             if (it->w < 0) { it->x += it->w; it->w = -it->w; }
             if (it->h < 0) { it->y += it->h; it->h = -it->h; }

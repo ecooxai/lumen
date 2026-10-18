@@ -1,0 +1,11 @@
+<!doctype html><style id="s1">#a { width: 10px; }</style><body><div id="a">a</div><div id="b">b</div><div id="c">c</div>
+<script>
+const w = id => getComputedStyle(document.getElementById(id)).width; const r = [];
+document.body.offsetWidth; r.push(w('a') == '10px');
+setTimeout(() => { document.getElementById('s1').firstChild.data = '#a { width: 20px; }'; }, 100);
+setTimeout(() => { r.push(w('a') == '20px'); document.getElementById('s1').textContent = '#a { width: 30px; } #b { width: 40px; }'; }, 300);
+setTimeout(() => { r.push(w('a') == '30px', w('b') == '40px'); const st = document.createElement('style'); st.textContent = '#c { width: 50px; }'; document.head.append(st); }, 500);
+setTimeout(() => { r.push(w('c') == '50px'); document.getElementById('s1').append(document.createTextNode(' #c { width: 60px !important; }')); }, 700);
+setTimeout(() => { r.push(w('c') == '60px'); document.getElementById('s1').remove(); }, 900);
+setTimeout(() => { r.push(w('a') != '30px'); console.log('STU ' + JSON.stringify(r)); }, 1100);
+</script>

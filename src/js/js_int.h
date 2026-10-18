@@ -2,7 +2,9 @@
 #pragma once
 #include <v8.h>
 #include <libplatform/libplatform.h>
+#include <algorithm>
 #include <atomic>
+#include <functional>
 #include <condition_variable>
 #include <map>
 #include <mutex>
@@ -51,6 +53,7 @@ struct AnimEv {
 };
 struct JsCtx {
     v8::Isolate *iso = nullptr;
+    uint64_t bus_seen = 0; std::string bus_origin;   /* BroadcastChannel / storage-event bus */
     bool bg = false, bg_gc = false; double bg_since = 0;   /* tab in the background: V8 favours memory, one idle GC */
     v8::ArrayBuffer::Allocator *alloc = nullptr;
     v8::Global<v8::Context> ctx;
@@ -90,7 +93,10 @@ struct JsCtx {
     uint64_t frame_scan_ver = ~0ull;
     void *host_ud = nullptr;          /* child host data returned by frame_open */
     std::string frame_src;
+    bool sb_opaque = false, sb_noscript = false;   /* <iframe sandbox> without allow-same-origin / allow-scripts */
     std::unordered_map<std::string, v8::Global<v8::Module>> mods;   /* ES module map, keyed by URL */
+    std::vector<std::pair<std::string, std::string>> imap;          /* import map "imports" (scopes merged) */
+    size_t imap_seen = 0;
     std::unordered_multimap<int, std::string> mod_url;              /* module identity hash -> key */
     int mod_seq = 0;
 };
@@ -109,6 +115,14 @@ v8::Local<v8::String> jsrc(v8::Isolate *iso, const char *s, size_t n);
 std::string jcstr(v8::Isolate *iso, v8::Local<v8::Value> v);
 v8::Local<v8::Value> jwrap(JsCtx *c, Node *n);
 Node *junwrap(v8::Local<v8::Value> v);
+void js_bus_deliver(JsCtx *c);
+uint64_t js_bus_seq();
+struct BusMsg { uint64_t seq; double t; std::string origin, kind, name; std::vector<uint8_t> data; const void *sender; double id; };
+bool js_bus_post(v8::Isolate *iso, v8::Local<v8::Context> cx, v8::Local<v8::Value> v, const std::string &origin,
+                 const std::string &kind, const std::string &name, const void *sender, double id);
+bool js_bus_take(const std::string &origin, const void *self, uint64_t &seen, std::vector<BusMsg> &out);
+bool js_bus_args(v8::Isolate *iso, v8::Local<v8::Context> ctx, const BusMsg &m, const void *self, v8::Local<v8::Value> argv[5]);
+void js_bus_listen(const void *key, std::function<void()> wake);   /* worker threads; null wake unregisters */
 v8::MaybeLocal<v8::Value> jcall(JsCtx *c, v8::Local<v8::Function> f, v8::Local<v8::Value> recv, int argc, v8::Local<v8::Value> *argv);
 void jfire(JsCtx *c, Node *n, const char *type);
 void jreport(JsCtx *c, v8::Local<v8::Value> exc, v8::Local<v8::Message> msg);
@@ -116,6 +130,8 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N);
 void js_run_inserted(JsCtx *c, Node *root);
 extern "C" JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame);
 extern "C" JsCtx *owner_ctx(Document *d);
+/* URL of the top-level document this context belongs to (site for cookies) */
+static inline const char *js_top_url(const JsCtx *c) { while (c && c->parent) c = c->parent; return c && c->doc ? c->doc->url : nullptr; }
 std::string ctx_origin(JsCtx *c);
 void frames_scan(JsCtx *c);
 void frames_inserted(JsCtx *c, Node *root);
@@ -124,6 +140,9 @@ void frame_kill(JsCtx *k);
 void frame_nav(JsCtx *k, const char *u);
 void js_install_frames(JsCtx *c, v8::Local<v8::Object> N);
 void js_install_workers(JsCtx *c, v8::Local<v8::Object> N);
+void js_install_canvas(JsCtx *c, v8::Local<v8::Object> N);
+void js_install_webgpu(JsCtx *c, v8::Local<v8::Object> N);
+void js_install_capture(JsCtx *c, v8::Local<v8::Object> N);
 void workers_pump(JsCtx *c);
 void workers_kill(JsCtx *c);
 double workers_deadline(JsCtx *c);

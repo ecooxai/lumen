@@ -1,23 +1,29 @@
+const popOpen = new WeakSet();
+/* pointer capture: moves/ups (and their compat mouse events) go to the capturing element until pointerup */
+let pointerCapture_ = null;
+function releaseCapture_() { const t = pointerCapture_; pointerCapture_ = null; if (t) dispatch(t, new PointerEvent('lostpointercapture', { bubbles: true, pointerId: 1 })); }
 const camelToKebab = (p) => p.startsWith('--') ? p : p === 'cssFloat' ? 'float' : p.replace(/^(webkit|moz|ms)(?=[A-Z])/, '-$1').replace(/[A-Z]/g, c => '-' + c.toLowerCase());
 function parseDecls(s) {
     const m = new Map(); if (!s) return m;
     let depth = 0, q = 0, start = 0; const parts = [];
     for (let i = 0; i < s.length; i++) { const c = s[i]; if (q) { if (c === q) q = 0; } else if (c === '"' || c === "'") q = c; else if (c === '(') depth++; else if (c === ')') depth--; else if (c === ';' && !depth) { parts.push(s.slice(start, i)); start = i + 1; } }
     parts.push(s.slice(start));
-    for (const p of parts) { const i = p.indexOf(':'); if (i < 0) continue; const k = p.slice(0, i).trim(); let v = p.slice(i + 1).trim(); if (!k) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } m.set(k.startsWith('--') ? k : k.toLowerCase(), [v, imp]); }
+    for (const p of parts) { const i = p.indexOf(':'); if (i < 0) continue; const k = p.slice(0, i).trim(); let v = p.slice(i + 1).trim(); if (!k) continue; if (!/["'(]/.test(v)) v = v.replace(/(^|[\s,\/+*-])\.(\d)/g, '$10.$2'); let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } m.set(k.startsWith('--') ? k : k.toLowerCase(), [v, imp]); }
     return m;
 }
 const serDecls = (m) => [...m].map(([k, [v, i]]) => k + ': ' + v + (i ? ' !important' : '') + ';').join(' ');
+const cssomSet = (el, v) => { const old = N.attr(el, 'style'); v = String(v); N.setAttr(el, 'style', v, true); notify('attributes', el, { attributeName: 'style', oldValue: old }); ceAttr(el, 'style', old, v); };
 class CSSStyleDeclaration {
     constructor(el, ro) { def(this, '_el', el); def(this, '_ro', ro); }
     _m() { return parseDecls(this._el ? N.attr(this._el, 'style') : ''); }
-    get cssText() { return serDecls(this._m()); } set cssText(v) { this._el.setAttribute('style', String(v)); }
+    get cssText() { return serDecls(this._m()); } set cssText(v) { cssomSet(this._el, v); }
     get length() { return this._m().size; }
     item(i) { return [...this._m().keys()][i] || ''; }
+    *[Symbol.iterator]() { for (let i = 0, n = this.length; i < n; i++) yield this.item(i); }
     getPropertyValue(p) { const e = this._m().get(camelToKebab(String(p))); return e ? e[0] : ''; }
     getPropertyPriority(p) { const e = this._m().get(camelToKebab(String(p))); return e ? e[1] : ''; }
-    setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p); const m = this._m(); if (v == null || v === '') m.delete(p); else m.set(p, [String(v), pri ? 'important' : '']); this._el.setAttribute('style', serDecls(m)); }
-    removeProperty(p) { p = camelToKebab(String(p)); const m = this._m(); const e = m.get(p); if (e) { m.delete(p); this._el.setAttribute('style', serDecls(m)); } return e ? e[0] : ''; }
+    setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p); const m = this._m(); if (v == null || v === '') m.delete(p); else m.set(p, [String(v), pri ? 'important' : '']); cssomSet(this._el, serDecls(m)); }
+    removeProperty(p) { p = camelToKebab(String(p)); const m = this._m(); const e = m.get(p); if (e) { m.delete(p); cssomSet(this._el, serDecls(m)); } return e ? e[0] : ''; }
 }
 const styleHandler = {
     get(t, p) { if (typeof p !== 'string' || p in t) return Reflect.get(t, p, t); if (/^\d+$/.test(p)) return t.item(+p); return t.getPropertyValue(p); },
@@ -98,7 +104,20 @@ methods(Element.prototype, {
     scrollTo(x, y) { if (this === document.documentElement || this === document.body) return window.scrollTo(x, y); const o = x && typeof x === 'object' ? x : { left: x, top: y }; this.__scrollSet(o.left == null ? NaN : +o.left || 0, o.top == null ? NaN : +o.top || 0); },
     scroll(x, y) { this.scrollTo(x, y); },
     scrollBy(x, y) { const o = x && typeof x === 'object' ? x : { left: x, top: y }; this.scrollTo({ left: this.scrollLeft + (+o.left || 0), top: this.scrollTop + (+o.top || 0) }); },
-    scrollIntoView() { const r = N.rect(this); if (r) N.scrollTo(0, r[1]); }, scrollIntoViewIfNeeded() { this.scrollIntoView(); },
+    scrollIntoView(o) {
+        const blk = o === false ? 'end' : (o && typeof o === 'object' && o.block) || 'start';
+        const need = (top, h, vh) => blk === 'start' ? top : blk === 'end' ? top + h - vh : blk === 'center' ? top + h / 2 - vh / 2 :
+            top < 0 ? top : top + h > vh ? (h > vh ? top : top + h - vh) : 0;   /* nearest */
+        for (let p = this.parentElement; p && p !== document.body && p !== document.documentElement; p = p.parentElement) {
+            if (p.scrollHeight <= p.clientHeight + 1) continue;
+            const ov = getComputedStyle(p).overflowY; if (ov !== 'auto' && ov !== 'scroll' && ov !== 'hidden') continue;
+            const er = this.getBoundingClientRect(), pr = p.getBoundingClientRect(), d = Math.round(need(er.top - pr.top, er.height, p.clientHeight));
+            if (d) p.scrollTop = p.scrollTop + d;
+        }
+        const r = this.getBoundingClientRect(), d = Math.round(need(r.top, r.height, window.innerHeight));
+        if (d) window.scrollTo(window.scrollX, window.scrollY + d);
+    },
+    scrollIntoViewIfNeeded(c) { this.scrollIntoView(c === false ? { block: 'nearest' } : { block: 'center' }); },
     attachShadow(init) {
         if (this.__shadow) throw new DOMException('Shadow root cannot be created on a host which already hosts a shadow tree.', 'NotSupportedError');
         const sr = N.attachShadow(this); Object.setPrototypeOf(sr, ShadowRoot.prototype);
@@ -108,7 +127,7 @@ methods(Element.prototype, {
     get shadowRoot() { return this.__shadow && this.__shadow.__mode === 'open' ? this.__shadow : null; },
     get assignedSlot() { return null; },
     requestFullscreen() { return Promise.reject(new DOMException('Fullscreen is not supported yet', 'NotSupportedError')); },
-    requestPointerLock() {}, setPointerCapture() {}, releasePointerCapture() {}, hasPointerCapture() { return false; },
+    requestPointerLock() {}, setPointerCapture() { if (pointerCapture_ !== this) { pointerCapture_ = this; dispatch(this, new PointerEvent('gotpointercapture', { bubbles: true, pointerId: 1 })); } }, releasePointerCapture() { if (pointerCapture_ === this) releaseCapture_(); }, hasPointerCapture() { return pointerCapture_ === this; },
     animate(kf, o) { return new Animation(this, kf, o); }, getAnimations() { return []; },
     checkVisibility() { return !!N.rect(this); },
 });
@@ -119,17 +138,20 @@ function setInner(el, html) {
     const added = kids(el);
     if (removed.length || added.length) notify('childList', el, { removedNodes: removed, addedNodes: added });
     for (const a of added) ceConnected(a, true);
+    if (el.__ass) readopt(el);
 }
 const reflectStr = (p, ...ns) => { for (const n of ns) { const a = n.toLowerCase(); acc(p, n, function () { return N.attr(this, a) ?? ''; }, function (v) { this.setAttribute(a, v); }); } };
 const reflectBool = (p, ...ns) => { for (const n of ns) { const a = n.toLowerCase(); acc(p, n, function () { return N.attr(this, a) != null; }, function (v) { if (v) this.setAttribute(a, ''); else this.removeAttribute(a); }); } };
 const reflectUrl = (p, ...ns) => { for (const n of ns) { const a = n.toLowerCase(); acc(p, n, function () { const v = N.attr(this, a); if (v == null) return ''; const r = N.urlParse(v, document.baseURI); return r ? r[0] : v; }, function (v) { this.setAttribute(a, v); }); } };
 const reflectInt = (p, d, ...ns) => { for (const n of ns) { const a = n.toLowerCase(); acc(p, n, function () { const v = parseInt(N.attr(this, a), 10); return isNaN(v) ? d : v; }, function (v) { this.setAttribute(a, String(v | 0)); }); } };
 const EVENT_HANDLERS = 'abort animationend animationiteration animationstart auxclick beforeinput blur cancel canplay canplaythrough change click close contextmenu copy cut dblclick drag dragend dragenter dragleave dragover dragstart drop durationchange emptied ended error focus focusin focusout input invalid keydown keypress keyup load loadeddata loadedmetadata loadstart mousedown mouseenter mouseleave mousemove mouseout mouseover mouseup paste pause play playing pointercancel pointerdown pointerenter pointerleave pointermove pointerout pointerover pointerup progress ratechange reset resize scroll seeked seeking select selectionchange selectstart stalled submit suspend timeupdate toggle touchcancel touchend touchmove touchstart transitionend volumechange waiting wheel'.split(' ');
+const SB_NOSCRIPT = (N.sbFlags() & 2) !== 0;   /* <iframe sandbox> without allow-scripts: inline handlers don't run */
 function compileHandler(el, k, src) {
+    if (SB_NOSCRIPT) return null;
     const c = el.__hc || (def(el, '__hc', {}), el.__hc);
     if (c[k] && c[k].src === src) return c[k].fn;
     let fn = null;
-    try { fn = new Function('event', src); } catch (e) { report(e); }
+    try { fn = N.compileHandler(src); } catch (e) { report(e); }
     c[k] = { src, fn };
     return fn;
 }
@@ -151,11 +173,11 @@ reflectBool(HTMLElement.prototype, 'hidden', 'inert', 'autofocus');
 installHandlers(HTMLElement.prototype, true);
 methods(HTMLElement.prototype, {
     get style() { if (!this.__style) def(this, '__style', makeStyle(this)); return this.__style; },
-    set style(v) { this.setAttribute('style', v); },
+    set style(v) { cssomSet(this, v); },
     get dataset() {
         if (this.__ds) return this.__ds;
         const el = this, toAttr = (k) => 'data-' + k.replace(/[A-Z]/g, c => '-' + c.toLowerCase());
-        const ds = new Proxy({}, {
+        const ds = new Proxy(Object.create(DOMStringMap.prototype), {
             get(t, k) { return typeof k === 'string' ? N.attr(el, toAttr(k)) ?? undefined : undefined; },
             set(t, k, v) { el.setAttribute(toAttr(k), v); return true; },
             deleteProperty(t, k) { el.removeAttribute(toAttr(k)); return true; },
@@ -188,7 +210,9 @@ methods(HTMLElement.prototype, {
     focus() { const o = N.active(); if (o === this) return; N.focus(this); if (N.active() !== this) return; if (o) o.dispatchEvent(new FocusEvent('focusout', { bubbles: true, composed: true, relatedTarget: this })); this.dispatchEvent(new FocusEvent('focusin', { bubbles: true, composed: true, relatedTarget: o })); }, blur() { if (N.active() !== this) return; N.focus(null); this.dispatchEvent(new FocusEvent('focusout', { bubbles: true, composed: true, relatedTarget: null })); },
     click() { if (this.disabled) return; const ev = new MouseEvent('click', { bubbles: true, cancelable: true, composed: true, view: G, detail: 1 }); const pre = preActivate(this); if (dispatch(this, ev)) activate(this, ev, pre); else if (pre && pre.restore) pre.restore(); },
     attachInternals() { return { setFormValue() {}, setValidity() {}, checkValidity() { return true; }, reportValidity() { return true; }, states: new Set(), form: null, labels: [] }; },
-    showPopover() {}, hidePopover() {}, togglePopover() {},
+    showPopover() { if (!popOpen.has(this)) { popOpen.add(this); N.setPseudo(this, 1, true); } },
+    hidePopover() { if (popOpen.delete(this)) N.setPseudo(this, 1, false); },
+    togglePopover(f) { const cur = popOpen.has(this), o = f === undefined ? !cur : typeof f === 'object' && f ? (f.force === undefined ? !cur : !!f.force) : !!f; if (o) this.showPopover(); else this.hidePopover(); return o; },
 });
 class SVGElement extends Element {}
 installHandlers(SVGElement.prototype, true);

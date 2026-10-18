@@ -4,7 +4,10 @@ let mediaPumpId = 0;
 const mediaFire = (el, t) => el.dispatchEvent(new Event(t));
 const mediaLater = (el, t) => setTimeout(() => mediaFire(el, t), 0);
 const mediaRanges = (flat) => { const r = []; for (let i = 0; i + 1 < flat.length; i += 2) r.push([flat[i], flat[i + 1]]); return new TimeRanges(r); };
+function mediaPump() { if (!mediaPumpId) mediaPumpId = setInterval(mediaPoll, 50); }
+/* polls at 20 Hz only while some element plays, seeks, waits or changed state in the last 2 s */
 function mediaPoll() {
+    let busy = false;
     for (const el of mediaEls) {
         if (!el.__mp) { mediaEls.delete(el); continue; }
         const s = N.mediaState(el.__mp); if (!s) continue;
@@ -13,6 +16,9 @@ function mediaPoll() {
         const n = { ready, ended, seeking, waiting, error, duration, w, h, tu: o.tu };
         def(el, '__st', n);
         const playing = el.__paused === false;
+        const same = ready === o.ready && ended === o.ended && seeking === o.seeking && waiting === o.waiting && error === o.error && w === o.w && h === o.h && (duration === o.duration || (Number.isNaN(duration) && Number.isNaN(o.duration)));
+        const idle = same ? (el.__idle || 0) + 1 : 0; def(el, '__idle', idle);
+        if (playing || seeking || waiting || idle < 40) busy = true;
         if (error && !o.error) { def(el, '__err', new MediaError(msg === 'network error' ? 2 : 3, msg || '')); mediaFire(el, 'error'); continue; }
         if (!(Number.isNaN(duration) && Number.isNaN(o.duration)) && duration !== o.duration) mediaFire(el, 'durationchange');
         if (ready >= 1 && o.ready < 1) mediaFire(el, 'loadedmetadata');
@@ -25,11 +31,11 @@ function mediaPoll() {
         if (!seeking && o.seeking) { n.tu = time; mediaFire(el, 'timeupdate'); mediaFire(el, 'seeked'); }
         if (playing && !seeking && Math.abs(time - n.tu) >= 0.25) { n.tu = time; mediaFire(el, 'timeupdate'); }
         if (ended && !o.ended) {
-            if (el.loop) { N.mediaSeek(el.__mp, 0); N.mediaPlay(el.__mp); continue; }
+            if (el.loop) { n.ended = false; n.seeking = true; N.mediaSeek(el.__mp, 0); N.mediaPlay(el.__mp); mediaFire(el, 'seeking'); continue; }
             def(el, '__paused', true); mediaFire(el, 'timeupdate'); mediaFire(el, 'pause'); mediaFire(el, 'ended');
         }
     }
-    if (!mediaEls.size && mediaPumpId) { clearInterval(mediaPumpId); mediaPumpId = 0; }
+    if (!busy && mediaPumpId) { clearInterval(mediaPumpId); mediaPumpId = 0; }
 }
 function mediaDetach(el) {
     if (el.__mp) { N.mediaFree(el.__mp); def(el, '__mp', 0); }
@@ -38,13 +44,16 @@ function mediaDetach(el) {
 }
 function mediaAttach(el, src) {
     const id = N.mediaNew(el); def(el, '__mp', id);
-    mediaEls.add(el); if (!mediaPumpId) mediaPumpId = setInterval(mediaPoll, 50);
+    mediaEls.add(el); def(el, '__idle', 0); mediaPump();
     N.mediaVolume(id, el.volume, el.muted);
     if (src instanceof MediaSource) { def(el, '__src', ''); src._attach(el, id); }
     else {
         const ms = objectURLs.get(src);
         def(el, '__src', src);
-        if (ms instanceof MediaSource) ms._attach(el, id); else N.mediaOpen(id, src);
+        if (!N.cspMedia((() => { try { return new URL(src, document.baseURI).href; } catch (e) { return String(src); } })())) { mediaLater(el, 'loadstart'); mediaLater(el, 'error'); return; }
+        if (ms instanceof MediaSource) ms._attach(el, id);
+        else if (ms && ms._buf) { if (!ms.__file) ms.__file = N.blobFile(ms._buf); N.mediaOpen(id, ms.__file || src); }
+        else N.mediaOpen(id, src);
     }
     mediaLater(el, 'loadstart');
 }
@@ -56,7 +65,7 @@ mk('HTMLMediaElement', HTMLElement, [], p => {
         set src(v) { N.setAttr(this, 'src', String(v)); this.load(); },
         get currentSrc() { return this.__src || ''; },
         get paused() { return this.__paused !== false; },
-        get ended() { const s = st(this); return !!(s && s[2]); },
+        get ended() { const s = st(this); return !!(s && s[2]) && !this.loop; },
         get seeking() { const s = st(this); return !!(s && s[3]); },
         get readyState() { const s = st(this); return s ? s[0] : 0; },
         get networkState() { const s = st(this); return s ? (s[0] >= 4 ? 1 : 2) : (N.attr(this, 'src') != null ? 3 : 0); },
@@ -66,7 +75,7 @@ mk('HTMLMediaElement', HTMLElement, [], p => {
         set currentTime(v) {
             v = +v || 0;
             if (!this.__mp) { def(this, '__ct', v); return; }
-            N.mediaSeek(this.__mp, v); if (this.__st) this.__st.seeking = true;
+            N.mediaSeek(this.__mp, v); if (this.__st) this.__st.seeking = true; def(this, '__idle', 0); mediaPump();
             mediaFire(this, 'seeking');
         },
         fastSeek(t) { this.currentTime = t; },
@@ -99,7 +108,7 @@ mk('HTMLMediaElement', HTMLElement, [], p => {
             if (!this.__mp) return Promise.reject(new DOMException('The element has no supported sources.', 'NotSupportedError'));
             if (this.__err) return Promise.reject(new DOMException(this.__err.message || 'playback error', 'NotSupportedError'));
             if (this.__paused !== false) { def(this, '__paused', false); mediaLater(this, 'play'); if (this.readyState >= 3) mediaLater(this, 'playing'); }
-            N.mediaPlay(this.__mp);
+            N.mediaPlay(this.__mp); def(this, '__idle', 0); mediaPump();
             return Promise.resolve();
         },
         pause() {

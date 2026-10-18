@@ -1,0 +1,16 @@
+<!doctype html><title>dialog :modal and :popover-open</title>
+<style>dialog{opacity:0} dialog:modal{opacity:1} .m:modal{color:rgb(255,0,0)} #p:popover-open{color:rgb(0,128,0)}</style>
+<dialog id=d class=m><p>Modal content</p></dialog><div id=p popover>Pop</div>
+<script>
+const d = document.getElementById('d'), p = document.getElementById('p');
+const st = () => 'op=' + getComputedStyle(d).opacity + ' pos=' + getComputedStyle(d).position + ' modal=' + d.matches(':modal') + ' color=' + getComputedStyle(d).color;
+console.log('MD before ' + st());
+d.showModal(); console.log('MD shown ' + st());
+d.close(); console.log('MD closed ' + st() + ' open=' + d.open);
+d.show(); console.log('MD show() ' + st());
+d.close();
+console.log('MD pop before disp=' + getComputedStyle(p).display + ' m=' + p.matches(':popover-open'));
+p.showPopover(); console.log('MD pop shown disp=' + getComputedStyle(p).display + ' m=' + p.matches(':popover-open') + ' color=' + getComputedStyle(p).color);
+console.log('MD toggle=' + p.togglePopover() + ' disp=' + getComputedStyle(p).display);
+d.showModal();
+</script>

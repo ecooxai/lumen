@@ -52,7 +52,7 @@ mk('HTMLFormElement', HTMLElement, ['form'], p => {
     methods(p, {
         get method() { return (N.attr(this, 'method') || 'get').toLowerCase() === 'post' ? 'post' : 'get'; }, set method(v) { this.setAttribute('method', v); },
         get enctype() { return N.attr(this, 'enctype') || 'application/x-www-form-urlencoded'; },
-        get elements() { return nodeList(N.query(this, 'input,select,textarea,button,fieldset,output', true)); }, get length() { return this.elements.length; },
+        get elements() { const l = nodeList(N.query(this, 'input,select,textarea,button,fieldset,output', true)); def(l, 'namedItem', k => { k = String(k); const m = Array.prototype.filter.call(l, e => e.id === k || e.getAttribute('name') === k); return m.length > 1 ? Object.assign(nodeList(m), { get value() { const c = m.find(e => e.checked); return c ? c.value : ''; } }) : m[0] || null; }); for (const e of l) for (const k of [e.id, e.getAttribute('name')]) if (k && !(k in l)) def(l, k, l.namedItem(k)); return l; }, get length() { return this.elements.length; },
         submit() { submitForm(this, null); },
         requestSubmit(s) { if (dispatch(this, new SubmitEvent('submit', { bubbles: true, cancelable: true, submitter: s || null }), true)) submitForm(this, s); },
         reset() { if (dispatch(this, new Event('reset', { bubbles: true, cancelable: true }))) for (const e of this.elements) N.setValue(e, null); },
@@ -119,5 +119,5 @@ mk('HTMLOptionElement', HTMLElement, ['option'], p => {
 mk('HTMLLabelElement', HTMLElement, ['label'], p => { acc(p, 'htmlFor', function () { return N.attr(this, 'for') ?? ''; }, function (v) { this.setAttribute('for', v); }); methods(p, { get control() { const f = N.attr(this, 'for'); return f ? N.byId(f) : this.querySelector('input,select,textarea,button'); } }); });
 mk('HTMLFieldSetElement', HTMLElement, ['fieldset'], p => reflectBool(p, 'disabled'));
 mk('HTMLDetailsElement', HTMLElement, ['details'], p => acc(p, 'open', function () { return N.attr(this, 'open') != null; }, function (v) { const was = this.open; this.toggleAttribute('open', !!v); if (was !== !!v) setTimeout(() => dispatch(this, new Event('toggle'))); }));
-mk('HTMLDialogElement', HTMLElement, ['dialog'], p => { reflectBool(p, 'open'); methods(p, { show() { this.open = true; }, showModal() { this.open = true; }, close(rv) { if (!this.open) return; this.open = false; if (rv !== undefined) this.returnValue = rv; dispatch(this, new Event('close')); } }); });
+mk('HTMLDialogElement', HTMLElement, ['dialog'], p => { reflectBool(p, 'open'); methods(p, { show() { this.open = true; }, showModal() { this.open = true; N.setPseudo(this, 0, true); }, close(rv) { if (!this.open) return; this.open = false; N.setPseudo(this, 0, false); if (rv !== undefined) this.returnValue = rv; dispatch(this, new Event('close')); } }); });
 mk('HTMLUnknownElement', HTMLElement, []);

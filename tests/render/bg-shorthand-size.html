@@ -1,0 +1,11 @@
+<!doctype html>
+<body style="margin:0">
+<!-- YouTube seek-preview style: one cell of a 2x2 sprite (80x80 file shown at 160x160) chosen with `position / size` -->
+<div id="a" style="width:80px;height:80px"></div>
+<div style="height:10px"></div>
+<div style="width:80px;height:80px;background:url(bg-sprite.png) -80px 0px/160px 160px no-repeat"></div>
+<div style="height:10px"></div>
+<div style="width:80px;height:80px;background:url(bg-sprite.png) 0 -80px / 160px no-repeat"></div>
+<script>document.getElementById('a').style.background = 'url(bg-sprite.png) -80px -80px / 160px 160px';</script>
+<!-- expected, top to bottom: solid yellow, solid blue, solid green 80x80 squares (no 2x2 grids) -->
+</body>

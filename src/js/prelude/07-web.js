@@ -174,6 +174,22 @@ class CountQueuingStrategy { constructor(o) { this.highWaterMark = o.highWaterMa
 class TextEncoderStream extends TransformStream { constructor() { const e = new TextEncoder(); super({ transform(c, k) { k.enqueue(e.encode(c)); } }); } get encoding() { return 'utf-8'; } }
 class TextDecoderStream extends TransformStream { constructor(l = 'utf-8') { const d = new TextDecoder(l); super({ transform(c, k) { const s = d.decode(c); if (s) k.enqueue(s); } }); def(this, '_enc', d.encoding); } get encoding() { return this._enc; } }
 const objectURLs = new Map(); let objectURLSeq = 0;
+if (typeof WebAssembly === 'object' && !WebAssembly.compileStreaming) {
+    const wasmBody = async (src, fn) => {
+        const r = await src;
+        const err = m => new TypeError('WebAssembly.' + fn + '(): ' + m);
+        if (!(r instanceof Response)) throw err('Argument 0 must be provided and must be a Response');
+        if (/^https?:/.test(r.url || '') && !/^application\/wasm\s*(;|$)/i.test(r.headers.get('content-type') || ''))
+            throw err("Incorrect response MIME type. Expected 'application/wasm'.");
+        if (!r.ok) throw err('HTTP status code is not ok');
+        if (r.bodyUsed) throw err('Response body has already been used');
+        return r.arrayBuffer();
+    };
+    Object.defineProperties(WebAssembly, {
+        compileStreaming: { value: async function compileStreaming(src) { return WebAssembly.compile(await wasmBody(src, 'compileStreaming')); }, writable: true, configurable: true },
+        instantiateStreaming: { value: async function instantiateStreaming(src, imports) { return WebAssembly.instantiate(await wasmBody(src, 'instantiateStreaming'), imports); }, writable: true, configurable: true },
+    });
+}
 class URLSearchParams {
     constructor(init = '') {
         def(this, '_l', []); def(this, '_u', null);
@@ -215,7 +231,7 @@ class URL {
     toString() { return this._p[0]; } toJSON() { return this._p[0]; }
     static canParse(u, b) { return !!N.urlParse(String(u), b === undefined ? null : String(b)); }
     static parse(u, b) { try { return new URL(u, b); } catch (e) { return null; } }
-    static createObjectURL(b) { const u = 'blob:' + location.origin + '/' + (++objectURLSeq).toString(16).padStart(8, '0') + '-lumen'; objectURLs.set(u, b); return u; }
-    static revokeObjectURL(u) { objectURLs.delete(u); }
+    static createObjectURL(b) { const u = 'blob:' + location.origin + '/' + (++objectURLSeq).toString(16).padStart(8, '0') + '-lumen'; objectURLs.set(u, b); if (b && b._buf && b._buf.byteLength < 8e6 && (!b.type || /javascript|ecmascript/i.test(b.type))) N.blobMod(u, new TextDecoder().decode(b._buf)); return u; }
+    static revokeObjectURL(u) { const b = objectURLs.get(u); if (b && b.__file) { N.blobFileFree(b.__file); b.__file = null; } if (objectURLs.delete(u)) N.blobMod(String(u)); }
 }
 URL_KEYS.forEach((k, i) => acc(URL.prototype, k, function () { return this._p[i]; }, k === 'origin' ? undefined : function (v) { this._set(k, v); }));

@@ -1,0 +1,15 @@
+<!doctype html><title>media idle poll</title>
+<video id=v src="../media/test.mp4" muted preload=auto></video>
+<script>
+const v = document.getElementById('v'), ev = [];
+for (const t of ['loadedmetadata', 'canplay', 'playing', 'timeupdate', 'seeked']) v.addEventListener(t, () => ev.push(t));
+setTimeout(() => {
+    const t0 = v.currentTime, meta = v.readyState >= 1;
+    v.play();
+    setTimeout(() => {
+        const adv = v.currentTime - t0, tu = ev.filter(e => e === 'timeupdate').length;
+        v.pause(); v.currentTime = 0.5;
+        setTimeout(() => console.log('RESULTS meta:' + (meta ? 'PASS' : 'FAIL') + ' advances:' + (adv > 0.5 ? 'PASS' : 'FAIL') + ' timeupdate:' + (tu >= 2 ? 'PASS' : 'FAIL') + ' seeked:' + (ev.includes('seeked') ? 'PASS' : 'FAIL') + ' | adv=' + adv.toFixed(2)), 1000);
+    }, 1500);
+}, 4000);
+</script>

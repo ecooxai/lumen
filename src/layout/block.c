@@ -170,6 +170,16 @@ static float clamph(const ComputedStyle *s, float h, float cbh, float bp) {
     return h;
 }
 
+/* bottom of the n-th line box among b's in-flow block descendants, in document order (line-clamp) */
+static float nth_line_bottom(const Box *b, int *n) {
+    for (int i = 0; i < b->nlines; i++) if (--*n == 0) return b->lines[i].y + b->lines[i].h;
+    for (const Box *c = b->first; c; c = c->next) {
+        if (c->abs || c->floated || c->kind != BX_BLOCK) continue;
+        float r = nth_line_bottom(c, n);
+        if (r >= 0) return r;
+    }
+    return -1;
+}
 static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float cbh, FloatCtx *fc, int mode, float fw, float fh);
 /* flex/grid measure a child and then lay it out again, often with identical inputs; nested containers made that exponential */
 int g_lb_calls, g_lb_hits;
@@ -254,6 +264,7 @@ static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float 
     if (b->bfc && f == &own) { float fb = fc_bottom(&own); if (fb > cy + ch) ch = fb - cy; }
     free(own.v);
     float content_h = ch;
+    if (s->line_clamp >= 1 && hdef < 0 && s->overflow_y != OV_VISIBLE) { int n = (int)s->line_clamp; float lb = nth_line_bottom(b, &n); if (lb >= 0 && lb - cy < ch) ch = LMAX(0, lb - cy); }
     float h = (hdef >= 0 && b->fmt != FMT_REPLACED ? hdef : ch) + vb;
     if (fh < 0) h = clamph(s, h, cbh, vb);
     b->h = LMAX(0, h);
@@ -367,6 +378,19 @@ static int hit_layer(const Box *c) {
     int z = c->st->z_auto || c->st->position == P_STATIC ? 0 : c->st->z_index;
     return z > 0 ? 0 : z == 0 ? 1 : 3;
 }
+static bool hit_sc(const Box *c) {   /* creates a stacking context (same test as paint_stacking) */
+    return !c->parent || (c->st && (!c->st->z_auto || c->st->has_transform || c->st->opacity < 0.999f || c->st->position == P_FIXED || c->st->position == P_STICKY));
+}
+typedef struct { Box *b; float ox, oy; int ord; } HitZ;
+#define HITZ_MAX 32
+/* positive-z boxes below b that paint in the enclosing stacking context (through non-stacking, non-scrolling boxes) */
+static void hit_hoist(Box *b, float ox, float oy, float vx, float vy, HitZ *out, int *n) {
+    for (Box *c = b->first; c && *n < HITZ_MAX; c = c->next) {
+        float cx = c->fixed ? vx : ox, cy = c->fixed ? vy : oy;
+        if (c->st && hit_layer(c) == 0) { out[*n] = (HitZ){ c, cx, cy, *n }; (*n)++; continue; }
+        if (!hit_sc(c) && !(c->scroller && c->node)) hit_hoist(c, cx, cy, vx, vy, out, n);
+    }
+}
 static Box *hit(Box *b, float x, float y, float ox, float oy, float vx, float vy) {
     bool hidden = b->st && b->st->visibility != VIS_VISIBLE;   /* not a target itself, but visible descendants are */
     if (b->st && b->st->has_transform) {   /* painted shifted by its translation (paint_stacking) */
@@ -380,6 +404,21 @@ static Box *hit(Box *b, float x, float y, float ox, float oy, float vx, float vy
     float cox = ox, coy = oy;
     if (b->scroller && b->node) { cox += b->node->scroll_x; coy += box_scroll_y(b); }
     int done = INT32_MAX;   /* z>0 layer: repeatedly take the highest z below the last one taken */
+    if (hit_sc(b)) {   /* z>0 children and z>0 boxes hoisted out of z-index:auto descendants, highest z (then latest) first */
+        HitZ z[HITZ_MAX]; int nz = 0;
+        for (Box *c = b->first; c && nz < HITZ_MAX; c = c->next) {
+            float cx = c->fixed ? vx : c->abs && b->scroller && !box_within(c->cb, b) ? ox : cox, cy = c->fixed ? vy : c->abs && b->scroller && !box_within(c->cb, b) ? oy : coy;
+            if (c->st && hit_layer(c) == 0) { z[nz] = (HitZ){ c, cx, cy, nz }; nz++; }
+            else if (!hit_sc(c) && !(c->scroller && c->node)) hit_hoist(c, cx, cy, vx, vy, z, &nz);
+        }
+        for (int i = 1; i < nz; i++) for (int j = i; j > 0 && z[j].b->st->z_index > z[j - 1].b->st->z_index; j--) { HitZ t = z[j]; z[j] = z[j - 1]; z[j - 1] = t; }
+        for (int i = 0; i < nz; i++) {
+            int e = i; while (e + 1 < nz && z[e + 1].b->st->z_index == z[i].b->st->z_index) e++;
+            for (int k = e; k >= i; k--) { Box *h = hit(z[k].b, x, y, z[k].ox, z[k].oy, vx, vy); if (h) return h; }
+            i = e;
+        }
+        done = 1;
+    }
     for (;;) {
         int best = INT32_MIN;
         for (Box *c = b->last; c; c = c->prev) if (hit_layer(c) == 0 && c->st->z_index < done && c->st->z_index > best) best = c->st->z_index;

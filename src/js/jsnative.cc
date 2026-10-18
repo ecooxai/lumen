@@ -1,3 +1,9 @@
+#include <unistd.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <dirent.h>
+#include <time.h>
+#include <chrono>
 /* Native functions (the `N` object) backing the JS DOM/Web API prelude */
 #include "js_int.h"
 #include <thread>
@@ -5,6 +11,7 @@
 #include <sys/random.h>
 #endif
 #include <vector>
+#include <map>
 #include <openssl/core_names.h>
 #include <openssl/ecdsa.h>
 #include <openssl/evp.h>
@@ -79,7 +86,11 @@ FN(setText) {
     if (!s.empty()) node_append(n, node_new_text(c->doc, s.data(), s.size()));
 }
 FN(attr) { CTX; ARGN(n, 0); std::string k = S(1); RET(nstr(iso, n->type == NODE_ELEMENT || n->type == NODE_DOCTYPE ? node_attr(n, k.c_str()) : nullptr)); }
-FN(setAttr) { CTX; ARGN(n, 0); std::string k = S(1), v = S(2); node_set_attr(n, atom(k.c_str()), v.c_str()); }
+FN(setAttr) {
+    CTX; ARGN(n, 0); std::string k = S(1), v = S(2); node_set_attr(n, atom(k.c_str()), v.c_str());
+    if (k == "style") { if (a.Length() > 3 && a[3]->IsTrue()) n->flags |= NF_STYLE_CSSOM; else n->flags &= ~(uint32_t)NF_STYLE_CSSOM; }
+}
+FN(cspExempt) { CTX; ARGN(n, 0); if (!(n->flags & NF_CSP_STYLE_CHECKED)) n->flags |= NF_CSP_STYLE_CHECKED; }   /* <style> filled by CSSOM / constructed sheets */
 FN(rmAttr) { CTX; ARGN(n, 0); std::string k = S(1); if (node_has_attr(n, k.c_str())) node_remove_attr(n, k.c_str()); }
 FN(attrs) {
     CTX; ARGN(n, 0);
@@ -244,6 +255,11 @@ FN(checked) {
     CTX; ARGN(n, 0);
     RET(n->checked_override ? n->checked_override > 0 : node_has_attr(n, n->tag && !strcmp(n->tag, "option") ? "selected" : "checked"));
 }
+FN(setPseudo) {   /* 0 :modal, 1 :popover-open */
+    CTX; ARGN(n, 0); uint32_t f = NUM(1) == 0 ? NF_MODAL : NF_POPOVER_OPEN;
+    if (BOOL(2)) n->flags |= f; else n->flags &= ~f;
+    doc_mark_dirty(n->doc, n);
+}
 FN(setChecked) {
     CTX; ARGN(n, 0); bool b = BOOL(1);
     n->checked_override = b ? 1 : -1;
@@ -267,9 +283,15 @@ FN(focus) {
     if (n) jfire(c, n, "focus");
 }
 FN(active) { CTX; RET(jwrap(c, c->doc->focus)); }
-FN(cookie) { CTX; char *s = cookies_get_document(c->doc->url); RET(jstr(iso, s ? s : "")); free(s); }
-FN(setCookie) { CTX; std::string s = S(0); cookies_set_document(c->doc->url, s.c_str()); }
+/* about:blank / about:srcdoc documents use their creator's URL for origin-bound state (cookies) */
+static const char *origin_url(JsCtx *c) {
+    while (c->parent && (!c->doc->url || !strncmp(c->doc->url, "about:", 6))) c = c->parent;
+    return c->doc->url;
+}
+FN(cookie) { CTX; if (c->sb_opaque) { RET(jstr(iso, "")); return; } char *s = cookies_get_document(origin_url(c), js_top_url(c)); RET(jstr(iso, s ? s : "")); free(s); }
+FN(setCookie) { CTX; if (c->sb_opaque) return; std::string s = S(0); cookies_set_document(origin_url(c), js_top_url(c), s.c_str()); }
 FN(url) { CTX; RET(jstr(iso, c->doc->url ? c->doc->url : "about:blank")); }
+FN(referrer) { CTX; RET(jstr(iso, c->doc && c->doc->referrer ? c->doc->referrer : "")); }
 FN(setUrl) {
     CTX; std::string u = S(0);
     free(c->doc->url); c->doc->url = xstrdup(u.c_str());
@@ -277,11 +299,196 @@ FN(setUrl) {
 }
 FN(navigate) { CTX; std::string u = S(0); if (c->parent) { frame_nav(c, u.c_str()); return; } if (c->host.navigate) c->host.navigate(c->host.ud, u.c_str()); }
 FN(navigatePost) {
-    CTX; std::string u = S(0), b = S(1), t = S(2);
+    CTX; std::string u = S(0), t = S(2); const char *bp; size_t bn; std::string b;
+    if (bytes_of(a[1], &bp, &bn)) b.assign(bp, bn); else b = S(1);
     if (c->host.navigate_post) c->host.navigate_post(c->host.ud, u.c_str(), b.data(), b.size(), t.c_str());
     else if (c->host.navigate) c->host.navigate(c->host.ud, u.c_str());
 }
+void (*js_save_file)(const char *, const void *, size_t);
+FN(saveFile) { CTX; std::string nm = S(0); const char *p = nullptr; size_t n = 0; if (!bytes_of(a[1], &p, &n) || !js_save_file) RET(false); js_save_file(nm.c_str(), p, n); RET(true); }
 FN(histGo) { CTX; if (c->host.history_go) c->host.history_go(c->host.ud, a[0]->Int32Value(ctx).FromMaybe(0)); }
+/* sessionStorage outlives page loads within a tab: keyed by (tab, origin) */
+static std::map<std::pair<void *, std::string>, std::string> g_session;
+FN(ssGet) { CTX; auto it = g_session.find({c->host.ud, S(0)}); RET(nstr(iso, it == g_session.end() ? nullptr : it->second.c_str())); }
+FN(ssSet) { CTX; g_session[{c->host.ud, S(0)}] = S(1); }
+
+/* localStorage: one process-wide map per origin (shared by all tabs), loaded lazily from
+ * <profile>/localstorage/ and written back at most every 2 s, on backgrounding and at exit */
+struct LsOrigin { std::map<std::string, std::string> m; bool loaded = false, dirty = false; };
+static std::map<std::string, LsOrigin> g_ls;
+static std::mutex g_ls_mu;
+static std::string g_ls_dir;
+static double g_ls_last;
+static std::string ohash(const std::string &o) {
+    uint64_t h = 1469598103934665603ull; for (unsigned char ch : o) { h ^= ch; h *= 1099511628211ull; }
+    char b[32]; snprintf(b, sizeof b, "%016llx", (unsigned long long)h); return b;
+}
+static std::string ls_file(const std::string &o) { return g_ls_dir + ohash(o); }
+static void kv_read(const std::string &p, const std::string &o, std::map<std::string, std::string> &m, uint32_t max) {
+    FILE *f = fopen(p.c_str(), "rb"); if (!f) return;
+    auto rd = [&](std::string &s) { uint32_t n; if (fread(&n, 4, 1, f) != 1 || n > max) return false; s.resize(n); return !n || fread(&s[0], 1, n, f) == n; };
+    std::string org, k, v;
+    if (rd(org) && org == o) while (rd(k) && rd(v)) m[k] = v;
+    fclose(f);
+}
+static void kv_write(const std::string &p, const std::string &o, const std::map<std::string, std::string> &m) {
+    std::string t = p + ".tmp"; int fd = open(t.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0600); FILE *f = fd < 0 ? NULL : fdopen(fd, "wb"); if (!f) { if (fd >= 0) close(fd); return; }
+    auto wr = [&](const std::string &s) { uint32_t n = (uint32_t)s.size(); fwrite(&n, 4, 1, f); fwrite(s.data(), 1, n, f); };
+    wr(o); for (auto &kv : m) { wr(kv.first); wr(kv.second); }
+    if (fclose(f) == 0) rename(t.c_str(), p.c_str()); else unlink(t.c_str());
+}
+static LsOrigin &ls_get(const std::string &o) {
+    LsOrigin &L = g_ls[o]; if (L.loaded) return L;
+    L.loaded = true; if (!g_ls_dir.empty()) kv_read(ls_file(o), o, L.m, 64u << 20);
+    return L;
+}
+static void ls_write(const std::string &o, const LsOrigin &L) { kv_write(ls_file(o), o, L.m); }
+
+/* IndexedDB: one V8-serialized snapshot per (origin, database) shared by every context of the origin; each
+ * committed write transaction replaces it, and it is persisted under <profile>/indexeddb/ with localStorage */
+struct IdbOrigin { std::map<std::string, std::string> b; std::map<std::string, uint64_t> gen; bool loaded = false, dirty = false; };
+static std::map<std::string, IdbOrigin> g_idb;
+static std::string g_idb_dir;
+static uint64_t g_idb_gen;
+static IdbOrigin &idb_get(const std::string &o) {
+    IdbOrigin &D = g_idb[o]; if (D.loaded) return D;
+    D.loaded = true; if (!g_idb_dir.empty()) kv_read(g_idb_dir + ohash(o), o, D.b, 1u << 30);
+    for (auto &kv : D.b) D.gen[kv.first] = ++g_idb_gen;
+    return D;
+}
+/* IDB requests: run promise reactions while the transaction is still active, as after a browser event dispatch */
+FN(drainMicrotasks) { a.GetIsolate()->PerformMicrotaskCheckpoint(); }
+FN(idbGen) { CTX; std::lock_guard<std::mutex> g(g_ls_mu); IdbOrigin &D = idb_get(S(0)); auto it = D.gen.find(S(1)); a.GetReturnValue().Set(v8::Number::New(iso, it == D.gen.end() ? 0 : (double)it->second)); }
+FN(idbGet) {
+    CTX; std::lock_guard<std::mutex> g(g_ls_mu); IdbOrigin &D = idb_get(S(0)); auto it = D.b.find(S(1));
+    if (it == D.b.end()) { a.GetReturnValue().SetNull(); return; }
+    v8::Local<v8::Context> cx = iso->GetCurrentContext();
+    v8::ValueDeserializer d(iso, (const uint8_t *)it->second.data(), it->second.size());
+    v8::Local<v8::Value> v;
+    if (d.ReadHeader(cx).FromMaybe(false) && d.ReadValue(cx).ToLocal(&v)) a.GetReturnValue().Set(v); else a.GetReturnValue().SetNull();
+}
+FN(idbPut) {
+    CTX; v8::Local<v8::Context> cx = iso->GetCurrentContext();
+    v8::ValueSerializer ser(iso); ser.WriteHeader();
+    if (!ser.WriteValue(cx, a[2]).FromMaybe(false)) return;
+    std::pair<uint8_t *, size_t> r = ser.Release();
+    std::lock_guard<std::mutex> g(g_ls_mu); IdbOrigin &D = idb_get(S(0)); std::string n = S(1);
+    D.b[n].assign((const char *)r.first, r.second); free(r.first);
+    uint64_t gen = D.gen[n] = ++g_idb_gen; D.dirty = true;
+    a.GetReturnValue().Set(v8::Number::New(iso, (double)gen));
+}
+FN(idbDel) { CTX; std::lock_guard<std::mutex> g(g_ls_mu); IdbOrigin &D = idb_get(S(0)); D.b.erase(S(1)); D.gen.erase(S(1)); D.dirty = true; }
+FN(storageUsage) {
+    CTX; std::lock_guard<std::mutex> g(g_ls_mu); std::string o = S(0); double n = 0;
+    for (auto &kv : ls_get(o).m) n += (double)(kv.first.size() + kv.second.size());
+    for (auto &kv : idb_get(o).b) n += (double)kv.second.size();
+    a.GetReturnValue().Set(v8::Number::New(iso, n));
+}
+FN(idbNames) {
+    CTX; std::lock_guard<std::mutex> g(g_ls_mu); IdbOrigin &D = idb_get(S(0)); v8::Local<v8::Context> cx = iso->GetCurrentContext();
+    v8::Local<v8::Array> r = v8::Array::New(iso, (int)D.b.size()); uint32_t i = 0;
+    for (auto &kv : D.b) r->Set(cx, i++, nstr(iso, kv.first.c_str())).Check();
+    a.GetReturnValue().Set(r);
+}
+
+/* ---- in-process message bus: BroadcastChannel (pages, iframes, workers) and cross-context localStorage `storage` events ---- */
+static std::vector<BusMsg> g_bus;
+static std::mutex g_bus_mu;
+static std::atomic<uint64_t> g_bus_seqn{0};
+static std::map<const void *, std::function<void()>> g_bus_wake;
+uint64_t js_bus_seq() { return g_bus_seqn.load(); }
+void js_bus_listen(const void *key, std::function<void()> wake) {
+    std::lock_guard<std::mutex> g(g_bus_mu);
+    if (wake) g_bus_wake[key] = std::move(wake); else g_bus_wake.erase(key);
+}
+bool js_bus_post(v8::Isolate *iso, v8::Local<v8::Context> cx, v8::Local<v8::Value> v, const std::string &origin,
+                 const std::string &kind, const std::string &name, const void *sender, double id) {
+    v8::ValueSerializer ser(iso);
+    ser.WriteHeader();
+    if (!ser.WriteValue(cx, v).FromMaybe(false)) return false;
+    std::pair<uint8_t *, size_t> r = ser.Release();
+    BusMsg m;
+    m.data.assign(r.first, r.first + r.second);
+    free(r.first);
+    m.origin = origin; m.kind = kind; m.name = name; m.sender = sender; m.id = id;
+    {
+        std::lock_guard<std::mutex> g(g_bus_mu);
+        double now = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now().time_since_epoch()).count();
+        m.t = now; m.seq = g_bus_seqn.load() + 1;
+        g_bus.push_back(std::move(m));
+        g_bus_seqn.store(g_bus.back().seq);
+        size_t i = 0;   /* every live context drains the bus within a tick; keep 5 s / 256 messages */
+        while (i < g_bus.size() && (now - g_bus[i].t > 5000 || g_bus.size() - i > 256)) i++;
+        g_bus.erase(g_bus.begin(), g_bus.begin() + (long)i);
+        for (auto &kv : g_bus_wake) kv.second();   /* lock order: g_bus_mu, then the worker's mutex */
+    }
+    if (js_wakeup) js_wakeup();
+    return true;
+}
+bool js_bus_take(const std::string &origin, const void *self, uint64_t &seen, std::vector<BusMsg> &out) {
+    if (origin.empty() || seen == g_bus_seqn.load()) return false;
+    std::lock_guard<std::mutex> g(g_bus_mu);
+    for (auto &m : g_bus)
+        if (m.seq > seen && m.origin == origin && (origin != "null" || m.sender == self)) out.push_back(m);
+    seen = g_bus_seqn.load();
+    return !out.empty();
+}
+bool js_bus_args(v8::Isolate *iso, v8::Local<v8::Context> ctx, const BusMsg &m, const void *self, v8::Local<v8::Value> argv[5]) {
+    v8::ValueDeserializer d(iso, m.data.data(), m.data.size());
+    v8::Local<v8::Value> v;
+    if (!d.ReadHeader(ctx).FromMaybe(false) || !d.ReadValue(ctx).ToLocal(&v)) return false;
+    argv[0] = jstr(iso, m.kind.c_str()); argv[1] = jstr(iso, m.name.c_str()); argv[2] = v;
+    argv[3] = v8::Number::New(iso, m.id); argv[4] = v8::Boolean::New(iso, m.sender == self);
+    return true;
+}
+FN(busOrigin) { CTX; c->bus_origin = S(0); c->bus_seen = js_bus_seq(); }
+FN(busPost) {
+    CTX;
+    v8::Local<v8::Context> cx = iso->GetCurrentContext();
+    (void)js_bus_post(iso, cx, a[3], S(0), S(1), S(2), c, a[4]->NumberValue(cx).FromMaybe(0));
+}
+void js_bus_deliver(JsCtx *c) {
+    std::vector<BusMsg> mine;
+    if (!js_bus_take(c->bus_origin, c, c->bus_seen, mine) || c->api.IsEmpty()) return;
+    v8::Isolate *iso = c->iso;
+    v8::HandleScope hs(iso);
+    v8::Local<v8::Context> ctx = c->ctx.Get(iso);
+    v8::Context::Scope cs(ctx);
+    v8::Local<v8::Value> fv;
+    if (!c->api.Get(iso)->Get(ctx, jstr(iso, "busDeliver")).ToLocal(&fv) || !fv->IsFunction()) return;
+    for (auto &m : mine) {
+        v8::Local<v8::Value> argv[5];
+        if (js_bus_args(iso, ctx, m, c, argv)) (void)jcall(c, fv.As<v8::Function>(), v8::Undefined(iso), 5, argv);
+    }
+}
+
+extern "C" void js_ls_flush(bool force) {
+    std::lock_guard<std::mutex> g(g_ls_mu);
+    double t = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now().time_since_epoch()).count();
+    if (!force && t - g_ls_last < 2000) return;
+    g_ls_last = t;
+    if (g_ls_dir.empty()) return;
+    for (auto &e : g_ls) if (e.second.dirty) { ls_write(e.first, e.second); e.second.dirty = false; }
+    for (auto &e : g_idb) if (e.second.dirty && e.first != "null") { kv_write(g_idb_dir + ohash(e.first), e.first, e.second.b); e.second.dirty = false; }
+}
+static void ls_atexit(void) { js_ls_flush(true); }
+extern "C" void js_set_profile_dir(const char *dir) {
+    if (!dir || !*dir || getenv("LUMEN_NO_PERSIST_STORAGE")) return;
+    g_ls_dir = std::string(dir) + "localstorage/"; mkdir(g_ls_dir.c_str(), 0700);
+    g_idb_dir = std::string(dir) + "indexeddb/"; mkdir(g_idb_dir.c_str(), 0700); atexit(ls_atexit);
+}
+FN(lsGet) {
+    CTX; std::lock_guard<std::mutex> g(g_ls_mu); LsOrigin &L = ls_get(S(0));
+    v8::Local<v8::Context> cx = iso->GetCurrentContext();
+    v8::Local<v8::Array> r = v8::Array::New(iso, (int)L.m.size() * 2); uint32_t i = 0;
+    for (auto &kv : L.m) { r->Set(cx, i++, nstr(iso, kv.first.c_str())).Check(); r->Set(cx, i++, nstr(iso, kv.second.c_str())).Check(); }
+    a.GetReturnValue().Set(r);
+}
+FN(lsSet) { CTX; std::lock_guard<std::mutex> g(g_ls_mu); LsOrigin &L = ls_get(S(0)); L.m[S(1)] = S(2); L.dirty = true; }
+FN(lsDel) { CTX; std::lock_guard<std::mutex> g(g_ls_mu); LsOrigin &L = ls_get(S(0)); if (a.Length() < 2) L.m.clear(); else L.m.erase(S(1)); L.dirty = true; }
+extern "C" void js_session_forget(void *ud) {
+    for (auto it = g_session.begin(); it != g_session.end();) it = it->first.first == ud ? g_session.erase(it) : std::next(it);
+}
 FN(histLen) { CTX; RET(c->host.history_len ? c->host.history_len(c->host.ud) : 1); }
 FN(timer) {
     CTX;
@@ -309,7 +516,8 @@ static NetRequest *mkreq(JsCtx *c, const FCI &a) {
     v8::Isolate *iso = c->iso;
     v8::Local<v8::Context> ctx = iso->GetCurrentContext();
     std::string m = S(0), u = S(1);
-    NetRequest *rq = net_request_new(m.c_str(), u.c_str());
+    NetRequest *rq = net_request_ctx(m.c_str(), u.c_str(), js_top_url(c));
+    if (c->doc && c->doc->csp) { rq->csp = strdup(c->doc->csp); rq->csp_doc = strdup(c->doc->url ? c->doc->url : ""); rq->csp_dir = "connect-src"; }   /* fetch / XHR */
     bool referer = false;
     if (a[2]->IsArray()) {
         v8::Local<v8::Array> h = a[2].As<v8::Array>();
@@ -321,7 +529,7 @@ static NetRequest *mkreq(JsCtx *c, const FCI &a) {
             headers_add(&rq->headers, ks.c_str(), vs.c_str());
         }
     }
-    if (!referer && c->doc->url && !strncmp(c->doc->url, "http", 4)) headers_add(&rq->headers, "Referer", c->doc->url);
+    if (!referer) if (char *ref = net_referrer(c->doc->url, u.c_str(), c->doc->referrer_policy)) { headers_add(&rq->headers, "Referer", ref); free(ref); }
     const char *p; size_t n;
     if (a.Length() > 3 && bytes_of(a[3], &p, &n) && n) { rq->body = (char *)xmalloc(n); memcpy(rq->body, p, n); rq->body_len = n; }
     return rq;
@@ -349,7 +557,7 @@ static void fetch_done(NetRequest *req, NetResponse *r, void *ud) {
     c->fetches.erase(f->id);
     JS_ENTER(c);
     if (f->script) {
-        if (r && r->status >= 200 && r->status < 300) js_run_script(c, f->script, r->body ? r->body : "", r->body ? r->body_len : 0, r->url ? r->url : "");
+        if (r && r->status >= 200 && r->status < 300 && !js_script_mime_blocked(headers_get(&r->headers, "content-type"))) js_run_script(c, f->script, r->body ? r->body : "", r->body ? r->body_len : 0, r->url ? r->url : "");
         else jfire(c, f->script, "error");
     } else {
         v8::Local<v8::Value> argv[6];
@@ -406,7 +614,42 @@ FN(audioDecode) {
 }
 FN(mediaNew) { CTX; ARGN(n, 0); uint32_t id = c->next_player++; c->players[id] = mp_new(n); RET((double)id); }
 FN(mediaFree) { CTX; MP; mp_free(mp); c->players.erase(mpit); }
+FN(cspMedia) { CTX; std::string u = S(0); bool ok = !c->doc || !c->doc->csp || csp_allows_url(c->doc->csp, c->doc->url ? c->doc->url : "", u.c_str(), "media-src"); if (!ok) fprintf(stderr, "lumen: CSP media-src blocked %.120s\n", u.c_str()); RET(ok); }
 FN(mediaOpen) { CTX; MP; mp_open_url(mp, S(1).c_str()); }
+/* Blob -> temp file so <video>/<audio> play blob: URLs through the ordinary file path */
+FN(blobFile) {
+    CTX; const char *p; size_t n;
+    if (!bytes_of(a[0], &p, &n)) return;
+    const char *td = getenv("TMPDIR"); std::string path = td && *td ? td : "/tmp";
+    if (path.back() != '/') path += '/';
+    path += "lumen-blob-XXXXXX";
+    int fd = mkstemp(&path[0]); if (fd < 0) return;
+    size_t off = 0; ssize_t w;
+    while (off < n && (w = write(fd, p + off, n - off)) > 0) off += (size_t)w;
+    close(fd);
+    if (off < n) { unlink(path.c_str()); return; }
+    a.GetReturnValue().Set(v8::String::NewFromUtf8(iso, ("file://" + path).c_str()).ToLocalChecked());
+}
+/* blob: media temp files whose object URL was never revoked; skip recent ones another
+ * running Lumen may still be playing */
+extern "C" void js_blob_cleanup(void) {
+    const char *td = getenv("TMPDIR");
+    std::string d = td && *td ? td : "/tmp";
+    if (d.back() != '/') d += '/';
+    DIR *dir = opendir(d.c_str()); if (!dir) return;
+    time_t now = time(NULL);
+    for (struct dirent *e; (e = readdir(dir));) {
+        if (strncmp(e->d_name, "lumen-blob-", 11)) continue;
+        std::string p = d + e->d_name; struct stat st;
+        if (!stat(p.c_str(), &st) && S_ISREG(st.st_mode) && now - st.st_mtime > 24 * 3600) unlink(p.c_str());
+    }
+    closedir(dir);
+}
+
+FN(blobFileFree) {
+    CTX; std::string u = jcstr(iso, a[0]);
+    if (!u.compare(0, 7, "file://") && u.find("/lumen-blob-") != std::string::npos) unlink(u.c_str() + 7);
+}
 FN(mediaAddBuffer) { CTX; MP; RET((double)mp_add_buffer(mp, S(1).c_str())); }
 FN(mediaAppend) {
     CTX; MP; const char *p; size_t n;
@@ -414,6 +657,7 @@ FN(mediaAppend) {
     RET(v8::Boolean::New(iso, mp_append(mp, (int)NUM(1), (const uint8_t *)p, n)));
 }
 FN(mediaRemove) { CTX; MP; mp_remove(mp, (int)NUM(1), NUM(2), NUM(3)); }
+FN(mediaAbort) { CTX; MP; mp_abort(mp, (int)NUM(1)); }
 FN(mediaBuffered) {
     CTX; MP; double r[64]; int n = mp_buffered(mp, (int)NUM(1), r, 32);
     v8::Local<v8::Array> arr = v8::Array::New(iso, n * 2);
@@ -469,6 +713,12 @@ FN(wsOpen) {
     WsSock *s = new WsSock{ c, c->next_ws++, nullptr, {} };
     s->cb.Reset(iso, a[3].As<v8::Function>());
     c->sockets[s->id] = s;
+    if (c->doc && c->doc->csp && !csp_allows_url(c->doc->csp, c->doc->url, S(0).c_str(), "connect-src")) {
+        fprintf(stderr, "lumen: CSP connect-src blocked %.120s\n", S(0).c_str());
+        c->sockets.erase(s->id); s->cb.Reset(); delete s;
+        iso->ThrowException(v8::Exception::Error(jstr(iso, "SecurityError: Refused to connect because it violates the document's Content Security Policy.")));
+        return;
+    }
     s->ws = net_ws_open(S(0).c_str(), S(1).c_str(), S(2).c_str(), ws_cb, s);
     RET((double)s->id);
 }
@@ -545,6 +795,20 @@ FN(ceScan) {
 }
 FN(readyState) { CTX; RET(c->doc->ready_state); }
 FN(quirks) { CTX; RET(c->doc->quirks); }
+FN(coi) { CTX; RET(c->doc->cross_origin_isolated); }
+FN(ctxOrigin) { CTX; RET(jstr(iso, ctx_origin(c).c_str())); }
+FN(sbFlags) { CTX; RET((int)(c->sb_opaque ? 1 : 0) | (c->sb_noscript ? 2 : 0)); }
+FN(compileHandler) {
+    CTX; std::string s = S(0);
+    if (c->doc && c->doc->csp && !csp_allows_attr(c->doc->csp, s.c_str(), s.size())) {
+        fprintf(stderr, "lumen: CSP blocked inline event handler %.80s\n", s.c_str());
+        RET(v8::Null(iso)); return;
+    }
+    v8::ScriptCompiler::Source src(jstr(iso, s.c_str(), (int)s.size()));
+    v8::Local<v8::String> args[1] = { jstr(iso, "event") };
+    v8::Local<v8::Function> f;
+    if (v8::ScriptCompiler::CompileFunction(ctx, &src, 1, args).ToLocal(&f)) RET(f);
+}
 FN(currentScript) { CTX; RET(jwrap(c, c->current_script)); }
 FN(media) { CTX; std::string q = S(0); RET(jsg_media(c->host.media, q.c_str())); }
 FN(cssSelText) { CTX; std::string q = S(0); char *r = css_selector_text(q.c_str()); RET(nstr(iso, r)); free(r); }
@@ -854,8 +1118,9 @@ void js_run_inserted(JsCtx *c, Node *root) {
         char *u = *src ? url_join(c->doc->url, src) : nullptr;
         if (!u) { jfire(c, s, "error"); continue; }
         jwrap(c, s);
-        NetRequest *rq = net_request_new("GET", u);
-        if (c->doc->url && !strncmp(c->doc->url, "http", 4)) headers_add(&rq->headers, "Referer", c->doc->url);
+        NetRequest *rq = net_request_ctx("GET", u, js_top_url(c));
+        if (char *ref = net_referrer(c->doc->url, u, c->doc->referrer_policy)) { headers_add(&rq->headers, "Referer", ref); free(ref); }
+        if (c->doc->url && !node_attr(s, "crossorigin")) { rq->no_cors_origin = strdup(c->doc->url); rq->coep_require_corp = c->doc->coep_require_corp; }
         start_fetch(c, rq, new Fetch{ c, 0, {}, s });
         free(u);
     }
@@ -868,17 +1133,19 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
 #define REG(nm) (void)N->Set(ctx, jstr(iso, #nm), v8::Function::New(ctx, n_##nm).ToLocalChecked())
     REG(isNode); REG(version);
     REG(inert); REG(type); REG(name); REG(ns); REG(parent); REG(first); REG(last); REG(next); REG(prev);
-    REG(text); REG(setText); REG(attr); REG(setAttr); REG(rmAttr); REG(attrs); REG(insert); REG(remove); REG(newDoc); REG(newXmlDoc); REG(parseDoc); REG(adopt); REG(pi); REG(cdata); REG(doctype); REG(ownerDoc);
+    REG(text); REG(setText); REG(attr); REG(setAttr); REG(rmAttr); REG(cspExempt); REG(cspMedia); REG(referrer); REG(attrs); REG(insert); REG(remove); REG(newDoc); REG(newXmlDoc); REG(parseDoc); REG(adopt); REG(pi); REG(cdata); REG(doctype); REG(ownerDoc);
     REG(create); REG(textNode); REG(comment); REG(frag); REG(html); REG(setHTML); REG(parseFrag); REG(query);
     REG(matches); REG(byId); REG(clone); REG(doc); REG(contains); REG(connected); REG(host); REG(attachShadow);
-    REG(templateContent); REG(rect); REG(vrect); REG(clipSet); REG(clipGet); REG(scrollPos); REG(setScroll); REG(computed); REG(value); REG(setValue); REG(checked); REG(setChecked); REG(pickFiles);
-    REG(focus); REG(active); REG(cookie); REG(setCookie); REG(url); REG(setUrl); REG(navigate); REG(navigatePost); REG(histGo);
-    REG(histLen); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
-    REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove);
+    REG(templateContent); REG(rect); REG(vrect); REG(clipSet); REG(clipGet); REG(scrollPos); REG(setScroll); REG(computed); REG(value); REG(setValue); REG(checked); REG(setChecked); REG(setPseudo); REG(pickFiles);
+    REG(focus); REG(active); REG(cookie); REG(setCookie); REG(url); REG(setUrl); REG(navigate); REG(navigatePost); REG(saveFile); REG(histGo);
+    REG(histLen); REG(ssGet); REG(ssSet); REG(lsGet); REG(lsSet); REG(lsDel); REG(drainMicrotasks); REG(idbGen); REG(idbGet); REG(idbPut); REG(idbDel); REG(idbNames); REG(storageUsage);
+    REG(busPost);
+    REG(busOrigin); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
+    REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(blobFile); REG(blobFileFree); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove); REG(mediaAbort);
     REG(mediaBuffered); REG(mediaEos); REG(mediaSetDuration); REG(mediaPlay); REG(mediaPause); REG(mediaSeek);
-    REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(readyState); REG(quirks);
+    REG(sbFlags); REG(compileHandler); REG(ctxOrigin); REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(readyState); REG(quirks); REG(coi);
     REG(currentScript); REG(media); REG(cssSupports); REG(cssSelText); REG(urlParse); REG(encode); REG(decode); REG(random); REG(cDigest); REG(cHmac); REG(cAes); REG(cEcGen); REG(cEcDerive); REG(cEcSign); REG(cEcVerify); REG(cSpki); REG(cSpkiParse); REG(cPkcs8Parse); REG(cEcFromD); REG(cHkdf); REG(cPbkdf2);
     REG(heap); REG(imgSize); REG(userAgent); REG(platform); REG(cpus); REG(makeAll);
 #undef REG
-    js_install_frames(c, N); js_install_workers(c, N);
+    js_install_frames(c, N); js_install_workers(c, N); js_install_canvas(c, N); js_install_webgpu(c, N); js_install_capture(c, N);
 }

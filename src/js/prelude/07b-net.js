@@ -92,7 +92,7 @@ function bodyInit(b, h) {
     if (b == null) return null;
     if (typeof b === 'string') { if (h && !h.has('content-type')) h.set('Content-Type', 'text/plain;charset=UTF-8'); return N.encode(b); }
     if (b instanceof URLSearchParams) { if (h && !h.has('content-type')) h.set('Content-Type', 'application/x-www-form-urlencoded;charset=UTF-8'); return N.encode(b.toString()); }
-    if (b instanceof FormData) { const bd = '----LumenFormBoundary' + Math.random().toString(36).slice(2); if (h && !h.has('content-type')) h.set('Content-Type', 'multipart/form-data; boundary=' + bd); let s = ''; for (const [k, v] of b) s += `--${bd}\r\nContent-Disposition: form-data; name="${k}"\r\n\r\n${typeof v === 'string' ? v : ''}\r\n`; return N.encode(s + `--${bd}--\r\n`); }
+    if (b instanceof FormData) { const bd = '----LumenFormBoundary' + Math.random().toString(36).slice(2); if (h && !h.has('content-type')) h.set('Content-Type', 'multipart/form-data; boundary=' + bd); return multipartBody([...b], bd).buffer; }
     if (b instanceof Blob) { if (h && b.type && !h.has('content-type')) h.set('Content-Type', b.type); return b._buf; }
     if (b instanceof ReadableStream) return b;
     return toBytes(b);
@@ -183,8 +183,19 @@ function fetch(input, init) {
         req.signal.addEventListener('abort', () => { N.abort(id); if (ctl) { try { ctl.error(req.signal.reason); } catch (e) {} ctl = null; } reject(req.signal.reason); });
     });
 }
+function multipartBody(entries, bd) {
+    const esc = s => String(s).replace(/"/g, '%22').replace(/\r?\n/g, '%0D%0A'), parts = [];
+    for (const [k, v] of entries) {
+        if (v instanceof Blob) { parts.push(new Uint8Array(N.encode(`--${bd}\r\nContent-Disposition: form-data; name="${esc(k)}"; filename="${esc(v.name ?? 'blob')}"\r\nContent-Type: ${v.type || 'application/octet-stream'}\r\n\r\n`))); parts.push(new Uint8Array(v._buf)); parts.push(new Uint8Array(N.encode('\r\n'))); }
+        else parts.push(new Uint8Array(N.encode(`--${bd}\r\nContent-Disposition: form-data; name="${esc(k)}"\r\n\r\n${v}\r\n`)));
+    }
+    parts.push(new Uint8Array(N.encode(`--${bd}--\r\n`)));
+    const out = new Uint8Array(parts.reduce((n, p) => n + p.byteLength, 0)); let o = 0;
+    for (const p of parts) { out.set(p, o); o += p.byteLength; }
+    return out;
+}
 class FormData {
-    constructor(form) { def(this, '_l', []); if (form) for (const e of form.elements) { if (!e.name || e.disabled) continue; const t = e.type; if ((t === 'checkbox' || t === 'radio') && !e.checked) continue; if (/^(submit|button|reset|image|file)$/.test(t)) continue; this._l.push([e.name, e.value]); } }
+    constructor(form) { def(this, '_l', []); if (form) for (const e of form.elements) { if (!e.name || e.disabled) continue; const t = e.type; if ((t === 'checkbox' || t === 'radio') && !e.checked) continue; if (t === 'file') { const fs = [...e.files]; if (!fs.length) this._l.push([e.name, new File([], '', { type: 'application/octet-stream' })]); for (const f of fs) this._l.push([e.name, f]); continue; } if (/^(submit|button|reset|image)$/.test(t)) continue; this._l.push([e.name, e.value]); } }
     append(k, v, fn) { this._l.push([String(k), v instanceof Blob ? (fn ? new File([v], fn, v) : v) : String(v)]); }
     set(k, v, fn) { this.delete(k); this.append(k, v, fn); } delete(k) { this._l = this._l.filter(e => e[0] !== String(k)); }
     get(k) { const e = this._l.find(x => x[0] === String(k)); return e ? e[1] : null; } getAll(k) { return this._l.filter(x => x[0] === String(k)).map(x => x[1]); }
@@ -419,10 +430,26 @@ for (const k of ['url', 'readyState', 'bufferedAmount', 'onopen', 'onerror', 'on
 for (const k of ['wasClean', 'code', 'reason']) { const d = Object.getOwnPropertyDescriptor(CloseEvent.prototype, k); d.enumerable = true; Object.defineProperty(CloseEvent.prototype, k, d); }
 for (const [k, v] of Object.entries({ CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3 })) { Object.defineProperty(WebSocket, k, { value: v, enumerable: true }); Object.defineProperty(WebSocket.prototype, k, { value: v, enumerable: true }); }
 const portList = t => (t && typeof t[Symbol.iterator] === 'function' ? [...t] : t && t.transfer ? [...t.transfer] : []).filter(p => p && typeof p.postMessage === 'function' && typeof p.start === 'function');
-class MessagePort extends EventTarget { constructor() { super(); this.onmessage = null; def(this, '_other', null); } postMessage(d, t) { const ps = portList(t), r = this._wk || (this._other && this._other._wk); if (r) { N.workerPost(r[0], { __lumenPort: r[1], data: d, xfer: ps.map(p => { const k = ++portSeq; p._wk = [r[0], k]; if (p._other) remotePorts.set(k, p._other); return k; }) }); return; } const o = this._other; if (o) { const c = structuredClone(d); setTimeout(() => o._deliver(c, ps)); } } _deliver(data, ports) { dispatch(this, new MessageEvent('message', { data, ports: ports || [] }), true); } start() {} close() { this._other = null; } }
+class MessagePort extends EventTarget { constructor() { super(); this.onmessage = null; def(this, '_other', null); } postMessage(d, t) { const ps = portList(t), r = this._wk || (this._other && this._other._wk); if (r) { N.workerPost(r[0], { __lumenPort: r[1], data: portSub(d, ps), xfer: ps.map(p => { const k = ++portSeq; p._wk = [r[0], k]; if (p._other) remotePorts.set(k, p._other); return k; }) }); return; } const o = this._other; if (o) { const c = structuredClone(d); setTimeout(() => o._deliver(c, ps)); } } _deliver(data, ports) { dispatch(this, new MessageEvent('message', { data, ports: ports || [] }), true); } start() {} close() { this._other = null; } }
 class MessageChannel { constructor() { this.port1 = new MessagePort(); this.port2 = new MessagePort(); this.port1._other = this.port2; this.port2._other = this.port1; } }
-class BroadcastChannel extends EventTarget { constructor(n) { super(); this.name = String(n); } postMessage() {} close() {} }
+const bcAll = new Set();
+let bcIds = 0;
+class BroadcastChannel extends EventTarget {
+    constructor(n) {
+        super();
+        if (!arguments.length) throw new TypeError("Failed to construct 'BroadcastChannel': 1 argument required");
+        Object.defineProperty(this, '_id', { value: ++bcIds }); Object.defineProperty(this, '_closed', { value: false, writable: true });
+        this.name = String(n); this.onmessage = null; this.onmessageerror = null; bcAll.add(this);
+    }
+    postMessage(m) {
+        if (this._closed) throw new DOMException("Failed to execute 'postMessage' on 'BroadcastChannel': Channel is closed", 'InvalidStateError');
+        try { N.busPost(ssOrigin, 'bc', this.name, m, this._id); } catch (e) { throw new DOMException(String(e && e.message || e), 'DataCloneError'); }
+    }
+    close() { this._closed = true; bcAll.delete(this); }
+}
 
+const portSub = (v, ps, seen = new Set()) => { if (!ps.length || !v || typeof v !== 'object' || seen.has(v)) return v; const i = ps.indexOf(v); if (i >= 0) return { __lumenPortRef: i }; seen.add(v); if (Array.isArray(v)) return v.map(x => portSub(x, ps, seen)); const pr = Object.getPrototypeOf(v); if (pr !== Object.prototype && pr !== null) return v; const o = {}; for (const k of Object.keys(v)) o[k] = portSub(v[k], ps, seen); return o; };
+const portRes = (v, ps, seen = new Set()) => { if (!ps.length || !v || typeof v !== 'object' || seen.has(v)) return v; if (typeof v.__lumenPortRef === 'number' && Object.keys(v).length === 1) return ps[v.__lumenPortRef]; seen.add(v); for (const k of Object.keys(v)) v[k] = portRes(v[k], ps, seen); return v; };
 const workers = new Map(); let portSeq = 0; const remotePorts = new Map();
 class Worker extends EventTarget {
     constructor(url, opts) {
@@ -437,7 +464,7 @@ class Worker extends EventTarget {
         def(this, '_id', N.workerNew(u.href, src, N.userAgent(), N.platform(), opts && opts.name != null ? String(opts.name) : '', !!opts && opts.type === 'module'));
         workers.set(this._id, this);
     }
-    postMessage(m, t) { if (arguments.length < 1) throw new TypeError("Failed to execute 'postMessage' on 'Worker': 1 argument required, but only 0 present."); if (!this._id) return; const ps = (Array.isArray(t) ? t : t && t.transfer || []).filter(p => p instanceof MessagePort); if (!ps.length) return N.workerPost(this._id, m); N.workerPost(this._id, { __lumenXfer: ps.map(p => { const k = ++portSeq; p._wk = [this._id, k]; if (p._other) remotePorts.set(k, p._other); return k; }), data: m }); }
+    postMessage(m, t) { if (arguments.length < 1) throw new TypeError("Failed to execute 'postMessage' on 'Worker': 1 argument required, but only 0 present."); if (!this._id) return; const ps = (Array.isArray(t) ? t : t && t.transfer || []).filter(p => p instanceof MessagePort); if (!ps.length) return N.workerPost(this._id, m); N.workerPost(this._id, { __lumenXfer: ps.map(p => { const k = ++portSeq; p._wk = [this._id, k]; if (p._other) remotePorts.set(k, p._other); return k; }), data: portSub(m, ps) }); }
     terminate() { if (this._id) { N.workerTerm(this._id); workers.delete(this._id); this._id = 0; } }
 }
 function workerEvent(id, kind, data, message, filename, lineno, colno) {
@@ -445,8 +472,8 @@ function workerEvent(id, kind, data, message, filename, lineno, colno) {
     if (kind === 0) {
         let ports = [];
         if (data && typeof data === 'object') {
-            if (data.__lumenPort) { const p = remotePorts.get(data.__lumenPort); if (p) p._deliver(data.data, (data.xfer || []).map(k => { const q = new MessagePort(); q._wk = [id, k]; remotePorts.set(k, q); return q; })); return; }
-            if (data.__lumenXfer) { ports = data.__lumenXfer.map(k => { const q = new MessagePort(); q._wk = [id, k]; remotePorts.set(k, q); return q; }); data = data.data; }
+            if (data.__lumenPort) { const p = remotePorts.get(data.__lumenPort); if (p) { const qs = (data.xfer || []).map(k => { const q = new MessagePort(); q._wk = [id, k]; remotePorts.set(k, q); return q; }); p._deliver(portRes(data.data, qs), qs); } return; }
+            if (data.__lumenXfer) { ports = data.__lumenXfer.map(k => { const q = new MessagePort(); q._wk = [id, k]; remotePorts.set(k, q); return q; }); data = portRes(data.data, ports); }
         }
         dispatch(w, new MessageEvent('message', { data, ports }), true);
     }

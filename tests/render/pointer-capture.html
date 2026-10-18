@@ -1,0 +1,7 @@
+<!doctype html><body style="margin:0"><div id="bar" style="height:300px;background:#cde"></div><div style="height:600px"></div><script>
+const bar = document.getElementById('bar'); let out = 0, btn = 0, upT = null, got = 0, lost = 0, t0 = 0, held = 0;
+bar.addEventListener('pointerdown', e => { t0 = performance.now(); bar.setPointerCapture(e.pointerId); });
+bar.addEventListener('gotpointercapture', () => got++); bar.addEventListener('lostpointercapture', () => lost++);
+bar.addEventListener('pointermove', e => { if (e.clientY > 320) { out++; btn = e.buttons; } });
+document.addEventListener('pointerup', e => { upT = e.target; held = performance.now() - t0; setTimeout(() => console.log('PCAP ' + JSON.stringify([out > 0, btn == 1, upT == bar, got == 1, lost == 1, bar.hasPointerCapture(1) == false, held > 300])), 50); });
+</script>

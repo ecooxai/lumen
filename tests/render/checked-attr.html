@@ -1,0 +1,6 @@
+<!doctype html><body><input type="checkbox" id="c1" checked><input type="checkbox" id="c2"><input type="radio" name="r" id="r1" checked><select><option>a<option selected id="o2">b</select><script>
+const q = s => document.querySelector(s) != null, c2 = document.getElementById('c2'), c1 = document.getElementById('c1');
+const a = [q('#c1:checked'), !q('#c2:checked'), q('#r1:checked'), q('#o2:checked')];
+c2.checked = true; c1.checked = false;
+setTimeout(() => console.log('CHK ' + JSON.stringify(a.concat([q('#c2:checked'), !q('#c1:checked'), c1.hasAttribute('checked')]))), 20);
+</script>

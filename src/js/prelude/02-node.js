@@ -146,6 +146,7 @@ methods(Node.prototype, {
         for (const r of removed) ceConnected(r, false);
         N.setText(this, v);
         if (removed.length || N.first(this)) notify('childList', this, { removedNodes: removed, addedNodes: kids(this) });
+        if (this.__ass) readopt(this);
     },
     get nodeValue() { return isCD(this) ? N.text(this) : null; },
     set nodeValue(v) { if (isCD(this)) this.textContent = v; },
@@ -198,7 +199,7 @@ const ParentNode = {
     get lastElementChild() { for (let c = N.last(this); c; c = N.prev(c)) if (N.type(c) === 1) return c; return null; },
     append(...ns) { for (const n of ns) insertNode(this, toNode(n), null); },
     prepend(...ns) { const f = N.first(this); for (const n of ns) insertNode(this, toNode(n), f); },
-    replaceChildren(...ns) { for (const c of kids(this)) removeNode(c); this.append(...ns); },
+    replaceChildren(...ns) { for (const c of kids(this)) removeNode(c); this.append(...ns); if (this.__ass) readopt(this); },
     querySelector(s) { return N.query(this, String(s), false); },
     querySelectorAll(s) { return nodeList(N.query(this, String(s), true)); },
     getElementsByTagName(t) { t = String(t); const sel = t === '*' ? '*' : t.replace(/[^\w-]/g, ''); return liveList(this, () => sel ? N.query(this, sel, true) : []); },
@@ -255,8 +256,8 @@ methods(ShadowRoot.prototype, {
     get host() { return N.host(this); }, get mode() { return this.__mode || 'open'; },
     get innerHTML() { return N.html(this, false); }, set innerHTML(v) { setInner(this, String(v)); },
     get activeElement() { return null; }, get delegatesFocus() { return false; },
-    get adoptedStyleSheets() { return this.__ass || []; }, set adoptedStyleSheets(v) { def(this, '__ass', v); },
-    get styleSheets() { return []; },
+    get adoptedStyleSheets() { return adoptedGet(this); }, set adoptedStyleSheets(v) { adoptSheets(this, v); },
+    get styleSheets() { return scopeSheets(this); },
 });
 
 class Attr {
@@ -281,6 +282,8 @@ class NamedNodeMap {
     removeNamedItem(n) { const a = this.getNamedItem(n); if (!a) throw new DOMException("Failed to execute 'removeNamedItem' on 'NamedNodeMap': No item with name '" + n + "' was found.", 'NotFoundError'); return this._el.removeAttributeNode(a); }
     *[Symbol.iterator]() { for (let i = 0; i < this.length; i++) yield this[i]; }
 }
+class DOMStringMap {}
+globalThis.DOMStringMap = DOMStringMap;
 class DOMTokenList {
     constructor(el, attr) { def(this, '_el', el); def(this, '_attr', attr); }
     _get() { const v = N.attr(this._el, this._attr); return v ? [...new Set(v.split(/[\t\n\f\r ]+/).filter(Boolean))] : []; }

@@ -1,0 +1,13 @@
+<!doctype html>
+<body style="margin:0">
+<!-- grid-auto-flow:column + grid-auto-columns: items form one scrolling row (Reddit search carousels) -->
+<div id=g style="display:grid;grid-auto-flow:column;grid-auto-columns:calc(50% - 8px);column-gap:16px;width:400px;overflow:auto">
+  <div id=a style="height:50px;background:#c33"></div><div id=b style="height:50px;background:#3c3"></div><div id=c style="height:50px;background:#33c"></div>
+</div>
+<div id=g2 style="display:grid;grid-auto-flow:column;grid-template-rows:20px 20px;width:300px">
+  <i id=p></i><i id=q></i><i id=r></i>
+</div>
+<script>
+requestAnimationFrame(() => requestAnimationFrame(() => { const R = e => e.getBoundingClientRect();
+  console.log('GFC ' + JSON.stringify([R(a).left, R(b).left, R(c).left, R(a).width, R(c).top === R(a).top, R(q).top - R(p).top, R(r).left > R(p).left, R(r).top === R(p).top])); }));
+</script>

@@ -107,21 +107,31 @@ static bool match_pseudo(const SimpleSel *s, Node *el, Node *scope) {
     if (n == P_root) return el->parent && el->parent->type == NODE_DOCUMENT;
     if (n == P_scope) return scope ? el == scope : (el->parent && el->parent->type == NODE_DOCUMENT);
     if (n == P_empty) { for (Node *c = el->first; c; c = c->next) if (c->type == NODE_ELEMENT || (c->type == NODE_TEXT && c->text_len)) return false; return true; }
-    if (n == P_checked) return (el->tag == A_input && ((el->flags & NF_CHECKED) || (!(el->flags & NF_PARSER_INSERTED) && false))) || (el->tag == A_option && node_has_attr(el, "selected")) || (el->tag == A_input && node_has_attr(el, "checked") && !(el->flags & NF_CHECKED) && false) || ((el->flags & NF_CHECKED) != 0);
+    if (n == P_checked) {   /* checkedness: script-set state, else the content attribute */
+        if (el->tag != A_input && el->tag != A_option) return false;
+        return el->checked_override ? el->checked_override > 0 : node_has_attr(el, el->tag == A_input ? "checked" : "selected");
+    }
     if (n == P_disabled) return is_disabled(el);
     if (n == P_enabled) return (el->tag == A_button || el->tag == A_input || el->tag == A_select || el->tag == A_textarea) && !is_disabled(el);
     if (n == P_link || n == P_any_link) return is_link(el);
     if (n == P_visited) return false;
     if (n == P_defined) return !strchr(el->tag, '-') || el->ext != NULL || (el->flags & (1u << 20));
     if (n == P_host) { if (!el->shadow_root) return false; if (!s->sub) return true; return css_match_selector_list(s->sub, el); }
-    if (n == P_placeholder_shown) { if (el->tag != A_input && el->tag != A_textarea) return false; const char *v = node_attr(el, "value"); return node_has_attr(el, "placeholder") && (!v || !v[0]); }
+    if (n == P_placeholder_shown) {
+        if ((el->tag != A_input && el->tag != A_textarea) || !node_has_attr(el, "placeholder")) return false;
+        if (el->value_override) return !el->value_override[0];
+        if (el->tag == A_textarea) { for (Node *c = el->first; c; c = c->next) if (c->type == NODE_TEXT && c->text_len) return false; return true; }
+        const char *v = node_attr(el, "value"); return !v || !v[0];
+    }
     if (n == P_required) return node_has_attr(el, "required");
     if (n == P_optional) return (el->tag == A_input || el->tag == A_select || el->tag == A_textarea) && !node_has_attr(el, "required");
     if (n == P_read_only) return !(el->tag == A_input || el->tag == A_textarea) || node_has_attr(el, "readonly");
     if (n == P_read_write) return (el->tag == A_input || el->tag == A_textarea) && !node_has_attr(el, "readonly");
     if (n == P_lang) { for (Node *x = el; x && x->type == NODE_ELEMENT; x = x->parent) { const char *l = node_attr(x, "lang"); if (l) return s->value && str_istarts(l, s->value); } return false; }
     if (n == P_dir) return s->value && !strcmp(s->value, "ltr");
-    if (n == P_target || n == P_default || n == P_popover_open || n == P_modal || n == P_fullscreen) return false;
+    if (n == P_modal) return el->flags & NF_MODAL;
+    if (n == P_popover_open) return el->flags & NF_POPOVER_OPEN;
+    if (n == P_target || n == P_default || n == P_fullscreen) return false;
     if (n == P_playing || n == P_paused) return n == P_paused;
     /* vendor / unknown pseudo-classes never match */
     return false;
@@ -144,15 +154,25 @@ static bool match_compound(const Compound *c, Node *el, Node *scope) {
     return true;
 }
 
+/* `:host ... x` steps from a shadow tree's top level up to its host */
+static Node *host_up(Node *el, const Compound *c) {
+    Node *p = el->parent;
+    if (!p || p->type != NODE_FRAGMENT || !p->host) return NULL;
+    const char *h = atom("host");
+    for (int k = 0; k < c->n; k++) if (c->s[k].kind == SK_PSEUDO && c->s[k].name == h) return p->host;
+    return NULL;
+}
 static bool match_from(const Selector *s, int ci, Node *el, Node *scope) {
     if (!match_compound(&s->c[ci], el, scope)) return false;
     if (ci == 0) return true;
     uint8_t comb = s->c[ci].comb;
     switch (comb) {
-    case CB_CHILD: { Node *p = parent_el(el); return p && match_from(s, ci - 1, p, scope); }
+    case CB_CHILD: { Node *p = parent_el(el); if (!p) p = host_up(el, &s->c[ci - 1]); return p && match_from(s, ci - 1, p, scope); }
     case CB_DESC: {
-        for (Node *p = parent_el(el); p; p = parent_el(p)) if (match_from(s, ci - 1, p, scope)) return true;
-        return false; }
+        Node *p = parent_el(el), *last = el;
+        for (; p; last = p, p = parent_el(p)) if (match_from(s, ci - 1, p, scope)) return true;
+        p = host_up(last, &s->c[ci - 1]);
+        return p && match_from(s, ci - 1, p, scope); }
     case CB_ADJ: { Node *p = prev_el(el); return p && match_from(s, ci - 1, p, scope); }
     case CB_SIB: { for (Node *p = prev_el(el); p; p = prev_el(p)) if (match_from(s, ci - 1, p, scope)) return true; return false; }
     }

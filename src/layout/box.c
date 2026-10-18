@@ -63,9 +63,12 @@ static char *prep_text(BState *bs, const char *s, size_t n, const ComputedStyle 
 }
 
 static bool is_ws_text(const Box *b) { if (b->kind != BX_TEXT) return false; for (int i = 0; i < b->text_len; i++) if (b->text[i] != ' ' && b->text[i] != '\n') return false; return b->st->white_space == WS_NORMAL || b->st->white_space == WS_NOWRAP || b->st->white_space == WS_PRE_LINE; }
+/* flex/grid: whitespace-only text runs are never rendered, whatever white-space says */
+static bool all_ws_text(const Box *b) { if (b->kind != BX_TEXT) return false; for (int i = 0; i < b->text_len; i++) { char ch = b->text[i]; if (ch != ' ' && ch != '\n' && ch != '\t' && ch != '\r' && ch != '\f') return false; } return true; }
 static bool block_level(const Box *b) { return b->kind == BX_BLOCK && in_flow(b); }
 static bool inline_level(const Box *b) { return b->kind == BX_INLINE || b->kind == BX_TEXT || b->kind == BX_ATOMIC || b->kind == BX_BR; }
 
+static ComputedStyle *anon_item_style(Layout *L, const ComputedStyle *p);
 static void fixup_block(Layout *L, Box *b) {
     bool has_block = false;
     for (Box *c = b->first; c; c = c->next) { if (block_level(c)) has_block = true; }
@@ -78,7 +81,7 @@ static void fixup_block(Layout *L, Box *b) {
         Box *run = c, *end = c; bool real = false;
         while (end && !block_level(end)) { if (inline_level(end) && !is_ws_text(end)) real = true; end = end->next; }
         if (real) {
-            Box *a = new_box(L, BX_BLOCK, NULL, b->st); a->anon = true; a->fmt = FMT_INLINE;
+            Box *a = new_box(L, BX_BLOCK, NULL, anon_item_style(L, b->st)); a->anon = true; a->fmt = FMT_INLINE;
             for (Box *x = run; x != end;) { Box *nx = x->next; x->next = x->prev = NULL; append(a, x); x = nx; }
             append(b, a);
         } else {
@@ -102,7 +105,7 @@ static void fixup_container_items(Layout *L, Box *b) {
     while (c) {
         Box *next = c->next; c->next = c->prev = NULL;
         if (c->kind == BX_TEXT || c->kind == BX_BR) {
-            if (c->kind == BX_TEXT && !is_ws_text(c)) { Box *a = new_box(L, BX_BLOCK, NULL, anon_item_style(L, b->st)); a->anon = true; a->fmt = FMT_INLINE; a->bfc = true; append(a, c); append(b, a); }
+            if (c->kind == BX_TEXT && !all_ws_text(c)) { Box *a = new_box(L, BX_BLOCK, NULL, anon_item_style(L, b->st)); a->anon = true; a->fmt = FMT_INLINE; a->bfc = true; append(a, c); append(b, a); }
         } else {
             if (c->kind == BX_INLINE) { c->kind = BX_BLOCK; fixup_block(L, c); }
             else if (c->kind == BX_ATOMIC) c->kind = BX_BLOCK;
@@ -148,20 +151,30 @@ static void build_pseudo(BState *bs, Box *parent, Node *el, ComputedStyle *ps) {
     uint8_t kind = blockify ? BX_BLOCK : ps->display == D_INLINE ? BX_INLINE : (ps->display == D_INLINE_BLOCK || ps->display == D_INLINE_FLEX) ? BX_ATOMIC : BX_BLOCK;
     Box *b = new_box(bs->L, kind, el, ps); b->anon = true;
     b->fmt = ps->display == D_FLEX || ps->display == D_INLINE_FLEX ? FMT_FLEX : ps->display == D_GRID ? FMT_GRID : FMT_FLOW;
-    b->abs = ps->position == P_ABSOLUTE || ps->position == P_FIXED; b->fixed = ps->position == P_FIXED; b->floated = ps->float_ != F_NONE;
+    b->abs = ps->position == P_ABSOLUTE || ps->position == P_FIXED; b->fixed = ps->position == P_FIXED; b->floated = !b->abs && ps->float_ != F_NONE && parent->fmt != FMT_FLEX && parent->fmt != FMT_GRID;
     if (b->abs || b->floated || kind == BX_ATOMIC) b->bfc = true;
     if (*ps->content) { Box *t = new_box(bs->L, BX_TEXT, NULL, ps); t->text = prep_text(bs, ps->content, strlen(ps->content), ps, &t->text_len); append(b, t); }
     if (kind != BX_INLINE) fixup_block(bs->L, b);
     append(parent, b);
 }
 
+static Node *slot_host(Node *slot) { Node *r = slot; while (r->parent) r = r->parent; return r->type == NODE_FRAGMENT ? r->host : NULL; }
+/* light child c of a shadow host goes to the slot named nm (default slot when nm is empty) */
+static bool slot_takes(Node *c, const char *nm) {
+    if (c->type == NODE_TEXT) return !nm || !*nm;
+    if (c->type != NODE_ELEMENT) return false;
+    const char *sa = node_attr(c, "slot");
+    return nm && *nm ? sa && !strcmp(sa, nm) : !sa || !*sa;
+}
 static void build_children(BState *bs, Box *b, Node *n) {
     int li = 0;
     if (n->tag == A_ol) { const char *s = node_attr(n, "start"); li = s ? atoi(s) - 1 : 0; }
     if (n->style) build_pseudo(bs, b, n, n->style->before);
     Node *kids = n->template_content ? NULL : n;
-    if (kids) for (Node *c = n->first; c; c = c->next) build(bs, b, c, &li);
-    if (n->shadow_root) for (Node *c = n->shadow_root->first; c; c = c->next) build(bs, b, c, &li);
+    if (n->shadow_root) {   /* a shadow host renders its shadow tree; light children only appear through <slot>s */
+        for (Node *c = n->first; c; c = node_next_deep(c, n)) c->box = NULL;
+        for (Node *c = n->shadow_root->first; c; c = c->next) build(bs, b, c, &li);
+    } else if (kids) for (Node *c = n->first; c; c = c->next) build(bs, b, c, &li);
     if (n->style) build_pseudo(bs, b, n, n->style->after);
 }
 
@@ -181,7 +194,12 @@ static void build(BState *bs, Box *parent, Node *n, int *li) {
     ComputedStyle *st = n->style;
     n->box = NULL;
     if (!st || st->display == D_NONE) return;
-    if (n->tag == A_slot && n->ns == NS_HTML) { for (Node *c = n->first; c; c = c->next) build(bs, parent, c, li); return; }
+    if (n->tag == A_slot && n->ns == NS_HTML) {
+        Node *h = slot_host(n); const char *nm = node_attr(n, "name"); bool any = false;
+        if (h && h->shadow_root) for (Node *c = h->first; c; c = c->next) if (slot_takes(c, nm)) { any = true; build(bs, parent, c, li); }
+        if (!any) for (Node *c = n->first; c; c = c->next) build(bs, parent, c, li);
+        return;
+    }
     if (st->display == D_CONTENTS) { build_children(bs, parent, n); return; }
     if (n->ns == NS_SVG && n->tag != A_svg) return;
     if (n->tag == A_br && n->ns == NS_HTML) { Box *b = new_box(L, BX_BR, n, st); append(parent, b); n->box = b; bs->last_space = true; return; }
@@ -196,7 +214,7 @@ static void build(BState *bs, Box *parent, Node *n, int *li) {
     n->box = b;
     b->ctl = (uint8_t)ctl;
     b->abs = st->position == P_ABSOLUTE || st->position == P_FIXED; b->fixed = st->position == P_FIXED;
-    b->floated = !b->abs && st->float_ != F_NONE;
+    b->floated = !b->abs && st->float_ != F_NONE && parent->fmt != FMT_FLEX && parent->fmt != FMT_GRID;  /* flex/grid items ignore float */
     /* The root's overflow (or body's, when the root's is visible) belongs to the viewport, not the box */
     const ComputedStyle *hs = L->doc->html ? L->doc->html->style : NULL;
     bool to_viewport = n == L->doc->html || (n == L->doc->body && (!hs || (hs->overflow_x == OV_VISIBLE && hs->overflow_y == OV_VISIBLE)));
@@ -343,12 +361,18 @@ void intrinsic(Layout *L, Box *b, float *omn, float *omx) {
         mn -= bp; mx -= bp;
         if (st->width.kind == LK_LEN && !st->width.pct) { float w = st->width.px - (st->box_sizing == BOX_BORDER ? bp : 0); mn = LMAX(mn, w); mx = LMAX(mx, w); }
     } else {
+        float frow = 0; /* adjacent floats sit side by side in max-content */
         for (Box *c = b->first; c; c = c->next) {
             if (c->abs) continue;
             float a, z; intrinsic_outer(L, c, &a, &z);
+            if (c->floated) { if (c->st->clear) frow = 0; frow += z; z = frow; }
+            else frow = 0;
             mn = LMAX(mn, a); mx = LMAX(mx, z);
         }
     }
+    /* a percentage-wide scroll container is compressible: its min-content contribution ignores its
+       contents (Amazon's nowrap carousel in a `width:100%;overflow:hidden` viewport must not widen the column) */
+    if (st->width.kind == LK_LEN && st->width.pct && st->overflow_x != OV_VISIBLE && b->fmt != FMT_REPLACED) mn = 0;
     if (st->max_width.kind == LK_LEN && !st->max_width.pct) { float v = st->max_width.px - (st->box_sizing == BOX_BORDER ? bp : 0); mx = LMIN(mx, v); mn = LMIN(mn, v); }
     if (st->min_width.kind == LK_LEN && !st->min_width.pct) { float v = st->min_width.px - (st->box_sizing == BOX_BORDER ? bp : 0); mx = LMAX(mx, v); mn = LMAX(mn, v); }
     if (mn > mx) mx = mn;
@@ -378,7 +402,7 @@ void replaced_size(Layout *L, Box *b, float cbw, float *ow, float *oh) {
     } else if (n && n->tag == A_canvas) {
         const char *aw = node_attr(n, "width"), *ah = node_attr(n, "height"); if (aw) nw = (float)atof(aw); if (ah) nh = (float)atof(ah);
     } else if (n && n->tag == A_audio) { nw = 300; nh = 54; }
-    if (!ratio && nh > 0) ratio = nw / nh;
+    if (!ratio && nh > 0 && !(n && (n->tag == A_iframe || n->tag == A_embed || n->tag == A_object))) ratio = nw / nh;   /* 300x150 frame default has no intrinsic ratio */
     if (st->aspect_ratio > 0) ratio = st->aspect_ratio;
     bool bs = st->box_sizing == BOX_BORDER; float hb = hbp(b), vb2 = vbp(b);
     float w = -1, h = -1;

@@ -451,7 +451,7 @@ static void tree_token(HtmlParser *p) {
             if (table_end(p, t)) return;
             handle_end_body(p, t);
             return;
-        case M_AFTER_BODY: return;
+        case M_AFTER_BODY: if (t == A_body || t == A_html) return; p->mode = M_IN_BODY; tree_token(p); return;   /* stray </body></html> mid-page: keep parsing in body */
         case M_IN_FRAMESET: if (t == A_frameset) pop(p); return;
         default: return;
         }
@@ -679,6 +679,10 @@ static void run(HtmlParser *p, bool final) {
 }
 
 void html_parser_feed(HtmlParser *p, const char *src, size_t len) {
+    /* HTML preprocessing: NUL becomes U+FFFD so C-string scanning never truncates input */
+    for (const char *z; len && (z = memchr(src, 0, len)); len -= (size_t)(z - src) + 1, src = z + 1) {
+        sb_put(&p->in, src, (size_t)(z - src)); sb_put(&p->in, "\xEF\xBF\xBD", 3);
+    }
     sb_put(&p->in, src, len);
     run(p, false);
     flush_chars(p);
