@@ -35,7 +35,9 @@ int main(int argc, char **argv) {
     if (strstr(argv[1], "://")) snprintf(url, sizeof url, "%s", argv[1]);
     else if (realpath(argv[1], abs)) snprintf(url, sizeof url, "file://%s", abs);
     else { fprintf(stderr, "jsrun: cannot resolve %s\n", argv[1]); return 1; }
-    NetResponse *r = net_fetch_sync(net_request_new("GET", url));
+    NetRequest *rq = net_request_new("GET", url);
+    NetResponse *r = net_fetch_sync(rq);
+    net_request_free(rq);
     if (!r || r->status == 0) { fprintf(stderr, "jsrun: fetch failed: %s\n", r && r->error ? r->error : "?"); return 1; }
     Document *d = doc_new(r->url ? r->url : url);
     html_parse(d, r->body ? r->body : "", r->body ? r->body_len : 0);
@@ -48,7 +50,9 @@ int main(int argc, char **argv) {
             char *t = node_text_content(n); StyleSheet *s = css_parse_sheet(t, strlen(t), d->url, 1, &se->media); s->owner = n; style_engine_add_sheet(se, s); free(t);
         } else if (n->tag == A_link && rel && strstr(rel, "stylesheet") && node_attr(n, "href")) {
             char *u = url_join(d->url, node_attr(n, "href"));
-            NetResponse *cr = u ? net_fetch_sync(net_request_new("GET", u)) : NULL;
+            NetRequest *crq = u ? net_request_new("GET", u) : NULL;
+            NetResponse *cr = crq ? net_fetch_sync(crq) : NULL;
+            net_request_free(crq);
             if (cr && cr->status == 200) { StyleSheet *s = css_parse_sheet(cr->body, cr->body_len, cr->url, 1, &se->media); s->owner = n; style_engine_add_sheet(se, s); }
             if (cr) net_response_free(cr);
             free(u);
@@ -76,7 +80,9 @@ int main(int argc, char **argv) {
             free(t); free(u);
         } else if (src) {
             char *u = url_join(d->url, src);
-            NetResponse *sr = u ? net_fetch_sync(net_request_new("GET", u)) : NULL;
+            NetRequest *srq = u ? net_request_new("GET", u) : NULL;
+            NetResponse *sr = srq ? net_fetch_sync(srq) : NULL;
+            net_request_free(srq);
             if (sr && sr->status >= 200 && sr->status < 300) js_run_script(js, n, sr->body ? sr->body : "", sr->body_len, u);
             else { n->flags |= NF_SCRIPT_STARTED; js_dispatch(js, n, "error", "Event", false, false, 0, 0, 0, NULL); }
             if (sr) net_response_free(sr);

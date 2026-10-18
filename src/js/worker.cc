@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <chrono>
 #include <condition_variable>
+#include <cstdlib>
 #include <cstring>
 #include <deque>
 #include <map>
@@ -31,8 +32,10 @@ struct Worker {
     std::mutex mu; std::condition_variable cv;
     std::deque<Buf> in; std::deque<OutMsg> out;
     std::atomic<bool> term{false};
+    std::atomic<bool> finished{false}; /* worker_main and its isolate/allocator cleanup have returned */
     bool accepting = true;  /* protected by mu; close() stops incoming tasks without aborting the current task */
     v8::Isolate *iso = nullptr;
+    NetRequest *request = nullptr; /* protected by mu; owned by the synchronous worker_fetch call */
     std::atomic<size_t> heap{0}, ext{0};
 };
 struct WTimer { double due = 0, interval = 0; bool repeat = false; v8::Global<v8::Function> fn; std::vector<v8::Global<v8::Value>> args; };
@@ -46,6 +49,42 @@ struct WEnv {
 };
 std::map<uint32_t, std::shared_ptr<Worker>> g_workers;   /* main thread only */
 uint32_t g_wseq;
+
+/* Per-page termination stays asynchronous. The process, however, must not
+ * destroy the bus/platform while a detached worker is still using them. The
+ * count includes startup and cleanup, even after its JS registry entry is gone.
+ */
+struct WorkerThreads {
+    std::mutex mu;
+    std::condition_variable cv;
+    size_t running = 0;
+    bool stopping = false;
+};
+void worker_exit();
+WorkerThreads &worker_threads() {
+    static WorkerThreads threads;
+    /* Register AFTER construction: the callback must precede this object's
+     * destructor, as well as the bus/platform globals constructed before main.
+     * The explicit app shutdown runs before other subsystem cleanup; this is
+     * also a backstop for command-line tools and other embedders.
+     */
+    static const bool registered = [] {
+        if (std::atexit(worker_exit) != 0) {
+            fprintf(stderr, "lumen: cannot register worker shutdown\n");
+            std::abort();
+        }
+        return true;
+    }();
+    (void)registered;
+    return threads;
+}
+
+bool wait_worker_threads(unsigned timeout_ms) {
+    WorkerThreads &threads = worker_threads();
+    std::unique_lock<std::mutex> lock(threads.mu);
+    return threads.cv.wait_for(lock, std::chrono::milliseconds(timeout_ms), [&] { return threads.running == 0; });
+}
+
 const int kEnvSlot = 2;
 v8::MaybeLocal<v8::Module> wm_compile(WEnv *E, const std::string &u, const std::string &src);
 bool wm_graph(WEnv *E, v8::Local<v8::Module> m);
@@ -121,6 +160,28 @@ void post_out(WEnv *E, OutMsg &&m) {
         E->w->out.push_back(std::move(m));
     }
     wake();
+}
+
+/* The request remains alive while terminate() can see it. Clearing the active
+ * pointer under the same lock before freeing prevents cancellation from racing
+ * request destruction or a later request reusing its allocation/socket.
+ */
+NetResponse *worker_fetch(Worker *w, NetRequest *request) {
+    {
+        std::lock_guard<std::mutex> lock(w->mu);
+        if (w->term) { net_request_free(request); return nullptr; }
+        w->request = request;
+    }
+    NetResponse *response = net_fetch_sync(request);
+    bool terminated;
+    {
+        std::lock_guard<std::mutex> lock(w->mu);
+        w->request = nullptr;
+        terminated = w->term;
+    }
+    net_request_free(request);
+    if (terminated) { net_response_free(response); return nullptr; }
+    return response;
 }
 
 /* An uncaught worker exception: the worker's own onerror/listeners may handle it, else it goes to the Worker object */
@@ -212,8 +273,8 @@ WFN(fetch) {
         }
     }
     if (a[4]->IsTrue()) rq->no_cookies = true;
-    NetResponse *r = net_fetch_sync(rq);
-    if (!r || r->status == 0) { if (r) net_response_free(r); a.GetReturnValue().SetNull(); return; }
+    NetResponse *r = worker_fetch(E->w.get(), rq);
+    if (!r || r->status == 0 || E->w->term) { if (r) net_response_free(r); a.GetReturnValue().SetNull(); return; }
     v8::Local<v8::Array> hs = v8::Array::New(iso);
     for (int i = 0; i < r->headers.n; i++) { (void)hs->Set(ctx, (uint32_t)(2 * i), jstr(iso, r->headers.v[i].name)); (void)hs->Set(ctx, (uint32_t)(2 * i + 1), jstr(iso, r->headers.v[i].value)); }
     v8::Local<v8::Value> out[4] = { v8::Integer::New(iso, r->status), jstr(iso, r->url ? r->url : u.c_str()), make_ab(iso, r->body, r->body_len), hs };
@@ -227,7 +288,9 @@ WFN(importScript) {
         fprintf(stderr, "lumen: CSP script-src blocked importScripts %.120s\n", u.c_str());
         throw_dom(iso, ctx, "Failed to execute 'importScripts': The script at '" + u + "' failed to load.", "NetworkError"); return;
     }
-    NetResponse *r = net_fetch_sync(net_request_new("GET", u.c_str()));
+    NetRequest *rq = net_request_new("GET", u.c_str());
+    NetResponse *r = worker_fetch(E->w.get(), rq);
+    if (E->w->term) { net_response_free(r); return; }
     if (!r || r->status < 200 || r->status >= 300) {
         if (r) net_response_free(r);
         throw_dom(iso, ctx, "Failed to execute 'importScripts': The script at '" + u + "' failed to load.", "NetworkError"); return;
@@ -511,11 +574,14 @@ static bool w_wasm_cb(v8::Local<v8::Context>, v8::Local<v8::String>) {
     return ok;
 }
 void worker_main(std::shared_ptr<Worker> w) {
+    if (w->term) return;
     v8::Isolate::CreateParams cp;
     std::unique_ptr<v8::ArrayBuffer::Allocator> al(v8::ArrayBuffer::Allocator::NewDefaultAllocator());
     cp.array_buffer_allocator = al.get();
     v8::Isolate *iso = v8::Isolate::New(cp);
-    { std::lock_guard<std::mutex> lk(w->mu); w->iso = iso; }
+    bool stopped;
+    { std::lock_guard<std::mutex> lk(w->mu); stopped = w->term; if (!stopped) w->iso = iso; }
+    if (stopped) { iso->Dispose(); return; }
     iso->SetMicrotasksPolicy(v8::MicrotasksPolicy::kExplicit);
     WEnv *E = new WEnv; E->w = w; E->iso = iso; E->t0 = now_ms();
     iso->SetData(kEnvSlot, E);
@@ -557,7 +623,8 @@ void worker_main(std::shared_ptr<Worker> w) {
             fprintf(stderr, "lumen: CSP worker-src blocked %.120s\n", w->url.c_str()); ok = false;
         } else if (ok) { E->csp = w->ocsp; E->cspdoc = w->odoc; E->has_csp = w->has_ocsp; }
         else if (!w->term) {
-            NetResponse *r = net_fetch_sync(net_request_new("GET", w->url.c_str()));
+            NetRequest *rq = net_request_new("GET", w->url.c_str());
+            NetResponse *r = worker_fetch(w.get(), rq);
             if (r && r->status >= 200 && r->status < 300) {
                 src.assign(r->body ? r->body : "", r->body_len); ok = true;
                 if (const char *h = headers_get(&r->headers, "content-security-policy")) { E->csp = h; E->cspdoc = w->url; E->has_csp = true; }
@@ -678,6 +745,7 @@ bool wm_graph(WEnv *E, v8::Local<v8::Module> m) {
     std::string base = wm_key(E, m);
     v8::Local<v8::FixedArray> rq = m->GetModuleRequests();
     for (int i = 0; i < rq->Length(); i++) {
+        if (E->w->term) return false;
         std::string sp = jcstr(iso, rq->Get(i).As<v8::ModuleRequest>()->GetSpecifier()), u = wm_resolve(sp, base);
         if (u.empty()) { iso->ThrowException(v8::Exception::TypeError(jstr(iso, ("Failed to resolve module specifier \"" + sp + "\"").c_str()))); return false; }
         if (E->mods.count(u)) continue;
@@ -685,7 +753,9 @@ bool wm_graph(WEnv *E, v8::Local<v8::Module> m) {
             fprintf(stderr, "lumen: CSP script-src blocked module %.120s\n", u.c_str());
             iso->ThrowException(v8::Exception::TypeError(jstr(iso, ("Failed to fetch module: " + u).c_str()))); return false;
         }
-        NetResponse *r = net_fetch_sync(net_request_new("GET", u.c_str()));
+        NetRequest *rq = net_request_new("GET", u.c_str());
+        NetResponse *r = worker_fetch(E->w.get(), rq);
+        if (E->w->term) { net_response_free(r); return false; }
         bool ok = r && r->status >= 200 && r->status < 300; std::string body;
         if (ok) body.assign(r->body ? r->body : "", r->body_len);
         if (r) net_response_free(r);
@@ -704,8 +774,17 @@ v8::MaybeLocal<v8::Module> wm_resolve_cb(v8::Local<v8::Context>, v8::Local<v8::S
 }
 
 void *worker_thread(void *p) {
-    std::unique_ptr<std::shared_ptr<Worker>> sp(static_cast<std::shared_ptr<Worker> *>(p));
-    worker_main(*sp);
+    WorkerThreads &threads = worker_threads();
+    {
+        std::unique_ptr<std::shared_ptr<Worker>> sp(static_cast<std::shared_ptr<Worker> *>(p));
+        worker_main(*sp);
+        (*sp)->finished = true;
+    } /* Release the thread's Worker reference before signaling completion. */
+    {
+        std::lock_guard<std::mutex> lock(threads.mu);
+        --threads.running;
+        threads.cv.notify_all();
+    } /* No Lumen/V8/global access after this point. */
     return nullptr;
 }
 
@@ -713,15 +792,28 @@ void worker_terminate(Worker *w) {
     std::lock_guard<std::mutex> lk(w->mu);
     w->term = true;
     close_input_locked(w);
+    if (w->request) net_request_cancel(w->request);
     if (w->iso) w->iso->TerminateExecution();
     for (OutMsg &m : w->out) free(m.data.p);
     w->out.clear();
     w->cv.notify_all();
 }
 
+void worker_exit() {
+    if (js_workers_shutdown(5000)) return;
+    /* DNS/native library work cannot always be interrupted. Never continue
+     * into static destruction with live workers or pretend exit succeeded.
+     */
+    fprintf(stderr, "lumen: worker shutdown exceeded 5 seconds; terminating before unsafe static cleanup\n");
+    fflush(stderr);
+    std::_Exit(EXIT_FAILURE);
+}
+
 /* ---- main thread ---- */
 void n_workerNew(const FCI &a) {
     v8::Isolate *iso = a.GetIsolate();
+    WorkerThreads &threads = worker_threads();
+    { std::lock_guard<std::mutex> lock(threads.mu); if (threads.stopping) { a.GetReturnValue().Set(0); return; } }
     auto w = std::make_shared<Worker>();
     w->id = ++g_wseq; w->owner = jctx(iso); w->coi = w->owner && w->owner->doc && w->owner->doc->cross_origin_isolated;
     if (const char *t = js_top_url(w->owner)) w->top = t;
@@ -732,7 +824,11 @@ void n_workerNew(const FCI &a) {
     pthread_attr_t at; pthread_attr_init(&at); pthread_attr_setstacksize(&at, 8u << 20); pthread_attr_setdetachstate(&at, PTHREAD_CREATE_DETACHED);
     pthread_t th;
     auto *arg = new std::shared_ptr<Worker>(w);
-    if (pthread_create(&th, &at, worker_thread, arg) != 0) { delete arg; g_workers.erase(w->id); a.GetReturnValue().Set(0); pthread_attr_destroy(&at); return; }
+    { std::lock_guard<std::mutex> lock(threads.mu); ++threads.running; }
+    if (pthread_create(&th, &at, worker_thread, arg) != 0) {
+        { std::lock_guard<std::mutex> lock(threads.mu); --threads.running; threads.cv.notify_all(); }
+        delete arg; g_workers.erase(w->id); a.GetReturnValue().Set(0); pthread_attr_destroy(&at); return;
+    }
     pthread_attr_destroy(&at);
     a.GetReturnValue().Set(w->id);
 }
@@ -761,6 +857,14 @@ void n_workerTerm(const FCI &a) {
     g_workers.erase(it);
 }
 } // namespace
+
+extern "C" bool js_workers_shutdown(unsigned timeout_ms) {
+    WorkerThreads &threads = worker_threads();
+    { std::lock_guard<std::mutex> lock(threads.mu); threads.stopping = true; }
+    for (auto &entry : g_workers) worker_terminate(entry.second.get());
+    g_workers.clear();
+    return wait_worker_threads(timeout_ms);
+}
 
 void js_install_workers(JsCtx *c, v8::Local<v8::Object> N) {
     v8::Isolate *iso = c->iso; v8::Local<v8::Context> ctx = iso->GetCurrentContext();

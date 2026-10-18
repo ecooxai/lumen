@@ -25,6 +25,7 @@
 #endif
 #include <SDL3/SDL.h>
 #include "viewport.h"
+#include "present_retry.h"
 #ifdef LUMEN_IOS
 #include <SDL3/SDL_main.h>
 #include "touch_contacts.h"
@@ -82,11 +83,11 @@ static void text_input(SDL_Window *w, bool url) {
 typedef struct { Node *n; char *src; size_t len; char *name; bool module; } PScript;
 typedef struct { Node *n; uint64_t h; } SheetRef;
 typedef struct Page {
-    char *url; Document *d; StyleEngine *e; Layout *L; uint64_t gen; double load_ms;
+    char *url; Document *d; StyleEngine *e; Layout *L; uint64_t gen; double load_ms, scroll_due;
     JsCtx *js; PScript *scripts; int nscripts; uint64_t seen_ver, lay_ver;
     SheetRef *sref; int nsref;
     Node **vids; int nvids, vidcap; uint64_t vids_ver; /* <video> elements, rebuilt when the tree changes */
-    HMap img_fired; bool img_check;
+    HMap img_fired; bool img_check, scroll_pending;
     /* <iframe> child browsing context (document owned by the JS layer) */
     Node *frame_el; float fw, fh, fsy; Canvas cv; Image img; DisplayList fdl;
     uint64_t drawn_ver; int drawn_epoch; bool frelayout; struct Page *fnext;
@@ -211,6 +212,12 @@ static NetRequest *doc_req(Document *d, const char *u, const char *top, const ch
     if (d && d->csp && csp_dir) { rq->csp = xstrdup(d->csp); rq->csp_doc = xstrdup(d->url ? d->url : ""); rq->csp_dir = csp_dir; }
     return rq;
 }
+static NetResponse *doc_fetch_sync(Document *d, const char *u, const char *top, const char *csp_dir) {
+    NetRequest *rq = doc_req(d, u, top, csp_dir);
+    NetResponse *r = net_fetch_sync(rq);
+    net_request_free(rq);
+    return r;
+}
 static Image *cache_get(const char *u) {
     SDL_LockMutex(icache_mu); ImgSlot *s = hm_get(&icache, u); Image *im = s ? s->im : NULL; bool want = false; const uint8_t *enc = NULL; size_t en = 0;
     if (s && !g_in_layout) { s->used = (double)SDL_GetTicks(); if (s->evicted && !s->refetch) { s->refetch = true; if (s->enc) { enc = s->enc; en = s->enclen; } else want = true; } }
@@ -232,7 +239,7 @@ static void cache_fetch(Page *p, const char *u) {
     if (!u || !*u || !strncmp(u, "blob:", 5)) return;
     SDL_LockMutex(icache_mu); bool have = hm_get(&icache, u) != NULL; SDL_UnlockMutex(icache_mu);
     if (have) return;
-    NetResponse *r = net_fetch_sync(doc_req(p->d, u, page_top_url(p), "img-src"));
+    NetResponse *r = doc_fetch_sync(p->d, u, page_top_url(p), "img-src");
     Image *im = r && r->status == 200 ? image_decode((const uint8_t *)r->body, r->body_len) : NULL;
     if (r) net_response_free(r);
     ImgSlot *slot = xcalloc(1, sizeof *slot); slot->im = im; slot->done = true;
@@ -314,6 +321,7 @@ static int loader(void *arg) {
         if (rq->ref) headers_set(&nr->headers, "Referer", rq->ref);
     }
     NetResponse *r = rq->html ? NULL : net_fetch_sync(nr);
+    net_request_free(nr);
     if (r && r->status >= 200 && r->status < 300 && is_download(r)) {
         char nm[256]; download_name(r, r->url ? r->url : rq->url, nm, sizeof nm);
         download_save(nm, r->body ? r->body : "", r->body ? r->body_len : 0);
@@ -364,7 +372,7 @@ static int loader(void *arg) {
         if (src) {
             sc.name = url_join(p->d->url, src);
             if (!sc.name) continue;
-            NetResponse *sr = net_fetch_sync(doc_req(p->d, sc.name, page_top_url(p), NULL));
+            NetResponse *sr = doc_fetch_sync(p->d, sc.name, page_top_url(p), NULL);
             if (sr && sr->status >= 200 && sr->status < 300 && !js_script_mime_blocked(headers_get(&sr->headers, "content-type"))) { sc.src = xstrndup(sr->body ? sr->body : "", sr->body_len); sc.len = sr->body_len; }
             if (sr) net_response_free(sr);
         } else { sc.src = node_text_content(n); sc.len = strlen(sc.src); sc.name = xstrdup(p->url); }
@@ -378,7 +386,7 @@ static int loader(void *arg) {
             char *t = node_text_content(n); if (style_csp_ok(p->d, n, t)) { StyleSheet *s = css_parse_sheet(t, strlen(t), p->d->url, 1, &p->e->media); s->owner = n; style_engine_add_sheet(p->e, s); } free(t);
         } else if (n->tag == A_link && node_attr(n, "rel") && strstr(node_attr(n, "rel"), "stylesheet") && node_attr(n, "href")) {
             char *u = url_join(p->d->url, node_attr(n, "href"));
-            NetResponse *cr = net_fetch_sync(doc_req(p->d, u, page_top_url(p), "style-src"));
+            NetResponse *cr = doc_fetch_sync(p->d, u, page_top_url(p), "style-src");
             if (cr && cr->status == 200) { StyleSheet *s = css_parse_sheet(cr->body, cr->body_len, cr->url, 1, &p->e->media); s->owner = n; style_engine_add_sheet(p->e, s); }
             if (cr) net_response_free(cr); free(u);
         } else if (n->tag == A_img && node_attr(n, "src")) {
@@ -413,6 +421,7 @@ typedef struct App {
     SDL_Window *win; SDL_MetalView mview; Gpu *gpu;
     int pw, ph; float scale, vw, vh;
     UiViewport view;   /* safe content area within the full-size SDL window */
+    PresentRetry present_retry;
     SDL_Cursor *cursors[3]; bool cursor_tried[3];
     Canvas frame, page; DisplayList pdl, cdl, hdl;
     struct DSig *osig, *nsig; int nosig, cosig, cnsig; uint64_t chash; bool osig_ok;   /* last page display list, to raster only what changed */
@@ -702,6 +711,8 @@ static void navigate_ex(App *a, const char *url, bool push, const char *body, si
             free(u); u = xmalloc(64); snprintf(u, 64, "lumen://newtab?s=%s", sec); push = false;
         }
         html = internal_page(u);
+    } else if (!body && (!strcmp(u, "about:blank") || !strncmp(u, "about:blank#", 12) || !strncmp(u, "about:blank?", 12))) {
+        html = xstrdup("<!doctype html><html><head></head><body></body></html>");
     } else if (!body) html = file_page(u);
     if (push) {
         for (int i = a->t->hpos + 1; i < a->t->nhist; i++) free(a->t->hist[i]);
@@ -1035,6 +1046,18 @@ static void build_chrome(App *a) {
 }
 
 static float max_scroll(App *a) { return a->t->cur && a->t->cur->L ? LMAX(0, a->t->cur->L->doc_h - (a->vh - BAR)) : 0; }
+/* Viewport scrolling is synchronous; its document event is queued/coalesced
+   for the host turn. This also covers keyboard, anchors and relayout. */
+static bool page_scroll(App *a, float y) {
+    Page *p = a->t->cur; if (!p) return false;
+    y = isfinite(y) ? LCLAMP(y, 0, max_scroll(a)) : 0;
+    /* layout_hit maps fixed descendants using the layout's viewport offset;
+       keep it current before input/elementFromPoint, even before painting. */
+    if (p->L) { p->L->scroll_x = 0; p->L->scroll_y = y; }
+    if (y == a->t->sy) return false;
+    a->t->sy = y; p->scroll_pending = true; a->dirty = true;
+    return true;
+}
 
 static double g_tr, g_tl, g_td, g_tx;
 static bool g_no_paint_only;
@@ -1169,7 +1192,7 @@ static void render(App *a) {
     int sidebar_px = LMIN((int)(a->side * a->scale), a->view.px_w - 1);
     int side_px = a->view.px_x + sidebar_px, pwp = a->view.px_w - sidebar_px; if (pwp < 1) pwp = 1;
     int why = !a->vonly ? 1 : !a->t->cur || a->t->cur != a->last_page || !a->t->cur->L ? 2 : a->t->relayout ? 3 : a->t->cur->d->dom_version != a->last_ver ? 4 : 0;
-    bool defer = why && why != 2 && !a->t->loading && a->t->cur && a->t->cur->L && t0 - a->last_input > 1000 && t0 - a->last_full < 250 && media_timeout_ms() >= 0 && a->page.w == pwp && a->page.h == ph;
+    bool defer = !a->present_retry.delay_ms && why && why != 2 && !a->t->loading && a->t->cur && a->t->cur->L && t0 - a->last_input > 1000 && t0 - a->last_full < 250 && media_timeout_ms() >= 0 && a->page.w == pwp && a->page.h == ph;
     a->deferred = defer; if (defer) why = 0;
     if (defer && !a->vframe) { a->dirty = false; return; }
     bool part = !why;
@@ -1192,7 +1215,7 @@ static void render(App *a) {
             { double q = now_ms(); layout_run(a->t->cur->L, a->t->cur->d, a->vw - a->side, a->vh - BAR); g_tl += now_ms() - q; }
             a->t->relayout = false;
         }
-        a->t->sy = LCLAMP(a->t->sy, 0, max_scroll(a));
+        page_scroll(a, a->t->sy);
         int blit = 0;   /* page scrolled by whole device pixels: shift the old pixels, raster only the exposed strip */
         if (a->t->sy != a->last_sy && part) {
             float sdy = (a->t->sy - a->last_sy) * a->page.scale;
@@ -1309,7 +1332,9 @@ static void render(App *a) {
     if (!gskip) for (int y = part ? ry0 : 0; y < (part ? ry1 : ph) && y + bar_px < a->ph; y++)
         memcpy(a->frame.px + (size_t)(y + bar_px) * (size_t)a->frame.stride + side_px, a->page.px + (size_t)y * (size_t)a->page.stride, (size_t)pwp * 4);
     if (!gskip && a->hdl.items.n) { float s = chrome.scale; raster_rect(&chrome, &a->hdl, RGBA(255, 255, 255, 255), (int)floorf(g_pop[0] * s), (int)floorf(g_pop[1] * s), (int)ceilf(g_pop[2] * s), (int)ceilf(g_pop[3] * s)); }   /* floats over the page */
-    if (!(a->gpu && gpu_present_frame(a->gpu, a->frame.px, a->frame.w, a->frame.h, a->frame.stride, gskip ? 0 : part ? bar_px + ry0 : 0, gskip ? 0 : part ? bar_px + ry1 : a->frame.h, gvp))) {
+    bool presented = a->gpu && gpu_present_frame(a->gpu, a->frame.px, a->frame.w, a->frame.h, a->frame.stride, gskip ? 0 : part ? bar_px + ry0 : 0, gskip ? 0 : part ? bar_px + ry1 : a->frame.h, gvp);
+    bool retry = gpu_present_pending(a->gpu);
+    if (!presented && !retry) {
         SDL_Surface *ws = SDL_GetWindowSurface(a->win);
         int y0 = gskip ? 0 : part ? bar_px + ry0 : 0, y1 = gskip ? 0 : part ? bar_px + ry1 : a->frame.h;
         if (ws && ws->w == a->frame.w && ws->h == a->frame.h && (ws->format == SDL_PIXELFORMAT_XRGB8888 || ws->format == SDL_PIXELFORMAT_ARGB8888)) {
@@ -1325,13 +1350,15 @@ static void render(App *a) {
             SDL_DestroySurface(src); SDL_UpdateWindowSurface(a->win);
         }
     }
-    if (cap_screen_active() && a->frame.h >= bar_px + ph && a->frame.w >= side_px + pwp)
+    if (retry) present_retry_fail(&a->present_retry, now_ms()); else present_retry_clear(&a->present_retry);
+    if (!retry && cap_screen_active() && a->frame.h >= bar_px + ph && a->frame.w >= side_px + pwp)
         cap_screen_push(a->frame.px + (size_t)bar_px * (size_t)a->frame.stride + side_px, pwp, ph, a->frame.stride);
 #ifdef LUMEN_IOS
+    ios_debug_geometry(a->win, a->mview, retry ? "present-retry" : presented ? "presented" : "cpu-fallback");
     if (SDL_TextInputActive(a->win)) text_area(a, a->editing || !a->t->cur ? NULL : a->t->cur->d->focus);
 #endif
     a->frame_ms = now_ms() - t0;
-    if (getenv("LUMEN_SHOT")) {   /* write the presented frame to a PNG after LUMEN_SHOT_MS and exit */
+    if (!retry && getenv("LUMEN_SHOT")) {   /* write the presented frame to a PNG after LUMEN_SHOT_MS and exit */
         if (!g_shot_t0) g_shot_t0 = t0;
         if (shot_left() <= 0) { png_write(getenv("LUMEN_SHOT"), a->frame.px, a->frame.w, a->frame.h, a->frame.stride); exit(0); }
     }
@@ -1377,10 +1404,9 @@ static bool wheel_scroll(App *a, float x, float y, float dx, float dy) {
 static bool wheel_apply(App *a, float mx, float my, float dx, float dy) {
     if (mx < a->side || mx >= a->vw || my <= BAR || my >= a->vh) return false;
     if (wheel_scroll(a, mx - a->side, my - BAR, dx, dy)) return true;
-    float sy = LCLAMP(a->t->sy + dy, 0, max_scroll(a));
-    if (sy == a->t->sy) return false;
-    if (!(a->dirty && !a->vonly)) a->vonly = true;
-    a->t->sy = sy; a->dirty = true;
+    bool full = a->dirty && !a->vonly;
+    if (!page_scroll(a, a->t->sy + dy)) return false;
+    if (!full) a->vonly = true;
     return true;
 }
 static Tab *tab_of_doc(App *a, Document *d) {
@@ -1392,6 +1418,7 @@ static Tab *tab_of_doc(App *a, Document *d) {
     return NULL;
 }
 static void update_size(App *a) {
+    present_retry_clear(&a->present_retry);
     for (int i = 0; i < a->ntabs; i++) a->tabs[i]->relayout = true;
     int w, h; SDL_GetWindowSize(a->win, &w, &h); SDL_GetWindowSizeInPixels(a->win, &a->pw, &a->ph);
     SDL_Rect safe = { 0, 0, w, h };
@@ -1408,6 +1435,9 @@ static void update_size(App *a) {
     a->vonly = a->gvid_ok = a->osig_ok = false;
     if (a->gpu && !g_bg) gpu_resize(a->gpu, a->pw, a->ph);
     a->t->relayout = a->dirty = true;
+#ifdef LUMEN_IOS
+    ios_debug_geometry(a->win, a->mview, g_bg ? "resize-background" : "resize-foreground");
+#endif
 }
 
 static App *g_app;
@@ -1602,6 +1632,8 @@ static void frame_layout(Page *p) {
     if (!p->L) p->L = layout_new();
     p->e->media.vw = p->fw; p->e->media.vh = p->fh;
     layout_run(p->L, p->d, p->fw, p->fh);
+    p->fsy = isfinite(p->fsy) ? LCLAMP(p->fsy, 0, LMAX(0, p->L->doc_h - p->fh)) : 0;
+    p->L->scroll_x = 0; p->L->scroll_y = p->fsy;
     p->frelayout = false; p->drawn_ver = ~0ull;
 }
 /* Restyle, lay out and raster an iframe's document into its cached image; true if it changed. */
@@ -1726,7 +1758,12 @@ static void hf_sync(void *ud, Document *d, bool layout) {
     if (layout && p->fw > 0) frame_layout(p);
 }
 static void hf_viewport(void *ud, float *w, float *h, float *sx, float *sy, float *dpr) { Page *p = ud; *w = p->fw; *h = p->fh; *sx = 0; *sy = p->fsy; *dpr = g_app->scale; }
-static void hf_scroll_to(void *ud, float x, float y) { (void)x; Page *p = ud; p->fsy = y > 0 ? y : 0; p->drawn_ver = ~0ull; }
+static void hf_scroll_to(void *ud, float x, float y) {
+    (void)x; Page *p = ud; frame_restyle(p); frame_layout(p);
+    y = isfinite(y) ? LCLAMP(y, 0, LMAX(0, p->L->doc_h - p->fh)) : 0;
+    p->L->scroll_x = 0; p->L->scroll_y = y;
+    if (y != p->fsy) { p->fsy = y; p->drawn_ver = ~0ull; }
+}
 static Node *hf_hit(void *ud, float x, float y) { Page *p = ud; if (!p->L) return NULL; Box *b = layout_hit(p->L, x, y + p->fsy); return b ? b->node : NULL; }
 static void h_frame_close(void *ud);
 static void h_frame_open(void *ud, Node *f, Document *d, JsHost *ch) {
@@ -1744,7 +1781,7 @@ static void h_frame_open(void *ud, Node *f, Document *d, JsHost *ch) {
             char *t = node_text_content(n); if (style_csp_ok(d, n, t)) { StyleSheet *sh = css_parse_sheet(t, strlen(t), d->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); } free(t);
         } else if (is_sheet_link(n)) {
             char *u = url_join(d->url, node_attr(n, "href"));
-            NetResponse *cr = u ? net_fetch_sync(doc_req(f->doc, u, frame_top_url(f), "style-src")) : NULL;
+            NetResponse *cr = u ? doc_fetch_sync(f->doc, u, frame_top_url(f), "style-src") : NULL;
             if (cr && cr->status == 200 && cr->body) { StyleSheet *sh = css_parse_sheet(cr->body, cr->body_len, cr->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); }
             if (cr) net_response_free(cr);
             free(u);
@@ -1814,6 +1851,7 @@ static void h_sync_in(void *ud, Document *d, bool layout) {
     p->e->media.vw = a->vw - a->side; p->e->media.vh = a->vh - BAR;
     layout_run(p->L, p->d, a->vw - a->side, a->vh - BAR);
     a->t->relayout = false;
+    page_scroll(a, a->t->sy);   /* a forced layout can shrink the scroll range before the next paint */
 }
 static void h_navigate_in(void *ud, const char *u) { (void)ud; nav_from(g_app->t->cur ? g_app->t->cur->d : NULL, u); navigate(g_app, u, true); }
 static void h_set_url_in(void *ud, const char *u, bool push) {
@@ -1828,7 +1866,11 @@ static void h_navigate_post_in(void *ud, const char *u, const char *body, size_t
 static void h_history_go_in(void *ud, int d) { (void)ud; history_go(g_app, d); }
 static int h_history_len_in(void *ud) { (void)ud; return g_app->t->nhist; }
 static void h_viewport_in(void *ud, float *w, float *h, float *sx, float *sy, float *dpr) { (void)ud; *w = g_app->vw - g_app->side; *h = g_app->vh - BAR; *sx = 0; *sy = g_app->t->sy; *dpr = g_app->scale; }
-static void h_scroll_to_in(void *ud, float x, float y) { (void)ud; (void)x; g_app->t->sy = y; g_app->dirty = true; }
+static void h_scroll_to_in(void *ud, float x, float y) {
+    (void)ud; (void)x; App *a = g_app; Page *p = a->t->cur; if (!p) return;
+    h_sync_in(a, p->d, true);   /* clamp against current layout before returning to script */
+    page_scroll(a, y);
+}
 static Node *h_hit_in(void *ud, float x, float y) { (void)ud; Page *p = g_app->t->cur; if (!p || !p->L) return NULL; Box *b = layout_hit(p->L, x, y + g_app->t->sy); return b ? b->node : NULL; }
 static void h_sync(void *ud, Document *d, bool layout) { TAB_CALL(ud, h_sync_in(g_app, d, layout)); }
 static void h_navigate(void *ud, const char *u) { TAB_CALL(ud, h_navigate_in(ud, u)); }
@@ -1976,6 +2018,7 @@ static void focus_node(App *a, Node *n) {
     if (js && old) { js_dispatch(js, old, "blur", "FocusEvent", false, false, 0, 0, 0, NULL); js_dispatch(js, old, "focusout", "FocusEvent", true, false, 0, 0, 0, NULL); }
     if (js && n) { js_dispatch(js, n, "focus", "FocusEvent", false, false, 0, 0, 0, NULL); js_dispatch(js, n, "focusin", "FocusEvent", true, false, 0, 0, 0, NULL); }
     if (is_text_ctl(n) || edit_host(n)) { text_area(a, n); text_input(a->win, false); }
+    else if (!a->editing) SDL_StopTextInput(a->win);
     a->caret_t = now_ms();
     a->t->relayout = true; a->dirty = true;
 }
@@ -2301,7 +2344,7 @@ static void anchor_follow(App *a, Node *t) {
         if (n->type == NODE_ELEMENT && n->tag == A_a && node_attr(n, "href")) {
             const char *h = node_attr(n, "href");
             if (!strncmp(h, "javascript:", 11)) return;
-            if (h[0] == '#') { Node *t = doc_get_element_by_id(a->t->cur->d, h + 1); if (t && t->box) { a->t->sy = t->box->y; a->dirty = true; } return; }
+            if (h[0] == '#') { Node *t = doc_get_element_by_id(a->t->cur->d, h + 1); if (t && t->box) page_scroll(a, t->box->y); return; }
             char *u = url_join(a->t->cur->d->url, h); nav_from(a->t->cur->d, u); navigate(a, u, true); free(u); return;
         }
 }
@@ -2765,7 +2808,7 @@ int main(int argc, char **argv) {
         }
         SDL_Event ev;
         int to = a.t->loading ? 120 : 1000;
-        for (int i = 0; i < a.ntabs; i++) { Tab *tb = a.tabs[i]; if (tb->cur && tb->cur->js) { double dl = js_next_deadline(tb->cur->js) - now_ms(); if (tb->limited && tb->budget < 0) dl = LMAX(dl, -tb->budget / tb->lim - (now_ms() - tb->bud_t)); if (dl < to) to = dl < 0 ? 0 : (int)dl; } }
+        for (int i = 0; i < a.ntabs; i++) { Tab *tb = a.tabs[i]; if (tb->cur && tb->cur->js) { double now = now_ms(), dl = js_next_deadline(tb->cur->js) - now; if (tb->cur->scroll_pending) dl = LMIN(dl, tb->cur->scroll_due - now); if (tb->limited && tb->budget < 0) dl = LMAX(dl, -tb->budget / tb->lim - (now - tb->bud_t)); if (dl < to) to = dl <= 0 ? 0 : (int)ceil(dl); } }
         if (net_pending() && to > 50) to = 50;
         if (g_hud) {
             static double lh; double th = now_ms();
@@ -2817,6 +2860,7 @@ int main(int argc, char **argv) {
         if (a.vbars) { static double lb; double tn = now_ms(); if (tn - lb >= 500) { lb = tn; a.dirty = true; a.vonly = false; } if (to > 500) to = 500; }
         if (a.deferred) { double r = 250 - (now_ms() - a.last_full); if (r <= 0) a.dirty = true; else if (r + 1 < to) to = (int)r + 1; }
         if (a.tip_until) { double r = a.tip_until - now_ms(); if (r <= 0) { a.tip_until = 0; a.dirty = true; a.vonly = false; } else if (r + 1 < to) to = (int)r + 1; }
+        if (!g_bg) to = present_retry_wait(&a.present_retry, now_ms(), to);
         {
             bool want = false;
             if (!a.editing && (page_focus(&a) || edit_focus(&a))) {
@@ -2838,7 +2882,7 @@ int main(int argc, char **argv) {
 #ifdef LUMEN_IOS
         if (touch_fling(&a) && to > 8) to = 8;
 #endif
-        if (getenv("LUMEN_SHOT")) { double r = shot_left(); if (r <= 0) { a.dirty = true; to = 0; } else if (r + 1 < to) to = (int)r + 1; }
+        if (getenv("LUMEN_SHOT") && !a.present_retry.delay_ms) { double r = shot_left(); if (r <= 0) { a.dirty = true; to = 0; } else if (r + 1 < to) to = (int)r + 1; }
 #ifdef LUMEN_IOS
         if (!ios_wait_event(&ev, to)) {
 #else
@@ -2867,9 +2911,10 @@ int main(int argc, char **argv) {
 #ifdef LUMEN_IOS
             case SDL_EVENT_FINGER_DOWN: case SDL_EVENT_FINGER_MOTION: case SDL_EVENT_FINGER_UP: case SDL_EVENT_FINGER_CANCELED: touch_event(&a, &ev); break;
             case SDL_EVENT_WINDOW_FOCUS_LOST: touch_cancel(); cmd = false; break;
-            case SDL_EVENT_WILL_ENTER_BACKGROUND: g_bg = true; touch_cancel(); js_ls_flush(true); if (*cookie_path) { cookies_save(cookie_path); hsts_save(hsts_path); cookies_saved_at = now_ms(); } break;
+            case SDL_EVENT_WILL_ENTER_BACKGROUND: g_bg = true; present_retry_clear(&a.present_retry); touch_cancel(); js_ls_flush(true); if (*cookie_path) { cookies_save(cookie_path); hsts_save(hsts_path); cookies_saved_at = now_ms(); } break;
             case SDL_EVENT_DID_ENTER_BACKGROUND: g_bg = true; break;
-            case SDL_EVENT_WILL_ENTER_FOREGROUND: case SDL_EVENT_DID_ENTER_FOREGROUND: g_bg = false; update_size(&a); a.dirty = true; a.vonly = false; break;
+            case SDL_EVENT_WILL_ENTER_FOREGROUND: g_bg = true; update_size(&a); break;
+            case SDL_EVENT_DID_ENTER_FOREGROUND: g_bg = false; update_size(&a); a.dirty = true; a.vonly = false; break;
             case SDL_EVENT_LOW_MEMORY: g_lowmem = media_lowmem = true; a.dirty = true; break;   /* Lite mode drops off-screen images/media */
 #endif
             case SDL_EVENT_MOUSE_WHEEL: {
@@ -3008,10 +3053,10 @@ int main(int argc, char **argv) {
                     break;
                 }
                 if (!page_key(&a, k, ev.key.mod)) { restyle(&a); a.dirty = true; a.vonly = false; break; }
-                if (k == SDLK_DOWN) a.t->sy += 40; else if (k == SDLK_UP) a.t->sy -= 40;
-                else if (k == SDLK_PAGEDOWN || k == SDLK_SPACE) a.t->sy += (ev.key.mod & SDL_KMOD_SHIFT) ? -page : page;
-                else if (k == SDLK_PAGEUP) a.t->sy -= page;
-                else if (k == SDLK_HOME) a.t->sy = 0; else if (k == SDLK_END) a.t->sy = max_scroll(&a);
+                if (k == SDLK_DOWN) page_scroll(&a, a.t->sy + 40); else if (k == SDLK_UP) page_scroll(&a, a.t->sy - 40);
+                else if (k == SDLK_PAGEDOWN || k == SDLK_SPACE) page_scroll(&a, a.t->sy + ((ev.key.mod & SDL_KMOD_SHIFT) ? -page : page));
+                else if (k == SDLK_PAGEUP) page_scroll(&a, a.t->sy - page);
+                else if (k == SDLK_HOME) page_scroll(&a, 0); else if (k == SDLK_END) page_scroll(&a, max_scroll(&a));
                 else if (k == SDLK_BACKSPACE) history_go(&a, (ev.key.mod & SDL_KMOD_SHIFT) ? 1 : -1);
                 else break;
                 a.dirty = true; break; }
@@ -3051,8 +3096,16 @@ int main(int argc, char **argv) {
         } while (SDL_PollEvent(&ev));
         js_release_pins();
         net_poll();
-        { Tab *act = a.t; double tn = now_ms(); for (int i = 0; i < a.ntabs; i++) { a.t = a.tabs[i]; if (a.t->limited) { a.t->budget = LMIN(a.t->budget + a.t->lim * (tn - a.t->bud_t), 100); a.t->bud_t = tn; if (a.t->budget < 0) continue; } if (a.t->cur && a.t->cur->js) { double c0 = now_ms(); js_tick(a.t->cur->js); restyle(&a); fire_img_events(a.t->cur); double c = now_ms() - c0; a.t->cpu_ms += c; if (a.t->limited) a.t->budget -= c; } } a.t = act; if (a.t->cur && a.t->cur->js) frames_tick(&a); }
+        { Tab *act = a.t; double tn = now_ms(); for (int i = 0; i < a.ntabs; i++) { a.t = a.tabs[i]; if (a.t->limited) { a.t->budget = LMIN(a.t->budget + a.t->lim * (tn - a.t->bud_t), 100); a.t->bud_t = tn; if (a.t->budget < 0) continue; } if (a.t->cur && a.t->cur->js) { double c0 = now_ms();
+            Page *p = a.t->cur;
+            if (p->scroll_pending && c0 >= p->scroll_due) {
+                p->scroll_pending = false;   /* a listener may queue another scroll for the next turn */
+                p->scroll_due = c0 + 16;     /* bound scroll callbacks even when a listener scrolls again */
+                js_dispatch(p->js, &p->d->node, "scroll", "Event", true, false, 0, 0, 0, NULL);
+            }
+            js_tick(a.t->cur->js); restyle(&a); fire_img_events(a.t->cur); double c = now_ms() - c0; a.t->cpu_ms += c; if (a.t->limited) a.t->budget -= c; } } a.t = act; if (a.t->cur && a.t->cur->js) frames_tick(&a); }
         edit_sel_sync(&a);
+        if (!g_bg && present_retry_due(&a.present_retry, now_ms())) { if (!a.dirty) a.vonly = true; a.dirty = true; }
         if (a.dirty && !g_bg) { double r0 = now_ms(); render(&a); a.t->cpu_ms += now_ms() - r0; }
         cpu_monitor(&a);
         { float want = a.t->info || *g_notice ? INFOH : 0; if (want != g_info_h) { g_info_h = want; for (int i = 0; i < a.ntabs; i++) a.tabs[i]->relayout = true; a.dirty = true; a.vonly = false; } }
@@ -3060,6 +3113,11 @@ int main(int argc, char **argv) {
     }
     if (*cookie_path) { cookies_save(cookie_path); hsts_save(hsts_path); }
     for (int i = 0; i < a.ntabs; i++) if (a.tabs[i]->cur) page_free(a.tabs[i]->cur);
+    if (!js_workers_shutdown(5000)) {
+        fprintf(stderr, "lumen: worker cleanup exceeded 5 seconds during shutdown\n");
+        fflush(stderr);
+        _Exit(EXIT_FAILURE);
+    }
     gpu_destroy(a.gpu);
     if (a.mview) SDL_Metal_DestroyView(a.mview);
     for (int i = 0; i < 3; i++) SDL_DestroyCursor(a.cursors[i]);

@@ -51,8 +51,39 @@ void headers_set(Headers *h, const char *n, const char *v) {
 void headers_free(Headers *h) { for (int i = 0; i < h->n; i++) { free(h->v[i].name); free(h->v[i].value); } vec_free(*h); }
 
 /* ---------- connections ---------- */
+/* Socket ownership and shutdown share one lock. Detach before close or pool
+   transfer, so a late cancellation cannot affect a recycled file descriptor
+   or the next request to reuse a connection. Never invoke callbacks here. */
+static pthread_mutex_t g_io_mu = PTHREAD_MUTEX_INITIALIZER;
+static bool request_cancelled(const NetRequest *r) {
+    return r && __atomic_load_n(&r->cancelled, __ATOMIC_RELAXED);
+}
+void net_request_cancel(NetRequest *r) {
+    if (!r) return;
+    pthread_mutex_lock(&g_io_mu);
+    __atomic_store_n(&r->cancelled, true, __ATOMIC_RELAXED);
+    if (r->active_socket >= 0) shutdown(r->active_socket, SHUT_RDWR);
+    pthread_mutex_unlock(&g_io_mu);
+}
+static bool request_attach(NetRequest *r, int fd) {
+    if (!r) return true;
+    pthread_mutex_lock(&g_io_mu);
+    bool ok = !request_cancelled(r);
+    if (ok) r->active_socket = fd;
+    pthread_mutex_unlock(&g_io_mu);
+    return ok;
+}
+static bool request_detach(NetRequest *r, int fd) {
+    if (!r) return false;
+    pthread_mutex_lock(&g_io_mu);
+    if (r->active_socket == fd) r->active_socket = -1;
+    bool cancelled = request_cancelled(r);
+    pthread_mutex_unlock(&g_io_mu);
+    return cancelled;
+}
 typedef struct Conn {
     int fd; SSL *ssl;
+    NetRequest *owner; /* exclusive I/O owner; NULL while pooled or used by a WebSocket */
     char *key; /* scheme://host:port */
     char rbuf[16384]; size_t rpos, rlen;
     double last_used;
@@ -66,6 +97,7 @@ static Conn *g_pool;
 static void conn_close(Conn *c) {
     if (!c) return;
     if (c->ssl) { SSL_shutdown(c->ssl); SSL_free(c->ssl); }
+    request_detach(c->owner, c->fd);
     if (c->fd >= 0) close(c->fd);
     free(c->key); free(c);
 }
@@ -92,11 +124,13 @@ static void pool_put(Conn *c) {
     pthread_mutex_lock(&g_pool_mu);
     int n = 0; for (Conn *x = g_pool; x; x = x->next) n++;
     if (n > 32) { pthread_mutex_unlock(&g_pool_mu); conn_close(c); return; }
+    bool cancelled = request_detach(c->owner, c->fd); c->owner = NULL;
+    if (cancelled) { pthread_mutex_unlock(&g_pool_mu); conn_close(c); return; }
     c->next = g_pool; g_pool = c;
     pthread_mutex_unlock(&g_pool_mu);
 }
 
-static int connect_tcp(const char *host, int port, char **err) {
+static int connect_tcp(const char *host, int port, char **err, NetRequest *owner) {
     struct addrinfo hints = {0}, *res = NULL;
     hints.ai_family = AF_UNSPEC; hints.ai_socktype = SOCK_STREAM;
     char ps[16]; snprintf(ps, sizeof ps, "%d", port);
@@ -115,21 +149,33 @@ static int connect_tcp(const char *host, int port, char **err) {
     if (gr) { *err = xstrdup(gai_strerror(gr)); return -1; }
     int fd = -1;
     for (struct addrinfo *ai = res; ai; ai = ai->ai_next) {
+        if (request_cancelled(owner)) break;
         fd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
         if (fd < 0) continue;
+        if (!request_attach(owner, fd)) { close(fd); fd = -1; break; }
         /* non-blocking connect with timeout */
         int fl = fcntl(fd, F_GETFL, 0); fcntl(fd, F_SETFL, fl | O_NONBLOCK);
         int r = connect(fd, ai->ai_addr, ai->ai_addrlen);
         if (r < 0 && errno == EINPROGRESS) {
             struct pollfd pf = { fd, POLLOUT, 0 };
-            if (poll(&pf, 1, 10000) == 1) { int e = 0; socklen_t l = sizeof e; getsockopt(fd, SOL_SOCKET, SO_ERROR, &e, &l); r = e ? -1 : 0; }
-            else r = -1;
+            double end = now_ms() + 10000;
+            while (!request_cancelled(owner) && now_ms() < end) {
+                /* shutdown of an unconnected socket need not wake poll on
+                   every platform; bound that cancellation latency as well. */
+                int left = (int)LMAX(1, end - now_ms());
+                int ready = poll(&pf, 1, owner ? LMIN(left, 100) : left);
+                if (ready < 0 && errno == EINTR) continue;
+                if (!ready) continue;
+                if (ready > 0) { int e = 0; socklen_t l = sizeof e; r = !getsockopt(fd, SOL_SOCKET, SO_ERROR, &e, &l) && !e ? 0 : -1; }
+                break;
+            }
         }
-        if (r == 0) { fcntl(fd, F_SETFL, fl); break; }
+        if (r == 0 && !request_cancelled(owner)) { fcntl(fd, F_SETFL, fl); break; }
+        request_detach(owner, fd);
         close(fd); fd = -1;
     }
     freeaddrinfo(res);
-    if (fd < 0) { *err = xstrdup("connection failed"); return -1; }
+    if (fd < 0) { *err = xstrdup(request_cancelled(owner) ? "cancelled" : "connection failed"); return -1; }
     int one = 1; setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof one);
 #ifdef SO_NOSIGPIPE
     setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &one, sizeof one);
@@ -140,13 +186,17 @@ static int connect_tcp(const char *host, int port, char **err) {
     return fd;
 }
 
-static Conn *conn_open(const URL *u, char **err) {
+static Conn *conn_open(const URL *u, char **err, NetRequest *owner) {
+    if (request_cancelled(owner)) { *err = xstrdup("cancelled"); return NULL; }
     char key[512]; snprintf(key, sizeof key, "%s://%s:%d", u->scheme, u->host, u->port);
     Conn *c = pool_take(key);
-    if (c) return c;
-    int fd = connect_tcp(u->host, u->port, err);
+    if (c) {
+        if (!request_attach(owner, c->fd)) { pool_put(c); *err = xstrdup("cancelled"); return NULL; }
+        c->owner = owner; return c;
+    }
+    int fd = connect_tcp(u->host, u->port, err, owner);
     if (fd < 0) return NULL;
-    c = xcalloc(1, sizeof *c); c->fd = fd; c->key = xstrdup(key);
+    c = xcalloc(1, sizeof *c); c->fd = fd; c->owner = owner; c->key = xstrdup(key);
     if (!strcmp(u->scheme, "https") || !strcmp(u->scheme, "wss")) {
         c->ssl = SSL_new(g_ssl_ctx);
         SSL_set_fd(c->ssl, fd);
@@ -167,6 +217,7 @@ static Conn *conn_open(const URL *u, char **err) {
 static ssize_t conn_write(Conn *c, const void *buf, size_t n) {
     size_t off = 0;
     while (off < n) {
+        if (request_cancelled(c->owner)) return -1;
         ssize_t w = c->ssl ? SSL_write(c->ssl, (const char *)buf + off, (int)(n - off)) : send(c->fd, (const char *)buf + off, n - off, 0);
         if (w <= 0) return -1;
         off += (size_t)w;
@@ -174,6 +225,7 @@ static ssize_t conn_write(Conn *c, const void *buf, size_t n) {
     return (ssize_t)n;
 }
 static ssize_t conn_fill(Conn *c) {
+    if (request_cancelled(c->owner)) return -1;
     if (c->rpos < c->rlen) return (ssize_t)(c->rlen - c->rpos);
     c->rpos = c->rlen = 0;
     ssize_t r = c->ssl ? SSL_read(c->ssl, c->rbuf, sizeof c->rbuf) : recv(c->fd, c->rbuf, sizeof c->rbuf, 0);
@@ -290,15 +342,15 @@ static void stream_out(Dec *d, SB *raw) {
     sb_clear(raw);
     if (o.n) ev_push(2, t_stream, NULL, o.s, o.n); else sb_free(&o);
 }
-static bool stream_cancelled(void) { return t_stream && __atomic_load_n(&t_stream->cancelled, __ATOMIC_RELAXED); }
+static bool stream_cancelled(void) { return request_cancelled(t_stream); }
 
 /* ---------- single HTTP exchange ---------- */
-static NetResponse *http_once(const char *method, const URL *u, const Headers *hdrs, const char *body, size_t body_len, bool cookies, bool *retryable) {
+static NetResponse *http_once(NetRequest *request, const char *method, const URL *u, const Headers *hdrs, const char *body, size_t body_len, bool cookies, bool *retryable) {
     NetResponse *r = xcalloc(1, sizeof *r);
     r->t_start = now_ms();
     char *err = NULL;
     *retryable = false;
-    Conn *c = conn_open(u, &err);
+    Conn *c = conn_open(u, &err, request);
     if (!c) { r->error = err; return r; }
     bool reused = c->last_used > 0;
     SB req; sb_init(&req);
@@ -394,7 +446,7 @@ static NetResponse *http_once(const char *method, const URL *u, const Headers *h
     if (!ok) { keep = false; if (!b.n) { r->error = xstrdup("truncated body"); } }
     if (keep) pool_put(c); else conn_close(c);
     if (streaming) dec_free(&dec);
-    else if (!decompress(headers_get(&r->headers, "content-encoding"), &b)) DLOG("decompress failed for %s", u->host);
+    else if (!request_cancelled(request) && !decompress(headers_get(&r->headers, "content-encoding"), &b)) DLOG("decompress failed for %s", u->host);
     r->body_len = b.n; r->body = b.s ? b.s : xcalloc(1, 1);
     r->t_end = now_ms();
     return r;
@@ -451,12 +503,13 @@ static NetResponse *csp_block(NetRequest *req, const char *url) {
     return e;
 }
 
-NetResponse *net_fetch_sync(NetRequest *req) {
+static NetResponse *fetch_sync(NetRequest *req) {
     { NetResponse *b = csp_block(req, req->url); if (b) return b; }
     if (str_istarts(req->url, "data:")) return data_url(req->url);
     char *url = xstrdup(req->url);
     char *method = xstrdup(req->method ? req->method : "GET");
     const char *body = req->body; size_t blen = req->body_len;
+    bool cookies = !req->no_cookies;
     int redirects = req->max_redirects ? req->max_redirects : 20;
     NetResponse *r = NULL;
     for (;;) {
@@ -468,8 +521,15 @@ NetResponse *net_fetch_sync(NetRequest *req) {
         bool retry;
         t_url = url;
         t_cross = req->site_for_cookies && !net_url_same_site(req->site_for_cookies, url);
-        r = http_once(method, &u, &req->headers, body, blen, !req->no_cookies, &retry);
-        if (r->error && retry) { net_response_free(r); r = http_once(method, &u, &req->headers, body, blen, !req->no_cookies, &retry); }
+        if (cookies && req->credentials_origin) {
+            char *origin = url_origin(&u);
+            /* A cross-origin hop makes the Fetch response non-basic for the rest
+               of the redirect chain, even if a later hop returns to the source. */
+            cookies = origin && !strcmp(origin, req->credentials_origin);
+            free(origin);
+        }
+        r = http_once(req, method, &u, &req->headers, body, blen, cookies, &retry);
+        if (r->error && retry && !request_cancelled(req)) { net_response_free(r); r = http_once(req, method, &u, &req->headers, body, blen, cookies, &retry); }
         if (!r->error && r->status) hsts_note(&u, headers_get(&r->headers, "strict-transport-security"));
         const char *loc = headers_get(&r->headers, "location");
         if (r->status >= 300 && r->status < 400 && r->status != 304 && loc && redirects-- > 0) {
@@ -479,7 +539,7 @@ NetResponse *net_fetch_sync(NetRequest *req) {
             if (!nu) { r = xcalloc(1, sizeof *r); r->error = xstrdup("bad redirect"); break; }
             free(url); url = nu;
             if ((r = csp_block(req, url))) break;
-            if (req->cancelled) { r = xcalloc(1, sizeof *r); r->error = xstrdup("cancelled"); break; }
+            if (request_cancelled(req)) { r = xcalloc(1, sizeof *r); r->error = xstrdup("cancelled"); break; }
             continue;
         }
         url_free(&u);
@@ -496,6 +556,18 @@ NetResponse *net_fetch_sync(NetRequest *req) {
     return r;
 }
 
+NetResponse *net_fetch_sync(NetRequest *req) {
+    if (!request_cancelled(req)) {
+        NetResponse *r = fetch_sync(req);
+        if (!request_cancelled(req)) return r;
+        net_response_free(r);
+    }
+    NetResponse *r = xcalloc(1, sizeof *r);
+    r->error = xstrdup("cancelled"); r->url = xstrdup(req->url); r->body = xcalloc(1, 1);
+    r->t_start = r->t_end = now_ms();
+    return r;
+}
+
 void net_response_free(NetResponse *r) {
     if (!r) return;
     free(r->status_text); free(r->url); headers_free(&r->headers); free(r->body); free(r->error); free(r);
@@ -503,6 +575,7 @@ void net_response_free(NetResponse *r) {
 
 NetRequest *net_request_new(const char *method, const char *url) {
     NetRequest *r = xcalloc(1, sizeof *r);
+    r->active_socket = -1;
     r->method = xstrdup(method ? method : "GET"); r->url = xstrdup(url);
     return r;
 }
@@ -511,7 +584,7 @@ NetRequest *net_request_ctx(const char *method, const char *url, const char *top
     if (top_url && *top_url) r->site_for_cookies = xstrdup(top_url);
     return r;
 }
-static void net_request_free(NetRequest *r) { free(r->method); free(r->url); headers_free(&r->headers); free(r->body); free(r->site_for_cookies); free(r->no_cors_origin); free(r->csp); free(r->csp_doc); free(r); }
+void net_request_free(NetRequest *r) { if (!r) return; free(r->method); free(r->url); headers_free(&r->headers); free(r->body); free(r->site_for_cookies); free(r->credentials_origin); free(r->no_cors_origin); free(r->csp); free(r->csp_doc); free(r); }
 
 /* ---------- async worker pool ---------- */
 typedef struct Job { NetRequest *req; NetResponse *resp; struct Job *next, *rnext; } Job;
@@ -534,7 +607,7 @@ static void *worker(void *arg) {
         Job *j = *best; *best = j->next; j->next = NULL;
         j->rnext = g_running; g_running = j;
         pthread_mutex_unlock(&g_mu);
-        if (j->req->cancelled) { j->resp = xcalloc(1, sizeof *j->resp); j->resp->error = xstrdup("cancelled"); }
+        if (request_cancelled(j->req)) { j->resp = xcalloc(1, sizeof *j->resp); j->resp->error = xstrdup("cancelled"); }
         else { t_stream = j->req->chunk ? j->req : NULL; j->resp = net_fetch_sync(j->req); t_stream = NULL; }
         pthread_mutex_lock(&g_mu);
         for (Job **pp = &g_running; *pp; pp = &(*pp)->rnext) if (*pp == j) { *pp = j->rnext; break; }
@@ -570,8 +643,8 @@ uint64_t net_fetch(NetRequest *req) {
 }
 void net_cancel(uint64_t id) {
     pthread_mutex_lock(&g_mu);
-    for (Job *j = g_queue; j; j = j->next) if (j->req->id == id) j->req->cancelled = true;
-    for (Job *j = g_running; j; j = j->rnext) if (j->req->id == id) __atomic_store_n(&j->req->cancelled, true, __ATOMIC_RELAXED);
+    for (Job *j = g_queue; j; j = j->next) if (j->req->id == id) net_request_cancel(j->req);
+    for (Job *j = g_running; j; j = j->rnext) if (j->req->id == id) net_request_cancel(j->req);
     pthread_mutex_unlock(&g_mu);
 }
 int net_pending(void) { pthread_mutex_lock(&g_mu); int n = g_pending; pthread_mutex_unlock(&g_mu); return n; }
@@ -587,14 +660,14 @@ int net_poll(void) {
         NetRequest *rq = e->req;
         if (e->type == 0) {
             pthread_mutex_lock(&g_mu); g_pending--; pthread_mutex_unlock(&g_mu);
-            if (!rq->cancelled && rq->done) rq->done(rq, e->resp, rq->ud);
+            if (!request_cancelled(rq) && rq->done) rq->done(rq, e->resp, rq->ud);
             net_response_free(e->resp); net_request_free(rq);
             n++;
         } else if (e->type == 1) {
-            if (!rq->cancelled && rq->head) rq->head(rq, e->resp, rq->ud);
+            if (!request_cancelled(rq) && rq->head) rq->head(rq, e->resp, rq->ud);
             net_response_free(e->resp);
         } else {
-            if (!rq->cancelled && rq->chunk) rq->chunk(rq, e->data, e->n, rq->ud);
+            if (!request_cancelled(rq) && rq->chunk) rq->chunk(rq, e->data, e->n, rq->ud);
             free(e->data);
         }
         free(e);
@@ -666,7 +739,7 @@ static void *ws_thread(void *arg) {
     SB in, msg, line; sb_init(&in); sb_init(&msg); sb_init(&line); int msg_op = 1;
     bool have_u = url_parse(w->url, &u);
     bool wcross = *w->origin && !net_url_same_site(w->origin, w->url);
-    if (!have_u || !(c = conn_open(&u, &err))) goto out;
+    if (!have_u || !(c = conn_open(&u, &err, NULL))) goto out;
     struct timeval tv = { 0, 0 };
     setsockopt(c->fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof tv);
     unsigned char kr[16]; char key[32], want[32]; RAND_bytes(kr, sizeof kr); b64enc(kr, sizeof kr, key);

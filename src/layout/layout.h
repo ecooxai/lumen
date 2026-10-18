@@ -67,6 +67,8 @@ static inline bool box_scrollable_x(const Box *b) { return b->scroller && b->st 
 static inline bool box_scrollable_y(const Box *b) { return b->scroller && b->st && b->st->overflow_y != OV_VISIBLE && b->st->overflow_y != OV_CLIP; }
 static inline bool box_scroll_from_end(const Box *b) { return b->st && (b->st->display == D_FLEX || b->st->display == D_INLINE_FLEX) && b->st->flex_direction == FD_COLUMN_REVERSE; }
 static inline float box_scroll_y(const Box *b) { return box_scrollable_y(b) ? b->node->scroll_y + (box_scroll_from_end(b) ? LMAX(0, b->scroll_h - b->h) : 0) : 0; }
+bool box_is_sticky(const Box *b);
+void box_sticky_offset(const Box *b, const Layout *L, float *dx, float *dy);
 void layout_dump(Box *b, int depth, int maxdepth);
 
 /* internal */

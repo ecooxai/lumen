@@ -1,0 +1,102 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Top-level scrolling regression</title>
+<style>
+html,body { margin:0; }
+#space { height:6000px; }
+#results { position:fixed; left:16px; top:16px; margin:0; padding:12px; background:white; color:black; }
+#fixed { position:fixed; left:20px; top:120px; width:80px; height:40px; background:#0055cc; }
+</style>
+<body><div id="space"></div><div id="fixed"></div>
+<iframe id="frame" style="position:fixed;left:140px;top:120px;width:160px;height:160px;border:0" srcdoc="<style>body{margin:0}#space{height:2000px}#fixed{position:fixed;left:20px;top:20px;width:40px;height:40px;background:blue}</style><div id='space'></div><div id='fixed'></div>"></iframe>
+<pre id="results">Running window scroll checks</pre>
+<script>
+(async function () {
+  let passed=0, failed=0;
+  const check=(ok,name)=>{ if(ok)passed++;else failed++;console.log('SCROLL-'+(ok?'PASS ':'FAIL ')+name); };
+  const wait=()=>new Promise(resolve=>setTimeout(resolve,80));
+  const documentEvents=[],windowEvents=[];
+  let nested=false,inListener=false,reentered=false;
+  document.addEventListener('scroll',function(e){
+    if(inListener)reentered=true;
+    documentEvents.push({target:e.target,current:e.currentTarget,bubbles:e.bubbles,cancelable:e.cancelable,y:scrollY,time:performance.now()});
+    if(nested&&scrollY===400){nested=false;inListener=true;scrollTo(0,460);inListener=false;}
+  });
+  addEventListener('scroll',function(e){windowEvents.push({target:e.target,current:e.currentTarget});});
+  const clear=()=>{documentEvents.length=windowEvents.length=0;};
+  try {
+    await wait();
+    scrollTo(0,0);await wait();clear();
+    const fixed=document.getElementById('fixed');
+    check(document.elementFromPoint(30,130)===fixed,'fixed control is hittable before scrolling');
+    scrollTo(0,120);scrollTo(0,240);scrollBy(0,40);
+    check(scrollY===280&&pageYOffset===280,'API changes offset synchronously');
+    check(document.elementFromPoint(30,130)===fixed,'fixed control is hittable immediately after scroll before paint');
+    check(documentEvents.length===0&&windowEvents.length===0,'scroll event is asynchronous');
+    await wait();
+    check(documentEvents.length===1&&windowEvents.length===1,'same-turn changes coalesce to one document and window event');
+    const first=documentEvents[0],bubbled=windowEvents[0];
+    check(!!first&&first.target===document&&first.current===document&&first.bubbles&&!first.cancelable,'document is bubbling noncancelable scroll target');
+    check(!!bubbled&&bubbled.target===document&&bubbled.current===window,'document scroll bubbles to window');
+    check(!!first&&first.y===280,'listener observes the final offset');
+    check(document.elementFromPoint(30,130)===fixed,'fixed control remains hittable after paint');
+
+    clear();scrollTo(0,280);scrollBy(0,0);await wait();
+    check(documentEvents.length===0&&windowEvents.length===0,'unchanged scroll offset produces no event');
+
+    clear();scrollTo(0,-500);
+    check(scrollY===0,'negative offset clamps before API returns');
+    await wait();check(documentEvents.length===1,'clamped movement still dispatches one event');
+    clear();scrollTo(0,-500);await wait();
+    check(documentEvents.length===0,'repeated movement against top boundary produces no event');
+
+    clear();scrollTo(0,100000);
+    const end=scrollY;
+    check(end>0&&end<100000,'oversized offset clamps before API returns');
+    await wait();check(documentEvents.length===1,'bottom-boundary movement dispatches one event');
+    clear();scrollTo(0,100000);await wait();
+    check(scrollY===end&&documentEvents.length===0,'repeated movement against bottom boundary produces no event');
+
+    clear();scrollTo(0,Infinity);
+    check(scrollY===0,'nonfinite offset normalizes to zero');
+    await wait();
+    check(documentEvents.length===1,'normalized movement dispatches one event');
+
+    clear();nested=true;scrollTo(0,400);await wait();await wait();
+    check(!reentered&&documentEvents.length===2&&windowEvents.length===2&&scrollY===460,'listener scrolling schedules a later event without reentry');
+    check(documentEvents.length===2&&documentEvents[1].time-documentEvents[0].time>=10,'listener scrolling is bounded to frame cadence');
+
+    clear();scrollTo(0,600);scrollTo(0,460);await wait();
+    check(documentEvents.length===1,'movement returning to original offset retains a queued event');
+
+    const frame=document.getElementById('frame');
+    let child=null;
+    for(let i=0;i<10&&!child;i++){child=frame.contentDocument&&frame.contentDocument.getElementById('fixed');if(!child)await wait();}
+    check(!!child,'iframe fixture loaded');
+    if(child){
+      const view=frame.contentWindow,doc=frame.contentDocument;
+      view.scrollTo(0,280);
+      check(view.scrollY===280&&doc.elementFromPoint(30,30)===child,'iframe fixed control is hittable immediately after scroll');
+      await wait();
+      check(doc.elementFromPoint(30,30)===child,'iframe fixed control remains hittable after paint');
+      doc.getElementById('space').style.height='0px';await wait();await wait();
+      check(view.scrollY===0&&doc.elementFromPoint(30,30)===child,'iframe layout shrink updates offset and fixed hit geometry');
+    }
+
+    clear();document.getElementById('space').style.height='0px';
+    const shrinkRect=document.getElementById('space').getBoundingClientRect();
+    check(shrinkRect.height===0&&scrollY===0,'forced layout clamps the page offset before returning to script');
+    check(documentEvents.length===0,'forced-layout scroll event stays asynchronous');
+    check(document.elementFromPoint(30,130)===fixed,'forced layout keeps fixed control hit geometry current before paint');
+    await wait();await wait();
+    check(scrollY===0,'layout shrink clamps the page offset');
+    check(documentEvents.length===1,'layout shrink queues a document scroll event');
+    check(document.elementFromPoint(30,130)===fixed,'layout shrink keeps fixed control hit geometry current');
+    clear();scrollTo(0,400);await wait();
+    check(scrollY===0&&documentEvents.length===0,'unscrollable page does not dispatch an event');
+  } catch(e) { check(false,'uncaught exception: '+e); }
+  console.log('SCROLL-DONE passed='+passed+' failed='+failed);
+  document.getElementById('results').textContent=passed+' passed, '+failed+' failed';
+  document.documentElement.setAttribute('data-scroll-done','1');
+})();
+</script>

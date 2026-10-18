@@ -491,7 +491,9 @@ done:
 static int dec_thread(void *arg) {
     Stream *s = arg; MediaPlayer *m = s->m;
     if (s->progressive && !s->init) {
-        NetResponse *r = net_fetch_sync(net_request_new("GET", s->mime));
+        NetRequest *rq = net_request_new("GET", s->mime);
+        NetResponse *r = net_fetch_sync(rq);
+        net_request_free(rq);
         if (!r || r->status < 200 || r->status >= 300 || !r->body) { set_error(m, "network error"); if (r) net_response_free(r); return 0; }
         Blob *b = xcalloc(1, sizeof *b); b->refs = 1; b->n = r->body_len; b->p = xmalloc(r->body_len); memcpy(b->p, r->body, r->body_len);
         net_response_free(r);

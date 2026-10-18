@@ -57,6 +57,7 @@ void style_free(ComputedStyle *s) {
     if (!s || --s->refs > 0) return;
     g_styles_live--;
     free(s->bg_image); free(s->mask_image); free(s->bg_gradient); free(s->content); free(s->grid_cols); free(s->grid_rows); free(s->grid_areas); free(s->grid_area);
+    free(s->transform_state);
     custom_unref(s->custom);
     if (s->before) style_free(s->before);
     if (s->marker) style_free(s->marker);
@@ -506,44 +507,155 @@ static void apply_font(ACtx *c, const char *v) {
         free(t);
     }
 }
-static void parse_transform(ACtx *c, const char *v) {
-    float m[6] = { 1, 0, 0, 1, 0, 0 };
-    c->st->translate_pending[0] = c->st->translate_pending[1] = (Length){0, 0, LK_LEN};
-    if (str_ieq(v, "none")) { c->st->has_transform = false; return; }
+enum { TF_TRANSLATE, TF_ROTATE, TF_SCALE, TF_LIST, TF_COUNT };
+typedef struct {
+    float m[6];
+    float pct[4]; /* x from width/height, then y from width/height */
+    float angle;  /* retain the individual rotate value, including full turns */
+    bool active;
+} TransformPart;
+struct CSSTransformState { TransformPart part[TF_COUNT]; };
+
+static TransformPart transform_identity(void) {
+    TransformPart p = {0}; p.m[0] = p.m[3] = 1; return p;
+}
+static void transform_multiply(TransformPart *a, const TransformPart *b) {
+    TransformPart r = *a;
+    r.m[0] = a->m[0] * b->m[0] + a->m[2] * b->m[1];
+    r.m[1] = a->m[1] * b->m[0] + a->m[3] * b->m[1];
+    r.m[2] = a->m[0] * b->m[2] + a->m[2] * b->m[3];
+    r.m[3] = a->m[1] * b->m[2] + a->m[3] * b->m[3];
+    r.m[4] = a->m[0] * b->m[4] + a->m[2] * b->m[5] + a->m[4];
+    r.m[5] = a->m[1] * b->m[4] + a->m[3] * b->m[5] + a->m[5];
+    for (int i = 0; i < 2; i++) {
+        r.pct[i] = a->m[0] * b->pct[i] + a->m[2] * b->pct[2 + i] + a->pct[i];
+        r.pct[2 + i] = a->m[1] * b->pct[i] + a->m[3] * b->pct[2 + i] + a->pct[2 + i];
+    }
+    r.active = a->active || b->active;
+    *a = r;
+}
+static int transform_property(const char *p) {
+    if (!strcmp(p, "translate")) return TF_TRANSLATE;
+    if (!strcmp(p, "rotate")) return TF_ROTATE;
+    if (!strcmp(p, "scale")) return TF_SCALE;
+    if (!strcmp(p, "transform") || !strcmp(p, "-webkit-transform") || !strcmp(p, "-moz-transform") || !strcmp(p, "-ms-transform")) return TF_LIST;
+    return -1;
+}
+bool css_transform_changed(const ComputedStyle *a, const ComputedStyle *b, const char *property) {
+    int which = transform_property(property);
+    if (which < 0) return false;
+    TransformPart x = transform_identity(), y = transform_identity();
+    if (a && a->transform_state) x = a->transform_state->part[which];
+    if (b && b->transform_state) y = b->transform_state->part[which];
+    if (x.active != y.active) return true;
+    if (!x.active) return false;
+    if (x.angle != y.angle) return true;
+    for (int i = 0; i < 6; i++) if (x.m[i] != y.m[i]) return true;
+    for (int i = 0; i < 4; i++) if (x.pct[i] != y.pct[i]) return true;
+    return false;
+}
+static void transform_update(ComputedStyle *s, int which, const TransformPart *part) {
+    /* The style owns this allocation. Inheritance copies a part's values, never
+       the pointer; style adoption swaps whole styles before freeing the old one. */
+    if (!s->transform_state && part->active) s->transform_state = xcalloc(1, sizeof *s->transform_state);
+    if (s->transform_state) s->transform_state->part[which] = *part;
+    TransformPart result = transform_identity();
+    /* CSS Transforms 2: translate, rotate, scale, then transform, regardless of
+       declaration order. Each property's cascade only replaces its own part. */
+    if (s->transform_state) for (int i = 0; i < TF_COUNT; i++)
+        if (s->transform_state->part[i].active) transform_multiply(&result, &s->transform_state->part[i]);
+    memcpy(s->transform, result.m, sizeof s->transform);
+    s->translate_pending[0] = (Length){ .kind = LK_LEN, .pct = result.pct[0], .pct2 = result.pct[1] };
+    s->translate_pending[1] = (Length){ .kind = LK_LEN, .pct = result.pct[3], .pct2 = result.pct[2] };
+    s->has_transform = result.active; /* identity values other than none still form containing blocks */
+    if (!result.active) { free(s->transform_state); s->transform_state = NULL; }
+}
+static bool transform_number(const char *s, float *out, bool percent) {
+    char *end; float v = strtof(s, &end);
+    if (end == s || !isfinite(v)) return false;
+    if (percent && *end == '%') { v /= 100; end++; }
+    if (*end) return false;
+    *out = v; return true;
+}
+static bool transform_angle(const char *s, float *out) {
+    char *end; float v = strtof(s, &end);
+    if (end == s || !isfinite(v)) return false;
+    if (str_ieq(end, "turn")) v *= 360;
+    else if (str_ieq(end, "rad")) v *= 180.f / (float)M_PI;
+    else if (str_ieq(end, "grad")) v *= .9f;
+    else if (!str_ieq(end, "deg") && (*end || v != 0)) return false;
+    if (!isfinite(v)) return false;
+    *out = v; return true;
+}
+static bool transform_length(ACtx *c, const char *s, Length *l) {
+    return alen(c, s, l) && l->kind == LK_LEN && isfinite(l->px) && isfinite(l->pct);
+}
+static bool parse_transform(ACtx *c, const char *v, TransformPart *out) {
+    TransformPart result = transform_identity();
+    if (str_ieq(v, "none")) { *out = result; return true; }
     const char *p = v;
+    int count = 0;
     while (*p) {
         while (is_ws((unsigned char)*p)) p++;
-        const char *lp = strchr(p, '('); if (!lp) break;
+        if (!*p) break;
+        const char *lp = strchr(p, '('); if (!lp || lp == p || lp - p >= 32) return false;
         char fn[32]; snprintf(fn, sizeof fn, "%.*s", (int)LMIN(lp - p, 31), p);
         const char *rp = lp + 1; for (int dp = 1; *rp; rp++) { if (*rp == '(') dp++; else if (*rp == ')' && !--dp) break; }
-        if (!*rp) break;
+        if (!*rp) return false;
         char *args = xstrndup(lp + 1, (size_t)(rp - lp - 1));
         { int dp = 0; for (char *q = args; *q; q++) { if (*q == '(') dp++; else if (*q == ')') dp--; else if (*q == ',' && !dp) *q = ' '; } }
-        char *t[6]; int n = split_ws(args, t, 6);
-        float a = 1, b = 0, cc = 0, d = 1, e = 0, f = 0;
+        char *t[16]; int n = split_ws(args, t, 16);
+        TransformPart step = transform_identity(); step.active = true;
+        bool valid = true;
         for (char *q = fn; *q; q++) *q = (char)lc(*q);
         if (!strcmp(fn, "translate") || !strcmp(fn, "translatex") || !strcmp(fn, "translatey") || !strcmp(fn, "translate3d")) {
             Length lx = {0, 0, LK_LEN}, ly = {0, 0, LK_LEN};
-            if (!strcmp(fn, "translatey")) { if (n) alen(c, t[0], &ly); } else { if (n) alen(c, t[0], &lx); if (n > 1 && strcmp(fn, "translatex")) alen(c, t[1], &ly); }
-            e = lx.px; f = ly.px;
-            c->st->translate_pending[0].pct += lx.pct; c->st->translate_pending[1].pct += ly.pct;
-        } else if (!strcmp(fn, "scale") || !strcmp(fn, "scale3d")) { a = n ? strtof(t[0], NULL) : 1; d = n > 1 ? strtof(t[1], NULL) : a; }
-        else if (!strcmp(fn, "scalex")) a = n ? strtof(t[0], NULL) : 1;
-        else if (!strcmp(fn, "scaley")) d = n ? strtof(t[0], NULL) : 1;
+            bool y = !strcmp(fn, "translatey"), axis = y || !strcmp(fn, "translatex"), three = !strcmp(fn, "translate3d");
+            valid = three ? n == 3 : axis ? n == 1 : n >= 1 && n <= 2;
+            if (valid) valid = transform_length(c, t[0], y ? &ly : &lx);
+            if (valid && !axis && n > 1) valid = transform_length(c, t[1], &ly);
+            if (valid && three) { Length z; valid = transform_length(c, t[2], &z) && !z.pct; }
+            step.m[4] = lx.px; step.m[5] = ly.px; step.pct[0] = lx.pct; step.pct[3] = ly.pct;
+        } else if (!strcmp(fn, "translatez")) {
+            Length z; valid = n == 1 && transform_length(c, t[0], &z) && !z.pct; /* existing 2D projection */
+        } else if (!strcmp(fn, "scale") || !strcmp(fn, "scale3d")) {
+            valid = !strcmp(fn, "scale3d") ? n == 3 : n >= 1 && n <= 2;
+            if (valid) valid = transform_number(t[0], &step.m[0], true);
+            step.m[3] = step.m[0];
+            if (valid && n > 1) valid = transform_number(t[1], &step.m[3], true);
+            if (valid && n == 3) { float z; valid = transform_number(t[2], &z, true); }
+        } else if (!strcmp(fn, "scalex") || !strcmp(fn, "scaley") || !strcmp(fn, "scalez")) {
+            float scale; valid = n == 1 && transform_number(t[0], &scale, true);
+            if (valid && strcmp(fn, "scalez")) step.m[!strcmp(fn, "scalex") ? 0 : 3] = scale;
+        }
         else if (!strcmp(fn, "rotate") || !strcmp(fn, "rotatez")) {
-            float ang = n ? strtof(t[0], NULL) : 0; if (n && strstr(t[0], "turn")) ang *= 360; else if (n && strstr(t[0], "rad")) ang *= 57.2958f;
-            float r = ang * (float)M_PI / 180; a = cosf(r); b = sinf(r); cc = -sinf(r); d = cosf(r);
-        } else if (!strcmp(fn, "matrix") && n == 6) { a = strtof(t[0], NULL); b = strtof(t[1], NULL); cc = strtof(t[2], NULL); d = strtof(t[3], NULL); e = strtof(t[4], NULL); f = strtof(t[5], NULL); }
-        else if (!strcmp(fn, "skewx")) { cc = tanf(strtof(t[0], NULL) * (float)M_PI / 180); }
-        else if (!strcmp(fn, "skewy")) { b = tanf(strtof(t[0], NULL) * (float)M_PI / 180); }
-        /* m = m * [a b c d e f] */
-        float r0 = m[0] * a + m[2] * b, r1 = m[1] * a + m[3] * b, r2 = m[0] * cc + m[2] * d, r3 = m[1] * cc + m[3] * d, r4 = m[0] * e + m[2] * f + m[4], r5 = m[1] * e + m[3] * f + m[5];
-        m[0] = r0; m[1] = r1; m[2] = r2; m[3] = r3; m[4] = r4; m[5] = r5;
+            valid = n == 1 && transform_angle(t[0], &step.angle);
+            if (valid) { float r = step.angle * (float)M_PI / 180; step.m[0] = step.m[3] = cosf(r); step.m[1] = sinf(r); step.m[2] = -step.m[1]; result.angle = step.angle; }
+        } else if (!strcmp(fn, "rotatex") || !strcmp(fn, "rotatey")) {
+            /* Identity X/Y rotations occur in generated 2D transform lists.
+               Preserve the surrounding transforms without a 3D projection. */
+            float angle; valid = n == 1 && transform_angle(t[0], &angle) && fmodf(angle, 360) == 0;
+        } else if (!strcmp(fn, "matrix")) {
+            valid = n == 6;
+            for (int i = 0; valid && i < 6; i++) valid = transform_number(t[i], &step.m[i], false);
+        } else if (!strcmp(fn, "skewx") || !strcmp(fn, "skewy")) {
+            float angle; valid = n == 1 && transform_angle(t[0], &angle);
+            if (valid) step.m[!strcmp(fn, "skewx") ? 2 : 1] = tanf(angle * (float)M_PI / 180);
+        } else valid = false;
+        if (valid) transform_multiply(&result, &step);
         free_toks(t, n); free(args);
+        if (!valid) return false;
+        count++;
         p = rp + 1;
     }
-    memcpy(c->st->transform, m, sizeof m);
-    c->st->has_transform = !(m[0] == 1 && m[1] == 0 && m[2] == 0 && m[3] == 1 && m[4] == 0 && m[5] == 0) || c->st->translate_pending[0].pct || c->st->translate_pending[1].pct;
+    if (!count) return false;
+    *out = result; return true;
+}
+static bool parse_transform_property(ACtx *c, int which, const char *v, TransformPart *out) {
+    if (which == TF_LIST || str_ieq(v, "none")) return parse_transform(c, v, out);
+    static const char *const fn[] = {"translate", "rotate", "scale"};
+    SB text; sb_init(&text); sb_printf(&text, "%s(%s)", fn[which], v);
+    bool ok = parse_transform(c, text.s, out); sb_free(&text); return ok;
 }
 static bool parse_one_shadow(ACtx *c, char *v, Shadow *sh) {
     char *t[7]; int n = split_ws(v, t, 7); float nums[4] = {0}; int nn = 0;
@@ -757,6 +869,15 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
     const char *P = prop;
     Length l; Color col; int k;
     bool inherit = str_ieq(val, "inherit"), initial = str_ieq(val, "initial") || str_ieq(val, "revert") || str_ieq(val, "revert-layer"), unset = str_ieq(val, "unset");
+    int tf = transform_property(P);
+    if (tf >= 0) {
+        TransformPart part = transform_identity();
+        if (inherit || initial || unset) {
+            if (inherit && par && par->transform_state) part = par->transform_state->part[tf];
+            transform_update(st, tf, &part);
+        } else if (parse_transform_property(&c, tf, val, &part)) transform_update(st, tf, &part);
+        goto out;
+    }
     {
         const char *Q = strncmp(P, "-webkit-", 8) ? P : P + 8;
         if (!strncmp(Q, "animation", 9) || !strncmp(Q, "transition", 10)) { anim_decl(st, Q, inherit || initial || unset ? "" : val); free(vbuf); free(subst); return; }
@@ -1017,7 +1138,7 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
             char *t[2]; int n = split_ws(val, t, 2);
             int a = n ? kw(t[0], ov) : -1, b = n > 1 ? kw(t[1], ov) : a;
             if (n && str_ieq(t[0], "overlay")) a = b = OV_AUTO;
-            if (a >= 0) { if (P[8] != 'y') st->overflow_x = (uint8_t)a; if (P[8] != 'x') st->overflow_y = (uint8_t)(P[8] == 'y' ? a : b >= 0 ? b : a); }
+            if (a >= 0) { if (strcmp(P, "overflow-y")) st->overflow_x = (uint8_t)a; if (strcmp(P, "overflow-x")) st->overflow_y = (uint8_t)(!strcmp(P, "overflow-y") ? a : b >= 0 ? b : a); }
             free_toks(t, n);
         }
         else if (!strcmp(P, "order")) st->order = atoi(val);
@@ -1046,12 +1167,10 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
     case 'r':
         if (!strcmp(P, "right")) alen(&c, val, &st->inset[1]);
         else if (!strcmp(P, "row-gap")) { if (alen(&c, val, &l)) { st->row_gap = l.px; st->row_gap_l = l; } }
-        else if (!strcmp(P, "rotate")) { char buf[64]; snprintf(buf, sizeof buf, "rotate(%s)", val); if (!str_ieq(val, "none")) parse_transform(&c, buf); }
         break;
     case 's':
         if (!strcmp(P, "stroke")) { if (css_parse_color(val, &col, st->color)) st->stroke = col; else st->stroke = 0; }
         else if (!strcmp(P, "stroke-width")) st->stroke_width = alen_px(&c, val, 1);
-        else if (!strcmp(P, "scale")) { char buf[64]; snprintf(buf, sizeof buf, "scale(%s)", val); if (!str_ieq(val, "none")) parse_transform(&c, buf); }
         break;
     case 't':
         if (!strcmp(P, "top")) alen(&c, val, &st->inset[0]);
@@ -1061,8 +1180,6 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         else if (!strcmp(P, "text-indent")) st->text_indent = alen_px(&c, val, 0);
         else if (!strcmp(P, "text-overflow")) st->text_overflow = str_ieq(val, "ellipsis") ? TO_ELLIPSIS : TO_CLIP;
         else if (!strcmp(P, "text-shadow")) parse_shadow(&c, val, &st->text_shadow, &st->has_text_shadow);
-        else if (!strcmp(P, "transform") || !strcmp(P, "-webkit-transform")) parse_transform(&c, val);
-        else if (!strcmp(P, "translate")) { char buf[256]; snprintf(buf, sizeof buf, "translate(%s)", val); if (!str_ieq(val, "none")) parse_transform(&c, buf); }
         else if (!strcmp(P, "transform-origin")) { char *t[2] = {0}; int n = split_ws(val, t, 2);
             if ((n >= 1 && (str_ieq(t[0], "top") || str_ieq(t[0], "bottom"))) || (n == 2 && (str_ieq(t[1], "left") || str_ieq(t[1], "right")))) { char *sw = t[0]; t[0] = t[1]; t[1] = sw; if (n == 1) { t[0] = NULL; t[1] = sw; } }
             if (n == 1) n = 2;
@@ -1433,6 +1550,19 @@ static void presentational_hints(ComputedStyle *st, const ComputedStyle *par, No
     if (el->tag == A_img || el->tag == A_video) { /* aspect from attributes */ const char *w = node_attr(el, "width"), *h = node_attr(el, "height"); if (w && h && atof(h) > 0) st->aspect_ratio = (float)(atof(w) / atof(h)); }
 }
 
+static void normalize_overflow(ComputedStyle *st) {
+    /* CSS Overflow: with a scrollable keyword on either axis, visible computes
+       to auto and clip to hidden on the other. Wait for all declarations so a
+       later override can still leave a non-scrollable visible/clip pair. */
+    if ((st->overflow_x != OV_VISIBLE && st->overflow_x != OV_CLIP) ||
+        (st->overflow_y != OV_VISIBLE && st->overflow_y != OV_CLIP)) {
+        if (st->overflow_x == OV_VISIBLE) st->overflow_x = OV_AUTO;
+        else if (st->overflow_x == OV_CLIP) st->overflow_x = OV_HIDDEN;
+        if (st->overflow_y == OV_VISIBLE) st->overflow_y = OV_AUTO;
+        else if (st->overflow_y == OV_CLIP) st->overflow_y = OV_HIDDEN;
+    }
+}
+
 static ComputedStyle *compute_pseudo(StyleEngine *e, Node *el, ComputedStyle *base, int which) {
     VEC(MDecl) md = {0};
     RuleVec *rv;
@@ -1447,6 +1577,7 @@ static ComputedStyle *compute_pseudo(StyleEngine *e, Node *el, ComputedStyle *ba
     for (int i = 0; i < md.n; i++) if (md.v[i].d->prop[0] == '-' && md.v[i].d->prop[1] == '-') css_apply_decl(st, base, md.v[i].d->prop, md.v[i].d->value, e, el);
     for (int i = 0; i < md.n; i++) if (!(md.v[i].d->prop[0] == '-' && md.v[i].d->prop[1] == '-')) css_apply_decl(st, base, md.v[i].d->prop, md.v[i].d->value, e, el);
     vec_free(md);
+    normalize_overflow(st);
     if (!st->content && which != 4 && which != 5) { style_free(st); return NULL; }
     return st;
 }
@@ -1526,6 +1657,7 @@ static ComputedStyle *compute(StyleEngine *e, Node *el, const ComputedStyle *par
     vec_free(all);
     vec_free(md);
     /* fixups */
+    normalize_overflow(st);
     if (st->line_height_factor > 0) st->line_height = st->line_height_factor * st->font_size;
     if (st->position == P_ABSOLUTE || st->position == P_FIXED || st->float_ != F_NONE) {
         if (st->display == D_INLINE || st->display == D_INLINE_BLOCK || st->display == D_TABLE_CELL || st->display == D_TABLE_ROW) st->display = D_BLOCK;
@@ -1564,7 +1696,7 @@ static bool paint_only(const ComputedStyle *a, const ComputedStyle *b) {
     PO_Z(color); PO_Z(bg_color); PO_Z(bg_image); PO_Z(bg_gradient); PO_Z(bg_repeat); PO_Z(bg_size_kind); PO_Z(bg_size); PO_Z(bg_pos);
     PO_Z(mask_image); PO_Z(mask_fit); PO_Z(border_color); PO_Z(outline_style); PO_Z(outline_width); PO_Z(outline_offset); PO_Z(outline_color);
     PO_Z(box_shadow); PO_Z(has_shadow); PO_Z(text_shadow); PO_Z(has_text_shadow); PO_Z(text_decoration);
-    PO_Z(opacity); PO_Z(transform); PO_Z(transform_origin); PO_Z(translate_pending); PO_Z(visibility); PO_Z(z_index); PO_Z(z_auto); PO_Z(isolation);
+    PO_Z(opacity); PO_Z(transform); PO_Z(transform_origin); PO_Z(translate_pending); PO_Z(transform_state); PO_Z(visibility); PO_Z(z_index); PO_Z(z_auto); PO_Z(isolation);
     PO_Z(cursor); PO_Z(pointer_events); PO_Z(user_select); PO_Z(caret_color); PO_Z(fill); PO_Z(stroke); PO_Z(stroke_width); PO_Z(object_fit);
     PO_Z(filter_blur); PO_Z(filter_brightness); PO_Z(backdrop_blur);
     PO_Z(anim_name); PO_Z(anim_dur); PO_Z(anim_delay); PO_Z(anim_iter); PO_Z(tr_prop); PO_Z(tr_dur); PO_Z(tr_delay);
@@ -1700,7 +1832,24 @@ char *css_get_computed_value(Node *el, const char *prop) {
     else if (!strcmp(prop, "pointer-events")) sb_puts(&b, s->pointer_events ? "auto" : "none");
     else if (!strcmp(prop, "user-select") || !strcmp(prop, "-webkit-user-select") || !strcmp(prop, "webkit-user-select")) sb_puts(&b, s->user_select ? "none" : "auto");
     else if (!strcmp(prop, "box-sizing")) sb_puts(&b, s->box_sizing ? "border-box" : "content-box");
-    else if (!strcmp(prop, "transform")) { if (s->has_transform) sb_printf(&b, "matrix(%g, %g, %g, %g, %g, %g)", s->transform[0], s->transform[1], s->transform[2], s->transform[3], s->transform[4], s->transform[5]); else sb_puts(&b, "none"); }
+    else if (transform_property(prop) >= 0) {
+        int which = transform_property(prop);
+        const TransformPart *p = s->transform_state ? &s->transform_state->part[which] : NULL;
+        if (!p || !p->active) sb_puts(&b, "none");
+        else if (which == TF_TRANSLATE) {
+            len_str(&b, (Length){ .kind = LK_LEN, .px = p->m[4], .pct = p->pct[0] }, "auto");
+            if (p->m[5] || p->pct[3]) { sb_putc(&b, ' '); len_str(&b, (Length){ .kind = LK_LEN, .px = p->m[5], .pct = p->pct[3] }, "auto"); }
+        } else if (which == TF_ROTATE) sb_printf(&b, "%gdeg", p->angle);
+        else if (which == TF_SCALE) { sb_printf(&b, "%g", p->m[0]); if (p->m[0] != p->m[3]) sb_printf(&b, " %g", p->m[3]); }
+        else {
+            /* The transform property's resolved matrix excludes the individual
+               properties. Its own percentages resolve against this border box. */
+            const Box *bx = el->box; float w = bx ? bx->w : 0, h = bx ? bx->h : 0;
+            float tx = p->m[4] + (p->pct[0] * w + p->pct[1] * h) / 100;
+            float ty = p->m[5] + (p->pct[2] * w + p->pct[3] * h) / 100;
+            sb_printf(&b, "matrix(%g, %g, %g, %g, %g, %g)", p->m[0], p->m[1], p->m[2], p->m[3], tx, ty);
+        }
+    }
     else if (!strncmp(prop, "margin-", 7) || !strncmp(prop, "padding-", 8)) {
         bool m = prop[0] == 'm'; const char *side = prop + (m ? 7 : 8);
         int i = !strcmp(side, "top") ? 0 : !strcmp(side, "right") ? 1 : !strcmp(side, "bottom") ? 2 : 3;

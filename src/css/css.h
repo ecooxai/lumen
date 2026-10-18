@@ -91,7 +91,8 @@ typedef struct ComputedStyle {
     Shadow box_shadow; bool has_shadow;
     Shadow text_shadow; bool has_text_shadow;
     float transform[6]; bool has_transform; Length transform_origin[2];
-    Length translate_pending[2]; /* % translate resolved at layout */
+    Length translate_pending[2]; /* pct: same-axis box size; pct2: other-axis box size */
+    struct CSSTransformState *transform_state; /* owned, allocated only for non-none transform properties */
     float aspect_ratio;
     char *content;          /* for ::before/::after */
     int grid_ncols; GridTrack *grid_cols; int grid_nrows; GridTrack *grid_rows; Length grid_auto_rows, grid_auto_cols; bool grid_flow_col;
@@ -106,6 +107,15 @@ typedef struct ComputedStyle {
     CustomProps *custom;
     struct ComputedStyle *before, *after, *marker; /* pseudo element styles */
 } ComputedStyle;
+
+/* Resolve the composed translation after the border-box size is known. A
+   rotation can move a width-based percentage to y (or height-based one to x). */
+static inline void css_transform_translation(const ComputedStyle *s, float w, float h, float *x, float *y) {
+    *x = s->transform[4] + (s->translate_pending[0].pct * w + s->translate_pending[0].pct2 * h) / 100;
+    *y = s->transform[5] + (s->translate_pending[1].pct * h + s->translate_pending[1].pct2 * w) / 100;
+}
+/* A transition observes the changed property, even when other transforms cancel it. */
+bool css_transform_changed(const ComputedStyle *a, const ComputedStyle *b, const char *property);
 
 /* called on every element restyle (old may be NULL); used to fire animation/transition events */
 extern void (*css_style_change_hook)(Node *n, const ComputedStyle *old, const ComputedStyle *now);

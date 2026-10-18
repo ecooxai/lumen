@@ -56,7 +56,7 @@ void frame_kill(JsCtx *k) {
     for (JsCtx *g : k->kids) frame_kill(g);
     for (auto &kv : k->fetches) { net_cancel(kv.first); kv.second->c = nullptr; kv.second->cb.Reset(); kv.second->head.Reset(); kv.second->chunk.Reset(); }
     k->fetches.clear(); for (auto &kv : k->sockets) { net_ws_release(kv.second->ws); kv.second->cb.Reset(); delete kv.second; } k->sockets.clear();
-    k->timers.clear(); k->rafs.clear(); k->anims.clear();
+    k->timers.clear(); k->rafs.clear(); k->anims.clear(); k->rejections.clear();
     if (k->host.frame_close && k->host_ud) k->host.frame_close(k->host_ud);
     k->host_ud = nullptr;
 }
@@ -102,6 +102,7 @@ static JsCtx *frame_create(JsCtx *p, Node *f, const char *url, const char *html,
             NetRequest *srq = u ? net_request_ctx("GET", u, js_top_url(k)) : nullptr;
             if (srq && d->url) { srq->no_cors_origin = strdup(d->url); srq->coep_require_corp = d->coep_require_corp; }
             NetResponse *sr = srq ? net_fetch_sync(srq) : nullptr;
+            net_request_free(srq);
             if (sr && sr->status >= 200 && sr->status < 300) js_run_script(k, s, sr->body ? sr->body : "", sr->body_len, u);
             else { s->flags |= NF_SCRIPT_STARTED; js_dispatch(k, s, "error", "Event", false, false, 0, 0, 0, NULL); }
             if (sr) net_response_free(sr);

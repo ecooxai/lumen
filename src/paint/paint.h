@@ -24,9 +24,10 @@ typedef struct DItem {
     float blur, spread, alpha;
     float sx, sy;               /* DO_SHADOW: offset from the border box */
     bool inset;
+    bool scroll_anchor;        /* fixed/sticky ink must be repainted after page pixel reuse */
 } DItem;
 
-typedef struct DisplayList { VEC(DItem) items; Arena arena; float vw, vh; bool has_fixed; float fix[4]; } DisplayList;   /* fix: viewport bounds of position:fixed items */
+typedef struct DisplayList { VEC(DItem) items; Arena arena; float vw, vh; bool has_fixed; float fix[4]; } DisplayList;   /* fix: viewport ink bounds of fixed/sticky items */
 
 extern Image *(*paint_image_hook)(Node *n);
 extern Image *(*paint_url_image_hook)(const char *url);

@@ -362,11 +362,7 @@ static void paint_deferred(PB *p, Deferred *d) {
     if (p->clip) { DItem *c = emit(p, DO_PUSH_CLIP); c->x = p->cx; c->y = p->cy; c->w = p->cw; c->h = p->ch; }
     paint_stacking(p, d->b);
     if (d->b->fixed)
-        for (int i = fi0; i < p->dl->items.n; i++) {
-            const DItem *it = &p->dl->items.v[i]; float *f = p->dl->fix;
-            if (it->w <= 0 || it->h <= 0) continue;
-            f[0] = LMIN(f[0], it->x); f[1] = LMIN(f[1], it->y); f[2] = LMAX(f[2], it->x + it->w); f[3] = LMAX(f[3], it->y + it->h);
-        }
+        for (int i = fi0; i < p->dl->items.n; i++) p->dl->items.v[i].scroll_anchor = true;
     if (p->clip) emit(p, DO_POP_CLIP);
     int order = p->order; *p = saved; p->order = order;
 }
@@ -386,7 +382,9 @@ static void paint_stacking(PB *p, Box *b) {
     const ComputedStyle *s = b->st;
     if (s->opacity <= 0.001f) return;
     float tx = 0, ty = 0;
-    if (s->has_transform) { tx = s->transform[4]; ty = s->transform[5]; if (s->translate_pending[0].pct) tx += s->translate_pending[0].pct * b->w / 100; if (s->translate_pending[1].pct) ty += s->translate_pending[1].pct * b->h / 100; }
+    if (s->has_transform) css_transform_translation(s, b->w, b->h, &tx, &ty);
+    float sticky_x, sticky_y; box_sticky_offset(b, p->L, &sticky_x, &sticky_y);
+    tx += sticky_x; ty += sticky_y;
     p->dx += tx; p->dy += ty;
     /* axis-aligned scale (e.g. progress bars using scaleX): scale the subtree's non-text items about transform-origin */
     float ksx = s->has_transform && !s->transform[1] && !s->transform[2] ? s->transform[0] : 1, ksy = s->has_transform && !s->transform[1] && !s->transform[2] ? s->transform[3] : 1;
@@ -443,14 +441,43 @@ static void paint_stacking(PB *p, Box *b) {
             if (it->h < 0) { it->y += it->h; it->h = -it->h; }
         }
     }
+    if (box_is_sticky(b)) {
+        /* Page scrolling can reuse old pixels. Sticky content must be included
+           in the same damage bounds as fixed content, even before it sticks. */
+        p->dl->has_fixed = true;
+        for (int i = i0; i < p->dl->items.n; i++) p->dl->items.v[i].scroll_anchor = true;
+    }
     p->dx -= tx; p->dy -= ty;
 }
 
 void dl_clear(DisplayList *dl) { dl->items.n = 0; dl->has_fixed = false; dl->fix[0] = dl->fix[1] = 1e9f; dl->fix[2] = dl->fix[3] = -1e9f; arena_reset(&dl->arena); }
 
+static void scroll_ink_bounds(DisplayList *dl) {
+    /* Compute after all ancestor transforms, using ink rather than border
+       boxes. Shadows and glyph overhang can extend beyond the item's rect. */
+    for (int i = 0; i < dl->items.n; i++) {
+        const DItem *it = &dl->items.v[i];
+        if (!it->scroll_anchor || it->op >= DO_PUSH_CLIP) continue;
+        float x0 = it->x, y0 = it->y, x1 = it->x + it->w, y1 = it->y + it->h, e = 2;
+        if (it->op == DO_SHADOW) e += fabsf(it->spread) + fabsf(it->blur);
+        if (it->op == DO_TEXT) {
+            x0 = y0 = 1e30f; x1 = y1 = -1e30f;
+            for (int k = 0; k < it->ng; k++) {
+                const DGlyph *g = &it->g[k]; float em = (g->font ? g->font->size : 16) * (it->ts > 0 ? it->ts : 1);
+                x0 = LMIN(x0, g->x - em); y0 = LMIN(y0, g->y - 1.5f * em);
+                x1 = LMAX(x1, g->x + 2 * em); y1 = LMAX(y1, g->y + em);
+            }
+        }
+        if (x1 <= x0 || y1 <= y0) continue;
+        dl->fix[0] = LMIN(dl->fix[0], x0 - e); dl->fix[1] = LMIN(dl->fix[1], y0 - e);
+        dl->fix[2] = LMAX(dl->fix[2], x1 + e); dl->fix[3] = LMAX(dl->fix[3], y1 + e);
+    }
+}
+
 void dl_build(DisplayList *dl, Layout *L, float scroll_x, float scroll_y, float vw, float vh) {
     dl_clear(dl); dl->vw = vw; dl->vh = vh;
     if (!L->root) return;
+    L->scroll_x = scroll_x; L->scroll_y = scroll_y;
     tsel_prepare(L);
     PB p; memset(&p, 0, sizeof p); p.dl = dl; p.L = L; p.dx = -scroll_x; p.dy = -scroll_y; p.sx = scroll_x; p.sy = scroll_y;
     /* canvas background propagates from html, else body */
@@ -460,4 +487,5 @@ void dl_build(DisplayList *dl, Layout *L, float scroll_x, float scroll_y, float 
     else if (body && body->style && COLOR_A(body->style->bg_color)) bg = body->style->bg_color;
     if (bg) { DItem *it = emit(&p, DO_RECT); it->x = 0; it->y = 0; it->w = vw; it->h = vh; it->color = bg; }
     for (Box *c = L->root->first; c; c = c->next) paint_stacking(&p, c);
+    if (dl->has_fixed) scroll_ink_bounds(dl);
 }

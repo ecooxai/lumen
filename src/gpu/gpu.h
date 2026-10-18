@@ -23,6 +23,9 @@ bool gpu_present_rows(Gpu *g, const uint32_t *px, int w, int h, int stride, int 
 typedef struct { const uint32_t *px; int w, h, stride; float x0, y0, x1, y1; const uint8_t *yuv; int mat; } GpuVideo;
 bool gpu_yuv_ok(Gpu *g);
 bool gpu_present_frame(Gpu *g, const uint32_t *px, int w, int h, int stride, int y0, int y1, const GpuVideo *v);
+/* A false present result with pending=true needs a later cached-frame retry,
+   not a second presentation backend. A subsequent present resets this flag. */
+bool gpu_present_pending(Gpu *g);
 const char *gpu_backend_name(Gpu *g);
 void gpu_destroy(Gpu *g);
 #endif

@@ -2,14 +2,16 @@
 #include "../src/net/net.h"
 int main(int argc, char **argv) {
     dom_init(); net_init(4); font_init();
-    NetResponse *r = net_fetch_sync(net_request_new("GET", argv[1]));
+    NetRequest *rq = net_request_new("GET", argv[1]);
+    NetResponse *r = net_fetch_sync(rq);
+    net_request_free(rq);
     Document *d = doc_new(r->url);
     html_parse(d, r->body, r->body_len);
     StyleEngine *e = style_engine_new(d);
     for (Node *n = d->node.first; n; n = node_next_in_tree(n, &d->node)) {
         if (n->type != NODE_ELEMENT) continue;
         if (n->tag == A_style) { char *t = node_text_content(n); StyleSheet *s = css_parse_sheet(t, strlen(t), d->url, 1, &e->media); s->owner = n; style_engine_add_sheet(e, s); free(t); }
-        else if (n->tag == A_link && node_attr(n, "rel") && strstr(node_attr(n, "rel"), "stylesheet") && node_attr(n, "href")) { char *u = url_join(d->url, node_attr(n, "href")); NetResponse *cr = net_fetch_sync(net_request_new("GET", u)); StyleSheet *s = css_parse_sheet(cr->body, cr->body_len, cr->url, 1, &e->media); s->owner = n; style_engine_add_sheet(e, s); free(u); }
+        else if (n->tag == A_link && node_attr(n, "rel") && strstr(node_attr(n, "rel"), "stylesheet") && node_attr(n, "href")) { char *u = url_join(d->url, node_attr(n, "href")); NetRequest *crq = net_request_new("GET", u); NetResponse *cr = net_fetch_sync(crq); net_request_free(crq); StyleSheet *s = css_parse_sheet(cr->body, cr->body_len, cr->url, 1, &e->media); s->owner = n; style_engine_add_sheet(e, s); free(u); }
     }
     style_recalc(e, &d->node, true);
     Layout *L = layout_new();

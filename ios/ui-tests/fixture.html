@@ -1,0 +1,36 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lumen Apple UI regression</title>
+<style>
+* { box-sizing:border-box; }
+html,body { margin:0; font:18px system-ui; background:#f3f4f6; color:#111827; }
+body { min-height:2600px; padding:220px 24px 120px; }
+button,input { font:18px system-ui; border:0; border-radius:8px; }
+#tap { position:fixed; top:24px; left:20px; width:160px; height:56px; background:#0055cc; color:white; }
+#field { position:fixed; top:112px; left:20px; width:240px; height:52px; padding:12px; background:#fff8c0; color:#111827; }
+#bottom { position:fixed; bottom:20px; left:20px; width:160px; height:56px; background:#006b4f; color:white; }
+</style></head><body>
+<button id="tap">Tap target</button>
+<input id="field" type="text" aria-label="Fixture input" placeholder="Type here" autocomplete="off">
+<button id="bottom">Bottom target</button>
+<h1>Apple input fixture</h1><p>Scroll, rotate, type and dismiss the workspace menu.</p>
+<p style="margin-top:500px">Middle of the scrollable page</p>
+<p style="margin-top:800px">End of the scrollable page</p>
+<script>
+(function () {
+  var run = new URLSearchParams(location.search).get('run');
+  var pending = Promise.resolve();
+  function send(type, extra) {
+    var event = Object.assign({run:run,type:type,width:innerWidth,height:innerHeight,scrollY:scrollY},extra||{});
+    // Preserve event order so the test oracle never replaces a new viewport with an older request.
+    pending = pending.then(function () { return fetch('/event',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(event)}); }).catch(function () {});
+  }
+  document.getElementById('tap').addEventListener('click',function(){ send('click',{target:'tap'}); });
+  document.getElementById('bottom').addEventListener('click',function(){ send('click',{target:'bottom'}); });
+  document.getElementById('field').addEventListener('input',function(e){ send('input',{value:e.target.value}); });
+  addEventListener('resize',function(){ send('viewport'); });
+  var scrollTimer=0;
+  addEventListener('scroll',function(){ clearTimeout(scrollTimer); scrollTimer=setTimeout(function(){ send('scroll'); },100); });
+  send('ready');
+})();
+</script></body></html>

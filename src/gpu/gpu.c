@@ -9,7 +9,7 @@
 struct Gpu {
     WGPUInstance inst; WGPUSurface surf; WGPUAdapter adapter; WGPUDevice dev; WGPUQueue q;
     WGPUTextureFormat fmt; WGPURenderPipeline pipe; WGPUBindGroupLayout bgl; WGPUSampler samp;
-    WGPUTexture tex; WGPUTextureView view; WGPUBindGroup bg; int tw, th; int w, h; bool configured;
+    WGPUTexture tex; WGPUTextureView view; WGPUBindGroup bg; int tw, th; int w, h; bool configured, present_pending;
     WGPUBackendType backend; char aname[128];
     WGPUSampler vsamp; WGPUBuffer ubuf, vubuf; WGPUTexture vtex; WGPUTextureView vview; WGPUBindGroup vbg; int vtw, vth;
     WGPURenderPipeline ypipe; WGPUBindGroupLayout ybgl; WGPUBuffer yubuf; WGPUTexture yt, ct; WGPUTextureView ytv, ctv; WGPUBindGroup ybg; int ytw, yth;
@@ -280,7 +280,9 @@ static void ensure_tex(Gpu *g, int w, int h) {
 
 bool gpu_present(Gpu *g, const uint32_t *px, int w, int h, int stride) { return gpu_present_frame(g, px, w, h, stride, 0, h, NULL); }
 bool gpu_present_rows(Gpu *g, const uint32_t *px, int w, int h, int stride, int y0, int y1) { return gpu_present_frame(g, px, w, h, stride, y0, y1, NULL); }
+bool gpu_present_pending(Gpu *g) { return g && g->present_pending; }
 bool gpu_present_frame(Gpu *g, const uint32_t *px, int w, int h, int stride, int y0, int y1, const GpuVideo *v) {
+    if (g) g->present_pending = false;
     if (!g || !g->configured) return false;
     if (!g->tex || g->tw != w || g->th != h) { y0 = 0; y1 = h; }
     ensure_tex(g, w, h);
@@ -322,8 +324,9 @@ bool gpu_present_frame(Gpu *g, const uint32_t *px, int w, int h, int stride, int
     wgpuSurfaceGetCurrentTexture(g->surf, &st);
     if (st.status != WGPUSurfaceGetCurrentTextureStatus_SuccessOptimal && st.status != WGPUSurfaceGetCurrentTextureStatus_SuccessSuboptimal) {
         if (st.texture) wgpuTextureRelease(st.texture);
-        configure(g);
-        return st.status == WGPUSurfaceGetCurrentTextureStatus_Timeout || st.status == WGPUSurfaceGetCurrentTextureStatus_Outdated || st.status == WGPUSurfaceGetCurrentTextureStatus_Lost;
+        if (st.status == WGPUSurfaceGetCurrentTextureStatus_Outdated || st.status == WGPUSurfaceGetCurrentTextureStatus_Lost) configure(g);
+        g->present_pending = st.status == WGPUSurfaceGetCurrentTextureStatus_Timeout || st.status == WGPUSurfaceGetCurrentTextureStatus_Outdated || st.status == WGPUSurfaceGetCurrentTextureStatus_Lost;
+        return false;   /* The pixels are cached, but no frame reached the native surface. */
     }
     WGPUTextureView tv = wgpuTextureCreateView(st.texture, NULL);
     WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(g->dev, NULL);

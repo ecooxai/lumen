@@ -43,6 +43,10 @@ struct Timer {
     bool repeat;
     v8::Global<v8::Function> fn;
 };
+struct PromiseRejection {
+    v8::Global<v8::Promise> promise;
+    uint64_t order;
+};
 struct AnimEv {
     double due;
     Node *n;
@@ -66,6 +70,10 @@ struct JsCtx {
     std::vector<Node *> wrapped;
     std::map<uint32_t, Timer> timers;
     uint32_t next_timer = 1;
+    /* Retain only until a handler is added or the next completed checkpoint. */
+    std::unordered_multimap<int, PromiseRejection> rejections;
+    uint64_t next_rejection = 0;
+    bool rejections_pending = false; /* fast path on the isolate's root context */
     std::map<uint32_t, v8::Global<v8::Function>> rafs;
     uint32_t next_raf = 1;
     double last_raf = 0, t0 = 0;

@@ -1,0 +1,53 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Deferred promise rejection reporting</title>
+<body><pre id="results">Running promise reporting checks</pre>
+<script>
+// Run with LUMEN_CONSOLE=1. The native runner also checks stderr: only the
+// PROMISE-GENUINE markers may be reported as unhandled, once each.
+(async function () {
+  let passed = 0, failed = 0, formatted = 0, caught = 0;
+  const check = (ok, name) => {
+    if (ok) passed++; else failed++;
+    console.log('PROMISE-' + (ok ? 'PASS ' : 'FAIL ') + name);
+  };
+  const reason = {
+    toString() { formatted++; return 'PROMISE-HANDLED-REASON'; },
+    get stack() { formatted++; return 'PROMISE-HANDLED-STACK'; }
+  };
+  Promise.reject(reason).catch(value => { if (value === reason) caught++; });
+  check(formatted === 0, 'synchronous catch does not format a rejection reason');
+  const later = Promise.reject(reason);
+  queueMicrotask(() => later.catch(value => { if (value === reason) caught++; }));
+  Promise.reject(reason).then(() => {}).catch(value => { if (value === reason) caught++; });
+  try { await Promise.reject(reason); } catch (value) { if (value === reason) caught++; }
+  for (let i = 0; i < 1000; i++) Promise.reject(reason).catch(() => {});
+  await new Promise(resolve => setTimeout(resolve, 30));
+  check(caught === 4, 'synchronous, microtask, forwarded, and awaited catches retain their reasons');
+  check(formatted === 0, 'handled rejections stay silent after the microtask checkpoint');
+
+  // Genuine failures still need one report, including a primitive reason and
+  // a promise that becomes handled in a later task.
+  Promise.reject('PROMISE-GENUINE-STRING');
+  const late = Promise.reject(new Error('PROMISE-GENUINE-LATE'));
+  await new Promise(resolve => setTimeout(resolve, 30));
+  let lateCaught = false;
+  late.catch(error => { lateCaught = error.message === 'PROMISE-GENUINE-LATE'; });
+  await new Promise(resolve => setTimeout(resolve, 30));
+  check(lateCaught, 'a handler attached after reporting still runs normally');
+
+  // Diagnostics must not execute user getters or coercions, even for a truly
+  // unhandled object, or change execution when those accessors throw.
+  let unexpected = 0;
+  Promise.reject({
+    toString() { unexpected++; throw new Error('PROMISE-FORMATTER-TOSTRING'); },
+    get stack() { unexpected++; throw new Error('PROMISE-FORMATTER-STACK'); }
+  });
+  await new Promise(resolve => setTimeout(resolve, 30));
+  check(unexpected === 0, 'reporting does not execute rejection-object getters or coercions');
+  check(await Promise.resolve(23) === 23, 'reporting leaves subsequent promise jobs usable');
+  console.log('PROMISE-DONE passed=' + passed + ' failed=' + failed);
+  document.getElementById('results').textContent = passed + ' passed, ' + failed + ' failed';
+  document.documentElement.setAttribute('data-promise-done', '1');
+})();
+</script>

@@ -24,7 +24,7 @@ const ioRun = () => { ioPending = false; for (const o of [...ioAll]) if (o._t.si
 const ioKick = () => { if (!ioPending) { ioPending = true; setTimeout(ioRun, 0); } if (!ioTimer) ioTimer = setInterval(() => { if (!ioAll.size) { clearInterval(ioTimer); ioTimer = 0; } else ioRun(); }, 300); };
 class PerformanceObserver { constructor(cb) { this._cb = cb; } observe() {} disconnect() {} takeRecords() { return []; } static get supportedEntryTypes() { return []; } }
 class Storage {
-    constructor(save) { def(this, '_m', new Map()); def(this, '_s', save || null); Object.defineProperty(this, '_n', { value: 0, writable: true }); }
+    constructor(save) { def(this, '_m', new Map()); def(this, '_s', save || null); def(this, '_n', 0); }
     get length() { return this._m.size; } key(i) { return [...this._m.keys()][i] ?? null; }
     getItem(k) { return this._m.has(String(k)) ? this._m.get(String(k)) : null; }
     setItem(k, v) {

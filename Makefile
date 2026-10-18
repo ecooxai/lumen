@@ -84,12 +84,23 @@ $(BUILD)/%.cc.o: %.cc
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -MMD -c $< -o $@
 
-V8LIBS := $(if $(IOS),-lv8_monolith,-lv8 -lv8_libplatform -lv8_libbase)
+V8LIBS := -lv8 -lv8_libplatform -lv8_libbase
+ifneq ($(IOS),)
+  V8LINK_RSP := $(BUILD)/v8-link.rsp
+  V8LIBS := @$(V8LINK_RSP)
+# GN's static monolith does not contain Temporal's Rust closure. Keep V8 and
+# wgpu Rust unwind symbols separate without changing their original archives.
+$(V8LINK_RSP): FORCE ios/prepare-v8-link.py $(V8OUT)/obj/libv8_monolith.a $(V8OUT)/obj/v8_monolith.ninja
+	python3 ios/prepare-v8-link.py --v8-dir "$(V8DIR)" --v8-out "$(V8OUT)" --output "$@" --jobs 3
+FORCE:
+.PHONY: FORCE
+$(addprefix $(BUILD)/,lumen jsrun test_overflow_clip test_sticky_position test_media_lifecycle test_worker_lifecycle test_promise_rejections): $(V8LINK_RSP)
+endif
 LIBS := $(NETLIBS) -lfreetype -lharfbuzz -lSDL3 $(V8LIBS) -lwgpu_native \
         -lavcodec -lavformat -lavutil -lswscale -lswresample -lpng -ljpeg -lwebp -lwebpdemux -lsharpyuv -lgif $(if $(IOS),-ldav1d) $(PLATLIBS)
 
 $(BUILD)/lumen: $(call OBJ,$(CORE_SRC) $(APP_SRC) $(JS_SRC))
-	$(CXX) $(OPT) $^ -o $@ $(LIBS)
+	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
 
 $(BUILD)/fetch: $(call OBJ,tests/fetch.c $(BASE_SRC) $(NET_SRC))
 	$(CC) $(OPT) $^ -o $@ $(NETLIBS)
@@ -99,15 +110,23 @@ $(BUILD)/test_url: $(call OBJ,tests/test_url.c $(BASE_SRC))
 $(BUILD)/test_net: $(call OBJ,tests/test_net.c $(BASE_SRC) src/net/cookies.c src/net/hsts.c src/net/referrer.c src/net/csp.c)
 	$(CC) $(OPT) $^ -o $@ $(NETLIBS)
 
-test: $(BUILD)/test_url $(BUILD)/test_net $(BUILD)/test_css_viewport $(BUILD)/test_overflow_clip $(BUILD)/test_app_viewport $(BUILD)/test_touch_contacts $(BUILD)/test_media_lifecycle $(BUILD)/test_worker_lifecycle
+$(BUILD)/test_net_cancel: $(call OBJ,tests/test_net_cancel.c $(BASE_SRC) $(NET_SRC))
+	$(CC) $(OPT) $(filter %.o,$^) -o $@ $(NETLIBS) -lpthread
+
+test: $(BUILD)/test_present_retry $(BUILD)/test_css_transforms $(BUILD)/test_url $(BUILD)/test_net $(BUILD)/test_net_cancel $(BUILD)/test_css_viewport $(BUILD)/test_overflow_clip $(BUILD)/test_sticky_position $(BUILD)/test_app_viewport $(BUILD)/test_touch_contacts $(BUILD)/test_media_lifecycle $(BUILD)/test_worker_lifecycle $(BUILD)/test_promise_rejections
 	$(BUILD)/test_url
 	$(BUILD)/test_net
+	$(BUILD)/test_net_cancel
 	$(BUILD)/test_css_viewport
+	$(BUILD)/test_css_transforms
 	$(BUILD)/test_overflow_clip
+	$(BUILD)/test_sticky_position
 	$(BUILD)/test_app_viewport
 	$(BUILD)/test_touch_contacts
+	$(BUILD)/test_present_retry
 	$(BUILD)/test_media_lifecycle
 	$(BUILD)/test_worker_lifecycle
+	$(BUILD)/test_promise_rejections
 
 # iOS app bundle: flat .app with the binary, Info.plist, ICU data, CA bundle and icon; ad-hoc signed (re-sign to sideload).
 # Mac Catalyst uses the macOS layout (Contents/MacOS, Contents/Resources). JIT=1 links the JIT V8 and signs with
@@ -133,9 +152,15 @@ app: $(BUILD)/lumen ios/Info.plist
 	sips -z 120 120 assets/icon/lumen-256.png --out $(APPRES)/AppIcon60x60@2x.png >/dev/null
 	codesign --force --sign - --timestamp=none $(if $(ENTS),--entitlements $(ENTS)) $(APP)
 IPA := Lumen$(if $(filter 1,$(JIT)),-jit,-jitless).ipa
+ifeq ($(PLAT),ios)
 ipa: app
 	rm -rf $(BUILD)/ipa && mkdir -p $(BUILD)/ipa/Payload && cp -R $(APP) $(BUILD)/ipa/Payload/
 	cd $(BUILD)/ipa && rm -f ../$(IPA) && zip -qry ../$(IPA) Payload
+else
+ipa:
+	@echo "IPA packaging requires PLAT=ios; simulator and Catalyst binaries are separate targets." >&2
+	@exit 2
+endif
 .PHONY: app ipa
 
 clean:
@@ -171,22 +196,35 @@ $(BUILD)/src/js/js.cc.o: $(BUILD)/src/js/prelude.inc
 $(BUILD)/src/js/worker.cc.o: CXXFLAGS += -fno-rtti
 $(BUILD)/src/js/js.cc.o: CXXFLAGS += -I$(BUILD)/src/js
 $(BUILD)/jsrun: $(call OBJ,tests/jsrun.c $(CORE_SRC) $(JS_SRC))
-	$(CXX) $(OPT) $^ -o $@ $(LIBS)
+	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
 
 $(BUILD)/test_css_viewport: $(call OBJ,tests/test_css_viewport.c $(CSS_TEST_SRC))
 	$(CC) $(OPT) $^ -o $@ $(NETLIBS)
 
 $(BUILD)/test_overflow_clip: $(call OBJ,tests/test_overflow_clip.c $(CORE_SRC) $(JS_SRC))
-	$(CXX) $(OPT) $^ -o $@ $(LIBS)
+	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
 
 $(BUILD)/test_media_lifecycle: $(call OBJ,tests/test_media_lifecycle.c $(filter-out src/media/media.c,$(CORE_SRC)) $(JS_SRC))
-	$(CXX) $(OPT) $^ -o $@ $(LIBS)
+	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
 
 $(BUILD)/tests/test_worker_lifecycle.cc.o: CXXFLAGS += -fno-rtti -UNDEBUG
 $(BUILD)/test_worker_lifecycle: $(call OBJ,tests/test_worker_lifecycle.cc $(CORE_SRC) $(filter-out src/js/worker.cc,$(JS_SRC)))
-	$(CXX) $(OPT) $^ -o $@ $(LIBS)
+	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
+
+$(BUILD)/tests/test_promise_rejections.cc.o: CXXFLAGS += -fno-rtti -UNDEBUG
+$(BUILD)/test_promise_rejections: $(call OBJ,tests/test_promise_rejections.cc $(CORE_SRC) $(JS_SRC))
+	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
 
 $(BUILD)/test_app_viewport: $(call OBJ,tests/test_app_viewport.c)
 	$(CC) $(OPT) $^ -o $@ -lm
 $(BUILD)/test_touch_contacts: $(call OBJ,tests/test_touch_contacts.c)
 	$(CC) $(OPT) $^ -o $@
+
+$(BUILD)/test_css_transforms: $(call OBJ,tests/test_css_transforms.c $(CSS_TEST_SRC))
+	$(CC) $(OPT) $^ -o $@ $(NETLIBS)
+
+$(BUILD)/test_present_retry: $(call OBJ,tests/test_present_retry.c)
+	$(CC) $(OPT) $^ -o $@ -lm
+
+$(BUILD)/test_sticky_position: $(call OBJ,tests/test_sticky_position.c $(CORE_SRC) $(JS_SRC))
+	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)

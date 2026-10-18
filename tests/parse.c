@@ -4,7 +4,7 @@ int main(int argc, char **argv) {
     dom_init(); net_init(2);
     const char *u = argv[1];
     NetResponse *r;
-    if (strstr(u, "://")) { NetRequest *rq = net_request_new("GET", u); r = net_fetch_sync(rq); }
+    if (strstr(u, "://")) { NetRequest *rq = net_request_new("GET", u); r = net_fetch_sync(rq); net_request_free(rq); }
     else { r = xcalloc(1, sizeof *r); r->body = read_file(u, &r->body_len); }
     double t = now_ms();
     Document *d = doc_new(u);

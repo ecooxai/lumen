@@ -1,5 +1,6 @@
 /* UIKit implementation of the macui.h platform hooks for iOS / iPadOS (and the same build on Apple Silicon Macs). */
 #import <UIKit/UIKit.h>
+#import <QuartzCore/CAMetalLayer.h>
 #include "macui.h"
 
 static Uint32 g_menu_ev;
@@ -50,6 +51,39 @@ static int run_modal(UIViewController *vc, UIAlertController *ac, float x, float
 
 void mac_style_window(SDL_Window *w) { g_win = w; }
 void mac_install_menu(Uint32 ev) { g_menu_ev = ev; }
+
+static NSString *view_geometry(UIView *v) {
+    if (!v) return @"none";
+    CALayer *p = v.layer.presentationLayer;
+    return [NSString stringWithFormat:@"%@ frame=%@ bounds=%@ transform=%@ scale=%g layerBounds=%@ presentationFrame=%@ presentationBounds=%@",
+        NSStringFromClass(v.class), NSStringFromCGRect(v.frame), NSStringFromCGRect(v.bounds), NSStringFromCGAffineTransform(v.transform),
+        (double)v.layer.contentsScale, NSStringFromCGRect(v.layer.bounds), p ? NSStringFromCGRect(p.frame) : @"none", p ? NSStringFromCGRect(p.bounds) : @"none"];
+}
+void ios_debug_geometry(SDL_Window *w, void *metal_view, const char *stage) {
+    if (!getenv("LUMEN_DEBUG_GEOMETRY")) return;
+    const char *profile = getenv("LUMEN_PROFILE_DIR");
+    if (!w || !profile || *profile != '/') return;
+    @autoreleasepool {
+        UIWindow *win = (__bridge UIWindow *)SDL_GetPointerProperty(SDL_GetWindowProperties(w), SDL_PROP_WINDOW_UIKIT_WINDOW_POINTER, NULL);
+        UIView *metal = (__bridge UIView *)metal_view;
+        CAMetalLayer *layer = [metal.layer isKindOfClass:CAMetalLayer.class] ? (CAMetalLayer *)metal.layer : nil;
+        int width = 0, height = 0, pw = 0, ph = 0;
+        SDL_GetWindowSize(w, &width, &height); SDL_GetWindowSizeInPixels(w, &pw, &ph);
+        SDL_Rect safe = {0}; SDL_GetWindowSafeArea(w, &safe);
+        NSString *value = [NSString stringWithFormat:@"stage=%s appState=%ld orientation=%ld transition=%d SDL=%dx%d pixels=%dx%d safe=%d,%d,%d,%d\nwindow: %@\nroot: %@\nmetal: %@ drawable=%@\n",
+            stage, (long)UIApplication.sharedApplication.applicationState, (long)win.windowScene.interfaceOrientation,
+            win.rootViewController.transitionCoordinator != nil, width, height, pw, ph, safe.x, safe.y, safe.w, safe.h,
+            view_geometry(win), view_geometry(win.rootViewController.view), view_geometry(metal), layer ? NSStringFromCGSize(layer.drawableSize) : @"none"];
+        static NSString *last;
+        static unsigned count;
+        if ([last isEqualToString:value] || count >= 160) return;
+        last = value; count++;
+        char path[1400]; int n = snprintf(path, sizeof path, "%s/native-geometry.log", profile);
+        if (n < 0 || (size_t)n >= sizeof path) return;
+        FILE *f = fopen(path, "a");
+        if (f) { fprintf(f, "t=%llu %s", (unsigned long long)SDL_GetTicks(), value.UTF8String); fclose(f); }
+    }
+}
 
 bool mac_prompt(const char *title, const char *init, char *out, size_t n) {
     UIViewController *vc = root_vc(g_win);

@@ -4,7 +4,9 @@ static HMap icache;
 static Image *load_url(const char *u) {
     if (!u || !*u) return NULL;
     Image **c = (Image **)hm_get(&icache, u); if (c) return *c;
-    NetResponse *r = net_fetch_sync(net_request_new("GET", u));
+    NetRequest *rq = net_request_new("GET", u);
+    NetResponse *r = net_fetch_sync(rq);
+    net_request_free(rq);
     Image *im = r && r->status == 200 ? image_decode((const uint8_t *)r->body, r->body_len) : NULL;
     Image **slot = xmalloc(sizeof *slot); *slot = im; hm_put(&icache, u, slot);
     return im;
@@ -17,7 +19,9 @@ int main(int argc, char **argv) {
     float W = argc > 3 ? (float)atof(argv[3]) : 1280, H = argc > 4 ? (float)atof(argv[4]) : 800, sy = argc > 5 ? (float)atof(argv[5]) : 0;
     dom_init(); net_init(4); font_init();
     double t0 = now_ms();
-    NetResponse *r = net_fetch_sync(net_request_new("GET", argv[1]));
+    NetRequest *rq = net_request_new("GET", argv[1]);
+    NetResponse *r = net_fetch_sync(rq);
+    net_request_free(rq);
     Document *d = doc_new(r->url);
     html_parse(d, r->body, r->body_len);
     StyleEngine *e = style_engine_new(d);
@@ -25,7 +29,7 @@ int main(int argc, char **argv) {
     for (Node *n = d->node.first; n; n = node_next_in_tree(n, &d->node)) {
         if (n->type != NODE_ELEMENT) continue;
         if (n->tag == A_style) { char *t = node_text_content(n); StyleSheet *s = css_parse_sheet(t, strlen(t), d->url, 1, &e->media); s->owner = n; style_engine_add_sheet(e, s); free(t); }
-        else if (n->tag == A_link && node_attr(n, "rel") && strstr(node_attr(n, "rel"), "stylesheet") && node_attr(n, "href")) { char *u = url_join(d->url, node_attr(n, "href")); NetResponse *cr = net_fetch_sync(net_request_new("GET", u)); StyleSheet *s = css_parse_sheet(cr->body, cr->body_len, cr->url, 1, &e->media); s->owner = n; style_engine_add_sheet(e, s); free(u); }
+        else if (n->tag == A_link && node_attr(n, "rel") && strstr(node_attr(n, "rel"), "stylesheet") && node_attr(n, "href")) { char *u = url_join(d->url, node_attr(n, "href")); NetRequest *crq = net_request_new("GET", u); NetResponse *cr = net_fetch_sync(crq); net_request_free(crq); StyleSheet *s = css_parse_sheet(cr->body, cr->body_len, cr->url, 1, &e->media); s->owner = n; style_engine_add_sheet(e, s); free(u); }
     }
     paint_image_hook = node_img; paint_url_image_hook = load_url; layout_image_size_hook = img_size;
     double t1 = now_ms();

@@ -41,10 +41,12 @@ struct NetRequest {
     void *ud;
     uint64_t id;
     char *site_for_cookies;   /* top-level document URL; NULL = same-site (top-level navigation) */
+    char *credentials_origin; /* Fetch/XHR same-origin credentials: canonical initiating origin, NULL = include */
     char *no_cors_origin;     /* initiating document URL of a no-cors subresource load: enables CORP checks */
     bool coep_require_corp;   /* initiator has COEP require-corp: cross-origin responses need CORP */
     char *csp, *csp_doc;      /* enforced CSP of the initiating document, checked on every hop against csp_dir */
     const char *csp_dir;
+    int active_socket;       /* private to net: protected by the I/O ownership mutex; -1 when detached */
 };
 
 void net_init(int threads);
@@ -52,13 +54,18 @@ void net_shutdown(void);
 NetRequest *net_request_new(const char *method, const char *url);
 /* request made on behalf of a page whose top-level document is top_url (drives SameSite cookies) */
 NetRequest *net_request_ctx(const char *method, const char *url, const char *top_url);
+void net_request_free(NetRequest *req); /* only for requests not transferred to net_fetch */
+/* Thread-safe cancellation of a caller-owned request, including blocked socket
+   I/O. Keep req alive until both cancellation and net_fetch_sync have returned.
+   The system DNS resolver itself is not cancellable. Use net_cancel for async. */
+void net_request_cancel(NetRequest *req);
 /* registrable-domain ("site") comparison of two hosts; approximate eTLD+1 without the full public suffix list */
 bool net_same_site(const char *host_a, const char *host_b);
 bool net_url_same_site(const char *url_a, const char *url_b);
 /* Asynchronous: callbacks fire on the thread calling net_poll(). Ownership of req moves to net. */
 uint64_t net_fetch(NetRequest *req);
 void net_cancel(uint64_t id);
-/* Synchronous fetch (blocking). Caller frees response with net_response_free. */
+/* Synchronous fetch (blocking). Caller retains req; frees both request and response. */
 NetResponse *net_fetch_sync(NetRequest *req);
 void net_response_free(NetResponse *r);
 /* Dispatch completed requests. Returns number dispatched. */

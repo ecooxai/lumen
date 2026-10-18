@@ -138,11 +138,13 @@ static void watchdog_run(JsCtx *c) {
     }
 }
 
+static void report_rejections(JsCtx *c);
 static void settle(JsCtx *c) {
     if (c->depth) return;
     js_enter(c);
     c->iso->PerformMicrotaskCheckpoint();
     js_leave(c);
+    report_rejections(c);
 }
 
 void jreport(JsCtx *c, v8::Local<v8::Value> exc, v8::Local<v8::Message> msg) {
@@ -323,6 +325,7 @@ static bool mod_fetch(const std::string &u, const std::string &ref, std::string 
     NetRequest *rq = net_request_new("GET", u.c_str());
     if (char *rv = net_referrer(ref.c_str(), u.c_str(), nullptr)) { headers_add(&rq->headers, "Referer", rv); free(rv); }
     NetResponse *r = net_fetch_sync(rq);
+    net_request_free(rq);
     bool ok = r && r->status >= 200 && r->status < 300;
     if (ok) out.assign(r->body ? r->body : "", r->body_len);
     if (r) net_response_free(r);
@@ -468,23 +471,65 @@ static void mod_report(const v8::FunctionCallbackInfo<v8::Value> &a) {
 }
 
 static void on_reject(v8::PromiseRejectMessage m) {
-    if (m.GetEvent() != v8::kPromiseRejectWithNoHandler || g_log_level > 2) return;
+    const auto event = m.GetEvent();
+    if (event != v8::kPromiseHandlerAddedAfterReject && (event != v8::kPromiseRejectWithNoHandler || g_log_level > 2)) return;
     v8::Isolate *iso = v8::Isolate::GetCurrent();
-    v8::Local<v8::Value> v = m.GetValue();
-    std::string s = jcstr(iso, v);
-    if (v->IsObject()) {
-        v8::Local<v8::Value> st;
-        if (v.As<v8::Object>()->Get(iso->GetCurrentContext(), jstr(iso, "stack")).ToLocal(&st) && st->IsString()) s = jcstr(iso, st);
+    v8::Local<v8::Promise> p = m.GetPromise();
+    v8::Local<v8::Context> ctx;
+    if (!p->GetCreationContext(iso).ToLocal(&ctx) || ctx->GetNumberOfEmbedderDataFields() < 2) return;
+    JsCtx *c = ctx_of(ctx);
+    if (!c || c->dead) return;
+    if (event == v8::kPromiseHandlerAddedAfterReject && c->rejections.empty()) return;
+    int key = p->GetIdentityHash();
+    if (event == v8::kPromiseHandlerAddedAfterReject) {
+        auto range = c->rejections.equal_range(key);
+        for (auto it = range.first; it != range.second; ++it) {
+            if (it->second.promise.Get(iso) == p) { c->rejections.erase(it); break; }
+        }
+    } else {
+        c->rejections.emplace(key, PromiseRejection{v8::Global<v8::Promise>(iso, p), c->next_rejection++});
+        while (c->parent) c = c->parent;
+        c->rejections_pending = true;
     }
-    if (!v->IsObject() || s.find('\n') == std::string::npos) {
-        v8::Local<v8::StackTrace> tr = v8::StackTrace::CurrentStackTrace(iso, 4);
-        for (int i = 0; i < tr->GetFrameCount(); i++) {
-            v8::Local<v8::StackFrame> f = tr->GetFrame(iso, i);
-            v8::Local<v8::String> fn = f->GetFunctionName(), sn = f->GetScriptName();
-            s += "\n    at " + (fn.IsEmpty() ? std::string("?") : jcstr(iso, fn)) + " (" + (sn.IsEmpty() ? std::string("?") : jcstr(iso, sn)) + ":" + std::to_string(f->GetLineNumber()) + ":" + std::to_string(f->GetColumn()) + ")";
+}
+
+static void report_rejections(JsCtx *c) {
+    /* Frames share their parent's isolate and microtask queue. A nested frame
+     * call must not report while a parent task can still attach a handler. */
+    while (c->parent) c = c->parent;
+    if (!c->rejections_pending) return;
+    std::vector<JsCtx *> contexts{c};
+    for (size_t i = 0; i < contexts.size(); ++i) {
+        if (contexts[i]->depth) return;
+        contexts.insert(contexts.end(), contexts[i]->kids.begin(), contexts[i]->kids.end());
+    }
+    c->rejections_pending = false;
+    for (JsCtx *owner : contexts) {
+        if (owner->dead || g_log_level > 2) { owner->rejections.clear(); continue; }
+        if (owner->rejections.empty()) continue;
+        JS_ENTER(owner);
+        std::vector<PromiseRejection> pending;
+        pending.reserve(owner->rejections.size());
+        for (auto &entry : owner->rejections) pending.push_back(std::move(entry.second));
+        owner->rejections.clear();
+        std::sort(pending.begin(), pending.end(), [](const auto &a, const auto &b) { return a.order < b.order; });
+        for (auto &entry : pending) {
+            v8::Local<v8::Promise> p = entry.promise.Get(iso);
+            if (p->HasHandler() || p->State() != v8::Promise::kRejected) continue;
+            v8::Local<v8::Value> reason = p->Result();
+            v8::Local<v8::String> detail;
+            v8::TryCatch tc(iso);
+            std::string s = reason->ToDetailString(ctx).ToLocal(&detail) ? jcstr(iso, detail) : "<unprintable rejection>";
+            /* Do not invoke user-defined toString/stack getters for a log.
+             * Native Error objects can expose an already-recorded V8 trace. */
+            v8::Local<v8::StackTrace> trace = v8::Exception::GetStackTrace(reason);
+            if (!trace.IsEmpty()) for (int i = 0; i < std::min(trace->GetFrameCount(), 4); ++i) {
+                v8::Local<v8::StackFrame> f = trace->GetFrame(iso, i);
+                s += "\n    at " + jcstr(iso, f->GetFunctionName()) + " (" + jcstr(iso, f->GetScriptName()) + ":" + std::to_string(f->GetLineNumber()) + ":" + std::to_string(f->GetColumn()) + ")";
+            }
+            fprintf(stderr, "[js warn] Unhandled promise rejection: %.900s\n", s.c_str());
         }
     }
-    fprintf(stderr, "[js warn] Unhandled promise rejection: %.900s\n", s.c_str());
 }
 
 extern "C" {
@@ -661,7 +706,7 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
         int line = tc.Message().IsEmpty() ? 0 : tc.Message()->GetLineNumber(ctx).FromMaybe(0);
         fprintf(stderr, "lumen: JS prelude failed (line %d): %s\n", line, m.c_str());
     }
-    iso->PerformMicrotaskCheckpoint();
+    settle(c);
     if (const char *to = getenv("LUMEN_JS_TIMEOUT_MS")) g_js_timeout_ms = atof(to);
     if (g_js_timeout_ms > 0 && !parent) c->watchdog = std::thread(watchdog_run, c);
     return c;
@@ -750,6 +795,7 @@ void js_free(JsCtx *c) {
         for (auto &kv : c->fetches) { net_cancel(kv.first); kv.second->c = nullptr; kv.second->cb.Reset(); kv.second->head.Reset(); kv.second->chunk.Reset(); }
         c->fetches.clear(); for (auto &kv : c->sockets) { net_ws_release(kv.second->ws); kv.second->cb.Reset(); delete kv.second; } c->sockets.clear();
         c->timers.clear();
+        c->rejections.clear();
         c->rafs.clear();
         c->anims.clear();
         c->protos.clear();

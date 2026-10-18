@@ -1,0 +1,95 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Storage enumeration regression</title>
+<body><pre id="results">Running storage checks</pre>
+<script>
+(function () {
+  let passed = 0, failed = 0;
+  const check = (name, run) => {
+    let ok = false, detail = '';
+    try { ok = !!run(); } catch (e) { detail = ': ' + e; }
+    if (ok) passed++; else failed++;
+    console.log('STORAGE-' + (ok ? 'PASS ' : 'FAIL ') + name + detail);
+  };
+  const sameKeys = (actual, expected) => JSON.stringify(actual.slice().sort()) === JSON.stringify(expected.slice().sort());
+  for (const name of ['localStorage', 'sessionStorage']) {
+    const storage = window[name], saved = [];
+    for (let i = 0; i < storage.length; i++) {
+      const key = storage.key(i);
+      saved.push([key, storage.getItem(key)]);
+    }
+    try {
+      storage.clear();
+      check(name + ' empty Object.keys', () => Object.keys(storage).length === 0);
+      check(name + ' empty JSON', () => JSON.stringify(storage) === '{}');
+      storage.setItem('alpha', 'one');
+      storage['space key'] = 'two';
+      storage.setItem('', 'empty-key');
+      storage.setItem('2', 'numeric-key');
+      const expectedKeys = ['alpha', 'space key', '', '2'];
+      check(name + ' Object.keys exposes all stored keys only', () => sameKeys(Object.keys(storage), expectedKeys));
+      check(name + ' Reflect.ownKeys exposes all stored keys only', () => sameKeys(Reflect.ownKeys(storage), expectedKeys));
+      check(name + ' for-in enumerates stored keys only', () => {
+        const keys = []; for (const key in storage) keys.push(key);
+        return sameKeys(keys, expectedKeys);
+      });
+      check(name + ' JSON contains stored string values', () => {
+        const copy = JSON.parse(JSON.stringify(storage));
+        return sameKeys(Object.keys(copy), expectedKeys) && copy.alpha === 'one' &&
+          copy['space key'] === 'two' && copy[''] === 'empty-key' && copy['2'] === 'numeric-key';
+      });
+      check(name + ' Object.assign copies stored values', () => {
+        const copy = Object.assign({}, storage);
+        return sameKeys(Object.keys(copy), expectedKeys) && copy.alpha === 'one' && copy['space key'] === 'two';
+      });
+      check(name + ' property descriptors describe enumerable stored values', () => {
+        const all = Object.getOwnPropertyDescriptors(storage), d = all.alpha;
+        return sameKeys(Object.keys(all), expectedKeys) && d.value === 'one' &&
+          d.enumerable && d.configurable && d.writable && !('get' in d) && !('set' in d);
+      });
+      check(name + ' absent stored key has no descriptor', () => Object.getOwnPropertyDescriptor(storage, 'absent') === undefined);
+      check(name + ' enumeration leaves length and key lookup intact', () =>
+        storage.length === 4 && sameKeys(Array.from({ length: storage.length }, (_, i) => storage.key(i)), expectedKeys) && storage.getItem('alpha') === 'one');
+      storage.setItem('alpha', 'updated');
+      check(name + ' update after enumeration keeps one entry', () => storage.length === 4 && Object.assign({}, storage).alpha === 'updated');
+      storage.removeItem('alpha');
+      check(name + ' removeItem removes the enumerated key and descriptor', () =>
+        sameKeys(Object.keys(storage), ['space key', '', '2']) && storage.getItem('alpha') === null && Object.getOwnPropertyDescriptor(storage, 'alpha') === undefined);
+      delete storage['space key'];
+      check(name + ' delete removes an enumerated property', () => sameKeys(Object.keys(storage), ['', '2']) && storage.getItem('space key') === null);
+      storage.clear();
+      check(name + ' clear removes all enumerated values', () => storage.length === 0 && Object.keys(storage).length === 0 && JSON.stringify(storage) === '{}');
+
+      // Exercise quota accounting after enumeration, removal, and clear. Lumen's
+      // storage budget is 5 Mi characters, including each entry's key.
+      const budget = 5242880;
+      storage.setItem('q', 'x'.repeat(budget - 1));
+      check(name + ' full quota remains enumerable', () => sameKeys(Object.keys(storage), ['q']) && storage.getItem('q').length === budget - 1);
+      check(name + ' quota overflow is atomic after enumeration', () => {
+        let error = null;
+        try { storage.setItem('overflow', 'x'); } catch (e) { error = e; }
+        return error && error.name === 'QuotaExceededError' && storage.length === 1 &&
+          storage.getItem('overflow') === null && storage.getItem('q').length === budget - 1;
+      });
+      storage.setItem('q', 'short');
+      storage.setItem('after-shrink', 'allowed');
+      check(name + ' replacing an enumerated value releases quota', () =>
+        sameKeys(Object.keys(storage), ['q', 'after-shrink']) && storage.getItem('after-shrink') === 'allowed');
+      storage.clear();
+      storage.setItem('r', 'y'.repeat(budget - 1));
+      check(name + ' clear resets quota after enumeration', () => storage.length === 1 && sameKeys(Object.keys(storage), ['r']));
+      storage.removeItem('r');
+      storage.setItem('s', 'z'.repeat(budget - 1));
+      check(name + ' removeItem releases full quota after enumeration', () => storage.length === 1 && sameKeys(Object.keys(storage), ['s']));
+    } catch (e) {
+      check(name + ' setup or mutation: ' + e, () => false);
+    } finally {
+      storage.clear();
+      for (const [key, value] of saved) storage.setItem(key, value);
+    }
+  }
+  console.log('STORAGE-DONE passed=' + passed + ' failed=' + failed);
+  document.getElementById('results').textContent = passed + ' passed, ' + failed + ' failed';
+  document.documentElement.setAttribute('data-storage-done', '1');
+})();
+</script>

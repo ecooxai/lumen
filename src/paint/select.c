@@ -10,11 +10,15 @@ static SelR *g_r; static int g_nr, g_cr;
 static const Layout *g_rl;
 
 typedef void (*WalkFn)(Box *b, float dx, float dy, void *ud);
-static void walk(Box *b, float dx, float dy, float psy, WalkFn fn, void *ud) {
-    if (b->fixed) dy += psy;
+static void walk(Layout *L, Box *b, float dx, float dy, float psy, WalkFn fn, void *ud) {
+    if (b->fixed) { dx = 0; dy = psy; }
+    float sx, sy; box_sticky_offset(b, L, &sx, &sy); dx += sx; dy += sy;
+    if (b->kind != BX_TEXT && b->kind != BX_BR && b->st && b->st->has_transform) {
+        css_transform_translation(b->st, b->w, b->h, &sx, &sy); dx += sx; dy += sy;
+    }
     if (b->scroller && b->node) { dx -= b->node->scroll_x; dy -= box_scroll_y(b); }
     fn(b, dx, dy, ud);
-    for (Box *c = b->first; c; c = c->next) walk(c, dx, dy, psy, fn, ud);
+    for (Box *c = b->first; c; c = c->next) walk(L, c, dx, dy, psy, fn, ud);
 }
 
 static bool editable(const Node *n) {
@@ -59,8 +63,8 @@ static void hit_fn(Box *b, float dx, float dy, void *ud) {
 bool tsel_point(Layout *L, float x, float y, float psy, Box *scope, Node **n, int *off) {
     if (!L || !L->root) return false;
     Hit h = { x, y, scope, 0, 1e30f, NULL, 0 };
-    walk(L->root, 0, 0, psy, hit_fn, &h);
-    if (!h.bb && scope) { h.scope = NULL; walk(L->root, 0, 0, psy, hit_fn, &h); }
+    walk(L, L->root, 0, 0, psy, hit_fn, &h);
+    if (!h.bb && scope) { h.scope = NULL; walk(L, L->root, 0, 0, psy, hit_fn, &h); }
     if (!h.bb) return false;
     *n = h.bb->node; *off = h.off;
     return true;
@@ -92,7 +96,7 @@ void tsel_prepare(Layout *L) {
     g_nr = 0; g_rl = L;
     if (!g_tsel.on || !L || !L->root || g_tsel.L != L) return;
     Ord o; memset(&o, 0, sizeof o);
-    walk(L->root, 0, 0, 0, ord_fn, &o);
+    walk(L, L->root, 0, 0, 0, ord_fn, &o);
     if (o.phase != 2) g_nr = 0;   /* an end vanished from the tree: draw nothing */
 }
 
@@ -129,7 +133,7 @@ static bool wordch(unsigned char c) { return c >= 0x80 || (c >= '0' && c <= '9')
 
 void tsel_word(Layout *L, Node *n, int off) {
     Find f = { n, NULL, NULL, NULL, NULL };
-    walk(L->root, 0, 0, 0, find_fn, &f);
+    walk(L, L->root, 0, 0, 0, find_fn, &f);
     if (!f.b) return;
     const char *s = f.b->text; int len = f.b->text_len, a = LMIN(off, len), e = a;
     if (a < len && wordch((unsigned char)s[a])) { while (a > 0 && wordch((unsigned char)s[a - 1])) a--; while (e < len && wordch((unsigned char)s[e])) e++; }
@@ -140,10 +144,10 @@ void tsel_word(Layout *L, Node *n, int off) {
 
 void tsel_block(Layout *L, Node *n) {
     Find f = { n, NULL, NULL, NULL, NULL };
-    walk(L->root, 0, 0, 0, find_fn, &f);
+    walk(L, L->root, 0, 0, 0, find_fn, &f);
     if (!f.b) return;
     Find g = { NULL, NULL, blk_of(f.b), NULL, NULL };
-    walk(L->root, 0, 0, 0, find_fn, &g);
+    walk(L, L->root, 0, 0, 0, find_fn, &g);
     if (!g.first) return;
     g_tsel = (TextSel){ true, L, g.first->node, g.last->node, 0, g.last->text_len };
 }
@@ -151,7 +155,7 @@ void tsel_block(Layout *L, Node *n) {
 void tsel_all(Layout *L) {
     if (!L || !L->root) return;
     Find g = { NULL, NULL, NULL, NULL, NULL };
-    walk(L->root, 0, 0, 0, find_fn, &g);
+    walk(L, L->root, 0, 0, 0, find_fn, &g);
     if (!g.first) return;
     g_tsel = (TextSel){ true, L, g.first->node, g.last->node, 0, g.last->text_len };
 }

@@ -72,6 +72,7 @@ typedef struct Document {
     uint64_t layout_version;      /* bumped on mutations that can change layout beyond computed style */
     HMap id_cache; uint64_t id_cache_ver; bool id_cache_ok; /* id -> first element, rebuilt per dom_version */
     void *stylesheets;            /* css engine data */
+    struct Layout *layout;        /* non-owning current layout, cleared before layout destruction */
     struct Node *focus;
     struct Node *sel[2]; int selo[2]; bool sel_back; uint64_t sel_ver;   /* JS selection start/end (text offsets in bytes) */
     void *browser;                /* owning page */

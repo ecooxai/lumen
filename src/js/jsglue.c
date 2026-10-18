@@ -37,9 +37,11 @@ bool jsg_vrect(Node *n, float r[4]) {
     r[0] = b->x; r[1] = b->y; r[2] = b->w; r[3] = b->h;
     for (struct Box *a = b; a; ) {
         const ComputedStyle *s = a->st;
+        float sticky_x, sticky_y; box_sticky_offset(a, n->doc ? n->doc->layout : NULL, &sticky_x, &sticky_y);
+        r[0] += sticky_x; r[1] += sticky_y;
         if (s && s->has_transform) {
-            r[0] += s->transform[4] + s->translate_pending[0].pct * a->w / 100;
-            r[1] += s->transform[5] + s->translate_pending[1].pct * a->h / 100;
+            float tx, ty; css_transform_translation(s, a->w, a->h, &tx, &ty);
+            r[0] += tx; r[1] += ty;
         }
         if (a->fixed) break;
         struct Box *up = a->abs && a->cb ? a->cb : a->parent;
@@ -135,7 +137,10 @@ static void style_change(Node *n, const ComputedStyle *o, const ComputedStyle *s
     if (!o || !vis || o->display == D_NONE || s->tr_dur + s->tr_delay <= 0) return;
     struct { const char *p; bool ch; } c[] = {
         { "opacity", o->opacity != s->opacity },
-        { "transform", o->has_transform != s->has_transform || memcmp(o->transform, s->transform, sizeof s->transform) != 0 },
+        { "transform", css_transform_changed(o, s, "transform") },
+        { "translate", css_transform_changed(o, s, "translate") },
+        { "rotate", css_transform_changed(o, s, "rotate") },
+        { "scale", css_transform_changed(o, s, "scale") },
         { "color", o->color != s->color }, { "background-color", o->bg_color != s->bg_color },
         { "visibility", o->visibility != s->visibility },
         { "width", len_ne(o->width, s->width) }, { "height", len_ne(o->height, s->height) },

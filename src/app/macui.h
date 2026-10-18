@@ -8,6 +8,10 @@
 
 /* Transparent, full-size title bar so the tab strip sits beside the traffic lights. */
 void mac_style_window(SDL_Window *w);
+#ifdef LUMEN_IOS
+/* Opt-in view/layer diagnostics, recorded only in an explicit test profile. */
+void ios_debug_geometry(SDL_Window *w, void *metal_view, const char *stage);
+#endif
 /* Adds the Workspace menu; selections arrive as SDL user events of type `ev` with `user.code` = MENU_*. */
 void mac_install_menu(Uint32 ev);
 /* Modal text prompt; false if cancelled or empty. */

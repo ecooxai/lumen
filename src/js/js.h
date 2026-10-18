@@ -33,6 +33,11 @@ typedef struct JsHost {
 } JsHost;
 
 void js_global_init(const char *argv0);
+/* Main thread, process shutdown only: stop new workers and wait for all worker-owned cleanup.
+ * Call after freeing page contexts, before destroying other subsystems. A false
+ * result means DNS/native work exceeded the limit; do not enter static teardown.
+ * Ordinary js_free/Worker.terminate remain asynchronous. */
+bool js_workers_shutdown(unsigned timeout_ms);
 JsCtx *js_new(Document *d, const JsHost *host);
 void js_mem_stats(size_t *heap, size_t *external);
 void js_set_background(JsCtx *c, bool bg);

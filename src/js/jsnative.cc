@@ -512,11 +512,14 @@ FN(raf) {
 FN(cancelRaf) { CTX; c->rafs.erase((uint32_t)NUM(0)); }
 FN(now) { CTX; RET(now_ms() - c->t0); }
 
-static NetRequest *mkreq(JsCtx *c, const FCI &a) {
+static NetRequest *mkreq(JsCtx *c, const FCI &a, int credentials_arg) {
     v8::Isolate *iso = c->iso;
     v8::Local<v8::Context> ctx = iso->GetCurrentContext();
     std::string m = S(0), u = S(1);
     NetRequest *rq = net_request_ctx(m.c_str(), u.c_str(), js_top_url(c));
+    std::string credentials = a.Length() > credentials_arg ? S(credentials_arg) : "same-origin";
+    rq->no_cookies = credentials == "omit";
+    if (!rq->no_cookies && credentials != "include") rq->credentials_origin = strdup(ctx_origin(c).c_str());
     if (c->doc && c->doc->csp) { rq->csp = strdup(c->doc->csp); rq->csp_doc = strdup(c->doc->url ? c->doc->url : ""); rq->csp_dir = "connect-src"; }   /* fetch / XHR */
     bool referer = false;
     if (a[2]->IsArray()) {
@@ -686,7 +689,7 @@ FN(fetch) {
     if (!a[4]->IsFunction()) return;
     Fetch *f = new Fetch{ c, 0, {}, nullptr };
     f->cb.Reset(iso, a[4].As<v8::Function>());
-    NetRequest *rq = mkreq(c, a);
+    NetRequest *rq = mkreq(c, a, 7);
     if (a.Length() > 6 && a[5]->IsFunction() && a[6]->IsFunction()) {
         f->head.Reset(iso, a[5].As<v8::Function>()); f->chunk.Reset(iso, a[6].As<v8::Function>());
         rq->head = fetch_head; rq->chunk = fetch_chunk;
@@ -738,7 +741,9 @@ FN(wsClose) {
 }
 FN(fetchSync) {
     CTX;
-    NetResponse *r = net_fetch_sync(mkreq(c, a));
+    NetRequest *rq = mkreq(c, a, 4);
+    NetResponse *r = net_fetch_sync(rq);
+    net_request_free(rq);
     v8::Local<v8::Value> out[6];
     resp_args(iso, r, out);
     if (r) net_response_free(r);

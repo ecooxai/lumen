@@ -4,6 +4,7 @@ int main(int argc, char **argv) {
     dom_init(); net_init(4);
     NetRequest *rq = net_request_new("GET", argv[1]);
     NetResponse *r = net_fetch_sync(rq);
+    net_request_free(rq);
     Document *d = doc_new(r->url);
     double t0 = now_ms();
     html_parse(d, r->body, r->body_len);
@@ -14,7 +15,7 @@ int main(int argc, char **argv) {
         if (n->type != NODE_ELEMENT) continue;
         if (n->tag == A_style) { char *t = node_text_content(n); StyleSheet *s = css_parse_sheet(t, strlen(t), d->url, 1, &e->media); s->owner = n; style_engine_add_sheet(e, s); css_bytes += strlen(t); free(t); nsheets++; }
         else if (n->tag == A_link && node_attr(n, "rel") && strstr(node_attr(n, "rel"), "stylesheet") && node_attr(n, "href")) {
-            char *u = url_join(d->url, node_attr(n, "href")); NetRequest *q = net_request_new("GET", u); NetResponse *cr = net_fetch_sync(q);
+            char *u = url_join(d->url, node_attr(n, "href")); NetRequest *q = net_request_new("GET", u); NetResponse *cr = net_fetch_sync(q); net_request_free(q);
             StyleSheet *s = css_parse_sheet(cr->body, cr->body_len, cr->url, 1, &e->media); s->owner = n; style_engine_add_sheet(e, s); css_bytes += cr->body_len; nsheets++; free(u);
         }
     }

@@ -64,6 +64,102 @@ static void tr(Box *root, Box *b, float dx, float dy) {
 }
 void box_translate(Box *b, float dx, float dy) { if (dx || dy) tr(b, b, dx, dy); }
 
+/* ---------------- sticky visual offsets ---------------- */
+bool box_is_sticky(const Box *b) {
+    return b && b->st && b->st->position == P_STICKY && b->kind != BX_TEXT && b->kind != BX_BR &&
+        !(b->anon && b->parent && b->st == b->parent->st);
+}
+typedef struct StickyFrame {
+    float shift[2], port[2], size[2], cb_start[2], cb_end[2], delta[2];
+    const Box *cb;
+} StickyFrame;
+static float sticky_axis(float pos, float size, float port, float span, float cb_start, float cb_end,
+                         Length lo, Length hi, float margin_lo, float margin_hi, bool reverse) {
+    bool has_lo = lo.kind == LK_LEN, has_hi = hi.kind == LK_LEN;
+    if (!has_lo && !has_hi) return 0;
+    float start = has_lo ? res(lo, span) : 0, end = has_hi ? res(hi, span) : 0;
+    /* An oversized sticky box keeps its writing-mode start edge. The other
+       inset may become negative so the view rectangle can contain the box. */
+    if (span - start - end < size) {
+        if (reverse) start = span - end - size;
+        else end = span - start - size;
+    }
+    float ml = LMIN(margin_lo, pos - margin_lo - cb_start);
+    float mh = LMIN(margin_hi, cb_end - (pos + size + margin_hi));
+    float delta = 0;
+    for (int pass = 0; pass < 2; pass++) {
+        bool low = reverse ? pass == 0 : pass == 1;
+        if (low && has_lo) {
+            float wanted = LMAX(0, port + start - (pos + delta));
+            float room = LMAX(0, cb_end - (pos + delta + size + mh));
+            delta += LMIN(wanted, room);
+        } else if (!low && has_hi) {
+            float wanted = LMIN(0, port + span - end - (pos + delta + size));
+            float room = LMIN(0, cb_start - (pos + delta - ml));
+            delta += LMAX(wanted, room);
+        }
+    }
+    return delta;
+}
+static bool sticky_containing_box(const Box *b) {
+    if (b->kind == BX_INLINE || b->kind == BX_TEXT || b->kind == BX_BR) return false;
+    if (b->anon && b->parent && b->st == b->parent->st) return false;
+    int d = b->st ? b->st->display : D_BLOCK;
+    return d != D_TABLE_ROW && d != D_TABLE_ROW_GROUP && d != D_TABLE_HEADER_GROUP && d != D_TABLE_FOOTER_GROUP;
+}
+/* One top-down walk accumulates ancestor sticky shifts and scrolling. CSS
+   transforms are deliberately excluded: they apply after sticky positioning. */
+static void sticky_frame(const Box *b, const Layout *L, StickyFrame *f) {
+    const Box *up = b->abs && b->cb ? b->cb : b->parent;
+    if (up) sticky_frame(up, L, f);
+    else {
+        memset(f, 0, sizeof *f);
+        f->port[0] = L->scroll_x; f->port[1] = L->scroll_y;
+        f->size[0] = L->vw; f->size[1] = L->vh;
+        f->cb_end[0] = L->doc_w; f->cb_end[1] = L->doc_h;
+    }
+    if (b->fixed) {
+        f->shift[0] = f->shift[1] = f->port[0] = f->port[1] = 0;
+        f->size[0] = L->vw; f->size[1] = L->vh;
+    }
+    f->delta[0] = f->delta[1] = 0;
+    if (box_is_sticky(b)) {
+        const ComputedStyle *s = b->st, *cs = f->cb ? f->cb->st : NULL;
+        float x0 = f->cb_start[0], y0 = f->cb_start[1], x1 = f->cb_end[0], y1 = f->cb_end[1];
+        bool reverse_x = cs && (cs->writing_mode ? cs->writing_mode == 1 : cs->direction != 0);
+        bool reverse_y = cs && cs->writing_mode && cs->direction;
+        f->delta[0] = sticky_axis(b->x + f->shift[0], b->w, f->port[0], f->size[0], x0, x1,
+                                  s->inset[3], s->inset[1], b->m[3], b->m[1], reverse_x);
+        f->delta[1] = sticky_axis(b->y + f->shift[1], b->h, f->port[1], f->size[1], y0, y1,
+                                  s->inset[0], s->inset[2], b->m[0], b->m[2], reverse_y);
+        f->shift[0] += f->delta[0]; f->shift[1] += f->delta[1];
+    }
+    if (b->node && box_scrollable_x(b)) {
+        f->port[0] = b->x + f->shift[0] + b->b[3]; f->size[0] = LMAX(0, b->w - b->b[3] - b->b[1]);
+        f->shift[0] -= b->node->scroll_x;
+    }
+    if (b->node && box_scrollable_y(b)) {
+        f->port[1] = b->y + f->shift[1] + b->b[0]; f->size[1] = LMAX(0, b->h - b->b[0] - b->b[2]);
+        f->shift[1] -= box_scroll_y(b);
+    }
+    if (sticky_containing_box(b)) {
+        /* Match browser sticky containment: the containing box constrains
+           movement, including for items whose grid area is smaller. */
+        f->cb = b; float x = b->x + f->shift[0], y = b->y + f->shift[1];
+        f->cb_start[0] = x + b->b[3] + b->p[3];
+        f->cb_start[1] = y + b->b[0] + b->p[0];
+        float w = box_scrollable_x(b) ? LMAX(b->w, b->scroll_w) : b->w;
+        float h = box_scrollable_y(b) ? LMAX(b->h, b->scroll_h) : b->h;
+        f->cb_end[0] = x + w - b->b[1] - b->p[1];
+        f->cb_end[1] = y + h - b->b[2] - b->p[2];
+    }
+}
+void box_sticky_offset(const Box *b, const Layout *L, float *dx, float *dy) {
+    *dx = *dy = 0;
+    if (!L || !box_is_sticky(b)) return;
+    StickyFrame frame; sticky_frame(b, L, &frame); *dx = frame.delta[0]; *dy = frame.delta[1];
+}
+
 /* ---------------- absolute positioning ---------------- */
 void add_abs(Layout *L, Box *c) {
     Box *cb = L->root;
@@ -278,10 +374,10 @@ static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float 
 /* ---------------- relative offsets + extents ---------------- */
 static void post(Layout *L, Box *b, float cbw, float cbh, float clipx, float clipy) {
     const ComputedStyle *s = b->st;
-    if (s && (s->position == P_RELATIVE || s->position == P_STICKY) && b->node) {
+    if (s && s->position == P_RELATIVE && b->node) {
         float dx = 0, dy = 0;
         if (s->inset[3].kind == LK_LEN) dx = res(s->inset[3], cbw); else if (s->inset[1].kind == LK_LEN) dx = -res(s->inset[1], cbw);
-        if (s->position == P_RELATIVE) { if (s->inset[0].kind == LK_LEN) dy = res(s->inset[0], cbh); else if (s->inset[2].kind == LK_LEN) dy = -res(s->inset[2], cbh); }
+        if (s->inset[0].kind == LK_LEN) dy = res(s->inset[0], cbh); else if (s->inset[2].kind == LK_LEN) dy = -res(s->inset[2], cbh);
         box_translate(b, dx, dy);
     }
     float cw = b->w - hbp(b);
@@ -313,7 +409,11 @@ static void free_box_data(Box *b) {
 }
 
 Layout *layout_new(void) { Layout *L = xcalloc(1, sizeof *L); L->dpr = 2; return L; }
-void layout_free(Layout *L) { if (L->root) free_box_data(L->root); arena_reset(&L->arena); free(L->alog); free(L); }
+void layout_free(Layout *L) {
+    if (L->root) free_box_data(L->root);
+    if (L->doc && L->doc->layout == L) L->doc->layout = NULL;
+    arena_reset(&L->arena); free(L->alog); free(L);
+}
 
 static void track_containers(Document *d, Box *b) {
     for (; b; b = b->next) {
@@ -349,8 +449,10 @@ static void hot_report(Layout *L) {
 void layout_run(Layout *L, Document *d, float vw, float vh) {
     double t0 = now_ms();
     if (L->root) free_box_data(L->root);
+    if (L->doc && L->doc != d && L->doc->layout == L) L->doc->layout = NULL;
     arena_reset(&L->arena);
     L->doc = d; L->vw = vw; L->vh = vh; L->nboxes = 0; L->nalog = 0;
+    d->layout = L;
     L->root = build_box_tree(L, d);
     Box *r = L->root;
     r->x = r->y = 0; r->w = vw;
@@ -392,11 +494,12 @@ static void hit_hoist(Box *b, float ox, float oy, float vx, float vy, HitZ *out,
         if (!hit_sc(c) && !(c->scroller && c->node)) hit_hoist(c, cx, cy, vx, vy, out, n);
     }
 }
-static Box *hit(Box *b, float x, float y, float ox, float oy, float vx, float vy) {
+static Box *hit(Layout *L, Box *b, float x, float y, float ox, float oy, float vx, float vy) {
     bool hidden = b->st && b->st->visibility != VIS_VISIBLE;   /* not a target itself, but visible descendants are */
+    float sticky_x, sticky_y; box_sticky_offset(b, L, &sticky_x, &sticky_y);
+    ox -= sticky_x; oy -= sticky_y; /* viewport-fixed descendants reset this shift */
     if (b->st && b->st->has_transform) {   /* painted shifted by its translation (paint_stacking) */
-        float tx = b->st->transform[4] + b->st->translate_pending[0].pct * b->w / 100;
-        float ty = b->st->transform[5] + b->st->translate_pending[1].pct * b->h / 100;
+        float tx, ty; css_transform_translation(b->st, b->w, b->h, &tx, &ty);
         ox -= tx; oy -= ty; vx -= tx; vy -= ty;
     }
     float lx = x + ox, ly = y + oy;
@@ -415,7 +518,7 @@ static Box *hit(Box *b, float x, float y, float ox, float oy, float vx, float vy
         for (int i = 1; i < nz; i++) for (int j = i; j > 0 && z[j].b->st->z_index > z[j - 1].b->st->z_index; j--) { HitZ t = z[j]; z[j] = z[j - 1]; z[j - 1] = t; }
         for (int i = 0; i < nz; i++) {
             int e = i; while (e + 1 < nz && z[e + 1].b->st->z_index == z[i].b->st->z_index) e++;
-            for (int k = e; k >= i; k--) { Box *h = hit(z[k].b, x, y, z[k].ox, z[k].oy, vx, vy); if (h) return h; }
+            for (int k = e; k >= i; k--) { Box *h = hit(L, z[k].b, x, y, z[k].ox, z[k].oy, vx, vy); if (h) return h; }
             i = e;
         }
         done = 1;
@@ -425,7 +528,7 @@ static Box *hit(Box *b, float x, float y, float ox, float oy, float vx, float vy
         for (Box *c = b->last; c; c = c->prev) if (hit_layer(c) == 0 && c->st->z_index < done && c->st->z_index > best) best = c->st->z_index;
         if (best == INT32_MIN) break;
         for (Box *c = b->last; c; c = c->prev) if (hit_layer(c) == 0 && c->st->z_index == best) {
-            Box *h = hit(c, x, y, c->fixed ? vx : c->abs && b->scroller && !box_within(c->cb, b) ? ox : cox, c->fixed ? vy : c->abs && b->scroller && !box_within(c->cb, b) ? oy : coy, vx, vy);
+            Box *h = hit(L, c, x, y, c->fixed ? vx : c->abs && b->scroller && !box_within(c->cb, b) ? ox : cox, c->fixed ? vy : c->abs && b->scroller && !box_within(c->cb, b) ? oy : coy, vx, vy);
             if (h) return h;
         }
         done = best;
@@ -433,7 +536,7 @@ static Box *hit(Box *b, float x, float y, float ox, float oy, float vx, float vy
     for (int layer = 1; layer <= 3; layer++)
         for (Box *c = b->last; c; c = c->prev) {
             if (hit_layer(c) != layer) continue;
-            Box *h = hit(c, x, y, c->fixed ? vx : c->abs && b->scroller && !box_within(c->cb, b) ? ox : cox, c->fixed ? vy : c->abs && b->scroller && !box_within(c->cb, b) ? oy : coy, vx, vy);
+            Box *h = hit(L, c, x, y, c->fixed ? vx : c->abs && b->scroller && !box_within(c->cb, b) ? ox : cox, c->fixed ? vy : c->abs && b->scroller && !box_within(c->cb, b) ? oy : coy, vx, vy);
             if (h) return h;
         }
     if (b->kind == BX_INLINE) {
@@ -446,7 +549,7 @@ static Box *hit(Box *b, float x, float y, float ox, float oy, float vx, float vy
 }
 Box *layout_hit(Layout *L, float x, float y) {
     if (!L->root) return NULL;
-    Box *b = hit(L->root, x, y, 0, 0, -L->scroll_x, -L->scroll_y);
+    Box *b = hit(L, L->root, x, y, 0, 0, -L->scroll_x, -L->scroll_y);
     while (b && !b->node) b = b->parent;   /* anonymous boxes (e.g. a flex item's text run) belong to their parent's node */
     return b;
 }

@@ -1,0 +1,40 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Sticky grid scrollport compatibility</title>
+<style>
+  html, body { margin: 0; }
+  .port { width: 430px; height: 100px; overflow: auto hidden; }
+  .grid { display: grid; grid-template-columns: 100%; grid-template-rows: 100px; }
+  .grid > * { grid-row: 1; grid-column: 1; }
+  .main { position: sticky; inset: 0 auto auto 0; width: 430px; height: 100px; background: #123456; }
+  .aside { position: sticky; inset: 0 auto auto 0; width: 326.8px; height: 100px; transform: translateX(-100%); background: #654321; }
+  .wide { width: 756.8px; height: 1px; pointer-events: none; }
+  #separate-grid { width: 430px; grid-template-columns: 215px 215px; }
+  #separate-grid .main { width: 100px; }
+</style>
+<div id="direct" class="port grid"><div class="main"></div><div class="aside"></div><div class="wide"></div></div>
+<div id="separate" class="port"><div id="separate-grid" class="grid"><div class="main"></div></div><div class="wide"></div></div>
+<pre id="result">Waiting for layout</pre>
+<script>
+  requestAnimationFrame(() => {
+    const direct = document.getElementById('direct');
+    const separate = document.getElementById('separate');
+    direct.scrollLeft = 326.8;
+    separate.scrollLeft = 250;
+    requestAnimationFrame(() => {
+      const x = (node, port) => node.getBoundingClientRect().x - port.getBoundingClientRect().x;
+      const data = {
+        directScroll: direct.scrollLeft,
+        directWidth: direct.scrollWidth,
+        directMainX: x(direct.querySelector('.main'), direct),
+        directAsideX: x(direct.querySelector('.aside'), direct),
+        separateScroll: separate.scrollLeft,
+        separateMainX: x(separate.querySelector('.main'), separate)
+      };
+      window.stickyGridResult = data;
+      document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+      console.log('STICKY_GRID_RESULT ' + JSON.stringify(data));
+      document.documentElement.setAttribute('data-done', '1');
+    });
+  });
+</script>

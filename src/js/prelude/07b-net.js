@@ -73,18 +73,19 @@ function preflightOk(url, method, hs, status, finalUrl, hdrs, cred) {
     if (!/^(GET|HEAD|POST)$/.test(method) && !ms.includes(method) && (cred || !ms.includes('*'))) return false;
     return hs.every(h => hl.includes(h) || (!cred && h !== 'authorization' && hl.includes('*')));
 }
-function corsSend(cred, onId, method, url, flat, body, cb, st) {
+function corsSend(credentials, onId, method, url, flat, body, cb, st) {
     const hs = needsPreflight(method, url, flat);
-    if (!hs) return onId(N.fetch(method, url, flat, body, cb, st && st.head, st && st.chunk));
-    onId(N.fetch('OPTIONS', url, preflightHdrs(method, hs), null, (status, st, u, hdrs, b, err) => {
-        if (err || !preflightOk(url, method, hs, status, u, hdrs || [], cred)) return cb(0, '', url, [], null, true);
-        onId(N.fetch(method, url, flat, body, cb, st && st.head, st && st.chunk));
-    }));
+    const send = () => onId(N.fetch(method, url, flat, body, cb, st && st.head, st && st.chunk, credentials));
+    if (!hs) return send();
+    onId(N.fetch('OPTIONS', url, preflightHdrs(method, hs), null, (status, statusText, u, hdrs, b, err) => {
+        if (err || !preflightOk(url, method, hs, status, u, hdrs || [], credentials === 'include')) return cb(0, '', url, [], null, true);
+        send();
+    }, undefined, undefined, 'omit'));
 }
-function corsSendSync(cred, method, url, flat, body) {
+function corsSendSync(credentials, method, url, flat, body) {
     const hs = needsPreflight(method, url, flat);
-    if (hs) { const p = N.fetchSync('OPTIONS', url, preflightHdrs(method, hs), null); if (p[5] || !preflightOk(url, method, hs, p[0], p[2], p[3] || [], cred)) return [0, '', url, [], null, true]; }
-    return N.fetchSync(method, url, flat, body);
+    if (hs) { const p = N.fetchSync('OPTIONS', url, preflightHdrs(method, hs), null, 'omit'); if (p[5] || !preflightOk(url, method, hs, p[0], p[2], p[3] || [], credentials === 'include')) return [0, '', url, [], null, true]; }
+    return N.fetchSync(method, url, flat, body, credentials);
 }
 
 const fromFlat = (a) => { const h = new Headers(); for (let i = 0; i + 1 < a.length; i += 2) h.append(a[i], a[i + 1]); return h; };
@@ -119,9 +120,18 @@ class Request extends Body {
         this.headers = new Headers(init.headers || (src && src.headers));
         def(this, '_b', init.body !== undefined ? bodyInit(init.body, this.headers) : src ? src._b : null);
         this.signal = init.signal || (src && src.signal) || new AbortController().signal;
-        Object.assign(this, { credentials: init.credentials || 'same-origin', mode: init.mode || 'cors', cache: init.cache || 'default', redirect: init.redirect || 'follow', referrer: 'about:client', integrity: '', keepalive: !!init.keepalive, priority: init.priority || 'auto' });
+        for (const [key, fallback] of Object.entries({ credentials: 'same-origin', mode: 'cors', cache: 'default', redirect: 'follow', referrer: 'about:client', integrity: '', keepalive: false, priority: 'auto' })) {
+            const value = init[key] !== undefined ? init[key] : src ? src[key] : fallback;
+            this[key] = key === 'keepalive' ? !!value : String(value);
+        }
+        if (!['omit', 'same-origin', 'include'].includes(this.credentials)) throw new TypeError('Invalid Request credentials mode');
     }
-    clone() { return new Request(this); }
+    clone() {
+        if (this.bodyUsed || (this._b instanceof ReadableStream && this._b.locked)) throw new TypeError('Request body has already been consumed or is locked.');
+        const r = new Request(this);
+        if (this._b instanceof ReadableStream) { const [a, b] = this._b.tee(); this._b = a; r._b = b; }
+        return r;
+    }
 }
 class Response extends Body {
     constructor(body = null, init = {}) { super(); this.headers = new Headers(init.headers); def(this, '_b', bodyInit(body, this.headers)); this.status = init.status ?? 200; this.statusText = init.statusText || ''; this.type = 'default'; this.url = ''; this.redirected = false; }
@@ -173,7 +183,7 @@ function fetch(input, init) {
             r._b = new ReadableStream({ start(c) { ctl = c; } }); settled = true; resolve(r);
         };
         const chunk = (ab) => { if (ctl) try { ctl.enqueue(new Uint8Array(ab)); } catch (e) {} };
-        corsSend(req.credentials === 'include', (i) => id = i, req.method, req.url, withOrigin(req.headers._flat(), req.url, req.method, req.mode), req._b, (status, statusText, url, hdrs, body, err) => {
+        corsSend(req.credentials, (i) => id = i, req.method, req.url, withOrigin(req.headers._flat(), req.url, req.method, req.mode), req._b, (status, statusText, url, hdrs, body, err) => {
             if (settled) { if (ctl) { try { if (err) ctl.error(new TypeError('network error')); else ctl.close(); } catch (e) {} ctl = null; } return; }
             if (err) return reject(new TypeError('Failed to fetch'));
             const r = build(status, statusText, url, hdrs); if (!r) return reject(new TypeError('Failed to fetch'));
@@ -319,8 +329,9 @@ class XMLHttpRequest extends XMLHttpRequestEventTarget {
         }
         const lb = localBody(this._u);
         if (lb !== undefined) { const br = lb && blobResponse(this._u, lb, this._rh.get('range')); const f = () => br ? this._done(gen, br[0], br[1], this._u, br[2], br[3], false) : this._done(gen, 0, '', this._u, [], null, true); if (this._async) setTimeout(f); else f(); return; }
-        if (!this._async) { const r = corsSendSync(this._wc, this._m, this._u, withOrigin(this._rh._flat(), this._u, this._m, 'cors'), b); this._done(gen, ...r); return; }
-        corsSend(this._wc, (i) => this._id = i, this._m, this._u, withOrigin(this._rh._flat(), this._u, this._m, 'cors'), b, (...a) => this._done(gen, ...a));
+        const credentials = this._wc ? 'include' : 'same-origin';
+        if (!this._async) { const r = corsSendSync(credentials, this._m, this._u, withOrigin(this._rh._flat(), this._u, this._m, 'cors'), b); this._done(gen, ...r); return; }
+        corsSend(credentials, (i) => this._id = i, this._m, this._u, withOrigin(this._rh._flat(), this._u, this._m, 'cors'), b, (...a) => this._done(gen, ...a));
         if (this._to > 0) this._timer = setTimeout(() => { if (gen !== this._gen) return; this._terminate(); this._errorSteps('timeout'); }, this._to);
     }
     abort() {
