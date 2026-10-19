@@ -10,12 +10,90 @@ class GPUObjectBase { constructor(id, label) { this._id = id; this.label = label
 class GPUSupportedLimits { constructor() { Object.assign(this, { maxTextureDimension1D: 8192, maxTextureDimension2D: 8192, maxTextureDimension3D: 2048, maxTextureArrayLayers: 256, maxBindGroups: 4, maxBindingsPerBindGroup: 1000, maxDynamicUniformBuffersPerPipelineLayout: 8, maxDynamicStorageBuffersPerPipelineLayout: 4, maxSampledTexturesPerShaderStage: 16, maxSamplersPerShaderStage: 16, maxStorageBuffersPerShaderStage: 8, maxStorageTexturesPerShaderStage: 4, maxUniformBuffersPerShaderStage: 12, maxUniformBufferBindingSize: 65536, maxStorageBufferBindingSize: 134217728, minUniformBufferOffsetAlignment: 256, minStorageBufferOffsetAlignment: 256, maxVertexBuffers: 8, maxBufferSize: 268435456, maxVertexAttributes: 16, maxVertexBufferArrayStride: 2048, maxInterStageShaderVariables: 16, maxColorAttachments: 8, maxColorAttachmentBytesPerSample: 32, maxComputeWorkgroupStorageSize: 16384, maxComputeInvocationsPerWorkgroup: 256, maxComputeWorkgroupSizeX: 256, maxComputeWorkgroupSizeY: 256, maxComputeWorkgroupSizeZ: 64, maxComputeWorkgroupsPerDimension: 65535 }); } }
 class GPUSupportedFeatures extends Set {}
 class GPUAdapterInfo { constructor(d) { this.vendor = ''; this.architecture = ''; this.device = d || ''; this.description = d || ''; } }
+// Mapped views are owned by the buffer, protected against script transfer, and
+// detached on unmap/destroy. Weak device references avoid retaining dead buffers.
+const gpuBufferData = new WeakMap();
+const gpuMappedOwners = new WeakMap();
+const gpuDeviceBuffers = new WeakMap();
+const gpuBufferGC = new FinalizationRegistry(({ device, ref }) => {
+    const owner = device.deref(); if (owner) gpuDeviceBuffers.get(owner)?.delete(ref);
+});
+function gpuUnsigned(value, bits) {
+    let n = +value;
+    if (!Number.isFinite(n)) throw new TypeError('GPU size must be finite.');
+    n = Math.trunc(n);
+    if (n < 0 || n >= 2 ** bits) throw new TypeError('GPU size is outside its unsigned integer range.');
+    return n;
+}
 class GPUBuffer extends GPUObjectBase {
-    constructor(dev, d) { super(N.gpuBuffer(d.size, d.usage, !!d.mappedAtCreation), d.label); this.size = d.size; this.usage = d.usage; this.mapState = d.mappedAtCreation ? 'mapped' : 'unmapped'; this._created = !!d.mappedAtCreation; this._maps = []; if (d.mappedAtCreation) this._mapOff = 0, this._mapMode = GPUMapMode.WRITE; }
-    async mapAsync(mode, off = 0, size) { size = size ?? this.size - off; this.mapState = 'pending'; await null; this._mapMode = mode; this._mapOff = off; this._mapSize = size; this._readData = mode & GPUMapMode.READ ? N.gpuMapRead(this._id, off, size) : null; this.mapState = 'mapped'; }
-    getMappedRange(off, size) { off = off ?? this._mapOff ?? 0; size = size ?? this.size - off; let ab; if (this._readData) ab = this._readData.slice(off - this._mapOff, off - this._mapOff + size); else ab = new ArrayBuffer(size); this._maps.push([off, ab]); return ab; }
-    unmap() { if (this.mapState !== 'mapped') return; if (this._mapMode & GPUMapMode.WRITE || this._created) { for (const [off, ab] of this._maps) N.gpuUnmapWrite(this._id, off, new Uint8Array(ab), this._created); if (!this._maps.length) N.gpuUnmapWrite(this._id, 0, null, this._created); } this._maps = []; this._readData = null; this._created = false; this.mapState = 'unmapped'; }
-    destroy() { this._drop(); }
+    constructor(dev, d) {
+        if (!d || d.size === undefined || d.usage === undefined) throw new TypeError('GPUBufferDescriptor requires size and usage.');
+        const size = gpuUnsigned(d.size, 64), usage = gpuUnsigned(d.usage, 32), created = !!d.mappedAtCreation;
+        super(N.gpuBuffer(size, usage, created), d.label);
+        const ref = new WeakRef(this);
+        gpuBufferData.set(this, { dev, size, usage, state: created ? 'mapped' : 'unmapped',
+            created, mode: GPUMapMode.WRITE, off: 0, length: size, views: [], data: null,
+            generation: 0, destroyed: false, ref });
+        let refs = gpuDeviceBuffers.get(dev);
+        if (!refs) gpuDeviceBuffers.set(dev, refs = new Set());
+        refs.add(ref); gpuBufferGC.register(this, { device: new WeakRef(dev), ref }, this);
+    }
+    get size() { return gpuBufferData.get(this).size; }
+    get usage() { return gpuBufferData.get(this).usage; }
+    get mapState() { return gpuBufferData.get(this).state; }
+    _mapError(message) {
+        gpuBufferData.get(this).dev._validation(message);
+        return new DOMException(message, 'OperationError');
+    }
+    async mapAsync(mode, off = 0, size) {
+        const s = gpuBufferData.get(this);
+        mode = gpuUnsigned(mode, 32); off = gpuUnsigned(off, 64);
+        size = size === undefined ? Math.max(0, s.size - off) : gpuUnsigned(size, 64);
+        if (s.state !== 'unmapped') throw this._mapError('The buffer already has a mapping or pending map.');
+        if (s.destroyed || s.dev._destroyed) throw this._mapError('The buffer or its device was destroyed.');
+        if ((mode !== GPUMapMode.READ && mode !== GPUMapMode.WRITE) || !(s.usage & mode) ||
+            off % 8 || size % 4 || off > s.size || size > s.size - off)
+            throw this._mapError('Invalid map mode, usage, alignment, or range.');
+        const generation = ++s.generation; s.state = 'pending';
+        await null;
+        if (generation !== s.generation || s.destroyed || s.dev._destroyed)
+            throw new DOMException('The pending buffer map was cancelled.', 'AbortError');
+        const data = N.gpuMapRead(this._id, off, size, mode === GPUMapMode.WRITE);
+        if (!(data instanceof ArrayBuffer)) {
+            s.state = 'unmapped'; throw this._mapError('The native GPU buffer could not be mapped.');
+        }
+        s.off = off; s.length = size; s.mode = mode; s.data = data; s.views = [];
+        s.created = false; s.state = 'mapped';
+    }
+    getMappedRange(off = 0, size) {
+        const s = gpuBufferData.get(this); off = gpuUnsigned(off, 64);
+        size = size === undefined ? Math.max(0, s.size - off) : gpuUnsigned(size, 64);
+        if (s.state !== 'mapped' || off % 8 || size % 4 || off < s.off ||
+            off > s.off + s.length || size > s.off + s.length - off ||
+            s.views.some(([start, ab]) => size && ab.byteLength && off < start + ab.byteLength && start < off + size))
+            throw new DOMException('The requested mapped range is unavailable, misaligned, or overlapping.', 'OperationError');
+        const ab = s.data ? s.data.slice(off - s.off, off - s.off + size) : new ArrayBuffer(size);
+        N.gpuProtectMap(ab); gpuMappedOwners.set(ab, this); s.views.push([off, ab]); return ab;
+    }
+    _invalidate() {
+        const s = gpuBufferData.get(this); ++s.generation;
+        for (const [, ab] of s.views) { gpuMappedOwners.delete(ab); N.gpuDetachMap(ab); }
+        s.views = []; s.data = null; s.created = false; s.state = 'unmapped';
+    }
+    unmap() {
+        const s = gpuBufferData.get(this);
+        try {
+            if (s.state === 'mapped' && !s.destroyed && (s.mode === GPUMapMode.WRITE || s.created)) {
+                N.gpuUnmapRanges(this._id, s.off, s.length, s.views, s.created);
+                s.dev._check(null);
+            }
+        } finally { this._invalidate(); }
+    }
+    destroy() {
+        const s = gpuBufferData.get(this); if (s.destroyed) return;
+        this._invalidate(); s.destroyed = true; this._drop();
+        gpuDeviceBuffers.get(s.dev)?.delete(s.ref); gpuBufferGC.unregister(this);
+    }
 }
 class GPUTexture extends GPUObjectBase {
     constructor(dev, d, id) { const s = Array.isArray(d.size) ? { width: d.size[0], height: d.size[1] ?? 1, depthOrArrayLayers: d.size[2] ?? 1 } : d.size; super(id || N.gpuTexture(s.width, s.height || 1, s.depthOrArrayLayers || 1, d.format, d.usage, d.mipLevelCount || 1, d.sampleCount || 1, d.dimension || '2d'), d.label);
@@ -83,7 +161,16 @@ class GPUQueue {
 }
 class GPUDevice extends EventTarget {
     constructor(ad) { super(); this.adapter = ad; this.queue = new GPUQueue(); this.features = new GPUSupportedFeatures(); this.limits = new GPUSupportedLimits(); this.label = ''; this._lost = null; this.lost = new Promise(r => { this._lost = r; }); this._scopes = []; this.onuncapturederror = null; }
-    _check(o) { const e = N.gpuErr(); if (e) { const err = new GPUValidationError(e); if (this._scopes.length) { const s = this._scopes[this._scopes.length - 1]; if (!s.err) s.err = err; } else { const ev = new Event('uncapturederror'); ev.error = err; this.dispatchEvent(ev); if (typeof this.onuncapturederror === 'function') this.onuncapturederror(ev); } if (o) o._err = e; } return o; }
+    _validation(message) {
+        const err = new GPUValidationError(message);
+        for (let i = this._scopes.length - 1; i >= 0; --i) {
+            const scope = this._scopes[i];
+            if (scope.f === 'validation') { if (!scope.err) scope.err = err; return; }
+        }
+        const ev = new Event('uncapturederror'); ev.error = err; this.dispatchEvent(ev);
+        if (typeof this.onuncapturederror === 'function') this.onuncapturederror(ev);
+    }
+    _check(o) { const e = N.gpuErr(); if (e) { this._validation(e); if (o) o._err = e; } return o; }
     createBuffer(d) { return this._check(new GPUBuffer(this, d)); }
     createTexture(d) { return this._check(new GPUTexture(this, d)); }
     createSampler(d = {}) { return new GPUSampler(N.gpuSampler(d), d.label); }
@@ -101,7 +188,12 @@ class GPUDevice extends EventTarget {
     createQuerySet(d) { return { type: d.type, count: d.count, destroy() {} }; }
     pushErrorScope(f) { this._scopes.push({ f, err: null }); }
     async popErrorScope() { const s = this._scopes.pop(); if (!s) throw new DOMException('no error scope', 'OperationError'); return s.err; }
-    destroy() { this._lost && this._lost({ reason: 'destroyed', message: '' }); }
+    destroy() {
+        if (this._destroyed) return; this._destroyed = true;
+        const refs = gpuDeviceBuffers.get(this);
+        if (refs) { for (const ref of refs) ref.deref()?.destroy(); refs.clear(); }
+        this._lost && this._lost({ reason: 'destroyed', message: '' });
+    }
 }
 class GPUError { constructor(m) { this.message = m; } }
 class GPUValidationError extends GPUError {}

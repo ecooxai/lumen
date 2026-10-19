@@ -124,11 +124,36 @@ static bool map_sync(WGPUBuffer b, WGPUMapMode m, size_t off, size_t n) {
     for (int i = 0; !done && i < 100000; i++) { wgpuDevicePoll(gd, true, nullptr); wgpuInstanceProcessEvents(gi); }
     return done == 1;
 }
-/* gpuMapRead(id, off, size) -> ArrayBuffer copy (buffer is unmapped again) */
-FN(gpuMapRead) { CTX; WGPUBuffer b = get<WGPUBuffer>((int)NUM(0), T_BUF); if (!b) return; size_t off = (size_t)NUM(1), n = (size_t)NUM(2);
-    if (!map_sync(b, WGPUMapMode_Read, off, n)) { a.GetReturnValue().SetNull(); return; }
-    auto ab = v8::ArrayBuffer::New(iso, n); const void *p = wgpuBufferGetConstMappedRange(b, off, n); if (p) memcpy(ab->Data(), p, n);
+/* gpuMapRead(id, off, size, write) -> CPU copy; public state stays in JS. */
+FN(gpuMapRead) { CTX; WGPUBuffer b = get<WGPUBuffer>((int)NUM(0), T_BUF); if (!b) return;
+    size_t off = (size_t)NUM(1), n = (size_t)NUM(2); bool write = a[3]->BooleanValue(iso);
+    if (!map_sync(b, write ? WGPUMapMode_Write : WGPUMapMode_Read, off, n)) { a.GetReturnValue().SetNull(); return; }
+    const void *p = write ? wgpuBufferGetMappedRange(b, off, n) : wgpuBufferGetConstMappedRange(b, off, n);
+    if (!p && n) { wgpuBufferUnmap(b); a.GetReturnValue().SetNull(); return; }
+    auto ab = v8::ArrayBuffer::New(iso, n); if (n) memcpy(ab->Data(), p, n);
     wgpuBufferUnmap(b); a.GetReturnValue().Set(ab); }
+FN(gpuProtectMap) { CTX; if (!a[0]->IsArrayBuffer()) return;
+    a[0].As<v8::ArrayBuffer>()->SetDetachKey(jstr(iso, "WebGPUBufferMapping")); }
+FN(gpuDetachMap) { CTX; if (!a[0]->IsArrayBuffer()) return;
+    auto ab = a[0].As<v8::ArrayBuffer>(); if (ab->WasDetached()) return;
+    a.GetReturnValue().Set(ab->Detach(jstr(iso, "WebGPUBufferMapping")).FromMaybe(false)); }
+/* Write all disjoint views through ONE mapping, then unmap once. */
+FN(gpuUnmapRanges) { CTX; WGPUBuffer b = get<WGPUBuffer>((int)NUM(0), T_BUF);
+    if (!b || !a[3]->IsArray()) return;
+    size_t off = (size_t)NUM(1), n = (size_t)NUM(2); bool created = a[4]->BooleanValue(iso);
+    if (!created && !map_sync(b, WGPUMapMode_Write, off, n)) return;
+    auto *dst = (uint8_t *)wgpuBufferGetMappedRange(b, off, n); auto ranges = a[3].As<v8::Array>();
+    if (dst) for (uint32_t i = 0; i < ranges->Length(); ++i) {
+        VL value; if (!ranges->Get(ctx, i).ToLocal(&value) || !value->IsArray()) continue;
+        auto range = value.As<v8::Array>(); VL pos, bytes;
+        if (!range->Get(ctx, 0).ToLocal(&pos) || !range->Get(ctx, 1).ToLocal(&bytes) || !bytes->IsArrayBuffer()) continue;
+        double start = pos->NumberValue(ctx).FromMaybe(-1); auto ab = bytes.As<v8::ArrayBuffer>();
+        if (!std::isfinite(start) || start < (double)off || start - (double)off > (double)n) continue;
+        size_t delta = (size_t)(start - (double)off), count = ab->ByteLength();
+        if (count > n - delta || ab->WasDetached()) continue;
+        if (count) memcpy(dst + delta, ab->Data(), count);
+    }
+    wgpuBufferUnmap(b); }
 /* gpuUnmapWrite(id, off, bytes, mappedAtCreation) */
 FN(gpuUnmapWrite) { CTX; WGPUBuffer b = get<WGPUBuffer>((int)NUM(0), T_BUF); if (!b) return; size_t off = (size_t)NUM(1);
     bool created = a[3]->BooleanValue(iso);
@@ -303,7 +328,7 @@ FN(gpuPresent) { CTX; WGPUTexture t = get<WGPUTexture>((int)NUM(0), T_TEX); Canv
 void js_install_webgpu(JsCtx *c, v8::Local<v8::Object> N) {
     v8::Isolate *iso = c->iso; v8::Local<v8::Context> ctx = iso->GetCurrentContext();
 #define REG(nm) (void)N->Set(ctx, jstr(iso, #nm), v8::Function::New(ctx, n_##nm).ToLocalChecked())
-    REG(gpuInit); REG(gpuErr); REG(gpuDrop); REG(gpuBuffer); REG(gpuWriteBuffer); REG(gpuMapRead); REG(gpuUnmapWrite); REG(gpuTexture); REG(gpuView); REG(gpuSampler); REG(gpuShader);
+    REG(gpuInit); REG(gpuErr); REG(gpuDrop); REG(gpuBuffer); REG(gpuWriteBuffer); REG(gpuMapRead); REG(gpuProtectMap); REG(gpuDetachMap); REG(gpuUnmapRanges); REG(gpuUnmapWrite); REG(gpuTexture); REG(gpuView); REG(gpuSampler); REG(gpuShader);
     REG(gpuBGL); REG(gpuPL); REG(gpuBG); REG(gpuRP); REG(gpuCP); REG(gpuPipeBGL); REG(gpuWriteTexture); REG(gpuExec); REG(gpuPresent); REG(gpuFeature);
 #undef REG
 }

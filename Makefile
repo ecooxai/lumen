@@ -302,3 +302,8 @@ $(BUILD)/tests/test_app_windows.c.o: CFLAGS += -I$(BUILD)/src/app
 $(BUILD)/tests/test_app_windows.c.o: $(BUILD)/src/app/icon.inc
 $(BUILD)/test_app_windows: $(call OBJ,tests/test_app_windows.c $(CORE_SRC) $(JS_SRC) $(filter-out src/app/main.c,$(APP_SRC))) $(V8LINK_RSP)
 	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
+
+# Explicit integration gate: requires a real native GPU adapter on the host.
+.PHONY: test-webgpu
+test-webgpu: $(BUILD)/jsrun
+	python3 tests/test_webgpu_buffer_lifecycle.py --jsrun $(BUILD)/jsrun

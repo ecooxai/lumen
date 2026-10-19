@@ -1,0 +1,74 @@
+<!doctype html><meta charset="utf-8"><title>WebGPU buffer lifecycle regression</title>
+<h1>WebGPU buffer lifecycle</h1><pre id="result">Running real GPU checks…</pre>
+<script>
+(async function () {
+  const checks=[];
+  function check(name,ok,detail) {checks.push({name,passed:!!ok,detail:detail||''});console.log((ok?'PASS ':'FAIL ')+name+(detail?' '+detail:''));}
+  function throws(name,fn,error) {let caught;try{fn();}catch(e){caught=e;}check(name,caught&&caught.name===error,caught?caught.name:'did not throw');}
+  async function rejects(name,fn,error) {let caught;try{await fn();}catch(e){caught=e;}check(name,caught&&caught.name===error,caught?caught.name:'resolved');}
+  let device;const allocated=[];
+  try {
+    const adapter=await navigator.gpu.requestAdapter();if(!adapter)throw Error('No native GPU adapter');
+    device=await adapter.requestDevice();
+    const buffer=(usage,mapped=false,size=32)=>{const b=device.createBuffer({size,usage,mappedAtCreation:mapped});allocated.push(b);return b;};
+    const write=GPUBufferUsage.MAP_WRITE|GPUBufferUsage.COPY_SRC;
+    const read=GPUBufferUsage.MAP_READ|GPUBufferUsage.COPY_DST;
+    let b=buffer(write);
+    check('initial state is unmapped',b.mapState==='unmapped');
+    throws('unmapped getMappedRange rejects',()=>b.getMappedRange(),'OperationError');
+    await rejects('invalid map mode rejects',()=>b.mapAsync(0),'OperationError');b.unmap();
+    await rejects('combined map mode rejects',()=>b.mapAsync(3),'OperationError');b.unmap();
+    await rejects('wrong usage rejects',()=>b.mapAsync(GPUMapMode.READ),'OperationError');b.unmap();
+    await rejects('unaligned map offset rejects',()=>b.mapAsync(GPUMapMode.WRITE,4,16),'OperationError');b.unmap();
+    await rejects('unaligned map size rejects',()=>b.mapAsync(GPUMapMode.WRITE,0,3),'OperationError');b.unmap();
+    await rejects('out of bounds map rejects',()=>b.mapAsync(GPUMapMode.WRITE,24,16),'OperationError');b.unmap();
+    await rejects('negative map offset rejects conversion',()=>b.mapAsync(GPUMapMode.WRITE,-1,8),'TypeError');b.unmap();
+    const pending=b.mapAsync(GPUMapMode.WRITE,8,16);
+    check('mapping is initially pending',b.mapState==='pending');
+    const concurrent=b.mapAsync(GPUMapMode.WRITE,8,16);
+    await rejects('second pending map rejects',()=>concurrent,'OperationError');await pending;
+    check('successful map is mapped',b.mapState==='mapped');
+    throws('default mapped range uses absolute offset zero',()=>b.getMappedRange(),'OperationError');
+    throws('mapped range offset alignment rejects',()=>b.getMappedRange(12,4),'OperationError');
+    throws('mapped range size alignment rejects',()=>b.getMappedRange(8,6),'OperationError');
+    const a=b.getMappedRange(8,8);
+    throws('overlapping mapped ranges reject',()=>b.getMappedRange(8,8),'OperationError');
+    throws('mapped ArrayBuffer cannot be transferred',()=>a.transfer(),'TypeError');
+    check('failed transfer preserves mapping',a.byteLength===8);
+    b.unmap();check('unmap resets mapState',b.mapState==='unmapped');check('unmap detaches mapped ArrayBuffer',a.byteLength===0);
+    throws('getMappedRange rejects after unmap',()=>b.getMappedRange(8,8),'OperationError');
+    const cancelled=b.mapAsync(GPUMapMode.WRITE);b.unmap();await rejects('unmap cancels pending map',()=>cancelled,'AbortError');
+    check('cancelled map stays unmapped',b.mapState==='unmapped');
+    b=buffer(write);await b.mapAsync(GPUMapMode.WRITE);const dying=b.getMappedRange();b.destroy();
+    check('destroy resets mapState',b.mapState==='unmapped');check('destroy detaches mappings',dying.byteLength===0);
+    await rejects('destroyed buffer cannot map',()=>b.mapAsync(GPUMapMode.WRITE),'OperationError');
+    b=buffer(write);const doomed=b.mapAsync(GPUMapMode.WRITE);b.destroy();await rejects('destroy cancels pending map',()=>doomed,'AbortError');
+    // Two disjoint mapped-at-creation ranges must both reach the real GPU.
+    const src=buffer(GPUBufferUsage.COPY_SRC,true),dst=buffer(read);
+    const first=src.getMappedRange(0,8),last=src.getMappedRange(16,8);
+    new Uint32Array(first).set([17,29]);new Uint32Array(last).set([43,71]);src.unmap();
+    check('all creation mappings detached',first.byteLength===0&&last.byteLength===0);
+    const encoder=device.createCommandEncoder();encoder.copyBufferToBuffer(src,0,dst,0,32);device.queue.submit([encoder.finish()]);
+    await dst.mapAsync(GPUMapMode.READ);let values=Array.from(new Uint32Array(dst.getMappedRange()));
+    check('both written ranges survive native GPU copy',values.join(',')==='17,29,0,0,43,71,0,0',values.join(','));dst.unmap();
+    // MAP_WRITE remapping retains values written by an earlier mapping.
+    const retained=buffer(write);await retained.mapAsync(GPUMapMode.WRITE);new Uint32Array(retained.getMappedRange()).set([5,7,11,13]);retained.unmap();
+    await retained.mapAsync(GPUMapMode.WRITE);values=Array.from(new Uint32Array(retained.getMappedRange()));
+    check('write remapping retains prior content',values.slice(0,4).join(',')==='5,7,11,13',values.join(','));retained.unmap();
+    let orphan=device.createBuffer({size:32,usage:write,mappedAtCreation:true});
+    const retainedView=orphan.getMappedRange();orphan=null;
+    if(typeof gc==='function') {
+      await new Promise(r=>setTimeout(r,1));gc();
+      await new Promise(r=>setTimeout(r,1));gc();
+      await new Promise(r=>setTimeout(r,1));
+    }
+    const owner=buffer(write,true);const view=owner.getMappedRange();device.destroy();
+    check('retained mapped view detaches after buffer wrapper GC',retainedView.byteLength===0);
+    check('device destruction detaches owned mappings',view.byteLength===0);check('device destruction resets owned buffer state',owner.mapState==='unmapped');
+  } catch(e){check('fixture completed',false,e.name+': '+e.message);}
+  finally {for(const b of allocated)try{b.destroy();}catch(e){} if(device)try{device.destroy();}catch(e){}}
+  const report={total:checks.length,passed:checks.filter(x=>x.passed).length,failed:checks.filter(x=>!x.passed),checks};
+  document.getElementById('result').textContent=JSON.stringify(report,null,2);document.documentElement.setAttribute('data-done','true');
+  console.log('WEBGPU_BUFFER_RESULT '+JSON.stringify({total:report.total,passed:report.passed,failed:report.failed.length,gcStress:typeof gc==='function'}));
+})();
+</script>
