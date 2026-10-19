@@ -8,6 +8,8 @@ import android.content.Intent;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.SharedPreferences;
+import android.media.AudioDeviceInfo;
+import android.media.AudioManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.ParcelFileDescriptor;
@@ -27,12 +29,19 @@ import javax.net.ssl.X509TrustManager;
 
 public final class LumenActivity extends SDLActivity {
     private static final String PROXY_EXTRA = "org.lumen.browser.PROXY";
+    private static final String CONSOLE_EXTRA = "org.lumen.browser.CONSOLE";
+    private static final String V8_FLAGS_EXTRA = "org.lumen.browser.V8_FLAGS";
+    private static final String JS_TIMEOUT_EXTRA = "org.lumen.browser.JS_TIMEOUT_MS";
     private boolean nativeArgumentsRequested;
     private static native boolean nativeOpenUrl(byte[] url);
     private static native boolean nativeRequestBack();
     private static native void nativeUiAction(int code, int value, byte[] first, byte[] second);
+    static native String nativeUiIcon(int code);
+    static native float[] nativeTabStats();
+    private TouchFeedback touchFeedback;
     private Runnable unregisterBack;
     private BrowserSurface browserSurface;
+    private BrowserToolbar toolbar;
 
     @Override
     protected SDLSurface createSDLSurface(Context context) {
@@ -46,6 +55,7 @@ public final class LumenActivity extends SDLActivity {
     }
 
     private synchronized void requestBack() {
+        if (toolbar != null && toolbar.editing()) { toolbar.stopEditing(); return; }
         if (!nativeArgumentsRequested || mBrokenLibraries) {
             moveTaskToBack(true);
         } else if (!nativeRequestBack()) {
@@ -56,7 +66,12 @@ public final class LumenActivity extends SDLActivity {
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
-        if (!mBrokenLibraries && mLayout != null) BrowserInsets.install(getWindow(), mLayout);
+        if (!mBrokenLibraries && mLayout != null) {
+            BrowserInsets.install(getWindow(), mLayout);
+            toolbar = new BrowserToolbar(this, UI_ACTION, () -> { if (mSurface != null) mSurface.requestFocus(); });
+            mLayout.addView(toolbar, new android.widget.RelativeLayout.LayoutParams(0, 0));
+            getWindow().getDecorView().getViewTreeObserver().addOnGlobalFocusChangeListener((old, now) -> toolbar.focusMoved(now));
+        }
         if (Build.VERSION.SDK_INT >= 33) unregisterBack = Api33.registerBack(this);
     }
 
@@ -65,8 +80,43 @@ public final class LumenActivity extends SDLActivity {
         requestBack();
     }
 
+    /* The page's text input stopping hides the keyboard and focuses the page; while the address
+       field is being edited only SDL's own state is updated. */
+    @Override
+    protected boolean sendCommand(int command, Object data) {
+        if (command != COMMAND_TEXTEDIT_HIDE || toolbar == null) return super.sendCommand(command, data);
+        runOnUiThread(() -> {
+            if (!toolbar.editing()) { LumenActivity.super.sendCommand(command, data); return; }
+            if (mTextEdit != null) mTextEdit.setLayoutParams(new android.widget.RelativeLayout.LayoutParams(0, 0));
+            onNativeScreenKeyboardHidden();
+        });
+        return true;
+    }
+
+    /* a touch on the page ends address editing first */
+    @Override
+    public boolean dispatchTouchEvent(android.view.MotionEvent event) {
+        if (touchFeedback == null) touchFeedback = TouchFeedback.on(getWindow().getDecorView());
+        touchFeedback.touch(event);
+        if (event.getActionMasked() == android.view.MotionEvent.ACTION_DOWN && toolbar != null && toolbar.editing() && toolbar.outside(event)) toolbar.stopEditing();
+        return super.dispatchTouchEvent(event);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (toolbar != null) toolbar.pause(true);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (toolbar != null) toolbar.pause(false);
+    }
+
     @Override
     protected void onDestroy() {
+        if (toolbar != null) toolbar.pause(true);
         if (browserSurface != null) browserSurface.close();
         if (unregisterBack != null) {
             unregisterBack.run();
@@ -121,6 +171,74 @@ public final class LumenActivity extends SDLActivity {
         });
     }
 
+    /* from the native thread while a voice microphone is open (getUserMedia with echo cancellation):
+       like Chrome's WebRTC, the call runs in communication mode, so the platform echo canceller
+       pairs the microphone with the call's playback, on the loudspeaker unless a headset is connected */
+    public static void setVoiceCall(boolean on) {
+        final SDLActivity activity = mSingleton;
+        if (activity != null) VoiceCall.set(activity, on);
+    }
+
+    private static final class VoiceCall {
+        private static boolean active, speakerBefore;
+        private static int modeBefore;
+
+        static synchronized void set(SDLActivity activity, boolean on) {
+            if (on == active) return;
+            AudioManager audio = (AudioManager) activity.getApplicationContext().getSystemService(Context.AUDIO_SERVICE);
+            if (audio == null) return;
+            try {
+                if (on) {
+                    modeBefore = audio.getMode();
+                    audio.setMode(AudioManager.MODE_IN_COMMUNICATION);
+                    if (Build.VERSION.SDK_INT >= 31) Api31.route(audio);
+                    else {
+                        speakerBefore = audio.isSpeakerphoneOn();
+                        audio.setSpeakerphoneOn(!wiredHeadset(audio));
+                    }
+                } else {
+                    if (Build.VERSION.SDK_INT >= 31) audio.clearCommunicationDevice();
+                    else audio.setSpeakerphoneOn(speakerBefore);
+                    audio.setMode(modeBefore == AudioManager.MODE_IN_COMMUNICATION ? AudioManager.MODE_NORMAL : modeBefore);
+                }
+                active = on;
+            } catch (RuntimeException exception) {
+                Log.w("Lumen", "Unable to change the voice call audio mode", exception);
+                return;
+            }
+            activity.runOnUiThread(() -> activity.setVolumeControlStream(on ? AudioManager.STREAM_VOICE_CALL : AudioManager.USE_DEFAULT_STREAM_TYPE));
+        }
+
+        static boolean headset(int type) {
+            return type == AudioDeviceInfo.TYPE_WIRED_HEADSET || type == AudioDeviceInfo.TYPE_WIRED_HEADPHONES
+                || type == AudioDeviceInfo.TYPE_USB_HEADSET || type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO
+                || (Build.VERSION.SDK_INT >= 31 && type == AudioDeviceInfo.TYPE_BLE_HEADSET);
+        }
+
+        static boolean wiredHeadset(AudioManager audio) {
+            for (AudioDeviceInfo device : audio.getDevices(AudioManager.GET_DEVICES_OUTPUTS)) {
+                int type = device.getType();
+                if (headset(type) && type != AudioDeviceInfo.TYPE_BLUETOOTH_SCO) return true;
+            }
+            return false;
+        }
+    }
+
+    @android.annotation.TargetApi(31)
+    private static final class Api31 {
+        static void route(AudioManager audio) {
+            AudioDeviceInfo pick = null;
+            for (AudioDeviceInfo device : audio.getAvailableCommunicationDevices()) {
+                if (VoiceCall.headset(device.getType())) {
+                    pick = device;
+                    break;
+                }
+                if (device.getType() == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER) pick = device;
+            }
+            if (pick != null) audio.setCommunicationDevice(pick);
+        }
+    }
+
     private static String utf8(byte[] value) {
         return value != null ? new String(value, StandardCharsets.UTF_8) : null;
     }
@@ -145,9 +263,28 @@ public final class LumenActivity extends SDLActivity {
 
     public static void showMenu(int[] state) {
         final SDLActivity activity = mSingleton;
-        if (activity == null || state == null || state.length < 7) return;
+        if (activity == null || state == null || state.length < 9) return;
         final int[] copy = state.clone();
         activity.runOnUiThread(() -> BrowserMenus.showMenu(activity, copy, UI_ACTION));
+    }
+
+    /* the toolbar row's state from the native thread (android_ui_toolbar) */
+    public static void updateToolbar(int[] state, byte[] url) {
+        final SDLActivity activity = mSingleton;
+        if (!(activity instanceof LumenActivity) || state == null) return;
+        final int[] copy = state.clone();
+        final String address = url != null ? utf8(url) : "";
+        activity.runOnUiThread(() -> {
+            BrowserToolbar bar = ((LumenActivity) activity).toolbar;
+            if (bar != null) bar.update(copy, address);
+        });
+    }
+
+    /* the menu's Fullscreen: hides the status and navigation bars (a swipe shows them for a moment) */
+    public static void setFullscreen(boolean on) {
+        final SDLActivity activity = mSingleton;
+        if (activity == null) return;
+        activity.runOnUiThread(() -> BrowserInsets.fullscreen(activity.getWindow(), on));
     }
 
     public static void showBookmarks(byte[][] titles, byte[][] urls, byte[] pageTitle, byte[] pageUrl) {
@@ -258,6 +395,33 @@ public final class LumenActivity extends SDLActivity {
         return new String[] {"SDL3", "main"};
     }
 
+    /* Page console to logcat (tag LumenJS) for this process only: launch with
+       `--es org.lumen.browser.CONSOLE 2` (0 debug .. 3 errors). Not saved. */
+    private void applyConsole(Intent intent) {
+        String level = intent != null ? intent.getStringExtra(CONSOLE_EXTRA) : null;
+        if (level == null || !level.matches("[0-3]")) return;
+        try {
+            Os.setenv("LUMEN_CONSOLE", level, true);
+        } catch (ErrnoException exception) {
+            Log.e("Lumen", "Unable to enable the page console", exception);
+        }
+    }
+
+    /* Debug builds only: extra V8 flags for this process, for tuning experiments. Launch with
+       `--es org.lumen.browser.V8_FLAGS "--max-semi-space-size=16"`, and the script watchdog
+       with `--es org.lumen.browser.JS_TIMEOUT_MS 30000` (0 disables it). Not saved. */
+    private void applyV8Flags(Intent intent) {
+        if ((getApplicationInfo().flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) == 0) return;
+        String flags = intent != null ? intent.getStringExtra(V8_FLAGS_EXTRA) : null;
+        String timeout = intent != null ? intent.getStringExtra(JS_TIMEOUT_EXTRA) : null;
+        try {
+            if (flags != null && flags.matches("[-a-z0-9_= ]{1,200}")) Os.setenv("LUMEN_V8_FLAGS", flags, true);
+            if (timeout != null && timeout.matches("[0-9]{1,7}")) Os.setenv("LUMEN_JS_TIMEOUT_MS", timeout, true);
+        } catch (ErrnoException exception) {
+            Log.e("Lumen", "Unable to set the V8 flags", exception);
+        }
+    }
+
     /* HTTP proxy for the native network stack, read once at startup. Launch with
        `--es org.lumen.browser.PROXY host:port` to save one ("direct" clears it);
        otherwise the system proxy of the active network applies. */
@@ -298,6 +462,8 @@ public final class LumenActivity extends SDLActivity {
         AndroidFontRaster.initialize();
         nativeArgumentsRequested = true;
         applyProxy(getIntent());
+        applyConsole(getIntent());
+        applyV8Flags(getIntent());
         String url = launchUrl(getIntent());
         return new String[] {url != null ? url : "lumen://newtab"};
     }

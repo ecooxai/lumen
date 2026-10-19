@@ -92,10 +92,28 @@ function bodyInit(b, h) {
     if (b == null) return null;
     if (typeof b === 'string') { if (h && !h.has('content-type')) h.set('Content-Type', 'text/plain;charset=UTF-8'); return N.encode(b); }
     if (b instanceof URLSearchParams) { if (h && !h.has('content-type')) h.set('Content-Type', 'application/x-www-form-urlencoded;charset=UTF-8'); return N.encode(b.toString()); }
-    if (b instanceof FormData) { const bd = '----LumenFormBoundary' + Math.random().toString(36).slice(2); if (h && !h.has('content-type')) h.set('Content-Type', 'multipart/form-data; boundary=' + bd); let s = ''; for (const [k, v] of b) s += `--${bd}\r\nContent-Disposition: form-data; name="${k}"\r\n\r\n${typeof v === 'string' ? v : ''}\r\n`; return N.encode(s + `--${bd}--\r\n`); }
+    if (b instanceof FormData) return formBody(b, h);
     if (b instanceof Blob) { if (h && b.type && !h.has('content-type')) h.set('Content-Type', b.type); return b._buf; }
     if (b instanceof ReadableStream) return b;
     return toBytes(b);
+}
+/* multipart/form-data as browsers send it: names escaped, text newlines as CRLF, files with filename and type */
+function formBody(fd, h) {
+    const bd = '----LumenFormBoundary' + Math.random().toString(36).slice(2), esc = x => x.replace(/\r/g, '%0D').replace(/\n/g, '%0A').replace(/"/g, '%22');
+    if (h && !h.has('content-type')) h.set('Content-Type', 'multipart/form-data; boundary=' + bd);
+    const parts = []; let n = 0;
+    const add = u => { u = new Uint8Array(u); parts.push(u); n += u.length; };
+    for (const [k, v] of fd) {
+        const name = esc(k.replace(/\r\n|\r|\n/g, '\r\n'));
+        if (v instanceof Blob) {
+            add(N.encode(`--${bd}\r\nContent-Disposition: form-data; name="${name}"; filename="${esc(v instanceof File ? v.name : 'blob')}"\r\nContent-Type: ${v.type || 'application/octet-stream'}\r\n\r\n`));
+            add(v._buf); add(N.encode('\r\n'));
+        } else add(N.encode(`--${bd}\r\nContent-Disposition: form-data; name="${name}"\r\n\r\n${v.replace(/\r\n|\r|\n/g, '\r\n')}\r\n`));
+    }
+    add(N.encode(`--${bd}--\r\n`));
+    const out = new Uint8Array(n); let o = 0;
+    for (const u of parts) { out.set(u, o); o += u.length; }
+    return out.buffer;
 }
 const bodyState = new WeakMap();
 const bodyInfo = b => { const s = bodyState.get(b); if (!s) throw new TypeError('Illegal invocation'); return s; };
@@ -486,7 +504,7 @@ for (const k of ['url', 'readyState', 'bufferedAmount', 'onopen', 'onerror', 'on
 for (const k of ['wasClean', 'code', 'reason']) { const d = Object.getOwnPropertyDescriptor(CloseEvent.prototype, k); d.enumerable = true; Object.defineProperty(CloseEvent.prototype, k, d); }
 for (const [k, v] of Object.entries({ CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3 })) { Object.defineProperty(WebSocket, k, { value: v, enumerable: true }); Object.defineProperty(WebSocket.prototype, k, { value: v, enumerable: true }); }
 const portList = t => (t && typeof t[Symbol.iterator] === 'function' ? [...t] : t && t.transfer ? [...t.transfer] : []).filter(p => p && typeof p.postMessage === 'function' && typeof p.start === 'function');
-class MessagePort extends EventTarget { constructor() { super(); this.onmessage = null; def(this, '_other', null); } postMessage(d, t) { const ps = portList(t), r = this._wk || (this._other && this._other._wk); if (r) { N.workerPost(r[0], { __lumenPort: r[1], data: d, xfer: ps.map(p => { const k = ++portSeq; p._wk = [r[0], k]; if (p._other) remotePorts.set(k, p._other); return k; }) }); return; } const o = this._other; if (o) { const c = structuredClone(d); setTimeout(() => o._deliver(c, ps)); } } _deliver(data, ports) { dispatch(this, new MessageEvent('message', { data, ports: ports || [] }), true); } start() {} close() { this._other = null; } }
+class MessagePort extends EventTarget { constructor() { super(); this.onmessage = null; def(this, '_other', null); } postMessage(d, t) { const ps = portList(t), r = this._wk || (this._other && this._other._wk); if (r) { N.workerPost(r[0], { __lumenPort: r[1], data: d, xfer: ps.map(p => { const k = ++portSeq; p._wk = [r[0], k]; if (p._other) remotePorts.set(k, p._other); return k; }) }); return; } const o = this._other; if (o) { const c = structuredClone(d); N.timer(() => o._deliver(c, ps), 0, false, true); } } _deliver(data, ports) { dispatch(this, new MessageEvent('message', { data, ports: ports || [] }), true); } start() {} close() { this._other = null; } }
 class MessageChannel { constructor() { this.port1 = new MessagePort(); this.port2 = new MessagePort(); this.port1._other = this.port2; this.port2._other = this.port1; } }
 class BroadcastChannel extends EventTarget { constructor(n) { super(); this.name = String(n); } postMessage() {} close() {} }
 

@@ -6,6 +6,7 @@
 #include <cmath>
 #include <condition_variable>
 #include <map>
+#include <set>
 #include <memory>
 #include <mutex>
 #include <thread>
@@ -44,6 +45,7 @@ struct WsSock {
 struct Timer {
     double due, interval;
     bool repeat;
+    int nest;   /* HTML timer nesting level; 0 for posted tasks (MessagePort), which are never clamped */
     v8::Global<v8::Function> fn;
 };
 struct AnimEv {
@@ -61,6 +63,7 @@ struct ModJob {
     std::string url;
     v8::Global<v8::Promise::Resolver> R;
     Node *script = nullptr;
+    double at = 0;   /* when its fetch started */
 };
 struct JsCtx {
     v8::Isolate *iso = nullptr;
@@ -78,7 +81,10 @@ struct JsCtx {
     double viewport_due = 0;
     std::vector<Node *> wrapped;
     std::map<uint32_t, Timer> timers;
+    std::set<std::pair<double, uint32_t>> timer_due;   /* (due, id) of every timer, soonest first */
     uint32_t next_timer = 1;
+    void timer_erase(std::map<uint32_t, Timer>::iterator it) { timer_due.erase({ it->second.due, it->first }); timers.erase(it); }
+    void timer_clear() { timers.clear(); timer_due.clear(); }
     std::map<uint32_t, v8::Global<v8::Function>> rafs;
     uint32_t next_raf = 1;
     v8::Global<v8::Function> video_frame_pump;
@@ -101,6 +107,7 @@ struct JsCtx {
     std::vector<Document *> docs;
     Node *current_script = nullptr;
     int depth = 0;
+    int timer_nest = 0;   /* nesting level of the timer callback now running */
     std::map<uint32_t, MediaPlayer *> players;
     uint32_t next_player = 1;
     std::vector<AnimEv> anims;
@@ -148,6 +155,10 @@ v8::MaybeLocal<v8::Value> jcall(JsCtx *c, v8::Local<v8::Function> f, v8::Local<v
 void jfire(JsCtx *c, Node *n, const char *type);
 void jreport(JsCtx *c, v8::Local<v8::Value> exc, v8::Local<v8::Message> msg);
 void js_install_native(JsCtx *c, v8::Local<v8::Object> N);
+#if defined(__ANDROID__) && !defined(NDEBUG)
+bool jsprof_active(void);      /* the debug JS profile is running */
+void js_native_report(void);   /* log and reset per-native call counts and time */
+#endif
 void js_run_inserted(JsCtx *c, Node *root);
 /* js_run_module for script-inserted modules: an external graph not loaded yet runs later, once fetched */
 extern "C" void js_run_module_inserted(JsCtx *c, Node *script, const char *src, size_t n, const char *url);
@@ -166,4 +177,8 @@ void js_wasm_install(v8::Local<v8::Context> ctx, v8::Local<v8::Object> native);
 void workers_pump(JsCtx *c);
 void workers_kill(JsCtx *c);
 double workers_deadline(JsCtx *c);
+void js_install_rtc(JsCtx *c, v8::Local<v8::Object> N);   /* rtc.cc: native WebRTC transport */
+bool rtc_pending(JsCtx *c);
+void rtc_pump(JsCtx *c);
+void rtc_ctx_free(JsCtx *c);
 v8::Platform *js_platform();

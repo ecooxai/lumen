@@ -332,7 +332,8 @@ static char *next_token(const char **pp) {
     const char *p = *pp; while (is_ws((unsigned char)*p)) p++;
     if (!*p) return NULL;
     const char *s = p; int d = 0;
-    while (*p && (d || !is_ws((unsigned char)*p))) { if (*p == '(') d++; else if (*p == ')') d--; else if (*p == '"' || *p == '\'') { char q = *p++; while (*p && *p != q) p++; if (!*p) break; } p++; }
+    /* a function ends its token even without whitespace after it: minifiers write minmax(0,1fr)10px */
+    while (*p && (d || !is_ws((unsigned char)*p))) { if (*p == '(') d++; else if (*p == ')' && !--d) { p++; break; } else if (*p == '"' || *p == '\'') { char q = *p++; while (*p && *p != q) p++; if (!*p) break; } p++; }
     *pp = p; return xstrndup(s, (size_t)(p - s));
 }
 static int split_ws(const char *v, char **out, int max) { int n = 0; const char *p = v; char *t; while (n < max && (t = next_token(&p))) out[n++] = t; return n; }
@@ -471,7 +472,7 @@ static void apply_background(ACtx *c, const char *v) {
         size_t tl = strlen(t);
         char *tt = t; if (tl && tt[tl - 1] == ',') tt[tl - 1] = 0;
         Color col;
-        if (str_istarts(tt, "url(") || strstr(tt, "gradient(")) {}
+        if (strstr(tt, "url(") || strstr(tt, "gradient(")) {}
         else if (str_ieq(tt, "no-repeat")) c->st->bg_repeat = BG_NO_REPEAT;
         else if (str_ieq(tt, "repeat-x")) c->st->bg_repeat = BG_REPEAT_X;
         else if (str_ieq(tt, "repeat-y")) c->st->bg_repeat = BG_REPEAT_Y;
@@ -1524,6 +1525,46 @@ static Selector empty_candidate(const Selector *sel) {
     }
     return result;
 }
+/* How a candidate reaches the changed element, for precise invalidation.
+ * flags: 1 :empty on this element, 2 through :has, 4 a sibling combinator in
+ * :has, 8 anything else (nth-of, :host, combinators inside :is): scan all. */
+static unsigned empty_reach(const SimpleSel *s);
+static unsigned empty_reach_selector(const Selector *sel, bool relative) {
+    unsigned r = 0;
+    for (int i = 0; i < sel->n; i++) {
+        if (relative && (sel->c[i].comb == CB_ADJ || sel->c[i].comb == CB_SIB)) r |= 4;
+        for (int j = 0; j < sel->c[i].n; j++) {
+            unsigned x = empty_reach(&sel->c[i].s[j]);
+            if (x && !relative && i != sel->n - 1) x |= 8;
+            r |= x;
+        }
+    }
+    return r;
+}
+static unsigned empty_reach(const SimpleSel *s) {
+    if (is_pseudo(s, "empty")) return 1;
+    if (!s->sub) return 0;
+    bool has = is_pseudo(s, "has"), plain = is_pseudo(s, "is") || is_pseudo(s, "where") || is_pseudo(s, "not");
+    unsigned r = 0;
+    for (int k = 0; k < s->sub->n; k++) r |= empty_reach_selector(&s->sub->v[k], has);
+    if (!r) return 0;
+    if (has) return 2 | (r & 4) | (r & 8);
+    return plain ? r : r | 8;
+}
+static void empty_classify(const Selector *sel, EmptyDependency *d) {
+    d->mode = 0; d->dep = -1; d->sib = false;
+    unsigned all = 0; int found = -1, count = 0;
+    for (int i = 0; i < sel->n; i++) {
+        unsigned r = 0;
+        for (int j = 0; j < sel->c[i].n; j++) {
+            r |= empty_reach(&sel->c[i].s[j]);
+            if (is_pseudo(&sel->c[i].s[j], "host") || is_pseudo(&sel->c[i].s[j], "host-context") || is_pseudo(&sel->c[i].s[j], "slotted")) all |= 8;
+        }
+        if (r) { found = i; count++; all |= r; }
+    }
+    if (count != 1 || (all & 8)) return;
+    d->dep = found; d->mode = all & 2 ? 2 : 1; d->sib = (all & 4) != 0;
+}
 /* Bit 1: dependencies contained in a changed parent's subtree. Bit 2:
  * dependencies which can affect ancestors or their following siblings too.
  * Bit 4: emptiness, already covered by the separate transition index.
@@ -2096,9 +2137,11 @@ static void idx_add_sheet(StyleEngine *e, StyleSheet *sh) {
                 vec_push(e->idx.tree_candidates, dependency);
             }
             if (empty_dependencies(&r->sel) & 2) {
-                EmptyDependency dependency = {empty_candidate(&r->sel), r->scope};
+                EmptyDependency dependency = {empty_candidate(&r->sel), r->scope, -1, 0, false};
+                empty_classify(&r->sel, &dependency);
                 vec_push(e->idx.empty_candidates, dependency);
-                if (!key.name) e->idx.empty_universal = true;
+                if (dependency.mode) {}
+                else if (!key.name) e->idx.empty_universal = true;
                 else if (key.kind == SK_ID) hm_put(&e->idx.empty_ids, key.name, (void *)1);
                 else if (key.kind == SK_CLASS) hm_put(&e->idx.empty_classes, key.name, (void *)1);
                 else if (key.kind == SK_TYPE) hm_put(&e->idx.empty_tags, key.name, (void *)1);
@@ -2984,27 +3027,115 @@ static int invalidate_tree_dependents(StyleEngine *e, Node *n, bool local, int *
     return affected;
 }
 
+static void empty_mark(Node *n, int *count) {
+    if (n->flags & NF_STYLE_DIRTY) return;
+    (*count)++;
+    n->flags |= NF_STYLE_DIRTY;
+    for (Node *p = n->parent ? n->parent : n->host; p; p = p->parent ? p->parent : p->host) p->flags |= NF_CHILD_STYLE_DIRTY;
+}
+static Node *empty_next_el(Node *n) { for (n = n->next; n && n->type != NODE_ELEMENT; n = n->next) {} return n; }
+static Node *empty_prev_el(Node *n) { for (n = n->prev; n && n->type != NODE_ELEMENT; n = n->prev) {} return n; }
+typedef VEC(Node *) EmptyNodes;
+/* From the elements compound dep can be, walk the combinators to the subject,
+ * keeping only elements that match the selector up to each compound. Returns
+ * false when the walk grows past the budget; the caller then tests everything. */
+static bool empty_precise(const EmptyDependency *d, const EmptyNodes *changed, EmptyNodes *cur, EmptyNodes *next, int *marked) {
+    enum { BUDGET = 4096 };
+    const Selector *full = &d->candidate;
+    cur->n = 0;
+    for (int i = 0; i < changed->n; i++) {
+        Node *x = changed->v[i];
+        if (d->mode == 1) { vec_push(*cur, x); continue; }
+        for (Node *a = x; a && a->type == NODE_ELEMENT; a = a->parent) {
+            vec_push(*cur, a);
+            if (d->sib) for (Node *s = empty_prev_el(a); s; s = empty_prev_el(s)) { vec_push(*cur, s); if (cur->n > BUDGET) return false; }
+            if (cur->n > BUDGET) return false;
+        }
+    }
+    for (int k = d->dep; ; k++) {
+        Selector prefix = *full; prefix.n = k + 1;
+        if (k != full->n - 1) prefix.pseudo_el = 0;
+        int kept = 0;
+        for (int i = 0; i < cur->n; i++) if (css_match_selector(&prefix, cur->v[i], d->scope)) cur->v[kept++] = cur->v[i];
+        cur->n = kept;
+        if (k == full->n - 1) break;
+        uint8_t comb = full->c[k + 1].comb;
+        next->n = 0;
+        for (int i = 0; i < cur->n; i++) {
+            Node *x = cur->v[i];
+            if (comb == CB_CHILD) { for (Node *c = x->first; c; c = c->next) if (c->type == NODE_ELEMENT) vec_push(*next, c); }
+            else if (comb == CB_ADJ) { Node *s = empty_next_el(x); if (s) vec_push(*next, s); }
+            else if (comb == CB_SIB) { for (Node *s = empty_next_el(x); s; s = empty_next_el(s)) vec_push(*next, s); }
+            else for (Node *c = x->first; c; c = node_next_deep(c, x)) if (c->type == NODE_ELEMENT) { vec_push(*next, c); if (next->n > BUDGET) return false; }
+            if (next->n > BUDGET) return false;
+        }
+        EmptyNodes t = *cur; *cur = *next; *next = t;
+    }
+    for (int i = 0; i < cur->n; i++) empty_mark(cur->v[i], marked);
+    return true;
+}
 static void invalidate_empty_dependents(StyleEngine *e) {
     RuleIndex *ix = &e->idx;
     int affected_count = 0;
-    for (Node *n = e->doc->node.first; n; n = node_next_deep(n, &e->doc->node)) {
-        if (n->type != NODE_ELEMENT) continue;
-        const char *tag = n->ns == NS_HTML ? n->tag : atom_lower(n->tag, strlen(n->tag));
-        bool affected = ix->empty_universal || (n->id && hm_get(&ix->empty_ids,n->id)) || hm_get(&ix->empty_tags,tag);
-        for (int i = 0; !affected && i < n->nclasses; i++) affected = hm_get(&ix->empty_classes,n->classes[i]) != NULL;
-        if (!affected) continue;
-        affected = false;
-        for (int i = 0; !affected && i < ix->empty_candidates.n; i++)
-            affected = css_match_selector(&ix->empty_candidates.v[i].candidate, n, ix->empty_candidates.v[i].scope);
-        if (!affected) continue;
-        affected_count++;
-        n->flags |= NF_STYLE_DIRTY;
-        for (Node *p = n->parent ? n->parent : n->host; p; p = p->parent ? p->parent : p->host) p->flags |= NF_CHILD_STYLE_DIRTY;
-    }
 #if defined(__ANDROID__) && !defined(NDEBUG)
-    if (e->debug_style_passes) __android_log_print(ANDROID_LOG_INFO, "LumenStyle", "lumen-style empty candidates=%d affected=%d\n", ix->empty_candidates.n, affected_count);
+    int dbg_hits[256] = {0};
+#endif
+    EmptyNodes changed = {0}, cur = {0}, next = {0};
+    bool overflow = false, any_full = false;
+    for (int i = 0; i < ix->empty_candidates.n; i++) any_full |= !ix->empty_candidates.v[i].mode;
+    /* the changed elements; removed ones are gone with their flag, their parent flipped instead */
+    for (Node *n = e->doc->node.first; n; n = node_next_deep(n, &e->doc->node)) {
+        if (n->type != NODE_ELEMENT || !(n->flags & NF_EMPTY_CHANGED)) continue;
+        n->flags &= ~(uint32_t)NF_EMPTY_CHANGED;
+        if (changed.n < 512) vec_push(changed, n); else overflow = true;
+    }
+    uint8_t *full = xcalloc((size_t)ix->empty_candidates.n + 1, 1);
+    for (int i = 0; i < ix->empty_candidates.n; i++) {
+        EmptyDependency *d = &ix->empty_candidates.v[i];
+        if (!d->mode || overflow) { full[i] = 1; continue; }
+        int before = affected_count;
+        if (!empty_precise(d, &changed, &cur, &next, &affected_count)) { full[i] = 1; any_full = true; }
+#if defined(__ANDROID__) && !defined(NDEBUG)
+        if (i < 256) dbg_hits[i] += affected_count - before;
 #else
-    (void)affected_count;
+        (void)before;
+#endif
+    }
+    if (overflow) any_full = true;
+    for (Node *n = any_full ? e->doc->node.first : NULL; n; n = node_next_deep(n, &e->doc->node)) {
+        if (n->type != NODE_ELEMENT) continue;
+        bool affected = false;
+        for (int i = 0; !affected && i < ix->empty_candidates.n; i++) {
+            if (!full[i]) continue;
+            EmptyDependency *d = &ix->empty_candidates.v[i];
+            /* precise candidates that overflowed are not in the key maps */
+            if (!d->mode) {
+                const char *tag = n->ns == NS_HTML ? n->tag : atom_lower(n->tag, strlen(n->tag));
+                bool keyed = ix->empty_universal || (n->id && hm_get(&ix->empty_ids, n->id)) || hm_get(&ix->empty_tags, tag);
+                for (int c = 0; !keyed && c < n->nclasses; c++) keyed = hm_get(&ix->empty_classes, n->classes[c]) != NULL;
+                if (!keyed) break;
+            }
+            affected = css_match_selector(&d->candidate, n, d->scope);
+#if defined(__ANDROID__) && !defined(NDEBUG)
+            if (affected && i < 256) dbg_hits[i]++;
+#endif
+        }
+        if (affected) empty_mark(n, &affected_count);
+    }
+    int changed_n = changed.n;
+    free(full); vec_free(changed); vec_free(cur); vec_free(next);
+#if defined(__ANDROID__) && !defined(NDEBUG)
+    if (e->debug_style_passes) {
+        __android_log_print(ANDROID_LOG_INFO, "LumenStyle", "lumen-style empty candidates=%d affected=%d universal=%d changed=%d full=%d\n",
+            ix->empty_candidates.n, affected_count, ix->empty_universal, changed_n, any_full);
+        for (int i = 0; i < ix->empty_candidates.n && i < 256; i++) if (dbg_hits[i] > 20) {
+            SB shape; sb_init(&shape); debug_selector_shape(&ix->empty_candidates.v[i].candidate, &shape);
+            __android_log_print(ANDROID_LOG_INFO, "LumenStyle", "lumen-style empty hit=%d n=%d shape=%.1500s", i, dbg_hits[i], shape.s ? shape.s : "");
+            sb_free(&shape);
+        }
+    }
+#else
+    (void)affected_count; (void)changed_n;
 #endif
 }
 void style_recalc(StyleEngine *e, Node *root, bool force) {

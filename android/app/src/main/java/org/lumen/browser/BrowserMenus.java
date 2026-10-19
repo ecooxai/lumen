@@ -16,6 +16,7 @@ import android.view.WindowInsets;
 import android.widget.BaseAdapter;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.PopupWindow;
@@ -32,9 +33,9 @@ final class BrowserMenus {
     /* mirrors android_ui.h */
     static final int NEW_TAB = 1, FORWARD = 2, BOOKMARKS = 3, DOWNLOADS = 4, HISTORY = 5, WORKSPACES = 6, SETTINGS = 7,
         DESKTOP = 8, ZOOM = 9, BM_TOGGLE = 10, BM_OPEN = 11, BM_SAVE = 12, BM_DELETE = 13,
-        WS_SELECT = 14, WS_NEW = 15, WS_RENAME = 16, WS_CLOSE = 17;
-    private static final int MAX_WORKSPACES = 16, ZOOM_MIN = 50, ZOOM_MAX = 300, ZOOM_STEP = 5;
-    private static final int TEXT = 0xff202124, SUBTLE = 0xff5f6368, DISABLED = 0xffbdc1c6, DIVIDER = 0xffe8eaed;
+        WS_SELECT = 14, WS_NEW = 15, WS_RENAME = 16, WS_CLOSE = 17, BACK = 18, RELOAD = 19, FULLSCREEN = 20, URL_GO = 21;
+    private static final int MAX_WORKSPACES = 16, ZOOM_MIN = 20, ZOOM_MAX = 300, ZOOM_STEP = 10;
+    private static final int TEXT = 0xff202124, SUBTLE = 0xff5f6368, DISABLED = 0xffbdc1c6, DIVIDER = 0xffe8eaed, ACCENT = 0xff1a73e8;
     private static PopupWindow menu;
 
     private BrowserMenus() { }
@@ -64,12 +65,68 @@ final class BrowserMenus {
         return line;
     }
 
+    private static ImageView icon(Context context, int code, int color, int size) {
+        ImageView view = new ImageView(context);
+        view.setScaleType(ImageView.ScaleType.CENTER);
+        view.setImageDrawable(BrowserIcons.of(code, color, dp(context, size)));
+        return view;
+    }
+
+    /* a menu line: the action's icon, its name, and a check box for the on/off ones (check: -1 none) */
+    private static LinearLayout row(Context context, int code, String text, boolean enabled, int check) {
+        LinearLayout row = new LinearLayout(context);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(dp(context, 16), 0, dp(context, check >= 0 ? 10 : 18), 0);
+        row.addView(icon(context, code, enabled ? SUBTLE : DISABLED, 22), new LinearLayout.LayoutParams(dp(context, 24), dp(context, 24)));
+        TextView name = label(context, text, 16, enabled ? TEXT : DISABLED);
+        name.setPadding(dp(context, 16), 0, 0, 0);
+        row.addView(name, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+        if (check >= 0) {
+            CheckBox box = new CheckBox(context);
+            box.setChecked(check != 0);
+            box.setEnabled(enabled);
+            box.setClickable(false);
+            box.setFocusable(false);
+            row.addView(box);
+        }
+        row.setEnabled(enabled);
+        ripple(row, false);
+        return row;
+    }
+
+    /* what a toolbar slot's action is called, for accessibility */
+    static String actionName(int code, boolean on) {
+        switch (code) {
+            case BACK: return "Back";
+            case FORWARD: return "Forward";
+            case RELOAD: return "Reload";
+            case NEW_TAB: return "New tab";
+            case BOOKMARKS: return "Bookmarks";
+            case HISTORY: return "History";
+            case DOWNLOADS: return "Downloads";
+            case WORKSPACES: return "Workspaces";
+            case SETTINGS: return "Settings";
+            case DESKTOP: return on ? "Desktop site, on" : "Desktop site";
+            case BM_TOGGLE: return on ? "Remove bookmark" : "Bookmark this page";
+            case FULLSCREEN: return on ? "Exit fullscreen" : "Fullscreen";
+            default: return null;
+        }
+    }
+
+    /* every dialog shows touches too */
+    private static AlertDialog show(AlertDialog.Builder builder) {
+        AlertDialog dialog = builder.show();
+        TouchFeedback.window(dialog.getWindow());
+        return dialog;
+    }
+
     static void toast(Activity activity, String text) {
         Toast.makeText(activity, text, text.length() > 48 ? Toast.LENGTH_LONG : Toast.LENGTH_SHORT).show();
     }
 
     /* state: can go forward, desktop site on, desktop site possible, zoom possible, zoom percent,
-       page bookmarked, page can be bookmarked */
+       page bookmarked, page can be bookmarked, can go back, fullscreen on */
     static void showMenu(Activity activity, int[] state, Action action) {
         if (menu != null) { menu.dismiss(); menu = null; }
         final Context context = activity;
@@ -80,19 +137,18 @@ final class BrowserMenus {
 
         LinearLayout icons = new LinearLayout(context);
         icons.setOrientation(LinearLayout.HORIZONTAL);
-        String[] glyphs = { "→", state[5] != 0 ? "★" : "☆", "⤓" };
-        String[] names = { "Forward", state[5] != 0 ? "Remove bookmark" : "Bookmark this page", "Downloads" };
-        int[] codes = { FORWARD, BM_TOGGLE, DOWNLOADS };
-        boolean[] enabled = { state[0] != 0, state[6] != 0, true };
-        for (int i = 0; i < glyphs.length; i++) {
-            TextView icon = label(context, glyphs[i], 22, enabled[i] ? (codes[i] == BM_TOGGLE && state[5] != 0 ? 0xff1a73e8 : TEXT) : DISABLED);
-            icon.setGravity(Gravity.CENTER);
-            icon.setContentDescription(names[i]);
-            icon.setEnabled(enabled[i]);
-            ripple(icon, true);
+        String[] names = { "Back", "Forward", "Reload", state[5] != 0 ? "Remove bookmark" : "Bookmark this page", "Downloads" };
+        int[] codes = { BACK, FORWARD, RELOAD, BM_TOGGLE, DOWNLOADS };
+        boolean[] enabled = { state[7] != 0, state[0] != 0, true, state[6] != 0, true };
+        for (int i = 0; i < codes.length; i++) {
+            int color = enabled[i] ? (codes[i] == BM_TOGGLE && state[5] != 0 ? ACCENT : TEXT) : DISABLED;
+            ImageView button = icon(context, codes[i], color, 24);
+            button.setContentDescription(names[i]);
+            button.setEnabled(enabled[i]);
+            ripple(button, true);
             final int code = codes[i];
-            icon.setOnClickListener(view -> { popup.dismiss(); action.send(code, 0, null, null); });
-            icons.addView(icon, new LinearLayout.LayoutParams(0, dp(context, 48), 1));
+            button.setOnClickListener(view -> { popup.dismiss(); action.send(code, 0, null, null); });
+            icons.addView(button, new LinearLayout.LayoutParams(0, dp(context, 48), 1));
         }
         root.addView(icons);
         root.addView(divider(context));
@@ -100,79 +156,71 @@ final class BrowserMenus {
         String[] rows = { "New tab", "Bookmarks", "History", "Downloads", "Workspaces" };
         int[] rowCodes = { NEW_TAB, BOOKMARKS, HISTORY, DOWNLOADS, WORKSPACES };
         for (int i = 0; i < rows.length; i++) {
-            TextView row = label(context, rows[i], 16, TEXT);
-            row.setGravity(Gravity.CENTER_VERTICAL);
-            row.setPadding(dp(context, 18), 0, dp(context, 18), 0);
-            ripple(row, false);
+            LinearLayout row = row(context, rowCodes[i], rows[i], true, -1);
             final int code = rowCodes[i];
             row.setOnClickListener(view -> { popup.dismiss(); action.send(code, 0, null, null); });
             root.addView(row, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(context, 48)));
         }
         root.addView(divider(context));
 
-        /* page zoom: the value follows the slider, the page relayouts when the thumb is let go */
+        /* page zoom: the zoom icon followed by quick levels on one line, the slider below it; the level
+           matching the slider is highlighted, the page relayouts when the thumb is let go */
         boolean canZoom = state[3] != 0;
         LinearLayout zoom = new LinearLayout(context);
         zoom.setOrientation(LinearLayout.HORIZONTAL);
         zoom.setGravity(Gravity.CENTER_VERTICAL);
-        zoom.setPadding(dp(context, 18), 0, dp(context, 8), 0);
-        zoom.addView(label(context, "Zoom", 16, canZoom ? TEXT : DISABLED));
-        final TextView value = label(context, "", 14, canZoom ? SUBTLE : DISABLED);
-        value.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
+        zoom.setPadding(dp(context, 16), 0, dp(context, 8), 0);
+        ImageView zoomIcon = icon(context, ZOOM, canZoom ? SUBTLE : DISABLED, 22);
+        zoomIcon.setContentDescription("Zoom");
+        zoom.addView(zoomIcon, new LinearLayout.LayoutParams(dp(context, 24), dp(context, 24)));
+        zoom.addView(new View(context), new LinearLayout.LayoutParams(dp(context, 8), 1));
         final SeekBar slider = new SeekBar(context);
         slider.setMax((ZOOM_MAX - ZOOM_MIN) / ZOOM_STEP);
         int start = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, state[4]));
-        slider.setProgress((start - ZOOM_MIN) / ZOOM_STEP);
+        slider.setProgress(Math.round((start - ZOOM_MIN) / (float) ZOOM_STEP));
         slider.setEnabled(canZoom);
-        slider.setContentDescription("Page zoom");
-        value.setText(start + "%");
+        slider.setContentDescription("Page zoom " + start + " percent");
+        final int[] levels = { 50, 100, 150, 200 };
+        final TextView[] quick = new TextView[levels.length];
+        for (int i = 0; i < levels.length; i++) {
+            final int level = levels[i];
+            quick[i] = label(context, String.valueOf(level), 14, canZoom ? (level == start ? ACCENT : TEXT) : DISABLED);
+            quick[i].setGravity(Gravity.CENTER);
+            quick[i].setEnabled(canZoom);
+            quick[i].setContentDescription("Zoom " + level + " percent");
+            ripple(quick[i], true);
+            quick[i].setOnClickListener(view -> {
+                slider.setProgress((level - ZOOM_MIN) / ZOOM_STEP);
+                action.send(ZOOM, level, null, null);
+            });
+            zoom.addView(quick[i], new LinearLayout.LayoutParams(dp(context, 48), dp(context, 44)));
+        }
         slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override public void onProgressChanged(SeekBar bar, int progress, boolean user) {
-                value.setText((ZOOM_MIN + progress * ZOOM_STEP) + "%");
+                int pct = ZOOM_MIN + progress * ZOOM_STEP;
+                bar.setContentDescription("Page zoom " + pct + " percent");
+                for (int i = 0; i < levels.length; i++) quick[i].setTextColor(levels[i] == pct ? ACCENT : TEXT);
             }
             @Override public void onStartTrackingTouch(SeekBar bar) { }
             @Override public void onStopTrackingTouch(SeekBar bar) {
                 action.send(ZOOM, ZOOM_MIN + bar.getProgress() * ZOOM_STEP, null, null);
             }
         });
-        LinearLayout.LayoutParams sliderLayout = new LinearLayout.LayoutParams(0, dp(context, 48), 1);
-        zoom.addView(slider, sliderLayout);
-        zoom.addView(value, new LinearLayout.LayoutParams(dp(context, 48), dp(context, 48)));
-        TextView reset = label(context, "Reset", 14, canZoom ? 0xff1a73e8 : DISABLED);
-        reset.setGravity(Gravity.CENTER);
-        reset.setEnabled(canZoom);
-        ripple(reset, true);
-        reset.setOnClickListener(view -> {
-            slider.setProgress((100 - ZOOM_MIN) / ZOOM_STEP);
-            action.send(ZOOM, 100, null, null);
-        });
-        zoom.addView(reset, new LinearLayout.LayoutParams(dp(context, 56), dp(context, 48)));
-        root.addView(zoom, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(context, 52)));
+        root.addView(zoom, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(context, 46)));
+        slider.setPadding(dp(context, 26), 0, dp(context, 26), 0);
+        root.addView(slider, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(context, 40)));
 
         boolean canDesktop = state[2] != 0;
-        LinearLayout desktop = new LinearLayout(context);
-        desktop.setOrientation(LinearLayout.HORIZONTAL);
-        desktop.setGravity(Gravity.CENTER_VERTICAL);
-        desktop.setPadding(dp(context, 18), 0, dp(context, 10), 0);
-        TextView desktopLabel = label(context, "Desktop site", 16, canDesktop ? TEXT : DISABLED);
-        desktop.addView(desktopLabel, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
-        final CheckBox check = new CheckBox(context);
-        check.setChecked(state[1] != 0);
-        check.setEnabled(canDesktop);
-        check.setClickable(false);
-        check.setFocusable(false);
-        desktop.addView(check);
-        desktop.setEnabled(canDesktop);
-        ripple(desktop, false);
-        final boolean desktopOn = state[1] != 0;
+        final boolean desktopOn = state[1] != 0, fullscreenOn = state[8] != 0;
+        LinearLayout desktop = row(context, DESKTOP, "Desktop site", canDesktop, desktopOn ? 1 : 0);
         desktop.setOnClickListener(view -> { popup.dismiss(); action.send(DESKTOP, desktopOn ? 0 : 1, null, null); });
         root.addView(desktop, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(context, 48)));
+        LinearLayout fullscreen = row(context, FULLSCREEN, "Fullscreen", true, fullscreenOn ? 1 : 0);
+        fullscreen.setOnClickListener(view -> { popup.dismiss(); action.send(FULLSCREEN, fullscreenOn ? 0 : 1, null, null); });
+        root.addView(fullscreen, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(context, 48)));
         root.addView(divider(context));
 
-        TextView settings = label(context, "Settings", 16, TEXT);
-        settings.setGravity(Gravity.CENTER_VERTICAL);
-        settings.setPadding(dp(context, 18), 0, dp(context, 18), 0);
-        ripple(settings, false);
+        LinearLayout settings = row(context, SETTINGS, "Settings", true, -1);
         settings.setOnClickListener(view -> { popup.dismiss(); action.send(SETTINGS, 0, null, null); });
         root.addView(settings, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(context, 48)));
 
@@ -194,6 +242,7 @@ final class BrowserMenus {
         WindowInsets insets = decor.getRootWindowInsets();
         if (insets != null) top = insets.getSystemWindowInsetTop();
         menu = popup;
+        TouchFeedback.popup(popup);
         popup.showAtLocation(decor, Gravity.TOP | Gravity.END, dp(context, 4), top + dp(context, 4));
     }
 
@@ -237,21 +286,21 @@ final class BrowserMenus {
         if (pageUrl != null) builder.setPositiveButton("Add current page", (dialog, which) -> edit(activity, -1, pageTitle, pageUrl, action));
         builder.setNeutralButton("New", (dialog, which) -> edit(activity, -1, "", "javascript:", action));
         builder.setNegativeButton("Close", null);
-        final AlertDialog dialog = builder.show();
+        final AlertDialog dialog = show(builder);
         if (list == null) return;
         list.setOnItemClickListener((parent, view, position, id) -> {
             dialog.dismiss();
             action.send(BM_OPEN, position, null, urls[position]);
         });
         list.setOnItemLongClickListener((parent, view, position, id) -> {
-            new AlertDialog.Builder(activity)
+            show(new AlertDialog.Builder(activity)
                 .setTitle(titles[position])
                 .setItems(new String[] { "Edit", "Delete" }, (options, which) -> {
                     dialog.dismiss();
                     if (which == 0) edit(activity, position, titles[position], urls[position], action);
                     else action.send(BM_DELETE, position, null, urls[position]);
                 })
-                .show();
+                );
             return true;
         });
     }
@@ -276,7 +325,7 @@ final class BrowserMenus {
         form.addView(name);
         form.addView(address);
         form.addView(note);
-        new AlertDialog.Builder(activity)
+        show(new AlertDialog.Builder(activity)
             .setTitle(index < 0 ? "Add bookmark" : "Edit bookmark")
             .setView(form)
             .setPositiveButton("Save", (dialog, which) -> {
@@ -285,7 +334,7 @@ final class BrowserMenus {
                 action.send(BM_SAVE, index, name.getText().toString().trim(), target);
             })
             .setNegativeButton("Cancel", null)
-            .show();
+            );
     }
 
     private interface Named { void done(String name); }
@@ -298,7 +347,7 @@ final class BrowserMenus {
         int pad = dp(activity, 22);
         box.setPadding(pad, dp(activity, 8), pad, 0);
         box.addView(name, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        new AlertDialog.Builder(activity)
+        show(new AlertDialog.Builder(activity)
             .setTitle(title)
             .setView(box)
             .setPositiveButton("OK", (dialog, which) -> {
@@ -306,7 +355,7 @@ final class BrowserMenus {
                 if (!value.isEmpty()) done.done(value);
             })
             .setNegativeButton("Cancel", null)
-            .show();
+            );
     }
 
     static void showWorkspaces(Activity activity, String[] names, int[] tabs, int current, Action action) {
@@ -324,17 +373,17 @@ final class BrowserMenus {
             builder.setPositiveButton("New workspace", (dialog, which) ->
                 promptName(activity, "New workspace", "Workspace " + (names.length + 1), name -> action.send(WS_NEW, 0, name, null)));
         }
-        final AlertDialog dialog = builder.show();
+        final AlertDialog dialog = show(builder);
         dialog.getListView().setOnItemLongClickListener((parent, view, position, id) -> {
             String[] options = names.length > 1 ? new String[] { "Rename", "Close workspace" } : new String[] { "Rename" };
-            new AlertDialog.Builder(activity)
+            show(new AlertDialog.Builder(activity)
                 .setTitle(names[position])
                 .setItems(options, (choices, which) -> {
                     dialog.dismiss();
                     if (which == 0) promptName(activity, "Rename workspace", names[position], name -> action.send(WS_RENAME, position, name, null));
                     else action.send(WS_CLOSE, position, null, null);
                 })
-                .show();
+                );
             return true;
         });
     }

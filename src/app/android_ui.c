@@ -3,6 +3,7 @@
 #include <SDL3/SDL.h>
 #include <jni.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 
 void (*android_ui_action)(int code, int value, char *s1, char *s2);
@@ -21,6 +22,21 @@ JNIEXPORT void JNICALL Java_org_lumen_browser_LumenActivity_nativeUiAction(
     if ((*env)->ExceptionCheck(env)) (*env)->ExceptionClear(env);
     if (android_ui_action) android_ui_action(code, value, s[0], s[1]);
     else { free(s[0]); free(s[1]); }
+}
+
+JNIEXPORT jstring JNICALL Java_org_lumen_browser_LumenActivity_nativeUiIcon(JNIEnv *env, jclass activity_class, jint code) {
+    (void)activity_class;
+    const char *p = android_ui_icon(code);
+    return p ? (*env)->NewStringUTF(env, p) : NULL;
+}
+
+volatile float android_ui_stats[4];
+JNIEXPORT jfloatArray JNICALL Java_org_lumen_browser_LumenActivity_nativeTabStats(JNIEnv *env, jclass activity_class) {
+    (void)activity_class;
+    jfloat v[4]; for (int i = 0; i < 4; i++) v[i] = android_ui_stats[i];
+    jfloatArray a = (*env)->NewFloatArray(env, 4);
+    if (a) (*env)->SetFloatArrayRegion(env, a, 0, 4, v);
+    return a;
 }
 
 static jbyteArray jbytes(JNIEnv *env, const char *s) {
@@ -60,10 +76,58 @@ void android_ui_toast(const char *text) {
 void android_ui_menu(const AndroidMenuState *st) {
     jclass c; jmethodID m; JNIEnv *env = begin(&c, "showMenu", "([I)V", &m);
     if (!env) return;
-    jint v[7] = { st->can_forward, st->desktop, st->can_desktop, st->can_zoom, st->zoom_pct, st->bookmarked, st->can_bookmark };
-    jintArray a = (*env)->NewIntArray(env, 7);
-    if (a) { (*env)->SetIntArrayRegion(env, a, 0, 7, v); (*env)->CallStaticVoidMethod(env, c, m, a); }
+    jint v[9] = { st->can_forward, st->desktop, st->can_desktop, st->can_zoom, st->zoom_pct, st->bookmarked, st->can_bookmark, st->can_back, st->fullscreen };
+    jintArray a = (*env)->NewIntArray(env, 9);
+    if (a) { (*env)->SetIntArrayRegion(env, a, 0, 9, v); (*env)->CallStaticVoidMethod(env, c, m, a); }
     end(env);
+}
+void android_ui_toolbar(const AndroidBarState *st, const char *url) {
+    static AndroidBarState last; static char last_url[4096]; static bool sent;
+    if (!url) url = "";
+    if (sent && !memcmp(&last, st, sizeof last) && !strncmp(last_url, url, sizeof last_url - 1)) return;
+    jclass c; jmethodID m; JNIEnv *env = begin(&c, "updateToolbar", "([I[B)V", &m);
+    if (!env) return;
+    const AndroidMenuState *mn = &st->menu;
+    /* left, top, width, height, loading, slot count, 4 x (action, enabled, lit), then showMenu's 9,
+       then the CPU readout and touch feedback settings: on, colour, opacity, size, hide delay */
+    jint v[33] = { st->left, st->top, st->width, st->height, st->loading, st->nslot };
+    for (int i = 0; i < 4; i++) { v[6 + 3 * i] = st->slot[i]; v[7 + 3 * i] = st->slot_enabled[i]; v[8 + 3 * i] = st->slot_lit[i]; }
+    jint menu[9] = { mn->can_forward, mn->desktop, mn->can_desktop, mn->can_zoom, mn->zoom_pct, mn->bookmarked, mn->can_bookmark, mn->can_back, mn->fullscreen };
+    memcpy(v + 18, menu, sizeof menu);
+    v[27] = st->hud; v[28] = st->touch_feedback;
+    v[29] = st->touch_rgb; v[30] = st->touch_alpha; v[31] = st->touch_size; v[32] = st->touch_ms;
+    jintArray a = (*env)->NewIntArray(env, 33);
+    if (a) {
+        (*env)->SetIntArrayRegion(env, a, 0, 33, v);
+        (*env)->CallStaticVoidMethod(env, c, m, a, jbytes(env, url));
+        if (!(*env)->ExceptionCheck(env)) { last = *st; snprintf(last_url, sizeof last_url, "%s", url); sent = true; }
+    }
+    end(env);
+}
+void android_ui_fullscreen(bool on) {
+    jclass c; jmethodID m; JNIEnv *env = begin(&c, "setFullscreen", "(Z)V", &m);
+    if (!env) return;
+    (*env)->CallStaticVoidMethod(env, c, m, (jboolean)on);
+    end(env);
+}
+const char *android_ui_icon(int code) {
+    switch (code) {
+    case UI_BACK: return "M20 12 L4.5 12 M10.5 6 L4.5 12 L10.5 18";
+    case UI_FORWARD: return "M4 12 L19.5 12 M13.5 6 L19.5 12 L13.5 18";
+    case UI_RELOAD: return "A 12 12 7.5 -40 -280 M18.6 2.8 L18.2 7.3 L13.7 7";
+    case UI_NEW_TAB: return "M12 4.5 L12 19.5 M4.5 12 L19.5 12";
+    case UI_BM_TOGGLE: return "M12.0 3.6 L14.3 9.4 L20.6 9.8 L15.7 13.8 L17.3 19.9 L12.0 16.5 L6.7 19.9 L8.3 13.8 L3.4 9.8 L9.7 9.4 Z";
+    case UI_BOOKMARKS: return "M6 3.5 L18 3.5 L18 20.5 L12 15.5 L6 20.5 Z";
+    case UI_HISTORY: return "O 12 12 8.5 M12 7 L12 12 L15.5 14";
+    case UI_DOWNLOADS: return "M12 4 L12 15.5 M7 10.5 L12 15.5 L17 10.5 M5 20 L19 20";
+    case UI_WORKSPACES: return "M4 4 L10.5 4 L10.5 10.5 L4 10.5 Z M13.5 4 L20 4 L20 10.5 L13.5 10.5 Z M4 13.5 L10.5 13.5 L10.5 20 L4 20 Z M13.5 13.5 L20 13.5 L20 20 L13.5 20 Z";
+    case UI_DESKTOP: return "M3 5 L21 5 L21 16 L3 16 Z M12 16 L12 20 M8 20 L16 20";
+    case UI_FULLSCREEN: return "M4 9 L4 4 L9 4 M15 4 L20 4 L20 9 M20 15 L20 20 L15 20 M9 20 L4 20 L4 15";
+    case UI_ZOOM: return "O 10.5 10.5 6.5 M15.2 15.2 L20 20 M7.5 10.5 L13.5 10.5 M10.5 7.5 L10.5 13.5";
+    case UI_SETTINGS: return "O 12 12 3 O 12 12 6.5 M18.0 14.5 L20.5 15.5 M14.5 18.0 L15.5 20.5 M9.5 18.0 L8.5 20.5 M6.0 14.5 L3.5 15.5 "
+                             "M6.0 9.5 L3.5 8.5 M9.5 6.0 L8.5 3.5 M14.5 6.0 L15.5 3.5 M18.0 9.5 L20.5 8.5";
+    default: return NULL;
+    }
 }
 void android_ui_bookmarks(const char *const *titles, const char *const *urls, int n, const char *page_title, const char *page_url) {
     jclass c; jmethodID m; JNIEnv *env = begin(&c, "showBookmarks", "([[B[[B[B[B)V", &m);

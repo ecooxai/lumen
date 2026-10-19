@@ -8,8 +8,13 @@ class AudioParam {
     get value() { return this._v; }
     set value(x) { x = +x; if (x === x) { this._v = x; this._ev = []; } }
     _add(e) {
-        if (!this._ev.length) this._t0 = this._c.currentTime;
-        this._ev.push(e); this._ev.sort((a, b) => a.t - b.t); return this;
+        const ev = this._ev;
+        if (!ev.length) this._t0 = this._c.currentTime;
+        else if (ev.length > 64) this._at(this._c.currentTime);   /* a param nothing renders: settle what is past */
+        let i = ev.length;
+        while (i && ev[i - 1].t > e.t) i--;   /* after events at the same time, usually at the end */
+        if (i === ev.length) ev.push(e); else ev.splice(i, 0, e);
+        return this;
     }
     setValueAtTime(v, t) { return this._add({ k: 0, v: +v, t: +t }); }
     linearRampToValueAtTime(v, t) { return this._add({ k: 1, v: +v, t: +t }); }
@@ -50,16 +55,22 @@ class AudioNode extends EventTarget {
     disconnect(d) {
         for (const o of [...this._out]) if (d === undefined || o === d) { o._in.delete(this); this._out.delete(o); }
     }
+    /* the node's own [L, R] for quantum f: two pairs taken in turn, so last quantum's output stays intact
+       while a cycle reads it; consumers use an output within its quantum and copy what they keep */
+    _buf(f) {
+        const b = this._pp || (this._pp = [[new Float32Array(Q), new Float32Array(Q)], [new Float32Array(Q), new Float32Array(Q)]]);
+        return b[(f / Q) & 1];
+    }
     _mix(f) {   /* sum of inputs as [L, R] */
         let l = null, r = null;
         for (const s of this._in) {
             const o = s._pull(f);
             if (!o) continue;
-            if (!l) { l = new Float32Array(Q); r = new Float32Array(Q); }
+            if (!l) { [l, r] = this._buf(f); l.fill(0); r.fill(0); }
             const a = o[0], b = o[1];
             for (let i = 0; i < Q; i++) { l[i] += a[i]; r[i] += b[i]; }
         }
-        return l ? [l, r] : null;
+        return l ? this._buf(f) : null;
     }
     _pull(f) { if (this._q !== f) { this._q = f; this._o = this._render(f); } return this._o; }
     _render(f) { return this._mix(f); }
@@ -97,7 +108,7 @@ class DelayNode extends AudioNode {
     constructor(ctx, o = {}) { super(ctx); this._max = o.maxDelayTime ?? 1; this.delayTime = new AudioParam(ctx, o.delayTime ?? 0, 0, this._max); this._b = [new Float32Array(Math.ceil(this._max * ctx.sampleRate) + Q + 1), null]; this._b[1] = new Float32Array(this._b[0].length); this._w = 0; }
     _render(f) {
         const m = this._mix(f) || [silence, silence], n = this._b[0].length, d = Math.min(Math.round(paramIn(this.delayTime, f) * this.context.sampleRate), n - Q - 1);
-        const l = new Float32Array(Q), r = new Float32Array(Q);
+        const o = this._dbuf || (this._dbuf = [[new Float32Array(Q), new Float32Array(Q)], [new Float32Array(Q), new Float32Array(Q)]]), [l, r] = o[(f / Q) & 1];
         for (let i = 0; i < Q; i++) {
             const w = (this._w + i) % n; this._b[0][w] = m[0][i]; this._b[1][w] = m[1][i];
             const rd = (w - d + n) % n; l[i] = this._b[0][rd]; r[i] = this._b[1][rd];
@@ -115,41 +126,106 @@ class DynamicsCompressorNode extends AudioNode {
     constructor(ctx) { super(ctx); this.threshold = new AudioParam(ctx, -24); this.knee = new AudioParam(ctx, 30); this.ratio = new AudioParam(ctx, 12); this.attack = new AudioParam(ctx, 0.003); this.release = new AudioParam(ctx, 0.25); this.reduction = 0; }
 }
 class ConvolverNode extends AudioNode { constructor(ctx) { super(ctx); this.buffer = null; this.normalize = true; } }
+/* in-place radix-2 FFT; n is a power of two */
+const fft = (re, im) => {
+    const n = re.length;
+    for (let i = 1, j = 0; i < n; i++) {
+        let b = n >> 1;
+        for (; j & b; b >>= 1) j ^= b;
+        j ^= b;
+        if (i < j) { let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; }
+    }
+    for (let len = 2; len <= n; len <<= 1) {
+        const h = len >> 1, a = -2 * Math.PI / len, wr = Math.cos(a), wi = Math.sin(a);
+        for (let i = 0; i < n; i += len) {
+            let cr = 1, ci = 0;
+            for (let k = 0; k < h; k++) {
+                const u = i + k, v = u + h, xr = re[v] * cr - im[v] * ci, xi = re[v] * ci + im[v] * cr;
+                re[v] = re[u] - xr; im[v] = im[u] - xi; re[u] += xr; im[u] += xi;
+                const t = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = t;
+            }
+        }
+    }
+};
+const blackmanWin = new Map();   /* fftSize -> window, shared by every analyser */
+const blackman = n => {
+    let w = blackmanWin.get(n);
+    if (!w) { w = new Float32Array(n); for (let i = 0; i < n; i++) { const x = 2 * Math.PI * i / n; w[i] = 0.42 - 0.5 * Math.cos(x) + 0.08 * Math.cos(2 * x); } blackmanWin.set(n, w); }
+    return w;
+};
 class AnalyserNode extends AudioNode {
-    constructor(ctx, o = {}) { super(ctx); this.fftSize = o.fftSize || 2048; this.minDecibels = -100; this.maxDecibels = -30; this.smoothingTimeConstant = 0.8; this._last = new Float32Array(32768); }
-    get frequencyBinCount() { return this.fftSize / 2; }
+    constructor(ctx, o = {}) { super(ctx); this._fft = 2048; this.fftSize = o.fftSize || 2048; this.minDecibels = -100; this.maxDecibels = -30; this.smoothingTimeConstant = 0.8; this._last = new Float32Array(32768); this._ver = 0; this._specVer = -1; this._sm = null; }
+    get fftSize() { return this._fft; }
+    set fftSize(v) {
+        v = v >>> 0;
+        if (v < 32 || v > 32768 || (v & (v - 1))) throw new DOMException(`Failed to set the 'fftSize' property on 'AnalyserNode': The value provided (${v}) is not a power of two, or is outside the range [32, 32768].`, 'IndexSizeError');
+        if (v !== this._fft) { this._fft = v; this._sm = null; this._specVer = -1; }
+    }
+    get frequencyBinCount() { return this._fft / 2; }
     _feed(p) {   /* microphone PCM straight from a MediaStreamAudioSourceNode */
         const L = this._last, n = Math.min(p.length, L.length);
-        L.copyWithin(0, n); L.set(n < p.length ? p.subarray(p.length - n) : p, L.length - n); this._fed = true;
+        L.copyWithin(0, n); L.set(n < p.length ? p.subarray(p.length - n) : p, L.length - n); this._fed = true; this._ver++;
     }
     _render(f) {
         const m = this._mix(f), L = this._last;
         if (this._fed) return m;
-        L.copyWithin(0, Q);
+        L.copyWithin(0, Q); this._ver++;
         if (m) for (let i = 0; i < Q; i++) L[L.length - Q + i] = (m[0][i] + m[1][i]) / 2; else L.fill(0, L.length - Q);
         return m;
     }
-    getFloatTimeDomainData(a) { const n = Math.min(a.length, this.fftSize); a.set(this._last.subarray(this._last.length - n)); }
-    getByteTimeDomainData(a) { const n = Math.min(a.length, this.fftSize), s = this._last.length - n; for (let i = 0; i < n; i++) a[i] = Math.max(0, Math.min(255, 128 + this._last[s + i] * 128)); }
-    getFloatFrequencyData(a) {
-        const n = Math.min(a.length, this.frequencyBinCount), N2 = n * 2, s = this._last.length - N2;
-        for (let k = 0; k < n; k++) {   /* plain DFT with a Hann window; analysers are rare and small */
-            let re = 0, im = 0;
-            for (let i = 0; i < N2; i++) { const w = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / N2), x = this._last[s + i] * w, ph = 2 * Math.PI * k * i / N2; re += x * Math.cos(ph); im -= x * Math.sin(ph); }
-            a[k] = 20 * Math.log10(Math.sqrt(re * re + im * im) / N2 + 1e-12);
-        }
+    _spectrum() {   /* Blackman window, FFT and smoothing over time, once per new block of samples */
+        const n = this._fft, h = n >> 1;
+        if (this._sm && this._specVer === this._ver) return this._sm;
+        if (!this._re || this._re.length !== n) { this._re = new Float32Array(n); this._im = new Float32Array(n); }
+        const re = this._re, im = this._im, w = blackman(n), s = this._last.length - n;
+        for (let i = 0; i < n; i++) re[i] = this._last[s + i] * w[i];
+        im.fill(0);
+        fft(re, im);
+        const sm = this._sm || (this._sm = new Float32Array(h)), k = Math.max(0, Math.min(1, +this.smoothingTimeConstant || 0));
+        for (let i = 0; i < h; i++) { const v = Math.sqrt(re[i] * re[i] + im[i] * im[i]) / n; sm[i] = k * sm[i] + (1 - k) * (v === v && v !== Infinity ? v : 0); }
+        this._specVer = this._ver;
+        return sm;
     }
+    getFloatTimeDomainData(a) { const n = Math.min(a.length, this._fft); a.set(this._last.subarray(this._last.length - n)); }
+    getByteTimeDomainData(a) { const n = Math.min(a.length, this._fft), s = this._last.length - n; for (let i = 0; i < n; i++) a[i] = Math.max(0, Math.min(255, 128 + this._last[s + i] * 128)); }
+    getFloatFrequencyData(a) { const sm = this._spectrum(), n = Math.min(a.length, sm.length); for (let i = 0; i < n; i++) a[i] = 20 * Math.log10(sm[i]); }
     getByteFrequencyData(a) {
-        const f = new Float32Array(Math.min(a.length, this.frequencyBinCount)); this.getFloatFrequencyData(f);
-        for (let i = 0; i < f.length; i++) a[i] = Math.max(0, Math.min(255, 255 * (f[i] - this.minDecibels) / (this.maxDecibels - this.minDecibels)));
+        const sm = this._spectrum(), n = Math.min(a.length, sm.length), lo = this.minDecibels, span = this.maxDecibels - lo;
+        for (let i = 0; i < n; i++) a[i] = Math.max(0, Math.min(255, 255 * (20 * Math.log10(sm[i]) - lo) / span));
     }
 }
 
-/* a microphone track feeds the analysers, script processors and stream destinations downstream of it directly
-   (level meters, dictation); it is not mixed into the output */
+/* PCM waiting to be rendered, copied into a ring; the oldest samples are dropped past max */
+class PcmQueue {
+    constructor(max) { this.b = new Float32Array(Math.ceil(max)); this.r = 0; this.size = 0; this.out = null; }
+    push(p) {
+        const b = this.b, cap = b.length;
+        if (p.length >= cap) { b.set(p.subarray(p.length - cap)); this.r = 0; this.size = cap; return; }
+        const drop = Math.max(0, this.size + p.length - cap);
+        this.r = (this.r + drop) % cap; this.size -= drop;
+        const w = (this.r + this.size) % cap, k = Math.min(p.length, cap - w);
+        b.set(k < p.length ? p.subarray(0, k) : p, w);
+        if (k < p.length) b.set(p.subarray(k), 0);
+        this.size += p.length;
+    }
+    take(n) {   /* n samples, zero padded, in a buffer reused by the next take; null if empty */
+        if (!this.size) return null;
+        const out = this.out && this.out.length === n ? this.out : (this.out = new Float32Array(n)), b = this.b, cap = b.length;
+        const m = Math.min(n, this.size), k = Math.min(m, cap - this.r);
+        out.set(b.subarray(this.r, this.r + k));
+        if (k < m) out.set(b.subarray(0, m - k), k);
+        if (m < n) out.fill(0, m);
+        this.r = (this.r + m) % cap; this.size -= m;
+        return out;
+    }
+}
+
+/* a microphone track feeds the analysers, script processors, worklets and stream destinations downstream of it
+   directly (level meters, dictation); it is not mixed into the output. Remote WebRTC audio is fed the same way
+   and also rendered through the graph. */
 const feedMic = (n, pcm, depth) => {
     if (n._feed) n._feed(pcm);
-    if (depth > 8 || !n._out || n instanceof ScriptProcessorNode) return;
+    if (depth > 8 || !n._out || n instanceof ScriptProcessorNode || n instanceof AudioWorkletNode) return;
     let p = pcm;
     if (n instanceof GainNode && n.gain.value !== 1) { const g = n.gain.value; p = new Float32Array(pcm.length); for (let i = 0; i < p.length; i++) p[i] = pcm[i] * g; }
     for (const o of n._out) if (o instanceof AudioNode) feedMic(o, p, depth + 1);
@@ -161,11 +237,20 @@ class MediaStreamAudioSourceNode extends AudioNode {
         if (!(s instanceof MediaStream)) throw new TypeError("Failed to construct 'MediaStreamAudioSourceNode': required member mediaStream is undefined.");
         const t = s.getAudioTracks()[0];
         if (!t) throw new DOMException("Failed to construct 'MediaStreamAudioSourceNode': MediaStream has no audio track", 'InvalidStateError');
-        this.mediaStream = s;
-        this._sub = pcm => { for (const n of this._out) if (n instanceof AudioNode) feedMic(n, pcm, 0); };
+        this.mediaStream = s; this._remote = t._.hub instanceof RtcHub; this._pq = new PcmQueue(RATE * 0.3); this._primed = false;
+        this._sub = pcm => {
+            for (const n of this._out) if (n instanceof AudioNode) feedMic(n, pcm, 0);
+            if (this._remote && this._out.size) { this._pq.push(pcm); ctx._activate(this); }
+        };
         if (t._.hub) t._.hub.subs.add(this._sub);
     }
-    _render() { return null; }
+    _render() {
+        const q = this._pq;
+        if (!this._primed && q.size < RATE * 0.05) { if (!q.size) this.context._active.delete(this); return null; }   /* 50 ms of jitter buffer */
+        if (q.size < Q) this._primed = false; else this._primed = true;
+        const p = q.take(Q);
+        return p ? [p, p] : null;
+    }
 }
 class AudioProcessingEvent extends Event {
     constructor(t, i = {}) { super(t, i); this.playbackTime = +i.playbackTime || 0; this.inputBuffer = i.inputBuffer || null; this.outputBuffer = i.outputBuffer || null; }
@@ -202,9 +287,10 @@ class ScriptProcessorNode extends AudioNode {
         }
         const ob = this._ob;
         if (!ob || this._op >= ob.length) return null;
-        const l = ob._ch[0].slice(this._op, this._op + Q), r = ob._ch[ob._ch.length > 1 ? 1 : 0].slice(this._op, this._op + Q);
+        const o = this._buf(f), R = ob._ch[ob._ch.length > 1 ? 1 : 0];
+        o[0].set(ob._ch[0].subarray(this._op, this._op + Q)); o[1].set(R.subarray(this._op, this._op + Q));
         this._op += Q;
-        return [l, r];
+        return o;
     }
 }
 /* a MediaStream of the microphone audio reaching it, for MediaRecorder */
@@ -235,7 +321,7 @@ class AudioScheduledSourceNode extends AudioNode {
         const sr = this.context.sampleRate, t0 = f / sr, t1 = (f + Q) / sr;
         if (t1 <= this._start) return null;
         if (t0 >= this._stop) { this._end(); return null; }
-        const out = new Float32Array(Q), a = Math.max(0, Math.ceil((this._start - t0) * sr)), b = Math.min(Q, Math.ceil((this._stop - t0) * sr));
+        const out = this._buf(f)[0].fill(0), a = Math.max(0, Math.ceil((this._start - t0) * sr)), b = Math.min(Q, Math.ceil((this._stop - t0) * sr));
         const r = this._gen(out, a, b, f);
         if (b < Q || r === false) this._end();
         return [out, out];
@@ -282,11 +368,12 @@ class AudioBufferSourceNode extends AudioScheduledSourceNode {
         if ((f + Q) / sr <= this._start) return null;
         if (t0 >= this._stop) { this._end(); return null; }
         if (this._pos < 0) this._pos = this._off * buf.sampleRate;
-        const l = new Float32Array(Q), r = new Float32Array(Q), L = buf._ch[0], R = buf._ch[buf._ch.length > 1 ? 1 : 0], n = buf.length;
+        const [l, r] = this._buf(f), L = buf._ch[0], R = buf._ch[buf._ch.length > 1 ? 1 : 0], n = buf.length;
         const step = paramIn(this.playbackRate, f) * Math.pow(2, paramIn(this.detune, f) / 1200) * buf.sampleRate / sr;
         const ls = this.loopStart * buf.sampleRate, le = this.loopEnd > this.loopStart ? Math.min(n, this.loopEnd * buf.sampleRate) : n;
         const a = Math.max(0, Math.ceil((this._start - t0) * sr)), b = Math.min(Q, Math.ceil((this._stop - t0) * sr));
         let p = this._pos, ended = b < Q;
+        l.fill(0); r.fill(0);
         for (let i = a; i < b; i++) {
             if (this.loop && p >= le) p = ls + (p - le) % Math.max(le - ls, 1);
             if (p >= n || p < 0 || this._left <= 0) { ended = true; break; }
@@ -297,6 +384,129 @@ class AudioBufferSourceNode extends AudioScheduledSourceNode {
         this._pos = p;
         if (ended) this._end();
         return [l, r];
+    }
+}
+
+/* AudioWorklet: modules run on this thread with the worklet globals in scope, and processors run inside the graph.
+   A worklet fed by a microphone processes each 128 frames as they are captured. */
+let wkPort = null;   /* the port of the processor being constructed */
+class AudioWorkletProcessor {
+    constructor() {
+        if (!wkPort) throw new TypeError("Failed to construct 'AudioWorkletProcessor': Illegal constructor");
+        this.port = wkPort; wkPort = null;
+    }
+}
+class AudioParamMap {
+    constructor(m) { Object.defineProperty(this, '_m', { value: m }); }
+    get size() { return this._m.size; }
+    get(k) { return this._m.get(k); }
+    has(k) { return this._m.has(k); }
+    keys() { return this._m.keys(); }
+    values() { return this._m.values(); }
+    entries() { return this._m.entries(); }
+    forEach(f, self) { this._m.forEach((v, k) => f.call(self, v, k, this)); }
+    [Symbol.iterator]() { return this._m.entries(); }
+}
+class AudioWorklet {
+    constructor(ctx) { Object.defineProperty(this, '_c', { value: ctx }); this._procs = new Map(); this._mods = new Map(); }
+    addModule(url) {
+        let u;
+        try { u = new URL(String(url), document.baseURI || N.url()).href; }
+        catch (e) { return Promise.reject(new DOMException(`Failed to execute 'addModule' on 'Worklet': The URL '${url}' is invalid.`, 'SyntaxError')); }
+        let p = this._mods.get(u);
+        if (!p) {
+            p = fetch(u).then(r => { if (!r.ok) throw new TypeError('worklet module HTTP ' + r.status); return r.text(); }).then(src => { this._run(src); }).catch(e => {
+                this._mods.delete(u);
+                console.error(e);
+                throw new DOMException("Failed to execute 'addModule' on 'Worklet': Unable to load a worklet's module.", 'AbortError');
+            });
+            this._mods.set(u, p);
+        }
+        return p;
+    }
+    _run(src) {
+        const c = this._c, procs = this._procs, scope = Object.create(null);
+        Object.defineProperties(scope, {
+            registerProcessor: { value(name, ctor) {
+                name = String(name);
+                if (!name) throw new DOMException("Failed to execute 'registerProcessor' on 'AudioWorkletGlobalScope': The processor name cannot be empty.", 'NotSupportedError');
+                if (procs.has(name)) throw new DOMException(`Failed to execute 'registerProcessor' on 'AudioWorkletGlobalScope': An AudioWorkletProcessor with name:"${name}" is already registered.`, 'NotSupportedError');
+                if (typeof ctor !== 'function') throw new TypeError("Failed to execute 'registerProcessor' on 'AudioWorkletGlobalScope': The provided callback is not a function.");
+                const d = ctor.parameterDescriptors;
+                procs.set(name, { ctor, params: d ? [...d] : [] });
+            } },
+            AudioWorkletProcessor: { value: AudioWorkletProcessor },
+            sampleRate: { get: () => c.sampleRate },
+            currentFrame: { get: () => c._f },
+            currentTime: { get: () => c._f / c.sampleRate },
+        });
+        /* module code: export keywords are dropped, the body runs once */
+        new Function('lumenWorkletScope', 'with (lumenWorkletScope) {\n' + String(src).replace(/^([ \t]*)export\s+(default\s+)?/gm, '$1') + '\n}')(scope);
+    }
+}
+class AudioWorkletNode extends AudioNode {
+    constructor(ctx, name, o = {}) {
+        if (!(ctx instanceof BaseAudioContext)) throw new TypeError("Failed to construct 'AudioWorkletNode': parameter 1 is not of type 'BaseAudioContext'.");
+        const d = ctx.audioWorklet._procs.get(String(name));
+        if (!d) throw new DOMException(`Failed to construct 'AudioWorkletNode': AudioWorkletNode cannot be created: The node name '${name}' is not defined in AudioWorkletGlobalScope.`, 'InvalidStateError');
+        const ins = o.numberOfInputs ?? 1, outs = o.numberOfOutputs ?? 1;
+        super(ctx, ins, outs);
+        const ch = new MessageChannel(), pm = new Map();
+        for (const p of d.params) pm.set(p.name, new AudioParam(ctx, p.defaultValue ?? 0, p.minValue, p.maxValue));
+        if (o.parameterData) for (const [k, v] of Object.entries(o.parameterData)) if (pm.has(k)) pm.get(k).value = v;
+        this.port = ch.port1; this.parameters = new AudioParamMap(pm); this.onprocessorerror = null;
+        this._outCh = o.outputChannelCount || null; this._keep = true; this._proc = null;
+        this._acc = new Float32Array(Q); this._an = 0; this._fedAt = -1e9; this._ql = new PcmQueue(RATE / 2); this._qr = new PcmQueue(RATE / 2);
+        wkPort = ch.port2;
+        try { this._proc = new d.ctor({ numberOfInputs: ins, numberOfOutputs: outs, outputChannelCount: o.outputChannelCount, parameterData: o.parameterData || {}, processorOptions: o.processorOptions === undefined ? undefined : structuredClone(o.processorOptions) }); }
+        catch (e) { this._fail(e); }
+        wkPort = null;
+        if (this._proc) { ctx._auto.add(this); ctx._activate(this); }
+    }
+    _fail(e) {
+        this._proc = null; this.context._auto.delete(this); this.context._active.delete(this);
+        console.error(e);
+        setTimeout(() => this.dispatchEvent(new ErrorEvent('processorerror', { message: String(e && e.message || e), error: e })));
+    }
+    _process(input) {   /* input: the channels of input 0; returns output 0 as [L, R], valid until the next call */
+        const p = this._proc;
+        if (!p) return null;
+        /* like Chrome, the same arrays are handed to every process() call; outputs start silent */
+        const b = this._bufs || (this._bufs = { ins: [], outs: [], prm: {} }), ins = b.ins, outs = b.outs, prm = b.prm;
+        for (let i = 0; i < this.numberOfInputs; i++) ins[i] = i ? (ins[i] || []) : input;
+        for (let i = 0; i < this.numberOfOutputs; i++) {
+            const n = (this._outCh && this._outCh[i]) || (this.numberOfInputs === 1 && this.numberOfOutputs === 1 ? Math.max(input.length, 1) : 1);
+            let o = outs[i];
+            if (!o || o.length !== n) { o = outs[i] = []; for (let c = 0; c < n; c++) o.push(new Float32Array(Q)); }
+            else for (const c of o) c.fill(0);
+        }
+        for (const [k, a] of this.parameters._m) (prm[k] || (prm[k] = new Float32Array(1)))[0] = paramIn(a, this.context._f);
+        try { this._keep = !!p.process(ins, outs, prm); } catch (e) { this._fail(e); return null; }
+        const o = outs[0];
+        return o && o.length ? [o[0], o[1] || o[0]] : null;
+    }
+    _feed(pcm) {
+        this._fedAt = performance.now();
+        let fwd = null, k0 = 0;
+        for (let i = 0; i < pcm.length;) {
+            const k = Math.min(pcm.length - i, Q - this._an);
+            this._acc.set(pcm.subarray(i, i + k), this._an); this._an += k; i += k;
+            if (this._an < Q) break;
+            this._an = 0;
+            const o = this._process(this._accIn || (this._accIn = [this._acc]));
+            if (!o || !this._out.size) continue;   /* nothing downstream: process() ran for its side effects */
+            this._ql.push(o[0]); this._qr.push(o[1]);   /* the queues copy */
+            if (!fwd) fwd = new Float32Array(pcm.length + Q);
+            fwd.set(o[0], k0); k0 += Q;
+        }
+        if (fwd && k0) { const out = fwd.subarray(0, k0); for (const n of this._out) if (n instanceof AudioNode) feedMic(n, out, 1); }
+    }
+    _render(f) {
+        if (performance.now() - this._fedAt < 500) { const l = this._ql.take(Q); return l ? [l, this._qr.take(Q) || l] : null; }
+        if (!this._proc) return null;
+        const m = this._mix(f);
+        if (!m && !this._keep) { this.context._active.delete(this); return null; }
+        return this._process(m ? [m[0], m[1]] : []);
     }
 }
 
@@ -316,13 +526,13 @@ class AudioBuffer {
 class BaseAudioContext extends EventTarget {
     constructor(rate) {
         super(); this.sampleRate = rate; this._f = 0; this._active = new Set(); this._state = 'running';
-        this.destination = new AudioDestinationNode(this); this.listener = {}; this.audioWorklet = { addModule: () => Promise.reject(new DOMException('AudioWorklet is not supported', 'NotSupportedError')) };
+        this.destination = new AudioDestinationNode(this); this.listener = {}; this.audioWorklet = new AudioWorklet(this); this._auto = new Set();
     }
     get state() { return this._state; }
     get currentTime() { return this._f / this.sampleRate; }
     _setState(s) { if (this._state !== s) { this._state = s; this.dispatchEvent(new Event('statechange')); } }
     _activate(n) { this._active.add(n); }
-    _quantum() { const o = this.destination._pull(this._f); this._f += Q; return o; }
+    _quantum() { const o = this.destination._pull(this._f); for (const n of this._auto) n._pull(this._f); this._f += Q; return o; }   /* worklets run unconnected too */
     createGain() { return new GainNode(this); }
     createOscillator() { return new OscillatorNode(this); }
     createBufferSource() { return new AudioBufferSourceNode(this); }
@@ -432,6 +642,6 @@ Object.assign(globalThis, {
     AudioContext, webkitAudioContext: AudioContext, OfflineAudioContext, webkitOfflineAudioContext: OfflineAudioContext, BaseAudioContext,
     AudioNode, AudioParam, AudioBuffer, AudioDestinationNode, AudioScheduledSourceNode, GainNode, OscillatorNode, AudioBufferSourceNode,
     ConstantSourceNode, StereoPannerNode, DelayNode, BiquadFilterNode, DynamicsCompressorNode, ConvolverNode, AnalyserNode, PeriodicWave, MediaStreamAudioSourceNode,
-    ScriptProcessorNode, AudioProcessingEvent, MediaStreamAudioDestinationNode,
+    ScriptProcessorNode, AudioProcessingEvent, MediaStreamAudioDestinationNode, AudioWorklet, AudioWorkletNode, AudioParamMap,
 });
 })();

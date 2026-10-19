@@ -23,6 +23,14 @@ final class BrowserInsets implements View.OnApplyWindowInsetsListener {
         container.requestApplyInsets();
     }
 
+    @SuppressWarnings("deprecation")
+    static void fullscreen(Window window, boolean on) {
+        if (Build.VERSION.SDK_INT >= 30) { Api30.fullscreen(window, on); return; }
+        int flags = View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
+        View decor = window.getDecorView();
+        decor.setSystemUiVisibility(on ? decor.getSystemUiVisibility() | flags : decor.getSystemUiVisibility() & ~flags);
+    }
+
     @Override
     public WindowInsets onApplyWindowInsets(View view, WindowInsets insets) {
         if (Build.VERSION.SDK_INT >= 30) return Api30.apply(this, view, insets);
@@ -61,6 +69,17 @@ final class BrowserInsets implements View.OnApplyWindowInsetsListener {
     private static final class Api30 {
         static void configure(Window window) {
             window.setDecorFitsSystemWindows(false);
+        }
+
+        static void fullscreen(Window window, boolean on) {
+            android.view.WindowInsetsController controller = window.getInsetsController();
+            if (controller == null) return;
+            if (on) {
+                controller.setSystemBarsBehavior(android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+                controller.hide(WindowInsets.Type.systemBars());
+            } else {
+                controller.show(WindowInsets.Type.systemBars());
+            }
         }
 
         static WindowInsets apply(BrowserInsets adapter, View view, WindowInsets insets) {

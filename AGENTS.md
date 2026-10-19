@@ -43,3 +43,16 @@ while kill -0 $P 2>/dev/null; do ps -o %cpu=,rss= -p $P; sleep 1; done
   profile it (`sample <pid> 5 -file out.txt` on macOS, `perf` on Linux),
   find the hot path and fix it before moving on.
 - Report the measured CPU numbers with the test results.
+
+## Subagents for build, test and device work
+
+Delegate every build, install/deploy, test run and computer-use or phone-control
+task (adb taps, screenshots, page probes, CPU sampling) to a subagent running the
+latest Claude Haiku model (currently Haiku 5.5, `model: haiku`) with high
+reasoning effort (`effort: high`). Start a fresh subagent for each task with a
+self-contained prompt that includes the compile rules above, the CPU-monitoring
+requirement and the privacy rules: never type into page inputs, describe
+third-party pages only structurally, and delete screenshots that show personal
+content. It iterates at most five times, fixes only simple problems and returns a
+short report. Writing and debugging code stays in the main agent, and source
+files are not edited while a subagent is building.

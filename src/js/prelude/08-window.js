@@ -23,7 +23,33 @@ const ioAll = new Set();
 // Native layout/style/scroll changes drive observation; idle documents do no work.
 const ioStop = () => { if (!ioAll.size) N.intersectionPump(null); };
 const ioRun = () => { for (const o of [...ioAll]) if (o._t.size) o._check(); ioStop(); };
-class PerformanceObserver { constructor(cb) { this._cb = cb; } observe() {} disconnect() {} takeRecords() { return []; } static get supportedEntryTypes() { return []; } }
+// Marks, measures and the page's navigation entry; observers get them in a microtask, buffered ones too
+const PERF_TYPES = Object.freeze(['mark', 'measure', 'navigation']);
+const perfObservers = new Set();
+const perfNotify = (e) => { for (const o of perfObservers) if (o._types.has(e.entryType)) o._push([e]); };
+class PerformanceObserverEntryList {
+    constructor(l) { def(this, '_l', l); }
+    getEntries() { return this._l.slice(); } getEntriesByType(t) { return this._l.filter(e => e.entryType === t); }
+    getEntriesByName(n, t) { return this._l.filter(e => e.name === n && (t == null || e.entryType === t)); }
+}
+class PerformanceObserver {
+    constructor(cb) { if (typeof cb !== 'function') throw new TypeError('PerformanceObserver: callback must be a function'); def(this, '_cb', cb); def(this, '_types', new Set()); def(this, '_q', []); def(this, '_due', false); }
+    observe(o) {
+        o = o || {}; const ts = o.entryTypes || (o.type != null ? [String(o.type)] : []);
+        for (const t of ts) if (PERF_TYPES.includes(t)) this._types.add(t);
+        if (!this._types.size) return;
+        perfObservers.add(this);
+        if (o.buffered && o.type != null && this._types.has(o.type)) this._push(performance.getEntriesByType(o.type));
+    }
+    _push(l) {
+        if (!l.length) return; this._q.push(...l);
+        if (this._due) return; this._due = true;
+        queueMicrotask(() => { this._due = false; if (!this._q.length || !perfObservers.has(this)) return; const q = this._q.splice(0); try { this._cb.call(this, new PerformanceObserverEntryList(q), this); } catch (e) { report(e); } });
+    }
+    disconnect() { perfObservers.delete(this); this._q.length = 0; this._types.clear(); }
+    takeRecords() { return this._q.splice(0); }
+    static get supportedEntryTypes() { return PERF_TYPES; }
+}
 class Storage {
     constructor() { def(this, '_m', new Map()); }
     get length() { return this._m.size; } key(i) { return [...this._m.keys()][i] ?? null; }
@@ -127,7 +153,8 @@ const navigator = {
                 return new Promise(r => setTimeout(() => r(new MediaStream(t.concat(video())))));
             }
             return new Promise((res, rej) => {   /* the device opens once Android grants the microphone */
-                const id = N.micOpen();
+                const ec = c.audio === true || typeof c.audio !== 'object' ? undefined : c.audio.echoCancellation;   /* on unless false, {exact: false} or {ideal: false} */
+                const id = N.micOpen(!(ec === false || (ec && typeof ec === 'object' && (ec.exact === false || ec.ideal === false))));
                 if (id < 0) { rej(new DOMException('Requested device not found', 'NotFoundError')); return; }
                 const wait = () => {
                     const st = N.micState(id);
@@ -152,14 +179,32 @@ const navigator = {
 const screen = { get width() { return N.viewport()[5]; }, get height() { return N.viewport()[6]; }, get availWidth() { return N.viewport()[5]; }, get availHeight() { return N.viewport()[6]; }, colorDepth: 24, pixelDepth: 24, orientation: { type: 'landscape-primary', angle: 0, addEventListener() {} } };
 const T0 = Date.now() - N.now();
 const marks = [];
+/* the navigation entry's times: the document's DOMContentLoaded and load, once they happen */
+const navTimes = { dcl: 0, load: 0 };
+let navEntry = null;
+const navigationEntry = () => {
+    if (navEntry && navTimes.load) return navEntry;
+    const end = navTimes.load || 0, dcl = navTimes.dcl || 0;
+    navEntry = { name: location.href, entryType: 'navigation', initiatorType: 'navigation', type: 'navigate', startTime: 0, duration: end, redirectCount: 0,
+        fetchStart: 0, domainLookupStart: 0, domainLookupEnd: 0, connectStart: 0, connectEnd: 0, requestStart: 0, responseStart: 0, responseEnd: 0,
+        domInteractive: dcl, domContentLoadedEventStart: dcl, domContentLoadedEventEnd: dcl, domComplete: end, loadEventStart: end, loadEventEnd: end,
+        transferSize: 0, encodedBodySize: 0, decodedBodySize: 0, nextHopProtocol: 'h2', serverTiming: [], toJSON() { return Object.assign({}, this); } };
+    return navEntry;
+};
+Promise.resolve().then(() => {
+    document.addEventListener('DOMContentLoaded', () => { navTimes.dcl = N.now(); }, { once: true });
+    G.addEventListener('load', () => { navTimes.load = N.now(); setTimeout(() => perfNotify(navigationEntry())); }, { once: true });
+});
+const perfEntries = (t) => t === 'navigation' ? (navTimes.dcl ? [navigationEntry()] : []) : marks.filter(m => m.entryType === t);
 const performance = Object.assign(new EventTarget(), {
     now() { return N.now(); }, timeOrigin: T0,
     timing: { navigationStart: T0, fetchStart: T0, domLoading: T0, responseStart: T0 },
     navigation: { type: 0, redirectCount: 0 },
-    mark(n, o) { const e = { name: n, entryType: 'mark', startTime: o && o.startTime != null ? o.startTime : N.now(), duration: 0, detail: o && o.detail }; marks.push(e); return e; },
-    measure(n, s, e) { const f = (x) => typeof x === 'string' ? (marks.findLast(m => m.name === x) || { startTime: 0 }).startTime : x ?? N.now(); const st = typeof s === 'object' && s ? f(s.start) : f(s ?? 0); const en = typeof s === 'object' && s ? f(s.end) : f(e); const m = { name: n, entryType: 'measure', startTime: st, duration: en - st }; marks.push(m); return m; },
-    getEntries() { return marks.slice(); }, getEntriesByType(t) { return marks.filter(m => m.entryType === t); }, getEntriesByName(n) { return marks.filter(m => m.name === n); },
-    clearMarks() { marks.length = 0; }, clearMeasures() {}, clearResourceTimings() {}, setResourceTimingBufferSize() {},
+    mark(n, o) { const e = { name: n, entryType: 'mark', startTime: o && o.startTime != null ? o.startTime : N.now(), duration: 0, detail: o && o.detail }; marks.push(e); if (marks.length > 4096) marks.splice(0, 1024); perfNotify(e); return e; },
+    measure(n, s, e) { const f = (x) => typeof x === 'string' ? (marks.findLast(m => m.name === x) || { startTime: 0 }).startTime : x ?? N.now(); const st = typeof s === 'object' && s ? f(s.start) : f(s ?? 0); const en = typeof s === 'object' && s ? f(s.end) : f(e); const m = { name: n, entryType: 'measure', startTime: st, duration: en - st, detail: typeof s === 'object' && s ? s.detail ?? null : null }; marks.push(m); if (marks.length > 4096) marks.splice(0, 1024); perfNotify(m); return m; },
+    getEntries() { return perfEntries('navigation').concat(marks); }, getEntriesByType(t) { return perfEntries(t); }, getEntriesByName(n, t) { return (t == null ? this.getEntries() : perfEntries(t)).filter(m => m.name === n); },
+    clearMarks(n) { for (let i = marks.length; i--;) if (marks[i].entryType === 'mark' && (n == null || marks[i].name === n)) marks.splice(i, 1); },
+    clearMeasures(n) { for (let i = marks.length; i--;) if (marks[i].entryType === 'measure' && (n == null || marks[i].name === n)) marks.splice(i, 1); }, clearResourceTimings() {}, setResourceTimingBufferSize() {},
     get memory() { const h = N.heap(); return { usedJSHeapSize: h[0], totalJSHeapSize: h[1], jsHeapSizeLimit: h[2] }; },
     toJSON() { return { timeOrigin: T0 }; },
 });
@@ -356,7 +401,7 @@ function cloneValue(v, seen) {
     const o = Array.isArray(v) ? [] : {}; seen.set(v, o); for (const k of Object.keys(v)) o[k] = cloneValue(v[k], seen); return o;
 }
 const xferPorts = (o, t) => { const tr = o && typeof o === 'object' ? o.transfer : t; return (tr && typeof tr[Symbol.iterator] === 'function' ? [...tr] : []).filter(p => p && typeof p.postMessage === 'function' && typeof p.start === 'function'); };
-function postMessage(data, origin, transfer) { const [src, org] = N.caller(); const d = structuredClone(data), ports = xferPorts(origin, transfer); setTimeout(() => dispatch(G, new MessageEvent('message', { data: d, origin: org, source: asWin(src), ports }), true)); }
+function postMessage(data, origin, transfer) { const [src, org] = N.caller(); const d = structuredClone(data), ports = xferPorts(origin, transfer); N.timer(() => { try { dispatch(G, new MessageEvent('message', { data: d, origin: org, source: asWin(src), ports }), true); } catch (e) { report(e); } }, 0, false, true); }
 function queueMessage(data, origin, src, ports) { setTimeout(() => dispatch(G, new MessageEvent('message', { data, origin, source: asWin(src), ports: ports ? [...ports] : [] }), true)); }
 const remoteWins = new Map();
 function asWin(v) {

@@ -6,6 +6,9 @@
 #include <sys/random.h>
 #endif
 #include <vector>
+#if defined(__ANDROID__) && !defined(NDEBUG)
+#include <android/log.h>
+#endif
 #include <openssl/core_names.h>
 #include <openssl/ecdsa.h>
 #include <openssl/evp.h>
@@ -329,10 +332,15 @@ FN(timer) {
     t.fn.Reset(iso, a[0].As<v8::Function>());
     t.repeat = BOOL(2);
     t.interval = std::max(NUM(1), t.repeat ? 4.0 : 0.0);
+    // a[3]: a posted task (MessagePort), run as soon as possible like Chrome's.
+    // Timers nested five deep are clamped to 4 ms, as HTML specifies.
+    t.nest = a.Length() > 3 && BOOL(3) ? 0 : c->timer_nest + 1;
+    if (t.nest > 5) t.interval = std::max(t.interval, 4.0);
     t.due = now_ms() + t.interval;
+    c->timer_due.insert({ t.due, id });
     RET(id);
 }
-FN(clearTimer) { CTX; c->timers.erase((uint32_t)NUM(0)); }
+FN(clearTimer) { CTX; auto it = c->timers.find((uint32_t)NUM(0)); if (it != c->timers.end()) c->timer_erase(it); }
 FN(raf) {
     CTX;
     if (!a[0]->IsFunction()) return;
@@ -386,6 +394,10 @@ static void fetch_done(NetRequest *req, NetResponse *r, void *ud) {
     if (!c) { delete f; return; }
     c->fetches.erase(f->id);
     JS_ENTER(c);
+#if defined(__ANDROID__) && !defined(NDEBUG)
+    struct Slow { double t = now_ms(); bool script; size_t kb; ~Slow() { if (now_ms() - t >= 200) __android_log_print(ANDROID_LOG_INFO, "LumenLoad", "fetch_done script=%d kb=%zu ms=%.0f", script, kb, now_ms() - t); } }
+        slow{ now_ms(), f->script != nullptr, r && r->body ? r->body_len >> 10 : 0 };
+#endif
     if (f->script) {
         if (r && !r->error && r->status >= 200 && r->status < 300) js_run_script(c, f->script, r->body ? r->body : "", r->body ? r->body_len : 0, r->url ? r->url : "");
         else jfire(c, f->script, "error");
@@ -435,7 +447,7 @@ FN(waPush) {
 FN(waQueued) { CTX; RET((double)wa_queued(c, (int)NUM(0))); }
 FN(waPause) { CTX; wa_pause(c, (int)NUM(0), BOOL(1)); }
 FN(waClose) { CTX; wa_close(c, (int)NUM(0)); }
-FN(micOpen) { CTX; RET((double)mic_open(c)); }
+FN(micOpen) { CTX; RET((double)mic_open(c, a.Length() < 1 || BOOL(0))); }
 FN(micPermission) { RET((double)mic_permission()); }
 FN(micState) { CTX; RET((double)mic_state(c, (int)NUM(0))); }
 FN(micRead) {   /* mono float32 PCM captured since the last read, or null */
@@ -994,10 +1006,40 @@ void js_run_inserted(JsCtx *c, Node *root) {
     frames_inserted(c, root);
 }
 
+#if defined(__ANDROID__) && !defined(NDEBUG)
+#include <mutex>
+/* Debug Android: while the jsprof diagnostic is armed, each native counts its calls and time
+   (inclusive of any JS it calls back into); jsprof logs the totals. Native names only. */
+struct NatStat { const char *name; v8::FunctionCallback fn; uint64_t n; double ms; };
+static NatStat g_nat[512]; static size_t g_nnat; static std::mutex g_nat_mu;
+static void n_timed(const FCI &a) {
+    NatStat &s = g_nat[(size_t)a.Data().As<v8::Integer>()->Value()];
+    double t = now_ms(); s.fn(a); s.ms += now_ms() - t; s.n++;
+}
+static v8::Local<v8::Function> nat_fn(v8::Local<v8::Context> ctx, const char *name, v8::FunctionCallback fn) {
+    if (!jsprof_active()) return v8::Function::New(ctx, fn).ToLocalChecked();
+    size_t i;
+    { std::lock_guard<std::mutex> l(g_nat_mu);
+      for (i = 0; i < g_nnat && g_nat[i].fn != fn; i++) {}
+      if (i == g_nnat) { if (g_nnat == sizeof g_nat / sizeof *g_nat) return v8::Function::New(ctx, fn).ToLocalChecked(); g_nat[g_nnat++] = { name, fn, 0, 0 }; } }
+    return v8::Function::New(ctx, n_timed, v8::Integer::New(v8::Isolate::GetCurrent(), (int)i)).ToLocalChecked();
+}
+void js_native_report(void) {
+    std::lock_guard<std::mutex> l(g_nat_mu);
+    std::vector<NatStat *> v; for (size_t i = 0; i < g_nnat; i++) if (g_nat[i].n) v.push_back(&g_nat[i]);
+    std::sort(v.begin(), v.end(), [](NatStat *x, NatStat *y) { return x->ms > y->ms; });
+    for (size_t i = 0; i < v.size() && i < 30; i++)
+        __android_log_print(ANDROID_LOG_INFO, "LumenProf", "native %-14s calls=%llu ms=%.0f", v[i]->name, (unsigned long long)v[i]->n, v[i]->ms);
+    for (size_t i = 0; i < g_nnat; i++) g_nat[i].n = 0, g_nat[i].ms = 0;
+}
+#define NAT_FN(nm) nat_fn(ctx, #nm, n_##nm)
+#else
+#define NAT_FN(nm) v8::Function::New(ctx, n_##nm).ToLocalChecked()
+#endif
 void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     v8::Isolate *iso = c->iso;
     v8::Local<v8::Context> ctx = iso->GetCurrentContext();
-#define REG(nm) (void)N->Set(ctx, jstr(iso, #nm), v8::Function::New(ctx, n_##nm).ToLocalChecked())
+#define REG(nm) (void)N->Set(ctx, jstr(iso, #nm), NAT_FN(nm))
     REG(isNode); REG(version);
     REG(inert); REG(type); REG(name); REG(ns); REG(parent); REG(first); REG(last); REG(next); REG(prev);
     REG(text); REG(setText); REG(attr); REG(setAttr); REG(rmAttr); REG(attrs); REG(insert); REG(remove); REG(newDoc); REG(newXmlDoc); REG(parseDoc); REG(adopt); REG(pi); REG(cdata); REG(doctype); REG(ownerDoc);
@@ -1013,5 +1055,5 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(currentScript); REG(media); REG(cssSupports); REG(cssSelText); REG(urlParse); REG(encode); REG(decode); REG(random); REG(cDigest); REG(cHmac); REG(cAes); REG(cEcGen); REG(cEcDerive); REG(cEcSign); REG(cEcVerify); REG(cSpki); REG(cSpkiParse); REG(cPkcs8Parse); REG(cEcFromD); REG(cHkdf); REG(cPbkdf2);
     REG(heap); REG(imgSize); REG(userAgent); REG(platform); REG(download); REG(downloadBytes); REG(touchPoints); REG(cpus); REG(makeAll);
 #undef REG
-    js_install_frames(c, N); js_install_workers(c, N);
+    js_install_frames(c, N); js_install_workers(c, N); js_install_rtc(c, N);
 }

@@ -175,7 +175,10 @@ typedef struct StyleSheet {
     uint32_t rank; /* cascade order among the engine's sheets; gaps let a sheet be indexed between two others */
 } StyleSheet;
 
-typedef struct EmptyDependency { Selector candidate; Node *scope; } EmptyDependency;
+/* mode 0: test every element (keyed by the subject); 1: compound dep tests a
+ * changed element's :empty directly; 2: compound dep tests it through :has, so
+ * it is an ancestor (sib: or an ancestor's preceding sibling) of the change. */
+typedef struct EmptyDependency { Selector candidate; Node *scope; int dep; uint8_t mode; bool sib; } EmptyDependency;
 typedef struct TreeDependency {
     Selector candidate; Node *scope; bool global;
     const char *subject; uint8_t subject_kind;

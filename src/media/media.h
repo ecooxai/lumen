@@ -69,7 +69,7 @@ void wa_close(const void *owner, int id);
 void wa_close_owner(const void *owner);
 /* decodeAudioData: whole file -> malloc'd interleaved stereo float at 48 kHz, NULL if undecodable */
 /* microphone (mono float at 48 kHz) and MediaRecorder encoding, per owning JS context */
-int mic_open(const void *owner);                 /* -1 without audio; Android asks for permission first */
+int mic_open(const void *owner, bool voice);     /* -1 without audio; Android asks for permission first; voice: echo cancellation */
 int mic_permission(void);                        /* 1 granted, 0 not asked yet, -1 denied */
 int mic_state(const void *owner, int id);        /* 0 waiting for permission, 1 capturing, -1 denied or failed */
 int mic_read(const void *owner, int id, float *out, int max);

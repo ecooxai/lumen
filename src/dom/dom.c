@@ -230,7 +230,7 @@ void node_insert_before(Node *parent, Node *child, Node *ref) {
     if (child->parent) node_remove(child);
     if (prevents_empty(child) && has_empty_content(parent)) {
         parent->flags |= NF_STYLE_DIRTY; /* the parent's own :empty may change */
-        if (parent->doc && is_connected(parent)) parent->doc->text_emptiness_version++;
+        if (parent->doc && is_connected(parent)) { parent->flags |= NF_EMPTY_CHANGED; parent->doc->text_emptiness_version++; }
     }
     child->parent = parent;
     if (ref && ref->parent == parent) {
@@ -260,7 +260,7 @@ void node_remove(Node *c) {
     c->parent = c->prev = c->next = NULL;
     if (prevents_empty(c) && has_empty_content(p)) {
         p->flags |= NF_STYLE_DIRTY;
-        if (p->doc && is_connected(p)) p->doc->text_emptiness_version++;
+        if (p->doc && is_connected(p)) { p->flags |= NF_EMPTY_CHANGED; p->doc->text_emptiness_version++; }
     }
     mark_connected(c, false);
     if (c->doc && c->doc->focus && node_is_inclusive_ancestor(c, c->doc->focus)) c->doc->focus = NULL;
@@ -447,15 +447,18 @@ char *node_text_content(const Node *n) {
     SB b; sb_init(&b); text_rec(n, &b); return sb_take(&b);
 }
 void node_set_character_data(Node *n, const char *s, size_t len) {
-    bool emptiness_changed = !n->text_len != !len;
+    /* Only a flip of the parent's own :empty matters, not a text node that
+     * empties beside other content (frameworks clear and refill text often). */
+    bool text_node = n->type == NODE_TEXT || n->type == NODE_CDATA;
+    bool emptiness_changed = !n->text_len != !len, was_empty = emptiness_changed && text_node && n->parent && has_empty_content(n->parent);
     char *replacement = xstrndup(s, len);
     free(n->text); n->text = replacement; n->text_len = len;
     /* Ordinary edits only affect layout. The style engine tracks selectors
      * that depend on another element's emptiness (:has and combinators). */
     Node *dirty = n;
-    if (emptiness_changed && (n->type == NODE_TEXT || n->type == NODE_CDATA) && n->parent) {
+    if (emptiness_changed && text_node && n->parent && was_empty != has_empty_content(n->parent)) {
         dirty = n->parent;
-        if (n->doc && is_connected(n->parent)) n->doc->text_emptiness_version++;
+        if (n->doc && is_connected(n->parent)) { n->parent->flags |= NF_EMPTY_CHANGED; n->doc->text_emptiness_version++; }
     }
     mark(n->doc, dirty, true, dirty != n, "text");
 }

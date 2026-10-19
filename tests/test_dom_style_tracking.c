@@ -214,7 +214,9 @@ static void test_empty_dependency_selectors(void) {
         ":is(section:has(:empty)) + aside", ":not(:has(p:empty))", "section:not(:empty) p",
         "p:empty + .leaf", ":nth-child(1 of :not(:empty))", "section:has(p:empty) .leaf",
         "section > :not(:empty) ~ :not(:empty)", "section > :is(p:empty,b)",
-        "section > :not(:is(p:empty)) + *", "section > :nth-child(1 of :not(:empty))"};
+        "section > :not(:is(p:empty)) + *", "section > :nth-child(1 of :not(:empty))",
+        "[id]:is(:empty,:has(i:empty))", "section:is(:has(>p:empty)) > b", "body:has(p:empty) > section > .leaf",
+        "[id]:empty ~ [class]", "section:has(p:empty) ~ aside", "b:has(~ p:empty)", "section:has(> b ~ p:empty) b"};
     for (size_t i = 0; i < ARRLEN(selectors); i++) {
         Document *d = doc_new("https://empty-dependency.test/");
         const char *html = "<html><body><section><p id='p'>a</p><b class='leaf'>b</b></section><aside>c</aside></body></html>";
@@ -255,6 +257,44 @@ static void test_empty_dependency_selectors(void) {
         assert(e->stats_matched <= 2); /* only the edited paragraph and dependent sibling */
         assert((p->next->style->bg_color == RGBA(255,0,0,255)) == (i % 2 != 0));
     }
+    style_engine_free(e); doc_free(d);
+}
+
+/* Attribute-keyed and :has-based emptiness rules in a long page (chat history):
+ * a text flip restyles only elements near the changed one. */
+static void test_empty_dependency_locality(void) {
+    Document *d = doc_new("https://empty-locality.test/");
+    const char *html = "<html><body><main id='history'></main><ol><li id='li'><div><div id='cell'>a</div></div><span data-m>m</span></li></ol>"
+        "<section><b data-s></b><p id='p'>a</p></section></body></html>";
+    html_parse(d, html, strlen(html));
+    Node *history = doc_get_element_by_id(d, "history");
+    for (int i = 0; i < 1000; i++) {
+        Node *item = node_new_element(d, "div", NS_HTML); node_set_attr(item, "data-m", "");
+        Node *inner = node_new_element(d, "div", NS_HTML); node_set_attr(inner, "data-t", ""); node_append(item, inner);
+        node_append(inner, node_new_text(d, "x", 1)); node_append(history, item);
+    }
+    StyleEngine *e = style_engine_new(d);
+    const char *css = "[data-m]:is(:empty,:has([data-t]:empty)){color:red}"
+        "li:is(:has(>div>div:empty)) > [data-m]{background-color:red}"
+        "[data-s]:has(~ p:empty){background-color:blue}";
+    style_engine_add_sheet(e, css_parse_sheet(css, strlen(css), d->url, 1, &e->media));
+    style_recalc(e, &d->node, true);
+    Node *cell = doc_get_element_by_id(d, "cell"), *mark = doc_get_element_by_id(d, "li")->last;
+    Node *p = doc_get_element_by_id(d, "p"), *bs = css_query(&d->node, "[data-s]", false, NULL);
+    for (int i = 0; i < 4; i++) {
+        node_set_character_data(cell->first, i % 2 ? "a" : "", i % 2);
+        style_recalc(e, &d->node, false);
+        assert(e->stats_matched <= 3); /* the cell, the marker, not the 1000 history items */
+        assert((mark->style->bg_color == RGBA(255,0,0,255)) == (i % 2 == 0));
+        node_set_character_data(p->first, i % 2 ? "a" : "", i % 2);
+        style_recalc(e, &d->node, false);
+        assert(e->stats_matched <= 3);
+        assert((bs->style->bg_color == RGBA(0,0,255,255)) == (i % 2 == 0));
+    }
+    Node *item = history->first->first->first;
+    node_set_character_data(item, "", 0);
+    style_recalc(e, &d->node, false);
+    assert(history->first->style->color == RGBA(255,0,0,255) && e->stats_matched <= 3);
     style_engine_free(e); doc_free(d);
 }
 
@@ -1447,6 +1487,7 @@ int main(void) {
     test_match_memo();
     test_sibling_state();
     test_empty_dependency_selectors();
+    test_empty_dependency_locality();
     test_inherited_custom_updates();
     test_deep_custom_rebase();
     test_inherited_context_changes();

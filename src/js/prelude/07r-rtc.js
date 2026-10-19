@@ -215,7 +215,10 @@ rtcRO(MediaStream, ['id']);
 rtcOn(MediaStream, ['addtrack', 'removetrack']);
 
 class RTCCertificate {
-    constructor(tok, expires) { if (tok !== RTC_INTERNAL) throw new TypeError('Illegal constructor'); def(this, '_', { expires, fp: rtcHex(32), der: crypto.getRandomValues(new Uint8Array(64)).buffer }); }
+    constructor(tok, expires) { if (tok !== RTC_INTERNAL) throw new TypeError('Illegal constructor'); def(this, '_', { expires, fp: rtcHex(32), der: crypto.getRandomValues(new Uint8Array(64)).buffer, crt: '', key: '' });
+        const k = typeof N.rtcCert === 'function' ? N.rtcCert() : null;
+        if (k) { this._.crt = k[0]; this._.key = k[1]; this._.fp = k[2]; }
+    }
     get expires() { return this._.expires; }
     getFingerprints() { return [{ algorithm: 'sha-256', value: this._.fp.toLowerCase() }]; }
 }
@@ -324,7 +327,7 @@ class RTCRtpSender {
         if (t && t.kind !== this._.kind) return Promise.reject(new TypeError('Track kind does not match sender kind.'));
         const tr = pc._.transceivers.find(x => x.sender === this);
         if (tr && tr._.stopping) return Promise.reject(rtcErr('InvalidStateError'));
-        return new Promise(r => rtcTask(() => { this._.track = t; if (t) this._.used = true; r(undefined); }));
+        return new Promise(r => rtcTask(() => { this._.track = t; if (t) this._.used = true; if (tr && tr._.nh) pc._natSender(tr); r(undefined); }));
     }
     setStreams(...s) { if (this._.pc._.closed) throw rtcErr('InvalidStateError'); this._.streams = [...new Set(s)]; this._.pc._updateNeg(); }
     getStats() { return this._.pc.getStats(this._.track); }
@@ -399,6 +402,7 @@ class RTCDataChannel extends EventTarget {
         else { str = String(data); size = rtcU8(str); }
         const sctp = this._.pc._.sctp;
         if (sctp && size > sctp._.maxMessageSize) throw new TypeError('Message too large.');
+        if (this._.nh) return this._natSend(data, bin, str, size);
         this._.bufferedAmount += size; this._.sent++; this._.bs += size;
         const blob = data instanceof Blob ? data : null;
         this._.q = this._.q.then(async () => {
@@ -419,6 +423,7 @@ class RTCDataChannel extends EventTarget {
         const s = this._.readyState;
         if (s === 'closing' || s === 'closed') return;
         this._.readyState = 'closing';
+        if (this._.nh) { const h = this._.nh; this._.q.then(() => N.rtcDcClose(h)); return; }
         const peer = this._.peer;
         this._.q.then(() => rtcTask(() => {
             if (peer && peer._.readyState === 'open') { peer._.readyState = 'closing'; rtcEv(peer, 'closing'); }
@@ -522,6 +527,7 @@ class RTCPeerConnection extends EventTarget {
             })(),
             iceTransportPolicy: en('iceTransportPolicy', ['relay', 'all'], 'all'),
             rtcpMuxPolicy: en('rtcpMuxPolicy', ['require'], 'require'),
+            lumenNative: !!cfg.lumenNative,
         };
         for (const s of out.iceServers) {
             const urls = s.urls;
@@ -610,7 +616,8 @@ class RTCPeerConnection extends EventTarget {
     }
     _sigState(s) { if (this._.signalingState === s) return; this._.signalingState = s; rtcEv(this, 'signalingstatechange'); }
     _assocSections(remoteSdp) {
-        /* sections for an offer: negotiated ones keep their place, then new ones in creation order */
+        /* sections for an offer: negotiated ones keep their place, then new media in creation order and a new
+           data section last, as Chrome orders them (servers built against Chrome's offers expect it) */
         const prev = this._.curLocal || this._.curRemote ? rtcParseSdp((this._.curLocal || this._.curRemote).sdp) : null;
         const secs = [];
         if (prev) for (const m of prev.media) {
@@ -619,11 +626,11 @@ class RTCPeerConnection extends EventTarget {
             secs.push(t ? { kind: m.kind, mid: m.mid, t } : { kind: m.kind, mid: m.mid, dead: true });
         }
         for (const o of this._.order) {
-            if (o === 'data') { if (!secs.some(s => s.kind === 'application')) secs.push({ kind: 'application', mid: this._.dataMid }); continue; }
-            if (o._.stopped || secs.some(s => s.t === o)) continue;
+            if (o === 'data' || o._.stopped || secs.some(s => s.t === o)) continue;
             if (o._.stopping && !o._.mid) continue;
             secs.push({ kind: o._.kind, mid: o._.mid, t: o });
         }
+        if (this._.dataInOrder && !secs.some(s => s.kind === 'application')) secs.push({ kind: 'application', mid: this._.dataMid });
         return secs;
     }
     _freshMid() { const used = new Set([...this._.transceivers.map(t => t._.mid), this._.dataMid].filter(x => x !== null)); for (const d of [this._.curLocal, this._.curRemote, this._.pendRemote]) if (d) for (const m of rtcParseSdp(d.sdp)?.media || []) used.add(m.mid); while (used.has(String(this._.nextMid))) this._.nextMid++; return String(this._.nextMid++); }
@@ -753,6 +760,7 @@ class RTCPeerConnection extends EventTarget {
                 this._ensureSctp(parsed);
                 if (type === 'answer') { this._.lastOffer = this._.lastAnswer = null; this._.nn = false; }
                 this._sigState(type === 'answer' ? 'stable' : 'have-local-pranswer');
+                if (type === 'answer') this._natLocalAnswer();
             }
             this._gather();
             this._tryConnect();
@@ -783,6 +791,7 @@ class RTCPeerConnection extends EventTarget {
             for (const s of r._.streams) if (!streams.includes(s)) { s.removeTrack(r._.track); rtcFire(s, new MediaStreamTrackEvent('removetrack', { track: r._.track })); }
             for (const s of streams) if (!s._.tracks.includes(r._.track)) s.addTrack(r._.track);
             r._.streams = streams;
+            if (this._.nat && r._.kind === 'audio' && !r._.track._.hub) r._.track._.hub = new RtcHub(t._.nh || 0);
             if (!t._.fired) { t._.fired = true; rtcFire(this, new RTCTrackEvent('track', { receiver: r, track: r._.track, streams, transceiver: t })); }
         } else if (t._.fired) {
             t._.fired = false;
@@ -824,6 +833,7 @@ class RTCPeerConnection extends EventTarget {
             const d = new RTCSessionDescription({ type, sdp });
             const first = parsed.media.find(m => m.port !== 0) || parsed.media[0];
             this._.remoteUfrag = first ? first.ufrag : null;
+            if ((type === 'offer' || type === 'answer') && this._natWanted()) this._natRemote(type, sdp);
             this._.canTrickle = parsed.media.some(m => m.trickle);
             for (const m of parsed.media) for (const c of m.cands) this._.remoteCands.push(c);
             if (type === 'offer') {
@@ -888,7 +898,7 @@ class RTCPeerConnection extends EventTarget {
         this._.nn = false; this._updateNeg();
     }
     _gather() {
-        if (this._.gatheredFor === this._.ufrag) return;
+        if (this._.nat || this._.gatheredFor === this._.ufrag) return;
         this._.gatheredFor = this._.ufrag;
         const gen = ++this._.gatherGen, ufrag = this._.ufrag;
         const parsed = rtcParseSdp((this._.pendLocal || this._.curLocal).sdp);
@@ -940,6 +950,7 @@ class RTCPeerConnection extends EventTarget {
             if (cand !== '') {
                 const ice = new RTCIceCandidate({ candidate: cand, sdpMid: m ? m.mid : null, sdpMLineIndex: m ? parsed.media.indexOf(m) : 0, usernameFragment: uf });
                 this._.remoteCands.push(cand); this._.ice._.remote.push(ice);
+                if (this._.nat) N.rtcCand(this._.nat.id, cand, m ? m.mid : parsed.media[0].mid);
             }
             const target = this._.pendRemote || this._.curRemote;
             const lines = target.sdp.split(/\r?\n/).filter(Boolean), out = [];
@@ -957,10 +968,10 @@ class RTCPeerConnection extends EventTarget {
     }
     _tryConnect() {
         const me = this._;
-        if (me.closed || me.connected) return;
+        if (me.closed || me.connected || me.nat || me.cfg.lumenNative) return;
         if (!(me.curLocal || me.pendLocal) || !this.remoteDescription) return;
         const peer = rtcPeers.get(me.remoteUfrag);
-        if (!peer || peer === this || peer._.closed || !(peer._.curLocal || peer._.pendLocal) || !peer.remoteDescription || rtcPeers.get(peer._.remoteUfrag) !== this) return;
+        if (!peer || peer === this || peer._.closed || peer._.nat || peer._.cfg.lumenNative || !(peer._.curLocal || peer._.pendLocal) || !peer.remoteDescription || rtcPeers.get(peer._.remoteUfrag) !== this) return;
         if (!me.remoteCands.length && !peer._.remoteCands.length) return;
         if (!me.localCands.length || !peer._.localCands.length) return;
         if (me.cfg.iceTransportPolicy === 'relay' || peer._.cfg.iceTransportPolicy === 'relay') return;
@@ -1037,7 +1048,8 @@ class RTCPeerConnection extends EventTarget {
         if (!o.negotiated && this._.connected) this._assignId(dc);
         this._.channels.push(dc);
         if (!this._.dataInOrder) { this._.dataInOrder = true; this._.order.push('data'); }
-        if (this._.connected) rtcTask(() => this._announce(dc));
+        if (this._.nat) this._natDc(dc);
+        else if (this._.connected) rtcTask(() => this._announce(dc));
         this._updateNeg();
         return dc;
     }
@@ -1150,6 +1162,7 @@ class RTCPeerConnection extends EventTarget {
             const ts = performance.timeOrigin + performance.now(), m = new Map(), me = this._;
             const add = o => m.set(o.id, Object.assign({ timestamp: ts }, o));
             add({ id: 'P', type: 'peer-connection', dataChannelsOpened: me.dcOpened, dataChannelsClosed: me.dcClosed });
+            const ns = me.nat ? N.rtcStats(me.nat.id) : null, sent = ns ? ns[0] : 0, recvd = ns ? ns[1] : 0, rtt = ns && ns[2] >= 0 ? ns[2] / 1000 : undefined;
             const fp = me.cert.getFingerprints()[0];
             add({ id: 'CF' + fp.value.slice(0, 8), type: 'certificate', fingerprint: fp.value, fingerprintAlgorithm: fp.algorithm, base64Certificate: btoa('lumen') });
             if (me.connected) {
@@ -1157,9 +1170,9 @@ class RTCPeerConnection extends EventTarget {
                 if (pair) {
                     add({ id: 'I' + pair.local.foundation, type: 'local-candidate', transportId: 'T01', address: pair.local.address, port: pair.local.port, protocol: pair.local.protocol, candidateType: pair.local.type, priority: pair.local.priority, foundation: pair.local.foundation, usernameFragment: pair.local.usernameFragment });
                     add({ id: 'I' + pair.remote.foundation + 'r', type: 'remote-candidate', transportId: 'T01', address: pair.remote.address, port: pair.remote.port, protocol: pair.remote.protocol, candidateType: pair.remote.type, priority: pair.remote.priority, foundation: pair.remote.foundation, usernameFragment: pair.remote.usernameFragment });
-                    add({ id: 'CP', type: 'candidate-pair', transportId: 'T01', localCandidateId: 'I' + pair.local.foundation, remoteCandidateId: 'I' + pair.remote.foundation + 'r', state: 'succeeded', nominated: true, bytesSent: 0, bytesReceived: 0 });
+                    add({ id: 'CP', type: 'candidate-pair', transportId: 'T01', localCandidateId: 'I' + pair.local.foundation, remoteCandidateId: 'I' + pair.remote.foundation + 'r', state: 'succeeded', nominated: true, bytesSent: sent, bytesReceived: recvd, currentRoundTripTime: rtt });
                 }
-                add({ id: 'T01', type: 'transport', bytesSent: 0, bytesReceived: 0, dtlsState: me.dtls.state, iceState: me.ice.state, selectedCandidatePairId: pair ? 'CP' : undefined, localCertificateId: 'CF' + fp.value.slice(0, 8), dtlsRole: me.role, iceRole: me.ice.role, iceLocalUsernameFragment: me.ufrag, selectedCandidatePairChanges: 1 });
+                add({ id: 'T01', type: 'transport', bytesSent: sent, bytesReceived: recvd, dtlsState: me.dtls.state, iceState: me.ice.state, selectedCandidatePairId: pair ? 'CP' : undefined, localCertificateId: 'CF' + fp.value.slice(0, 8), dtlsRole: me.role, iceRole: me.ice.role, iceLocalUsernameFragment: me.ufrag, selectedCandidatePairChanges: 1 });
             }
             if (!sel) for (const dc of me.channels) add({ id: 'D' + (dc._.id ?? 'x') + me.channels.indexOf(dc), type: 'data-channel', label: dc._.label, protocol: dc._.protocol, dataChannelIdentifier: dc._.id, state: dc._.readyState, messagesSent: dc._.sent, bytesSent: dc._.bs, messagesReceived: dc._.recv, bytesReceived: dc._.br });
             res(new RTCStatsReport(RTC_INTERNAL, m));
@@ -1177,6 +1190,7 @@ class RTCPeerConnection extends EventTarget {
         me.dtls._.state = 'closed'; me.ice._.state = 'closed';
         me.iceConnectionState = 'closed'; me.connectionState = 'closed';
         me.ops = [];
+        this._natStop();
         if (peer && !peer._.closed) rtcTask(() => {
             if (peer._.closed) return;
             for (const dc of peer._.channels) if (dc._.peer && dc._.peer._.pc === this && dc._.readyState !== 'closed') dc._closed('Transport closed');

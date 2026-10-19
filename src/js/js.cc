@@ -21,6 +21,10 @@
 #include <dirent.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#ifdef __ANDROID__
+#include <android/log.h>
+#include <pthread.h>
+#endif
 
 /* Process lifetime: V8 worker threads may still run while static destructors do. */
 static v8::Platform *g_platform;
@@ -111,6 +115,9 @@ static void on_watchdog(v8::Isolate *iso, void *) {
     fprintf(stderr, "lumen: script exceeded %.0f ms, terminating\n", g_js_timeout_ms);
     v8::HandleScope hs(iso);
     v8::Local<v8::StackTrace> st = v8::StackTrace::CurrentStackTrace(iso, 12);
+#if defined(__ANDROID__) && !defined(NDEBUG)
+    __android_log_print(ANDROID_LOG_INFO, "LumenLoad", "watchdog terminated a task after %.0f ms (frames=%d)", g_js_timeout_ms, st->GetFrameCount());
+#endif
     for (int i = 0; i < st->GetFrameCount(); i++) {
         v8::Local<v8::StackFrame> f = st->GetFrame(iso, i);
         fprintf(stderr, "    at %s (%s:%d:%d)\n", jcstr(iso, f->GetFunctionName()).c_str(), jcstr(iso, f->GetScriptName()).c_str(), f->GetLineNumber(), f->GetColumn());
@@ -535,6 +542,7 @@ static void mod_job_start(JsCtx *c, std::unique_ptr<ModJob> j) {
     std::string ref = c->doc && c->doc->url ? c->doc->url : "";
     auto known = std::make_shared<std::unordered_set<std::string>>();
     for (auto &kv : c->mods) known->insert(kv.first);
+    j->at = now_ms();
     std::thread([u = j->url, ref, known, done = j->done] {
         mod_prefetch({ u }, ref, [&known](const std::string &k) { return known->count(k) > 0; });
         *done = true;
@@ -589,6 +597,42 @@ static void import_finish(JsCtx *c, v8::Local<v8::Promise::Resolver> R, const st
         tc.Reset();
     }
 }
+/* With the page console on: each import() as a number, a hash of the module and how it settled,
+   so one that never settles shows (module URLs are not logged) */
+static void import_report(const v8::FunctionCallbackInfo<v8::Value> &a, const char *how) {
+    v8::Local<v8::Context> cx = a.GetIsolate()->GetCurrentContext();
+    v8::Local<v8::Array> d = a.Data().As<v8::Array>();
+    unsigned id = d->Get(cx, 0).ToLocalChecked()->Uint32Value(cx).FromMaybe(0);
+    double ms = now_ms() - d->Get(cx, 1).ToLocalChecked()->NumberValue(cx).FromMaybe(0);
+    std::string why;
+    if (a.Length() && a[0]->IsNativeError()) {
+        why = jcstr(a.GetIsolate(), a[0]);
+        size_t cut = why.find("://");
+        if (cut != std::string::npos) why.resize(why.rfind(' ', cut) == std::string::npos ? 0 : why.rfind(' ', cut));
+        if (why.size() > 120) why.resize(120);
+    }
+    fprintf(stderr, "lumen: import #%u %s after %.0fms %s\n", id, how, ms, why.c_str());
+}
+/* a module as its disk-cache entry name (FNV-1a of the URL, see cache.c), never the URL */
+static std::string mod_cache_name(const std::string &u) {
+    uint64_t h = 1469598103934665603ull;
+    for (unsigned char ch : u) h = (h ^ ch) * 1099511628211ull;
+    char k[24]; snprintf(k, sizeof k, "%016llx", (unsigned long long)h);
+    return k;
+}
+static void import_trace(v8::Local<v8::Context> ctx, v8::Local<v8::Promise> p, const std::string &u, bool known) {
+    static unsigned next;
+    unsigned id = ++next;
+    fprintf(stderr, "lumen: import #%u start %s%s\n", id, mod_cache_name(u).c_str(), known ? " compiled" : "");
+    v8::Isolate *iso = v8::Isolate::GetCurrent();
+    v8::Local<v8::Array> d = v8::Array::New(iso, 2);
+    (void)d->Set(ctx, 0, v8::Integer::NewFromUnsigned(iso, id));
+    (void)d->Set(ctx, 1, v8::Number::New(iso, now_ms()));
+    v8::Local<v8::Function> ok, bad;
+    if (v8::Function::New(ctx, [](const v8::FunctionCallbackInfo<v8::Value> &a) { import_report(a, "resolved"); }, d).ToLocal(&ok) &&
+        v8::Function::New(ctx, [](const v8::FunctionCallbackInfo<v8::Value> &a) { import_report(a, "rejected"); }, d).ToLocal(&bad))
+        (void)p->Then(ctx, ok, bad);
+}
 static v8::MaybeLocal<v8::Promise> mod_dynamic(v8::Local<v8::Context> ctx, v8::Local<v8::Data>, v8::Local<v8::Value> res, v8::Local<v8::String> spec, v8::Local<v8::FixedArray>) {
     v8::Isolate *iso = v8::Isolate::GetCurrent();
     JsCtx *c = ctx_of(ctx);
@@ -597,6 +641,7 @@ static v8::MaybeLocal<v8::Promise> mod_dynamic(v8::Local<v8::Context> ctx, v8::L
     std::string base = res->IsString() ? jcstr(iso, res) : "";
     if (base.find(':') == std::string::npos || !base.compare(0, 6, "lumen:")) base = c->doc && c->doc->url ? c->doc->url : "";
     std::string u = mod_resolve(jcstr(iso, spec), base);
+    if (g_log_level < 3) import_trace(ctx, R->GetPromise(), u, c->mods.count(u) > 0);
     if (u.empty()) {
         v8::TryCatch tc(iso);
         mod_throw(iso, "Failed to resolve module specifier \"" + jcstr(iso, spec) + "\"");
@@ -653,8 +698,9 @@ static void on_reject(v8::PromiseRejectMessage m) {
 #if defined(__ANDROID__) && !defined(NDEBUG)
 #include <android/log.h>
 /* Debug Android diagnostic, armed by an empty "jsprof" file next to v8cache: samples each new
-   top-level page's JS for 45 s and logs ticks per Lumen prelude function. Page code is only
-   counted in aggregate; its function names and script URLs are never logged. */
+   top-level page's JS for 45 s and logs ticks per Lumen prelude function. Page code is counted in
+   aggregate, plus the line:column of its hottest functions; its function names and script URLs are
+   never logged. */
 static v8::CpuProfiler *g_prof; static JsCtx *g_prof_ctx; static double g_prof_end;
 static void jsprof_walk(const v8::CpuProfileNode *n, std::unordered_map<std::string, int> &self,
                         std::unordered_map<std::string, int> &incl, std::vector<std::string> &stack, int &total) {
@@ -663,6 +709,12 @@ static void jsprof_walk(const v8::CpuProfileNode *n, std::unordered_map<std::str
     std::string k = sn == "lumen:prelude" ? "P " + (fn.empty() ? std::string("(anon)") : fn) + ":" + std::to_string(n->GetLineNumber())
                   : sn.empty() && !fn.empty() ? "V " + fn : "<page>";
     int hits = (int)n->GetHitCount(); self[k] += hits; total += hits;
+    if (k == "<page>" && hits) {
+        /* the script as its disk-cache entry name (FNV-1a of the URL, see cache.c), never the URL */
+        uint64_t h = 1469598103934665603ull; for (unsigned char ch : sn) h = (h ^ ch) * 1099511628211ull;
+        char key[64]; snprintf(key, sizeof key, "@ %016llx:%d:%d", (unsigned long long)h, n->GetLineNumber(), n->GetColumnNumber());
+        self[key] += hits;
+    }
     bool fresh = std::find(stack.begin(), stack.end(), k) == stack.end();
     if (fresh) stack.push_back(k);
     int before = total;
@@ -687,6 +739,7 @@ static void jsprof_stop(bool report) {
         top(self, "self", 60);
         incl.erase("<page>");
         top(incl, "incl", 60);
+        js_native_report();
     }
     if (pr) pr->Delete();
     g_prof->Dispose(); g_prof = nullptr; g_prof_ctx = nullptr;
@@ -699,6 +752,7 @@ static void jsprof_start(JsCtx *c) {
     g_prof->SetSamplingInterval(500);
     g_prof->StartProfiling(jstr(c->iso, "lumen"), v8::CpuProfilingOptions(v8::kLeafNodeLineNumbers));
 }
+bool jsprof_active(void) { return g_prof != nullptr; }
 static void jsprof_tick(JsCtx *c) { if (g_prof && g_prof_ctx == c && now_ms() > g_prof_end) jsprof_stop(true); }
 static void jsprof_free(JsCtx *c) { if (g_prof && g_prof_ctx == c) jsprof_stop(true); }
 #else
@@ -707,12 +761,35 @@ static void jsprof_tick(JsCtx *) {}
 static void jsprof_free(JsCtx *) {}
 #endif
 
+#ifdef __ANDROID__
+/* Android discards stderr; with LUMEN_CONSOLE set, the console and error reports go to logcat */
+static void *stderr_pump(void *arg) {
+    FILE *f = fdopen((int)(intptr_t)arg, "r");
+    char line[2048];
+    while (f && fgets(line, sizeof line, f)) __android_log_write(ANDROID_LOG_INFO, "LumenJS", line);
+    return nullptr;
+}
+static void stderr_to_logcat() {
+    int p[2];
+    if (pipe(p)) return;
+    setvbuf(stderr, nullptr, _IOLBF, 0);
+    dup2(p[1], 2); close(p[1]);
+    pthread_t t;
+    if (pthread_create(&t, nullptr, stderr_pump, (void *)(intptr_t)p[0]) == 0) pthread_detach(t);
+}
+#endif
+
 extern "C" {
 
 void js_global_init(const char *argv0) {
     if (g_platform) return;
     const char *lv = getenv("LUMEN_CONSOLE");
-    if (lv) g_log_level = atoi(lv);
+    if (lv) {
+        g_log_level = atoi(lv);
+#ifdef __ANDROID__
+        stderr_to_logcat();
+#endif
+    }
     const char *icu = getenv("LUMEN_ICU_DATA");
     if (!icu && access("/opt/homebrew/opt/v8/libexec/icudtl.dat", R_OK) == 0) icu = "/opt/homebrew/opt/v8/libexec/icudtl.dat";
     v8::V8::InitializeICUDefaultLocation(argv0, icu);
@@ -940,7 +1017,7 @@ void js_free(JsCtx *c) {
         c->watchdog.join();
     }
     for (auto &kv : c->players) mp_free(kv.second);
-    wa_close_owner(c); mic_close_owner(c); rec_close_owner(c);
+    wa_close_owner(c); mic_close_owner(c); rec_close_owner(c); rtc_ctx_free(c);
     g_ctxs.erase(std::remove(g_ctxs.begin(), g_ctxs.end(), c), g_ctxs.end());
     c->players.clear();
     std::vector<Node *> roots;
@@ -951,7 +1028,7 @@ void js_free(JsCtx *c) {
         v8::HandleScope hs(c->iso);
         for (auto &kv : c->fetches) { net_cancel(kv.first); kv.second->c = nullptr; kv.second->cb.Reset(); kv.second->head.Reset(); kv.second->chunk.Reset(); }
         c->fetches.clear(); for (auto &kv : c->sockets) { net_ws_release(kv.second->ws); kv.second->cb.Reset(); delete kv.second; } c->sockets.clear();
-        c->timers.clear();
+        c->timer_clear();
         c->rafs.clear();
         c->video_frame_pump.Reset(); c->resize_pump.Reset(); c->intersection_pump.Reset(); c->media_pump.Reset();
         c->anims.clear();
@@ -1047,6 +1124,7 @@ static void mod_jobs_finish(JsCtx *c) {
         else ++it;
     for (auto &j : ready) {
         if (c->dead) return;
+        if (g_log_level < 3) fprintf(stderr, "lumen: module graph %s fetched after %.0fms\n", mod_cache_name(j->url).c_str(), now_ms() - j->at);
         if (j->script) { module_script_run(c, j->script, nullptr, 0, j->url.c_str(), false); continue; }
         JS_ENTER(c);
         js_enter(c);
@@ -1213,11 +1291,12 @@ double js_next_deadline(JsCtx *c) {
     // idle timer or waiting for the shell's one-second fallback.
     if (viewport_changes(c, false)) d = std::min(d, c->viewport_due);
     if (c->foreground_tasks) d = std::min(d, now_ms() + c->foreground_tasks->NextDelayMs());
-    for (auto &kv : c->timers) d = std::min(d, kv.second.due);
+    if (!c->timer_due.empty()) d = std::min(d, c->timer_due.begin()->first);
     for (auto &e : c->anims) d = std::min(d, e.due);
     if (!c->rafs.empty()) d = std::min(d, c->last_raf + 16);
     if (!c->media_pump.IsEmpty()) d = std::min(d, c->media_version != media_state_version() ? now_ms() : c->media_due);
     if (!c->video_frame_pump.IsEmpty() && c->video_frame_version != media_frame_version()) d = std::min(d, now_ms());
+    if (rtc_pending(c)) d = std::min(d, now_ms());
     if (!c->resize_pump.IsEmpty() && (c->resize_pending || c->resize_version != jsg_layout_generation())) d = std::min(d, c->resize_due);
     if (!c->intersection_pump.IsEmpty() && (c->intersection_pending || c->intersection_version != jsg_visual_generation())) d = std::min(d, c->intersection_due);
     for (JsCtx *k : c->kids) if (!k->dead) d = std::min(d, js_next_deadline(k));
@@ -1273,18 +1352,34 @@ static void tick_one(JsCtx *c) {
     if (!c->mod_jobs.empty()) { mod_jobs_finish(c); settle(c); }
     TICK_MARK(1);
     pick_deliver(c);
-    double now = now_ms();
+    double now = now_ms(), timers_t0 = now;
     std::vector<std::pair<double, uint32_t>> due;
-    for (auto &kv : c->timers) if (kv.second.due <= now) due.push_back({ kv.second.due, kv.first });
-    std::sort(due.begin(), due.end());
-    for (auto &d : due) {
-        auto it = c->timers.find(d.second);
-        if (it == c->timers.end()) continue;
-        v8::Local<v8::Function> fn = it->second.fn.Get(iso);
-        if (it->second.repeat) it->second.due = now_ms() + it->second.interval;
-        else c->timers.erase(it);
-        (void)jcall(c, fn, ctx->Global(), 0, nullptr);
+    size_t ntimers = 0;
+    // Like Chrome, run tasks that become due meanwhile (MessageChannel hops, zero
+    // timeouts) back to back for up to 8 ms rather than one batch per frame.
+    for (;;) {
+        due.clear();
+        for (auto &d : c->timer_due) { if (d.first > now) break; due.push_back(d); }
+        if (due.empty()) break;
+        for (auto &d : due) {
+            auto it = c->timers.find(d.second);
+            if (it == c->timers.end() || it->second.due != d.first) continue;
+            v8::Local<v8::Function> fn = it->second.fn.Get(iso);
+            int nest = it->second.nest;
+            if (it->second.repeat) {
+                c->timer_due.erase(d);
+                it->second.due = now_ms() + it->second.interval;
+                c->timer_due.insert({ it->second.due, it->first });
+            } else c->timer_erase(it);
+            c->timer_nest = nest;
+            (void)jcall(c, fn, ctx->Global(), 0, nullptr);
+            c->timer_nest = 0;
+            ntimers++;
+        }
+        now = now_ms();
+        if (now - timers_t0 >= 8 || c->dead) break;
     }
+    now = now_ms();
     TICK_MARK(2);
     viewport_update(c);
     TICK_MARK(3);
@@ -1295,6 +1390,7 @@ static void tick_one(JsCtx *c) {
         if (jcall(c, c->media_pump.Get(iso), v8::Undefined(iso), 0, nullptr).ToLocal(&playing) && playing->BooleanValue(iso))
             c->media_due = now_ms() + 50;
     }
+    rtc_pump(c);
     if (!c->video_frame_pump.IsEmpty() && c->video_frame_version != media_frame_version()) {
         c->video_frame_version = media_frame_version();
         v8::Local<v8::Value> ts = v8::Number::New(iso, now - c->t0);
@@ -1349,7 +1445,7 @@ static void tick_one(JsCtx *c) {
     code_refresh_tick(c);
     workers_pump(c);
     settle(c);
-    TICK_END(due.size());
+    TICK_END(ntimers);
 }
 
 bool js_wants_frame(JsCtx *c) {

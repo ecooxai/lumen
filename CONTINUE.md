@@ -1,5 +1,72 @@
 # Lumen: handoff notes
 
+## IN PROGRESS: native WebRTC for ChatGPT live voice (2026-10-18)
+
+Branch `claude-opus-5-5/android-chatgpt-vulkan-scroll`. `07r-rtc.js` still owns the
+spec state machine, SDP text and the in-page simulation (two peers of one page
+link directly, `tests/js/webrtc.html`). When the remote description comes from
+outside the page (or `{lumenNative: true}` in the config, tests only),
+`07s-rtc-native.js` starts a libdatachannel connection with
+the same ICE ufrag/pwd, the same certificate (`N.rtcCert`, real ECDSA P-256, so
+the SDP fingerprint matches) and the same mids:
+- offerer: at setRemoteDescription(answer) the native side gets one track per
+  local m-line (`rtcAddTrack`, our sender SSRC), the data channels, its own
+  offer (`rtcLocal`), then the answer with `m=application` moved last
+  (`sdp_reorder`, the native offer lists tracks first).
+- answerer: the offer goes native as is; `track` events bind transceivers by
+  mid; `rtcLocal('answer')` at setLocalDescription(answer).
+- audio: sender tracks with a PCM hub (mic `MicHub`, `MediaStreamAudioDestinationNode`)
+  feed `rtcSendPCM` (Opus 32 kbps VOIP, FEC, 20 ms frames). Received Opus is
+  decoded on the network thread into an SDL playback stream (only while an
+  `<audio>`/`<video>` plays the MediaStream: `mediaStreamPlay` in 05-ce.js) and
+  a tap ring that `RtcHub` (40 ms) fans out to Web Audio.
+- events reach JS through a queue + `net_wakeup`, drained by `rtc_pump` in `tick_one`.
+- split: `src/rtc/rtc_core.cc` (target `lumen_rtc`, `-fexceptions`) owns all
+  libdatachannel/Opus/SDL-audio code behind the plain-C `rtc_core.h`;
+  `src/js/rtc.cc` is the V8 glue plus `N.rtcCert` (OpenSSL). On Android
+  libdatachannel is built against NDK libc++ (`std::__ndk1`, exceptions) while the
+  engine uses the V8 prebuilt's libc++ (`std::__Cr`, `-fno-exceptions`), so no C++
+  type may cross that header; `lumen_rtc` compiles with the NDK libc++ headers and
+  links `libc++_shared.so` (already packaged for SDL's HID code).
+- libdatachannel 0.24.6 drops RTP from SSRCs the remote SDP does not declare;
+  the glue warns "a remote audio section declares no SSRC" (structure only).
+- Android microphone: `capture.c` records with AAudio itself (not SDL).
+  echoCancellation (default on) uses the VOICE_COMMUNICATION input preset
+  (platform echo canceller, noise suppressor, gain control), else CAMCORDER.
+  Entering communication mode reroutes the input and disconnects a stream
+  opened just before; SDL kept such default recordings on the dead device for
+  good (silent mic: ChatGPT dictation spun, live voice heard nothing), so a lost
+  stream is reopened from the JS poll (`mic_heal`, logs "microphone reopened").
+
+- Android call audio (Chrome-like): the first voice mic (`capture.c` refcount)
+  calls `LumenActivity.setVoiceCall(true)`: MODE_IN_COMMUNICATION, communication
+  device = headset if any else built-in speaker (API 31+; older: speakerphone),
+  volume keys on STREAM_VOICE_CALL; restored when the last voice mic closes. Needs
+  MODIFY_AUDIO_SETTINGS. Received call audio plays on its own AAudio stream with
+  USAGE_VOICE_COMMUNICATION (`VoiceOut` in rtc_core.cc, ring + 60 ms prebuffer,
+  >250 ms behind drops, reopens after a disconnect); desktop keeps SDL. Mic streams
+  close on a detached thread (`mic_release`): AAudio VOICE_COMMUNICATION input took
+  seconds to stop on the MI 8 and blocked the JS thread inside track.stop().
+- ChatGPT voice (phone, ui36-39): connects end to end. The server rejected offers
+  with the data m-line first (`invalid_offer`); offers now list new media in
+  creation order and a new data section last, like Chrome (`_assocSections`).
+  dumpsys during a call: mode IN_COMMUNICATION, route speaker, capture source
+  VOICE_COMMUNICATION, playback VOICE_COMMUNICATION; MODE_NORMAL ~1 s after end.
+- Voice CPU (MI 8, profiler off): idle page 1-2%, call ~86-96% (startup peak ~340%).
+  Remaining cost is ChatGPT's own JS (16 ms visualizer intervals, React updates,
+  getComputedStyle/getBoundingClientRect) and V8 GC. Done: Web Audio nodes reuse
+  ping-pong quantum buffers (`_buf`), `PcmQueue` is a ring, worklet buffers reused,
+  shared Blackman windows, AudioParam inserts in order, timers indexed by due time
+  (`timer_due`). Note: the debug jsprof (`files/jsprof` marker, 500 us sampling)
+  itself costs ~45% CPU; remove the marker before measuring.
+
+Host: ctest 69/69; `SDL_AUDIO_DRIVER=dummy LUMEN_CONSOLE=log build/codex-native/jsrun
+tests/js/webrtc-native.html 9000` passes 9/9 (data channel text/binary, 440/660 Hz
+tone both ways over SRTP, element playback, stats, close); `tests/js/webrtc.html` 4/4;
+`tests/js/webaudio.html` 23/23.
+Phone fixtures: `build/claude-chatgpt-scroll/fixtures-rtc/{rtc,mic}.html`.
+Next: real echo check with a spoken reply, voice CPU (page JS), long-chat load CPU.
+
 ## IN PROGRESS: Android long ChatGPT sessions (2026-10-15)
 
 Priority: CPU below 50% during typing/streaming in long sessions, Vulkan first.

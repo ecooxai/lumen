@@ -97,6 +97,21 @@ static bool g_hud;          /* CPU/RAM readout at the bottom of the workspace si
 #else
 static bool g_hud = true;
 #endif
+/* Android's readout sits by the address field and has its own key: the sidebar one's was never shown there */
+#ifdef __ANDROID__
+#define HUD_KEY "cpu_meter"
+#else
+#define HUD_KEY "cpu_hud"
+#endif
+static bool g_touch_fb = true;   /* Touch feedback (Settings, Android): a faint circle where the screen is touched */
+#ifdef __ANDROID__
+/* its colour (0xRRGGBB), opacity (%), diameter (dp) and how long it stays after the finger lifts (ms) */
+static int g_touch_fb_rgb = 0x90caf9, g_touch_fb_alpha = 10, g_touch_fb_size = 14, g_touch_fb_ms = 200;
+static const int touch_fb_colors[] = {0x90caf9, 0x1a73e8, 0x9e9e9e, 0x81c784, 0xe57373, 0xba68c8, 0xffb74d, 0xfff176};
+static const char *touch_fb_color_names[] = {"Light blue", "Blue", "Grey", "Green", "Red", "Purple", "Orange", "Yellow"};
+static const int touch_fb_alphas[] = {5, 10, 15, 20, 30, 50}, touch_fb_sizes[] = {8, 10, 14, 20, 28, 40};
+static const int touch_fb_times[] = {0, 100, 200, 300, 500, 1000};
+#endif
 static bool g_hud_pop;      /* host CPU/RAM popup opened by clicking the readout */
 static float g_hud_cpu, g_hud_ram, g_host_cpu, g_host_ram, g_pop[4];
 #define HUDH 48.f
@@ -146,6 +161,16 @@ static void pixel_scale_load(const char *line) {
     if (percent) g_pixel_scale_pct = percent;
 }
 #endif
+#ifdef __ANDROID__
+/* the toolbar buttons left of the menu, two (four on a wide window): the most recently used menu actions */
+#define NSLOT 4
+static int g_slot[NSLOT] = { UI_BACK, UI_RELOAD, UI_FORWARD, UI_NEW_TAB }, g_slot_n = 2; static unsigned g_slot_seq[NSLOT], g_slot_clock;
+static bool g_fullscreen;
+static bool slot_action(int code) {
+    return code == UI_BACK || code == UI_FORWARD || code == UI_RELOAD || code == UI_NEW_TAB || code == UI_BOOKMARKS || code == UI_HISTORY ||
+        code == UI_DOWNLOADS || code == UI_WORKSPACES || code == UI_SETTINGS || code == UI_DESKTOP || code == UI_BM_TOGGLE || code == UI_FULLSCREEN;
+}
+#endif
 typedef struct { char *url, *title; } Link;
 #define MAX_BM 512
 #define MAX_HV 1000
@@ -153,11 +178,13 @@ static Link g_bms[MAX_BM], g_hv[MAX_HV]; static int g_nbm, g_nhv;
 static void pref_path(char *out, size_t n, const char *f) { snprintf(out, n, "%s%s", g_pref, f); }
 static void settings_save(void) {
     char p[1200]; pref_path(p, sizeof p, "settings.txt"); FILE *f = *g_pref ? fopen(p, "w") : NULL; if (!f) return;
-    fprintf(f, "offscreen_media_eviction=%d\ncpu_limit=%d\ncpu_pct=%d\ncpu_secs=%d\ncpu_lim=%d\nvideo_controls=%d\ntab_sleep=%d\nuser_agent=%d\ncpu_hud=%d\nsmooth_scroll=%d\n", g_lowmem, g_cpu_on, g_cpu_pct, g_cpu_secs, g_cpu_lim, g_vctl, g_tab_sleep, g_ua, g_hud, g_smooth);
+    fprintf(f, "offscreen_media_eviction=%d\ncpu_limit=%d\ncpu_pct=%d\ncpu_secs=%d\ncpu_lim=%d\nvideo_controls=%d\ntab_sleep=%d\nuser_agent=%d\n%s=%d\nsmooth_scroll=%d\n", g_lowmem, g_cpu_on, g_cpu_pct, g_cpu_secs, g_cpu_lim, g_vctl, g_tab_sleep, g_ua, HUD_KEY, g_hud, g_smooth);
     fprintf(f, "page_zoom=%d\n", g_page_zoom_pct);
 #ifdef __ANDROID__
     fprintf(f, "pixel_scale=%d\n", g_pixel_scale_pct);
     fprintf(f, "renderer=%s\n", renderer_key(g_renderer));
+    for (int i = 0; i < NSLOT; i++) fprintf(f, "bar_slot%d=%d\n", i, g_slot[i]);
+    fprintf(f, "touch_feedback=%d\ntouch_feedback_color=%d\ntouch_feedback_opacity=%d\ntouch_feedback_size=%d\ntouch_feedback_ms=%d\n", g_touch_fb, g_touch_fb_rgb, g_touch_fb_alpha, g_touch_fb_size, g_touch_fb_ms);
 #endif
     fclose(f);
 }
@@ -414,12 +441,10 @@ typedef struct App {
     const Box *sbox; float sbox_x0, sbox_y0;   /* the one scroller moved since the last frame (NULL: several) and its painted offsets */
 } App;
 static App *g_app;
-#define DESKTOP_W 980.f   /* "Desktop site" pages lay out this wide, scaled to fit */
+/* "Desktop site" only changes the user agent; the layout width follows the window and the zoom */
 static float tab_zoom_for(const Tab *tab, bool internal) {
     if (internal) return 1;
-    float z = (tab && tab->zoom_pct ? tab->zoom_pct : g_page_zoom_pct) / 100.f;
-    if (tab && tab->desktop && g_app) { float w = g_app->vw - g_app->side; if (w > 0 && w < DESKTOP_W) z *= w / DESKTOP_W; }
-    return z;
+    return (tab && tab->zoom_pct ? tab->zoom_pct : g_page_zoom_pct) / 100.f;
 }
 static float tab_zoom(const Tab *tab) { return tab_zoom_for(tab, tab && tab->cur && tab->cur->internal_ui); }
 static bool url_desktop(const char *url) {
@@ -484,10 +509,17 @@ static void tab_unlimit(Tab *t) { t->limited = t->info = false; t->ncpu = t->cpu
 #define TAB_CALL(ud, expr) do { Tab *o_ = g_app->t; g_app->t = (Tab *)(ud); expr; g_app->t = o_; } while (0)
 
 
+/* a typed localhost or IPv4 address opens over http, as in Chrome */
+static bool local_host(const char *in) {
+    size_t n = strcspn(in, ":/?#"), dots = 0;
+    if (n == 9 && !strncasecmp(in, "localhost", 9)) return true;
+    for (size_t i = 0; i < n; i++) if (in[i] == '.') dots++; else if (!isdigit((unsigned char)in[i])) return false;
+    return n && dots == 3;
+}
 static char *normalize_url(const char *in) {
     while (*in == ' ') in++;
     if (strstr(in, "://") || !strncmp(in, "about:", 6) || !strncmp(in, "data:", 5)) return xstrdup(in);
-    if (!strchr(in, ' ') && strchr(in, '.')) { char *o = xmalloc(strlen(in) + 9); sprintf(o, "https://%s", in); return o; }
+    if (!strchr(in, ' ') && (strchr(in, '.') || local_host(in))) { char *o = xmalloc(strlen(in) + 9); sprintf(o, "%s://%s", local_host(in) ? "http" : "https", in); return o; }
     size_t n = strlen(in); char *o = xmalloc(n * 3 + 40), *w = o + sprintf(o, "https://www.google.com/search?q=");
     for (const unsigned char *s = (const unsigned char *)in; *s; s++) {
         if (isalnum(*s) || strchr("-_.~", *s)) *w++ = (char)*s; else if (*s == ' ') *w++ = '+'; else w += sprintf(w, "%%%02X", *s);
@@ -507,7 +539,39 @@ static void sb_esc(SB *b, const char *s) {
     case '"': sb_puts(b, "&quot;"); break; case '\'': sb_puts(b, "&#39;"); break; default: sb_putc(b, *s);
     }
 }
+#ifdef __ANDROID__
+#define HUD_TEXT "Shows the whole phone's CPU use (top) and Lumen's (bottom) next to the address bar, updated every 3 seconds. Tap it for the current tab's CPU and the memory use."
+#else
+#define HUD_TEXT "Shows how much CPU and memory (GB) Lumen uses at the bottom of the workspace sidebar, updated every 2 seconds. Click it to see the whole computer's CPU and memory use."
+#endif
 static void ip_toggle(SB *b, const char *key, bool on) { sb_printf(b, "<a class=\"btn%s\" href=\"lumen://set?s=settings&%s=%d\">%s</a>", on ? " on" : "", key, !on, on ? "On" : "Off"); }
+#ifdef __ANDROID__
+/* Settings: the touch circle's colour, opacity, size and hide delay, as choice buttons */
+/* each button shows its value / div, or 100 - value for the opacities shown as transparency */
+static void touch_fb_choices(SB *b, const char *title, const char *key, const int *v, int n, int cur, const char *fmt, double div, bool invert) {
+    sb_printf(b, "</div><div class=row><div class=grow>%s</div></div><p class=choices>", title);
+    for (int i = 0; i < n; i++) {
+        sb_printf(b, "<a class=\"btn%s\" href=\"lumen://set?s=settings&%s=%d\">", v[i] == cur ? " on" : "", key, v[i]);
+        sb_printf(b, fmt, invert ? 100 - v[i] : v[i] / div); sb_puts(b, "</a> ");
+    }
+    sb_puts(b, "</p><div>");
+}
+static void touch_fb_rows(SB *b) {
+    sb_puts(b, "</div><div class=row><div class=grow>Colour</div></div><p class=choices>");
+    int n = (int)(sizeof touch_fb_colors / sizeof *touch_fb_colors);
+    for (int i = 0; i < n; i++)
+        sb_printf(b, "<a class=\"btn swatch%s\" title=\"%s\" href=\"lumen://set?s=settings&touchfb_color=%d\"><i style=\"background:#%06x\"></i>%s</a> ",
+            touch_fb_colors[i] == g_touch_fb_rgb ? " on" : "", touch_fb_color_names[i], touch_fb_colors[i], touch_fb_colors[i], touch_fb_color_names[i]);
+    sb_printf(b, "</p><p class=choices>Custom #<input id=fbc value=\"%06x\" maxlength=6 style=\"width:72px\"><button class=btn onclick=\"fbColor()\">Set</button>"
+        " <span class=fbprev style=\"width:%dpx;height:%dpx;background:rgba(%d,%d,%d,%.2f);border:1px solid rgba(%d,%d,%d,%.2f)\"></span></p>",
+        g_touch_fb_rgb, g_touch_fb_size, g_touch_fb_size, g_touch_fb_rgb >> 16, (g_touch_fb_rgb >> 8) & 255, g_touch_fb_rgb & 255, g_touch_fb_alpha / 100.0,
+        g_touch_fb_rgb >> 16, (g_touch_fb_rgb >> 8) & 255, g_touch_fb_rgb & 255, LCLAMP(g_touch_fb_alpha * 2, 1, 100) / 100.0);
+    sb_puts(b, "<div>");
+    touch_fb_choices(b, "Transparency", "touchfb_alpha", touch_fb_alphas, (int)(sizeof touch_fb_alphas / sizeof *touch_fb_alphas), g_touch_fb_alpha, "%g%%", 1, true);
+    touch_fb_choices(b, "Size", "touchfb_size", touch_fb_sizes, (int)(sizeof touch_fb_sizes / sizeof *touch_fb_sizes), g_touch_fb_size, "%g dp", 1, false);
+    touch_fb_choices(b, "Hide after lifting the finger", "touchfb_ms", touch_fb_times, (int)(sizeof touch_fb_times / sizeof *touch_fb_times), g_touch_fb_ms, "%g s", 1000, false);
+}
+#endif
 #ifdef __ANDROID__
 static void renderer_text(App *app, char *text, size_t capacity) {
     snprintf(text, capacity, "Requested: %s. Active: %s.%s", renderer_key(g_renderer), gpu_backend_name(app->gpu),
@@ -664,6 +728,9 @@ static char *internal_page(App *app, const char *u) {
         ".empty{color:#5f6368;padding:18px 0}"
         ".dlbar{height:4px;background:#e8eaed;border-radius:2px;margin-top:8px;overflow:hidden}.dlbar i{display:block;height:4px;background:#1a73e8}"
         ".row .btn{margin-left:6px}"
+        ".choices{margin:0 0 10px}.choices .btn{margin:0 4px 6px 0;padding:5px 12px}"
+        ".swatch i{display:inline-block;width:12px;height:12px;border-radius:6px;margin-right:6px;vertical-align:-1px;border:1px solid rgba(0,0,0,.15)}"
+        ".fbprev{display:inline-block;border-radius:50%;vertical-align:middle;margin-left:10px}"
         ".workspaces{margin:0 -4px 20px}"
         "a.workspace{display:inline-block;vertical-align:top;width:72px;height:72px;box-sizing:border-box;margin:4px;padding:10px 8px;background:#fff;border:1px solid #dadce0;border-radius:14px;color:#5f6368;text-align:center;text-decoration:none}"
         "a.workspace.active{background:#e8f0fe;border-color:#1a73e8;color:#1967d2}"
@@ -752,13 +819,18 @@ static char *internal_page(App *app, const char *u) {
         ip_toggle(&b, "vctl", g_vctl);
         sb_puts(&b, "</div></div><div class=card><div class=row><div class=grow><div class=t>Sleep background ChatGPT tabs</div><div class=sub>A ChatGPT tab left in the background for a minute stops running and frees most of its memory. It keeps showing its last screen and reloads when you click it. Text you typed but did not send in that tab may be lost.</div></div>");
         ip_toggle(&b, "sleep", g_tab_sleep);
-        sb_puts(&b, "</div></div><div class=card><div class=row><div class=grow><div class=t>CPU usage</div><div class=sub>Shows how much CPU and memory (GB) Lumen uses at the bottom of the workspace sidebar, updated every 2 seconds. Click it to see the whole computer's CPU and memory use.</div></div>");
+        sb_puts(&b, "</div></div><div class=card><div class=row><div class=grow><div class=t>CPU usage</div><div class=sub>" HUD_TEXT "</div></div>");
         ip_toggle(&b, "hud", g_hud);
+#ifdef __ANDROID__
+        sb_puts(&b, "</div></div><div class=card><div class=row><div class=grow><div class=t>Touch feedback</div><div class=sub>Shows a small circle where you touch the screen, anywhere in Lumen, until a moment after you lift your finger.</div></div>");
+        ip_toggle(&b, "touchfb", g_touch_fb);
+        if (g_touch_fb) touch_fb_rows(&b);
+#endif
         sb_puts(&b, "</div></div><div class=card><div class=row><div class=grow><div class=t>Smooth scrolling</div><div class=sub>Animates each mouse-wheel step. When off, each wheel step jumps a fixed, larger distance, which uses less CPU. Trackpad scrolling is not affected.</div></div>");
         ip_toggle(&b, "smooth", g_smooth);
         sb_puts(&b, "</div></div><div class=card><div class=row><div class=grow><div class=t>User agent</div><div class=sub>How Lumen identifies itself to websites. Chrome works best on most sites. Reload open pages to apply.</div></div>");
         for (int i = 0; i < UA_COUNT; i++) sb_printf(&b, "<a class=\"btn%s\" href=\"lumen://set?s=settings&ua=%d\">%s</a>", i == g_ua ? " on" : "", i, net_user_agent_name(i));
-        sb_puts(&b, "</div></div><script>function save(){var g=function(i){return parseInt(document.getElementById(i).value,10)||0};location.href='lumen://set?s=settings&cpu_pct='+g('n')+'&cpu_secs='+g('m')+'&cpu_lim='+g('t')}</script>");
+        sb_puts(&b, "</div></div><script>function fbColor(){var c=document.getElementById('fbc').value.replace(/^#/,'');if(/^[0-9a-fA-F]{6}$/.test(c))location.href='lumen://set?s=settings&touchfb_hex='+c}function save(){var g=function(i){return parseInt(document.getElementById(i).value,10)||0};location.href='lumen://set?s=settings&cpu_pct='+g('n')+'&cpu_secs='+g('m')+'&cpu_lim='+g('t')}</script>");
     } else {
         bool bm = sec[0] == 'b'; Link *v = bm ? g_bms : g_hv; int n = bm ? g_nbm : g_nhv;
         sb_printf(&b, "<h2>%s</h2>", bm ? "Bookmarks" : "History");
@@ -845,6 +917,14 @@ static void apply_set(App *a, const char *q) {
     if (qparam(q, "sleep", v, sizeof v)) g_tab_sleep = atoi(v) != 0;
     if (qparam(q, "smooth", v, sizeof v)) { g_smooth = atoi(v) != 0; g_sm_dx = g_sm_dy = 0; }
     if (qparam(q, "hud", v, sizeof v)) { g_hud = atoi(v) != 0; g_hud_pop = false; }
+    if (qparam(q, "touchfb", v, sizeof v)) g_touch_fb = atoi(v) != 0;
+#ifdef __ANDROID__
+    if (qparam(q, "touchfb_color", v, sizeof v)) g_touch_fb_rgb = (int)(strtol(v, NULL, 10) & 0xffffff);
+    if (qparam(q, "touchfb_hex", v, sizeof v)) { char *e; long c = strtol(v, &e, 16); if (e != v && !*e && strlen(v) == 6) g_touch_fb_rgb = (int)c; }
+    if (qparam(q, "touchfb_alpha", v, sizeof v)) g_touch_fb_alpha = LCLAMP(atoi(v), 1, 100);
+    if (qparam(q, "touchfb_size", v, sizeof v)) g_touch_fb_size = LCLAMP(atoi(v), 4, 120);
+    if (qparam(q, "touchfb_ms", v, sizeof v)) g_touch_fb_ms = LCLAMP(atoi(v), 0, 5000);
+#endif
     if (qparam(q, "ua", v, sizeof v)) { g_ua = LCLAMP(atoi(v), 0, UA_COUNT - 1); net_set_user_agent(g_ua); }
     if (qparam(q, "cpu_pct", v, sizeof v)) g_cpu_pct = LCLAMP(atoi(v), 10, 100);
     if (qparam(q, "cpu_secs", v, sizeof v)) g_cpu_secs = LCLAMP(atoi(v), 5, 600);
@@ -910,6 +990,7 @@ static float push_text(DisplayList *dl, Font *f, const char *s, float x, float b
     vec_push(dl->items, it); shaped_free(&sr);
     return w;
 }
+#ifndef __ANDROID__   /* the address field's text; Android's is BrowserToolbar's */
 /* the glyphs of s that fall in [skip, skip + w) of its run, drawn from x */
 static void push_text_window(DisplayList *dl, Font *f, const char *s, float x, float base, float skip, float w, Color c) {
     ShapedRun sr; memset(&sr, 0, sizeof sr); text_shape(f, s, strlen(s), 0, &sr);
@@ -926,6 +1007,7 @@ static void push_text_window(DisplayList *dl, Font *f, const char *s, float x, f
     it.x = x; it.y = base - f->ascent; it.w = x1; it.h = f->ascent + f->descent;
     vec_push(dl->items, it); shaped_free(&sr);
 }
+#endif
 /* the byte offset of s nearest x px into its run */
 static int text_hit_x(Font *f, const char *s, float x) {
     ShapedRun sr; memset(&sr, 0, sizeof sr); text_shape(f, s, strlen(s), 0, &sr);
@@ -936,7 +1018,7 @@ static int text_hit_x(Font *f, const char *s, float x) {
 }
 static void url_sel_clamp(App *a) { int n = (int)strlen(a->t->url); for (int k = 0; k < 2; k++) a->us[k] = LCLAMP(a->us[k], 0, n); }
 
-enum { HB_NONE, HB_BACK, HB_FWD, HB_RELOAD, HB_URL, HB_NEWTAB, HB_WSNEW, HB_STAR, HB_HUD, HB_MENU, HB_TAB = 100, HB_TABX = 200, HB_WS = 300, HB_INFO = 400, HB_TABDOT = 500 };
+enum { HB_NONE, HB_BACK, HB_FWD, HB_RELOAD, HB_URL, HB_NEWTAB, HB_WSNEW, HB_STAR, HB_HUD, HB_MENU, HB_TAB = 100, HB_TABX = 200, HB_WS = 300, HB_INFO = 400, HB_TABDOT = 500, HB_SLOT = 600 };
 static void info_btn(App *a, int k, float *x, float *w) {
     static const float W[4] = { 70, 76, 82, 28 }; float r = a->vw - 12;
     for (int i = 3; i >= k; i--) r -= W[i] + (i < 3 ? 6 : 0);
@@ -983,30 +1065,26 @@ static Image *ws_icon(App *a, int ic, bool on) {
 static int ws_tabs(App *a, int w, int *out) { int n = 0; for (int i = 0; i < a->ntabs; i++) if (a->tabs[i]->ws == w) out[n++] = i; return n; }
 static float tab_w(App *a) { int v[MAX_TABS], n = ws_tabs(a, a->wi, v); float w = (a->vw - TLW - 48) / (n ? n : 1); return w > 220 ? 220 : w; }
 static float bar_x0(App *a) { return g_compact ? TLW : a->side; }
-/* Android toolbar: back | URL | reload | menu; elsewhere back, forward, reload and star sit left of the URL */
+/* Android toolbar: URL | back | reload | menu; elsewhere back, forward, reload and star sit left of the URL */
 static float url_x(App *a) {
     (void)a;
 #ifdef __ANDROID__
-    return 46;
+    return 10;
 #else
     return 144;
 #endif
 }
 static float url_w(App *a) {
 #ifdef __ANDROID__
-    return a->vw - bar_x0(a) - url_x(a) - 90;
+    return a->vw - bar_x0(a) - url_x(a) - 134;
 #else
     return a->vw - bar_x0(a) - 144 - (g_compact ? 92 : 12);
 #endif
 }
 #ifdef __ANDROID__
-static int android_bar_hit(App *a, float x) {   /* x from the toolbar's left edge */
-    float w = a->vw - bar_x0(a);
-    if (x < 0) return HB_NONE;
-    if (x < 44) return HB_BACK;
-    if (x >= w - 44) return HB_MENU;
-    if (x >= w - 88) return HB_RELOAD;
-    return x >= url_x(a) ? HB_URL : HB_NONE;
+static int android_bar_hit(App *a, float x) {   /* the row is BrowserToolbar's: its touches never come here */
+    (void)a; (void)x;
+    return HB_NONE;
 }
 #endif
 static int bar_hit(App *a, float x, float y) {
@@ -1072,6 +1150,7 @@ static Image *sym_icon(App *a, int k, int c) {   /* k: 0 back 1 forward 2 reload
     }
     return *slot;
 }
+#ifndef __ANDROID__   /* Android: BrowserToolbar draws android_ui_icon's outlines */
 static void draw_icon(DisplayList *dl, int kind, float cx, float cy, Color c) {
     if (kind == HB_BACK || kind == HB_FWD) {
         float d = kind == HB_BACK ? -1 : 1;
@@ -1081,6 +1160,7 @@ static void draw_icon(DisplayList *dl, int kind, float cx, float cy, Color c) {
         push_rect(dl, cx - 1, cy - 8, 4, 2, 1, c); push_rect(dl, cx + 1, cy - 9, 2, 4, 1, c);
     }
 }
+#endif
 
 static void chrome_tip(App *a) {   /* tooltip for a tab's CPU-limit dot (hover or click) */
     int i = a->hover >= HB_TABDOT ? a->hover - HB_TABDOT : a->tip_until ? a->tip_tab : -1;
@@ -1247,17 +1327,8 @@ static void build_chrome(App *a) {
     int n0 = dl->items.n;
     push_rect(dl, 0, 0, tbw, TB, 0, RGBA(250, 250, 250, 255));
     push_rect(dl, 0, TB - 1, tbw, 1, 0, RGBA(226, 226, 226, 255));
+#ifndef __ANDROID__   /* Android: the toolbar row is BrowserToolbar, fed by bar_push */
     Color on = RGBA(60, 60, 60, 255), off = RGBA(190, 190, 190, 255);
-#ifdef __ANDROID__
-    {
-        float bx[3] = { 22.f, tbw - 66.f, tbw - 22.f }; int bk[3] = { HB_BACK, HB_RELOAD, HB_MENU };
-        for (int i = 0; i < 3; i++) {
-            if (a->hover == bk[i]) push_rect(dl, bx[i] - 15, TB / 2 - 15, 30, 30, 15, RGBA(232, 232, 232, 255));
-            if (bk[i] == HB_MENU) for (int d = -1; d <= 1; d++) push_rect(dl, bx[i] - 2, TB / 2 + d * 6 - 2, 4, 4, 2, on);
-            else draw_icon(dl, bk[i], bx[i], TB / 2, bk[i] != HB_BACK || a->t->hpos > 0 ? on : off);
-        }
-    }
-#else
     int hk[3] = { HB_BACK, HB_FWD, HB_RELOAD };
     for (int i = 0; i < 3; i++) {
         float cx = 22.f + i * 32.f;
@@ -1271,7 +1342,6 @@ static void build_chrome(App *a) {
         Image *si = sym_icon(a, bmd ? 4 : 3, bmd ? 2 : 0);
         if (si) push_img(dl, si, cx - 8, TB / 2 - 8, 16, 16); else push_text(dl, a->ui, bmd ? "\xE2\x98\x85" : "\xE2\x98\x86", cx - 7, TB / 2 + (a->ui->ascent - a->ui->descent) / 2, 16, on);
     }
-#endif
     float ux = url_x(a), uw = url_w(a);
     push_rect(dl, ux, 7, uw, TB - 14, (TB - 14) / 2, a->editing ? RGBA(255, 255, 255, 255) : RGBA(238, 238, 238, 255));
     if (a->editing) {
@@ -1305,6 +1375,7 @@ static void build_chrome(App *a) {
     }
 #endif
     if (a->t->loading) push_rect(dl, 0, TB - 2, tbw * 0.35f, 2, 0, RGBA(66, 133, 244, 255));
+#endif
     for (int i = n0; i < dl->items.n; i++) { DItem *it = &dl->items.v[i]; it->y += TABH; it->x += x0; if (it->op == DO_TEXT) for (int g = 0; g < it->ng; g++) { it->g[g].y += TABH; it->g[g].x += x0; } }
 }
 
@@ -1621,9 +1692,13 @@ static bool scroller_blit(App *a, int pwp, int ph, int *ox0, int *oy0, int *ox1,
     *ox0 = R[0]; *oy0 = R[1]; *ox1 = R[2]; *oy1 = R[3];
     return true;
 }
+#ifdef __ANDROID__
+static void bar_push(App *a);
+#endif
 static void render(App *a) {
 #ifdef __ANDROID__
     if (!a->win || a->android_suspended) return;
+    bar_push(a);
     update_resolution_readout(a);
     update_renderer_readout(a);
 #endif
@@ -3664,6 +3739,12 @@ static void cpu_monitor(App *a) {   /* a tab averaging over g_cpu_pct% of a core
             fprintf(stderr, "lumen: tab %d limited to %d%% CPU (was %.0f%%)\n", i, g_cpu_lim, t->pct * 100);
         }
     }
+#ifdef __ANDROID__
+    if (g_hud) {
+        size_t heap = 0, ext = 0; js_mem_stats(&heap, &ext);
+        android_ui_stats[0] = a->t->pct * 100; android_ui_stats[1] = heap / 1048576.f; android_ui_stats[2] = ext / 1048576.f; android_ui_stats[3] = (float)a->ntabs;
+    }
+#endif
     if (getenv("LUMEN_CPU_DEBUG")) for (int i = 0; i < a->ntabs; i++) fprintf(stderr, "lumen-cpu: tab %d %.0f%%%s\n", i, a->tabs[i]->pct * 100, a->tabs[i]->limited ? " limited" : "");
 }
 static void bm_toggle(App *a) {
@@ -3799,14 +3880,31 @@ static void desktop_sites_save(void) {
     fclose(f);
 }
 static bool page_is_web(const Tab *t) { return t->cur && !t->cur->internal_ui && !strncmp(t->url, "http", 4); }
-static void show_more_menu(App *a) {
-    Tab *t = a->t; bool web = page_is_web(t);
-    AndroidMenuState st = {
-        .can_forward = t->hpos < t->nhist - 1, .desktop = t->desktop, .can_desktop = web,
+static AndroidMenuState menu_state(App *a) {
+    Tab *t = a->t;
+    return (AndroidMenuState){
+        .can_forward = t->hpos < t->nhist - 1, .desktop = t->desktop, .can_desktop = page_is_web(t),
         .can_zoom = t->cur && !t->cur->internal_ui, .zoom_pct = t->zoom_pct ? t->zoom_pct : g_page_zoom_pct,
         .bookmarked = bm_find(t->url) >= 0, .can_bookmark = t->cur && *t->url && strncmp(t->url, "lumen:", 6),
+        .can_back = t->hpos > 0, .fullscreen = g_fullscreen,
     };
-    android_ui_menu(&st);
+}
+static void show_more_menu(App *a) { AndroidMenuState st = menu_state(a); android_ui_menu(&st); }
+/* hand the toolbar row's state to its Android view (android_ui_toolbar drops repeats) */
+static void bar_push(App *a) {
+    Tab *t = a->t; AndroidBarState st; memset(&st, 0, sizeof st);
+    float s = a->scale, x0 = bar_x0(a);
+    st.left = (int)lroundf(x0 * s); st.top = (int)lroundf(TABH * s);
+    st.width = (int)lroundf((a->vw - x0) * s); st.height = (int)lroundf(TB * s);
+    g_slot_n = st.nslot = a->vw - x0 >= 600 ? 4 : 2;   /* landscape phones and tablets */
+    for (int i = 0; i < st.nslot; i++) {
+        int code = g_slot[i]; st.slot[i] = code;
+        st.slot_enabled[i] = code == UI_BACK ? t->hpos > 0 : code == UI_FORWARD ? t->hpos < t->nhist - 1 : true;
+        st.slot_lit[i] = code == UI_BM_TOGGLE ? bm_find(t->url) >= 0 : code == UI_DESKTOP ? t->desktop : code == UI_FULLSCREEN && g_fullscreen;
+    }
+    st.loading = t->loading; st.menu = menu_state(a); st.hud = g_hud; st.touch_feedback = g_touch_fb;
+    st.touch_rgb = g_touch_fb_rgb; st.touch_alpha = g_touch_fb_alpha; st.touch_size = g_touch_fb_size; st.touch_ms = g_touch_fb_ms;
+    android_ui_toolbar(&st, t->url);
 }
 static void show_bookmarks(App *a) {
     const char *titles[MAX_BM], *urls[MAX_BM];
@@ -3828,11 +3926,28 @@ static void ui_action_post(int code, int value, char *s1, char *s2) {   /* Andro
     SDL_Event ev; SDL_zero(ev); ev.type = EV_UI; ev.user.data1 = u;
     if (!SDL_PushEvent(&ev)) { free(s1); free(s2); free(u); }
 }
+/* a menu action not in the toolbar takes the place of the toolbar button used least recently */
+static void slot_used(App *a, int code) {
+    if (!slot_action(code)) return;
+    for (int i = 0; i < g_slot_n; i++) if (g_slot[i] == code) { g_slot_seq[i] = ++g_slot_clock; return; }
+    int k = 0; for (int i = 1; i < g_slot_n; i++) if (g_slot_seq[i] < g_slot_seq[k]) k = i;
+    /* a slot hidden on a narrow window that held it takes the action it replaces, so none shows twice */
+    for (int i = g_slot_n; i < NSLOT; i++) if (g_slot[i] == code) { g_slot[i] = g_slot[k]; g_slot_seq[i] = g_slot_seq[k]; }
+    g_slot[k] = code; g_slot_seq[k] = ++g_slot_clock;
+    settings_save(); a->dirty = true; a->vonly = false;
+}
 static void ui_action(App *a, UiAction *u, bool *quit) {
     (void)quit;
     Tab *t = a->t;
+#if defined(__ANDROID__) && !defined(NDEBUG)
+    __android_log_print(ANDROID_LOG_INFO, "LumenUi", "action code=%d value=%d", u->code, u->value);
+#endif
+    slot_used(a, u->code);
     switch (u->code) {
     case UI_NEW_TAB: tab_open(a); break;
+    case UI_BACK: history_go(a, -1); break;
+    case UI_RELOAD: if (t->hpos >= 0) navigate(a, t->hist[t->hpos], false); break;
+    case UI_FULLSCREEN: g_fullscreen = u->value != 0; android_ui_fullscreen(g_fullscreen); break;
     case UI_FORWARD: history_go(a, 1); break;
     case UI_BOOKMARKS: show_bookmarks(a); break;
     case UI_WORKSPACES: show_workspaces(a); break;
@@ -3840,21 +3955,23 @@ static void ui_action(App *a, UiAction *u, bool *quit) {
     case UI_HISTORY: navigate(a, "lumen://newtab?s=history", true); break;
     case UI_SETTINGS: navigate(a, "lumen://newtab?s=settings", true); break;
     case UI_DESKTOP: {
-        URL pu; if (!page_is_web(t) || !url_parse(t->url, &pu)) break;
+        URL pu;
+        if (!page_is_web(t)) { ui_toast(a, "Desktop site works on web pages only"); break; }
+        if (!url_parse(t->url, &pu)) break;
         net_set_desktop_host(pu.host, u->value != 0); url_free(&pu);
         desktop_sites_save();
         if (t->hpos >= 0) navigate(a, t->hist[t->hpos], false);
         break; }
     case UI_ZOOM:
         if (!t->cur || t->cur->internal_ui) break;
-        { int pct = LCLAMP(u->value, 50, 300), want = pct == g_page_zoom_pct ? 0 : pct;
+        { int pct = LCLAMP(u->value, 20, 300), want = pct == g_page_zoom_pct ? 0 : pct;
           if (want != t->zoom_pct) { t->zoom_pct = want; page_zoom_changed(a); } }
         break;
     case UI_BM_TOGGLE: {
         bool was = bm_find(t->url) >= 0; bm_toggle(a);
         if ((bm_find(t->url) >= 0) != was) ui_toast(a, was ? "Bookmark removed" : "Bookmarked");
         break; }
-    case UI_BM_OPEN:
+    case UI_BM_OPEN: case UI_URL_GO:
         if (!u->s2 || !*u->s2) break;
         if (is_js_url(u->s2)) run_js_url(a, u->s2); else { SDL_StopTextInput(a->win); navigate(a, u->s2, true); }
         break;
@@ -4128,10 +4245,18 @@ int main(int argc, char **argv) {
 #endif
             char k[64]; int v; if (sscanf(line, "%63[^=]=%d", k, &v) != 2) continue;
             if (!strcmp(k, "page_zoom") && page_zoom_valid(v)) g_page_zoom_pct = v;
+#ifdef __ANDROID__
+            else if (!strncmp(k, "bar_slot", 8) && k[8] >= '0' && k[8] < '0' + NSLOT && !k[9] && slot_action(v)) g_slot[k[8] - '0'] = v;
+            else if (!strcmp(k, "touch_feedback")) g_touch_fb = v != 0;
+            else if (!strcmp(k, "touch_feedback_color")) g_touch_fb_rgb = v & 0xffffff;
+            else if (!strcmp(k, "touch_feedback_opacity")) g_touch_fb_alpha = LCLAMP(v, 1, 100);
+            else if (!strcmp(k, "touch_feedback_size")) g_touch_fb_size = LCLAMP(v, 4, 120);
+            else if (!strcmp(k, "touch_feedback_ms")) g_touch_fb_ms = LCLAMP(v, 0, 5000);
+#endif
             else if (!strcmp(k, "offscreen_media_eviction")) g_lowmem = v != 0; else if (!strcmp(k, "cpu_limit")) g_cpu_on = v != 0;
             else if (!strcmp(k, "cpu_pct")) g_cpu_pct = LCLAMP(v, 10, 100); else if (!strcmp(k, "cpu_secs")) g_cpu_secs = LCLAMP(v, 5, 600);
             else if (!strcmp(k, "cpu_lim")) g_cpu_lim = LCLAMP(v, 5, 95); else if (!strcmp(k, "video_controls")) g_vctl = v != 0;
-            else if (!strcmp(k, "tab_sleep")) g_tab_sleep = v != 0; else if (!strcmp(k, "cpu_hud")) g_hud = v != 0; else if (!strcmp(k, "smooth_scroll")) g_smooth = v != 0; else if (!strcmp(k, "user_agent")) g_ua = LCLAMP(v, 0, UA_COUNT - 1);
+            else if (!strcmp(k, "tab_sleep")) g_tab_sleep = v != 0; else if (!strcmp(k, HUD_KEY)) g_hud = v != 0; else if (!strcmp(k, "smooth_scroll")) g_smooth = v != 0; else if (!strcmp(k, "user_agent")) g_ua = LCLAMP(v, 0, UA_COUNT - 1);
         }
         if (sf) fclose(sf);
         paint_profile_configure();
@@ -4318,21 +4443,31 @@ int main(int argc, char **argv) {
             case SDL_EVENT_MOUSE_BUTTON_DOWN:
                 if (ev.button.button != SDL_BUTTON_LEFT) break;
                 { int bh = bar_hit(&a, ev.button.x, ev.button.y);
+#if defined(__ANDROID__) && !defined(NDEBUG)
+                  if (ev.button.y < BAR) __android_log_print(ANDROID_LOG_INFO, "LumenUi", "bar x=%.0f y=%.0f vw=%.0f x0=%.0f compact=%d hit=%d slots=%d,%d",
+                      ev.button.x, ev.button.y, a.vw, bar_x0(&a), g_compact, bh, g_slot[0], g_slot[1]);
+#endif
                   if (g_hud_pop) { float x = ev.button.x, y = ev.button.y; bool in = x >= g_pop[0] && x < g_pop[2] && y >= g_pop[1] && y < g_pop[3]; g_hud_pop = false; a.dirty = true; a.vonly = false; if (in || bh == HB_HUD) break; }
                   if (bh == HB_HUD) { g_hud_pop = true; a.dirty = true; a.vonly = false; break; }
-                  if (bh >= HB_TABDOT) { int i = bh - HB_TABDOT; if (i != a.ti) tab_select(&a, i); a.t->info = true; a.dirty = true; a.vonly = false; break; }
-                  if (bh >= HB_INFO) { info_click(&a, bh - HB_INFO); break; }
-                  if (bh >= HB_WS) { int w = bh - HB_WS; if (w != a.wi) ws_select(&a, w); else ws_popup(&a, w, ev.button.x, ev.button.y); break; }
-                  if (bh == HB_WSNEW) { menu_cmd(&a, MENU_WS_NEW); break; }
-                  if (bh >= HB_TABX) { tab_close(&a, bh - HB_TABX, &quit); break; }
-                  if (bh >= HB_TAB) { int i = bh - HB_TAB; if (i == a.ti) tab_popup(&a, i, ev.button.x, ev.button.y); else tab_select(&a, i); break; }
-                  if (bh == HB_NEWTAB) { tab_open(&a); break; } }
+                  if (bh >= HB_SLOT) {}   /* toolbar slots act below */
+                  else if (bh >= HB_TABDOT) { int i = bh - HB_TABDOT; if (i != a.ti) tab_select(&a, i); a.t->info = true; a.dirty = true; a.vonly = false; break; }
+                  else if (bh >= HB_INFO) { info_click(&a, bh - HB_INFO); break; }
+                  else if (bh >= HB_WS) { int w = bh - HB_WS; if (w != a.wi) ws_select(&a, w); else ws_popup(&a, w, ev.button.x, ev.button.y); break; }
+                  else if (bh == HB_WSNEW) { menu_cmd(&a, MENU_WS_NEW); break; }
+                  else if (bh >= HB_TABX) { tab_close(&a, bh - HB_TABX, &quit); break; }
+                  else if (bh >= HB_TAB) { int i = bh - HB_TAB; if (i == a.ti) tab_popup(&a, i, ev.button.x, ev.button.y); else tab_select(&a, i); break; }
+                  else if (bh == HB_NEWTAB) { tab_open(&a); break; } }
                 switch (bar_hit(&a, ev.button.x, ev.button.y)) {
                 case HB_BACK: history_go(&a, -1); break;
                 case HB_FWD: history_go(&a, 1); break;
                 case HB_STAR: bm_toggle(&a); a.dirty = true; a.vonly = false; break;
 #ifdef __ANDROID__
                 case HB_MENU: if (a.editing) url_cancel(&a); show_more_menu(&a); a.dirty = true; break;
+                case HB_SLOT: case HB_SLOT + 1: {
+                    if (a.editing) url_cancel(&a);
+                    int code = g_slot[bar_hit(&a, ev.button.x, ev.button.y) - HB_SLOT];
+                    UiAction u = { code, code == UI_DESKTOP ? !a.t->desktop : code == UI_FULLSCREEN ? !g_fullscreen : 0, NULL, NULL };
+                    ui_action(&a, &u, &quit); a.dirty = true; a.vonly = false; break; }
 #endif
                 case HB_RELOAD: if (a.t->hpos >= 0) navigate(&a, a.t->hist[a.t->hpos], false); break;
                 case HB_URL: url_press(&a, ev.button.x, ev.button.clicks); break;
@@ -4481,7 +4616,7 @@ int main(int argc, char **argv) {
                 if (ev.type == EV_MENU) menu_cmd(&a, ev.user.code);
                 if (ev.type == EV_DL) dl_event(&a, &ev);
 #ifdef __ANDROID__
-                if (ev.type == EV_UI) { UiAction *u = ev.user.data1; ui_action(&a, u, &quit); free(u->s1); free(u->s2); free(u); }
+                if (ev.type == EV_UI) { UiAction *u = ev.user.data1; ui_action(&a, u, &quit); free(u->s1); free(u->s2); free(u); a.dirty = true; a.vonly = false; }
 #endif
                 if (ev.type == EV_LOADED) {
                     Page *p = ev.user.data1;

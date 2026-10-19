@@ -27,6 +27,7 @@ enum {
     NF_TREE_RELATED = 1 << 18,  /* scratch: also preceding siblings / changed parent's children */
     NF_TREE_CHILD = 1 << 19,    /* scratch: direct child of a pending child-list change */
     NF_RESELECT_KEYED = 1 << 20, /* class/ID change: descendants reselect only if a rule tests those keys above its subject */
+    NF_EMPTY_CHANGED = 1 << 21,  /* this connected element's :empty state flipped since the last style pass */
     NF_INERT = 1 << 11,           /* template content fragment */
 };
 

@@ -55,6 +55,8 @@ function mediaAttach(el, src) {
 mk('HTMLMediaElement', HTMLElement, [], p => {
     reflectStr(p, 'crossOrigin', 'preload'); reflectBool(p, 'autoplay', 'loop', 'controls', 'playsInline', 'defaultMuted');
     const st = (el) => el.__mp ? N.mediaState(el.__mp) : null;
+    /* a MediaStream (getUserMedia, WebRTC) plays live: its audio tracks go to the output while the element plays (07s-rtc-native.js) */
+    const live = (el) => el.__so instanceof MediaStream;
     methods(p, {
         get src() { const v = N.attr(this, 'src'); return v == null ? '' : new URL(v, document.baseURI).href; },
         set src(v) { N.setAttr(this, 'src', String(v)); this.load(); },
@@ -62,10 +64,10 @@ mk('HTMLMediaElement', HTMLElement, [], p => {
         get paused() { return this.__paused !== false; },
         get ended() { const s = st(this); return !!(s && s[2]); },
         get seeking() { const s = st(this); return !!(s && s[3]); },
-        get readyState() { const s = st(this); return s ? s[0] : 0; },
+        get readyState() { if (live(this)) return 4; const s = st(this); return s ? s[0] : 0; },
         get networkState() { const s = st(this); return s ? (s[0] >= 4 ? 1 : 2) : (N.attr(this, 'src') != null ? 3 : 0); },
         get error() { return this.__err || null; },
-        get duration() { const s = st(this); return s ? s[7] : NaN; },
+        get duration() { if (live(this)) return Infinity; const s = st(this); return s ? s[7] : NaN; },
         get currentTime() { const s = st(this); return s ? s[6] : (this.__ct || 0); },
         set currentTime(v) {
             v = +v || 0;
@@ -75,9 +77,9 @@ mk('HTMLMediaElement', HTMLElement, [], p => {
         },
         fastSeek(t) { this.currentTime = t; },
         get volume() { return this.__vol ?? 1; },
-        set volume(v) { v = +v; if (!(v >= 0 && v <= 1)) throw new DOMException('volume out of range', 'IndexSizeError'); def(this, '__vol', v); if (this.__mp) N.mediaVolume(this.__mp, v, this.muted); mediaLater(this, 'volumechange'); },
+        set volume(v) { v = +v; if (!(v >= 0 && v <= 1)) throw new DOMException('volume out of range', 'IndexSizeError'); def(this, '__vol', v); if (this.__mp) N.mediaVolume(this.__mp, v, this.muted); if (live(this)) mediaStreamPlay(this, this.__paused === false); mediaLater(this, 'volumechange'); },
         get muted() { return this.__muted ?? N.attr(this, 'muted') != null; },
-        set muted(v) { def(this, '__muted', !!v); if (this.__mp) N.mediaVolume(this.__mp, this.volume, !!v); mediaLater(this, 'volumechange'); },
+        set muted(v) { def(this, '__muted', !!v); if (this.__mp) N.mediaVolume(this.__mp, this.volume, !!v); if (live(this)) mediaStreamPlay(this, this.__paused === false); mediaLater(this, 'volumechange'); },
         get playbackRate() { return this.__rate ?? 1; }, set playbackRate(v) { def(this, '__rate', +v); mediaLater(this, 'ratechange'); },
         get defaultPlaybackRate() { return 1; }, set defaultPlaybackRate(v) {}, get preservesPitch() { return true; }, set preservesPitch(v) {},
         get buffered() { return this.__mp ? mediaRanges(N.mediaBuffered(this.__mp, -1)) : new TimeRanges([]); },
@@ -87,7 +89,15 @@ mk('HTMLMediaElement', HTMLElement, [], p => {
         get audioTracks() { return Object.assign([], { addEventListener() {}, removeEventListener() {}, getTrackById() { return null; } }); },
         get videoTracks() { return Object.assign([], { addEventListener() {}, removeEventListener() {}, getTrackById() { return null; } }); },
         get srcObject() { return this.__so ?? null; },
-        set srcObject(v) { def(this, '__so', v ?? null); mediaDetach(this); def(this, '__paused', true); if (v instanceof MediaSource) mediaAttach(this, v); },
+        set srcObject(v) {
+            if (live(this)) mediaStreamPlay(this, false);
+            def(this, '__so', v ?? null); mediaDetach(this); def(this, '__paused', true);
+            if (v instanceof MediaSource) mediaAttach(this, v);
+            else if (live(this)) {
+                for (const t of ['loadstart', 'durationchange', 'loadedmetadata', 'loadeddata', 'canplay', 'canplaythrough']) mediaLater(this, t);
+                if (this.autoplay) this.play();
+            }
+        },
         load() {
             const was = !!this.__mp;
             mediaDetach(this);
@@ -99,6 +109,11 @@ mk('HTMLMediaElement', HTMLElement, [], p => {
             if (this.__ct) { N.mediaSeek(this.__mp, this.__ct); def(this, '__ct', 0); }
         },
         play() {
+            if (live(this)) {
+                if (this.__paused !== false) { def(this, '__paused', false); mediaLater(this, 'play'); mediaLater(this, 'playing'); }
+                mediaStreamPlay(this, true);
+                return Promise.resolve();
+            }
             if (!this.__mp) this.load();
             if (!this.__mp) return Promise.reject(new DOMException('The element has no supported sources.', 'NotSupportedError'));
             if (this.__err) return Promise.reject(new DOMException(this.__err.message || 'playback error', 'NotSupportedError'));
@@ -108,6 +123,7 @@ mk('HTMLMediaElement', HTMLElement, [], p => {
         },
         pause() {
             if (this.__mp) N.mediaPause(this.__mp);
+            if (live(this)) mediaStreamPlay(this, false);
             if (this.__paused === false) { def(this, '__paused', true); mediaLater(this, 'timeupdate'); mediaLater(this, 'pause'); }
         },
         canPlayType(t) { return ['', 'maybe', 'probably'][N.mediaCanPlay(String(t), false)] || ''; },

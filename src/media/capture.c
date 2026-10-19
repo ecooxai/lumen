@@ -1,4 +1,4 @@
-/* Microphone capture for getUserMedia (SDL recording, mono float at 48 kHz) and
+/* Microphone capture for getUserMedia (mono float at 48 kHz; SDL recording, AAudio on Android) and
    MediaRecorder encoding with FFmpeg: Opus in WebM or Ogg, AAC in fragmented MP4.
    Everything here runs on the JS thread, except the Android permission answer. */
 #ifndef _GNU_SOURCE
@@ -7,6 +7,7 @@
 #include "media/media.h"
 #include <SDL3/SDL.h>
 #ifdef __ANDROID__
+#include <aaudio/AAudio.h>
 #include <jni.h>
 #endif
 #include <libavcodec/avcodec.h>
@@ -22,7 +23,16 @@
 #ifndef __ANDROID__
 static int g_mic_granted;   /* desktop: no prompt, so "granted" once a device opened */
 #endif
-static struct { const void *owner; SDL_AudioStream *s; int state; } g_mic[MIC_MAX];   /* state: 0 asking, 1 capturing, -1 failed */
+#ifdef __ANDROID__
+/* Android records with AAudio itself: entering communication mode reroutes the input and
+   disconnects a stream opened just before, and SDL keeps default recordings on such a lost
+   device for good, so they would stay silent. A lost stream is reopened instead (mic_heal). */
+#define AMIC_CAP 65536   /* ring samples (1.4 s), a power of two */
+typedef struct { AAudioStream *st; SDL_AtomicInt w, r, lost; float ring[AMIC_CAP]; } MicDev;
+#else
+typedef SDL_AudioStream MicDev;
+#endif
+static struct { const void *owner; MicDev *s; int state; bool voice, call; uint64_t retry; } g_mic[MIC_MAX];   /* state: 0 asking, 1 capturing, -1 failed */
 #ifdef __ANDROID__
 static SDL_AtomicInt g_mic_perm;   /* 0 unknown, 1 asking, 2 granted, -1 denied (the next mic_open asks again) */
 static void SDLCALL mic_permission_answer(void *ud, const char *permission, bool granted) {
@@ -44,7 +54,114 @@ static void mic_check_granted(void) {
     if (cls) (*env)->DeleteLocalRef(env, cls);
     (*env)->DeleteLocalRef(env, activity);
 }
+/* open voice microphones; while there are any, the activity keeps Android's communication mode
+   (LumenActivity.setVoiceCall), which pairs the echo canceller with the call's playback; a closing
+   microphone leaves it on its closer thread, after the stream is gone */
+static int g_voice_calls;
+static SDL_Mutex *g_voice_mu;
+static void voice_call_java(bool on);
+static void voice_call(bool on) {
+    static SDL_InitState once;
+    if (SDL_ShouldInit(&once)) { g_voice_mu = SDL_CreateMutex(); SDL_SetInitialized(&once, true); }
+    SDL_LockMutex(g_voice_mu);
+    if (!(on ? g_voice_calls++ : --g_voice_calls)) voice_call_java(on);
+    SDL_UnlockMutex(g_voice_mu);
+}
+static void voice_call_java(bool on) {
+    JNIEnv *env = SDL_GetAndroidJNIEnv();
+    jobject activity = env ? SDL_GetAndroidActivity() : NULL;
+    if (!activity) return;
+    jclass cls = (*env)->GetObjectClass(env, activity);
+    jmethodID m = cls ? (*env)->GetStaticMethodID(env, cls, "setVoiceCall", "(Z)V") : NULL;
+    if (m) (*env)->CallStaticVoidMethod(env, cls, m, (jboolean)on);
+    if ((*env)->ExceptionCheck(env)) (*env)->ExceptionClear(env);
+    if (cls) (*env)->DeleteLocalRef(env, cls);
+    (*env)->DeleteLocalRef(env, activity);
+}
+#else
+static void voice_call(bool on) { (void)on; }
 #endif
+
+#ifdef __ANDROID__
+static aaudio_data_callback_result_t mic_data(AAudioStream *st, void *ud, void *data, int32_t n) {
+    (void)st;
+    MicDev *m = ud; const float *in = data;
+    unsigned w = (unsigned)SDL_GetAtomicInt(&m->w), r = (unsigned)SDL_GetAtomicInt(&m->r);
+    unsigned room = AMIC_CAP - (w - r);
+    if ((unsigned)n > room) n = (int32_t)room;   /* the reader fell behind: drop the newest */
+    for (int32_t i = 0; i < n; i++) m->ring[(w + i) & (AMIC_CAP - 1)] = in[i];
+    SDL_MemoryBarrierRelease();
+    SDL_SetAtomicInt(&m->w, (int)(w + n));
+    return AAUDIO_CALLBACK_RESULT_CONTINUE;
+}
+static void mic_error(AAudioStream *st, void *ud, aaudio_result_t e) { (void)st; (void)e; SDL_SetAtomicInt(&((MicDev *)ud)->lost, 1); }
+static MicDev *dev_open(bool voice) {
+    MicDev *m = calloc(1, sizeof *m);
+    AAudioStreamBuilder *b = NULL;
+    if (!m || AAudio_createStreamBuilder(&b) != AAUDIO_OK) { free(m); return NULL; }
+    AAudioStreamBuilder_setDirection(b, AAUDIO_DIRECTION_INPUT);
+    AAudioStreamBuilder_setFormat(b, AAUDIO_FORMAT_PCM_FLOAT);
+    AAudioStreamBuilder_setChannelCount(b, 1);
+    AAudioStreamBuilder_setSampleRate(b, MIC_RATE);
+    /* VOICE_COMMUNICATION brings the platform echo canceller, noise suppressor and gain control */
+    AAudioStreamBuilder_setInputPreset(b, voice ? AAUDIO_INPUT_PRESET_VOICE_COMMUNICATION : AAUDIO_INPUT_PRESET_CAMCORDER);
+    AAudioStreamBuilder_setDataCallback(b, mic_data, m);
+    AAudioStreamBuilder_setErrorCallback(b, mic_error, m);
+    aaudio_result_t r = AAudioStreamBuilder_openStream(b, &m->st);
+    AAudioStreamBuilder_delete(b);
+    if (r == AAUDIO_OK && (AAudioStream_getSampleRate(m->st) != MIC_RATE || AAudioStream_getChannelCount(m->st) != 1 || AAudioStream_getFormat(m->st) != AAUDIO_FORMAT_PCM_FLOAT))
+        r = AAUDIO_ERROR_INVALID_FORMAT;
+    if (r == AAUDIO_OK) r = AAudioStream_requestStart(m->st);
+    if (r != AAUDIO_OK) {
+        SDL_SetError("%s", AAudio_convertResultToText(r));
+        if (m->st) AAudioStream_close(m->st);
+        free(m);
+        return NULL;
+    }
+    return m;
+}
+static void dev_close(MicDev *m) { AAudioStream_requestStop(m->st); AAudioStream_close(m->st); free(m); }
+static int dev_read(MicDev *m, float *out, int max) {
+    unsigned r = (unsigned)SDL_GetAtomicInt(&m->r), w = (unsigned)SDL_GetAtomicInt(&m->w);
+    SDL_MemoryBarrierAcquire();
+    int n = (int)(w - r) < max ? (int)(w - r) : max;
+    for (int i = 0; i < n; i++) out[i] = m->ring[(r + i) & (AMIC_CAP - 1)];
+    SDL_SetAtomicInt(&m->r, (int)(r + n));
+    return n;
+}
+static int dev_available(MicDev *m) { return (int)((unsigned)SDL_GetAtomicInt(&m->w) - (unsigned)SDL_GetAtomicInt(&m->r)); }
+#else
+static MicDev *dev_open(bool voice) {
+    (void)voice;
+    SDL_AudioSpec spec = { SDL_AUDIO_F32, 1, MIC_RATE };
+    SDL_AudioStream *s = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_RECORDING, &spec, NULL, NULL);
+    if (s) SDL_ResumeAudioStreamDevice(s);
+    return s;
+}
+static void dev_close(MicDev *s) { SDL_DestroyAudioStream(s); }
+static int dev_read(MicDev *s, float *out, int max) { int n = SDL_GetAudioStreamData(s, out, max * (int)sizeof(float)); return n > 0 ? n / (int)sizeof(float) : 0; }
+static int dev_available(MicDev *s) { int n = SDL_GetAudioStreamAvailable(s); return n > 0 ? n / (int)sizeof(float) : 0; }
+#endif
+
+/* Closing an Android voice input waits for AAudio to stop it, seconds on some devices, so streams
+   close on their own thread; the slot is free (and mic_read sees no stream) at once */
+typedef struct { MicDev *s; bool call; } MicClosing;
+static int mic_closer(void *p) {
+    MicClosing *c = p;
+    dev_close(c->s);
+    if (c->call) voice_call(false);
+    free(c);
+    return 0;
+}
+static void mic_release(MicDev *s, bool call) {
+    MicClosing *c = s ? malloc(sizeof *c) : NULL;
+    SDL_Thread *t = NULL;
+    if (c) { c->s = s; c->call = call; t = SDL_CreateThread(mic_closer, "lumen-mic-close", c); }
+    if (t) { SDL_DetachThread(t); return; }
+    free(c);
+    if (s) dev_close(s);
+    if (call) voice_call(false);
+}
 int mic_permission(void) {
 #ifdef __ANDROID__
     mic_check_granted();
@@ -55,19 +172,36 @@ int mic_permission(void) {
 #endif
 }
 static void mic_start(int i) {
-    SDL_AudioSpec spec = { SDL_AUDIO_F32, 1, MIC_RATE };
-    g_mic[i].s = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_RECORDING, &spec, NULL, NULL);
-    if (!g_mic[i].s) { SDL_Log("lumen: microphone unavailable: %s", SDL_GetError()); g_mic[i].state = -1; return; }
-    SDL_ResumeAudioStreamDevice(g_mic[i].s);
+    if (g_mic[i].voice) { voice_call(true); g_mic[i].call = true; }
+    g_mic[i].s = dev_open(g_mic[i].voice);
+    if (!g_mic[i].s) {
+        SDL_Log("lumen: microphone unavailable: %s", SDL_GetError()); g_mic[i].state = -1;
+        if (g_mic[i].call) { g_mic[i].call = false; voice_call(false); }
+        return;
+    }
     g_mic[i].state = 1;
 #ifndef __ANDROID__
     g_mic_granted = 1;
 #endif
 }
-int mic_open(const void *owner) {
+#ifdef __ANDROID__
+/* a stream Android disconnected (a route change) is replaced, retried twice a second until it opens */
+static void mic_heal(int id) {
+    if (g_mic[id].state != 1 || (g_mic[id].s && !SDL_GetAtomicInt(&g_mic[id].s->lost))) return;
+    uint64_t now = SDL_GetTicks();
+    if (now < g_mic[id].retry) return;
+    if (g_mic[id].s) mic_release(g_mic[id].s, false);
+    g_mic[id].s = dev_open(g_mic[id].voice);
+    g_mic[id].retry = now + 500;
+    SDL_Log("lumen: microphone %s", g_mic[id].s ? "reopened" : "lost, retrying");
+}
+#else
+static void mic_heal(int id) { (void)id; }
+#endif
+int mic_open(const void *owner, bool voice) {
     if (!(SDL_WasInit(SDL_INIT_AUDIO) & SDL_INIT_AUDIO) && !SDL_InitSubSystem(SDL_INIT_AUDIO)) return -1;
     for (int i = 0; i < MIC_MAX; i++) if (!g_mic[i].owner) {
-        g_mic[i].owner = owner; g_mic[i].s = NULL; g_mic[i].state = 0;
+        g_mic[i].owner = owner; g_mic[i].s = NULL; g_mic[i].state = 0; g_mic[i].voice = voice;
 #ifdef __ANDROID__
         /* ask without blocking; the device opens on a later mic_state once granted */
         mic_check_granted();
@@ -97,19 +231,21 @@ int mic_state(const void *owner, int id) {
     return g_mic[id].state;
 }
 int mic_read(const void *owner, int id, float *out, int max) {
-    if (!mic_ok(owner, id) || !g_mic[id].s || max <= 0) return 0;
-    int n = SDL_GetAudioStreamData(g_mic[id].s, out, max * (int)sizeof(float));
-    return n > 0 ? n / (int)sizeof(float) : 0;
+    if (!mic_ok(owner, id) || max <= 0) return 0;
+    mic_heal(id);
+    return g_mic[id].s ? dev_read(g_mic[id].s, out, max) : 0;
 }
 int mic_available(const void *owner, int id) {
-    if (!mic_ok(owner, id) || !g_mic[id].s) return 0;
-    int n = SDL_GetAudioStreamAvailable(g_mic[id].s);
-    return n > 0 ? n / (int)sizeof(float) : 0;
+    if (!mic_ok(owner, id)) return 0;
+    mic_heal(id);
+    return g_mic[id].s ? dev_available(g_mic[id].s) : 0;
 }
 void mic_close(const void *owner, int id) {
     if (!mic_ok(owner, id)) return;
-    if (g_mic[id].s) SDL_DestroyAudioStream(g_mic[id].s);
+    MicDev *s = g_mic[id].s;
+    bool call = g_mic[id].call;
     memset(&g_mic[id], 0, sizeof g_mic[id]);
+    mic_release(s, call);
 }
 void mic_close_owner(const void *owner) { for (int i = 0; i < MIC_MAX; i++) if (g_mic[i].owner == owner) mic_close(owner, i); }
 bool mic_active(void) { for (int i = 0; i < MIC_MAX; i++) if (g_mic[i].state == 1) return true; return false; }
