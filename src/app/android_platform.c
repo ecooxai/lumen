@@ -34,6 +34,26 @@ JNIEXPORT jboolean JNICALL Java_org_lumen_browser_LumenActivity_nativeOpenUrl(
     return accepted ? JNI_TRUE : JNI_FALSE;
 }
 
+/* a file another app opened or shared with Lumen, at a path Lumen can read */
+JNIEXPORT jboolean JNICALL Java_org_lumen_browser_LumenActivity_nativeOpenFile(
+    JNIEnv *environment, jclass activity_class, jbyteArray encoded, jboolean viewer) {
+    (void)activity_class;
+    if (!encoded) return JNI_FALSE;
+    jsize length = (*environment)->GetArrayLength(environment, encoded);
+    if (length <= 0 || length > 16384) return JNI_FALSE;
+    char *path = malloc((size_t)length + 1);
+    if (!path) return JNI_FALSE;
+    (*environment)->GetByteArrayRegion(environment, encoded, 0, length, (jbyte *)path);
+    if ((*environment)->ExceptionCheck(environment)) {
+        free(path);
+        return JNI_FALSE;
+    }
+    path[length] = 0;
+    bool accepted = !memchr(path, 0, (size_t)length) && android_launch_submit_file(path, viewer);
+    free(path);
+    return accepted ? JNI_TRUE : JNI_FALSE;
+}
+
 void android_share_text(const char *text) {
     JNIEnv *environment = SDL_GetAndroidJNIEnv();
     if (!environment || !text) return;

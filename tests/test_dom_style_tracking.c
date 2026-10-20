@@ -1,5 +1,7 @@
 #include "../src/css/css.h"
 #include <assert.h>
+#include <strings.h>
+#include <stdio.h>
 
 static void test_match_cache(void) {
     Document *d = doc_new("https://selector-cache.test/");
@@ -348,27 +350,61 @@ static void test_attribute_subject_invalidation(void) {
         ":where(main > :nth-child(1 of [data-state]) .target)",
         ":where(main:has(> p[data-state]) > p:not(:has([data-state])))"
     };
+    /* attributes outside data-/aria- whose only style effect is attribute selectors take the same path */
+    const char *names[] = { "data-state", "tabindex", "hidden", "role" };
+    for (size_t an = 0; an < ARRLEN(names); an++)
     for (size_t k = 0; k < ARRLEN(selectors); k++) {
+        char sel[256], *o = sel; const char *name = names[an];
+        for (const char *q = selectors[k]; *q && o < sel + sizeof sel - 16; ) {
+            if (!strncasecmp(q, "data-state", 10)) { o += snprintf(o, sel + sizeof sel - o, "%s", name); q += 10; } else *o++ = *q++;
+        }
+        *o = 0;
         Document *d = doc_new("https://attribute-invalidation.test/");
         const char *html = "<html><body><main class='target [odd]' id='root'><p class='target [odd]' id='change'><b class='target [odd]'></b></p><p class='target [odd]'></p><i></i></main></body></html>";
         html_parse(d, html, strlen(html));
         StyleEngine *e = style_engine_new(d);
-        char css[512]; snprintf(css, sizeof css, "%s{color:red;background-color:blue}", selectors[k]);
+        char css[512]; snprintf(css, sizeof css, "%s{color:red;background-color:blue}", sel);
         style_engine_add_sheet(e, css_parse_sheet(css, strlen(css), d->url, 1, &e->media));
         style_recalc(e, &d->node, true);
         Node *change = doc_get_element_by_id(d, "change");
         for (int pass = 0; pass < 4; pass++) {
             Node *n = pass < 2 ? change : change->parent;
-            if (pass % 2) node_remove_attr(n, "data-state"); else node_set_attr(n, "data-state", "on");
-            assert(css_query(&d->node, "[data-state]", false, NULL) == (pass % 2 ? NULL : n));
+            if (pass % 2) node_remove_attr(n, name); else node_set_attr(n, name, "0");
+            char q[64]; snprintf(q, sizeof q, "[%s]", name);
+            assert(css_query(&d->node, q, false, NULL) == (pass % 2 ? NULL : n));
             style_recalc(e, &d->node, false);
-            Color colors[20], backgrounds[20]; int count = 0;
+            Color colors[20], backgrounds[20]; int displays[20], count = 0;
             for (Node *c = d->html; c; c = node_next_in_tree(c, &d->node)) if (c->type == NODE_ELEMENT) {
-                assert(count < 20); colors[count] = c->style->color; backgrounds[count++] = c->style->bg_color;
+                assert(count < 20); colors[count] = c->style->color; displays[count] = c->style->display; backgrounds[count++] = c->style->bg_color;
             }
             style_recalc(e, &d->node, true); count = 0;
             for (Node *c = d->html; c; c = node_next_in_tree(c, &d->node)) if (c->type == NODE_ELEMENT) {
-                assert(c->style->color == colors[count]); assert(c->style->bg_color == backgrounds[count++]);
+                assert(c->style->color == colors[count]); assert(c->style->display == displays[count]); assert(c->style->bg_color == backgrounds[count++]);
+            }
+        }
+        style_engine_free(e); doc_free(d);
+    }
+    /* disabled also flips :disabled/:enabled (fieldset descendants, :has(), siblings): it keeps the whole-tree path */
+    const char *dsel[] = { ":disabled", "button:enabled + .target", "fieldset:disabled .target", "[disabled] ~ .target",
+        "main:has(:disabled) .target", ":not(:enabled)" };
+    for (size_t k = 0; k < ARRLEN(dsel); k++) for (int which = 0; which < 2; which++) {
+        Document *d = doc_new("https://disabled-invalidation.test/");
+        const char *html = "<html><body><main><fieldset id='fs'><input class='target'><p class='target'></p></fieldset><button id='b'></button><p class='target'></p></main></body></html>";
+        html_parse(d, html, strlen(html));
+        StyleEngine *e = style_engine_new(d);
+        char css[256]; snprintf(css, sizeof css, "%s{color:red}", dsel[k]);
+        style_engine_add_sheet(e, css_parse_sheet(css, strlen(css), d->url, 1, &e->media));
+        style_recalc(e, &d->node, true);
+        Node *n = doc_get_element_by_id(d, which ? "fs" : "b");
+        for (int pass = 0; pass < 2; pass++) {
+            if (pass) node_remove_attr(n, "disabled"); else node_set_attr(n, "disabled", "");
+            style_recalc(e, &d->node, false);
+            Color colors[20]; int count = 0;
+            for (Node *c = d->html; c; c = node_next_in_tree(c, &d->node)) if (c->type == NODE_ELEMENT) { assert(count < 20); colors[count++] = c->style->color; }
+            style_recalc(e, &d->node, true); count = 0;
+            for (Node *c = d->html; c; c = node_next_in_tree(c, &d->node)) if (c->type == NODE_ELEMENT) {
+                if (c->style->color != colors[count]) fprintf(stderr, "disabled mismatch: %s which=%d pass=%d element=%d <%s>\n", dsel[k], which, pass, count, c->tag);
+                assert(c->style->color == colors[count++]);
             }
         }
         style_engine_free(e); doc_free(d);

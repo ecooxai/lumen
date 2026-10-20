@@ -22,6 +22,7 @@ typedef struct {
     unsigned count, overflow;
     bool blocked, dragged, can_scroll;
     float origin_x, origin_y, last_x, last_y;
+    float slop;   /* travel in px before a touch is a drag, not a tap; 0 means 8. Set before each update */
 } AndroidTouch;
 
 void android_touch_reset(AndroidTouch *touch);

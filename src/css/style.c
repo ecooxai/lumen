@@ -173,7 +173,10 @@ bool css_parse_color(const char *in, Color *out, Color current) {
 typedef struct { float em, rem; const MediaCtx *mc; } LCtx;
 /* nearest query container's size from the last layout (layout re-marks style when it changes); viewport otherwise */
 static float g_cq[2];
-static float cq_dim(const LCtx *c, int h) { return g_cq[h] > 0 ? g_cq[h] : h ? (c->mc ? c->mc->vh : 768) : (c->mc ? c->mc->vw : 1024); }
+/* set when a length used the viewport height, so a height-only viewport change (the on-screen
+   keyboard) restyles just those elements */
+static bool g_vh_used;
+static float cq_dim(const LCtx *c, int h) { if (g_cq[h] > 0) return g_cq[h]; if (h) { g_vh_used = true; return c->mc ? c->mc->vh : 768; } return c->mc ? c->mc->vw : 1024; }
 static bool calc_expr(const char **pp, Length *out, LCtx *c);
 static bool parse_dim(const char **pp, Length *out, LCtx *c) {
     const char *p = *pp; while (is_ws((unsigned char)*p)) p++;
@@ -213,13 +216,13 @@ static bool parse_dim(const char **pp, Length *out, LCtx *c) {
     else if (!strcmp(u, "mm")) l.px = v * 96 / 25.4f;
     else if (!strcmp(u, "q")) l.px = v * 96 / 101.6f;
     else if (!strcmp(u, "vw") || !strcmp(u, "svw") || !strcmp(u, "lvw") || !strcmp(u, "dvw")) l.px = v * (c->mc ? c->mc->vw : 1024) / 100;
-    else if (!strcmp(u, "vh") || !strcmp(u, "svh") || !strcmp(u, "lvh") || !strcmp(u, "dvh")) l.px = v * (c->mc ? c->mc->vh : 768) / 100;
+    else if (!strcmp(u, "vh") || !strcmp(u, "svh") || !strcmp(u, "lvh") || !strcmp(u, "dvh")) { l.px = v * (c->mc ? c->mc->vh : 768) / 100; g_vh_used = true; }
     else if (!strcmp(u, "cqw") || !strcmp(u, "cqi")) l.px = v * cq_dim(c, 0) / 100;
     else if (!strcmp(u, "cqh") || !strcmp(u, "cqb")) l.px = v * cq_dim(c, 1) / 100;
     else if (!strcmp(u, "cqmin")) l.px = v * LMIN(cq_dim(c, 0), cq_dim(c, 1)) / 100;
     else if (!strcmp(u, "cqmax")) l.px = v * LMAX(cq_dim(c, 0), cq_dim(c, 1)) / 100;
-    else if (!strcmp(u, "vmin")) l.px = v * LMIN(c->mc ? c->mc->vw : 1024, c->mc ? c->mc->vh : 768) / 100;
-    else if (!strcmp(u, "vmax")) l.px = v * LMAX(c->mc ? c->mc->vw : 1024, c->mc ? c->mc->vh : 768) / 100;
+    else if (!strcmp(u, "vmin")) { l.px = v * LMIN(c->mc ? c->mc->vw : 1024, c->mc ? c->mc->vh : 768) / 100; g_vh_used = true; }
+    else if (!strcmp(u, "vmax")) { l.px = v * LMAX(c->mc ? c->mc->vw : 1024, c->mc ? c->mc->vh : 768) / 100; g_vh_used = true; }
     else if (!strcmp(u, "fr")) { l.px = v; }
     else if (!strcmp(u, "deg") || !strcmp(u, "s") || !strcmp(u, "ms")) l.px = v;
     else return false;
@@ -657,10 +660,17 @@ static unsigned indep_bit(const char *P) {
 /* The non-inherited fields an explicit inherit copies from the parent below;
  * inherited_diff() doesn't compare them. inherit of the remaining properties
  * either copies a compared field or is ignored, so it adds no dependency. */
+/* border-radius: 4, a corner longhand: its index (tl tr br bl), else -1 */
+static int border_corner(const char *P) {
+    static const char *const corners[] = { "border-top-left-radius", "border-top-right-radius", "border-bottom-right-radius", "border-bottom-left-radius" };
+    if (!strcmp(P, "border-radius")) return 4;
+    for (int i = 0; i < 4; i++) if (!strcmp(P, corners[i])) return i;
+    return -1;
+}
 static bool inherit_copies_uncompared(const char *P) {
     static const char *const props[] = { "background-color","background","width","height","margin","padding","border","position", NULL };
     for (int i = 0; props[i]; i++) if (!strcmp(P, props[i])) return true;
-    return false;
+    return border_corner(P) >= 0;
 }
 static const char *const known_props[] = { "animation","animation-name","animation-duration","animation-delay","animation-iteration-count","animation-timing-function","animation-fill-mode","animation-direction","animation-play-state","transition","transition-property","transition-duration","transition-delay","transition-timing-function","display","position","float","clear","width","height","min-width","min-height","max-width","max-height","margin","margin-top","margin-right","margin-bottom","margin-left","padding","padding-top","padding-right","padding-bottom","padding-left","border","border-width","border-style","border-color","border-top","border-right","border-bottom","border-left","border-radius","color","background","background-color","background-image","font","font-size","font-weight","font-family","font-style","line-height","text-align","text-decoration","white-space","overflow","overflow-x","overflow-y","visibility","opacity","z-index","top","right","bottom","left","inset","flex","flex-direction","flex-wrap","flex-grow","flex-shrink","flex-basis","justify-content","align-items","align-self","align-content","gap","row-gap","column-gap","order","grid","grid-template-columns","grid-template-rows","grid-column","grid-row","grid-area","transform","transition","animation","box-shadow","text-shadow","box-sizing","cursor","pointer-events","content","list-style","list-style-type","vertical-align","text-transform","letter-spacing","word-spacing","text-indent","text-overflow","word-break","overflow-wrap","word-wrap","object-fit","aspect-ratio","filter","outline","user-select","appearance","will-change","contain","isolation","mix-blend-mode","place-items","place-content","place-self","justify-items","justify-self","table-layout","border-collapse","border-spacing","clip-path","mask","mask-image","mask-size","-webkit-mask","-webkit-mask-image","-webkit-mask-size","resize","scroll-behavior","overscroll-behavior","touch-action","font-variant","text-rendering","-webkit-font-smoothing","fill","stroke","caret-color","accent-color","color-scheme","translate","scale","rotate","container-type","backdrop-filter","line-clamp","-webkit-line-clamp","text-wrap","hyphens","tab-size","direction","unicode-bidi","writing-mode","inset-inline","inset-block","margin-inline","margin-block","padding-inline","padding-block", NULL };
 bool css_property_known(const char *p) { return kw(p, known_props) >= 0; }
@@ -833,6 +843,10 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         else if (!strcmp(P, "position")) st->position = src->position;
         else if (!strcmp(P, "cursor")) st->cursor = src->cursor;
         else if (!strcmp(P, "fill")) st->fill = src->fill;
+        else if ((k = border_corner(P)) >= 0) {   /* Google's search box: a white inner box with border-radius: inherit */
+            if (k == 4) memcpy(st->border_radius, src->border_radius, sizeof st->border_radius);
+            else st->border_radius[k] = src->border_radius[k];
+        }
         else if (!strcmp(P, "all")) {}
         goto out;
     }
@@ -1816,13 +1830,18 @@ static Selector tree_candidate(RuleIndex *ix, const Selector *sel, bool global, 
     }
     return result;
 }
+/* The attribute a simple selector tests: [name], or disabled for :disabled/:enabled. */
+static const char *simple_attribute(const SimpleSel *s) {
+    if (s->kind == SK_ATTR) return s->name;
+    return is_pseudo(s, "disabled") || is_pseudo(s, "enabled") ? "disabled" : NULL;
+}
 static bool simple_uses_attribute(const SimpleSel *s, const char *name) {
     /* NULL builds a coalesced class/ID candidate, including subjects outside
      * the child-list mutation's ancestor chain. */
     if (!name && (s->kind == SK_CLASS || s->kind == SK_ID || s->kind == SK_TREE_RELATED ||
             (s->kind == SK_ATTR && (str_ieq(s->name, "class") || str_ieq(s->name, "id"))) ||
             is_pseudo(s, "target"))) return true;
-    if (name && s->kind == SK_ATTR && str_ieq(s->name, name)) return true;
+    if (name && simple_attribute(s) && str_ieq(simple_attribute(s), name)) return true;
     if (s->sub) for (int k = 0; k < s->sub->n; k++) {
         const Selector *sel = &s->sub->v[k];
         for (int i = 0; i < sel->n; i++) for (int j = 0; j < sel->c[i].n; j++)
@@ -1874,9 +1893,9 @@ static void add_attribute_candidate(RuleIndex *ix, const char *name, const Rule 
 static void index_attribute_subjects(RuleIndex *ix, const Selector *sel, const char *subject, bool relative, const Rule *rule) {
     for (int i = 0; i < sel->n; i++) for (int j = 0; j < sel->c[i].n; j++) {
         const SimpleSel *s = &sel->c[i].s[j];
-        if (s->kind == SK_ATTR) {
+        if (simple_attribute(s)) {
             /* Lowercase is conservative for XML/SVG and required for HTML. */
-            const char *name = atom_lower(s->name, strlen(s->name));
+            const char *name = atom_lower(simple_attribute(s), strlen(simple_attribute(s)));
             if (relative || i != sel->n - 1) {
                 desc_add(&ix->attribute_subjects, NULL, name, subject);
                 add_attribute_candidate(ix, name, rule, subject);
@@ -2035,10 +2054,19 @@ void node_sibling_selectors_changed(Node *n, int mode) {
     }
     if (any) for (Node *p = n->parent ? n->parent : n->host; p; p = p->parent ? p->parent : p->host) p->flags |= NF_CHILD_STYLE_DIRTY;
 }
-/* data-/aria- attributes have no built-in layout/presentation behavior. Their
- * stylesheet uses can affect ancestors, siblings and shadow trees, so collect
- * conservative subjects over the whole tree instead of just the changed node.
- * Other attributes retain the ordinary invalidation path. */
+/* data-/aria- attributes, and the attributes listed here, have no built-in layout
+ * or presentation behavior beyond selectors (the UA's [hidden] rule included;
+ * disabled also flips :disabled/:enabled, indexed as the attribute, and dom.c
+ * reselects a fieldset's descendants). Their stylesheet uses can affect ancestors, siblings and shadow trees, so
+ * collect conservative subjects over the whole tree instead of just the changed
+ * node. Other attributes retain the ordinary invalidation path. */
+bool css_selector_only_attribute(const char *name) {
+    static const char *const names[] = { "tabindex", "role", "title", "hidden", "disabled", "draggable", "spellcheck",
+        "translate", "autocomplete", "inputmode", "enterkeyhint", "autocapitalize", "autocorrect", "for", "target",
+        "nonce", "loading", "decoding", "fetchpriority", "referrerpolicy", NULL };
+    for (int i = 0; names[i]; i++) if (str_ieq(name, names[i])) return true;
+    return str_istarts(name, "data-") || str_istarts(name, "aria-");
+}
 static bool subject_key_on(const Node *el, const char *tag, const char *k) {
     return tag == k || (el->id && !strcmp(el->id, k)) || node_has_class_atom(el, k);
 }
@@ -2049,7 +2077,7 @@ bool node_attribute_style_changed(Node *n, const char *name) {
     /* A pending sheet change needs no fallback: the current index covers the
      * current rules and sheet_delta marks every subject of the new ones. */
     if (!e || n->ns != NS_HTML || !(n->flags & NF_CONNECTED) ||
-            !(str_istarts(name, "data-") || str_istarts(name, "aria-"))) return false;
+            !css_selector_only_attribute(name)) return false;
     const char *key = atom_lower(name, strlen(name));
     HovDesc *subjects = hm_get(&e->idx.attribute_subjects, key);
 #if defined(__ANDROID__) && !defined(NDEBUG)
@@ -2802,10 +2830,12 @@ static void recalc(StyleEngine *e, Node *n, const ComputedStyle *par, bool force
             e->ancestor_classes = classes;
             e->collect_dynamic = false;
             css_match_cache_subject(n, classes);
+            g_vh_used = false;
             ComputedStyle *st = compute(e, n, par);
             if (st->display != D_NONE) {
                 if (e->idx.count) { st->before = compute_pseudo(e, n, st, 1); st->after = compute_pseudo(e, n, st, 2); if (st->display == D_LIST_ITEM) st->marker = compute_pseudo(e, n, st, 4); }
             }
+            st->uses_vh = g_vh_used;
             st->inherited_dynamic |= e->collect_dynamic;
             /* Root-font units and animation visibility can depend on distant
              * ancestors even after intermediate inherited values stabilize. */
@@ -3027,6 +3057,15 @@ static int invalidate_tree_dependents(StyleEngine *e, Node *n, bool local, int *
     return affected;
 }
 
+static void vh_mark(Node *n, int *count) {
+    if (n->type == NODE_ELEMENT && n->style && n->style->uses_vh && !(n->flags & NF_STYLE_DIRTY)) {
+        (*count)++;
+        n->flags |= NF_STYLE_DIRTY;
+        for (Node *p = n->parent ? n->parent : n->host; p; p = p->parent ? p->parent : p->host) p->flags |= NF_CHILD_STYLE_DIRTY;
+    }
+    for (Node *c = n->first; c; c = c->next) vh_mark(c, count);
+    if (n->shadow_root) vh_mark(n->shadow_root, count);
+}
 static void empty_mark(Node *n, int *count) {
     if (n->flags & NF_STYLE_DIRTY) return;
     (*count)++;
@@ -3150,6 +3189,10 @@ void style_recalc(StyleEngine *e, Node *root, bool force) {
     bool media_changed = !e->media_valid || e->media.vw != e->styled_media.vw ||
         e->media.vh != e->styled_media.vh || e->media.dpr != e->styled_media.dpr ||
         e->media.dark != e->styled_media.dark;
+    /* only the height moved (the on-screen keyboard): unless a media query flips, restyle just
+       the elements that resolved a viewport-height unit, not the whole document */
+    bool height_only = media_changed && e->media_valid && e->media.vw == e->styled_media.vw &&
+        e->media.dpr == e->styled_media.dpr && e->media.dark == e->styled_media.dark && !e->idx_dirty && !e->idx_changed;
     if (e->idx_dirty) idx_build(e);
     if (media_changed || e->idx_changed) {
         g_match_epoch++;
@@ -3157,12 +3200,15 @@ void style_recalc(StyleEngine *e, Node *root, bool force) {
             StyleSheet *sheet = e->sheets.v[sheet_index];
             for (int index = 0; index < sheet->media_conds.n; index++) {
                 MediaCond *condition = sheet->media_conds.v[index];
-                condition->matches = (!condition->outer || condition->outer->matches) &&
+                bool matches = (!condition->outer || condition->outer->matches) &&
                     css_media_matches(condition->query, &e->media);
+                if (matches != condition->matches) height_only = false;
+                condition->matches = matches;
             }
         }
     }
-    if (media_changed) { force = true; root = &e->doc->node; }
+    if (media_changed && height_only && !force) { int marked = 0; vh_mark(&e->doc->node, &marked); root = &e->doc->node; }
+    else if (media_changed) { force = true; root = &e->doc->node; }
     if (e->idx_changed) {
         e->idx_changed = false;
         /* Unchanged rules keep their matches: restyle only what the added or
@@ -3338,7 +3384,7 @@ void style_recalc(StyleEngine *e, Node *root, bool force) {
     }
 #endif
     // Paint-only transforms can change intersections without running layout.
-    if (e->stats_matched) doc_visual_changed();
+    if (e->stats_matched) doc_boxes_changed();
     e->styled_media = e->media;
     e->media_valid = true;
 }
@@ -3440,6 +3486,35 @@ char *css_get_computed_value(Node *el, const char *prop) {
     else if (!strcmp(prop, "gap")) { gap_str(&b, s->row_gap, s->row_gap_l); sb_putc(&b, ' '); gap_str(&b, s->column_gap, s->column_gap_l); }
     else if (!strcmp(prop, "grid-template-columns")) tracks_str(&b, s->grid_cols, s->grid_ncols);
     else if (!strcmp(prop, "grid-template-rows")) tracks_str(&b, s->grid_rows, s->grid_nrows);
+    else if (!strcmp(prop, "text-align")) { static const char *ta[] = { "start", "left", "right", "center", "justify", "end" }; sb_puts(&b, ta[s->text_align % 6]); }
+    else if (!strcmp(prop, "white-space")) { static const char *ws[] = { "normal", "nowrap", "pre", "pre-wrap", "pre-line", "break-spaces" }; sb_puts(&b, ws[s->white_space % 6]); }
+    else if (!strcmp(prop, "flex-direction")) { static const char *fd[] = { "row", "row-reverse", "column", "column-reverse" }; sb_puts(&b, fd[s->flex_direction & 3]); }
+    else if (!strcmp(prop, "flex-wrap")) { static const char *fw[] = { "nowrap", "wrap", "wrap-reverse" }; sb_puts(&b, fw[s->flex_wrap % 3]); }
+    else if (!strcmp(prop, "justify-content") || !strcmp(prop, "align-items") || !strcmp(prop, "align-self") || !strcmp(prop, "align-content") || !strcmp(prop, "justify-items") || !strcmp(prop, "justify-self")) {
+        static const char *al[] = { "auto", "normal", "stretch", "flex-start", "flex-end", "center", "baseline", "space-between", "space-around", "space-evenly", "start", "end" };
+        uint8_t v = prop[0] == 'j' ? (prop[8] == 'c' ? s->justify_content : prop[8] == 'i' ? s->justify_items : s->justify_self)
+                                   : (prop[6] == 'i' ? s->align_items : prop[6] == 's' ? s->align_self : s->align_content);
+        sb_puts(&b, al[v % 12]);
+    }
+    else if (!strcmp(prop, "order")) sb_printf(&b, "%d", s->order);
+    else if (!strcmp(prop, "float")) sb_puts(&b, s->float_ == F_LEFT ? "left" : s->float_ == F_RIGHT ? "right" : "none");
+    else if (!strcmp(prop, "clear")) { static const char *cl[] = { "none", "left", "right", "both" }; sb_puts(&b, cl[s->clear & 3]); }
+    else if (!strcmp(prop, "text-transform")) { static const char *tt[] = { "none", "uppercase", "lowercase", "capitalize" }; sb_puts(&b, tt[s->text_transform & 3]); }
+    else if (!strcmp(prop, "font-style")) sb_puts(&b, s->font_style ? "italic" : "normal");
+    else if (!strcmp(prop, "vertical-align")) {
+        static const char *va[] = { "baseline", "top", "middle", "bottom", "text-top", "text-bottom", "sub", "super" };
+        if (s->vertical_align == VA_LENGTH) sb_printf(&b, "%gpx", s->vertical_align_len); else sb_puts(&b, va[s->vertical_align % 8]);
+    }
+    else if (!strcmp(prop, "object-fit")) { static const char *of[] = { "fill", "contain", "cover", "none", "scale-down" }; sb_puts(&b, of[s->object_fit % 5]); }
+    else if (!strcmp(prop, "text-overflow")) sb_puts(&b, s->text_overflow == TO_ELLIPSIS ? "ellipsis" : "clip");
+    else if (!strcmp(prop, "word-break")) { static const char *wb[] = { "normal", "break-all", "break-word" }; sb_puts(&b, wb[s->word_break % 3]); }
+    else if (!strcmp(prop, "overflow-wrap") || !strcmp(prop, "word-wrap")) sb_puts(&b, s->overflow_wrap ? "break-word" : "normal");
+    else if (!strcmp(prop, "user-select") || !strcmp(prop, "-webkit-user-select")) sb_puts(&b, s->user_select ? "none" : "auto");
+    else if (!strcmp(prop, "cursor")) { static const char *cu[] = { "auto", "pointer", "text", "move", "not-allowed", "grab" }; sb_puts(&b, cu[s->cursor % 6]); }
+    else if (!strcmp(prop, "list-style-type")) {
+        static const char *ls[] = { "none", "disc", "circle", "square", "decimal", "lower-alpha", "upper-alpha", "lower-roman", "upper-roman" };
+        sb_puts(&b, ls[s->list_style % 9]);
+    }
     else sb_puts(&b, "");
     return sb_take(&b);
 }

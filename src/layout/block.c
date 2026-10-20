@@ -268,8 +268,14 @@ static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float 
     if (fh < 0) h = clamph(s, h, cbh, vb);
     b->h = LMAX(0, h);
     if (b->fmt == FMT_REPLACED || b->ctl) b->has_baseline = b->ctl && b->nlines, b->baseline = b->nlines ? b->lines[0].base : b->y + b->h;
-    /* vertical centering of single-line control text */
-    if (b->ctl && b->ctl != CTL_TEXTAREA && b->nlines == 1) { float d = (b->h - vb - content_h) / 2; if (d > 0) { for (Box *c = b->first; c; c = c->next) box_translate(c, 0, 0); for (int i = 0; i < b->nfrags; i++) { b->frags[i].y += d; b->frags[i].base += d; } b->lines[0].y += d; b->lines[0].base += d; b->baseline += d; } }
+    /* a button's content is centred vertically in a taller box, as in Chrome (google.com's
+       icon buttons: an inline-block svg in a 48px display:block <button>); so is single-line
+       control text */
+    bool button = b->node && b->node->type == NODE_ELEMENT && b->node->tag == A_button && b->node->ns == NS_HTML && (b->fmt == FMT_FLOW || b->fmt == FMT_INLINE);
+    if (button || (b->ctl && b->ctl != CTL_TEXTAREA && b->nlines == 1)) {
+        float d = (b->h - vb - content_h) / 2;
+        if (d > 0) { box_translate(b, 0, d); b->y -= d; }   /* everything inside moves, the box stays */
+    }
     b->scroll_w = cw; b->scroll_h = content_h;
     if (b->abs_head) layout_abs(L, b);
 }
@@ -377,7 +383,7 @@ bool layout_move(Layout *L, Node *n, const Length old[4]) {
         finish_extents(L);
     }
     atomic_fetch_add_explicit(&geometry_version, 1, memory_order_relaxed);
-    doc_visual_changed();
+    doc_boxes_changed();
     return true;
 }
 
@@ -440,7 +446,7 @@ void layout_run(Layout *L, Document *d, float vw, float vh) {
     track_containers(d, r);
     text_shape_cache_sweep();
     atomic_fetch_add_explicit(&geometry_version, 1, memory_order_relaxed);
-    doc_visual_changed();
+    doc_boxes_changed();
     L->ms = now_ms() - t0;
 #if defined(__ANDROID__) && !defined(NDEBUG)
     if (d->debug_mutations) {

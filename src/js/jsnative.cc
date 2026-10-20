@@ -156,11 +156,17 @@ FN(setHTML) {
     node_append(target, f);
     node_free_tree(f);
 }
+/* (context, html, written): written, from document.write() inside a script, queues the
+   fragment's classic scripts to run after that script (js_run_script) */
 FN(parseFrag) {
     CTX; Node *cx = junwrap(a[0]); std::string s = S(1);
     if (!cx || cx->type != NODE_ELEMENT) cx = c->doc->body;
     Node *f = html_parse_fragment(c->doc, cx, s.data(), s.size());
-    if (f) mark_started(f);
+    if (!f) { RET(jwrap(c, f)); return; }
+    if (a.Length() > 2 && a[2]->IsTrue() && c->current_script)
+        for (Node *x = f; x; x = node_next_in_tree(x, f))
+            if (x->type == NODE_ELEMENT && x->tag == A_script && x->ns == NS_HTML && jsg_classic_script(x)) { jwrap(c, x); c->written.push_back(x); }
+    mark_started(f);
     RET(jwrap(c, f));
 }
 FN(parseDoc) {
@@ -323,6 +329,7 @@ FN(navigatePost) {
     else if (c->host.navigate) c->host.navigate(c->host.ud, u.c_str());
 }
 FN(histGo) { CTX; if (c->host.history_go) c->host.history_go(c->host.ud, a[0]->Int32Value(ctx).FromMaybe(0)); }
+FN(internal) { CTX; if (c->parent || !c->host.internal) return; std::string s = S(0); char *r = c->host.internal(c->host.ud, s.c_str()); if (r) { RET(jstr(iso, r)); free(r); } }
 FN(histLen) { CTX; RET(c->host.history_len ? c->host.history_len(c->host.ud) : 1); }
 FN(timer) {
     CTX;
@@ -447,6 +454,35 @@ FN(waPush) {
 FN(waQueued) { CTX; RET((double)wa_queued(c, (int)NUM(0))); }
 FN(waPause) { CTX; wa_pause(c, (int)NUM(0), BOOL(1)); }
 FN(waClose) { CTX; wa_close(c, (int)NUM(0)); }
+FN(camCount) { RET((double)cam_count()); }
+FN(camOpen) { CTX; RET((double)cam_open(c, (int)NUM(0), (int)NUM(1), (int)NUM(2), (int)NUM(3))); }
+FN(camState) { CTX; RET((double)cam_state(c, (int)NUM(0))); }
+FN(camSource) { CTX; RET((double)cam_source(c, (int)NUM(0))); }
+FN(camPermission) { RET((double)cam_permission()); }
+FN(camInfo) {
+    CTX; int w, h, fps, facing; cam_info(c, (int)NUM(0), &w, &h, &fps, &facing);
+    v8::Local<v8::Value> v[] = { v8::Number::New(iso, w), v8::Number::New(iso, h), v8::Number::New(iso, fps), v8::Number::New(iso, facing) };
+    RET(v8::Array::New(iso, v, 4));
+}
+FN(camClose) { CTX; cam_close(c, (int)NUM(0)); }
+FN(screenOpen) { CTX; RET((double)(screen_supported() ? screen_open(c, (int)NUM(0), (int)NUM(1), (int)NUM(2), a.Length() > 3 && a[3]->BooleanValue(iso)) : -1)); }
+FN(screenState) { CTX; RET((double)screen_state(c, (int)NUM(0))); }
+FN(screenSource) { CTX; RET((double)screen_source(c, (int)NUM(0))); }
+FN(screenInfo) {
+    CTX; int w, h; bool audio; screen_info(c, (int)NUM(0), &w, &h, &audio);
+    v8::Local<v8::Value> v[] = { v8::Number::New(iso, w), v8::Number::New(iso, h), v8::Boolean::New(iso, audio) };
+    RET(v8::Array::New(iso, v, 3));
+}
+FN(screenAudio) {   /* the system audio (mono float32 PCM) captured since the last read, or null */
+    CTX; int id = (int)NUM(0), n = screen_audio_available(c, id);
+    if (n <= 0) { RET(v8::Null(iso)); return; }
+    if (n > 48000 * 4) n = 48000 * 4;
+    v8::Local<v8::ArrayBuffer> ab = v8::ArrayBuffer::New(iso, (size_t)n * sizeof(float));
+    int got = screen_audio_read(c, id, (float *)ab->Data(), n);
+    if (got <= 0) { RET(v8::Null(iso)); return; }
+    RET(v8::Float32Array::New(ab, 0, (size_t)got));
+}
+FN(screenClose) { CTX; screen_close(c, (int)NUM(0)); }
 FN(micOpen) { CTX; RET((double)mic_open(c, a.Length() < 1 || BOOL(0))); }
 FN(micPermission) { RET((double)mic_permission()); }
 FN(micState) { CTX; RET((double)mic_state(c, (int)NUM(0))); }
@@ -461,7 +497,8 @@ FN(micRead) {   /* mono float32 PCM captured since the last read, or null */
 }
 FN(micClose) { CTX; mic_close(c, (int)NUM(0)); }
 FN(recKind) { CTX; (void)c; RET((double)rec_kind(S(0).c_str())); }
-FN(recOpen) { CTX; RET((double)rec_open(c, S(0).c_str(), (int)NUM(1))); }
+FN(recOpen) { CTX; RET((double)rec_open(c, S(0).c_str(), (int)NUM(1), (int)NUM(2), (int)NUM(3), (int)NUM(4), (int)NUM(5), (int)NUM(6), a.Length() < 8 || a[7]->BooleanValue(iso))); }
+FN(recPause) { CTX; rec_pause(c, (int)NUM(0), a[1]->BooleanValue(iso)); }
 FN(recPush) {
     CTX; const char *p; size_t n;
     if (bytes_of(a[1], &p, &n)) rec_push(c, (int)NUM(0), (const float *)p, (int)(n / sizeof(float)));
@@ -472,6 +509,7 @@ FN(recTake) {
     if (!p) { RET(v8::Null(iso)); return; }
     RET(mkab(iso, p, n)); free(p);
 }
+FN(recMime) { CTX; const char *m = rec_mime(c, (int)NUM(0)); RET(v8::String::NewFromUtf8(iso, m ? m : "").ToLocalChecked()); }
 FN(recClose) { CTX; rec_close(c, (int)NUM(0)); }
 FN(audioDecode) {
     CTX; const char *p; size_t n; int frames = 0;
@@ -482,7 +520,9 @@ FN(audioDecode) {
 }
 FN(mediaNew) { CTX; ARGN(n, 0); uint32_t id = c->next_player++; c->players[id] = mp_new(n); RET((double)id); }
 FN(mediaFree) { CTX; MP; mp_free(mp); c->players.erase(mpit); }
+FN(mediaLive) { CTX; MP; mp_live(mp, (int)NUM(1)); }
 FN(mediaOpen) { CTX; MP; mp_open_url(mp, S(1).c_str()); }
+FN(mediaOpenBytes) { CTX; MP; const char *p; size_t n; if (bytes_of(a[1], &p, &n)) mp_open_bytes(mp, (const uint8_t *)p, n); }
 FN(mediaAddBuffer) { CTX; MP; RET((double)mp_add_buffer(mp, S(1).c_str())); }
 FN(mediaAppend) {
     CTX; MP; const char *p; size_t n;
@@ -668,6 +708,7 @@ FN(ceScan) {
 FN(readyState) { CTX; RET(c->doc->ready_state); }
 FN(quirks) { CTX; RET(c->doc->quirks); }
 FN(currentScript) { CTX; RET(jwrap(c, c->current_script)); }
+FN(hidden) { CTX; RET(v8::Boolean::New(iso, c->bg)); }
 FN(media) { CTX; std::string q = S(0); RET(jsg_media(c->host.media, q.c_str())); }
 FN(cssSelText) { CTX; std::string q = S(0); char *r = css_selector_text(q.c_str()); RET(nstr(iso, r)); free(r); }
 FN(cssSupports) { CTX; std::string q = S(0); RET(jsg_supports(q.c_str())); }
@@ -1047,13 +1088,13 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(matches); REG(byId); REG(clone); REG(doc); REG(contains); REG(connected); REG(host); REG(attachShadow);
     REG(templateContent); REG(rect); REG(vrect); REG(clipSet); REG(clipGet); REG(scrollPos); REG(setScroll); REG(computed); REG(value); REG(setValue); REG(ctlSel); REG(setCtlSel); REG(checked); REG(setChecked); REG(pickFiles);
     REG(modal); REG(focus); REG(active); REG(cookie); REG(setCookie); REG(url); REG(setUrl); REG(navigate); REG(navigatePost); REG(histGo);
-    REG(histLen); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
-    REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove);
+    REG(histLen); REG(internal); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
+    REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(mediaOpenBytes); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove);
     REG(mediaBuffered); REG(mediaEos); REG(mediaSetDuration); REG(mediaPlay); REG(mediaPause); REG(mediaSeek);
     REG(mediaPump); REG(resizePump); REG(intersectionPump); REG(videoFramePump); REG(videoFrameInfo); REG(videoQuality);
-    REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(micOpen); REG(micPermission); REG(micState); REG(micRead); REG(micClose); REG(recKind); REG(recOpen); REG(recPush); REG(recFinish); REG(recTake); REG(recClose); REG(readyState); REG(quirks);
-    REG(currentScript); REG(media); REG(cssSupports); REG(cssSelText); REG(urlParse); REG(encode); REG(decode); REG(random); REG(cDigest); REG(cHmac); REG(cAes); REG(cEcGen); REG(cEcDerive); REG(cEcSign); REG(cEcVerify); REG(cSpki); REG(cSpkiParse); REG(cPkcs8Parse); REG(cEcFromD); REG(cHkdf); REG(cPbkdf2);
+    REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(camCount); REG(camOpen); REG(camState); REG(camSource); REG(camPermission); REG(camInfo); REG(camClose); REG(mediaLive); REG(screenOpen); REG(screenState); REG(screenSource); REG(screenInfo); REG(screenClose); REG(screenAudio); REG(micOpen); REG(micPermission); REG(micState); REG(micRead); REG(micClose); REG(recKind); REG(recOpen); REG(recPause); REG(recPush); REG(recFinish); REG(recTake); REG(recClose); REG(recMime); REG(readyState); REG(quirks);
+    REG(currentScript); REG(hidden); REG(media); REG(cssSupports); REG(cssSelText); REG(urlParse); REG(encode); REG(decode); REG(random); REG(cDigest); REG(cHmac); REG(cAes); REG(cEcGen); REG(cEcDerive); REG(cEcSign); REG(cEcVerify); REG(cSpki); REG(cSpkiParse); REG(cPkcs8Parse); REG(cEcFromD); REG(cHkdf); REG(cPbkdf2);
     REG(heap); REG(imgSize); REG(userAgent); REG(platform); REG(download); REG(downloadBytes); REG(touchPoints); REG(cpus); REG(makeAll);
 #undef REG
-    js_install_frames(c, N); js_install_workers(c, N); js_install_rtc(c, N);
+    js_install_frames(c, N); js_install_workers(c, N); js_install_rtc(c, N); js_install_webgl(c, N); js_install_webgpu(c, N);
 }

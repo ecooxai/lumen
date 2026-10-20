@@ -29,9 +29,13 @@ def main():
     icon = (arguments.root / "assets/icon/lumen-256.png").read_bytes()
     rows = [", ".join(f"0x{value:02x}" for value in icon[offset:offset + 12]) + ",\n"
             for offset in range(0, len(icon), 12)]
+    newtab = (arguments.root / "src/app/newtab.html").read_bytes() + b"\0"
+    newtab_rows = [", ".join(f"0x{value:02x}" for value in newtab[offset:offset + 16]) + ",\n"
+                   for offset in range(0, len(newtab), 16)]
     arguments.output_dir.mkdir(parents=True, exist_ok=True)
     write_atomic(arguments.output_dir / "prelude.inc", b'R"JS(' + prelude + b')JS"')
     write_atomic(arguments.output_dir / "icon.inc", "".join(rows).encode("ascii"))
+    write_atomic(arguments.output_dir / "newtab.inc", "".join(newtab_rows).encode("ascii"))
 
 
 if __name__ == "__main__":

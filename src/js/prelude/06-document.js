@@ -40,7 +40,7 @@ methods(Document.prototype, {
     get readyState() { return ['loading', 'interactive', 'complete'][N.readyState()]; },
     get characterSet() { return 'UTF-8'; }, get charset() { return 'UTF-8'; }, get inputEncoding() { return 'UTF-8'; }, get contentType() { return this.__ct ?? (N.ns(this) === 3 ? 'application/xml' : 'text/html'); },
     get compatMode() { return N.quirks() ? 'BackCompat' : 'CSS1Compat'; },
-    get visibilityState() { return 'visible'; }, get hidden() { return false; }, get webkitHidden() { return false; }, get prerendering() { return false; },
+    get visibilityState() { return N.hidden() ? 'hidden' : 'visible'; }, get hidden() { return N.hidden(); }, get webkitHidden() { return N.hidden(); }, get prerendering() { return false; },
     get defaultView() { return this === document ? G : null; }, get activeElement() { return N.active() || this.body; },
     get currentScript() { return N.currentScript(); }, get scrollingElement() { return this.documentElement; },
     get forms() { return htmlColl(N.query(this, 'form', true)); }, get images() { return htmlColl(N.query(this, 'img', true)); },
@@ -123,7 +123,7 @@ function docWrite(html) {
         if (docWriteRef.has(s)) { const r = docWriteRef.get(s); ref = r && N.parent(r) === parent ? r : null; }
         else docWriteRef.set(s, ref);
     }
-    insertNode(parent, N.parseFrag(parent, html), ref);
+    insertNode(parent, N.parseFrag(parent, html, !!s), ref);
 }
 const implementation = { hasFeature() { return true; }, createHTMLDocument(t) { const d = N.newDoc(t === undefined ? null : String(t)); Object.setPrototypeOf(d, HTMLDocument.prototype); def(d, '__url', 'about:blank'); return d; }, createDocumentType(n, p, s) { n = String(n); if (/[\t\n\f\r >\x00]/.test(n)) throw new DOMException(`The qualified name provided ('${n}') contains the invalid name-start character.`, 'InvalidCharacterError'); return N.doctype(n, String(p), String(s), this._doc || document); },
     createDocument(ns, q, dt = null) { const d = N.newXmlDoc(); def(d, '__url', 'about:blank'); if (ns === NSURI[0]) def(d, '__ct', 'application/xhtml+xml'); else if (ns === NSURI[1]) def(d, '__ct', 'image/svg+xml'); q = q == null ? '' : String(q); const el = q ? Document.prototype.createElementNS.call(d, ns, q) : null; if (dt) insertNode(d, dt, null); if (el) insertNode(d, el, null); return d; } };

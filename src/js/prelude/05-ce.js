@@ -48,7 +48,11 @@ function mediaAttach(el, src) {
     else {
         const ms = objectURLs.get(src);
         def(el, '__src', src);
-        if (ms instanceof MediaSource) ms._attach(el, id); else N.mediaOpen(id, src);
+        /* local files only for Lumen's own pages and file: pages, as in Chrome */
+        if (ms instanceof MediaSource) ms._attach(el, id);
+        else if (ms instanceof Blob) N.mediaOpenBytes(id, ms._buf);   /* the native side cannot fetch a Blob's URL */
+        else if (/^file:/i.test(src) && !/^(file|lumen):$/.test(location.protocol)) N.mediaOpen(id, 'about:blank');
+        else N.mediaOpen(id, src);
     }
     mediaLater(el, 'loadstart');
 }
@@ -64,7 +68,7 @@ mk('HTMLMediaElement', HTMLElement, [], p => {
         get paused() { return this.__paused !== false; },
         get ended() { const s = st(this); return !!(s && s[2]); },
         get seeking() { const s = st(this); return !!(s && s[3]); },
-        get readyState() { if (live(this)) return 4; const s = st(this); return s ? s[0] : 0; },
+        get readyState() { const s = st(this); if (live(this) && !s) return 4; return s ? s[0] : 0; },
         get networkState() { const s = st(this); return s ? (s[0] >= 4 ? 1 : 2) : (N.attr(this, 'src') != null ? 3 : 0); },
         get error() { return this.__err || null; },
         get duration() { if (live(this)) return Infinity; const s = st(this); return s ? s[7] : NaN; },
@@ -94,7 +98,12 @@ mk('HTMLMediaElement', HTMLElement, [], p => {
             def(this, '__so', v ?? null); mediaDetach(this); def(this, '__paused', true);
             if (v instanceof MediaSource) mediaAttach(this, v);
             else if (live(this)) {
-                for (const t of ['loadstart', 'durationchange', 'loadedmetadata', 'loadeddata', 'canplay', 'canplaythrough']) mediaLater(this, t);
+                /* a native live source (camera, screen) is shown by a live player, whose state fires the load events */
+                const vt = this.localName === 'video' && v.getVideoTracks().find(t => t._.hub && t._.hub.src > 0);
+                if (vt) {
+                    const id = N.mediaNew(this); def(this, '__mp', id); mediaEls.add(this); N.mediaPump(mediaPoll);
+                    N.mediaLive(id, vt._.hub.src); mediaLater(this, 'loadstart');
+                } else for (const t of ['loadstart', 'durationchange', 'loadedmetadata', 'loadeddata', 'canplay', 'canplaythrough']) mediaLater(this, t);
                 if (this.autoplay) this.play();
             }
         },
@@ -110,7 +119,8 @@ mk('HTMLMediaElement', HTMLElement, [], p => {
         },
         play() {
             if (live(this)) {
-                if (this.__paused !== false) { def(this, '__paused', false); mediaLater(this, 'play'); mediaLater(this, 'playing'); }
+                if (this.__paused !== false) { def(this, '__paused', false); mediaLater(this, 'play'); if (!this.__mp || this.readyState >= 3) mediaLater(this, 'playing'); }
+                if (this.__mp) N.mediaPlay(this.__mp);
                 mediaStreamPlay(this, true);
                 return Promise.resolve();
             }

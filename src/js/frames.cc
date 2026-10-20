@@ -21,7 +21,13 @@ std::string ctx_origin(JsCtx *c) {
     if (c->parent && (!c->doc->url || !strncmp(c->doc->url, "about:", 6))) return ctx_origin(c->parent);
     return origin_of(c->doc->url);
 }
-static bool same_origin(JsCtx *a, JsCtx *b) { return a == b || ctx_origin(a) == ctx_origin(b); }
+std::string ctx_origin_key(JsCtx *c) {
+    if (c->parent && (!c->doc->url || !strncmp(c->doc->url, "about:", 6))) return ctx_origin_key(c->parent);
+    const char *u = c->doc->url;
+    if (u && str_ieqn(u, "file:", 5)) return std::string(u, strcspn(u, "#"));
+    return origin_of(u);
+}
+static bool same_origin(JsCtx *a, JsCtx *b) { return a == b || ctx_origin_key(a) == ctx_origin_key(b); }
 
 static v8::Local<v8::Value> win_for(JsCtx *v, JsCtx *t) {
     v8::Isolate *iso = v->iso;

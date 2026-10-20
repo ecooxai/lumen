@@ -18,9 +18,9 @@ final class BrowserStats {
     static final int PERIOD_MS = 3000;
     private static final String CPU = "/sys/devices/system/cpu/";
 
-    /* the phone's CPU use (% of all its cores, -1 unknown) and Lumen's (% of one core) */
+    /* the phone's CPU use and Lumen's, as % of all the phone's cores (-1 unknown) */
     float system = -1, browser = -1;
-    /* the current tab's CPU (% of one core), the JS heap and V8 external memory of all tabs (MB) */
+    /* the current tab's CPU (% of all cores), the JS heap and V8 external memory of all tabs (MB) */
     float tab, heap, external;
     int tabs, cores;
     /* bytes: Lumen's resident memory, the phone's memory and how much of it is available */
@@ -62,10 +62,11 @@ final class BrowserStats {
 
     private void sample() {
         long wall = SystemClock.elapsedRealtime(), cpu = android.os.Process.getElapsedCpuTime();
-        if (lastWall != 0 && wall > lastWall) browser = 100f * (cpu - lastCpu) / (wall - lastWall);
+        sampleSystem();
+        int all = Math.max(1, cores > 0 ? cores : Runtime.getRuntime().availableProcessors());
+        if (lastWall != 0 && wall > lastWall) browser = 100f * (cpu - lastCpu) / (wall - lastWall) / all;
         lastWall = wall;
         lastCpu = cpu;
-        sampleSystem();
         String statm = read("/proc/self/statm");
         if (statm != null) {
             String[] fields = statm.trim().split("\\s+");
@@ -81,7 +82,7 @@ final class BrowserStats {
         try {
             float[] native_ = LumenActivity.nativeTabStats();
             if (native_ != null && native_.length >= 4) {
-                tab = native_[0];
+                tab = native_[0] / all;
                 heap = native_[1];
                 external = native_[2];
                 tabs = Math.round(native_[3]);

@@ -35,6 +35,7 @@ typedef struct Box {
     float sx, sy;
     struct Box *cb, *abs_next, *abs_head;
     float mk[8]; int8_t mmode; bool memo; int alo, ahi; unsigned astamp; int dcalls;   /* inputs of the last layout_box, reused when called again with the same ones */
+    uint64_t ink_gen; float ink0, ink1; bool defer_in;   /* paint culling: vertical extent of the normal-flow paint, and whether it holds boxes painted later (stacking); valid while doc_box_generation() + 1 == ink_gen */
 } Box;
 
 typedef struct FRect { float x, y, w, h; uint8_t side; } FRect;

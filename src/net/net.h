@@ -56,6 +56,9 @@ void net_init(int threads);
 /* HTTP proxy for all connections: "host:port", "http://[user:pass@]host:port", or NULL/"" for direct.
    net_init reads LUMEN_PROXY, then https_proxy/http_proxy (and NO_PROXY) from the environment. */
 void net_set_proxy(const char *spec);
+/* file: URLs never read inside dir (the app's private data: cookies, caches), except below the
+   allowed folders or files (NULL-terminated). Call once, before any fetch. */
+void net_file_protect(const char *dir, const char *const *allowed);
 /* Private disk cache for GET responses in dir (created if missing), bounded to max_bytes. */
 void net_cache_init(const char *dir, size_t max_bytes);
 void net_shutdown(void);
@@ -103,4 +106,5 @@ const char *net_user_agent_name(int which);
 bool net_desktop_host(const char *host);
 void net_set_desktop_host(const char *host, bool on);
 void net_desktop_hosts(char *out, size_t n);   /* space-separated, for saving */
+void net_desktop_restore(const char *entry);    /* one saved entry, as net_desktop_hosts wrote it */
 #endif

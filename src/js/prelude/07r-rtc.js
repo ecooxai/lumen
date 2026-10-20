@@ -106,10 +106,17 @@ class MediaStreamTrack extends EventTarget {
     stop() { if (this._.readyState === 'live' && this._.hub) this._.hub.release(); this._.readyState = 'ended'; }
     clone() {
         const t = new MediaStreamTrack(RTC_INTERNAL, this._.kind, this._.label); t._.enabled = this._.enabled; t._.muted = this._.muted; t._.readyState = this._.readyState;
-        if (this._.hub && this._.readyState === 'live') { t._.hub = this._.hub; this._.hub.refs++; }
+        if (this._.hub && this._.readyState === 'live') { t._.hub = this._.hub; this._.hub.refs++; if (this._.hub.tracks) this._.hub.tracks.add(t); }
         return t;
     }
-    getSettings() { return this._.kind === 'audio' ? { deviceId: 'default', groupId: '', sampleRate: 48000, channelCount: 1 } : { deviceId: 'default', groupId: '', width: 640, height: 480, frameRate: 30 }; }
+    getSettings() {
+        if (this._.kind === 'audio') return { deviceId: 'default', groupId: '', sampleRate: 48000, channelCount: 1 };
+        const h = this._.hub, i = h && h.info ? h.info() : [640, 480, 30, 0];
+        const o = { deviceId: h && h.deviceId || 'default', groupId: '', width: i[0], height: i[1], frameRate: i[2], aspectRatio: i[1] ? i[0] / i[1] : 0, resizeMode: 'none' };
+        if (i[3]) o.facingMode = i[3] === 1 ? 'user' : 'environment';
+        if (h && h.display) { o.displaySurface = h.display; o.cursor = 'never'; delete o.resizeMode; }
+        return o;
+    }
     getConstraints() { return {}; }
     getCapabilities() { return {}; }
     applyConstraints() { return Promise.resolve(); }
@@ -127,6 +134,42 @@ class MicHub {
     }
     release() { if (--this.refs > 0) return; clearInterval(this.timer); N.micClose(this.id); this.subs.clear(); }
 }
+/* a camera (N.cam*) shared by the tracks cloned from it: frames go to a native live source that <video> shows */
+class CamHub {
+    constructor(id) { this.id = id; this.refs = 1; this.src = N.camSource(id); this.deviceId = 'camera' + N.camInfo(id)[3]; }
+    info() { return N.camInfo(this.id); }
+    release() { if (--this.refs > 0) return; N.camClose(this.id); this.src = -1; }
+}
+const camTrack = id => { const h = new CamHub(id), f = h.info()[3]; const t = new MediaStreamTrack(RTC_INTERNAL, 'video', f === 2 ? 'camera 0, facing back' : f === 1 ? 'camera 1, facing front' : 'Camera'); t._.hub = h; return t; };
+/* the screen (N.screen*, Android MediaProjection) and its system audio, mono 48 kHz PCM fanned out to
+   recorders and audio sources every 40 ms like a microphone's: its tracks end when the system stops the sharing */
+class ScreenHub {
+    constructor(id, fps, audio) {
+        this.id = id; this.refs = 1; this.fps = fps; this.src = N.screenSource(id); this.display = 'monitor'; this.deviceId = 'screen:0:0'; this.tracks = new Set();
+        this.subs = new Set(); this.atimer = audio ? setInterval(() => this.poll(), 40) : 0;
+        this.timer = setInterval(() => {
+            if (N.screenState(this.id) >= 0) return;
+            clearInterval(this.timer); this.timer = 0;
+            for (const t of this.tracks) if (t._.readyState === 'live') { t._.readyState = 'ended'; rtcEv(t, 'ended'); }
+            this.refs = 1; this.release();
+        }, 500);
+    }
+    info() { const i = N.screenInfo(this.id); return [i[0], i[1], this.fps, 0]; }
+    poll() {
+        if (this.refs <= 0 || this.src <= 0) return;
+        const pcm = N.screenAudio(this.id);
+        if (pcm) for (const f of [...this.subs]) try { f(pcm); } catch (e) { setTimeout(() => { throw e; }); }
+    }
+    release() { if (--this.refs > 0) return; clearInterval(this.timer); clearInterval(this.atimer); this.timer = this.atimer = 0; if (this.src > 0) N.screenClose(this.id); this.src = -1; this.subs.clear(); }
+}
+/* the shared screen's tracks: its video, and its system audio when the playback capture runs */
+const screenTracks = (id, fps) => {
+    const audio = !!N.screenInfo(id)[2], h = new ScreenHub(id, fps, audio), list = [new MediaStreamTrack(RTC_INTERNAL, 'video', 'screen:0:0')];
+    if (audio) list.push(new MediaStreamTrack(RTC_INTERNAL, 'audio', 'System Audio'));
+    h.refs = list.length;
+    for (const t of list) { t._.hub = h; h.tracks.add(t); }
+    return list;
+};
 const micTrack = id => { const t = new MediaStreamTrack(RTC_INTERNAL, 'audio', 'Default'); t._.hub = new MicHub(id); return t; };
 class MediaStreamTrackEvent extends Event {
     constructor(t, i) { if (!i || !(i.track instanceof MediaStreamTrack)) throw new TypeError("Failed to construct 'MediaStreamTrackEvent': required member track is undefined."); super(t, i); def(this, '_', { track: i.track }); }
@@ -155,7 +198,8 @@ class BlobEvent extends Event {
     }
 }
 rtcRO(BlobEvent, ['data', 'timecode']);
-/* MediaRecorder over the native encoder (N.rec*): Opus in WebM/Ogg or AAC in MP4, audio tracks only */
+/* MediaRecorder over the native encoder (N.rec*): Opus in WebM/Ogg or AAC in MP4, with VP8/VP9 or H.264
+   video from a camera or screen track (encoded natively from its live source) */
 class MediaRecorder extends EventTarget {
     constructor(stream, o) {
         if (!(stream instanceof MediaStream)) throw new TypeError("Failed to construct 'MediaRecorder': parameter 1 is not of type 'MediaStream'.");
@@ -163,20 +207,27 @@ class MediaRecorder extends EventTarget {
         const mime = o && o.mimeType ? String(o.mimeType) : '';
         if (mime && !MediaRecorder.isTypeSupported(mime)) throw new DOMException(`Failed to construct 'MediaRecorder': Unsupported mimeType: ${mime}`, 'NotSupportedError');
         def(this, '_', { stream, mimeType: mime, state: 'inactive', audioBitsPerSecond: o && o.audioBitsPerSecond ? +o.audioBitsPerSecond : o && o.bitsPerSecond ? +o.bitsPerSecond : 0,
-            videoBitsPerSecond: 0, audioBitrateMode: 'variable', id: -1, timer: 0, silent: 0, sub: null, track: null });
+            videoBitsPerSecond: o && o.videoBitsPerSecond ? +o.videoBitsPerSecond : o && o.bitsPerSecond ? +o.bitsPerSecond : 0, audioBitrateMode: 'variable', id: -1, timer: 0, silent: 0, sub: null, track: null });
     }
     static isTypeSupported(t) { return !!N.recKind && String(t) !== '' && N.recKind(String(t)) > 0; }
     start(slice) {
         const _ = this._;
         if (_.state !== 'inactive') throw new DOMException(`Failed to execute 'start' on 'MediaRecorder': The MediaRecorder's state is '${_.state}'.`, 'InvalidStateError');
         const track = _.stream.getAudioTracks().find(t => t.readyState === 'live');
-        if (!track || !N.recOpen) throw new DOMException("Failed to execute 'start' on 'MediaRecorder': The MediaRecorder cannot start because there are no audio or video tracks available.", 'NotSupportedError');
-        const mime = _.mimeType || 'audio/webm;codecs=opus', id = N.recOpen(mime, _.audioBitsPerSecond);
+        const vt = _.stream.getVideoTracks().find(t => t.readyState === 'live' && t._.hub && t._.hub.src > 0);
+        if ((!track && !vt) || !N.recOpen) throw new DOMException("Failed to execute 'start' on 'MediaRecorder': The MediaRecorder cannot start because there are no audio or video tracks available.", 'NotSupportedError');
+        let mime = _.mimeType;
+        if (!mime) mime = !vt ? 'audio/webm' : ['video/webm;codecs=vp8', 'video/webm;codecs=vp9', 'video/mp4;codecs=avc1', 'video/webm'].find(t => N.recKind(t) > 0) || '';
+        const vi = vt ? vt._.hub.info() : [0, 0, 0, 0];
+        const id = mime ? N.recOpen(mime, _.audioBitsPerSecond, _.videoBitsPerSecond, vt ? vt._.hub.src : 0, vi[0], vi[1], vi[2] || 30, !!track) : -1;
         if (id < 0) throw new DOMException(`Failed to execute 'start' on 'MediaRecorder': There was an error starting the MediaRecorder.`, 'NotSupportedError');
-        _.id = id; _.mimeType = /^audio\/webm$/i.test(mime) ? 'audio/webm;codecs=opus' : mime; _.state = 'recording'; _.track = track;
-        _.sub = pcm => { if (_.state === 'recording') N.recPush(id, track.enabled ? pcm : new Float32Array(pcm.length)); };
-        if (track._.hub) track._.hub.subs.add(_.sub);
-        else _.silent = setInterval(() => _.sub(new Float32Array(1920)), 40);   /* a track without a device records silence in real time */
+        _.id = id; if (!/codecs=/i.test(_.mimeType)) _.mimeType = N.recMime ? N.recMime(id) || mime : mime;   /* as Chrome: the codecs chosen, unless the page named them */
+        _.state = 'recording'; _.track = track || null;
+        if (track) {
+            _.sub = pcm => { if (_.state === 'recording') N.recPush(id, track.enabled ? pcm : new Float32Array(pcm.length)); };
+            if (track._.hub) track._.hub.subs.add(_.sub);
+            else _.silent = setInterval(() => _.sub(new Float32Array(1920)), 40);   /* a track without a device records silence in real time */
+        }
         const ms = slice === undefined ? 0 : Number(slice) || 0;
         if (ms > 0) _.timer = setInterval(() => this._emit(false), Math.max(ms, 100));
         rtcTask(() => rtcEv(this, 'start'));
@@ -197,12 +248,12 @@ class MediaRecorder extends EventTarget {
     pause() {
         const _ = this._;
         if (_.state === 'inactive') throw new DOMException("Failed to execute 'pause' on 'MediaRecorder': The MediaRecorder's state is 'inactive'.", 'InvalidStateError');
-        if (_.state === 'recording') { _.state = 'paused'; rtcTask(() => rtcEv(this, 'pause')); }
+        if (_.state === 'recording') { _.state = 'paused'; N.recPause(_.id, true); rtcTask(() => rtcEv(this, 'pause')); }
     }
     resume() {
         const _ = this._;
         if (_.state === 'inactive') throw new DOMException("Failed to execute 'resume' on 'MediaRecorder': The MediaRecorder's state is 'inactive'.", 'InvalidStateError');
-        if (_.state === 'paused') { _.state = 'recording'; rtcTask(() => rtcEv(this, 'resume')); }
+        if (_.state === 'paused') { _.state = 'recording'; N.recPause(_.id, false); rtcTask(() => rtcEv(this, 'resume')); }
     }
     requestData() {
         if (this._.state === 'inactive') throw new DOMException("Failed to execute 'requestData' on 'MediaRecorder': The MediaRecorder's state is 'inactive'.", 'InvalidStateError');

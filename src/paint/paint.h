@@ -4,7 +4,7 @@
 #include "regions.h"
 
 /* Decoded image: premultiplied 0xAARRGGBB pixels */
-typedef struct Image { int w, h, refs; uint32_t *px; float scale; /* device px per CSS px, 0 = 1 */ struct ImgAnim *anim; uint8_t *yuv; int yuv_mat; /* NV12 video frame; mat: 1 = BT.709, 2 = full range */ uint64_t content_version; /* images updated in place, e.g. iframe canvases */ } Image;
+typedef struct Image { int w, h, refs; uint32_t *px; float scale; /* device px per CSS px, 0 = 1 */ struct ImgAnim *anim; uint8_t *yuv; int yuv_mat; /* NV12 video frame; mat: 1 = BT.709, 2 = full range */ uint64_t content_version; /* images updated in place, e.g. iframe canvases */ bool translucent; /* a canvas frame with alpha below 1 somewhere: blended, not shown through a hole */ } Image;
 static inline float image_css_w(const Image *im) { return im->scale > 0 ? im->w / im->scale : (float)im->w; }
 static inline float image_css_h(const Image *im) { return im->scale > 0 ? im->h / im->scale : (float)im->h; }
 
@@ -45,10 +45,12 @@ bool image_anim_tick(double now_ms, double *next_ms);
 Image *svg_image(Node *n, float cw, float ch, float dpr);
 void dl_build(DisplayList *dl, Layout *L, float scroll_x, float scroll_y, float vw, float vh);
 extern bool dl_caret_on; /* paint the caret in the focused text control */
+extern bool dl_cull; /* skip normal-flow subtrees outside the viewport (off only to compare, in tests) */
 void dl_clear(DisplayList *dl);
 
-/* punch: image whose pixels raster leaves as alpha-0 holes (composited by the GPU); punched is set when it was hit. */
-typedef struct Canvas { int w, h, stride; uint32_t *px; float scale; const void *punch; bool punched; int row_offset; } Canvas;
+/* punch: image whose pixels raster leaves as alpha-0 holes (composited by the GPU); punched is set when it was hit.
+   punch_more: up to three more such images (NULL-terminated); bit i of punched_more is set when punch_more[i] was hit. */
+typedef struct Canvas { int w, h, stride; uint32_t *px; float scale; const void *punch; bool punched; int row_offset; const void *punch_more[3]; unsigned punched_more; } Canvas;
 /* Logical page rows can wrap in the existing allocation during GPU scrolling. */
 static inline uint32_t *canvas_row(const Canvas *c, int y) {
     int row = y + c->row_offset;

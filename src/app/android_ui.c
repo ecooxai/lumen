@@ -144,4 +144,16 @@ void android_ui_workspaces(const char *const *names, const int *tabs, int n, int
     if (v && k) { (*env)->SetIntArrayRegion(env, k, 0, n, (const jint *)tabs); (*env)->CallStaticVoidMethod(env, c, m, v, k, current); }
     end(env);
 }
+void android_ui_tab_menu(const char *title, const char *const *items, const bool *on, int n) {
+    jclass c; jmethodID m; JNIEnv *env = begin(&c, "showTabMenu", "([B[[B[Z)V", &m);
+    if (!env) return;
+    jbyteArray t = jbytes(env, title);
+    jobjectArray v = jbytes_array(env, items, n);
+    jbooleanArray k = (*env)->NewBooleanArray(env, n);
+    if (t && v && k) {
+        for (int i = 0; i < n; i++) { jboolean b = on[i]; (*env)->SetBooleanArrayRegion(env, k, i, 1, &b); }
+        (*env)->CallStaticVoidMethod(env, c, m, t, v, k);
+    }
+    end(env);
+}
 #endif

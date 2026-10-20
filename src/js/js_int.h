@@ -69,6 +69,8 @@ struct JsCtx {
     v8::Isolate *iso = nullptr;
     std::shared_ptr<JsForegroundTasks> foreground_tasks; // Root owns the shared frame isolate.
     bool bg = false, bg_gc = false; double bg_since = 0;   /* tab in the background: V8 favours memory, one idle GC */
+    bool bg_seen = false;   /* the bg the page last got a visibilitychange for */
+    double bg_timers = 0;   /* a background tab's timers run at most once a second: the last run */
     v8::ArrayBuffer::Allocator *alloc = nullptr;
     v8::Global<v8::Context> ctx;
     v8::Global<v8::ObjectTemplate> node_tmpl;
@@ -106,6 +108,7 @@ struct JsCtx {
     uint32_t next_ws = 1;
     std::vector<Document *> docs;
     Node *current_script = nullptr;
+    std::vector<Node *> written;   /* scripts document.write() added; they run after the script that wrote them */
     int depth = 0;
     int timer_nest = 0;   /* nesting level of the timer callback now running */
     std::map<uint32_t, MediaPlayer *> players;
@@ -165,6 +168,7 @@ extern "C" void js_run_module_inserted(JsCtx *c, Node *script, const char *src, 
 extern "C" JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame);
 extern "C" JsCtx *owner_ctx(Document *d);
 std::string ctx_origin(JsCtx *c);
+std::string ctx_origin_key(JsCtx *c);   /* for same-origin checks: ctx_origin, but each file: document is its own origin, as in Chrome */
 void frames_scan(JsCtx *c);
 void frames_inserted(JsCtx *c, Node *root);
 void frames_forget(JsCtx *c);
@@ -178,7 +182,12 @@ void workers_pump(JsCtx *c);
 void workers_kill(JsCtx *c);
 double workers_deadline(JsCtx *c);
 void js_install_rtc(JsCtx *c, v8::Local<v8::Object> N);   /* rtc.cc: native WebRTC transport */
+void js_install_webgl(JsCtx *c, v8::Local<v8::Object> N);   /* webgl.cc: N.gl, WebGL over GLES 3 */
+void js_install_webgpu(JsCtx *c, v8::Local<v8::Object> N);   /* webgpu.cc: N.gpu, WebGPU over wgpu */
 bool rtc_pending(JsCtx *c);
+bool rtc_active(JsCtx *c);   /* the page has used native WebRTC */
 void rtc_pump(JsCtx *c);
 void rtc_ctx_free(JsCtx *c);
+double webgpu_deadline(JsCtx *c);   /* when webgpu_pump has work: queued events now, GPU work in flight soon */
+void webgpu_pump(JsCtx *c);
 v8::Platform *js_platform();

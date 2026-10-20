@@ -123,7 +123,25 @@ mk('HTMLBaseElement', HTMLElement, ['base'], p => { reflectUrl(p, 'href'); refle
 mk('HTMLTemplateElement', HTMLElement, ['template'], p => methods(p, { get content() { return N.templateContent(this); } }));
 mk('HTMLSlotElement', HTMLElement, ['slot'], p => { reflectStr(p, 'name'); methods(p, { assignedNodes() { return []; }, assignedElements() { return []; }, assign() {} }); });
 mk('HTMLIFrameElement', HTMLElement, ['iframe'], p => { reflectUrl(p, 'src'); reflectStr(p, 'srcdoc', 'name', 'allow', 'width', 'height', 'referrerPolicy', 'loading'); methods(p, { get sandbox() { if (!this.__sb) def(this, '__sb', new DOMTokenList(this, 'sandbox')); return this.__sb; }, set sandbox(v) { this.setAttribute('sandbox', v); }, get contentWindow() { return asWin(N.frameWin(this)); }, get contentDocument() { return N.frameDoc(this); } }); });
-mk('HTMLCanvasElement', HTMLElement, ['canvas'], p => { reflectInt(p, 300, 'width'); reflectInt(p, 150, 'height'); methods(p, { getContext(t) { return t === '2d' ? (this._ctx2d || (this._ctx2d = new CanvasRenderingContext2D(this))) : null; }, toDataURL() { return 'data:,'; }, toBlob(cb) { setTimeout(() => cb(null)); } }); });
+mk('HTMLCanvasElement', HTMLElement, ['canvas'], p => {
+    /* resizing resizes the WebGL drawing buffer; WebGPU reads the size each frame */
+    for (const [n, d] of [['width', 300], ['height', 150]])
+        acc(p, n, function () { const v = parseInt(N.attr(this, n), 10); return isNaN(v) || v < 0 ? d : v; }, function (v) { this.setAttribute(n, String(v >>> 0)); canvasResized(this); });
+    methods(p, {
+        /* one context per canvas: asking for another kind gives null */
+        getContext(t, o) {
+            t = String(t);
+            const kind = t === 'experimental-webgl' ? 'webgl' : t;
+            if (this.__ck) return this.__ck === kind ? this.__cx : null;
+            const x = kind === '2d' ? new CanvasRenderingContext2D(this) : kind === 'webgl' ? glCreate(this, 1, o) : kind === 'webgl2' ? glCreate(this, 2, o)
+                : kind === 'webgpu' && gpuNavigator ? gpuCanvasContext(this) : null;
+            if (x) { def(this, '__ck', kind); def(this, '__cx', x); }
+            return x;
+        },
+        captureStream(fps) { return canvasStream(this, fps); },
+        toDataURL() { return 'data:,'; }, toBlob(cb) { setTimeout(() => cb(null)); },
+    });
+});
 mk('HTMLFormElement', HTMLElement, ['form'], p => {
     reflectUrl(p, 'action'); reflectStr(p, 'name', 'target', 'acceptCharset', 'autocomplete'); reflectBool(p, 'noValidate');
     methods(p, {

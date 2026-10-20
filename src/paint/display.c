@@ -16,6 +16,7 @@ typedef struct {
     bool fixed;
     Box *sb; const void *outer;   /* innermost scroller and the state outside it */
     const Box *mv, *mv_out;       /* scroller painted items move with, and the one outside it (for sticky boxes) */
+    bool cull; uint64_t gen;      /* skip normal-flow subtrees outside the viewport (box_ink extents of visual generation gen) */
 } PB;
 
 static DItem *emit(PB *p, uint8_t op) { DItem it; memset(&it, 0, sizeof it); it.op = op; it.alpha = 1; it.fixed = p->fixed; it.mv = p->mv; vec_push(p->dl->items, it); return &p->dl->items.v[p->dl->items.n - 1]; }
@@ -74,8 +75,11 @@ static void paint_rect_deco(PB *p, Box *b, float x, float y, float w, float h, b
     if (COLOR_A(s->bg_color)) {
         Color c = s->bg_color;
         /* backdrop-filter: blur() isn't rendered; blurred content behind a translucent surface reads as
-           nearly flat, so approximate it by cutting the remaining transparency to a quarter */
-        if (s->backdrop_blur > 0 && COLOR_A(c) < 255) c = (c & 0xffffff) | (Color)(255 - (255 - COLOR_A(c)) / 4) << 24;
+           nearly flat, so approximate it by cutting the remaining transparency to a quarter. A strong blur
+           (YouTube's frosted masthead, 48 px) leaves no shapes at all: a mostly opaque surface is drawn
+           opaque, since faint sharp text behind it reads as stale pixels */
+        if (s->backdrop_blur > 0 && COLOR_A(c) < 255)
+            c = (c & 0xffffff) | (Color)(s->backdrop_blur >= 16 && COLOR_A(c) >= 128 ? 255 : 255 - (255 - COLOR_A(c)) / 4) << 24;
         DItem *it = emit(p, DO_RECT); it->x = x; it->y = y; it->w = w; it->h = h; memcpy(it->r, r, sizeof r); it->color = c;
     }
     if (s->bg_gradient) { DItem *it = emit(p, DO_GRADIENT); it->x = x; it->y = y; it->w = w; it->h = h; memcpy(it->r, r, sizeof r); it->grad = s->bg_gradient; }
@@ -228,6 +232,58 @@ static bool makes_layer(const Box *b) { return b->st && b->node && (b->st->opaci
 static void paint_stacking(PB *p, Box *b);
 static void paint_flow(PB *p, Box *b, DefVec *defs);
 
+/* Off-screen culling. box_ink() keeps, per box, the vertical extent of what paint_block_content
+   paints for it (its box, normal-flow children, floats, line content; a clipping scroller only its
+   box) and whether that walk would collect boxes painted later in stacking order (positioned or
+   layered ones), which must still be found. A subtree without those whose extent, widened by the
+   64 px decoration margin paint_rect_deco allows, misses the viewport or clip is skipped whole.
+   The extents hold until the next layout or restyle (doc_box_generation; scrolling keeps them). */
+static void box_ink(Box *b, uint64_t gen);
+static void ink_inline(Box *ib, uint64_t gen, float *y0, float *y1, bool *defer) {
+    for (Box *c = ib->first; c; c = c->next) {
+        if (positioned(c) || c->abs) { *defer = true; continue; }
+        if (c->kind != BX_INLINE) continue;
+        for (int i = 0; i < c->nir; i++) { *y0 = LMIN(*y0, c->ir[i].y); *y1 = LMAX(*y1, c->ir[i].y + c->ir[i].h); }
+        ink_inline(c, gen, y0, y1, defer);
+    }
+}
+static void ink_add(Box *c, uint64_t gen, float *y0, float *y1, bool *defer) {
+    box_ink(c, gen); *y0 = LMIN(*y0, c->ink0); *y1 = LMAX(*y1, c->ink1); *defer |= c->defer_in;
+}
+static void box_ink(Box *b, uint64_t gen) {
+    if (b->ink_gen == gen) return;
+    float y0 = b->y, y1 = b->y + b->h, c0 = y0, c1 = y1; bool defer = false;
+    if (b->fmt != FMT_REPLACED) {
+        const ComputedStyle *s = b->st;
+        bool clips = b->scroller && b->node && (s->overflow_x != OV_VISIBLE || s->overflow_y != OV_VISIBLE);
+        for (Box *c = b->first; c; c = c->next) {   /* as paint_flow: block children and floats */
+            if (c->kind == BX_TEXT || c->kind == BX_BR || c->kind == BX_INLINE) continue;
+            if (positioned(c) || makes_layer(c)) { defer = true; continue; }
+            if (c->kind == BX_ATOMIC && !c->floated) continue;
+            ink_add(c, gen, &c0, &c1, &defer);
+        }
+        if (b->nfrags) {
+            ink_inline(b, gen, &c0, &c1, &defer);
+            for (int i = 0; i < b->nfrags; i++) {
+                TextFrag *f = &b->frags[i]; Box *fb = f->box;
+                if (fb->kind == BX_TEXT) { c0 = LMIN(c0, f->y); c1 = LMAX(c1, f->y + f->h); }
+                else if (positioned(fb) || makes_layer(fb)) defer = true;
+                else if (!fb->floated) ink_add(fb, gen, &c0, &c1, &defer);
+            }
+        }
+        if (!clips) { y0 = c0; y1 = c1; }
+    }
+    b->ink0 = y0; b->ink1 = y1; b->defer_in = defer; b->ink_gen = gen;
+}
+static bool culled(PB *p, Box *c) {
+    if (!p->cull) return false;
+    box_ink(c, p->gen);
+    if (c->defer_in) return false;
+    float y0 = c->ink0 + p->dy - 64, y1 = c->ink1 + p->dy + 64;
+    if (y1 < 0 || y0 > p->dl->vh) return true;
+    return p->clip && (y1 < p->cy || y0 > p->cy + p->ch);
+}
+
 static void paint_inline_decos(PB *p, Box *ib) {
     for (Box *c = ib->first; c; c = c->next) {
         if (c->kind != BX_INLINE || positioned(c)) continue;
@@ -243,6 +299,7 @@ static void collect_inline_positioned(PB *p, Box *ib, DefVec *defs) {
 }
 
 bool dl_caret_on;
+bool dl_cull = true;
 
 static void paint_caret(PB *p, Box *b) {
     const ComputedStyle *s = b->st;
@@ -342,11 +399,11 @@ static void paint_flow(PB *p, Box *b, DefVec *defs) {
             /* an abs box whose containing block is outside a scroller neither scrolls nor clips with it */
             const PB *q = p; if (c->abs) while (q->sb && !box_within(c->cb, q->sb)) q = q->outer;
             Deferred d = { c, q->dx, q->dy, q->clip, q->cx, q->cy, q->cw, q->ch, p->order++, q->mv, q->mv_out }; vec_push(*defs, d); continue; }
-        if (c->floated || c->kind == BX_ATOMIC) continue;
+        if (c->floated || c->kind == BX_ATOMIC || culled(p, c)) continue;
         paint_block_content(p, c, defs);
     }
     /* floats */
-    for (Box *c = b->first; c; c = c->next) if (c->floated && !positioned(c) && !makes_layer(c)) { DefVec local = {0}; paint_block_content(p, c, &local); for (int i = 0; i < local.n; i++) vec_push(*defs, local.v[i]); vec_free(local); }
+    for (Box *c = b->first; c; c = c->next) if (c->floated && !positioned(c) && !makes_layer(c) && !culled(p, c)) { DefVec local = {0}; paint_block_content(p, c, &local); for (int i = 0; i < local.n; i++) vec_push(*defs, local.v[i]); vec_free(local); }
     /* inline content */
     if (b->nfrags) {
         paint_inline_decos(p, b);
@@ -354,7 +411,7 @@ static void paint_flow(PB *p, Box *b, DefVec *defs) {
         for (int i = 0; i < b->nfrags; i++) {
             TextFrag *f = &b->frags[i];
             if (f->box->kind == BX_TEXT) paint_text_frag(p, f);
-            else if (!positioned(f->box) && !makes_layer(f->box) && !f->box->floated) { DefVec local = {0}; paint_block_content(p, f->box, &local); for (int k = 0; k < local.n; k++) vec_push(*defs, local.v[k]); vec_free(local); }
+            else if (!positioned(f->box) && !makes_layer(f->box) && !f->box->floated && !culled(p, f->box)) { DefVec local = {0}; paint_block_content(p, f->box, &local); for (int k = 0; k < local.n; k++) vec_push(*defs, local.v[k]); vec_free(local); }
         }
     }
 }
@@ -429,6 +486,7 @@ void dl_build(DisplayList *dl, Layout *L, float scroll_x, float scroll_y, float 
     if (!L->root) return;
     tsel_prepare(L);
     PB p; memset(&p, 0, sizeof p); p.dl = dl; p.L = L; p.dx = -scroll_x; p.dy = -scroll_y; p.sx = scroll_x; p.sy = scroll_y;
+    p.cull = dl_cull; p.gen = doc_box_generation() + 1;
     /* canvas background propagates from html, else body */
     Node *html = L->doc->html, *body = L->doc->body;
     Color bg = 0;
@@ -442,6 +500,6 @@ void dl_build(DisplayList *dl, Layout *L, float scroll_x, float scroll_y, float 
         if (!it->fixed || it->w <= 0 || it->h <= 0 || it->op == DO_PUSH_CLIP) continue;
         float pad = it->op == DO_SHADOW ? LMAX(0, it->spread) + LMAX(0.5f, it->blur) : 0;
         float bounds[4] = {it->x - pad, it->y - pad, it->x + it->w + pad, it->y + it->h + pad};
-        paint_regions_add(&dl->fixed, bounds);
+        paint_fixed_add(&dl->fixed, bounds);
     }
 }

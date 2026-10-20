@@ -1,0 +1,44 @@
+--- a/src/vulkan/mod.rs
++++ b/src/vulkan/mod.rs
+@@ -482,7 +482,11 @@
+         let alignment = desc.requirements.alignment;
+ 
+         let dedicated_allocation = desc.allocation_scheme != AllocationScheme::GpuAllocatorManaged;
+-        let requires_personal_block = size > memblock_size;
++        // Lumen: readback memory that is not coherent gets its own block. Invalidating a range of it before each read
++        // makes some drivers (Adreno kgsl) maintain the cache of the whole block, 64 MiB of it for a shared host block.
++        let requires_personal_block = size > memblock_size
++            || (desc.location == MemoryLocation::GpuToCpu
++                && !self.memory_properties.contains(vk::MemoryPropertyFlags::HOST_COHERENT));
+ 
+         // Create a dedicated block for large memory allocations or allocations that require dedicated memory allocations.
+         if dedicated_allocation || requires_personal_block {
+@@ -814,8 +818,26 @@
+             }
+             MemoryLocation::Unknown => vk::MemoryPropertyFlags::empty(),
+         };
+-        let mut memory_type_index_opt =
+-            self.find_memorytype_index(&desc.requirements, mem_loc_preferred_bits);
++        // Lumen: GPU-to-CPU readback takes cached memory that is not coherent first. Adreno's coherent+cached type
++        // reads at about 100 MB/s like uncached memory; the non-coherent cached one reads at memory speed, and wgpu
++        // invalidates non-coherent maps before reads.
++        let mut memory_type_index_opt = if desc.location == MemoryLocation::GpuToCpu {
++            self.memory_types
++                .iter()
++                .find(|memory_type| {
++                    (1 << memory_type.memory_type_index) & desc.requirements.memory_type_bits != 0
++                        && memory_type.memory_properties.contains(
++                            vk::MemoryPropertyFlags::HOST_VISIBLE | vk::MemoryPropertyFlags::HOST_CACHED,
++                        )
++                        && !memory_type.memory_properties.contains(vk::MemoryPropertyFlags::HOST_COHERENT)
++                })
++                .map(|memory_type| memory_type.memory_type_index as u32)
++        } else {
++            None
++        };
++        if memory_type_index_opt.is_none() {
++            memory_type_index_opt = self.find_memorytype_index(&desc.requirements, mem_loc_preferred_bits);
++        }
+ 
+         if memory_type_index_opt.is_none() {
+             let mem_loc_required_bits = match desc.location {

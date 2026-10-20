@@ -33,7 +33,7 @@ final class BrowserMenus {
     /* mirrors android_ui.h */
     static final int NEW_TAB = 1, FORWARD = 2, BOOKMARKS = 3, DOWNLOADS = 4, HISTORY = 5, WORKSPACES = 6, SETTINGS = 7,
         DESKTOP = 8, ZOOM = 9, BM_TOGGLE = 10, BM_OPEN = 11, BM_SAVE = 12, BM_DELETE = 13,
-        WS_SELECT = 14, WS_NEW = 15, WS_RENAME = 16, WS_CLOSE = 17, BACK = 18, RELOAD = 19, FULLSCREEN = 20, URL_GO = 21;
+        WS_SELECT = 14, WS_NEW = 15, WS_RENAME = 16, WS_CLOSE = 17, BACK = 18, RELOAD = 19, FULLSCREEN = 20, URL_GO = 21, BM_ADD = 22, TAB_MENU = 23;
     private static final int MAX_WORKSPACES = 16, ZOOM_MIN = 20, ZOOM_MAX = 300, ZOOM_STEP = 10;
     private static final int TEXT = 0xff202124, SUBTLE = 0xff5f6368, DISABLED = 0xffbdc1c6, DIVIDER = 0xffe8eaed, ACCENT = 0xff1a73e8;
     private static PopupWindow menu;
@@ -121,11 +121,38 @@ final class BrowserMenus {
         return dialog;
     }
 
+    /* a short notice just below a view, gone after a moment; touches pass through it */
+    static void notice(View anchor, String text) {
+        Context context = anchor.getContext();
+        TextView view = label(context, text, 13, Color.WHITE);
+        view.setPadding(dp(context, 14), dp(context, 8), dp(context, 14), dp(context, 8));
+        GradientDrawable shape = new GradientDrawable();
+        shape.setColor(0xf0202124);
+        shape.setCornerRadius(dp(context, 8));
+        view.setBackground(shape);
+        view.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
+        final PopupWindow popup = new PopupWindow(view, ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, false);
+        popup.setTouchable(false);
+        popup.setElevation(dp(context, 6));
+        popup.showAsDropDown(anchor, (anchor.getWidth() - view.getMeasuredWidth()) / 2, dp(context, 2));
+        view.postDelayed(() -> { if (popup.isShowing()) popup.dismiss(); }, 1800);
+    }
+
+    /* a long press on Bookmarks: the current page is bookmarked, with a notice under the button.
+       Returns whether the page is a bookmark now. */
+    static boolean bookmarkHere(View anchor, boolean bookmarked, boolean can, Action action) {
+        if (!can) { notice(anchor, "Open a web page to bookmark it"); return bookmarked; }
+        if (bookmarked) { notice(anchor, "Already in bookmarks"); return true; }
+        action.send(BM_ADD, 0, null, null);
+        notice(anchor, "Added to bookmarks");
+        return true;
+    }
+
     static void toast(Activity activity, String text) {
         Toast.makeText(activity, text, text.length() > 48 ? Toast.LENGTH_LONG : Toast.LENGTH_SHORT).show();
     }
 
-    /* state: can go forward, desktop site on, desktop site possible, zoom possible, zoom percent,
+    /* state: can go forward, desktop site on, desktop site scope (1 site, 2 all sites), zoom possible, zoom percent,
        page bookmarked, page can be bookmarked, can go back, fullscreen on */
     static void showMenu(Activity activity, int[] state, Action action) {
         if (menu != null) { menu.dismiss(); menu = null; }
@@ -140,6 +167,7 @@ final class BrowserMenus {
         String[] names = { "Back", "Forward", "Reload", state[5] != 0 ? "Remove bookmark" : "Bookmark this page", "Downloads" };
         int[] codes = { BACK, FORWARD, RELOAD, BM_TOGGLE, DOWNLOADS };
         boolean[] enabled = { state[7] != 0, state[0] != 0, true, state[6] != 0, true };
+        final ImageView[] star = new ImageView[1];
         for (int i = 0; i < codes.length; i++) {
             int color = enabled[i] ? (codes[i] == BM_TOGGLE && state[5] != 0 ? ACCENT : TEXT) : DISABLED;
             ImageView button = icon(context, codes[i], color, 24);
@@ -148,6 +176,7 @@ final class BrowserMenus {
             ripple(button, true);
             final int code = codes[i];
             button.setOnClickListener(view -> { popup.dismiss(); action.send(code, 0, null, null); });
+            if (code == BM_TOGGLE) star[0] = button;
             icons.addView(button, new LinearLayout.LayoutParams(0, dp(context, 48), 1));
         }
         root.addView(icons);
@@ -159,6 +188,15 @@ final class BrowserMenus {
             LinearLayout row = row(context, rowCodes[i], rows[i], true, -1);
             final int code = rowCodes[i];
             row.setOnClickListener(view -> { popup.dismiss(); action.send(code, 0, null, null); });
+            if (code == BOOKMARKS) row.setOnLongClickListener(view -> {   /* the menu stays open so the notice shows under the row */
+                boolean was = state[5] != 0;
+                if (bookmarkHere(view, was, state[6] != 0, action) && !was) {
+                    state[5] = 1;
+                    star[0].setImageDrawable(BrowserIcons.of(BM_TOGGLE, ACCENT, dp(context, 24)));
+                    star[0].setContentDescription("Remove bookmark");
+                }
+                return true;
+            });
             root.addView(row, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(context, 48)));
         }
         root.addView(divider(context));
@@ -210,9 +248,9 @@ final class BrowserMenus {
         slider.setPadding(dp(context, 26), 0, dp(context, 26), 0);
         root.addView(slider, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(context, 40)));
 
-        boolean canDesktop = state[2] != 0;
+        /* state[2]: 1 for this page's site, 2 for every site (a page that is not a site) */
         final boolean desktopOn = state[1] != 0, fullscreenOn = state[8] != 0;
-        LinearLayout desktop = row(context, DESKTOP, "Desktop site", canDesktop, desktopOn ? 1 : 0);
+        LinearLayout desktop = row(context, DESKTOP, state[2] == 2 ? "Desktop site (all sites)" : "Desktop site", true, desktopOn ? 1 : 0);
         desktop.setOnClickListener(view -> { popup.dismiss(); action.send(DESKTOP, desktopOn ? 0 : 1, null, null); });
         root.addView(desktop, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(context, 48)));
         LinearLayout fullscreen = row(context, FULLSCREEN, "Fullscreen", true, fullscreenOn ? 1 : 0);
@@ -386,5 +424,16 @@ final class BrowserMenus {
                 );
             return true;
         });
+    }
+
+    /* the tab menu (a double tap on the tab bar): the chosen item's index goes back as TAB_MENU */
+    static void showTabMenu(Activity activity, String title, String[] items, boolean[] checked, Action action) {
+        if (menu != null) { menu.dismiss(); menu = null; }
+        String[] labels = new String[items.length];
+        for (int i = 0; i < items.length; i++) labels[i] = (checked[i] ? "\u2713  " : "     ") + items[i];
+        show(new AlertDialog.Builder(activity)
+            .setTitle(title)
+            .setItems(labels, (dialog, which) -> action.send(TAB_MENU, which, null, null))
+            .setNegativeButton("Cancel", null));
     }
 }

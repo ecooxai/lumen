@@ -44,6 +44,21 @@ while kill -0 $P 2>/dev/null; do ps -o %cpu=,rss= -p $P; sleep 1; done
   find the hot path and fix it before moving on.
 - Report the measured CPU numbers with the test results.
 
+## Device test pages
+
+`python3 tools/device_tests.py PAGE|GROUP ...` opens Lumen's test pages on the
+phone (debug build), samples Lumen's CPU every second and prints the pages'
+numeric results. Pages: cam, screen, mic, webgl, webgpu, aquarium, chatgpt
+(newest chat bookmark), google, youtube, utils (WebGPU Weather World is under
+its apps menu). Run `all` before an important commit or a release; for a small
+fix run only the relevant pages (e.g. `google`, or `gfx` for WebGL/WebGPU
+work). Each page gets its own cold start; `--tabs` opens them together, one
+tab each (background tabs are throttled, so measure there only the front tab).
+The script never taps or types; screen recording needs its system prompt
+accepted. A settled site whose last-10-s CPU exceeds 5% is reported.
+Sites are tested in desktop mode (Desktop site is on for all sites by
+default): the desktop versions must work.
+
 ## Subagents for build, test and device work
 
 Delegate every build, install/deploy, test run and computer-use or phone-control

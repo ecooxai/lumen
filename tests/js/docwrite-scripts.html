@@ -1,0 +1,13 @@
+<!doctype html><html><body>
+<!-- document.write() scripts run after their writer, in order, before the next parser script (tdl.require) -->
+<script>
+window.order = [];
+document.write('<script src="docwrite-ext.js"><\/script>');
+document.write('<script>order.push("inline")<\/script>');
+order.push('writer');
+</script>
+<script>
+order.push('next');
+const got = order.join(','), want = 'writer,ext,nested,inline,next';
+console.log('RESULTS order:' + (got === want ? 'PASS' : 'FAIL(' + got + ')') + ' current:' + (window.extCurrent === 'docwrite-ext.js' ? 'PASS' : 'FAIL(' + window.extCurrent + ')'));
+</script></body></html>

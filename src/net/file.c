@@ -2,6 +2,8 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -113,6 +115,31 @@ static bool directory_body(NetResponse *response, int descriptor, const URL *url
     return true;
 }
 
+static char *g_private, *g_allowed[4];
+
+static char *real_or_copy(const char *path) { char *r = realpath(path, NULL); return r ? r : xstrdup(path); }
+void net_file_protect(const char *dir, const char *const *allowed) {
+    if (!dir || !*dir) return;
+    g_private = real_or_copy(dir);
+    for (int i = 0; allowed && allowed[i] && i < 4; i++) g_allowed[i] = real_or_copy(allowed[i]);
+}
+static bool under(const char *path, const char *top) {
+    size_t n = strlen(top);
+    return !strncmp(path, top, n) && (path[n] == 0 || path[n] == '/');
+}
+/* the open file is inside the private folder and not in an allowed part of it */
+static bool file_private(int descriptor) {
+    if (!g_private) return false;
+    char link[64], path[4096];
+    snprintf(link, sizeof link, "/proc/self/fd/%d", descriptor);
+    ssize_t n = readlink(link, path, sizeof path - 1);
+    if (n <= 0) return true;
+    path[n] = 0;
+    if (!under(path, g_private)) return false;
+    for (int i = 0; i < 4 && g_allowed[i]; i++) if (under(path, g_allowed[i])) return false;
+    return true;
+}
+
 NetResponse *net_file_response(const URL *url, const char *href) {
     NetResponse *response = xcalloc(1, sizeof *response);
     response->url = xstrdup(href);
@@ -128,6 +155,9 @@ NetResponse *net_file_response(const URL *url, const char *href) {
         int status = errno == EACCES || errno == EPERM ? 403 : 404;
         file_error(response, status, status == 403 ? "Permission denied" : "File not found");
         free(path); return response;
+    }
+    if (file_private(descriptor)) {
+        close(descriptor); free(path); file_error(response, 403, "Permission denied"); return response;
     }
     struct stat info;
     if (fstat(descriptor, &info)) {

@@ -28,6 +28,8 @@ typedef struct JsHost {
     /* nested browsing context for <iframe>: fill *child (its ud is the frame's host data) */
     void (*frame_open)(void *ud, Node *iframe, Document *d, struct JsHost *child);
     void (*frame_close)(void *child_ud);
+    /* Lumen's own pages only: a command of lumenInternal(), answered with a malloc'd string or NULL */
+    char *(*internal)(void *ud, const char *cmd);
 } JsHost;
 
 void js_global_init(const char *argv0);

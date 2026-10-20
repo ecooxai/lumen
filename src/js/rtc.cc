@@ -212,6 +212,7 @@ void js_install_rtc(JsCtx *c, v8::Local<v8::Object> N) {
 }
 
 bool rtc_pending(JsCtx *c) { return rtcc_pending(c) > 0; }
+bool rtc_active(JsCtx *c) { return g_cbs.count(c) > 0; }
 
 void rtc_pump(JsCtx *c) {
     size_t n = rtcc_pending(c);   /* those queued now; later ones wait for the next turn */

@@ -31,6 +31,11 @@ function corsOk(reqUrl, finalUrl, hdrs, cred) {
     try {
         const r = new URL(reqUrl), f = new URL(finalUrl || reqUrl);
         if (/^(data|blob|about):$/.test(f.protocol)) return true;
+        if (location.protocol === 'lumen:' && r.protocol === 'file:' && f.protocol === 'file:') return true;   /* the Downloads viewer's files */
+        if (location.protocol === 'file:' && (r.protocol === 'file:' || f.protocol === 'file:')) {   /* a file page reads files in its own folder or below */
+            const dir = location.href.replace(/[?#].*$/, '').replace(/[^/]*$/, '');
+            return [r, f].every(u => u.protocol === 'file:' && u.href.startsWith(dir) && !/(^|\/)(\.|%2e){1,2}(\/|$)/i.test(u.pathname));
+        }
         cross = r.origin !== o || f.origin !== o;
     } catch (e) { return true; }
     if (!cross) return true;

@@ -2,7 +2,11 @@ package org.lumen.browser;
 
 import android.app.Activity;
 import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.drawable.GradientDrawable;
+import android.os.SystemClock;
 import android.text.InputType;
 import android.util.SparseArray;
 import android.util.TypedValue;
@@ -28,7 +32,7 @@ import android.widget.TextView;
 final class BrowserToolbar extends FrameLayout {
     private static final int BAR = 0xfffafafa, LINE = 0xffe2e2e2, FIELD = 0xffeeeeee, FIELD_EDIT = 0xffffffff,
         TEXT = 0xff3c3c3c, ADDRESS = 0xff5a5a5a, EDIT_TEXT = 0xff141414, DISABLED = 0xffbebebe,
-        ACCENT = 0xff1a73e8, PROGRESS = 0xff4285f4, BUSY = 0xffd93025;
+        ACCENT = 0xff1a73e8, PROGRESS = 0xff4285f4, BUSY = 0xffd93025, DOT = 0xff2d2d30;
     private static final String DOTS = "O 12 6 0.9 O 12 12 0.9 O 12 18 0.9";
     /* an on toggle carries a check inside its outline */
     private static final String DESKTOP_CHECK = " M8.8 10.6 L11 12.8 L15.2 8.4", FULLSCREEN_CHECK = " M8.5 12.2 L11 14.7 L15.7 9.6";
@@ -57,6 +61,16 @@ final class BrowserToolbar extends FrameLayout {
     /* the address field is being edited: it keeps the focus until stopEditing */
     private volatile boolean holding;
     private float unit = -1;
+    /* the touch indicator at the field's right end: 0 none, 1-4 an arrow up/down/left/right, 5 a dot */
+    private int indicator;
+    private static final int IND_MS = 1000, IND_TRAVEL = 6;   /* hold time; finger travel in dp that sets or turns the arrow */
+    private boolean indTouch;
+    private int indPointer, indDir;
+    private float indX, indY;
+    private long indDownT = -1000000, indDirT = -1000000;
+    private final Runnable indExpire = this::indicatorRefresh;
+    private final Paint indicatorPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Path arrow = new Path();
 
     BrowserToolbar(Activity activity, BrowserMenus.Action action, Runnable pageFocus) {
         super(activity);
@@ -77,6 +91,10 @@ final class BrowserToolbar extends FrameLayout {
             @Override public boolean onKeyPreIme(int keyCode, KeyEvent event) {
                 if (keyCode == KeyEvent.KEYCODE_BACK && event.getAction() == KeyEvent.ACTION_UP && hasFocus()) { stopEditing(); return true; }
                 return super.onKeyPreIme(keyCode, event);
+            }
+            @Override protected void onDraw(Canvas canvas) {
+                super.onDraw(canvas);
+                if (indicator != 0 && !holding && unit > 0) drawIndicator(canvas, getScrollX() + getWidth() - 14 * unit, getHeight() / 2f);
             }
         };
         field.setSingleLine(true);
@@ -123,6 +141,7 @@ final class BrowserToolbar extends FrameLayout {
             final int index = i;
             slots[i] = button(context);
             slots[i].setOnClickListener(view -> slot(index));
+            slots[i].setOnLongClickListener(view -> slotHeld(index));
             row.addView(slots[i]);
         }
         more = button(context);
@@ -173,13 +192,13 @@ final class BrowserToolbar extends FrameLayout {
         systemCpu.setText(meterPercent(s.system));
         browserCpu.setText(meterPercent(s.browser));
         systemCpu.setTextColor(s.system >= 80 ? BUSY : ADDRESS);
-        browserCpu.setTextColor(s.browser >= 100 ? BUSY : TEXT);
+        browserCpu.setTextColor(s.browser >= 50 ? BUSY : TEXT);
         meter.setContentDescription("Phone CPU " + percent(s.system) + ", Lumen CPU " + percent(s.browser));
         if (detail == null || !detail.isShowing()) return;
         String[] values = {
             s.system < 0 ? "\u2013" : percent(s.system) + " of " + s.cores + (s.cores == 1 ? " core" : " cores"),
-            s.browser < 0 ? "\u2013" : percent(s.browser) + " of one core",
-            percent(s.tab) + " of one core",
+            s.browser < 0 ? "\u2013" : percent(s.browser) + " of all cores",
+            percent(s.tab) + " of all cores",
             megabytes(s.resident),
             megabytes(s.heap * 1048576.0) + " + " + megabytes(s.external * 1048576.0) + " external",
             s.memoryTotal <= 0 ? "\u2013" : String.format(java.util.Locale.US, "%.1f of %.1f GB used",
@@ -313,6 +332,18 @@ final class BrowserToolbar extends FrameLayout {
         action.send(code, value, null, null);
     }
 
+    /* a long press on the Bookmarks slot adds the current page; other slots keep the default */
+    private boolean slotHeld(int index) {
+        if (state == null || index >= state[5] || state[6 + 3 * index] != BrowserMenus.BOOKMARKS) return false;
+        stopEditing();
+        if (BrowserMenus.bookmarkHere(slots[index], state[18 + 5] != 0, state[18 + 6] != 0, action)) {
+            state[18 + 5] = 1;
+            for (int i = 0; i < state[5]; i++) if (state[6 + 3 * i] == BrowserMenus.BM_TOGGLE) state[6 + 3 * i + 2] = 1;
+            icons(state[5]);
+        }
+        return true;
+    }
+
     private void flip(int base, int menuIndex, int on) {
         state[base + 2] = on;
         state[menuIndex] = on;
@@ -345,7 +376,67 @@ final class BrowserToolbar extends FrameLayout {
         }
     }
 
-    /* a new state from the native side: see android_ui_toolbar */
+    /* Every window touch, on the UI thread, before the page sees it: the indicator never waits for the
+       native loop, so a page busy loading or running script does not delay it. A touch that starts on
+       the page shows a dark dot while the finger is down (at least 1 s), and a blue arrow the way the
+       finger moves (held 1 s after the last move). A second finger is ignored. */
+    void indicatorTouch(MotionEvent event) {
+        long now = SystemClock.uptimeMillis();
+        int action = event.getActionMasked();
+        if (action == MotionEvent.ACTION_DOWN) {
+            indTouch = outside(event);
+            if (!indTouch) return;
+            indPointer = event.getPointerId(0); indDownT = now; indDir = 0; indX = event.getX(); indY = event.getY();
+        } else if (!indTouch) return;
+        else if (action == MotionEvent.ACTION_MOVE) {
+            int at = event.findPointerIndex(indPointer);
+            if (at < 0) return;
+            float dx = event.getX(at) - indX, dy = event.getY(at) - indY, travel = IND_TRAVEL * getResources().getDisplayMetrics().density;
+            if (Math.abs(dx) < travel && Math.abs(dy) < travel) return;
+            indDir = Math.abs(dy) >= Math.abs(dx) ? (dy < 0 ? 1 : 2) : dx < 0 ? 3 : 4;
+            indDirT = now; indX = event.getX(at); indY = event.getY(at);
+        } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL
+                || action == MotionEvent.ACTION_POINTER_UP && event.getPointerId(event.getActionIndex()) == indPointer) indTouch = false;
+        else return;
+        indicatorRefresh();
+    }
+
+    /* shows the indicator's state now and wakes up again at its next change */
+    private void indicatorRefresh() {
+        long now = SystemClock.uptimeMillis(), next = -1;
+        int kind;
+        if (indDir != 0 && now - indDirT < IND_MS) { kind = indDir; next = indDirT + IND_MS; }
+        else if (indTouch) kind = 5;
+        else if (now - indDownT < IND_MS) { kind = 5; next = indDownT + IND_MS; }
+        else kind = 0;
+        removeCallbacks(indExpire);
+        if (next >= 0) postDelayed(indExpire, next - now + 1);
+        if (kind == indicator) return;
+        indicator = kind;
+        field.invalidate();
+    }
+
+    /* a dark dot while a finger is down, else a blue arrow the way the finger moves, centred on (cx,cy) */
+    private void drawIndicator(Canvas canvas, float cx, float cy) {
+        float u = unit;
+        indicatorPaint.setStyle(Paint.Style.FILL);
+        if (indicator == 5) {
+            indicatorPaint.setColor(DOT);
+            canvas.drawCircle(cx, cy, 4 * u, indicatorPaint);
+            return;
+        }
+        indicatorPaint.setColor(ACCENT);
+        arrow.reset();   /* pointing up, then turned */
+        arrow.moveTo(0, -6.5f); arrow.lineTo(5.5f, -0.5f); arrow.lineTo(1.6f, -0.5f); arrow.lineTo(1.6f, 6.5f);
+        arrow.lineTo(-1.6f, 6.5f); arrow.lineTo(-1.6f, -0.5f); arrow.lineTo(-5.5f, -0.5f); arrow.close();
+        canvas.save();
+        canvas.translate(cx, cy);
+        canvas.scale(u, u);
+        canvas.rotate(indicator == 2 ? 180 : indicator == 3 ? -90 : indicator == 4 ? 90 : 0);
+        canvas.drawPath(arrow, indicatorPaint);
+        canvas.restore();
+    }
+
     void update(int[] next, String url) {
         if (next == null || next.length < 27) return;
         state = next;
@@ -360,6 +451,11 @@ final class BrowserToolbar extends FrameLayout {
             }
         }
         int width = next[2], height = next[3];
+        if (width <= 0 || height <= 0) {   /* the Downloads viewer's full screen: no toolbar */
+            if (field.hasFocus()) field.clearFocus();
+            setVisibility(GONE);
+            return;
+        }
         RelativeLayout.LayoutParams at = getLayoutParams() instanceof RelativeLayout.LayoutParams
             ? (RelativeLayout.LayoutParams) getLayoutParams() : new RelativeLayout.LayoutParams(width, height);
         if (at.leftMargin != next[0] || at.topMargin != next[1] || at.width != width || at.height != height) {
@@ -378,16 +474,16 @@ final class BrowserToolbar extends FrameLayout {
             fieldAt.rightMargin = Math.round(2 * u);
             field.setLayoutParams(fieldAt);
             field.setTextSize(TypedValue.COMPLEX_UNIT_PX, 14 * u);
-            field.setPadding(Math.round(16 * u), 0, Math.round(16 * u), 0);
+            field.setPadding(Math.round(16 * u), 0, Math.round(28 * u), 0);   /* the text stops short of the indicator */
             fieldShape.setCornerRadius((height - 2 * Math.round(7 * u)) / 2f);
             for (ImageView slot : slots) slot.setLayoutParams(new LinearLayout.LayoutParams(button, button));
             more.setLayoutParams(new LinearLayout.LayoutParams(button, button));
-            LinearLayout.LayoutParams meterAt = new LinearLayout.LayoutParams(Math.round(36 * u), button);
+            LinearLayout.LayoutParams meterAt = new LinearLayout.LayoutParams(Math.round(23 * u), button);   /* a quarter smaller than the 30 it was */
             meterAt.leftMargin = Math.round(2 * u);
             meter.setLayoutParams(meterAt);
             meter.setPadding(0, 0, Math.round(4 * u), 0);
-            systemCpu.setTextSize(TypedValue.COMPLEX_UNIT_PX, 11 * u);
-            browserCpu.setTextSize(TypedValue.COMPLEX_UNIT_PX, 11 * u);
+            systemCpu.setTextSize(TypedValue.COMPLEX_UNIT_PX, 6.75f * u);
+            browserCpu.setTextSize(TypedValue.COMPLEX_UNIT_PX, 6.75f * u);
             more.setImageDrawable(BrowserIcons.path(DOTS, TEXT, Math.round(20 * u)));
             ((FrameLayout.LayoutParams) progress.getLayoutParams()).height = Math.max(2, Math.round(2 * u));
         }

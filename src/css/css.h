@@ -107,6 +107,7 @@ typedef struct ComputedStyle {
     CustomMask custom_dependencies; /* bloom filter of var() names actually consulted */
     uint64_t attribute_dependencies; /* attr() names consulted, including pseudos */
     bool parent_sensitive, inherited_dynamic; /* explicit inherit, container/style-attribute rules */
+    bool uses_vh; /* resolved a viewport-height unit (vh, vmin, vmax, viewport cq*), here or in a pseudo */
     uint8_t indep_set; /* independent inherited properties the cascade set (style.c INDEP_*) */
     struct ComputedStyle *before, *after, *marker; /* pseudo element styles */
 } ComputedStyle;

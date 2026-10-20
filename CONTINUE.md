@@ -1,5 +1,260 @@
 # Lumen: handoff notes
 
+## IN PROGRESS: touch indicator, first-scroll restyle, Google, WebGL/WebGPU (2026-10-19)
+
+Same branch, on top of the sections below.
+- Touch indicator: entirely on the Java UI thread, separate from the native engine loop, so a
+  page busy loading or running script never delays it. `LumenActivity.dispatchTouchEvent` →
+  `BrowserToolbar.indicatorTouch` reads every raw MotionEvent that starts outside the toolbar.
+  Finger down shows a dark dot for at least `IND_MS` (1 s) and until up; 6 dp of travel
+  (`IND_TRAVEL`) sets a blue arrow the way the finger moves (up/down/left/right), held 1 s
+  after the last move (`indicatorRefresh` re-posts itself for the expiry). It is drawn inside
+  the address field at its right end (`drawIndicator`); the field's right padding is 28 units
+  so the URL text stops short of it. Nothing is drawn in the tab strip. (It used to be
+  computed in main.c from SDL finger events, which waited behind JS/layout during loads.)
+- Tabs on Android have no ×; double tap a tab for its menu (Close tab, CPU limit:
+  `android_ui_tab_menu`, `BrowserMenus.showTabMenu`, `TAB_MENU = 23`).
+- Keyboard: a page input needs a second tap (a quick double tap counts) to raise the keyboard,
+  and JS `focus()` never raises it (`kbd_tap`). Keyboard resizes change only the viewport
+  height; `uses_vh` in css.h lets style.c take a `height_only` path, so text is not restyled
+  or stretched.
+- First scroll on a long ChatGPT chat froze ~1.5 s: ChatGPT toggles `tabindex` (and other
+  selector-only attributes) on scroll, which went through `mark_impl(reason=name)`, i.e.
+  `selector_changes_unknown` and a whole-document reselect (~1.1 s, rules_iter 2.7M).
+  `css_selector_only_attribute` (style.c; weak default in dom.c) now lists tabindex, role,
+  title, hidden, disabled, draggable, ... plus data-/aria-, which take the precise
+  `attribute_subjects` path. `:disabled`/`:enabled` are indexed as the `disabled` attribute
+  (`simple_attribute`), and a fieldset's `disabled` also reselects its subtree. Measured on
+  ui80: no `unknown=tabindex` passes, the first-swipe spike is 85% for one second, the load
+  settles at 24 s and the last 10 s average 5.8%. Tests: `test_attribute_subject_invalidation`
+  (tabindex/hidden/role and a `:disabled` matrix).
+- The busy-window trace (LumenLoad) is followed by a `paths blit=.. full=.. why=.. noblit=a/b/c`
+  line: render paths per 2 s, and page scrolls not shifted (sub-pixel/overlay/dirty scroller,
+  fixed boxes over half the screen, video). On Google (ui82), every scroll frame after load was
+  a blit at about 9 ms of render per frame; the full rasters in an earlier run were during load.
+- Probes: `/tmp/lumen-scripts/probe_type.py FILE` finds the address field by content-desc
+  "Address" through uiautomator and types a javascript: probe there. Page console reaches
+  logcat (LumenJS) only when Lumen is started with `--es org.lumen.browser.CONSOLE 0..3`.
+- The Android debug build is -O2; the LumenLoad/LumenStyle traces arm for 120 s after a
+  navigation and 30 s after a tap.
+- Google search-results page: focusing the search field made it vanish. The overlay is a
+  fixed `height:100%` box whose first child is an empty focus-sentinel span; its anonymous
+  block wrapper shared the parent's style and so took `height:100%`, pushing the field a
+  viewport down. `anon_block_style` (box.c) gives anonymous block wrappers auto
+  width/height/min, no max and no aspect ratio. Test: `test_anon_block_size`.
+- `document.write('<script ...>')` scripts never ran (`parseFrag` marks a fragment's scripts
+  started), which broke tdl.require (WebGL Aquarium). With a current script, `parseFrag(...,
+  true)` queues the fragment's classic scripts in `JsCtx::written`, and `js_run_script` runs
+  them right after the writer, in order (external ones via `net_fetch_sync` with a Referer),
+  nested writes included. Fixture: `tests/js/docwrite-scripts.html` (+ `docwrite-ext.js`).
+- Background tabs, as in Chrome: no requestAnimationFrame callbacks while `JsCtx::bg`
+  (`js_set_background`), `document.hidden`/`visibilityState` follow it and `visibilitychange`
+  fires on change; timers wake a hidden tab at most once a second (`timers_throttled`, unless
+  it plays media or has used native WebRTC). Hidden WebGL Aquarium tabs had kept the app at
+  ~110% CPU on other pages; ui87 idles at 1.1% with them open.
+- Google's search-box mic/magnifier sat ~10 CSS px high: an inline-block svg in a 48px
+  `display:block` `<button>`. A `<button>` with flow/inline content now centres its content
+  vertically when taller (block.c, after the height clamp; the old single-line control centring
+  only moved text fragments, never child boxes). Test: `test_button_center`.
+- `getComputedStyle` returned "" for keyword properties (flex-direction, align-*, justify-*,
+  order, text-align, white-space, float, vertical-align, cursor, user-select, ...);
+  `css_get_computed_value` serializes them now. Fixture: `tests/js/computed-keywords.html`.
+- Device tests: `tools/device_tests.py` (see AGENTS.md) serves `tests/device` (cam, mic, gfx)
+  and `tests/pages` on 127.0.0.1:8930 via adb reverse, takes their `/r?n=TAG` result posts on
+  the same port, and launches with the debug-only `TEST_URLS` extra (`LumenActivity.testUrls`,
+  one tab per URL, through main's argv). `bm:TEXT` start arguments open the newest bookmark
+  whose address or title contains TEXT (`start_url`). mic.html uploads recordings only on ?up=1.
+- Settings → Hide tab bar (`hide_tabs`, `g_hide_tabs`): `update_compact` keeps the compact
+  one-row layout with any number of tabs; the menu's Workspaces switches tabs. On Android
+  `update_compact` now runs before `bar_push` so the toolbar's top follows at once.
+- Desktop site is on for every site by default ("*"), seeded once on Android (`desktop_default`
+  in settings.txt) so existing installs get it too. Turning one site off under "*" saves a
+  `-site` exclusion (desktop_sites.txt) instead of turning "*" off; turning it on lifts it.
+  `net_desktop_restore` loads entries verbatim. Test: `test_desktop_sites`. Site testing
+  targets the desktop layouts.
+- Workspaces persist: `session.txt` (pref dir) holds workspace names/icons and every tab's
+  history, address, zoom and title, plus the shown tab and each workspace's last tab.
+  `session_service` (main loop) hashes that state every 2 s, and at once on going to the
+  background, and rewrites the file via `session.txt.new` + rename when it changed.
+  `session_load` at startup restores it with every tab asleep (`Tab::stitle` is its saved
+  title until the page loads); only the shown tab loads. A VIEW address opens in a new tab on
+  top. TEST_URLS launches set `LUMEN_NO_SESSION`, so test runs neither restore nor save;
+  desktop builds restore only when started without arguments.
+- Caret blink stops 10 s after the last focus change or input, and the caret then stays
+  shown (as GTK does); a focus change resets `caret_t`. ChatGPT's focused composer had kept
+  the page re-rendering twice a second.
+- Display-list culling (display.c): `box_ink` caches per box the vertical extent of its
+  normal-flow paint and `defer_in` (the subtree holds positioned/layered boxes, which must
+  still be collected). `culled` skips subtrees whose extent ±64 px misses the viewport or
+  clip. The cache (`Box::ink_gen`) is valid while `doc_box_generation() + 1 == ink_gen`;
+  layout (block.c) and restyle (style.c) call `doc_boxes_changed`, scrolling does not.
+  `dl_cull` is off only in tests. Test: `test_paint_cull` (culled vs full walk at 8 offsets and
+  after a move). ui93: ChatGPT long chat idles at 1–2% (was 14%), YouTube 4–5%.
+- The LumenLoad `paths` line also counts wakes (`wake caret/anim/vbars/defer`) and why a
+  scroller blit failed (`sb_fail nosbox/ui/clip/x/d/area`). A `jsstat` line (debug Android)
+  counts per 2 s what woke page JS: ticks, timers by interval (0, ≤16, ≤50, ≤250 ms,
+  longer) and their ms, rAF callbacks, media pumps (and how many found media playing), and
+  intersection/resize pumps. `jsstat ... phase_ms p0..p8 settle=` splits tick_one's time into
+  tasks, modules, pick+timers, viewport, media/rtc/webgpu/videoframe, visibility+rAF, anims,
+  resize, intersection and the settle step (code refresh, workers, microtasks).
+- `backdrop-filter` is not rendered. Its background is drawn more opaque instead, and fully
+  opaque at blur ≥ 16 px with alpha ≥ 128: YouTube's 48 px frosted masthead let the feed's text
+  show through sharply.
+- `env_hook(ENV_...)` in main.c caches the debug env variables (LUMEN_SHOT, CRASH_TEST,
+  TAB_SLEEP(_MS), MEM_STATS, AUTOSCROLL, CHECK_DAMAGE). getenv on every frame was 2.7% of
+  YouTube's idle profile.
+- Fixed regions (`DisplayList.fixed`) are collected with `paint_fixed_add` (regions.h). It merges
+  two boxes only when their bounding box is no larger than both areas together, so a header
+  band and a full-height side column stay apart. A page-scroll blit repaints and uploads only
+  each region's own columns (`gpu_upload_page_rect_ring`). When the union of the exposed strip
+  and the regions (`paint_regions_union_area`, overlaps once) passes 4/5 of the page, a full
+  raster is used. YouTube's masthead and guide used to merge into one full-screen region, so
+  every scroll frame was rastered in full. Scrolling up, the strip lies inside a header's
+  shifted copy; summed separately it had pushed YouTube (112 CSS px header+chips band, steps of
+  240 device px) to 84% and a full raster. When full, a new region joins the one it grows least.
+  Debug Android logs `noblit fixed d= page= area= sdmg= fixed= unmatched= repaint px: ...` (geometry
+  only, during the 120 s trace) for each refused shift.
+- Scroll + damage (`bdmg` in the paths line): a frame that both scrolls by whole device pixels
+  and has DOM/layout changes (why 1/3/4) also shifts the old pixels. It then rasters, together
+  with the fixed regions, the union of items that differ from the last frame. Comparison
+  signatures are hashed with the page-scrolling items moved back by the scroll (`dl_sigs`'
+  dy; y is hashed in 1/1024 CSS px). Old boxes are moved up by the scroll, because their pixels
+  were. `sig_damage` is shared with the no-scroll `dmg` path. Check:
+  `LUMEN_CHECK_DAMAGE=1 LUMEN_AUTOSCROLL=600,400,-0.5,2000,250 build/lumen file://$PWD/tests/pages/scroll-damage.html`;
+  each `scroll damage` line must show `mismatched px=0`. A fractional wheel delta takes the
+  trackpad path (whole CSS px); whole notches scroll smoothly, by fractions of a pixel, and never blit.
+  Display-list culling adds/drops items at both ends while scrolling, so `sig_damage` trims the
+  common head/tail, then matches in order: each new item takes the first old item with its hash
+  after the last match (sorted (hash, index) + binary search); unmatched old and new items are
+  damage, kept as separate regions (`paint_fixed_add`), not one union. `dl_sigs`' context hash
+  is a stack of the open clips/layers only (a cumulative one made every item after a culled clip
+  differ). The paths line shows `bdmg=N (no a/b/c/d)`: not shifted because the shift was
+  refused, the damage was too big, video, or not eligible. `LUMEN_CHECK_DAMAGE` also prints
+  `scroll sigs d= unmatched old= new= regions= [first unmatched items]`.
+- `idle=` in the paths line: frames skipped before the display list is built. Nothing changed
+  (why 0, no scroll, no dirty scroller) and the last display list held no media frame
+  (`App::last_nv`), e.g. YouTube playing a hidden/off-screen video: it had rebuilt the list at
+  ~25 fps (600 ms of render per 2 s, now ~70 ms). A first frame or a size change relayouts, so
+  a video that turns visible is still drawn.
+- The user's phone has Smooth scrolling off with 30 CSS px steps (settings.txt), so a swipe
+  jumps 60-240 device px per frame; test scrolling with that setting, never change it.
+- Google home search box (phone, desktop site) painted square with a bump at its left edge, and its
+  focused suggestion panel joined it with square top corners: the box (`.RNNXgb`, 26 px radius,
+  1 px border, shadow) holds a white inner box with `background: inherit; border-radius: inherit`,
+  and `inherit`/`initial`/`unset` of border-radius were ignored, so the white child covered the
+  rounded corners. The keyword block in `apply_decl` (style.c) now copies the shorthand and each
+  corner (`border_corner`); they mark the style parent-sensitive. Test: `test_radius_inherit`.
+  (The host gets a different Google variant without that rule.) Left: with the panel open, a
+  small shadow blob shows at the box's two bottom corners where the panel joins (shadow detail).
+- Debug Android: `--es org.lumen.browser.PRE_JS BASE64` writes a probe script to the cache dir and
+  sets `LUMEN_PRE_FILE`, so every page runs it before its own scripts (with `CONSOLE 2`, its
+  console.warn lines reach logcat LumenJS). Use it instead of typing `javascript:` probes when a
+  page input has the focus (Google home's autofocused field): `probe_type.py`'s text never reached
+  the address field there (not investigated).
+- PAUSED (user, 2026-10-19: finish only the two most important items this session, YouTube scroll
+  lag and the Google home input bug). Still open: WebGL Aquarium 10000 fish > 10 fps and bookmark;
+  WebGPU via utils bookmark → apps → Weather World; ChatGPT long-chat load < 10 s and its
+  sdirty bursts / 370 ms style passes; YouTube idle ~4-5% (its own 50 ms timers, js ~30-80 ms
+  per 2 s); address-bar typing CPU (~67%); scroll+DOM frames on YouTube whose damage covers
+  most of the page (see the `noblit fixed` lines with sdmg=1).
+
+## IN PROGRESS: screen recording, Downloads viewer, Home/Settings UI (2026-10-19)
+
+Same branch, on top of the section below.
+- Screen share crash (entire screen): fixed; JNI entry points of `src/media/screen.c` (and
+  `src/text/android_font_raster.c`) must be compiled straight into libmain, because
+  `-Wl,--exclude-libs,ALL` hides every symbol of the static archives (CMakeLists
+  `android_jni_bridges`). A missing JNI symbol is an UnsatisfiedLinkError crash, not an error.
+- System audio: `AudioPlaybackCaptureConfiguration` (needs RECORD_AUDIO, asked before the
+  consent dialog) streams mono float 48 kHz into a ring in screen.c; JS drains it every 40 ms
+  (`N.screenAudio`). MediaRecorder types follow Chrome (webm vp8/vp9/av1/h264 + opus/pcm,
+  x-matroska, mp4 avc1/hvc1/vp9/av01 + mp4a/opus, audio/webm, audio/mp4, audio/ogg);
+  MediaCodec encoders are probed once. Demo + self-test: `tests/pages/screen-recorder.html`
+  (`?auto=1&report=1&tag=X`, posts PASS/FAIL lines to 127.0.0.1:8932).
+- `<video src=URL.createObjectURL(blob)>` never loaded (native media fetched the blob: URL);
+  now `N.mediaOpenBytes` hands the Blob's bytes to `mp_open_bytes`. This was the "no picture"
+  failure of every video format in the ui72 self-test.
+- Downloads viewer (`newtab.html`, "Downloads viewer" block): images, video, audio, PDF and
+  STL/OBJ/glTF/GLB in a float; zoom (buttons, wheel, pinch, double tap), pan, full screen
+  (`set?fullscreen=0/1` → `android_ui_fullscreen`), open with an app, bottom facts overlay
+  (tap toggles). Facts come from `lumenInternal('view?path=P[&page=N&w=PX]')` (`files_view` in
+  main.c: size, `media_probe_file` FFmpeg probe, PDF pages via `LumenActivity.pdfRender` →
+  PdfRenderer JPEG in the cache dir, URL with a `?v=` serial because images cache by URL).
+  file: media now streams from the file (`Stream.fd`, pread in `read_cb`) instead of being read
+  into memory, and only `lumen:`/`file:` pages may play file: media; `corsOk` lets `lumen:`
+  pages read file: URLs (the 3D viewer fetches the model). Fixtures:
+  `build/claude-chatgpt-scroll/fixtures-rtc/viewer.html` (+ `viewer/`), `scroll.html`.
+- Settings: Smooth scrolling is on by default (saved as `smooth_scrolling`; the old
+  `smooth_scroll` key is ignored). Off, a touch drag moves in steps (`android_step_scroll`): the
+  drag slop drops to 5 px (`AndroidTouch.slop`); the page scrolls `scroll_px` (multiples of 10,
+  default 20, at most one screen, `scroll_px_max`) after 5 CSS px of travel (`STEP_START`), then
+  once per further 10 px (`STEP_TRAVEL`); no fling. The slider (`.rng`, `spMove`) is a plain track and thumb on a
+  squared scale. Sleep background ChatGPT tabs is off by default and saved as `chatgpt_sleep`,
+  so an older `tab_sleep=1` no longer turns it on.
+- Viewer full screen is `g_bare` (`bare_set`): TABH/TB become 0, `build_chrome` draws nothing,
+  the panel takes the full width, BrowserToolbar goes GONE on a zero-height state, and the
+  system bars hide; it resets when the panel goes away.
+- Open with / Share from other apps (`SharedFiles.java`, manifest VIEW content:/file: and
+  SEND/SEND_MULTIPLE filters): a file readable in place (file:, or a content: URI whose path
+  holds `/storage/…` with the same name and size) opens there, so a page's relative files load;
+  otherwise it is copied to `files/opened/<time>-<n>/` (cleaned after a day). Pages (html, txt,
+  svg, …) open as file: tabs with JS; pictures, video, audio, PDF and 3D models open
+  `lumen://newtab?s=downloads&view=PATH` (newtab opens the viewer; `files_resolve` accepts
+  `opened_dir()`). JNI `nativeOpenFile` → `android_launch_submit_file`, which builds and
+  percent-encodes the URL; `android_launch_submit` still takes http(s) only. Shared text opens
+  its first http(s) link.
+- file: hardening: `net_file_protect` makes file: reads inside the app's data dir fail (except
+  `files/opened` and `cache/viewer-pdf.jpg`); each file: document is its own origin for frames
+  and V8 security tokens (`ctx_origin_key`); `corsOk` lets a file: page fetch only files in its
+  own folder or below. Still open: http(s) pages can load file: subresources (img/script)
+  natively, because NetRequest has no initiator.
+- Home: compact rows, text-only workspace label, `+` right of the title, long press (DOM
+  `contextmenu`; the TAP that ends the press is swallowed) opens Rename / Duplicate
+  (`lumen://workspace?dup=I`, tabs come asleep) / Close workspace; the current workspace is
+  scrolled to the middle. Toolbar CPU meter is a quarter smaller.
+
+## IN PROGRESS: camera, screen capture, WebGL 2, WebGPU, bookmark UI (2026-10-19)
+
+Same branch. Page-facing graphics and capture, measured on the phone (Adreno, Vulkan):
+- WebGL 1/2: `src/gpu/webgl.c` (one offscreen GLES 3 context per canvas, FBO as the default
+  framebuffer, async readback through two PBOs + fences), natives `src/js/webgl.cc`, prelude
+  `07g-webgl.js`. Frames go to the canvas's media player and are composited like video frames.
+- WebGPU: `src/js/webgpu.cc` on a wgpu-native instance of its own (not the compositor's);
+  prelude `07h-webgpu.js`; enum table `src/js/webgpu_enums.inc` from `tools/gen_webgpu_enums.py`.
+  Everything wgpu-native would panic on is validated first; errors only go to the page.
+  Canvas present copies the texture into one of 3 MapRead buffers; `canvas_finish` hands the
+  newest to `wgf_push` (`src/gpu/webgpu_frame.c`, pooled Images).
+- Camera: `src/media/camera.c` (SDL3 camera, NV12 kept for GPU conversion). Screen:
+  `src/media/screen.c` + `ScreenCapture.java` (MediaProjection). MediaRecorder and
+  canvas.captureStream work on both.
+- **gpu-allocator patch (not in the repo tree, apply by hand):** `tools/patches/gpu-allocator-0.28.0-cached-readback.patch`
+  against `build/codex-android-wgpu/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/gpu-allocator-0.28.0`,
+  then rebuild wgpu-native (`python3 tools/codex_compile.py python3 /tmp/lumen-launch/wgpu_rebuild.py`
+  does `cargo clean -p gpu-allocator`, the release build and the install into `prefix/lib`).
+  Why: Adreno memory types are 0:0x1 1:0xb 2:0xf 3:0x1 4:0x7 5:0x21; readback buffers allow
+  0x7 and stock gpu-allocator picks type 2 (coherent+cached), which reads like uncached memory
+  (256 KiB memcpy 2.2-4.8 ms). The patch picks type 1 (cached, not coherent; wgpu invalidates
+  before reads) and gives such allocations a block of their own, because kgsl's cache
+  maintenance on invalidate covers the whole 64 MiB shared block (that cost ~62% of a core).
+- Results (ui69): WebGPU 256x256 animation 57.4 fps at ~40% CPU (was ~50% stock, 65-70% with
+  type 1 in a shared block), readback ~0.2 ms/frame, compute bad=0. WebGL 2 animation ~57 fps
+  at ~36-46%. Camera 640x480/30, vp8+opus recording, CPU mean ~22%. Idle 0-3%.
+- Remaining WebGPU cost (simpleperf): compositor present ~27% of samples, page submit/present
+  ~15%, `vkCreateFramebuffer` ~10% (wgpu-hal 29 creates a framebuffer per render pass and
+  drops it at encoder reset; it no longer supports imageless framebuffers; a device-level
+  imageless cache in wgpu-hal would remove it), kgsl alloc/free ioctls ~9%.
+- Bookmark UI (`src/app/newtab.html`, `bm_add`/`bm_store` in main.c, `BrowserMenus.notice`):
+  long press on Bookmarks (menu row or toolbar slot) adds the current page with a notice below
+  it; `+` right of the Bookmarks title adds it (`set?bm_add=1`, one-shot `msg` toast); each row
+  has a ⋮ menu: edit (inline, `bm_save=I&bm_t&bm_u`), remove, open in new tab / new workspace
+  (`lumen://workspace?bmtab=I` / `bmws=I`). The row with the open menu gets `z-index` because
+  the engine treats a `z-index:auto` positioned box as its own layer for paint and hit testing
+  (CSS says its z-indexed descendants join the parent context); fix that in
+  `src/layout/block.c` `hit_layers` and `src/paint/display.c` together.
+- Next: screen-capture run (`gfx_phone.py scr1 cam.html 'auto=screen' 60`), camera re-run,
+  ChatGPT #settings shows only a Language card on mobile, WebM duration=N/A, the spurious
+  unhandled-rejection warning (js.cc:683).
+
 ## IN PROGRESS: native WebRTC for ChatGPT live voice (2026-10-18)
 
 Branch `claude-opus-5-5/android-chatgpt-vulkan-scroll`. `07r-rtc.js` still owns the

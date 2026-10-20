@@ -85,38 +85,58 @@ static const char *const ua_name[UA_COUNT] = { "Chrome 150", "Firefox 150", "Lum
 const char *g_user_agent = "Mozilla/5.0 (" UA_OS ") AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0" UA_MOBILE " Safari/537.36";
 void net_set_user_agent(int which) { if (which >= 0 && which < UA_COUNT) g_user_agent = ua_str[which]; }
 const char *net_user_agent_name(int which) { return which >= 0 && which < UA_COUNT ? ua_name[which] : ""; }
-/* "Desktop site": these sites (and their subdomains) see a desktop Chrome on Linux. */
+/* "Desktop site": these sites (and their subdomains) see a desktop Chrome on Linux; "*" is every site,
+   and "-site" entries are the sites turned off under "*". */
 #define UA_DESKTOP "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
 #define MAX_DESKTOP 64
 static char g_desktop[MAX_DESKTOP][128]; static int g_ndesktop;
 static pthread_mutex_t g_desktop_mu = PTHREAD_MUTEX_INITIALIZER;
 static const char *site_of(const char *host) { return !strncasecmp(host, "www.", 4) ? host + 4 : host; }
+/* site is host or a parent site of it */
+static bool site_covers(const char *site, const char *host) {
+    size_t hn = strlen(host), n = strlen(site);
+    return hn >= n && !strcasecmp(host + hn - n, site) && (hn == n || host[hn - n - 1] == '.');
+}
+static void desktop_del(int k) { memmove(g_desktop[k], g_desktop[k + 1], sizeof g_desktop[0] * (size_t)(g_ndesktop - k - 1)); g_ndesktop--; }
+static bool desktop_on_locked(const char *host) {   /* host without "www." */
+    bool all = false, on = false;
+    for (int i = 0; i < g_ndesktop; i++) {
+        const char *e = g_desktop[i];
+        if (*e == '-') { if (strcmp(host, "*") && site_covers(e + 1, host)) return false; }
+        else if (!strcmp(e, "*")) all = true;
+        else if (strcmp(host, "*") && site_covers(e, host)) on = true;
+    }
+    return all || on;
+}
 bool net_desktop_host(const char *host) {
     if (!host || !*host) return false;
-    host = site_of(host);
-    size_t hn = strlen(host); bool on = false;
     pthread_mutex_lock(&g_desktop_mu);
-    for (int i = 0; i < g_ndesktop && !on; i++) {
-        size_t n = strlen(g_desktop[i]);
-        on = hn >= n && !strcasecmp(host + hn - n, g_desktop[i]) && (hn == n || host[hn - n - 1] == '.');
-    }
+    bool on = desktop_on_locked(site_of(host));
     pthread_mutex_unlock(&g_desktop_mu);
     return on;
 }
 void net_set_desktop_host(const char *host, bool on) {
     if (!host || !*host) return;
     host = site_of(host);
-    if (strlen(host) >= sizeof g_desktop[0]) return;
+    if (strlen(host) + 1 >= sizeof g_desktop[0]) return;
     pthread_mutex_lock(&g_desktop_mu);
-    int i = 0; while (i < g_ndesktop && strcasecmp(g_desktop[i], host)) i++;
-    if (on && i == g_ndesktop && g_ndesktop < MAX_DESKTOP) snprintf(g_desktop[g_ndesktop++], sizeof g_desktop[0], "%s", host);
-    size_t hn = strlen(host);
-    for (int k = 0; !on && k < g_ndesktop;) {   /* off: also the parent sites that cover host */
-        size_t n = strlen(g_desktop[k]);
-        if (hn >= n && !strcasecmp(host + hn - n, g_desktop[k]) && (hn == n || host[hn - n - 1] == '.')) {
-            memmove(g_desktop[k], g_desktop[k + 1], sizeof g_desktop[0] * (size_t)(g_ndesktop - k - 1)); g_ndesktop--;
-        } else k++;
+    bool all = !strcmp(host, "*");
+    for (int k = 0; k < g_ndesktop;) {
+        const char *e = g_desktop[k];
+        bool drop = all ? !on && (*e == '-' || !strcmp(e, "*"))   /* "*" off: back to no sites */
+                  : *e == '-' ? site_covers(e + 1, host)             /* on: lift the exclusions over host */
+                  : !on && strcmp(e, "*") && site_covers(e, host);    /* off: the sites that cover host */
+        if (drop) desktop_del(k); else k++;
     }
+    if (desktop_on_locked(host) != on && g_ndesktop < MAX_DESKTOP)   /* still covered by "*" when off: exclude */
+        snprintf(g_desktop[g_ndesktop++], sizeof g_desktop[0], "%s%s", on ? "" : "-", host);
+    pthread_mutex_unlock(&g_desktop_mu);
+}
+void net_desktop_restore(const char *entry) {
+    if (!entry || !*entry || strlen(entry) >= sizeof g_desktop[0]) return;
+    pthread_mutex_lock(&g_desktop_mu);
+    int i = 0; while (i < g_ndesktop && strcasecmp(g_desktop[i], entry)) i++;
+    if (i == g_ndesktop && g_ndesktop < MAX_DESKTOP) snprintf(g_desktop[g_ndesktop++], sizeof g_desktop[0], "%s", entry);
     pthread_mutex_unlock(&g_desktop_mu);
 }
 void net_desktop_hosts(char *out, size_t n) {   /* space separated */

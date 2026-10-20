@@ -51,7 +51,8 @@ AndroidTouchResult android_touch_update(AndroidTouch *touch, AndroidTouchPhase p
             android_touch_reset(touch);
             return result;
         }
-        if (distance_x * distance_x + distance_y * distance_y >= 64) touch->dragged = true;
+        float slop = touch->slop > 0 ? touch->slop : 8;
+        if (distance_x * distance_x + distance_y * distance_y >= slop * slop) touch->dragged = true;
         result.anchor_x = touch->origin_x; result.anchor_y = touch->origin_y;
         if (touch->dragged) {
             if (touch->can_scroll && (delta_x || delta_y)) {

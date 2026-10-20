@@ -10,12 +10,12 @@ class ScrollRegionTests(unittest.TestCase):
     def test_actual_scroll_raster_matches_full_frame(self):
         source = (ROOT / 'src/app/main.c').read_text()
         start = source.index('        if (blit) {', source.index('static void render('))
-        end = source.index('        } else if (part && a->sdirty)', start)
+        end = source.index('        } else if (!sdmg && part && a->sdirty', start)
         with tempfile.TemporaryDirectory() as directory:
             work = Path(directory)
             (work / 'scroll_raster.h').write_text(source[start:end] + '        }')
             helper = source.index('static bool video_scroll_matches(')
-            (work / 'video_scroll.h').write_text(source[helper:source.index('static void render(', helper)])
+            (work / 'video_scroll.h').write_text(source[helper:source.index('/* Only one element scroller moved', helper)])
             exe = work / 'scroll-regions'
             subprocess.run([os.environ.get('CC', 'cc'), '-std=gnu11', '-Wall', '-Wextra',
                 '-Wno-misleading-indentation', '-fsanitize=address,undefined',

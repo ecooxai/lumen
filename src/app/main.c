@@ -3,6 +3,10 @@
 #include <ctype.h>
 #include <time.h>
 #include <sys/resource.h>
+#include <sys/stat.h>
+#include <dirent.h>
+#include <fcntl.h>
+#include <limits.h>
 #if defined(__ANDROID__) && !defined(NDEBUG)
 #include <android/log.h>
 #endif
@@ -36,8 +40,19 @@
 
 static SDL_Window *g_dialog_win;
 static bool g_compact;   /* one tab in the workspace: toolbar lives in the title bar */
-#define TABH (g_compact ? 0.f : 30.f)
-#define TB 44.f
+static bool g_desktop_seeded;   /* Desktop site was turned on for every site once (saved as desktop_default); later choices stand */
+static bool g_hide_tabs;   /* Hide tab bar (Settings, saved as hide_tabs): compact even with several tabs; the menu's Workspaces lists them */
+static bool g_bare, g_bare_fs __attribute__((unused));   /* the Downloads viewer's full screen: no tab strip or toolbar, the panel fills the window; the system bars' state before */
+/* test hooks read on every main-loop turn: looked up once (Android's getenv scans the environment) */
+enum { ENV_SHOT, ENV_CRASH_TEST, ENV_TAB_SLEEP_MS, ENV_TAB_SLEEP, ENV_MEM_STATS, ENV_AUTOSCROLL, ENV_CHECK_DAMAGE, ENV_N };
+static const char *env_hook(int i) {
+    static const char *const names[ENV_N] = { "LUMEN_SHOT", "LUMEN_CRASH_TEST", "LUMEN_TAB_SLEEP_MS", "LUMEN_TAB_SLEEP", "LUMEN_MEM_STATS", "LUMEN_AUTOSCROLL", "LUMEN_CHECK_DAMAGE" };
+    static const char *v[ENV_N]; static bool got[ENV_N];
+    if (!got[i]) { v[i] = getenv(names[i]); got[i] = true; }
+    return v[i];
+}
+#define TABH (g_compact || g_bare ? 0.f : 30.f)
+#define TB (g_bare ? 0.f : 44.f)
 static float g_info_h;
 static char g_notice[256];   /* dismissable error notice shown in the info bar */
 #define INFOH 36.f
@@ -87,9 +102,18 @@ static uint64_t load_gen;
 static bool g_lowmem;
 static int g_cpu_on = 1, g_cpu_pct = 80, g_cpu_secs = 60, g_cpu_lim = 40;
 static bool g_vctl;
-static bool g_tab_sleep;
-static bool g_smooth;       /* Smooth scrolling (Settings, off by default): animate wheel notches instead of jumping */
+static bool g_tab_sleep;   /* sleep background ChatGPT tabs; off by default, saved as chatgpt_sleep (an older tab_sleep is ignored) */
+static bool g_smooth = true;   /* Smooth scrolling (Settings, on by default, saved as smooth_scrolling): animate wheel notches; off, touch scrolls in steps */
+static bool g_tap_kbd = true;   /* Keyboard on second tap (Settings, Android, on by default, saved as tap_keyboard): a first tap in a text field only places the caret */
+static int g_scroll_px = 20;   /* the touch scroll step while smooth scrolling is off, in CSS px: a multiple of 10, at most the page's height */
 static float g_sm_dx, g_sm_dy, g_sm_x, g_sm_y;
+/* Android tabs show no close button (the touch indicator is drawn by BrowserToolbar, on the UI
+   thread, from the raw touches) */
+#ifdef __ANDROID__
+#define ANDROID_UI 1
+#else
+#define ANDROID_UI 0
+#endif
 static int g_page_zoom_pct = 100;
 #define WHEEL_STEP 120.f
 #ifdef NDEBUG
@@ -178,7 +202,7 @@ static Link g_bms[MAX_BM], g_hv[MAX_HV]; static int g_nbm, g_nhv;
 static void pref_path(char *out, size_t n, const char *f) { snprintf(out, n, "%s%s", g_pref, f); }
 static void settings_save(void) {
     char p[1200]; pref_path(p, sizeof p, "settings.txt"); FILE *f = *g_pref ? fopen(p, "w") : NULL; if (!f) return;
-    fprintf(f, "offscreen_media_eviction=%d\ncpu_limit=%d\ncpu_pct=%d\ncpu_secs=%d\ncpu_lim=%d\nvideo_controls=%d\ntab_sleep=%d\nuser_agent=%d\n%s=%d\nsmooth_scroll=%d\n", g_lowmem, g_cpu_on, g_cpu_pct, g_cpu_secs, g_cpu_lim, g_vctl, g_tab_sleep, g_ua, HUD_KEY, g_hud, g_smooth);
+    fprintf(f, "offscreen_media_eviction=%d\ncpu_limit=%d\ncpu_pct=%d\ncpu_secs=%d\ncpu_lim=%d\nvideo_controls=%d\nchatgpt_sleep=%d\nuser_agent=%d\n%s=%d\nsmooth_scrolling=%d\nscroll_px=%d\ntap_keyboard=%d\nhide_tabs=%d\ndesktop_default=%d\n", g_lowmem, g_cpu_on, g_cpu_pct, g_cpu_secs, g_cpu_lim, g_vctl, g_tab_sleep, g_ua, HUD_KEY, g_hud, g_smooth, g_scroll_px, g_tap_kbd, g_hide_tabs, g_desktop_seeded);
     fprintf(f, "page_zoom=%d\n", g_page_zoom_pct);
 #ifdef __ANDROID__
     fprintf(f, "pixel_scale=%d\n", g_pixel_scale_pct);
@@ -207,6 +231,14 @@ static void links_load(const char *file, Link *v, int *n, int max) {
     if (total > *n) links_save(file, v, *n);
 }
 static int bm_find(const char *url) { for (int i = 0; i < g_nbm; i++) if (!strcmp(g_bms[i].url, url)) return i; return -1; }
+/* a start argument "bm:TEXT" (tools/device_tests.py): the newest bookmark whose address, else title, contains
+   TEXT, so test runs open personal pages without their addresses leaving the device */
+static const char *start_url(const char *arg) {
+    if (strncmp(arg, "bm:", 3) || !arg[3]) return arg;
+    for (int k = 0; k < 2; k++)
+        for (int i = g_nbm - 1; i >= 0; i--) if (strcasestr(k ? g_bms[i].title : g_bms[i].url, arg + 3)) return g_bms[i].url;
+    return "lumen://newtab";
+}
 static void hist_add(const char *url, const char *title) {
     if (g_nhv && !strcmp(g_hv[g_nhv - 1].url, url)) return;
     link_put(g_hv, &g_nhv, MAX_HV, url, title);
@@ -238,6 +270,7 @@ static Image *cache_get(const char *u) {
 static Image *node_img(Node *n) {
     if (n->tag == A_iframe) { Page *fp = frame_find(n); return fp && fp->cv.px ? &fp->img : NULL; }
     if (n->tag == A_video) { Image *f = media_frame_for(n); if (f) return f; }
+    if (n->tag == A_canvas) return media_frame_for(n);   /* WebGL/WebGPU canvases push frames to a live player */
     const char *s = node_attr(n, n->tag == A_video ? "poster" : "src"); if (!s) return NULL;
     char *u = url_join(n->doc->url, s); Image *im = cache_get(u); free(u); return im;
 }
@@ -410,8 +443,9 @@ static void page_free(Page *p) {
 }
 
 typedef struct Tab { Page *cur; bool loading, relayout, desktop;   /* desktop: the site is in "Desktop site" mode */ char *hist[256]; uint64_t hgen[256]; int nhist, hpos; char url[2048]; float sy; uint64_t lgen; int ws;
-    int zoom_pct; /* zero inherits the default; browser pages always use 100%. */
-    double cpu_ms, media_ms0, budget, bud_t, unlimit_until; float pct, lim, cpuhist[600]; int ncpu, cpui, cpumode, vctl, vap, lite; uint64_t vgen; bool limited, info, asleep; double bg_since; int crashes; } Tab;
+    int zoom_pct; /* zero inherits the default */
+    double cpu_ms, media_ms0, budget, bud_t, unlimit_until; float pct, lim, cpuhist[600]; int ncpu, cpui, cpumode, vctl, vap, lite; uint64_t vgen; bool limited, info, asleep; double bg_since; int crashes;
+    char *stitle;   /* the title saved with a restored tab, until its page loads */ } Tab;
 typedef struct App {
     SDL_Window *win; SDL_MetalView mview; Gpu *gpu;
 #ifdef __ANDROID__
@@ -419,6 +453,7 @@ typedef struct App {
     AndroidTouch touch;
     AndroidFling fling;
     float fling_x, fling_y;
+    float step_rx, step_ry; bool step_started;   /* touch scrolling in steps: finger travel not yet used; the drag's first 5 px done */
     Tab *touch_tab;
     uint64_t touch_generation;
     unsigned touch_dom_flags;
@@ -426,9 +461,12 @@ typedef struct App {
     int pw, ph, screen_w, screen_h; float scale, vw, vh, input_scale;
     Canvas frame, page; DisplayList pdl, cdl, hdl;
     bool frame_page_stale;
-    struct DSig *osig, *nsig; int nosig, cosig, cnsig; uint64_t chash; bool osig_ok;   /* last page display list, to raster only what changed */
+    struct DSig *osig, *nsig, *ssig; int nosig, cosig, cnsig, cssig; uint64_t chash; bool osig_ok;   /* last page display list, to raster only what changed; ssig: this one moved back by a scroll */
     Tab *t, *tabs[MAX_TABS]; int ntabs, ti;
     char wsname[16][64]; Tab *wslast[16]; int nws, wi; float side;
+    /* the menu's panel (panel_open): its tab, the tab it covers, one closed but not yet freed, a link it
+       opened for the covered tab, a close asked for from the page, and the dimmed picture beside it */
+    Tab *pan, *pan_under, *pan_dead; char *pan_go; bool pan_close; uint32_t *pan_bg; int pan_bgw, pan_bgh;
     int wsicon[16]; Image *icimg[16][2];
     Image *sym[8][4]; bool vbars, vbar_any; uint64_t vbar_msv;
     int tip_tab; double tip_until;     /* CPU-limit dot tooltip pinned by a click */
@@ -437,29 +475,49 @@ typedef struct App {
     bool dirty;
     Font *ui;
     int hover; double frame_ms;
-    bool vonly, deferred, vframe; double last_input, last_full; float last_sy; uint64_t last_ver; Page *last_page; bool gvid_ok; const void *vown; float vrect[4]; float srect[4]; bool sdirty;   /* srect: viewport rect of element scrollers to repaint */
+    bool vonly, deferred, vframe; double last_input, last_full; float last_sy; uint64_t last_ver; Page *last_page; bool gvid_ok; const void *vown; float vrect[4]; int nxown; const void *xown[GPU_EXTRA_LAYERS]; float xrect[GPU_EXTRA_LAYERS][4]; float srect[4]; bool sdirty; int last_nv;   /* last_nv: media frames in the last display list; srect: viewport rect of element scrollers to repaint */
     const Box *sbox; float sbox_x0, sbox_y0;   /* the one scroller moved since the last frame (NULL: several) and its painted offsets */
 } App;
+#ifdef __ANDROID__
+static void bare_set(App *a, bool on);
+#endif
 static App *g_app;
 /* "Desktop site" only changes the user agent; the layout width follows the window and the zoom */
-static float tab_zoom_for(const Tab *tab, bool internal) {
-    if (internal) return 1;
-    return (tab && tab->zoom_pct ? tab->zoom_pct : g_page_zoom_pct) / 100.f;
-}
-static float tab_zoom(const Tab *tab) { return tab_zoom_for(tab, tab && tab->cur && tab->cur->internal_ui); }
+static float tab_zoom(const Tab *tab) { return (tab && tab->zoom_pct ? tab->zoom_pct : g_page_zoom_pct) / 100.f; }
 static bool url_desktop(const char *url) {
     URL u; if (!url || strncmp(url, "http", 4) || !url_parse(url, &u)) return false;
     bool on = net_desktop_host(u.host); url_free(&u); return on;
 }
-static float page_width(const App *a) { return (a->vw - a->side) / tab_zoom(a->t); }
+/* the panel takes the right of the window below the toolbar, most of a phone held upright */
+static bool panel_shown(const App *a) { return a->pan && a->t == a->pan; }
+static float page_left(const App *a) {
+    if (!panel_shown(a) || g_bare) return a->side;
+    float w = (a->vw - a->side) * 0.6f;
+    if (w < 400) w = a->vw - a->side - 32;
+    if (w > 680) w = 680;
+    return LMAX(a->side, a->vw - w);
+}
+/* the tab whose page the toolbar shows: the covered one while the panel is up */
+static Tab *bar_tab(App *a) { return a->pan && a->pan_under ? a->pan_under : a->t; }
+static float page_width(const App *a) { return (a->vw - page_left(a)) / tab_zoom(a->t); }
 static float page_height(const App *a) { return (a->vh - BAR) / tab_zoom(a->t); }
+/* the touch scroll step's largest setting: the page's visible height, in whole 10 px */
+static int scroll_px_max(const App *a) { return LMAX(10, (int)(page_height(a) / 10) * 10); }
 static float page_scale(const App *a) { return a->scale * tab_zoom(a->t); }
-static float page_x(const App *a, float x) { return (x - a->side) / tab_zoom(a->t); }
+static float page_x(const App *a, float x) { return (x - page_left(a)) / tab_zoom(a->t); }
 static float page_y(const App *a, float y) { return (y - BAR) / tab_zoom(a->t); }
 static void page_input_reset(void);
 #ifdef __ANDROID__
 static bool tsel_ui(App *a);
 static void tsel_overlay(App *a, DisplayList *dl);
+static void kbm_overlay(App *a, DisplayList *dl);
+/* Keyboard on second tap: the field the last tap placed the caret in without the keyboard, that
+   tap (window px), and its Paste | Select all bubble (anchored in page px, drawn in viewport px) */
+static struct {
+    Node *n; float x, y;
+    bool menu; float mx, my;
+    float bar[4], bend[2]; int act[2], nb, hit;
+} g_kbm;
 #endif
 static void page_zoom_changed(App *a) {
     page_input_reset();
@@ -474,7 +532,7 @@ static void page_zoom_changed(App *a) {
 #endif
 }
 static void page_zoom_adjust(App *a, int direction) {
-    if (!a->t || (a->t->cur && a->t->cur->internal_ui)) return;
+    if (!a->t) return;
     int current = a->t->zoom_pct ? a->t->zoom_pct : g_page_zoom_pct;
     int next = direction ? page_zoom_step(current, direction) : 0;
     if (a->t->zoom_pct == next) return;
@@ -494,6 +552,9 @@ static float sidebar_width(float requested) {
 #endif
 }
 static bool workspace_action(App *app, const char *url);
+static bool fragment_link(App *a, const char *h);
+static void panel_close(App *a, bool keep_picture);
+static void panel_backdrop(App *a, int bar_px, int width);
 static void publish_gens(App *a) { for (int i = 0; i < MAX_TABS; i++) g_tab_gen[i] = i < a->ntabs ? a->tabs[i]->lgen : 0; }
 static Tab *tab_new(App *a) {
     if (a->ntabs == MAX_TABS) return NULL;
@@ -533,44 +594,21 @@ static bool qparam(const char *q, const char *k, char *out, size_t n) {
         if (!strncmp(p, k, kl) && p[kl] == '=') { size_t l = strcspn(p + kl + 1, "&#"); if (l >= n) l = n - 1; memcpy(out, p + kl + 1, l); out[l] = 0; return true; }
     return false;
 }
-static void sb_esc(SB *b, const char *s) {
-    for (; *s; s++) switch (*s) {
-    case '<': sb_puts(b, "&lt;"); break; case '>': sb_puts(b, "&gt;"); break; case '&': sb_puts(b, "&amp;"); break;
-    case '"': sb_puts(b, "&quot;"); break; case '\'': sb_puts(b, "&#39;"); break; default: sb_putc(b, *s);
+/* s as a JSON string; control characters, < and the line separators escaped, other UTF-8 kept */
+static void sb_json(SB *b, const char *s) {
+    sb_putc(b, '"');
+    for (const unsigned char *p = (const unsigned char *)s; p && *p; p++) {
+        if (*p == '"' || *p == '\\') { sb_putc(b, '\\'); sb_putc(b, (char)*p); }
+        else if (*p < 0x20 || *p == '<') sb_printf(b, "\\u%04x", *p);
+        else if (*p == 0xe2 && p[1] == 0x80 && (p[2] == 0xa8 || p[2] == 0xa9)) { sb_printf(b, "\\u%04x", p[2] == 0xa8 ? 0x2028 : 0x2029); p += 2; }
+        else sb_putc(b, (char)*p);
     }
+    sb_putc(b, '"');
 }
 #ifdef __ANDROID__
-#define HUD_TEXT "Shows the whole phone's CPU use (top) and Lumen's (bottom) next to the address bar, updated every 3 seconds. Tap it for the current tab's CPU and the memory use."
+#define HUD_TEXT "Shows the whole phone's CPU use (top) and Lumen's (bottom) next to the address bar, both as a share of all its cores, updated every 3 seconds. Tap it for the current tab's CPU and the memory use."
 #else
 #define HUD_TEXT "Shows how much CPU and memory (GB) Lumen uses at the bottom of the workspace sidebar, updated every 2 seconds. Click it to see the whole computer's CPU and memory use."
-#endif
-static void ip_toggle(SB *b, const char *key, bool on) { sb_printf(b, "<a class=\"btn%s\" href=\"lumen://set?s=settings&%s=%d\">%s</a>", on ? " on" : "", key, !on, on ? "On" : "Off"); }
-#ifdef __ANDROID__
-/* Settings: the touch circle's colour, opacity, size and hide delay, as choice buttons */
-/* each button shows its value / div, or 100 - value for the opacities shown as transparency */
-static void touch_fb_choices(SB *b, const char *title, const char *key, const int *v, int n, int cur, const char *fmt, double div, bool invert) {
-    sb_printf(b, "</div><div class=row><div class=grow>%s</div></div><p class=choices>", title);
-    for (int i = 0; i < n; i++) {
-        sb_printf(b, "<a class=\"btn%s\" href=\"lumen://set?s=settings&%s=%d\">", v[i] == cur ? " on" : "", key, v[i]);
-        sb_printf(b, fmt, invert ? 100 - v[i] : v[i] / div); sb_puts(b, "</a> ");
-    }
-    sb_puts(b, "</p><div>");
-}
-static void touch_fb_rows(SB *b) {
-    sb_puts(b, "</div><div class=row><div class=grow>Colour</div></div><p class=choices>");
-    int n = (int)(sizeof touch_fb_colors / sizeof *touch_fb_colors);
-    for (int i = 0; i < n; i++)
-        sb_printf(b, "<a class=\"btn swatch%s\" title=\"%s\" href=\"lumen://set?s=settings&touchfb_color=%d\"><i style=\"background:#%06x\"></i>%s</a> ",
-            touch_fb_colors[i] == g_touch_fb_rgb ? " on" : "", touch_fb_color_names[i], touch_fb_colors[i], touch_fb_colors[i], touch_fb_color_names[i]);
-    sb_printf(b, "</p><p class=choices>Custom #<input id=fbc value=\"%06x\" maxlength=6 style=\"width:72px\"><button class=btn onclick=\"fbColor()\">Set</button>"
-        " <span class=fbprev style=\"width:%dpx;height:%dpx;background:rgba(%d,%d,%d,%.2f);border:1px solid rgba(%d,%d,%d,%.2f)\"></span></p>",
-        g_touch_fb_rgb, g_touch_fb_size, g_touch_fb_size, g_touch_fb_rgb >> 16, (g_touch_fb_rgb >> 8) & 255, g_touch_fb_rgb & 255, g_touch_fb_alpha / 100.0,
-        g_touch_fb_rgb >> 16, (g_touch_fb_rgb >> 8) & 255, g_touch_fb_rgb & 255, LCLAMP(g_touch_fb_alpha * 2, 1, 100) / 100.0);
-    sb_puts(b, "<div>");
-    touch_fb_choices(b, "Transparency", "touchfb_alpha", touch_fb_alphas, (int)(sizeof touch_fb_alphas / sizeof *touch_fb_alphas), g_touch_fb_alpha, "%g%%", 1, true);
-    touch_fb_choices(b, "Size", "touchfb_size", touch_fb_sizes, (int)(sizeof touch_fb_sizes / sizeof *touch_fb_sizes), g_touch_fb_size, "%g dp", 1, false);
-    touch_fb_choices(b, "Hide after lifting the finger", "touchfb_ms", touch_fb_times, (int)(sizeof touch_fb_times / sizeof *touch_fb_times), g_touch_fb_ms, "%g s", 1000, false);
-}
 #endif
 #ifdef __ANDROID__
 static void renderer_text(App *app, char *text, size_t capacity) {
@@ -645,44 +683,15 @@ static void dl_status_text(const DlInfo *d, char *out, size_t cap) {
 }
 static int dl_percent(const DlInfo *d) { return d->state == DL_DONE ? 100 : d->total > 0 ? (int)(d->done * 100 / d->total) : 0; }
 static uint64_t g_dl_page_sver;   /* the download list the open Downloads page shows */
-static void downloads_section(SB *b) {
-    DlInfo v[100]; int n = dl_list(v, 100);
-    g_dl_page_sver = dl_state_version();
-    sb_puts(b, "<h2>Downloads</h2><p class=sub style=\"margin:-8px 0 14px\">"
-#ifdef __ANDROID__
-        "Files are saved to the Download folder. "
-#else
-        "Files are saved to your Downloads folder. "
-#endif
-        "Large files use several connections when the server allows it; paused downloads continue where they stopped.</p><div class=card>");
-    if (!n) sb_puts(b, "<div class=empty>No downloads yet.</div>");
-    bool finished = false;
-    for (int i = 0; i < n; i++) {
-        DlInfo *d = &v[i]; char st[160]; dl_status_text(d, st, sizeof st);
-        finished |= d->state != DL_RUNNING && d->state != DL_PAUSED;
-        sb_printf(b, "<div class=row><div class=grow><div class=t>"); sb_esc(b, d->name);
-        sb_printf(b, "</div><div class=u id=dl-%llu-s>", (unsigned long long)d->id); sb_esc(b, st); sb_puts(b, "</div>");
-        if (d->state == DL_RUNNING || d->state == DL_PAUSED)
-            sb_printf(b, "<div class=dlbar><i id=dl-%llu-b style=\"width:%d%%\"></i></div>", (unsigned long long)d->id, dl_percent(d));
-        sb_puts(b, "</div>");
-        unsigned long long id = (unsigned long long)d->id;
-        if (d->state == DL_RUNNING) sb_printf(b, "<a class=btn href=\"lumen://set?s=downloads&dl_pause=%llu\">Pause</a>", id);
-        if (d->state == DL_PAUSED) sb_printf(b, "<a class=btn href=\"lumen://set?s=downloads&dl_resume=%llu\">Resume</a>", id);
-        if (d->state == DL_FAILED && d->resumable) sb_printf(b, "<a class=btn href=\"lumen://set?s=downloads&dl_resume=%llu\">Retry</a>", id);
-        if (d->state == DL_DONE) sb_printf(b, "<a class=btn href=\"lumen://set?s=downloads&dl_open=%llu\">Open</a>", id);
-        if (d->state == DL_RUNNING || d->state == DL_PAUSED) sb_printf(b, "<a class=x title=Cancel href=\"lumen://set?s=downloads&dl_cancel=%llu\">\xC3\x97</a>", id);
-        else sb_printf(b, "<a class=x title=\"Remove from list\" href=\"lumen://set?s=downloads&dl_forget=%llu\">\xC3\x97</a>", id);
-        sb_puts(b, "</div>");
-    }
-    sb_puts(b, "</div>");
-    if (finished) sb_puts(b, "<p><a class=btn href=\"lumen://set?s=downloads&dl_clear=1\">Clear finished</a></p><p class=sub>Removing a download from the list keeps the file.</p>");
-}
-/* the Downloads page follows progress in place and re-renders when the list or a state changes */
-static void navigate(App *a, const char *url, bool push);
+/* the Downloads page follows progress in place and asks the page to refresh when the list or a state changes */
 static void downloads_page_update(App *a) {
     Page *page = a->t->cur;
-    if (!page || !page->internal_ui || !page->d || !strstr(page->url, "s=downloads")) return;
-    if (dl_state_version() != g_dl_page_sver) { navigate(a, "lumen://newtab?s=downloads", false); return; }
+    if (!page || !page->internal_ui || !page->d) return;
+    if (dl_state_version() != g_dl_page_sver) {
+        g_dl_page_sver = dl_state_version();
+        if (page->js) js_eval(page->js, "window.lumenRefresh && lumenRefresh()", "lumen:downloads");
+        return;
+    }
     DlInfo v[100]; int n = dl_list(v, 100);
     for (int i = 0; i < n; i++) {
         if (v[i].state != DL_RUNNING) continue;
@@ -694,169 +703,273 @@ static void downloads_page_update(App *a) {
     }
     a->dirty = true; a->vonly = false;
 }
-static char *internal_page(App *app, const char *u) {
+
+/* ---------- Lumen's own pages: src/app/newtab.html, drawn from the JSON below ---------- */
+static const unsigned char newtab_html[] = {
+#include "newtab.inc"
+};
+static const char *const newtab_sections[] = {
 #ifdef __ANDROID__
-    const char *default_section = "workspaces";
+    "home",
+#endif
+    "bookmarks", "history", "downloads", "settings" };
+#define NEWTAB_NSEC (int)(sizeof newtab_sections / sizeof *newtab_sections)
+static char *internal_page(App *app, const char *u) { (void)app; (void)u; return xstrdup((const char *)newtab_html); }
+/* a query value, %-decoded; NULL when absent */
+static char *qparam_dup(const char *q, const char *k) {
+    size_t kl = strlen(k);
+    for (const char *p = q; p && *p; p = strchr(p, '&') ? strchr(p, '&') + 1 : NULL)
+        if (!strncmp(p, k, kl) && p[kl] == '=') return url_decode(p + kl + 1, strcspn(p + kl + 1, "&#"));
+    return NULL;
+}
+static void sb_json_int_array(SB *b, const int *v, int n) {
+    sb_putc(b, '[');
+    for (int i = 0; i < n; i++) sb_printf(b, "%s%d", i ? "," : "", v[i]);
+    sb_putc(b, ']');
+}
+/* files other apps open or share with Lumen, copied in by LumenActivity when they have no path of their own */
+static const char *opened_dir(void) {
+#ifdef __ANDROID__
+    static char dir[1100];
+    if (!*dir) { const char *files = SDL_GetAndroidInternalStoragePath(); if (files) snprintf(dir, sizeof dir, "%s/opened", files); }
+    return dir;
 #else
-    const char *default_section = "bookmarks";
+    return "";
 #endif
-    const char *q = strchr(u, '?'); char sec[16]; snprintf(sec, sizeof sec, "%s", default_section);
-    if (q) qparam(q + 1, "s", sec, sizeof sec);
-    if (strcmp(sec, "history") && strcmp(sec, "settings") && strcmp(sec, "bookmarks") && strcmp(sec, "workspaces") && strcmp(sec, "downloads")) snprintf(sec, sizeof sec, "%s", default_section);
-    SB b; sb_init(&b);
-    sb_puts(&b, "<!doctype html><html><head><meta charset=utf-8><title>New Tab</title><style>"
-        "body{margin:0;font:14px -apple-system,system-ui,sans-serif;color:#202124;background:#f6f7f9;display:flex;min-height:100vh}"
-        "nav{width:190px;flex:none;min-height:100vh;background:#fff;border-right:1px solid #e3e5e8;padding:24px 12px;box-sizing:border-box}"
-        "nav h1{font-size:20px;font-weight:600;margin:0 12px 20px}"
-        "nav a{display:block;padding:9px 12px;margin:2px 0;border-radius:8px;color:#3c4043;text-decoration:none}"
-        "nav a.on{background:#e8f0fe;color:#1967d2;font-weight:600}"
-        "main{flex:1;padding:32px 40px;max-width:820px}"
-        "h2{font-size:22px;font-weight:600;margin:0 0 18px}"
-        ".card{background:#fff;border:1px solid #e3e5e8;border-radius:12px;padding:4px 18px;margin-bottom:16px}"
-        ".row{display:flex;align-items:center;padding:12px 0;border-bottom:1px solid #f0f1f3}"
-        ".row:last-child{border-bottom:0}"
-        ".grow{flex:1;min-width:0;margin-right:12px}"
-        ".t{font-weight:500;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}"
-        ".u{color:#5f6368;font-size:12px;margin-top:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}"
-        "a.l{color:inherit;text-decoration:none;display:block}"
-        ".x{color:#80868b;text-decoration:none;padding:4px 10px;border-radius:6px;font-size:18px}"
-        ".btn{display:inline-block;padding:6px 16px;border-radius:16px;background:#e8eaed;color:#202124;text-decoration:none;font:500 14px -apple-system,system-ui,sans-serif;border:0}"
-        ".btn.on{background:#1a73e8;color:#fff}"
-        ".note{background:#e8f0fe;color:#174ea6;border-radius:8px;padding:10px 12px;margin:0 0 14px;line-height:1.45}"
-        ".sub{color:#5f6368;font-size:13px;margin-top:3px;line-height:1.4}"
-        "input{width:48px;padding:4px 6px;border:1px solid #dadce0;border-radius:6px;font:14px -apple-system,system-ui,sans-serif;margin:0 4px}"
-        ".empty{color:#5f6368;padding:18px 0}"
-        ".dlbar{height:4px;background:#e8eaed;border-radius:2px;margin-top:8px;overflow:hidden}.dlbar i{display:block;height:4px;background:#1a73e8}"
-        ".row .btn{margin-left:6px}"
-        ".choices{margin:0 0 10px}.choices .btn{margin:0 4px 6px 0;padding:5px 12px}"
-        ".swatch i{display:inline-block;width:12px;height:12px;border-radius:6px;margin-right:6px;vertical-align:-1px;border:1px solid rgba(0,0,0,.15)}"
-        ".fbprev{display:inline-block;border-radius:50%;vertical-align:middle;margin-left:10px}"
-        ".workspaces{margin:0 -4px 20px}"
-        "a.workspace{display:inline-block;vertical-align:top;width:72px;height:72px;box-sizing:border-box;margin:4px;padding:10px 8px;background:#fff;border:1px solid #dadce0;border-radius:14px;color:#5f6368;text-align:center;text-decoration:none}"
-        "a.workspace.active{background:#e8f0fe;border-color:#1a73e8;color:#1967d2}"
-        ".workspace-icon{display:block;width:32px;height:32px;margin:0 auto;font-size:0}"
-        ".workspace-icon i{display:inline-block;width:12px;height:12px;margin:2px;background:currentColor;border-radius:2px}"
-        ".workspace-number{display:block;font-size:11px;line-height:16px}"
-        ".workspace-add{display:block;font-size:28px;line-height:32px}"
-        ".phone{display:block}"
-        ".phone nav{display:flex;width:auto;min-height:0;padding:8px;border-right:0;border-bottom:1px solid #e3e5e8}"
-        ".phone nav h1{display:none}"
-        ".phone nav a{flex:1;min-width:0;min-height:44px;box-sizing:border-box;padding:12px 4px;margin:0;text-align:center}"
-        ".phone main{padding:20px 16px;min-width:0;box-sizing:border-box}"
-        "@media(max-width:600px){"
-        "body{display:block}"
-        "nav{display:flex;width:auto;min-height:0;padding:8px;border-right:0;border-bottom:1px solid #e3e5e8}"
-        "nav h1{display:none}"
-        "nav a{flex:1;min-width:0;min-height:44px;box-sizing:border-box;padding:12px 4px;margin:0;text-align:center}"
-        "main{padding:20px 16px;min-width:0;box-sizing:border-box}"
-        ".card{padding:4px 12px}.t{white-space:normal}.x{padding:10px}"
-        "}"
-        "</style></head><body");
-#ifdef __ANDROID__
-    sb_puts(&b, " class=phone");
-#endif
-    sb_puts(&b, "><nav><h1>Lumen</h1>");
-#ifdef __ANDROID__
-    sb_printf(&b, "<a href=\"lumen://newtab\" title=Workspaces%s>Home</a>", strcmp(sec, "workspaces") ? "" : " class=on");
-#endif
-    static const char *S[4][2] = { { "bookmarks", "Bookmarks" }, { "history", "History" }, { "downloads", "Downloads" }, { "settings", "Settings" } };
-    for (int i = 0; i < 4; i++) sb_printf(&b, "<a href=\"lumen://newtab?s=%s\"%s>%s</a>", S[i][0], strcmp(sec, S[i][0]) ? "" : " class=on", S[i][1]);
-    sb_puts(&b, "</nav><main>");
-    if (!strcmp(sec, "workspaces")) {
-        sb_puts(&b, "<h2>Workspaces</h2><div class=workspaces>");
-        for (int workspace = 0; workspace < app->nws; workspace++) {
-            sb_printf(&b, "<a class=\"workspace%s\" href=\"lumen://workspace?select=%d\"%s aria-label=\"", workspace == app->wi ? " active" : "", workspace, workspace == app->wi ? " aria-current=\"true\"" : "");
-            sb_esc(&b, app->wsname[workspace]);
-            sb_printf(&b, "\"><span class=workspace-icon aria-hidden=true><i></i><i></i><i></i><i></i></span><span class=workspace-number aria-hidden=true>%d</span></a>", workspace + 1);
-        }
-        if (app->nws < 16 && app->ntabs < MAX_TABS) sb_puts(&b, "<a class=workspace href=\"lumen://workspace?new\" aria-label=\"Add workspace\"><span class=workspace-add aria-hidden=true>+</span><span class=workspace-number>Add</span></a>");
-        sb_puts(&b, "</div><h2>Open tabs</h2><div class=card>");
-        for (int tab = 0; tab < app->ntabs; tab++) {
-            Tab *entry = app->tabs[tab];
-            if (entry->ws != app->wi) continue;
-            const char *address = entry == app->t ? u : entry->url;
-            const char *title = entry == app->t ? "New Tab" : entry->cur && entry->cur->d && entry->cur->d->title && *entry->cur->d->title ? entry->cur->d->title : *address ? address : "New Tab";
-            sb_printf(&b, "<div class=row><a class=\"l grow\" href=\"lumen://workspace?tab=%d\"><div class=t>", tab);
-            sb_esc(&b, title); sb_puts(&b, "</div><div class=u>"); sb_esc(&b, address); sb_puts(&b, "</div></a></div>");
-        }
-        sb_puts(&b, "</div><p class=sub>Use + in the toolbar to open a tab. Tap a workspace icon to switch.</p>");
-        if (app->nws > 1) sb_puts(&b, "<p><a class=btn href=\"lumen://workspace?close\">Close this workspace</a></p>");
-    } else if (!strcmp(sec, "downloads")) {
-        downloads_section(&b);
-    } else if (!strcmp(sec, "settings")) {
-        sb_puts(&b, "<h2>Settings</h2>");
-        sb_puts(&b, "<div class=card><div class=t>Default page zoom</div><p class=sub>Make website text and images larger or smaller. Browser controls keep their usual size.</p><p>");
-        for (size_t i = 0; i < sizeof page_zoom_levels / sizeof *page_zoom_levels; i++) {
-            int percent = page_zoom_levels[i];
-            sb_printf(&b, "<a class=\"btn%s\" href=\"lumen://set?s=settings&page_zoom=%d\">%d%%</a> ", percent == g_page_zoom_pct ? " on" : "", percent, percent);
-        }
-        sb_puts(&b, "</p></div>");
-#ifdef __ANDROID__
-        char resolution[256]; resolution_text(app, resolution, sizeof resolution);
-        sb_puts(&b, "<div class=card><div class=t>Physical pixel scale</div><p class=sub>Independent of Android display size. 1x maps one layout pixel to one screen pixel; 2x uses 2 by 2 screen pixels. Default: 2x. Rendering stays at native resolution.</p><p>");
-        for (int percent = 100; percent <= 300; percent += 50)
-            sb_printf(&b, "<a id=\"lumen-pixel-scale-%d\" class=\"btn%s\" href=\"lumen://set?s=settings&pixel_scale=%d\">%gx</a> ", percent, percent == g_pixel_scale_pct ? " on" : "", percent, percent / 100.0);
-        sb_puts(&b, "</p><p class=sub id=lumen-resolution>"); sb_esc(&b, resolution);
-        sb_puts(&b, "</p><p class=sub>App render excludes system bars and the keyboard. Layout is the app area before pixel scaling.</p></div>");
-        char renderer[256]; renderer_text(app, renderer, sizeof renderer);
-        sb_puts(&b, "<div class=card><div class=t>Graphics backend</div><p class=sub>Vulkan through wgpu is the default. GPU acceleration composites the page and video; page rasterization still uses the CPU. Switch instantly; unavailable backends fall back to software.</p><p>");
-        static const char *backend_labels[] = {"Auto", "Vulkan", "OpenGL ES", "Software"};
-        for (int backend = GPU_BACKEND_AUTO; backend <= GPU_BACKEND_CPU; backend++) {
-            const char *key = renderer_key((GpuBackend)backend);
-            sb_printf(&b, "<a id=\"lumen-renderer-%s\" class=\"btn%s\" href=\"lumen://set?s=settings&renderer=%s\">%s</a> ", key, backend == (int)g_renderer ? " on" : "", key, backend_labels[backend]);
-        }
-        sb_puts(&b, "</p><p class=sub id=lumen-renderer>"); sb_esc(&b, renderer); sb_puts(&b, "</p></div>");
-#endif
-        sb_puts(&b, "<div class=card><div class=row><div class=grow><div class=t>Lite mode</div><div class=sub>Uses less memory on heavy pages such as YouTube.</div></div>");
-        ip_toggle(&b, "lite", g_lowmem);
-        sb_puts(&b, "</div>");
-        if (g_lowmem) sb_puts(&b, "<p class=note>Lite mode is on. Images, video pictures and other media outside the visible part of a page are removed from memory; only the text and layout are kept. They load again when you scroll back to them, so they may appear a moment later. Audio keeps playing.</p>");
-        sb_puts(&b, "</div><div class=card><div class=row><div class=grow><div class=t>CPU limit</div><div class=sub>Slows down a tab that keeps the processor busy for a long time.</div></div>");
-        ip_toggle(&b, "cpu", g_cpu_on);
-        sb_printf(&b, "</div><div class=row><div class=grow>When a tab uses more than <input id=n value=%d>%% CPU for <input id=m value=%d> seconds, limit it to <input id=t value=%d>%%</div><button class=btn onclick=\"save()\">Save</button></div>"
-            "<div class=sub style=\"padding:0 0 12px\">To set the limit for one tab only, click the tab, then click it again.</div></div>", g_cpu_pct, g_cpu_secs, g_cpu_lim);
-        sb_puts(&b, "<div class=card><div class=row><div class=grow><div class=t>Always show video controls</div><div class=sub>Keeps the play controls visible under every video, including YouTube, so they never hide. To change it for one tab only, click the tab, then click it again.</div></div>");
-        ip_toggle(&b, "vctl", g_vctl);
-        sb_puts(&b, "</div></div><div class=card><div class=row><div class=grow><div class=t>Sleep background ChatGPT tabs</div><div class=sub>A ChatGPT tab left in the background for a minute stops running and frees most of its memory. It keeps showing its last screen and reloads when you click it. Text you typed but did not send in that tab may be lost.</div></div>");
-        ip_toggle(&b, "sleep", g_tab_sleep);
-        sb_puts(&b, "</div></div><div class=card><div class=row><div class=grow><div class=t>CPU usage</div><div class=sub>" HUD_TEXT "</div></div>");
-        ip_toggle(&b, "hud", g_hud);
-#ifdef __ANDROID__
-        sb_puts(&b, "</div></div><div class=card><div class=row><div class=grow><div class=t>Touch feedback</div><div class=sub>Shows a small circle where you touch the screen, anywhere in Lumen, until a moment after you lift your finger.</div></div>");
-        ip_toggle(&b, "touchfb", g_touch_fb);
-        if (g_touch_fb) touch_fb_rows(&b);
-#endif
-        sb_puts(&b, "</div></div><div class=card><div class=row><div class=grow><div class=t>Smooth scrolling</div><div class=sub>Animates each mouse-wheel step. When off, each wheel step jumps a fixed, larger distance, which uses less CPU. Trackpad scrolling is not affected.</div></div>");
-        ip_toggle(&b, "smooth", g_smooth);
-        sb_puts(&b, "</div></div><div class=card><div class=row><div class=grow><div class=t>User agent</div><div class=sub>How Lumen identifies itself to websites. Chrome works best on most sites. Reload open pages to apply.</div></div>");
-        for (int i = 0; i < UA_COUNT; i++) sb_printf(&b, "<a class=\"btn%s\" href=\"lumen://set?s=settings&ua=%d\">%s</a>", i == g_ua ? " on" : "", i, net_user_agent_name(i));
-        sb_puts(&b, "</div></div><script>function fbColor(){var c=document.getElementById('fbc').value.replace(/^#/,'');if(/^[0-9a-fA-F]{6}$/.test(c))location.href='lumen://set?s=settings&touchfb_hex='+c}function save(){var g=function(i){return parseInt(document.getElementById(i).value,10)||0};location.href='lumen://set?s=settings&cpu_pct='+g('n')+'&cpu_secs='+g('m')+'&cpu_lim='+g('t')}</script>");
-    } else {
-        bool bm = sec[0] == 'b'; Link *v = bm ? g_bms : g_hv; int n = bm ? g_nbm : g_nhv;
-        sb_printf(&b, "<h2>%s</h2>", bm ? "Bookmarks" : "History");
-        if (!bm && n) sb_puts(&b, "<p><a class=btn href=\"lumen://set?s=history&clearhist=1\">Clear history</a></p>");
-        sb_puts(&b, "<div class=card>");
-#ifdef __ANDROID__
-        const char *bm_empty = "No bookmarks yet. Open the \xE2\x8B\xAE menu next to the address bar, then Bookmarks, to add the current page.";
-#else
-        const char *bm_empty = "No bookmarks yet. Click the star next to the address bar to bookmark a page.";
-#endif
-        if (!n) sb_printf(&b, "<div class=empty>%s</div>", bm ? bm_empty : "No pages visited yet.");
-        if (bm && n) sb_puts(&b, "<p class=sub style=\"margin:8px 0\">JavaScript bookmarks run on the page you are viewing: open them from the \xE2\x8B\xAE menu.</p>");
-        for (int i = n - 1, k = 0; i >= 0 && k < 300; i--, k++) {
-            bool script = !strncasecmp(v[i].url, "javascript:", 11);
-            if (script) { sb_puts(&b, "<div class=row><div class=grow><div class=t>"); sb_esc(&b, v[i].title); sb_puts(&b, "</div><div class=u>"); sb_esc(&b, v[i].url); sb_puts(&b, "</div></div>"); }
-            else {
-            sb_puts(&b, "<div class=row><a class=\"l grow\" href=\""); sb_esc(&b, v[i].url); sb_puts(&b, "\"><div class=t>"); sb_esc(&b, v[i].title);
-            sb_puts(&b, "</div><div class=u>"); sb_esc(&b, v[i].url); sb_puts(&b, "</div></a>");
-            }
-            if (bm) sb_printf(&b, "<a class=x title=Remove href=\"lumen://set?s=bookmarks&unbm=%d\">\xC3\x97</a>", i);
-            sb_puts(&b, "</div>");
-        }
-        sb_puts(&b, "</div>");
+}
+/* path, resolved, when it is the file browser's top folder or inside it, or a file opened from another app */
+static bool files_resolve(const char *path, char *out) {
+    char top[PATH_MAX], opened[PATH_MAX];
+    if (!path || path[0] != '/' || !realpath(path, out)) return false;
+    if (*opened_dir() && realpath(opened_dir(), opened)) { size_t k = strlen(opened); if (!strncmp(out, opened, k) && out[k] == '/') return true; }
+    if (!realpath(download_store_top(), top)) snprintf(top, sizeof top, "%s", download_store_top());
+    size_t n = strlen(top);
+    if (n == 1) return true;
+    return !strncmp(out, top, n) && (out[n] == 0 || out[n] == '/');
+}
+typedef struct { char *name; bool dir; long long size; long long mtime; } FileEntry;
+static void files_json(SB *b, const char *want) {
+    char dir[PATH_MAX], top[PATH_MAX], root[PATH_MAX];
+    if (!realpath(download_store_top(), top)) snprintf(top, sizeof top, "%s", download_store_top());
+    if (!realpath(download_store_dir(), root)) snprintf(root, sizeof root, "%s", download_store_dir());
+    if (!files_resolve(want, dir)) snprintf(dir, sizeof dir, "%s", root);
+    sb_puts(b, "\"dir\":"); sb_json(b, dir);
+    sb_puts(b, ",\"root\":"); sb_json(b, root);
+    if (strcmp(dir, top) && strcmp(dir, "/")) {
+        char parent[PATH_MAX]; snprintf(parent, sizeof parent, "%s", dir);
+        char *slash = strrchr(parent, '/');
+        if (slash == parent) slash[1] = 0; else if (slash) *slash = 0;
+        sb_puts(b, ",\"parent\":"); sb_json(b, parent);
     }
-    sb_puts(&b, "</main></body></html>");
+    sb_printf(b, ",\"grant\":%s,\"files\":[", download_store_all_files() ? "false" : "true");
+    DIR *d = opendir(dir);
+    const char *error = NULL;
+    if (!d) error = "Lumen cannot open this folder.";
+    else {
+        int fd = dirfd(d), count = 0;
+        struct dirent *e;
+        while ((e = readdir(d)) && count < 5000) {
+            if (e->d_name[0] == '.') continue;   /* ., .. and hidden files */
+            struct stat st;
+            if (fstatat(fd, e->d_name, &st, 0)) continue;
+            bool folder = S_ISDIR(st.st_mode);
+            if (!folder && !S_ISREG(st.st_mode)) continue;
+            sb_puts(b, count++ ? ",{\"n\":" : "{\"n\":"); sb_json(b, e->d_name);
+            sb_printf(b, ",\"d\":%d,\"s\":%lld,\"m\":%lld}", folder, (long long)st.st_size, (long long)st.st_mtime);
+        }
+        closedir(d);
+    }
+    sb_puts(b, "]");
+    if (error) { sb_puts(b, ",\"error\":"); sb_json(b, error); }
+}
+static void downloads_json(SB *b, const char *want) {
+    DlInfo v[100]; int n = dl_list(v, 100), k = 0;
+    g_dl_page_sver = dl_state_version();
+    sb_puts(b, "{\"active\":[");
+    for (int i = 0; i < n; i++) {
+        DlInfo *d = &v[i];
+        const char *state = d->state == DL_RUNNING ? "running" : d->state == DL_PAUSED ? "paused" : d->state == DL_FAILED ? "failed" : NULL;
+        if (!state) continue;   /* finished files are in the folder below */
+        char st[160]; dl_status_text(d, st, sizeof st);
+        sb_printf(b, "%s{\"id\":\"%llu\",\"state\":\"%s\",\"pct\":%d,\"resumable\":%s,\"name\":", k++ ? "," : "", (unsigned long long)d->id, state, dl_percent(d), d->resumable ? "true" : "false");
+        sb_json(b, d->name); sb_puts(b, ",\"status\":"); sb_json(b, st); sb_putc(b, '}');
+    }
+    sb_puts(b, "],");
+    files_json(b, want);
+    sb_putc(b, '}');
+}
+static void links_json(SB *b, const Link *v, int n) {
+    sb_putc(b, '[');
+    for (int i = n - 1; i >= 0; i--) {
+        sb_printf(b, "%s{\"i\":%d,\"t\":", i == n - 1 ? "" : ",", i); sb_json(b, v[i].title);
+        sb_puts(b, ",\"u\":"); sb_json(b, v[i].url); sb_putc(b, '}');
+    }
+    sb_putc(b, ']');
+}
+static void home_json(App *app, SB *b) {
+    sb_puts(b, "\"ws\":[");
+    for (int w = 0; w < app->nws; w++) {
+        sb_puts(b, w ? ",{\"name\":" : "{\"name\":"); sb_json(b, app->wsname[w]);
+        sb_printf(b, ",\"cur\":%s,\"tabs\":[", w == app->wi ? "true" : "false");
+        for (int i = 0, k = 0; i < app->ntabs; i++) {
+            Tab *t = app->tabs[i];
+            if (t->ws != w) continue;
+            bool own = t->cur && t->cur->internal_ui;
+            const char *title = own ? "New Tab" : t->cur && t->cur->d && t->cur->d->title && *t->cur->d->title ? t->cur->d->title : t->stitle ? t->stitle : *t->url ? t->url : "New Tab";
+            sb_printf(b, "%s{\"i\":%d,\"cur\":%s,\"title\":", k++ ? "," : "", i, t == bar_tab(app) ? "true" : "false"); sb_json(b, title);
+            sb_puts(b, ",\"url\":"); sb_json(b, own ? "" : t->url); sb_putc(b, '}');
+        }
+        sb_puts(b, "]}");
+    }
+    sb_printf(b, "],\"canAddWs\":%s", app->nws < 16 && app->ntabs < MAX_TABS ? "true" : "false");
+}
+static void settings_json(App *app, SB *b) {
+    static const int zooms[] = { 50, 100, 150, 200 };
+    sb_puts(b, "{\"zooms\":"); sb_json_int_array(b, zooms, 4);
+    sb_printf(b, ",\"zoom\":%d", g_page_zoom_pct);
+#ifdef __ANDROID__
+    static const int scales[] = { 100, 150, 200, 250, 300 };
+    static const char *backend_labels[] = { "Auto", "Vulkan", "OpenGL ES", "Software" };
+    char text[256];
+    sb_puts(b, ",\"pixelScales\":"); sb_json_int_array(b, scales, 5);
+    resolution_text(app, text, sizeof text);
+    sb_printf(b, ",\"pixelScale\":%d,\"resolution\":", g_pixel_scale_pct); sb_json(b, text);
+    sb_puts(b, ",\"renderers\":[");
+    for (int backend = GPU_BACKEND_AUTO; backend <= GPU_BACKEND_CPU; backend++) sb_printf(b, "%s[\"%s\",\"%s\"]", backend ? "," : "", renderer_key((GpuBackend)backend), backend_labels[backend]);
+    renderer_text(app, text, sizeof text);
+    sb_printf(b, "],\"renderer\":\"%s\",\"rendererText\":", renderer_key(g_renderer)); sb_json(b, text);
+    int ncolors = (int)(sizeof touch_fb_colors / sizeof *touch_fb_colors);
+    sb_printf(b, ",\"touch\":{\"on\":%s,\"color\":%d,\"alpha\":%d,\"size\":%d,\"ms\":%d,\"colors\":", g_touch_fb ? "true" : "false", g_touch_fb_rgb, g_touch_fb_alpha, g_touch_fb_size, g_touch_fb_ms);
+    sb_json_int_array(b, touch_fb_colors, ncolors);
+    sb_puts(b, ",\"names\":[");
+    for (int i = 0; i < ncolors; i++) { if (i) sb_putc(b, ','); sb_json(b, touch_fb_color_names[i]); }
+    sb_puts(b, "],\"alphas\":"); sb_json_int_array(b, touch_fb_alphas, (int)(sizeof touch_fb_alphas / sizeof *touch_fb_alphas));
+    sb_puts(b, ",\"sizes\":"); sb_json_int_array(b, touch_fb_sizes, (int)(sizeof touch_fb_sizes / sizeof *touch_fb_sizes));
+    sb_puts(b, ",\"times\":"); sb_json_int_array(b, touch_fb_times, (int)(sizeof touch_fb_times / sizeof *touch_fb_times));
+    sb_putc(b, '}');
+    sb_printf(b, ",\"tapKbd\":%s", g_tap_kbd ? "true" : "false");
+#else
+    (void)app;
+#endif
+    sb_printf(b, ",\"lite\":%s,\"cpu\":%s,\"cpuPct\":%d,\"cpuSecs\":%d,\"cpuLim\":%d,\"vctl\":%s,\"sleep\":%s,\"hud\":%s,\"smooth\":%s,\"ua\":%d,\"hudText\":",
+        g_lowmem ? "true" : "false", g_cpu_on ? "true" : "false", g_cpu_pct, g_cpu_secs, g_cpu_lim, g_vctl ? "true" : "false", g_tab_sleep ? "true" : "false", g_hud ? "true" : "false", g_smooth ? "true" : "false", g_ua);
+    sb_json(b, HUD_TEXT);
+    sb_printf(b, ",\"hideTabs\":%s", g_hide_tabs ? "true" : "false");
+    sb_printf(b, ",\"scrollPx\":%d,\"scrollMax\":%d", LMIN(g_scroll_px, scroll_px_max(app)), scroll_px_max(app));
+    sb_puts(b, ",\"uas\":[");
+    for (int i = 0; i < UA_COUNT; i++) { if (i) sb_putc(b, ','); sb_json(b, net_user_agent_name(i)); }
+    sb_puts(b, "]}");
+}
+static const char *g_newtab_msg;   /* a notice for the next state, from the last set? */
+static const char *bm_add(Tab *t);
+static const char *bm_store(int index, const char *title, const char *raw);
+/* the state of section s of q (and of folder dir on Downloads) */
+static char *newtab_state(App *app, const char *q) {
+    char sec[16] = "";
+    qparam(q, "s", sec, sizeof sec);
+    if (!strcmp(sec, "workspaces")) snprintf(sec, sizeof sec, "home");
+    int k = 0;
+    while (k < NEWTAB_NSEC && strcmp(sec, newtab_sections[k])) k++;
+    if (k == NEWTAB_NSEC) k = 0;
+    const char *s = newtab_sections[k];
+    SB b; sb_init(&b);
+    sb_printf(&b, "{\"sec\":\"%s\",\"sections\":[", s);
+    for (int i = 0; i < NEWTAB_NSEC; i++) sb_printf(&b, "%s\"%s\"", i ? "," : "", newtab_sections[i]);
+    sb_printf(&b, "],\"panel\":%s", panel_shown(app) ? "true" : "false");
+    if (!strcmp(s, "home")) { sb_putc(&b, ','); home_json(app, &b); }
+    else if (!strcmp(s, "bookmarks")) {
+#ifdef __ANDROID__
+        const char *empty = "No bookmarks yet. Open the \xE2\x8B\xAE menu next to the address bar, then Bookmarks, to add the current page.";
+#else
+        const char *empty = "No bookmarks yet. Click the star next to the address bar to bookmark a page.";
+#endif
+        Tab *t = bar_tab(app);
+        bool page = t->cur && *t->url && strncmp(t->url, "lumen:", 6);
+        sb_puts(&b, ",\"bm\":"); links_json(&b, g_bms, g_nbm);
+        sb_puts(&b, ",\"bmEmpty\":"); sb_json(&b, empty);
+        sb_printf(&b, ",\"bmPage\":%d", !page ? 0 : bm_find(t->url) >= 0 ? 2 : 1);   /* none, can be added, already added */
+        sb_printf(&b, ",\"canAddWs\":%s", app->nws < 16 && app->ntabs < MAX_TABS ? "true" : "false");   /* "Open in new workspace" */
+    } else if (!strcmp(s, "history")) { sb_puts(&b, ",\"hist\":"); links_json(&b, g_hv, g_nhv); }
+    else if (!strcmp(s, "downloads")) { char *dir = qparam_dup(q, "dir"); sb_puts(&b, ",\"dl\":"); downloads_json(&b, dir); free(dir); }
+    else { sb_puts(&b, ",\"set\":"); settings_json(app, &b); }
+    if (g_newtab_msg) { sb_puts(&b, ",\"msg\":"); sb_json(&b, g_newtab_msg); g_newtab_msg = NULL; }
+    sb_putc(&b, '}');
     return sb_take(&b);
+}
+static void apply_set(App *a, const char *q);
+static bool is_js_url(const char *u);
+#ifdef __ANDROID__
+static void show_bookmarks(App *a);
+static void show_workspaces(App *a);
+#endif
+/* the Downloads viewer's facts about a file: "view?path=P[&page=N&w=PX]" gives {"size","probe":{media_probe_file},
+   "pdf":{"pages","page","img" a file: URL of the page's picture,"w","h"}}; probe and pdf only when they apply */
+static char *files_view(const char *q) {
+    char *want = qparam_dup(q, "path"), path[PATH_MAX], v[16], probe[1024];
+    struct stat st;
+    bool ok = want && files_resolve(want, path) && !stat(path, &st) && S_ISREG(st.st_mode);
+    free(want);
+    if (!ok) return xstrdup("{\"error\":\"Lumen cannot open this file.\"}");
+    SB b; sb_init(&b);
+    sb_printf(&b, "{\"size\":%lld", (long long)st.st_size);
+    const char *dot = strrchr(path, '.');
+    if (dot && !strcasecmp(dot, ".pdf")) {
+        int page = qparam(q, "page", v, sizeof v) ? atoi(v) : 0, width = qparam(q, "w", v, sizeof v) ? atoi(v) : 1280, pages = 0, w = 0, h = 0;
+        char image[PATH_MAX];
+        static unsigned serial;   /* each picture a new URL, since the image cache keys on it */
+        if (download_store_pdf_page(path, page, width, &pages, image, sizeof image, &w, &h)) {
+            sb_printf(&b, ",\"pdf\":{\"pages\":%d,\"page\":%d,\"w\":%d,\"h\":%d,\"img\":", pages, LMAX(0, LMIN(page, pages - 1)), w, h);
+            SB u; sb_init(&u); sb_puts(&u, "file://");
+            for (const unsigned char *c = (const unsigned char *)image; *c; c++)
+                if (isalnum(*c) || strchr("/-._~", *c)) sb_printf(&u, "%c", *c); else sb_printf(&u, "%%%02X", *c);
+            sb_printf(&u, "?v=%u", ++serial);
+            sb_json(&b, u.s); sb_free(&u); sb_puts(&b, "}");
+        }
+    } else if (media_probe_file(path, probe, sizeof probe)) sb_printf(&b, ",\"probe\":{%s}", probe);
+    sb_puts(&b, "}");
+    return b.s;
+}
+/* lumenInternal(cmd) of Lumen's own pages: "state?s=SEC[&dir=PATH]", or "set?s=SEC&key=value..."
+   which applies the settings and actions first; both return the section's state as JSON */
+static char *h_internal_in(const char *cmd) {
+    App *a = g_app;
+    if (!a->t || !a->t->cur || !a->t->cur->internal_ui) return NULL;
+    if (!strcmp(cmd, "ping")) return xstrdup("pong");
+    const char *q;
+    char v[16];
+    if (!strncmp(cmd, "view?", 5)) return files_view(cmd + 5);
+    if (!strncmp(cmd, "state?", 6)) q = cmd + 6;
+    else if (!strncmp(cmd, "set?", 4)) {
+        q = cmd + 4;
+        /* these recreate the window or resize the page, so they stay links (lumen://set?) */
+        if (qparam(q, "renderer", v, sizeof v) || qparam(q, "pixel_scale", v, sizeof v)) return NULL;
+        apply_set(a, q);
+        if (qparam(q, "files_grant", v, sizeof v)) download_store_request_all_files();
+        char *open = qparam_dup(q, "files_open"), path[PATH_MAX]; struct stat st;
+        if (open && files_resolve(open, path) && !stat(path, &st) && S_ISREG(st.st_mode)) download_store_open_path(path);
+        free(open);
+        if (qparam(q, "bm_add", v, sizeof v)) g_newtab_msg = bm_add(bar_tab(a));   /* the page under the panel */
+        if (qparam(q, "bm_save", v, sizeof v)) {   /* an edit of the Bookmarks page: index, bm_t title, bm_u URL */
+            int i = atoi(v);
+            char *title = qparam_dup(q, "bm_t"), *url = qparam_dup(q, "bm_u");
+            if (i >= 0 && i < g_nbm) g_newtab_msg = bm_store(i, title, url);
+            if (!g_newtab_msg && i >= 0 && i < g_nbm) g_newtab_msg = "A bookmark needs a URL";
+            free(title); free(url);
+        }
+        if (qparam(q, "ws_rename", v, sizeof v)) {   /* Home's workspace menu: index, ws_name the new name */
+            int i = atoi(v);
+            char *name = qparam_dup(q, "ws_name");
+            if (i >= 0 && i < a->nws && name && *name) snprintf(a->wsname[i], sizeof a->wsname[0], "%s", name);
+            free(name);
+        }
+#ifdef __ANDROID__
+        if (qparam(q, "ws_dialog", v, sizeof v)) show_workspaces(a);   /* rename one */
+        if (qparam(q, "fullscreen", v, sizeof v) && (atoi(v) != 0) != g_bare) bare_set(a, atoi(v) != 0);   /* the Downloads viewer's */
+        int run = qparam(q, "bmrun", v, sizeof v) ? atoi(v) : -1;   /* the panel's JavaScript bookmark, for the page it covers */
+        if (panel_shown(a) && run >= 0 && run < g_nbm && is_js_url(g_bms[run].url)) { free(a->pan_go); a->pan_go = xstrdup(g_bms[run].url); }
+#endif
+    } else return NULL;
+    return newtab_state(a, q);
 }
 static void update_size(App *app);
 #ifdef __ANDROID__
@@ -916,6 +1029,9 @@ static void apply_set(App *a, const char *q) {
     if (qparam(q, "vctl", v, sizeof v)) g_vctl = atoi(v) != 0;
     if (qparam(q, "sleep", v, sizeof v)) g_tab_sleep = atoi(v) != 0;
     if (qparam(q, "smooth", v, sizeof v)) { g_smooth = atoi(v) != 0; g_sm_dx = g_sm_dy = 0; }
+    if (qparam(q, "tapkbd", v, sizeof v)) g_tap_kbd = atoi(v) != 0;
+    if (qparam(q, "hidetabs", v, sizeof v)) g_hide_tabs = atoi(v) != 0;
+    if (qparam(q, "scroll_px", v, sizeof v)) g_scroll_px = LCLAMP((atoi(v) + 5) / 10 * 10, 10, scroll_px_max(a));
     if (qparam(q, "hud", v, sizeof v)) { g_hud = atoi(v) != 0; g_hud_pop = false; }
     if (qparam(q, "touchfb", v, sizeof v)) g_touch_fb = atoi(v) != 0;
 #ifdef __ANDROID__
@@ -944,6 +1060,9 @@ static void apply_set(App *a, const char *q) {
 static bool is_js_url(const char *u);
 static void navigate_ex(App *a, const char *url, bool push, const char *body, size_t blen, const char *ctype) {
     if (is_js_url(url)) return;   /* page scripts run their own; the address bar and bookmarks use run_js_url */
+    if (panel_shown(a) && strncmp(url, "lumen://newtab", 14) && strncmp(url, "lumen://set?", 12)) {   /* for the covered tab, once the panel closes */
+        free(a->pan_go); a->pan_go = xstrdup(url); return;
+    }
     char *u = normalize_url(url), *html = NULL;
     if (!strncmp(u, "lumen://", 8)) {
         if (!strncmp(u, "lumen://set?", 12)) {   /* only Lumen's own pages may change settings */
@@ -962,7 +1081,7 @@ static void navigate_ex(App *a, const char *url, bool push, const char *body, si
     }
     snprintf(a->t->url, sizeof a->t->url, "%s", u);
     a->editing = false; a->t->loading = true; a->dirty = true;
-    LoadReq *rq = xcalloc(1, sizeof *rq); rq->url = u; rq->html = html; rq->gen = ++load_gen; a->t->desktop = !html && url_desktop(u); float zoom = tab_zoom_for(a->t, html != NULL); rq->vw = (a->vw - a->side) / zoom; rq->vh = (a->vh - BAR) / zoom; rq->dpr = a->scale * zoom; a->t->lgen = rq->gen; publish_gens(a);
+    LoadReq *rq = xcalloc(1, sizeof *rq); rq->url = u; rq->html = html; rq->gen = ++load_gen; a->t->desktop = !html && url_desktop(u); float zoom = tab_zoom(a->t); rq->vw = (a->vw - page_left(a)) / zoom; rq->vh = (a->vh - BAR) / zoom; rq->dpr = a->scale * zoom; a->t->lgen = rq->gen; publish_gens(a);
     if (push) a->t->hgen[a->t->hpos] = rq->gen;
     if (!html && a->t->cur && !a->t->cur->internal_ui && !strncmp(a->t->cur->url, "http", 4)) rq->ref = xstrdup(a->t->cur->url);
     if (body) { rq->body = xmalloc(blen + 1); memcpy(rq->body, body, blen); rq->body[blen] = 0; rq->blen = blen; rq->ctype = xstrdup(ctype ? ctype : ""); }
@@ -1106,7 +1225,7 @@ static int bar_hit(App *a, float x, float y) {
     }
     if (y < TABH) {
         int v[MAX_TABS], n = ws_tabs(a, a->wi, v), k; float tw = tab_w(a), x0 = TLW + 6; k = (int)((x - x0) / tw);
-        if (x >= x0 && k < n) { float lx = x - x0 - k * tw; return lx > tw - 28 ? HB_TABX + v[k] : a->tabs[v[k]]->limited && lx < 26 ? HB_TABDOT + v[k] : HB_TAB + v[k]; }
+        if (x >= x0 && k < n) { float lx = x - x0 - k * tw; return lx > tw - 28 && !ANDROID_UI ? HB_TABX + v[k] : a->tabs[v[k]]->limited && lx < 26 ? HB_TABDOT + v[k] : HB_TAB + v[k]; }
         if (x >= x0 + n * tw && x < x0 + n * tw + 32) return HB_NEWTAB;
         return HB_NONE;
     }
@@ -1241,6 +1360,7 @@ static void hud_sample(void) {
 static void build_chrome(App *a) {
     build_hud_pop(a);
     DisplayList *dl = &a->cdl; dl_clear(dl);
+    if (g_bare) return;
     float x0 = bar_x0(a), tbw = a->vw - x0;
     if (g_compact) { push_rect(dl, 0, 0, a->vw, TB, 0, RGBA(250, 250, 250, 255)); push_rect(dl, 0, TB - 1, a->vw, 1, 0, RGBA(226, 226, 226, 255)); }
     else push_rect(dl, 0, 0, a->vw, TABH, 0, RGBA(222, 225, 230, 255));
@@ -1251,10 +1371,10 @@ static void build_chrome(App *a) {
         if (i == a->ti) push_rect(dl, x, 4, tabw - 2, TABH - 4, 7, RGBA(250, 250, 250, 255));
         else if (a->hover == HB_TAB + i || a->hover == HB_TABX + i) push_rect(dl, x, 6, tabw - 2, TABH - 10, 6, RGBA(235, 237, 240, 255));
         else if (k + 1 < nvt && vt[k + 1] != a->ti) push_rect(dl, x + tabw - 2, 9, 1, TABH - 16, 0, RGBA(170, 175, 180, 255));
-        const char *title = t->cur && t->cur->d && t->cur->d->title && *t->cur->d->title ? t->cur->d->title : *t->url ? t->url : "New Tab";
+        const char *title = t->cur && t->cur->d && t->cur->d->title && *t->cur->d->title ? t->cur->d->title : t->stitle ? t->stitle : *t->url ? t->url : "New Tab";
         if (t->limited) push_rect(dl, x + 10, (4 + TABH) / 2 - 5, 10, 10, 5, RGBA(52, 199, 89, 255));
-        push_text(dl, a->ui, title, x + (t->limited ? 26 : 12), tbase, tabw - (t->limited ? 54 : 40), lite_on(t) ? RGBA(0, 100, 0, 255) : RGBA(40, 40, 40, 255));
-        push_text(dl, a->ui, "\xC3\x97", x + tabw - 22, tbase, 16, a->hover == HB_TABX + i ? RGBA(20, 20, 20, 255) : RGBA(110, 110, 110, 255));
+        push_text(dl, a->ui, title, x + (t->limited ? 26 : 12), tbase, tabw - (t->limited ? 54 : 40) + (ANDROID_UI ? 18 : 0), lite_on(t) ? RGBA(0, 100, 0, 255) : RGBA(40, 40, 40, 255));
+        if (!ANDROID_UI) push_text(dl, a->ui, "\xC3\x97", x + tabw - 22, tbase, 16, a->hover == HB_TABX + i ? RGBA(20, 20, 20, 255) : RGBA(110, 110, 110, 255));
         if (t->loading) push_rect(dl, x + 8, TABH - 3, (tabw - 18) * 0.35f, 2, 1, RGBA(66, 133, 244, 255));
     }
     if (!g_compact) {
@@ -1382,9 +1502,24 @@ static void build_chrome(App *a) {
 static float max_scroll(App *a) { return a->t->cur && a->t->cur->L ? LMAX(0, a->t->cur->L->doc_h - page_height(a)) : 0; }
 
 static double g_tr, g_tl, g_td, g_tx;
+static int g_tr_n, g_tr_slow;   /* style passes, and those >= 15 ms (debug load trace) */
 static bool g_no_paint_only;
+#ifdef __ANDROID__
+static void bar_push(App *a);
+/* the Downloads viewer's full screen: hides the system bars too, and puts them back as they were */
+static void bare_set(App *a, bool on) {
+    if (on == g_bare) return;
+    g_bare = on;
+    if (on) g_bare_fs = g_fullscreen;
+    bool fs = on || g_bare_fs;
+    if (fs != g_fullscreen) { g_fullscreen = fs; android_ui_fullscreen(fs); }
+    a->hover = HB_NONE; a->vonly = false; a->dirty = true;
+    for (int i = 0; i < a->ntabs; i++) a->tabs[i]->relayout = true;
+    bar_push(a);
+}
+#endif
 static void update_compact(App *a) {
-    int v[MAX_TABS]; bool c = ws_tabs(a, a->wi, v) <= 1;
+    int v[MAX_TABS]; bool c = g_hide_tabs || ws_tabs(a, a->wi, v) <= 1;
     if (c == g_compact) return;
     g_compact = c; a->hover = HB_NONE; a->vonly = false;
     for (int i = 0; i < a->ntabs; i++) a->tabs[i]->relayout = true;
@@ -1393,13 +1528,15 @@ static void update_compact(App *a) {
 struct DSig { uint64_t h; float b[4]; };
 static uint64_t hmix(uint64_t h, const void *p, size_t n) { const uint8_t *c = p; for (size_t i = 0; i < n; i++) h = (h ^ c[i]) * 1099511628211ull; return h; }
 #define HMIX(h, v) h = hmix(h, &(v), sizeof(v))
-static uint64_t ditem_hash(const DItem *it) {
-    uint64_t h = 1469598103934665603ull;
-    HMIX(h, it->op); HMIX(h, it->x); HMIX(h, it->y); HMIX(h, it->w); HMIX(h, it->h); HMIX(h, it->r); HMIX(h, it->color);
+/* vertical positions in 1/1024 CSS px, so an item moved back by a page scroll hashes as before it */
+static int64_t hq(float v) { return isfinite(v) ? (int64_t)llrintf(LCLAMP(v, -1e9f, 1e9f) * 1024) : INT64_MIN; }
+static uint64_t ditem_hash(const DItem *it, float dy) {
+    uint64_t h = 1469598103934665603ull; int64_t y = hq(it->y + dy);
+    HMIX(h, it->op); HMIX(h, it->x); HMIX(h, y); HMIX(h, it->w); HMIX(h, it->h); HMIX(h, it->r); HMIX(h, it->color);
     HMIX(h, it->bw); HMIX(h, it->bc); HMIX(h, it->bs); HMIX(h, it->img); HMIX(h, it->blur); HMIX(h, it->spread); HMIX(h, it->alpha); HMIX(h, it->inset);
     if (it->img) HMIX(h, it->img->content_version);
     if (it->grad) { const Gradient *g = it->grad; HMIX(h, g->type); HMIX(h, g->angle); HMIX(h, g->nstops); HMIX(h, g->repeating); h = hmix(h, g->stops, sizeof g->stops[0] * (size_t)LCLAMP(g->nstops, 0, 8)); }
-    for (int i = 0; i < it->ng; i++) { const DGlyph *g = &it->g[i]; HMIX(h, g->gid); HMIX(h, g->x); HMIX(h, g->y); HMIX(h, g->font); }
+    for (int i = 0; i < it->ng; i++) { const DGlyph *g = &it->g[i]; int64_t gy = hq(g->y + dy); HMIX(h, g->gid); HMIX(h, g->x); HMIX(h, gy); HMIX(h, g->font); }
     return h;
 }
 static void bunion(float *a, const float *b) { a[0] = LMIN(a[0], b[0]); a[1] = LMIN(a[1], b[1]); a[2] = LMAX(a[2], b[2]); a[3] = LMAX(a[3], b[3]); }
@@ -1413,28 +1550,30 @@ static void ditem_box(const DItem *it, float *b) {
     if (it->op == DO_POP_CLIP || it->op == DO_POP_LAYER || it->op == DO_PUSH_LAYER || x1 <= x0 || y1 <= y0) { b[0] = b[1] = 1e30f; b[2] = b[3] = -1e30f; return; }
     b[0] = x0 - e; b[1] = y0 - e; b[2] = x1 + e; b[3] = y1 + e;
 }
-static int dl_sigs(const DisplayList *dl, struct DSig **v, int *cap) {
-    int n = dl->items.n, st[64], ns = 0;
-    uint64_t context_hash = 1469598103934665603ull;
+/* dy: CSS px added to the items that scroll with the page (not fixed ones) before hashing */
+static int dl_sigs(const DisplayList *dl, struct DSig **v, int *cap, float dy) {
+    int n = dl->items.n, st[64], ns = 0, depth = 0;
+    uint64_t context[65]; context[0] = 1469598103934665603ull;   /* per open clip/layer depth: the hash of the innermost one */
     if (n > *cap) { *cap = n + n / 2 + 16; *v = xrealloc(*v, sizeof **v * (size_t)*cap); }
     for (int i = 0; i < n; i++) {
         const DItem *it = &dl->items.v[i]; struct DSig *q = &(*v)[i];
-        q->h = ditem_hash(it); ditem_box(it, q->b);
-        if (it->op == DO_PUSH_CLIP || it->op == DO_POP_CLIP ||
-            it->op == DO_PUSH_LAYER || it->op == DO_POP_LAYER) HMIX(context_hash, q->h);
-        HMIX(q->h, context_hash);
+        q->h = ditem_hash(it, it->fixed ? 0 : dy); ditem_box(it, q->b);
+        HMIX(q->h, context[LMIN(depth, 64)]);   /* only the open clips and layers: items culled before this one do not change it */
+        if (it->op == DO_PUSH_CLIP || it->op == DO_PUSH_LAYER) { if (++depth <= 64) context[depth] = q->h; }
+        else if ((it->op == DO_POP_CLIP || it->op == DO_POP_LAYER) && depth) depth--;
         if (it->op == DO_PUSH_LAYER) { if (ns < 64) st[ns++] = i; }   /* a layer covers its contents: an opacity change damages all of them */
         else if (it->op == DO_POP_LAYER) { if (ns) { int t = st[--ns]; if (ns) bunion((*v)[st[ns - 1]].b, (*v)[t].b); } }
         else if (ns) bunion((*v)[st[ns - 1]].b, q->b);
     }
     return n;
 }
-static uint64_t dl_hash(const DisplayList *dl) { uint64_t h = (uint64_t)dl->items.n; for (int i = 0; i < dl->items.n; i++) h = h * 31 + ditem_hash(&dl->items.v[i]); return h; }
+static uint64_t dl_hash(const DisplayList *dl) { uint64_t h = (uint64_t)dl->items.n; for (int i = 0; i < dl->items.n; i++) h = h * 31 + ditem_hash(&dl->items.v[i], 0); return h; }
 
 static PaintProfile g_paint_profile;
 /* paint profile: frames per render path, then why the scroller blit was not taken */
-enum { PP_BLIT, PP_SBLIT, PP_SDIRTY, PP_SKIP, PP_RECT, PP_DMG, PP_FULL, PP_NOSBOX, PP_SB_UI, PP_SB_CLIP, PP_SB_X, PP_SB_D, PP_SB_AREA, PP_N };
-static unsigned g_pp[PP_N], g_pp_why[6];
+enum { PP_BLIT, PP_BDMG, PP_SBLIT, PP_SDIRTY, PP_SKIP, PP_IDLE, PP_RECT, PP_DMG, PP_FULL, PP_NOSBOX, PP_SB_UI, PP_SB_CLIP, PP_SB_X, PP_SB_D, PP_SB_AREA, PP_N };
+static unsigned g_pp[PP_N], g_pp_why[6], g_pp_noblit[3], g_wake[4], g_sdmg_no[4];   /* g_sdmg_no: scroll+DOM frames not shifted: shift refused, damage too big, video, not eligible (signatures, loading) */
+static unsigned g_pp_unused_ __attribute__((unused));   /* g_wake: frames asked for by the caret blink, image animations, video bars, defer expiry */   /* g_pp_noblit: page scrolls not shifted: sub-pixel/overlay/dirty scroller, fixed boxes, video */
 static long g_sb_big[6], g_sb_dmg; static unsigned g_sb_rects;   /* scroller blit damage: largest unmoved item (area op w h mv fixed), total px, rects */   /* g_pp_why: frames that neither blitted nor skipped, by render()'s why */
 #define SB_FAIL(k) do { g_pp[k]++; return false; } while (0)
 
@@ -1503,15 +1642,15 @@ static void paint_profile_report(const PaintFrame *frame, double start_ms, bool 
 #else
     fprintf(stderr, "%s\n", message);
 #endif
-    snprintf(message, sizeof message, "lumen: paint paths blit=%u sblit=%u sdirty=%u skip=%u rect=%u dmg=%u full=%u sb_fail nosbox=%u ui=%u clip=%u x=%u d=%u area=%u why=%u/%u/%u/%u/%u/%u raster calls=%u kpx=%llu layers=%u layer_kpx=%llu sb_dmg kpx=%ld rects=%u big=%ld/op%ld/%ldx%ld/mv%ld/f%ld",
-             g_pp[0], g_pp[1], g_pp[2], g_pp[3], g_pp[4], g_pp[5], g_pp[6], g_pp[7], g_pp[8], g_pp[9], g_pp[10], g_pp[11], g_pp[12], g_pp_why[0], g_pp_why[1], g_pp_why[2], g_pp_why[3], g_pp_why[4], g_pp_why[5], g_raster_calls, g_raster_px / 1000, g_layer_n, g_layer_px / 1000,
+    snprintf(message, sizeof message, "lumen: paint paths blit=%u bdmg=%u (no %u/%u/%u/%u) sblit=%u sdirty=%u skip=%u idle=%u rect=%u dmg=%u full=%u sb_fail nosbox=%u ui=%u clip=%u x=%u d=%u area=%u why=%u/%u/%u/%u/%u/%u raster calls=%u kpx=%llu layers=%u layer_kpx=%llu sb_dmg kpx=%ld rects=%u big=%ld/op%ld/%ldx%ld/mv%ld/f%ld",
+             g_pp[PP_BLIT], g_pp[PP_BDMG], g_sdmg_no[0], g_sdmg_no[1], g_sdmg_no[2], g_sdmg_no[3], g_pp[PP_SBLIT], g_pp[PP_SDIRTY], g_pp[PP_SKIP], g_pp[PP_IDLE], g_pp[PP_RECT], g_pp[PP_DMG], g_pp[PP_FULL], g_pp[PP_NOSBOX], g_pp[PP_SB_UI], g_pp[PP_SB_CLIP], g_pp[PP_SB_X], g_pp[PP_SB_D], g_pp[PP_SB_AREA], g_pp_why[0], g_pp_why[1], g_pp_why[2], g_pp_why[3], g_pp_why[4], g_pp_why[5], g_raster_calls, g_raster_px / 1000, g_layer_n, g_layer_px / 1000,
              g_sb_dmg / 1000, g_sb_rects, g_sb_big[0], g_sb_big[1], g_sb_big[2], g_sb_big[3], g_sb_big[4], g_sb_big[5]);
 #ifdef __ANDROID__
     SDL_Log("%s", message);
 #else
     fprintf(stderr, "%s\n", message);
 #endif
-    memset(g_pp, 0, sizeof g_pp); memset(g_pp_why, 0, sizeof g_pp_why); g_raster_calls = g_layer_n = 0; g_raster_px = g_layer_px = 0; memset(g_sb_big, 0, sizeof g_sb_big); g_sb_dmg = 0; g_sb_rects = 0;
+    memset(g_pp, 0, sizeof g_pp); memset(g_pp_why, 0, sizeof g_pp_why); memset(g_sdmg_no, 0, sizeof g_sdmg_no); g_raster_calls = g_layer_n = 0; g_raster_px = g_layer_px = 0; memset(g_sb_big, 0, sizeof g_sb_big); g_sb_dmg = 0; g_sb_rects = 0;
     paint_profile_reset(&g_paint_profile, frame->last_ms);
 }
 
@@ -1556,6 +1695,13 @@ static void android_reveal_focus(App *app) {
 
 /* Reuse an existing video hole only when it follows the same pixel movement
    as the page (or is fixed and covered by fixed-region damage). */
+/* GPU layer for media frame im shown at CSS rect r (x, y, w, h) of the page */
+static GpuVideo media_layer(const Image *im, const float r[4], float s, int side_px, int bar_px) {
+    GpuVideo v = { im->px, im->w, im->h, im->w, floorf(r[0] * s + 0.5f) + side_px, floorf(r[1] * s + 0.5f) + bar_px,
+                   floorf((r[0] + r[2]) * s + 0.5f) + side_px, floorf((r[1] + r[3]) * s + 0.5f) + bar_px };
+    v.yuv = im->yuv; v.mat = im->yuv_mat; v.serial = media_image_serial(im);
+    return v;
+}
 static bool video_scroll_matches(const DItem *it, const float previous[4], float scale, int delta) {
     float current[4] = {it->x, it->y, it->x + it->w, it->y + it->h};
     float old[4] = {previous[0], previous[1], previous[0] + previous[2], previous[1] + previous[3]};
@@ -1683,7 +1829,7 @@ static bool scroller_blit(App *a, int pwp, int ph, int *ox0, int *oy0, int *ox1,
         const float *r = dmg.rect[i];
         raster_rect(&a->page, dl, RGBA(255, 255, 255, 255), (int)r[0], (int)r[1], (int)r[2], (int)r[3]);
     }
-    if (getenv("LUMEN_CHECK_DAMAGE")) {
+    if (env_hook(ENV_CHECK_DAMAGE)) {
         Canvas t; canvas_init(&t, pwp, ph, s); raster(&t, dl, RGBA(255, 255, 255, 255));
         long bad = 0; for (int y = 0; y < ph; y++) for (int x = 0; x < pwp; x++) bad += t.px[(size_t)y * (size_t)t.stride + (size_t)x] != canvas_row(&a->page, y)[x];
         fprintf(stderr, "lumen: scroller blit d=%d damage=%d px=%ld covers=%d mismatched px=%ld\n", d, dmg.count, area, ncov, bad); canvas_free(&t);
@@ -1692,23 +1838,73 @@ static bool scroller_blit(App *a, int pwp, int ph, int *ox0, int *oy0, int *ox1,
     *ox0 = R[0]; *oy0 = R[1]; *ox1 = R[2]; *oy1 = R[3];
     return true;
 }
+/* device-pixel regions of the items that differ between the last frame's signatures and cur, kept apart
+   while that adds no area (paint_fixed_add); the last frame's boxes move up by shift CSS px, as its pixels
+   were shifted. After trimming the unchanged head and tail, items are matched in order by signature (a
+   scroll culls items at both ends, so indices do not line up): each new item takes the first unmatched
+   old one with its signature after the last match. Unmatched items on either side are damage, so matched
+   ones keep their relative paint order. Returns the regions' total area. */
+static void sig_add(PaintRegions *out, const float *b, float shift, float s, int pwp, int ph) {
+    if (!(b[2] > b[0] && b[3] > b[1])) return;
+    float r[4] = { fminf(pwp, fmaxf(0, floorf(b[0] * s))), fminf(ph, fmaxf(0, floorf((b[1] - shift) * s))),
+                   fminf(pwp, fmaxf(0, ceilf(b[2] * s))), fminf(ph, fmaxf(0, ceilf((b[3] - shift) * s))) };
+    paint_fixed_add(out, r);
+}
+typedef struct { uint64_t h; int i; } SigAt;
+static int sig_at_cmp(const void *x, const void *y) {
+    const SigAt *a = x, *b = y;
+    return a->h != b->h ? (a->h < b->h ? -1 : 1) : a->i - b->i;
+}
+static int g_sig_changed[2], g_sig_first[3];   /* last sig_damage: unmatched old and new items, the first new ones (LUMEN_CHECK_DAMAGE) */
+static double sig_damage(const App *a, const struct DSig *cur, int ncur, float shift, int pwp, int ph, PaintRegions *out) {
+    static SigAt *olds; static int cap;
+    int first = 0, old_end = a->nosig, new_end = ncur;
+    float s = a->page.scale;
+    memset(g_sig_changed, 0, sizeof g_sig_changed); g_sig_first[0] = g_sig_first[1] = g_sig_first[2] = -1;
+    while (first < old_end && first < new_end && a->osig[first].h == cur[first].h) first++;
+    while (old_end > first && new_end > first && a->osig[old_end - 1].h == cur[new_end - 1].h) { old_end--; new_end--; }
+    int no = old_end - first;
+    if (no > cap) { cap = no + no / 2 + 16; olds = xrealloc(olds, sizeof *olds * (size_t)cap); }
+    for (int k = 0; k < no; k++) olds[k] = (SigAt){ a->osig[first + k].h, first + k };
+    if (no > 1) qsort(olds, (size_t)no, sizeof *olds, sig_at_cmp);
+    int last = first - 1;   /* the last matched old item */
+    for (int index = first; index < new_end; index++) {
+        uint64_t h = cur[index].h;
+        int lo = 0, hi = no;   /* the first old entry not before (h, last + 1) */
+        while (lo < hi) { int mid = (lo + hi) / 2; if (olds[mid].h < h || (olds[mid].h == h && olds[mid].i <= last)) lo = mid + 1; else hi = mid; }
+        if (lo < no && olds[lo].h == h) {
+            for (int k = last + 1; k < olds[lo].i; k++) { sig_add(out, a->osig[k].b, shift, s, pwp, ph); g_sig_changed[0]++; }
+            last = olds[lo].i;
+        } else {
+            sig_add(out, cur[index].b, 0, s, pwp, ph);
+            if (g_sig_changed[1] < 3) g_sig_first[g_sig_changed[1]] = index;
+            g_sig_changed[1]++;
+        }
+    }
+    for (int k = last + 1; k < old_end; k++) { sig_add(out, a->osig[k].b, shift, s, pwp, ph); g_sig_changed[0]++; }
+    double area = 0;
+    for (int i = 0; i < out->count; i++) area += (double)paint_region_area(out->rect[i]);
+    return area;
+}
 #ifdef __ANDROID__
 static void bar_push(App *a);
 #endif
 static void render(App *a) {
 #ifdef __ANDROID__
     if (!a->win || a->android_suspended) return;
+    update_compact(a);   /* before bar_push: the toolbar's top follows the tab bar */
     bar_push(a);
     update_resolution_readout(a);
     update_renderer_readout(a);
-#endif
+#else
     update_compact(a);
+#endif
     double t0 = now_ms();
     PaintFrame profile_frame = paint_profile_begin(t0);
     int bar_px = (int)(BAR * a->scale);
     if (a->frame.w != a->pw || a->frame.h != a->ph || a->frame.scale != a->scale) { canvas_free(&a->frame); canvas_init(&a->frame, a->pw, a->ph, a->scale); }
     int ph = a->ph - bar_px; if (ph < 1) ph = 1;
-    int side_px = (int)(a->side * a->scale), pwp = a->pw - side_px; if (pwp < 1) pwp = 1;
+    int side_px = (int)(page_left(a) * a->scale), pwp = a->pw - side_px; if (pwp < 1) pwp = 1;
     int why = !a->vonly ? 1 : !a->t->cur || a->t->cur != a->last_page || !a->t->cur->L ? 2 : a->t->relayout ? 3 : a->t->cur->d->dom_version != a->last_ver ? 4 : 0;
     bool defer = why && why != 2 && !a->t->loading && a->t->cur && a->t->cur->L && t0 - a->last_input > 1000 && t0 - a->last_full < 250 && media_timeout_ms() >= 0 && a->page.w == pwp && a->page.h == ph;
     a->deferred = defer; if (defer) why = 0;
@@ -1718,15 +1914,28 @@ static void render(App *a) {
     int scroll_delta = 0;
     PaintRegions scroll_fixed = {0};
     if (a->page.w != pwp || a->page.h != ph || a->page.scale != page_scale(a)) { canvas_free(&a->page); canvas_init(&a->page, pwp, ph, page_scale(a)); part = false; a->osig_ok = false; }
-    bool gskip = false; GpuVideo gvd, *gvp = NULL;
+    bool gskip = false; GpuVideo gvd, *gvp = NULL, xvd[GPU_EXTRA_LAYERS]; int nxvd = 0;
     Image *fast = part && !a->sdirty && a->t->cur && a->gpu && a->gvid_ok && a->t->sy == a->last_sy && a->page.w == pwp && a->page.h == ph ? media_owner_frame(a->vown) : NULL;
+    if (fast && fast->translucent) fast = NULL;
+    for (int i = 0; fast && i < a->nxown; i++) {   /* the extra layers need opaque RGBA frames too */
+        const Image *x = media_owner_frame(a->xown[i]);
+        if (!x || x->translucent || !x->px) fast = NULL;
+        else xvd[nxvd++] = media_layer(x, a->xrect[i], a->page.scale, side_px, bar_px);
+    }
     paint_profile_stage(&profile_frame, PAINT_PREPARE);
+    /* Unchanged page, no scroll, and the last display list showed no video frame (a video playing off-screen or
+       hidden): the frame would be skipped anyway, so neither rebuild it nor present it. A first frame or a new
+       size relayouts (why 3), so a video that turns visible is still drawn. */
+    if (!fast && part && a->t->cur && a->osig_ok && !a->last_nv && !a->sdirty && !a->frame_page_stale &&
+        a->t->sy == a->last_sy && a->page.w == pwp && a->page.h == ph && a->page.scale == page_scale(a)
+#ifdef __ANDROID__
+        && !a->focus_reveal
+#endif
+        ) { g_pp[PP_IDLE]++; a->dirty = a->vframe = a->vonly = false; return; }
     if (a->t->cur && (defer || fast)) {   /* nothing but the video changed, or layout may be stale: only swap the video texture */
         Image *im = fast;
         if (!im) { a->dirty = a->vframe = false; return; }
-        float s = a->page.scale; const float *r = a->vrect;
-        gvd = (GpuVideo){ im->px, im->w, im->h, im->w, floorf(r[0] * s + 0.5f) + side_px, floorf(r[1] * s + 0.5f) + bar_px, floorf((r[0] + r[2]) * s + 0.5f) + side_px, floorf((r[1] + r[3]) * s + 0.5f) + bar_px };
-        gvd.yuv = im->yuv; gvd.mat = im->yuv_mat; gvd.serial = media_image_serial(im); gvp = &gvd; gskip = true;
+        gvd = media_layer(im, a->vrect, a->page.scale, side_px, bar_px); gvp = &gvd; gskip = true;
     } else if (a->t->cur) {
         if (a->t->relayout || !a->t->cur->L) {
             if (!a->t->cur->L) a->t->cur->L = layout_new();
@@ -1735,43 +1944,77 @@ static void render(App *a) {
             a->t->relayout = false;
         }
         a->t->sy = LCLAMP(a->t->sy, 0, max_scroll(a));
+        bool sdmg = !part && (why == 1 || why == 3 || why == 4) && a->osig_ok && !a->t->loading;   /* also changed: shift, then damage */
 #ifdef __ANDROID__
-        if (a->focus_reveal) { android_reveal_focus(a); part = false; }
+        if (a->focus_reveal) { android_reveal_focus(a); part = false; sdmg = false; }
 #endif
+        float scroll_css = a->t->sy - a->last_sy;
         int blit = 0;   /* page scrolled by whole device pixels: shift the old pixels, raster only the exposed strip */
-        if (a->t->sy != a->last_sy && part) {
+        if (a->t->sy != a->last_sy && !part && !sdmg && why != 2) g_sdmg_no[3]++;
+        if (a->t->sy != a->last_sy && (part || sdmg)) {
             float sdy = (a->t->sy - a->last_sy) * a->page.scale;
             bool overlay = false;
 #ifdef __ANDROID__
-            overlay = tsel_ui(a);   /* the selection bar is clamped to the viewport, so old pixels cannot be shifted */
+            overlay = tsel_ui(a) || g_kbm.nb;   /* the selection bar and Paste bubble are clamped to the viewport, so old pixels cannot be shifted */
 #endif
-            if (!a->sdirty && !overlay && fabsf(sdy - roundf(sdy)) < 0.01f && fabsf(sdy) < ph / 2) blit = (int)roundf(sdy);
-            else { part = false; why = 5; }
+            if (!a->sdirty && !overlay && fabsf(sdy - roundf(sdy)) < 0.01f && fabsf(sdy) < ph / 2) { blit = (int)roundf(sdy); part = true; }
+            else { part = false; if (!sdmg) why = 5; else g_sdmg_no[0]++; g_pp_noblit[0]++; }
         }
+        if (!blit) sdmg = false;
         g_full_paint = (double)SDL_GetTicks(); { double q = now_ms(); dl_clear(&a->pdl); dl_build(&a->pdl, a->t->cur->L, 0, a->t->sy, page_width(a), page_height(a)); g_td += now_ms() - q; } a->vbars = video_bars(a, &a->pdl);
 #ifdef __ANDROID__
         tsel_overlay(a, &a->pdl);
+        kbm_overlay(a, &a->pdl);
 #endif
         paint_profile_stage(&profile_frame, PAINT_LAYOUT_DL);
-        int nn = dl_sigs(&a->pdl, &a->nsig, &a->cnsig);
-        const DItem *vit = NULL; int nv = 0;
+        int nn = dl_sigs(&a->pdl, &a->nsig, &a->cnsig, 0);
+        const DItem *vit = NULL, *vits[1 + GPU_EXTRA_LAYERS]; int nv = 0, nvit = 0;
+        bool xpx = true;   /* every frame after the first has RGBA pixels (only the first layer can be YUV) */
         for (int i = 0; i < a->pdl.items.n; i++) {
             const DItem *it = &a->pdl.items.v[i];
             if (it->op != DO_IMAGE || !media_is_frame(it->img)) continue;
             if (!nv++) vit = it;
+            if (nvit && !it->img->px) xpx = false;
+            if (nvit < 1 + GPU_EXTRA_LAYERS) vits[nvit] = it;
+            nvit++;
+            if (it->img->translucent) nv++;   /* a see-through canvas is blended by the raster, not shown through a hole */
             float s = a->page.scale;
             rx0 = LMIN(rx0, (int)floorf(it->x * s)); ry0 = LMIN(ry0, (int)floorf(it->y * s));
             rx1 = LMAX(rx1, (int)ceilf((it->x + it->w) * s)); ry1 = LMAX(ry1, (int)ceilf((it->y + it->h) * s));
         }
         rx0 = LMAX(rx0, 0); ry0 = LMAX(ry0, 0); rx1 = LMIN(rx1, pwp); ry1 = LMIN(ry1, ph);
-        bool gv = a->gpu && nv == 1;
-        bool scroll_video = gv && a->gvid_ok && media_owner_of(vit->img) == a->vown &&
+        a->last_nv = nvit;
+        /* opaque media frames are GPU layers under the page, shown through alpha-0 holes; translucent ones count twice */
+        bool gv = a->gpu && nv && nv == nvit && nvit <= 1 + GPU_EXTRA_LAYERS && xpx;
+        bool same_layers = gv && a->gvid_ok && a->nxown == nvit - 1 && media_owner_of(vit->img) == a->vown;
+        for (int i = 1; same_layers && i < nvit; i++) same_layers = media_owner_of(vits[i]->img) == a->xown[i - 1];
+        bool scroll_video = gv && nv == 1 && a->gvid_ok && media_owner_of(vit->img) == a->vown &&
                             video_scroll_matches(vit, a->vrect, a->page.scale, blit);
         scroll_fixed = paint_scroll_regions(&a->pdl.fixed, a->page.scale, pwp, ph, blit);
-        int fixed_rows = 0;
-        for (int i = 0; i < scroll_fixed.count; i++)
-            fixed_rows += (int)(scroll_fixed.rect[i][3] - scroll_fixed.rect[i][1]);
-        if (blit && ((nv && !scroll_video) || fixed_rows * 2 > ph)) { blit = 0; part = false; why = 5; }
+        bool chrome_changed = false;
+        if (sdmg && !nv) {   /* the items that differ from the last frame's once moved back by the scroll are repainted with the fixed boxes */
+            dl_sigs(&a->pdl, &a->ssig, &a->cssig, scroll_css);
+            PaintRegions changed = {0}; sig_damage(a, a->ssig, nn, scroll_css, pwp, ph, &changed);
+            for (int i = 0; i < changed.count; i++) paint_fixed_add(&scroll_fixed, changed.rect[i]);
+            if (env_hook(ENV_CHECK_DAMAGE)) {
+                fprintf(stderr, "lumen: scroll sigs d=%.2f unmatched old=%d new=%d of %d/%d regions=%d:", scroll_css, g_sig_changed[0], g_sig_changed[1], a->nosig, nn, changed.count);
+                for (int i = 0; i < changed.count; i++) fprintf(stderr, " %.0f,%.0f-%.0f,%.0f", changed.rect[i][0], changed.rect[i][1], changed.rect[i][2], changed.rect[i][3]);
+                for (int k = 0; k < 3 && g_sig_first[k] >= 0; k++) { const DItem *it = &a->pdl.items.v[g_sig_first[k]]; fprintf(stderr, " [#%d op%d f%d %.2f,%.2f %.1fx%.1f]", g_sig_first[k], it->op, it->fixed, it->x, it->y, it->w, it->h); }
+                fputc('\n', stderr);
+            }
+            build_chrome(a); chrome_tip(a);
+            chrome_changed = dl_hash(&a->cdl) * 31 + dl_hash(&a->hdl) != a->chash;
+        } else if (sdmg) { blit = 0; part = false; g_sdmg_no[2]++; }
+        /* the exposed strip and the fixed boxes repainted after the shift (overlaps once: scrolling up, the strip lies
+           in a header's shifted copy): past 4/5 of the page, a full raster is as cheap */
+        float strip[4] = { 0, blit > 0 ? ph - blit : 0, pwp, blit > 0 ? ph : -blit };
+        double fixed_area = paint_regions_union_area(&scroll_fixed, blit ? strip : NULL);
+        if (blit && !nv && fixed_area * 5 > (double)pwp * ph * 4 && t0 < g_load_trace_until) {   /* geometry only */
+            static double last; char m[600]; int o = 0;
+            for (int i = 0; i < scroll_fixed.count && o < 500; i++) { const float *r = scroll_fixed.rect[i]; o += snprintf(m + o, sizeof m - (size_t)o, " %.0f,%.0f-%.0f,%.0f", r[0], r[1], r[2], r[3]); }
+            if (t0 - last > 400) { last = t0; LOAD_TRACE("noblit fixed d=%d page=%dx%d area=%.0f%% sdmg=%d fixed=%d unmatched=%d/%d repaint px:%s", blit, pwp, ph, fixed_area * 100 / ((double)pwp * ph), sdmg, a->pdl.fixed.count, g_sig_changed[0], g_sig_changed[1], o ? m : " none"); }
+        }
+        if (blit && ((nv && !scroll_video) || fixed_area * 5 > (double)pwp * ph * 4)) { g_pp_noblit[nv && !scroll_video ? 2 : 1]++; blit = 0; part = false; if (!sdmg) why = 5; else g_sdmg_no[1]++; }
         paint_profile_stage(&profile_frame, PAINT_SIGNATURES);
         if (blit) {
             profile_frame.blit = true;
@@ -1795,8 +2038,14 @@ static void render(App *a) {
                             (int)box[0], (int)box[1], (int)box[2], (int)box[3]);
             }   /* fixed boxes moved with the shift: repaint where they were and are */
             a->page.punch = NULL;
-            rx0 = 0; ry0 = 0; rx1 = pwp; ry1 = ph; a->gvid_ok = scroll_video; g_pp[PP_BLIT]++;
-        } else if (part && a->sdirty && !nv && scroller_blit(a, pwp, ph, &rx0, &ry0, &rx1, &ry1)) {
+            rx0 = 0; ry0 = 0; rx1 = pwp; ry1 = ph; a->gvid_ok = scroll_video; g_pp[sdmg ? PP_BDMG : PP_BLIT]++;
+            if (sdmg && env_hook(ENV_CHECK_DAMAGE)) {
+                Canvas t; canvas_init(&t, pwp, ph, a->page.scale); raster(&t, &a->pdl, RGBA(255, 255, 255, 255));
+                long bad = 0; for (int y = 0; y < ph; y++) for (int x = 0; x < pwp; x++) bad += t.px[(size_t)y * (size_t)t.stride + (size_t)x] != canvas_row(&a->page, y)[x];
+                fprintf(stderr, "lumen: scroll damage d=%d regions=%d mismatched px=%ld\n", d, scroll_fixed.count, bad); canvas_free(&t);
+            }
+            if (chrome_changed) part = false;
+        } else if (!sdmg && part && a->sdirty && !nv && scroller_blit(a, pwp, ph, &rx0, &ry0, &rx1, &ry1)) {
             a->gvid_ok = false; g_pp[PP_SBLIT]++;
         } else if (part && a->sdirty) {
             g_pp[PP_SDIRTY]++;
@@ -1806,7 +2055,7 @@ static void render(App *a) {
             x0 = LMAX(x0, 0); y0 = LMAX(y0, 0); x1 = LMIN(x1, pwp); y1 = LMIN(y1, ph);
             if (x1 > x0 && y1 > y0) raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), x0, y0, x1, y1);
             rx0 = x0; ry0 = y0; rx1 = LMAX(x1, x0); ry1 = LMAX(y1, y0); a->gvid_ok = false;
-        } else if (part && (nv == 0 || (gv && a->gvid_ok))) { gskip = true; g_pp[PP_SKIP]++; }
+        } else if (part && (nv == 0 || same_layers)) { gskip = true; g_pp[PP_SKIP]++; }
         else if (part && rx1 > rx0 && ry1 > ry0) { a->gvid_ok = false; g_pp[PP_RECT]++; raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), rx0, ry0, rx1, ry1); }
         else {
             g_pp_why[LCLAMP(why, 0, 5)]++;
@@ -1814,55 +2063,54 @@ static void render(App *a) {
             if (dmg) {   /* only DOM/layout changed: raster the union of the items that differ from the last frame */
                 build_chrome(a); chrome_tip(a);
                 bool chrome_changed = dl_hash(&a->cdl) * 31 + dl_hash(&a->hdl) != a->chash;
-                float dm[4] = { 1e30f, 1e30f, -1e30f, -1e30f };
-                int first_changed = 0, old_end = a->nosig, new_end = nn;
-                while (first_changed < old_end && first_changed < new_end &&
-                       a->osig[first_changed].h == a->nsig[first_changed].h) first_changed++;
-                while (old_end > first_changed && new_end > first_changed &&
-                       a->osig[old_end - 1].h == a->nsig[new_end - 1].h) { old_end--; new_end--; }
-                for (int index = first_changed; index < LMAX(old_end, new_end); index++) {
-                    const struct DSig *previous = index < old_end ? &a->osig[index] : NULL;
-                    const struct DSig *current = index < new_end ? &a->nsig[index] : NULL;
-                    if (previous && current && previous->h == current->h) continue;
-                    if (previous) bunion(dm, previous->b);
-                    if (current) bunion(dm, current->b);
+                PaintRegions changed = {0}; double area = sig_damage(a, a->nsig, nn, 0, pwp, ph, &changed);
+                int x0 = pwp, y0 = ph, x1 = 0, y1 = 0;   /* their union: the rows composed and uploaded */
+                for (int i = 0; i < changed.count; i++) {
+                    const float *c = changed.rect[i];
+                    x0 = LMIN(x0, (int)c[0]); y0 = LMIN(y0, (int)c[1]); x1 = LMAX(x1, (int)c[2]); y1 = LMAX(y1, (int)c[3]);
                 }
-                float s = a->page.scale;
-                int x0 = (int)fminf(pwp, fmaxf(0, floorf(dm[0] * s))), y0 = (int)fminf(ph, fmaxf(0, floorf(dm[1] * s)));
-                int x1 = (int)fminf(pwp, fmaxf(0, ceilf(dm[2] * s))), y1 = (int)fminf(ph, fmaxf(0, ceilf(dm[3] * s)));
-                if (dmg && (x1 <= x0 || y1 <= y0)) { part = true; gskip = true; }
-                else if (dmg && (long)(x1 - x0) * (y1 - y0) * 2 < (long)pwp * ph) {
-                    { double q = now_ms(); raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), x0, y0, x1, y1); g_tx += now_ms() - q; }
+                if (dmg && !changed.count) { part = true; gskip = true; }
+                else if (dmg && area * 2 < (double)pwp * ph) {
+                    double q = now_ms();
+                    for (int i = 0; i < changed.count; i++) { const float *c = changed.rect[i]; raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), (int)c[0], (int)c[1], (int)c[2], (int)c[3]); }
+                    g_tx += now_ms() - q;
                     part = true; rx0 = x0; ry0 = y0; rx1 = x1; ry1 = y1; a->gvid_ok = false; g_pp[PP_DMG]++;
                 }
                 else dmg = false;
-                if (dmg && getenv("LUMEN_CHECK_DAMAGE")) {
+                if (dmg && env_hook(ENV_CHECK_DAMAGE)) {
                     Canvas t; canvas_init(&t, pwp, ph, a->page.scale); raster(&t, &a->pdl, RGBA(255, 255, 255, 255));
                     long bad = 0; for (int y = 0; y < ph; y++) for (int x = 0; x < pwp; x++) bad += t.px[(size_t)y * (size_t)t.stride + (size_t)x] != canvas_row(&a->page, y)[x];
-                    fprintf(stderr, "lumen: damage %dx%d at %d,%d mismatched px=%ld\n", LMAX(0, x1 - x0), LMAX(0, y1 - y0), x0, y0, bad); canvas_free(&t);
+                    fprintf(stderr, "lumen: damage %dx%d at %d,%d regions=%d mismatched px=%ld\n", LMAX(0, x1 - x0), LMAX(0, y1 - y0), x0, y0, changed.count, bad); canvas_free(&t);
                 }
                 if (dmg && chrome_changed) { part = false; gskip = false; }
             }
             if (!dmg) {
                 part = false; a->page.punch = gv ? vit->img : NULL; a->page.punched = false; g_pp[PP_FULL]++;
+                for (int i = 1; gv && i < nvit; i++) a->page.punch_more[i - 1] = vits[i]->img;
+                a->page.punched_more = 0;
                 { double q = now_ms(); raster(&a->page, &a->pdl, RGBA(255, 255, 255, 255)); g_tx += now_ms() - q; }
-                a->gvid_ok = gv && a->page.punched; a->page.punch = NULL;
+                a->gvid_ok = gv && a->page.punched && a->page.punched_more == (gv ? (1u << (nvit - 1)) - 1 : 0); a->page.punch = NULL;
+                memset(a->page.punch_more, 0, sizeof a->page.punch_more);
             }
         }
         { struct DSig *t = a->osig; a->osig = a->nsig; a->nsig = t; int c = a->cosig; a->cosig = a->cnsig; a->cnsig = c; a->nosig = nn; a->osig_ok = true; }
         if (gv && a->gvid_ok) {
-            const Image *im = vit->img; float s = a->page.scale;
-            gvd = (GpuVideo){ im->px, im->w, im->h, im->w, floorf(vit->x * s + 0.5f) + side_px, floorf(vit->y * s + 0.5f) + bar_px, floorf((vit->x + vit->w) * s + 0.5f) + side_px, floorf((vit->y + vit->h) * s + 0.5f) + bar_px };
-            gvd.yuv = im->yuv; gvd.mat = im->yuv_mat; gvd.serial = media_image_serial(im); gvp = &gvd;
-            a->vown = media_owner_of(im); a->vrect[0] = vit->x; a->vrect[1] = vit->y; a->vrect[2] = vit->w; a->vrect[3] = vit->h;
+            a->vown = media_owner_of(vit->img); a->vrect[0] = vit->x; a->vrect[1] = vit->y; a->vrect[2] = vit->w; a->vrect[3] = vit->h;
+            gvd = media_layer(vit->img, a->vrect, a->page.scale, side_px, bar_px); gvp = &gvd;
+            a->nxown = nvit - 1;
+            for (int i = 1; i < nvit; i++) {
+                const DItem *x = vits[i]; float *r = a->xrect[i - 1];
+                a->xown[i - 1] = media_owner_of(x->img); r[0] = x->x; r[1] = x->y; r[2] = x->w; r[3] = x->h;
+                xvd[nxvd++] = media_layer(x->img, r, a->page.scale, side_px, bar_px);
+            }
         }
     } else { a->gvid_ok = false; a->osig_ok = false; raster(&a->page, &(DisplayList){0}, RGBA(255, 255, 255, 255)); }
     paint_profile_stage(&profile_frame, PAINT_RASTER);
-    if (!part) { build_chrome(a); chrome_tip(a); a->chash = dl_hash(&a->cdl) * 31 + dl_hash(&a->hdl); raster(&a->frame, &a->cdl, RGBA(255, 255, 255, 255)); }
+    if (!part) { build_chrome(a); chrome_tip(a); a->chash = dl_hash(&a->cdl) * 31 + dl_hash(&a->hdl); raster(&a->frame, &a->cdl, RGBA(255, 255, 255, 255)); if (panel_shown(a)) panel_backdrop(a, bar_px, side_px - (int)(a->side * a->scale)); }
     bool direct_page = false;
 #ifdef __ANDROID__
     direct_page = a->gpu && part && !gskip && profile_frame.blit && !side_px &&
-                  !a->hdl.items.n && !getenv("LUMEN_SHOT") &&
+                  !a->hdl.items.n && !env_hook(ENV_SHOT) &&
                   a->page.w == a->frame.w && a->page.h == a->frame.h - bar_px;
 #endif
     if (!direct_page && a->frame_page_stale) { gskip = false; ry0 = 0; ry1 = ph; }
@@ -1874,12 +2122,10 @@ static void render(App *a) {
     paint_profile_stage(&profile_frame, PAINT_COMPOSE);
     bool page_uploaded = direct_page &&
         gpu_scroll_page_ring(a->gpu, a->page.px, a->frame.w, a->frame.h, a->page.stride,
-                        bar_px, scroll_delta,
-                        scroll_fixed.count ? (int)scroll_fixed.rect[0][1] : 0,
-                        scroll_fixed.count ? (int)scroll_fixed.rect[0][3] : 0, a->page.row_offset);
-    for (int i = 1; page_uploaded && i < scroll_fixed.count; i++)
-        page_uploaded = gpu_upload_page_ring(a->gpu, a->page.px, a->frame.w, a->frame.h,
-                                        a->page.stride, bar_px,
+                        bar_px, scroll_delta, 0, 0, a->page.row_offset);
+    for (int i = 0; page_uploaded && i < scroll_fixed.count; i++)   /* only the fixed boxes' own columns */
+        page_uploaded = gpu_upload_page_rect_ring(a->gpu, a->page.px, a->frame.w, a->frame.h, a->page.stride, bar_px,
+                                        (int)scroll_fixed.rect[i][0], (int)scroll_fixed.rect[i][2],
                                         (int)scroll_fixed.rect[i][1], (int)scroll_fixed.rect[i][3], a->page.row_offset);
     if (direct_page && !page_uploaded)
         page_uploaded = gpu_upload_page_ring(a->gpu, a->page.px, a->frame.w, a->frame.h,
@@ -1889,7 +2135,9 @@ static void render(App *a) {
         a->frame_page_stale = false;
         gskip = false; ry0 = 0; ry1 = ph;
     }
-    if (!(a->gpu && gpu_present_frame(a->gpu, a->frame.px, a->frame.w, a->frame.h, a->frame.stride, (gskip || page_uploaded) ? 0 : part ? bar_px + ry0 : 0, (gskip || page_uploaded) ? 0 : part ? bar_px + ry1 : a->frame.h, gvp))) {
+    if (gvp) gpu_set_extra_layers(a->gpu, xvd, nxvd);
+    int up0 = (gskip || page_uploaded) ? 0 : part ? bar_px + ry0 : 0, up1 = (gskip || page_uploaded) ? 0 : part ? bar_px + ry1 : a->frame.h;
+    if (!(a->gpu && gpu_present_frame(a->gpu, a->frame.px, a->frame.w, a->frame.h, a->frame.stride, up0, up1, gvp))) {
         if (a->frame_page_stale) {
             compose_page(a, 0, ph, bar_px, side_px);
             a->frame_page_stale = false;
@@ -1903,10 +2151,10 @@ static void render(App *a) {
     }
     paint_profile_stage(&profile_frame, PAINT_PRESENT);
     a->frame_ms = now_ms() - t0;
-    if (getenv("LUMEN_SHOT")) {   /* write the presented frame to a PNG after LUMEN_SHOT_MS and exit */
+    if (env_hook(ENV_SHOT)) {   /* write the presented frame to a PNG after LUMEN_SHOT_MS and exit */
         static double ts; if (!ts) ts = t0;
         const char *d = getenv("LUMEN_SHOT_MS");
-        if (t0 - ts >= (d ? atof(d) : 1500)) { png_write(getenv("LUMEN_SHOT"), a->frame.px, a->frame.w, a->frame.h, a->frame.stride); exit(0); }
+        if (t0 - ts >= (d ? atof(d) : 1500)) { png_write(env_hook(ENV_SHOT), a->frame.px, a->frame.w, a->frame.h, a->frame.stride); exit(0); }
     }
     paint_profile_report(&profile_frame, t0, part);
     if (g_paint_profile.enabled) {
@@ -1958,13 +2206,13 @@ static bool wheel_scroll(App *a, float x, float y, float dx, float dy) {
 }
 static void wheel_apply(App *a, float mx, float my, float dx, float dy) {
     float zoom = tab_zoom(a->t); dx /= zoom; dy /= zoom;
-    if (!(my > BAR && mx > a->side && wheel_scroll(a, page_x(a, mx), page_y(a, my), dx, dy))) { if (!(a->dirty && !a->vonly)) a->vonly = true; a->t->sy += dy; }
+    if (!(my > BAR && mx > page_left(a) && wheel_scroll(a, page_x(a, mx), page_y(a, my), dx, dy))) { if (!(a->dirty && !a->vonly)) a->vonly = true; a->t->sy += dy; }
     a->dirty = true;
 }
 #ifdef __ANDROID__
 static bool android_scroll_apply(App *app, float anchor_x, float anchor_y, float dx, float dy) {
     if (!app->t->cur || app->t->asleep || app->t->info || !isfinite(dx) || !isfinite(dy) ||
-            anchor_x <= app->side || anchor_y <= BAR || (!dx && !dy)) return false;
+            anchor_x <= page_left(app) || anchor_y <= BAR || (!dx && !dy)) return false;
     float zoom = tab_zoom(app->t); dx /= zoom; dy /= zoom;
     if (wheel_scroll(app, page_x(app, anchor_x), page_y(app, anchor_y), dx, dy)) return true;
     float scale = page_scale(app);
@@ -1974,6 +2222,23 @@ static bool android_scroll_apply(App *app, float anchor_x, float anchor_y, float
     if (!(app->dirty && !app->vonly)) app->vonly = true;
     app->dirty = true;
     return true;
+}
+/* smooth scrolling off: a drag moves the page in steps of the size set in Settings, the first
+   after 5 px of finger travel, then one every further 10 px; no momentum after. */
+#define STEP_START 5
+#define STEP_TRAVEL 10
+static bool android_step_scroll(App *app, float anchor_x, float anchor_y, float dx, float dy) {
+    float zoom = tab_zoom(app->t), step = (float)LMIN(g_scroll_px, scroll_px_max(app)), out[2] = { 0, 0 };
+    float *r[2] = { &app->step_rx, &app->step_ry };
+    *r[0] += dx / zoom; *r[1] += dy / zoom;
+    for (int k = 0; k < 2; k++)
+        for (float need; fabsf(*r[k]) >= (need = app->step_started ? STEP_TRAVEL : STEP_START); ) {
+            float sign = *r[k] > 0 ? 1 : -1;
+            out[k] += sign * step;
+            *r[k] -= sign * need; app->step_started = true;
+        }
+    if (!out[0] && !out[1]) return true;   /* not far enough yet: the drag goes on */
+    return android_scroll_apply(app, anchor_x, anchor_y, out[0] * zoom, out[1] * zoom);
 }
 static void android_fling_tick(App *app) {
     if (!app->fling.active) return;
@@ -2027,6 +2292,9 @@ static bool android_touch_input(App *app, SDL_Event *event) {
     if (phase == ANDROID_TOUCH_DOWN) {
         android_fling_reset(&app->fling);
         if (pointer_x < 0 || pointer_y < 0 || pointer_x > app->vw || pointer_y > app->vh) return true;
+        if (panel_shown(app) && pointer_x < page_left(app) && pointer_y > BAR) {   /* beside the panel: closes it */
+            app->pan_close = true; android_touch_reset(&app->touch); return true;
+        }
         app->touch_tab = app->t;
         app->touch_generation = app->t->lgen;
         g_sm_dx = g_sm_dy = 0;
@@ -2042,22 +2310,25 @@ static bool android_touch_input(App *app, SDL_Event *event) {
         return true;
     }
     if (dom & 1) app->touch.can_scroll = false;
+    app->touch.slop = g_smooth ? 8 : STEP_START;   /* stepped scrolling starts after 5 px */
     AndroidTouchResult result = android_touch_update(&app->touch, phase,
         event->tfinger.touchID, event->tfinger.fingerID, pointer_x, pointer_y,
-        pointer_x > app->side && pointer_y > BAR && !g_hud_pop && !app->t->info && !(dom & 1));
+        pointer_x > page_left(app) && pointer_y > BAR && !g_hud_pop && !app->t->info && !(dom & 1));
     double timestamp = (double)event->tfinger.timestamp / 1000000.0;
+    if (phase == ANDROID_TOUCH_DOWN) { app->step_rx = app->step_ry = 0; app->step_started = false; }
     if (phase == ANDROID_TOUCH_DOWN && app->touch.count == 1 && !app->touch.blocked && app->touch.can_scroll)
         android_fling_begin(&app->fling, timestamp);
     if (phase == ANDROID_TOUCH_CANCEL || app->touch.blocked) android_fling_reset(&app->fling);
     if (result.action == ANDROID_TOUCH_SCROLL) {
         android_dom_touch(app, "scroll", event);
         app->fling_x = result.anchor_x; app->fling_y = result.anchor_y;
-        if (android_scroll_apply(app, result.anchor_x, result.anchor_y, result.dx, result.dy)) {
+        if (!g_smooth) { android_step_scroll(app, result.anchor_x, result.anchor_y, result.dx, result.dy); android_fling_reset(&app->fling); }
+        else if (android_scroll_apply(app, result.anchor_x, result.anchor_y, result.dx, result.dy)) {
             if (!app->fling.tracking) android_fling_begin(&app->fling, timestamp);
             else android_fling_sample(&app->fling, result.dx, result.dy, timestamp);
         } else android_fling_reset(&app->fling);
     }
-    if (phase == ANDROID_TOUCH_UP) android_fling_release(&app->fling, timestamp, now_ms());
+    if (phase == ANDROID_TOUCH_UP) { if (g_smooth) android_fling_release(&app->fling, timestamp, now_ms()); else android_fling_reset(&app->fling); }
     if (result.action != ANDROID_TOUCH_TAP) return true;
     /* A handled touchend can suppress compatibility clicks. It still counts
        as interaction with the player for the control visibility timer. */
@@ -2522,7 +2793,7 @@ static void restyle(App *a) {
     if (!p) return;
     if (p->seen_paint_ver != p->d->paint_version) {
         p->seen_paint_ver = p->d->paint_version;
-        if (a->t == a->tabs[a->ti]) { a->dirty = true; a->vonly = false; }
+        if (a->t == (a->pan ? a->pan : a->tabs[a->ti])) { a->dirty = true; a->vonly = false; }
     }
     bool viewport_changed = page_viewport(p, page_width(a), page_height(a), page_scale(a));
     if (!viewport_changed && p->d->dom_version == p->seen_ver && !p->sheets_pending) return;
@@ -2531,7 +2802,7 @@ static void restyle(App *a) {
     p->sheets_pending = false;
     /* inset-only changes translate the current boxes instead of relaying out */
     p->e->allow_moves = p->L && !a->t->relayout && !viewport_changed && !sheets && p->d->layout_version == p->lay_ver && !g_no_paint_only;
-    { double q = now_ms(); style_recalc(p->e, &p->d->node, false); g_tr += now_ms() - q; }
+    { double q = now_ms(); style_recalc(p->e, &p->d->node, false); g_tr += now_ms() - q; g_tr_n++; g_tr_slow += now_ms() - q >= 15; }
     p->e->allow_moves = false;
     if (sync_images(p)) p->img_check = true;
     if (viewport_changed || sheets || p->e->layout_dirty || p->d->layout_version != p->lay_ver || g_no_paint_only) a->t->relayout = true;
@@ -2539,7 +2810,7 @@ static void restyle(App *a) {
         if (!layout_move(p->L, p->e->moves[i].node, p->e->moves[i].old)) a->t->relayout = true;
     p->e->nmoves = 0;
     p->e->layout_dirty = false; p->lay_ver = p->d->layout_version;
-    if (a->t == a->tabs[a->ti]) a->dirty = true;
+    if (a->t == (a->pan ? a->pan : a->tabs[a->ti])) a->dirty = true;
 }
 static void history_go(App *a, int d);
 static void h_sync_in(void *ud, Document *d, bool layout) {
@@ -2625,12 +2896,14 @@ static void h_set_url(void *ud, const char *u, bool push) { TAB_CALL(ud, h_set_u
 static void h_navigate_post(void *ud, const char *u, const char *body, size_t len, const char *ctype) { TAB_CALL(ud, h_navigate_post_in(ud, u, body, len, ctype)); }
 static void h_history_go(void *ud, int d) { TAB_CALL(ud, h_history_go_in(ud, d)); }
 static int h_history_len(void *ud) { int r = 0; TAB_CALL(ud, r = h_history_len_in(ud)); return r; }
+static char *h_internal(void *ud, const char *cmd) { char *r = NULL; TAB_CALL(ud, r = h_internal_in(cmd)); return r; }
 static void h_viewport(void *ud, float *w, float *h, float *sx, float *sy, float *dpr) { TAB_CALL(ud, h_viewport_in(ud, w, h, sx, sy, dpr)); }
 static void h_scroll_to(void *ud, float x, float y) { TAB_CALL(ud, h_scroll_to_in(ud, x, y)); }
 static Node *h_hit(void *ud, float x, float y) { Node *r = NULL; TAB_CALL(ud, r = h_hit_in(ud, x, y)); return r; }
 static void page_start_js(App *a, Page *p) {
     if (getenv("LUMEN_NO_JS")) return;
-    JsHost h = { a->t, &p->e->media, h_navigate, h_set_url, h_history_go, h_viewport, h_scroll_to, h_hit, h_history_len, h_navigate_post, h_sync, h_frame_open, h_frame_close };
+    JsHost h = { a->t, &p->e->media, h_navigate, h_set_url, h_history_go, h_viewport, h_scroll_to, h_hit, h_history_len, h_navigate_post, h_sync, h_frame_open, h_frame_close,
+                 p->internal_ui ? h_internal : NULL };
     double t0 = now_ms();
     sync_sheets(p, true);
     p->js = js_new(p->d, &h);
@@ -2896,13 +3169,17 @@ static void focus_node(App *a, Node *n) {
 #ifdef __ANDROID__
     a->focus_reveal = true;
     a->dirty = true;
-    if (old == n && (is_text_ctl(n) || edit_host(n))) SDL_StartTextInput(a->win);
+    if (old == n && !g_tap_kbd && (is_text_ctl(n) || edit_host(n))) SDL_StartTextInput(a->win);   /* else kbd_tap decides */
 #endif
     if (old == n) return;
     doc_set_focus(d, n);
     if (js && old) { js_dispatch(js, old, "blur", "FocusEvent", false, false, 0, 0, 0, NULL); js_dispatch(js, old, "focusout", "FocusEvent", true, false, 0, 0, 0, NULL); }
     if (js && n) { js_dispatch(js, n, "focus", "FocusEvent", false, false, 0, 0, 0, NULL); js_dispatch(js, n, "focusin", "FocusEvent", true, false, 0, 0, 0, NULL); }
+#ifdef __ANDROID__
+    if (!g_tap_kbd && (is_text_ctl(n) || edit_host(n))) SDL_StartTextInput(a->win);
+#else
     if (is_text_ctl(n) || edit_host(n)) SDL_StartTextInput(a->win);
+#endif
     a->caret_t = now_ms();
     a->t->relayout = true; a->dirty = true;
 }
@@ -3162,7 +3439,7 @@ static void edit_drag(App *a, float x, float y) {
 static void ctl_press(App *a, float x, float y, int clicks) {
     g_cpress = false;
     Node *f = page_focus(a); Page *p = a->t->cur;
-    if (!f || !f->box || !p || !p->L || a->t->asleep || x < a->side || y < BAR) return;
+    if (!f || !f->box || !p || !p->L || a->t->asleep || x < page_left(a) || y < BAR) return;
     float px = page_x(a, x), py = page_y(a, y) + a->t->sy;
     Box *b = layout_hit(p->L, px, py, 0, a->t->sy);
     if (!b || !b->node || !node_within(b->node, f)) return;
@@ -3220,7 +3497,7 @@ static struct {
     int bar_hit;                  /* bar button held, 1-based */
     int umenu_hit;                /* URL menu button held, 1-based */
 } g_ts;
-static void tsel_touch_reset(void) { g_ts.armed = false; g_ts.mode = g_ts.bar_hit = g_ts.umenu_hit = 0; }
+static void tsel_touch_reset(void) { g_ts.armed = false; g_ts.mode = g_ts.bar_hit = g_ts.umenu_hit = g_kbm.hit = 0; }
 static Node *tsel_ctl(App *a) {
     Node *f = page_focus(a);
     return f && f == g_ts.cn && f->doc->csel_n == f && f->doc->csel[0] == g_ts.cs[0] && f->doc->csel[1] == g_ts.cs[1] ? f : NULL;
@@ -3280,6 +3557,81 @@ static void tsel_overlay(App *a, DisplayList *dl) {
         g_ts.bend[i] = bx + bw[i];
     }
     g_ts.bar[0] = x; g_ts.bar[1] = y; g_ts.bar[2] = x + w; g_ts.bar[3] = y + h; g_ts.nb = n;
+}
+/* Keyboard on second tap: after a touch tap was handled. A tap in the focused field while the
+   keyboard is down places the caret (done by the click) and shows the Paste bubble; a second tap
+   within 30 px of it brings the keyboard up. With the keyboard up, taps only move the caret. */
+static void kbd_tap(App *a, float x, float y) {
+    Node *f = page_focus(a); Page *p = a->t->cur;
+    if (!f) f = edit_focus(a);
+    bool was = g_kbm.menu; g_kbm.menu = false;
+    if (was) sel_dirty(a);
+    if (!g_tap_kbd || !f || !p || !p->L || x < page_left(a) || y < BAR) { g_kbm.n = NULL; return; }
+    float px = page_x(a, x), py = page_y(a, y) + a->t->sy;
+    Box *b = layout_hit(p->L, px, py, 0, a->t->sy);
+    if (!b || !b->node || !node_within(b->node, f)) return;   /* elsewhere on the page: the field keeps its focus */
+    if (SDL_ScreenKeyboardShown(a->win)) { g_kbm.n = f; return; }
+    if (g_kbm.n == f && hypotf(x - g_kbm.x, y - g_kbm.y) <= 30) { g_kbm.n = NULL; SDL_StartTextInput(a->win); return; }
+    g_kbm.n = f; g_kbm.x = x; g_kbm.y = y;
+    g_kbm.menu = true; g_kbm.mx = px; g_kbm.my = py; g_kbm.hit = 0;
+    a->caret_t = now_ms();
+}
+static void kbm_overlay(App *a, DisplayList *dl) {
+    g_kbm.nb = 0;
+    Node *f = page_focus(a);
+    if (!f) f = edit_focus(a);
+    if (!g_kbm.menu || !f || f != g_kbm.n || tsel_ui(a) || SDL_ScreenKeyboardShown(a->win)) { g_kbm.menu = false; return; }
+    int n = 0; bool any = true;
+    if (is_text_ctl(f)) { char *v = ctl_value(f); any = *v != 0; free(v); }
+    g_kbm.act[n++] = TA_PASTE;
+    if (any) g_kbm.act[n++] = TA_ALL;
+    Font *ft = a->ui; static const char *label[4] = { "Cut", "Copy", "Paste", "Select all" };
+    float pad = 16, h = 40, w = 0, bw[2], vw = page_width(a), vh = page_height(a);
+    for (int i = 0; i < n; i++) { bw[i] = text_width(ft, label[g_kbm.act[i]], strlen(label[g_kbm.act[i]]), 0) + 2 * pad; w += bw[i]; }
+    float cy = g_kbm.my - a->t->sy;
+    if (cy < -h || cy > vh + h) return;   /* scrolled away */
+    float x = LCLAMP(g_kbm.mx - w / 2, 4, LMAX(4, vw - 4 - w)), y = cy - 34 - h;   /* above the finger, clear of a second tap */
+    if (y < 4) y = LMIN(cy + 34, vh - 4 - h);
+    push_rect(dl, x - 1, y, w + 2, h + 2, 9, RGBA(0, 0, 0, 38));
+    push_rect(dl, x, y, w, h, 8, RGBA(255, 255, 255, 255));
+    float base = y + h / 2 + (ft->ascent - ft->descent) / 2, bx = x;
+    for (int i = 0; i < n; bx += bw[i], i++) {
+        if (i) push_rect(dl, bx, y + 10, 1, h - 20, 0, RGBA(218, 220, 224, 255));
+        push_text(dl, ft, label[g_kbm.act[i]], bx + pad, base, bw[i], RGBA(32, 33, 36, 255));
+        g_kbm.bend[i] = bx + bw[i];
+    }
+    g_kbm.bar[0] = x; g_kbm.bar[1] = y; g_kbm.bar[2] = x + w; g_kbm.bar[3] = y + h; g_kbm.nb = n;
+}
+/* the bubble's button under window point x, y: 1-based, 0 for none */
+static int kbm_hit(App *a, float x, float y) {
+    if (!g_kbm.menu || !g_kbm.nb || x <= page_left(a) || y <= BAR) return 0;
+    float px = page_x(a, x), py = page_y(a, y);
+    if (px < g_kbm.bar[0] || px >= g_kbm.bar[2] || py < g_kbm.bar[1] || py >= g_kbm.bar[3]) return 0;
+    return g_kbm.nb > 1 && px >= g_kbm.bend[0] ? 2 : 1;
+}
+static void kbm_action(App *a, int act) {
+    Page *p = a->t->cur; Node *f = page_focus(a), *h = f ? NULL : edit_focus(a);
+    g_kbm.menu = false; sel_dirty(a);
+    if (!p || !p->L || (!f && !h)) return;
+    if (act == TA_ALL && f) {   /* then the Cut | Copy | Paste bar, as after a long press */
+        char *v = ctl_value(f); int e = u8_byte_cp(v, (int)strlen(v)); free(v);
+        g_tsel.on = false;
+        tsel_ctl_set(a, f, 0, e);
+        g_ts.kind = TK_CTL; g_ts.cn = f; g_ts.cw[0] = 0; g_ts.cw[1] = e;
+        g_ts.ax = g_kbm.mx; g_ts.ay = g_kbm.my - a->t->sy;
+        g_ts.mode = 0; g_ts.ui = true; g_ts.gx = g_ts.gy = 0;
+        return;
+    }
+    if (act == TA_ALL) {
+        if (p->js) js_dispatch(p->js, h, "lumensel-all", "MouseEvent", false, false, 0, 0, 0, NULL);
+        edit_sel_sync(a);
+        if (g_tsel.on && edit_focus(a) == h) { g_ts.kind = TK_EDIT; g_ts.mode = 0; g_ts.ui = true; g_ts.gx = g_ts.gy = 0; }
+        return;
+    }
+    char *t = SDL_GetClipboardText();
+    if (t && *t) { if (f) ctl_insert(a, f, t); else if (p->js) js_dispatch(p->js, h, "lumenedit", "KeyboardEvent", false, false, 0, 0, 0, t); }
+    SDL_free(t);
+    restyle(a); a->dirty = true;
 }
 static void tsel_action(App *a, int act) {
     Page *p = a->t->cur; Node *f = g_ts.kind == TK_CTL ? tsel_ctl(a) : NULL, *h = g_ts.kind == TK_EDIT ? edit_focus(a) : NULL;
@@ -3353,8 +3705,11 @@ static bool tsel_touch(App *a, AndroidTouchPhase phase, const SDL_Event *ev, flo
     bool mine = device == g_ts.device && finger == g_ts.finger;
     if (phase == ANDROID_TOUCH_DOWN) {
         g_ts.armed = g_ts.url = false;
-        if (g_ts.mode || g_ts.bar_hit || g_ts.umenu_hit) return true;   /* other fingers wait for the selection gesture */
+        if (g_ts.mode || g_ts.bar_hit || g_ts.umenu_hit || g_kbm.hit) return true;   /* other fingers wait for the selection gesture */
         if (a->touch.count) return false;
+        int km = kbm_hit(a, x, y);
+        if (km) { g_ts.device = device; g_ts.finger = finger; g_kbm.hit = km; return true; }
+        if (g_kbm.menu) { g_kbm.menu = false; sel_dirty(a); }
         int um = url_menu_hit(x, y);
         if (um >= 0) { g_ts.device = device; g_ts.finger = finger; g_ts.umenu_hit = um + 1; return true; }
         if (a->umenu) { a->umenu = false; a->dirty = true; a->vonly = false; }
@@ -3363,7 +3718,7 @@ static bool tsel_touch(App *a, AndroidTouchPhase phase, const SDL_Event *ev, flo
             g_ts.armed = g_ts.url = true; g_ts.down = now_ms(); g_ts.x = x; g_ts.y = y;
             return false;
         }
-        if (x <= a->side || y <= BAR || a->t->info || g_hud_pop) return false;
+        if (x <= page_left(a) || y <= BAR || a->t->info || g_hud_pop) return false;
         g_ts.device = device; g_ts.finger = finger;
         float px = page_x(a, x), py = page_y(a, y);
         if (tsel_ui(a)) {
@@ -3391,6 +3746,12 @@ static bool tsel_touch(App *a, AndroidTouchPhase phase, const SDL_Event *ev, flo
         }
         g_ts.armed = true; g_ts.down = now_ms(); g_ts.x = x; g_ts.y = y;
         return false;
+    }
+    if (g_kbm.hit) {
+        if (!mine) return true;
+        if (phase == ANDROID_TOUCH_UP && kbm_hit(a, x, y) == g_kbm.hit) kbm_action(a, g_kbm.act[g_kbm.hit - 1]);
+        if (phase != ANDROID_TOUCH_MOVE) g_kbm.hit = 0;
+        return true;
     }
     if (g_ts.umenu_hit) {
         if (!mine) return true;
@@ -3518,7 +3879,8 @@ static void link_save(App *a, Node *n, const char *h) {
     free(u);
 }
 static void click_page(App *a, float x, float y, unsigned touch_flags) {
-    if (x < a->side || y < BAR) return;
+    if (panel_shown(a) && x >= a->side && x < page_left(a) && y >= BAR) { a->pan_close = true; return; }
+    if (x < page_left(a) || y < BAR) return;
     x = page_x(a, x); y = page_y(a, y);
     if (!a->t->cur || !a->t->cur->L || a->t->asleep) return;   /* a sleeping page is only a picture until its reload lands */
     h_sync_in(a, a->t->cur->d, true);   /* paint may be deferred; hit-test the current DOM, not detached boxes */
@@ -3562,7 +3924,7 @@ static void click_page(App *a, float x, float y, unsigned touch_flags) {
         }
         if (is_text_ctl(ctl)) focus_node(a, ctl);
         else if (edit_host(t)) { if (!js_focused && md_ok) focus_node(a, edit_host(t)); }
-        else if (!js_focused && md_ok && page_focus(a)) focus_node(a, NULL);
+        else if (!js_focused && md_ok && (page_focus(a) || edit_focus(a))) focus_node(a, NULL);   /* a tap outside blurs, hiding the keyboard */
         if (!touch) js_dispatch(js, t, "pointerup", "PointerEvent", true, true, x, cy, 0, NULL);
         if (!(touch_flags & 2)) {
             if (touch) js_touch_compat(js, t, "mouseup", "MouseEvent", x, cy);
@@ -3578,14 +3940,33 @@ static void click_page(App *a, float x, float y, unsigned touch_flags) {
             const char *h = node_attr(n, "href");
             if (workspace_action(a, h)) return;
             if (!strncmp(h, "javascript:", 11)) return;
-            if (h[0] == '#') { Node *t = doc_get_element_by_id(a->t->cur->d, h + 1); if (t && t->box) { a->t->sy = t->box->y; a->dirty = true; } return; }
+            if (fragment_link(a, h)) return;
             if (node_attr(n, "download") || !strncmp(h, "blob:", 5) || !strncmp(h, "data:", 5)) { link_save(a, n, h); return; }
             char *u = url_join(a->t->cur->d->url, h); navigate(a, u, true); free(u); return;
         }
 }
 
+/* a link to another fragment of the shown document: the page's location.assign, which keeps the
+   document and fires popstate and hashchange as Chrome does; without scripts it only scrolls */
+static bool fragment_link(App *a, const char *h) {
+    Page *p = a->t->cur;
+    const char *cur = p->url ? p->url : p->d->url ? p->d->url : "";   /* the location, which pushState moves */
+    char *u = url_join(cur, h), *hash = u ? strchr(u, '#') : NULL;
+    size_t base = hash ? (size_t)(hash - u) : 0;
+    bool same = hash && strlen(cur) >= base && !strncmp(cur, u, base) && (cur[base] == 0 || cur[base] == '#');
+    if (same && p->js) {
+        SB b; sb_init(&b); sb_puts(&b, "__lumenFragment("); sb_json(&b, u); sb_puts(&b, ")");
+        char *src = sb_take(&b); js_eval(p->js, src, "lumen:fragment"); free(src);
+        a->dirty = true; restyle(a);
+    } else if (same) {
+        Node *t = doc_get_element_by_id(p->d, hash + 1);
+        if (t && t->box) { a->t->sy = t->box->y; a->dirty = true; }
+    }
+    free(u);
+    return same;
+}
 static bool over_link(App *a, float x, float y) {
-    if (x < a->side || y < BAR) return false;
+    if (x < page_left(a) || y < BAR) return false;
     x = page_x(a, x); y = page_y(a, y);
     if (!a->t->cur || !a->t->cur->L || a->t->asleep) return false;
     Box *b = layout_hit(a->t->cur->L, x, y + a->t->sy, 0, a->t->sy);
@@ -3594,6 +3975,7 @@ static bool over_link(App *a, float x, float y) {
 }
 
 static void tab_select(App *a, int i) {
+    if (a->pan) { int k = 0; while (k < a->ntabs && a->tabs[k] != a->pan) k++; if (k == i) return; panel_close(a, false); if (k < i) i--; }
     if (i < 0 || i >= a->ntabs) return;
     a->ti = i; a->t = a->tabs[i]; a->wi = a->t->ws; a->wslast[a->wi] = a->t; a->editing = false; a->t->relayout = true; a->dirty = true; a->vonly = false;
     if (a->t->asleep && !a->t->loading) navigate(a, a->t->url, false);
@@ -3601,6 +3983,7 @@ static void tab_select(App *a, int i) {
     SDL_SetWindowTitle(a->win, p && p->d->title && *p->d->title ? p->d->title : "Lumen");
 }
 static void tab_open(App *a) {
+    panel_close(a, false);
     if (!tab_new(a)) return;
     tab_select(a, a->ntabs - 1);
     navigate(a, "lumen://newtab", true);
@@ -3610,8 +3993,9 @@ static void tab_open(App *a) {
     a->editing = true; a->t->url[0] = 0; a->us[0] = a->us[1] = 0; SDL_StartTextInput(a->win);
 #endif
 }
-static void tab_free(Tab *t) { if (t->cur) page_free(t->cur); for (int k = 0; k < t->nhist; k++) free(t->hist[k]); free(t); }
+static void tab_free(Tab *t) { if (t->cur) page_free(t->cur); for (int k = 0; k < t->nhist; k++) free(t->hist[k]); free(t->stitle); free(t); }
 static void tab_close(App *a, int i, bool *quit) {
+    if (a->pan) { int k = 0; while (k < a->ntabs && a->tabs[k] != a->pan) k++; if (k == i) return; panel_close(a, false); if (k < i) i--; }
     if (a->ntabs == 1) { *quit = true; return; }
     Tab *t = a->tabs[i]; int w = t->ws; bool act = i == a->ti;
     for (int k = 0; k < 16; k++) if (a->wslast[k] == t) a->wslast[k] = NULL;
@@ -3655,10 +4039,111 @@ static void ws_close(App *a, int w) {
     a->t = n ? a->tabs[0] : NULL; a->ti = 0;
     ws_select(a, w > 0 ? w - 1 : 0);
 }
+/* Workspaces and their tabs survive a restart (session.txt beside the bookmarks): names, icons, each tab's
+   history, address, zoom and title, the shown tab and each workspace's last one. Saved when they change
+   (checked every 2 s, and at once when the app goes to the background), through a temporary file; restored
+   on a normal start, where only the shown tab loads and the others sleep until first shown. Test launches
+   (LUMEN_NO_SESSION, or several start addresses) neither restore nor save. */
+static bool g_session = true;
+static uint64_t g_session_sig;
+static void clean_field(char *s) { for (; *s; s++) if (*s == '\t' || *s == '\n' || *s == '\r') *s = ' '; }
+static bool session_tab(const App *a, const Tab *t) { return t->ws >= 0 && t->ws < a->nws && t != a->pan; }
+static const char *saved_title(const Tab *t) { return t->cur && t->cur->d && t->cur->d->title && *t->cur->d->title ? t->cur->d->title : t->stitle; }
+static uint64_t session_sig(const App *a) {
+    uint64_t h = 1469598103934665603ull;
+    HMIX(h, a->nws); HMIX(h, a->ti);
+    for (int w = 0; w < a->nws; w++) { h = hmix(h, a->wsname[w], strlen(a->wsname[w]) + 1); HMIX(h, a->wsicon[w]); HMIX(h, a->wslast[w]); }
+    for (int i = 0; i < a->ntabs; i++) {
+        const Tab *t = a->tabs[i]; const char *title = saved_title(t);
+        if (!session_tab(a, t)) continue;
+        HMIX(h, t); HMIX(h, t->ws); HMIX(h, t->hpos); HMIX(h, t->nhist); HMIX(h, t->zoom_pct);
+        for (int k = 0; k < t->nhist; k++) HMIX(h, t->hist[k]);   /* entries are replaced, never edited */
+        h = hmix(h, t->url, strlen(t->url) + 1);
+        if (title) h = hmix(h, title, strlen(title));
+    }
+    return h;
+}
+static void session_save(const App *a) {
+    char p[1200], tmp[1300]; pref_path(p, sizeof p, "session.txt"); if (!*g_pref) return;
+    snprintf(tmp, sizeof tmp, "%s.new", p);
+    FILE *f = fopen(tmp, "w"); if (!f) return;
+    int idx[MAX_TABS], n = 0;
+    fprintf(f, "lumen-session 1\n");
+    for (int w = 0; w < a->nws; w++) { char name[64]; snprintf(name, sizeof name, "%s", a->wsname[w]); clean_field(name); fprintf(f, "ws\t%d\t%s\n", a->wsicon[w], name); }
+    for (int i = 0; i < a->ntabs; i++) {
+        const Tab *t = a->tabs[i]; idx[i] = -1;
+        if (!session_tab(a, t)) continue;
+        idx[i] = n++;
+        char title[256]; snprintf(title, sizeof title, "%s", saved_title(t) ? saved_title(t) : ""); clean_field(title);
+        fprintf(f, "tab\t%d\t%d\t%d\t%s\n", t->ws, t->hpos, t->zoom_pct, title);
+        for (int k = 0; k < t->nhist; k++) fprintf(f, "h\t%s\n", t->hist[k]);
+        if (*t->url) fprintf(f, "url\t%s\n", t->url);
+    }
+    fprintf(f, "cur\t%d\n", a->ti >= 0 && a->ti < a->ntabs ? idx[a->ti] : -1);
+    for (int w = 0; w < a->nws; w++) for (int i = 0; i < a->ntabs; i++) if (a->tabs[i] == a->wslast[w] && idx[i] >= 0) fprintf(f, "last\t%d\t%d\n", w, idx[i]);
+    bool ok = !ferror(f); if (fclose(f)) ok = false;
+    if (ok) rename(tmp, p); else remove(tmp);
+}
+/* the saved workspaces and tabs, every tab asleep: the index of the one to show, or -1 (no tabs saved) */
+static int session_load(App *a) {
+    char p[1200]; pref_path(p, sizeof p, "session.txt"); FILE *f = *g_pref ? fopen(p, "r") : NULL; if (!f) return -1;
+    char *line = NULL; size_t cap = 0; int nws = 0, ntab = 0, sel = -1, last[16]; Tab *list[MAX_TABS], *t = NULL;
+    for (int w = 0; w < 16; w++) last[w] = -1;
+    bool ok = getline(&line, &cap, f) > 0 && !strncmp(line, "lumen-session 1\n", 16);
+    while (ok && getline(&line, &cap, f) > 0) {
+        line[strcspn(line, "\r\n")] = 0;
+        char *v = strchr(line, '\t'); if (!v) continue; *v++ = 0;
+        if (!strcmp(line, "ws") && nws < 16 && !ntab) {
+            char *name = strchr(v, '\t'); if (!name) continue; *name++ = 0;
+            snprintf(a->wsname[nws], sizeof a->wsname[0], "%s", *name ? name : "Workspace"); a->wsicon[nws] = atoi(v); a->wslast[nws++] = NULL;
+        } else if (!strcmp(line, "tab")) {
+            int ws, hpos, zoom, used = 0; t = NULL;
+            if (sscanf(v, "%d\t%d\t%d%n", &ws, &hpos, &zoom, &used) < 3 || ws < 0 || ws >= nws) continue;
+            if (!(t = ntab ? tab_new(a) : a->tabs[0])) continue;   /* the first reuses the start tab */
+            t->ws = ws; t->hpos = hpos; t->zoom_pct = LCLAMP(zoom, 0, 300);
+            if (v[used] == '\t' && v[used + 1]) t->stitle = xstrdup(v + used + 1);
+            list[ntab++] = t;
+        } else if (!strcmp(line, "h") && t && t->nhist < 256) t->hist[t->nhist++] = xstrdup(v);
+        else if (!strcmp(line, "url") && t) snprintf(t->url, sizeof t->url, "%s", v);
+        else if (!strcmp(line, "cur")) sel = atoi(v);
+        else if (!strcmp(line, "last")) { int w, k; if (sscanf(v, "%d\t%d", &w, &k) == 2 && w >= 0 && w < 16) last[w] = k; }
+    }
+    free(line); fclose(f);
+    if (nws) a->nws = nws;
+    if (!ntab) { a->tabs[0]->ws = 0; return -1; }
+    for (int k = 0; k < ntab; k++) {
+        t = list[k];
+        if (t->nhist) t->hpos = LCLAMP(t->hpos, 0, t->nhist - 1); else t->hpos = -1;
+        if (!*t->url) snprintf(t->url, sizeof t->url, "%s", t->nhist ? t->hist[t->hpos] : "lumen://newtab");
+        t->asleep = true;
+    }
+    for (int w = 0; w < a->nws; w++) if (last[w] >= 0 && last[w] < ntab && list[last[w]]->ws == w) a->wslast[w] = list[last[w]];
+    Tab *show = list[sel >= 0 && sel < ntab ? sel : 0];
+    for (int i = 0; i < a->ntabs; i++) if (a->tabs[i] == show) return i;
+    return 0;
+}
+/* the main loop's check: saves when anything saved changed */
+static void session_service(App *a, bool background) {
+    static double last; static bool was_bg;
+    double now = now_ms(); bool force = background && !was_bg; was_bg = background;
+    if (!g_session || (!force && now - last < 2000)) return;
+    last = now;
+    uint64_t sig = session_sig(a);
+    if (sig != g_session_sig) { g_session_sig = sig; session_save(a); }
+}
+/* a lumen://workspace? link of Lumen's own pages, or the panel's close link; from the panel they wait
+   for it to close (panel_service) */
+static bool workspace_run(App *app, const char *url);
 static bool workspace_action(App *app, const char *url) {
+    if (!strcmp(url, "lumen://panel?close")) { if (panel_shown(app)) app->pan_close = true; return true; }
+    if (strncmp(url, "lumen://workspace?", 18)) return false;
+    if (!app->t->cur || !app->t->cur->internal_ui) return true;
+    if (panel_shown(app)) { free(app->pan_go); app->pan_go = xstrdup(url); return true; }
+    return workspace_run(app, url);
+}
+static bool workspace_run(App *app, const char *url) {
     const char *prefix = "lumen://workspace?";
     if (strncmp(url, prefix, strlen(prefix))) return false;
-    if (!app->t->cur || !app->t->cur->internal_ui) return true;
     const char *action = url + strlen(prefix);
     if (!strcmp(action, "new")) {
         if (app->nws >= 16 || app->ntabs >= MAX_TABS) return true;
@@ -3667,6 +4152,56 @@ static bool workspace_action(App *app, const char *url) {
     } else if (!strcmp(action, "close")) {
         if (app->nws <= 1) return true;
         ws_close(app, app->wi);
+    } else if (!strncmp(action, "close=", 6)) {   /* Home: any workspace, staying on this tab unless it closes */
+        const char *digits = action + 6;
+        size_t length = strlen(digits);
+        if (app->nws <= 1 || !length || length > 3 || strspn(digits, "0123456789") != length) return true;
+        int index = atoi(digits);
+        if (index >= app->nws) return true;
+        Tab *here = app->t->ws == index ? NULL : app->t;
+        ws_close(app, index);
+        for (int i = 0; here && i < app->ntabs; i++) if (app->tabs[i] == here) tab_select(app, i);
+    } else if (!strncmp(action, "bmtab=", 6) || !strncmp(action, "bmws=", 5)) {   /* Bookmarks: in a new tab, or in a new workspace */
+        bool ws = action[2] == 'w';
+        const char *digits = action + (ws ? 5 : 6);
+        size_t length = strlen(digits);
+        if (!length || length > 3 || strspn(digits, "0123456789") != length) return true;
+        int index = atoi(digits);
+        if (index >= g_nbm || is_js_url(g_bms[index].url) || app->ntabs >= MAX_TABS || (ws && app->nws >= 16)) return true;
+        char *url = xstrdup(g_bms[index].url);
+        if (ws) {
+            snprintf(app->wsname[app->nws], sizeof app->wsname[0], "Workspace %d", app->nws + 1);
+            app->wsicon[app->nws] = WORKSPACE_DEFAULT_ICON; app->wslast[app->nws] = NULL; app->wi = app->nws++;
+        }
+        if (tab_new(app)) { tab_select(app, app->ntabs - 1); SDL_StopTextInput(app->win); navigate(app, url, true); }
+        free(url);
+        return true;
+    } else if (!strncmp(action, "dup=", 4)) {   /* Home: a copy of a workspace, its tabs with their history; each loads when first shown */
+        const char *digits = action + 4;
+        size_t length = strlen(digits);
+        if (!length || length > 3 || strspn(digits, "0123456789") != length) return true;
+        int index = atoi(digits), w = app->nws, n = app->ntabs;
+        if (index >= app->nws || app->nws >= 16 || app->ntabs >= MAX_TABS) return true;
+        snprintf(app->wsname[w], sizeof app->wsname[0], "%.58s copy", app->wsname[index]);
+        app->wsicon[w] = app->wsicon[index]; app->wslast[w] = NULL; app->nws++;
+        int keep = app->wi; app->wi = w;   /* tab_new puts tabs in the current workspace */
+        for (int i = 0; i < n; i++) {
+            Tab *from = app->tabs[i], *t;
+            if (from->ws != index || !(t = tab_new(app))) continue;
+            for (int k = 0; k < from->nhist; k++) t->hist[k] = xstrdup(from->hist[k]);
+            t->nhist = from->nhist; t->hpos = from->hpos; t->desktop = from->desktop;
+            snprintf(t->url, sizeof t->url, "%s", from->url);
+            t->asleep = *t->url != 0;
+        }
+        app->wi = keep;
+        ws_select(app, w);
+    } else if (!strncmp(action, "open=", 5)) {   /* Home: a tab of any workspace */
+        const char *digits = action + 5;
+        size_t length = strlen(digits);
+        if (!length || length > 3 || strspn(digits, "0123456789") != length) return true;
+        int index = atoi(digits);
+        if (index >= app->ntabs) return true;
+        tab_select(app, index);
     } else {
         bool select_workspace = !strncmp(action, "select=", 7);
         if (!select_workspace && strncmp(action, "tab=", 4)) return true;
@@ -3747,22 +4282,58 @@ static void cpu_monitor(App *a) {   /* a tab averaging over g_cpu_pct% of a core
 #endif
     if (getenv("LUMEN_CPU_DEBUG")) for (int i = 0; i < a->ntabs; i++) fprintf(stderr, "lumen-cpu: tab %d %.0f%%%s\n", i, a->tabs[i]->pct * 100, a->tabs[i]->limited ? " limited" : "");
 }
+/* bookmarks t's page unless it already is: the notice to show */
+static const char *bm_add(Tab *t) {
+    if (!t->cur || !*t->url || !strncmp(t->url, "lumen:", 6)) return "Open a web page to bookmark it";
+    if (bm_find(t->url) >= 0) return "Already in bookmarks";
+    if (g_nbm >= MAX_BM) return "Bookmark limit reached";
+    link_put(g_bms, &g_nbm, MAX_BM, t->url, t->cur->d->title);
+    links_save("bookmarks.txt", g_bms, g_nbm);
+    return "Added to bookmarks";
+}
 static void bm_toggle(App *a) {
     if (!a->t->cur || !*a->t->url || !strncmp(a->t->url, "lumen:", 6)) return;
     int i = bm_find(a->t->url);
     if (i >= 0) link_del(g_bms, &g_nbm, i); else link_put(g_bms, &g_nbm, MAX_BM, a->t->url, a->t->cur->d->title);
     links_save("bookmarks.txt", g_bms, g_nbm);
 }
-static void tab_popup(App *a, int i, float x, float y) {
-#ifdef __APPLE__
-    Tab *t = a->tabs[i]; char def[96];
-    if (g_cpu_on) snprintf(def, sizeof def, "Default (over %d%% for %d s \xE2\x86\x92 %d%%)", g_cpu_pct, g_cpu_secs, g_cpu_lim); else snprintf(def, sizeof def, "Default (limit off)");
-    int c = mac_tab_menu(a->win, x, y, t->cpumode, (int)(t->lim * 100 + 0.5f), vctl_on(t), lite_on(t), def);
+#if defined(__APPLE__) || defined(__ANDROID__)
+/* the tab menu's choice c (MENU_TAB_*) for t */
+static void tab_menu_apply(App *a, Tab *t, int c) {
     if (c == MENU_TAB_VCTL) t->vctl = !vctl_on(t);
     else if (c == MENU_TAB_LITE) t->lite = !lite_on(t);
     else if (c == MENU_TAB_CPU_DEFAULT || c == MENU_TAB_CPU_NEVER) { t->cpumode = c == MENU_TAB_CPU_NEVER; tab_unlimit(t); t->unlimit_until = 0; }
     else if (c > MENU_TAB_CPU_LIM) { t->cpumode = 2; t->limited = true; t->info = false; t->lim = (c - MENU_TAB_CPU_LIM) / 100.f; t->budget = 0; t->bud_t = now_ms(); }
     a->dirty = true; a->vonly = false;
+}
+static void tab_menu_default(char *def, size_t n) {
+    if (g_cpu_on) snprintf(def, n, "Default (over %d%% for %d s \xE2\x86\x92 %d%%)", g_cpu_pct, g_cpu_secs, g_cpu_lim); else snprintf(def, n, "Default (limit off)");
+}
+#endif
+#ifdef __ANDROID__
+/* the tab menu (a double tap on the tab bar): Close tab, then the desktop tab menu's choices */
+static Tab *g_tab_menu_tab;
+static const int g_tab_menu_codes[] = { 0, MENU_TAB_CPU_DEFAULT, MENU_TAB_CPU_NEVER, MENU_TAB_CPU_LIM + 20, MENU_TAB_CPU_LIM + 40, MENU_TAB_CPU_LIM + 60, MENU_TAB_VCTL, MENU_TAB_LITE };
+static void tab_menu(App *a, int i) {
+    Tab *t = a->tabs[i]; char def[96], lim[3][32];
+    tab_menu_default(def, sizeof def);
+    def[0] = (char)tolower((unsigned char)def[0]);
+    char cpu[112]; snprintf(cpu, sizeof cpu, "CPU limit: %s", def);
+    for (int k = 0; k < 3; k++) snprintf(lim[k], sizeof lim[k], "CPU limit: %d%%", 20 * (k + 1));
+    const char *items[] = { "Close tab", cpu, "CPU limit: never", lim[0], lim[1], lim[2], "Always show video controls", "Lite mode (release off-screen media to save RAM)" };
+    int pct = (int)(t->lim * 100 + 0.5f);
+    bool on[] = { false, t->cpumode == 0, t->cpumode == 1, t->cpumode == 2 && pct == 20, t->cpumode == 2 && pct == 40, t->cpumode == 2 && pct == 60, vctl_on(t), lite_on(t) };
+    const char *title = t->cur && t->cur->d && t->cur->d->title && *t->cur->d->title ? t->cur->d->title : t->stitle ? t->stitle : *t->url ? t->url : "New Tab";
+    g_tab_menu_tab = t;
+    android_ui_tab_menu(title, items, on, (int)(sizeof items / sizeof *items));
+}
+#endif
+static void tab_popup(App *a, int i, float x, float y) {
+#ifdef __APPLE__
+    Tab *t = a->tabs[i]; char def[96];
+    tab_menu_default(def, sizeof def);
+    int c = mac_tab_menu(a->win, x, y, t->cpumode, (int)(t->lim * 100 + 0.5f), vctl_on(t), lite_on(t), def);
+    tab_menu_apply(a, t, c);
 #else
     (void)a; (void)i; (void)x; (void)y;
 #endif
@@ -3856,10 +4427,9 @@ static void run_js_url(App *a, const char *url) {
 static void desktop_sites_load(void) {
     char p[1200]; pref_path(p, sizeof p, "desktop_sites.txt"); FILE *f = *g_pref ? fopen(p, "r") : NULL; if (!f) return;
     char line[256];
-    while (fgets(line, sizeof line, f)) { line[strcspn(line, "\r\n \t")] = 0; if (*line) net_set_desktop_host(line, true); }
+    while (fgets(line, sizeof line, f)) { line[strcspn(line, "\r\n \t")] = 0; if (*line) net_desktop_restore(line); }
     fclose(f);
 }
-#ifdef __ANDROID__
 /* bookmark files are one "url<TAB>title" per line: code in javascript: bookmarks keeps its line breaks escaped */
 static char *bm_url_clean(const char *u) {
     while (*u == ' ' || *u == '\n' || *u == '\r' || *u == '\t') u++;
@@ -3873,6 +4443,22 @@ static char *bm_url_clean(const char *u) {
     if (*r && !is_js_url(r)) { char *full = normalize_url(r); free(r); r = full; }
     return r;
 }
+/* the bookmark at index (or a new one, -1) set to title and url: its notice, or NULL when url is empty */
+static const char *bm_store(int index, const char *title, const char *raw) {
+    char *url = raw ? bm_url_clean(raw) : NULL;
+    if (!url || !*url) { free(url); return NULL; }
+    if (!title || !*title) title = url;
+    int i = index >= 0 && index < g_nbm ? index : bm_find(url);
+    if (i >= 0) {
+        free(g_bms[i].url); free(g_bms[i].title);
+        g_bms[i].url = url; g_bms[i].title = xstrdup(title);
+        for (char *c = g_bms[i].title; *c; c++) if (*c == '\t' || *c == '\n' || *c == '\r') *c = ' ';
+    } else if (g_nbm < MAX_BM) { link_put(g_bms, &g_nbm, MAX_BM, url, title); free(url); }
+    else { free(url); return "Bookmark limit reached"; }
+    links_save("bookmarks.txt", g_bms, g_nbm);
+    return "Bookmark saved";
+}
+#ifdef __ANDROID__
 static void desktop_sites_save(void) {
     char hosts[64 * 130]; net_desktop_hosts(hosts, sizeof hosts);
     char p[1200]; pref_path(p, sizeof p, "desktop_sites.txt"); FILE *f = *g_pref ? fopen(p, "w") : NULL; if (!f) return;
@@ -3880,11 +4466,13 @@ static void desktop_sites_save(void) {
     fclose(f);
 }
 static bool page_is_web(const Tab *t) { return t->cur && !t->cur->internal_ui && !strncmp(t->url, "http", 4); }
+/* "Desktop site" on a web page is for its site; on any other page ("*") for every site */
+static bool desktop_on(const Tab *t) { return page_is_web(t) ? t->desktop : net_desktop_host("*"); }
 static AndroidMenuState menu_state(App *a) {
-    Tab *t = a->t;
+    Tab *t = bar_tab(a);
     return (AndroidMenuState){
-        .can_forward = t->hpos < t->nhist - 1, .desktop = t->desktop, .can_desktop = page_is_web(t),
-        .can_zoom = t->cur && !t->cur->internal_ui, .zoom_pct = t->zoom_pct ? t->zoom_pct : g_page_zoom_pct,
+        .can_forward = t->hpos < t->nhist - 1, .desktop = desktop_on(t), .can_desktop = page_is_web(t) ? 1 : 2,
+        .can_zoom = true, .zoom_pct = t->zoom_pct ? t->zoom_pct : g_page_zoom_pct,
         .bookmarked = bm_find(t->url) >= 0, .can_bookmark = t->cur && *t->url && strncmp(t->url, "lumen:", 6),
         .can_back = t->hpos > 0, .fullscreen = g_fullscreen,
     };
@@ -3892,7 +4480,7 @@ static AndroidMenuState menu_state(App *a) {
 static void show_more_menu(App *a) { AndroidMenuState st = menu_state(a); android_ui_menu(&st); }
 /* hand the toolbar row's state to its Android view (android_ui_toolbar drops repeats) */
 static void bar_push(App *a) {
-    Tab *t = a->t; AndroidBarState st; memset(&st, 0, sizeof st);
+    Tab *t = bar_tab(a); AndroidBarState st; memset(&st, 0, sizeof st);
     float s = a->scale, x0 = bar_x0(a);
     st.left = (int)lroundf(x0 * s); st.top = (int)lroundf(TABH * s);
     st.width = (int)lroundf((a->vw - x0) * s); st.height = (int)lroundf(TB * s);
@@ -3900,7 +4488,7 @@ static void bar_push(App *a) {
     for (int i = 0; i < st.nslot; i++) {
         int code = g_slot[i]; st.slot[i] = code;
         st.slot_enabled[i] = code == UI_BACK ? t->hpos > 0 : code == UI_FORWARD ? t->hpos < t->nhist - 1 : true;
-        st.slot_lit[i] = code == UI_BM_TOGGLE ? bm_find(t->url) >= 0 : code == UI_DESKTOP ? t->desktop : code == UI_FULLSCREEN && g_fullscreen;
+        st.slot_lit[i] = code == UI_BM_TOGGLE ? bm_find(t->url) >= 0 : code == UI_DESKTOP ? desktop_on(t) : code == UI_FULLSCREEN && g_fullscreen;
     }
     st.loading = t->loading; st.menu = menu_state(a); st.hud = g_hud; st.touch_feedback = g_touch_fb;
     st.touch_rgb = g_touch_fb_rgb; st.touch_alpha = g_touch_fb_alpha; st.touch_size = g_touch_fb_size; st.touch_ms = g_touch_fb_ms;
@@ -3909,7 +4497,7 @@ static void bar_push(App *a) {
 static void show_bookmarks(App *a) {
     const char *titles[MAX_BM], *urls[MAX_BM];
     for (int i = 0; i < g_nbm; i++) { titles[i] = g_bms[i].title; urls[i] = g_bms[i].url; }
-    Tab *t = a->t; bool page = t->cur && *t->url && strncmp(t->url, "lumen:", 6);
+    Tab *t = bar_tab(a); bool page = t->cur && *t->url && strncmp(t->url, "lumen:", 6);
     const char *title = page && t->cur->d->title && *t->cur->d->title ? t->cur->d->title : t->url;
     android_ui_bookmarks(titles, urls, g_nbm, page ? title : NULL, page ? t->url : NULL);
 }
@@ -3917,6 +4505,85 @@ static void show_workspaces(App *a) {
     const char *names[16]; int tabs[16], v[MAX_TABS];
     for (int i = 0; i < a->nws; i++) { names[i] = a->wsname[i]; tabs[i] = ws_tabs(a, i, v); }
     android_ui_workspaces(names, tabs, a->nws, a->wi);
+}
+/* The menu's Bookmarks, History, Downloads, Workspaces and Settings: Lumen's new tab page at that
+   section in a panel at the right below the toolbar, over a dimmed picture of the page it covers.
+   The panel is a tab of no workspace that is shown (a->t) while a->ti stays on the covered tab; links
+   it opens and workspace changes wait for the main loop (panel_service), which closes it first, as
+   its own scripts may be running when they are asked for. */
+static void panel_snapshot(App *a) {
+    int bar_px = (int)(BAR * a->scale), w = a->frame.w, h = a->frame.h - bar_px;
+    free(a->pan_bg); a->pan_bg = NULL;
+    if (w <= 0 || h <= 0 || !a->frame.px) return;
+    if (a->frame_page_stale) { compose_page(a, 0, h, bar_px, (int)(page_left(a) * a->scale)); a->frame_page_stale = false; }
+    if (!(a->pan_bg = malloc((size_t)w * (size_t)h * 4))) return;
+    a->pan_bgw = w; a->pan_bgh = h;
+    for (int y = 0; y < h; y++) {
+        const uint32_t *from = a->frame.px + (size_t)(y + bar_px) * (size_t)a->frame.stride; uint32_t *to = a->pan_bg + (size_t)y * (size_t)w;
+        for (int x = 0; x < w; x++) { uint32_t c = from[x]; to[x] = 0xff000000u | ((c >> 16 & 255) * 5 / 8) << 16 | ((c >> 8 & 255) * 5 / 8) << 8 | (c & 255) * 5 / 8; }
+    }
+}
+/* the picture left of the panel, darkening into a shadow at its edge */
+static void panel_backdrop(App *a, int bar_px, int width) {
+    int x0 = (int)(a->side * a->scale), x1 = LMIN(x0 + width, a->frame.w), shade = (int)(10 * a->scale);
+    for (int y = bar_px; y < a->frame.h && x1 > x0; y++) {
+        uint32_t *row = a->frame.px + (size_t)y * (size_t)a->frame.stride;
+        const uint32_t *pic = a->pan_bg && a->pan_bgw == a->frame.w && y - bar_px < a->pan_bgh ? a->pan_bg + (size_t)(y - bar_px) * (size_t)a->pan_bgw : NULL;
+        for (int x = x0; x < x1; x++) {
+            uint32_t c = pic ? pic[x] : 0xff5f6368;
+            int k = x1 - x <= shade ? 256 - 96 * (shade - (x1 - x) + 1) / shade : 256;
+            row[x] = 0xff000000u | ((c >> 16 & 255) * k >> 8) << 16 | ((c >> 8 & 255) * k >> 8) << 8 | ((c & 255) * k >> 8);
+        }
+    }
+}
+static void panel_open_at(App *a, const char *section, bool keep_picture) {
+    char url[64]; snprintf(url, sizeof url, "lumen://newtab?s=%s", section);
+    if (a->pan) {   /* open: the same section again closes it */
+        if (!strcmp(a->pan->url, url)) panel_close(a, false); else navigate(a, url, false);
+        return;
+    }
+    if (a->ntabs >= MAX_TABS) { navigate(a, url, true); return; }
+    if (!keep_picture || !a->pan_bg) panel_snapshot(a);
+    Tab *under = a->t, *p = tab_new(a);
+    if (!p) return;
+    p->ws = -1;
+    a->pan = p; a->pan_under = under; a->t = p;
+    if (a->editing) { a->editing = false; SDL_StopTextInput(a->win); }
+    navigate(a, url, true);
+    a->dirty = true; a->vonly = a->osig_ok = a->gvid_ok = false;
+}
+static void panel_open(App *a, const char *section) { panel_open_at(a, section, false); }
+static void panel_close(App *a, bool keep_picture) {
+    Tab *p = a->pan;
+    if (!p) return;
+    a->pan = NULL; a->pan_close = false;
+    int i = 0; while (i < a->ntabs && a->tabs[i] != p) i++;
+    if (i < a->ntabs) {
+        memmove(a->tabs + i, a->tabs + i + 1, sizeof(Tab *) * (size_t)(a->ntabs - i - 1)); a->ntabs--;
+        if (a->ti > i) a->ti--;
+    }
+    a->t = a->ti >= 0 && a->ti < a->ntabs ? a->tabs[a->ti] : a->tabs[0];
+    a->pan_under = NULL;
+    if (a->pan_dead) tab_free(a->pan_dead);
+    a->pan_dead = p;   /* freed by panel_service: its page may be on the stack */
+    if (!keep_picture) { free(a->pan_bg); a->pan_bg = NULL; }
+    if (a->t->cur && a->t->cur->js) js_touch(a->t->cur->js, NULL, "reset", 0, 0, 0, 0, 0);
+    android_touch_reset(&a->touch);
+    android_fling_reset(&a->fling);
+    a->t->relayout = true; a->dirty = true; a->vonly = a->osig_ok = a->gvid_ok = false;
+    publish_gens(a);
+}
+/* the main loop, where no page script runs */
+static void panel_service(App *a) {
+    if (a->pan_dead) { tab_free(a->pan_dead); a->pan_dead = NULL; }
+    if (!a->pan || (!a->pan_close && !a->pan_go)) { a->pan_close = false; return; }
+    char *go = a->pan_go; a->pan_go = NULL;
+    bool home = go && !strncmp(go, "lumen://workspace?close=", 24);   /* closing another workspace keeps Home up */
+    panel_close(a, home);
+    if (go && is_js_url(go)) run_js_url(a, go);
+    else if (go && !workspace_run(a, go)) navigate(a, go, true);
+    if (home && a->t->ws >= 0) panel_open_at(a, "home", true);
+    free(go);
 }
 typedef struct { int code, value; char *s1, *s2; } UiAction;
 static void ui_action_post(int code, int value, char *s1, char *s2) {   /* Android UI thread */
@@ -3938,32 +4605,39 @@ static void slot_used(App *a, int code) {
 }
 static void ui_action(App *a, UiAction *u, bool *quit) {
     (void)quit;
-    Tab *t = a->t;
 #if defined(__ANDROID__) && !defined(NDEBUG)
     __android_log_print(ANDROID_LOG_INFO, "LumenUi", "action code=%d value=%d", u->code, u->value);
 #endif
     slot_used(a, u->code);
+    /* the panel's own sections switch it; bookmark edits refresh it; anything else is for the page under it */
+    bool section = u->code == UI_BOOKMARKS || u->code == UI_HISTORY || u->code == UI_DOWNLOADS || u->code == UI_WORKSPACES || u->code == UI_SETTINGS;
+    if (a->pan && !section && u->code != UI_BM_SAVE && u->code != UI_BM_DELETE && u->code != UI_BM_ADD) panel_close(a, false);
+    Tab *t = bar_tab(a);
     switch (u->code) {
     case UI_NEW_TAB: tab_open(a); break;
     case UI_BACK: history_go(a, -1); break;
     case UI_RELOAD: if (t->hpos >= 0) navigate(a, t->hist[t->hpos], false); break;
     case UI_FULLSCREEN: g_fullscreen = u->value != 0; android_ui_fullscreen(g_fullscreen); break;
     case UI_FORWARD: history_go(a, 1); break;
-    case UI_BOOKMARKS: show_bookmarks(a); break;
-    case UI_WORKSPACES: show_workspaces(a); break;
-    case UI_DOWNLOADS: navigate(a, "lumen://newtab?s=downloads", true); break;
-    case UI_HISTORY: navigate(a, "lumen://newtab?s=history", true); break;
-    case UI_SETTINGS: navigate(a, "lumen://newtab?s=settings", true); break;
+    case UI_BOOKMARKS: panel_open(a, "bookmarks"); break;
+    case UI_WORKSPACES: panel_open(a, "home"); break;
+    case UI_DOWNLOADS: panel_open(a, "downloads"); break;
+    case UI_HISTORY: panel_open(a, "history"); break;
+    case UI_SETTINGS: panel_open(a, "settings"); break;
     case UI_DESKTOP: {
+        bool on = u->value != 0;
+        if (!page_is_web(t)) {
+            net_set_desktop_host("*", on); desktop_sites_save();
+            ui_toast(a, on ? "Desktop site on for all sites" : "Desktop site off for all sites");
+            break;
+        }
         URL pu;
-        if (!page_is_web(t)) { ui_toast(a, "Desktop site works on web pages only"); break; }
         if (!url_parse(t->url, &pu)) break;
-        net_set_desktop_host(pu.host, u->value != 0); url_free(&pu);
+        net_set_desktop_host(pu.host, on); url_free(&pu);   /* under "*", off excludes only this site */
         desktop_sites_save();
         if (t->hpos >= 0) navigate(a, t->hist[t->hpos], false);
         break; }
     case UI_ZOOM:
-        if (!t->cur || t->cur->internal_ui) break;
         { int pct = LCLAMP(u->value, 20, 300), want = pct == g_page_zoom_pct ? 0 : pct;
           if (want != t->zoom_pct) { t->zoom_pct = want; page_zoom_changed(a); } }
         break;
@@ -3976,20 +4650,12 @@ static void ui_action(App *a, UiAction *u, bool *quit) {
         if (is_js_url(u->s2)) run_js_url(a, u->s2); else { SDL_StopTextInput(a->win); navigate(a, u->s2, true); }
         break;
     case UI_BM_SAVE: {
-        char *url = u->s2 ? bm_url_clean(u->s2) : NULL;
-        if (!url || !*url) { free(url); break; }
-        const char *title = u->s1 && *u->s1 ? u->s1 : url;
-        int i = u->value >= 0 && u->value < g_nbm ? u->value : bm_find(url);
-        if (i >= 0) {
-            free(g_bms[i].url); free(g_bms[i].title);
-            g_bms[i].url = url; g_bms[i].title = xstrdup(title);
-            for (char *c = g_bms[i].title; *c; c++) if (*c == '\t' || *c == '\n' || *c == '\r') *c = ' ';
-        } else if (g_nbm < MAX_BM) { link_put(g_bms, &g_nbm, MAX_BM, url, title); free(url); }
-        else { free(url); ui_toast(a, "Bookmark limit reached"); break; }
-        links_save("bookmarks.txt", g_bms, g_nbm);
-        ui_toast(a, "Bookmark saved");
+        const char *msg = bm_store(u->value, u->s1, u->s2);
+        if (!msg) break;
+        ui_toast(a, msg);
         show_bookmarks(a);
         break; }
+    case UI_BM_ADD: bm_add(t); break;
     case UI_BM_DELETE: {
         int i = u->value >= 0 && u->value < g_nbm && u->s2 && !strcmp(g_bms[u->value].url, u->s2) ? u->value : u->s2 ? bm_find(u->s2) : -1;
         if (i < 0) break;
@@ -4004,9 +4670,24 @@ static void ui_action(App *a, UiAction *u, bool *quit) {
         break;
     case UI_WS_RENAME: if (u->value >= 0 && u->value < a->nws && u->s1 && *u->s1) snprintf(a->wsname[u->value], sizeof a->wsname[0], "%s", u->s1); break;
     case UI_WS_CLOSE: if (u->value >= 0 && u->value < a->nws && a->nws > 1) ws_close(a, u->value); break;
+    case UI_TAB_MENU: {
+        int i = 0; while (i < a->ntabs && a->tabs[i] != g_tab_menu_tab) i++;
+        if (i == a->ntabs || u->value < 0 || u->value >= (int)(sizeof g_tab_menu_codes / sizeof *g_tab_menu_codes)) break;
+        if (u->value) { tab_menu_apply(a, a->tabs[i], g_tab_menu_codes[u->value]); break; }
+        Tab *mt = g_tab_menu_tab; g_tab_menu_tab = NULL;
+        if (a->ntabs == 1) tab_open(a);   /* the last tab gives way to a new one rather than closing Lumen */
+        for (i = 0; i < a->ntabs && a->tabs[i] != mt; i++) {}
+        if (i < a->ntabs) tab_close(a, i, quit);
+        break; }
     }
+    if (panel_shown(a) && (u->code == UI_BM_SAVE || u->code == UI_BM_DELETE || (u->code == UI_BM_ADD && strstr(a->t->url, "s=bookmarks"))))
+        navigate(a, "lumen://newtab?s=bookmarks", false);
     a->dirty = true; a->vonly = false;
 }
+#else
+static void panel_close(App *a, bool keep_picture) { (void)a; (void)keep_picture; }
+static void panel_backdrop(App *a, int bar_px, int width) { (void)a; (void)bar_px; (void)width; }
+static void panel_service(App *a) { (void)a; }
 #endif
 /* Download events: a navigation that became a download leaves the tab where it was; the
    Downloads page follows progress; starts, completions and failures get a toast. */
@@ -4071,6 +4752,7 @@ static bool SDLCALL android_graphics_lifecycle(void *userdata, SDL_Event *event)
 
 static void android_handle_back(App *app) {
     if (tsel_ui(app)) { tsel_clear(app); return; }
+    if (app->pan && !app->editing) { panel_close(app, false); return; }
     switch (android_back_action(g_hud_pop, app->editing,
         page_focus(app) || edit_focus(app), app->t->hpos > 0)) {
     case ANDROID_BACK_DISMISS_POPUP:
@@ -4230,6 +4912,20 @@ int main(int argc, char **argv) {
     SDL_Log("Lumen: requested renderer %s, active %s", renderer_key(g_renderer), gpu_backend_name(a.gpu));
 #endif
     a.ui = font_get("system-ui", 400, false, 13.5f);
+    {   /* file: pages and links never read Lumen's own data (cookies, caches, settings) */
+#ifdef __ANDROID__
+        const char *files = SDL_GetAndroidInternalStoragePath();
+        char data[1024] = "", pdf[1100] = "";
+        if (files) { snprintf(data, sizeof data, "%s", files); char *s = strrchr(data, '/'); if (s && s != data) *s = 0; }
+        snprintf(pdf, sizeof pdf, "%s/cache/viewer-pdf.jpg", data);
+        const char *allowed[] = { opened_dir(), pdf, NULL };
+        if (*data) net_file_protect(data, allowed);
+#else
+        char *pref = SDL_GetPrefPath("lumen", "Lumen");
+        if (pref) net_file_protect(pref, NULL);
+        SDL_free(pref);
+#endif
+    }
     char cookie_path[1024] = "";
     { char *pref = SDL_GetPrefPath("lumen", "Lumen"); if (pref) { snprintf(cookie_path, sizeof cookie_path, "%scookies.txt", pref); cookies_load(cookie_path);
         char cache_dir[1100]; snprintf(cache_dir, sizeof cache_dir, "%shttpcache", pref); net_cache_init(cache_dir, 256u << 20);
@@ -4256,7 +4952,8 @@ int main(int argc, char **argv) {
             else if (!strcmp(k, "offscreen_media_eviction")) g_lowmem = v != 0; else if (!strcmp(k, "cpu_limit")) g_cpu_on = v != 0;
             else if (!strcmp(k, "cpu_pct")) g_cpu_pct = LCLAMP(v, 10, 100); else if (!strcmp(k, "cpu_secs")) g_cpu_secs = LCLAMP(v, 5, 600);
             else if (!strcmp(k, "cpu_lim")) g_cpu_lim = LCLAMP(v, 5, 95); else if (!strcmp(k, "video_controls")) g_vctl = v != 0;
-            else if (!strcmp(k, "tab_sleep")) g_tab_sleep = v != 0; else if (!strcmp(k, HUD_KEY)) g_hud = v != 0; else if (!strcmp(k, "smooth_scroll")) g_smooth = v != 0; else if (!strcmp(k, "user_agent")) g_ua = LCLAMP(v, 0, UA_COUNT - 1);
+            else if (!strcmp(k, "chatgpt_sleep")) g_tab_sleep = v != 0; else if (!strcmp(k, HUD_KEY)) g_hud = v != 0; else if (!strcmp(k, "smooth_scrolling")) g_smooth = v != 0; else if (!strcmp(k, "tap_keyboard")) g_tap_kbd = v != 0; else if (!strcmp(k, "hide_tabs")) g_hide_tabs = v != 0; else if (!strcmp(k, "desktop_default")) g_desktop_seeded = v != 0;
+            else if (!strcmp(k, "scroll_px")) g_scroll_px = LCLAMP((v + 5) / 10 * 10, 10, 100000); else if (!strcmp(k, "user_agent")) g_ua = LCLAMP(v, 0, UA_COUNT - 1);
         }
         if (sf) fclose(sf);
         paint_profile_configure();
@@ -4266,6 +4963,11 @@ int main(int argc, char **argv) {
         net_set_user_agent(g_ua);
         links_load("bookmarks.txt", g_bms, &g_nbm, MAX_BM); links_load("history.txt", g_hv, &g_nhv, MAX_HV);
         desktop_sites_load();
+#ifdef __ANDROID__
+        if (!g_desktop_seeded && *g_pref) {   /* Desktop site is on for every site by default, existing installs included */
+            net_set_desktop_host("*", true); desktop_sites_save(); g_desktop_seeded = true; settings_save();
+        }
+#endif
         download_store_init(g_pref);
         dl_track(&a, false);
         dl_notify = dl_changed;
@@ -4276,15 +4978,33 @@ int main(int argc, char **argv) {
         fprintf(stderr, "lumen: lite mode %s\n", g_lowmem ? "on" : "off");
         media_lowmem = g_lowmem;
     }
-    navigate(&a, start, true);
-    for (int i = 2; i < argc; i++) { Tab *nt = tab_new(&a); if (!nt) break; a.t = nt; navigate(&a, argv[i], true); }
-    a.t = a.tabs[0]; a.ti = 0;
+    int shown = -1;
+#ifdef __ANDROID__
+    g_session = !getenv("LUMEN_NO_SESSION") && argc <= 2;   /* argv[1]: lumen://newtab, or the address the app was opened with */
+#else
+    g_session = !getenv("LUMEN_NO_SESSION") && argc <= 1;
+#endif
+    if (g_session && (shown = session_load(&a)) >= 0) {
+        tab_select(&a, shown);
+        if (strcmp(start, "lumen://newtab") && tab_new(&a)) { tab_select(&a, a.ntabs - 1); navigate(&a, start_url(start), true); }
+        g_session_sig = session_sig(&a);
+    } else {
+        navigate(&a, start_url(start), true);
+        for (int i = 2; i < argc; i++) { Tab *nt = tab_new(&a); if (!nt) break; a.t = nt; navigate(&a, start_url(argv[i]), true); }
+        a.t = a.tabs[0]; a.ti = 0;
+    }
     bool quit = false, cmd = false;
 #ifdef __ANDROID__
     AndroidTextInputState android_text_state = {0};
     android_back_set_wakeup(wake);
 #endif
     while (!quit) {
+        panel_service(&a);
+#ifdef __ANDROID__
+        session_service(&a, a.android_suspended);
+#else
+        session_service(&a, false);
+#endif
         { int sig = sigsetjmp(g_recover, 1); if (sig) recover_from_crash(&a, sig); }
         g_guard = 1;
 #ifdef __ANDROID__
@@ -4302,9 +5022,9 @@ int main(int argc, char **argv) {
             free(launch_url);
         }
 #endif
-        if (getenv("LUMEN_CRASH_TEST")) {   /* test hook: fault once on the main thread after N ms */
+        if (env_hook(ENV_CRASH_TEST)) {   /* test hook: fault once on the main thread after N ms */
             static double t0; static bool done; if (!t0) t0 = now_ms();
-            if (!done && now_ms() - t0 > atof(getenv("LUMEN_CRASH_TEST"))) { done = true; *(volatile int *)(uintptr_t)8 = 1; }
+            if (!done && now_ms() - t0 > atof(env_hook(ENV_CRASH_TEST))) { done = true; *(volatile int *)(uintptr_t)8 = 1; }
         }
         SDL_Event ev;
         int to = a.t->loading ? 120 : 1000;
@@ -4319,11 +5039,13 @@ int main(int argc, char **argv) {
 #ifdef __ANDROID__
         Node *text_focus = page_focus(&a);
         if (!text_focus) text_focus = edit_focus(&a);
+        /* the focused field was blurred or removed (e.g. an inline editor closing): hide the keyboard, as Chrome does */
+        if (android_text_state.focus && !text_focus && !a.editing && SDL_TextInputActive(a.win)) SDL_StopTextInput(a.win);
         if (android_text_input_start(&android_text_state, (uintptr_t)text_focus,
             a.t->cur ? a.t->cur->gen : 0, a.editing)) {
             a.focus_reveal = a.dirty = true;
             a.vonly = false;
-            if (!SDL_TextInputActive(a.win)) SDL_StartTextInput(a.win);
+            if (!g_tap_kbd && !SDL_TextInputActive(a.win)) SDL_StartTextInput(a.win);   /* else only a second tap brings the keyboard (kbd_tap) */
         }
 #else
         if (!a.editing && (page_focus(&a) || edit_focus(&a)) && !SDL_TextInputActive(a.win)) SDL_StartTextInput(a.win);
@@ -4332,13 +5054,13 @@ int main(int argc, char **argv) {
             static double last_bg; double tb = now_ms();
             if (tb - last_bg > 2000) {
                 last_bg = tb;
-                for (int i = 0; i < a.ntabs; i++) if (a.tabs[i]->cur && a.tabs[i]->cur->js) js_set_background(a.tabs[i]->cur->js, a.tabs[i] != a.t);
+                for (int i = 0; i < a.ntabs; i++) if (a.tabs[i]->cur && a.tabs[i]->cur->js) js_set_background(a.tabs[i]->cur->js, a.tabs[i] != a.t && a.tabs[i] != a.pan_under);
                 /* tab sleep (Settings, off by default): an idle background chatgpt.com tab drops its JS (the bulk of its RAM) and keeps
                    its DOM/layout on screen; activating it reloads. LUMEN_TAB_SLEEP_MS: delay (overrides the setting), 0 = off; LUMEN_TAB_SLEEP=all: any site */
-                const char *sm = getenv("LUMEN_TAB_SLEEP_MS"); double sleep_ms = sm ? atof(sm) : g_tab_sleep ? 60000 : 0; bool sleep_all = getenv("LUMEN_TAB_SLEEP") && !strcmp(getenv("LUMEN_TAB_SLEEP"), "all");
+                const char *sm = env_hook(ENV_TAB_SLEEP_MS); double sleep_ms = sm ? atof(sm) : g_tab_sleep ? 60000 : 0; bool sleep_all = env_hook(ENV_TAB_SLEEP) && !strcmp(env_hook(ENV_TAB_SLEEP), "all");
                 for (int i = 0; i < a.ntabs; i++) {
                     Tab *st = a.tabs[i]; Page *sp = st->cur;
-                    if (st == a.t || st->loading || !sp || !sp->js || !sp->url) { st->bg_since = 0; continue; }
+                    if (st == a.t || st == a.pan_under || st->loading || !sp || !sp->js || !sp->url) { st->bg_since = 0; continue; }
                     if (!st->bg_since) st->bg_since = tb;
                     bool site = sleep_all || !strncmp(sp->url, "https://chatgpt.com/", 20);
                     if (sleep_ms > 0 && site && tb - st->bg_since > sleep_ms && !js_busy(sp->js)) { js_free(sp->js); sp->js = NULL; st->asleep = true; }
@@ -4347,7 +5069,7 @@ int main(int argc, char **argv) {
                 for (Page *p = g_frames; p; p = p->fnext) if (p->js) { Tab *ft = tab_of_doc(&a, p->d); js_set_background(p->js, ft && ft != a.t); }
             }
         }
-        if (getenv("LUMEN_MEM_STATS")) {
+        if (env_hook(ENV_MEM_STATS)) {
             static double last_stats; double tn = now_ms();
             if (tn - last_stats > 10000) { last_stats = tn; size_t fr, seg = media_mem_bytes(&fr); size_t jh = 0, je = 0; js_mem_stats(&jh, &je); fprintf(stderr, "lumen-mem: mse=%.1fMB vframes=%.1fMB images=%.1fMB/%d js_heap=%.1fMB js_external=%.1fMB canvases=%.1fMB\n", seg / 1048576.0, fr / 1048576.0, g_icache_bytes / 1048576.0, g_icache_n, jh / 1048576.0, je / 1048576.0, ((double)a.frame.w * a.frame.h + (double)a.page.w * a.page.h) * 4 / 1048576.0); }
             if (last_stats == tn) { extern long g_styles_live, g_nodes_live; extern size_t g_css_parsed_bytes; extern void worker_mem_stats(size_t *, size_t *, int *); size_t wh, wx; int wn; worker_mem_stats(&wh, &wx, &wn);
@@ -4367,23 +5089,29 @@ int main(int argc, char **argv) {
         }
         page_move_keep(&a); if (g_mv_p && to > 1000) to = 1000;
         if (a.vbar_any && !a.vbars && media_state_version() != a.vbar_msv) { a.dirty = true; a.vonly = false; }   /* a bar's play state changed (e.g. play() from a page script) */
-        if (a.vbars) { static double lb; double tn = now_ms(); if (tn - lb >= 500) { lb = tn; a.dirty = true; a.vonly = false; } if (to > 500) to = 500; }
-        if (a.deferred) { double r = 250 - (now_ms() - a.last_full); if (r <= 0) a.dirty = true; else if (r + 1 < to) to = (int)r + 1; }
+        if (a.vbars) { static double lb; double tn = now_ms(); if (tn - lb >= 500) { lb = tn; a.dirty = true; a.vonly = false; g_wake[2]++; } if (to > 500) to = 500; }
+        if (a.deferred) { double r = 250 - (now_ms() - a.last_full); if (r <= 0) { a.dirty = true; g_wake[3]++; } else if (r + 1 < to) to = (int)r + 1; }
         if (a.tip_until) { double r = a.tip_until - now_ms(); if (r <= 0) { a.tip_until = 0; a.dirty = true; a.vonly = false; } else if (r + 1 < to) to = (int)r + 1; }
         {
-            bool want = false;
-            if (!a.editing && (page_focus(&a) || edit_focus(&a))) {
-                double ph = fmod(now_ms() - a.caret_t, 1060);
-                want = ph < 530;
-                int nx = (int)((want ? 530 : 1060) - ph) + 1; if (nx < to) to = nx;
+            /* the caret blinks for 10 s after focus or input, then stays shown, as in GTK: a focused
+               field on an idle page (a chat composer) no longer repaints the page twice a second */
+            bool want = false; static const Node *blink_node; static const Page *blink_page;
+            Node *fn = a.editing ? NULL : page_focus(&a) ? page_focus(&a) : edit_focus(&a);
+            if (fn && (fn != blink_node || a.t->cur != blink_page)) a.caret_t = now_ms();
+            blink_node = fn; blink_page = a.t->cur;
+            if (fn) {
+                double since = now_ms() - a.caret_t, ph = fmod(since, 1060);
+                want = ph < 530 || since >= 10000;
+                int nx = (int)LMIN((want ? 530 : 1060) - ph, 10000 - since) + 1;
+                if (since < 10000 && nx < to) to = nx;
             }
-            if (want != dl_caret_on) { dl_caret_on = want; a.vonly = false; a.dirty = true; }
+            if (want != dl_caret_on) { dl_caret_on = want; a.vonly = false; a.dirty = true; g_wake[0]++; }
         }
-        { double now = now_ms(), gn; if (image_anim_tick(now, &gn)) { a.vonly = false; a.dirty = true; } if (gn > 0 && gn - now < to) to = gn - now < 1 ? 1 : (int)(gn - now); }
-        if (getenv("LUMEN_AUTOSCROLL")) {
+        { double now = now_ms(), gn; if (image_anim_tick(now, &gn)) { a.vonly = false; a.dirty = true; g_wake[1]++; } if (gn > 0 && gn - now < to) to = gn - now < 1 ? 1 : (int)(gn - now); }
+        if (env_hook(ENV_AUTOSCROLL)) {
             /* test hook: "x,y,dy,start_ms,count" pushes one wheel tick every 16ms */
             static double t0; static int sent; float wx = 0, wy = 0, wdy = 0; double st = 0; int cnt = 0;
-            sscanf(getenv("LUMEN_AUTOSCROLL"), "%f,%f,%f,%lf,%d", &wx, &wy, &wdy, &st, &cnt);
+            sscanf(env_hook(ENV_AUTOSCROLL), "%f,%f,%f,%lf,%d", &wx, &wy, &wdy, &st, &cnt);
             if (!t0) t0 = now_ms();
             if (sent < cnt && now_ms() - t0 > st + sent * 16.0) { SDL_Event we = {0}; we.type = SDL_EVENT_MOUSE_WHEEL; we.wheel.y = wdy; we.wheel.mouse_x = wx / a.input_scale; we.wheel.mouse_y = wy / a.input_scale; SDL_PushEvent(&we); sent++; }
             if (sent < cnt && to > 16) to = 16;
@@ -4392,7 +5120,7 @@ int main(int argc, char **argv) {
         to = android_fling_wait_ms(&a.fling, now_ms(), to);
         to = tsel_wait_ms(to);
 #endif
-        if (!SDL_WaitEventTimeout(&ev, to)) { if (a.t->loading || getenv("LUMEN_SHOT")) a.dirty = true; }
+        if (!SDL_WaitEventTimeout(&ev, to)) { if (a.t->loading || env_hook(ENV_SHOT)) a.dirty = true; }
         else do {
             bool wheel0 = ev.type == SDL_EVENT_MOUSE_WHEEL && !ev.wheel.x && !ev.wheel.y;
             input_coordinates(&a, &ev);
@@ -4430,7 +5158,7 @@ int main(int argc, char **argv) {
             }
             case SDL_EVENT_MOUSE_MOTION: {
                 int h = bar_hit(&a, ev.motion.x, ev.motion.y); if (h != a.hover) { a.hover = h; a.dirty = true; }
-                if (!h && ev.motion.y > BAR && ev.motion.x > a.side) page_move(&a, page_x(&a, ev.motion.x), page_y(&a, ev.motion.y));
+                if (!h && ev.motion.y > BAR && ev.motion.x > page_left(&a)) page_move(&a, page_x(&a, ev.motion.x), page_y(&a, ev.motion.y));
                 else if (a.t->cur && page_hover(a.t->cur, NULL)) restyle(&a);
                 if (g_press && (ev.motion.state & SDL_BUTTON_LMASK)) sel_drag(&a, ev.motion.x, ev.motion.y);
                 else if (g_epress && (ev.motion.state & SDL_BUTTON_LMASK)) edit_drag(&a, ev.motion.x, ev.motion.y);
@@ -4449,6 +5177,14 @@ int main(int argc, char **argv) {
 #endif
                   if (g_hud_pop) { float x = ev.button.x, y = ev.button.y; bool in = x >= g_pop[0] && x < g_pop[2] && y >= g_pop[1] && y < g_pop[3]; g_hud_pop = false; a.dirty = true; a.vonly = false; if (in || bh == HB_HUD) break; }
                   if (bh == HB_HUD) { g_hud_pop = true; a.dirty = true; a.vonly = false; break; }
+#ifdef __ANDROID__
+                  if (ev.button.y < TABH && bh != HB_NEWTAB) {   /* a double tap on the tab strip: the tab menu */
+                      static double tap_t; static float tap_x;
+                      double tn = now_ms(); bool twice = tn - tap_t < 450 && fabsf(ev.button.x - tap_x) < 60;
+                      tap_t = twice ? 0 : tn; tap_x = ev.button.x;
+                      if (twice) { tab_menu(&a, a.ti); break; }
+                  }
+#endif
                   if (bh >= HB_SLOT) {}   /* toolbar slots act below */
                   else if (bh >= HB_TABDOT) { int i = bh - HB_TABDOT; if (i != a.ti) tab_select(&a, i); a.t->info = true; a.dirty = true; a.vonly = false; break; }
                   else if (bh >= HB_INFO) { info_click(&a, bh - HB_INFO); break; }
@@ -4466,7 +5202,7 @@ int main(int argc, char **argv) {
                 case HB_SLOT: case HB_SLOT + 1: {
                     if (a.editing) url_cancel(&a);
                     int code = g_slot[bar_hit(&a, ev.button.x, ev.button.y) - HB_SLOT];
-                    UiAction u = { code, code == UI_DESKTOP ? !a.t->desktop : code == UI_FULLSCREEN ? !g_fullscreen : 0, NULL, NULL };
+                    UiAction u = { code, code == UI_DESKTOP ? !desktop_on(bar_tab(&a)) : code == UI_FULLSCREEN ? !g_fullscreen : 0, NULL, NULL };
                     ui_action(&a, &u, &quit); a.dirty = true; a.vonly = false; break; }
 #endif
                 case HB_RELOAD: if (a.t->hpos >= 0) navigate(&a, a.t->hist[a.t->hpos], false); break;
@@ -4478,7 +5214,7 @@ int main(int argc, char **argv) {
 #endif
                     if (a.editing) { a.editing = a.umenu = false; SDL_StopTextInput(a.win); a.dirty = true; } sel_press(&a, ev.button.x, ev.button.y, ev.button.clicks); click_page(&a, ev.button.x, ev.button.y, touch_flags); edit_press(&a, ev.button.x, ev.button.y, ev.button.clicks); ctl_press(&a, ev.button.x, ev.button.y, ev.button.clicks);
 #ifdef __ANDROID__
-                    if (touch_tap) page_touch_controls(&a, page_x(&a, ev.button.x), page_y(&a, ev.button.y));
+                    if (touch_tap) { page_touch_controls(&a, page_x(&a, ev.button.x), page_y(&a, ev.button.y)); kbd_tap(&a, ev.button.x, ev.button.y); }
 #endif
                 }
                 }
@@ -4631,6 +5367,7 @@ int main(int argc, char **argv) {
                     bool rerender = a.t->cur && a.t->cur->internal_ui && p->internal_ui && !strcmp(a.t->cur->url, p->url);
                     float keep_sy = rerender ? a.t->sy : 0;
                     page_free(a.t->cur); a.t->cur = p; a.t->asleep = false; a.t->loading = false; a.t->sy = keep_sy; a.t->relayout = true; a.dirty = true;
+                    free(a.t->stitle); a.t->stitle = NULL;
                     if (!p->internal_ui) a.t->desktop = url_desktop(p->url);
                     if (!a.editing) snprintf(a.t->url, sizeof a.t->url, "%s", p->url);
                     if (a.t->hpos >= 0) { free(a.t->hist[a.t->hpos]); a.t->hist[a.t->hpos] = xstrdup(p->url); }
@@ -4655,17 +5392,41 @@ int main(int argc, char **argv) {
         tsel_long_press(&a);
 #endif
         js_release_pins();
-        double lt0 = now_ms(), tr_js = 0, tr_restyle = 0, tr_img = 0;
+        double lt0 = now_ms(), tr_js = 0, tr_restyle = 0, tr_img = 0, tr_bg = 0;
         net_poll();
         if (a.t->cur && a.t->cur->sheets_pending) restyle(&a);
         double lt1 = now_ms();
-        { Tab *act = a.t; double tn = now_ms(); for (int i = 0; i < a.ntabs; i++) { a.t = a.tabs[i]; if (a.t->limited) { a.t->budget = LMIN(a.t->budget + a.t->lim * (tn - a.t->bud_t), 100); a.t->bud_t = tn; if (a.t->budget < 0) continue; } if (a.t->cur && a.t->cur->js) { double c0 = now_ms(); js_tick(a.t->cur->js); double c1 = now_ms(); restyle(&a); double c2 = now_ms(); fire_img_events(a.t->cur); double c = now_ms() - c0; tr_js += c1 - c0; tr_restyle += c2 - c1; tr_img += now_ms() - c2; a.t->cpu_ms += c; if (a.t->limited) a.t->budget -= c; } } a.t = act; if (a.t->cur && a.t->cur->js) frames_tick(&a); }
+        { Tab *act = a.t; double tn = now_ms(); for (int i = 0; i < a.ntabs; i++) { a.t = a.tabs[i]; if (a.t->limited) { a.t->budget = LMIN(a.t->budget + a.t->lim * (tn - a.t->bud_t), 100); a.t->bud_t = tn; if (a.t->budget < 0) continue; } if (a.t->cur && a.t->cur->js) { double c0 = now_ms(); js_tick(a.t->cur->js); double c1 = now_ms(); restyle(&a); double c2 = now_ms(); fire_img_events(a.t->cur); double c = now_ms() - c0; tr_js += c1 - c0; tr_restyle += c2 - c1; tr_img += now_ms() - c2; a.t->cpu_ms += c; if (a.t != act) tr_bg += c; if (a.t->limited) a.t->budget -= c; } } a.t = act; if (a.t->cur && a.t->cur->js) frames_tick(&a); }
         edit_sel_sync(&a);
         double lt2 = now_ms();
+        bool rendered = a.dirty;
         if (a.dirty) { double r0 = now_ms(); render(&a); a.t->cpu_ms += now_ms() - r0; }
         if (lt0 < g_load_trace_until && now_ms() - lt0 >= 100) LOAD_TRACE("stall_ms=%.0f net_poll_ms=%.0f js_style_ms=%.0f (js=%.0f restyle=%.0f img=%.0f) render_ms=%.0f", now_ms() - lt0, lt1 - lt0, lt2 - lt1, tr_js, tr_restyle, tr_img, now_ms() - lt2);
-        (void)tr_js; (void)tr_restyle; (void)tr_img;
+        if (lt0 < g_load_trace_until) {   /* where the main thread's time went per 2 s, short loops included */
+            static double w0, w_net, w_js, w_rs, w_img, w_bg, w_rn; static int w_loops, w_frames;
+            if (!w0) w0 = lt0;
+            w_net += lt1 - lt0; w_js += tr_js; w_rs += tr_restyle; w_img += tr_img; w_bg += tr_bg; w_rn += now_ms() - lt2; w_loops++; w_frames += rendered;
+            if (now_ms() - w0 >= 2000) {
+                LOAD_TRACE("busy window_ms=%.0f loops=%d frames=%d net=%.0f js=%.0f restyle=%.0f img=%.0f bg_tabs=%.0f render=%.0f (style=%.0f passes=%d slow=%d layout=%.0f dl=%.0f raster=%.0f)",
+                           now_ms() - w0, w_loops, w_frames, w_net, w_js, w_rs, w_img, w_bg, w_rn, g_tr, g_tr_n, g_tr_slow, g_tl, g_td, g_tx);
+                if (!g_paint_profile.enabled && w_frames) {   /* which render path the frames took, and why page scrolls were not shifted */
+                    LOAD_TRACE("paths blit=%u bdmg=%u (no %u/%u/%u/%u) sblit=%u sdirty=%u skip=%u idle=%u rect=%u dmg=%u full=%u why=%u/%u/%u/%u/%u/%u noblit=%u/%u/%u wake caret=%u anim=%u vbars=%u defer=%u sb_fail nosbox=%u ui=%u clip=%u x=%u d=%u area=%u",
+                               g_pp[PP_BLIT], g_pp[PP_BDMG], g_sdmg_no[0], g_sdmg_no[1], g_sdmg_no[2], g_sdmg_no[3], g_pp[PP_SBLIT], g_pp[PP_SDIRTY], g_pp[PP_SKIP], g_pp[PP_IDLE], g_pp[PP_RECT], g_pp[PP_DMG], g_pp[PP_FULL],
+                               g_pp_why[0], g_pp_why[1], g_pp_why[2], g_pp_why[3], g_pp_why[4], g_pp_why[5], g_pp_noblit[0], g_pp_noblit[1], g_pp_noblit[2],
+                               g_wake[0], g_wake[1], g_wake[2], g_wake[3], g_pp[PP_NOSBOX], g_pp[PP_SB_UI], g_pp[PP_SB_CLIP], g_pp[PP_SB_X], g_pp[PP_SB_D], g_pp[PP_SB_AREA]);
+                    memset(g_pp, 0, sizeof g_pp); memset(g_pp_why, 0, sizeof g_pp_why);
+                }
+                memset(g_pp_noblit, 0, sizeof g_pp_noblit); memset(g_wake, 0, sizeof g_wake); memset(g_sdmg_no, 0, sizeof g_sdmg_no);
+                w0 = now_ms(); w_net = w_js = w_rs = w_img = w_bg = w_rn = 0; w_loops = w_frames = 0;
+                if (!g_paint_profile.enabled) g_tr = g_tl = g_td = g_tx = 0;
+                g_tr_n = g_tr_slow = 0;
+            }
+        }
+        (void)tr_js; (void)tr_restyle; (void)tr_img; (void)tr_bg; (void)rendered;
         cpu_monitor(&a);
+#ifdef __ANDROID__
+        if (g_bare && !panel_shown(&a)) bare_set(&a, false);   /* the panel went away with the viewer up */
+#endif
         { float want = a.t->info || *g_notice ? INFOH : 0; if (want != g_info_h) { g_info_h = want; for (int i = 0; i < a.ntabs; i++) a.tabs[i]->relayout = true; a.dirty = true; a.vonly = false; } }
         if (*cookie_path && now_ms() - cookies_saved_at > 5000) { cookies_save(cookie_path); cookies_saved_at = now_ms(); }
     }

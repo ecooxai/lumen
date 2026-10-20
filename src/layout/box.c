@@ -67,19 +67,31 @@ static bool is_ws_text(const Box *b) { if (b->kind != BX_TEXT) return false; for
 static bool block_level(const Box *b) { return b->kind == BX_BLOCK && in_flow(b); }
 static bool inline_level(const Box *b) { return b->kind == BX_INLINE || b->kind == BX_TEXT || b->kind == BX_ATOMIC || b->kind == BX_BR; }
 
+/* an anonymous block wrapping an inline run shares its parent's style, but not its size: a
+   height: 100% parent would otherwise give each wrapper the parent's whole height */
+static ComputedStyle *anon_block_style(Layout *L, ComputedStyle *p) {
+    if (p->width.kind == LK_AUTO && p->height.kind == LK_AUTO && p->min_width.kind == LK_AUTO && p->min_height.kind == LK_AUTO &&
+        p->max_width.kind == LK_NONE && p->max_height.kind == LK_NONE && p->aspect_ratio <= 0) return p;
+    ComputedStyle *s = arena_alloc(&L->arena, sizeof *s);
+    *s = *p; s->refs = 1 << 20;
+    s->width = s->height = s->min_width = s->min_height = L_auto();
+    s->max_width.kind = s->max_height.kind = LK_NONE; s->aspect_ratio = 0;
+    return s;
+}
 static void fixup_block(Layout *L, Box *b) {
     bool has_block = false;
     for (Box *c = b->first; c; c = c->next) { if (block_level(c)) has_block = true; }
     if (!has_block) { b->fmt = b->fmt == FMT_FLOW ? FMT_INLINE : b->fmt; return; }
     /* wrap runs of inline-level content in anonymous blocks */
-    Box *c = b->first; b->first = b->last = NULL;
+    Box *c = b->first; b->first = b->last = NULL; ComputedStyle *ast = NULL;
     while (c) {
         Box *next = c->next;
         if (block_level(c)) { c->next = c->prev = NULL; append(b, c); c = next; continue; }
         Box *run = c, *end = c; bool real = false;
         while (end && !block_level(end)) { if (inline_level(end) && !is_ws_text(end)) real = true; end = end->next; }
         if (real) {
-            Box *a = new_box(L, BX_BLOCK, NULL, b->st); a->anon = true; a->fmt = FMT_INLINE;
+            if (!ast) ast = anon_block_style(L, b->st);
+            Box *a = new_box(L, BX_BLOCK, NULL, ast); a->anon = true; a->fmt = FMT_INLINE;
             for (Box *x = run; x != end;) { Box *nx = x->next; x->next = x->prev = NULL; append(a, x); x = nx; }
             append(b, a);
         } else {

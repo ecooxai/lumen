@@ -2,6 +2,10 @@
 #include <string>
 /* V8 embedding: platform, per-page isolate/context, node wrappers, script execution, timers, events */
 #include "js_int.h"
+extern "C" {
+#include "../gpu/webgl.h"
+#include "../gpu/webgpu.h"
+}
 #include "v8_tasks.h"
 #include "clone.h"
 #include <v8-profiler.h>
@@ -892,7 +896,7 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
     c->ctx.Reset(iso, ctx);
     ctx->SetAlignedPointerInEmbedderData(1, c, kTag);
     if (!parent) jsprof_start(c);
-    ctx->SetSecurityToken(v8::String::NewFromUtf8(iso, ctx_origin(c).c_str(), v8::NewStringType::kInternalized).ToLocalChecked());
+    ctx->SetSecurityToken(v8::String::NewFromUtf8(iso, ctx_origin_key(c).c_str(), v8::NewStringType::kInternalized).ToLocalChecked());
     v8::Context::Scope cs(ctx);
     v8::Local<v8::ObjectTemplate> tmpl = v8::ObjectTemplate::New(iso);
     tmpl->SetInternalFieldCount(2);
@@ -1017,7 +1021,7 @@ void js_free(JsCtx *c) {
         c->watchdog.join();
     }
     for (auto &kv : c->players) mp_free(kv.second);
-    wa_close_owner(c); mic_close_owner(c); rec_close_owner(c); rtc_ctx_free(c);
+    wa_close_owner(c); mic_close_owner(c); cam_close_owner(c); screen_close_owner(c); rec_close_owner(c); gl_close_owner(c); webgpu_close_owner(c); rtc_ctx_free(c);
     g_ctxs.erase(std::remove(g_ctxs.begin(), g_ctxs.end(), c), g_ctxs.end());
     c->players.clear();
     std::vector<Node *> roots;
@@ -1054,13 +1058,38 @@ void js_free(JsCtx *c) {
     delete c;
 }
 
+/* The scripts a script wrote with document.write() run right after it, in order, as the parser
+   would reach them: external ones block on the network like parser scripts (tdl's tdl.require). */
+static void run_written(JsCtx *c, size_t from) {
+    std::vector<Node *> list(c->written.begin() + (std::ptrdiff_t)from, c->written.end());
+    c->written.resize(from);
+    for (Node *s : list) {
+        if (c->dead) return;
+        if (!(s->flags & NF_CONNECTED)) continue;
+        const char *src = node_attr(s, "src");
+        if (!src) { char *t = node_text_content(s); js_run_script(c, s, t ? t : "", t ? strlen(t) : 0, c->doc->url); free(t); continue; }
+        char *u = *src ? url_join(c->doc->url, src) : nullptr;
+        NetResponse *r = nullptr;
+        if (u) {
+            NetRequest *rq = net_request_new("GET", u);
+            if (c->doc->url && !strncmp(c->doc->url, "http", 4)) headers_add(&rq->headers, "Referer", c->doc->url);
+            r = net_fetch_sync(rq);
+        }
+        if (r && r->status >= 200 && r->status < 300) js_run_script(c, s, r->body ? r->body : "", r->body_len, u);
+        else { JS_ENTER(c); jfire(c, s, "error"); }
+        if (r) net_response_free(r);
+        free(u);
+    }
+}
 void js_run_script(JsCtx *c, Node *script, const char *src, size_t n, const char *name) {
     if (!c) return;
     if (script) script->flags |= NF_SCRIPT_STARTED;
     Node *prev = c->current_script;
+    size_t written = c->written.size();
     c->current_script = script;
     run_source(c, src, n, name, script && node_attr(script, "src"));
     c->current_script = prev;
+    if (c->written.size() > written) run_written(c, written);
     if (script && node_attr(script, "src")) {
         JS_ENTER(c);
         jfire(c, script, "load");
@@ -1282,6 +1311,13 @@ void js_set_ready_state(JsCtx *c, int state) {
     JS_ENTER(c);
     jfire(c, &c->doc->node, "readystatechange");
 }
+/* Chrome's background throttling: a hidden tab's timers wake it at most once a second, unless it
+   plays media or holds a WebRTC call */
+static bool timers_throttled(JsCtx *c) {
+    if (!c->bg || rtc_active(c)) return false;
+    for (auto &kv : c->players) { MpState s; mp_state(kv.second, &s); if (!s.paused && !s.ended) return false; }
+    return true;
+}
 
 double js_next_deadline(JsCtx *c) {
     if (!c) return INFINITY;
@@ -1291,12 +1327,14 @@ double js_next_deadline(JsCtx *c) {
     // idle timer or waiting for the shell's one-second fallback.
     if (viewport_changes(c, false)) d = std::min(d, c->viewport_due);
     if (c->foreground_tasks) d = std::min(d, now_ms() + c->foreground_tasks->NextDelayMs());
-    if (!c->timer_due.empty()) d = std::min(d, c->timer_due.begin()->first);
+    if (!c->timer_due.empty()) d = std::min(d, timers_throttled(c) ? std::max(c->timer_due.begin()->first, c->bg_timers + 1000) : c->timer_due.begin()->first);
     for (auto &e : c->anims) d = std::min(d, e.due);
-    if (!c->rafs.empty()) d = std::min(d, c->last_raf + 16);
+    if (!c->rafs.empty() && !c->bg) d = std::min(d, c->last_raf + 16);
+    if (c->bg_seen != c->bg) d = std::min(d, now_ms());
     if (!c->media_pump.IsEmpty()) d = std::min(d, c->media_version != media_state_version() ? now_ms() : c->media_due);
     if (!c->video_frame_pump.IsEmpty() && c->video_frame_version != media_frame_version()) d = std::min(d, now_ms());
     if (rtc_pending(c)) d = std::min(d, now_ms());
+    d = std::min(d, webgpu_deadline(c));
     if (!c->resize_pump.IsEmpty() && (c->resize_pending || c->resize_version != jsg_layout_generation())) d = std::min(d, c->resize_due);
     if (!c->intersection_pump.IsEmpty() && (c->intersection_pending || c->intersection_version != jsg_visual_generation())) d = std::min(d, c->intersection_due);
     for (JsCtx *k : c->kids) if (!k->dead) d = std::min(d, js_next_deadline(k));
@@ -1334,17 +1372,43 @@ void js_tick(JsCtx *c) {
    viewport, media, raf, anims, resize, intersection, then settle). Numbers only. */
 #define TICK_BEGIN() double tk_t[10]; int tk_i = 0; tk_t[0] = now_ms(); size_t tk_mods = c->mod_jobs.size()
 #define TICK_MARK(i) (tk_t[++tk_i] = now_ms())
-#define TICK_END(ntimers) do { double tk_e = now_ms(); if (tk_e - tk_t[0] >= 100) { char tk_b[256]; int tk_o = 0; \
+#define TICK_END(ntimers) do { double tk_e = now_ms(); jst_phases(tk_t, tk_i, tk_e); if (tk_e - tk_t[0] >= 100) { char tk_b[256]; int tk_o = 0; \
         for (int k = 1; k <= tk_i; k++) tk_o += snprintf(tk_b + tk_o, sizeof tk_b - (size_t)tk_o, " %.0f", tk_t[k] - tk_t[k - 1]); \
         __android_log_print(ANDROID_LOG_INFO, "LumenLoad", "tick_ms=%.0f mods=%zu timers=%zu phases=%s settle=%.0f", tk_e - tk_t[0], tk_mods, (size_t)(ntimers), tk_b, tk_e - tk_t[tk_i]); } } while (0)
+/* What woke the page's JS per 2 s, all frames together: timers by delay (0, <=16, <=50, <=250 ms, longer) and
+   their ms, animation frames, media pumps (and how many found media playing), intersection and resize pumps */
+static struct { double t0, timer_ms, ph[10]; unsigned ticks, timers, tb[5], rafs, media, playing, io, ro; } g_jst;
+/* ms per tick phase (as TICK_END's), the last one being code refresh, workers and settle */
+static void jst_phases(const double *t, int n, double end) {
+    for (int k = 1; k <= n && k < 10; k++) g_jst.ph[k - 1] += t[k] - t[k - 1];
+    g_jst.ph[9] += end - t[n];
+}
+#define JST(stmt) do { stmt; } while (0)
+static double jst_timer_begin(double interval) { g_jst.tb[interval <= 0 ? 0 : interval <= 16 ? 1 : interval <= 50 ? 2 : interval <= 250 ? 3 : 4]++; return now_ms(); }
+static void jst_timer_end(double t) { g_jst.timer_ms += now_ms() - t; g_jst.timers++; }
+static void jst_report() {
+    double now = now_ms();
+    if (!g_jst.t0) g_jst.t0 = now;
+    if (now - g_jst.t0 < 2000) return;
+    __android_log_print(ANDROID_LOG_INFO, "LumenLoad", "jsstat window_ms=%.0f ticks=%u timers=%u (0:%u 16:%u 50:%u 250:%u long:%u) timer_ms=%.0f rafs=%u media=%u playing=%u io=%u ro=%u"
+        " phase_ms=%.0f %.0f %.0f %.0f %.0f %.0f %.0f %.0f %.0f settle=%.0f",
+        now - g_jst.t0, g_jst.ticks, g_jst.timers, g_jst.tb[0], g_jst.tb[1], g_jst.tb[2], g_jst.tb[3], g_jst.tb[4], g_jst.timer_ms, g_jst.rafs, g_jst.media, g_jst.playing, g_jst.io, g_jst.ro,
+        g_jst.ph[0], g_jst.ph[1], g_jst.ph[2], g_jst.ph[3], g_jst.ph[4], g_jst.ph[5], g_jst.ph[6], g_jst.ph[7], g_jst.ph[8], g_jst.ph[9]);
+    memset(&g_jst, 0, sizeof g_jst); g_jst.t0 = now;
+}
 #else
 #define TICK_BEGIN() do {} while (0)
 #define TICK_MARK(i) do {} while (0)
 #define TICK_END(ntimers) do { (void)(ntimers); } while (0)
+#define JST(stmt) do {} while (0)
+static inline double jst_timer_begin(double) { return 0; }
+static inline void jst_timer_end(double) {}
+static inline void jst_report() {}
 #endif
 static void tick_one(JsCtx *c) {
     JS_ENTER(c);
     TICK_BEGIN();
+    JST(g_jst.ticks++); if (!c->parent) jst_report();
     // Frames share the root isolate. Drain once at the root event-loop level,
     // including a checkpoint after each task so promise completions run now.
     if (c->foreground_tasks) while (c->foreground_tasks->RunOne()) iso->PerformMicrotaskCheckpoint();
@@ -1355,9 +1419,12 @@ static void tick_one(JsCtx *c) {
     double now = now_ms(), timers_t0 = now;
     std::vector<std::pair<double, uint32_t>> due;
     size_t ntimers = 0;
+    bool throttled = timers_throttled(c);
+    if (throttled && now - c->bg_timers < 1000) timers_t0 = -1;   /* not this turn */
+    else if (throttled && !c->timer_due.empty() && c->timer_due.begin()->first <= now) c->bg_timers = now;
     // Like Chrome, run tasks that become due meanwhile (MessageChannel hops, zero
     // timeouts) back to back for up to 8 ms rather than one batch per frame.
-    for (;;) {
+    for (; timers_t0 >= 0;) {
         due.clear();
         for (auto &d : c->timer_due) { if (d.first > now) break; due.push_back(d); }
         if (due.empty()) break;
@@ -1365,14 +1432,16 @@ static void tick_one(JsCtx *c) {
             auto it = c->timers.find(d.second);
             if (it == c->timers.end() || it->second.due != d.first) continue;
             v8::Local<v8::Function> fn = it->second.fn.Get(iso);
-            int nest = it->second.nest;
+            int nest = it->second.nest; double interval = it->second.interval;
             if (it->second.repeat) {
                 c->timer_due.erase(d);
                 it->second.due = now_ms() + it->second.interval;
                 c->timer_due.insert({ it->second.due, it->first });
             } else c->timer_erase(it);
             c->timer_nest = nest;
+            double stat_t = jst_timer_begin(interval);
             (void)jcall(c, fn, ctx->Global(), 0, nullptr);
+            jst_timer_end(stat_t);
             c->timer_nest = 0;
             ntimers++;
         }
@@ -1387,22 +1456,29 @@ static void tick_one(JsCtx *c) {
         c->media_version = media_state_version();
         c->media_due = INFINITY;
         v8::Local<v8::Value> playing;
-        if (jcall(c, c->media_pump.Get(iso), v8::Undefined(iso), 0, nullptr).ToLocal(&playing) && playing->BooleanValue(iso))
-            c->media_due = now_ms() + 50;
+        JST(g_jst.media++);
+        if (jcall(c, c->media_pump.Get(iso), v8::Undefined(iso), 0, nullptr).ToLocal(&playing) && playing->BooleanValue(iso)) {
+            c->media_due = now_ms() + 50; JST(g_jst.playing++);
+        }
     }
     rtc_pump(c);
+    webgpu_pump(c);
     if (!c->video_frame_pump.IsEmpty() && c->video_frame_version != media_frame_version()) {
         c->video_frame_version = media_frame_version();
         v8::Local<v8::Value> ts = v8::Number::New(iso, now - c->t0);
         (void)jcall(c, c->video_frame_pump.Get(iso), v8::Undefined(iso), 1, &ts);
     }
     TICK_MARK(4);
-    if (!c->rafs.empty() && now - c->last_raf >= 15.5) {
+    if (c->bg_seen != c->bg) { c->bg_seen = c->bg; jfire(c, &c->doc->node, "visibilitychange"); }
+    /* a background tab gets no animation frames, as in Chrome: a hidden WebGL demo or animated page
+       would otherwise keep drawing at 60 Hz */
+    if (!c->rafs.empty() && !c->bg && now - c->last_raf >= 15.5) {
         c->last_raf = now;
         std::map<uint32_t, v8::Global<v8::Function>> list;
         list.swap(c->rafs);
         v8::Local<v8::Value> ts = v8::Number::New(iso, now - c->t0);
         for (auto &kv : list) (void)jcall(c, kv.second.Get(iso), ctx->Global(), 1, &ts);
+        JST(g_jst.rafs += (unsigned)list.size());
     }
     TICK_MARK(5);
     if (!c->anims.empty()) {
@@ -1426,7 +1502,7 @@ static void tick_one(JsCtx *c) {
         if (c->host.sync) c->host.sync(c->host.ud, c->doc, true);
         c->resize_version = jsg_layout_generation();
         c->resize_pending = false;
-        c->resize_due = now_ms() + 16;
+        c->resize_due = now_ms() + 16; JST(g_jst.ro++);
         (void)jcall(c, c->resize_pump.Get(iso), v8::Undefined(iso), 0, nullptr);
     }
     TICK_MARK(7);
@@ -1438,7 +1514,7 @@ static void tick_one(JsCtx *c) {
         if (c->host.sync) c->host.sync(c->host.ud, c->doc, true);
         c->intersection_version = jsg_visual_generation();
         c->intersection_pending = false;
-        c->intersection_due = now_ms() + 50;
+        c->intersection_due = now_ms() + 50; JST(g_jst.io++);
         (void)jcall(c, c->intersection_pump.Get(iso), v8::Undefined(iso), 0, nullptr);
     }
     TICK_MARK(8);
@@ -1450,7 +1526,7 @@ static void tick_one(JsCtx *c) {
 
 bool js_wants_frame(JsCtx *c) {
     if (!c || c->dead) return false;
-    if (!c->rafs.empty()) return true;
+    if (!c->rafs.empty() && !c->bg) return true;
     for (JsCtx *k : c->kids) if (js_wants_frame(k)) return true;
     return false;
 }

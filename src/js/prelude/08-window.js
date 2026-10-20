@@ -65,7 +65,7 @@ const storageProxy = () => new Proxy(new Storage(), {
 const localStorage = storageProxy(), sessionStorage = storageProxy();
 class Location {
     get href() { return N.url(); } set href(v) { this.assign(v); }
-    assign(u) { const n = new URL(String(u), document.baseURI); const cur = new URL(N.url()); if (n.href.split('#')[0] === cur.href.split('#')[0] && n.hash) { const old = cur.href; N.setUrl(n.href, true); setTimeout(() => dispatch(G, new HashChangeEvent('hashchange', { oldURL: old, newURL: n.href }))); } else N.navigate(n.href); }
+    assign(u) { const n = new URL(String(u), document.baseURI); const cur = new URL(N.url()); if (n.href.split('#')[0] === cur.href.split('#')[0] && n.hash) fragmentNav(n.href, cur.href); else N.navigate(n.href); }
     replace(u) { N.navigate(new URL(String(u), document.baseURI).href); }
     reload() { N.navigate(N.url()); }
     toString() { return N.url(); }
@@ -80,6 +80,23 @@ Object.defineProperty(globalThis, '__lumenPopState', { value: d => {
     histState = histStates[histIdx] ?? null;
     globalThis.dispatchEvent(new PopStateEvent('popstate', { state: histState }));
 } });
+/* a navigation to another fragment of this document, as Chrome does it: a new history entry, the
+   target scrolled into view, popstate at once (routers such as React Router's follow it) and then
+   hashchange; the same fragment again only scrolls */
+function fragmentNav(href, old) {
+    const hash = href.slice(href.indexOf('#') + 1);
+    let id = hash; try { id = decodeURIComponent(hash); } catch (e) {}
+    const target = id && (document.getElementById(id) || document.getElementsByName(id)[0]);
+    if (href === old) { if (target) target.scrollIntoView(); return; }
+    histState = null; histStates.length = ++histIdx; histStates[histIdx] = null;
+    N.setUrl(href, true);
+    if (target) target.scrollIntoView(); else if (!id || id.toLowerCase() === 'top') G.scrollTo(0, 0);
+    dispatch(G, new PopStateEvent('popstate', { state: null }));
+    setTimeout(() => dispatch(G, new HashChangeEvent('hashchange', { oldURL: old, newURL: href })));
+}
+Object.defineProperty(globalThis, '__lumenFragment', { value: u => location.assign(u) });
+/* Lumen's own pages (lumen://newtab) read and change the browser's state through this */
+if (N.internal('ping') === 'pong') Object.defineProperty(G, 'lumenInternal', { value: cmd => N.internal(String(cmd)) ?? null });
 const history = {
     get length() { return N.histLen(); }, get state() { return histState; }, scrollRestoration: 'auto',
     pushState(s, t, u) { if (this !== history && this && typeof this.pushState === 'function' && this.pushState !== history.pushState) return this.pushState(s, t, u); histState = structuredClone(s); histStates.length = ++histIdx; histStates[histIdx] = histState; N.setUrl(u != null ? new URL(String(u), N.url()).href : N.url(), true); },
@@ -107,17 +124,49 @@ class PermissionStatus extends EventTarget {
     get name() { return this._.name; }
     get state() { return this._.state; }
 }
-const micStatuses = new Set();
-const micPermState = () => { const p = N.micPermission ? N.micPermission() : 0; return p > 0 ? 'granted' : p < 0 ? 'denied' : 'prompt'; };
-function micPermChanged() {
-    const state = micPermState();
-    for (const r of [...micStatuses]) {
+const permStatuses = { microphone: new Set(), camera: new Set() };
+const permNative = { microphone: () => N.micPermission ? N.micPermission() : 0, camera: () => N.camPermission ? N.camPermission() : 0 };
+const permState = name => { const p = permNative[name](); return p > 0 ? 'granted' : p < 0 ? 'denied' : 'prompt'; };
+const micPermState = () => permState('microphone');
+function permChanged(name) {
+    const state = permState(name), set = permStatuses[name];
+    for (const r of [...set]) {
         const p = r.deref();
-        if (!p) { micStatuses.delete(r); continue; }
+        if (!p) { set.delete(r); continue; }
         if (p._.state === state) continue;
         p._.state = state;
         dispatch(p, new Event('change'), true);
     }
+}
+const micPermChanged = () => permChanged('microphone'), camPermChanged = () => permChanged('camera');
+/* a constraint's wanted value: exact, ideal, or the bound given */
+const mcVal = v => v && typeof v === 'object' ? (v.exact ?? v.ideal ?? v.max ?? v.min) : v;
+/* waits for a device that opens once Android grants the permission: state 0 asking, 1 open, -1 refused */
+const mcWait = (state, close, changed, ok) => new Promise((res, rej) => {
+    const wait = () => {
+        const st = state();
+        if (st === 0) { setTimeout(wait, 50); return; }
+        changed();
+        if (st < 0) { close(); rej(new DOMException('Permission denied', 'NotAllowedError')); return; }
+        res(ok());
+    };
+    wait();
+});
+function openMic(a) {
+    const ec = a === true || typeof a !== 'object' ? undefined : a.echoCancellation;   /* on unless false, {exact: false} or {ideal: false} */
+    const id = N.micOpen(!(ec === false || (ec && typeof ec === 'object' && (ec.exact === false || ec.ideal === false))));
+    if (id < 0) return Promise.reject(new DOMException('Requested device not found', 'NotFoundError'));
+    return mcWait(() => N.micState(id), () => N.micClose(id), micPermChanged, () => micTrack(id));
+}
+function openCam(v) {
+    const o = v && typeof v === 'object' ? v : {};
+    let facing = mcVal(o.facingMode); if (Array.isArray(facing)) facing = facing[0];
+    const dev = String(mcVal(o.deviceId) ?? '');
+    const f = dev === 'camera1' ? 1 : dev === 'camera2' ? 2 : facing === 'environment' ? 2 : facing === 'user' ? 1 : 0;
+    const w = +mcVal(o.width) || 0, h = +mcVal(o.height) || 0, fps = +mcVal(o.frameRate) || 30;
+    const id = N.camCount() > 0 ? N.camOpen(Math.min(w || (h ? h * 4 / 3 : 640), 1920), Math.min(h || (w ? w * 3 / 4 : 480), 1920), Math.min(fps, 60), f) : -1;
+    if (id < 0) return Promise.reject(new DOMException('Requested device not found', 'NotFoundError'));
+    return mcWait(() => N.camState(id), () => N.camClose(id), camPermChanged, () => camTrack(id));
 }
 const navigator = {
     userAgent: N.userAgent(), appVersion: N.userAgent().replace(/^Mozilla\//, ''), appName: 'Netscape', appCodeName: 'Mozilla', product: 'Gecko', productSub: __uaChrome ? '20030107' : '20100101', vendor: __uaChrome ? 'Google Inc.' : '', vendorSub: '',
@@ -135,37 +184,40 @@ const navigator = {
     permissions: { query(d) {
         if (!d || typeof d !== 'object' || d.name === undefined) return Promise.reject(new TypeError("Failed to execute 'query' on 'Permissions': required member name is undefined."));
         const name = String(d.name);
-        if (name === 'microphone') { const p = new PermissionStatus(name, micPermState()); micStatuses.add(new WeakRef(p)); return Promise.resolve(p); }
+        if (permStatuses[name]) { const p = new PermissionStatus(name, permState(name)); permStatuses[name].add(new WeakRef(p)); return Promise.resolve(p); }
         return Promise.resolve(new PermissionStatus(name, 'prompt'));
     } },
     mediaDevices: Object.assign(new EventTarget(), {
         enumerateDevices() {
             /* like Chrome, labels only once the microphone was granted (sites read an empty label as "no permission") */
-            const mic = { deviceId: 'default', groupId: 'default', kind: 'audioinput', label: micPermState() === 'granted' ? 'Default' : '' };
-            mic.toJSON = () => ({ deviceId: mic.deviceId, groupId: mic.groupId, kind: mic.kind, label: mic.label });
-            return Promise.resolve(N.micOpen ? [mic] : []);
+            const dev = (deviceId, kind, label) => { const d = { deviceId, groupId: deviceId, kind, label }; d.toJSON = () => ({ deviceId, groupId: deviceId, kind, label }); return d; };
+            const list = N.micOpen ? [dev('default', 'audioinput', micPermState() === 'granted' ? 'Default' : '')] : [];
+            const cams = N.camCount ? N.camCount() : 0, camLabels = permState('camera') === 'granted';
+            for (let i = 0; i < Math.min(cams, 2); i++) list.push(dev(camLabels ? 'camera' + (i ? 2 : 1) : '', 'videoinput', camLabels ? (i ? 'camera 0, facing back' : 'camera 1, facing front') : ''));
+            return Promise.resolve(list);
         },
         getUserMedia(c) {
             if (!c || typeof c !== 'object' || (!c.audio && !c.video)) return Promise.reject(new TypeError("Failed to execute 'getUserMedia': At least one of audio and video must be requested"));
-            const video = () => c.video ? [new MediaStreamTrack(RTC_INTERNAL, 'video', 'Fake Default Video Input')] : [];
-            if (!c.audio || !N.micOpen) {
-                const t = c.audio ? [new MediaStreamTrack(RTC_INTERNAL, 'audio', 'Fake Default Audio Input')] : [];
-                return new Promise(r => setTimeout(() => r(new MediaStream(t.concat(video())))));
-            }
-            return new Promise((res, rej) => {   /* the device opens once Android grants the microphone */
-                const ec = c.audio === true || typeof c.audio !== 'object' ? undefined : c.audio.echoCancellation;   /* on unless false, {exact: false} or {ideal: false} */
-                const id = N.micOpen(!(ec === false || (ec && typeof ec === 'object' && (ec.exact === false || ec.ideal === false))));
-                if (id < 0) { rej(new DOMException('Requested device not found', 'NotFoundError')); return; }
-                const wait = () => {
-                    const st = N.micState(id);
-                    if (st === 0) { setTimeout(wait, 50); return; }
-                    if (st < 0) { N.micClose(id); micPermChanged(); rej(new DOMException('Permission denied', 'NotAllowedError')); return; }
-                    micPermChanged();
-                    res(new MediaStream([micTrack(id)].concat(video())));
-                };
-                wait();
+            const opens = [];
+            if (c.audio) opens.push(N.micOpen ? openMic(c.audio) : Promise.resolve(new MediaStreamTrack(RTC_INTERNAL, 'audio', 'Fake Default Audio Input')));
+            if (c.video) opens.push(N.camOpen ? openCam(c.video) : Promise.resolve(new MediaStreamTrack(RTC_INTERNAL, 'video', 'Fake Default Video Input')));
+            return Promise.allSettled(opens).then(r => {
+                const bad = r.find(x => x.status === 'rejected');
+                if (bad) { for (const x of r) if (x.status === 'fulfilled') x.value.stop(); throw bad.reason; }
+                return new MediaStream(r.map(x => x.value));
             });
-        }, getDisplayMedia() { return Promise.reject(new DOMException('Capture is not implemented yet', 'NotSupportedError')); }, getSupportedConstraints() { return {}; } }),
+        }, getDisplayMedia(c) {
+            if (c === undefined) c = { video: true };
+            if (!c || typeof c !== 'object' || c.video === false) return Promise.reject(new TypeError("Failed to execute 'getDisplayMedia' on 'MediaDevices': video must be requested"));
+            if (!N.screenOpen) return Promise.reject(new DOMException('Not supported', 'NotSupportedError'));
+            const v = c.video && typeof c.video === 'object' ? c.video : {};
+            const fps = Math.min(+mcVal(v.frameRate) || 30, 60);
+            /* audio: the system audio (Android's playback capture), as desktop Chrome shares it, unless systemAudio is 'exclude' */
+            const audio = !!c.audio && c.systemAudio !== 'exclude' && !(c.audio && typeof c.audio === 'object' && c.audio.exact === false);
+            const id = N.screenOpen(Math.min(+mcVal(v.width) || 1920, 4096), Math.min(+mcVal(v.height) || 1920, 4096), fps, audio);
+            if (id < 0) return Promise.reject(new DOMException('Could not start video source', 'NotReadableError'));
+            return mcWait(() => N.screenState(id), () => N.screenClose(id), audio ? micPermChanged : () => {}, () => new MediaStream(screenTracks(id, fps)));
+        }, getSupportedConstraints() { return {}; } }),
     serviceWorker: Object.assign(new EventTarget(), {
         controller: null, ready: new Promise(() => {}),
         register() { return Promise.reject(new DOMException('Service workers are not supported', 'SecurityError')); },
@@ -176,6 +228,7 @@ const navigator = {
     locks: { request(n, o, cb) { cb = typeof o === 'function' ? o : cb; return Promise.resolve().then(() => cb({ name: n })); } },
     getGamepads() { return []; }, getBattery() { return Promise.resolve(battery); },
 };
+if (gpuNavigator) def(navigator, 'gpu', gpuNavigator);
 const screen = { get width() { return N.viewport()[5]; }, get height() { return N.viewport()[6]; }, get availWidth() { return N.viewport()[5]; }, get availHeight() { return N.viewport()[6]; }, colorDepth: 24, pixelDepth: 24, orientation: { type: 'landscape-primary', angle: 0, addEventListener() {} } };
 const T0 = Date.now() - N.now();
 const marks = [];
@@ -462,6 +515,10 @@ const globals = {
     CSSStyleDeclaration, SVGFEBlendElement, SVGFEComponentTransferElement, SVGFEDiffuseLightingElement, SVGFESpecularLightingElement, SVGFEDropShadowElement, SVGFEFloodElement, SVGFEGaussianBlurElement, SVGFEImageElement, SVGFEMergeElement, SVGFEMergeNodeElement, SVGFEOffsetElement, SVGFETileElement, SVGFEDistantLightElement, SVGFEPointLightElement, SVGFESpotLightElement, SVGFEFuncRElement, SVGFEFuncGElement, SVGFEFuncBElement, SVGFEFuncAElement, SVGLength, SVGNumber, SVGAnimatedLength, SVGAnimatedNumber, SVGAnimatedInteger, SVGAnimatedBoolean, SVGAnimatedString, SVGAnimatedEnumeration, SVGRect, SVGAnimatedRect, SVGUnitTypes, SVGGeometryElement, SVGRectElement, SVGCircleElement, SVGEllipseElement, SVGLineElement, SVGPathElement, SVGPolylineElement, SVGPolygonElement, SVGGElement, SVGDefsElement, SVGUseElement, SVGImageElement, SVGForeignObjectElement, SVGAElement, SVGSwitchElement, SVGTextContentElement, SVGTextPositioningElement, SVGTextElement, SVGTSpanElement, SVGTextPathElement, SVGGradientElement, SVGLinearGradientElement, SVGRadialGradientElement, SVGStopElement, SVGClipPathElement, SVGMaskElement, SVGPatternElement, SVGFilterElement, SVGMarkerElement, SVGSymbolElement, SVGTitleElement, SVGDescElement, SVGMetadataElement, SVGStyleElement, SVGScriptElement, SVGFEColorMatrixElement, SVGFECompositeElement, SVGFEMorphologyElement, SVGFETurbulenceElement, SVGFEDisplacementMapElement, SVGFEConvolveMatrixElement, SVGComponentTransferFunctionElement, CSSRuleList, CSSStyleRule, CSSGroupingRule, CSSConditionRule, CSSMediaRule, CSSSupportsRule, CSSContainerRule, CSSLayerBlockRule, CSSLayerStatementRule, CSSImportRule, CSSNamespaceRule, CSSFontFaceRule, CSSPageRule, CSSKeyframeRule, CSSKeyframesRule, MediaList, Element, HTMLElement, SVGElement, SVGGraphicsElement, SVGSVGElement, MathMLElement, Image, Audio, Option, CustomElementRegistry, Document, HTMLDocument, XMLDocument, CSSRule, CSSStyleSheet, CSS, FontFace,
     TreeWalker, NodeIterator, NodeFilter, Range, StaticRange, AbstractRange, Selection, Animation, DOMMatrixReadOnly, DOMMatrix, DOMPoint, DOMParser, XMLSerializer,
     TextEncoder, TextDecoder, btoa, atob, Blob, File, FileList, DataTransfer, DataTransferItem, DataTransferItemList, FileReader, ReadableStream, ReadableStreamDefaultReader, WritableStream, WritableStreamDefaultWriter, TransformStream, ByteLengthQueuingStrategy, CountQueuingStrategy, TextEncoderStream, TextDecoderStream, URLSearchParams, URL, webkitURL: URL, Headers, Request, Response, fetch, FormData, XMLHttpRequestEventTarget, XMLHttpRequestUpload, XMLHttpRequest, WebSocket, CloseEvent, MessagePort, MessageChannel, Worker, BroadcastChannel,
+    WebGLRenderingContext, WebGL2RenderingContext, WebGLObject, WebGLBuffer, WebGLFramebuffer, WebGLRenderbuffer, WebGLTexture, WebGLProgram, WebGLShader, WebGLVertexArrayObject, WebGLQuery, WebGLSampler, WebGLSync, WebGLTransformFeedback, WebGLUniformLocation, WebGLActiveInfo, WebGLShaderPrecisionFormat, WebGLContextEvent, ImageBitmap, createImageBitmap,
+    GPUSupportedFeatures, WGSLLanguageFeatures, GPUSupportedLimits, GPUAdapterInfo, GPUError, GPUValidationError, GPUOutOfMemoryError, GPUInternalError, GPUPipelineError, GPUUncapturedErrorEvent, GPUDeviceLostInfo, GPUCompilationMessage, GPUCompilationInfo,
+    GPUBufferUsage, GPUTextureUsage, GPUShaderStage, GPUMapMode, GPUColorWrite, GPU, GPUAdapter, GPUDevice, GPUBuffer, GPUTexture, GPUTextureView, GPUSampler, GPUBindGroupLayout, GPUPipelineLayout, GPUBindGroup, GPUCommandBuffer, GPURenderBundle, GPUExternalTexture,
+    GPUQuerySet, GPUShaderModule, GPUComputePipeline, GPURenderPipeline, GPUCommandEncoder, GPURenderPassEncoder, GPUComputePassEncoder, GPURenderBundleEncoder, GPUQueue, GPUCanvasContext,
     MediaRecorder, BlobEvent, RTCPeerConnection, RTCSessionDescription, RTCIceCandidate, RTCPeerConnectionIceEvent, RTCPeerConnectionIceErrorEvent, RTCDataChannel, RTCDataChannelEvent, RTCTrackEvent, RTCRtpSender, RTCRtpReceiver, RTCRtpTransceiver, RTCIceTransport, RTCDtlsTransport, RTCSctpTransport, RTCCertificate, RTCStatsReport, RTCError, RTCErrorEvent, MediaStream, MediaStreamTrack, MediaStreamTrackEvent,
     ResizeObserver, IntersectionObserver, HTMLAllCollection, PerformanceObserver, Storage, localStorage, sessionStorage, Location, location, history, navigator, screen, performance, crypto, MediaQueryList, matchMedia, getComputedStyle, PermissionStatus,
     setTimeout, setInterval, clearTimeout, clearInterval, requestAnimationFrame, cancelAnimationFrame, requestIdleCallback, cancelIdleCallback, queueMicrotask, structuredClone, postMessage, console, customElements, Window, document,

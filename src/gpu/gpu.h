@@ -31,7 +31,14 @@ bool gpu_upload_page_ring(Gpu *gpu, const uint32_t *pixels, int width, int heigh
                           int toolbar, int first_row, int last_row, int source_offset);
 bool gpu_scroll_page_ring(Gpu *gpu, const uint32_t *pixels, int width, int height, int stride,
                           int toolbar, int delta, int fixed_first, int fixed_last, int source_offset);
+/* columns x0..x1 of the rows (a fixed side column after a scroll) */
+bool gpu_upload_page_rect_ring(Gpu *gpu, const uint32_t *pixels, int width, int height, int stride,
+                               int toolbar, int x0, int x1, int first_row, int last_row, int source_offset);
 bool gpu_present_frame(Gpu *g, const uint32_t *px, int w, int h, int stride, int y0, int y1, const GpuVideo *v);
+/* Up to GPU_EXTRA_LAYERS more RGBA frames (px required, yuv ignored) drawn like v by the next gpu_present_frame:
+   several canvases or videos on one page stay GPU layers instead of being rastered each frame. */
+#define GPU_EXTRA_LAYERS 3
+void gpu_set_extra_layers(Gpu *g, const GpuVideo *v, int n);
 const char *gpu_backend_name(Gpu *g);
 void gpu_destroy(Gpu *g);
 #endif

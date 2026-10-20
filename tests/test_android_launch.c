@@ -23,6 +23,9 @@ int main(void) {
     CHECK(!android_launch_submit("file:///private/data"));
     CHECK(!android_launch_submit("javascript:alert(1)"));
     CHECK(!android_launch_submit("https://example.org/\nspoof"));
+    CHECK(!android_launch_submit_file("relative/page.html", false));
+    CHECK(!android_launch_submit_file("/sdcard/../data/x", true));
+    CHECK(!android_launch_submit_file("/sdcard/a\nb.html", false));
     char *oversized = malloc(65538);
     CHECK(oversized);
     memset(oversized, 'a', 65537);
@@ -37,6 +40,15 @@ int main(void) {
     free(url);
     url = android_launch_take();
     CHECK(url && !strcmp(url, "http://example.org/latest"));
+    free(url);
+    CHECK(!android_launch_take());
+    CHECK(android_launch_submit_file("/sdcard/My page #1.html", false));
+    CHECK(android_launch_submit_file("/sdcard/a b&c.png", true));
+    url = android_launch_take();
+    CHECK(url && !strcmp(url, "file:///sdcard/My%20page%20%231.html"));
+    free(url);
+    url = android_launch_take();
+    CHECK(url && !strcmp(url, "lumen://newtab?s=downloads&view=%2Fsdcard%2Fa%20b%26c.png"));
     free(url);
     CHECK(!android_launch_take());
     for (int index = 0; index < 32; index++) CHECK(android_launch_submit("https://example.org/bounded"));

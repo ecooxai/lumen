@@ -28,12 +28,18 @@ import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 
 public final class LumenActivity extends SDLActivity {
+    /* the running activity for helpers outside SDLActivity's subclasses, or null */
+    static SDLActivity current() { return mSingleton; }
+
     private static final String PROXY_EXTRA = "org.lumen.browser.PROXY";
     private static final String CONSOLE_EXTRA = "org.lumen.browser.CONSOLE";
     private static final String V8_FLAGS_EXTRA = "org.lumen.browser.V8_FLAGS";
     private static final String JS_TIMEOUT_EXTRA = "org.lumen.browser.JS_TIMEOUT_MS";
+    private static final String PRE_JS_EXTRA = "org.lumen.browser.PRE_JS";
+    private static final String TEST_URLS_EXTRA = "org.lumen.browser.TEST_URLS";
     private boolean nativeArgumentsRequested;
     private static native boolean nativeOpenUrl(byte[] url);
+    private static native boolean nativeOpenFile(byte[] path, boolean viewer);
     private static native boolean nativeRequestBack();
     private static native void nativeUiAction(int code, int value, byte[] first, byte[] second);
     static native String nativeUiIcon(int code);
@@ -76,6 +82,11 @@ public final class LumenActivity extends SDLActivity {
     }
 
     @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (!ScreenCapture.result(this, requestCode, resultCode, data)) super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    @Override
     public void onBackPressed() {
         requestBack();
     }
@@ -98,6 +109,7 @@ public final class LumenActivity extends SDLActivity {
     public boolean dispatchTouchEvent(android.view.MotionEvent event) {
         if (touchFeedback == null) touchFeedback = TouchFeedback.on(getWindow().getDecorView());
         touchFeedback.touch(event);
+        if (toolbar != null) toolbar.indicatorTouch(event);
         if (event.getActionMasked() == android.view.MotionEvent.ACTION_DOWN && toolbar != null && toolbar.editing() && toolbar.outside(event)) toolbar.stopEditing();
         return super.dispatchTouchEvent(event);
     }
@@ -146,12 +158,22 @@ public final class LumenActivity extends SDLActivity {
         String url;
         synchronized (this) {
             setIntent(intent);
+            if (!nativeArgumentsRequested || mBrokenLibraries) return;
+            if (openShared(intent)) return;
             url = launchUrl(intent);
-            if (!nativeArgumentsRequested || mBrokenLibraries || url == null) return;
+            if (url == null) return;
         }
         if (!nativeOpenUrl(url.getBytes(StandardCharsets.UTF_8))) {
             Toast.makeText(this, "Unable to open link: browser is busy", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    /* "Open with" and "Share" from other apps: files, and links in shared text */
+    private boolean openShared(Intent intent) {
+        return SharedFiles.handle(this, intent,
+            (path, viewer) -> nativeOpenFile(path.getBytes(StandardCharsets.UTF_8), viewer),
+            url -> { if (!nativeOpenUrl(url.getBytes(StandardCharsets.UTF_8))) runOnUiThread(() ->
+                Toast.makeText(this, "Unable to open link: browser is busy", Toast.LENGTH_SHORT).show()); });
     }
 
     /* the system share sheet for UTF-8 text, from the native thread */
@@ -178,6 +200,10 @@ public final class LumenActivity extends SDLActivity {
         final SDLActivity activity = mSingleton;
         if (activity != null) VoiceCall.set(activity, on);
     }
+
+    /* getDisplayMedia from the native thread (src/media/screen.c) */
+    public static void screenStart(int maxWidth, int maxHeight, int fps, boolean audio) { ScreenCapture.start(maxWidth, maxHeight, fps, audio); }
+    public static void screenStop() { ScreenCapture.stop(); }
 
     private static final class VoiceCall {
         private static boolean active, speakerBefore;
@@ -305,6 +331,16 @@ public final class LumenActivity extends SDLActivity {
         activity.runOnUiThread(() -> BrowserMenus.showWorkspaces(activity, labels, counts, current, UI_ACTION));
     }
 
+    public static void showTabMenu(byte[] title, byte[][] items, boolean[] checked) {
+        final SDLActivity activity = mSingleton;
+        if (activity == null || title == null || checked == null) return;
+        final String heading = new String(title, StandardCharsets.UTF_8);
+        final String[] labels = utf8(items);
+        if (labels.length != checked.length) return;
+        final boolean[] on = checked.clone();
+        activity.runOnUiThread(() -> BrowserMenus.showTabMenu(activity, heading, labels, on, UI_ACTION));
+    }
+
     /* Downloads go to the shared Downloads collection: a pending entry the native side writes
        through the returned descriptor, published or deleted by downloadFinish. */
     public static String[] downloadCreate(byte[] name, byte[] mime) {
@@ -371,6 +407,83 @@ public final class LumenActivity extends SDLActivity {
         });
     }
 
+    /* The Downloads page's file browser lists every file only with "All files access" (Android 11+) */
+    public static boolean allFilesAccess() {
+        return Build.VERSION.SDK_INT < 30 || android.os.Environment.isExternalStorageManager();
+    }
+
+    public static boolean requestAllFilesAccess() {
+        final SDLActivity activity = mSingleton;
+        if (activity == null || Build.VERSION.SDK_INT < 30) return false;
+        activity.runOnUiThread(() -> {
+            Intent own = new Intent(android.provider.Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
+                Uri.parse("package:" + activity.getPackageName()));
+            try {
+                activity.startActivity(own);
+            } catch (RuntimeException exception) {
+                try {
+                    activity.startActivity(new Intent(android.provider.Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION));
+                } catch (RuntimeException ignored) { }
+            }
+        });
+        return true;
+    }
+
+    /* a file of the shared storage, opened in the app the user picks: its content URI comes from the media scanner */
+    public static void fileOpen(byte[] path, byte[] unused) {
+        final SDLActivity activity = mSingleton;
+        if (activity == null || path == null) return;
+        final String file = new String(path, StandardCharsets.UTF_8);
+        int dot = file.lastIndexOf('.');
+        final String type = dot > file.lastIndexOf('/') ? android.webkit.MimeTypeMap.getSingleton()
+            .getMimeTypeFromExtension(file.substring(dot + 1).toLowerCase(java.util.Locale.ROOT)) : null;
+        android.media.MediaScannerConnection.scanFile(activity, new String[] {file}, type != null ? new String[] {type} : null, (scanned, uri) ->
+            activity.runOnUiThread(() -> {
+                if (uri == null) {
+                    Toast.makeText(activity, "Lumen cannot open this file", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                Intent view = new Intent(Intent.ACTION_VIEW);
+                if (type != null) view.setDataAndType(uri, type); else view.setData(uri);
+                view.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+                try {
+                    activity.startActivity(Intent.createChooser(view, null));
+                } catch (RuntimeException exception) {
+                    Toast.makeText(activity, "No app can open this file", Toast.LENGTH_SHORT).show();
+                }
+            }));
+    }
+
+    /* The Downloads viewer's PDF pages: page (from 0) of the PDF at path, rendered width pixels wide on
+     * white into a JPEG in the cache. Returns { page count, image path, width, height }, or null. */
+    public static String[] pdfRender(byte[] path, int page, int width) {
+        final SDLActivity activity = mSingleton;
+        if (activity == null || path == null) return null;
+        java.io.File file = new java.io.File(new String(path, StandardCharsets.UTF_8));
+        try (ParcelFileDescriptor fd = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY);
+             android.graphics.pdf.PdfRenderer pdf = new android.graphics.pdf.PdfRenderer(fd)) {
+            int count = pdf.getPageCount();
+            if (count <= 0) return null;
+            int index = Math.max(0, Math.min(page, count - 1));
+            try (android.graphics.pdf.PdfRenderer.Page sheet = pdf.openPage(index)) {
+                int w = Math.max(64, Math.min(width, 4096));
+                int h = Math.max(1, Math.round((float) w * sheet.getHeight() / Math.max(1, sheet.getWidth())));
+                if (h > 8192) { w = Math.max(1, Math.round(w * 8192f / h)); h = 8192; }
+                android.graphics.Bitmap bitmap = android.graphics.Bitmap.createBitmap(w, h, android.graphics.Bitmap.Config.ARGB_8888);
+                bitmap.eraseColor(android.graphics.Color.WHITE);
+                sheet.render(bitmap, null, null, android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
+                java.io.File out = new java.io.File(activity.getCacheDir(), "viewer-pdf.jpg");
+                try (java.io.FileOutputStream stream = new java.io.FileOutputStream(out)) {
+                    bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 92, stream);
+                }
+                bitmap.recycle();
+                return new String[] { String.valueOf(count), out.getAbsolutePath(), String.valueOf(w), String.valueOf(h) };
+            }
+        } catch (Exception | OutOfMemoryError exception) {
+            return null;
+        }
+    }
+
     public static byte[][] getTrustRoots() {
         try {
             TrustManagerFactory factory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
@@ -404,6 +517,21 @@ public final class LumenActivity extends SDLActivity {
             Os.setenv("LUMEN_CONSOLE", level, true);
         } catch (ErrnoException exception) {
             Log.e("Lumen", "Unable to enable the page console", exception);
+        }
+    }
+
+    /* Debug builds only: a probe script (base64, `--es org.lumen.browser.PRE_JS ...`) that every page
+       runs before its own scripts, as LUMEN_PRE_FILE does on the desktop. Not saved. */
+    private void applyPreJs(Intent intent) {
+        if ((getApplicationInfo().flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) == 0) return;
+        String code = intent != null ? intent.getStringExtra(PRE_JS_EXTRA) : null;
+        if (code == null) return;
+        java.io.File file = new java.io.File(getCacheDir(), "pre.js");
+        try (java.io.FileOutputStream out = new java.io.FileOutputStream(file)) {
+            out.write(android.util.Base64.decode(code, android.util.Base64.DEFAULT));
+            Os.setenv("LUMEN_PRE_FILE", file.getPath(), true);
+        } catch (IllegalArgumentException | java.io.IOException | ErrnoException exception) {
+            Log.e("Lumen", "Unable to set the probe script", exception);
         }
     }
 
@@ -457,6 +585,24 @@ public final class LumenActivity extends SDLActivity {
         }
     }
 
+    /* Debug builds only: the device test pages, one tab each, from `--es org.lumen.browser.TEST_URLS
+       "URL URL ..."` (tools/device_tests.py). "bm:TEXT" is the newest bookmark matching TEXT. */
+    private String[] testUrls(Intent intent) {
+        if ((getApplicationInfo().flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) == 0) return null;
+        String extra = intent != null ? intent.getStringExtra(TEST_URLS_EXTRA) : null;
+        if (extra == null) return null;
+        java.util.ArrayList<String> urls = new java.util.ArrayList<>();
+        for (String u : extra.trim().split("\\s+"))
+            if (urls.size() < 16 && u.matches("(https?://|lumen://|bm:)\\S{1,2000}")) urls.add(u);
+        if (urls.isEmpty()) return null;
+        try {
+            Os.setenv("LUMEN_NO_SESSION", "1", true);   /* a test run neither restores nor saves the workspaces */
+        } catch (ErrnoException exception) {
+            Log.e("Lumen", "Unable to mark the test run", exception);
+        }
+        return urls.toArray(new String[0]);
+    }
+
     @Override
     protected synchronized String[] getArguments() {
         AndroidFontRaster.initialize();
@@ -464,7 +610,10 @@ public final class LumenActivity extends SDLActivity {
         applyProxy(getIntent());
         applyConsole(getIntent());
         applyV8Flags(getIntent());
-        String url = launchUrl(getIntent());
+        applyPreJs(getIntent());
+        String[] tests = testUrls(getIntent());
+        if (tests != null) return tests;
+        String url = openShared(getIntent()) ? null : launchUrl(getIntent());   /* a shared file opens in a tab of its own once ready */
         return new String[] {url != null ? url : "lumen://newtab"};
     }
 }

@@ -19,6 +19,9 @@ static void trace_mutation(Document *d, Node *n, const char *kind, const char *a
 static atomic_uint_fast64_t visual_version;
 uint64_t doc_visual_generation(void) { return atomic_load_explicit(&visual_version, memory_order_relaxed); }
 void doc_visual_changed(void) { atomic_fetch_add_explicit(&visual_version, 1, memory_order_relaxed); }
+static atomic_uint_fast64_t box_paint_version;
+uint64_t doc_box_generation(void) { return atomic_load_explicit(&box_paint_version, memory_order_relaxed); }
+void doc_boxes_changed(void) { atomic_fetch_add_explicit(&box_paint_version, 1, memory_order_relaxed); doc_visual_changed(); }
 
 #define X(n) const char *A_##n;
 X(html) X(head) X(body) X(title) X(meta) X(link) X(style) X(script) X(noscript) X(base) X(div) X(span) X(p) X(a) X(img) X(br) X(hr)
@@ -171,11 +174,13 @@ static bool style_only_attr(const char *name) { return !strcmp(name, "style") ||
 /* CSS may precisely invalidate attribute-selector subjects. DOM-only users
  * retain the conservative behavior without linking the style engine. */
 __attribute__((weak)) bool node_attribute_style_changed(Node *n, const char *name) { (void)n; (void)name; return false; }
+__attribute__((weak)) bool css_selector_only_attribute(const char *name) { return str_istarts(name, "data-") || str_istarts(name, "aria-"); }
 static void mark_attribute(Node *n, const char *name) {
     Document *d = n->doc;
     if (d && str_ieq(name, "src")) d->resource_version++;
     if (d && node_attribute_style_changed(n, name)) {
         d->dom_version++; d->selector_version++;
+        if (str_ieq(name, "disabled") && node_is(n, A_fieldset)) mark_impl(d, n, false, true, NULL, true, true);   /* its descendants' :disabled */
         mark_sheet_content(d, n);
         if (d->on_mutation) d->on_mutation(d, n);
     } else {
@@ -363,7 +368,7 @@ static void record_selector_attribute(Node *n, const char *name, const char *val
     Document *d = n->doc;
     /* node_attribute_style_changed marks these subjects by candidate; their
      * keys must not widen the descendant reselect of unrelated changes. */
-    bool precise = d->stylesheets && n->ns == NS_HTML && (str_istarts(name, "data-") || str_istarts(name, "aria-"));
+    bool precise = d->stylesheets && n->ns == NS_HTML && css_selector_only_attribute(name);
     selector_change_key_in(d, atom_lower(name, strlen(name)), !precise);
     if (str_ieq(name, "id")) {
         selector_change_key(d, "id"); selector_change_key(d, n->id); selector_change_key(d, value);

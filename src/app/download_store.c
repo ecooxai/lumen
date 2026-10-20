@@ -61,6 +61,38 @@ static void store_finish(const char *where, int fd, bool keep) {
     call_uri("downloadFinish", where, NULL, keep, true);
 }
 static void store_open(const char *where, const char *mime) { call_uri("downloadOpen", where, mime, false, false); }
+static bool static_bool(const char *method) {
+    JNIEnv *env = SDL_GetAndroidJNIEnv();
+    if (!env || (*env)->PushLocalFrame(env, 4) < 0) return false;
+    jclass c = activity_class(env);
+    jmethodID m = c ? (*env)->GetStaticMethodID(env, c, method, "()Z") : NULL;
+    bool r = m && (*env)->CallStaticBooleanMethod(env, c, m);
+    if ((*env)->ExceptionCheck(env)) { (*env)->ExceptionClear(env); r = false; }
+    (*env)->PopLocalFrame(env, NULL);
+    return r;
+}
+const char *download_store_dir(void) { return "/storage/emulated/0/Download"; }
+const char *download_store_top(void) { return "/storage/emulated/0"; }
+bool download_store_all_files(void) { return static_bool("allFilesAccess"); }
+void download_store_request_all_files(void) { static_bool("requestAllFilesAccess"); }
+void download_store_open_path(const char *path) { call_uri("fileOpen", path, "", false, false); }
+bool download_store_pdf_page(const char *path, int page, int width, int *pages, char *image, size_t image_n, int *w, int *h) {
+    JNIEnv *env = SDL_GetAndroidJNIEnv();
+    if (!env || (*env)->PushLocalFrame(env, 16) < 0) return false;
+    bool ok = false;
+    jclass c = activity_class(env);
+    jmethodID m = c ? (*env)->GetStaticMethodID(env, c, "pdfRender", "([BII)[Ljava/lang/String;") : NULL;
+    jobjectArray r = m ? (*env)->CallStaticObjectMethod(env, c, m, jbytes(env, path), (jint)page, (jint)width) : NULL;
+    if (!(*env)->ExceptionCheck(env) && r && (*env)->GetArrayLength(env, r) == 4) {
+        const char *v[4] = {0}; jstring s[4];
+        for (int i = 0; i < 4; i++) { s[i] = (*env)->GetObjectArrayElement(env, r, i); v[i] = s[i] ? (*env)->GetStringUTFChars(env, s[i], NULL) : NULL; }
+        if (v[0] && v[1] && v[2] && v[3]) { *pages = atoi(v[0]); snprintf(image, image_n, "%s", v[1]); *w = atoi(v[2]); *h = atoi(v[3]); ok = *pages > 0; }
+        for (int i = 0; i < 4; i++) if (v[i]) (*env)->ReleaseStringUTFChars(env, s[i], v[i]);
+    }
+    if ((*env)->ExceptionCheck(env)) (*env)->ExceptionClear(env);
+    (*env)->PopLocalFrame(env, NULL);
+    return ok;
+}
 #else
 static char g_dir[1024];
 static int store_create(const char *name, const char *mime, char *where, size_t where_n, char *final_name, size_t final_n) {
@@ -97,6 +129,15 @@ static void store_open(const char *where, const char *mime) {
     if (!u) return;
     strcpy(u, "file://"); strcat(u, where);
     SDL_OpenURL(u); SDL_free(u);
+}
+const char *download_store_dir(void) { return g_dir; }
+const char *download_store_top(void) { return "/"; }
+bool download_store_all_files(void) { return true; }
+void download_store_request_all_files(void) { }
+void download_store_open_path(const char *path) { store_open(path, NULL); }
+bool download_store_pdf_page(const char *path, int page, int width, int *pages, char *image, size_t image_n, int *w, int *h) {
+    (void)path; (void)page; (void)width; (void)pages; (void)image; (void)image_n; (void)w; (void)h;
+    return false;
 }
 #endif
 
