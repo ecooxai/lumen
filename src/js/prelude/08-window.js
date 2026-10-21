@@ -682,30 +682,115 @@ function fireAnim(t, type, name, elapsed, anim) {
     const play0 = MP.play, pause0 = MP.pause;
     MP.play = function () { if (this.__so instanceof MediaStream) { this.__spaused = false; setTimeout(() => { this.dispatchEvent(new Event('play')); this.dispatchEvent(new Event('playing')); }); return Promise.resolve(); } return play0.call(this); };
     MP.pause = function () { if (this.__so instanceof MediaStream) { this.__spaused = true; this.dispatchEvent(new Event('pause')); return; } return pause0.call(this); };
-    /* geolocation */
-    class GeolocationCoordinates { constructor(o) { Object.assign(this, { latitude: o.lat, longitude: o.lon, accuracy: o.acc, altitude: null, altitudeAccuracy: null, heading: null, speed: null }); } toJSON() { return { ...this }; } }
-    class GeolocationPosition { constructor(c) { this.coords = c; this.timestamp = Date.now(); } toJSON() { return { coords: this.coords.toJSON(), timestamp: this.timestamp }; } }
+    /* Geolocation: session permission, bounded acquisition, cancellable watches.
+     * The production provider is IP-derived; it is not GPS/CoreLocation. */
+    class GeolocationCoordinates {
+        constructor(o) { for (const [k, v] of Object.entries({ latitude: o.lat, longitude: o.lon, accuracy: o.acc, altitude: null, altitudeAccuracy: null, heading: null, speed: null })) Object.defineProperty(this, k, { value: v, enumerable: true }); }
+        toJSON() { return { ...this }; }
+    }
+    class GeolocationPosition {
+        constructor(c, timestamp) { Object.defineProperties(this, { coords: { value: c, enumerable: true }, timestamp: { value: timestamp, enumerable: true } }); }
+        toJSON() { return { coords: this.coords.toJSON(), timestamp: this.timestamp }; }
+    }
     class GeolocationPositionError { constructor(code, m) { this.code = code; this.message = m; } }
     Object.assign(GeolocationPositionError, { PERMISSION_DENIED: 1, POSITION_UNAVAILABLE: 2, TIMEOUT: 3 }); Object.assign(GeolocationPositionError.prototype, { PERMISSION_DENIED: 1, POSITION_UNAVAILABLE: 2, TIMEOUT: 3 });
     let cache = null;
-    async function locate() {
-        const f = N.geoFixed(); if (f) { const [lat, lon, acc] = f.split(',').map(Number); return { lat, lon, acc: acc || 50 }; }
-        if (cache && Date.now() - cache.t < 600000) return cache.p;
-        for (const [u, pick] of [['https://ipapi.co/json/', j => [j.latitude, j.longitude]], ['https://ipinfo.io/json', j => (j.loc || '').split(',').map(Number)]]) {
-            try { const j = await (await fetch(u)).json(); const [lat, lon] = pick(j); if (isFinite(lat) && isFinite(lon)) { const p = { lat, lon, acc: 5000 }; cache = { t: Date.now(), p }; return p; } } catch { }
+    const geoNumber = value => typeof value === 'number' ? value : typeof value === 'string' && value.trim() ? Number(value) : NaN;
+    const geoData = (latitude, longitude, accuracy) => {
+        const lat = geoNumber(latitude), lon = geoNumber(longitude), acc = geoNumber(accuracy);
+        if (!Number.isFinite(lat) || Math.abs(lat) > 90 || !Number.isFinite(lon) || Math.abs(lon) > 180 || !Number.isFinite(acc) || acc < 0) throw new GeolocationPositionError(2, 'Position unavailable');
+        return { lat, lon, acc };
+    };
+    async function locate(signal) {
+        const fixed = N.geoFixed();
+        if (fixed) { const a = fixed.split(','); return geoData(a[0], a[1], a.length > 2 ? a[2] : 50); }
+        for (const [url, pick] of [['https://ipapi.co/json/', j => [j.latitude, j.longitude]], ['https://ipinfo.io/json', j => (j.loc || '').split(',')]]) {
+            if (signal.aborted) break;
+            try {
+                const response = await fetch(url, { signal });
+                if (!response.ok) continue;
+                const [lat, lon] = pick(await response.json());
+                /* IP providers supply no verified error radius. The half-Earth
+                 * bound avoids claiming the previous invented 5 km precision. */
+                return geoData(lat, lon, 20040000);
+            } catch { if (signal.aborted) break; }
         }
         throw new GeolocationPositionError(2, 'Position unavailable');
     }
-    const watches = new Map(); let wid = 0;
-    function get(ok, er, o) {
-        if (!ask('geolocation')) { setTimeout(() => er && er(new GeolocationPositionError(1, 'User denied Geolocation'))); return; }
-        const to = o && o.timeout > 0 && isFinite(o.timeout) ? o.timeout : 0; let done = false;
-        if (to) setTimeout(() => { if (!done) { done = true; er && er(new GeolocationPositionError(3, 'Timeout expired')); } }, to);
-        locate().then(p => { if (!done) { done = true; ok(new GeolocationPosition(new GeolocationCoordinates(p))); } }, e => { if (!done) { done = true; er && er(e); } });
+    const geoClamp = (v, fallback) => {
+        if (v === undefined) return fallback;
+        const n = Number(v);
+        if (Number.isNaN(n) || n <= 0) return 0;
+        if (n >= 0xffffffff) return 0xffffffff;
+        const floor = Math.floor(n), fraction = n - floor;
+        return fraction === .5 ? floor + (floor % 2) : Math.round(n);
+    };
+    const geoOptions = o => ({ maximumAge: geoClamp(o?.maximumAge, 0), timeout: geoClamp(o?.timeout, 0xffffffff), enableHighAccuracy: !!o?.enableHighAccuracy });
+    const geoCallbacks = (ok, er) => { if (typeof ok !== 'function' || (er != null && typeof er !== 'function')) throw new TypeError('Geolocation callbacks must be functions'); };
+    function get(ok, er, options, finished = () => {}) {
+        let done = false, timer = 0, startTimer = 0, visibility = null;
+        const controller = new AbortController();
+        const cleanup = () => {
+            clearTimeout(timer); clearTimeout(startTimer); timer = startTimer = 0;
+            if (visibility) document.removeEventListener('visibilitychange', visibility);
+            visibility = null;
+        };
+        const cancel = () => { if (done) return; done = true; cleanup(); controller.abort(); };
+        const complete = (position, error) => {
+            if (done) return;
+            done = true; cleanup(); if (error) controller.abort();
+            try { if (error) { if (er) er(error); } else ok(position); }
+            catch (e) { report(e); }
+            finally { finished(error); }
+        };
+        const begin = () => {
+            startTimer = 0; if (done) return;
+            if (document.visibilityState === 'hidden') {
+                visibility = () => { if (document.visibilityState !== 'hidden') { document.removeEventListener('visibilitychange', visibility); visibility = null; begin(); } };
+                document.addEventListener('visibilitychange', visibility); return;
+            }
+            if (!ask('geolocation')) { complete(null, new GeolocationPositionError(1, 'User denied Geolocation')); return; }
+            const acquired = Date.now();
+            if (cache && options.maximumAge > 0 && acquired - cache.position.timestamp < options.maximumAge && cache.highAccuracy === options.enableHighAccuracy) { complete(cache.position); return; }
+            if (!options.timeout) { complete(null, new GeolocationPositionError(3, 'Timeout expired')); return; }
+            /* Native timers use a signed 32-bit delay; split larger durations. */
+            const deadline = acquired + options.timeout;
+            const expire = () => {
+                const remaining = deadline - Date.now();
+                if (remaining > 0) timer = setTimeout(expire, Math.min(remaining, 0x7fffffff));
+                else complete(null, new GeolocationPositionError(3, 'Timeout expired'));
+            };
+            expire();
+            locate(controller.signal).then(data => {
+                if (done) return;
+                const position = new GeolocationPosition(new GeolocationCoordinates(data), acquired);
+                cache = { position, highAccuracy: options.enableHighAccuracy }; complete(position);
+            }, error => complete(null, error instanceof GeolocationPositionError ? error : new GeolocationPositionError(2, 'Position unavailable')));
+        };
+        startTimer = setTimeout(begin, 0);
+        return cancel;
     }
-    const geolocation = { getCurrentPosition(ok, er, o) { get(ok, er, o); },
-        watchPosition(ok, er, o) { const id = ++wid; get(ok, er, o); watches.set(id, setInterval(() => get(ok, er, o), 60000)); return id; },
-        clearWatch(id) { clearInterval(watches.get(id)); watches.delete(id); } };
+    const watches = new Map(); let wid = 0;
+    const geolocation = {
+        getCurrentPosition(ok, er, options) { geoCallbacks(ok, er); get(ok, er, geoOptions(options)); },
+        watchPosition(ok, er, options) {
+            geoCallbacks(ok, er); const normalized = geoOptions(options);
+            do { wid = wid >= 0x7fffffff ? 1 : wid + 1; } while (watches.has(wid));
+            const id = wid, watch = { cancel: null, timer: 0 }; watches.set(id, watch);
+            const run = () => {
+                watch.timer = 0; if (!watches.has(id)) return;
+                watch.cancel = get(ok, er, normalized, error => {
+                    watch.cancel = null; if (!watches.has(id)) return;
+                    if (error?.code === 1) { watches.delete(id); return; }
+                    /* One acquisition at a time; polling stops after denial or
+                     * clearWatch, and hidden pages wait without a poll timer. */
+                    watch.timer = setTimeout(run, 60000);
+                });
+            };
+            run(); return id;
+        },
+        clearWatch(id) { const watch = watches.get(Number(id) | 0); if (!watch) return; watches.delete(Number(id) | 0); clearTimeout(watch.timer); watch.cancel?.(); }
+    };
     Object.defineProperty(navigator, 'geolocation', { value: geolocation, configurable: true });
     Object.assign(globalThis, { GeolocationCoordinates, GeolocationPosition, GeolocationPositionError, PermissionStatus, Geolocation: function Geolocation() { } });
     if (!N.winOp(localWindowId, 16)) { delete navigator.mediaDevices; delete navigator.geolocation; }

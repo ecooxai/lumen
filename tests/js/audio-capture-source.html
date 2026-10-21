@@ -1,0 +1,23 @@
+<!doctype html><meta charset="utf-8"><title>Native microphone PCM fixture</title>
+<p>This regression uses the SDL disk recording driver and a known PCM signal. It does not certify a physical microphone.</p>
+<script>
+(async()=>{
+ let stream,context;
+ try{
+  stream=await navigator.mediaDevices.getUserMedia({audio:{sampleRate:48000,channelCount:1},video:false});
+  const track=stream.getAudioTracks()[0];context=new AudioContext();
+  const source=context.createMediaStreamSource(stream),analyser=context.createAnalyser();analyser.fftSize=256;source.connect(analyser);
+  const samples=new Float32Array(256);let peakRms=0;
+  for(let i=0;i<30;i++){await new Promise(r=>setTimeout(r,20));analyser.getFloatTimeDomainData(samples);const rms=Math.sqrt(samples.reduce((n,x)=>n+x*x,0)/samples.length);peakRms=Math.max(peakRms,rms);}
+  if(peakRms<0.04)throw new Error('Native captured PCM did not reach analyser; peak RMS '+peakRms);
+  track.enabled=false;await new Promise(r=>setTimeout(r,100));analyser.getFloatTimeDomainData(samples);
+  const mutedPeak=Math.max(...samples.map(Math.abs));if(mutedPeak>0.00001)throw new Error('Disabled track was not silent');
+  track.stop();await new Promise(r=>setTimeout(r,100));
+  if(context._active.size!==0)throw new Error('Ended microphone retained active graph');
+  await context.close();if(context._timer!==0)throw new Error('Closed graph retained timer');
+  console.log('RESULTS native-microphone-fixture PASS '+JSON.stringify({peakRms,mutedPeak,trackState:track.readyState,contextState:context.state,input:'SDL disk PCM fixture',physicalMicrophoneTested:false}));
+  document.documentElement.setAttribute('data-result','PASS');
+ }catch(e){console.log('RESULTS native-microphone-fixture FAIL '+e.name+': '+e.message);document.documentElement.setAttribute('data-result','FAIL');}
+ finally{if(stream)stream.getTracks().forEach(t=>t.stop());if(context)await context.close();}
+})();
+</script>

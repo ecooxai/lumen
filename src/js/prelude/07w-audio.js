@@ -116,7 +116,7 @@ class DynamicsCompressorNode extends AudioNode {
 }
 class ConvolverNode extends AudioNode { constructor(ctx) { super(ctx); this.buffer = null; this.normalize = true; } }
 class AnalyserNode extends AudioNode {
-    constructor(ctx, o = {}) { super(ctx); this.fftSize = o.fftSize || 2048; this.minDecibels = -100; this.maxDecibels = -30; this.smoothingTimeConstant = 0.8; this._last = new Float32Array(32768); }
+    constructor(ctx, o = {}) { super(ctx); this.fftSize = o.fftSize || 2048; this.minDecibels = -100; this.maxDecibels = -30; this.smoothingTimeConstant = 0.8; this._last = new Float32Array(32768); ctx._analysers.add(this); }
     get frequencyBinCount() { return this.fftSize / 2; }
     _render(f) {
         const m = this._mix(f), L = this._last;
@@ -224,6 +224,59 @@ class AudioBufferSourceNode extends AudioScheduledSourceNode {
     }
 }
 
+/* Captured PCM is supplied by the native SDL recording stream. No synthetic
+ * oscillator or silent placeholder is substituted for a microphone. */
+class MediaStreamAudioSourceNode extends AudioNode {
+    constructor(ctx, options = {}) {
+        if (!(ctx instanceof AudioContext)) throw new TypeError('An AudioContext is required');
+        const stream = options.mediaStream;
+        if (!(stream instanceof MediaStream)) throw new TypeError('mediaStream must be a MediaStream');
+        const tracks = stream.getAudioTracks().slice().sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+        if (!tracks.length) throw new DOMException('The stream has no audio track', 'InvalidStateError');
+        super(ctx, 0, 1);
+        Object.defineProperty(this, 'mediaStream', { value: stream, enumerable: true });
+        this._track = tracks[0];
+        const settings = this._track.getSettings();
+        this._rate = Number(settings.sampleRate) || ctx.sampleRate;
+        this._channels = Math.max(1, Number(settings.channelCount) || 1);
+        this.channelCount = this._channels;
+        this._buffer = new Float32Array(0); this._position = 0;
+        ctx._activate(this);
+    }
+    _render() {
+        const track = this._track;
+        if (track.readyState === 'ended') {
+            this._buffer = new Float32Array(0); this.context._active.delete(this); return null;
+        }
+        const channels = this._channels, step = this._rate / this.context.sampleRate;
+        const required = Math.ceil(Q * step) + 2;
+        if (this._buffer.length / channels - this._position < required) {
+            const incoming = typeof track._readPCM === 'function' ? track._readPCM() : new Float32Array(0);
+            const consumed = Math.min(Math.floor(this._position), this._buffer.length / channels);
+            let remaining = this._buffer.subarray(consumed * channels);
+            this._position -= consumed;
+            const limit = Math.max(required, Math.ceil(this._rate / 4)) * channels;
+            const fresh = incoming.subarray(Math.max(0, incoming.length - limit));
+            if (remaining.length + fresh.length > limit) {
+                remaining = remaining.subarray(remaining.length + fresh.length - limit);
+                this._position = 0;
+            }
+            const joined = new Float32Array(remaining.length + fresh.length);
+            joined.set(remaining); joined.set(fresh, remaining.length); this._buffer = joined;
+        }
+        const left = new Float32Array(Q), right = new Float32Array(Q), data = this._buffer;
+        const frames = data.length / channels; let position = this._position;
+        for (let i = 0; i < Q && position < frames; i++, position += step) {
+            const first = Math.floor(position), next = Math.min(first + 1, frames - 1), fraction = position - first;
+            const a = first * channels, b = next * channels, rc = channels > 1 ? 1 : 0;
+            left[i] = data[a] + (data[b] - data[a]) * fraction;
+            right[i] = data[a + rc] + (data[b + rc] - data[a + rc]) * fraction;
+        }
+        this._position = position;
+        return track.enabled && !track.muted ? [left, right] : [silence, silence];
+    }
+}
+
 class AudioBuffer {
     constructor(o = {}) {
         const n = o.length | 0, c = o.numberOfChannels || 1;
@@ -239,14 +292,18 @@ class AudioBuffer {
 
 class BaseAudioContext extends EventTarget {
     constructor(rate) {
-        super(); this.sampleRate = rate; this._f = 0; this._active = new Set(); this._state = 'running';
+        super(); this.sampleRate = rate; this._f = 0; this._active = new Set(); this._analysers = new Set(); this._state = 'running';
         this.destination = new AudioDestinationNode(this); this.listener = {}; this.audioWorklet = { addModule: () => Promise.reject(new DOMException('AudioWorklet is not supported', 'NotSupportedError')) };
     }
     get state() { return this._state; }
     get currentTime() { return this._f / this.sampleRate; }
     _setState(s) { if (this._state !== s) { this._state = s; this.dispatchEvent(new Event('statechange')); } }
     _activate(n) { this._active.add(n); }
-    _quantum() { const o = this.destination._pull(this._f); this._f += Q; return o; }
+    _quantum() {
+        for (const source of [...this._active]) source._pull(this._f);
+        for (const analyser of this._analysers) if (analyser._in.size) analyser._pull(this._f);
+        const output = this.destination._pull(this._f); this._f += Q; return output;
+    }
     createGain() { return new GainNode(this); }
     createOscillator() { return new OscillatorNode(this); }
     createBufferSource() { return new AudioBufferSourceNode(this); }
@@ -260,7 +317,7 @@ class BaseAudioContext extends EventTarget {
     createPeriodicWave(real, imag, o = {}) { return new PeriodicWave(this, { real, imag, disableNormalization: o.disableNormalization }); }
     createBuffer(c, n, r) { return new AudioBuffer({ numberOfChannels: c, length: n, sampleRate: r }); }
     createMediaElementSource() { throw new DOMException('createMediaElementSource is not supported', 'NotSupportedError'); }
-    createMediaStreamSource() { throw new DOMException('createMediaStreamSource is not supported', 'NotSupportedError'); }
+    createMediaStreamSource(stream) { return new MediaStreamAudioSourceNode(this, { mediaStream: stream }); }
     decodeAudioData(data, ok, err) {
         return new Promise((res, rej) => setTimeout(() => {
             const pcm = data && N.audioDecode(data);
@@ -287,21 +344,22 @@ class AudioContext extends BaseAudioContext {
     _kick() {
         if (this._timer || this._state !== 'running') return;
         this._sync();
-        if (this._dev < 0) this._dev = N.waOpen();
+        if (this._dev < 0 && this.destination._in.size) this._dev = N.waOpen();
         this._wall = performance.now(); this._base = this._f;
         this._pump();
     }
     _pump() {
         this._timer = 0;
         if (this._state !== 'running') return;
-        const target = this._base + (performance.now() - this._wall) * RATE / 1000 + LAT;
+        if (this._dev < 0 && this.destination._in.size) this._dev = N.waOpen();
+        const target = this._base + (performance.now() - this._wall) * RATE / 1000 + (this._dev >= 0 ? LAT : 0);
         const queued = this._dev >= 0 ? N.waQueued(this._dev) : 0;
         let n = queued > LAT * 2 ? 0 : Math.max(0, Math.ceil((target - this._f) / Q));
         if (n > 64) { this._f += (n - 8) * Q; n = 8; }   /* fell far behind (timer throttled): skip ahead */
         if (n) {
-            const out = new Float32Array(n * Q * 2);
+            const out = this._dev >= 0 ? new Float32Array(n * Q * 2) : null;
             for (let k = 0; k < n; k++) {
-                const o = this._quantum(); if (!o) continue;
+                const o = this._quantum(); if (!o || !out) continue;
                 const a = o[0], b = o[1], base = k * Q * 2;
                 for (let i = 0; i < Q; i++) { out[base + 2 * i] = a[i]; out[base + 2 * i + 1] = b[i]; }
             }
@@ -321,7 +379,7 @@ class AudioContext extends BaseAudioContext {
         return Promise.resolve();
     }
     close() {
-        if (this._state !== 'closed') { this._sync(); clearTimeout(this._timer); this._timer = 0; if (this._dev >= 0) N.waClose(this._dev); this._dev = -1; this._setState('closed'); }
+        if (this._state !== 'closed') { this._sync(); clearTimeout(this._timer); this._timer = 0; if (this._dev >= 0) N.waClose(this._dev); this._dev = -1; this._active.clear(); this._analysers.clear(); this._setState('closed'); }
         return Promise.resolve();
     }
     getOutputTimestamp() { return { contextTime: this.currentTime, performanceTime: performance.now() }; }
@@ -354,7 +412,7 @@ class OfflineAudioContext extends BaseAudioContext {
 
 Object.assign(globalThis, {
     AudioContext, webkitAudioContext: AudioContext, OfflineAudioContext, webkitOfflineAudioContext: OfflineAudioContext, BaseAudioContext,
-    AudioNode, AudioParam, AudioBuffer, AudioDestinationNode, AudioScheduledSourceNode, GainNode, OscillatorNode, AudioBufferSourceNode,
+    AudioNode, AudioParam, AudioBuffer, AudioDestinationNode, AudioScheduledSourceNode, GainNode, OscillatorNode, AudioBufferSourceNode, MediaStreamAudioSourceNode,
     ConstantSourceNode, StereoPannerNode, DelayNode, BiquadFilterNode, DynamicsCompressorNode, ConvolverNode, AnalyserNode, PeriodicWave,
 });
 })();
