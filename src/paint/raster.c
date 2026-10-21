@@ -1,6 +1,7 @@
 /* CPU rasterizer: premultiplied ARGB32, anti-aliased shapes, glyphs, images */
 #include "paint.h"
 #include <math.h>
+#include <pthread.h>
 #include <zlib.h>
 #if defined(__aarch64__) && defined(__ARM_NEON) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 #include <arm_neon.h>
@@ -16,6 +17,8 @@ typedef struct {
     LayerSave layers[16]; int nlayer;
     uint32_t *px;
     int origin_x, origin_y, stride, height; /* tightly bounded storage for opacity groups */
+    bool quiet;                             /* a band after the first: leaves the canvas' punch results alone */
+    uint32_t lut[256]; Color lut_color; bool lut_ok;
 } R;
 
 static inline uint32_t *raster_row(R *r, int y) {
@@ -252,12 +255,11 @@ static void gradient(R *r, const DItem *it) {
 }
 
 /* premultiplied pixel per glyph coverage for one text color (same values premul() gives) */
-static const uint32_t *text_lut(Color color) {
-    static uint32_t lut[256]; static Color have; static bool ok;
-    if (ok && have == color) return lut;
+static const uint32_t *text_lut(R *r, Color color) {
+    if (r->lut_ok && r->lut_color == color) return r->lut;
     uint32_t ca = COLOR_A(color);
-    for (uint32_t a = 0; a < 256; a++) lut[a] = premul(color | 0xff000000u, (a * ca / 255) / 255.f);
-    have = color; ok = true; return lut;
+    for (uint32_t a = 0; a < 256; a++) r->lut[a] = premul(color | 0xff000000u, (a * ca / 255) / 255.f);
+    r->lut_color = color; r->lut_ok = true; return r->lut;
 }
 /* a text item whose fragment box, padded by twice its font size for ink overflow, misses [x0,x1)x[y0,y1) device px */
 static bool text_outside(const DItem *it, float s, float x0, float y0, float x1, float y1) {
@@ -279,7 +281,7 @@ static void text(R *r, const DItem *it) {
         if (ox >= c->x1 || oy >= c->y1 || ox + gl->w <= c->x0 || oy + gl->h <= c->y0) continue;
         int xs = LMAX(0, c->x0 - ox), xe = LMIN(gl->w, c->x1 - ox);
         if (!c->round && !(gl->color && gl->rgba) && gl->alpha) {   /* the common case: integer coverage through a lookup */
-            if (!lut) lut = text_lut(it->color);
+            if (!lut) lut = text_lut(r, it->color);
             for (int y = LMAX(0, c->y0 - oy); y < gl->h && oy + y < c->y1; y++) {
                 uint32_t *row = raster_row(r, oy + y) + ox - r->origin_x;
                 const uint8_t *src = gl->alpha + y * gl->w;
@@ -352,6 +354,7 @@ static void image(R *r, const DItem *it) {
         int qx0 = LMAX(c->x0, (int)floorf(x0 + 0.5f)), qy0 = LMAX(c->y0, (int)floorf(y0 + 0.5f)), qx1 = LMIN(c->x1, (int)floorf(x1 + 0.5f)), qy1 = LMIN(c->y1, (int)floorf(y1 + 0.5f));
         for (int y = qy0; qx1 > qx0 && y < qy1; y++) memset(raster_row(r, y) + qx0 - r->origin_x, 0, (size_t)(qx1 - qx0) * 4);
         bool ok = !r->nlayer && !c->round;
+        if (r->quiet) return;
         if (more < 0) r->c->punched = ok;
         else if (ok) r->c->punched_more |= 1u << more;
         else r->c->punched_more &= ~(1u << more);
@@ -474,12 +477,8 @@ static LayerRect *layer_bounds(const DisplayList *dl, float scale, LayerRect dam
 
 unsigned long long g_raster_px, g_layer_px;
 unsigned g_raster_calls, g_layer_n;
-void raster(Canvas *cv, const DisplayList *dl, Color clearc) { raster_rect(cv, dl, clearc, 0, 0, cv->w, cv->h); }
-void raster_rect(Canvas *cv, const DisplayList *dl, Color clearc, int rx0, int ry0, int rx1, int ry1) {
-    R r; memset(&r, 0, sizeof r); r.c = cv; r.s = cv->scale; r.px = cv->px; r.stride = cv->stride; r.height = cv->h;
-    rx0 = LMAX(rx0, 0); ry0 = LMAX(ry0, 0); rx1 = LMIN(rx1, cv->w); ry1 = LMIN(ry1, cv->h);
-    if (rx1 <= rx0 || ry1 <= ry0) return;
-    g_raster_calls++; g_raster_px += (unsigned long long)(rx1 - rx0) * (unsigned long long)(ry1 - ry0);
+static void raster_band(Canvas *cv, const DisplayList *dl, Color clearc, int rx0, int ry0, int rx1, int ry1, bool quiet) {
+    R r; memset(&r, 0, sizeof r); r.c = cv; r.s = cv->scale; r.px = cv->px; r.stride = cv->stride; r.height = cv->h; r.quiet = quiet;
     uint32_t cl = premul(clearc, 1);
     for (int y = ry0; y < ry1; y++) store_span(canvas_row(cv, y) + rx0, rx1 - rx0, cl);
     r.clips[0] = (Clip){ rx0, ry0, rx1, ry1, 0, 0, (float)cv->w, (float)cv->h, {0}, false }; r.nclip = 1;
@@ -513,7 +512,7 @@ void raster_rect(Canvas *cv, const DisplayList *dl, Color clearc, int rx0, int r
             LayerRect b = bounds[i];
             r.stride = b.x1 - b.x0; r.height = b.y1 - b.y0;
             r.px = xcalloc((size_t)r.stride * (size_t)(b.y1 - b.y0), 4);
-            g_layer_n++; g_layer_px += (unsigned long long)LMAX(r.stride, 0) * (unsigned long long)LMAX(r.height, 0);
+            __atomic_fetch_add(&g_layer_n, 1, __ATOMIC_RELAXED); __atomic_fetch_add(&g_layer_px, (unsigned long long)LMAX(r.stride, 0) * (unsigned long long)LMAX(r.height, 0), __ATOMIC_RELAXED);
             r.origin_x = b.x0; r.origin_y = b.y0;
             break;
         }
@@ -538,6 +537,81 @@ void raster_rect(Canvas *cv, const DisplayList *dl, Color clearc, int rx0, int r
     }
     while (r.nlayer > 0) { r.nlayer--; if (r.nlayer < 16) { free(r.px); r.px = r.layers[r.nlayer].px; r.origin_y = r.layers[r.nlayer].origin_y; } }
     free(bounds);
+}
+
+/* Large rasters are cut into horizontal bands painted on all cores. Each band replays the whole
+   display list clipped to its rows; every pixel operation is per pixel, so the result is identical
+   to one pass. The bands outnumber the threads so big and little cores finish together. */
+static struct {
+    pthread_mutex_t run, mu; pthread_cond_t go, done;
+    int threads, active; unsigned gen;
+    uint64_t ticket;   /* generation << 32 | next band: a thread late from one job cannot claim a band of the next */
+    Canvas *cv; const DisplayList *dl; Color clear; int x0, y0, x1, y1, nband, left;
+} pool = { PTHREAD_MUTEX_INITIALIZER, PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER, PTHREAD_COND_INITIALIZER };
+
+static void bands_work(unsigned gen) {
+    for (;;) {
+        uint64_t t = __atomic_load_n(&pool.ticket, __ATOMIC_ACQUIRE);
+        if ((unsigned)(t >> 32) != gen || (int)(uint32_t)t >= pool.nband) return;
+        if (!__atomic_compare_exchange_n(&pool.ticket, &t, t + 1, false, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE)) continue;
+        int b = (int)(uint32_t)t, h = pool.y1 - pool.y0;
+        raster_band(pool.cv, pool.dl, pool.clear, pool.x0, pool.y0 + (int)((int64_t)h * b / pool.nband),
+                    pool.x1, pool.y0 + (int)((int64_t)h * (b + 1) / pool.nband), b > 0);
+        pthread_mutex_lock(&pool.mu);
+        if (!--pool.left) pthread_cond_broadcast(&pool.done);
+        pthread_mutex_unlock(&pool.mu);
+    }
+}
+static void *band_thread(void *arg) {
+    (void)arg; unsigned seen = 0;
+    for (;;) {
+        pthread_mutex_lock(&pool.mu);
+        while (pool.gen == seen) pthread_cond_wait(&pool.go, &pool.mu);
+        seen = pool.gen;
+        pthread_mutex_unlock(&pool.mu);
+        bands_work(seen);
+    }
+    return NULL;
+}
+void raster_set_threads(int n) {
+    pthread_mutex_lock(&pool.run);
+    for (n = LCLAMP(n, 0, 15); pool.threads < n; pool.threads++) {
+        pthread_t t; if (pthread_create(&t, NULL, band_thread, NULL)) break;
+        pthread_detach(t);
+    }
+    pool.active = LMIN(n, pool.threads);   /* fewer: the rest stay parked */
+    pthread_mutex_unlock(&pool.run);
+}
+
+void raster(Canvas *cv, const DisplayList *dl, Color clearc) { raster_rect(cv, dl, clearc, 0, 0, cv->w, cv->h); }
+void raster_rect(Canvas *cv, const DisplayList *dl, Color clearc, int rx0, int ry0, int rx1, int ry1) {
+    rx0 = LMAX(rx0, 0); ry0 = LMAX(ry0, 0); rx1 = LMIN(rx1, cv->w); ry1 = LMIN(ry1, cv->h);
+    if (rx1 <= rx0 || ry1 <= ry0) return;
+    g_raster_calls++; g_raster_px += (unsigned long long)(rx1 - rx0) * (unsigned long long)(ry1 - ry0);
+    int nband = LMIN(3 * (pool.active + 1), (ry1 - ry0) / 24);
+    /* small damage (a caret, a hover) costs less than waking the pool; a raster running on another
+       thread, or a nested one, paints alone */
+    if (!pool.active || (int64_t)(rx1 - rx0) * (ry1 - ry0) < 160000 || nband < 2 || pthread_mutex_trylock(&pool.run)) {
+        raster_band(cv, dl, clearc, rx0, ry0, rx1, ry1, false); return;
+    }
+    /* video frames convert to RGB once, before the bands read them */
+    for (int i = 0; i < dl->items.n; i++) {
+        const DItem *it = &dl->items.v[i]; Image *im = it->img;
+        if (it->op != DO_IMAGE || !im || im->px || !im->yuv || im == cv->punch) continue;
+        if (im == cv->punch_more[0] || im == cv->punch_more[1] || im == cv->punch_more[2]) continue;
+        if (it->w > 0 && it->h > 0) image_yuv_materialize(im);
+    }
+    pthread_mutex_lock(&pool.mu);
+    pool.cv = cv; pool.dl = dl; pool.clear = clearc; pool.x0 = rx0; pool.y0 = ry0; pool.x1 = rx1; pool.y1 = ry1;
+    pool.nband = nband; pool.left = nband; unsigned gen = ++pool.gen;
+    __atomic_store_n(&pool.ticket, (uint64_t)gen << 32, __ATOMIC_RELEASE);
+    pthread_cond_broadcast(&pool.go);
+    pthread_mutex_unlock(&pool.mu);
+    bands_work(gen);
+    pthread_mutex_lock(&pool.mu);
+    while (pool.left) pthread_cond_wait(&pool.done, &pool.mu);
+    pthread_mutex_unlock(&pool.mu);
+    pthread_mutex_unlock(&pool.run);
 }
 
 /* ---------------- PNG writer (for tests/screenshots) ---------------- */

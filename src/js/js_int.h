@@ -123,6 +123,7 @@ struct JsCtx {
     std::thread watchdog;
     JsCtx *parent = nullptr;          /* nested browsing context: owning frame's context */
     Node *frame_el = nullptr;         /* the <iframe> in the parent document */
+    bool fullscreen = false;          /* its document has a fullscreen element */
     std::vector<JsCtx *> kids;
     uint32_t id = 0;
     bool dead = false;

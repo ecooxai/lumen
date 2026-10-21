@@ -43,6 +43,8 @@ struct NetRequest {
     bool (*on_head)(NetRequest *req, const NetResponse *head, void *ud);
     bool (*sink)(NetRequest *req, const char *data, size_t n, void *ud);
     void *sink_ud;
+    /* on the fetching thread once the whole response is in, before done runs on the main thread */
+    void (*work)(NetRequest *req, NetResponse *resp, void *ud);
     void *ud;
     uint64_t id;
 #if defined(__ANDROID__) && !defined(NDEBUG)
@@ -95,10 +97,15 @@ void cookies_set_document(const char *url, const char *cookie_str);
 char *cookies_get_document(const char *url);
 void cookies_load(const char *path);
 bool cookies_save(const char *path); /* writes only when the jar changed */
+/* the site of a host (its registrable domain, approximated: example.co.uk for www.example.co.uk) */
+void net_site_of(const char *host, char *out, size_t n);
+/* the cookies of a site and its subdomains: counts them, or deletes them and returns how many went */
+int cookies_site(const char *site, bool remove);
 
 extern const char *g_user_agent;
 /* Authentication providers must see Lumen's own identity, including after redirects. */
 const char *net_user_agent_for_url(const char *url);
+bool net_login_host(const char *host);   /* a Google/Apple/Microsoft sign-in host: Lumen is Firefox there */
 enum { UA_CHROME, UA_FIREFOX, UA_LUMEN, UA_COUNT };
 void net_set_user_agent(int which);   /* UA_CHROME (default), UA_FIREFOX or UA_LUMEN */
 const char *net_user_agent_name(int which);

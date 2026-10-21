@@ -21,6 +21,8 @@ typedef struct ShapedRun { GlyphPos *g; int n; float width; } ShapedRun;
 void font_init(void);
 /* family: CSS font-family list; weight 100..900 */
 Font *font_get(const char *family, int weight, bool italic, float size);
+/* the same face, variations and synthesis at another size (text under a scale transform) */
+Font *font_resized(Font *f, float size);
 void text_shape(Font *f, const char *s, size_t len, float letter_spacing, ShapedRun *out);
 void shaped_free(ShapedRun *r);
 /* changes whenever font resolution may change (a web font loaded), so cached shaping must not be reused */

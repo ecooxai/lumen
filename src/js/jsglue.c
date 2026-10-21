@@ -60,6 +60,30 @@ bool jsg_vrect(Node *n, float r[4], float scroll_x, float scroll_y) {
     return true;
 }
 
+/* The viewport rectangle that clipping ancestors (overflow other than visible) leave for a box, up to
+   but not including stop: its descendants are cut to their padding boxes, as IntersectionObserver sees
+   them. False without a box; an unclipped axis spans everything. */
+bool jsg_vclip(Node *n, Node *stop, float c[4], float scroll_x, float scroll_y) {
+    struct Box *b = n->box;
+    if (!b) return false;
+    c[0] = c[1] = -INFINITY; c[2] = c[3] = INFINITY;
+    for (struct Box *a = b; a && !a->fixed; ) {
+        struct Box *up = a->abs && a->cb ? a->cb : a->parent;
+        if (!up || (stop && up->node == stop)) break;
+        const ComputedStyle *s = up->st;
+        bool viewport = up->node && (up->node->tag == A_html || up->node->tag == A_body);   /* their overflow is the viewport's */
+        if (s && up->node && !viewport && (s->overflow_x != OV_VISIBLE || s->overflow_y != OV_VISIBLE)) {
+            float r[4];
+            if (jsg_vrect(up->node, r, scroll_x, scroll_y) && up->node->box == up) {
+                if (s->overflow_x != OV_VISIBLE) { c[0] = fmaxf(c[0], r[0] + up->b[3]); c[2] = fminf(c[2], r[0] + r[2] - up->b[1]); }
+                if (s->overflow_y != OV_VISIBLE) { c[1] = fmaxf(c[1], r[1] + up->b[0]); c[3] = fminf(c[3], r[1] + r[3] - up->b[2]); }
+            }
+        }
+        a = up;
+    }
+    return true;
+}
+
 bool jsg_scroll(Node *n, float r[4]) {
     struct Box *b = n->box;
     if (!b || !b->scroller) return false;

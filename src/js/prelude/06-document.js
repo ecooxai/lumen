@@ -21,7 +21,7 @@ class Document extends Node { constructor() { if (new.target === HTMLDocument) i
 class HTMLDocument extends Document {}
 class XMLDocument extends Document {}
 methods(Document.prototype, ParentNode);
-installHandlers(Document.prototype, false);
+installHandlers(Document.prototype, false, EVENT_HANDLERS.concat(FS_HANDLERS, ['readystatechange', 'visibilitychange', 'pointerlockchange', 'pointerlockerror', 'freeze', 'resume']));
 const findChild = (p, tag) => { if (!p) return null; for (let c = N.first(p); c; c = N.next(c)) if (N.type(c) === 1 && N.name(c) === tag) return c; return null; };
 methods(Document.prototype, {
     get all() { let o = allColl.get(this); if (!o) { const d = this, list = () => d.getElementsByTagName('*'); o = N.makeAll(function (k) { if (typeof k === 'number' || /^\d+$/.test(k)) return list()[+k] ?? undefined; return k === undefined ? undefined : allNamed(list(), String(k)) ?? undefined; }); Object.setPrototypeOf(o, HTMLAllCollection.prototype); allMeta.set(o, list); allColl.set(this, o); } return o; },
@@ -47,8 +47,9 @@ methods(Document.prototype, {
     get links() { return htmlColl(N.query(this, 'a[href],area[href]', true)); }, get scripts() { return htmlColl(N.query(this, 'script', true)); },
     get styleSheets() { return scopeSheets(this); },
     get adoptedStyleSheets() { return adoptedGet(this); }, set adoptedStyleSheets(v) { adoptSheets(this, v); },
-    get fonts() { return fontSet; }, get timeline() { if (!this.__tl) def(this, '__tl', new DocumentTimeline()); return this.__tl; }, get fullscreenElement() { return null; }, get fullscreenEnabled() { return false; },
-    exitFullscreen() { return Promise.resolve(); }, get pictureInPictureEnabled() { return false; },
+    get fonts() { return fontSet; }, get timeline() { if (!this.__tl) def(this, '__tl', new DocumentTimeline()); return this.__tl; }, get fullscreenElement() { return fsCurrent(this); }, get fullscreenEnabled() { return true; },
+    get webkitFullscreenElement() { return fsCurrent(this); }, get webkitCurrentFullScreenElement() { return fsCurrent(this); }, get webkitIsFullScreen() { return !!fsCurrent(this); }, get webkitFullscreenEnabled() { return true; },
+    exitFullscreen() { return fsExit(); }, webkitExitFullscreen() { fsExit().catch(() => {}); }, webkitCancelFullScreen() { fsExit().catch(() => {}); }, get pictureInPictureEnabled() { return false; },
     get implementation() { if (this === document) return implementation; if (!this.__impl) def(this, '__impl', Object.create(implementation, { _doc: { value: this } })); return this.__impl; },
     createElement(tag, opts) {
         tag = String(tag); if (!validLocalName(tag)) throw new DOMException(`The tag name provided ('${tag}') is not a valid name.`, 'InvalidCharacterError');
@@ -127,3 +128,55 @@ function docWrite(html) {
 }
 const implementation = { hasFeature() { return true; }, createHTMLDocument(t) { const d = N.newDoc(t === undefined ? null : String(t)); Object.setPrototypeOf(d, HTMLDocument.prototype); def(d, '__url', 'about:blank'); return d; }, createDocumentType(n, p, s) { n = String(n); if (/[\t\n\f\r >\x00]/.test(n)) throw new DOMException(`The qualified name provided ('${n}') contains the invalid name-start character.`, 'InvalidCharacterError'); return N.doctype(n, String(p), String(s), this._doc || document); },
     createDocument(ns, q, dt = null) { const d = N.newXmlDoc(); def(d, '__url', 'about:blank'); if (ns === NSURI[0]) def(d, '__ct', 'application/xhtml+xml'); else if (ns === NSURI[1]) def(d, '__ct', 'image/svg+xml'); q = q == null ? '' : String(q); const el = q ? Document.prototype.createElementNS.call(d, ns, q) : null; if (dt) insertNode(d, dt, null); if (el) insertNode(d, el, null); return d; } };
+
+/* The Fullscreen API. The browser hides its own bars and gives the page the whole window; the element
+   is :fullscreen, which the UA sheet stretches over the viewport. One element at a time; Back (or the
+   browser otherwise) leaves through __lumenFullscreenExit. */
+let fsEl = null;
+function fsFire(el, type) {
+    const t = el && el.isConnected ? el : document;
+    for (const n of [type, 'webkit' + type]) t.dispatchEvent(new Event(n, { bubbles: true, composed: true }));
+}
+function fsRequest(el) {
+    return new Promise((resolve, reject) => setTimeout(() => {
+        if (!el.isConnected) {
+            fsFire(el, 'fullscreenerror');
+            reject(new TypeError("Failed to execute 'requestFullscreen' on 'Element': Element not connected"));
+            return;
+        }
+        if (fsEl === el) { resolve(); return; }
+        if (fsEl) N.fullscreen(fsEl, false, true);
+        fsEl = el; N.fullscreen(el, true, true);
+        fsAfterResize(() => { fsFire(el, 'fullscreenchange'); resolve(); });
+    }, 0));
+}
+function fsExit() {
+    if (!fsEl) return Promise.reject(new TypeError("Failed to execute 'exitFullscreen' on 'Document': Document not active"));
+    const el = fsEl; fsEl = null; N.fullscreen(el, false, false);
+    return new Promise(resolve => fsAfterResize(() => { fsFire(el, 'fullscreenchange'); resolve(); }));
+}
+/* As in Chrome, fullscreenchange follows the window's resize: pages measure the new viewport in it.
+   The browser's bars go away in steps, so it waits for the resizes to settle (or a moment without one). */
+let fsQueue = [], fsTimer = 0, fsDeadline = 0;
+function fsAfterResize(fn) {
+    fsQueue.push(fn);
+    if (!fsTimer) { fsDeadline = N.now() + 1000; fsTimer = setTimeout(fsFlush, 600); }
+}
+function fsResized() {
+    if (!fsTimer) return;
+    clearTimeout(fsTimer);
+    fsTimer = setTimeout(fsFlush, Math.max(0, Math.min(150, fsDeadline - N.now())));
+}
+function fsFlush() {
+    fsTimer = 0;
+    const q = fsQueue; fsQueue = [];
+    for (const fn of q) fn();
+}
+/* the fullscreen element as doc sees it: a shadow tree's element shows as its host */
+function fsCurrent(doc) {
+    if (fsEl && !fsEl.isConnected) { fsExit().catch(() => {}); return null; }
+    let e = fsEl;
+    while (e && e.getRootNode() !== doc) { const r = e.getRootNode(); e = r && r.host || null; }
+    return e;
+}
+Object.defineProperty(globalThis, '__lumenFullscreenExit', { value: () => { if (fsEl) fsExit().catch(() => {}); } });

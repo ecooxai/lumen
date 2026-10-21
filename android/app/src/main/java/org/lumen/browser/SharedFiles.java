@@ -87,8 +87,42 @@ final class SharedFiles {
 
     /* a path Lumen can read for uri, copying it in when needed; null for kinds Lumen does not show */
     private static String local(Activity activity, Uri uri) throws IOException {
+        long[] size = {-1};
+        String name = nameOf(activity, uri, size);
+        if (name == null) return null;
+        String extension = extension(name);
+        if (!VIEWER.matcher(extension).matches() && !PAGE.matcher(extension).matches()) return null;
+        return readable(activity, uri, name, size[0], new File(activity.getFilesDir(), "opened"));
+    }
+
+    /* the files the system's picker chose for an <input type=file>, one path per line, or null:
+       files in shared storage in place, anything else copied to cache/picked (kept a day) */
+    static String picked(Activity activity, Intent data) {
+        ArrayList<Uri> uris = new ArrayList<>();
+        if (data != null && data.getClipData() != null)
+            for (int i = 0; i < data.getClipData().getItemCount() && uris.size() < 64; i++) uris.add(data.getClipData().getItemAt(i).getUri());
+        else if (data != null && data.getData() != null) uris.add(data.getData());
+        File picked = new File(activity.getCacheDir(), "picked");
+        clean(picked);
+        StringBuilder paths = new StringBuilder();
+        for (Uri uri : uris) {
+            try {
+                long[] size = {-1};
+                String name = nameOf(activity, uri, size), path = name != null ? readable(activity, uri, name, size[0], picked) : null;
+                if (path == null || path.indexOf('\n') >= 0) continue;
+                if (paths.length() > 0) paths.append('\n');
+                paths.append(path);
+            } catch (IOException | RuntimeException exception) {
+                Log.w("Lumen", "Unable to read a picked file: " + exception.getClass().getSimpleName());
+            }
+        }
+        return paths.length() > 0 ? paths.toString() : null;
+    }
+
+    /* uri's file name (with an extension from its type when it has none) and size; null for Lumen's own data */
+    private static String nameOf(Activity activity, Uri uri, long[] size) throws IOException {
         ContentResolver resolver = activity.getContentResolver();
-        String name = null; long size = -1;
+        String name = null;
         if ("file".equals(uri.getScheme())) {   /* never Lumen's own data */
             File file = new File(uri.getPath() != null ? uri.getPath() : "").getCanonicalFile();
             if (file.getPath().startsWith(new File(activity.getApplicationInfo().dataDir).getCanonicalPath() + "/")) return null;
@@ -97,7 +131,7 @@ final class SharedFiles {
         else try (Cursor cursor = resolver.query(uri, new String[] {OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE}, null, null, null)) {
             if (cursor != null && cursor.moveToFirst()) {
                 if (!cursor.isNull(0)) name = cursor.getString(0);
-                if (!cursor.isNull(1)) size = cursor.getLong(1);
+                if (!cursor.isNull(1)) size[0] = cursor.getLong(1);
             }
         } catch (RuntimeException ignored) {}
         if (name == null || name.isEmpty()) name = uri.getLastPathSegment() != null ? new File(uri.getLastPathSegment()).getName() : "file";
@@ -107,11 +141,15 @@ final class SharedFiles {
             String guessed = MimeTypeMap.getSingleton().getExtensionFromMimeType(type);
             if (guessed != null) name += "." + guessed;
         }
-        String extension = extension(name);
-        if (!VIEWER.matcher(extension).matches() && !PAGE.matcher(extension).matches()) return null;
+        return name;
+    }
+
+    /* uri's file in place when Lumen can read it there, else a copy in a new folder under into */
+    private static String readable(Activity activity, Uri uri, String name, long size, File into) throws IOException {
+        ContentResolver resolver = activity.getContentResolver();
         File direct = inPlace(activity, uri, name, size);
         if (direct != null) return direct.getAbsolutePath();
-        File folder = new File(new File(activity.getFilesDir(), "opened"), System.currentTimeMillis() + "-" + (serial++));
+        File folder = new File(into, System.currentTimeMillis() + "-" + (serial++));
         if (!folder.mkdirs()) throw new IOException("mkdirs");
         File out = new File(folder, name);
         try (InputStream in = resolver.openInputStream(uri); OutputStream copy = new FileOutputStream(out)) {

@@ -35,6 +35,7 @@ extern Image *(*paint_image_hook)(Node *n);
 extern Image *(*paint_url_image_hook)(const char *url);
 extern const Node *(*svg_ext_ref_hook)(const char *url, const char *id); /* element #id of an external SVG document, NULL while it loads */
 Image *image_decode(const uint8_t *data, size_t n);
+Image *image_decode_bitmap(const uint8_t *data, size_t n);   /* PNG, JPEG, WebP, GIF: safe on any thread (SVG needs the DOM) */
 void image_unref(Image *im);
 void image_yuv_materialize(Image *im);
 /* Copy planar 8-bit 4:2:0 into the presenter's NV12 layout, without RGB conversion.
@@ -62,6 +63,9 @@ void canvas_free(Canvas *c);
 void raster(Canvas *c, const DisplayList *dl, Color clear);
 /* Re-raster only device-pixel rect [x0,x1)x[y0,y1); pixels outside are left untouched. */
 void raster_rect(Canvas *c, const DisplayList *dl, Color clear, int x0, int y0, int x1, int y1);
+/* Extra threads that paint bands of large rasters with the caller (0, the default: one thread).
+   Threads are never destroyed; a smaller n leaves the others parked. */
+void raster_set_threads(int n);
 extern unsigned long long g_raster_px, g_layer_px;   /* paint profile: pixels rastered / composited from opacity layers */
 extern unsigned g_raster_calls, g_layer_n;
 bool png_write(const char *path, const uint32_t *px, int w, int h, int stride);

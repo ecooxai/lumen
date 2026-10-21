@@ -335,6 +335,9 @@ static int loader(void *arg) {
     NetResponse *r = rq->html ? NULL : net_fetch_sync(nr);
     int kind = probe ? dl_probe_finish(probe, r) : 0;
     if (kind == 1) { if (r) net_response_free(r); loader_done(rq); return 0; }   /* the download carries on by itself */
+    if (r && (r->status == 204 || r->status == 205)) {   /* No Content: the tab stays on its page, as for a download */
+        nav_download_started(0, (void *)(uintptr_t)rq->gen); net_response_free(r); loader_done(rq); return 0;
+    }
     double t_html = now_ms();
     Page *p = xcalloc(1, sizeof *p); p->gen = rq->gen; p->internal_ui = rq->html != NULL;
     const char *body = r && r->body ? r->body : "";
@@ -490,6 +493,10 @@ static bool url_desktop(const char *url) {
 }
 /* the panel takes the right of the window below the toolbar, most of a phone held upright */
 static bool panel_shown(const App *a) { return a->pan && a->t == a->pan; }
+/* a page in fullscreen (the Fullscreen API): the window is all page, with no tab strip, toolbar, side
+   bar or system bars; the page it is, and the side bar's width before */
+static Page *g_fs_page;
+static float g_fs_side;
 static float page_left(const App *a) {
     if (!panel_shown(a) || g_bare) return a->side;
     float w = (a->vw - a->side) * 0.6f;
@@ -748,11 +755,21 @@ static bool files_resolve(const char *path, char *out) {
     return !strncmp(out, top, n) && (out[n] == 0 || out[n] == '/');
 }
 typedef struct { char *name; bool dir; long long size; long long mtime; } FileEntry;
-static void files_json(SB *b, const char *want) {
+/* folder want, or folder def when want is not one the browser may show ("missing" then); a file
+   given as want lists its folder and names it as "file" */
+static void files_json(SB *b, const char *want, const char *def) {
     char dir[PATH_MAX], top[PATH_MAX], root[PATH_MAX];
+    struct stat ws;
     if (!realpath(download_store_top(), top)) snprintf(top, sizeof top, "%s", download_store_top());
-    if (!realpath(download_store_dir(), root)) snprintf(root, sizeof root, "%s", download_store_dir());
-    if (!files_resolve(want, dir)) snprintf(dir, sizeof dir, "%s", root);
+    if (!realpath(def, root)) snprintf(root, sizeof root, "%s", def);
+    if (!files_resolve(want, dir) || stat(dir, &ws)) {
+        if (want && *want) sb_puts(b, "\"missing\":true,");
+        snprintf(dir, sizeof dir, "%s", root);
+    } else if (S_ISREG(ws.st_mode)) {
+        sb_puts(b, "\"file\":"); sb_json(b, dir); sb_putc(b, ',');
+        char *slash = strrchr(dir, '/');
+        if (slash == dir) slash[1] = 0; else if (slash) *slash = 0;
+    }
     sb_puts(b, "\"dir\":"); sb_json(b, dir);
     sb_puts(b, ",\"root\":"); sb_json(b, root);
     if (strcmp(dir, top) && strcmp(dir, "/")) {
@@ -795,7 +812,7 @@ static void downloads_json(SB *b, const char *want) {
         sb_json(b, d->name); sb_puts(b, ",\"status\":"); sb_json(b, st); sb_putc(b, '}');
     }
     sb_puts(b, "],");
-    files_json(b, want);
+    files_json(b, want, download_store_dir());
     sb_putc(b, '}');
 }
 static void links_json(SB *b, const Link *v, int n) {
@@ -863,10 +880,32 @@ static void settings_json(App *app, SB *b) {
 static const char *g_newtab_msg;   /* a notice for the next state, from the last set? */
 static const char *bm_add(Tab *t);
 static const char *bm_store(int index, const char *title, const char *raw);
-/* the state of section s of q (and of folder dir on Downloads) */
+/* <input type=file> on Android: the file chooser (newtab's "pick", in the panel) while a page waits
+   for it; several files or one, and the input's accept list */
+static struct { bool wait, multi; char accept[512]; } g_pick;
+static const char *files_home(void) {
+#ifdef __ANDROID__
+    return download_store_top();
+#else
+    const char *h = getenv("HOME");
+    return h && *h ? h : "/";
+#endif
+}
+/* the state of section s of q (and of folder dir on Downloads and the file chooser) */
 static char *newtab_state(App *app, const char *q) {
     char sec[16] = "";
     qparam(q, "s", sec, sizeof sec);
+    if (!strcmp(sec, "pick")) {   /* not one of the sections the others list */
+        SB b; sb_init(&b);
+        char *dir = qparam_dup(q, "dir");
+        sb_printf(&b, "{\"sec\":\"pick\",\"sections\":[],\"panel\":%s,\"pk\":{\"home\":", panel_shown(app) ? "true" : "false");
+        sb_json(&b, files_home());
+        sb_printf(&b, ",\"multi\":%s,\"wait\":%s,\"accept\":", g_pick.multi ? "true" : "false", g_pick.wait ? "true" : "false");
+        sb_json(&b, g_pick.accept);
+        sb_putc(&b, ','); files_json(&b, dir, files_home()); free(dir);
+        sb_puts(&b, "}}");
+        return sb_take(&b);
+    }
     if (!strcmp(sec, "workspaces")) snprintf(sec, sizeof sec, "home");
     int k = 0;
     while (k < NEWTAB_NSEC && strcmp(sec, newtab_sections[k])) k++;
@@ -948,6 +987,21 @@ static char *h_internal_in(const char *cmd) {
         char *open = qparam_dup(q, "files_open"), path[PATH_MAX]; struct stat st;
         if (open && files_resolve(open, path) && !stat(path, &st) && S_ISREG(st.st_mode)) download_store_open_path(path);
         free(open);
+        char *chosen = g_pick.wait ? qparam_dup(q, "pick_choose") : NULL;   /* the file chooser's files, one per line */
+        if (chosen) {
+            char *paths[64]; int n = 0;
+            for (char *sv = NULL, *line = strtok_r(chosen, "\n", &sv); line && n < 64; line = strtok_r(NULL, "\n", &sv)) {
+                char path[PATH_MAX]; struct stat st;
+                if (files_resolve(line, path) && !stat(path, &st) && S_ISREG(st.st_mode)) paths[n++] = xstrdup(path);
+            }
+            if (n) { g_pick.wait = false; js_files_picked((const char *const *)paths, g_pick.multi ? n : 1); a->pan_close = true; }
+            for (int i = 0; i < n; i++) free(paths[i]);
+            free(chosen);
+        }
+#ifdef __ANDROID__
+        if (g_pick.wait && qparam(q, "pick_system", v, sizeof v)) { g_pick.wait = false; a->pan_close = true; android_ui_pick_files(g_pick.accept, g_pick.multi); }   /* the system's picker answers instead */
+#endif
+        if (qparam(q, "pick_cancel", v, sizeof v)) a->pan_close = true;   /* panel_close tells the page */
         if (qparam(q, "bm_add", v, sizeof v)) g_newtab_msg = bm_add(bar_tab(a));   /* the page under the panel */
         if (qparam(q, "bm_save", v, sizeof v)) {   /* an edit of the Bookmarks page: index, bm_t title, bm_u URL */
             int i = atoi(v);
@@ -1068,8 +1122,9 @@ static void navigate_ex(App *a, const char *url, bool push, const char *body, si
         if (!strncmp(u, "lumen://set?", 12)) {   /* only Lumen's own pages may change settings */
             if (!a->t->cur || !a->t->cur->internal_ui) { free(u); return; }
             apply_set(a, u + 12);
-            char sec[16] = "settings"; qparam(u + 12, "s", sec, sizeof sec);
-            free(u); u = xmalloc(64); snprintf(u, 64, "lumen://newtab?s=%s", sec); push = false;
+            char sec[16] = "settings", open[48] = ""; qparam(u + 12, "s", sec, sizeof sec);
+            if (qparam(u + 12, "open", open, sizeof open) && strspn(open, "abcdefghijklmnopqrstuvwxyz,") != strlen(open)) open[0] = 0;   /* the settings groups left open */
+            free(u); u = xmalloc(128); snprintf(u, 128, "lumen://newtab?s=%s%s%s", sec, *open ? "&open=" : "", open); push = false;
         }
         html = internal_page(a, u);
     }
@@ -1518,6 +1573,27 @@ static void bare_set(App *a, bool on) {
     bar_push(a);
 }
 #endif
+static void page_fs_set(App *a, Page *p) {
+    if (p == g_fs_page) return;
+    bool was = g_fs_page != NULL;
+    g_fs_page = p;
+    if (!!p == was) return;
+    if (p) { g_fs_side = a->side; a->side = 0; } else a->side = g_fs_side;
+#ifdef __ANDROID__
+    bare_set(a, p != NULL);
+#else
+    g_bare = p != NULL;
+    SDL_SetWindowFullscreen(a->win, g_bare);
+    a->vonly = false; a->dirty = true;
+    for (int i = 0; i < a->ntabs; i++) a->tabs[i]->relayout = true;
+#endif
+}
+/* the browser takes fullscreen back: the page hears it, and its bars return even if it does not answer */
+static void page_fs_exit(App *a) {
+    if (!g_fs_page) return;
+    js_fullscreen_exit();
+    page_fs_set(a, NULL);
+}
 static void update_compact(App *a) {
     int v[MAX_TABS]; bool c = g_hide_tabs || ws_tabs(a, a->wi, v) <= 1;
     if (c == g_compact) return;
@@ -2137,7 +2213,13 @@ static void render(App *a) {
     }
     if (gvp) gpu_set_extra_layers(a->gpu, xvd, nxvd);
     int up0 = (gskip || page_uploaded) ? 0 : part ? bar_px + ry0 : 0, up1 = (gskip || page_uploaded) ? 0 : part ? bar_px + ry1 : a->frame.h;
-    if (!(a->gpu && gpu_present_frame(a->gpu, a->frame.px, a->frame.w, a->frame.h, a->frame.stride, up0, up1, gvp))) {
+    bool shown = a->gpu && gpu_present_frame(a->gpu, a->frame.px, a->frame.w, a->frame.h, a->frame.stride, up0, up1, gvp);
+#ifdef __ANDROID__
+    /* a GPU without a surface is between windows (going to the background): a software window surface
+       would take the window from Vulkan, so the frame waits for the next one */
+    if (a->gpu) shown = true;
+#endif
+    if (!shown) {
         if (a->frame_page_stale) {
             compose_page(a, 0, ph, bar_px, side_px);
             a->frame_page_stale = false;
@@ -2445,11 +2527,16 @@ static void link_done(NetRequest *rq, NetResponse *r, void *ud) {
     node_release(l->n);
     free(l);
 }
-typedef struct { uint64_t gen; char *u; } ImgLoad;
+typedef struct { uint64_t gen; char *u; Image *im; } ImgLoad;
+/* bitmaps decode on the fetching thread, off the main loop; SVG decodes in img_done */
+static void img_work(NetRequest *rq, NetResponse *r, void *ud) {
+    (void)rq; ImgLoad *l = ud;
+    if (r->status == 200 && r->body) l->im = image_decode_bitmap((const uint8_t *)r->body, r->body_len);
+}
 static void img_done(NetRequest *rq, NetResponse *r, void *ud) {
     (void)rq; ImgLoad *l = ud;
     g_img_epoch++;
-    Image *im = r && r->status == 200 && r->body ? image_decode((const uint8_t *)r->body, r->body_len) : NULL;
+    Image *im = l->im ? l->im : r && r->status == 200 && r->body ? image_decode((const uint8_t *)r->body, r->body_len) : NULL;
     if (getenv("LUMEN_DEBUG_IMG")) fprintf(stderr, "lumen: img decode -> %s\n", im ? "ok" : "NULL");
     SDL_LockMutex(icache_mu);
     ImgSlot *slot = hm_get(&icache, l->u);
@@ -2465,8 +2552,8 @@ static void img_done(NetRequest *rq, NetResponse *r, void *ud) {
     free(l->u); free(l);
 }
 static void img_refetch(const char *u) {
-    NetRequest *rq = net_request_new("GET", u); ImgLoad *l = xmalloc(sizeof *l); l->gen = 0; l->u = xstrdup(u);
-    rq->done = img_done; rq->ud = l; rq->priority = 2; net_fetch(rq);
+    NetRequest *rq = net_request_new("GET", u); ImgLoad *l = xcalloc(1, sizeof *l); l->gen = 0; l->u = xstrdup(u);
+    rq->done = img_done; rq->work = img_work; rq->ud = l; rq->priority = 2; net_fetch(rq);
 }
 /* external SVG documents referenced by <use href="file.svg#id">, parsed once per URL */
 typedef struct { Document *d; } SvgDoc;
@@ -2527,8 +2614,8 @@ static bool sync_images(Page *p) {
         SDL_UnlockMutex(icache_mu);
         if (!have) {
             if (getenv("LUMEN_DEBUG_IMG")) fprintf(stderr, "lumen: img fetch %.80s\n", u);
-            NetRequest *rq = net_request_new("GET", u); ImgLoad *l = xmalloc(sizeof *l); l->gen = p->gen; l->u = u;
-            rq->done = img_done; rq->ud = l; rq->priority = 2; net_fetch(rq);
+            NetRequest *rq = net_request_new("GET", u); ImgLoad *l = xcalloc(1, sizeof *l); l->gen = p->gen; l->u = u;
+            rq->done = img_done; rq->work = img_work; rq->ud = l; rq->priority = 2; net_fetch(rq);
         } else free(u);
     }
     return true;
@@ -2624,7 +2711,7 @@ static bool frame_update(Page *p) {
     if (p->cv.w != pw || p->cv.h != ph || p->cv.scale != s || !p->cv.px) { canvas_free(&p->cv); canvas_init(&p->cv, pw, ph, s); p->drawn_ver = ~0ull; }
     if (p->drawn_ver == p->d->dom_version && p->drawn_paint_ver == p->d->paint_version && p->drawn_epoch == g_img_epoch) return false;
     dl_clear(&p->fdl); dl_build(&p->fdl, p->L, 0, p->fsy, w, h);
-    raster(&p->cv, &p->fdl, RGBA(255, 255, 255, 255));
+    raster(&p->cv, &p->fdl, 0);   /* a frame's canvas is transparent: the page shows through unless its root or body has a background */
     p->drawn_ver = p->d->dom_version; p->drawn_paint_ver = p->d->paint_version; p->drawn_epoch = g_img_epoch;
     uint64_t content_version = p->img.content_version + 1;
     p->img = (Image){ .w = pw, .h = ph, .refs = 1 << 30, .px = p->cv.px, .scale = s, .content_version = content_version };
@@ -2657,7 +2744,8 @@ static char *ff_prop(const char *body, const char *name) {
     }
     return NULL;
 }
-/* first src entry FreeType can read: TrueType/OpenType/WOFF (no brotli for WOFF2) */
+/* first src entry FreeType can read: TrueType, OpenType, WOFF or WOFF2 (FreeType is built with
+   brotli; Google serves icon fonts such as Material Icons only as WOFF2) */
 static char *ff_pick_src(const char *src) {
     for (const char *p = src; (p = strstr(p, "url(")); ) {
         p += 4; while (*p == ' ') p++;
@@ -2668,9 +2756,7 @@ static char *ff_pick_src(const char *src) {
         char fmt[32] = ""; const char *f = strstr(e, "format(");
         if (f && f < nx) { f += 7; size_t k = 0; while (*f && *f != ')' && k < sizeof fmt - 1) { if (*f != '"' && *f != '\'' && *f != ' ') fmt[k++] = (char)tolower((unsigned char)*f); f++; } fmt[k] = 0; }
         char *u = xmalloc(n + 1); memcpy(u, p, n); u[n] = 0;
-        char *qm = strpbrk(u, "?#"); size_t ul = qm ? (size_t)(qm - u) : n;
-        bool woff2 = strstr(fmt, "woff2") || (!*fmt && ul >= 6 && !strncasecmp(u + ul - 6, ".woff2", 6));
-        bool ok = *fmt ? !woff2 && (strstr(fmt, "truetype") || strstr(fmt, "opentype") || strstr(fmt, "woff")) : !woff2;
+        bool ok = !*fmt || strstr(fmt, "truetype") || strstr(fmt, "opentype") || strstr(fmt, "woff");
         if (ok && n) return u;
         free(u); p = nx;
     }
@@ -2767,6 +2853,14 @@ static void h_frame_close(void *ud) {
     free(p->url); free(p);
     if (g_app) { g_app->dirty = true; g_app->vonly = false; }
 }
+/* the target a link navigates: its own, else its document's <base target> */
+static const char *link_target(Node *l) {
+    const char *t = node_attr(l, "target");
+    if (t || !l->doc) return t;
+    for (Node *n = l->doc->node.first; n; n = node_next_in_tree(n, &l->doc->node))
+        if (n->type == NODE_ELEMENT && n->tag == A_base && node_attr(n, "target")) return node_attr(n, "target");
+    return NULL;
+}
 static void click_frame(App *a, Page *fp, float x, float y) {
     Box *b = layout_hit(fp->L, x, y + fp->fsy, 0, fp->fsy);
     Node *t = b ? b->node : NULL;
@@ -2780,11 +2874,11 @@ static void click_frame(App *a, Page *fp, float x, float y) {
     if (!ok) return;
     for (Node *n = t; n; n = n->parent)
         if (n->type == NODE_ELEMENT && n->tag == A_a && node_attr(n, "href")) {
-            const char *h = node_attr(n, "href"), *tg = node_attr(n, "target");
+            const char *h = node_attr(n, "href"), *tg = link_target(n);
             if (!strncmp(h, "javascript:", 11) || h[0] == '#') return;
             char *u = url_join(fp->d->url, h);
-            if (u && tg && (!strcmp(tg, "_top") || !strcmp(tg, "_blank"))) navigate(a, u, true);
-            else if (u) js_frame_navigate(fp->frame_el, u);
+            if (u && tg && str_ieq(tg, "_blank")) navigate(a, u, true);
+            else if (u && !js_navigate_target(js, tg, u, NULL, 0, NULL)) js_frame_navigate(fp->frame_el, u);
             free(u); return;
         }
 }
@@ -2857,6 +2951,7 @@ static void h_set_url_in(void *ud, const char *u, bool push) {
 }
 static void h_navigate_post_in(void *ud, const char *u, const char *body, size_t len, const char *ctype) { (void)ud; navigate_ex(g_app, u, true, body, len, ctype); }
 static void h_history_go_in(void *ud, int d) { (void)ud; history_go(g_app, d); }
+static void h_fullscreen_in(void *ud, bool on) { (void)ud; App *a = g_app; page_fs_set(a, on && a->t->cur ? a->t->cur : NULL); }
 static int h_history_len_in(void *ud) { (void)ud; return g_app->t->nhist; }
 static void h_viewport_in(void *ud, float *w, float *h, float *sx, float *sy, float *dpr) { (void)ud; *w = page_width(g_app); *h = page_height(g_app); *sx = 0; *sy = LCLAMP(g_app->t->sy, 0, max_scroll(g_app)); *dpr = page_scale(g_app); }
 static void h_scroll_to_in(void *ud, float x, float y) {
@@ -2895,6 +2990,7 @@ static void h_navigate(void *ud, const char *u) { TAB_CALL(ud, h_navigate_in(ud,
 static void h_set_url(void *ud, const char *u, bool push) { TAB_CALL(ud, h_set_url_in(ud, u, push)); }
 static void h_navigate_post(void *ud, const char *u, const char *body, size_t len, const char *ctype) { TAB_CALL(ud, h_navigate_post_in(ud, u, body, len, ctype)); }
 static void h_history_go(void *ud, int d) { TAB_CALL(ud, h_history_go_in(ud, d)); }
+static void h_fullscreen(void *ud, bool on) { TAB_CALL(ud, h_fullscreen_in(ud, on)); }
 static int h_history_len(void *ud) { int r = 0; TAB_CALL(ud, r = h_history_len_in(ud)); return r; }
 static char *h_internal(void *ud, const char *cmd) { char *r = NULL; TAB_CALL(ud, r = h_internal_in(cmd)); return r; }
 static void h_viewport(void *ud, float *w, float *h, float *sx, float *sy, float *dpr) { TAB_CALL(ud, h_viewport_in(ud, w, h, sx, sy, dpr)); }
@@ -2903,7 +2999,7 @@ static Node *h_hit(void *ud, float x, float y) { Node *r = NULL; TAB_CALL(ud, r 
 static void page_start_js(App *a, Page *p) {
     if (getenv("LUMEN_NO_JS")) return;
     JsHost h = { a->t, &p->e->media, h_navigate, h_set_url, h_history_go, h_viewport, h_scroll_to, h_hit, h_history_len, h_navigate_post, h_sync, h_frame_open, h_frame_close,
-                 p->internal_ui ? h_internal : NULL };
+                 p->internal_ui ? h_internal : NULL, h_fullscreen };
     double t0 = now_ms();
     sync_sheets(p, true);
     p->js = js_new(p->d, &h);
@@ -3190,13 +3286,32 @@ static void url_enc(SB *b, const char *s) {
         else { char h[4]; snprintf(h, sizeof h, "%%%02X", *p); sb_puts(b, h); }
     }
 }
+/* the form's default button: its first submit button in tree order */
+static Node *form_default_button(Node *f) {
+    for (Node *n = f->first; n; n = node_next_in_tree(n, f)) {
+        if (n->type != NODE_ELEMENT) continue;
+        const char *ty = node_attr(n, "type");
+        if (n->tag == A_button && (!ty || str_ieq(ty, "submit"))) return n;
+        if (n->tag == A_input && ty && (str_ieq(ty, "submit") || str_ieq(ty, "image"))) return n;
+    }
+    return NULL;
+}
+/* Enter in a text field: implicit submission. With scripts, a click on the default button (or
+   requestSubmit without one), so the page's handlers, the submitter and POST forms work as in Chrome. */
 static void submit_form(App *a, Node *ctl) {
     Node *f = ctl;
     while (f && !(f->type == NODE_ELEMENT && f->tag == A_form)) f = f->parent;
     if (!f) return;
-    if (a->t->cur->js && !js_dispatch(a->t->cur->js, f, "submit", "Event", true, true, 0, 0, 0, NULL)) return;
+    JsCtx *js = a->t->cur->js;
+    if (js) {
+        Node *b = form_default_button(f);
+        if (b && node_has_attr(b, "disabled")) return;
+        if (b) js_dispatch(js, b, "click", "MouseEvent", true, true, 0, 0, 0, NULL);
+        else js_eval(js, "{const e=document.activeElement,f=e&&e.form;if(f)f.requestSubmit()}", "lumen:submit");
+        return;
+    }
     const char *m = node_attr(f, "method");
-    if (m && str_ieq(m, "post")) { fprintf(stderr, "lumen: native POST form submission not supported yet\n"); return; }
+    bool post = m && str_ieq(m, "post");
     SB q; sb_init(&q);
     for (Node *n = f->first; n; n = node_next_in_tree(n, f)) {
         if (n->type != NODE_ELEMENT || !(n->tag == A_input || n->tag == A_textarea || n->tag == A_select)) continue;
@@ -3210,6 +3325,11 @@ static void submit_form(App *a, Node *ctl) {
     }
     const char *act = node_attr(f, "action");
     char *u = url_join(a->t->cur->d->url, act && *act ? act : a->t->cur->d->url);
+    if (post) {
+        char *hm = strchr(u, '#'); if (hm) *hm = 0;
+        navigate_ex(a, u, true, q.n ? q.s : "", q.n, "application/x-www-form-urlencoded");
+        free(u); sb_free(&q); return;
+    }
     char *qm = strchr(u, '?'); if (qm) *qm = 0;
     char *hm = strchr(u, '#'); if (hm) *hm = 0;
     char *qs = q.n ? sb_take(&q) : NULL; if (!qs) sb_free(&q);
@@ -3322,10 +3442,13 @@ static bool vbar_on(App *a, Node *n) {
     if (n->tag == A_audio) return node_attr(n, "controls") != NULL;
     return n->tag == A_video && (node_attr(n, "controls") || (vctl_on(a->t) && !is_youtube(a->t->url)));
 }
+/* under the video with "always show video controls", except in Lumen's own pages (the file chooser's
+   preview), which leave no room for it; over its bottom otherwise */
 static float vbar_y(App *a, const Box *b) {
     if (b->node && b->node->tag == A_audio) return b->y + LMAX(0, (b->h - VBH) / 2);
-    return vctl_on(a->t) ? b->y + b->h : b->y + b->h - VBH;
+    return vctl_on(a->t) && !a->t->cur->internal_ui ? b->y + b->h : b->y + b->h - VBH;
 }
+static bool box_in_fixed(const Box *b) { for (; b; b = b->parent) if (b->fixed) return true; return false; }   /* placed in the viewport, not the page */
 static void fmt_t(char *o, size_t n, double s) { int t = s >= 0 && s < 1e7 ? (int)s : 0; if (t >= 3600) snprintf(o, n, "%d:%02d:%02d", t / 3600, t / 60 % 60, t % 60); else snprintf(o, n, "%d:%02d", t / 60, t % 60); }
 static void vbar_layout(App *a, const Box *b, const MpState *s, char *tm, size_t n, float *tx0, float *tx1) {
     char c[16], d[16]; fmt_t(c, sizeof c, s->time); fmt_t(d, sizeof d, s->duration); snprintf(tm, n, "%s / %s", c, d);
@@ -3335,7 +3458,7 @@ static bool video_bars(App *a, DisplayList *dl) {   /* control bar under each <v
     bool playing = false; a->vbar_any = false; a->vbar_msv = media_state_version(); Document *d = a->t->cur->d; float rb = (a->ui->ascent - a->ui->descent) / 2;
     for (Node *n = d->node.first; n; n = node_next_in_tree(n, &d->node)) {
         if (!vbar_on(a, n)) continue;
-        Box *b = n->box; float y = vbar_y(a, b) - a->t->sy;
+        Box *b = n->box; float y = vbar_y(a, b) - (box_in_fixed(b) ? 0 : a->t->sy);
         if (y < -VBH || y > page_height(a)) continue;
         MpState s; memset(&s, 0, sizeof s); if (!media_state_for(n, &s)) s.paused = true;
         playing |= !s.paused; a->vbar_any = true;
@@ -3354,7 +3477,7 @@ static bool vbar_click(App *a, float x, float y) {   /* document coordinates */
     Page *p = a->t->cur; if (!p->js) return false;
     for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) {
         if (!vbar_on(a, n)) continue;
-        Box *b = n->box; float by = vbar_y(a, b);
+        Box *b = n->box; float by = vbar_y(a, b) + (box_in_fixed(b) ? a->t->sy : 0);
         if (x < b->x || x >= b->x + b->w || y < by || y >= by + VBH) continue;
         MpState s; memset(&s, 0, sizeof s); bool ok = media_state_for(n, &s);
         char tm[48], key[32] = "toggle"; float tx0, tx1; vbar_layout(a, b, &s, tm, sizeof tm, &tx0, &tx1);
@@ -3569,7 +3692,10 @@ static void kbd_tap(App *a, float x, float y) {
     if (!g_tap_kbd || !f || !p || !p->L || x < page_left(a) || y < BAR) { g_kbm.n = NULL; return; }
     float px = page_x(a, x), py = page_y(a, y) + a->t->sy;
     Box *b = layout_hit(p->L, px, py, 0, a->t->sy);
-    if (!b || !b->node || !node_within(b->node, f)) return;   /* elsewhere on the page: the field keeps its focus */
+    /* in the field, or on what a styled field lays over it (a label, an outline) */
+    const Box *fb = f->box;
+    bool over = fb && px >= fb->x - 4 && px < fb->x + fb->w + 4 && py >= fb->y - 4 && py < fb->y + fb->h + 4;
+    if (!over && (!b || !b->node || !node_within(b->node, f))) return;   /* elsewhere on the page: the field keeps its focus */
     if (SDL_ScreenKeyboardShown(a->win)) { g_kbm.n = f; return; }
     if (g_kbm.n == f && hypotf(x - g_kbm.x, y - g_kbm.y) <= 30) { g_kbm.n = NULL; SDL_StartTextInput(a->win); return; }
     g_kbm.n = f; g_kbm.x = x; g_kbm.y = y;
@@ -3942,7 +4068,9 @@ static void click_page(App *a, float x, float y, unsigned touch_flags) {
             if (!strncmp(h, "javascript:", 11)) return;
             if (fragment_link(a, h)) return;
             if (node_attr(n, "download") || !strncmp(h, "blob:", 5) || !strncmp(h, "data:", 5)) { link_save(a, n, h); return; }
-            char *u = url_join(a->t->cur->d->url, h); navigate(a, u, true); free(u); return;
+            char *u = url_join(a->t->cur->d->url, h);
+            if (u && a->t->cur->js && js_navigate_target(a->t->cur->js, link_target(n), u, NULL, 0, NULL)) { free(u); return; }   /* into a named frame */
+            navigate(a, u, true); free(u); return;
         }
 }
 
@@ -4347,6 +4475,11 @@ static void ws_popup(App *a, int w, float x, float y) {
     (void)w; (void)x; (void)y; menu_cmd(a, MENU_WS_RENAME);
 #endif
 }
+#ifdef __ANDROID__
+static void ui_action_post(int code, int value, char *s1, char *s2);
+/* Lumen's own file chooser in the panel; its button for the system's picker sends it on (any thread) */
+static void pick_files(bool multiple, const char *accept) { ui_action_post(UI_FILE_PICK, multiple, xstrdup(accept ? accept : ""), NULL); }
+#else
 static void pick_done(void *ud, const char *const *list, int filter) {
     (void)ud; (void)filter;
     int n = 0;
@@ -4374,6 +4507,7 @@ static void pick_files(bool multiple, const char *accept) {
     flt.name = "Allowed files"; flt.pattern = pat;
     SDL_ShowOpenFileDialog(pick_done, NULL, g_dialog_win, pat[0] ? &flt : NULL, pat[0] ? 1 : 0, NULL, multiple);
 }
+#endif
 static SDL_HitTestResult win_hit(SDL_Window *w, const SDL_Point *pt, void *ud) {
     (void)w;
     App *app = ud;
@@ -4507,7 +4641,7 @@ static void show_workspaces(App *a) {
     android_ui_workspaces(names, tabs, a->nws, a->wi);
 }
 /* The menu's Bookmarks, History, Downloads, Workspaces and Settings: Lumen's new tab page at that
-   section in a panel at the right below the toolbar, over a dimmed picture of the page it covers.
+   section in a panel at the right below the toolbar, floating over a picture of the page it covers.
    The panel is a tab of no workspace that is shown (a->t) while a->ti stays on the covered tab; links
    it opens and workspace changes wait for the main loop (panel_service), which closes it first, as
    its own scripts may be running when they are asked for. */
@@ -4520,20 +4654,16 @@ static void panel_snapshot(App *a) {
     a->pan_bgw = w; a->pan_bgh = h;
     for (int y = 0; y < h; y++) {
         const uint32_t *from = a->frame.px + (size_t)(y + bar_px) * (size_t)a->frame.stride; uint32_t *to = a->pan_bg + (size_t)y * (size_t)w;
-        for (int x = 0; x < w; x++) { uint32_t c = from[x]; to[x] = 0xff000000u | ((c >> 16 & 255) * 5 / 8) << 16 | ((c >> 8 & 255) * 5 / 8) << 8 | (c & 255) * 5 / 8; }
+        memcpy(to, from, (size_t)w * 4);
     }
 }
-/* the picture left of the panel, darkening into a shadow at its edge */
+/* the picture left of the panel as it was, undimmed; a hairline marks the panel's edge */
 static void panel_backdrop(App *a, int bar_px, int width) {
-    int x0 = (int)(a->side * a->scale), x1 = LMIN(x0 + width, a->frame.w), shade = (int)(10 * a->scale);
+    int x0 = (int)(a->side * a->scale), x1 = LMIN(x0 + width, a->frame.w), line = LMAX(1, (int)a->scale);
     for (int y = bar_px; y < a->frame.h && x1 > x0; y++) {
         uint32_t *row = a->frame.px + (size_t)y * (size_t)a->frame.stride;
         const uint32_t *pic = a->pan_bg && a->pan_bgw == a->frame.w && y - bar_px < a->pan_bgh ? a->pan_bg + (size_t)(y - bar_px) * (size_t)a->pan_bgw : NULL;
-        for (int x = x0; x < x1; x++) {
-            uint32_t c = pic ? pic[x] : 0xff5f6368;
-            int k = x1 - x <= shade ? 256 - 96 * (shade - (x1 - x) + 1) / shade : 256;
-            row[x] = 0xff000000u | ((c >> 16 & 255) * k >> 8) << 16 | ((c >> 8 & 255) * k >> 8) << 8 | ((c & 255) * k >> 8);
-        }
+        for (int x = x0; x < x1; x++) row[x] = x1 - x <= line ? 0xffdadce0 : pic ? pic[x] : 0xffffffff;
     }
 }
 static void panel_open_at(App *a, const char *section, bool keep_picture) {
@@ -4557,6 +4687,7 @@ static void panel_close(App *a, bool keep_picture) {
     Tab *p = a->pan;
     if (!p) return;
     a->pan = NULL; a->pan_close = false;
+    if (g_pick.wait) { g_pick.wait = false; js_files_picked(NULL, -1); }   /* the file chooser closed without a choice */
     int i = 0; while (i < a->ntabs && a->tabs[i] != p) i++;
     if (i < a->ntabs) {
         memmove(a->tabs + i, a->tabs + i + 1, sizeof(Tab *) * (size_t)(a->ntabs - i - 1)); a->ntabs--;
@@ -4603,12 +4734,42 @@ static void slot_used(App *a, int code) {
     g_slot[k] = code; g_slot_seq[k] = ++g_slot_clock;
     settings_save(); a->dirty = true; a->vonly = false;
 }
+/* the site of a tab's page, "" when it is not a web page */
+static void tab_site(const Tab *t, char *out, size_t n) {
+    URL pu; *out = 0;
+    if (!page_is_web(t) || !url_parse(t->url, &pu)) return;
+    if (pu.host) net_site_of(pu.host, out, n);
+    url_free(&pu);
+}
+/* Site info's "Delete data": the cookies of the page's site and its subdomains go, the page reloads
+   with empty storage, and other open pages of the site lose their localStorage and sessionStorage
+   (Lumen keeps those in memory per page; it has no service workers, IndexedDB or Cache Storage). */
+static void site_clear(App *a, const char *url) {
+    URL su; char site[256] = "", msg[400];
+    if (!url || !url_parse(url, &su)) return;
+    if (su.host && *su.host && (!strcmp(su.scheme, "https") || !strcmp(su.scheme, "http"))) net_site_of(su.host, site, sizeof site);
+    url_free(&su);
+    if (!*site) return;
+    int cookies = cookies_site(site, true);
+    Tab *bar = bar_tab(a);
+    for (int i = 0; i < a->ntabs; i++) {
+        Tab *t = a->tabs[i]; char ts[256];
+        tab_site(t, ts, sizeof ts);
+        if (strcmp(ts, site)) continue;
+        if (t == bar) { if (t->hpos >= 0) navigate(a, t->hist[t->hpos], false); }
+        else if (t->cur && t->cur->js) TAB_CALL(t, js_eval(t->cur->js, "try{localStorage.clear();sessionStorage.clear()}catch(e){}", "lumen:site-data"));
+    }
+    if (cookies) snprintf(msg, sizeof msg, "Deleted data of %s (%d cookie%s)", site, cookies, cookies == 1 ? "" : "s");
+    else snprintf(msg, sizeof msg, "Deleted data of %s", site);
+    ui_toast(a, msg);
+}
 static void ui_action(App *a, UiAction *u, bool *quit) {
     (void)quit;
 #if defined(__ANDROID__) && !defined(NDEBUG)
     __android_log_print(ANDROID_LOG_INFO, "LumenUi", "action code=%d value=%d", u->code, u->value);
 #endif
     slot_used(a, u->code);
+    if (u->code == UI_FILE_PICK) g_pick.wait = false;   /* a new request replaces one still open */
     /* the panel's own sections switch it; bookmark edits refresh it; anything else is for the page under it */
     bool section = u->code == UI_BOOKMARKS || u->code == UI_HISTORY || u->code == UI_DOWNLOADS || u->code == UI_WORKSPACES || u->code == UI_SETTINGS;
     if (a->pan && !section && u->code != UI_BM_SAVE && u->code != UI_BM_DELETE && u->code != UI_BM_ADD) panel_close(a, false);
@@ -4624,6 +4785,11 @@ static void ui_action(App *a, UiAction *u, bool *quit) {
     case UI_DOWNLOADS: panel_open(a, "downloads"); break;
     case UI_HISTORY: panel_open(a, "history"); break;
     case UI_SETTINGS: panel_open(a, "settings"); break;
+    case UI_FILE_PICK:
+        g_pick.multi = u->value != 0; snprintf(g_pick.accept, sizeof g_pick.accept, "%s", u->s1 ? u->s1 : "");
+        if (a->ntabs >= MAX_TABS) { android_ui_pick_files(g_pick.accept, g_pick.multi); break; }   /* no room for the panel */
+        g_pick.wait = true; panel_open(a, "pick");
+        break;
     case UI_DESKTOP: {
         bool on = u->value != 0;
         if (!page_is_web(t)) {
@@ -4679,6 +4845,7 @@ static void ui_action(App *a, UiAction *u, bool *quit) {
         for (i = 0; i < a->ntabs && a->tabs[i] != mt; i++) {}
         if (i < a->ntabs) tab_close(a, i, quit);
         break; }
+    case UI_SITE_CLEAR: site_clear(a, u->s2); break;
     }
     if (panel_shown(a) && (u->code == UI_BM_SAVE || u->code == UI_BM_DELETE || (u->code == UI_BM_ADD && strstr(a->t->url, "s=bookmarks"))))
         navigate(a, "lumen://newtab?s=bookmarks", false);
@@ -4753,8 +4920,10 @@ static bool SDLCALL android_graphics_lifecycle(void *userdata, SDL_Event *event)
 static void android_handle_back(App *app) {
     if (tsel_ui(app)) { tsel_clear(app); return; }
     if (app->pan && !app->editing) { panel_close(app, false); return; }
-    switch (android_back_action(g_hud_pop, app->editing,
-        page_focus(app) || edit_focus(app), app->t->hpos > 0)) {
+    if (g_fs_page) { page_fs_exit(app); return; }
+    AndroidBackAction act = android_back_action(g_hud_pop, app->editing, page_focus(app) || edit_focus(app), app->t->hpos > 0);
+    SDL_Log("Lumen: back: action %d, history %d of %d", (int)act, app->t->hpos, app->t->nhist);
+    switch (act) {
     case ANDROID_BACK_DISMISS_POPUP:
         g_hud_pop = false;
         break;
@@ -4862,6 +5031,7 @@ int main(int argc, char **argv) {
     android_platform_init();
 #endif
     dom_init(); net_init(6); font_init(); css_sheet_added_hook = sheet_fonts;
+    { const char *rt = getenv("LUMEN_RASTER_THREADS"); raster_set_threads(rt ? atoi(rt) : LMIN(SDL_GetNumLogicalCPUCores(), 8) - 1); }   /* large rasters use every core */
     icache_mu = SDL_CreateMutex(); EV_LOADED = SDL_RegisterEvents(1); EV_NET = SDL_RegisterEvents(1); EV_MENU = SDL_RegisterEvents(1); EV_DL = SDL_RegisterEvents(1); EV_UI = SDL_RegisterEvents(1);
 #ifdef __ANDROID__
     android_launch_set_wakeup(wake);
@@ -5250,7 +5420,9 @@ int main(int argc, char **argv) {
                 }
 #endif
 #ifdef __ANDROID__
-                if (k == SDLK_AC_BACK) { if (!ev.key.repeat) android_handle_back(&a); break; }
+                /* Back arrives through onBackPressed (android_back_take); SDL's key event for the same press
+                   would take a second step back */
+                if (k == SDLK_AC_BACK) break;
 #endif
                 if (k == SDLK_LGUI || k == SDLK_RGUI || k == SDLK_LCTRL || k == SDLK_RCTRL) { cmd = true; break; }
                 if (cmd || (ev.key.mod & (SDL_KMOD_GUI | SDL_KMOD_CTRL))) {
@@ -5300,6 +5472,7 @@ int main(int argc, char **argv) {
                     else if (k >= SDLK_1 && k <= SDLK_9) tab_nth(&a, k == SDLK_9 ? -1 : (int)(k - SDLK_1));
                     a.dirty = true; break;
                 }
+                if (k == SDLK_ESCAPE && g_fs_page && !a.editing) { page_fs_exit(&a); a.dirty = true; break; }
                 if (a.editing) {
                     if (k == SDLK_RETURN || k == SDLK_KP_ENTER) { SDL_StopTextInput(a.win); if (is_js_url(a.t->url)) { char js[sizeof a.t->url]; snprintf(js, sizeof js, "%s", a.t->url); run_js_url(&a, js); } else navigate(&a, a.t->url, true); }
                     else if (k == SDLK_ESCAPE) url_cancel(&a);
@@ -5425,9 +5598,10 @@ int main(int argc, char **argv) {
         (void)tr_js; (void)tr_restyle; (void)tr_img; (void)tr_bg; (void)rendered;
         cpu_monitor(&a);
 #ifdef __ANDROID__
-        if (g_bare && !panel_shown(&a)) bare_set(&a, false);   /* the panel went away with the viewer up */
+        if (g_bare && !g_fs_page && !panel_shown(&a)) bare_set(&a, false);   /* the panel went away with the viewer up */
 #endif
-        { float want = a.t->info || *g_notice ? INFOH : 0; if (want != g_info_h) { g_info_h = want; for (int i = 0; i < a.ntabs; i++) a.tabs[i]->relayout = true; a.dirty = true; a.vonly = false; } }
+        if (g_fs_page && a.t->cur != g_fs_page) page_fs_exit(&a);   /* the fullscreen page was left or closed */
+        { float want = !g_fs_page && (a.t->info || *g_notice) ? INFOH : 0; if (want != g_info_h) { g_info_h = want; for (int i = 0; i < a.ntabs; i++) a.tabs[i]->relayout = true; a.dirty = true; a.vonly = false; } }
         if (*cookie_path && now_ms() - cookies_saved_at > 5000) { cookies_save(cookie_path); cookies_saved_at = now_ms(); }
     }
     if (*cookie_path) cookies_save(cookie_path);

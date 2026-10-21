@@ -1,5 +1,110 @@
 # Lumen: handoff notes
 
+## Login identity, frames, raster bands, file chooser, Fullscreen API (2026-10-20/21, v0.3.2-android-preview)
+
+- Sign-in hosts (`login_hosts` in src/net/http.c: accounts.google.com, accounts.youtube.com, the
+  Microsoft and Apple login hosts) get a Firefox user agent (desktop one in Desktop site mode):
+  Google refused "this browser may not be secure" with Lumen's Chrome identity. ctest
+  `auth_user_agent`. The user signed in to Google manually; never script credentials.
+- Frames: link/form `target` and `<base target>` navigate named frames (`linkTarget` in
+  06b-activate.js, `N.navTarget`, frames.cc `named_ctx`), POSTs into frames; iframe `frameBorder`
+  etc. reflect; a frame document without a background is transparent (tests/pages/frame-*.html).
+- Google account page: rounded clips for images/overflow, outlines follow border-radius
+  (display.c; ctest `round_clip`), WOFF2 fonts (FreeType + brotli; ctest `font_woff2`), SVG
+  `<img>` gradients and root presentation attributes (`svg_gradient_img`).
+- Multi-core raster: large rasters are cut into horizontal bands on a thread pool
+  (raster.c `raster_band`, `band_thread`; small damage stays on the caller; ctest
+  `raster_bands`); image decode runs on workers.
+- Settings/workspace/bookmark/history panels float without dimming the page.
+- File chooser for `<input type=file>` (SharedFiles.java / BrowserMenus.java): floating panel,
+  path field defaulting to home, type icons, image/audio/video preview with Choose, second tap
+  chooses, system-picker button on the path row. tests/pages/file-input.html logs `FILEIN`.
+  Choosing a file through the system picker is still unverified.
+- Fullscreen API: `requestFullscreen`/`exitFullscreen`/`fullscreenElement` (+ webkit aliases) in
+  03-element.js / 06-document.js (`fsRequest`, `fsExit`), `N.fullscreen` sets `NF_FULLSCREEN`
+  (`:fullscreen` in select.c, UA rules in ua.c) and calls `JsHost.fullscreen`; main.c
+  `page_fs_set`/`page_fs_exit` hide the browser UI (`bare_set` on Android), Back or Escape exit
+  (`js_fullscreen_exit`). `fullscreenchange` waits for the window's resize (`fsAfterResize`, 600 ms
+  timer, nudged by `fsResized` from `viewportChanged`, 1 s cap) so pages read the full-screen size
+  (YouTube: vh 488 → 540); `screen.width/height` report the window while fullscreen. ctest
+  `js_fullscreen`.
+- Crash: Android destroys the window on Home possibly mid-frame; `wgpuSurfaceConfigure` on it is a
+  fatal wgpu panic. gpu.c `window_alive` (ANativeWindow_getWidth < 0) skips configuring until
+  `gpu_resume`; main.c does not fall back to the SDL surface while the GPU waits. Verified twice.
+- Back: one hardware Back press was handled twice (SDL's `SDLK_AC_BACK` key event and
+  `onBackPressed` → `android_back_take`); the second step backgrounded the app. main.c now
+  ignores `SDLK_AC_BACK`.
+- IntersectionObserver (08-window.js): full `rootMargin` shorthand (px/%), element `root`,
+  thresholds with real ratios and Chrome-like threshold-index change detection, zero-area targets
+  intersect, and clipping ancestors cut targets (`N.vclip` → jsglue.c `jsg_vclip`). The old code
+  read only the first margin value and needed a non-empty box, so lazy-load sentinels (YouTube
+  comments: the watch page's left column ended above the viewport and looked blank) fired late.
+  ctest `js_intersection_geometry` (jsrun lays the page out at 1280x800 when `JSRUN_LAYOUT=1`).
+  `IntersectionObserverEntry` exists now: YouTube loads intersection-observer.min.js, which
+  installs a polyfill (rechecks on every scroll/resize/DOM mutation) unless that class with
+  `intersectionRatio` on its prototype is present.
+- Definite heights for children are clamped by min/max-height (block.c `layout_box_in`):
+  YouTube's theater `#full-bleed-container` (flex row, `height:56.25vw; max-height:calc(100vh -
+  169px); min-height:480px`) was 480 tall but its stretched `#player-full-bleed-container` got
+  607.5 (56.25vw), so the player ran past the screen and hid its control bar. ctest
+  `js_minmax_definite`.
+- YouTube tap behaviour is correct as is: the desktop player switches to `ytp-touch-mode`, one tap
+  shows the controls, a double tap toggles pause. In fullscreen YouTube hides the masthead with
+  `ytd-app[masthead-hidden] #masthead-container:not(:focus-within)` (translateY + delayed opacity
+  transition), set once its player sees `fullscreenchange`. The player picks the event name by
+  `'on' + name in document`; Lumen had no `onfullscreenchange`, so YouTube never noticed fullscreen
+  (masthead stayed, second F did nothing). Element now has on(webkit)fullscreenchange/error and
+  Document also onreadystatechange/visibilitychange/pointerlock*/freeze/resume (03-element.js
+  `FS_HANDLERS`). Verified on the phone: masthead hidden, player 1080x540, F exits. Probe
+  /tmp/lumen-scripts/probeFs.js logs `YTF`.
+- Measured (apk-fsh): YouTube load median 165% (max 432), playback 178% median, fullscreen 182%,
+  paused last 10 s median 3.5% (max 10.7).
+- Hardware video decoding on Android (media.c `open_mediacodec`): H.264 (8-bit), HEVC Main, VP8,
+  VP9 profile 0 open FFmpeg's `*_mediacodec` decoder first (NDK AMediaCodec, since no JVM is
+  given to FFmpeg), software libavcodec is the fallback; `LUMEN_HWDEC=0` disables it. Frames
+  arrive as NV12 and take the existing `yuv_copy` path. `decode_pkt` now retries a packet the
+  decoder refused with EAGAIN (full input queue) instead of dropping it. Logs once
+  `lumen-media: hardware decoder h264_mediacodec WxH`. YouTube 720p on the MI 8: playback median
+  178% → 67%, fullscreen 182% → 43%; picture and colours checked. Qualcomm OMX logs harmless
+  "Setting color format failed" / "Cache Clean failed" lines.
+- x.com (logged out): load peak ~210%, idle 0%, scroll median 3.5%. Fixed:
+  - the empty "Email or username" input was 0 tall (an empty control had no line), caret drawn
+    below it: an empty text control is now one line tall with a baseline (inline.c, js_empty_input);
+  - "Continue with Google" is x.com's own pill with `transform:scale(1.15)` (origin left) over an
+    invisible (opacity 0) GSI iframe; axis-aligned scales scaled boxes/svg but not text, so the
+    scaled G covered the label. A uniform scale now scales glyph positions and draws them with
+    `font_resized` (same face/variations at the quarter-pixel-rounded scaled size) (test_scale_text);
+  - `document.fonts` is a set-like iterable (pages spread it).
+  Not a bug as far as known: the "By continuing…" line sits in a `margin:0 -12px` flex child under an
+  `overflow-x:hidden` column and is clipped by 12px on each side, which Chrome's geometry would do too.
+  Debug: `--es org.lumen.browser.FRAME_PRE_JS <base64>` runs a probe in every iframe document
+  (LUMEN_FRAME_PRE). Probes in /tmp/lumen-scripts (probeX*.js, probeGsiF.js).
+- `tools/device_tests.py x` (x.com) added to the `sites` group.
+- Phone CPU sampler: `kill -0` fails (EPERM) on the MI 8; poll /proc and keep adb's stdin closed:
+  `adb -s 2d4f6bc0 shell 'while [ -z "$(pidof org.lumen.browser)" ]; do sleep 0.2; done;
+  P=$(pidof org.lumen.browser); while [ -d /proc/$P ]; do echo "$(date +%s) $(top -b -n1 -p $P |
+  tail -1)"; sleep 1; done' </dev/null > FILE &`. simpleperf works with `--app org.lumen.browser`.
+- Measured (phone): Google load peak ~180%, settled 0-7%; ChatGPT logged out peak ~300%, last 10 s
+  ~1%; YouTube cold mean 39%, settled ~4%; playback 100-200% (decode); paused ~4%.
+- Open: Shorts double tap and guide drawer; ChatGPT needs the user to sign in again on the phone before its
+  full test; x.com test not run yet.
+
+## Site info and Delete data (2026-10-20)
+
+- The address field (BrowserToolbar) is a rounded `pill` holding a site icon and the EditText: a lock
+  on https, a red warning on http, an info sign on other pages, a magnifier while editing
+  (`siteIcon`). Tapping it opens `BrowserMenus.showSiteInfo`: host, URL, connection, the site's
+  cookie count (`nativeSite`, `nativeSiteCookies` in android_ui.c) and Delete data, which after a
+  confirmation sends `UI_SITE_CLEAR` (24). `site_clear` (main.c) deletes the cookies of the site and
+  its subdomains (`net_site_of`: registrable domain approximated without a suffix list;
+  `cookies_site`), reloads the page and clears local/sessionStorage in other open tabs of the site.
+  Lumen has no service workers, IndexedDB or Cache Storage, and localStorage lives in memory per
+  page; the HTTP cache stores only URL hashes, so it is not cleared per site.
+- Tests: ctest `cookie_site`; `tools/device_tests.py sitedata` (tests/pages/site-data.html sets two
+  cookies and storage and reports `load cookie=0|1`; no done marker, so it is flagged "no done
+  report"). Verified on the phone (APK build/claude-chatgpt-scroll/apk-site/lumen-site-debug.apk):
+  icons, popup, dialog, `cookie=0` after Delete; example.com idles ~1%.
+
 ## IN PROGRESS: touch indicator, first-scroll restyle, Google, WebGL/WebGPU (2026-10-19)
 
 Same branch, on top of the sections below.
@@ -151,6 +256,26 @@ Same branch, on top of the sections below.
   console.warn lines reach logcat LumenJS). Use it instead of typing `javascript:` probes when a
   page input has the focus (Google home's autofocused field): `probe_type.py`'s text never reached
   the address field there (not investigated).
+- 2026-10-20 (resumed): WebGL Aquarium 10000 fish runs WebGL2 at ~23 fps settled on the phone
+  (was ~20.5; target > 10), CPU ~100% of a core because the page is CPU-bound (per-fish JS plus
+  ~60k GL calls a frame). simpleperf showed `eglGetCurrentContext` (~13%, Android's EGL wrapper
+  takes a lock and TLS) in every binding call through `make_current`; `src/gpu/webgl.c` now keeps
+  the thread's current context in `g_current` (only that file changes it). Left in the bindings:
+  `view_of`/`view_range` V8 type checks, `jctx`, readback memcpy (~6%).
+- Settings (`src/app/newtab.html` `settings()`): the cards sit in four folded groups (Display,
+  Scrolling and touch, Performance and memory, Sites and video), each header showing the option
+  titles; a tap toggles one, a search opens every group with a match. Open groups live in the
+  address (`lumen://newtab?s=settings&open=display,perf`); the pixel-scale / renderer links pass
+  `open=` through `lumen://set?`, whose redirect in `navigate_ex` keeps it (letters and commas only).
+  adb gotcha: quote URLs containing `&` for the phone's shell too (`adb shell "am start ... 'URL'"`),
+  or it cuts the extra at `&`.
+- ui104 (uncommitted: webgl.c context cache, settings groups) is installed on the phone; host
+  ctest 75/75. Its run for the Aquarium bookmark (long press on Bookmarks) and WebGPU Weather World
+  (utils bookmark → apps → Weather World, probe /tmp/lumen-scripts/gpu_pre.b64 via PRE_JS) had
+  not reported when the session paused: re-run both. Next after that: ChatGPT long-chat load
+  (`python3 -I /tmp/lumen-scripts/chat_load.py LABEL 40 perf jsprof`).
+- The "address-bar typing ~67%" number was probe_type.py pasting a 1000-char script at machine
+  speed plus running it, not human typing; measure ordinary typing before working on it.
 - PAUSED (user, 2026-10-19: finish only the two most important items this session, YouTube scroll
   lag and the Google home input bug). Still open: WebGL Aquarium 10000 fish > 10 fps and bookmark;
   WebGPU via utils bookmark → apps → Weather World; ChatGPT long-chat load < 10 s and its

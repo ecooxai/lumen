@@ -3418,6 +3418,7 @@ char *css_get_computed_value(Node *el, const char *prop) {
     if (!s) return sb_take(&b);
     static const char *const ds[] = { "none", "inline", "block", "inline-block", "flex", "inline-flex", "grid", "inline-grid", "list-item", "table", "inline-table", "table-row", "table-cell", "table-row-group", "table-header-group", "table-footer-group", "table-column", "table-column-group", "table-caption", "contents", "flow-root" };
     static const char *const ps[] = { "static", "relative", "absolute", "fixed", "sticky" };
+    static const char *const bs[] = { "none", "hidden", "solid", "dashed", "dotted", "double", "groove", "ridge", "inset", "outset" };
     if (prop[0] == '-' && prop[1] == '-') { const char *v = custom_get(s->custom, prop); if (v) sb_puts(&b, v); }
     else if (!strcmp(prop, "display")) sb_puts(&b, ds[s->display]);
     else if (!strncmp(prop, "animation-", 10) || !strncmp(prop, "transition-", 11) || !strncmp(prop, "-webkit-animation-", 18) || !strncmp(prop, "-webkit-transition-", 19)) {
@@ -3495,6 +3496,25 @@ char *css_get_computed_value(Node *el, const char *prop) {
         uint8_t v = prop[0] == 'j' ? (prop[8] == 'c' ? s->justify_content : prop[8] == 'i' ? s->justify_items : s->justify_self)
                                    : (prop[6] == 'i' ? s->align_items : prop[6] == 's' ? s->align_self : s->align_content);
         sb_puts(&b, al[v % 12]);
+    }
+    else if (!strncmp(prop, "border-", 7) && (strstr(prop, "-width") || strstr(prop, "-style") || strstr(prop, "-color") || strstr(prop, "-radius"))) {
+        static const char *const sides[] = { "top-", "right-", "bottom-", "left-" }, *const corners[] = { "top-left-", "top-right-", "bottom-right-", "bottom-left-" };
+        const char *q = prop + 7; int i = -1;
+        if (strstr(q, "-radius")) { for (int k = 0; k < 4; k++) if (!strncmp(q, corners[k], strlen(corners[k]))) i = k; if (i >= 0) len_str(&b, s->border_radius[i], "0px"); }
+        else {
+            for (int k = 0; k < 4; k++) if (!strncmp(q, sides[k], strlen(sides[k]))) { i = k; q += strlen(sides[k]); }
+            if (i >= 0 && !strcmp(q, "width")) sb_printf(&b, "%gpx", s->border_style[i] > BS_HIDDEN ? s->border_width[i] : 0);
+            else if (i >= 0 && !strcmp(q, "style")) sb_puts(&b, bs[s->border_style[i] % 10]);
+            else if (i >= 0 && !strcmp(q, "color")) color_str(&b, s->border_color[i]);
+        }
+    }
+    else if (!strcmp(prop, "outline-style")) sb_puts(&b, bs[s->outline_style % 10]);
+    else if (!strcmp(prop, "outline-width")) sb_printf(&b, "%gpx", s->outline_style ? s->outline_width : 0);
+    else if (!strcmp(prop, "outline-color")) color_str(&b, s->outline_color);
+    else if (!strcmp(prop, "box-shadow")) {
+        const Shadow *h = &s->box_shadow;
+        if (!s->has_shadow) sb_puts(&b, "none");
+        else { color_str(&b, h->color); sb_printf(&b, " %gpx %gpx %gpx %gpx%s", h->x, h->y, h->blur, h->spread, h->inset ? " inset" : ""); }
     }
     else if (!strcmp(prop, "order")) sb_printf(&b, "%d", s->order);
     else if (!strcmp(prop, "float")) sb_puts(&b, s->float_ == F_LEFT ? "left" : s->float_ == F_RIGHT ? "right" : "none");

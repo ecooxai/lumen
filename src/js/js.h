@@ -30,6 +30,8 @@ typedef struct JsHost {
     void (*frame_close)(void *child_ud);
     /* Lumen's own pages only: a command of lumenInternal(), answered with a malloc'd string or NULL */
     char *(*internal)(void *ud, const char *cmd);
+    /* the Fullscreen API: the page is to fill the window (on) or go back to its place (off) */
+    void (*fullscreen)(void *ud, bool on);
 } JsHost;
 
 void js_global_init(const char *argv0);
@@ -78,6 +80,11 @@ extern void (*js_pick_files)(bool multiple, const char *accept);
 void js_files_picked(const char *const *paths, int n);
 void js_pick_begin(JsCtx *c, bool multiple, const char *accept);   /* called from worker threads when messages are queued */
 void js_frame_navigate(Node *iframe, const char *url);
+/* the browser leaves fullscreen (Back, Escape): every document with a fullscreen element exits it */
+void js_fullscreen_exit(void);
+/* A link or form target ("_top", "_parent", a frame's name) naming another browsing context than c:
+   navigates it (POST when ctype is set) and returns true; false leaves the navigation to c. */
+bool js_navigate_target(JsCtx *c, const char *target, const char *url, const char *body, size_t n, const char *ctype);
 
 #ifdef __cplusplus
 }

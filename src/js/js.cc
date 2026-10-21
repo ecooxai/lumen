@@ -1165,6 +1165,11 @@ static void mod_jobs_finish(JsCtx *c) {
 void js_eval(JsCtx *c, const char *src, const char *name) {
     if (c && src) run_source(c, src, strlen(src), name, false);
 }
+void js_fullscreen_exit(void) {
+    std::vector<JsCtx *> fs;
+    for (JsCtx *c : g_ctxs) if (c->fullscreen && !c->dead) fs.push_back(c);
+    for (JsCtx *c : fs) { c->fullscreen = false; js_eval(c, "__lumenFullscreenExit()", "lumen:fullscreen"); }
+}
 char *js_eval_result(JsCtx *c, const char *src, const char *name, bool *failed) {
     *failed = false;
     if (!c || !src) return NULL;

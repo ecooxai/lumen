@@ -97,8 +97,20 @@ static void on_error(WGPUDevice const *d, WGPUErrorType t, WGPUStringView msg, v
     (void)d; (void)u1; (void)u2; gpu_log("gpu: error %d: %.*s\n", (int)t, (int)(msg.data ? msg.length : 0), msg.data ? msg.data : "");
 }
 
+/* Android destroys the window as the app goes to the background, possibly while a frame is being drawn;
+   its queries then fail. Configuring a surface on it is a fatal error in wgpu (a panic that aborts
+   Lumen), so nothing is configured until the foreground brings a new window (gpu_resume). */
+static bool window_alive(Gpu *g) {
+#ifdef __ANDROID__
+    if (g->native_window && ANativeWindow_getWidth(g->native_window) < 0) return false;
+#else
+    (void)g;
+#endif
+    return true;
+}
+
 static void configure(Gpu *g) {
-    if (!g->surf || g->w <= 0 || g->h <= 0) {
+    if (!g->surf || g->w <= 0 || g->h <= 0 || !window_alive(g)) {
         if (g->surf && g->configured) wgpuSurfaceUnconfigure(g->surf);
         g->configured = false;
         return;

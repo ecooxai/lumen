@@ -1,6 +1,7 @@
 /* Native functions (the `N` object) backing the JS DOM/Web API prelude */
 #include "js_int.h"
 #include <algorithm>
+#include <cmath>
 #include <thread>
 #ifndef __APPLE__
 #include <sys/random.h>
@@ -242,6 +243,18 @@ FN(vrect) {
     for (int i = 0; i < 4; i++) (void)o->Set(ctx, i, v8::Number::New(iso, r[i]));
     RET(o);
 }
+FN(vclip) {
+    CTX; ARGN(n, 0); float r[4];
+    JsCtx *owner = n->doc != c->doc ? owner_ctx(n->doc) : c;
+    if (owner && owner->host.sync) owner->host.sync(owner->host.ud, n->doc, true);
+    float w = 0, h = 0, sx = 0, sy = 0, dpr = 1;
+    if (owner && owner->host.viewport) owner->host.viewport(owner->host.ud, &w, &h, &sx, &sy, &dpr);
+    if (!jsg_vclip(n, a.Length() > 1 ? junwrap(a[1]) : nullptr, r, sx, sy)) { RET(v8::Null(iso)); return; }
+    if (std::isinf(r[0]) && std::isinf(r[1]) && std::isinf(r[2]) && std::isinf(r[3])) { RET(v8::Undefined(iso)); return; }
+    v8::Local<v8::Array> o = v8::Array::New(iso, 4);
+    for (int i = 0; i < 4; i++) (void)o->Set(ctx, i, v8::Number::New(iso, r[i]));
+    RET(o);
+}
 FN(scrollPos) {
     CTX; ARGN(n, 0); float r[4];
     if (c->host.sync) c->host.sync(c->host.ud, c->doc, true);
@@ -305,6 +318,21 @@ FN(modal) {
         node_set_modal(n, BOOL(1));
     }
     RET(!!(n->flags & NF_MODAL));
+}
+/* fullscreen(el, on, window): marks el :fullscreen or not, and the <iframe>s holding this document with it;
+   window asks the browser to fill the window with the page or put it back */
+FN(fullscreen) {
+    CTX; ARGN(n, 0);
+    bool on = BOOL(1), win = BOOL(2);
+    if (on) n->flags |= NF_FULLSCREEN; else n->flags &= ~(uint32_t)NF_FULLSCREEN;
+    if (n->doc) doc_mark_dirty(n->doc, n);
+    c->fullscreen = win;
+    JsCtx *r = c;
+    for (; r->parent; r = r->parent) if (Node *f = r->frame_el) {
+        if (win) f->flags |= NF_FULLSCREEN; else f->flags &= ~(uint32_t)NF_FULLSCREEN;
+        if (f->doc) doc_mark_dirty(f->doc, f);
+    }
+    if (r->host.fullscreen) r->host.fullscreen(r->host.ud, win);
 }
 FN(focus) {
     CTX; Node *n = junwrap(a[0]); Node *old = c->doc->focus;
@@ -1087,11 +1115,11 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(create); REG(textNode); REG(comment); REG(frag); REG(html); REG(setHTML); REG(parseFrag); REG(query);
     REG(matches); REG(byId); REG(clone); REG(doc); REG(contains); REG(connected); REG(host); REG(attachShadow);
     REG(templateContent); REG(rect); REG(vrect); REG(clipSet); REG(clipGet); REG(scrollPos); REG(setScroll); REG(computed); REG(value); REG(setValue); REG(ctlSel); REG(setCtlSel); REG(checked); REG(setChecked); REG(pickFiles);
-    REG(modal); REG(focus); REG(active); REG(cookie); REG(setCookie); REG(url); REG(setUrl); REG(navigate); REG(navigatePost); REG(histGo);
+    REG(modal); REG(fullscreen); REG(focus); REG(active); REG(cookie); REG(setCookie); REG(url); REG(setUrl); REG(navigate); REG(navigatePost); REG(histGo);
     REG(histLen); REG(internal); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
     REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(mediaOpenBytes); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove);
     REG(mediaBuffered); REG(mediaEos); REG(mediaSetDuration); REG(mediaPlay); REG(mediaPause); REG(mediaSeek);
-    REG(mediaPump); REG(resizePump); REG(intersectionPump); REG(videoFramePump); REG(videoFrameInfo); REG(videoQuality);
+    REG(mediaPump); REG(resizePump); REG(intersectionPump); REG(vclip); REG(videoFramePump); REG(videoFrameInfo); REG(videoQuality);
     REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(camCount); REG(camOpen); REG(camState); REG(camSource); REG(camPermission); REG(camInfo); REG(camClose); REG(mediaLive); REG(screenOpen); REG(screenState); REG(screenSource); REG(screenInfo); REG(screenClose); REG(screenAudio); REG(micOpen); REG(micPermission); REG(micState); REG(micRead); REG(micClose); REG(recKind); REG(recOpen); REG(recPause); REG(recPush); REG(recFinish); REG(recTake); REG(recClose); REG(recMime); REG(readyState); REG(quirks);
     REG(currentScript); REG(hidden); REG(media); REG(cssSupports); REG(cssSelText); REG(urlParse); REG(encode); REG(decode); REG(random); REG(cDigest); REG(cHmac); REG(cAes); REG(cEcGen); REG(cEcDerive); REG(cEcSign); REG(cEcVerify); REG(cSpki); REG(cSpkiParse); REG(cPkcs8Parse); REG(cEcFromD); REG(cHkdf); REG(cPbkdf2);
     REG(heap); REG(imgSize); REG(userAgent); REG(platform); REG(download); REG(downloadBytes); REG(touchPoints); REG(cpus); REG(makeAll);

@@ -15,6 +15,7 @@ uint64_t jsg_visual_generation(void);
 void jsg_visual_changed(void);
 bool jsg_rect(Node *n, float r[4]);
 bool jsg_vrect(Node *n, float r[4], float scroll_x, float scroll_y);
+bool jsg_vclip(Node *n, Node *stop, float c[4], float scroll_x, float scroll_y);   /* clipping ancestors' viewport rect: x0, y0, x1, y1 */
 bool jsg_scroll(Node *n, float r[4]);   /* scroll x, y, width, height of a scroll container */
 bool jsg_set_scroll(Node *n, float x, float y);  /* NAN keeps an axis; true if it moved */  /* border box, document coordinates */
 bool jsg_media(void *media, const char *q);

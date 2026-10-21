@@ -43,6 +43,10 @@ final class BrowserToolbar extends FrameLayout {
     private final Runnable pageFocus;
     private final SparseArray<String> icons = new SparseArray<>();
     private final LinearLayout row;
+    /* the rounded address box: the site icon (site info when tapped, a magnifier while editing), then the field */
+    private final LinearLayout pill;
+    private final ImageView site;
+    private int siteShown = -1;
     private final EditText field;
     private final GradientDrawable fieldShape = new GradientDrawable();
     private final ImageView[] slots = new ImageView[SLOTS];
@@ -105,7 +109,7 @@ final class BrowserToolbar extends FrameLayout {
         field.setCursorVisible(false);
         field.setTextColor(ADDRESS);
         field.setGravity(Gravity.CENTER_VERTICAL);
-        field.setBackground(fieldShape);
+        field.setBackground(null);
         field.setContentDescription("Address");
         field.setOnFocusChangeListener((view, focused) -> { if (focused && !holding) { holding = true; look(true); field.setText(address); field.selectAll(); } });
         field.setOnEditorActionListener((view, id, event) -> {
@@ -121,7 +125,18 @@ final class BrowserToolbar extends FrameLayout {
             return true;
         });
         fieldShape.setColor(FIELD);
-        row.addView(field);
+        pill = new LinearLayout(context);
+        pill.setOrientation(LinearLayout.HORIZONTAL);
+        pill.setGravity(Gravity.CENTER_VERTICAL);
+        pill.setBackground(fieldShape);
+        site = button(context);
+        site.setOnClickListener(view -> {
+            if (holding || state == null) return;
+            BrowserMenus.showSiteInfo(activity, pill, address, action);
+        });
+        pill.addView(site);
+        pill.addView(field, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1));
+        row.addView(pill);
 
         meter = new LinearLayout(context);
         meter.setOrientation(LinearLayout.VERTICAL);
@@ -272,7 +287,22 @@ final class BrowserToolbar extends FrameLayout {
         return scheme >= 0 ? url.substring(scheme + 3) : url;
     }
 
+    /* the site icon: a lock on https, a warning on http, an info sign on other pages, a magnifier while editing */
+    private void siteIcon() {
+        int kind = holding ? -2 : BrowserMenus.siteKind(address);
+        if (kind == siteShown || unit <= 0) return;
+        siteShown = kind;
+        site.setVisibility(kind == BrowserMenus.SITE_NONE ? GONE : VISIBLE);
+        site.setClickable(kind >= 0);
+        String source = kind == -2 ? BrowserIcons.SEARCH : BrowserMenus.siteIcon(kind);
+        site.setImageDrawable(BrowserIcons.path(source, kind == BrowserMenus.SITE_INSECURE ? BUSY : ADDRESS, Math.round(17 * unit)));
+        site.setContentDescription(kind == -2 ? null : kind == BrowserMenus.SITE_SECURE ? "Connection is secure, site information"
+            : kind == BrowserMenus.SITE_INSECURE ? "Not secure, site information" : "Site information");
+        field.setPadding(Math.round((kind == BrowserMenus.SITE_NONE ? 16 : 2) * unit), 0, Math.round(28 * unit), 0);   /* the text stops short of the indicator */
+    }
+
     private void look(boolean edit) {
+        siteIcon();
         field.setCursorVisible(edit);
         field.setTextColor(edit ? EDIT_TEXT : ADDRESS);
         fieldShape.setColor(edit ? FIELD_EDIT : FIELD);
@@ -472,9 +502,11 @@ final class BrowserToolbar extends FrameLayout {
             LinearLayout.LayoutParams fieldAt = new LinearLayout.LayoutParams(0, height - 2 * Math.round(7 * u), 1);
             fieldAt.leftMargin = Math.round(10 * u);
             fieldAt.rightMargin = Math.round(2 * u);
-            field.setLayoutParams(fieldAt);
+            pill.setLayoutParams(fieldAt);
+            site.setLayoutParams(new LinearLayout.LayoutParams(Math.round(34 * u), ViewGroup.LayoutParams.MATCH_PARENT));
+            site.setPadding(Math.round(4 * u), 0, 0, 0);
             field.setTextSize(TypedValue.COMPLEX_UNIT_PX, 14 * u);
-            field.setPadding(Math.round(16 * u), 0, Math.round(28 * u), 0);   /* the text stops short of the indicator */
+            siteShown = -1;
             fieldShape.setCornerRadius((height - 2 * Math.round(7 * u)) / 2f);
             for (ImageView slot : slots) slot.setLayoutParams(new LinearLayout.LayoutParams(button, button));
             more.setLayoutParams(new LinearLayout.LayoutParams(button, button));
@@ -497,6 +529,7 @@ final class BrowserToolbar extends FrameLayout {
             address = url;
             if (!field.hasFocus()) field.setText(shown(address));
         }
+        siteIcon();
         setVisibility(VISIBLE);
     }
 }

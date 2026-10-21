@@ -25,6 +25,10 @@ static bool visible(PB *p, float x, float y, float w, float h) {
     if (p->clip && (x > p->cx + p->cw || y > p->cy + p->ch || x + w < p->cx || y + h < p->cy)) return false;
     return true;
 }
+static bool rounded(const ComputedStyle *s) {
+    for (int i = 0; i < 4; i++) if (s->border_radius[i].px > 0 || s->border_radius[i].pct > 0) return true;
+    return false;
+}
 static void radii(const Box *b, float w, float h, float r[4]) {
     for (int i = 0; i < 4; i++) r[i] = res(b->st->border_radius[i], i % 2 ? w : w);
     float f = 1;
@@ -106,7 +110,8 @@ static void paint_rect_deco(PB *p, Box *b, float x, float y, float w, float h, b
     if (s->outline_style > BS_HIDDEN && s->outline_width > 0 && COLOR_A(s->outline_color)) {
         float o = s->outline_offset + s->outline_width;
         DItem *it = emit(p, DO_BORDER); it->x = x - o; it->y = y - o; it->w = w + 2 * o; it->h = h + 2 * o;
-        for (int i = 0; i < 4; i++) { it->bw[i] = s->outline_width; it->bc[i] = s->outline_color; it->bs[i] = s->outline_style; }
+        /* the outline follows the box's rounded corners, grown by its offset and width */
+        for (int i = 0; i < 4; i++) { it->bw[i] = s->outline_width; it->bc[i] = s->outline_color; it->bs[i] = s->outline_style; it->r[i] = r[i] > 0 ? LMAX(0, r[i] + o) : 0; }
     }
 }
 
@@ -220,7 +225,7 @@ static void paint_replaced(PB *p, Box *b) {
         if (of == OF_SCALE_DOWN) k = LMIN(k, 1);
         dw = im->w * k; dh = im->h * k; dx = x + (w - dw) / 2; dy = y + (h - dh) / 2;
     }
-    bool needclip = dw > w + 0.5f || dh > h + 0.5f || b->st->border_radius[0].px > 0;
+    bool needclip = dw > w + 0.5f || dh > h + 0.5f || rounded(b->st);
     if (needclip) { DItem *c = emit(p, DO_PUSH_CLIP); c->x = x; c->y = y; c->w = w; c->h = h; radii(b, w, h, c->r); }
     DItem *it = emit(p, DO_IMAGE); it->x = dx; it->y = dy; it->w = dw; it->h = dh; it->img = im;
     if (needclip) emit(p, DO_POP_CLIP);
@@ -379,6 +384,11 @@ static void paint_block_content(PB *p, Box *b, DefVec *defs) {
     if (clips) {
         float x = b->x + p->dx + b->b[3], y = b->y + p->dy + b->b[0], w = b->w - b->b[1] - b->b[3], h = b->h - b->b[0] - b->b[2];
         DItem *c = emit(p, DO_PUSH_CLIP); c->x = x; c->y = y; c->w = w; c->h = h; c->sc = b;
+        if (rounded(s)) {   /* overflow clips to the padding box's rounded corners */
+            float o[4]; radii(b, b->w, b->h, o);
+            const float side[4][2] = { { b->b[3], b->b[0] }, { b->b[1], b->b[0] }, { b->b[1], b->b[2] }, { b->b[3], b->b[2] } };
+            for (int i = 0; i < 4; i++) c->r[i] = LMAX(0, o[i] - LMAX(side[i][0], side[i][1]));
+        }
         if (p->clip) { float x1 = LMIN(x + w, p->cx + p->cw), y1 = LMIN(y + h, p->cy + p->ch); x = LMAX(x, p->cx); y = LMAX(y, p->cy); w = LMAX(0, x1 - x); h = LMAX(0, y1 - y); }
         p->clip = true; p->cx = x; p->cy = y; p->cw = w; p->ch = h;
         p->dx -= b->node->scroll_x; p->dy -= box_scroll_y(b);
@@ -447,7 +457,9 @@ static void paint_stacking(PB *p, Box *b) {
     bool was_fixed = p->fixed; const Box *was_mv = p->mv;
     if (s->position == P_STICKY) { p->fixed = true; p->mv = p->mv_out; } /* include in scroll damage */
     p->dx += tx; p->dy += ty;
-    /* axis-aligned scale (e.g. progress bars using scaleX): scale the subtree's non-text items about transform-origin */
+    /* axis-aligned scale (e.g. progress bars using scaleX): scale the subtree's items about transform-origin;
+       text only under a uniform scale, as the same face at the scaled size (x.com's scale(1.15) Google
+       button drew its scaled icon over unscaled text) */
     float ksx = s->has_transform && !s->transform[1] && !s->transform[2] ? s->transform[0] : 1, ksy = s->has_transform && !s->transform[1] && !s->transform[2] ? s->transform[3] : 1;
     int i0 = p->dl->items.n;
     bool layer = s->opacity < 0.999f;
@@ -468,7 +480,16 @@ static void paint_stacking(PB *p, Box *b) {
         float oy = b->y + p->dy + s->transform_origin[1].px + s->transform_origin[1].pct * b->h / 100;
         for (int i = i0; i < p->dl->items.n; i++) {
             DItem *it = &p->dl->items.v[i];
-            if (it->g) continue;
+            if (it->g) {
+                if (fabsf(ksx - ksy) > 1e-4f || ksx <= 0) continue;
+                Font *from = NULL, *to = NULL;   /* sizes in quarter pixels: a scale animation reuses a few fonts */
+                for (int k = 0; k < it->ng; k++) {
+                    DGlyph *g = &it->g[k];
+                    g->x = ox + (g->x - ox) * ksx; g->y = oy + (g->y - oy) * ksy;
+                    if (g->font && g->font != from) { from = g->font; to = font_resized(from, LMAX(0.25f, roundf(from->size * ksx * 4) / 4)); }
+                    if (g->font) g->font = to;
+                }
+            }
             it->x = ox + (it->x - ox) * ksx; it->y = oy + (it->y - oy) * ksy; it->w *= ksx; it->h *= ksy;
             if (it->w < 0) { it->x += it->w; it->w = -it->w; }
             if (it->h < 0) { it->y += it->h; it->h = -it->h; }

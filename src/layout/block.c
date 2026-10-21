@@ -247,6 +247,9 @@ static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float 
     if (fh >= 0) hdef = LMAX(0, fh - vb);
     else if (len_def(s->height, cbh) && s->height.kind == LK_LEN) hdef = LMAX(0, res(s->height, cbh) - (bs ? vb : 0));
     else if (s->aspect_ratio > 0 && b->fmt != FMT_REPLACED && s->height.kind != LK_LEN) hdef = LMAX(0, (bs ? b->w : cw) / s->aspect_ratio - (bs ? vb : 0));
+    /* children size against the used height: YouTube's theater player stretches in a flex row whose
+       height:56.25vw is capped by max-height and then raised by min-height:480px */
+    if (hdef >= 0 && fh < 0) hdef = LMAX(0, clamph(s, hdef + vb, cbh, vb) - vb);
     float ch_for_kids = hdef >= 0 ? hdef : -1;
     FloatCtx own = {0};
     FloatCtx *f = b->bfc || !fc ? &own : fc;
@@ -267,14 +270,14 @@ static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float 
     float h = (hdef >= 0 && b->fmt != FMT_REPLACED ? hdef : ch) + vb;
     if (fh < 0) h = clamph(s, h, cbh, vb);
     b->h = LMAX(0, h);
-    if (b->fmt == FMT_REPLACED || b->ctl) b->has_baseline = b->ctl && b->nlines, b->baseline = b->nlines ? b->lines[0].base : b->y + b->h;
+    if (b->fmt == FMT_REPLACED || (b->ctl && b->nlines)) b->has_baseline = b->ctl && b->nlines, b->baseline = b->nlines ? b->lines[0].base : b->y + b->h;
     /* a button's content is centred vertically in a taller box, as in Chrome (google.com's
        icon buttons: an inline-block svg in a 48px display:block <button>); so is single-line
        control text */
     bool button = b->node && b->node->type == NODE_ELEMENT && b->node->tag == A_button && b->node->ns == NS_HTML && (b->fmt == FMT_FLOW || b->fmt == FMT_INLINE);
-    if (button || (b->ctl && b->ctl != CTL_TEXTAREA && b->nlines == 1)) {
+    if (button || (b->ctl && b->ctl != CTL_TEXTAREA && b->nlines <= 1)) {
         float d = (b->h - vb - content_h) / 2;
-        if (d > 0) { box_translate(b, 0, d); b->y -= d; }   /* everything inside moves, the box stays */
+        if (d > 0) { box_translate(b, 0, d); b->y -= d; if (b->ctl && !b->nlines) b->baseline += d; }   /* everything inside moves, the box stays */
     }
     b->scroll_w = cw; b->scroll_h = content_h;
     if (b->abs_head) layout_abs(L, b);

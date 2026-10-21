@@ -43,7 +43,7 @@ function activate(el, ev, pre) {
         const raw = N.attr(a, 'href');
         if (/^javascript:/i.test(raw)) { try { (0, eval)(decodeURIComponent(raw.slice(11))); } catch (e) { report(e); } }
         else if (a.href && (a.hasAttribute('download') || /^(blob|data):/i.test(a.href))) saveHref(a.href, a.getAttribute('download'));
-        else if (a.href) location.assign(a.href);
+        else if (a.href && !N.navTarget(linkTarget(a), a.href)) location.assign(a.href);
         return;
     }
     if (el.closest && !/^(input|button|label|summary|textarea|select)$/.test(N.name(el))) {
@@ -76,11 +76,20 @@ function activate(el, ev, pre) {
     else if (name === 'summary') { const d = N.parent(el); if (d && N.name(d) === 'details') d.open = !d.open; }
     else if (name === 'textarea' || name === 'select') N.focus(el);
 }
+/* the browsing context a link or form navigates: its target, else the document's <base target> */
+function linkTarget(el, submitter) {
+    const t = (submitter && submitter.getAttribute('formtarget')) ?? el.getAttribute('target');
+    if (t !== null) return t;
+    const b = document.querySelector('base[target]');
+    return b ? b.getAttribute('target') : '';
+}
 function submitForm(form, submitter) {
     const fd = new FormData(form);
     if (submitter && submitter.name) fd.append(submitter.name, submitter.value);
     const u = new URL((submitter && submitter.getAttribute('formaction')) || N.attr(form, 'action') || N.url(), document.baseURI);
-    if (form.method === 'get') { u.search = new URLSearchParams([...fd].filter(([, v]) => typeof v === 'string')).toString(); N.navigate(u.href); }
+    const target = linkTarget(form, submitter);
+    const navigatePost = (url, body, ctype) => { if (!N.navTarget(target, url, body, ctype)) N.navigatePost(url, body, ctype); };
+    if (form.method === 'get') { u.search = new URLSearchParams([...fd].filter(([, v]) => typeof v === 'string')).toString(); if (!N.navTarget(target, u.href)) N.navigate(u.href); }
     else {
         const et = ((submitter && submitter.getAttribute('formenctype')) || N.attr(form, 'enctype') || '').toLowerCase();
         const kv = [...fd].filter(([, v]) => typeof v === 'string');
@@ -88,9 +97,9 @@ function submitForm(form, submitter) {
             const bd = '----LumenFormBoundary' + Math.random().toString(36).slice(2);
             const esc = s => s.replace(/"/g, '%22').replace(/\r?\n/g, '%0D%0A');
             const body = kv.map(([k, v]) => `--${bd}\r\nContent-Disposition: form-data; name="${esc(k)}"\r\n\r\n${v}\r\n`).join('') + `--${bd}--\r\n`;
-            N.navigatePost(u.href, body, 'multipart/form-data; boundary=' + bd);
-        } else if (et === 'text/plain') N.navigatePost(u.href, kv.map(([k, v]) => `${k}=${v}\r\n`).join(''), 'text/plain');
-        else N.navigatePost(u.href, new URLSearchParams(kv).toString(), 'application/x-www-form-urlencoded');
+            navigatePost(u.href, body, 'multipart/form-data; boundary=' + bd);
+        } else if (et === 'text/plain') navigatePost(u.href, kv.map(([k, v]) => `${k}=${v}\r\n`).join(''), 'text/plain');
+        else navigatePost(u.href, new URLSearchParams(kv).toString(), 'application/x-www-form-urlencoded');
     }
 }
 function cssSplit(s) {
@@ -273,6 +282,13 @@ const CSS = {
     supports(p, v) { return N.cssSupports(v === undefined ? String(p) : `(${p}: ${v})`); },
     registerProperty() {},
 };
-const fontSet = Object.assign(new EventTarget(), { status: 'loaded', size: 0, load() { return Promise.resolve([]); }, check() { return true; }, add() {}, delete() {}, clear() {}, forEach() {}, has() { return false; } });
+/* set-like over the faces a page adds: pages spread it (`[...document.fonts]`) and read .size */
+const fontFaces = new Set();
+const fontSet = Object.assign(new EventTarget(), { status: 'loaded', load() { return Promise.resolve([]); }, check() { return true; },
+    add(f) { fontFaces.add(f); return this; }, delete(f) { return fontFaces.delete(f); }, clear() { fontFaces.clear(); },
+    forEach(cb, t) { for (const f of fontFaces) cb.call(t, f, f, this); }, has(f) { return fontFaces.has(f); },
+    values() { return fontFaces.values(); }, keys() { return fontFaces.values(); }, entries() { return fontFaces.entries(); },
+    [Symbol.iterator]() { return fontFaces.values(); } });
+Object.defineProperty(fontSet, 'size', { get() { return fontFaces.size; } });
 Object.defineProperty(fontSet, 'ready', { get() { return Promise.resolve(fontSet); } });
 class FontFace { constructor(family, source, d) { this.family = family; this.source = source; Object.assign(this, d); this.status = 'loaded'; this.loaded = Promise.resolve(this); } load() { return Promise.resolve(this); } }

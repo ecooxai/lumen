@@ -24,6 +24,7 @@ enum {
     NF_CONNECTED = 1 << 9, NF_DISABLED = 1 << 10,
     NF_ATTR_MIXED_CASE = 1 << 12, /* conservative: an HTML attribute name contained ASCII uppercase */
     NF_MODAL = 1 << 14,          /* dialog opened with showModal */
+    NF_FULLSCREEN = 1 << 13,     /* requestFullscreen: :fullscreen (on an <iframe>, for an element inside it) */
     NF_RESELECT_SUBTREE = 1 << 15, /* ancestry/selector changes cannot reuse descendant matches */
     NF_CHILD_LIST_DIRTY = 1 << 16, /* structural selector invalidation pending */
     NF_TREE_ANCESTOR = 1 << 17, /* scratch: ancestor of a pending child-list change */

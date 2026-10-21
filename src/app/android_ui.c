@@ -1,5 +1,7 @@
 #include "android_ui.h"
 #ifdef __ANDROID__
+#include "../net/net.h"
+#include "../js/js.h"
 #include <SDL3/SDL.h>
 #include <jni.h>
 #include <stdlib.h>
@@ -28,6 +30,34 @@ JNIEXPORT jstring JNICALL Java_org_lumen_browser_LumenActivity_nativeUiIcon(JNIE
     (void)activity_class;
     const char *p = android_ui_icon(code);
     return p ? (*env)->NewStringUTF(env, p) : NULL;
+}
+
+/* site info: how many cookies the site of a URL has (on the UI thread; the jar has its own lock) */
+JNIEXPORT jint JNICALL Java_org_lumen_browser_LumenActivity_nativeSiteCookies(JNIEnv *env, jclass activity_class, jbyteArray url) {
+    (void)activity_class;
+    jsize n = url ? (*env)->GetArrayLength(env, url) : 0;
+    if (n <= 0 || n > 8192) return 0;
+    char text[8193]; (*env)->GetByteArrayRegion(env, url, 0, n, (jbyte *)text); text[n] = 0;
+    if ((*env)->ExceptionCheck(env)) { (*env)->ExceptionClear(env); return 0; }
+    URL u; int count = 0;
+    if (!url_parse(text, &u)) return 0;
+    if (u.host && *u.host) { char site[256]; net_site_of(u.host, site, sizeof site); count = cookies_site(site, false); }
+    url_free(&u);
+    return count;
+}
+
+/* site info: the site whose data "Delete data" removes, NULL for a page without a host */
+JNIEXPORT jstring JNICALL Java_org_lumen_browser_LumenActivity_nativeSite(JNIEnv *env, jclass activity_class, jbyteArray url) {
+    (void)activity_class;
+    jsize n = url ? (*env)->GetArrayLength(env, url) : 0;
+    if (n <= 0 || n > 8192) return NULL;
+    char text[8193]; (*env)->GetByteArrayRegion(env, url, 0, n, (jbyte *)text); text[n] = 0;
+    if ((*env)->ExceptionCheck(env)) { (*env)->ExceptionClear(env); return NULL; }
+    URL u; char site[256] = "";
+    if (!url_parse(text, &u)) return NULL;
+    if (u.host && *u.host) net_site_of(u.host, site, sizeof site);
+    url_free(&u);
+    return *site ? (*env)->NewStringUTF(env, site) : NULL;
 }
 
 volatile float android_ui_stats[4];
@@ -103,6 +133,25 @@ void android_ui_toolbar(const AndroidBarState *st, const char *url) {
         if (!(*env)->ExceptionCheck(env)) { last = *st; snprintf(last_url, sizeof last_url, "%s", url); sent = true; }
     }
     end(env);
+}
+void android_ui_pick_files(const char *accept, bool multiple) {
+    jclass c; jmethodID m; JNIEnv *env = begin(&c, "pickFiles", "([BZ)V", &m);
+    if (!env) { js_files_picked(NULL, -1); return; }
+    (*env)->CallStaticVoidMethod(env, c, m, jbytes(env, accept ? accept : ""), (jboolean)multiple);
+    if ((*env)->ExceptionCheck(env)) js_files_picked(NULL, -1);
+    end(env);
+}
+/* pickFiles' answer on the UI thread: the paths, one per line; null when nothing was chosen */
+JNIEXPORT void JNICALL Java_org_lumen_browser_LumenActivity_nativeFilesPicked(JNIEnv *env, jclass activity_class, jbyteArray list) {
+    (void)activity_class;
+    jsize n = list ? (*env)->GetArrayLength(env, list) : 0;
+    char *s = n > 0 && n < (1 << 20) ? malloc((size_t)n + 1) : NULL;
+    if (!s) { js_files_picked(NULL, -1); return; }
+    (*env)->GetByteArrayRegion(env, list, 0, n, (jbyte *)s); s[n] = 0;
+    const char *paths[64]; int k = 0;
+    for (char *sv = NULL, *line = strtok_r(s, "\n", &sv); line && k < 64; line = strtok_r(NULL, "\n", &sv)) paths[k++] = line;
+    js_files_picked(paths, k ? k : -1);
+    free(s);
 }
 void android_ui_fullscreen(bool on) {
     jclass c; jmethodID m; JNIEnv *env = begin(&c, "setFullscreen", "(Z)V", &m);

@@ -249,6 +249,9 @@ float layout_inline(Layout *L, Box *b, float x0, float y0, float W, FloatCtx *fc
     for (Box *ch = b->first; ch; ch = ch->next) if (ch->kind == BX_INLINE) fix_irects(b, ch);
     /* nested inline boxes inside inline boxes */
     if (b->nlines) { b->has_baseline = true; b->baseline = b->lines[b->nlines - 1].base; }
+    /* an empty form control (no value, no placeholder) is still one line tall, baseline where its text
+       would sit: x.com's login input had height 0 in its flex column and drew the caret below the box */
+    else if (b->ctl) { b->has_baseline = true; b->baseline = y0 + c.strutA; return c.strutA + c.strutD; }
     /* apply text-align shift to inline rects */
     for (int li = 0; li < b->nlines; li++) {
         Line *ln = &b->lines[li];

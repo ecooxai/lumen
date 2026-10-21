@@ -145,10 +145,28 @@ void net_desktop_hosts(char *out, size_t n) {   /* space separated */
     for (int i = 0; i < g_ndesktop && o + strlen(g_desktop[i]) + 2 < n; i++) o += (size_t)snprintf(out + o, n - o, "%s%s", o ? " " : "", g_desktop[i]);
     pthread_mutex_unlock(&g_desktop_mu);
 }
+/* The sign-in pages of Google, Apple and Microsoft turn away browsers they do not recognise ("This
+   browser or app may not be secure"), Lumen's own identity and a Chrome without Chrome's internals
+   alike: there Lumen is Firefox, a desktop one when the site is in Desktop site mode. */
+static const char *const login_hosts[] = {
+    "accounts.google.com", "accounts.youtube.com",
+    "appleid.apple.com", "idmsa.apple.com", "account.apple.com",
+    "login.microsoftonline.com", "login.microsoft.com", "login.live.com", "account.live.com",
+};
+bool net_login_host(const char *host) {
+    if (!host) return false;
+    for (size_t i = 0; i < sizeof login_hosts / sizeof *login_hosts; i++) if (str_ieq(host, login_hosts[i])) return true;
+    return false;
+}
+#ifdef __ANDROID__
+#define UA_FF_PHONE "Mozilla/5.0 (Android 10; Mobile; rv:150.0) Gecko/150.0 Firefox/150.0"
+#define UA_FF_DESKTOP "Mozilla/5.0 (X11; Linux x86_64; rv:150.0) Gecko/20100101 Firefox/150.0"
+#else
+#define UA_FF_PHONE ua_str[UA_FIREFOX]
+#define UA_FF_DESKTOP ua_str[UA_FIREFOX]
+#endif
 static const char *user_agent_for_host(const char *host) {
-    /* Google requires a distinct browser identity on its authentication origin.
-       Keep the normal compatibility preference for other sites. */
-    if (host && str_ieq(host, "accounts.google.com")) return ua_str[UA_LUMEN];
+    if (net_login_host(host)) return net_desktop_host(host) ? UA_FF_DESKTOP : UA_FF_PHONE;
     return net_desktop_host(host) ? UA_DESKTOP : g_user_agent;
 }
 const char *net_user_agent_for_url(const char *url) {
@@ -848,6 +866,7 @@ static void *worker(void *arg) {
         pthread_mutex_unlock(&g_mu);
         if (j->req->cancelled) { j->resp = xcalloc(1, sizeof *j->resp); j->resp->error = xstrdup("cancelled"); }
         else { t_stream = j->req->chunk ? j->req : NULL; j->resp = net_fetch_impl(j->req); t_stream = NULL; }
+        if (j->req->work && !j->req->cancelled) j->req->work(j->req, j->resp, j->req->ud);
         pthread_mutex_lock(&g_mu);
         for (Job **pp = &g_running; *pp; pp = &(*pp)->rnext) if (*pp == j) { *pp = j->rnext; break; }
         pthread_mutex_unlock(&g_mu);

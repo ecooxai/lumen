@@ -289,7 +289,13 @@ static const Node *url_ref(const Node *n, const char *v) {
         const Node *r = !u ? NULL : strlen(u) == dl && !strncmp(u, du, dl) ? doc_get_element_by_id(n->doc, id) : svg_ext_ref_hook(u, id);
         free(u); return r;
     }
-    return doc_get_element_by_id(n->doc, id);
+    const Node *r = doc_get_element_by_id(n->doc, id), *top = n;
+    if (r) return r;
+    while (top->parent) top = top->parent;   /* a tree outside the document, e.g. an SVG <img> */
+    if (top == &n->doc->node) return NULL;
+    for (const Node *k = top; k; k = node_next_in_tree((Node *)k, (Node *)top))
+        if (k->type == NODE_ELEMENT && k->id && !strcmp(k->id, id)) return k;
+    return NULL;
 }
 
 static bool has_geometry(const Node *n, int depth) {
@@ -547,6 +553,12 @@ Image *svg_image(Node *n, float cw, float ch, float dpr) {
     Mat m = { kx, 0, 0, ky, tx - vx * kx, ty - vy * ky };
     Ctx c = { xcalloc((size_t)(W + 2) * (size_t)H, sizeof(float)), W, H, im->px, NULL, vw, vh };
     Paint pt = { s ? s->fill : RGBA(0, 0, 0, 255), s ? s->stroke : 0, s ? s->stroke_width : 1, 1, 1, 1, false };
+    if (!s) {   /* an SVG <img> has no style: the root's presentation attributes start the inheritance */
+        Color cur = RGBA(0, 0, 0, 255);
+        pt.fill = attr_color(n, "fill", pt.fill, cur); pt.stroke = attr_color(n, "stroke", pt.stroke, cur);
+        paint_server(n, "fill", &pt.fg, &pt.fill); paint_server(n, "stroke", &pt.sg, &pt.stroke);
+        if (node_attr(n, "stroke-width")) pt.sw = fattr(n, "stroke-width");
+    }
     walk(&c, n, m, pt, 0);
     free(c.acc);
     if (sc->im) bury(sc->im);

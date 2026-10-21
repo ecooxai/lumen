@@ -30,6 +30,7 @@ function fixture() {
         ${eventSource}
         const document = new EventTarget();
         ${mediaSource}
+        function fsResized() {}   // 06-document.js: fullscreenchange waits for resizes
         ${visualSource}
         Object.setPrototypeOf(G, EventTarget.prototype);
         return { G, document, Event, EventTarget, matchMedia,

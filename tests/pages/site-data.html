@@ -1,0 +1,21 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+<title>Site data</title>
+<!-- Site info's "Delete data": each load reports whether the cookie and the storage items set by the
+     previous load are still there, then sets them again. After Delete data the page reloads and
+     reports cookie=0. -->
+<style>body { font: 22px sans-serif; margin: 24px } #state { font-size: 30px; margin-top: 16px }</style>
+<h1>Site data</h1>
+<div id="state">checking</div>
+<script>
+const q = new URLSearchParams(location.search), tag = (q.get('tag') || 'sitedata').replace(/\W/g, '');
+const cookie = /(^|; )lumen_site_test=1(;|$)/.test(document.cookie) ? 1 : 0;
+const local = localStorage.getItem('lumen_site_test') ? 1 : 0, session = sessionStorage.getItem('lumen_site_test') ? 1 : 0;
+const line = `load cookie=${cookie} local=${local} session=${session}`;
+document.cookie = 'lumen_site_test=1; max-age=3600; path=/';
+document.cookie = 'lumen_site_test2=1; max-age=3600; path=/';
+localStorage.setItem('lumen_site_test', '1'); sessionStorage.setItem('lumen_site_test', '1');
+document.getElementById('state').textContent = `before this load: cookie ${cookie ? 'present' : 'absent'}; now set (2 cookies)`;
+fetch('/r?n=' + tag, { method: 'POST', body: line }).catch(() => {});
+</script>

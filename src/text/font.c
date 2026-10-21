@@ -301,6 +301,23 @@ static Font *font_for_face(Face *face, float size, bool sb, bool si) {
     return f;
 }
 
+Font *font_resized(Font *f, float size) {
+    if (!f || size <= 0 || fabsf(f->size - size) < 0.005f) return f;
+    char key[64]; snprintf(key, sizeof key, "rs:%p@%.2f", (void *)f, size);
+    pthread_mutex_lock(&font_mu);
+    Font *r = hm_get(&fonts, key);
+    if (!r) {
+        r = xcalloc(1, sizeof *r);
+        r->face = f->face; r->size = size; r->synth_bold = f->synth_bold; r->synth_italic = f->synth_italic;
+        hb_font_t *hb = hb_font_create_sub_font(f->hb);   /* keeps the parent's variation coordinates (weight instances) */
+        int sc = (int)lroundf(size * 64); hb_font_set_scale(hb, sc, sc); hb_font_set_ptem(hb, size * 0.75f);
+        r->hb = hb; font_metrics(r);
+        hm_put(&fonts, key, r);
+    }
+    pthread_mutex_unlock(&font_mu);
+    return r;
+}
+
 static Font *font_get_slow(const char *family, int weight, bool italic, float size);
 Font *font_get(const char *family, int weight, bool italic, float size) {
     if (size <= 0) size = 0.01f;

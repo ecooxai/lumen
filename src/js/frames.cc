@@ -136,12 +136,18 @@ static void frame_done(NetRequest *rq, NetResponse *r, void *ud) {
     delete l;
 }
 
-static void frame_load(JsCtx *p, Node *f, const char *u, const std::string &key) {
+/* ctype: a POST of body (a form submitted into the frame) */
+static void frame_load(JsCtx *p, Node *f, const char *u, const std::string &key,
+                       const char *body = nullptr, size_t blen = 0, const char *ctype = nullptr) {
     bool remote = u && *u && strncmp(u, "about:", 6) && strncmp(u, "javascript:", 11);
     JsCtx *k = frame_create(p, f, "about:blank", "", 0, !remote);
     k->frame_src = key;
     if (!remote) return;
-    NetRequest *rq = net_request_new("GET", u);
+    NetRequest *rq = net_request_new(ctype ? "POST" : "GET", u);
+    if (ctype) {
+        rq->body = (char *)xmalloc(blen + 1); if (blen) memcpy(rq->body, body, blen); rq->body[blen] = 0; rq->body_len = blen;
+        headers_add(&rq->headers, "Content-Type", ctype);
+    }
     if (p->doc->url && !strncmp(p->doc->url, "http", 4)) headers_add(&rq->headers, "Referer", p->doc->url);
     FrameLoad *l = new FrameLoad{ p, f, k->id, u };
     g_loads.push_back(l);
@@ -161,6 +167,38 @@ void frame_nav(JsCtx *k, const char *u) {
     char *abs = url_join(k->doc->url, u);
     if (abs) frame_load(k->parent, k->frame_el, abs, k->frame_src);
     free(abs);
+}
+
+/* The browsing context a link or form names in its target, seen from c: c itself for "", _self and
+   _blank (Lumen opens no windows), and for names no frame carries. */
+static JsCtx *named_ctx(JsCtx *c, const char *name) {
+    std::vector<JsCtx *> st{ c };
+    while (!st.empty()) {
+        JsCtx *k = st.back(); st.pop_back();
+        if (k != c && !k->dead) if (const char *n = node_attr(k->frame_el, "name")) if (!strcmp(n, name)) return k;
+        for (auto it = k->kids.rbegin(); it != k->kids.rend(); ++it) st.push_back(*it);
+    }
+    return nullptr;
+}
+static JsCtx *target_ctx(JsCtx *c, const char *t) {
+    if (!t || !*t || str_ieq(t, "_self") || str_ieq(t, "_blank")) return c;
+    if (str_ieq(t, "_top")) return root_of(c);
+    if (str_ieq(t, "_parent")) return c->parent ? c->parent : c;
+    frames_scan(root_of(c));
+    JsCtx *k = named_ctx(c, t);   /* its own frames first, then the whole page */
+    if (!k) k = named_ctx(root_of(c), t);
+    return k ? k : c;
+}
+bool js_navigate_target(JsCtx *c, const char *target, const char *url, const char *body, size_t n, const char *ctype) {
+    JsCtx *t = c ? target_ctx(c, target) : nullptr;
+    if (!t || t == c || t->dead || !url) return false;
+    if (t->parent) {
+        char *abs = url_join(c->doc->url, url);
+        if (abs) frame_load(t->parent, t->frame_el, abs, t->frame_src, body, n, ctype);
+        free(abs);
+    } else if (ctype && t->host.navigate_post) t->host.navigate_post(t->host.ud, url, body, n, ctype);
+    else if (t->host.navigate) t->host.navigate(t->host.ud, url);
+    return true;
 }
 
 static bool is_iframe(Node *n) { return n->type == NODE_ELEMENT && n->ns == NS_HTML && n->tag == A_iframe; }
@@ -223,6 +261,14 @@ static void n_ctxRel(const FCI &a) {
     case 4: if (t) { std::string u = jcstr(iso, a[2]); frame_nav(t, u.c_str()); } break;
     }
 }
+/* navTarget(target, url[, body, ctype]): navigates the context target names, if not this one */
+static void n_navTarget(const FCI &a) {
+    FCTX;
+    std::string t = jcstr(iso, a[0]), u = jcstr(iso, a[1]), b, ct;
+    bool post = a.Length() > 3 && a[3]->IsString();
+    if (post) { b = jcstr(iso, a[2]); ct = jcstr(iso, a[3]); }
+    a.GetReturnValue().Set(js_navigate_target(c, t.c_str(), u.c_str(), b.data(), b.size(), post ? ct.c_str() : nullptr));
+}
 static JsCtx *ctx_of_value(v8::Isolate *iso, JsCtx *c, v8::Local<v8::Value> v) {
     if (v->IsNumber()) return by_id(c, (uint32_t)v.As<v8::Number>()->Value());
     if (!v->IsObject()) return nullptr;
@@ -267,6 +313,6 @@ void js_install_frames(JsCtx *c, v8::Local<v8::Object> N) {
     v8::Isolate *iso = c->iso;
     v8::Local<v8::Context> ctx = iso->GetCurrentContext();
 #define REG(nm) (void)N->Set(ctx, jstr(iso, #nm), v8::Function::New(ctx, n_##nm).ToLocalChecked())
-    REG(frameWin); REG(frameDoc); REG(parentWin); REG(topWin); REG(frameEl); REG(frameCount); REG(frameAt); REG(ctxRel); REG(caller); REG(postTo);
+    REG(frameWin); REG(frameDoc); REG(parentWin); REG(topWin); REG(frameEl); REG(frameCount); REG(frameAt); REG(ctxRel); REG(navTarget); REG(caller); REG(postTo);
 #undef REG
 }

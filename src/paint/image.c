@@ -220,12 +220,15 @@ static Image *dec_svg(const uint8_t *d, size_t n) {
     return im;
 }
 
-Image *image_decode(const uint8_t *d, size_t n) {
+Image *image_decode_bitmap(const uint8_t *d, size_t n) {
     if (!d || n < 8) return NULL;
     if (!memcmp(d, "\x89PNG", 4)) return dec_png(d, n);
     if (d[0] == 0xFF && d[1] == 0xD8) return dec_jpeg(d, n);
     if (n > 12 && !memcmp(d, "RIFF", 4) && !memcmp(d + 8, "WEBP", 4)) return dec_webp(d, n);
     if (!memcmp(d, "GIF8", 4)) return dec_gif(d, n);
-    if (is_svg(d, n)) return dec_svg(d, n);
     return NULL;
+}
+Image *image_decode(const uint8_t *d, size_t n) {
+    Image *im = image_decode_bitmap(d, n);
+    return im || !d || n < 8 || !is_svg(d, n) ? im : dec_svg(d, n);
 }

@@ -21,6 +21,8 @@ enum {
     UI_URL_GO,       /* s2: what was typed in the address bar (javascript: runs on the current page) */
     UI_BM_ADD,       /* bookmark the current page if it is not yet (a long press on Bookmarks; the notice is shown by Java) */
     UI_TAB_MENU,     /* value: the chosen item of android_ui_tab_menu */
+    UI_SITE_CLEAR,   /* s2: the page's URL; site info's "Delete data": its site's cookies and storage */
+    UI_FILE_PICK,    /* engine only: an <input type=file> asks for files; value: several, s1: its accept list */
 };
 /* can_desktop: 1 for the page's site, 2 for every site (on a page that is not a site) */
 typedef struct { bool can_forward, desktop, can_zoom, bookmarked, can_bookmark, can_back, fullscreen; int can_desktop, zoom_pct; } AndroidMenuState;
@@ -41,6 +43,9 @@ typedef struct {
 } AndroidBarState;
 void android_ui_toolbar(const AndroidBarState *state, const char *url);
 void android_ui_fullscreen(bool on);
+/* the system's document picker for an <input type=file> (accept: its accept list); the files,
+   copied where Lumen can read them when they are not in shared storage, or a cancel, go to js_files_picked */
+void android_ui_pick_files(const char *accept, bool multiple);
 void android_ui_toast(const char *text);
 /* for the CPU readout's details (LumenActivity.nativeTabStats), written by the engine thread about
    once a second while the readout is on: the current tab's CPU (% of one core), the JS heap and

@@ -1,0 +1,21 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+<title>Form POST</title>
+<!-- Enter in a text field submits its POST form (implicit submission, as on Google's sign-in page):
+     the submit event names the default button as submitter, and the form's own POST reaches /r
+     with the field and the button's name=value (user=...&go=next). /r answers 204, so the page stays
+     (then reports "still here"). Type into the field, press Enter. -->
+<style>body { font: 22px sans-serif; margin: 24px } input, button { font: inherit; padding: 8px }</style>
+<h1>Form POST</h1>
+<form method="post" action="/r?n=formpost">
+  <input name="user" autocomplete="off">
+  <button name="go" value="next">Next</button>
+</form>
+<script>
+const report = s => fetch('/r?n=formpost', { method: 'POST', body: s }).catch(() => {});
+const f = document.forms[0];
+f.addEventListener('submit', e => report(`submit event submitter=${e.submitter ? e.submitter.name : 'none'}`));
+report('load');
+f.addEventListener('submit', () => setTimeout(() => report('still here'), 3000));
+</script>

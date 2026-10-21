@@ -56,9 +56,15 @@ static bool egl_init(void) {
 bool gl_available(void) { return egl_init(); }
 const char *gl_renderer(void) { return g_renderer[0] ? g_renderer : "OpenGL ES"; }
 
+/* Only this file changes the thread's EGL context, so it remembers which one is current: every binding
+   call passes here, and Android's eglGetCurrentContext costs a lock and TLS lookups (~13% of a core with
+   WebGL Aquarium's 10000 fish). */
+static _Thread_local EGLContext g_current = EGL_NO_CONTEXT;
 static bool make_current(GlCtx *g) {
-    if (eglGetCurrentContext() == (EGLContext)g->egl) return true;
-    return eglMakeCurrent(g_dpy, g_pb, g_pb, (EGLContext)g->egl);
+    if (g_current == (EGLContext)g->egl) return true;
+    if (!eglMakeCurrent(g_dpy, g_pb, g_pb, (EGLContext)g->egl)) { g_current = eglGetCurrentContext(); return false; }
+    g_current = (EGLContext)g->egl;
+    return true;
 }
 
 static void fb_free(GlCtx *g) {
@@ -285,7 +291,7 @@ void gl_close(const void *owner, int id) {
         glDeleteBuffers(2, g->pbo);
         fb_free(g);
     }
-    eglMakeCurrent(g_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    eglMakeCurrent(g_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT); g_current = EGL_NO_CONTEXT;
     eglDestroyContext(g_dpy, (EGLContext)g->egl);
     mp_free((MediaPlayer *)g->player);
     if (g->capture > 0) live_close(g->capture);

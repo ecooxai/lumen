@@ -119,7 +119,7 @@ methods(Element.prototype, {
     },
     get shadowRoot() { return this.__shadow && this.__shadow.__mode === 'open' ? this.__shadow : null; },
     get assignedSlot() { return null; },
-    requestFullscreen() { return Promise.reject(new DOMException('Fullscreen is not supported yet', 'NotSupportedError')); },
+    requestFullscreen() { return fsRequest(this); }, webkitRequestFullscreen() { fsRequest(this).catch(() => {}); }, webkitRequestFullScreen() { fsRequest(this).catch(() => {}); },
     requestPointerLock() {}, setPointerCapture() {}, releasePointerCapture() {}, hasPointerCapture() { return false; },
     animate(kf, o) { return new Animation(this, kf, o); }, getAnimations() { return []; },
     checkVisibility() { return !!N.rect(this); },
@@ -157,6 +157,9 @@ function installHandlers(proto, attrBacked, list = EVENT_HANDLERS) {
         }, function (v) { if (!this.__on) def(this, '__on', {}); this.__on[k] = typeof v === 'function' ? v : null; });
     }
 }
+/* pages pick the fullscreen event name by `'on' + name in document` (YouTube's player listens to none without it) */
+const FS_HANDLERS = ['fullscreenchange', 'fullscreenerror', 'webkitfullscreenchange', 'webkitfullscreenerror'];
+installHandlers(Element.prototype, true, FS_HANDLERS);
 const makeStyle = (el) => new Proxy(new CSSStyleDeclaration(el), styleHandler);
 class HTMLElement extends Element { constructor() { return ceConstruct(new.target); } }
 reflectStr(HTMLElement.prototype, 'title', 'lang', 'accessKey', 'nonce', 'dir');

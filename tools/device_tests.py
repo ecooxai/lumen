@@ -7,8 +7,11 @@
 
 Pages: cam (camera capture), screen (screen recording), mic (microphone), webgl (WebGL 1/2, canvas
 recording), webgpu (WebGPU compute and render), aquarium (WebGL Aquarium, 10000 fish), chatgpt
-(the newest chatgpt.com/c/ bookmark: a long chat), google, youtube, utils (the "utils" bookmark,
-whose apps menu has the WebGPU Weather World). Groups: media, gfx, sites, all (every page but utils).
+(the newest chatgpt.com/c/ bookmark: a long chat), google, youtube, x, utils (the "utils" bookmark,
+whose apps menu has the WebGPU Weather World), sitedata (sets cookies and storage and reports
+whether the previous load's survived, for site info's Delete data; not in a group), formpost (Enter in
+a POST form's field; not in a group), frametarget (a link and forms aimed at a named iframe load
+there; not in a group). Groups: media, gfx, sites, all (every page but utils).
 
 By default each page gets a cold start of its own (force-stop, then a launch with only that page)
 and its CPU is sampled every second: a local page until it reports "done" and 10 s more (at most
@@ -36,9 +39,13 @@ PAGES = {
     "chatgpt": ("bm:chatgpt.com/c/", 60, True),
     "google": ("https://www.google.com/", 45, True),
     "youtube": ("https://www.youtube.com/", 60, True),
+    "x": ("https://x.com/", 60, True),
     "utils": ("bm:utils", 30, False),
+    "sitedata": (LOCAL + "/site-data.html?tag=sitedata", 90, False),   # site info's Delete data, tapped by hand meanwhile
+    "formpost": (LOCAL + "/form-post.html", 90, False),   # Enter in a POST form's field, typed by hand meanwhile
+    "frametarget": (LOCAL + "/frame-target.html", 30, False),   # links and forms aimed at a named iframe
 }
-GROUPS = {"media": ["cam", "screen", "mic"], "gfx": ["webgl", "webgpu", "aquarium"], "sites": ["chatgpt", "google", "youtube"]}
+GROUPS = {"media": ["cam", "screen", "mic"], "gfx": ["webgl", "webgpu", "aquarium"], "sites": ["chatgpt", "google", "youtube", "x"]}
 GROUPS["all"] = GROUPS["media"] + GROUPS["gfx"] + GROUPS["sites"]
 IDLE_PCT = 5.0   # a settled page's last-10-s mean above this is reported as a problem (AGENTS.md: 0-3 %)
 DONE = re.compile(r"(^|\s)done$|^DONE$|^ERR ", re.I)

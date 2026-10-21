@@ -1,0 +1,17 @@
+<!doctype html><style>body{margin:0}
+#fb{display:flex;height:56.25vw;max-height:calc(100vh - 600px);min-height:480px;overflow-x:clip}
+#pf{position:relative;flex:1}#pc{position:absolute;inset:0}
+#mx{height:900px;max-height:300px}#mx>div{height:100%}</style>
+<div id=fb><div id=pf><div id=pc></div></div></div><div id=mx><div id=mxk></div></div>
+<script>
+// Children size against a box's used height, after min/max-height (YouTube's theater player: a flex
+// row with height:56.25vw, max-height:calc(100vh - 169px), min-height:480px holds a stretched item
+// whose absolute player fills it).
+const h = id => document.getElementById(id).getBoundingClientRect().height, fail = [];
+const ok = (c, m) => { if (!c) fail.push(m); };
+ok(h('fb') === 480, 'container ' + h('fb'));
+ok(h('pf') === 480, 'stretched item ' + h('pf'));
+ok(h('pc') === 480, 'absolute child ' + h('pc'));
+ok(h('mx') === 300 && h('mxk') === 300, 'max-height child ' + h('mx') + ' ' + h('mxk'));
+console.log('RESULTS minmax-definite:' + (fail.length ? 'FAIL ' + fail.join('; ') : 'PASS'));
+</script>

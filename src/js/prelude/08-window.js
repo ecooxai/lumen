@@ -9,12 +9,76 @@ class ResizeObserver {
         if (recs.length) { try { this._cb(recs, this); } catch (e) { report(e); } }
     }
 }
+// Pages test for the entry class (with intersectionRatio on its prototype) before trusting the native
+// observer; without it YouTube installs a polyfill that rechecks on every DOM mutation and scroll.
+class IntersectionObserverEntry {
+    constructor(init = {}) {
+        for (const k of ['target', 'time', 'rootBounds', 'boundingClientRect', 'intersectionRect', 'isIntersecting', 'isVisible', 'intersectionRatio'])
+            def(this, '_' + k, init[k] ?? null);
+    }
+    get target() { return this._target; } get time() { return this._time; } get rootBounds() { return this._rootBounds; }
+    get boundingClientRect() { return this._boundingClientRect; } get intersectionRect() { return this._intersectionRect; }
+    get isIntersecting() { return !!this._isIntersecting; } get isVisible() { return !!this._isVisible; }
+    get intersectionRatio() { return this._intersectionRatio || 0; }
+}
 class IntersectionObserver {
-    constructor(cb, o = {}) { this._cb = cb; this._t = new Map(); this.root = o.root || null; this.rootMargin = o.rootMargin || '0px'; this.thresholds = [].concat(o.threshold ?? 0); const m = /^\s*(-?[\d.]+)(px|%)?/.exec(this.rootMargin); this._m = m ? +m[1] * (m[2] === '%' ? N.viewport()[1] / 100 : 1) : 0; }
+    constructor(cb, o = {}) {
+        if (typeof cb !== 'function') throw new TypeError("Failed to construct 'IntersectionObserver': The callback provided as parameter 1 is not a function.");
+        this._cb = cb; this._t = new Map(); this.root = o.root || null;
+        this._m = ioMargin(o.rootMargin ?? '0px');
+        this.rootMargin = this._m.map(([v, pct]) => v + (pct ? '%' : 'px')).join(' ');
+        const th = [].concat(o.threshold ?? 0).map(Number).sort((x, y) => x - y);
+        if (th.some(t => !(t >= 0 && t <= 1))) throw new RangeError("Failed to construct 'IntersectionObserver': Threshold values must be numbers between 0 and 1");
+        this.thresholds = Object.freeze(th.length ? th : [0]);
+    }
     observe(el) { if (this._t.has(el)) return; this._t.set(el, null); ioAll.add(this); N.intersectionPump(ioRun); }
-    _check() { const v = N.viewport(), m = this._m, out = []; for (const [el, prev] of this._t) { const r = el.getBoundingClientRect(); const vis = el.isConnected && r.bottom > -m && r.top < v[1] + m && r.right > -m && r.left < v[0] + m && r.width + r.height > 0; if (vis === prev) continue; this._t.set(el, vis); out.push({ target: el, isIntersecting: vis, intersectionRatio: vis ? 1 : 0, boundingClientRect: r, intersectionRect: vis ? r : new DOMRect(), rootBounds: new DOMRect(0, 0, v[0], v[1]), time: N.now() }); } if (out.length) try { this._cb(out, this); } catch (e) { report(e); } }
+    // Per target: the threshold index crossed and whether it touches the root; an entry when either changes
+    _check() {
+        const root = this.root && this.root.nodeType === 1 ? this.root : null, out = [];
+        let rb;
+        if (root) { const r = root.getBoundingClientRect(); rb = [r.left, r.top, r.right, r.bottom]; }
+        else { const v = N.viewport(); rb = [0, 0, v[0], v[1]]; }
+        const m = this._m, w = rb[2] - rb[0], h = rb[3] - rb[1], px = ([v, pct], d) => pct ? v * d / 100 : v;
+        rb = [rb[0] - px(m[3], w), rb[1] - px(m[0], h), rb[2] + px(m[1], w), rb[3] + px(m[2], h)];
+        const rootOn = !root || root.isConnected;
+        for (const [el, prev] of this._t) {
+            const r = el.getBoundingClientRect();
+            let on = rootOn && el.isConnected && (!root || ioWithin(el, root)), x0 = r.left, y0 = r.top, x1 = r.right, y1 = r.bottom;
+            if (on) {
+                const c = N.vclip(el, root);   // ancestors with overflow clip cut the target
+                if (c === null) on = false;
+                else if (c) { x0 = Math.max(x0, c[0]); y0 = Math.max(y0, c[1]); x1 = Math.min(x1, c[2]); y1 = Math.min(y1, c[3]); }
+            }
+            x0 = Math.max(x0, rb[0]); y0 = Math.max(y0, rb[1]); x1 = Math.min(x1, rb[2]); y1 = Math.min(y1, rb[3]);
+            on = on && x0 <= x1 && y0 <= y1;   // edge-adjacent and zero-area targets intersect too
+            const area = r.width * r.height, ratio = !on ? 0 : area > 0 ? Math.min(1, (x1 - x0) * (y1 - y0) / area) : 1;
+            let idx = 0;
+            if (on) while (idx < this.thresholds.length && this.thresholds[idx] <= ratio) idx++;
+            if (prev && prev[0] === idx && prev[1] === on) continue;
+            this._t.set(el, [idx, on]);
+            out.push(new IntersectionObserverEntry({ target: el, isIntersecting: on, isVisible: false, intersectionRatio: ratio, boundingClientRect: r,
+                intersectionRect: on ? new DOMRect(x0, y0, x1 - x0, y1 - y0) : new DOMRect(),
+                rootBounds: new DOMRect(rb[0], rb[1], rb[2] - rb[0], rb[3] - rb[1]), time: N.now() }));
+        }
+        if (out.length) try { this._cb(out, this); } catch (e) { report(e); }
+    }
     unobserve(el) { this._t.delete(el); if (!this._t.size) { ioAll.delete(this); ioStop(); } }
     disconnect() { this._t.clear(); ioAll.delete(this); ioStop(); } takeRecords() { return []; }
+}
+// rootMargin is a margin shorthand of one to four px or % lengths; % of the root's width or height
+function ioMargin(s) {
+    const parts = String(s).trim().split(/\s+/).filter(Boolean).map(t => {
+        const m = /^([-+]?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?)(px|%)?$/i.exec(t);
+        if (!m || (!m[2] && +m[1] !== 0)) throw new DOMException("Failed to construct 'IntersectionObserver': rootMargin must be specified in pixels or percent.", 'SyntaxError');
+        return [+m[1], m[2] === '%'];
+    });
+    if (parts.length > 4) throw new DOMException("Failed to construct 'IntersectionObserver': Extra text found at the end of rootMargin.", 'SyntaxError');
+    const [t = [0, false], r = t, b = t, l = r] = parts;
+    return [t, r, b, l];
+}
+function ioWithin(el, root) {   // through shadow roots
+    for (let n = el.parentNode; n; n = n.parentNode || (n.nodeType === 11 ? n.host : null)) if (n === root) return true;
+    return false;
 }
 const roAll = new Set();
 const roStop = () => { if (!roAll.size) N.resizePump(null); };
@@ -228,8 +292,15 @@ const navigator = {
     locks: { request(n, o, cb) { cb = typeof o === 'function' ? o : cb; return Promise.resolve().then(() => cb({ name: n })); } },
     getGamepads() { return []; }, getBattery() { return Promise.resolve(battery); },
 };
-if (gpuNavigator) def(navigator, 'gpu', gpuNavigator);
-const screen = { get width() { return N.viewport()[5]; }, get height() { return N.viewport()[6]; }, get availWidth() { return N.viewport()[5]; }, get availHeight() { return N.viewport()[6]; }, colorDepth: 24, pixelDepth: 24, orientation: { type: 'landscape-primary', angle: 0, addEventListener() {} } };
+const __uaFirefox = / Firefox\//.test(N.userAgent());
+if (__uaFirefox) {   /* as Firefox (sign-in pages): its own fields, and none of Chrome's */
+    Object.assign(navigator, { oscpu: N.platform(), buildID: '20181001000000' });
+    for (const k of ['userAgentData', 'deviceMemory', 'connection']) delete navigator[k];
+}
+if (gpuNavigator && !__uaFirefox) def(navigator, 'gpu', gpuNavigator);
+// in fullscreen the page's window is the whole screen, as pages comparing the two expect
+const screenSize = i => N.viewport()[fsEl ? i - 5 : i];
+const screen = { get width() { return screenSize(5); }, get height() { return screenSize(6); }, get availWidth() { return screenSize(5); }, get availHeight() { return screenSize(6); }, colorDepth: 24, pixelDepth: 24, orientation: { type: 'landscape-primary', angle: 0, addEventListener() {} } };
 const T0 = Date.now() - N.now();
 const marks = [];
 /* the navigation entry's times: the document's DOMContentLoaded and load, once they happen */
@@ -520,7 +591,7 @@ const globals = {
     GPUBufferUsage, GPUTextureUsage, GPUShaderStage, GPUMapMode, GPUColorWrite, GPU, GPUAdapter, GPUDevice, GPUBuffer, GPUTexture, GPUTextureView, GPUSampler, GPUBindGroupLayout, GPUPipelineLayout, GPUBindGroup, GPUCommandBuffer, GPURenderBundle, GPUExternalTexture,
     GPUQuerySet, GPUShaderModule, GPUComputePipeline, GPURenderPipeline, GPUCommandEncoder, GPURenderPassEncoder, GPUComputePassEncoder, GPURenderBundleEncoder, GPUQueue, GPUCanvasContext,
     MediaRecorder, BlobEvent, RTCPeerConnection, RTCSessionDescription, RTCIceCandidate, RTCPeerConnectionIceEvent, RTCPeerConnectionIceErrorEvent, RTCDataChannel, RTCDataChannelEvent, RTCTrackEvent, RTCRtpSender, RTCRtpReceiver, RTCRtpTransceiver, RTCIceTransport, RTCDtlsTransport, RTCSctpTransport, RTCCertificate, RTCStatsReport, RTCError, RTCErrorEvent, MediaStream, MediaStreamTrack, MediaStreamTrackEvent,
-    ResizeObserver, IntersectionObserver, HTMLAllCollection, PerformanceObserver, Storage, localStorage, sessionStorage, Location, location, history, navigator, screen, performance, crypto, MediaQueryList, matchMedia, getComputedStyle, PermissionStatus,
+    ResizeObserver, IntersectionObserver, IntersectionObserverEntry, HTMLAllCollection, PerformanceObserver, Storage, localStorage, sessionStorage, Location, location, history, navigator, screen, performance, crypto, MediaQueryList, matchMedia, getComputedStyle, PermissionStatus,
     setTimeout, setInterval, clearTimeout, clearInterval, requestAnimationFrame, cancelAnimationFrame, requestIdleCallback, cancelIdleCallback, queueMicrotask, structuredClone, postMessage, console, customElements, Window, document,
     window: G, self: G, globalThis: G, get top() { return asWin(N.topWin()) ?? G; }, get parent() { return asWin(N.parentWin()) ?? G; }, frames: G, opener: null, get frameElement() { return N.frameEl(); }, closed: false, name: '', get length() { return N.frameCount(); }, origin: location.origin, isSecureContext: location.protocol === 'https:', crossOriginIsolated: false,
     get innerWidth() { return N.viewport()[0]; }, get innerHeight() { return N.viewport()[1]; }, get outerWidth() { return N.viewport()[0]; }, get outerHeight() { return N.viewport()[1] + 40; },
@@ -557,6 +628,7 @@ function viewportChanged(resized, scrolled, media = true) {
     if (resized) {
         dispatch(G, new Event('resize'), true);
         dispatch(visual, new Event('resize'), true);
+        fsResized();
     }
     if (scrolled) dispatch(document, new Event('scroll', { bubbles: true }), true);
     if (media) mediaChanged();

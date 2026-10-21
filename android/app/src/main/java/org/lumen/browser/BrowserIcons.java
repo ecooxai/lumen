@@ -11,6 +11,14 @@ import android.graphics.drawable.Drawable;
 /* A menu action's outline icon, the same one the native toolbar draws (android_ui_icon): a path on
  * a 24 unit grid, stroked in one color. */
 final class BrowserIcons extends Drawable {
+    /* site info's own outlines, in the same path text */
+    static final String LOCK = "M6.5 11 L17.5 11 L17.5 20 L6.5 20 Z M8.8 11 L8.8 8.2 A 12 8.2 3.2 180 180 M15.2 8.2 L15.2 11 M12 14.3 L12 16.6",
+        INFO = "O 12 12 8.5 M12 11 L12 16.2 O 12 7.9 0.35",
+        WARNING = "M12 3.8 L21 19.5 L3 19.5 Z M12 9.5 L12 14 O 12 16.9 0.35",
+        SEARCH = "O 10.5 10.5 6 M14.8 14.8 L19.5 19.5",
+        COOKIE = "O 12 12 8.5 O 9 9 0.5 O 14.8 9.8 0.5 O 9.6 14.6 0.5 O 14.6 15 0.5 O 12 12.2 0.3",
+        TRASH = "M4.5 7 L19.5 7 M9.5 7 L9.5 4.5 L14.5 4.5 L14.5 7 M6.5 7 L7.5 20 L16.5 20 L17.5 7 M10.3 10.5 L10.3 16.5 M13.7 10.5 L13.7 16.5";
+
     private final Path path = new Path();
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final int size;

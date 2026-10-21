@@ -33,9 +33,9 @@ final class BrowserMenus {
     /* mirrors android_ui.h */
     static final int NEW_TAB = 1, FORWARD = 2, BOOKMARKS = 3, DOWNLOADS = 4, HISTORY = 5, WORKSPACES = 6, SETTINGS = 7,
         DESKTOP = 8, ZOOM = 9, BM_TOGGLE = 10, BM_OPEN = 11, BM_SAVE = 12, BM_DELETE = 13,
-        WS_SELECT = 14, WS_NEW = 15, WS_RENAME = 16, WS_CLOSE = 17, BACK = 18, RELOAD = 19, FULLSCREEN = 20, URL_GO = 21, BM_ADD = 22, TAB_MENU = 23;
+        WS_SELECT = 14, WS_NEW = 15, WS_RENAME = 16, WS_CLOSE = 17, BACK = 18, RELOAD = 19, FULLSCREEN = 20, URL_GO = 21, BM_ADD = 22, TAB_MENU = 23, SITE_CLEAR = 24;
     private static final int MAX_WORKSPACES = 16, ZOOM_MIN = 20, ZOOM_MAX = 300, ZOOM_STEP = 10;
-    private static final int TEXT = 0xff202124, SUBTLE = 0xff5f6368, DISABLED = 0xffbdc1c6, DIVIDER = 0xffe8eaed, ACCENT = 0xff1a73e8;
+    private static final int TEXT = 0xff202124, SUBTLE = 0xff5f6368, DISABLED = 0xffbdc1c6, DIVIDER = 0xffe8eaed, ACCENT = 0xff1a73e8, UNSAFE = 0xffd93025;
     private static PopupWindow menu;
 
     private BrowserMenus() { }
@@ -282,6 +282,135 @@ final class BrowserMenus {
         menu = popup;
         TouchFeedback.popup(popup);
         popup.showAtLocation(decor, Gravity.TOP | Gravity.END, dp(context, 4), top + dp(context, 4));
+    }
+
+    /* what the address field's site icon shows for a URL */
+    static final int SITE_NONE = 0, SITE_SECURE = 1, SITE_INSECURE = 2, SITE_OTHER = 3;
+    static int siteKind(String url) {
+        if (url == null || url.isEmpty()) return SITE_NONE;
+        if (url.regionMatches(true, 0, "https://", 0, 8)) return SITE_SECURE;
+        if (url.regionMatches(true, 0, "http://", 0, 7)) return SITE_INSECURE;
+        return SITE_OTHER;
+    }
+    static String siteIcon(int kind) { return kind == SITE_SECURE ? BrowserIcons.LOCK : kind == SITE_INSECURE ? BrowserIcons.WARNING : BrowserIcons.INFO; }
+
+    private static String host(String url) {
+        String host = android.net.Uri.parse(url).getHost();
+        return host != null && !host.isEmpty() ? host : null;
+    }
+
+    /* a site info line: an icon, a heading and a line of detail under it */
+    private static LinearLayout infoRow(Context context, String icon, int color, String heading, String detail) {
+        LinearLayout row = new LinearLayout(context);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(dp(context, 16), dp(context, 10), dp(context, 18), dp(context, 10));
+        ImageView image = new ImageView(context);
+        image.setScaleType(ImageView.ScaleType.CENTER);
+        image.setImageDrawable(BrowserIcons.path(icon, color, dp(context, 22)));
+        row.addView(image, new LinearLayout.LayoutParams(dp(context, 24), dp(context, 24)));
+        LinearLayout text = new LinearLayout(context);
+        text.setOrientation(LinearLayout.VERTICAL);
+        text.setPadding(dp(context, 16), 0, 0, 0);
+        text.addView(label(context, heading, 15, color == UNSAFE ? color : TEXT));
+        if (detail != null) {
+            TextView more = label(context, detail, 13, SUBTLE);
+            more.setPadding(0, dp(context, 2), 0, 0);
+            text.addView(more);
+        }
+        row.addView(text, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+        return row;
+    }
+
+    /* Site info, from the icon at the address field's left end, as in Chrome: the connection, the
+       site's cookies and Delete data, which removes the site's cookies, storage and service workers
+       (with its subdomains) after a confirmation. */
+    static void showSiteInfo(Activity activity, View anchor, String url, Action action) {
+        if (menu != null) { menu.dismiss(); menu = null; }
+        final Context context = activity;
+        final int kind = siteKind(url);
+        if (kind == SITE_NONE) return;
+        final boolean web = kind == SITE_SECURE || kind == SITE_INSECURE;
+        String host = host(url), site = null;
+        int cookies = 0;
+        if (web) {
+            byte[] bytes = url.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            try { site = LumenActivity.nativeSite(bytes); cookies = LumenActivity.nativeSiteCookies(bytes); } catch (UnsatisfiedLinkError error) { site = null; }
+            if (site == null) site = host;
+        }
+        LinearLayout root = new LinearLayout(context);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(0, dp(context, 6), 0, dp(context, 6));
+        final PopupWindow popup = new PopupWindow(context);
+
+        String heading = web && host != null ? host : url.regionMatches(true, 0, "lumen:", 0, 6) ? "Lumen page"
+            : url.regionMatches(true, 0, "file:", 0, 5) ? "File on this phone" : host != null ? host : "This page";
+        TextView title = label(context, heading, 17, TEXT);
+        title.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        title.setSingleLine(true);
+        title.setEllipsize(TextUtils.TruncateAt.MIDDLE);
+        title.setPadding(dp(context, 20), dp(context, 8), dp(context, 20), 0);
+        root.addView(title);
+        TextView address = label(context, url, 12, SUBTLE);
+        address.setSingleLine(true);
+        address.setEllipsize(TextUtils.TruncateAt.END);
+        address.setPadding(dp(context, 20), dp(context, 2), dp(context, 20), dp(context, 10));
+        root.addView(address);
+        root.addView(divider(context));
+
+        if (kind == SITE_SECURE) root.addView(infoRow(context, BrowserIcons.LOCK, SUBTLE, "Connection is secure",
+            "Your information (for example, passwords or credit card numbers) is private when it is sent to this site."));
+        else if (kind == SITE_INSECURE) root.addView(infoRow(context, BrowserIcons.WARNING, UNSAFE, "Connection is not secure",
+            "You should not enter any sensitive information on this site (for example, passwords or credit cards), because it could be stolen by attackers."));
+        else root.addView(infoRow(context, BrowserIcons.INFO, SUBTLE, "This page is not on the web",
+            "It is not loaded from a site, so it has no cookies or site data."));
+        if (web) {
+            root.addView(infoRow(context, BrowserIcons.COOKIE, SUBTLE, "Cookies and site data",
+                (cookies == 0 ? "No cookies" : cookies == 1 ? "1 cookie" : cookies + " cookies") + " for " + site + " and its subdomains"));
+            root.addView(divider(context));
+            LinearLayout delete = new LinearLayout(context);
+            delete.setOrientation(LinearLayout.HORIZONTAL);
+            delete.setGravity(Gravity.CENTER_VERTICAL);
+            delete.setPadding(dp(context, 16), 0, dp(context, 18), 0);
+            ImageView trash = new ImageView(context);
+            trash.setScaleType(ImageView.ScaleType.CENTER);
+            trash.setImageDrawable(BrowserIcons.path(BrowserIcons.TRASH, ACCENT, dp(context, 22)));
+            delete.addView(trash, new LinearLayout.LayoutParams(dp(context, 24), dp(context, 24)));
+            TextView name = label(context, "Delete data", 16, ACCENT);
+            name.setPadding(dp(context, 16), 0, 0, 0);
+            delete.addView(name, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+            delete.setContentDescription("Delete data of " + site);
+            ripple(delete, false);
+            final String which = site;
+            delete.setOnClickListener(view -> {
+                popup.dismiss();
+                show(new AlertDialog.Builder(activity)
+                    .setTitle("Delete site data?")
+                    .setMessage("All cookies, local and session storage and service workers of " + which
+                        + " and its subdomains will be deleted, and this page reloads. You will be signed out of this site.")
+                    .setPositiveButton("Delete", (dialog, button) -> action.send(SITE_CLEAR, 0, null, url))
+                    .setNegativeButton("Cancel", null));
+            });
+            root.addView(delete, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(context, 52)));
+        }
+
+        ScrollView scroll = new ScrollView(context);
+        scroll.addView(root);
+        GradientDrawable background = new GradientDrawable();
+        background.setColor(Color.WHITE);
+        background.setCornerRadius(dp(context, 10));
+        popup.setContentView(scroll);
+        popup.setBackgroundDrawable(background);
+        popup.setElevation(dp(context, 10));
+        int screen = context.getResources().getDisplayMetrics().widthPixels;
+        popup.setWidth(Math.min(screen - dp(context, 16), dp(context, 360)));
+        popup.setHeight(ViewGroup.LayoutParams.WRAP_CONTENT);
+        popup.setFocusable(true);
+        popup.setOutsideTouchable(true);
+        popup.setOnDismissListener(() -> { if (menu == popup) menu = null; });
+        menu = popup;
+        TouchFeedback.popup(popup);
+        popup.showAsDropDown(anchor, 0, dp(context, 4));
     }
 
     private static final class Bookmarks extends BaseAdapter {

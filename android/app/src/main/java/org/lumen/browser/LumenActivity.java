@@ -36,6 +36,7 @@ public final class LumenActivity extends SDLActivity {
     private static final String V8_FLAGS_EXTRA = "org.lumen.browser.V8_FLAGS";
     private static final String JS_TIMEOUT_EXTRA = "org.lumen.browser.JS_TIMEOUT_MS";
     private static final String PRE_JS_EXTRA = "org.lumen.browser.PRE_JS";
+    private static final String FRAME_PRE_JS_EXTRA = "org.lumen.browser.FRAME_PRE_JS";
     private static final String TEST_URLS_EXTRA = "org.lumen.browser.TEST_URLS";
     private boolean nativeArgumentsRequested;
     private static native boolean nativeOpenUrl(byte[] url);
@@ -44,6 +45,10 @@ public final class LumenActivity extends SDLActivity {
     private static native void nativeUiAction(int code, int value, byte[] first, byte[] second);
     static native String nativeUiIcon(int code);
     static native float[] nativeTabStats();
+    static native int nativeSiteCookies(byte[] url);
+    static native String nativeSite(byte[] url);
+    private static native void nativeFilesPicked(byte[] paths);
+    private static final int PICK_REQUEST = 0x4c50;
     private TouchFeedback touchFeedback;
     private Runnable unregisterBack;
     private BrowserSurface browserSurface;
@@ -83,7 +88,43 @@ public final class LumenActivity extends SDLActivity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == PICK_REQUEST) {   /* reading the files may take a while: off the UI thread */
+            if (resultCode != RESULT_OK || data == null) { nativeFilesPicked(null); return; }
+            new Thread(() -> {
+                String paths = SharedFiles.picked(this, data);
+                nativeFilesPicked(paths != null ? paths.getBytes(StandardCharsets.UTF_8) : null);
+            }, "LumenPickFiles").start();
+            return;
+        }
         if (!ScreenCapture.result(this, requestCode, resultCode, data)) super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    /* the system's document picker for an <input type=file>, from the native thread: accept's MIME
+       types and extensions narrow it; the answer goes to nativeFilesPicked */
+    public static void pickFiles(byte[] accept, boolean multiple) {
+        final SDLActivity activity = mSingleton;
+        if (activity == null) { nativeFilesPicked(null); return; }
+        java.util.LinkedHashSet<String> types = new java.util.LinkedHashSet<>();
+        for (String token : new String(accept != null ? accept : new byte[0], StandardCharsets.UTF_8).split(",")) {
+            String t = token.trim().toLowerCase(java.util.Locale.ROOT), type = t.startsWith(".")
+                ? android.webkit.MimeTypeMap.getSingleton().getMimeTypeFromExtension(t.substring(1)) : t.indexOf('/') > 0 ? t : null;
+            if (t.isEmpty()) continue;
+            if (type == null) { types.clear(); break; }   /* an extension Android does not know: show everything */
+            types.add(type);
+        }
+        Intent pick = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        pick.addCategory(Intent.CATEGORY_OPENABLE);
+        pick.setType(types.size() == 1 ? types.iterator().next() : "*/*");
+        if (types.size() > 1) pick.putExtra(Intent.EXTRA_MIME_TYPES, types.toArray(new String[0]));
+        pick.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, multiple);
+        activity.runOnUiThread(() -> {
+            try {
+                activity.startActivityForResult(pick, PICK_REQUEST);
+            } catch (RuntimeException exception) {
+                Log.e("Lumen", "Unable to open the file picker", exception);
+                nativeFilesPicked(null);
+            }
+        });
     }
 
     @Override
@@ -521,9 +562,18 @@ public final class LumenActivity extends SDLActivity {
     }
 
     /* Debug builds only: a probe script (base64, `--es org.lumen.browser.PRE_JS ...`) that every page
-       runs before its own scripts, as LUMEN_PRE_FILE does on the desktop. Not saved. */
+       runs before its own scripts, as LUMEN_PRE_FILE does on the desktop; FRAME_PRE_JS is the same for
+       every iframe document (LUMEN_FRAME_PRE). Not saved. */
     private void applyPreJs(Intent intent) {
         if ((getApplicationInfo().flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) == 0) return;
+        String frame = intent != null ? intent.getStringExtra(FRAME_PRE_JS_EXTRA) : null;
+        if (frame != null) {
+            try {
+                Os.setenv("LUMEN_FRAME_PRE", new String(android.util.Base64.decode(frame, android.util.Base64.DEFAULT), java.nio.charset.StandardCharsets.UTF_8), true);
+            } catch (IllegalArgumentException | ErrnoException exception) {
+                Log.e("Lumen", "Unable to set the frame probe script", exception);
+            }
+        }
         String code = intent != null ? intent.getStringExtra(PRE_JS_EXTRA) : null;
         if (code == null) return;
         java.io.File file = new java.io.File(getCacheDir(), "pre.js");

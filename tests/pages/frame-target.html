@@ -1,0 +1,27 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+<title>Frame target</title>
+<!-- A link, a GET form and a POST form whose target names an iframe load in that frame, not in the
+     tab (Google's account menu opens its widget so). Expected reports, in order: "framed via=link",
+     "framed via=get", "via=post" (the POST body), "top still here", "done". A report
+     "top navigated" or a missing "framed" line is a failure. -->
+<style>body { font: 22px sans-serif; margin: 24px } iframe { width: 300px; height: 80px }</style>
+<script>
+const report = s => fetch('/r?n=frametarget', { method: 'POST', body: s }).catch(() => {});
+const via = new URLSearchParams(location.search).get('via');
+if (window.top !== window) report(`framed via=${via || 'src'}`);
+else if (via) report('top navigated via=' + via);
+</script>
+<h1>Frame target</h1>
+<a id="link" href="frame-target.html?via=link" target="pane">link</a>
+<form id="get" action="frame-target.html" target="pane"><input type="hidden" name="via" value="get"><button>GET</button></form>
+<form id="post" method="post" action="/r?n=frametarget" target="pane"><input type="hidden" name="via" value="post"><button>POST</button></form>
+<iframe name="pane" src="about:blank"></iframe>
+<script>
+if (window.top === window && !via) {
+  const steps = [() => document.getElementById('link').click(), () => document.getElementById('get').requestSubmit(),
+                 () => document.getElementById('post').requestSubmit(), () => report('top still here'), () => report('done')];
+  steps.forEach((f, i) => setTimeout(f, 1500 * (i + 1)));
+}
+</script>

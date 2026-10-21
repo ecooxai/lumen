@@ -122,7 +122,7 @@ mk('HTMLTitleElement', HTMLElement, ['title'], textProp);
 mk('HTMLBaseElement', HTMLElement, ['base'], p => { reflectUrl(p, 'href'); reflectStr(p, 'target'); });
 mk('HTMLTemplateElement', HTMLElement, ['template'], p => methods(p, { get content() { return N.templateContent(this); } }));
 mk('HTMLSlotElement', HTMLElement, ['slot'], p => { reflectStr(p, 'name'); methods(p, { assignedNodes() { return []; }, assignedElements() { return []; }, assign() {} }); });
-mk('HTMLIFrameElement', HTMLElement, ['iframe'], p => { reflectUrl(p, 'src'); reflectStr(p, 'srcdoc', 'name', 'allow', 'width', 'height', 'referrerPolicy', 'loading'); methods(p, { get sandbox() { if (!this.__sb) def(this, '__sb', new DOMTokenList(this, 'sandbox')); return this.__sb; }, set sandbox(v) { this.setAttribute('sandbox', v); }, get contentWindow() { return asWin(N.frameWin(this)); }, get contentDocument() { return N.frameDoc(this); } }); });
+mk('HTMLIFrameElement', HTMLElement, ['iframe'], p => { reflectUrl(p, 'src'); reflectStr(p, 'srcdoc', 'name', 'allow', 'width', 'height', 'referrerPolicy', 'loading', 'frameBorder', 'scrolling', 'marginWidth', 'marginHeight', 'align'); reflectBool(p, 'allowFullscreen'); methods(p, { get sandbox() { if (!this.__sb) def(this, '__sb', new DOMTokenList(this, 'sandbox')); return this.__sb; }, set sandbox(v) { this.setAttribute('sandbox', v); }, get contentWindow() { return asWin(N.frameWin(this)); }, get contentDocument() { return N.frameDoc(this); } }); });
 mk('HTMLCanvasElement', HTMLElement, ['canvas'], p => {
     /* resizing resizes the WebGL drawing buffer; WebGPU reads the size each frame */
     for (const [n, d] of [['width', 300], ['height', 150]])

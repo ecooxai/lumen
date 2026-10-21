@@ -388,7 +388,31 @@ static enum AVPixelFormat pick_hw(AVCodecContext *cc, const enum AVPixelFormat *
     return fmts[0];
 }
 static bool hwdec_enabled(void) { const char *e = getenv("LUMEN_HWDEC"); return !e || strcmp(e, "0") != 0; }
+#ifdef __ANDROID__
+/* the phone's hardware video decoder through FFmpeg's MediaCodec wrapper (NDK API, as no JVM is set);
+   frames come back as NV12/I420 buffers like software ones. Software decoding stays the fallback,
+   also for 10-bit streams (YouTube 1080p H.264 cost ~180% CPU in libavcodec on the MI 8) */
+static AVCodecContext *open_mediacodec(AVStream *st) {
+    const AVCodecParameters *p = st->codecpar;
+    const char *name = p->codec_id == AV_CODEC_ID_H264 ? (p->profile == AV_PROFILE_H264_HIGH_10 || p->profile >= AV_PROFILE_H264_HIGH_422 ? NULL : "h264_mediacodec")
+        : p->codec_id == AV_CODEC_ID_HEVC ? (p->profile == AV_PROFILE_HEVC_MAIN ? "hevc_mediacodec" : NULL)
+        : p->codec_id == AV_CODEC_ID_VP9 ? (p->profile <= 0 ? "vp9_mediacodec" : NULL)
+        : p->codec_id == AV_CODEC_ID_VP8 ? "vp8_mediacodec" : NULL;
+    const AVCodec *codec = name ? avcodec_find_decoder_by_name(name) : NULL;
+    if (!codec || !hwdec_enabled()) return NULL;
+    AVCodecContext *cc = avcodec_alloc_context3(codec);
+    if (!cc || avcodec_parameters_to_context(cc, p) < 0) { avcodec_free_context(&cc); return NULL; }
+    cc->pkt_timebase = st->time_base;
+    if (avcodec_open2(cc, codec, NULL) < 0) { avcodec_free_context(&cc); return NULL; }
+    static bool said;
+    if (!said) { said = true; SDL_Log("lumen-media: hardware decoder %s %dx%d", name, p->width, p->height); }
+    return cc;
+}
+#endif
 static AVCodecContext *open_dec(AVStream *st) {
+#ifdef __ANDROID__
+    if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) { AVCodecContext *hw = open_mediacodec(st); if (hw) return hw; }
+#endif
     const AVCodec *codec = avcodec_find_decoder(st->codecpar->codec_id);
     if (!codec) return NULL;
     AVCodecContext *cc = avcodec_alloc_context3(codec);
@@ -404,7 +428,20 @@ static AVCodecContext *open_dec(AVStream *st) {
     return cc;
 }
 static bool decode_pkt(Stream *s, DecCtx *d, AVCodecContext *cc, AVPacket *pkt, AVFrame *f, bool video, AVRational tb) {
-    if (avcodec_send_packet(cc, pkt) < 0 && pkt) return true;
+    /* a hardware decoder refuses input (EAGAIN) while its queue is full: take its frames and retry, for up
+       to a second, rather than drop the packet */
+    for (int tries = 0;; tries++) {
+        int e = avcodec_send_packet(cc, pkt);
+        if (e != AVERROR(EAGAIN) || tries >= 500) { if (e < 0 && pkt) return true; break; }
+        bool got = false;
+        while (avcodec_receive_frame(cc, f) == 0) {
+            got = true;
+            bool ok = video ? emit_video(s, d, f, tb) : emit_audio(s, d, f, tb);
+            av_frame_unref(f);
+            if (!ok) return false;
+        }
+        if (!got) SDL_Delay(2);
+    }
     while (avcodec_receive_frame(cc, f) == 0) {
         bool ok = video ? emit_video(s, d, f, tb) : emit_audio(s, d, f, tb);
         av_frame_unref(f);

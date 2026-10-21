@@ -44,6 +44,34 @@ while kill -0 $P 2>/dev/null; do ps -o %cpu=,rss= -p $P; sleep 1; done
   find the hot path and fix it before moving on.
 - Report the measured CPU numbers with the test results.
 
+## Monitoring subagent during every test
+
+Every Lumen test run (phone or host) gets a second, separate monitor subagent
+(Haiku 5.5, `model: haiku`, `effort: high`), started alongside the test
+subagent and given the same privacy rules. It never taps or types. For the
+whole run it samples Lumen's CPU and RAM (RSS) every second (on the phone a
+host-side `adb shell top -b -n1 -p PID` loop, since a device-side loop can die
+early). It also watches errors: on the phone logcat crashes, ANRs, tombstones,
+native `lumen` errors, uncaught JS exceptions and console errors, and
+GPU/Vulkan/wgpu validation errors; on the host Lumen's stderr. Its final report
+to the main agent gives:
+
+- CPU min/median/max and the last-10-s median;
+- peak and final RSS;
+- error counts with the first line of each distinct error.
+
+It returns early with the finding as soon as something is abnormal:
+
+- a crash or ANR;
+- settled idle CPU above 5%, or typing above 10%;
+- sustained high CPU with no heavy work going on;
+- RSS still growing after the page settled, or above 1.5 GB on the phone;
+- a repeating error.
+
+The main agent then investigates and fixes the cause (profile the hot path,
+find the leak or the error source) before moving on, and reruns the test with
+a fresh monitor.
+
 ## Device test pages
 
 `python3 tools/device_tests.py PAGE|GROUP ...` opens Lumen's test pages on the

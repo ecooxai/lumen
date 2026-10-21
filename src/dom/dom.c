@@ -97,7 +97,7 @@ static void mark_connected(Node *n, bool on) {
     for (Node *c = n; c; c = node_next_in_tree(c, n)) {
         if (c->doc && (node_is(c, A_style) || node_is(c, A_link))) c->doc->sheet_version++;
         if (!on && (c->flags & NF_MODAL)) node_set_modal(c, false);
-        if (on) c->flags |= NF_CONNECTED; else c->flags &= ~(uint32_t)(NF_CONNECTED | NF_MODAL);
+        if (on) c->flags |= NF_CONNECTED; else c->flags &= ~(uint32_t)(NF_CONNECTED | NF_MODAL | NF_FULLSCREEN);
         if (c->type == NODE_ELEMENT && c->shadow_root) mark_connected(c->shadow_root, on);
     }
 }
