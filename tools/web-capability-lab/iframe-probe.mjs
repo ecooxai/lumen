@@ -1,5 +1,6 @@
+import {errorState} from './core.mjs';
 let tracks=[];let timer;let generation=0;
-window.LumeFrame={activeTracks:()=>tracks.filter(t=>t.readyState==='live').length};
+window.LumeFrame={activeTracks:()=>tracks.filter(t=>t.readyState==='live').length,stop};
 const result=document.querySelector('#result');const video=document.querySelector('video');
 function stop(){generation++;tracks.forEach(track=>track.stop());tracks=[];clearTimeout(timer);video.pause();video.srcObject=null;video.hidden=true;}
 function tell(capability,state,detail,evidence={}){result.textContent=detail;parent.postMessage({type:'lume-frame-result',capability,state,detail,evidence},location.origin);}
@@ -12,7 +13,7 @@ for(const button of document.querySelectorAll('[data-capability]'))button.addEve
       if(!navigator.geolocation){tell(kind,'unsupported','Geolocation API is absent.');return;}
       const p=await new Promise((resolve,reject)=>navigator.geolocation.getCurrentPosition(resolve,reject,{timeout:15000,maximumAge:0}));
       if(token!==generation)return;
-      tell(kind,'pass',`Child frame position returned, ±${Math.round(p.coords.accuracy)} m.`,{accuracyMeters:p.coords.accuracy});
+      const provider=navigator.lumenCapabilities?.geolocationProvider||'browser-managed';tell(kind,'pass',`Child frame position returned (${provider}), ±${Math.round(p.coords.accuracy)} m.`,{accuracyMeters:p.coords.accuracy,provider,physicalGPSVerified:false});
     }else{
       if(!navigator.mediaDevices?.getUserMedia){tell(kind,'unsupported','Media capture API is absent.');return;}
       const stream=await navigator.mediaDevices.getUserMedia(kind==='camera'?{video:true,audio:false}:{audio:true,video:false});
@@ -21,6 +22,6 @@ for(const button of document.querySelectorAll('[data-capability]'))button.addEve
       tell(kind,'pass',`Child frame ${kind} acquired. Stops in 8 seconds.`,{trackCount:tracks.length,live:tracks.every(t=>t.readyState==='live')});
       timer=setTimeout(stop,8000);
     }
-  }catch(error){if(token===generation)tell(kind,error.name==='NotAllowedError'||error.code===1?'blocked':'fail',`${error.name||'Error'}: ${error.message}`);}
+  }catch(error){if(token===generation)tell(kind,error.code===1?'blocked':errorState(error),`${error.name||'Error'}: ${error.message}`);}
 });
 document.querySelector('#stop').addEventListener('click',stop);document.addEventListener('visibilitychange',()=>{if(document.hidden)stop();});window.addEventListener('pagehide',stop);

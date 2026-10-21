@@ -1,0 +1,10 @@
+// Reference test: separate Chrome processes, connected through real WebRTC.
+const {chromium}=require('playwright');const assert=require('node:assert/strict');const fs=require('node:fs');const path=require('node:path');
+(async()=>{const {createLabServer}=await import('../server.mjs');const server=createLabServer();await new Promise(resolve=>server.listen(18765,'127.0.0.1',resolve));const browsers=[];try{
+  const options={headless:true,executablePath:process.env.LUME_CHROME_EXECUTABLE||undefined};const first=await chromium.launch(options),second=await chromium.launch(options);browsers.push(first,second);const offer=await first.newPage(),answer=await second.newPage();const room='chrome-independent-'+Date.now();
+  await Promise.all([offer.goto(`http://127.0.0.1:18765/rtc-peer.html?room=${room}&role=offer&autostart=1`),answer.goto(`http://127.0.0.1:18765/rtc-peer.html?room=${room}&role=answer&autostart=1`)]);
+  await Promise.all([offer.waitForFunction(()=>['pass','fail','unsupported','cancelled'].includes(window.LumeRTCPeer?.snapshot().state),{timeout:25000}),answer.waitForFunction(()=>['pass','fail','unsupported','cancelled'].includes(window.LumeRTCPeer?.snapshot().state),{timeout:25000})]);
+  const result={testEnvironment:'Two independent headless Chromium processes; not Lumen',offer:await offer.evaluate(()=>LumeRTCPeer.snapshot()),answer:await answer.evaluate(()=>LumeRTCPeer.snapshot())};
+  fs.mkdirSync(path.join(__dirname,'../output'),{recursive:true});fs.writeFileSync(path.join(__dirname,'../output/chrome-independent-rtc.json'),JSON.stringify(result,null,2));
+  assert.equal(result.offer.state,'pass',JSON.stringify(result.offer));assert.equal(result.answer.state,'pass',JSON.stringify(result.answer));assert.equal(result.offer.payloadMatched,true);assert.equal(result.answer.resourcesReleased,true);console.log(JSON.stringify(result,null,2));
+}finally{await Promise.all(browsers.map(browser=>browser.close()));await new Promise(resolve=>server.close(resolve));}})().catch(error=>{console.error(error);process.exitCode=1;});

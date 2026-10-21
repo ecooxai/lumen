@@ -21,3 +21,11 @@ test('WebSocket echo roundtrip preserves exact payload and closes cleanly',async
 test('WebSocket server encoder handles extended payload lengths',()=>{
   const frame=websocketFrame('x'.repeat(300));assert.equal(frame[0],129);assert.equal(frame[1],126);assert.equal(frame.readUInt16BE(2),300);assert.equal(frame.length,304);
 });
+
+test('RTC HTTP broker enforces origin and routes bounded signal data',async t=>{
+  const server=createLabServer();server.listen(0,'127.0.0.1');await once(server,'listening');t.after(()=>new Promise(resolve=>server.close(resolve)));
+  const origin=`http://127.0.0.1:${server.address().port}`;const payload=JSON.stringify({room:'room-test-http',role:'offer',message:{type:'offer',sdp:'v=0'}});
+  assert.equal((await fetch(origin+'/api/rtc-signal',{method:'POST',headers:{'content-type':'application/json',origin:'https://untrusted.invalid'},body:payload})).status,403);
+  assert.equal((await fetch(origin+'/api/rtc-signal',{method:'POST',headers:{'content-type':'application/json',origin},body:payload})).status,200);
+  const result=await(await fetch(origin+'/api/rtc-signal?room=room-test-http&role=answer')).json();assert.equal(result.messages[0].message.type,'offer');
+});

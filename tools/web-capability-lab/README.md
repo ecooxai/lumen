@@ -163,3 +163,24 @@ record the actual runtime and scope of each test; a successful build is not a
 claim that all native-device or website requirements have been satisfied.
 
 For an engine with compatibility shims, even reported ICE/DTLS statistics may be synthetic. This local API check cannot establish real UDP/DTLS/SCTP implementation. Use an independent Chrome peer interoperability test before claiming standards transport support.
+
+## Independent browser WebRTC proof
+
+Start the HTTP server. Open the following URLs in **different browser processes** with one unique room identifier (8–80 letters, digits, hyphens or underscores):
+
+- Chrome offer: `http://127.0.0.1:8765/rtc-peer.html?room=lume-unique-test01&role=offer&autostart=1`
+- Lume answer: `http://127.0.0.1:8765/rtc-peer.html?room=lume-unique-test01&role=answer&autostart=1`
+
+The offer sends a random nonce through RTCDataChannel; the independent answer must echo it. Both peers close on success, failure, stop, hidden page or a 20-second deadline. Inspect `window.LumeRTCPeer.snapshot()` or the `LUME_RTC_INTEROP ` console record. Reports include ICE/DTLS state and byte counts, but no SDP, ICE candidate addresses or payload. A failed handshake or missing echo stays failed; it is not replaced by in-process echo.
+
+`/api/rtc-signal` is a same-origin, loopback-only temporary broker. Signaling data stays in bounded process memory, expires after two minutes, and is never written to logs or files. Rooms are limited to 32, messages to eight per direction, and SDP to 32 KiB. It has no background polling thread; peers poll every 350 ms for a bounded test. A real-device/LAN deployment requires a separately designed authorized signaling endpoint.
+
+`node tests/rtc-interop.cjs` validates the helper with two independent headless Chromium processes on temporary HTTP port18765. That reference test proves the helper works; it does not count as Lume interoperability. Use a fresh unique room for each run.
+
+### Native engine declarations
+
+When Lumen exposes `navigator.lumenCapabilities`, the exported environment preserves that capability descriptor. A declared `webrtcNetworkTransport: false` prevents both RTC probes from treating the experimental in-process shim as network support, even when the shim is explicitly enabled. A declared `webTransport: false` is unsupported. Location results include the declared provider (currently IP approximation in Lumen), and do not claim physical GPS verification. `node tests/engine-declarations.cjs` exercises these guards in a real Chromium document with an explicit synthetic capability descriptor.
+
+### Embedded permission fixture
+
+The synthetic Chromium media regression also clicks camera, microphone, and location controls inside the real same-origin iframe. It checks track replacement, preserves track references while the iframe is removed, and verifies every retained track is ended after parent Stop. Parent teardown calls the child's explicit stop hook before removing the frame. Location uses injected fixture coordinates, and exported evidence omits the coordinates. This verifies lab wiring and resource behavior; it does not prove physical camera, microphone, GPS, or native Lumen child permissions.

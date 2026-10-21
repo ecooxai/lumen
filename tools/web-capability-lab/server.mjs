@@ -4,10 +4,11 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {createRTCBroker} from './rtc-broker.mjs';
 
 const ROOT=path.dirname(fileURLToPath(import.meta.url));
 const TYPES={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.js':'text/javascript; charset=utf-8','.json':'application/json; charset=utf-8','.wasm':'application/wasm'};
-const ALLOWED_FILES=new Set(['index.html','style.css','app.mjs','core.mjs','iframe-probe.html','iframe-probe.mjs','frame.css']);
+const ALLOWED_FILES=new Set(['index.html','style.css','app.mjs','core.mjs','iframe-probe.html','iframe-probe.mjs','frame.css','rtc-peer.html','rtc-peer.mjs','rtc-peer.css']);
 
 export function websocketFrame(payload,opcode=1){
   const bytes=Buffer.isBuffer(payload)?payload:Buffer.from(payload);
@@ -41,11 +42,24 @@ function attachWebSocket(socket,head){
 }
 
 export function createLabServer({root=ROOT,tls=null,certificateFile=path.join(ROOT,'output','wt-certificate.json')}={}){
+  const rtcBroker=createRTCBroker();
   const handler=(request,response)=>{
     const headers={'Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','Permissions-Policy':'camera=(self), microphone=(self), geolocation=(self)','Content-Security-Policy':"default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; connect-src 'self' ws://localhost:* ws://127.0.0.1:* wss://localhost:* wss://127.0.0.1:* https://localhost:4433 https://127.0.0.1:4433; img-src 'self' blob:; media-src 'self' blob:; frame-src 'self'; object-src 'none'; frame-ancestors 'self'"};
     const send=(status,body,type='text/plain; charset=utf-8')=>{response.writeHead(status,{...headers,'Content-Type':type});response.end(body);};
-    if(request.method!=='GET'&&request.method!=='HEAD'){send(405,'Method not allowed');return;}
     let pathname;try{pathname=decodeURIComponent(new URL(request.url,'http://localhost').pathname);}catch{send(400,'Malformed URL');return;}
+    if(pathname==='/api/rtc-signal'){
+      if(!['127.0.0.1','::1','::ffff:127.0.0.1'].includes(request.socket.remoteAddress)){send(403,'RTC signaling is loopback-only');return;}
+      if(request.headers.origin&&request.headers.origin!==`${tls?'https':'http'}://${request.headers.host}`){send(403,'Cross-origin signaling denied');return;}
+      const answer=result=>send(result.error||200,JSON.stringify(result),'application/json');
+      if(request.method==='GET'){const query=new URL(request.url,'http://localhost').searchParams;answer(rtcBroker.poll(query.get('room'),query.get('role'),Number(query.get('after')||0)));return;}
+      if(request.method==='POST'){
+        if(!(request.headers['content-type']||'').startsWith('application/json')){send(415,'JSON required');return;}
+        let body='',tooLarge=false;request.on('data',chunk=>{if(tooLarge)return;body+=chunk;if(Buffer.byteLength(body)>65536){tooLarge=true;send(413,'Signal too large');}});
+        request.on('end',()=>{if(tooLarge)return;try{const data=JSON.parse(body);answer(rtcBroker.post(data.room,data.role,data.message));}catch{send(400,'Malformed JSON');}});return;
+      }
+      send(405,'Method not allowed');return;
+    }
+    if(request.method!=='GET'&&request.method!=='HEAD'){send(405,'Method not allowed');return;}
     if(pathname==='/health'){send(200,JSON.stringify({ok:true,service:'lume-capability-lab'}),'application/json');return;}
     if(pathname==='/api/config'){
       let wt={available:false};try{const saved=JSON.parse(fs.readFileSync(certificateFile,'utf8'));if(Array.isArray(saved.certificateHash)&&saved.certificateHash.length===32&&saved.expiresAt>Date.now())wt={available:true,url:'https://127.0.0.1:4433/echo',certificateHash:saved.certificateHash,serverTransport:'HTTP/3 only',expiresAt:saved.expiresAt};}catch{}
