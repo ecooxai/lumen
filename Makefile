@@ -116,7 +116,8 @@ $(BUILD)/test_net_cancel: $(call OBJ,tests/test_net_cancel.c $(BASE_SRC) $(NET_S
 $(BUILD)/test_grid_rows: $(call OBJ,tests/test_grid_rows.c $(CORE_SRC) $(JS_SRC))
 	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
 
-test: $(BUILD)/test_gpu_present $(BUILD)/test_device_capabilities $(BUILD)/test_js_device_capabilities $(BUILD)/test_present_retry $(BUILD)/test_css_transforms $(BUILD)/test_url $(BUILD)/test_net $(BUILD)/test_net_cancel $(BUILD)/test_grid_rows $(BUILD)/test_css_viewport $(BUILD)/test_overflow_clip $(BUILD)/test_sticky_position $(BUILD)/test_app_viewport $(BUILD)/test_touch_contacts $(BUILD)/test_media_lifecycle $(BUILD)/test_worker_lifecycle $(BUILD)/test_promise_rejections $(BUILD)/test_control $(BUILD)/test_js_control_selection $(BUILD)/test_js_control_input $(BUILD)/test_app_control $(BUILD)/test_control_paint $(BUILD)/test_control_geometry $(BUILD)/test_video_punch $(BUILD)/test_history_origin $(BUILD)/test_app_window_queue $(BUILD)/test_composer_paint $(BUILD)/test_window_lifecycle $(BUILD)/test_app_windows
+test: $(BUILD)/test_capture_policy $(BUILD)/test_gpu_present $(BUILD)/test_device_capabilities $(BUILD)/test_js_device_capabilities $(BUILD)/test_present_retry $(BUILD)/test_css_transforms $(BUILD)/test_url $(BUILD)/test_net $(BUILD)/test_net_cancel $(BUILD)/test_grid_rows $(BUILD)/test_css_viewport $(BUILD)/test_overflow_clip $(BUILD)/test_sticky_position $(BUILD)/test_app_viewport $(BUILD)/test_touch_contacts $(BUILD)/test_media_lifecycle $(BUILD)/test_worker_lifecycle $(BUILD)/test_promise_rejections $(BUILD)/test_control $(BUILD)/test_js_control_selection $(BUILD)/test_js_control_input $(BUILD)/test_app_control $(BUILD)/test_control_paint $(BUILD)/test_control_geometry $(BUILD)/test_video_punch $(BUILD)/test_history_origin $(BUILD)/test_app_window_queue $(BUILD)/test_composer_paint $(BUILD)/test_window_lifecycle $(BUILD)/test_app_windows
+	$(BUILD)/test_capture_policy
 	$(BUILD)/test_history_origin
 	$(BUILD)/test_app_window_queue
 	$(BUILD)/test_composer_paint
@@ -307,3 +308,8 @@ $(BUILD)/test_app_windows: $(call OBJ,tests/test_app_windows.c $(CORE_SRC) $(JS_
 .PHONY: test-webgpu
 test-webgpu: $(BUILD)/jsrun
 	python3 tests/test_webgpu_buffer_lifecycle.py --jsrun $(BUILD)/jsrun
+
+# Media capability policy and native capture lifetime.
+$(BUILD)/tests/test_capture_policy.cc.o: CXXFLAGS += -fno-rtti -UNDEBUG
+$(BUILD)/test_capture_policy: $(call OBJ,tests/test_capture_policy.cc $(CORE_SRC) $(JS_SRC)) $(V8LINK_RSP)
+	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)

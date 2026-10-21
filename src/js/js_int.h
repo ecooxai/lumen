@@ -85,6 +85,10 @@ struct JsCtx {
     std::vector<Document *> docs;
     Node *current_script = nullptr;
     int depth = 0;
+    /* Native capture ownership follows the document, including cloned tracks. */
+    std::map<int, unsigned> capture_cameras, capture_mics;
+    std::unordered_set<int> capture_recorders;
+    bool capture_screen_authorized = false;
     std::map<uint32_t, MediaPlayer *> players;
     uint32_t next_player = 1;
     std::vector<AnimEv> anims;
@@ -174,6 +178,10 @@ void js_install_workers(JsCtx *c, v8::Local<v8::Object> N);
 void js_install_canvas(JsCtx *c, v8::Local<v8::Object> N);
 void js_install_webgpu(JsCtx *c, v8::Local<v8::Object> N);
 void js_install_capture(JsCtx *c, v8::Local<v8::Object> N);
+void js_capture_close(JsCtx *c);
+bool js_capture_allowed(const JsCtx *c, const char *kind);
+bool js_windows_is_secure(const JsCtx *c);
+bool js_windows_has_activation(const JsCtx *c);
 void workers_pump(JsCtx *c);
 void workers_kill(JsCtx *c);
 double workers_deadline(JsCtx *c);

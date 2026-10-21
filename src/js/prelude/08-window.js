@@ -591,7 +591,7 @@ function fireAnim(t, type, name, elapsed, anim) {
     const origin = () => { try { return location.origin || 'file://'; } catch { return 'file://'; } };
     const PN = { camera: 'camera', microphone: 'microphone', geolocation: 'location', 'display-capture': 'screen' };
     const state = n => { const s = N.capState(PN[n] || n, origin()); return s > 0 ? 'granted' : s < 0 ? 'denied' : 'prompt'; };
-    const ask = n => N.capAsk(PN[n] || n, origin());
+    const ask = n => N.capAllowed(n) && N.capAsk(PN[n] || n, origin());
     class PermissionStatus extends EventTarget { constructor(n) { super(); this.name = n; this.onchange = null; } get state() { return state(this.name); } }
     navigator.permissions.query = d => { const n = d && d.name; if (!n) return Promise.reject(new TypeError('name required')); return Promise.resolve(new PermissionStatus(n)); };
     const ideal = v => v == null ? 0 : typeof v === 'number' ? v : v.exact || v.ideal || v.max || v.min || 0;
@@ -599,12 +599,13 @@ function fireAnim(t, type, name, elapsed, anim) {
     md.enumerateDevices = () => Promise.resolve([
         ...N.capCameras().map((l, i) => ({ deviceId: 'cam' + i, groupId: 'g' + i, kind: 'videoinput', label: state('camera') === 'granted' ? l : '', toJSON() { return { ...this }; } })),
         ...N.capMics().map((l, i) => ({ deviceId: i ? 'mic' + i : 'default', groupId: 'm' + i, kind: 'audioinput', label: state('microphone') === 'granted' ? l : '', toJSON() { return { ...this }; } }))]);
-    md.getSupportedConstraints = () => ({ deviceId: true, width: true, height: true, frameRate: true, aspectRatio: true, facingMode: true, sampleRate: true, channelCount: true, echoCancellation: true, noiseSuppression: true, autoGainControl: true });
+    md.getSupportedConstraints = () => ({ deviceId: true, width: true, height: true, frameRate: true, sampleRate: true, channelCount: true });
     const NA = () => new DOMException('Permission denied', 'NotAllowedError'), NF = k => new DOMException('Requested device not found (' + k + ')', 'NotFoundError');
     md.getUserMedia = c => new Promise((res, rej) => setTimeout(() => {
         if (!c || typeof c !== 'object' || (!c.audio && !c.video)) return rej(new TypeError("Failed to execute 'getUserMedia': At least one of audio and video must be requested"));
         const tracks = [];
         try {
+            if ((c.video && !N.capAllowed('camera')) || (c.audio && !N.capAllowed('microphone'))) throw NA();
             if (c.video) { const cams = N.capCameras(); if (!cams.length) throw NF('camera'); if (!ask('camera')) throw NA();
                 const v = typeof c.video === 'object' ? c.video : {}; let idx = 0; const did = ideal(v.deviceId); if (typeof did === 'string' && /^cam\d+$/.test(did)) idx = +did.slice(3);
                 const id = N.capCamOpen(idx, ideal(v.width), ideal(v.height), ideal(v.frameRate)); if (id < 0) throw NA(); if (!id) throw new DOMException('Could not start video source', 'NotReadableError');
@@ -618,6 +619,8 @@ function fireAnim(t, type, name, elapsed, anim) {
     }));
     md.getDisplayMedia = (c = {}) => new Promise((res, rej) => setTimeout(() => {
         if (c && (c.video === false || c.audio && !c.video && c.video !== undefined)) return rej(new TypeError("Failed to execute 'getDisplayMedia': video must be requested"));
+        if (!N.capAllowed('display-capture')) return rej(NA());
+        if (!N.winOp(localWindowId, 15)[1]) return rej(new DOMException('Screen capture requires a user gesture', 'InvalidStateError'));
         if (!ask('display-capture')) return rej(NA());
         const id = N.capScreenOpen(); if (!id) return rej(new DOMException('Could not start video source', 'NotReadableError'));
         const t = new MediaStreamTrack(RTC_INTERNAL, 'video', 'web-contents-media-stream://' + id); t._.cam = id; t._.dev = 'screen'; t._.display = true;
@@ -650,7 +653,16 @@ function fireAnim(t, type, name, elapsed, anim) {
         requestData() { if (this.state === 'inactive') throw new DOMException("Failed to execute 'requestData' on 'MediaRecorder': The MediaRecorder's state is 'inactive'.", 'InvalidStateError'); }
     }
     Object.assign(globalThis, { MediaRecorder, BlobEvent });
-    const TP = MediaStreamTrack.prototype, stop0 = TP.stop, gs0 = TP.getSettings;
+    const TP = MediaStreamTrack.prototype, stop0 = TP.stop, gs0 = TP.getSettings, clone0 = TP.clone;
+    TP.clone = function () {
+        const t = clone0.call(this);
+        for (const k of ['dev', 'rate', 'ch', 'display']) if (this._[k] !== undefined) t._[k] = this._[k];
+        if (this.readyState === 'live') {
+            if (this._.cam && N.capCamRetain(this._.cam)) t._.cam = this._.cam;
+            if (this._.mic && N.capMicRetain(this._.mic)) t._.mic = this._.mic;
+        }
+        return t;
+    };
     TP.stop = function () { if (this._.cam) { N.capCamClose(this._.cam); this._.cam = 0; } if (this._.mic) { N.capMicClose(this._.mic); this._.mic = 0; } stop0.call(this); };
     TP.getSettings = function () { if (this._.cam) { const [w, h, f] = N.capCamInfo(this._.cam); return { deviceId: this._.dev, groupId: '', width: w, height: h, frameRate: f, aspectRatio: h ? w / h : 0, facingMode: 'user', resizeMode: 'none' }; }
         if (this._.kind === 'audio' && this._.rate) return { deviceId: 'default', groupId: '', sampleRate: this._.rate, channelCount: this._.ch, sampleSize: 32, echoCancellation: false, autoGainControl: false, noiseSuppression: false }; return gs0.call(this); };
@@ -696,6 +708,19 @@ function fireAnim(t, type, name, elapsed, anim) {
         clearWatch(id) { clearInterval(watches.get(id)); watches.delete(id); } };
     Object.defineProperty(navigator, 'geolocation', { value: geolocation, configurable: true });
     Object.assign(globalThis, { GeolocationCoordinates, GeolocationPosition, GeolocationPositionError, PermissionStatus, Geolocation: function Geolocation() { } });
+    if (!N.winOp(localWindowId, 16)) { delete navigator.mediaDevices; delete navigator.geolocation; }
+})();
+
+/* The experimental RTC shim has no network transport. Do not advertise it as
+ * WebRTC to production pages; conformance experiments require explicit opt-in. */
+(() => {
+    const enabled = N.rtcLoopbackEnabled();
+    Object.defineProperty(navigator, 'lumenCapabilities', { value: Object.freeze({
+        engine: 'Lumen', webrtcNetworkTransport: false,
+        experimentalRTC: enabled ? 'in-process-loopback' : 'disabled',
+        geolocationProvider: 'ip-approximation', webTransport: false,
+    }), configurable: false, writable: false });
+    if (!enabled) for (const k of ['RTCPeerConnection', 'webkitRTCPeerConnection', 'RTCSessionDescription', 'RTCIceCandidate', 'RTCPeerConnectionIceEvent', 'RTCPeerConnectionIceErrorEvent', 'RTCDataChannel', 'RTCDataChannelEvent', 'RTCTrackEvent', 'RTCRtpSender', 'RTCRtpReceiver', 'RTCRtpTransceiver', 'RTCIceTransport', 'RTCDtlsTransport', 'RTCSctpTransport', 'RTCCertificate', 'RTCStatsReport', 'RTCError', 'RTCErrorEvent']) delete globalThis[k];
 })();
 
 /* WebIDL attributes are enumerable accessors: libraries copy events with for-in (video.js fixEvent needs e.type) */

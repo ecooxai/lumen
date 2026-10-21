@@ -217,6 +217,7 @@ static Perm g_perm[128]; static int g_nperm;
 int cap_perm_state(const char *kind, const char *origin) {
     const char *e = getenv("LUMEN_PERMISSIONS");
     if (e && !strcmp(e, "grant")) return 1; if (e && !strcmp(e, "deny")) return -1;
+    if (!strcmp(kind, "screen")) return 0; /* screen selection is never persisted */
     char k[300]; snprintf(k, sizeof k, "%s|%s", kind, origin);
     for (int i = 0; i < g_nperm; i++) if (!strcmp(g_perm[i].key, k)) return g_perm[i].v;
     return 0;
@@ -227,6 +228,6 @@ int cap_ask(const char *kind, const char *origin) {
     const SDL_MessageBoxButtonData bt[] = { { SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 0, "Block" }, { SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 1, "Allow" } };
     SDL_MessageBoxData d = { SDL_MESSAGEBOX_INFORMATION, NULL, "Permission request", msg, 2, bt, NULL };
     int r = 0; if (!SDL_ShowMessageBox(&d, &r)) r = 0;
-    if (g_nperm < 128) { snprintf(g_perm[g_nperm].key, sizeof g_perm[0].key, "%s|%s", kind, origin); g_perm[g_nperm++].v = r ? 1 : -1; }
+    if (strcmp(kind, "screen") && g_nperm < 128) { snprintf(g_perm[g_nperm].key, sizeof g_perm[0].key, "%s|%s", kind, origin); g_perm[g_nperm++].v = r ? 1 : -1; }
     return r == 1;
 }

@@ -68,10 +68,12 @@ static std::string src_key(JsCtx *p, Node *f) {
 }
 
 static std::string g_next_csp;   /* CSP of the response frame_create is about to build a document from */
+static std::string g_next_permissions; /* Permissions-Policy on the incoming frame response */
 static std::string g_next_ref;   /* Referer sent for the frame navigation frame_create is about to build */
 static JsCtx *frame_create(JsCtx *p, Node *f, const char *url, const char *html, size_t n, bool fire_load) {
     JsCtx *old = js_frame_ctx(f);
     Document *d = doc_new(url);
+    if (!g_next_permissions.empty()) { d->permissions_policy = strdup(g_next_permissions.c_str()); g_next_permissions.clear(); }
     if (!g_next_csp.empty()) { d->csp = csp_append(nullptr, g_next_csp.c_str()); g_next_csp.clear(); }
     if (!g_next_ref.empty()) { d->referrer = strdup(g_next_ref.c_str()); g_next_ref.clear(); }
     else if (!strncmp(url, "about:", 6) && p->doc && p->doc->csp) d->csp = strdup(p->doc->csp);
@@ -197,7 +199,7 @@ static void frame_done(NetRequest *rq, NetResponse *r, void *ud) {
         const char *body = ok && r->body ? r->body : "";
         if (ok) for (int i = 0; i < r->headers.n; i++)
             if (str_ieq(r->headers.v[i].name, "content-security-policy")) { if (!g_next_csp.empty()) g_next_csp += '\n'; g_next_csp += r->headers.v[i].value; }
-        if (ok) g_next_ref = l->ref;
+        if (ok) { const char *policy = headers_get(&r->headers, "permissions-policy"); g_next_permissions = policy ? policy : ""; g_next_ref = l->ref; }
         JsCtx *k = frame_create(p, l->f, ok && r->url ? r->url : l->url.c_str(), body, ok && r->body ? r->body_len : 0, true);
         k->frame_src = key;
     }

@@ -354,6 +354,8 @@ static int loader(void *arg) {
         bool secure = !strncmp(p->url, "https:", 6) || !strncmp(p->url, "http://localhost", 16) || !strncmp(p->url, "http://127.0.0.1", 16);
         p->d->coep_require_corp = secure && coep && !strncasecmp(coep, "require-corp", 12);
         p->d->cross_origin_isolated = p->coop == JS_COOP_SAME_ORIGIN_PLUS_COEP;
+        const char *pp = headers_get(&r->headers, "permissions-policy");
+        if (pp) p->d->permissions_policy = xstrdup(pp);
         const char *rp = headers_get(&r->headers, "referrer-policy");
         if (rp) snprintf(p->d->referrer_policy, sizeof p->d->referrer_policy, "%s", rp);
         for (int i = 0; i < r->headers.n; i++)

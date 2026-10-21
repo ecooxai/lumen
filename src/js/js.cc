@@ -772,6 +772,7 @@ void js_free(JsCtx *c) {
     js_windows_detach(c, c->parent != nullptr); /* only this exact installed realm may detach its destination */
     { std::lock_guard<std::mutex> l(g_pick_mu); if (g_pick_ctx == c) g_pick_ctx = nullptr; }
     workers_kill(c);
+    js_capture_close(c);
     for (JsCtx *k : std::vector<JsCtx *>(c->kids)) js_free(k);
     frames_forget(c);
     if (c->parent) {

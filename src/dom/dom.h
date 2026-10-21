@@ -63,6 +63,7 @@ typedef struct Document {
     Node *html, *head, *body;
     bool quirks;
     char *csp;                    /* enforced Content-Security-Policy, one policy per line (NULL = none) */
+    char *permissions_policy;     /* Permissions-Policy response header (NULL = default) */
     char *referrer;               /* document.referrer: the Referer sent for this navigation (NULL = none) */
     char referrer_policy[40];     /* Referrer-Policy response header / <meta name=referrer>; "" = default */
     bool coep_require_corp;       /* COEP require-corp (secure context): cross-origin no-cors loads need CORP */

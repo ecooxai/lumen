@@ -28,7 +28,7 @@ struct Window {
     JsCtx *current = nullptr;
     uint64_t epoch = 0;
     Principal principal;
-    std::string url = "about:blank", name, base, csp, referrer, origin_url, referrer_policy;
+    std::string url = "about:blank", name, base, csp, referrer, origin_url, referrer_policy, permissions_policy;
     std::map<std::string, std::string> sessions;
     uint32_t forced_sandbox = 0, sandbox = 0;
     JsWindowCoop coop = JS_COOP_UNSAFE_NONE;
@@ -248,6 +248,7 @@ JsWindowId js_window_commit(JsWindowId id, Document *d, JsWindowCoop coop) {
     if (initial_blank) {
         free(d->base_url); d->base_url = w->base.empty() ? nullptr : xstrdup(w->base.c_str());
         free(d->csp); d->csp = w->csp.empty() ? nullptr : xstrdup(w->csp.c_str());
+        free(d->permissions_policy); d->permissions_policy = w->permissions_policy.empty() ? nullptr : xstrdup(w->permissions_policy.c_str());
         free(d->referrer); d->referrer = w->referrer.empty() ? nullptr : xstrdup(w->referrer.c_str());
         snprintf(d->referrer_policy, sizeof d->referrer_policy, "%s", w->referrer_policy.c_str());
         d->coep_require_corp = w->coep; d->cross_origin_isolated = w->isolated;
@@ -304,6 +305,13 @@ void js_windows_detach(JsCtx *c, bool close_frame) {
     if (!w || w->current != c || w->epoch != c->window_epoch) return;
     if ((close_frame && c->parent) || (!w->external && !c->parent)) { js_window_destroy(w->id); return; }
     w->current = nullptr; purge_destination(w->id, c->window_epoch);
+}
+bool js_windows_is_secure(const JsCtx *c) {
+    Window *w = c ? live_window(c->window_id) : nullptr;
+    return w && w->current == c && w->epoch == c->window_epoch && w->secure;
+}
+bool js_windows_has_activation(const JsCtx *c) {
+    return c && current_context(c) && transient_activation(c->window_id);
 }
 bool js_windows_same_origin(const JsCtx *a, const JsCtx *b) {
     return a && b && (a == b || context_principal(a) == context_principal(b));
@@ -536,7 +544,7 @@ void n_winOpen(const FCI &a) {
     w->name = reserved == "_blank" || f.noopener ? "" : name;
     w->base = js_windows_base_url(source, true);
     w->origin_url = blank_url(source->doc->url) && !source->inherited_origin_url.empty() ? source->inherited_origin_url : source->doc->url ? source->doc->url : "about:blank";
-    w->csp = source->doc->csp ? source->doc->csp : "";
+    w->csp = source->doc->csp ? source->doc->csp : ""; w->permissions_policy = source->doc->permissions_policy ? source->doc->permissions_policy : "";
     w->referrer_policy = source->doc->referrer_policy;
     w->referrer = f.noreferrer ? "" : navigation_referrer(source, w->origin_url);
     if (!f.noopener) if (Window *top = find_window(source_top)) w->sessions = top->sessions;
