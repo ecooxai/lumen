@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0a2731"><title>Lume · Browser capability lab</title>
+  <link rel="stylesheet" href="style.css"><script type="module" src="app.mjs"></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="brand" href="#"><span class="brand-mark">L</span><span>lume<span class="brand-sub">BROWSER LAB</span></span></a>
+    <div class="rail-label">APPLE PLATFORM VALIDATION</div>
+    <nav aria-label="Page sections"><a class="selected" href="#capabilities">01 <span>Capabilities</span></a><a href="#connections">02 <span>Connections</span></a><a href="#identity">03 <span>Identity</span></a><a href="#results">04 <span>Evidence</span></a></nav>
+    <div class="rail-foot"><span class="dot"></span> On-demand tests<br><small>Idle means idle.<br>Every result is measured.</small><p>GPT-6 Astra Pro<br>Native subagents · Web</p></div>
+  </aside>
+  <main>
+    <header><span class="eyebrow">ENGINEERING / COMPATIBILITY</span><span id="context-badge" class="context">Checking secure context</span></header>
+    <section class="hero">
+      <div><p class="kicker">THE WEB, VERIFIED.</p><h1>A browser should<br><em>prove what works.</em></h1><p class="intro">Real graphics, real transports, real permissions.<br>Run a test. Inspect its evidence. Release its resources.</p></div>
+      <div class="summary-panel"><div class="summary-head">LIVE RESULTS <span id="run-state">READY</span></div><div class="score"><strong id="pass-count">0</strong><span>/ <span id="total-count">12</span><small>verified capabilities</small></span></div><div class="summary-line"><span><i class="status-dot pass"></i><b id="pass-small">0</b> pass</span><span><i class="status-dot fail"></i><b id="fail-small">0</b> fail</span><span><i class="status-dot unsupported"></i><b id="other-small">0</b> unavailable</span></div><div class="resource-count" id="resource-count">0 active resource scopes</div></div>
+    </section>
+    <div class="toolbar"><button class="primary" id="run-auto" data-test="run-automatic">Run automatic tests <span>↗</span></button><button id="stop-all" data-test="stop-all">Stop all resources</button><button id="export" data-test="export">Export evidence ↓</button><span class="toolbar-note">Camera, mic & location require your action.</span></div>
+    <section id="capabilities"><div class="section-heading"><h2>Device & rendering</h2><span>01—06</span></div><div class="grid" id="device-grid"></div></section>
+    <section id="connections"><div class="section-heading"><h2>Connections & embedded content</h2><span>07—10</span></div><div class="grid" id="connection-grid"></div></section>
+    <section id="identity"><div class="section-heading"><h2>Identity, with clear boundaries</h2><span>11—12</span></div><div class="identity-note">Provider sign-in needs a registered client, approved callback and supported browser flow. The simulation below contains no password fields and creates no provider session.</div><div class="grid" id="identity-grid"></div><dialog id="oauth-dialog"><form method="dialog"><span class="eyebrow">INTERFACE SIMULATION ONLY</span><h2 id="mock-provider">Provider sign-in</h2><p>This demonstrates the consent interface. It does not contact the provider, request credentials, or sign you in.</p><div class="mock-account"><span>DEMO</span><strong>Example user</strong><small>demo@example.invalid</small></div><button class="primary" value="accepted">Continue demo</button><button value="cancel">Cancel</button></form></dialog></section>
+    <section id="results"><div class="section-heading"><h2>Evidence log</h2><span>LOCAL · NO UPLOAD</span></div><pre id="event-log" aria-live="polite">Ready. Permission tests run only after you choose them.</pre><p class="footnote">This is a capability test suite, not an HTML5Test score. A successful local loopback does not verify external STUN/TURN, production OAuth, or every website. Missing APIs and denied permissions remain visible.</p></section>
+    <footer><span>LUME / BUILT FOR APPLE DEVICES</span><span>GPT-6 Astra Pro · Native subagents · Web</span></footer>
+  </main>
+  <div id="iteration-status" class="iteration-status" title="Lab checks only; not an overall browser quality or HTML5Test score.">Iteration 01 · Lab checks not run</div>
+</body>
+</html>

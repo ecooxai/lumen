@@ -1,0 +1,15 @@
+{
+  "name": "lume-web-capability-lab",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Measured browser capability probes with explicit lifecycle cleanup",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "test:browser": "node tests/browser-smoke.cjs",
+    "test:media-fixture": "node tests/media-fixture.cjs"
+  },
+  "devDependencies": { "playwright": "1.62.1" }
+}
