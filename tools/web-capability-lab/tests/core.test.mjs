@@ -52,3 +52,28 @@ test('permission denial is blocked, unavailable hardware is blocked, actual erro
   assert.equal(errorState({ name: 'NotFoundError' }), 'blocked');
   assert.equal(errorState({ name: 'Error' }), 'fail');
 });
+
+
+test('coverage uses all requested probes, retaining blocked, unsupported and untested in its denominator',()=>{
+  const report=new ReportStore(['real','blocked','unsupported','not-run','mock']);
+  report.set('real','pass','actual result');report.set('blocked','blocked','permission denied');report.set('unsupported','unsupported','API missing');report.set('mock','configuration','simulation is not authentication',{simulation:true,authenticated:false});
+  assert.equal(report.coverage().scoreOutOf100,20);assert.equal(report.coverage().passed,1);assert.equal(report.coverage().total,5);
+  assert.equal(report.results['not-run'].state,'idle');assert.equal(report.results.mock.state,'configuration');
+  assert.equal(new ReportStore([]).coverage().scoreOutOf100,0);
+});
+
+test('native channel evidence requires a selected native ICE pair, state and measured bidirectional bytes',async()=>{
+  const {inspectRTCEvidence}=await import('../core.mjs');
+  const stats=[{id:'local',type:'local-candidate',protocol:'udp',port:1234},{id:'remote',type:'remote-candidate',protocol:'udp',port:5678},{type:'candidate-pair',state:'succeeded',localCandidateId:'local',remoteCandidateId:'remote'},{type:'data-channel',state:'open',bytesSent:49,bytesReceived:49}];
+  const input={stats,capabilities:{engine:'Lumen',webrtcNetworkTransport:true,webrtcBackend:'libdatachannel-0.24.6',webrtcMediaTransport:false},connectionState:'connected',iceConnectionState:'completed'};
+  const result=inspectRTCEvidence(input);assert.equal(result.verified,true);assert.equal(result.nativeChannelStatsObserved,true);assert.equal(result.networkStatsObserved,false);assert.equal(result.transportBytesSent,null);assert.equal(result.dtlsState,null);assert.equal(result.mediaTransportSupported,false);
+  for(const change of [{connectionState:'connecting'},{iceConnectionState:'checking'},{capabilities:{webrtcNetworkTransport:false}},{capabilities:{}},{stats:stats.filter(item=>item.type!=='candidate-pair')},{stats:stats.map(item=>item.type==='data-channel'?{...item,bytesReceived:0}:item)}])assert.equal(inspectRTCEvidence({...input,...change}).verified,false);
+});
+
+test('ordinary transport evidence retains the nonzero transport guard and never substitutes payload bytes',async()=>{
+  const {inspectRTCEvidence}=await import('../core.mjs');
+  const stats=[{type:'candidate-pair',state:'succeeded',nominated:true,bytesSent:0,bytesReceived:0},{type:'transport',dtlsState:'connected',bytesSent:0,bytesReceived:0},{type:'data-channel',state:'open',bytesSent:49,bytesReceived:49}];
+  assert.equal(inspectRTCEvidence({stats}).verified,false);
+  stats[1]={...stats[1],bytesSent:100,bytesReceived:100};assert.equal(inspectRTCEvidence({stats}).networkStatsObserved,true);
+  assert.equal(inspectRTCEvidence({stats,capabilities:{webrtcNetworkTransport:false}}).verified,false);
+});

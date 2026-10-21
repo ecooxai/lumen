@@ -1,4 +1,4 @@
-import { ReportStore, ResourceScope, errorState, within, validateEcho } from './core.mjs';
+import { ReportStore, ResourceScope, errorState, within, validateEcho, inspectRTCEvidence } from './core.mjs';
 
 const definitions = [
   ['camera','Camera','CAM','Request a live video track. Preview stops after 15 seconds.','device'],
@@ -8,7 +8,7 @@ const definitions = [
   ['webgl','WebGL 2 / 1','GL','Draw a triangle and verify pixels read from the GPU framebuffer.','device'],
   ['webgpu','WebGPU','GPU','Render with WGSL and verify texture bytes copied back from the GPU.','device'],
   ['iframe','Embedded permissions','IF','Load a real iframe. Camera and location have separate child controls.','connection'],
-  ['webrtc','WebRTC','RTC','Check local channel behavior and reported ICE/DTLS stats.','connection'],
+  ['webrtc','WebRTC','RTC','Verify local channel echo and inspect measured transport or payload counters.','connection'],
   ['websocket','WebSocket','WS','Connect to this server and verify an exact echoed message.','connection'],
   ['webtransport','WebTransport / QUIC','H3','Echo a datagram through the optional HTTP/3-only local server.','connection'],
   ['google','Google sign-in','G','Compare a clearly labeled consent simulation with real provider sign-in.','identity'],
@@ -23,7 +23,7 @@ let autoRunning = false;
 let autoGeneration = 0;
 let config = {};
 const $ = selector => document.querySelector(selector);
-const snapshot = () => ({ schemaVersion: 1, generatedAt: new Date().toISOString(), environment: { userAgent: navigator.userAgent, secureContext: isSecureContext, origin: location.origin, visibility: document.visibilityState, platform: navigator.platform, hardwareConcurrency: navigator.hardwareConcurrency ?? null, engineCapabilities: navigator.lumenCapabilities ?? null }, summary: report.summary(), resources: resources(), results: structuredClone(report.results), log: [...logLines] });
+const snapshot = () => ({ schemaVersion: 1, generatedAt: new Date().toISOString(), environment: { userAgent: navigator.userAgent, secureContext: isSecureContext, origin: location.origin, visibility: document.visibilityState, platform: navigator.platform, hardwareConcurrency: navigator.hardwareConcurrency ?? null, engineCapabilities: navigator.lumenCapabilities ?? null }, summary: report.summary(), measuredCoverage: report.coverage(), resources: resources(), results: structuredClone(report.results), log: [...logLines] });
 
 function resources() {
   let childTracks=0;for(const frame of document.querySelectorAll('iframe')){try{childTracks+=frame.contentWindow.LumeFrame?.activeTracks()||0;}catch{}}
@@ -36,7 +36,7 @@ function render() {
   $('#other-small').textContent=sum.unsupported+sum.blocked+sum.configuration;
   $('#run-state').textContent=sum.running?'RUNNING':'READY';
   $('#resource-count').textContent=`${resources().activeScopes} active resource scopes`;
-  $('#iteration-status').textContent=`Iteration 01 · Lab checks ${sum.pass}/${sum.total} passed · ${navigator.platform}`;
+  const coverage=report.coverage();$('#iteration-status').textContent=`Iteration 02 · Measured lab coverage ${coverage.scoreOutOf100}/100\n${sum.pass}/${sum.total} passed · ${sum.fail} failed · ${sum.blocked} blocked · ${sum.unsupported} unsupported\n${sum.idle} not run · ${sum.configuration} setup · ${sum.cancelled} cancelled · ${sum.running} running · ${navigator.platform}`;
   for(const result of Object.values(report.results)) {
     const card=$(`[data-capability="${result.id}"]`); const state=card.querySelector('.state');
     state.textContent=result.state==='configuration'?'SETUP NEEDED':result.state; state.className=`state ${result.state}`;
@@ -148,7 +148,9 @@ const probes={
     const channel=left.createDataChannel('lume-verified');scope.add(()=>channel.close());const sent=`lume-rtc-${crypto.randomUUID?.()||Date.now()}`;let received;
     const echo=new Promise((resolve,reject)=>{channel.onerror=()=>reject(new Error('WebRTC channel error'));channel.onopen=()=>channel.send(sent);channel.onmessage=event=>{received=event.data;try{validateEcho(sent,received);resolve();}catch(error){reject(error);}};right.ondatachannel=event=>{scope.add(()=>event.channel.close());event.channel.onmessage=message=>event.channel.send(message.data);};});
     await left.setLocalDescription(await left.createOffer());await right.setRemoteDescription(left.localDescription);await Promise.all(rightCandidates.map(c=>right.addIceCandidate(c)));await right.setLocalDescription(await right.createAnswer());await left.setRemoteDescription(right.localDescription);await Promise.all(leftCandidates.map(c=>left.addIceCandidate(c)));await echo;
-    const state=left.connectionState;await new Promise(resolve=>scope.timer(resolve,200));const stats=[...(await left.getStats()).values()];const pair=stats.find(item=>item.type==='candidate-pair'&&item.state==='succeeded'&&item.nominated);const transport=stats.find(item=>item.type==='transport'&&item.dtlsState==='connected');const transportBytesSent=transport?.bytesSent||pair?.bytesSent||0;const transportBytesReceived=transport?.bytesReceived||pair?.bytesReceived||0;const networkStatsObserved=!!(pair&&transport&&transportBytesSent>0&&transportBytesReceived>0);scope.dispose();return {state:networkStatsObserved?'pass':'configuration',detail:networkStatsObserved?'Local API echo matched; ICE/DTLS reports connected. External interoperability untested.':'Local API echo matched, but ICE/DTLS transport is unverified.',evidence:{payloadMatched:true,bytes:new TextEncoder().encode(sent).length,connectionState:state,iceServers:[],coverage:'same-browser loopback only',networkStatsObserved,transportBytesSent,transportBytesReceived,dtlsState:transport?.dtlsState??null,candidatePairState:pair?.state??null,externalSTUNTURN:false,crossBrowserInteroperability:false}};
+    await new Promise(resolve=>scope.timer(resolve,200));const state=left.connectionState,iceState=left.iceConnectionState;
+    const stats=[...(await left.getStats()).values()];const observed=inspectRTCEvidence({stats,capabilities:navigator.lumenCapabilities,connectionState:state,iceConnectionState:iceState});
+    scope.dispose();return {state:observed.verified?'pass':'configuration',detail:observed.networkStatsObserved?'Local API echo matched; ICE/DTLS counters verified. External interoperability untested.':observed.nativeChannelStatsObserved?'Native ICE channel echo matched; measured payload bytes verified. Independent peer test still required.':'Local API echo matched, but network transport is unverified.',evidence:{payloadMatched:true,bytes:new TextEncoder().encode(sent).length,connectionState:state,iceConnectionState:iceState,iceServers:[],coverage:'same-browser loopback only',...observed,externalSTUNTURN:false,crossBrowserInteroperability:false}};
   },
   async websocket(scope) {
     if(!window.WebSocket)return unsupported('WebSocket is not exposed.');

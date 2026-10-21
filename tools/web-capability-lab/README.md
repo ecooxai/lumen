@@ -171,11 +171,11 @@ Start the HTTP server. Open the following URLs in **different browser processes*
 - Chrome offer: `http://127.0.0.1:8765/rtc-peer.html?room=lume-unique-test01&role=offer&autostart=1`
 - Lume answer: `http://127.0.0.1:8765/rtc-peer.html?room=lume-unique-test01&role=answer&autostart=1`
 
-The offer sends a random nonce through RTCDataChannel; the independent answer must echo it. Both peers close on success, failure, stop, hidden page or a 20-second deadline. Inspect `window.LumeRTCPeer.snapshot()` or the `LUME_RTC_INTEROP ` console record. Reports include ICE/DTLS state and byte counts, but no SDP, ICE candidate addresses or payload. A failed handshake or missing echo stays failed; it is not replaced by in-process echo.
+Each peer sends a random nonce through RTCDataChannel; the other peer must echo it. Both peers close on success, failure, stop, hidden page or a 20-second deadline. Inspect `window.LumeRTCPeer.snapshot()` or the `LUME_RTC_INTEROP ` console record. Reports include ICE/DTLS state and byte counts, but no SDP, ICE candidate addresses or payload. A failed handshake or missing echo stays failed; it is not replaced by in-process echo.
 
 `/api/rtc-signal` is a same-origin, loopback-only temporary broker. Signaling data stays in bounded process memory, expires after two minutes, and is never written to logs or files. Rooms are limited to 32, messages to eight per direction, and SDP to 32 KiB. It has no background polling thread; peers poll every 350 ms for a bounded test. A real-device/LAN deployment requires a separately designed authorized signaling endpoint.
 
-`node tests/rtc-interop.cjs` validates the helper with two independent headless Chromium processes on temporary HTTP port18765. That reference test proves the helper works; it does not count as Lume interoperability. Use a fresh unique room for each run.
+`node tests/rtc-interop.cjs` validates the helper with two independent headless Chromium processes on an automatically assigned temporary loopback HTTP port. That reference test proves the helper works; it does not count as Lume interoperability. Use a fresh unique room for each run.
 
 ### Native engine declarations
 
@@ -184,3 +184,11 @@ When Lumen exposes `navigator.lumenCapabilities`, the exported environment prese
 ### Embedded permission fixture
 
 The synthetic Chromium media regression also clicks camera, microphone, and location controls inside the real same-origin iframe. It checks track replacement, preserves track references while the iframe is removed, and verifies every retained track is ended after parent Stop. Parent teardown calls the child's explicit stop hook before removing the frame. Location uses injected fixture coordinates, and exported evidence omits the coordinates. This verifies lab wiring and resource behavior; it does not prove physical camera, microphone, GPS, or native Lumen child permissions.
+
+## Measured lab coverage
+
+The bottom-right iteration badge reports a measured `n/100` coverage value: passed probes divided by all twelve requested probes, rounded to the nearest integer. Blocked, unsupported, setup-required, cancelled and untested probes remain in the denominator. Counts for those states remain visible. Simulated identity consent does not pass real authentication. The badge is not an overall browser-quality score or an HTML5Test result; independent engine acceptance, provider authentication, device coverage and resource budgets remain separate.
+
+The native libdatachannel backend reports measured application payload bytes and its actual selected ICE candidates. It does not expose ICE/DTLS/UDP byte totals through its C API; those fields stay null or absent. The local probe accepts this specifically declared backend only with a selected pair, native connected/completed state, and nonzero payload bytes in both directions. This remains same-browser evidence. The independent browser helper still requires a nonce from the other process; missing transport totals are not converted into fabricated zeros or inferred DTLS measurements. Native media RTP remains unsupported.
+
+The peer page records only its own fresh nonce echo (`independentPeerEcho`) and released resources. It cannot inspect OS process identity, so `processSeparationVerified` and `crossBrowserInteroperability` remain false in the page report. The external runner records separately launched PIDs and browser binary fingerprints and performs the aggregate assertion. Both peers now exchange fresh nonces and acknowledge completion through the bounded signaling broker before teardown. The two-Chromium reference test proves independent-process transport only; Chrome-to-Lumen evidence is recorded by the separate engine verification runner.
