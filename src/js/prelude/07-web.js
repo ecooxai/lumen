@@ -93,7 +93,7 @@ class ReadableStream {
         return new Promise((res, rej) => {
             let stop = false;
             const fin = (err, isErr) => { if (stop) return; stop = true; rd.releaseLock(); w.releaseLock(); isErr ? rej(err) : res(); };
-            if (sig) { const onAbort = () => { const e = sig.reason !== undefined ? sig.reason : new DOMException('The operation was aborted.', 'AbortError'); if (!o.preventAbort) dest.abort(e).catch(() => {}); if (!o.preventCancel) this._cancel(e); fin(e, true); }; if (sig.aborted) return onAbort(); sig.addEventListener('abort', onAbort, { once: true }); }
+            if (sig) { const onAbort = () => { const e = sig.reason !== undefined ? sig.reason : new DOMException('The operation was aborted.', 'AbortError'); if (!o.preventAbort) w.abort(e).catch(() => {}); if (!o.preventCancel) this._cancel(e); fin(e, true); }; if (sig.aborted) return onAbort(); sig.addEventListener('abort', onAbort, { once: true }); }
             const step = () => {
                 if (stop) return;
                 rd.read().then(({ value, done }) => {
@@ -119,40 +119,185 @@ class ReadableStream {
         return new ReadableStream({ pull(c) { return Promise.resolve(iter.next()).then(({ value, done }) => done ? c.close() : Promise.resolve(value).then(v => c.enqueue(v))); }, cancel(r) { if (iter.return) return iter.return(r); } }, { highWaterMark: 0 });
     }
 }
+function writableDeferred(handled = false) {
+    const d = { state: 'pending' };
+    d.promise = new Promise((resolve, reject) => {
+        d.resolve = value => { if (d.state === 'pending') { d.state = 'fulfilled'; resolve(value); } };
+        d.reject = reason => { if (d.state === 'pending') { d.state = 'rejected'; reject(reason); } };
+    });
+    if (handled) d.promise.catch(() => {});
+    return d;
+}
+function writableRejectSlot(writer, key, reason) {
+    if (writer[key].state !== 'pending') writer[key] = writableDeferred(true);
+    writer[key].reject(reason);
+}
 class WritableStreamDefaultWriter {
-    constructor(s) { if (s._writer) throw new TypeError('WritableStream is locked'); def(this, '_s', s); s._writer = this; }
-    get closed() { return this._s._closedP; } get ready() { return Promise.resolve(); } get desiredSize() { const s = this._s; return s._err !== undefined ? null : s._closing ? 0 : Math.max(0, s._hwm - s._pending); }
-    write(x) { return this._s._write(x); } close() { return this._s._close(); } abort(r) { return this._s.abort(r); }
-    releaseLock() { if (this._s && this._s._writer === this) this._s._writer = null; }
+    constructor(s) {
+        if (!(s instanceof WritableStream)) throw new TypeError('Expected a WritableStream');
+        if (s._writer) throw new TypeError('WritableStream is locked');
+        def(this, '_s', s); def(this, '_ready', writableDeferred(true)); def(this, '_closed', writableDeferred(true));
+        s._writer = this;
+        if (s._state === 'writable') { if (s._closing || !s._backpressure) this._ready.resolve(); }
+        else if (s._state === 'closed') { this._ready.resolve(); this._closed.resolve(); }
+        else { this._ready.reject(s._err); if (s._state === 'errored') this._closed.reject(s._err); }
+    }
+    get closed() { return this._closed.promise; }
+    get ready() { return this._ready.promise; }
+    get desiredSize() {
+        const s = this._s;
+        if (!s) throw new TypeError('WritableStream writer lock was released');
+        if (s._state === 'erroring' || s._state === 'errored') return null;
+        return s._state === 'closed' ? 0 : s._hwm - s._queueSize;
+    }
+    write(chunk) { return this._s ? this._s._write(chunk, this) : Promise.reject(new TypeError('WritableStream writer lock was released')); }
+    close() { return this._s ? this._s._close() : Promise.reject(new TypeError('WritableStream writer lock was released')); }
+    abort(reason) { return this._s ? this._s._abort(reason) : Promise.reject(new TypeError('WritableStream writer lock was released')); }
+    releaseLock() {
+        if (!this._s) return;
+        const error = new TypeError('WritableStream writer lock was released');
+        writableRejectSlot(this, '_ready', error); writableRejectSlot(this, '_closed', error);
+        this._s._writer = null; this._s = null;
+    }
 }
 class WritableStream {
     constructor(sink = {}, strategy = {}) {
-        sink = sink || {};
-        def(this, '_sink', sink); def(this, '_writer', null); def(this, '_err', undefined); def(this, '_closing', false); def(this, '_pending', 0); def(this, '_hwm', strategy && strategy.highWaterMark != null ? strategy.highWaterMark : 1);
-        const ac = new AbortController();
-        const c = { error: (e) => { if (this._err === undefined) this._err = e; }, signal: ac.signal }; def(this, '_c', c); def(this, '_ac', ac);
-        let r, j; def(this, '_closedP', new Promise((a, b) => { r = a; j = b; })); this._closedP.catch(() => {}); def(this, '_cr', [r, j]);
-        let st; try { st = sink.start ? sink.start.call(sink, c) : undefined; } catch (e) { st = Promise.reject(e); }
-        def(this, '_chain', Promise.resolve(st).catch(e => { this._err = e; this._cr[1](e); }));
+        sink = sink == null ? {} : sink; strategy = strategy == null ? {} : strategy;
+        if (!['object', 'function'].includes(typeof sink)) throw new TypeError('Underlying sink must be an object');
+        if (sink.type !== undefined) throw new RangeError('Writable stream types are not supported');
+        const algorithms = {};
+        for (const name of ['start', 'write', 'close', 'abort']) {
+            const method = sink[name];
+            if (method !== undefined && typeof method !== 'function') throw new TypeError(`Underlying sink ${name} must be callable`);
+            algorithms[name] = method;
+        }
+        const size = strategy.size;
+        if (size !== undefined && typeof size !== 'function') throw new TypeError('Queue strategy size must be callable');
+        const highWaterMark = strategy.highWaterMark === undefined ? 1 : Number(strategy.highWaterMark);
+        if (Number.isNaN(highWaterMark) || highWaterMark < 0) throw new RangeError('Invalid high water mark');
+        def(this, '_sink', sink); def(this, '_algorithms', algorithms); def(this, '_size', size);
+        def(this, '_writer', null); def(this, '_state', 'writable'); def(this, '_err', undefined);
+        def(this, '_queue', []); def(this, '_queueSize', 0); def(this, '_hwm', highWaterMark);
+        def(this, '_backpressure', highWaterMark <= 0); def(this, '_started', false);
+        def(this, '_inFlight', null); def(this, '_closing', false); def(this, '_closeRequest', null); def(this, '_abortRequest', null);
+        const ac = new AbortController(); def(this, '_ac', ac);
+        const controller = { error: reason => this._controllerError(reason), signal: ac.signal }; def(this, '_c', controller);
+        // A synchronous start exception belongs to the constructor, while a
+        // rejected start promise errors the constructed stream asynchronously.
+        const started = algorithms.start ? algorithms.start.call(sink, controller) : undefined;
+        Promise.resolve(started).then(() => { this._started = true; this._advance(); }, error => { this._started = true; this._dealRejection(error); });
     }
     get locked() { return !!this._writer; }
     getWriter() { return new WritableStreamDefaultWriter(this); }
-    _write(x) {
-        if (this._closing) return Promise.reject(new TypeError('Cannot write to a closing stream'));
-        this._pending++;
-        const p = this._chain.then(() => { if (this._err !== undefined) throw this._err; return this._sink.write ? this._sink.write.call(this._sink, x, this._c) : undefined; }).finally(() => this._pending--);
-        this._chain = p.catch(e => { if (this._err === undefined) this._err = e; this._cr[1](e); });
-        return p.then(() => {});
+    close() { return this._writer ? Promise.reject(new TypeError('WritableStream is locked')) : this._close(); }
+    abort(reason) { return this._writer ? Promise.reject(new TypeError('WritableStream is locked')) : this._abort(reason); }
+    _updateBackpressure() {
+        if (this._state !== 'writable' || this._closing) return;
+        const pressure = this._hwm - this._queueSize <= 0;
+        if (pressure !== this._backpressure && this._writer) {
+            if (pressure) this._writer._ready = writableDeferred(true);
+            else this._writer._ready.resolve();
+        }
+        this._backpressure = pressure;
+    }
+    _write(chunk, writer) {
+        let size = 1;
+        try { if (this._size) size = this._size.call(undefined, chunk); }
+        catch (error) { this._controllerError(error); }
+        // The strategy callback may release the writer or change stream state.
+        if (writer._s !== this) return Promise.reject(new TypeError('WritableStream writer lock was released'));
+        if (this._state === 'errored') return Promise.reject(this._err);
+        if (this._closing || this._state === 'closed') return Promise.reject(new TypeError('Cannot write to a closing or closed stream'));
+        if (this._state === 'erroring') return Promise.reject(this._err);
+        const request = writableDeferred();
+        try {
+            size = Number(size);
+            if (!Number.isFinite(size) || size < 0) throw new RangeError('Invalid queue chunk size');
+        } catch (error) { this._controllerError(error); request.reject(error); return request.promise; }
+        this._queue.push({ kind: 'write', chunk, size, request }); this._queueSize += size;
+        this._updateBackpressure(); this._advance();
+        return request.promise;
     }
     _close() {
-        if (this._closing) return Promise.reject(new TypeError('Stream is already closing'));
-        this._closing = true;
-        const p = this._chain.then(() => { if (this._err !== undefined) throw this._err; return this._sink.close ? this._sink.close.call(this._sink) : undefined; });
-        this._chain = p.then(() => this._cr[0](), e => this._cr[1](e));
-        return p.then(() => {});
+        if (this._closing || this._state === 'closed' || this._state === 'errored') return Promise.reject(new TypeError('Cannot close this stream'));
+        const request = writableDeferred(); this._closeRequest = request; this._closing = true;
+        if (this._writer && this._backpressure && this._state === 'writable') this._writer._ready.resolve();
+        this._queue.push({ kind: 'close', request }); this._advance();
+        return request.promise;
     }
-    close() { if (this._writer) return Promise.reject(new TypeError('WritableStream is locked')); return this._close(); }
-    abort(r) { if (this._err === undefined) this._err = r; this._ac.abort(r); this._cr[1](r); return Promise.resolve(this._sink.abort ? this._sink.abort.call(this._sink, r) : undefined).then(() => {}); }
+    _abort(reason) {
+        if (this._state === 'closed' || this._state === 'errored') return Promise.resolve();
+        this._ac.abort(reason);
+        if (this._state === 'closed' || this._state === 'errored') return Promise.resolve();
+        if (this._abortRequest) return this._abortRequest.request.promise;
+        const request = writableDeferred(); const alreadyErroring = this._state === 'erroring';
+        this._abortRequest = { request, reason, alreadyErroring };
+        if (!alreadyErroring) this._startErroring(reason);
+        else this._advance();
+        return request.promise;
+    }
+    _clearAlgorithms() { this._algorithms = {}; this._size = undefined; this._sink = null; }
+    _controllerError(reason) {
+        if (this._state !== 'writable') return;
+        this._clearAlgorithms(); this._startErroring(reason);
+    }
+    _startErroring(reason) {
+        if (this._state !== 'writable') return;
+        this._state = 'erroring'; this._err = reason;
+        if (this._writer) writableRejectSlot(this._writer, '_ready', reason);
+        if (this._started && !this._inFlight) this._finishErroring();
+    }
+    _dealRejection(reason) {
+        if (this._state === 'writable') this._startErroring(reason);
+        else if (this._state === 'erroring') this._finishErroring();
+    }
+    _rejectCloseAndClosed() {
+        if (this._closeRequest) { this._closeRequest.reject(this._err); this._closeRequest = null; }
+        if (this._writer) this._writer._closed.reject(this._err);
+    }
+    _finishErroring() {
+        if (this._state !== 'erroring' || this._inFlight || !this._started) return;
+        this._state = 'errored';
+        for (const item of this._queue) if (item.kind === 'write') item.request.reject(this._err);
+        this._queue.length = 0; this._queueSize = 0;
+        const abort = this._abortRequest; this._abortRequest = null;
+        if (!abort || abort.alreadyErroring) {
+            if (abort) abort.request.reject(this._err);
+            this._clearAlgorithms(); this._rejectCloseAndClosed(); return;
+        }
+        let result;
+        try { result = this._algorithms.abort ? this._algorithms.abort.call(this._sink, abort.reason) : undefined; }
+        catch (error) { result = Promise.reject(error); }
+        this._clearAlgorithms();
+        Promise.resolve(result).then(() => { abort.request.resolve(); this._rejectCloseAndClosed(); }, error => { abort.request.reject(error); this._rejectCloseAndClosed(); });
+    }
+    _advance() {
+        if (!this._started || this._inFlight) return;
+        if (this._state === 'erroring') { this._finishErroring(); return; }
+        if (this._state !== 'writable' || !this._queue.length) return;
+        const item = this._queue[0]; this._inFlight = item;
+        if (item.kind === 'close') { this._queue.shift(); this._closeRequest = null; }
+        let result;
+        try { result = this._algorithms[item.kind] ? this._algorithms[item.kind].call(this._sink, ...(item.kind === 'write' ? [item.chunk, this._c] : [])) : undefined; }
+        catch (error) { result = Promise.reject(error); }
+        if (item.kind === 'close') this._clearAlgorithms();
+        Promise.resolve(result).then(() => {
+            item.request.resolve(); this._inFlight = null;
+            if (item.kind === 'close') {
+                this._state = 'closed'; this._err = undefined;
+                if (this._abortRequest) { this._abortRequest.request.resolve(); this._abortRequest = null; }
+                if (this._writer) this._writer._closed.resolve();
+                return;
+            }
+            this._queue.shift(); this._queueSize = Math.max(0, this._queueSize - item.size);
+            this._updateBackpressure(); this._advance();
+        }, error => {
+            item.request.reject(error); this._inFlight = null;
+            if (item.kind === 'close' && this._abortRequest) { this._abortRequest.request.reject(error); this._abortRequest = null; }
+            if (this._state === 'writable') this._clearAlgorithms();
+            this._dealRejection(error);
+        });
+    }
 }
 class TransformStream {
     constructor(t = {}, ws = {}, rs = {}) {

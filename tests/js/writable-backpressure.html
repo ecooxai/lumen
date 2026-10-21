@@ -1,0 +1,34 @@
+<!doctype html><meta charset="utf-8"><title>Writable stream lifecycle regression</title><script>
+(async()=>{
+ const results={};
+ const assert=(value,message)=>{if(!value)throw new Error(message);};
+ const deferred=()=>{let resolve,reject;const promise=new Promise((a,b)=>{resolve=a;reject=b;});return{promise,resolve,reject};};
+ const tick=async()=>{for(let index=0;index<12;index++)await Promise.resolve();};
+ const rejected=async(promise,predicate)=>{let caught=false;try{await promise;}catch(error){caught=true;assert(predicate(error),'unexpected rejection');}assert(caught,'expected rejection');};
+ const check=async(name,body)=>{try{await body();results[name]='PASS';}catch(error){results[name]='FAIL: '+error.message;}};
+ await check('weighted-backpressure',async()=>{
+  const gate=deferred(),entered=deferred();const writer=new WritableStream({write(){entered.resolve();return gate.promise;}},{highWaterMark:4,size:chunk=>chunk.byteLength}).getWriter();
+  const written=writer.write(new Uint8Array(6));const ready=writer.ready;let unblocked=false;ready.then(()=>{unblocked=true;},()=>{});
+  try{assert(writer.desiredSize===-2,'weighted negative desiredSize');await entered.promise;await tick();assert(!unblocked,'ready resolved while queue full');assert(ready===writer.ready,'ready identity');}finally{gate.resolve();}
+  await written;await ready;assert(writer.desiredSize===4,'queue drained');await writer.close();await writer.closed;
+ });
+ await check('released-writer',async()=>{
+  const stream=new WritableStream();const first=stream.getWriter();const closed=first.closed;closed.catch(()=>{});first.releaseLock();assert(!stream.locked,'lock not released');await rejected(closed,e=>e?.name==='TypeError');await rejected(first.write(1),e=>e?.name==='TypeError');await rejected(first.ready,e=>e?.name==='TypeError');const next=stream.getWriter();await next.write(2);await next.close();await next.closed;
+ });
+ await check('error-with-undefined',async()=>{
+  const started=deferred();let controller,calls=0;const writer=new WritableStream({start(c){controller=c;return started.promise;},write(){calls++;}}).getWriter();const write=writer.write(1);write.catch(()=>{});controller.error(undefined);await rejected(writer.ready,e=>e===undefined);started.resolve();await rejected(write,e=>e===undefined);await rejected(writer.closed,e=>e===undefined);assert(calls===0&&writer.desiredSize===null,'errored stream continued writing');
+ });
+ await check('abort-in-flight',async()=>{
+  const gate=deferred(),entered=deferred();const reason={cancel:true};let aborts=0,writes=0,controller;const writer=new WritableStream({start(c){controller=c;},write(){writes++;entered.resolve();return gate.promise;},abort(value){assert(value===reason,'abort reason');aborts++;}}).getWriter();
+  const first=writer.write(1),second=writer.write(2);second.catch(()=>{});await entered.promise;const aborted=writer.abort(reason);assert(controller.signal.aborted,'signal must abort immediately');assert(aborts===0,'sink abort must wait for current write');gate.resolve();await first;await rejected(second,e=>e===reason);await aborted;await rejected(writer.closed,e=>e===reason);assert(writes===1&&aborts===1,'queued work or duplicate abort');
+ });
+ await check('pipe-abort-uses-locked-writer',async()=>{
+  const gate=deferred(),entered=deferred();let aborts=0,cancels=0;const signal=new AbortController();const reason={stopPipe:true};
+  const source=new ReadableStream({pull(c){c.enqueue(1);},cancel(){cancels++;}});const sink=new WritableStream({write(){entered.resolve();return gate.promise;},abort(){aborts++;}});const piped=source.pipeTo(sink,{signal:signal.signal});piped.catch(()=>{});await entered.promise;signal.abort(reason);gate.resolve();await rejected(piped,e=>e===reason);await tick();assert(aborts===1&&cancels===1,'pipe did not abort sink and cancel source');assert(!source.locked&&!sink.locked,'pipe locks retained');
+ });
+ const report={scope:'native writable-stream lifecycle fixture',results,passed:Object.values(results).filter(value=>value==='PASS').length,total:Object.keys(results).length,byobSupportTested:false};
+ globalThis.lumeWritableStreamResult=report;
+ document.documentElement.setAttribute("data-writable-complete","true");
+ console.log('RESULTS writable-backpressure '+JSON.stringify(report));
+})();
+</script>
