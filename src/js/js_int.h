@@ -147,6 +147,11 @@ v8::MaybeLocal<v8::Value> jcall(JsCtx *c, v8::Local<v8::Function> f, v8::Local<v
 void jfire(JsCtx *c, Node *n, const char *type);
 void jreport(JsCtx *c, v8::Local<v8::Value> exc, v8::Local<v8::Message> msg);
 void js_install_native(JsCtx *c, v8::Local<v8::Object> N);
+void js_install_rtc(JsCtx *c, v8::Local<v8::Object> N);
+void js_rtc_close(JsCtx *c);
+double js_rtc_deadline(JsCtx *c);
+void js_rtc_deliver(JsCtx *c);
+size_t js_rtc_live_peers();
 void js_run_inserted(JsCtx *c, Node *root);
 extern "C" JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame);
 extern "C" JsCtx *owner_ctx(Document *d);

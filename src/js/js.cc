@@ -682,6 +682,7 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
     c->node_tmpl.Reset(iso, tmpl);
     v8::Local<v8::Object> N = v8::Object::New(iso);
     js_install_native(c, N);
+    js_install_rtc(c, N);
     v8::TryCatch tc(iso);
     v8::ScriptOrigin origin(jstr(iso, "lumen:prelude"));
     v8::Local<v8::Script> s;
@@ -773,6 +774,7 @@ void js_free(JsCtx *c) {
     { std::lock_guard<std::mutex> l(g_pick_mu); if (g_pick_ctx == c) g_pick_ctx = nullptr; }
     workers_kill(c);
     js_capture_close(c);
+    js_rtc_close(c);
     for (JsCtx *k : std::vector<JsCtx *>(c->kids)) js_free(k);
     frames_forget(c);
     if (c->parent) {
@@ -991,6 +993,7 @@ double js_next_deadline(JsCtx *c) {
     for (JsCtx *k : c->kids) if (!k->dead) d = std::min(d, js_next_deadline(k));
     d = std::min(d, workers_deadline(c));
     d = std::min(d, js_windows_deadline(c));
+    d = std::min(d, js_rtc_deadline(c));
     return d;
 }
 
@@ -1026,6 +1029,7 @@ static void tick_one(JsCtx *c) {
     pick_deliver(c);
     js_bus_deliver(c);
     js_windows_deliver(c);
+    js_rtc_deliver(c);
     double now = now_ms();
     std::vector<std::pair<double, uint32_t>> due;
     for (auto &kv : c->timers) if (kv.second.due <= now) due.push_back({ kv.second.due, kv.first });

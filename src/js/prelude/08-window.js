@@ -813,16 +813,19 @@ function fireAnim(t, type, name, elapsed, anim) {
     if (!N.winOp(localWindowId, 16)) { delete navigator.mediaDevices; delete navigator.geolocation; }
 })();
 
-/* The experimental RTC shim has no network transport. Do not advertise it as
- * WebRTC to production pages; conformance experiments require explicit opt-in. */
+/* Only the compiled native backend advertises network data-channel transport.
+ * The opt-in legacy conformance shim remains explicitly in-process. */
 (() => {
     const enabled = N.rtcLoopbackEnabled();
+    const native = !enabled && nativeRTCGlobals !== null;
     Object.defineProperty(navigator, 'lumenCapabilities', { value: Object.freeze({
-        engine: 'Lumen', webrtcNetworkTransport: false,
+        engine: 'Lumen', webrtcNetworkTransport: native, webrtcMediaTransport: false,
+        webrtcBackend: native ? 'libdatachannel-0.24.6' : enabled ? 'in-process-loopback' : 'unsupported',
         experimentalRTC: enabled ? 'in-process-loopback' : 'disabled',
         geolocationProvider: 'ip-approximation', webTransport: false,
     }), configurable: false, writable: false });
     if (!enabled) for (const k of ['RTCPeerConnection', 'webkitRTCPeerConnection', 'RTCSessionDescription', 'RTCIceCandidate', 'RTCPeerConnectionIceEvent', 'RTCPeerConnectionIceErrorEvent', 'RTCDataChannel', 'RTCDataChannelEvent', 'RTCTrackEvent', 'RTCRtpSender', 'RTCRtpReceiver', 'RTCRtpTransceiver', 'RTCIceTransport', 'RTCDtlsTransport', 'RTCSctpTransport', 'RTCCertificate', 'RTCStatsReport', 'RTCError', 'RTCErrorEvent']) delete globalThis[k];
+    if (native) Object.assign(globalThis, nativeRTCGlobals, {RTCSessionDescription, RTCIceCandidate, RTCPeerConnectionIceEvent});
 })();
 
 /* WebIDL attributes are enumerable accessors: libraries copy events with for-in (video.js fixEvent needs e.type) */

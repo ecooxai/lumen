@@ -36,8 +36,10 @@ ifneq ($(filter $(PLAT),sim ios cat),)
   JIT ?= 0
   JITSFX := $(if $(filter 1,$(JIT)),-jit)
   BUILD := build-$(PLAT)$(JITSFX)
-  IOSDEPS ?= $(HOME)/ios-deps/$(PLAT)
-  V8DIR ?= $(HOME)/src/v8ios/v8
+  # Prefer the reproducible project-local Apple toolchain when it is present.
+  # Explicit IOSDEPS/V8DIR overrides still win; older home installations remain supported.
+  IOSDEPS ?= $(if $(wildcard build-apple-toolchain/$(PLAT)/include/png.h),$(CURDIR)/build-apple-toolchain/$(PLAT),$(HOME)/ios-deps/$(PLAT))
+  V8DIR ?= $(if $(wildcard build-apple-toolchain/v8/include/v8.h),$(CURDIR)/build-apple-toolchain/v8,$(HOME)/src/v8ios/v8)
   V8OUT ?= $(V8DIR)/out/$(if $(filter ios,$(PLAT)),ios-device,$(if $(filter sim,$(PLAT)),ios-simulator,catalyst))$(JITSFX)
   SDKNAME := $(if $(filter ios,$(PLAT)),iphoneos,$(if $(filter sim,$(PLAT)),iphonesimulator,macosx))
   TRIPLE := arm64-apple-ios16.0$(if $(filter sim,$(PLAT)),-simulator,$(if $(filter cat,$(PLAT)),-macabi,))
@@ -57,6 +59,24 @@ CXXFLAGS := -std=c++20 $(OPT) $(WARN) $(INC) -DV8_COMPRESS_POINTERS
 BASELIBS := $(LIBDIRS) $(if $(IOS),,-licuuc) -lm
 NETLIBS := $(BASELIBS) -lssl -lcrypto -lz -lbrotlidec $(if $(IOS),-lbrotlicommon) -lzstd
 
+# Real data-channel transport is optional until the pinned target dependencies exist.
+# Build them with tools/build-rtc.py --platform macos|sim|ios. RTC=1 requires them.
+RTC ?= auto
+RTC_PLATFORM := $(if $(IOS),$(PLAT),$(if $(filter Darwin,$(UNAME)),macos,linux))
+RTC_PREFIX ?= $(CURDIR)/build-deps/rtc/$(RTC_PLATFORM)
+RTC_ARCHIVES := $(addprefix $(RTC_PREFIX)/lib/,libdatachannel.a libjuice.a libusrsctp.a)
+RTC_COMPLETE := $(and $(wildcard $(RTC_PREFIX)/include/rtc/rtc.h),$(filter 3,$(words $(wildcard $(RTC_ARCHIVES)))))
+ifeq ($(filter $(RTC),auto 0 1),)
+  $(error RTC must be auto, 0, or 1)
+endif
+ifeq ($(RTC),1)
+  ifeq ($(RTC_COMPLETE),)
+    $(error RTC=1 requires the pinned native libraries in $(RTC_PREFIX))
+  endif
+endif
+RTC_ENABLED := $(if $(filter 0,$(RTC)),0,$(if $(RTC_COMPLETE),1,0))
+RTC_LIBS := $(if $(filter 1,$(RTC_ENABLED)),$(RTC_ARCHIVES))
+
 BASE_SRC := $(wildcard src/base/*.c)
 NET_SRC := $(wildcard src/net/*.c)
 CORE_SRC := $(BASE_SRC) $(NET_SRC) $(wildcard src/html/*.c src/dom/*.c src/css/*.c src/text/*.c src/layout/*.c src/paint/*.c src/media/*.c src/gpu/*.c src/js/*.c)
@@ -70,6 +90,17 @@ endif
 OBJ = $(patsubst %,$(BUILD)/%.o,$(1))
 
 all: $(BUILD)/lumen
+
+# A content-stable header invalidates the bridge when dependencies or RTC= change.
+$(BUILD)/rtc-config.h: FORCE_RTC_CONFIG
+	@mkdir -p $(dir $@)
+	@printf '#define LUMEN_RTC_NATIVE %s\n' '$(RTC_ENABLED)' > $@.tmp
+	@cmp -s $@.tmp $@ || mv $@.tmp $@
+	@rm -f $@.tmp
+FORCE_RTC_CONFIG:
+.PHONY: FORCE_RTC_CONFIG
+$(BUILD)/src/js/rtc_native.cc.o: $(BUILD)/rtc-config.h $(RTC_LIBS)
+$(BUILD)/src/js/rtc_native.cc.o: CXXFLAGS += -I$(BUILD) -I$(RTC_PREFIX)/include -DRTC_STATIC -DRTC_ENABLE_MEDIA=0 -DRTC_ENABLE_WEBSOCKET=0 -fno-rtti
 
 # Test assertions must remain active even in release builds.
 $(BUILD)/tests/%.c.o: CFLAGS += -UNDEBUG
@@ -96,7 +127,7 @@ FORCE:
 .PHONY: FORCE
 $(addprefix $(BUILD)/,lumen jsrun test_js_device_capabilities test_grid_rows test_overflow_clip test_sticky_position test_media_lifecycle test_worker_lifecycle test_promise_rejections): $(V8LINK_RSP)
 endif
-LIBS := $(NETLIBS) -lfreetype -lharfbuzz -lSDL3 $(V8LIBS) -lwgpu_native \
+LIBS := $(RTC_LIBS) $(NETLIBS) -lfreetype -lharfbuzz -lSDL3 $(V8LIBS) -lwgpu_native \
         -lavcodec -lavformat -lavutil -lswscale -lswresample -lpng -ljpeg -lwebp -lwebpdemux -lsharpyuv -lgif $(if $(IOS),-ldav1d) $(PLATLIBS)
 
 $(BUILD)/lumen: $(call OBJ,$(CORE_SRC) $(APP_SRC) $(JS_SRC))
@@ -330,3 +361,7 @@ test-audio-capture: $(BUILD)/jsrun
 .PHONY: test-camera-authorization
 test-camera-authorization:
 	node tests/test_camera_authorization.mjs
+
+$(BUILD)/tests/test_rtc_native.cc.o: CXXFLAGS += -fno-rtti -UNDEBUG
+$(BUILD)/test_rtc_native: $(call OBJ,tests/test_rtc_native.cc $(CORE_SRC) $(JS_SRC))
+	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)

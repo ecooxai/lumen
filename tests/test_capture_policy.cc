@@ -88,8 +88,8 @@ int main(int argc, char **argv) {
         free(f.document->permissions_policy);f.document->permissions_policy=strdup("camera=(self \"https://embedded.example\")");
         CHECK("response origin plus frame delegation grants camera",permission(child,"camera","granted"));
         CHECK("real MediaStream types remain available without RTC transport",value(f.context,"typeof MediaStream==='function' && typeof MediaStreamTrack==='function'"));
-        CHECK("network WebRTC constructors are not falsely exposed",value(f.context,"typeof RTCPeerConnection==='undefined' && typeof RTCDataChannel==='undefined'"));
-        CHECK("capability descriptor records unsupported transport",value(f.context,"navigator.lumenCapabilities.webrtcNetworkTransport===false && navigator.lumenCapabilities.experimentalRTC==='disabled' && Object.isFrozen(navigator.lumenCapabilities)"));
+        CHECK("RTC constructors match actual compiled network transport",value(f.context,"navigator.lumenCapabilities.webrtcNetworkTransport ? typeof RTCPeerConnection==='function' && typeof RTCDataChannel==='function' && navigator.lumenCapabilities.webrtcBackend==='libdatachannel-0.24.6' : typeof RTCPeerConnection==='undefined' && typeof RTCDataChannel==='undefined'"));
+        CHECK("capability descriptor never invents media transport",value(f.context,"navigator.lumenCapabilities.webrtcMediaTransport===false && navigator.lumenCapabilities.experimentalRTC==='disabled' && Object.isFrozen(navigator.lumenCapabilities)"));
     }
     {
         setenv("LUMEN_EXPERIMENTAL_RTC_LOOPBACK","1",1);
