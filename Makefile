@@ -325,3 +325,8 @@ $(BUILD)/test_geolocation_contract: $(call OBJ,tests/test_geolocation_contract.c
 test-audio-capture: $(BUILD)/jsrun
 	node tests/test_audio_capture_graph.mjs
 	python3 tests/test_native_microphone.py --jsrun $(BUILD)/jsrun
+
+# Deterministic native-bridge authorization/first-frame regression; not physical capture.
+.PHONY: test-camera-authorization
+test-camera-authorization:
+	node tests/test_camera_authorization.mjs

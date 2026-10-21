@@ -601,20 +601,37 @@ function fireAnim(t, type, name, elapsed, anim) {
         ...N.capMics().map((l, i) => ({ deviceId: i ? 'mic' + i : 'default', groupId: 'm' + i, kind: 'audioinput', label: state('microphone') === 'granted' ? l : '', toJSON() { return { ...this }; } }))]);
     md.getSupportedConstraints = () => ({ deviceId: true, width: true, height: true, frameRate: true, sampleRate: true, channelCount: true });
     const NA = () => new DOMException('Permission denied', 'NotAllowedError'), NF = k => new DOMException('Requested device not found (' + k + ')', 'NotFoundError');
-    md.getUserMedia = c => new Promise((res, rej) => setTimeout(() => {
+    const cameraReady = id => new Promise((resolve, reject) => {
+        let frameWait = null;
+        const check = () => {
+            const status = N.capCamStatus(id);
+            if (status === 2) { resolve(); return; }
+            if (status < 0) { reject(status === -1 ? NA() : new DOMException('Camera became unavailable', 'NotReadableError')); return; }
+            /* An ignored OS prompt may remain pending. Only authorized frame
+             * startup has a timeout; it must not consume permission-wait time. */
+            if (status === 1) {
+                if (frameWait === null) frameWait = Date.now();
+                if (Date.now() - frameWait >= 10000) { reject(new DOMException('Camera did not produce a frame', 'NotReadableError')); return; }
+            } else frameWait = null;
+            setTimeout(check, 100);
+        };
+        check();
+    });
+    md.getUserMedia = c => new Promise((res, rej) => setTimeout(async () => {
         if (!c || typeof c !== 'object' || (!c.audio && !c.video)) return rej(new TypeError("Failed to execute 'getUserMedia': At least one of audio and video must be requested"));
-        const tracks = [];
+        const tracks = []; let openingCamera = 0;
         try {
             if ((c.video && !N.capAllowed('camera')) || (c.audio && !N.capAllowed('microphone'))) throw NA();
             if (c.video) { const cams = N.capCameras(); if (!cams.length) throw NF('camera'); if (!ask('camera')) throw NA();
                 const v = typeof c.video === 'object' ? c.video : {}; let idx = 0; const did = ideal(v.deviceId); if (typeof did === 'string' && /^cam\d+$/.test(did)) idx = +did.slice(3);
                 const id = N.capCamOpen(idx, ideal(v.width), ideal(v.height), ideal(v.frameRate)); if (id < 0) throw NA(); if (!id) throw new DOMException('Could not start video source', 'NotReadableError');
-                const t = new MediaStreamTrack(RTC_INTERNAL, 'video', cams[idx]); t._.cam = id; t._.dev = 'cam' + idx; tracks.push(t); }
+                openingCamera = id; await cameraReady(id);
+                const t = new MediaStreamTrack(RTC_INTERNAL, 'video', cams[idx]); t._.cam = id; t._.dev = 'cam' + idx; tracks.push(t); openingCamera = 0; }
             if (c.audio) { const mics = N.capMics(); if (!mics.length) throw NF('microphone'); if (!ask('microphone')) throw NA();
                 const a = typeof c.audio === 'object' ? c.audio : {}; const id = N.capMicOpen(ideal(a.sampleRate) || 48000, ideal(a.channelCount) || 1);
                 if (!id) throw new DOMException('Could not start audio source', 'NotReadableError');
                 const t = new MediaStreamTrack(RTC_INTERNAL, 'audio', mics[0]); t._.mic = id; t._.rate = ideal(a.sampleRate) || 48000; t._.ch = ideal(a.channelCount) || 1; tracks.push(t); }
-        } catch (e) { for (const t of tracks) t.stop(); return rej(e); }
+        } catch (e) { if (openingCamera) N.capCamClose(openingCamera); for (const t of tracks) t.stop(); return rej(e); }
         res(new MediaStream(tracks));
     }));
     md.getDisplayMedia = (c = {}) => new Promise((res, rej) => setTimeout(() => {

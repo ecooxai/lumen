@@ -16,7 +16,7 @@
 int ios_rp_start(void); void ios_rp_stop(void); bool ios_rp_push(void (*store)(const uint32_t *px, int w, int h, int stride));
 #endif
 
-typedef struct { SDL_Camera *cam; Node *node; Image img[2]; int cur, w, h, fps; SDL_Thread *th; SDL_AtomicInt run; bool screen, rp; Uint64 last; unsigned seq; } Cam;
+typedef struct { SDL_Camera *cam; Node *node; Image img[2]; int cur, w, h, fps; SDL_Thread *th; SDL_AtomicInt run, ready; bool screen, rp; Uint64 last; unsigned seq; } Cam;
 #define NCAM 8
 static Cam g_cam[NCAM + 1];
 static SDL_AudioStream *g_mic[NCAM + 1];
@@ -32,6 +32,7 @@ int cap_cameras(char (*names)[128], int max) {
 static int cam_thread(void *p) {
     Cam *c = p;
     while (SDL_GetAtomicInt(&c->run)) {
+        if (SDL_GetCameraPermissionState(c->cam) <= 0) { SDL_Delay(50); continue; }
         Uint64 ts; SDL_Surface *f = SDL_AcquireCameraFrame(c->cam, &ts);
         if (!f) { SDL_Delay(4); continue; }
         SDL_Surface *s = SDL_ConvertSurface(f, SDL_PIXELFORMAT_ARGB8888);
@@ -41,7 +42,7 @@ static int cam_thread(void *p) {
         if (im->w != s->w || im->h != s->h) { free(im->px); im->px = malloc((size_t)s->w * s->h * 4); im->w = s->w; im->h = s->h; im->refs = 1; im->scale = 1; }
         for (int y = 0; y < s->h; y++) { uint32_t *d = im->px + (size_t)y * s->w; const uint32_t *r = (const uint32_t *)((const uint8_t *)s->pixels + (size_t)y * s->pitch); for (int x = 0; x < s->w; x++) d[x] = r[x] | 0xff000000u; }
         c->w = s->w; c->h = s->h; SDL_DestroySurface(s);
-        c->cur = b; c->seq++; cvbuf_changed = 1;
+        c->cur = b; c->seq++; SDL_SetAtomicInt(&c->ready, 1); cvbuf_changed = 1;
     }
     return 0;
 }
@@ -60,11 +61,19 @@ int cap_cam_open(int idx, int w, int h, int fps) {
     Cam *c = &g_cam[slot]; memset(c, 0, sizeof *c);
     c->cam = SDL_OpenCamera(ids[idx], want); SDL_free(ids);
     if (!c->cam) { fprintf(stderr, "camera: %s\n", SDL_GetError()); return 0; }
-    for (int i = 0; i < 200 && SDL_GetCameraPermissionState(c->cam) == 0; i++) { SDL_PumpEvents(); SDL_Delay(10); }
     if (SDL_GetCameraPermissionState(c->cam) < 0) { SDL_CloseCamera(c->cam); c->cam = NULL; return -1; }
     SDL_CameraSpec cs; if (SDL_GetCameraFormat(c->cam, &cs)) { c->w = cs.width; c->h = cs.height; c->fps = cs.framerate_denominator ? cs.framerate_numerator / cs.framerate_denominator : 30; }
     SDL_SetAtomicInt(&c->run, 1); c->th = SDL_CreateThread(cam_thread, "camera", c);
+    if (!c->th) { SDL_SetAtomicInt(&c->run, 0); SDL_CloseCamera(c->cam); memset(c, 0, sizeof *c); return 0; }
     return slot;
+}
+/* -2 unavailable, -1 OS denied, 0 OS pending, 1 authorized, 2 first frame ready.
+ * JS polls without blocking the main event loop while an OS prompt is open. */
+int cap_cam_status(int id) {
+    if (id <= 0 || id > NCAM || !g_cam[id].cam) return -2;
+    Cam *c = &g_cam[id]; int permission = SDL_GetCameraPermissionState(c->cam);
+    if (permission <= 0) return permission < 0 ? -1 : 0;
+    return SDL_GetAtomicInt(&c->ready) ? 2 : 1;
 }
 void cap_cam_info(int id, int *w, int *h, int *fps) { Cam *c = id > 0 && id <= NCAM ? &g_cam[id] : NULL; *w = c ? c->w : 0; *h = c ? c->h : 0; *fps = c ? c->fps : 0; }
 void cap_cam_bind(int id, Node *n) {

@@ -3,7 +3,7 @@
 #include <cstdlib>
 #include <string>
 extern "C" {
-int cap_cameras(char (*names)[128], int max); int cap_cam_open(int idx, int w, int h, int fps); void cap_cam_info(int id, int *w, int *h, int *fps);
+int cap_cameras(char (*names)[128], int max); int cap_cam_open(int idx, int w, int h, int fps); int cap_cam_status(int id); void cap_cam_info(int id, int *w, int *h, int *fps);
 void cap_cam_bind(int id, Node *n); void cap_cam_close(int id); int cap_mics(char (*names)[128], int max); int cap_mic_open(int rate, int ch);
 int cap_mic_read(int id, float *out, int max); int cap_screen_open(void); int cap_rec_start(int src, int bps); void cap_rec_pause(int id, bool on); uint8_t *cap_rec_stop(int id, int *len); void cap_mic_close(int id); int cap_perm_state(const char *kind, const char *origin); int cap_ask(const char *kind, const char *origin);
 }
@@ -19,6 +19,7 @@ FN(rtcLoopbackEnabled) { const char *s=getenv("LUMEN_EXPERIMENTAL_RTC_LOOPBACK")
 FN(capCameras) { if(allowed(a,"camera")) names(a, cap_cameras); else a.GetReturnValue().Set(v8::Array::New(a.GetIsolate())); }
 FN(capMics) { if(allowed(a,"microphone")) names(a, cap_mics); else a.GetReturnValue().Set(v8::Array::New(a.GetIsolate())); }
 FN(capCamOpen) { CTX; int id=granted(a,"camera")?cap_cam_open(INT(0), INT(1), INT(2), INT(3)):0; if(id>0)jctx(iso)->capture_cameras[id]=1; a.GetReturnValue().Set(id); }
+FN(capCamStatus) { CTX; int id=INT(0); a.GetReturnValue().Set(!jctx(iso)->capture_cameras.count(id) ? -2 : !granted(a,"camera") ? -1 : cap_cam_status(id)); }
 FN(capCamInfo) { CTX; int w, h, f; cap_cam_info(INT(0), &w, &h, &f); v8::Local<v8::Array> r = v8::Array::New(iso, 3); (void)r->Set(ctx, 0, v8::Integer::New(iso, w)); (void)r->Set(ctx, 1, v8::Integer::New(iso, h)); (void)r->Set(ctx, 2, v8::Integer::New(iso, f)); a.GetReturnValue().Set(r); }
 FN(capCamBind) { CTX; int id=INT(0); if(!id || jctx(iso)->capture_cameras.count(id))cap_cam_bind(id, a[1]->IsObject() ? junwrap(a[1]) : nullptr); }
 FN(capCamRetain) { CTX; auto &m=jctx(iso)->capture_cameras;auto i=m.find(INT(0)); if(i!=m.end())++i->second; a.GetReturnValue().Set(i!=m.end()); }
@@ -53,6 +54,6 @@ FN(blobMod) {
 void js_install_capture(JsCtx *c, v8::Local<v8::Object> N) {
     v8::Isolate *iso = c->iso; v8::Local<v8::Context> ctx = iso->GetCurrentContext();
 #define REG(nm) (void)N->Set(ctx, jstr(iso, #nm), v8::Function::New(ctx, n_##nm).ToLocalChecked())
-    REG(capAllowed); REG(rtcLoopbackEnabled); REG(capCamRetain); REG(capMicRetain); REG(blobMod); REG(capCameras); REG(capMics); REG(capCamOpen); REG(capCamInfo); REG(capCamBind); REG(capCamClose); REG(capScreenOpen); REG(recStart); REG(recPause); REG(recStop); REG(capMicOpen); REG(capMicClose); REG(capMicRead); REG(capState); REG(capAsk); REG(geoFixed);
+    REG(capAllowed); REG(rtcLoopbackEnabled); REG(capCamRetain); REG(capMicRetain); REG(blobMod); REG(capCameras); REG(capMics); REG(capCamOpen); REG(capCamStatus); REG(capCamInfo); REG(capCamBind); REG(capCamClose); REG(capScreenOpen); REG(recStart); REG(recPause); REG(recStop); REG(capMicOpen); REG(capMicClose); REG(capMicRead); REG(capState); REG(capAsk); REG(geoFixed);
 #undef REG
 }
