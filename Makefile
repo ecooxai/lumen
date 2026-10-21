@@ -13,9 +13,13 @@ WARN := -Wall -Wextra -Wno-unused-parameter -Wno-sign-compare -Wno-missing-field
 INC := -Isrc
 ifeq ($(UNAME),Darwin)
   BREW ?= /opt/homebrew
-  DEPS := openssl@3 brotli zstd freetype harfbuzz sdl3 v8 wgpu-native ffmpeg libpng jpeg-turbo webp giflib icu4c
-  INC += $(foreach d,$(DEPS),-I$(BREW)/opt/$(d)/include) -I$(BREW)/opt/freetype/include/freetype2 -I$(BREW)/opt/harfbuzz/include/harfbuzz -I$(BREW)/include
-  LIBDIRS := $(foreach d,$(DEPS),-L$(BREW)/opt/$(d)/lib)
+  # Pinned Metal first-frame fix built by tools/build-wgpu.py; explicit override wins.
+  WGPU_LOCAL_PREFIX := $(CURDIR)/build-deps/wgpu/macos
+  WGPU_PREFIX ?= $(if $(wildcard $(WGPU_LOCAL_PREFIX)/manifest.json),$(WGPU_LOCAL_PREFIX),$(BREW)/opt/wgpu-native)
+  WGPU_LIBRARY := $(WGPU_PREFIX)/lib/libwgpu_native.dylib
+  DEPS := openssl@3 brotli zstd freetype harfbuzz sdl3 v8 ffmpeg libpng jpeg-turbo webp giflib icu4c
+  INC += -I$(WGPU_PREFIX)/include $(foreach d,$(DEPS),-I$(BREW)/opt/$(d)/include) -I$(BREW)/opt/freetype/include/freetype2 -I$(BREW)/opt/harfbuzz/include/harfbuzz -I$(BREW)/include
+  LIBDIRS := -L$(WGPU_PREFIX)/lib $(foreach d,$(DEPS),-L$(BREW)/opt/$(d)/lib)
   PLATLIBS := -framework Cocoa -framework QuartzCore -framework Metal -framework AVFoundation -framework CoreMedia -framework CoreVideo -framework ScreenCaptureKit
 else
   # Linux: every dependency comes from Homebrew (V8/SDL3/wgpu-native bottles need its glibc + gcc runtime)
@@ -101,6 +105,21 @@ FORCE_RTC_CONFIG:
 .PHONY: FORCE_RTC_CONFIG
 $(BUILD)/src/js/rtc_native.cc.o: $(BUILD)/rtc-config.h $(RTC_LIBS)
 $(BUILD)/src/js/rtc_native.cc.o: CXXFLAGS += -I$(BUILD) -I$(RTC_PREFIX)/include -DRTC_STATIC -DRTC_ENABLE_MEDIA=0 -DRTC_ENABLE_WEBSOCKET=0 -fno-rtti
+
+# Relink GPU consumers when the selected library changes, including an
+# explicit return to the Homebrew prefix. Do not apply macOS selection to iOS.
+ifeq ($(UNAME),Darwin)
+ifeq ($(IOS),)
+$(BUILD)/wgpu-config.txt: FORCE_WGPU_CONFIG
+	@mkdir -p $(dir $@)
+	@printf '%s\n' '$(WGPU_PREFIX)' > $@.tmp
+	@cmp -s $@.tmp $@ || mv $@.tmp $@
+	@rm -f $@.tmp
+FORCE_WGPU_CONFIG:
+.PHONY: FORCE_WGPU_CONFIG
+$(BUILD)/src/gpu/gpu.c.o $(BUILD)/src/js/webgpu.cc.o $(BUILD)/tests/test_gpu_present.c.o: $(BUILD)/wgpu-config.txt $(WGPU_LIBRARY)
+endif
+endif
 
 # Test assertions must remain active even in release builds.
 $(BUILD)/tests/%.c.o: CFLAGS += -UNDEBUG
