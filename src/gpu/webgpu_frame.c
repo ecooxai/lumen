@@ -39,18 +39,16 @@ static uint32_t unit8(uint16_t hv) {   /* a half float in [0, 1] to 0..255 */
     return (uint32_t)(v * 255.0f + 0.5f);
 }
 
-void wgf_push(WgFrames *f, MediaPlayer *m, int capture, const uint8_t *rows, size_t stride, int w, int h, int fmt, bool opaque) {
-    if (!f || !m || !rows || w <= 0 || h <= 0) return;
-    Image *im = frame_image(f, w, h);
+bool wgf_convert(uint32_t *px, const uint8_t *rows, size_t stride, int w, int h, int fmt, bool opaque) {
     uint32_t all = 0xffffffffu, force = opaque ? 0xff000000u : 0;
     size_t row = (size_t)w * 4;
     if (fmt != WGF_RGBA16F) {   /* mapped readback memory is often uncached: copy it out in bulk, convert in cached memory */
-        if (stride == row) memcpy(im->px, rows, row * (size_t)h);
-        else for (int y = 0; y < h; y++) memcpy(im->px + (size_t)y * w, rows + (size_t)y * stride, row);
+        if (stride == row) memcpy(px, rows, row * (size_t)h);
+        else for (int y = 0; y < h; y++) memcpy(px + (size_t)y * w, rows + (size_t)y * stride, row);
     }
     for (int y = 0; y < h; y++) {
         const uint8_t *s = rows + (size_t)y * stride;
-        uint32_t *o = im->px + (size_t)y * w;
+        uint32_t *o = px + (size_t)y * w;
         if (fmt == WGF_BGRA8) {   /* already 0xAARRGGBB in memory */
             if (opaque) for (int x = 0; x < w; x++) o[x] |= force;
             else for (int x = 0; x < w; x++) all &= o[x];
@@ -68,7 +66,19 @@ void wgf_push(WgFrames *f, MediaPlayer *m, int capture, const uint8_t *rows, siz
             }
         }
     }
-    im->translucent = !opaque && (all >> 24) != 0xff;
+    return !opaque && (all >> 24) != 0xff;
+}
+
+void wgf_push_gpu(MediaPlayer *m, ImgGpu *g, int w, int h) {
+    Image *im = xcalloc(1, sizeof *im); im->w = w; im->h = h; im->refs = 1; im->gpu = g;
+    mp_push(m, im);
+}
+
+bool wgf_push(WgFrames *f, MediaPlayer *m, int capture, const uint8_t *rows, size_t stride, int w, int h, int fmt, bool opaque) {
+    if (!f || !m || !rows || w <= 0 || h <= 0) return false;
+    Image *im = frame_image(f, w, h);
+    bool see = im->translucent = wgf_convert(im->px, rows, stride, w, h, fmt, opaque);
     if (capture > 0) { im->refs++; live_push(capture, im); }
     mp_push(m, im);
+    return see;
 }

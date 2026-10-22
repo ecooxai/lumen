@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en-GB"><body>
+<div id="a" class="x" data-k="1"><span>one</span><span>two</span><p>three <b>bold</b></p></div>
+<div id="b" class="x y"><span title="t">four</span><!--c--><span> five  six </span></div>
+<svg id="s"><circle r="1"/></svg>
+<script>
+// XPath 1.0: paths, axes, predicates, unions, functions and every result type, with HTML name rules.
+const fail = [], ok = (c, m) => { if (!c) fail.push(m); };
+try {
+  const ev = (e, n, t) => document.evaluate(e, n || document, null, t ?? XPathResult.ANY_TYPE, null);
+  const snap = (e, n) => { const r = ev(e, n, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE), a = []; for (let i = 0; i < r.snapshotLength; i++) a.push(r.snapshotItem(i)); return a; };
+  const txt = a => a.map(n => n.textContent).join('|');
+  ok(txt(snap('//span')) === 'one|two|four| five  six ', 'all spans ' + txt(snap('//span')));
+  ok(txt(snap('//DIV[@id="a"]/SPAN')) === 'one|two', 'case-insensitive html names');
+  ok(snap('//div[2]/span[1]')[0].textContent === 'four', 'positional');
+  ok(txt(snap('//div/span[last()]')) === 'two| five  six ', 'last()');
+  ok(snap('//span[@title]')[0].getAttribute('title') === 't', 'attr predicate');
+  ok(snap('//*[contains(concat(" ", normalize-space(@class), " "), " y ")]')[0].id === 'b', 'class contains');
+  ok(ev('count(//span)').numberValue === 4, 'count');
+  ok(ev('string(//p)').stringValue === 'three bold', 'string value');
+  ok(ev('normalize-space(//div[2]/span[2])').stringValue === 'five six', 'normalize-space');
+  ok(ev('//b/ancestor::div/@id', null, XPathResult.STRING_TYPE).stringValue === 'a', 'ancestor + attr');
+  ok(txt(snap('//b/ancestor::*')) === txt([document.documentElement, document.body, document.getElementById('a'), document.querySelector('p')]), 'ancestor order');
+  ok(ev('//span[1]/following-sibling::*[1]', null, 9).singleNodeValue.textContent === 'two', 'following-sibling');
+  ok(ev('(//span)[last()]/preceding::span[1]', null, 9).singleNodeValue.textContent === 'four', 'preceding nearest');
+  ok(txt(snap('//p | //span[1]')) === 'one|three bold|four', 'union order');
+  ok(ev('//comment()', null, 9).singleNodeValue.nodeType === 8, 'comment()');
+  ok(snap('//div[1]//text()').length === 4, 'text() ' + snap('//div[1]//text()').length);
+  ok(ev('1 + 2 * 3 - 4 div 2 mod 3').numberValue === 5, 'arith');
+  ok(ev('//span = "four"').booleanValue === true && ev('//span != "four"').booleanValue === true, 'set compare');
+  ok(ev('substring("12345", 1.5, 2.6)').stringValue === '234' && ev('substring-after("a=b", "=")').stringValue === 'b', 'substring');
+  ok(ev('translate("bar", "abc", "AB")').stringValue === 'BAr', 'translate');
+  ok(ev('round(-0.5)').numberValue === 0 && ev('round(2.5)').numberValue === 3 && ev('floor(-1.5)').numberValue === -2, 'round/floor');
+  ok(ev('lang("en")', document.querySelector('b'), 3).booleanValue === true, 'lang');
+  ok(ev('id("a b")', null, 7).snapshotLength === 2, 'id()');
+  ok(ev('name(//div/@*[1])').stringValue === 'id' && ev('local-name(//div)').stringValue === 'div', 'name');
+  ok(ev('sum(//div[1]/@data-k) + number("2")').numberValue === 3, 'sum');
+  ok(ev('//svg').resultType === 4 && ev('//svg').iterateNext() === null, 'svg not html-namespaced');
+  ok(ev('//*[local-name()="circle"]').iterateNext().getAttribute('r') === '1', 'local-name svg');
+  const it = ev('./span', document.getElementById('a'), 5); ok(it.iterateNext().textContent === 'one' && it.iterateNext().textContent === 'two' && it.iterateNext() === null, 'iterator');
+  const x = new XPathEvaluator().createExpression('count(.//span)');
+  ok(x.evaluate(document.getElementById('b'), 1).numberValue === 2, 'evaluator expression');
+  ok(ev('//div[1]/@id')._v[0] === ev('//*[@id="a"]/@id')._v[0], 'attr identity');
+  let e1 = ''; try { ev('//[bad'); } catch (e) { e1 = e.name; } ok(e1 === 'SyntaxError', 'syntax ' + e1);
+  let e2 = ''; try { ev('1').singleNodeValue; } catch (e) { e2 = e.name; } ok(e2 === 'TypeError', 'type ' + e2);
+  let e3 = ''; try { ev('//q:x'); } catch (e) { e3 = e.name; } ok(e3 === 'NamespaceError', 'ns ' + e3);
+  const ns = p => p === 'svg' ? 'http://www.w3.org/2000/svg' : null;
+  ok(document.evaluate('//svg:circle', document, ns, 9, null).singleNodeValue.localName === 'circle', 'resolver');
+  ok(XPathResult.FIRST_ORDERED_NODE_TYPE === 9 && typeof document.createNSResolver === 'function', 'constants');
+} catch (e) { fail.push('threw ' + e + ' ' + e.stack); }
+console.log('RESULTS xpath:' + (fail.length ? 'FAIL ' + fail.join('; ') : 'PASS'));
+</script></body></html>

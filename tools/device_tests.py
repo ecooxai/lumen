@@ -109,7 +109,7 @@ def capture_prompt(serial, accept):
     cancel it. Prints only the system buttons it pressed. True when a prompt was showing."""
     focus = re.search(r"mCurrentFocus=[^\n]*", adb(["shell", "dumpsys", "window", "displays"], serial).stdout)
     if not focus or "systemui" not in focus.group(0) and "MediaProjection" not in focus.group(0): return False
-    chose = False
+    listed = picked = False   # the choice list is open; entire screen was picked from it
     for _ in range(5):
         adb(["shell", "uiautomator", "dump", "/sdcard/lumen-ui.xml"], serial)
         xml = adb(["shell", "cat", "/sdcard/lumen-ui.xml"], serial).stdout
@@ -123,12 +123,13 @@ def capture_prompt(serial, accept):
             return None, None
         texts = " ".join(re.findall(r' text="([^"]*)"', "".join(nodes)))
         prompt = "Lumen" in texts and ("screen" in texts.lower() or "record" in texts.lower())
-        if not prompt and not (chose and find(CAPTURE_ALL)[0]): return False   # neither the prompt nor its open choice list
+        if not prompt and not (listed and find(CAPTURE_ALL)[0]): return False   # neither the prompt nor its open choice list
         if not accept: label, box = find(("Cancel",))
-        elif chose and find(CAPTURE_ALL)[0]: label, box = find(CAPTURE_ALL)         # the open choice list
-        elif not chose and find(CAPTURE_ONE)[0] and find(cls="Spinner")[0]:      # one app chosen: open the list
-            label, box = "(screen choice)", find(cls="Spinner")[1]; chose = True
-        else: label, box = find(CAPTURE_OK); chose = False
+        elif listed and find(CAPTURE_ALL)[0]:                                     # the open choice list
+            label, box = find(CAPTURE_ALL); listed, picked = False, True
+        elif not picked and find(CAPTURE_ONE)[0] and find(cls="Spinner")[0]:     # one app chosen: open the list
+            label, box = "(screen choice)", find(cls="Spinner")[1]; listed = True
+        else: label, box = find(CAPTURE_OK)   # the spinner now reads "Share entire screen": confirm
         if not box:
             print("  capture prompt: no known button; system buttons: " + ", ".join(sorted(set(re.findall(r' text="([^"]{1,40})"', "".join(nodes))))))
             return True

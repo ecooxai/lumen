@@ -683,14 +683,14 @@ const bmpCrop = (d, sx, sy, sw, sh) => {
     for (let y = 0; y < h; y++) o.data.set(d.data.subarray(((y0 + y) * d.width + x0) * 4, ((y0 + y) * d.width + x0 + w) * 4), y * o.width * 4);
     return o;
 };
-const bmpLoaded = img => img.naturalWidth ? Promise.resolve() : new Promise((res, rej) => { img.addEventListener('load', res, { once: true }); img.addEventListener('error', rej, { once: true }); });
 async function createImageBitmap(src, a, b, c, d, e) {
     const opts = (typeof a === 'object' && a ? a : e) || {};
-    if (src instanceof Blob) {
-        const img = document.createElement('img'), u = URL.createObjectURL(src);
-        img.src = u;
-        try { await bmpLoaded(img); } catch (x) { throw new DOMException('The source image could not be decoded.', 'InvalidStateError'); } finally { URL.revokeObjectURL(u); }
-        src = img;
+    if (src instanceof Blob) {   /* decoded natively off the main thread to straight-alpha pixels */
+        const id = N.imgDecode(await src.arrayBuffer());
+        let r = id ? undefined : null;
+        while (r === undefined) { await new Promise(f => setTimeout(f, 4)); r = N.imgTake(id); }
+        if (!r) throw new DOMException('The source image could not be decoded.', 'InvalidStateError');
+        src = new ImageData(new Uint8ClampedArray(r[2]), r[0], r[1]);
     }
     const z = bmpSize(src);
     if (!z) throw new TypeError("Failed to execute 'createImageBitmap': The provided value is not of type '(Blob or HTMLCanvasElement or HTMLImageElement or HTMLVideoElement or ImageBitmap or ImageData)'.");

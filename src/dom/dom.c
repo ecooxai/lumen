@@ -2,6 +2,15 @@
 #include <stdatomic.h>
 #if defined(__ANDROID__) && !defined(NDEBUG)
 #include <android/log.h>
+#include <dlfcn.h>
+/* Debug Android: who restyles the root element, as caller offsets in libmain.so (rate-limited). */
+static void html_dirty_log(const char *reason, bool subtree, bool selectors, bool layout, void *ret0, void *ret1) {
+    static unsigned count;
+    if (++count > 40 && count % 25) return;
+    Dl_info info; uintptr_t base = dladdr(ret0, &info) && info.dli_fbase ? (uintptr_t)info.dli_fbase : 0;
+    __android_log_print(ANDROID_LOG_INFO, "LumenStyle", "html_dirty n=%u reason=%s subtree=%d selectors=%d layout=%d caller=0x%lx,0x%lx", count, reason ? reason : "-",
+        subtree, selectors, layout, (unsigned long)((uintptr_t)ret0 - base), (unsigned long)((uintptr_t)ret1 - base));
+}
 #endif
 
 static void trace_mutation(Document *d, Node *n, const char *kind, const char *attribute) {
@@ -22,6 +31,9 @@ void doc_visual_changed(void) { atomic_fetch_add_explicit(&visual_version, 1, me
 static atomic_uint_fast64_t box_paint_version;
 uint64_t doc_box_generation(void) { return atomic_load_explicit(&box_paint_version, memory_order_relaxed); }
 void doc_boxes_changed(void) { atomic_fetch_add_explicit(&box_paint_version, 1, memory_order_relaxed); doc_visual_changed(); }
+static atomic_uint_fast64_t activity_version;
+uint64_t doc_activity_generation(void) { return atomic_load_explicit(&activity_version, memory_order_relaxed); }
+void doc_activity(void) { atomic_fetch_add_explicit(&activity_version, 1, memory_order_relaxed); }
 
 #define X(n) const char *A_##n;
 X(html) X(head) X(body) X(title) X(meta) X(link) X(style) X(script) X(noscript) X(base) X(div) X(span) X(p) X(a) X(img) X(br) X(hr)
@@ -93,12 +105,29 @@ void node_set_modal(Node *n, bool modal) {
     doc_mark_dirty(d, n);
 }
 
-static void mark_connected(Node *n, bool on) {
+/* The document whose own tree holds n (none for detached nodes and shadow trees). */
+static Document *tree_doc(Node *n) { while (n->parent) n = n->parent; return n->type == NODE_DOCUMENT ? n->doc : NULL; }
+/* getElementById's map (id -> first element with it) follows elements as they connect, disconnect
+   or change id. A duplicate id leaves the order to a full tree-order rebuild on the next lookup. */
+static void id_map_add(Document *d, Node *n) {
+    if (!d || !d->id_cache_ok || !n->id || !n->id[0]) return;
+    Node *o = hm_get(&d->id_cache, n->id);
+    if (o && o != n) d->id_cache_ok = false;
+    else hm_put(&d->id_cache, n->id, n);
+}
+static void id_map_del(Document *d, Node *n, const char *id) {
+    if (!d || !d->id_cache_ok || !id || !id[0] || hm_get(&d->id_cache, id) != n) return;
+    if (hm_get(&d->id_dups, id) || d->id_cache.n > 16384) d->id_cache_ok = false;   /* another element may hold it; or compact */
+    else hm_put(&d->id_cache, id, NULL);
+}
+/* d is the document whose tree gains or loses n (NULL inside shadow trees, which getElementById skips). */
+static void mark_connected(Node *n, bool on, Document *d) {
     for (Node *c = n; c; c = node_next_in_tree(c, n)) {
         if (c->doc && (node_is(c, A_style) || node_is(c, A_link))) c->doc->sheet_version++;
         if (!on && (c->flags & NF_MODAL)) node_set_modal(c, false);
         if (on) c->flags |= NF_CONNECTED; else c->flags &= ~(uint32_t)(NF_CONNECTED | NF_MODAL | NF_FULLSCREEN);
-        if (c->type == NODE_ELEMENT && c->shadow_root) mark_connected(c->shadow_root, on);
+        if (c->type == NODE_ELEMENT && c->id) { if (on) id_map_add(d, c); else id_map_del(d, c, c->id); }
+        if (c->type == NODE_ELEMENT && c->shadow_root) mark_connected(c->shadow_root, on, NULL);
     }
 }
 static bool is_connected(Node *p) { return p->type == NODE_DOCUMENT || (p->flags & NF_CONNECTED); }
@@ -115,8 +144,11 @@ static void mark_sheet_content(Document *d, Node *n) {
 __attribute__((weak)) void node_sibling_selectors_changed(Node *n, int mode) { (void)n; (void)mode; }
 /* reason names an unknown change; NULL marks known keys. subtree reselects
  * n's descendants even for known keys. */
-static void mark_impl(Document *d, Node *n, bool layout, bool selectors, const char *reason, bool subtree, bool style) {
+__attribute__((noinline)) static void mark_impl(Document *d, Node *n, bool layout, bool selectors, const char *reason, bool subtree, bool style) {
     if (!d) return;
+#if defined(__ANDROID__) && !defined(NDEBUG)
+    if (n && n == d->html && style) html_dirty_log(reason, subtree, selectors, layout, __builtin_return_address(0), __builtin_return_address(1));
+#endif
     d->dom_version++;
     if (selectors) {
         d->selector_version++;
@@ -155,15 +187,19 @@ void doc_set_focus(Document *d, Node *n) {
     Node *old = d->focus;
     if (old == n) return;
     if (doc_uses_focus_within(d)) {
-        /* Only ancestors on one side of the common ancestor change state. */
-        if (!doc_focus_within_moved(d, old, n)) selector_change_key(d, ":focus-within");
+        /* Only ancestors on one side of the common ancestor change state. A precise
+         * move has also restyled the subjects of sibling, descendant and :has
+         * dependents, so those ancestors rematch only themselves: a keyed mark
+         * would let another key changed in this batch reselect their subtrees. */
+        bool precise = doc_focus_within_moved(d, old, n);
+        if (!precise) selector_change_key(d, ":focus-within");
         for (int side = 0; side < 2; side++)
             for (Node *a = side ? n : old; a; a = a->parent ? a->parent : a->host) {
                 if (a->type != NODE_ELEMENT) continue;
                 Node *other = side ? old : n;
                 if (other && node_is_inclusive_ancestor(a, other)) break;
-                mark_impl(d, a, true, true, NULL, false, true);
-                node_sibling_selectors_changed(a, 0);
+                mark_impl(d, a, true, !precise, NULL, false, true);
+                if (!precise) node_sibling_selectors_changed(a, 0);
             }
     }
     if (old) { old->flags &= ~(uint32_t)NF_FOCUS; doc_mark_state_dirty(d, old, true); }
@@ -173,18 +209,30 @@ void doc_set_focus(Document *d, Node *n) {
 static bool style_only_attr(const char *name) { return !strcmp(name, "style") || !strcmp(name, "class"); }
 /* CSS may precisely invalidate attribute-selector subjects. DOM-only users
  * retain the conservative behavior without linking the style engine. */
-__attribute__((weak)) bool node_attribute_style_changed(Node *n, const char *name) { (void)n; (void)name; return false; }
+__attribute__((weak)) bool node_attribute_style_changed(Node *n, const char *name, bool value_only) { (void)n; (void)name; (void)value_only; return false; }
+/* A link's new href keeps :link and :any-link (sites rewrite them on touch for click tracking);
+   only [href] value tests can flip. <base> moves URL resolution, so it keeps the ordinary path. */
+static bool href_value_edit(const Node *n, const char *name, bool presence) {
+    return !presence && n->ns == NS_HTML && str_ieq(name, "href") && !node_is(n, A_base);
+}
+__attribute__((weak)) bool css_attribute_observed(Node *n, const char *name) { (void)n; (void)name; return true; }
 __attribute__((weak)) bool css_selector_only_attribute(const char *name) { return str_istarts(name, "data-") || str_istarts(name, "aria-"); }
-static void mark_attribute(Node *n, const char *name) {
+/* ... and the [style] tests when an element's style attribute changes: presence tests (`:not([style])`)
+ * when it comes or goes, value tests (`[style*=x]`) on any edit. */
+__attribute__((weak)) bool node_style_attribute_changed(Node *n, bool presence) { (void)n; (void)presence; return true; }
+static void mark_attribute(Node *n, const char *name, bool presence) {
     Document *d = n->doc;
     if (d && str_ieq(name, "src")) d->resource_version++;
-    if (d && node_attribute_style_changed(n, name)) {
+    if (d && node_attribute_style_changed(n, name, href_value_edit(n, name, presence))) {
         d->dom_version++; d->selector_version++;
         if (str_ieq(name, "disabled") && node_is(n, A_fieldset)) mark_impl(d, n, false, true, NULL, true, true);   /* its descendants' :disabled */
+        if (str_ieq(name, "src") || str_ieq(name, "srcset") || str_ieq(name, "sizes") || str_ieq(name, "poster")) mark_impl(d, n, true, false, NULL, false, true);
         mark_sheet_content(d, n);
         if (d->on_mutation) d->on_mutation(d, n);
     } else {
         bool inline_style = str_ieq(name, "style");
+        /* cached presence matches key on selector_version, value tests on dom_version */
+        if (inline_style && d && node_style_attribute_changed(n, presence) && presence) d->selector_version++;
         mark_impl(d, n, !style_only_attr(name), !inline_style, str_ieq(name, "class") || str_ieq(name, "id") ? NULL : atom_lower(name, strlen(name)), false, true);
         if (d) node_sibling_selectors_changed(n, inline_style ? 2 : 1);
     }
@@ -207,6 +255,7 @@ static void record_tree_change(Document *d, Node *n) {
     if (!d) return;
     if (n == d->focus) d->tree_focus_changed = true;
     if (n->type == NODE_ELEMENT) {
+        if (n->tag == A_iframe && n->ns == NS_HTML) d->frame_version++;
         tree_change_key(d, atom_lower(n->tag, strlen(n->tag)));
         tree_change_key(d, n->id);
         for (int i = 0; i < n->nclasses; i++) tree_change_key(d, n->classes[i]);
@@ -248,7 +297,7 @@ void node_insert_before(Node *parent, Node *child, Node *ref) {
         parent->last = child;
     }
     child->refcount++;
-    if (is_connected(parent)) { mark_connected(child, true); record_tree_change(parent->doc, child); }
+    if (is_connected(parent)) { mark_connected(child, true, tree_doc(parent)); record_tree_change(parent->doc, child); }
     /* A moved subtree has new ancestry. Existing siblings only need the
      * structural selector dependencies, not a fresh cascade for every leaf. */
     child->flags |= NF_STYLE_DIRTY | NF_RESELECT_SUBTREE;
@@ -267,7 +316,7 @@ void node_remove(Node *c) {
         p->flags |= NF_STYLE_DIRTY;
         if (p->doc && is_connected(p)) { p->flags |= NF_EMPTY_CHANGED; p->doc->text_emptiness_version++; }
     }
-    mark_connected(c, false);
+    mark_connected(c, false, tree_doc(p));
     if (c->doc && c->doc->focus && node_is_inclusive_ancestor(c, c->doc->focus)) c->doc->focus = NULL;
     mark_child_list(p);
     if (c->refcount) c->refcount--;
@@ -302,7 +351,7 @@ void doc_free(Document *d) {
     if (d->selector_cache_free) d->selector_cache_free(d->selector_cache);
     free(d->modals.v); d->modals.v = NULL; d->modals.n = d->modals.cap = 0;
     for (int i = 0; i < 2; i++) if (d->sel[i]) { node_release(d->sel[i]); d->sel[i] = NULL; }
-    hm_free(&d->id_cache, NULL);
+    hm_free(&d->id_cache, NULL); hm_free(&d->id_dups, NULL);
     Node *c = d->node.first;
     while (c) { Node *nx = c->next; c->parent = NULL; c->refcount = 0; c->js = NULL; node_free_tree(c); c = nx; }
     free(d->url); free(d->base_url); free(d->title); free(d);
@@ -341,12 +390,16 @@ static void cache_classes(Node *n, const char *value) {
         n->class_bits |= node_class_bit(cls);
     }
 }
+#if defined(__ANDROID__) && !defined(NDEBUG)
+char dom_debug_key_names[1024][24];   /* debug: the last key set per selector-change bit (copied) */
+#endif
 static void selector_change_key_in(Document *d, const char *key, bool reselect) {
     if (!key) return;
     unsigned bit = dom_tree_key_bit(key);
     d->selector_change_keys[bit >> 6] |= UINT64_C(1) << (bit & 63);
     if (reselect) d->reselect_change_keys[bit >> 6] |= UINT64_C(1) << (bit & 63);
 #if defined(__ANDROID__) && !defined(NDEBUG)
+    snprintf(dom_debug_key_names[bit], sizeof dom_debug_key_names[bit], "%s", key);
     if (reselect && d->debug_mutations) { char b[24]; snprintf(b, sizeof b, "rkey bit=%u", bit); trace_mutation(d, NULL, b, key); }
 #endif
 }
@@ -366,10 +419,15 @@ static bool class_value_contains(const char *value, const char *key) {
 static void record_selector_attribute(Node *n, const char *name, const char *value) {
     if (!n->doc || !is_connected(n)) return;
     Document *d = n->doc;
+    if (n->tag == A_iframe && n->ns == NS_HTML && (str_ieq(name, "src") || str_ieq(name, "srcdoc"))) d->frame_version++;
     /* node_attribute_style_changed marks these subjects by candidate; their
      * keys must not widen the descendant reselect of unrelated changes. */
-    bool precise = d->stylesheets && n->ns == NS_HTML && css_selector_only_attribute(name);
-    selector_change_key_in(d, atom_lower(name, strlen(name)), !precise);
+    bool precise = d->stylesheets && n->ns == NS_HTML && (css_selector_only_attribute(name) || href_value_edit(n, name, !value || attr_index(n, name) < 0));
+    /* Attributes without built-in selector state are observed only through attribute
+     * selectors: when none can test it on n (a map moving tiles by inline style),
+     * no :has() or other dependency needs to see the edit. */
+    bool unobserved = d->stylesheets && n->ns == NS_HTML && (precise || str_ieq(name, "style")) && !css_attribute_observed(n, name);
+    if (!unobserved) selector_change_key_in(d, atom_lower(name, strlen(name)), !precise);
     if (str_ieq(name, "id")) {
         selector_change_key(d, "id"); selector_change_key(d, n->id); selector_change_key(d, value);
     } else if (str_ieq(name, "class")) {
@@ -392,7 +450,10 @@ void node_set_attr(Node *n, const char *name, const char *value) {
             if (*p >= 'A' && *p <= 'Z') { n->flags |= NF_ATTR_MIXED_CASE; break; }
     int i = attr_index(n, name);
     if (i >= 0 && !strcmp(n->attrs[i].value, value)) return;
+    bool added = i < 0;
     record_selector_attribute(n, name, value);
+    Document *id_doc = (n->flags & NF_CONNECTED) && atom(name) == A_id ? tree_doc(n) : NULL;
+    id_map_del(id_doc, n, n->id);
     if (i >= 0) { if (!strcmp(n->attrs[i].value, value)) return; free(n->attrs[i].value); n->attrs[i].value = xstrdup(value); }
     else {
         if (n->nattrs >= n->attrcap) { n->attrcap = n->attrcap ? n->attrcap * 2 : 4; n->attrs = xrealloc(n->attrs, sizeof(Attr) * (size_t)n->attrcap); }
@@ -402,20 +463,21 @@ void node_set_attr(Node *n, const char *name, const char *value) {
     if (n->attrs[i].name == A_class || (n->ns == NS_HTML && str_ieq(name, "class"))) cache_classes(n, n->attrs[i].value);
     /* re-point cached id after realloc */
     for (int k = 0; k < n->nattrs; k++) if (n->attrs[k].name == A_id) n->id = n->attrs[k].value;
+    id_map_add(id_doc, n);
     trace_mutation(n->doc, n, "set", name);
-    mark_attribute(n, name);
+    mark_attribute(n, name, added);
 }
 void node_remove_attr(Node *n, const char *name) {
     if (!strcmp(name, "open")) node_set_modal(n, false);
     int i = attr_index(n, name); if (i < 0) return;
     record_selector_attribute(n, name, NULL);
-    if (n->attrs[i].name == A_id) n->id = NULL;
+    if (n->attrs[i].name == A_id) { if (n->flags & NF_CONNECTED) id_map_del(tree_doc(n), n, n->id); n->id = NULL; }
     if (n->attrs[i].name == A_class || (n->ns == NS_HTML && str_ieq(name, "class"))) cache_classes(n, NULL);
     free(n->attrs[i].value);
     memmove(&n->attrs[i], &n->attrs[i + 1], sizeof(Attr) * (size_t)(n->nattrs - i - 1)); n->nattrs--;
     for (int k = 0; k < n->nattrs; k++) if (n->attrs[k].name == A_id) n->id = n->attrs[k].value;
     trace_mutation(n->doc, n, "remove", name);
-    mark_attribute(n, name);
+    mark_attribute(n, name, true);
 }
 bool node_has_class(const Node *n, const char *cls) {
     return n && n->nclasses && node_has_class_atom(n, atom(cls));
@@ -539,11 +601,15 @@ char *node_serialize(const Node *n, bool outer) {
 
 Node *doc_get_element_by_id(Document *d, const char *id) {
     if (!id[0]) return NULL;
-    if (!d->id_cache_ok || d->id_cache_ver != d->dom_version) {
+    if (!d->id_cache_ok) {
         hm_free(&d->id_cache, NULL); memset(&d->id_cache, 0, sizeof d->id_cache);
+        hm_free(&d->id_dups, NULL); memset(&d->id_dups, 0, sizeof d->id_dups);
         for (Node *n = d->node.first; n; n = node_next_in_tree(n, &d->node))
-            if (n->type == NODE_ELEMENT && n->id && n->id[0] && !hm_get(&d->id_cache, n->id)) hm_put(&d->id_cache, n->id, n);
-        d->id_cache_ver = d->dom_version; d->id_cache_ok = true;
+            if (n->type == NODE_ELEMENT && n->id && n->id[0]) {
+                if (!hm_get(&d->id_cache, n->id)) hm_put(&d->id_cache, n->id, n);
+                else hm_put(&d->id_dups, n->id, n);
+            }
+        d->id_cache_ok = true;
     }
     return hm_get(&d->id_cache, id);
 }

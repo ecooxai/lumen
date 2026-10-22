@@ -167,6 +167,64 @@ const history = {
     replaceState(s, t, u) { if (this !== history && this && typeof this.replaceState === 'function' && this.replaceState !== history.replaceState) return this.replaceState(s, t, u); histState = structuredClone(s); histStates[histIdx] = histState; if (u != null) N.setUrl(new URL(String(u), N.url()).href, false); },
     back() { N.histGo(-1); }, forward() { N.histGo(1); }, go(d) { N.histGo(d | 0); },
 };
+/* Web Locks for this page: per name, a FIFO of requests granted from the head while compatible
+   (shared with shared); a lock is held until its callback's promise settles. */
+class Lock { constructor(name, mode) { def(this, '_n', name); def(this, '_m', mode); } get name() { return this._n; } get mode() { return this._m; } }
+const lockHeld = [], lockWait = [];
+const lockClash = (a, b) => a.name === b.name && (a.mode === 'exclusive' || b.mode === 'exclusive');
+function lockPump() {
+    for (let i = 0; i < lockWait.length; i++) {
+        const r = lockWait[i];
+        if (lockHeld.some(h => lockClash(h, r)) || lockWait.slice(0, i).some(q => q.name === r.name)) continue;
+        lockWait.splice(i--, 1); lockGrant(r);
+    }
+}
+function lockGrant(r) {
+    lockHeld.push(r);
+    if (r.signal) r.signal.removeEventListener('abort', r.onabort);
+    const done = (ok, v) => {
+        const i = lockHeld.indexOf(r);
+        if (i >= 0) { lockHeld.splice(i, 1); lockPump(); }
+        if (!r.stolen) (ok ? r.res : r.rej)(v);
+    };
+    Promise.resolve().then(() => r.cb(new Lock(r.name, r.mode))).then(v => done(true, v), e => done(false, e));
+}
+const locks = {
+    request(name, o, cb) {
+        if (typeof o === 'function') { cb = o; o = {}; }
+        o = o || {}; name = String(name);
+        const mode = o.mode === undefined ? 'exclusive' : String(o.mode);
+        if (typeof cb !== 'function') return Promise.reject(new TypeError("Failed to execute 'request' on 'LockManager': callback is not a function"));
+        if (mode !== 'exclusive' && mode !== 'shared') return Promise.reject(new TypeError("Failed to execute 'request' on 'LockManager': invalid mode"));
+        if (name.startsWith('-') || (o.steal && (o.ifAvailable || mode !== 'exclusive')) || (o.signal && (o.steal || o.ifAvailable)))
+            return Promise.reject(new DOMException('The request options are not supported.', 'NotSupportedError'));
+        if (o.signal && o.signal.aborted) return Promise.reject(o.signal.reason);
+        return new Promise((res, rej) => {
+            const r = { name, mode, cb, res, rej, signal: o.signal || null, stolen: false, onabort: null };
+            if (o.steal) {
+                for (let i = lockHeld.length; i--;) if (lockHeld[i].name === name) {
+                    const h = lockHeld.splice(i, 1)[0]; h.stolen = true;
+                    h.rej(new DOMException('The lock was stolen.', 'AbortError'));
+                }
+                lockGrant(r); return;
+            }
+            if (o.ifAvailable) {
+                if (lockHeld.some(h => lockClash(h, r)) || lockWait.some(q => q.name === name)) Promise.resolve().then(() => cb(null)).then(res, rej);
+                else lockGrant(r);
+                return;
+            }
+            if (r.signal) {
+                r.onabort = () => { const i = lockWait.indexOf(r); if (i >= 0) { lockWait.splice(i, 1); rej(r.signal.reason); lockPump(); } };
+                r.signal.addEventListener('abort', r.onabort);
+            }
+            lockWait.push(r); lockPump();
+        });
+    },
+    query() {
+        const info = r => ({ name: r.name, mode: r.mode, clientId: 'lumen' });
+        return Promise.resolve({ held: lockHeld.map(info), pending: lockWait.map(info) });
+    },
+};
 class BatteryManager extends EventTarget {}
 const battery = Object.assign(Reflect.construct(EventTarget, [], BatteryManager), { charging: true, chargingTime: 0, dischargingTime: Infinity, level: 1, onchargingchange: null, onchargingtimechange: null, ondischargingtimechange: null, onlevelchange: null });
 const __uaChrome = (/ Chrome\/(\d+)/.exec(N.userAgent()) || [])[1];
@@ -209,7 +267,7 @@ const mcVal = v => v && typeof v === 'object' ? (v.exact ?? v.ideal ?? v.max ?? 
 const mcWait = (state, close, changed, ok) => new Promise((res, rej) => {
     const wait = () => {
         const st = state();
-        if (st === 0) { setTimeout(wait, 50); return; }
+        if (st === 0) { setTimeout(wait, 20); return; }
         changed();
         if (st < 0) { close(); rej(new DOMException('Permission denied', 'NotAllowedError')); return; }
         res(ok());
@@ -288,8 +346,8 @@ const navigator = {
         getRegistration() { return Promise.resolve(undefined); }, getRegistrations() { return Promise.resolve([]); },
         startMessages() {},
     }),
-    storage: { estimate() { return Promise.resolve({ quota: 1e9, usage: 0 }); }, persist() { return Promise.resolve(false); } },
-    locks: { request(n, o, cb) { cb = typeof o === 'function' ? o : cb; return Promise.resolve().then(() => cb({ name: n })); } },
+    storage: { estimate() { return Promise.resolve({ quota: 1e9, usage: 0 }); }, persist() { return Promise.resolve(false); }, persisted() { return Promise.resolve(false); } },
+    locks,
     getGamepads() { return []; }, getBattery() { return Promise.resolve(battery); },
 };
 const __uaFirefox = / Firefox\//.test(N.userAgent());
@@ -526,24 +584,42 @@ function cloneValue(v, seen) {
 }
 const xferPorts = (o, t) => { const tr = o && typeof o === 'object' ? o.transfer : t; return (tr && typeof tr[Symbol.iterator] === 'function' ? [...tr] : []).filter(p => p && typeof p.postMessage === 'function' && typeof p.start === 'function'); };
 function postMessage(data, origin, transfer) { const [src, org] = N.caller(); const d = structuredClone(data), ports = xferPorts(origin, transfer); N.timer(() => { try { dispatch(G, new MessageEvent('message', { data: d, origin: org, source: asWin(src), ports }), true); } catch (e) { report(e); } }, 0, false, true); }
-function queueMessage(data, origin, src, ports) { setTimeout(() => dispatch(G, new MessageEvent('message', { data, origin, source: asWin(src), ports: ports ? [...ports] : [] }), true)); }
+function rejection(promise, reason) { const e = new PromiseRejectionEvent('unhandledrejection', { promise, reason, cancelable: true }); try { dispatch(G, e, true); } catch (x) { report(x); } return e.defaultPrevented; }
+function queueMessage(data, origin, src, ports) { setTimeout(() => dispatch(G, new MessageEvent('message', { data, origin, source: asWin(src), ports: ports ? [...ports].map(p => typeof p === 'number' ? importPort(src, p) : p) : [] }), true)); }
 const remoteWins = new Map();
+const postArgs = (v, d, o, t) => N.postTo(v, d, o && typeof o === 'object' ? String(o.targetOrigin ?? '/') : String(o ?? '/'), xferPorts(o, t));
+// A window this page can't touch directly: a cross-origin frame (its context id) or another tab (-its window id,
+// as window.open returns and a popup's opener and message sources give)
 function asWin(v) {
     if (typeof v !== 'number') return v;
     let w = remoteWins.get(v);
     if (w) return w;
-    const nav = u => N.ctxRel(v, 4, String(u));
+    const tab = v < 0, wid = -v, abs = u => new URL(String(u), location.href).href;
+    const nav = tab ? u => { N.winOp(wid, 2, abs(u)); } : u => N.ctxRel(v, 4, String(u));
+    const loc = Object.freeze({ set href(u) { nav(u); }, replace: nav, assign: nav });
     w = Object.freeze({
-        postMessage(d, o, t) { N.postTo(v, d, o && typeof o === 'object' ? String(o.targetOrigin ?? '/') : String(o ?? '/'), xferPorts(o, t)); },
+        postMessage(d, o, t) { postArgs(v, d, o, t); },
         get window() { return w; }, get self() { return w; }, get frames() { return w; },
-        get parent() { return asWin(N.ctxRel(v, 0)) ?? w; }, get top() { return asWin(N.ctxRel(v, 1)) ?? w; },
-        get length() { return N.ctxRel(v, 2); }, get closed() { return N.ctxRel(v, 3); }, opener: null,
-        location: Object.freeze({ set href(u) { nav(u); }, replace: nav, assign: nav }),
-        focus() {}, blur() {}, close() {},
+        get parent() { return tab ? w : asWin(N.ctxRel(v, 0)) ?? w; }, get top() { return tab ? w : asWin(N.ctxRel(v, 1)) ?? w; },
+        get length() { return tab ? 0 : N.ctxRel(v, 2); }, get closed() { return tab ? !!N.winOp(wid, 0) : N.ctxRel(v, 3); }, opener: null,
+        get location() { return loc; }, set location(u) { nav(u); },
+        focus() { if (tab) N.winOp(wid, 3); }, blur() {}, close() { if (tab) N.winOp(wid, 1); },
     });
     remoteWins.set(v, w);
     return w;
 }
+// window.open: a new tab, its proxy for the opener; _self, _top, _parent and frame names navigate those
+function openWin(u, t, f) {
+    u = u === undefined || u === null ? '' : String(u); t = t === undefined || t === null || t === '' ? '_blank' : String(t); f = String(f ?? '');
+    const url = u ? new URL(u, document.baseURI).href : 'about:blank', lt = t.toLowerCase();
+    if (/^javascript:/i.test(url)) return null;
+    if (lt === '_self' || (lt === '_top' && top === G) || (lt === '_parent' && parent === G)) { location.href = url; return G; }
+    if (lt !== '_blank' && N.navTarget(t, url)) return lt === '_top' ? top : lt === '_parent' ? parent : null;
+    const noop = /(^|[\s,])(noopener|noreferrer)\s*(=\s*(yes|1|true))?\s*($|,)/i.test(f);
+    const id = N.openWin(url, lt === '_blank' ? '' : t, !noop);
+    return id && !noop ? asWin(-id) : null;
+}
+let openerSet;
 const counts = {}, timers = {};
 const LOG_LEVEL = N.logLevel();
 const clog = (lv, a, pre = '') => { if (lv >= LOG_LEVEL) N.log(lv, pre + fmt(a)); };
@@ -579,27 +655,28 @@ Object.setPrototypeOf(history, History.prototype); Object.setPrototypeOf(navigat
 Object.setPrototypeOf(performance, Performance.prototype); Object.setPrototypeOf(crypto, Crypto.prototype);
 const globals = {
     CryptoKey, SubtleCrypto,
-    ProcessingInstruction, TouchEvent, CompositionEvent, ClipboardEvent, ClipboardItem, DragEvent, StorageEvent, PromiseRejectionEvent, SubmitEvent,
+    ProcessingInstruction, Touch, TouchEvent, CompositionEvent, ClipboardEvent, ClipboardItem, DragEvent, StorageEvent, PromiseRejectionEvent, SubmitEvent,
     StyleSheet, IdleDeadline, TimeRanges, MediaError, MediaSource, SourceBuffer, SourceBufferList, ImageData, Path2D, CanvasGradient, CanvasPattern, CanvasRenderingContext2D, History, Navigator, Screen, Performance, Crypto, SubtleCrypto,
     DOMException, DOMRectReadOnly, DOMRect, Event, CustomEvent, CommandEvent, ToggleEvent, UIEvent, FocusEvent, MouseEvent, PointerEvent, WheelEvent, KeyboardEvent, InputEvent, ErrorEvent, ProgressEvent, MessageEvent, PopStateEvent, HashChangeEvent, PageTransitionEvent, AnimationEvent, TransitionEvent, MediaQueryListEvent,
     EventTarget, AbortSignal, AbortController, MutationObserver, MutationRecord, Node, NodeList, HTMLCollection, AnimationTimeline, DocumentTimeline, CharacterData, Text, CDATASection, Comment, DocumentType, DocumentFragment, ShadowRoot, Attr, NamedNodeMap, DOMTokenList,
     CSSStyleDeclaration, SVGFEBlendElement, SVGFEComponentTransferElement, SVGFEDiffuseLightingElement, SVGFESpecularLightingElement, SVGFEDropShadowElement, SVGFEFloodElement, SVGFEGaussianBlurElement, SVGFEImageElement, SVGFEMergeElement, SVGFEMergeNodeElement, SVGFEOffsetElement, SVGFETileElement, SVGFEDistantLightElement, SVGFEPointLightElement, SVGFESpotLightElement, SVGFEFuncRElement, SVGFEFuncGElement, SVGFEFuncBElement, SVGFEFuncAElement, SVGLength, SVGNumber, SVGAnimatedLength, SVGAnimatedNumber, SVGAnimatedInteger, SVGAnimatedBoolean, SVGAnimatedString, SVGAnimatedEnumeration, SVGRect, SVGAnimatedRect, SVGUnitTypes, SVGGeometryElement, SVGRectElement, SVGCircleElement, SVGEllipseElement, SVGLineElement, SVGPathElement, SVGPolylineElement, SVGPolygonElement, SVGGElement, SVGDefsElement, SVGUseElement, SVGImageElement, SVGForeignObjectElement, SVGAElement, SVGSwitchElement, SVGTextContentElement, SVGTextPositioningElement, SVGTextElement, SVGTSpanElement, SVGTextPathElement, SVGGradientElement, SVGLinearGradientElement, SVGRadialGradientElement, SVGStopElement, SVGClipPathElement, SVGMaskElement, SVGPatternElement, SVGFilterElement, SVGMarkerElement, SVGSymbolElement, SVGTitleElement, SVGDescElement, SVGMetadataElement, SVGStyleElement, SVGScriptElement, SVGFEColorMatrixElement, SVGFECompositeElement, SVGFEMorphologyElement, SVGFETurbulenceElement, SVGFEDisplacementMapElement, SVGFEConvolveMatrixElement, SVGComponentTransferFunctionElement, CSSRuleList, CSSStyleRule, CSSGroupingRule, CSSConditionRule, CSSMediaRule, CSSSupportsRule, CSSContainerRule, CSSLayerBlockRule, CSSLayerStatementRule, CSSImportRule, CSSNamespaceRule, CSSFontFaceRule, CSSPageRule, CSSKeyframeRule, CSSKeyframesRule, MediaList, Element, HTMLElement, SVGElement, SVGGraphicsElement, SVGSVGElement, MathMLElement, Image, Audio, Option, CustomElementRegistry, Document, HTMLDocument, XMLDocument, CSSRule, CSSStyleSheet, CSS, FontFace,
-    TreeWalker, NodeIterator, NodeFilter, Range, StaticRange, AbstractRange, Selection, Animation, DOMMatrixReadOnly, DOMMatrix, DOMPoint, DOMParser, XMLSerializer,
+    TreeWalker, NodeIterator, NodeFilter, Range, StaticRange, AbstractRange, Selection, Animation, DOMMatrixReadOnly, DOMMatrix, DOMPoint, DOMParser, XMLSerializer, XPathResult, XPathExpression, XPathEvaluator,
     TextEncoder, TextDecoder, btoa, atob, Blob, File, FileList, DataTransfer, DataTransferItem, DataTransferItemList, FileReader, ReadableStream, ReadableStreamDefaultReader, WritableStream, WritableStreamDefaultWriter, TransformStream, ByteLengthQueuingStrategy, CountQueuingStrategy, TextEncoderStream, TextDecoderStream, URLSearchParams, URL, webkitURL: URL, Headers, Request, Response, fetch, FormData, XMLHttpRequestEventTarget, XMLHttpRequestUpload, XMLHttpRequest, WebSocket, CloseEvent, MessagePort, MessageChannel, Worker, BroadcastChannel,
     WebGLRenderingContext, WebGL2RenderingContext, WebGLObject, WebGLBuffer, WebGLFramebuffer, WebGLRenderbuffer, WebGLTexture, WebGLProgram, WebGLShader, WebGLVertexArrayObject, WebGLQuery, WebGLSampler, WebGLSync, WebGLTransformFeedback, WebGLUniformLocation, WebGLActiveInfo, WebGLShaderPrecisionFormat, WebGLContextEvent, ImageBitmap, createImageBitmap,
     GPUSupportedFeatures, WGSLLanguageFeatures, GPUSupportedLimits, GPUAdapterInfo, GPUError, GPUValidationError, GPUOutOfMemoryError, GPUInternalError, GPUPipelineError, GPUUncapturedErrorEvent, GPUDeviceLostInfo, GPUCompilationMessage, GPUCompilationInfo,
     GPUBufferUsage, GPUTextureUsage, GPUShaderStage, GPUMapMode, GPUColorWrite, GPU, GPUAdapter, GPUDevice, GPUBuffer, GPUTexture, GPUTextureView, GPUSampler, GPUBindGroupLayout, GPUPipelineLayout, GPUBindGroup, GPUCommandBuffer, GPURenderBundle, GPUExternalTexture,
     GPUQuerySet, GPUShaderModule, GPUComputePipeline, GPURenderPipeline, GPUCommandEncoder, GPURenderPassEncoder, GPUComputePassEncoder, GPURenderBundleEncoder, GPUQueue, GPUCanvasContext,
     MediaRecorder, BlobEvent, RTCPeerConnection, RTCSessionDescription, RTCIceCandidate, RTCPeerConnectionIceEvent, RTCPeerConnectionIceErrorEvent, RTCDataChannel, RTCDataChannelEvent, RTCTrackEvent, RTCRtpSender, RTCRtpReceiver, RTCRtpTransceiver, RTCIceTransport, RTCDtlsTransport, RTCSctpTransport, RTCCertificate, RTCStatsReport, RTCError, RTCErrorEvent, MediaStream, MediaStreamTrack, MediaStreamTrackEvent,
+    IDBFactory, IDBDatabase, IDBTransaction, IDBObjectStore, IDBIndex, IDBCursor, IDBCursorWithValue, IDBKeyRange, IDBRequest, IDBOpenDBRequest, IDBVersionChangeEvent, DOMStringList, indexedDB,
     ResizeObserver, IntersectionObserver, IntersectionObserverEntry, HTMLAllCollection, PerformanceObserver, Storage, localStorage, sessionStorage, Location, location, history, navigator, screen, performance, crypto, MediaQueryList, matchMedia, getComputedStyle, PermissionStatus,
     setTimeout, setInterval, clearTimeout, clearInterval, requestAnimationFrame, cancelAnimationFrame, requestIdleCallback, cancelIdleCallback, queueMicrotask, structuredClone, postMessage, console, customElements, Window, document,
-    window: G, self: G, globalThis: G, get top() { return asWin(N.topWin()) ?? G; }, get parent() { return asWin(N.parentWin()) ?? G; }, frames: G, opener: null, get frameElement() { return N.frameEl(); }, closed: false, name: '', get length() { return N.frameCount(); }, origin: location.origin, isSecureContext: location.protocol === 'https:', crossOriginIsolated: false,
+    window: G, self: G, globalThis: G, get top() { return asWin(N.topWin()) ?? G; }, get parent() { return asWin(N.parentWin()) ?? G; }, frames: G, get opener() { return openerSet !== undefined ? openerSet : asWin(N.openerWin()); }, set opener(v) { openerSet = v; }, get frameElement() { return N.frameEl(); }, closed: false, name: '', get length() { return N.frameCount(); }, origin: location.origin, isSecureContext: location.protocol === 'https:', crossOriginIsolated: false,
     get innerWidth() { return N.viewport()[0]; }, get innerHeight() { return N.viewport()[1]; }, get outerWidth() { return N.viewport()[0]; }, get outerHeight() { return N.viewport()[1] + 40; },
     get scrollX() { return N.viewport()[2]; }, get scrollY() { return N.viewport()[3]; }, get pageXOffset() { return N.viewport()[2]; }, get pageYOffset() { return N.viewport()[3]; }, get devicePixelRatio() { return N.viewport()[4]; },
     screenX: 0, screenY: 0, screenLeft: 0, screenTop: 0,
     scrollTo(x, y) { if (typeof x === 'object' && x) { y = x.top ?? N.viewport()[3]; x = x.left ?? N.viewport()[2]; } N.scrollTo(+x || 0, +y || 0); }, scroll(x, y) { G.scrollTo(x, y); },
     scrollBy(x, y) { if (typeof x === 'object' && x) { y = x.top || 0; x = x.left || 0; } const v = N.viewport(); N.scrollTo(v[2] + (+x || 0), v[3] + (+y || 0)); },
-    alert(m) { N.log(1, 'alert: ' + m); }, confirm() { return false; }, prompt() { return null; }, print() {}, focus() {}, blur() {}, close() {}, stop() {}, open() { return null; },
+    alert(m) { N.log(1, 'alert: ' + m); }, confirm() { return false; }, prompt() { return null; }, print() {}, focus() {}, blur() {}, close() { if (top === G) N.winOp(0, 4); }, stop() {}, open: openWin,
     getSelection() { return selection; }, reportError: report, visualViewport: null, speechSynthesis: undefined,
 };
 for (const k of Object.keys(H)) globals[k] = H[k];
@@ -746,5 +823,5 @@ function fireAnim(t, type, name, elapsed, anim) {
     };
     selAt('left', move(-1)); selAt('right', move(1));
 }
-return { queueMessage, workerEvent, protoFor, dispatch, fire, fireAnim, report, mediaChanged, viewportChanged, ceConnected, nativeTouch, Event, MouseEvent, PointerEvent, KeyboardEvent, FocusEvent, WheelEvent, InputEvent, PopStateEvent, ErrorEvent };
+return { queueMessage, exportPort, portMessage, rejection, workerEvent, protoFor, dispatch, fire, fireAnim, report, mediaChanged, viewportChanged, ceConnected, nativeTouch, Event, MouseEvent, PointerEvent, KeyboardEvent, FocusEvent, WheelEvent, InputEvent, PopStateEvent, ErrorEvent };
 })

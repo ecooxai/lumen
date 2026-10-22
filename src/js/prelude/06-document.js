@@ -82,7 +82,7 @@ methods(Document.prototype, {
     getElementById(id) { return N.byId(String(id)); },
     getElementsByName(n) { return nodeList(N.query(this, `[name="${CSS.escape(String(n))}"]`, true)); },
     importNode(n, deep) { const r = N.clone(n, !!deep); ceUpgradeTree(r); return r; }, adoptNode(n) { if (!N.isNode(n)) throw new TypeError("Failed to execute 'adoptNode' on 'Document': parameter 1 is not of type 'Node'."); if (N.type(n) === 9) throw new DOMException('The node provided is a document, which may not be adopted.', 'NotSupportedError'); if (N.parent(n)) removeNode(n); N.adopt(n, this); return n; },
-    hasFocus() { return true; },
+    hasFocus() { return true; }, getAnimations() { return []; },   /* Element.animate() animations finish at once */
     elementFromPoint(x, y) { return N.hit(+x, +y); },
     elementsFromPoint(x, y) { const r = []; for (let e = N.hit(+x, +y); e && N.type(e) === 1; e = N.parent(e)) r.push(e); return r; },
     getSelection() { return selection; },

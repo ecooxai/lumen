@@ -92,9 +92,24 @@ class MouseEvent extends UIEvent {
     get x() { return this.clientX; } get y() { return this.clientY; }
     get offsetX() { const r = this.target && this.target.getBoundingClientRect ? this.target.getBoundingClientRect() : null; return r ? this.clientX - r.left : this.clientX; }
     get offsetY() { const r = this.target && this.target.getBoundingClientRect ? this.target.getBoundingClientRect() : null; return r ? this.clientY - r.top : this.clientY; }
+    get which() { return /^(?:mouse(?:down|up)|(?:aux|dbl)?click|contextmenu)$/.test(this.type) ? this.button + 1 : this.buttons & 1 ? 1 : this.buttons & 4 ? 2 : this.buttons & 2 ? 3 : 0; }
+    get layerX() { return this.offsetX; } get layerY() { return this.offsetY; }
     getModifierState(k) { return k === 'Shift' ? this.shiftKey : k === 'Control' ? this.ctrlKey : k === 'Alt' ? this.altKey : k === 'Meta' ? this.metaKey : false; }
 }
-class PointerEvent extends MouseEvent { constructor(t, i) { super(t, i); i = i || {}; this.pointerId = i.pointerId || 1; this.pointerType = i.pointerType || 'mouse'; this.isPrimary = i.isPrimary !== false; this.width = i.width || 1; this.height = i.height || 1; this.pressure = i.pressure || 0; } }
+class PointerEvent extends MouseEvent {
+    constructor(t, i) {
+        super(t, i); i = i || {};
+        this.pointerId = i.pointerId ?? 1; this.pointerType = i.pointerType || 'mouse'; this.isPrimary = i.isPrimary !== false;
+        this.width = i.width || 1; this.height = i.height || 1; this.pressure = +i.pressure || 0; this.tangentialPressure = +i.tangentialPressure || 0;
+        this.tiltX = +i.tiltX || 0; this.tiltY = +i.tiltY || 0; this.twist = +i.twist || 0;
+        this.altitudeAngle = i.altitudeAngle ?? Math.PI / 2; this.azimuthAngle = +i.azimuthAngle || 0; this.persistentDeviceId = +i.persistentDeviceId || 0;
+        def(this, '__co', i.coalescedEvents ? Array.from(i.coalescedEvents) : null);
+        def(this, '__pr', i.predictedEvents ? Array.from(i.predictedEvents) : []);
+    }
+    /* a native move is one sample: it is its own coalesced event */
+    getCoalescedEvents() { return this.__co || (this.isTrusted && this.type === 'pointermove' ? [this] : []); }
+    getPredictedEvents() { return this.__pr.slice(); }
+}
 class WheelEvent extends MouseEvent { constructor(t, i) { super(t, i); i = i || {}; this.deltaX = i.deltaX || 0; this.deltaY = i.deltaY || 0; this.deltaZ = i.deltaZ || 0; this.deltaMode = i.deltaMode || 0; } }
 class KeyboardEvent extends UIEvent {
     constructor(t, i) {
@@ -126,7 +141,10 @@ class EventTarget {
         type = String(type);
         let a = m.get(type); if (!a) m.set(type, a = []);
         for (const l of a) if (l.fn === fn && l.capture === capture) return;
-        a.push({ fn, capture, once: !!o.once, passive: !!o.passive, removed: false });
+        /* Chrome's intervention: unless told otherwise, these listeners on the window, document, html or body are passive */
+        const passive = o.passive !== undefined ? !!o.passive : /^(?:touchstart|touchmove|wheel|mousewheel)$/.test(type) && (this === G || this.nodeType === 9 ||
+            (this.nodeType === 1 && this.parentNode && (this.parentNode.nodeType === 9 || (this.localName === 'body' && this.parentNode.parentNode && this.parentNode.parentNode.nodeType === 9))));
+        a.push({ fn, capture, once: !!o.once, passive, removed: false });
         if (o.signal) o.signal.addEventListener('abort', () => this.removeEventListener(type, fn, capture));
     }
     removeEventListener(type, fn, opts) {
@@ -149,8 +167,9 @@ function parentForEvent(t, ev) {
         const ty = N.type(t);
         if (ty === 11) { const h = N.host(t); return h && ev.composed ? h : null; }
         if (ty === 9) return ev._type === 'load' ? null : G;
+        return null;
     }
-    return null;
+    return t.__evp || null;   /* IndexedDB: request -> transaction -> database */
 }
 /* Blink fires webkit-prefixed listeners on a target only when it has no unprefixed ones */
 const LEGACY_EV = { animationstart: 'webkitAnimationStart', animationend: 'webkitAnimationEnd', animationiteration: 'webkitAnimationIteration', transitionend: 'webkitTransitionEnd' };

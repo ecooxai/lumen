@@ -3,6 +3,7 @@ const char *css_ua_sheet =
 "html,address,blockquote,body,dd,div,dl,dt,fieldset,form,frame,frameset,h1,h2,h3,h4,h5,h6,noframes,ol,p,ul,center,dir,hr,menu,pre,"
 "article,aside,footer,header,hgroup,main,nav,section,figure,figcaption,details,summary,legend,search,dialog,optgroup{display:block}"
 "head,script,style,link,meta,title,base,template,noscript,datalist,param,area,[hidden]:not([hidden=until-found]),source,track,dialog:not([open]){display:none}"
+"[inert]{pointer-events:none;user-select:none}"
 "li{display:list-item}table{display:table;border-collapse:separate;border-spacing:2px;box-sizing:border-box;text-indent:0}"
 "thead{display:table-header-group;vertical-align:middle}tbody{display:table-row-group;vertical-align:middle}tfoot{display:table-footer-group;vertical-align:middle}"
 "tr{display:table-row;vertical-align:inherit}td,th{display:table-cell;vertical-align:inherit;padding:1px}th{font-weight:bold;text-align:-internal-center}"

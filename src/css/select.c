@@ -1,5 +1,6 @@
 /* Selector matching and querySelector */
 #include "css.h"
+#include <strings.h>
 
 enum { MATCH_CACHE_SIZE = 8192 };
 typedef struct {
@@ -49,6 +50,123 @@ void css_match_cache_end(CssMatchCache *previous) { active_match_cache = previou
 CssMatchCache *css_match_cache_suspend(void) { CssMatchCache *previous = active_match_cache; active_match_cache = NULL; return previous; }
 void css_match_cache_free(CssMatchCache *cache) { free(cache); }
 
+uint64_t css_has_stats[2];
+/* :has() with a leading descendant or child combinator matches a subject inside the element's subtree.
+ * Its arguments usually require a class, ID, attribute or tag that few elements carry, and pages test
+ * them on many large elements, so each such name keeps the list of document elements carrying it (ASCII
+ * case-folded: a superset) for one selector_version, which tree and attribute changes bump. An element
+ * then tests the candidates under it instead of walking its subtree. */
+typedef struct { const Document *doc; uint64_t version; uint8_t kind; const char *name; Node **v; int n; } HasCandidates;
+static HasCandidates g_has_lists[64];
+bool css_has_unfiltered;
+enum { HAS_LIST_MAX = 96 };   /* longer lists climb more than a walk usually visits */
+#if defined(__ANDROID__) && !defined(NDEBUG)
+#include <android/log.h>
+/* Debug Android: :has() arguments by subtree nodes their walks visit (page selector shapes only). */
+typedef struct { const Selector *sel; uint64_t tests, nodes, listed; } HasDbg;
+static HasDbg g_has_dbg[512];
+static uint64_t g_has_builds[2];   /* candidate lists built, nodes their document walks visited */
+static HasDbg *has_dbg(const Selector *sel) {
+    for (unsigned i = (unsigned)((uintptr_t)sel >> 4) & 511, k = 0; k < 512; k++, i = (i + 1) & 511)
+        if (g_has_dbg[i].sel == sel || !g_has_dbg[i].sel) { g_has_dbg[i].sel = sel; return &g_has_dbg[i]; }
+    return &g_has_dbg[0];
+}
+static void has_dbg_describe(const Selector *sel, char *out, size_t cap) {
+    size_t o = 0;
+    for (int i = 1; i < sel->n && o + 40 < cap; i++) {
+        static const char comb[] = { '?', ' ', '>', '+', '~' };
+        o += (size_t)snprintf(out + o, cap - o, "%s%c", i > 1 ? " " : "", comb[sel->c[i].comb < 5 ? sel->c[i].comb : 0]);
+        for (int j = 0; j < sel->c[i].n && o + 40 < cap; j++) {
+            const SimpleSel *t = &sel->c[i].s[j];
+            static const char pre[] = { 0, '*', '#', '.', '[', ':', ':', '~', '!' };
+            o += (size_t)snprintf(out + o, cap - o, "%c%s%s", pre[t->kind < 9 ? t->kind : 0] ? pre[t->kind < 9 ? t->kind : 0] : ' ',
+                                  t->kind == SK_UNIVERSAL ? "" : t->name ? t->name : "?", t->sub ? "()" : "");
+        }
+    }
+    out[o < cap ? o : cap - 1] = 0;
+}
+void css_has_debug_dump(bool log) {
+    for (int round = 0; log && round < 6; round++) {
+        HasDbg *best = NULL;
+        for (int i = 0; i < 512; i++) if (g_has_dbg[i].sel && (!best || g_has_dbg[i].nodes > best->nodes)) best = &g_has_dbg[i];
+        if (!best || !best->nodes) break;
+        char d[200]; has_dbg_describe(best->sel, d, sizeof d);
+        __android_log_print(ANDROID_LOG_INFO, "LumenStyle", "has_cost walks=%llu nodes=%llu listed=%llu arg=%s", (unsigned long long)best->tests,
+                            (unsigned long long)best->nodes, (unsigned long long)best->listed, d);
+        best->nodes = 0;
+    }
+    if (log) __android_log_print(ANDROID_LOG_INFO, "LumenStyle", "has_lists builds=%llu nodes=%llu", (unsigned long long)g_has_builds[0], (unsigned long long)g_has_builds[1]);
+    memset(g_has_dbg, 0, sizeof g_has_dbg); memset(g_has_builds, 0, sizeof g_has_builds);
+}
+#define HAS_DBG(sel, field, n) (has_dbg(sel)->field += (n))
+#else
+void css_has_debug_dump(bool log) { (void)log; }
+#define HAS_DBG(sel, field, n) ((void)0)
+#endif
+static bool carries(const Node *x, uint8_t kind, const char *name) {
+    if (kind == SK_CLASS) { for (int i = 0; i < x->nclasses; i++) if (!strcasecmp(x->classes[i], name)) return true; return false; }
+    if (kind == SK_ID) return x->id && !strcasecmp(x->id, name);
+    if (kind == SK_ATTR) { for (int i = 0; i < x->nattrs; i++) if (!strcasecmp(x->attrs[i].name, name)) return true; return false; }
+    return !strcasecmp(x->tag, name);
+}
+/* The document's elements carrying the name, NULL when there are too many to beat a walk. */
+static const HasCandidates *has_candidates(Document *d, uint8_t kind, const char *name) {
+    HasCandidates *c = &g_has_lists[((uintptr_t)name >> 3 ^ (uintptr_t)name >> 9 ^ kind) & 63];
+    if (c->doc != d || c->version != d->selector_version || c->kind != kind || c->name != name) {
+        c->doc = d; c->version = d->selector_version; c->kind = kind; c->name = name; c->n = 0;
+#if defined(__ANDROID__) && !defined(NDEBUG)
+        g_has_builds[0]++;
+#endif
+        int cap = 0;
+        for (Node *x = d->node.first; x; x = node_next_in_tree(x, &d->node)) {
+#if defined(__ANDROID__) && !defined(NDEBUG)
+            g_has_builds[1]++;
+#endif
+            if (x->type != NODE_ELEMENT || !carries(x, kind, name)) continue;
+            if (c->n > HAS_LIST_MAX) break;
+            if (c->n == cap) { cap = cap ? cap * 2 : 8; c->v = xrealloc(c->v, (size_t)cap * sizeof *c->v); }
+            c->v[c->n++] = x;
+        }
+    }
+    return c->n > HAS_LIST_MAX ? NULL : c;
+}
+/* The name of the subject compound the fewest elements are likely to carry: an ID, class, attribute, tag. */
+static const SimpleSel *subject_name(const Selector *sel) {
+    const SimpleSel *best = NULL; static const uint8_t rank[] = { [SK_ID] = 4, [SK_CLASS] = 3, [SK_ATTR] = 2, [SK_TYPE] = 1 };
+    const Compound *c = &sel->c[sel->n - 1];
+    for (int j = 0; j < c->n; j++) {
+        const SimpleSel *t = &c->s[j];
+        if (t->kind > SK_ATTR || !rank[t->kind] || !t->name || !t->name[0] || strchr(t->name, '|') || (t->kind == SK_ATTR && strchr(t->name, ':')) || !strcmp(t->name, "*")) continue;
+        if (!best || rank[t->kind] > rank[best->kind]) best = t;
+    }
+    return best;
+}
+/* el:has(sel) for a descendant or child argument; -1 when the candidates do not apply. */
+static int has_by_candidates(const Selector *sel, Node *el) {
+    if (css_has_unfiltered || sel->n < 2) return -1;
+    const SimpleSel *key = subject_name(sel);
+    Document *d = el->doc;
+    if (!key || !d) return -1;
+    Node *top = el; while (top->parent) top = top->parent;
+    if (top != &d->node) return -1;   /* detached and shadow trees walk */
+    const HasCandidates *c = has_candidates(d, key->kind, key->name);
+    if (!c) return -1;
+    /* Each candidate walks its ancestors, up to the root when outside el: a small subtree is cheaper
+       to walk itself, testing only the elements carrying the key. */
+    long budget = (long)c->n * 8;
+    for (Node *x = el->first; x; x = node_next_in_tree(x, el)) {
+        if (--budget < 0) goto listed;
+        if (x->type == NODE_ELEMENT && carries(x, key->kind, key->name) && css_match_selector(sel, x, el)) return 1;
+    }
+    return 0;
+listed:
+    for (int i = 0; i < c->n; i++) {
+        Node *x = c->v[i], *p = x->parent;
+        while (p && p != el) p = p->parent;
+        if (p && css_match_selector(sel, x, el)) return 1;
+    }
+    return 0;
+}
 static Node *parent_el(Node *n) { Node *p = n->parent; return p && p->type == NODE_ELEMENT ? p : NULL; }
 static Node *prev_el(Node *n) { for (n = n->prev; n; n = n->prev) if (n->type == NODE_ELEMENT) return n; return NULL; }
 static Node *next_el(Node *n) { for (n = n->next; n; n = n->next) if (n->type == NODE_ELEMENT) return n; return NULL; }
@@ -141,13 +259,19 @@ static bool match_pseudo(const SimpleSel *s, Node *el, Node *scope) {
     if (n == P_is || n == P_where || n == P_matches || n == P_webkit_any || n == P_moz_any) return s->sub && css_match_selector_list(s->sub, el);
     if (n == P_has) {
         if (!s->sub) return false;
+        css_has_stats[0]++;
         for (int i = 0; i < s->sub->n; i++) {
             const Selector *sel = &s->sub->v[i];
             uint8_t comb = sel->n > 1 ? sel->c[1].comb : CB_DESC;
             if (comb == CB_ADJ || comb == CB_SIB) {
                 for (Node *x = next_el(el); x; x = next_el(x)) { if (css_match_selector(sel, x, el)) return true; if (comb == CB_ADJ) break; }
+            } else if (comb == CB_CHILD && sel->n == 2 && !css_has_unfiltered) {
+                for (Node *x = el->first; x; x = x->next) { css_has_stats[1]++; if (x->type == NODE_ELEMENT && css_match_selector(sel, x, el)) return true; }
             } else {
-                for (Node *x = el->first; x; x = node_next_in_tree(x, el)) if (x->type == NODE_ELEMENT && css_match_selector(sel, x, el)) return true;
+                int r = has_by_candidates(sel, el);
+                if (r >= 0) { HAS_DBG(sel, listed, 1); if (r) return true; continue; }
+                HAS_DBG(sel, tests, 1);
+                for (Node *x = el->first; x; x = node_next_in_tree(x, el)) { css_has_stats[1]++; HAS_DBG(sel, nodes, 1); if (x->type == NODE_ELEMENT && css_match_selector(sel, x, el)) return true; }
             }
         }
         return false;
@@ -310,6 +434,22 @@ Node *css_query(Node *root, const char *sel, bool all, NodeVec *outp) {
     if (l.n == 1 && l.v[0].n == 1 && l.v[0].c[0].n == 1 && l.v[0].c[0].s[0].kind == SK_ID && root->type == NODE_DOCUMENT && !all) {
         found = doc_get_element_by_id(root->doc, l.v[0].c[0].s[0].name);
         css_sellist_free(&scratch); return found;
+    }
+    /* A selector whose subject has a unique ID matches at most that element (pages poll `#id` lists) */
+    const char *subject_id = NULL;
+    if (l.n == 1 && l.v[0].n && root->doc && !root->doc->quirks) {
+        const Compound *subject = &l.v[0].c[l.v[0].n - 1];
+        for (int i = 0; i < subject->n && !subject_id; i++) if (subject->s[i].kind == SK_ID) subject_id = subject->s[i].name;
+    }
+    Node *top = root; while (top->parent) top = top->parent;
+    if (subject_id && top == &root->doc->node) {
+        Node *el = doc_get_element_by_id(root->doc, subject_id);
+        if (!hm_get(&root->doc->id_dups, subject_id)) {
+            bool inside = false;
+            for (Node *a = el ? el->parent : NULL; a && !inside; a = a->parent) inside = a == root;
+            if (inside && css_match_selector(&l.v[0], el, root->type == NODE_DOCUMENT ? NULL : root)) { found = el; if (all) vec_push(*out, el); }
+            css_sellist_free(&scratch); return found;
+        }
     }
     for (Node *n = start->first; n; n = node_next_in_tree(n, start)) {
         if (n->type != NODE_ELEMENT) continue;

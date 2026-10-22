@@ -1,0 +1,12 @@
+<!doctype html>
+<style>
+#n { touch-action: none } #x { touch-action: pan-x } #y { touch-action: pan-y pinch-zoom } #m { touch-action: manipulation }
+#l { touch-action: pan-left } #p { touch-action: pinch-zoom } #b { touch-action: pan-x pan-y }
+</style>
+<div id=n><span id=kid></span></div><div id=x></div><div id=y></div><div id=m></div><div id=l></div><div id=p></div><div id=b></div><div id=a></div>
+<script>
+// touch-action computes to the panning it allows; it is not inherited.
+const want = { n: 'none', x: 'pan-x', y: 'pan-y', m: 'auto', l: 'pan-x', p: 'none', b: 'auto', a: 'auto', kid: 'auto' }, fail = [];
+for (const [id, v] of Object.entries(want)) { const got = getComputedStyle(document.getElementById(id)).touchAction; if (got !== v) fail.push(id + '=' + got); }
+console.log('RESULTS touch-action:' + (fail.length ? 'FAIL ' + fail.join(' ') : 'PASS'));
+</script>

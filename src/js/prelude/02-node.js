@@ -7,7 +7,7 @@ const kids = (n) => { const a = []; for (let c = N.first(n); c; c = N.next(c)) a
 const elKids = (n) => { const a = []; for (let c = N.first(n); c; c = N.next(c)) if (N.type(c) === 1) a.push(c); return a; };
 const liveRanges = new Set(), liveIters = new Set();
 const rangesEach = (f) => { for (const w of liveRanges) { const r = w.deref(); if (r) f(r); else liveRanges.delete(w); } };
-const idxOf = (n) => { let i = 0; for (let s = N.prev(n); s; s = N.prev(s)) i++; return i; };
+const idxOf = (n) => N.index(n);   /* natively: no wrapper per sibling */
 const isCD = (n) => { const t = N.type(n); return t === 3 || t === 4 || t === 7 || t === 8; };
 const isTextNode = (n) => { const t = N.type(n); return t === 3 || t === 4; };
 const nodeLength = (n) => { const t = N.type(n); if (t === 10) return 0; if (t === 3 || t === 4 || t === 7 || t === 8) return N.text(n).length; let k = 0; for (let c = N.first(n); c; c = N.next(c)) k++; return k; };
@@ -253,6 +253,7 @@ methods(DocumentFragment.prototype, ParentNode);
 methods(DocumentFragment.prototype, { getElementById(id) { return N.query(this, '#' + CSS.escape(String(id)), false); } });
 class ShadowRoot extends DocumentFragment {}
 methods(ShadowRoot.prototype, {
+    getAnimations() { return []; },
     get host() { return N.host(this); }, get mode() { return this.__mode || 'open'; },
     get innerHTML() { return N.html(this, false); }, set innerHTML(v) { setInner(this, String(v)); },
     get activeElement() { return null; }, get delegatesFocus() { return false; },

@@ -35,6 +35,7 @@
 #include "../net/net.h"
 #include "../base/url.h"
 #include "../gpu/gpu.h"
+#include "../gpu/webgpu.h"
 #include "../js/js.h"
 #include "../js/jsglue.h"
 
@@ -82,6 +83,20 @@ typedef struct Page {
 } Page;
 static Page *g_frames;
 static Page *frame_find(Node *f) { for (Page *p = g_frames; p; p = p->fnext) if (p->frame_el == f) return p; return NULL; }
+#ifdef __ANDROID__
+/* touch contacts that started inside an iframe: their frame, whose JS context gets the sequence */
+static struct { uint64_t device, finger; Page *fp; } g_touch_in[10];
+static int g_touch_nin;
+static bool frame_alive(const Page *fp) { for (Page *p = g_frames; p; p = p->fnext) if (p == fp) return true; return false; }
+static void touch_frames_reset(void) {
+    for (int i = 0; i < g_touch_nin; i++) {
+        Page *fp = g_touch_in[i].fp; bool dup = false;
+        for (int j = 0; j < i; j++) dup |= g_touch_in[j].fp == fp;
+        if (!dup && frame_alive(fp) && fp->frame_el) js_touch(js_frame_ctx(fp->frame_el), NULL, "reset", 0, 0, 0, 0, 0);
+    }
+    g_touch_nin = 0;
+}
+#endif
 static bool page_viewport(Page *page, float width, float height, float scale) {
     if (page->e->media.vw == width && page->e->media.vh == height && page->e->media.dpr == scale) return false;
     page->e->media.vw = width; page->e->media.vh = height;
@@ -267,21 +282,36 @@ static Image *cache_get(const char *u) {
     if (want) img_refetch(u);
     return im;
 }
+/* An element's src resolved against its document. Layout sizes every image on each pass (a dragged map's
+   tiles every frame), and parsing the URLs again took a sixth of such frames: remembered per element. The
+   result is borrowed until this thread's next call. */
+static const char *node_src_url(Node *n, const char *s) {
+    static _Thread_local struct { const Node *n; char *base, *src, *abs; } memo[1024];
+    static _Thread_local char *scratch;
+    const char *base = n->doc->url;
+    if (strlen(s) > 262144) { free(scratch); scratch = url_join(base, s); return scratch; }   /* huge data: URLs are not copied */
+    uint64_t k = (uint64_t)(uintptr_t)n * 0x9E3779B97F4A7C15ull;
+    __typeof__(&memo[0]) m = &memo[k >> 54];
+    if (m->n == n && m->src && !strcmp(m->src, s) && (base ? m->base && !strcmp(m->base, base) : !m->base)) return m->abs;
+    free(m->base); free(m->src); free(m->abs);
+    m->n = n; m->base = base ? xstrdup(base) : NULL; m->src = xstrdup(s); m->abs = url_join(base, s);
+    return m->abs;
+}
 static Image *node_img(Node *n) {
     if (n->tag == A_iframe) { Page *fp = frame_find(n); return fp && fp->cv.px ? &fp->img : NULL; }
     if (n->tag == A_video) { Image *f = media_frame_for(n); if (f) return f; }
     if (n->tag == A_canvas) return media_frame_for(n);   /* WebGL/WebGPU canvases push frames to a live player */
     const char *s = node_attr(n, n->tag == A_video ? "poster" : "src"); if (!s) return NULL;
-    char *u = url_join(n->doc->url, s); Image *im = cache_get(u); free(u); return im;
+    const char *u = node_src_url(n, s); return u ? cache_get(u) : NULL;
 }
 static Image *url_img(const char *u) { return u ? cache_get(u) : NULL; }
 static bool img_size(Node *n, float *w, float *h) {
     if (n->tag == A_iframe) return false;
     g_in_layout = true; Image *im = node_img(n); g_in_layout = false;
     if (!im) {
-        const char *s = n->tag == A_img ? node_attr(n, "src") : NULL; char *u = s ? url_join(n->doc->url, s) : NULL;
+        const char *s = n->tag == A_img ? node_attr(n, "src") : NULL; const char *u = s ? node_src_url(n, s) : NULL;
         SDL_LockMutex(icache_mu); ImgSlot *sl = u ? hm_get(&icache, u) : NULL; bool ok = sl && sl->evicted; if (ok) { *w = sl->ew; *h = sl->eh; } SDL_UnlockMutex(icache_mu);
-        free(u); return ok;
+        return ok;
     }
     *w = image_css_w(im); *h = image_css_h(im); return true; }
 
@@ -448,7 +478,8 @@ static void page_free(Page *p) {
 typedef struct Tab { Page *cur; bool loading, relayout, desktop;   /* desktop: the site is in "Desktop site" mode */ char *hist[256]; uint64_t hgen[256]; int nhist, hpos; char url[2048]; float sy; uint64_t lgen; int ws;
     int zoom_pct; /* zero inherits the default */
     double cpu_ms, media_ms0, budget, bud_t, unlimit_until; float pct, lim, cpuhist[600]; int ncpu, cpui, cpumode, vctl, vap, lite; uint64_t vgen; bool limited, info, asleep; double bg_since; int crashes;
-    char *stitle;   /* the title saved with a restored tab, until its page loads */ } Tab;
+    char *stitle;   /* the title saved with a restored tab, until its page loads */
+    uint32_t wid, opener, opener_wid; char *wname; bool scripted, close_req;   /* window.open: this tab's window id; the context and tab that opened it, its name; to close */ } Tab;
 typedef struct App {
     SDL_Window *win; SDL_MetalView mview; Gpu *gpu;
 #ifdef __ANDROID__
@@ -460,6 +491,7 @@ typedef struct App {
     Tab *touch_tab;
     uint64_t touch_generation;
     unsigned touch_dom_flags;
+    unsigned touch_block;   /* TOUCH_NO_X/Y: the touch-action of the contact's target forbids that panning */
 #endif
     int pw, ph, screen_w, screen_h; float scale, vw, vh, input_scale;
     Canvas frame, page; DisplayList pdl, cdl, hdl;
@@ -471,7 +503,7 @@ typedef struct App {
        opened for the covered tab, a close asked for from the page, and the dimmed picture beside it */
     Tab *pan, *pan_under, *pan_dead; char *pan_go; bool pan_close; uint32_t *pan_bg; int pan_bgw, pan_bgh;
     int wsicon[16]; Image *icimg[16][2];
-    Image *sym[8][4]; bool vbars, vbar_any; uint64_t vbar_msv;
+    Image *sym[8][4]; bool vbars, vbar_any, vbar_tick; uint64_t vbar_msv; float vbr[4];   /* vbar_tick: only the bars' clocks are due; vbr: their union in the viewport */
     int tip_tab; double tip_until;     /* CPU-limit dot tooltip pinned by a click */
     bool editing; int us[2]; float uscroll; bool umenu;   /* URL field: anchor/focus bytes of t->url, text scroll, Android Copy/Paste/Share menu */
     double caret_t;
@@ -519,9 +551,10 @@ static bool tsel_ui(App *a);
 static void tsel_overlay(App *a, DisplayList *dl);
 static void kbm_overlay(App *a, DisplayList *dl);
 /* Keyboard on second tap: the field the last tap placed the caret in without the keyboard, that
-   tap (window px), and its Paste | Select all bubble (anchored in page px, drawn in viewport px) */
+   tap (window px), and its Paste | Select all bubble (anchored in page px, drawn in viewport px);
+   tx, ty, tt: the last page tap, focused or not */
 static struct {
-    Node *n; float x, y;
+    Node *n; float x, y, tx, ty; double tt;
     bool menu; float mx, my;
     float bar[4], bend[2]; int act[2], nb, hit;
 } g_kbm;
@@ -534,6 +567,7 @@ static void page_zoom_changed(App *a) {
     g_sm_dx = g_sm_dy = 0;
 #ifdef __ANDROID__
     if (a->t && a->t->cur && a->t->cur->js) js_touch(a->t->cur->js, NULL, "reset", 0, 0, 0, 0, 0);
+    touch_frames_reset();
     android_touch_reset(&a->touch);
     android_fling_reset(&a->fling);
 #endif
@@ -563,9 +597,10 @@ static bool fragment_link(App *a, const char *h);
 static void panel_close(App *a, bool keep_picture);
 static void panel_backdrop(App *a, int bar_px, int width);
 static void publish_gens(App *a) { for (int i = 0; i < MAX_TABS; i++) g_tab_gen[i] = i < a->ntabs ? a->tabs[i]->lgen : 0; }
+static uint32_t g_next_wid = 1, g_show_wid;   /* g_show_wid: a tab window.open opened or focused, shown by popup_service */
 static Tab *tab_new(App *a) {
     if (a->ntabs == MAX_TABS) return NULL;
-    Tab *t = xcalloc(1, sizeof *t); t->hpos = -1; t->ws = a->wi; t->vctl = -1; t->lite = -1; t->lim = 0.4f; a->tabs[a->ntabs++] = t;
+    Tab *t = xcalloc(1, sizeof *t); t->wid = g_next_wid++; t->hpos = -1; t->ws = a->wi; t->vctl = -1; t->lite = -1; t->lim = 0.4f; a->tabs[a->ntabs++] = t;
     if (!a->t) a->t = t;
     return t;
 }
@@ -1633,7 +1668,10 @@ static int dl_sigs(const DisplayList *dl, struct DSig **v, int *cap, float dy) {
     if (n > *cap) { *cap = n + n / 2 + 16; *v = xrealloc(*v, sizeof **v * (size_t)*cap); }
     for (int i = 0; i < n; i++) {
         const DItem *it = &dl->items.v[i]; struct DSig *q = &(*v)[i];
-        q->h = ditem_hash(it, it->fixed ? 0 : dy); ditem_box(it, q->b);
+        /* pops and layers carry no position: moving them by the scroll would unmatch them and, through the
+           context, every item inside an opacity layer */
+        bool still = (it->fixed && !it->sticky) || it->op == DO_POP_CLIP || it->op == DO_PUSH_LAYER || it->op == DO_POP_LAYER;
+        q->h = ditem_hash(it, still ? 0 : dy); ditem_box(it, q->b);
         HMIX(q->h, context[LMIN(depth, 64)]);   /* only the open clips and layers: items culled before this one do not change it */
         if (it->op == DO_PUSH_CLIP || it->op == DO_PUSH_LAYER) { if (++depth <= 64) context[depth] = q->h; }
         else if ((it->op == DO_POP_CLIP || it->op == DO_POP_LAYER) && depth) depth--;
@@ -1776,6 +1814,7 @@ static GpuVideo media_layer(const Image *im, const float r[4], float s, int side
     GpuVideo v = { im->px, im->w, im->h, im->w, floorf(r[0] * s + 0.5f) + side_px, floorf(r[1] * s + 0.5f) + bar_px,
                    floorf((r[0] + r[2]) * s + 0.5f) + side_px, floorf((r[1] + r[3]) * s + 0.5f) + bar_px };
     v.yuv = im->yuv; v.mat = im->yuv_mat; v.serial = media_image_serial(im);
+    if (im->gpu && !im->px) { v.view = im->gpu->view; v.view_dev = im->gpu->dev; v.view_flags = im->gpu->flags; }
     return v;
 }
 static bool video_scroll_matches(const DItem *it, const float previous[4], float scale, int delta) {
@@ -1931,12 +1970,13 @@ static int sig_at_cmp(const void *x, const void *y) {
     const SigAt *a = x, *b = y;
     return a->h != b->h ? (a->h < b->h ? -1 : 1) : a->i - b->i;
 }
-static int g_sig_changed[2], g_sig_first[3];   /* last sig_damage: unmatched old and new items, the first new ones (LUMEN_CHECK_DAMAGE) */
+static int g_wk_to[16], g_wk_ev[8][2];   /* main-loop wakes per 2 s: timeouts by the source that set the wait, events by type */
+static int g_sig_changed[2], g_sig_first[3]; static float g_sig_firstA[3];   /* last sig_damage: unmatched old and new items, the largest new ones in the viewport (diagnostics) */
 static double sig_damage(const App *a, const struct DSig *cur, int ncur, float shift, int pwp, int ph, PaintRegions *out) {
     static SigAt *olds; static int cap;
     int first = 0, old_end = a->nosig, new_end = ncur;
     float s = a->page.scale;
-    memset(g_sig_changed, 0, sizeof g_sig_changed); g_sig_first[0] = g_sig_first[1] = g_sig_first[2] = -1;
+    memset(g_sig_changed, 0, sizeof g_sig_changed); g_sig_first[0] = g_sig_first[1] = g_sig_first[2] = -1; memset(g_sig_firstA, 0, sizeof g_sig_firstA);
     while (first < old_end && first < new_end && a->osig[first].h == cur[first].h) first++;
     while (old_end > first && new_end > first && a->osig[old_end - 1].h == cur[new_end - 1].h) { old_end--; new_end--; }
     int no = old_end - first;
@@ -1953,7 +1993,12 @@ static double sig_damage(const App *a, const struct DSig *cur, int ncur, float s
             last = olds[lo].i;
         } else {
             sig_add(out, cur[index].b, 0, s, pwp, ph);
-            if (g_sig_changed[1] < 3) g_sig_first[g_sig_changed[1]] = index;
+            const float *b = cur[index].b;
+            float ar = fmaxf(0, fminf(b[2] * s, pwp) - fmaxf(b[0] * s, 0)) * fmaxf(0, fminf(b[3] * s, ph) - fmaxf(b[1] * s, 0));
+            for (int k = 0; k < 3; k++) if (g_sig_first[k] < 0 || ar > g_sig_firstA[k]) {
+                for (int j = 2; j > k; j--) { g_sig_first[j] = g_sig_first[j - 1]; g_sig_firstA[j] = g_sig_firstA[j - 1]; }
+                g_sig_first[k] = index; g_sig_firstA[k] = ar; break;
+            }
             g_sig_changed[1]++;
         }
     }
@@ -1965,6 +2010,39 @@ static double sig_damage(const App *a, const struct DSig *cur, int ncur, float s
 #ifdef __ANDROID__
 static void bar_push(App *a);
 #endif
+/* Startup timeline, logged once as "lumen: boot ...": ms since main() per stage, the process age at
+   main() (library loading and the Java activity), the first presented frame, the first page loaded and
+   when the main thread settled (2 s without a task over 150 ms). */
+#ifdef __linux__
+#include <unistd.h>
+#endif
+static struct { double t0, proc, last_long, long_ms; char s[512]; int n, longs; bool presented, loaded, done; } g_boot;
+static void boot_mark(const char *k) {
+    if (g_boot.done || g_boot.n >= (int)sizeof g_boot.s - 40) return;
+    g_boot.n += snprintf(g_boot.s + g_boot.n, sizeof g_boot.s - g_boot.n, " %s=%.0f", k, now_ms() - g_boot.t0);
+}
+static void boot_begin(void) {
+    g_boot.t0 = now_ms(); g_boot.proc = -1;
+#ifdef __linux__
+    FILE *f = fopen("/proc/self/stat", "r"); char b[1024]; struct timespec ts;
+    if (f) {
+        size_t n = fread(b, 1, sizeof b - 1, f); b[n] = 0; fclose(f);
+        char *p = strrchr(b, ')'); unsigned long long st = 0; int i = 0;
+        for (p = p ? strtok(p + 2, " ") : NULL; p && i < 19; p = strtok(NULL, " ")) i++;   /* field 22: starttime in clock ticks since boot */
+        if (p) st = strtoull(p, NULL, 10);
+        if (st && !clock_gettime(CLOCK_BOOTTIME, &ts)) g_boot.proc = (ts.tv_sec + ts.tv_nsec / 1e9 - (double)st / sysconf(_SC_CLK_TCK)) * 1000;
+    }
+#endif
+}
+/* each main-loop turn: gap = time since the previous turn */
+static void boot_tick(double gap) {
+    if (g_boot.done || !g_boot.loaded) return;
+    double t = now_ms();
+    if (gap > 150) { g_boot.last_long = t; g_boot.longs++; g_boot.long_ms += gap; }
+    if (t - g_boot.last_long < 2000 && t - g_boot.t0 < 120000) return;
+    boot_mark("settled"); g_boot.done = true;
+    SDL_Log("lumen: boot process_age_at_main=%.0f%s (settled = last task over 150 ms; %d such tasks, %.0f ms)", g_boot.proc, g_boot.s, g_boot.longs, g_boot.long_ms);
+}
 static void render(App *a) {
 #ifdef __ANDROID__
     if (!a->win || a->android_suspended) return;
@@ -1991,18 +2069,18 @@ static void render(App *a) {
     PaintRegions scroll_fixed = {0};
     if (a->page.w != pwp || a->page.h != ph || a->page.scale != page_scale(a)) { canvas_free(&a->page); canvas_init(&a->page, pwp, ph, page_scale(a)); part = false; a->osig_ok = false; }
     bool gskip = false; GpuVideo gvd, *gvp = NULL, xvd[GPU_EXTRA_LAYERS]; int nxvd = 0;
-    Image *fast = part && !a->sdirty && a->t->cur && a->gpu && a->gvid_ok && a->t->sy == a->last_sy && a->page.w == pwp && a->page.h == ph ? media_owner_frame(a->vown) : NULL;
+    Image *fast = part && !a->sdirty && !a->vbar_tick && a->t->cur && a->gpu && a->gvid_ok && a->t->sy == a->last_sy && a->page.w == pwp && a->page.h == ph ? media_owner_frame(a->vown) : NULL;
     if (fast && fast->translucent) fast = NULL;
     for (int i = 0; fast && i < a->nxown; i++) {   /* the extra layers need opaque RGBA frames too */
         const Image *x = media_owner_frame(a->xown[i]);
-        if (!x || x->translucent || !x->px) fast = NULL;
+        if (!x || x->translucent || (!x->px && !x->gpu)) fast = NULL;
         else xvd[nxvd++] = media_layer(x, a->xrect[i], a->page.scale, side_px, bar_px);
     }
     paint_profile_stage(&profile_frame, PAINT_PREPARE);
     /* Unchanged page, no scroll, and the last display list showed no video frame (a video playing off-screen or
        hidden): the frame would be skipped anyway, so neither rebuild it nor present it. A first frame or a new
        size relayouts (why 3), so a video that turns visible is still drawn. */
-    if (!fast && part && a->t->cur && a->osig_ok && !a->last_nv && !a->sdirty && !a->frame_page_stale &&
+    if (!fast && part && a->t->cur && a->osig_ok && !a->last_nv && !a->sdirty && !a->vbar_tick && !a->frame_page_stale &&
         a->t->sy == a->last_sy && a->page.w == pwp && a->page.h == ph && a->page.scale == page_scale(a)
 #ifdef __ANDROID__
         && !a->focus_reveal
@@ -2033,7 +2111,10 @@ static void render(App *a) {
 #ifdef __ANDROID__
             overlay = tsel_ui(a) || g_kbm.nb;   /* the selection bar and Paste bubble are clamped to the viewport, so old pixels cannot be shifted */
 #endif
-            if (!a->sdirty && !overlay && fabsf(sdy - roundf(sdy)) < 0.01f && fabsf(sdy) < ph / 2) { blit = (int)roundf(sdy); part = true; }
+            if (!a->sdirty && !overlay && fabsf(sdy - roundf(sdy)) < 0.01f && fabsf(sdy) < ph / 2) {
+                blit = (int)roundf(sdy); part = true;
+                a->t->sy = a->last_sy + blit / a->page.scale; scroll_css = a->t->sy - a->last_sy;   /* whole pixels like the shift: a fraction off, the old pixels would not match */
+            }
             else { part = false; if (!sdmg) why = 5; else g_sdmg_no[0]++; g_pp_noblit[0]++; }
         }
         if (!blit) sdmg = false;
@@ -2050,7 +2131,7 @@ static void render(App *a) {
             const DItem *it = &a->pdl.items.v[i];
             if (it->op != DO_IMAGE || !media_is_frame(it->img)) continue;
             if (!nv++) vit = it;
-            if (nvit && !it->img->px) xpx = false;
+            if (nvit && !it->img->px && !it->img->gpu) xpx = false;
             if (nvit < 1 + GPU_EXTRA_LAYERS) vits[nvit] = it;
             nvit++;
             if (it->img->translucent) nv++;   /* a see-through canvas is blended by the raster, not shown through a hole */
@@ -2086,11 +2167,22 @@ static void render(App *a) {
         float strip[4] = { 0, blit > 0 ? ph - blit : 0, pwp, blit > 0 ? ph : -blit };
         double fixed_area = paint_regions_union_area(&scroll_fixed, blit ? strip : NULL);
         if (blit && !nv && fixed_area * 5 > (double)pwp * ph * 4 && t0 < g_load_trace_until) {   /* geometry only */
-            static double last; char m[600]; int o = 0;
-            for (int i = 0; i < scroll_fixed.count && o < 500; i++) { const float *r = scroll_fixed.rect[i]; o += snprintf(m + o, sizeof m - (size_t)o, " %.0f,%.0f-%.0f,%.0f", r[0], r[1], r[2], r[3]); }
+            static double last; char m[900]; int o = 0;
+            for (int i = 0; i < scroll_fixed.count && o < 300; i++) { const float *r = scroll_fixed.rect[i]; o += snprintf(m + o, sizeof m - (size_t)o, " %.0f,%.0f-%.0f,%.0f", r[0], r[1], r[2], r[3]); }
+            int big[3] = { -1, -1, -1 }; float bigA[3] = { 0, 0, 0 }, vw = a->pdl.vw, vh = a->pdl.vh;   /* the largest fixed items, clipped to the viewport */
+            for (int i = 0; i < a->pdl.items.n; i++) {
+                const DItem *it = &a->pdl.items.v[i];
+                if (!it->fixed || it->op == DO_PUSH_CLIP || it->op >= DO_POP_CLIP) continue;
+                float ar = LMAX(0, LMIN(it->x + it->w, vw) - LMAX(it->x, 0)) * LMAX(0, LMIN(it->y + it->h, vh) - LMAX(it->y, 0));
+                for (int k = 0; k < 3; k++) if (ar > bigA[k]) { for (int j = 2; j > k; j--) { big[j] = big[j - 1]; bigA[j] = bigA[j - 1]; } big[k] = i; bigA[k] = ar; break; }
+            }
+            for (int k = 0; k < 3 && sdmg && g_sig_first[k] >= 0 && g_sig_first[k] < a->pdl.items.n && o < 440; k++) { const DItem *it = &a->pdl.items.v[g_sig_first[k]]; o += snprintf(m + o, sizeof m - (size_t)o, " <#%d op%d f%d %.1f,%.2f %.1fx%.1f ng%d mv%d>", g_sig_first[k], it->op, it->fixed, it->x, it->y, it->w, it->h, it->ng, it->mv != NULL); }
+            for (int k = 0; k < 3 && big[k] >= 0 && o < 560; k++) { const DItem *it = &a->pdl.items.v[big[k]]; o += snprintf(m + o, sizeof m - (size_t)o, " [op%d %c %.0f,%.0f %.0fx%.0f a%u mv%d]", it->op, it->sticky ? 's' : 'f', it->x, it->y, it->w, it->h, (unsigned)COLOR_A(it->color), it->mv != NULL); }
             if (t0 - last > 400) { last = t0; LOAD_TRACE("noblit fixed d=%d page=%dx%d area=%.0f%% sdmg=%d fixed=%d unmatched=%d/%d repaint px:%s", blit, pwp, ph, fixed_area * 100 / ((double)pwp * ph), sdmg, a->pdl.fixed.count, g_sig_changed[0], g_sig_changed[1], o ? m : " none"); }
         }
         if (blit && ((nv && !scroll_video) || fixed_area * 5 > (double)pwp * ph * 4)) { g_pp_noblit[nv && !scroll_video ? 2 : 1]++; blit = 0; part = false; if (!sdmg) why = 5; else g_sdmg_no[1]++; }
+        bool bars_only = part && !blit && !a->sdirty && a->vbar_tick && (nv == 0 || (same_layers && nvit == 1));
+        if (part && !blit && !a->sdirty && a->vbar_tick && !bars_only) { part = false; why = 1; }   /* bar clocks over several video layers: a full raster */
         paint_profile_stage(&profile_frame, PAINT_SIGNATURES);
         if (blit) {
             profile_frame.blit = true;
@@ -2131,15 +2223,30 @@ static void render(App *a) {
             x0 = LMAX(x0, 0); y0 = LMAX(y0, 0); x1 = LMIN(x1, pwp); y1 = LMIN(y1, ph);
             if (x1 > x0 && y1 > y0) raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), x0, y0, x1, y1);
             rx0 = x0; ry0 = y0; rx1 = LMAX(x1, x0); ry1 = LMAX(y1, y0); a->gvid_ok = false;
+        } else if (bars_only) {   /* only the video bars' clocks moved: repaint them, punching the video layer's hole again */
+            float s = a->page.scale;
+            int x0 = LMAX((int)floorf(a->vbr[0] * s), 0), y0 = LMAX((int)floorf(a->vbr[1] * s), 0), x1 = LMIN((int)ceilf(a->vbr[2] * s), pwp), y1 = LMIN((int)ceilf(a->vbr[3] * s), ph);
+            if (x1 > x0 && y1 > y0) {
+                a->page.punch = nv ? vit->img : NULL;
+                raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), x0, y0, x1, y1);
+                a->page.punch = NULL; rx0 = x0; ry0 = y0; rx1 = x1; ry1 = y1; g_pp[PP_RECT]++;
+                if (env_hook(ENV_CHECK_DAMAGE)) {
+                    Canvas t; canvas_init(&t, pwp, ph, a->page.scale); t.punch = nv ? vit->img : NULL; raster(&t, &a->pdl, RGBA(255, 255, 255, 255)); t.punch = NULL;
+                    long bad = 0; for (int y = 0; y < ph; y++) for (int x = 0; x < pwp; x++) bad += t.px[(size_t)y * (size_t)t.stride + (size_t)x] != canvas_row(&a->page, y)[x];
+                    fprintf(stderr, "lumen: bar damage %dx%d at %d,%d mismatched px=%ld\n", x1 - x0, y1 - y0, x0, y0, bad); canvas_free(&t);
+                }
+            } else { gskip = true; g_pp[PP_SKIP]++; }
         } else if (part && (nv == 0 || same_layers)) { gskip = true; g_pp[PP_SKIP]++; }
         else if (part && rx1 > rx0 && ry1 > ry0) { a->gvid_ok = false; g_pp[PP_RECT]++; raster_rect(&a->page, &a->pdl, RGBA(255, 255, 255, 255), rx0, ry0, rx1, ry1); }
         else {
             g_pp_why[LCLAMP(why, 0, 5)]++;
             bool dmg = (why == 1 || why == 3 || why == 4) && !nv && a->osig_ok && a->t->sy == a->last_sy && !a->t->loading;
+            double dmg_area = -1; int dmg_n = -1;
             if (dmg) {   /* only DOM/layout changed: raster the union of the items that differ from the last frame */
                 build_chrome(a); chrome_tip(a);
                 bool chrome_changed = dl_hash(&a->cdl) * 31 + dl_hash(&a->hdl) != a->chash;
                 PaintRegions changed = {0}; double area = sig_damage(a, a->nsig, nn, 0, pwp, ph, &changed);
+                dmg_area = area; dmg_n = changed.count;
                 int x0 = pwp, y0 = ph, x1 = 0, y1 = 0;   /* their union: the rows composed and uploaded */
                 for (int i = 0; i < changed.count; i++) {
                     const float *c = changed.rect[i];
@@ -2159,6 +2266,15 @@ static void render(App *a) {
                     fprintf(stderr, "lumen: damage %dx%d at %d,%d regions=%d mismatched px=%ld\n", LMAX(0, x1 - x0), LMAX(0, y1 - y0), x0, y0, changed.count, bad); canvas_free(&t);
                 }
                 if (dmg && chrome_changed) { part = false; gskip = false; }
+            }
+            if (!dmg && why && now_ms() < g_load_trace_until) {   /* why a frame took the full repaint: the gates, or the damage's area and largest items */
+                static double last_full_tr; double tn = now_ms();
+                if (tn - last_full_tr > 500) {
+                    last_full_tr = tn; char m[320]; int o = 0; m[0] = 0;
+                    for (int k = 0; dmg_n >= 0 && k < 3 && g_sig_first[k] >= 0 && g_sig_first[k] < a->pdl.items.n && o < 260; k++) { const DItem *it = &a->pdl.items.v[g_sig_first[k]]; o += snprintf(m + o, sizeof m - (size_t)o, " <op%d f%d %.0f,%.0f %.0fx%.0f>", it->op, it->fixed, it->x, it->y, it->w, it->h); }
+                    LOAD_TRACE("full why=%d nv=%d osig=%d sy_same=%d loading=%d regions=%d area=%.0f%% unmatched=%d/%d%s", why, nv, a->osig_ok, a->t->sy == a->last_sy, a->t->loading, dmg_n,
+                               dmg_area < 0 ? -1.0 : dmg_area * 100 / ((double)pwp * ph), dmg_n >= 0 ? g_sig_changed[0] : -1, dmg_n >= 0 ? g_sig_changed[1] : -1, m);
+                }
             }
             if (!dmg) {
                 part = false; a->page.punch = gv ? vit->img : NULL; a->page.punched = false; g_pp[PP_FULL]++;
@@ -2214,6 +2330,7 @@ static void render(App *a) {
     if (gvp) gpu_set_extra_layers(a->gpu, xvd, nxvd);
     int up0 = (gskip || page_uploaded) ? 0 : part ? bar_px + ry0 : 0, up1 = (gskip || page_uploaded) ? 0 : part ? bar_px + ry1 : a->frame.h;
     bool shown = a->gpu && gpu_present_frame(a->gpu, a->frame.px, a->frame.w, a->frame.h, a->frame.stride, up0, up1, gvp);
+    if (!g_boot.presented) { g_boot.presented = true; boot_mark("first_present"); }
 #ifdef __ANDROID__
     /* a GPU without a surface is between windows (going to the background): a software window surface
        would take the window from Vulkan, so the frame waits for the next one */
@@ -2232,6 +2349,7 @@ static void render(App *a) {
         }
     }
     paint_profile_stage(&profile_frame, PAINT_PRESENT);
+    if (!gskip || gvp) doc_activity();   /* page pixels changed: animation frames keep their full rate */
     a->frame_ms = now_ms() - t0;
     if (env_hook(ENV_SHOT)) {   /* write the presented frame to a PNG after LUMEN_SHOT_MS and exit */
         static double ts; if (!ts) ts = t0;
@@ -2249,7 +2367,7 @@ static void render(App *a) {
     }
     if (!part) a->last_full = t0;
     a->vframe = false;
-    a->dirty = a->vonly = a->sdirty = false;
+    a->dirty = a->vonly = a->sdirty = a->vbar_tick = false;
     a->last_page = a->t->cur; a->last_sy = a->t->sy; if (!defer) a->last_ver = a->t->cur ? a->t->cur->d->dom_version : 0;
 }
 
@@ -2334,6 +2452,7 @@ static void android_fling_tick(App *app) {
 }
 static unsigned android_dom_touch(App *app, const char *phase, const SDL_Event *event);
 static void page_touch_controls(App *a, float x, float y);
+static void kbd_tap(App *a, float x, float y);
 static bool tsel_touch(App *a, AndroidTouchPhase phase, const SDL_Event *ev, float x, float y);
 static void tsel_touch_reset(void);
 static bool android_touch_input(App *app, SDL_Event *event) {
@@ -2391,6 +2510,7 @@ static bool android_touch_input(App *app, SDL_Event *event) {
         android_fling_reset(&app->fling);
         return true;
     }
+    if (phase == ANDROID_TOUCH_DOWN && app->touch.count == 0 && (app->touch_block & 3) == 3) dom |= 1;   /* touch-action: none */
     if (dom & 1) app->touch.can_scroll = false;
     app->touch.slop = g_smooth ? 8 : STEP_START;   /* stepped scrolling starts after 5 px */
     AndroidTouchResult result = android_touch_update(&app->touch, phase,
@@ -2401,6 +2521,11 @@ static bool android_touch_input(App *app, SDL_Event *event) {
     if (phase == ANDROID_TOUCH_DOWN && app->touch.count == 1 && !app->touch.blocked && app->touch.can_scroll)
         android_fling_begin(&app->fling, timestamp);
     if (phase == ANDROID_TOUCH_CANCEL || app->touch.blocked) android_fling_reset(&app->fling);
+    if (result.action == ANDROID_TOUCH_SCROLL && app->touch.count == 1 && app->touch_block) {   /* touch-action: pan-x or pan-y */
+        if (app->touch_block & TOUCH_NO_X) result.dx = 0;
+        if (app->touch_block & TOUCH_NO_Y) result.dy = 0;
+        if (!result.dx && !result.dy) result.action = ANDROID_TOUCH_NONE;
+    }
     if (result.action == ANDROID_TOUCH_SCROLL) {
         android_dom_touch(app, "scroll", event);
         app->fling_x = result.anchor_x; app->fling_y = result.anchor_y;
@@ -2416,6 +2541,7 @@ static bool android_touch_input(App *app, SDL_Event *event) {
        as interaction with the player for the control visibility timer. */
     if (dom & 4) {
         page_touch_controls(app, page_x(app, result.anchor_x), page_y(app, result.anchor_y));
+        kbd_tap(app, result.anchor_x, result.anchor_y);
         return true;
     }
     SDL_Event click = {0};
@@ -2917,26 +3043,88 @@ static void h_sync_in(void *ud, Document *d, bool layout) {
     a->t->relayout = false;
 }
 #ifdef __ANDROID__
+/* The panning a touch on n may start: the touch-action of n and its ancestors up to the nearest
+   scroll container combined (Google's map forbids both, so its drags pan the map, not the page). */
+static unsigned touch_block_of(const Node *n) {
+    unsigned block = 0;
+    for (; n && n->type == NODE_ELEMENT; n = n->parent) {
+        const ComputedStyle *s = n->style;
+        if (!s) continue;
+        block |= s->touch_block;
+        if (s->overflow_x >= OV_SCROLL && s->overflow_x != OV_CLIP) break;
+        if (s->overflow_y >= OV_SCROLL && s->overflow_y != OV_CLIP) break;
+    }
+    return block;
+}
+/* The viewport origin of frame fp's content box, through its enclosing frames; false once it is gone. */
+static bool frame_origin(App *a, Page *fp, float *ox, float *oy) {
+    *ox = *oy = 0;
+    for (int depth = 0; fp; depth++) {
+        Box *fb = fp->frame_el ? fp->frame_el->box : NULL;
+        if (depth > 8 || !fb || !(fp->frame_el->flags & NF_CONNECTED)) return false;
+        Document *pd = fp->frame_el->doc;
+        Page *parent = NULL;
+        for (Page *q = g_frames; q; q = q->fnext) if (q->d == pd) { parent = q; break; }
+        if (!parent && (!a->t->cur || a->t->cur->d != pd)) return false;
+        *ox += fb->x + fb->b[3] + fb->p[3];
+        *oy += fb->y + fb->b[0] + fb->p[0] - (parent ? parent->fsy : a->t->sy);
+        fp = parent;
+    }
+    return true;
+}
 static unsigned android_dom_touch(App *a, const char *phase, const SDL_Event *event) {
     Page *p = a->t->cur;
+    bool start = !strcmp(phase, "start");
+    if (start) a->touch_block = 0;
+    if (!strcmp(phase, "reset")) touch_frames_reset();
     if (!p || !p->js || a->t->asleep) return 0;
     Node *target = NULL;
     float x = event ? page_x(a, event->tfinger.x * a->vw) : 0;
     float y = event ? page_y(a, event->tfinger.y * a->vh) : 0;
-    if (!strcmp(phase, "start")) {
+    uint64_t device = event ? event->tfinger.touchID : 0, finger = event ? event->tfinger.fingerID : 0;
+    JsCtx *js = p->js; Document *d = p->d;
+    Page *fp = NULL; int in = -1;
+    for (int i = 0; event && !start && i < g_touch_nin; i++)
+        if (g_touch_in[i].device == device && g_touch_in[i].finger == finger) { in = i; fp = g_touch_in[i].fp; break; }
+    if (start) {
         if (x <= 0 || y <= 0 || g_hud_pop || a->t->info) return 0;
         h_sync_in(a, p->d, true);
         Box *b = p->L ? layout_hit(p->L, x, y + a->t->sy, 0, a->t->sy) : NULL;
         target = b ? b->node : NULL;
         while (target && target->type != NODE_ELEMENT) target = target->parent;
-        /* Frame coordinates are handled by click_frame until contact routing
-           across browsing contexts is implemented. */
-        if (target && target->tag == A_iframe) return 0;
+        unsigned block = 0;
+        /* a touch on an iframe goes to the element under it in the frame's document, in its coordinates */
+        for (int depth = 0; target && target->tag == A_iframe && depth < 8; depth++) {
+            Page *f = frame_find(target);
+            float ox, oy;
+            if (!f || !f->L || !f->d || !js_frame_ctx(target) || !frame_origin(a, f, &ox, &oy)) return 0;
+            block |= touch_block_of(target);
+            fp = f;
+            b = layout_hit(f->L, x - ox, y - oy + f->fsy, 0, f->fsy);
+            target = b ? b->node : NULL;
+            while (target && target->type != NODE_ELEMENT) target = target->parent;
+        }
+        a->touch_block = block | touch_block_of(target);
+        if (fp && target && g_touch_nin < (int)(sizeof g_touch_in / sizeof *g_touch_in)) {
+            in = g_touch_nin++;
+            g_touch_in[in].device = device; g_touch_in[in].finger = finger; g_touch_in[in].fp = fp;
+        }
+        else if (fp) return 0;
     }
-    uint64_t version = p->d->dom_version;
-    unsigned flags = js_touch(p->js, target, phase, event ? event->tfinger.touchID : 0,
-        event ? event->tfinger.fingerID : 0, x, y, event ? event->tfinger.pressure : 0);
-    if (a->t->cur == p && version != p->d->dom_version) { a->vonly = false; restyle(a); }
+    if (fp) {
+        float ox, oy;
+        if (!frame_alive(fp) || !fp->frame_el || !(js = js_frame_ctx(fp->frame_el)) || !frame_origin(a, fp, &ox, &oy)) {
+            if (in >= 0) g_touch_in[in] = g_touch_in[--g_touch_nin];
+            return 0;
+        }
+        x -= ox; y -= oy; d = fp->d;
+        a->dirty = true; a->vonly = false;   /* the frame's raster follows its document */
+    }
+    uint64_t version = d->dom_version;
+    unsigned flags = js_touch(js, target, phase, device, finger, x, y, event ? event->tfinger.pressure : 0);
+    if (fp && in >= 0 && in < g_touch_nin && (!strcmp(phase, "end") || !strcmp(phase, "cancel")))
+        g_touch_in[in] = g_touch_in[--g_touch_nin];
+    if (!fp && a->t->cur == p && version != p->d->dom_version) { a->vonly = false; restyle(a); }
     return flags;
 }
 #endif
@@ -2986,6 +3174,32 @@ static void debug_layout_geometry(App *a) {
     fclose(f);
 }
 #endif
+static Tab *tab_of_wid(App *a, uint32_t wid) { for (int i = 0; i < a->ntabs; i++) if (wid && a->tabs[i]->wid == wid) return a->tabs[i]; return NULL; }
+/* window.open from the calling tab: the new tab loads now and shows once the script returns (popup_service) */
+static uint32_t h_open_window_in(const char *u, const char *name, uint32_t opener) {
+    App *a = g_app; Tab *o = a->t, *t = NULL;
+    if (!o || a->pan) return 0;
+    if (name && *name) for (int i = 0; i < a->ntabs && !t; i++) if (a->tabs[i]->wname && !strcmp(a->tabs[i]->wname, name) && !a->tabs[i]->close_req) t = a->tabs[i];
+    if (!t) {
+        if (!(t = tab_new(a))) return 0;
+        t->ws = o->ws; t->scripted = true; t->wname = name && *name ? xstrdup(name) : NULL; publish_gens(a);
+    }
+    t->opener = opener; t->opener_wid = o->wid;
+    a->t = t; navigate(a, u && *u ? u : "about:blank", true); a->t = o;
+    g_show_wid = t->wid;
+    return t->wid;
+}
+static int h_window_op_in(uint32_t wid, int op, const char *arg) {
+    App *a = g_app; Tab *t = op == 4 ? a->t : tab_of_wid(a, wid);
+    if (op == 0) return !t || t->close_req;
+    if (!t || t->close_req) return 0;
+    if (op == 1 || op == 4) { if (t->scripted) { t->close_req = true; a->dirty = true; } return 0; }   /* pages close only the tabs scripts opened */
+    if (op == 2 && arg && *arg) { Tab *o = a->t; a->t = t; navigate(a, arg, true); a->t = o; return 0; }
+    if (op == 3) g_show_wid = t->wid;
+    return 0;
+}
+static uint32_t h_open_window(void *ud, const char *u, const char *name, uint32_t opener) { uint32_t r = 0; TAB_CALL(ud, r = h_open_window_in(u, name, opener)); return r; }
+static int h_window_op(void *ud, uint32_t wid, int op, const char *arg) { int r = 0; TAB_CALL(ud, r = h_window_op_in(wid, op, arg)); return r; }
 static void h_navigate(void *ud, const char *u) { TAB_CALL(ud, h_navigate_in(ud, u)); }
 static void h_set_url(void *ud, const char *u, bool push) { TAB_CALL(ud, h_set_url_in(ud, u, push)); }
 static void h_navigate_post(void *ud, const char *u, const char *body, size_t len, const char *ctype) { TAB_CALL(ud, h_navigate_post_in(ud, u, body, len, ctype)); }
@@ -2999,10 +3213,20 @@ static Node *h_hit(void *ud, float x, float y) { Node *r = NULL; TAB_CALL(ud, r 
 static void page_start_js(App *a, Page *p) {
     if (getenv("LUMEN_NO_JS")) return;
     JsHost h = { a->t, &p->e->media, h_navigate, h_set_url, h_history_go, h_viewport, h_scroll_to, h_hit, h_history_len, h_navigate_post, h_sync, h_frame_open, h_frame_close,
-                 p->internal_ui ? h_internal : NULL, h_fullscreen };
+                 p->internal_ui ? h_internal : NULL, h_fullscreen, p->internal_ui ? NULL : h_open_window, h_window_op };
     double t0 = now_ms();
     sync_sheets(p, true);
+    /* the stylesheets the loader fetched before any script ran: their load (or error) events come after
+       DOMContentLoaded (x.com starts its app from a capturing listener for its sheet's load) */
+    Node **links = NULL; bool *lok = NULL; int nlinks = 0;
+    for (Node *n = p->d->node.first; n; n = node_next_deep(n, &p->d->node)) {
+        if (n->type != NODE_ELEMENT || n->ns != NS_HTML || !is_sheet_link(n)) continue;
+        bool ok = false; for (int i = 0; i < p->e->sheets.n && !ok; i++) ok = p->e->sheets.v[i]->owner == n;
+        links = xrealloc(links, sizeof *links * (size_t)(nlinks + 1)); lok = xrealloc(lok, sizeof *lok * (size_t)(nlinks + 1));
+        n->refcount++; links[nlinks] = n; lok[nlinks++] = ok;
+    }
     p->js = js_new(p->d, &h);
+    js_set_window(p->js, a->t->wid, a->t->opener);
     LOAD_TRACE("js_new_ms=%.0f", now_ms() - t0);
     js_eval(p->js, "document.addEventListener('lumenmediactl',function(e){var v=e.target;if(!(v instanceof HTMLMediaElement))return;e.stopImmediatePropagation();"
         "if(e.key==='toggle'){if(v.paused)v.play();else v.pause()}else if(e.key.indexOf('seek:')===0&&v.duration>0)v.currentTime=v.duration*parseFloat(e.key.slice(5))},true)", "lumen:ctl");
@@ -3028,6 +3252,8 @@ static void page_start_js(App *a, Page *p) {
     js_set_ready_state(p->js, 1);
     js_dispatch(p->js, &p->d->node, "DOMContentLoaded", "Event", true, false, 0, 0, 0, NULL);
     LOAD_TRACE("dcl_ms=%.0f", now_ms() - t_dcl);
+    for (int i = 0; i < nlinks; i++) { if (links[i]->flags & NF_CONNECTED) js_dispatch(p->js, links[i], lok[i] ? "load" : "error", "Event", false, false, 0, 0, 0, NULL); node_release(links[i]); }
+    free(links); free(lok);
     js_set_ready_state(p->js, 2);
     js_dispatch_window(p->js, "load");
     fprintf(stderr, "lumen: ran %d scripts in %.0fms\n", p->nscripts, now_ms() - t0);
@@ -3456,6 +3682,7 @@ static void vbar_layout(App *a, const Box *b, const MpState *s, char *tm, size_t
 }
 static bool video_bars(App *a, DisplayList *dl) {   /* control bar under each <video controls> (or every video when "always show video controls" is on) */
     bool playing = false; a->vbar_any = false; a->vbar_msv = media_state_version(); Document *d = a->t->cur->d; float rb = (a->ui->ascent - a->ui->descent) / 2;
+    a->vbr[0] = a->vbr[1] = 1e9f; a->vbr[2] = a->vbr[3] = -1e9f;
     for (Node *n = d->node.first; n; n = node_next_in_tree(n, &d->node)) {
         if (!vbar_on(a, n)) continue;
         Box *b = n->box; float y = vbar_y(a, b) - (box_in_fixed(b) ? 0 : a->t->sy);
@@ -3464,6 +3691,7 @@ static bool video_bars(App *a, DisplayList *dl) {   /* control bar under each <v
         playing |= !s.paused; a->vbar_any = true;
         char tm[48]; float tx0, tx1; vbar_layout(a, b, &s, tm, sizeof tm, &tx0, &tx1);
         push_rect(dl, b->x, y, b->w, VBH, 0, RGBA(32, 33, 36, 240));
+        a->vbr[0] = LMIN(a->vbr[0], b->x); a->vbr[1] = LMIN(a->vbr[1], y); a->vbr[2] = LMAX(a->vbr[2], b->x + b->w); a->vbr[3] = LMAX(a->vbr[3], y + VBH);
         Image *ic = sym_icon(a, s.paused ? 5 : 6, 3); if (ic) push_img(dl, ic, b->x + 14, y + (VBH - 16) / 2, 16, 16);
         float f = s.duration > 0 ? LCLAMP(s.time / s.duration, 0, 1) : 0, cy = y + VBH / 2;
         push_rect(dl, tx0, cy - 2, tx1 - tx0, 4, 2, RGBA(255, 255, 255, 90));
@@ -3689,6 +3917,9 @@ static void kbd_tap(App *a, float x, float y) {
     if (!f) f = edit_focus(a);
     bool was = g_kbm.menu; g_kbm.menu = false;
     if (was) sel_dirty(a);
+    double tn = now_ms();
+    bool again = hypotf(x - g_kbm.tx, y - g_kbm.ty) <= 30 && tn - g_kbm.tt < 1500;   /* the previous tap, focused or not */
+    g_kbm.tx = x; g_kbm.ty = y; g_kbm.tt = tn;
     if (!g_tap_kbd || !f || !p || !p->L || x < page_left(a) || y < BAR) { g_kbm.n = NULL; return; }
     float px = page_x(a, x), py = page_y(a, y) + a->t->sy;
     Box *b = layout_hit(p->L, px, py, 0, a->t->sy);
@@ -3697,7 +3928,10 @@ static void kbd_tap(App *a, float x, float y) {
     bool over = fb && px >= fb->x - 4 && px < fb->x + fb->w + 4 && py >= fb->y - 4 && py < fb->y + fb->h + 4;
     if (!over && (!b || !b->node || !node_within(b->node, f))) return;   /* elsewhere on the page: the field keeps its focus */
     if (SDL_ScreenKeyboardShown(a->win)) { g_kbm.n = f; return; }
-    if (g_kbm.n == f && hypotf(x - g_kbm.x, y - g_kbm.y) <= 30) { g_kbm.n = NULL; SDL_StartTextInput(a->win); return; }
+#ifndef NDEBUG
+    __android_log_print(ANDROID_LOG_INFO, "LumenUi", "kbd_tap field=%s same=%d again=%d dist=%.0f", is_text_ctl(f) ? "ctl" : "editable", g_kbm.n == f, again, hypotf(x - g_kbm.x, y - g_kbm.y));
+#endif
+    if ((g_kbm.n == f && hypotf(x - g_kbm.x, y - g_kbm.y) <= 30) || (g_kbm.n != f && again)) { g_kbm.n = NULL; g_kbm.menu = false; SDL_StartTextInput(a->win); return; }
     g_kbm.n = f; g_kbm.x = x; g_kbm.y = y;
     g_kbm.menu = true; g_kbm.mx = px; g_kbm.my = py; g_kbm.hit = 0;
     a->caret_t = now_ms();
@@ -4121,7 +4355,7 @@ static void tab_open(App *a) {
     a->editing = true; a->t->url[0] = 0; a->us[0] = a->us[1] = 0; SDL_StartTextInput(a->win);
 #endif
 }
-static void tab_free(Tab *t) { if (t->cur) page_free(t->cur); for (int k = 0; k < t->nhist; k++) free(t->hist[k]); free(t->stitle); free(t); }
+static void tab_free(Tab *t) { if (t->cur) page_free(t->cur); for (int k = 0; k < t->nhist; k++) free(t->hist[k]); free(t->stitle); free(t->wname); free(t); }
 static void tab_close(App *a, int i, bool *quit) {
     if (a->pan) { int k = 0; while (k < a->ntabs && a->tabs[k] != a->pan) k++; if (k == i) return; panel_close(a, false); if (k < i) i--; }
     if (a->ntabs == 1) { *quit = true; return; }
@@ -4136,6 +4370,20 @@ static void tab_close(App *a, int i, bool *quit) {
     for (int k = i - 1; k >= 0 && j < 0; k--) if (a->tabs[k]->ws == w) j = k;
     a->ti = 0; a->t = a->tabs[0];
     if (j >= 0) tab_select(a, j); else { a->wi = w; tab_open(a); }
+}
+/* from the main loop, where no page script runs: the tabs window.open showed and window.close closed */
+static void popup_service(App *a, bool *quit) {
+    for (int i = 0; i < a->ntabs; i++) {
+        Tab *t = a->tabs[i];
+        if (!t->close_req || a->ntabs == 1 || t == a->pan) { t->close_req = false; continue; }
+        uint32_t back = t == a->t ? t->opener_wid : 0;
+        tab_close(a, i, quit); i--;
+        Tab *o = tab_of_wid(a, back);
+        for (int k = 0; o && k < a->ntabs; k++) if (a->tabs[k] == o) tab_select(a, k);
+    }
+    if (!g_show_wid) return;
+    Tab *t = tab_of_wid(a, g_show_wid); g_show_wid = 0;
+    if (t && t != a->t && !a->pan) for (int k = 0; k < a->ntabs; k++) if (a->tabs[k] == t) tab_select(a, k);
 }
 static void tab_cycle(App *a, int d) {
     int v[MAX_TABS], n = ws_tabs(a, a->wi, v), cur = 0;
@@ -4699,6 +4947,7 @@ static void panel_close(App *a, bool keep_picture) {
     a->pan_dead = p;   /* freed by panel_service: its page may be on the stack */
     if (!keep_picture) { free(a->pan_bg); a->pan_bg = NULL; }
     if (a->t->cur && a->t->cur->js) js_touch(a->t->cur->js, NULL, "reset", 0, 0, 0, 0, 0);
+    touch_frames_reset();
     android_touch_reset(&a->touch);
     android_fling_reset(&a->fling);
     a->t->relayout = true; a->dirty = true; a->vonly = a->osig_ok = a->gvid_ok = false;
@@ -4921,7 +5170,10 @@ static void android_handle_back(App *app) {
     if (tsel_ui(app)) { tsel_clear(app); return; }
     if (app->pan && !app->editing) { panel_close(app, false); return; }
     if (g_fs_page) { page_fs_exit(app); return; }
-    AndroidBackAction act = android_back_action(g_hud_pop, app->editing, page_focus(app) || edit_focus(app), app->t->hpos > 0);
+    /* Like Chrome, Back only drops the focus (and keyboard) while the keyboard is up: once the IME has hidden
+       it, a focused field no longer swallows Back, so the next press goes back in history. */
+    bool kbd_up = SDL_ScreenKeyboardShown(app->win);
+    AndroidBackAction act = android_back_action(g_hud_pop, app->editing, kbd_up && (page_focus(app) || edit_focus(app)), app->t->hpos > 0);
     SDL_Log("Lumen: back: action %d, history %d of %d", (int)act, app->t->hpos, app->t->nhist);
     switch (act) {
     case ANDROID_BACK_DISMISS_POPUP:
@@ -4938,6 +5190,7 @@ static void android_handle_back(App *app) {
         focus_node(app, NULL);
         break;
     case ANDROID_BACK_HISTORY:
+        if (SDL_TextInputActive(app->win)) SDL_StopTextInput(app->win);
         history_go(app, -1);
         break;
     case ANDROID_BACK_BACKGROUND:
@@ -5017,6 +5270,7 @@ static int deadline_wait_ms(int timeout, double remaining) {
 }
 
 int main(int argc, char **argv) {
+    boot_begin();
     g_no_paint_only = getenv("LUMEN_NO_PAINT_ONLY") != NULL;
     g_main_thr = pthread_self();
     install_crash_handler();
@@ -5030,13 +5284,16 @@ int main(int argc, char **argv) {
 #ifdef __ANDROID__
     android_platform_init();
 #endif
+    boot_mark("sdl");
     dom_init(); net_init(6); font_init(); css_sheet_added_hook = sheet_fonts;
+    boot_mark("fonts");
     { const char *rt = getenv("LUMEN_RASTER_THREADS"); raster_set_threads(rt ? atoi(rt) : LMIN(SDL_GetNumLogicalCPUCores(), 8) - 1); }   /* large rasters use every core */
     icache_mu = SDL_CreateMutex(); EV_LOADED = SDL_RegisterEvents(1); EV_NET = SDL_RegisterEvents(1); EV_MENU = SDL_RegisterEvents(1); EV_DL = SDL_RegisterEvents(1); EV_UI = SDL_RegisterEvents(1);
 #ifdef __ANDROID__
     android_launch_set_wakeup(wake);
 #endif
     net_wakeup = wake; media_wakeup = wake; js_wakeup = wake; js_clip_set = h_clip_set; js_clip_get = h_clip_get; js_global_init(argv[0]);
+    boot_mark("v8");
     paint_image_hook = node_img; paint_url_image_hook = url_img; svg_ext_ref_hook = svg_ext_ref; layout_image_size_hook = img_size;
     App a; memset(&a, 0, sizeof a); g_app = &a; a.nws = 1; a.wsicon[0] = WORKSPACE_DEFAULT_ICON; snprintf(a.wsname[0], sizeof a.wsname[0], "Personal"); a.side = sidebar_width(getenv("LUMEN_NO_SIDEBAR") ? 0 : SIDEW); tab_new(&a);
     bool want_gpu = !getenv("LUMEN_NO_GPU");
@@ -5047,6 +5304,7 @@ int main(int argc, char **argv) {
     a.win = SDL_CreateWindow("Lumen", ww, wh, SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY | (want_gpu && !strcmp(SDL_GetPlatform(), "macOS") ? SDL_WINDOW_METAL : 0));
     if (!a.win) { fprintf(stderr, "SDL_CreateWindow: %s\n", SDL_GetError()); return 1; }
     g_dialog_win = a.win; js_pick_files = pick_files;
+    boot_mark("window");
     set_window_icon(a.win);
 #ifdef __APPLE__
     mac_style_window(a.win); mac_install_menu(EV_MENU);
@@ -5077,6 +5335,7 @@ int main(int argc, char **argv) {
         return 1;
     }
 #endif
+    boot_mark("gpu");
     fprintf(stderr, "lumen: presenting with %s\n", gpu_backend_name(a.gpu));
 #ifdef __ANDROID__
     SDL_Log("Lumen: requested renderer %s, active %s", renderer_key(g_renderer), gpu_backend_name(a.gpu));
@@ -5100,6 +5359,7 @@ int main(int argc, char **argv) {
     { char *pref = SDL_GetPrefPath("lumen", "Lumen"); if (pref) { snprintf(cookie_path, sizeof cookie_path, "%scookies.txt", pref); cookies_load(cookie_path);
         char cache_dir[1100]; snprintf(cache_dir, sizeof cache_dir, "%shttpcache", pref); net_cache_init(cache_dir, 256u << 20);
         snprintf(cache_dir, sizeof cache_dir, "%sv8cache", pref); js_code_cache_init(cache_dir, 96u << 20); SDL_free(pref); } }
+    boot_mark("caches");
     double cookies_saved_at = now_ms();
     {
         char *pref = SDL_GetPrefPath("lumen", "Lumen"); char sp[1024] = "";
@@ -5148,6 +5408,7 @@ int main(int argc, char **argv) {
         fprintf(stderr, "lumen: lite mode %s\n", g_lowmem ? "on" : "off");
         media_lowmem = g_lowmem;
     }
+    boot_mark("settings");
     int shown = -1;
 #ifdef __ANDROID__
     g_session = !getenv("LUMEN_NO_SESSION") && argc <= 2;   /* argv[1]: lumen://newtab, or the address the app was opened with */
@@ -5163,13 +5424,17 @@ int main(int argc, char **argv) {
         for (int i = 2; i < argc; i++) { Tab *nt = tab_new(&a); if (!nt) break; a.t = nt; navigate(&a, start_url(argv[i]), true); }
         a.t = a.tabs[0]; a.ti = 0;
     }
+    boot_mark("session");
     bool quit = false, cmd = false;
 #ifdef __ANDROID__
     AndroidTextInputState android_text_state = {0};
     android_back_set_wakeup(wake);
 #endif
+    double boot_turn = now_ms();
     while (!quit) {
+        { double t = now_ms(); boot_tick(t - boot_turn); boot_turn = t; }
         panel_service(&a);
+        popup_service(&a, &quit);
 #ifdef __ANDROID__
         session_service(&a, a.android_suspended);
 #else
@@ -5198,12 +5463,14 @@ int main(int argc, char **argv) {
         }
         SDL_Event ev;
         int to = a.t->loading ? 120 : 1000;
-        for (int i = 0; i < a.ntabs; i++) { Tab *tb = a.tabs[i]; if (tb->cur && tb->cur->js) { double dl = js_next_deadline(tb->cur->js) - now_ms(); if (tb->limited && tb->budget < 0) dl = LMAX(dl, -tb->budget / tb->lim - (now_ms() - tb->bud_t)); to = deadline_wait_ms(to, dl); } }
-        if (net_pending() && to > 50) to = 50;
+        int wk_src = 0, wk_prev = to;   /* what set the wait: the busy trace's wake counts */
+#define WTAG(k) do { if (to < wk_prev) wk_src = (k); wk_prev = to; } while (0)
+        for (int i = 0; i < a.ntabs; i++) { Tab *tb = a.tabs[i]; if (tb->cur && tb->cur->js) { double dl = js_next_deadline(tb->cur->js) - now_ms(); if (tb->limited && tb->budget < 0) dl = LMAX(dl, -tb->budget / tb->lim - (now_ms() - tb->bud_t)); to = deadline_wait_ms(to, dl); } }  WTAG(1);
+        if (net_pending() && to > 50) to = 50;  WTAG(2);
         if (g_hud && a.side > 0) {
             static double lh; double th = now_ms();
             if (th - lh >= 2000) { lh = th; hud_sample(); a.dirty = true; a.vonly = false; }
-            int nx = (int)(2000 - (th - lh)) + 1; if (nx < to) to = nx;
+            int nx = (int)(2000 - (th - lh)) + 1; if (nx < to) to = nx;  WTAG(3);
         }
         { int mf = media_tick(); if (mf & 1) { if (!a.dirty && !a.deferred) a.vonly = true; a.dirty = a.vframe = true; } if (mf & 2) a.t->relayout = true; }
 #ifdef __ANDROID__
@@ -5230,7 +5497,8 @@ int main(int argc, char **argv) {
                 const char *sm = env_hook(ENV_TAB_SLEEP_MS); double sleep_ms = sm ? atof(sm) : g_tab_sleep ? 60000 : 0; bool sleep_all = env_hook(ENV_TAB_SLEEP) && !strcmp(env_hook(ENV_TAB_SLEEP), "all");
                 for (int i = 0; i < a.ntabs; i++) {
                     Tab *st = a.tabs[i]; Page *sp = st->cur;
-                    if (st == a.t || st == a.pan_under || st->loading || !sp || !sp->js || !sp->url) { st->bg_since = 0; continue; }
+                    bool popup = false; for (int k = 0; k < a.ntabs; k++) popup |= a.tabs[k]->opener_wid == st->wid && a.tabs[k]->scripted;   /* waits for its window.open tab */
+                    if (st == a.t || st == a.pan_under || st->loading || !sp || !sp->js || !sp->url || popup) { st->bg_since = 0; continue; }
                     if (!st->bg_since) st->bg_since = tb;
                     bool site = sleep_all || !strncmp(sp->url, "https://chatgpt.com/", 20);
                     if (sleep_ms > 0 && site && tb - st->bg_since > sleep_ms && !js_busy(sp->js)) { js_free(sp->js); sp->js = NULL; st->asleep = true; }
@@ -5251,17 +5519,21 @@ int main(int argc, char **argv) {
             if (a.t->cur) media_mark_visible(vis_doc, a.t->cur->d);
             if (tn - last_evict > 2000) { last_evict = tn; img_evict(); }
         }
-        { int mt = media_timeout_ms(); if (mt >= 0 && mt < to) to = mt; }
+        { int mt = media_timeout_ms(); if (mt >= 0 && mt < to) to = mt; }  WTAG(4);
         if (g_sm_dx || g_sm_dy) {   /* smooth scrolling: move 30% of what is left each 16ms frame */
             float sx = fabsf(g_sm_dx) < 2 ? g_sm_dx : g_sm_dx * .3f, sy = fabsf(g_sm_dy) < 2 ? g_sm_dy : g_sm_dy * .3f;
             g_sm_dx -= sx; g_sm_dy -= sy; wheel_apply(&a, g_sm_x, g_sm_y, sx, sy);
-            if (to > 16) to = 16;
+            if (to > 16) to = 16; WTAG(5);
         }
-        page_move_keep(&a); if (g_mv_p && to > 1000) to = 1000;
+        page_move_keep(&a); if (g_mv_p && to > 1000) to = 1000;  WTAG(6);
         if (a.vbar_any && !a.vbars && media_state_version() != a.vbar_msv) { a.dirty = true; a.vonly = false; }   /* a bar's play state changed (e.g. play() from a page script) */
-        if (a.vbars) { static double lb; double tn = now_ms(); if (tn - lb >= 500) { lb = tn; a.dirty = true; a.vonly = false; g_wake[2]++; } if (to > 500) to = 500; }
-        if (a.deferred) { double r = 250 - (now_ms() - a.last_full); if (r <= 0) { a.dirty = true; g_wake[3]++; } else if (r + 1 < to) to = (int)r + 1; }
-        if (a.tip_until) { double r = a.tip_until - now_ms(); if (r <= 0) { a.tip_until = 0; a.dirty = true; a.vonly = false; } else if (r + 1 < to) to = (int)r + 1; }
+        if (a.vbars) {   /* a playing video's bar clock: only the bars are repainted, not the page */
+            static double lb; double tn = now_ms();
+            if (tn - lb >= 500) { lb = tn; if (!(a.dirty && !a.vonly)) a.vonly = true; a.dirty = a.vbar_tick = true; g_wake[2]++; }
+            if (to > 500) to = 500;  WTAG(7);
+        }
+        if (a.deferred) { double r = 250 - (now_ms() - a.last_full); if (r <= 0) { a.dirty = true; g_wake[3]++; } else if (r + 1 < to) to = (int)r + 1; }  WTAG(8);
+        if (a.tip_until) { double r = a.tip_until - now_ms(); if (r <= 0) { a.tip_until = 0; a.dirty = true; a.vonly = false; } else if (r + 1 < to) to = (int)r + 1; }  WTAG(9);
         {
             /* the caret blinks for 10 s after focus or input, then stays shown, as in GTK: a focused
                field on an idle page (a chat composer) no longer repaints the page twice a second */
@@ -5273,26 +5545,34 @@ int main(int argc, char **argv) {
                 double since = now_ms() - a.caret_t, ph = fmod(since, 1060);
                 want = ph < 530 || since >= 10000;
                 int nx = (int)LMIN((want ? 530 : 1060) - ph, 10000 - since) + 1;
-                if (since < 10000 && nx < to) to = nx;
+                if (since < 10000 && nx < to) to = nx;  WTAG(10);
             }
             if (want != dl_caret_on) { dl_caret_on = want; a.vonly = false; a.dirty = true; g_wake[0]++; }
         }
-        { double now = now_ms(), gn; if (image_anim_tick(now, &gn)) { a.vonly = false; a.dirty = true; g_wake[1]++; } if (gn > 0 && gn - now < to) to = gn - now < 1 ? 1 : (int)(gn - now); }
+        { double now = now_ms(), gn; if (image_anim_tick(now, &gn)) { a.vonly = false; a.dirty = true; g_wake[1]++; } if (gn > 0 && gn - now < to) to = gn - now < 1 ? 1 : (int)(gn - now); }  WTAG(11);
         if (env_hook(ENV_AUTOSCROLL)) {
             /* test hook: "x,y,dy,start_ms,count" pushes one wheel tick every 16ms */
             static double t0; static int sent; float wx = 0, wy = 0, wdy = 0; double st = 0; int cnt = 0;
             sscanf(env_hook(ENV_AUTOSCROLL), "%f,%f,%f,%lf,%d", &wx, &wy, &wdy, &st, &cnt);
             if (!t0) t0 = now_ms();
             if (sent < cnt && now_ms() - t0 > st + sent * 16.0) { SDL_Event we = {0}; we.type = SDL_EVENT_MOUSE_WHEEL; we.wheel.y = wdy; we.wheel.mouse_x = wx / a.input_scale; we.wheel.mouse_y = wy / a.input_scale; SDL_PushEvent(&we); sent++; }
-            if (sent < cnt && to > 16) to = 16;
+            if (sent < cnt && to > 16) to = 16;  WTAG(12);
         }
 #ifdef __ANDROID__
-        to = android_fling_wait_ms(&a.fling, now_ms(), to);
-        to = tsel_wait_ms(to);
+        to = android_fling_wait_ms(&a.fling, now_ms(), to);  WTAG(13);
+        to = tsel_wait_ms(to);  WTAG(14);
 #endif
-        if (!SDL_WaitEventTimeout(&ev, to)) { if (a.t->loading || env_hook(ENV_SHOT)) a.dirty = true; }
+        double boot_wait = now_ms();
+        bool boot_got = SDL_WaitEventTimeout(&ev, to);
+#undef WTAG
+        if (!boot_got) g_wk_to[wk_src]++;
+        else { int k = 0; while (k < 8 && g_wk_ev[k][1] && g_wk_ev[k][0] != (int)ev.type) k++; if (k < 8) { g_wk_ev[k][0] = (int)ev.type; g_wk_ev[k][1]++; } }
+        boot_turn += now_ms() - boot_wait;   /* waiting is not work */
+        if (!boot_got) { if (a.t->loading || env_hook(ENV_SHOT)) a.dirty = true; }
         else do {
             bool wheel0 = ev.type == SDL_EVENT_MOUSE_WHEEL && !ev.wheel.x && !ev.wheel.y;
+            if ((ev.type >= SDL_EVENT_KEY_DOWN && ev.type <= SDL_EVENT_TEXT_INPUT) || (ev.type >= SDL_EVENT_MOUSE_MOTION && ev.type <= SDL_EVENT_MOUSE_WHEEL) ||
+                (ev.type >= SDL_EVENT_FINGER_DOWN && ev.type <= SDL_EVENT_FINGER_CANCELED)) doc_activity();   /* input: full-rate animation frames */
             input_coordinates(&a, &ev);
 #ifdef __ANDROID__
             bool touch_tap = ev.type == SDL_EVENT_FINGER_UP;
@@ -5550,6 +5830,7 @@ int main(int argc, char **argv) {
                     sync_images(p);
                     page_start_js(&a, p);
                     a.t = act; double t0 = now_ms(); if (fg) render(&a); else a.dirty = true;
+                    if (fg && !g_boot.loaded && !p->internal_ui) { g_boot.loaded = true; boot_mark("page_loaded"); g_boot.last_long = now_ms(); }
                     fprintf(stderr, "lumen: %s loaded in %.0fms, first frame %.1fms (layout+paint+present), %d boxes\n", p->url, p->load_ms, now_ms() - t0, p->L ? p->L->nboxes : 0);
 #if defined(__ANDROID__) && !defined(NDEBUG)
                     __android_log_print(ANDROID_LOG_INFO, "LumenLoad", "loader_ms=%.0f first_frame_ms=%.1f boxes=%d", p->load_ms, now_ms() - t0, p->L ? p->L->nboxes : 0);
@@ -5582,6 +5863,11 @@ int main(int argc, char **argv) {
             if (now_ms() - w0 >= 2000) {
                 LOAD_TRACE("busy window_ms=%.0f loops=%d frames=%d net=%.0f js=%.0f restyle=%.0f img=%.0f bg_tabs=%.0f render=%.0f (style=%.0f passes=%d slow=%d layout=%.0f dl=%.0f raster=%.0f)",
                            now_ms() - w0, w_loops, w_frames, w_net, w_js, w_rs, w_img, w_bg, w_rn, g_tr, g_tr_n, g_tr_slow, g_tl, g_td, g_tx);
+                { char wk[300]; int o = snprintf(wk, sizeof wk, "wakes timeout");
+                  for (int k = 0; k < 16; k++) if (g_wk_to[k]) o += snprintf(wk + o, sizeof wk - (size_t)o, " s%d=%d", k, g_wk_to[k]);
+                  o += snprintf(wk + o, sizeof wk - (size_t)o, " event");
+                  for (int k = 0; k < 8 && g_wk_ev[k][1] && o < 260; k++) o += snprintf(wk + o, sizeof wk - (size_t)o, " 0x%x=%d", g_wk_ev[k][0], g_wk_ev[k][1]);
+                  LOAD_TRACE("%s", wk); memset(g_wk_to, 0, sizeof g_wk_to); memset(g_wk_ev, 0, sizeof g_wk_ev); }
                 if (!g_paint_profile.enabled && w_frames) {   /* which render path the frames took, and why page scrolls were not shifted */
                     LOAD_TRACE("paths blit=%u bdmg=%u (no %u/%u/%u/%u) sblit=%u sdirty=%u skip=%u idle=%u rect=%u dmg=%u full=%u why=%u/%u/%u/%u/%u/%u noblit=%u/%u/%u wake caret=%u anim=%u vbars=%u defer=%u sb_fail nosbox=%u ui=%u clip=%u x=%u d=%u area=%u",
                                g_pp[PP_BLIT], g_pp[PP_BDMG], g_sdmg_no[0], g_sdmg_no[1], g_sdmg_no[2], g_sdmg_no[3], g_pp[PP_SBLIT], g_pp[PP_SDIRTY], g_pp[PP_SKIP], g_pp[PP_IDLE], g_pp[PP_RECT], g_pp[PP_DMG], g_pp[PP_FULL],

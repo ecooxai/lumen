@@ -303,7 +303,7 @@ void gl_close_owner(const void *owner) { for (int i = 0; i < GLCTX_MAX; i++) if 
 /* an <img>, <video> or canvas frame as RGBA rows top down (malloc), straight or premultiplied alpha */
 uint8_t *gl_node_rgba(Node *n, int *w, int *h, bool premul) {
     Image *im = paint_image_hook ? paint_image_hook(n) : NULL;
-    if (im && !im->px && im->yuv) image_yuv_materialize(im);
+    if (im && !im->px && (im->yuv || im->gpu)) image_yuv_materialize(im);
     if (!im || !im->px || im->w <= 0 || im->h <= 0) return NULL;
     *w = im->w; *h = im->h;
     size_t np = (size_t)im->w * im->h;

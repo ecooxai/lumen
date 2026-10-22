@@ -339,7 +339,50 @@ function fetch(input, init) {
         return Promise.resolve(new Response(r[2], { status: r[0], url: r[1], headers: rh }));
     } catch (e) { return Promise.reject(e); }
 }
-const toFn = f => typeof f === 'function' ? f : (0, eval)('(function(){' + String(f) + '\n})');
+class XMLHttpRequestEventTarget extends EventTarget {}
+class XMLHttpRequestUpload extends XMLHttpRequestEventTarget {}
+class ProgressEvent extends Event { constructor(t, i) { super(t, i); i = i || {}; this.lengthComputable = !!i.lengthComputable; this.loaded = i.loaded || 0; this.total = i.total || 0; } }
+class XMLHttpRequest extends XMLHttpRequestEventTarget {   /* over W.fetch, which blocks this worker's thread; async requests finish on a later task */
+    constructor() { super(); def(this, '_x', { rs: 0, h: [], rh: null, st: 0, stt: '', url: '', body: null, gen: 0 }); this.responseType = ''; this.timeout = 0; this.withCredentials = false; this.upload = new XMLHttpRequestUpload(); for (const k of ['onreadystatechange', 'onloadstart', 'onprogress', 'onload', 'onloadend', 'onerror', 'onabort', 'ontimeout']) this[k] = null; }
+    get readyState() { return this._x.rs; } get status() { return this._x.st; } get statusText() { return this._x.stt; } get responseURL() { return this._x.url; }
+    get responseText() { const x = this._x; if (this.responseType && this.responseType !== 'text') throw new DOMException("Failed to read 'responseText': the object's responseType is '" + this.responseType + "'.", 'InvalidStateError'); return x.body ? W.decode(x.body) : ''; }
+    get response() {
+        const x = this._x, t = this.responseType;
+        if (t === '' || t === 'text') return this.responseText;
+        if (x.rs !== 4 || !x.body) return null;
+        if (t === 'json') { try { return JSON.parse(W.decode(x.body)); } catch (e) { return null; } }
+        if (t === 'blob') return new Blob([x.body], { type: x.rh && x.rh.get('content-type') || '' });
+        return t === 'arraybuffer' ? x.body : null;
+    }
+    open(m, u, async = true) { const x = this._x; x.gen++; Object.assign(x, { m: String(m).toUpperCase(), u: W.resolve(String(u)), async: async !== false, h: [], rh: null, st: 0, stt: '', url: '', body: null, sent: false }); if (x.u == null) throw new DOMException("Failed to execute 'open': Invalid URL", 'SyntaxError'); this._state(1); }
+    setRequestHeader(k, v) { if (this._x.rs !== 1 || this._x.sent) throw new DOMException("Failed to execute 'setRequestHeader': The object's state must be OPENED.", 'InvalidStateError'); this._x.h.push(String(k), String(v)); }
+    getResponseHeader(k) { const h = this._x.rh; return h ? h.get(k) : null; }
+    getAllResponseHeaders() { const h = this._x.rh; if (!h) return ''; let s = ''; h.forEach((v, k) => s += k + ': ' + v + '\r\n'); return s; }
+    overrideMimeType() {}
+    abort() { const x = this._x; x.gen++; if (x.sent && x.rs !== 4) { x.sent = false; x.rs = 4; this._fire('readystatechange'); this._fire('abort'); this._fire('loadend'); } x.rs = 0; }
+    send(body) {
+        const x = this._x;
+        if (x.rs !== 1 || x.sent) throw new DOMException("Failed to execute 'send': The object's state must be OPENED.", 'InvalidStateError');
+        x.sent = true; const gen = x.gen;
+        if (body instanceof URLSearchParams) { if (!x.h.some((k, i) => !(i & 1) && k.toLowerCase() === 'content-type')) x.h.push('content-type', 'application/x-www-form-urlencoded;charset=UTF-8'); body = body.toString(); }
+        else if (body instanceof Blob) body = body._b;
+        else if (body != null && typeof body !== 'string' && !(body instanceof ArrayBuffer) && !ArrayBuffer.isView(body)) body = String(body);
+        const run = () => {
+            if (gen !== x.gen) return;
+            const r = W.fetch(x.u, x.m, x.m === 'GET' || x.m === 'HEAD' || body == null ? undefined : body, x.h, false);
+            if (!r) { x.rs = 4; x.sent = false; this._fire('readystatechange'); if (!x.async) throw new DOMException("Failed to execute 'send': Failed to load '" + x.u + "'.", 'NetworkError'); this._fire('error'); this._fire('loadend'); return; }
+            x.st = r[0]; x.url = r[1]; x.body = r[2]; x.rh = new Headers(); for (let i = 0; i + 1 < r[3].length; i += 2) x.rh.append(r[3][i], r[3][i + 1]);
+            const n = x.body.byteLength;
+            this._state(2); this._state(3); this._fire('progress', n); x.rs = 4; x.sent = false; this._fire('readystatechange'); this._fire('load', n); this._fire('loadend', n);
+        };
+        if (!x.async) return run();
+        this._fire('loadstart'); setTimeout(run, 0);
+    }
+    _state(s) { this._x.rs = s; this._fire('readystatechange'); }
+    _fire(t, n) { fireOn(this, t === 'readystatechange' ? new Event(t) : new ProgressEvent(t, { lengthComputable: n > 0, loaded: n || 0, total: n || 0 })); }
+}
+for (const [i, k] of ['UNSENT', 'OPENED', 'HEADERS_RECEIVED', 'LOADING', 'DONE'].entries()) { XMLHttpRequest[k] = i; XMLHttpRequest.prototype[k] = i; }
+const toFn =f => typeof f === 'function' ? f : (0, eval)('(function(){' + String(f) + '\n})');
 const performance = { now: () => W.now(), timeOrigin: W.timeOrigin, mark() {}, measure() {}, getEntriesByName() { return []; }, getEntriesByType() { return []; }, toJSON() { return { timeOrigin: W.timeOrigin }; } };
 const fmt = a => a.map(x => typeof x === 'string' ? x : x instanceof Error ? x.stack || String(x) : (() => { try { return JSON.stringify(x); } catch (e) { return String(x); } })()).join(' ');
 const console = { log: (...a) => W.log(1, fmt(a)), info: (...a) => W.log(1, fmt(a)), debug: (...a) => W.log(0, fmt(a)), warn: (...a) => W.log(2, fmt(a)), error: (...a) => W.log(3, fmt(a)), trace() {}, group() {}, groupEnd() {}, time() {}, timeEnd() {}, assert: (c, ...a) => { if (!c) W.log(3, 'Assertion failed: ' + fmt(a)); } };
@@ -359,7 +402,7 @@ const api = {
     setTimeout: (f, ms, ...args) => W.timer(toFn(f), +ms || 0, false, args), setInterval: (f, ms, ...args) => W.timer(toFn(f), +ms || 0, true, args),
     clearTimeout: id => W.clear(+id || 0), clearInterval: id => W.clear(+id || 0),
     queueMicrotask: f => { Promise.resolve().then(() => f()); }, structuredClone: (v, options) => { if (options && options.transfer) for (const item of options.transfer) if (W.isWasmModule(item)) throw new DOMException('WebAssembly.Module is not transferable.', 'DataCloneError'); return W.clone(v); },
-    btoa, atob, TextEncoder, TextDecoder, Blob, File, URL, URLSearchParams, Headers, Response, fetch, performance, console,
+    btoa, atob, TextEncoder, TextDecoder, Blob, File, URL, URLSearchParams, Headers, Response, fetch, XMLHttpRequest, XMLHttpRequestEventTarget, XMLHttpRequestUpload, ProgressEvent, performance, console,
     Event, MessageEvent, MessagePort, MessageChannel, ErrorEvent, CustomEvent, PromiseRejectionEvent, EventTarget, DOMException, WorkerGlobalScope, DedicatedWorkerGlobalScope, WorkerLocation, WorkerNavigator,
 };
 for (const k of Object.keys(api)) Object.defineProperty(G, k, { value: api[k], writable: true, configurable: true, enumerable: false });

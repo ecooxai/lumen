@@ -4,7 +4,8 @@
 #include "regions.h"
 
 /* Decoded image: premultiplied 0xAARRGGBB pixels */
-typedef struct Image { int w, h, refs; uint32_t *px; float scale; /* device px per CSS px, 0 = 1 */ struct ImgAnim *anim; uint8_t *yuv; int yuv_mat; /* NV12 video frame; mat: 1 = BT.709, 2 = full range */ uint64_t content_version; /* images updated in place, e.g. iframe canvases */ bool translucent; /* a canvas frame with alpha below 1 somewhere: blended, not shown through a hole */ } Image;
+typedef struct Image { int w, h, refs; uint32_t *px; float scale; /* device px per CSS px, 0 = 1 */ struct ImgAnim *anim; uint8_t *yuv; int yuv_mat; /* NV12 video frame; mat: 1 = BT.709, 2 = full range */ uint64_t content_version; /* images updated in place, e.g. iframe canvases */ bool translucent; /* a canvas frame with alpha below 1 somewhere: blended, not shown through a hole */ struct ImgGpu *gpu; } Image;
+/* gpu: a frame left on the GPU (ImgGpu, gpu/webgpu.h); px stays NULL until image_yuv_materialize reads it back */
 static inline float image_css_w(const Image *im) { return im->scale > 0 ? im->w / im->scale : (float)im->w; }
 static inline float image_css_h(const Image *im) { return im->scale > 0 ? im->h / im->scale : (float)im->h; }
 
@@ -25,6 +26,7 @@ typedef struct DItem {
     float blur, spread, alpha;
     float ox, oy;               /* DO_SHADOW offset: the border box is at (x - ox, y - oy) */
     bool inset, fixed; /* fixed items keep their viewport position during document scrolling */
+    bool sticky;                /* fixed only because inside a position:sticky box that still moves with the page scroll */
     const void *mv;             /* innermost scroller box the item moves with when it scrolls; NULL = the document */
     const void *sc;             /* DO_PUSH_CLIP: the scroller box whose clip this is */
 } DItem;
@@ -37,7 +39,7 @@ extern const Node *(*svg_ext_ref_hook)(const char *url, const char *id); /* elem
 Image *image_decode(const uint8_t *data, size_t n);
 Image *image_decode_bitmap(const uint8_t *data, size_t n);   /* PNG, JPEG, WebP, GIF: safe on any thread (SVG needs the DOM) */
 void image_unref(Image *im);
-void image_yuv_materialize(Image *im);
+void image_yuv_materialize(Image *im);   /* px of a video frame (yuv) or a GPU one (gpu); may leave it NULL */
 /* Copy planar 8-bit 4:2:0 into the presenter's NV12 layout, without RGB conversion.
  * Plane pointers address the first displayed row; strides may be negative. */
 Image *image_yuv420p(int w, int h, const uint8_t *const planes[3], const int strides[3], int mat);
@@ -66,6 +68,7 @@ void raster_rect(Canvas *c, const DisplayList *dl, Color clear, int x0, int y0, 
 /* Extra threads that paint bands of large rasters with the caller (0, the default: one thread).
    Threads are never destroyed; a smaller n leaves the others parked. */
 void raster_set_threads(int n);
+extern bool raster_pixel_rows;   /* test hook: no constant-coverage spans for rounded rects and shadows, no item culling */
 extern unsigned long long g_raster_px, g_layer_px;   /* paint profile: pixels rastered / composited from opacity layers */
 extern unsigned g_raster_calls, g_layer_n;
 bool png_write(const char *path, const uint32_t *px, int w, int h, int stride);

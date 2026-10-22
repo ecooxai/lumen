@@ -68,6 +68,7 @@ FN(first) { CTX; ARGN(n, 0); RET(jwrap(c, n->first)); }
 FN(last) { CTX; ARGN(n, 0); RET(jwrap(c, n->last)); }
 FN(next) { CTX; ARGN(n, 0); RET(jwrap(c, n->next)); }
 FN(prev) { CTX; ARGN(n, 0); RET(jwrap(c, n->prev)); }
+FN(index) { CTX; ARGN(n, 0); int i = 0; for (Node *s = n->prev; s; s = s->prev) i++; RET(i); }
 FN(text) {
     CTX; ARGN(n, 0);
     if (is_textish(n)) { RET(jstr(iso, n->text ? n->text : "", n->text ? (int)n->text_len : 0)); return; }
@@ -189,9 +190,9 @@ static void throw_dom(v8::Isolate *iso, v8::Local<v8::Context> ctx, const std::s
 }
 FN(query) {
     CTX; ARGN(root, 0); std::string sel = S(1); bool all = BOOL(2);
-    if (!jsg_valid_selector(sel.c_str())) { throw_dom(iso, ctx, "'" + sel + "' is not a valid selector.", "SyntaxError"); return; }
     Node **out = nullptr;
     int k = jsg_query(root, sel.c_str(), all, &out);
+    if (k < 0) { throw_dom(iso, ctx, "'" + sel + "' is not a valid selector.", "SyntaxError"); return; }
     if (!all) { RET(jwrap(c, k ? out[0] : nullptr)); free(out); return; }
     v8::Local<v8::Array> r = v8::Array::New(iso, k);
     for (int i = 0; i < k; i++) (void)r->Set(ctx, i, jwrap(c, out[i]));
@@ -337,6 +338,7 @@ FN(fullscreen) {
 FN(focus) {
     CTX; Node *n = junwrap(a[0]); Node *old = c->doc->focus;
     if (old == n) return;
+    for (Node *p = n; p; p = p->parent ? p->parent : p->host) if (p->type == NODE_ELEMENT && node_has_attr(p, "inert")) return;   /* inert content can't be focused */
     doc_set_focus(c->doc, n);
     if (old) jfire(c, old, "blur");
     if (n) jfire(c, n, "focus");
@@ -973,7 +975,44 @@ FN(imgSize) {
     v8::Local<v8::Value> v[2] = { v8::Number::New(iso, w), v8::Number::New(iso, h) };
     RET(v8::Array::New(iso, v, 2));
 }
-FN(userAgent) { CTX; RET(jstr(iso, net_user_agent_for_url(c->doc->url))); }
+/* createImageBitmap(blob): the bytes decode on a thread of their own; imgTake gives undefined while that runs,
+   then [width, height, straight-alpha RGBA ArrayBuffer], or null when they were no image */
+struct ImgJob { std::atomic<int> state{ 0 }; int w = 0, h = 0; uint8_t *rgba = nullptr; ~ImgJob() { free(rgba); } };
+static std::mutex g_img_mu;
+static std::map<uint32_t, std::shared_ptr<ImgJob>> g_img_jobs;
+static uint32_t g_img_next = 1;
+FN(imgDecode) {
+    CTX; const char *p; size_t n;
+    if (a.Length() < 1 || !bytes_of(a[0], &p, &n) || !n) { RET(0); return; }
+    auto j = std::make_shared<ImgJob>();
+    uint32_t id;
+    { std::lock_guard<std::mutex> lk(g_img_mu); id = g_img_next++; g_img_jobs[id] = j; }
+    std::thread([j, bytes = std::vector<uint8_t>((const uint8_t *)p, (const uint8_t *)p + n)] {
+        j->rgba = jsg_decode_rgba(bytes.data(), bytes.size(), &j->w, &j->h);
+        j->state = j->rgba ? 1 : -1;
+        if (js_wakeup) js_wakeup();
+    }).detach();
+    RET(id);
+}
+FN(imgTake) {
+    CTX; uint32_t id = (uint32_t)NUM(0);
+    std::shared_ptr<ImgJob> j;
+    {
+        std::lock_guard<std::mutex> lk(g_img_mu);
+        auto it = g_img_jobs.find(id);
+        if (it == g_img_jobs.end()) { RET(v8::Null(iso)); return; }
+        if (!it->second->state) return;
+        j = it->second; g_img_jobs.erase(it);
+    }
+    if (j->state < 0) { RET(v8::Null(iso)); return; }
+    v8::Local<v8::Value> v[3] = { v8::Number::New(iso, j->w), v8::Number::New(iso, j->h), mkab(iso, j->rgba, (size_t)j->w * (size_t)j->h * 4) };
+    RET(v8::Array::New(iso, v, 3));
+}
+/* A page's browser identity, frames included, follows its top-level document, as one browser has one
+   identity per tab: a sign-in host's button frame inside another site must agree with the script in the
+   embedding page about which browser this is. */
+static const char *ident_url(JsCtx *c) { while (c->parent) c = c->parent; return c->doc->url; }
+FN(userAgent) { CTX; RET(jstr(iso, net_user_agent_for_url(ident_url(c)))); }
 FN(touchPoints) {
     CTX;
 #ifdef __ANDROID__
@@ -997,7 +1036,7 @@ FN(downloadBytes) {   /* name, MIME type, bytes */
 FN(platform) {
     CTX;
 #ifdef __ANDROID__
-    RET(jstr(iso, strstr(net_user_agent_for_url(c->doc->url), "Android") ? "Linux armv8l" : "Linux x86_64"));
+    RET(jstr(iso, strstr(net_user_agent_for_url(ident_url(c)), "Android") ? "Linux armv8l" : "Linux x86_64"));
 #elif defined(__APPLE__)
     RET(jstr(iso, "MacIntel"));
 #else
@@ -1110,7 +1149,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     v8::Local<v8::Context> ctx = iso->GetCurrentContext();
 #define REG(nm) (void)N->Set(ctx, jstr(iso, #nm), NAT_FN(nm))
     REG(isNode); REG(version);
-    REG(inert); REG(type); REG(name); REG(ns); REG(parent); REG(first); REG(last); REG(next); REG(prev);
+    REG(inert); REG(type); REG(name); REG(ns); REG(parent); REG(first); REG(last); REG(next); REG(prev); REG(index);
     REG(text); REG(setText); REG(attr); REG(setAttr); REG(rmAttr); REG(attrs); REG(insert); REG(remove); REG(newDoc); REG(newXmlDoc); REG(parseDoc); REG(adopt); REG(pi); REG(cdata); REG(doctype); REG(ownerDoc);
     REG(create); REG(textNode); REG(comment); REG(frag); REG(html); REG(setHTML); REG(parseFrag); REG(query);
     REG(matches); REG(byId); REG(clone); REG(doc); REG(contains); REG(connected); REG(host); REG(attachShadow);
@@ -1122,7 +1161,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(mediaPump); REG(resizePump); REG(intersectionPump); REG(vclip); REG(videoFramePump); REG(videoFrameInfo); REG(videoQuality);
     REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(camCount); REG(camOpen); REG(camState); REG(camSource); REG(camPermission); REG(camInfo); REG(camClose); REG(mediaLive); REG(screenOpen); REG(screenState); REG(screenSource); REG(screenInfo); REG(screenClose); REG(screenAudio); REG(micOpen); REG(micPermission); REG(micState); REG(micRead); REG(micClose); REG(recKind); REG(recOpen); REG(recPause); REG(recPush); REG(recFinish); REG(recTake); REG(recClose); REG(recMime); REG(readyState); REG(quirks);
     REG(currentScript); REG(hidden); REG(media); REG(cssSupports); REG(cssSelText); REG(urlParse); REG(encode); REG(decode); REG(random); REG(cDigest); REG(cHmac); REG(cAes); REG(cEcGen); REG(cEcDerive); REG(cEcSign); REG(cEcVerify); REG(cSpki); REG(cSpkiParse); REG(cPkcs8Parse); REG(cEcFromD); REG(cHkdf); REG(cPbkdf2);
-    REG(heap); REG(imgSize); REG(userAgent); REG(platform); REG(download); REG(downloadBytes); REG(touchPoints); REG(cpus); REG(makeAll);
+    REG(heap); REG(imgSize); REG(imgDecode); REG(imgTake); REG(userAgent); REG(platform); REG(download); REG(downloadBytes); REG(touchPoints); REG(cpus); REG(makeAll);
 #undef REG
     js_install_frames(c, N); js_install_workers(c, N); js_install_rtc(c, N); js_install_webgl(c, N); js_install_webgpu(c, N);
 }

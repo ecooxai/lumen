@@ -120,7 +120,7 @@ methods(Element.prototype, {
     get shadowRoot() { return this.__shadow && this.__shadow.__mode === 'open' ? this.__shadow : null; },
     get assignedSlot() { return null; },
     requestFullscreen() { return fsRequest(this); }, webkitRequestFullscreen() { fsRequest(this).catch(() => {}); }, webkitRequestFullScreen() { fsRequest(this).catch(() => {}); },
-    requestPointerLock() {}, setPointerCapture() {}, releasePointerCapture() {}, hasPointerCapture() { return false; },
+    requestPointerLock() {}, setPointerCapture(id) { capturePointer(this, id, true); }, releasePointerCapture(id) { capturePointer(this, id, false); }, hasPointerCapture(id) { return hasCapture(this, id); },
     animate(kf, o) { return new Animation(this, kf, o); }, getAnimations() { return []; },
     checkVisibility() { return !!N.rect(this); },
 });

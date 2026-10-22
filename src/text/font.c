@@ -515,11 +515,18 @@ static void glyph_key(char key[32], uint32_t gid, float scale) {
     while (n) key[o++] = t[--n];
     key[o] = 0;
 }
+/* Fonts and their glyphs live for the process, so each thread remembers recent lookups without the
+ * font lock: raster band threads painting text together otherwise queue on it. */
+typedef struct { const Font *f; uint32_t gid; long scale; const Glyph *g; } GlyphSlot;
+static _Thread_local GlyphSlot glyph_slots[512];
 const Glyph *font_glyph(Font *f, uint32_t gid, float scale) {
+    long sk = lroundf(scale * 100);
+    GlyphSlot *slot = &glyph_slots[((uintptr_t)f >> 4 ^ gid * 0x9e3779b1u ^ (uintptr_t)sk * 0x85ebca6bu) & 511];
+    if (slot->f == f && slot->gid == gid && slot->scale == sk) return slot->g;
     char key[32]; glyph_key(key, gid, scale);
     pthread_mutex_lock(&font_mu);
     Glyph *g = hm_get(&f->glyphs, key);
-    if (g) { pthread_mutex_unlock(&font_mu); return g; }
+    if (g) { pthread_mutex_unlock(&font_mu); *slot = (GlyphSlot){f, gid, sk, g}; return g; }
     g = xcalloc(1, sizeof *g);
     FT_Face ft = f->face->ft;
     float px = f->size * scale;
@@ -576,6 +583,7 @@ const Glyph *font_glyph(Font *f, uint32_t gid, float scale) {
 #endif
     hm_put(&f->glyphs, key, g);
     pthread_mutex_unlock(&font_mu);
+    *slot = (GlyphSlot){f, gid, sk, g};
     return g;
 }
 

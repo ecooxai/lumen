@@ -1,0 +1,11 @@
+<!doctype html><html><body><div id="a"></div>
+<script>
+/* DocumentOrShadowRoot.getAnimations(): pages call it on the document and shadow roots */
+const fail = [], ok = (c, m) => { if (!c) fail.push(m); };
+const a = document.getElementById('a'), sr = a.attachShadow({ mode: 'open' });
+a.animate([{ opacity: 0 }, { opacity: 1 }], 10);
+ok(Array.isArray(document.getAnimations()), 'document');
+ok(Array.isArray(sr.getAnimations()), 'shadow root');
+ok(Array.isArray(a.getAnimations()), 'element');
+console.log('RESULTS get-animations:' + (fail.length ? 'FAIL ' + fail.join('; ') : 'PASS'));
+</script></body></html>

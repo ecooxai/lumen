@@ -1,5 +1,6 @@
 #if defined(__ANDROID__) && !defined(NDEBUG)
 #include <android/log.h>
+#include <sched.h>
 #include <time.h>
 #endif
 /* Cascade, inheritance and computed values */
@@ -8,6 +9,7 @@
 #include "../base/url.h"
 #include <math.h>
 #include <ctype.h>
+#include <strings.h>
 
 typedef VEC(Rule *) RuleVec;
 
@@ -60,7 +62,7 @@ ComputedStyle *style_inherit(const ComputedStyle *p) {
     s->letter_spacing = p->letter_spacing; s->word_spacing = p->word_spacing; s->text_indent = p->text_indent; s->list_style = p->list_style;
     s->cursor = p->cursor; s->pointer_events = p->pointer_events; s->word_break = p->word_break; s->overflow_wrap = p->overflow_wrap; s->direction = p->direction;
     s->has_text_shadow = p->has_text_shadow; s->text_shadow = p->text_shadow; s->caret_color = p->caret_color; s->fill = p->fill; s->stroke = p->stroke; s->stroke_width = p->stroke_width;
-    s->user_select = p->user_select; s->border_collapse = p->border_collapse; s->writing_mode = p->writing_mode;
+    s->user_select = p->user_select; s->border_collapse = p->border_collapse; s->writing_mode = p->writing_mode; s->inert = p->inert;
     s->custom = custom_ref(p->custom);
     for (int i = 0; i < 4; i++) s->border_color[i] = s->color;
     s->outline_color = s->color;
@@ -424,6 +426,20 @@ static char *extract_url(const char *v) {
     const char *e = u; while (*e && (q ? *e != q : *e != ')')) e++;
     char *r = xstrndup(u, (size_t)(e - u)); char *t = str_trim(r); memmove(r, t, strlen(t) + 1); return r;
 }
+/* url() against the document base, remembered: restyles resolve the same (often long data:) URLs again. */
+static char *style_url_join(const char *base, const char *rel) {
+    static _Thread_local struct { char *base, *rel, *abs; } memo[32];
+    size_t n = strlen(rel); uint32_t h = (uint32_t)n * 2654435761u;
+    for (size_t i = 0; i < n && i < 48; i++) h = (h ^ (unsigned char)rel[i]) * 16777619u;
+    for (size_t i = n > 48 ? n - 48 : n; i < n; i++) h = (h ^ (unsigned char)rel[i]) * 16777619u;
+    if (base) for (const char *q = base; *q; q++) h = (h ^ (unsigned char)*q) * 16777619u;
+    __typeof__(&memo[0]) m = &memo[h & 31];
+    if (m->rel && !strcmp(m->rel, rel) && (base ? m->base && !strcmp(m->base, base) : !m->base)) return m->abs ? xstrdup(m->abs) : NULL;
+    char *abs = url_join(base, rel);
+    free(m->base); free(m->rel); free(m->abs);
+    m->base = base ? xstrdup(base) : NULL; m->rel = xstrdup(rel); m->abs = abs ? xstrdup(abs) : NULL;
+    return abs;
+}
 static void apply_background_image(ACtx *c, const char *v) {
     free(c->st->bg_image); c->st->bg_image = NULL; free(c->st->bg_gradient); c->st->bg_gradient = NULL;
     if (str_ieq(v, "none")) return;
@@ -436,7 +452,7 @@ static void apply_background_image(ACtx *c, const char *v) {
     char *u = extract_url(v);
     if (u) {
         const char *base = c->e && c->e->doc ? (c->e->doc->base_url ? c->e->doc->base_url : c->e->doc->url) : NULL;
-        char *abs = url_join(base, u); free(u); c->st->bg_image = abs;
+        char *abs = style_url_join(base, u); free(u); c->st->bg_image = abs;
     }
 }
 static void apply_bg_pos(ACtx *c, const char *v) {
@@ -641,7 +657,7 @@ static uint8_t parse_align(const char *v) {
  * parent change reaches children that did not set them without rematching. */
 enum { INDEP_POINTER = 1, INDEP_VISIBILITY = 2, INDEP_CURSOR = 4, INDEP_USER_SELECT = 8,
     INDEP_WHITE_SPACE = 16, INDEP_TEXT_TRANSFORM = 32, INDEP_WORD_BREAK = 64, INDEP_OVERFLOW_WRAP = 128,
-    INH_OTHER = 256 };
+    INH_OTHER = 256, INH_UNCOMPARED = 512 /* a value `inherit` copies without inherited_diff comparing it */ };
 static unsigned indep_bit(const char *P) {
     switch (P[0]) {
     case 'p': return !strcmp(P, "pointer-events") ? INDEP_POINTER : 0;
@@ -672,7 +688,7 @@ static bool inherit_copies_uncompared(const char *P) {
     for (int i = 0; props[i]; i++) if (!strcmp(P, props[i])) return true;
     return border_corner(P) >= 0;
 }
-static const char *const known_props[] = { "animation","animation-name","animation-duration","animation-delay","animation-iteration-count","animation-timing-function","animation-fill-mode","animation-direction","animation-play-state","transition","transition-property","transition-duration","transition-delay","transition-timing-function","display","position","float","clear","width","height","min-width","min-height","max-width","max-height","margin","margin-top","margin-right","margin-bottom","margin-left","padding","padding-top","padding-right","padding-bottom","padding-left","border","border-width","border-style","border-color","border-top","border-right","border-bottom","border-left","border-radius","color","background","background-color","background-image","font","font-size","font-weight","font-family","font-style","line-height","text-align","text-decoration","white-space","overflow","overflow-x","overflow-y","visibility","opacity","z-index","top","right","bottom","left","inset","flex","flex-direction","flex-wrap","flex-grow","flex-shrink","flex-basis","justify-content","align-items","align-self","align-content","gap","row-gap","column-gap","order","grid","grid-template-columns","grid-template-rows","grid-column","grid-row","grid-area","transform","transition","animation","box-shadow","text-shadow","box-sizing","cursor","pointer-events","content","list-style","list-style-type","vertical-align","text-transform","letter-spacing","word-spacing","text-indent","text-overflow","word-break","overflow-wrap","word-wrap","object-fit","aspect-ratio","filter","outline","user-select","appearance","will-change","contain","isolation","mix-blend-mode","place-items","place-content","place-self","justify-items","justify-self","table-layout","border-collapse","border-spacing","clip-path","mask","mask-image","mask-size","-webkit-mask","-webkit-mask-image","-webkit-mask-size","resize","scroll-behavior","overscroll-behavior","touch-action","font-variant","text-rendering","-webkit-font-smoothing","fill","stroke","caret-color","accent-color","color-scheme","translate","scale","rotate","container-type","backdrop-filter","line-clamp","-webkit-line-clamp","text-wrap","hyphens","tab-size","direction","unicode-bidi","writing-mode","inset-inline","inset-block","margin-inline","margin-block","padding-inline","padding-block", NULL };
+static const char *const known_props[] = { "animation","animation-name","animation-duration","animation-delay","animation-iteration-count","animation-timing-function","animation-fill-mode","animation-direction","animation-play-state","transition","transition-property","transition-duration","transition-delay","transition-timing-function","display","position","float","clear","width","height","min-width","min-height","max-width","max-height","margin","margin-top","margin-right","margin-bottom","margin-left","padding","padding-top","padding-right","padding-bottom","padding-left","border","border-width","border-style","border-color","border-top","border-right","border-bottom","border-left","border-radius","color","background","background-color","background-image","font","font-size","font-weight","font-family","font-style","line-height","text-align","text-decoration","white-space","overflow","overflow-x","overflow-y","visibility","opacity","z-index","top","right","bottom","left","inset","flex","flex-direction","flex-wrap","flex-grow","flex-shrink","flex-basis","justify-content","align-items","align-self","align-content","gap","row-gap","column-gap","order","grid","grid-template-columns","grid-template-rows","grid-column","grid-row","grid-area","transform","transition","animation","box-shadow","text-shadow","box-sizing","cursor","pointer-events","content","list-style","list-style-type","vertical-align","text-transform","letter-spacing","word-spacing","text-indent","text-overflow","word-break","overflow-wrap","word-wrap","object-fit","aspect-ratio","filter","outline","user-select","appearance","will-change","contain","isolation","mix-blend-mode","place-items","place-content","place-self","justify-items","justify-self","table-layout","border-collapse","border-spacing","clip-path","mask","mask-image","mask-size","-webkit-mask","-webkit-mask-image","-webkit-mask-size","resize","scroll-behavior","overscroll-behavior","touch-action","font-variant","text-rendering","-webkit-font-smoothing","fill","stroke","caret-color","accent-color","color-scheme","translate","scale","rotate","container-type","backdrop-filter","line-clamp","-webkit-line-clamp","text-wrap","hyphens","tab-size","direction","unicode-bidi","writing-mode","inset-inline","inset-block","margin-inline","margin-block","padding-inline","padding-block","inline-size","block-size","min-inline-size","max-inline-size","min-block-size","max-block-size", NULL };
 bool css_property_known(const char *p) { return kw(p, known_props) >= 0; }
 
 static char *parse_grid_areas(const char *v) {
@@ -763,6 +779,15 @@ static void anim_decl(ComputedStyle *st, const char *Q, const char *val) {
     free(buf);
 }
 
+/* Logical sizes map to the physical ones (horizontal writing modes). */
+static const char *logical_size_prop(const char *p) {
+    static const char *const map[][2] = { { "inline-size", "width" }, { "block-size", "height" }, { "min-inline-size", "min-width" },
+        { "max-inline-size", "max-width" }, { "min-block-size", "min-height" }, { "max-block-size", "max-height" } };
+    if (!strstr(p, "-size")) return p;
+    for (size_t i = 0; i < sizeof map / sizeof *map; i++) if (!strcmp(p, map[i][0])) return map[i][1];
+    return p;
+}
+
 static bool custom_defer;
 void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *prop, const char *value_in, StyleEngine *e, Node *el) {
     if (prop[0] == '-' && prop[1] == '-') {
@@ -811,7 +836,7 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
     if (el && strstr(v, "cq")) for (const Node *a = el->parent; a; a = a->parent)
         if (a->type == NODE_ELEMENT && a->style && a->style->container_type) { g_cq[0] = a->cq_w; g_cq[1] = a->style->container_type == 2 ? a->cq_h : 0; break; }
     if (e && e->doc && e->doc->html && e->doc->html->style && el != e->doc->html) c.rem = e->doc->html->style->font_size;
-    const char *P = prop;
+    const char *P = logical_size_prop(prop);
     Length l; Color col; int k;
     st->indep_set |= indep_bit(P);
     bool inherit = str_ieq(val, "inherit"), initial = str_ieq(val, "initial") || str_ieq(val, "revert") || str_ieq(val, "revert-layer"), unset = str_ieq(val, "unset");
@@ -853,7 +878,7 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
     if (!strcmp(P, "mask-image") || !strcmp(P, "-webkit-mask-image") || !strcmp(P, "mask") || !strcmp(P, "-webkit-mask")) {
         free(st->mask_image); st->mask_image = NULL;
         char *u = strstr(val, "url(") ? extract_url(val) : NULL;
-        if (u) { const char *base = c.e && c.e->doc ? (c.e->doc->base_url ? c.e->doc->base_url : c.e->doc->url) : NULL; st->mask_image = url_join(base, u); free(u); }
+        if (u) { const char *base = c.e && c.e->doc ? (c.e->doc->base_url ? c.e->doc->base_url : c.e->doc->url) : NULL; st->mask_image = style_url_join(base, u); free(u); }
         if (P[strlen(P) - 1] == 'k') st->mask_fit = strstr(val, "contain") ? 1 : strstr(val, "cover") ? 2 : 0;
         goto out;
     }
@@ -1047,8 +1072,6 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         else if (!strcmp(P, "min-height")) alen(&c, val, &st->min_height);
         else if (!strcmp(P, "max-width")) alen(&c, val, &st->max_width);
         else if (!strcmp(P, "max-height")) alen(&c, val, &st->max_height);
-        else if (!strcmp(P, "min-inline-size")) alen(&c, val, &st->min_width);
-        else if (!strcmp(P, "max-inline-size")) alen(&c, val, &st->max_width);
         break;
     case 'o':
         if (!strcmp(P, "opacity")) { float x = strtof(val, NULL); if (strchr(val, '%')) x /= 100; st->opacity = LCLAMP(x, 0, 1); }
@@ -1101,6 +1124,11 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         else if (!strcmp(P, "text-transform")) st->text_transform = str_ieq(val, "uppercase") ? TT_UPPER : str_ieq(val, "lowercase") ? TT_LOWER : str_ieq(val, "capitalize") ? TT_CAPITALIZE : TT_NONE;
         else if (!strcmp(P, "text-indent")) st->text_indent = alen_px(&c, val, 0);
         else if (!strcmp(P, "text-overflow")) st->text_overflow = str_ieq(val, "ellipsis") ? TO_ELLIPSIS : TO_CLIP;
+        else if (!strcmp(P, "touch-action")) {   /* pinch-zoom alone allows no panning; manipulation pans both ways */
+            bool x = str_ieq(val, "auto") || strstr(val, "manipulation") || strstr(val, "pan-x") || strstr(val, "pan-left") || strstr(val, "pan-right");
+            bool y = str_ieq(val, "auto") || strstr(val, "manipulation") || strstr(val, "pan-y") || strstr(val, "pan-up") || strstr(val, "pan-down");
+            st->touch_block = (x ? 0 : TOUCH_NO_X) | (y ? 0 : TOUCH_NO_Y);
+        }
         else if (!strcmp(P, "text-shadow")) parse_shadow(&c, val, &st->text_shadow, &st->has_text_shadow);
         else if (!strcmp(P, "transform") || !strcmp(P, "-webkit-transform")) parse_transform(&c, val);
         else if (!strcmp(P, "translate")) { char buf[256]; snprintf(buf, sizeof buf, "translate(%s)", val); if (!str_ieq(val, "none")) parse_transform(&c, buf); }
@@ -1139,7 +1167,7 @@ static void idx_add(HMap *m, const char *key, Rule *r) {
 static void rv_free(void *p) { RuleVec *v = p; vec_free(*v); free(v); }
 static void nofree(void *p) { (void)p; }
 typedef struct HovDesc { VEC(const char *) keys; bool univ; } HovDesc;
-typedef struct AttributeCandidate { Selector candidate; const Rule *source; const char *subject; } AttributeCandidate;
+typedef struct AttributeCandidate { Selector candidate; const Rule *source; const char *subject, *bearer; } AttributeCandidate;
 typedef VEC(AttributeCandidate) AttributeCandidates;
 static void attribute_candidates_free(void *p) {
     AttributeCandidates *v = p;
@@ -1185,10 +1213,10 @@ static void idx_clear(RuleIndex *ix) {
     }
     vec_free(ix->tree_candidate_lists);
     hm_free(&ix->attribute_candidates, attribute_candidates_free);
-    hm_free(&ix->attribute_subjects, hd_free); hm_free(&ix->self_attributes, NULL);
+    hm_free(&ix->attribute_subjects, hd_free); hm_free(&ix->self_attributes, NULL); hm_free(&ix->attribute_bearers, hd_free);
     hm_free(&ix->empty_ids, NULL); hm_free(&ix->empty_classes, NULL); hm_free(&ix->empty_tags, NULL); ix->empty_universal = false;
     for (int i = 0; i < 1024; i++) if (ix->ancestor_buckets[i]) { rv_free(ix->ancestor_buckets[i]); ix->ancestor_buckets[i] = NULL; }
-    memset(ix->ancestor_bucket_bits, 0, sizeof ix->ancestor_bucket_bits); hm_free(&ix->by_id, rv_free); hm_free(&ix->by_class, rv_free); hm_free(&ix->by_tag, rv_free); hm_free(&ix->by_attr, rv_free); hm_free(&ix->by_parent_tag, rv_free); hm_free(&ix->by_parent_class, rv_free); hm_free(&ix->by_parent_attr, rv_free); vec_free(ix->root_rules); vec_free(ix->fw_rules); ix->fw_complex = false; hm_free(&ix->hov, nofree); hm_free(&ix->hov_anc, nofree); hm_free(&ix->hov_ach, nofree); hm_free(&ix->hov_desc, hd_free); hm_free(&ix->anc_desc, hd_free); hd_free(ix->hov_desc_u); hd_free(ix->anc_desc_u); ix->hov_desc_u = ix->anc_desc_u = NULL; vec_free(ix->universal); ix->count = 0; ix->hov_univ = 0; ix->hov_has = ix->hov_sib = ix->focus_within = false;
+    memset(ix->ancestor_bucket_bits, 0, sizeof ix->ancestor_bucket_bits); hm_free(&ix->by_id, rv_free); hm_free(&ix->by_class, rv_free); hm_free(&ix->by_tag, rv_free); hm_free(&ix->by_attr, rv_free); hm_free(&ix->by_parent_tag, rv_free); hm_free(&ix->by_parent_class, rv_free); hm_free(&ix->by_parent_attr, rv_free); vec_free(ix->root_rules); vec_free(ix->fw_rules); vec_free(ix->fw_keys); vec_free(ix->fw_far); vec_free(ix->fw_far_keys); ix->fw_far_unkeyed = 0; ix->fw_complex = false; hm_free(&ix->hov, nofree); hm_free(&ix->hov_anc, nofree); hm_free(&ix->hov_ach, nofree); hm_free(&ix->hov_desc, hd_free); hm_free(&ix->anc_desc, hd_free); hd_free(ix->hov_desc_u); hd_free(ix->anc_desc_u); ix->hov_desc_u = ix->anc_desc_u = NULL; vec_free(ix->universal); ix->count = 0; ix->hov_univ = 0; ix->hov_has = ix->hov_sib = ix->focus_within = ix->style_values = false;
     memset(ix->has_keys, 0, sizeof ix->has_keys); memset(ix->reselect_keys, 0, sizeof ix->reselect_keys);
     for (int i = 0; i < 1024; i++) vec_free(ix->reselect_subjects[i]);
     memset(ix->sib_keys, 0, sizeof ix->sib_keys); ix->sib_any = ix->sib_state = ix->sib_desc = ix->sib_style = false;
@@ -1498,6 +1526,49 @@ static int subject_keys(const Selector *sel, SubjectKey out[8]) {
     }
     return 0;
 }
+/* Keys one of which the subject's parent must carry: those of the compound
+ * left of a child combinator, or of every branch of a subject :is()/:where()
+ * such as Tailwind's :where(.space-y-4 > :not(:last-child)). */
+static int parent_keys(const Selector *sel, SubjectKey out[4]) {
+    if (!sel->n || sel->pseudo_el) return 0;
+    if (sel->n > 1 && sel->c[sel->n - 1].comb == CB_CHILD) {
+        const Compound *up = &sel->c[sel->n - 2];
+        Selector one = {.c = (Compound *)up, .n = 1};
+        SubjectKey key = subject_key(&one), many[8];
+        if (key.name) { out[0] = key; return 1; }
+        for (int k = 0; k < up->n; k++)
+            if (up->s[k].kind == SK_ATTR) { out[0] = (SubjectKey){atom_lower(up->s[k].name, strlen(up->s[k].name)), SK_ATTR}; return 1; }
+        int n = subject_keys(&one, many);
+        if (n > 4) return 0;
+        for (int i = 0; i < n; i++) out[i] = many[i];
+        return n;
+    }
+    const Compound *last = &sel->c[sel->n - 1];
+    for (int k = 0; k < last->n; k++) {
+        const SimpleSel *s = &last->s[k];
+        if (!(is_pseudo(s, "is") || is_pseudo(s, "where")) || !s->sub || !s->sub->n) continue;
+        int n = 0;
+        for (int j = 0; j < s->sub->n; j++) {
+            SubjectKey alt[4]; int m = parent_keys(&s->sub->v[j], alt);
+            if (!m) { n = 0; break; }
+            for (int a = 0; a < m; a++) {
+                bool dup = false;
+                for (int i = 0; i < n; i++) dup |= out[i].name == alt[a].name && out[i].kind == alt[a].kind;
+                if (dup) continue;
+                if (n == 4) { n = 0; break; }
+                out[n++] = alt[a];
+            }
+            if (!n) break;
+        }
+        if (n) return n;
+    }
+    return 0;
+}
+static void tree_parent_keys(TreeDependency *dep, const Selector *sel) {
+    SubjectKey keys[4]; int n = dep->scope ? 0 : parent_keys(sel, keys);
+    for (int i = 0; i < n; i++) { dep->parent_names[i] = keys[i].name; dep->parent_kinds[i] = keys[i].kind; }
+    dep->nparent = (uint8_t)n;
+}
 /* Bit 1: subject emptiness; bit 2: another element's emptiness. A text
  * transition already dirties its parent, so only bit 2 needs wider work. */
 static unsigned empty_dependencies(const Selector *sel) {
@@ -1648,7 +1719,8 @@ static unsigned tree_local_scope(const SimpleSel *s) {
     return scope;
 }
 /* Descendant/child queries can use a changed-subtree key filter. State changes
- * independently invalidate selectors and disable this filter for that pass.
+ * independently invalidate selectors and disable this filter for that pass
+ * (inline style edits included: CSSOM writes go through the style attribute).
  * Positional, sibling and nested :has tests can change an existing witness
  * outside the edited subtree and must fall back. */
 static bool tree_witness_query_safe(const Selector *sel) {
@@ -1656,7 +1728,6 @@ static bool tree_witness_query_safe(const Selector *sel) {
         if (sel->c[i].comb == CB_ADJ || sel->c[i].comb == CB_SIB) return false;
         for (int j = 0; j < sel->c[i].n; j++) {
             const SimpleSel *s = &sel->c[i].s[j];
-            if (s->kind == SK_ATTR && str_ieq(s->name, "style")) return false;
             if (s->kind != SK_PSEUDO) continue;
             if (is_pseudo(s, "scope") || is_pseudo(s, "focus") || is_pseudo(s, "focus-visible") ||
                     is_pseudo(s, "hover") || is_pseudo(s, "active")) continue;
@@ -1883,12 +1954,26 @@ static Selector attribute_candidate(RuleIndex *ix, const Selector *sel, const ch
     }
     return out;
 }
-static void add_attribute_candidate(RuleIndex *ix, const char *name, const Rule *rule, const char *subject) {
+/* bearer: the key an element changing the attribute must have for this rule to see it, or NULL. */
+static void add_attribute_candidate(RuleIndex *ix, const char *name, const Rule *rule, const char *subject, const char *bearer) {
     AttributeCandidates *v = hm_get(&ix->attribute_candidates, name);
     if (!v) { v = xcalloc(1, sizeof *v); hm_put(&ix->attribute_candidates, name, v); }
-    for (int i = 0; i < v->n; i++) if (v->v[i].source == rule) return;
-    AttributeCandidate candidate = {attribute_candidate(ix, &rule->sel, name), rule, subject};
+    for (int i = 0; i < v->n; i++) if (v->v[i].source == rule) {
+        if (v->v[i].bearer != bearer) v->v[i].bearer = NULL;   /* tested in two compounds */
+        return;
+    }
+    AttributeCandidate candidate = {attribute_candidate(ix, &rule->sel, name), rule, subject, bearer};
     vec_push(*v, candidate);
+}
+/* The id, class or type a compound requires of its element; NULL when it requires none of them. */
+static const char *bearer_key(const Compound *c) {
+    const char *cls = NULL, *tag = NULL;
+    for (int k = 0; k < c->n; k++) {
+        const SimpleSel *s = &c->s[k];
+        if (s->kind == SK_ID) return s->name;
+        if (s->kind == SK_CLASS && !cls) cls = s->name; else if (s->kind == SK_TYPE) tag = s->value;
+    }
+    return cls ? cls : tag;
 }
 static void index_attribute_subjects(RuleIndex *ix, const Selector *sel, const char *subject, bool relative, const Rule *rule) {
     for (int i = 0; i < sel->n; i++) for (int j = 0; j < sel->c[i].n; j++) {
@@ -1897,8 +1982,13 @@ static void index_attribute_subjects(RuleIndex *ix, const Selector *sel, const c
             /* Lowercase is conservative for XML/SVG and required for HTML. */
             const char *name = atom_lower(simple_attribute(s), strlen(simple_attribute(s)));
             if (relative || i != sel->n - 1) {
+                /* Only elements this compound can match observe the attribute for other
+                 * elements' styles (an edited element restyles itself). One nested in
+                 * :is()/:not() is borne by that argument's compound, which may require nothing. */
+                const char *bearer = bearer_key(&sel->c[i]);
+                desc_add(&ix->attribute_bearers, NULL, name, bearer);
                 desc_add(&ix->attribute_subjects, NULL, name, subject);
-                add_attribute_candidate(ix, name, rule, subject);
+                add_attribute_candidate(ix, name, rule, subject, bearer);
             }
             else hm_put(&ix->self_attributes, name, (void *)1);
         }
@@ -1908,7 +1998,14 @@ static void index_attribute_subjects(RuleIndex *ix, const Selector *sel, const c
                   is_pseudo(s, "matches") || is_pseudo(s, "-webkit-any") || is_pseudo(s, "-moz-any")), rule);
     }
 }
-static void mark_style_subject(Node *n) {
+#if defined(__ANDROID__) && !defined(NDEBUG)
+static int g_html_line; static const char *g_html_key;   /* debug: the last invalidation that dirtied <html> */
+#define DBG_HTML(n, key) do { if ((n)->doc && (n) == (n)->doc->html) { g_html_line = __LINE__; g_html_key = (key); } } while (0)
+#else
+#define DBG_HTML(n, key) ((void)0)
+#endif
+#define mark_style_subject(n, key) do { DBG_HTML(n, key); mark_style_subject_(n); } while (0)
+static void mark_style_subject_(Node *n) {
     n->flags |= NF_STYLE_DIRTY;
     for (Node *p = n->parent ? n->parent : n->host; p; p = p->parent ? p->parent : p->host)
         p->flags |= NF_CHILD_STYLE_DIRTY;
@@ -1917,15 +2014,28 @@ static void mark_style_subject(Node *n) {
  * (`.group:focus-within .x`, `:focus-within > *`) can only change below the
  * elements whose :focus-within state flips. Rematch just those rules there, with
  * the old and the new focus, and restyle the elements whose result differs;
- * an unkeyed subject would otherwise restyle the whole changed subtree. False:
- * not bounded this way, the caller falls back to the reselect key. */
+ * an unkeyed subject would otherwise restyle the whole changed subtree. Rules
+ * that also need siblings or :has (`.peer:focus-within ~ .x`) are rematched the
+ * same way over the whole document, on the elements carrying their subject key.
+ * False: not bounded this way, the caller falls back to the reselect key. */
+static bool subject_key_on(const Node *el, const char *tag, const char *k);
+static bool fw_rule_changed(Document *d, Node *el, const char *tag, Rule *const *rules, const char *const *keys, int nrules, Node *old, Node *n) {
+    for (int i = 0; i < nrules; i++) {
+        Rule *r = rules[i];
+        if (r->dead || (keys[i] && !subject_key_on(el, tag, keys[i]))) continue;
+        d->focus = old; bool was = css_match_selector(&r->sel, el, NULL);
+        d->focus = n; bool now = css_match_selector(&r->sel, el, NULL);
+        if (was != now) return true;
+    }
+    return false;
+}
 bool doc_focus_within_moved(Document *d, Node *old, Node *n) {
     StyleEngine *e = d ? d->stylesheets : NULL;
     if (!e) return false;
     idx_ensure(e);
     RuleIndex *ix = &e->idx;
-    if (ix->fw_complex || ix->fw_rules.n > 64) return false;
-    if (!ix->fw_rules.n) return true;
+    if (ix->fw_complex) return false;
+    if (!ix->fw_rules.n && !ix->fw_far.n) return true;
     Node *tops[2] = {NULL, NULL};
     for (int side = 0; side < 2; side++)
         for (Node *a = side ? n : old; a; a = a->parent) {
@@ -1937,28 +2047,24 @@ bool doc_focus_within_moved(Document *d, Node *old, Node *n) {
     if (tops[0] && tops[1] && (node_is_inclusive_ancestor(tops[0], tops[1]) || node_is_inclusive_ancestor(tops[1], tops[0]))) return false;
     CssMatchCache *cache = css_match_cache_suspend();
     Node *focus = d->focus;
-    for (int side = 0; side < 2; side++) {
+    for (int side = 0; side < 2 && ix->fw_rules.n; side++) {
         Node *top = tops[side];
         for (Node *el = top; el; ) {
             if (el->type == NODE_ELEMENT) {
-                uint64_t was = 0, now = 0;
-                d->focus = old;
-                for (int i = 0; i < ix->fw_rules.n; i++) {
-                    Rule *r = ix->fw_rules.v[i];
-                    if (!r->dead && css_match_selector(&r->sel, el, NULL)) was |= UINT64_C(1) << i;
-                }
-                d->focus = n;
-                for (int i = 0; i < ix->fw_rules.n; i++) {
-                    Rule *r = ix->fw_rules.v[i];
-                    if (!r->dead && css_match_selector(&r->sel, el, NULL)) now |= UINT64_C(1) << i;
-                }
-                if (was != now) mark_style_subject(el);
+                const char *tag = el->ns == NS_HTML ? el->tag : atom_lower(el->tag, strlen(el->tag));
+                if (fw_rule_changed(d, el, tag, ix->fw_rules.v, ix->fw_keys.v, ix->fw_rules.n, old, n)) mark_style_subject(el, "fw");
             }
             if (el->first && el->type == NODE_ELEMENT) { el = el->first; continue; }
             while (el != top && !el->next) el = el->parent;
             el = el == top ? NULL : el->next;
         }
     }
+    if (ix->fw_far.n && (tops[0] || tops[1]))
+        for (Node *el = d->node.first; el; el = node_next_deep(el, &d->node)) {
+            if (el->type != NODE_ELEMENT) continue;
+            const char *tag = el->ns == NS_HTML ? el->tag : atom_lower(el->tag, strlen(el->tag));
+            if (fw_rule_changed(d, el, tag, ix->fw_far.v, ix->fw_far_keys.v, ix->fw_far.n, old, n)) mark_style_subject(el, "fw_far");
+        }
     d->focus = focus;
     css_match_cache_end(cache);
     return true;
@@ -2048,57 +2154,165 @@ void node_sibling_selectors_changed(Node *n, int mode) {
         mode, hit, ix->sib_desc, n->tag ? n->tag : "-", n->next->tag ? n->next->tag : "-");
 #endif
     for (Node *s = n->next; s; s = s->next) if (s->type == NODE_ELEMENT) {
-        s->flags |= NF_STYLE_DIRTY | (ix->sib_desc ? NF_RESELECT_SUBTREE : 0);
+        s->flags |= NF_STYLE_DIRTY | (ix->sib_desc ? NF_RESELECT_SUBTREE : 0); DBG_HTML(s, "sibling");
         any = true;
         if (hit == 1) break;
     }
     if (any) for (Node *p = n->parent ? n->parent : n->host; p; p = p->parent ? p->parent : p->host) p->flags |= NF_CHILD_STYLE_DIRTY;
 }
-/* data-/aria- attributes, and the attributes listed here, have no built-in layout
- * or presentation behavior beyond selectors (the UA's [hidden] rule included;
- * disabled also flips :disabled/:enabled, indexed as the attribute, and dom.c
- * reselects a fieldset's descendants). Their stylesheet uses can affect ancestors, siblings and shadow trees, so
- * collect conservative subjects over the whole tree instead of just the changed
- * node. Other attributes retain the ordinary invalidation path. */
+/* HTML attributes other than the ones listed here have no built-in layout, presentation, state
+ * or resource behavior beyond selectors: data-/aria-, page attributes such as jsaction, and the
+ * UA's [hidden] rule (disabled also flips :disabled/:enabled, indexed as the attribute, and dom.c
+ * reselects a fieldset's descendants). Their stylesheet uses can affect ancestors, siblings and
+ * shadow trees, so collect conservative subjects over the whole tree instead of just the changed
+ * node. Image sources (src, srcset, sizes, poster) are also selector-only for style; dom.c still
+ * marks their element's layout. The listed ones (presentational hints, form and element state,
+ * links, direction and language, shadow and slot wiring) retain the ordinary invalidation path. */
+static int attribute_name_cmp(const void *key, const void *entry) { return strcasecmp(key, *(const char *const *)entry); }
 bool css_selector_only_attribute(const char *name) {
-    static const char *const names[] = { "tabindex", "role", "title", "hidden", "disabled", "draggable", "spellcheck",
-        "translate", "autocomplete", "inputmode", "enterkeyhint", "autocapitalize", "autocorrect", "for", "target",
-        "nonce", "loading", "decoding", "fetchpriority", "referrerpolicy", NULL };
-    for (int i = 0; names[i]; i++) if (str_ieq(name, names[i])) return true;
-    return str_istarts(name, "data-") || str_istarts(name, "aria-");
+    static const char *const builtin[] = {   /* sorted */
+        "accept", "align", "alink", "allow", "allowfullscreen", "alt", "as", "async", "autofocus", "autoplay", "background",
+        "behavior", "bgcolor", "blocking", "border", "bottommargin", "cellpadding", "cellspacing", "char", "charoff", "charset",
+        "checked", "class", "classid", "clear", "codebase", "color", "cols", "colspan", "compact", "content", "contenteditable",
+        "controls", "controlslist", "coords", "crossorigin", "data", "default", "defer", "dir", "direction", "dirname",
+        "exportparts", "face", "form", "formnovalidate", "frame", "frameborder", "headers", "height", "high", "href", "hspace",
+        "http-equiv", "id", "integrity", "is", "ismap", "kind", "label", "lang", "leftmargin", "link", "list", "loop", "low",
+        "marginheight", "marginwidth", "max", "maxlength", "media", "min", "minlength", "multiple", "muted", "nomodule",
+        "noshade", "novalidate", "nowrap", "open", "optimum", "part", "pattern", "placeholder", "playsinline", "popover",
+        "popovertarget", "popovertargetaction", "preload", "readonly", "rel", "required", "reversed", "rightmargin",
+        "rows", "rowspan", "rules", "sandbox", "scope", "scrollamount", "scrolldelay", "scrolling", "selected",
+        "shadowrootclonable", "shadowrootdelegatesfocus", "shadowrootmode", "shape", "size", "slot", "span",
+        "srcdoc", "srclang", "start", "step", "style", "text", "topmargin", "truespeed", "type", "usemap", "valign",
+        "value", "vlink", "vspace", "width", "wrap", "xlink:href", "xml:lang", "xml:space", "xmlns",
+    };
+    return !bsearch(name, builtin, sizeof builtin / sizeof *builtin, sizeof *builtin, attribute_name_cmp);
 }
 static bool subject_key_on(const Node *el, const char *tag, const char *k) {
     return tag == k || (el->id && !strcmp(el->id, k)) || node_has_class_atom(el, k);
 }
-bool node_attribute_style_changed(Node *n, const char *name) {
+#if defined(__ANDROID__) && !defined(NDEBUG)
+static void debug_selector_shape(const Selector *s, SB *out);
+static int g_html_shapes;   /* debug: selector shapes logged for invalidations of <html> */
+static void debug_html_shape(const char *why, const char *key, const Selector *s, const Selector *cand) {
+    if (g_html_shapes >= 12) return;
+    g_html_shapes++;
+    SB a, b; sb_init(&a); sb_init(&b); debug_selector_shape(s, &a); if (cand) debug_selector_shape(cand, &b);
+    __android_log_print(ANDROID_LOG_INFO, "LumenStyle", "html_shape why=%s key=%s source=%.1500s candidate=%.600s", why, key ? key : "-", a.s ? a.s : "", b.s ? b.s : "");
+    sb_free(&a); sb_free(&b);
+}
+#endif
+static bool key_bit_in(const uint64_t bits[16], const char *key) { unsigned b = dom_tree_key_bit(key); return (bits[b >> 6] >> (b & 63)) & 1; }
+static void key_bit_add(uint64_t bits[16], const char *key) { if (key) { unsigned b = dom_tree_key_bit(key); bits[b >> 6] |= UINT64_C(1) << (b & 63); } }
+/* Marks the elements whose match can flip with the pending attributes, in one tree walk. */
+static void attribute_subjects_flush(StyleEngine *e) {
+    int n = e->npending_attrs; e->npending_attrs = 0;
+    if (!n) return;
+    HovDesc *subjects[16]; AttributeCandidates *candidates[16]; int live = 0, live_slot[16];
+    for (int k = 0; k < n; k++) {   /* the index may have been rebuilt since */
+        HovDesc *s = hm_get(&e->idx.attribute_subjects, e->pending_attrs[k]);
+        if (s) { subjects[live] = s; live_slot[live] = k; candidates[live++] = hm_get(&e->idx.attribute_candidates, e->pending_attrs[k]); }
+    }
+    Document *d = e->doc;
+    if (live) for (Node *el = d->node.first; el; el = node_next_deep(el, &d->node)) {
+        if (el->type != NODE_ELEMENT || (el->flags & NF_STYLE_DIRTY)) continue;
+        const char *tag = el->ns == NS_HTML ? el->tag : atom_lower(el->tag, strlen(el->tag));
+        for (int k = 0; k < live; k++) {
+            bool affected = subjects[k]->univ;
+            for (int i = 0; !affected && i < subjects[k]->keys.n; i++) affected = subject_key_on(el, tag, subjects[k]->keys.v[i]);
+            if (!affected) continue;
+            bool match = !candidates[k]; /* conservative fallback */
+            const uint64_t *bearers = e->pending_bearers[live_slot[k]];
+            for (int i = 0; candidates[k] && !match && i < candidates[k]->n; i++)   /* a keyed subject skips other elements */
+                match = (!candidates[k]->v[i].bearer || key_bit_in(bearers, candidates[k]->v[i].bearer)) &&
+                    (!candidates[k]->v[i].subject || subject_key_on(el, tag, candidates[k]->v[i].subject)) &&
+                    css_match_selector(&candidates[k]->v[i].candidate, el, candidates[k]->v[i].source->scope);
+            if (match) {
+#if defined(__ANDROID__) && !defined(NDEBUG)
+                if (el == d->html) for (int i = 0; candidates[k] && i < candidates[k]->n; i++)
+                    if ((!candidates[k]->v[i].bearer || key_bit_in(bearers, candidates[k]->v[i].bearer)) && (!candidates[k]->v[i].subject || subject_key_on(el, tag, candidates[k]->v[i].subject)) && css_match_selector(&candidates[k]->v[i].candidate, el, candidates[k]->v[i].source->scope)) {
+                        debug_html_shape("attr", e->pending_attrs[k], &candidates[k]->v[i].source->sel, &candidates[k]->v[i].candidate); break;
+                    }
+#endif
+                mark_style_subject(el, e->pending_attrs[k]); break;
+            }
+        }
+    }
+}
+static void attribute_subjects_queue(StyleEngine *e, Node *n, const char *key);
+/* Whether a selector can test the attribute name on n: n has the id, class or type of
+ * some compound testing it. Other elements' edits of it cannot change any match. */
+static bool attribute_borne(StyleEngine *e, const Node *n, const char *key) {
+    const HovDesc *b = hm_get(&e->idx.attribute_bearers, key);
+    if (!b) return false;
+    if (b->univ || n->ns != NS_HTML) return true;
+    for (int i = 0; i < b->keys.n; i++) if (subject_key_on(n, n->tag, b->keys.v[i])) return true;
+    return false;
+}
+bool css_attribute_observed(Node *n, const char *name) {
+    Document *d = n->doc;
+    StyleEngine *e = d ? d->stylesheets : NULL;
+    if (!e) return true;
+    idx_ensure(e);
+#if defined(__ANDROID__) && !defined(NDEBUG)
+    bool borne = attribute_borne(e, n, atom_lower(name, strlen(name)));
+    static int shown;   /* debug: why an attribute edit counts as observed */
+    if (borne && shown < 8) {
+        shown++;
+        const HovDesc *b = hm_get(&e->idx.attribute_bearers, atom_lower(name, strlen(name)));
+        __android_log_print(ANDROID_LOG_INFO, "LumenStyle", "attr_observed name=%s tag=%s ns=%d classes=%d univ=%d keys=%d k0=%s k1=%s k2=%s",
+            name, n->tag ? n->tag : "-", (int)n->ns, n->nclasses, b ? b->univ : -1, b ? b->keys.n : -1,
+            b && b->keys.n > 0 ? b->keys.v[0] : "-", b && b->keys.n > 1 ? b->keys.v[1] : "-", b && b->keys.n > 2 ? b->keys.v[2] : "-");
+    }
+    return borne;
+#else
+    return attribute_borne(e, n, atom_lower(name, strlen(name)));
+#endif
+}
+bool node_attribute_style_changed(Node *n, const char *name, bool value_only) {
     Document *d = n->doc;
     StyleEngine *e = d ? d->stylesheets : NULL;
     if (e) idx_ensure(e);
     /* A pending sheet change needs no fallback: the current index covers the
      * current rules and sheet_delta marks every subject of the new ones. */
     if (!e || n->ns != NS_HTML || !(n->flags & NF_CONNECTED) ||
-            !css_selector_only_attribute(name)) return false;
-    const char *key = atom_lower(name, strlen(name));
+            !(value_only || css_selector_only_attribute(name))) return false;
+    attribute_subjects_queue(e, n, atom_lower(name, strlen(name)));
+    return true;
+}
+/* Inline style edits skip selector invalidation, so the style attribute's selector tests are
+ * invalidated like other attributes': presence tests (`:not([style])`) when it comes or goes, value
+ * tests (`[style*=x]`) on every edit. Returns whether such a test may have flipped. */
+bool node_style_attribute_changed(Node *n, bool presence);
+bool node_style_attribute_changed(Node *n, bool presence) {
+    Document *d = n->doc;
+    StyleEngine *e = d ? d->stylesheets : NULL;
+    if (!e) return false;
+    idx_ensure(e);
+    const char *key = atom_lower("style", 5);
+    if (!presence && !e->idx.style_values) return false;
+    if (!hm_get(&e->idx.attribute_subjects, key) && !hm_get(&e->idx.self_attributes, key)) return false;
+    if (n->flags & NF_CONNECTED) attribute_subjects_queue(e, n, key);
+    return true;
+}
+static void attribute_subjects_queue(StyleEngine *e, Node *n, const char *key) {
     HovDesc *subjects = hm_get(&e->idx.attribute_subjects, key);
 #if defined(__ANDROID__) && !defined(NDEBUG)
     if (e->debug_style_passes) __android_log_print(ANDROID_LOG_INFO, "LumenStyle", "lumen-style attribute name=%s self=%d relative=%d universal=%d\n", key, hm_get(&e->idx.self_attributes, key) != NULL, subjects ? subjects->keys.n : 0, subjects ? subjects->univ : 0);
 #endif
-    if (subjects) for (Node *el = d->node.first; el; el = node_next_deep(el, &d->node)) {
-        if (el->type != NODE_ELEMENT) continue;
-        bool affected = subjects->univ;
-        const char *tag = el->ns == NS_HTML ? el->tag : atom_lower(el->tag, strlen(el->tag));
-        for (int i = 0; !affected && i < subjects->keys.n; i++) affected = subject_key_on(el, tag, subjects->keys.v[i]);
-        if (affected) {
-            AttributeCandidates *candidates = hm_get(&e->idx.attribute_candidates, key);
-            bool match = !candidates; /* conservative fallback */
-            for (int i = 0; candidates && !match && i < candidates->n; i++)   /* a keyed subject skips other elements */
-                match = (!candidates->v[i].subject || subject_key_on(el, tag, candidates->v[i].subject)) &&
-                    css_match_selector(&candidates->v[i].candidate, el, candidates->v[i].source->scope);
-            if (match) mark_style_subject(el);
+    /* Candidates ignore the attribute's value, so one walk at the next pass
+     * covers every set before it; other edits in between invalidate themselves. */
+    if (subjects && attribute_borne(e, n, key)) {
+        int i = 0; while (i < e->npending_attrs && e->pending_attrs[i] != key) i++;
+        if (i == e->npending_attrs) {
+            if (i == 16) { attribute_subjects_flush(e); i = 0; }
+            e->pending_attrs[e->npending_attrs++] = key;
+            memset(e->pending_bearers[i], 0, sizeof e->pending_bearers[i]);
         }
+        uint64_t *bits = e->pending_bearers[i];
+        if (n->ns != NS_HTML) memset(bits, 0xff, sizeof e->pending_bearers[i]);
+        else { key_bit_add(bits, n->tag); key_bit_add(bits, n->id); for (int c = 0; c < n->nclasses; c++) key_bit_add(bits, n->classes[c]); }
     }
-    if (!n->style || hm_get(&e->idx.self_attributes, key) || (n->style->attribute_dependencies & custom_bit(key))) mark_style_subject(n);
-    return true;
+    if (!n->style || hm_get(&e->idx.self_attributes, key) || (n->style->attribute_dependencies & custom_bit(key))) mark_style_subject(n, key);
 }
 /* Index one sheet's rules after everything indexed so far in the cascade. */
 static void idx_add_sheet(StyleEngine *e, StyleSheet *sh) {
@@ -2122,12 +2336,19 @@ static void idx_add_sheet(StyleEngine *e, StyleSheet *sh) {
             LocalKey local = key.name ? (LocalKey){0} : local_key(&r->sel);
             if (local.kind == 1) continue;
             index_attribute_subjects(&e->idx, &r->sel, key.name, false, r);
+            if (r->sel.reads_style_attribute) e->idx.style_values = true;
             if (!e->idx.focus_within && sel_uses_pseudo(&r->sel, "focus-within")) e->idx.focus_within = true;
             uint64_t reselect[16] = {0};
             reselect_dependencies(&r->sel, reselect, true);
-            if (sel_uses_pseudo(&r->sel, "focus-within") && (reselect[fw_bit >> 6] >> (fw_bit & 63) & 1)) {
-                vec_push(e->idx.fw_rules, r);
-                if (r->scope || fw_needs_more(&r->sel)) e->idx.fw_complex = true;
+            /* :has(:focus-within) is no reselect key, but its subjects flip as well */
+            if (sel_uses_pseudo(&r->sel, "focus-within") && ((reselect[fw_bit >> 6] >> (fw_bit & 63) & 1) || fw_needs_more(&r->sel))) {
+                SubjectKey fk = subject_key(&r->sel);
+                const char *fkey = !fk.name ? NULL : fk.kind == SK_TYPE ? atom_lower(fk.name, strlen(fk.name)) : fk.name;
+                if (r->scope) e->idx.fw_complex = true;
+                else if (fw_needs_more(&r->sel)) {
+                    vec_push(e->idx.fw_far, r); vec_push(e->idx.fw_far_keys, fkey);
+                    if (!fkey && ++e->idx.fw_far_unkeyed > 8) e->idx.fw_complex = true;
+                } else { vec_push(e->idx.fw_rules, r); vec_push(e->idx.fw_keys, fkey); }
             }
             SubjectKey keys[8]; int nkeys = key.name ? 0 : subject_keys(&r->sel, keys);
             r->multi_key = nkeys > 1;
@@ -2143,6 +2364,7 @@ static void idx_add_sheet(StyleEngine *e, StyleSheet *sh) {
                 if (!scope) continue;
                 TreeDependency dependency = {tree_candidate(&e->idx, &r->sel, false, j, scope), r->scope, false, key.name, key.kind, &r->sel};
                 selector_change_dependencies(&r->sel, dependency.selector_keys, true);
+                tree_parent_keys(&dependency, &r->sel);
                 vec_push(e->idx.tree_candidates, dependency);
             }
             if (tree & 2) for (int j = 0; j < r->sel.n; j++) {
@@ -2162,6 +2384,7 @@ static void idx_add_sheet(StyleEngine *e, StyleSheet *sh) {
                     if (!tree_witness_keys(part, dependency.witness_keys)) dependency.witness_filter = false;
                     if (!tree_focus_only(part)) dependency.focus_tree_filter = false;
                 }
+                tree_parent_keys(&dependency, &r->sel);
                 vec_push(e->idx.tree_candidates, dependency);
             }
             if (empty_dependencies(&r->sel) & 2) {
@@ -2218,13 +2441,37 @@ static bool compound_has_root(const Compound *c) {
     for (int k = 0; k < c->n; k++) if (is_pseudo(&c->s[k], "root")) return true;
     return false;
 }
+/* `:is(.a, .b) > *` or `:is(.a, .b) *`: the subject's parent (or an ancestor) carries
+ * one of the keys of the compound left of it; `.a + *` or `.a ~ *`: a previous sibling does. */
+static bool sheet_delta_parent_keys(StyleEngine *e, const Selector *sel) {
+    if (sel->n < 2) return false;
+    uint8_t comb = sel->c[sel->n - 1].comb;
+    Selector up = {.c = (Compound *)&sel->c[sel->n - 2], .n = 1};
+    SubjectKey keys[8], one = subject_key(&up); int n = one.name ? 1 : subject_keys(&up, keys);
+    if (one.name) keys[0] = one;
+    for (int j = 0; j < n; j++) if (keys[j].kind == SK_ID || (comb != CB_CHILD && keys[j].kind != SK_CLASS)) return false;
+    for (int j = 0; j < n; j++) {
+        if (comb == CB_ADJ || comb == CB_SIB) hm_put(comb == CB_ADJ ? &e->delta_adj_classes : &e->delta_sib_classes, keys[j].name, (void *)1);
+        else if (comb == CB_DESC) { unsigned bit = class_filter_bit(keys[j].name); e->delta_ancestors[bit >> 6] |= UINT64_C(1) << (bit & 63); }
+        else hm_put(keys[j].kind == SK_CLASS ? &e->delta_parent_classes : keys[j].kind == SK_ATTR ? &e->delta_parent_attrs :
+            &e->delta_parent_tags, keys[j].name, (void *)1);
+    }
+    return n > 0;
+}
+/* `:root[data-reduced-motion] *` matches nothing while the root lacks the
+ * attribute; a later root change reselects through the index as usual. */
+static bool sheet_delta_root_fails(StyleEngine *e, const Rule *r) {
+    if (r->sel.n < 2 || r->scope || !e->doc->html || !compound_has_root(&r->sel.c[0])) return false;
+    Selector prefix = r->sel; prefix.n = 1; prefix.pseudo_el = 0;
+    return !css_match_selector(&prefix, e->doc->html, NULL);
+}
 /* Record the index keys of a sheet's rules, mirroring matched_decls' buckets. */
 static void sheet_delta(StyleEngine *e, const StyleSheet *s) {
     e->delta_any = true;
     if (s->disabled || e->delta_all) return;
     for (int i = 0; i < s->rules.n && !e->delta_all; i++) {
         const Rule *r = &s->rules.v[i];
-        if (!r->sel.n) continue;
+        if (!r->sel.n || r->sel.pseudo_el == 3) continue;   /* pseudo-elements never styled (::view-transition-*, ::selection) */
         SubjectKey key = subject_key(&r->sel), keys[8];
         LocalKey local; int nkeys;
         if (!key.name && (nkeys = subject_keys(&r->sel, keys))) {
@@ -2243,7 +2490,8 @@ static void sheet_delta(StyleEngine *e, const StyleSheet *s) {
         else if (local.kind == 6) hm_put(&e->delta_parent_attrs, local.name, (void *)1);
         else {
             const char *required = required_class(&r->sel, true);
-            if (!required) { e->delta_all = true; break; }
+            if (!required && (sheet_delta_parent_keys(e, &r->sel) || sheet_delta_root_fails(e, r))) continue;
+            if (!required) { e->delta_all = true; e->dbg_delta_all_rule = r; break; }
             unsigned bit = class_filter_bit(required);
             e->delta_ancestors[bit >> 6] |= UINT64_C(1) << (bit & 63);
         }
@@ -2252,38 +2500,59 @@ static void sheet_delta(StyleEngine *e, const StyleSheet *s) {
 static void sheet_delta_clear(StyleEngine *e) {
     hm_free(&e->delta_ids, NULL); hm_free(&e->delta_classes, NULL); hm_free(&e->delta_tags, NULL);
     hm_free(&e->delta_attrs, NULL); hm_free(&e->delta_parent_tags, NULL); hm_free(&e->delta_parent_classes, NULL); hm_free(&e->delta_parent_attrs, NULL);
+    hm_free(&e->delta_adj_classes, NULL); hm_free(&e->delta_sib_classes, NULL);
     memset(e->delta_ancestors, 0, sizeof e->delta_ancestors);
-    e->delta_any = e->delta_all = e->delta_root = false;
+    e->delta_any = e->delta_all = e->delta_root = false; e->dbg_delta_all_rule = NULL;
 }
-static bool sheet_delta_hit(StyleEngine *e, Node *n, const uint64_t classes[16]) {
-    if (n->id && hm_get(&e->delta_ids, n->id)) return true;
-    for (int i = 0; i < n->nclasses; i++) if (hm_get(&e->delta_classes, n->classes[i])) return true;
-    if (e->delta_tags.n && hm_get(&e->delta_tags, n->ns == NS_HTML ? n->tag : atom_lower(n->tag, strlen(n->tag)))) return true;
-    if (e->delta_root && n->parent && n->parent->type == NODE_DOCUMENT) return true;
+/* Which kind of key marks n (debug statistics), 0 for none. */
+static int sheet_delta_hit(StyleEngine *e, Node *n, const uint64_t classes[16]) {
+    if (n->id && hm_get(&e->delta_ids, n->id)) return 1;
+    for (int i = 0; i < n->nclasses; i++) if (hm_get(&e->delta_classes, n->classes[i])) return 2;
+    if (e->delta_tags.n && hm_get(&e->delta_tags, n->ns == NS_HTML ? n->tag : atom_lower(n->tag, strlen(n->tag)))) return 3;
+    if (e->delta_root && n->parent && n->parent->type == NODE_DOCUMENT) return 4;
     for (int i = 0; e->delta_attrs.n && i < n->nattrs; i++)
-        if (hm_get(&e->delta_attrs, atom_lower(n->attrs[i].name, strlen(n->attrs[i].name)))) return true;
+        if (hm_get(&e->delta_attrs, atom_lower(n->attrs[i].name, strlen(n->attrs[i].name)))) return 5;
     Node *p = n->parent;
     if (e->delta_parent_tags.n && p && p->type == NODE_ELEMENT &&
-            hm_get(&e->delta_parent_tags, p->ns == NS_HTML ? p->tag : atom_lower(p->tag, strlen(p->tag)))) return true;
+            hm_get(&e->delta_parent_tags, p->ns == NS_HTML ? p->tag : atom_lower(p->tag, strlen(p->tag)))) return 6;
     if (p && p->type == NODE_ELEMENT) {
-        for (int i = 0; e->delta_parent_classes.n && i < p->nclasses; i++) if (hm_get(&e->delta_parent_classes, p->classes[i])) return true;
+        for (int i = 0; e->delta_parent_classes.n && i < p->nclasses; i++) if (hm_get(&e->delta_parent_classes, p->classes[i])) return 7;
         for (int i = 0; e->delta_parent_attrs.n && i < p->nattrs; i++)
-            if (hm_get(&e->delta_parent_attrs, atom_lower(p->attrs[i].name, strlen(p->attrs[i].name)))) return true;
+            if (hm_get(&e->delta_parent_attrs, atom_lower(p->attrs[i].name, strlen(p->attrs[i].name)))) return 8;
     }
-    for (int k = 0; k < 16; k++) if (classes[k] & e->delta_ancestors[k]) return true;
+    for (int k = 0; k < 16; k++) if (classes[k] & e->delta_ancestors[k]) return 9;
+    return 0;
+}
+static bool sheet_delta_class(HMap *keys, const Node *n) {
+    for (int i = 0; keys->n && i < n->nclasses; i++) if (hm_get(keys, n->classes[i])) return true;
     return false;
 }
-/* Marks matching elements; returns whether any descendant of n was marked. */
-static bool sheet_delta_mark(StyleEngine *e, Node *n, const uint64_t ancestors[16]) {
+#if defined(__ANDROID__) && !defined(NDEBUG)
+static int g_delta_kinds[11];   /* debug: elements per marking key kind, [0] unmarked */
+#endif
+/* Marks matching elements; returns whether any descendant of n was marked.
+ * sibling: a previous sibling carries a class a new sibling rule follows. */
+static bool sheet_delta_mark(StyleEngine *e, Node *n, const uint64_t ancestors[16], bool sibling) {
     uint64_t classes[16]; memcpy(classes, ancestors, sizeof classes);
     bool any = false;
     if (n->type == NODE_ELEMENT) {
         add_class_filter(classes, n);
-        if (sheet_delta_hit(e, n, classes)) { n->flags |= NF_STYLE_DIRTY; any = true; }
+        int kind = sibling ? 10 : sheet_delta_hit(e, n, classes);
+        if (kind) { n->flags |= NF_STYLE_DIRTY; any = true; DBG_HTML(n, "delta"); }
+#if defined(__ANDROID__) && !defined(NDEBUG)
+        g_delta_kinds[kind]++;
+#endif
     }
-    bool below = false;
-    for (Node *c = n->first; c; c = c->next) below |= sheet_delta_mark(e, c, classes);
-    if (n->shadow_root) below |= sheet_delta_mark(e, n->shadow_root, classes);
+    bool below = false, after = false;
+    const Node *prev = NULL;
+    for (Node *c = n->first; c; c = c->next) {
+        bool adj = prev && sheet_delta_class(&e->delta_adj_classes, prev);
+        below |= sheet_delta_mark(e, c, classes, after || adj);
+        if (c->type != NODE_ELEMENT) continue;
+        after |= sheet_delta_class(&e->delta_sib_classes, c);
+        prev = c;
+    }
+    if (n->shadow_root) below |= sheet_delta_mark(e, n->shadow_root, classes, false);
     if (below) n->flags |= NF_CHILD_STYLE_DIRTY;
     return any || below;
 }
@@ -2386,7 +2655,7 @@ static void collect(StyleEngine *e, Node *el, RuleVec *rv, int pseudo, VEC(MDecl
         if (bit < 1024 && e->ancestor_classes && !(e->ancestor_classes[bit >> 6] & (UINT64_C(1) << (bit & 63)))) continue;
         bit = r->ancestor_class_filter2;
         if (bit < 1024 && e->ancestor_classes && !(e->ancestor_classes[bit >> 6] & (UINT64_C(1) << (bit & 63)))) continue;
-        if (r->sel.reads_style_attribute) e->collect_dynamic = true;
+        if (r->sel.reads_style_attribute) e->collect_style_value = true;
         e->stats_rule_tests++;
 #if defined(__ANDROID__) && !defined(NDEBUG)
         r->dbg_tests++;
@@ -2457,7 +2726,7 @@ static MDecl *matched_decls(StyleEngine *e, Node *el, int pseudo, int *count, bo
     if (m && (m->have >> slot & 1)) { e->stats_memo_hits++; *count = m->n[slot]; *owned = false; return m->v[slot]; }
     VEC(MDecl) md = {0};
     RuleVec *rv;
-    bool dynamic = e->collect_dynamic; e->collect_dynamic = false;
+    bool dynamic = e->collect_dynamic; e->collect_dynamic = false; e->collect_style_value = false;
     g_collect_stamp++;
     if (el->id && (rv = hm_get(&e->idx.by_id, el->id))) collect(e, el, rv, pseudo, (void *)&md);
     for (int i = 0; i < el->nclasses; i++) if ((rv = hm_get(&e->idx.by_class, el->classes[i]))) collect(e, el, rv, pseudo, (void *)&md);
@@ -2487,7 +2756,7 @@ static MDecl *matched_decls(StyleEngine *e, Node *el, int pseudo, int *count, bo
     }
     collect_universal(e, el, pseudo, (void *)&md);
     if (md.n > 1) qsort(md.v, (size_t)md.n, sizeof(MDecl), mdecl_cmp);
-    bool keep = !e->collect_dynamic && el->doc && el->style && node_attr_atom(el, A_style);
+    bool keep = !e->collect_dynamic && !e->collect_style_value && el->doc && el->style && node_attr_atom(el, A_style);
     e->collect_dynamic |= dynamic;
     *count = md.n; *owned = !keep;
     if (keep) {
@@ -2572,9 +2841,30 @@ static void apply_decl_ordered(ComputedStyle *st, const ComputedStyle *par, MDec
     for (int i = 0; i < n; i++) { const char *p = v[i].d->prop; if ((p[0] == '-' && p[1] == '-') || !strcmp(p, "font-size") || !strcmp(p, "font") || !strcmp(p, "color")) continue; css_apply_decl(st, par, p, v[i].d->value, e, el); }
 }
 
+#if defined(__ANDROID__) && !defined(NDEBUG)
+/* Debug Android: the slowest restyled elements of a pass and where their time went (tags only). */
+typedef struct { double ms, compute, pseudo, hook, rest, decls; const char *tag; int ncls; uint64_t has_tests, has_nodes; } DbgSlowEl;
+static double g_decls_ms;   /* matched_decls time of the current element */
+static DbgSlowEl g_slow_el[3];
+static double g_el_total;   /* all restyled elements' own time */
+static double dbg_now(void) { struct timespec t; clock_gettime(CLOCK_MONOTONIC, &t); return t.tv_sec * 1e3 + t.tv_nsec / 1e6; }
+static void dbg_slow_el(const Node *n, double ms, double compute, double pseudo, double hook, const uint64_t has0[2]) {
+    g_el_total += ms;
+    int k = 3; while (k > 0 && g_slow_el[k - 1].ms < ms) k--;
+    if (k >= 3) return;
+    memmove(&g_slow_el[k + 1], &g_slow_el[k], sizeof *g_slow_el * (size_t)(2 - k));
+    g_slow_el[k] = (DbgSlowEl){ms, compute, pseudo, hook, ms - compute - pseudo - hook, g_decls_ms, n->tag, n->nclasses, css_has_stats[0] - has0[0], css_has_stats[1] - has0[1]};
+}
+#endif
 static ComputedStyle *compute(StyleEngine *e, Node *el, const ComputedStyle *par) {
     int mn; bool owned;
+#if defined(__ANDROID__) && !defined(NDEBUG)
+    double dbg_d0 = dbg_now();
+#endif
     MDecl *md = matched_decls(e, el, 0, &mn, &owned);
+#if defined(__ANDROID__) && !defined(NDEBUG)
+    g_decls_ms = dbg_now() - dbg_d0;
+#endif
     ComputedStyle *st = style_inherit(par);
     /* split normal / important so presentational hints & inline style go between */
     int split = 0; while (split < mn && (md[split].key >> 62) < 2) split++;
@@ -2616,6 +2906,8 @@ static ComputedStyle *compute(StyleEngine *e, Node *el, const ComputedStyle *par
     }
     for (int i = 0; i < 4; i++) if (st->border_style[i] == BS_NONE || st->border_style[i] == BS_HIDDEN) st->border_width[i] = 0;
     if (st->outline_style == BS_NONE) st->outline_width = 0;
+    if (node_has_attr(el, "inert")) st->inert = 1;   /* the UA [inert] rule makes the attribute restyle the element */
+    if (st->inert) { st->pointer_events = 0; st->user_select = 1; }
     if (node_has_attr(el, "hidden") && el->ns == NS_HTML && st->display != D_NONE) {
         const char *hv = node_attr(el, "hidden"); if (!hv || !str_ieq(hv, "until-found")) { /* author CSS can override display; UA rule already sets none */ }
     }
@@ -2639,7 +2931,7 @@ static bool paint_only(const ComputedStyle *a, const ComputedStyle *b) {
     PO_Z(mask_image); PO_Z(mask_fit); PO_Z(border_color); PO_Z(outline_style); PO_Z(outline_width); PO_Z(outline_offset); PO_Z(outline_color);
     PO_Z(box_shadow); PO_Z(has_shadow); PO_Z(text_shadow); PO_Z(has_text_shadow); PO_Z(text_decoration);
     PO_Z(opacity); PO_Z(transform); PO_Z(transform_origin); PO_Z(translate_pending); PO_Z(visibility); PO_Z(z_index); PO_Z(z_auto); PO_Z(isolation);
-    PO_Z(cursor); PO_Z(pointer_events); PO_Z(user_select); PO_Z(caret_color); PO_Z(fill); PO_Z(stroke); PO_Z(stroke_width); PO_Z(object_fit);
+    PO_Z(cursor); PO_Z(pointer_events); PO_Z(inert); PO_Z(user_select); PO_Z(touch_block); PO_Z(caret_color); PO_Z(fill); PO_Z(stroke); PO_Z(stroke_width); PO_Z(object_fit);
     PO_Z(filter_blur); PO_Z(filter_brightness); PO_Z(backdrop_blur);
     PO_Z(anim_name); PO_Z(anim_dur); PO_Z(anim_delay); PO_Z(anim_iter); PO_Z(tr_prop); PO_Z(tr_dur); PO_Z(tr_delay);
 #undef PO_Z
@@ -2684,18 +2976,25 @@ static void adopt(ComputedStyle *old, ComputedStyle *nw) {
 /* Inheritance-only updates must still expose the new custom-property values to
  * descendants and getComputedStyle. Rebase immutable maps; never mutate maps
  * retained by another computed style. Flattened maps take the normal path. */
+/* The parent values an explicit `inherit` of a non-inherited property copies (see apply's inherit). */
+static bool uncompared_differ(const ComputedStyle *a, const ComputedStyle *b) {
+    return a->bg_color != b->bg_color || memcmp(&a->width, &b->width, sizeof a->width) || memcmp(&a->height, &b->height, sizeof a->height) ||
+        memcmp(a->margin, b->margin, sizeof a->margin) || memcmp(a->padding, b->padding, sizeof a->padding) ||
+        memcmp(a->border_style, b->border_style, sizeof a->border_style) || a->position != b->position ||
+        memcmp(a->border_radius, b->border_radius, sizeof a->border_radius);
+}
 static bool can_rebase(const ComputedStyle *s, const CustomProps *old_parent,
-        const CustomProps *new_parent, const CustomMask *changed) {
+        const CustomProps *new_parent, const CustomMask *changed, unsigned diff) {
     if (!s) return true;
-    if (s->parent_sensitive || s->inherited_dynamic || cm_any(&s->custom_dependencies, changed)) return false;
+    if ((s->parent_sensitive && (diff & INH_UNCOMPARED)) || s->inherited_dynamic || cm_any(&s->custom_dependencies, changed)) return false;
     if (s->custom != old_parent && (!s->custom || s->custom->parent != old_parent ||
             (new_parent && new_parent->depth >= CUSTOM_MAX_DEPTH))) return false;
-    return can_rebase(s->before, s->custom, s->custom, changed) &&
-        can_rebase(s->after, s->custom, s->custom, changed) &&
-        can_rebase(s->marker, s->custom, s->custom, changed);
+    return can_rebase(s->before, s->custom, s->custom, changed, diff) &&
+        can_rebase(s->after, s->custom, s->custom, changed, diff) &&
+        can_rebase(s->marker, s->custom, s->custom, changed, diff);
 }
-static int rebase_block_reason(const ComputedStyle *s, const CustomProps *old_parent, const CustomProps *new_parent, const CustomMask *changed) {
-    if (s->parent_sensitive) return 0;
+static int rebase_block_reason(const ComputedStyle *s, const CustomProps *old_parent, const CustomProps *new_parent, const CustomMask *changed, unsigned diff) {
+    if (s->parent_sensitive && (diff & INH_UNCOMPARED)) return 0;
     if (s->inherited_dynamic) return 1;
     if (cm_any(&s->custom_dependencies, changed)) return 2;
     if (s->custom != old_parent && (!s->custom || s->custom->parent != old_parent ||
@@ -2751,6 +3050,10 @@ static CustomMask custom_changes(const CustomProps *a, const CustomProps *b,
 /* 0 when children inherit the same values; INDEP_* bits when only
  * independent properties differ; INH_OTHER otherwise. */
 static const char *g_inh_field; /* debug: first non-independent inherited difference */
+#if defined(__ANDROID__) && !defined(NDEBUG)
+/* Debug Android: the largest subtree matched under an element that was not a dirty root, and why. */
+static struct { int n; const char *tag, *field; unsigned diff; bool resel, inherit_only, cleared, reuse; int depth; } g_cascade;
+#endif
 static unsigned inherited_diff(const ComputedStyle *a, const ComputedStyle *b) {
     if (!a || !b) return INH_OTHER;
 #define INHERITED_EQ(f) if (memcmp(&a->f, &b->f, sizeof a->f)) { g_inh_field = #f; return INH_OTHER; }
@@ -2761,7 +3064,7 @@ static unsigned inherited_diff(const ComputedStyle *a, const ComputedStyle *b) {
     INHERITED_EQ(letter_spacing); INHERITED_EQ(word_spacing); INHERITED_EQ(text_indent); INHERITED_EQ(list_style);
     INHERITED_EQ(direction);
     INHERITED_EQ(has_text_shadow); INHERITED_EQ(text_shadow); INHERITED_EQ(caret_color); INHERITED_EQ(fill); INHERITED_EQ(stroke); INHERITED_EQ(stroke_width);
-    INHERITED_EQ(border_collapse); INHERITED_EQ(writing_mode);
+    INHERITED_EQ(border_collapse); INHERITED_EQ(writing_mode); INHERITED_EQ(inert);
 #undef INHERITED_EQ
     return (a->pointer_events != b->pointer_events ? INDEP_POINTER : 0) | (a->visibility != b->visibility ? INDEP_VISIBILITY : 0) |
         (a->cursor != b->cursor ? INDEP_CURSOR : 0) | (a->user_select != b->user_select ? INDEP_USER_SELECT : 0) |
@@ -2800,27 +3103,28 @@ static void recalc(StyleEngine *e, Node *n, const ComputedStyle *par, bool force
         CustomProps *old_custom = n->style ? custom_ref(n->style->custom) : NULL;
         unsigned child_diff = 0;
         CustomMask child_changed = {{0}};
+        bool restore_reuse = false;   /* reuse_inherited was cleared for this subtree only */
         bool need = force || (n->flags & NF_STYLE_DIRTY) || !n->style;
         bool resel = reselect || (keyed && need && keyed_hit(e, n));
         bool inherit_only = need && force && !resel && !(n->flags & NF_STYLE_DIRTY) && n->style && par &&
             !(parent_diff & INH_OTHER) && e->reuse_inherited;
         bool indep = inherit_only && indep_free(n->style, parent_diff);
         if (inherit_only && !indep) e->stats_indep_block++;
-        else if (indep && !can_rebase(n->style, old_parent, par->custom, changed)) {
-            e->stats_rebase_block++; int why = rebase_block_reason(n->style, old_parent, par->custom, changed);
+        else if (indep && !can_rebase(n->style, old_parent, par->custom, changed, parent_diff)) {
+            e->stats_rebase_block++; int why = rebase_block_reason(n->style, old_parent, par->custom, changed, parent_diff);
             e->stats_rebase_why[why]++; indep = false;
             if (why == 2) { uint64_t bits = 0; for (int i = 0; i < 4; i++) bits += (uint64_t)__builtin_popcountll(changed->w[i]); if (bits > g_cc[6]) g_cc[6] = bits; }
         }
         if (indep) {
             rebase_custom(n->style, old_parent, par->custom);
-            if (parent_diff) {
+            if (parent_diff & ~(unsigned)INH_UNCOMPARED) {
                 ComputedStyle old = *n->style;
                 indep_inherit(n->style, par, parent_diff);
                 if (css_style_change_hook) css_style_change_hook(n, &old, n->style);
                 if (parent_diff & (INDEP_WHITE_SPACE | INDEP_TEXT_TRANSFORM | INDEP_WORD_BREAK | INDEP_OVERFLOW_WRAP)) e->layout_dirty = true;
             }
             e->stats_reused++;
-            child_diff = parent_diff;
+            child_diff = parent_diff & ~(unsigned)INH_UNCOMPARED;   /* n kept its own uncompared values */
             child_changed = *changed; /* over-invalidation is safe when a local variable shadows it */
         } else if (need) {
 #if defined(__ANDROID__) && !defined(NDEBUG)
@@ -2831,17 +3135,28 @@ static void recalc(StyleEngine *e, Node *n, const ComputedStyle *par, bool force
             e->collect_dynamic = false;
             css_match_cache_subject(n, classes);
             g_vh_used = false;
+#if defined(__ANDROID__) && !defined(NDEBUG)
+            double dbg_e0 = dbg_now(); uint64_t dbg_has0[2] = {css_has_stats[0], css_has_stats[1]};
+#endif
             ComputedStyle *st = compute(e, n, par);
+#if defined(__ANDROID__) && !defined(NDEBUG)
+            double dbg_e1 = dbg_now();
+#endif
             if (st->display != D_NONE) {
                 if (e->idx.count) { st->before = compute_pseudo(e, n, st, 1); st->after = compute_pseudo(e, n, st, 2); if (st->display == D_LIST_ITEM) st->marker = compute_pseudo(e, n, st, 4); }
             }
+#if defined(__ANDROID__) && !defined(NDEBUG)
+            double dbg_e2 = dbg_now(), dbg_h = 0;
+#endif
             st->uses_vh = g_vh_used;
             st->inherited_dynamic |= e->collect_dynamic;
             /* Root-font units and animation visibility can depend on distant
-             * ancestors even after intermediate inherited values stabilize. */
-            if (n->style && (((n->style->display == D_NONE) != (st->display == D_NONE)) ||
-                    (n == e->doc->html && n->style->font_size != st->font_size))) e->reuse_inherited = false;
+             * ancestors even after intermediate inherited values stabilize:
+             * the subtree matches afresh, and later elements reuse again. */
+            if (e->reuse_inherited && n->style && (((n->style->display == D_NONE) != (st->display == D_NONE)) ||
+                    (n == e->doc->html && n->style->font_size != st->font_size))) { e->reuse_inherited = false; restore_reuse = true; }
             child_diff = e->reuse_inherited ? inherited_diff(n->style, st) : INH_OTHER;
+            if (n->style && uncompared_differ(n->style, st)) child_diff |= INH_UNCOMPARED;
 #ifdef __ANDROID__
             /* Why a page-wide inherited value moved: values and selector shapes only. */
             if ((n == e->doc->body || n == e->doc->html) && n->style && n->style->color != st->color) {
@@ -2859,7 +3174,13 @@ static void recalc(StyleEngine *e, Node *n, const ComputedStyle *par, bool force
 #endif
             if (e->reuse_inherited) child_changed = custom_changes(old_custom, st->custom,
                 old_parent, par ? par->custom : NULL, changed);
+#if defined(__ANDROID__) && !defined(NDEBUG)
+            double dbg_h0 = dbg_now();
+#endif
             if (css_style_change_hook) css_style_change_hook(n, n->style, st);
+#if defined(__ANDROID__) && !defined(NDEBUG)
+            dbg_h = dbg_now() - dbg_h0;
+#endif
             if (n->doc && image_inputs_changed(n, n->style, st)) n->doc->resource_version++;
             if (n->style && paint_only(n->style, st)) { adopt(n->style, st); style_free(st); e->stats_paint++; }
             else if (n->style && e->allow_moves && inset_only(n->style, st)) {
@@ -2875,6 +3196,9 @@ static void recalc(StyleEngine *e, Node *n, const ComputedStyle *par, bool force
             }
             force = true; /* children inherit */
             e->stats_matched++;
+#if defined(__ANDROID__) && !defined(NDEBUG)
+            dbg_slow_el(n, dbg_now() - dbg_e0, dbg_e1 - dbg_e0, dbg_e2 - dbg_e1, dbg_h, dbg_has0);
+#endif
         }
         n->flags &= ~(uint32_t)(NF_STYLE_DIRTY);
         if (!force && !(n->flags & NF_CHILD_STYLE_DIRTY)) { custom_unref(old_custom); return; }
@@ -2883,7 +3207,13 @@ static void recalc(StyleEngine *e, Node *n, const ComputedStyle *par, bool force
         Node *kids = n->template_content ? NULL : n;
         if (kids) for (Node *c = n->first; c; c = c->next) recalc(e, c, n->style, force, reselect, keyed, classes, old_custom, &child_changed, child_diff);
         if (n->shadow_root) for (Node *c = n->shadow_root->first; c; c = c->next) recalc(e, c, n->style, force, reselect, keyed, classes, old_custom, &child_changed, child_diff);
+        if (restore_reuse) e->reuse_inherited = true;
 #if defined(__ANDROID__) && !defined(NDEBUG)
+        if (!sub_root && need && e->stats_matched - m0 > g_cascade.n && (child_diff & INH_OTHER)) {
+            int depth = 0; for (Node *a = n->parent; a; a = a->parent) depth++;
+            g_cascade.n = e->stats_matched - m0; g_cascade.tag = n->tag; g_cascade.field = e->reuse_inherited && !restore_reuse ? g_inh_field : "noreuse";
+            g_cascade.diff = child_diff; g_cascade.resel = resel; g_cascade.inherit_only = inherit_only; g_cascade.cleared = restore_reuse; g_cascade.reuse = e->reuse_inherited; g_cascade.depth = depth;
+        }
         if (e->debug_style_passes && e->stats_matched - m0 >= 1000 && (own & 3) && !(own & 4))   /* where a large reselect starts: own flags 1 subtree, 2 keyed; 8 keyed from above */
             __android_log_print(ANDROID_LOG_INFO, "LumenStyle", "lumen-style big_reselect tag=%s matched=%d own=%u whole=%d", n->tag ? n->tag : "-", e->stats_matched - m0, own, e->keyed_whole);
 #else
@@ -2931,11 +3261,13 @@ static void debug_selector_shape(const Selector *s, SB *out) {
 /* One compact index per mutation batch avoids scanning every active rule for
  * every element in a long conversation. Collisions only add exact-key checks.
  * Coalesced changes that can remove the subject key stay in the universal list. */
-typedef struct { TreeDependency *dep; const char *key; unsigned kind; uint32_t need; int next; } ActiveTreeEntry;
+typedef struct { TreeDependency *dep; const char *key; unsigned kind; uint32_t need; int next; bool parent; } ActiveTreeEntry;
+/* Lists [global * 2 + flagged]: outside changed subtrees only global entries
+ * can hit; flagged entries need a tree flag most elements of a big inserted
+ * subtree lack, so those elements skip them without walking the chains. */
 typedef struct {
     ActiveTreeEntry *entries;
-    int heads[1024], universal, count, unkeyed;
-    int global_heads[1024], global_universal; /* outside changed subtrees only these can hit */
+    int heads[4][1024], universal[4], count, unkeyed;
     bool any_global;
 } ActiveTreeIndex;
 static unsigned tree_subject_hash(unsigned kind, const char *key) {
@@ -2973,23 +3305,44 @@ static uint32_t tree_subject_flags(const TreeDependency *dep) {
         need |= last->s[k].op == 2 ? NF_TREE_CHILD : last->s[k].op ? NF_TREE_RELATED : NF_TREE_ANCESTOR;
     return need;
 }
-static void active_tree_push(ActiveTreeIndex *index, int *head, TreeDependency *dep, SubjectKey key) {
-    index->entries[index->count] = (ActiveTreeEntry){dep, key.name, key.kind, tree_subject_flags(dep), *head};
+static void active_tree_push(ActiveTreeIndex *index, int *head, TreeDependency *dep, SubjectKey key, bool parent) {
+    index->entries[index->count] = (ActiveTreeEntry){dep, key.name, key.kind, tree_subject_flags(dep), *head, parent};
     *head = index->count++;
+}
+static bool tree_parent_hit(const TreeDependency *dep, const Node *n) {
+    const Node *p = n->parent;
+    if (!p || p->type != NODE_ELEMENT) return false;
+    for (int i = 0; i < dep->nparent; i++) {
+        const char *key = dep->parent_names[i];
+        switch (dep->parent_kinds[i]) {
+        case SK_ID: if (p->id && !strcmp(p->id, key)) return true; break;
+        case SK_TYPE: if (p->tag && str_ieq(p->tag, key)) return true; break;
+        case SK_CLASS: for (int k = 0; k < p->nclasses; k++) if (!strcmp(p->classes[k], key)) return true; break;
+        default: for (int k = 0; k < p->nattrs; k++) if (str_ieq(p->attrs[k].name, key)) return true;
+        }
+    }
+    return false;
 }
 static void active_tree_add(ActiveTreeIndex *index, TreeDependency *dep, const Document *d) {
     SubjectKey keys[8]; int n = tree_dep_keys(d, dep, keys);
+    /* the parent's keys did not change in this batch, so it carried them before as well */
+    bool parent = dep->nparent > 0 && !(dep->selector_changed && d->selector_changes_unknown);
+    for (int i = 0; parent && dep->selector_changed && i < dep->nparent; i++) if (dep->parent_kinds[i] != SK_TYPE) {
+        unsigned bit = dom_tree_key_bit(dep->parent_names[i]);
+        parent = !(d->selector_change_keys[bit >> 6] >> (bit & 63) & 1);
+    }
+    index->unkeyed += !n && !parent;
     bool global = dep->global || dep->selector_changed;
-    index->unkeyed += !n;
     index->any_global |= global;
+    int flagged = tree_subject_flags(dep) != 0;
     if (!n) {
-        active_tree_push(index, &index->universal, dep, (SubjectKey){0});
-        if (global) active_tree_push(index, &index->global_universal, dep, (SubjectKey){0});
+        active_tree_push(index, &index->universal[flagged], dep, (SubjectKey){0}, parent);
+        if (global) active_tree_push(index, &index->universal[2 + flagged], dep, (SubjectKey){0}, parent);
     }
     for (int i = 0; i < n; i++) {
         unsigned hash = tree_subject_hash(keys[i].kind, keys[i].name);
-        active_tree_push(index, &index->heads[hash], dep, keys[i]);
-        if (global) active_tree_push(index, &index->global_heads[hash], dep, keys[i]);
+        active_tree_push(index, &index->heads[flagged][hash], dep, keys[i], parent);
+        if (global) active_tree_push(index, &index->heads[2 + flagged][hash], dep, keys[i], parent);
     }
 }
 #if defined(__ANDROID__) && !defined(NDEBUG)
@@ -3012,6 +3365,8 @@ static bool invalidate_tree_bucket(StyleEngine *e, Node *n, bool local, int *log
 #endif
             continue;
         }
+        if (entry->parent && !tree_parent_hit(dep, n)) continue;
+        e->stats_tree_selector_tests++;
 #if defined(__ANDROID__) && !defined(NDEBUG)
         g_tt[1]++; g_tt[2] += local;
         if (g_dep_tests) g_dep_tests[dep - e->idx.tree_candidates.v]++;
@@ -3026,7 +3381,19 @@ static bool invalidate_tree_bucket(StyleEngine *e, Node *n, bool local, int *log
         }
         if (g_dep_hits) g_dep_hits[dep - e->idx.tree_candidates.v]++;
 #endif
-        mark_style_subject(n);
+#if defined(__ANDROID__) && !defined(NDEBUG)
+        if (n->doc && n == n->doc->html && dep->selector_changed && g_html_shapes < 12) {
+            extern char dom_debug_key_names[1024][24];
+            char names[200]; int len = 0; names[0] = 0;
+            for (int k = 0; k < 16; k++) for (uint64_t bits = dep->selector_keys[k] & n->doc->selector_change_keys[k]; bits; bits &= bits - 1) {
+                const char *nm = dom_debug_key_names[k * 64 + __builtin_ctzll(bits)];
+                if (len < 180) len += snprintf(names + len, sizeof names - len, "%s,", *nm ? nm : "?");
+            }
+            __android_log_print(ANDROID_LOG_INFO, "LumenStyle", "html_sel_keys %s", names);
+        }
+        if (n->doc && n == n->doc->html) debug_html_shape(dep->global ? (dep->selector_changed ? "tree_global_sel" : dep->witness_filter ? "tree_global_wit" : "tree_global_nowit") : local ? "tree_local" : "tree_changed", key, dep->source, dep->selector_changed ? &dep->changed_candidate : &dep->candidate);
+#endif
+        mark_style_subject(n, "tree");
         return true;
     }
     return false;
@@ -3035,19 +3402,25 @@ static int invalidate_tree_dependents(StyleEngine *e, Node *n, bool local, int *
     int affected = 0;
     /* annotate_tree_changes flagged every ancestor of an edited child list */
     if (!local && !(n->flags & NF_TREE_ANCESTOR) && !index->any_global) return 0;
-    if (n->type == NODE_ELEMENT) {
-        const int *heads = local ? index->heads : index->global_heads;
-        bool hit = invalidate_tree_bucket(e, n, local, logged, index, local ? index->universal : index->global_universal, 0, NULL);
-        if (!hit && n->id) hit = invalidate_tree_bucket(e, n, local, logged, index,
-            heads[tree_subject_hash(SK_ID, n->id)], SK_ID, n->id);
-        if (!hit && n->tag) hit = invalidate_tree_bucket(e, n, local, logged, index,
-            heads[tree_subject_hash(SK_TYPE, n->tag)], SK_TYPE, n->tag);
-        for (int i = 0; !hit && i < n->nclasses; i++)
-            hit = invalidate_tree_bucket(e, n, local, logged, index,
-                heads[tree_subject_hash(SK_CLASS, n->classes[i])], SK_CLASS, n->classes[i]);
-        for (int i = 0; !hit && i < n->nattrs; i++)
-            hit = invalidate_tree_bucket(e, n, local, logged, index,
-                heads[tree_subject_hash(SK_ATTR, n->attrs[i].name)], SK_ATTR, n->attrs[i].name);
+    /* an element without a style yet (just inserted), or dirty and reselected itself, is matched in full anyway */
+    bool fresh = !n->style || (n->flags & (NF_STYLE_DIRTY | NF_RESELECT_SUBTREE)) == (NF_STYLE_DIRTY | NF_RESELECT_SUBTREE);
+    if (n->type == NODE_ELEMENT && !fresh) {
+        bool hit = false;
+        int sets = n->flags & (NF_TREE_ANCESTOR | NF_TREE_RELATED | NF_TREE_CHILD) ? 2 : 1;
+        for (int set = local ? 0 : 2, end = set + sets; !hit && set < end; set++) {
+            const int *heads = index->heads[set];
+            hit = invalidate_tree_bucket(e, n, local, logged, index, index->universal[set], 0, NULL);
+            if (!hit && n->id) hit = invalidate_tree_bucket(e, n, local, logged, index,
+                heads[tree_subject_hash(SK_ID, n->id)], SK_ID, n->id);
+            if (!hit && n->tag) hit = invalidate_tree_bucket(e, n, local, logged, index,
+                heads[tree_subject_hash(SK_TYPE, n->tag)], SK_TYPE, n->tag);
+            for (int i = 0; !hit && i < n->nclasses; i++)
+                hit = invalidate_tree_bucket(e, n, local, logged, index,
+                    heads[tree_subject_hash(SK_CLASS, n->classes[i])], SK_CLASS, n->classes[i]);
+            for (int i = 0; !hit && i < n->nattrs; i++)
+                hit = invalidate_tree_bucket(e, n, local, logged, index,
+                    heads[tree_subject_hash(SK_ATTR, n->attrs[i].name)], SK_ATTR, n->attrs[i].name);
+        }
         affected += hit;
     }
     local |= (n->flags & NF_CHILD_LIST_DIRTY) != 0;
@@ -3060,7 +3433,7 @@ static int invalidate_tree_dependents(StyleEngine *e, Node *n, bool local, int *
 static void vh_mark(Node *n, int *count) {
     if (n->type == NODE_ELEMENT && n->style && n->style->uses_vh && !(n->flags & NF_STYLE_DIRTY)) {
         (*count)++;
-        n->flags |= NF_STYLE_DIRTY;
+        n->flags |= NF_STYLE_DIRTY; DBG_HTML(n, "vh");
         for (Node *p = n->parent ? n->parent : n->host; p; p = p->parent ? p->parent : p->host) p->flags |= NF_CHILD_STYLE_DIRTY;
     }
     for (Node *c = n->first; c; c = c->next) vh_mark(c, count);
@@ -3069,7 +3442,7 @@ static void vh_mark(Node *n, int *count) {
 static void empty_mark(Node *n, int *count) {
     if (n->flags & NF_STYLE_DIRTY) return;
     (*count)++;
-    n->flags |= NF_STYLE_DIRTY;
+    n->flags |= NF_STYLE_DIRTY; DBG_HTML(n, "empty");
     for (Node *p = n->parent ? n->parent : n->host; p; p = p->parent ? p->parent : p->host) p->flags |= NF_CHILD_STYLE_DIRTY;
 }
 static Node *empty_next_el(Node *n) { for (n = n->next; n && n->type != NODE_ELEMENT; n = n->next) {} return n; }
@@ -3178,9 +3551,11 @@ static void invalidate_empty_dependents(StyleEngine *e) {
 #endif
 }
 void style_recalc(StyleEngine *e, Node *root, bool force) {
-    e->stats_tree_tests = 0;
+    e->stats_tree_tests = e->stats_tree_selector_tests = 0;
 #if defined(__ANDROID__) && !defined(NDEBUG)
-    struct timespec dbg_t0; clock_gettime(CLOCK_MONOTONIC, &dbg_t0);
+    struct timespec dbg_t0, dbg_c0; clock_gettime(CLOCK_MONOTONIC, &dbg_t0); clock_gettime(CLOCK_THREAD_CPUTIME_ID, &dbg_c0);
+    int dbg_cpu0 = sched_getcpu();
+    memset(g_slow_el, 0, sizeof g_slow_el); g_el_total = 0;
     bool dbg_force = force, dbg_idx = e->idx_dirty || e->idx_changed, dbg_tree = e->seen_tree_version != e->doc->tree_version,
          dbg_empty = e->seen_text_emptiness != e->doc->text_emptiness_version, dbg_inh = e->seen_inheritance_version != e->doc->inheritance_version;
     int dbg_affected = -1, dbg_unkeyed = -1;
@@ -3194,6 +3569,8 @@ void style_recalc(StyleEngine *e, Node *root, bool force) {
     bool height_only = media_changed && e->media_valid && e->media.vw == e->styled_media.vw &&
         e->media.dpr == e->styled_media.dpr && e->media.dark == e->styled_media.dark && !e->idx_dirty && !e->idx_changed;
     if (e->idx_dirty) idx_build(e);
+    if (force) e->npending_attrs = 0;
+    else attribute_subjects_flush(e);
     if (media_changed || e->idx_changed) {
         g_match_epoch++;
         for (int sheet_index = 0; sheet_index < e->sheets.n; sheet_index++) {
@@ -3209,13 +3586,30 @@ void style_recalc(StyleEngine *e, Node *root, bool force) {
     }
     if (media_changed && height_only && !force) { int marked = 0; vh_mark(&e->doc->node, &marked); root = &e->doc->node; }
     else if (media_changed) { force = true; root = &e->doc->node; }
+#if defined(__ANDROID__) && !defined(NDEBUG)
+    if (e->idx_changed && !force && (!e->delta_any || e->delta_all || e->seen_regprop_version != g_regprop_version)) {
+        SB shape; sb_init(&shape); if (e->dbg_delta_all_rule) debug_selector_shape(&e->dbg_delta_all_rule->sel, &shape);
+        __android_log_print(ANDROID_LOG_INFO, "LumenStyle", "idx_force any=%d all=%d regprop=%d sheets=%d rule=%.200s",
+            e->delta_any, e->delta_all, e->seen_regprop_version != g_regprop_version, e->sheets.n, shape.s ? shape.s : "");
+        sb_free(&shape);
+    }
+#endif
     if (e->idx_changed) {
         e->idx_changed = false;
         /* Unchanged rules keep their matches: restyle only what the added or
          * removed rules can match. Unkeyed rules fall back to every element. */
         if (!force && e->delta_any && !e->delta_all && e->seen_regprop_version == g_regprop_version) {
             uint64_t none[16] = {0};
-            sheet_delta_mark(e, &e->doc->node, none);
+#if defined(__ANDROID__) && !defined(NDEBUG)
+            memset(g_delta_kinds, 0, sizeof g_delta_kinds);
+#endif
+            sheet_delta_mark(e, &e->doc->node, none, false);
+#if defined(__ANDROID__) && !defined(NDEBUG)
+            int *k = g_delta_kinds;
+            if (k[1] + k[2] + k[3] + k[5] + k[6] + k[7] + k[8] + k[9] + k[10] >= 200)
+                __android_log_print(ANDROID_LOG_INFO, "LumenStyle", "sheet_delta unmarked=%d id=%d class=%d tag=%d root=%d attr=%d ptag=%d pclass=%d pattr=%d anc=%d sib=%d",
+                    k[0], k[1], k[2], k[3], k[4], k[5], k[6], k[7], k[8], k[9], k[10]);
+#endif
             root = &e->doc->node;
         } else force = true;
         sheet_delta_clear(e);
@@ -3236,8 +3630,8 @@ void style_recalc(StyleEngine *e, Node *root, bool force) {
         if (!force) {
             int logged = 0, affected = 0;
             if (annotate_tree_changes(&e->doc->node) || has_changed) {
-                ActiveTreeIndex active = {.universal = -1, .global_universal = -1};
-                for (int i = 0; i < 1024; i++) active.heads[i] = active.global_heads[i] = -1;
+                ActiveTreeIndex active = {.universal = {-1, -1, -1, -1}};
+                memset(active.heads, -1, sizeof active.heads);
                 active.entries = xmalloc((size_t)e->idx.tree_candidates.n * 16 * sizeof *active.entries + 1);
                 for (int i = 0; i < e->idx.tree_candidates.n; i++) {
                     TreeDependency *dep = &e->idx.tree_candidates.v[i];
@@ -3264,6 +3658,19 @@ void style_recalc(StyleEngine *e, Node *root, bool force) {
 #endif
 #if defined(__ANDROID__) && !defined(NDEBUG)
                 dbg_unkeyed = active.unkeyed;
+                static int unkeyed_dumps;   /* debug: the unkeyed dependencies' selector shapes, twice per process */
+                if (active.unkeyed >= 40 && unkeyed_dumps < 2) {
+                    unkeyed_dumps++;
+                    int shown = 0;
+                    for (int set = 0; set < 2; set++)
+                    for (int i = active.universal[set]; i >= 0 && shown < 160; i = active.entries[i].next, shown++) {
+                        TreeDependency *dep = active.entries[i].dep;
+                        SB shape; sb_init(&shape); debug_selector_shape(dep->source, &shape);
+                        __android_log_print(ANDROID_LOG_INFO, "LumenStyle", "tree_unkeyed %d global=%d changed=%d need=%x witness=%d subject=%s shape=%.260s", shown, dep->global, dep->selector_changed,
+                            active.entries[i].need, dep->witness_filter, dep->subject ? dep->subject : "*", shape.s ? shape.s : "");
+                        sb_free(&shape);
+                    }
+                }
 #endif
                 affected = invalidate_tree_dependents(e, &e->doc->node, false, &logged, &active);
                 free(active.entries);
@@ -3278,7 +3685,7 @@ void style_recalc(StyleEngine *e, Node *root, bool force) {
                     sb_free(&shape); g_dep_hits[best] = 0;
                 }
                 free(g_dep_hits); g_dep_hits = NULL;
-                if (g_tt[1] >= 200000) {
+                if (g_tt[1] >= 5000) {
                     __android_log_print(ANDROID_LOG_INFO, "LumenStyle", "tree_tests mismatch=%llu tests=%llu local=%llu active=%d unkeyed=%d",
                         (unsigned long long)g_tt[0], (unsigned long long)g_tt[1], (unsigned long long)g_tt[2], active.count, active.unkeyed);
                     for (int round = 0; round < 12; round++) {   /* the most-tested deps, as selector shapes */
@@ -3342,7 +3749,13 @@ void style_recalc(StyleEngine *e, Node *root, bool force) {
 #endif
     uint64_t ancestors[16] = {0};
     for (Node *n = root->parent ? root->parent : root->host; n; n = n->parent ? n->parent : n->host) add_class_filter(ancestors, n);
+#if defined(__ANDROID__) && !defined(NDEBUG)
+    struct timespec dbg_tw; clock_gettime(CLOCK_MONOTONIC, &dbg_tw);
+#endif
     recalc(e, root, NULL, force, force, false, ancestors, NULL, &(CustomMask){{0}}, INH_OTHER);
+#if defined(__ANDROID__) && !defined(NDEBUG)
+    struct timespec dbg_tr; clock_gettime(CLOCK_MONOTONIC, &dbg_tr);
+#endif
     e->seen_inheritance_version = e->doc->inheritance_version;
     memset(e->doc->selector_change_keys, 0, sizeof e->doc->selector_change_keys);
     memset(e->doc->reselect_change_keys, 0, sizeof e->doc->reselect_change_keys);
@@ -3355,15 +3768,26 @@ void style_recalc(StyleEngine *e, Node *root, bool force) {
     css_match_cache_end(previous_cache);
 #if defined(__ANDROID__) && !defined(NDEBUG)
     {   /* Debug Android: why a slow style pass ran and how much it matched. Counts and tag names only. */
-        struct timespec t1; clock_gettime(CLOCK_MONOTONIC, &t1);
+        struct timespec t1, c1; clock_gettime(CLOCK_MONOTONIC, &t1); clock_gettime(CLOCK_THREAD_CPUTIME_ID, &c1);
         double ms = (t1.tv_sec - dbg_t0.tv_sec) * 1e3 + (t1.tv_nsec - dbg_t0.tv_nsec) / 1e6;
-        if (ms >= 15) __android_log_print(ANDROID_LOG_INFO, "LumenStyle", "pass_ms=%.0f matched=%d reused=%d memo=%d paint=%d roots=%d big=%d big_tag=%s big_reselect=%d big_inh=%d force=%d/%d media=%d idx=%d tree=%d affected=%d empty=%d inh=%d tree_tests=%llu rules_iter=%llu tested=%llu hit=%llu idx_rules=%d universal=%d indep_block=%d rebase_block=%d inh_field=%s anc_iter=%llu why=%d/%d/%d/%d/%d unknown=%s cc=%llu/%llu/%llu/%llu/%llu/%llu chg=%llu tu=%d",
+        double cpu_ms = (c1.tv_sec - dbg_c0.tv_sec) * 1e3 + (c1.tv_nsec - dbg_c0.tv_nsec) / 1e6;   /* below ms: the thread waited (preempted, faults) */
+        if (ms >= 15) __android_log_print(ANDROID_LOG_INFO, "LumenStyle", "pass_ms=%.0f matched=%d reused=%d memo=%d paint=%d roots=%d big=%d big_tag=%s big_reselect=%d big_inh=%d force=%d/%d media=%d idx=%d tree=%d affected=%d empty=%d inh=%d tree_tests=%llu rules_iter=%llu tested=%llu hit=%llu idx_rules=%d universal=%d indep_block=%d rebase_block=%d inh_field=%s anc_iter=%llu why=%d/%d/%d/%d/%d unknown=%s cc=%llu/%llu/%llu/%llu/%llu/%llu chg=%llu tu=%d pre=%.0f walk=%.0f thread_ms=%.0f core=%d/%d html_why=%d/%s",
             ms, e->stats_matched, e->stats_reused, e->stats_memo_hits, e->stats_paint, e->stats_roots, e->stats_big_root, e->stats_big_tag ? e->stats_big_tag : "", e->stats_big_reselect, e->stats_big_inh,
             dbg_force, force, media_changed, dbg_idx, dbg_tree, dbg_affected, dbg_empty, dbg_inh, (unsigned long long)e->stats_tree_tests,
             (unsigned long long)e->stats_rule_iter, (unsigned long long)e->stats_rule_tests, (unsigned long long)e->stats_rule_hits, (int)e->idx.count, e->idx.universal.n,
             e->stats_indep_block, e->stats_rebase_block, e->stats_inh_field ? e->stats_inh_field : "", (unsigned long long)e->stats_anc_iter,
             e->stats_rebase_why[0], e->stats_rebase_why[1], e->stats_rebase_why[2], e->stats_rebase_why[3], e->stats_rebase_why[4], dbg_unknown,
-            (unsigned long long)g_cc[0], (unsigned long long)g_cc[1], (unsigned long long)g_cc[2], (unsigned long long)g_cc[3], (unsigned long long)g_cc[4], (unsigned long long)g_cc[5], (unsigned long long)g_cc[6], dbg_unkeyed);
+            (unsigned long long)g_cc[0], (unsigned long long)g_cc[1], (unsigned long long)g_cc[2], (unsigned long long)g_cc[3], (unsigned long long)g_cc[4], (unsigned long long)g_cc[5], (unsigned long long)g_cc[6], dbg_unkeyed,
+            (dbg_tw.tv_sec - dbg_t0.tv_sec) * 1e3 + (dbg_tw.tv_nsec - dbg_t0.tv_nsec) / 1e6, (dbg_tr.tv_sec - dbg_tw.tv_sec) * 1e3 + (dbg_tr.tv_nsec - dbg_tw.tv_nsec) / 1e6, cpu_ms, dbg_cpu0, sched_getcpu(), g_html_line, g_html_key ? g_html_key : "-");
+        g_html_line = 0; g_html_key = NULL;
+        if (ms >= 15) for (int k = 0; k < 3 && g_slow_el[k].tag; k++)
+            __android_log_print(ANDROID_LOG_INFO, "LumenStyle", "slow_el %d of_total=%.1f tag=%s classes=%d ms=%.2f compute=%.2f decls=%.2f pseudo=%.2f hook=%.2f rest=%.2f has=%llu/%llu", k, g_el_total, g_slow_el[k].tag,
+                g_slow_el[k].ncls, g_slow_el[k].ms, g_slow_el[k].compute, g_slow_el[k].decls, g_slow_el[k].pseudo, g_slow_el[k].hook, g_slow_el[k].rest,
+                (unsigned long long)g_slow_el[k].has_tests, (unsigned long long)g_slow_el[k].has_nodes);
+        if (ms >= 60 && g_cascade.n) __android_log_print(ANDROID_LOG_INFO, "LumenStyle", "cascade n=%d tag=%s depth=%d field=%s diff=%u resel=%d inherit_only=%d cleared=%d reuse=%d",
+            g_cascade.n, g_cascade.tag, g_cascade.depth, g_cascade.field ? g_cascade.field : "", g_cascade.diff, g_cascade.resel, g_cascade.inherit_only, g_cascade.cleared, g_cascade.reuse);
+        memset(&g_cascade, 0, sizeof g_cascade);
+        css_has_debug_dump(ms >= 60);
         /* The rules that cost the most failed selector tests, as selector shapes. */
         for (int round = 0; ms >= 90 && round < 10; round++) {
             Rule *best = NULL;
@@ -3530,6 +3954,7 @@ char *css_get_computed_value(Node *el, const char *prop) {
     else if (!strcmp(prop, "word-break")) { static const char *wb[] = { "normal", "break-all", "break-word" }; sb_puts(&b, wb[s->word_break % 3]); }
     else if (!strcmp(prop, "overflow-wrap") || !strcmp(prop, "word-wrap")) sb_puts(&b, s->overflow_wrap ? "break-word" : "normal");
     else if (!strcmp(prop, "user-select") || !strcmp(prop, "-webkit-user-select")) sb_puts(&b, s->user_select ? "none" : "auto");
+    else if (!strcmp(prop, "touch-action")) { static const char *ta[] = { "auto", "pan-y", "pan-x", "none" }; sb_puts(&b, ta[s->touch_block & 3]); }
     else if (!strcmp(prop, "cursor")) { static const char *cu[] = { "auto", "pointer", "text", "move", "not-allowed", "grab" }; sb_puts(&b, cu[s->cursor % 6]); }
     else if (!strcmp(prop, "list-style-type")) {
         static const char *ls[] = { "none", "disc", "circle", "square", "decimal", "lower-alpha", "upper-alpha", "lower-roman", "upper-roman" };

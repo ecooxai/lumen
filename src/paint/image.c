@@ -1,5 +1,6 @@
 /* Image decoding (PNG, JPEG, WebP, animated GIF, SVG) to premultiplied ARGB32 */
 #include "paint.h"
+#include "../gpu/webgpu.h"
 #include "../dom/dom.h"
 #include "../base/util.h"
 #include <ctype.h>
@@ -37,6 +38,7 @@ void image_unref(Image *im) {
         free(im->anim->fr); free(im->anim->delay); free(im->anim);
     } else free(im->px);
     free(im->yuv);
+    if (im->gpu) im->gpu->release(im->gpu);
     free(im);
 }
 
@@ -64,6 +66,11 @@ Image *image_yuv420p(int w, int h, const uint8_t *const planes[3], const int str
 
 static inline uint32_t c8(float v) { return v < 0 ? 0 : v > 255 ? 255 : (uint32_t)v; }
 void image_yuv_materialize(Image *im) {
+    if (!im->px && !im->yuv && im->gpu) {
+        uint32_t *px = xmalloc((size_t)im->w * (size_t)im->h * 4);
+        if (im->gpu->read(im->gpu, px, im->w, im->h)) im->px = px; else free(px);
+        return;
+    }
     if (im->px || !im->yuv) return;
     int w = im->w, h = im->h, cw = (w + 1) / 2; const uint8_t *Y = im->yuv, *UV = im->yuv + (size_t)w * (size_t)h;
     bool b709 = im->yuv_mat & 1, full = im->yuv_mat & 2;

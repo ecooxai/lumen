@@ -320,7 +320,7 @@ static bool parse_selector(SP *p, Selector *sel, bool relative) {
     sel->c = cs.v; sel->n = cs.n;
     for (int i = 0; i < sel->n; i++) for (int j = 0; j < sel->c[i].n; j++) {
         const SimpleSel *s = &sel->c[i].s[j];
-        if (s->kind == SK_ATTR && str_ieq(s->name, "style")) sel->reads_style_attribute = true;
+        if (s->kind == SK_ATTR && s->op && str_ieq(s->name, "style")) sel->reads_style_attribute = true;   /* presence tests are invalidated like other attributes */
         if (s->sub) for (int k = 0; k < s->sub->n; k++)
             if (s->sub->v[k].reads_style_attribute) sel->reads_style_attribute = true;
     }

@@ -32,10 +32,18 @@ typedef struct JsHost {
     char *(*internal)(void *ud, const char *cmd);
     /* the Fullscreen API: the page is to fill the window (on) or go back to its place (off) */
     void (*fullscreen)(void *ud, bool on);
+    /* window.open: a new tab (or the tab the page named name) loading url; opener is the calling context's
+       js_ctx_id, 0 for noopener. Returns the tab's window id, 0 when none opened. */
+    uint32_t (*open_window)(void *ud, const char *url, const char *name, uint32_t opener);
+    /* on window wid: 0 is it closed, 1 close it (a tab a script opened), 2 load arg in it, 3 show it;
+       4 window.close() of the calling tab (wid unused) */
+    int (*window_op)(void *ud, uint32_t wid, int op, const char *arg);
 } JsHost;
 
 void js_global_init(const char *argv0);
 JsCtx *js_new(Document *d, const JsHost *host);
+/* the tab a page's context shows (its window id) and the context that opened that tab with window.open (0: none) */
+void js_set_window(JsCtx *c, uint32_t wid, uint32_t opener);
 void js_mem_stats(size_t *heap, size_t *external);
 void js_set_background(JsCtx *c, bool bg);
 bool js_busy(JsCtx *c);   /* fetches in flight */

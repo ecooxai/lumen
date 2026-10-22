@@ -195,6 +195,8 @@ int main(void) {
 
     /* the finished list survives a restart */
     char *saved = read_file(list, &n); CHECK(saved && strstr(saved, "report.bin") && strstr(saved, "note.txt")); free(saved);
+    /* the 12 MB report must not pile up in /tmp across runs */
+    unlink(path); snprintf(path, sizeof path, "%s/note.txt", g_dir); unlink(path); unlink(list); rmdir(g_dir);
 
     puts("download classification, names, page bytes and parallel ranged downloads with cookies passed");
     return 0;

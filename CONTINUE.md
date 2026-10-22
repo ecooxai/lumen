@@ -1,5 +1,54 @@
 # Lumen: handoff notes
 
+## WebGPU zero-copy, ChatGPT/Google restyle work, touch, x.com sign-in (2026-10-21/22)
+
+- WebGPU shares the compositor's device (gpu.c `gpu_shared`, full adapter features/limits;
+  webgpu.cc binds instance/adapter/device to it unless `LUMEN_WEBGPU_SEPARATE`): canvas frames are
+  drawn from their texture view with no readback (no-swizzle/opaque flags in the layer shader).
+  Samples went from ~62% CPU to ~31-39% at 57 fps on the MI 8. `createImageBitmap(Blob)` decodes
+  off the main thread (`N.imgDecode`/`N.imgTake`).
+- ChatGPT taps: whole-tree restyles came from unknown-keyed attribute edits (`inert`, `name`,
+  `jsaction`, `src`, `href`), focus moves with many/complex `:focus-within` rules (now per-rule
+  subject keys, no 64-rule cap) and unkeyed tree dependencies (parent keys, need-split index).
+  Sidebar tap click work 1412 → 867 ms, dictate 2077 → 1033 ms; passes after taps ≤163 ms.
+  Code-cache serialization is deferred; `getElementById` updates incrementally (test_id_map).
+  Dictation tap → recording is still ~1.7 s, mostly ChatGPT's own JS in the click dispatch.
+- ChatGPT model picker: Lumen's hit testing ignored `inert`, so taps went to an invisible
+  `inert` track over the menu. Inert subtrees are now not hit-testable or focusable. Verified:
+  slider set to High, model GPT-5.6 (run 65). The sparkle rAF in that menu forced full repaints
+  (a media item disables the damage path); with the menu open CPU fell 70-85% → ~21%.
+- ChatGPT doc pages (/space/page_…): IndexedDB (07i-idb.js, ctest js_indexeddb) and Web Locks
+  make the editor writable; the keyboard shows on double tap and paragraphs wrap to 736 px.
+- Google results: a carousel rAF loop that never paints is throttled to 15 Hz after 1 s
+  (ctest js_raf_throttle; idle 7-18% → 3.5%). Scroll lag came from forced restyles: precise
+  `[style]` presence invalidation, `:has()` candidate lists and blooms (test_has_filter),
+  bearer/witness filters for `html:has(...)`, sheet-delta parent/sibling/root keys. Map drag
+  passes 48 → ~15 ms. Raster: item culling and clear skip in bands (test_raster_spans), canvas
+  background/clip items hash without the scroll offset so scrolled frames blit again.
+  `touch-action` is honoured (ctest js_touch_action). XPath (07j-xpath.js, ctest js_xpath).
+- Pointer/touch: pointer capture, coalesced moves and touch events reach iframes; a drag on a
+  WebGL canvas rotates (tests/pages/touch-draw.html). Canvas2D is still a stub (px=0), so 2D
+  drawing apps draw nothing: the next big item.
+- window.open popups (main.c `h_open_window_in`/`h_window_op_in`, frames.cc `n_openWin`,
+  08-window.js `openWin`/`asWin`): a new tab with an opener; cross-tab `postMessage` (XMsg queue,
+  delivered on the target's tick) and now MessagePorts transferred between tabs (random bridge
+  keys: 07b-net.js `exportPort`/`importPort`/`portMessage`, frames.cc `n_portTo`; ctest
+  js_window_ports, jsrun opens one second window). `unhandledrejection` events fire after the
+  microtask checkpoint (js.cc `rej_flush`, ctest js_unhandled_rejection). Stylesheet `<link>`
+  load/error events fire after DOMContentLoaded (x.com starts its app from one).
+- x.com Google sign-in: a frame's identity (UA, platform) follows its top-level document
+  (jsnative.cc `ident_url`): the GSI button frame (accounts.google.com, Firefox UA) bound no click
+  handler while x.com's GSI client (Chrome UA) drew no overlay. With that, the popup, its
+  `channelConnect` port and the credential round trip work: run 77 reached the logged-in timeline
+  (posts with text and media load, scroll, composer opens and focuses; the keyboard comes on the
+  second tap, the "Keyboard on second tap" setting). Publishing a post needs the user's go-ahead.
+  Android Back drops a field's focus only while the keyboard is up (the IME eats the first press), so
+  after the keyboard is gone Back goes back in history as in Chrome (runs 78-79: composer → /home).
+  Probed with session-local scripts (not in the repo) passed as debug PRE_JS/FRAME_PRE_JS extras.
+- Open: Canvas2D; dictation latency; ChatGPT load-time passes (~650 ms, sheet-delta marks) and
+  boot settle (~17-22 s, target 15 s); ChatGPT app-server rejections (getLocaleInfo etc.);
+  Google raster cost during swipes; YouTube Shorts.
+
 ## Login identity, frames, raster bands, file chooser, Fullscreen API (2026-10-20/21, v0.3.2-android-preview)
 
 - Sign-in hosts (`login_hosts` in src/net/http.c: accounts.google.com, accounts.youtube.com, the

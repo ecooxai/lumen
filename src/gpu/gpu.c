@@ -16,11 +16,13 @@ struct Gpu {
     WGPUTextureFormat fmt; WGPURenderPipeline pipe; WGPUBindGroupLayout bgl; WGPUSampler samp;
     WGPUTexture tex; WGPUTextureView view; WGPUBindGroup bg; int tw, th; int w, h; bool configured;
     WGPUBackendType backend;
+    bool full;   /* the device has the adapter's WebGPU features and limits: pages may share it */
     int scroll_toolbar, scroll_height, scroll_offset;
     WGPUSampler vsamp; WGPUBuffer ubuf, vubuf; WGPUTexture vtex; WGPUTextureView vview; WGPUBindGroup vbg; int vtw, vth;
     WGPURenderPipeline ypipe; WGPUBindGroupLayout ybgl; WGPUBuffer yubuf; WGPUTexture yt, ct; WGPUTextureView ytv, ctv; WGPUBindGroup ybg; int ytw, yth;
     uint64_t vserial, yserial; /* Content currently uploaded to each video texture. */
     struct { WGPUTexture tex; WGPUTextureView view; WGPUBindGroup bg; WGPUBuffer ubuf; int w, h; uint64_t serial; } xl[GPU_EXTRA_LAYERS];
+    WGPUBindGroup gbg[1 + GPU_EXTRA_LAYERS]; const void *gview[1 + GPU_EXTRA_LAYERS];   /* bind groups of shared texture views: the primary layer's, then the extras' */
     GpuVideo xv[GPU_EXTRA_LAYERS]; int nxv;   /* extra layers for the next present */
 #ifdef __ANDROID__
     ANativeWindow *native_window;
@@ -47,7 +49,10 @@ static const char *WGSL =
     "      uv.y = (f32(params.scroll.x + mapped) + 0.5) / f32(height);\n"
     "    }\n"
     "  }\n"
-    "  return textureSampleLevel(t, s, uv, 0.0).bgra; }\n";
+    "  let c = textureSampleLevel(t, s, uv, 0.0);\n"
+    "  var o = select(c.bgra, c, (params.scroll.w & 1u) != 0u);\n"   /* uploads hold 0xAARRGGBB words; shared textures are in order */
+    "  if ((params.scroll.w & 2u) != 0u) { o.a = 1.0; }\n"
+    "  return o; }\n";
 
 static const char *WGSL_YUV =
     "@group(0) @binding(0) var ty: texture_2d<f32>;\n"
@@ -65,7 +70,7 @@ static const char *WGSL_YUV =
 
 static WGPUStringView sv(const char *s) { return (WGPUStringView){ s, WGPU_STRLEN }; }
 
-static void gpu_log(const char *format, ...) {
+void gpu_log(const char *format, ...) {
     va_list arguments;
     va_start(arguments, format);
 #ifdef __ANDROID__
@@ -93,8 +98,12 @@ static void on_device(WGPURequestDeviceStatus st, WGPUDevice d, WGPUStringView m
     (void)u2; if (st == WGPURequestDeviceStatus_Success) *(WGPUDevice *)u1 = d;
     else gpu_log("gpu: device request failed: %.*s\n", (int)(msg.data ? msg.length : 0), msg.data ? msg.data : "");
 }
+bool (*gpu_error_hook)(int type, const char *msg, size_t len);
+static Gpu *g_live;   /* the presenter pages may share */
 static void on_error(WGPUDevice const *d, WGPUErrorType t, WGPUStringView msg, void *u1, void *u2) {
-    (void)d; (void)u1; (void)u2; gpu_log("gpu: error %d: %.*s\n", (int)t, (int)(msg.data ? msg.length : 0), msg.data ? msg.data : "");
+    (void)d; (void)u1; (void)u2;
+    if (gpu_error_hook && gpu_error_hook((int)t, msg.data ? msg.data : "", msg.data ? (msg.length == WGPU_STRLEN ? strlen(msg.data) : msg.length) : 0)) return;
+    gpu_log("gpu: error %d: %.*s\n", (int)t, (int)(msg.data ? msg.length : 0), msg.data ? msg.data : "");
 }
 
 /* Android destroys the window as the app goes to the background, possibly while a frame is being drawn;
@@ -224,12 +233,25 @@ Gpu *gpu_create_backend(const GpuSurfSrc *src, int w, int h, GpuBackend backend)
         wgpuAdapterInfoFreeMembers(info);
     }
 
-    WGPUDeviceDescriptor dd = WGPU_DEVICE_DESCRIPTOR_INIT;
-    dd.uncapturedErrorCallbackInfo.callback = on_error;
-    WGPURequestDeviceCallbackInfo dc = WGPU_REQUEST_DEVICE_CALLBACK_INFO_INIT;
-    dc.mode = WGPUCallbackMode_AllowProcessEvents; dc.callback = on_device; dc.userdata1 = &g->dev;
-    wgpuAdapterRequestDevice(g->adapter, &dd, dc);
-    wgpuInstanceProcessEvents(g->inst);
+    /* the adapter's WebGPU features and limits, so pages' devices can be this one; the defaults if that fails */
+    WGPUSupportedFeatures sf = { 0 };
+    wgpuAdapterGetFeatures(g->adapter, &sf);
+    WGPUFeatureName feats[64]; size_t nf = 0;
+    for (size_t i = 0; i < sf.featureCount && nf < 64; i++) if ((uint32_t)sf.features[i] < 0x10000u) feats[nf++] = sf.features[i];
+    wgpuSupportedFeaturesFreeMembers(sf);
+    WGPULimits lim = WGPU_LIMITS_INIT;
+    bool share = !getenv("LUMEN_WEBGPU_SEPARATE") && wgpuAdapterGetLimits(g->adapter, &lim) == WGPUStatus_Success;
+    for (int attempt = share ? 0 : 1; attempt < 2 && !g->dev; attempt++) {
+        WGPUDeviceDescriptor dd = WGPU_DEVICE_DESCRIPTOR_INIT;
+        dd.uncapturedErrorCallbackInfo.callback = on_error;
+        if (!attempt) { dd.requiredFeatureCount = nf; dd.requiredFeatures = feats; dd.requiredLimits = &lim; }
+        WGPURequestDeviceCallbackInfo dc = WGPU_REQUEST_DEVICE_CALLBACK_INFO_INIT;
+        dc.mode = WGPUCallbackMode_AllowProcessEvents; dc.callback = on_device; dc.userdata1 = &g->dev;
+        wgpuAdapterRequestDevice(g->adapter, &dd, dc);
+        wgpuInstanceProcessEvents(g->inst);
+        g->full = g->dev && !attempt;
+    }
+    if (g->dev) gpu_log("gpu: device %s\n", g->full ? "has the adapter's features and limits: pages share it" : "has the defaults: pages make their own");
     if (!g->dev) goto fail;
     g->q = wgpuDeviceGetQueue(g->dev);
 
@@ -267,6 +289,7 @@ Gpu *gpu_create_backend(const GpuSurfSrc *src, int w, int h, GpuBackend backend)
     ub.size = 48; g->yubuf = wgpuDeviceCreateBuffer(g->dev, &ub);
     float full[8] = { -1, 1, 1, -1, 0, 0, 0, 0 }; wgpuQueueWriteBuffer(g->q, g->ubuf, 0, full, sizeof full);
     configure(g);
+    g_live = g;
     return g;
 fail:
     gpu_log("gpu: unavailable, using CPU presentation\n");
@@ -304,11 +327,15 @@ static void free_xtex(Gpu *g, int i) {
     if (g->xl[i].tex) { wgpuTextureDestroy(g->xl[i].tex); wgpuTextureRelease(g->xl[i].tex); }
     g->xl[i].bg = NULL; g->xl[i].view = NULL; g->xl[i].tex = NULL; g->xl[i].serial = 0;
 }
-static bool ensure_xtex(Gpu *g, int i, int w, int h) {
+static bool ensure_xubuf(Gpu *g, int i) {
     if (!g->xl[i].ubuf) {
         WGPUBufferDescriptor ub = WGPU_BUFFER_DESCRIPTOR_INIT; ub.size = 32; ub.usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst;
         if (!(g->xl[i].ubuf = wgpuDeviceCreateBuffer(g->dev, &ub))) return false;
     }
+    return true;
+}
+static bool ensure_xtex(Gpu *g, int i, int w, int h) {
+    if (!ensure_xubuf(g, i)) return false;
     if (g->xl[i].tex && g->xl[i].w == w && g->xl[i].h == h) return true;
     free_xtex(g, i);
     g->xl[i].tex = mk_tex(g, w, h, WGPUTextureFormat_RGBA8Unorm);
@@ -317,6 +344,22 @@ static bool ensure_xtex(Gpu *g, int i, int w, int h) {
     g->xl[i].bg = make_bg(g, g->xl[i].view, g->vsamp, g->xl[i].ubuf);
     g->xl[i].w = w; g->xl[i].h = h;
     return g->xl[i].bg != NULL;
+}
+/* a shared texture view layer: slot 0 the primary layer, 1.. the extras; its bind group is made again only
+   when the view changes (it holds the view, so the address cannot come back as another one meanwhile) */
+static WGPUBindGroup view_bg(Gpu *g, int k, const GpuVideo *v, WGPUBuffer ub) {
+    if (g->gview[k] != v->view || !g->gbg[k]) {
+        if (g->gbg[k]) wgpuBindGroupRelease(g->gbg[k]);
+        g->gbg[k] = make_bg(g, (WGPUTextureView)v->view, g->vsamp, ub);
+        g->gview[k] = g->gbg[k] ? v->view : NULL;
+    }
+    return g->gbg[k];
+}
+static bool view_ok(Gpu *g, const GpuVideo *v) { return v && v->view && v->view_dev == (const void *)g->dev && v->w > 0 && v->h > 0; }
+static void layer_rect(Gpu *g, const GpuVideo *v, WGPUBuffer ub, int w, int h) {
+    union { float f[8]; uint32_t u[8]; } r = { { v->x0 / w * 2 - 1, 1 - v->y0 / h * 2, v->x1 / w * 2 - 1, 1 - v->y1 / h * 2, 0, 0, 0, 0 } };
+    if (v->view) r.u[7] = 1u | (v->view_flags & GPU_VIEW_OPAQUE ? 2u : 0u);
+    wgpuQueueWriteBuffer(g->q, ub, 0, r.f, sizeof r);
 }
 void gpu_set_extra_layers(Gpu *g, const GpuVideo *v, int n) {
     if (!g) return;
@@ -480,7 +523,10 @@ bool gpu_present_frame(Gpu *g, const uint32_t *px, int w, int h, int stride, int
         WGPUExtent3D ext = { (uint32_t)w, (uint32_t)(y1 - y0), 1 };
         wgpuQueueWriteTexture(g->q, &dst, px + (size_t)y0 * (size_t)stride, (size_t)stride * 4 * (size_t)(y1 - y0), &lay, &ext);
     }
-    bool yv = v && v->yuv && gpu_yuv_ok(g) && v->w > 0 && v->h > 0, vid = !yv && v && v->px && v->w > 0 && v->h > 0;
+    bool gvw = view_ok(g, v), yv = !gvw && v && v->yuv && gpu_yuv_ok(g) && v->w > 0 && v->h > 0, vid = !gvw && !yv && v && !v->view && v->px && v->w > 0 && v->h > 0;
+    WGPUBindGroup vbg = gvw ? view_bg(g, 0, v, g->vubuf) : NULL;
+    if (gvw && vbg) layer_rect(g, v, g->vubuf, w, h);
+    gvw = vbg != NULL;
     if (yv) {
         ensure_ytex(g, v->w, v->h);
         if (!v->serial || v->serial != g->yserial) {
@@ -508,13 +554,18 @@ bool gpu_present_frame(Gpu *g, const uint32_t *px, int w, int h, int stride, int
             wgpuQueueWriteTexture(g->q, &dst, v->px, (size_t)v->stride * 4 * (size_t)v->h, &lay, &ext);
             g->vserial = v->serial;
         }
-        float r[8] = { v->x0 / w * 2 - 1, 1 - v->y0 / h * 2, v->x1 / w * 2 - 1, 1 - v->y1 / h * 2, 0, 0, 0, 0 };
-        wgpuQueueWriteBuffer(g->q, g->vubuf, 0, r, sizeof r);
+        layer_rect(g, v, g->vubuf, w, h);
     }
     int nx = 0;   /* extra layers: uploaded only when their frame changed, drawn after the primary one */
-    bool xdraw[GPU_EXTRA_LAYERS] = { false };
+    WGPUBindGroup xbg[GPU_EXTRA_LAYERS] = { NULL };
     for (int i = 0; i < g->nxv; i++) {
         const GpuVideo *x = &g->xv[i];
+        if (x->view) {
+            if (!view_ok(g, x) || !ensure_xubuf(g, i) || !(xbg[i] = view_bg(g, 1 + i, x, g->xl[i].ubuf))) continue;
+            layer_rect(g, x, g->xl[i].ubuf, w, h);
+            nx++;
+            continue;
+        }
         if (!x->px || x->w <= 0 || x->h <= 0 || !ensure_xtex(g, i, x->w, x->h)) continue;
         if (!x->serial || x->serial != g->xl[i].serial) {
             WGPUTexelCopyTextureInfo dst = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT; dst.texture = g->xl[i].tex;
@@ -523,10 +574,11 @@ bool gpu_present_frame(Gpu *g, const uint32_t *px, int w, int h, int stride, int
             wgpuQueueWriteTexture(g->q, &dst, x->px, (size_t)x->stride * 4 * (size_t)x->h, &lay, &ext);
             g->xl[i].serial = x->serial;
         }
-        float r[8] = { x->x0 / w * 2 - 1, 1 - x->y0 / h * 2, x->x1 / w * 2 - 1, 1 - x->y1 / h * 2, 0, 0, 0, 0 };
-        wgpuQueueWriteBuffer(g->q, g->xl[i].ubuf, 0, r, sizeof r);
-        xdraw[i] = true; nx++;
+        layer_rect(g, x, g->xl[i].ubuf, w, h);
+        xbg[i] = g->xl[i].bg; nx++;
     }
+    for (int k = 0; k <= GPU_EXTRA_LAYERS; k++)   /* views no longer shown are let go of */
+        if (g->gbg[k] && !(k ? k <= g->nxv && xbg[k - 1] == g->gbg[k] : gvw)) { wgpuBindGroupRelease(g->gbg[k]); g->gbg[k] = NULL; g->gview[k] = NULL; }
     g->nxv = 0;
 
     WGPUSurfaceTexture st = WGPU_SURFACE_TEXTURE_INIT;
@@ -544,8 +596,8 @@ bool gpu_present_frame(Gpu *g, const uint32_t *px, int w, int h, int stride, int
     WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(enc, &rp);
     if (yv) { wgpuRenderPassEncoderSetPipeline(pass, g->ypipe); wgpuRenderPassEncoderSetBindGroup(pass, 0, g->ybg, 0, NULL); wgpuRenderPassEncoderDraw(pass, 4, 1, 0, 0); }
     wgpuRenderPassEncoderSetPipeline(pass, g->pipe);
-    if (vid) { wgpuRenderPassEncoderSetBindGroup(pass, 0, g->vbg, 0, NULL); wgpuRenderPassEncoderDraw(pass, 4, 1, 0, 0); }
-    for (int i = 0; nx && i < GPU_EXTRA_LAYERS; i++) if (xdraw[i]) { wgpuRenderPassEncoderSetBindGroup(pass, 0, g->xl[i].bg, 0, NULL); wgpuRenderPassEncoderDraw(pass, 4, 1, 0, 0); }
+    if (vid || gvw) { wgpuRenderPassEncoderSetBindGroup(pass, 0, gvw ? vbg : g->vbg, 0, NULL); wgpuRenderPassEncoderDraw(pass, 4, 1, 0, 0); }
+    for (int i = 0; nx && i < GPU_EXTRA_LAYERS; i++) if (xbg[i]) { wgpuRenderPassEncoderSetBindGroup(pass, 0, xbg[i], 0, NULL); wgpuRenderPassEncoderDraw(pass, 4, 1, 0, 0); }
     wgpuRenderPassEncoderSetBindGroup(pass, 0, g->bg, 0, NULL);
     wgpuRenderPassEncoderDraw(pass, 4, 1, 0, 0);
     wgpuRenderPassEncoderEnd(pass); wgpuRenderPassEncoderRelease(pass);
@@ -567,8 +619,17 @@ const char *gpu_backend_name(Gpu *g) {
     }
 }
 
+bool gpu_shared(GpuShared *o) {
+    Gpu *g = g_live;
+    if (!g || !g->full || !o) return false;
+    o->inst = g->inst; o->adapter = g->adapter; o->dev = g->dev; o->queue = g->q;
+    return true;
+}
+
 void gpu_destroy(Gpu *g) {
     if (!g) return;
+    if (g_live == g) g_live = NULL;
+    for (int i = 0; i <= GPU_EXTRA_LAYERS; i++) if (g->gbg[i]) wgpuBindGroupRelease(g->gbg[i]);
     if (g->bg) wgpuBindGroupRelease(g->bg);
     if (g->view) wgpuTextureViewRelease(g->view);
     if (g->tex) { wgpuTextureDestroy(g->tex); wgpuTextureRelease(g->tex); }

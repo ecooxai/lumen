@@ -32,6 +32,7 @@ enum FlexDir { FD_ROW, FD_ROW_REVERSE, FD_COLUMN, FD_COLUMN_REVERSE };
 enum Align { AL_AUTO, AL_NORMAL, AL_STRETCH, AL_FLEX_START, AL_FLEX_END, AL_CENTER, AL_BASELINE, AL_SPACE_BETWEEN, AL_SPACE_AROUND, AL_SPACE_EVENLY, AL_START, AL_END };
 enum VAlign { VA_BASELINE, VA_TOP, VA_MIDDLE, VA_BOTTOM, VA_TEXT_TOP, VA_TEXT_BOTTOM, VA_SUB, VA_SUPER, VA_LENGTH };
 enum { TT_NONE, TT_UPPER, TT_LOWER, TT_CAPITALIZE };
+enum { TOUCH_NO_X = 1, TOUCH_NO_Y = 2 };
 enum { TD_UNDERLINE = 1, TD_OVERLINE = 2, TD_LINE_THROUGH = 4 };
 enum { BOX_CONTENT, BOX_BORDER };
 enum { VIS_VISIBLE, VIS_HIDDEN, VIS_COLLAPSE };
@@ -64,6 +65,8 @@ typedef struct ComputedStyle {
     uint8_t vertical_align, bg_repeat, bg_size_kind, object_fit, text_overflow, word_break, overflow_wrap, direction;
     uint8_t border_style[4];
     uint8_t outline_style, user_select, appearance, isolation, table_layout, border_collapse, container_type, resize, writing_mode;
+    uint8_t inert;   /* inside an inert subtree: never hit, focused or selected, whatever pointer-events the page sets */
+    uint8_t touch_block;   /* touch-action as the panning it forbids: TOUCH_NO_X | TOUCH_NO_Y (0: auto) */
     const char *container_name; /* atom: space-separated names, or NULL */
     int16_t font_weight;
     int z_index; bool z_auto;
@@ -131,7 +134,7 @@ typedef struct SimpleSel {
     SelList *sub;         /* :not/:is/:where/:has/nth-of */
 } SimpleSel;
 typedef struct Compound { SimpleSel *s; int n; uint8_t comb; /* combinator to the LEFT (towards previous compound) */ } Compound;
-typedef struct Selector { Compound *c; int n; uint32_t spec; uint8_t pseudo_el; /* 0 none 1 before 2 after 3 other */ bool reads_style_attribute; uint16_t required_class_filter; /* encoded bloom bit + 1, 0 = none */ } Selector;
+typedef struct Selector { Compound *c; int n; uint32_t spec; uint8_t pseudo_el; /* 0 none 1 before 2 after 3 other */ bool reads_style_attribute; /* tests the style attribute's value, which inline-style edits change without selector invalidation */ uint16_t required_class_filter; /* encoded bloom bit + 1, 0 = none */ } Selector;
 struct SelList { Selector *v; int n; };
 
 typedef struct ContainerCond { char *name, *query; struct ContainerCond *outer; } ContainerCond;
@@ -188,6 +191,7 @@ typedef struct TreeDependency {
     uint64_t selector_keys[16]; /* class/ID dependencies anywhere in the source selector */
     Selector changed_candidate; /* lazily widened for coalesced class/ID changes */
     bool selector_changed;
+    const char *parent_names[4]; uint8_t parent_kinds[4], nparent; /* the subject's parent carries one of these */
 } TreeDependency;
 typedef struct RuleIndex {
     HMap by_id, by_class, by_tag; /* -> RuleVec* */
@@ -195,6 +199,7 @@ typedef struct RuleIndex {
     HMap attribute_subjects; /* attribute name -> conservative rule subject keys */
     HMap attribute_candidates; /* attribute name -> widened selectors retaining independent constraints */
     HMap self_attributes;   /* attribute selectors that only depend on their subject */
+    HMap attribute_bearers; /* attribute name -> keys of the compounds testing it (HovDesc) */
     bool empty_universal;
     VEC(EmptyDependency) empty_candidates; /* shallow selectors with emptiness-dependent tests removed */
     VEC(TreeDependency) tree_candidates; /* structural tests removed; payloads borrowed from sheets */
@@ -214,9 +219,12 @@ typedef struct RuleIndex {
     uint64_t reselect_keys[16]; /* class/ID/attribute keys tested left of a rule's subject compound */
     VEC(uint16_t) reselect_subjects[1024]; /* per reselect key bit: subject key bits of its rules, 1024 = any element */
     uint64_t has_keys[16]; /* class/ID keys inside :has() arguments: their change can restyle distant subjects */
-    VEC(Rule *) fw_rules; bool fw_complex; /* rules testing :focus-within left of the subject; fw_complex: one also needs siblings, :has or a shadow scope */
+    /* Rules testing :focus-within left of the subject, with their subject keys (NULL: unkeyed).
+       fw_far: those that also need siblings or :has, so their subjects lie anywhere;
+       fw_complex: one is shadow-scoped or too many far ones are unkeyed. */
+    VEC(Rule *) fw_rules; VEC(const char *) fw_keys; VEC(Rule *) fw_far; VEC(const char *) fw_far_keys; int fw_far_unkeyed; bool fw_complex;
     HMap hov_desc, anc_desc; void *hov_desc_u, *anc_desc_u; /* key of a non-subject :hover compound -> subject keys it can affect */
-    HMap hov, hov_anc, hov_ach; /* hov_ach: like hov_anc but keyed by the subject's parent (`.k > :has(...)`) */ uint8_t hov_univ; bool hov_has, hov_sib, focus_within; /* hov_anc: keys of compounds with :has(...:hover...), | 16 for :has(+ ...), 32 for :has(~ ...) */ /* :hover invalidation: id/class/tag -> 1 self, 2 subtree, 4 parent subtree */
+    HMap hov, hov_anc, hov_ach; /* hov_ach: like hov_anc but keyed by the subject's parent (`.k > :has(...)`) */ uint8_t hov_univ; bool hov_has, hov_sib, focus_within, style_values; /* style_values: a selector tests the style attribute's value */ /* hov_anc: keys of compounds with :has(...:hover...), | 16 for :has(+ ...), 32 for :has(~ ...) */ /* :hover invalidation: id/class/tag -> 1 self, 2 subtree, 4 parent subtree */
 } RuleIndex;
 
 typedef struct CssMatchCache CssMatchCache;
@@ -237,7 +245,9 @@ typedef struct StyleEngine {
     /* Subjects of rules in sheets added/removed since the last pass, so a sheet
      * change restyles only elements those rules can match. */
     HMap delta_ids, delta_classes, delta_tags, delta_attrs, delta_parent_tags, delta_parent_classes, delta_parent_attrs; uint64_t delta_ancestors[16];
+    HMap delta_adj_classes, delta_sib_classes; /* a new rule's subject follows a sibling with this class */
     bool delta_any, delta_all, delta_root; uint64_t seen_regprop_version;
+    const Rule *dbg_delta_all_rule; /* debug: the added or removed rule that forced a full restyle */
     MediaCtx media;
     MediaCtx styled_media;
     bool media_valid;
@@ -249,6 +259,7 @@ typedef struct StyleEngine {
     uint64_t seen_sheet_version;
     uint64_t seen_inheritance_version;
     bool reuse_inherited, collect_dynamic, keyed_reselect;
+    bool collect_style_value;   /* the element's match read a style attribute value: no memo, its own value edits change it */
     bool keyed_whole; uint64_t keyed_subjects[16]; /* descendants a keyed change can rematch */
     int stats_matched, stats_paint, stats_reused, stats_memo_hits;
     uint64_t stats_rule_iter, stats_rule_tests, stats_rule_hits; /* debug: collect() work per pass */
@@ -257,6 +268,9 @@ typedef struct StyleEngine {
     int stats_rebase_why[5]; /* debug: parent_sensitive, dynamic, custom deps, custom chain, pseudo */
     int stats_indep_block, stats_rebase_block; const char *stats_inh_field; /* debug: why inherited-only children rematched */
     uint64_t stats_tree_tests; /* structural dependency candidates examined */
+    uint64_t stats_tree_selector_tests; /* of those, matched against the selector */
+    const char *pending_attrs[16]; int npending_attrs;
+    uint64_t pending_bearers[16][16]; /* per pending attribute: key bits of the elements that changed it */ /* changed selector-only attributes whose distant subjects the next pass marks */
     int debug_style_passes; /* debug-only device profiling, armed by F8 */
     bool layout_dirty;          /* a recalc changed something other than paint-only properties */
     /* With allow_moves set, an element whose style changed only in inset is
@@ -279,6 +293,9 @@ void css_sellist_free(SelList *l);
 char *css_selector_text(const char *src); /* canonical CSSOM serialization; NULL if invalid */
 /* Syntax only: matching always observes live DOM/state. Caller frees scratch. */
 const SelList *css_query_syntax(Document *d, const char *text, SelList *scratch);
+extern uint64_t css_has_stats[2];
+extern bool css_has_unfiltered;
+void css_has_debug_dump(bool log);   /* debug Android: log (if asked) and reset the costliest :has() arguments */   /* test hook: :has() walks every subtree, the reference for its name filter */   /* statistics: :has() tests, nodes their descendant walks visited */
 bool css_match_selector_list(const SelList *l, Node *el);
 bool css_match_selector(const Selector *s, Node *el, Node *scope);
 typedef VEC(Node *) NodeVec;

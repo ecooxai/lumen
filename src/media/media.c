@@ -607,12 +607,14 @@ static void sync_audio_device(MediaPlayer *m, bool run) {
 #define WA_MAX 32
 static struct { SDL_AudioStream *s; const void *owner; } g_wa[WA_MAX];
 int wa_open(const void *owner) {
+    uint64_t t0 = SDL_GetTicksNS();
     if (!(SDL_WasInit(SDL_INIT_AUDIO) & SDL_INIT_AUDIO) && !SDL_InitSubSystem(SDL_INIT_AUDIO)) return -1;
     for (int i = 0; i < WA_MAX; i++) if (!g_wa[i].s) {
         SDL_AudioSpec spec = { SDL_AUDIO_F32, 2, OUT_RATE };
         SDL_AudioStream *st = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, NULL, NULL);
         if (!st) return -1;
         SDL_ResumeAudioStreamDevice(st); g_wa[i].s = st; g_wa[i].owner = owner;
+        SDL_Log("lumen: web audio output %d opened in %.0f ms", i, (SDL_GetTicksNS() - t0) / 1e6);
         return i;
     }
     return -1;

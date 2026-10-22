@@ -13,13 +13,13 @@ typedef struct {
     float sx, sy;               /* page scroll */
     bool clip; float cx, cy, cw, ch;
     int order;
-    bool fixed;
+    bool fixed, sticky;         /* sticky: fixed only as a repaint region, inside a sticky box that moves with the page */
     Box *sb; const void *outer;   /* innermost scroller and the state outside it */
     const Box *mv, *mv_out;       /* scroller painted items move with, and the one outside it (for sticky boxes) */
     bool cull; uint64_t gen;      /* skip normal-flow subtrees outside the viewport (box_ink extents of visual generation gen) */
 } PB;
 
-static DItem *emit(PB *p, uint8_t op) { DItem it; memset(&it, 0, sizeof it); it.op = op; it.alpha = 1; it.fixed = p->fixed; it.mv = p->mv; vec_push(p->dl->items, it); return &p->dl->items.v[p->dl->items.n - 1]; }
+static DItem *emit(PB *p, uint8_t op) { DItem it; memset(&it, 0, sizeof it); it.op = op; it.alpha = 1; it.fixed = p->fixed; it.sticky = p->sticky; it.mv = p->mv; vec_push(p->dl->items, it); return &p->dl->items.v[p->dl->items.n - 1]; }
 static bool visible(PB *p, float x, float y, float w, float h) {
     if (x > p->dl->vw || y > p->dl->vh || x + w < 0 || y + h < 0) return false;
     if (p->clip && (x > p->cx + p->cw || y > p->cy + p->ch || x + w < p->cx || y + h < p->cy)) return false;
@@ -435,7 +435,7 @@ static int def_cmp(const void *a, const void *b) {
 
 static void paint_deferred(PB *p, Deferred *d) {
     PB saved = *p;
-    if (d->b->fixed) { p->dx = -0.0f; p->dy = 0; p->clip = false; p->fixed = true; p->mv = p->mv_out = NULL; }
+    if (d->b->fixed) { p->dx = -0.0f; p->dy = 0; p->clip = false; p->fixed = true; p->sticky = false; p->mv = p->mv_out = NULL; }
     else {
         p->dx = d->dx; p->dy = d->dy; p->mv = d->mv; p->mv_out = d->mv_out;
         /* clips of scrollers apply only when the box's containing block is inside them */
@@ -454,8 +454,11 @@ static void paint_stacking(PB *p, Box *b) {
     if (s->has_transform) { tx = s->transform[4]; ty = s->transform[5]; if (s->translate_pending[0].pct) tx += s->translate_pending[0].pct * b->w / 100; if (s->translate_pending[1].pct) ty += s->translate_pending[1].pct * b->h / 100; }
     float sticky_x, sticky_y; box_sticky_offset(b, p->sx, p->sy, &sticky_x, &sticky_y);
     tx += sticky_x; ty += sticky_y;
-    bool was_fixed = p->fixed; const Box *was_mv = p->mv;
-    if (s->position == P_STICKY) { p->fixed = true; p->mv = p->mv_out; } /* include in scroll damage */
+    bool was_fixed = p->fixed, was_sticky = p->sticky; const Box *was_mv = p->mv;
+    if (s->position == P_STICKY) {   /* include in scroll damage; it stays put with the page only while stuck to the viewport */
+        bool still = (was_fixed && !was_sticky) || ((sticky_x || sticky_y) && !p->mv);
+        p->fixed = true; p->sticky = !still; p->mv = p->mv_out;
+    }
     p->dx += tx; p->dy += ty;
     /* axis-aligned scale (e.g. progress bars using scaleX): scale the subtree's items about transform-origin;
        text only under a uniform scale, as the same face at the scaled size (x.com's scale(1.15) Google
@@ -496,7 +499,7 @@ static void paint_stacking(PB *p, Box *b) {
         }
     }
     p->dx -= tx; p->dy -= ty;
-    p->fixed = was_fixed; p->mv = was_mv;
+    p->fixed = was_fixed; p->sticky = was_sticky; p->mv = was_mv;
 }
 
 void dl_clear(DisplayList *dl) { dl->items.n = 0; dl->fixed.count = 0; arena_reset(&dl->arena); }
@@ -513,10 +516,11 @@ void dl_build(DisplayList *dl, Layout *L, float scroll_x, float scroll_y, float 
     Color bg = 0;
     if (html && html->style && COLOR_A(html->style->bg_color)) bg = html->style->bg_color;
     else if (body && body->style && COLOR_A(body->style->bg_color)) bg = body->style->bg_color;
-    if (bg) { DItem *it = emit(&p, DO_RECT); it->x = 0; it->y = 0; it->w = vw; it->h = vh; it->color = bg; }
+    /* the canvas fills the viewport wherever the page is scrolled: fixed for scroll signatures, not a fixed region */
+    if (bg) { DItem *it = emit(&p, DO_RECT); it->x = 0; it->y = 0; it->w = vw; it->h = vh; it->color = bg; it->fixed = true; }
     for (Box *c = L->root->first; c; c = c->next) paint_stacking(&p, c);
     /* Collect final coordinates after ancestor transforms have been applied. */
-    for (int i = 0; i < dl->items.n; i++) {
+    for (int i = bg ? 1 : 0; i < dl->items.n; i++) {
         const DItem *it = &dl->items.v[i];
         if (!it->fixed || it->w <= 0 || it->h <= 0 || it->op == DO_PUSH_CLIP) continue;
         float pad = it->op == DO_SHADOW ? LMAX(0, it->spread) + LMAX(0.5f, it->blur) : 0;

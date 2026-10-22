@@ -40,7 +40,16 @@ typedef struct { AAudioStream *st; SDL_AtomicInt w, r, lost, fed, dropped, last;
 #else
 typedef SDL_AudioStream MicDev;
 #endif
-static struct { const void *owner; MicDev *s; int state; bool voice, call; uint64_t retry; } g_mic[MIC_MAX];   /* state: 0 asking, 1 capturing, -1 failed */
+#ifdef __ANDROID__
+/* Opening takes 0.3-0.5 s (the communication mode switch, then AAudio), so it runs on its own thread
+   and the page keeps going; st: 0 opening, 1 opened, 2 abandoned by mic_close (the opener cleans up) */
+typedef struct { SDL_AtomicInt st; MicDev *s; bool voice, call, want_call; } MicOpen;
+#endif
+static struct { const void *owner; MicDev *s; int state; bool voice, call; uint64_t retry;
+#ifdef __ANDROID__
+    MicOpen *op;
+#endif
+} g_mic[MIC_MAX];   /* state: 0 asking or opening, 1 capturing, -1 failed */
 #ifdef __ANDROID__
 static SDL_AtomicInt g_mic_perm;   /* 0 unknown, 1 asking, 2 granted, -1 denied (the next mic_open asks again) */
 static void SDLCALL mic_permission_answer(void *ud, const char *permission, bool granted) {
@@ -196,8 +205,37 @@ bool mic_permission_request(void) {
 #endif
     return false;
 }
+#ifdef __ANDROID__
+static int mic_opener(void *p) {
+    MicOpen *o = p;
+    uint64_t t0 = SDL_GetTicksNS();
+    if (o->want_call) { voice_call(true); o->call = true; }
+    uint64_t t1 = SDL_GetTicksNS();
+    o->s = dev_open(o->voice);
+    if (!o->s) SDL_Log("lumen: microphone unavailable: %s", SDL_GetError());
+    SDL_Log("lumen: microphone open took %.0f ms off the main thread (communication mode %.0f ms, stream %.0f ms)", (SDL_GetTicksNS() - t0) / 1e6, (t1 - t0) / 1e6, (SDL_GetTicksNS() - t1) / 1e6);
+    if (SDL_CompareAndSwapAtomicInt(&o->st, 0, 1)) return 0;
+    mic_release(o->s, o->call);   /* closed while opening */
+    free(o);
+    return 0;
+}
+/* starts an opener; want_call: also enter communication mode (a first open, not a reopen) */
+static bool mic_open_async(int i, bool want_call) {
+    MicOpen *o = calloc(1, sizeof *o);
+    if (!o) return false;
+    o->voice = g_mic[i].voice; o->want_call = want_call;
+    SDL_Thread *t = SDL_CreateThread(mic_opener, "lumen-mic-open", o);
+    if (!t) { free(o); return false; }
+    SDL_DetachThread(t);
+    g_mic[i].op = o;
+    return true;
+}
 static void mic_start(int i) {
-    if (g_mic[i].voice) { voice_call(true); g_mic[i].call = true; }
+    if (g_mic[i].op) return;
+    if (!mic_open_async(i, g_mic[i].voice)) g_mic[i].state = -1;
+}
+#else
+static void mic_start(int i) {
     g_mic[i].s = dev_open(g_mic[i].voice);
     if (!g_mic[i].s) {
         SDL_Log("lumen: microphone unavailable: %s", SDL_GetError()); g_mic[i].state = -1;
@@ -205,10 +243,9 @@ static void mic_start(int i) {
         return;
     }
     g_mic[i].state = 1;
-#ifndef __ANDROID__
     g_mic_granted = 1;
-#endif
 }
+#endif
 #ifdef __ANDROID__
 /* LUMEN_MIC_STATS (debug builds): every 2 s, frames captured, read and dropped, and the level read,
    to tell a stalled or starved device from a slow reader; no audio leaves the process */
@@ -236,6 +273,24 @@ static void mic_stats_read(int id, const float *p, int n) {
     (void)id; (void)p; (void)n;
 #endif
 }
+/* the main thread takes a finished open: a first stream starts capturing, a reopen replaces the lost one */
+static void mic_adopt(int i) {
+    MicOpen *o = g_mic[i].op;
+    if (!o || SDL_GetAtomicInt(&o->st) != 1) return;
+    SDL_MemoryBarrierAcquire();
+    g_mic[i].op = NULL;
+    if (o->call) g_mic[i].call = true;
+    if (g_mic[i].state == 1) {   /* a reopen */
+        if (g_mic[i].s) {
+            g_mic_stats[i].fed -= SDL_GetAtomicInt(&g_mic[i].s->fed); g_mic_stats[i].dropped -= SDL_GetAtomicInt(&g_mic[i].s->dropped);
+            mic_release(g_mic[i].s, false);
+        }
+        g_mic[i].s = o->s;
+        SDL_Log("lumen: microphone %s", o->s ? "reopened" : "lost, retrying");
+    } else if (o->s) { g_mic[i].s = o->s; g_mic[i].state = 1; }
+    else { g_mic[i].state = -1; if (g_mic[i].call) { g_mic[i].call = false; mic_release(NULL, true); } }
+    free(o);
+}
 /* a stream Android disconnected (a route change) is replaced, retried twice a second until it opens */
 static void mic_heal(int id) {
     uint64_t now = SDL_GetTicks();
@@ -246,16 +301,12 @@ static void mic_heal(int id) {
         SDL_Log("lumen: microphone stalled (state %d), reopening", (int)AAudioStream_getState(m->st));
         SDL_SetAtomicInt(&m->lost, 1);
     }
-    if (g_mic[id].state != 1 || (m && !SDL_GetAtomicInt(&m->lost))) return;
+    mic_adopt(id);
+    if (g_mic[id].state != 1 || g_mic[id].op || (g_mic[id].s && !SDL_GetAtomicInt(&g_mic[id].s->lost))) return;
     if (now < g_mic[id].retry) return;
-    if (g_mic[id].s) {
-        /* the counters move to the new stream, so the stats keep adding up */
-        g_mic_stats[id].fed -= SDL_GetAtomicInt(&g_mic[id].s->fed); g_mic_stats[id].dropped -= SDL_GetAtomicInt(&g_mic[id].s->dropped);
-        mic_release(g_mic[id].s, false);
-    }
-    g_mic[id].s = dev_open(g_mic[id].voice);
+    /* the lost stream keeps its slot until the new one is open; the counters move over then */
+    mic_open_async(id, false);
     g_mic[id].retry = now + 500;
-    SDL_Log("lumen: microphone %s", g_mic[id].s ? "reopened" : "lost, retrying");
 }
 #else
 static void mic_heal(int id) { (void)id; }
@@ -285,6 +336,7 @@ static bool mic_ok(const void *owner, int id) { return id >= 0 && id < MIC_MAX &
 int mic_state(const void *owner, int id) {
     if (!mic_ok(owner, id)) return -1;
 #ifdef __ANDROID__
+    mic_adopt(id);
     if (!g_mic[id].state) {
         int p = SDL_GetAtomicInt(&g_mic_perm);
         if (p == 2) mic_start(id);
@@ -309,6 +361,10 @@ void mic_close(const void *owner, int id) {
     if (!mic_ok(owner, id)) return;
     MicDev *s = g_mic[id].s;
     bool call = g_mic[id].call;
+#ifdef __ANDROID__
+    MicOpen *o = g_mic[id].op;
+    if (o && !SDL_CompareAndSwapAtomicInt(&o->st, 0, 2)) { mic_release(o->s, o->call); free(o); }   /* finished but not adopted */
+#endif
     memset(&g_mic[id], 0, sizeof g_mic[id]);
 #ifdef __ANDROID__
     memset(&g_mic_stats[id], 0, sizeof g_mic_stats[id]);

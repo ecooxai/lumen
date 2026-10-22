@@ -1,0 +1,37 @@
+<!doctype html><script>
+// XMLHttpRequest inside a worker: async load with readystatechange/load/loadend, text, json and arraybuffer
+// responses, response headers, a synchronous request, and an error event for a failed request.
+const src = `onmessage = () => {
+  const fail = [], ok = (c, m) => { if (!c) fail.push(m); };
+  const x = new XMLHttpRequest(), seen = [];
+  ok(x.readyState === 0 && XMLHttpRequest.DONE === 4, 'unsent');
+  x.open('GET', 'data:text/plain,hello');
+  ok(x.readyState === 1, 'opened');
+  x.onreadystatechange = () => seen.push(x.readyState);
+  x.addEventListener('loadend', () => {
+    ok(seen.join() === '2,3,4' && x.status === 200 && x.responseText === 'hello' && x.response === 'hello', 'text ' + seen + ' ' + x.status);
+    ok(/text\\/plain/.test(x.getResponseHeader('content-type') || ''), 'header ' + x.getAllResponseHeaders());
+    const j = new XMLHttpRequest(); j.responseType = 'json'; j.open('GET', 'data:application/json,{"a":1}');
+    j.onload = () => {
+      ok(j.response && j.response.a === 1, 'json');
+      const b = new XMLHttpRequest(); b.open('GET', 'data:,AB'); b.responseType = 'arraybuffer';
+      b.onload = () => {
+        ok(b.response instanceof ArrayBuffer && new Uint8Array(b.response)[1] === 66, 'arraybuffer');
+        const s = new XMLHttpRequest(); s.open('GET', 'data:,sync', false); s.send();
+        ok(s.readyState === 4 && s.responseText === 'sync', 'sync');
+        const e = new XMLHttpRequest(); e.open('GET', 'lumen-nope://x');
+        e.onerror = () => { ok(e.readyState === 4 && e.status === 0, 'error state'); postMessage(fail); };
+        e.onload = () => { fail.push('error loaded'); postMessage(fail); };
+        e.send();
+      };
+      b.send();
+    };
+    j.send();
+  });
+  x.send();
+};`;
+const w = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+w.onerror = e => console.log('RESULTS worker-xhr:FAIL ' + e.message);
+w.onmessage = e => console.log('RESULTS worker-xhr:' + (e.data.length ? 'FAIL ' + e.data.join('; ') : 'PASS'));
+w.postMessage(1);
+</script>

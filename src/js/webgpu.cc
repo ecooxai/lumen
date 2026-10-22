@@ -9,6 +9,9 @@
 extern "C" {
 #include "../gpu/webgpu.h"
 #include "../gpu/webgl.h"
+extern "C" {
+#include "../gpu/gpu.h"
+}
 extern int gpu_log_quiet;
 }
 #include <webgpu.h>
@@ -16,6 +19,7 @@ extern int gpu_log_quiet;
 #include <algorithm>
 #include <cstring>
 #include <deque>
+#include <thread>
 #include <vector>
 
 using FCI = v8::FunctionCallbackInfo<v8::Value>;
@@ -50,6 +54,9 @@ struct H {
     WGPUQueue q = nullptr;
     bool lost = false, want_release = false;
     int children = 0;
+    bool shared = false;              /* the presenter's device: what the page asked for, kept here */
+    std::vector<WGPUFeatureName> feats;
+    WGPULimits lim{};
 };
 
 constexpr uint32_t SLOT_BITS = 20, SLOT_MASK = (1u << SLOT_BITS) - 1, GEN_MASK = 0xfff;
@@ -61,7 +68,16 @@ H *hraw(uint32_t id) {
     if (!s || s >= g_h.size() || !g_h[s] || (g_gen[s] & GEN_MASK) != id >> SLOT_BITS) return nullptr;
     return g_h[s];
 }
-H *hget(JsCtx *c, uint32_t id, Kind k) { H *h = hraw(id); return h && h->owner == c && h->kind == k ? h : nullptr; }
+/* errors on the presenter's device, which pages share, reach the device the running call last looked up */
+int g_in_call = 0;
+uint32_t g_last_did = 0;
+struct InCall { InCall() { g_in_call++; g_last_did = 0; } ~InCall() { g_in_call--; } };
+H *hget(JsCtx *c, uint32_t id, Kind k) {
+    H *h = hraw(id);
+    if (!h || h->owner != c || h->kind != k) return nullptr;
+    if (g_in_call) g_last_did = k == K_DEVICE ? id : h->dev ? h->dev : g_last_did;
+    return h;
+}
 
 uint32_t hnew(Kind k, JsCtx *c, void *p, uint32_t dev) {
     uint32_t slot;
@@ -153,6 +169,12 @@ uint32_t g_next_ticket = 1;
 int g_outstanding = 0;
 WGPUInstance g_inst = nullptr;
 bool g_inst_failed = false;
+/* Pages' devices are the presenter's own when it has the adapter's features and limits (gpu_shared): a canvas
+   texture is then drawn by the presenter in place, with no readback or upload. LUMEN_WEBGPU_SEPARATE=1 opts out.
+   These hold references of their own, so a presenter made again (another renderer) leaves pages working. */
+GpuShared g_sh{};
+bool g_sh_on = false;
+std::thread::id g_main_tid;
 
 struct Tk { JsCtx *c; uint64_t serial; uint32_t ticket, obj; };
 
@@ -241,9 +263,23 @@ void on_map(WGPUMapAsyncStatus st, WGPUStringView, void *u1, void *) {
 }
 void on_done(WGPUQueueWorkDoneStatus, WGPUStringView, void *u1, void *) { ticket_done((Tk *)u1, 1); }
 
+bool shared_error(int type, const char *msg, size_t n) {
+    if (!g_in_call) return false;   /* the presenter's own */
+    route_error(g_last_did, type, std::string(msg, n));
+    return true;
+}
 bool instance() {
     if (g_inst) return true;
     if (g_inst_failed) return false;
+    if (!getenv("LUMEN_WEBGPU_SEPARATE") && gpu_shared(&g_sh)) {
+        g_inst = (WGPUInstance)g_sh.inst; wgpuInstanceAddRef(g_inst);
+        wgpuAdapterAddRef((WGPUAdapter)g_sh.adapter); wgpuDeviceAddRef((WGPUDevice)g_sh.dev); wgpuQueueAddRef((WGPUQueue)g_sh.queue);
+        g_sh_on = true;
+        g_main_tid = std::this_thread::get_id();
+        gpu_error_hook = shared_error;
+        gpu_log_quiet = 1;
+        return true;
+    }
     WGPUInstanceExtras ex = {};
     ex.chain.sType = (WGPUSType)WGPUSType_InstanceExtras;
 #ifdef __ANDROID__
@@ -407,7 +443,7 @@ struct Env {
     JsCtx *c = e.c; (void)c;                 \
     v8::Isolate *iso = e.iso; (void)iso
 #define RET(...) a.GetReturnValue().Set(__VA_ARGS__)
-#define FN(nm) void w_##nm(const FCI &a)
+#define FN(nm) void w_##nm##_(const FCI &a); void w_##nm(const FCI &a) { InCall in_; w_##nm##_(a); } void w_##nm##_(const FCI &a)
 #define ARG(i) ((i) < a.Length() ? a[i] : v8::Local<v8::Value>(v8::Undefined(iso)))
 #define ID(i) e.hid(ARG(i))
 inline double an(const FCI &a, int i) {
@@ -425,7 +461,7 @@ const WGPUStringView NO_STR = { nullptr, WGPU_STRLEN };
 /* the device a call is for: valid and not yet released */
 H *device(Env &e, uint32_t id) {
     H *d = hget(e.c, id, K_DEVICE);
-    return d && d->p ? d : nullptr;
+    return d && d->p && !(d->shared && d->destroyed) ? d : nullptr;   /* a shared device is only marked destroyed */
 }
 WGPUQueue queue_of(H *d) {
     if (!d->q && d->p) d->q = wgpuDeviceGetQueue((WGPUDevice)d->p);
@@ -436,6 +472,19 @@ void *need(Env &e, uint32_t id, Kind k, bool *ok) {
     H *h = hget(e.c, id, k);
     if (!h || !h->p) { *ok = false; return nullptr; }
     return h->p;
+}
+/* a GPUTextureView, or a GPUTexture standing for its default view (the WebGPU "texture as view" shorthand the
+   webgpu-samples probe at startup); views made here go to temps, released once the call is done */
+struct TempViews { std::vector<WGPUTextureView> v; ~TempViews() { for (auto x : v) wgpuTextureViewRelease(x); } };
+WGPUTextureView need_view(Env &e, uint32_t id, bool *ok, TempViews &temps) {
+    H *h = id ? hraw(id) : nullptr;
+    if (!h || h->kind != K_TEXTURE) return (WGPUTextureView)need(e, id, K_VIEW, ok);
+    WGPUTexture t = (WGPUTexture)need(e, id, K_TEXTURE, ok);
+    if (!t) return nullptr;
+    WGPUTextureView v = wgpuTextureCreateView(t, nullptr);
+    if (!v) { *ok = false; return nullptr; }
+    temps.v.push_back(v);
+    return v;
 }
 uint32_t finish_new(Env &e, Kind k, void *p, uint32_t did, Cap &cap) {
     uint32_t id = hnew(k, e.c, p, did);
@@ -489,6 +538,17 @@ FN(requestAdapter) {   /* (powerPreference, forceFallbackAdapter): ticket, settl
     int pref = e.en_v(ARG(0), "PowerPreference", WGPUPowerPreference_Undefined);
     if (e.bad) return;
     if (!instance()) { RET(0); return; }
+    if (g_sh_on) {   /* the presenter's adapter; there is no fallback one */
+        Tk *t = ticket_new(c, 0);
+        uint32_t ticket = t->ticket, id = 0;
+        if (!ARG(1)->BooleanValue(iso)) {
+            wgpuAdapterAddRef((WGPUAdapter)g_sh.adapter);
+            if (!(id = hnew(K_ADAPTER, c, g_sh.adapter, 0))) wgpuAdapterRelease((WGPUAdapter)g_sh.adapter);
+        }
+        ticket_done(t, id);
+        RET(ticket);
+        return;
+    }
     WGPURequestAdapterOptions o = WGPU_REQUEST_ADAPTER_OPTIONS_INIT;
     o.powerPreference = (WGPUPowerPreference)pref;
     o.forceFallbackAdapter = ARG(1)->BooleanValue(iso);
@@ -537,12 +597,28 @@ FN(adapterInfo) {   /* (adapter): [vendor, architecture, isFallback, subgroupMin
     wgpuAdapterInfoFreeMembers(info);
     RET(v8::Array::New(iso, v, 5));
 }
+/* WebGPU's default limits, what a device has unless it asks for more */
+WGPULimits default_limits() {
+    WGPULimits l = WGPU_LIMITS_INIT;
+    l.maxTextureDimension1D = l.maxTextureDimension2D = 8192; l.maxTextureDimension3D = 2048; l.maxTextureArrayLayers = 256;
+    l.maxBindGroups = 4; l.maxBindGroupsPlusVertexBuffers = 24; l.maxBindingsPerBindGroup = 1000;
+    l.maxDynamicUniformBuffersPerPipelineLayout = 8; l.maxDynamicStorageBuffersPerPipelineLayout = 4;
+    l.maxSampledTexturesPerShaderStage = 16; l.maxSamplersPerShaderStage = 16; l.maxStorageBuffersPerShaderStage = 8;
+    l.maxStorageTexturesPerShaderStage = 4; l.maxUniformBuffersPerShaderStage = 12; l.maxUniformBufferBindingSize = 65536;
+    l.maxStorageBufferBindingSize = 134217728; l.minUniformBufferOffsetAlignment = l.minStorageBufferOffsetAlignment = 256;
+    l.maxVertexBuffers = 8; l.maxBufferSize = 268435456; l.maxVertexAttributes = 16; l.maxVertexBufferArrayStride = 2048;
+    l.maxInterStageShaderVariables = 16; l.maxColorAttachments = 8; l.maxColorAttachmentBytesPerSample = 32;
+    l.maxComputeWorkgroupStorageSize = 16384; l.maxComputeInvocationsPerWorkgroup = 256;
+    l.maxComputeWorkgroupSizeX = 256; l.maxComputeWorkgroupSizeY = 256; l.maxComputeWorkgroupSizeZ = 64;
+    l.maxComputeWorkgroupsPerDimension = 65535;
+    return l;
+}
 FN(limits) {   /* (adapter or device) */
     GPUC;
     uint32_t id = ID(0);
     WGPULimits l = WGPU_LIMITS_INIT;
     if (H *ad = hget(c, id, K_ADAPTER)) { if (wgpuAdapterGetLimits((WGPUAdapter)ad->p, &l) != WGPUStatus_Success) return; }
-    else if (H *d = device(e, id)) { if (wgpuDeviceGetLimits((WGPUDevice)d->p, &l) != WGPUStatus_Success) return; }
+    else if (H *d = device(e, id)) { if (d->shared) l = d->lim; else if (wgpuDeviceGetLimits((WGPUDevice)d->p, &l) != WGPUStatus_Success) return; }
     else return;
     RET(limits_obj(e, l));
 }
@@ -551,8 +627,10 @@ FN(features) {   /* (adapter or device): feature names, lowercase without hyphen
     uint32_t id = ID(0);
     WGPUSupportedFeatures f = {};
     if (H *ad = hget(c, id, K_ADAPTER)) wgpuAdapterGetFeatures((WGPUAdapter)ad->p, &f);
-    else if (H *d = device(e, id)) wgpuDeviceGetFeatures((WGPUDevice)d->p, &f);
-    else return;
+    else if (H *d = device(e, id)) {
+        if (d->shared) { WGPUSupportedFeatures sf = { d->feats.size(), d->feats.data() }; RET(features_arr(e, sf)); return; }
+        wgpuDeviceGetFeatures((WGPUDevice)d->p, &f);
+    } else return;
     RET(features_arr(e, f));
     wgpuSupportedFeaturesFreeMembers(f);
 }
@@ -569,6 +647,29 @@ FN(requestDevice) {   /* (adapter, featureNames, limits): ticket, settled with t
     LIMITS(X)
 #undef X
     if (e.bad) return;
+    if (g_sh_on && ad->p == g_sh.adapter) {   /* the presenter's device, which has all the adapter offers */
+        Tk *t = ticket_new(c, 0);
+        uint32_t ticket = t->ticket;
+        WGPULimits al = WGPU_LIMITS_INIT, dl = default_limits(), unset = WGPU_LIMITS_INIT;
+        std::string err;
+        for (WGPUFeatureName f : feats) if (!wgpuDeviceHasFeature((WGPUDevice)g_sh.dev, f)) err = "a required feature is not supported";
+        wgpuAdapterGetLimits((WGPUAdapter)g_sh.adapter, &al);
+#define X(nm, wide) if (l.nm != unset.nm) { \
+            bool lower = !strncmp(#nm, "min", 3); \
+            if (lower ? l.nm < al.nm : l.nm > al.nm) err = "the limit " #nm " is beyond the adapter's"; \
+            else if (lower ? l.nm > dl.nm : l.nm < dl.nm) {} else dl.nm = l.nm; }
+        LIMITS(X)
+#undef X
+        uint32_t did = err.empty() ? hnew(K_DEVICE, c, g_sh.dev, 0) : 0;
+        if (did) {
+            wgpuDeviceAddRef((WGPUDevice)g_sh.dev);
+            H *d = hraw(did);
+            d->shared = true; d->feats = feats; d->lim = dl;
+        }
+        ticket_done(t, did, err.empty() ? std::string() : err);
+        RET(ticket);
+        return;
+    }
     uint32_t did = hnew(K_DEVICE, c, nullptr, 0);
     if (!did) { RET(0); return; }
     WGPUDeviceDescriptor dd = WGPU_DEVICE_DESCRIPTOR_INIT;
@@ -604,7 +705,15 @@ FN(destroy) {   /* (device, buffer, texture or query set) */
         for (H *b : g_h)   /* destroying a device unmaps its buffers */
             if (b && b->kind == K_BUFFER && b->dev == id && b->map_state) { detach_ranges(b); b->map_state = 0; b->map_ticket = 0; }
         Cap cap;
-        wgpuDeviceDestroy((WGPUDevice)h->p);
+        if (!h->shared) { wgpuDeviceDestroy((WGPUDevice)h->p); break; }
+        for (H *b : g_h)   /* the presenter's device lives on: what this one made goes, and it is lost */
+            if (b && b->dev == id && b->p && !b->canvas && !b->destroyed) {
+                if (b->kind == K_BUFFER) { b->destroyed = true; wgpuBufferDestroy((WGPUBuffer)b->p); }
+                else if (b->kind == K_TEXTURE) { b->destroyed = true; wgpuTextureDestroy((WGPUTexture)b->p); }
+            }
+        std::lock_guard<std::mutex> lk(g_mu);
+        auto pc = g_ctx.find(h->owner);
+        if (pc != g_ctx.end()) pc->second.evs.push_back(Ev{ 2, id, 1.0, 0, "Device destroyed." });
         break;
     }
     case K_BUFFER: {
@@ -1274,6 +1383,7 @@ FN(beginRenderPass) {   /* (encoder, descriptor): a pass id; an ended encoder gi
     std::vector<WGPURenderPassColorAttachment> cas;
     bool ok = true;
     std::vector<uint32_t> uses;
+    TempViews temps;
     auto cl = e.list(o, "colorAttachments", true);
     if (!e.bad && e.get(o, "colorAttachments")->IsUndefined()) e.type_error("Required member is undefined: colorAttachments");
     for (uint32_t i = 0; i < cl->Length() && !e.bad; i++) {
@@ -1282,10 +1392,10 @@ FN(beginRenderPass) {   /* (encoder, descriptor): a pass id; an ended encoder gi
         if (ca->IsNullOrUndefined()) { cas.push_back(A); continue; }
         uint32_t vid = e.hid(ca, "view");
         if (!vid && !e.bad) { e.type_error("Required member is undefined: view"); break; }
-        A.view = (WGPUTextureView)need(e, vid, K_VIEW, &ok);
+        A.view = need_view(e, vid, &ok, temps);
         uses.push_back(vid);
         uint32_t rid = e.hid(ca, "resolveTarget");
-        if (rid) { A.resolveTarget = (WGPUTextureView)need(e, rid, K_VIEW, &ok); uses.push_back(rid); }
+        if (rid) { A.resolveTarget = need_view(e, rid, &ok, temps); uses.push_back(rid); }
         v8::Local<v8::Value> dsl = e.get(ca, "depthSlice");
         A.depthSlice = dsl->IsUndefined() ? WGPU_DEPTH_SLICE_UNDEFINED : e.u32v(dsl, 0);
         A.clearValue = e.color(e.get(ca, "clearValue"));
@@ -1299,7 +1409,7 @@ FN(beginRenderPass) {   /* (encoder, descriptor): a pass id; an ended encoder gi
     if (has_ds) {
         uint32_t vid = e.hid(dso, "view");
         if (!vid && !e.bad) e.type_error("Required member is undefined: view");
-        dsa.view = (WGPUTextureView)need(e, vid, K_VIEW, &ok);
+        dsa.view = need_view(e, vid, &ok, temps);
         uses.push_back(vid);
         dsa.depthClearValue = (float)e.num(dso, "depthClearValue", NAN);
         dsa.depthLoadOp = (WGPULoadOp)e.en(dso, "depthLoadOp", "LoadOp", WGPULoadOp_Undefined);
@@ -1785,19 +1895,48 @@ FN(copyExternalImageToTexture) {
 
 /* ---- canvases ---- */
 
-struct Rb { uint32_t buf = 0, w = 0, h = 0, stride = 0, ticket = 0; int state = 0; uint64_t seq = 0; };   /* state: 0 free, 1 mapping, 2 mapped */
+struct Rb { uint32_t buf = 0, w = 0, h = 0, stride = 0, ticket = 0; int state = 0; uint64_t seq = 0; bool probe = false; };   /* state: 0 free, 1 mapping, 2 mapped */
+/* A texture of a canvas's swap chain. Frames the compositor draws in place hold it as their ImgGpu (refs: one for
+   the canvas's pool, one per such frame), so a texture it may still draw is never handed out to be drawn into. */
+struct Swap {
+    ImgGpu g{};   /* first: the Image's gpu pointer is the Swap */
+    std::atomic<int> refs{ 1 };
+    WGPUTexture tex = nullptr; WGPUTextureView view = nullptr; WGPUDevice dev = nullptr;
+    uint32_t id = 0, w = 0, h = 0, canvas = 0;
+    uint64_t seq = 0;   /* the canvas's frame it was last presented as */
+    int wf = 0;
+    bool opaque = true;
+};
+void swap_unref(Swap *s) {
+    if (s->refs.fetch_sub(1) != 1) return;
+    if (s->view) wgpuTextureViewRelease(s->view);
+    if (s->tex) wgpuTextureRelease(s->tex);
+    if (s->dev) wgpuDeviceRelease(s->dev);
+    delete s;
+}
 struct Canvas {
     JsCtx *owner; Node *node; MediaPlayer *player; WgFrames *frames;
     int capture = 0;
-    uint32_t dev = 0, tex = 0, tw = 0, th = 0;
+    uint32_t dev = 0;
     int fmt = 0, wf = 0;
     uint64_t usage = 0;
     std::vector<WGPUTextureFormat> view_fmts;
     bool opaque = true;
+    std::vector<Swap *> sw;   /* the pool, at most SWAP_MAX */
+    Swap *cur = nullptr;      /* handed out for this frame, not presented yet */
     Rb rb[3];
     uint64_t seq = 0, shown = 0;
     uint32_t dropped = 0;
+    /* see-through canvases are read back until SEE_RUN frames in a row had no alpha below 1, then shown in place
+       with every PROBE_EVERY-th frame read back to check; reading a frame shown in place (need_px) reads back
+       NEED_PX frames */
+    int opaque_run = 0, since_probe = 0, need_px = 0;
+    uint32_t n_place = 0, n_back = 0, n_sync = 0;   /* frames shown in place, read back; reads of frames shown in place */
 };
+/* the player keeps its frame, the next one and three older ones (media.c's grave, which only the raster's
+   pointer checks need: the compositor draws the current frame), so six textures are enough for one to be free */
+const size_t SWAP_MAX = 6;
+const int SEE_RUN = 10, PROBE_EVERY = 30, NEED_PX = 120;
 std::map<uint32_t, Canvas *> g_canvas;
 uint32_t g_next_canvas = 1, g_next_rb = 1;
 int g_rb_busy = 0;   /* readbacks mapping or mapped, in all canvases */
@@ -1813,9 +1952,16 @@ void on_canvas_map(WGPUMapAsyncStatus st, WGPUStringView, void *u1, void *u2) {
     Rb &r = it->second->rb[v & 3];
     if (r.state == 1 && r.ticket == (uint32_t)(v >> 2)) rb_state(r, st == WGPUMapAsyncStatus_Success ? 2 : 0);
 }
+void canvas_drop_swap(Canvas *cv, size_t i) {
+    Swap *s = cv->sw[i];
+    if (cv->cur == s) cv->cur = nullptr;
+    if (s->id) hfree(s->id);
+    s->id = 0;
+    cv->sw.erase(cv->sw.begin() + (long)i);
+    swap_unref(s);
+}
 void canvas_drop_tex(Canvas *cv) {
-    if (cv->tex) hfree(cv->tex);
-    cv->tex = 0; cv->tw = cv->th = 0;
+    while (!cv->sw.empty()) canvas_drop_swap(cv, cv->sw.size() - 1);
 }
 void canvas_drop_rbs(Canvas *cv) {
     for (Rb &r : cv->rb) {
@@ -1839,6 +1985,14 @@ Canvas *canvas(JsCtx *c, uint32_t id) {
     auto it = g_canvas.find(id);
     return it != g_canvas.end() && it->second->owner == c ? it->second : nullptr;
 }
+bool rows_translucent(const uint8_t *rows, size_t stride, uint32_t w, uint32_t h, int wf) {
+    for (uint32_t y = 0; y < h; y++) {
+        const uint8_t *r = rows + (size_t)y * stride;
+        if (wf == WGF_RGBA16F) { for (uint32_t x = 0; x < w; x++) { uint16_t a; memcpy(&a, r + (size_t)x * 8 + 6, 2); if (a < 0x3c00) return true; } }
+        else for (uint32_t x = 0; x < w; x++) if (r[(size_t)x * 4 + 3] != 255) return true;
+    }
+    return false;
+}
 /* the newest mapped readback of each canvas to its player; older ones are just unmapped */
 void canvas_finish() {
     if (!g_rb_busy) return;
@@ -1854,16 +2008,58 @@ void canvas_finish() {
             Rb &r = cv->rb[k];
             if (r.state != 2) continue;
             H *b = hraw(r.buf);
-            if (k == best && live && b && b->p && r.seq > cv->shown) {
+            if (live && b && b->p && (r.probe || (k == best && r.seq > cv->shown))) {
                 const uint8_t *rows = (const uint8_t *)wgpuBufferGetMappedRange((WGPUBuffer)b->p, 0, (size_t)r.stride * r.h);
-                wgf_push(cv->frames, cv->player, cv->capture, rows, r.stride, (int)r.w, (int)r.h, cv->wf, cv->opaque);
-                cv->shown = r.seq;
+                bool see = false;
+                if (r.probe) see = rows && rows_translucent(rows, r.stride, r.w, r.h, cv->wf);
+                else { see = wgf_push(cv->frames, cv->player, cv->capture, rows, r.stride, (int)r.w, (int)r.h, cv->wf, cv->opaque); cv->shown = r.seq; }
+                cv->opaque_run = see ? 0 : cv->opaque_run + 1;
             }
             if (live && b && b->p) wgpuBufferUnmap((WGPUBuffer)b->p);
             rb_state(r, 0);
         }
     }
 }
+
+/* ImgGpu.read: the frame's pixels, read back now (main thread only: it waits for the GPU, and callbacks run) */
+void on_sync_map(WGPUMapAsyncStatus st, WGPUStringView, void *u1, void *) { *(int *)u1 = st == WGPUMapAsyncStatus_Success ? 1 : -1; }
+bool swap_read(ImgGpu *g, uint32_t *px, int w, int h) {
+    Swap *s = reinterpret_cast<Swap *>(g);
+    if (std::this_thread::get_id() != g_main_tid || !s->tex || (uint32_t)w != s->w || (uint32_t)h != s->h) return false;
+    auto it = g_canvas.find(s->canvas);
+    if (it != g_canvas.end()) { it->second->need_px = NEED_PX; it->second->n_sync++; }   /* a page reading the canvas, or no GPU layer for it */
+    uint32_t bpp = s->wf == WGF_RGBA16F ? 8 : 4, stride = (s->w * bpp + 255) / 256 * 256;
+    WGPUBufferDescriptor bd = WGPU_BUFFER_DESCRIPTOR_INIT;
+    bd.size = (uint64_t)stride * s->h; bd.usage = WGPUBufferUsage_MapRead | WGPUBufferUsage_CopyDst;
+    Cap cap;
+    WGPUBuffer buf = wgpuDeviceCreateBuffer(s->dev, &bd);
+    if (!buf) return false;
+    WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(s->dev, nullptr);
+    WGPUTexelCopyTextureInfo src = { s->tex, 0, { 0, 0, 0 }, WGPUTextureAspect_All };
+    WGPUTexelCopyBufferInfo dst = { { 0, stride, s->h }, buf };
+    WGPUExtent3D ext = { s->w, s->h, 1 };
+    wgpuCommandEncoderCopyTextureToBuffer(enc, &src, &dst, &ext);
+    WGPUCommandBuffer cb = wgpuCommandEncoderFinish(enc, nullptr);
+    wgpuCommandEncoderRelease(enc);
+    WGPUQueue q = wgpuDeviceGetQueue(s->dev);
+    wgpuQueueSubmit(q, 1, &cb);
+    wgpuQueueRelease(q);
+    wgpuCommandBufferRelease(cb);
+    int done = 0;
+    wgpuBufferMapAsync(buf, WGPUMapMode_Read, 0, (size_t)bd.size, WGPUBufferMapCallbackInfo{ nullptr, WGPUCallbackMode_AllowProcessEvents, on_sync_map, &done, nullptr });
+    for (int i = 0; !done && !cap.has && i < 100; i++) { wgpuDevicePoll(s->dev, true, nullptr); wgpuInstanceProcessEvents(g_inst); }
+    bool ok = done == 1;
+    if (ok) {
+        const uint8_t *rows = (const uint8_t *)wgpuBufferGetMappedRange(buf, 0, (size_t)bd.size);
+        if ((ok = rows != nullptr)) {
+            wgf_convert(px, rows, stride, w, h, s->wf, true);   /* only opaque frames are shown in place */
+        }
+        wgpuBufferUnmap(buf);
+    }
+    wgpuBufferRelease(buf);
+    return ok;
+}
+void swap_release(ImgGpu *g) { swap_unref(reinterpret_cast<Swap *>(g)); }
 
 FN(canvasConfigure) {   /* (canvasElement, device, format, usage, opaque, viewFormats, canvasId | 0): canvas id */
     GPUC;
@@ -1891,57 +2087,99 @@ FN(canvasConfigure) {   /* (canvasElement, device, format, usage, opaque, viewFo
     cv->dev = did; cv->fmt = fmt; cv->usage = usage; cv->view_fmts = vf;
     cv->wf = fmt == WGPUTextureFormat_BGRA8Unorm ? WGF_BGRA8 : fmt == WGPUTextureFormat_RGBA8Unorm ? WGF_RGBA8 : WGF_RGBA16F;
     cv->opaque = ARG(4)->BooleanValue(iso);
+    cv->opaque_run = cv->since_probe = 0;
     RET(id);
 }
 FN(canvasUnconfigure) { GPUC; if (canvas(c, au(a, 0))) canvas_free(au(a, 0)); }
 FN(canvasTexture) {   /* (canvasId, width, height): the texture to draw this frame into */
     GPUC;
-    Canvas *cv = canvas(c, au(a, 0));
+    uint32_t cid = au(a, 0);
+    Canvas *cv = canvas(c, cid);
     if (!cv) return;
     uint32_t w = std::max<uint32_t>(au(a, 1), 1), h = std::max<uint32_t>(au(a, 2), 1);
-    H *t = hraw(cv->tex);
-    if (t && cv->tw == w && cv->th == h) { RET(cv->tex); return; }
-    canvas_drop_tex(cv);
+    if (cv->cur && cv->cur->w == w && cv->cur->h == h && hraw(cv->cur->id)) { RET(cv->cur->id); return; }
+    cv->cur = nullptr;
+    for (size_t i = cv->sw.size(); i-- > 0;) if (cv->sw[i]->w != w || cv->sw[i]->h != h) canvas_drop_swap(cv, i);
+    for (Swap *s : cv->sw) if (s->refs.load() == 1 && hraw(s->id)) { cv->cur = s; RET(s->id); return; }   /* not on screen */
+    if (cv->sw.size() >= SWAP_MAX) {   /* all held: the least recently presented is only in the grave by now */
+        Swap *old = nullptr;
+        for (Swap *s : cv->sw) if (hraw(s->id) && (!old || s->seq < old->seq)) old = s;
+        if (old && old->seq + 3 <= cv->seq) { cv->cur = old; RET(old->id); return; }
+        canvas_drop_swap(cv, 0);
+    }
     H *d = hraw(cv->dev);
     if (!d || !d->p) return;
     WGPUTextureDescriptor td = WGPU_TEXTURE_DESCRIPTOR_INIT;
-    td.usage = cv->usage | WGPUTextureUsage_CopySrc | WGPUTextureUsage_RenderAttachment;
+    td.usage = cv->usage | WGPUTextureUsage_CopySrc | WGPUTextureUsage_RenderAttachment | (d->shared ? WGPUTextureUsage_TextureBinding : 0);
     td.size = WGPUExtent3D{ w, h, 1 };
     td.format = (WGPUTextureFormat)cv->fmt;
     td.viewFormatCount = cv->view_fmts.size(); td.viewFormats = cv->view_fmts.data();
     Cap cap;
     WGPUTexture tex = wgpuDeviceCreateTexture((WGPUDevice)d->p, &td);
+    bool ok = tex && !cap.has;
     uint32_t id = finish_new(e, K_TEXTURE, tex, cv->dev, cap);
     H *th = hraw(id);
     if (!th) return;
     th->canvas = true; th->fmt = cv->fmt; th->usage = cv->usage;
-    cv->tex = id; cv->tw = w; cv->th = h;
+    Swap *s = new Swap();
+    s->id = id; s->w = w; s->h = h; s->canvas = cid; s->wf = cv->wf;
+    if (ok && d->shared) {
+        s->tex = tex; wgpuTextureAddRef(tex);
+        s->dev = (WGPUDevice)d->p; wgpuDeviceAddRef(s->dev);
+        s->view = wgpuTextureCreateView(tex, nullptr);
+    }
+    s->g.view = s->view; s->g.dev = s->dev; s->g.flags = GPU_VIEW_OPAQUE; s->g.read = swap_read; s->g.release = swap_release;
+    cv->sw.push_back(s);
+    cv->cur = s;
     RET(id);
 }
-FN(canvasPresent) {   /* (canvasId): reads the texture back for the canvas's player */
+/* whether this frame goes to the compositor as the texture itself */
+bool in_place(Canvas *cv, H *d, Swap *s) {
+    if (!d->shared || !s->view || cv->capture > 0) return false;
+    if (cv->need_px > 0) { cv->need_px--; return false; }
+    GpuShared now;
+    if (!gpu_shared(&now) || now.dev != (void *)s->dev) return false;   /* the presenter was made again */
+    return cv->opaque || cv->opaque_run >= SEE_RUN;
+}
+FN(canvasPresent) {   /* (canvasId): hands the frame to the canvas's player, in place or read back */
     GPUC;
     Canvas *cv = canvas(c, au(a, 0));
-    if (!cv) return;
-    H *d = hraw(cv->dev), *t = hraw(cv->tex);
+    if (!cv || !cv->cur) return;
+    Swap *s = cv->cur;
+    cv->cur = nullptr;
+    H *d = hraw(cv->dev), *t = hraw(s->id);
     if (!d || !d->p || d->lost || !t || !t->p || t->bad) return;
+    bool probe = false;
+    if ((cv->n_place + cv->n_back) % 600 == 599)
+        gpu_log("webgpu: canvas %ux%u: %u frames in place, %u read back, %u in-place frames read\n", s->w, s->h, cv->n_place, cv->n_back, cv->n_sync);
+    if (in_place(cv, d, s)) {
+        cv->n_place++;
+        if (!cv->opaque && ++cv->since_probe >= PROBE_EVERY) { cv->since_probe = 0; probe = true; }
+        s->refs++;
+        cv->shown = s->seq = ++cv->seq;   /* readbacks still in flight are older */
+        wgf_push_gpu(cv->player, &s->g, (int)s->w, (int)s->h);
+        if (media_wakeup) media_wakeup();
+        if (!probe) return;
+    }
     int k = -1;
-    for (int i = 0; i < 3; i++) if (!cv->rb[i].state && (k < 0 || (cv->rb[i].w == cv->tw && cv->rb[i].h == cv->th))) k = i;
-    if (k < 0) { cv->dropped++; return; }   /* three frames in flight already */
+    for (int i = 0; i < 3; i++) if (!cv->rb[i].state && (k < 0 || (cv->rb[i].w == s->w && cv->rb[i].h == s->h))) k = i;
+    if (k < 0) { if (!probe) cv->dropped++; return; }   /* three frames in flight already */
+    if (!probe) cv->n_back++;
     Rb &r = cv->rb[k];
-    uint32_t bpp = cv->wf == WGF_RGBA16F ? 8 : 4, stride = (cv->tw * bpp + 255) / 256 * 256;
+    uint32_t bpp = cv->wf == WGF_RGBA16F ? 8 : 4, stride = (s->w * bpp + 255) / 256 * 256;
     Cap cap;
-    if (!r.buf || r.w != cv->tw || r.h != cv->th) {
+    if (!r.buf || r.w != s->w || r.h != s->h) {
         if (r.buf) hfree(r.buf);
         r = Rb();
         WGPUBufferDescriptor bd = WGPU_BUFFER_DESCRIPTOR_INIT;
-        bd.size = (uint64_t)stride * cv->th; bd.usage = WGPUBufferUsage_MapRead | WGPUBufferUsage_CopyDst;
+        bd.size = (uint64_t)stride * s->h; bd.usage = WGPUBufferUsage_MapRead | WGPUBufferUsage_CopyDst;
         WGPUBuffer b = wgpuDeviceCreateBuffer((WGPUDevice)d->p, &bd);
         if (!b || cap.has) { if (b) wgpuBufferRelease(b); return; }
         r.buf = hnew(K_BUFFER, c, b, cv->dev);
         if (!r.buf) { wgpuBufferRelease(b); return; }
         H *bh = hraw(r.buf);
         bh->canvas = true; bh->size = bd.size; bh->usage = bd.usage;
-        r.w = cv->tw; r.h = cv->th; r.stride = stride;
+        r.w = s->w; r.h = s->h; r.stride = stride;
     }
     H *bh = hraw(r.buf);
     WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder((WGPUDevice)d->p, nullptr);
@@ -1954,7 +2192,8 @@ FN(canvasPresent) {   /* (canvasId): reads the texture back for the canvas's pla
     if (!cap.has) wgpuQueueSubmit(queue_of(d), 1, &cb);
     wgpuCommandBufferRelease(cb);
     if (cap.has) return;
-    r.ticket = g_next_rb++ & 0x3fffffff; r.seq = ++cv->seq;
+    r.ticket = g_next_rb++ & 0x3fffffff; r.probe = probe;
+    if (!probe) r.seq = ++cv->seq;
     rb_state(r, 1);
     wgpuBufferMapAsync((WGPUBuffer)bh->p, WGPUMapMode_Read, 0, (size_t)r.stride * r.h,
                        WGPUBufferMapCallbackInfo{ nullptr, WGPUCallbackMode_AllowProcessEvents, on_canvas_map, (void *)(uintptr_t)au(a, 0), (void *)(uintptr_t)(k | (uintptr_t)r.ticket << 2) });

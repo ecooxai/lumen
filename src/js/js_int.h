@@ -103,6 +103,10 @@ struct JsCtx {
     bool intersection_pending = false;
     double intersection_due = 0;
     double last_raf = 0, t0 = 0;
+    /* rAF loop throttle (raf_gap in js.cc): when the current back-to-back run of frames began, and the
+       shell activity generation (page paints, input) seen at the last frame with when it last changed */
+    double raf_run_t = 0, raf_act_t = 0;
+    uint64_t raf_act_seen = 0;
     std::map<uint64_t, Fetch *> fetches;
     std::map<uint32_t, struct WsSock *> sockets;
     uint32_t next_ws = 1;
@@ -126,6 +130,7 @@ struct JsCtx {
     bool fullscreen = false;          /* its document has a fullscreen element */
     std::vector<JsCtx *> kids;
     uint32_t id = 0;
+    uint32_t wid = 0, opener = 0;     /* top context: its tab's window id, the context that opened the tab */
     bool dead = false;
     uint64_t frame_scan_ver = ~0ull;
     void *host_ud = nullptr;          /* child host data returned by frame_open */
@@ -134,6 +139,10 @@ struct JsCtx {
     std::unordered_multimap<int, std::string> mod_url;              /* module identity hash -> key */
     int mod_seq = 0;
     std::vector<std::unique_ptr<ModJob>> mod_jobs;
+    /* Promises rejected with no handler (root context, for all its frames); reported after the
+       tick's microtask checkpoint unless a handler was attached meanwhile */
+    struct Rej { v8::Global<v8::Promise> p; v8::Global<v8::Value> reason; uint32_t ctx; std::string trace; };
+    std::vector<Rej> rejs;
     /* Cached modules re-serialised once the page has been quiet, so the cache also holds
        functions compiled lazily after evaluation: {script, cache path, bytes loaded}. */
     struct CodeRefresh { v8::Global<v8::UnboundModuleScript> s; std::string path; int had; };
@@ -176,6 +185,10 @@ void frames_forget(JsCtx *c);
 void frame_kill(JsCtx *k);
 void frame_nav(JsCtx *k, const char *u);
 void js_install_frames(JsCtx *c, v8::Local<v8::Object> N);
+extern "C" JsCtx *js_ctx_by_id(uint32_t id);        /* any live context, any tab */
+extern "C" JsCtx *js_ctx_of_window(uint32_t wid);   /* the top context a tab shows now */
+bool xmsg_waiting(JsCtx *c);             /* another tab's postMessage waits for c */
+void xmsg_deliver(JsCtx *c);
 void js_install_workers(JsCtx *c, v8::Local<v8::Object> N);
 void js_wasm_init(v8::Isolate *iso);
 void js_wasm_install(v8::Local<v8::Context> ctx, v8::Local<v8::Object> native);

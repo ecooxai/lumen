@@ -290,6 +290,17 @@ static v8::ScriptCompiler::CachedData *code_load(const std::string &path) {
     utimensat(AT_FDCWD, path.c_str(), nullptr, 0);   /* recently used */
     return new v8::ScriptCompiler::CachedData(b, (int)st.st_size, v8::ScriptCompiler::CachedData::BufferOwned);
 }
+/* CreateCodeCache, timed in debug Android builds (serialising a large module blocks the main thread) */
+template <class T> static v8::ScriptCompiler::CachedData *code_create(T script, const char *site) {
+#if defined(__ANDROID__) && !defined(NDEBUG)
+    double t0 = now_ms();
+    v8::ScriptCompiler::CachedData *cd = v8::ScriptCompiler::CreateCodeCache(script);
+    if (now_ms() - t0 >= 20) __android_log_print(ANDROID_LOG_INFO, "LumenLoad", "code_cache site=%s ms=%.0f kb=%d", site, now_ms() - t0, cd ? cd->length >> 10 : 0);
+    return cd;
+#else
+    (void)site; return v8::ScriptCompiler::CreateCodeCache(script);
+#endif
+}
 /* Writes cd (consumed) atomically off the main thread. */
 static void code_store(const std::string &path, v8::ScriptCompiler::CachedData *cd) {
     if (!cd) return;
@@ -324,7 +335,7 @@ static void run_source(JsCtx *c, const char *src, size_t n, const char *name, bo
     v8::ScriptCompiler::Source source(jsrc(iso, src, n), origin, cd);
     if (v8::ScriptCompiler::Compile(ctx, &source, cd ? v8::ScriptCompiler::kConsumeCodeCache : v8::ScriptCompiler::kNoCompileOptions).ToLocal(&s)) {
         (void)s->Run(ctx);
-        if (cache && (!cd || source.GetCachedData()->rejected)) code_store(path, v8::ScriptCompiler::CreateCodeCache(s->GetUnboundScript()));
+        if (cache && (!cd || source.GetCachedData()->rejected)) code_store(path, code_create(s->GetUnboundScript(), "classic"));
     }
     js_leave(c);
     if (tc.HasCaught() && tc.CanContinue()) jreport(c, tc.Exception(), tc.Message());
@@ -457,15 +468,19 @@ static std::string mod_key(JsCtx *c, v8::Local<v8::Module> m) {
     return c->doc && c->doc->url ? c->doc->url : "";
 }
 static constexpr double kCodeRefreshQuietMs = 10000;   /* after the last module compile */
+static constexpr double kCodeIdleMs = 4000;             /* after the last user input */
+static std::atomic<double> g_input_at{ 0 };              /* last trusted pointer, touch, key or wheel event */
+/* Serialising one large module takes 50-150 ms on a phone, so it waits for the user to pause. */
+static bool user_idle() { return now_ms() - g_input_at.load() > kCodeIdleMs; }
 /* Re-serialises cached modules in small slices once module loading has been quiet; a cache
    that grew (functions compiled since) replaces the stored one. */
 static void code_refresh_tick(JsCtx *c) {
-    if (c->code_refresh.empty() || now_ms() < c->code_refresh_due) return;
+    if (c->code_refresh.empty() || now_ms() < c->code_refresh_due || !user_idle()) return;
     double t0 = now_ms();
     while (!c->code_refresh.empty() && now_ms() - t0 < 8) {
         JsCtx::CodeRefresh r = std::move(c->code_refresh.back());
         c->code_refresh.pop_back();
-        v8::ScriptCompiler::CachedData *cd = v8::ScriptCompiler::CreateCodeCache(r.s.Get(c->iso));
+        v8::ScriptCompiler::CachedData *cd = code_create(r.s.Get(c->iso), "refresh");
         if (cd && cd->length > r.had + r.had / 8 + 1024) code_store(r.path, cd);
         else delete cd;
     }
@@ -532,9 +547,10 @@ static v8::MaybeLocal<v8::Promise> mod_eval(JsCtx *c, v8::Local<v8::Module> m) {
     if (m->GetStatus() == v8::Module::kUninstantiated && !m->InstantiateModule(ctx, mod_resolve_cb).FromMaybe(false)) return {};
     v8::Local<v8::Value> result;
     bool evaluated = m->Evaluate(ctx).ToLocal(&result);
-    for (auto &p : t_code_pending) {
+    /* while the user interacts, the code refresh queue stores these later instead */
+    if (user_idle()) for (auto &p : t_code_pending) {
         v8::Local<v8::Module> pm = p.first.Get(c->iso);
-        if (pm->GetStatus() != v8::Module::kErrored) code_store(p.second, v8::ScriptCompiler::CreateCodeCache(pm->GetUnboundModuleScript()));
+        if (pm->GetStatus() != v8::Module::kErrored) code_store(p.second, code_create(pm->GetUnboundModuleScript(), "module"));
     }
     t_code_pending.clear();
     if (!evaluated) return {};
@@ -679,46 +695,97 @@ static void mod_report(const v8::FunctionCallbackInfo<v8::Value> &a) {
     if (JsCtx *c = jctx(iso)) jreport(c, a[0], v8::Exception::CreateMessage(iso, a[0]));
 }
 
+static JsCtx *root_ctx(JsCtx *c) { while (c && c->parent) c = c->parent; return c; }
 static void on_reject(v8::PromiseRejectMessage m) {
-    if (m.GetEvent() != v8::kPromiseRejectWithNoHandler || g_log_level > 2) return;
     v8::Isolate *iso = v8::Isolate::GetCurrent();
+    JsCtx *c = jctx(iso), *r = root_ctx(c);
+    if (!r) return;
+    v8::Local<v8::Promise> p = m.GetPromise();
+    if (m.GetEvent() == v8::kPromiseHandlerAddedAfterReject) {
+        for (size_t i = 0; i < r->rejs.size(); i++) if (r->rejs[i].p == p) { r->rejs.erase(r->rejs.begin() + (long)i); break; }
+        return;
+    }
+    if (m.GetEvent() != v8::kPromiseRejectWithNoHandler) return;
     v8::Local<v8::Value> v = m.GetValue();
-    std::string s = jcstr(iso, v);
+    std::string tr;
+    bool has_stack = false;
     if (v->IsObject()) {
         v8::Local<v8::Value> st;
-        if (v.As<v8::Object>()->Get(iso->GetCurrentContext(), jstr(iso, "stack")).ToLocal(&st) && st->IsString()) s = jcstr(iso, st);
+        has_stack = v.As<v8::Object>()->Get(iso->GetCurrentContext(), jstr(iso, "stack")).ToLocal(&st) && st->IsString() && jcstr(iso, st).find('\n') != std::string::npos;
     }
-    if (!v->IsObject() || s.find('\n') == std::string::npos) {
-        v8::Local<v8::StackTrace> tr = v8::StackTrace::CurrentStackTrace(iso, 4);
-        for (int i = 0; i < tr->GetFrameCount(); i++) {
-            v8::Local<v8::StackFrame> f = tr->GetFrame(iso, i);
+    if (!has_stack && g_log_level <= 2) {   /* where it was rejected; a later report has no stack */
+        v8::Local<v8::StackTrace> t = v8::StackTrace::CurrentStackTrace(iso, 4);
+        for (int i = 0; i < t->GetFrameCount(); i++) {
+            v8::Local<v8::StackFrame> f = t->GetFrame(iso, i);
             v8::Local<v8::String> fn = f->GetFunctionName(), sn = f->GetScriptName();
-            s += "\n    at " + (fn.IsEmpty() ? std::string("?") : jcstr(iso, fn)) + " (" + (sn.IsEmpty() ? std::string("?") : jcstr(iso, sn)) + ":" + std::to_string(f->GetLineNumber()) + ":" + std::to_string(f->GetColumn()) + ")";
+            tr += "\n    at " + (fn.IsEmpty() ? std::string("?") : jcstr(iso, fn)) + " (" + (sn.IsEmpty() ? std::string("?") : jcstr(iso, sn)) + ":" + std::to_string(f->GetLineNumber()) + ":" + std::to_string(f->GetColumn()) + ")";
         }
     }
-    fprintf(stderr, "[js warn] Unhandled promise rejection: %.900s\n", s.c_str());
+    if (r->rejs.size() < 256) r->rejs.push_back({ v8::Global<v8::Promise>(iso, p), v8::Global<v8::Value>(iso, v), c->id, tr });
+}
+/* After a task's microtasks: each still-unhandled rejection fires a cancelable unhandledrejection
+   event at its window, and is logged unless the page prevented it. */
+static void rej_flush(JsCtx *r) {
+    if (r->rejs.empty() || r->depth) return;
+    v8::Isolate *iso = r->iso;
+    std::vector<JsCtx::Rej> list;
+    list.swap(r->rejs);
+    for (JsCtx::Rej &e : list) {
+        JsCtx *t = js_ctx_by_id(e.ctx);
+        if (!t || t->dead || t->api.IsEmpty()) continue;
+        v8::HandleScope hs(iso);
+        v8::Local<v8::Context> tc = t->ctx.Get(iso);
+        v8::Context::Scope cs(tc);
+        v8::Local<v8::Value> fn, prevented, reason = e.reason.Get(iso);
+        v8::Local<v8::Value> argv[2] = { e.p.Get(iso), reason };
+        if (t->api.Get(iso)->Get(tc, jstr(iso, "rejection")).ToLocal(&fn) && fn->IsFunction() &&
+            jcall(t, fn.As<v8::Function>(), v8::Undefined(iso), 2, argv).ToLocal(&prevented) && prevented->BooleanValue(iso)) continue;
+        if (g_log_level > 2) continue;
+        std::string s = jcstr(iso, reason);
+        if (reason->IsObject()) {
+            v8::Local<v8::Value> st;
+            if (reason.As<v8::Object>()->Get(tc, jstr(iso, "stack")).ToLocal(&st) && st->IsString()) s = jcstr(iso, st);
+        }
+        fprintf(stderr, "[js warn] Unhandled promise rejection: %.900s\n", (s + e.trace).c_str());
+    }
+    js_enter(r);
+    iso->PerformMicrotaskCheckpoint();
+    js_leave(r);
 }
 
 #if defined(__ANDROID__) && !defined(NDEBUG)
 #include <android/log.h>
 /* Debug Android diagnostic, armed by an empty "jsprof" file next to v8cache: samples each new
-   top-level page's JS for 45 s and logs ticks per Lumen prelude function. Page code is counted in
+   top-level page's JS for 90 s (or until 3 s after its first tap) and logs ticks per Lumen prelude function. A file
+   reading "tail" ignores touches and also reports the last 15 s (the settled page). Page code is counted in
    aggregate, plus the line:column of its hottest functions; its function names and script URLs are
    never logged. */
-static v8::CpuProfiler *g_prof; static JsCtx *g_prof_ctx; static double g_prof_end;
-static void jsprof_walk(const v8::CpuProfileNode *n, std::unordered_map<std::string, int> &self,
-                        std::unordered_map<std::string, int> &incl, std::vector<std::string> &stack, int &total) {
+#define JSPROF_MS 90000   /* the page window; a first tap ends it 3 s after */
+static v8::CpuProfiler *g_prof; static JsCtx *g_prof_ctx; static double g_prof_end, g_prof_begun, g_prof_tap; static bool g_prof_tail;
+static std::string jsprof_key(const v8::CpuProfileNode *n) {
     std::string sn = *v8::String::Utf8Value(g_prof_ctx->iso, n->GetScriptResourceName());
     std::string fn = n->GetFunctionNameStr();
-    std::string k = sn == "lumen:prelude" ? "P " + (fn.empty() ? std::string("(anon)") : fn) + ":" + std::to_string(n->GetLineNumber())
-                  : sn.empty() && !fn.empty() ? "V " + fn : "<page>";
-    int hits = (int)n->GetHitCount(); self[k] += hits; total += hits;
-    if (k == "<page>" && hits) {
-        /* the script as its disk-cache entry name (FNV-1a of the URL, see cache.c), never the URL */
-        uint64_t h = 1469598103934665603ull; for (unsigned char ch : sn) h = (h ^ ch) * 1099511628211ull;
-        char key[64]; snprintf(key, sizeof key, "@ %016llx:%d:%d", (unsigned long long)h, n->GetLineNumber(), n->GetColumnNumber());
-        self[key] += hits;
+    return sn == "lumen:prelude" ? "P " + (fn.empty() ? std::string("(anon)") : fn) + ":" + std::to_string(n->GetLineNumber())
+         : sn.empty() && !fn.empty() ? "V " + fn : "<page>";
+}
+/* page code as its script's disk-cache entry name (FNV-1a of the URL, see cache.c) and line:column, never the URL */
+static std::string jsprof_page_key(const v8::CpuProfileNode *n) {
+    std::string sn = *v8::String::Utf8Value(g_prof_ctx->iso, n->GetScriptResourceName());
+    uint64_t h = 1469598103934665603ull; for (unsigned char ch : sn) h = (h ^ ch) * 1099511628211ull;
+    /* code without line numbers (WebAssembly, eval) also gets its URL scheme and V8's source type */
+    char key[96], kind[40] = "";
+    if (n->GetLineNumber() <= 0) {
+        size_t c = sn.find(':'); std::string sch = c != std::string::npos && c < 12 ? sn.substr(0, c) : std::string("-");
+        snprintf(kind, sizeof kind, " [%s type=%d len=%zu]", sch.c_str(), (int)n->GetSourceType(), sn.size());
     }
+    snprintf(key, sizeof key, "@ %016llx:%d:%d%s", (unsigned long long)h, n->GetLineNumber(), n->GetColumnNumber(), kind);
+    return key;
+}
+static void jsprof_walk(const v8::CpuProfileNode *n, std::unordered_map<std::string, int> &self,
+                        std::unordered_map<std::string, int> &incl, std::vector<std::string> &stack, int &total) {
+    std::string k = jsprof_key(n);
+    int hits = (int)n->GetHitCount(); self[k] += hits; total += hits;
+    if (k == "<page>" && hits) self[jsprof_page_key(n)] += hits;
     bool fresh = std::find(stack.begin(), stack.end(), k) == stack.end();
     if (fresh) stack.push_back(k);
     int before = total;
@@ -743,24 +810,57 @@ static void jsprof_stop(bool report) {
         top(self, "self", 60);
         incl.erase("<page>");
         top(incl, "incl", 60);
+        if (g_prof_tap > 0 || g_prof_tail) {   /* the first tap's 2.5 s or the last 15 s, from the samples' own times */
+            int64_t from = g_prof_tail ? pr->GetEndTime() - 15000000 : pr->GetStartTime() + (int64_t)((g_prof_tap - g_prof_begun) * 1000);
+            int64_t to = g_prof_tail ? pr->GetEndTime() : from + 2500000;
+            std::unordered_map<std::string, int> wself, wincl; int wtotal = 0;
+            for (int i = 0; i < pr->GetSamplesCount(); i++) {
+                int64_t t = pr->GetSampleTimestamp(i);
+                if (t < from || t >= to) continue;
+                const v8::CpuProfileNode *n = pr->GetSample(i);
+                std::string k = jsprof_key(n);
+                wself[k == "<page>" ? jsprof_page_key(n) : k]++; wtotal++;
+                std::vector<std::string> seen;
+                for (const v8::CpuProfileNode *u = n; u && u->GetParent(); u = u->GetParent()) {
+                    std::string uk = jsprof_key(u);
+                    if (uk == "<page>") uk = jsprof_page_key(u);
+                    if (std::find(seen.begin(), seen.end(), uk) == seen.end()) { seen.push_back(uk); wincl[uk]++; }
+                }
+            }
+            __android_log_print(ANDROID_LOG_INFO, "LumenProf", "%s samples=%d start_ms=%.0f", g_prof_tail ? "tail_window" : "tap_window", wtotal,
+                                g_prof_tail ? (pr->GetEndTime() - pr->GetStartTime()) / 1000.0 - 15000 : g_prof_tap - g_prof_begun);
+            total = wtotal;
+            top(wself, "tself", 40);
+            top(wincl, "tincl", 40);
+        }
         js_native_report();
     }
     if (pr) pr->Delete();
-    g_prof->Dispose(); g_prof = nullptr; g_prof_ctx = nullptr;
+    g_prof->Dispose(); g_prof = nullptr; g_prof_ctx = nullptr; g_prof_tap = 0;
 }
 static void jsprof_start(JsCtx *c) {
-    if (g_prof) jsprof_stop(now_ms() > g_prof_end - 40000);
+    if (g_prof) jsprof_stop(now_ms() > g_prof_end - JSPROF_MS + 5000);
     if (g_code_dir.size() < 7 || access((g_code_dir.substr(0, g_code_dir.size() - 7) + "jsprof").c_str(), F_OK)) return;
+    { char mode[8] = ""; FILE *f = fopen((g_code_dir.substr(0, g_code_dir.size() - 7) + "jsprof").c_str(), "r");
+      if (f) { if (!fgets(mode, sizeof mode, f)) mode[0] = 0; fclose(f); }
+      g_prof_tail = !strncmp(mode, "tail", 4); }
     v8::Isolate::Scope is(c->iso); v8::HandleScope hs(c->iso);
-    g_prof = v8::CpuProfiler::New(c->iso); g_prof_ctx = c; g_prof_end = now_ms() + 45000;
+    g_prof = v8::CpuProfiler::New(c->iso); g_prof_ctx = c; g_prof_end = now_ms() + JSPROF_MS;
     g_prof->SetSamplingInterval(500);
     g_prof->StartProfiling(jstr(c->iso, "lumen"), v8::CpuProfilingOptions(v8::kLeafNodeLineNumbers));
+    g_prof_begun = now_ms();
+}
+/* a tap while the page's profile runs: report its window 3 s later instead of restarting */
+static void jsprof_tap(JsCtx *c) {
+    if (g_prof && g_prof_ctx == c) { if (!g_prof_tap && !g_prof_tail) { g_prof_tap = now_ms(); g_prof_end = g_prof_tap + 3000; } }
+    else if (!g_prof_tail) jsprof_start(c);
 }
 bool jsprof_active(void) { return g_prof != nullptr; }
 static void jsprof_tick(JsCtx *c) { if (g_prof && g_prof_ctx == c && now_ms() > g_prof_end) jsprof_stop(true); }
 static void jsprof_free(JsCtx *c) { if (g_prof && g_prof_ctx == c) jsprof_stop(true); }
 #else
 static void jsprof_start(JsCtx *) {}
+static void jsprof_tap(JsCtx *) {}
 static void jsprof_tick(JsCtx *) {}
 static void jsprof_free(JsCtx *) {}
 #endif
@@ -807,6 +907,18 @@ void js_global_init(const char *argv0) {
     v8::V8::Initialize();
 }
 
+#if defined(__ANDROID__) && !defined(NDEBUG)
+/* debug: main-thread GC pauses of 30 ms or more, by type and heap size */
+static double g_gc_t0;
+static void gc_pause_begin(v8::Isolate *, v8::GCType, v8::GCCallbackFlags) { g_gc_t0 = now_ms(); }
+static void gc_pause_end(v8::Isolate *iso, v8::GCType type, v8::GCCallbackFlags flags) {
+    double ms = now_ms() - g_gc_t0;
+    if (ms < 30) return;
+    v8::HeapStatistics hs; iso->GetHeapStatistics(&hs);
+    __android_log_print(ANDROID_LOG_INFO, "LumenLoad", "gc_pause ms=%.0f type=%d flags=%x used_mb=%zu total_mb=%zu external_mb=%zu",
+        ms, (int)type, (unsigned)flags, hs.used_heap_size() >> 20, hs.total_heap_size() >> 20, hs.external_memory() >> 20);
+}
+#endif
 static std::vector<JsCtx *> g_ctxs;
 static uint32_t g_next_ctx_id = 1;
 void js_mem_stats(size_t *heap, size_t *external) {
@@ -844,6 +956,16 @@ void js_mem_stats(size_t *heap, size_t *external) {
     }
     *heap = h; *external = e;
 }
+JsCtx *js_ctx_by_id(uint32_t id) {
+    for (JsCtx *c : g_ctxs) if (c->id == id) return c->dead ? nullptr : c;
+    return nullptr;
+}
+JsCtx *js_ctx_of_window(uint32_t wid) {   /* the newest, while the old page lingers through a navigation */
+    JsCtx *r = nullptr;
+    for (JsCtx *c : g_ctxs) if (wid && c->wid == wid && !c->parent && !c->dead && (!r || c->id > r->id)) r = c;
+    return r;
+}
+void js_set_window(JsCtx *c, uint32_t wid, uint32_t opener) { if (c) { c->wid = wid; c->opener = opener; } }
 JsCtx *owner_ctx(Document *d) {
     for (JsCtx *c : g_ctxs) if (c->doc == d) return c;
     for (JsCtx *c : g_ctxs) if (std::find(c->docs.begin(), c->docs.end(), d) != c->docs.end()) return c;
@@ -886,6 +1008,10 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
     c->iso->SetData(0, c);
     c->iso->SetMicrotasksPolicy(v8::MicrotasksPolicy::kExplicit);
     c->iso->SetPromiseRejectCallback(on_reject);
+#if defined(__ANDROID__) && !defined(NDEBUG)
+    c->iso->AddGCPrologueCallback(gc_pause_begin);
+    c->iso->AddGCEpilogueCallback(gc_pause_end);
+#endif
     c->iso->SetHostImportModuleDynamicallyCallback(mod_dynamic);
     c->iso->SetHostInitializeImportMetaObjectCallback(mod_meta);
     }
@@ -1002,7 +1128,7 @@ static void pick_deliver(JsCtx *c) {
     v8::Local<v8::Value> argv[1] = { paths.empty() ? v8::Local<v8::Value>(v8::Null(iso)) : v8::Local<v8::Value>(arr) };
     (void)jcall(c, fn, ctx->Global(), 1, argv);
 }
-void js_debug_profile(JsCtx *c) { if (c && !c->parent) jsprof_start(c); }
+void js_debug_profile(JsCtx *c) { if (c && !c->parent) jsprof_tap(c); }
 void js_free(JsCtx *c) {
     if (!c) return;
     jsprof_free(c);
@@ -1241,6 +1367,7 @@ static int legacy_key_code(const std::string &code) {
 }
 
 static bool js_dispatch_impl(JsCtx *c, Node *target, const char *type, const char *kind, bool bubbles, bool cancelable, double x, double y, int button, const char *key, bool touch) {
+    if (touch || (kind && (!strcmp(kind, "MouseEvent") || !strcmp(kind, "KeyboardEvent") || !strcmp(kind, "WheelEvent") || !strcmp(kind, "PointerEvent")))) g_input_at = now_ms();
     if (!c || c->fire.IsEmpty()) return true;
     if (target && target->parent && target->parent->type != NODE_DOCUMENT) { node_retain(target); g_pins.push_back(target); }
     JS_ENTER(c);
@@ -1296,6 +1423,7 @@ bool js_touch_compat(JsCtx *c, Node *target, const char *type, const char *kind,
 
 unsigned js_touch(JsCtx *c, Node *target, const char *phase, uint64_t device, uint64_t finger, double x, double y, double pressure) {
     if (!c || c->api.IsEmpty()) return 0;
+    g_input_at = now_ms();
     JS_ENTER(c);
     v8::Local<v8::Value> fn, result;
     if (!c->api.Get(iso)->Get(ctx, jstr(iso, "nativeTouch")).ToLocal(&fn) || !fn->IsFunction()) return 0;
@@ -1324,6 +1452,16 @@ static bool timers_throttled(JsCtx *c) {
     return true;
 }
 
+/* Milliseconds between animation frames. A rAF loop that has run back to back for over a second while
+   nothing was repainted and no input arrived for a second (a carousel or scroll poller re-reading the same
+   geometry, as on Google results) gets 15 frames a second instead of 60; the next paint or input restores
+   the full rate. A one-off frame request after a quiet spell is not a run and is not delayed. */
+static double raf_gap(JsCtx *c, double now) {
+    bool run = c->last_raf - c->raf_run_t > 1000;   /* the last frame ended a run of over a second */
+    bool quiet = jsg_activity_generation() == c->raf_act_seen && now - c->raf_act_t > 1000;
+    return run && quiet ? 66 : 15.5;
+}
+
 double js_next_deadline(JsCtx *c) {
     if (!c) return INFINITY;
     double d = INFINITY;
@@ -1334,11 +1472,11 @@ double js_next_deadline(JsCtx *c) {
     if (c->foreground_tasks) d = std::min(d, now_ms() + c->foreground_tasks->NextDelayMs());
     if (!c->timer_due.empty()) d = std::min(d, timers_throttled(c) ? std::max(c->timer_due.begin()->first, c->bg_timers + 1000) : c->timer_due.begin()->first);
     for (auto &e : c->anims) d = std::min(d, e.due);
-    if (!c->rafs.empty() && !c->bg) d = std::min(d, c->last_raf + 16);
+    if (!c->rafs.empty() && !c->bg) d = std::min(d, c->last_raf + std::ceil(raf_gap(c, now_ms())));
     if (c->bg_seen != c->bg) d = std::min(d, now_ms());
     if (!c->media_pump.IsEmpty()) d = std::min(d, c->media_version != media_state_version() ? now_ms() : c->media_due);
     if (!c->video_frame_pump.IsEmpty() && c->video_frame_version != media_frame_version()) d = std::min(d, now_ms());
-    if (rtc_pending(c)) d = std::min(d, now_ms());
+    if (rtc_pending(c) || xmsg_waiting(c) || !c->rejs.empty()) d = std::min(d, now_ms());
     d = std::min(d, webgpu_deadline(c));
     if (!c->resize_pump.IsEmpty() && (c->resize_pending || c->resize_version != jsg_layout_generation())) d = std::min(d, c->resize_due);
     if (!c->intersection_pump.IsEmpty() && (c->intersection_pending || c->intersection_version != jsg_visual_generation())) d = std::min(d, c->intersection_due);
@@ -1421,6 +1559,7 @@ static void tick_one(JsCtx *c) {
     if (!c->mod_jobs.empty()) { mod_jobs_finish(c); settle(c); }
     TICK_MARK(1);
     pick_deliver(c);
+    xmsg_deliver(c);
     double now = now_ms(), timers_t0 = now;
     std::vector<std::pair<double, uint32_t>> due;
     size_t ntimers = 0;
@@ -1477,7 +1616,10 @@ static void tick_one(JsCtx *c) {
     if (c->bg_seen != c->bg) { c->bg_seen = c->bg; jfire(c, &c->doc->node, "visibilitychange"); }
     /* a background tab gets no animation frames, as in Chrome: a hidden WebGL demo or animated page
        would otherwise keep drawing at 60 Hz */
-    if (!c->rafs.empty() && !c->bg && now - c->last_raf >= 15.5) {
+    if (!c->rafs.empty() && !c->bg && now - c->last_raf >= raf_gap(c, now)) {
+        if (now - c->last_raf > 100) c->raf_run_t = now;   /* a new run of frames */
+        uint64_t act = jsg_activity_generation();
+        if (act != c->raf_act_seen) { c->raf_act_seen = act; c->raf_act_t = now; }
         c->last_raf = now;
         std::map<uint32_t, v8::Global<v8::Function>> list;
         list.swap(c->rafs);
@@ -1526,6 +1668,7 @@ static void tick_one(JsCtx *c) {
     code_refresh_tick(c);
     workers_pump(c);
     settle(c);
+    if (!c->parent) rej_flush(c);
     TICK_END(ntimers);
 }
 

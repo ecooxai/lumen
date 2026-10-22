@@ -351,7 +351,7 @@ static void test_attribute_subject_invalidation(void) {
         ":where(main:has(> p[data-state]) > p:not(:has([data-state])))"
     };
     /* attributes outside data-/aria- whose only style effect is attribute selectors take the same path */
-    const char *names[] = { "data-state", "tabindex", "hidden", "role" };
+    const char *names[] = { "data-state", "tabindex", "hidden", "role", "jsaction", "jsname", "eid" };
     for (size_t an = 0; an < ARRLEN(names); an++)
     for (size_t k = 0; k < ARRLEN(selectors); k++) {
         char sel[256], *o = sel; const char *name = names[an];
@@ -367,8 +367,9 @@ static void test_attribute_subject_invalidation(void) {
         style_engine_add_sheet(e, css_parse_sheet(css, strlen(css), d->url, 1, &e->media));
         style_recalc(e, &d->node, true);
         Node *change = doc_get_element_by_id(d, "change");
-        for (int pass = 0; pass < 4; pass++) {
-            Node *n = pass < 2 ? change : change->parent;
+        for (int pass = 0; pass < 6; pass++) {   /* 4, 5: both elements change before one pass */
+            Node *n = pass < 2 || pass >= 4 ? change : change->parent;
+            if (pass >= 4) { if (pass % 2) node_remove_attr(n, name); else node_set_attr(n, name, "0"); n = change->parent; }
             if (pass % 2) node_remove_attr(n, name); else node_set_attr(n, name, "0");
             char q[64]; snprintf(q, sizeof q, "[%s]", name);
             assert(css_query(&d->node, q, false, NULL) == (pass % 2 ? NULL : n));
@@ -431,6 +432,15 @@ static void test_attribute_subject_invalidation(void) {
     assert(d->layout_version == version);
     node_set_attr(root, "data-unreferenced", "x");
     style_recalc(e, &d->node, false); assert(e->stats_matched == 0);
+    /* page attributes nothing selects (Google's jsaction, eid, ...) cost no style pass and no layout */
+    for (int i = 0; i < 4; i++) {
+        node_set_attr(root, "jsaction", i % 2 ? "click:a" : "click:b"); node_set_attr(label, "EID", i % 2 ? "x" : "y");
+        style_recalc(e, &d->node, false); assert(e->stats_matched == 0 && d->layout_version == version);
+    }
+    /* attributes with built-in rendering keep the ordinary path */
+    node_set_attr(root, "width", "10");
+    assert(d->layout_version != version);
+    style_recalc(e, &d->node, false); version = d->layout_version;
     node_set_attr(label, "aria-label", "caption");
     style_recalc(e, &d->node, false);
     assert(label->style->before && !strcmp(label->style->before->content, "caption"));
@@ -518,6 +528,41 @@ static void assert_incremental_matches_full(StyleEngine *e) {
     for (int i = 0; i < count; i++) {
         assert(nodes[i]->style->color == colors[i]);
         assert(nodes[i]->style->bg_color == backgrounds[i]);
+    }
+}
+
+/* [style] presence tests are invalidated like other attribute selectors when the attribute comes or
+ * goes, so the elements tested against them keep the cheap inherited path for value-only edits. */
+static void test_style_presence_invalidation(void) {
+    const char *selectors[] = {
+        ".group :not([style])", ".group > p:not([style]) span", "[style] > span", ".group > p[style] + p span",
+        "p:nth-child(1 of :not([style])) span", ".group:has(p[style]) span", ":is(.group [style]) span",
+        "[mZ] :first-child:nth-child(1 of :not([style]))",
+        /* value tests: inline value edits must invalidate them without making every tested element dynamic */
+        "[style*='0'] > span", ".group > p:not([style*=margin]) span", "p:nth-child(1 of :not([style*=margin])) span",
+        ".group:has(p[style*='1px']) span", "[mZ] :first-child:nth-child(1 of :not([style*=x]))", ":is(.group [style$=px]) span"
+    };
+    for (size_t k = 0; k < ARRLEN(selectors); k++) {
+        Document *d = doc_new("https://style-presence.test/");
+        const char *html = "<html><body><main class='group' id='group' mZ><p id='a'><span>a</span></p><p id='b'><span>b</span></p><p id='c' style='margin:0'><span>c</span></p></main></body></html>";
+        html_parse(d, html, strlen(html));
+        StyleEngine *e = style_engine_new(d);
+        char css[512]; snprintf(css, sizeof css, "%s{color:red;background-color:blue} html{--k:1} span{border-color:var(--k)}", selectors[k]);
+        style_engine_add_sheet(e, css_parse_sheet(css, strlen(css), d->url, 1, &e->media));
+        style_recalc(e, &d->node, true);
+        Node *a = doc_get_element_by_id(d, "a"), *b = doc_get_element_by_id(d, "b"), *c = doc_get_element_by_id(d, "c");
+        node_set_attr(a, "style", "margin:0"); assert_incremental_matches_full(e);       /* gained */
+        node_set_attr(a, "style", "margin:1px"); assert_incremental_matches_full(e);     /* value only */
+        node_remove_attr(c, "style"); assert_incremental_matches_full(e);                 /* lost */
+        node_set_attr(b, "style", ""); assert_incremental_matches_full(e);               /* empty still present */
+        node_remove_attr(a, "style"); node_set_attr(c, "style", "x:y"); assert_incremental_matches_full(e);
+        node_set_attr(b, "style", "margin:1px"); assert_incremental_matches_full(e);     /* value only, on a sibling */
+        node_set_attr(b, "style", "padding:0"); node_set_attr(c, "style", "margin:2px"); assert_incremental_matches_full(e);
+        node_set_attr(d->html, "style", "--k:2"); style_recalc(e, &d->node, false);      /* a root custom property */
+        fprintf(stderr, "style presence %s: root edit matched %d\n", selectors[k], e->stats_matched);
+        assert(e->stats_matched < 8);   /* html, the var() users and [style] subjects, not every element tested */
+        assert_incremental_matches_full(e);
+        style_engine_free(e); doc_free(d);
     }
 }
 
@@ -826,8 +871,46 @@ static void test_sheet_change_targets_subjects(void) {
         assert(toggle->style->color != RGBA(255,0,0,255) && msg->style->color != RGBA(255,0,0,255));
         node_remove(owner); node_free_tree(owner);
     }
+    /* keys inside the parent's :is() bound the subjects too */
+    const char *parent_css[] = { ":is(.msg,.none) > *{padding-right:3px}", ":is(.msg,.none) *{padding-right:3px}" };
+    for (size_t k = 0; k < ARRLEN(parent_css); k++) {
+        Node *owner = node_new_element(d, "style", NS_HTML); node_append(d->head, owner);
+        StyleSheet *sh = css_parse_sheet(parent_css[k], strlen(parent_css[k]), d->url, 1, &e->media); sh->owner = owner;
+        style_engine_add_sheet(e, sh);
+        style_recalc(e, &d->node, false);
+        assert(e->stats_matched < 10 && msg->first->style->padding[1].px == 3);
+        style_engine_remove_owner(e, owner);
+        style_recalc(e, &d->node, false);
+        assert(msg->first->style->padding[1].px == 0);
+        node_remove(owner); node_free_tree(owner);
+    }
+    /* so do the classes of a previous sibling */
+    Node *em = node_new_element(d, "em", NS_HTML); node_append(reply, em); style_recalc(e, &d->node, false);
+    const char *sib_css[] = { ".msg + *{padding-right:3px}", "p.msg ~ *{padding-right:3px}", ":is(.msg,.none) ~ em{padding-right:3px}" };
+    for (size_t k = 0; k < ARRLEN(sib_css); k++) {
+        Node *owner = node_new_element(d, "style", NS_HTML); node_append(d->head, owner);
+        StyleSheet *sh = css_parse_sheet(sib_css[k], strlen(sib_css[k]), d->url, 1, &e->media); sh->owner = owner;
+        style_engine_add_sheet(e, sh);
+        style_recalc(e, &d->node, false);
+        assert(e->stats_matched < 10 && em->style->padding[1].px == 3);
+        style_engine_remove_owner(e, owner);
+        style_recalc(e, &d->node, false);
+        assert(em->style->padding[1].px == 0);
+        node_remove(owner); node_free_tree(owner);
+    }
+    /* a rule under a root attribute the page lacks restyles nothing */
+    Node *owner = node_new_element(d, "style", NS_HTML); node_append(d->head, owner);
+    const char *root_css = ":root[data-reduced-motion] :is(*,::before){padding-right:3px}";
+    StyleSheet *rsh = css_parse_sheet(root_css, strlen(root_css), d->url, 1, &e->media); rsh->owner = owner;
+    style_engine_add_sheet(e, rsh); style_recalc(e, &d->node, false);
+    assert(e->stats_matched < 10 && em->style->padding[1].px == 0);
+    node_set_attr(d->html, "data-reduced-motion", ""); style_recalc(e, &d->node, false);
+    assert(em->style->padding[1].px == 3);
+    style_engine_remove_owner(e, owner); node_remove(owner); node_free_tree(owner);
     style_engine_free(e); doc_free(d);
-    const char *sheets[] = {".chosen span{color:red}", "#special{color:red}", "p{color:red}", ":root{color:red}",
+    const char *sheets[] = {":root[data-x] :is(*,::before){color:red}", ":root.on > body{color:red}", ".chosen + *{color:red}", ".chosen ~ span{color:red}", ":is(.chosen,.none) ~ *{color:red}",
+        ".chosen + p > span{color:red}", "p.chosen ~ :last-child{color:red}", ":is(.chosen,.none) > *{color:red}", ":is(.group,aside) *{color:red}", ":is(p,aside) > *{color:red}",
+        ":is([data-x],.none) > *{color:red}", ":is(#special,.none) > *{color:red}",".chosen span{color:red}", "#special{color:red}", "p{color:red}", ":root{color:red}",
         "*{background-color:blue}", ":is(.chosen) > span{color:red}", ".group :where(span){color:red}",
         ".group > p + p{color:red}", "[data-x]{color:red}", ":root{--c:red} span{color:var(--c)}",
         "span::before{content:'x';color:red}", ".chosen:has(span){background-color:blue}"};
@@ -845,6 +928,9 @@ static void test_sheet_change_targets_subjects(void) {
             if (i == 1) node_set_attr(d->body->first->first, "class", "other");
             if (i == 2) node_set_attr(d->body->first->first, "class", "chosen");
             assert_incremental_matches_full(e);
+            /* the root gains what a skipped root-prefixed rule needs */
+            if (i == 1) { node_set_attr(d->html, "data-x", "1"); node_set_attr(d->html, "class", "on"); assert_incremental_matches_full(e); }
+            if (i == 2) { node_remove_attr(d->html, "data-x"); node_remove_attr(d->html, "class"); assert_incremental_matches_full(e); }
             style_engine_remove_owner(e, owner); assert_incremental_matches_full(e);
             node_remove(owner); node_free_tree(owner);
         }
@@ -922,6 +1008,40 @@ static void test_focus_state_changes(void) {
     doc_set_focus(d, NULL);
     style_recalc(e, &d->node, false);
     assert(e->stats_matched < 20 && b->style->color != RGBA(255,0,0,255));
+    style_engine_free(e); doc_free(d);
+    /* Utility CSS: many :focus-within variants, some through :has() or a sibling. */
+    d = doc_new("https://focus-within-many.test/");
+    sb_init(&html);
+    sb_puts(&html, "<html><body><main><div class=w><div class=\"p g\"><input id=a><b class=c></b><i class=v5></i></div><aside class=peer-t></aside></div>");
+    for (int i = 0; i < 1000; i++) sb_puts(&html, "<section><b></b></section>");
+    sb_puts(&html, "<nav class=h><div class=f></div></nav></main></body></html>");
+    html_parse(d, html.s, html.n); sb_free(&html);
+    e = style_engine_new(d);
+    SB sheet; sb_init(&sheet);
+    for (int i = 0; i < 80; i++) { char r[96]; snprintf(r, sizeof r, ".g:focus-within .v%d{padding-top:%dpx} ", i, i + 1); sb_puts(&sheet, r); }
+    sb_puts(&sheet, ".g:focus-within > *{color:red} .p:focus-within ~ .peer-t{color:blue} main:has(.g:focus-within) .f{color:green}"
+        " :is(.g:focus-within) b{padding-left:3px} section b{color:rgb(1,2,3)} .pmf *{padding-bottom:7px}");
+    style_engine_add_sheet(e, css_parse_sheet(sheet.s, sheet.n, d->url, 1, &e->media)); sb_free(&sheet);
+    style_recalc(e, &d->node, true);
+    a = doc_get_element_by_id(d, "a"); b = a->next;
+    Node *peer = a->parent->next, *f = d->body->first->last->first;
+    doc_set_focus(d, a);
+    assert(!d->selector_changes_unknown);
+    style_recalc(e, &d->node, false);
+    assert(e->stats_matched < 40 && b->style->color == RGBA(255,0,0,255) && b->style->padding[3].px == 3);
+    assert(peer->style->color == RGBA(0,0,255,255) && f->style->color == RGBA(0,128,0,255));
+    Node *v = b->next;   /* .v5: one of the many keyed :focus-within rules */
+    assert(v->style->padding[0].px == 6);
+    doc_set_focus(d, NULL);
+    style_recalc(e, &d->node, false);
+    assert(e->stats_matched < 40 && b->style->color != RGBA(255,0,0,255) && b->style->padding[3].px == 0 && v->style->padding[0].px == 0);
+    assert(peer->style->color != RGBA(0,0,255,255) && f->style->color != RGBA(0,128,0,255));
+    /* An editor marks itself focused in the same batch: an unkeyed dependent of
+     * that class reselects below the editor only, not below every focus ancestor. */
+    doc_set_focus(d, a);
+    node_set_attr(a->parent, "class", "p g pmf");
+    style_recalc(e, &d->node, false);
+    assert(e->stats_matched < 40 && b->style->padding[2].px == 7 && b->style->color == RGBA(255,0,0,255));
     style_engine_free(e); doc_free(d);
 }
 
@@ -1242,6 +1362,163 @@ static void test_independent_inherited_change(void) {
     style_engine_free(e); doc_free(d);
 }
 
+/* An element shown or hidden rematches its own subtree; later dirty roots in the pass still reuse. */
+static void test_display_toggle_scope(void) {
+    Document *d = doc_new("https://display-scope.test/");
+    SB html; sb_init(&html);
+    sb_puts(&html, "<html><body><div class=hide><i></i></div><section>");
+    for (int i = 0; i < 1000; i++) sb_puts(&html, "<p><b></b></p>");
+    sb_puts(&html, "</section></body></html>");
+    html_parse(d, html.s, html.n); sb_free(&html);
+    StyleEngine *e = style_engine_new(d);
+    const char *css = ".hide{display:none} .bg{background:red} p{color:blue}";
+    style_engine_add_sheet(e, css_parse_sheet(css, strlen(css), d->url, 1, &e->media));
+    style_recalc(e, &d->node, true);
+    Node *toggle = d->body->first, *sec = toggle->next;
+    for (int i = 0; i < 4; i++) {
+        node_set_attr(toggle, "class", i % 2 ? "hide" : "");
+        node_set_attr(sec, "class", i % 2 ? "" : "bg");
+        style_recalc(e, &d->node, false);
+        assert(e->stats_matched < 20 && e->stats_reused >= 1000);
+        assert((toggle->style->display == D_NONE) == (i % 2 != 0) && sec->style->bg_color == (i % 2 ? 0 : RGBA(255, 0, 0, 255)));
+        assert(sec->first->style->color == RGBA(0, 0, 255, 255) && sec->first->first->style->color == RGBA(0, 0, 255, 255));
+    }
+    style_engine_free(e); doc_free(d);
+}
+
+/* A rewritten link href restyles its [href] subjects only; adding or removing it flips :link. */
+static void test_href_value_edit(void) {
+    Document *d = doc_new("https://href-edit.test/");
+    SB html; sb_init(&html);
+    sb_puts(&html, "<html><body><a href=/a>x</a><section>");
+    for (int i = 0; i < 1000; i++) sb_puts(&html, "<p><b></b></p>");
+    sb_puts(&html, "</section></body></html>");
+    html_parse(d, html.s, html.n); sb_free(&html);
+    StyleEngine *e = style_engine_new(d);
+    const char *css = "a{color:red} a:link{background:yellow} a[href^='/x']{color:blue} a[href^='/x'] + section{background:green} p{color:gray}";
+    style_engine_add_sheet(e, css_parse_sheet(css, strlen(css), d->url, 1, &e->media));
+    style_recalc(e, &d->node, true);
+    Node *link = d->body->first, *sec = link->next;
+    for (int i = 0; i < 4; i++) {
+        bool x = i % 2 == 0;
+        node_set_attr(link, "href", x ? "/x?ved=1" : "/a");
+        style_recalc(e, &d->node, false);
+        assert(e->stats_matched < 20 && e->stats_reused >= 1000);
+        assert(link->style->color == (x ? RGBA(0, 0, 255, 255) : RGBA(255, 0, 0, 255)) && link->style->bg_color == RGBA(255, 255, 0, 255));
+        assert(sec->style->bg_color == (x ? RGBA(0, 128, 0, 255) : 0) && sec->first->style->color == RGBA(128, 128, 128, 255));
+    }
+    node_remove_attr(link, "href"); style_recalc(e, &d->node, false);
+    assert(link->style->bg_color == 0 && link->style->color == RGBA(255, 0, 0, 255) && sec->style->bg_color == 0);
+    node_set_attr(link, "href", "/x"); style_recalc(e, &d->node, false);
+    assert(link->style->bg_color == RGBA(255, 255, 0, 255) && link->style->color == RGBA(0, 0, 255, 255) && sec->style->bg_color == RGBA(0, 128, 0, 255));
+    style_engine_free(e); doc_free(d);
+}
+
+/* An attribute edit on an element no compound testing that attribute can match (a map moving its
+ * tiles by inline style under `html:has(.srp[style*=x])`) restyles only that element. */
+static void test_unborne_attribute_edit(void) {
+    Document *d = doc_new("https://bearer.test/");
+    SB html; sb_init(&html);
+    sb_puts(&html, "<html><body><main><div class='srp'></div><section><p></p></section><div class='tile'></div>");
+    for (int i = 0; i < 500; i++) sb_puts(&html, "<p><b></b></p>");
+    sb_puts(&html, "</main></body></html>");
+    html_parse(d, html.s, html.n); sb_free(&html);
+    StyleEngine *e = style_engine_new(d);
+    const char *css = "html:has(.srp[style*='hidden']) body{color:red} section:has(> [data-on]){color:blue}"
+        " .tile[data-k] ~ p{color:green} b{font-weight:400} [style*='translate']{outline:1px solid}";   /* self-only tests bear nothing */
+    style_engine_add_sheet(e, css_parse_sheet(css, strlen(css), d->url, 1, &e->media));
+    style_recalc(e, &d->node, true);
+    Node *m = d->body->first, *srp = m->first, *sec = srp->next, *tile = sec->next;
+    for (int i = 0; i < 6; i++) {
+        node_set_attr(tile, "style", i % 2 ? "transform:translate(1px,2px)" : "transform:translate(3px,4px)");
+        node_set_attr(tile, "data-x", i % 2 ? "a" : "b");
+        style_recalc(e, &d->node, false);
+        assert(e->stats_matched <= 1 && d->body->style->color == RGBA(0, 0, 0, 255));
+    }
+    node_set_attr(srp, "style", "overflow:hidden");
+    style_recalc(e, &d->node, false);
+    assert(d->body->style->color == RGBA(255, 0, 0, 255));
+    node_set_attr(srp, "style", "overflow:auto");
+    style_recalc(e, &d->node, false);
+    assert(d->body->style->color == RGBA(0, 0, 0, 255));
+    node_set_attr(sec->first, "data-on", "");   /* borne by any element */
+    style_recalc(e, &d->node, false);
+    assert(sec->style->color == RGBA(0, 0, 255, 255));
+    node_remove_attr(sec->first, "data-on");
+    style_recalc(e, &d->node, false);
+    assert(sec->style->color == RGBA(0, 0, 0, 255));
+    node_set_attr(tile, "data-k", "1");   /* borne by .tile, observed by its following siblings */
+    style_recalc(e, &d->node, false);
+    assert(tile->next->style->color == RGBA(0, 128, 0, 255));
+    for (int i = 0; i < 4; i++) {   /* map tiles come and go: the html:has(.srp[style]) witness is .srp */
+        Node *img = node_new_element(d, "img", NS_HTML); node_set_attr(img, "style", "transform:translate(1px,1px)");
+        node_append(tile, img);
+        style_recalc(e, &d->node, false);
+        assert(e->stats_matched <= 2 && d->body->style->color == RGBA(0, 0, 0, 255));
+        if (i % 2) { node_remove(img); style_recalc(e, &d->node, false); assert(e->stats_matched <= 1); }
+    }
+    Node *late = node_new_element(d, "div", NS_HTML); node_set_attr(late, "class", "srp"); node_set_attr(late, "style", "overflow:hidden");
+    node_append(sec, late);   /* a witness inserted with its style */
+    style_recalc(e, &d->node, false);
+    assert(d->body->style->color == RGBA(255, 0, 0, 255));
+    node_set_attr(late, "style", "overflow:visible");
+    style_recalc(e, &d->node, false);
+    assert(d->body->style->color == RGBA(0, 0, 0, 255));
+    node_set_attr(late, "style", "overflow:hidden");
+    style_recalc(e, &d->node, false);
+    assert(d->body->style->color == RGBA(255, 0, 0, 255));
+    node_remove(late);
+    style_recalc(e, &d->node, false);
+    assert(d->body->style->color == RGBA(0, 0, 0, 255));
+    style_engine_free(e); doc_free(d);
+}
+
+/* Explicit `inherit` of a non-inherited value rematches only when the parent's copied value moved. */
+static void test_explicit_inherit_uncompared(void) {
+    Document *d = doc_new("https://uncompared.test/");
+    SB html; sb_init(&html);
+    sb_puts(&html, "<html><body><main>");
+    for (int i = 0; i < 500; i++) sb_puts(&html, "<p><b></b></p>");
+    sb_puts(&html, "</main></body></html>");
+    html_parse(d, html.s, html.n); sb_free(&html);
+    StyleEngine *e = style_engine_new(d);
+    const char *css = "main{background:#fff} main.dim{opacity:.5} main.red{background:red} main.wide{padding:4px}"
+        " p{background:inherit;border-radius:inherit} b{padding:inherit}";
+    style_engine_add_sheet(e, css_parse_sheet(css, strlen(css), d->url, 1, &e->media));
+    style_recalc(e, &d->node, true);
+    Node *m = d->body->first, *p = m->first, *b = p->first;
+    const char *steps[] = { "dim", "red", "dim red", "", "wide", "" };
+    for (size_t i = 0; i < sizeof steps / sizeof *steps; i++) {
+        bool was_red = p->style->bg_color == RGBA(255, 0, 0, 255);
+        node_set_attr(m, "class", steps[i]);
+        style_recalc(e, &d->node, false);
+        bool red = strstr(steps[i], "red") != NULL;
+        assert(p->style->bg_color == (red ? RGBA(255, 0, 0, 255) : RGBA(255, 255, 255, 255)));
+        assert(m->last->style->bg_color == p->style->bg_color && b->style->padding[0].px == 0);
+        if (red == was_red && !strstr(steps[i], "wide") && (!i || !strstr(steps[i - 1], "wide"))) assert(e->stats_matched < 10 && e->stats_reused >= 1000);
+    }
+    style_engine_free(e); doc_free(d);
+}
+
+/* A sheet of pseudo-element rules Lumen never styles restyles nothing. */
+static void test_unstyled_pseudo_sheet(void) {
+    Document *d = doc_new("https://pseudo-sheet.test/");
+    SB html; sb_init(&html);
+    sb_puts(&html, "<html><body><section>");
+    for (int i = 0; i < 1000; i++) sb_puts(&html, "<p><b></b></p>");
+    sb_puts(&html, "</section></body></html>");
+    html_parse(d, html.s, html.n); sb_free(&html);
+    StyleEngine *e = style_engine_new(d);
+    const char *css = "p{color:gray}";
+    style_engine_add_sheet(e, css_parse_sheet(css, strlen(css), d->url, 1, &e->media));
+    style_recalc(e, &d->node, true);
+    const char *vt = "::view-transition-group(*){animation-duration:.3s} ::selection{color:red} ::placeholder{color:blue} b{font-weight:400}";
+    style_engine_add_sheet(e, css_parse_sheet(vt, strlen(vt), d->url, 1, &e->media));
+    style_recalc(e, &d->node, false);
+    assert(e->stats_matched <= 1000 + 5 && d->body->first->first->style->color == RGBA(128, 128, 128, 255));   /* the b subjects only */
+    style_engine_free(e); doc_free(d);
+}
+
 /* Unkeyed subjects indexed by :root, attribute or parent type still match. */
 static void test_local_rule_index(void) {
     Document *d = doc_new("https://local-index.test/");
@@ -1495,9 +1772,59 @@ static void test_sheet_rank_cascade(void) {
     style_engine_invalidate(e); style_recalc(e, &d->node, true); assert(p->style->color == RGBA(0,128,0,255) && !e->dead_sheets.n);
     style_engine_free(e); doc_free(d);
 }
+/* Unkeyed child-combinator subjects such as Tailwind's
+ * :where(.space-y-4 > :not(:last-child)) are tested only below a parent with the key. */
+static void test_tree_parent_keys(void) {
+    Document *d = doc_new("https://tree-parent-keys.test/");
+    const char *empty = "<html><body><main></main><nav class='stack'></nav></body></html>";
+    html_parse(d, empty, strlen(empty));
+    Node *main = d->body->first, *stack = main->next;
+    for (int i = 0; i < 400; i++) {
+        Node *row = node_new_element(d, "div", NS_HTML); node_append(main, row);
+        for (int j = 0; j < 4; j++) node_append(row, node_new_element(d, "span", NS_HTML));
+    }
+    SB css; sb_init(&css);
+    for (int i = 0; i < 100; i++) sb_printf(&css, ":where(.space-y-%d > :not(:last-child)){margin-bottom:%dpx}", i, i);
+    sb_puts(&css, ".stack > :first-child{color:red}");
+    StyleEngine *e = style_engine_new(d);
+    style_engine_add_sheet(e, css_parse_sheet(css.s, css.n, d->url, 1, &e->media)); sb_free(&css);
+    style_recalc(e, &d->node, true);
+    /* the rows below main need no 100 selector tests each */
+    Node *row = node_new_element(d, "div", NS_HTML); node_insert_before(main, row, main->first);
+    Node *b = node_new_element(d, "b", NS_HTML); node_append(stack, b);
+    style_recalc(e, &d->node, false);
+    assert(b->style->color == RGBA(255,0,0,255));
+    assert(e->stats_tree_selector_tests < 1000);
+    assert(e->stats_tree_tests < 60000);   /* the spans below the rows carry no tree flag */
+    style_engine_free(e); doc_free(d);
+
+    const char *selectors[] = {":where(.sp > :not(:last-child))", ".sp > :first-child", ":is(.sp,[data-sp]) > :last-child",
+        "main.sp > p + p", "MAIN > :nth-child(2)", ":where(.sp > :first-child, aside > :last-child)",
+        "[data-sp] > :not(:first-child)", ":where(.sp > p:first-child) span", "#top > :last-child"};
+    for (size_t k = 0; k < ARRLEN(selectors); k++) {
+        d = doc_new("https://tree-parent-semantics.test/");
+        const char *html = "<html><body><main class='sp'><p><span></span></p><p><span></span></p></main><aside><p></p></aside></body></html>";
+        html_parse(d, html, strlen(html)); e = style_engine_new(d);
+        char rule[256]; snprintf(rule, sizeof rule, "%s{color:red;background-color:blue}", selectors[k]);
+        style_engine_add_sheet(e, css_parse_sheet(rule, strlen(rule), d->url, 1, &e->media));
+        Node *group = d->body->first, *aside = group->next;
+        style_recalc(e, &d->node, true);
+        for (int i = 0; i < 16; i++) {
+            Node *parent = i & 8 ? aside : group;
+            if (i & 1) { node_remove_attr(parent, "class"); node_remove_attr(parent, "data-sp"); node_remove_attr(parent, "id"); }
+            else if (i & 2) { node_set_attr(parent, "class", "sp"); node_set_attr(parent, "data-sp", ""); node_set_attr(parent, "id", "top"); }
+            Node *p = node_new_element(d, "p", NS_HTML);
+            if (i & 4) node_append(parent, p); else node_insert_before(parent, p, parent->first);
+            assert_incremental_matches_full(e);
+            node_remove(p); node_free_tree(p); assert_incremental_matches_full(e);
+        }
+        style_engine_free(e); doc_free(d);
+    }
+}
 int main(void) {
     test_tree_subject_index();
     dom_init();
+    test_tree_parent_keys();
     test_coalesced_selector_tree_changes();
     test_coalesced_subject_class_tree_changes();
     test_sheet_change_targets_subjects();
@@ -1505,6 +1832,11 @@ int main(void) {
     test_forced_children_after_class_changes();
     test_local_rule_index();
     test_independent_inherited_change();
+    test_display_toggle_scope();
+    test_href_value_edit();
+    test_unstyled_pseudo_sheet();
+    test_explicit_inherit_uncompared();
+    test_unborne_attribute_edit();
     test_keyed_descendant_sets();
     test_multi_key_subjects();
     test_explicit_inherit_reuse();
@@ -1525,6 +1857,7 @@ int main(void) {
     test_empty_dependency_selectors();
     test_empty_dependency_locality();
     test_inherited_custom_updates();
+    test_style_presence_invalidation();
     test_deep_custom_rebase();
     test_inherited_context_changes();
     test_match_cache();

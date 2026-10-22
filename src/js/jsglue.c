@@ -4,11 +4,58 @@
 #include <string.h>
 #include "../css/css.h"
 #include "../layout/layout.h"
+#include "../paint/paint.h"
+#include "../base/util.h"
 
+#if defined(__ANDROID__) && !defined(NDEBUG)
+#include <android/log.h>
+/* Debug Android: the selectors pages query most, by time, every 2 s (selector text is page code). */
+static struct { char *sel; bool all; int calls, found; double ms; } g_qstat[64];
+static double g_qstat_t0;
+static void query_stat(const char *sel, bool all, int found, double ms) {
+    double now = now_ms();
+    if (!g_qstat_t0) g_qstat_t0 = now;
+    uint32_t h = 2166136261u;
+    for (const char *p = sel; *p; p++) h = (h ^ (unsigned char)*p) * 16777619u;
+    for (int i = 0; i < 64; i++) {
+        int k = (h + i) % 64;
+        if (g_qstat[k].sel && (g_qstat[k].all != all || strcmp(g_qstat[k].sel, sel))) continue;
+        if (!g_qstat[k].sel) { g_qstat[k].sel = xstrdup(sel); g_qstat[k].all = all; }
+        g_qstat[k].calls++; g_qstat[k].found += found; g_qstat[k].ms += ms;
+        break;
+    }
+    if (now - g_qstat_t0 < 2000) return;
+    double total = 0; int calls = 0;
+    for (int i = 0; i < 64; i++) { total += g_qstat[i].ms; calls += g_qstat[i].calls; }
+    if (total >= 5) {
+        char line[900]; int n = snprintf(line, sizeof line, "window_ms=%.0f calls=%d ms=%.1f top", now - g_qstat_t0, calls, total);
+        for (int round = 0; round < 6 && n < (int)sizeof line - 1; round++) {
+            int best = -1;
+            for (int i = 0; i < 64; i++) if (g_qstat[i].sel && g_qstat[i].calls > 0 && (best < 0 || g_qstat[i].ms > g_qstat[best].ms)) best = i;
+            if (best < 0) break;
+            n += snprintf(line + n, sizeof line - n, " %dx%.1fms/%d%s{%.60s}", g_qstat[best].calls, g_qstat[best].ms, g_qstat[best].found, g_qstat[best].all ? "a" : "1", g_qstat[best].sel);
+            g_qstat[best].calls = -g_qstat[best].calls;   /* reported */
+        }
+        __android_log_print(ANDROID_LOG_INFO, "LumenQuery", "%s", line);
+    }
+    for (int i = 0; i < 64; i++) { free(g_qstat[i].sel); g_qstat[i].sel = NULL; g_qstat[i].calls = g_qstat[i].found = 0; g_qstat[i].ms = 0; }
+    g_qstat_t0 = now;
+}
+#endif
+
+/* -1: the selector is invalid (its parse is cached with the document's). */
 int jsg_query(Node *root, const char *sel, bool all, Node ***out) {
     NodeVec v = {0};
+#if defined(__ANDROID__) && !defined(NDEBUG)
+    double t0 = now_ms();
+#endif
     Node *first = css_query(root, sel, all, all ? &v : NULL);
-    if (!all) { *out = NULL; if (!first) return 0; *out = xmalloc(sizeof(Node *)); (*out)[0] = first; return 1; }
+    *out = NULL;
+    if (first == (Node *)-1) { free(v.v); return -1; }
+#if defined(__ANDROID__) && !defined(NDEBUG)
+    query_stat(sel, all, all ? v.n : first != NULL, now_ms() - t0);
+#endif
+    if (!all) { if (!first) return 0; *out = xmalloc(sizeof(Node *)); (*out)[0] = first; return 1; }
     *out = v.v; return v.n;
 }
 
@@ -26,6 +73,7 @@ char *jsg_computed(Node *el, const char *prop) { return css_get_computed_value(e
 uint64_t jsg_layout_generation(void) { return layout_generation(); }
 uint64_t jsg_visual_generation(void) { return doc_visual_generation(); }
 void jsg_visual_changed(void) { doc_visual_changed(); }
+uint64_t jsg_activity_generation(void) { return doc_activity_generation(); }
 
 bool jsg_rect(Node *n, float r[4]) {
     struct Box *b = n->box;
@@ -108,17 +156,26 @@ bool jsg_set_scroll(Node *n, float x, float y) {
 
 bool jsg_media(void *media, const char *q) { return media && css_media_matches(q, (const MediaCtx *)media); }
 
-bool jsg_valid_selector(const char *sel) {
-    SelList l = {0};
-    bool ok = css_parse_selector_list(sel, &l);
-    css_sellist_free(&l);
-    return ok;
-}
-
 bool jsg_supports(const char *cond) { return css_supports(cond); }
 
 bool jsg_img_size(Node *n, float *w, float *h) {
     return layout_image_size_hook && layout_image_size_hook(n, w, h);
+}
+
+uint8_t *jsg_decode_rgba(const uint8_t *d, size_t n, int *w, int *h) {
+    Image *im = image_decode_bitmap(d, n);
+    if (!im || !im->px) { image_unref(im); return NULL; }
+    size_t np = (size_t)im->w * (size_t)im->h;
+    uint8_t *o = xmalloc(np * 4);
+    for (size_t i = 0; i < np; i++) {
+        uint32_t v = im->px[i], al = v >> 24;
+        uint32_t r = v >> 16 & 0xff, g = v >> 8 & 0xff, b = v & 0xff;
+        if (al && al < 255) { r = (r * 255 + al / 2) / al; g = (g * 255 + al / 2) / al; b = (b * 255 + al / 2) / al; }
+        o[i * 4] = (uint8_t)(r > 255 ? 255 : r); o[i * 4 + 1] = (uint8_t)(g > 255 ? 255 : g); o[i * 4 + 2] = (uint8_t)(b > 255 ? 255 : b); o[i * 4 + 3] = (uint8_t)al;
+    }
+    *w = im->w; *h = im->h;
+    image_unref(im);
+    return o;
 }
 
 bool jsg_module_script(Node *s) {

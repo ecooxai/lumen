@@ -10,6 +10,9 @@ void doc_visual_changed(void);
 /* box geometry or computed styles changed (layout, restyle), not just scroll offsets; also a visual change */
 uint64_t doc_box_generation(void);
 void doc_boxes_changed(void);
+/* the shell repainted page pixels or got user input; a rAF loop with neither is throttled (see js.cc) */
+uint64_t doc_activity_generation(void);
+void doc_activity(void);
 
 enum { NODE_ELEMENT = 1, NODE_TEXT = 3, NODE_CDATA = 4, NODE_PI = 7, NODE_COMMENT = 8, NODE_DOCUMENT = 9, NODE_DOCTYPE = 10, NODE_FRAGMENT = 11 };
 enum { NS_HTML = 0, NS_SVG = 1, NS_MATHML = 2, NS_NONE = 3 };
@@ -84,6 +87,7 @@ typedef struct Document {
     uint64_t inheritance_version; /* unindexed connected selector changes; excludes precise attributes/tree edits */
     uint64_t text_emptiness_version;
     uint64_t tree_version;        /* child-list mutations, coalesced by the style engine */
+    uint64_t frame_version;       /* connected iframes inserted, removed or given a new src/srcdoc */
     uint64_t tree_change_keys[16]; /* conservative keys in inserted/removed connected subtrees */
     uint64_t selector_change_keys[16]; /* changed class tokens/IDs and their attribute names */
     uint64_t reselect_change_keys[16]; /* the same, less data-/aria- attributes the style engine invalidates by candidate */
@@ -96,7 +100,7 @@ typedef struct Document {
     uint64_t paint_version;       /* visual changes without DOM/style/layout invalidation */
     uint64_t resource_version;    /* img src and computed background/mask image changes */
     float layout_vw, layout_vh;   /* viewport of the current box tree */
-    HMap id_cache; uint64_t id_cache_ver; bool id_cache_ok; /* id -> first element, rebuilt per dom_version */
+    HMap id_cache, id_dups; bool id_cache_ok; /* id -> first element, kept current by tree and id edits; ids seen twice */
     void *selector_cache; void (*selector_cache_free)(void *); /* bounded parsed query syntax */
     void *stylesheets;            /* css engine data */
     struct Node *focus;

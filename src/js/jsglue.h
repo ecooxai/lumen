@@ -4,7 +4,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-int jsg_query(Node *root, const char *sel, bool all, Node ***out); /* *out malloc'd */
+int jsg_query(Node *root, const char *sel, bool all, Node ***out); /* *out malloc'd; -1: invalid selector */
 bool jsg_matches(Node *el, const char *sel, bool *ok);
 void jsg_install_hooks(void);
 void js_anim_event(Node *n, const char *type, const char *name, double delay_ms, double elapsed, bool anim);
@@ -13,16 +13,18 @@ char *jsg_computed(Node *el, const char *prop);
 uint64_t jsg_layout_generation(void);
 uint64_t jsg_visual_generation(void);
 void jsg_visual_changed(void);
+uint64_t jsg_activity_generation(void);
 bool jsg_rect(Node *n, float r[4]);
 bool jsg_vrect(Node *n, float r[4], float scroll_x, float scroll_y);
 bool jsg_vclip(Node *n, Node *stop, float c[4], float scroll_x, float scroll_y);   /* clipping ancestors' viewport rect: x0, y0, x1, y1 */
 bool jsg_scroll(Node *n, float r[4]);   /* scroll x, y, width, height of a scroll container */
 bool jsg_set_scroll(Node *n, float x, float y);  /* NAN keeps an axis; true if it moved */  /* border box, document coordinates */
 bool jsg_media(void *media, const char *q);
-bool jsg_valid_selector(const char *sel);
 bool jsg_supports(const char *cond);
 char *css_selector_text(const char *src);
 bool jsg_img_size(Node *n, float *w, float *h);
+/* PNG, JPEG, WebP or GIF (first frame) bytes to malloc'd straight-alpha RGBA rows; any thread */
+uint8_t *jsg_decode_rgba(const uint8_t *d, size_t n, int *w, int *h);
 bool jsg_classic_script(Node *s);
 bool jsg_module_script(Node *s);
 #ifdef __cplusplus

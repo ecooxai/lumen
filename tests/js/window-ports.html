@@ -1,0 +1,51 @@
+<!doctype html>
+<title>MessagePorts between windows</title>
+<script>
+// The opener and a window.open popup run in separate contexts (separate isolates, like tabs). The popup asks
+// for a channel, the opener transfers a MessagePort to it, and both ends talk over it, including a second
+// port transferred through the first, as Google's sign-in popup does with the page that opened it.
+if (!window.opener) {
+  const fail = [], seen = [];
+  const ok = (c, m) => { if (!c) fail.push(m); };
+  let w, done = false;
+  const finish = () => {
+    if (done) return; done = true;
+    ok(seen.join() === 'ready', 'window messages ' + seen.join());
+    console.log('RESULTS window-ports:' + (fail.length ? 'FAIL ' + fail.join('; ') : 'PASS'));
+  };
+  addEventListener('message', e => {
+    seen.push(e.data && e.data.t);
+    if (!e.data || e.data.t !== 'ready') return;
+    ok(e.ports.length === 0, 'ready ports ' + e.ports.length);
+    const ch = new MessageChannel();
+    ch.port1.onmessage = m => {
+      if (m.data === 'hello') ch.port1.postMessage('ack');
+      else if (m.data && m.data.t === 'sub') {
+        const q = m.ports[0];
+        ok(q instanceof MessagePort, 'sub port');
+        if (!q) return finish();
+        q.onmessage = r => { ok(r.data && r.data.n === 42 && r.data.s === 'sub-ack', 'sub reply'); finish(); };
+        q.postMessage('sub-hi');
+      } else { ok(false, 'unexpected ' + JSON.stringify(m.data)); finish(); }
+    };
+    e.source.postMessage({ t: 'connect' }, '*', [ch.port2]);
+  });
+  w = window.open(location.href.split('#')[0] + '#popup');
+  ok(w && typeof w.postMessage === 'function', 'window.open');
+  setTimeout(() => { ok(false, 'timeout'); finish(); }, 1500);
+} else {
+  addEventListener('message', e => {
+    if (!e.data || e.data.t !== 'connect') return;
+    const p = e.ports[0];
+    if (!p) return;
+    p.onmessage = m => {
+      if (m.data !== 'ack') return;
+      const c2 = new MessageChannel();
+      c2.port1.onmessage = r => { if (r.data === 'sub-hi') c2.port1.postMessage({ n: 42, s: 'sub-ack' }); };
+      p.postMessage({ t: 'sub' }, [c2.port2]);
+    };
+    p.postMessage('hello');
+  });
+  opener.postMessage({ t: 'ready' }, '*');
+}
+</script>

@@ -7,6 +7,11 @@
 using FCI = v8::FunctionCallbackInfo<v8::Value>;
 
 struct FrameLoad { JsCtx *p; Node *f; uint32_t kid; std::string url; };
+/* postMessage to another tab's context: serialized by the sender, read by the target's next tick */
+/* A message for another tab: a window message, or with port set a message for the bridged port with that key.
+   keys are the transferred ports' bridge keys (see exportPort in 07b-net.js). */
+struct XMsg { uint32_t to; std::vector<uint8_t> data; std::string origin; double src; double port; std::vector<double> keys; };
+static std::vector<XMsg> g_xmsgs;
 static std::vector<FrameLoad *> g_loads;
 
 static std::string origin_of(const char *u) {
@@ -29,22 +34,17 @@ std::string ctx_origin_key(JsCtx *c) {
 }
 static bool same_origin(JsCtx *a, JsCtx *b) { return a == b || ctx_origin_key(a) == ctx_origin_key(b); }
 
+/* t as v sees it: its global when they share an isolate and origin, else a number for asWin, a tab's
+   top context being -its window id (tabs have isolates of their own) */
+static double remote_id(JsCtx *t) { return !t->parent && t->wid ? -(double)t->wid : (double)t->id; }
 static v8::Local<v8::Value> win_for(JsCtx *v, JsCtx *t) {
     v8::Isolate *iso = v->iso;
     if (!t || t->dead || t->ctx.IsEmpty()) return v8::Null(iso);
-    if (same_origin(v, t)) return t->ctx.Get(iso)->Global();
-    return v8::Number::New(iso, t->id);
+    if (t->iso == v->iso && same_origin(v, t)) return t->ctx.Get(iso)->Global();
+    return v8::Number::New(iso, t->iso == v->iso ? t->id : remote_id(t));
 }
 static JsCtx *root_of(JsCtx *c) { while (c->parent) c = c->parent; return c; }
-static JsCtx *by_id(JsCtx *any, uint32_t id) {
-    std::vector<JsCtx *> st{ root_of(any) };
-    while (!st.empty()) {
-        JsCtx *c = st.back(); st.pop_back();
-        if (c->id == id) return c->dead ? nullptr : c;
-        for (JsCtx *k : c->kids) st.push_back(k);
-    }
-    return nullptr;
-}
+static JsCtx *by_id(JsCtx *any, uint32_t id) { (void)any; return js_ctx_by_id(id); }
 
 JsCtx *js_frame_ctx(Node *f) {
     JsCtx *p = f && f->doc ? owner_ctx(f->doc) : nullptr;
@@ -210,8 +210,9 @@ static void collect_iframes(Node *root, std::vector<Node *> &out) {
 }
 
 void frames_scan(JsCtx *c) {
-    if (c->dead || c->doc->dom_version == c->frame_scan_ver) return;
-    c->frame_scan_ver = c->doc->dom_version;
+    /* Not per DOM version: a page animating thousands of nodes would walk the whole tree every tick. */
+    if (c->dead || c->doc->frame_version == c->frame_scan_ver) return;
+    c->frame_scan_ver = c->doc->frame_version;
     for (JsCtx *k : std::vector<JsCtx *>(c->kids))
         if (!k->dead && (!(k->frame_el->flags & NF_CONNECTED) || k->frame_el->doc != c->doc || src_key(c, k->frame_el) != k->frame_src)) frame_kill(k);
     std::vector<Node *> todo;
@@ -270,7 +271,7 @@ static void n_navTarget(const FCI &a) {
     a.GetReturnValue().Set(js_navigate_target(c, t.c_str(), u.c_str(), b.data(), b.size(), post ? ct.c_str() : nullptr));
 }
 static JsCtx *ctx_of_value(v8::Isolate *iso, JsCtx *c, v8::Local<v8::Value> v) {
-    if (v->IsNumber()) return by_id(c, (uint32_t)v.As<v8::Number>()->Value());
+    if (v->IsNumber()) { double d = v.As<v8::Number>()->Value(); return d < 0 ? js_ctx_of_window((uint32_t)-d) : by_id(c, (uint32_t)d); }
     if (!v->IsObject()) return nullptr;
     v8::Local<v8::Context> cx;
     if (!v.As<v8::Object>()->GetCreationContext(iso).ToLocal(&cx)) return nullptr;
@@ -295,6 +296,23 @@ static void n_postTo(const FCI &a) {
     ser.WriteHeader();
     if (!ser.WriteValue(cx, a[1]).FromMaybe(false)) return;
     std::pair<uint8_t *, size_t> buf = ser.Release();
+    if (t->iso != iso) {   /* another tab: its next tick delivers it, transferred ports bridged by key */
+        std::vector<double> keys;
+        v8::Local<v8::Value> fn;
+        if (a[3]->IsArray() && a[3].As<v8::Array>()->Length() && c->api.Get(iso)->Get(cx, jstr(iso, "exportPort")).ToLocal(&fn) && fn->IsFunction()) {
+            v8::Local<v8::Array> ps = a[3].As<v8::Array>();
+            for (uint32_t i = 0; i < ps->Length(); i++) {
+                v8::Local<v8::Value> argv[2], k;
+                if (!ps->Get(cx, i).ToLocal(&argv[0])) continue;
+                argv[1] = v8::Number::New(iso, remote_id(t));
+                if (fn.As<v8::Function>()->Call(cx, v8::Undefined(iso), 2, argv).ToLocal(&k) && k->IsNumber()) keys.push_back(k.As<v8::Number>()->Value());
+            }
+        }
+        g_xmsgs.push_back({ t->id, std::vector<uint8_t>(buf.first, buf.first + buf.second), ctx_origin(c), remote_id(c), 0, std::move(keys) });
+        free(buf.first);
+        if (js_wakeup) js_wakeup();
+        return;
+    }
     {
         v8::Local<v8::Context> tc = t->ctx.Get(iso);
         v8::Context::Scope cs(tc);
@@ -308,11 +326,83 @@ static void n_postTo(const FCI &a) {
     }
     free(buf.first);
 }
+/* portTo(dest, key, data, keys): a message for the port bridged to another tab by key */
+static void n_portTo(const FCI &a) {
+    FCTX; v8::Local<v8::Context> cx = iso->GetCurrentContext();
+    JsCtx *t = ctx_of_value(iso, c, a[0]);
+    double k = a[1]->NumberValue(cx).FromMaybe(0);
+    if (!t || t->dead || t->api.IsEmpty() || t->iso == iso || !k) return;
+    std::vector<double> keys;
+    if (a[3]->IsArray()) {
+        v8::Local<v8::Array> ks = a[3].As<v8::Array>();
+        for (uint32_t i = 0; i < ks->Length(); i++) { v8::Local<v8::Value> v; if (ks->Get(cx, i).ToLocal(&v) && v->IsNumber()) keys.push_back(v.As<v8::Number>()->Value()); }
+    }
+    v8::ValueSerializer ser(iso);
+    ser.WriteHeader();
+    if (!ser.WriteValue(cx, a[2]).FromMaybe(false)) return;
+    std::pair<uint8_t *, size_t> buf = ser.Release();
+    g_xmsgs.push_back({ t->id, std::vector<uint8_t>(buf.first, buf.first + buf.second), ctx_origin(c), remote_id(c), k, std::move(keys) });
+    free(buf.first);
+    if (js_wakeup) js_wakeup();
+}
+
+bool xmsg_waiting(JsCtx *c) {
+    for (const XMsg &m : g_xmsgs) if (m.to == c->id) return true;
+    return false;
+}
+void xmsg_deliver(JsCtx *c) {   /* in c's isolate and context */
+    if (g_xmsgs.empty()) return;
+    std::vector<XMsg> mine;
+    for (auto it = g_xmsgs.begin(); it != g_xmsgs.end();) {
+        if (it->to == c->id) { mine.push_back(std::move(*it)); it = g_xmsgs.erase(it); }
+        else if (!js_ctx_by_id(it->to)) it = g_xmsgs.erase(it);   /* its page is gone */
+        else ++it;
+    }
+    v8::Isolate *iso = c->iso;
+    for (XMsg &m : mine) {
+        if (c->dead || c->api.IsEmpty()) break;
+        v8::HandleScope hs(iso);
+        v8::Local<v8::Context> tc = c->ctx.Get(iso);
+        v8::ValueDeserializer des(iso, m.data.data(), m.data.size());
+        v8::Local<v8::Value> data, fn;
+        v8::Local<v8::Array> keys = v8::Array::New(iso, (int)m.keys.size());
+        for (size_t i = 0; i < m.keys.size(); i++) (void)keys->Set(tc, (uint32_t)i, v8::Number::New(iso, m.keys[i]));
+        if (m.port) {
+            if (des.ReadHeader(tc).FromMaybe(false) && des.ReadValue(tc).ToLocal(&data) &&
+                c->api.Get(iso)->Get(tc, jstr(iso, "portMessage")).ToLocal(&fn) && fn->IsFunction()) {
+                v8::Local<v8::Value> argv[4] = { v8::Number::New(iso, m.port), data, v8::Number::New(iso, m.src), keys };
+                (void)jcall(c, fn.As<v8::Function>(), v8::Undefined(iso), 4, argv);
+            }
+        } else if (des.ReadHeader(tc).FromMaybe(false) && des.ReadValue(tc).ToLocal(&data) &&
+            c->api.Get(iso)->Get(tc, jstr(iso, "queueMessage")).ToLocal(&fn) && fn->IsFunction()) {
+            v8::Local<v8::Value> argv[4] = { data, jstr(iso, m.origin.c_str()), v8::Number::New(iso, m.src), keys };
+            (void)jcall(c, fn.As<v8::Function>(), v8::Undefined(iso), 4, argv);
+        }
+    }
+}
+/* openWin(url, name, withOpener): the new tab's window id, 0 if none */
+static void n_openWin(const FCI &a) {
+    FCTX; JsCtx *r = root_of(c);
+    if (!r->host.open_window || a.Length() < 3) { a.GetReturnValue().Set(0); return; }
+    std::string u = jcstr(iso, a[0]), nm = jcstr(iso, a[1]);
+    a.GetReturnValue().Set(r->host.open_window(r->host.ud, u.c_str(), nm.c_str(), a[2]->BooleanValue(iso) ? c->id : 0));
+}
+/* winOp(wid, op[, arg]): JsHost.window_op */
+static void n_winOp(const FCI &a) {
+    FCTX; JsCtx *r = root_of(c); v8::Local<v8::Context> cx = iso->GetCurrentContext();
+    uint32_t w = a[0]->Uint32Value(cx).FromMaybe(0); int op = a[1]->Int32Value(cx).FromMaybe(-1);
+    std::string arg = a.Length() > 2 ? jcstr(iso, a[2]) : std::string();
+    a.GetReturnValue().Set(r->host.window_op ? r->host.window_op(r->host.ud, w, op, arg.c_str()) : op == 0);
+}
+static void n_openerWin(const FCI &a) {
+    FCTX; JsCtx *r = root_of(c), *o = c == r && r->opener ? js_ctx_by_id(r->opener) : nullptr;
+    a.GetReturnValue().Set(o ? win_for(c, o) : v8::Local<v8::Value>(v8::Null(iso)));
+}
 
 void js_install_frames(JsCtx *c, v8::Local<v8::Object> N) {
     v8::Isolate *iso = c->iso;
     v8::Local<v8::Context> ctx = iso->GetCurrentContext();
 #define REG(nm) (void)N->Set(ctx, jstr(iso, #nm), v8::Function::New(ctx, n_##nm).ToLocalChecked())
-    REG(frameWin); REG(frameDoc); REG(parentWin); REG(topWin); REG(frameEl); REG(frameCount); REG(frameAt); REG(ctxRel); REG(navTarget); REG(caller); REG(postTo);
+    REG(frameWin); REG(frameDoc); REG(parentWin); REG(topWin); REG(frameEl); REG(frameCount); REG(frameAt); REG(ctxRel); REG(navTarget); REG(caller); REG(postTo); REG(portTo); REG(openWin); REG(winOp); REG(openerWin);
 #undef REG
 }
