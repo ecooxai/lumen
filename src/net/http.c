@@ -181,6 +181,14 @@ void (*net_wakeup)(void) = NULL;
 /* ---------- headers ---------- */
 void headers_add(Headers *h, const char *n, const char *v) { Header x = { xstrdup(n), xstrdup(v) }; vec_push(*h, x); }
 const char *headers_get(const Headers *h, const char *n) { for (int i = 0; i < h->n; i++) if (str_ieq(h->v[i].name, n)) return h->v[i].value; return NULL; }
+char *headers_join(const Headers *h, const char *n) {
+    size_t len = 0; int k = 0;
+    for (int i = 0; i < h->n; i++) if (str_ieq(h->v[i].name, n)) len += strlen(h->v[i].value) + 2, k++;
+    if (!k) return NULL;
+    char *r = xmalloc(len + 1); r[0] = 0;
+    for (int i = 0; i < h->n; i++) if (str_ieq(h->v[i].name, n)) { if (r[0]) strcat(r, ", "); strcat(r, h->v[i].value); }
+    return r;
+}
 void headers_set(Headers *h, const char *n, const char *v) {
     for (int i = 0; i < h->n; i++) if (str_ieq(h->v[i].name, n)) { free(h->v[i].value); h->v[i].value = xstrdup(v); return; }
     headers_add(h, n, v);

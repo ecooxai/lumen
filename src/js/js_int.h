@@ -20,6 +20,7 @@ extern "C" {
 #include "../net/net.h"
 #include "../net/download.h"
 #include "../base/url.h"
+#include "../base/encoding.h"
 #include "../media/media.h"
 extern const char *g_user_agent;
 }
@@ -76,6 +77,9 @@ struct JsCtx {
     v8::Global<v8::ObjectTemplate> node_tmpl;
     v8::Global<v8::Object> api;
     v8::Global<v8::Function> protoFor, fire, report, viewportChanged, pick_cb;
+    v8::Global<v8::Function> tt_script, tt_eval;   /* Trusted Types / CSP hooks: inline script text, string compilation */
+    v8::Global<v8::ObjectTemplate> code_like;
+    bool tt_on = false;                            /* inline scripts go through tt_script */
     std::unordered_map<std::string, v8::Global<v8::Object>> protos;
     Document *doc = nullptr;
     JsHost host{};
@@ -132,6 +136,8 @@ struct JsCtx {
     uint32_t id = 0;
     uint32_t wid = 0, opener = 0;     /* top context: its tab's window id, the context that opened the tab */
     bool dead = false;
+    bool load_deferred = false;       /* its window load waits for its frames (HTML's "delay the load event") */
+    bool el_load = false;             /* a frame: its <iframe> gets a load event after its window's */
     uint64_t frame_scan_ver = ~0ull;
     void *host_ud = nullptr;          /* child host data returned by frame_open */
     std::string frame_src;
@@ -162,6 +168,10 @@ v8::Local<v8::String> jstr(v8::Isolate *iso, const char *s, int n = -1);
 /* script source; big ones become external strings shared by every isolate (tabs, frames, workers) */
 v8::Local<v8::String> jsrc(v8::Isolate *iso, const char *s, size_t n);
 std::string jcstr(v8::Isolate *iso, v8::Local<v8::Value> v);
+void js_url_install(v8::Local<v8::Context> ctx, v8::Local<v8::Object> target); /* urljs.cc: urlParse, urlSet */
+void js_crypto_install(v8::Local<v8::Context> ctx, v8::Local<v8::Object> target); /* cryptojs.cc: the WebCrypto primitives */
+void js_compress_install(v8::Local<v8::Context> ctx, v8::Local<v8::Object> target); /* compressjs.cc: zlib streams for CompressionStream */
+void js_encoding_install(v8::Local<v8::Context> ctx, v8::Local<v8::Object> target); /* encodingjs.cc: TextDecoder, form and charset natives */
 v8::Local<v8::Value> jwrap(JsCtx *c, Node *n);
 Node *junwrap(v8::Local<v8::Value> v);
 v8::MaybeLocal<v8::Value> jcall(JsCtx *c, v8::Local<v8::Function> f, v8::Local<v8::Value> recv, int argc, v8::Local<v8::Value> *argv);
@@ -182,6 +192,8 @@ std::string ctx_origin_key(JsCtx *c);   /* for same-origin checks: ctx_origin, b
 void frames_scan(JsCtx *c);
 void frames_inserted(JsCtx *c, Node *root);
 void frames_forget(JsCtx *c);
+void js_doc_reparse(JsCtx *k, const char *html, size_t n);   /* document.close() of a script-opened document */
+void frames_load_check(JsCtx *c);   /* fires a deferred window load once no frame delays it */
 void frame_kill(JsCtx *k);
 void frame_nav(JsCtx *k, const char *u);
 void js_install_frames(JsCtx *c, v8::Local<v8::Object> N);

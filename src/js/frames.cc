@@ -71,16 +71,31 @@ void frames_forget(JsCtx *c) { for (FrameLoad *l : g_loads) if (l->p == c) l->p 
 static std::string src_key(JsCtx *p, Node *f) {
     if (const char *sd = node_attr(f, "srcdoc")) return std::string("srcdoc:") + sd;
     const char *src = node_attr(f, "src");
-    char *u = src && *src ? url_join(p->doc->url, src) : nullptr;
+    char *u = src && *src ? url_join(doc_base(p->doc), src) : nullptr;
     std::string r = u ? u : "";
     free(u);
     return r;
 }
 
-static JsCtx *frame_create(JsCtx *p, Node *f, const char *url, const char *html, size_t n, bool fire_load) {
+static void frame_run_scripts(JsCtx *k, Document *d);
+/* key: the frame's src_key, set before its load event fires (a handler that rescans the frames must not see it
+   as stale and restart it) */
+static JsCtx *frame_create(JsCtx *p, Node *f, const std::string &key, const char *url, const char *html, size_t n, bool fire_load,
+                           const char *ctype = nullptr, const Headers *hdrs = nullptr) {
     if (JsCtx *old = js_frame_ctx(f)) frame_kill(old);
     Document *d = doc_new(url);
-    html_parse(d, html ? html : "", html ? n : 0);
+    if (!strncmp(url, "about:", 6)) d->base_url = xstrdup(doc_base(p->doc));   /* about:blank and about:srcdoc inherit the parent's */
+    if (hdrs) { d->csp = headers_join(hdrs, "content-security-policy"); d->csp_ro = headers_join(hdrs, "content-security-policy-report-only"); }
+    bool xml = xml_mime(ctype);
+    char *decoded = nullptr;
+    if (ctype && html) {   /* a response (not about:blank or srcdoc): decoded by its encoding */
+        int enc; size_t dn = 0;
+        if ((decoded = enc_document((const uint8_t *)html, n, ctype, xml, &enc, &dn))) { html = decoded; n = dn; }
+        d->charset = enc;
+    }
+    if (xml) { xml_parse(d, html ? html : "", html ? n : 0); d->content_type = mime_essence(ctype); }
+    else html_parse(d, html ? html : "", html ? n : 0);
+    free(decoded);
     JsHost ch{};
     ch.viewport = p->host.viewport;
     if (p->host.frame_open) p->host.frame_open(p->host.ud, f, d, &ch);
@@ -88,18 +103,43 @@ static JsCtx *frame_create(JsCtx *p, Node *f, const char *url, const char *html,
     ch.frame_close = p->host.frame_close;
     JsCtx *k = js_new_ex(d, &ch, p, f);
     k->host_ud = ch.ud;
+    k->frame_src = key;
     if (const char *fp = getenv("LUMEN_FRAME_PRE")) if (strncmp(url, "about:", 6)) js_eval(k, fp, "lumen:frame-pre");
+    frame_run_scripts(k, d);
+    if (k->dead) return k;
+    js_set_ready_state(k, 1);
+    js_dispatch(k, &d->node, "DOMContentLoaded", "Event", true, false, 0, 0, 0, NULL);
+    k->el_load = fire_load;
+    if (!k->dead) js_fire_load(k);
+    return k;
+}
+/* document.close() of a document script opened: its written markup is parsed as a whole, its scripts run in
+   order, then it loads as a frame's document does (its <iframe> gets the load event) */
+void js_doc_reparse(JsCtx *k, const char *html, size_t n) {
+    Document *d = k->doc;
+    if (d->node.first) return;   /* open() emptied it */
+    d->html = d->head = d->body = NULL; d->quirks = false;
+    js_set_ready_state(k, 0);
+    html_parse(d, html, n);
+    frame_run_scripts(k, d);
+    if (k->dead) return;
+    js_set_ready_state(k, 1);
+    js_dispatch(k, &d->node, "DOMContentLoaded", "Event", true, false, 0, 0, 0, NULL);
+    k->el_load = k->frame_el != nullptr;
+    if (!k->dead) js_fire_load(k);
+}
+static void frame_run_scripts(JsCtx *k, Document *d) {
     for (Node *s = d->node.first; s && !k->dead; s = node_next_in_tree(s, &d->node)) {
         if (s->type != NODE_ELEMENT || s->tag != A_script || s->ns != NS_HTML || (s->flags & NF_SCRIPT_STARTED)) continue;
         bool mod = jsg_module_script(s);
         if (!mod && !jsg_classic_script(s)) continue;
         const char *src = node_attr(s, "src");
         if (mod) {
-            char *t = src ? nullptr : node_text_content(s), *u = src ? url_join(d->url, src) : nullptr;
+            char *t = src ? nullptr : node_text_content(s), *u = src ? url_join(doc_base(d), src) : nullptr;
             js_run_module(k, s, t ? t : (src ? nullptr : ""), t ? strlen(t) : 0, u ? u : d->url);
             free(t); free(u);
         } else if (src) {
-            char *u = url_join(d->url, src);
+            char *u = url_join(doc_base(d), src);
             NetResponse *sr = u ? net_fetch_sync(net_request_new("GET", u)) : nullptr;
             if (sr && sr->status >= 200 && sr->status < 300) js_run_script(k, s, sr->body ? sr->body : "", sr->body_len, u);
             else { s->flags |= NF_SCRIPT_STARTED; js_dispatch(k, s, "error", "Event", false, false, 0, 0, 0, NULL); }
@@ -111,14 +151,32 @@ static JsCtx *frame_create(JsCtx *p, Node *f, const char *url, const char *html,
             free(t);
         }
     }
-    if (k->dead) return k;
-    js_set_ready_state(k, 1);
-    js_dispatch(k, &d->node, "DOMContentLoaded", "Event", true, false, 0, 0, 0, NULL);
-    js_set_ready_state(k, 2);
-    js_dispatch_window(k, "load");
-    if (fire_load && !k->dead && !p->dead) js_dispatch(p, f, "load", "Event", false, false, 0, 0, 0, NULL);
-    return k;
 }
+
+/* An iframe still fetching its document, or whose document still waits for its own frames, delays its
+   parent's load event. A frame removed meanwhile no longer does. */
+static bool frames_loading(JsCtx *c) {
+    for (FrameLoad *l : g_loads) if (l->p == c) for (JsCtx *k : c->kids) if (!k->dead && k->id == l->kid && k->frame_el == l->f) return true;
+    for (JsCtx *k : c->kids) if (!k->dead && k->load_deferred) return true;
+    return false;
+}
+void js_fire_load(JsCtx *c) {
+    if (!c || c->dead) return;
+    c->load_deferred = false;   /* a frame that finishes during the scan must not fire this load from within it */
+    frames_scan(c);   /* the frames its parser inserted start loading now */
+    if (c->dead) return;
+    if (frames_loading(c)) { c->load_deferred = true; return; }
+    js_set_ready_state(c, 2);
+    js_dispatch_window(c, "load");
+    JsCtx *p = c->parent;
+    if (!p || c->dead || p->dead) return;
+    if (c->el_load) { c->el_load = false; js_dispatch(p, c->frame_el, "load", "Event", false, false, 0, 0, 0, NULL); }
+    frames_load_check(p);
+}
+void frames_load_check(JsCtx *c) { if (c && !c->dead && c->load_deferred && !frames_loading(c)) js_fire_load(c); }
+
+/* a response's Content-Type, "" when it has none (frame_create then sniffs its encoding) */
+static const char *frame_ctype(NetResponse *r) { const char *t = headers_get(&r->headers, "content-type"); return t ? t : ""; }
 
 static void frame_done(NetRequest *rq, NetResponse *r, void *ud) {
     (void)rq;
@@ -130,20 +188,51 @@ static void frame_done(NetRequest *rq, NetResponse *r, void *ud) {
         std::string key = blank->frame_src;
         bool ok = r && r->status > 0;
         const char *body = ok && r->body ? r->body : "";
-        JsCtx *k = frame_create(p, l->f, ok && r->url ? r->url : l->url.c_str(), body, ok && r->body ? r->body_len : 0, true);
-        k->frame_src = key;
+        bool blob = !strncmp(l->url.c_str(), "blob:", 5);   /* read through a data: URL, but a document at its blob URL */
+        frame_create(p, l->f, key, ok && r->url && !blob ? r->url : l->url.c_str(), body, ok && r->body ? r->body_len : 0, true,
+                     ok ? frame_ctype(r) : nullptr, ok ? &r->headers : nullptr);
     }
     delete l;
+    frames_load_check(p);
 }
 
 /* ctype: a POST of body (a form submitted into the frame) */
+/* a blob: URL's bytes as a data: URL the loader reads, from the realm that made it (its realm hook's blob) */
+static std::string blob_as_data(JsCtx *p, const char *u) {
+    JS_ENTER(p);
+    v8::Local<v8::Value> realm, fn, res;
+    if (!ctx->Global()->GetPrivate(ctx, v8::Private::ForApi(iso, jstr(iso, "lumen:realm"))).ToLocal(&realm) || !realm->IsObject()) return "";
+    if (!realm.As<v8::Object>()->Get(ctx, jstr(iso, "blob")).ToLocal(&fn) || !fn->IsFunction()) return "";
+    v8::Local<v8::Value> arg = jstr(iso, u);
+    v8::TryCatch tc(iso);
+    if (!fn.As<v8::Function>()->Call(ctx, realm, 1, &arg).ToLocal(&res) || !res->IsArray()) return "";
+    v8::Local<v8::Array> r = res.As<v8::Array>();
+    v8::Local<v8::Value> bytes, type;
+    if (!r->Get(ctx, 0).ToLocal(&bytes) || !bytes->IsUint8Array() || !r->Get(ctx, 1).ToLocal(&type)) return "";
+    v8::Local<v8::Uint8Array> b = bytes.As<v8::Uint8Array>();
+    std::vector<uint8_t> raw(b->ByteLength());
+    if (!raw.empty()) b->CopyContents(raw.data(), raw.size());
+    v8::String::Utf8Value ts(iso, type);
+    std::string t = *ts && **ts ? *ts : "text/plain";
+    for (char &ch : t) if (ch == ',') ch = ';';
+    static const char *B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    std::string out = "data:" + t + ";base64,";
+    out.reserve(out.size() + raw.size() / 3 * 4 + 4);
+    for (size_t i = 0; i < raw.size(); i += 3) {
+        uint32_t v = raw[i] << 16 | (i + 1 < raw.size() ? raw[i + 1] << 8 : 0) | (i + 2 < raw.size() ? raw[i + 2] : 0);
+        out += B64[v >> 18 & 63]; out += B64[v >> 12 & 63];
+        out += i + 1 < raw.size() ? B64[v >> 6 & 63] : '=';
+        out += i + 2 < raw.size() ? B64[v & 63] : '=';
+    }
+    return out;
+}
 static void frame_load(JsCtx *p, Node *f, const char *u, const std::string &key,
                        const char *body = nullptr, size_t blen = 0, const char *ctype = nullptr) {
     bool remote = u && *u && strncmp(u, "about:", 6) && strncmp(u, "javascript:", 11);
-    JsCtx *k = frame_create(p, f, "about:blank", "", 0, !remote);
-    k->frame_src = key;
+    JsCtx *k = frame_create(p, f, key, "about:blank", "", 0, !remote);
     if (!remote) return;
-    NetRequest *rq = net_request_new(ctype ? "POST" : "GET", u);
+    std::string blob = !strncmp(u, "blob:", 5) ? blob_as_data(p, u) : "";
+    NetRequest *rq = net_request_new(ctype ? "POST" : "GET", blob.empty() ? u : blob.c_str());
     if (ctype) {
         rq->body = (char *)xmalloc(blen + 1); if (blen) memcpy(rq->body, body, blen); rq->body[blen] = 0; rq->body_len = blen;
         headers_add(&rq->headers, "Content-Type", ctype);
@@ -158,13 +247,13 @@ static void frame_load(JsCtx *p, Node *f, const char *u, const std::string &key,
 static void frame_start(JsCtx *p, Node *f) {
     if (p->dead) return;
     std::string key = src_key(p, f);
-    if (const char *sd = node_attr(f, "srcdoc")) { JsCtx *k = frame_create(p, f, "about:srcdoc", sd, strlen(sd), true); k->frame_src = key; return; }
+    if (const char *sd = node_attr(f, "srcdoc")) { frame_create(p, f, key, "about:srcdoc", sd, strlen(sd), true); return; }
     frame_load(p, f, key.c_str(), key);
 }
 
 void frame_nav(JsCtx *k, const char *u) {
     if (!k->parent || k->dead) return;
-    char *abs = url_join(k->doc->url, u);
+    char *abs = url_join(doc_base(k->doc), u);
     if (abs) frame_load(k->parent, k->frame_el, abs, k->frame_src);
     free(abs);
 }
@@ -193,7 +282,7 @@ bool js_navigate_target(JsCtx *c, const char *target, const char *url, const cha
     JsCtx *t = c ? target_ctx(c, target) : nullptr;
     if (!t || t == c || t->dead || !url) return false;
     if (t->parent) {
-        char *abs = url_join(c->doc->url, url);
+        char *abs = url_join(doc_base(c->doc), url);
         if (abs) frame_load(t->parent, t->frame_el, abs, t->frame_src, body, n, ctype);
         free(abs);
     } else if (ctype && t->host.navigate_post) t->host.navigate_post(t->host.ud, url, body, n, ctype);
@@ -247,6 +336,7 @@ static int live_kids(JsCtx *c) { int n = 0; for (JsCtx *k : c->kids) n += !k->de
 static void n_frameCount(const FCI &a) { FCTX; frames_scan(c); a.GetReturnValue().Set(live_kids(c)); }
 static void n_frameAt(const FCI &a) {
     FCTX; int i = a[0]->Int32Value(iso->GetCurrentContext()).FromMaybe(-1);
+    frames_scan(c);   /* a frame the parser just inserted gets its about:blank window now */
     for (JsCtx *k : c->kids) if (!k->dead && i-- == 0) { a.GetReturnValue().Set(win_for(c, k)); return; }
     a.GetReturnValue().SetUndefined();
 }
@@ -276,6 +366,25 @@ static JsCtx *ctx_of_value(v8::Isolate *iso, JsCtx *c, v8::Local<v8::Value> v) {
     v8::Local<v8::Context> cx;
     if (!v.As<v8::Object>()->GetCreationContext(iso).ToLocal(&cx)) return nullptr;
     return static_cast<JsCtx *>(cx->GetAlignedPointerFromEmbedderData(1, kTag));
+}
+/* HTML "fully active": the context still shows its frame's document, its <iframe> is connected, and so on up */
+static bool fully_active(JsCtx *c) {
+    for (; c; c = c->parent) {
+        if (c->dead) return false;
+        if (!c->parent) return true;
+        if (!c->frame_el || !(c->frame_el->flags & NF_CONNECTED) || js_frame_ctx(c->frame_el) != c) return false;
+    }
+    return true;
+}
+/* fullyActive(x): a node's document's realm, else an object's creation realm (DOM "inner invoke" skips listeners
+   when either the target's or the callback's global is not fully active) */
+static void n_fullyActive(const FCI &a) {
+    FCTX;
+    JsCtx *k = nullptr;
+    if (Node *n = junwrap(a[0])) k = n->doc ? owner_ctx(n->doc) : nullptr;
+    else k = ctx_of_value(iso, c, a[0]);
+    if (!k && !a[0]->IsNumber()) k = c;
+    a.GetReturnValue().Set(k ? fully_active(k) : true);
 }
 static void n_caller(const FCI &a) {
     FCTX;
@@ -403,6 +512,6 @@ void js_install_frames(JsCtx *c, v8::Local<v8::Object> N) {
     v8::Isolate *iso = c->iso;
     v8::Local<v8::Context> ctx = iso->GetCurrentContext();
 #define REG(nm) (void)N->Set(ctx, jstr(iso, #nm), v8::Function::New(ctx, n_##nm).ToLocalChecked())
-    REG(frameWin); REG(frameDoc); REG(parentWin); REG(topWin); REG(frameEl); REG(frameCount); REG(frameAt); REG(ctxRel); REG(navTarget); REG(caller); REG(postTo); REG(portTo); REG(openWin); REG(winOp); REG(openerWin);
+    REG(frameWin); REG(frameDoc); REG(parentWin); REG(topWin); REG(frameEl); REG(frameCount); REG(frameAt); REG(ctxRel); REG(navTarget); REG(caller); REG(fullyActive); REG(postTo); REG(portTo); REG(openWin); REG(winOp); REG(openerWin);
 #undef REG
 }

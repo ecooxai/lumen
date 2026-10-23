@@ -36,9 +36,14 @@ enum {
     NF_RESELECT_KEYED = 1 << 20, /* class/ID change: descendants reselect only if a rule tests those keys above its subject */
     NF_EMPTY_CHANGED = 1 << 21,  /* this connected element's :empty state flipped since the last style pass */
     NF_INERT = 1 << 11,           /* template content fragment */
+    /* a shadow root's (a fragment with a host) metadata */
+    NF_SR_CLOSED = 1 << 22, NF_SR_DELEGATES = 1 << 23, NF_SR_SERIALIZABLE = 1 << 24, NF_SR_CLONABLE = 1 << 25,
+    NF_SR_MANUAL = 1 << 26, NF_SR_DECLARATIVE = 1 << 27,
+    NF_SAN_MADE = 1 << 28,        /* made by a sanitizing parser, which frees it unless inserted */
 };
 
-typedef struct { const char *name; char *value; } Attr; /* name is an atom */
+/* name is an atom: the qualified name. ns and pfx are atoms of a namespaced attribute (setAttributeNS, XML), else NULL. */
+typedef struct { const char *name; char *value; const char *ns, *pfx; } Attr;
 
 struct Document;
 struct ComputedStyle;
@@ -50,6 +55,7 @@ typedef struct Node {
     struct Node *parent, *first, *last, *prev, *next;
     struct Document *doc;
     const char *tag;               /* atom; lower-case for HTML */
+    const char *xns, *xpfx, *xln;  /* atoms of elements from XML or createElementNS: a namespace URI outside NS_*, the prefix, the case-kept local name */
     const char *id;                /* cached id attr (points into attrs) */
     const char *class_name;        /* cached class attr (points into attrs) */
     const char **classes; int nclasses;
@@ -77,8 +83,11 @@ typedef struct Node {
 typedef struct Document {
     Node node;
     char *url;
-    char *base_url;
+    char *base_url;               /* an about:blank or about:srcdoc frame's fallback base URL (its parent's), else NULL */
     char *title;
+    char *content_type;           /* the response's MIME type of a loaded XML document, else NULL */
+    char *csp, *csp_ro;           /* the response's Content-Security-Policy(-Report-Only) headers, joined; else NULL */
+    int charset;   /* the document's encoding (base/encoding.h); 0 is UTF-8 */
     Node *html, *head, *body;
     bool quirks;
     int ready_state;              /* 0 loading, 1 interactive, 2 complete */
@@ -110,6 +119,8 @@ typedef struct Document {
     void *browser;                /* owning page */
     void (*on_mutation)(struct Document *, Node *);
 } Document;
+/* the URL a document's relative URLs resolve against (without <base>) */
+static inline const char *doc_base(const Document *d) { return d->base_url ? d->base_url : d->url; }
 
 Document *doc_new(const char *url);
 void doc_free(Document *d);
@@ -134,6 +145,13 @@ const char *node_attr(const Node *n, const char *name);  /* name: atom or plain 
 bool node_has_attr(const Node *n, const char *name);
 void node_set_attr(Node *n, const char *name, const char *value);
 void node_remove_attr(Node *n, const char *name);
+/* the DOM's exact lookups: the first attribute with qualified name qname (no case folding), or by namespace and local name;
+   -1 if there is none */
+int node_attr_qindex(const Node *n, const char *qname);
+int node_attr_ns_index(const Node *n, const char *ns, const char *local);
+/* sets attribute i's value, or with i < 0 appends one (qname, ns, pfx atoms) */
+void node_set_attr_at(Node *n, int i, const char *qname, const char *value, const char *ns, const char *pfx);
+void node_remove_attr_at(Node *n, int i);
 void node_set_modal(Node *n, bool modal);
 bool node_has_class(const Node *n, const char *cls);
 static inline uint64_t node_class_bit(const char *cls) {
@@ -149,6 +167,7 @@ static inline bool node_has_class_atom(const Node *n, const char *cls) {
 static inline bool node_is(const Node *n, const char *tag_atom) { return n && n->type == NODE_ELEMENT && n->tag == tag_atom && n->ns == NS_HTML; }
 
 char *node_text_content(const Node *n);
+char *node_text_content_n(const Node *n, size_t *len);   /* with its length: the text may hold NULs */
 void node_set_text_content(Node *n, const char *s);
 void node_set_character_data(Node *n, const char *s, size_t len);
 void node_text_append(Node *n, const char *s, size_t len);
@@ -168,8 +187,31 @@ bool node_is_inclusive_ancestor(const Node *a, const Node *b);
 
 /* HTML parser */
 void html_parse(Document *d, const char *src, size_t len);
+/* XML documents (also XHTML, SVG): d becomes an XML document; a well-formedness error leaves a parsererror element */
+void xml_parse(Document *d, const char *src, size_t len);
+bool xml_mime(const char *content_type);   /* text/xml, application/xml or any +xml type */
+char *mime_essence(const char *content_type);   /* "type/subtype" in lower case, without parameters */
 /* Fragment parsing for innerHTML; children appended to 'context' replacement fragment */
 Node *html_parse_fragment(Document *d, Node *context, const char *src, size_t len);
+/* The HTML Sanitizer: a canonical SanitizerConfig built by the bindings. Names are (namespace URI or NULL, local
+   name); processing instructions use a NULL namespace and their target. */
+typedef struct SanCfg SanCfg;
+enum { SAN_ELEMENTS, SAN_REMOVE_ELEMENTS, SAN_REPLACE_ELEMENTS, SAN_ATTRIBUTES, SAN_REMOVE_ATTRIBUTES, SAN_PIS, SAN_REMOVE_PIS, SAN_NLISTS };
+SanCfg *san_new(void);
+void san_free(SanCfg *c);
+void san_add(SanCfg *c, int list, const char *ns, const char *name);   /* name NULL: the list exists, empty */
+/* an element's attributes (remove false) or removeAttributes list; the element must be in SAN_ELEMENTS */
+void san_elem_attr(SanCfg *c, const char *el_ns, const char *el_name, bool remove, const char *ns, const char *name);
+void san_flags(SanCfg *c, bool comments, bool data_attributes, bool javascript_urls);
+/* the parser's sanitizer configuration (NULL: none) and its allow declarative shadow roots flag */
+typedef struct { const SanCfg *san; bool dsd; } HtmlOpts;
+void html_parse_ex(Document *d, const char *src, size_t len, const HtmlOpts *o);   /* html_parse allows DSD */
+Node *html_parse_fragment_ex(Document *d, Node *context, const char *src, size_t len, const HtmlOpts *o);
+/* attach a shadow root: flags are NF_SR_*; NULL if host already is one or cannot host one */
+Node *node_attach_shadow(Node *host, uint32_t flags);
+bool node_valid_shadow_host(const Node *n);
+/* the HTML fragment serialization with shadow roots: serializable ones, and those in roots[] */
+char *node_serialize_ex(const Node *n, bool outer, bool serializable, Node *const *roots, int nroots);
 /* Incremental parser for document.write & streaming */
 typedef struct HtmlParser HtmlParser;
 HtmlParser *html_parser_new(Document *d, Node *fragment_context);

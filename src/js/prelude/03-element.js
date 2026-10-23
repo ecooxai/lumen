@@ -47,42 +47,70 @@ class Element extends Node {}
 methods(Element.prototype, ParentNode); methods(Element.prototype, ChildNode);
 const lcName = (el, n) => { n = String(n); return N.ns(el) === 0 ? n.toLowerCase() : n; };
 const NSURI = ['http://www.w3.org/1999/xhtml', 'http://www.w3.org/2000/svg', 'http://www.w3.org/1998/Math/MathML'];
-const XML_NS = 'http://www.w3.org/XML/1998/namespace', XMLNS_NS = 'http://www.w3.org/2000/xmlns/';
 const validLocalName = n => /^[A-Za-z][^\t\n\f\r \/>\x00]*$/.test(n) || /^[:_\u0080-\u{10FFFF}][A-Za-z0-9\-.:_\u0080-\u{10FFFF}]*$/u.test(n);
 const asciiLower = s => s.replace(/[A-Z]+/g, c => c.toLowerCase()), asciiUpper = s => s.replace(/[a-z]+/g, c => c.toUpperCase());
 methods(Element.prototype, {
-    get tagName() { let ln = this.localName; if (typeof ln !== 'string') ln = String(N.name(this)); const q = this.__pfx ? this.__pfx + ':' + ln : ln; return this.namespaceURI === NSURI[0] ? asciiUpper(q) : q; },
+    get tagName() { let ln = this.localName; if (typeof ln !== 'string') ln = String(N.name(this)); const q = this.__pfx ? this.__pfx + ':' + ln : ln; if (this.namespaceURI !== NSURI[0]) return q; const d = N.ownerDoc(this); return d && N.ns(d) === 3 ? q : asciiUpper(q); },
     get localName() { return this.__ln ?? N.name(this); }, get namespaceURI() { return this.__nsu !== undefined ? this.__nsu : N.ns(this) === 3 ? null : NSURI[N.ns(this)] || NSURI[0]; }, get prefix() { return this.__pfx ?? null; },
     get id() { return N.attr(this, 'id') ?? ''; }, set id(v) { this.setAttribute('id', v); },
     get className() { return N.attr(this, 'class') ?? ''; }, set className(v) { this.setAttribute('class', v); },
-    get classList() { if (!this.__cl) def(this, '__cl', new DOMTokenList(this, 'class')); return this.__cl; }, set classList(v) { this.setAttribute('class', v); },
+    get classList() { if (!this.__cl) def(this, '__cl', new DOMTokenList(TOK_KEY, this, 'class')); return this.__cl; }, set classList(v) { this.setAttribute('class', v); },
     get slot() { return N.attr(this, 'slot') ?? ''; }, set slot(v) { this.setAttribute('slot', v); },
-    get attributes() { return new NamedNodeMap(this); },
-    getAttribute(n) { return N.attr(this, lcName(this, n)); },
-    getAttributeNS(ns, n) { return N.attr(this, String(n)); },
+    get attributes() { if (!this.__nnm) def(this, '__nnm', nnmOf(this)); return this.__nnm; },
+    getAttribute(n) { return N.attrQ(this, lcName(this, n)); },
+    getAttributeNS(ns, n) { return N.attrNS(this, ns == null || ns === '' ? null : String(ns), String(n)); },
     setAttribute(n, v) {
-        n = lcName(this, n); if (!/^[^\s"'>\/=\x00-\x1f]+$/.test(n)) throw new DOMException(`'${n}' is not a valid attribute name.`, 'InvalidCharacterError');
-        const old = N.attr(this, n); v = String(v);
-        N.setAttr(this, n, v);
-        notify('attributes', this, { attributeName: n, oldValue: old });
-        ceAttr(this, n, old, v);
+        n = lcName(this, n); if (!validAttrName(n)) throw new DOMException(`Failed to execute 'setAttribute' on 'Element': '${n}' is not a valid attribute name.`, 'InvalidCharacterError');
+        attrSetQ(this, n, ttAttr(this, null, n, v));
     },
-    setAttributeNS(ns, n, v) { n = String(n); const i = n.indexOf(':'); this.setAttribute(i >= 0 ? n.slice(i + 1) : n, v); },
-    removeAttribute(n) { n = lcName(this, n); const old = N.attr(this, n); if (old == null) return; N.rmAttr(this, n); notify('attributes', this, { attributeName: n, oldValue: old }); ceAttr(this, n, old, null); },
-    removeAttributeNS(ns, n) { this.removeAttribute(n); },
-    hasAttribute(n) { return N.attr(this, lcName(this, n)) != null; }, hasAttributeNS(ns, n) { return N.attr(this, String(n)) != null; },
+    setAttributeNS(ns, q, v) { const [u, p, l] = nsExtract(ns, q, true); attrChange(this, u, p, l, ttAttr(this, u, l, v)); },
+    removeAttribute(n) {
+        n = lcName(this, n);
+        const old = N.attrQ(this, n); if (old == null) return;
+        const a = attrByQName(this, n);
+        if (a && (a._ns !== null || a._pfx !== null)) { attrRemove(this, a._ns, a._ln); return; }
+        attrDetach(this, null, n, old);
+        N.rmAttrQ(this, n);
+        if (n.charCodeAt(0) === 111 && n.charCodeAt(1) === 110) handlerAttr(this, n, null);
+        notify('attributes', this, { attributeName: n, attributeNamespace: null, oldValue: old });
+        ceAttr(this, n, old, null, null);
+    },
+    removeAttributeNS(ns, n) { attrRemove(this, ns == null || ns === '' ? null : String(ns), String(n)); },
+    hasAttribute(n) { return N.attrQ(this, lcName(this, n)) != null; },
+    hasAttributeNS(ns, n) { return N.attrNS(this, ns == null || ns === '' ? null : String(ns), String(n)) != null; },
     hasAttributes() { return N.attrs(this).length > 0; },
-    toggleAttribute(n, force) { const has = this.hasAttribute(n); if (force === undefined ? has : !force) { if (has) this.removeAttribute(n); return false; } if (!has) this.setAttribute(n, ''); return true; },
+    toggleAttribute(n, force) {
+        n = lcName(this, n); if (!validAttrName(n)) throw new DOMException(`Failed to execute 'toggleAttribute' on 'Element': '${n}' is not a valid attribute name.`, 'InvalidCharacterError');
+        if (N.attrQ(this, n) == null) { if (force === undefined || force) { attrSetQ(this, n, ''); return true; } return false; }
+        if (force === undefined || !force) { this.removeAttribute(n); return false; }
+        return true;
+    },
     getAttributeNames() { const a = N.attrs(this); const r = []; for (let i = 0; i < a.length; i += 2) r.push(a[i]); return r; },
-    getAttributeNode(n) { return this.hasAttribute(n) ? new Attr(this, lcName(this, n)) : null; },
-    getAttributeNodeNS(ns, n) { return this.getAttributeNode(n); },
-    setAttributeNode(a) { const old = this.getAttributeNode(a.name); this.setAttribute(a.name, a.value); def(a, '_el', this); return old; },
+    getAttributeNode(n) { return attrByQName(this, lcName(this, n)); },
+    getAttributeNodeNS(ns, n) { return attrByNS(this, ns == null || ns === '' ? null : String(ns), String(n)); },
+    setAttributeNode(a) {
+        if (!(a instanceof Attr)) throw new TypeError("Failed to execute 'setAttributeNode' on 'Element': parameter 1 is not of type 'Attr'.");
+        const v = ttAttr(this, a._ns, a._ln, a.value);   /* first: the default policy may change the element's attributes */
+        if (a._el && a._el !== this) throw new DOMException("Failed to execute 'setAttributeNode' on 'Element': The node provided is an attribute node that is already an attribute of another Element; attribute nodes must be explicitly cloned.", 'InUseAttributeError');
+        const old = attrByNS(this, a._ns, a._ln);
+        if (old === a) return a;
+        if (old) attrDetach(this, a._ns, a._ln, old.value);
+        attrChange(this, a._ns, a._pfx, a._ln, v);
+        let m = attrNodes.get(this); if (!m) attrNodes.set(this, m = new Map());
+        a._el = this; m.set(attrKey(a._ns, a._ln), a);
+        return old;
+    },
     setAttributeNodeNS(a) { return this.setAttributeNode(a); },
-    removeAttributeNode(a) { if (!a || !this.hasAttribute(a.name)) throw new DOMException("Failed to execute 'removeAttributeNode' on 'Element': The node provided is owned by another element.", 'NotFoundError'); const v = a.value; this.removeAttribute(a.name); const d = new Attr(null, a.name); Object.defineProperty(d, 'value', { value: v, writable: true }); return d; },
-    get innerHTML() { return N.html(this, false); }, set innerHTML(v) { setInner(this, v == null ? '' : String(v)); },
+    removeAttributeNode(a) {
+        if (!(a instanceof Attr)) throw new TypeError("Failed to execute 'removeAttributeNode' on 'Element': parameter 1 is not of type 'Attr'.");
+        if (a._el !== this) throw new DOMException("Failed to execute 'removeAttributeNode' on 'Element': The node provided is owned by another element.", 'NotFoundError');
+        attrRemove(this, a._ns, a._ln);
+        return a;
+    },
+    get innerHTML() { return N.html(this, false); }, set innerHTML(v) { setInner(this, ttString(TrustedHTML, v == null ? '' : v, 'Element innerHTML')); },
     get outerHTML() { return N.html(this, true); },
-    set outerHTML(v) { const p = N.parent(this); if (!p) return; insertNode(p, N.parseFrag(p, String(v)), this); removeNode(this); },
-    insertAdjacentHTML(pos, html) { const ctx = /^(beforebegin|afterend)$/i.test(pos) ? N.parent(this) : this; if (ctx) this.insertAdjacentElement(pos, N.parseFrag(ctx, String(html))); },
+    set outerHTML(v) { v = ttString(TrustedHTML, v == null ? '' : v, 'Element outerHTML'); const p = N.parent(this); if (!p) return; insertNode(p, N.parseFrag(p, v), this); removeNode(this); },
+    insertAdjacentHTML(pos, html) { html = ttString(TrustedHTML, html, 'Element insertAdjacentHTML'); const ctx = /^(beforebegin|afterend)$/i.test(pos) ? N.parent(this) : this; if (ctx) this.insertAdjacentElement(pos, N.parseFrag(ctx, String(html))); },
     insertAdjacentElement(pos, el) {
         switch (String(pos).toLowerCase()) {
         case 'beforebegin': { const p = N.parent(this); if (p) insertNode(p, el, this); break; }
@@ -94,8 +122,9 @@ methods(Element.prototype, {
         return el;
     },
     insertAdjacentText(pos, t) { this.insertAdjacentElement(pos, N.textNode(String(t))); },
-    matches(s) { return N.matches(this, String(s)); }, webkitMatchesSelector(s) { return N.matches(this, String(s)); },
-    closest(s) { s = String(s); for (let e = this; e && N.type(e) === 1; e = N.parent(e)) if (N.matches(e, s)) return e; return null; },
+    matches(s) { if (!arguments.length) throw argsErr('matches', this, 1); return N.matches(this, cssPre(String(s))); },
+    webkitMatchesSelector(s) { if (!arguments.length) throw argsErr('webkitMatchesSelector', this, 1); return N.matches(this, cssPre(String(s))); },
+    closest(s) { if (!arguments.length) throw argsErr('closest', this, 1); s = cssPre(String(s)); for (let e = this; e && N.type(e) === 1; e = N.parent(e)) if (N.matches(e, s, this)) return e; return null; },
     getBoundingClientRect() { const r = N.vrect(this); return r ? new DOMRect(r[0], r[1], r[2], r[3]) : new DOMRect(); },
     getClientRects() { return N.rect(this) ? [this.getBoundingClientRect()] : []; },
     get clientWidth() { if (this === document.documentElement) return N.viewport()[0]; const r = N.rect(this); return r ? Math.round(r[2]) : 0; },
@@ -112,12 +141,36 @@ methods(Element.prototype, {
     scrollBy(x, y) { const o = x && typeof x === 'object' ? x : { left: x, top: y }; this.scrollTo({ left: this.scrollLeft + (+o.left || 0), top: this.scrollTop + (+o.top || 0) }); },
     scrollIntoView() { const r = N.rect(this); if (r) N.scrollTo(0, r[1]); }, scrollIntoViewIfNeeded() { this.scrollIntoView(); },
     attachShadow(init) {
-        if (this.__shadow) throw new DOMException('Shadow root cannot be created on a host which already hosts a shadow tree.', 'NotSupportedError');
-        const sr = N.attachShadow(this); Object.setPrototypeOf(sr, ShadowRoot.prototype);
-        def(sr, '__mode', (init && init.mode) || 'open'); def(this, '__shadow', sr);
+        const fail = m => new TypeError(`Failed to execute 'attachShadow' on 'Element': ${m}`);
+        if (!arguments.length) throw fail('1 argument required, but only 0 present.');
+        if (init === null || (typeof init !== 'object' && typeof init !== 'function')) throw fail("The provided value is not of type 'ShadowRootInit'.");
+        /* the dictionary members, read in order */
+        const clonable = !!init.clonable, delegatesFocus = !!init.delegatesFocus, mode = init.mode;
+        if (mode === undefined) throw fail("Failed to read the 'mode' property from 'ShadowRootInit': Required member is undefined.");
+        const m = String(mode);
+        if (m !== 'open' && m !== 'closed') throw fail(`Failed to read the 'mode' property from 'ShadowRootInit': The provided value '${m}' is not a valid enum value of type ShadowRootMode.`);
+        const serializable = !!init.serializable, sa = init.slotAssignment === undefined ? 'named' : String(init.slotAssignment);
+        if (sa !== 'named' && sa !== 'manual') throw fail(`Failed to read the 'slotAssignment' property from 'ShadowRootInit': The provided value '${sa}' is not a valid enum value of type SlotAssignmentMode.`);
+        const ln = this.localName;
+        if (this.namespaceURI !== NSURI[0] || !(SHADOW_HOSTS.has(ln) || validCEName(ln)))
+            throw new DOMException(`Failed to execute 'attachShadow' on 'Element': This element does not support attachShadow`, 'NotSupportedError');
+        const d = registry.byName.get(ln) || (this.getAttribute('is') && registry.byName.get(this.getAttribute('is')));
+        if (d && d.ctor && Array.isArray(d.ctor.disabledFeatures) && d.ctor.disabledFeatures.map(String).includes('shadow'))
+            throw new DOMException("Failed to execute 'attachShadow' on 'Element': attachShadow() is disabled by disabledFeatures static field.", 'NotSupportedError');
+        const cur = N.shadowOf(this);
+        if (cur) {
+            /* a declarative shadow root of the same mode is emptied and reused */
+            const f = N.srFlags(cur);
+            if (!(f & 32) || ((f & 1) ? 'closed' : 'open') !== m) throw new DOMException("Failed to execute 'attachShadow' on 'Element': Shadow root cannot be created on a host which already hosts a shadow tree.", 'NotSupportedError');
+            for (const k of kids(cur)) removeNode(k);
+            N.srSetFlags(cur, 0, 32);
+            return cur;
+        }
+        const sr = N.attachShadow(this, (m === 'closed' ? 1 : 0) | (delegatesFocus ? 2 : 0) | (serializable ? 4 : 0) | (clonable ? 8 : 0) | (sa === 'manual' ? 16 : 0));
+        if (Object.getPrototypeOf(sr) !== ShadowRoot.prototype) Object.setPrototypeOf(sr, ShadowRoot.prototype);
         return sr;
     },
-    get shadowRoot() { return this.__shadow && this.__shadow.__mode === 'open' ? this.__shadow : null; },
+    get shadowRoot() { const sr = N.shadowOf(this); return sr && !(N.srFlags(sr) & 1) ? sr : null; },
     get assignedSlot() { return null; },
     requestFullscreen() { return fsRequest(this); }, webkitRequestFullscreen() { fsRequest(this).catch(() => {}); }, webkitRequestFullScreen() { fsRequest(this).catch(() => {}); },
     requestPointerLock() {}, setPointerCapture(id) { capturePointer(this, id, true); }, releasePointerCapture(id) { capturePointer(this, id, false); }, hasPointerCapture(id) { return hasCapture(this, id); },
@@ -135,16 +188,54 @@ function setInner(el, html) {
 }
 const reflectStr = (p, ...ns) => { for (const n of ns) { const a = n.toLowerCase(); acc(p, n, function () { return N.attr(this, a) ?? ''; }, function (v) { this.setAttribute(a, v); }); } };
 const reflectBool = (p, ...ns) => { for (const n of ns) { const a = n.toLowerCase(); acc(p, n, function () { return N.attr(this, a) != null; }, function (v) { if (v) this.setAttribute(a, ''); else this.removeAttribute(a); }); } };
-const reflectUrl = (p, ...ns) => { for (const n of ns) { const a = n.toLowerCase(); acc(p, n, function () { const v = N.attr(this, a); if (v == null) return ''; const r = N.urlParse(v, document.baseURI); return r ? r[0] : v; }, function (v) { this.setAttribute(a, v); }); } };
+/* the encoding a node's document gives its URLs' queries; undefined for UTF-8 */
+const docEnc = n => { const e = N.charset(n); return e === 'UTF-8' ? undefined : e; };
+/* set el's attribute with qualified name n (validated, lowercased) to the string v */
+/* an element's contenteditable state: 'true', 'false', 'plaintext-only', or null (inherit) */
+function ceState(el) {
+    const v = N.attr(el, 'contenteditable');
+    if (v == null) return null;
+    const s = v.toLowerCase();
+    return s === '' || s === 'true' ? 'true' : s === 'false' || s === 'plaintext-only' ? s : null;
+}
+function attrSetQ(el, n, v) {
+    const a = N.attrQ(el, n) == null ? null : attrByQName(el, n);
+    if (a && (a._ns !== null || a._pfx !== null)) return attrChange(el, a._ns, a._pfx, a._ln, v);
+    const old = N.attrQ(el, n);
+    N.setAttrQ(el, n, v);
+    if (n.charCodeAt(0) === 111 && n.charCodeAt(1) === 110) handlerAttr(el, n, v);
+    notify('attributes', el, { attributeName: n, attributeNamespace: null, oldValue: old });
+    ceAttr(el, n, old, v, null);
+}
+const reflectUrl = (p, ...ns) => { for (const n of ns) { const a = n.toLowerCase(); acc(p, n, function () { const v = N.attr(this, a); if (v == null) return ''; const r = N.urlParse(v, document.baseURI, docEnc(this)); return r ? r[0] : v; }, function (v) { this.setAttribute(a, v); }); } };
 const reflectInt = (p, d, ...ns) => { for (const n of ns) { const a = n.toLowerCase(); acc(p, n, function () { const v = parseInt(N.attr(this, a), 10); return isNaN(v) ? d : v; }, function (v) { this.setAttribute(a, String(v | 0)); }); } };
-const EVENT_HANDLERS = 'abort animationend animationiteration animationstart auxclick beforeinput blur cancel canplay canplaythrough change click close contextmenu copy cut dblclick drag dragend dragenter dragleave dragover dragstart drop durationchange emptied ended error focus focusin focusout input invalid keydown keypress keyup load loadeddata loadedmetadata loadstart mousedown mouseenter mouseleave mousemove mouseout mouseover mouseup paste pause play playing pointercancel pointerdown pointerenter pointerleave pointermove pointerout pointerover pointerup progress ratechange reset resize scroll seeked seeking select selectionchange selectstart stalled submit suspend timeupdate toggle touchcancel touchend touchmove touchstart transitionend volumechange waiting wheel'.split(' ');
+const EVENT_HANDLERS = 'abort animationend animationiteration animationstart auxclick beforeinput blur cancel canplay canplaythrough change click close contextmenu copy cut dblclick drag dragend dragenter dragleave dragover dragstart drop durationchange emptied ended error focus focusin focusout input invalid keydown keypress keyup load loadeddata loadedmetadata loadstart mousedown mouseenter mouseleave mousemove mouseout mouseover mouseup paste pause play playing pointercancel pointerdown pointerenter pointerleave pointermove pointerout pointerover pointerup progress ratechange reset resize scroll seeked seeking select selectionchange selectstart stalled submit suspend timeupdate toggle touchcancel touchend touchmove touchstart transitionend volumechange waiting wheel webkitanimationend webkitanimationiteration webkitanimationstart webkittransitionend'.split(' ');
+const EMPTY_SCOPE = Object.freeze(Object.create(null));
 function compileHandler(el, k, src) {
     const c = el.__hc || (def(el, '__hc', {}), el.__hc);
     if (c[k] && c[k].src === src) return c[k].fn;
     let fn = null;
-    try { fn = new Function('event', src); } catch (e) { report(e); }
+    /* the handler's scope is the element, its form owner, its document, then the global object */
+    try {
+        ttInternal++;
+        let make;
+        try { make = new Function('__lumenScope', `with (__lumenScope[0]) with (__lumenScope[1]) return function (${N.ns(el) === 1 ? 'evt' : 'event'}) { with (this) {\n${src}\n} };`); } finally { ttInternal--; }
+        let form = null;
+        try { form = N.ns(el) === 0 ? el.form : null; } catch (e) {}
+        fn = make([el.ownerDocument || EMPTY_SCOPE, form || EMPTY_SCOPE]);
+    } catch (e) { report(e); }
     c[k] = { src, fn };
     return fn;
+}
+/* an on* content attribute set or removed: it replaces a handler the IDL attribute set; on <body> and <frameset> the
+   window's events' handlers are the window's */
+function handlerAttr(el, k, src) {
+    if (el.__on && k in el.__on) delete el.__on[k];
+    const t = N.name(el);
+    if ((t === 'body' || t === 'frameset') && N.ns(el) === 0 && WINDOW_FWD.includes(k.slice(2))) {
+        if (!G.__on) def(G, '__on', {});
+        G.__on[k] = src == null ? null : compileHandler(el, k, src);
+    }
 }
 function installHandlers(proto, attrBacked, list = EVENT_HANDLERS) {
     for (const t of list) {
@@ -158,8 +249,15 @@ function installHandlers(proto, attrBacked, list = EVENT_HANDLERS) {
     }
 }
 /* pages pick the fullscreen event name by `'on' + name in document` (YouTube's player listens to none without it) */
+const SHADOW_HOSTS = new Set(['article', 'aside', 'blockquote', 'body', 'div', 'footer', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'header', 'main', 'nav', 'p', 'section', 'span']);
 const FS_HANDLERS = ['fullscreenchange', 'fullscreenerror', 'webkitfullscreenchange', 'webkitfullscreenerror'];
 installHandlers(Element.prototype, true, FS_HANDLERS);
+/* ChildNode and ParentNode methods stay out of `with (element)` scopes (inline event handlers) */
+const unscopable = (C, names) => Object.defineProperty(C.prototype, Symbol.unscopables, { value: Object.assign(Object.create(null), Object.fromEntries(names.map(n => [n, true]))), configurable: true });
+unscopable(Element, ['after', 'append', 'before', 'prepend', 'remove', 'replaceChildren', 'replaceWith', 'slot']);
+unscopable(CharacterData, ['after', 'before', 'remove', 'replaceWith']);
+unscopable(DocumentType, ['after', 'before', 'remove', 'replaceWith']);
+unscopable(DocumentFragment, ['append', 'prepend', 'replaceChildren']);
 const makeStyle = (el) => new Proxy(new CSSStyleDeclaration(el), styleHandler);
 class HTMLElement extends Element { constructor() { return ceConstruct(new.target); } }
 reflectStr(HTMLElement.prototype, 'title', 'lang', 'accessKey', 'nonce', 'dir');
@@ -198,11 +296,25 @@ methods(HTMLElement.prototype, {
     get offsetLeft() { const r = N.rect(this); if (!r) return 0; const op = this.offsetParent; const pr = op && op !== document.body ? N.rect(op) : null; return Math.round(r[0] - (pr ? pr[0] : 0)); },
     get offsetWidth() { const r = N.rect(this); return r ? Math.round(r[2]) : 0; },
     get offsetHeight() { const r = N.rect(this); return r ? Math.round(r[3]) : 0; },
-    get isContentEditable() { const v = N.attr(this, 'contenteditable'); return v === '' || v === 'true'; },
-    get contentEditable() { return N.attr(this, 'contenteditable') ?? 'inherit'; }, set contentEditable(v) { this.setAttribute('contenteditable', v); },
+    get isContentEditable() {
+        for (let n = this; n && N.type(n) === 1; n = N.parent(n)) { const s = ceState(n); if (s) return s !== 'false'; }
+        return N.connected(this) && N.ownerDoc(this) === document && document.designMode === 'on';
+    },
+    get contentEditable() { return ceState(this) || 'inherit'; },
+    set contentEditable(v) {
+        const s = String(v).toLowerCase();
+        if (s === 'inherit') this.removeAttribute('contenteditable');
+        else if (s === 'true' || s === 'false' || s === 'plaintext-only') this.setAttribute('contenteditable', s);
+        else throw new DOMException(`Failed to set the 'contentEditable' property on 'HTMLElement': The value provided ('${v}') is not one of 'true', 'false', 'plaintext-only', or 'inherit'.`, 'SyntaxError');
+    },
     get draggable() { return N.attr(this, 'draggable') === 'true'; }, set draggable(v) { this.setAttribute('draggable', String(!!v)); },
     focus() { const o = N.active(); if (o === this) return; N.focus(this); if (N.active() !== this) return; if (o) o.dispatchEvent(new FocusEvent('focusout', { bubbles: true, composed: true, relatedTarget: this })); this.dispatchEvent(new FocusEvent('focusin', { bubbles: true, composed: true, relatedTarget: o })); }, blur() { if (N.active() !== this) return; N.focus(null); this.dispatchEvent(new FocusEvent('focusout', { bubbles: true, composed: true, relatedTarget: null })); },
-    click() { if (this.disabled) return; const ev = new MouseEvent('click', { bubbles: true, cancelable: true, composed: true, view: G, detail: 1 }); const pre = preActivate(this); if (dispatch(this, ev)) activate(this, ev, pre); else if (pre && pre.restore) pre.restore(); },
+    click() {
+        if (this.disabled || this.__clicking) return;
+        def(this, '__clicking', true);
+        try { dispatch(this, new PointerEvent('click', { bubbles: true, cancelable: true, composed: true, view: G, detail: 1, pointerId: -1, pointerType: '' })); }
+        finally { this.__clicking = false; }
+    },
     attachInternals() { return { setFormValue() {}, setValidity() {}, checkValidity() { return true; }, reportValidity() { return true; }, states: new Set(), form: null, labels: [] }; },
     showPopover() {}, hidePopover() {}, togglePopover() {},
 });

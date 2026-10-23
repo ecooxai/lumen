@@ -1,6 +1,55 @@
 
 // ---- extra interfaces: rarer node/event types, media helpers ----
-class ProcessingInstruction extends CharacterData { get target() { return N.name(this); } }
+/* A processing instruction's attributes (declarative partial updates) live in its data as name="value" pairs
+   separated by whitespace; data that is not entirely such pairs has none. Names are case-sensitive; values are
+   escaped as an element's attribute values serialize. Changing one rewrites the data. */
+const piRefs = { amp: '&', quot: '"', apos: "'", lt: '<', gt: '>', nbsp: ' ' };
+const piParse = d => {
+    const out = [], re = /[\t\n\f\r ]*([^\t\n\f\r \/=>"']+)=(?:"([^"]*)"|'([^']*)')(?=[\t\n\f\r ]|$)/y;
+    let i = 0;
+    while (i < d.length) {
+        if (/^[\t\n\f\r ]*$/.test(d.slice(i))) break;
+        re.lastIndex = i;
+        const m = re.exec(d);
+        if (!m) return [];
+        const v = (m[2] ?? m[3]).replace(/&(?:#[xX]([0-9a-fA-F]+)|#([0-9]+)|([a-zA-Z]+));/g, (x, h, dec, nm) =>
+            h ? String.fromCodePoint(Math.min(parseInt(h, 16), 0x10ffff)) : dec ? String.fromCodePoint(Math.min(+dec, 0x10ffff)) : piRefs[nm] ?? x);
+        if (!out.some(a => a[0] === m[1])) out.push([m[1], v]);
+        i = re.lastIndex;
+    }
+    return out;
+};
+const piSet = (pi, list) => { pi.data = list.map(([k, v]) => `${k}="${v.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/ /g, '&nbsp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}"`).join(' '); };
+const piName = (op, n) => {
+    n = String(n);
+    if (!validAttrName(n)) throw new DOMException(`Failed to execute '${op}' on 'ProcessingInstruction': '${n}' is not a valid attribute name.`, 'InvalidCharacterError');
+    return n;
+};
+class ProcessingInstruction extends CharacterData {
+    get target() { return N.name(this); }
+    hasAttributes() { return piParse(this.data).length > 0; }
+    getAttributeNames() { return piParse(this.data).map(a => a[0]); }
+    getAttribute(n) { n = String(n); const a = piParse(this.data).find(a => a[0] === n); return a ? a[1] : null; }
+    hasAttribute(n) { n = String(n); return piParse(this.data).some(a => a[0] === n); }
+    setAttribute(n, v) {
+        n = piName('setAttribute', n); v = String(v);
+        const list = piParse(this.data), a = list.find(a => a[0] === n);
+        if (a) a[1] = v; else list.push([n, v]);
+        piSet(this, list);
+    }
+    removeAttribute(n) {
+        n = String(n);
+        const list = piParse(this.data), i = list.findIndex(a => a[0] === n);
+        if (i >= 0) { list.splice(i, 1); piSet(this, list); }
+    }
+    toggleAttribute(n, force = undefined) {
+        n = piName('toggleAttribute', n);
+        const has = this.hasAttribute(n);
+        if (has && force !== true) { this.removeAttribute(n); return false; }
+        if (!has && force !== false) { this.setAttribute(n, ''); return true; }
+        return has;
+    }
+}
 const copyInit = (ev, init, keys) => { if (init) for (const k of keys) if (k in init) ev[k] = init[k]; };
 class TouchEvent extends UIEvent {
     constructor(t, i = {}) {
@@ -16,6 +65,20 @@ class ClipboardItem {
     get types() { return Object.keys(this._i); }
     async getType(t) { if (!(t in this._i)) throw new DOMException('type not found', 'NotFoundError'); const v = await this._i[t]; return v instanceof Blob ? v : new Blob([String(v)], { type: t }); }
     static supports(t) { return /^(text\/plain|text\/html|image\/png)$/.test(t); }
+}
+class BeforeUnloadEvent extends Event { constructor() { illegal(); } get returnValue() { return this.__rv ?? ''; } set returnValue(v) { def(this, '__rv', String(v)); } }
+class TextEvent extends UIEvent {
+    constructor() { illegal(); }
+    get data() { return this.__data ?? ''; }
+    initTextEvent(type, bubbles = false, cancelable = false, view = null, data = 'undefined') { this.initEvent(type, bubbles, cancelable); def(this, '__view', view); def(this, '__data', String(data)); }
+}
+class DeviceOrientationEvent extends Event {
+    constructor(t, i = {}) { super(t, i); this.alpha = i.alpha ?? null; this.beta = i.beta ?? null; this.gamma = i.gamma ?? null; this.absolute = !!i.absolute; }
+    static requestPermission() { return Promise.resolve('granted'); }
+}
+class DeviceMotionEvent extends Event {
+    constructor(t, i = {}) { super(t, i); this.acceleration = i.acceleration ?? null; this.accelerationIncludingGravity = i.accelerationIncludingGravity ?? null; this.rotationRate = i.rotationRate ?? null; this.interval = i.interval ?? 0; }
+    static requestPermission() { return Promise.resolve('granted'); }
 }
 class ClipboardEvent extends Event { constructor(t, i = {}) { super(t, i); this.clipboardData = i.clipboardData || null; } }
 class DragEvent extends MouseEvent { constructor(t, i = {}) { super(t, i); this.dataTransfer = i.dataTransfer || null; } }

@@ -203,9 +203,10 @@ Audio.prototype = H.HTMLAudioElement.prototype;
 function Option(text = '', value, ds, sel) { const o = document.createElement('option'); o.text = text; if (value !== undefined) o.value = value; if (ds) o.setAttribute('selected', ''); if (sel) o.selected = true; return o; }
 Option.prototype = H.HTMLOptionElement.prototype;
 function urlParts(p, attr) {
-    const get = (el) => { const v = N.attr(el, attr); if (v == null) return null; try { return new URL(v, document.baseURI); } catch (e) { return null; } };
+    const get = (el) => { const v = N.attr(el, attr); if (v == null) return null; const r = N.urlParse(v, document.baseURI, docEnc(el)); return r ? new URL(r[0]) : null; };
     acc(p, attr, function () { const u = get(this); return u ? u.href : (N.attr(this, attr) ?? ''); }, function (v) { this.setAttribute(attr, v); });
-    for (const k of ['protocol', 'host', 'hostname', 'port', 'pathname', 'search', 'hash', 'username', 'password']) acc(p, k, function () { const u = get(this); return u ? u[k] : ''; }, function (v) { const u = get(this); if (u) { u[k] = v; this.setAttribute(attr, u.href); } });
+    // HTMLHyperlinkElementUtils: an unparsable URL reads as protocol ':' and '' elsewhere, and its setters do nothing
+    for (const k of ['protocol', 'host', 'hostname', 'port', 'pathname', 'search', 'hash', 'username', 'password']) acc(p, k, function () { const u = get(this); return u ? u[k] : k === 'protocol' ? ':' : ''; }, function (v) { const u = get(this); if (u) { u[k] = v; this.setAttribute(attr, u.href); } });
     acc(p, 'origin', function () { const u = get(this); return u ? u.origin : ''; });
     def(p, 'toString', function () { return this[attr]; });
 }
@@ -224,7 +225,7 @@ function protoFor(type, tag, ns) {
     case 7: return ProcessingInstruction.prototype;
     case 9: return ns === 3 ? XMLDocument.prototype : HTMLDocument.prototype;
     case 10: return DocumentType.prototype;
-    case 11: return DocumentFragment.prototype;
+    case 11: return tag === '#shadow' ? ShadowRoot.prototype : DocumentFragment.prototype;
     }
     return Node.prototype;
 }
@@ -269,9 +270,21 @@ function ceConnected(root, connected, moved) {
         if (typeof cb === 'function') { try { cb.call(el); } catch (e) { report(e); } }
     }
 }
-function ceAttr(el, name, old, v) {
+function ceMoved(root) {
+    if (!registry.byName.size) return;
+    const t = N.type(root); if (t !== 1 && t !== 11) return;
+    for (const el of N.ceScan(root)) {
+        if (!el.__ce) continue;
+        const run = cb => { if (typeof cb === 'function') { try { cb.call(el); } catch (e) { report(e); } } };
+        if (typeof el.connectedMoveCallback === 'function') run(el.connectedMoveCallback);
+        else { run(el.disconnectedCallback); run(el.connectedCallback); }
+    }
+}
+function ceAttr(el, name, old, v, ns = null) {
+    if (name === 'type' && ns === null && old !== v && oprOf.has(el)) oprDisconnectAll(el);
+    if (ns === null && N.ns(el) === 0) formAttr(el, name, old, v);
     const d = el.__ce; if (!d || !d.observed.includes(name) || typeof el.attributeChangedCallback !== 'function') return;
-    try { el.attributeChangedCallback(name, old, v, null); } catch (e) { report(e); }
+    try { el.attributeChangedCallback(name, old, v, ns); } catch (e) { report(e); }
 }
 class CustomElementRegistry {
     define(name, ctor, opts) {

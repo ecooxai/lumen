@@ -128,7 +128,9 @@ enum Combinator { CB_NONE, CB_DESC, CB_CHILD, CB_ADJ, CB_SIB };
 typedef struct SelList SelList;
 typedef struct SimpleSel {
     uint8_t kind, op, ci; /* attr op: 0 exists, '=', '~', '|', '^', '$', '*' */
+    uint8_t nsk;          /* type/universal: 1 = elements in no namespace (|name); attr: 1 = [|name], 2 = any namespace [*|name] */
     const char *name;     /* atom: tag/id/class/attr/pseudo */
+    const char *raw;      /* attr: the name as written (atom), matched case-sensitively outside HTML elements in HTML documents */
     char *value;
     int a, b;             /* nth */
     SelList *sub;         /* :not/:is/:where/:has/nth-of */
@@ -289,6 +291,7 @@ void css_sheet_free(StyleSheet *s);
 DeclList *css_parse_decls(const char *src, size_t n);
 void css_decls_free(DeclList *d);
 bool css_parse_selector_list(const char *src, SelList *out);
+bool css_parse_query_selector_list(const char *src, SelList *out);   /* querySelector's stricter grammar */
 void css_sellist_free(SelList *l);
 char *css_selector_text(const char *src); /* canonical CSSOM serialization; NULL if invalid */
 /* Syntax only: matching always observes live DOM/state. Caller frees scratch. */
@@ -297,6 +300,7 @@ extern uint64_t css_has_stats[2];
 extern bool css_has_unfiltered;
 void css_has_debug_dump(bool log);   /* debug Android: log (if asked) and reset the costliest :has() arguments */   /* test hook: :has() walks every subtree, the reference for its name filter */   /* statistics: :has() tests, nodes their descendant walks visited */
 bool css_match_selector_list(const SelList *l, Node *el);
+bool css_match_selector_list_scoped(const SelList *l, Node *el, Node *scope);   /* scope: what :scope matches (NULL: the root) */
 bool css_match_selector(const Selector *s, Node *el, Node *scope);
 typedef VEC(Node *) NodeVec;
 Node *css_query(Node *root, const char *sel, bool all, NodeVec *out);

@@ -1,0 +1,50 @@
+<!doctype html>
+<template id=t><p>TEST</p> text</template>
+<body>
+<iframe id=f srcdoc="<p>child</p>"></iframe>
+<script>
+// DOM details the web-platform-tests check: a <template> in the head keeps its content (the parser left the head on
+// its first child, so the <p> went into the body); children is an HTMLCollection; createAttribute; MutationRecord,
+// CustomEvent and DOMImplementation are WebIDL interfaces; members on a foreign receiver throw; the window's load
+// waits for its iframes.
+const fail = [];
+const ok = (c, m) => { if (!c) fail.push(m); };
+const t = document.getElementById('t');
+ok(t && t.parentNode === document.head, 'template in head');
+ok(t && t.content.querySelector('p') && t.content.cloneNode(true).querySelector('p'), 'template content');
+ok(!document.body.querySelector('p'), 'template child leaked into body');
+ok(document.body.children instanceof HTMLCollection && document.children instanceof HTMLCollection, 'children HTMLCollection');
+const a = document.createAttribute('X');
+ok(a instanceof Attr && a.name === 'x' && a.value === '' && a.ownerElement === null, 'createAttribute');
+let threw = ''; try { document.createAttribute(''); } catch (e) { threw = e.name; }
+ok(threw === 'InvalidCharacterError', 'createAttribute("") ' + threw);
+const ce = new CustomEvent('x', { detail: 5 });
+ok(ce.detail === 5 && CustomEvent.length === 1 && !Object.hasOwn(ce, 'detail'), 'CustomEvent detail');
+ok(Event.prototype.AT_TARGET === 2 && Event.AT_TARGET === 2, 'Event constants');
+ok(typeof DOMImplementation === 'function' && document.implementation instanceof DOMImplementation, 'DOMImplementation');
+ok(Object.getOwnPropertyDescriptor(NodeFilter, 'SHOW_ALL').writable === false, 'NodeFilter constants');
+ok(Node.prototype.getRootNode.length === 0, 'getRootNode length');
+const brand = (f, m) => { let e = null; try { f(); } catch (x) { e = x; } ok(e instanceof TypeError, m); };
+brand(() => Node.prototype.contains.call({}, document), 'Node.contains brand');
+brand(() => Object.getOwnPropertyDescriptor(Element.prototype, 'children').get.call({}), 'Element.children brand');
+brand(() => Object.getOwnPropertyDescriptor(Document.prototype, 'URL').get.call(Document.prototype), 'Document.URL brand');
+ok(document.body.contains(t) === false && document.contains(t), 'contains still works');
+let recs = null;
+const mo = new MutationObserver(r => { recs = r; });
+mo.observe(document.body, { childList: true, attributes: true, subtree: true });
+const d = document.createElement('div');
+document.body.append(d);
+d.setAttribute('a', '1');
+let loaded = false;
+addEventListener('load', () => {
+    loaded = true;
+    const fd = document.getElementById('f').contentDocument;
+    ok(fd && fd.readyState === 'complete' && fd.querySelector('p'), 'iframe loaded before window load');
+    ok(recs && recs.length === 2 && recs[0].addedNodes instanceof NodeList && recs[0].addedNodes[0] === d && !Object.hasOwn(recs[0], 'type')
+       && recs[1].type === 'attributes' && recs[1].attributeName === 'a' && recs[1].oldValue === null, 'MutationRecord');
+    let me = null; try { new MutationRecord(); } catch (e) { me = e; }
+    ok(me instanceof TypeError, 'MutationRecord constructor');
+    console.log('RESULTS dom-webidl:' + (fail.length ? 'FAIL ' + fail.join('; ') : 'PASS'));
+});
+setTimeout(() => { if (!loaded) console.log('RESULTS dom-webidl:FAIL no load event'); }, 1800);
+</script>

@@ -128,7 +128,25 @@ done:
 }
 
 /* ---------------- selectors ---------------- */
-typedef struct { const char *s; size_t i, n; } SP;
+typedef struct { const char *s; size_t i, n; bool query; } SP;   /* query: querySelector's grammar (no @namespace prefixes, only known pseudos) */
+/* the pseudo-classes and pseudo-elements Chrome parses; querySelector rejects others */
+static bool known_pseudo(const char *n, bool el) {
+    static const char *const classes[] = { "active", "any-link", "autofill", "buffering", "checked", "closed", "default", "defined", "dir", "disabled",
+        "empty", "enabled", "first-child", "first-of-type", "focus", "focus-visible", "focus-within", "fullscreen", "future", "has", "has-slotted",
+        "host", "host-context", "hover", "in-range", "indeterminate", "invalid", "is", "lang", "last-child", "last-of-type", "link", "modal",
+        "muted", "not", "nth-child", "nth-last-child", "nth-last-of-type", "nth-of-type", "only-child", "only-of-type", "open", "optional", "out-of-range",
+        "past", "paused", "picture-in-picture", "placeholder-shown", "playing", "popover-open", "read-only", "read-write", "required", "root",
+        "scope", "seeking", "stalled", "state", "target", "target-current", "user-invalid", "user-valid", "valid", "visited", "volume-locked", "where",
+        "xr-overlay", "active-view-transition", "active-view-transition-type", NULL };
+    static const char *const elements[] = { "before", "after", "first-line", "first-letter", "marker", "placeholder", "selection", "backdrop",
+        "file-selector-button", "cue", "part", "slotted", "highlight", "spelling-error", "grammar-error", "target-text", "view-transition",
+        "view-transition-group", "view-transition-image-pair", "view-transition-old", "view-transition-new", "details-content", "picker", "picker-icon",
+        "checkmark", "column", "scroll-marker", "scroll-marker-group", "scroll-button", "search-text", NULL };
+    if (!strncmp(n, "-webkit-", 8)) return el || !strcmp(n, "-webkit-any") || !strcmp(n, "-webkit-any-link") || !strcmp(n, "-webkit-autofill") ||
+        !strcmp(n, "-webkit-full-screen") || !strcmp(n, "-webkit-drag");
+    for (const char *const *k = el ? elements : classes; *k; k++) if (!strcmp(*k, n)) return true;
+    return false;
+}
 static void sp_ws(SP *p) { while (p->i < p->n) { if (is_ws((unsigned char)p->s[p->i])) p->i++; else if (p->i + 1 < p->n && p->s[p->i] == '/' && p->s[p->i + 1] == '*') { const char *e = strstr(p->s + p->i + 2, "*/"); p->i = e ? (size_t)(e - p->s) + 2 : p->n; } else break; } }
 static char *sp_ident(SP *p) {
     CLexer l; clex_init(&l, p->s, p->n); l.i = p->i;
@@ -183,14 +201,28 @@ static bool parse_compound(SP *p, Compound *c, Selector *sel) {
     while (p->i < p->n) {
         char ch = p->s[p->i];
         SimpleSel s; memset(&s, 0, sizeof s);
-        if (ch == '*') { p->i++; s.kind = SK_UNIVERSAL; if (p->i < p->n && p->s[p->i] == '|') { p->i++; if (p->s[p->i] == '*') p->i++; else { char *x = sp_ident(p); free(x); } } }
+        if (ch == '*') {
+            p->i++; s.kind = SK_UNIVERSAL;
+            if (p->i < p->n && p->s[p->i] == '|' && (p->i + 1 >= p->n || p->s[p->i + 1] != '=')) {   /* *|* or *|name: any namespace */
+                p->i++;
+                if (p->i < p->n && p->s[p->i] == '*') p->i++;
+                else { char *t = sp_ident(p); if (!t) goto fail; s.kind = SK_TYPE; s.name = atom(t); s.value = (char *)atom_lower(t, strlen(t)); s.op = 1; free(t); }
+            }
+        }
+        else if (ch == '|' && p->i + 1 < p->n && p->s[p->i + 1] != '=') {   /* |name or |*: no namespace */
+            p->i++; s.nsk = 1;
+            if (p->s[p->i] == '*') { p->i++; s.kind = SK_UNIVERSAL; }
+            else { char *t = sp_ident(p); if (!t) goto fail; s.kind = SK_TYPE; s.name = atom(t); s.value = (char *)atom_lower(t, strlen(t)); s.op = 1; free(t); }
+        }
         else if (ch == '#') { p->i++; char *id = sp_ident(p); if (!id) { CLexer l; clex_init(&l, p->s, p->n); l.i = p->i; id = consume_name(&l); p->i = l.i; if (!id[0]) { free(id); goto fail; } } s.kind = SK_ID; s.name = atom(id); free(id); }
         else if (ch == '.') { p->i++; char *cl = sp_ident(p); if (!cl) goto fail; s.kind = SK_CLASS; s.name = atom(cl); free(cl); }
         else if (ch == '[') {
             p->i++; sp_ws(p);
-            char *an = sp_ident(p); if (!an) { if (p->i < p->n && p->s[p->i] == '*') { p->i++; if (p->s[p->i] == '|') p->i++; an = sp_ident(p); } if (!an) goto fail; }
-            if (p->i < p->n && p->s[p->i] == '|' && p->i + 1 < p->n && p->s[p->i + 1] != '=') { p->i++; free(an); an = sp_ident(p); if (!an) goto fail; }
-            s.kind = SK_ATTR; s.name = atom_lower(an, strlen(an)); free(an);
+            uint8_t ansk = 0;
+            if (p->i + 1 < p->n && p->s[p->i] == '|' && p->s[p->i + 1] != '=') { p->i++; ansk = 1; }   /* [|name]: no namespace */
+            char *an = sp_ident(p); if (!an) { if (p->i < p->n && p->s[p->i] == '*') { p->i++; if (p->s[p->i] == '|') p->i++; ansk = 2; an = sp_ident(p); } if (!an) goto fail; }
+            if (p->i < p->n && p->s[p->i] == '|' && p->i + 1 < p->n && p->s[p->i + 1] != '=') { if (p->query) { free(an); goto fail; } p->i++; free(an); an = sp_ident(p); if (!an) goto fail; }
+            s.kind = SK_ATTR; s.name = atom_lower(an, strlen(an)); s.raw = atom(an); s.nsk = ansk; free(an);
             sp_ws(p);
             if (p->i < p->n && p->s[p->i] != ']') {
                 char op = p->s[p->i];
@@ -205,14 +237,15 @@ static bool parse_compound(SP *p, Compound *c, Selector *sel) {
                 if (p->i < p->n && (p->s[p->i] == 'i' || p->s[p->i] == 'I')) { s.ci = 1; p->i++; sp_ws(p); }
                 else if (p->i < p->n && (p->s[p->i] == 's' || p->s[p->i] == 'S')) { s.ci = 2; p->i++; sp_ws(p); }
             }
-            if (p->i >= p->n || p->s[p->i] != ']') { free(s.value); goto fail; }
-            p->i++;
+            if (p->i < p->n && p->s[p->i] != ']') { free(s.value); goto fail; }
+            if (p->i < p->n) p->i++;   /* the end of the input closes an open bracket */
         }
         else if (ch == ':') {
             p->i++; bool el = false;
             if (p->i < p->n && p->s[p->i] == ':') { el = true; p->i++; }
             char *nm = sp_ident(p); if (!nm) goto fail;
             for (char *q = nm; *q; q++) *q = (char)lc(*q);
+            if (p->query && !known_pseudo(nm, el || !strcmp(nm, "before") || !strcmp(nm, "after") || !strcmp(nm, "first-line") || !strcmp(nm, "first-letter"))) { free(nm); goto fail; }
             s.name = atom(nm); free(nm);
             if (!el && (s.name == atom("before") || s.name == atom("after") || s.name == atom("first-line") || s.name == atom("first-letter"))) el = true;
             s.kind = el ? SK_PSEUDO_EL : SK_PSEUDO;
@@ -226,7 +259,7 @@ static bool parse_compound(SP *p, Compound *c, Selector *sel) {
                 const char *nmx = s.name;
                 if (nmx == atom("not") || nmx == atom("is") || nmx == atom("where") || nmx == atom("matches") || nmx == atom("-webkit-any") || nmx == atom("has") || nmx == atom("host") || nmx == atom("host-context") || nmx == atom("slotted") || nmx == atom("-moz-any")) {
                     s.sub = xcalloc(1, sizeof(SelList));
-                    SP q = { arg, 0, strlen(arg) };
+                    SP q = { arg, 0, strlen(arg), p->query };
                     if (!parse_sellist(&q, s.sub, nmx == atom("has"), 0)) {
                         /* forgiving selector list for :is/:where */
                         if (nmx == atom("not") || nmx == atom("has")) { free(arg); css_sellist_free(s.sub); free(s.sub); goto fail; }
@@ -235,13 +268,14 @@ static bool parse_compound(SP *p, Compound *c, Selector *sel) {
                     const char *rest = NULL;
                     if (!parse_nth(arg, &s.a, &s.b, &rest)) { free(arg); goto fail; }
                     if (rest && *rest && !str_istarts(rest, "of ")) { free(arg); goto fail; }
-                    if (rest && str_istarts(rest, "of ")) { s.sub = xcalloc(1, sizeof(SelList)); SP q = { rest + 3, 0, strlen(rest + 3) }; parse_sellist(&q, s.sub, false, 0); }
+                    if (rest && str_istarts(rest, "of ")) { s.sub = xcalloc(1, sizeof(SelList)); SP q = { rest + 3, 0, strlen(rest + 3), p->query }; parse_sellist(&q, s.sub, false, 0); }
                 } else s.value = xstrdup(str_trim(arg));
                 free(arg);
             }
         }
         else if (name_start((unsigned char)ch) || ch == '\\' || (ch == '-' )) {
             char *t = sp_ident(p); if (!t) goto fail;
+            if (p->i < p->n && p->s[p->i] == '|' && p->query && (p->i + 1 >= p->n || p->s[p->i + 1] != '=')) { free(t); goto fail; }   /* no @namespace prefixes here */
             if (p->i < p->n && p->s[p->i] == '|') { p->i++; free(t); if (p->i < p->n && p->s[p->i] == '*') { p->i++; s.kind = SK_UNIVERSAL; vec_push(v, s); any = true; continue; } t = sp_ident(p); if (!t) goto fail; }
             s.kind = SK_TYPE; s.name = atom(t); s.value = (char *)atom_lower(t, strlen(t)); free(t);
             s.op = 1; /* marks value as atom (not owned) */
@@ -353,8 +387,14 @@ static bool parse_sellist(SP *p, SelList *out, bool relative, char endc) {
     return ok && p->i >= p->n;
 }
 
+bool css_parse_query_selector_list(const char *src, SelList *out) {
+    SP p = { src, 0, strlen(src), true };
+    bool ok = parse_sellist(&p, out, false, 0);
+    if (!ok) { css_sellist_free(out); return false; }
+    return true;
+}
 bool css_parse_selector_list(const char *src, SelList *out) {
-    SP p = { src, 0, strlen(src) };
+    SP p = { src, 0, strlen(src), false };
     bool ok = parse_sellist(&p, out, false, 0);
     if (!ok) { css_sellist_free(out); return false; }
     return true;

@@ -441,7 +441,10 @@ class AudioWorklet {
             currentTime: { get: () => c._f / c.sampleRate },
         });
         /* module code: export keywords are dropped, the body runs once */
-        new Function('lumenWorkletScope', 'with (lumenWorkletScope) {\n' + String(src).replace(/^([ \t]*)export\s+(default\s+)?/gm, '$1') + '\n}')(scope);
+        let run;
+        ttInternal++;
+        try { run = new Function('lumenWorkletScope', 'with (lumenWorkletScope) {\n' + String(src).replace(/^([ \t]*)export\s+(default\s+)?/gm, '$1') + '\n}'); } finally { ttInternal--; }
+        run(scope);
     }
 }
 class AudioWorkletNode extends AudioNode {

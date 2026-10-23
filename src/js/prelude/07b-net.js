@@ -122,7 +122,7 @@ function formBody(fd, h) {
 }
 const bodyState = new WeakMap();
 const bodyInfo = b => { const s = bodyState.get(b); if (!s) throw new TypeError('Illegal invocation'); return s; };
-const bodyUsed = b => { const s = bodyInfo(b); return s.used || !!(s.body instanceof ReadableStream && s.body._disturbed); };
+const bodyUsed = b => { const s = bodyInfo(b); return s.used || streamDisturbed(s.body); };
 function bodyStream(b) {
     const s = bodyInfo(b);
     if (s.body === null) return null;
@@ -217,6 +217,14 @@ class Response extends Body {
 for (const key of ['status', 'statusText', 'headers', 'type', 'url', 'redirected']) {
     Object.defineProperty(Response.prototype, key, {configurable: true, enumerable: true, get() { return responseInfo(this)[key]; }});
 }
+const CACHE_URL = input => { try { return new URL(requestState.has(input) ? requestState.get(input).url : String(input), document.baseURI).href; } catch (e) { return null; } };
+function CACHE_RESP(e) {
+    const r = new Response(null, { status: e.status, statusText: e.statusText, headers: e.headers });
+    bodyInfo(r).body = e.bytes.slice().buffer;
+    Object.assign(responseInfo(r), { url: e.url, type: e.type, redirected: e.redirected });
+    return r;
+}
+/*@shared cache.js*/
 if (N.wasmResponse) N.wasmResponse(response => {
     const state = responseInfo(response);
     return {mime: Headers.prototype.get.call(state.headers, 'content-type') || '', status: state.status, type: state.type, url: state.url, take: () => takeBodyReader(response)};
@@ -408,7 +416,8 @@ class XMLHttpRequest extends XMLHttpRequestEventTarget {
         if (this._rs === 4) { this._rs = 0; this._reset(); }
     }
     _mimeType() { return (this._mime || this.getResponseHeader('content-type') || '').split(';')[0].trim().toLowerCase(); }
-    _text() { if (!this._body) return ''; let s = N.decode(this._body); if (s.charCodeAt(0) === 0xFEFF) s = s.slice(1); return s; }
+    _charset() { const m = /;\s*charset\s*=\s*("?)([^";]*)\1/i.exec(this._mime || this.getResponseHeader('content-type') || ''); return m ? m[2].trim() : null; }
+    _text() { return this._body ? N.decodeBytes(this._body, this._charset()) : ''; }
     get responseText() {
         if (this._rt && this._rt !== 'text') throw new DOMException("The value is only accessible if the object's 'responseType' is '' or 'text' (was '" + this._rt + "').", 'InvalidStateError');
         return this._rs < 3 ? '' : this._text();
@@ -460,6 +469,7 @@ class WebSocket extends EventTarget {
         const ps = protocols === undefined ? [] : typeof protocols === 'string' ? [protocols] : [...protocols].map(String);
         if (new Set(ps.map(p => p.toLowerCase())).size !== ps.length || ps.some(p => !/^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/.test(p))) throw new DOMException("Failed to construct 'WebSocket': The subprotocol is invalid.", 'SyntaxError');
         def(this, '_s', { url: s, rs: 0, protocol: '', binaryType: 'blob', ps, buf: 0, dead: false });
+        if (!cspConnect(s)) { def(this, '_id', 0); this._s.rs = 3; this._fail(); return; }
         def(this, '_id', N.wsOpen(s, ps.join(', '), location.origin, (type, data, code) => this._ev(type, data, code)));
     }
     get url() { return this._s.url; } get readyState() { return this._s.rs; } get protocol() { return this._s.protocol; }
@@ -531,11 +541,36 @@ class Worker extends EventTarget {
         else if (u.protocol === 'data:') { const lb = localBody(u.href); if (lb) src = new TextDecoder().decode(lb[0]); }
         else if (u.origin !== location.origin) throw new DOMException(`Failed to construct 'Worker': Script at '${u.href}' cannot be accessed from origin '${location.origin}'.`, 'SecurityError');
         this.onmessage = null; this.onmessageerror = null; this.onerror = null;
-        def(this, '_id', N.workerNew(u.href, src, N.userAgent(), N.platform(), opts && opts.name != null ? String(opts.name) : '', !!opts && opts.type === 'module'));
+        def(this, '_id', N.workerNew(u.href, src, N.userAgent(), N.platform(), opts && opts.name != null ? String(opts.name) : '', !!opts && opts.type === 'module', !!opts && opts[SHARED_WORKER] === true));
         workers.set(this._id, this);
     }
     postMessage(m, t) { if (arguments.length < 1) throw new TypeError("Failed to execute 'postMessage' on 'Worker': 1 argument required, but only 0 present."); if (!this._id) return; const transfer = Array.isArray(t) ? t : t && t.transfer || []; for (const item of transfer) if (N.isWasmModule(item)) throw new DOMException('WebAssembly.Module is not transferable.', 'DataCloneError'); const ps = transfer.filter(p => p instanceof MessagePort); if (!ps.length) return N.workerPost(this._id, m); N.workerPost(this._id, { __lumenXfer: ps.map(p => { const k = ++portSeq; p._wk = [this._id, k]; if (p._other) remotePorts.set(k, p._other); return k; }), data: m }); }
     terminate() { if (this._id) { N.workerTerm(this._id); workers.delete(this._id); this._id = 0; } }
+}
+/* A SharedWorker: one worker per script URL and name in this document; each SharedWorker object connects to it
+   through its own MessageChannel, which the worker's global receives as a connect event. */
+const SHARED_WORKER = Symbol('shared'), sharedWorkers = new Map();
+class SharedWorker extends EventTarget {
+    constructor(url, opts = undefined) {
+        super();
+        if (arguments.length < 1) throw new TypeError("Failed to construct 'SharedWorker': 1 argument required, but only 0 present.");
+        const o = typeof opts === 'object' && opts !== null ? opts : { name: opts === undefined ? '' : String(opts) };
+        const name = o.name == null ? '' : String(o.name);
+        const href = new URL(String(url), document.baseURI || N.url()).href, key = href + '\n' + name;
+        let entry = sharedWorkers.get(key);
+        if (!entry || !entry.w._id) {
+            const w = new Worker(href, { name, type: o.type, [SHARED_WORKER]: true });
+            entry = { w, objs: new Set() };
+            w.onerror = e => { e.preventDefault(); for (const s of entry.objs) dispatch(s, new Event('error'), true); };
+            sharedWorkers.set(key, entry);
+        }
+        entry.objs.add(this);
+        this.onerror = null;
+        const ch = new MessageChannel();
+        def(this, '_port', ch.port1);
+        entry.w.postMessage({ __lumenConnect: true }, [ch.port2]);
+    }
+    get port() { return this._port; }
 }
 function workerEvent(id, kind, data, message, filename, lineno, colno) {
     const w = workers.get(id); if (!w) return;
@@ -545,8 +580,10 @@ function workerEvent(id, kind, data, message, filename, lineno, colno) {
             if (data.__lumenPort) { const p = remotePorts.get(data.__lumenPort); if (p) p._deliver(data.data, (data.xfer || []).map(k => { const q = new MessagePort(); q._wk = [id, k]; remotePorts.set(k, q); return q; })); return; }
             if (data.__lumenXfer) { ports = data.__lumenXfer.map(k => { const q = new MessagePort(); q._wk = [id, k]; remotePorts.set(k, q); return q; }); data = data.data; }
         }
+        if (w._sw) return w._sw(0, data, ports);
         dispatch(w, new MessageEvent('message', { data, ports }), true);
     }
+    else if (w._sw) w._sw(kind, null, [], message, filename, lineno);
     else if (kind === 1) {
         const e = new ErrorEvent('error', { message, filename, lineno, colno, cancelable: true });
         dispatch(w, e, true);
@@ -554,3 +591,183 @@ function workerEvent(id, kind, data, message, filename, lineno, colno) {
     } else if (kind === 3) dispatch(w, new MessageEvent('messageerror', {}), true);
     else dispatch(w, new Event('error', { cancelable: true }), true);
 }
+
+/* Service workers: registrations per scope in this document. Each worker runs on its own thread as a Worker does;
+   this side drives install and activate ({__lumenSW} messages, one lifecycle step per task) and relays messages
+   between the worker's clients and navigator.serviceWorker. Fetches are not intercepted. An idle worker stops after
+   30 s and starts again, without install or activate, when a message is sent to it. */
+const SWK = Symbol('ServiceWorker'), swRegs = new Map();
+let swClientId = '', swCtrl = null, swReadyResolve = null, regSet, regUvc, swSetState, swRec;
+const swClient = () => ({ id: swClientId || (swClientId = crypto.randomUUID()), url: location.href, type: 'window',
+    frameType: G.parent !== G ? 'nested' : 'top-level', visibility: document.visibilityState, focused: document.hasFocus() });
+const swReady = new Promise(r => { swReadyResolve = r; });
+const swInScope = scope => { const u = new URL(location.href); u.hash = ''; return u.href.startsWith(scope); };
+function swSpawn(rec, how) {
+    rec.id = N.workerNew(rec.url, null, N.userAgent(), N.platform(), '', rec.type === 'module', false, true);
+    if (!rec.id) return false;
+    workers.set(rec.id, rec);
+    N.workerPost(rec.id, { __lumenSW: how, scope: rec.reg.scope, updateViaCache: rec.reg.updateViaCache, client: swClient(), controlled: swCtrl === rec.sw, state: rec.sw.state });
+    return true;
+}
+function swStop(rec) { clearTimeout(rec.idle); rec.idle = 0; if (rec.id) { N.workerTerm(rec.id); workers.delete(rec.id); rec.id = 0; } }
+function swTouch(rec) { clearTimeout(rec.idle); rec.idle = rec.sw.state === 'activated' ? setTimeout(() => swStop(rec), 30000) : 0; }
+function swSend(rec, m, ps = []) {
+    if (!rec.id && !swSpawn(rec, 'wake')) return;
+    swTouch(rec);
+    if (!ps.length) return N.workerPost(rec.id, m);
+    N.workerPost(rec.id, { __lumenXfer: ps.map(p => { const k = ++portSeq; p._wk = [rec.id, k]; if (p._other) remotePorts.set(k, p._other); return k; }), data: m });
+}
+function swRedundant(rec) {
+    if (rec.sw.state === 'redundant') return;
+    const r = rec.reg;
+    for (const k of ['installing', 'waiting', 'active']) if (r[k] === rec.sw) regSet(r, k, null);
+    swStop(rec);
+    swSetState(rec.sw, 'redundant');
+}
+function swEvent(rec, kind, data, ports, message) {
+    const step = f => { rec.chain = rec.chain.then(() => new Promise(res => setTimeout(() => { try { f(); } finally { res(); } }))); };
+    swTouch(rec);
+    if (kind === 1 || kind === 2) {   /* the script failed to load or threw while it ran */
+        if (!rec.evaluated && rec.fail) { const f = rec.fail; rec.fail = null; swStop(rec); step(() => f(new TypeError(`Failed to register a ServiceWorker for scope ('${rec.reg.scope}') with script ('${rec.url}'): ${kind === 2 ? 'An unknown error occurred when fetching the script.' : 'ServiceWorker script evaluation failed'}`))); }
+        else if (kind === 1) N.log(3, 'Uncaught (in service worker) ' + message);
+        return;
+    }
+    if (kind === 3) { dispatch(swContainer, new MessageEvent('messageerror', { origin: location.origin, source: rec.sw }), true); return; }
+    if (!data || typeof data !== 'object') return;
+    const r = rec.reg;
+    switch (data.__lumenSW) {
+    case 'evaluated':
+        rec.evaluated = true; rec.fail = null;
+        step(() => { regSet(r, 'installing', rec.sw); swSetState(rec.sw, 'installing'); rec.ok(r); rec.ok = null; });
+        step(() => dispatch(r, new Event('updatefound'), true));
+        break;
+    case 'installed':
+        step(() => {
+            if (rec.sw.state === 'redundant') return;
+            if (!data.ok) { swRedundant(rec); if (!r.active && !r.waiting && swRegs.get(r.scope) === r) swRegs.delete(r.scope); return; }
+            regSet(r, 'waiting', rec.sw); regSet(r, 'installing', null); swSetState(rec.sw, 'installed');
+        });
+        step(() => {   /* nothing waits on an older worker: activate at once */
+            if (rec.sw.state !== 'installed') return;
+            const old = r.active && swRec(r.active);
+            if (old && old !== rec) { if (swCtrl === old.sw) { swCtrl = rec.sw; dispatch(swContainer, new Event('controllerchange'), true); } swRedundant(old); }
+            regSet(r, 'active', rec.sw); regSet(r, 'waiting', null); swSetState(rec.sw, 'activating');
+            swSend(rec, { __lumenSW: 'activate' });
+        });
+        break;
+    case 'activated':
+        step(() => {
+            if (rec.sw.state === 'redundant') return;
+            swSetState(rec.sw, 'activated'); swTouch(rec);
+            if (swReadyResolve && swInScope(r.scope) && swRegs.get(r.scope) === r) { swReadyResolve(r); swReadyResolve = null; }
+        });
+        break;
+    case 'claim':
+        if (swInScope(r.scope) && swCtrl !== rec.sw) { swCtrl = rec.sw; dispatch(swContainer, new Event('controllerchange'), true); }
+        break;
+    case 'unregister': r.unregister(); break;
+    case 'cmsg': dispatch(swContainer, new MessageEvent('message', { data: data.data, origin: location.origin, source: rec.sw, ports }), true); break;
+    }
+}
+class ServiceWorker extends EventTarget {
+    #url; #state = 'parsed'; #rec;
+    constructor(key, url, rec) { if (key !== SWK) throw new TypeError('Illegal constructor'); super(); this.#url = url; this.#rec = rec; this.onstatechange = null; this.onerror = null; }
+    get scriptURL() { return this.#url; }
+    get state() { return this.#state; }
+    postMessage(message, transfer = undefined) {
+        if (arguments.length < 1) throw new TypeError("Failed to execute 'postMessage' on 'ServiceWorker': 1 argument required, but only 0 present.");
+        if (this.#state === 'redundant') throw new DOMException("Failed to execute 'postMessage' on 'ServiceWorker': The ServiceWorker is in redundant state.", 'InvalidStateError');
+        const t = Array.isArray(transfer) ? transfer : transfer && typeof transfer === 'object' && transfer.transfer || [];
+        for (const item of t) if (N.isWasmModule(item)) throw new DOMException('WebAssembly.Module is not transferable.', 'DataCloneError');
+        swSend(this.#rec, { __lumenSW: 'msg', data: message, client: swClient() }, t.filter(p => p instanceof MessagePort));
+    }
+    static {
+        swSetState = (w, s) => { if (w.#state === s) return; w.#state = s; dispatch(w, new Event('statechange'), true); };
+        swRec = w => w.#rec;
+    }
+}
+class NavigationPreloadManager {
+    #on = false; #hdr = 'true';
+    constructor(key) { if (key !== SWK) throw new TypeError('Illegal constructor'); }
+    enable() { this.#on = true; return Promise.resolve(); }
+    disable() { this.#on = false; return Promise.resolve(); }
+    setHeaderValue(v) { this.#hdr = String(v); return Promise.resolve(); }
+    getState() { return Promise.resolve({ enabled: this.#on, headerValue: this.#hdr }); }
+}
+class ServiceWorkerRegistration extends EventTarget {
+    #scope; #uvc; #slots = { installing: null, waiting: null, active: null }; #nav = new NavigationPreloadManager(SWK);
+    constructor(key, scope, uvc) { if (key !== SWK) throw new TypeError('Illegal constructor'); super(); this.#scope = scope; this.#uvc = uvc; this.onupdatefound = null; }
+    get installing() { return this.#slots.installing; }
+    get waiting() { return this.#slots.waiting; }
+    get active() { return this.#slots.active; }
+    get scope() { return this.#scope; }
+    get updateViaCache() { return this.#uvc; }
+    get navigationPreload() { return this.#nav; }
+    update() {
+        if (!this.installing && !this.waiting && !this.active) return Promise.reject(new DOMException("Failed to update a ServiceWorker for scope ('" + this.#scope + "'): The registration has no newest worker.", 'InvalidStateError'));
+        return Promise.resolve(this);
+    }
+    unregister() {
+        if (swRegs.get(this.#scope) !== this) return Promise.resolve(false);
+        swRegs.delete(this.#scope);
+        for (const k of ['installing', 'waiting', 'active']) { const w = this.#slots[k]; if (w && w !== swCtrl) swRedundant(swRec(w)); }
+        return Promise.resolve(true);
+    }
+    showNotification() { return Promise.reject(new TypeError("Failed to execute 'showNotification' on 'ServiceWorkerRegistration': No notification permission has been granted for this origin.")); }
+    getNotifications() { return Promise.resolve([]); }
+    static { regSet = (r, k, v) => { r.#slots[k] = v; }; regUvc = (r, v) => { r.#uvc = v; }; }
+}
+const swURL = (v, base, what) => {
+    let u;
+    try { u = new URL(String(v), base); } catch (e) { throw new TypeError(`Failed to register a ServiceWorker: The ${what} URL '${String(v)}' is invalid.`); }
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') throw new TypeError(`Failed to register a ServiceWorker: The URL protocol of the ${what} ('${u.href}') is not supported.`);
+    if (/%2f|%5c/i.test(u.pathname)) throw new TypeError(`Failed to register a ServiceWorker: The provided ${what} ('${u.href}') includes a disallowed escape character.`);
+    if (u.origin !== location.origin) throw new DOMException(`Failed to register a ServiceWorker: The origin of the provided ${what} ('${u.origin}') does not match the current origin ('${location.origin}').`, 'SecurityError');
+    u.hash = '';
+    return u;
+};
+class ServiceWorkerContainer extends EventTarget {
+    constructor(key) { if (key !== SWK) throw new TypeError('Illegal constructor'); super(); this.oncontrollerchange = null; this.onmessage = null; this.onmessageerror = null; }
+    get controller() { return swCtrl; }
+    get ready() { return swReady; }
+    register(scriptURL, options = undefined) {
+        const argc = arguments.length;
+        return new Promise((resolve, reject) => {
+            if (argc < 1) throw new TypeError("Failed to execute 'register' on 'ServiceWorkerContainer': 1 argument required, but only 0 present.");
+            if (options != null && typeof options !== 'object' && typeof options !== 'function') throw new TypeError("Failed to execute 'register' on 'ServiceWorkerContainer': The provided value is not of type 'RegistrationOptions'.");
+            const o = options == null ? {} : options, base = document.baseURI || N.url();
+            const scopeIn = o.scope, type = o.type === undefined ? 'classic' : String(o.type), uvc = o.updateViaCache === undefined ? 'imports' : String(o.updateViaCache);
+            if (type !== 'classic' && type !== 'module') throw new TypeError(`Failed to execute 'register' on 'ServiceWorkerContainer': Failed to read the 'type' property from 'RegistrationOptions': The provided value '${type}' is not a valid enum value of type WorkerType.`);
+            if (!['imports', 'all', 'none'].includes(uvc)) throw new TypeError(`Failed to execute 'register' on 'ServiceWorkerContainer': Failed to read the 'updateViaCache' property from 'RegistrationOptions': The provided value '${uvc}' is not a valid enum value of type ServiceWorkerUpdateViaCache.`);
+            const u = swURL(scriptURL, base, 'script');
+            const scope = scopeIn === undefined ? new URL('./', u) : swURL(scopeIn, base, 'scope');
+            const maxScope = u.pathname.slice(0, u.pathname.lastIndexOf('/') + 1);
+            if (!scope.pathname.startsWith(maxScope)) throw new DOMException(`Failed to register a ServiceWorker for scope ('${scope.href}') with script ('${u.href}'): The path of the provided scope ('${scope.pathname}') is not under the max scope allowed ('${maxScope}'). Adjust the scope, move the Service Worker script, or use the Service-Worker-Allowed HTTP header to allow the scope.`, 'SecurityError');
+            let reg = swRegs.get(scope.href);
+            if (reg) {
+                const newest = reg.installing || reg.waiting || reg.active;
+                if (newest && newest.scriptURL === u.href && swRec(newest).type === type && reg.updateViaCache === uvc) { resolve(reg); return; }
+                regUvc(reg, uvc);
+            } else swRegs.set(scope.href, reg = new ServiceWorkerRegistration(SWK, scope.href, uvc));
+            const rec = { id: 0, url: u.href, type, reg, sw: null, evaluated: false, idle: 0, chain: Promise.resolve(), ok: resolve, fail: null };
+            rec.sw = new ServiceWorker(SWK, u.href, rec);
+            rec._sw = (...a) => swEvent(rec, ...a);
+            rec.fail = e => { if (!reg.installing && !reg.waiting && !reg.active && swRegs.get(reg.scope) === reg) swRegs.delete(reg.scope); reject(e); };
+            if (!swSpawn(rec, 'install')) { rec.fail(new TypeError('Failed to register a ServiceWorker: The worker could not be started.')); }
+        });
+    }
+    getRegistration(clientURL = '') {
+        return new Promise(resolve => {
+            let u;
+            try { u = new URL(String(clientURL), document.baseURI || N.url()); } catch (e) { throw new TypeError("Failed to execute 'getRegistration' on 'ServiceWorkerContainer': The documentURL provided is invalid."); }
+            if (u.origin !== location.origin) throw new DOMException("Failed to execute 'getRegistration' on 'ServiceWorkerContainer': The origin of the provided documentURL ('" + u.origin + "') does not match the current origin ('" + location.origin + "').", 'SecurityError');
+            u.hash = '';
+            let best;
+            for (const [s, r] of swRegs) if (u.href.startsWith(s) && (!best || s.length > best.scope.length)) best = r;
+            resolve(best);
+        });
+    }
+    getRegistrations() { return Promise.resolve([...swRegs.values()]); }
+    startMessages() {}
+}
+const swContainer = new ServiceWorkerContainer(SWK);

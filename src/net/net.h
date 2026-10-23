@@ -8,6 +8,7 @@ typedef VEC(Header) Headers;
 
 void headers_add(Headers *h, const char *name, const char *value);
 const char *headers_get(const Headers *h, const char *name);
+char *headers_join(const Headers *h, const char *name);   /* every value of name joined with ", "; NULL if absent */
 void headers_set(Headers *h, const char *name, const char *value);
 void headers_free(Headers *h);
 

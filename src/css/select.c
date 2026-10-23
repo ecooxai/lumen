@@ -182,8 +182,21 @@ static bool html_ci_attr(const char *n) {
     for (size_t i = 0; i < sizeof names / sizeof *names; i++) if (!strcmp(n, names[i])) return true;
     return false;
 }
+/* the attribute an attribute selector names: HTML elements in HTML documents compare the lowercased name, other
+   elements the name as written; [*|name] matches the local name in any namespace, [|name] no namespace only */
+static const char *attr_find(const SimpleSel *s, Node *el) {
+    bool html = el->ns == NS_HTML && el->doc && el->doc->node.ns == NS_HTML;
+    if (html && !s->nsk) return node_attr_atom(el, s->name);
+    const char *name = html || !s->raw ? s->name : s->raw;
+    for (int i = 0; i < el->nattrs; i++) {
+        const Attr *a = &el->attrs[i];
+        if (s->nsk == 2) { if (!strcmp(a->pfx ? a->name + strlen(a->pfx) + 1 : a->name, name)) return a->value; }
+        else if (a->name == name && (!a->ns || (s->nsk == 0 && a->pfx))) return a->value;
+    }
+    return NULL;
+}
 static bool attr_match(const SimpleSel *s, Node *el) {
-    const char *v = node_attr_atom(el, s->name);
+    const char *v = attr_find(s, el);
     if (!v) return false;
     if (!s->op) return true;
     const char *w = s->value; size_t wl = strlen(w), vl = strlen(v);
@@ -204,14 +217,37 @@ static bool attr_match(const SimpleSel *s, Node *el) {
     return false;
 }
 
-static bool is_link(Node *el) { return (el->tag == A_a || el->tag == A_area || el->tag == A_link) && el->ns == NS_HTML && (node_attr_atom(el, A_href) != NULL); }
+static bool is_link(Node *el) { return (el->tag == A_a || el->tag == A_area) && el->ns == NS_HTML && (node_attr_atom(el, A_href) != NULL); }
+/* a descendant of a disabled fieldset, outside that fieldset's first legend */
+static bool in_disabled_fieldset(const Node *el) {
+    const Node *child = el;
+    for (const Node *p = el->parent; p && p->type == NODE_ELEMENT; child = p, p = p->parent) {
+        if (p->ns != NS_HTML || p->tag != A_fieldset || !node_attr_atom(p, A_disabled)) continue;
+        const Node *legend = NULL;
+        for (const Node *k = p->first; k; k = k->next) if (k->type == NODE_ELEMENT && k->ns == NS_HTML && k->tag == A_legend) { legend = k; break; }
+        if (child != legend) return true;
+    }
+    return false;
+}
+/* "actually disabled" */
 static bool is_disabled(Node *el) {
     if (el->ns != NS_HTML) return false;
-    if ((el->tag == A_button || el->tag == A_input || el->tag == A_select || el->tag == A_textarea || el->tag == A_option || el->tag == A_optgroup || el->tag == A_fieldset) && (node_attr_atom(el, A_disabled) != NULL)) return true;
+    if (el->tag == A_button || el->tag == A_input || el->tag == A_select || el->tag == A_textarea || el->tag == A_fieldset)
+        return node_attr_atom(el, A_disabled) != NULL || in_disabled_fieldset(el);
+    if (el->tag == A_optgroup) return node_attr_atom(el, A_disabled) != NULL;
+    if (el->tag == A_option) {
+        if (node_attr_atom(el, A_disabled)) return true;
+        const Node *g = el->parent;
+        return g && g->type == NODE_ELEMENT && g->ns == NS_HTML && g->tag == A_optgroup && node_attr_atom(g, A_disabled);
+    }
     return false;
 }
 
 static bool match_compound(const Compound *c, Node *el, Node *scope);
+/* Inside :has() the scope argument is the relative anchor; an explicit :scope there means the outer scoping root */
+static _Thread_local int has_depth;
+static _Thread_local Node *has_outer;
+static bool match_has(const SimpleSel *s, Node *el);
 static bool match_pseudo(const SimpleSel *s, Node *el, Node *scope) {
     const char *n = s->name;
     static const char *P_hover, *P_active, *P_focus, *P_first_child, *P_last_child, *P_only_child, *P_nth_child, *P_nth_last_child,
@@ -255,33 +291,35 @@ static bool match_pseudo(const SimpleSel *s, Node *el, Node *scope) {
         if (n == P_only_of_type) return !before && !after;
         return nth_match(s->a, s->b, (n == P_nth_of_type ? before : after) + 1);
     }
-    if (n == P_not) return s->sub && !css_match_selector_list(s->sub, el);
-    if (n == P_is || n == P_where || n == P_matches || n == P_webkit_any || n == P_moz_any) return s->sub && css_match_selector_list(s->sub, el);
+    if (n == P_not) return s->sub && !css_match_selector_list_scoped(s->sub, el, scope);
+    if (n == P_is || n == P_where || n == P_matches || n == P_webkit_any || n == P_moz_any) return s->sub && css_match_selector_list_scoped(s->sub, el, scope);
     if (n == P_has) {
         if (!s->sub) return false;
-        css_has_stats[0]++;
-        for (int i = 0; i < s->sub->n; i++) {
-            const Selector *sel = &s->sub->v[i];
-            uint8_t comb = sel->n > 1 ? sel->c[1].comb : CB_DESC;
-            if (comb == CB_ADJ || comb == CB_SIB) {
-                for (Node *x = next_el(el); x; x = next_el(x)) { if (css_match_selector(sel, x, el)) return true; if (comb == CB_ADJ) break; }
-            } else if (comb == CB_CHILD && sel->n == 2 && !css_has_unfiltered) {
-                for (Node *x = el->first; x; x = x->next) { css_has_stats[1]++; if (x->type == NODE_ELEMENT && css_match_selector(sel, x, el)) return true; }
-            } else {
-                int r = has_by_candidates(sel, el);
-                if (r >= 0) { HAS_DBG(sel, listed, 1); if (r) return true; continue; }
-                HAS_DBG(sel, tests, 1);
-                for (Node *x = el->first; x; x = node_next_in_tree(x, el)) { css_has_stats[1]++; HAS_DBG(sel, nodes, 1); if (x->type == NODE_ELEMENT && css_match_selector(sel, x, el)) return true; }
-            }
-        }
-        return false;
+        Node *saved = has_outer;
+        has_outer = has_depth ? has_outer : scope;
+        has_depth++;
+        bool r = match_has(s, el);
+        has_depth--; has_outer = saved;
+        return r;
     }
     if (n == P_root) return el->parent && el->parent->type == NODE_DOCUMENT;
-    if (n == P_scope) return scope ? el == scope : (el->parent && el->parent->type == NODE_DOCUMENT);
+    if (n == P_scope) {
+        if (s->op == 2) return el == scope;
+        Node *root = has_depth ? has_outer : scope;
+        return root ? el == root : (el->parent && el->parent->type == NODE_DOCUMENT);
+    }
+
     if (n == P_empty) { for (Node *c = el->first; c; c = c->next) if (c->type == NODE_ELEMENT || ((c->type == NODE_TEXT || c->type == NODE_CDATA) && c->text_len)) return false; return true; }
-    if (n == P_checked) return (el->tag == A_input && ((el->flags & NF_CHECKED) || (!(el->flags & NF_PARSER_INSERTED) && false))) || (el->tag == A_option && (node_attr_atom(el, A_selected) != NULL)) || (el->tag == A_input && (node_attr_atom(el, A_checked) != NULL) && !(el->flags & NF_CHECKED) && false) || ((el->flags & NF_CHECKED) != 0);
+    if (n == P_checked) {   /* a checked checkbox or radio button, a selected option: the checked IDL attribute's state */
+        if (el->ns != NS_HTML) return false;
+        if (el->tag == A_option) return el->checked_override ? el->checked_override > 0 : node_attr_atom(el, A_selected) != NULL;
+        if (el->tag != A_input) return false;
+        const char *t = node_attr_atom(el, A_type);
+        if (!t || (strcasecmp(t, "checkbox") && strcasecmp(t, "radio"))) return false;
+        return el->checked_override ? el->checked_override > 0 : node_attr_atom(el, A_checked) != NULL;
+    }
     if (n == P_disabled) return is_disabled(el);
-    if (n == P_enabled) return (el->tag == A_button || el->tag == A_input || el->tag == A_select || el->tag == A_textarea) && !is_disabled(el);
+    if (n == P_enabled) return el->ns == NS_HTML && (el->tag == A_button || el->tag == A_input || el->tag == A_select || el->tag == A_textarea || el->tag == A_fieldset || el->tag == A_option || el->tag == A_optgroup) && !is_disabled(el);
     if (n == P_link || n == P_any_link) return is_link(el);
     if (n == P_visited) return false;
     if (n == P_defined) return !strchr(el->tag, '-') || el->ext != NULL || (el->flags & (1u << 20));
@@ -295,16 +333,39 @@ static bool match_pseudo(const SimpleSel *s, Node *el, Node *scope) {
     if (n == P_dir) return s->value && !strcmp(s->value, "ltr");
     if (n == P_modal) return (el->flags & NF_MODAL) != 0;
     if (n == P_fullscreen) return (el->flags & NF_FULLSCREEN) != 0;
-    if (n == P_target || n == P_default || n == P_popover_open) return false;
+    if (n == P_target) {   /* the element the document URL's fragment names */
+        const char *u = el->doc && el->doc->url ? strchr(el->doc->url, '#') : NULL;
+        return u && u[1] && el->id && !strcmp(el->id, u + 1) && (el->flags & NF_CONNECTED);
+    }
+    if (n == P_default || n == P_popover_open) return false;
     if (n == P_playing || n == P_paused) return n == P_paused;
     /* vendor / unknown pseudo-classes never match */
     return false;
 }
 
+static bool match_has(const SimpleSel *s, Node *el) {
+    css_has_stats[0]++;
+    for (int i = 0; i < s->sub->n; i++) {
+        const Selector *sel = &s->sub->v[i];
+        uint8_t comb = sel->n > 1 ? sel->c[1].comb : CB_DESC;
+        if (comb == CB_ADJ || comb == CB_SIB) {
+            for (Node *x = next_el(el); x; x = next_el(x)) { if (css_match_selector(sel, x, el)) return true; if (comb == CB_ADJ) break; }
+        } else if (comb == CB_CHILD && sel->n == 2 && !css_has_unfiltered) {
+            for (Node *x = el->first; x; x = x->next) { css_has_stats[1]++; if (x->type == NODE_ELEMENT && css_match_selector(sel, x, el)) return true; }
+        } else {
+            int r = has_by_candidates(sel, el);
+            if (r >= 0) { HAS_DBG(sel, listed, 1); if (r) return true; continue; }
+            HAS_DBG(sel, tests, 1);
+            for (Node *x = el->first; x; x = node_next_in_tree(x, el)) { css_has_stats[1]++; HAS_DBG(sel, nodes, 1); if (x->type == NODE_ELEMENT && css_match_selector(sel, x, el)) return true; }
+        }
+    }
+    return false;
+}
 static bool match_simple(const SimpleSel *s, Node *el, Node *scope) {
     switch (s->kind) {
-    case SK_UNIVERSAL: return true;
-    case SK_TYPE: return el->ns == NS_HTML ? el->tag == (const char *)s->value : (el->tag == s->name || str_ieq(el->tag, s->name));
+    case SK_UNIVERSAL: return !s->nsk || (el->ns == NS_NONE && !el->xns);   /* xns: some other namespace */
+    case SK_TYPE: if (s->nsk && (el->ns != NS_NONE || el->xns)) return false;
+        return el->ns == NS_HTML ? el->tag == (const char *)s->value : (el->tag == s->name || str_ieq(el->tag, s->name));
     case SK_ID: return el->id && el->id == s->name ? true : (el->id && !strcmp(el->id, s->name));
     case SK_CLASS: return node_has_class_atom(el, s->name);
     case SK_ATTR: return attr_match(s, el);
@@ -385,10 +446,11 @@ bool css_match_selector(const Selector *s, Node *el, Node *scope) {
     }
     return match_from(cache, s, s->n - 1, el, scope);
 }
-bool css_match_selector_list(const SelList *l, Node *el) {
-    for (int i = 0; i < l->n; i++) if (!l->v[i].pseudo_el && css_match_selector(&l->v[i], el, NULL)) return true;
+bool css_match_selector_list_scoped(const SelList *l, Node *el, Node *scope) {
+    for (int i = 0; i < l->n; i++) if (!l->v[i].pseudo_el && css_match_selector(&l->v[i], el, scope)) return true;
     return false;
 }
+bool css_match_selector_list(const SelList *l, Node *el) { return css_match_selector_list_scoped(l, el, NULL); }
 
 enum { QUERY_CACHE_SIZE = 64, QUERY_CACHE_MAX_TEXT = 4096 };
 typedef struct { char *text; SelList selectors; bool valid; } QueryEntry;
@@ -404,7 +466,7 @@ static void query_cache_free(void *ptr) {
 const SelList *css_query_syntax(Document *d, const char *text, SelList *scratch) {
     size_t len = strlen(text);
     if (!d || len > QUERY_CACHE_MAX_TEXT)
-        return css_parse_selector_list(text, scratch) ? scratch : NULL;
+        return css_parse_query_selector_list(text, scratch) ? scratch : NULL;
     if (!d->selector_cache) {
         d->selector_cache = xcalloc(1, sizeof(QueryCache));
         d->selector_cache_free = query_cache_free;
@@ -417,7 +479,7 @@ const SelList *css_query_syntax(Document *d, const char *text, SelList *scratch)
         free(entry->text); css_sellist_free(&entry->selectors);
         memset(&entry->selectors, 0, sizeof entry->selectors);
         entry->text = xstrdup(text);
-        entry->valid = css_parse_selector_list(text, &entry->selectors);
+        entry->valid = css_parse_query_selector_list(text, &entry->selectors);
     }
     return entry->valid ? &entry->selectors : NULL;
 }
@@ -431,13 +493,13 @@ Node *css_query(Node *root, const char *sel, bool all, NodeVec *outp) {
     NodeVec *out = outp;
     Node *start = root->template_content && false ? root->template_content : root;
     /* fast path: single #id */
-    if (l.n == 1 && l.v[0].n == 1 && l.v[0].c[0].n == 1 && l.v[0].c[0].s[0].kind == SK_ID && root->type == NODE_DOCUMENT && !all) {
+    if (l.n == 1 && !l.v[0].pseudo_el && l.v[0].n == 1 && l.v[0].c[0].n == 1 && l.v[0].c[0].s[0].kind == SK_ID && root->type == NODE_DOCUMENT && !all) {
         found = doc_get_element_by_id(root->doc, l.v[0].c[0].s[0].name);
         css_sellist_free(&scratch); return found;
     }
     /* A selector whose subject has a unique ID matches at most that element (pages poll `#id` lists) */
     const char *subject_id = NULL;
-    if (l.n == 1 && l.v[0].n && root->doc && !root->doc->quirks) {
+    if (l.n == 1 && l.v[0].n && !l.v[0].pseudo_el && root->doc && !root->doc->quirks) {
         const Compound *subject = &l.v[0].c[l.v[0].n - 1];
         for (int i = 0; i < subject->n && !subject_id; i++) if (subject->s[i].kind == SK_ID) subject_id = subject->s[i].name;
     }
@@ -454,7 +516,7 @@ Node *css_query(Node *root, const char *sel, bool all, NodeVec *outp) {
     for (Node *n = start->first; n; n = node_next_in_tree(n, start)) {
         if (n->type != NODE_ELEMENT) continue;
         bool m = false;
-        for (int i = 0; i < l.n && !m; i++) m = css_match_selector(&l.v[i], n, root->type == NODE_DOCUMENT ? NULL : root);
+        for (int i = 0; i < l.n && !m; i++) m = !l.v[i].pseudo_el && css_match_selector(&l.v[i], n, root->type == NODE_DOCUMENT ? NULL : root);   /* pseudo-elements are never elements */
         if (m) { if (!all) { found = n; break; } vec_push(*out, n); }
     }
     css_sellist_free(&scratch);

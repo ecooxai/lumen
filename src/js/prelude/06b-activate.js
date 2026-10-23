@@ -1,6 +1,7 @@
 /* legacy-pre-activation: checkbox/radio state flips before click listeners run, reverted if cancelled */
-function preActivate(el) {
-    if (!el || el.nodeType !== 1 || N.name(el) !== 'input' || el.disabled) return null;
+/* a disabled checkbox or radio still toggles for a script's click event; the user's clicks don't reach it */
+function preActivate(el, ev) {
+    if (!el || el.nodeType !== 1 || N.name(el) !== 'input' || (el.disabled && ev && ev.isTrusted)) return null;
     const t = el.type;
     if (t !== 'checkbox' && t !== 'radio') return null;
     const was = el.checked;
@@ -37,23 +38,30 @@ function saveHref(href, name) {
     N.downloadBytes(name ? String(name) : 'download', String(body[1] || '').split(';')[0], body[0]);
 }
 Object.defineProperty(globalThis, '__lumenSaveHref', { value: saveHref });
+const ACT_INPUT = new Set(['checkbox', 'radio', 'submit', 'image', 'reset', 'file', 'button', 'color']);
+const INTERACTIVE = new Set(['a', 'audio', 'button', 'details', 'embed', 'iframe', 'input', 'label', 'select', 'textarea', 'video']);
+/* elements with an activation behavior: links, buttons, labels, summaries and the clickable input types */
+function hasActivation(n) {
+    if (!N.isNode(n) || N.type(n) !== 1 || N.ns(n) !== 0) return false;
+    const t = N.name(n);
+    if (t === 'a' || t === 'area') return N.attr(n, 'href') != null;
+    if (t === 'input') return ACT_INPUT.has(n.type);
+    if (t === 'summary') { const d = N.parent(n); return !!d && N.name(d) === 'details' && N.ns(d) === 0; }
+    return t === 'button' || t === 'label';
+}
 function activate(el, ev, pre) {
-    const a = el.closest ? el.closest('a[href]') : null;
+    const a = (N.name(el) === 'a' || N.name(el) === 'area') && N.attr(el, 'href') != null ? el : null;
     if (a) {
         const raw = N.attr(a, 'href');
-        if (/^javascript:/i.test(raw)) { try { (0, eval)(decodeURIComponent(raw.slice(11))); } catch (e) { report(e); } }
+        if (/^javascript:/i.test(raw)) runJsURL(raw);
         else if (a.href && (a.hasAttribute('download') || /^(blob|data):/i.test(a.href))) saveHref(a.href, a.getAttribute('download'));
         else if (a.href && !N.navTarget(linkTarget(a), a.href)) location.assign(a.href);
         return;
     }
-    if (el.closest && !/^(input|button|label|summary|textarea|select)$/.test(N.name(el))) {
-        const t = el.closest('button,label,summary');
-        if (t) el = t;
-    }
     const name = N.name(el);
     if (name === 'input' || name === 'button') {
-        if (el.matches(':disabled')) return;
         const t = el.type;
+        if (el.matches(':disabled') && (name !== 'input' || (t !== 'checkbox' && t !== 'radio') || ev.isTrusted)) return;
         if (name === 'button') {
             const f = el.form;
             if (f) {
@@ -72,7 +80,13 @@ function activate(el, ev, pre) {
         else if (t === 'submit' || t === 'image') { const f = el.form; if (f) f.requestSubmit(el); }
         else if (t === 'reset') { const f = el.form; if (f) f.reset(); }
         else if (name === 'input') N.focus(el);
-    } else if (name === 'label') { const c = el.control; if (c && c !== el) c.click(); }
+    } else if (name === 'label') {
+        /* a click on the control itself or on interactive content inside the label is that element's alone */
+        for (let n = ev && ev.target; n && n !== el; n = N.parent(n)) if (N.type(n) === 1 && INTERACTIVE.has(N.name(n))) return;
+        const c = el.control;
+        if (!c || c === el) return;
+        if (hasActivation(c)) c.click(); else N.focus(c);
+    }
     else if (name === 'summary') { const d = N.parent(el); if (d && N.name(d) === 'details') d.open = !d.open; }
     else if (name === 'textarea' || name === 'select') N.focus(el);
 }
@@ -86,10 +100,17 @@ function linkTarget(el, submitter) {
 function submitForm(form, submitter) {
     const fd = new FormData(form);
     if (submitter && submitter.name) fd.append(submitter.name, submitter.value);
-    const u = new URL((submitter && submitter.getAttribute('formaction')) || N.attr(form, 'action') || N.url(), document.baseURI);
+    /* the form's encoding: the first accept-charset label that names one, else its document's */
+    let cs = null;
+    for (const l of (N.attr(form, 'accept-charset') || '').split(/[\t\n\f\r ]+/)) if (l && (cs = N.encLabel(l))) break;
+    cs = cs || N.charset(form);
+    const action = N.urlParse((submitter && submitter.getAttribute('formaction')) || N.attr(form, 'action') || N.url(), document.baseURI, docEnc(form));
+    if (!action) return;
+    const u = new URL(action[0]);
+    const urlencoded = kv => N.formEncode(kv.flat(), cs);
     const target = linkTarget(form, submitter);
     const navigatePost = (url, body, ctype) => { if (!N.navTarget(target, url, body, ctype)) N.navigatePost(url, body, ctype); };
-    if (form.method === 'get') { u.search = new URLSearchParams([...fd].filter(([, v]) => typeof v === 'string')).toString(); if (!N.navTarget(target, u.href)) N.navigate(u.href); }
+    if (form.method === 'get') { u.search = urlencoded([...fd].filter(([, v]) => typeof v === 'string')); if (!N.navTarget(target, u.href)) N.navigate(u.href); }
     else {
         const et = ((submitter && submitter.getAttribute('formenctype')) || N.attr(form, 'enctype') || '').toLowerCase();
         const kv = [...fd].filter(([, v]) => typeof v === 'string');
@@ -99,7 +120,7 @@ function submitForm(form, submitter) {
             const body = kv.map(([k, v]) => `--${bd}\r\nContent-Disposition: form-data; name="${esc(k)}"\r\n\r\n${v}\r\n`).join('') + `--${bd}--\r\n`;
             navigatePost(u.href, body, 'multipart/form-data; boundary=' + bd);
         } else if (et === 'text/plain') navigatePost(u.href, kv.map(([k, v]) => `${k}=${v}\r\n`).join(''), 'text/plain');
-        else navigatePost(u.href, new URLSearchParams(kv).toString(), 'application/x-www-form-urlencoded');
+        else navigatePost(u.href, urlencoded(kv), 'application/x-www-form-urlencoded');
     }
 }
 function cssSplit(s) {

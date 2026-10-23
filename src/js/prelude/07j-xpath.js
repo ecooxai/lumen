@@ -3,12 +3,7 @@
    per element so the same attribute is the same node across steps and evaluations. In HTML documents
    unprefixed name tests match HTML elements and attributes case-insensitively, as in browsers. */
 const xpErr = (msg, name) => new DOMException(msg, name || 'SyntaxError');
-const xpAttrs = new WeakMap();
-function xpAttr(el, name) {
-    let m = xpAttrs.get(el); if (!m) xpAttrs.set(el, m = new Map());
-    let a = m.get(name); if (!a) m.set(name, a = new Attr(el, name));
-    return a;
-}
+function xpAttr(el, name) { return attrByQName(el, name) || attrNode(el, null, null, name); }
 const xpParent = n => n.nodeType === 2 ? n.ownerElement : n.parentNode;
 const xpHtmlDoc = n => { const d = n.nodeType === 9 ? n : n.ownerDocument; return !!d && N.ns(d) !== 3; };
 function xpStr(n) {
@@ -38,7 +33,7 @@ function xpSort(a) {
         if (ix.has(r)) continue;
         for (let c = r; c;) {
             ix.set(c, k++);
-            if (c.nodeType === 1) { const m = xpAttrs.get(c); if (m) { const names = c.getAttributeNames(); for (const [nm, at] of m) ix.set(at, k + names.indexOf(nm) / (names.length + 1)); } }
+            if (c.nodeType === 1) { const m = attrNodes.get(c); if (m) { const names = c.getAttributeNames(); for (const at of m.values()) ix.set(at, k + names.indexOf(at.name) / (names.length + 1)); } }
             if (c.firstChild) { c = c.firstChild; continue; }
             while (c && c !== r && !c.nextSibling) c = c.parentNode;
             c = c && c !== r ? c.nextSibling : null;

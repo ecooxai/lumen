@@ -4,14 +4,16 @@ const path = require('node:path');
 const vm = require('node:vm');
 const { test } = require('node:test');
 const root = path.resolve(__dirname, '../src/js/prelude');
-const events = fs.readFileSync(path.join(root, '01-events.js'), 'utf8');
+// the build splices src/js/shared/NAME.js in at each /*@shared NAME.js*/ marker (tools/generate_embedded.py)
+const events = fs.readFileSync(path.join(root, '01-events.js'), 'utf8')
+    .replace(/\/\*@shared ((?!abort\.js)[\w.-]+)\*\//g, (_, name) => fs.readFileSync(path.join(root, '../shared', name), 'utf8'));
 const extra = fs.readFileSync(path.join(root, '07z-extra.js'), 'utf8');
 const touch = fs.readFileSync(path.join(root, '07zz-touch.js'), 'utf8');
 function fixture() {
     return vm.runInNewContext(`(function() {
-        const N = { now: () => 123, isNode: () => false, log: () => {} };
+        const N = { now: () => 123, isNode: () => false, log: () => {}, setRealm: () => {}, realmOf: () => null, fullyActive: () => true };
         const G = { scrollX: 5, scrollY: 200 };
-        ${events.slice(events.indexOf("'use strict';"), events.indexOf('class AbortSignal'))}
+        ${events.slice(events.indexOf("'use strict';"), events.indexOf('/*@shared abort.js*/'))}
         ${extra.slice(extra.indexOf('const copyInit'), extra.indexOf('class CompositionEvent'))}
         ${touch}
         return { target: new EventTarget(), second: new EventTarget(), nativeTouch,

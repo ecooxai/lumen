@@ -59,11 +59,11 @@ int jsg_query(Node *root, const char *sel, bool all, Node ***out) {
     *out = v.v; return v.n;
 }
 
-bool jsg_matches(Node *el, const char *sel, bool *ok) {
+bool jsg_matches(Node *el, const char *sel, Node *scope, bool *ok) {
     SelList scratch = {0};
     const SelList *parsed = css_query_syntax(el->doc, sel, &scratch);
     *ok = parsed != NULL;
-    bool m = parsed && css_match_selector_list(parsed, el);
+    bool m = parsed && css_match_selector_list_scoped(parsed, el, scope);
     css_sellist_free(&scratch);
     return m;
 }
@@ -130,6 +130,87 @@ bool jsg_vclip(Node *n, Node *stop, float c[4], float scroll_x, float scroll_y) 
         a = up;
     }
     return true;
+}
+
+/* A text node's data byte offset -> its box text's, whose white space the box tree collapsed (prep_text): a dropped
+   character maps to where the next kept one is */
+static int box_byte(const Node *n, const Box *t, int o) {
+    bool pre = t->st && !(t->st->white_space == WS_NORMAL || t->st->white_space == WS_NOWRAP || t->st->white_space == WS_PRE_LINE);
+    int k = 0;
+    for (int i = 0; i < o && i < (int)n->text_len && k < t->text_len; i++) {
+        unsigned char c = (unsigned char)n->text[i];
+        if (c == '\r') continue;
+        if (c == ' ' || c == '\t' || c == '\n' || c == '\f') {
+            if (t->text[k] == ' ' || t->text[k] == '\n') { k++; if (c == '\t' && pre) for (int j = 0; j < 3 && k < t->text_len && t->text[k] == ' '; j++) k++; }
+        } else k++;
+    }
+    return k;
+}
+/* Rects (x y w h, document coordinates) over box text bytes [s, e) of t, one per fragment owner holds; s == e gives
+   the caret's zero-width rect */
+static int frag_rects(const Box *owner, const Box *t, int s, int e, float dx, float dy, float *out, int max) {
+    int n = 0;
+    for (int i = 0; i < owner->nfrags && n < max; i++) {
+        const TextFrag *f = &owner->frags[i];
+        if (f->box != t || f->g1 <= f->g0) continue;
+        int lo = (int)t->sh.g[f->g0].cluster, hi = f->g1 < t->sh.n ? (int)t->sh.g[f->g1].cluster : t->text_len;
+        if (s == e ? s < lo || s > hi : e <= lo || s >= hi) continue;
+        float x0 = t->sh.g[f->g0].x, a = -1, z = -1;
+        for (int g = f->g0; g < f->g1; g++) {
+            int cl = (int)t->sh.g[g].cluster; float gx = t->sh.g[g].x - x0;
+            if (a < 0 && cl >= s) a = gx;
+            if (z < 0 && cl >= e) z = gx;
+        }
+        if (a < 0) a = f->w;
+        if (z < 0) z = f->w;
+        out[n * 4] = f->x + LMIN(a, z) + dx; out[n * 4 + 1] = f->y + dy; out[n * 4 + 2] = fabsf(z - a); out[n * 4 + 3] = f->h;
+        n++;
+        if (s == e) break;
+    }
+    return n;
+}
+static int u16_byte(const char *s, int len, int u) {
+    int i = 0;
+    while (i < len && u > 0) {
+        unsigned char c = (unsigned char)s[i];
+        int w = c < 0x80 ? 1 : c < 0xE0 ? 2 : c < 0xF0 ? 3 : 4;
+        u -= w == 4 ? 2 : 1; i += w;
+    }
+    return i < len ? i : len;
+}
+/* The rects of UTF-16 offsets [s, e) of a text node's data, document coordinates; its parent element's own scroll
+   applies, as the parent's viewport rect does not include it */
+int jsg_text_rects(Node *n, int s, int e, float *out, int max) {
+    const Box *t = n->box;
+    if (!t || t->kind != BX_TEXT || !t->text) return 0;
+    const Box *owner = NULL;
+    for (const Box *a = t->parent; a && !owner; a = a->parent)
+        for (int i = 0; i < a->nfrags; i++) if (a->frags[i].box == t) { owner = a; break; }
+    if (!owner) return 0;
+    float dx = 0, dy = 0;
+    for (const Box *a = t->parent; a; a = a->parent) {
+        if (a->scroller && a->node) { dx -= a->node->scroll_x; dy -= box_scroll_y(a); }
+        if (a->node && a->node == n->parent) break;
+    }
+    int bs = box_byte(n, t, u16_byte(n->text, (int)n->text_len, s)), be = box_byte(n, t, u16_byte(n->text, (int)n->text_len, e));
+    return frag_rects(owner, t, bs, be, dx, dy, out, max);
+}
+/* The rects of an <input>/<textarea> value's codepoints [s, e), document coordinates with the control's own scroll;
+   an empty value gives the caret at the content box's start */
+int jsg_ctl_rects(Node *el, int s, int e, float *out, int max) {
+    const Box *cb = el->box;
+    if (!cb || (cb->ctl != CTL_TEXT && cb->ctl != CTL_TEXTAREA) || max < 1) return 0;
+    float dx = 0, dy = 0;
+    if (cb->scroller && cb->node) { dx -= cb->node->scroll_x; dy -= box_scroll_y(cb); }
+    const Box *t = ctl_text_box(cb);
+    if (!t) {
+        if (s != e) return 0;
+        Font *f = cb->st ? style_font(cb->st) : NULL;
+        out[0] = cb->x + cb->b[3] + cb->p[3]; out[1] = cb->y + cb->b[0] + cb->p[0]; out[2] = 0;
+        out[3] = f ? style_line_height(cb->st, f) : cb->h - cb->b[0] - cb->b[2] - cb->p[0] - cb->p[2];
+        return 1;
+    }
+    return frag_rects(cb, t, u8_cp_byte(t->text, t->text_len, s), u8_cp_byte(t->text, t->text_len, e), dx, dy, out, max);
 }
 
 bool jsg_scroll(Node *n, float r[4]) {
@@ -222,8 +303,15 @@ static void style_change(Node *n, const ComputedStyle *o, const ComputedStyle *s
     const char *on = o && o->display != D_NONE ? o->anim_name : NULL, *nn = vis ? s->anim_name : NULL;
     if (on && on != nn) js_anim_cancel(n, on);
     if (nn && nn != on) {
-        js_anim_event(n, "animationstart", nn, s->anim_delay * 1000, 0, true);
-        if (isfinite(s->anim_iter)) { double d = s->anim_dur * s->anim_iter; js_anim_event(n, "animationend", nn, (s->anim_delay + d) * 1000, d, true); }
+        js_anim_event(n, "animationstart", nn, s->anim_delay * 1000, s->anim_delay < 0 ? -s->anim_delay : 0, true);
+        if (isfinite(s->anim_iter)) {
+            double d = s->anim_dur * s->anim_iter;
+            /* animationiteration at each iteration boundary still ahead (a negative delay starts part way through) */
+            if (s->anim_dur > 0)
+                for (int k = 1, sent = 0; k < s->anim_iter && sent < 32; k++)
+                    if (s->anim_delay + k * s->anim_dur >= 0) { js_anim_event(n, "animationiteration", nn, (s->anim_delay + k * s->anim_dur) * 1000, k * s->anim_dur, true); sent++; }
+            js_anim_event(n, "animationend", nn, (s->anim_delay + d) * 1000, d, true);
+        }
     }
     if (!o || !vis || o->display == D_NONE || s->tr_dur + s->tr_delay <= 0) return;
     struct { const char *p; bool ch; } c[] = {

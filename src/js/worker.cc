@@ -26,7 +26,7 @@ enum { WM_MESSAGE, WM_ERROR, WM_LOADFAIL };
 struct OutMsg { int kind; Buf data; std::string msg, file; int line = 0, col = 0; };
 struct Worker {
     uint32_t id = 0; JsCtx *owner = nullptr;
-    std::string url, src, ua, platform, name; bool have_src = false, module = false;
+    std::string url, src, ua, platform, name; bool have_src = false, module = false, shared = false, service = false;
     std::mutex mu; std::condition_variable cv;
     uint64_t task_version = 0;  // protected by mu, prevents lost foreground wakeups
     std::deque<Buf> in; std::deque<OutMsg> out;
@@ -177,70 +177,121 @@ WFN(reportErr) { WENV; werr(E, a[0], v8::Exception::CreateMessage(iso, a[0])); }
 const char kWorkerPrelude[] = R"JS((function (W, G) {
 'use strict';
 const def = (o, k, v) => Object.defineProperty(o, k, { value: v, writable: true, configurable: true, enumerable: false });
-const codes = { IndexSizeError: 1, HierarchyRequestError: 3, WrongDocumentError: 4, InvalidCharacterError: 5, NotFoundError: 8, NotSupportedError: 9, InvalidStateError: 11, SyntaxError: 12, InvalidModificationError: 13, NamespaceError: 14, InvalidAccessError: 15, SecurityError: 18, NetworkError: 19, AbortError: 20, URLMismatchError: 21, QuotaExceededError: 22, TimeoutError: 23, DataCloneError: 25 };
-class DOMException extends Error { constructor(message = '', name = 'Error') { super(String(message)); def(this, 'name', String(name)); } get code() { return codes[this.name] || 0; } }
+)JS"
+#include "domexception_shared.inc"
+R"JS(
 W.cloneError(DOMException);
-class Event {
-    constructor(type, init) { init = init || {}; this.type = String(type); this.bubbles = !!init.bubbles; this.cancelable = !!init.cancelable; this.composed = !!init.composed; this.defaultPrevented = false; this.target = null; this.currentTarget = null; this.eventPhase = 0; this.isTrusted = false; this.timeStamp = W.now(); def(this, '_stop', false); }
-    preventDefault() { if (this.cancelable) this.defaultPrevented = true; }
-    stopPropagation() {} stopImmediatePropagation() { this._stop = true; }
-    get srcElement() { return this.target; } get returnValue() { return !this.defaultPrevented; } get cancelBubble() { return false; }
-    composedPath() { return this.currentTarget ? [this.currentTarget] : []; }
-}
+)JS"
+#include "quota_shared.inc"
+R"JS(
+const EVN = W;
+)JS"
+#include "event_shared.inc"
+R"JS(
 class MessageEvent extends Event { constructor(t, i) { super(t, i); i = i || {}; this.data = i.data === undefined ? null : i.data; this.origin = i.origin || ''; this.lastEventId = i.lastEventId || ''; this.source = i.source || null; this.ports = i.ports || []; } }
 class ErrorEvent extends Event { constructor(t, i) { super(t, i); i = i || {}; this.message = i.message || ''; this.filename = i.filename || ''; this.lineno = i.lineno || 0; this.colno = i.colno || 0; this.error = i.error; } }
-class CustomEvent extends Event { constructor(t, i) { super(t, i); this.detail = i && i.detail !== undefined ? i.detail : null; } }
 class PromiseRejectionEvent extends Event { constructor(t, i) { super(t, i); this.promise = i && i.promise; this.reason = i && i.reason; } }
 const lsn = new WeakMap();
 const listeners = t => { let m = lsn.get(t); if (!m) lsn.set(t, m = new Map()); return m; };
+/* EventTarget per the DOM standard. A worker has no tree: an event goes only to its target, after the target's
+   on<type> handler. A bare call (no receiver) targets the worker global, as WebIDL operations on the global do. */
+const etThis = (o, op) => {
+    if (o == null) return G;
+    if ((typeof o === 'object' || typeof o === 'function') && (o instanceof EventTarget || o === G)) return o;
+    throw new TypeError(`Failed to execute '${op}' on 'EventTarget': Illegal invocation`);
+};
+const etArgs = (op, n, have) => { if (have < n) throw new TypeError(`Failed to execute '${op}' on 'EventTarget': ${n} argument${n > 1 ? 's' : ''} required, but only ${have} present.`); };
 function fireOn(t, e, skipHandler) {
-    e.target = t; e.currentTarget = t; e.eventPhase = 2;
-    const h = t['on' + e.type];
-    if (!skipHandler && typeof h === 'function') { try { const r = h.call(t, e); if (r === false && e.type !== 'error') e.preventDefault(); } catch (x) { W.reportErr(x); } }
-    for (const l of (listeners(t).get(e.type) || []).slice()) {
+    evTarget(e, t); evCurrent(e, t); evPhase(e, 2); e._stop = e._imm = false; e._path = [t];
+    const h = skipHandler ? null : t['on' + e.type];
+    if (typeof h === 'function') { try { const r = h.call(t, e); if (r === false && e.type !== 'error') e.preventDefault(); } catch (x) { W.reportErr(x); } }
+    const L = !e._imm && listeners(t).get(e.type);
+    if (L) for (const l of L.slice()) {
         if (l.removed) continue;
-        if (l.once) t.removeEventListener(e.type, l.fn);
+        if (l.once) EventTarget.prototype.removeEventListener.call(t, e.type, l.fn, l.capture);
+        e._passive = l.passive;
         try { if (typeof l.fn === 'function') l.fn.call(t, e); else if (l.fn && typeof l.fn.handleEvent === 'function') l.fn.handleEvent(e); } catch (x) { W.reportErr(x); }
-        if (e._stop) break;
+        e._passive = false;
+        if (e._imm) break;
     }
-    e.currentTarget = null; e.eventPhase = 0;
+    evCurrent(e, null); evPhase(e, 0);
     return !e.defaultPrevented;
 }
 class EventTarget {
-    addEventListener(t, fn, o) { if (!fn) return; t = String(t); const L = listeners(this).get(t) || []; if (L.some(x => x.fn === fn)) return; L.push({ fn, once: !!(o && typeof o === 'object' && o.once) }); listeners(this).set(t, L); }
-    removeEventListener(t, fn) { const L = listeners(this).get(String(t)); if (!L) return; const i = L.findIndex(x => x.fn === fn); if (i >= 0) { L[i].removed = true; L.splice(i, 1); } }
-    dispatchEvent(e) { if (!(e instanceof Event)) throw new TypeError("parameter 1 is not of type 'Event'."); return fireOn(this, e); }
+    addEventListener(type, callback, options = undefined) {
+        const self = etThis(this, 'addEventListener');
+        etArgs('addEventListener', 2, arguments.length);
+        type = String(type);
+        if (callback !== null && callback !== undefined && typeof callback !== 'object' && typeof callback !== 'function')
+            throw new TypeError("Failed to execute 'addEventListener' on 'EventTarget': parameter 2 is not of type 'EventListener'.");
+        const o = typeof options === 'boolean' ? { capture: options } : options !== null && typeof options === 'object' ? options : {};
+        const capture = !!o.capture, once = !!o.once, passive = !!o.passive, sig = o.signal;
+        if (sig !== undefined && !(sig instanceof AbortSignal)) throw new TypeError("Failed to execute 'addEventListener' on 'EventTarget': Failed to read the 'signal' property from 'AddEventListenerOptions': Failed to convert value to 'AbortSignal'.");
+        if (callback == null || (sig && sig.aborted)) return;
+        const m = listeners(self); let L = m.get(type); if (!L) m.set(type, L = []);
+        if (L.some(l => l.fn === callback && l.capture === capture)) return;
+        L.push({ fn: callback, capture, once, passive, removed: false });
+        if (sig) abortSignalAdd(sig, () => EventTarget.prototype.removeEventListener.call(self, type, callback, capture));
+    }
+    removeEventListener(type, callback, options = undefined) {
+        const self = etThis(this, 'removeEventListener');
+        etArgs('removeEventListener', 2, arguments.length);
+        const capture = typeof options === 'boolean' ? options : !!(options !== null && typeof options === 'object' && options.capture);
+        const L = listeners(self).get(String(type)); if (!L) return;
+        const i = L.findIndex(l => l.fn === callback && l.capture === capture);
+        if (i >= 0) { L[i].removed = true; L.splice(i, 1); }
+    }
+    dispatchEvent(event) {
+        const self = etThis(this, 'dispatchEvent');
+        etArgs('dispatchEvent', 1, arguments.length);
+        if (!evIs(event)) throw new TypeError("Failed to execute 'dispatchEvent' on 'EventTarget': parameter 1 is not of type 'Event'.");
+        if (event._uninit || event.eventPhase !== 0) throw new DOMException("Failed to execute 'dispatchEvent' on 'EventTarget': The event is already being dispatched.", 'InvalidStateError');
+        return fireOn(self, event);
+    }
 }
+const ABORT_FIRE = (t, ev) => { evTrusted(ev); fireOn(t, ev); };
+)JS"
+#include "abort_shared.inc"
+R"JS(
+const OBS_REPORT = e => W.reportErr(e);
+)JS"
+#include "observable_shared.inc"
+R"JS(
 class WorkerGlobalScope extends EventTarget {}
 class DedicatedWorkerGlobalScope extends WorkerGlobalScope {}
-Object.setPrototypeOf(G, DedicatedWorkerGlobalScope.prototype);
+class SharedWorkerGlobalScope extends WorkerGlobalScope {}
+class ServiceWorkerGlobalScope extends WorkerGlobalScope {}
+Object.setPrototypeOf(G, (W.service ? ServiceWorkerGlobalScope : W.shared ? SharedWorkerGlobalScope : DedicatedWorkerGlobalScope).prototype);
 
-const URLRE = /^([a-zA-Z][a-zA-Z0-9+.-]*:)(?:\/\/(?:[^@\/?#]*@)?(\[[^\]]*\]|[^\/?#:]*)(?::(\d*))?)?([^?#]*)(\?[^#]*)?(#.*)?$/;
-function parts(href) {
-    const m = URLRE.exec(href) || [];
-    const protocol = m[1] || '', hostname = m[2] || '', port = m[3] || '', host = hostname + (port ? ':' + port : '');
-    const origin = /^(https?|wss?|ftp):$/.test(protocol) ? protocol + '//' + host : protocol === 'blob:' ? parts(m[4] || '').origin : 'null';
-    return { href, protocol, host, hostname, port, pathname: m[4] || '', search: m[5] && m[5] !== '?' ? m[5] : '', hash: m[6] && m[6] !== '#' ? m[6] : '', origin };
-}
-class URLSearchParams {
-    constructor(q) { def(this, '_p', []); q = String(q ?? '').replace(/^\?/, ''); if (q) for (const kv of q.split('&')) { const i = kv.indexOf('='), d = s => decodeURIComponent(s.replace(/\+/g, ' ')); this._p.push(i < 0 ? [d(kv), ''] : [d(kv.slice(0, i)), d(kv.slice(i + 1))]); } }
-    get(k) { const e = this._p.find(p => p[0] === k); return e ? e[1] : null; } getAll(k) { return this._p.filter(p => p[0] === k).map(p => p[1]); } has(k) { return this._p.some(p => p[0] === k); }
-    append(k, v) { this._p.push([String(k), String(v)]); } set(k, v) { this.delete(k); this.append(k, v); } delete(k) { this._p = this._p.filter(p => p[0] !== k); }
-    forEach(f) { for (const [k, v] of this._p) f(v, k, this); } entries() { return this._p[Symbol.iterator](); } [Symbol.iterator]() { return this._p[Symbol.iterator](); }
-    toString() { return this._p.map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&'); }
-}
-class URL {
-    constructor(u, base) { const h = W.resolve(String(u), base === undefined ? undefined : String(base)); if (h == null) throw new TypeError("Failed to construct 'URL': Invalid URL"); Object.assign(this, parts(h)); this.searchParams = new URLSearchParams(this.search); }
-    toString() { return this.href; } toJSON() { return this.href; }
-    static createObjectURL(b) { const u = 'blob:' + self.location.origin + '/' + (++URL._seq).toString(16).padStart(8, '0') + '-lumenw'; URL._map.set(u, b); return u; }
-    static revokeObjectURL(u) { URL._map.delete(String(u)); }
-    static canParse(u, b) { try { new URL(u, b); return true; } catch { return false; } }
-}
-URL._seq = 0; URL._map = new Map();
+const URLN = W;
+)JS"
+#include "url_shared.inc"
+#include "urlpattern_shared.inc"
+R"JS(
+const blobURLs = new Map(); let blobURLSeq = 0;
+Object.defineProperties(URL, {
+    createObjectURL: { value: function createObjectURL(b) { const u = 'blob:' + self.location.origin + '/' + (++blobURLSeq).toString(16).padStart(8, '0') + '-lumenw'; blobURLs.set(u, b); return u; }, writable: true, enumerable: true, configurable: true },
+    revokeObjectURL: { value: function revokeObjectURL(u) { blobURLs.delete(String(u)); }, writable: true, enumerable: true, configurable: true },
+});
 class WorkerLocation { toString() { return this.href; } }
-const location = Object.assign(Object.create(WorkerLocation.prototype), parts(W.url)); delete location.searchParams;
+{
+    const p = W.urlParse(W.url, null) || [W.url, '', '', '', '', '', '', '', '', '', 'null'];
+    ['href', 'protocol', 'username', 'password', 'host', 'hostname', 'port', 'pathname', 'search', 'hash', 'origin'].forEach((k, i) => {
+        if (i !== 2 && i !== 3) Object.defineProperty(WorkerLocation.prototype, k, { get() { return p[i]; }, enumerable: true, configurable: true });
+    });
+}
+const location = Object.create(WorkerLocation.prototype);
 class WorkerNavigator {}
 const ua = W.ua, navigator = Object.assign(Object.create(WorkerNavigator.prototype), { userAgent: ua, appVersion: ua.replace(/^Mozilla\//, ''), appName: 'Netscape', appCodeName: 'Mozilla', product: 'Gecko', platform: W.platform, language: 'en-US', languages: ['en-US'], onLine: true, hardwareConcurrency: W.cores });
+/* a secure context: https, file, or a loopback host (as Chrome treats them) */
+const secureContext = (l => {
+    if (l.protocol === 'blob:') { try { l = new URL(l.pathname); } catch (e) { return true; } }   /* the origin it was made in (blob:null from a file page) */
+    return l.protocol === 'https:' || l.protocol === 'file:' || /^(localhost|127(\.\d+){3}|\[::1\])$|\.localhost$/.test(l.hostname);
+})(location);
+const CN = W, CRYPTO_SECURE = () => secureContext;
+)JS"
+#include "crypto_shared.inc"
+R"JS(
 
 const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 function btoa(s) {
@@ -261,22 +312,17 @@ function atob(s) {
     for (const ch of s) { n = (n << 6 | B64.indexOf(ch)) & 0xffffff; bits += 6; if (bits >= 8) { bits -= 8; o += String.fromCharCode(n >> bits & 255); } }
     return o;
 }
-class TextEncoder {
-    get encoding() { return 'utf-8'; }
-    encode(s = '') {
-        s = String(s); const out = [];
-        for (let i = 0; i < s.length; i++) {
-            let c = s.charCodeAt(i);
-            if (c >= 0xd800 && c < 0xdc00 && i + 1 < s.length) { const d = s.charCodeAt(i + 1); if (d >= 0xdc00 && d < 0xe000) { c = 0x10000 + (c - 0xd800 << 10) + (d - 0xdc00); i++; } }
-            if (c >= 0xd800 && c < 0xe000) c = 0xfffd;
-            if (c < 0x80) out.push(c); else if (c < 0x800) out.push(0xc0 | c >> 6, 0x80 | c & 63);
-            else if (c < 0x10000) out.push(0xe0 | c >> 12, 0x80 | c >> 6 & 63, 0x80 | c & 63);
-            else out.push(0xf0 | c >> 18, 0x80 | c >> 12 & 63, 0x80 | c >> 6 & 63, 0x80 | c & 63);
-        }
-        return new Uint8Array(out);
-    }
-}
-class TextDecoder { constructor(label = 'utf-8') { this.encoding = 'utf-8'; this.fatal = false; this.ignoreBOM = false; } decode(b) { return b == null ? '' : W.decode(b); } }
+)JS"
+#include "streams_shared.inc"
+R"JS(
+const ENCN = W;
+)JS"
+#include "encoding_shared.inc"
+R"JS(
+const ZN = W;
+)JS"
+#include "compression_shared.inc"
+R"JS(
 class Headers {
     constructor(h) { def(this, '_m', new Map()); if (h) for (const [k, v] of (h instanceof Headers ? h._m : Array.isArray(h) ? h : Object.entries(h))) this.append(k, v); }
     get(k) { return this._m.get(String(k).toLowerCase()) ?? null; } has(k) { return this._m.has(String(k).toLowerCase()); }
@@ -339,6 +385,11 @@ function fetch(input, init) {
         return Promise.resolve(new Response(r[2], { status: r[0], url: r[1], headers: rh }));
     } catch (e) { return Promise.reject(e); }
 }
+const CACHE_URL = input => W.resolve(String(input !== null && typeof input === 'object' && input.url !== undefined ? input.url : input));
+const CACHE_RESP = e => { const r = new Response(e.bytes, { status: e.status, statusText: e.statusText, headers: e.headers, url: e.url }); responseInfo(r).type = e.type; return r; };
+)JS"
+#include "cache_shared.inc"
+R"JS(
 class XMLHttpRequestEventTarget extends EventTarget {}
 class XMLHttpRequestUpload extends XMLHttpRequestEventTarget {}
 class ProgressEvent extends Event { constructor(t, i) { super(t, i); i = i || {}; this.lengthComputable = !!i.lengthComputable; this.loaded = i.loaded || 0; this.total = i.total || 0; } }
@@ -389,35 +440,254 @@ const console = { log: (...a) => W.log(1, fmt(a)), info: (...a) => W.log(1, fmt(
 const wports = new Map(); let wpseq = 0;
 class MessagePort extends EventTarget {
     constructor() { super(); this.onmessage = null; this.onmessageerror = null; Object.defineProperty(this, '_other', { value: null, writable: true }); Object.defineProperty(this, '_k', { value: 0, writable: true }); }
-    postMessage(d, t) { const ps = (Array.isArray(t) ? t : t && t.transfer || []).filter(p => p instanceof MessagePort), k = this._k || (this._other && this._other._k); if (k) { W.post({ __lumenPort: k, data: d, xfer: ps.map(p => { const j = -(++wpseq); p._k = j; if (p._other) wports.set(j, p._other); return j; }) }); return; } const o = this._other; if (o) { const c = W.clone(d); setTimeout(() => { const e = new MessageEvent('message', { data: c, ports: ps }); e.isTrusted = true; fireOn(o, e); }); } }
+    postMessage(d, t) { const ps = (Array.isArray(t) ? t : t && t.transfer || []).filter(p => p instanceof MessagePort), k = this._k || (this._other && this._other._k); if (k) { W.post({ __lumenPort: k, data: d, xfer: ps.map(p => { const j = -(++wpseq); p._k = j; if (p._other) wports.set(j, p._other); return j; }) }); return; } const o = this._other; if (o) { const c = W.clone(d); setTimeout(() => { const e = new MessageEvent('message', { data: c, ports: ps }); evTrusted(e); fireOn(o, e); }); } }
     start() {} close() { this._other = null; }
 }
 class MessageChannel { constructor() { this.port1 = new MessagePort(); this.port2 = new MessagePort(); this.port1._other = this.port2; this.port2._other = this.port1; } }
+/* A service worker's side of the registration. The page drives the lifecycle with {__lumenSW} messages (install,
+   activate, state, msg) and this side answers with evaluated / installed / activated, and cmsg for Client.postMessage. */
+const xferOut = (t, op) => {
+    const transfer = Array.isArray(t) ? t : t && typeof t === 'object' && t.transfer || [];
+    for (const item of transfer) if (W.isWasmModule(item)) throw new DOMException(`Failed to execute '${op}': WebAssembly.Module is not transferable.`, 'DataCloneError');
+    return transfer.filter(p => p instanceof MessagePort).map(p => { const k = -(++wpseq); p._k = k; if (p._other) wports.set(k, p._other); return k; });
+};
+const swPost = (m, keys) => keys.length ? W.post({ __lumenXfer: keys, data: m }) : W.post(m);
+const extPending = new WeakMap();
+class ExtendableEvent extends Event {
+    constructor(type, init = undefined) {
+        if (arguments.length < 1) throw new TypeError("Failed to construct 'ExtendableEvent': 1 argument required, but only 0 present.");
+        super(type, init);
+        extPending.set(this, { list: [], n: 0 });
+    }
+    waitUntil(p) {
+        if (arguments.length < 1) throw new TypeError("Failed to execute 'waitUntil' on 'ExtendableEvent': 1 argument required, but only 0 present.");
+        const st = extPending.get(this);
+        if (!st) throw new TypeError('Illegal invocation');
+        if (!this.isTrusted) throw new DOMException("Failed to execute 'waitUntil' on 'ExtendableEvent': The event is not trusted.", 'InvalidStateError');
+        if (this.eventPhase === 0 && st.n === 0) throw new DOMException("Failed to execute 'waitUntil' on 'ExtendableEvent': The event handler is already finished.", 'InvalidStateError');
+        st.n++;
+        const q = Promise.resolve(p);
+        st.list.push(q);
+        q.then(() => { setTimeout(() => st.n--); }, () => { setTimeout(() => st.n--); });
+    }
+}
+/* the promises an extendable event's handlers passed to waitUntil, including ones added while those settle */
+const extSettle = async e => {
+    const st = extPending.get(e); let ok = true, seen = 0;
+    while (seen < st.list.length) {
+        const batch = st.list.slice(seen); seen = st.list.length;
+        for (const r of await Promise.allSettled(batch)) if (r.status === 'rejected') ok = false;
+    }
+    return ok;
+};
+class ExtendableMessageEvent extends ExtendableEvent {
+    #data; #origin; #lastEventId; #source; #ports;
+    constructor(type, init = undefined) {
+        if (arguments.length < 1) throw new TypeError("Failed to construct 'ExtendableMessageEvent': 1 argument required, but only 0 present.");
+        super(type, init);
+        const i = init == null ? {} : init;
+        this.#data = i.data === undefined ? null : i.data;
+        this.#origin = i.origin === undefined ? '' : String(i.origin);
+        this.#lastEventId = i.lastEventId === undefined ? '' : String(i.lastEventId);
+        const src = i.source === undefined ? null : i.source;
+        if (src !== null && !(src instanceof Client || src instanceof ServiceWorker || src instanceof MessagePort))
+            throw new TypeError("Failed to construct 'ExtendableMessageEvent': The provided value is not of type '(Client or ServiceWorker or MessagePort)'.");
+        this.#source = src;
+        const ports = i.ports === undefined ? [] : [...i.ports];
+        for (const p of ports) if (!(p instanceof MessagePort)) throw new TypeError("Failed to construct 'ExtendableMessageEvent': Failed to read the 'ports' property from 'ExtendableMessageEventInit': Failed to convert value to 'MessagePort'.");
+        this.#ports = Object.freeze(ports);
+    }
+    get data() { return this.#data; } get origin() { return this.#origin; } get lastEventId() { return this.#lastEventId; }
+    get source() { return this.#source; } get ports() { return this.#ports; }
+}
+const CLIENT_KEY = Symbol('Client');
+class Client {
+    #info;
+    constructor(key, info) { if (key !== CLIENT_KEY) throw new TypeError('Illegal constructor'); this.#info = info; }
+    get url() { return this.#info.url; } get frameType() { return this.#info.frameType || 'top-level'; }
+    get id() { return this.#info.id; } get type() { return this.#info.type || 'window'; }
+    postMessage(message, transfer = undefined) {
+        if (arguments.length < 1) throw new TypeError("Failed to execute 'postMessage' on 'Client': 1 argument required, but only 0 present.");
+        const keys = xferOut(transfer, 'postMessage');
+        swPost({ __lumenSW: 'cmsg', client: this.#info.id, data: message }, keys);
+    }
+}
+class WindowClient extends Client {
+    get visibilityState() { return swInfo.client && swInfo.client.visibility || 'visible'; }
+    get focused() { return !!(swInfo.client && swInfo.client.focused); }
+    get ancestorOrigins() { return Object.freeze([]); }
+    focus() { return Promise.reject(new DOMException("Failed to execute 'focus' on 'WindowClient': Not allowed to focus a window.", 'InvalidAccessError')); }
+    navigate(url) { return Promise.reject(new TypeError("Failed to execute 'navigate' on 'WindowClient': Cannot navigate a client that is not controlled.")); }
+}
+const swInfo = { scope: '', client: null, controlled: false, claimed: false };
+const clientObjs = new Map();
+const clientOf = info => { let c = clientObjs.get(info.id); if (!c) clientObjs.set(info.id, c = new WindowClient(CLIENT_KEY, info)); return c; };
+class Clients {
+    constructor(key) { if (key !== CLIENT_KEY) throw new TypeError('Illegal constructor'); }
+    get(id) {
+        if (arguments.length < 1) return Promise.reject(new TypeError("Failed to execute 'get' on 'Clients': 1 argument required, but only 0 present."));
+        const c = swInfo.client;
+        return Promise.resolve(c && c.id === String(id) ? clientOf(c) : undefined);
+    }
+    matchAll(options = undefined) {
+        const o = options == null ? {} : options, type = o.type === undefined ? 'window' : String(o.type);
+        if (!['window', 'worker', 'sharedworker', 'all'].includes(type)) return Promise.reject(new TypeError(`Failed to execute 'matchAll' on 'Clients': The provided value '${type}' is not a valid enum value of type ClientType.`));
+        const c = swInfo.client, want = type === 'window' || type === 'all';
+        return Promise.resolve(c && want && (o.includeUncontrolled || swInfo.controlled) ? [clientOf(c)] : []);
+    }
+    openWindow(url) { return Promise.reject(new DOMException("Failed to execute 'openWindow' on 'Clients': Not allowed to open a window.", 'InvalidAccessError')); }
+    claim() {
+        if (swSelf.state !== 'activating' && swSelf.state !== 'activated') return Promise.reject(new DOMException("Failed to execute 'claim' on 'Clients': Only the active worker can claim clients.", 'InvalidStateError'));
+        W.post({ __lumenSW: 'claim' });
+        swInfo.controlled = true;
+        return Promise.resolve();
+    }
+}
+const SW_KEY = Symbol('ServiceWorker');
+class ServiceWorker extends EventTarget {
+    #url; #state = 'parsed';
+    constructor(key, url) { if (key !== SW_KEY) throw new TypeError('Illegal constructor'); super(); this.#url = url; this.onstatechange = null; this.onerror = null; }
+    get scriptURL() { return this.#url; } get state() { return this.#state; }
+    postMessage(message, transfer = undefined) {
+        if (arguments.length < 1) throw new TypeError("Failed to execute 'postMessage' on 'ServiceWorker': 1 argument required, but only 0 present.");
+        if (this.#state === 'redundant') throw new DOMException("Failed to execute 'postMessage' on 'ServiceWorker': The ServiceWorker is in redundant state.", 'InvalidStateError');
+        const data = W.clone(message), src = this;
+        setTimeout(() => { const e = new ExtendableMessageEvent('message', { data, origin: location.origin, source: src }); evTrusted(e); fireOn(G, e); });
+    }
+    static { swSetState = (w, s) => { if (w.#state === s) return; w.#state = s; const e = new Event('statechange'); evTrusted(e); fireOn(w, e); }; }
+}
+var swSetState;
+class NavigationPreloadManager {
+    #on = false; #hdr = 'true';
+    constructor(key) { if (key !== SW_KEY) throw new TypeError('Illegal constructor'); }
+    enable() { this.#on = true; return Promise.resolve(); }
+    disable() { this.#on = false; return Promise.resolve(); }
+    setHeaderValue(v) { this.#hdr = String(v); return Promise.resolve(); }
+    getState() { return Promise.resolve({ enabled: this.#on, headerValue: this.#hdr }); }
+}
+class ServiceWorkerRegistration extends EventTarget {
+    constructor(key) { if (key !== SW_KEY) throw new TypeError('Illegal constructor'); super(); this.onupdatefound = null; def(this, '_nav', new NavigationPreloadManager(SW_KEY)); }
+    get installing() { return swSelf.state === 'installing' ? swSelf : null; }
+    get waiting() { return swSelf.state === 'installed' ? swSelf : null; }
+    get active() { return swSelf.state === 'activating' || swSelf.state === 'activated' ? swSelf : null; }
+    get scope() { return swInfo.scope; } get updateViaCache() { return swInfo.updateViaCache || 'imports'; }
+    get navigationPreload() { return this._nav; }
+    update() { return Promise.resolve(this); }
+    unregister() { W.post({ __lumenSW: 'unregister' }); return Promise.resolve(true); }
+    showNotification() { return Promise.reject(new TypeError('No notification permission has been granted for this origin.')); }
+    getNotifications() { return Promise.resolve([]); }
+}
+class FetchEvent extends ExtendableEvent {
+    #request; #clientId; #resultingClientId; #handled;
+    constructor(type, init) {
+        if (arguments.length < 2) throw new TypeError(`Failed to construct 'FetchEvent': 2 arguments required, but only ${arguments.length} present.`);
+        super(type, init);
+        if (init == null || init.request === undefined) throw new TypeError("Failed to construct 'FetchEvent': Failed to read the 'request' property from 'FetchEventInit': Required member is undefined.");
+        this.#request = init.request; this.#clientId = init.clientId === undefined ? '' : String(init.clientId);
+        this.#resultingClientId = init.resultingClientId === undefined ? '' : String(init.resultingClientId);
+        this.#handled = init.handled instanceof Promise ? init.handled : Promise.resolve();
+    }
+    get request() { return this.#request; } get clientId() { return this.#clientId; } get resultingClientId() { return this.#resultingClientId; }
+    get handled() { return this.#handled; } get preloadResponse() { return Promise.resolve(undefined); }
+    respondWith(r) { if (!this.isTrusted) throw new DOMException("Failed to execute 'respondWith' on 'FetchEvent': The event is not trusted.", 'InvalidStateError'); }
+}
+const swSelf = W.service ? new ServiceWorker(SW_KEY, location.href) : null;
+const swReg = W.service ? new ServiceWorkerRegistration(SW_KEY) : null;
+const swClients = W.service ? new Clients(CLIENT_KEY) : null;
+const swFire = async (type, slot) => {
+    const e = new ExtendableEvent(type); evTrusted(e); fireOn(G, e);
+    return extSettle(e);
+};
+const swHandle = async (d, ports) => {
+    if (d.client) swInfo.client = d.client;
+    if (d.scope) { swInfo.scope = d.scope; swInfo.updateViaCache = d.updateViaCache; }
+    if (d.controlled !== undefined) swInfo.controlled = d.controlled;
+    switch (d.__lumenSW) {
+    case 'install':
+        swSetState(swSelf, 'installing');
+        W.post({ __lumenSW: 'evaluated' });
+        W.post({ __lumenSW: 'installed', ok: await swFire('install') });
+        break;
+    case 'wake': swSetState(swSelf, d.state); break;
+    case 'activate':
+        swSetState(swSelf, 'installed'); swSetState(swSelf, 'activating');
+        await swFire('activate');
+        swSetState(swSelf, 'activated');
+        W.post({ __lumenSW: 'activated' });
+        break;
+    case 'state': swSetState(swSelf, d.state); break;
+    case 'msg': {
+        const c = d.client ? clientOf(d.client) : null;
+        const e = new ExtendableMessageEvent('message', { data: d.data, origin: c ? new URL(c.url).origin : '', source: c, ports });
+        evTrusted(e); fireOn(G, e);
+        break;
+    }
+    case 'msgerror': { const e = new ExtendableMessageEvent('messageerror', {}); evTrusted(e); fireOn(G, e); break; }
+    }
+};
 const api = {
-    self: G, globalThis: G, location, navigator, name: W.name, origin: location.origin, isSecureContext: location.protocol === 'https:', crossOriginIsolated: false,
+    self: G, globalThis: G, location, navigator, name: W.name, origin: location.origin, isSecureContext: secureContext, crossOriginIsolated: false,
     onmessage: null, onmessageerror: null, onerror: null, onunhandledrejection: null, onrejectionhandled: null, onlanguagechange: null, onoffline: null, ononline: null,
     postMessage(m, t) { if (arguments.length < 1) throw new TypeError("Failed to execute 'postMessage': 1 argument required, but only 0 present."); const transfer = Array.isArray(t) ? t : t && t.transfer || []; for (const item of transfer) if (W.isWasmModule(item)) throw new DOMException('WebAssembly.Module is not transferable.', 'DataCloneError'); const ps = transfer.filter(p => p instanceof MessagePort); if (!ps.length) return W.post(m); W.post({ __lumenXfer: ps.map(p => { const k = -(++wpseq); p._k = k; if (p._other) wports.set(k, p._other); return k; }), data: m }); },
     close() { W.close(); },
+    reportError(e) { if (!arguments.length) throw new TypeError("Failed to execute 'reportError' on 'WorkerGlobalScope': 1 argument required, but only 0 present."); W.reportErr(e); },
     importScripts(...urls) { for (const u of urls) W.importScript(String(u)); },
     setTimeout: (f, ms, ...args) => W.timer(toFn(f), +ms || 0, false, args), setInterval: (f, ms, ...args) => W.timer(toFn(f), +ms || 0, true, args),
     clearTimeout: id => W.clear(+id || 0), clearInterval: id => W.clear(+id || 0),
-    queueMicrotask: f => { Promise.resolve().then(() => f()); }, structuredClone: (v, options) => { if (options && options.transfer) for (const item of options.transfer) if (W.isWasmModule(item)) throw new DOMException('WebAssembly.Module is not transferable.', 'DataCloneError'); return W.clone(v); },
-    btoa, atob, TextEncoder, TextDecoder, Blob, File, URL, URLSearchParams, Headers, Response, fetch, XMLHttpRequest, XMLHttpRequestEventTarget, XMLHttpRequestUpload, ProgressEvent, performance, console,
-    Event, MessageEvent, MessagePort, MessageChannel, ErrorEvent, CustomEvent, PromiseRejectionEvent, EventTarget, DOMException, WorkerGlobalScope, DedicatedWorkerGlobalScope, WorkerLocation, WorkerNavigator,
+    queueMicrotask: f => { Promise.resolve().then(() => f()); }, structuredClone: (v, options) => { if (options && options.transfer) for (const item of options.transfer) if (W.isWasmModule(item)) throw new DOMException('WebAssembly.Module is not transferable.', 'DataCloneError'); if (v instanceof URL || v instanceof URLSearchParams) throw new DOMException(`${v[Symbol.toStringTag]} object could not be cloned.`, 'DataCloneError'); return W.clone(v); },
+    btoa, atob, TextEncoder, TextDecoder, TextEncoderStream, TextDecoderStream, CompressionStream, DecompressionStream, ReadableStream, ReadableStreamDefaultReader, ReadableStreamBYOBReader,
+    ReadableStreamDefaultController, ReadableByteStreamController, ReadableStreamBYOBRequest, WritableStream, WritableStreamDefaultWriter,
+    WritableStreamDefaultController, TransformStream, TransformStreamDefaultController, ByteLengthQueuingStrategy, CountQueuingStrategy, Blob, File, URL, URLSearchParams, Headers, Response, fetch, Cache, CacheStorage, caches, URLPattern, XMLHttpRequest, XMLHttpRequestEventTarget, XMLHttpRequestUpload, ProgressEvent, performance, console,
+    Event, MessageEvent, MessagePort, MessageChannel, ErrorEvent, AbortController, AbortSignal, Observable, Subscriber, CustomEvent, PromiseRejectionEvent, EventTarget, DOMException, QuotaExceededError, Crypto,
+    ...(secureContext ? { CryptoKey, SubtleCrypto } : {}), WorkerGlobalScope, DedicatedWorkerGlobalScope, WorkerLocation, WorkerNavigator,
 };
+if (W.shared) {   /* a shared worker talks only through the ports its connect events bring */
+    delete api.postMessage; delete api.onmessage; delete api.onmessageerror; delete api.DedicatedWorkerGlobalScope;
+    Object.assign(api, { onconnect: null, SharedWorkerGlobalScope });
+}
+if (W.service) {   /* a service worker: no postMessage of its own; the page's clients and registration */
+    delete api.postMessage; delete api.DedicatedWorkerGlobalScope;
+    Object.assign(api, { oninstall: null, onactivate: null, onfetch: null, onmessage: null, onmessageerror: null, oncontentdelete: null, onnotificationclick: null, onnotificationclose: null, onpush: null, onpushsubscriptionchange: null, onsync: null, onperiodicsync: null, onbackgroundfetchsuccess: null, onbackgroundfetchfail: null, onbackgroundfetchabort: null, onbackgroundfetchclick: null, oncookiechange: null,
+        clients: swClients, registration: swReg, serviceWorker: swSelf, skipWaiting() { return Promise.resolve(); },
+        ServiceWorkerGlobalScope, ExtendableEvent, ExtendableMessageEvent, FetchEvent, Client, WindowClient, Clients, ServiceWorker, ServiceWorkerRegistration, NavigationPreloadManager });
+}
 for (const k of Object.keys(api)) Object.defineProperty(G, k, { value: api[k], writable: true, configurable: true, enumerable: false });
+{   /* WebIDL shape, as on the page: members are enumerable and constants read-only */
+    const CONST = /^[A-Z][A-Z0-9_]*$/;
+    const shape = (o, skip) => {
+        for (const k of Object.getOwnPropertyNames(o)) {
+            if (skip.has(k) || k[0] === '_') continue;
+            const d = Object.getOwnPropertyDescriptor(o, k);
+            if (!d.configurable) continue;
+            if (CONST.test(k) && typeof d.value === 'number') Object.defineProperty(o, k, { value: d.value, writable: false, enumerable: true, configurable: false });
+            else if (!d.enumerable) { d.enumerable = true; Object.defineProperty(o, k, d); }
+        }
+    };
+    const PROTO_SKIP = new Set(['constructor']), STATIC_SKIP = new Set(['length', 'name', 'prototype', 'arguments', 'caller']);
+    for (const C of Object.values(api)) {
+        if (typeof C !== 'function' || !/^[A-Z]/.test(C.name) || !C.prototype || typeof C.prototype !== 'object') continue;
+        shape(C.prototype, PROTO_SKIP);
+        shape(C, STATIC_SKIP);
+    }
+}
+Object.defineProperty(WorkerGlobalScope.prototype, 'crypto', { get: Object.getOwnPropertyDescriptor({ get crypto() { if (this !== globalThis) throw new TypeError('Illegal invocation'); return crypto; } }, 'crypto').get, enumerable: true, configurable: true });
 return {
     onmsg(data) {
         let ports = [];
         if (data && typeof data === 'object') {
-            if (data.__lumenPort) { const p = wports.get(data.__lumenPort); if (p) { const e = new MessageEvent('message', { data: data.data, ports: (data.xfer || []).map(k => { const q = new MessagePort(); q._k = k; wports.set(k, q); return q; }) }); e.isTrusted = true; fireOn(p, e); } return; }
+            if (data.__lumenPort) { const p = wports.get(data.__lumenPort); if (p) { const e = new MessageEvent('message', { data: data.data, ports: (data.xfer || []).map(k => { const q = new MessagePort(); q._k = k; wports.set(k, q); return q; }) }); evTrusted(e); fireOn(p, e); } return; }
             if (data.__lumenXfer) { ports = data.__lumenXfer.map(k => { const q = new MessagePort(); q._k = k; wports.set(k, q); return q; }); data = data.data; }
         }
-        const e = new MessageEvent('message', { data, ports }); e.isTrusted = true; fireOn(G, e);
+        if (W.service) { if (data && typeof data === 'object' && data.__lumenSW) swHandle(data, ports); return; }
+        if (W.shared) {   /* a new SharedWorker object connected: its port */
+            if (data && data.__lumenConnect && ports.length) { const e = new MessageEvent('connect', { data: '', ports, source: ports[0] }); evTrusted(e); fireOn(G, e); }
+            return;
+        }
+        const e = new MessageEvent('message', { data, ports }); evTrusted(e); fireOn(G, e);
     },
     report(error, message, filename, lineno, colno) {
         const e = new ErrorEvent('error', { message, filename, lineno, colno, error, cancelable: true });
-        e.isTrusted = true;
+        evTrusted(e);
         if (typeof G.onerror === 'function') { try { if (G.onerror.call(G, message, filename, lineno, colno, error) === true) e.preventDefault(); } catch (x) {} }
         fireOn(G, e, true);
         return e.defaultPrevented;
@@ -474,10 +744,14 @@ void worker_main(std::shared_ptr<Worker> w) {
         v8::Local<v8::Object> W = v8::Object::New(iso);
         js_wasm_install(ctx, W);
         js_clone_install(ctx, W);
+        js_url_install(ctx, W);
+        js_crypto_install(ctx, W); js_encoding_install(ctx, W); js_compress_install(ctx, W);
 #define WREG(nm) (void)W->Set(ctx, jstr(iso, #nm), v8::Function::New(ctx, w_##nm).ToLocalChecked())
         WREG(post); WREG(clone); WREG(timer); WREG(clear); WREG(close); WREG(now); WREG(log); WREG(decode); WREG(resolve); WREG(fetch); WREG(importScript); WREG(reportErr);
         auto setS = [&](const char *k, const std::string &v) { (void)W->Set(ctx, jstr(iso, k), jstr(iso, v.c_str())); };
         setS("url", w->url); setS("ua", w->ua); setS("platform", w->platform); setS("name", w->name);
+        (void)W->Set(ctx, jstr(iso, "shared"), v8::Boolean::New(iso, w->shared));
+        (void)W->Set(ctx, jstr(iso, "service"), v8::Boolean::New(iso, w->service));
         (void)W->Set(ctx, jstr(iso, "cores"), v8::Integer::New(iso, (int)std::max(1u, std::thread::hardware_concurrency())));
         double wall = (double)std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count() / 1000.0;
         (void)W->Set(ctx, jstr(iso, "timeOrigin"), v8::Number::New(iso, wall));
@@ -652,6 +926,8 @@ void n_workerNew(const FCI &a) {
     w->id = ++g_wseq; w->owner = jctx(iso);
     w->url = jcstr(iso, a[0]); w->have_src = a[1]->IsString(); if (w->have_src) w->src = jcstr(iso, a[1]);
     w->ua = jcstr(iso, a[2]); w->platform = jcstr(iso, a[3]); w->name = a[4]->IsString() ? jcstr(iso, a[4]) : ""; w->module = a.Length() > 5 && a[5]->IsTrue();
+    w->shared = a.Length() > 6 && a[6]->IsTrue();   /* a SharedWorker's global */
+    w->service = a.Length() > 7 && a[7]->IsTrue();  /* a ServiceWorker's global */
     g_workers[w->id] = w;
     pthread_attr_t at; pthread_attr_init(&at); pthread_attr_setstacksize(&at, 8u << 20); pthread_attr_setdetachstate(&at, PTHREAD_CREATE_DETACHED);
     pthread_t th;

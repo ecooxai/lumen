@@ -34,6 +34,7 @@
 #include "../media/media.h"
 #include "../net/net.h"
 #include "../base/url.h"
+#include "../base/encoding.h"
 #include "../gpu/gpu.h"
 #include "../gpu/webgpu.h"
 #include "../js/js.h"
@@ -45,9 +46,9 @@ static bool g_desktop_seeded;   /* Desktop site was turned on for every site onc
 static bool g_hide_tabs;   /* Hide tab bar (Settings, saved as hide_tabs): compact even with several tabs; the menu's Workspaces lists them */
 static bool g_bare, g_bare_fs __attribute__((unused));   /* the Downloads viewer's full screen: no tab strip or toolbar, the panel fills the window; the system bars' state before */
 /* test hooks read on every main-loop turn: looked up once (Android's getenv scans the environment) */
-enum { ENV_SHOT, ENV_CRASH_TEST, ENV_TAB_SLEEP_MS, ENV_TAB_SLEEP, ENV_MEM_STATS, ENV_AUTOSCROLL, ENV_CHECK_DAMAGE, ENV_N };
+enum { ENV_SHOT, ENV_CRASH_TEST, ENV_TAB_SLEEP_MS, ENV_TAB_SLEEP, ENV_MEM_STATS, ENV_AUTOSCROLL, ENV_CHECK_DAMAGE, ENV_TESTDRIVER, ENV_N };
 static const char *env_hook(int i) {
-    static const char *const names[ENV_N] = { "LUMEN_SHOT", "LUMEN_CRASH_TEST", "LUMEN_TAB_SLEEP_MS", "LUMEN_TAB_SLEEP", "LUMEN_MEM_STATS", "LUMEN_AUTOSCROLL", "LUMEN_CHECK_DAMAGE" };
+    static const char *const names[ENV_N] = { "LUMEN_SHOT", "LUMEN_CRASH_TEST", "LUMEN_TAB_SLEEP_MS", "LUMEN_TAB_SLEEP", "LUMEN_MEM_STATS", "LUMEN_AUTOSCROLL", "LUMEN_CHECK_DAMAGE", "LUMEN_TESTDRIVER" };
     static const char *v[ENV_N]; static bool got[ENV_N];
     if (!got[i]) { v[i] = getenv(names[i]); got[i] = true; }
     return v[i];
@@ -112,7 +113,7 @@ static SDL_Mutex *icache_mu;
 static HMap icache;
 static size_t g_icache_bytes; static int g_icache_n;
 static int g_img_epoch;
-static Uint32 EV_LOADED, EV_NET, EV_MENU, EV_DL, EV_UI;
+static Uint32 EV_LOADED, EV_NET, EV_MENU, EV_DL, EV_UI, EV_TD;
 static uint64_t load_gen;
 static bool g_lowmem;
 static int g_cpu_on = 1, g_cpu_pct = 80, g_cpu_secs = 60, g_cpu_lim = 40;
@@ -375,13 +376,24 @@ static int loader(void *arg) {
     char *errbuf = NULL;
     if (rq->html) { body = rq->html; blen = strlen(body); }
     else if (!r || r->status == 0) { errbuf = xmalloc(512); snprintf(errbuf, 512, "<title>Error</title><body style='font:15px system-ui;padding:40px;color:#444'><h2>Can't open this page</h2><p>%s</p>", rq->url); body = errbuf; blen = strlen(errbuf); }
+    const char *ctype = r && r->status > 0 && !rq->html ? headers_get(&r->headers, "content-type") : NULL;
     if (r && r->status == 200 && !rq->html) {
-        char *viewer = local_viewer_html(r->url, headers_get(&r->headers, "content-type"), kind == 2);
-        if (viewer) { free(r->body); r->body = viewer; r->body_len = strlen(viewer); body = viewer; blen = r->body_len; }
+        char *viewer = local_viewer_html(r->url, ctype, kind == 2);
+        if (viewer) { free(r->body); r->body = viewer; r->body_len = strlen(viewer); body = viewer; blen = r->body_len; ctype = NULL; }
     }
     p->url = xstrdup(r && r->url ? r->url : rq->url);
     p->d = doc_new(p->url);
-    html_parse(p->d, body, blen);
+    if (r && r->status > 0 && !rq->html) { p->d->csp = headers_join(&r->headers, "content-security-policy"); p->d->csp_ro = headers_join(&r->headers, "content-security-policy-report-only"); }
+    bool xml = xml_mime(ctype);
+    char *decoded = NULL;
+    if (!rq->html && !errbuf) {   /* the document's encoding; anything but UTF-8 is decoded to UTF-8 first */
+        int enc; size_t dn = 0;
+        if ((decoded = enc_document((const uint8_t *)body, blen, ctype, xml, &enc, &dn))) { body = decoded; blen = dn; }
+        p->d->charset = enc;
+    }
+    if (xml) { xml_parse(p->d, body, blen); p->d->content_type = mime_essence(ctype); }
+    else html_parse(p->d, body, blen);
+    free(decoded);
     double t_parse = now_ms();
     /* Classic scripts and stylesheets in document order, fetched together; module scripts
      * and modulepreloads with their whole static import graphs alongside. */
@@ -394,7 +406,7 @@ static int loader(void *arg) {
         if (n->tag == A_script && n->ns == NS_HTML && js && (module = jsg_module_script(n), module || jsg_classic_script(n))) href = node_attr(n, "src");
         else if (rel && strstr(rel, "modulepreload")) { href = js ? node_attr(n, "href") : NULL; module = true; }
         else if (rel && strstr(rel, "stylesheet")) href = node_attr(n, "href");
-        char *u = href ? url_join(p->d->url, href) : NULL;
+        char *u = href ? url_join(doc_base(p->d), href) : NULL;
         if (!u) continue;
         char ***v = module ? &mods : &urls; int *k = module ? &nmod : &nurl;
         *v = xrealloc(*v, sizeof **v * (size_t)(*k + 1)); (*v)[(*k)++] = u;
@@ -416,7 +428,7 @@ static int loader(void *arg) {
         PScript sc = { n, NULL, 0, NULL, mod };
         const char *src = node_attr(n, "src");
         if (src) {
-            sc.name = url_join(p->d->url, src);
+            sc.name = url_join(doc_base(p->d), src);
             if (!sc.name) continue;
             if (mod) {   /* prefetched above; js_run_module compiles it and its imports */
                 sc.src = js_module_take(sc.name, p->url, &sc.len);
@@ -439,7 +451,7 @@ static int loader(void *arg) {
         if (n->tag == A_style) {
             char *t = node_text_content(n); StyleSheet *s = css_parse_sheet(t, strlen(t), p->d->url, 1, &p->e->media); s->owner = n; style_engine_add_sheet(p->e, s); free(t);
         } else if (n->tag == A_link && node_attr(n, "rel") && strstr(node_attr(n, "rel"), "stylesheet") && node_attr(n, "href")) {
-            char *u = url_join(p->d->url, node_attr(n, "href"));
+            char *u = url_join(doc_base(p->d), node_attr(n, "href"));
             NetResponse *cr = NULL;
             for (int i = 0; u && i < nurl; i++) if (got[i] && urls[i] && !strcmp(urls[i], u)) { cr = got[i]; got[i] = NULL; break; }
             if (!cr && u) cr = net_fetch_sync(net_request_new("GET", u));
@@ -1003,10 +1015,82 @@ static char *files_view(const char *q) {
     sb_puts(&b, "}");
     return b.s;
 }
+/* LUMEN_TESTDRIVER (WPT runs only): WPT's testdriver drives real input through "td?OPS", one op per line in CSS
+   viewport pixels: "move X Y", "down B", "up B" (WebDriver buttons), "key CP", "keyup CP" (WebDriver key code
+   points). The ops become SDL events behind the queue, then an EV_TD event with the returned id calls
+   __lumenTdDone(id) once they have been handled. */
+static SDL_Keymod g_td_mod;
+static SDL_Keycode td_keycode(uint32_t cp, SDL_Keymod *mod) {
+    switch (cp) {
+    case 0xE003: return SDLK_BACKSPACE; case 0xE004: return SDLK_TAB; case 0xE006: case 0xE007: return SDLK_RETURN;
+    case 0xE00C: return SDLK_ESCAPE; case 0xE00D: return SDLK_SPACE; case 0xE00E: return SDLK_PAGEUP; case 0xE00F: return SDLK_PAGEDOWN;
+    case 0xE010: return SDLK_END; case 0xE011: return SDLK_HOME; case 0xE012: return SDLK_LEFT; case 0xE013: return SDLK_UP;
+    case 0xE014: return SDLK_RIGHT; case 0xE015: return SDLK_DOWN; case 0xE017: return SDLK_DELETE;
+    case 0xE008: case 0xE050: *mod = SDL_KMOD_LSHIFT; return SDLK_LSHIFT;
+    case 0xE009: case 0xE051: *mod = SDL_KMOD_LCTRL; return SDLK_LCTRL;
+    case 0xE00A: case 0xE052: *mod = SDL_KMOD_LALT; return SDLK_LALT;
+    case 0xE03D: case 0xE053: *mod = SDL_KMOD_LGUI; return SDLK_LGUI;
+    default: break;
+    }
+    if (cp >= 0xE031 && cp <= 0xE03C) return SDLK_F1 + (cp - 0xE031);
+    if (cp >= 'A' && cp <= 'Z') { *mod = SDL_KMOD_LSHIFT; return cp + 32; }
+    return cp >= 0xE000 && cp <= 0xF8FF ? SDLK_UNKNOWN : cp;
+}
+static char *td_cmd(App *a, const char *q) {
+    static float x, y; static Uint32 buttons; static double down_t; static int clicks; static int id;
+    if (!strcmp(q, "ping")) return xstrdup("pong");
+    float z = tab_zoom(a->t), s = a->input_scale > 0 ? a->input_scale : 1;
+    for (const char *l = q; *l; ) {
+        const char *e = strchr(l, '\n'); size_t n = e ? (size_t)(e - l) : strlen(l);
+        char op[16] = ""; double v1 = 0, v2 = 0; char line[128];
+        snprintf(line, sizeof line, "%.*s", (int)(n < sizeof line ? n : sizeof line - 1), l);
+        int got = sscanf(line, "%15s %lf %lf", op, &v1, &v2);
+        SDL_Event ev; SDL_zero(ev);
+        Uint8 btn = v1 == 1 ? SDL_BUTTON_MIDDLE : v1 == 2 ? SDL_BUTTON_RIGHT : SDL_BUTTON_LEFT;
+        if (got == 3 && !strcmp(op, "move")) {
+            x = (page_left(a) + (float)v1 * z) / s; y = (BAR + (float)v2 * z) / s;
+            ev.type = SDL_EVENT_MOUSE_MOTION; ev.motion.x = x; ev.motion.y = y; ev.motion.state = buttons; SDL_PushEvent(&ev);
+        } else if (got >= 1 && (!strcmp(op, "down") || !strcmp(op, "up"))) {
+            bool down = op[0] == 'd';
+            if (down) { double t = now_ms(); clicks = t - down_t < 500 ? clicks + 1 : 1; down_t = t; buttons |= SDL_BUTTON_MASK(btn); }
+            else buttons &= ~SDL_BUTTON_MASK(btn);
+            ev.type = down ? SDL_EVENT_MOUSE_BUTTON_DOWN : SDL_EVENT_MOUSE_BUTTON_UP;
+            ev.button.button = btn; ev.button.down = down; ev.button.clicks = (Uint8)clicks; ev.button.x = x; ev.button.y = y;
+            SDL_PushEvent(&ev);
+        } else if (got >= 2 && (!strcmp(op, "key") || !strcmp(op, "keyup"))) {
+            uint32_t cp = (uint32_t)v1; SDL_Keymod mod = 0; SDL_Keycode k = td_keycode(cp, &mod);
+            bool modifier = k == SDLK_LSHIFT || k == SDLK_LCTRL || k == SDLK_LALT || k == SDLK_LGUI;
+            if (modifier) { if (op[3]) g_td_mod &= ~mod; else g_td_mod |= mod; SDL_SetModState(g_td_mod); }
+            if (k != SDLK_UNKNOWN && !(op[3] && !modifier)) {
+                ev.type = op[3] ? SDL_EVENT_KEY_UP : SDL_EVENT_KEY_DOWN; ev.key.key = k; ev.key.down = !op[3]; ev.key.mod = g_td_mod | mod;
+                /* the browser's own shortcuts stay out of tests: tab, window and history keys go to the page without Ctrl */
+                if ((ev.key.mod & (SDL_KMOD_CTRL | SDL_KMOD_GUI)) && !modifier && (k == SDLK_Q || k == SDLK_W || k == SDLK_T || k == SDLK_N || k == SDLK_L || k == SDLK_R || k == SDLK_TAB ||
+                    k == SDLK_LEFTBRACKET || k == SDLK_RIGHTBRACKET || (k >= SDLK_0 && k <= SDLK_9) || k == SDLK_EQUALS || k == SDLK_MINUS || k == SDLK_PLUS))
+                    ev.key.mod &= ~(SDL_KMOD_CTRL | SDL_KMOD_GUI);
+                SDL_PushEvent(&ev);
+            }
+            if (!op[3] && cp >= 32 && cp != 127 && !(cp >= 0xE000 && cp <= 0xF8FF) && !(g_td_mod & (SDL_KMOD_CTRL | SDL_KMOD_GUI | SDL_KMOD_ALT))) {
+                static char *texts[64]; static int ti;   /* the text outlives the queued event; reused 64 events later */
+                char *t = xmalloc(5); size_t tn = 0;
+                if (cp < 0x80) t[tn++] = (char)cp;
+                else if (cp < 0x800) { t[tn++] = (char)(0xC0 | cp >> 6); t[tn++] = (char)(0x80 | (cp & 63)); }
+                else if (cp < 0x10000) { t[tn++] = (char)(0xE0 | cp >> 12); t[tn++] = (char)(0x80 | (cp >> 6 & 63)); t[tn++] = (char)(0x80 | (cp & 63)); }
+                else { t[tn++] = (char)(0xF0 | cp >> 18); t[tn++] = (char)(0x80 | (cp >> 12 & 63)); t[tn++] = (char)(0x80 | (cp >> 6 & 63)); t[tn++] = (char)(0x80 | (cp & 63)); }
+                t[tn] = 0; free(texts[ti]); texts[ti] = t; ti = (ti + 1) % 64;
+                SDL_Event te; SDL_zero(te); te.type = SDL_EVENT_TEXT_INPUT; te.text.text = t; SDL_PushEvent(&te);
+            }
+        }
+        l += n; if (*l) l++;
+    }
+    SDL_Event done; SDL_zero(done); done.type = EV_TD; done.user.code = ++id; SDL_PushEvent(&done);
+    char b[16]; snprintf(b, sizeof b, "%d", id); return xstrdup(b);
+}
+
 /* lumenInternal(cmd) of Lumen's own pages: "state?s=SEC[&dir=PATH]", or "set?s=SEC&key=value..."
    which applies the settings and actions first; both return the section's state as JSON */
 static char *h_internal_in(const char *cmd) {
     App *a = g_app;
+    if (env_hook(ENV_TESTDRIVER) && !strncmp(cmd, "td?", 3)) return a->t ? td_cmd(a, cmd + 3) : NULL;
     if (!a->t || !a->t->cur || !a->t->cur->internal_ui) return NULL;
     if (!strcmp(cmd, "ping")) return xstrdup("pong");
     const char *q;
@@ -2731,7 +2815,7 @@ static bool sync_images(Page *p) {
         if (n->type != NODE_ELEMENT) continue;
         char *u = NULL;
         if (n->style && (n->style->mask_image || n->style->bg_image) && n->style->display != D_NONE) u = xstrdup(n->style->mask_image ? n->style->mask_image : n->style->bg_image);
-        else if (n->ns == NS_HTML && n->tag == A_img && node_attr(n, "src")) u = url_join(p->d->url, node_attr(n, "src"));
+        else if (n->ns == NS_HTML && n->tag == A_img && node_attr(n, "src")) u = url_join(doc_base(p->d), node_attr(n, "src"));
         else continue;
         if (!u || !*u || !strncmp(u, "blob:", 5)) { free(u); continue; }
         SDL_LockMutex(icache_mu);
@@ -2753,7 +2837,7 @@ static void fire_img_events(Page *p) {
     Node **ev = NULL; bool *ok = NULL; int ne = 0, cap = 0;
     for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) {
         if (n->type != NODE_ELEMENT || n->ns != NS_HTML || n->tag != A_img || !node_attr(n, "src")) continue;
-        char *u = url_join(p->d->url, node_attr(n, "src")); if (!u) continue;
+        char *u = url_join(doc_base(p->d), node_attr(n, "src")); if (!u) continue;
         char key[2048]; snprintf(key, sizeof key, "%p %s", (void *)n, u);
         if (!hm_get(&p->img_fired, key)) {
             SDL_LockMutex(icache_mu); ImgSlot *s = hm_get(&icache, u); bool done = s && s->done, good = done && s->im; SDL_UnlockMutex(icache_mu);
@@ -2791,7 +2875,7 @@ static bool sync_sheets(Page *p, bool seed) {
             if (known) { style_engine_remove_owner(p->e, n); changed = true; }
             if (t) { StyleSheet *sh = css_parse_sheet(t, strlen(t), p->d->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); changed = true; n_full++; parsed += len; }
             else {
-                char *u = url_join(p->d->url, node_attr(n, "href"));
+                char *u = url_join(doc_base(p->d), node_attr(n, "href"));
                 if (u) { NetRequest *rq = net_request_new("GET", u); LinkLoad *l = xmalloc(sizeof *l); l->gen = p->gen; l->n = n; n->refcount++; rq->done = is_sheet_link(n) ? link_done : preload_done; rq->ud = l; net_fetch(rq); free(u); }
             }
         }
@@ -2954,7 +3038,7 @@ static void h_frame_open(void *ud, Node *f, Document *d, JsHost *ch) {
         if (n->tag == A_style) {
             char *t = node_text_content(n); StyleSheet *sh = css_parse_sheet(t, strlen(t), d->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); free(t);
         } else if (is_sheet_link(n)) {
-            char *u = url_join(d->url, node_attr(n, "href"));
+            char *u = url_join(doc_base(d), node_attr(n, "href"));
             NetResponse *cr = u ? net_fetch_sync(net_request_new("GET", u)) : NULL;
             if (cr && cr->status == 200 && cr->body) { StyleSheet *sh = css_parse_sheet(cr->body, cr->body_len, cr->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); }
             if (cr) net_response_free(cr);
@@ -3213,7 +3297,7 @@ static Node *h_hit(void *ud, float x, float y) { Node *r = NULL; TAB_CALL(ud, r 
 static void page_start_js(App *a, Page *p) {
     if (getenv("LUMEN_NO_JS")) return;
     JsHost h = { a->t, &p->e->media, h_navigate, h_set_url, h_history_go, h_viewport, h_scroll_to, h_hit, h_history_len, h_navigate_post, h_sync, h_frame_open, h_frame_close,
-                 p->internal_ui ? h_internal : NULL, h_fullscreen, p->internal_ui ? NULL : h_open_window, h_window_op };
+                 p->internal_ui || env_hook(ENV_TESTDRIVER) ? h_internal : NULL, h_fullscreen, p->internal_ui ? NULL : h_open_window, h_window_op };
     double t0 = now_ms();
     sync_sheets(p, true);
     /* the stylesheets the loader fetched before any script ran: their load (or error) events come after
@@ -3254,8 +3338,7 @@ static void page_start_js(App *a, Page *p) {
     LOAD_TRACE("dcl_ms=%.0f", now_ms() - t_dcl);
     for (int i = 0; i < nlinks; i++) { if (links[i]->flags & NF_CONNECTED) js_dispatch(p->js, links[i], lok[i] ? "load" : "error", "Event", false, false, 0, 0, 0, NULL); node_release(links[i]); }
     free(links); free(lok);
-    js_set_ready_state(p->js, 2);
-    js_dispatch_window(p->js, "load");
+    js_fire_load(p->js);   /* now, or once the page's iframes have loaded */
     fprintf(stderr, "lumen: ran %d scripts in %.0fms\n", p->nscripts, now_ms() - t0);
 #if defined(__ANDROID__) && !defined(NDEBUG)
     __android_log_print(ANDROID_LOG_INFO, "LumenLoad", "scripts=%d run_ms=%.0f", p->nscripts, now_ms() - t0);   /* timing only, no URLs */
@@ -3314,11 +3397,7 @@ static char *ctl_value(Node *n) {
     if (n->tag == A_textarea) return node_text_content(n);
     const char *v = node_attr(n, "value"); return xstrdup(v ? v : "");
 }
-static void ctl_set(App *a, Node *n, char *v) {
-    free(n->value_override); n->value_override = v; doc_mark_state_dirty(n->doc, n, true);
-    if (a->t->cur->js) js_dispatch(a->t->cur->js, n, "input", "InputEvent", true, false, 0, 0, 0, NULL);
-    a->t->relayout = true; a->dirty = true;
-}
+static int u8_u16_len(const char *s, int n) { int k = 0; for (int i = 0; i < n; i++) { unsigned char c = (unsigned char)s[i]; if ((c & 0xC0) != 0x80) k += c >= 0xF0 ? 2 : 1; } return k; }
 /* native editing of <input>/<textarea> at its selection (Document.csel: anchor/focus codepoints of the value);
    a control that never had one keeps its caret at the end */
 static bool word_byte(unsigned char c) { return isalnum(c) || c == '_' || c >= 0x80; }
@@ -3370,20 +3449,31 @@ static char *ctl_selected(Node *f) {
     memmove(v, v + s, (size_t)(e - s)); v[e - s] = 0;
     return v;
 }
-/* replace the codepoints [lo, hi) with s and put the caret after it; an <input> drops line breaks, as in Chrome */
-static void ctl_splice(App *a, Node *f, int lo, int hi, const char *s) {
-    char *v = ctl_value(f); int n = (int)strlen(v), bl = u8_cp_byte(v, n, lo), bh = u8_cp_byte(v, n, hi);
+/* replace the codepoints [lo, hi) with s and put the caret after it; an <input> drops line breaks, as in Chrome.
+   beforeinput (inputType itype) may cancel it; the input event moves the control's OpaqueRanges first */
+static void ctl_splice(App *a, Node *f, int lo, int hi, const char *s, const char *itype) {
+    JsCtx *js = a->t->cur->js;
+    bool ins = !strncmp(itype, "insert", 6);
+    if (js && !js_dispatch_input(js, f, "beforeinput", itype, ins ? s : NULL, -1, -1, -1)) return;
+    if (a->t->cur->js != js || !f->doc || f->doc->focus != f) return;
+    char *v = ctl_value(f); int n = (int)strlen(v);
+    if (lo > u8_byte_cp(v, n)) lo = u8_byte_cp(v, n);
+    if (hi > u8_byte_cp(v, n)) hi = u8_byte_cp(v, n);
+    int bl = u8_cp_byte(v, n, lo), bh = u8_cp_byte(v, n, hi);
     SB b; sb_init(&b); sb_put(&b, v, (size_t)bl);
     size_t k0 = b.n;
     for (const char *p = s; *p; p++) if (f->tag != A_input || (*p != '\n' && *p != '\r')) sb_putc(&b, *p);
     int caret = lo + (b.n > k0 ? u8_byte_cp(b.s + k0, (int)(b.n - k0)) : 0);
+    int lo16 = u8_u16_len(v, bl), hi16 = lo16 + u8_u16_len(v + bl, bh - bl), n16 = u8_u16_len(b.s + k0, (int)(b.n - k0));
     sb_puts(&b, v + bh); free(v);
     ctl_sel_set(a, f, caret, caret);   /* before the input event, so its handlers see the new caret */
-    ctl_set(a, f, sb_take(&b));
+    free(f->value_override); f->value_override = sb_take(&b); doc_mark_state_dirty(f->doc, f, true);
+    if (js) js_dispatch_input(js, f, "input", itype, ins ? s : NULL, lo16, hi16, n16);
+    a->t->relayout = true; a->dirty = true;
 }
-static void ctl_insert(App *a, Node *f, const char *s) {
+static void ctl_insert(App *a, Node *f, const char *s, const char *itype) {
     char *v = ctl_value(f); int an, fo; ctl_sel(f, v, &an, &fo); free(v);
-    ctl_splice(a, f, LMIN(an, fo), LMAX(an, fo), s);
+    ctl_splice(a, f, LMIN(an, fo), LMAX(an, fo), s, itype);
 }
 /* Backspace (dir < 0) / Delete: the selection, else the codepoint or word beside the caret */
 static void ctl_delete(App *a, Node *f, int dir, bool word) {
@@ -3391,7 +3481,7 @@ static void ctl_delete(App *a, Node *f, int dir, bool word) {
     int lo = LMIN(an, fo), hi = LMAX(an, fo);
     if (lo == hi) { int t = ctl_step(v, lo, dir, word); if (dir < 0) lo = t; else hi = t; }
     free(v);
-    if (lo != hi) ctl_splice(a, f, lo, hi, "");
+    if (lo != hi) ctl_splice(a, f, lo, hi, "", dir < 0 ? (word ? "deleteWordBackward" : "deleteContentBackward") : (word ? "deleteWordForward" : "deleteContentForward"));
 }
 /* caret movement keys; with shift the focus end moves and the anchor stays */
 static void ctl_move(App *a, Node *f, SDL_Keycode k, bool shift, bool word) {
@@ -3407,10 +3497,10 @@ static void ctl_move(App *a, Node *f, SDL_Keycode k, bool shift, bool word) {
 static void ctl_select_all(App *a, Node *f) { char *v = ctl_value(f); ctl_sel_set(a, f, 0, u8_byte_cp(v, (int)strlen(v))); free(v); }
 static void ctl_cut(App *a, Node *f) {
     char *t = ctl_selected(f);
-    if (*t) { SDL_SetClipboardText(t); ctl_insert(a, f, ""); }
+    if (*t) { SDL_SetClipboardText(t); ctl_insert(a, f, "", "deleteByCut"); }
     free(t);
 }
-static void ctl_paste(App *a, Node *f) { char *t = SDL_GetClipboardText(); if (t && *t) ctl_insert(a, f, t); SDL_free(t); }
+static void ctl_paste(App *a, Node *f) { char *t = SDL_GetClipboardText(); if (t && *t) ctl_insert(a, f, t, "insertFromPaste"); SDL_free(t); }
 
 /* URL field editing at its selection (a->us: anchor/focus bytes of t->url) */
 static void url_changed(App *a) { a->caret_t = now_ms(); a->dirty = true; a->vonly = false; }
@@ -3989,7 +4079,7 @@ static void kbm_action(App *a, int act) {
         return;
     }
     char *t = SDL_GetClipboardText();
-    if (t && *t) { if (f) ctl_insert(a, f, t); else if (p->js) js_dispatch(p->js, h, "lumenedit", "KeyboardEvent", false, false, 0, 0, 0, t); }
+    if (t && *t) { if (f) ctl_insert(a, f, t, "insertFromPaste"); else if (p->js) js_dispatch(p->js, h, "lumenedit", "KeyboardEvent", false, false, 0, 0, 0, t); }
     SDL_free(t);
     restyle(a); a->dirty = true;
 }
@@ -4004,11 +4094,11 @@ static void tsel_action(App *a, int act) {
         return;
     }
     if (act == TA_COPY || act == TA_CUT) { char *t = f ? ctl_selected(f) : tsel_text(p->L); if (*t) SDL_SetClipboardText(t); free(t); }
-    if (act == TA_CUT && f) ctl_insert(a, f, "");
+    if (act == TA_CUT && f) ctl_insert(a, f, "", "deleteByCut");
     else if (act == TA_CUT && h) js_dispatch(p->js, h, "lumeneditdel", "KeyboardEvent", false, false, 0, 0, 0, "Backspace");
     else if (act == TA_PASTE) {
         char *t = SDL_GetClipboardText();
-        if (t && *t) { if (f) ctl_insert(a, f, t); else js_dispatch(p->js, h, "lumenedit", "KeyboardEvent", false, false, 0, 0, 0, t); }
+        if (t && *t) { if (f) ctl_insert(a, f, t, "insertFromPaste"); else js_dispatch(p->js, h, "lumenedit", "KeyboardEvent", false, false, 0, 0, 0, t); }
         SDL_free(t);
     }
     tsel_clear(a);
@@ -5288,7 +5378,7 @@ int main(int argc, char **argv) {
     dom_init(); net_init(6); font_init(); css_sheet_added_hook = sheet_fonts;
     boot_mark("fonts");
     { const char *rt = getenv("LUMEN_RASTER_THREADS"); raster_set_threads(rt ? atoi(rt) : LMIN(SDL_GetNumLogicalCPUCores(), 8) - 1); }   /* large rasters use every core */
-    icache_mu = SDL_CreateMutex(); EV_LOADED = SDL_RegisterEvents(1); EV_NET = SDL_RegisterEvents(1); EV_MENU = SDL_RegisterEvents(1); EV_DL = SDL_RegisterEvents(1); EV_UI = SDL_RegisterEvents(1);
+    icache_mu = SDL_CreateMutex(); EV_LOADED = SDL_RegisterEvents(1); EV_NET = SDL_RegisterEvents(1); EV_MENU = SDL_RegisterEvents(1); EV_DL = SDL_RegisterEvents(1); EV_UI = SDL_RegisterEvents(1); EV_TD = SDL_RegisterEvents(1);
 #ifdef __ANDROID__
     android_launch_set_wakeup(wake);
 #endif
@@ -5673,7 +5763,7 @@ int main(int argc, char **argv) {
                 if (!a.editing && page_focus(&a)) {
                     Node *f = page_focus(&a);
                     if (!a.t->cur->js || js_dispatch(a.t->cur->js, f, "keydown", "KeyboardEvent", true, true, 0, 0, 0, ev.text.text)) {
-                        ctl_insert(&a, f, ev.text.text);
+                        ctl_insert(&a, f, ev.text.text, "insertText");
                     }
                     if (a.t->cur->js) js_dispatch(a.t->cur->js, f, "keyup", "KeyboardEvent", true, true, 0, 0, 0, ev.text.text);
                     restyle(&a);
@@ -5768,7 +5858,7 @@ int main(int argc, char **argv) {
                         bool ok = !a.t->cur->js || js_dispatch(a.t->cur->js, f, "keydown", "KeyboardEvent", true, true, 0, 0, 0, kn);
                         if (ok && (k == SDLK_BACKSPACE || k == SDLK_DELETE)) ctl_delete(&a, f, k == SDLK_DELETE ? 1 : -1, false);
                         else if (ok && (k == SDLK_LEFT || k == SDLK_RIGHT || k == SDLK_UP || k == SDLK_DOWN || k == SDLK_HOME || k == SDLK_END)) ctl_move(&a, f, k, ev.key.mod & SDL_KMOD_SHIFT, false);
-                        else if (ok && !strcmp(kn, "Enter") && f->tag == A_textarea) ctl_insert(&a, f, "\n");
+                        else if (ok && !strcmp(kn, "Enter") && f->tag == A_textarea) ctl_insert(&a, f, "\n", "insertLineBreak");
                         else if (ok && !strcmp(kn, "Enter") && f->tag == A_input) submit_form(&a, f);
                         else if (ok && !strcmp(kn, "Escape")) focus_node(&a, NULL);
                         if (a.t->cur && a.t->cur->js && page_focus(&a) == f) js_dispatch(a.t->cur->js, f, "keyup", "KeyboardEvent", true, true, 0, 0, 0, kn);
@@ -5804,6 +5894,7 @@ int main(int argc, char **argv) {
             default:
                 if (ev.type == EV_MENU) menu_cmd(&a, ev.user.code);
                 if (ev.type == EV_DL) dl_event(&a, &ev);
+                if (ev.type == EV_TD && a.t->cur && a.t->cur->js) { char s[48]; snprintf(s, sizeof s, "__lumenTdDone(%d)", (int)ev.user.code); js_eval(a.t->cur->js, s, "lumen:testdriver"); }
 #ifdef __ANDROID__
                 if (ev.type == EV_UI) { UiAction *u = ev.user.data1; ui_action(&a, u, &quit); free(u->s1); free(u->s2); free(u); a.dirty = true; a.vonly = false; }
 #endif

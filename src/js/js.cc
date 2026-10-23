@@ -64,12 +64,14 @@ std::string jcstr(v8::Isolate *iso, v8::Local<v8::Value> v) {
 static v8::Local<v8::Object> proto_for(JsCtx *c, Node *n) {
     v8::Isolate *iso = c->iso;
     if (c->protoFor.IsEmpty()) return {};
-    std::string key = std::to_string(n->type) + ":" + (n->type == NODE_ELEMENT && n->tag ? n->tag : "") + ":" + std::to_string(n->ns);
+    /* a shadow root (a fragment with a host) is tagged "#shadow" */
+    const char *tag = n->type == NODE_ELEMENT ? n->tag : n->type == NODE_FRAGMENT && n->host ? "#shadow" : "";
+    std::string key = std::to_string(n->type) + ":" + (tag ? tag : "") + ":" + std::to_string(n->ns);
     auto it = c->protos.find(key);
     if (it != c->protos.end()) return it->second.Get(iso);
     v8::Local<v8::Context> ctx = iso->GetCurrentContext();
     v8::TryCatch tc(iso);
-    v8::Local<v8::Value> argv[3] = { v8::Integer::New(iso, n->type), jstr(iso, n->type == NODE_ELEMENT ? n->tag : ""), v8::Integer::New(iso, n->ns) };
+    v8::Local<v8::Value> argv[3] = { v8::Integer::New(iso, n->type), jstr(iso, tag ? tag : ""), v8::Integer::New(iso, n->ns) };
     v8::Local<v8::Value> r;
     if (!c->protoFor.Get(iso)->Call(ctx, v8::Undefined(iso), 3, argv).ToLocal(&r) || !r->IsObject()) return {};
     c->protos[key].Reset(iso, r.As<v8::Object>());
@@ -89,6 +91,11 @@ v8::Local<v8::Value> jwrap(JsCtx *c, Node *n) {
     o->SetAlignedPointerInInternalField(1, n, kTag);
     v8::Local<v8::Object> proto = proto_for(c, n);
     if (!proto.IsEmpty()) (void)o->SetPrototype(ctx, proto);
+    if (n->type == NODE_ELEMENT && (n->xns || n->xpfx || n->xln)) {   /* the names of an element from XML, a clone or createElementNS */
+        if (n->xns) (void)o->DefineOwnProperty(ctx, jstr(iso, "__nsu"), jstr(iso, n->xns), v8::DontEnum);
+        if (n->xpfx) (void)o->DefineOwnProperty(ctx, jstr(iso, "__pfx"), jstr(iso, n->xpfx), v8::DontEnum);
+        if (n->xln) (void)o->DefineOwnProperty(ctx, jstr(iso, "__ln"), jstr(iso, n->xln), v8::DontEnum);
+    }
     n->js = new v8::Global<v8::Object>(iso, o);
     c->wrapped.push_back(n);
     return hs.Escape(v8::Local<v8::Value>(o));
@@ -696,6 +703,20 @@ static void mod_report(const v8::FunctionCallbackInfo<v8::Value> &a) {
 }
 
 static JsCtx *root_ctx(JsCtx *c) { while (c && c->parent) c = c->parent; return c; }
+/* eval/Function source: strings reach here only while the realm's CSP restricts string compilation (evalGuard),
+   code-like objects (TrustedScript) always. The ttEval hook returns the source to compile, false to block it,
+   or undefined to leave it as is; a hook that throws blocks it (an EvalError). */
+static v8::ModifyCodeGenerationFromStringsResult codegen_check(v8::Local<v8::Context> ctx, v8::Local<v8::Value> source, bool is_code_like) {
+    v8::Isolate *iso = v8::Isolate::GetCurrent();
+    if (!source->IsString() && !(source->IsObject() && source.As<v8::Object>()->IsCodeLike(iso))) return { true, {} };
+    JsCtx *c = ctx_of(ctx);
+    if (!c || c->dead || c->tt_eval.IsEmpty()) return { true, source->IsString() ? source.As<v8::String>() : v8::MaybeLocal<v8::String>() };
+    v8::TryCatch tc(iso);
+    v8::Local<v8::Value> argv[2] = { source, v8::Boolean::New(iso, is_code_like) }, r;
+    if (!c->tt_eval.Get(iso)->Call(ctx, v8::Undefined(iso), 2, argv).ToLocal(&r) || r->IsFalse()) return { false, {} };
+    if (r->IsString()) return { true, r.As<v8::String>() };
+    return { true, {} };
+}
 static void on_reject(v8::PromiseRejectMessage m) {
     v8::Isolate *iso = v8::Isolate::GetCurrent();
     JsCtx *c = jctx(iso), *r = root_ctx(c);
@@ -1013,6 +1034,7 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
     c->iso->AddGCEpilogueCallback(gc_pause_end);
 #endif
     c->iso->SetHostImportModuleDynamicallyCallback(mod_dynamic);
+    c->iso->SetModifyCodeGenerationFromStringsCallback(codegen_check);
     c->iso->SetHostInitializeImportMetaObjectCallback(mod_meta);
     }
     v8::Isolate *iso = c->iso;
@@ -1031,6 +1053,8 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
     js_install_native(c, N);
     js_wasm_install(ctx, N);
     js_clone_install(ctx, N);
+    js_url_install(ctx, N);
+    js_crypto_install(ctx, N); js_encoding_install(ctx, N); js_compress_install(ctx, N);
     v8::TryCatch tc(iso);
     v8::ScriptOrigin origin(jstr(iso, "lumen:prelude"));
     v8::Local<v8::Script> s;
@@ -1060,6 +1084,11 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
         get("fire", c->fire);
         get("report", c->report);
         get("viewportChanged", c->viewportChanged);
+        get("ttScript", c->tt_script);
+        get("ttEval", c->tt_eval);
+        /* the document's CSP: after protoFor, since reading the <meta> elements wraps nodes */
+        v8::Local<v8::Value> ti;
+        if (ao->Get(ctx, jstr(iso, "ttInit")).ToLocal(&ti) && ti->IsFunction()) (void)ti.As<v8::Function>()->Call(ctx, v8::Undefined(iso), 0, nullptr);
     }
     if (tc.HasCaught()) {
         std::string m = jcstr(iso, tc.Exception());
@@ -1164,6 +1193,7 @@ void js_free(JsCtx *c) {
         c->anims.clear();
         c->protos.clear();
         c->protoFor.Reset(); c->fire.Reset(); c->report.Reset(); c->viewportChanged.Reset();
+        c->tt_script.Reset(); c->tt_eval.Reset(); c->code_like.Reset();
         c->api.Reset(); c->node_tmpl.Reset();
         c->mods.clear(); c->mod_url.clear(); c->mod_jobs.clear(); c->code_refresh.clear();
         for (Node *n : c->wrapped) { delete static_cast<v8::Global<v8::Object> *>(n->js); n->js = nullptr; }
@@ -1194,7 +1224,7 @@ static void run_written(JsCtx *c, size_t from) {
         if (!(s->flags & NF_CONNECTED)) continue;
         const char *src = node_attr(s, "src");
         if (!src) { char *t = node_text_content(s); js_run_script(c, s, t ? t : "", t ? strlen(t) : 0, c->doc->url); free(t); continue; }
-        char *u = *src ? url_join(c->doc->url, src) : nullptr;
+        char *u = *src ? url_join(doc_base(c->doc), src) : nullptr;
         NetResponse *r = nullptr;
         if (u) {
             NetRequest *rq = net_request_new("GET", u);
@@ -1207,9 +1237,21 @@ static void run_written(JsCtx *c, size_t from) {
         free(u);
     }
 }
+/* Trusted Types: an inline script runs its script text slot's value (the ttScript hook); false when blocked */
+static bool tt_script_text(JsCtx *c, Node *script, const char *&src, size_t &n, std::string &buf) {
+    if (!c->tt_on || !script || !src || c->tt_script.IsEmpty() || node_attr(script, "src")) return true;
+    JS_ENTER(c);
+    v8::TryCatch tc(iso);
+    v8::Local<v8::Value> argv[2] = { jwrap(c, script), jsrc(iso, src, n) }, r;
+    if (!c->tt_script.Get(iso)->Call(ctx, v8::Undefined(iso), 2, argv).ToLocal(&r) || !r->IsString()) return false;
+    buf = jcstr(iso, r); src = buf.c_str(); n = buf.size();
+    return true;
+}
 void js_run_script(JsCtx *c, Node *script, const char *src, size_t n, const char *name) {
     if (!c) return;
     if (script) script->flags |= NF_SCRIPT_STARTED;
+    std::string tt_buf;
+    if (!tt_script_text(c, script, src, n, tt_buf)) return;
     Node *prev = c->current_script;
     size_t written = c->written.size();
     c->current_script = script;
@@ -1228,6 +1270,8 @@ static void module_script_run(JsCtx *c, Node *script, const char *src, size_t n,
     if (!c) return;
     if (script) script->flags |= NF_SCRIPT_STARTED;
     bool ext = script && node_attr(script, "src"), ok = false;
+    std::string tt_buf;
+    if (!tt_script_text(c, script, src, n, tt_buf)) return;
     if (may_defer && ext && !src && url && !c->mods.count(url)) {
         { JS_ENTER(c); jwrap(c, script); }   /* keeps the element alive until it runs */
         auto j = std::make_unique<ModJob>();
@@ -1417,6 +1461,28 @@ bool js_dispatch(JsCtx *c, Node *target, const char *type, const char *kind, boo
     return js_dispatch_impl(c, target, type, kind, bubbles, cancelable, x, y, button, key, false);
 }
 
+bool js_dispatch_input(JsCtx *c, Node *target, const char *type, const char *input_type, const char *data, int lo16, int hi16, int n16) {
+    if (!c || c->fire.IsEmpty() || !target) return true;
+    if (target->parent && target->parent->type != NODE_DOCUMENT) { node_retain(target); g_pins.push_back(target); }
+    JS_ENTER(c);
+    v8::Local<v8::Object> init = v8::Object::New(iso);
+    auto set = [&](const char *k, v8::Local<v8::Value> v) { (void)init->Set(ctx, jstr(iso, k), v); };
+    bool before = !strcmp(type, "beforeinput");
+    set("bubbles", v8::True(iso)); set("cancelable", v8::Boolean::New(iso, before)); set("composed", v8::True(iso));
+    set("view", ctx->Global());
+    set("inputType", jstr(iso, input_type ? input_type : ""));
+    set("data", data ? v8::Local<v8::Value>(jstr(iso, data)) : v8::Local<v8::Value>(v8::Null(iso)));
+    if (lo16 >= 0) {
+        v8::Local<v8::Array> e = v8::Array::New(iso, 3);
+        (void)e->Set(ctx, 0, v8::Integer::New(iso, lo16)); (void)e->Set(ctx, 1, v8::Integer::New(iso, hi16)); (void)e->Set(ctx, 2, v8::Integer::New(iso, n16));
+        set("__edit", e);
+    }
+    v8::Local<v8::Value> ctor = v8::Undefined(iso);
+    if (!c->api.IsEmpty()) (void)c->api.Get(iso)->Get(ctx, jstr(iso, "InputEvent")).ToLocal(&ctor);
+    v8::Local<v8::Value> argv[4] = { jwrap(c, target), jstr(iso, type), init, ctor }, r;
+    if (!jcall(c, c->fire.Get(iso), v8::Undefined(iso), 4, argv).ToLocal(&r)) return true;
+    return r->BooleanValue(iso);
+}
 bool js_touch_compat(JsCtx *c, Node *target, const char *type, const char *kind, double x, double y) {
     return js_dispatch_impl(c, target, type, kind, true, true, x, y, 0, nullptr, true);
 }
@@ -1508,6 +1574,7 @@ void js_tick(JsCtx *c) {
     tick_one(c);
     frames_scan(c);
     for (JsCtx *k : std::vector<JsCtx *>(c->kids)) if (!k->dead) js_tick(k);
+    frames_load_check(c);
 }
 #if defined(__ANDROID__) && !defined(NDEBUG)
 #include <android/log.h>

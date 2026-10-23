@@ -8,7 +8,14 @@ const formControl = (p) => methods(p, {
     checkValidity() { return true; }, reportValidity() { return true; }, setCustomValidity() {},
 });
 const textProp = (p) => methods(p, { get text() { return N.text(this); }, set text(v) { this.textContent = v; } });
-mk('HTMLHtmlElement', HTMLElement, ['html']); mk('HTMLHeadElement', HTMLElement, ['head']); mk('HTMLBodyElement', HTMLElement, ['body']);
+mk('HTMLHtmlElement', HTMLElement, ['html']); mk('HTMLHeadElement', HTMLElement, ['head']);
+/* <body> and <frameset> event handlers for the window's events are the window's own (on* IDL attributes and content
+   attributes both) */
+const WINDOW_FWD = ['blur', 'error', 'focus', 'load', 'resize', 'scroll', 'afterprint', 'beforeprint', 'beforeunload', 'hashchange', 'languagechange', 'message', 'messageerror',
+    'offline', 'online', 'pagehide', 'pagereveal', 'pageshow', 'pageswap', 'popstate', 'rejectionhandled', 'storage', 'unhandledrejection', 'unload'];
+const fwdHandlers = p => { for (const t of WINDOW_FWD) acc(p, 'on' + t, function () { return G['on' + t] ?? null; }, function (v) { G['on' + t] = v; }); };
+mk('HTMLBodyElement', HTMLElement, ['body'], p => { fwdHandlers(p); reflectStr(p, 'text', 'link', 'vLink', 'aLink', 'bgColor', 'background'); });
+mk('HTMLFrameSetElement', HTMLElement, ['frameset'], p => { fwdHandlers(p); reflectStr(p, 'cols', 'rows'); });
 mk('HTMLDivElement', HTMLElement, ['div']); mk('HTMLSpanElement', HTMLElement, ['span']); mk('HTMLParagraphElement', HTMLElement, ['p']);
 mk('HTMLHeadingElement', HTMLElement, ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']); mk('HTMLBRElement', HTMLElement, ['br']); mk('HTMLHRElement', HTMLElement, ['hr']);
 mk('HTMLPreElement', HTMLElement, ['pre']); mk('HTMLQuoteElement', HTMLElement, ['blockquote', 'q']); mk('HTMLUListElement', HTMLElement, ['ul']);
@@ -99,7 +106,7 @@ mk('HTMLTableRowElement', HTMLElement, ['tr'], p => methods(p, {
     deleteCell(i) { deleteFrom(cellsOf(this), i, "deleteCell' on 'HTMLTableRowElement"); },
 }));
 mk('HTMLTableCellElement', HTMLElement, ['td', 'th'], p => reflectInt(p, 1, 'colSpan', 'rowSpan'));
-mk('HTMLAnchorElement', HTMLElement, ['a'], p => { reflectStr(p, 'target', 'download', 'rel', 'hreflang', 'type', 'referrerPolicy'); urlParts(p, 'href'); textProp(p); methods(p, { get relList() { return new DOMTokenList(this, 'rel'); } }); });
+mk('HTMLAnchorElement', HTMLElement, ['a'], p => { reflectStr(p, 'target', 'download', 'rel', 'hreflang', 'type', 'referrerPolicy'); urlParts(p, 'href'); textProp(p); methods(p, { get relList() { return new DOMTokenList(TOK_KEY, this, 'rel'); } }); });
 mk('HTMLAreaElement', HTMLElement, ['area'], p => { urlParts(p, 'href'); reflectStr(p, 'alt', 'target'); });
 mk('HTMLImageElement', HTMLElement, ['img'], p => {
     reflectUrl(p, 'src'); reflectStr(p, 'alt', 'srcset', 'sizes', 'crossOrigin', 'useMap', 'referrerPolicy', 'decoding', 'loading', 'fetchPriority');
@@ -116,13 +123,13 @@ mk('HTMLScriptElement', HTMLElement, ['script'], p => {
 });
 H.HTMLScriptElement.supports = (t) => t === 'classic';
 mk('HTMLStyleElement', HTMLElement, ['style'], p => { reflectStr(p, 'media', 'type'); reflectBool(p, 'disabled'); methods(p, { get sheet() { return sheetFor(this); } }); });
-mk('HTMLLinkElement', HTMLElement, ['link'], p => { reflectUrl(p, 'href'); reflectStr(p, 'rel', 'media', 'hreflang', 'type', 'as', 'crossOrigin', 'integrity', 'referrerPolicy', 'sizes', 'fetchPriority'); reflectBool(p, 'disabled'); methods(p, { get relList() { return new DOMTokenList(this, 'rel'); }, get sheet() { return /stylesheet/i.test(N.attr(this, 'rel') || '') ? sheetFor(this) : null; } }); });
+mk('HTMLLinkElement', HTMLElement, ['link'], p => { reflectUrl(p, 'href'); reflectStr(p, 'rel', 'media', 'hreflang', 'type', 'as', 'crossOrigin', 'integrity', 'referrerPolicy', 'sizes', 'fetchPriority'); reflectBool(p, 'disabled'); methods(p, { get relList() { return new DOMTokenList(TOK_KEY, this, 'rel'); }, get sheet() { return /stylesheet/i.test(N.attr(this, 'rel') || '') ? sheetFor(this) : null; } }); });
 mk('HTMLMetaElement', HTMLElement, ['meta'], p => reflectStr(p, 'name', 'content', 'httpEquiv', 'charset', 'media'));
 mk('HTMLTitleElement', HTMLElement, ['title'], textProp);
 mk('HTMLBaseElement', HTMLElement, ['base'], p => { reflectUrl(p, 'href'); reflectStr(p, 'target'); });
 mk('HTMLTemplateElement', HTMLElement, ['template'], p => methods(p, { get content() { return N.templateContent(this); } }));
 mk('HTMLSlotElement', HTMLElement, ['slot'], p => { reflectStr(p, 'name'); methods(p, { assignedNodes() { return []; }, assignedElements() { return []; }, assign() {} }); });
-mk('HTMLIFrameElement', HTMLElement, ['iframe'], p => { reflectUrl(p, 'src'); reflectStr(p, 'srcdoc', 'name', 'allow', 'width', 'height', 'referrerPolicy', 'loading', 'frameBorder', 'scrolling', 'marginWidth', 'marginHeight', 'align'); reflectBool(p, 'allowFullscreen'); methods(p, { get sandbox() { if (!this.__sb) def(this, '__sb', new DOMTokenList(this, 'sandbox')); return this.__sb; }, set sandbox(v) { this.setAttribute('sandbox', v); }, get contentWindow() { return asWin(N.frameWin(this)); }, get contentDocument() { return N.frameDoc(this); } }); });
+mk('HTMLIFrameElement', HTMLElement, ['iframe'], p => { reflectUrl(p, 'src'); reflectStr(p, 'srcdoc', 'name', 'allow', 'width', 'height', 'referrerPolicy', 'loading', 'frameBorder', 'scrolling', 'marginWidth', 'marginHeight', 'align'); reflectBool(p, 'allowFullscreen'); methods(p, { get sandbox() { if (!this.__sb) def(this, '__sb', new DOMTokenList(TOK_KEY, this, 'sandbox')); return this.__sb; }, set sandbox(v) { this.setAttribute('sandbox', v); }, get contentWindow() { return asWin(N.frameWin(this)); }, get contentDocument() { return N.frameDoc(this); } }); });
 mk('HTMLCanvasElement', HTMLElement, ['canvas'], p => {
     /* resizing resizes the WebGL drawing buffer; WebGPU reads the size each frame */
     for (const [n, d] of [['width', 300], ['height', 150]])
@@ -143,13 +150,21 @@ mk('HTMLCanvasElement', HTMLElement, ['canvas'], p => {
     });
 });
 mk('HTMLFormElement', HTMLElement, ['form'], p => {
-    reflectUrl(p, 'action'); reflectStr(p, 'name', 'target', 'acceptCharset', 'autocomplete'); reflectBool(p, 'noValidate');
+    reflectUrl(p, 'action'); reflectStr(p, 'name', 'target', 'autocomplete'); acc(p, 'acceptCharset', function () { return N.attr(this, 'accept-charset') ?? ''; }, function (v) { this.setAttribute('accept-charset', v); }); reflectBool(p, 'noValidate');
     methods(p, {
         get method() { return (N.attr(this, 'method') || 'get').toLowerCase() === 'post' ? 'post' : 'get'; }, set method(v) { this.setAttribute('method', v); },
         get enctype() { return N.attr(this, 'enctype') || 'application/x-www-form-urlencoded'; },
         get elements() { return nodeList(N.query(this, 'input,select,textarea,button,fieldset,output', true)); }, get length() { return this.elements.length; },
-        submit() { submitForm(this, null); },
-        requestSubmit(s) { if (dispatch(this, new SubmitEvent('submit', { bubbles: true, cancelable: true, submitter: s || null }), true)) submitForm(this, s); },
+        /* a form that is not connected cannot navigate: it neither fires submit nor submits */
+        submit() { if (this.isConnected) submitForm(this, null); },
+        requestSubmit(s = null) {
+            if (s !== null) {
+                const sub = N.isNode(s) && N.type(s) === 1 && N.ns(s) === 0 && ((N.name(s) === 'button' && s.type === 'submit') || (N.name(s) === 'input' && (s.type === 'submit' || s.type === 'image')));
+                if (!sub) throw new TypeError("Failed to execute 'requestSubmit' on 'HTMLFormElement': The specified element is not a submit button.");
+                if (s.form !== this) throw new DOMException("Failed to execute 'requestSubmit' on 'HTMLFormElement': The specified element is not owned by this form element.", 'NotFoundError');
+            }
+            if (this.isConnected && dispatch(this, new SubmitEvent('submit', { bubbles: true, cancelable: true, submitter: s }), true)) submitForm(this, s);
+        },
         reset() { if (dispatch(this, new Event('reset', { bubbles: true, cancelable: true }))) for (const e of this.elements) N.setValue(e, null); },
         checkValidity() { return true; }, reportValidity() { return true; },
     });
@@ -159,28 +174,57 @@ const cpU16 = (v, cp) => { let i = 0; for (; cp > 0 && i < v.length; cp--) i += 
 const u16Cp = (v, o) => { let n = 0; for (let i = 0; i < o && i < v.length; n++) i += v.codePointAt(i) > 0xffff ? 2 : 1; return n; };
 const SEL_TYPES = /^(text|search|url|tel|password)$/;
 const selOk = el => el.localName === 'textarea' || SEL_TYPES.test(el.type);
-const selGet = el => {
-    const v = el.value, r = N.ctlSel(el);
-    if (!r) return [v.length, v.length, 'none'];
-    const a = Math.min(cpU16(v, r[0]), v.length), f = Math.min(cpU16(v, r[1]), v.length);
-    return [Math.min(a, f), Math.max(a, f), f < a ? 'backward' : 'forward'];
+/* each control keeps its own selection; the one holding the native caret reports that (a user's change) */
+const selStore = new WeakMap(), selPending = new WeakSet();
+const selFire = el => {
+    if (selPending.has(el)) return;
+    selPending.add(el);
+    setTimeout(() => { selPending.delete(el); dispatch(el, new Event('select', { bubbles: true }), true); });
 };
-const selSet = (el, s, e, dir) => {
+const selGet = el => {
+    const v = el.value, n = v.length, r = N.ctlSel(el), st = selStore.get(el);
+    if (r) {
+        const a = Math.min(cpU16(v, r[0]), n), f = Math.min(cpU16(v, r[1]), n), s = Math.min(a, f), e = Math.max(a, f);
+        if (st && st[0] === s && st[1] === e) return st.slice();
+        return [s, e, f < a ? 'backward' : 'forward'];
+    }
+    if (st) return [Math.min(st[0], n), Math.min(st[1], n), st[2]];
+    return [n, n, 'none'];
+};
+const selSet = (el, s, e, dir, quiet) => {
     const v = el.value, n = v.length;
-    s = Math.min(Math.max(0, Math.trunc(+s) || 0), n); e = Math.min(Math.max(0, Math.trunc(+e) || 0), n); if (e < s) s = e;
-    const back = dir === 'backward';
-    N.setCtlSel(el, u16Cp(v, back ? e : s), u16Cp(v, back ? s : e));
+    s = Math.min(Math.max(0, toU32(s)), n); e = Math.min(Math.max(0, toU32(e)), n); if (e < s) s = e;
+    dir = dir === 'backward' || dir === 'forward' ? dir : 'none';
+    const old = selGet(el);
+    selStore.set(el, [s, e, dir]);
+    if (N.ctlSel(el) || (el.isConnected && document.activeElement === el)) { const back = dir === 'backward'; N.setCtlSel(el, u16Cp(v, back ? e : s), u16Cp(v, back ? s : e)); }
+    if (!quiet && (old[0] !== s || old[1] !== e || old[2] !== dir)) selFire(el);
+};
+let oprSplicing = false;
+/* a script's value change: a full replacement moves the control's OpaqueRanges to 0 unless nothing changed */
+const valueSet = (el, v) => {
+    const old = oprOf.has(el) && !oprSplicing ? el.value : null;
+    N.setValue(el, v);
+    if (old !== null && el.value !== old) oprReplace(el, 0, old.length, el.value.length);
 };
 const selNo = () => { throw new DOMException("The input element's type does not support selection.", 'InvalidStateError'); };
 const textSelection = {
     get selectionStart() { return selOk(this) ? selGet(this)[0] : null; },
-    set selectionStart(v) { if (!selOk(this)) selNo(); const r = selGet(this); selSet(this, v, Math.max(+v || 0, r[1]), r[2]); },
+    set selectionStart(v) { if (!selOk(this)) selNo(); const r = selGet(this); v = toU32(v); selSet(this, v, Math.max(v, r[1]), r[2]); },
     get selectionEnd() { return selOk(this) ? selGet(this)[1] : null; },
-    set selectionEnd(v) { if (!selOk(this)) selNo(); const r = selGet(this); selSet(this, Math.min(r[0], +v || 0), v, r[2]); },
+    set selectionEnd(v) { if (!selOk(this)) selNo(); const r = selGet(this); v = toU32(v); selSet(this, Math.min(r[0], v), v, r[2]); },
     get selectionDirection() { return selOk(this) ? selGet(this)[2] : null; },
     set selectionDirection(d) { if (!selOk(this)) selNo(); const r = selGet(this); selSet(this, r[0], r[1], d); },
     setSelectionRange(s, e, dir) { if (!selOk(this)) selNo(); selSet(this, s, e, dir); },
-    select() { if (!selOk(this)) return; selSet(this, 0, this.value.length); setTimeout(() => this.dispatchEvent(new Event('select', { bubbles: true }))); },
+    createValueRange(start, end) {
+        if (arguments.length < 2) throw new TypeError(`Failed to execute 'createValueRange' on '${this.localName === 'input' ? 'HTMLInputElement' : 'HTMLTextAreaElement'}': 2 arguments required, but only ${arguments.length} present.`);
+        if (!selOk(this)) throw new DOMException("The element's type does not support value ranges.", 'NotSupportedError');
+        start = toU32(start); end = toU32(end);
+        const n = this.value.length;
+        if (start > n || end > n) throw new DOMException(`The offset ${Math.max(start, end)} is larger than the value's length (${n}).`, 'IndexSizeError');
+        return oprNew(this, start, Math.max(start, end));
+    },
+    select() { if (!selOk(this)) return; selSet(this, 0, this.value.length, 'none', true); selFire(this); },
     setRangeText(text, start, end, mode = 'preserve') {
         if (!selOk(this)) selNo();
         text = String(text);
@@ -189,7 +233,9 @@ const textSelection = {
         const v = this.value, n = v.length;
         start = Math.min(Math.max(0, Math.trunc(+start) || 0), n); end = Math.min(Math.max(0, Math.trunc(+end) || 0), n);
         if (start > end) throw new DOMException('The provided start value is larger than the end.', 'IndexSizeError');
-        this.value = v.slice(0, start) + text + v.slice(end);
+        oprSplicing = true;
+        try { this.value = v.slice(0, start) + text + v.slice(end); } finally { oprSplicing = false; }
+        oprReplace(this, start, end, this.value.length - (n - (end - start)));
         const nl = start + text.length;
         if (mode === 'select') { ss = start; se = nl; }
         else if (mode === 'start') ss = se = start;
@@ -209,7 +255,7 @@ mk('HTMLInputElement', HTMLElement, ['input'], p => {
     methods(p, {
         get type() { const t = (N.attr(this, 'type') || 'text').toLowerCase(); return INPUT_TYPES.test(t) ? t : 'text'; }, set type(v) { this.setAttribute('type', v); },
         get value() { if (this.type === 'file') { const f = this.files; return f.length ? 'C:\\fakepath\\' + f[0].name : ''; } const v = N.value(this); return v != null ? v : (/^(checkbox|radio)$/.test(this.type) ? (N.attr(this, 'value') ?? 'on') : N.attr(this, 'value') ?? ''); },
-        set value(v) { if (this.type === 'file') { if (v === '' || v == null) def(this, '_files', new FileList()); return; } N.setValue(this, v == null ? '' : String(v)); },
+        set value(v) { if (this.type === 'file') { if (v === '' || v == null) def(this, '_files', new FileList()); return; } valueSet(this, v == null ? '' : String(v)); },
         get defaultValue() { return N.attr(this, 'value') ?? ''; }, set defaultValue(v) { this.setAttribute('value', v); },
         get checked() { return N.checked(this); }, set checked(v) { N.setChecked(this, !!v); },
         get defaultChecked() { return this.hasAttribute('checked'); }, set defaultChecked(v) { this.toggleAttribute('checked', !!v); },
@@ -225,7 +271,7 @@ mk('HTMLTextAreaElement', HTMLElement, ['textarea'], p => {
     reflectStr(p, 'name', 'placeholder', 'autocomplete', 'wrap'); reflectBool(p, 'disabled', 'readOnly', 'required'); reflectInt(p, 20, 'cols'); reflectInt(p, 2, 'rows'); formControl(p);
     methods(p, {
         get type() { return 'textarea'; },
-        get value() { const v = N.value(this); return v != null ? v : N.text(this); }, set value(v) { N.setValue(this, v == null ? '' : String(v)); },
+        get value() { const v = N.value(this); return v != null ? v : N.text(this); }, set value(v) { valueSet(this, v == null ? '' : String(v)); },
         get defaultValue() { return N.text(this); }, set defaultValue(v) { this.textContent = v; },
     });
     methods(p, textSelection);
@@ -337,4 +383,50 @@ mk('HTMLDialogElement', HTMLElement, ['dialog'], p => {
         close(rv) { dialogClose(this, rv); }, requestClose(rv) { dialogRequestClose(this, rv); },
     });
 });
+mk('HTMLTableCaptionElement', HTMLElement, ['caption'], p => reflectStr(p, 'align'));
+mk('HTMLTableColElement', HTMLElement, ['col', 'colgroup'], p => {
+    reflectStr(p, 'align', 'ch', 'chOff', 'vAlign', 'width');
+    acc(p, 'span', function () { const v = parseInt(N.attr(this, 'span'), 10); return v >= 1 ? Math.min(v, 1000) : 1; }, function (v) { this.setAttribute('span', String(v >>> 0)); });
+});
+mk('HTMLDataElement', HTMLElement, ['data'], p => reflectStr(p, 'value'));
+mk('HTMLDataListElement', HTMLElement, ['datalist'], p => methods(p, { get options() { return htmlColl(N.query(this, 'option', true)); } }));
+mk('HTMLModElement', HTMLElement, ['ins', 'del'], p => { reflectUrl(p, 'cite'); reflectStr(p, 'dateTime'); });
+mk('HTMLDirectoryElement', HTMLElement, ['dir'], p => reflectBool(p, 'compact'));
+mk('HTMLFontElement', HTMLElement, ['font'], p => reflectStr(p, 'color', 'face', 'size'));
+mk('HTMLFrameElement', HTMLElement, ['frame'], p => { reflectStr(p, 'name', 'scrolling', 'frameBorder', 'marginHeight', 'marginWidth'); reflectUrl(p, 'src', 'longDesc'); reflectBool(p, 'noResize'); });
+mk('HTMLOptGroupElement', HTMLElement, ['optgroup'], p => { reflectBool(p, 'disabled'); reflectStr(p, 'label'); });
+mk('HTMLLegendElement', HTMLElement, ['legend'], p => {
+    reflectStr(p, 'align');
+    methods(p, { get form() { const f = N.parent(this); return f && N.name(f) === 'fieldset' ? f.form : null; } });
+});
+mk('HTMLOutputElement', HTMLElement, ['output'], p => {
+    reflectStr(p, 'name');
+    methods(p, {
+        get type() { return 'output'; }, get form() { return this.closest('form'); },
+        get value() { return this.textContent; }, set value(v) { this.textContent = v; },
+        get defaultValue() { return this.__dv ?? this.textContent; }, set defaultValue(v) { def(this, '__dv', String(v)); },
+        get willValidate() { return false; }, checkValidity() { return true; }, reportValidity() { return true; }, setCustomValidity() {},
+    });
+});
+const numAttr = (el, a, d) => { const v = parseFloat(N.attr(el, a)); return Number.isFinite(v) ? v : d; };
+const setNum = (el, a, v) => { v = +v; if (!Number.isFinite(v)) throw new TypeError(`The provided double value is non-finite.`); el.setAttribute(a, String(v)); };
+mk('HTMLProgressElement', HTMLElement, ['progress'], p => methods(p, {
+    get max() { const m = numAttr(this, 'max', 1); return m > 0 ? m : 1; }, set max(v) { if (+v > 0) setNum(this, 'max', v); },
+    get value() { const v = numAttr(this, 'value', 0); return Math.min(Math.max(v, 0), this.max); }, set value(v) { setNum(this, 'value', v); },
+    get position() { return N.attr(this, 'value') == null ? -1 : this.value / this.max; },
+    get labels() { return nodeList([]); },
+}));
+mk('HTMLMeterElement', HTMLElement, ['meter'], p => methods(p, {
+    get min() { return numAttr(this, 'min', 0); }, set min(v) { setNum(this, 'min', v); },
+    get max() { return Math.max(numAttr(this, 'max', 1), this.min); }, set max(v) { setNum(this, 'max', v); },
+    get value() { return Math.min(Math.max(numAttr(this, 'value', 0), this.min), this.max); }, set value(v) { setNum(this, 'value', v); },
+    get low() { return Math.min(Math.max(numAttr(this, 'low', this.min), this.min), this.max); }, set low(v) { setNum(this, 'low', v); },
+    get high() { return Math.max(Math.min(Math.max(numAttr(this, 'high', this.max), this.min), this.max), this.low); }, set high(v) { setNum(this, 'high', v); },
+    get optimum() { return Math.min(Math.max(numAttr(this, 'optimum', (this.min + this.max) / 2), this.min), this.max); }, set optimum(v) { setNum(this, 'optimum', v); },
+    get labels() { return nodeList([]); },
+}));
+mk('HTMLMapElement', HTMLElement, ['map'], p => { reflectStr(p, 'name'); methods(p, { get areas() { return htmlColl(N.query(this, 'area', true)); } }); });
+mk('HTMLParamElement', HTMLElement, ['param'], p => reflectStr(p, 'name', 'value', 'type', 'valueType'));
+mk('HTMLMenuElement', HTMLElement, ['menu'], p => reflectBool(p, 'compact'));
+mk('HTMLMarqueeElement', HTMLElement, ['marquee'], p => { reflectStr(p, 'behavior', 'bgColor', 'direction', 'height', 'width'); reflectBool(p, 'trueSpeed'); methods(p, { start() {}, stop() {} }); });
 mk('HTMLUnknownElement', HTMLElement, []);

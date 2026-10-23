@@ -55,8 +55,7 @@ static int run_scripts(JsCtx *js, Document *d) {
     }
     js_set_ready_state(js, 1);
     js_dispatch(js, &d->node, "DOMContentLoaded", "Event", true, false, 0, 0, 0, NULL);
-    js_set_ready_state(js, 2);
-    js_dispatch_window(js, "load");
+    js_fire_load(js);   /* now, or once the page's iframes have loaded */
     return nscripts;
 }
 /* window.open: one more window (window id 2) in its own context, without styles, loaded from the event loop

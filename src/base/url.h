@@ -14,6 +14,10 @@ typedef struct {
 } URL;
 bool url_parse(const char *s, URL *u);
 bool url_resolve(const URL *base, const char *rel, URL *out);
+bool url_parse_n(const char *s, size_t n, const URL *base, URL *out); /* base may be NULL; s may hold NULs */
+bool url_parse_enc(const char *s, size_t n, const URL *base, URL *out, int enc); /* the query in encoding enc (base/encoding.h) */
+bool url_set(URL *u, const char *key, const char *v, size_t n);      /* the URL setters: protocol, username, ..., hash */
+char *url_origin_web(const URL *u);                                  /* serialized origin per the URL standard */
 char *url_to_string(const URL *u);           /* full href */
 char *url_origin(const URL *u);              /* scheme://host[:port] */
 char *url_path_query(const URL *u);          /* path?query for request line */

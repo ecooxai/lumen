@@ -5,12 +5,14 @@ const vm = require('node:vm');
 const { test } = require('node:test');
 
 const root = path.resolve(__dirname, '..');
-const events = fs.readFileSync(path.join(root, 'src/js/prelude/01-events.js'), 'utf8');
+// the build splices src/js/shared/NAME.js in at each /*@shared NAME.js*/ marker (tools/generate_embedded.py)
+const events = fs.readFileSync(path.join(root, 'src/js/prelude/01-events.js'), 'utf8')
+    .replace(/\/\*@shared ((?!abort\.js)[\w.-]+)\*\//g, (_, name) => fs.readFileSync(path.join(root, 'src/js/shared', name), 'utf8'));
 const windowSource = fs.readFileSync(path.join(root, 'src/js/prelude/08-window.js'), 'utf8');
-const eventSource = events.slice(events.indexOf("'use strict';"), events.indexOf('class AbortSignal'));
+const eventSource = events.slice(events.indexOf("'use strict';"), events.indexOf('/*@shared abort.js*/'));
 const mediaSource = windowSource.slice(windowSource.indexOf('const mqls ='), windowSource.indexOf('function getComputedStyle'));
 const visualStart = windowSource.includes('class VisualViewport') ? 'class VisualViewport' : 'const visual =';
-const visualSource = windowSource.slice(windowSource.indexOf(visualStart), windowSource.indexOf('// Bare global calls'));
+const visualSource = windowSource.slice(windowSource.indexOf(visualStart), windowSource.indexOf('if (navigator.maxTouchPoints)'));
 
 function fixture() {
     let viewport = [412, 800, 0, 0, 2];
@@ -24,6 +26,9 @@ function fixture() {
         type: () => 9,
         log: (...args) => errors.push(args),
         media: query => query.includes('resolution') ? viewport[4] >= 3 : viewport[0] >= 600,
+        setRealm: () => {},
+        realmOf: () => null,
+        fullyActive: () => true,
     };
     const result = vm.runInNewContext(`(function(N) {
         const G = {};

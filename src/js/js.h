@@ -68,12 +68,17 @@ char *js_module_take(const char *url, const char *referrer, size_t *len);
    returns false when default was prevented */
 bool js_dispatch(JsCtx *c, Node *target, const char *type, const char *kind, bool bubbles, bool cancelable,
                  double x, double y, int button, const char *key);
+/* a trusted beforeinput (cancelable; false when cancelled) or input event of a text edit; for input, lo16..hi16 is
+   the replaced UTF-16 span of the old value and n16 the inserted length (lo16 < 0: unknown) */
+bool js_dispatch_input(JsCtx *c, Node *target, const char *type, const char *input_type, const char *data, int lo16, int hi16, int n16);
 bool js_dispatch_window(JsCtx *c, const char *type);
 unsigned js_touch(JsCtx *c, Node *target, const char *phase, uint64_t device, uint64_t finger,
                   double x, double y, double pressure);
 bool js_touch_compat(JsCtx *c, Node *target, const char *type, const char *kind, double x, double y);
 void js_release_pins(void);   /* end of a host event batch: unpin js_dispatch targets */
 void js_set_ready_state(JsCtx *c, int state);
+/* the window load event (readyState complete), or later once the document's iframes have loaded */
+void js_fire_load(JsCtx *c);
 /* ms until the next timer / animation frame is due; <0 if none */
 double js_next_deadline(JsCtx *c);
 /* run due timers, animation frames and microtasks */

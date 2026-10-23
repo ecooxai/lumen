@@ -127,15 +127,23 @@ const storageProxy = () => new Proxy(new Storage(), {
     getOwnPropertyDescriptor(t, k) { return t._m.has(k) ? { value: t._m.get(k), enumerable: true, configurable: true, writable: true } : undefined; },
 });
 const localStorage = storageProxy(), sessionStorage = storageProxy();
+// Location and window.open report an unparsable URL as a SyntaxError DOMException
+const navURL = (u, what) => { const n = URL.parse(String(u), document.baseURI); if (!n) throw new DOMException(`Failed to ${what}: '${u}' is not a valid URL.`, 'SyntaxError'); return n; };
 class Location {
     get href() { return N.url(); } set href(v) { this.assign(v); }
-    assign(u) { const n = new URL(String(u), document.baseURI); const cur = new URL(N.url()); if (n.href.split('#')[0] === cur.href.split('#')[0] && n.hash) fragmentNav(n.href, cur.href); else N.navigate(n.href); }
-    replace(u) { N.navigate(new URL(String(u), document.baseURI).href); }
+    assign(u) { const n = navURL(u, "execute 'assign' on 'Location'"); if (n.protocol === 'javascript:') { runJsURL(n.href); return; } const cur = new URL(N.url()); if (n.href.split('#')[0] === cur.href.split('#')[0] && n.href.includes('#')) fragmentNav(n.href, cur.href); else N.navigate(n.href); }
+    replace(u) { const n = navURL(u, "execute 'replace' on 'Location'"); if (n.protocol === 'javascript:') runJsURL(n.href); else N.navigate(n.href); }
     reload() { N.navigate(N.url()); }
     toString() { return N.url(); }
     get ancestorOrigins() { return []; }
 }
-URL_KEYS.forEach((k, i) => { if (k !== 'href') acc(Location.prototype, k, function () { return N.urlParse(N.url(), null)[i]; }, k === 'origin' ? undefined : function (v) { const u = new URL(N.url()); u[k] = v; this.assign(u.href); }); });
+URL_KEYS.forEach((k, i) => { if (k !== 'href') acc(Location.prototype, k, function () { return N.urlParse(N.url(), null)[i]; }, k === 'origin' ? undefined : function (v) {
+    const u = new URL(N.url());
+    if (k === 'protocol' && !URL.canParse(String(v).replace(/:.*/s, '') + ':')) throw new DOMException(`Failed to set the 'protocol' property on 'Location': '${v}' is an invalid protocol.`, 'SyntaxError');
+    /* hash: a present but empty fragment stays (URL's own setter drops it), and the same fragment does nothing */
+    if (k === 'hash') { const n = new URL('#' + String(v).replace(/^#/, ''), u); if (n.hash === u.hash && n.href.includes('#') === u.href.includes('#')) return; this.assign(n.href); return; }
+    u[k] = v; this.assign(u.href);
+}); });
 const location = new Location();
 let histState = null, histIdx = 0;
 const histStates = [null];
@@ -161,6 +169,14 @@ function fragmentNav(href, old) {
 Object.defineProperty(globalThis, '__lumenFragment', { value: u => location.assign(u) });
 /* Lumen's own pages (lumen://newtab) read and change the browser's state through this */
 if (N.internal('ping') === 'pong') Object.defineProperty(G, 'lumenInternal', { value: cmd => N.internal(String(cmd)) ?? null });
+// WPT runs (LUMEN_TESTDRIVER): testdriver-vendor.js sends real input through __lumenTd(ops), resolved once handled
+/* the input is done in the top document, which resolves it: frames send theirs through it */
+const topTd = () => { try { const t = window.top; return t !== window && t.__lumenTd; } catch (e) { return null; } };
+if (N.internal('td?ping') === 'pong' || topTd()) {
+    const waiting = new Map();
+    Object.defineProperty(G, '__lumenTdDone', { value: id => { const r = waiting.get(id); waiting.delete(id); if (r) r(); } });
+    Object.defineProperty(G, '__lumenTd', { value: ops => { const t = topTd(); if (t) return t(ops); return new Promise(res => { const id = +N.internal('td?' + ops); if (id) waiting.set(id, res); else res(); }); } });
+}
 const history = {
     get length() { return N.histLen(); }, get state() { return histState; }, scrollRestoration: 'auto',
     pushState(s, t, u) { if (this !== history && this && typeof this.pushState === 'function' && this.pushState !== history.pushState) return this.pushState(s, t, u); histState = structuredClone(s); histStates.length = ++histIdx; histStates[histIdx] = histState; N.setUrl(u != null ? new URL(String(u), N.url()).href : N.url(), true); },
@@ -290,13 +306,25 @@ function openCam(v) {
     if (id < 0) return Promise.reject(new DOMException('Requested device not found', 'NotFoundError'));
     return mcWait(() => N.camState(id), () => N.camClose(id), camPermChanged, () => camTrack(id));
 }
+class UserActivation {
+    constructor(key) { if (key !== RTC_INTERNAL) throw new TypeError('Illegal constructor'); }
+    get hasBeenActive() { return stickyActivation; }
+    get isActive() { return transientActivation(); }
+}
 const navigator = {
+    userActivation: new UserActivation(RTC_INTERNAL),
     userAgent: N.userAgent(), appVersion: N.userAgent().replace(/^Mozilla\//, ''), appName: 'Netscape', appCodeName: 'Mozilla', product: 'Gecko', productSub: __uaChrome ? '20030107' : '20100101', vendor: __uaChrome ? 'Google Inc.' : '', vendorSub: '',
     platform: N.platform(), language: 'en-US', languages: ['en-US', 'en'], onLine: true, cookieEnabled: true, doNotTrack: null, webdriver: false, pdfViewerEnabled: false,
     hardwareConcurrency: N.cpus(), deviceMemory: 8, maxTouchPoints: N.touchPoints ? N.touchPoints() : 0, plugins: [], mimeTypes: [],
     userAgentData,
     connection: { effectiveType: '4g', downlink: 10, rtt: 50, saveData: false, addEventListener() {}, removeEventListener() {} },
-    javaEnabled() { return false; }, sendBeacon() { return true; }, vibrate() { return false; }, registerProtocolHandler() {},
+    javaEnabled() { return false; }, sendBeacon(url, data = null) {
+        const u = URL.parse(String(url), document.baseURI);
+        if (!u) throw new TypeError(`Failed to execute 'sendBeacon' on 'Navigator': '${url}' is not a valid URL.`);
+        if (u.protocol !== 'http:' && u.protocol !== 'https:') throw new TypeError("Failed to execute 'sendBeacon' on 'Navigator': Beacons are only supported over HTTP(S).");
+        fetch(u.href, { method: 'POST', body: data, keepalive: true, credentials: 'include', mode: 'no-cors' }).catch(() => {});
+        return true;
+    }, vibrate() { return false; }, registerProtocolHandler() {},
     clipboard: Object.assign(new EventTarget(), {
         writeText(t) { N.clipSet(String(t)); return Promise.resolve(); },
         readText() { return Promise.resolve(N.clipGet()); },
@@ -340,12 +368,7 @@ const navigator = {
             if (id < 0) return Promise.reject(new DOMException('Could not start video source', 'NotReadableError'));
             return mcWait(() => N.screenState(id), () => N.screenClose(id), audio ? micPermChanged : () => {}, () => new MediaStream(screenTracks(id, fps)));
         }, getSupportedConstraints() { return {}; } }),
-    serviceWorker: Object.assign(new EventTarget(), {
-        controller: null, ready: new Promise(() => {}),
-        register() { return Promise.reject(new DOMException('Service workers are not supported', 'SecurityError')); },
-        getRegistration() { return Promise.resolve(undefined); }, getRegistrations() { return Promise.resolve([]); },
-        startMessages() {},
-    }),
+    serviceWorker: swContainer,
     storage: { estimate() { return Promise.resolve({ quota: 1e9, usage: 0 }); }, persist() { return Promise.resolve(false); }, persisted() { return Promise.resolve(false); } },
     locks,
     getGamepads() { return []; }, getBattery() { return Promise.resolve(battery); },
@@ -390,142 +413,18 @@ const performance = Object.assign(new EventTarget(), {
     get memory() { const h = N.heap(); return { usedJSHeapSize: h[0], totalJSHeapSize: h[1], jsHeapSizeLimit: h[2] }; },
     toJSON() { return { timeOrigin: T0 }; },
 });
-const ckeys = new WeakMap();
-class CryptoKey { constructor() { throw new TypeError('Illegal constructor'); } }
-function mkKey(type, extractable, algorithm, usages, data) {
-    const k = Object.create(CryptoKey.prototype);
-    Object.defineProperties(k, { type: { value: type, enumerable: true }, extractable: { value: !!extractable, enumerable: true }, algorithm: { value: Object.freeze(algorithm), enumerable: true }, usages: { value: Object.freeze([...usages]), enumerable: true } });
-    ckeys.set(k, data); return k;
-}
-const ALGS = ['AES-GCM', 'AES-CBC', 'AES-CTR', 'AES-KW', 'HMAC', 'ECDH', 'ECDSA', 'HKDF', 'PBKDF2', 'SHA-1', 'SHA-256', 'SHA-384', 'SHA-512', 'RSA-OAEP', 'RSA-PSS', 'RSASSA-PKCS1-v1_5', 'Ed25519', 'X25519'];
-function normAlg(a) {
-    const o = typeof a === 'string' ? { name: a } : Object.assign({}, a);
-    const n = ALGS.find(x => x.toLowerCase() === String(o.name).toLowerCase());
-    if (!n) throw new DOMException('Unrecognized algorithm name', 'NotSupportedError');
-    o.name = n; return o;
-}
-const hashOf = h => normAlg(h).name;
-function cbytes(x) {
-    if (x instanceof ArrayBuffer) return x.slice(0);
-    if (ArrayBuffer.isView(x)) return new Uint8Array(x.buffer, x.byteOffset, x.byteLength).slice().buffer;
-    throw new TypeError('Expected a BufferSource');
-}
-const b64u = {
-    enc(b) { let s = ''; for (const x of new Uint8Array(b)) s += String.fromCharCode(x); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); },
-    dec(s) { s = String(s).replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; const t = atob(s), u = new Uint8Array(t.length); for (let i = 0; i < t.length; i++) u[i] = t.charCodeAt(i); return u.buffer; },
-};
-const opErr = r => { if (r === undefined) throw new DOMException('The operation failed for an operation-specific reason', 'OperationError'); return r; };
-const keyData = (k, usage) => {
-    if (!(k instanceof CryptoKey)) throw new TypeError('Expected a CryptoKey');
-    if (usage && !k.usages.includes(usage)) throw new DOMException(`Key usages do not permit ${usage}`, 'InvalidAccessError');
-    return ckeys.get(k);
-};
-const hmacLen = h => (h === 'SHA-384' || h === 'SHA-512') ? 1024 : 512;
-const isEC = n => n === 'ECDH' || n === 'ECDSA';
-const ecPoint = (x, y) => { const a = new Uint8Array(x), b = new Uint8Array(y), u = new Uint8Array(1 + a.length + b.length); u[0] = 4; u.set(a, 1); u.set(b, 1 + a.length); return u.buffer; };
-const ecXY = pub => { const u = new Uint8Array(pub), n = (u.length - 1) / 2; return [b64u.enc(u.slice(1, 1 + n)), b64u.enc(u.slice(1 + n))]; };
-const ecUsages = (name, type, usages) => usages.filter(u => name === 'ECDH' ? type === 'private' && (u === 'deriveKey' || u === 'deriveBits') : u === (type === 'private' ? 'sign' : 'verify'));
-const SC = {
-    digest(alg, data) { return opErr(N.cDigest(hashOf(alg), cbytes(data))); },
-    generateKey(alg, ext, usages) {
-        const a = normAlg(alg), n = a.name;
-        if (n.startsWith('AES-')) { if (![128, 192, 256].includes(a.length)) throw new DOMException('AES key length must be 128, 192 or 256 bits', 'OperationError'); return mkKey('secret', ext, { name: n, length: a.length }, usages, crypto.getRandomValues(new Uint8Array(a.length / 8)).buffer); }
-        if (n === 'HMAC') { const h = hashOf(a.hash), len = a.length || hmacLen(h); return mkKey('secret', ext, { name: n, hash: { name: h }, length: len }, usages, crypto.getRandomValues(new Uint8Array(Math.ceil(len / 8))).buffer); }
-        if (isEC(n)) {
-            const kp = opErr(N.cEcGen(a.namedCurve)), al = { name: n, namedCurve: a.namedCurve };
-            return { publicKey: mkKey('public', true, al, ecUsages(n, 'public', usages), { curve: a.namedCurve, pub: kp[1] }), privateKey: mkKey('private', ext, al, ecUsages(n, 'private', usages), { curve: a.namedCurve, priv: kp[0], pub: kp[1] }) };
-        }
-        throw new DOMException(`${n} key generation is not supported`, 'NotSupportedError');
-    },
-    exportKey(fmt, key) {
-        const d = keyData(key), al = key.algorithm;
-        if (!key.extractable) throw new DOMException('key is not extractable', 'InvalidAccessError');
-        const jwkBase = { ext: true, key_ops: [...key.usages] };
-        if (key.type === 'secret') {
-            if (fmt === 'raw') return d.slice(0);
-            if (fmt === 'jwk') { const bits = d.byteLength * 8, alg = al.name === 'HMAC' ? 'HS' + al.hash.name.slice(4) : al.name.startsWith('AES-') ? `A${bits}${al.name.slice(4)}` : undefined; return Object.assign({ kty: 'oct', k: b64u.enc(d) }, alg ? { alg } : {}, jwkBase); }
-        } else if (key.type === 'public') {
-            if (fmt === 'raw') return d.pub.slice(0);
-            if (fmt === 'spki') return opErr(N.cSpki(d.curve, d.pub));
-            if (fmt === 'jwk') { const [x, y] = ecXY(d.pub); return Object.assign({ kty: 'EC', crv: d.curve, x, y }, jwkBase); }
-        } else {
-            if (fmt === 'pkcs8') return d.priv.slice(0);
-            if (fmt === 'jwk') { const r = opErr(N.cPkcs8Parse(d.priv)), [x, y] = ecXY(r[2]); return Object.assign({ kty: 'EC', crv: r[0], x, y, d: b64u.enc(r[1]) }, jwkBase); }
-        }
-        throw new DOMException(`Unsupported export format ${fmt}`, 'NotSupportedError');
-    },
-    importKey(fmt, data, alg, ext, usages) {
-        const a = normAlg(alg), n = a.name;
-        if (isEC(n)) {
-            let curve = a.namedCurve, pub, priv;
-            if (fmt === 'raw') pub = cbytes(data);
-            else if (fmt === 'spki') { const r = opErr(N.cSpkiParse(cbytes(data))); curve = r[0]; pub = r[1]; }
-            else if (fmt === 'pkcs8') { priv = cbytes(data); const r = opErr(N.cPkcs8Parse(priv)); curve = r[0]; pub = r[2]; }
-            else if (fmt === 'jwk') { curve = data.crv || curve; pub = ecPoint(b64u.dec(data.x), b64u.dec(data.y)); if (data.d) priv = opErr(N.cEcFromD(curve, b64u.dec(data.d), pub)); }
-            else throw new DOMException(`Unsupported import format ${fmt}`, 'NotSupportedError');
-            if (curve !== a.namedCurve) throw new DOMException('Curve mismatch', 'DataError');
-            const type = priv ? 'private' : 'public', al = { name: n, namedCurve: curve };
-            if (type === 'public' && !N.cSpki(curve, pub)) throw new DOMException('Invalid EC public key', 'DataError');
-            return mkKey(type, type === 'public' ? true : ext, al, ecUsages(n, type, usages), { curve, pub, priv });
-        }
-        let raw;
-        if (fmt === 'raw') raw = cbytes(data);
-        else if (fmt === 'jwk' && data && data.kty === 'oct') raw = b64u.dec(data.k);
-        else throw new DOMException(`Unsupported import format ${fmt}`, 'NotSupportedError');
-        if (n.startsWith('AES-')) { if (![16, 24, 32].includes(raw.byteLength)) throw new DOMException('Invalid AES key length', 'DataError'); return mkKey('secret', ext, { name: n, length: raw.byteLength * 8 }, usages, raw); }
-        if (n === 'HMAC') return mkKey('secret', ext, { name: n, hash: { name: hashOf(a.hash) }, length: a.length || raw.byteLength * 8 }, usages, raw);
-        if (n === 'HKDF' || n === 'PBKDF2') return mkKey('secret', false, { name: n }, usages, raw);
-        throw new DOMException(`${n} import is not supported`, 'NotSupportedError');
-    },
-    encrypt(alg, key, data, dec, usage) {
-        const a = normAlg(alg), d = keyData(key, usage || (dec ? 'decrypt' : 'encrypt'));
-        if (key.algorithm.name !== a.name) throw new DOMException('Algorithm does not match key', 'InvalidAccessError');
-        const iv = a.name === 'AES-CTR' ? a.counter : a.iv;
-        if (!a.name.startsWith('AES-') || a.name === 'AES-KW') throw new DOMException(`${a.name} is not supported`, 'NotSupportedError');
-        return opErr(N.cAes(a.name, !dec, d, cbytes(iv), cbytes(data), a.additionalData ? cbytes(a.additionalData) : new ArrayBuffer(0), a.tagLength || 128));
-    },
-    decrypt(alg, key, data) { return SC.encrypt(alg, key, data, true); },
-    sign(alg, key, data) {
-        const a = normAlg(alg), d = keyData(key, 'sign');
-        if (a.name === 'HMAC') return opErr(N.cHmac(key.algorithm.hash.name, d, cbytes(data)));
-        if (a.name === 'ECDSA') return opErr(N.cEcSign(d.curve, hashOf(a.hash), d.priv, cbytes(data)));
-        throw new DOMException(`${a.name} signing is not supported`, 'NotSupportedError');
-    },
-    verify(alg, key, sig, data) {
-        const a = normAlg(alg), d = keyData(key, 'verify');
-        if (a.name === 'HMAC') { const m = new Uint8Array(opErr(N.cHmac(key.algorithm.hash.name, d, cbytes(data)))), s = new Uint8Array(cbytes(sig)); let diff = m.length ^ s.length; for (let i = 0; i < m.length; i++) diff |= m[i] ^ (s[i] | 0); return diff === 0; }
-        if (a.name === 'ECDSA') return N.cEcVerify(d.curve, hashOf(a.hash), d.pub, cbytes(data), cbytes(sig));
-        throw new DOMException(`${a.name} verification is not supported`, 'NotSupportedError');
-    },
-    deriveBits(alg, key, length, usage = 'deriveBits') {
-        const a = normAlg(alg), d = keyData(key, usage);
-        if (a.name === 'ECDH') { const peer = keyData(a.public); const s = opErr(N.cEcDerive(d.curve, d.priv, peer.pub)); return length == null ? s : s.slice(0, length / 8); }
-        if (length == null || length % 8) throw new DOMException('length must be a multiple of 8', 'OperationError');
-        if (a.name === 'HKDF') return opErr(N.cHkdf(hashOf(a.hash), d, cbytes(a.salt), cbytes(a.info), length / 8));
-        if (a.name === 'PBKDF2') return opErr(N.cPbkdf2(hashOf(a.hash), d, cbytes(a.salt), a.iterations, length / 8));
-        throw new DOMException(`${a.name} derivation is not supported`, 'NotSupportedError');
-    },
-    deriveKey(alg, key, dAlg, ext, usages) {
-        const da = normAlg(dAlg), len = da.length || (da.name === 'HMAC' ? hmacLen(hashOf(da.hash)) : undefined);
-        return SC.importKey('raw', SC.deriveBits(alg, key, len, 'deriveKey'), da, ext, usages);
-    },
-    wrapKey(fmt, key, wk, wAlg) {
-        const e = SC.exportKey(fmt, key);
-        return SC.encrypt(wAlg, wk, fmt === 'jwk' ? new TextEncoder().encode(JSON.stringify(e)) : e, false, 'wrapKey');
-    },
-    unwrapKey(fmt, data, uk, uAlg, kAlg, ext, usages) {
-        const raw = SC.encrypt(uAlg, uk, data, true, 'unwrapKey');
-        return SC.importKey(fmt, fmt === 'jwk' ? JSON.parse(new TextDecoder().decode(raw)) : raw, kAlg, ext, usages);
-    },
-};
-class SubtleCrypto { constructor() { throw new TypeError('Illegal constructor'); } }
-for (const k of Object.keys(SC)) Object.defineProperty(SubtleCrypto.prototype, k, { value: { [k](...a) { try { return Promise.resolve(SC[k](...a)); } catch (e) { return Promise.reject(e); } } }[k], writable: true, configurable: true });
-const subtle = Object.create(SubtleCrypto.prototype);
-const crypto = {
-    getRandomValues(a) { if (!ArrayBuffer.isView(a)) throw new TypeError('getRandomValues requires an ArrayBufferView'); const u = new Uint8Array(a.buffer, a.byteOffset, a.byteLength); N.random(u.buffer, u.byteOffset, u.byteLength); return a; },
-    randomUUID() { const b = crypto.getRandomValues(new Uint8Array(16)); b[6] = (b[6] & 15) | 64; b[8] = (b[8] & 63) | 128; const h = [...b].map(x => x.toString(16).padStart(2, '0')).join(''); return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`; },
-    subtle,
-};
+/* a secure context: https, file, or a loopback host (as Chrome treats them); about: and data: frames inherit it, and a frame
+   inside a non-secure same-origin parent is never secure */
+const secureContext = (l => {
+    const p = N.parentWin();
+    let ps = true;
+    try { if (p && typeof p === 'object') ps = p.isSecureContext !== false; } catch (e) {}
+    if (l.protocol === 'about:' || l.protocol === 'data:') return ps;
+    return ps && (l.protocol === 'https:' || l.protocol === 'file:' || /^(localhost|127(\.\d+){3}|\[::1\])$|\.localhost$/.test(l.hostname));
+})(location);
+if (!secureContext) delete navigator.serviceWorker;   /* as Chrome: service workers only in secure contexts */
+const CN = N, CRYPTO_SECURE = () => secureContext;
+/*@shared crypto.js*/
 const mqls = [];
 class MediaQueryList extends EventTarget {
     constructor(q) { super(); this.media = q; this.onchange = null; def(this, '_m', N.media(q)); }
@@ -552,7 +451,7 @@ function mediaChanged() {
 }
 class MediaQueryListEvent extends Event { constructor(t, i = {}) { super(t, i); this.matches = !!i.matches; this.media = i.media || ''; } }
 function getComputedStyle(el) { if (!el || !N.isNode(el) || N.type(el) !== 1) throw new TypeError("Failed to execute 'getComputedStyle': parameter 1 is not of type 'Element'."); if (!el.__cstyle) def(el, '__cstyle', new Proxy(new ComputedStyleDeclaration(el, true), computedHandler)); return el.__cstyle; }   /* live, so one per element */
-const timerFn = (repeat) => (fn, ms, ...args) => { if (typeof fn !== 'function') { const src = String(fn); fn = () => (0, eval)(src); } return N.timer(() => { try { fn(...args); } catch (e) { report(e); } }, Math.max(0, +ms || 0), repeat); };
+const timerFn = (repeat) => (fn, ms, ...args) => { if (typeof fn !== 'function') { const src = ttString(TrustedScript, fn, repeat ? 'Window setInterval' : 'Window setTimeout'); fn = () => { ttTimerSrc = src; (0, eval)(src); }; } return N.timer(() => { try { fn(...args); } catch (e) { report(e); } }, Math.max(0, +ms || 0), repeat); };
 const setTimeout = timerFn(false), setInterval = timerFn(true);
 const clearTimeout = (id) => { if (id) N.clearTimer(id); }, clearInterval = clearTimeout;
 const requestAnimationFrame = (fn) => N.raf((t) => { try { fn(t); } catch (e) { report(e); } });
@@ -577,7 +476,8 @@ function cloneValue(v, seen) {
     if (tag === 'Date') return new Date(Date.prototype.getTime.call(v)); if (tag === 'RegExp') return new RegExp(v.source, v.flags);
     if (tag === 'ArrayBuffer') { const b = new ArrayBuffer(v.byteLength); new Uint8Array(b).set(new Uint8Array(v)); seen.set(v, b); return b; }
     if (ArrayBuffer.isView(v)) { const b = cloneValue(v.buffer, seen); return tag === 'DataView' ? new DataView(b, v.byteOffset, v.byteLength) : new globalThis[tag](b, v.byteOffset, v.length); }
-    if (v instanceof Blob || tag === 'Blob' || tag === 'File') return v; if (N.isNode(v)) throw new DOMException('could not be cloned.', 'DataCloneError');
+    if (tag === 'CryptoKey') { const k = cryptoKeyClone(v); seen.set(v, k); return k; }
+    if (v instanceof Blob || tag === 'Blob' || tag === 'File') return v; if (N.isNode(v) || v instanceof URL || v instanceof URLSearchParams) throw new DOMException(`${tag} object could not be cloned.`, 'DataCloneError');
     if (tag === 'Map') { const m = new Map(); seen.set(v, m); for (const [k, x] of v) m.set(cloneValue(k, seen), cloneValue(x, seen)); return m; }
     if (tag === 'Set') { const s = new Set(); seen.set(v, s); for (const x of v) s.add(cloneValue(x, seen)); return s; }
     const o = Array.isArray(v) ? [] : {}; seen.set(v, o); for (const k of Object.keys(v)) o[k] = cloneValue(v[k], seen); return o;
@@ -611,7 +511,7 @@ function asWin(v) {
 // window.open: a new tab, its proxy for the opener; _self, _top, _parent and frame names navigate those
 function openWin(u, t, f) {
     u = u === undefined || u === null ? '' : String(u); t = t === undefined || t === null || t === '' ? '_blank' : String(t); f = String(f ?? '');
-    const url = u ? new URL(u, document.baseURI).href : 'about:blank', lt = t.toLowerCase();
+    const url = u ? navURL(u, "execute 'open' on 'Window'").href : 'about:blank', lt = t.toLowerCase();
     if (/^javascript:/i.test(url)) return null;
     if (lt === '_self' || (lt === '_top' && top === G) || (lt === '_parent' && parent === G)) { location.href = url; return G; }
     if (lt !== '_blank' && N.navTarget(t, url)) return lt === '_top' ? top : lt === '_parent' ? parent : null;
@@ -634,11 +534,61 @@ const console = {
     timeStamp() {}, profile() {}, profileEnd() {}, clear() {},
 };
 const customElements = new CustomElementRegistry();
+/* a node's registry: the window's for nodes of this window's document, none for documents made by scripts */
+const nodeRegistry = n => (N.ownerDoc(n) || n) === document ? customElements : null;
+acc(Document.prototype, 'customElementRegistry', function () { return nodeRegistry(this); });
+acc(Element.prototype, 'customElementRegistry', function () { return nodeRegistry(this); });
+acc(ShadowRoot.prototype, 'customElementRegistry', function () { return nodeRegistry(this); });
 class Window extends EventTarget {}
 installHandlers(Window.prototype, false, EVENT_HANDLERS.concat(['beforeunload', 'hashchange', 'message', 'messageerror', 'offline', 'online', 'pagehide', 'pageshow', 'popstate', 'storage', 'unhandledrejection', 'rejectionhandled', 'unload', 'DOMContentLoaded']));
+/* <body onload="..."> from the parser: the window's handler until a script sets one */
+for (const t of WINDOW_FWD) {
+    const k = 'on' + t, d = Object.getOwnPropertyDescriptor(Window.prototype, k);
+    if (!d) continue;
+    acc(Window.prototype, k, function () {
+        const own = this.__on && this.__on[k];
+        if (own !== undefined) return own;
+        const d = this === G && document, b = d && d.body;
+        if (b && N.ns(b) === 0) { const src = N.attr(b, k); if (src != null) return compileHandler(b, k, src); }
+        return null;
+    }, d.set);
+}
 Object.setPrototypeOf(G, Window.prototype);
 {
-    const namedGet = (p) => { const d = G.document; return typeof p === 'string' && p && d ? N.byId(p) : null; };
+    /* window's named properties: a child frame by name (its WindowProxy), else the HTML elements with that id or the
+       embed/form/img/object elements with that name (one element, or a collection of them in tree order). The name
+       index is rebuilt only after the DOM changes. */
+    let namedVer = -1, namedMap = new Map();
+    const byName = (d, p) => {
+        const v = N.version(d);
+        if (v !== namedVer) {
+            namedVer = v; namedMap = new Map();
+            for (const e of N.query(d, 'embed[name],form[name],img[name],object[name],iframe[name],frame[name]', true)) {
+                if (N.ns(e) !== 0) continue;
+                const n = N.attr(e, 'name'); if (!n) continue;
+                let a = namedMap.get(n); if (!a) namedMap.set(n, a = []); a.push(e);
+            }
+        }
+        return namedMap.get(p);
+    };
+    const namedGet = (p) => {
+        const d = G.document;
+        if (typeof p !== 'string' || !p || !d) return null;
+        const named = byName(d, p), byId = N.byId(p);
+        if (!named && !byId) return null;
+        let els = [];
+        if (named) for (const e of named) {
+            const t = N.name(e);
+            if (t === 'iframe' || t === 'frame') { const w = e.contentWindow; if (w) return w; } else els.push(e);
+        }
+        if (byId && N.ns(byId) === 0) {
+            const ids = N.query(d, '[id="' + CSS.escape(p) + '"]', true);
+            if (ids.length === 1 && !els.length) return ids[0];
+            for (const e of ids) if (N.ns(e) === 0 && !els.includes(e)) els.push(e);
+            els.sort((x, y) => x === y ? 0 : x.compareDocumentPosition(y) & 4 ? -1 : 1);
+        }
+        return els.length === 0 ? null : els.length === 1 ? els[0] : htmlColl(els);
+    };
     Object.setPrototypeOf(Window.prototype, new Proxy(EventTarget.prototype, {
         get(t, p, r) { if (typeof p !== 'string' || p in t) return Reflect.get(t, p, r); const e = namedGet(p); return e === null ? undefined : e; },
         has(t, p) { return p in t || namedGet(p) !== null; },
@@ -649,38 +599,39 @@ const document = N.doc();
 Object.setPrototypeOf(document, HTMLDocument.prototype);
 function illegalCtor() { throw new TypeError('Illegal constructor'); }
 const History = function History() { illegalCtor(); }, Navigator = function Navigator() { illegalCtor(); }, Screen = function Screen() { illegalCtor(); };
-const Performance = function Performance() { illegalCtor(); }, Crypto = function Crypto() { illegalCtor(); };
+const Performance = function Performance() { illegalCtor(); };
 Object.setPrototypeOf(Performance.prototype, EventTarget.prototype);
 Object.setPrototypeOf(history, History.prototype); Object.setPrototypeOf(navigator, Navigator.prototype); Object.setPrototypeOf(screen, Screen.prototype);
-Object.setPrototypeOf(performance, Performance.prototype); Object.setPrototypeOf(crypto, Crypto.prototype);
+Object.setPrototypeOf(performance, Performance.prototype);
 const globals = {
-    CryptoKey, SubtleCrypto,
-    ProcessingInstruction, Touch, TouchEvent, CompositionEvent, ClipboardEvent, ClipboardItem, DragEvent, StorageEvent, PromiseRejectionEvent, SubmitEvent,
-    StyleSheet, IdleDeadline, TimeRanges, MediaError, MediaSource, SourceBuffer, SourceBufferList, ImageData, Path2D, CanvasGradient, CanvasPattern, CanvasRenderingContext2D, History, Navigator, Screen, Performance, Crypto, SubtleCrypto,
+    ...(secureContext ? { CryptoKey, SubtleCrypto, ServiceWorker, ServiceWorkerContainer, ServiceWorkerRegistration, NavigationPreloadManager } : {}), QuotaExceededError,
+    TrustedHTML, TrustedScript, TrustedScriptURL, TrustedHTMLParserOptions, TrustedTypePolicy, TrustedTypePolicyFactory, SecurityPolicyViolationEvent, get trustedTypes() { return ttFactory; },
+    ProcessingInstruction, Touch, TouchEvent, CompositionEvent, BeforeUnloadEvent, TextEvent, DeviceOrientationEvent, DeviceMotionEvent, ClipboardEvent, ClipboardItem, DragEvent, StorageEvent, PromiseRejectionEvent, SubmitEvent,
+    StyleSheet, IdleDeadline, TimeRanges, MediaError, MediaSource, SourceBuffer, SourceBufferList, ImageData, Path2D, CanvasGradient, CanvasPattern, CanvasRenderingContext2D, History, Navigator, Screen, Performance, Crypto,
     DOMException, DOMRectReadOnly, DOMRect, Event, CustomEvent, CommandEvent, ToggleEvent, UIEvent, FocusEvent, MouseEvent, PointerEvent, WheelEvent, KeyboardEvent, InputEvent, ErrorEvent, ProgressEvent, MessageEvent, PopStateEvent, HashChangeEvent, PageTransitionEvent, AnimationEvent, TransitionEvent, MediaQueryListEvent,
-    EventTarget, AbortSignal, AbortController, MutationObserver, MutationRecord, Node, NodeList, HTMLCollection, AnimationTimeline, DocumentTimeline, CharacterData, Text, CDATASection, Comment, DocumentType, DocumentFragment, ShadowRoot, Attr, NamedNodeMap, DOMTokenList,
+    EventTarget, AbortSignal, AbortController, Observable, Subscriber, MutationObserver, MutationRecord, Node, NodeList, HTMLCollection, HTMLFormControlsCollection, HTMLOptionsCollection, RadioNodeList, ValidityState, UserActivation, AnimationTimeline, DocumentTimeline, CharacterData, Text, CDATASection, Comment, DocumentType, DocumentFragment, ShadowRoot, Attr, NamedNodeMap, DOMTokenList,
     CSSStyleDeclaration, SVGFEBlendElement, SVGFEComponentTransferElement, SVGFEDiffuseLightingElement, SVGFESpecularLightingElement, SVGFEDropShadowElement, SVGFEFloodElement, SVGFEGaussianBlurElement, SVGFEImageElement, SVGFEMergeElement, SVGFEMergeNodeElement, SVGFEOffsetElement, SVGFETileElement, SVGFEDistantLightElement, SVGFEPointLightElement, SVGFESpotLightElement, SVGFEFuncRElement, SVGFEFuncGElement, SVGFEFuncBElement, SVGFEFuncAElement, SVGLength, SVGNumber, SVGAnimatedLength, SVGAnimatedNumber, SVGAnimatedInteger, SVGAnimatedBoolean, SVGAnimatedString, SVGAnimatedEnumeration, SVGRect, SVGAnimatedRect, SVGUnitTypes, SVGGeometryElement, SVGRectElement, SVGCircleElement, SVGEllipseElement, SVGLineElement, SVGPathElement, SVGPolylineElement, SVGPolygonElement, SVGGElement, SVGDefsElement, SVGUseElement, SVGImageElement, SVGForeignObjectElement, SVGAElement, SVGSwitchElement, SVGTextContentElement, SVGTextPositioningElement, SVGTextElement, SVGTSpanElement, SVGTextPathElement, SVGGradientElement, SVGLinearGradientElement, SVGRadialGradientElement, SVGStopElement, SVGClipPathElement, SVGMaskElement, SVGPatternElement, SVGFilterElement, SVGMarkerElement, SVGSymbolElement, SVGTitleElement, SVGDescElement, SVGMetadataElement, SVGStyleElement, SVGScriptElement, SVGFEColorMatrixElement, SVGFECompositeElement, SVGFEMorphologyElement, SVGFETurbulenceElement, SVGFEDisplacementMapElement, SVGFEConvolveMatrixElement, SVGComponentTransferFunctionElement, CSSRuleList, CSSStyleRule, CSSGroupingRule, CSSConditionRule, CSSMediaRule, CSSSupportsRule, CSSContainerRule, CSSLayerBlockRule, CSSLayerStatementRule, CSSImportRule, CSSNamespaceRule, CSSFontFaceRule, CSSPageRule, CSSKeyframeRule, CSSKeyframesRule, MediaList, Element, HTMLElement, SVGElement, SVGGraphicsElement, SVGSVGElement, MathMLElement, Image, Audio, Option, CustomElementRegistry, Document, HTMLDocument, XMLDocument, CSSRule, CSSStyleSheet, CSS, FontFace,
-    TreeWalker, NodeIterator, NodeFilter, Range, StaticRange, AbstractRange, Selection, Animation, DOMMatrixReadOnly, DOMMatrix, DOMPoint, DOMParser, XMLSerializer, XPathResult, XPathExpression, XPathEvaluator,
-    TextEncoder, TextDecoder, btoa, atob, Blob, File, FileList, DataTransfer, DataTransferItem, DataTransferItemList, FileReader, ReadableStream, ReadableStreamDefaultReader, WritableStream, WritableStreamDefaultWriter, TransformStream, ByteLengthQueuingStrategy, CountQueuingStrategy, TextEncoderStream, TextDecoderStream, URLSearchParams, URL, webkitURL: URL, Headers, Request, Response, fetch, FormData, XMLHttpRequestEventTarget, XMLHttpRequestUpload, XMLHttpRequest, WebSocket, CloseEvent, MessagePort, MessageChannel, Worker, BroadcastChannel,
+    TreeWalker, NodeIterator, NodeFilter, DOMImplementation, Range, StaticRange, AbstractRange, OpaqueRange, Highlight, HighlightRegistry, Selection, Animation, DOMMatrixReadOnly, DOMMatrix, DOMPoint, DOMParser, XMLSerializer, XPathResult, XPathExpression, XPathEvaluator, Sanitizer,
+    TextEncoder, TextDecoder, btoa, atob, Blob, File, FileList, DataTransfer, DataTransferItem, DataTransferItemList, FileReader, ReadableStream, ReadableStreamDefaultReader, ReadableStreamBYOBReader, ReadableStreamDefaultController, ReadableByteStreamController, ReadableStreamBYOBRequest, WritableStream, WritableStreamDefaultWriter, WritableStreamDefaultController, TransformStream, TransformStreamDefaultController, ByteLengthQueuingStrategy, CountQueuingStrategy, TextEncoderStream, TextDecoderStream, CompressionStream, DecompressionStream, URLSearchParams, URL, webkitURL: URL, URLPattern, Headers, Request, Response, fetch, Cache, CacheStorage, caches, FormData, XMLHttpRequestEventTarget, XMLHttpRequestUpload, XMLHttpRequest, WebSocket, CloseEvent, MessagePort, MessageChannel, Worker, SharedWorker, BroadcastChannel,
     WebGLRenderingContext, WebGL2RenderingContext, WebGLObject, WebGLBuffer, WebGLFramebuffer, WebGLRenderbuffer, WebGLTexture, WebGLProgram, WebGLShader, WebGLVertexArrayObject, WebGLQuery, WebGLSampler, WebGLSync, WebGLTransformFeedback, WebGLUniformLocation, WebGLActiveInfo, WebGLShaderPrecisionFormat, WebGLContextEvent, ImageBitmap, createImageBitmap,
     GPUSupportedFeatures, WGSLLanguageFeatures, GPUSupportedLimits, GPUAdapterInfo, GPUError, GPUValidationError, GPUOutOfMemoryError, GPUInternalError, GPUPipelineError, GPUUncapturedErrorEvent, GPUDeviceLostInfo, GPUCompilationMessage, GPUCompilationInfo,
     GPUBufferUsage, GPUTextureUsage, GPUShaderStage, GPUMapMode, GPUColorWrite, GPU, GPUAdapter, GPUDevice, GPUBuffer, GPUTexture, GPUTextureView, GPUSampler, GPUBindGroupLayout, GPUPipelineLayout, GPUBindGroup, GPUCommandBuffer, GPURenderBundle, GPUExternalTexture,
     GPUQuerySet, GPUShaderModule, GPUComputePipeline, GPURenderPipeline, GPUCommandEncoder, GPURenderPassEncoder, GPUComputePassEncoder, GPURenderBundleEncoder, GPUQueue, GPUCanvasContext,
     MediaRecorder, BlobEvent, RTCPeerConnection, RTCSessionDescription, RTCIceCandidate, RTCPeerConnectionIceEvent, RTCPeerConnectionIceErrorEvent, RTCDataChannel, RTCDataChannelEvent, RTCTrackEvent, RTCRtpSender, RTCRtpReceiver, RTCRtpTransceiver, RTCIceTransport, RTCDtlsTransport, RTCSctpTransport, RTCCertificate, RTCStatsReport, RTCError, RTCErrorEvent, MediaStream, MediaStreamTrack, MediaStreamTrackEvent,
     IDBFactory, IDBDatabase, IDBTransaction, IDBObjectStore, IDBIndex, IDBCursor, IDBCursorWithValue, IDBKeyRange, IDBRequest, IDBOpenDBRequest, IDBVersionChangeEvent, DOMStringList, indexedDB,
-    ResizeObserver, IntersectionObserver, IntersectionObserverEntry, HTMLAllCollection, PerformanceObserver, Storage, localStorage, sessionStorage, Location, location, history, navigator, screen, performance, crypto, MediaQueryList, matchMedia, getComputedStyle, PermissionStatus,
+    ResizeObserver, IntersectionObserver, IntersectionObserverEntry, HTMLAllCollection, PerformanceObserver, Storage, localStorage, sessionStorage, Location, get location() { return location; }, set location(v) { location.href = v; }, history, navigator, screen, performance, get crypto() { return crypto; }, MediaQueryList, matchMedia, getComputedStyle, PermissionStatus,
     setTimeout, setInterval, clearTimeout, clearInterval, requestAnimationFrame, cancelAnimationFrame, requestIdleCallback, cancelIdleCallback, queueMicrotask, structuredClone, postMessage, console, customElements, Window, document,
-    window: G, self: G, globalThis: G, get top() { return asWin(N.topWin()) ?? G; }, get parent() { return asWin(N.parentWin()) ?? G; }, frames: G, get opener() { return openerSet !== undefined ? openerSet : asWin(N.openerWin()); }, set opener(v) { openerSet = v; }, get frameElement() { return N.frameEl(); }, closed: false, name: '', get length() { return N.frameCount(); }, origin: location.origin, isSecureContext: location.protocol === 'https:', crossOriginIsolated: false,
+    window: G, self: G, globalThis: G, get top() { return asWin(N.topWin()) ?? G; }, get parent() { return asWin(N.parentWin()) ?? G; }, frames: G, get opener() { return openerSet !== undefined ? openerSet : asWin(N.openerWin()); }, set opener(v) { openerSet = v; }, get frameElement() { return N.frameEl(); }, closed: false, name: '', get length() { return N.frameCount(); }, origin: location.origin, isSecureContext: secureContext, crossOriginIsolated: false,
     get innerWidth() { return N.viewport()[0]; }, get innerHeight() { return N.viewport()[1]; }, get outerWidth() { return N.viewport()[0]; }, get outerHeight() { return N.viewport()[1] + 40; },
     get scrollX() { return N.viewport()[2]; }, get scrollY() { return N.viewport()[3]; }, get pageXOffset() { return N.viewport()[2]; }, get pageYOffset() { return N.viewport()[3]; }, get devicePixelRatio() { return N.viewport()[4]; },
     screenX: 0, screenY: 0, screenLeft: 0, screenTop: 0,
     scrollTo(x, y) { if (typeof x === 'object' && x) { y = x.top ?? N.viewport()[3]; x = x.left ?? N.viewport()[2]; } N.scrollTo(+x || 0, +y || 0); }, scroll(x, y) { G.scrollTo(x, y); },
     scrollBy(x, y) { if (typeof x === 'object' && x) { y = x.top || 0; x = x.left || 0; } const v = N.viewport(); N.scrollTo(v[2] + (+x || 0), v[3] + (+y || 0)); },
     alert(m) { N.log(1, 'alert: ' + m); }, confirm() { return false; }, prompt() { return null; }, print() {}, focus() {}, blur() {}, close() { if (top === G) N.winOp(0, 4); }, stop() {}, open: openWin,
-    getSelection() { return selection; }, reportError: report, visualViewport: null, speechSynthesis: undefined,
+    getSelection() { return selection; }, reportError(e) { if (!arguments.length) throw new TypeError("Failed to execute 'reportError' on 'Window': 1 argument required, but only 0 present."); report(e); }, visualViewport: null, speechSynthesis: undefined,
 };
 for (const k of Object.keys(H)) globals[k] = H[k];
-for (const k of Object.keys(globals)) { const d = Object.getOwnPropertyDescriptor(globals, k); d.configurable = true; if (!d.get) d.writable = true; d.enumerable = false; Object.defineProperty(G, k, d); }
+for (const k of Object.keys(globals)) { const d = Object.getOwnPropertyDescriptor(globals, k); d.configurable = true; if (!d.get) d.writable = true; d.enumerable = !!d.get; Object.defineProperty(G, k, d); }   /* attributes enumerate, interfaces do not */
 for (const k of Object.keys(globals)) {
     const d = Object.getOwnPropertyDescriptor(globals, k), v = d.value;
     if (typeof v === 'function' && /^[A-Z]/.test(k) && v.prototype && v.prototype.constructor === v && !Object.prototype.hasOwnProperty.call(v.prototype, Symbol.toStringTag))
@@ -699,6 +650,10 @@ class VisualViewport extends EventTarget {
 }
 Object.defineProperty(VisualViewport.prototype, Symbol.toStringTag, { value: 'VisualViewport', configurable: true });
 Object.defineProperty(G, 'VisualViewport', { value: VisualViewport, writable: true, configurable: true });
+/* window.event is [Replaceable]: assigning it replaces the accessor with a plain value */
+Object.defineProperty(G, 'event', { get: { get event() {
+    if (this != null && this !== G) throw new TypeError("Failed to read the 'event' property from 'Window': Illegal invocation");
+    return curEvent; } }.__lookupGetter__('event'), set(v) { if (this != null && this !== G) throw new TypeError("Failed to set the 'event' property on 'Window': Illegal invocation"); Object.defineProperty(G, 'event', { value: v, writable: true, configurable: true, enumerable: true }); }, configurable: true, enumerable: true });
 const visual = Object.assign(Object.create(VisualViewport.prototype), { onresize: null, onscroll: null, onscrollend: null });
 G.visualViewport = visual;
 function viewportChanged(resized, scrolled, media = true) {
@@ -710,20 +665,16 @@ function viewportChanged(resized, scrolled, media = true) {
     if (scrolled) dispatch(document, new Event('scroll', { bubbles: true }), true);
     if (media) mediaChanged();
 }
-// Bare global calls like `addEventListener(...)` run with an undefined receiver in strict code.
 if (navigator.maxTouchPoints) for (const type of ['touchstart', 'touchmove', 'touchend', 'touchcancel']) def(G, 'on' + type, null);
-for (const k of ['addEventListener', 'removeEventListener', 'dispatchEvent']) {
-    const f = EventTarget.prototype[k];
-    Object.defineProperty(G, k, { value: function (...a) { return f.apply(this ?? G, a); }, writable: true, configurable: true });
-}
 function fire(target, type, init, Ctor = Event) {
     const touchClick = type === 'click' && init && init.__touch;
     if (init && init.__touch) init = nativeTouchInit(type, init);
-    const pre = type === 'click' ? preActivate(target) : null;
-    const ev = new Ctor(type, init), ok = dispatch(target, ev, true);
-    if (!ok && pre && pre.restore) pre.restore();
-    if (ok && type === 'click' && target && target.nodeType === 1 && !(target.closest && target.closest('a[href]')) && !(target.disabled || (target.closest && target.closest('button:disabled')))) {
-        try { activate(target, ev, pre); } catch (e) { report(e); }   /* anchors are navigated natively by the shell */
+    if (init && init.__edit) oprReplace(target, init.__edit[0], init.__edit[1], init.__edit[2]);
+    const ev = new Ctor(type, init), ok = dispatch(target, ev, true);   /* dispatch runs the click's activation behavior */
+    /* a tap on a text field, textarea or select focuses it */
+    if (ok && type === 'click' && target && N.isNode(target) && N.type(target) === 1 && !target.disabled && !(target.closest && target.closest('a[href]'))) {
+        const n = N.name(target);
+        if (n === 'textarea' || n === 'select' || (n === 'input' && !ACT_INPUT.has(target.type))) N.focus(target);
     }
     if (touchClick) nativeTap = null;
     return ok;
@@ -823,5 +774,108 @@ function fireAnim(t, type, name, elapsed, anim) {
     };
     selAt('left', move(-1)); selAt('right', move(1));
 }
-return { queueMessage, exportPort, portMessage, rejection, workerEvent, protoFor, dispatch, fire, fireAnim, report, mediaChanged, viewportChanged, ceConnected, nativeTouch, Event, MouseEvent, PointerEvent, KeyboardEvent, FocusEvent, WheelEvent, InputEvent, PopStateEvent, ErrorEvent };
+/* WebIDL shape of the interfaces defined above: attributes and operations are enumerable, constants are read-only,
+   and operations reject calls with fewer arguments than they require */
+{
+    const REQUIRED = {
+        EventTarget: { addEventListener: 2, removeEventListener: 2, dispatchEvent: 1 },
+        Event: { initEvent: 1 }, CustomEvent: { initCustomEvent: 1 },
+        Node: { appendChild: 1, removeChild: 1, insertBefore: 2, replaceChild: 2, contains: 1, compareDocumentPosition: 1, isEqualNode: 1,
+                isSameNode: 1, lookupPrefix: 1, lookupNamespaceURI: 1, isDefaultNamespace: 1 },
+        Attr: { contains: 1, isEqualNode: 1, isSameNode: 1, lookupPrefix: 1, lookupNamespaceURI: 1, isDefaultNamespace: 1 },
+        CharacterData: { appendData: 1, deleteData: 2, insertData: 2, replaceData: 3, substringData: 2 },
+        Text: { splitText: 1 },
+        Document: { createAttribute: 1, createAttributeNS: 2, createCDATASection: 1, createComment: 1, createElement: 1, createElementNS: 2,
+                    createEvent: 1, createExpression: 1, createNSResolver: 1, createProcessingInstruction: 2, createTextNode: 1, getElementById: 1,
+                    getElementsByClassName: 1, getElementsByTagName: 1, getElementsByTagNameNS: 2, querySelector: 1, querySelectorAll: 1, moveBefore: 2 },
+        DocumentFragment: { getElementById: 1, querySelector: 1, querySelectorAll: 1, moveBefore: 2 },
+        DOMImplementation: { createDocument: 2, createDocumentType: 3 },
+        Element: { attachShadow: 1, closest: 1, getAttribute: 1, getAttributeNS: 2, getAttributeNode: 1, getAttributeNodeNS: 2, getElementsByClassName: 1,
+                   getElementsByTagName: 1, getElementsByTagNameNS: 2, hasAttribute: 1, hasAttributeNS: 2, insertAdjacentElement: 2, insertAdjacentText: 2,
+                   matches: 1, webkitMatchesSelector: 1, moveBefore: 2, querySelector: 1, querySelectorAll: 1, removeAttribute: 1, removeAttributeNS: 2,
+                   removeAttributeNode: 1, setAttribute: 2, setAttributeNS: 3, toggleAttribute: 1 },
+        HTMLCollection: { item: 1, namedItem: 1 }, NodeList: { item: 1 },
+        XPathEvaluator: { createExpression: 1, createNSResolver: 1 },
+    };
+    for (const [iface, ops] of Object.entries(REQUIRED)) {
+        const P = G[iface] && G[iface].prototype;
+        if (!P) continue;
+        for (const [k, n] of Object.entries(ops)) {
+            const d = Object.getOwnPropertyDescriptor(P, k);
+            if (!d || typeof d.value !== 'function' || !d.configurable) continue;
+            const f = d.value;
+            d.value = { [k]() {
+                if (arguments.length < n) throw new TypeError(`Failed to execute '${k}' on '${iface}': ${n} argument${n > 1 ? 's' : ''} required, but only ${arguments.length} present.`);
+                return f.apply(this, arguments);
+            } }[k];
+            Object.defineProperty(d.value, 'length', { value: n });
+            Object.defineProperty(P, k, d);
+        }
+    }
+    /* members that would run on any receiver: a call on an object that is not one of the interface's throws, as
+       WebIDL's operations and attributes do (the others reach a native check first) */
+    const BRAND = {
+        Node: ['baseURI', 'childNodes', 'contains', 'isEqualNode', 'isSameNode', 'lookupPrefix', 'removeChild'],
+        Document: ['URL', 'children', 'compatMode', 'fullscreen', 'importNode', 'createAttributeNS', 'createComment', 'createDocumentFragment', 'createElementNS', 'createEvent',
+                   'createExpression', 'createNSResolver', 'createNodeIterator', 'createProcessingInstruction', 'createRange', 'createTextNode',
+                   'createTreeWalker', 'documentURI', 'evaluate', 'fullscreenElement', 'fullscreenEnabled', 'getElementById', 'getElementsByClassName',
+                   'getElementsByTagName', 'getElementsByTagNameNS', 'implementation', 'onfullscreenchange', 'onfullscreenerror'],
+        DocumentFragment: ['children'], ShadowRoot: ['clonable', 'delegatesFocus', 'fullscreenElement', 'mode', 'onslotchange', 'serializable', 'slotAssignment'], Text: ['assignedSlot'],
+        Element: ['assignedSlot', 'attributes', 'children', 'classList', 'closest', 'getElementsByClassName', 'getElementsByTagName',
+                  'getElementsByTagNameNS', 'insertAdjacentElement', 'onfullscreenchange', 'onfullscreenerror', 'prefix', 'shadowRoot'],
+        Attr: ['localName', 'name', 'namespaceURI', 'ownerElement', 'prefix', 'specified', 'value'],
+        AbstractRange: ['collapsed', 'endOffset', 'startOffset'], Range: ['cloneRange', 'collapse', 'commonAncestorContainer', 'detach', 'selectNodeContents'],
+        NodeIterator: ['detach', 'filter', 'pointerBeforeReferenceNode', 'referenceNode', 'root', 'whatToShow'],
+        TreeWalker: ['currentNode', 'filter', 'parentNode', 'previousNode', 'root', 'whatToShow'],
+        DOMTokenList: ['supports'], DOMImplementation: ['createDocument', 'createDocumentType', 'createHTMLDocument', 'hasFeature'], HTMLCollection: ['namedItem'], NodeList: ['item'], MutationObserver: ['disconnect', 'takeRecords'],
+        XPathEvaluator: ['createExpression', 'createNSResolver', 'evaluate'], XPathResult: ['invalidIteratorState', 'resultType'],
+    };
+    const isNodeObj = o => N.isNode(o);
+    const FOREIGN_BRANDS = { Node: isNodeObj, Document: isNodeObj, DocumentFragment: isNodeObj, ShadowRoot: isNodeObj, Text: isNodeObj, Element: isNodeObj,
+        DOMImplementation: o => '_doc' in o };
+    for (const [iface, names] of Object.entries(BRAND)) {
+        const P = G[iface] && G[iface].prototype;
+        if (!P) continue;
+        const own = Object.prototype.isPrototypeOf.bind(P);
+        /* a node from another same-origin realm passes when its own realm's interface matches */
+        const isP = !FOREIGN_BRANDS[iface] ? own : o => own(o) || (o !== null && typeof o === 'object' && FOREIGN_BRANDS[iface](o) && (() => {
+            for (let p = Object.getPrototypeOf(o); p; p = Object.getPrototypeOf(p)) { const c = Object.getOwnPropertyDescriptor(p, 'constructor'); if (c && typeof c.value === 'function' && c.value.name === iface) return true; }
+            return false;
+        })());
+        for (const k of names) {
+            const d = Object.getOwnPropertyDescriptor(P, k);
+            if (!d || !d.configurable) continue;
+            const check = o => { if (o === null || (typeof o !== 'object' && typeof o !== 'function') || !isP(o)) throw new TypeError(`Failed to execute '${k}' on '${iface}': Illegal invocation`); };
+            if (typeof d.value === 'function') {
+                const f = d.value;
+                d.value = { [k]() { check(this); return f.apply(this, arguments); } }[k];
+                Object.defineProperty(d.value, 'length', { value: f.length });
+            } else if (d.get) {
+                const g = d.get, st = d.set;
+                d.get = Object.getOwnPropertyDescriptor({ get [k]() { check(this); return g.call(this); } }, k).get;
+                if (st) d.set = Object.getOwnPropertyDescriptor({ set [k](v) { check(this); st.call(this, v); } }, k).set;
+            } else continue;
+            Object.defineProperty(P, k, d);
+        }
+    }
+    const CONST = /^[A-Z][A-Z0-9_]*$/;
+    const shape = (o, skip) => {
+        for (const k of Object.getOwnPropertyNames(o)) {
+            if (skip.has(k) || k[0] === '_') continue;
+            const d = Object.getOwnPropertyDescriptor(o, k);
+            if (!d.configurable) continue;
+            if (CONST.test(k) && typeof d.value === 'number') Object.defineProperty(o, k, { value: d.value, writable: false, enumerable: true, configurable: false });
+            else if (!d.enumerable) { d.enumerable = true; Object.defineProperty(o, k, d); }
+        }
+    };
+    const PROTO_SKIP = new Set(['constructor']), STATIC_SKIP = new Set(['length', 'name', 'prototype', 'arguments', 'caller']);
+    for (const name of Object.getOwnPropertyNames(G)) {
+        if (PRE_GLOBALS.has(name) || !/^[A-Z]/.test(name)) continue;
+        const d = Object.getOwnPropertyDescriptor(G, name), C = d && d.value;
+        if (typeof C !== 'function' || !C.prototype || typeof C.prototype !== 'object') continue;
+        shape(C.prototype, PROTO_SKIP);
+        shape(C, STATIC_SKIP);
+    }
+}
+return { ttInit, ttScript, ttEval, queueMessage, exportPort, portMessage, rejection, workerEvent, protoFor, dispatch, fire, fireAnim, report, mediaChanged, viewportChanged, ceConnected, nativeTouch, Event, MouseEvent, PointerEvent, KeyboardEvent, FocusEvent, WheelEvent, InputEvent, PopStateEvent, ErrorEvent };
 })

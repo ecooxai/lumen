@@ -354,22 +354,30 @@ void doc_free(Document *d) {
     hm_free(&d->id_cache, NULL); hm_free(&d->id_dups, NULL);
     Node *c = d->node.first;
     while (c) { Node *nx = c->next; c->parent = NULL; c->refcount = 0; c->js = NULL; node_free_tree(c); c = nx; }
-    free(d->url); free(d->base_url); free(d->title); free(d);
+    free(d->url); free(d->base_url); free(d->title); free(d->content_type); free(d->csp); free(d->csp_ro); free(d);
 }
 
+/* attributes the engine reads by name (style, on*, href...): null-namespace ones and prefixed ones (xlink:href);
+   setAttributeNS(ns, "style", ...) makes one that must not stand in for the element's own */
+static inline bool plain_attr(const Attr *a) {
+    static const char *xmlns;
+    if (!a->ns || a->pfx) return true;
+    if (!xmlns) xmlns = atom("xmlns");
+    return a->name == xmlns;
+}
 static int attr_index(const Node *n, const char *name) {
-    for (int i = 0; i < n->nattrs; i++) if (n->attrs[i].name == name) return i;
+    for (int i = 0; i < n->nattrs; i++) if (n->attrs[i].name == name && plain_attr(&n->attrs[i])) return i;
     const char *a = atom(name);
-    for (int i = 0; i < n->nattrs; i++) if (n->attrs[i].name == a) return i;
-    if (n->ns == NS_HTML) { for (int i = 0; i < n->nattrs; i++) if (str_ieq(n->attrs[i].name, name)) return i; }
+    for (int i = 0; i < n->nattrs; i++) if (n->attrs[i].name == a && plain_attr(&n->attrs[i])) return i;
+    if (n->ns == NS_HTML) { for (int i = 0; i < n->nattrs; i++) if (str_ieq(n->attrs[i].name, name) && plain_attr(&n->attrs[i])) return i; }
     return -1;
 }
 const char *node_attr(const Node *n, const char *name) { if (!n || (n->type != NODE_ELEMENT && n->type != NODE_DOCTYPE)) return NULL; int i = attr_index(n, name); return i >= 0 ? n->attrs[i].value : NULL; }
 const char *node_attr_atom(const Node *n, const char *name) {
     if (!n || (n->type != NODE_ELEMENT && n->type != NODE_DOCTYPE)) return NULL;
-    for (int i = 0; i < n->nattrs; i++) if (n->attrs[i].name == name) return n->attrs[i].value;
+    for (int i = 0; i < n->nattrs; i++) if (n->attrs[i].name == name && plain_attr(&n->attrs[i])) return n->attrs[i].value;
     if (n->ns == NS_HTML && (n->flags & NF_ATTR_MIXED_CASE))
-        for (int i = 0; i < n->nattrs; i++) if (str_ieq(n->attrs[i].name, name)) return n->attrs[i].value;
+        for (int i = 0; i < n->nattrs; i++) if (str_ieq(n->attrs[i].name, name) && plain_attr(&n->attrs[i])) return n->attrs[i].value;
     return NULL;
 }
 bool node_has_attr(const Node *n, const char *name) { return node_attr(n, name) != NULL; }
@@ -444,41 +452,62 @@ static void record_selector_attribute(Node *n, const char *name, const char *val
         }
     }
 }
-void node_set_attr(Node *n, const char *name, const char *value) {
+int node_attr_qindex(const Node *n, const char *qname) {
+    const char *a = atom(qname);
+    for (int i = 0; i < n->nattrs; i++) if (n->attrs[i].name == a) return i;
+    return -1;
+}
+int node_attr_ns_index(const Node *n, const char *ns, const char *local) {
+    for (int i = 0; i < n->nattrs; i++) {
+        const Attr *a = &n->attrs[i];
+        if (a->ns != ns) continue;
+        if (!strcmp(a->pfx ? a->name + strlen(a->pfx) + 1 : a->name, local)) return i;
+    }
+    return -1;
+}
+void node_set_attr_at(Node *n, int i, const char *name, const char *value, const char *ns, const char *pfx) {
     if (n->ns == NS_HTML && !(n->flags & NF_ATTR_MIXED_CASE))
         for (const unsigned char *p = (const unsigned char *)name; *p; p++)
             if (*p >= 'A' && *p <= 'Z') { n->flags |= NF_ATTR_MIXED_CASE; break; }
-    int i = attr_index(n, name);
     if (i >= 0 && !strcmp(n->attrs[i].value, value)) return;
     bool added = i < 0;
+    /* only null-namespace id and class attributes are the element's ID and classes */
+    bool plain = !(i >= 0 ? n->attrs[i].ns : ns);
     record_selector_attribute(n, name, value);
-    Document *id_doc = (n->flags & NF_CONNECTED) && atom(name) == A_id ? tree_doc(n) : NULL;
+    Document *id_doc = plain && (n->flags & NF_CONNECTED) && atom(name) == A_id ? tree_doc(n) : NULL;
     id_map_del(id_doc, n, n->id);
-    if (i >= 0) { if (!strcmp(n->attrs[i].value, value)) return; free(n->attrs[i].value); n->attrs[i].value = xstrdup(value); }
+    if (i >= 0) { free(n->attrs[i].value); n->attrs[i].value = xstrdup(value); }
     else {
         if (n->nattrs >= n->attrcap) { n->attrcap = n->attrcap ? n->attrcap * 2 : 4; n->attrs = xrealloc(n->attrs, sizeof(Attr) * (size_t)n->attrcap); }
-        n->attrs[n->nattrs].name = atom(name); n->attrs[n->nattrs].value = xstrdup(value); i = n->nattrs++;
+        n->attrs[n->nattrs] = (Attr){ atom(name), xstrdup(value), ns, pfx }; i = n->nattrs++;
     }
-    if (n->attrs[i].name == A_id) n->id = n->attrs[i].value;
-    if (n->attrs[i].name == A_class || (n->ns == NS_HTML && str_ieq(name, "class"))) cache_classes(n, n->attrs[i].value);
+    if (plain && (n->attrs[i].name == A_class || (n->ns == NS_HTML && str_ieq(name, "class")))) cache_classes(n, n->attrs[i].value);
     /* re-point cached id after realloc */
-    for (int k = 0; k < n->nattrs; k++) if (n->attrs[k].name == A_id) n->id = n->attrs[k].value;
+    if (plain || added) { n->id = NULL; for (int k = 0; k < n->nattrs; k++) if (n->attrs[k].name == A_id && !n->attrs[k].ns) { n->id = n->attrs[k].value; break; } }
     id_map_add(id_doc, n);
     trace_mutation(n->doc, n, "set", name);
     mark_attribute(n, name, added);
 }
-void node_remove_attr(Node *n, const char *name) {
+void node_set_attr(Node *n, const char *name, const char *value) {
+    int i = attr_index(n, name);
+    if (i >= 0 && !strcmp(n->attrs[i].value, value)) return;
+    node_set_attr_at(n, i, i >= 0 ? n->attrs[i].name : name, value, NULL, NULL);
+}
+void node_remove_attr_at(Node *n, int i) {
+    if (i < 0 || i >= n->nattrs) return;
+    const char *name = n->attrs[i].name;
     if (!strcmp(name, "open")) node_set_modal(n, false);
-    int i = attr_index(n, name); if (i < 0) return;
     record_selector_attribute(n, name, NULL);
-    if (n->attrs[i].name == A_id) { if (n->flags & NF_CONNECTED) id_map_del(tree_doc(n), n, n->id); n->id = NULL; }
-    if (n->attrs[i].name == A_class || (n->ns == NS_HTML && str_ieq(name, "class"))) cache_classes(n, NULL);
+    bool plain = !n->attrs[i].ns;
+    if (plain && n->attrs[i].name == A_id) { if (n->flags & NF_CONNECTED) id_map_del(tree_doc(n), n, n->id); n->id = NULL; }
+    if (plain && (n->attrs[i].name == A_class || (n->ns == NS_HTML && str_ieq(name, "class")))) cache_classes(n, NULL);
     free(n->attrs[i].value);
     memmove(&n->attrs[i], &n->attrs[i + 1], sizeof(Attr) * (size_t)(n->nattrs - i - 1)); n->nattrs--;
-    for (int k = 0; k < n->nattrs; k++) if (n->attrs[k].name == A_id) n->id = n->attrs[k].value;
+    n->id = NULL; for (int k = 0; k < n->nattrs; k++) if (n->attrs[k].name == A_id && !n->attrs[k].ns) { n->id = n->attrs[k].value; break; }
     trace_mutation(n->doc, n, "remove", name);
     mark_attribute(n, name, true);
 }
+void node_remove_attr(Node *n, const char *name) { node_remove_attr_at(n, attr_index(n, name)); }
 bool node_has_class(const Node *n, const char *cls) {
     return n && n->nclasses && node_has_class_atom(n, atom(cls));
 }
@@ -509,9 +538,10 @@ static void text_rec(const Node *n, SB *b) {
         else if (c->type == NODE_ELEMENT || c->type == NODE_FRAGMENT) text_rec(c, b);
     }
 }
-char *node_text_content(const Node *n) {
-    if (n->type == NODE_TEXT || n->type == NODE_COMMENT || n->type == NODE_CDATA || n->type == NODE_PI) return xstrndup(n->text, n->text_len);
-    SB b; sb_init(&b); text_rec(n, &b); return sb_take(&b);
+char *node_text_content(const Node *n) { size_t len; return node_text_content_n(n, &len); }
+char *node_text_content_n(const Node *n, size_t *len) {
+    if (n->type == NODE_TEXT || n->type == NODE_COMMENT || n->type == NODE_CDATA || n->type == NODE_PI) { *len = n->text_len; return xstrndup(n->text, n->text_len); }
+    SB b; sb_init(&b); text_rec(n, &b); *len = b.n; return sb_take(&b);
 }
 void node_set_character_data(Node *n, const char *s, size_t len) {
     /* Only a flip of the parent's own :empty matters, not a text node that
@@ -542,7 +572,7 @@ void node_text_append(Node *n, const char *s, size_t len) {
 Node *node_clone(Node *n, bool deep, Document *d) {
     Node *c;
     switch (n->type) {
-    case NODE_ELEMENT: c = node_new_element(d, n->tag, n->ns); for (int i = 0; i < n->nattrs; i++) node_set_attr(c, n->attrs[i].name, n->attrs[i].value); break;
+    case NODE_ELEMENT: c = node_new_element(d, n->tag, n->ns); c->xns = n->xns; c->xpfx = n->xpfx; c->xln = n->xln; for (int i = 0; i < n->nattrs; i++) node_set_attr_at(c, -1, n->attrs[i].name, n->attrs[i].value, n->attrs[i].ns, n->attrs[i].pfx); break;
     case NODE_TEXT: c = node_new_text(d, n->text, n->text_len); break;
     case NODE_COMMENT: c = node_new_comment(d, n->text, n->text_len); break;
     case NODE_DOCTYPE: c = node_new_doctype(d, n->text); for (int i = 0; i < n->nattrs; i++) node_set_attr(c, n->attrs[i].name, n->attrs[i].value); break;
@@ -552,7 +582,33 @@ Node *node_clone(Node *n, bool deep, Document *d) {
     }
     if (n->template_content) { c->template_content = node_clone(n->template_content, true, d); c->template_content->refcount = 1; c->template_content->flags |= NF_INERT; }
     if (deep) for (Node *k = n->first; k; k = k->next) node_append(c, node_clone(k, true, d));
+    /* a clonable shadow root is cloned with its host, its children always */
+    if (n->type == NODE_ELEMENT && n->shadow_root && (n->shadow_root->flags & NF_SR_CLONABLE)) {
+        Node *sr = node_attach_shadow(c, n->shadow_root->flags & (NF_SR_CLOSED | NF_SR_DELEGATES | NF_SR_SERIALIZABLE | NF_SR_CLONABLE | NF_SR_MANUAL | NF_SR_DECLARATIVE));
+        if (sr) for (Node *k = n->shadow_root->first; k; k = k->next) node_append(sr, node_clone(k, true, d));
+    }
     return c;
+}
+
+bool node_valid_shadow_host(const Node *n) {
+    static const char *const ok[] = { "article", "aside", "blockquote", "body", "div", "footer", "h1", "h2", "h3", "h4", "h5", "h6", "header", "main", "nav", "p", "section", "span", NULL };
+    if (!n || n->type != NODE_ELEMENT || n->ns != NS_HTML) return false;
+    for (int i = 0; ok[i]; i++) if (!strcmp(n->tag, ok[i])) return true;
+    /* a valid custom element name */
+    const char *t = n->tag;
+    if (!(t[0] >= 'a' && t[0] <= 'z') || !strchr(t, '-')) return false;
+    for (const unsigned char *q = (const unsigned char *)t; *q; q++) if (*q >= 'A' && *q <= 'Z') return false;
+    static const char *const bad[] = { "annotation-xml", "color-profile", "font-face", "font-face-src", "font-face-uri", "font-face-format", "font-face-name", "missing-glyph", NULL };
+    for (int i = 0; bad[i]; i++) if (!strcmp(t, bad[i])) return false;
+    return true;
+}
+Node *node_attach_shadow(Node *host, uint32_t flags) {
+    if (!host || host->shadow_root || !node_valid_shadow_host(host)) return NULL;
+    Node *f = node_new_fragment(host->doc);
+    f->host = host; f->refcount = 1; f->flags |= flags;
+    host->shadow_root = f;
+    if (host->flags & NF_CONNECTED) { f->flags |= NF_CONNECTED; if (host->doc) doc_mark_dirty(host->doc, host); }
+    return f;
 }
 
 bool html_is_void(const char *t) {
@@ -563,13 +619,30 @@ bool html_is_void(const char *t) {
 static void esc(SB *b, const char *s, size_t n, bool attr) {
     for (size_t i = 0; i < n; i++) {
         char c = s[i];
-        if (c == '&') sb_puts(b, "&amp;"); else if (c == '<' && !attr) sb_puts(b, "&lt;"); else if (c == '>' && !attr) sb_puts(b, "&gt;");
+        if (c == '&') sb_puts(b, "&amp;"); else if (c == '<') sb_puts(b, "&lt;"); else if (c == '>') sb_puts(b, "&gt;");
         else if (c == '"' && attr) sb_puts(b, "&quot;"); else if ((unsigned char)c == 0xC2 && i + 1 < n && (unsigned char)s[i + 1] == 0xA0) { sb_puts(b, "&nbsp;"); i++; }
         else sb_putc(b, c);
     }
 }
 static void ser(const Node *n, SB *b);
+/* getHTML(): the shadow roots to serialize */
+static __thread struct { bool on, serializable; Node *const *roots; int nroots; } g_ser;
+static void ser_shadow(const Node *host, SB *b) {
+    const Node *sr = host->shadow_root;
+    bool want = g_ser.serializable && (sr->flags & NF_SR_SERIALIZABLE);
+    for (int i = 0; !want && i < g_ser.nroots; i++) want = g_ser.roots[i] == sr;
+    if (!want) return;
+    sb_puts(b, (sr->flags & NF_SR_CLOSED) ? "<template shadowrootmode=\"closed\"" : "<template shadowrootmode=\"open\"");
+    if (sr->flags & NF_SR_DELEGATES) sb_puts(b, " shadowrootdelegatesfocus=\"\"");
+    if (sr->flags & NF_SR_SERIALIZABLE) sb_puts(b, " shadowrootserializable=\"\"");
+    if (sr->flags & NF_SR_MANUAL) sb_puts(b, " shadowrootslotassignment=\"manual\"");
+    if (sr->flags & NF_SR_CLONABLE) sb_puts(b, " shadowrootclonable=\"\"");
+    sb_putc(b, '>');
+    for (const Node *c = sr->first; c; c = c->next) ser(c, b);
+    sb_puts(b, "</template>");
+}
 static void ser_children(const Node *n, const Node *src, SB *b) {
+    if (g_ser.on && n->type == NODE_ELEMENT && n->shadow_root) ser_shadow(n, b);
     bool raw = n->type == NODE_ELEMENT && n->ns == NS_HTML && (n->tag == A_script || n->tag == A_style || n->tag == A_xmp || n->tag == A_iframe || n->tag == A_noscript || n->tag == A_plaintext || n->tag == atom("noembed") || n->tag == atom("noframes"));
     for (const Node *c = src->first; c; c = c->next) { if (raw && c->type == NODE_TEXT) sb_put(b, c->text, c->text_len); else ser(c, b); }
 }
@@ -597,6 +670,12 @@ char *node_serialize(const Node *n, bool outer) {
     if (outer) ser(n, &b);
     else ser_children(n, n->template_content ? n->template_content : n, &b);
     return sb_take(&b);
+}
+char *node_serialize_ex(const Node *n, bool outer, bool serializable, Node *const *roots, int nroots) {
+    g_ser.on = true; g_ser.serializable = serializable; g_ser.roots = roots; g_ser.nroots = nroots;
+    char *s = node_serialize(n, outer);
+    memset(&g_ser, 0, sizeof g_ser);
+    return s;
 }
 
 Node *doc_get_element_by_id(Document *d, const char *id) {
