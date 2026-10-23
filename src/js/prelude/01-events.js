@@ -105,9 +105,19 @@ class KeyboardEvent extends UIEvent {
     }
     getModifierState(k) { return MouseEvent.prototype.getModifierState.call(this, k); }
 }
-class InputEvent extends UIEvent { constructor(t, i) { super(t, i); i = i || {}; this.data = i.data ?? null; this.inputType = i.inputType || ''; this.isComposing = !!i.isComposing; } }
+class InputEvent extends UIEvent {
+    constructor(t, i) {
+        super(t, i); i = i || {};
+        const tr = i.targetRanges === undefined ? [] : Array.from(i.targetRanges);
+        if (tr.some(r => !(r instanceof StaticRange))) throw new TypeError("Failed to construct 'InputEvent': Failed to read the 'targetRanges' property from 'InputEventInit': Failed to convert value to 'StaticRange'.");
+        this.data = i.data == null ? null : String(i.data); this.inputType = i.inputType === undefined ? '' : String(i.inputType); this.isComposing = !!i.isComposing;
+        this.dataTransfer = i.dataTransfer ?? null;
+        def(this, '_tr', tr);
+    }
+    getTargetRanges() { return this._tr.slice(); }
+}
 class ErrorEvent extends Event { constructor(t, i) { super(t, i); i = i || {}; this.message = i.message || ''; this.filename = i.filename || ''; this.lineno = i.lineno || 0; this.colno = i.colno || 0; this.error = i.error; } }
-class ProgressEvent extends Event { constructor(t, i) { super(t, i); i = i || {}; this.lengthComputable = !!i.lengthComputable; this.loaded = i.loaded || 0; this.total = i.total || 0; } }
+class ProgressEvent extends Event { constructor(t, i = undefined) { super(t, i); i = i || {}; this.lengthComputable = !!i.lengthComputable; this.loaded = i.loaded || 0; this.total = i.total || 0; } }
 class MessageEvent extends Event { constructor(t, i) { super(t, i); i = i || {}; this.data = i.data; this.origin = i.origin || ''; this.lastEventId = i.lastEventId || ''; this.source = i.source || null; this.ports = i.ports || []; } }
 class PopStateEvent extends Event { constructor(t, i) { super(t, i); this.state = i && i.state !== undefined ? i.state : null; } }
 class HashChangeEvent extends Event { constructor(t, i) { super(t, i); i = i || {}; this.oldURL = i.oldURL || ''; this.newURL = i.newURL || ''; } }

@@ -165,7 +165,7 @@ function formOwner(el) {
     const name = N.name(el);
     if (!LISTED.has(name) && name !== 'img') return null;
     const fa = name === 'img' ? null : N.attr(el, 'form');
-    if (fa != null && el.isConnected) { const f = fa ? rootById(el, fa) : null; return isHtmlEl(f, 'form') ? f : null; }
+    if (fa != null && el.isConnected) { const f = fa ? rootById(el, fa) : null; return isHtmlEl(refResolve(f), 'form') ? f : null; }
     for (let p = N.parent(el); p; p = N.parent(p)) if (isHtmlEl(p, 'form')) return p;
     return null;
 }
@@ -361,7 +361,7 @@ const optText = o => {
 const labelable = e => isHtmlEl(e) && (LABELABLE.has(N.name(e)) ? !(N.name(e) === 'input' && inType(e) === 'hidden') : !!(e.__ce && e.__ce.formAssociated));
 function labelControl(label) {
     const f = N.attr(label, 'for');
-    if (f != null) { const e = f ? rootById(label, f) : null; return e && labelable(e) ? e : null; }
+    if (f != null) { const e = f ? rootById(label, f) : null; return e && labelable(refResolve(e)) ? e : null; }
     for (const e of N.query(label, '*', true)) if (labelable(e)) return e;
     return null;
 }
@@ -369,7 +369,13 @@ function labelsOf(el) {
     if (!labelable(el)) return null;
     let c = labelsCache.get(el);
     if (!c) {
-        c = liveWith(null, () => N.query(el.getRootNode(), 'label', true).filter(l => labelControl(l) === el), NodeList.prototype, liveHandler);
+        /* labels in this tree, and in outer trees when they name a host whose reference target leads here */
+        c = liveWith(null, () => {
+            const out = [];
+            for (let r = el.getRootNode(), inner = true; r; r = r.host ? r.host.getRootNode() : null, inner = false)
+                for (const l of N.query(r, 'label', true)) { const t = labelControl(l); if (t === el || (!inner && t && refResolve(t) === el)) out.push(l); }
+            return out;
+        }, NodeList.prototype, liveHandler);
         labelsCache.set(el, c);
     }
     return c;
@@ -606,7 +612,7 @@ methods(H.HTMLInputElement.prototype, {
     },
     stepUp(n = 1) { stepBy(this, toI32(n), 'stepUp'); },
     stepDown(n = 1) { stepBy(this, -toI32(n), 'stepDown'); },
-    get list() { const id = N.attr(this, 'list'); const e = id ? rootById(this, id) : null; return isHtmlEl(e, 'datalist') ? e : null; },
+    get list() { const id = N.attr(this, 'list'); const e = id ? rootById(this, id) : null; return isHtmlEl(refResolve(e), 'datalist') ? e : null; },
 });
 function stepBy(el, n, op) {
     const t = inType(el), T = NUMERIC[t];

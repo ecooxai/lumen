@@ -59,7 +59,10 @@ public:
         }
         JsSerializedValue inner;
         if (!serialize_into(iso, ctx, rec, inner)) return v8::Nothing<bool>();
-        ser->WriteUint32(HOST_RECORD); ser->WriteUint32((uint32_t)i); ser->WriteUint32((uint32_t)inner.size);
+        v8::Local<v8::Value> t, id;   /* the type travels as its stable id: realms register types in different orders */
+        uint32_t tid = (uint32_t)i;
+        if (types_->Get(ctx, i).ToLocal(&t) && t.As<v8::Array>()->Get(ctx, 2).ToLocal(&id) && id->IsUint32()) tid = id.As<v8::Uint32>()->Value();
+        ser->WriteUint32(HOST_RECORD); ser->WriteUint32(tid); ser->WriteUint32((uint32_t)inner.size);
         ser->WriteRawBytes(inner.bytes.get(), inner.size);
         return v8::Just(true);
     }
@@ -90,8 +93,16 @@ public:
         auto ctx = iso->GetCurrentContext();
         uint32_t tag = 0, i = 0, n = 0; const void *raw = nullptr;
         v8::Local<v8::Value> t, proto, rec;
-        if (!des || !des->ReadUint32(&tag) || tag != HOST_RECORD || !des->ReadUint32(&i) || !des->ReadUint32(&n) || !des->ReadRawBytes(n, &raw) ||
-            !host_types(iso)->Get(ctx, i).ToLocal(&t) || !t->IsArray() || !t.As<v8::Array>()->Get(ctx, 0).ToLocal(&proto) || !proto->IsObject()) {
+        uint32_t tid = 0;
+        if (!des || !des->ReadUint32(&tag) || tag != HOST_RECORD || !des->ReadUint32(&tid) || !des->ReadUint32(&n) || !des->ReadRawBytes(n, &raw))
+            return fail(iso, "Unable to deserialize cloned data.");
+        auto types = host_types(iso);
+        i = types->Length();
+        for (uint32_t k = 0; k < types->Length(); k++) {
+            v8::Local<v8::Value> e, id;
+            if (types->Get(ctx, k).ToLocal(&e) && e->IsArray() && e.As<v8::Array>()->Get(ctx, 2).ToLocal(&id) && id->IsUint32() && id.As<v8::Uint32>()->Value() == tid) { i = k; break; }
+        }
+        if (i == types->Length() || !types->Get(ctx, i).ToLocal(&t) || !t->IsArray() || !t.As<v8::Array>()->Get(ctx, 0).ToLocal(&proto) || !proto->IsObject()) {
             return fail(iso, "Unable to deserialize cloned data.");
         }
         v8::ValueDeserializer inner(iso, (const uint8_t *)raw, n);
@@ -118,13 +129,13 @@ void clone_module(const v8::FunctionCallbackInfo<v8::Value> &a) {
         a.GetReturnValue().Set(copy);
 }
 void is_module(const v8::FunctionCallbackInfo<v8::Value> &a) { a.GetReturnValue().Set(a[0]->IsWasmModuleObject()); }
-/* cloneHost(prototype, fromRecord(object, record)) */
+/* cloneHost(prototype, fromRecord(object, record), id): id names the type across realms */
 void register_host(const v8::FunctionCallbackInfo<v8::Value> &a) {
     auto iso = a.GetIsolate(); auto ctx = iso->GetCurrentContext();
     if (!a[0]->IsObject() || !a[1]->IsFunction()) return;
     auto types = host_types(iso);
-    v8::Local<v8::Value> entry[] = { a[0], a[1] };
-    (void)types->Set(ctx, types->Length(), v8::Array::New(iso, entry, 2));
+    v8::Local<v8::Value> entry[] = { a[0], a[1], a[2]->IsUint32() ? a[2] : v8::Local<v8::Value>(v8::Integer::NewFromUnsigned(iso, types->Length())) };
+    (void)types->Set(ctx, types->Length(), v8::Array::New(iso, entry, 3));
     (void)ctx->Global()->SetPrivate(ctx, host_key(iso), types);
 }
 /* cloneRec(object, record): the plain values the object is serialized as */

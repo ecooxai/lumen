@@ -24,22 +24,27 @@ namespace {
 using Buf = JsSerializedValue;
 enum { WM_MESSAGE, WM_ERROR, WM_LOADFAIL };
 struct OutMsg { int kind; Buf data; std::string msg, file; int line = 0, col = 0; };
+struct WFetchEv { uint64_t id; int kind; NetResponse *resp; std::string data; };   /* kind: 0 done, 1 head, 2 chunk */
 struct Worker {
     uint32_t id = 0; JsCtx *owner = nullptr;
     std::string url, src, ua, platform, name; bool have_src = false, module = false, shared = false, service = false;
     std::mutex mu; std::condition_variable cv;
     uint64_t task_version = 0;  // protected by mu, prevents lost foreground wakeups
     std::deque<Buf> in; std::deque<OutMsg> out;
+    std::deque<WFetchEv> fetched;   /* W.fetchAsync steps for the worker's thread, protected by mu */
     std::atomic<bool> term{false};
     v8::Isolate *iso = nullptr;
     std::atomic<size_t> heap{0}, ext{0};
+    ~Worker() { for (auto &f : fetched) net_response_free(f.resp); }
 };
+struct WFetchCb { v8::Global<v8::Function> head, chunk, done; };
 struct WTimer { double due = 0, interval = 0; bool repeat = false; v8::Global<v8::Function> fn; std::vector<v8::Global<v8::Value>> args; };
 struct WEnv {
     std::shared_ptr<Worker> w; v8::Isolate *iso = nullptr;
     v8::Global<v8::Context> ctx; v8::Global<v8::Function> onmsg, report;
     std::map<std::string, v8::Global<v8::Module>> mods; std::multimap<int, std::string> murl;
     std::map<uint32_t, WTimer> timers; uint32_t tseq = 0; bool closing = false, reporting = false; double t0 = 0;
+    std::map<uint64_t, WFetchCb> fetches;   /* W.fetchAsync callbacks by net request id */
 };
 std::map<uint32_t, std::shared_ptr<Worker>> g_workers;   /* main thread only */
 uint32_t g_wseq;
@@ -159,6 +164,85 @@ WFN(fetch) {
     net_response_free(r);
     a.GetReturnValue().Set(v8::Array::New(iso, out, 4));
 }
+/* W.fetchAsync(method, url, flatHeaders, body, head, chunk, done) -> id: fetch() on the net pool, its body streamed.
+   The net layer calls back on the main thread (net_poll), which queues each step for the worker; there
+   head(status, statusText, url, flatHeaders), chunk(ArrayBuffer) and done(status, statusText, url, flatHeaders,
+   body, err) run. W.fetchPause(id, on) is flow control, W.fetchAbort(id) cancels. */
+std::mutex g_wfetch_mu;
+std::map<uint64_t, std::weak_ptr<Worker>> g_wfetch;
+void fetch_queue(NetRequest *rq, int kind, NetResponse *r, const char *data, size_t n, bool last) {
+    std::shared_ptr<Worker> w;
+    { std::lock_guard<std::mutex> lk(g_wfetch_mu); auto it = g_wfetch.find(rq->id); if (it == g_wfetch.end()) return; w = it->second.lock(); if (last || !w) g_wfetch.erase(it); }
+    if (!w) return;
+    WFetchEv ev{ rq->id, kind, nullptr, {} };
+    if (r) { ev.resp = (NetResponse *)malloc(sizeof *ev.resp); *ev.resp = *r; memset(r, 0, sizeof *r); }   /* the net layer frees the emptied original */
+    if (data) ev.data.assign(data, n);
+    { std::lock_guard<std::mutex> lk(w->mu); w->fetched.push_back(std::move(ev)); }
+    w->cv.notify_one();
+}
+void fetch_head_w(NetRequest *rq, NetResponse *r, void *) { fetch_queue(rq, 1, r, nullptr, 0, false); }
+void fetch_chunk_w(NetRequest *rq, const char *d, size_t n, void *) { fetch_queue(rq, 2, nullptr, d, n, false); }
+void fetch_done_w(NetRequest *rq, NetResponse *r, void *) { fetch_queue(rq, 0, r, nullptr, 0, true); }
+WFN(fetchAsync) {
+    WENV; if (!a[4]->IsFunction() || !a[5]->IsFunction() || !a[6]->IsFunction()) return;
+    NetRequest *rq = net_request_new(jcstr(iso, a[0]).c_str(), jcstr(iso, a[1]).c_str());
+    if (a[2]->IsArray()) {
+        v8::Local<v8::Array> h = a[2].As<v8::Array>();
+        for (uint32_t i = 0; i + 1 < h->Length(); i += 2) {
+            v8::Local<v8::Value> k, v;
+            if (!h->Get(ctx, i).ToLocal(&k) || !h->Get(ctx, i + 1).ToLocal(&v)) continue;
+            std::string ks = jcstr(iso, k), vs = jcstr(iso, v);
+            if (!net_request_control(rq, ks.c_str(), vs.c_str()) && !(str_ieq(ks.c_str(), "referer") && vs.empty())) headers_add(&rq->headers, ks.c_str(), vs.c_str());
+        }
+    }
+    const char *p; size_t n;
+    if (bytes_of(a[3], p, n) && n) { rq->body = (char *)malloc(n); memcpy(rq->body, p, n); rq->body_len = n; }
+    rq->head = fetch_head_w; rq->chunk = fetch_chunk_w; rq->done = fetch_done_w;
+    uint64_t id;
+    { std::lock_guard<std::mutex> lk(g_wfetch_mu); id = net_fetch(rq); g_wfetch[id] = E->w; }
+    WFetchCb &cb = E->fetches[id];
+    cb.head.Reset(iso, a[4].As<v8::Function>()); cb.chunk.Reset(iso, a[5].As<v8::Function>()); cb.done.Reset(iso, a[6].As<v8::Function>());
+    a.GetReturnValue().Set((double)id);
+}
+WFN(fetchPause) { WENV; net_pause((uint64_t)a[0]->NumberValue(ctx).FromMaybe(0), a[1]->BooleanValue(iso)); }
+WFN(fetchAbort) {
+    WENV; uint64_t id = (uint64_t)a[0]->NumberValue(ctx).FromMaybe(0);
+    if (!E->fetches.erase(id)) return;
+    { std::lock_guard<std::mutex> lk(g_wfetch_mu); g_wfetch.erase(id); }
+    net_cancel(id);
+}
+v8::Local<v8::Array> resp_headers(v8::Isolate *iso, v8::Local<v8::Context> ctx, const NetResponse *r) {
+    v8::Local<v8::Array> hs = v8::Array::New(iso);
+    for (size_t i = 0; r && i < r->headers.n; i++) { (void)hs->Set(ctx, (uint32_t)(2 * i), jstr(iso, r->headers.v[i].name)); (void)hs->Set(ctx, (uint32_t)(2 * i + 1), jstr(iso, r->headers.v[i].value)); }
+    return hs;
+}
+void run_fetched(WEnv *E, std::deque<WFetchEv> &evs) {
+    v8::Isolate *iso = E->iso; v8::HandleScope hs(iso); v8::Local<v8::Context> ctx = E->ctx.Get(iso);
+    for (WFetchEv &f : evs) {
+        NetResponse *r = f.resp;
+        auto it = E->fetches.find(f.id);
+        if (it != E->fetches.end() && !E->w->term && !E->closing) {
+            v8::TryCatch tc(iso);
+            if (f.kind == 1) {
+                v8::Local<v8::Value> argv[4] = { v8::Integer::New(iso, r->status), jstr(iso, r->status_text ? r->status_text : ""), jstr(iso, r->url ? r->url : ""), resp_headers(iso, ctx, r) };
+                (void)it->second.head.Get(iso)->Call(ctx, v8::Undefined(iso), 4, argv);
+            } else if (f.kind == 2) {
+                v8::Local<v8::Value> argv[1] = { make_ab(iso, f.data.data(), f.data.size()) };
+                (void)it->second.chunk.Get(iso)->Call(ctx, v8::Undefined(iso), 1, argv);
+            } else {
+                v8::Local<v8::Function> cb = it->second.done.Get(iso); E->fetches.erase(it);
+                bool err = !r || r->status == 0 || r->error;
+                v8::Local<v8::Value> argv[6] = { v8::Integer::New(iso, r ? r->status : 0), jstr(iso, r && r->status_text ? r->status_text : ""), jstr(iso, r && r->url ? r->url : ""), resp_headers(iso, ctx, r),
+                    make_ab(iso, r && r->body ? r->body : "", r && r->body ? r->body_len : 0), err ? v8::Local<v8::Value>(jstr(iso, r && r->error ? r->error : "network error")) : v8::Local<v8::Value>(v8::False(iso)) };
+                (void)cb->Call(ctx, v8::Undefined(iso), 6, argv);
+            }
+            wcheck(E, tc);
+            iso->PerformMicrotaskCheckpoint();
+        }
+        net_response_free(r);
+    }
+    evs.clear();
+}
 WFN(importScript) {
     WENV; std::string u = resolve(E, jcstr(iso, a[0]));
     if (u.empty()) { throw_dom(iso, ctx, "Failed to execute 'importScripts': The URL '" + jcstr(iso, a[0]) + "' is invalid.", "SyntaxError"); return; }
@@ -166,6 +250,20 @@ WFN(importScript) {
     if (!r || r->status < 200 || r->status >= 300) {
         if (r) net_response_free(r);
         throw_dom(iso, ctx, "Failed to execute 'importScripts': The script at '" + u + "' failed to load.", "NetworkError"); return;
+    }
+    /* a classic worker script must be served with a JavaScript MIME type (a missing type is let through) */
+    if (const char *ct = headers_get(&r->headers, "content-type"); ct && *ct) {
+        static const char *ok[] = { "application/ecmascript", "application/javascript", "application/x-ecmascript", "application/x-javascript",
+            "text/ecmascript", "text/javascript", "text/javascript1.0", "text/javascript1.1", "text/javascript1.2", "text/javascript1.3",
+            "text/javascript1.4", "text/javascript1.5", "text/jscript", "text/livescript", "text/x-ecmascript", "text/x-javascript" };
+        char *ess = mime_essence(ct);
+        bool js = false;
+        for (const char *m : ok) if (ess && !strcmp(ess, m)) js = true;
+        free(ess);
+        if (!js) {
+            net_response_free(r);
+            throw_dom(iso, ctx, "Failed to execute 'importScripts': Refused to execute script from '" + u + "' because its MIME type ('" + std::string(ct) + "') is not executable.", "NetworkError"); return;
+        }
     }
     std::string src(r->body ? r->body : "", r->body_len); net_response_free(r);
     v8::ScriptOrigin origin(jstr(iso, u.c_str()));
@@ -201,19 +299,28 @@ const etThis = (o, op) => {
     throw new TypeError(`Failed to execute '${op}' on 'EventTarget': Illegal invocation`);
 };
 const etArgs = (op, n, have) => { if (have < n) throw new TypeError(`Failed to execute '${op}' on 'EventTarget': ${n} argument${n > 1 ? 's' : ''} required, but only ${have} present.`); };
-function fireOn(t, e, skipHandler) {
-    evTarget(e, t); evCurrent(e, t); evPhase(e, 2); e._stop = e._imm = false; e._path = [t];
-    const h = skipHandler ? null : t['on' + e.type];
+/* listeners of t for phase (1 capture, 2 at target, 3 bubble) */
+function invokeOn(t, e, phase, skipHandler) {
+    evCurrent(e, t); evPhase(e, phase);
+    const h = skipHandler || phase === 1 ? null : t['on' + e.type];
+    const L = listeners(t).get(e.type), ls = L ? L.slice() : null;   /* listeners added while dispatching do not see this event */
     if (typeof h === 'function') { try { const r = h.call(t, e); if (r === false && e.type !== 'error') e.preventDefault(); } catch (x) { W.reportErr(x); } }
-    const L = !e._imm && listeners(t).get(e.type);
-    if (L) for (const l of L.slice()) {
-        if (l.removed) continue;
+    if (ls && !e._imm) for (const l of ls) {
+        if (l.removed || (phase === 1 && !l.capture) || (phase === 3 && l.capture)) continue;
         if (l.once) EventTarget.prototype.removeEventListener.call(t, e.type, l.fn, l.capture);
         e._passive = l.passive;
         try { if (typeof l.fn === 'function') l.fn.call(t, e); else if (l.fn && typeof l.fn.handleEvent === 'function') l.fn.handleEvent(e); } catch (x) { W.reportErr(x); }
         e._passive = false;
         if (e._imm) break;
     }
+}
+/* the path runs through __evp parents (IndexedDB: request -> transaction -> database) */
+function fireOn(t, e, skipHandler) {
+    const path = [t]; for (let p = t.__evp; p && path.length < 8; p = p.__evp) path.push(p);
+    evTarget(e, t); e._stop = e._imm = false; e._path = path;
+    for (let i = path.length - 1; i > 0 && !e._stop; i--) invokeOn(path[i], e, 1);
+    if (!e._stop) invokeOn(t, e, 2, skipHandler);
+    if (e.bubbles) for (let i = 1; i < path.length && !e._stop; i++) invokeOn(path[i], e, 3);
     evCurrent(e, null); evPhase(e, 0);
     return !e.defaultPrevented;
 }
@@ -268,9 +375,11 @@ const URLN = W;
 #include "url_shared.inc"
 #include "urlpattern_shared.inc"
 R"JS(
-const blobURLs = new Map(); let blobURLSeq = 0;
+const blobURLs = new Map();
+/* a blob: URL's path ends with a random UUID (version 4) */
+const blobUUID = () => { const h = [...Array(32)].map(() => (Math.random() * 16 | 0).toString(16)); h[12] = '4'; h[16] = '89ab'[Math.random() * 4 | 0]; const s = h.join(''); return `${s.slice(0, 8)}-${s.slice(8, 12)}-${s.slice(12, 16)}-${s.slice(16, 20)}-${s.slice(20)}`; };
 Object.defineProperties(URL, {
-    createObjectURL: { value: function createObjectURL(b) { const u = 'blob:' + self.location.origin + '/' + (++blobURLSeq).toString(16).padStart(8, '0') + '-lumenw'; blobURLs.set(u, b); return u; }, writable: true, enumerable: true, configurable: true },
+    createObjectURL: { value: function createObjectURL(b) { const u = 'blob:' + self.location.origin + '/' + blobUUID(); blobURLs.set(u, b); return u; }, writable: true, enumerable: true, configurable: true },
     revokeObjectURL: { value: function revokeObjectURL(u) { blobURLs.delete(String(u)); }, writable: true, enumerable: true, configurable: true },
 });
 class WorkerLocation { toString() { return this.href; } }
@@ -323,116 +432,48 @@ const ZN = W;
 )JS"
 #include "compression_shared.inc"
 R"JS(
-class Headers {
-    constructor(h) { def(this, '_m', new Map()); if (h) for (const [k, v] of (h instanceof Headers ? h._m : Array.isArray(h) ? h : Object.entries(h))) this.append(k, v); }
-    get(k) { return this._m.get(String(k).toLowerCase()) ?? null; } has(k) { return this._m.has(String(k).toLowerCase()); }
-    set(k, v) { this._m.set(String(k).toLowerCase(), String(v)); } append(k, v) { k = String(k).toLowerCase(); this._m.set(k, this._m.has(k) ? this._m.get(k) + ', ' + v : String(v)); }
-    delete(k) { this._m.delete(String(k).toLowerCase()); } forEach(f) { this._m.forEach((v, k) => f(v, k, this)); }
-    entries() { return this._m.entries(); } keys() { return this._m.keys(); } values() { return this._m.values(); } [Symbol.iterator]() { return this._m.entries(); }
-}
-const blobBytes = parts => {
-    const bufs = (parts || []).map(x => x instanceof Blob ? x._b : x instanceof ArrayBuffer ? new Uint8Array(x) : ArrayBuffer.isView(x) ? new Uint8Array(x.buffer, x.byteOffset, x.byteLength) : new TextEncoder().encode(String(x)));
-    const out = new Uint8Array(bufs.reduce((n, b) => n + b.length, 0)); let o = 0; for (const b of bufs) { out.set(b, o); o += b.length; } return out;
+const FILE_ENCODE = s => new TextEncoder().encode(s), FILEN = W;
+)JS"
+#include "file_shared.inc"
+R"JS(
+const FETCH_BASE = () => location.href;
+const FETCH_BLOB = b => new Uint8Array(b._buf);
+const FETCH_BLOBURL = u => blobURLs.get(u) || null;
+const FETCH_BRAND = r => W.wasmResponseBrand(r);
+const FETCH_WASM = f => W.wasmResponse(f);
+const FORM_FIRE = () => {};
+const FORM_ENTRIES = () => { throw new TypeError("Failed to construct 'FormData': parameter 1 is not of type 'HTMLFormElement'."); };
+const FETCH_NET = (o, h) => {
+    const id = W.fetchAsync(o.method, o.url, o.headers.concat([':redirect', 'manual', ':cookies', o.cookies ? 'include' : 'omit']), o.body,
+        (status, statusText, url, hdrs) => h.head(status, statusText, url, hdrs), ab => h.chunk(ab),
+        (status, statusText, url, hdrs, body, err) => h.done(err || null, status, statusText, url, hdrs, body));
+    const cancel = () => W.fetchAbort(id);
+    cancel.pause = on => W.fetchPause(id, on);
+    return cancel;
 };
-class Blob {
-    constructor(parts, opts) { Object.defineProperty(this, '_b', { value: blobBytes(parts) }); this.type = opts && opts.type ? String(opts.type).toLowerCase() : ''; }
-    get size() { return this._b.length; }
-    slice(a = 0, b = this.size, type = '') { const n = this.size, f = x => x < 0 ? Math.max(n + x, 0) : Math.min(x, n); return new Blob([this._b.slice(f(a), Math.max(f(a), f(b)))], { type }); }
-    arrayBuffer() { return Promise.resolve(this._b.slice().buffer); }
-    bytes() { return Promise.resolve(this._b.slice()); }
-    text() { return Promise.resolve(W.decode(this._b.slice().buffer)); }
-    get [Symbol.toStringTag]() { return 'Blob'; }
-}
-class File extends Blob { constructor(parts, name, opts) { super(parts, opts); this.name = String(name); this.lastModified = opts && opts.lastModified || Date.now(); } }
-const responseState = new WeakMap();
-const responseInfo = r => { const s = responseState.get(r); if (!s) throw new TypeError('Expected a Response'); return s; };
-function responseTake(response) {
-    const s = responseInfo(response);
-    if (s.used) throw new TypeError('Body has already been consumed.');
-    if (s.bytes === null) return null;
-    s.used = true; let done = false;
-    return {read() { if (done) return Promise.resolve({done:true}); done = true; return Promise.resolve({done:false,value:s.bytes.slice()}); }, cancel() { done = true; return Promise.resolve(); }, releaseLock() {}};
-}
-class Response {
-    constructor(body = null, init = {}) { responseState.set(this, {bytes: body === null ? null : blobBytes([body]), status: init.status ?? 200, statusText: init.statusText || '', url: init.url || '', headers: new Headers(init.headers), used: false, type: 'basic'}); W.wasmResponseBrand(this); }
-    get ok() { const s = responseInfo(this); return s.status >= 200 && s.status < 300; }
-    get bodyUsed() { return responseInfo(this).used; }
-    async arrayBuffer() { const reader = responseTake(this); return reader ? (await reader.read()).value.buffer : new ArrayBuffer(0); }
-    async text() { return W.decode(await this.arrayBuffer()); }
-    async json() { return JSON.parse(await this.text()); }
-    clone() { const s = responseInfo(this); if (s.used) throw new TypeError('Body has already been consumed.'); return new Response(s.bytes, s); }
-}
-for (const key of ['status','statusText','url','headers','type']) Object.defineProperty(Response.prototype, key, {configurable:true, enumerable:true, get() { return responseInfo(this)[key]; }});
-W.wasmResponse(response => {
-    const s = responseInfo(response);
-    return {mime: Headers.prototype.get.call(s.headers, 'content-type') || '', status: s.status, type: s.type, url: s.url, take: () => responseTake(response)};
-});
-function fetch(input, init) {
-    init = init || {};
-    try {
-        const u = W.resolve(String(input && input.url || input));
-        if (u == null) throw new TypeError('Failed to fetch: invalid URL');
-        const method = String(init.method || (input && input.method) || 'GET').toUpperCase();
-        const hdrs = new Headers(init.headers || (input && input.headers) || undefined);
-        let body = init.body == null ? undefined : init.body;
-        if (body instanceof URLSearchParams) { if (!hdrs.has('content-type')) hdrs.set('content-type', 'application/x-www-form-urlencoded;charset=UTF-8'); body = body.toString(); }
-        else if (typeof body === 'string') { if (!hdrs.has('content-type')) hdrs.set('content-type', 'text/plain;charset=UTF-8'); }
-        else if (body !== undefined && !(body instanceof ArrayBuffer) && !ArrayBuffer.isView(body)) body = String(body);
-        const flat = []; hdrs.forEach((v, k) => flat.push(k, v));
-        const r = W.fetch(u, method, body, flat, init.credentials === 'omit');
-        if (!r) return Promise.reject(new TypeError('Failed to fetch'));
-        const rh = new Headers(); for (let i = 0; i + 1 < r[3].length; i += 2) rh.append(r[3][i], r[3][i + 1]);
-        return Promise.resolve(new Response(r[2], { status: r[0], url: r[1], headers: rh }));
-    } catch (e) { return Promise.reject(e); }
-}
-const CACHE_URL = input => W.resolve(String(input !== null && typeof input === 'object' && input.url !== undefined ? input.url : input));
-const CACHE_RESP = e => { const r = new Response(e.bytes, { status: e.status, statusText: e.statusText, headers: e.headers, url: e.url }); responseInfo(r).type = e.type; return r; };
+)JS"
+#include "fetch_shared.inc"
+R"JS(
+const CACHE_URL = input => { if (reqState.has(input)) return reqState.get(input).url; return W.resolve(String(input)); };
+const CACHE_RESP = responseFrom;
 )JS"
 #include "cache_shared.inc"
 R"JS(
-class XMLHttpRequestEventTarget extends EventTarget {}
-class XMLHttpRequestUpload extends XMLHttpRequestEventTarget {}
-class ProgressEvent extends Event { constructor(t, i) { super(t, i); i = i || {}; this.lengthComputable = !!i.lengthComputable; this.loaded = i.loaded || 0; this.total = i.total || 0; } }
-class XMLHttpRequest extends XMLHttpRequestEventTarget {   /* over W.fetch, which blocks this worker's thread; async requests finish on a later task */
-    constructor() { super(); def(this, '_x', { rs: 0, h: [], rh: null, st: 0, stt: '', url: '', body: null, gen: 0 }); this.responseType = ''; this.timeout = 0; this.withCredentials = false; this.upload = new XMLHttpRequestUpload(); for (const k of ['onreadystatechange', 'onloadstart', 'onprogress', 'onload', 'onloadend', 'onerror', 'onabort', 'ontimeout']) this[k] = null; }
-    get readyState() { return this._x.rs; } get status() { return this._x.st; } get statusText() { return this._x.stt; } get responseURL() { return this._x.url; }
-    get responseText() { const x = this._x; if (this.responseType && this.responseType !== 'text') throw new DOMException("Failed to read 'responseText': the object's responseType is '" + this.responseType + "'.", 'InvalidStateError'); return x.body ? W.decode(x.body) : ''; }
-    get response() {
-        const x = this._x, t = this.responseType;
-        if (t === '' || t === 'text') return this.responseText;
-        if (x.rs !== 4 || !x.body) return null;
-        if (t === 'json') { try { return JSON.parse(W.decode(x.body)); } catch (e) { return null; } }
-        if (t === 'blob') return new Blob([x.body], { type: x.rh && x.rh.get('content-type') || '' });
-        return t === 'arraybuffer' ? x.body : null;
-    }
-    open(m, u, async = true) { const x = this._x; x.gen++; Object.assign(x, { m: String(m).toUpperCase(), u: W.resolve(String(u)), async: async !== false, h: [], rh: null, st: 0, stt: '', url: '', body: null, sent: false }); if (x.u == null) throw new DOMException("Failed to execute 'open': Invalid URL", 'SyntaxError'); this._state(1); }
-    setRequestHeader(k, v) { if (this._x.rs !== 1 || this._x.sent) throw new DOMException("Failed to execute 'setRequestHeader': The object's state must be OPENED.", 'InvalidStateError'); this._x.h.push(String(k), String(v)); }
-    getResponseHeader(k) { const h = this._x.rh; return h ? h.get(k) : null; }
-    getAllResponseHeaders() { const h = this._x.rh; if (!h) return ''; let s = ''; h.forEach((v, k) => s += k + ': ' + v + '\r\n'); return s; }
-    overrideMimeType() {}
-    abort() { const x = this._x; x.gen++; if (x.sent && x.rs !== 4) { x.sent = false; x.rs = 4; this._fire('readystatechange'); this._fire('abort'); this._fire('loadend'); } x.rs = 0; }
-    send(body) {
-        const x = this._x;
-        if (x.rs !== 1 || x.sent) throw new DOMException("Failed to execute 'send': The object's state must be OPENED.", 'InvalidStateError');
-        x.sent = true; const gen = x.gen;
-        if (body instanceof URLSearchParams) { if (!x.h.some((k, i) => !(i & 1) && k.toLowerCase() === 'content-type')) x.h.push('content-type', 'application/x-www-form-urlencoded;charset=UTF-8'); body = body.toString(); }
-        else if (body instanceof Blob) body = body._b;
-        else if (body != null && typeof body !== 'string' && !(body instanceof ArrayBuffer) && !ArrayBuffer.isView(body)) body = String(body);
-        const run = () => {
-            if (gen !== x.gen) return;
-            const r = W.fetch(x.u, x.m, x.m === 'GET' || x.m === 'HEAD' || body == null ? undefined : body, x.h, false);
-            if (!r) { x.rs = 4; x.sent = false; this._fire('readystatechange'); if (!x.async) throw new DOMException("Failed to execute 'send': Failed to load '" + x.u + "'.", 'NetworkError'); this._fire('error'); this._fire('loadend'); return; }
-            x.st = r[0]; x.url = r[1]; x.body = r[2]; x.rh = new Headers(); for (let i = 0; i + 1 < r[3].length; i += 2) x.rh.append(r[3][i], r[3][i + 1]);
-            const n = x.body.byteLength;
-            this._state(2); this._state(3); this._fire('progress', n); x.rs = 4; x.sent = false; this._fire('readystatechange'); this._fire('load', n); this._fire('loadend', n);
-        };
-        if (!x.async) return run();
-        this._fire('loadstart'); setTimeout(run, 0);
-    }
-    _state(s) { this._x.rs = s; this._fire('readystatechange'); }
-    _fire(t, n) { fireOn(this, t === 'readystatechange' ? new Event(t) : new ProgressEvent(t, { lengthComputable: n > 0, loaded: n || 0, total: n || 0 })); }
-}
-for (const [i, k] of ['UNSENT', 'OPENED', 'HEADERS_RECEIVED', 'LOADING', 'DONE'].entries()) { XMLHttpRequest[k] = i; XMLHttpRequest.prototype[k] = i; }
+class ProgressEvent extends Event { constructor(t, i = undefined) { super(t, i); i = i || {}; this.lengthComputable = !!i.lengthComputable; this.loaded = i.loaded || 0; this.total = i.total || 0; } }
+const XHR_WINDOW = false;
+const XHR_HANDLERS = (proto, names) => { for (const n of names) { const store = new WeakMap(); Object.defineProperty(proto, 'on' + n, { get() { return store.get(this) ?? null; }, set(v) { store.set(this, typeof v === 'function' ? v : null); }, enumerable: true, configurable: true }); } };
+const XHR_FIRE = (t, e) => { evTrusted(e); fireOn(t, e); };
+const XHR_DECODE = (b, cs) => { let enc = 'utf-8'; if (cs) try { enc = new TextDecoder(cs).encoding; } catch (e) {} return new TextDecoder(enc).decode(b); };
+const XHR_DOC = () => null, XHR_DOC_BODY = () => undefined;
+const XHR_SYNC = (method, url, flat, body, cred) => { const r = W.fetch(url, method, body === null ? undefined : body, flat, false); return r ? [r[0], '', r[1], r[3], r[2], false] : [0, '', url, [], null, true]; };
+)JS"
+#include "xhr_shared.inc"
+R"JS(
+const report = e => W.reportErr(e);
+const dispatch = (t, ev, trusted) => { if (trusted) evTrusted(ev); return fireOn(t, ev); };
+)JS"
+#include "idb_shared.inc"
+R"JS(
 const toFn =f => typeof f === 'function' ? f : (0, eval)('(function(){' + String(f) + '\n})');
 const performance = { now: () => W.now(), timeOrigin: W.timeOrigin, mark() {}, measure() {}, getEntriesByName() { return []; }, getEntriesByType() { return []; }, toJSON() { return { timeOrigin: W.timeOrigin }; } };
 const fmt = a => a.map(x => typeof x === 'string' ? x : x instanceof Error ? x.stack || String(x) : (() => { try { return JSON.stringify(x); } catch (e) { return String(x); } })()).join(' ');
@@ -637,9 +678,10 @@ const api = {
     queueMicrotask: f => { Promise.resolve().then(() => f()); }, structuredClone: (v, options) => { if (options && options.transfer) for (const item of options.transfer) if (W.isWasmModule(item)) throw new DOMException('WebAssembly.Module is not transferable.', 'DataCloneError'); if (v instanceof URL || v instanceof URLSearchParams) throw new DOMException(`${v[Symbol.toStringTag]} object could not be cloned.`, 'DataCloneError'); return W.clone(v); },
     btoa, atob, TextEncoder, TextDecoder, TextEncoderStream, TextDecoderStream, CompressionStream, DecompressionStream, ReadableStream, ReadableStreamDefaultReader, ReadableStreamBYOBReader,
     ReadableStreamDefaultController, ReadableByteStreamController, ReadableStreamBYOBRequest, WritableStream, WritableStreamDefaultWriter,
-    WritableStreamDefaultController, TransformStream, TransformStreamDefaultController, ByteLengthQueuingStrategy, CountQueuingStrategy, Blob, File, URL, URLSearchParams, Headers, Response, fetch, Cache, CacheStorage, caches, URLPattern, XMLHttpRequest, XMLHttpRequestEventTarget, XMLHttpRequestUpload, ProgressEvent, performance, console,
+    WritableStreamDefaultController, TransformStream, TransformStreamDefaultController, ByteLengthQueuingStrategy, CountQueuingStrategy, Blob, File, FileReader, FileReaderSync, URL, URLSearchParams, Headers, Request, Response, FormData, fetch, Cache, CacheStorage, caches, URLPattern, XMLHttpRequest, XMLHttpRequestEventTarget, XMLHttpRequestUpload, ProgressEvent, performance, console,
     Event, MessageEvent, MessagePort, MessageChannel, ErrorEvent, AbortController, AbortSignal, Observable, Subscriber, CustomEvent, PromiseRejectionEvent, EventTarget, DOMException, QuotaExceededError, Crypto,
     ...(secureContext ? { CryptoKey, SubtleCrypto } : {}), WorkerGlobalScope, DedicatedWorkerGlobalScope, WorkerLocation, WorkerNavigator,
+    IDBFactory, IDBDatabase, IDBTransaction, IDBObjectStore, IDBIndex, IDBCursor, IDBCursorWithValue, IDBKeyRange, IDBRecord, IDBRequest, IDBOpenDBRequest, IDBVersionChangeEvent, DOMStringList, indexedDB,
 };
 if (W.shared) {   /* a shared worker talks only through the ports its connect events bring */
     delete api.postMessage; delete api.onmessage; delete api.onmessageerror; delete api.DedicatedWorkerGlobalScope;
@@ -747,7 +789,7 @@ void worker_main(std::shared_ptr<Worker> w) {
         js_url_install(ctx, W);
         js_crypto_install(ctx, W); js_encoding_install(ctx, W); js_compress_install(ctx, W);
 #define WREG(nm) (void)W->Set(ctx, jstr(iso, #nm), v8::Function::New(ctx, w_##nm).ToLocalChecked())
-        WREG(post); WREG(clone); WREG(timer); WREG(clear); WREG(close); WREG(now); WREG(log); WREG(decode); WREG(resolve); WREG(fetch); WREG(importScript); WREG(reportErr);
+        WREG(post); WREG(clone); WREG(timer); WREG(clear); WREG(close); WREG(now); WREG(log); WREG(decode); WREG(resolve); WREG(fetch); WREG(fetchAsync); WREG(fetchPause); WREG(fetchAbort); WREG(importScript); WREG(reportErr);
         auto setS = [&](const char *k, const std::string &v) { (void)W->Set(ctx, jstr(iso, k), jstr(iso, v.c_str())); };
         setS("url", w->url); setS("ua", w->ua); setS("platform", w->platform); setS("name", w->name);
         (void)W->Set(ctx, jstr(iso, "shared"), v8::Boolean::New(iso, w->shared));
@@ -803,20 +845,23 @@ void worker_main(std::shared_ptr<Worker> w) {
             { v8::HeapStatistics hs; iso->GetHeapStatistics(&hs); w->heap = hs.total_heap_size(); w->ext = hs.external_memory(); }
             if (!idle_gc && now_ms() - last_act > 10000) { iso->LowMemoryNotification(); idle_gc = true; continue; }  /* idle worker: give memory back once */
             std::deque<Buf> msgs;
+            std::deque<WFetchEv> fetched;
             {
                 std::unique_lock<std::mutex> lk(w->mu);
                 uint64_t version = w->task_version;
                 double next = std::min(1e300, now_ms() + tasks->NextDelayMs());
                 for (auto &kv : E->timers) next = std::min(next, kv.second.due);
-                auto ready = [&] { return w->term.load() || !w->in.empty() || w->task_version != version; };
+                auto ready = [&] { return w->term.load() || !w->in.empty() || !w->fetched.empty() || w->task_version != version; };
                 if (!idle_gc) next = std::min(next, last_act + 10001);
                 if (!ready()) {
                     if (next >= 1e299) w->cv.wait(lk, ready);
                     else { double ms = next - now_ms(); if (ms > 0) w->cv.wait_for(lk, std::chrono::microseconds((int64_t)(ms * 1000) + 1), ready); }
                 }
                 msgs.swap(w->in);
+                fetched.swap(w->fetched);
             }
-            if (!msgs.empty()) { last_act = now_ms(); idle_gc = false; }
+            if (!msgs.empty() || !fetched.empty()) { last_act = now_ms(); idle_gc = false; }
+            if (!fetched.empty()) run_fetched(E, fetched);
             for (Buf &b : msgs) {
                 if (!w->term && !E->closing) {
                     v8::HandleScope hs2(iso);
@@ -837,7 +882,8 @@ void worker_main(std::shared_ptr<Worker> w) {
                 last_act = now_ms(); idle_gc = false;
             }
         }
-        E->timers.clear(); E->mods.clear(); E->murl.clear(); E->onmsg.Reset(); E->report.Reset(); E->ctx.Reset();
+        for (auto &f : E->fetches) { { std::lock_guard<std::mutex> lk(g_wfetch_mu); g_wfetch.erase(f.first); } net_cancel(f.first); }
+        E->fetches.clear(); E->timers.clear(); E->mods.clear(); E->murl.clear(); E->onmsg.Reset(); E->report.Reset(); E->ctx.Reset();
     }
     std::deque<Buf> abandoned;
     {

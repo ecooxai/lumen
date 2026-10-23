@@ -217,3 +217,10 @@ void rtc_ctx_free(JsCtx *c);
 double webgpu_deadline(JsCtx *c);   /* when webgpu_pump has work: queued events now, GPU work in flight soon */
 void webgpu_pump(JsCtx *c);
 v8::Platform *js_platform();
+
+/* a request body argument: an ArrayBuffer or view as its bytes, anything else as its UTF-8 string */
+inline std::string js_body_bytes(v8::Isolate *iso, v8::Local<v8::Value> v) {
+    if (v->IsArrayBufferView()) { auto w = v.As<v8::ArrayBufferView>(); std::string b(w->ByteLength(), '\0'); w->CopyContents(b.data(), b.size()); return b; }
+    if (v->IsArrayBuffer()) { auto ab = v.As<v8::ArrayBuffer>(); return std::string((const char *)ab->Data(), ab->ByteLength()); }
+    return jcstr(iso, v);
+}

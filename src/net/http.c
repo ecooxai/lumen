@@ -489,6 +489,8 @@ typedef struct Ev { int type; NetRequest *req; NetResponse *resp; char *data; si
 static pthread_mutex_t g_ev_mu = PTHREAD_MUTEX_INITIALIZER;
 static Ev *g_ev, *g_ev_tail;
 static __thread NetRequest *t_stream;
+static __thread SB *t_copy;           /* streamed cacheable GET: a copy of the decoded body for the HTTP cache */
+static __thread bool t_copy_over;     /* the copy outgrew its limit */
 static __thread NetRequest *t_sink;   /* fetch whose body goes to its download sink */
 static __thread bool t_sink_stop;
 static __thread const char *t_url;
@@ -542,7 +544,14 @@ static void stream_out(Dec *d, SB *raw) {
     SB o; sb_init(&o);
     dec_feed(d, raw->s, raw->n, &o);
     sb_clear(raw);
-    if (o.n) ev_push(2, t_stream, NULL, o.s, o.n); else sb_free(&o);
+    if (!o.n) { sb_free(&o); return; }
+    size_t n = o.n;
+    if (t_copy && !t_copy_over) { if (t_copy->n + n > (8u << 20)) t_copy_over = true; else sb_put(t_copy, o.s, n); }
+    __atomic_add_fetch(&t_stream->queued, n, __ATOMIC_RELAXED);
+    ev_push(2, t_stream, NULL, o.s, n);
+    /* flow control: wait while script's stream is full or 16 MB are still undelivered (the socket then backs up) */
+    while ((__atomic_load_n(&t_stream->paused, __ATOMIC_RELAXED) || __atomic_load_n(&t_stream->queued, __ATOMIC_RELAXED) > (16u << 20))
+           && !__atomic_load_n(&t_stream->cancelled, __ATOMIC_RELAXED)) usleep(5000);
 }
 static void sink_out(Dec *d, SB *raw) {
     if (!raw->n || t_sink_stop) { sb_clear(raw); return; }
@@ -686,6 +695,7 @@ static NetResponse *http_once(const char *method, const URL *u, const Headers *h
     if (keep) pool_put(c); else conn_close(c);
     if (streaming || sinking) dec_free(&dec);
     else if (!decompress(headers_get(&r->headers, "content-encoding"), &b)) DLOG("decompress failed for %s", u->host);
+    if (streaming && t_copy && !t_copy_over && ok) { sb_free(&b); b = *t_copy; sb_init(t_copy); }   /* the whole body, for the cache */
     r->body_len = b.n; r->body = b.s ? b.s : xcalloc(1, 1);
     r->t_end = now_ms();
     return r;
@@ -767,7 +777,7 @@ static NetResponse *net_fetch_impl2(NetRequest *req, char *cache_state) {
     char *url = xstrdup(req->url);
     char *method = xstrdup(req->method ? req->method : "GET");
     const char *body = req->body; size_t blen = req->body_len;
-    int redirects = req->max_redirects ? req->max_redirects : 20;
+    int redirects = req->max_redirects < 0 ? 0 : req->max_redirects ? req->max_redirects : 20;
     NetResponse *r = NULL;
     for (;;) {
         URL u;
@@ -776,12 +786,14 @@ static NetResponse *net_fetch_impl2(NetRequest *req, char *cache_state) {
         if (strcmp(u.scheme, "http") && strcmp(u.scheme, "https")) { r = xcalloc(1, sizeof *r); r->error = xstrdup("unsupported scheme"); url_free(&u); break; }
         /* Streamed fetches deliver the live response head and body to script as they arrive. */
         bool get = !strcmp(method, "GET") && !body;
-        bool cacheable = get && !t_stream && !req->on_head && http_cache_enabled() && !headers_get(&req->headers, "range");
+        bool cacheable = get && !req->on_head && http_cache_enabled() && !headers_get(&req->headers, "range");
         Headers cond = {0}; bool fresh = false;
         NetResponse *cached = cacheable ? http_cache_lookup(url, &req->headers, &fresh, &cond) : NULL;
+        /* a streamed fetch uses only fresh entries: a 304 would reach script as its response head */
+        if (cached && !fresh && t_stream) { net_response_free(cached); cached = NULL; headers_free(&cond); }
         if (cached && fresh) { r = cached; url_free(&u); *cache_state = 'F'; break; }
         uint64_t fly = 0;
-        if (cacheable && !fly_begin(fly = fly_hash(url))) {
+        if (cacheable && !t_stream && !fly_begin(fly = fly_hash(url))) {   /* a stream may never end: nobody waits for it */
             /* another thread just fetched it: use what it stored, else fetch as usual */
             fly = 0;
             headers_free(&cond); net_response_free(cached);
@@ -791,16 +803,19 @@ static NetResponse *net_fetch_impl2(NetRequest *req, char *cache_state) {
         }
         const Headers *hdrs = cached ? &cond : &req->headers;
         bool retry;
+        SB copy; sb_init(&copy);
+        if (t_stream && cacheable) { t_copy = &copy; t_copy_over = false; }
         t_url = url; t_sink = req->on_head && req->sink ? req : NULL; t_sink_stop = false;
         r = http_once(method, &u, hdrs, body, blen, !req->no_cookies, &retry);
         if (r->error && retry) { net_response_free(r); r = http_once(method, &u, hdrs, body, blen, !req->no_cookies, &retry); }
-        t_sink = NULL;
+        t_sink = NULL; t_copy = NULL; sb_free(&copy);
         if (cached && r->status == 304) { NetResponse *m = http_cache_revalidated(url, &req->headers, cached, r); net_response_free(r); r = m; *cache_state = 'R'; }
         else {
             net_response_free(cached);
             if (cacheable) *cache_state = 'M';
             if (cacheable && r->status == 200) { http_cache_store(url, &req->headers, r); *cache_state = 'S'; }
             else if (!get && strcmp(method, "HEAD") && strcmp(method, "OPTIONS") && r->status >= 200 && r->status < 400) http_cache_invalidate(url);
+            if (t_stream) { free(r->body); r->body = NULL; r->body_len = 0; }   /* script got the body as chunks */
         }
         if (fly) fly_end(fly);
         headers_free(&cond);
@@ -813,6 +828,9 @@ static NetResponse *net_fetch_impl2(NetRequest *req, char *cache_state) {
             URL target;
             bool parsed = url_parse(nu, &target);
             bool allowed = parsed && (!strcmp(target.scheme, "http") || !strcmp(target.scheme, "https"));
+            /* a Location without a fragment keeps the request's (Fetch: "set locationURL's fragment") */
+            const char *hash = strchr(url, '#');
+            if (allowed && hash && !target.fragment) { char *w = xmalloc(strlen(nu) + strlen(hash) + 1); strcpy(w, nu); strcat(w, hash); free(nu); nu = w; }
             if (parsed) url_free(&target);
             if (!allowed) {
                 free(nu);
@@ -836,6 +854,13 @@ static NetResponse *net_fetch_impl2(NetRequest *req, char *cache_state) {
 void net_response_free(NetResponse *r) {
     if (!r) return;
     free(r->status_text); free(r->url); headers_free(&r->headers); free(r->body); free(r->error); free(r);
+}
+
+bool net_request_control(NetRequest *rq, const char *name, const char *value) {
+    if (name[0] != ':') return false;
+    if (!strcmp(name, ":redirect")) rq->max_redirects = !strcmp(value, "manual") ? -1 : 0;
+    else if (!strcmp(name, ":cookies")) rq->no_cookies = !strcmp(value, "omit");
+    return true;
 }
 
 NetRequest *net_request_new(const char *method, const char *url) {
@@ -922,6 +947,12 @@ void net_cancel(uint64_t id) {
     pthread_mutex_lock(&g_mu);
     for (Job *j = g_queue; j; j = j->next) if (j->req->id == id) j->req->cancelled = true;
     for (Job *j = g_running; j; j = j->rnext) if (j->req->id == id) __atomic_store_n(&j->req->cancelled, true, __ATOMIC_RELAXED);
+    pthread_mutex_unlock(&g_mu);
+}
+void net_pause(uint64_t id, bool on) {
+    pthread_mutex_lock(&g_mu);
+    for (Job *j = g_queue; j; j = j->next) if (j->req->id == id) j->req->paused = on;
+    for (Job *j = g_running; j; j = j->rnext) if (j->req->id == id) __atomic_store_n(&j->req->paused, on, __ATOMIC_RELAXED);
     pthread_mutex_unlock(&g_mu);
 }
 int net_pending(void) { pthread_mutex_lock(&g_mu); int n = g_pending; pthread_mutex_unlock(&g_mu); return n; }
@@ -1019,6 +1050,7 @@ int net_poll(void) {
             if (!rq->cancelled && rq->head) rq->head(rq, e->resp, rq->ud);
             net_response_free(e->resp);
         } else {
+            __atomic_sub_fetch(&rq->queued, e->n, __ATOMIC_RELAXED);
             if (!rq->cancelled && rq->chunk) rq->chunk(rq, e->data, e->n, rq->ud);
             free(e->data);
         }

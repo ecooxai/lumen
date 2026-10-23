@@ -107,8 +107,10 @@ methods(Element.prototype, {
         attrRemove(this, a._ns, a._ln);
         return a;
     },
-    get innerHTML() { return N.html(this, false); }, set innerHTML(v) { setInner(this, ttString(TrustedHTML, v == null ? '' : v, 'Element innerHTML')); },
-    get outerHTML() { return N.html(this, true); },
+    /* in an XML document the fragment serialization is XML's */
+    get innerHTML() { return xmlDocOf(this) ? [...this.childNodes].map(c => xmlSer(c, null, Object.assign(Object.create(null), { xml: XML_NS }))).join('') : N.html(this, false); },
+    set innerHTML(v) { setInner(this, ttString(TrustedHTML, v == null ? '' : v, 'Element innerHTML')); },
+    get outerHTML() { return xmlDocOf(this) ? xmlSer(this, null, Object.assign(Object.create(null), { xml: XML_NS })) : N.html(this, true); },
     set outerHTML(v) { v = ttString(TrustedHTML, v == null ? '' : v, 'Element outerHTML'); const p = N.parent(this); if (!p) return; insertNode(p, N.parseFrag(p, v), this); removeNode(this); },
     insertAdjacentHTML(pos, html) { html = ttString(TrustedHTML, html, 'Element insertAdjacentHTML'); const ctx = /^(beforebegin|afterend)$/i.test(pos) ? N.parent(this) : this; if (ctx) this.insertAdjacentElement(pos, N.parseFrag(ctx, String(html))); },
     insertAdjacentElement(pos, el) {
@@ -149,6 +151,7 @@ methods(Element.prototype, {
         if (mode === undefined) throw fail("Failed to read the 'mode' property from 'ShadowRootInit': Required member is undefined.");
         const m = String(mode);
         if (m !== 'open' && m !== 'closed') throw fail(`Failed to read the 'mode' property from 'ShadowRootInit': The provided value '${m}' is not a valid enum value of type ShadowRootMode.`);
+        const rt = init.referenceTarget, refTarget = rt == null ? null : String(rt);
         const serializable = !!init.serializable, sa = init.slotAssignment === undefined ? 'named' : String(init.slotAssignment);
         if (sa !== 'named' && sa !== 'manual') throw fail(`Failed to read the 'slotAssignment' property from 'ShadowRootInit': The provided value '${sa}' is not a valid enum value of type SlotAssignmentMode.`);
         const ln = this.localName;
@@ -168,6 +171,7 @@ methods(Element.prototype, {
         }
         const sr = N.attachShadow(this, (m === 'closed' ? 1 : 0) | (delegatesFocus ? 2 : 0) | (serializable ? 4 : 0) | (clonable ? 8 : 0) | (sa === 'manual' ? 16 : 0));
         if (Object.getPrototypeOf(sr) !== ShadowRoot.prototype) Object.setPrototypeOf(sr, ShadowRoot.prototype);
+        if (refTarget !== null) N.srRef(sr, refTarget);
         return sr;
     },
     get shadowRoot() { const sr = N.shadowOf(this); return sr && !(N.srFlags(sr) & 1) ? sr : null; },
@@ -331,6 +335,83 @@ class SVGGraphicsElement extends SVGElement {}
 class SVGSVGElement extends SVGGraphicsElement {}
 methods(SVGSVGElement.prototype, { createSVGPoint() { return { x: 0, y: 0, matrixTransform() { return this; } }; }, createSVGMatrix() { return new DOMMatrix(); }, getScreenCTM() { return new DOMMatrix(); } });
 class MathMLElement extends Element {}
+installHandlers(MathMLElement.prototype, true);
+methods(MathMLElement.prototype, {
+    get style() { if (!this.__style) def(this, '__style', makeStyle(this)); return this.__style; },
+    get dataset() { return Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'dataset').get.call(this); },
+    focus() { N.focus(this); }, blur() { if (N.active() === this) N.focus(null); },
+});
+/* HTMLOrSVGElement's tabIndex, nonce and autofocus on SVG and MathML elements */
+for (const P of [SVGElement.prototype, MathMLElement.prototype]) {
+    acc(P, 'tabIndex', function () { const v = /^[\t\n\f\r ]*[-+]?\d+/.test(N.attr(this, 'tabindex') || '') ? parseInt(N.attr(this, 'tabindex'), 10) : NaN; return Number.isFinite(v) && Math.abs(v) < 2 ** 31 ? v : N.ns(this) === 1 && N.name(this) === 'a' && N.attr(this, 'href') != null ? 0 : -1; },
+        function (v) { this.setAttribute('tabindex', String(v | 0)); });
+    acc(P, 'autofocus', function () { return N.attr(this, 'autofocus') != null; }, function (v) { if (v) this.setAttribute('autofocus', ''); else this.removeAttribute('autofocus'); });
+    acc(P, 'nonce', function () { return this.__nonce ?? N.attr(this, 'nonce') ?? ''; }, function (v) { def(this, '__nonce', String(v)); });
+}
+
+/* ARIAMixin: nullable string reflection of role and aria-* */
+for (const k of ['role', 'ariaAtomic', 'ariaAutoComplete', 'ariaBrailleLabel', 'ariaBrailleRoleDescription', 'ariaBusy', 'ariaChecked',
+    'ariaColCount', 'ariaColIndex', 'ariaColIndexText', 'ariaColSpan', 'ariaCurrent', 'ariaDescription', 'ariaDisabled', 'ariaExpanded',
+    'ariaHasPopup', 'ariaHidden', 'ariaInvalid', 'ariaKeyShortcuts', 'ariaLabel', 'ariaLevel', 'ariaLive', 'ariaModal', 'ariaMultiLine',
+    'ariaMultiSelectable', 'ariaOrientation', 'ariaPlaceholder', 'ariaPosInSet', 'ariaPressed', 'ariaReadOnly', 'ariaRelevant',
+    'ariaRequired', 'ariaRoleDescription', 'ariaRowCount', 'ariaRowIndex', 'ariaRowIndexText', 'ariaRowSpan', 'ariaSelected',
+    'ariaSetSize', 'ariaSort', 'ariaValueMax', 'ariaValueMin', 'ariaValueNow', 'ariaValueText']) {
+    const a = k === 'role' ? 'role' : 'aria-' + k.slice(4).toLowerCase();
+    acc(Element.prototype, k, function () { return N.attr(this, a) ?? null; }, function (v) { if (v === null) this.removeAttribute(a); else this.setAttribute(a, v); });
+}
+/* the element a reference to el ends at, following shadow roots' referenceTarget; null when one names no element */
+function refResolve(el) {
+    for (let i = 0; el && i < 64; i++) {
+        const sr = N.isNode(el) && N.type(el) === 1 ? N.shadowOf(el) : null, rt = sr ? N.srRef(sr) : null;
+        if (rt === null || rt === undefined) return el;
+        el = rt ? N.query(sr, '#' + CSS.escape(rt), false) : null;
+    }
+    return el || null;
+}
+/* element reflection (HTML "reflect" for Element / FrozenArray<Element> attributes): explicitly set elements count
+   while they are in this element's tree or a shadow-including ancestor tree of it */
+const refExplicit = new WeakMap();
+const refVisible = (from, e) => { const t = e.getRootNode(); for (let r = from.getRootNode(); r; r = r.host ? r.host.getRootNode() : null) if (r === t) return true; return false; };
+const refById = (el, id) => { const r = el.getRootNode(); return r && typeof r.getElementById === 'function' ? r.getElementById(id) : null; };
+function reflectElement(proto, prop, attr) {
+    acc(proto, prop, function () {
+        const m = refExplicit.get(this), e = m && m[attr];
+        if (e) return refVisible(this, e) ? e : null;
+        const id = N.attr(this, attr);
+        return id ? refById(this, id) : null;
+    }, function (v) {
+        let m = refExplicit.get(this);
+        if (v == null) { if (m) delete m[attr]; this.removeAttribute(attr); return; }
+        if (!(v instanceof Element)) throw new TypeError(`Failed to set the '${prop}' property: The provided value is not of type 'Element'.`);
+        if (!m) refExplicit.set(this, m = {});
+        this.setAttribute(attr, ''); m[attr] = v;
+    });
+}
+function reflectElements(proto, prop, attr) {
+    acc(proto, prop, function () {
+        const m = refExplicit.get(this), l = m && m[attr];
+        const out = l ? l.filter(e => refVisible(this, e)) : (N.attr(this, attr) ?? null) === null ? null
+            : N.attr(this, attr).split(/[\t\n\f\r ]+/).filter(Boolean).map(id => refById(this, id)).filter(Boolean);
+        if (out === null) return null;
+        const c = m && m['#' + attr];
+        if (c && c.length === out.length && c.every((e, i) => e === out[i])) return c;
+        const f = Object.freeze(out);
+        let mm = m; if (!mm) refExplicit.set(this, mm = {});
+        mm['#' + attr] = f;
+        return f;
+    }, function (v) {
+        let m = refExplicit.get(this);
+        if (v == null) { if (m) delete m[attr]; this.removeAttribute(attr); return; }
+        const l = [...v];
+        if (!l.every(e => e instanceof Element)) throw new TypeError(`Failed to set the '${prop}' property: The provided value is not of type 'Element'.`);
+        if (!m) refExplicit.set(this, m = {});
+        this.setAttribute(attr, ''); m[attr] = l;
+    });
+}
+reflectElement(Element.prototype, 'ariaActiveDescendantElement', 'aria-activedescendant');
+for (const [p, a] of [['ariaControlsElements', 'aria-controls'], ['ariaDescribedByElements', 'aria-describedby'], ['ariaDetailsElements', 'aria-details'],
+    ['ariaErrorMessageElements', 'aria-errormessage'], ['ariaFlowToElements', 'aria-flowto'], ['ariaLabelledByElements', 'aria-labelledby'], ['ariaOwnsElements', 'aria-owns']])
+    reflectElements(Element.prototype, p, a);
 
 function innerTextOf(el) {
     const BLK = /^(ADDRESS|ARTICLE|ASIDE|BLOCKQUOTE|CAPTION|DD|DETAILS|DIALOG|DIV|DL|DT|FIELDSET|FIGCAPTION|FIGURE|FOOTER|FORM|H[1-6]|HEADER|HR|LI|MAIN|NAV|OL|PRE|SECTION|SUMMARY|TABLE|TBODY|TFOOT|THEAD|TR|UL)$/;

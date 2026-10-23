@@ -2,7 +2,8 @@
    encLabel(label) -> canonical name | null, encUtf8(string) -> Uint8Array, encInto(string, u8) -> [read, written],
    isBufferSource(v), decInit(name, fatal, stripBOM) -> state, decChunk(state, bytes | null, last) -> string,
    decodeBytes(bytes, label) -> string (BOM sniffing first, as fetch, XHR and documents decode),
-   formEncode([name, value, ...], label) -> application/x-www-form-urlencoded in that encoding. */
+   formEncode([name, value, ...], label) -> application/x-www-form-urlencoded in that encoding,
+   encodeHtml(string, label) -> ArrayBuffer of the text in that encoding, unmappable code points as &#N;. */
 #include "js_int.h"
 #include <cctype>
 extern "C" {
@@ -129,6 +130,18 @@ void form_encode_fn(const FCI &a) {
     a.GetReturnValue().Set(utf8_str(iso, out.s, out.n));
     sb_free(&out);
 }
+void encode_html_fn(const FCI &a) {
+    v8::Isolate *iso = a.GetIsolate();
+    int e = a.Length() > 1 && !a[1]->IsNullOrUndefined() ? label_of(iso, a[1]) : -1;
+    e = enc_output(e < 0 ? ENCODING_UTF8 : e);
+    std::string s = jcstr(iso, a[0]);
+    size_t n = 0;
+    char *out = enc_encode_html(e, s.data(), s.size(), &n);
+    auto ab = v8::ArrayBuffer::New(iso, n);
+    if (n) memcpy(ab->Data(), out, n);
+    free(out);
+    a.GetReturnValue().Set(ab);
+}
 }
 
 void js_encoding_install(v8::Local<v8::Context> ctx, v8::Local<v8::Object> target) {
@@ -142,4 +155,5 @@ void js_encoding_install(v8::Local<v8::Context> ctx, v8::Local<v8::Object> targe
     fn("decChunk", decode_fn);
     fn("decodeBytes", decode_bytes_fn);
     fn("formEncode", form_encode_fn);
+    fn("encodeHtml", encode_html_fn);
 }

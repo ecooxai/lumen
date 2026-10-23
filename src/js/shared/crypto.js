@@ -807,6 +807,6 @@ if (CRYPTO_SECURE()) Object.defineProperty(Crypto.prototype, 'subtle', {
     get: Object.getOwnPropertyDescriptor({ get subtle() { if (this !== cryptoObj) throw new TypeError('Illegal invocation'); return subtle; } }, 'subtle').get,
     enumerable: true, configurable: true });
 Object.defineProperty(Crypto.prototype, Symbol.toStringTag, { value: 'Crypto', configurable: true });
-if (CN.cloneHost) CN.cloneHost(CryptoKey.prototype, cryptoKeyFromRecord);
+if (CN.cloneHost) CN.cloneHost(CryptoKey.prototype, cryptoKeyFromRecord, 1);
 return { Crypto, CryptoKey, SubtleCrypto, crypto: cryptoObj, cryptoKeyClone };
 })();

@@ -234,6 +234,36 @@ public final class LumenActivity extends SDLActivity {
         });
     }
 
+    /* from the native thread on paste: the primary clip's first image as {MIME type, bytes} (at most 32 MB), else null */
+    public static byte[][] clipboardImage() {
+        final SDLActivity activity = mSingleton;
+        if (activity == null) return null;
+        try {
+            android.content.ClipboardManager clipboard = (android.content.ClipboardManager) activity.getSystemService(Context.CLIPBOARD_SERVICE);
+            android.content.ClipData clip = clipboard != null ? clipboard.getPrimaryClip() : null;
+            if (clip == null) return null;
+            ContentResolver resolver = activity.getContentResolver();
+            for (int i = 0; i < clip.getItemCount(); i++) {
+                Uri uri = clip.getItemAt(i).getUri();
+                String type = uri != null ? resolver.getType(uri) : null;
+                if (type == null || !type.startsWith("image/")) continue;
+                try (java.io.InputStream in = resolver.openInputStream(uri)) {
+                    if (in == null) continue;
+                    java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+                    byte[] buffer = new byte[65536];
+                    for (int n; (n = in.read(buffer)) > 0; ) {
+                        out.write(buffer, 0, n);
+                        if (out.size() > 32 << 20) return null;
+                    }
+                    return new byte[][] { type.getBytes(StandardCharsets.UTF_8), out.toByteArray() };
+                }
+            }
+        } catch (Exception exception) {
+            Log.w("Lumen", "Unable to read the clipboard image", exception);
+        }
+        return null;
+    }
+
     /* from the native thread while a voice microphone is open (getUserMedia with echo cancellation):
        like Chrome's WebRTC, the call runs in communication mode, so the platform echo canceller
        pairs the microphone with the call's playback, on the loudspeaker unless a headset is connected */

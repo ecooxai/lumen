@@ -74,6 +74,30 @@ void android_share_text(const char *text) {
     (*environment)->PopLocalFrame(environment, NULL);
 }
 
+unsigned char *android_clip_image(char **mime, size_t *len) {
+    JNIEnv *environment = SDL_GetAndroidJNIEnv();
+    if (!environment) return NULL;
+    if ((*environment)->PushLocalFrame(environment, 8) < 0) { (*environment)->ExceptionClear(environment); return NULL; }
+    unsigned char *out = NULL;
+    jobject activity = SDL_GetAndroidActivity();
+    jclass activity_class = activity ? (*environment)->GetObjectClass(environment, activity) : NULL;
+    jmethodID method = activity_class ? (*environment)->GetStaticMethodID(environment, activity_class, "clipboardImage", "()[[B") : NULL;
+    jobjectArray parts = method ? (*environment)->CallStaticObjectMethod(environment, activity_class, method) : NULL;
+    if (!(*environment)->ExceptionCheck(environment) && parts && (*environment)->GetArrayLength(environment, parts) == 2) {
+        jbyteArray type = (*environment)->GetObjectArrayElement(environment, parts, 0), data = (*environment)->GetObjectArrayElement(environment, parts, 1);
+        jsize tn = type ? (*environment)->GetArrayLength(environment, type) : 0, dn = data ? (*environment)->GetArrayLength(environment, data) : 0;
+        if (tn > 0 && tn < 128 && dn > 0) {
+            *mime = malloc((size_t)tn + 1); out = malloc((size_t)dn);
+            (*environment)->GetByteArrayRegion(environment, type, 0, tn, (jbyte *)*mime); (*mime)[tn] = 0;
+            (*environment)->GetByteArrayRegion(environment, data, 0, dn, (jbyte *)out);
+            *len = (size_t)dn;
+        }
+    }
+    if ((*environment)->ExceptionCheck(environment)) (*environment)->ExceptionClear(environment);
+    (*environment)->PopLocalFrame(environment, NULL);
+    return out;
+}
+
 static bool android_trust_roots(SSL_CTX *context) {
     JNIEnv *environment = SDL_GetAndroidJNIEnv();
     if (!environment) return false;

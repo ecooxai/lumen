@@ -231,7 +231,7 @@ function protoFor(type, tag, ns) {
 }
 
 const registry = { byName: new Map(), byCtor: new Map(), waiting: new Map(), upgrading: [] };
-const validCEName = (n) => /^[a-z][.0-9_a-z\u00b7\u00c0-\uffff-]*-[.0-9_a-z\u00b7\u00c0-\uffff-]*$/.test(n) && !/^(annotation-xml|color-profile|font-face|font-face-src|font-face-uri|font-face-format|font-face-name|missing-glyph)$/.test(n);
+const validCEName = (n) => /^[a-z][^\0\t\n\f\r />A-Z]*$/.test(n) && n.includes('-') && !/^(annotation-xml|color-profile|font-face|font-face-src|font-face-uri|font-face-format|font-face-name|missing-glyph)$/.test(n);
 function ceConstruct(nt) {
     if (registry.upgrading.length) { const el = registry.upgrading.pop(); Object.setPrototypeOf(el, nt.prototype); return el; }
     const d = registry.byCtor.get(nt);
@@ -303,6 +303,7 @@ class CustomElementRegistry {
     getName(ctor) { const d = registry.byCtor.get(ctor); return d ? d.name : null; }
     whenDefined(name) {
         name = String(name);
+        if (!validCEName(name)) return Promise.reject(new DOMException(`"${name}" is not a valid custom element name`, 'SyntaxError'));
         if (registry.byName.has(name)) return Promise.resolve(registry.byName.get(name).ctor);
         let w = registry.waiting.get(name);
         if (!w) { let resolve; const promise = new Promise(r => resolve = r); w = { promise, resolve }; registry.waiting.set(name, w); }

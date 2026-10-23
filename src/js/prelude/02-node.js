@@ -325,8 +325,22 @@ methods(Node.prototype, {
         notify('childList', this, { addedNodes: added, removedNodes: removed, previousSibling: prev, nextSibling: ref });
         return old;
     },
-    cloneNode(deep = false) { const r = N.clone(this, !!deep); if (!N.inert(this)) ceUpgradeTree(r); return r; },
+    cloneNode(deep = false) { const r = N.clone(this, !!deep); cloneControls(this, r, !!deep); if (!N.inert(this)) ceUpgradeTree(r); return r; },
     contains(o) { return o != null && N.isNode(o) && N.contains(this, o); },
+});
+/* HTML cloning steps: an input's or textarea's dirty value, an input's checkedness and indeterminate state */
+const cloneControl = (a, b) => {
+    if (a.namespaceURI !== 'http://www.w3.org/1999/xhtml' || (a.localName !== 'input' && a.localName !== 'textarea')) return;
+    const v = N.value(a);
+    if (v != null) N.setValue(b, v);
+    if (a.localName === 'input') { if (N.checked(a) !== N.checked(b)) N.setChecked(b, N.checked(a)); if (a.__ind) def(b, '__ind', true); }
+};
+function cloneControls(a, b, deep) {
+    if (a.nodeType === 1) cloneControl(a, b);
+    if (!deep || !a.firstChild || (a.nodeType !== 1 && a.nodeType !== 9 && a.nodeType !== 11) || !a.querySelector('input,textarea')) return;
+    for (let x = a.firstChild, y = b.firstChild; x && y; x = x.nextSibling, y = y.nextSibling) cloneControls(x, y, true);
+}
+methods(Node.prototype, {
     getRootNode(o = undefined) { let n = this; for (;;) { const p = N.parent(n); if (p) { n = p; continue; } if (o && o.composed && N.type(n) === 11 && N.host(n)) { n = N.host(n); continue; } return n; } },
     isSameNode(o) { return this === o; },
     isEqualNode(o) { if (arguments.length < 1) throw argsErr('isEqualNode', 'Node', 1); return o != null && nodesEqual(this, o); },
@@ -516,6 +530,7 @@ methods(ShadowRoot.prototype, {
     get activeElement() { return null; }, get delegatesFocus() { return !!(N.srFlags(this) & 2); },
     get clonable() { return !!(N.srFlags(this) & 8); }, get serializable() { return !!(N.srFlags(this) & 4); },
     get slotAssignment() { return N.srFlags(this) & 16 ? 'manual' : 'named'; },
+    get referenceTarget() { return N.srRef(this); }, set referenceTarget(v) { N.srRef(this, v == null ? null : String(v)); },
     get adoptedStyleSheets() { return adoptedGet(this); }, set adoptedStyleSheets(v) { adoptSheets(this, v); },
     get styleSheets() { return scopeSheets(this); }, get fullscreenElement() { return fsCurrent(this); },
     get onslotchange() { return this.__onslotchange || null; },

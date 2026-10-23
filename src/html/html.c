@@ -707,6 +707,8 @@ static void template_start(P, Tok *t) {
         | (slot && str_ieq(slot, "manual") ? NF_SR_MANUAL : 0);
     Node *sr = node_attach_shadow(host, f);
     if (!sr) { insert_el_at(p, il, tp, true); return; }
+    const char *rt = node_attr(tp, "shadowrootreferencetarget");
+    if (rt) { free(sr->text); sr->text = xstrdup(rt); sr->text_len = strlen(rt); }
     Node *old = tp->template_content;
     old->refcount = 0; node_free_tree(old);
     tp->template_content = sr;

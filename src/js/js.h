@@ -10,6 +10,8 @@ typedef struct JsCtx JsCtx;
 /* system clipboard, set by the embedder (navigator.clipboard, execCommand copy); get returns malloc'd text */
 extern void (*js_clip_set)(const char *text);
 extern char *(*js_clip_get)(void);
+/* the clipboard's image (malloc'd bytes and MIME type), else NULL */
+extern unsigned char *(*js_clip_image)(char **mime, size_t *len);
 /* modifier keys held for the next dispatched event: 1 shift, 2 ctrl, 4 alt, 8 meta */
 extern int js_key_mods;
 

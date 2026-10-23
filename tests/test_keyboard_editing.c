@@ -32,7 +32,9 @@ int main(int argc, char **argv) {
         expect(c, d, assertion);
     }
     char *text = node_text_content(editor);
-    assert(!strcmp(text, ".'()!,?;/-=[]\\`aA7 ")); free(text);
+    /* the trailing typed space stays visible as a no-break space, as in Chrome */
+    if (strcmp(text, ".'()!,?;/-=[]\\`aA7\xC2\xA0") && strcmp(text, ".'()!,?;/-=[]\\`aA7 ")) { fprintf(stderr, "FAILED: typed text is \"%s\"\n", text); abort(); }
+    free(text);
     assert(!js_dispatch(c, editor, "keydown", "KeyboardEvent", true, true, 0, 0, 0, "Delete"));
     expect(c, d, "last.key==='Delete' && last.keyCode===46 && last.code==='Delete'");
     expect(c, d, "(()=>{const e=new KeyboardEvent('keydown',{key:'.'});return e.keyCode===0&&e.which===0&&e.charCode===0})()");

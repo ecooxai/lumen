@@ -244,9 +244,9 @@ function upCanonPathname(v) {
 }
 function upCanonOpaque(v) {
     if (v === '') return v;
-    const p = URLN.urlParse('lumen-dummy:' + v, null);
+    const p = URLN.urlParse('lumen-dummy:' + v + 'x', null);   /* the x keeps trailing spaces, which URL parsing strips */
     if (!p) throw upErr(`Invalid pathname '${v}'.`);
-    return p[7];
+    return p[7].slice(0, -1);
 }
 const upCanonSearch = v => v === '' ? v : URLN.urlSet(UP_DUMMY, 'search', '?' + v)[8].slice(1);
 const upCanonHash = v => v === '' ? v : URLN.urlSet(UP_DUMMY, 'hash', '#' + v)[9].slice(1);
@@ -304,7 +304,7 @@ function upCompile(input, encode, options) {
     const [source, names] = upRegexp(parts, options);
     let regexp;
     try { regexp = new RegExp(source, options.ignoreCase ? 'vi' : 'v'); } catch (e) { throw upErr(`Invalid regular expression '${source}'.`); }
-    return { pattern: upPatternString(parts, options), regexp, names, hasRegExpGroups: parts.some(q => q.type === 'regexp') };
+    return { pattern: upPatternString(parts, options), regexp, names, hasRegExpGroups: parts.some(q => q.type === 'regexp'), parts, encode, segment: upSegmentWildcard(options) };
 }
 const upMatchesSpecial = c => UP_SPECIAL.some(s => c.regexp.exec(s) !== null);
 function upIsIPv6(s) {
@@ -514,7 +514,44 @@ class URLPattern {
         }
         return result;
     }
-    static compareComponent() { throw new TypeError('URLPattern.compareComponent is not supported'); }
+    /* the component's URL from groups: only fixed text and named segment wildcards, without modifiers (as Chrome) */
+    generate(component, groups) {
+        const W = "Failed to execute 'generate' on 'URLPattern': ";
+        if (arguments.length < 2) throw new TypeError(W + `2 arguments required, but only ${arguments.length} present.`);
+        component = String(component);
+        if (!UP_COMPONENTS.includes(component)) throw new TypeError(W + `The provided value '${component}' is not a valid enum value of type URLPatternComponent.`);
+        if (groups === null || typeof groups !== 'object') throw new TypeError(W + "parameter 2 is not of type 'record<USVString, USVString>'.");
+        const c = this.#c[component], seg = new RegExp('^(?:' + c.segment + ')$', 'v');
+        let out = '';
+        for (const part of c.parts) {
+            if (part.modifier !== 'none') throw new TypeError(W + 'The pattern has a modifier.');
+            if (part.type === 'fixed-text') { out += part.value; continue; }
+            if (part.type !== 'segment-wildcard' || !Object.hasOwn(groups, part.name)) throw new TypeError(W + `No value for the group '${part.name}'.`);
+            let v;
+            try { v = c.encode(String(groups[part.name]).toWellFormed()); } catch (e) { throw new TypeError(W + 'Invalid group value.'); }
+            if (!seg.test(v)) throw new TypeError(W + 'Invalid group value.');
+            out += part.prefix + v + part.suffix;
+        }
+        return out;
+    }
+    /* orders two patterns' component by specificity: fixed text before wildcards, fewer modifiers, then the text */
+    static compareComponent(component, left, right) {
+        const W = "Failed to execute 'compareComponent' on 'URLPattern': ";
+        if (arguments.length < 3) throw new TypeError(W + `3 arguments required, but only ${arguments.length} present.`);
+        component = String(component);
+        if (!UP_COMPONENTS.includes(component)) throw new TypeError(W + `The provided value '${component}' is not a valid enum value of type URLPatternComponent.`);
+        if (!(#c in left) || !(#c in right)) throw new TypeError(W + "parameter is not of type 'URLPattern'.");
+        const a = left.#c[component].parts, b = right.#c[component].parts;
+        const TYPES = ['full-wildcard', 'regexp', 'segment-wildcard', 'fixed-text'], MODS = ['zero-or-more', 'optional', 'one-or-more', 'none'];
+        const EMPTY = { type: 'fixed-text', modifier: 'none', prefix: '', value: '', suffix: '' };
+        const cmp = (x, y) => x < y ? -1 : x > y ? 1 : 0;
+        for (let i = 0; i < Math.max(a.length, b.length); i++) {
+            const x = a[i] || EMPTY, y = b[i] || EMPTY;
+            const r = cmp(TYPES.indexOf(x.type), TYPES.indexOf(y.type)) || cmp(MODS.indexOf(x.modifier), MODS.indexOf(y.modifier)) ||
+                cmp(x.prefix, y.prefix) || cmp(x.value, y.value) || cmp(x.suffix, y.suffix);
+            if (r) return r;
+        }
+        return 0;
+    }
 }
-delete URLPattern.compareComponent;
 Object.defineProperty(URLPattern.prototype, Symbol.toStringTag, { value: 'URLPattern', configurable: true });

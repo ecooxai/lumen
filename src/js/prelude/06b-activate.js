@@ -98,8 +98,14 @@ function linkTarget(el, submitter) {
     return b ? b.getAttribute('target') : '';
 }
 function submitForm(form, submitter) {
-    const fd = new FormData(form);
-    if (submitter && submitter.name) fd.append(submitter.name, submitter.value);
+    /* method=dialog closes the form's dialog with the submitter's value instead of navigating */
+    if (((submitter && submitter.getAttribute('formmethod')) || N.attr(form, 'method') || '').toLowerCase() === 'dialog') {
+        const d = form.closest('dialog');
+        if (d && d.open) dialogClose(d, submitter ? submitter.value : undefined, submitter);
+        return;
+    }
+    const fd = new FormData(form, submitter && submitter.type !== 'image' && submitter.form === form ? submitter : null);
+    if (submitter && submitter.name && (submitter.type === 'image' || submitter.form !== form)) fd.append(submitter.name, submitter.value);
     /* the form's encoding: the first accept-charset label that names one, else its document's */
     let cs = null;
     for (const l of (N.attr(form, 'accept-charset') || '').split(/[\t\n\f\r ]+/)) if (l && (cs = N.encLabel(l))) break;
@@ -110,17 +116,28 @@ function submitForm(form, submitter) {
     const urlencoded = kv => N.formEncode(kv.flat(), cs);
     const target = linkTarget(form, submitter);
     const navigatePost = (url, body, ctype) => { if (!N.navTarget(target, url, body, ctype)) N.navigatePost(url, body, ctype); };
-    if (form.method === 'get') { u.search = urlencoded([...fd].filter(([, v]) => typeof v === 'string')); if (!N.navTarget(target, u.href)) N.navigate(u.href); }
+    /* names and string values get their newlines normalized to CRLF; urlencoded and text/plain send a file's name */
+    const crlf = v => v.replace(/\r\n|\r|\n/g, '\r\n');
+    const pairs = () => [...fd].map(([k, v]) => [crlf(k), crlf(typeof v === 'string' ? v : v.name)]);
+    if (form.method === 'get') { u.search = urlencoded(pairs()); if (!N.navTarget(target, u.href)) N.navigate(u.href); }
     else {
         const et = ((submitter && submitter.getAttribute('formenctype')) || N.attr(form, 'enctype') || '').toLowerCase();
-        const kv = [...fd].filter(([, v]) => typeof v === 'string');
         if (et === 'multipart/form-data') {
             const bd = '----LumenFormBoundary' + Math.random().toString(36).slice(2);
-            const esc = s => s.replace(/"/g, '%22').replace(/\r?\n/g, '%0D%0A');
-            const body = kv.map(([k, v]) => `--${bd}\r\nContent-Disposition: form-data; name="${esc(k)}"\r\n\r\n${v}\r\n`).join('') + `--${bd}--\r\n`;
+            const esc = s => s.replace(/\n/g, '%0A').replace(/\r/g, '%0D').replace(/"/g, '%22');
+            /* text parts in the form's encoding (unmappable code points as &#N;), file contents as their bytes */
+            const enc = t => new Uint8Array(N.encodeHtml(t, cs)), parts = [];
+            for (const [k, v] of fd) {
+                const head = `--${bd}\r\nContent-Disposition: form-data; name="${esc(crlf(k))}"`;
+                if (typeof v === 'string') parts.push(enc(`${head}\r\n\r\n${crlf(v)}\r\n`));
+                else parts.push(enc(`${head}; filename="${esc(v.name)}"\r\nContent-Type: ${v.type || 'application/octet-stream'}\r\n\r\n`), new Uint8Array(v._buf), enc('\r\n'));
+            }
+            parts.push(enc(`--${bd}--\r\n`));
+            const body = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
+            parts.reduce((o, p) => (body.set(p, o), o + p.length), 0);
             navigatePost(u.href, body, 'multipart/form-data; boundary=' + bd);
-        } else if (et === 'text/plain') navigatePost(u.href, kv.map(([k, v]) => `${k}=${v}\r\n`).join(''), 'text/plain');
-        else navigatePost(u.href, urlencoded(kv), 'application/x-www-form-urlencoded');
+        } else if (et === 'text/plain') navigatePost(u.href, N.encodeHtml(pairs().map(([k, v]) => `${k}=${v}\r\n`).join(''), cs), 'text/plain');
+        else navigatePost(u.href, urlencoded(pairs()), 'application/x-www-form-urlencoded');
     }
 }
 function cssSplit(s) {

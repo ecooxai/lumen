@@ -16,6 +16,7 @@ static std::vector<FrameLoad *> g_loads;
 
 static std::string origin_of(const char *u) {
     URL x{};
+    if (u && str_ieqn(u, "blob:", 5) && (str_ieqn(u + 5, "http:", 5) || str_ieqn(u + 5, "https:", 6))) u += 5;   /* a blob URL's origin is its inner URL's */
     if (!u || !url_parse(u, &x)) return "null";
     char *o = url_origin(&x);
     std::string r = o && *o ? o : "null";
@@ -357,7 +358,7 @@ static void n_navTarget(const FCI &a) {
     FCTX;
     std::string t = jcstr(iso, a[0]), u = jcstr(iso, a[1]), b, ct;
     bool post = a.Length() > 3 && a[3]->IsString();
-    if (post) { b = jcstr(iso, a[2]); ct = jcstr(iso, a[3]); }
+    if (post) { b = js_body_bytes(iso, a[2]); ct = jcstr(iso, a[3]); }
     a.GetReturnValue().Set(js_navigate_target(c, t.c_str(), u.c_str(), b.data(), b.size(), post ? ct.c_str() : nullptr));
 }
 static JsCtx *ctx_of_value(v8::Isolate *iso, JsCtx *c, v8::Local<v8::Value> v) {

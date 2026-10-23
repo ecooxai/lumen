@@ -132,7 +132,7 @@ const navURL = (u, what) => { const n = URL.parse(String(u), document.baseURI); 
 class Location {
     get href() { return N.url(); } set href(v) { this.assign(v); }
     assign(u) { const n = navURL(u, "execute 'assign' on 'Location'"); if (n.protocol === 'javascript:') { runJsURL(n.href); return; } const cur = new URL(N.url()); if (n.href.split('#')[0] === cur.href.split('#')[0] && n.href.includes('#')) fragmentNav(n.href, cur.href); else N.navigate(n.href); }
-    replace(u) { const n = navURL(u, "execute 'replace' on 'Location'"); if (n.protocol === 'javascript:') runJsURL(n.href); else N.navigate(n.href); }
+    replace(u) { const n = navURL(u, "execute 'replace' on 'Location'"); if (n.protocol === 'javascript:') { runJsURL(n.href); return; } const cur = new URL(N.url()); if (n.href.split('#')[0] === cur.href.split('#')[0] && n.href.includes('#')) fragmentNav(n.href, cur.href, true); else N.navigate(n.href); }
     reload() { N.navigate(N.url()); }
     toString() { return N.url(); }
     get ancestorOrigins() { return []; }
@@ -155,13 +155,13 @@ Object.defineProperty(globalThis, '__lumenPopState', { value: d => {
 /* a navigation to another fragment of this document, as Chrome does it: a new history entry, the
    target scrolled into view, popstate at once (routers such as React Router's follow it) and then
    hashchange; the same fragment again only scrolls */
-function fragmentNav(href, old) {
+function fragmentNav(href, old, replace = false) {
     const hash = href.slice(href.indexOf('#') + 1);
     let id = hash; try { id = decodeURIComponent(hash); } catch (e) {}
     const target = id && (document.getElementById(id) || document.getElementsByName(id)[0]);
     if (href === old) { if (target) target.scrollIntoView(); return; }
-    histState = null; histStates.length = ++histIdx; histStates[histIdx] = null;
-    N.setUrl(href, true);
+    histState = null; if (!replace) { histStates.length = ++histIdx; histStates[histIdx] = null; }
+    N.setUrl(href, !replace);
     if (target) target.scrollIntoView(); else if (!id || id.toLowerCase() === 'top') G.scrollTo(0, 0);
     dispatch(G, new PopStateEvent('popstate', { state: null }));
     setTimeout(() => dispatch(G, new HashChangeEvent('hashchange', { oldURL: old, newURL: href })));
@@ -172,10 +172,28 @@ if (N.internal('ping') === 'pong') Object.defineProperty(G, 'lumenInternal', { v
 // WPT runs (LUMEN_TESTDRIVER): testdriver-vendor.js sends real input through __lumenTd(ops), resolved once handled
 /* the input is done in the top document, which resolves it: frames send theirs through it */
 const topTd = () => { try { const t = window.top; return t !== window && t.__lumenTd; } catch (e) { return null; } };
-if (N.internal('td?ping') === 'pong' || topTd()) {
+/* a frame's viewport origin in the top viewport: its frame elements' boxes plus their borders and padding */
+const tdOrigin = () => {
+    let x = 0, y = 0;
+    try {
+        for (let w = window; w !== w.top; w = w.parent) {
+            const f = w.frameElement; if (!f) break;
+            const r = f.getBoundingClientRect(), cs = w.parent.getComputedStyle(f);
+            x += r.left + (parseFloat(cs.borderLeftWidth) || 0) + (parseFloat(cs.paddingLeft) || 0);
+            y += r.top + (parseFloat(cs.borderTopWidth) || 0) + (parseFloat(cs.paddingTop) || 0);
+        }
+    } catch (e) {}
+    return [x, y];
+};
+if (N.internal('td?ping') === 'pong') {
     const waiting = new Map();
     Object.defineProperty(G, '__lumenTdDone', { value: id => { const r = waiting.get(id); waiting.delete(id); if (r) r(); } });
-    Object.defineProperty(G, '__lumenTd', { value: ops => { const t = topTd(); if (t) return t(ops); return new Promise(res => { const id = +N.internal('td?' + ops); if (id) waiting.set(id, res); else res(); }); } });
+    Object.defineProperty(G, '__lumenTd', { value: ops => {
+        const t = topTd();
+        if (t) { const [ox, oy] = tdOrigin(); return t(String(ops).replace(/^move (\S+) (\S+)$/gm, (m, x, y) => `move ${+x + ox} ${+y + oy}`)); }
+        /* the top document resolves its own ops; a frame without access to it resolves after a short wait */
+        return new Promise(res => { const id = +N.internal('td?' + ops); if (id && window === window.top) waiting.set(id, res); else setTimeout(res, 50); });
+    } });
 }
 const history = {
     get length() { return N.histLen(); }, get state() { return histState; }, scrollRestoration: 'auto',
@@ -329,7 +347,12 @@ const navigator = {
         writeText(t) { N.clipSet(String(t)); return Promise.resolve(); },
         readText() { return Promise.resolve(N.clipGet()); },
         async write(items) { for (const it of items || []) if (it.types.includes('text/plain')) { N.clipSet(await (await it.getType('text/plain')).text()); return; } },
-        async read() { return [new ClipboardItem({ 'text/plain': new Blob([N.clipGet()], { type: 'text/plain' }) })]; },
+        async read() {
+            const o = {}, t = N.clipGet(), img = N.clipImage();
+            if (t) o['text/plain'] = new Blob([t], { type: 'text/plain' });
+            if (img) o[img[0]] = new Blob([img[1]], { type: img[0] });
+            return Object.keys(o).length ? [new ClipboardItem(o)] : [];
+        },
     }),
     permissions: { query(d) {
         if (!d || typeof d !== 'object' || d.name === undefined) return Promise.reject(new TypeError("Failed to execute 'query' on 'Permissions': required member name is undefined."));
@@ -618,7 +641,7 @@ const globals = {
     GPUBufferUsage, GPUTextureUsage, GPUShaderStage, GPUMapMode, GPUColorWrite, GPU, GPUAdapter, GPUDevice, GPUBuffer, GPUTexture, GPUTextureView, GPUSampler, GPUBindGroupLayout, GPUPipelineLayout, GPUBindGroup, GPUCommandBuffer, GPURenderBundle, GPUExternalTexture,
     GPUQuerySet, GPUShaderModule, GPUComputePipeline, GPURenderPipeline, GPUCommandEncoder, GPURenderPassEncoder, GPUComputePassEncoder, GPURenderBundleEncoder, GPUQueue, GPUCanvasContext,
     MediaRecorder, BlobEvent, RTCPeerConnection, RTCSessionDescription, RTCIceCandidate, RTCPeerConnectionIceEvent, RTCPeerConnectionIceErrorEvent, RTCDataChannel, RTCDataChannelEvent, RTCTrackEvent, RTCRtpSender, RTCRtpReceiver, RTCRtpTransceiver, RTCIceTransport, RTCDtlsTransport, RTCSctpTransport, RTCCertificate, RTCStatsReport, RTCError, RTCErrorEvent, MediaStream, MediaStreamTrack, MediaStreamTrackEvent,
-    IDBFactory, IDBDatabase, IDBTransaction, IDBObjectStore, IDBIndex, IDBCursor, IDBCursorWithValue, IDBKeyRange, IDBRequest, IDBOpenDBRequest, IDBVersionChangeEvent, DOMStringList, indexedDB,
+    IDBFactory, IDBDatabase, IDBTransaction, IDBObjectStore, IDBIndex, IDBCursor, IDBCursorWithValue, IDBKeyRange, IDBRecord, IDBRequest, FormDataEvent, IDBOpenDBRequest, IDBVersionChangeEvent, DOMStringList, indexedDB,
     ResizeObserver, IntersectionObserver, IntersectionObserverEntry, HTMLAllCollection, PerformanceObserver, Storage, localStorage, sessionStorage, Location, get location() { return location; }, set location(v) { location.href = v; }, history, navigator, screen, performance, get crypto() { return crypto; }, MediaQueryList, matchMedia, getComputedStyle, PermissionStatus,
     setTimeout, setInterval, clearTimeout, clearInterval, requestAnimationFrame, cancelAnimationFrame, requestIdleCallback, cancelIdleCallback, queueMicrotask, structuredClone, postMessage, console, customElements, Window, document,
     window: G, self: G, globalThis: G, get top() { return asWin(N.topWin()) ?? G; }, get parent() { return asWin(N.parentWin()) ?? G; }, frames: G, get opener() { return openerSet !== undefined ? openerSet : asWin(N.openerWin()); }, set opener(v) { openerSet = v; }, get frameElement() { return N.frameEl(); }, closed: false, name: '', get length() { return N.frameCount(); }, origin: location.origin, isSecureContext: secureContext, crossOriginIsolated: false,
@@ -700,33 +723,111 @@ function fireAnim(t, type, name, elapsed, anim) {
         s.collapse(n, n.nodeType === 3 ? n.data.length : n.childNodes.length);
         return s;
     };
-    const fire = (h, type, inputType, data) => h.dispatchEvent(new InputEvent(type, { inputType, data, bubbles: true, cancelable: type === 'beforeinput', composed: true }));
+    const fire = (h, type, inputType, data, targetRanges = [], dataTransfer = null) => h.dispatchEvent(new InputEvent(type, { inputType, data, targetRanges, dataTransfer, bubbles: true, cancelable: type === 'beforeinput', composed: true }));
+    /* the DataTransfer of the paste being performed, for its beforeinput/input (insertFromPaste) */
+    let pasting = null;
+    /* the text next to the caret within host h, in tree order: [text node, offset] at its end (back) or start */
+    const textBeside = (h, n, back) => {
+        const tw = document.createTreeWalker(h, 4);
+        tw.currentNode = n;
+        for (let t = back ? tw.previousNode() : tw.nextNode(); t; t = back ? tw.previousNode() : tw.nextNode()) if (t.data.length) return [t, back ? t.data.length : 0];
+        return null;
+    };
+    const wordChar = /[\p{L}\p{N}_]/u;
+    /* the StaticRanges a key edit will change (Input Events' getTargetRanges()) */
+    const editRanges = (h, s, type) => {
+        const r = s.rangeCount ? s.getRangeAt(0) : null;
+        if (!r) return [];
+        if (!r.collapsed || !type.startsWith('delete')) {
+            /* element boundaries move into the text they bound, as Chrome reports them */
+            const down = (n, o, atEnd) => {
+                for (;;) {
+                    const c = n.nodeType === 1 ? (atEnd ? n.childNodes[o - 1] : n.childNodes[o]) : null;
+                    if (!c || (c.nodeType === 1 && (c.localName === 'br' || !c.firstChild)) || (c.nodeType !== 1 && c.nodeType !== 3)) return [n, o];
+                    if (c.nodeType === 3) return [c, atEnd ? c.data.length : 0];
+                    n = c; o = atEnd ? c.childNodes.length : 0;
+                }
+            };
+            const [sn, so] = r.collapsed ? [r.startContainer, r.startOffset] : down(r.startContainer, r.startOffset, false);
+            const [en, eo] = r.collapsed ? [r.endContainer, r.endOffset] : down(r.endContainer, r.endOffset, true);
+            return [new StaticRange({ startContainer: sn, startOffset: so, endContainer: en, endOffset: eo })];
+        }
+        const back = type.endsWith('Backward'), word = type.startsWith('deleteWord');
+        let n = r.startContainer, o = r.startOffset;
+        /* a <br> right before (Backspace) or after (Delete) the caret is what goes */
+        const beside = n.nodeType === 3 ? ((back ? !o : o >= n.data.length) ? (back ? n.previousSibling : n.nextSibling) : null) : back ? n.childNodes[o - 1] : n.childNodes[o];
+        if (beside && beside.nodeType === 1 && beside.localName === 'br' && (back || beside.nextSibling)) {
+            const p = beside.parentNode, i = [...p.childNodes].indexOf(beside);
+            return [new StaticRange({ startContainer: p, startOffset: i, endContainer: p, endOffset: i + 1 })];
+        }
+        if (n.nodeType !== 3 || (back ? !o : o >= n.data.length)) {
+            const ref = n.nodeType === 3 ? n : (back ? n.childNodes[o - 1] : n.childNodes[o]) || n;
+            const t = textBeside(h, ref, back);
+            if (!t) return [new StaticRange({ startContainer: n, startOffset: o, endContainer: n, endOffset: o })];
+            const [tn, to] = t;
+            return [back ? new StaticRange({ startContainer: tn, startOffset: Math.max(0, to - 1), endContainer: n, endOffset: o }) : new StaticRange({ startContainer: n, startOffset: o, endContainer: tn, endOffset: Math.min(tn.data.length, 1) })];
+        }
+        let a = o, b = o;
+        const d = n.data;
+        if (word) {
+            if (back) { while (a > 0 && !wordChar.test(d[a - 1])) a--; while (a > 0 && wordChar.test(d[a - 1])) a--; }
+            else { while (b < d.length && !wordChar.test(d[b])) b++; while (b < d.length && wordChar.test(d[b])) b++; }
+        } else if (back) a -= a > 1 && /[\udc00-\udfff]/.test(d[a - 1]) ? 2 : 1;
+        else b += /[\ud800-\udbff]/.test(d[b]) && b + 1 < d.length ? 2 : 1;
+        return [new StaticRange({ startContainer: n, startOffset: a, endContainer: n, endOffset: b })];
+    };
+    /* key edits: [inputType, editing command]; Ctrl deletes a word, Shift+Enter inserts a line break */
+    const keyEdit = (e, h) => {
+        if (e.key === 'Enter') return e.shiftKey || h.getAttribute('contenteditable') === 'plaintext-only' ? ['insertLineBreak', 'insertlinebreak'] : ['insertParagraph', 'insertparagraph'];
+        if (e.key === 'Delete') return [e.ctrlKey ? 'deleteWordForward' : 'deleteContentForward', 'forwarddelete'];
+        return [e.ctrlKey ? 'deleteWordBackward' : 'deleteContentBackward', 'delete'];
+    };
     const edit = (e, del) => {
         e.stopImmediatePropagation();
         const h = editHost(e.target); if (!h) return;
-        const s = caret(h), data = del ? null : e.key, type = del ? 'deleteContentBackward' : 'insertText';
-        if (!e.lumenExec && !fire(h, 'beforeinput', type, data)) return;
-        if (!s.isCollapsed) {
-            const blocks = [...h.children].some(c => /^(P|DIV|LI|H[1-6]|BLOCKQUOTE|PRE)$/.test(c.tagName));
-            s.deleteFromDocument();
-            if (blocks && !h.firstChild) { const p = document.createElement('p'); p.appendChild(document.createElement('br')); h.appendChild(p); s.collapse(p, 0); }
-            else s.collapse(s.anchorNode, s.anchorOffset);
-            if (del) { fire(h, 'input', type, data); document.dispatchEvent(new Event('selectionchange')); return; }
-        }
+        const dt = del ? null : pasting; pasting = null;
+        const s = caret(h), data = del ? null : e.key, [type, cmd] = del ? keyEdit(e, h) : [dt ? 'insertFromPaste' : 'insertText', 'inserttext'];
+        if (!e.lumenExec && !fire(h, 'beforeinput', type, dt ? null : data, editRanges(h, s, type), dt)) return;
         const c = s.focusNode, o = s.focusOffset;
-        if (del) {
-            if (c.nodeType !== 3 || !o) return;
-            const n = o > 1 && /[\udc00-\udfff]/.test(c.data[o - 1]) ? 2 : 1;
-            c.deleteData(o - n, n); s.collapse(c, o - n);
-        } else if (c.nodeType === 3) { c.insertData(o, data); s.collapse(c, o + data.length); }
+        /* typing or pasting into a text node: the common case, kept cheap (a typed space goes through the editing
+           commands, which keep it visible as a no-break space where needed) */
+        if (!del && s.isCollapsed && c.nodeType === 3 && !data.includes('\n') && (data.length > 1 || !/\s/.test(data))) { c.insertData(o, data); s.collapse(c, o + data.length); }
         else {
-            let ref = c.childNodes[o] ?? null;
-            if (!ref && c.lastChild && c.lastChild.nodeType === 1 && c.lastChild.tagName === 'BR') ref = c.lastChild;
-            const t = document.createTextNode(data); c.insertBefore(t, ref); s.collapse(t, data.length);
+            const before = del ? h.innerHTML : null;
+            if (type.startsWith('deleteWord')) {
+                const r = editRanges(h, s, type)[0];
+                if (r && !r.collapsed) { const x = document.createRange(); x.setStart(r.startContainer, r.startOffset); x.setEnd(r.endContainer, r.endOffset); s.removeAllRanges(); s.addRange(x); }
+            }
+            let ok = false;
+            try { ok = editing().exec(type.startsWith('deleteWord') ? 'delete' : cmd, false, data ?? '', undefined); } catch (x) { ok = false; }
+            if (!ok || (before !== null && h.innerHTML === before)) return;   /* nothing changed: no input event */
         }
-        fire(h, 'input', type, data);
+        fire(h, 'input', type, dt ? null : data, [], dt);
         document.dispatchEvent(new Event('selectionchange'));
     };
+    /* a native paste (e.key: the clipboard text): the paste event with the clipboard's text and image; cancelling it
+       cancels the native insertion. An image alone pastes into an editing host as an <img>, as in Chrome. */
+    document.addEventListener('lumenpaste', e => {
+        e.stopImmediatePropagation();
+        const dt = new DataTransfer(), text = e.key || '', t = e.target;
+        if (text) dt.setData('text/plain', text);
+        const img = N.clipImage();
+        const file = img ? new File([img[1]], 'image.' + (img[0].split('/')[1] || 'png').replace('jpeg', 'jpg'), { type: img[0], lastModified: Date.now() }) : null;
+        if (file) dt.items.add(file);
+        if (!t.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true, composed: true }))) { e.preventDefault(); return; }
+        const h = editHost(t);
+        if (text) { pasting = h ? dt : null; return; }
+        if (!file || !h) return;
+        e.preventDefault();
+        if (!fire(h, 'beforeinput', 'insertFromPaste', null, editRanges(h, caret(h), 'insertFromPaste'), dt)) return;
+        const r = new FileReader();
+        r.onload = () => {
+            let ok = false;
+            try { ok = editing().exec('insertimage', false, r.result, undefined); } catch (x) { ok = false; }
+            if (ok) { fire(h, 'input', 'insertFromPaste', null, [], dt); document.dispatchEvent(new Event('selectionchange')); }
+        };
+        r.readAsDataURL(file);
+    }, true);
     document.addEventListener('lumenedit', e => edit(e, false), true);
     document.addEventListener('lumeneditdel', e => edit(e, true), true);
     /* native mouse/keyboard selection in contenteditable: target + byte offset (clientX), extend flag (clientY) */

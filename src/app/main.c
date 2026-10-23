@@ -3500,7 +3500,16 @@ static void ctl_cut(App *a, Node *f) {
     if (*t) { SDL_SetClipboardText(t); ctl_insert(a, f, "", "deleteByCut"); }
     free(t);
 }
-static void ctl_paste(App *a, Node *f) { char *t = SDL_GetClipboardText(); if (t && *t) ctl_insert(a, f, t, "insertFromPaste"); SDL_free(t); }
+/* a paste: first the page's paste event (its DataTransfer has the clipboard's text and image); unless cancelled, the
+   text goes into the control f or the editing host h. With neither, the event goes to the body. */
+static void page_paste(App *a, Node *f, Node *h) {
+    Page *p = a->t->cur; char *t = SDL_GetClipboardText();
+    Node *target = f ? f : h ? h : p && p->d ? (p->d->body ? p->d->body : p->d->html) : NULL;
+    bool go = !p || !p->js || !target || js_dispatch(p->js, target, "lumenpaste", "KeyboardEvent", false, true, 0, 0, 0, t ? t : "");
+    if (go && t && *t) { if (f) ctl_insert(a, f, t, "insertFromPaste"); else if (h) js_dispatch(p->js, h, "lumenedit", "KeyboardEvent", false, false, 0, 0, 0, t); }
+    SDL_free(t);
+}
+static void ctl_paste(App *a, Node *f) { page_paste(a, f, NULL); }
 
 /* URL field editing at its selection (a->us: anchor/focus bytes of t->url) */
 static void url_changed(App *a) { a->caret_t = now_ms(); a->dirty = true; a->vonly = false; }
@@ -3911,6 +3920,20 @@ static void edit_sel_sync(App *a) {
 }
 static void h_clip_set(const char *t) { SDL_SetClipboardText(t); }
 static char *h_clip_get(void) { char *t = SDL_GetClipboardText(); char *r = strdup(t ? t : ""); SDL_free(t); return r; }
+static unsigned char *h_clip_image(char **mime, size_t *len) {
+#ifdef __ANDROID__
+    return android_clip_image(mime, len);
+#else
+    static const char *const types[] = { "image/png", "image/jpeg", "image/gif", "image/webp", "image/bmp" };
+    for (size_t i = 0; i < sizeof types / sizeof *types; i++) {
+        if (!SDL_HasClipboardData(types[i])) continue;
+        size_t n = 0; void *d = SDL_GetClipboardData(types[i], &n);
+        if (d && n) { unsigned char *o = malloc(n); memcpy(o, d, n); SDL_free(d); *mime = strdup(types[i]); *len = n; return o; }
+        SDL_free(d);
+    }
+    return NULL;
+#endif
+}
 static void sel_copy(App *a) {
     Node *f = !a->editing ? page_focus(a) : NULL;
     if (a->editing) { char *s = url_selected(a); if (*s) SDL_SetClipboardText(s); free(s); return; }
@@ -4078,9 +4101,7 @@ static void kbm_action(App *a, int act) {
         if (g_tsel.on && edit_focus(a) == h) { g_ts.kind = TK_EDIT; g_ts.mode = 0; g_ts.ui = true; g_ts.gx = g_ts.gy = 0; }
         return;
     }
-    char *t = SDL_GetClipboardText();
-    if (t && *t) { if (f) ctl_insert(a, f, t, "insertFromPaste"); else if (p->js) js_dispatch(p->js, h, "lumenedit", "KeyboardEvent", false, false, 0, 0, 0, t); }
-    SDL_free(t);
+    page_paste(a, f, f ? NULL : h);
     restyle(a); a->dirty = true;
 }
 static void tsel_action(App *a, int act) {
@@ -4096,11 +4117,7 @@ static void tsel_action(App *a, int act) {
     if (act == TA_COPY || act == TA_CUT) { char *t = f ? ctl_selected(f) : tsel_text(p->L); if (*t) SDL_SetClipboardText(t); free(t); }
     if (act == TA_CUT && f) ctl_insert(a, f, "", "deleteByCut");
     else if (act == TA_CUT && h) js_dispatch(p->js, h, "lumeneditdel", "KeyboardEvent", false, false, 0, 0, 0, "Backspace");
-    else if (act == TA_PASTE) {
-        char *t = SDL_GetClipboardText();
-        if (t && *t) { if (f) ctl_insert(a, f, t, "insertFromPaste"); else js_dispatch(p->js, h, "lumenedit", "KeyboardEvent", false, false, 0, 0, 0, t); }
-        SDL_free(t);
-    }
+    else if (act == TA_PASTE) page_paste(a, f, f ? NULL : h);
     tsel_clear(a);
     if (act != TA_COPY) { restyle(a); a->dirty = true; }
 }
@@ -5382,7 +5399,7 @@ int main(int argc, char **argv) {
 #ifdef __ANDROID__
     android_launch_set_wakeup(wake);
 #endif
-    net_wakeup = wake; media_wakeup = wake; js_wakeup = wake; js_clip_set = h_clip_set; js_clip_get = h_clip_get; js_global_init(argv[0]);
+    net_wakeup = wake; media_wakeup = wake; js_wakeup = wake; js_clip_set = h_clip_set; js_clip_get = h_clip_get; js_clip_image = h_clip_image; js_global_init(argv[0]);
     boot_mark("v8");
     paint_image_hook = node_img; paint_url_image_hook = url_img; svg_ext_ref_hook = svg_ext_ref; layout_image_size_hook = img_size;
     App a; memset(&a, 0, sizeof a); g_app = &a; a.nws = 1; a.wsicon[0] = WORKSPACE_DEFAULT_ICON; snprintf(a.wsname[0], sizeof a.wsname[0], "Personal"); a.side = sidebar_width(getenv("LUMEN_NO_SIDEBAR") ? 0 : SIDEW); tab_new(&a);
@@ -5816,11 +5833,7 @@ int main(int argc, char **argv) {
                     else if ((k == SDLK_BACKSPACE || k == SDLK_DELETE) && !a.editing && page_focus(&a)) { ctl_delete(&a, page_focus(&a), k == SDLK_DELETE ? 1 : -1, true); restyle(&a); }
                     else if ((k == SDLK_LEFT || k == SDLK_RIGHT || k == SDLK_HOME || k == SDLK_END || k == SDLK_UP || k == SDLK_DOWN) && !a.editing && page_focus(&a))
                         ctl_move(&a, page_focus(&a), k == SDLK_UP ? SDLK_HOME : k == SDLK_DOWN ? SDLK_END : k, shift, k == SDLK_LEFT || k == SDLK_RIGHT);
-                    else if (k == SDLK_V && !a.editing && edit_focus(&a)) {
-                        char *t = SDL_GetClipboardText();
-                        if (t && *t) js_dispatch(a.t->cur->js, edit_focus(&a), "lumenedit", "KeyboardEvent", false, false, 0, 0, 0, t);
-                        SDL_free(t); restyle(&a);
-                    }
+                    else if (k == SDLK_V && !a.editing) { page_paste(&a, NULL, edit_focus(&a)); restyle(&a); }
                     else if (k == SDLK_X && !a.editing && edit_focus(&a) && g_tsel.on && a.t->cur->L == g_tsel.L) {
                         char *t = tsel_text(a.t->cur->L);
                         if (*t) { SDL_SetClipboardText(t); js_dispatch(a.t->cur->js, edit_focus(&a), "lumeneditdel", "KeyboardEvent", false, false, 0, 0, 0, "Backspace"); }
@@ -5868,11 +5881,12 @@ int main(int argc, char **argv) {
                 }
                 if (edit_focus(&a)) {
                     Node *f = edit_focus(&a); JsCtx *js = a.t->cur->js;
-                    const char *kn = k == SDLK_RETURN || k == SDLK_KP_ENTER ? "Enter" : k == SDLK_BACKSPACE ? "Backspace" : k == SDLK_ESCAPE ? "Escape" : k == SDLK_TAB ? "Tab" :
+                    const char *kn = k == SDLK_RETURN || k == SDLK_KP_ENTER ? "Enter" : k == SDLK_BACKSPACE ? "Backspace" : k == SDLK_DELETE ? "Delete" : k == SDLK_ESCAPE ? "Escape" : k == SDLK_TAB ? "Tab" :
                         k == SDLK_LEFT ? "ArrowLeft" : k == SDLK_RIGHT ? "ArrowRight" : k == SDLK_UP ? "ArrowUp" : k == SDLK_DOWN ? "ArrowDown" : k == SDLK_HOME ? "Home" : k == SDLK_END ? "End" : NULL;
                     if (kn) {
                         bool ok = js_dispatch(js, f, "keydown", "KeyboardEvent", true, true, 0, 0, 0, kn);
-                        if (ok && !strcmp(kn, "Backspace")) js_dispatch(js, f, "lumeneditdel", "KeyboardEvent", false, false, 0, 0, 0, kn);
+                        /* Backspace, Delete (Ctrl: a word) and Enter (Shift: a line break) edit through the editing commands */
+                        if (ok && (!strcmp(kn, "Backspace") || !strcmp(kn, "Delete") || !strcmp(kn, "Enter"))) js_dispatch(js, f, "lumeneditdel", "KeyboardEvent", false, false, 0, 0, 0, kn);
                         else if (ok && (!strcmp(kn, "ArrowLeft") || !strcmp(kn, "ArrowRight") || !strcmp(kn, "Home") || !strcmp(kn, "End"))) {
                             static const char *mv[] = { "lumensel-left", "lumensel-right", "lumensel-home", "lumensel-end" };
                             js_dispatch(js, f, mv[kn[0] == 'H' ? 2 : kn[0] == 'E' ? 3 : kn[5] == 'L' ? 0 : 1], "MouseEvent", false, false, 0, (ev.key.mod & SDL_KMOD_SHIFT) ? 1 : 0, 0, NULL);

@@ -56,6 +56,17 @@ void (*js_clip_set)(const char *text);
 char *(*js_clip_get)(void);
 FN(clipSet) { CTX; v8::String::Utf8Value u(iso, a[0]); if (js_clip_set) js_clip_set(*u ? *u : ""); }
 FN(clipGet) { CTX; char *t = js_clip_get ? js_clip_get() : nullptr; RET(jstr(iso, t ? t : "")); free(t); }
+unsigned char *(*js_clip_image)(char **mime, size_t *len);
+/* clipImage(): the system clipboard's image as [mime, ArrayBuffer], else null */
+FN(clipImage) {
+    CTX; (void)ctx;
+    char *mime = nullptr; size_t n = 0;
+    unsigned char *p = js_clip_image ? js_clip_image(&mime, &n) : nullptr;
+    if (!p || !mime) { free(p); free(mime); RET(v8::Null(iso)); return; }
+    v8::Local<v8::Value> v[2] = { jstr(iso, mime), mkab(iso, p, n) };
+    free(p); free(mime);
+    RET(v8::Array::New(iso, v, 2));
+}
 FN(isNode) { CTX; RET(junwrap(a[0]) != nullptr); }
 FN(type) { CTX; ARGN(n, 0); RET((int)n->type); }
 FN(name) { CTX; ARGN(n, 0); RET(jstr(iso, n->type == NODE_ELEMENT || n->type == NODE_PI ? n->tag : n->type == NODE_DOCTYPE ? n->text : "")); }
@@ -370,6 +381,17 @@ FN(srSetFlags) {
     uint32_t set = (uint32_t)a[1]->Int32Value(ctx).FromMaybe(0) << 22, clr = (uint32_t)a[2]->Int32Value(ctx).FromMaybe(0) << 22;
     if (n->type == NODE_FRAGMENT && n->host) n->flags = (n->flags & ~clr) | set;
 }
+/* srRef(root[, value|null]): a shadow root's referenceTarget, kept in its (otherwise unused) text */
+FN(srRef) {
+    CTX; ARGN(n, 0); (void)ctx;
+    if (n->type != NODE_FRAGMENT || !n->host) return;
+    if (a.Length() > 1) {
+        free(n->text); n->text = nullptr; n->text_len = 0;
+        if (!a[1]->IsNull() && !a[1]->IsUndefined()) { v8::String::Utf8Value s(iso, a[1]); n->text = xstrdup(*s ? *s : ""); n->text_len = strlen(n->text); }
+        return;
+    }
+    if (n->text) RET(jstr(iso, n->text)); else RET(v8::Null(iso));
+}
 /* getHTML(node, serializableShadowRoots, [shadowRoots]) */
 FN(getHTML) {
     CTX; ARGN(n, 0);
@@ -590,12 +612,18 @@ FN(setUrl) {
 }
 FN(navigate) { CTX; std::string u = S(0); if (c->parent) { frame_nav(c, u.c_str()); return; } if (c->host.navigate) c->host.navigate(c->host.ud, u.c_str()); }
 FN(navigatePost) {
-    CTX; std::string u = S(0), b = S(1), t = S(2);
+    CTX; std::string u = S(0), b = js_body_bytes(iso, a[1]), t = S(2);
     if (c->host.navigate_post) c->host.navigate_post(c->host.ud, u.c_str(), b.data(), b.size(), t.c_str());
     else if (c->host.navigate) c->host.navigate(c->host.ud, u.c_str());
 }
 FN(histGo) { CTX; if (c->host.history_go) c->host.history_go(c->host.ud, a[0]->Int32Value(ctx).FromMaybe(0)); }
-FN(internal) { CTX; if (c->parent || !c->host.internal) return; std::string s = S(0); char *r = c->host.internal(c->host.ud, s.c_str()); if (r) { RET(jstr(iso, r)); free(r); } }
+/* frames reach the host only for testdriver ("td?"), which the top context's host answers (LUMEN_TESTDRIVER runs) */
+FN(internal) {
+    CTX; std::string s = S(0); JsCtx *h = c;
+    if (c->parent) { if (s.compare(0, 3, "td?")) return; while (h->parent) h = h->parent; }
+    if (!h->host.internal) return;
+    char *r = h->host.internal(h->host.ud, s.c_str()); if (r) { RET(jstr(iso, r)); free(r); }
+}
 FN(histLen) { CTX; RET(c->host.history_len ? c->host.history_len(c->host.ud) : 1); }
 FN(timer) {
     CTX;
@@ -636,7 +664,8 @@ static NetRequest *mkreq(JsCtx *c, const FCI &a) {
             v8::Local<v8::Value> k, v;
             if (!h->Get(ctx, i).ToLocal(&k) || !h->Get(ctx, i + 1).ToLocal(&v)) continue;
             std::string ks = jcstr(iso, k), vs = jcstr(iso, v);
-            if (str_ieq(ks.c_str(), "referer")) referer = true;
+            if (net_request_control(rq, ks.c_str(), vs.c_str())) continue;
+            if (str_ieq(ks.c_str(), "referer")) { referer = true; if (vs.empty()) continue; }   /* an empty Referer: none sent */
             headers_add(&rq->headers, ks.c_str(), vs.c_str());
         }
     }
@@ -922,6 +951,7 @@ FN(fetchSync) {
     if (r) net_response_free(r);
     RET(v8::Array::New(iso, out, 6));
 }
+FN(fetchPause) { CTX; (void)c; net_pause((uint64_t)NUM(0), BOOL(1)); }
 FN(abort) {
     CTX; uint64_t id = (uint64_t)NUM(0);
     auto it = c->fetches.find(id);
@@ -1208,11 +1238,11 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(text); REG(setText); REG(attr); REG(setAttr); REG(rmAttr); REG(attrs); REG(attrQ); REG(attrNS); REG(setAttrQ); REG(setAttrNS); REG(rmAttrQ); REG(rmAttrNS); REG(attrsNS); REG(insert); REG(remove); REG(newDoc); REG(newXmlDoc); REG(xname); REG(charset); REG(ctype); REG(csp); REG(evalGuard); REG(ttOn); REG(codeLike); REG(lazySrc); REG(parseXml); REG(parseDoc); REG(docReparse); REG(adopt); REG(pi); REG(cdata); REG(doctype); REG(ownerDoc);
     REG(create); REG(textNode); REG(comment); REG(frag); REG(html); REG(setHTML); REG(parseFrag); REG(query);
     REG(matches); REG(byId); REG(clone); REG(doc); REG(contains); REG(connected); REG(host); REG(setRealm); REG(realmOf); REG(attachShadow);
-    REG(shadowOf); REG(srFlags); REG(srSetFlags); REG(getHTML); REG(parseFragEx); REG(parseDocEx);
-    REG(templateContent); REG(rect); REG(textRects); REG(vrect); REG(clipSet); REG(clipGet); REG(scrollPos); REG(setScroll); REG(computed); REG(value); REG(setValue); REG(ctlSel); REG(setCtlSel); REG(checked); REG(setChecked); REG(pickFiles);
+    REG(shadowOf); REG(srFlags); REG(srSetFlags); REG(srRef); REG(getHTML); REG(parseFragEx); REG(parseDocEx);
+    REG(templateContent); REG(rect); REG(textRects); REG(vrect); REG(clipSet); REG(clipGet); REG(clipImage); REG(scrollPos); REG(setScroll); REG(computed); REG(value); REG(setValue); REG(ctlSel); REG(setCtlSel); REG(checked); REG(setChecked); REG(pickFiles);
     REG(modal); REG(fullscreen); REG(focus); REG(active); REG(cookie); REG(setCookie); REG(url); REG(docBase); REG(setUrl); REG(navigate); REG(navigatePost); REG(histGo);
     REG(histLen); REG(internal); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
-    REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(mediaOpenBytes); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove);
+    REG(abort); REG(fetchPause); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(mediaOpenBytes); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove);
     REG(mediaBuffered); REG(mediaEos); REG(mediaSetDuration); REG(mediaPlay); REG(mediaPause); REG(mediaSeek);
     REG(mediaPump); REG(resizePump); REG(intersectionPump); REG(vclip); REG(videoFramePump); REG(videoFrameInfo); REG(videoQuality);
     REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(errPos); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(scrollTo); REG(hit); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(camCount); REG(camOpen); REG(camState); REG(camSource); REG(camPermission); REG(camInfo); REG(camClose); REG(mediaLive); REG(screenOpen); REG(screenState); REG(screenSource); REG(screenInfo); REG(screenClose); REG(screenAudio); REG(micOpen); REG(micPermission); REG(micState); REG(micRead); REG(micClose); REG(recKind); REG(recOpen); REG(recPause); REG(recPush); REG(recFinish); REG(recTake); REG(recClose); REG(recMime); REG(readyState); REG(quirks);

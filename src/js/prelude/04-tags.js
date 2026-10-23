@@ -149,11 +149,36 @@ mk('HTMLCanvasElement', HTMLElement, ['canvas'], p => {
         toDataURL() { return 'data:,'; }, toBlob(cb) { setTimeout(() => cb(null)); },
     });
 });
+/* a control's autocomplete IDL value: its autofill tokens, normalised, or "" when they are not valid */
+const AF_NORMAL = new Set('name honorific-prefix given-name additional-name family-name honorific-suffix nickname username new-password current-password one-time-code organization-title organization street-address address-line1 address-line2 address-line3 address-level4 address-level3 address-level2 address-level1 country country-name postal-code cc-name cc-given-name cc-additional-name cc-family-name cc-number cc-exp cc-exp-month cc-exp-year cc-csc cc-type transaction-currency transaction-amount language bday bday-day bday-month bday-year sex url photo'.split(' '));
+const AF_CONTACT = new Set('tel tel-country-code tel-national tel-area-code tel-local tel-local-prefix tel-local-suffix tel-extension email impp'.split(' '));
+const autofill = el => {
+    const t = (N.attr(el, 'autocomplete') || '').toLowerCase().split(/[\t\n\f\r ]+/).filter(Boolean);
+    if (!t.length) return '';
+    if (t.length === 1 && t[0] === 'webauthn') return 'webauthn';
+    const webauthn = t[t.length - 1] === 'webauthn' && t.length > 1;
+    if (webauthn) t.pop();
+    const f = t.pop();
+    if ((f === 'on' || f === 'off') && !webauthn && !t.length) return el.localName === 'input' && el.type === 'hidden' ? '' : f;
+    const contact = AF_CONTACT.has(f);
+    if (!contact && !AF_NORMAL.has(f)) return '';
+    const out = [f];
+    if (contact && t.length && /^(home|work|mobile|fax|pager)$/.test(t[t.length - 1])) out.unshift(t.pop());
+    if (t.length && /^(shipping|billing)$/.test(t[t.length - 1])) out.unshift(t.pop());
+    if (t.length && t[t.length - 1].startsWith('section-')) out.unshift(t.pop());
+    if (t.length) return '';
+    if (webauthn) out.push('webauthn');
+    return out.join(' ');
+};
+const autofillAcc = p => acc(p, 'autocomplete', function () { return autofill(this); }, function (v) { this.setAttribute('autocomplete', v); });
 mk('HTMLFormElement', HTMLElement, ['form'], p => {
-    reflectUrl(p, 'action'); reflectStr(p, 'name', 'target', 'autocomplete'); acc(p, 'acceptCharset', function () { return N.attr(this, 'accept-charset') ?? ''; }, function (v) { this.setAttribute('accept-charset', v); }); reflectBool(p, 'noValidate');
+    reflectUrl(p, 'action'); reflectStr(p, 'name', 'target');
+    acc(p, 'autocomplete', function () { return (N.attr(this, 'autocomplete') || '').toLowerCase() === 'off' ? 'off' : 'on'; }, function (v) { this.setAttribute('autocomplete', v); }); acc(p, 'acceptCharset', function () { return N.attr(this, 'accept-charset') ?? ''; }, function (v) { this.setAttribute('accept-charset', v); }); reflectBool(p, 'noValidate');
     methods(p, {
-        get method() { return (N.attr(this, 'method') || 'get').toLowerCase() === 'post' ? 'post' : 'get'; }, set method(v) { this.setAttribute('method', v); },
-        get enctype() { return N.attr(this, 'enctype') || 'application/x-www-form-urlencoded'; },
+        get method() { const v = (N.attr(this, 'method') || '').toLowerCase(); return v === 'post' || v === 'dialog' ? v : 'get'; }, set method(v) { this.setAttribute('method', v); },
+        get enctype() { const v = (N.attr(this, 'enctype') || '').toLowerCase(); return /^(multipart\/form-data|text\/plain)$/.test(v) ? v : 'application/x-www-form-urlencoded'; },
+        set enctype(v) { this.setAttribute('enctype', v); },
+        get encoding() { return this.enctype; }, set encoding(v) { this.setAttribute('enctype', v); },
         get elements() { return nodeList(N.query(this, 'input,select,textarea,button,fieldset,output', true)); }, get length() { return this.elements.length; },
         /* a form that is not connected cannot navigate: it neither fires submit nor submits */
         submit() { if (this.isConnected) submitForm(this, null); },
@@ -224,11 +249,12 @@ const textSelection = {
         if (start > n || end > n) throw new DOMException(`The offset ${Math.max(start, end)} is larger than the value's length (${n}).`, 'IndexSizeError');
         return oprNew(this, start, Math.max(start, end));
     },
-    select() { if (!selOk(this)) return; selSet(this, 0, this.value.length, 'none', true); selFire(this); },
+    select() { if (!selOk(this)) return; selSet(this, 0, this.value.length, 'none'); },
     setRangeText(text, start, end, mode = 'preserve') {
         if (!selOk(this)) selNo();
         text = String(text);
-        let [ss, se] = selGet(this);
+        const before = selGet(this);
+        let [ss, se] = before;
         if (start === undefined) { start = ss; end = se; }
         const v = this.value, n = v.length;
         start = Math.min(Math.max(0, Math.trunc(+start) || 0), n); end = Math.min(Math.max(0, Math.trunc(+end) || 0), n);
@@ -245,12 +271,16 @@ const textSelection = {
             if (ss > end) ss += d; else if (ss > start) ss = start;
             if (se > end) se += d; else if (se > start) se = nl;
         }
-        selSet(this, ss, se);
+        /* select fires only when the selection differs from the one before the call */
+        selSet(this, ss, se, undefined, true);
+        const now = selGet(this);
+        if (now[0] !== before[0] || now[1] !== before[1] || now[2] !== before[2]) selFire(this);
     },
 };
 const INPUT_TYPES = /^(hidden|text|search|tel|url|email|password|date|month|week|time|datetime-local|number|range|color|checkbox|radio|file|submit|image|reset|button)$/;
 mk('HTMLInputElement', HTMLElement, ['input'], p => {
-    reflectStr(p, 'name', 'placeholder', 'accept', 'alt', 'autocomplete', 'inputMode', 'max', 'min', 'pattern', 'step', 'enterKeyHint');
+    autofillAcc(p);
+    reflectStr(p, 'name', 'placeholder', 'accept', 'alt', 'inputMode', 'max', 'min', 'pattern', 'step', 'enterKeyHint');
     reflectBool(p, 'disabled', 'readOnly', 'required', 'multiple'); reflectUrl(p, 'src'); reflectInt(p, 20, 'size'); reflectInt(p, -1, 'maxLength', 'minLength'); formControl(p);
     methods(p, {
         get type() { const t = (N.attr(this, 'type') || 'text').toLowerCase(); return INPUT_TYPES.test(t) ? t : 'text'; }, set type(v) { this.setAttribute('type', v); },
@@ -268,7 +298,8 @@ mk('HTMLInputElement', HTMLElement, ['input'], p => {
     methods(p, textSelection);
 });
 mk('HTMLTextAreaElement', HTMLElement, ['textarea'], p => {
-    reflectStr(p, 'name', 'placeholder', 'autocomplete', 'wrap'); reflectBool(p, 'disabled', 'readOnly', 'required'); reflectInt(p, 20, 'cols'); reflectInt(p, 2, 'rows'); formControl(p);
+    autofillAcc(p);
+    reflectStr(p, 'name', 'placeholder', 'wrap'); reflectBool(p, 'disabled', 'readOnly', 'required'); reflectInt(p, 20, 'cols'); reflectInt(p, 2, 'rows'); formControl(p);
     methods(p, {
         get type() { return 'textarea'; },
         get value() { const v = N.value(this); return v != null ? v : N.text(this); }, set value(v) { valueSet(this, v == null ? '' : String(v)); },
@@ -307,7 +338,11 @@ mk('HTMLButtonElement', HTMLElement, ['button'], p => {
         },
     });
 });
+reflectElement(HTMLElement.prototype, 'anchorElement', 'anchor');
+for (const C of [H.HTMLButtonElement, H.HTMLAnchorElement, H.HTMLAreaElement]) reflectElement(C.prototype, 'interestForElement', 'interestfor');
+for (const C of [H.HTMLButtonElement, H.HTMLInputElement]) reflectElement(C.prototype, 'popoverTargetElement', 'popovertarget');
 mk('HTMLSelectElement', HTMLElement, ['select'], p => {
+    autofillAcc(p);
     reflectStr(p, 'name'); reflectBool(p, 'disabled', 'multiple', 'required'); formControl(p);
     methods(p, {
         get type() { return this.multiple ? 'select-multiple' : 'select-one'; },

@@ -99,6 +99,8 @@ function isDescendant(descendant, ancestor) {
  * Returns true if node1 is before node2 in tree order, false otherwise.
  */
 function isBefore(node1, node2) {
+    // Lumen: null is the end of the document (nextNodeDescendants() of the last node)
+    if (!node2) return !!node1;
     return Boolean(node1.compareDocumentPosition(node2) & Node.DOCUMENT_POSITION_FOLLOWING);
 }
 
@@ -106,6 +108,7 @@ function isBefore(node1, node2) {
  * Returns true if node1 is after node2 in tree order, false otherwise.
  */
 function isAfter(node1, node2) {
+    if (!node2) return false;
     return Boolean(node1.compareDocumentPosition(node2) & Node.DOCUMENT_POSITION_PRECEDING);
 }
 
@@ -752,7 +755,7 @@ function isInlineNode(node) {
 function isEditingHost(node) {
     return node
         && isHtmlElement(node)
-        && (node.contentEditable == "true"
+        && (node.contentEditable == "true" || node.contentEditable == "plaintext-only"   // Lumen: plaintext-only hosts too
         || (node.parentNode
         && node.parentNode.nodeType == Node.DOCUMENT_NODE
         && node.parentNode.designMode == "on"));
@@ -1086,6 +1089,25 @@ function isCollapsedBlockProp(node) {
 // active range meets the requirements that selection boundary points are
 // supposed to meet, i.e., that the nodes are both Text or Element nodes that
 // descend from a Document.
+/* Lumen (as Chrome): content joined into a block with another white-space keeps its own in a <span>; the span for
+   inline nodes moving from block "from" into block "to", or null when the styles match */
+function whiteSpaceSpan(from, to, nodes) {
+    if (!nodes.length || !nodes.every(isInlineNode)) return null;
+    var a = getComputedStyle(from).whiteSpace, b = getComputedStyle(to).whiteSpace;
+    if (!a || a == b) return null;
+    var span = document.createElement("span");
+    span.setAttribute("style", "white-space:" + a);
+    return span;
+}
+
+/* Lumen: the white-space of node's element preserves segment breaks (pre, pre-wrap, pre-line, break-spaces) */
+function newlinesSignificant(node) {
+    var el = node.nodeType == Node.ELEMENT_NODE ? node : node.parentNode;
+    if (!el || el.nodeType != Node.ELEMENT_NODE) return false;
+    var cs = getComputedStyle(el), ws = cs.whiteSpaceCollapse || "", w = cs.whiteSpace || "";
+    return /^(preserve|preserve-breaks|break-spaces)$/.test(ws) || /^(pre|pre-wrap|pre-line|break-spaces)$/.test(w);
+}
+
 function getActiveRange() {
     var ret;
     if (globalRange) {
@@ -4911,11 +4933,16 @@ function deleteSelection(flags) {
 
         // "Record the values of children, and let values be the result."
         var values = recordValues(children);
+        var wsSpan = whiteSpaceSpan(endBlock, startBlock, children);
 
         // "While children's first member's parent is not start block, split
         // the parent of children."
         while (children[0].parentNode != startBlock) {
             splitParent(children);
+        }
+        if (wsSpan) {
+            startBlock.insertBefore(wsSpan, children[0]);
+            children.forEach(function(node) { movePreservingRanges(node, wsSpan, -1); });
         }
 
         // "If children's first member's previousSibling is an editable br,
@@ -4974,8 +5001,10 @@ function deleteSelection(flags) {
 
         // "For each node in nodes to move, append node as the last child of
         // start block, preserving ranges."
+        var wsSpan = whiteSpaceSpan(endBlock, startBlock, nodesToMove);
+        if (wsSpan) startBlock.appendChild(wsSpan);
         nodesToMove.forEach(function(node) {
-            movePreservingRanges(node, startBlock, -1);
+            movePreservingRanges(node, wsSpan || startBlock, -1);
         });
 
     // "Otherwise:"
@@ -4999,8 +5028,10 @@ function deleteSelection(flags) {
 
         // "While end block has children, append the first child of end block
         // to start block, preserving ranges."
+        var wsSpan = whiteSpaceSpan(endBlock, startBlock, [].slice.call(endBlock.childNodes));
+        if (wsSpan) startBlock.appendChild(wsSpan);
         while (endBlock.hasChildNodes()) {
-            movePreservingRanges(endBlock.firstChild, startBlock, -1);
+            movePreservingRanges(endBlock.firstChild, wsSpan || startBlock, -1);
         }
 
         // "While end block has no children, let parent be the parent of end
@@ -7454,6 +7485,23 @@ commands.insertlinebreak = {
             getActiveRange().setEnd(newNode, newOffset);
         }
 
+        // Lumen (as Chrome and Firefox): where white-space keeps newlines, the line break is a linefeed, not a <br>
+        if (newlinesSignificant(getActiveRange().startContainer)) {
+            var lfNode = getActiveRange().startContainer, lfOffset = getActiveRange().startOffset;
+            if (lfNode.nodeType == Node.TEXT_NODE) {
+                lfNode.insertData(lfOffset, "\n");
+                lfOffset++;
+            } else {
+                var lf = document.createTextNode("\n");
+                getActiveRange().insertNode(lf);
+                lfNode = lf; lfOffset = 1;
+            }
+            getSelection().collapse(lfNode, lfOffset);
+            getActiveRange().setStart(lfNode, lfOffset);
+            getActiveRange().setEnd(lfNode, lfOffset);
+            return true;
+        }
+
         // "Let br be the result of calling createElement("br") on the context
         // object."
         var br = document.createElement("br");
@@ -7513,6 +7561,13 @@ commands.insertparagraph = {
         if (!isEditable(getActiveRange().startContainer)
         && !isEditingHost(getActiveRange().startContainer)) {
             return true;
+        }
+
+        // Lumen (as Chrome and Firefox): an editing host that cannot hold a <div> or <p> (a <span> or <p> host)
+        // gets a line break instead of a new paragraph
+        var paraHost = getEditingHostOf(getActiveRange().startContainer) || (isEditingHost(getActiveRange().startContainer) ? getActiveRange().startContainer : null);
+        if (paraHost && !isAllowedChild("div", paraHost) && !isAllowedChild("p", paraHost)) {
+            return commands.insertlinebreak.action();
         }
 
         // "Let node and offset be the active range's start node and offset."
