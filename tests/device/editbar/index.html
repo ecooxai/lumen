@@ -29,7 +29,7 @@ for (const t of ['pointerdown', 'touchstart', 'mousedown'])
     lastDown = Date.now(); post({ ev: 'down', type: t, x: p.clientX, y: p.clientY });
   }, true);
 const line = () => {
-  const b = document.querySelector('#ed [data-block], #ed .public-DraftEditorPlaceholder-inner') || document.getElementById('ed');
+  const bl = document.querySelectorAll('#ed [data-block]'), b = bl[bl.length - 1] || document.querySelector('#ed .public-DraftEditorPlaceholder-inner') || document.getElementById('ed');   /* the last line: taps at its end put the caret at the text's end */
   const r = b.getBoundingClientRect(), m = document.getElementById('out').getBoundingClientRect();
   return { line: [r.left, r.top, r.right, r.bottom], out: [m.left, m.top, m.right, m.bottom] };
 };

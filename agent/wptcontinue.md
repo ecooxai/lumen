@@ -106,7 +106,11 @@ Read `AGENTS.md` first. In short:
 
 ## UI test automation (user: script UI tests; AI agents only when necessary)
   main.c logs 'LumenBar' (logcat) on layout change: "bar edit|sel y0= y1= x0= ACT:xend ..." and "pop kind= x= y= w=
-  rh= acts=" in viewport CSS px (= page clientX/Y). tools/edit_bar_test.py WORKS (run: python3 tools/edit_bar_test.py --serial 2d4f6bc0 [--install] [--only ...]; port 8937; screen size from screencap PNG; run 1: 15/19, fails were stale-geometry dedup → geom_log per channel + 'hidden' lines, needs APK rebuild + rerun) + tests/device/editbar/ (LumenBar log in main.c needs APK rebuild) (Draft
+  rh= acts=" in viewport CSS px (= page clientX/Y). tools/edit_bar_test.py WORKS (run: python3 tools/edit_bar_test.py --serial 2d4f6bc0 [--install] [--only ...]; port 8937; screen size from screencap PNG; run 1: 15/19, fails were stale-geometry dedup → geom_log per channel + 'hidden' lines, rebuilt 08:57; run 2: 15/20. Remaining fails: (1) SCRIPT: STATE line = FIRST block, so taps land on line 1 → use the LAST [data-block] in index.html line(); (2) BUG?: bar COPY with no selection in an editing host didn't reach the clipboard (history pasted an older clip) — check field_all + tsel_text timing in bar_do (JS selection mirrored async?); (3) More list / held Backspace fails probably follow from (1)/(2) — rerun after fixes. Results in /tmp/devtest/ebt2.txt) Page fixed (last block). Run 3 (/tmp/devtest/ebt3.txt): 17/21. Remaining fails all trace to ONE REAL BUG: a tap on an
+  EMPTY Draft line (block = <div data-block><span><br data-text></span></div>) puts the caret at the end of the line
+  ABOVE (bar Backspace deleted 'z'; snippet/paste landed on line 1/2; dom vs model then diverged after word deletes).
+  NEXT: fix caret hit-testing on empty blocks with only a <br> (layout_hit / lumensel-collapse target+offset for a
+  <br>-only line → collapse inside that block at offset 0), then rerun the script (no agent needed). + tests/device/editbar/ (LumenBar log in main.c needs APK rebuild) (Draft
   page posting state to the script; calibration taps map screen px → client px; CPU/RSS sampled every 1 s).
   Settings results (08:05 agent run): all PASS; snippets textarea too short (text overflows under Save button).
 
