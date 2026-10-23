@@ -535,15 +535,6 @@ class Selection {
     }
 }
 const selection = new Selection();
-class Animation extends EventTarget {
-    constructor(el, kf, o) {
-        super(); this.effect = { target: el }; this.playState = 'finished'; this.onfinish = null; this.finished = Promise.resolve(this); this.ready = Promise.resolve(this);
-        const last = Array.isArray(kf) ? kf[kf.length - 1] : null;
-        if (last && o && (o.fill === 'forwards' || o.fill === 'both') && el.style) for (const k in last) if (k !== 'offset' && k !== 'easing') el.style[k] = last[k];
-        setTimeout(() => { const ev = new Event('finish'); if (this.onfinish) this.onfinish(ev); dispatch(this, ev); });
-    }
-    play() {} pause() {} finish() {} cancel() { this.playState = 'idle'; } reverse() {} commitStyles() {} persist() {}
-}
 class DOMMatrixReadOnly { constructor() { Object.assign(this, { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0, m41: 0, m42: 0, is2D: true, isIdentity: true }); } translate() { return new DOMMatrix(); } scale() { return new DOMMatrix(); } multiply() { return new DOMMatrix(); } inverse() { return new DOMMatrix(); } transformPoint(p) { return p; } toString() { return 'matrix(1, 0, 0, 1, 0, 0)'; } }
 class DOMMatrix extends DOMMatrixReadOnly {}
 class DOMPoint { constructor(x = 0, y = 0, z = 0, w = 1) { Object.assign(this, { x, y, z, w }); } }

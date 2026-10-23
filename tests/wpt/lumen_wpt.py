@@ -242,7 +242,7 @@ class Runner:
         return keep[:12]
 
     def record(self, inst, status, message, subtests):
-        inst.result = status
+        inst.result = status; inst.t_res = time.time()
         rec = {"url": inst.cur, "status": status, "message": message, "subtests": subtests, "ms": int((time.time() - inst.t0) * 1000), "inst": inst.n,
                "log": self.log_lines(inst)}
         self.out.write(json.dumps(rec) + "\n"); self.out.flush()
@@ -293,6 +293,8 @@ class Runner:
                     if inst.cur and inst.result is None and time.time() - inst.t0 > limit:
                         self.record(inst, "TIMEOUT", "lumen-wpt: hard deadline %d s" % limit, []); self.keep_log(inst, "hard timeout")
                         inst.cur = None; break
+                    if inst.cur and inst.result is not None and time.time() - inst.t_res > 20:   # done, but never asked for the next test (e.g. reload loop)
+                        self.keep_log(inst, "no next request"); inst.cur = None; break
                     if inst.fresh and time.time() - inst.t0 > 60:   # never asked for its first test
                         self.keep_log(inst, "no first request"); inst.cur = None; break
                     if inst.cur is None and not inst.fresh: break      # restart_every reached or queue empty

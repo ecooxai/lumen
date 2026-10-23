@@ -16,7 +16,12 @@ typedef VEC(Rule *) RuleVec;
 /* ---------------- style objects ---------------- */
 long g_styles_live;
 static void match_memo_free(void *memo);
-void node_free_inline_style(Node *n) { css_decls_free(n->inline_decls); n->inline_decls = NULL; match_memo_free(n->match_memo); n->match_memo = NULL; }
+void node_free_inline_style(Node *n) { css_decls_free(n->inline_decls); n->inline_decls = NULL; css_decls_free(n->anim_decls); n->anim_decls = NULL; match_memo_free(n->match_memo); n->match_memo = NULL; }
+void css_set_anim_style(Node *n, const char *css) {
+    css_decls_free(n->anim_decls);
+    n->anim_decls = css && *css ? css_parse_decls(css, strlen(css)) : NULL;
+    if (n->doc) doc_mark_style_dirty(n->doc, n);
+}
 ComputedStyle *style_new_default(void) {
     ComputedStyle *s = xcalloc(1, sizeof *s); g_styles_live++;
     s->refs = 1; s->anim_iter = 1;
@@ -2883,6 +2888,7 @@ static ComputedStyle *compute(StyleEngine *e, Node *el, const ComputedStyle *par
         DeclList *dl = el->inline_decls;
         for (int i = 0; i < dl->n; i++) { MDecl m = { &dl->v[i], 0, 0 }; vec_push(all, m); }
     }
+    if (el->anim_decls) { DeclList *dl = el->anim_decls; for (int i = 0; i < dl->n; i++) { MDecl m = { &dl->v[i], 0, 0 }; vec_push(all, m); } }
     for (int i = split; i < mn; i++) vec_push(all, md[i]);
     apply_decl_ordered(st, par, all.v, all.n, e, el);
     vec_free(all);

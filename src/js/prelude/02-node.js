@@ -92,8 +92,6 @@ class NodeList {
 /* WebIDL: a value iterator over an indexed getter uses the Array.prototype functions */
 for (const k of ['entries', 'forEach', 'keys', 'values']) Object.defineProperty(NodeList.prototype, k, { value: Array.prototype[k], writable: true, enumerable: true, configurable: true });
 Object.defineProperty(NodeList.prototype, Symbol.iterator, { value: Array.prototype.values, writable: true, configurable: true });
-class AnimationTimeline { get currentTime() { return performance.now(); } get duration() { return null; } }
-class DocumentTimeline extends AnimationTimeline { constructor(o) { super(); def(this, '_origin', +(o && o.originTime) || 0); } get currentTime() { return performance.now() - this._origin; } }
 class HTMLCollection {
     constructor(key = undefined) { illegal(); }
     get length() { return listOf(this, 'length', 'HTMLCollection').length; }

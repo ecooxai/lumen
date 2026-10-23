@@ -3062,7 +3062,16 @@ static void hf_sync(void *ud, Document *d, bool layout) {
 }
 static void hf_viewport(void *ud, float *w, float *h, float *sx, float *sy, float *dpr) { Page *p = ud; *w = p->fw; *h = p->fh; *sx = 0; *sy = p->fsy; *dpr = frame_scale(p); }
 static void hf_scroll_to(void *ud, float x, float y) { (void)x; Page *p = ud; p->fsy = y > 0 ? y : 0; p->drawn_ver = ~0ull; }
-static Node *hf_hit(void *ud, float x, float y) { Page *p = ud; if (!p->L) return NULL; Box *b = layout_hit(p->L, x, y + p->fsy, 0, p->fsy); return b ? b->node : NULL; }
+/* A hit on an inline <svg> box goes on to the shape under the point (layout x, y), per 'pointer-events' */
+static Node *hit_node(Box *b, float x, float y) {
+    if (b && b->node && b->node->type == NODE_ELEMENT && b->node->ns == NS_SVG && b->node->tag == A_svg) {
+        float cx = b->x + b->b[3] + b->p[3], cy = b->y + b->b[0] + b->p[0];
+        Node *s = svg_hit(b->node, x - cx, y - cy, b->w - (b->b[1] + b->b[3] + b->p[1] + b->p[3]), b->h - (b->b[0] + b->b[2] + b->p[0] + b->p[2]));
+        if (s) return s;
+    }
+    return b ? b->node : NULL;
+}
+static Node *hf_hit(void *ud, float x, float y) { Page *p = ud; if (!p->L) return NULL; return hit_node(layout_hit(p->L, x, y + p->fsy, 0, p->fsy), x, y + p->fsy); }
 static void h_frame_close(void *ud);
 static void h_frame_open(void *ud, Node *f, Document *d, JsHost *ch) {
     (void)ud;
@@ -3215,7 +3224,7 @@ static unsigned android_dom_touch(App *a, const char *phase, const SDL_Event *ev
         if (x <= 0 || y <= 0 || g_hud_pop || a->t->info) return 0;
         h_sync_in(a, p->d, true);
         Box *b = p->L ? layout_hit(p->L, x, y + a->t->sy, 0, a->t->sy) : NULL;
-        target = b ? b->node : NULL;
+        target = hit_node(b, x, y + a->t->sy);
         while (target && target->type != NODE_ELEMENT) target = target->parent;
         unsigned block = 0;
         /* a touch on an iframe goes to the element under it in the frame's document, in its coordinates */
@@ -3276,7 +3285,7 @@ static void h_scroll_to_in(void *ud, float x, float y) {
     if (a->t->sy == next) return;
     a->t->sy = next; a->dirty = true;
 }
-static Node *h_hit_in(void *ud, float x, float y) { (void)ud; Page *p = g_app->t->cur; if (!p || !p->L) return NULL; Box *b = layout_hit(p->L, x, y + g_app->t->sy, 0, g_app->t->sy); return b ? b->node : NULL; }
+static Node *h_hit_in(void *ud, float x, float y) { (void)ud; Page *p = g_app->t->cur; if (!p || !p->L) return NULL; return hit_node(layout_hit(p->L, x, y + g_app->t->sy, 0, g_app->t->sy), x, y + g_app->t->sy); }
 static void h_sync(void *ud, Document *d, bool layout) { TAB_CALL(ud, h_sync_in(g_app, d, layout)); }
 #if defined(__ANDROID__) && !defined(NDEBUG)
 /* Local developer diagnostic: geometry/CSS only, never page text, URLs or form values. */
@@ -3759,7 +3768,7 @@ static bool youtube_controls_target(Page *page, Node *node) {
 static void page_move(App *a, float x, float y) {   /* pointer moves for page scripts (e.g. YouTube shows its controls on mousemove) */
     static double last; static Node *prev; double tn = now_ms();
     Page *p = a->t->cur; if (!p || !p->L) return;
-    Box *b = layout_hit(p->L, x, y + a->t->sy, 0, a->t->sy); Node *n = b ? b->node : NULL;
+    Node *n = hit_node(layout_hit(p->L, x, y + a->t->sy, 0, a->t->sy), x, y + a->t->sy);
     while (n && n->type != NODE_ELEMENT) n = n->parent;
     if (!n) n = p->d->html;
     if (page_hover(p, n)) restyle(a);

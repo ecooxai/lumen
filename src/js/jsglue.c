@@ -69,6 +69,7 @@ bool jsg_matches(Node *el, const char *sel, Node *scope, bool *ok) {
 }
 
 char *jsg_computed(Node *el, const char *prop) { return css_get_computed_value(el, prop); }
+void jsg_set_anim_style(Node *el, const char *css) { if (el->type == NODE_ELEMENT) css_set_anim_style(el, css); }
 
 uint64_t jsg_layout_generation(void) { return layout_generation(); }
 uint64_t jsg_visual_generation(void) { return doc_visual_generation(); }

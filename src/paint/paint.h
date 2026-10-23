@@ -46,6 +46,7 @@ Image *image_yuv420p(int w, int h, const uint8_t *const planes[3], const int str
 /* Advances animated images; true if any frame changed. *next_ms gets the next frame time (0 = none). */
 bool image_anim_tick(double now_ms, double *next_ms);
 Image *svg_image(Node *n, float cw, float ch, float dpr);
+Node *svg_hit(Node *n, float x, float y, float cw, float ch);   /* shape at content-box point (x, y), or NULL */
 void dl_build(DisplayList *dl, Layout *L, float scroll_x, float scroll_y, float vw, float vh);
 extern bool dl_caret_on; /* paint the caret in the focused text control */
 extern bool dl_cull; /* skip normal-flow subtrees outside the viewport (off only to compare, in tests) */

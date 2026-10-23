@@ -290,7 +290,7 @@ static Image *to_image(struct SwsContext **sws, AVFrame *f) {
     *sws = sws_getCachedContext(*sws, f->width, f->height, (enum AVPixelFormat)f->format, ow, oh, AV_PIX_FMT_BGRA, SWS_BILINEAR, NULL, NULL, NULL);
     if (!*sws) return NULL;
     Image *im = xcalloc(1, sizeof *im); im->w = ow; im->h = oh; im->refs = 1;
-    im->px = xmalloc((size_t)ow * (size_t)oh * 4);
+    im->px = xmalloc((size_t)ow * (size_t)oh * 4 + 256);   /* swscale's SIMD may write past a narrow last row */
     uint8_t *dst[4] = { (uint8_t *)im->px }; int ls[4] = { ow * 4 };
     sws_scale(*sws, (const uint8_t *const *)f->data, f->linesize, 0, f->height, dst, ls);
     return im;

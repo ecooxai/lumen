@@ -525,6 +525,100 @@ static uint64_t tree_hash(const Node *n, uint64_t h, int depth) {
     return h;
 }
 
+/* ---- hit testing: the topmost shape whose fill or stroke area holds a point, per 'pointer-events' ---- */
+typedef struct { char pe[16]; bool visible, fill_none, stroke_none, ahem; float sw, fs; } HitPaint;
+/* <text> as one rectangle per run: em-high, advance 1 em per character in Ahem, else about 0.55 em */
+static void svg_text_rect(PathB *p, const Node *k, const HitPaint *hp) {
+    int n = 0;
+    for (const Node *c = k->first; c; c = c->next) if (c->type == NODE_TEXT && c->text) for (const unsigned char *s = (const unsigned char *)c->text; *s; s++) n += (*s & 0xC0) != 0x80 && !(n == 0 && isspace(*s));
+    if (!n) return;
+    float x = fattr(k, "x"), y = fattr(k, "y"), w = n * hp->fs * (hp->ahem ? 1 : 0.55f);
+    pb_move(p, x, y - 0.8f * hp->fs); pb_line(p, x + w, y - 0.8f * hp->fs); pb_line(p, x + w, y + 0.2f * hp->fs); pb_line(p, x, y + 0.2f * hp->fs); pb_close(p);
+}
+static bool path_inside(const PathB *p, float x, float y, bool eo) {
+    int wind = 0, np = p->xy.n / 2;
+    for (int s = 0; s < p->st.n; s++) {
+        int a = p->st.v[s], e = s + 1 < p->st.n ? p->st.v[s + 1] : np;
+        for (int i = a; i < e; i++) {
+            int j = i + 1 < e ? i + 1 : a;
+            float x0 = p->xy.v[2 * i], y0 = p->xy.v[2 * i + 1], x1 = p->xy.v[2 * j], y1 = p->xy.v[2 * j + 1];
+            if ((y0 <= y) != (y1 <= y)) { float cx = x0 + (y - y0) * (x1 - x0) / (y1 - y0); if (cx > x) wind += y1 > y0 ? 1 : -1; }
+        }
+    }
+    return eo ? (wind & 1) != 0 : wind != 0;
+}
+static bool path_near(const PathB *p, float x, float y, float hw) {
+    int np = p->xy.n / 2;
+    for (int s = 0; s < p->st.n; s++) {
+        int a = p->st.v[s], e = s + 1 < p->st.n ? p->st.v[s + 1] : np;
+        for (int i = a; i < e; i++) {
+            int j = i + 1;
+            if (j >= e) { if (!p->cl.v[s]) break; j = a; }
+            float x0 = p->xy.v[2 * i], y0 = p->xy.v[2 * i + 1], dx = p->xy.v[2 * j] - x0, dy = p->xy.v[2 * j + 1] - y0, l2 = dx * dx + dy * dy;
+            float t = l2 > 0 ? ((x - x0) * dx + (y - y0) * dy) / l2 : 0; t = t < 0 ? 0 : t > 1 ? 1 : t;
+            float ex = x0 + t * dx - x, ey = y0 + t * dy - y;
+            if (ex * ex + ey * ey <= hw * hw) return true;
+        }
+    }
+    return false;
+}
+static const Node *hit_walk(const Node *n, Mat m, HitPaint hp, float x, float y, int depth);
+static const Node *hit_el(const Node *k, Mat m, HitPaint hp, float x, float y, int depth) {
+    static const char *const skip[] = { "defs", "clipPath", "mask", "symbol", "linearGradient", "radialGradient", "pattern", "filter", "title", "desc", "style", "script", "foreignObject", "metadata", "marker", NULL };
+    if (depth > 32 || attr_hidden(k)) return NULL;
+    const char *t = k->tag, *v; char b[64];
+    for (int i = 0; skip[i]; i++) if (!strcmp(t, skip[i])) return NULL;
+    if ((v = prop(k, "pointer-events", b, sizeof b))) { size_t l = LMIN(strlen(v), sizeof hp.pe - 1); memcpy(hp.pe, v, l); hp.pe[l] = 0; }
+    if ((v = prop(k, "visibility", b, sizeof b))) hp.visible = str_ieq(v, "visible");
+    if ((v = prop(k, "fill", b, sizeof b))) hp.fill_none = str_ieq(skipws(v), "none");
+    if ((v = prop(k, "stroke", b, sizeof b))) hp.stroke_none = str_ieq(skipws(v), "none");
+    if ((v = prop(k, "stroke-width", b, sizeof b))) hp.sw = (float)atof(v);
+    if ((v = prop(k, "font-size", b, sizeof b)) && atof(v) > 0) hp.fs = (float)atof(v);
+    if ((v = prop(k, "font-family", b, sizeof b))) hp.ahem = strcasestr(v, "ahem") != NULL;
+    Mat km = (v = node_attr(k, "transform")) ? parse_transform(v, m) : m;
+    if (!strcmp(t, "g") || !strcmp(t, "a") || !strcmp(t, "svg") || !strcmp(t, "switch")) return hit_walk(k, km, hp, x, y, depth + 1);
+    if (!strcmp(t, "use") || !strcmp(t, "image")) return NULL;
+    const char *pe = hp.pe;
+    bool vis = !strncasecmp(pe, "visible", 7) || str_ieq(pe, "auto");
+    if (str_ieq(pe, "none") || (vis && !hp.visible)) return NULL;
+    bool painted = str_ieq(pe, "auto") || str_ieq(pe, "visiblePainted") || str_ieq(pe, "painted");
+    bool wf = painted ? !hp.fill_none : str_ieq(pe, "visibleFill") || str_ieq(pe, "visible") || str_ieq(pe, "fill") || str_ieq(pe, "all");
+    bool ws = painted ? !hp.stroke_none : str_ieq(pe, "visibleStroke") || str_ieq(pe, "visible") || str_ieq(pe, "stroke") || str_ieq(pe, "all");
+    if (!wf && !ws) return NULL;
+    PathB p = { 0 }; p.m = km; p.sc = sqrtf(fabsf(km.a * km.d - km.b * km.c));
+    if (!strcmp(t, "text")) svg_text_rect(&p, k, &hp); else build_shape(&p, k);
+    bool eo = (v = prop(k, "fill-rule", b, sizeof b)) && !strcmp(v, "evenodd");
+    bool h = p.xy.n >= 4 && ((wf && strcmp(t, "line") && path_inside(&p, x, y, eo)) || (ws && hp.sw > 0 && path_near(&p, x, y, hp.sw * p.sc / 2)));
+    free(p.xy.v); free(p.st.v); free(p.cl.v);
+    return h ? k : NULL;
+}
+static const Node *hit_walk(const Node *n, Mat m, HitPaint hp, float x, float y, int depth) {
+    const Node *r = NULL;
+    for (const Node *k = n->first; k; k = k->next)
+        if (k->type == NODE_ELEMENT && k->ns == NS_SVG) { const Node *h = hit_el(k, m, hp, x, y, depth); if (h) r = h; }
+    return r;
+}
+Node *svg_hit(Node *n, float x, float y, float cw, float ch) {
+    if (cw < 0.5f || ch < 0.5f) return NULL;
+    float vx = 0, vy = 0, vw = cw, vh = ch; const char *vb = node_attr(n, "viewBox"), *par = node_attr(n, "preserveAspectRatio");
+    if (!(vb && sscanf(vb, "%f%*[ ,]%f%*[ ,]%f%*[ ,]%f", &vx, &vy, &vw, &vh) == 4 && vw > 0 && vh > 0)) { vx = vy = 0; vw = cw; vh = ch; }
+    float kx = cw / vw, ky = ch / vh, tx = 0, ty = 0;
+    if (!par || strncmp(par, "none", 4)) {
+        bool slice = par && strstr(par, "slice"); float kk = slice ? LMAX(kx, ky) : LMIN(kx, ky);
+        float ax = !par || strstr(par, "xMid") ? 0.5f : strstr(par, "xMax") ? 1 : 0, ay = !par || strstr(par, "YMid") ? 0.5f : strstr(par, "YMax") ? 1 : 0;
+        tx = (cw - vw * kk) * ax; ty = (ch - vh * kk) * ay; kx = ky = kk;
+    }
+    HitPaint hp = { "auto", true, false, true, false, 1, n->style && n->style->font_size > 0 ? n->style->font_size : 16 }; char b[64]; const char *v;
+    if ((v = prop(n, "font-size", b, sizeof b)) && atof(v) > 0) hp.fs = (float)atof(v);
+    if ((v = prop(n, "font-family", b, sizeof b))) hp.ahem = strcasestr(v, "ahem") != NULL;
+    if ((v = prop(n, "pointer-events", b, sizeof b))) snprintf(hp.pe, sizeof hp.pe, "%s", v);
+    if ((v = prop(n, "visibility", b, sizeof b))) hp.visible = str_ieq(v, "visible");
+    if ((v = prop(n, "fill", b, sizeof b))) hp.fill_none = str_ieq(skipws(v), "none");
+    if ((v = prop(n, "stroke", b, sizeof b))) hp.stroke_none = str_ieq(skipws(v), "none");
+    if ((v = prop(n, "stroke-width", b, sizeof b))) hp.sw = (float)atof(v);
+    return (Node *)hit_walk(n, (Mat){ kx, 0, 0, ky, tx - vx * kx, ty - vy * ky }, hp, x, y, 0);
+}
+
 typedef struct { Image *im; uint64_t key; } SvgCache;
 static Image *graveyard[64]; static int grave_i;
 static void bury(Image *im) { image_unref(graveyard[grave_i]); graveyard[grave_i] = im; grave_i = (grave_i + 1) % 64; }

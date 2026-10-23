@@ -318,6 +318,65 @@ broke the whole page prelude: 33 ctest failures).
 - Ideas not done: detached `<img>` (not in document) never loads → onload never fires (fetch/metadata img/picture
   timeouts; also real-site preloading). Native Sec-Fetch-* for subresources/navigations (needs initiator/dest on
   NetRequest). fetch stream-safe-creation.any.js times out (cause unknown; probe it).
+- Whole-WPT snapshot after run 114 (`report` over all of lumen.jsonl; pre-report copies /tmp/report-sel114.md,
+  /tmp/gaps-sel114.json): 11,639 tests run, 97.1% of Chrome-passing subtests, 5557/9906 full, norm 59.5% vs
+  Chrome 91.3%. Statuses OK 10181 / TIMEOUT 1046 (html 292, svg 262, fetch 110) / ERROR 403 (bluetooth 148,
+  wasm 94) / CRASH 8 (clear-site-data 6, quirks excluded-properties-003, html duplicate-name-order).
+  NOT RUN: 26.6k of 37.6k Chrome-passing testharness tests (412k subtests): css 7.8k tests, html 7.0k of 8.6k,
+  referrer-policy, CSP, service-workers, websockets, pointerevents, cookies, webaudio, webcodecs, webrtc.
+  Top single gaps: svg pointer-events hittest 4608, svg idlharness 909, web-animations KeyframeEffect missing
+  (~2.6k over interpolation/accumulation/addition), editing whitespace delete/forwarddelete/inserttext ~1k,
+  quirks unitless-length ~1k, custom-elements customized built-ins 222, url/failure (Location href) 196.
+- Run 115 (in progress at 09:48): /css/ + /html/ with the 09:30 staged binary (15,187 tests).
+- Web Animations (uncommitted, host build + ctest 104/104 OK, smoke: 60px at t=500 of 10→110px):
+  new `src/js/prelude/06d-anim.js` replaces the 06c `Animation` stub and the 02-node timelines. It has easing
+  (cubic-bezier, steps with before flag, linear()), EffectTiming validation, the spec computed-timing
+  model, keyframe processing (sequence + property-indexed, offsets/easing/composite lists, only animatable
+  props read in code-point order), KeyframeEffect (copy ctor, target, pseudoElement, composite,
+  iterationComposite, get/setKeyframes), the Animation playback model (pending play/pause tasks,
+  ready/finished promises, finish/cancel/remove events, reverse, updatePlaybackRate, persist,
+  commitStyles, replaceState removal), and Element.animate/getAnimations + Document.getAnimations.
+  Values interpolate on token lists (numbers/units → calc for mixed units, colours premultiplied, 2-D matrix
+  decomposition for mismatched transforms, discrete fallback), composite add/accumulate. Effect values go
+  to a new native layer `Node.anim_decls` (`N.setAnimStyle` → `css_set_anim_style`, applied after inline
+  style, before !important). getComputedStyle flushes (`waFlush`) first; the frame loop (`waKick`/`waTick`
+  on N.raf) runs only while an animation is running/pending. rAF callbacks set `waFrameTime` so
+  document.timeline.currentTime equals the rAF timestamp inside a frame. Not done: CSS animations/
+  transitions as CSSAnimation objects, scroll timelines, pseudo-element targets.
+- url/failure: remote window proxies (`asWin`) now validate Location URLs with `navURL` (SyntaxError).
+- SVG hit testing (built 10:0x, ctest 104/104; jsrun has no layout hit test so verify via WPT):
+  `svg_hit()` in `src/paint/svg.c` walks the painter's geometry (same transforms/viewBox) and applies the
+  `pointer-events`/visibility/fill/stroke rules (fill: winding test, stroke: distance <= sw/2; <text> as
+  em boxes, Ahem 1 em/char). `hit_node()` in main.c refines a hit on an <svg> box for elementFromPoint
+  (h_hit_in, hf_hit), touch/pointer targets and hover. Reads attributes + style attr only (not sheets).
+- SVG DOM (unbuilt at 10:00): brand checks on svgProps getters; new SVGStringList/NumberList/LengthList/
+  PointList/TransformList (generic `svgListClass`), SVGTransform, SVGAngle, SVGPreserveAspectRatio + animated
+  wrappers, SVGTests (requiredExtensions/systemLanguage), SVGGraphicsElement transform/getBBox/getCTM/
+  getScreenCTM (getBBox moved off SVGElement), viewportElement, SVGSVGElement extras, text-content
+  methods, text positioning lists, polyline points, marker orient*, SVGAnimationElement family,
+  SVGView/MPath, TimeEvent; all exported in 08-window.
+- SVG DOM built 10:1x: ctest 104/104, smoke values all correct (SVGTransform, points, preserveAspectRatio).
+- Found: window named access (`window.someId`) skips SVG-namespace elements (HTML spec: any element with
+  an id). Not located yet (not in jsnative NamedPropertyHandler; search the global/window prelude code).
+- Editing (unbuilt): `canonicalSpaceSequence` in src/js/lazy/editing.js now emits Chrome's pattern for
+  n > 1 (nbsp, sp, nbsp, ...; last one nbsp at a line end), for the ~1,000 chrome-compat whitespace failures.
+- Run 115 findings: (a) /css/selectors/invalidation/user-valid-user-invalid.html posts its result, then
+  reloads itself ~5/s forever (no Enter is sent; reproduce alone). The runner's hard deadline skipped
+  it; lumen_wpt.py now restarts an instance that posted a result and asks nothing for 20 s.
+  (b) 3 SIGABRT heap corruptions on canvas+video tests (`avformat_close_input` double free, main +0x18ae86):
+  pattern-from-video-cross-origin-taint, canvas-display-p3-drawImage(-ImageBitmap)-video.
+  All use tiny (2x2) videos; first fix: `to_image` (media.c) pads the BGRA buffer by 256 bytes against
+  swscale SIMD overrun on narrow rows. Unverified: rerun those 3 tests (and under ASan if still crashing).
+  (c) A 4th CRASH is `exit 0` on /html/canvas/offscreen/fill-and-stroke-styles/2d.fillStyle.parse.hsla-clamp-3.worker.html
+  (something in a worker quits the whole process?).
+  (d) Every /html/cross-origin-opener-policy/ iframe-popup-* test ends ERROR "Timeout while running
+  cleanup" after 60 s (resources/iframe-test.js:130: send(popup, "await send(close_token,'closed'); close();")
+  then receive(close_token) never resolves, although 'Popup loaded' worked). javascript-url.https.html
+  TIMEOUTs too. Costs ~1 min per test variant; investigate the popup executor's polling after the
+  subtest (popup opened from the iframe via window.open).
+- Built 10:1x (ctest 104/104): SVG DOM, editing whitespace (smoke: "a&nbsp; &nbsp;" correct), media pad.
+- Next: when run 115 ends, build, stage to /tmp/lumen-wpt/bin/lumen, run /web-animations/ /svg/ /url/
+  with a monitor; fix regressions; commit.
 
 ## Next steps
 

@@ -5268,6 +5268,14 @@ function canonicalSpaceSequence(n, nonBreakingStart, nonBreakingEnd) {
         return "\xa0";
     }
 
+    // Chrome (and the chrome-compat tests): alternate from a non-breaking space, and end on one
+    // when the sequence ends the line.
+    if (n > 1) {
+        var chrome = "";
+        for (var i = 0; i < n; i++) chrome += i % 2 ? " " : "\xa0";
+        return nonBreakingEnd && chrome[n - 1] == " " ? chrome.slice(0, -1) + "\xa0" : chrome;
+    }
+
     // "Let buffer be the empty string."
     var buffer = "";
 

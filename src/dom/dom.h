@@ -76,6 +76,7 @@ typedef struct Node {
     struct Node *template_content; /* for <template> */
     char *inline_style_src;        /* cached style="" for change detection */
     void *inline_decls;            /* parsed CSS declarations for style attr */
+    void *anim_decls;              /* Web Animations effect values (above inline style, below !important) */
     void *match_memo;              /* style engine: matched rules, valid per selector_version */
     uint32_t refcount;             /* JS keeps nodes alive */
 } Node;

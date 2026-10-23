@@ -327,6 +327,7 @@ bool css_parse_color(const char *s, Color *out, Color current);
 bool css_parse_length(const char *s, Length *out, float em, float rem, const MediaCtx *mc);
 void css_apply_decl(ComputedStyle *st, const ComputedStyle *parent, const char *prop, const char *value, StyleEngine *e, Node *el);
 char *css_get_computed_value(Node *el, const char *prop);
+void css_set_anim_style(Node *n, const char *css);   /* Web Animations declaration layer; "" clears it */
 extern const char *css_ua_sheet;
 
 /* tokenizer (exposed for value parsing) */

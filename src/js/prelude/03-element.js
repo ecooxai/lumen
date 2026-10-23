@@ -37,7 +37,7 @@ const styleHandler = {
     has(t, p) { return p in t || typeof p === 'string'; },
 };
 class ComputedStyleDeclaration extends CSSStyleDeclaration {
-    getPropertyValue(p) { const v = N.computed(this._el, camelToKebab(String(p))); return v == null ? '' : v; }
+    getPropertyValue(p) { if (waDirty) waFlush(); const v = N.computed(this._el, camelToKebab(String(p))); return v == null ? '' : v; }
     get cssText() { return ''; } get length() { return 0; }
     setProperty() { throw new DOMException('These styles are computed, and therefore read-only.', 'NoModificationAllowedError'); }
 }
@@ -178,7 +178,13 @@ methods(Element.prototype, {
     get assignedSlot() { return null; },
     requestFullscreen() { return fsRequest(this); }, webkitRequestFullscreen() { fsRequest(this).catch(() => {}); }, webkitRequestFullScreen() { fsRequest(this).catch(() => {}); },
     requestPointerLock() {}, setPointerCapture(id) { capturePointer(this, id, true); }, releasePointerCapture(id) { capturePointer(this, id, false); }, hasPointerCapture(id) { return hasCapture(this, id); },
-    animate(kf, o) { return new Animation(this, kf, o); }, getAnimations() { return []; },
+    animate(kf, o) {
+        const e = new KeyframeEffect(this, kf, o), tl = o !== null && typeof o === 'object' && o.timeline !== undefined ? o.timeline : document.timeline;
+        const a = new Animation(e, tl);
+        if (o !== null && typeof o === 'object' && o.id !== undefined) a.id = o.id;
+        a.play(); return a;
+    },
+    getAnimations(o) { const sub = !!(o && o.subtree); return waGetAnims(t => t === this || (sub && this.contains(t))); },
     checkVisibility() { return !!N.rect(this); },
 });
 function setInner(el, html) {
