@@ -27,6 +27,7 @@
 #include "android_ui.h"
 #include "../net/download.h"
 #include "media_icon.h"
+#include "path_icon.h"
 #include "paint_profile.h"
 #include "page_zoom.h"
 #include "../base/platform.h"
@@ -120,6 +121,10 @@ static int g_cpu_on = 1, g_cpu_pct = 80, g_cpu_secs = 60, g_cpu_lim = 40;
 static bool g_vctl;
 static bool g_tab_sleep;   /* sleep background ChatGPT tabs; off by default, saved as chatgpt_sleep (an older tab_sleep is ignored) */
 static bool g_smooth = true;   /* Smooth scrolling (Settings, on by default, saved as smooth_scrolling): animate wheel notches; off, touch scrolls in steps */
+#ifdef __ANDROID__
+static double g_kbd_show_at;   /* Show keyboard: when to raise it, once the menu's window has given focus back */
+static bool g_kbd_sticky;   /* Show keyboard (Android menu): the keyboard stays up for the last focused text field until hidden */
+#endif
 static bool g_tap_kbd = true;   /* Keyboard on second tap (Settings, Android, on by default, saved as tap_keyboard): a first tap in a text field only places the caret */
 static int g_scroll_px = 20;   /* the touch scroll step while smooth scrolling is off, in CSS px: a multiple of 10, at most the page's height */
 static float g_sm_dx, g_sm_dy, g_sm_x, g_sm_y;
@@ -216,6 +221,15 @@ typedef struct { char *url, *title; } Link;
 #define MAX_HV 1000
 static Link g_bms[MAX_BM], g_hv[MAX_HV]; static int g_nbm, g_nhv;
 static void pref_path(char *out, size_t n, const char *f) { snprintf(out, n, "%s%s", g_pref, f); }
+#ifdef __ANDROID__
+/* the touch selection and edit bars' actions; the edit bar's two slots and text snippets (defined with the bar) */
+enum { TA_CUT, TA_COPY, TA_PASTE, TA_ALL, TA_KBD, TA_BKSP, TA_ENTER, TA_UNDO, TA_CLEAR, TA_HIDE, TA_MORE, TA_NACT };
+static int g_bar_slot[2];
+#define MAX_SNIP 16
+static char *g_snip[MAX_SNIP]; static int g_nsnip;
+static void snip_encode(char *out, size_t n);
+static void snip_decode(const char *v);
+#endif
 static void settings_save(void) {
     char p[1200]; pref_path(p, sizeof p, "settings.txt"); FILE *f = *g_pref ? fopen(p, "w") : NULL; if (!f) return;
     fprintf(f, "offscreen_media_eviction=%d\ncpu_limit=%d\ncpu_pct=%d\ncpu_secs=%d\ncpu_lim=%d\nvideo_controls=%d\nchatgpt_sleep=%d\nuser_agent=%d\n%s=%d\nsmooth_scrolling=%d\nscroll_px=%d\ntap_keyboard=%d\nhide_tabs=%d\ndesktop_default=%d\n", g_lowmem, g_cpu_on, g_cpu_pct, g_cpu_secs, g_cpu_lim, g_vctl, g_tab_sleep, g_ua, HUD_KEY, g_hud, g_smooth, g_scroll_px, g_tap_kbd, g_hide_tabs, g_desktop_seeded);
@@ -224,6 +238,7 @@ static void settings_save(void) {
     fprintf(f, "pixel_scale=%d\n", g_pixel_scale_pct);
     fprintf(f, "renderer=%s\n", renderer_key(g_renderer));
     for (int i = 0; i < NSLOT; i++) fprintf(f, "bar_slot%d=%d\n", i, g_slot[i]);
+    { char sn[4096]; snip_encode(sn, sizeof sn); fprintf(f, "edit_slot0=%d\nedit_slot1=%d\nsnippets=%s\n", g_bar_slot[0], g_bar_slot[1], sn); }
     fprintf(f, "touch_feedback=%d\ntouch_feedback_color=%d\ntouch_feedback_opacity=%d\ntouch_feedback_size=%d\ntouch_feedback_ms=%d\n", g_touch_fb, g_touch_fb_rgb, g_touch_fb_alpha, g_touch_fb_size, g_touch_fb_ms);
 #endif
     fclose(f);
@@ -562,13 +577,15 @@ static void page_input_reset(void);
 static bool tsel_ui(App *a);
 static void tsel_overlay(App *a, DisplayList *dl);
 static void kbm_overlay(App *a, DisplayList *dl);
+static void pop_overlay(App *a, DisplayList *dl);
 /* Keyboard on second tap: the field the last tap placed the caret in without the keyboard, that
    tap (window px), and its Paste | Select all bubble (anchored in page px, drawn in viewport px);
    tx, ty, tt: the last page tap, focused or not */
 static struct {
     Node *n; float x, y, tx, ty; double tt;
     bool menu; float mx, my;
-    float bar[4], bend[2]; int act[2], nb, hit;
+    float bar[4], bend[10]; int act[10], nb, hit;
+    double hold_t, hold_next; bool held;   /* a bar button held down: when, its next repeat, whether it acted */
 } g_kbm;
 #endif
 static void page_zoom_changed(App *a) {
@@ -912,6 +929,10 @@ static void settings_json(App *app, SB *b) {
     sb_puts(b, ",\"times\":"); sb_json_int_array(b, touch_fb_times, (int)(sizeof touch_fb_times / sizeof *touch_fb_times));
     sb_putc(b, '}');
     sb_printf(b, ",\"tapKbd\":%s", g_tap_kbd ? "true" : "false");
+    sb_printf(b, ",\"editBar\":{\"slots\":[%d,%d],\"choices\":[[%d,\"Backspace\"],[%d,\"Enter\"],[%d,\"Undo\"],[%d,\"Clear\"],[%d,\"Hide menu\"]],\"snippets\":[",
+              g_bar_slot[0], g_bar_slot[1], TA_BKSP, TA_ENTER, TA_UNDO, TA_CLEAR, TA_HIDE);
+    for (int i = 0; i < g_nsnip; i++) { if (i) sb_putc(b, ','); sb_json(b, g_snip[i]); }
+    sb_puts(b, "]}");
 #else
     (void)app;
 #endif
@@ -1203,6 +1224,22 @@ static void apply_set(App *a, const char *q) {
     if (qparam(q, "sleep", v, sizeof v)) g_tab_sleep = atoi(v) != 0;
     if (qparam(q, "smooth", v, sizeof v)) { g_smooth = atoi(v) != 0; g_sm_dx = g_sm_dy = 0; }
     if (qparam(q, "tapkbd", v, sizeof v)) g_tap_kbd = atoi(v) != 0;
+#ifdef __ANDROID__
+    for (int k = 0; k < 2; k++) {
+        char key[16]; snprintf(key, sizeof key, "edit_slot%d", k);
+        if (!qparam(q, key, v, sizeof v)) continue;
+        int x = atoi(v);
+        if (x != TA_BKSP && x != TA_ENTER && x != TA_UNDO && x != TA_CLEAR && x != TA_HIDE) continue;
+        if (g_bar_slot[!k] == x) g_bar_slot[!k] = g_bar_slot[k];   /* the two slots swap rather than repeat */
+        g_bar_slot[k] = x;
+    }
+    { char sn[4096];   /* URL-encoded snip_encode text */
+      if (qparam(q, "snippets", sn, sizeof sn)) {
+          size_t o = 0; unsigned x;
+          for (size_t i = 0; sn[i]; i++) sn[o++] = sn[i] == '%' && sscanf(sn + i + 1, "%2x", &x) == 1 ? (i += 2, (char)x) : sn[i] == '+' ? ' ' : sn[i];
+          sn[o] = 0; snip_decode(sn);
+      } }
+#endif
     if (qparam(q, "hidetabs", v, sizeof v)) g_hide_tabs = atoi(v) != 0;
     if (qparam(q, "scroll_px", v, sizeof v)) g_scroll_px = LCLAMP((atoi(v) + 5) / 10 * 10, 10, scroll_px_max(a));
     if (qparam(q, "hud", v, sizeof v)) { g_hud = atoi(v) != 0; g_hud_pop = false; }
@@ -2206,6 +2243,7 @@ static void render(App *a) {
 #ifdef __ANDROID__
         tsel_overlay(a, &a->pdl);
         kbm_overlay(a, &a->pdl);
+        pop_overlay(a, &a->pdl);
 #endif
         paint_profile_stage(&profile_frame, PAINT_LAYOUT_DL);
         int nn = dl_sigs(&a->pdl, &a->nsig, &a->cnsig, 0);
@@ -3588,6 +3626,8 @@ static void url_drag(App *a, float x) { int o = url_at(a, x); if (o != a->us[1])
 static void focus_node(App *a, Node *n) {
     Document *d = a->t->cur->d; Node *old = d->focus; JsCtx *js = a->t->cur->js;
 #ifdef __ANDROID__
+    /* Show keyboard: taps elsewhere keep the text field the keyboard types into; another field becomes it */
+    if (g_kbd_sticky && old && (is_text_ctl(old) || edit_host(old)) && !(n && (is_text_ctl(n) || edit_host(n)))) return;
     a->focus_reveal = true;
     a->dirty = true;
     if (old == n && !g_tap_kbd && (is_text_ctl(n) || edit_host(n))) SDL_StartTextInput(a->win);   /* else kbd_tap decides */
@@ -3920,7 +3960,13 @@ static void edit_sel_sync(App *a) {
 }
 static void h_clip_set(const char *t) { SDL_SetClipboardText(t); }
 static char *h_clip_get(void) { char *t = SDL_GetClipboardText(); char *r = strdup(t ? t : ""); SDL_free(t); return r; }
+static struct { unsigned char *img; size_t n; char *mime; } g_clip_pick;   /* a chosen history image: the next paste's */
 static unsigned char *h_clip_image(char **mime, size_t *len) {
+    if (g_clip_pick.img) {   /* a clipboard-history image chosen for this paste */
+        unsigned char *r = g_clip_pick.img; *mime = g_clip_pick.mime; *len = g_clip_pick.n;
+        g_clip_pick.img = NULL; g_clip_pick.mime = NULL; g_clip_pick.n = 0;
+        return r;
+    }
 #ifdef __ANDROID__
     return android_clip_image(mime, len);
 #else
@@ -3948,7 +3994,110 @@ enum { LONG_PRESS_MS = 500 };
 /* what the touch selection is in: page text (g_tsel), the focused <input>/<textarea> (Document.csel),
    or the focused contenteditable (its JS selection, mirrored into g_tsel) */
 enum { TK_PAGE, TK_CTL, TK_EDIT };
-enum { TA_CUT, TA_COPY, TA_PASTE, TA_ALL };
+enum { BAR_MAX = 10, BAR_BW = 44, BAR_H = 44, POP_RH = 40, POP_MAX = 32, CLIP_MAX = 10 };
+/* Settings: the edit bar's two slots, any two of Backspace, Enter, Undo, Clear and Hide (the others are in its
+   More menu, with the text snippets; a snippet's trailing newline presses Enter after its text) */
+static int g_bar_slot[2] = { TA_BKSP, TA_ENTER };
+static void snip_defaults(void) {
+    static const char *d[] = { "yes\n", "continue\n", "confirm\n", "include", "enter" };
+    for (int i = 0; i < g_nsnip; i++) free(g_snip[i]);
+    g_nsnip = 0;
+    for (size_t i = 0; i < sizeof d / sizeof *d; i++) g_snip[g_nsnip++] = xstrdup(d[i]);
+}
+/* snippets as one line: '|' between them, '%', '|' and newlines percent-encoded */
+static void snip_encode(char *out, size_t n) {
+    size_t k = 0; out[0] = 0;
+    for (int i = 0; i < g_nsnip && k + 4 < n; i++) {
+        if (i) out[k++] = '|';
+        for (const char *c = g_snip[i]; *c && k + 4 < n; c++)
+            if (*c == '%' || *c == '|' || *c == '\n' || *c == '\r') k += (size_t)snprintf(out + k, n - k, "%%%02X", (unsigned char)*c);
+            else out[k++] = *c;
+    }
+    out[k] = 0;
+}
+static void snip_decode(const char *v) {
+    for (int i = 0; i < g_nsnip; i++) free(g_snip[i]);
+    g_nsnip = 0;
+    while (*v && g_nsnip < MAX_SNIP) {
+        const char *e = strchr(v, '|'); size_t len = e ? (size_t)(e - v) : strlen(v);
+        char *t = xmalloc(len + 1); size_t k = 0;
+        for (size_t i = 0; i < len; i++) {
+            unsigned x;
+            if (v[i] == '%' && i + 2 < len + 1 && sscanf(v + i + 1, "%2x", &x) == 1) { t[k++] = (char)x; i += 2; } else t[k++] = v[i];
+        }
+        t[k] = 0;
+        if (k) g_snip[g_nsnip++] = t; else free(t);
+        if (!e) break;
+        v = e + 1;
+    }
+}
+static const char *ta_label(int act) {
+    static const char *l[TA_NACT] = { "Cut", "Copy", "Paste", "Select all", "Keyboard", "Backspace", "Enter", "Undo", "Clear", "Hide menu", "More" };
+    return act >= 0 && act < TA_NACT ? l[act] : "";
+}
+static const char *ta_path(int act) {
+    switch (act) {
+    case TA_CUT: return "O 6.5 17.5 2.7 O 17.5 17.5 2.7 M8.4 15.4 L17 3.5 M15.6 15.4 L7 3.5";
+    case TA_COPY: return "M9 8 L19 8 L19 20.5 L9 20.5 Z M6 16.5 L5 16.5 L5 3.5 L15 3.5 L15 5";
+    case TA_PASTE: return "M6 5 L18 5 L18 21 L6 21 Z M9 3 L15 3 L15 7 L9 7 Z";
+    case TA_ALL: return "M4 4 L7 4 M10.5 4 L13.5 4 M17 4 L20 4 L20 7 M20 10.5 L20 13.5 M20 17 L20 20 L17 20 M13.5 20 L10.5 20 M7 20 L4 20 L4 17 M4 13.5 L4 10.5 M4 7 L4 4 M8.5 8.5 L15.5 8.5 L15.5 15.5 L8.5 15.5 Z";
+    case TA_KBD: return "M3 6 L21 6 L21 18 L3 18 Z M6.5 9.5 L7.5 9.5 M10 9.5 L11 9.5 M13 9.5 L14 9.5 M16.5 9.5 L17.5 9.5 M6.5 12.5 L7.5 12.5 M10 12.5 L11 12.5 M13 12.5 L14 12.5 M16.5 12.5 L17.5 12.5 M8 15.3 L16 15.3";
+    case TA_BKSP: return "M9 5 L21 5 L21 19 L9 19 L3 12 Z M12 9 L18 15 M18 9 L12 15";
+    case TA_ENTER: return "M19 5 L19 13 L5 13 M9 9 L5 13 L9 17";
+    case TA_UNDO: return "M9 5 L4 10 L9 15 M4 10 L14 10 A 14 15 5 -90 180 M14 20 L9 20";
+    case TA_CLEAR: return "O 12 12 9 M8.5 8.5 L15.5 15.5 M15.5 8.5 L8.5 15.5";
+    case TA_HIDE: return "M5 9 L12 16 L19 9";
+    case TA_MORE: return "O 5 12 1.2 O 12 12 1.2 O 19 12 1.2";
+    default: return NULL;
+    }
+}
+static Image *ta_icon(App *a, int act) {
+    static Image *ic[TA_NACT];
+    if (act < 0 || act >= TA_NACT) return NULL;
+    Image **slot = &ic[act];
+    if (*slot && (*slot)->scale != a->scale) { image_unref(*slot); *slot = NULL; }
+    if (!*slot) {
+        int px = (int)(22 * a->scale + 0.5f); Image *im = xcalloc(1, sizeof *im);
+        im->w = im->h = px; im->refs = 1; im->scale = a->scale; im->px = xcalloc((size_t)px * (size_t)px, 4);
+        if (!path_icon_rgba(ta_path(act), px, 1.7f, 0x3c4043, im->px)) { free(im->px); free(im); return NULL; }
+        *slot = im;
+    }
+    return *slot;
+}
+/* an icon bar centred on cx, above top (else below bot), page viewport px; bend: each button's right end */
+static void bar_draw(App *a, DisplayList *dl, const int *act, int n, float cx, float top, float bot, float bar[4], float *bend, int held) {
+    float w = (float)n * BAR_BW, h = BAR_H, vw = page_width(a), vh = page_height(a);
+    float x = LCLAMP(cx - w / 2, 4, LMAX(4, vw - 4 - w)), y = top - 10 - h;
+    if (y < 4) y = LMIN(bot + 10, vh - 4 - h);
+    push_rect(dl, x - 1, y, w + 2, h + 2, 9, RGBA(0, 0, 0, 38));
+    push_rect(dl, x, y, w, h, 8, RGBA(255, 255, 255, 255));
+    for (int i = 0; i < n; i++) {
+        float bx = x + (float)i * BAR_BW;
+        if (i + 1 == held) push_rect(dl, bx + 2, y + 2, BAR_BW - 4, h - 4, 6, RGBA(232, 234, 237, 255));
+        Image *im = ta_icon(a, act[i]);
+        if (im) push_img(dl, im, bx + (BAR_BW - 22) / 2.0f, y + (h - 22) / 2, 22, 22);
+        bend[i] = bx + BAR_BW;
+    }
+    bar[0] = x; bar[1] = y; bar[2] = x + w; bar[3] = y + h;
+}
+static int bar_index(const float bar[4], const float *bend, int n, float px, float py) {
+    if (!n || px < bar[0] || px >= bar[2] || py < bar[1] || py >= bar[3]) return 0;
+    int i = 0; while (i < n - 1 && px >= bend[i]) i++;
+    return i + 1;
+}
+/* an editable field's bar: Keyboard, Cut, Copy (the whole value with nothing selected), Paste, Select all, the
+   two slots and More */
+static int edit_bar_acts(int *act, bool cutcopy) {
+    int n = 0;
+    act[n++] = TA_KBD;
+    if (cutcopy) { act[n++] = TA_CUT; act[n++] = TA_COPY; }
+    act[n++] = TA_PASTE; act[n++] = TA_ALL; act[n++] = g_bar_slot[0]; act[n++] = g_bar_slot[1]; act[n++] = TA_MORE;
+    return n;
+}
+/* the More menu (kind 1) or the clipboard history (kind 2) under the bar; act: TA_*, 100 + snippet, 200 + clip */
+static struct { int kind, n, hit; float x, y, w; int act[POP_MAX]; } g_epop;
+/* the last clipboard contents, newest first: text, or an image's bytes and type */
+static struct { char *text; unsigned char *img; size_t n; char *mime; } g_clips[CLIP_MAX]; static int g_nclips;
 static struct {
     bool armed, ui, url; int mode, kind;   /* mode 1: the long-press finger extends from its word; 2: a handle is dragged */
     double down; float x, y;      /* armed long press, window px; url: it is on the URL field */
@@ -3957,7 +4106,7 @@ static struct {
     Node *cn; int cw[2], cs[2], fixed;   /* TK_CTL: the control, its word and the selection shown (codepoints), the held end */
     float gx, gy;                 /* handle grab: finger minus the caret point */
     float ax, ay;                 /* where the bar goes with no handles (an empty control), page viewport px */
-    float bar[4], bend[4]; int bact[4], nb;   /* selection bar rect, its button ends and actions, page viewport px */
+    float bar[4], bend[BAR_MAX]; int bact[BAR_MAX], nb;   /* selection bar rect, its button ends and actions, page viewport px */
     int bar_hit;                  /* bar button held, 1-based */
     int umenu_hit;                /* URL menu button held, 1-based */
 } g_ts;
@@ -3998,29 +4147,15 @@ static void tsel_overlay(App *a, DisplayList *dl) {
     }
     if (g_ts.mode || (!c[0].ok && !c[1].ok && g_ts.kind != TK_CTL)) return;
     Node *f = g_ts.kind == TK_CTL ? tsel_ctl(a) : NULL;
-    bool any = f ? f->doc->csel[0] != f->doc->csel[1] : true, secret = f && f->tag == A_input && node_attr(f, "type") && !strcasecmp(node_attr(f, "type"), "password");
+    bool secret = f && f->tag == A_input && node_attr(f, "type") && !strcasecmp(node_attr(f, "type"), "password");
     int n = 0;
-    if (g_ts.kind != TK_PAGE && any && !secret) g_ts.bact[n++] = TA_CUT;
-    if (any && !secret) g_ts.bact[n++] = TA_COPY;
-    if (g_ts.kind != TK_PAGE) g_ts.bact[n++] = TA_PASTE;
-    g_ts.bact[n++] = TA_ALL;
-    Font *ft = a->ui; static const char *label[4] = { "Cut", "Copy", "Paste", "Select all" };
-    float pad = 16, h = 40, w = 0, bw[4], vw = page_width(a), vh = page_height(a);
-    for (int i = 0; i < n; i++) { bw[i] = text_width(ft, label[g_ts.bact[i]], strlen(label[g_ts.bact[i]]), 0) + 2 * pad; w += bw[i]; }
+    if (g_ts.kind == TK_PAGE) { g_ts.bact[n++] = TA_COPY; g_ts.bact[n++] = TA_ALL; }
+    else n = edit_bar_acts(g_ts.bact, !secret);
     TselCaret anchor = { true, g_ts.ax, g_ts.ay - 20, 40, 0 };
     const TselCaret *top = c[0].ok ? &c[0] : c[1].ok ? &c[1] : &anchor, *bot = c[1].ok ? &c[1] : c[0].ok ? &c[0] : &anchor;
     float cx = c[0].ok && c[1].ok && fabsf(c[0].y - c[1].y) < 1 ? (c[0].x + c[1].x) / 2 : top->x;
-    float x = LCLAMP(cx - w / 2, 4, LMAX(4, vw - 4 - w)), y = top->y - 10 - h;
-    if (y < 4) y = LMIN(bot->y + bot->h + 2 * r + 10, vh - 4 - h);
-    push_rect(dl, x - 1, y, w + 2, h + 2, 9, RGBA(0, 0, 0, 38));
-    push_rect(dl, x, y, w, h, 8, RGBA(255, 255, 255, 255));
-    float base = y + h / 2 + (ft->ascent - ft->descent) / 2, bx = x;
-    for (int i = 0; i < n; bx += bw[i], i++) {
-        if (i) push_rect(dl, bx, y + 10, 1, h - 20, 0, RGBA(218, 220, 224, 255));
-        push_text(dl, ft, label[g_ts.bact[i]], bx + pad, base, bw[i], RGBA(32, 33, 36, 255));
-        g_ts.bend[i] = bx + bw[i];
-    }
-    g_ts.bar[0] = x; g_ts.bar[1] = y; g_ts.bar[2] = x + w; g_ts.bar[3] = y + h; g_ts.nb = n;
+    bar_draw(a, dl, g_ts.bact, n, cx, top->y, bot->y + bot->h + 2 * r, g_ts.bar, g_ts.bend, g_ts.bar_hit);
+    g_ts.nb = n;
 }
 /* Keyboard on second tap: after a touch tap was handled. A tap in the focused field while the
    keyboard is down places the caret (done by the click) and shows the Paste bubble; a second tap
@@ -4031,7 +4166,6 @@ static void kbd_tap(App *a, float x, float y) {
     bool was = g_kbm.menu; g_kbm.menu = false;
     if (was) sel_dirty(a);
     double tn = now_ms();
-    bool again = hypotf(x - g_kbm.tx, y - g_kbm.ty) <= 30 && tn - g_kbm.tt < 1500;   /* the previous tap, focused or not */
     g_kbm.tx = x; g_kbm.ty = y; g_kbm.tt = tn;
     if (!g_tap_kbd || !f || !p || !p->L || x < page_left(a) || y < BAR) { g_kbm.n = NULL; return; }
     float px = page_x(a, x), py = page_y(a, y) + a->t->sy;
@@ -4040,11 +4174,10 @@ static void kbd_tap(App *a, float x, float y) {
     const Box *fb = f->box;
     bool over = fb && px >= fb->x - 4 && px < fb->x + fb->w + 4 && py >= fb->y - 4 && py < fb->y + fb->h + 4;
     if (!over && (!b || !b->node || !node_within(b->node, f))) return;   /* elsewhere on the page: the field keeps its focus */
-    if (SDL_ScreenKeyboardShown(a->win)) { g_kbm.n = f; return; }
-#ifndef NDEBUG
-    __android_log_print(ANDROID_LOG_INFO, "LumenUi", "kbd_tap field=%s same=%d again=%d dist=%.0f", is_text_ctl(f) ? "ctl" : "editable", g_kbm.n == f, again, hypotf(x - g_kbm.x, y - g_kbm.y));
-#endif
-    if ((g_kbm.n == f && hypotf(x - g_kbm.x, y - g_kbm.y) <= 30) || (g_kbm.n != f && again)) { g_kbm.n = NULL; g_kbm.menu = false; SDL_StartTextInput(a->win); return; }
+    /* the keyboard comes up only from the bar's Keyboard button (or Show keyboard): a tap shows the bar while the
+       keyboard is down, a second tap on the same spot while it is up */
+    bool same = g_kbm.n == f && hypotf(x - g_kbm.x, y - g_kbm.y) <= 30;
+    if (SDL_ScreenKeyboardShown(a->win) && !same) { g_kbm.n = f; g_kbm.x = x; g_kbm.y = y; return; }
     g_kbm.n = f; g_kbm.x = x; g_kbm.y = y;
     g_kbm.menu = true; g_kbm.mx = px; g_kbm.my = py; g_kbm.hit = 0;
     a->caret_t = now_ms();
@@ -4053,40 +4186,89 @@ static void kbm_overlay(App *a, DisplayList *dl) {
     g_kbm.nb = 0;
     Node *f = page_focus(a);
     if (!f) f = edit_focus(a);
-    if (!g_kbm.menu || !f || f != g_kbm.n || tsel_ui(a) || SDL_ScreenKeyboardShown(a->win)) { g_kbm.menu = false; return; }
-    int n = 0; bool any = true;
+    if (!g_kbm.menu || !f || f != g_kbm.n || tsel_ui(a)) { g_kbm.menu = false; return; }
+    bool any = true, secret = f->tag == A_input && node_attr(f, "type") && !strcasecmp(node_attr(f, "type"), "password");
     if (is_text_ctl(f)) { char *v = ctl_value(f); any = *v != 0; free(v); }
-    g_kbm.act[n++] = TA_PASTE;
-    if (any) g_kbm.act[n++] = TA_ALL;
-    Font *ft = a->ui; static const char *label[4] = { "Cut", "Copy", "Paste", "Select all" };
-    float pad = 16, h = 40, w = 0, bw[2], vw = page_width(a), vh = page_height(a);
-    for (int i = 0; i < n; i++) { bw[i] = text_width(ft, label[g_kbm.act[i]], strlen(label[g_kbm.act[i]]), 0) + 2 * pad; w += bw[i]; }
-    float cy = g_kbm.my - a->t->sy;
-    if (cy < -h || cy > vh + h) return;   /* scrolled away */
-    float x = LCLAMP(g_kbm.mx - w / 2, 4, LMAX(4, vw - 4 - w)), y = cy - 34 - h;   /* above the finger, clear of a second tap */
-    if (y < 4) y = LMIN(cy + 34, vh - 4 - h);
-    push_rect(dl, x - 1, y, w + 2, h + 2, 9, RGBA(0, 0, 0, 38));
-    push_rect(dl, x, y, w, h, 8, RGBA(255, 255, 255, 255));
-    float base = y + h / 2 + (ft->ascent - ft->descent) / 2, bx = x;
-    for (int i = 0; i < n; bx += bw[i], i++) {
-        if (i) push_rect(dl, bx, y + 10, 1, h - 20, 0, RGBA(218, 220, 224, 255));
-        push_text(dl, ft, label[g_kbm.act[i]], bx + pad, base, bw[i], RGBA(32, 33, 36, 255));
-        g_kbm.bend[i] = bx + bw[i];
-    }
-    g_kbm.bar[0] = x; g_kbm.bar[1] = y; g_kbm.bar[2] = x + w; g_kbm.bar[3] = y + h; g_kbm.nb = n;
+    int n = edit_bar_acts(g_kbm.act, any && !secret);
+    float cy = g_kbm.my - a->t->sy, vh = page_height(a);
+    if (cy < -BAR_H || cy > vh + BAR_H) return;   /* scrolled away */
+    bar_draw(a, dl, g_kbm.act, n, g_kbm.mx, cy - 24, cy + 24, g_kbm.bar, g_kbm.bend, g_kbm.hit);
+    g_kbm.nb = n;
 }
 /* the bubble's button under window point x, y: 1-based, 0 for none */
 static int kbm_hit(App *a, float x, float y) {
     if (!g_kbm.menu || !g_kbm.nb || x <= page_left(a) || y <= BAR) return 0;
     float px = page_x(a, x), py = page_y(a, y);
-    if (px < g_kbm.bar[0] || px >= g_kbm.bar[2] || py < g_kbm.bar[1] || py >= g_kbm.bar[3]) return 0;
-    return g_kbm.nb > 1 && px >= g_kbm.bend[0] ? 2 : 1;
+    return bar_index(g_kbm.bar, g_kbm.bend, g_kbm.nb, px, py);
+}
+/* bar keys go through the event queue, as the keyboard's do */
+static void key_push(SDL_Keycode k) {
+    SDL_Event e; SDL_zero(e); e.type = SDL_EVENT_KEY_DOWN; e.key.key = k; e.key.down = true; SDL_PushEvent(&e);
+    e.type = SDL_EVENT_KEY_UP; e.key.down = false; SDL_PushEvent(&e);
+}
+static void text_push(const char *t) {
+    static char *ring[16]; static int ri;   /* the text outlives the queued event */
+    free(ring[ri]); ring[ri] = xstrdup(t);
+    SDL_Event e; SDL_zero(e); e.type = SDL_EVENT_TEXT_INPUT; e.text.text = ring[ri]; ri = (ri + 1) % 16; SDL_PushEvent(&e);
+}
+static void snip_type(const char *t) {
+    size_t n = strlen(t); bool nl = n && t[n - 1] == '\n';
+    char *b = xstrdup(t); if (nl) b[n - 1] = 0;
+    if (*b) text_push(b);
+    free(b);
+    if (nl) key_push(SDLK_RETURN);
+}
+static void field_all(App *a, Node *f, Node *h) {
+    Page *p = a->t->cur;
+    if (f) { char *v = ctl_value(f); tsel_ctl_set(a, f, 0, u8_byte_cp(v, (int)strlen(v))); free(v); }
+    else if (h && p->js) { js_dispatch(p->js, h, "lumensel-all", "MouseEvent", false, false, 0, 0, 0, NULL); edit_sel_sync(a); }
+}
+static void field_word_delete(App *a, Node *f, Node *h) {
+    Page *p = a->t->cur;
+    if (f) ctl_delete(a, f, -1, true);
+    else if (h && p->js) { int m = js_key_mods; js_key_mods = 2; js_dispatch(p->js, h, "lumeneditdel", "KeyboardEvent", false, false, 0, 0, 0, "Backspace"); js_key_mods = m; }
+    restyle(a); a->dirty = true;
+}
+static void pop_open(App *a, int kind, const float bar[4]);
+static void clip_record(const char *text, const unsigned char *img, size_t n, const char *mime);
+/* a bar button on field f (a text control) or h (an editing host); whole: Cut and Copy take the whole value */
+static void bar_do(App *a, int act, Node *f, Node *h, bool whole) {
+    Page *p = a->t->cur;
+    if (!p || (!f && !h)) return;
+    switch (act) {
+    case TA_KBD: g_kbm.menu = false; SDL_StartTextInput(a->win); break;
+    case TA_HIDE: g_kbm.menu = false; g_epop.kind = 0; break;
+    case TA_MORE: pop_open(a, 1, g_ts.ui && tsel_ui(a) ? g_ts.bar : g_kbm.bar); return;
+    case TA_PASTE: page_paste(a, f, f ? NULL : h); break;
+    case TA_BKSP: key_push(SDLK_BACKSPACE); break;
+    case TA_ENTER: key_push(SDLK_RETURN); break;
+    case TA_UNDO: if (p->js) js_dispatch(p->js, f ? f : h, "lumenundo", "KeyboardEvent", false, false, 0, 0, 0, NULL); break;
+    case TA_CLEAR:
+        field_all(a, f, h);
+        if (f) ctl_insert(a, f, "", "deleteContentBackward"); else if (p->js) js_dispatch(p->js, h, "lumeneditdel", "KeyboardEvent", false, false, 0, 0, 0, "Backspace");
+        g_tsel.on = false;
+        break;
+    case TA_CUT: case TA_COPY: {
+        if (whole) field_all(a, f, h);
+        char *t = f ? ctl_selected(f) : tsel_text(p->L);
+        if (*t) { SDL_SetClipboardText(t); clip_record(t, NULL, 0, NULL); }
+        free(t);
+        if (act == TA_CUT) { if (f) ctl_insert(a, f, "", "deleteByCut"); else if (p->js) js_dispatch(p->js, h, "lumeneditdel", "KeyboardEvent", false, false, 0, 0, 0, "Backspace"); }
+        if (whole && f && act == TA_COPY) { char *v = ctl_value(f); int e = u8_byte_cp(v, (int)strlen(v)); free(v); tsel_ctl_set(a, f, e, e); }
+        if (whole) g_tsel.on = false;
+        break;
+    }
+    default: break;
+    }
+    g_ts.ui = false;
+    sel_dirty(a); restyle(a); a->dirty = true;
 }
 static void kbm_action(App *a, int act) {
     Page *p = a->t->cur; Node *f = page_focus(a), *h = f ? NULL : edit_focus(a);
-    g_kbm.menu = false; sel_dirty(a);
+    if (act != TA_MORE) g_kbm.menu = false;
+    sel_dirty(a);
     if (!p || !p->L || (!f && !h)) return;
-    if (act == TA_ALL && f) {   /* then the Cut | Copy | Paste bar, as after a long press */
+    if (act == TA_ALL && f) {   /* then the selection bar, as after a long press */
         char *v = ctl_value(f); int e = u8_byte_cp(v, (int)strlen(v)); free(v);
         g_tsel.on = false;
         tsel_ctl_set(a, f, 0, e);
@@ -4101,8 +4283,8 @@ static void kbm_action(App *a, int act) {
         if (g_tsel.on && edit_focus(a) == h) { g_ts.kind = TK_EDIT; g_ts.mode = 0; g_ts.ui = true; g_ts.gx = g_ts.gy = 0; }
         return;
     }
-    page_paste(a, f, f ? NULL : h);
-    restyle(a); a->dirty = true;
+    bar_do(a, act, f, h, true);
+    if (act == TA_BKSP || act == TA_ENTER || act == TA_UNDO || act == TA_CLEAR) g_kbm.menu = true;   /* the bar stays for more edits */
 }
 static void tsel_action(App *a, int act) {
     Page *p = a->t->cur; Node *f = g_ts.kind == TK_CTL ? tsel_ctl(a) : NULL, *h = g_ts.kind == TK_EDIT ? edit_focus(a) : NULL;
@@ -4114,12 +4296,122 @@ static void tsel_action(App *a, int act) {
         sel_dirty(a);
         return;
     }
-    if (act == TA_COPY || act == TA_CUT) { char *t = f ? ctl_selected(f) : tsel_text(p->L); if (*t) SDL_SetClipboardText(t); free(t); }
-    if (act == TA_CUT && f) ctl_insert(a, f, "", "deleteByCut");
-    else if (act == TA_CUT && h) js_dispatch(p->js, h, "lumeneditdel", "KeyboardEvent", false, false, 0, 0, 0, "Backspace");
-    else if (act == TA_PASTE) page_paste(a, f, f ? NULL : h);
+    if (act == TA_COPY && !f && !h) { char *t = tsel_text(p->L); if (*t) SDL_SetClipboardText(t); free(t); tsel_clear(a); return; }
+    if (act == TA_MORE) { bar_do(a, act, f, h, false); return; }
+    bar_do(a, act, f, h, false);
     tsel_clear(a);
-    if (act != TA_COPY) { restyle(a); a->dirty = true; }
+}
+/* the More menu: the slot actions not on the bar, then the snippets; the clipboard history: its entries */
+static void pop_open(App *a, int kind, const float bar[4]) {
+    g_epop.kind = kind; g_epop.n = g_epop.hit = 0;
+    if (kind == 1) {
+        static const int extra[] = { TA_UNDO, TA_BKSP, TA_ENTER, TA_CLEAR, TA_HIDE };
+        for (size_t i = 0; i < sizeof extra / sizeof *extra; i++) if (extra[i] != g_bar_slot[0] && extra[i] != g_bar_slot[1]) g_epop.act[g_epop.n++] = extra[i];
+        for (int i = 0; i < g_nsnip && g_epop.n < POP_MAX; i++) g_epop.act[g_epop.n++] = 100 + i;
+    } else {
+        char *t = SDL_GetClipboardText();   /* what is on the clipboard now is the newest entry */
+        if (t && *t) clip_record(t, NULL, 0, NULL);
+        else { char *m = NULL; size_t n = 0; unsigned char *img = android_clip_image(&m, &n); if (img) clip_record(NULL, img, n, m); free(img); free(m); }
+        SDL_free(t);
+        for (int i = 0; i < g_nclips && g_epop.n < POP_MAX; i++) g_epop.act[g_epop.n++] = 200 + i;
+    }
+    if (!g_epop.n) { g_epop.kind = 0; return; }
+    float w = 240, h = (float)g_epop.n * POP_RH, vw = page_width(a), vh = page_height(a);
+    g_epop.w = w; g_epop.x = LCLAMP(bar[2] - w, 4, LMAX(4, vw - 4 - w));
+    g_epop.y = bar[3] + 6 + h <= vh - 4 ? bar[3] + 6 : LMAX(4, bar[1] - 6 - h);
+    sel_dirty(a);
+}
+static void pop_label(int act, char *out, size_t n) {
+    if (act < 100) { snprintf(out, n, "%s", ta_label(act)); return; }
+    if (act < 200) {
+        const char *t = act - 100 < g_nsnip ? g_snip[act - 100] : ""; size_t l = strlen(t);
+        snprintf(out, n, "%.*s%s", (int)(l && t[l - 1] == '\n' ? l - 1 : l), t, l && t[l - 1] == '\n' ? "  + Enter" : "");
+        return;
+    }
+    int k = act - 200;
+    if (k >= g_nclips) { out[0] = 0; return; }
+    if (g_clips[k].img) { snprintf(out, n, "Image (%s, %zu KB)", g_clips[k].mime ? g_clips[k].mime : "image", (g_clips[k].n + 1023) / 1024); return; }
+    size_t j = 0;
+    for (const char *c = g_clips[k].text; *c && j + 4 < n && j < 40; c++) out[j++] = *c == '\n' || *c == '\t' ? ' ' : *c;
+    out[j] = 0;
+    if (strlen(g_clips[k].text) > j) snprintf(out + j, n - j, "...");
+}
+static void pop_overlay(App *a, DisplayList *dl) {
+    if (!g_epop.kind) return;
+    if (!page_focus(a) && !edit_focus(a)) { g_epop.kind = 0; return; }
+    Font *ft = a->ui; float h = (float)g_epop.n * POP_RH;
+    push_rect(dl, g_epop.x - 1, g_epop.y, g_epop.w + 2, h + 2, 9, RGBA(0, 0, 0, 38));
+    push_rect(dl, g_epop.x, g_epop.y, g_epop.w, h, 8, RGBA(255, 255, 255, 255));
+    for (int i = 0; i < g_epop.n; i++) {
+        float y = g_epop.y + (float)i * POP_RH; char lb[96]; int act = g_epop.act[i];
+        if (i + 1 == g_epop.hit) push_rect(dl, g_epop.x + 2, y + 2, g_epop.w - 4, POP_RH - 4, 6, RGBA(232, 234, 237, 255));
+        if (i && (act >= 100) != (g_epop.act[i - 1] >= 100)) push_rect(dl, g_epop.x + 8, y, g_epop.w - 16, 1, 0, RGBA(218, 220, 224, 255));
+        Image *im = act < 100 ? ta_icon(a, act) : NULL;
+        if (im) push_img(dl, im, g_epop.x + 10, y + (POP_RH - 22) / 2.0f, 22, 22);
+        pop_label(act, lb, sizeof lb);
+        push_text(dl, ft, lb, g_epop.x + 42, y + POP_RH / 2.0f + (ft->ascent - ft->descent) / 2, g_epop.w - 50, RGBA(32, 33, 36, 255));
+    }
+}
+static int pop_hit(App *a, float x, float y) {
+    if (!g_epop.kind || x <= page_left(a) || y <= BAR) return 0;
+    float px = page_x(a, x), py = page_y(a, y);
+    if (px < g_epop.x || px >= g_epop.x + g_epop.w || py < g_epop.y || py >= g_epop.y + (float)g_epop.n * POP_RH) return 0;
+    return (int)((py - g_epop.y) / POP_RH) + 1;
+}
+static void pop_action(App *a, int i) {
+    Node *f = page_focus(a), *h = f ? NULL : edit_focus(a);
+    int act = i >= 1 && i <= g_epop.n ? g_epop.act[i - 1] : -1;
+    g_epop.kind = 0; sel_dirty(a);
+    if (act < 0 || (!f && !h)) return;
+    if (act < 100) { bar_do(a, act, f, h, true); if (act != TA_HIDE) g_kbm.menu = true; return; }
+    if (act < 200) { if (act - 100 < g_nsnip) snip_type(g_snip[act - 100]); return; }
+    int k = act - 200;
+    if (k >= g_nclips) return;
+    if (g_clips[k].img) {   /* the image is the next paste's; the clipboard keeps its text */
+        free(g_clip_pick.img); free(g_clip_pick.mime);
+        g_clip_pick.img = xmalloc(g_clips[k].n); memcpy(g_clip_pick.img, g_clips[k].img, g_clips[k].n);
+        g_clip_pick.n = g_clips[k].n; g_clip_pick.mime = xstrdup(g_clips[k].mime ? g_clips[k].mime : "image/png");
+        page_paste(a, f, f ? NULL : h);
+    } else { SDL_SetClipboardText(g_clips[k].text); page_paste(a, f, f ? NULL : h); }
+    restyle(a); a->dirty = true;
+}
+/* clipboard history: a new clip goes first, an equal older one is dropped */
+static void clip_record(const char *text, const unsigned char *img, size_t n, const char *mime) {
+    if ((!text || !*text) && !img) return;
+    for (int i = 0; i < g_nclips; i++) {
+        bool eq = img ? g_clips[i].img && g_clips[i].n == n && !memcmp(g_clips[i].img, img, n) : g_clips[i].text && !strcmp(g_clips[i].text, text);
+        if (!eq) continue;
+        if (i == 0) return;
+        __typeof__(g_clips[0]) c = g_clips[i]; memmove(&g_clips[1], &g_clips[0], (size_t)i * sizeof c); g_clips[0] = c;
+        return;
+    }
+    if (g_nclips == CLIP_MAX) { g_nclips--; free(g_clips[g_nclips].text); free(g_clips[g_nclips].img); free(g_clips[g_nclips].mime); }
+    memmove(&g_clips[1], &g_clips[0], (size_t)g_nclips * sizeof g_clips[0]);
+    g_clips[0].text = text && !img ? xstrdup(text) : NULL;
+    g_clips[0].img = NULL; g_clips[0].n = 0; g_clips[0].mime = NULL;
+    if (img) { g_clips[0].img = xmalloc(n); memcpy(g_clips[0].img, img, n); g_clips[0].n = n; g_clips[0].mime = xstrdup(mime ? mime : "image/png"); }
+    g_nclips++;
+}
+/* a held bar button: Backspace held deletes a word, then another every 2 s; Paste held opens the history */
+static void bar_hold_tick(App *a) {
+    if (!g_kbm.hit && !g_ts.bar_hit) return;
+    int act = g_kbm.hit ? g_kbm.act[g_kbm.hit - 1] : g_ts.bact[g_ts.bar_hit - 1];
+    double t = now_ms();
+    if (t < g_kbm.hold_next || (act != TA_BKSP && act != TA_PASTE)) return;
+    Node *f = page_focus(a), *h = f ? NULL : edit_focus(a);
+    if (act == TA_PASTE) {
+        if (g_kbm.held) return;
+        g_kbm.held = true;
+        pop_open(a, 2, g_kbm.hit ? g_kbm.bar : g_ts.bar);
+        return;
+    }
+    g_kbm.held = true; g_kbm.hold_next = t + 2000;
+    field_word_delete(a, f, h);
+}
+static int bar_hold_wait_ms(int to) {
+    if (!g_kbm.hit && !g_ts.bar_hit) return to;
+    double left = g_kbm.hold_next - now_ms();
+    return left <= 0 ? 0 : left + 1 < to ? (int)left + 1 : to;
 }
 /* move the dragged end to the finger (window px) */
 static void tsel_extend(App *a, float x, float y) {
@@ -4172,10 +4464,14 @@ static bool tsel_touch(App *a, AndroidTouchPhase phase, const SDL_Event *ev, flo
     bool mine = device == g_ts.device && finger == g_ts.finger;
     if (phase == ANDROID_TOUCH_DOWN) {
         g_ts.armed = g_ts.url = false;
-        if (g_ts.mode || g_ts.bar_hit || g_ts.umenu_hit || g_kbm.hit) return true;   /* other fingers wait for the selection gesture */
+        if (g_ts.mode || g_ts.bar_hit || g_ts.umenu_hit || g_kbm.hit || g_epop.hit) return true;   /* other fingers wait for the selection gesture */
         if (a->touch.count) return false;
+        int ph = pop_hit(a, x, y);
+        if (ph) { g_ts.device = device; g_ts.finger = finger; g_epop.hit = ph; sel_dirty(a); return true; }
+        if (g_epop.kind) { g_epop.kind = 0; sel_dirty(a); }
         int km = kbm_hit(a, x, y);
-        if (km) { g_ts.device = device; g_ts.finger = finger; g_kbm.hit = km; return true; }
+        g_kbm.hold_t = now_ms(); g_kbm.hold_next = g_kbm.hold_t + LONG_PRESS_MS; g_kbm.held = false;
+        if (km) { g_ts.device = device; g_ts.finger = finger; g_kbm.hit = km; sel_dirty(a); return true; }
         if (g_kbm.menu) { g_kbm.menu = false; sel_dirty(a); }
         int um = url_menu_hit(x, y);
         if (um >= 0) { g_ts.device = device; g_ts.finger = finger; g_ts.umenu_hit = um + 1; return true; }
@@ -4214,10 +4510,16 @@ static bool tsel_touch(App *a, AndroidTouchPhase phase, const SDL_Event *ev, flo
         g_ts.armed = true; g_ts.down = now_ms(); g_ts.x = x; g_ts.y = y;
         return false;
     }
+    if (g_epop.hit) {
+        if (!mine) return true;
+        if (phase == ANDROID_TOUCH_UP && pop_hit(a, x, y) == g_epop.hit) { int i = g_epop.hit; g_epop.hit = 0; pop_action(a, i); }
+        if (phase != ANDROID_TOUCH_MOVE) { g_epop.hit = 0; sel_dirty(a); }
+        return true;
+    }
     if (g_kbm.hit) {
         if (!mine) return true;
-        if (phase == ANDROID_TOUCH_UP && kbm_hit(a, x, y) == g_kbm.hit) kbm_action(a, g_kbm.act[g_kbm.hit - 1]);
-        if (phase != ANDROID_TOUCH_MOVE) g_kbm.hit = 0;
+        if (phase == ANDROID_TOUCH_UP && !g_kbm.held && kbm_hit(a, x, y) == g_kbm.hit) kbm_action(a, g_kbm.act[g_kbm.hit - 1]);
+        if (phase != ANDROID_TOUCH_MOVE) { g_kbm.hit = 0; sel_dirty(a); }
         return true;
     }
     if (g_ts.umenu_hit) {
@@ -4232,7 +4534,7 @@ static bool tsel_touch(App *a, AndroidTouchPhase phase, const SDL_Event *ev, flo
             float px = page_x(a, x), py = page_y(a, y);
             bool in = px >= g_ts.bar[0] && px < g_ts.bar[2] && py >= g_ts.bar[1] && py < g_ts.bar[3];
             int i = 0; while (i < g_ts.nb - 1 && px >= g_ts.bend[i]) i++;
-            if (in && i == g_ts.bar_hit - 1) tsel_action(a, g_ts.bact[i]);
+            if (in && !g_kbm.held && i == g_ts.bar_hit - 1) tsel_action(a, g_ts.bact[i]);
         }
         if (g_ts.mode && phase == ANDROID_TOUCH_MOVE) tsel_extend(a, x, y);
         else if (phase != ANDROID_TOUCH_MOVE) { g_ts.mode = g_ts.bar_hit = 0; g_ts.gx = g_ts.gy = 0; sel_dirty(a); }
@@ -5141,6 +5443,7 @@ static void ui_action(App *a, UiAction *u, bool *quit) {
     case UI_DOWNLOADS: panel_open(a, "downloads"); break;
     case UI_HISTORY: panel_open(a, "history"); break;
     case UI_SETTINGS: panel_open(a, "settings"); break;
+    case UI_KEYBOARD: g_kbd_sticky = true; g_kbd_show_at = now_ms() + 350; a->dirty = true; break;
     case UI_FILE_PICK:
         g_pick.multi = u->value != 0; snprintf(g_pick.accept, sizeof g_pick.accept, "%s", u->s1 ? u->s1 : "");
         if (a->ntabs >= MAX_TABS) { android_ui_pick_files(g_pick.accept, g_pick.multi); break; }   /* no room for the panel */
@@ -5293,6 +5596,7 @@ static void android_handle_back(App *app) {
             app->t->cur ? app->t->cur->url : app->t->hist[app->t->hpos]);
         break;
     case ANDROID_BACK_CLEAR_FOCUS:
+        g_kbd_sticky = false;
         SDL_StopTextInput(app->win);
         focus_node(app, NULL);
         break;
@@ -5471,16 +5775,21 @@ int main(int argc, char **argv) {
     {
         char *pref = SDL_GetPrefPath("lumen", "Lumen"); char sp[1024] = "";
         if (pref) { snprintf(g_pref, sizeof g_pref, "%s", pref); snprintf(sp, sizeof sp, "%ssettings.txt", pref); SDL_free(pref); }
-        FILE *sf = *sp ? fopen(sp, "r") : NULL; char line[256];
+        FILE *sf = *sp ? fopen(sp, "r") : NULL; char line[4096];
+#ifdef __ANDROID__
+        snip_defaults();
+#endif
         while (sf && fgets(line, sizeof line, sf)) {
 #ifdef __ANDROID__
             pixel_scale_load(line);
+            if (!strncmp(line, "snippets=", 9)) { line[strcspn(line, "\r\n")] = 0; snip_decode(line + 9); continue; }
 #endif
             char k[64]; int v; if (sscanf(line, "%63[^=]=%d", k, &v) != 2) continue;
             if (!strcmp(k, "page_zoom") && page_zoom_valid(v)) g_page_zoom_pct = v;
 #ifdef __ANDROID__
             else if (!strncmp(k, "bar_slot", 8) && k[8] >= '0' && k[8] < '0' + NSLOT && !k[9] && slot_action(v)) g_slot[k[8] - '0'] = v;
             else if (!strcmp(k, "touch_feedback")) g_touch_fb = v != 0;
+            else if ((!strcmp(k, "edit_slot0") || !strcmp(k, "edit_slot1")) && (v == TA_BKSP || v == TA_ENTER || v == TA_UNDO || v == TA_CLEAR || v == TA_HIDE)) g_bar_slot[k[9] - '0'] = v;
             else if (!strcmp(k, "touch_feedback_color")) g_touch_fb_rgb = v & 0xffffff;
             else if (!strcmp(k, "touch_feedback_opacity")) g_touch_fb_alpha = LCLAMP(v, 1, 100);
             else if (!strcmp(k, "touch_feedback_size")) g_touch_fb_size = LCLAMP(v, 4, 120);
@@ -5584,7 +5893,7 @@ int main(int argc, char **argv) {
         Node *text_focus = page_focus(&a);
         if (!text_focus) text_focus = edit_focus(&a);
         /* the focused field was blurred or removed (e.g. an inline editor closing): hide the keyboard, as Chrome does */
-        if (android_text_state.focus && !text_focus && !a.editing && SDL_TextInputActive(a.win)) SDL_StopTextInput(a.win);
+        if (android_text_state.focus && !text_focus && !a.editing && !g_kbd_sticky && SDL_TextInputActive(a.win)) SDL_StopTextInput(a.win);
         if (android_text_input_start(&android_text_state, (uintptr_t)text_focus,
             a.t->cur ? a.t->cur->gen : 0, a.editing)) {
             a.focus_reveal = a.dirty = true;
@@ -5667,7 +5976,10 @@ int main(int argc, char **argv) {
         }
 #ifdef __ANDROID__
         to = android_fling_wait_ms(&a.fling, now_ms(), to);  WTAG(13);
-        to = tsel_wait_ms(to);  WTAG(14);
+        to = bar_hold_wait_ms(tsel_wait_ms(to));
+#ifdef __ANDROID__
+        if (g_kbd_show_at) { double l = g_kbd_show_at - now_ms(); if (l < to) to = l > 0 ? (int)l + 1 : 0; }
+#endif  WTAG(14);
 #endif
         double boot_wait = now_ms();
         bool boot_got = SDL_WaitEventTimeout(&ev, to);
@@ -5776,7 +6088,21 @@ int main(int argc, char **argv) {
                 }
                 }
                 break;
+#ifdef __ANDROID__
+            case SDL_EVENT_SCREEN_KEYBOARD_HIDDEN: g_kbd_sticky = false; break;
+            case SDL_EVENT_CLIPBOARD_UPDATE: {   /* the clipboard history: text, else an image */
+                char *t = SDL_GetClipboardText();
+                if (t && *t) clip_record(t, NULL, 0, NULL);
+                else { char *m = NULL; size_t n = 0; unsigned char *img = android_clip_image(&m, &n); if (img) clip_record(NULL, img, n, m); free(img); free(m); }
+                SDL_free(t);
+                break;
+            }
+#endif
             case SDL_EVENT_TEXT_INPUT: a.caret_t = now_ms();
+#ifdef __ANDROID__
+                /* the soft keyboard's Enter also arrives as a Return key event, which does the edit */
+                if (ev.text.text && ev.text.text[strspn(ev.text.text, "\r\n")] == 0) break;
+#endif
                 if (!a.editing && page_focus(&a)) {
                     Node *f = page_focus(&a);
                     if (!a.t->cur->js || js_dispatch(a.t->cur->js, f, "keydown", "KeyboardEvent", true, true, 0, 0, 0, ev.text.text)) {
@@ -5949,6 +6275,12 @@ int main(int argc, char **argv) {
 #ifdef __ANDROID__
         android_fling_tick(&a);
         tsel_long_press(&a);
+        bar_hold_tick(&a);
+        if (g_kbd_show_at && now_ms() >= g_kbd_show_at) {
+            g_kbd_show_at = 0;
+            if (SDL_TextInputActive(a.win)) SDL_StopTextInput(a.win);
+            SDL_StartTextInput(a.win);
+        }
 #endif
         js_release_pins();
         double lt0 = now_ms(), tr_js = 0, tr_restyle = 0, tr_img = 0, tr_bg = 0;

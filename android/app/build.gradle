@@ -84,6 +84,9 @@ android {
         }
     }
     sourceSets {
+        /* the prebuilt V8 brings its own libc++ (ANDROID_STL=none), but SDL's HID code links the NDK's
+           libc++_shared.so (CMakeLists.txt), which must then be in the APK */
+        if (v8PrebuiltRoot != null) main.jniLibs.srcDir layout.buildDirectory.dir('lumen-stl')
         main.java.srcDir new File(sdlRoot, 'android-project/app/src/main/java')
         main.java.srcDir '../platform/src/main/java'
     }
@@ -97,4 +100,12 @@ android {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
+}
+
+if (v8PrebuiltRoot != null) {
+    def copyStl = tasks.register('lumenCopyCxxShared', Copy) {
+        from { new File(android.ndkDirectory, 'toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so') }
+        into layout.buildDirectory.dir('lumen-stl/arm64-v8a')
+    }
+    tasks.named('preBuild') { dependsOn copyStl }
 }

@@ -765,7 +765,10 @@ function fireAnim(t, type, name, elapsed, anim) {
             const t = textBeside(h, ref, back);
             if (!t) return [new StaticRange({ startContainer: n, startOffset: o, endContainer: n, endOffset: o })];
             const [tn, to] = t;
-            return [back ? new StaticRange({ startContainer: tn, startOffset: Math.max(0, to - 1), endContainer: n, endOffset: o }) : new StaticRange({ startContainer: n, startOffset: o, endContainer: tn, endOffset: Math.min(tn.data.length, 1) })];
+            /* across a block boundary only the break goes (the blocks join), as in Chrome */
+            const blockOf = x => { for (let e = x.nodeType === 1 ? x : x.parentNode; e && e !== h; e = e.parentNode) if (/^(div|p|li|h[1-6]|blockquote|pre|tr|td|th|section|article|dd|dt)$/.test(e.localName)) return e; return h; };
+            const cross = blockOf(tn) !== blockOf(n);
+            return [back ? new StaticRange({ startContainer: tn, startOffset: cross ? to : Math.max(0, to - 1), endContainer: n, endOffset: o }) : new StaticRange({ startContainer: n, startOffset: o, endContainer: tn, endOffset: cross ? to : Math.min(tn.data.length, 1) })];
         }
         let a = o, b = o;
         const d = n.data;
@@ -787,7 +790,20 @@ function fireAnim(t, type, name, elapsed, anim) {
         const h = editHost(e.target); if (!h) return;
         const dt = del ? null : pasting; pasting = null;
         const s = caret(h), data = del ? null : e.key, [type, cmd] = del ? keyEdit(e, h) : [dt ? 'insertFromPaste' : 'insertText', 'inserttext'];
+        /* typed text runs Chrome's sequence: keypress, beforeinput, textInput (React's onBeforeInput, which Draft.js
+           editors rely on), then the insertion and input; cancelling any of them cancels the insertion */
+        const typed = !del && !dt && !e.lumenExec;
+        if (del && e.key === 'Enter' && !dispatch(e.target, new KeyboardEvent('keypress', { key: 'Enter', charCode: 13, keyCode: 13, which: 13, bubbles: true, cancelable: true, composed: true, view: G }), true)) return;
+        if (typed && [...data].length === 1) {
+            const cc = data.codePointAt(0);
+            if (!dispatch(e.target, new KeyboardEvent('keypress', { key: data, charCode: cc, keyCode: cc, which: cc, bubbles: true, cancelable: true, composed: true, view: G }), true)) return;
+        }
         if (!e.lumenExec && !fire(h, 'beforeinput', type, dt ? null : data, editRanges(h, s, type), dt)) return;
+        if (typed) {
+            const te = document.createEvent('TextEvent');
+            te.initTextEvent('textInput', true, true, G, data);
+            if (!dispatch(e.target, te, true)) return;
+        }
         const c = s.focusNode, o = s.focusOffset;
         /* typing or pasting into a text node: the common case, kept cheap (a typed space goes through the editing
            commands, which keep it visible as a no-break space where needed) */
@@ -827,6 +843,51 @@ function fireAnim(t, type, name, elapsed, anim) {
             if (ok) { fire(h, 'input', 'insertFromPaste', null, [], dt); document.dispatchEvent(new Event('selectionchange')); }
         };
         r.readAsDataURL(file);
+    }, true);
+    /* a focused editing host always holds the selection, as in Chrome: one that gains focus with the selection
+       elsewhere gets a caret at its first position before its focus handlers run (editors such as Draft.js treat
+       no selection as no focus); a click then moves it to the clicked point */
+    document.addEventListener('focus', e => {
+        const t = e.target;
+        if (!(t instanceof Element) || !t.isContentEditable || editHost(t) !== t) return;
+        const s = document.getSelection();
+        if (s.rangeCount && t.contains(s.anchorNode)) return;
+        let n = t;
+        while (n.firstChild && !(n.firstChild.nodeType === 1 && (n.firstChild.tagName === 'BR' || n.firstChild.tagName === 'IMG'))) n = n.firstChild;
+        s.collapse(n, 0);
+    }, true);
+    /* the edit bar's Undo: each text field's earlier values (an editing host's markup), taken as input events
+       change it; undoing restores one through the value setter, so editors that track it see the change */
+    const undoStack = new WeakMap(), undoLast = new WeakMap();
+    const undoState = t => t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement ? t.value : t.innerHTML;
+    const undoTarget = t => t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement ? t : t instanceof Element && t.isContentEditable ? editHost(t) : null;
+    document.addEventListener('focusin', e => { const t = undoTarget(e.target); if (t && !undoLast.has(t)) undoLast.set(t, undoState(t)); }, true);
+    document.addEventListener('input', e => {
+        const t = undoTarget(e.target);
+        if (!t || e.inputType === 'historyUndo') return;
+        const was = undoLast.get(t), now = undoState(t);
+        if (was !== undefined && was !== now) {
+            let st = undoStack.get(t);
+            if (!st) undoStack.set(t, st = []);
+            st.push(was);
+            if (st.length > 100) st.shift();
+        }
+        undoLast.set(t, now);
+    }, true);
+    document.addEventListener('lumenundo', e => {
+        const t = undoTarget(e.target), st = t && undoStack.get(t);
+        if (!st || !st.length) return;
+        const v = st.pop();
+        if (!fire(t, 'beforeinput', 'historyUndo', null, [], null)) { st.push(v); return; }
+        if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement) {
+            Object.getOwnPropertyDescriptor(Object.getPrototypeOf(t), 'value').set.call(t, v);
+            try { t.setSelectionRange(v.length, v.length); } catch (_) { }
+        } else {
+            t.innerHTML = v;
+            const s = document.getSelection(); s.selectAllChildren(t); s.collapseToEnd();
+        }
+        undoLast.set(t, v);
+        fire(t, 'input', 'historyUndo', null, [], null);
     }, true);
     document.addEventListener('lumenedit', e => edit(e, false), true);
     document.addEventListener('lumeneditdel', e => edit(e, true), true);

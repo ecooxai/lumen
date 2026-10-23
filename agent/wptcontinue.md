@@ -14,6 +14,96 @@ Read `AGENTS.md` first. In short:
   uninstall; use `adb install -r`. Don't touch lumen PID 837634. Never `pkill -f`. Commit only when the user
   asks.
 
+
+## USER REQUEST (latest, verbatim intent) — Android editing UI + bugs, then Linux parity
+1. BUG x.com: typing in new-post / reply composer doubles chars ("1" → "11").
+2. BUG: in some text-edit elements Enter inserts nothing.
+3. Top-right menu: new item "Show keyboard": shows the soft keyboard and routes input to the latest active
+   (focused) element; user can keep tapping page elements to pick the target without the keyboard hiding;
+   only Back or the keyboard's own hide closes it.
+4. Tapping an input: double-tap no longer shows the keyboard; instead the edit bubble shows, ALL ICONS:
+   [keyboard] [paste] [select all] [slot A] [slot B] [more]   — keyboard icon left of Paste.
+   cut/copy icons always: with no selection and non-empty input they act as cut-all / copy-all.
+   Four extra actions: undo, backspace, clear-all, hide(bubble). Only 2 slots (A,B) on the bar: Backspace and
+   Enter by default; the others go into the More menu (whichever 2 the user picks stay on the bar).
+   More menu also lists text snippets: "yes\n", "continue\n", "confirm\n", "include", "enter";
+   user can add more snippets in a Settings UI.
+5. Long-press Paste → clipboard history (last 10 text or image clips) to choose from.
+6. Long-press Backspace → delete a word; keep holding → delete another word every 2 s.
+7. Then keep passing WPT; finally bring all engine + UI improvements to the Linux (host) build too.
+  Findings: SDL Android IME (SDLInputConnection.updateText) sends KEY_DOWN scancodes for ASCII + TEXT_INPUT; main.c
+  only acts on TEXT_INPUT for printable keys. Lumen fired NO keypress/textInput, React (TextEvent exists) builds
+  onBeforeInput from textInput → Draft.js (x.com) never got it. FIX (NOT built): 08-window.js edit(): keypress
+  before beforeinput, TextEvent textInput after, both cancelable. Probe page /tmp/draftprobe/index.html (React16 +
+  Draft 0.11.7, logs 'DRAFT model ... dom ...'). APK built+installed 05:05 (pre-fix); device idle OK on cold google
+  (0-2%), device_tests 45 s window ends during load (false NOT IDLE); session-restore bg tabs ~66% CPU.
+  Draft probe: OLD binary = "11" doubling + NotFoundError (reproduced on host). keypress/textInput build: no
+  doubling, but caret drops to 0 after the first char: clicking an EMPTY editor sets no DOM selection, so Draft
+  thinks it lost focus (rangeCount 0 = no focus) and never restores the caret. FIX (NOT built): 08-window.js
+  capture 'focus' listener collapses the selection into an editing host that gains focus without it.
+  BUILT + host-probed (new3): Draft typing '1a b' Enter 'z' → "1a b|z" exactly like Chrome. 104/104.
+  Enter fix (NOT built): SDL Android IME sends Enter as SDLK_RETURN key AND TEXT_INPUT "\n" → main.c now drops
+  newline-only TEXT_INPUT on Android (Return key path edits); 08-window.js edit() fires keypress for Enter.
+  Next: build APK, device check of typing/Enter on a LOCAL page (push /tmp/draftprobe to phone via host server
+  + adb reverse), then the edit-bubble UI work (todo list).
+  Edit-bubble code map (main.c): enum TA_* at ~3951; g_ts (selection bar, tsel_overlay ~3987 draws text labels
+  Cut/Copy/Paste/Select all, bact[4]/bend[4]); kbd_tap ~4028 (2nd tap within 30 px → SDL_StartTextInput = the
+  'double tap shows keyboard' the user wants REMOVED); kbm_overlay ~4052 (Paste | Select all bubble, g_kbm.act/
+  bend[2]); kbm_hit ~4079 (2 buttons only); kbm_action ~4085; tsel_action ~4107; page_paste; focus_node ~3588
+  (g_tap_kbd gates auto keyboard). Plan: shared icon bar renderer (push_rect + simple vector glyphs or font
+  icons) used by both overlays; action set {KBD, CUT, COPY, PASTE, ALL, SLOT_A, SLOT_B, MORE}; slots default
+  Backspace, Enter; others (undo, clear, hide) in More popup + snippets list (prefs key, Settings page
+  lumen://settings section). Cut/Copy with no selection + non-empty → whole value. Long-press timers: paste →
+  history popup (keep ring of 10 in app: text via SDL clipboard events, images via android_clip_image), backspace
+  → word delete every 2 s while held. Top-right menu item 'Show keyboard' → sticky mode flag (taps don't hide).
+  DONE (not built): src/app/path_icon.{c,h} (path_icon_rgba: strokes android_ui_icon path text → premult ARGB);
+  UI_KEYBOARD=26 (android_ui.h enum after UI_FILE_PICK, android_ui.c icon, BrowserMenus.java KEYBOARD row before
+  Settings sending action(KEYBOARD,1)). TODO main.c: handle UI_KEYBOARD in the ui action switch (~5143), icon bar.
+  Bar design being coded in main.c (replace enum TA_* at ~3951): TA_CUT,COPY,PASTE,ALL,KBD,BKSP,ENTER,UNDO,CLEAR,
+  HIDE,MORE; g_bar_slot[2]={BKSP,ENTER}; g_snip[] snippets (prefs bar_slots=, snippets= pct-encoded '|' list);
+  ta_path()/ta_icon() cache via path_icon_rgba (22px, 1.7 stroke, 0x3c4043); bar_draw(act[],n,cx,top,bot,bar,bend,
+  held) 44x44 buttons; editable bar [KBD][CUT][COPY][PASTE][ALL][slotA][slotB][MORE], page text [COPY][ALL];
+  g_ts.bact/bend and g_kbm.act/bend enlarged to 10; g_pop popup (kind 1 More, 2 clip history; act TA_*,
+  100+snippet, 200+clip), rows 40px; keys via SDL_PushEvent KEY_DOWN/UP (same path as real keys); snippets push
+  TEXT_INPUT (static ring buffer) then RETURN if trailing \n; word delete: ctl_delete(a,f,-1,true) / js_key_mods=2
+  + lumeneditdel Backspace; undo = new 'lumenundo' JS event (prelude snapshot stack on beforeinput, TODO);
+  hold tick for BKSP long press (500ms then every 2s) & PASTE long press → clip history; kbd_tap: 2nd tap shows
+  bar (not keyboard); sticky keyboard g_kbd_sticky (UI_KEYBOARD) skips auto-hide ~5587, cleared on
+  SDL_EVENT_SCREEN_KEYBOARD_HIDDEN/back; TEXT_INPUT with no focus refocuses g_kbd_last.
+  PROGRESS: main.c now has (after old enum TA_ line) the full enum, g_bar_slot, g_snip + snip_defaults/encode/
+  decode, ta_label, ta_path, ta_icon, bar_draw, bar_index, edit_bar_acts, g_pop, g_clips, g_clip_pick; #include
+  "path_icon.h". NEXT: rewrite tsel_overlay bar part + kbm_overlay to use bar_draw (bact/bend/act sizes → BAR_MAX),
+  kbm_hit→bar_index, actions (bar_do), pop_overlay/pop_hit, hold tick, sticky kbd, prefs + settings page.
+  DONE: tsel_overlay + kbm_overlay now draw via bar_draw (kbm also shows with the keyboard up); kbm_hit uses
+  bar_index; g_kbm has hold_t/hold_next/held; g_ts.bact/bend BAR_MAX. NEXT: kbd_tap (2nd tap → bar not kbd),
+  bar_do actions replacing kbm_action/tsel_action bodies, pop overlay+touch, hold tick, sticky kbd, prefs.
+  DONE kbd_tap (2nd tap shows bar). NEXT bar_do etc.
+  DONE: key_push/text_push/snip_type/field_all/field_word_delete/bar_do + new kbm_action/tsel_action (main.c,
+  replacing old ones; pop_open forward-declared, NOT yet defined). NEXT: pop_open/pop_overlay/pop_hit + touch
+  wiring in tsel_touch (g_pop.hit), hold tick (BKSP long press word delete every 2 s; PASTE long press →
+  pop_open(a,2,...)), g_clips recording (SDL_EVENT_CLIPBOARD_UPDATE) + g_clip_pick in h_clip_image, UI_KEYBOARD
+  case + sticky, prefs bar_slots/snippets + settings page, JS 'lumenundo' + snapshot stack, compile.
+  DONE: pop_open/pop_label/pop_overlay (prototype + call after kbm_overlay ~2208)/pop_hit/pop_action/clip_record/
+  bar_hold_tick/bar_hold_wait_ms defined before tsel_extend. NEXT: wire in tsel_touch (pop hit on DOWN; set
+  g_kbm.hold_t/hold_next=now+500/held=false when a bar button is pressed (both g_kbm.hit and g_ts.bar_hit); on UP
+  skip the tap action if g_kbm.held), call bar_hold_tick next to tsel_long_press(&a) ~5955 and bar_hold_wait_ms
+  next to tsel_wait_ms ~5670; clip_record on SDL_EVENT_CLIPBOARD_UPDATE; h_clip_image returns g_clip_pick once;
+  UI_KEYBOARD + sticky; prefs; snip_defaults() at startup; JS lumenundo.
+  DONE: tsel_touch wiring (pop hit, hold timing set on DOWN, held skips tap), bar_hold_tick/wait in main loop.
+  DONE h_clip_image→g_clip_pick (moved decl). Bar/pop code sits inside '#ifdef __ANDROID__' starting main.c:3953 (verify). DONE clip_record on CLIPBOARD_UPDATE. REMAINING: UI_KEYBOARD case + sticky
+  DONE UI_KEYBOARD + g_kbd_sticky (focus_node keeps text focus, no auto-hide, cleared on KEYBOARD_HIDDEN/back). DONE prefs edit_slot0/1 + snippets (save/load, snip_defaults at load). DONE settings page 'Edit bar' card (newtab.html, JSON editBar, qparams edit_slot0/1 + snippets). DONE JS lumenundo (08-window.js undo stack from input events). Host build+ctest OK. Popup state renamed g_epop (g_pop is a HUD float[4]). APK built (gradle5.log) but crashed: libc++_shared.so not packaged (NDK 28.2 now installed → libs stripped, 92 MB). Added build.gradle lumenCopyCxxShared → build/lumen-stl jniLibs. REMAINING: rebuild, device test A–I (local /tmp/draftprobe via adb reverse 8799, TEST_URLS extra).
+  DEVICE RUN (06:36, APK 92 MB w/ libc++_shared): PASS A bar shows w/o keyboard, B kbd icon, C "1a" (no doubling),
+  D soft Enter "1a|z", E bar Enter/Backspace, F More list + snippet. FAIL G long-press Paste: no history (g_nclips 0 —
+  CLIPBOARD_UPDATE not seen; record our own copies + seed from current clipboard); FAIL H word delete at block start
+  crossed the line break and desynced Draft (should only delete the break); FAIL I Show keyboard: IME onFailed
+  PHASE_CLIENT_VIEW_SERVED right after popup dismiss (delay StartTextInput ~300 ms). Also: tap in empty padding of
+  a contenteditable box doesn't focus it. Page console.log doesn't reach logcat with CONSOLE 2. Idle CPU 0-3%, RSS 276MB.
+  FIXES (not yet built): editRanges block-boundary → only the break (08-window.js); bar copy/cut clip_record +
+  pop_open(2) seeds from current clipboard; UI_KEYBOARD sets g_kbd_show_at=now+350, main loop restarts text input.
+  TODO: tap in contenteditable padding should focus it. (old note:  ~221 fprintf; loader: k/v int parse ~5490, Android keys block has 'bar_slot%d' for the TOOLBAR (g_slot) — use NEW keys 'edit_slot0/1' (int TA_*) and 'snippets' (string, snip_decode; loader var for raw string TBD); call snip_defaults() before settings load)
+  bar_slots/snippets save/load + settings page; snip_defaults() at startup; JS lumenundo; compile (Android only
+  code? check #ifdef __ANDROID__ around tsel block).
+
 ## Pass rate vs Chrome (subtests Chrome passes that Lumen also passes)
 
 | Area | before (19:55) | now | Area | before | now |
@@ -200,6 +290,12 @@ broke the whole page prelude: 33 ctest failures).
     bodies; text/plain uses encodeHtml; multipart built as bytes with raw file contents.
     BUILT + probed: urlencoded2/text-plain/multipart each 2 failures left (NUL in name/value only). 104/104 ctest.
   Next: rerun /html/semantics/forms/ /workers/ ; then html/browsers idle timeouts, selection, input-events.
+  COMMITTED e5ffc46 (all of the above). Run 113 = /html/semantics/forms/ /workers/ started (agents ea173b48 run,
+  026120be monitor; reports /tmp/run113-report-{forms,workers,all}.txt).
+  RUN 113: html/semantics/forms 77.9%→80.4% (259/499 full); workers 65.5%→69.3% (182/313); overall 97.1% of
+  Chrome-passing, 5557/9906 full, norm 59.5%. No crashes, no stuck CPU, peak total RSS 1.4 GB.
+  Next targets: workers modules (credentials 50, dynamic import 30, options-mismatch 32), forms idle timeouts
+  (image-width-height, color.html), html/browsers windows timeouts, selection/input-events.
   Many /html/ gaps there are stale (enctype setter exists) → rerun /html/ /dom/ /selection/ /xhr/ after the build.
 - Ideas not done: detached `<img>` (not in document) never loads → onload never fires (fetch/metadata img/picture
   timeouts; also real-site preloading). Native Sec-Fetch-* for subresources/navigations (needs initiator/dest on

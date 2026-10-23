@@ -800,6 +800,18 @@ function settings() {
     cards.push(card('Smooth scrolling', 'Scrolling follows your finger and glides. When off, the page jumps by the step below, which uses less CPU.', toggle('smooth', T.smooth), step));
     if (T.tapKbd !== undefined)
         cards.push(card('Keyboard on second tap', 'The first tap in a text field only places the cursor and offers Paste. Tap the same spot again to type.', toggle('tapkbd', T.tapKbd)));
+    if (T.editBar) {
+        var E = T.editBar, eb = '';
+        [0, 1].forEach(function (k) {
+            eb += '<div class=sub>Button ' + (k + 1) + '</div><p class=choices>';
+            E.choices.forEach(function (c) { eb += '<button class="btn' + (c[0] === E.slots[k] ? ' on' : '') + '" data-cmd="edit_slot' + k + '=' + c[0] + '">' + h(c[1]) + '</button> '; });
+            eb += '</p>';
+        });
+        eb += '<div class=sub>Text snippets, one per line; end a line with \\n to press Enter after it</div>'
+            + '<p><textarea id=snips rows=6 style="width:100%;box-sizing:border-box">' + h(E.snippets.map(function (t) { return t.replace(/\n/g, '\\n'); }).join('\n')) + '</textarea></p>'
+            + '<p><button class=btn id=snipsave>Save snippets</button></p>';
+        cards.push(card('Edit bar', 'The icon bar over a text field: Keyboard, Cut, Copy, Paste, Select all, two buttons you choose and More. More holds the other buttons and your text snippets. Hold Paste for the clipboard history, hold Backspace to delete words.', '', eb));
+    }
     group = 'sites';
     var ua = '<p class=choices>';
     T.uas.forEach(function (name, i) { ua += '<button class="btn' + (i === T.ua ? ' on' : '') + '" data-cmd="ua=' + i + '">' + h(name) + '</button> '; });
@@ -1064,6 +1076,13 @@ document.addEventListener('click', function (e) {
             return;
         }
         if (V && (v = t.getAttribute('data-vw'))) { viewCmd(v); return; }
+        if (t.id === 'snipsave') {
+            e.preventDefault();
+            var enc = $('snips').value.split('\n').filter(function (l) { return l.trim(); }).map(function (l) {
+                return l.replace(/\\n/g, '\n').replace(/[%|\r\n]/g, function (c) { return '%' + ('0' + c.charCodeAt(0).toString(16).toUpperCase()).slice(-2); });
+            }).join('|');
+            set('snippets=' + q(enc)); return;
+        }
         if ((v = t.getAttribute('data-cmd'))) { e.preventDefault(); menuFor = wsMenu = -1; set(v); return; }
         if ((v = t.getAttribute('data-grp'))) {
             openGroups[v] = !openGroups[v]; var op = openParam();

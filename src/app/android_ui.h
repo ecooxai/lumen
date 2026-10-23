@@ -23,6 +23,7 @@ enum {
     UI_TAB_MENU,     /* value: the chosen item of android_ui_tab_menu */
     UI_SITE_CLEAR,   /* s2: the page's URL; site info's "Delete data": its site's cookies and storage */
     UI_FILE_PICK,    /* engine only: an <input type=file> asks for files; value: several, s1: its accept list */
+    UI_KEYBOARD,     /* Show keyboard: sticky soft keyboard for the last focused field */
 };
 /* can_desktop: 1 for the page's site, 2 for every site (on a page that is not a site) */
 typedef struct { bool can_forward, desktop, can_zoom, bookmarked, can_bookmark, can_back, fullscreen; int can_desktop, zoom_pct; } AndroidMenuState;

@@ -33,7 +33,7 @@ final class BrowserMenus {
     /* mirrors android_ui.h */
     static final int NEW_TAB = 1, FORWARD = 2, BOOKMARKS = 3, DOWNLOADS = 4, HISTORY = 5, WORKSPACES = 6, SETTINGS = 7,
         DESKTOP = 8, ZOOM = 9, BM_TOGGLE = 10, BM_OPEN = 11, BM_SAVE = 12, BM_DELETE = 13,
-        WS_SELECT = 14, WS_NEW = 15, WS_RENAME = 16, WS_CLOSE = 17, BACK = 18, RELOAD = 19, FULLSCREEN = 20, URL_GO = 21, BM_ADD = 22, TAB_MENU = 23, SITE_CLEAR = 24;
+        WS_SELECT = 14, WS_NEW = 15, WS_RENAME = 16, WS_CLOSE = 17, BACK = 18, RELOAD = 19, FULLSCREEN = 20, URL_GO = 21, BM_ADD = 22, TAB_MENU = 23, SITE_CLEAR = 24, KEYBOARD = 26;
     private static final int MAX_WORKSPACES = 16, ZOOM_MIN = 20, ZOOM_MAX = 300, ZOOM_STEP = 10;
     private static final int TEXT = 0xff202124, SUBTLE = 0xff5f6368, DISABLED = 0xffbdc1c6, DIVIDER = 0xffe8eaed, ACCENT = 0xff1a73e8, UNSAFE = 0xffd93025;
     private static PopupWindow menu;
@@ -107,6 +107,7 @@ final class BrowserMenus {
             case DOWNLOADS: return "Downloads";
             case WORKSPACES: return "Workspaces";
             case SETTINGS: return "Settings";
+            case KEYBOARD: return "Show keyboard";
             case DESKTOP: return on ? "Desktop site, on" : "Desktop site";
             case BM_TOGGLE: return on ? "Remove bookmark" : "Bookmark this page";
             case FULLSCREEN: return on ? "Exit fullscreen" : "Fullscreen";
@@ -258,6 +259,10 @@ final class BrowserMenus {
         root.addView(fullscreen, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(context, 48)));
         root.addView(divider(context));
 
+        /* the keyboard stays up for the last focused field until Back or its own hide key */
+        LinearLayout keyboard = row(context, KEYBOARD, "Show keyboard", true, -1);
+        keyboard.setOnClickListener(view -> { popup.dismiss(); action.send(KEYBOARD, 1, null, null); });
+        root.addView(keyboard, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(context, 48)));
         LinearLayout settings = row(context, SETTINGS, "Settings", true, -1);
         settings.setOnClickListener(view -> { popup.dismiss(); action.send(SETTINGS, 0, null, null); });
         root.addView(settings, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(context, 48)));
