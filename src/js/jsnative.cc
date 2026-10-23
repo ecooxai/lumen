@@ -1210,7 +1210,8 @@ template <class T> static T *c2d_arr(v8::Local<v8::Value> v, size_t *n) {
     if (!v->IsArrayBufferView() || !bytes_of(v, &p, &b)) { *n = 0; return nullptr; }
     *n = b / sizeof(T); return (T *)p;
 }
-static float *g_c2d_cov; static size_t g_c2d_ncov;
+static thread_local float *g_c2d_cov; static thread_local size_t g_c2d_ncov;
+#define C2DCTX v8::Isolate *iso = a.GetIsolate(); v8::Local<v8::Context> ctx = iso->GetCurrentContext(); (void)ctx
 static float *c2d_scratch(size_t n) {
     if (n > g_c2d_ncov) { free(g_c2d_cov); g_c2d_cov = (float *)xmalloc(n * sizeof(float)); g_c2d_ncov = n; }
     memset(g_c2d_cov, 0, n * sizeof(float));
@@ -1268,7 +1269,7 @@ static bool c2d_shape_cov(v8::Isolate *iso, v8::Local<v8::Context> ctx, v8::Loca
 }
 /* c2dFill(px, w, h, shape | null, alpha, op, clip | null, paint [kind, col, params(12), lut, img, iw, ih, flags]) */
 FN(c2dFill) {
-    CTX; size_t npx, nclip;
+    C2DCTX; size_t npx, nclip;
     uint32_t *px = c2d_arr<uint32_t>(a[0], &npx);
     int w = (int)NUM(1), h = (int)NUM(2);
     if (!px || w <= 0 || h <= 0 || npx < (size_t)w * h || !a[7]->IsArray()) return;
@@ -1295,7 +1296,7 @@ FN(c2dFill) {
 }
 /* c2dClip(mask, w, h, shape): mask *= the shape's coverage */
 FN(c2dClip) {
-    CTX; size_t nm;
+    C2DCTX; size_t nm;
     float *m = c2d_arr<float>(a[0], &nm);
     int w = (int)NUM(1), h = (int)NUM(2);
     if (!m || w <= 0 || h <= 0 || nm < (size_t)w * h) return;
@@ -1305,7 +1306,7 @@ FN(c2dClip) {
 }
 /* c2dMeasure(str, family, weight, italic, size) -> [width, ascent, descent] */
 FN(c2dMeasure) {
-    CTX;
+    C2DCTX;
     std::string s = jcstr(iso, a[0]), fam = jcstr(iso, a[1]);
     Font *f = font_get(fam.c_str(), (int)NUM(2), BOOL(3), (float)NUM(4));
     auto o = v8::Array::New(iso, 3);
@@ -1316,6 +1317,13 @@ FN(c2dMeasure) {
     RET(o);
 }
 /* c2dSource(node) -> [w, h, ArrayBuffer of premultiplied ARGB] for an <img>, <video> or shown canvas */
+/* the pure canvas natives (no document) for worker globals: OffscreenCanvas */
+void js_c2d_install(v8::Local<v8::Context> ctx, v8::Local<v8::Object> W) {
+    v8::Isolate *iso = v8::Isolate::GetCurrent();
+    (void)W->Set(ctx, jstr(iso, "c2dFill"), v8::Function::New(ctx, n_c2dFill).ToLocalChecked());
+    (void)W->Set(ctx, jstr(iso, "c2dClip"), v8::Function::New(ctx, n_c2dClip).ToLocalChecked());
+    (void)W->Set(ctx, jstr(iso, "c2dMeasure"), v8::Function::New(ctx, n_c2dMeasure).ToLocalChecked());
+}
 FN(c2dSource) {
     CTX; Node *n = junwrap(a[0]); int w = 0, h = 0;
     uint32_t *px = n ? c2d_node_pixels(n, &w, &h) : nullptr;

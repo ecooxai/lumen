@@ -473,7 +473,36 @@ const report = e => W.reportErr(e);
 const dispatch = (t, ev, trusted) => { if (trusted) evTrusted(ev); return fireOn(t, ev); };
 )JS"
 #include "idb_shared.inc"
+#include "color_shared.inc"
+#include "canvas2d_shared.inc"
 R"JS(
+const createImageBitmap = async (src, ...a) => {
+    let sx = 0, sy = 0, sw, sh;
+    if (a.length >= 4) {
+        sx = erLong(a[0]); sy = erLong(a[1]); sw = erLong(a[2]); sh = erLong(a[3]);
+        if (!sw || !sh) throw new RangeError(`The crop rect ${sw ? 'height' : 'width'} is 0.`);
+    }
+    let d;
+    if (src instanceof ImageData) d = src;
+    else if (src instanceof C2IB) { if (!src._.src) throw new DOMException('The image source is detached.', 'InvalidStateError'); d = src._.src; }
+    else if (src instanceof OffscreenCanvas) {
+        if (!src.width || !src.height) throw new DOMException('The image argument is an OffscreenCanvas element with a width or height of 0.', 'InvalidStateError');
+        d = src._.cx ? src._.cx.getImageData(0, 0, src.width, src.height) : new ImageData(src.width, src.height);
+    } else if (src instanceof Blob) throw new DOMException('The source image could not be decoded.', 'InvalidStateError');
+    else throw new TypeError("Failed to execute 'createImageBitmap': The provided value is not of type '(Blob or ImageBitmap or ImageData or OffscreenCanvas or VideoFrame)'.");
+    if (sw !== undefined) {
+        if (sw < 0) { sx += sw; sw = -sw; } if (sh < 0) { sy += sh; sh = -sh; }
+        const o = new ImageData(sw, sh), od = o.data, id = d.data;
+        for (let y = 0; y < sh; y++) for (let x = 0; x < sw; x++) {
+            const fx = sx + x, fy = sy + y;
+            if (fx < 0 || fy < 0 || fx >= d.width || fy >= d.height) continue;
+            const i = (fy * d.width + fx) * 4, j = (y * sw + x) * 4;
+            od[j] = id[i]; od[j + 1] = id[i + 1]; od[j + 2] = id[i + 2]; od[j + 3] = id[i + 3];
+        }
+        d = o;
+    }
+    const b = Object.create(C2IB.prototype); def(b, '_', { src: d, w: d.width, h: d.height }); return b;
+};
 const toFn =f => typeof f === 'function' ? f : (0, eval)('(function(){' + String(f) + '\n})');
 const performance = { now: () => W.now(), timeOrigin: W.timeOrigin, mark() {}, measure() {}, getEntriesByName() { return []; }, getEntriesByType() { return []; }, toJSON() { return { timeOrigin: W.timeOrigin }; } };
 const fmt = a => a.map(x => typeof x === 'string' ? x : x instanceof Error ? x.stack || String(x) : (() => { try { return JSON.stringify(x); } catch (e) { return String(x); } })()).join(' ');
@@ -681,6 +710,7 @@ const api = {
     WritableStreamDefaultController, TransformStream, TransformStreamDefaultController, ByteLengthQueuingStrategy, CountQueuingStrategy, Blob, File, FileReader, FileReaderSync, URL, URLSearchParams, Headers, Request, Response, FormData, fetch, Cache, CacheStorage, caches, URLPattern, XMLHttpRequest, XMLHttpRequestEventTarget, XMLHttpRequestUpload, ProgressEvent, performance, console,
     Event, MessageEvent, MessagePort, MessageChannel, ErrorEvent, AbortController, AbortSignal, Observable, Subscriber, CustomEvent, PromiseRejectionEvent, EventTarget, DOMException, QuotaExceededError, Crypto,
     ...(secureContext ? { CryptoKey, SubtleCrypto } : {}), WorkerGlobalScope, DedicatedWorkerGlobalScope, WorkerLocation, WorkerNavigator,
+    ImageData, Path2D, CanvasGradient, CanvasPattern, TextMetrics, OffscreenCanvas, OffscreenCanvasRenderingContext2D, ImageBitmap: C2IB, createImageBitmap,
     IDBFactory, IDBDatabase, IDBTransaction, IDBObjectStore, IDBIndex, IDBCursor, IDBCursorWithValue, IDBKeyRange, IDBRecord, IDBRequest, IDBOpenDBRequest, IDBVersionChangeEvent, DOMStringList, indexedDB,
 };
 if (W.shared) {   /* a shared worker talks only through the ports its connect events bring */
@@ -787,6 +817,7 @@ void worker_main(std::shared_ptr<Worker> w) {
         js_wasm_install(ctx, W);
         js_clone_install(ctx, W);
         js_url_install(ctx, W);
+        js_c2d_install(ctx, W);
         js_crypto_install(ctx, W); js_encoding_install(ctx, W); js_compress_install(ctx, W);
 #define WREG(nm) (void)W->Set(ctx, jstr(iso, #nm), v8::Function::New(ctx, w_##nm).ToLocalChecked())
         WREG(post); WREG(clone); WREG(timer); WREG(clear); WREG(close); WREG(now); WREG(log); WREG(decode); WREG(resolve); WREG(fetch); WREG(fetchAsync); WREG(fetchPause); WREG(fetchAbort); WREG(importScript); WREG(reportErr);

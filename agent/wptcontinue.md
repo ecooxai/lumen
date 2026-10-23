@@ -393,7 +393,31 @@ broke the whole page prelude: 33 ctest failures).
 - Run 116 started (bg subagent 139dfabe + monitor a5a9dd60): /web-animations/ /svg/ /editing/whitespaces/
   /url/ wide-gamut + fill-and-stroke canvas, video_loop_base, /css/selectors/invalidation/ with the
   38ae850 build. Reports -> /tmp/run116-report-*.txt.
-- CANVAS 2D (in progress, unbuilt): the 2D context in 07z-extra.js is all no-ops. Design:
+- RUN 116 RESULT (38ae850 build, --rerun needed since URLs were already in lumen.jsonl): 1119 tests,
+  OK 820 / TIMEOUT 287 / ERROR 12 / CRASH 0. web-animations 4.6% -> 54.9% (48/119 full), svg 40.4% ->
+  68.9% (116/694), editing 89.2 -> 89.8, url 95.7 -> 97.9. Video crash tests now OK (padding helped);
+  video_loop_base TIMEOUT. REGRESSIONS (OK -> TIMEOUT): /svg/animations/seeking-events-1..8,
+  conditional-processing-02, syncbase-escaped-dots, /svg/linking/scripted/href-animate-element,
+  /web-animations/interfaces/Animation/cancel.html. ERRORs: CSSAnimation not defined; SVGLength-cap/ic/
+  lh/rlh *_test ReferenceError; javascript-urls "java\tscript:" assign throws (URL parser must strip
+  tab/newline before validating); start-time-compat off by ~17ms. Reports /tmp/run116-report-*.txt.
+- Run 117 (bg 43358da6 + monitor 0b5ce71a): /html/canvas/ /svg/animations/ Animation/cancel.html with
+  a3c04e5+alpha-serialisation build. cancel.html: the thenable/finish/cancel subtest works in jsrun
+  (/tmp/wacancel.html), so the timeout is another subtest; check run 117 per-subtest output.
+- RUN 117 RESULT: 3681 tests, OK 3568 / TIMEOUT 101 / ERROR 12 / CRASH 0. html/canvas 4.8% -> 39.5%
+  (2288/5787 Chrome-passing; 1754/3344 full). Monitor: no hot CPU, RSS < 310 MB. Rows /tmp/run117-results.jsonl.
+  Canvas next fixes, by size: (1) workers lack OffscreenCanvas/ImageBitmap (worker prelude!) -> offscreen
+  *.worker tests; (2) wide-gamut display-p3 drawImage tests time out (~1000 subtests); (3) createImageBitmap
+  arg validation/crop/flipY/resize; (4) TextMetrics.getIndexFromOffset/getSelectionRects (tentative);
+  (5) regressions: element/compositing *.clear and uncovered.nocontext.* (red at 50,25), DOMMatrix.fromMatrix
+  missing (FIXED, uncommitted: c2dMatrixInit in 07y-canvas2d.js), fillStyle for color(srgb ...) must serialise as "color(srgb 1 0 1)",
+  "Array buffer allocation failed" for huge canvases (cap size -> zero-size bitmap);
+  canvas.transferControlToOffscreen missing; text 12%, shadows 28%, layers 8% (beginLayer/endLayer).
+  Still timing out: svg/animations seeking-events-1..8 and event tests; cancel.html subtest
+  "finished promise should not be rejected by cancel..." (jsrun passes it -> maybe step_timeout/rAF timing).
+- CANVAS 2D committed a3c04e5 (host build + 104 ctest OK; /tmp/c2d.html smoke via jsrun passes).
+  Not yet WPT-run: run /html/canvas/ with --rerun next.
+- CANVAS 2D design (was in progress): the 2D context in 07z-extra.js is all no-ops. Design:
   * src/paint/canvas2d.{h,c} (new): c2d_cover (polygon coverage via svg.c's `svg_acc_line`, newly
     exported), c2d_paint (paint kinds: solid / linear / two-circle radial / conic via 1024-entry
     premultiplied LUT / pattern with nearest or bilinear + repeat; all 26 composite ops; unbounded ops
