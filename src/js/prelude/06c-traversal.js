@@ -504,7 +504,35 @@ class Selection {
     }
     modify() {}
     getComposedRanges() { const r = this._r; return r ? [new StaticRange({ startContainer: r._sc, startOffset: r._so, endContainer: r._ec, endOffset: r._eo })] : []; }
-    toString() { return this._r ? this._r.toString() : ''; }
+    /* the selected text as rendered, as in Chrome: a line break between blocks and for each <br> */
+    toString() {
+        const r = this._r; if (!r) return '';
+        const root = r.commonAncestorContainer;
+        if (root.nodeType !== 1 && root.nodeType !== 9 && root.nodeType !== 11) return r.toString();
+        const disp = e => { try { return getComputedStyle(e).display || ''; } catch (_) { return ''; } };
+        const blockOf = n => {
+            for (let e = n.parentNode; e && e !== root; e = e.parentNode) {
+                if (e.nodeType !== 1) continue;
+                const d = disp(e);
+                if (d && !d.startsWith('inline') && d !== 'contents') return e;
+            }
+            return root;
+        };
+        let out = '', prev = null;
+        const brk = b => { if (prev && b !== prev && out && !out.endsWith('\n')) out += '\n'; prev = b; };
+        const tw = document.createTreeWalker(root, 5);
+        for (let n = tw.nextNode(); n; n = tw.nextNode()) {
+            if (!this.containsNode(n, true)) continue;
+            if (n.nodeType === 1) { if (n.localName === 'br' && n !== r._ec) { brk(blockOf(n)); out += '\n'; } continue; }
+            const e = n.parentNode; if (e && e.nodeType === 1 && disp(e) === 'none') continue;
+            let t = n.data;
+            if (n === r._ec) t = t.slice(0, r._eo);
+            if (n === r._sc) t = t.slice(r._so);
+            if (!t) continue;
+            brk(blockOf(n)); out += t;
+        }
+        return out;
+    }
 }
 const selection = new Selection();
 class Animation extends EventTarget {

@@ -173,7 +173,7 @@ def steps(r, only):
             row = next(row for row in p["rows"] if row[0] == 200)
             n = len(STATE["models"]); ph.tap(row[1], row[2])
             got = model_after(n)
-            r.check("history entry pastes", got and len(got) > len(before) and got.count(before.replace("|", "")[:3]) >= 2, repr(got))
+            r.check("history entry pastes", got and len(got) > len(before) and got.replace("|", "").count(before.replace("|", "")) >= 2, repr(got))
     if "hold" in only:
         n0 = len(STATE["models"]); before = model(); b = r.bar()
         x = next((x for a, x in b["btn"] if a == BKSP), None) if b else None

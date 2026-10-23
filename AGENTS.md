@@ -87,6 +87,16 @@ accepted. A settled site whose last-10-s CPU exceeds 5% is reported.
 Sites are tested in desktop mode (Desktop site is on for all sites by
 default): the desktop versions must work.
 
+## Scripted UI tests
+
+Prefer scripts over AI agents for UI tests; use an agent only when a script can't
+do it. `python3 tools/edit_bar_test.py --serial SERIAL [--install] [--only typing,bar,more,clip,hold,showkbd]`
+drives the Android edit bar on a local Draft.js page (tests/device/editbar), with
+no person or agent. It locates things through the page's posts and Lumen's
+`LumenBar` logcat lines, and samples CPU/RSS every second (that sampling counts as
+the run's monitor). When a step fails, find out whether the script or Lumen is
+wrong and fix that one.
+
 ## Subagents for build, test and device work
 
 Delegate every build, install/deploy, test run and computer-use or phone-control

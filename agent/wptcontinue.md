@@ -112,6 +112,9 @@ Read `AGENTS.md` first. In short:
   NEXT: fix caret hit-testing on empty blocks with only a <br> (layout_hit / lumensel-collapse target+offset for a
   <br>-only line → collapse inside that block at offset 0), then rerun the script (no agent needed). DONE edit_empty_line() in edit_press (main.c) → run 4: 19/21. Then: bar Copy in an editing host now takes
   String(getSelection()) via js_eval_result (native mirror was stale → old clip); page dom check uses per-block textContent.
+  Selection.toString() now renders block breaks + <br> as '\n' (06c-traversal.js, Chrome behaviour) → run 6
+  (/tmp/devtest/ebt6.txt): 21/21 PASS, idle last-10-s 3.5%, RSS 278 MB. NEXT: rerun WPT /selection/ to check the
+  toString change didn't regress; snippets textarea too short in Settings (newtab.html).
   TODO (WPT): Lumen innerText drops a trailing space under white-space:pre-wrap (Draft 'hello ' → 'hello'). + tests/device/editbar/ (LumenBar log in main.c needs APK rebuild) (Draft
   page posting state to the script; calibration taps map screen px → client px; CPU/RSS sampled every 1 s).
   Settings results (08:05 agent run): all PASS; snippets textarea too short (text overflows under Save button).
