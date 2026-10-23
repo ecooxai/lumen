@@ -329,4 +329,4 @@ const fontSet = Object.assign(new EventTarget(), { status: 'loaded', load() { re
     [Symbol.iterator]() { return fontFaces.values(); } });
 Object.defineProperty(fontSet, 'size', { get() { return fontFaces.size; } });
 Object.defineProperty(fontSet, 'ready', { get() { return Promise.resolve(fontSet); } });
-class FontFace { constructor(family, source, d) { this.family = family; this.source = source; Object.assign(this, d); this.status = 'loaded'; this.loaded = Promise.resolve(this); } load() { return Promise.resolve(this); } }
+/*@shared fontface.js*/

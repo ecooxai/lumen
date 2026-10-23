@@ -475,7 +475,15 @@ const dispatch = (t, ev, trusted) => { if (trusted) evTrusted(ev); return fireOn
 #include "idb_shared.inc"
 #include "color_shared.inc"
 #include "canvas2d_shared.inc"
+#include "fontface_shared.inc"
 R"JS(
+const ffSet = new Set();
+const fonts = Object.assign(new EventTarget(), { status: 'loaded', load() { return Promise.resolve([]); }, check() { return true; },
+    add(f) { ffSet.add(f); return this; }, delete(f) { return ffSet.delete(f); }, clear() { ffSet.clear(); }, has(f) { return ffSet.has(f); },
+    forEach(cb, t) { for (const f of ffSet) cb.call(t, f, f, this); }, values() { return ffSet.values(); }, keys() { return ffSet.values(); },
+    entries() { return ffSet.entries(); }, [Symbol.iterator]() { return ffSet.values(); } });
+Object.defineProperty(fonts, 'size', { get() { return ffSet.size; } });
+Object.defineProperty(fonts, 'ready', { get() { return Promise.resolve(fonts); } });
 const createImageBitmap = async (src, ...a) => {
     let sx = 0, sy = 0, sw, sh;
     if (a.length >= 4) {
@@ -714,7 +722,7 @@ const api = {
     WritableStreamDefaultController, TransformStream, TransformStreamDefaultController, ByteLengthQueuingStrategy, CountQueuingStrategy, Blob, File, FileReader, FileReaderSync, URL, URLSearchParams, Headers, Request, Response, FormData, fetch, Cache, CacheStorage, caches, URLPattern, XMLHttpRequest, XMLHttpRequestEventTarget, XMLHttpRequestUpload, ProgressEvent, performance, console,
     Event, MessageEvent, MessagePort, MessageChannel, ErrorEvent, AbortController, AbortSignal, Observable, Subscriber, CustomEvent, PromiseRejectionEvent, EventTarget, DOMException, QuotaExceededError, Crypto,
     ...(secureContext ? { CryptoKey, SubtleCrypto } : {}), WorkerGlobalScope, DedicatedWorkerGlobalScope, WorkerLocation, WorkerNavigator,
-    ImageData, Path2D, CanvasGradient, CanvasPattern, TextMetrics, OffscreenCanvas, OffscreenCanvasRenderingContext2D, ImageBitmap: C2IB, createImageBitmap,
+    ImageData, Path2D, CanvasGradient, CanvasPattern, TextMetrics, OffscreenCanvas, OffscreenCanvasRenderingContext2D, ImageBitmap: C2IB, createImageBitmap, FontFace, fonts,
     IDBFactory, IDBDatabase, IDBTransaction, IDBObjectStore, IDBIndex, IDBCursor, IDBCursorWithValue, IDBKeyRange, IDBRecord, IDBRequest, IDBOpenDBRequest, IDBVersionChangeEvent, DOMStringList, indexedDB,
 };
 if (W.shared) {   /* a shared worker talks only through the ports its connect events bring */

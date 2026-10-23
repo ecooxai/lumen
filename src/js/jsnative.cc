@@ -1325,6 +1325,15 @@ FN(c2dMeasure) {
     RET(o);
 }
 /* c2dSource(node) -> [w, h, ArrayBuffer of premultiplied ARGB] for an <img>, <video> or shown canvas */
+/* FontFace: fontFace(family, weight, italic, key, bytes) declares the face under key and loads its bytes; false when no font */
+static void n_fontFace(const FCI &a) {
+    v8::Isolate *iso = a.GetIsolate(); const char *p; size_t n;
+    if (a.Length() < 5 || !bytes_of(a[4], &p, &n) || !n) { RET(false); return; }
+    v8::String::Utf8Value fam(iso, a[0]), key(iso, a[3]);
+    if (!*fam || !*key) { RET(false); return; }
+    font_declare(*fam, a[1]->Int32Value(iso->GetCurrentContext()).FromMaybe(400), a[2]->BooleanValue(iso), *key);
+    RET(font_loaded(*key, p, n));
+}
 /* worker createImageBitmap(blob): decode on the worker's own thread -> [w, h, straight RGBA ArrayBuffer] or null */
 static void n_imgDecodeSync(const FCI &a) {
     v8::Isolate *iso = a.GetIsolate(); const char *p; size_t n; int w = 0, h = 0;
@@ -1342,6 +1351,7 @@ void js_c2d_install(v8::Local<v8::Context> ctx, v8::Local<v8::Object> W) {
     (void)W->Set(ctx, jstr(iso, "c2dClip"), v8::Function::New(ctx, n_c2dClip).ToLocalChecked());
     (void)W->Set(ctx, jstr(iso, "c2dMeasure"), v8::Function::New(ctx, n_c2dMeasure).ToLocalChecked());
     (void)W->Set(ctx, jstr(iso, "imgDecodeSync"), v8::Function::New(ctx, n_imgDecodeSync).ToLocalChecked());
+    (void)W->Set(ctx, jstr(iso, "fontFace"), v8::Function::New(ctx, n_fontFace).ToLocalChecked());
 }
 FN(c2dSource) {
     CTX; Node *n = junwrap(a[0]); int w = 0, h = 0;
@@ -1400,7 +1410,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
 #define REG(nm) (void)N->Set(ctx, jstr(iso, #nm), NAT_FN(nm))
     REG(isNode); REG(version);
     REG(inert); REG(type); REG(name); REG(ns); REG(parent); REG(first); REG(last); REG(next); REG(prev); REG(index);
-    REG(c2dFill); REG(c2dClip); REG(c2dMeasure); REG(c2dSource); REG(c2dPresent);
+    (void)N->Set(ctx, jstr(iso, "fontFace"), v8::Function::New(ctx, n_fontFace).ToLocalChecked()); REG(c2dFill); REG(c2dClip); REG(c2dMeasure); REG(c2dSource); REG(c2dPresent);
     REG(text); REG(setText); REG(attr); REG(setAttr); REG(rmAttr); REG(attrs); REG(attrQ); REG(attrNS); REG(setAttrQ); REG(setAttrNS); REG(rmAttrQ); REG(rmAttrNS); REG(attrsNS); REG(insert); REG(remove); REG(newDoc); REG(newXmlDoc); REG(xname); REG(charset); REG(ctype); REG(csp); REG(evalGuard); REG(ttOn); REG(codeLike); REG(lazySrc); REG(parseXml); REG(parseDoc); REG(docReparse); REG(adopt); REG(pi); REG(cdata); REG(doctype); REG(ownerDoc);
     REG(create); REG(textNode); REG(comment); REG(frag); REG(html); REG(setHTML); REG(parseFrag); REG(query);
     REG(matches); REG(byId); REG(clone); REG(doc); REG(contains); REG(connected); REG(host); REG(setRealm); REG(realmOf); REG(attachShadow);

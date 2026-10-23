@@ -459,6 +459,14 @@ broke the whole page prelude: 33 ctest failures).
       sync on the worker thread); /tmp/c2db.html passes; ctest 104/104. NEXT: WPT run 123 of /html/canvas/,
       then FontFace in worker, beginLayer/endLayer, TextMetrics tentative APIs, then back to SVG/web-animations
       timeouts and CSS gaps.
+      Run 123 (bg 3f5ac9cd + monitor 59335b40) started on /html/canvas/ with the 176bbad build.
+      FontFace: page FontFace is a STUB (06b-activate.js:332, status 'loaded', no loading; fontSet above it).
+      Canvas text tests use FontFace('CanvasTest', url(/fonts/CanvasTest.ttf)) -> real fix = fetch + register
+      with native font registry (font.c ~594 registers family/url under font_mu) for page AND worker.
+      IMPLEMENTED (uncommitted): real FontFace in src/js/shared/fontface.js (fetch url()/binary ->
+      N/W.fontFace(family, weight, italic, key, bytes) = font_declare + font_loaded in jsnative.cc); page uses
+      it via /*@shared fontface.js*/ in 06b-activate.js (fontSet unchanged); worker gets FontFace + `fonts` set
+      (worker.cc). COMMITTED; /tmp/ff.html: page+worker AAA=30px with CanvasTest; ctest 104/104. Needs WPT rerun.
   (6) FontFace missing in worker (51); beginLayer/endLayer (48); DOMPoint in worker (12); text align center (21).
 - Committed after 2e00940 (shared/canvas2d.js; also transferControlToOffscreen DONE, page-only): modern colours (color()/lab/oklab) serialise in their
   own space; c2dAlloc leaves an empty bitmap for >2^28 px or failed allocation. NOTE element/compositing
