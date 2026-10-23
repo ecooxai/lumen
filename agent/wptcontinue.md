@@ -420,7 +420,14 @@ broke the whole page prelude: 33 ctest failures).
   worker natives via js_c2d_install (c2dFill/Clip/Measure; C2DCTX macro, thread_local scratch); worker
   createImageBitmap (ImageData/ImageBitmap/OffscreenCanvas, crop; Blob rejects). DOMMatrix.fromMatrix
   replaced by c2dMatrixInit. Smoke /tmp/c2dw.html (worker) + /tmp/c2d.html pass; ctest 104/104.
-- Run 118 started (bg a21dfc1e + monitor f00391c0): all /html/canvas/ with the 2e00940 build -> /tmp/run118-*.
+- RUN 118 (2e00940 build): /html/canvas/ 3385 tests OK 3322/TO 53/ERR 10/CRASH 0; 39.5% -> 54.2% (3136/5787),
+  2528/3344 full. Monitor clean. Analyzer: /tmp/run118-analyze.py. Next by size: (1) 912 subtests in five
+  element/manual/wide-gamut-canvas display-p3 drawImage/pattern tests that time out whole-page; (2) draw-element-
+  image (requestPaint, tentative) 260; (3) TextMetrics getIndexFromOffset/getSelectionRects/getActualBoundingBox/
+  getTextClusters (tentative) ~190; (4) "source image could not be decoded" 87 (worker createImageBitmap(Blob)
+  must decode -> need native decode in worker); (5) shadows: fillRect.shadow red at 50,25 (61) + shadow.alpha (22);
+  (5 DONE uncommitted->see next commit: shadow drawn from offset shape, off-canvas shapes cast shadows)
+  (6) FontFace missing in worker (51); beginLayer/endLayer (48); DOMPoint in worker (12); text align center (21).
 - Committed after 2e00940 (shared/canvas2d.js; also transferControlToOffscreen DONE, page-only): modern colours (color()/lab/oklab) serialise in their
   own space; c2dAlloc leaves an empty bitmap for >2^28 px or failed allocation. NOTE element/compositing
   "*.clear" losses are not regressions ('clear' is not a valid op; stubs passed by drawing nothing).

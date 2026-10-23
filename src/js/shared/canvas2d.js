@@ -566,13 +566,16 @@ function c2dDraw(s, shape, paint) {
     if (!paint || !s.w || !s.h) return;
     const st = s.st;
     if (st.sColorV[3] > 0 && (st.sBlur > 0 || st.sx || st.sy)) {
-        const tmp = new Uint32Array(s.w * s.h);
-        C2N.c2dFill(tmp, s.w, s.h, shape, 1, 0, null, paint);
-        const cov = new Float32Array(s.w * s.h), ox = Math.round(st.sx), oy = Math.round(st.sy);
-        for (let y = 0; y < s.h; y++) for (let x = 0; x < s.w; x++) {
-            const fx = x - ox, fy = y - oy;
-            if (fx >= 0 && fy >= 0 && fx < s.w && fy < s.h) cov[y * s.w + x] = (tmp[fy * s.w + fx] >>> 24) / 255;
-        }
+        /* the shape and its paint moved by the shadow offset (the shape itself may lie off the canvas) */
+        const ox = st.sx, oy = st.sy, tmp = new Uint32Array(s.w * s.h);
+        let sh;
+        if (typeof shape[0] === 'string') { sh = shape.slice(); sh[5] += ox; sh[6] += oy; }
+        else { const xy = shape[0].slice(); for (let i = 0; i < xy.length; i += 2) { xy[i] += ox; xy[i + 1] += oy; } sh = [xy, shape[1], shape[2]]; }
+        let pt = paint;
+        if (paint[2]) { const pr = paint[2].slice(); pr[4] -= pr[0] * ox + pr[2] * oy; pr[5] -= pr[1] * ox + pr[3] * oy; pt = paint.slice(); pt[2] = pr; }
+        C2N.c2dFill(tmp, s.w, s.h, sh, 1, 0, null, pt);
+        const cov = new Float32Array(s.w * s.h);
+        for (let i = 0; i < cov.length; i++) cov[i] = (tmp[i] >>> 24) / 255;
         if (st.sBlur > 0) boxBlur(cov, s.w, s.h, st.sBlur / 2);
         const c = st.sColorV;
         C2N.c2dFill(s.px, s.w, s.h, cov, st.alpha, st.op, st.clip, [0, premul(c[0], c[1], c[2], c[3]), null, null, null, 0, 0, 0]);
