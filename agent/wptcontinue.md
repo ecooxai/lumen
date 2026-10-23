@@ -455,6 +455,10 @@ broke the whole page prelude: 33 ctest failures).
       DONE next commit: structuredClone/postMessage clone ImageBitmap + ImageData (08-window.js cloneValue;
       closed bitmap -> DataCloneError); zero-size image source -> null pattern / no-op drawImage. Not WPT-run yet
       (jsrun /tmp/c2dc.html passes). zerosource.image uses zero-size SVGs: check naturalWidth of those.
+      DONE next commit: worker createImageBitmap(Blob) decodes via W.imgDecodeSync (jsnative.cc, worker-only,
+      sync on the worker thread); /tmp/c2db.html passes; ctest 104/104. NEXT: WPT run 123 of /html/canvas/,
+      then FontFace in worker, beginLayer/endLayer, TextMetrics tentative APIs, then back to SVG/web-animations
+      timeouts and CSS gaps.
   (6) FontFace missing in worker (51); beginLayer/endLayer (48); DOMPoint in worker (12); text align center (21).
 - Committed after 2e00940 (shared/canvas2d.js; also transferControlToOffscreen DONE, page-only): modern colours (color()/lab/oklab) serialise in their
   own space; c2dAlloc leaves an empty bitmap for >2^28 px or failed allocation. NOTE element/compositing

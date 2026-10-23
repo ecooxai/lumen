@@ -1325,12 +1325,23 @@ FN(c2dMeasure) {
     RET(o);
 }
 /* c2dSource(node) -> [w, h, ArrayBuffer of premultiplied ARGB] for an <img>, <video> or shown canvas */
+/* worker createImageBitmap(blob): decode on the worker's own thread -> [w, h, straight RGBA ArrayBuffer] or null */
+static void n_imgDecodeSync(const FCI &a) {
+    v8::Isolate *iso = a.GetIsolate(); const char *p; size_t n; int w = 0, h = 0;
+    if (a.Length() < 1 || !bytes_of(a[0], &p, &n) || !n) { RET(v8::Null(iso)); return; }
+    uint8_t *rgba = jsg_decode_rgba((const uint8_t *)p, n, &w, &h);
+    if (!rgba) { RET(v8::Null(iso)); return; }
+    v8::Local<v8::Value> v[3] = { v8::Number::New(iso, w), v8::Number::New(iso, h), mkab(iso, rgba, (size_t)w * (size_t)h * 4) };
+    free(rgba);
+    RET(v8::Array::New(iso, v, 3));
+}
 /* the pure canvas natives (no document) for worker globals: OffscreenCanvas */
 void js_c2d_install(v8::Local<v8::Context> ctx, v8::Local<v8::Object> W) {
     v8::Isolate *iso = v8::Isolate::GetCurrent();
     (void)W->Set(ctx, jstr(iso, "c2dFill"), v8::Function::New(ctx, n_c2dFill).ToLocalChecked());
     (void)W->Set(ctx, jstr(iso, "c2dClip"), v8::Function::New(ctx, n_c2dClip).ToLocalChecked());
     (void)W->Set(ctx, jstr(iso, "c2dMeasure"), v8::Function::New(ctx, n_c2dMeasure).ToLocalChecked());
+    (void)W->Set(ctx, jstr(iso, "imgDecodeSync"), v8::Function::New(ctx, n_imgDecodeSync).ToLocalChecked());
 }
 FN(c2dSource) {
     CTX; Node *n = junwrap(a[0]); int w = 0, h = 0;

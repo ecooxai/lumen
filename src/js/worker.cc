@@ -488,7 +488,11 @@ const createImageBitmap = async (src, ...a) => {
     else if (src instanceof OffscreenCanvas) {
         if (!src.width || !src.height) throw new DOMException('The image argument is an OffscreenCanvas element with a width or height of 0.', 'InvalidStateError');
         d = src._.cx ? src._.cx.getImageData(0, 0, src.width, src.height) : new ImageData(src.width, src.height);
-    } else if (src instanceof Blob) throw new DOMException('The source image could not be decoded.', 'InvalidStateError');
+    } else if (src instanceof Blob) {
+        const r = W.imgDecodeSync(await src.arrayBuffer());
+        if (!r) throw new DOMException('The source image could not be decoded.', 'InvalidStateError');
+        d = new ImageData(new Uint8ClampedArray(r[2]), r[0], r[1]);
+    }
     else throw new TypeError("Failed to execute 'createImageBitmap': The provided value is not of type '(Blob or ImageBitmap or ImageData or OffscreenCanvas or VideoFrame)'.");
     if (sw !== undefined) {
         if (sw < 0) { sx += sw; sw = -sw; } if (sh < 0) { sy += sh; sh = -sh; }
