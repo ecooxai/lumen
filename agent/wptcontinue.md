@@ -415,6 +415,17 @@ broke the whole page prelude: 33 ctest failures).
   canvas.transferControlToOffscreen missing; text 12%, shadows 28%, layers 8% (beginLayer/endLayer).
   Still timing out: svg/animations seeking-events-1..8 and event tests; cancel.html subtest
   "finished promise should not be rejected by cancel..." (jsrun passes it -> maybe step_timeout/rAF timing).
+- 2e00940: canvas code moved to src/js/shared/canvas2d.js (+ color parser to shared/color.js; prelude files
+  07y/04e now hold only /*@shared*/ markers) and included in the worker prelude (worker.cc after idb);
+  worker natives via js_c2d_install (c2dFill/Clip/Measure; C2DCTX macro, thread_local scratch); worker
+  createImageBitmap (ImageData/ImageBitmap/OffscreenCanvas, crop; Blob rejects). DOMMatrix.fromMatrix
+  replaced by c2dMatrixInit. Smoke /tmp/c2dw.html (worker) + /tmp/c2d.html pass; ctest 104/104.
+- Run 118 started (bg a21dfc1e + monitor f00391c0): all /html/canvas/ with the 2e00940 build -> /tmp/run118-*.
+- Committed after 2e00940 (shared/canvas2d.js; also transferControlToOffscreen DONE, page-only): modern colours (color()/lab/oklab) serialise in their
+  own space; c2dAlloc leaves an empty bitmap for >2^28 px or failed allocation. NOTE element/compositing
+  "*.clear" losses are not regressions ('clear' is not a valid op; stubs passed by drawing nothing).
+  Next: transferControlToOffscreen (OffscreenCanvas with placeholder node; c2dPresent to placeholder),
+  then the run-118 top failure messages.
 - CANVAS 2D committed a3c04e5 (host build + 104 ctest OK; /tmp/c2d.html smoke via jsrun passes).
   Not yet WPT-run: run /html/canvas/ with --rerun next.
 - CANVAS 2D design (was in progress): the 2D context in 07z-extra.js is all no-ops. Design:

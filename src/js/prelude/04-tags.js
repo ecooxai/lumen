@@ -139,6 +139,7 @@ mk('HTMLCanvasElement', HTMLElement, ['canvas'], p => {
         getContext(t, o) {
             t = String(t);
             const kind = t === 'experimental-webgl' ? 'webgl' : t;
+            if (this.__offscreen) throw new DOMException("Failed to execute 'getContext' on 'HTMLCanvasElement': Cannot get context from a canvas that has transferred its control to offscreen.", 'InvalidStateError');
             if (this.__ck) return this.__ck === kind ? this.__cx : null;
             const x = kind === '2d' ? c2dCreate(this, o) : kind === 'webgl' ? glCreate(this, 1, o) : kind === 'webgl2' ? glCreate(this, 2, o)
                 : kind === 'webgpu' && gpuNavigator ? gpuCanvasContext(this) : null;
@@ -146,6 +147,10 @@ mk('HTMLCanvasElement', HTMLElement, ['canvas'], p => {
             return x;
         },
         captureStream(fps) { return canvasStream(this, fps); },
+        transferControlToOffscreen() {
+            if (this.__ck || this.__offscreen) throw new DOMException("Failed to execute 'transferControlToOffscreen' on 'HTMLCanvasElement': Cannot transfer control from a canvas that has a rendering context.", 'InvalidStateError');
+            const o = new OffscreenCanvas(this.width, this.height); o._.ph = this; def(this, '__offscreen', o); return o;
+        },
         toDataURL() { return canvasDataURL(this); },
         toBlob(cb) { if (typeof cb !== 'function') throw new TypeError("Failed to execute 'toBlob' on 'HTMLCanvasElement': parameter 1 is not of type 'BlobCallback'."); const b = canvasBlob(this); setTimeout(() => cb(b)); },
     });

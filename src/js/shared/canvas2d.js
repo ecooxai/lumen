@@ -281,7 +281,11 @@ function c2dColor(text, cv) {
     const a8 = Math.round(a * 255);
     let as = colorNum3(a);
     for (let d = 1; d <= 6; d++) { const t = +a.toFixed(d); if (Math.round(t * 255) === a8) { as = String(t); break; } }
-    const s = a >= 1 ? '#' + b8.map(v => v.toString(16).padStart(2, '0')).join('') : `rgba(${b8.join(', ')}, ${as})`;
+    let s = a >= 1 ? '#' + b8.map(v => v.toString(16).padStart(2, '0')).join('') : `rgba(${b8.join(', ')}, ${as})`;
+    if (!c.current && c.legacy === false) {   /* modern colours keep their own space, as Chrome serialises them */
+        const body = c.c.map(colorNum3).join(' ') + (a < 1 ? ' / ' + colorNum3(a) : '');
+        s = c.space === 'lab' || c.space === 'oklab' ? `${c.space}(${body})` : `color(${c.space} ${body})`;
+    }
     return { s, v: [b8[0] / 255, b8[1] / 255, b8[2] / 255, a] };
 }
 class CanvasGradient {
@@ -408,18 +412,24 @@ const c2dDefaults = () => ({
     alpha: 1, op: 0, sBlur: 0, sColor: 'rgba(0, 0, 0, 0)', sColorV: [0, 0, 0, 0], sx: 0, sy: 0, smooth: true, smoothQ: 'low', filter: 'none',
     m: ID, clip: null, letterSpacing: '0px', wordSpacing: '0px', kerning: 'auto', stretch: 'normal', caps: 'normal', rendering: 'auto', lang: 'inherit',
 });
+/* a bitmap Chrome could not allocate (over 2^28 pixels or out of memory) is left empty: drawing is a no-op */
+function c2dAlloc(s, w, h) {
+    s.w = w; s.h = h;
+    try { if (w * h > 268435456) throw new RangeError(); s.px = new Uint32Array(Math.max(0, w * h)); } catch (e) { s.px = new Uint32Array(0); s.w = s.h = 0; }
+    if (!s.alpha) s.px.fill(0xff000000);
+}
 function c2dState(target, w, h, opts) {
     const alpha = !(opts && opts.alpha === false);
     const s = { target, w, h, alpha, opts: { alpha, colorSpace: opts && opts.colorSpace === 'display-p3' ? 'display-p3' : 'srgb', desynchronized: !!(opts && opts.desynchronized), willReadFrequently: !!(opts && opts.willReadFrequently) },
         st: c2dDefaults(), stack: [], path: new PathData(), dirty: false };
-    s.px = new Uint32Array(Math.max(0, w * h));
-    if (!alpha) s.px.fill(0xff000000);
+    c2dAlloc(s, w, h);
     return s;
 }
 const c2dPresent = s => {
-    if (s.dirty || !(s.target instanceof C2Node)) return;
+    const node = s.target instanceof C2Node ? s.target : s.target && s.target._ && s.target._.ph;   /* ph: transferControlToOffscreen placeholder */
+    if (s.dirty || !node || !C2N.c2dPresent) return;
     s.dirty = true;
-    queueMicrotask(() => { s.dirty = false; C2N.c2dPresent(s.target, s.px, s.w, s.h); });
+    queueMicrotask(() => { s.dirty = false; C2N.c2dPresent(node, s.px, s.w, s.h); });
 };
 function c2dPaintOf(s, which) {
     const st = s.st, v = st[which];
@@ -636,7 +646,7 @@ const C2D_METHODS = {
     save() { const s = this._; s.stack.push({ ...s.st, dash: s.st.dash.slice() }); },
     restore() { const s = this._; if (s.stack.length) s.st = s.stack.pop(); },
     reset() { const s = this._; s.px.fill(s.alpha ? 0 : 0xff000000); s.st = c2dDefaults(); s.stack = []; s.path = new PathData(); c2dPresent(s); },
-    _reset(w, h) { const s = this._; s.w = w; s.h = h; s.px = new Uint32Array(w * h); if (!s.alpha) s.px.fill(0xff000000); s.st = c2dDefaults(); s.stack = []; s.path = new PathData(); c2dPresent(s); },
+    _reset(w, h) { const s = this._; c2dAlloc(s, w, h); s.st = c2dDefaults(); s.stack = []; s.path = new PathData(); c2dPresent(s); },
     _m() { return this._.st.m; },
     get _p() { return this._.path; },
     scale(x, y) { x = +x; y = +y; if (fin(x, y)) this._.st.m = mMul(this._.st.m, [x, 0, 0, y, 0, 0]); },
