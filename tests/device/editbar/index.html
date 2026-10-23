@@ -38,7 +38,7 @@ function App() {
   React.useEffect(() => {
     const t = st.getCurrentContent().getPlainText('|');
     document.getElementById('model').textContent = JSON.stringify(t);
-    post(Object.assign({ ev: 'model', model: t, dom: document.querySelector('#ed [contenteditable]').innerText.replace(/\n/g, '|') }, line()));
+    post(Object.assign({ ev: 'model', model: t, dom: Array.from(document.querySelectorAll('#ed [data-block]'), b => b.textContent).join('|') }, line()));
   }, [st]);
   return React.createElement(Draft.Editor, { editorState: st, onChange: setSt, placeholder: 'type here' });
 }

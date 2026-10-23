@@ -110,7 +110,9 @@ Read `AGENTS.md` first. In short:
   EMPTY Draft line (block = <div data-block><span><br data-text></span></div>) puts the caret at the end of the line
   ABOVE (bar Backspace deleted 'z'; snippet/paste landed on line 1/2; dom vs model then diverged after word deletes).
   NEXT: fix caret hit-testing on empty blocks with only a <br> (layout_hit / lumensel-collapse target+offset for a
-  <br>-only line → collapse inside that block at offset 0), then rerun the script (no agent needed). + tests/device/editbar/ (LumenBar log in main.c needs APK rebuild) (Draft
+  <br>-only line → collapse inside that block at offset 0), then rerun the script (no agent needed). DONE edit_empty_line() in edit_press (main.c) → run 4: 19/21. Then: bar Copy in an editing host now takes
+  String(getSelection()) via js_eval_result (native mirror was stale → old clip); page dom check uses per-block textContent.
+  TODO (WPT): Lumen innerText drops a trailing space under white-space:pre-wrap (Draft 'hello ' → 'hello'). + tests/device/editbar/ (LumenBar log in main.c needs APK rebuild) (Draft
   page posting state to the script; calibration taps map screen px → client px; CPU/RSS sampled every 1 s).
   Settings results (08:05 agent run): all PASS; snippets textarea too short (text overflows under Save button).
 

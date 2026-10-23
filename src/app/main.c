@@ -3909,13 +3909,35 @@ static bool edit_text_at(App *a, Node *h, float px, float py, Node **tn, int *of
     Page *p = a->t->cur;
     return h->box && tsel_point(p->L, px, py, a->t->sy, h->box, tn, off) && node_within(*tn, h);
 }
+static bool node_has_text(const Node *n) {
+    if (n->type == NODE_TEXT) return n->text_len > 0;
+    for (const Node *c = n->first; c; c = c->next) if (node_has_text(c)) return true;
+    return false;
+}
+static Node *node_find_br(Node *n) {
+    if (n->type == NODE_ELEMENT && n->tag && !strcmp(n->tag, "br")) return n;
+    for (Node *c = n->first; c; c = c->next) { Node *r = node_find_br(c); if (r) return r; }
+    return NULL;
+}
+/* a press on an empty line of editing host h (a block holding only a <br>, as editors make): the element the
+   caret goes into at offset 0, the <br>'s parent as in Chrome; NULL when the press is on text */
+static Node *edit_empty_line(Node *hit, Node *h) {
+    if (!hit || hit == h || !node_within(hit, h) || node_has_text(hit)) return NULL;
+    Node *c = hit;
+    while (c->parent && c->parent != h && !node_has_text(c->parent)) c = c->parent;
+    Node *br = node_find_br(c);
+    return br ? br->parent : NULL;
+}
 static void edit_press(App *a, float x, float y, int clicks) {
     g_epress = false;
     Node *h = edit_focus(a); Page *p = a->t->cur;
     if (!h || !p || !p->L || a->t->asleep) return;
     float px = page_x(a, x), py = page_y(a, y) + a->t->sy;
     Box *b = layout_hit(p->L, px, py, 0, a->t->sy); Node *tn; int off;
-    if (!b || edit_host(b->node) != edit_host(h) || !edit_text_at(a, h, px, py, &tn, &off)) return;
+    if (!b || edit_host(b->node) != edit_host(h)) return;
+    Node *el = clicks == 1 ? edit_empty_line(b->node, h) : NULL;
+    if (el) { tn = el; off = 0; }
+    else if (!edit_text_at(a, h, px, py, &tn, &off)) return;
     js_dispatch(p->js, tn, clicks >= 3 ? "lumensel-all" : clicks == 2 ? "lumensel-word" : "lumensel-collapse", "MouseEvent", false, false, off, 0, 0, NULL);
     g_epress = clicks == 1;
     sel_dirty(a);
@@ -4270,7 +4292,9 @@ static void bar_do(App *a, int act, Node *f, Node *h, bool whole) {
         break;
     case TA_CUT: case TA_COPY: {
         if (whole) field_all(a, f, h);
-        char *t = f ? ctl_selected(f) : tsel_text(p->L);
+        bool failed = false;   /* an editing host's text is its selection's, as the page sees it */
+        char *t = f ? ctl_selected(f) : h && p->js ? js_eval_result(p->js, "String(getSelection())", "lumen-copy", &failed) : tsel_text(p->L);
+        if (!t || failed) { free(t); t = tsel_text(p->L); }
         if (*t) { SDL_SetClipboardText(t); clip_record(t, NULL, 0, NULL); }
         free(t);
         if (act == TA_CUT) { if (f) ctl_insert(a, f, "", "deleteByCut"); else if (p->js) js_dispatch(p->js, h, "lumeneditdel", "KeyboardEvent", false, false, 0, 0, 0, "Backspace"); }
