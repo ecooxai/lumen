@@ -594,6 +594,7 @@ function attrDetach(el, ns, ln, v) {
 function attrChange(el, ns, pfx, ln, v) {
     const old = N.attrNS(el, ns, ln);
     N.setAttrNS(el, ns, pfx, ln, v);   /* by namespace: a namespaced attribute with the same qualified name stays */
+    if (ln === 'src' && !ns && el instanceof H.HTMLImageElement && !el.isConnected) N.imgWatch(el);   /* new Image(): still loads */
     notify('attributes', el, { attributeName: ln, attributeNamespace: ns, oldValue: old });
     ceAttr(el, ln, old, v, ns);
 }

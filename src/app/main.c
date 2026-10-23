@@ -2853,7 +2853,9 @@ static bool vis_doc(Node *n, void *ud) {
 static bool sync_images(Page *p) {
     if (p->res_seen && p->seen_res == p->d->resource_version) return false;
     p->res_seen = true; p->seen_res = p->d->resource_version;
-    for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) {
+    if (p->d->ndimg) p->img_check = true;
+    for (int di = -1; di < p->d->ndimg; di++)
+    for (Node *n = di < 0 ? p->d->node.first : p->d->dimg[di]; n; n = di < 0 ? node_next_in_tree(n, &p->d->node) : NULL) {
         if (n->type != NODE_ELEMENT) continue;
         char *u = NULL;
         if (n->style && (n->style->mask_image || n->style->bg_image) && n->style->display != D_NONE) u = xstrdup(n->style->mask_image ? n->style->mask_image : n->style->bg_image);
@@ -2877,7 +2879,8 @@ static void fire_img_events(Page *p) {
     if (!p || !p->js || !p->img_check) return;
     p->img_check = false;
     Node **ev = NULL; bool *ok = NULL; int ne = 0, cap = 0;
-    for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) {
+    for (int di = -1; di < p->d->ndimg; di++)
+    for (Node *n = di < 0 ? p->d->node.first : p->d->dimg[di]; n; n = di < 0 ? node_next_in_tree(n, &p->d->node) : NULL) {
         if (n->type != NODE_ELEMENT || n->ns != NS_HTML || n->tag != A_img || !node_attr(n, "src")) continue;
         char *u = url_join(doc_base(p->d), node_attr(n, "src")); if (!u) continue;
         char key[2048]; snprintf(key, sizeof key, "%p %s", (void *)n, u);
@@ -2891,6 +2894,17 @@ static void fire_img_events(Page *p) {
         }
         free(u);
     }
+    /* a detached image stays listed until its current src has fired (or it got connected) */
+    int keep = 0;
+    for (int i = 0; i < p->d->ndimg; i++) {
+        Node *n = p->d->dimg[i]; bool pending = false;
+        if (!(n->flags & NF_CONNECTED) && node_attr(n, "src")) {
+            char *u = url_join(doc_base(p->d), node_attr(n, "src"));
+            if (u) { char key[2048]; snprintf(key, sizeof key, "%p %s", (void *)n, u); pending = !hm_get(&p->img_fired, key); free(u); }
+        }
+        if (pending) p->d->dimg[keep++] = n; else node_release(n);
+    }
+    p->d->ndimg = keep;
     for (int i = 0; i < ne; i++) { js_dispatch(p->js, ev[i], ok[i] ? "load" : "error", "Event", false, false, 0, 0, 0, NULL); node_release(ev[i]); }
     free(ev); free(ok);
 }

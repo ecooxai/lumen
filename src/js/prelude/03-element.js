@@ -213,6 +213,7 @@ function attrSetQ(el, n, v) {
     if (a && (a._ns !== null || a._pfx !== null)) return attrChange(el, a._ns, a._pfx, a._ln, v);
     const old = N.attrQ(el, n);
     N.setAttrQ(el, n, v);
+    if (n === 'src' && el instanceof H.HTMLImageElement && !el.isConnected) N.imgWatch(el);   /* new Image(): still loads */
     if (n.charCodeAt(0) === 111 && n.charCodeAt(1) === 110) handlerAttr(el, n, v);
     notify('attributes', el, { attributeName: n, attributeNamespace: null, oldValue: old });
     ceAttr(el, n, old, v, null);

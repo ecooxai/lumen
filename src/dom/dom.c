@@ -348,6 +348,8 @@ void node_free_tree(Node *n) {
     node_free_one(n);
 }
 void doc_free(Document *d) {
+    for (int i = 0; i < d->ndimg; i++) node_release(d->dimg[i]);
+    free(d->dimg); d->dimg = NULL; d->ndimg = d->cdimg = 0;
     if (d->selector_cache_free) d->selector_cache_free(d->selector_cache);
     free(d->modals.v); d->modals.v = NULL; d->modals.n = d->modals.cap = 0;
     for (int i = 0; i < 2; i++) if (d->sel[i]) { node_release(d->sel[i]); d->sel[i] = NULL; }

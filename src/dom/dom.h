@@ -109,6 +109,7 @@ typedef struct Document {
     uint64_t layout_version;      /* bumped on mutations that can change layout beyond computed style */
     uint64_t paint_version;       /* visual changes without DOM/style/layout invalidation */
     uint64_t resource_version;    /* img src and computed background/mask image changes */
+    struct Node **dimg; int ndimg, cdimg;   /* detached <img> elements whose src should still load (refcounted) */
     float layout_vw, layout_vh;   /* viewport of the current box tree */
     HMap id_cache, id_dups; bool id_cache_ok; /* id -> first element, kept current by tree and id edits; ids seen twice */
     void *selector_cache; void (*selector_cache_free)(void *); /* bounded parsed query syntax */

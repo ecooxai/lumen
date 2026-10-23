@@ -427,6 +427,31 @@ broke the whole page prelude: 33 ctest failures).
   getTextClusters (tentative) ~190; (4) "source image could not be decoded" 87 (worker createImageBitmap(Blob)
   must decode -> need native decode in worker); (5) shadows: fillRect.shadow red at 50,25 (61) + shadow.alpha (22);
   (5 DONE uncommitted->see next commit: shadow drawn from offset shape, off-canvas shapes cast shadows)
+  (1) investigating: tests load resources/*.png|jpg|webp|avif|bmp|ico|gif|svg via new Image() then
+      createImageBitmap/drawImage; jsrun can't load images (probe /tmp/imgprobe.html useless) -> use real lumen
+      (run 119: the five wide-gamut tests, per-subtest statuses).
+      RUN 119 RESULT: every subtest TIMEOUT for ALL images incl. plain 8-bit sRGB PNG; no errors. Cause =
+      detached `new Image()` never loads/fires onload (same as the fetch gap "detached img loads"). FIX THAT.
+      Code: main.c ~2850 (fetch-start loop walks p->d tree only: img src -> icache/net_fetch img_done) and
+      fire_img_events (main.c 2876, also tree-only, keyed "%p url" in p->img_fired). Plan: per-Page list of
+      detached img nodes (refcounted) registered from JS (N.imgWatch(node) in 04-tags img src setter /
+      setAttribute src when !isConnected); both loops also iterate it; drop entries after firing. Also
+      img.complete is hard-coded true in 04-tags.js:117 (should be false while loading).
+      IMPLEMENTED (uncommitted, built 12:54): Document.dimg list (dom.h; released in doc_free), N.imgWatch
+      (jsnative.cc) called from attrChange (02-node.js) for detached HTML img src; sync_images and
+      fire_img_events iterate it; fired/connected entries are dropped. ctest 104/104.
+      RUN 120 (canvas/manual + the-img-element + fetch): wide-gamut pages STILL timed out; img +13, fetch -66
+      (text-utf8.any.serviceworker.html "ServiceWorker script evaluation failed" -30 - check if worker prelude
+      change broke SW, metadata/preload.https.sub.html timeout -36, cookies leak between instances?).
+      Cause of still-timeout: restyle() returns early unless dom_version changed and a detached attr edit
+      doesn't bump it -> imgWatch now bumps d->dom_version too (built 13:3x, uncommitted). Recheck = run 121.
+      RUN 121: still timed out; REAL cause: setAttribute uses attrSetQ (03-element.js ~211), not attrChange
+      -> hook added there too (built). SW text-utf8 now OK (run-120 failure was flaky). /tmp tmpfs was 98%
+      full: deleted /tmp/run120-prev-all.jsonl; don't copy lumen.jsonl into /tmp. Recheck = run 122.
+      RUN 122 (committed with this fix): /html/canvas/ 54.2% -> 62.9% (3638/5787), 2607/3344 full; img 24.5%.
+      No crash; monitor clean. Next: drawImage rejects structured-cloned ImageBitmap (184, '-cloned' test);
+      pattern regressions (createPattern(zero-height img) must be null; norepeat.coord1; shadow.pattern.transparent.1);
+      drawImage.zerosource.image (39); worker Blob decode (87); FontFace in worker (51).
   (6) FontFace missing in worker (51); beginLayer/endLayer (48); DOMPoint in worker (12); text align center (21).
 - Committed after 2e00940 (shared/canvas2d.js; also transferControlToOffscreen DONE, page-only): modern colours (color()/lab/oklab) serialise in their
   own space; c2dAlloc leaves an empty bitmap for >2^28 px or failed allocation. NOTE element/compositing
