@@ -452,6 +452,9 @@ broke the whole page prelude: 33 ctest failures).
       No crash; monitor clean. Next: drawImage rejects structured-cloned ImageBitmap (184, '-cloned' test);
       pattern regressions (createPattern(zero-height img) must be null; norepeat.coord1; shadow.pattern.transparent.1);
       drawImage.zerosource.image (39); worker Blob decode (87); FontFace in worker (51).
+      DONE next commit: structuredClone/postMessage clone ImageBitmap + ImageData (08-window.js cloneValue;
+      closed bitmap -> DataCloneError); zero-size image source -> null pattern / no-op drawImage. Not WPT-run yet
+      (jsrun /tmp/c2dc.html passes). zerosource.image uses zero-size SVGs: check naturalWidth of those.
   (6) FontFace missing in worker (51); beginLayer/endLayer (48); DOMPoint in worker (12); text align center (21).
 - Committed after 2e00940 (shared/canvas2d.js; also transferControlToOffscreen DONE, page-only): modern colours (color()/lab/oklab) serialise in their
   own space; c2dAlloc leaves an empty bitmap for >2^28 px or failed allocation. NOTE element/compositing

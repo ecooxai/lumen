@@ -361,6 +361,7 @@ function c2dImage(img, fn) {
     const r = C2N.c2dSource(img);
     if (!r) return null;
     const sw = isImg ? img.naturalWidth || r[0] : isVid ? img.videoWidth || r[0] : r[0], sh = isImg ? img.naturalHeight || r[1] : isVid ? img.videoHeight || r[1] : r[1];
+    if (!sw || !sh || !r[0] || !r[1]) return null;   /* zero-size source: createPattern gives null, drawImage nothing */
     return { px: new Uint32Array(r[2]), w: r[0], h: r[1], sw, sh };
 }
 function imageDataSrc(d) {

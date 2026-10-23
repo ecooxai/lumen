@@ -500,6 +500,11 @@ function cloneValue(v, seen) {
     if (tag === 'ArrayBuffer') { const b = new ArrayBuffer(v.byteLength); new Uint8Array(b).set(new Uint8Array(v)); seen.set(v, b); return b; }
     if (ArrayBuffer.isView(v)) { const b = cloneValue(v.buffer, seen); return tag === 'DataView' ? new DataView(b, v.byteOffset, v.byteLength) : new globalThis[tag](b, v.byteOffset, v.length); }
     if (tag === 'CryptoKey') { const k = cryptoKeyClone(v); seen.set(v, k); return k; }
+    if (v instanceof ImageBitmap) {   /* serializable: same pixels; a closed bitmap cannot be cloned */
+        if (!v._.src) throw new DOMException('An ImageBitmap is detached and could not be cloned.', 'DataCloneError');
+        const b = Object.create(ImageBitmap.prototype); def(b, '_', Object.assign({}, v._)); seen.set(v, b); return b;
+    }
+    if (v instanceof ImageData) { const d = new ImageData(new Uint8ClampedArray(v.data), v.width, v.height, { colorSpace: v.colorSpace }); seen.set(v, d); return d; }
     if (v instanceof Blob || tag === 'Blob' || tag === 'File') return v; if (N.isNode(v) || v instanceof URL || v instanceof URLSearchParams) throw new DOMException(`${tag} object could not be cloned.`, 'DataCloneError');
     if (tag === 'Map') { const m = new Map(); seen.set(v, m); for (const [k, x] of v) m.set(cloneValue(k, seen), cloneValue(x, seen)); return m; }
     if (tag === 'Set') { const s = new Set(); seen.set(v, s); for (const x of v) s.add(cloneValue(x, seen)); return s; }
