@@ -4083,6 +4083,18 @@ static void bar_draw(App *a, DisplayList *dl, const int *act, int n, float cx, f
     }
     bar[0] = x; bar[1] = y; bar[2] = x + w; bar[3] = y + h;
 }
+/* UI tests (tools/edit_bar_test.py): the bars' and popup's layout in viewport CSS px, logged when it changes */
+static void geom_log(int ch, const char *sig) {   /* ch: 0 edit bar, 1 selection bar, 2 popup */
+    static char last[3][512];
+    if (!strcmp(sig, last[ch])) return;
+    snprintf(last[ch], sizeof last[ch], "%s", sig);
+    __android_log_print(ANDROID_LOG_INFO, "LumenBar", "%s", sig);
+}
+static void bar_geom_log(const char *kind, const int *act, int n, const float bar[4], const float *bend) {
+    char sig[512]; int k = snprintf(sig, sizeof sig, "bar %s y0=%.0f y1=%.0f x0=%.0f", kind, bar[1], bar[3], bar[0]);
+    for (int i = 0; i < n && k < (int)sizeof sig - 16; i++) k += snprintf(sig + k, sizeof sig - (size_t)k, " %d:%.0f", act[i], i < n - 1 ? bend[i] : bar[2]);
+    geom_log(*kind == 'e' ? 0 : 1, sig);
+}
 static int bar_index(const float bar[4], const float *bend, int n, float px, float py) {
     if (!n || px < bar[0] || px >= bar[2] || py < bar[1] || py >= bar[3]) return 0;
     int i = 0; while (i < n - 1 && px >= bend[i]) i++;
@@ -4159,6 +4171,7 @@ static void tsel_overlay(App *a, DisplayList *dl) {
     float cx = c[0].ok && c[1].ok && fabsf(c[0].y - c[1].y) < 1 ? (c[0].x + c[1].x) / 2 : top->x;
     bar_draw(a, dl, g_ts.bact, n, cx, top->y, bot->y + bot->h + 2 * r, g_ts.bar, g_ts.bend, g_ts.bar_hit);
     g_ts.nb = n;
+    bar_geom_log("sel", g_ts.bact, n, g_ts.bar, g_ts.bend);
 }
 /* Keyboard on second tap: after a touch tap was handled. A tap in the focused field while the
    keyboard is down places the caret (done by the click) and shows the Paste bubble; a second tap
@@ -4189,7 +4202,7 @@ static void kbm_overlay(App *a, DisplayList *dl) {
     g_kbm.nb = 0;
     Node *f = page_focus(a);
     if (!f) f = edit_focus(a);
-    if (!g_kbm.menu || !f || f != g_kbm.n || tsel_ui(a)) { g_kbm.menu = false; return; }
+    if (!g_kbm.menu || !f || f != g_kbm.n || tsel_ui(a)) { g_kbm.menu = false; geom_log(0, "bar edit hidden"); return; }
     bool any = true, secret = f->tag == A_input && node_attr(f, "type") && !strcasecmp(node_attr(f, "type"), "password");
     if (is_text_ctl(f)) { char *v = ctl_value(f); any = *v != 0; free(v); }
     int n = edit_bar_acts(g_kbm.act, any && !secret);
@@ -4197,6 +4210,7 @@ static void kbm_overlay(App *a, DisplayList *dl) {
     if (cy < -BAR_H || cy > vh + BAR_H) return;   /* scrolled away */
     bar_draw(a, dl, g_kbm.act, n, g_kbm.mx, cy - 24, cy + 24, g_kbm.bar, g_kbm.bend, g_kbm.hit);
     g_kbm.nb = n;
+    bar_geom_log("edit", g_kbm.act, n, g_kbm.bar, g_kbm.bend);
 }
 /* the bubble's button under window point x, y: 1-based, 0 for none */
 static int kbm_hit(App *a, float x, float y) {
@@ -4343,7 +4357,10 @@ static void pop_label(int act, char *out, size_t n) {
     if (strlen(g_clips[k].text) > j) snprintf(out + j, n - j, "...");
 }
 static void pop_overlay(App *a, DisplayList *dl) {
-    if (!g_epop.kind) return;
+    if (!g_epop.kind) { geom_log(2, "pop hidden"); return; }
+    { char sig[512]; int k = snprintf(sig, sizeof sig, "pop kind=%d x=%.0f y=%.0f w=%.0f rh=%d acts=", g_epop.kind, g_epop.x, g_epop.y, g_epop.w, POP_RH);
+      for (int i = 0; i < g_epop.n && k < (int)sizeof sig - 8; i++) k += snprintf(sig + k, sizeof sig - (size_t)k, "%s%d", i ? "," : "", g_epop.act[i]);
+      geom_log(2, sig); }
     if (!page_focus(a) && !edit_focus(a)) { g_epop.kind = 0; return; }
     Font *ft = a->ui; float h = (float)g_epop.n * POP_RH;
     push_rect(dl, g_epop.x - 1, g_epop.y, g_epop.w + 2, h + 2, 9, RGBA(0, 0, 0, 38));

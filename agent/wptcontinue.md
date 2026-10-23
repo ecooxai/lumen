@@ -104,6 +104,12 @@ Read `AGENTS.md` first. In short:
   bar_slots/snippets save/load + settings page; snip_defaults() at startup; JS lumenundo; compile (Android only
   code? check #ifdef __ANDROID__ around tsel block).
 
+## UI test automation (user: script UI tests; AI agents only when necessary)
+  main.c logs 'LumenBar' (logcat) on layout change: "bar edit|sel y0= y1= x0= ACT:xend ..." and "pop kind= x= y= w=
+  rh= acts=" in viewport CSS px (= page clientX/Y). tools/edit_bar_test.py WORKS (run: python3 tools/edit_bar_test.py --serial 2d4f6bc0 [--install] [--only ...]; port 8937; screen size from screencap PNG; run 1: 15/19, fails were stale-geometry dedup → geom_log per channel + 'hidden' lines, needs APK rebuild + rerun) + tests/device/editbar/ (LumenBar log in main.c needs APK rebuild) (Draft
+  page posting state to the script; calibration taps map screen px → client px; CPU/RSS sampled every 1 s).
+  Settings results (08:05 agent run): all PASS; snippets textarea too short (text overflows under Save button).
+
 ## Pass rate vs Chrome (subtests Chrome passes that Lumen also passes)
 
 | Area | before (19:55) | now | Area | before | now |
