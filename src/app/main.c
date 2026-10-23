@@ -2577,7 +2577,10 @@ static void page_touch_controls(App *a, float x, float y);
 static void kbd_tap(App *a, float x, float y);
 static bool tsel_touch(App *a, AndroidTouchPhase phase, const SDL_Event *ev, float x, float y);
 static void tsel_touch_reset(void);
+/* the keyboard id of the keys the edit bar sends (a held Backspace must not end its own touch) */
+#define BAR_KEY_ID 0x4c42u
 static bool android_touch_input(App *app, SDL_Event *event) {
+    if (event->type == SDL_EVENT_KEY_DOWN && event->key.which == BAR_KEY_ID) return false;
     switch (event->type) {
     case SDL_EVENT_MOUSE_MOTION: return event->motion.which == SDL_TOUCH_MOUSEID;
     case SDL_EVENT_MOUSE_BUTTON_DOWN: case SDL_EVENT_MOUSE_BUTTON_UP:
@@ -4203,7 +4206,7 @@ static int kbm_hit(App *a, float x, float y) {
 }
 /* bar keys go through the event queue, as the keyboard's do */
 static void key_push(SDL_Keycode k) {
-    SDL_Event e; SDL_zero(e); e.type = SDL_EVENT_KEY_DOWN; e.key.key = k; e.key.down = true; SDL_PushEvent(&e);
+    SDL_Event e; SDL_zero(e); e.type = SDL_EVENT_KEY_DOWN; e.key.key = k; e.key.down = true; e.key.which = BAR_KEY_ID; SDL_PushEvent(&e);
     e.type = SDL_EVENT_KEY_UP; e.key.down = false; SDL_PushEvent(&e);
 }
 static void text_push(const char *t) {
@@ -4226,7 +4229,10 @@ static void field_all(App *a, Node *f, Node *h) {
 static void field_word_delete(App *a, Node *f, Node *h) {
     Page *p = a->t->cur;
     if (f) ctl_delete(a, f, -1, true);
-    else if (h && p->js) { int m = js_key_mods; js_key_mods = 2; js_dispatch(p->js, h, "lumeneditdel", "KeyboardEvent", false, false, 0, 0, 0, "Backspace"); js_key_mods = m; }
+    else if (h && p->js) {   /* as a key, so editors that handle Ctrl+Backspace themselves (Draft.js) see it */
+        SDL_Event e; SDL_zero(e); e.type = SDL_EVENT_KEY_DOWN; e.key.key = SDLK_BACKSPACE; e.key.down = true; e.key.mod = SDL_KMOD_LCTRL; e.key.which = BAR_KEY_ID; SDL_PushEvent(&e);
+        e.type = SDL_EVENT_KEY_UP; e.key.down = false; SDL_PushEvent(&e);
+    }
     restyle(a); a->dirty = true;
 }
 static void pop_open(App *a, int kind, const float bar[4]);
@@ -5979,7 +5985,8 @@ int main(int argc, char **argv) {
         to = bar_hold_wait_ms(tsel_wait_ms(to));
 #ifdef __ANDROID__
         if (g_kbd_show_at) { double l = g_kbd_show_at - now_ms(); if (l < to) to = l > 0 ? (int)l + 1 : 0; }
-#endif  WTAG(14);
+#endif
+        WTAG(14);
 #endif
         double boot_wait = now_ms();
         bool boot_got = SDL_WaitEventTimeout(&ev, to);
