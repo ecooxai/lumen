@@ -115,6 +115,9 @@ Read `AGENTS.md` first. In short:
   Selection.toString() now renders block breaks + <br> as '\n' (06c-traversal.js, Chrome behaviour) → run 6
   (/tmp/devtest/ebt6.txt): 21/21 PASS, idle last-10-s 3.5%, RSS 278 MB. NEXT: rerun WPT /selection/ to check the
   toString change didn't regress; snippets textarea too short in Settings (newtab.html).
+  textarea rows/cols presentational hints (style.c presentational_hints: rows*1.15em, calc(cols*0.6em+14px)) — the
+  Settings snippets box had rows=6 but UA height 32px. Built host + ctest 104/104 (not in an APK yet).
+  WPT run 114: /selection/ --rerun (log /tmp/run114-wpt.log) to check Selection.toString change.
   TODO (WPT): Lumen innerText drops a trailing space under white-space:pre-wrap (Draft 'hello ' → 'hello'). + tests/device/editbar/ (LumenBar log in main.c needs APK rebuild) (Draft
   page posting state to the script; calibration taps map screen px → client px; CPU/RSS sampled every 1 s).
   Settings results (08:05 agent run): all PASS; snippets textarea too short (text overflows under Save button).

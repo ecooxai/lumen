@@ -2800,6 +2800,11 @@ static void presentational_hints(ComputedStyle *st, const ComputedStyle *par, No
         Node *t = el->parent; while (t && t->tag != A_table) t = t->parent;
         if (t && (v = node_attr_atom(t, A_cellpadding))) { char buf[32]; snprintf(buf, sizeof buf, "%spx", v); css_apply_decl(st, par, "padding", buf, e, el); }
     }
+    if (el->tag == A_textarea) {   /* rows and cols: lines of text and monospace characters (a scrollbar's room beside them) */
+        char buf[64]; int k;
+        if ((v = node_attr(el, "rows")) && (k = atoi(v)) > 0) { snprintf(buf, sizeof buf, "%.2fem", k * 1.15); css_apply_decl(st, par, "height", buf, e, el); }
+        if ((v = node_attr(el, "cols")) && (k = atoi(v)) > 0) { snprintf(buf, sizeof buf, "calc(%.2fem + 14px)", k * 0.6); css_apply_decl(st, par, "width", buf, e, el); }
+    }
     if (el->tag == A_img || el->tag == A_video) { /* aspect from attributes */ const char *w = node_attr_atom(el, A_width), *h = node_attr_atom(el, A_height); if (w && h && atof(h) > 0) st->aspect_ratio = (float)(atof(w) / atof(h)); }
 }
 
