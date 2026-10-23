@@ -702,7 +702,7 @@ async function createImageBitmap(src, a, b, c, d, e) {
     return o;
 }
 
-const canvasResized = cv => { if (cv.__ck === 'webgl' || cv.__ck === 'webgl2') cv.__cx._resize(cv.width, cv.height); };
+const canvasResized = cv => { if (cv.__ck === 'webgl' || cv.__ck === 'webgl2') cv.__cx._resize(cv.width, cv.height); else if (cv.__ck === '2d') cv.__cx._reset(cv.width, cv.height); };
 /* canvas.captureStream(fps): a video track over the context's live source, opened once the canvas has a WebGL or WebGPU context */
 function canvasStream(cv, fps) {
     const hub = {

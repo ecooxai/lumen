@@ -1200,6 +1200,143 @@ void js_run_inserted(JsCtx *c, Node *root) {
     frames_inserted(c, root);
 }
 
+/* ---- canvas 2D (paint/canvas2d.c) ---- */
+extern "C" {
+#include "../paint/canvas2d.h"
+#include "../text/font.h"
+}
+template <class T> static T *c2d_arr(v8::Local<v8::Value> v, size_t *n) {
+    const char *p; size_t b;
+    if (!v->IsArrayBufferView() || !bytes_of(v, &p, &b)) { *n = 0; return nullptr; }
+    *n = b / sizeof(T); return (T *)p;
+}
+static float *g_c2d_cov; static size_t g_c2d_ncov;
+static float *c2d_scratch(size_t n) {
+    if (n > g_c2d_ncov) { free(g_c2d_cov); g_c2d_cov = (float *)xmalloc(n * sizeof(float)); g_c2d_ncov = n; }
+    memset(g_c2d_cov, 0, n * sizeof(float));
+    return g_c2d_cov;
+}
+/* text shape [str, family, weight, italic, size, x, y, sx, sy]: glyph alpha into cov; returns rows touched */
+static bool c2d_text_cov(v8::Isolate *iso, v8::Local<v8::Context> ctx, v8::Local<v8::Array> sh, float *cov, int w, int h, int *y0, int *y1) {
+    auto G = [&](int i) { return sh->Get(ctx, i).ToLocalChecked(); };
+    std::string s = jcstr(iso, G(0)), fam = jcstr(iso, G(1));
+    double wt = G(2)->NumberValue(ctx).FromMaybe(400), size = G(4)->NumberValue(ctx).FromMaybe(10), x = G(5)->NumberValue(ctx).FromMaybe(0), y = G(6)->NumberValue(ctx).FromMaybe(0);
+    double sx = G(7)->NumberValue(ctx).FromMaybe(1), sy = G(8)->NumberValue(ctx).FromMaybe(1);
+    bool it = G(3)->BooleanValue(iso);
+    if (!(size > 0) || s.empty()) return false;
+    Font *f = font_get(fam.c_str(), (int)wt, it, (float)size);
+    if (!f) return false;
+    ShapedRun r = { 0 };
+    text_shape(f, s.c_str(), s.size(), 0, &r);
+    float sc = (float)LMAX(1e-3, sy);
+    int ymin = h, ymax = 0;
+    for (int i = 0; i < r.n; i++) {
+        const Glyph *gl = font_glyph(r.g[i].font ? r.g[i].font : f, r.g[i].gid, sc);
+        if (!gl || (!gl->alpha && !gl->rgba)) continue;
+        int gx = (int)lround(x + (r.g[i].x) * sx) + gl->left, gy = (int)lround(y + r.g[i].y * sy) - gl->top;
+        for (int yy = 0; yy < gl->h; yy++) {
+            int py = gy + yy; if (py < 0 || py >= h) continue;
+            for (int xx = 0; xx < gl->w; xx++) {
+                int px = gx + xx; if (px < 0 || px >= w) continue;
+                float a = gl->alpha ? gl->alpha[yy * gl->w + xx] / 255.f : (gl->rgba[yy * gl->w + xx] >> 24) / 255.f;
+                float &o = cov[(size_t)py * w + px]; o = LMIN(1.f, o + a);
+            }
+            ymin = LMIN(ymin, py); ymax = LMAX(ymax, py + 1);
+        }
+    }
+    shaped_free(&r);
+    if (ymax <= ymin) return false;
+    *y0 = ymin; *y1 = ymax; return true;
+}
+static bool c2d_shape_cov(v8::Isolate *iso, v8::Local<v8::Context> ctx, v8::Local<v8::Value> v, int w, int h, float **cov, int *y0, int *y1) {
+    if (v->IsFloat32Array()) {   /* a ready coverage mask (shadows) */
+        size_t n; float *m = c2d_arr<float>(v, &n);
+        if (n < (size_t)w * h) return false;
+        *cov = c2d_scratch((size_t)w * h); memcpy(*cov, m, (size_t)w * h * sizeof(float)); *y0 = 0; *y1 = h; return true;
+    }
+    if (!v->IsArray()) { *cov = nullptr; *y0 = 0; *y1 = h; return true; }
+    auto sh = v.As<v8::Array>();
+    float *c = c2d_scratch((size_t)w * h);
+    *cov = c;
+    auto first = sh->Get(ctx, 0).ToLocalChecked();
+    if (first->IsString()) return c2d_text_cov(iso, ctx, sh, c, w, h, y0, y1);
+    size_t nxy, nsub;
+    float *xy = c2d_arr<float>(first, &nxy);
+    int *sub = c2d_arr<int>(sh->Get(ctx, 1).ToLocalChecked(), &nsub);
+    if (!xy || !sub || !nsub) return false;
+    return c2d_cover(c, w, h, xy, sub, (int)nsub, (int)(nxy / 2), sh->Get(ctx, 2).ToLocalChecked()->BooleanValue(iso), y0, y1);
+}
+/* c2dFill(px, w, h, shape | null, alpha, op, clip | null, paint [kind, col, params(12), lut, img, iw, ih, flags]) */
+FN(c2dFill) {
+    CTX; size_t npx, nclip;
+    uint32_t *px = c2d_arr<uint32_t>(a[0], &npx);
+    int w = (int)NUM(1), h = (int)NUM(2);
+    if (!px || w <= 0 || h <= 0 || npx < (size_t)w * h || !a[7]->IsArray()) return;
+    float *clip = c2d_arr<float>(a[6], &nclip);
+    if (clip && nclip < (size_t)w * h) clip = nullptr;
+    float *cov; int y0 = 0, y1 = h;
+    int op = (int)NUM(5);
+    if (!c2d_shape_cov(iso, ctx, a[3], w, h, &cov, &y0, &y1)) { if (op != C2D_SRC_IN && op != C2D_SRC_OUT && op != C2D_DST_IN && op != C2D_DST_ATOP && op != C2D_COPY) return; y0 = y1 = 0; }
+    auto pa = a[7].As<v8::Array>();
+    auto P = [&](int i) { return pa->Get(ctx, i).ToLocalChecked(); };
+    C2DPaint p = { 0 }; size_t n;
+    p.kind = (int)P(0)->NumberValue(ctx).FromMaybe(0);
+    p.col = (uint32_t)P(1)->NumberValue(ctx).FromMaybe(0);
+    if (float *q = c2d_arr<float>(P(2), &n)) if (n >= 12) { memcpy(p.inv, q, 6 * sizeof(float)); memcpy(p.g, q + 6, 6 * sizeof(float)); }
+    p.lut = c2d_arr<uint32_t>(P(3), &n); if (p.lut && n < 1024) p.lut = nullptr;
+    p.img = c2d_arr<uint32_t>(P(4), &n);
+    p.iw = (int)P(5)->NumberValue(ctx).FromMaybe(0); p.ih = (int)P(6)->NumberValue(ctx).FromMaybe(0);
+    if (p.img && n < (size_t)p.iw * p.ih) p.img = nullptr;
+    int fl = (int)P(7)->NumberValue(ctx).FromMaybe(0);
+    p.rx = fl & 1; p.ry = fl & 2; p.smooth = fl & 4;
+    if ((p.kind == 1 || p.kind == 2 || p.kind == 3) && !p.lut) return;
+    if (cov && y1 <= y0) cov = c2d_scratch((size_t)w * h);
+    c2d_paint(px, w, h, cov, &p, (float)NUM(4), op, clip, y0, y1);
+}
+/* c2dClip(mask, w, h, shape): mask *= the shape's coverage */
+FN(c2dClip) {
+    CTX; size_t nm;
+    float *m = c2d_arr<float>(a[0], &nm);
+    int w = (int)NUM(1), h = (int)NUM(2);
+    if (!m || w <= 0 || h <= 0 || nm < (size_t)w * h) return;
+    float *cov; int y0 = 0, y1 = 0;
+    if (!c2d_shape_cov(iso, ctx, a[3], w, h, &cov, &y0, &y1)) { memset(m, 0, (size_t)w * h * sizeof(float)); return; }
+    for (size_t i = 0, e = (size_t)w * h; i < e; i++) m[i] *= cov[i];
+}
+/* c2dMeasure(str, family, weight, italic, size) -> [width, ascent, descent] */
+FN(c2dMeasure) {
+    CTX;
+    std::string s = jcstr(iso, a[0]), fam = jcstr(iso, a[1]);
+    Font *f = font_get(fam.c_str(), (int)NUM(2), BOOL(3), (float)NUM(4));
+    auto o = v8::Array::New(iso, 3);
+    double wd = f ? text_width(f, s.c_str(), s.size(), 0) : 0;
+    o->Set(ctx, 0, v8::Number::New(iso, wd)).Check();
+    o->Set(ctx, 1, v8::Number::New(iso, f ? f->ascent : NUM(4) * 0.8)).Check();
+    o->Set(ctx, 2, v8::Number::New(iso, f ? f->descent : NUM(4) * 0.2)).Check();
+    RET(o);
+}
+/* c2dSource(node) -> [w, h, ArrayBuffer of premultiplied ARGB] for an <img>, <video> or shown canvas */
+FN(c2dSource) {
+    CTX; Node *n = junwrap(a[0]); int w = 0, h = 0;
+    uint32_t *px = n ? c2d_node_pixels(n, &w, &h) : nullptr;
+    if (!px) { RET(v8::Null(iso)); return; }
+    auto o = v8::Array::New(iso, 3);
+    o->Set(ctx, 0, v8::Number::New(iso, w)).Check();
+    o->Set(ctx, 1, v8::Number::New(iso, h)).Check();
+    o->Set(ctx, 2, mkab(iso, px, (size_t)w * h * 4)).Check();
+    free(px);
+    RET(o);
+}
+/* c2dPresent(node, px, w, h): show the context's pixels for the canvas element */
+FN(c2dPresent) {
+    CTX; Node *n = junwrap(a[0]); size_t np;
+    uint32_t *px = c2d_arr<uint32_t>(a[1], &np);
+    int w = (int)NUM(2), h = (int)NUM(3);
+    if (!n) return;
+    if (!px || w <= 0 || h <= 0 || np < (size_t)w * h) c2d_forget(n); else c2d_present(n, px, w, h);
+    if (n->doc) n->doc->paint_version++;
+}
+
 #if defined(__ANDROID__) && !defined(NDEBUG)
 #include <mutex>
 /* Debug Android: while the jsprof diagnostic is armed, each native counts its calls and time
@@ -1236,6 +1373,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
 #define REG(nm) (void)N->Set(ctx, jstr(iso, #nm), NAT_FN(nm))
     REG(isNode); REG(version);
     REG(inert); REG(type); REG(name); REG(ns); REG(parent); REG(first); REG(last); REG(next); REG(prev); REG(index);
+    REG(c2dFill); REG(c2dClip); REG(c2dMeasure); REG(c2dSource); REG(c2dPresent);
     REG(text); REG(setText); REG(attr); REG(setAttr); REG(rmAttr); REG(attrs); REG(attrQ); REG(attrNS); REG(setAttrQ); REG(setAttrNS); REG(rmAttrQ); REG(rmAttrNS); REG(attrsNS); REG(insert); REG(remove); REG(newDoc); REG(newXmlDoc); REG(xname); REG(charset); REG(ctype); REG(csp); REG(evalGuard); REG(ttOn); REG(codeLike); REG(lazySrc); REG(parseXml); REG(parseDoc); REG(docReparse); REG(adopt); REG(pi); REG(cdata); REG(doctype); REG(ownerDoc);
     REG(create); REG(textNode); REG(comment); REG(frag); REG(html); REG(setHTML); REG(parseFrag); REG(query);
     REG(matches); REG(byId); REG(clone); REG(doc); REG(contains); REG(connected); REG(host); REG(setRealm); REG(realmOf); REG(attachShadow);

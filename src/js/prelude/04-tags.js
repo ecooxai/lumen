@@ -140,13 +140,14 @@ mk('HTMLCanvasElement', HTMLElement, ['canvas'], p => {
             t = String(t);
             const kind = t === 'experimental-webgl' ? 'webgl' : t;
             if (this.__ck) return this.__ck === kind ? this.__cx : null;
-            const x = kind === '2d' ? new CanvasRenderingContext2D(this) : kind === 'webgl' ? glCreate(this, 1, o) : kind === 'webgl2' ? glCreate(this, 2, o)
+            const x = kind === '2d' ? c2dCreate(this, o) : kind === 'webgl' ? glCreate(this, 1, o) : kind === 'webgl2' ? glCreate(this, 2, o)
                 : kind === 'webgpu' && gpuNavigator ? gpuCanvasContext(this) : null;
             if (x) { def(this, '__ck', kind); def(this, '__cx', x); }
             return x;
         },
         captureStream(fps) { return canvasStream(this, fps); },
-        toDataURL() { return 'data:,'; }, toBlob(cb) { setTimeout(() => cb(null)); },
+        toDataURL() { return canvasDataURL(this); },
+        toBlob(cb) { if (typeof cb !== 'function') throw new TypeError("Failed to execute 'toBlob' on 'HTMLCanvasElement': parameter 1 is not of type 'BlobCallback'."); const b = canvasBlob(this); setTimeout(() => cb(b)); },
     });
 });
 /* a control's autocomplete IDL value: its autofill tokens, normalised, or "" when they are not valid */

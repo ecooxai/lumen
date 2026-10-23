@@ -375,7 +375,54 @@ broke the whole page prelude: 33 ctest failures).
   TIMEOUTs too. Costs ~1 min per test variant; investigate the popup executor's polling after the
   subtest (popup opened from the iframe via window.open).
 - Built 10:1x (ctest 104/104): SVG DOM, editing whitespace (smoke: "a&nbsp; &nbsp;" correct), media pad.
-- Next: when run 115 ends, build, stage to /tmp/lumen-wpt/bin/lumen, run /web-animations/ /svg/ /url/
+  Committed 38ae850 (run 115 used the older staged binary, so it does not measure these changes).
+- Run 115 done (11:26, 15,187 tests /css/ + /html/; OK 13723, ERROR 497, TIMEOUT 961, CRASH 6).
+  /css/: 27.0% of Chrome-passing subtests, 1418/7361 tests fully passing, score 27.3% vs Chrome 95.6%.
+  /html/ (whole): 51.2%, 1849/8300, score 26.5% vs 95.5%. Reports: /tmp/report-html115.md + gaps, and
+  wpt-data/lumen/report.md + gaps.json for /css/.
+  Largest CSS gaps (missing Chrome-passing subtests): css-grid 12.9k, css-typed-om 12.5k, css-color 10.8k,
+  css-anchor-position 8.4k, css-values 7.4k, css-fonts 6.0k, css-shapes 5.7k, css-backgrounds 5.5k,
+  motion 4.8k, css-align 4.0k, css-gaps 3.8k, flexbox 3.7k, sizing 3.7k, text 3.4k, images 2.8k,
+  transforms 2.8k, transitions 2.5k, conditional 2.4k. Most are parse/computed-value tests
+  (getComputedStyle/CSSOM serialisation), so a shared property parse/serialise layer is the lever.
+  Run 115 subagent deep reports: /tmp/run115-report-{css,html,all}[-deep].txt. Whole dataset now 87.5%
+  of Chrome-passing subtests, 8097/24014 tests fully passing, score 39.6% vs 94.0%. Notable html
+  subareas: the-xhtml-syntax 0/25607 (13 tests), canvas 4.8% (2D context methods are JS no-ops in
+  07z-extra.js!), cross-origin-opener-policy 16.3%, browsers 22.7%. Two more video crashes:
+  video_loop_base.html (SIGSEGV), video-aspect-ratio.html.
+- Run 116 started (bg subagent 139dfabe + monitor a5a9dd60): /web-animations/ /svg/ /editing/whitespaces/
+  /url/ wide-gamut + fill-and-stroke canvas, video_loop_base, /css/selectors/invalidation/ with the
+  38ae850 build. Reports -> /tmp/run116-report-*.txt.
+- CANVAS 2D (in progress, unbuilt): the 2D context in 07z-extra.js is all no-ops. Design:
+  * src/paint/canvas2d.{h,c} (new): c2d_cover (polygon coverage via svg.c's `svg_acc_line`, newly
+    exported), c2d_paint (paint kinds: solid / linear / two-circle radial / conic via 1024-entry
+    premultiplied LUT / pattern with nearest or bilinear + repeat; all 26 composite ops; unbounded ops
+    (source-in/out, destination-in/atop, copy) touch the whole canvas; clip = float mask), and a
+    node -> Image table (c2d_present copies px, bumps content_version; old frames in a 32-slot ring).
+  * DONE (unbuilt) jsnative.cc bindings (block "canvas 2D" before the jsprof section, REG'd), main.c
+    node_img uses c2d_image_for, svg.c exports svg_acc_line. Text shape adds sx, sy (8th/9th items).
+    Bindings: c2dFill(px Uint32Array, w, h, shape, alpha, op, clip, paint) with
+    shape [xy Float32Array, sub Int32Array, eo] or text [str, family, weight, italic, size, x, y]
+    (font_get/text_shape/font_glyph alpha into coverage); c2dClip(mask, w, h, xy, sub, eo) (mask *= cov);
+    c2dMeasure(str, family, weight, italic, size) -> [width, ascent, descent]; c2dSource(node) ->
+    [w, h, ArrayBuffer premult ARGB] via paint_image_hook; c2dPresent(node, px, w, h) + repaint request.
+  * Colour: cssColor(text) (04e-color.js) -> { space, c: [0..1 x3], alpha, legacy } | { current: true } | null;
+    colorTo(col, 'srgb') -> [r, g, b] 0..1. Stubs to delete: 07z-extra.js lines ~105-148 (ImageData, Path2D,
+    noop, CanvasGradient, CanvasPattern, CanvasRenderingContext2D + the noop method loops); also fix
+    HTMLCanvasElement.toDataURL/toBlob in 04-tags.js:149 and canvasResized (07g-webgl.js:705) for 2D.
+  * DONE (unbuilt) JS: src/js/prelude/07y-canvas2d.js (ImageData with EnforceRange checks, PathData,
+    Path2D incl. SVG d, gradients/patterns, TextMetrics, CanvasRenderingContext2D +
+    OffscreenCanvasRenderingContext2D sharing C2D_METHODS, shadows via JS box blur + Float32Array
+    coverage shape, PNG encoder (stored deflate) for toDataURL/toBlob/convertToBlob, OffscreenCanvas).
+    Stubs removed from 07z-extra.js; 04-tags getContext uses c2dCreate; canvasResized resets 2D; exports
+    added in 08-window.js:633. Tainting not tracked (s.tainted never set). strokeText = filled text.
+  * (old plan) JS: state stack (styles, transform, clip mask copy, dash,
+    shadow fields), CSS colour parse via cssColor, path in device coords (flatten arcs/beziers/ellipse/
+    arcTo/roundRect), stroke outline in user space (joins, caps, dash) as positively-oriented polygons
+    filled nonzero, Path2D (incl. SVG path string), gradients -> LUT, patterns, drawImage (pattern fill
+    of the dest rect), get/putImageData (unpremultiply; buffer Uint32 ARGB, bytes B G R A), toDataURL,
+    present batched per microtask, canvasResized resets the bitmap and state.
+- Next: build, stage to /tmp/lumen-wpt/bin/lumen, run /web-animations/ /svg/ /url/
   with a monitor; fix regressions; commit.
 
 ## Next steps

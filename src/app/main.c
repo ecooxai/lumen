@@ -32,6 +32,7 @@
 #include "page_zoom.h"
 #include "../base/platform.h"
 #include "../paint/paint.h"
+#include "../paint/canvas2d.h"
 #include "../media/media.h"
 #include "../net/net.h"
 #include "../base/url.h"
@@ -316,7 +317,7 @@ static const char *node_src_url(Node *n, const char *s) {
 static Image *node_img(Node *n) {
     if (n->tag == A_iframe) { Page *fp = frame_find(n); return fp && fp->cv.px ? &fp->img : NULL; }
     if (n->tag == A_video) { Image *f = media_frame_for(n); if (f) return f; }
-    if (n->tag == A_canvas) return media_frame_for(n);   /* WebGL/WebGPU canvases push frames to a live player */
+    if (n->tag == A_canvas) { Image *c = c2d_image_for(n); return c ? c : media_frame_for(n); }   /* 2D canvases present here; WebGL/WebGPU push frames to a live player */
     const char *s = node_attr(n, n->tag == A_video ? "poster" : "src"); if (!s) return NULL;
     const char *u = node_src_url(n, s); return u ? cache_get(u) : NULL;
 }

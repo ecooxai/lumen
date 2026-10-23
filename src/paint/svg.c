@@ -161,6 +161,8 @@ static void acc_line(Ctx *c, float x0, float y0, float x1, float y1) {
     }
 }
 
+void svg_acc_line(float *acc, int w, int h, float x0, float y0, float x1, float y1) { Ctx c = { .acc = acc, .w = w, .h = h }; acc_line(&c, x0, y0, x1, y1); }
+
 static void comp(Ctx *c, const Src *sr, float op, bool eo) {
     int W = c->w + 2;
     if (op > 0 && (sr->kind || COLOR_A(sr->col)))
