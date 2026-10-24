@@ -215,6 +215,19 @@ class CSSImportRule extends CSSRule {
 }
 class CSSNamespaceRule extends CSSRule { get type() { return 10; } get namespaceURI() { return this._ns; } get prefix() { return this._prefix; } get cssText() { return `@namespace ${this._prefix ? this._prefix + ' ' : ''}url("${this._ns}");`; } }
 class CSSFontFaceRule extends CSSRule { get type() { return 5; } get style() { return ruleStyle(this); } get cssText() { return `@font-face ${blockText(this)}`; } }
+/* @position-try: only insets, margins, sizes, self-alignment, position-anchor and position-area */
+const PT_ALLOWED = /^(top|right|bottom|left|inset(-block|-inline)?(-start|-end)?|margin(-top|-right|-bottom|-left|-block|-inline)?(-start|-end)?|(min-|max-)?(width|height|block-size|inline-size)|align-self|justify-self|place-self|position-anchor|position-area)$/;
+class CSSPositionTryDescriptors extends CSSRuleStyle {
+    constructor(rule, text) { super(rule, text); for (const k of [...this._map.keys()]) if (!PT_ALLOWED.test(k)) this._map.delete(k); }
+    set cssText(v) { const m = parseDecls(String(v)); for (const k of [...m.keys()]) if (!PT_ALLOWED.test(k)) m.delete(k); this._w(m); }
+    get cssText() { return super.cssText; }
+    setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p); if (PT_ALLOWED.test(p)) super.setProperty(p, v, pri); }
+}
+class CSSPositionTryRule extends CSSRule {
+    get type() { return 0; } get name() { return this._name; }
+    get style() { return this._style || (this._style = new Proxy(new CSSPositionTryDescriptors(this, this._body), styleHandler)); }
+    get cssText() { const d = this.style.cssText; return `@position-try ${this._name} ${d ? `{ ${d} }` : '{ }'}`; }
+}
 class CSSPageRule extends CSSRule { get type() { return 6; } get selectorText() { return this._sel; } set selectorText(v) { this._sel = String(v); this._changed(); } get style() { return ruleStyle(this); } get cssText() { return `@page ${this._sel ? this._sel + ' ' : ''}${blockText(this)}`; } }
 class CSSKeyframeRule extends CSSRule { get type() { return 8; } get keyText() { return this._key; } set keyText(v) { this._key = String(v); this._changed(); } get style() { return ruleStyle(this); } get cssText() { return `${this._key} ${blockText(this)}`; } }
 class CSSKeyframesRule extends CSSRule {
@@ -252,6 +265,7 @@ function cssMkRule(it, sheet, parent) {
     }
     else if (kw === 'namespace' && !blk) { const q = /^(?:([-\w]+)\s+)?(?:url\(\s*["']?([^"')]*)["']?\s*\)|"([^"]*)"|'([^']*)')$/.exec(rest); if (!q) return null; return cssMk(CSSNamespaceRule, { ...base, _prefix: q[1] || '', _ns: q[2] ?? q[3] ?? q[4] }); }
     else if (kw === 'font-face' && blk) return cssMk(CSSFontFaceRule, { ...base, _body: it.body, _style: null });
+    else if (kw === 'position-try' && blk && /^--\S+$/.test(rest)) return cssMk(CSSPositionTryRule, { ...base, _name: rest, _body: it.body, _style: null });
     else if (kw === 'page' && blk) return cssMk(CSSPageRule, { ...base, _sel: rest, _body: it.body, _style: null });
     else if ((kw === 'keyframes' || kw === '-webkit-keyframes') && blk && rest) { r = cssMk(CSSKeyframesRule, { ...base, _name: rest, _list: null }); const l = new CSSRuleList(); for (const k of cssSplit(it.body)) { const kr = cssMkKeyframe(k, sheet, r); if (kr) l.push(kr); } r._list = l; return r; }
     else return null;
