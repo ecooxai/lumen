@@ -883,3 +883,5 @@ broke the whole page prelude: 33 ctest failures).
   Lead: tests that tamper Map.prototype/Set.prototype break prelude (m.get in dispatch invoke, memo.get in N.urlParse, perfObservers iterable) -> prelude should capture Map/Set methods. Display work in progress: native canonical display text (display_text field).
   UNBUILT: style.c display_canon/display_blockify + ComputedStyle.display_text (css.h). smoke /tmp/disp.html
   committed a140646 display canon (smoke ok, staged).
+  UNBUILT: src/js/shared/safecoll.js SMap/SSet (captured methods) in page (01-events marker) + worker (worker.cc include) + CMake outputs; all 'new Map(' / 'new Set(' in prelude+shared -> SMap/SSet (32 files). smoke /tmp/tamper.html
+- RUN 164 (display canon): css-display +56; 2 regressions: math on non-MathML must compute to inline/block -> UNBUILT fix in computed_of.
