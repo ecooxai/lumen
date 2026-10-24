@@ -60,6 +60,7 @@ typedef struct GridTrack { Length size; float fr; Length min; } GridTrack;
 typedef struct ComputedStyle {
     int refs;
     uint8_t display, position, float_, clear, overflow_x, overflow_y, visibility, box_sizing;
+    const char *display_text;   /* atom: canonical display when it is not one of the Display keywords (e.g. "inline list-item") */
     uint8_t text_align, white_space, text_transform, text_decoration, font_style, list_style, cursor, pointer_events;
     uint8_t flex_direction, flex_wrap, justify_content, align_items, align_self, align_content, justify_items, justify_self;
     uint8_t vertical_align, bg_repeat, bg_size_kind, object_fit, text_overflow, word_break, overflow_wrap, direction;

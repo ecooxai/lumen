@@ -22,6 +22,7 @@ void css_set_anim_style(Node *n, const char *css) {
     n->anim_decls = css && *css ? css_parse_decls(css, strlen(css)) : NULL;
     if (n->doc) doc_mark_style_dirty(n->doc, n);
 }
+static const char *display_canon(const char *val);
 ComputedStyle *style_new_default(void) {
     ComputedStyle *s = xcalloc(1, sizeof *s); g_styles_live++;
     s->refs = 1; s->anim_iter = 1;
@@ -1012,7 +1013,7 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         else if (!strcmp(P, "font-family")) st->font_family = src->font_family;
         else if (!strcmp(P, "line-height")) { st->line_height = src->line_height; st->line_height_normal = src->line_height_normal; st->line_height_factor = src->line_height_factor; }
         else if (!strcmp(P, "background-color") || !strcmp(P, "background")) { st->bg_color = src->bg_color; if (!strcmp(P, "background")) { free(st->bg_image); st->bg_image = NULL; free(st->bg_gradient); st->bg_gradient = NULL; } }
-        else if (!strcmp(P, "display")) st->display = src->display;
+        else if (!strcmp(P, "display")) { st->display = src->display; st->display_text = src->display_text; }
         else if (!strcmp(P, "text-align")) st->text_align = src->text_align;
         else if (!strcmp(P, "width")) st->width = src->width;
         else if (!strcmp(P, "height")) st->height = src->height;
@@ -1120,8 +1121,15 @@ apply:
     case 'd':
         if (!strcmp(P, "display")) {
             static const char *const ds[] = { "none", "inline", "block", "inline-block", "flex", "inline-flex", "grid", "inline-grid", "list-item", "table", "inline-table", "table-row", "table-cell", "table-row-group", "table-header-group", "table-footer-group", "table-column", "table-column-group", "table-caption", "contents", "flow-root", NULL };
-            k = kw(val, ds);
+            k = kw(val, ds); const char *dt = NULL;
+            st->display_text = NULL;
             if (k >= 0) st->display = (uint8_t)k;
+            else if ((dt = display_canon(val))) {
+                st->display_text = dt;
+                k = kw(dt, ds);
+                st->display = k >= 0 ? (uint8_t)k : strstr(dt, "list-item") ? D_LIST_ITEM : str_starts(dt, "block") || str_starts(dt, "run-in") ? D_BLOCK : D_INLINE;
+                if (k >= 0) st->display_text = NULL;
+            }
             else if (str_ieq(val, "-webkit-box") || str_ieq(val, "-webkit-flex") || str_ieq(val, "-ms-flexbox")) st->display = D_FLEX;
             else if (str_ieq(val, "-webkit-inline-box") || str_ieq(val, "-webkit-inline-flex")) st->display = D_INLINE_FLEX;
             else if (str_ieq(val, "block flow") || str_ieq(val, "block flow-root")) st->display = D_BLOCK;
@@ -4044,6 +4052,45 @@ void css_transition_scan(Node *n, const ComputedStyle *o, const ComputedStyle *s
     tr_scan_gen(n, o, s, o->gen_i, &seen, cb); tr_scan_gen(n, o, s, s->gen_i, &seen, cb);
     hm_free(&seen, NULL);
 }
+/* Canonical form of a multi-keyword (or rare single-keyword) display value; NULL if invalid or not handled. */
+static const char *display_canon(const char *val) {
+    char buf[96]; size_t n = strlen(val); if (n >= sizeof buf) return NULL;
+    for (size_t i = 0; i <= n; i++) buf[i] = (char)lc(val[i]);
+    static const char *const single[] = { "flow", "run-in", "ruby", "ruby-base", "ruby-text", "math", "grid-lanes", "inline-grid-lanes", NULL };
+    if (!strchr(buf, ' ')) { for (const char *const *q = single; *q; q++) if (!strcmp(*q, buf)) return !strcmp(buf, "flow") ? atom("block") : atom(buf); return NULL; }
+    const char *outer = NULL, *inner = NULL; bool li = false;
+    for (char *t = strtok(buf, " \t\n"); t; t = strtok(NULL, " \t\n")) {
+        if (!strcmp(t, "block") || !strcmp(t, "inline") || !strcmp(t, "run-in")) { if (outer) return NULL; outer = t; }
+        else if (!strcmp(t, "flow") || !strcmp(t, "flow-root") || !strcmp(t, "table") || !strcmp(t, "flex") || !strcmp(t, "grid") || !strcmp(t, "ruby") || !strcmp(t, "math") || !strcmp(t, "grid-lanes")) { if (inner) return NULL; inner = t; }
+        else if (!strcmp(t, "list-item")) { if (li) return NULL; li = true; }
+        else return NULL;
+    }
+    char out[64];
+    if (li) {
+        if (inner && strcmp(inner, "flow") && strcmp(inner, "flow-root")) return NULL;
+        snprintf(out, sizeof out, "%s%s%slist-item", outer && strcmp(outer, "block") ? outer : "", outer && strcmp(outer, "block") ? " " : "", inner && !strcmp(inner, "flow-root") ? "flow-root " : "");
+        return atom(out);
+    }
+    if (!inner) inner = "flow";
+    if (!outer) outer = !strcmp(inner, "ruby") ? "inline" : "block";
+    if (!strcmp(outer, "block")) snprintf(out, sizeof out, "%s%s", !strcmp(inner, "ruby") || !strcmp(inner, "math") ? "block " : "", !strcmp(inner, "flow") ? "block" : inner);
+    else if (!strcmp(outer, "inline") && (!strcmp(inner, "flow") || !strcmp(inner, "flow-root") || !strcmp(inner, "ruby") || !strcmp(inner, "math"))) snprintf(out, sizeof out, "%s", !strcmp(inner, "flow") ? "inline" : !strcmp(inner, "flow-root") ? "inline-block" : inner);
+    else if (!strcmp(outer, "inline")) snprintf(out, sizeof out, "inline-%s", inner);
+    else snprintf(out, sizeof out, "run-in%s%s", strcmp(inner, "flow") ? " " : "", strcmp(inner, "flow") ? inner : "");
+    return atom(out);
+}
+/* Blockified display (CSS Display 3 §2.7) for absolutely positioned and floated boxes. */
+static const char *display_blockify(const char *d) {
+    static const char *const to_block[] = { "inline", "inline-block", "run-in", "ruby-base", "ruby-text", "table-row-group", "table-column", "table-column-group",
+        "table-header-group", "table-footer-group", "table-row", "table-cell", "table-caption", NULL };
+    for (const char *const *q = to_block; *q; q++) if (!strcmp(*q, d)) return "block";
+    if (!strncmp(d, "inline-", 7)) return d + 7;
+    if (!strncmp(d, "inline ", 7)) return d + 7;
+    if (!strncmp(d, "run-in ", 7)) return d + 7;
+    if (!strcmp(d, "ruby")) return "block ruby";
+    if (!strcmp(d, "math")) return "block math";
+    return d;
+}
 static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
     SB b; sb_init(&b);
     if (s && (!strncmp(prop, "transition-", 11) || !strncmp(prop, "animation-", 10))) {
@@ -4055,7 +4102,7 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
     static const char *const ps[] = { "static", "relative", "absolute", "fixed", "sticky" };
     static const char *const bs[] = { "none", "hidden", "solid", "dashed", "dotted", "double", "groove", "ridge", "inset", "outset" };
     if (prop[0] == '-' && prop[1] == '-') { const char *v = custom_get(s->custom, prop); if (!v) v = css_property_initial(prop); if (v) sb_puts(&b, v); }
-    else if (!strcmp(prop, "display")) sb_puts(&b, ds[s->display]);
+    else if (!strcmp(prop, "display")) { const char *d = s->display_text ? s->display_text : ds[s->display]; sb_puts(&b, (s->position == 2 || s->position == 3 || s->float_) && s->display != D_NONE ? display_blockify(d) : d); }
     else if (!strncmp(prop, "animation-", 10) || !strncmp(prop, "transition-", 11) || !strncmp(prop, "-webkit-animation-", 18) || !strncmp(prop, "-webkit-transition-", 19)) {
         const char *q = strncmp(prop, "-webkit-", 8) ? prop : prop + 8;
         if (!strcmp(q, "animation-name")) sb_puts(&b, s->anim_name ? s->anim_name : "none");
