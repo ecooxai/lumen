@@ -18,13 +18,22 @@ const serDecls = (m) => [...m].map(([k, [v, i]]) => k + ': ' + v + (i ? ' !impor
 /* a longhand only set through a shorthand in this declaration block: its share of the shorthand's value */
 const SHORTHAND_OF = { 'align-items': 'place-items', 'justify-items': 'place-items', 'align-self': 'place-self', 'justify-self': 'place-self', 'align-content': 'place-content', 'justify-content': 'place-content',
     'row-gap': 'gap', 'column-gap': 'gap', 'overflow-x': 'overflow', 'overflow-y': 'overflow', 'top': 'inset', 'right': 'inset', 'bottom': 'inset', 'left': 'inset',
-    'margin-top': 'margin', 'margin-right': 'margin', 'margin-bottom': 'margin', 'margin-left': 'margin', 'padding-top': 'padding', 'padding-right': 'padding', 'padding-bottom': 'padding', 'padding-left': 'padding' };
+    'margin-top': 'margin', 'margin-right': 'margin', 'margin-bottom': 'margin', 'margin-left': 'margin', 'padding-top': 'padding', 'padding-right': 'padding', 'padding-bottom': 'padding', 'padding-left': 'padding',
+    'animation-range-start': 'animation-range', 'animation-range-end': 'animation-range' };
+/* one animation-range item: start [end]; an omitted end takes the start's range name at 100%, else normal */
+function animRangePart(v, end) {
+    const t = tomSplitTop(v, ' ').filter(Boolean), isName = w => /^[a-z][\w-]*$/i.test(w) && w !== 'normal';
+    const take = () => { if (!t.length) return null; const w = t.shift(); return isName(w) && t.length && !isName(t[0]) && t[0] !== 'normal' ? w + ' ' + t.shift() : w; };
+    const a = take(), b = take() ?? (isName(a.split(' ')[0]) ? a.split(' ')[0] : 'normal');
+    return end ? b.replace(/ 100%$/, '') : a.replace(/ 0%$/, '');
+}
 function shorthandPart(m, p) {
     const sh = SHORTHAND_OF[p], e = sh && m.get(sh);
     if (!e) return '';
     const v = e[0].trim();
     if (/var\(/i.test(v)) return '';
     if (/^(inherit|initial|unset|revert|revert-layer)$/i.test(v)) return v;
+    if (sh === 'animation-range') return tomSplitTop(v, ',').map(x => animRangePart(x.trim(), p.endsWith('-end'))).join(', ');
     const t = tomSplitTop(v, ' ').filter(Boolean);
     if (sh.startsWith('place-')) {
         const first = p.startsWith('align-');
@@ -107,6 +116,7 @@ function specNormalize(p, v) {
     if (/\b(sin|cos|tan|asin|acos|atan|atan2|sqrt|exp|pow|log)\(/i.test(t)) t = specFoldMath(t);
     if (p !== 'line-height' && typeof TOM_LENGTH_PROPS !== 'undefined' && TOM_LENGTH_PROPS.test(p)) t = t.split(' ').map(w => w === '0' || w === '-0' ? '0px' : w).join(' ');
     if (/^(align|justify|place)-(content|items|self)$/.test(p)) t = t.replace(/\bfirst baseline\b/g, 'baseline');
+    if (/\banchor(-size)?\(/i.test(t)) t = t.replace(/\b(anchor-size|anchor)\(\s*([^\s,()-][^\s,()]*)\s+(--[\w-]+)/gi, '$1($3 $2');   /* the name comes first */
     if (SPEC_PAIR.has(p) || SPEC_BOX.has(p)) {
         const w = tomSplitTop(t, ' ').map(x => x.trim()).filter(Boolean);
         if (SPEC_PAIR.has(p) && w.length === 2 && w[0] === w[1] && !/^(first|last|safe|unsafe|legacy)$/.test(w[0])) t = w[0];
