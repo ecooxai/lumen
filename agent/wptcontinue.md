@@ -819,3 +819,4 @@ broke the whole page prelude: 33 ctest failures).
   passes auto/top-level commas/repeat()); typed-om shorthands+touch-action accept 0px (fixed: shorthand numeric reject);
   flexbox <img> items 0px (image-as-flexitem-size-002v/005) UNINVESTIGATED; -webkit-sans-serif generic (css-fonts) TODO;
   smooth-scroll timeouts likely load-related. Unbuilt as of this note.
+- run-139 regression fixes are in commit 8098fa6 ('wip' message; built+smoked OK, /tmp/rr.html). NEXT: flexbox img 0px (image-as-flexitem-size-002v), -webkit-sans-serif generic, color-mix computed, CSSPositionTryRule, gap 'calc() calc()' pair canonical (SPEC_PAIR skips words with '(').
