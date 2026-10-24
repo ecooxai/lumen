@@ -122,9 +122,10 @@ function specNormalize(p, v) {
 const SPEC_COLOR_PROPS = new Set(['color', 'background-color', 'border-top-color', 'border-right-color', 'border-bottom-color', 'border-left-color', 'border-block-start-color', 'border-block-end-color',
     'border-inline-start-color', 'border-inline-end-color', 'outline-color', 'caret-color', 'column-rule-color', 'text-decoration-color', 'text-emphasis-color', 'flood-color', 'lighting-color', 'stop-color', '-webkit-text-fill-color', '-webkit-text-stroke-color']);
 const specAlpha = a => { const b = Math.round(a * 255); for (const d of [2, 3]) { const t = +a.toFixed(d); if (Math.round(t * 255) === b) return String(t); } return String(+a.toFixed(6)); };
-function specColor(v) {
+function specColor(v, p) {
     const t = v.replace(/\/\*[\s\S]*?\*\//g, '').trim(), low = t.toLowerCase();
-    if (low === 'auto' || /,|repeat\(/.test(low.replace(/\([^()]*\)/g, m => /^\(\s*(in|from)\b/.test(m) ? '' : m.replace(/,/g, ' ')))) return t;
+    if (low === 'auto' && /^(caret|accent)-color$/.test(p)) return t;
+    if (/rule-color$/.test(p || '')) { let f = low, g; while ((g = f.replace(/[a-z-]*\([^()]*\)/g, 'x')) !== f) f = g; if (/,|\brepeat\b|^x$/.test(f) && /,|repeat\(/.test(low)) return t; }
     if (/^(inherit|initial|unset|revert|revert-layer)$/.test(low) || /var\(|env\(|attr\(/i.test(t)) return v;
     /* forms cssColor does not model are kept as written unless plainly empty */
     if (/\bfrom\b|calc\(|color-mix\(|color-layers\(|alpha\(|contrast-color\(|light-dark\(|device-cmyk\(|sibling-(index|count)\(|display-p3-linear/.test(low)) return /\(\s*\)/.test(low) ? null : v;
@@ -150,7 +151,7 @@ class CSSStyleDeclaration {
     item(i) { return [...this._m().keys()][i] || ''; }
     getPropertyValue(p) { p = camelToKebab(String(p)); const m = this._m(), e = m.get(p); return e ? e[0] : shorthandPart(m, p); }
     getPropertyPriority(p) { const e = this._m().get(camelToKebab(String(p))); return e ? e[1] : ''; }
-    setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p); if (v != null && v !== '' && SPEC_COLOR_PROPS.has(p)) { v = specColor(String(v)); if (v === null) return; } if (v != null && v !== '' && !p.startsWith('--')) v = specNormalize(p, String(v)); const m = new Map(this._m()); if (v == null || v === '') m.delete(p); else m.set(p, [String(v), pri ? 'important' : '']); this._el.setAttribute('style', serDecls(m)); }
+    setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p); if (v != null && v !== '' && SPEC_COLOR_PROPS.has(p)) { v = specColor(String(v), p); if (v === null) return; } if (v != null && v !== '' && !p.startsWith('--')) v = specNormalize(p, String(v)); const m = new Map(this._m()); if (v == null || v === '') m.delete(p); else m.set(p, [String(v), pri ? 'important' : '']); this._el.setAttribute('style', serDecls(m)); }
     removeProperty(p) { p = camelToKebab(String(p)); const m = new Map(this._m()); const e = m.get(p); if (e) { m.delete(p); this._el.setAttribute('style', serDecls(m)); } return e ? e[0] : ''; }
 }
 const styleHandler = {

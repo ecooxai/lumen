@@ -378,7 +378,7 @@ const CSS = {
         const lp = p.toLowerCase();
         if (!CSS_PROP_NAMES.has(lp)) return false;
         if (/^\s*(inherit|initial|unset|revert|revert-layer)\s*$/i.test(v)) return true;
-        if (SPEC_COLOR_PROPS.has(lp) && !/var\(|env\(|attr\(/i.test(v)) return specColor(v) !== null;
+        if (SPEC_COLOR_PROPS.has(lp) && !/var\(|env\(|attr\(/i.test(v)) return specColor(v, lp) !== null;
         return N.cssSupports(`(${lp}: initial)`) ? N.cssSupports(`(${lp}: ${v})`) : !!v.trim() && tomValidText(lp, v);
     },
     registerProperty(d) { registerProperty(d); },
