@@ -20,6 +20,15 @@ let [liveRanges, liveIters] = (() => {
     Object.defineProperty(G, LIVE_KEY, { value: sets, writable: true, configurable: true });
     return sets;
 })();
+/* <img>: the src whose load failed (complete is true for a broken image) */
+const imgFailed = new WeakMap();
+function imgSrcChanged(el) {
+    if (!el.isConnected) N.imgWatch(el);   /* new Image(): still loads */
+    if (!imgFailed.has(el)) el.addEventListener('error', () => imgFailed.set(el, el.getAttribute('src')));
+    imgFailed.set(el, null);
+    const s = el.getAttribute('src');
+    if (s && s.trim()) { try { new URL(s, document.baseURI); } catch (e) { setTimeout(() => { if (el.getAttribute('src') === s) { imgFailed.set(el, s); el.dispatchEvent(new Event('error')); } }, 0); } }
+}
 function linkLiveSets() {
     const sets = topLiveSets();
     if (!sets || sets[0] === liveRanges) return;
@@ -594,7 +603,7 @@ function attrDetach(el, ns, ln, v) {
 function attrChange(el, ns, pfx, ln, v) {
     const old = N.attrNS(el, ns, ln);
     N.setAttrNS(el, ns, pfx, ln, v);   /* by namespace: a namespaced attribute with the same qualified name stays */
-    if (ln === 'src' && !ns && el instanceof H.HTMLImageElement && !el.isConnected) N.imgWatch(el);   /* new Image(): still loads */
+    if (ln === 'src' && !ns && el instanceof H.HTMLImageElement) imgSrcChanged(el);
     notify('attributes', el, { attributeName: ln, attributeNamespace: ns, oldValue: old });
     ceAttr(el, ln, old, v, ns);
 }

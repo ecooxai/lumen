@@ -28,6 +28,9 @@ bool jsg_media(void *media, const char *q);
 bool jsg_supports(const char *cond);
 char *css_selector_text(const char *src);
 bool jsg_img_size(Node *n, float *w, float *h);
+/* host hook: the fetch of an <img>'s current src has finished (loaded or failed) */
+extern bool (*jsg_img_done_hook)(Node *n);
+bool jsg_img_done(Node *n);
 /* PNG, JPEG, WebP or GIF (first frame) bytes to malloc'd straight-alpha RGBA rows; any thread */
 uint8_t *jsg_decode_rgba(const uint8_t *d, size_t n, int *w, int *h);
 bool jsg_classic_script(Node *s);

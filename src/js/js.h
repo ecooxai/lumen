@@ -83,6 +83,10 @@ void js_release_pins(void);   /* end of a host event batch: unpin js_dispatch ta
 void js_set_ready_state(JsCtx *c, int state);
 /* the window load event (readyState complete), or later once the document's iframes have loaded */
 void js_fire_load(JsCtx *c);
+/* host hook: true while the page's own subresources (images) still delay its load event */
+extern bool (*js_load_blocked)(JsCtx *c);
+/* fire a load event deferred by js_load_blocked or by frames, once nothing delays it any more */
+void js_load_recheck(JsCtx *c);
 /* ms until the next timer / animation frame is due; <0 if none */
 double js_next_deadline(JsCtx *c);
 /* run due timers, animation frames and microtasks */

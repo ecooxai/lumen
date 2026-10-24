@@ -80,6 +80,7 @@ typedef struct Page {
     bool sheets_pending; /* a fetched stylesheet was added: next restyle recomputes everything once */
     SheetRef *sref; int nsref;
     HMap img_fired; bool img_check, internal_ui;
+    double load_t0;   /* when its load event first became due (images delay it up to 10 s) */
     /* <iframe> child browsing context (document owned by the JS layer) */
     Node *frame_el; float fw, fh, fsy; Canvas cv; Image img; DisplayList fdl;
     uint64_t drawn_ver, drawn_paint_ver; int drawn_epoch; bool frelayout; struct Page *fnext;
@@ -490,8 +491,10 @@ static int loader(void *arg) {
     return 0;
 }
 
+static Page *g_loading_page;   /* the page whose load event may still be waiting for its images */
 static void page_free(Page *p) {
     if (!p) return;
+    if (g_loading_page == p) g_loading_page = NULL;
     js_free(p->js);
     hm_free(&p->img_fired, NULL);
     free(p->sref);
@@ -2799,7 +2802,10 @@ static void img_done(NetRequest *rq, NetResponse *r, void *ud) {
     SDL_UnlockMutex(icache_mu);
     if (getenv("LUMEN_DEBUG_IMG")) fprintf(stderr, "lumen: img done status=%d len=%zu decoded=%d slot=%d %.80s\n", r ? r->status : -1, r && r->body ? r->body_len : 0, slot && slot->im ? 1 : 0, slot ? 1 : 0, l->u);
     if (im) image_unref(im);
-    if (g_app->t->cur && g_app->t->cur->gen == l->gen) { g_app->t->cur->img_check = true; g_app->t->relayout = g_app->dirty = true; }
+    if (g_app->t->cur && g_app->t->cur->gen == l->gen) {
+        g_app->t->cur->img_check = true; g_app->t->relayout = g_app->dirty = true;
+    }
+    if (g_loading_page && g_loading_page != g_app->t->cur && g_loading_page->js) js_load_recheck(g_loading_page->js);
     else if (!l->gen) { g_app->dirty = true; g_app->vonly = false; }
     free(l->u); free(l);
 }
@@ -2850,6 +2856,29 @@ static bool vis_doc(Node *n, void *ud) {
 }
 /* Start async loads for <img> sources and CSS background images that appeared after the initial load. */
 /* Walks the whole tree, so it runs only after image-relevant changes. */
+static bool img_fetch_done(Node *n) {
+    const char *src = node_attr(n, "src"); if (!src || !*src || !n->doc) return false;
+    char *u = url_join(doc_base(n->doc), src); if (!u) return false;
+    SDL_LockMutex(icache_mu); ImgSlot *s = hm_get(&icache, u); bool d = s && s->done; SDL_UnlockMutex(icache_mu);
+    free(u); return d;
+}
+/* the current page's load event waits for its images (capped at 10 s) */
+static bool h_load_blocked(JsCtx *c) {
+    Page *p = g_loading_page;
+    if (!p || p->js != c || !p->d || now_ms() - p->load_t0 >= 10000) return false;
+    bool busy = false;
+    SDL_LockMutex(icache_mu);
+    for (Node *n = p->d->node.first; n && !busy; n = node_next_in_tree(n, &p->d->node)) {
+        if (n->type != NODE_ELEMENT || n->ns != NS_HTML || n->tag != A_img || !node_attr(n, "src") || !*node_attr(n, "src")) continue;
+        const char *lz = node_attr(n, "loading"); if (lz && !strcasecmp(lz, "lazy")) continue;
+        char *u = url_join(doc_base(p->d), node_attr(n, "src"));
+        ImgSlot *slot = u ? hm_get(&icache, u) : NULL;
+        busy = slot && !slot->done;
+        free(u);
+    }
+    SDL_UnlockMutex(icache_mu);
+    return busy;
+}
 static bool sync_images(Page *p) {
     if (p->res_seen && p->seen_res == p->d->resource_version) return false;
     p->res_seen = true; p->seen_res = p->d->resource_version;
@@ -2907,6 +2936,7 @@ static void fire_img_events(Page *p) {
     p->d->ndimg = keep;
     for (int i = 0; i < ne; i++) { js_dispatch(p->js, ev[i], ok[i] ? "load" : "error", "Event", false, false, 0, 0, 0, NULL); node_release(ev[i]); }
     free(ev); free(ok);
+    if (g_loading_page == p && p->js) js_load_recheck(p->js);   /* after the images' own load events */
 }
 /* Reconcile engine sheets with <style>/<link rel=stylesheet> currently in the tree; seed only records them. */
 static bool sync_sheets(Page *p, bool seed) {
@@ -3406,7 +3436,8 @@ static void page_start_js(App *a, Page *p) {
     LOAD_TRACE("dcl_ms=%.0f", now_ms() - t_dcl);
     for (int i = 0; i < nlinks; i++) { if (links[i]->flags & NF_CONNECTED) js_dispatch(p->js, links[i], lok[i] ? "load" : "error", "Event", false, false, 0, 0, 0, NULL); node_release(links[i]); }
     free(links); free(lok);
-    js_fire_load(p->js);   /* now, or once the page's iframes have loaded */
+    p->load_t0 = now_ms(); g_loading_page = p; sync_images(p);   /* parser-inserted images delay the load event */
+    js_fire_load(p->js);   /* now, or once the page's iframes and images have loaded */
     fprintf(stderr, "lumen: ran %d scripts in %.0fms\n", p->nscripts, now_ms() - t0);
 #if defined(__ANDROID__) && !defined(NDEBUG)
     __android_log_print(ANDROID_LOG_INFO, "LumenLoad", "scripts=%d run_ms=%.0f", p->nscripts, now_ms() - t0);   /* timing only, no URLs */
@@ -5777,9 +5808,10 @@ int main(int argc, char **argv) {
 #ifdef __ANDROID__
     android_launch_set_wakeup(wake);
 #endif
+    js_load_blocked = h_load_blocked;
     net_wakeup = wake; media_wakeup = wake; js_wakeup = wake; js_clip_set = h_clip_set; js_clip_get = h_clip_get; js_clip_image = h_clip_image; js_global_init(argv[0]);
     boot_mark("v8");
-    paint_image_hook = node_img; paint_url_image_hook = url_img; svg_ext_ref_hook = svg_ext_ref; layout_image_size_hook = img_size;
+    paint_image_hook = node_img; paint_url_image_hook = url_img; svg_ext_ref_hook = svg_ext_ref; layout_image_size_hook = img_size; jsg_img_done_hook = img_fetch_done;
     App a; memset(&a, 0, sizeof a); g_app = &a; a.nws = 1; a.wsicon[0] = WORKSPACE_DEFAULT_ICON; snprintf(a.wsname[0], sizeof a.wsname[0], "Personal"); a.side = sidebar_width(getenv("LUMEN_NO_SIDEBAR") ? 0 : SIDEW); tab_new(&a);
     bool want_gpu = !getenv("LUMEN_NO_GPU");
 #ifdef __ANDROID__

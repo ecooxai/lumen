@@ -156,7 +156,9 @@ static void frame_run_scripts(JsCtx *k, Document *d) {
 
 /* An iframe still fetching its document, or whose document still waits for its own frames, delays its
    parent's load event. A frame removed meanwhile no longer does. */
+bool (*js_load_blocked)(JsCtx *c) = nullptr;
 static bool frames_loading(JsCtx *c) {
+    if (js_load_blocked && js_load_blocked(c)) return true;
     for (FrameLoad *l : g_loads) if (l->p == c) for (JsCtx *k : c->kids) if (!k->dead && k->id == l->kid && k->frame_el == l->f) return true;
     for (JsCtx *k : c->kids) if (!k->dead && k->load_deferred) return true;
     return false;
@@ -175,6 +177,7 @@ void js_fire_load(JsCtx *c) {
     frames_load_check(p);
 }
 void frames_load_check(JsCtx *c) { if (c && !c->dead && c->load_deferred && !frames_loading(c)) js_fire_load(c); }
+void js_load_recheck(JsCtx *c) { frames_load_check(c); }
 
 /* a response's Content-Type, "" when it has none (frame_create then sniffs its encoding) */
 static const char *frame_ctype(NetResponse *r) { const char *t = headers_get(&r->headers, "content-type"); return t ? t : ""; }
