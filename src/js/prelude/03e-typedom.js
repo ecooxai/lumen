@@ -106,6 +106,7 @@ function tomTypedOk(p, v) {
     if (!TOM_LENGTH_PROPS.test(p) && !TOM_ANGLE_PROPS.test(p) && !TOM_TIME_PROPS.test(p) && !TOM_FLEX_PROPS.test(p) && !TOM_NUMERIC_OK.test(p)) return false;
     if (/^grid-(row|column)-(start|end)$/.test(p)) return !k.length;
     if (p === 'border-image-width') return k.every(x => x === 'length' || x === 'percent');
+    if (/^(-webkit-)?text-size-adjust$/.test(p)) return k.length === 1 && k[0] === 'percent';
     if (p !== 'line-height' && TOM_LENGTH_PROPS.test(p) && !k.length) return false;
     if (k.includes('percent') && /^(border(-[a-z]+)*-width|outline-width|outline-offset|scroll-margin(-.*)?|column-width|perspective)$/.test(p)) return false;
     const t = v.type();

@@ -28,8 +28,11 @@ const erULong = v => erLong(v, 0, 4294967295);
 const fin = (...a) => a.every(Number.isFinite);
 const toDouble = (v, what) => { const x = Number(v); if (!Number.isFinite(x)) throw new TypeError(`The provided ${what || 'value'} is non-finite.`); return x; };
 
+/* ImageData state lives in a WeakMap (not private fields) so a structured-clone revival can fill it in */
+const idState = new WeakMap();
+const idSet = (o, w, h, d, cs) => { idState.set(o, { w, h, d, cs }); if (cs && FILEN.cloneRec) FILEN.cloneRec(o, [d, w, h, cs]); };
+const idGet = o => { const r = idState.get(o); if (!r) throw new TypeError('Illegal invocation'); return r; };
 class ImageData {
-    #w; #h; #d; #cs;
     constructor(a, b, c, d) {
         if (arguments.length < 2) throw new TypeError(`Failed to construct 'ImageData': 2 arguments required, but only ${arguments.length} present.`);
         let settings;
@@ -40,23 +43,24 @@ class ImageData {
             if (n % (4 * sw)) throw c2dIndex('The input data length is not a multiple of (4 * width).');
             const h = n / (4 * sw);
             if (c !== undefined && erULong(c) !== h) throw c2dIndex('The input data length is not equal to (4 * width * height).');
-            this.#w = sw; this.#h = h; this.#d = a; settings = d;
+            idSet(this, sw, h, a); settings = d;
         } else {
             const sw = erULong(a), sh = erULong(b);
             if (!sw || !sh) throw c2dIndex(`The source ${sw ? 'height' : 'width'} is zero.`);
             if (sw * sh * 4 > 2 ** 31) throw new RangeError('Out of memory at ImageData creation');
-            this.#w = sw; this.#h = sh; this.#d = new Uint8ClampedArray(sw * sh * 4); settings = c;
+            idSet(this, sw, sh, new Uint8ClampedArray(sw * sh * 4)); settings = c;
         }
         const cs = settings != null && settings.colorSpace !== undefined ? String(settings.colorSpace) : 'srgb';
         if (!C2D_SPACES.includes(cs)) throw new TypeError(`The provided value '${cs}' is not a valid enum value of type PredefinedColorSpace.`);
-        this.#cs = cs;
+        const st = idGet(this); idSet(this, st.w, st.h, st.d, cs);
     }
-    get width() { return this.#w; }
-    get height() { return this.#h; }
-    get data() { return this.#d; }
-    get colorSpace() { return this.#cs; }
+    get width() { return idGet(this).w; }
+    get height() { return idGet(this).h; }
+    get data() { return idGet(this).d; }
+    get colorSpace() { return idGet(this).cs; }
     get pixelFormat() { return 'rgba-unorm8'; }
 }
+if (FILEN.cloneHost) FILEN.cloneHost(ImageData.prototype, (o, r) => idSet(o, r[1], r[2], r[0], r[3]), 4);
 
 /* ---- paths: subpaths of [x, y, ...] points; curves are flattened as they are added, in the coordinate
    space of the matrix m (device space for the context's path, user space for Path2D) ---- */
