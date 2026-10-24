@@ -878,3 +878,4 @@ broke the whole page prelude: 33 ctest failures).
   UNBUILT: is_ident_arg accepts backslash escapes; highlight = '*' or ident. smoke /tmp/hl.html expect HL:vvvvvXXXXXX
   committed deeb900 highlight args (smoke HL:vvvvvXXXXXX ok, staged; monitor 162 clean). NEXT: rerun css-highlight-api to confirm; then other canonical leads (calc nesting fold, clamp literal, opacity calc, text-decoration-line order, grid-area auto, display flow list-item).
   NEXT STEP: add display/grid-area/text-decoration-line canonicalisation near line 117 of src/js/prelude/03-element.js (specified-value normaliser, where bare 0 -> 0px for TOM_LENGTH_PROPS).
+  UNBUILT: specNormalize display two-keyword canonical (flow list-item->list-item, block flow->block, inline flex->inline-flex...), text-decoration-line order, grid-area/row/column all-auto -> auto. smoke /tmp/dn.html. Then rerun css-display css-text-decor css-grid/parsing css-highlight-api (run 163).
