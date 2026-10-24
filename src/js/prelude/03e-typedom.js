@@ -17,7 +17,7 @@ const TOM_UNITS = {
     dpi: ['resolution', 1 / 96], dpcm: ['resolution', 2.54 / 96], dppx: ['resolution', 1], x: ['resolution', 1], fr: ['flex', 1],
 };
 const TOM_BASE = ['length', 'angle', 'time', 'frequency', 'resolution', 'flex', 'percent'];
-const tomUnit = u => { u = String(u).toLowerCase(); if (u === '%') u = 'percent'; if (!Object.prototype.hasOwnProperty.call(TOM_UNITS, u)) throw new TypeError(`Invalid unit: ${u}`); return u === 'q' ? 'Q' : u === 'hz' ? 'Hz' : u === 'khz' ? 'kHz' : u; };
+const tomUnit = u => { u = String(u).toLowerCase(); if (u === '%') u = 'percent'; if (!Object.prototype.hasOwnProperty.call(TOM_UNITS, u)) throw new TypeError(`Invalid unit: ${u}`); return u === 'q' ? 'q' : u === 'hz' ? 'Hz' : u === 'khz' ? 'kHz' : u; };
 const tomCat = u => TOM_UNITS[u.toLowerCase()][0];
 const tomNum = (v, what = 'value') => { v = Number(v); if (!Number.isFinite(v) && !Number.isNaN(v) && Math.abs(v) !== Infinity) throw new TypeError(`Invalid ${what}`); return v; };
 /* a numeric type: { length: 1, ... , percentHint } */
@@ -40,7 +40,7 @@ const tomAddType = (a, b) => {
     return null;
 };
 const tomMulType = (a, b) => { const r = {}; for (const k of new Set([...tomKeys(a), ...tomKeys(b)])) { const e = (a[k] || 0) + (b[k] || 0); if (e) r[k] = e; } return r; };
-const tomRect = v => { if (v instanceof CSSNumericValue) return v; if (typeof v === 'number') return new CSSUnitValue(v, 'number'); if (typeof v === 'string') { const r = CSSNumericValue.parse(v); return r; } throw new TypeError('Not a numeric value'); };
+const tomRect = v => { if (v instanceof CSSNumericValue) return v; if (typeof v === 'number') return new CSSUnitValue(v, 'number'); if (typeof v === 'string' || typeof v === 'boolean') { const n = Number(v); if (Number.isFinite(n)) return new CSSUnitValue(n, 'number'); } throw new TypeError('Not a numeric value'); };   /* WebIDL (double or CSSNumericValue) */
 const tomMath = (k, vals) => { const o = Object.create(({ sum: CSSMathSum, product: CSSMathProduct, min: CSSMathMin, max: CSSMathMax })[k].prototype); tomInit(o, { k, vals }); tomTypeOf(o); return o; };
 const tomConv = (v, unit) => {   /* value of unit value v in unit, or null */
     const d = tomData(v); if (d.k !== 'unit') return null;
@@ -529,6 +529,7 @@ function tomTypedOk(p, v) {
     if (/^(font-synthesis(-.*)?|white-space-collapse|text-wrap(-mode|-style)?|container-name|(backdrop-)?filter|font-style|offset-path|text-spacing-trim|text-box-trim|font-variant(-.*)?|anchor-name|position-anchor|view-transition-name|timeline-scope)$/.test(p)) return false;
     const k = tomKeys(tomTypeOf(v));
     if (/^grid-(row|column)-(start|end)$/.test(p)) return !k.length;
+    if (p === 'border-image-width') return true;
     if (p !== 'line-height' && TOM_LENGTH_PROPS.test(p) && !k.length) return false;
     if (k.includes('percent') && /^(border(-[a-z]+)*-width|outline-width|outline-offset|scroll-margin(-.*)?|column-width|perspective)$/.test(p)) return false;
     const t = v.type();
