@@ -757,3 +757,4 @@ broke the whole page prelude: 33 ctest failures).
   NEXT TODO: transitions must NOT start for disconnected / display:none / non-rendered elements and zero-duration
   (+ delay) must not start; transitionend for margin-bottom % (properties-value-002); keyframe selectors
   'entry 10%' (timeline ranges) in CSSKeyframeRule; specified-colour + place-* + insets commits not yet tested.
+  (unbuilt) zero-duration+delay transitions start; trCancelUnrendered in waTick/trPoll cancels transitions/CSS animations of removed or display:none elements

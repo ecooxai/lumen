@@ -431,6 +431,7 @@ function waTick(t) {
     waFrameTime = t; waInFrame = true;
     try {
         for (const a of [...waAll]) a._tick();
+        trCancelUnrendered();
         waDirty = true; waFlush(); waRemoveReplaced();
         /* animations that no longer run or fill drop out until they are played or seeked again */
         for (const a of waAll) { const st = a.playState; if (a._replace === 'removed' || st === 'idle' || (st === 'finished' && a._finished.done && !a._task && (!a._effect || waCompute(a._effect).activeTime === null))) waAll.delete(a); }
@@ -753,7 +754,7 @@ function trStart(el, packed) {
     const duration = Math.max(0, trTime(at('transition-duration', '0s'))), delay = trTime(at('transition-delay', '0s'));
     const running = trRunning.get(el), old = running && running.get(prop);
     if (old) { running.delete(prop); old.cancel(); }
-    if (duration + delay <= 0 || duration <= 0) return;
+    if (duration + delay <= 0 || !el.isConnected) return;
     const discrete = prop !== 'transform' && prop !== 'visibility' && waMix(prop, from, to, 0.5) === null;
     if (discrete && at('transition-behavior', 'normal') !== 'allow-discrete') return;
     const key = prop === 'float' ? 'cssFloat' : prop.replace(/^-webkit-/, 'webkit-').replace(/-([a-z])/g, (m, c) => c.toUpperCase());
@@ -773,6 +774,12 @@ function trStart(el, packed) {
     if (!trRunning.has(el)) trRunning.set(el, new Map());
     trRunning.get(el).set(prop, a);
     a.play();
+}
+/* transitions and CSS animations of removed or display:none elements are cancelled */
+function trCancelUnrendered() {
+    const gone = el => !el.isConnected || N.computed(el, 'display') === 'none';
+    for (const [el, m] of [...trRunning]) if (gone(el)) for (const a of [...m.values()]) a.cancel();
+    for (const [el, l] of [...caRunning]) if (gone(el)) { caRunning.delete(el); for (const a of l) a.cancel(); }
 }
 function trPoll() {
     const l = N.trTake();
