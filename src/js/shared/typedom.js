@@ -431,6 +431,8 @@ function tomParseTransform(text) {
 /* CSS colour values: channels are percents/numbers (hue: angles); a bare JS number means a fraction (hue: degrees) */
 const tomColErr = () => new DOMException('Invalid color channel', 'SyntaxError');
 function tomCh(v, kind) {
+    if (kind === 'hwbhue' && !(v instanceof CSSNumericValue)) throw new TypeError("The provided value is not of type 'CSSNumericValue'.");
+    if (kind === 'hwbhue') kind = 'hue';
     if (v === undefined) { if (kind === 'alpha') return new CSSUnitValue(100, 'percent'); throw tomColErr(); }
     if (typeof v === 'number') return kind === 'hue' ? new CSSUnitValue(v, 'deg') : new CSSUnitValue(v * 100, 'percent');
     if (!(v instanceof CSSNumericValue)) throw tomColErr();
@@ -462,15 +464,16 @@ class CSSColorValue extends CSSStyleValue {
     }
 }
 const tomColorClass = (name, fn, names) => {
+    const kindOf = n => n === 'alpha' ? 'alpha' : n === 'h' ? (fn === 'hwb' ? 'hwbhue' : 'hue') : 'ch';
     const C = class extends CSSColorValue {
         constructor(...a) {
             super(TOM); if (a.length < 3) throw new TypeError(`3 arguments required`);
-            const d = {}; names.forEach((n, i) => { d[n] = tomCh(a[i], n === 'alpha' ? 'alpha' : n === 'h' ? 'hue' : 'ch'); }); tomInit(this, d);
+            const d = {}; names.forEach((n, i) => { d[n] = tomCh(a[i], kindOf(n)); }); tomInit(this, d);
         }
         toString() { const d = tomData(this), a = d.alpha; return `${fn}(${names.slice(0, 3).map(n => d[n].toString()).join(' ')}${a instanceof CSSUnitValue && a.unit === 'percent' && a.value === 100 ? '' : ' / ' + a}`.replace(/$/, ')'); }
     };
     Object.defineProperty(C, 'name', { value: name });
-    for (const n of names) Object.defineProperty(C.prototype, n, { get() { return tomData(this)[n]; }, set(v) { tomData(this)[n] = tomCh(v, n === 'alpha' ? 'alpha' : n === 'h' ? 'hue' : 'ch'); }, enumerable: true, configurable: true });
+    for (const n of names) Object.defineProperty(C.prototype, n, { get() { return tomData(this)[n]; }, set(v) { tomData(this)[n] = tomCh(v, kindOf(n)); }, enumerable: true, configurable: true });
     return C;
 };
 const CSSRGB = tomColorClass('CSSRGB', 'rgb', ['r', 'g', 'b', 'alpha']), CSSHSL = tomColorClass('CSSHSL', 'hsl', ['h', 's', 'l', 'alpha']), CSSHWB = tomColorClass('CSSHWB', 'hwb', ['h', 'w', 'b', 'alpha']);
