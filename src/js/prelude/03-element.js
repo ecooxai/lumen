@@ -144,6 +144,8 @@ function specColor(v, p) {
     if (c.current) return 'currentcolor';
     if (/\bnone\b/.test(low)) return t;
     if (/^[a-z]+$/.test(low)) return low;
+    if (/^color\(/.test(low) && c.space) return `color(${c.space === 'xyz' ? 'xyz-d65' : c.space} ${c.c.map(colorNum).join(' ')}${c.alpha < 1 ? ' / ' + colorNum(c.alpha) : ''})`;
+    if (/^(ok)?lch\(/.test(low)) return t.replace(/([\d.])deg\b/gi, '$1');
     if (!c.legacy && !/^(#|rgba?\(|hsla?\(|hwb\()/.test(low)) return v;
     const [r, g, b] = (c.legacy ? c.c : colorTo(c, 'srgb')).map(x => Math.round(Math.min(1, Math.max(0, x)) * 255));
     return c.alpha >= 1 ? `rgb(${r}, ${g}, ${b})` : `rgba(${r}, ${g}, ${b}, ${specAlpha(c.alpha)})`;
