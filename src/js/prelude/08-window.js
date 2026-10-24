@@ -491,6 +491,7 @@ function structuredClone(v, options) {
         if (N.isWasmModule(item)) throw new DOMException('WebAssembly.Module is not transferable.', 'DataCloneError');
     return cloneValue(v, new SMap());
 }
+const PLATFORM_PROTOS = new WeakSet();   /* prototypes of the WebIDL interfaces; filled when the globals are shaped */
 function cloneValue(v, seen) {
     if (v === null || typeof v !== 'object') { if (typeof v === 'function' || typeof v === 'symbol') throw new DOMException('could not be cloned.', 'DataCloneError'); return v; }
     if (seen.has(v)) return seen.get(v);
@@ -519,6 +520,8 @@ function cloneValue(v, seen) {
     if (v instanceof Blob || tag === 'Blob' || tag === 'File') { const b = v instanceof File ? new File([v], v.name, { type: v.type, lastModified: v.lastModified }) : new Blob([v], { type: v.type }); seen.set(v, b); return b; } if (N.isNode(v) || v instanceof URL || v instanceof URLSearchParams) throw new DOMException(`${tag} object could not be cloned.`, 'DataCloneError');
     if (tag === 'Map') { const m = new OMap(), set = SMap.prototype.set; seen.set(v, m); for (const [k, x] of SMap.prototype.entries.call(v)) set.call(m, cloneValue(k, seen), cloneValue(x, seen)); return m; }
     if (tag === 'Set') { const s = new OSet(), add = SSet.prototype.add; seen.set(v, s); for (const x of SSet.prototype.values.call(v)) add.call(s, cloneValue(x, seen)); return s; }
+    if (tag === 'DOMException') { const e = new DOMException(v.message, v.name); seen.set(v, e); return e; }
+    for (let p = Object.getPrototypeOf(v); p; p = Object.getPrototypeOf(p)) if (PLATFORM_PROTOS.has(p)) throw new DOMException(`${tag} object could not be cloned.`, 'DataCloneError');
     const o = Array.isArray(v) ? [] : {}; seen.set(v, o); for (const k of Object.keys(v)) o[k] = cloneValue(v[k], seen); return o;
 }
 const xferPorts = (o, t) => { const tr = o && typeof o === 'object' ? o.transfer : t; return (tr && typeof tr[Symbol.iterator] === 'function' ? [...tr] : []).filter(p => p && typeof p.postMessage === 'function' && typeof p.start === 'function'); };
@@ -1052,6 +1055,7 @@ function fireAnim(t, type, name, elapsed, anim) {
         if (PRE_GLOBALS.has(name) || !/^[A-Z]/.test(name)) continue;
         const d = Object.getOwnPropertyDescriptor(G, name), C = d && d.value;
         if (typeof C !== 'function' || !C.prototype || typeof C.prototype !== 'object') continue;
+        PLATFORM_PROTOS.add(C.prototype);
         shape(C.prototype, PROTO_SKIP);
         shape(C, STATIC_SKIP);
     }
