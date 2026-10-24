@@ -319,14 +319,15 @@ function sheetFor(el) { if (!el.__sheet) { const s = new CSSStyleSheet(); def(s,
 const registeredProps = new Map();
 const RP_TYPES = new Set(['length', 'number', 'percentage', 'length-percentage', 'color', 'image', 'url', 'integer', 'angle', 'time', 'resolution', 'transform-function', 'custom-ident', 'transform-list', 'string']);
 const RP_NUM = '[+-]?(?:\\d+\\.?\\d*|\\.\\d+)(?:e[+-]?\\d+)?';
+const RP_MATH = /^(calc|min|max|clamp|abs|sign|round|mod|rem|hypot)\(.*\)$/i;
 const rpRe = (u) => new RegExp('^' + RP_NUM + u + '$', 'i');
 const RP_CHECK = {
-    length: v => v === '0' || rpRe('(px|cm|mm|in|pt|pc|q)').test(v) || /^calc\(/i.test(v) && !/(em|ex|ch|rem|vw|vh|vmin|vmax|lh|%|var\()/i.test(v),
+    length: v => v === '0' || rpRe('(px|cm|mm|in|pt|pc|q)').test(v) || RP_MATH.test(v) && !/\d(em|ex|ch|rem|vw|vh|vmin|vmax|lh|%)|var\(/i.test(v.replace(/sign\([^()]*\)/gi, '0')),
     number: v => rpRe('').test(v), integer: v => /^[+-]?\d+$/.test(v), percentage: v => rpRe('%').test(v),
-    'length-percentage': v => RP_CHECK.length(v) || RP_CHECK.percentage(v) || /^calc\(/i.test(v) && !/(em|ex|ch|rem|vw|vh|vmin|vmax|lh|var\()/i.test(v),
-    color: v => !!cssColor(v) && !/^currentcolor$/i.test(v), angle: v => v === '0' || rpRe('(deg|rad|grad|turn)').test(v), time: v => rpRe('(s|ms)').test(v),
+    'length-percentage': v => RP_CHECK.length(v) || RP_CHECK.percentage(v) || RP_MATH.test(v) && !/\d(em|ex|ch|rem|vw|vh|vmin|vmax|lh)|var\(/i.test(v),
+    color: v => !/^currentcolor$/i.test(v) && (!!cssColor(v) || /^(color-mix|contrast-color|light-dark|[a-z]+)\(.*\)$/i.test(v) && /\(\s*\S/.test(v)), angle: v => v === '0' || rpRe('(deg|rad|grad|turn)').test(v), time: v => rpRe('(s|ms)').test(v),
     resolution: v => rpRe('(dpi|dpcm|dppx|x)').test(v), url: v => /^url\(.*\)$/i.test(v), image: v => /^(url|(repeating-)?(linear|radial|conic)-gradient)\(.*\)$/i.test(v),
-    'transform-function': v => /^[a-z0-9-]+\(.*\)$/i.test(v) && !/(em|%)/i.test(v), 'transform-list': v => v.split(/\)\s*/).filter(Boolean).every(f => RP_CHECK['transform-function'](f + ')')),
+    'transform-function': v => /^[a-z0-9-]+\(.*\)$/i.test(v) && !/\d(em|ex|ch|rem|vw|vh|lh)\b/i.test(v), 'transform-list': v => v.split(/\)\s*/).filter(Boolean).every(f => RP_CHECK['transform-function'](f + ')')),
     'custom-ident': v => /^-?[_a-z][\w-]*$/i.test(v) && !/^(inherit|initial|unset|revert|revert-layer|default)$/i.test(v), string: v => /^(["']).*\1$/.test(v),
 };
 function rpParseSyntax(syn) {
@@ -345,12 +346,12 @@ function rpParseSyntax(syn) {
     return out;
 }
 function rpMatches(comps, v) {
-    v = v.trim();
+    v = v.replace(/\/\*[\s\S]*?\*\//g, ' ').trim();
     if (/var\(|env\(|attr\(/i.test(v)) return false;
     return comps.some(c => {
         const one = x => c.ident ? x === c.ident : RP_CHECK[c.type](x);
         if (!c.mult) return one(v);
-        const items = c.mult === '#' ? tomSplitTop(v, ',').map(x => x.trim()) : v.split(/\s+/);
+        const items = (c.mult === '#' ? tomSplitTop(v, ',') : tomSplitTop(v, ' ')).map(x => x.trim()).filter(x => x || c.mult === '#');
         return items.length > 0 && items.every(x => x && one(x));
     });
 }

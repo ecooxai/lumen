@@ -778,3 +778,10 @@ broke the whole page prelude: 33 ctest failures).
   Proper validator for color-mix/relative colours still TODO. css-sizing min-content narrower on floats/abspos (23) TODO.
 - committed colour validation; RUN 135 (css-color, css-properties-values-api, css-typed-om, cssom, css-position, css-align) started
   N.computed now syncs layout for box-dependent props (computed_needs_layout in jsnative.cc); unbuilt
+- committed computed layout sync (22ff1ae); waiting run 135 (cd7773d3 / mon 2b9a12de)
+  specNormalize (03-element.js): number canonicalisation + minimal pair/box shorthands; smoke /tmp/sn.html; unbuilt
+- RUN 135 (color/pva/typed-om/cssom/position/align): flat 16677 -> 16668/36930. pva 18.6 -> 28.1%, css-color 50.2 -> 51.7%.
+  Regressions fixed (unbuilt): TOM_NO_NUMERIC in tomText (SVG props now known accepted lengths); registerProperty
+  comments/sign()/math/% in transform/<color>+ top-level split/color functions; specColor comments, none kept raw,
+  display-p3-linear + sibling-index passthrough. TODO: @property invalid initial must not register (parse.c 793).
+  Insets still 20px for abs/fixed even with layout sync -> investigate (maybe box missing / cb loop wrong).

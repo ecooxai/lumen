@@ -496,14 +496,15 @@ const tomNames = m => {
     if (d.computed) { const names = [...CSS_PROP_NAMES].filter(n => tomRead(m, n)).sort(), cust = []; return names.concat(cust); }
     const out = []; for (let i = 0; i < decl.length; i++) out.push(decl.item(i)); return out;
 };
+/* properties whose grammar has no <number>/<length>/<percentage>/<angle>/<time> */
+const TOM_NO_NUMERIC = /^(color|background-color|.*-color|fill-rule|clip-rule|d|paint-order|shape-rendering|color-interpolation(-filters)?|color-rendering|text-rendering|image-rendering|stroke-linecap|stroke-linejoin|text-anchor|marker(-start|-mid|-end)?|vector-effect|mix-blend-mode|isolation|display|position|float|clear|visibility|direction|unicode-bidi|writing-mode|text-orientation|table-layout|caption-side|empty-cells|border-collapse|box-sizing|resize|pointer-events|user-select|backface-visibility|transform-style|transform-box|mask-type|dominant-baseline|alignment-baseline|white-space|word-break|overflow-wrap|word-wrap|hyphens|text-transform|font-kerning|font-variant-caps|break-(before|after|inside)|appearance|forced-color-adjust|print-color-adjust|content-visibility|container-type|scroll-behavior|overscroll-behavior(-[xy]|-block|-inline)?|overflow(-[xy]|-block|-inline)?|list-style-position|object-fit|ruby-position|text-decoration-style|text-decoration-line|border(-[a-z]+)*-style|outline-style|column-fill|column-span)$/;
 const tomText = (p, vals) => {
     if (!tomKnown(p)) throw new TypeError(`Invalid property name: ${p}`);
     if (!vals.length) throw new TypeError('At least one value required');
     if (vals.length > 1 && !TOM_LIST_PROPS.test(p)) throw new TypeError(`Property '${p}' does not take multiple values`);
     const parts = vals.map(v => {
-        if (v instanceof CSSStyleValue) {
-            if (v instanceof CSSUnparsedValue || !(p.startsWith('--')) || true) return v.toString();
-        }
+        if (v instanceof CSSNumericValue && TOM_NO_NUMERIC.test(p)) throw new TypeError(`Property '${p}' does not accept ${v}`);
+        if (v instanceof CSSStyleValue) return v.toString();
         if (v instanceof CSSStyleValue) return v.toString();
         const s = String(v);
         if (!p.startsWith('--') && !CSS.supports(p, s)) throw new TypeError(`Invalid value '${s}' for '${p}'`);

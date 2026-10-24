@@ -40,19 +40,43 @@ function shorthandPart(m, p) {
     const idx = [[0, 0, 0, 0], [0, 1, 0, 1], [0, 1, 2, 1], [0, 1, 2, 3]][t.length - 1][side];
     return t[idx];
 }
+/* specified-value canonicalisation: numbers as CSS serializes them, shortest 2- and 4-value shorthand forms */
+const SPEC_PAIR = new Set(['gap', 'grid-gap', 'place-items', 'place-self', 'place-content', 'overflow', 'overscroll-behavior', 'border-spacing', 'scroll-snap-align', 'contain-intrinsic-size', 'margin-block', 'margin-inline', 'padding-block', 'padding-inline', 'inset-block', 'inset-inline', 'scroll-margin-block', 'scroll-margin-inline', 'scroll-padding-block', 'scroll-padding-inline', 'border-block-width', 'border-inline-width', 'border-block-style', 'border-inline-style', 'border-block-color', 'border-inline-color']);
+const SPEC_BOX = new Set(['margin', 'padding', 'inset', 'border-width', 'border-style', 'border-color', 'scroll-margin', 'scroll-padding', 'border-image-outset', 'border-image-width']);
+function specNormalize(p, v) {
+    if (/["'\\]|url\(|var\(|env\(|attr\(|#/i.test(v)) return v;
+    let t = v.trim().replace(/(^|[\s(,/*+-])([+-]?)(\d*\.\d+|\d+\.?)(e[+-]?\d+)?(?=[a-z%]*(?:$|[\s),/*]))/gi, (m, pre, sign, num, exp) => {
+        const n = Number(num + (exp || ''));
+        if (!isFinite(n)) return m;
+        const r = String(+n.toFixed(6));
+        return pre + (sign === '-' && n ? '-' : '') + r;
+    }).replace(/\s+/g, ' ');
+    if (/^(inherit|initial|unset|revert|revert-layer)$/i.test(t)) return t;
+    if (SPEC_PAIR.has(p) || SPEC_BOX.has(p)) {
+        const w = t.split(' ');
+        if (w.some(x => /\(/.test(x))) return t;
+        if (SPEC_PAIR.has(p) && w.length === 2 && w[0] === w[1] && !/^(first|last|safe|unsafe|legacy)$/.test(w[0])) t = w[0];
+        if (SPEC_BOX.has(p) && w.length >= 2 && w.length <= 4) {
+            const [a, b, c = a, d = b] = w;
+            t = b === d ? (a === c ? (a === b ? a : `${a} ${b}`) : `${a} ${b} ${c}`) : `${a} ${b} ${c} ${d}`;
+        }
+    }
+    return t;
+}
 /* specified values of single-colour properties: legacy colours serialize as rgb()/rgba(), keywords lowercase;
    an unparsable colour leaves the declaration unchanged (null) */
 const SPEC_COLOR_PROPS = new Set(['color', 'background-color', 'border-top-color', 'border-right-color', 'border-bottom-color', 'border-left-color', 'border-block-start-color', 'border-block-end-color',
     'border-inline-start-color', 'border-inline-end-color', 'outline-color', 'caret-color', 'column-rule-color', 'text-decoration-color', 'text-emphasis-color', 'flood-color', 'lighting-color', 'stop-color', '-webkit-text-fill-color', '-webkit-text-stroke-color']);
 const specAlpha = a => { const b = Math.round(a * 255); for (const d of [2, 3]) { const t = +a.toFixed(d); if (Math.round(t * 255) === b) return String(t); } return String(+a.toFixed(6)); };
 function specColor(v) {
-    const t = v.trim(), low = t.toLowerCase();
+    const t = v.replace(/\/\*[\s\S]*?\*\//g, '').trim(), low = t.toLowerCase();
     if (/^(inherit|initial|unset|revert|revert-layer)$/.test(low) || /var\(|env\(|attr\(/i.test(t)) return v;
     /* forms cssColor does not model are kept as written unless plainly empty */
-    if (/\bfrom\b|calc\(|color-mix\(|color-layers\(|alpha\(|contrast-color\(|light-dark\(|device-cmyk\(/.test(low)) return /\(\s*\)/.test(low) ? null : v;
+    if (/\bfrom\b|calc\(|color-mix\(|color-layers\(|alpha\(|contrast-color\(|light-dark\(|device-cmyk\(|sibling-(index|count)\(|display-p3-linear/.test(low)) return /\(\s*\)/.test(low) ? null : v;
     const c = cssColor(t);
     if (!c) return null;
     if (c.current) return 'currentcolor';
+    if (/\bnone\b/.test(low)) return t;
     if (/^[a-z]+$/.test(low)) return low;
     if (!c.legacy && !/^(#|rgba?\(|hsla?\(|hwb\()/.test(low)) return v;
     const [r, g, b] = (c.legacy ? c.c : colorTo(c, 'srgb')).map(x => Math.round(Math.min(1, Math.max(0, x)) * 255));
@@ -71,7 +95,7 @@ class CSSStyleDeclaration {
     item(i) { return [...this._m().keys()][i] || ''; }
     getPropertyValue(p) { p = camelToKebab(String(p)); const m = this._m(), e = m.get(p); return e ? e[0] : shorthandPart(m, p); }
     getPropertyPriority(p) { const e = this._m().get(camelToKebab(String(p))); return e ? e[1] : ''; }
-    setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p); if (v != null && v !== '' && SPEC_COLOR_PROPS.has(p)) { v = specColor(String(v)); if (v === null) return; } const m = new Map(this._m()); if (v == null || v === '') m.delete(p); else m.set(p, [String(v), pri ? 'important' : '']); this._el.setAttribute('style', serDecls(m)); }
+    setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p); if (v != null && v !== '' && SPEC_COLOR_PROPS.has(p)) { v = specColor(String(v)); if (v === null) return; } if (v != null && v !== '' && !p.startsWith('--')) v = specNormalize(p, String(v)); const m = new Map(this._m()); if (v == null || v === '') m.delete(p); else m.set(p, [String(v), pri ? 'important' : '']); this._el.setAttribute('style', serDecls(m)); }
     removeProperty(p) { p = camelToKebab(String(p)); const m = new Map(this._m()); const e = m.get(p); if (e) { m.delete(p); this._el.setAttribute('style', serDecls(m)); } return e ? e[0] : ''; }
 }
 const styleHandler = {
