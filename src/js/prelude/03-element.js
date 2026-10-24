@@ -48,8 +48,10 @@ const specAlpha = a => { const b = Math.round(a * 255); for (const d of [2, 3]) 
 function specColor(v) {
     const t = v.trim(), low = t.toLowerCase();
     if (/^(inherit|initial|unset|revert|revert-layer)$/.test(low) || /var\(|env\(|attr\(/i.test(t)) return v;
-    const c = /calc\(|none/.test(low) ? null : cssColor(t);
-    if (!c) return /^[a-z-]+\(/.test(low) ? v : cssColor(t) ? v : null;
+    /* forms cssColor does not model are kept as written unless plainly empty */
+    if (/\bfrom\b|calc\(|color-mix\(|color-layers\(|alpha\(|contrast-color\(|light-dark\(|device-cmyk\(/.test(low)) return /\(\s*\)/.test(low) ? null : v;
+    const c = cssColor(t);
+    if (!c) return null;
     if (c.current) return 'currentcolor';
     if (/^[a-z]+$/.test(low)) return low;
     if (!c.legacy && !/^(#|rgba?\(|hsla?\(|hwb\()/.test(low)) return v;

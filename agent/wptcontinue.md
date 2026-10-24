@@ -771,3 +771,8 @@ broke the whole page prelude: 33 ctest failures).
 - committed colour regression fix (01de660); next: rerun css-color + timeouts dirs, then registerProperty validation / shorthand canonical serialization
   CSS.registerProperty implemented (06b-activate.js registerProperty + N.registerProp); smoke /tmp/rp.html expect: TypeError TypeError SyntaxError ok InvalidModificationError SyntaxError SyntaxError ok ok | --a=10px; unbuilt
   computed custom prop falls back to registered initial (style.c ~4057)
+- committed registerProperty (19b8b84); untested in WPT (css-properties-values-api)
+- RUN 134 (css-color/cssom-view/cssom/selectors/css-sizing): 17068 -> 17407/30156, 22 TIMEOUT->OK (run-133 timeouts were flaky), 0 crash.
+  654 regressed = invalid colour functions accepted (raw passthrough). Narrowed passthrough to from/calc/color-mix/
+  alpha/contrast-color/light-dark/device-cmyk/color-layers (empty args rejected); others validated by cssColor.
+  Proper validator for color-mix/relative colours still TODO. css-sizing min-content narrower on floats/abspos (23) TODO.
