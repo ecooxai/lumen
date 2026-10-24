@@ -159,6 +159,7 @@ static char *sp_ident(SP *p) {
 static bool parse_sellist(SP *p, SelList *out, bool relative, char endc);
 static bool in_list(const char *n, const char *const *l) { for (; *l; l++) if (!strcmp(*l, n)) return true; return false; }
 /* querySelector grammar: what may follow a pseudo-element in its compound (Selectors 4 and Chrome's rules) */
+static bool pe_args_ok(const SimpleSel *x);
 static bool pe_tail_ok(const Compound *c) {
     static const char *const user_action[] = { "hover", "focus", "focus-visible", "focus-within", "active", NULL };
     static const char *const structural[] = { "first-child", "last-child", "only-child", "first-of-type", "last-of-type", "only-of-type",
@@ -169,10 +170,11 @@ static bool pe_tail_ok(const Compound *c) {
     const char *pe = NULL;
     for (int i = 0; i < c->n; i++) {
         const SimpleSel *x = &c->s[i];
-        if (x->kind == SK_PSEUDO_EL && x->name == atom("picker") && (!x->value || strcmp(x->value, "select"))) return false;
+        if (x->kind == SK_PSEUDO_EL && !pe_args_ok(x)) return false;
         if (!pe) { if (x->kind == SK_PSEUDO_EL) pe = x->name; continue; }
         if (x->kind == SK_PSEUDO_EL) {
             if (x->name == atom("part") || x->name == atom("slotted")) return false;
+            if (pe == atom("column") && x->name != atom("scroll-marker")) return false;
             if (!(pe == atom("part") || pe == atom("slotted") || pe == atom("column") || pe == atom("picker") || ((pe == atom("before") || pe == atom("after")) && x->name == atom("marker")))) return false;
             pe = x->name;
         } else if (x->kind == SK_PSEUDO) {
@@ -182,6 +184,18 @@ static bool pe_tail_ok(const Compound *c) {
             else if (in_list(pe, user_action_only) && !in_list(x->name, user_action) && x->name != atom("is") && x->name != atom("where") && x->name != atom("not") && !(pe == atom("selection") && x->name == atom("window-inactive"))) return false;
         } else return false;
     }
+    return true;
+}
+static bool is_ident_arg(const char *v) {
+    if (!v || !*v || (isdigit((unsigned char)v[0])) || (v[0] == '-' && isdigit((unsigned char)v[1]))) return false;
+    for (const char *q = v; *q; q++) if (!(isalnum((unsigned char)*q) || *q == '-' || *q == '_' || (unsigned char)*q >= 0x80)) return false;
+    return true;
+}
+static bool pe_args_ok(const SimpleSel *x) {
+    static const char *const dirs[] = { "*", "up", "down", "left", "right", "block-start", "block-end", "inline-start", "inline-end", NULL };
+    if (x->name == atom("picker")) return x->value && str_ieq(x->value, "select");
+    if (x->name == atom("highlight")) return is_ident_arg(x->value);
+    if (x->name == atom("scroll-button")) { if (!x->value) return false; char b[32]; size_t n = strlen(x->value); if (n >= sizeof b) return false; for (size_t i = 0; i <= n; i++) b[i] = (char)lc(x->value[i]); return in_list(b, dirs); }
     return true;
 }
 static bool has_pe(const Compound *c) { for (int i = 0; i < c->n; i++) if (c->s[i].kind == SK_PSEUDO_EL) return true; return false; }
