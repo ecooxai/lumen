@@ -802,3 +802,4 @@ broke the whole page prelude: 33 ctest failures).
   repro /tmp/tq.html (simple transition): color rgb(77, 50, 0) correct, width ok, fvs ok -> regression needs the exact interpolation-testcommon.js flow (neutral keyframe / 'transition-behavior' / reversed?); next read /mnt/p3/project/browser/wpt/css/support/interpolation-testcommon.js cssTransitionsInterpolation and replicate.
   FIX (unbuilt): specNormalize skipped timing-function/transition/animation and no longer rounds to 6 decimals (createEasing cubic-bezier precision caused run-136 interpolation regressions)
 - committed easing precision fix (45d8478); next: rerun css-sizing/css-transitions/css-backgrounds/css-fonts/css-typed-om/css-properties-values-api/css-values (run 137)
+- RUN 137 (8 dirs): 29207 -> 29297/59430, 0 status changes, 14 regressed (keyword-sizes-on-floated-element: font-load flake?). Easing fix confirmed.

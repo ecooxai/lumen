@@ -517,12 +517,27 @@ const tomNames = m => {
 };
 /* properties whose grammar has no <number>/<length>/<percentage>/<angle>/<time> */
 const TOM_NO_NUMERIC = /^(color|background-color|.*-color|fill-rule|clip-rule|d|paint-order|shape-rendering|color-interpolation(-filters)?|color-rendering|text-rendering|image-rendering|stroke-linecap|stroke-linejoin|text-anchor|marker(-start|-mid|-end)?|vector-effect|mix-blend-mode|isolation|display|position|float|clear|visibility|direction|unicode-bidi|writing-mode|text-orientation|table-layout|caption-side|empty-cells|border-collapse|box-sizing|resize|pointer-events|user-select|backface-visibility|transform-style|transform-box|mask-type|dominant-baseline|alignment-baseline|white-space|word-break|overflow-wrap|word-wrap|hyphens|text-transform|font-kerning|font-variant-caps|break-(before|after|inside)|appearance|forced-color-adjust|print-color-adjust|content-visibility|container-type|scroll-behavior|overscroll-behavior(-[xy]|-block|-inline)?|overflow(-[xy]|-block|-inline)?|list-style-position|object-fit|ruby-position|text-decoration-style|text-decoration-line|border(-[a-z]+)*-style|outline-style|column-fill|column-span)$/;
+/* typed values whose type the property's grammar cannot hold */
+const TOM_ANGLE_PROPS = /^(rotate|offset-rotate|image-orientation|font-style|filter|backdrop-filter|offset-path|hue-rotate)$/;
+const TOM_TIME_PROPS = /^(transition|animation)(-delay|-duration)?$/;
+const TOM_FLEX_PROPS = /^grid(-template)?(-(columns|rows))?$|^grid-auto-(columns|rows)$/;
+function tomTypedOk(p, v) {
+    if (v instanceof CSSTransformValue) return p === 'transform';
+    if (!(v instanceof CSSNumericValue)) return true;
+    const t = v.type();
+    if (t.angle) return TOM_ANGLE_PROPS.test(p);
+    if (t.time) return TOM_TIME_PROPS.test(p);
+    if (t.flex) return TOM_FLEX_PROPS.test(p);
+    if (t.frequency || t.resolution) return /^image-resolution$/.test(p);
+    if ((t.length || t.percent) && TOM_TIME_PROPS.test(p)) return false;
+    return true;
+}
 const tomText = (p, vals) => {
     if (!tomKnown(p)) throw new TypeError(`Invalid property name: ${p}`);
     if (!vals.length) throw new TypeError('At least one value required');
     if (vals.length > 1 && !TOM_LIST_PROPS.test(p)) throw new TypeError(`Property '${p}' does not take multiple values`);
     const parts = vals.map(v => {
-        if (v instanceof CSSNumericValue && TOM_NO_NUMERIC.test(p)) throw new TypeError(`Property '${p}' does not accept ${v}`);
+        if (v instanceof CSSNumericValue && TOM_NO_NUMERIC.test(p) || !p.startsWith('--') && !tomTypedOk(p, v)) throw new TypeError(`Property '${p}' does not accept ${v}`);
         if (v instanceof CSSStyleValue) return v.toString();
         if (v instanceof CSSStyleValue) return v.toString();
         const s = String(v);
