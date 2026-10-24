@@ -108,8 +108,7 @@ function specNormalize(p, v) {
     if (p !== 'line-height' && typeof TOM_LENGTH_PROPS !== 'undefined' && TOM_LENGTH_PROPS.test(p)) t = t.split(' ').map(w => w === '0' || w === '-0' ? '0px' : w).join(' ');
     if (/^(align|justify|place)-(content|items|self)$/.test(p)) t = t.replace(/\bfirst baseline\b/g, 'baseline');
     if (SPEC_PAIR.has(p) || SPEC_BOX.has(p)) {
-        const w = t.split(' ');
-        if (w.some(x => /\(/.test(x))) return t;
+        const w = tomSplitTop(t, ' ').map(x => x.trim()).filter(Boolean);
         if (SPEC_PAIR.has(p) && w.length === 2 && w[0] === w[1] && !/^(first|last|safe|unsafe|legacy)$/.test(w[0])) t = w[0];
         if (SPEC_BOX.has(p) && w.length >= 2 && w.length <= 4) {
             const [a, b, c = a, d = b] = w;
