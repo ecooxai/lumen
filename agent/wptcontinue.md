@@ -799,3 +799,4 @@ broke the whole page prelude: 33 ctest failures).
   cssom-view x4; cssom x3) - some flaky. NEXT: reproduce (a)/(b) with jsrun page using
   /mnt/p3/project/browser/wpt/css/support/interpolation-testcommon.js pattern; then insets (still 20px), align-content
   "first baseline" -> "baseline" canonical, CSSPositionTryRule, CSS.supports general_enclosed, cs is not iterable.
+  repro /tmp/tq.html (simple transition): color rgb(77, 50, 0) correct, width ok, fvs ok -> regression needs the exact interpolation-testcommon.js flow (neutral keyframe / 'transition-behavior' / reversed?); next read /mnt/p3/project/browser/wpt/css/support/interpolation-testcommon.js cssTransitionsInterpolation and replicate.
