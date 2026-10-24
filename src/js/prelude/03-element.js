@@ -105,6 +105,7 @@ function specNormalize(p, v) {
     }).replace(/\s+/g, ' ');
     if (/^(inherit|initial|unset|revert|revert-layer)$/i.test(t)) return t;
     if (/\b(sin|cos|tan|asin|acos|atan|atan2|sqrt|exp|pow|log)\(/i.test(t)) t = specFoldMath(t);
+    if (p !== 'line-height' && typeof TOM_LENGTH_PROPS !== 'undefined' && TOM_LENGTH_PROPS.test(p)) t = t.split(' ').map(w => w === '0' || w === '-0' ? '0px' : w).join(' ');
     if (/^(align|justify|place)-(content|items|self)$/.test(p)) t = t.replace(/\bfirst baseline\b/g, 'baseline');
     if (SPEC_PAIR.has(p) || SPEC_BOX.has(p)) {
         const w = t.split(' ');

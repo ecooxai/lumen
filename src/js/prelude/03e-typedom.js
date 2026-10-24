@@ -479,6 +479,7 @@ function tomParseProp(prop, text, all) {
     prop = tomPropName(prop);
     if (!tomKnown(prop)) throw new TypeError(`Invalid property name: ${prop}`);
     text = String(text);
+    if (prop.startsWith('--') && !text.trim()) throw new TypeError(`Failed to parse '${text}' for '${prop}'`);
     if (!prop.startsWith('--') && (!text.trim() || !CSS.supports(prop, text) || !tomValidText(prop, text))) throw new TypeError(`Failed to parse '${text}' for '${prop}'`);
     const vs = tomValues(prop, text);
     return all ? vs : vs.slice(0, 1);
