@@ -787,3 +787,4 @@ broke the whole page prelude: 33 ctest failures).
   Insets still 20px for abs/fixed even with layout sync -> investigate (maybe box missing / cb loop wrong).
 - committed specNormalize + run135 regression fixes; RUN 136 (/css/ full) started
   @property: native validity (syntax+inherits required, initial for non-* syntax, simple type checks) parse.c; unbuilt
+- committed @property validity (2d68538); waiting run 136 (739f448b, mon be2ea702)

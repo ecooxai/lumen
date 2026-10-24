@@ -456,11 +456,30 @@ function tomReify(prop, text) {
 const tomValues = (prop, text) => TOM_LIST_PROPS.test(prop) && !TOM_WIDE.test(String(text).trim()) ? tomSplitTop(String(text), ',').map(s => tomReify(prop, s)) : [tomReify(prop, text)];
 const tomPropName = p => { p = String(p); return p.startsWith('--') ? p : p.toLowerCase(); };
 const tomKnown = p => p.startsWith('--') || CSS_PROP_NAMES.has(p) || CSS.supports(p, 'initial');
+/* coarse value-type validation: dimensions must suit the property, keyword-only properties take no numbers */
+const TOM_LENGTH_PROPS = /^(width|height|(min|max)-(width|height)|(min-|max-)?(block|inline)-size|margin(-.*)?|padding(-.*)?|top|right|bottom|left|inset(-.*)?|gap|row-gap|column-gap|column-width|flex-basis|border(-[a-z]+)*-width|outline-width|outline-offset|letter-spacing|word-spacing|text-indent|font-size|line-height|vertical-align|perspective|shape-margin|scroll-(margin|padding)(-.*)?|text-underline-offset|text-decoration-thickness|border(-[a-z]+)*-radius)$/;
+const TOM_DIM = /([+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?)([a-z%]+)?/gi;
+const TOM_LEN_UNITS = new Set(['', '%', 'px', 'em', 'rem', 'ex', 'rex', 'ch', 'rch', 'ic', 'ric', 'cap', 'rcap', 'lh', 'rlh', 'vw', 'vh', 'vi', 'vb', 'vmin', 'vmax', 'svw', 'svh', 'svi', 'svb', 'svmin', 'svmax', 'lvw', 'lvh', 'lvi', 'lvb', 'lvmin', 'lvmax', 'dvw', 'dvh', 'dvi', 'dvb', 'dvmin', 'dvmax', 'cqw', 'cqh', 'cqi', 'cqb', 'cqmin', 'cqmax', 'cm', 'mm', 'q', 'in', 'pt', 'pc']);
+function tomValidText(prop, text) {
+    const t = text.trim();
+    if (TOM_WIDE.test(t) || /var\(|env\(|attr\(/i.test(t)) return true;
+    if (TOM_NO_NUMERIC.test(prop) && !/-color$|^color$/.test(prop) && /^[+-]?(\d|\.\d)/.test(t)) return false;
+    if (TOM_LENGTH_PROPS.test(prop)) {
+        const bare = t.replace(/["'][^"']*["']/g, '');
+        for (const m of bare.matchAll(TOM_DIM)) {
+            const pre = bare[m.index - 1];
+            if (pre && /[a-z_-]/i.test(pre)) continue;
+            if (!TOM_LEN_UNITS.has((m[2] || '').toLowerCase())) return false;
+        }
+        if (/^[a-z-]+$/i.test(t) && !/^(auto|none|normal|thin|medium|thick|min-content|max-content|fit-content|stretch|-webkit-fill-available|content|baseline|sub|super|text-top|text-bottom|middle|top|bottom|xx-small|x-small|small|large|x-large|xx-large|xxx-large|smaller|larger|math|anchor-size|infinite)$/i.test(t)) return false;
+    }
+    return true;
+}
 function tomParseProp(prop, text, all) {
     prop = tomPropName(prop);
     if (!tomKnown(prop)) throw new TypeError(`Invalid property name: ${prop}`);
     text = String(text);
-    if (!prop.startsWith('--') && (!text.trim() || !CSS.supports(prop, text))) throw new TypeError(`Failed to parse '${text}' for '${prop}'`);
+    if (!prop.startsWith('--') && (!text.trim() || !CSS.supports(prop, text) || !tomValidText(prop, text))) throw new TypeError(`Failed to parse '${text}' for '${prop}'`);
     const vs = tomValues(prop, text);
     return all ? vs : vs.slice(0, 1);
 }
