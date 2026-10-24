@@ -809,3 +809,8 @@ broke the whole page prelude: 33 ctest failures).
 - RUN 138: 24942 -> 29376/52212 (typed-om 48.7->75.8%, conditional 39->64%), 30 regressed (touch-action/pointer-events/background missing from CSS_PROP_NAMES -> added with webkit aliases, unbuilt). Also unbuilt: nested calc fold.
 - committed math folding + prop names (a8fdc71). NEXT: color-mix computed serialisation in mixing space (~1069), CSSPositionTryRule, abspos align-self sizing, CSSStyleValue.parse('--foo','') throw, column-gap '0'->'0px' canonical
 - committed 0px + empty custom parse (32674cd); unmeasured since run 138: math folding, prop names, 0px. NEXT: run 139 (/css/ full), then color-mix computed serialisation, CSSPositionTryRule, abspos align-self.
+- RUN 139 (/css/ full, binary 32674cd) started; agents 0243d874 (run) / 80769927 (monitor).
+  color-mix plan: computed colour of color-mix()/relative colours must serialise in the mixing space
+  (color(srgb ..)/oklch()/lch()/color(xyz-d65 ..)), alpha kept, none -> missing-component rules. Native css_parse_color
+  currently resolves to 8-bit sRGB. Option: native keeps the original declaration text for colour props when it
+  contains color-mix/from, and N.computed returns JS-resolved text via shared color.js (cssColor + colorTo + colorNum).
