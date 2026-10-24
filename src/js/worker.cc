@@ -484,37 +484,12 @@ const fonts = Object.assign(new EventTarget(), { status: 'loaded', load() { retu
     entries() { return ffSet.entries(); }, [Symbol.iterator]() { return ffSet.values(); } });
 Object.defineProperty(fonts, 'size', { get() { return ffSet.size; } });
 Object.defineProperty(fonts, 'ready', { get() { return Promise.resolve(fonts); } });
-const createImageBitmap = async (src, ...a) => {
-    let sx = 0, sy = 0, sw, sh;
-    if (a.length >= 4) {
-        sx = erLong(a[0]); sy = erLong(a[1]); sw = erLong(a[2]); sh = erLong(a[3]);
-        if (!sw || !sh) throw new RangeError(`The crop rect ${sw ? 'height' : 'width'} is 0.`);
-    }
-    let d;
-    if (src instanceof ImageData) d = src;
-    else if (src instanceof C2IB) { if (!src._.src) throw new DOMException('The image source is detached.', 'InvalidStateError'); d = src._.src; }
-    else if (src instanceof OffscreenCanvas) {
-        if (!src.width || !src.height) throw new DOMException('The image argument is an OffscreenCanvas element with a width or height of 0.', 'InvalidStateError');
-        d = src._.cx ? src._.cx.getImageData(0, 0, src.width, src.height) : new ImageData(src.width, src.height);
-    } else if (src instanceof Blob) {
-        const r = W.imgDecodeSync(await src.arrayBuffer());
-        if (!r) throw new DOMException('The source image could not be decoded.', 'InvalidStateError');
-        d = new ImageData(new Uint8ClampedArray(r[2]), r[0], r[1]);
-    }
-    else throw new TypeError("Failed to execute 'createImageBitmap': The provided value is not of type '(Blob or ImageBitmap or ImageData or OffscreenCanvas or VideoFrame)'.");
-    if (sw !== undefined) {
-        if (sw < 0) { sx += sw; sw = -sw; } if (sh < 0) { sy += sh; sh = -sh; }
-        const o = new ImageData(sw, sh), od = o.data, id = d.data;
-        for (let y = 0; y < sh; y++) for (let x = 0; x < sw; x++) {
-            const fx = sx + x, fy = sy + y;
-            if (fx < 0 || fy < 0 || fx >= d.width || fy >= d.height) continue;
-            const i = (fy * d.width + fx) * 4, j = (y * sw + x) * 4;
-            od[j] = id[i]; od[j + 1] = id[i + 1]; od[j + 2] = id[i + 2]; od[j + 3] = id[i + 3];
-        }
-        d = o;
-    }
-    const b = Object.create(C2IB.prototype); def(b, '_', { src: d, w: d.width, h: d.height }); return b;
-};
+function createImageBitmap(src, ...a) {
+    if (!arguments.length) return Promise.reject(new TypeError("Failed to execute 'createImageBitmap' on 'WorkerGlobalScope': 1 argument required, but only 0 present."));
+    if (!(src instanceof Blob || src instanceof ImageData || src instanceof C2IB || src instanceof OffscreenCanvas))
+        return Promise.reject(new TypeError("Failed to execute 'createImageBitmap' on 'WorkerGlobalScope': The provided value is not of type '(Blob or ImageBitmap or ImageData or OffscreenCanvas or VideoFrame)'."));
+    return c2dBitmap(src, a, buf => W.imgDecodeSync(buf));
+}
 const toFn =f => typeof f === 'function' ? f : (0, eval)('(function(){' + String(f) + '\n})');
 const performance = { now: () => W.now(), timeOrigin: W.timeOrigin, mark() {}, measure() {}, getEntriesByName() { return []; }, getEntriesByType() { return []; }, toJSON() { return { timeOrigin: W.timeOrigin }; } };
 const fmt = a => a.map(x => typeof x === 'string' ? x : x instanceof Error ? x.stack || String(x) : (() => { try { return JSON.stringify(x); } catch (e) { return String(x); } })()).join(' ');

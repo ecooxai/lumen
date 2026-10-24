@@ -666,8 +666,8 @@ function glCreate(cv, v, o) {
     return g;
 }
 
-/* ImageBitmap: a source element or ImageData kept as is; WebGL and WebGPU uploads read its pixels then.
-   Crops and resizes are not applied to element sources. */
+/* ImageBitmap: an ImageData snapshot of the source taken by c2dBitmap (shared/canvas2d.js), with crop, resize
+   and orientation applied; WebGL and WebGPU uploads read its pixels. */
 class ImageBitmap {
     constructor(t) { if (t !== GLI) glIllegal(); }
     get width() { return this._.w; }
@@ -677,29 +677,18 @@ class ImageBitmap {
 const bmpSize = s => s instanceof ImageData ? [s.width, s.height] : s instanceof ImageBitmap ? [s._.w, s._.h]
     : s instanceof H.HTMLImageElement ? [s.naturalWidth, s.naturalHeight] : s instanceof H.HTMLVideoElement ? [s.videoWidth, s.videoHeight]
     : s instanceof H.HTMLCanvasElement ? [s.width, s.height] : null;
-const bmpCrop = (d, sx, sy, sw, sh) => {
-    const x0 = Math.max(0, sx | 0), y0 = Math.max(0, sy | 0), w = Math.max(0, Math.min(d.width - x0, sw | 0)), h = Math.max(0, Math.min(d.height - y0, sh | 0));
-    const o = new ImageData(Math.max(w, 1), Math.max(h, 1));
-    for (let y = 0; y < h; y++) o.data.set(d.data.subarray(((y0 + y) * d.width + x0) * 4, ((y0 + y) * d.width + x0 + w) * 4), y * o.width * 4);
-    return o;
-};
-async function createImageBitmap(src, a, b, c, d, e) {
-    const opts = (typeof a === 'object' && a ? a : e) || {};
-    if (src instanceof Blob) {   /* decoded natively off the main thread to straight-alpha pixels */
-        const id = N.imgDecode(await src.arrayBuffer());
-        let r = id ? undefined : null;
-        while (r === undefined) { await new Promise(f => setTimeout(f, 4)); r = N.imgTake(id); }
-        if (!r) throw new DOMException('The source image could not be decoded.', 'InvalidStateError');
-        src = new ImageData(new Uint8ClampedArray(r[2]), r[0], r[1]);
-    }
-    const z = bmpSize(src);
-    if (!z) throw new TypeError("Failed to execute 'createImageBitmap': The provided value is not of type '(Blob or HTMLCanvasElement or HTMLImageElement or HTMLVideoElement or ImageBitmap or ImageData)'.");
-    if (!z[0] || !z[1]) throw new DOMException('The source has no width or height.', 'InvalidStateError');
-    if (src instanceof ImageBitmap) src = src._.src;
-    if (typeof a === 'number' && src instanceof ImageData) src = bmpCrop(src, a, b, c, d);
-    const o = Object.create(ImageBitmap.prototype), w = typeof a === 'number' ? Math.abs(c | 0) : z[0], h = typeof a === 'number' ? Math.abs(d | 0) : z[1];
-    def(o, '_', { src, w, h, flipY: opts.imageOrientation === 'flipY', premul: opts.premultiplyAlpha === 'premultiply' });
-    return o;
+/* decoded natively off the main thread to straight-alpha pixels */
+async function bmpDecode(buf) {
+    const id = N.imgDecode(buf);
+    let r = id ? undefined : null;
+    while (r === undefined) { await new Promise(f => setTimeout(f, 4)); r = N.imgTake(id); }
+    return r;
+}
+function createImageBitmap(src, ...a) {
+    if (!arguments.length) return Promise.reject(new TypeError("Failed to execute 'createImageBitmap' on 'Window': 1 argument required, but only 0 present."));
+    if (!(src instanceof Blob || src instanceof ImageData || src instanceof ImageBitmap || bmpSize(src) || src instanceof SVGImageElement || (typeof OffscreenCanvas !== 'undefined' && src instanceof OffscreenCanvas)))
+        return Promise.reject(new TypeError("Failed to execute 'createImageBitmap' on 'Window': The provided value is not of type '(Blob or HTMLCanvasElement or HTMLImageElement or HTMLVideoElement or ImageBitmap or ImageData or OffscreenCanvas or SVGImageElement or VideoFrame)'."));
+    return c2dBitmap(src, a, bmpDecode);
 }
 
 const canvasResized = cv => { if (cv.__ck === 'webgl' || cv.__ck === 'webgl2') cv.__cx._resize(cv.width, cv.height); else if (cv.__ck === '2d') cv.__cx._reset(cv.width, cv.height); };

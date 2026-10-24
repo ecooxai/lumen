@@ -265,18 +265,62 @@ for (const [k, f] of Object.entries(PATH_METHODS)) Object.defineProperty(Path2D.
 /* ---- paints ---- */
 const premul = (r, g, b, a) => { const A = Math.round(a * 255), k = A / 255; return ((A << 24) | (Math.round(r * 255 * k) << 16) | (Math.round(g * 255 * k) << 8) | Math.round(b * 255 * k)) >>> 0; };
 const colorNum3 = v => { const r = +v.toFixed(6); return String(Object.is(r, -0) ? 0 : r); };
-/* a colour string -> { s: serialization, v: [r, g, b, a] 0..1 } or null */
-function c2dColor(text, cv) {
+const clamp01 = v => Math.max(0, Math.min(1, v));
+/* 'srgb' <-> 'display-p3' for 8-bit values: same transfer curve, different primaries (linear-light matrices) */
+const C2D_TOP3 = [0.8224621, 0.177538, 0, 0.0331941, 0.9668058, 0, 0.0170827, 0.0723974, 0.9105199];
+const C2D_TOSRGB = [1.2249401, -0.2249404, 0, -0.0420569, 1.0420571, 0, -0.0196376, -0.0786361, 1.0982735];
+let c2dLin = null, c2dEnc = null;
+/* a function (r, g, b) -> 0xRRGGBB converting 8-bit values into colour space `to` */
+function c2dXf(to) {
+    if (!c2dLin) {
+        c2dLin = new Float32Array(256);
+        for (let i = 0; i < 256; i++) { const v = i / 255; c2dLin[i] = v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }
+        c2dEnc = new Uint8Array(16385);
+        for (let i = 0; i <= 16384; i++) { const v = i / 16384; c2dEnc[i] = Math.round(255 * (v <= 0.0031308 ? v * 12.92 : 1.055 * v ** (1 / 2.4) - 0.055)); }
+    }
+    const M = to === 'display-p3' ? C2D_TOP3 : C2D_TOSRGB, memo = new Map(), enc = v => c2dEnc[Math.round(clamp01(v) * 16384)];
+    return (r, g, b) => {
+        const k = (r << 16) | (g << 8) | b;
+        let q = memo.get(k);
+        if (q === undefined) {
+            const R = c2dLin[r], G = c2dLin[g], B = c2dLin[b];
+            q = (enc(M[0] * R + M[1] * G + M[2] * B) << 16) | (enc(M[3] * R + M[4] * G + M[5] * B) << 8) | enc(M[6] * R + M[7] * G + M[8] * B);
+            if (memo.size > 65536) memo.clear();
+            memo.set(k, q);
+        }
+        return q;
+    };
+}
+/* premultiplied ARGB pixels from colour space `from` into `to` (a new array, or px itself when they match) */
+function c2dConvert(px, from, to) {
+    if ((from || 'srgb') === (to || 'srgb') || !px.length) return px;
+    const f = c2dXf(to), out = new Uint32Array(px.length);
+    for (let i = 0; i < px.length; i++) {
+        const p = px[i], a = p >>> 24;
+        if (!a) continue;
+        const un = c => Math.min(255, Math.round(c * 255 / a)), q = f(un((p >>> 16) & 255), un((p >>> 8) & 255), un(p & 255)), k = a / 255;
+        out[i] = ((a << 24) | (Math.round(((q >>> 16) & 255) * k) << 16) | (Math.round(((q >>> 8) & 255) * k) << 8) | Math.round((q & 255) * k)) >>> 0;
+    }
+    return out;
+}
+/* straight-alpha RGBA bytes converted in place */
+function c2dConvertRGBA(d, from, to) {
+    if ((from || 'srgb') === (to || 'srgb')) return;
+    const f = c2dXf(to);
+    for (let j = 0; j < d.length; j += 4) { if (!d[j + 3]) continue; const q = f(d[j], d[j + 1], d[j + 2]); d[j] = q >>> 16; d[j + 1] = (q >>> 8) & 255; d[j + 2] = q & 255; }
+}
+/* a colour string -> { s: serialization, v: [r, g, b, a] 0..1 in colour space cs } or null */
+function c2dColor(text, cv, cs = 'srgb') {
     const c = cssColor(String(text));
     if (!c) return null;
-    let rgb, a;
+    let col = c;
     if (c.current) {
         let cur = null;
         try { if (cv && cv.isConnected) cur = cssColor(getComputedStyle(cv).color); } catch (e) {}
         if (!cur || cur.current) return { s: '#000000', v: [0, 0, 0, 1] };
-        rgb = colorTo(cur, 'srgb'); a = cur.alpha;
-    } else { rgb = colorTo(c, 'srgb'); a = c.alpha; }
-    rgb = rgb.map(v => Math.max(0, Math.min(1, v))); a = Math.max(0, Math.min(1, a ?? 1));
+        col = cur;
+    }
+    const rgb = colorTo(col, 'srgb').map(clamp01), a = clamp01(col.alpha ?? 1);
     const b8 = rgb.map(v => Math.round(v * 255));
     const a8 = Math.round(a * 255);
     let as = colorNum3(a);
@@ -286,15 +330,16 @@ function c2dColor(text, cv) {
         const body = c.c.map(colorNum3).join(' ') + (a < 1 ? ' / ' + colorNum3(a) : '');
         s = c.space === 'lab' || c.space === 'oklab' ? `${c.space}(${body})` : `color(${c.space} ${body})`;
     }
-    return { s, v: [b8[0] / 255, b8[1] / 255, b8[2] / 255, a] };
+    const v = cs === 'srgb' ? b8.map(x => x / 255) : colorTo(col, cs).map(clamp01);
+    return { s, v: [v[0], v[1], v[2], a] };
 }
 class CanvasGradient {
-    constructor(k, kind, g) { if (k !== C2D_KEY) c2dIllegal(); def(this, '_', { kind, g, stops: [], lut: null }); }
+    constructor(k, kind, g, cs) { if (k !== C2D_KEY) c2dIllegal(); def(this, '_', { kind, g, stops: [], lut: null, cs: cs || 'srgb' }); }
     addColorStop(offset, color) {
         if (arguments.length < 2) throw new TypeError(`Failed to execute 'addColorStop' on 'CanvasGradient': 2 arguments required, but only ${arguments.length} present.`);
         const o = toDouble(offset, 'offset');
         if (o < 0 || o > 1) throw c2dIndex(`The provided value (${o}) is outside the range (0.0, 1.0).`);
-        const c = c2dColor(color, null);
+        const c = c2dColor(color, null, this._.cs);
         if (!c) throw new DOMException(`The value provided ('${color}') could not be parsed as a color.`, 'SyntaxError');
         const st = this._.stops; let i = st.length; while (i > 0 && st[i - 1][0] > o) i--;
         st.splice(i, 0, [o, c.v]); this._.lut = null;
@@ -333,7 +378,7 @@ for (const k of ['width', 'actualBoundingBoxLeft', 'actualBoundingBoxRight', 'fo
     'actualBoundingBoxDescent', 'emHeightAscent', 'emHeightDescent', 'hangingBaseline', 'alphabeticBaseline', 'ideographicBaseline'])
     Object.defineProperty(TextMetrics.prototype, k, { get() { return this._[k]; }, configurable: true, enumerable: true });
 
-/* image sources -> { px: Uint32Array premultiplied ARGB, w, h, sw, sh (CSS size of the source) } | null (not ready) */
+/* image sources -> { px: Uint32Array premultiplied ARGB, w, h, sw, sh (CSS size of the source), cs (colour space) } | null (not ready) */
 function c2dImage(img, fn) {
     const bad = () => { throw new TypeError(`Failed to execute '${fn}' on 'CanvasRenderingContext2D': The provided value is not of type '(CSSImageValue or HTMLCanvasElement or HTMLImageElement or HTMLVideoElement or ImageBitmap or OffscreenCanvas or SVGImageElement or VideoFrame)'.`); };
     if (img === null || typeof img !== 'object') bad();
@@ -342,7 +387,7 @@ function c2dImage(img, fn) {
         const w = img.width, h = img.height;
         if (!w || !h) throw new DOMException('The image argument is a canvas element with a width or height of 0.', 'InvalidStateError');
         const s = c2dIs(img, 'HTMLCanvasElement') ? ctxOf(img) : img._ && img._.cx && img._.cx._;
-        if (s) return { px: s.px, w: s.w, h: s.h, sw: s.w, sh: s.h, cv: img };
+        if (s) return { px: s.px, w: s.w, h: s.h, sw: s.w, sh: s.h, cv: img, cs: s.cs };
         const r = c2dIs(img, 'HTMLCanvasElement') ? C2N.c2dSource(img) : null;
         return r ? { px: new Uint32Array(r[2]), w: r[0], h: r[1], sw: w, sh: h } : { px: new Uint32Array(w * h), w, h, sw: w, sh: h };
     }
@@ -367,7 +412,82 @@ function c2dImage(img, fn) {
 function imageDataSrc(d) {
     const w = d.width, h = d.height, px = new Uint32Array(w * h), b = d.data;
     for (let i = 0, j = 0; i < px.length; i++, j += 4) { const a = b[j + 3]; px[i] = ((a << 24) | (Math.round(b[j] * a / 255) << 16) | (Math.round(b[j + 1] * a / 255) << 8) | Math.round(b[j + 2] * a / 255)) >>> 0; }
-    return { px, w, h, sw: w, sh: h };
+    return { px, w, h, sw: w, sh: h, cs: d.colorSpace };
+}
+
+/* createImageBitmap(image, [sx, sy, sw, sh,] options) for pages and workers: the source is snapshotted into an
+   ImageData now (crop, resize, orientation applied); decode(ArrayBuffer) -> Promise<[w, h, RGBA ArrayBuffer] | null> */
+const C2IB_ENUMS = { colorSpaceConversion: ['none', 'default'], imageOrientation: ['from-image', 'flipY', 'none'], premultiplyAlpha: ['none', 'premultiply', 'default'], resizeQuality: ['pixelated', 'low', 'medium', 'high'] };
+function c2dBitmap(src, args, decode) {
+    try {
+        const fail = m => new DOMException(m, 'InvalidStateError');
+        if (args.length === 0 && src === undefined) throw new TypeError("Failed to execute 'createImageBitmap': 1 argument required, but only 0 present.");
+        let crop = null, opts;
+        if (args.length >= 4) {
+            crop = args.slice(0, 4).map(v => { const x = Number(v); return Number.isFinite(x) ? x | 0 : 0; });
+            if (!crop[2] || !crop[3]) throw new RangeError(`The crop rect ${crop[2] ? 'height' : 'width'} is 0.`);
+            opts = args[4];
+        } else if (args.length > 0 && args[0] !== undefined && args[0] !== null && typeof args[0] !== 'object') throw new TypeError("Failed to execute 'createImageBitmap': Overload resolution failed.");
+        else opts = args[0];
+        if (opts !== undefined && opts !== null && typeof opts !== 'object' && typeof opts !== 'function') throw new TypeError("Failed to execute 'createImageBitmap': The provided value is not of type 'ImageBitmapOptions'.");
+        const o = {};
+        for (const k of ['colorSpaceConversion', 'imageOrientation', 'premultiplyAlpha', 'resizeHeight', 'resizeQuality', 'resizeWidth']) {
+            const v = opts == null ? undefined : opts[k];
+            if (v === undefined) continue;
+            if (k === 'resizeWidth' || k === 'resizeHeight') o[k] = erULong(v);
+            else if (!C2IB_ENUMS[k].includes(String(v))) throw new TypeError(`The provided value '${v}' is not a valid enum value of type ${k === 'resizeQuality' ? 'ResizeQuality' : k[0].toUpperCase() + k.slice(1)}.`);
+            else o[k] = String(v);
+        }
+        if (o.resizeWidth === 0 || o.resizeHeight === 0) throw fail('The resizeWidth or/and resizeHeight is equal to 0.');
+        const build = from => {   /* from: ImageData (exact copy path) or a c2dImage source */
+            const isD = from instanceof ImageData, fw = isD ? from.width : from.sw, fh = isD ? from.height : from.sh, cs = isD ? from.colorSpace : from.cs || 'srgb';
+            let [cx, cy, cw, ch] = crop || [0, 0, fw, fh];
+            if (cw < 0) { cx += cw; cw = -cw; } if (ch < 0) { cy += ch; ch = -ch; }
+            const ow = o.resizeWidth ?? (o.resizeHeight !== undefined ? Math.ceil(cw * o.resizeHeight / ch) : cw);
+            const oh = o.resizeHeight ?? (o.resizeWidth !== undefined ? Math.ceil(ch * o.resizeWidth / cw) : ch);
+            let d;
+            if (isD && ow === cw && oh === ch) {
+                d = new ImageData(ow, oh, { colorSpace: cs });
+                const od = d.data, id = from.data;
+                for (let y = 0; y < oh; y++) {
+                    const fy = cy + y; if (fy < 0 || fy >= fh) continue;
+                    const x0 = Math.max(0, cx), x1 = Math.min(fw, cx + cw);
+                    if (x1 > x0) od.set(id.subarray((fy * fw + x0) * 4, (fy * fw + x1) * 4), (y * ow + x0 - cx) * 4);
+                }
+            } else {
+                const s = c2dState(null, ow, oh, { colorSpace: cs });
+                s.st.smooth = o.resizeQuality !== 'pixelated';
+                c2dBlit(s, isD ? imageDataSrc(from) : from, cx, cy, cw, ch, 0, 0, ow, oh);
+                d = C2D_METHODS.getImageData.call({ _: s }, 0, 0, Math.max(1, s.w), Math.max(1, s.h));
+            }
+            if (o.imageOrientation === 'flipY') {
+                const row = d.width * 4, t = new Uint8ClampedArray(row), a = d.data;
+                for (let y = 0, z = d.height - 1; y < z; y++, z--) { t.set(a.subarray(y * row, y * row + row)); a.copyWithin(y * row, z * row, z * row + row); a.set(t, z * row); }
+            }
+            const b = Object.create(C2IB.prototype);
+            def(b, '_', { src: d, w: d.width, h: d.height, flipY: false, premul: o.premultiplyAlpha === 'premultiply' });
+            return b;
+        };
+        if (typeof Blob !== 'undefined' && src instanceof Blob)
+            return src.arrayBuffer().then(decode).then(r => {
+                if (!r) throw fail('The source image could not be decoded.');
+                return build(new ImageData(new Uint8ClampedArray(r[2]), r[0], r[1]));
+            });
+        if (src instanceof ImageData) {
+            if (src.data.buffer.detached) throw fail('The image data has been detached.');
+            return Promise.resolve(build(src));
+        }
+        if (src instanceof C2IB) {
+            if (!src._.src) throw fail('The image source is detached.');
+            return Promise.resolve(build(src._.src instanceof ImageData ? src._.src : c2dImage(src, 'createImageBitmap')));
+        }
+        if (typeof OffscreenCanvas !== 'undefined' && src instanceof OffscreenCanvas && src._.detached) throw fail('The OffscreenCanvas is detached.');
+        if (c2dIs(src, 'HTMLImageElement') && !src.getAttribute('src') && !src.getAttribute('srcset')) throw fail('The image element contains no source.');
+        const r = c2dImage(src, 'createImageBitmap');
+        if (!r) throw fail(c2dIs(src, 'HTMLVideoElement') ? 'The provided element has not retrieved data.' : 'The source image could not be decoded.');
+        if (r.cv) r.px = r.px.slice();
+        return Promise.resolve(build(r));
+    } catch (e) { return Promise.reject(e); }
 }
 
 /* ---- font shorthand ---- */
@@ -423,8 +543,29 @@ function c2dState(target, w, h, opts) {
     const alpha = !(opts && opts.alpha === false);
     const s = { target, w, h, alpha, opts: { alpha, colorSpace: opts && opts.colorSpace === 'display-p3' ? 'display-p3' : 'srgb', desynchronized: !!(opts && opts.desynchronized), willReadFrequently: !!(opts && opts.willReadFrequently) },
         st: c2dDefaults(), stack: [], path: new PathData(), dirty: false };
+    s.cs = s.opts.colorSpace;
     c2dAlloc(s, w, h);
     return s;
+}
+/* ImageDataSettings with the canvas's colour space as the default */
+const c2dDataSettings = (settings, cs) => settings != null && typeof settings === 'object' && settings.colorSpace !== undefined ? settings : { colorSpace: cs };
+/* draw source rect (sx, sy, sw, sh) of an image source into (dx, dy, dw, dh), converting its colour space */
+function c2dBlit(s, src, sx, sy, sw, sh, dx, dy, dw, dh) {
+    if (!fin(sx, sy, sw, sh, dx, dy, dw, dh)) return;
+    if (sw < 0) { sx += sw; sw = -sw; } if (sh < 0) { sy += sh; sh = -sh; }
+    if (dw < 0) { dx += dw; dw = -dw; } if (dh < 0) { dy += dh; dh = -dh; }
+    if (!sw || !sh || !dw || !dh) return;
+    const fx = dw / sw, fy = dh / sh;
+    const x0 = Math.max(sx, 0), y0 = Math.max(sy, 0), x1 = Math.min(sx + sw, src.sw), y1 = Math.min(sy + sh, src.sh);
+    if (x1 <= x0 || y1 <= y0) return;
+    dx += (x0 - sx) * fx; dy += (y0 - sy) * fy; dw = (x1 - x0) * fx; dh = (y1 - y0) * fy; sx = x0; sy = y0; sw = x1 - x0; sh = y1 - y0;
+    const kx = src.w / src.sw, ky = src.h / src.sh;
+    let px = c2dConvert(src.px, src.cs, s.cs);
+    if (src.cv && px === s.px) px = px.slice();
+    const inv = mInv(mMul(s.st.m, [fx / kx, 0, 0, fy / ky, dx - sx * fx, dy - sy * fy]));
+    if (!inv) return;
+    const pr = new Float32Array(12); pr.set(inv, 0);
+    c2dDraw(s, pathShape(c2dRect(s.st.m, dx, dy, dw, dh), false), [4, 0, pr, null, px, src.w, src.h, s.st.smooth ? 4 : 0]);
 }
 const c2dPresent = s => {
     const node = s.target instanceof C2Node ? s.target : s.target && s.target._ && s.target._.ph;   /* ph: transferControlToOffscreen placeholder */
@@ -624,7 +765,7 @@ const C2D_PROPS = {
 const c2dRect = (m, x, y, w, h) => { const p = new PathData(); p.rect(m, x, y, w, h); return p; };
 const c2dText = (s, text, x, y, maxW, which) => {
     const st = s.st, f = st.fontD;
-    const t = String(text).replace(/[\t\n\f\r]/g, ' ');
+    const t = String(text).replace(/[\t\n\f\r]/g, ' ').replace(/\0/g, '');
     if (maxW !== undefined && !(+maxW > 0)) return;
     if (!fin(+x, +y)) return;
     const [w, asc, desc] = C2N.c2dMeasure(t, f.family, f.weight, f.italic, f.size);
@@ -670,11 +811,11 @@ const C2D_METHODS = {
     get strokeStyle() { return this._.st.stroke; },
     set strokeStyle(v) { this._setStyle('stroke', v); },
     get shadowColor() { return this._.st.sColor; },
-    set shadowColor(v) { const c = c2dColor(v, this._.target instanceof C2Node ? this._.target : null); if (c) { this._.st.sColor = c.s; this._.st.sColorV = c.v; } },
+    set shadowColor(v) { const c = c2dColor(v, this._.target instanceof C2Node ? this._.target : null, this._.cs); if (c) { this._.st.sColor = c.s; this._.st.sColorV = c.v; } },
     _setStyle(k, v) {
         const st = this._.st;
         if (v instanceof CanvasGradient || v instanceof CanvasPattern) { st[k] = v; return; }
-        const c = c2dColor(v, this._.target instanceof C2Node ? this._.target : null);
+        const c = c2dColor(v, this._.target instanceof C2Node ? this._.target : null, this._.cs);
         if (c) { st[k] = c.s; st[k + 'V'] = c.v; }
     },
     get globalCompositeOperation() { return C2D_OPS[this._.st.op]; },
@@ -741,7 +882,7 @@ const C2D_METHODS = {
     fillText(t, x, y, maxW) { c2dText(this._, t, x, y, maxW, 'fill'); },
     strokeText(t, x, y, maxW) { c2dText(this._, t, x, y, maxW, 'stroke'); },
     measureText(text) {
-        const f = this._.st.fontD, t = String(text).replace(/[\t\n\f\r]/g, ' ');
+        const f = this._.st.fontD, t = String(text).replace(/[\t\n\f\r]/g, ' ').replace(/\0/g, '');
         const [w, asc, desc] = C2N.c2dMeasure(t, f.family, f.weight, f.italic, f.size);
         const al = this._.st.align, left = al === 'center' ? w / 2 : al === 'right' || (al === 'end' && this._.st.dir !== 'rtl') ? w : 0;
         let base = 0;
@@ -754,46 +895,33 @@ const C2D_METHODS = {
         if (![2, 4, 8].includes(a.length)) throw new TypeError(`Failed to execute 'drawImage' on 'CanvasRenderingContext2D': Valid arities are: [3, 5, 9], but ${a.length + 1} arguments provided.`);
         const src = c2dImage(img, 'drawImage');
         if (!src) return;
-        let [sx, sy, sw, sh, dx, dy, dw, dh] = a.length === 8 ? a.map(Number) : [0, 0, src.sw, src.sh, +a[0], +a[1], a.length === 4 ? +a[2] : src.sw, a.length === 4 ? +a[3] : src.sh];
-        if (!fin(sx, sy, sw, sh, dx, dy, dw, dh)) return;
-        if (sw < 0) { sx += sw; sw = -sw; } if (sh < 0) { sy += sh; sh = -sh; }
-        if (dw < 0) { dx += dw; dw = -dw; } if (dh < 0) { dy += dh; dh = -dh; }
-        if (!sw || !sh || !dw || !dh) return;
-        const fx = dw / sw, fy = dh / sh;
-        const x0 = Math.max(sx, 0), y0 = Math.max(sy, 0), x1 = Math.min(sx + sw, src.sw), y1 = Math.min(sy + sh, src.sh);
-        if (x1 <= x0 || y1 <= y0) return;
-        dx += (x0 - sx) * fx; dy += (y0 - sy) * fy; dw = (x1 - x0) * fx; dh = (y1 - y0) * fy; sx = x0; sy = y0; sw = x1 - x0; sh = y1 - y0;
-        const s = this._, kx = src.w / src.sw, ky = src.h / src.sh;
-        let px = src.px;
-        if (src.cv && px === s.px) px = px.slice();
-        const inv = mInv(mMul(s.st.m, [fx / kx, 0, 0, fy / ky, dx - sx * fx, dy - sy * fy]));
-        if (!inv) return;
-        const pr = new Float32Array(12); pr.set(inv, 0);
-        c2dDraw(s, pathShape(c2dRect(s.st.m, dx, dy, dw, dh), false), [4, 0, pr, null, px, src.w, src.h, s.st.smooth ? 4 : 0]);
+        const v = a.length === 8 ? a.map(Number) : [0, 0, src.sw, src.sh, +a[0], +a[1], a.length === 4 ? +a[2] : src.sw, a.length === 4 ? +a[3] : src.sh];
+        c2dBlit(this._, src, ...v);
     },
     createLinearGradient(x0, y0, x1, y1) {
         const v = [x0, y0, x1, y1].map((x, i) => toDouble(x, `x${i}`));
-        return new CanvasGradient(C2D_KEY, 1, v.concat([0, 0]));
+        return new CanvasGradient(C2D_KEY, 1, v.concat([0, 0]), this._.cs);
     },
     createRadialGradient(x0, y0, r0, x1, y1, r1) {
         const v = [x0, y0, r0, x1, y1, r1].map(x => toDouble(x));
         if (v[2] < 0 || v[5] < 0) throw c2dIndex(`The ${v[2] < 0 ? 'r0' : 'r1'} provided is less than 0.`);
-        return new CanvasGradient(C2D_KEY, 2, v);
+        return new CanvasGradient(C2D_KEY, 2, v, this._.cs);
     },
-    createConicGradient(a, x, y) { const v = [a, x, y].map(z => toDouble(z)); return new CanvasGradient(C2D_KEY, 3, [v[1], v[2], v[0], 0, 0, 0]); },
+    createConicGradient(a, x, y) { const v = [a, x, y].map(z => toDouble(z)); return new CanvasGradient(C2D_KEY, 3, [v[1], v[2], v[0], 0, 0, 0], this._.cs); },
     createPattern(img, rep) {
         const src = c2dImage(img, 'createPattern');
         rep = rep === null ? '' : String(rep);
         if (!['', 'repeat', 'repeat-x', 'repeat-y', 'no-repeat'].includes(rep)) throw new DOMException(`The provided type ('${rep}') is not one of 'repeat', 'no-repeat', 'repeat-x', or 'repeat-y'.`, 'SyntaxError');
         if (!src) return null;
-        return new CanvasPattern(C2D_KEY, { px: src.px.slice(), w: src.w, h: src.h, sw: src.sw, sh: src.sh }, rep || 'repeat');
+        const px = c2dConvert(src.px, src.cs, this._.cs);
+        return new CanvasPattern(C2D_KEY, { px: px === src.px ? px.slice() : px, w: src.w, h: src.h, sw: src.sw, sh: src.sh }, rep || 'repeat');
     },
     createImageData(a, b, c) {
         if (a instanceof ImageData) return new ImageData(a.width, a.height, { colorSpace: a.colorSpace });
         if (arguments.length < 2) throw new TypeError("Failed to execute 'createImageData': 2 arguments required.");
         const w = erLong(a), h = erLong(b);
         if (!w || !h) throw c2dIndex(`The source ${w ? 'height' : 'width'} is 0.`);
-        return new ImageData(Math.abs(w), Math.abs(h), c);
+        return new ImageData(Math.abs(w), Math.abs(h), c2dDataSettings(c, this._.cs));
     },
     getImageData(x, y, w, h, settings) {
         if (arguments.length < 4) throw new TypeError(`Failed to execute 'getImageData': 4 arguments required, but only ${arguments.length} present.`);
@@ -802,7 +930,7 @@ const C2D_METHODS = {
         if (w < 0) { x += w; w = -w; } if (h < 0) { y += h; h = -h; }
         const s = this._;
         if (s.tainted) throw new DOMException('The canvas has been tainted by cross-origin data.', 'SecurityError');
-        const o = new ImageData(w, h, settings), d = o.data;
+        const o = new ImageData(w, h, c2dDataSettings(settings, s.cs)), d = o.data;
         for (let yy = 0; yy < h; yy++) {
             const sy = y + yy; if (sy < 0 || sy >= s.h) continue;
             for (let xx = 0; xx < w; xx++) {
@@ -812,6 +940,7 @@ const C2D_METHODS = {
                 d[j] = Math.round(((v >>> 16) & 255) * 255 / a); d[j + 1] = Math.round(((v >>> 8) & 255) * 255 / a); d[j + 2] = Math.round((v & 255) * 255 / a); d[j + 3] = a;
             }
         }
+        c2dConvertRGBA(d, s.cs, o.colorSpace);
         return o;
     },
     putImageData(img, dx, dy, dirtyX, dirtyY, dirtyW, dirtyH) {
@@ -826,13 +955,15 @@ const C2D_METHODS = {
             if (x0 < 0) { w += x0; x0 = 0; } if (y0 < 0) { h += y0; y0 = 0; }
             w = Math.min(w, img.width - x0); h = Math.min(h, img.height - y0);
         }
-        const s = this._;
+        const s = this._, f = (img.colorSpace || 'srgb') !== s.cs ? c2dXf(s.cs) : null;
         for (let yy = y0; yy < y0 + h; yy++) {
             const ty = dy + yy; if (ty < 0 || ty >= s.h) continue;
             for (let xx = x0; xx < x0 + w; xx++) {
                 const tx = dx + xx; if (tx < 0 || tx >= s.w) continue;
                 const j = (yy * img.width + xx) * 4, a = s.alpha ? d[j + 3] : 255;
-                s.px[ty * s.w + tx] = ((a << 24) | (Math.round(d[j] * a / 255) << 16) | (Math.round(d[j + 1] * a / 255) << 8) | Math.round(d[j + 2] * a / 255)) >>> 0;
+                let r = d[j], g = d[j + 1], b = d[j + 2];
+                if (f && a) { const q = f(r, g, b); r = q >>> 16; g = (q >>> 8) & 255; b = q & 255; }
+                s.px[ty * s.w + tx] = ((a << 24) | (Math.round(r * a / 255) << 16) | (Math.round(g * a / 255) << 8) | Math.round(b * a / 255)) >>> 0;
             }
         }
         c2dPresent(s);

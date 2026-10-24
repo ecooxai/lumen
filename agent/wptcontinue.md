@@ -466,6 +466,11 @@ broke the whole page prelude: 33 ctest failures).
       IMPLEMENTED (uncommitted): real FontFace in src/js/shared/fontface.js (fetch url()/binary ->
       N/W.fontFace(family, weight, italic, key, bytes) = font_declare + font_loaded in jsnative.cc); page uses
       it via /*@shared fontface.js*/ in 06b-activate.js (fontSet unchanged); worker gets FontFace + `fonts` set
+      RUN 123 (176bbad build, before FontFace): canvas 62.9% -> 65.7% (3800/5787), 2692/3344 full; no crash,
+      monitor clean. Biggest left: wide-gamut 665 (display-p3 canvases must convert sRGB sources: 255,0,0 ->
+      234,51,35; P3/AdobeRGB image ICC handling), draw-element-image 261 (requestPaint, tentative),
+      imagebitmap 245, offscreen/text 227 + element/text 133 (FontFace now real -> rerun), getIndexFromOffset 110,
+      layers 63, strokeRect.zero (39), 3 pattern regressions (nocontext, zerowidth, modify.image2).
       (worker.cc). COMMITTED; /tmp/ff.html: page+worker AAA=30px with CanvasTest; ctest 104/104. Needs WPT rerun.
   (6) FontFace missing in worker (51); beginLayer/endLayer (48); DOMPoint in worker (12); text align center (21).
 - Committed after 2e00940 (shared/canvas2d.js; also transferControlToOffscreen DONE, page-only): modern colours (color()/lab/oklab) serialise in their
@@ -521,3 +526,13 @@ broke the whole page prelude: 33 ctest failures).
    editing changes touch ChatGPT (streamed replies, the ProseMirror composer): check typing CPU < 10% and that
    replies stream.
 6. Then the far-behind areas: IndexedDB, shadow-dom, custom-elements, web-animations, mathml, EditContext.
+- RUN 124 (9e63495 FontFace build): canvas 65.7% -> 66.3% (3839/5787); offscreen/text 72 -> 108; no crash; monitor clean
+  (peak RSS 313 MB). Regressions fixed next commit: maxWidth squeeze now resamples glyph bitmaps horizontally (jsnative.cc
+  c2d_text_cov; advances were squeezed but glyphs were not), measureText/fillText drop U+0000.
+- NEXT COMMIT: canvas colour spaces (shared/canvas2d.js: s.cs; c2dColor(text, cv, cs); gradients carry cs; c2dConvert/
+  c2dConvertRGBA/c2dXf srgb<->display-p3; get/putImageData + createImageData default to the canvas space; drawImage via
+  c2dBlit converts sources). createImageBitmap is now shared (c2dBitmap: validation, crop, resize, flipY, snapshot into
+  ImageData; page passes bmpDecode, worker W.imgDecodeSync). image.c applies embedded ICC matrix/TRC profiles (PNG iCCP,
+  JPEG APP2, WebP ICCP) -> sRGB with clipping. Not kept: wide-gamut source data for P3 canvases (P3 image on P3 canvas
+  reads as clipped sRGB), CMYK JPEGs. Smoke /tmp/c2dp3.html (jsrun needs LUMEN_CONSOLE=1 to print console.log).
+  /tmp/jscheck.py = parse check of page + worker preludes.

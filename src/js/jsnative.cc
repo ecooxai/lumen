@@ -1238,16 +1238,25 @@ static bool c2d_text_cov(v8::Isolate *iso, v8::Local<v8::Context> ctx, v8::Local
     ShapedRun r = { 0 };
     text_shape(f, s.c_str(), s.size(), 0, &r);
     float sc = (float)LMAX(1e-3, sy);
+    double hs = sx / LMAX(1e-3, sy);   /* horizontal squeeze (maxWidth) relative to the rasterised size */
     int ymin = h, ymax = 0;
     for (int i = 0; i < r.n; i++) {
         const Glyph *gl = font_glyph(r.g[i].font ? r.g[i].font : f, r.g[i].gid, sc);
         if (!gl || (!gl->alpha && !gl->rgba)) continue;
-        int gx = (int)lround(x + (r.g[i].x) * sx) + gl->left, gy = (int)lround(y + r.g[i].y * sy) - gl->top;
+        auto A = [&](int yy, int xx) { return gl->alpha ? gl->alpha[yy * gl->w + xx] / 255.f : (gl->rgba[yy * gl->w + xx] >> 24) / 255.f; };
+        int dw = fabs(hs - 1) < 1e-6 ? gl->w : (int)ceil(gl->w * hs);
+        int gx = (int)lround(x + (r.g[i].x) * sx + gl->left * hs), gy = (int)lround(y + r.g[i].y * sy) - gl->top;
         for (int yy = 0; yy < gl->h; yy++) {
             int py = gy + yy; if (py < 0 || py >= h) continue;
-            for (int xx = 0; xx < gl->w; xx++) {
+            for (int xx = 0; xx < dw; xx++) {
                 int px = gx + xx; if (px < 0 || px >= w) continue;
-                float a = gl->alpha ? gl->alpha[yy * gl->w + xx] / 255.f : (gl->rgba[yy * gl->w + xx] >> 24) / 255.f;
+                float a;
+                if (dw == gl->w) a = A(yy, xx);
+                else {   /* box-filter the source columns this output column covers */
+                    double s0 = xx / hs, s1 = LMIN((double)gl->w, (xx + 1) / hs), sum = 0;
+                    for (int k = (int)s0; k < s1; k++) sum += A(yy, k) * (LMIN(s1, k + 1.0) - LMAX(s0, (double)k));
+                    a = (float)(sum / LMAX(1e-6, s1 - s0));
+                }
                 float &o = cov[(size_t)py * w + px]; o = LMIN(1.f, o + a);
             }
             ymin = LMIN(ymin, py); ymax = LMAX(ymax, py + 1);
