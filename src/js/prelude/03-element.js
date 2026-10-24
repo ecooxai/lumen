@@ -15,6 +15,31 @@ function parseDecls(s) {
     return m;
 }
 const serDecls = (m) => [...m].map(([k, [v, i]]) => k + ': ' + v + (i ? ' !important' : '') + ';').join(' ');
+/* a longhand only set through a shorthand in this declaration block: its share of the shorthand's value */
+const SHORTHAND_OF = { 'align-items': 'place-items', 'justify-items': 'place-items', 'align-self': 'place-self', 'justify-self': 'place-self', 'align-content': 'place-content', 'justify-content': 'place-content',
+    'row-gap': 'gap', 'column-gap': 'gap', 'overflow-x': 'overflow', 'overflow-y': 'overflow', 'top': 'inset', 'right': 'inset', 'bottom': 'inset', 'left': 'inset',
+    'margin-top': 'margin', 'margin-right': 'margin', 'margin-bottom': 'margin', 'margin-left': 'margin', 'padding-top': 'padding', 'padding-right': 'padding', 'padding-bottom': 'padding', 'padding-left': 'padding' };
+function shorthandPart(m, p) {
+    const sh = SHORTHAND_OF[p], e = sh && m.get(sh);
+    if (!e) return '';
+    const v = e[0].trim();
+    if (/var\(/i.test(v)) return '';
+    if (/^(inherit|initial|unset|revert|revert-layer)$/i.test(v)) return v;
+    const t = tomSplitTop(v, ' ').filter(Boolean);
+    if (sh.startsWith('place-')) {
+        const first = p.startsWith('align-');
+        let a = t, two = [];
+        for (let i = 0; i < a.length; i++) { const w = a[i]; if ((w === 'first' || w === 'last' || w === 'safe' || w === 'unsafe' || w === 'legacy') && i + 1 < a.length) { two.push(w + ' ' + a[++i]); } else two.push(w); }
+        if (two.length > 2 || !two.length) return '';
+        const al = two[0].replace(/^first /, ''), ju = two.length > 1 ? two[1].replace(/^first /, '') : (sh === 'place-content' && /baseline/.test(two[0]) ? 'start' : al);
+        return first ? al : ju;
+    }
+    if (sh === 'gap' || sh === 'overflow') { if (t.length > 2) return ''; return p === 'row-gap' || p === 'overflow-x' ? t[0] : t[t.length - 1]; }
+    if (t.length > 4) return '';
+    const side = ['top', 'right', 'bottom', 'left'].indexOf(p.replace(/^(margin|padding)-/, ''));
+    const idx = [[0, 0, 0, 0], [0, 1, 0, 1], [0, 1, 2, 1], [0, 1, 2, 3]][t.length - 1][side];
+    return t[idx];
+}
 /* specified values of single-colour properties: legacy colours serialize as rgb()/rgba(), keywords lowercase;
    an unparsable colour leaves the declaration unchanged (null) */
 const SPEC_COLOR_PROPS = new Set(['color', 'background-color', 'border-top-color', 'border-right-color', 'border-bottom-color', 'border-left-color', 'border-block-start-color', 'border-block-end-color',
@@ -42,7 +67,7 @@ class CSSStyleDeclaration {
     get cssText() { return serDecls(this._m()); } set cssText(v) { this._el.setAttribute('style', String(v)); }
     get length() { return this._m().size; }
     item(i) { return [...this._m().keys()][i] || ''; }
-    getPropertyValue(p) { const e = this._m().get(camelToKebab(String(p))); return e ? e[0] : ''; }
+    getPropertyValue(p) { p = camelToKebab(String(p)); const m = this._m(), e = m.get(p); return e ? e[0] : shorthandPart(m, p); }
     getPropertyPriority(p) { const e = this._m().get(camelToKebab(String(p))); return e ? e[1] : ''; }
     setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p); if (v != null && v !== '' && SPEC_COLOR_PROPS.has(p)) { v = specColor(String(v)); if (v === null) return; } const m = new Map(this._m()); if (v == null || v === '') m.delete(p); else m.set(p, [String(v), pri ? 'important' : '']); this._el.setAttribute('style', serDecls(m)); }
     removeProperty(p) { p = camelToKebab(String(p)); const m = new Map(this._m()); const e = m.get(p); if (e) { m.delete(p); this._el.setAttribute('style', serDecls(m)); } return e ? e[0] : ''; }

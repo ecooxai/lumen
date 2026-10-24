@@ -743,3 +743,5 @@ broke the whole page prelude: 33 ctest failures).
   gap 'normal' now resets column/row gap.
 - committed initial/unset fix; RUN 132 started (transitions/animations/align/position/sizing/grid/CSS2/cssom-view/flexbox/values/lists)
   specified colour canonicalisation (03-element.js specColor/SPEC_COLOR_PROPS) written; smoke /tmp/sc.html; unbuilt
+- committed specified colours (5467407); not yet WPT-tested
+  shorthandPart (03-element.js) written: longhand reads derived from stored shorthand; smoke /tmp/sh.html
