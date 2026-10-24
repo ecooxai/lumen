@@ -25,7 +25,7 @@ const tomTypeOf = v => {
     const d = tomData(v);
     if (d.k === 'unit') { const c = tomCat(d.unit); return c ? { [c]: 1 } : {}; }
     if (d.k === 'negate') return tomTypeOf(d.v);
-    if (d.k === 'invert') { const t = tomTypeOf(d.v), r = {}; for (const k in t) if (k !== 'percentHint') r[k] = -t[k]; return r; }
+    if (d.k === 'invert') { const t = tomTypeOf(d.v), r = {}; for (const k in t) r[k] = k === 'percentHint' ? t[k] : -t[k]; return r; }
     let t = null;
     for (const x of d.vals) { const u = tomTypeOf(x); t = t === null ? u : d.k === 'product' ? tomMulType(t, u) : tomAddType(t, u); if (!t) throw new TypeError('Incompatible types'); }
     return t;
@@ -33,13 +33,14 @@ const tomTypeOf = v => {
 const tomKeys = t => Object.keys(t).filter(k => k !== 'percentHint' && t[k]);
 const tomAddType = (a, b) => {
     const ka = tomKeys(a), kb = tomKeys(b), same = ka.length === kb.length && ka.every(k => a[k] === b[k]);
+    if (a.percentHint && b.percentHint && a.percentHint !== b.percentHint) return null;
     if (same) return Object.assign({}, a, a.percentHint || b.percentHint ? { percentHint: a.percentHint || b.percentHint } : {});
     const pa = ka.length === 1 && ka[0] === 'percent' && a.percent === 1, pb = kb.length === 1 && kb[0] === 'percent' && b.percent === 1;
     if (pa && kb.length === 1 && b[kb[0]] === 1 && kb[0] !== 'percent') return Object.assign({}, b, { percentHint: kb[0] });
     if (pb && ka.length === 1 && a[ka[0]] === 1 && ka[0] !== 'percent') return Object.assign({}, a, { percentHint: ka[0] });
     return null;
 };
-const tomMulType = (a, b) => { const r = {}; for (const k of new Set([...tomKeys(a), ...tomKeys(b)])) { const e = (a[k] || 0) + (b[k] || 0); if (e) r[k] = e; } return r; };
+const tomMulType = (a, b) => { if (a.percentHint && b.percentHint && a.percentHint !== b.percentHint) return null; const r = {}; for (const k of new Set([...tomKeys(a), ...tomKeys(b)])) { const e = (a[k] || 0) + (b[k] || 0); if (e) r[k] = e; } if (a.percentHint || b.percentHint) r.percentHint = a.percentHint || b.percentHint; return r; };
 const tomRect = v => { if (v instanceof CSSNumericValue) return v; if (typeof v === 'number') return new CSSUnitValue(v, 'number'); if (typeof v === 'string' || typeof v === 'boolean') { const n = Number(v); if (Number.isFinite(n)) return new CSSUnitValue(n, 'number'); } throw new TypeError('Not a numeric value'); };   /* WebIDL (double or CSSNumericValue) */
 const tomMath = (k, vals) => { const o = Object.create(({ sum: CSSMathSum, product: CSSMathProduct, min: CSSMathMin, max: CSSMathMax })[k].prototype); tomInit(o, { k, vals }); tomTypeOf(o); return o; };
 const tomConv = (v, unit) => {   /* value of unit value v in unit, or null */
