@@ -107,6 +107,7 @@ typedef struct ComputedStyle {
     const char *anim_name; float anim_dur, anim_delay, anim_iter; /* first animation layer; name is an atom */
     const char *tr_prop; float tr_dur, tr_delay;                 /* transition-property list atom (NULL = all), max times */
     CustomProps *custom;
+    CustomProps *gen_i, *gen_n;   /* properties without a native field: cascaded value strings (inherited ones / the rest); "" = initial */
     CustomMask custom_dependencies; /* bloom filter of var() names actually consulted */
     uint64_t attribute_dependencies; /* attr() names consulted, including pseudos */
     bool parent_sensitive, inherited_dynamic; /* explicit inherit, container/style-attribute rules */

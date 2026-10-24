@@ -620,3 +620,39 @@ broke the whole page prelude: 33 ctest failures).
   cssom-view next: scrollWidthHeight-negative-margin-002 (496), getBoxQuads (49), convertRectFromNode (18),
   smooth scroll set-immediately semantics (~120), offsetTopLeft-border-box (28), new-iframe MQL (24),
   element-scroll-promises (24), scrollIntoView (40).
+- 4534129 committed geometry fixes. RUN 128 started (agents 43986682 run, f986614f monitor): /css/ + /shadow-dom/
+  on 4534129 (first CSS run with the getComputedStyle `in` fix + colour conversion); results -> /tmp/run128-*.
+  Computed modern-colour serialisation plan (not started): canvas2d.js c2dColor (line ~315) already serialises
+  cssColor() results Chrome-style (lab/oklab keep form, others -> color(space ...), alpha rounding). cssColor
+  (shared/color.js:39) returns {space, c[3], alpha, legacy, current}. For ComputedStyleDeclaration.getPropertyValue
+  of colour properties: if the native computed value is a colour and the element's inline declaration for that
+  property (most WPT computed tests set target.style[prop]) parses with cssColor to legacy === false, return the
+  c2dColor-style string instead (lch/oklch: Chrome keeps lch()/oklch() forms - check color-computed-lab/-oklch
+  expectations). Proper fix later: native keeps the declared string per colour property.
+  Checked expectations (css-color/parsing/color-computed-lab.html:86+): lch()/oklch() keep their own form with hue as a
+  bare number: "lch(0 0 0deg / 0.5)" -> "lch(0 0 0 / 0.5)"; lab/oklab likewise keep form. So the serialiser needs
+  lch/oklch/lab/oklab kept as-is (numbers via colorNum), color(space ...) for the rest.
+- RUN 128 (4534129, /css/ + /shadow-dom/, 8321 tests, 1460 s, 0 crash): /css/ 27.6% -> 31.3% (58349/186576);
+  css-color 9.7 -> 46.0%, geometry 96.5%, css-box 60.1%, shadow-dom 95.2%. 98 regressed (mostly animation
+  composition/interpolation: underlying value not replaced, repeat counts in grid-template interpolation; css-fonts
+  generic-family-keywords-002 -webkit-sans-serif; FontFace ascentOverride etc. getters missing). caret tests:
+  flex 3/3, transform 1/1, caretPositionFromPoint 5/7 (must return null outside viewport), caretRange 4/7.
+  TOP /css/ GAPS: 26280 "'X' value should be supported" (interpolation test helper - check what it calls,
+  e.g. CSS.supports or element.animate support), 29372 generic computed mismatches, 10915 ReferenceError
+  CSSKeywordValue (css-typed-om: implement CSSStyleValue family + attributeStyleMap/computedStyleMap),
+  5946 canonical serialization, ~2500 grid checkLayout, 1134 CSS.supports false, 882 querySelector should throw
+  (unknown pseudo-elements), 698 gridTemplateColumns.
+- ROOT CAUSE for much of /css/: css_get_computed_value (style.c ~3920-4046) handles ~68 properties; everything else
+  computes to "" (and CSS.supports = css_supports in parse.c:603 only checks the 167-entry known_props name list).
+  PLAN "generic property store": ComputedStyle gets a refcounted map (like s->custom / custom_ref / custom_get) of
+  unmodelled standard properties -> cascaded value string; css_apply_decl stores unknown-but-valid names there;
+  style_inherit copies only inherited ones; computed value = stored value, else inherited, else Chrome initial value.
+  Initial values + inherit flags come from Chrome-passing subtest names in chrome-base.json:
+  "Property X has initial value Y", "Property X inherits" / "does not inherit" -> generate a C table
+  (tools/ script) src/css/props_generated.inc. css_property_known then = known_props ∪ table (CSS.supports).
+  IMPLEMENTED (unbuilt): tools/gen_css_props.py -> src/css/props_generated.inc (497 props {name, inherited,
+  native(computed natively), initial}); style.c gen_props/gen_prop (bsearch)/gen_put (COW like custom)/gen_value;
+  ComputedStyle.gen_i/gen_n (css.h); css_apply_decl stores non-native props (inherit/initial/unset handled, "" =
+  initial); css_get_computed_value falls back to gen value / initial ("currentcolor" -> color); css_property_known
+  includes gen_prop (CSS.supports); paint_only zeroes gen_i/gen_n. Known gaps: no value validation, no px
+  conversion of lengths, inherited gen values don't propagate on inheritance-only parent updates.

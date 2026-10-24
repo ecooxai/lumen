@@ -58,6 +58,39 @@ const char *custom_get(const CustomProps *c, const char *name) {
 }
 #define CUSTOM_MAX_DEPTH 64
 
+/* Properties Chrome supports, for CSS.supports and the generic value store */
+typedef struct { const char *name; uint8_t inherited, native; const char *initial; } GenProp;
+static const GenProp gen_props[] = {
+#include "props_generated.inc"
+};
+static const GenProp *gen_prop(const char *p) {
+    int lo = 0, hi = (int)(sizeof gen_props / sizeof *gen_props) - 1;
+    while (lo <= hi) { int m = (lo + hi) / 2, c = strcmp(p, gen_props[m].name); if (!c) return &gen_props[m]; if (c < 0) hi = m - 1; else lo = m + 1; }
+    return NULL;
+}
+/* sets prop to v (taking ownership) in a copy-on-write chain of maps */
+static void gen_put(CustomProps **slot, const char *prop, char *v) {
+    CustomProps *c = *slot;
+    const char *cur = custom_get(c, prop);
+    if (cur && !strcmp(cur, v)) { free(v); return; }
+    if (!c || c->refs > 1) {
+        CustomProps *n = xcalloc(1, sizeof *n); n->refs = 1;
+        if (c && c->depth < CUSTOM_MAX_DEPTH) { n->parent = c; n->depth = c->depth + 1; }
+        else if (c) {
+            const CustomProps *chain[CUSTOM_MAX_DEPTH + 2]; int nc = 0;
+            for (const CustomProps *x = c; x && nc < CUSTOM_MAX_DEPTH + 2; x = x->parent) chain[nc++] = x;
+            while (nc-- > 0) hm_foreach((HMap *)&chain[nc]->map, ent) { char *prev = hm_get(&n->map, ent->key); hm_put(&n->map, ent->key, xstrdup((char *)ent->val)); free(prev); }
+            custom_unref(c);
+        }
+        *slot = c = n;
+    }
+    char *old = hm_get(&c->map, prop); hm_put(&c->map, prop, v); free(old);
+}
+static const char *gen_value(const ComputedStyle *s, const GenProp *g) {
+    const char *v = custom_get(g->inherited ? s->gen_i : s->gen_n, g->name);
+    return v && *v ? v : NULL;
+}
+
 ComputedStyle *style_inherit(const ComputedStyle *p) {
     ComputedStyle *s = style_new_default();
     if (!p) return s;
@@ -68,7 +101,7 @@ ComputedStyle *style_inherit(const ComputedStyle *p) {
     s->cursor = p->cursor; s->pointer_events = p->pointer_events; s->word_break = p->word_break; s->overflow_wrap = p->overflow_wrap; s->direction = p->direction;
     s->has_text_shadow = p->has_text_shadow; s->text_shadow = p->text_shadow; s->caret_color = p->caret_color; s->fill = p->fill; s->stroke = p->stroke; s->stroke_width = p->stroke_width;
     s->user_select = p->user_select; s->border_collapse = p->border_collapse; s->writing_mode = p->writing_mode; s->inert = p->inert;
-    s->custom = custom_ref(p->custom);
+    s->custom = custom_ref(p->custom); s->gen_i = custom_ref(p->gen_i);
     for (int i = 0; i < 4; i++) s->border_color[i] = s->color;
     s->outline_color = s->color;
     return s;
@@ -78,7 +111,7 @@ void style_free(ComputedStyle *s) {
     if (!s || --s->refs > 0) return;
     g_styles_live--;
     free(s->bg_image); free(s->mask_image); free(s->bg_gradient); free(s->content); free(s->grid_cols); free(s->grid_rows); free(s->grid_areas); free(s->grid_area);
-    custom_unref(s->custom);
+    custom_unref(s->custom); custom_unref(s->gen_i); custom_unref(s->gen_n);
     if (s->before) style_free(s->before);
     if (s->marker) style_free(s->marker);
     if (s->after) style_free(s->after);
@@ -762,7 +795,7 @@ static bool inherit_copies_uncompared(const char *P) {
     return border_corner(P) >= 0;
 }
 static const char *const known_props[] = { "animation","animation-name","animation-duration","animation-delay","animation-iteration-count","animation-timing-function","animation-fill-mode","animation-direction","animation-play-state","transition","transition-property","transition-duration","transition-delay","transition-timing-function","display","position","float","clear","width","height","min-width","min-height","max-width","max-height","margin","margin-top","margin-right","margin-bottom","margin-left","padding","padding-top","padding-right","padding-bottom","padding-left","border","border-width","border-style","border-color","border-top","border-right","border-bottom","border-left","border-radius","color","background","background-color","background-image","font","font-size","font-weight","font-family","font-style","line-height","text-align","text-decoration","white-space","overflow","overflow-x","overflow-y","visibility","opacity","z-index","top","right","bottom","left","inset","flex","flex-direction","flex-wrap","flex-grow","flex-shrink","flex-basis","justify-content","align-items","align-self","align-content","gap","row-gap","column-gap","order","grid","grid-template-columns","grid-template-rows","grid-column","grid-row","grid-area","transform","transition","animation","box-shadow","text-shadow","box-sizing","cursor","pointer-events","content","list-style","list-style-type","vertical-align","text-transform","letter-spacing","word-spacing","text-indent","text-overflow","word-break","overflow-wrap","word-wrap","object-fit","aspect-ratio","filter","outline","user-select","appearance","will-change","contain","isolation","mix-blend-mode","place-items","place-content","place-self","justify-items","justify-self","table-layout","border-collapse","border-spacing","clip-path","mask","mask-image","mask-size","-webkit-mask","-webkit-mask-image","-webkit-mask-size","resize","scroll-behavior","overscroll-behavior","touch-action","font-variant","text-rendering","-webkit-font-smoothing","fill","stroke","caret-color","accent-color","color-scheme","translate","scale","rotate","container-type","backdrop-filter","line-clamp","-webkit-line-clamp","text-wrap","hyphens","tab-size","direction","unicode-bidi","writing-mode","inset-inline","inset-block","margin-inline","margin-block","padding-inline","padding-block","inline-size","block-size","min-inline-size","max-inline-size","min-block-size","max-block-size", NULL };
-bool css_property_known(const char *p) { return kw(p, known_props) >= 0; }
+bool css_property_known(const char *p) { return kw(p, known_props) >= 0 || gen_prop(p); }
 
 static char *parse_grid_areas(const char *v) {
     if (str_ieq(v, "none")) return NULL;
@@ -914,6 +947,14 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
     st->indep_set |= indep_bit(P);
     bool inherit = str_ieq(val, "inherit"), initial = str_ieq(val, "initial") || str_ieq(val, "revert") || str_ieq(val, "revert-layer"), unset = str_ieq(val, "unset");
     if (inherit && inherit_copies_uncompared(P)) st->parent_sensitive = true;
+    const GenProp *gp = gen_prop(P);
+    if (gp && !gp->native) {
+        CustomProps **slot = gp->inherited ? &st->gen_i : &st->gen_n;
+        const char *pv = par ? gen_value(par, gp) : NULL;
+        if (inherit || (unset && gp->inherited)) gen_put(slot, P, xstrdup(pv ? pv : ""));
+        else if (initial || unset) gen_put(slot, P, xstrdup(""));
+        else gen_put(slot, P, xstrdup(val));
+    }
     {
         const char *Q = strncmp(P, "-webkit-", 8) ? P : P + 8;
         if (!strncmp(Q, "animation", 9) || !strncmp(Q, "transition", 10)) { anim_decl(st, Q, inherit || initial || unset ? "" : val); free(vbuf); free(subst); return; }
@@ -3004,7 +3045,7 @@ static bool paint_only(const ComputedStyle *a, const ComputedStyle *b) {
     if (!paint_only(a->before, b->before) || !paint_only(a->after, b->after) || !paint_only(a->marker, b->marker)) return false;
     ComputedStyle x = *a, y = *b;
 #define PO_Z(f) (memset(&x.f, 0, sizeof x.f), memset(&y.f, 0, sizeof y.f))
-    PO_Z(refs); PO_Z(grid_cols); PO_Z(grid_rows); PO_Z(content); PO_Z(grid_areas); PO_Z(grid_area); PO_Z(before); PO_Z(after); PO_Z(custom);
+    PO_Z(refs); PO_Z(grid_cols); PO_Z(grid_rows); PO_Z(content); PO_Z(grid_areas); PO_Z(grid_area); PO_Z(before); PO_Z(after); PO_Z(custom); PO_Z(gen_i); PO_Z(gen_n);
     PO_Z(custom_dependencies); PO_Z(attribute_dependencies); PO_Z(parent_sensitive); PO_Z(inherited_dynamic); PO_Z(indep_set);
     PO_Z(color); PO_Z(bg_color); PO_Z(bg_image); PO_Z(bg_gradient); PO_Z(bg_repeat); PO_Z(bg_size_kind); PO_Z(bg_size); PO_Z(bg_pos);
     PO_Z(mask_image); PO_Z(mask_fit); PO_Z(border_color); PO_Z(outline_style); PO_Z(outline_width); PO_Z(outline_offset); PO_Z(outline_color);
@@ -4041,6 +4082,12 @@ char *css_get_computed_value(Node *el, const char *prop) {
         static const char *ls[] = { "none", "disc", "circle", "square", "decimal", "lower-alpha", "upper-alpha", "lower-roman", "upper-roman" };
         sb_puts(&b, ls[s->list_style % 9]);
     }
-    else sb_puts(&b, "");
+    else {
+        const GenProp *g = gen_prop(prop);
+        const char *v = g ? gen_value(s, g) : NULL;
+        if (!v && g) v = g->initial;
+        if (v && !strcmp(v, "currentcolor") && g && !g->native) color_str(&b, s->color);
+        else if (v) sb_puts(&b, v);
+    }
     return sb_take(&b);
 }
