@@ -600,3 +600,14 @@ broke the whole page prelude: 33 ctest failures).
   alpha 0.5 -> 0.501961. Fix plan: native keeps the declared colour string for color-ish properties (or JS reads the
   cascaded declaration) and JS serialises via shared color.js (cssColor/colorTo) per css-color-4 computed rules
   (legacy rgb()/rgba() for sRGB-legacy syntaxes, keep lab()/oklch()/color() forms, alpha rounded to 3 sig like Chrome).
+  Uncommitted: style.c alpha_round (Chrome 2/3-decimal alpha) in color_str.
+  Modern-colour plan: css_apply_decl(st, par, P, val, ...) in style.c (~line 908 for background-color) parses with
+  css_parse_color(val, &col, current) into 8-bit Color. Add to ComputedStyle a small owned list of {prop atom, declared
+  string} for colour properties whose value is non-legacy (lab/lch/oklab/oklch/color(/color-mix/`from`/light-dark?);
+  check how ComputedStyle is copied/freed (inherit + style sharing) before adding owned pointers. css_get_computed_value
+  returns "\x01<declared>" for those; ComputedStyleDeclaration.getPropertyValue serialises it with shared color.js
+  (same serializer as canvas fillStyle) resolving currentcolor. Also native parser lacks lab/oklch/color(): fix
+  css_parse_color to convert them to sRGB 8-bit for painting (use the matrices from color.js).
+  Uncommitted (style.c): wide_color() converts lab/lch/oklab/oklch/hwb/color(srgb|srgb-linear|display-p3|rec2020|
+  a98-rgb|prophoto-rgb|xyz*) to 8-bit sRGB for painting (replaced the grey placeholder); relative colours (`from`)
+  still unsupported natively. Computed-value serialisation of modern colours still pending (plan above).

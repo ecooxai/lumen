@@ -107,6 +107,71 @@ static int parse_fn_args(const char *s, float *v, bool *pct, int max) {
     return n;
 }
 
+/* CSS Color 4 colours outside legacy sRGB syntax, converted to 8-bit sRGB (clipped) */
+static float srgb_enc(float x) { float a = fabsf(x), r = a <= 0.0031308f ? 12.92f * a : 1.055f * powf(a, 1 / 2.4f) - .055f; return x < 0 ? -r : r; }
+static float srgb_dec(float x) { float a = fabsf(x), r = a <= 0.04045f ? a / 12.92f : powf((a + .055f) / 1.055f, 2.4f); return x < 0 ? -r : r; }
+static void mat3(const float m[9], float v[3]) { float x = v[0], y = v[1], z = v[2]; for (int i = 0; i < 3; i++) v[i] = m[i * 3] * x + m[i * 3 + 1] * y + m[i * 3 + 2] * z; }
+static const float XYZ65_TO_LSRGB[9] = {3.2409699f, -1.5373832f, -0.4986108f, -0.9692436f, 1.8759675f, 0.0415551f, 0.0556301f, -0.2039770f, 1.0569715f};
+static const float D50_TO_D65[9] = {0.9554734f, -0.0230985f, 0.0632593f, -0.0283697f, 1.0099955f, 0.0210414f, 0.0123140f, -0.0205077f, 1.3303659f};
+static const float LP3_TO_XYZ65[9] = {0.4865709f, 0.2656677f, 0.1982173f, 0.2289746f, 0.6917385f, 0.0792869f, 0, 0.0451134f, 1.0439444f};
+static const float LREC2020_TO_XYZ65[9] = {0.6369580f, 0.1446169f, 0.1688810f, 0.2627002f, 0.6779981f, 0.0593017f, 0, 0.0280727f, 1.0609851f};
+static const float LA98_TO_XYZ65[9] = {0.5766690f, 0.1855582f, 0.1882286f, 0.2973450f, 0.6273636f, 0.0752915f, 0.0270314f, 0.0706889f, 0.9913375f};
+static const float LPRO_TO_XYZ50[9] = {0.7977605f, 0.1351858f, 0.0313493f, 0.2880711f, 0.7118432f, 0.0000857f, 0, 0, 0.8251046f};
+static bool wide_color(const char *s, Color *out) {
+    const char *args = strchr(s, '(') + 1; char space[24] = "";
+    if (str_starts(s, "color(")) {
+        while (is_ws((unsigned char)*args)) args++;
+        size_t k = 0; while (*args && !is_ws((unsigned char)*args) && *args != ')' && k < sizeof space - 1) space[k++] = *args++;
+        space[k] = 0;
+    }
+    float v[4] = {0, 0, 0, 1}; bool pc[4] = {0}; int n = parse_fn_args(args, v, pc, 4);
+    if (n < 3) return false;
+    float a = n > 3 ? (pc[3] ? v[3] / 100 : v[3]) : 1, c[3];   /* c: linear sRGB */
+    if (*space) {
+        for (int i = 0; i < 3; i++) c[i] = pc[i] ? v[i] / 100 : v[i];
+        if (!strcmp(space, "srgb")) for (int i = 0; i < 3; i++) c[i] = srgb_dec(c[i]);
+        else if (!strcmp(space, "srgb-linear")) {}
+        else if (!strcmp(space, "display-p3")) { for (int i = 0; i < 3; i++) c[i] = srgb_dec(c[i]); mat3(LP3_TO_XYZ65, c); mat3(XYZ65_TO_LSRGB, c); }
+        else if (!strcmp(space, "rec2020")) {
+            for (int i = 0; i < 3; i++) { float x = fabsf(c[i]), r = x < 0.081242858f ? x / 4.5f : powf((x + 0.09929683f) / 1.09929683f, 1 / 0.45f); c[i] = c[i] < 0 ? -r : r; }
+            mat3(LREC2020_TO_XYZ65, c); mat3(XYZ65_TO_LSRGB, c);
+        } else if (!strcmp(space, "a98-rgb")) { for (int i = 0; i < 3; i++) c[i] = copysignf(powf(fabsf(c[i]), 563.f / 256), c[i]); mat3(LA98_TO_XYZ65, c); mat3(XYZ65_TO_LSRGB, c); }
+        else if (!strcmp(space, "prophoto-rgb")) {
+            for (int i = 0; i < 3; i++) { float x = fabsf(c[i]); c[i] = copysignf(x <= 16.f / 512 ? x / 16 : powf(x, 1.8f), c[i]); }
+            mat3(LPRO_TO_XYZ50, c); mat3(D50_TO_D65, c); mat3(XYZ65_TO_LSRGB, c);
+        } else if (!strcmp(space, "xyz") || !strcmp(space, "xyz-d65")) mat3(XYZ65_TO_LSRGB, c);
+        else if (!strcmp(space, "xyz-d50")) { mat3(D50_TO_D65, c); mat3(XYZ65_TO_LSRGB, c); }
+        else return false;
+    } else if (s[0] == 'h') {   /* hwb(h w b) */
+        float w = v[1] / 100, bk = v[2] / 100, h = fmodf(v[0], 360) / 360; if (h < 0) h += 1;
+        if (w + bk >= 1) { float g = w / (w + bk); c[0] = c[1] = c[2] = g; }
+        else { c[0] = hue2rgb(0, 1, h + 1.f / 3); c[1] = hue2rgb(0, 1, h); c[2] = hue2rgb(0, 1, h - 1.f / 3); for (int i = 0; i < 3; i++) c[i] = c[i] * (1 - w - bk) + w; }
+        for (int i = 0; i < 3; i++) c[i] = srgb_dec(c[i]);
+    } else {
+        bool ok = s[0] == 'o', polar = strstr(s, "lch(") == s || strstr(s, "oklch(") == s;
+        float L = pc[0] ? v[0] / 100 * (ok ? 1 : 100) : v[0];
+        float scale = ok ? 0.4f : polar ? 150 : 125, A = pc[1] ? v[1] / 100 * scale : v[1], B = pc[2] ? v[2] / 100 * scale : v[2];
+        if (polar) { float C = A < 0 ? 0 : A, h = v[2] * (float)M_PI / 180; A = C * cosf(h); B = C * sinf(h); }
+        if (ok) {
+            float l = L + 0.3963377774f * A + 0.2158037573f * B, m = L - 0.1055613458f * A - 0.0638541728f * B, q = L - 0.0894841775f * A - 1.2914855480f * B;
+            l = l * l * l; m = m * m * m; q = q * q * q;
+            c[0] = 4.0767416621f * l - 3.3077115913f * m + 0.2309699292f * q;
+            c[1] = -1.2684380046f * l + 2.6097574011f * m - 0.3413193965f * q;
+            c[2] = -0.0041960863f * l - 0.7034186147f * m + 1.7076147010f * q;
+        } else {
+            const float k = 24389.f / 27, e = 216.f / 24389;
+            float fy = (L + 16) / 116, fx = fy + A / 500, fz = fy - B / 200;
+            c[0] = (fx * fx * fx > e ? fx * fx * fx : (116 * fx - 16) / k) * 0.96422f;
+            c[1] = L > k * e ? fy * fy * fy : L / k;
+            c[2] = (fz * fz * fz > e ? fz * fz * fz : (116 * fz - 16) / k) * 0.82521f;
+            mat3(D50_TO_D65, c); mat3(XYZ65_TO_LSRGB, c);
+        }
+    }
+    int r8[3]; for (int i = 0; i < 3; i++) r8[i] = (int)lroundf(LCLAMP(srgb_enc(c[i]), 0, 1) * 255);
+    *out = RGBA(r8[0], r8[1], r8[2], (int)LCLAMP(a * 255 + .5f, 0, 255));
+    return true;
+}
+
 bool css_parse_color(const char *in, Color *out, Color current) {
     while (is_ws((unsigned char)*in)) in++;
     char buf[128]; size_t L = strlen(in); if (L >= sizeof buf) L = sizeof buf - 1;
@@ -169,7 +234,10 @@ bool css_parse_color(const char *in, Color *out, Color current) {
         *out = RGBA(r, g, b, (int)LCLAMP(al * mult * 255 + .5f, 0, 255)); return true;
     }
     if (str_starts(s, "light-dark(")) { char t[96]; snprintf(t, sizeof t, "%s", s + 11); char *c = strchr(t, ','); if (c) *c = 0; return css_parse_color(t, out, current); }
-    if (str_starts(s, "oklch(") || str_starts(s, "lab(") || str_starts(s, "lch(") || str_starts(s, "oklab(")) { float v[4] = {0, 0, 0, 1}; bool pc[4] = {0}; int n = parse_fn_args(strchr(s, '(') + 1, v, pc, 4); if (n < 3) return false; int g = (int)LCLAMP((pc[0] ? v[0] / 100 : (s[0] == 'o' ? v[0] : v[0] / 100)) * 255, 0, 255); *out = RGBA(g, g, g, (int)(LCLAMP(n > 3 ? v[3] : 1, 0, 1) * 255)); return true; }
+    if (str_starts(s, "oklch(") || str_starts(s, "lab(") || str_starts(s, "lch(") || str_starts(s, "oklab(") || str_starts(s, "color(") || str_starts(s, "hwb(")) {
+        if (strstr(s, "from ")) return false;   /* relative colours: not supported natively */
+        return wide_color(s, out);
+    }
     int lo = 0, hi = (int)ARRLEN(named_colors) - 1;
     for (int i = 0; i <= hi; i++) if (!strcmp(named_colors[i].n, s)) { *out = 0xff000000u | named_colors[i].c; return true; }
     (void)lo;
@@ -3825,7 +3893,9 @@ void style_recalc(StyleEngine *e, Node *root, bool force) {
 }
 ComputedStyle *style_for_text(Node *t) { Node *p = t->parent; while (p && p->type != NODE_ELEMENT) p = p->parent ? p->parent : p->host; return p ? p->style : NULL; }
 
-static void color_str(SB *b, Color c) { if (COLOR_A(c) == 255) sb_printf(b, "rgb(%u, %u, %u)", COLOR_R(c), COLOR_G(c), COLOR_B(c)); else sb_printf(b, "rgba(%u, %u, %u, %g)", COLOR_R(c), COLOR_G(c), COLOR_B(c), COLOR_A(c) / 255.0); }
+/* alpha as Chrome prints it: the 2-decimal value that maps back to the same byte, else 3 decimals */
+static double alpha_round(unsigned a8) { double r = round(a8 / 2.55) / 100; return (unsigned)lround(r * 255) == a8 ? r : round(a8 / 0.255) / 1000; }
+static void color_str(SB *b, Color c) { if (COLOR_A(c) == 255) sb_printf(b, "rgb(%u, %u, %u)", COLOR_R(c), COLOR_G(c), COLOR_B(c)); else sb_printf(b, "rgba(%u, %u, %u, %g)", COLOR_R(c), COLOR_G(c), COLOR_B(c), alpha_round(COLOR_A(c))); }
 static void len_str(SB *b, Length l, const char *au) {
     if (l.kind == LK_AUTO) sb_puts(b, au);
     else if (l.kind == LK_NONE) sb_puts(b, "none");
