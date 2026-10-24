@@ -188,13 +188,13 @@ static bool pe_tail_ok(const Compound *c) {
 }
 static bool is_ident_arg(const char *v) {
     if (!v || !*v || (isdigit((unsigned char)v[0])) || (v[0] == '-' && isdigit((unsigned char)v[1]))) return false;
-    for (const char *q = v; *q; q++) if (!(isalnum((unsigned char)*q) || *q == '-' || *q == '_' || (unsigned char)*q >= 0x80)) return false;
+    for (const char *q = v; *q; q++) { if (*q == '\\' && q[1]) { q++; continue; } if (!(isalnum((unsigned char)*q) || *q == '-' || *q == '_' || (unsigned char)*q >= 0x80)) return false; }
     return true;
 }
 static bool pe_args_ok(const SimpleSel *x) {
     static const char *const dirs[] = { "*", "up", "down", "left", "right", "block-start", "block-end", "inline-start", "inline-end", NULL };
     if (x->name == atom("picker")) return x->value && str_ieq(x->value, "select");
-    if (x->name == atom("highlight")) return is_ident_arg(x->value);
+    if (x->name == atom("highlight")) return x->value && (!strcmp(x->value, "*") || is_ident_arg(x->value));
     if (x->name == atom("scroll-button")) { if (!x->value) return false; char b[32]; size_t n = strlen(x->value); if (n >= sizeof b) return false; for (size_t i = 0; i <= n; i++) b[i] = (char)lc(x->value[i]); return in_list(b, dirs); }
     return true;
 }
