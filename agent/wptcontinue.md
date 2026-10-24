@@ -788,3 +788,14 @@ broke the whole page prelude: 33 ctest failures).
 - committed specNormalize + run135 regression fixes; RUN 136 (/css/ full) started
   @property: native validity (syntax+inherits required, initial for non-* syntax, simple type checks) parse.c; unbuilt
 - committed @property validity (2d68538); waiting run 136 (739f448b, mon be2ea702)
+- committed tomValidText (11b59d4); smoke /tmp/tp.html ok; not WPT-tested
+- RUN 136 (/css/ full, bb82281 = before @property/tomValidText commits): 86299 -> 88910/186576 (47.7%), 0 crash.
+  typed-om 3995 -> 6130. 403 regressed: (a) css-sizing width/height "CSS Transitions ... from neutral" at -0.3 give
+  the target (transition not started?) 170; (b) colours at 0.3 give 76/49 instead of 77/50 and font-variation
+  15.000003 -> float32 round trip somewhere in the CSS Transitions path (suspect: interpolated value now read back
+  through native computed or specNormalize/specColor re-serialising anim values); (c) css-transitions
+  properties-value-001/inherit pt heights "must not be target value after start" got 13.3333px.
+  13 OK->TIMEOUT (transitions before-load-001, transition-remove-and-change-immediate, transitioncancel-003;
+  cssom-view x4; cssom x3) - some flaky. NEXT: reproduce (a)/(b) with jsrun page using
+  /mnt/p3/project/browser/wpt/css/support/interpolation-testcommon.js pattern; then insets (still 20px), align-content
+  "first baseline" -> "baseline" canonical, CSSPositionTryRule, CSS.supports general_enclosed, cs is not iterable.
