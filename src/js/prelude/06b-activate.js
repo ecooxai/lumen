@@ -315,10 +315,63 @@ function readopt(scope) { if (scope.__ass.some(s => { const n = s._mirrors && s.
 function adoptedGet(scope) { return new Proxy((scope.__ass || []).slice(), { set(t, k, val) { t[k] = val; adoptSheets(scope, t); return true; } }); }
 function scopeSheets(scope) { return N.query(scope, 'style,link[rel~=stylesheet]', true).filter(el => !el.__mirror).map(sheetFor); }
 function sheetFor(el) { if (!el.__sheet) { const s = new CSSStyleSheet(); def(s, '_owner', el); def(el, '__sheet', s); } return el.__sheet; }
+/* CSS.registerProperty: validates the definition (name, syntax, a computationally independent initial value) */
+const registeredProps = new Map();
+const RP_TYPES = new Set(['length', 'number', 'percentage', 'length-percentage', 'color', 'image', 'url', 'integer', 'angle', 'time', 'resolution', 'transform-function', 'custom-ident', 'transform-list', 'string']);
+const RP_NUM = '[+-]?(?:\\d+\\.?\\d*|\\.\\d+)(?:e[+-]?\\d+)?';
+const rpRe = (u) => new RegExp('^' + RP_NUM + u + '$', 'i');
+const RP_CHECK = {
+    length: v => v === '0' || rpRe('(px|cm|mm|in|pt|pc|q)').test(v) || /^calc\(/i.test(v) && !/(em|ex|ch|rem|vw|vh|vmin|vmax|lh|%|var\()/i.test(v),
+    number: v => rpRe('').test(v), integer: v => /^[+-]?\d+$/.test(v), percentage: v => rpRe('%').test(v),
+    'length-percentage': v => RP_CHECK.length(v) || RP_CHECK.percentage(v) || /^calc\(/i.test(v) && !/(em|ex|ch|rem|vw|vh|vmin|vmax|lh|var\()/i.test(v),
+    color: v => !!cssColor(v) && !/^currentcolor$/i.test(v), angle: v => v === '0' || rpRe('(deg|rad|grad|turn)').test(v), time: v => rpRe('(s|ms)').test(v),
+    resolution: v => rpRe('(dpi|dpcm|dppx|x)').test(v), url: v => /^url\(.*\)$/i.test(v), image: v => /^(url|(repeating-)?(linear|radial|conic)-gradient)\(.*\)$/i.test(v),
+    'transform-function': v => /^[a-z0-9-]+\(.*\)$/i.test(v) && !/(em|%)/i.test(v), 'transform-list': v => v.split(/\)\s*/).filter(Boolean).every(f => RP_CHECK['transform-function'](f + ')')),
+    'custom-ident': v => /^-?[_a-z][\w-]*$/i.test(v) && !/^(inherit|initial|unset|revert|revert-layer|default)$/i.test(v), string: v => /^(["']).*\1$/.test(v),
+};
+function rpParseSyntax(syn) {
+    const s = syn.trim();
+    if (s === '*') return '*';
+    if (!s) return null;
+    const out = [];
+    for (const part of s.split('|')) {
+        const m = /^\s*(?:<([a-z-]+)>|([-_a-zA-Z][\w-]*))([+#]?)\s*$/.exec(part);
+        if (!m) return null;
+        if (m[1] && !RP_TYPES.has(m[1])) return null;
+        if (m[2] && /^(inherit|initial|unset|revert|revert-layer|default)$/i.test(m[2])) return null;
+        if (m[1] === 'transform-list' && m[3]) return null;
+        out.push({ type: m[1], ident: m[2], mult: m[3] });
+    }
+    return out;
+}
+function rpMatches(comps, v) {
+    v = v.trim();
+    if (/var\(|env\(|attr\(/i.test(v)) return false;
+    return comps.some(c => {
+        const one = x => c.ident ? x === c.ident : RP_CHECK[c.type](x);
+        if (!c.mult) return one(v);
+        const items = c.mult === '#' ? tomSplitTop(v, ',').map(x => x.trim()) : v.split(/\s+/);
+        return items.length > 0 && items.every(x => x && one(x));
+    });
+}
+function registerProperty(d) {
+    if (d === null || typeof d !== 'object' && typeof d !== 'function') throw new TypeError("Failed to execute 'registerProperty' on 'CSS': parameter 1 is not of type 'PropertyDefinition'.");
+    if (d.name === undefined) throw new TypeError("Failed to execute 'registerProperty' on 'CSS': required member name is undefined.");
+    if (d.inherits === undefined) throw new TypeError("Failed to execute 'registerProperty' on 'CSS': required member inherits is undefined.");
+    const name = String(d.name), syntax = d.syntax === undefined ? '*' : String(d.syntax), iv = d.initialValue === undefined ? undefined : String(d.initialValue);
+    if (!/^--/.test(name)) throw new DOMException(`Custom property names must start with '--'.`, 'SyntaxError');
+    const comps = rpParseSyntax(syntax);
+    if (!comps) throw new DOMException(`The given syntax '${syntax}' is invalid.`, 'SyntaxError');
+    if (comps !== '*' && iv === undefined) throw new DOMException('An initial value must be provided if the syntax is not "*"', 'SyntaxError');
+    if (iv !== undefined && (comps === '*' ? /var\(/i.test(iv) : !rpMatches(comps, iv))) throw new DOMException('The initial value provided does not parse for the given syntax.', 'SyntaxError');
+    if (registeredProps.has(name)) throw new DOMException('The name provided has already been registered.', 'InvalidModificationError');
+    registeredProps.set(name, { syntax, inherits: !!d.inherits, initialValue: iv });
+    if (iv !== undefined) N.registerProp(name, iv.trim());
+}
 const CSS = {
     escape(s) { s = String(s); let r = ''; for (let i = 0; i < s.length; i++) { const c = s.charCodeAt(i); if (c === 0) r += '\uFFFD'; else if ((c >= 1 && c <= 31) || c === 127 || (i === 0 && c >= 48 && c <= 57) || (i === 1 && c >= 48 && c <= 57 && s.charCodeAt(0) === 45)) r += '\\' + c.toString(16) + ' '; else if (i === 0 && c === 45 && s.length === 1) r += '\\-'; else if (c >= 128 || c === 45 || c === 95 || (c >= 48 && c <= 57) || (c >= 65 && c <= 90) || (c >= 97 && c <= 122)) r += s[i]; else r += '\\' + s[i]; } return r; },
     supports(p, v) { return N.cssSupports(v === undefined ? String(p) : `(${p}: ${v})`); },
-    registerProperty() {},
+    registerProperty(d) { registerProperty(d); },
 };
 /* set-like over the faces a page adds: pages spread it (`[...document.fonts]`) and read .size */
 const fontFaces = new Set();

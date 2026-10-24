@@ -4054,7 +4054,7 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
     static const char *const ds[] = { "none", "inline", "block", "inline-block", "flex", "inline-flex", "grid", "inline-grid", "list-item", "table", "inline-table", "table-row", "table-cell", "table-row-group", "table-header-group", "table-footer-group", "table-column", "table-column-group", "table-caption", "contents", "flow-root" };
     static const char *const ps[] = { "static", "relative", "absolute", "fixed", "sticky" };
     static const char *const bs[] = { "none", "hidden", "solid", "dashed", "dotted", "double", "groove", "ridge", "inset", "outset" };
-    if (prop[0] == '-' && prop[1] == '-') { const char *v = custom_get(s->custom, prop); if (v) sb_puts(&b, v); }
+    if (prop[0] == '-' && prop[1] == '-') { const char *v = custom_get(s->custom, prop); if (!v) v = css_property_initial(prop); if (v) sb_puts(&b, v); }
     else if (!strcmp(prop, "display")) sb_puts(&b, ds[s->display]);
     else if (!strncmp(prop, "animation-", 10) || !strncmp(prop, "transition-", 11) || !strncmp(prop, "-webkit-animation-", 18) || !strncmp(prop, "-webkit-transition-", 19)) {
         const char *q = strncmp(prop, "-webkit-", 8) ? prop : prop + 8;

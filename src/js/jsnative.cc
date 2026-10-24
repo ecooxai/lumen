@@ -1047,6 +1047,8 @@ FN(hidden) { CTX; RET(v8::Boolean::New(iso, c->bg)); }
 FN(media) { CTX; std::string q = S(0); RET(jsg_media(c->host.media, q.c_str())); }
 FN(cssSelText) { CTX; std::string q = S(0); char *r = css_selector_text(q.c_str()); RET(nstr(iso, r)); free(r); }
 FN(cssSupports) { CTX; std::string q = S(0); RET(jsg_supports(q.c_str())); }
+extern "C" void css_register_property(const char *name, const char *initial);
+FN(registerProp) { CTX; std::string n = S(0), v = S(1); css_register_property(n.c_str(), v.c_str()); if (c->doc) doc_mark_dirty(c->doc, &c->doc->node); }
 FN(encode) { CTX; v8::String::Utf8Value u(iso, a[0]); RET(mkab(iso, *u ? *u : "", *u ? (size_t)u.length() : 0)); }
 FN(decode) {
     CTX; const char *p = ""; size_t n = 0;
@@ -1448,7 +1450,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(mediaBuffered); REG(mediaEos); REG(mediaSetDuration); REG(mediaPlay); REG(mediaPause); REG(mediaSeek);
     REG(mediaPump); REG(resizePump); REG(intersectionPump); REG(vclip); REG(videoFramePump); REG(videoFrameInfo); REG(videoQuality);
     REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(errPos); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(scrollTo); REG(hit); REG(caret); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(camCount); REG(camOpen); REG(camState); REG(camSource); REG(camPermission); REG(camInfo); REG(camClose); REG(mediaLive); REG(screenOpen); REG(screenState); REG(screenSource); REG(screenInfo); REG(screenClose); REG(screenAudio); REG(micOpen); REG(micPermission); REG(micState); REG(micRead); REG(micClose); REG(recKind); REG(recOpen); REG(recPause); REG(recPush); REG(recFinish); REG(recTake); REG(recClose); REG(recMime); REG(readyState); REG(quirks);
-    REG(currentScript); REG(hidden); REG(media); REG(cssSupports); REG(cssSelText); REG(encode); REG(decode); REG(random);
+    REG(currentScript); REG(hidden); REG(media); REG(cssSupports); REG(registerProp); REG(cssSelText); REG(encode); REG(decode); REG(random);
     REG(heap); REG(imgWatch); REG(imgSize); REG(imgDecode); REG(imgTake); REG(userAgent); REG(platform); REG(download); REG(downloadBytes); REG(touchPoints); REG(cpus); REG(makeAll);
 #undef REG
     js_install_frames(c, N); js_install_workers(c, N); js_install_rtc(c, N); js_install_webgl(c, N); js_install_webgpu(c, N);
