@@ -874,3 +874,5 @@ broke the whole page prelude: 33 ctest failures).
   Canonical-serialisation leads (latest records): color(xyz ..)->color(xyz-d65 ..); color() % channels -> numbers (0%->0, 50%->0.5); lch/oklch hue '0deg'->'0'; calc nesting fold calc(20px + calc(80px))->calc(100px); clamp() of literals -> calc(-20px); opacity calc(0.25*2)->calc(0.5); text-decoration-line canonical order; grid-area 'auto / auto'->'auto'; display 'flow list-item'->'list-item'; superellipse( 0) spaces; column-rule-inset-cap '0'->'0px'; rule-inset pair duplication; anchor(calc(50%) --foo) arg order with calc.
   UNBUILT: specColor canonical color() (from parsed channels, xyz->xyz-d65) and lch/oklch deg stripping. smoke /tmp/cc.html
   committed dd068e2 colour canon (smoke ok, staged). NEXT: run 162 on css-color, css-highlight-api, css-forms, css-multicol, css-overflow, selectors.
+- RUN 162 (dd068e2): css-color +170, overflow +7, multicol +3; 7 TIMEOUT->OK; highlight -7 (* and escapes rejected). UNBUILT: highlight arg accepts '*' and escaped idents.
+  UNBUILT: is_ident_arg accepts backslash escapes; highlight = '*' or ident. smoke /tmp/hl.html expect HL:vvvvvXXXXXX
