@@ -173,13 +173,13 @@ static bool pe_tail_ok(const Compound *c) {
         if (!pe) { if (x->kind == SK_PSEUDO_EL) pe = x->name; continue; }
         if (x->kind == SK_PSEUDO_EL) {
             if (x->name == atom("part") || x->name == atom("slotted")) return false;
-            if (!(pe == atom("part") || pe == atom("slotted") || pe == atom("column") || ((pe == atom("before") || pe == atom("after")) && x->name == atom("marker")))) return false;
+            if (!(pe == atom("part") || pe == atom("slotted") || pe == atom("column") || pe == atom("picker") || ((pe == atom("before") || pe == atom("after")) && x->name == atom("marker")))) return false;
             pe = x->name;
         } else if (x->kind == SK_PSEUDO) {
             if (pe == atom("part")) { if (in_list(x->name, structural)) return false; }
             else if (pe == atom("search-text")) { if (x->name != atom("current")) return false; }
             else if (in_list(pe, no_classes)) return false;
-            else if (in_list(pe, user_action_only) && !in_list(x->name, user_action) && !(pe == atom("selection") && x->name == atom("window-inactive"))) return false;
+            else if (in_list(pe, user_action_only) && !in_list(x->name, user_action) && x->name != atom("is") && x->name != atom("where") && x->name != atom("not") && !(pe == atom("selection") && x->name == atom("window-inactive"))) return false;
         } else return false;
     }
     return true;
@@ -291,7 +291,7 @@ static bool parse_compound(SP *p, Compound *c, Selector *sel) {
                     if (!parse_sellist(&q, s.sub, nmx == atom("has"), 0)) {
                         /* forgiving selector list for :is/:where */
                         if (nmx == atom("not") || nmx == atom("has")) { free(arg); css_sellist_free(s.sub); free(s.sub); goto fail; }
-                    } else if (p->query && (nmx == atom("not") || nmx == atom("has"))) {   /* no pseudo-elements inside :not()/:has() */
+                    } else if (nmx == atom("not") || nmx == atom("has")) {   /* no pseudo-elements inside :not()/:has() */
                         bool bad = false;
                         for (int k = 0; k < s.sub->n && !bad; k++) for (int j = 0; j < s.sub->v[k].n; j++) if (has_pe(&s.sub->v[k].c[j])) bad = true;
                         if (bad) { free(arg); css_sellist_free(s.sub); free(s.sub); goto fail; }
@@ -372,7 +372,7 @@ static bool parse_selector(SP *p, Selector *sel, bool relative) {
         if (!parse_compound(p, &c, sel)) goto fail;
         c.comb = cs.n ? comb : CB_NONE;
         vec_push(cs, c);
-        if (p->query && (!pe_tail_ok(&c) || (cs.n > 1 && has_pe(&cs.v[cs.n - 2])))) goto fail;   /* nothing may follow a pseudo-element's compound */
+        if ((!pe_tail_ok(&c) || (cs.n > 1 && has_pe(&cs.v[cs.n - 2])))) goto fail;   /* nothing may follow a pseudo-element's compound */
         size_t save = p->i;
         sp_ws(p);
         if (p->i >= p->n || p->s[p->i] == ',' || p->s[p->i] == ')' || p->s[p->i] == '{') break;
