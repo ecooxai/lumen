@@ -428,3 +428,49 @@ function tomParseTransform(text) {
     } catch (e) { return null; }
 }
 
+/* CSS colour values: channels are percents/numbers (hue: angles); a bare JS number means a fraction (hue: degrees) */
+const tomColErr = () => new DOMException('Invalid color channel', 'SyntaxError');
+function tomCh(v, kind) {
+    if (v === undefined) { if (kind === 'alpha') return new CSSUnitValue(100, 'percent'); throw tomColErr(); }
+    if (typeof v === 'number') return kind === 'hue' ? new CSSUnitValue(v, 'deg') : new CSSUnitValue(v * 100, 'percent');
+    if (!(v instanceof CSSNumericValue)) throw tomColErr();
+    let k; try { k = tomKeys(tomTypeOf(v)); } catch (e) { throw tomColErr(); }
+    const t = tomTypeOf(v);
+    const ok = kind === 'hue' ? (k.length === 1 && k[0] === 'angle' && t.angle === 1) || (!k.length && v instanceof CSSUnitValue)
+        : (k.length === 1 && k[0] === 'percent' && t.percent === 1) || (!k.length && kind !== 'alpha');
+    if (!ok) throw tomColErr();
+    return v;
+}
+class CSSColorValue extends CSSStyleValue {
+    constructor(k) { super(TOM); if (k !== TOM) tomIllegal(); }
+    static parse(text) {
+        const s = String(text).trim(), low = s.toLowerCase(), m = /^(rgba?|hsla?|hwb)\(([\s\S]*)\)$/.exec(low);
+        const num = a => a === 'none' ? new CSSKeywordValue('none') : a.u === '%' ? new CSSUnitValue(a.v, 'percent') : a.u === '' ? new CSSUnitValue(a.v, 'number') : new CSSUnitValue(a.v, a.u);
+        if (m) {
+            const a = colorArgs(m[2]); if (!a) throw tomColErr();
+            const vals = a.filter(x => x !== ',' && x !== '/');
+            if (vals.length < 3 || vals.length > 4) throw tomColErr();
+            const alpha = vals[3] === undefined ? undefined : vals[3].u === '' ? new CSSUnitValue(vals[3].v * 100, 'percent') : num(vals[3]);
+            if (m[1].startsWith('rgb')) return new CSSRGB(num(vals[0]), num(vals[1]), num(vals[2]), alpha);
+            const h = vals[0].u === '' ? new CSSUnitValue(vals[0].v, 'deg') : num(vals[0]);
+            const pc = x => x.u === '' ? new CSSUnitValue(x.v, 'percent') : num(x);
+            return new (m[1] === 'hwb' ? CSSHWB : CSSHSL)(h, pc(vals[1]), pc(vals[2]), alpha);
+        }
+        const c = cssColor(s);
+        if (!c || c.space !== 'srgb') throw tomColErr();
+        return new CSSRGB(...c.c.map(x => new CSSUnitValue(Math.round(x * 255), 'number')), c.alpha === 1 ? undefined : new CSSUnitValue(c.alpha * 100, 'percent'));
+    }
+}
+const tomColorClass = (name, fn, names) => {
+    const C = class extends CSSColorValue {
+        constructor(...a) {
+            super(TOM); if (a.length < 3) throw new TypeError(`3 arguments required`);
+            const d = {}; names.forEach((n, i) => { d[n] = tomCh(a[i], n === 'alpha' ? 'alpha' : n === 'h' ? 'hue' : 'ch'); }); tomInit(this, d);
+        }
+        toString() { const d = tomData(this), a = d.alpha; return `${fn}(${names.slice(0, 3).map(n => d[n].toString()).join(' ')}${a instanceof CSSUnitValue && a.unit === 'percent' && a.value === 100 ? '' : ' / ' + a}`.replace(/$/, ')'); }
+    };
+    Object.defineProperty(C, 'name', { value: name });
+    for (const n of names) Object.defineProperty(C.prototype, n, { get() { return tomData(this)[n]; }, set(v) { tomData(this)[n] = tomCh(v, n === 'alpha' ? 'alpha' : n === 'h' ? 'hue' : 'ch'); }, enumerable: true, configurable: true });
+    return C;
+};
+const CSSRGB = tomColorClass('CSSRGB', 'rgb', ['r', 'g', 'b', 'alpha']), CSSHSL = tomColorClass('CSSHSL', 'hsl', ['h', 's', 'l', 'alpha']), CSSHWB = tomColorClass('CSSHWB', 'hwb', ['h', 'w', 'b', 'alpha']);
