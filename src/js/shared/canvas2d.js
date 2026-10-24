@@ -371,8 +371,38 @@ class CanvasPattern {
         if (fin(...m)) this._.m = m;
     }
 }
+const c2dRectOf = (x, y, w, h) => typeof DOMRect !== 'undefined' ? new DOMRect(x, y, w, h) : { x, y, width: w, height: h, left: Math.min(x, x + w), top: Math.min(y, y + h), right: Math.max(x, x + w), bottom: Math.max(y, y + h) };
 class TextMetrics {
     constructor(k, o) { if (k !== C2D_KEY) c2dIllegal(); def(this, '_', o); }
+    /* x of the caret before UTF-16 index i, relative to the alignment point */
+    _x(i) { const o = this._, f = o.font; return (i ? C2N.c2dMeasure(o.text.slice(0, i), f.family, f.weight, f.italic, f.size)[0] : 0) - o.actualBoundingBoxLeft; }
+    _range(start, end, fn, strict) {
+        const n = this._.text.length;
+        start = erULong(start); end = erULong(end);
+        if ((strict ? start >= n : start > n) || end > n) throw c2dIndex(`Failed to execute '${fn}' on 'TextMetrics': The ${start > n || (strict && start >= n) ? 'start' : 'end'} index is out of range.`);
+        return start <= end ? [start, end] : [end, start];
+    }
+    getIndexFromOffset(offset) {
+        const x = toDouble(offset), t = this._.text;
+        let best = 0, bd = Infinity;
+        for (let i = 0; i <= t.length; i++) {
+            if (i > 0 && i < t.length && (t.charCodeAt(i) & 0xfc00) === 0xdc00) continue;   /* inside a surrogate pair */
+            const d = Math.abs(this._x(i) - x);
+            if (d < bd) { bd = d; best = i; }
+        }
+        return best;
+    }
+    getSelectionRects(start, end) {
+        const [a, b] = this._range(start, end, 'getSelectionRects');
+        if (a === b) return [];
+        const x0 = this._x(a), x1 = this._x(b), o = this._;
+        return [c2dRectOf(x0, -o.fontBoundingBoxAscent, x1 - x0, o.fontBoundingBoxAscent + o.fontBoundingBoxDescent)];
+    }
+    getActualBoundingBox(start, end) {
+        const [a, b] = this._range(start, end, 'getActualBoundingBox', true);
+        const x0 = this._x(a), x1 = this._x(b), o = this._;
+        return c2dRectOf(x0, -o.actualBoundingBoxAscent, x1 - x0, o.actualBoundingBoxAscent + o.actualBoundingBoxDescent);
+    }
 }
 for (const k of ['width', 'actualBoundingBoxLeft', 'actualBoundingBoxRight', 'fontBoundingBoxAscent', 'fontBoundingBoxDescent', 'actualBoundingBoxAscent',
     'actualBoundingBoxDescent', 'emHeightAscent', 'emHeightDescent', 'hangingBaseline', 'alphabeticBaseline', 'ideographicBaseline'])
@@ -789,9 +819,29 @@ const C2D_METHODS = {
     getContextAttributes() { return { ...this._.opts }; },
     isContextLost() { return false; },
     save() { const s = this._; s.stack.push({ ...s.st, dash: s.st.dash.slice() }); },
-    restore() { const s = this._; if (s.stack.length) s.st = s.stack.pop(); },
-    reset() { const s = this._; s.px.fill(s.alpha ? 0 : 0xff000000); s.st = c2dDefaults(); s.stack = []; s.path = new PathData(); c2dPresent(s); },
-    _reset(w, h) { const s = this._; c2dAlloc(s, w, h); s.st = c2dDefaults(); s.stack = []; s.path = new PathData(); c2dPresent(s); },
+    restore() { const s = this._, L = s.layers && s.layers[s.layers.length - 1]; if (s.stack.length > (L ? L.depth : 0)) s.st = s.stack.pop(); },
+    /* layers: drawing goes to a transparent bitmap that endLayer composites with the alpha, operation, shadow
+       and clip in effect at beginLayer */
+    beginLayer(opts) {
+        const s = this._;
+        if (opts != null && typeof opts !== 'object') throw new TypeError("Failed to execute 'beginLayer': The provided value is not of type 'CanvasLayerOptions'.");
+        C2D_METHODS.save.call(this);
+        (s.layers || (s.layers = [])).push({ px: s.px, st: s.st, depth: s.stack.length });
+        s.px = new Uint32Array(s.w * s.h);
+        s.st = { ...s.st, alpha: 1, op: 0, sColor: 'rgba(0, 0, 0, 0)', sColorV: [0, 0, 0, 0], sBlur: 0, sx: 0, sy: 0, clip: null, filter: 'none', dash: s.st.dash.slice() };
+    },
+    endLayer() {
+        const s = this._, L = s.layers && s.layers.pop();
+        if (!L) throw new DOMException("Failed to execute 'endLayer' on 'CanvasRenderingContext2D': No active layer.", 'InvalidStateError');
+        const layer = s.px;
+        s.stack.length = L.depth;
+        s.px = L.px; s.st = { ...L.st, m: ID };
+        const pr = new Float32Array(12); pr.set(ID, 0);
+        c2dDraw(s, pathShape(c2dRect(ID, 0, 0, s.w, s.h), false), [4, 0, pr, null, layer, s.w, s.h, 0]);
+        C2D_METHODS.restore.call(this);
+    },
+    reset() { const s = this._; if (s.layers && s.layers.length) { s.px = s.layers[0].px; s.layers = []; } s.px.fill(s.alpha ? 0 : 0xff000000); s.st = c2dDefaults(); s.stack = []; s.path = new PathData(); c2dPresent(s); },
+    _reset(w, h) { const s = this._; s.layers = []; c2dAlloc(s, w, h); s.st = c2dDefaults(); s.stack = []; s.path = new PathData(); c2dPresent(s); },
     _m() { return this._.st.m; },
     get _p() { return this._.path; },
     scale(x, y) { x = +x; y = +y; if (fin(x, y)) this._.st.m = mMul(this._.st.m, [x, 0, 0, y, 0, 0]); },
@@ -887,7 +937,7 @@ const C2D_METHODS = {
         const al = this._.st.align, left = al === 'center' ? w / 2 : al === 'right' || (al === 'end' && this._.st.dir !== 'rtl') ? w : 0;
         let base = 0;
         switch (this._.st.base) { case 'top': base = asc; break; case 'hanging': base = asc * 0.8; break; case 'middle': base = (asc - desc) / 2; break; case 'ideographic': case 'bottom': base = -desc; break; }
-        return new TextMetrics(C2D_KEY, { width: w, actualBoundingBoxLeft: left, actualBoundingBoxRight: w - left, fontBoundingBoxAscent: asc - base, fontBoundingBoxDescent: desc + base,
+        return new TextMetrics(C2D_KEY, { text: t, font: f, width: w, actualBoundingBoxLeft: left, actualBoundingBoxRight: w - left, fontBoundingBoxAscent: asc - base, fontBoundingBoxDescent: desc + base,
             actualBoundingBoxAscent: (t.trim() ? asc * 0.9 : 0) - base, actualBoundingBoxDescent: (t.trim() ? desc * 0.5 : 0) + base, emHeightAscent: f.size * asc / (asc + desc) - base,
             emHeightDescent: f.size * desc / (asc + desc) + base, hangingBaseline: asc * 0.8 - base, alphabeticBaseline: -base, ideographicBaseline: -desc - base });
     },

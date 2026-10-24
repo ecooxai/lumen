@@ -536,3 +536,7 @@ broke the whole page prelude: 33 ctest failures).
   JPEG APP2, WebP ICCP) -> sRGB with clipping. Not kept: wide-gamut source data for P3 canvases (P3 image on P3 canvas
   reads as clipped sRGB), CMYK JPEGs. Smoke /tmp/c2dp3.html (jsrun needs LUMEN_CONSOLE=1 to print console.log).
   /tmp/jscheck.py = parse check of page + worker preludes.
+- UNCOMMITTED after 2870572: TextMetrics getIndexFromOffset/getSelectionRects/getActualBoundingBox (prefix widths via
+  c2dMeasure; measureText keeps text+font in _); beginLayer/endLayer (s.layers stack of {px, st, depth}; endLayer
+  composites the layer bitmap with the beginLayer-time alpha/op/shadow/clip; restore can't pop past a layer).
+  Smoke /tmp/c2dl.html. Run 125 (canvas + the-img-element, 2870572 build) in progress.
