@@ -371,7 +371,16 @@ function registerProperty(d) {
 }
 const CSS = {
     escape(s) { s = String(s); let r = ''; for (let i = 0; i < s.length; i++) { const c = s.charCodeAt(i); if (c === 0) r += '\uFFFD'; else if ((c >= 1 && c <= 31) || c === 127 || (i === 0 && c >= 48 && c <= 57) || (i === 1 && c >= 48 && c <= 57 && s.charCodeAt(0) === 45)) r += '\\' + c.toString(16) + ' '; else if (i === 0 && c === 45 && s.length === 1) r += '\\-'; else if (c >= 128 || c === 45 || c === 95 || (c >= 48 && c <= 57) || (c >= 65 && c <= 90) || (c >= 97 && c <= 122)) r += s[i]; else r += '\\' + s[i]; } return r; },
-    supports(p, v) { return N.cssSupports(v === undefined ? String(p) : `(${p}: ${v})`); },
+    supports(p, v) {
+        if (v === undefined) return N.cssSupports(String(p));
+        p = String(p); v = String(v);
+        if (p.startsWith('--')) return N.cssSupports(`(${p}: ${v})`);
+        const lp = p.toLowerCase();
+        if (!CSS_PROP_NAMES.has(lp)) return false;
+        if (/^\s*(inherit|initial|unset|revert|revert-layer)\s*$/i.test(v)) return true;
+        if (SPEC_COLOR_PROPS.has(lp) && !/var\(|env\(|attr\(/i.test(v)) return specColor(v) !== null;
+        return N.cssSupports(`(${lp}: initial)`) ? N.cssSupports(`(${lp}: ${v})`) : !!v.trim() && tomValidText(lp, v);
+    },
     registerProperty(d) { registerProperty(d); },
 };
 /* set-like over the faces a page adds: pages spread it (`[...document.fonts]`) and read .size */
