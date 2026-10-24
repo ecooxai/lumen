@@ -768,3 +768,4 @@ broke the whole page prelude: 33 ctest failures).
   Next big: registerProperty validation (6908 did-not-throw incl. typed-om parse), gap "normal normal" -> "normal"
   canonical shorthand serialization (4974 canonical), insets still 20px vs 23.2px (containing block size wrong:
   abs uses padding box incl. padding? check), CSS-supports general_enclosed, querySelector invalid pseudo.
+- committed colour regression fix (01de660); next: rerun css-color + timeouts dirs, then registerProperty validation / shorthand canonical serialization
