@@ -808,3 +808,4 @@ broke the whole page prelude: 33 ctest failures).
   specFoldMath/mathEval (03-element.js): constant-fold trig/pow/sqrt/exp/log in specified values; smoke /tmp/mf.html; unbuilt
 - RUN 138: 24942 -> 29376/52212 (typed-om 48.7->75.8%, conditional 39->64%), 30 regressed (touch-action/pointer-events/background missing from CSS_PROP_NAMES -> added with webkit aliases, unbuilt). Also unbuilt: nested calc fold.
 - committed math folding + prop names (a8fdc71). NEXT: color-mix computed serialisation in mixing space (~1069), CSSPositionTryRule, abspos align-self sizing, CSSStyleValue.parse('--foo','') throw, column-gap '0'->'0px' canonical
+- committed 0px + empty custom parse (32674cd); unmeasured since run 138: math folding, prop names, 0px. NEXT: run 139 (/css/ full), then color-mix computed serialisation, CSSPositionTryRule, abspos align-self.
