@@ -876,3 +876,4 @@ broke the whole page prelude: 33 ctest failures).
   committed dd068e2 colour canon (smoke ok, staged). NEXT: run 162 on css-color, css-highlight-api, css-forms, css-multicol, css-overflow, selectors.
 - RUN 162 (dd068e2): css-color +170, overflow +7, multicol +3; 7 TIMEOUT->OK; highlight -7 (* and escapes rejected). UNBUILT: highlight arg accepts '*' and escaped idents.
   UNBUILT: is_ident_arg accepts backslash escapes; highlight = '*' or ident. smoke /tmp/hl.html expect HL:vvvvvXXXXXX
+  committed deeb900 highlight args (smoke HL:vvvvvXXXXXX ok, staged; monitor 162 clean). NEXT: rerun css-highlight-api to confirm; then other canonical leads (calc nesting fold, clamp literal, opacity calc, text-decoration-line order, grid-area auto, display flow list-item).
