@@ -948,7 +948,8 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
     bool inherit = str_ieq(val, "inherit"), initial = str_ieq(val, "initial") || str_ieq(val, "revert") || str_ieq(val, "revert-layer"), unset = str_ieq(val, "unset");
     if (inherit && inherit_copies_uncompared(P)) st->parent_sensitive = true;
     const GenProp *gp = gen_prop(P);
-    if (gp && !gp->native) {
+    bool anim_longhand = !strncmp(P, "transition-", 11) || !strncmp(P, "animation-", 10);
+    if (gp && (!gp->native || anim_longhand)) {
         CustomProps **slot = gp->inherited ? &st->gen_i : &st->gen_n;
         const char *pv = par ? gen_value(par, gp) : NULL;
         if (inherit || (unset && gp->inherited)) gen_put(slot, P, xstrdup(pv ? pv : ""));
@@ -3958,9 +3959,50 @@ static void tracks_str(SB *b, const GridTrack *t, int n) {
     }
 }
 static void gap_str(SB *b, float px, Length l) { if (l.kind == LK_LEN && l.pct) len_str(b, l, "normal"); else if (px) sb_printf(b, "%gpx", px); else sb_puts(b, "normal"); }
-char *css_get_computed_value(Node *el, const char *prop) {
-    ComputedStyle *s = el && el->type == NODE_ELEMENT ? el->style : NULL;
+static char *computed_of(Node *el, const ComputedStyle *s, const char *prop);
+char *css_get_computed_value(Node *el, const char *prop) { return computed_of(el, el && el->type == NODE_ELEMENT ? el->style : NULL, prop); }
+/* Properties whose computed value differs between o and s, for CSS transitions: the names in the
+ * transition-property list, or for "all" every natively computed property plus the generic ones. */
+static void tr_scan_one(Node *n, const ComputedStyle *o, const ComputedStyle *s, const char *prop, void (*cb)(Node *, const char *, const char *, const char *)) {
+    if (!strncmp(prop, "transition", 10) || !strncmp(prop, "animation", 9)) return;
+    char *a = computed_of(n, o, prop), *b = computed_of(n, s, prop);
+    if (strcmp(a, b)) cb(n, prop, a, b);
+    free(a); free(b);
+}
+static void tr_scan_gen(Node *n, const ComputedStyle *o, const ComputedStyle *s, const CustomProps *c, HMap *seen, void (*cb)(Node *, const char *, const char *, const char *)) {
+    for (; c; c = c->parent) hm_foreach((HMap *)&c->map, ent) {
+        if (hm_get(seen, ent->key)) continue;
+        hm_put(seen, ent->key, (void *)1);
+        const GenProp *g = gen_prop(ent->key);
+        if (g && !g->native) tr_scan_one(n, o, s, g->name, cb);
+    }
+}
+void css_transition_scan(Node *n, const ComputedStyle *o, const ComputedStyle *s, void (*cb)(Node *, const char *, const char *, const char *)) {
+    const char *list = s->tr_prop;
+    bool all = !list;
+    if (list) for (const char *p = list;;) {
+        const char *e = strchr(p, ','); size_t len = e ? (size_t)(e - p) : strlen(p);
+        char name[64];
+        while (len && *p == ' ') { p++; len--; }
+        while (len && p[len - 1] == ' ') len--;
+        if (len == 3 && !strncmp(p, "all", 3)) all = true;
+        else if (len && len < sizeof name) { memcpy(name, p, len); name[len] = 0; if (gen_prop(name)) tr_scan_one(n, o, s, name, cb); }
+        if (!e) break;
+        p = e + 1;
+    }
+    if (!all) return;
+    for (size_t i = 0; i < sizeof gen_props / sizeof *gen_props; i++) if (gen_props[i].native && strcmp(gen_props[i].name, "display")) tr_scan_one(n, o, s, gen_props[i].name, cb);
+    HMap seen; memset(&seen, 0, sizeof seen);
+    tr_scan_gen(n, o, s, o->gen_n, &seen, cb); tr_scan_gen(n, o, s, s->gen_n, &seen, cb);
+    tr_scan_gen(n, o, s, o->gen_i, &seen, cb); tr_scan_gen(n, o, s, s->gen_i, &seen, cb);
+    hm_free(&seen, NULL);
+}
+static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
     SB b; sb_init(&b);
+    if (s && (!strncmp(prop, "transition-", 11) || !strncmp(prop, "animation-", 10))) {
+        const GenProp *g = gen_prop(prop); const char *v = g ? gen_value(s, g) : NULL;
+        if (v) { sb_puts(&b, v); return sb_take(&b); }
+    }
     if (!s) return sb_take(&b);
     static const char *const ds[] = { "none", "inline", "block", "inline-block", "flex", "inline-flex", "grid", "inline-grid", "list-item", "table", "inline-table", "table-row", "table-cell", "table-row-group", "table-header-group", "table-footer-group", "table-column", "table-column-group", "table-caption", "contents", "flow-root" };
     static const char *const ps[] = { "static", "relative", "absolute", "fixed", "sticky" };

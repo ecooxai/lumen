@@ -523,6 +523,16 @@ FN(scrollPos) {
 }
 FN(setScroll) { CTX; ARGN(n, 0); if (c->host.sync) c->host.sync(c->host.ud, c->doc, true); RET(jsg_set_scroll(n, (float)NUM(1), (float)NUM(2))); }
 FN(computed) { CTX; ARGN(n, 0); if (c->host.sync) c->host.sync(c->host.ud, c->doc, false); std::string p = S(1); char *v = jsg_computed(n, p.c_str()); RET(nstr(iso, v)); free(v); }
+FN(trTake) {
+    CTX; v8::Local<v8::Array> out = v8::Array::New(iso); uint32_t k = 0;
+    for (size_t i = 0; i < c->anims.size();)
+        if (c->anims[i].type == "lumen-transition") {
+            v8::Local<v8::Value> pair[2] = { c->anims[i].target.Get(iso), jstr(iso, c->anims[i].name.c_str()) };
+            (void)out->Set(ctx, k++, v8::Array::New(iso, pair, 2));
+            c->anims.erase(c->anims.begin() + (long)i);
+        } else i++;
+    RET(out);
+}
 FN(setAnimStyle) { CTX; ARGN(n, 0); (void)c; std::string s = S(1); jsg_set_anim_style(n, s.c_str()); }
 FN(value) { CTX; ARGN(n, 0); RET(nstr(iso, n->value_override)); }
 static int cp_count(const char *s) { int k = 0; for (; s && *s; s++) if (((unsigned char)*s & 0xC0) != 0x80) k++; return k; }
@@ -1431,7 +1441,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(create); REG(textNode); REG(comment); REG(frag); REG(html); REG(setHTML); REG(parseFrag); REG(query);
     REG(matches); REG(byId); REG(clone); REG(doc); REG(contains); REG(connected); REG(host); REG(setRealm); REG(realmOf); REG(attachShadow);
     REG(shadowOf); REG(srFlags); REG(srSetFlags); REG(srRef); REG(getHTML); REG(parseFragEx); REG(parseDocEx);
-    REG(templateContent); REG(rect); REG(textRects); REG(vrect); REG(clipSet); REG(clipGet); REG(clipImage); REG(scrollPos); REG(setScroll); REG(computed); REG(setAnimStyle); REG(value); REG(setValue); REG(ctlSel); REG(setCtlSel); REG(checked); REG(setChecked); REG(pickFiles);
+    REG(templateContent); REG(rect); REG(textRects); REG(vrect); REG(clipSet); REG(clipGet); REG(clipImage); REG(scrollPos); REG(setScroll); REG(computed); REG(trTake); REG(setAnimStyle); REG(value); REG(setValue); REG(ctlSel); REG(setCtlSel); REG(checked); REG(setChecked); REG(pickFiles);
     REG(modal); REG(fullscreen); REG(focus); REG(active); REG(cookie); REG(setCookie); REG(url); REG(docBase); REG(setUrl); REG(navigate); REG(navigatePost); REG(histGo);
     REG(histLen); REG(internal); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
     REG(abort); REG(fetchPause); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(mediaOpenBytes); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove);

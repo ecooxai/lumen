@@ -710,6 +710,7 @@ function fire(target, type, init, Ctor = Event) {
     return ok;
 }
 function fireAnim(t, type, name, elapsed, anim) {
+    if (type === 'lumen-transition') { trStart(t, name); waDirty = true; waFlush(); return; }
     const init = anim ? { bubbles: true, animationName: name, elapsedTime: elapsed } : { bubbles: true, propertyName: name, elapsedTime: elapsed };
     return dispatch(t, new (anim ? AnimationEvent : TransitionEvent)(type, init), true);
 }

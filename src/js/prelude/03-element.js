@@ -37,7 +37,7 @@ const styleHandler = {
     has(t, p) { return p in t || typeof p === 'string'; },
 };
 class ComputedStyleDeclaration extends CSSStyleDeclaration {
-    getPropertyValue(p) { if (waDirty) waFlush(); const v = N.computed(this._el, camelToKebab(String(p))); return v == null ? '' : v; }
+    getPropertyValue(p) { if (waDirty) waFlush(); const k = camelToKebab(String(p)); let v = N.computed(this._el, k); if (trPoll()) v = N.computed(this._el, k); return v == null ? '' : v; }
     get cssText() { return ''; } get length() { return 0; }
     setProperty() { throw new DOMException('These styles are computed, and therefore read-only.', 'NoModificationAllowedError'); }
 }

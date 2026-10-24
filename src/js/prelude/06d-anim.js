@@ -439,6 +439,11 @@ function waTick(t) {
     } finally { waInFrame = false; }
     if ([...waAll].some(a => a.pending || a.playState === 'running') || waEvents.length) waKick();
 }
+/* the properties an animation-layer change touches won't start transitions on the next restyle */
+function trSuppressCss(el, a, b) {
+    let s = trSuppress.get(el);
+    for (const css of [a || '', b || '']) for (const m of css.matchAll(/(?:^|; )([-a-z]+):/g)) { if (!s) trSuppress.set(el, s = new Set()); s.add(m[1]); }
+}
 function waFlush() {
     if (!waDirty) return; waDirty = false;
     const byEl = new Map();
@@ -448,18 +453,18 @@ function waFlush() {
         const c = waCompute(e); if (c.progress === null) continue;
         let l = byEl.get(e._target); if (!l) byEl.set(e._target, l = []); l.push([e, c]);
     }
-    for (const el of waApplied.keys()) if (!byEl.has(el)) { N.setAnimStyle(el, ''); waApplied.delete(el); }
+    for (const el of waApplied.keys()) if (!byEl.has(el)) { trSuppressCss(el, waApplied.get(el), ''); N.setAnimStyle(el, ''); waApplied.delete(el); }
     for (const [el, list] of byEl) {
         const props = new Set(); for (const [e] of list) for (const k of e._kfs) for (const p of k.props.keys()) props.add(p);
         const needBase = list.some(([e]) => e._comp !== 'replace' || e._icomp !== 'replace' || e._kfs.length < 2 || e._kfs[0].co !== 0 || e._kfs[e._kfs.length - 1].co !== 1 || e._kfs.some(k => k.composite !== 'auto' && k.composite !== 'replace'));
-        if (needBase && waApplied.has(el)) { N.setAnimStyle(el, ''); waApplied.delete(el); }
+        if (needBase && waApplied.has(el)) { trSuppressCss(el, waApplied.get(el), ''); N.setAnimStyle(el, ''); waApplied.delete(el); }
         let css = '';
         for (const p of props) {
             let v = needBase ? (N.computed(el, p) || '') : null;
             for (const [e, c] of list) v = waEffectValue(e, p, v, c);
             if (v != null && v !== '') css += `${p}: ${v}; `;
         }
-        if (waApplied.get(el) !== css) { N.setAnimStyle(el, css); waApplied.set(el, css); }
+        if (waApplied.get(el) !== css) { trSuppressCss(el, waApplied.get(el), css); N.setAnimStyle(el, css); waApplied.set(el, css); }
     }
 }
 function waRemoveReplaced() {
@@ -729,3 +734,43 @@ const waGetAnims = (pred) => [...waAll].filter(a => {
     const st = a.playState; if (!(st === 'running' || st === 'paused' || a._task) && waCompute(e).activeTime === null) return false;
     return pred(e._target);
 }).sort((x, y) => x._seq - y._seq);
+/* CSS transitions: restyle reports changed computed values (N.trTake, or fireAnim 'lumen-transition'), and each
+   becomes a CSSTransition animating from the old to the new value. Values the animation layer itself writes are
+   suppressed once so animations don't start transitions. */
+const trRunning = new Map(), trSuppress = new Map();
+class CSSTransition extends Animation {
+    get transitionProperty() { return this._trProp; }
+}
+const trTime = s => { const m = /^(-?[\d.]+(?:e[+-]?\d+)?)(m?s)$/i.exec(String(s).trim()); return m ? +m[1] * (m[2].toLowerCase() === 'ms' ? 1 : 1000) : 0; };
+const trList = (el, p) => tomSplitTop(N.computed(el, p) || '', ',').map(s => s.trim());
+function trStart(el, packed) {
+    const [prop, from, to] = packed.split('\x01');
+    const sup = trSuppress.get(el);
+    if (sup && sup.has(prop)) { sup.delete(prop); if (!sup.size) trSuppress.delete(el); return; }
+    const names = trList(el, 'transition-property');
+    let i = names.lastIndexOf(prop); if (i < 0) i = names.lastIndexOf('all'); if (i < 0) return;
+    const at = (p, d) => { const l = trList(el, p); return l.length && l[0] ? l[i % l.length] : d; };
+    const duration = Math.max(0, trTime(at('transition-duration', '0s'))), delay = trTime(at('transition-delay', '0s'));
+    const running = trRunning.get(el), old = running && running.get(prop);
+    if (old) { running.delete(prop); old.cancel(); }
+    if (duration + delay <= 0 || duration <= 0) return;
+    const discrete = prop !== 'transform' && prop !== 'visibility' && waMix(prop, from, to, 0.5) === null;
+    if (discrete && at('transition-behavior', 'normal') !== 'allow-discrete') return;
+    const key = prop === 'float' ? 'cssFloat' : prop.replace(/^-webkit-/, 'webkit-').replace(/-([a-z])/g, (m, c) => c.toUpperCase());
+    let eff;
+    try { eff = new KeyframeEffect(el, [{ [key]: from }, { [key]: to }], { duration, delay, easing: at('transition-timing-function', 'ease'), fill: 'backwards' }); }
+    catch (e) { eff = new KeyframeEffect(el, [{ [key]: from }, { [key]: to }], { duration, delay, fill: 'backwards' }); }
+    const a = new CSSTransition(eff, document.timeline);
+    a._trProp = prop;
+    const done = () => { const m = trRunning.get(el); if (m && m.get(prop) === a) { m.delete(prop); if (!m.size) trRunning.delete(el); } };
+    a.addEventListener('finish', done); a.addEventListener('cancel', done);
+    if (!trRunning.has(el)) trRunning.set(el, new Map());
+    trRunning.get(el).set(prop, a);
+    a.play();
+}
+function trPoll() {
+    const l = N.trTake();
+    for (const [el, packed] of l) trStart(el, packed);
+    if (l.length) { waDirty = true; waFlush(); }
+    return l.length > 0;
+}

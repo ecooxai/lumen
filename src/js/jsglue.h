@@ -9,6 +9,7 @@ bool jsg_matches(Node *el, const char *sel, Node *scope, bool *ok);
 void jsg_install_hooks(void);
 void js_anim_event(Node *n, const char *type, const char *name, double delay_ms, double elapsed, bool anim);
 bool js_anim_cancel(Node *n, const char *name);
+void js_transition_start(Node *n, const char *prop, const char *from, const char *to);
 char *jsg_computed(Node *el, const char *prop);
 void jsg_set_anim_style(Node *el, const char *css);
 uint64_t jsg_layout_generation(void);

@@ -1762,6 +1762,17 @@ void js_anim_event(Node *n, const char *type, const char *name, double delay, do
     c->anims.push_back(std::move(e));
 }
 
+/* a CSS transition for the JS side to start (taken by fireAnim or synchronously by N.trTake) */
+void js_transition_start(Node *n, const char *prop, const char *from, const char *to) {
+    JsCtx *c = ctx_for(n);
+    if (!c || c->ctx.IsEmpty()) return;
+    JS_ENTER(c);
+    AnimEv e;
+    e.due = now_ms(); e.n = n; e.target.Reset(iso, jwrap(c, n));
+    e.type = "lumen-transition"; e.name = std::string(prop) + '\x01' + from + '\x01' + to; e.elapsed = 0; e.anim = false;
+    c->anims.push_back(std::move(e));
+}
+
 bool js_anim_cancel(Node *n, const char *name) {
     JsCtx *c = ctx_for(n);
     if (!c) return false;

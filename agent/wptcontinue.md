@@ -664,3 +664,45 @@ broke the whole page prelude: 33 ctest failures).
   StylePropertyMap(ReadOnly): element.attributeStyleMap, element.computedStyleMap(), rule.styleMap.
   Tests: /css/css-typed-om/ (the-stylepropertymap/properties/*.html use resources/testsuite.js there).
   wired: 08-window exports Typed OM classes + CSS.<unit>() factories (before getComputedStyle).
+- committed Typed OM (8ae2503); verified smoke /tmp/tom.html, 104/104. Next: WPT /css/css-typed-om/ after run 129.
+- RUN 129 (55850a5 generic store): /css/ 31.3% -> 35.7% (66646/186576), 0 crash, +14287 / -5928 subtests.
+  REGRESSION TO FIX FIRST: "CSS Transitions: property <X> ... at (-0.3)/(-1)" now return the plain target value
+  (translate/scale/rotate/clip-path/filter/colours/lengths): previously passed because native computed was "" and the
+  JS transition/animation layer's value was used; now the generic stored cascaded value wins. Check 06d-anim.js
+  (waFlush / setAnimStyle / how transitions of unmodelled props expose values) and make animated values override gen.
+  Other: 5949 colour serialization canonical (#000000 must be rgb(0, 0, 0) in specified style), 2080 anchor-name
+  value should be supported, place-items/place-self shorthand expansion (~770), getComputedStyle insets % (756),
+  CSS.supports should reject unknown -apple-* (718), cs is not iterable (getComputedStyle iteration, 371).
+  Typed OM (8ae2503) not yet WPT-tested: run /css/css-typed-om/.
+  CORRECTION: those 5928 "regressions" were FALSE PASSES: interpolation-testcommon compares the target against a
+  reference element styled with the expected value; both computed "" before. Lumen has NO CSS transition/animation
+  interpolation (jsglue.c style_change only fires events). PLAN "CSS transitions/animations on the WA engine":
+  - native: ComputedStyle records props set by the anim layer (setAnimStyle) so they don't trigger transitions;
+    css_computed_of(el, style, prop) (refactor of css_get_computed_value) gives old/new values; style_change, for
+    props allowed by transition-property (all: native list + gen maps union) whose value changed, calls a JS hook
+    js_transition(node, prop, from, to, dur, delay, easing) (per-property duration/delay/easing lists).
+  - JS (06d-anim.js): CSSTransition subclass of Animation built from KeyframeEffect([{p: from}, {p: to}]),
+    timing from transition-*; replace an existing transition of same el+prop; events transitionrun/start/end/cancel
+    then come from JS (drop native ones for handled props).
+  - later: CSSAnimation from @keyframes (needs native access to keyframes rules: N.keyframes(name)).
+  TRANSITIONS DESIGN (concrete): style.c: css_get_computed_value -> wrapper of computed_of(el, style, prop);
+  new css_transition_scan(n, o, s, cb): for tr_prop list names (or for "all": native gen_props + keys of gen maps)
+  compare computed_of(o) vs computed_of(s), cb(n, prop, from, to). jsglue.c style_change calls it (when
+  tr_dur+tr_delay > 0) -> js_transition_start(n, prop, from, to) (js.cc) pushes AnimEv{type "lumen-transition",
+  name "prop\1from\1to", due now}. JS: fireAnim handles that type; N.trTake() (jsnative) pulls pending ones
+  synchronously; CSSStyleDeclaration getPropertyValue: v = N.computed; if (N.trTake().length) start, waFlush,
+  recompute. JS start: skip props currently written by the WA layer (waApplied css) to avoid self-triggering;
+  read transition-duration/delay/timing-function/behavior lists from computed style at index of prop in
+  transition-property; new CSSTransition (Animation subclass) with KeyframeEffect([{p:from},{p:to}]), play();
+  cancel previous transition of same el+prop.
+- RUN 130 (/css/css-typed-om/, 8ae2503): 48 -> 4292/12587 (34.1%), 0 regressions, 0 crash. Remaining: 6903 =
+  CSSStyleValue.parse / map.set must throw TypeError on values invalid for the property (needs per-property value
+  grammar validation - would also fix CSS.supports and inline style parsing!); CSS.Q unit must be "q"? (expected
+  "q"); computed relative lengths must be CSSUnitValue px (computedStyleMap resolves calc/em); unsupported values
+  must be plain CSSStyleValue (accent-color 'red' -> CSSStyleValue: only keywords valid for the property become
+  CSSKeywordValue); SVG props (r, stop-color, d, fill-rule, paint-order...) missing from CSS_PROP_NAMES;
+  CSSColorValue/CSSRGB/CSSHSL/CSSHWB missing; Typed OM in workers; DOMException SyntaxError for empty CSSMathSum.
+- TRANSITIONS: native side written (style.c css_transition_scan/computed_of, jsglue.c, js.cc js_transition_start,
+  jsnative N.trTake) — unbuilt; JS side next in 06d-anim.js.
+  JS side written: 06d-anim.js trStart/trPoll/CSSTransition/trSuppressCss; 03-element getPropertyValue polls; 08-window fireAnim handles 'lumen-transition'. Smoke /tmp/tr.html.
+  fix: transition-*/animation-* longhands also stored raw in gen (computed_of prefers them; native tr_delay is max>=0 for events); excluded from transition scan.
