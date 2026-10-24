@@ -503,6 +503,7 @@ function cloneValue(v, seen) {
         const n = v.name, C = ['EvalError', 'RangeError', 'ReferenceError', 'SyntaxError', 'TypeError', 'URIError'].includes(n) ? globalThis[n] : Error, e = new C();
         const md = Object.getOwnPropertyDescriptor(v, 'message'); if (md && 'value' in md) def(e, 'message', String(md.value));
         if (typeof v.stack === 'string') def(e, 'stack', v.stack);
+        const cd = Object.getOwnPropertyDescriptor(v, 'cause'); if (cd && 'value' in cd) def(e, 'cause', cloneValue(cd.value, seen));
         seen.set(v, e); return e;
     }
     if (tag === 'Date') return new Date(Date.prototype.getTime.call(v)); if (tag === 'RegExp') return new RegExp(v.source, v.flags);
@@ -515,7 +516,7 @@ function cloneValue(v, seen) {
     }
     { const gc = v && typeof v === 'object' ? geoClone(v) : null; if (gc) { seen.set(v, gc); return gc; } }
     if (v instanceof ImageData) { const d = new ImageData(new Uint8ClampedArray(v.data), v.width, v.height, { colorSpace: v.colorSpace }); seen.set(v, d); return d; }
-    if (v instanceof Blob || tag === 'Blob' || tag === 'File') return v; if (N.isNode(v) || v instanceof URL || v instanceof URLSearchParams) throw new DOMException(`${tag} object could not be cloned.`, 'DataCloneError');
+    if (v instanceof Blob || tag === 'Blob' || tag === 'File') { const b = v instanceof File ? new File([v], v.name, { type: v.type, lastModified: v.lastModified }) : new Blob([v], { type: v.type }); seen.set(v, b); return b; } if (N.isNode(v) || v instanceof URL || v instanceof URLSearchParams) throw new DOMException(`${tag} object could not be cloned.`, 'DataCloneError');
     if (tag === 'Map') { const m = new OMap(), set = SMap.prototype.set; seen.set(v, m); for (const [k, x] of SMap.prototype.entries.call(v)) set.call(m, cloneValue(k, seen), cloneValue(x, seen)); return m; }
     if (tag === 'Set') { const s = new OSet(), add = SSet.prototype.add; seen.set(v, s); for (const x of SSet.prototype.values.call(v)) add.call(s, cloneValue(x, seen)); return s; }
     const o = Array.isArray(v) ? [] : {}; seen.set(v, o); for (const k of Object.keys(v)) o[k] = cloneValue(v[k], seen); return o;
