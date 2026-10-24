@@ -497,6 +497,14 @@ function cloneValue(v, seen) {
     const moduleCopy = N.cloneWasm(v);
     if (moduleCopy !== undefined) { seen.set(v, moduleCopy); return moduleCopy; }
     const tag = Object.prototype.toString.call(v).slice(8, -1);
+    if (tag === 'Boolean') return Object(Boolean.prototype.valueOf.call(v)); if (tag === 'Number') return Object(Number.prototype.valueOf.call(v));
+    if (tag === 'String') return Object(String.prototype.valueOf.call(v)); if (tag === 'BigInt') return Object(BigInt.prototype.valueOf.call(v));
+    if (tag === 'Error') {   /* HTML: name picks the constructor among the standard ones; message is kept when it is an own property */
+        const n = v.name, C = ['EvalError', 'RangeError', 'ReferenceError', 'SyntaxError', 'TypeError', 'URIError'].includes(n) ? globalThis[n] : Error, e = new C();
+        const md = Object.getOwnPropertyDescriptor(v, 'message'); if (md && 'value' in md) def(e, 'message', String(md.value));
+        if (typeof v.stack === 'string') def(e, 'stack', v.stack);
+        seen.set(v, e); return e;
+    }
     if (tag === 'Date') return new Date(Date.prototype.getTime.call(v)); if (tag === 'RegExp') return new RegExp(v.source, v.flags);
     if (tag === 'ArrayBuffer') { const b = new ArrayBuffer(v.byteLength); new Uint8Array(b).set(new Uint8Array(v)); seen.set(v, b); return b; }
     if (ArrayBuffer.isView(v)) { const b = cloneValue(v.buffer, seen); return tag === 'DataView' ? new DataView(b, v.byteOffset, v.byteLength) : new globalThis[tag](b, v.byteOffset, v.length); }
