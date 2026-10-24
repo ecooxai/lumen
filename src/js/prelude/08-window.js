@@ -508,8 +508,8 @@ function cloneValue(v, seen) {
     { const gc = v && typeof v === 'object' ? geoClone(v) : null; if (gc) { seen.set(v, gc); return gc; } }
     if (v instanceof ImageData) { const d = new ImageData(new Uint8ClampedArray(v.data), v.width, v.height, { colorSpace: v.colorSpace }); seen.set(v, d); return d; }
     if (v instanceof Blob || tag === 'Blob' || tag === 'File') return v; if (N.isNode(v) || v instanceof URL || v instanceof URLSearchParams) throw new DOMException(`${tag} object could not be cloned.`, 'DataCloneError');
-    if (tag === 'Map') { const m = new SMap(); seen.set(v, m); for (const [k, x] of v) m.set(cloneValue(k, seen), cloneValue(x, seen)); return m; }
-    if (tag === 'Set') { const s = new SSet(); seen.set(v, s); for (const x of v) s.add(cloneValue(x, seen)); return s; }
+    if (tag === 'Map') { const m = new OMap(), set = SMap.prototype.set; seen.set(v, m); for (const [k, x] of SMap.prototype.entries.call(v)) set.call(m, cloneValue(k, seen), cloneValue(x, seen)); return m; }
+    if (tag === 'Set') { const s = new OSet(), add = SSet.prototype.add; seen.set(v, s); for (const x of SSet.prototype.values.call(v)) add.call(s, cloneValue(x, seen)); return s; }
     const o = Array.isArray(v) ? [] : {}; seen.set(v, o); for (const k of Object.keys(v)) o[k] = cloneValue(v[k], seen); return o;
 }
 const xferPorts = (o, t) => { const tr = o && typeof o === 'object' ? o.transfer : t; return (tr && typeof tr[Symbol.iterator] === 'function' ? [...tr] : []).filter(p => p && typeof p.postMessage === 'function' && typeof p.start === 'function'); };
