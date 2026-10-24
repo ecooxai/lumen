@@ -858,3 +858,4 @@ broke the whole page prelude: 33 ctest failures).
   UNBUILT: shared/typedom.js tomAddType/tomMulType fail on differing percentHints; mul keeps hint. smoke /tmp/ph.html
   invert keeps percentHint (div conflict). UNBUILT.
 - RUN 157 (0abf0d5, typed-om): 11191->11207 (+16), 0 regressions. Typed-om ERRORs left: CSSRGB (cssColorValue.html), 5x '<position>' (test-suite gap).
+  NEXT: CSSColorValue family (CSSRGB/CSSHSL/CSSHWB/CSSLab/CSSLCH/CSSOKLab/CSSOKLCH/CSSColor) per css-typed-om/stylevalue-subclasses/css{RGB,HSL,...}.html + cssColorValue.html (CSSColorValue.parse(str) -> CSSRGB etc., blue -> CSSRGB(0,0,255), alpha as CSS.percent). Put in shared/typedom.js.
