@@ -763,7 +763,13 @@ function trStart(el, packed) {
     const a = new CSSTransition(eff, document.timeline);
     a._trProp = prop;
     const done = () => { const m = trRunning.get(el); if (m && m.get(prop) === a) { m.delete(prop); if (!m.size) trRunning.delete(el); } };
-    a.addEventListener('finish', done); a.addEventListener('cancel', done);
+    const fire = (type, t) => dispatch(el, new TransitionEvent(type, { bubbles: true, propertyName: prop, elapsedTime: t / 1000 }), true);
+    let started = false;
+    a.addEventListener('finish', () => { done(); if (!started) fire('transitionstart', Math.max(0, -delay)); started = true; fire('transitionend', duration); });
+    a.addEventListener('cancel', () => { done(); fire('transitioncancel', Math.max(0, Math.min(duration, (performance.now() - t0) - delay))); });
+    const t0 = performance.now();
+    setTimeout(() => { fire('transitionrun', Math.max(0, -delay)); if (delay <= 0 && a.playState !== 'idle') { started = true; fire('transitionstart', -delay); } }, 0);
+    if (delay > 0) setTimeout(() => { if (!started && a.playState === 'running') { started = true; fire('transitionstart', 0); } }, delay);
     if (!trRunning.has(el)) trRunning.set(el, new Map());
     trRunning.get(el).set(prop, a);
     a.play();

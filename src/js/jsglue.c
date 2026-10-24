@@ -317,6 +317,7 @@ static void style_change(Node *n, const ComputedStyle *o, const ComputedStyle *s
     }
     if (!o || !vis || o->display == D_NONE || s->tr_dur + s->tr_delay <= 0) return;
     css_transition_scan(n, o, s, js_transition_start);
+    return;   /* transition events come from the JS CSSTransitions */
     struct { const char *p; bool ch; } c[] = {
         { "opacity", o->opacity != s->opacity },
         { "transform", o->has_transform != s->has_transform || memcmp(o->transform, s->transform, sizeof s->transform) != 0 },

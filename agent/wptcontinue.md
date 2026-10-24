@@ -731,3 +731,10 @@ broke the whole page prelude: 33 ctest failures).
   NEXT: fix those, rerun /css/css-transitions/ /css/css-animations/ + affected dirs; then CSS.registerProperty
   arg validation (6908 did-not-throw is mostly typed-om parse validation + registerProperty), colour canonical
   serialization in specified style (5949), place-items/place-self shorthands (770), insets % in computed (756).
+  properties-value-* timeout: runParallelAsyncHarness waits for options.allTransitionsCompleted (driven by the
+  test's transitionend bookkeeping). Hypothesis: JS CSSTransitions now run for props that get no transitionend
+  (native events only for its 16 props in jsglue.c style_change), or native+JS mismatch. FIX PLAN: CSSTransition
+  fires transitionrun/transitionstart/transitionend/transitioncancel itself (via fireAnim-like dispatch on
+  play/finish/cancel with elapsedTime), and jsglue.c stops firing native transition events (keep animation events
+  until CSSAnimation fires animationstart/end/iteration/cancel itself).
+  implemented: CSSTransition fires transitionrun/start/end/cancel (06d trStart); jsglue.c returns before native transition events. unbuilt.
