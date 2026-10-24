@@ -758,3 +758,5 @@ broke the whole page prelude: 33 ctest failures).
   (+ delay) must not start; transitionend for margin-bottom % (properties-value-002); keyframe selectors
   'entry 10%' (timeline ranges) in CSSKeyframeRule; specified-colour + place-* + insets commits not yet tested.
   (unbuilt) zero-duration+delay transitions start; trCancelUnrendered in waTick/trPoll cancels transitions/CSS animations of removed or display:none elements
+- committed transition cancel; RUN 133 (/css/ full) started
+  (unbuilt) CSS_PROP_NAMES + SVG props (r d fill-rule stop-* stroke-line* paint-order text-anchor vector-effect marker* ...)
