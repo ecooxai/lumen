@@ -553,3 +553,12 @@ broke the whole page prelude: 33 ctest failures).
   DOMMatrix[ReadOnly] 4x4 with all ops, fromMatrix validate/fixup, CSS transform-list parsing in windows only,
   WebKitCSSMatrix alias) on pages and workers; replaced the 06c stubs and the 01-events DOMRect. Smoke /tmp/geo.html,
   /tmp/geow.html. Needs a WPT run of /css/geometry/ and /html/canvas/ (getTransform), /svg/ (uses DOMMatrix).
+- RUN 126 (bcac952): canvas 71.3% -> 72.8% (4212/5787), 0 crash, statuses unchanged; layers element 4->13/25, offscreen
+  8->27/50; text element 54->67, offscreen 110->136. Regressions: 2d.filter.layers.blur.exceptions x3 (false passes before;
+  fixed: beginLayer validates gaussianBlur stdDeviation), 3 single-pixel (pattern.basic.nocontext, shadow.image.transparent.2,
+  text.draw.align.left) unverified/flaky.
+- Remaining canvas: requestPaint/draw-element-image (tentative, ~330), document.caretPositionFromPoint MISSING (80; needs
+  native layout text-offset hit test, also missing caretRangeFromPoint) - real DOM API, do next; drawimage_html_image
+  (56, pixel mismatch); 2d.drawImage.zerosource.image (37); text align (19); wide-gamut images on P3 canvas (keep wide
+  data); getTextClusters (15); index-from-offset-edges (15); display-p3-linear (13, Chrome passes? check); selection-rects
+  y/x offsets (24); getActualBoundingBox x for substrings (18: expected -0 got 50).

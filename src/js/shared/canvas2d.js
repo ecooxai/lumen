@@ -832,6 +832,11 @@ const C2D_METHODS = {
     beginLayer(opts) {
         const s = this._;
         if (opts != null && typeof opts !== 'object') throw new TypeError("Failed to execute 'beginLayer': The provided value is not of type 'CanvasLayerOptions'.");
+        for (const f of [].concat(opts && opts.filter != null && typeof opts.filter === 'object' ? opts.filter : [])) {
+            if (!f || f.name !== 'gaussianBlur') continue;   /* stdDeviation: a finite number or a pair of them */
+            const d = f.stdDeviation, ok = x => typeof x === 'number' ? Number.isFinite(x) : false;
+            if (!(ok(d) || (Array.isArray(d) && d.length === 2 && d.every(ok)))) throw new TypeError("Failed to execute 'beginLayer': Failed to construct the filter: 'stdDeviation' must be a finite number or a pair of them.");
+        }
         C2D_METHODS.save.call(this);
         (s.layers || (s.layers = [])).push({ px: s.px, st: s.st, depth: s.stack.length });
         s.px = new Uint32Array(s.w * s.h);
