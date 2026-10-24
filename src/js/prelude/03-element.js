@@ -125,6 +125,7 @@ const SPEC_COLOR_PROPS = new Set(['color', 'background-color', 'border-top-color
 const specAlpha = a => { const b = Math.round(a * 255); for (const d of [2, 3]) { const t = +a.toFixed(d); if (Math.round(t * 255) === b) return String(t); } return String(+a.toFixed(6)); };
 function specColor(v) {
     const t = v.replace(/\/\*[\s\S]*?\*\//g, '').trim(), low = t.toLowerCase();
+    if (low === 'auto' || /,|repeat\(/.test(low.replace(/\([^()]*\)/g, m => /^\(\s*(in|from)\b/.test(m) ? '' : m.replace(/,/g, ' ')))) return t;
     if (/^(inherit|initial|unset|revert|revert-layer)$/.test(low) || /var\(|env\(|attr\(/i.test(t)) return v;
     /* forms cssColor does not model are kept as written unless plainly empty */
     if (/\bfrom\b|calc\(|color-mix\(|color-layers\(|alpha\(|contrast-color\(|light-dark\(|device-cmyk\(|sibling-(index|count)\(|display-p3-linear/.test(low)) return /\(\s*\)/.test(low) ? null : v;

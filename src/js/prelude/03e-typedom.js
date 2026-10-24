@@ -524,6 +524,7 @@ const TOM_TIME_PROPS = /^(transition|animation)(-delay|-duration)?$/;
 const TOM_FLEX_PROPS = /^grid(-template)?(-(columns|rows))?$|^grid-auto-(columns|rows)$/;
 function tomTypedOk(p, v) {
     if (v instanceof CSSTransformValue) return p === 'transform';
+    if (v instanceof CSSNumericValue && /^(touch-action|background|border(-block|-inline|-top|-right|-bottom|-left)?|outline|font|list-style|text-decoration|text-emphasis|column-rule|columns|flex-flow|grid(-area|-row|-column|-template)?|transition|animation|mask|offset|overflow|place-(content|items|self))$/.test(p)) return false;
     if (!(v instanceof CSSNumericValue)) return true;
     const t = v.type();
     if (t.angle) return TOM_ANGLE_PROPS.test(p);

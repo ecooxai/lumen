@@ -814,3 +814,8 @@ broke the whole page prelude: 33 ctest failures).
   (color(srgb ..)/oklch()/lch()/color(xyz-d65 ..)), alpha kept, none -> missing-component rules. Native css_parse_color
   currently resolves to 8-bit sRGB. Option: native keeps the original declaration text for colour props when it
   contains color-mix/from, and N.computed returns JS-resolved text via shared color.js (cssColor + colorTo + colorNum).
+- RUN 139 (/css/ full): 93434 -> 94347/186576 (50.6%), 0 crash. filter-effects +465, motion +336, css-values +250.
+  Regressions: css-gaps column-rule-color lists/repeat() + caret-color auto rejected by colour validation (fixed: specColor
+  passes auto/top-level commas/repeat()); typed-om shorthands+touch-action accept 0px (fixed: shorthand numeric reject);
+  flexbox <img> items 0px (image-as-flexitem-size-002v/005) UNINVESTIGATED; -webkit-sans-serif generic (css-fonts) TODO;
+  smooth-scroll timeouts likely load-related. Unbuilt as of this note.
