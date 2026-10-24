@@ -804,3 +804,6 @@ broke the whole page prelude: 33 ctest failures).
 - committed easing precision fix (45d8478); next: rerun css-sizing/css-transitions/css-backgrounds/css-fonts/css-typed-om/css-properties-values-api/css-values (run 137)
 - RUN 137 (8 dirs): 29207 -> 29297/59430, 0 status changes, 14 regressed (keyword-sizes-on-floated-element: font-load flake?). Easing fix confirmed.
 - committed tomTypedOk (31312f1); smoke /tmp/ts.html ok
+- committed cssPropKnown/CSS.supports unification + first baseline; RUN 138 (css-conditional, css-typed-om, css-align, cssom, css-anchor-position, css-color, css-properties-values-api) started
+  specFoldMath/mathEval (03-element.js): constant-fold trig/pow/sqrt/exp/log in specified values; smoke /tmp/mf.html; unbuilt
+- RUN 138: 24942 -> 29376/52212 (typed-om 48.7->75.8%, conditional 39->64%), 30 regressed (touch-action/pointer-events/background missing from CSS_PROP_NAMES -> added with webkit aliases, unbuilt). Also unbuilt: nested calc fold.
