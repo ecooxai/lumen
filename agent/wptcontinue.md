@@ -760,3 +760,11 @@ broke the whole page prelude: 33 ctest failures).
   (unbuilt) zero-duration+delay transitions start; trCancelUnrendered in waTick/trPoll cancels transitions/CSS animations of removed or display:none elements
 - committed transition cancel; RUN 133 (/css/ full) started
   (unbuilt) CSS_PROP_NAMES + SVG props (r d fill-rule stop-* stroke-line* paint-order text-anchor vector-effect marker* ...)
+- committed SVG prop names (9393c8d), unbuilt/untested; run 133 in progress (agents 9aef844a run, 00398d04 monitor)
+- RUN 133 (/css/ full, 2c77e92): 81130 -> 85969/186576 (46.1%), 0 crash; CSS Animations 3849 -> 5752/10673.
+  REGRESSION 1134 css-color parsing: specColor rejected color-mix/relative/alpha()/contrast-color/calc(infinity)/none
+  -> FIXED (unbuilt): unknown function forms kept raw. 21 OK->TIMEOUT (cssom-view scroll-behavior, cssom link
+  load events, selectors focus-visible) - probably flaky under 4 jobs: rerun those dirs to check.
+  Next big: registerProperty validation (6908 did-not-throw incl. typed-om parse), gap "normal normal" -> "normal"
+  canonical shorthand serialization (4974 canonical), insets still 20px vs 23.2px (containing block size wrong:
+  abs uses padding box incl. padding? check), CSS-supports general_enclosed, querySelector invalid pseudo.
