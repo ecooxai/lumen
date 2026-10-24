@@ -886,3 +886,4 @@ broke the whole page prelude: 33 ctest failures).
   UNBUILT: src/js/shared/safecoll.js SMap/SSet (captured methods) in page (01-events marker) + worker (worker.cc include) + CMake outputs; all 'new Map(' / 'new Set(' in prelude+shared -> SMap/SSet (32 files). smoke /tmp/tamper.html
 - RUN 164 (display canon): css-display +56; 2 regressions: math on non-MathML must compute to inline/block -> UNBUILT fix in computed_of.
   committed d400f9d SMap/SSet + math display (smoke ok, staged). NEXT run 165: broad check since prelude-wide change: /dom/ /html/dom/ /css/css-highlight-api/ /css/css-display/ /workers/ /url/ /performance-timeline/ /IndexedDB/ /fetch/api/
+- RUN 165 (SMap/SSet): +73 over 9 dirs (perf-timeline +64, display +10, idb +10); regressions: idb structured-clone Map (clone gave SMap) -> UNBUILT fix: OMap/OSet in cloneValue; 4 OK->TIMEOUT (OpaqueRange-interactive-basic, webkit-transition-end-event, 2 IDB) to recheck; keepalive worker.
