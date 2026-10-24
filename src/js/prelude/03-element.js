@@ -44,11 +44,11 @@ function shorthandPart(m, p) {
 const SPEC_PAIR = new Set(['gap', 'grid-gap', 'place-items', 'place-self', 'place-content', 'overflow', 'overscroll-behavior', 'border-spacing', 'scroll-snap-align', 'contain-intrinsic-size', 'margin-block', 'margin-inline', 'padding-block', 'padding-inline', 'inset-block', 'inset-inline', 'scroll-margin-block', 'scroll-margin-inline', 'scroll-padding-block', 'scroll-padding-inline', 'border-block-width', 'border-inline-width', 'border-block-style', 'border-inline-style', 'border-block-color', 'border-inline-color']);
 const SPEC_BOX = new Set(['margin', 'padding', 'inset', 'border-width', 'border-style', 'border-color', 'scroll-margin', 'scroll-padding', 'border-image-outset', 'border-image-width']);
 function specNormalize(p, v) {
-    if (/["'\\]|url\(|var\(|env\(|attr\(|#/i.test(v)) return v;
+    if (/["'\\]|url\(|var\(|env\(|attr\(|#/i.test(v) || /timing-function$|^transition$|^animation$/.test(p)) return v;
     let t = v.trim().replace(/(^|[\s(,/*+-])([+-]?)(\d*\.\d+|\d+\.?)(e[+-]?\d+)?(?=[a-z%]*(?:$|[\s),/*]))/gi, (m, pre, sign, num, exp) => {
         const n = Number(num + (exp || ''));
         if (!isFinite(n)) return m;
-        const r = String(+n.toFixed(6));
+        const r = String(n);
         return pre + (sign === '-' && n ? '-' : '') + r;
     }).replace(/\s+/g, ' ');
     if (/^(inherit|initial|unset|revert|revert-layer)$/i.test(t)) return t;
