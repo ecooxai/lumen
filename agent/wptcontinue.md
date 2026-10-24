@@ -864,3 +864,6 @@ broke the whole page prelude: 33 ctest failures).
   committed 80dc37c CSSRGB/HSL/HWB (smoke ok, staged; WPT rerun of typed-om pending = run 158).
 - RUN 158 (80dc37c): typed-om +104 (cssRGB/HSL/HWB/ColorValue/idlharness/historical), cssColorValue ERROR->OK, 0 regressions. Left: CSSHWB hue number/undefined must throw TypeError; parse 'none' channel -> CSSKeywordValue.
   committed ad17139 HWB hue; staged. RUN 159 = full /css/ (compare with run 148: 94,678/186,576).
+- RUN 159 (full /css/, HWB build): 98,892 / 186,576 = 53.0% (before-records 98,897; flat since targeted runs already counted). No crashes. 14 OK->TIMEOUT (scroll/timing, likely flaky). Real regressions to check: css-sizing/keyword-sizes-for-intrinsic-contributions (8), css-shadow/font-face-002/003 (160 vs 92: @font-face in shadow), css-fonts/mvs-shaping (4), anchor-position-inline-002, calc-size-flex-basis-on-column.
+  Biggest gaps: css-grid 11276, css-values 6466, css-color 5722, anchor 5198, fonts 3765, shapes 3247, flexbox 3222, gaps 3131, text 3045.
+  Top msgs: 2890 canonical (grid-column-gap '0' -> '0px'), 882 querySelector should throw (::checkmark etc. unknown pseudo-elements must be invalid), 756 insets 23.2px, 698 gridTemplateColumns auto-repeat, 506 AnimationEffect getComputedTiming 'effect'.
