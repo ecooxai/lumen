@@ -719,3 +719,15 @@ broke the whole page prelude: 33 ctest failures).
   `animation`/`transition` must also fill the raw gen longhand lists (delay is lost: native anim_delay/tr_delay are
   clamped/max). Implement in style.c css_apply_decl near anim_decl: split layers on top-level commas, classify tokens.
   shorthand expansion written: style.c anim_shorthand_gen (before anim_decl), called for animation/transition shorthands; unbuilt.
+- committed CSS animations + shorthand lists (6150e70); not yet WPT-tested (run 131 uses 965feec). Minor: waMix letter-spacing normal<->length should treat normal as 0.
+- RUN 131 (965feec transitions, /css/): /css/ 70890 -> 76049/186576 (40.8%), 0 crash. CSS Transitions subtests
+  13122 -> 18186/27375; CSS Animations 1442/10673 (6150e70 not yet tested); Web Animations 6217/10653.
+  REGRESSIONS (1193): (1) allow-discrete transitions at 0.5 interpolate where Chrome flips to the end value -
+  cases where from/to are not interpolable together in Chrome (line-height number<->length, gap 'normal'(initial)
+  <->px, grid repeat() counts differ, z-index?, aspect-ratio, counter lists): waMix is too permissive; the from value
+  of 'initial' column-gap computed natively as a length instead of "normal". (2) 17 OK->TIMEOUT: css-transitions/
+  properties-value-*.html (6 tests; likely transitions on many props - check transitionend events or a loop),
+  cssom-view scroll-behavior tests, contain-intrinsic-size auto-004/006.
+  NEXT: fix those, rerun /css/css-transitions/ /css/css-animations/ + affected dirs; then CSS.registerProperty
+  arg validation (6908 did-not-throw is mostly typed-om parse validation + registerProperty), colour canonical
+  serialization in specified style (5949), place-items/place-self shorthands (770), insets % in computed (756).
