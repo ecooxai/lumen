@@ -741,3 +741,5 @@ broke the whole page prelude: 33 ctest failures).
   FOUND: inline 'initial' ignored for native props (column-gap/z-index/min-width/top keep sheet value); line-height:4 computes 64px (Chrome '4'). Fixing in css_apply_decl.
   fixed (unbuilt): initial/unset fallback via goto apply with gp->initial; computed line-height prints unitless factor.
   gap 'normal' now resets column/row gap.
+- committed initial/unset fix; RUN 132 started (transitions/animations/align/position/sizing/grid/CSS2/cssom-view/flexbox/values/lists)
+  specified colour canonicalisation (03-element.js specColor/SPEC_COLOR_PROPS) written; smoke /tmp/sc.html; unbuilt
