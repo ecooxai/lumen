@@ -611,3 +611,12 @@ broke the whole page prelude: 33 ctest failures).
   Uncommitted (style.c): wide_color() converts lab/lch/oklab/oklch/hwb/color(srgb|srgb-linear|display-p3|rec2020|
   a98-rgb|prophoto-rgb|xyz*) to 8-bit sRGB for painting (replaced the grey placeholder); relative colours (`from`)
   still unsupported natively. Computed-value serialisation of modern colours still pending (plan above).
+- 45f4df8 committed colours. RUN 127 (685c69a): geometry 17.8% -> 84.7% (1328/1568), cssom-view 33.8 -> 35.1%,
+  canvas 72.8 -> 73.4% (4247/5787); 0 crash; 5 cssom-view TIMEOUT->OK. caret tests live in /css/cssom/ + /shadow-dom/
+  (not rerun yet: caretPositionFromPoint.html 1/7, shadow-dom Document-caretPositionFromPoint 1/14 before).
+  Uncommitted fixes for run-127 geometry regressions: .length 0 via default params, getter names via computed
+  accessors, own statics on DOMPoint/DOMRect/DOMMatrix, structured clone (geoClone in cloneValue), DOMRectList
+  interface (mkRectList helper; getClientRects not yet returning it).
+  cssom-view next: scrollWidthHeight-negative-margin-002 (496), getBoxQuads (49), convertRectFromNode (18),
+  smooth scroll set-immediately semantics (~120), offsetTopLeft-border-box (28), new-iframe MQL (24),
+  element-scroll-promises (24), scrollIntoView (40).

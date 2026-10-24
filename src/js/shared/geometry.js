@@ -13,12 +13,13 @@ class DOMPointReadOnly {
     #p;
     constructor(x = 0, y = 0, z = 0, w = 1) { this.#p = [geoNum(x), geoNum(y), geoNum(z), geoNum(w)]; }
     static { geoP = o => o.#p; }
-    static fromPoint(o) { o = geoDict(o, 'DOMPointInit'); return new this(o.x ?? 0, o.y ?? 0, o.z ?? 0, o.w ?? 1); }
+    static fromPoint(o = undefined) { o = geoDict(o, 'DOMPointInit'); return new this(o.x ?? 0, o.y ?? 0, o.z ?? 0, o.w ?? 1); }
     get x() { return geoP(this)[0]; } get y() { return geoP(this)[1]; } get z() { return geoP(this)[2]; } get w() { return geoP(this)[3]; }
-    matrixTransform(m) { return DOMMatrixReadOnly.fromMatrix(m).transformPoint(this); }
+    matrixTransform(m = undefined) { return DOMMatrixReadOnly.fromMatrix(m).transformPoint(this); }
     toJSON() { const [x, y, z, w] = geoP(this); return { x, y, z, w }; }
 }
 class DOMPoint extends DOMPointReadOnly {
+    static fromPoint(o = undefined) { return super.fromPoint(o); }
     get x() { return geoP(this)[0]; } set x(v) { geoP(this)[0] = geoNum(v); }
     get y() { return geoP(this)[1]; } set y(v) { geoP(this)[1] = geoNum(v); }
     get z() { return geoP(this)[2]; } set z(v) { geoP(this)[2] = geoNum(v); }
@@ -31,7 +32,7 @@ class DOMRectReadOnly {
     #r;
     constructor(x = 0, y = 0, w = 0, h = 0) { this.#r = [geoNum(x), geoNum(y), geoNum(w), geoNum(h)]; }
     static { geoR = o => o.#r; }
-    static fromRect(o) { o = geoDict(o, 'DOMRectInit'); return new this(o.x ?? 0, o.y ?? 0, o.width ?? 0, o.height ?? 0); }
+    static fromRect(o = undefined) { o = geoDict(o, 'DOMRectInit'); return new this(o.x ?? 0, o.y ?? 0, o.width ?? 0, o.height ?? 0); }
     get x() { return geoR(this)[0]; } get y() { return geoR(this)[1]; } get width() { return geoR(this)[2]; } get height() { return geoR(this)[3]; }
     get top() { const r = geoR(this); return geoMin(r[1], r[1] + r[3]); }
     get right() { const r = geoR(this); return geoMax(r[0], r[0] + r[2]); }
@@ -40,6 +41,7 @@ class DOMRectReadOnly {
     toJSON() { const { x, y, width, height, top, right, bottom, left } = this; return { x, y, width, height, top, right, bottom, left }; }
 }
 class DOMRect extends DOMRectReadOnly {
+    static fromRect(o = undefined) { return super.fromRect(o); }
     get x() { return geoR(this)[0]; } set x(v) { geoR(this)[0] = geoNum(v); }
     get y() { return geoR(this)[1]; } set y(v) { geoR(this)[1] = geoNum(v); }
     get width() { return geoR(this)[2]; } set width(v) { geoR(this)[2] = geoNum(v); }
@@ -48,9 +50,9 @@ class DOMRect extends DOMRectReadOnly {
 
 class DOMQuad {
     #q;
-    constructor(p1, p2, p3, p4) { this.#q = [p1, p2, p3, p4].map(p => DOMPoint.fromPoint(p)); }
-    static fromRect(o) { o = geoDict(o, 'DOMRectInit'); const x = geoNum(o.x ?? 0), y = geoNum(o.y ?? 0), w = geoNum(o.width ?? 0), h = geoNum(o.height ?? 0); return new DOMQuad({ x, y }, { x: x + w, y }, { x: x + w, y: y + h }, { x, y: y + h }); }
-    static fromQuad(o) { o = geoDict(o, 'DOMQuadInit'); return new DOMQuad(o.p1, o.p2, o.p3, o.p4); }
+    constructor(p1 = undefined, p2 = undefined, p3 = undefined, p4 = undefined) { this.#q = [p1, p2, p3, p4].map(p => DOMPoint.fromPoint(p)); }
+    static fromRect(o = undefined) { o = geoDict(o, 'DOMRectInit'); const x = geoNum(o.x ?? 0), y = geoNum(o.y ?? 0), w = geoNum(o.width ?? 0), h = geoNum(o.height ?? 0); return new DOMQuad({ x, y }, { x: x + w, y }, { x: x + w, y: y + h }, { x, y: y + h }); }
+    static fromQuad(o = undefined) { o = geoDict(o, 'DOMQuadInit'); return new DOMQuad(o.p1, o.p2, o.p3, o.p4); }
     get p1() { return this.#q[0]; } get p2() { return this.#q[1]; } get p3() { return this.#q[2]; } get p4() { return this.#q[3]; }
     getBounds() {
         const xs = this.#q.map(p => p.x), ys = this.#q.map(p => p.y);
@@ -167,7 +169,7 @@ function geoParse(str) {
 
 class DOMMatrixReadOnly {
     #m; #d2;
-    constructor(init) {
+    constructor(init = undefined) {
         let m = GEO_ID.slice(), d2 = true;
         if (init === GEO_KEY) { this.#m = arguments[1]; this.#d2 = arguments[2]; return; }
         if (typeof init === 'string') {
@@ -183,25 +185,25 @@ class DOMMatrixReadOnly {
         this.#m = m; this.#d2 = d2;
     }
     static { geoM = { get: o => o.#m, d2: o => o.#d2, set: (o, m, d2) => { o.#m = m; o.#d2 = d2; } }; }
-    static fromMatrix(o) { const [m, d2] = geoFixup(o, false); return new this(GEO_KEY, m, d2); }
+    static fromMatrix(o = undefined) { const [m, d2] = geoFixup(o, false); return new this(GEO_KEY, m, d2); }
     static fromFloat32Array(a) { return geoFromArray(this, a, Float32Array); }
     static fromFloat64Array(a) { return geoFromArray(this, a, Float64Array); }
     get is2D() { return geoM.d2(this); }
     get isIdentity() { const m = geoM.get(this); return m.every((x, i) => x === GEO_ID[i]); }
-    translate(x, y, z) { return geoCopy(this).translateSelf(x, y, z); }
-    scale(sx, sy, sz, ox, oy, oz) { return geoCopy(this).scaleSelf(sx, sy, sz, ox, oy, oz); }
+    translate(x = 0, y = 0, z = 0) { return geoCopy(this).translateSelf(x, y, z); }
+    scale(sx = 1, sy = undefined, sz = 1, ox = 0, oy = 0, oz = 0) { return geoCopy(this).scaleSelf(sx, sy, sz, ox, oy, oz); }
     scaleNonUniform(sx = 1, sy = 1) { return geoCopy(this).scaleSelf(sx, sy, 1, 0, 0, 0); }
-    scale3d(s, ox, oy, oz) { return geoCopy(this).scale3dSelf(s, ox, oy, oz); }
-    rotate(x, y, z) { return geoCopy(this).rotateSelf(x, y, z); }
-    rotateFromVector(x, y) { return geoCopy(this).rotateFromVectorSelf(x, y); }
-    rotateAxisAngle(x, y, z, a) { return geoCopy(this).rotateAxisAngleSelf(x, y, z, a); }
-    skewX(a) { return geoCopy(this).skewXSelf(a); }
-    skewY(a) { return geoCopy(this).skewYSelf(a); }
-    multiply(o) { return geoCopy(this).multiplySelf(o); }
+    scale3d(s = 1, ox = 0, oy = 0, oz = 0) { return geoCopy(this).scale3dSelf(s, ox, oy, oz); }
+    rotate(x = 0, y = undefined, z = undefined) { return geoCopy(this).rotateSelf(x, y, z); }
+    rotateFromVector(x = 0, y = 0) { return geoCopy(this).rotateFromVectorSelf(x, y); }
+    rotateAxisAngle(x = 0, y = 0, z = 0, a = 0) { return geoCopy(this).rotateAxisAngleSelf(x, y, z, a); }
+    skewX(a = 0) { return geoCopy(this).skewXSelf(a); }
+    skewY(a = 0) { return geoCopy(this).skewYSelf(a); }
+    multiply(o = undefined) { return geoCopy(this).multiplySelf(o); }
     flipX() { return geoCopy(this).multiplySelf({ a: -1 }); }
     flipY() { return geoCopy(this).multiplySelf({ d: -1 }); }
     inverse() { return geoCopy(this).invertSelf(); }
-    transformPoint(p) {
+    transformPoint(p = undefined) {
         const { x, y, z, w } = DOMPointReadOnly.fromPoint(p), m = geoM.get(this);
         return new DOMPoint(m[0] * x + m[4] * y + m[8] * z + m[12] * w, m[1] * x + m[5] * y + m[9] * z + m[13] * w,
             m[2] * x + m[6] * y + m[10] * z + m[14] * w, m[3] * x + m[7] * y + m[11] * z + m[15] * w);
@@ -225,12 +227,12 @@ function geoFromArray(C, a, T) {
     throw new TypeError('The sequence must contain 6 elements for a 2D matrix or 16 elements for a 3D matrix.');
 }
 for (const [k, i] of [...Object.entries(GEO_ALIAS), ...GEO_NAMES.map((n, i) => [n, i])])
-    Object.defineProperty(DOMMatrixReadOnly.prototype, k, { get() { return geoM.get(this)[i]; }, configurable: true, enumerable: true });
+    Object.defineProperty(DOMMatrixReadOnly.prototype, k, { get: Object.getOwnPropertyDescriptor({ get [k]() { return geoM.get(this)[i]; } }, k).get, configurable: true, enumerable: true });
 
 class DOMMatrix extends DOMMatrixReadOnly {
-    static fromMatrix(o) { const [m, d2] = geoFixup(o, false); return new DOMMatrix(GEO_KEY, m, d2); }
-    multiplySelf(o) { const other = DOMMatrix.fromMatrix(o); return geoPost(this, geoM.get(other), !other.is2D); }
-    preMultiplySelf(o) { const other = DOMMatrix.fromMatrix(o); geoM.set(this, geoMul(geoM.get(other), geoM.get(this)), this.is2D && other.is2D); return this; }
+    static fromMatrix(o = undefined) { const [m, d2] = geoFixup(o, false); return new DOMMatrix(GEO_KEY, m, d2); }
+    multiplySelf(o = undefined) { const other = DOMMatrix.fromMatrix(o); return geoPost(this, geoM.get(other), !other.is2D); }
+    preMultiplySelf(o = undefined) { const other = DOMMatrix.fromMatrix(o); geoM.set(this, geoMul(geoM.get(other), geoM.get(this)), this.is2D && other.is2D); return this; }
     translateSelf(x = 0, y = 0, z = 0) { x = geoNum(x); y = geoNum(y); z = geoNum(z); return geoPost(this, geoTrans(x, y, z), z !== 0); }
     scaleSelf(sx = 1, sy, sz = 1, ox = 0, oy = 0, oz = 0) {
         sx = geoNum(sx); sy = sy === undefined ? sx : geoNum(sy); sz = geoNum(sz); ox = geoNum(ox); oy = geoNum(oy); oz = geoNum(oz);
@@ -250,10 +252,25 @@ class DOMMatrix extends DOMMatrixReadOnly {
     skewXSelf(a = 0) { const t = GEO_ID.slice(); t[4] = Math.tan(geoRad(geoNum(a))); return geoPost(this, t, false); }
     skewYSelf(a = 0) { const t = GEO_ID.slice(); t[1] = Math.tan(geoRad(geoNum(a))); return geoPost(this, t, false); }
     invertSelf() { const r = geoInv(geoM.get(this)); geoM.set(this, r || new Array(16).fill(NaN), r ? geoM.d2(this) : false); return this; }
+    static fromFloat32Array(a) { return geoFromArray(DOMMatrix, a, Float32Array); }
+    static fromFloat64Array(a) { return geoFromArray(DOMMatrix, a, Float64Array); }
     setMatrixValue(str) { const [m, d2] = geoParse(str); geoM.set(this, m, d2); return this; }
 }
 for (const [k, i] of [...Object.entries(GEO_ALIAS), ...GEO_NAMES.map((n, i) => [n, i])])
-    Object.defineProperty(DOMMatrix.prototype, k, {
-        get() { return geoM.get(this)[i]; },
-        set(v) { const m = geoM.get(this); m[i] = geoNum(v); if (geoM.d2(this) && (GEO_3D.includes(i) ? m[i] !== 0 : (i === 10 || i === 15) && m[i] !== 1)) geoM.set(this, m, false); },
-        configurable: true, enumerable: true });
+    Object.defineProperty(DOMMatrix.prototype, k, Object.assign(Object.getOwnPropertyDescriptor({ get [k]() { return geoM.get(this)[i]; }, set [k](v) { const m = geoM.get(this); m[i] = geoNum(v); if (geoM.d2(this) && (GEO_3D.includes(i) ? m[i] !== 0 : (i === 10 || i === 15) && m[i] !== 1)) geoM.set(this, m, false); } }, k), { configurable: true, enumerable: true }));
+/* structured clone of a geometry object (null when v is not one) */
+function geoClone(v) {
+    for (const C of [DOMPoint, DOMPointReadOnly]) if (Object.getPrototypeOf(v) === C.prototype) return new C(v.x, v.y, v.z, v.w);
+    for (const C of [DOMRect, DOMRectReadOnly]) if (Object.getPrototypeOf(v) === C.prototype) return new C(v.x, v.y, v.width, v.height);
+    if (Object.getPrototypeOf(v) === DOMQuad.prototype) return new DOMQuad(v.p1, v.p2, v.p3, v.p4);
+    for (const C of [DOMMatrix, DOMMatrixReadOnly]) if (Object.getPrototypeOf(v) === C.prototype) return new C(GEO_KEY, geoM.get(v).slice(), geoM.d2(v));
+    return null;
+}
+class DOMRectList {
+    constructor() { geoIllegal('DOMRectList'); }
+    get length() { return geoRL(this).length; }
+    item(i) { return geoRL(this)[i >>> 0] ?? null; }
+}
+const geoRLData = new WeakMap(), geoRL = o => { const d = geoRLData.get(o); if (!d) throw new TypeError('Illegal invocation'); return d; };
+/* a DOMRectList over rects, indexable like an array */
+const mkRectList = rects => { const o = Object.create(DOMRectList.prototype); geoRLData.set(o, rects); rects.forEach((r, i) => Object.defineProperty(o, i, { value: r, enumerable: true })); return o; };
