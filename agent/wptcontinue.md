@@ -747,3 +747,13 @@ broke the whole page prelude: 33 ctest failures).
   shorthandPart (03-element.js) written: longhand reads derived from stored shorthand; smoke /tmp/sh.html
 - committed shorthandPart (acad551); not WPT-tested
   computed insets: % resolved against containing block for positioned elements (style.c computed_of); unbuilt
+- committed insets (f7a08d2); not WPT-tested. Waiting for run 132 (agent 08c68903, monitor da8b0ffd).
+- RUN 132 (c21d75d; 15 css dirs, 3170 tests): 24757 -> 29838/71990 (34.4% -> 41.4%), 0 crash, 19 TIMEOUT->OK,
+  4 OK->TIMEOUT (css-transitions disconnected-element-001, inherit-height-transition, non-rendered-element-001,
+  transition-zero-duration-with-delay). css-transitions 16% -> 52%, CSS Animations prefix 837 -> 3244/5465.
+  Regressions 217: interpolate-size/calc-size (min-height 'initial'(=auto) now interpolates; Chrome: discrete
+  unless interpolate-size), transform at (-1) from skewX -> expected "none"?? (CSS Animations with neutral keyframes),
+  -0 vs 0 in trailing-space-position, tab-size/flex-shrink extrapolation differences.
+  NEXT TODO: transitions must NOT start for disconnected / display:none / non-rendered elements and zero-duration
+  (+ delay) must not start; transitionend for margin-bottom % (properties-value-002); keyframe selectors
+  'entry 10%' (timeline ranges) in CSSKeyframeRule; specified-colour + place-* + insets commits not yet tested.
