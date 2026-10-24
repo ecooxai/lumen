@@ -24,7 +24,7 @@ typedef struct Box {
     float x, y, w, h;           /* border box, document coordinates */
     float m[4], b[4], p[4];     /* top right bottom left */
     float eff_mb;
-    char *text; int text_len; Font *font; ShapedRun sh; bool shaped; struct ShapeEntry *shape_ref;   /* sh is shared with the shaping cache */
+    char *text; int text_len; int *tsrc; Font *font; ShapedRun sh; bool shaped; struct ShapeEntry *shape_ref;   /* sh is shared with the shaping cache */
     TextFrag *frags; int nfrags, fcap;
     Line *lines; int nlines, lcap;
     IRect *ir; int nir, ircap;

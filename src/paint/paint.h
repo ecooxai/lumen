@@ -84,6 +84,7 @@ extern TselCaret g_tsel_caret[2];
 bool tsel_point(Layout *L, float x, float y, float page_sy, Box *scope, Node **n, int *off);
 /* like tsel_point, but fails unless text is on the point's line within maxd px horizontally */
 bool tsel_point_near(Layout *L, float x, float y, float page_sy, Box *scope, float maxd, Node **n, int *off);
+bool tsel_caret_point(Layout *L, float x, float y, float page_sy, Node **n, int *off);   /* text node + UTF-16 offset */
 int tsel_edge(const Box *t);   /* bit 0: t holds the selection start, bit 1: the end */
 void tsel_prepare(Layout *L);
 bool tsel_range(const Box *t, int *s, int *e);

@@ -562,3 +562,30 @@ broke the whole page prelude: 33 ctest failures).
   (56, pixel mismatch); 2d.drawImage.zerosource.image (37); text align (19); wide-gamut images on P3 canvas (keep wide
   data); getTextClusters (15); index-from-offset-edges (15); display-p3-linear (13, Chrome passes? check); selection-rects
   y/x offsets (24); getActualBoundingBox x for substrings (18: expected -0 got 50).
+- 242d83c committed (filter validation). Build/ctest 104/104 clean.
+- caretPositionFromPoint plan: no caret/offset hit API exists. layout_hit (src/layout/block.c:581) returns a Box; Box
+  has node, text/text_len, font, sh (ShapedRun: glyph x + cluster byte index). Add native N.caretAt(x, y) in jsnative/jsglue
+  (via the page hit hook like hf_hit/h_hit_in in main.c ~3089/3303): hit box -> nearest glyph cluster boundary to
+  x - box x -> byte offset within box text -> map to the node's UTF-16 offset (box text may be whitespace-collapsed slice;
+  need the box's start offset in node data - check how text boxes are built in src/layout/inline*.c). Then JS
+  document.caretPositionFromPoint(x, y) -> CaretPosition {offsetNode, offset, getClientRect()} and
+  caretRangeFromPoint. Element hits with no text box -> {offsetNode: element, offset: child index}.
+  Layout detail: TextFrag {box, x, y, w, h, base, g0, g1} (layout.h:15) lives in the IFC root box's frags[]; frag.box is
+  the text box; glyphs g0..g1 of box->sh (ShapedRun) with cluster byte index into box->text (collapsed text). Need a
+  collapsed->source offset map (find where box->text is built from node data in src/layout, e.g. whitespace collapse).
+  box->text comes from prep_text(bs, n->text, n->text_len, st, &len) in src/layout/box.c:188 (whitespace collapse /
+  text-transform); add an optional source-offset map there (or recompute by re-running the collapse walk on n->text in
+  the caret native) to turn a collapsed byte offset back into the node's UTF-16 offset.
+  prep_text (box.c:35) is byte-wise: drops \r, collapses spaces (depends on bs->last_space from previous text), tabs ->
+  4 spaces when not collapsing, case transform ASCII only. Plan: add `int *src` (arena, k+1 entries: output byte ->
+  source byte) to Box, filled by prep_text; caret native maps cluster byte -> src byte -> UTF-16 (count code units of
+  n->text[0..src]).
+  IN PROGRESS (uncommitted, unbuilt): Box.tsrc (layout.h) filled by prep_text(..., &t->tsrc) for DOM text nodes
+  (box.c:192; NULL for ::before/::after content and line 237). Check new_box zero-inits tsrc and whether any code later
+  advances box->text (trim) which would misalign tsrc. Next: native caretAt + JS caretPositionFromPoint/caretRangeFromPoint.
+  Checked: nothing advances box->text after prep_text, so tsrc stays aligned. Next: verify new_box zero-inits, then add
+  the caret native and JS API, build, smoke, commit, WPT-run canvas text + /css/cssom-view/ (caretPositionFromPoint).
+  DONE (unbuilt): tsel_dom_point (src/paint/select.c) maps the select.c hit (box byte off) through Box.tsrc to a UTF-16
+  offset; JsHost.caret hook (js.h) = hf_caret (iframes) / h_caret (tabs) in main.c; N.caret(x, y) native (syncs layout);
+  JS document.caretPositionFromPoint(x, y, {shadowRoots}) + caretRangeFromPoint + CaretPosition (06-document.js),
+  falls back to [element at point, 0]. Verify with real lumen on /css/cssom-view/caretPositionFromPoint* and canvas text.

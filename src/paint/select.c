@@ -71,6 +71,19 @@ bool tsel_point_near(Layout *L, float x, float y, float psy, Box *scope, float m
     return true;
 }
 
+/* the DOM position nearest (x, y): the text node and the UTF-16 offset in its data */
+bool tsel_caret_point(Layout *L, float x, float y, float psy, Node **n, int *off) {
+    if (!L || !L->root) return false;
+    Hit h = { x, y, NULL, 0, 1e30f, NULL, 0 };
+    walk(L->root, 0, 0, psy, hit_fn, &h);
+    if (!h.bb || !h.bb->tsrc || !h.bb->node->text) return false;
+    int src = h.bb->tsrc[h.off < 0 ? 0 : h.off > h.bb->text_len ? h.bb->text_len : h.off], u = 0;
+    const unsigned char *s = (const unsigned char *)h.bb->node->text;
+    for (int i = 0; i < src && i < h.bb->node->text_len; i++) if ((s[i] & 0xC0) != 0x80) u += s[i] >= 0xF0 ? 2 : 1;
+    *n = h.bb->node; *off = u;
+    return true;
+}
+
 typedef struct Ord { const Box *t[2]; Node *n[2]; int o[2]; int phase; } Ord;
 static void push_r(const Box *b, int s, int e) {
     if (e <= s) return;

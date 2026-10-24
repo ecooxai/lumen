@@ -40,6 +40,8 @@ typedef struct JsHost {
     /* on window wid: 0 is it closed, 1 close it (a tab a script opened), 2 load arg in it, 3 show it;
        4 window.close() of the calling tab (wid unused) */
     int (*window_op)(void *ud, uint32_t wid, int op, const char *arg);
+    /* the text node and UTF-16 offset nearest viewport point (x, y), false when there is none */
+    bool (*caret)(void *ud, float x, float y, Node **n, int *off);
 } JsHost;
 
 void js_global_init(const char *argv0);

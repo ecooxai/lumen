@@ -32,23 +32,25 @@ static Box *new_box(Layout *L, uint8_t kind, Node *n, ComputedStyle *st) {
 }
 static void append(Box *p, Box *c) { c->parent = p; c->prev = p->last; if (p->last) p->last->next = c; else p->first = c; p->last = c; }
 
-static char *prep_text(BState *bs, const char *s, size_t n, const ComputedStyle *st, int *outlen) {
+static char *prep_text(BState *bs, const char *s, size_t n, const ComputedStyle *st, int *outlen, int **srcmap) {
     char *o = arena_alloc(&bs->L->arena, n * 3 + 8); int k = 0;
+    int *map = srcmap ? arena_alloc(&bs->L->arena, (n * 3 + 9) * sizeof(int)) : NULL;   /* output byte -> source byte */
     int ws = st->white_space;
     bool collapse_sp = ws == WS_NORMAL || ws == WS_NOWRAP || ws == WS_PRE_LINE;
     bool keep_nl = ws == WS_PRE || ws == WS_PRE_WRAP || ws == WS_PRE_LINE || ws == WS_BREAK_SPACES;
     bool cap_next = true;
     for (size_t i = 0; i < n; i++) {
+#define PUT(ch) (map ? (void)(map[k] = (int)i) : (void)0, o[k++] = (ch))
         unsigned char c = (unsigned char)s[i];
         if (c == '\r') continue;
         if (c == '\n' && keep_nl) {
             if (ws == WS_PRE_LINE) while (k && o[k - 1] == ' ') k--;
-            o[k++] = '\n'; bs->last_space = true; continue;
+            PUT('\n'); bs->last_space = true; continue;
         }
         if (c == ' ' || c == '\t' || c == '\n' || c == '\f') {
-            if (collapse_sp) { if (!bs->last_space) o[k++] = ' '; bs->last_space = true; }
-            else if (c == '\t') { for (int t = 0; t < 4; t++) o[k++] = ' '; }
-            else o[k++] = ' ';
+            if (collapse_sp) { if (!bs->last_space) PUT(' '); bs->last_space = true; }
+            else if (c == '\t') { for (int t = 0; t < 4; t++) PUT(' '); }
+            else PUT(' ');
             cap_next = true;
             continue;
         }
@@ -57,9 +59,11 @@ static char *prep_text(BState *bs, const char *s, size_t n, const ComputedStyle 
         else if (st->text_transform == TT_LOWER && c >= 'A' && c <= 'Z') c = (unsigned char)(c + 32);
         else if (st->text_transform == TT_CAPITALIZE && cap_next && c >= 'a' && c <= 'z') c = (unsigned char)(c - 32);
         cap_next = false;
-        o[k++] = (char)c;
+        PUT((char)c);
     }
     if (!collapse_sp) bs->last_space = false;
+#undef PUT
+    if (map) { map[k] = (int)n; *srcmap = map; }
     o[k] = 0; *outlen = k; return o;
 }
 
@@ -163,7 +167,7 @@ static void build_pseudo(BState *bs, Box *parent, Node *el, ComputedStyle *ps) {
     b->fmt = ps->display == D_FLEX || ps->display == D_INLINE_FLEX ? FMT_FLEX : ps->display == D_GRID ? FMT_GRID : FMT_FLOW;
     b->abs = ps->position == P_ABSOLUTE || ps->position == P_FIXED; b->fixed = ps->position == P_FIXED; b->floated = ps->float_ != F_NONE;
     if (b->abs || b->floated || kind == BX_ATOMIC) b->bfc = true;
-    if (*ps->content) { Box *t = new_box(bs->L, BX_TEXT, NULL, ps); t->text = prep_text(bs, ps->content, strlen(ps->content), ps, &t->text_len); append(b, t); }
+    if (*ps->content) { Box *t = new_box(bs->L, BX_TEXT, NULL, ps); t->text = prep_text(bs, ps->content, strlen(ps->content), ps, &t->text_len, NULL); append(b, t); }
     if (kind != BX_INLINE) fixup_block(bs->L, b);
     append(parent, b);
 }
@@ -185,7 +189,7 @@ static void build(BState *bs, Box *parent, Node *n, int *li) {
         ComputedStyle *st = style_for_text(n);
         if (!st || st->display == D_NONE) return;
         Box *t = new_box(L, BX_TEXT, n, st);
-        t->text = prep_text(bs, n->text, n->text_len, st, &t->text_len);
+        t->text = prep_text(bs, n->text, n->text_len, st, &t->text_len, &t->tsrc);
         if (!t->text_len) return;
         append(parent, t); n->box = t;
         return;
@@ -230,7 +234,7 @@ static void build(BState *bs, Box *parent, Node *n, int *li) {
             const char *tt = ct;
             char *masked = NULL;
             if (ctl == CTL_TEXT && !ph) { const char *ty = node_attr(n, "type"); if (ty && str_ieq(ty, "password")) { size_t k = strlen(ct); masked = xmalloc(k * 3 + 1); size_t o = 0; for (size_t i = 0; i < k; i++) if (((unsigned char)ct[i] & 0xC0) != 0x80) { memcpy(masked + o, "\xe2\x80\xa2", 3); o += 3; } masked[o] = 0; tt = masked; } }
-            t->text = prep_text(&s2, tt, strlen(tt), st, &t->text_len);
+            t->text = prep_text(&s2, tt, strlen(tt), st, &t->text_len, NULL);
             free(masked);
             append(b, t);
         }

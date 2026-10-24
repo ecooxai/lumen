@@ -101,6 +101,22 @@ methods(Document.prototype, {
     importNode(n, deep = undefined) { const r = N.clone(n, !!deep); ceUpgradeTree(r); return r; }, adoptNode(n) { if (!N.isNode(n)) throw new TypeError("Failed to execute 'adoptNode' on 'Document': parameter 1 is not of type 'Node'."); if (N.type(n) === 9) throw new DOMException('The node provided is a document, which may not be adopted.', 'NotSupportedError'); if (N.type(n) === 11 && N.host(n)) throw new DOMException('The node provided is a shadow root, which may not be adopted.', 'HierarchyRequestError'); if (N.parent(n)) removeNode(n); N.adopt(n, this); return n; },
     hasFocus() { return true; }, getAnimations() { return waGetAnims(t => N.doc(t) === this && t.isConnected); },
     elementFromPoint(x, y) { return N.hit(+x, +y); },
+    caretPositionFromPoint(x, y, opts) {
+        if (arguments.length < 2) throw new TypeError(`Failed to execute 'caretPositionFromPoint' on 'Document': 2 arguments required, but only ${arguments.length} present.`);
+        x = +x; y = +y;
+        if (!Number.isFinite(x) || !Number.isFinite(y)) throw new TypeError("Failed to execute 'caretPositionFromPoint' on 'Document': The provided double value is non-finite.");
+        const r = caretAt(this, x, y);
+        if (!r) return null;
+        let [n, off] = r;
+        const roots = opts && opts.shadowRoots ? Array.from(opts.shadowRoots) : [];
+        for (let h; (h = N.parent(n)) && N.type(h) === 11 && N.host(h) && !roots.includes(h);) { const host = N.host(h), p = N.parent(host); off = p ? Array.prototype.indexOf.call(p.childNodes, host) : 0; n = p || host; }
+        return mkCaretPos(n, off);
+    },
+    caretRangeFromPoint(x, y) {
+        const r = caretAt(this, +x, +y);
+        if (!r) return null;
+        const rg = this.createRange(); rg.setStart(r[0], r[1]); rg.collapse(true); return rg;
+    },
     elementsFromPoint(x, y) { const r = []; for (let e = N.hit(+x, +y); e && N.type(e) === 1; e = N.parent(e)) r.push(e); return r; },
     getSelection() { return selection; },
     execCommand(cmd, ui, val) {
@@ -177,6 +193,15 @@ function editing() {
 }
 /* a queryCommand*() answer; the specification's implementation throws strings on states it does not handle */
 function editQuery(f, none) { try { return f(editing()); } catch (e) { return none; } }
+/* the DOM position nearest viewport point (x, y): the text node and offset, else the element there and 0 */
+const caretAt = (doc, x, y) => { const r = N.caret(x, y); if (r && N.doc(r[0]) === doc) return r; const e = N.hit(x, y); return e && N.doc(e) === doc ? [e, 0] : null; };
+class CaretPosition {
+    constructor() { illegal('CaretPosition'); }
+    get offsetNode() { return cpPriv(this).n; } get offset() { return cpPriv(this).o; }
+    getClientRect() { const { n, o } = cpPriv(this), r = new Range(); r.setStart(n, o); r.collapse(true); return r.getBoundingClientRect(); }
+}
+const cpData = new WeakMap(), cpPriv = o => { const d = cpData.get(o); if (!d) throw new TypeError('Illegal invocation'); return d; };
+const mkCaretPos = (n, o) => { const c = Object.create(CaretPosition.prototype); cpData.set(c, { n, o }); return c; };
 const argErr = m => new TypeError(`Failed to execute '${m}' on 'Document': 1 argument required, but only 0 present.`);
 /* the editing host of the selection's start, before a command runs: where its input event goes */
 function editHostOf(sel) {

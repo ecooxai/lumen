@@ -3087,6 +3087,7 @@ static Node *hit_node(Box *b, float x, float y) {
     return b ? b->node : NULL;
 }
 static Node *hf_hit(void *ud, float x, float y) { Page *p = ud; if (!p->L) return NULL; return hit_node(layout_hit(p->L, x, y + p->fsy, 0, p->fsy), x, y + p->fsy); }
+static bool hf_caret(void *ud, float x, float y, Node **n, int *off) { Page *p = ud; return p->L && tsel_caret_point(p->L, x, y + p->fsy, p->fsy, n, off); }
 static void h_frame_close(void *ud);
 static void h_frame_open(void *ud, Node *f, Document *d, JsHost *ch) {
     (void)ud;
@@ -3115,7 +3116,7 @@ static void h_frame_open(void *ud, Node *f, Document *d, JsHost *ch) {
     sync_images(p);
     p->seen_ver = d->dom_version; p->frelayout = true;
     p->fnext = g_frames; g_frames = p;
-    *ch = (JsHost){ .ud = p, .media = &p->e->media, .viewport = hf_viewport, .scroll_to = hf_scroll_to, .hit = hf_hit, .sync = hf_sync, .frame_open = h_frame_open, .frame_close = h_frame_close };
+    *ch = (JsHost){ .ud = p, .media = &p->e->media, .viewport = hf_viewport, .scroll_to = hf_scroll_to, .hit = hf_hit, .caret = hf_caret, .sync = hf_sync, .frame_open = h_frame_open, .frame_close = h_frame_close };
 }
 static void h_frame_close(void *ud) {
     Page *p = ud;
@@ -3359,10 +3360,12 @@ static char *h_internal(void *ud, const char *cmd) { char *r = NULL; TAB_CALL(ud
 static void h_viewport(void *ud, float *w, float *h, float *sx, float *sy, float *dpr) { TAB_CALL(ud, h_viewport_in(ud, w, h, sx, sy, dpr)); }
 static void h_scroll_to(void *ud, float x, float y) { TAB_CALL(ud, h_scroll_to_in(ud, x, y)); }
 static Node *h_hit(void *ud, float x, float y) { Node *r = NULL; TAB_CALL(ud, r = h_hit_in(ud, x, y)); return r; }
+static bool h_caret_in(float x, float y, Node **n, int *off) { Page *p = g_app->t->cur; return p && p->L && tsel_caret_point(p->L, x, y + g_app->t->sy, g_app->t->sy, n, off); }
+static bool h_caret(void *ud, float x, float y, Node **n, int *off) { bool r = false; TAB_CALL(ud, r = h_caret_in(x, y, n, off)); return r; }
 static void page_start_js(App *a, Page *p) {
     if (getenv("LUMEN_NO_JS")) return;
     JsHost h = { a->t, &p->e->media, h_navigate, h_set_url, h_history_go, h_viewport, h_scroll_to, h_hit, h_history_len, h_navigate_post, h_sync, h_frame_open, h_frame_close,
-                 p->internal_ui || env_hook(ENV_TESTDRIVER) ? h_internal : NULL, h_fullscreen, p->internal_ui ? NULL : h_open_window, h_window_op };
+                 p->internal_ui || env_hook(ENV_TESTDRIVER) ? h_internal : NULL, h_fullscreen, p->internal_ui ? NULL : h_open_window, h_window_op, h_caret };
     double t0 = now_ms();
     sync_sheets(p, true);
     /* the stylesheets the loader fetched before any script ran: their load (or error) events come after
