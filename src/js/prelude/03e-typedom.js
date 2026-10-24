@@ -522,12 +522,15 @@ const TOM_NO_NUMERIC = /^(color|background-color|.*-color|fill-rule|clip-rule|d|
 const TOM_ANGLE_PROPS = /^(rotate|offset-rotate|image-orientation|font-style|filter|backdrop-filter|offset-path|hue-rotate)$/;
 const TOM_TIME_PROPS = /^(transition|animation)(-delay|-duration)?$/;
 const TOM_FLEX_PROPS = /^grid(-template)?(-(columns|rows))?$|^grid-auto-(columns|rows)$/;
+/* properties (beyond the length/angle/time/flex ones) whose grammar has a numeric component */
+const TOM_NUMERIC_OK = /^(opacity|text-size-adjust|-webkit-text-size-adjust|z-index|order|flex(-grow|-shrink)?|orphans|widows|tab-size|font-weight|font-size-adjust|font-stretch|font-width|font-style|columns|column-count|(fill|stroke|stop|flood)-opacity|stroke(-width|-miterlimit|-dashoffset|-dasharray)?|r|rx|ry|cx|cy|x|y|background(-position(-[xy])?|-size)?|object-position|transform-origin|perspective-origin|mask(-position|-size)?|-webkit-mask(-position|-size)?|border-image(-outset|-slice|-width)?|shape-(outside|image-threshold)|offset(-distance|-position|-anchor|-rotate)?|aspect-ratio|zoom|scale|rotate|translate|grid-(template-(rows|columns)|auto-(rows|columns)|(row|column)-(start|end)|row|column|area)|initial-letter|hyphenate-limit-chars|math-depth|text-shadow|box-shadow|animation-iteration-count|animation(-delay|-duration)?|transition(-delay|-duration)?|counter-(increment|reset|set)|line-clamp|-webkit-line-clamp|max-lines|contain-intrinsic-(size|width|height|block-size|inline-size)|scroll-snap-(stop|type)|font|text-decoration|outline|border(-top|-right|-bottom|-left|-block|-inline)?|column-rule|rule|filter|backdrop-filter|transform|image-resolution|block-step-size|scroll-timeline-inset|view-timeline-inset|animation-range(-start|-end)?|-webkit-text-stroke(-width)?|text-emphasis-position|baseline-shift|shape-margin|clip|clip-path|corner-shape|interest-delay(-start|-end)?|reading-flow|position-try)$/;
 function tomTypedOk(p, v) {
     if (v instanceof CSSTransformValue) return p === 'transform';
     if (v instanceof CSSNumericValue && /^(touch-action|background|border(-block|-inline|-top|-right|-bottom|-left)?|outline|font|list-style|text-decoration|text-emphasis|column-rule|columns|flex-flow|grid(-area|-row|-column|-template)?|transition|animation|mask|offset|overflow|place-(content|items|self))$/.test(p)) return false;
     if (!(v instanceof CSSNumericValue)) return true;
     if (/^(font-synthesis(-.*)?|white-space-collapse|text-wrap(-mode|-style)?|container-name|(backdrop-)?filter|font-style|offset-path|text-spacing-trim|text-box-trim|font-variant(-.*)?|anchor-name|position-anchor|view-transition-name|timeline-scope)$/.test(p)) return false;
     const k = tomKeys(tomTypeOf(v));
+    if (!TOM_LENGTH_PROPS.test(p) && !TOM_ANGLE_PROPS.test(p) && !TOM_TIME_PROPS.test(p) && !TOM_FLEX_PROPS.test(p) && !TOM_NUMERIC_OK.test(p)) return false;
     if (/^grid-(row|column)-(start|end)$/.test(p)) return !k.length;
     if (p === 'border-image-width') return k.every(x => x === 'length' || x === 'percent');
     if (p !== 'line-height' && TOM_LENGTH_PROPS.test(p) && !k.length) return false;
