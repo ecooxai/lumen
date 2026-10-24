@@ -522,7 +522,13 @@ FN(scrollPos) {
     RET(o);
 }
 FN(setScroll) { CTX; ARGN(n, 0); if (c->host.sync) c->host.sync(c->host.ud, c->doc, true); RET(jsg_set_scroll(n, (float)NUM(1), (float)NUM(2))); }
-FN(computed) { CTX; ARGN(n, 0); if (c->host.sync) c->host.sync(c->host.ud, c->doc, false); std::string p = S(1); char *v = jsg_computed(n, p.c_str()); RET(nstr(iso, v)); free(v); }
+/* resolved values that read the box (used sizes, absolutized insets) need a current layout */
+static bool computed_needs_layout(const std::string &p) {
+    static const char *const l[] = { "width", "height", "top", "right", "bottom", "left", "inset", "margin", "padding", "block-size", "inline-size", "grid-template", "transform-origin", "perspective-origin" };
+    for (const char *x : l) if (!p.compare(0, strlen(x), x)) return true;
+    return false;
+}
+FN(computed) { CTX; ARGN(n, 0); std::string p = S(1); if (c->host.sync) c->host.sync(c->host.ud, c->doc, computed_needs_layout(p)); char *v = jsg_computed(n, p.c_str()); RET(nstr(iso, v)); free(v); }
 FN(trTake) {
     CTX; v8::Local<v8::Array> out = v8::Array::New(iso); uint32_t k = 0;
     for (size_t i = 0; i < c->anims.size();)

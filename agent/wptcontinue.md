@@ -776,3 +776,5 @@ broke the whole page prelude: 33 ctest failures).
   654 regressed = invalid colour functions accepted (raw passthrough). Narrowed passthrough to from/calc/color-mix/
   alpha/contrast-color/light-dark/device-cmyk/color-layers (empty args rejected); others validated by cssColor.
   Proper validator for color-mix/relative colours still TODO. css-sizing min-content narrower on floats/abspos (23) TODO.
+- committed colour validation; RUN 135 (css-color, css-properties-values-api, css-typed-om, cssom, css-position, css-align) started
+  N.computed now syncs layout for box-dependent props (computed_needs_layout in jsnative.cc); unbuilt
