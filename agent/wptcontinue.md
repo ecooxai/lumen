@@ -821,3 +821,4 @@ broke the whole page prelude: 33 ctest failures).
   smooth-scroll timeouts likely load-related. Unbuilt as of this note.
 - run-139 regression fixes are in commit 8098fa6 ('wip' message; built+smoked OK, /tmp/rr.html). NEXT: flexbox img 0px (image-as-flexitem-size-002v), -webkit-sans-serif generic, color-mix computed, CSSPositionTryRule, gap 'calc() calc()' pair canonical (SPEC_PAIR skips words with '(').
 - committed pair/box with functions (1a793f8); smoke /tmp/gp.html ok. Unmeasured since run 139: colour lists, shorthand numeric reject, pair functions. NEXT as listed above.
+  flexbox img 0px (image-as-flexitem-size-002v/005): test checks layout in body onload -> window load may fire before <img> decode under load; check that document load waits for pending image decodes (sync_images / load event in main.c). Next item.
