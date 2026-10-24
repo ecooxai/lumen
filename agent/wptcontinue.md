@@ -885,3 +885,4 @@ broke the whole page prelude: 33 ctest failures).
   committed a140646 display canon (smoke ok, staged).
   UNBUILT: src/js/shared/safecoll.js SMap/SSet (captured methods) in page (01-events marker) + worker (worker.cc include) + CMake outputs; all 'new Map(' / 'new Set(' in prelude+shared -> SMap/SSet (32 files). smoke /tmp/tamper.html
 - RUN 164 (display canon): css-display +56; 2 regressions: math on non-MathML must compute to inline/block -> UNBUILT fix in computed_of.
+  committed d400f9d SMap/SSet + math display (smoke ok, staged). NEXT run 165: broad check since prelude-wide change: /dom/ /html/dom/ /css/css-highlight-api/ /css/css-display/ /workers/ /url/ /performance-timeline/ /IndexedDB/ /fetch/api/
