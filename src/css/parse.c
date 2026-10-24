@@ -157,6 +157,34 @@ static char *sp_ident(SP *p) {
     char *r = consume_name(&l); p->i = l.i; return r;
 }
 static bool parse_sellist(SP *p, SelList *out, bool relative, char endc);
+static bool in_list(const char *n, const char *const *l) { for (; *l; l++) if (!strcmp(*l, n)) return true; return false; }
+/* querySelector grammar: what may follow a pseudo-element in its compound (Selectors 4 and Chrome's rules) */
+static bool pe_tail_ok(const Compound *c) {
+    static const char *const user_action[] = { "hover", "focus", "focus-visible", "focus-within", "active", NULL };
+    static const char *const structural[] = { "first-child", "last-child", "only-child", "first-of-type", "last-of-type", "only-of-type",
+        "nth-child", "nth-last-child", "nth-of-type", "nth-last-of-type", "empty", "root", "host", "host-context", NULL };
+    static const char *const user_action_only[] = { "before", "after", "marker", "first-line", "first-letter", "placeholder", "file-selector-button",
+        "backdrop", "selection", NULL };
+    static const char *const no_classes[] = { "highlight", "spelling-error", "grammar-error", "target-text", "column", "search-text", NULL };
+    const char *pe = NULL;
+    for (int i = 0; i < c->n; i++) {
+        const SimpleSel *x = &c->s[i];
+        if (x->kind == SK_PSEUDO_EL && x->name == atom("picker") && (!x->value || strcmp(x->value, "select"))) return false;
+        if (!pe) { if (x->kind == SK_PSEUDO_EL) pe = x->name; continue; }
+        if (x->kind == SK_PSEUDO_EL) {
+            if (x->name == atom("part") || x->name == atom("slotted")) return false;
+            if (!(pe == atom("part") || pe == atom("slotted") || pe == atom("column") || ((pe == atom("before") || pe == atom("after")) && x->name == atom("marker")))) return false;
+            pe = x->name;
+        } else if (x->kind == SK_PSEUDO) {
+            if (pe == atom("part")) { if (in_list(x->name, structural)) return false; }
+            else if (pe == atom("search-text")) { if (x->name != atom("current")) return false; }
+            else if (in_list(pe, no_classes)) return false;
+            else if (in_list(pe, user_action_only) && !in_list(x->name, user_action) && !(pe == atom("selection") && x->name == atom("window-inactive"))) return false;
+        } else return false;
+    }
+    return true;
+}
+static bool has_pe(const Compound *c) { for (int i = 0; i < c->n; i++) if (c->s[i].kind == SK_PSEUDO_EL) return true; return false; }
 
 static bool parse_nth(const char *s, int *a, int *b, const char **rest) {
     while (is_ws((unsigned char)*s)) s++;
@@ -263,6 +291,10 @@ static bool parse_compound(SP *p, Compound *c, Selector *sel) {
                     if (!parse_sellist(&q, s.sub, nmx == atom("has"), 0)) {
                         /* forgiving selector list for :is/:where */
                         if (nmx == atom("not") || nmx == atom("has")) { free(arg); css_sellist_free(s.sub); free(s.sub); goto fail; }
+                    } else if (p->query && (nmx == atom("not") || nmx == atom("has"))) {   /* no pseudo-elements inside :not()/:has() */
+                        bool bad = false;
+                        for (int k = 0; k < s.sub->n && !bad; k++) for (int j = 0; j < s.sub->v[k].n; j++) if (has_pe(&s.sub->v[k].c[j])) bad = true;
+                        if (bad) { free(arg); css_sellist_free(s.sub); free(s.sub); goto fail; }
                     }
                 } else if (str_starts(nmx, "nth-")) {
                     const char *rest = NULL;
@@ -340,6 +372,7 @@ static bool parse_selector(SP *p, Selector *sel, bool relative) {
         if (!parse_compound(p, &c, sel)) goto fail;
         c.comb = cs.n ? comb : CB_NONE;
         vec_push(cs, c);
+        if (p->query && (!pe_tail_ok(&c) || (cs.n > 1 && has_pe(&cs.v[cs.n - 2])))) goto fail;   /* nothing may follow a pseudo-element's compound */
         size_t save = p->i;
         sp_ws(p);
         if (p->i >= p->n || p->s[p->i] == ',' || p->s[p->i] == ')' || p->s[p->i] == '{') break;
