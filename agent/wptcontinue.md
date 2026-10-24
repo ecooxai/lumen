@@ -851,3 +851,6 @@ broke the whole page prelude: 33 ctest failures).
 - RUN 155 (87a9262; workers+canvas+typed-om): workers 1033->1044 (+11, imagedata clone tests TIMEOUT->OK), canvas 4247->4260 (+13), typed-om 11069->11077 (+8). Regressions: dedicated-worker-import-csp timeout moved (flaky); canvas 2d.pattern.image.zero{height,width} (createPattern should return null; same 3 flipped in run 123 -> flaky image-load timing?), 2d.pattern.basic.nocontext and 2d.composite.uncovered.nocontext.destination-in (drawing a context-less canvas must draw transparent black).
   UNBUILT: c2dImage: HTMLCanvasElement without context (no __ck/__offscreen) -> transparent black, not native c2dSource. smoke /tmp/nc.html
   committed 7f6b7c8 (nocontext fix, smoke ok). Next: CSSRGB/CSSColorValue family (typed-om ~120 subtests), relative lengths -> CSSUnitValue in computed map, unsupported values -> base CSSStyleValue, idlharness StylePropertyMap.
+  UNBUILT: tomReify: named colours on *-color props -> base CSSStyleValue (not keyword).
+  UNBUILT: computed map tomComputedText (abs units->px/s/deg, single-unit calc folded). smoke /tmp/cm.html
+  NOTE: computed accent-color (generic map props) keeps specified 'red' instead of rgb() -> colour props in generic maps should be canonicalised natively.

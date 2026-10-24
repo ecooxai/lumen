@@ -20,6 +20,7 @@ function tomReify(prop, text) {
     if (prop.startsWith('--')) return tomUnparsed(text);
     if (TOM_WIDE.test(text)) return new CSSKeywordValue(text.toLowerCase());
     if (/var\(/i.test(text)) return tomUnparsed(text);
+    if (/(^|-)color$/.test(prop) && /^[a-z]+$/i.test(text) && !/^(currentcolor|auto)$/i.test(text)) return tomGeneric(text);   /* named colours are not keywords */
     if (/^-?[a-z_][a-z0-9_-]*$/i.test(text) && !/^-?\d/.test(text)) return new CSSKeywordValue(text);
     if (/^[+-]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?(%|[a-z]+)?$/i.test(text) || /^(calc|min|max|clamp)\(/i.test(text)) { try { return CSSNumericValue.parse(text); } catch (e) {} }
     if ((prop === 'transform') && text !== 'none') { const t = tomParseTransform(text); if (t) return t; }
@@ -83,7 +84,14 @@ class StylePropertyMap extends StylePropertyMapReadOnly {
     delete(p) { p = tomPropName(p); if (!tomKnown(p)) throw new TypeError(`Invalid property name: ${p}`); tomData(this).decl().removeProperty(p); }
     clear() { const d = tomData(this).decl(); for (const n of tomNames(this)) d.removeProperty(n); }
 }
-const tomRead = (m, p) => { const v = tomData(m).decl().getPropertyValue(p); return v == null ? '' : String(v); };
+const TOM_CANON = { cm: ['px', 96 / 2.54], mm: ['px', 96 / 25.4], q: ['px', 96 / 101.6], in: ['px', 96], pt: ['px', 4 / 3], pc: ['px', 16], ms: ['s', 0.001], rad: ['deg', 180 / Math.PI], grad: ['deg', 0.9], turn: ['deg', 360] };
+/* computed values: absolute units in their canonical unit, single-unit calc() folded */
+const tomComputedText = (p, v) => {
+    if (p.startsWith('--') || /["']|url\(|var\(/i.test(v)) return v;
+    v = v.replace(/(^|[\s(,])([+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?)(cm|mm|q|in|pt|pc|ms|rad|grad|turn)(?=$|[\s),])/gi, (m, pre, n, u) => { const c = TOM_CANON[u.toLowerCase()]; return pre + tomNumStr(+n * c[1]) + c[0]; });
+    return v.replace(/\bcalc\((?:[^()]|\([^()]*\))*\)/gi, m => { try { const r = tomSumMap(CSSNumericValue.parse(m)); if (r && r.size === 1) { const [[u, x]] = r; return tomNumStr(x) + (u === 'number' ? '' : u === 'percent' ? '%' : u); } } catch (e) {} return m; });
+};
+const tomRead = (m, p) => { const v = tomData(m).decl().getPropertyValue(p); return v == null ? '' : tomData(m).computed ? tomComputedText(p, String(v)) : String(v); };
 const tomNames = m => {
     const d = tomData(m), decl = d.decl();
     if (d.computed) { const names = [...CSS_PROP_NAMES].filter(n => tomRead(m, n)).sort(), cust = []; return names.concat(cust); }
