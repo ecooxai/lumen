@@ -882,3 +882,4 @@ broke the whole page prelude: 33 ctest failures).
 - RUN 163: +72 (display +19, text-decor +49, grid/parsing +6, highlight +7), 1 regression (block ruby kept -> fixed). Leads: computed display for list-item variants ('flow-root list-item', 'inline list-item'), abspos blockification of display, text-decoration-thickness computed em->px + calc(% + px) order.
   Lead: tests that tamper Map.prototype/Set.prototype break prelude (m.get in dispatch invoke, memo.get in N.urlParse, perfObservers iterable) -> prelude should capture Map/Set methods. Display work in progress: native canonical display text (display_text field).
   UNBUILT: style.c display_canon/display_blockify + ComputedStyle.display_text (css.h). smoke /tmp/disp.html
+  committed a140646 display canon (smoke ok, staged).
