@@ -656,3 +656,11 @@ broke the whole page prelude: 33 ctest failures).
   initial); css_get_computed_value falls back to gen value / initial ("currentcolor" -> color); css_property_known
   includes gen_prop (CSS.supports); paint_only zeroes gen_i/gen_n. Known gaps: no value validation, no px
   conversion of lengths, inherited gen values don't propagate on inheritance-only parent updates.
+- committed generic store; RUN 129 (/css/) started on it
+- RUN 129 (/css/, agents 487629c6 run, 53fb8e96 monitor) running on 55850a5.
+- CSS TYPED OM (in progress): new src/js/prelude/03e-typedom.js. CSSStyleValue(parse/parseAll), CSSKeywordValue,
+  CSSNumericValue + CSSUnitValue + CSSMath{Sum,Product,Negate,Invert,Min,Max,Clamp} + CSSNumericArray, CSS.<unit>()
+  factories, CSSUnparsedValue/CSSVariableReferenceValue, CSSTransformValue + components, CSSImageValue,
+  StylePropertyMap(ReadOnly): element.attributeStyleMap, element.computedStyleMap(), rule.styleMap.
+  Tests: /css/css-typed-om/ (the-stylepropertymap/properties/*.html use resources/testsuite.js there).
+  wired: 08-window exports Typed OM classes + CSS.<unit>() factories (before getComputedStyle).
