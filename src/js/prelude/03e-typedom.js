@@ -17,7 +17,7 @@ const TOM_UNITS = {
     dpi: ['resolution', 1 / 96], dpcm: ['resolution', 2.54 / 96], dppx: ['resolution', 1], x: ['resolution', 1], fr: ['flex', 1],
 };
 const TOM_BASE = ['length', 'angle', 'time', 'frequency', 'resolution', 'flex', 'percent'];
-const tomUnit = u => { u = String(u).toLowerCase(); if (u === '%') u = 'percent'; if (!Object.prototype.hasOwnProperty.call(TOM_UNITS, u)) throw new TypeError(`Invalid unit: ${u}`); return u === 'q' ? 'q' : u === 'hz' ? 'Hz' : u === 'khz' ? 'kHz' : u; };
+const tomUnit = u => { u = String(u).toLowerCase(); if (u === '%') u = 'percent'; if (!Object.prototype.hasOwnProperty.call(TOM_UNITS, u)) throw new TypeError(`Invalid unit: ${u}`); return u; };
 const tomCat = u => TOM_UNITS[u.toLowerCase()][0];
 const tomNum = (v, what = 'value') => { v = Number(v); if (!Number.isFinite(v) && !Number.isNaN(v) && Math.abs(v) !== Infinity) throw new TypeError(`Invalid ${what}`); return v; };
 /* a numeric type: { length: 1, ... , percentHint } */
@@ -529,7 +529,7 @@ function tomTypedOk(p, v) {
     if (/^(font-synthesis(-.*)?|white-space-collapse|text-wrap(-mode|-style)?|container-name|(backdrop-)?filter|font-style|offset-path|text-spacing-trim|text-box-trim|font-variant(-.*)?|anchor-name|position-anchor|view-transition-name|timeline-scope)$/.test(p)) return false;
     const k = tomKeys(tomTypeOf(v));
     if (/^grid-(row|column)-(start|end)$/.test(p)) return !k.length;
-    if (p === 'border-image-width') return true;
+    if (p === 'border-image-width') return k.every(x => x === 'length' || x === 'percent');
     if (p !== 'line-height' && TOM_LENGTH_PROPS.test(p) && !k.length) return false;
     if (k.includes('percent') && /^(border(-[a-z]+)*-width|outline-width|outline-offset|scroll-margin(-.*)?|column-width|perspective)$/.test(p)) return false;
     const t = v.type();
