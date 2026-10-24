@@ -738,3 +738,6 @@ broke the whole page prelude: 33 ctest failures).
   play/finish/cancel with elapsedTime), and jsglue.c stops firing native transition events (keep animation events
   until CSSAnimation fires animationstart/end/iteration/cancel itself).
   implemented: CSSTransition fires transitionrun/start/end/cancel (06d trStart); jsglue.c returns before native transition events. unbuilt.
+  FOUND: inline 'initial' ignored for native props (column-gap/z-index/min-width/top keep sheet value); line-height:4 computes 64px (Chrome '4'). Fixing in css_apply_decl.
+  fixed (unbuilt): initial/unset fallback via goto apply with gp->initial; computed line-height prints unitless factor.
+  gap 'normal' now resets column/row gap.

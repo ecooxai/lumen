@@ -1029,8 +1029,14 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
             else st->border_radius[k] = src->border_radius[k];
         }
         else if (!strcmp(P, "all")) {}
+        else if (!inherit && !(unset && gp && gp->inherited) && gp && gp->native && gp->initial && *gp->initial) {
+            /* other natively modelled properties: apply the textual initial value */
+            free(vbuf); vbuf = xstrdup(gp->initial); val = vbuf; inherit = initial = unset = false;
+            goto apply;
+        }
         goto out;
     }
+apply:
     if (!strcmp(P, "mask-image") || !strcmp(P, "-webkit-mask-image") || !strcmp(P, "mask") || !strcmp(P, "-webkit-mask")) {
         free(st->mask_image); st->mask_image = NULL;
         char *u = strstr(val, "url(") ? extract_url(val) : NULL;
@@ -1108,7 +1114,7 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         else if (!strcmp(P, "clear")) { static const char *const cl[] = { "none", "left", "right", "both", NULL }; k = kw(val, cl); if (k >= 0) st->clear = (uint8_t)k; else if (str_ieq(val, "inline-start")) st->clear = CLEAR_LEFT; }
         else if (!strcmp(P, "cursor")) { st->cursor = str_ieq(val, "pointer") ? CUR_POINTER : str_ieq(val, "text") ? CUR_TEXT : str_ieq(val, "move") ? CUR_MOVE : str_ieq(val, "not-allowed") ? CUR_NOT_ALLOWED : str_istarts(val, "grab") ? CUR_GRAB : CUR_DEFAULT; }
         else if (!strcmp(P, "content")) { free(st->content); st->content = NULL; if (!str_ieq(val, "none") && !str_ieq(val, "normal")) { SB b; sb_init(&b); const char *q = val; while (*q) { if (*q == '"' || *q == '\'') { char qc = *q++; while (*q && *q != qc) { if (*q == '\\' && q[1]) { q++; if (isxdigit((unsigned char)*q)) { uint32_t cp = (uint32_t)strtoul(q, (char **)&q, 16); sb_utf8(&b, cp); if (*q == ' ') q++; continue; } } sb_putc(&b, *q++); } if (*q) q++; } else if (str_istarts(q, "attr(")) { const char *e2 = strchr(q, ')'); char an[64]; snprintf(an, sizeof an, "%.*s", (int)(e2 ? e2 - q - 5 : 0), q + 5); const char *attribute = str_trim(an); st->attribute_dependencies |= custom_bit(atom_lower(attribute, strlen(attribute))); const char *av = el ? node_attr(el, attribute) : NULL; if (av) sb_puts(&b, av); q = e2 ? e2 + 1 : q + strlen(q); } else if (str_istarts(q, "open-quote")) { sb_puts(&b, "\xe2\x80\x9c"); q += 10; } else if (str_istarts(q, "close-quote")) { sb_puts(&b, "\xe2\x80\x9d"); q += 11; } else q++; } st->content = sb_take(&b); } }
-        else if (!strcmp(P, "column-gap")) { if (alen(&c, val, &l)) { st->column_gap = l.px; st->column_gap_l = l; } }
+        else if (!strcmp(P, "column-gap")) { if (str_ieq(val, "normal")) { st->column_gap = 0; memset(&st->column_gap_l, 0, sizeof st->column_gap_l); } else if (alen(&c, val, &l)) { st->column_gap = l.px; st->column_gap_l = l; } }
         else if (!strcmp(P, "caret-color")) { css_parse_color(val, &st->caret_color, st->color); }
         break;
     case 'd':
@@ -1265,7 +1271,7 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         break;
     case 'r':
         if (!strcmp(P, "right")) alen(&c, val, &st->inset[1]);
-        else if (!strcmp(P, "row-gap")) { if (alen(&c, val, &l)) { st->row_gap = l.px; st->row_gap_l = l; } }
+        else if (!strcmp(P, "row-gap")) { if (str_ieq(val, "normal")) { st->row_gap = 0; memset(&st->row_gap_l, 0, sizeof st->row_gap_l); } else if (alen(&c, val, &l)) { st->row_gap = l.px; st->row_gap_l = l; } }
         else if (!strcmp(P, "rotate")) { char buf[64]; snprintf(buf, sizeof buf, "rotate(%s)", val); if (!str_ieq(val, "none")) parse_transform(&c, buf); }
         break;
     case 's':
@@ -4079,7 +4085,7 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
     else if (!strcmp(prop, "font-weight")) sb_printf(&b, "%d", s->font_weight);
     else if (!strcmp(prop, "font-family")) sb_puts(&b, s->font_family);
     else if (!strcmp(prop, "opacity")) sb_printf(&b, "%g", s->opacity);
-    else if (!strcmp(prop, "line-height")) { if (s->line_height_normal) sb_puts(&b, "normal"); else sb_printf(&b, "%gpx", s->line_height); }
+    else if (!strcmp(prop, "line-height")) { if (s->line_height_normal) sb_puts(&b, "normal"); else if (s->line_height_factor > 0) sb_printf(&b, "%g", s->line_height_factor); else sb_printf(&b, "%gpx", s->line_height); }
     else if (!strcmp(prop, "overflow") || !strcmp(prop, "overflow-y") || !strcmp(prop, "overflow-x")) { static const char *ov[] = { "visible", "hidden", "scroll", "auto", "clip" }; sb_puts(&b, ov[prop[9] == 'x' ? s->overflow_x : s->overflow_y]); }
     else if (!strcmp(prop, "z-index")) { if (s->z_auto) sb_puts(&b, "auto"); else sb_printf(&b, "%d", s->z_index); }
     else if (!strcmp(prop, "direction")) sb_puts(&b, s->direction ? "rtl" : "ltr");
