@@ -589,3 +589,14 @@ broke the whole page prelude: 33 ctest failures).
   offset; JsHost.caret hook (js.h) = hf_caret (iframes) / h_caret (tabs) in main.c; N.caret(x, y) native (syncs layout);
   JS document.caretPositionFromPoint(x, y, {shadowRoots}) + caretRangeFromPoint + CaretPosition (06-document.js),
   falls back to [element at point, 0]. Verify with real lumen on /css/cssom-view/caretPositionFromPoint* and canvas text.
+- 685c69a committed caretPositionFromPoint. RUN 127 (cssom-view, geometry, canvas) started on that build.
+- BIG CSS FIND: computedHandler (03-element.js) had no `has` trap, so `prop in getComputedStyle(el)` was false and
+  test_computed_value (css/support/computed-testcommon.js) failed its first assert for every property: 7,940 subtests in
+  css-color alone, likely tens of thousands across /css/. Added CSS_PROP_NAMES (505 names from Chrome-passing
+  "Property X ..." subtests, /tmp/chrome-props.txt) + cssPropName (camelCase/webkit) and a `has` trap. Next: rerun /css/
+  and look at the computed-value serialization failures that become visible.
+  Verified in jsrun: 'color' in cs true, 'fooBar'/'--x' false. Computed colours are lossy because native stores 8-bit
+  RGBA (css_get_computed_value): lab/oklch -> grey 127, color(display-p3 ...) -> black, rgb(from ...) -> black,
+  alpha 0.5 -> 0.501961. Fix plan: native keeps the declared colour string for color-ish properties (or JS reads the
+  cascaded declaration) and JS serialises via shared color.js (cssColor/colorTo) per css-color-4 computed rules
+  (legacy rgb()/rgba() for sRGB-legacy syntaxes, keep lab()/oklch()/color() forms, alpha rounded to 3 sig like Chrome).
