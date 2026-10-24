@@ -790,7 +790,20 @@ static void parse_rules(PCtx *c, const char *s, size_t n, const char *parent_sel
             else if (str_istarts(pt, "@property") && (!c->mq || c->mq->matches)) {
                 SB nm; sb_init(&nm); sb_puts(&nm, pt + 9); char *name = str_trim(nm.s);
                 char *bd = xstrndup(body, bn), *iv = strstr(bd, "initial-value");
-                if (iv && (iv = strchr(iv, ':'))) { char *e = strchr(++iv, ';'); if (e) *e = 0; css_register_property(name, str_trim(iv)); }
+                /* the rule is invalid without syntax and inherits, or without a matching initial value for a non-universal syntax */
+                char *sy = strstr(bd, "syntax"), *inh = strstr(bd, "inherits"), syn[64] = "";
+                if (sy && (sy = strchr(sy, ':'))) { sy++; while (*sy == ' ' || *sy == '"' || *sy == '\'') sy++; size_t k = 0; while (sy[k] && sy[k] != '"' && sy[k] != '\'' && sy[k] != ';' && k < sizeof syn - 1) { syn[k] = sy[k]; k++; } syn[k] = 0; }
+                bool universal = !strcmp(str_trim(syn), "*");
+                if (iv && (iv = strchr(iv, ':'))) { char *e = strchr(++iv, ';'); if (e) *e = 0; iv = str_trim(iv); }
+                bool ok = sy && inh && (universal || iv);
+                if (ok && iv && !universal) {
+                    char *end; double num = strtod(iv, &end); (void)num;
+                    if (!strcmp(syn, "<string>")) ok = *iv == '"' || *iv == '\'';
+                    else if (!strcmp(syn, "<number>") || !strcmp(syn, "<integer>")) ok = end != iv && !*end && (syn[2] != 'n' || !strpbrk(iv, ".eE"));
+                    else if (!strcmp(syn, "<length>")) ok = (end != iv && (!strcmp(end, "px") || !strcmp(end, "cm") || !strcmp(end, "mm") || !strcmp(end, "in") || !strcmp(end, "pt") || !strcmp(end, "pc") || (!*end && num == 0))) || str_istarts(iv, "calc(");
+                    else if (!strcmp(syn, "<percentage>")) ok = end != iv && !strcmp(end, "%");
+                }
+                if (ok && iv) css_register_property(name, iv);
                 free(bd); sb_free(&nm);
             }
             /* @starting-style describes transition entry values, not the final

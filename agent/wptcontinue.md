@@ -785,3 +785,5 @@ broke the whole page prelude: 33 ctest failures).
   comments/sign()/math/% in transform/<color>+ top-level split/color functions; specColor comments, none kept raw,
   display-p3-linear + sibling-index passthrough. TODO: @property invalid initial must not register (parse.c 793).
   Insets still 20px for abs/fixed even with layout sync -> investigate (maybe box missing / cb loop wrong).
+- committed specNormalize + run135 regression fixes; RUN 136 (/css/ full) started
+  @property: native validity (syntax+inherits required, initial for non-* syntax, simple type checks) parse.c; unbuilt
