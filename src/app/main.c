@@ -582,6 +582,7 @@ static bool tsel_ui(App *a);
 static void tsel_overlay(App *a, DisplayList *dl);
 static void kbm_overlay(App *a, DisplayList *dl);
 static void pop_overlay(App *a, DisplayList *dl);
+static bool pop_shown(void);
 /* Keyboard on second tap: the field the last tap placed the caret in without the keyboard, that
    tap (window px), and its Paste | Select all bubble (anchored in page px, drawn in viewport px);
    tx, ty, tt: the last page tap, focused or not */
@@ -2234,7 +2235,7 @@ static void render(App *a) {
             float sdy = (a->t->sy - a->last_sy) * a->page.scale;
             bool overlay = false;
 #ifdef __ANDROID__
-            overlay = tsel_ui(a) || g_kbm.nb;   /* the selection bar and Paste bubble are clamped to the viewport, so old pixels cannot be shifted */
+            overlay = tsel_ui(a) || g_kbm.nb || pop_shown();   /* the selection bar and Paste bubble are clamped to the viewport, so old pixels cannot be shifted */
 #endif
             if (!a->sdirty && !overlay && fabsf(sdy - roundf(sdy)) < 0.01f && fabsf(sdy) < ph / 2) {
                 blit = (int)roundf(sdy); part = true;
@@ -4190,7 +4191,11 @@ static int edit_bar_acts(int *act, bool cutcopy) {
     return n;
 }
 /* the More menu (kind 1) or the clipboard history (kind 2) under the bar; act: TA_*, 100 + snippet, 200 + clip */
-static struct { int kind, n, hit; float x, y, w; int act[POP_MAX]; } g_epop;
+/* ni: the first ni actions are icon buttons on one line at the top; free: opened from the browser menu, so it stays
+   without a focused field */
+static struct { int kind, n, ni, hit; bool free; float x, y, w; int act[POP_MAX]; } g_epop;
+static bool pop_shown(void) { return g_epop.kind != 0; }
+static int pop_rows(void) { return (g_epop.ni ? 1 : 0) + g_epop.n - g_epop.ni; }
 /* the last clipboard contents, newest first: text, or an image's bytes and type */
 static struct { char *text; unsigned char *img; size_t n; char *mime; } g_clips[CLIP_MAX]; static int g_nclips;
 static struct {
@@ -4303,6 +4308,10 @@ static void key_push(SDL_Keycode k) {
     SDL_Event e; SDL_zero(e); e.type = SDL_EVENT_KEY_DOWN; e.key.key = k; e.key.down = true; e.key.which = BAR_KEY_ID; SDL_PushEvent(&e);
     e.type = SDL_EVENT_KEY_UP; e.key.down = false; SDL_PushEvent(&e);
 }
+static void key_push_mod(SDL_Keycode k, SDL_Keymod mod) {
+    SDL_Event e; SDL_zero(e); e.type = SDL_EVENT_KEY_DOWN; e.key.key = k; e.key.down = true; e.key.mod = mod; e.key.which = BAR_KEY_ID; SDL_PushEvent(&e);
+    e.type = SDL_EVENT_KEY_UP; e.key.down = false; SDL_PushEvent(&e);
+}
 static void text_push(const char *t) {
     static char *ring[16]; static int ri;   /* the text outlives the queued event */
     free(ring[ri]); ring[ri] = xstrdup(t);
@@ -4405,10 +4414,12 @@ static void tsel_action(App *a, int act) {
 }
 /* the More menu: the slot actions not on the bar, then the snippets; the clipboard history: its entries */
 static void pop_open(App *a, int kind, const float bar[4]) {
-    g_epop.kind = kind; g_epop.n = g_epop.hit = 0;
-    if (kind == 1) {
-        static const int extra[] = { TA_UNDO, TA_BKSP, TA_ENTER, TA_CLEAR, TA_HIDE };
-        for (size_t i = 0; i < sizeof extra / sizeof *extra; i++) if (extra[i] != g_bar_slot[0] && extra[i] != g_bar_slot[1]) g_epop.act[g_epop.n++] = extra[i];
+    g_epop.kind = kind; g_epop.n = g_epop.ni = g_epop.hit = 0; g_epop.free = false;
+    if (kind == 1) {   /* Undo, Clear and Hide as icons on the top line; the keys not on the bar and the snippets below */
+        static const int icons[] = { TA_UNDO, TA_CLEAR, TA_HIDE }, keys[] = { TA_BKSP, TA_ENTER };
+        for (size_t i = 0; i < sizeof icons / sizeof *icons; i++) g_epop.act[g_epop.n++] = icons[i];
+        g_epop.ni = g_epop.n;
+        for (size_t i = 0; i < sizeof keys / sizeof *keys; i++) if (keys[i] != g_bar_slot[0] && keys[i] != g_bar_slot[1]) g_epop.act[g_epop.n++] = keys[i];
         for (int i = 0; i < g_nsnip && g_epop.n < POP_MAX; i++) g_epop.act[g_epop.n++] = 100 + i;
     } else {
         char *t = SDL_GetClipboardText();   /* what is on the clipboard now is the newest entry */
@@ -4418,7 +4429,7 @@ static void pop_open(App *a, int kind, const float bar[4]) {
         for (int i = 0; i < g_nclips && g_epop.n < POP_MAX; i++) g_epop.act[g_epop.n++] = 200 + i;
     }
     if (!g_epop.n) { g_epop.kind = 0; return; }
-    float w = 240, h = (float)g_epop.n * POP_RH, vw = page_width(a), vh = page_height(a);
+    float w = 240, h = (float)pop_rows() * POP_RH, vw = page_width(a), vh = page_height(a);
     g_epop.w = w; g_epop.x = LCLAMP(bar[2] - w, 4, LMAX(4, vw - 4 - w));
     g_epop.y = bar[3] + 6 + h <= vh - 4 ? bar[3] + 6 : LMAX(4, bar[1] - 6 - h);
     sel_dirty(a);
@@ -4442,15 +4453,24 @@ static void pop_overlay(App *a, DisplayList *dl) {
     if (!g_epop.kind) { geom_log(2, "pop hidden"); return; }
     { char sig[512]; int k = snprintf(sig, sizeof sig, "pop kind=%d x=%.0f y=%.0f w=%.0f rh=%d acts=", g_epop.kind, g_epop.x, g_epop.y, g_epop.w, POP_RH);
       for (int i = 0; i < g_epop.n && k < (int)sizeof sig - 8; i++) k += snprintf(sig + k, sizeof sig - (size_t)k, "%s%d", i ? "," : "", g_epop.act[i]);
+      if (k < (int)sizeof sig - 8) snprintf(sig + k, sizeof sig - (size_t)k, " ni=%d", g_epop.ni);
       geom_log(2, sig); }
-    if (!page_focus(a) && !edit_focus(a)) { g_epop.kind = 0; return; }
-    Font *ft = a->ui; float h = (float)g_epop.n * POP_RH;
+    if (!g_epop.free && !page_focus(a) && !edit_focus(a)) { g_epop.kind = 0; return; }
+    Font *ft = a->ui; float h = (float)pop_rows() * POP_RH;
     push_rect(dl, g_epop.x - 1, g_epop.y, g_epop.w + 2, h + 2, 9, RGBA(0, 0, 0, 38));
     push_rect(dl, g_epop.x, g_epop.y, g_epop.w, h, 8, RGBA(255, 255, 255, 255));
-    for (int i = 0; i < g_epop.n; i++) {
-        float y = g_epop.y + (float)i * POP_RH; char lb[96]; int act = g_epop.act[i];
+    float iw = g_epop.ni ? g_epop.w / (float)g_epop.ni : 0;
+    for (int i = 0; i < g_epop.ni; i++) {   /* the icon line */
+        float x = g_epop.x + (float)i * iw;
+        if (i + 1 == g_epop.hit) push_rect(dl, x + 2, g_epop.y + 2, iw - 4, POP_RH - 4, 6, RGBA(232, 234, 237, 255));
+        Image *im = ta_icon(a, g_epop.act[i]);
+        if (im) push_img(dl, im, x + (iw - 22) / 2, g_epop.y + (POP_RH - 22) / 2.0f, 22, 22);
+    }
+    if (g_epop.ni && g_epop.n > g_epop.ni) push_rect(dl, g_epop.x + 8, g_epop.y + POP_RH, g_epop.w - 16, 1, 0, RGBA(218, 220, 224, 255));
+    for (int i = g_epop.ni; i < g_epop.n; i++) {
+        float y = g_epop.y + (float)(i - g_epop.ni + (g_epop.ni ? 1 : 0)) * POP_RH; char lb[96]; int act = g_epop.act[i];
         if (i + 1 == g_epop.hit) push_rect(dl, g_epop.x + 2, y + 2, g_epop.w - 4, POP_RH - 4, 6, RGBA(232, 234, 237, 255));
-        if (i && (act >= 100) != (g_epop.act[i - 1] >= 100)) push_rect(dl, g_epop.x + 8, y, g_epop.w - 16, 1, 0, RGBA(218, 220, 224, 255));
+        if (i > g_epop.ni && (act >= 100) != (g_epop.act[i - 1] >= 100)) push_rect(dl, g_epop.x + 8, y, g_epop.w - 16, 1, 0, RGBA(218, 220, 224, 255));
         Image *im = act < 100 ? ta_icon(a, act) : NULL;
         if (im) push_img(dl, im, g_epop.x + 10, y + (POP_RH - 22) / 2.0f, 22, 22);
         pop_label(act, lb, sizeof lb);
@@ -4460,14 +4480,25 @@ static void pop_overlay(App *a, DisplayList *dl) {
 static int pop_hit(App *a, float x, float y) {
     if (!g_epop.kind || x <= page_left(a) || y <= BAR) return 0;
     float px = page_x(a, x), py = page_y(a, y);
-    if (px < g_epop.x || px >= g_epop.x + g_epop.w || py < g_epop.y || py >= g_epop.y + (float)g_epop.n * POP_RH) return 0;
-    return (int)((py - g_epop.y) / POP_RH) + 1;
+    if (px < g_epop.x || px >= g_epop.x + g_epop.w || py < g_epop.y || py >= g_epop.y + (float)pop_rows() * POP_RH) return 0;
+    int row = (int)((py - g_epop.y) / POP_RH);
+    if (g_epop.ni && !row) return LMIN(g_epop.ni - 1, (int)((px - g_epop.x) * (float)g_epop.ni / g_epop.w)) + 1;
+    return g_epop.ni + row - (g_epop.ni ? 1 : 0) + 1;
 }
 static void pop_action(App *a, int i) {
     Node *f = page_focus(a), *h = f ? NULL : edit_focus(a);
     int act = i >= 1 && i <= g_epop.n ? g_epop.act[i - 1] : -1;
     g_epop.kind = 0; sel_dirty(a);
-    if (act < 0 || (!f && !h)) return;
+    if (act < 0) return;
+    if (!f && !h) {   /* opened from the browser menu with no field: keys and snippets go to the page as typed */
+        if (act == TA_UNDO) key_push_mod(SDLK_Z, SDL_KMOD_LCTRL);
+        else if (act == TA_BKSP) key_push(SDLK_BACKSPACE);
+        else if (act == TA_ENTER) key_push(SDLK_RETURN);
+        else if (act >= 100 && act < 200 && act - 100 < g_nsnip) snip_type(g_snip[act - 100]);
+        else if (act >= 200 && act - 200 < g_nclips && g_clips[act - 200].text) { SDL_SetClipboardText(g_clips[act - 200].text); page_paste(a, NULL, NULL); }
+        a->dirty = true;
+        return;
+    }
     if (act < 100) { bar_do(a, act, f, h, true); if (act != TA_HIDE) g_kbm.menu = true; return; }
     if (act < 200) { if (act - 100 < g_nsnip) snip_type(g_snip[act - 100]); return; }
     int k = act - 200;
@@ -5526,6 +5557,16 @@ static void site_clear(App *a, const char *url) {
     else snprintf(msg, sizeof msg, "Deleted data of %s", site);
     ui_toast(a, msg);
 }
+/* the browser menu's Copy: a field's selection, else the page's (native or as the page's script sees it) */
+static void menu_copy(App *a) {
+    Page *p = a->t->cur; Node *f = page_focus(a); bool failed = false;
+    if (!p) return;
+    char *t = f ? ctl_selected(f) : NULL;
+    if ((!t || !*t) && g_tsel.on && p->L && g_tsel.L == p->L) { free(t); t = tsel_text(p->L); }
+    if ((!t || !*t) && p->js) { free(t); t = js_eval_result(p->js, "String(getSelection())", "lumen-copy", &failed); if (failed) { free(t); t = NULL; } }
+    if (t && *t) { SDL_SetClipboardText(t); clip_record(t, NULL, 0, NULL); ui_toast(a, "Copied"); } else ui_toast(a, "Nothing selected to copy");
+    free(t);
+}
 static void ui_action(App *a, UiAction *u, bool *quit) {
     (void)quit;
 #if defined(__ANDROID__) && !defined(NDEBUG)
@@ -5549,6 +5590,10 @@ static void ui_action(App *a, UiAction *u, bool *quit) {
     case UI_HISTORY: panel_open(a, "history"); break;
     case UI_SETTINGS: panel_open(a, "settings"); break;
     case UI_KEYBOARD: g_kbd_sticky = true; g_kbd_show_at = now_ms() + 350; a->dirty = true; break;
+    case UI_COPY: menu_copy(a); break;
+    case UI_PASTE: page_paste(a, page_focus(a), page_focus(a) ? NULL : edit_focus(a)); restyle(a); a->dirty = true; break;   /* else the body */
+    case UI_UNDO: case UI_REDO: key_push_mod(SDLK_Z, SDL_KMOD_LCTRL | (u->code == UI_REDO ? SDL_KMOD_LSHIFT : 0)); break;
+    case UI_EDIT_MORE: { float vw = page_width(a), bar[4] = { vw - 4, -2, vw - 4, -2 }; pop_open(a, 1, bar); g_epop.free = g_epop.kind != 0; a->dirty = true; break; }
     case UI_FILE_PICK:
         g_pick.multi = u->value != 0; snprintf(g_pick.accept, sizeof g_pick.accept, "%s", u->s1 ? u->s1 : "");
         if (a->ntabs >= MAX_TABS) { android_ui_pick_files(g_pick.accept, g_pick.multi); break; }   /* no room for the panel */
@@ -6267,6 +6312,9 @@ int main(int argc, char **argv) {
                     else if ((k == SDLK_LEFT || k == SDLK_RIGHT || k == SDLK_HOME || k == SDLK_END || k == SDLK_UP || k == SDLK_DOWN) && !a.editing && page_focus(&a))
                         ctl_move(&a, page_focus(&a), k == SDLK_UP ? SDLK_HOME : k == SDLK_DOWN ? SDLK_END : k, shift, k == SDLK_LEFT || k == SDLK_RIGHT);
                     else if (k == SDLK_V && !a.editing) { page_paste(&a, NULL, edit_focus(&a)); restyle(&a); }
+                    else if (k == SDLK_Z && !shift && !a.editing && a.t->cur->js && (page_focus(&a) || edit_focus(&a))) {   /* the page did not handle Ctrl+Z: Lumen's own undo */
+                        Node *f = page_focus(&a); js_dispatch(a.t->cur->js, f ? f : edit_focus(&a), "lumenundo", "KeyboardEvent", false, false, 0, 0, 0, NULL); restyle(&a);
+                    }
                     else if (k == SDLK_X && !a.editing && edit_focus(&a) && g_tsel.on && a.t->cur->L == g_tsel.L) {
                         char *t = tsel_text(a.t->cur->L);
                         if (*t) { SDL_SetClipboardText(t); js_dispatch(a.t->cur->js, edit_focus(&a), "lumeneditdel", "KeyboardEvent", false, false, 0, 0, 0, "Backspace"); }

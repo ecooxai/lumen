@@ -24,6 +24,10 @@ enum {
     UI_SITE_CLEAR,   /* s2: the page's URL; site info's "Delete data": its site's cookies and storage */
     UI_FILE_PICK,    /* engine only: an <input type=file> asks for files; value: several, s1: its accept list */
     UI_KEYBOARD,     /* Show keyboard: sticky soft keyboard for the last focused field */
+    UI_COPY,         /* copy the page's selection */
+    UI_PASTE,        /* paste into the focused (last active) field, else the body */
+    UI_UNDO, UI_REDO,   /* Ctrl+Z, Ctrl+Shift+Z */
+    UI_EDIT_MORE,    /* the edit bar's More menu, opened from the browser menu */
 };
 /* can_desktop: 1 for the page's site, 2 for every site (on a page that is not a site) */
 typedef struct { bool can_forward, desktop, can_zoom, bookmarked, can_bookmark, can_back, fullscreen; int can_desktop, zoom_pct; } AndroidMenuState;

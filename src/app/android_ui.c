@@ -173,6 +173,11 @@ const char *android_ui_icon(int code) {
     case UI_DESKTOP: return "M3 5 L21 5 L21 16 L3 16 Z M12 16 L12 20 M8 20 L16 20";
     case UI_FULLSCREEN: return "M4 9 L4 4 L9 4 M15 4 L20 4 L20 9 M20 15 L20 20 L15 20 M9 20 L4 20 L4 15";
     case UI_KEYBOARD: return "M3 6 L21 6 L21 18 L3 18 Z M6.5 9.5 L7.5 9.5 M10 9.5 L11 9.5 M13 9.5 L14 9.5 M16.5 9.5 L17.5 9.5 M6.5 12.5 L7.5 12.5 M10 12.5 L11 12.5 M13 12.5 L14 12.5 M16.5 12.5 L17.5 12.5 M8 15.3 L16 15.3";
+    case UI_COPY: return "M9 8 L19 8 L19 20.5 L9 20.5 Z M6 16.5 L5 16.5 L5 3.5 L15 3.5 L15 5";
+    case UI_PASTE: return "M6 5 L18 5 L18 21 L6 21 Z M9 3 L15 3 L15 7 L9 7 Z";
+    case UI_UNDO: return "M9 5 L4 10 L9 15 M4 10 L14 10 A 14 15 5 -90 180 M14 20 L9 20";
+    case UI_REDO: return "M15 5 L20 10 L15 15 M20 10 L10 10 A 10 15 5 -90 -180 M10 20 L15 20";
+    case UI_EDIT_MORE: return "O 5 12 1.2 O 12 12 1.2 O 19 12 1.2";
     case UI_ZOOM: return "O 10.5 10.5 6.5 M15.2 15.2 L20 20 M7.5 10.5 L13.5 10.5 M10.5 7.5 L10.5 13.5";
     case UI_SETTINGS: return "O 12 12 3 O 12 12 6.5 M18.0 14.5 L20.5 15.5 M14.5 18.0 L15.5 20.5 M9.5 18.0 L8.5 20.5 M6.0 14.5 L3.5 15.5 "
                              "M6.0 9.5 L3.5 8.5 M9.5 6.0 L8.5 3.5 M14.5 6.0 L15.5 3.5 M18.0 9.5 L20.5 8.5";

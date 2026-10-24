@@ -100,11 +100,14 @@ def parse_bar(line):
 
 
 def parse_pop(line):
-    m = re.match(r"pop kind=(\d+) x=(-?\d+) y=(-?\d+) w=(\d+) rh=(\d+) acts=([\d,]*)", line)
+    m = re.match(r"pop kind=(\d+) x=(-?\d+) y=(-?\d+) w=(\d+) rh=(\d+) acts=([\d,]*)(?: ni=(\d+))?", line)
     if not m: return None
     x, y, w, rh = (float(m.group(i)) for i in (2, 3, 4, 5))
-    acts = [int(a) for a in m.group(6).split(",") if a]
-    return {"kind": int(m.group(1)), "rows": [(a, x + w / 2, y + rh * (i + 0.5)) for i, a in enumerate(acts)]}
+    acts, ni = [int(a) for a in m.group(6).split(",") if a], int(m.group(7) or 0)
+    # the first ni actions are icons on the top line, the rest one per row below it
+    rows = [(a, x + w / ni * (i + 0.5), y + rh / 2) for i, a in enumerate(acts[:ni])]
+    rows += [(a, x + w / 2, y + rh * (i + (1 if ni else 0) + 0.5)) for i, a in enumerate(acts[ni:])]
+    return {"kind": int(m.group(1)), "rows": rows}
 
 
 class Run:

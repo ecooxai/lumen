@@ -33,7 +33,8 @@ final class BrowserMenus {
     /* mirrors android_ui.h */
     static final int NEW_TAB = 1, FORWARD = 2, BOOKMARKS = 3, DOWNLOADS = 4, HISTORY = 5, WORKSPACES = 6, SETTINGS = 7,
         DESKTOP = 8, ZOOM = 9, BM_TOGGLE = 10, BM_OPEN = 11, BM_SAVE = 12, BM_DELETE = 13,
-        WS_SELECT = 14, WS_NEW = 15, WS_RENAME = 16, WS_CLOSE = 17, BACK = 18, RELOAD = 19, FULLSCREEN = 20, URL_GO = 21, BM_ADD = 22, TAB_MENU = 23, SITE_CLEAR = 24, KEYBOARD = 26;
+        WS_SELECT = 14, WS_NEW = 15, WS_RENAME = 16, WS_CLOSE = 17, BACK = 18, RELOAD = 19, FULLSCREEN = 20, URL_GO = 21, BM_ADD = 22, TAB_MENU = 23, SITE_CLEAR = 24, KEYBOARD = 26,
+        COPY = 27, PASTE = 28, UNDO = 29, REDO = 30, EDIT_MORE = 31;
     private static final int MAX_WORKSPACES = 16, ZOOM_MIN = 20, ZOOM_MAX = 300, ZOOM_STEP = 10;
     private static final int TEXT = 0xff202124, SUBTLE = 0xff5f6368, DISABLED = 0xffbdc1c6, DIVIDER = 0xffe8eaed, ACCENT = 0xff1a73e8, UNSAFE = 0xffd93025;
     private static PopupWindow menu;
@@ -108,6 +109,11 @@ final class BrowserMenus {
             case WORKSPACES: return "Workspaces";
             case SETTINGS: return "Settings";
             case KEYBOARD: return "Show keyboard";
+            case COPY: return "Copy";
+            case PASTE: return "Paste";
+            case UNDO: return "Undo";
+            case REDO: return "Redo";
+            case EDIT_MORE: return "More";
             case DESKTOP: return on ? "Desktop site, on" : "Desktop site";
             case BM_TOGGLE: return on ? "Remove bookmark" : "Bookmark this page";
             case FULLSCREEN: return on ? "Exit fullscreen" : "Fullscreen";
@@ -163,41 +169,31 @@ final class BrowserMenus {
         root.setPadding(0, dp(context, 4), 0, dp(context, 6));
         final PopupWindow popup = new PopupWindow(context);
 
-        LinearLayout icons = new LinearLayout(context);
-        icons.setOrientation(LinearLayout.HORIZONTAL);
-        String[] names = { "Back", "Forward", "Reload", state[5] != 0 ? "Remove bookmark" : "Bookmark this page", "Downloads" };
-        int[] codes = { BACK, FORWARD, RELOAD, BM_TOGGLE, DOWNLOADS };
-        boolean[] enabled = { state[7] != 0, state[0] != 0, true, state[6] != 0, true };
+        /* two lines of icon buttons: navigation, then editing on the page (the keyboard for the last focused field,
+           Copy the selection, Paste into the last active field or the body, Undo, Redo, the edit bar's More menu) */
+        int[][] lines = { { BACK, FORWARD, RELOAD, BM_TOGGLE, DOWNLOADS }, { KEYBOARD, COPY, PASTE, UNDO, REDO, EDIT_MORE } };
         final ImageView[] star = new ImageView[1];
-        for (int i = 0; i < codes.length; i++) {
-            int color = enabled[i] ? (codes[i] == BM_TOGGLE && state[5] != 0 ? ACCENT : TEXT) : DISABLED;
-            ImageView button = icon(context, codes[i], color, 24);
-            button.setContentDescription(names[i]);
-            button.setEnabled(enabled[i]);
-            ripple(button, true);
-            final int code = codes[i];
-            button.setOnClickListener(view -> { popup.dismiss(); action.send(code, 0, null, null); });
-            if (code == BM_TOGGLE) star[0] = button;
-            icons.addView(button, new LinearLayout.LayoutParams(0, dp(context, 48), 1));
+        for (int[] codes : lines) {
+            LinearLayout icons = new LinearLayout(context);
+            icons.setOrientation(LinearLayout.HORIZONTAL);
+            for (final int code : codes) {
+                boolean enabled = code == BACK ? state[7] != 0 : code == FORWARD ? state[0] != 0 : code == BM_TOGGLE ? state[6] != 0 : true;
+                boolean lit = code == BM_TOGGLE && state[5] != 0;
+                ImageView button = icon(context, code, enabled ? (lit ? ACCENT : TEXT) : DISABLED, 24);
+                button.setContentDescription(actionName(code, lit));
+                button.setEnabled(enabled);
+                ripple(button, true);
+                button.setOnClickListener(view -> { popup.dismiss(); action.send(code, code == KEYBOARD ? 1 : 0, null, null); });
+                if (code == BM_TOGGLE) star[0] = button;
+                icons.addView(button, new LinearLayout.LayoutParams(0, dp(context, 48), 1));
+            }
+            root.addView(icons);
         }
-        root.addView(icons);
         root.addView(divider(context));
 
-        String[] rows = { "New tab", "Bookmarks", "History", "Downloads", "Workspaces" };
-        int[] rowCodes = { NEW_TAB, BOOKMARKS, HISTORY, DOWNLOADS, WORKSPACES };
-        for (int i = 0; i < rows.length; i++) {
-            LinearLayout row = row(context, rowCodes[i], rows[i], true, -1);
-            final int code = rowCodes[i];
+        for (final int code : new int[] { NEW_TAB, WORKSPACES }) {
+            LinearLayout row = row(context, code, actionName(code, false), true, -1);
             row.setOnClickListener(view -> { popup.dismiss(); action.send(code, 0, null, null); });
-            if (code == BOOKMARKS) row.setOnLongClickListener(view -> {   /* the menu stays open so the notice shows under the row */
-                boolean was = state[5] != 0;
-                if (bookmarkHere(view, was, state[6] != 0, action) && !was) {
-                    state[5] = 1;
-                    star[0].setImageDrawable(BrowserIcons.of(BM_TOGGLE, ACCENT, dp(context, 24)));
-                    star[0].setContentDescription("Remove bookmark");
-                }
-                return true;
-            });
             root.addView(row, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(context, 48)));
         }
         root.addView(divider(context));
@@ -259,13 +255,25 @@ final class BrowserMenus {
         root.addView(fullscreen, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(context, 48)));
         root.addView(divider(context));
 
-        /* the keyboard stays up for the last focused field until Back or its own hide key */
-        LinearLayout keyboard = row(context, KEYBOARD, "Show keyboard", true, -1);
-        keyboard.setOnClickListener(view -> { popup.dismiss(); action.send(KEYBOARD, 1, null, null); });
-        root.addView(keyboard, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(context, 48)));
         LinearLayout settings = row(context, SETTINGS, "Settings", true, -1);
         settings.setOnClickListener(view -> { popup.dismiss(); action.send(SETTINGS, 0, null, null); });
         root.addView(settings, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(context, 48)));
+        root.addView(divider(context));
+
+        for (final int code : new int[] { BOOKMARKS, HISTORY, DOWNLOADS }) {
+            LinearLayout row = row(context, code, actionName(code, false), true, -1);
+            row.setOnClickListener(view -> { popup.dismiss(); action.send(code, 0, null, null); });
+            if (code == BOOKMARKS) row.setOnLongClickListener(view -> {   /* the menu stays open so the notice shows under the row */
+                boolean was = state[5] != 0;
+                if (bookmarkHere(view, was, state[6] != 0, action) && !was) {
+                    state[5] = 1;
+                    star[0].setImageDrawable(BrowserIcons.of(BM_TOGGLE, ACCENT, dp(context, 24)));
+                    star[0].setContentDescription("Remove bookmark");
+                }
+                return true;
+            });
+            root.addView(row, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(context, 48)));
+        }
 
         ScrollView scroll = new ScrollView(context);
         scroll.addView(root);
