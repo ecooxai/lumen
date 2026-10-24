@@ -424,7 +424,7 @@ function c2dImage(img, fn) {
         if (!w || !h) throw new DOMException('The image argument is a canvas element with a width or height of 0.', 'InvalidStateError');
         const s = c2dIs(img, 'HTMLCanvasElement') ? ctxOf(img) : img._ && img._.cx && img._.cx._;
         if (s) return { px: s.px, w: s.w, h: s.h, sw: s.w, sh: s.h, cv: img, cs: s.cs };
-        const r = c2dIs(img, 'HTMLCanvasElement') ? C2N.c2dSource(img) : null;
+        const r = c2dIs(img, 'HTMLCanvasElement') && (img.__ck || img.__offscreen) ? C2N.c2dSource(img) : null;   /* no context yet: transparent black */
         return r ? { px: new Uint32Array(r[2]), w: r[0], h: r[1], sw: w, sh: h } : { px: new Uint32Array(w * h), w, h, sw: w, sh: h };
     }
     if (img instanceof C2IB) {
