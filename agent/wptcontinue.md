@@ -854,3 +854,4 @@ broke the whole page prelude: 33 ctest failures).
   UNBUILT: tomReify: named colours on *-color props -> base CSSStyleValue (not keyword).
   UNBUILT: computed map tomComputedText (abs units->px/s/deg, single-unit calc folded). smoke /tmp/cm.html
   NOTE: computed accent-color (generic map props) keeps specified 'red' instead of rgb() -> colour props in generic maps should be canonicalised natively.
+- RUN 156 (57c9916; typed-om, canvas/element, css-color): typed-om 11077->11191 (+114), canvas/element +12, css-color 0; 0 regressions, no status changes. Remaining typed-om: 421 did-not-throw (CSSNumericValue.mul/div incompatible types), 376 expected-got (normalize-numeric unitless zero -> 0px etc.), 70 calc(0px + 0em) computed -> needs em resolution, idlharness StylePropertyMap, CSSRGB, 'background' green keyword -> base CSSStyleValue (shorthands), em->px in computed (baseline-shift).
