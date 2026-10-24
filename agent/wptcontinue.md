@@ -837,3 +837,4 @@ broke the whole page prelude: 33 ctest failures).
 - RUN 149 (anchor/animations/color/gaps/values/logical/...; binary a6a8ab8): +2142 (anchor-position 6021->8121), 1 regression (CSSAnimation-canceling display:none ancestor -> expected idle got running, likely flaky timing), no status changes.
   UNBUILT: CSSPositionTryRule + CSSPositionTryDescriptors (06b-activate.js, PT_ALLOWED filter, exported in 08-window.js). smoke /tmp/pt.html
 - RUN 150 (anchor-position + cssom, b4f3ab7): anchor 8121->8446 (+325), cssom +5, 0 regressions, 5 status improvements. Top anchor failure: 1305 'assert_array_equals [N,N,N,N]' in anchor-in-scroller-with-left-side-scrollbar (RTL scrollers, layout).
+  UNBUILT: tomTypedOk stricter (numbers rejected for length props except line-height; % rejected for border/outline widths, outline-offset, scroll-margin, column-width, perspective; grid lines only numbers; keyword-only props list). smoke /tmp/tv.html

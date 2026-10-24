@@ -526,6 +526,11 @@ function tomTypedOk(p, v) {
     if (v instanceof CSSTransformValue) return p === 'transform';
     if (v instanceof CSSNumericValue && /^(touch-action|background|border(-block|-inline|-top|-right|-bottom|-left)?|outline|font|list-style|text-decoration|text-emphasis|column-rule|columns|flex-flow|grid(-area|-row|-column|-template)?|transition|animation|mask|offset|overflow|place-(content|items|self))$/.test(p)) return false;
     if (!(v instanceof CSSNumericValue)) return true;
+    if (/^(font-synthesis(-.*)?|white-space-collapse|text-wrap(-mode|-style)?|container-name|(backdrop-)?filter|font-style|offset-path|text-spacing-trim|text-box-trim|font-variant(-.*)?|anchor-name|position-anchor|view-transition-name|timeline-scope)$/.test(p)) return false;
+    const k = tomKeys(tomTypeOf(v));
+    if (/^grid-(row|column)-(start|end)$/.test(p)) return !k.length;
+    if (p !== 'line-height' && TOM_LENGTH_PROPS.test(p) && !k.length) return false;
+    if (k.includes('percent') && /^(border(-[a-z]+)*-width|outline-width|outline-offset|scroll-margin(-.*)?|column-width|perspective)$/.test(p)) return false;
     const t = v.type();
     if (t.angle) return TOM_ANGLE_PROPS.test(p);
     if (t.time) return TOM_TIME_PROPS.test(p);
