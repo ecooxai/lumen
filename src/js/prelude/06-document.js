@@ -220,7 +220,7 @@ const EXEC_INPUT = { inserttext: 'insertText', delete: 'deleteContentBackward', 
     strikethrough: 'formatStrikeThrough', superscript: 'formatSuperscript', subscript: 'formatSubscript', backcolor: 'formatBackColor', hilitecolor: 'formatBackColor',
     forecolor: 'formatFontColor', fontname: 'formatFontName', fontsize: 'formatFontSize', justifycenter: 'formatJustifyCenter', justifyfull: 'formatJustifyFull',
     justifyleft: 'formatJustifyLeft', justifyright: 'formatJustifyRight', removeformat: 'formatRemove', indent: 'formatIndent', outdent: 'formatOutdent', formatblock: 'formatBlock' };
-const EXEC_COLOR = new Set(['backcolor', 'hilitecolor', 'forecolor']);
+const EXEC_COLOR = new SSet(['backcolor', 'hilitecolor', 'forecolor']);
 /* the input event's data: the text, URL or font name as given, a color as its computed value */
 function execData(cmd, val) {
     if (cmd === 'inserttext' || cmd === 'createlink' || cmd === 'fontname') return val;

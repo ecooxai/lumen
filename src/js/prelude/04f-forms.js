@@ -2,8 +2,8 @@
    form owners (the form attribute), form.elements, the select element's options and selectedness, labels, and
    constraint validation. Replaces the simpler members 04-tags.js installs. */
 const isHtmlEl = (e, name) => N.isNode(e) && N.type(e) === 1 && N.ns(e) === 0 && (name === undefined || N.name(e) === name);
-const LISTED = new Set(['button', 'fieldset', 'input', 'object', 'output', 'select', 'textarea']);
-const LABELABLE = new Set(['button', 'input', 'meter', 'output', 'progress', 'select', 'textarea']);
+const LISTED = new SSet(['button', 'fieldset', 'input', 'object', 'output', 'select', 'textarea']);
+const LABELABLE = new SSet(['button', 'input', 'meter', 'output', 'progress', 'select', 'textarea']);
 const ASCII_WS = /^[\t\n\f\r ]+|[\t\n\f\r ]+$/g;
 const stripWs = s => s.replace(ASCII_WS, '');
 const inputTypeOf = raw => { const t = (raw || 'text').toLowerCase(); return INPUT_TYPES.test(t) ? t : 'text'; };
@@ -195,7 +195,7 @@ class HTMLFormControlsCollection extends HTMLCollection {
 }
 const radioCache = new WeakMap();
 function liveRadio(coll, k) {
-    let m = radioCache.get(coll); if (!m) radioCache.set(coll, m = new Map());
+    let m = radioCache.get(coll); if (!m) radioCache.set(coll, m = new SMap());
     let r = m.get(k);
     if (!r) { const f = listItems.get(coll); r = liveWith(null, () => f().filter(e => N.attr(e, 'id') === k || N.attr(e, 'name') === k), RadioNodeList.prototype, liveHandler); m.set(k, r); }
     return r;
@@ -416,12 +416,12 @@ function willValidate(el) {
     }
     return !ctlDisabled(el) && !inDatalist(el);
 }
-let patternCache = new Map();
+let patternCache = new SMap();
 const patternRe = p => {
     let r = patternCache.get(p);
     if (r === undefined) {
         try { r = new RegExp('^(?:' + p + ')$', 'v'); } catch (e) { r = null; }
-        if (patternCache.size > 200) patternCache = new Map();
+        if (patternCache.size > 200) patternCache = new SMap();
         patternCache.set(p, r);
     }
     return r;

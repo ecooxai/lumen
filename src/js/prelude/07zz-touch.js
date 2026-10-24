@@ -1,7 +1,7 @@
 // Native contacts keep their original DOM target, even across layout changes.
 // Return flags to the host: prevent scroll=1, suppress mouse=2, suppress tap=4,
 // native pointer sequence delivered=8. These are internal, not event properties.
-const nativeContacts = new Map();
+const nativeContacts = new SMap();
 let nativePointerId = 2, nativeTap = null;
 class Touch {
     constructor(i = {}) {
@@ -29,7 +29,7 @@ function pointerContact(id) {
     for (const c of nativeContacts.values()) if (c.id === id && !c.pointerEnded) return c;
     return null;
 }
-const mouseCaptures = new Map();   /* the mouse (pointerId 1) has no contact; its capture is only recorded */
+const mouseCaptures = new SMap();   /* the mouse (pointerId 1) has no contact; its capture is only recorded */
 function capturePointer(el, id, on) {
     id = +id;
     const c = pointerContact(id);

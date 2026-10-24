@@ -1,5 +1,5 @@
 class ResizeObserver {
-    constructor(cb) { this._cb = cb; this._t = new Map(); }
+    constructor(cb) { this._cb = cb; this._t = new SMap(); }
     observe(el) { if (this._t.has(el)) return; this._t.set(el, null); roAll.add(this); N.resizePump(roRun); }
     unobserve(el) { this._t.delete(el); if (!this._t.size) { roAll.delete(this); roStop(); } }
     disconnect() { this._t.clear(); roAll.delete(this); roStop(); }
@@ -24,7 +24,7 @@ class IntersectionObserverEntry {
 class IntersectionObserver {
     constructor(cb, o = {}) {
         if (typeof cb !== 'function') throw new TypeError("Failed to construct 'IntersectionObserver': The callback provided as parameter 1 is not a function.");
-        this._cb = cb; this._t = new Map(); this.root = o.root || null;
+        this._cb = cb; this._t = new SMap(); this.root = o.root || null;
         this._m = ioMargin(o.rootMargin ?? '0px');
         this.rootMargin = this._m.map(([v, pct]) => v + (pct ? '%' : 'px')).join(' ');
         const th = [].concat(o.threshold ?? 0).map(Number).sort((x, y) => x - y);
@@ -80,16 +80,16 @@ function ioWithin(el, root) {   // through shadow roots
     for (let n = el.parentNode; n; n = n.parentNode || (n.nodeType === 11 ? n.host : null)) if (n === root) return true;
     return false;
 }
-const roAll = new Set();
+const roAll = new SSet();
 const roStop = () => { if (!roAll.size) N.resizePump(null); };
 const roRun = () => { for (const o of [...roAll]) if (o._t.size) o._check(); roStop(); };
-const ioAll = new Set();
+const ioAll = new SSet();
 // Native layout/style/scroll changes drive observation; idle documents do no work.
 const ioStop = () => { if (!ioAll.size) N.intersectionPump(null); };
 const ioRun = () => { for (const o of [...ioAll]) if (o._t.size) o._check(); ioStop(); };
 // Marks, measures and the page's navigation entry; observers get them in a microtask, buffered ones too
 const PERF_TYPES = Object.freeze(['mark', 'measure', 'navigation']);
-const perfObservers = new Set();
+const perfObservers = new SSet();
 const perfNotify = (e) => { for (const o of perfObservers) if (o._types.has(e.entryType)) o._push([e]); };
 class PerformanceObserverEntryList {
     constructor(l) { def(this, '_l', l); }
@@ -97,7 +97,7 @@ class PerformanceObserverEntryList {
     getEntriesByName(n, t) { return this._l.filter(e => e.name === n && (t == null || e.entryType === t)); }
 }
 class PerformanceObserver {
-    constructor(cb) { if (typeof cb !== 'function') throw new TypeError('PerformanceObserver: callback must be a function'); def(this, '_cb', cb); def(this, '_types', new Set()); def(this, '_q', []); def(this, '_due', false); }
+    constructor(cb) { if (typeof cb !== 'function') throw new TypeError('PerformanceObserver: callback must be a function'); def(this, '_cb', cb); def(this, '_types', new SSet()); def(this, '_q', []); def(this, '_due', false); }
     observe(o) {
         o = o || {}; const ts = o.entryTypes || (o.type != null ? [String(o.type)] : []);
         for (const t of ts) if (PERF_TYPES.includes(t)) this._types.add(t);
@@ -115,7 +115,7 @@ class PerformanceObserver {
     static get supportedEntryTypes() { return PERF_TYPES; }
 }
 class Storage {
-    constructor() { def(this, '_m', new Map()); }
+    constructor() { def(this, '_m', new SMap()); }
     get length() { return this._m.size; } key(i) { return [...this._m.keys()][i] ?? null; }
     getItem(k) { return this._m.has(String(k)) ? this._m.get(String(k)) : null; }
     setItem(k, v) { this._m.set(String(k), String(v)); } removeItem(k) { this._m.delete(String(k)); } clear() { this._m.clear(); }
@@ -186,7 +186,7 @@ const tdOrigin = () => {
     return [x, y];
 };
 if (N.internal('td?ping') === 'pong') {
-    const waiting = new Map();
+    const waiting = new SMap();
     Object.defineProperty(G, '__lumenTdDone', { value: id => { const r = waiting.get(id); waiting.delete(id); if (r) r(); } });
     Object.defineProperty(G, '__lumenTd', { value: ops => {
         const t = topTd();
@@ -280,7 +280,7 @@ class PermissionStatus extends EventTarget {
     get name() { return this._.name; }
     get state() { return this._.state; }
 }
-const permStatuses = { microphone: new Set(), camera: new Set() };
+const permStatuses = { microphone: new SSet(), camera: new SSet() };
 const permNative = { microphone: () => N.micPermission ? N.micPermission() : 0, camera: () => N.camPermission ? N.camPermission() : 0 };
 const permState = name => { const p = permNative[name](); return p > 0 ? 'granted' : p < 0 ? 'denied' : 'prompt'; };
 const micPermState = () => permState('microphone');
@@ -489,7 +489,7 @@ function structuredClone(v, options) {
     // transfer-list entry is not reachable from the value being cloned.
     if (options && options.transfer) for (const item of options.transfer)
         if (N.isWasmModule(item)) throw new DOMException('WebAssembly.Module is not transferable.', 'DataCloneError');
-    return cloneValue(v, new Map());
+    return cloneValue(v, new SMap());
 }
 function cloneValue(v, seen) {
     if (v === null || typeof v !== 'object') { if (typeof v === 'function' || typeof v === 'symbol') throw new DOMException('could not be cloned.', 'DataCloneError'); return v; }
@@ -508,15 +508,15 @@ function cloneValue(v, seen) {
     { const gc = v && typeof v === 'object' ? geoClone(v) : null; if (gc) { seen.set(v, gc); return gc; } }
     if (v instanceof ImageData) { const d = new ImageData(new Uint8ClampedArray(v.data), v.width, v.height, { colorSpace: v.colorSpace }); seen.set(v, d); return d; }
     if (v instanceof Blob || tag === 'Blob' || tag === 'File') return v; if (N.isNode(v) || v instanceof URL || v instanceof URLSearchParams) throw new DOMException(`${tag} object could not be cloned.`, 'DataCloneError');
-    if (tag === 'Map') { const m = new Map(); seen.set(v, m); for (const [k, x] of v) m.set(cloneValue(k, seen), cloneValue(x, seen)); return m; }
-    if (tag === 'Set') { const s = new Set(); seen.set(v, s); for (const x of v) s.add(cloneValue(x, seen)); return s; }
+    if (tag === 'Map') { const m = new SMap(); seen.set(v, m); for (const [k, x] of v) m.set(cloneValue(k, seen), cloneValue(x, seen)); return m; }
+    if (tag === 'Set') { const s = new SSet(); seen.set(v, s); for (const x of v) s.add(cloneValue(x, seen)); return s; }
     const o = Array.isArray(v) ? [] : {}; seen.set(v, o); for (const k of Object.keys(v)) o[k] = cloneValue(v[k], seen); return o;
 }
 const xferPorts = (o, t) => { const tr = o && typeof o === 'object' ? o.transfer : t; return (tr && typeof tr[Symbol.iterator] === 'function' ? [...tr] : []).filter(p => p && typeof p.postMessage === 'function' && typeof p.start === 'function'); };
 function postMessage(data, origin, transfer) { const [src, org] = N.caller(); const d = structuredClone(data), ports = xferPorts(origin, transfer); N.timer(() => { try { dispatch(G, new MessageEvent('message', { data: d, origin: org, source: asWin(src), ports }), true); } catch (e) { report(e); } }, 0, false, true); }
 function rejection(promise, reason) { const e = new PromiseRejectionEvent('unhandledrejection', { promise, reason, cancelable: true }); try { dispatch(G, e, true); } catch (x) { report(x); } return e.defaultPrevented; }
 function queueMessage(data, origin, src, ports) { setTimeout(() => dispatch(G, new MessageEvent('message', { data, origin, source: asWin(src), ports: ports ? [...ports].map(p => typeof p === 'number' ? importPort(src, p) : p) : [] }), true)); }
-const remoteWins = new Map();
+const remoteWins = new SMap();
 const postArgs = (v, d, o, t) => N.postTo(v, d, o && typeof o === 'object' ? String(o.targetOrigin ?? '/') : String(o ?? '/'), xferPorts(o, t));
 // A window this page can't touch directly: a cross-origin frame (its context id) or another tab (-its window id,
 // as window.open returns and a popup's opener and message sources give)
@@ -588,11 +588,11 @@ Object.setPrototypeOf(G, Window.prototype);
     /* window's named properties: a child frame by name (its WindowProxy), else the HTML elements with that id or the
        embed/form/img/object elements with that name (one element, or a collection of them in tree order). The name
        index is rebuilt only after the DOM changes. */
-    let namedVer = -1, namedMap = new Map();
+    let namedVer = -1, namedMap = new SMap();
     const byName = (d, p) => {
         const v = N.version(d);
         if (v !== namedVer) {
-            namedVer = v; namedMap = new Map();
+            namedVer = v; namedMap = new SMap();
             for (const e of N.query(d, 'embed[name],form[name],img[name],object[name],iframe[name],frame[name]', true)) {
                 if (N.ns(e) !== 0) continue;
                 const n = N.attr(e, 'name'); if (!n) continue;
@@ -1038,7 +1038,7 @@ function fireAnim(t, type, name, elapsed, anim) {
             else if (!d.enumerable) { d.enumerable = true; Object.defineProperty(o, k, d); }
         }
     };
-    const PROTO_SKIP = new Set(['constructor']), STATIC_SKIP = new Set(['length', 'name', 'prototype', 'arguments', 'caller']);
+    const PROTO_SKIP = new SSet(['constructor']), STATIC_SKIP = new SSet(['length', 'name', 'prototype', 'arguments', 'caller']);
     for (const name of Object.getOwnPropertyNames(G)) {
         if (PRE_GLOBALS.has(name) || !/^[A-Z]/.test(name)) continue;
         const d = Object.getOwnPropertyDescriptor(G, name), C = d && d.value;

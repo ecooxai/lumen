@@ -80,7 +80,7 @@ class URLSearchParams {
                 }
             } else {
                 // a WebIDL record: keys that become equal as USVStrings keep the first position and the last value
-                const m = new Map();
+                const m = new SMap();
                 for (const k of Reflect.ownKeys(init)) {
                     const d = Reflect.getOwnPropertyDescriptor(init, k);
                     if (d && d.enumerable) m.set(urlUsv(k), urlUsv(init[k]));

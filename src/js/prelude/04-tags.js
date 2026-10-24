@@ -156,8 +156,8 @@ mk('HTMLCanvasElement', HTMLElement, ['canvas'], p => {
     });
 });
 /* a control's autocomplete IDL value: its autofill tokens, normalised, or "" when they are not valid */
-const AF_NORMAL = new Set('name honorific-prefix given-name additional-name family-name honorific-suffix nickname username new-password current-password one-time-code organization-title organization street-address address-line1 address-line2 address-line3 address-level4 address-level3 address-level2 address-level1 country country-name postal-code cc-name cc-given-name cc-additional-name cc-family-name cc-number cc-exp cc-exp-month cc-exp-year cc-csc cc-type transaction-currency transaction-amount language bday bday-day bday-month bday-year sex url photo'.split(' '));
-const AF_CONTACT = new Set('tel tel-country-code tel-national tel-area-code tel-local tel-local-prefix tel-local-suffix tel-extension email impp'.split(' '));
+const AF_NORMAL = new SSet('name honorific-prefix given-name additional-name family-name honorific-suffix nickname username new-password current-password one-time-code organization-title organization street-address address-line1 address-line2 address-line3 address-level4 address-level3 address-level2 address-level1 country country-name postal-code cc-name cc-given-name cc-additional-name cc-family-name cc-number cc-exp cc-exp-month cc-exp-year cc-csc cc-type transaction-currency transaction-amount language bday bday-day bday-month bday-year sex url photo'.split(' '));
+const AF_CONTACT = new SSet('tel tel-country-code tel-national tel-area-code tel-local tel-local-prefix tel-local-suffix tel-extension email impp'.split(' '));
 const autofill = el => {
     const t = (N.attr(el, 'autocomplete') || '').toLowerCase().split(/[\t\n\f\r ]+/).filter(Boolean);
     if (!t.length) return '';

@@ -107,7 +107,7 @@ class Cache {
 const cacheDrop = Cache.drop;
 delete Cache.drop;
 class CacheStorage {
-    #caches = new Map();
+    #caches = new SMap();
     constructor(key = undefined) { if (key !== CACHE_KEY) throw new TypeError("Failed to construct 'CacheStorage': Illegal constructor"); }
     async match(request, options = undefined) {
         const name = options && options.cacheName;

@@ -38,8 +38,8 @@ function saveHref(href, name) {
     N.downloadBytes(name ? String(name) : 'download', String(body[1] || '').split(';')[0], body[0]);
 }
 Object.defineProperty(globalThis, '__lumenSaveHref', { value: saveHref });
-const ACT_INPUT = new Set(['checkbox', 'radio', 'submit', 'image', 'reset', 'file', 'button', 'color']);
-const INTERACTIVE = new Set(['a', 'audio', 'button', 'details', 'embed', 'iframe', 'input', 'label', 'select', 'textarea', 'video']);
+const ACT_INPUT = new SSet(['checkbox', 'radio', 'submit', 'image', 'reset', 'file', 'button', 'color']);
+const INTERACTIVE = new SSet(['a', 'audio', 'button', 'details', 'embed', 'iframe', 'input', 'label', 'select', 'textarea', 'video']);
 /* elements with an activation behavior: links, buttons, labels, summaries and the clickable input types */
 function hasActivation(n) {
     if (!N.isNode(n) || N.type(n) !== 1 || N.ns(n) !== 0) return false;
@@ -171,7 +171,7 @@ class MediaList {
 }
 class CSSRuleStyle extends CSSStyleDeclaration {
     constructor(rule, text) { super(null); def(this, '_rule', rule); def(this, '_map', parseDecls(text || '')); }
-    _m() { return new Map(this._map); }
+    _m() { return new SMap(this._map); }
     _w(m) { this._map = m; this._rule._changed(); }
     get cssText() { return serDecls(this._map); } set cssText(v) { this._w(parseDecls(String(v))); }
     setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p); const m = this._m(); if (v == null || v === '') m.delete(p); else m.set(p, [String(v), pri ? 'important' : '']); this._w(m); }
@@ -319,7 +319,7 @@ function adoptSheets(scope, v) {
     def(scope, '__ass', list);
     const root = scope.nodeType === 9 ? (scope.head || scope.documentElement) : scope;
     for (const s of list) {
-        if (!s._mirrors) def(s, '_mirrors', new Map());
+        if (!s._mirrors) def(s, '_mirrors', new SMap());
         let n = s._mirrors.get(scope);
         if (n) { if (n.parentNode) N.remove(n); } else { n = N.create('style', 0); def(n, '__mirror', true); s._mirrors.set(scope, n); N.setText(n, s._text()); }
         if (root) N.insert(root, n, null);
@@ -330,8 +330,8 @@ function adoptedGet(scope) { return new Proxy((scope.__ass || []).slice(), { set
 function scopeSheets(scope) { return N.query(scope, 'style,link[rel~=stylesheet]', true).filter(el => !el.__mirror).map(sheetFor); }
 function sheetFor(el) { if (!el.__sheet) { const s = new CSSStyleSheet(); def(s, '_owner', el); def(el, '__sheet', s); } return el.__sheet; }
 /* CSS.registerProperty: validates the definition (name, syntax, a computationally independent initial value) */
-const registeredProps = new Map();
-const RP_TYPES = new Set(['length', 'number', 'percentage', 'length-percentage', 'color', 'image', 'url', 'integer', 'angle', 'time', 'resolution', 'transform-function', 'custom-ident', 'transform-list', 'string']);
+const registeredProps = new SMap();
+const RP_TYPES = new SSet(['length', 'number', 'percentage', 'length-percentage', 'color', 'image', 'url', 'integer', 'angle', 'time', 'resolution', 'transform-function', 'custom-ident', 'transform-list', 'string']);
 const RP_NUM = '[+-]?(?:\\d+\\.?\\d*|\\.\\d+)(?:e[+-]?\\d+)?';
 const RP_MATH = /^(calc|min|max|clamp|abs|sign|round|mod|rem|hypot)\(.*\)$/i;
 const rpRe = (u) => new RegExp('^' + RP_NUM + u + '$', 'i');
@@ -398,7 +398,7 @@ const CSS = {
     registerProperty(d) { registerProperty(d); },
 };
 /* set-like over the faces a page adds: pages spread it (`[...document.fonts]`) and read .size */
-const fontFaces = new Set();
+const fontFaces = new SSet();
 const fontSet = Object.assign(new EventTarget(), { status: 'loaded', load() { return Promise.resolve([]); }, check() { return true; },
     add(f) { fontFaces.add(f); return this; }, delete(f) { return fontFaces.delete(f); }, clear() { fontFaces.clear(); },
     forEach(cb, t) { for (const f of fontFaces) cb.call(t, f, f, this); }, has(f) { return fontFaces.has(f); },

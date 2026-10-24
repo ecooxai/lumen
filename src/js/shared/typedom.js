@@ -40,7 +40,7 @@ const tomAddType = (a, b) => {
     if (pb && ka.length === 1 && a[ka[0]] === 1 && ka[0] !== 'percent') return Object.assign({}, a, { percentHint: ka[0] });
     return null;
 };
-const tomMulType = (a, b) => { if (a.percentHint && b.percentHint && a.percentHint !== b.percentHint) return null; const r = {}; for (const k of new Set([...tomKeys(a), ...tomKeys(b)])) { const e = (a[k] || 0) + (b[k] || 0); if (e) r[k] = e; } if (a.percentHint || b.percentHint) r.percentHint = a.percentHint || b.percentHint; return r; };
+const tomMulType = (a, b) => { if (a.percentHint && b.percentHint && a.percentHint !== b.percentHint) return null; const r = {}; for (const k of new SSet([...tomKeys(a), ...tomKeys(b)])) { const e = (a[k] || 0) + (b[k] || 0); if (e) r[k] = e; } if (a.percentHint || b.percentHint) r.percentHint = a.percentHint || b.percentHint; return r; };
 const tomRect = v => { if (v instanceof CSSNumericValue) return v; if (typeof v === 'number') return new CSSUnitValue(v, 'number'); if (typeof v === 'string' || typeof v === 'boolean') { const n = Number(v); if (Number.isFinite(n)) return new CSSUnitValue(n, 'number'); } throw new TypeError('Not a numeric value'); };   /* WebIDL (double or CSSNumericValue) */
 const tomMath = (k, vals) => { const o = Object.create(({ sum: CSSMathSum, product: CSSMathProduct, min: CSSMathMin, max: CSSMathMax })[k].prototype); tomInit(o, { k, vals }); tomTypeOf(o); return o; };
 const tomConv = (v, unit) => {   /* value of unit value v in unit, or null */
@@ -77,17 +77,17 @@ const tomEq = (a, b) => {
 /* sum of unit values grouped by unit, or null when v holds something else */
 const tomSumMap = v => {
     const d = tomData(v);
-    if (d.k === 'unit') return new Map([[d.unit, d.value]]);
+    if (d.k === 'unit') return new SMap([[d.unit, d.value]]);
     if (d.k === 'negate') { const m = tomSumMap(d.v); if (m) for (const [k, x] of m) m.set(k, -x); return m; }
-    if (d.k === 'sum') { const r = new Map(); for (const x of d.vals) { const m = tomSumMap(x); if (!m) return null; for (const [k, y] of m) r.set(k, (r.get(k) || 0) + y); } return r; }
+    if (d.k === 'sum') { const r = new SMap(); for (const x of d.vals) { const m = tomSumMap(x); if (!m) return null; for (const [k, y] of m) r.set(k, (r.get(k) || 0) + y); } return r; }
     if (d.k === 'product') {
-        let r = new Map([['number', 1]]);
+        let r = new SMap([['number', 1]]);
         for (const x of d.vals) {
             const xd = tomData(x); let m;
-            if (xd.k === 'invert') { m = tomSumMap(xd.v); if (!m || m.size !== 1) return null; const [[k, y]] = m; if (k !== 'number') return null; m = new Map([['number', 1 / y]]); }
+            if (xd.k === 'invert') { m = tomSumMap(xd.v); if (!m || m.size !== 1) return null; const [[k, y]] = m; if (k !== 'number') return null; m = new SMap([['number', 1 / y]]); }
             else m = tomSumMap(x);
             if (!m) return null;
-            const n = new Map();
+            const n = new SMap();
             for (const [k1, a] of r) for (const [k2, b] of m) { if (k1 !== 'number' && k2 !== 'number') return null; const k = k1 === 'number' ? k2 : k1; n.set(k, (n.get(k) || 0) + a * b); }
             r = n;
         }
@@ -124,7 +124,7 @@ class CSSNumericValue extends CSSStyleValue {
         units = units.map(tomUnit);
         const m = tomSumMap(this); if (!m) throw new TypeError('Cannot convert value to a sum');
         if (!units.length) {
-            const out = new Map();
+            const out = new SMap();
             for (const [k, x] of m) { const c = TOM_UNITS[k.toLowerCase()]; const canon = c[0] === 'length' && c[1] ? 'px' : c[0] === 'angle' ? 'deg' : c[0] === 'time' ? 's' : c[0] === 'frequency' ? 'Hz' : c[0] === 'resolution' && c[1] ? 'dppx' : k; const y = tomConv(new CSSUnitValue(x, k), canon); out.set(canon, (out.get(canon) || 0) + (y ?? x)); }
             const vals = [...out].sort((a, b) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0).map(([k, x]) => new CSSUnitValue(x, k));
             return tomMath('sum', vals);

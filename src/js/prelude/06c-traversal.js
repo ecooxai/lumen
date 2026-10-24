@@ -199,7 +199,7 @@ function oprNew(el, s, e) {
     const r = new OpaqueRange(OPR_KEY);
     def(r, '_el', el); def(r, '_doc', el.ownerDocument); def(r, '_conn', N.connected(el));
     r._so = s; r._eo = e;
-    let set = oprOf.get(el); if (!set) oprOf.set(el, set = new Set());
+    let set = oprOf.get(el); if (!set) oprOf.set(el, set = new SSet());
     set.add(r);
     return r;
 }
@@ -404,7 +404,7 @@ function boundsRects(sc, so, ec, eo) {
         const charData = t => t === 3 || t === 4 || t === 7 || t === 8;
         let n = charData(startT) ? sc : childAt(sc, so) || after(sc);
         const endData = charData(endT), stop = endData ? null : childAt(ec, eo) || after(ec);
-        const contained = new Set();
+        const contained = new SSet();
         for (let k = 0; n && n !== stop && k < 100000; n = nextIn(n, null), k++) {
             const t = N.type(n);
             if (t === 3 || t === 4) { for (const r of textRects(n, n === sc ? so : 0, n === ec ? eo : N.text(n).length)) out.push(r); }
@@ -582,7 +582,7 @@ function xmlSer(n, dns, map) {
     default: { let s = ''; for (let c = N.first(n); c; c = N.next(c)) s += xmlSer(c, dns, map); return s; }
     }
 }
-const html_void = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'source', 'track', 'wbr']);
+const html_void = new SSet(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'source', 'track', 'wbr']);
 class XMLSerializer { serializeToString(n) { if (!N.isNode(n)) throw new TypeError("Failed to execute 'serializeToString' on 'XMLSerializer': parameter 1 is not of type 'Node'."); return xmlSer(n, null, Object.assign(Object.create(null), { xml: XML_NS })); } }
 
 /* CSS Custom Highlight API. Highlight is setlike and HighlightRegistry maplike over Set/Map intrinsics captured
@@ -594,7 +594,7 @@ const HL = (() => {
     return {
         sAdd: f(SP, 'add'), sHas: f(SP, 'has'), sDel: f(SP, 'delete'), sClear: f(SP, 'clear'), sValues: f(SP, 'values'), sEntries: f(SP, 'entries'), sSize: sz(SP),
         mGet: f(MP, 'get'), mSet: f(MP, 'set'), mHas: f(MP, 'has'), mDel: f(MP, 'delete'), mClear: f(MP, 'clear'), mKeys: f(MP, 'keys'), mValues: f(MP, 'values'), mEntries: f(MP, 'entries'), mSize: sz(MP),
-        next: f(Object.getPrototypeOf(new Set().values()), 'next'), mNext: f(Object.getPrototypeOf(new Map().values()), 'next'),
+        next: f(Object.getPrototypeOf(new SSet().values()), 'next'), mNext: f(Object.getPrototypeOf(new SMap().values()), 'next'),
     };
 })();
 const HL_TYPES = ['highlight', 'spelling-error', 'grammar-error'];
@@ -602,7 +602,7 @@ const hlRange = (r, m, i = 1) => { if (!(r instanceof AbstractRange)) throw new 
 const hlCallable = (cb, m) => { if (typeof cb !== 'function') throw new TypeError(`Failed to execute 'forEach' on '${m}': The callback provided as parameter 1 is not a function.`); };
 let hlSetOf;
 class Highlight {
-    #set = new Set(); #priority = 0; #type = 'highlight';
+    #set = new SSet(); #priority = 0; #type = 'highlight';
     constructor(...ranges) {
         for (let i = 0; i < ranges.length; i++) HL.sAdd(this.#set, hlRange(ranges[i], "construct 'Highlight'", i + 1));
     }
@@ -628,7 +628,7 @@ Object.defineProperty(Highlight.prototype, 'keys', { value: Highlight.prototype.
 Object.defineProperty(Highlight.prototype, Symbol.iterator, { value: Highlight.prototype.values, writable: true, configurable: true });
 const HLR_KEY = Symbol('HighlightRegistry');
 class HighlightRegistry {
-    #map = new Map();
+    #map = new SMap();
     constructor(key = undefined) { if (key !== HLR_KEY) illegal(); }
     get size() { return HL.mSize(this.#map); }
     get(k) { return HL.mGet(this.#map, String(k)); }

@@ -50,7 +50,7 @@ SVGRect.prototype._get = function () { if (!this._el) return this._v.slice(); co
 function mkRect(el, attr, ro) { const r = Object.create(SVGRect.prototype); def(r, '_el', el); def(r, '_attr', attr); def(r, '_ro', ro); def(r, '_v', [0, 0, 0, 0]); return r; }
 class SVGAnimatedRect { constructor() { illegal(); } get baseVal() { return this._b; } get animVal() { return this._a; } }
 const SVGUnitTypes = { SVG_UNIT_TYPE_UNKNOWN: 0, SVG_UNIT_TYPE_USERSPACEONUSE: 1, SVG_UNIT_TYPE_OBJECTBOUNDINGBOX: 2 };
-function svgCache(el, k, f) { let c = el.__svg; if (!c) { c = new Map(); def(el, '__svg', c); } let v = c.get(k); if (!v) { v = f(); c.set(k, v); } return v; }
+function svgCache(el, k, f) { let c = el.__svg; if (!c) { c = new SMap(); def(el, '__svg', c); } let v = c.get(k); if (!v) { v = f(); c.set(k, v); } return v; }
 function svgMk(C, props) { const o = Object.create(C.prototype); for (const k in props) def(o, k, props[k]); return o; }
 function svgProps(C, spec) {
     for (const [prop, kind, attr = prop, d = 0, map] of spec) Object.defineProperty(C.prototype, prop, {

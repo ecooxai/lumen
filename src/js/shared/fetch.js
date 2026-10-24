@@ -37,7 +37,7 @@ function parseMime(input) {
     if (semi < 0) semi = input.length;
     const sub = input.slice(p, semi).replace(/[\t\n\r ]+$/, '');
     if (!FETCH_TOKEN.test(sub)) return null;
-    const m = { type: type.toLowerCase(), subtype: sub.toLowerCase(), params: new Map() };
+    const m = { type: type.toLowerCase(), subtype: sub.toLowerCase(), params: new SMap() };
     p = semi;
     while (p < input.length) {
         p++;
@@ -110,7 +110,7 @@ function extractMime(list) {
 }
 
 /* ---- header guards (Fetch § 2.2.2) ---- */
-const FORBIDDEN_REQ = new Set(['accept-charset', 'accept-encoding', 'access-control-request-headers', 'access-control-request-method', 'connection', 'content-length', 'cookie', 'cookie2', 'date', 'dnt', 'expect', 'host', 'keep-alive', 'origin', 'referer', 'set-cookie', 'te', 'trailer', 'transfer-encoding', 'upgrade', 'via']);
+const FORBIDDEN_REQ = new SSet(['accept-charset', 'accept-encoding', 'access-control-request-headers', 'access-control-request-method', 'connection', 'content-length', 'cookie', 'cookie2', 'date', 'dnt', 'expect', 'host', 'keep-alive', 'origin', 'referer', 'set-cookie', 'te', 'trailer', 'transfer-encoding', 'upgrade', 'via']);
 function forbiddenRequestHeader(name, value) {
     const l = name.toLowerCase();
     if (FORBIDDEN_REQ.has(l) || l.startsWith('proxy-') || l.startsWith('sec-')) return true;
@@ -133,11 +133,11 @@ function corsSafelisted(name, value) {
     }
     return false;
 }
-const NO_CORS_NAMES = new Set(['accept', 'accept-language', 'content-language', 'content-type']);
+const NO_CORS_NAMES = new SSet(['accept', 'accept-language', 'content-language', 'content-type']);
 const noCorsSafelisted = (name, value) => NO_CORS_NAMES.has(name.toLowerCase()) && corsSafelisted(name, value);
 /* "CORS-unsafe request-header names": lowercase, sorted, unique */
 function corsUnsafeNames(list) {
-    const unsafe = new Set(), safe = new Set(); let size = 0;
+    const unsafe = new SSet(), safe = new SSet(); let size = 0;
     for (const [n, v] of list) {
         const l = n.toLowerCase();
         if (corsSafelisted(n, v)) { safe.add(l); size += v.length; } else unsafe.add(l);
@@ -168,7 +168,7 @@ function hdrAppend(s, name, value, where) {
 /* "sort and combine", cached per change */
 function hdrSorted(s) {
     if (s.sortedVer === s.ver && s.sortedList === s.list) return s.sorted;
-    const names = [...new Set(s.list.map(([n]) => n.toLowerCase()))].sort(), out = [];
+    const names = [...new SSet(s.list.map(([n]) => n.toLowerCase()))].sort(), out = [];
     for (const n of names) {
         if (n === 'set-cookie') { for (const [k, v] of s.list) if (k.toLowerCase() === n) out.push([n, v]); }
         else out.push([n, hdrGet(s.list, n)]);
@@ -613,7 +613,7 @@ Object.defineProperty(Request.prototype, Symbol.toStringTag, { value: 'Request',
 
 /* ---- Response ---- */
 const respOf = r => { const s = respState.get(r); if (!s) throw new TypeError('Illegal invocation'); return s; };
-const NULL_BODY_STATUS = new Set([101, 103, 204, 205, 304]), REDIRECT_STATUS = new Set([301, 302, 303, 307, 308]);
+const NULL_BODY_STATUS = new SSet([101, 103, 204, 205, 304]), REDIRECT_STATUS = new SSet([301, 302, 303, 307, 308]);
 function readResponseInit(init, where) {
     const o = { headers: null, status: 200, statusText: '' };
     if (init === undefined || init === null) return o;
@@ -825,7 +825,7 @@ function fetchNetwork(R, url, ctl, preflight) {
         });
     });
 }
-const preflightCache = new Map();
+const preflightCache = new SMap();
 async function corsPreflight(R, url, ctl) {
     const names = corsUnsafeNames(R.headers), inc = R.credentials === 'include', key = R.origin + ' ' + url.href + ' ' + inc;
     const safeMethod = /^(GET|HEAD|POST)$/.test(R.method), e = preflightCache.get(key);
@@ -846,9 +846,9 @@ async function corsPreflight(R, url, ctl) {
     for (const n of names) if (!hl.includes(n) && (inc || !hl.includes('*'))) throw fnet();
     let age = parseInt(hdrGet(res.headers, 'access-control-max-age') ?? '5', 10);
     if (!(age >= 0)) age = 5;
-    if (age > 0) preflightCache.set(key, { expires: Date.now() + Math.min(age, 7200) * 1000, methods: new Set(methods), headers: new Set(hl) });
+    if (age > 0) preflightCache.set(key, { expires: Date.now() + Math.min(age, 7200) * 1000, methods: new SSet(methods), headers: new SSet(hl) });
 }
-const REQUEST_BODY_HEADERS = new Set(['content-encoding', 'content-language', 'content-location', 'content-type']);
+const REQUEST_BODY_HEADERS = new SSet(['content-encoding', 'content-language', 'content-location', 'content-type']);
 async function fetchHttp(R, url, ctl, preflight) {
     if (preflight) await corsPreflight(R, url, ctl);
     if (ctl.aborted) throw fnet();
@@ -896,7 +896,7 @@ function fetchLocal(R, url) {
     return ok(206, 'Partial Content', [['Content-Length', String(b - a + 1)], ['Content-Type', blob.type], ['Content-Range', `bytes ${a}-${b}/${n}`]], bytes.slice(a, b + 1));
 }
 /* Fetch's bad ports: never fetched over HTTP(S) */
-const BAD_PORTS = new Set([0, 1, 7, 9, 11, 13, 15, 17, 19, 20, 21, 22, 23, 25, 37, 42, 43, 53, 69, 77, 79, 87, 95, 101, 102, 103, 104, 109, 110, 111, 113, 115, 117, 119, 123, 135, 137, 139, 143, 161, 179, 389, 427, 465, 512, 513, 514, 515, 526, 530, 531, 532, 540, 548, 554, 556, 563, 587, 601, 636, 989, 990, 993, 995, 1719, 1720, 1723, 2049, 3659, 4045, 4190, 5060, 5061, 6000, 6566, 6665, 6666, 6667, 6668, 6669, 6679, 6697, 10080]);
+const BAD_PORTS = new SSet([0, 1, 7, 9, 11, 13, 15, 17, 19, 20, 21, 22, 23, 25, 37, 42, 43, 53, 69, 77, 79, 87, 95, 101, 102, 103, 104, 109, 110, 111, 113, 115, 117, 119, 123, 135, 137, 139, 143, 161, 179, 389, 427, 465, 512, 513, 514, 515, 526, 530, 531, 532, 540, 548, 554, 556, 563, 587, 601, 636, 989, 990, 993, 995, 1719, 1720, 1723, 2049, 3659, 4045, 4190, 5060, 5061, 6000, 6566, 6665, 6666, 6667, 6668, 6669, 6679, 6697, 10080]);
 /* main fetch: picks the response tainting, then a scheme or HTTP fetch */
 async function fetchMain(R, ctl) {
     if (ctl.aborted) throw fnet();
@@ -918,14 +918,14 @@ async function fetchMain(R, ctl) {
     const preflight = R.useCorsPreflight || !/^(GET|HEAD|POST)$/.test(R.method) || corsUnsafeNames(R.headers).length > 0;
     return fetchHttp(R, url, ctl, preflight);
 }
-const SAFE_RESPONSE_NAMES = new Set(['cache-control', 'content-language', 'content-length', 'content-type', 'expires', 'last-modified', 'pragma']);
+const SAFE_RESPONSE_NAMES = new SSet(['cache-control', 'content-language', 'content-length', 'content-type', 'expires', 'last-modified', 'pragma']);
 /* the filtered response fetch() resolves with */
 function fetchResponse(R, res) {
     let type = R.tainting, headers = res.headers, body = res.body, status = res.status, statusText = res.statusText, urlList = R.urlList.slice();
     if (res.opaqueRedirect) { type = 'opaqueredirect'; status = 0; statusText = ''; headers = []; body = null; }
     else if (type === 'basic') headers = headers.filter(([n]) => !forbiddenResponseName(n));
     else if (type === 'cors') {
-        const ex = new Set((hdrGet(headers, 'access-control-expose-headers') || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean));
+        const ex = new SSet((hdrGet(headers, 'access-control-expose-headers') || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean));
         const all = ex.has('*') && R.credentials !== 'include';
         headers = headers.filter(([n]) => { const l = n.toLowerCase(); return !forbiddenResponseName(l) && (SAFE_RESPONSE_NAMES.has(l) || ex.has(l) || all); });
     } else { if (body && body.stream) res.cancel(); status = 0; statusText = ''; headers = []; body = null; urlList = []; }

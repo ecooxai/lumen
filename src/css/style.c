@@ -4102,7 +4102,8 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
     static const char *const ps[] = { "static", "relative", "absolute", "fixed", "sticky" };
     static const char *const bs[] = { "none", "hidden", "solid", "dashed", "dotted", "double", "groove", "ridge", "inset", "outset" };
     if (prop[0] == '-' && prop[1] == '-') { const char *v = custom_get(s->custom, prop); if (!v) v = css_property_initial(prop); if (v) sb_puts(&b, v); }
-    else if (!strcmp(prop, "display")) { const char *d = s->display_text ? s->display_text : ds[s->display]; sb_puts(&b, (s->position == 2 || s->position == 3 || s->float_) && s->display != D_NONE ? display_blockify(d) : d); }
+    else if (!strcmp(prop, "display")) { const char *d = s->display_text ? s->display_text : ds[s->display];
+        if (s->display_text && (!el || el->ns != NS_MATHML)) { if (!strcmp(d, "math")) d = "inline"; else if (!strcmp(d, "block math")) d = "block"; }   /* math is only for MathML elements */ sb_puts(&b, (s->position == 2 || s->position == 3 || s->float_) && s->display != D_NONE ? display_blockify(d) : d); }
     else if (!strncmp(prop, "animation-", 10) || !strncmp(prop, "transition-", 11) || !strncmp(prop, "-webkit-animation-", 18) || !strncmp(prop, "-webkit-transition-", 19)) {
         const char *q = strncmp(prop, "-webkit-", 8) ? prop : prop + 8;
         if (!strcmp(q, "animation-name")) sb_puts(&b, s->anim_name ? s->anim_name : "none");

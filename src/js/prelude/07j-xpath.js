@@ -24,9 +24,9 @@ const xpBool = v => typeof v === 'boolean' ? v : typeof v === 'number' ? v !== 0
 /* document order: a preorder index of each tree the nodes are in, attributes right after their element */
 function xpSort(a) {
     if (a.length < 2) return a;
-    const u = [...new Set(a)];
+    const u = [...new SSet(a)];
     if (u.length < 2) return u;
-    const ix = new Map(); let k = 0;
+    const ix = new SMap(); let k = 0;
     for (const n of u) {
         if (ix.has(n)) continue;
         let r = n; for (let p; (p = xpParent(r));) r = p;
@@ -75,7 +75,7 @@ const xpAxes = {
     attribute: function* (n) { if (n.nodeType === 1) for (const nm of n.getAttributeNames()) if (nm !== 'xmlns' && !nm.startsWith('xmlns:')) yield xpAttr(n, nm); },
     namespace: function* () {},
 };
-const xpReverse = new Set(['ancestor', 'ancestor-or-self', 'preceding', 'preceding-sibling']);
+const xpReverse = new SSet(['ancestor', 'ancestor-or-self', 'preceding', 'preceding-sibling']);
 /* tokens: {t: 'num'|'str'|'name'|'var'|'op', v} */
 function xpLex(s) {
     const out = []; let i = 0;
@@ -100,7 +100,7 @@ function xpLex(s) {
     }
     return out;
 }
-const xpNodeTypes = new Set(['node', 'text', 'comment', 'processing-instruction']);
+const xpNodeTypes = new SSet(['node', 'text', 'comment', 'processing-instruction']);
 function xpCompile(src, resolver) {
     const tk = xpLex(src); let p = 0;
     const peek = (o = 0) => tk[p + o], isOp = (v, o = 0) => { const t = tk[p + o]; return !!t && t.t === 'op' && t.v === v; };

@@ -1,12 +1,12 @@
 /* The network side of RTCPeerConnection (N.rtc*, src/js/rtc.cc). 07r-rtc.js keeps the spec state machine
    and writes the SDP; when the remote description comes from outside this page, a native connection takes
    the same ICE credentials, certificate and mids and carries the data channels and Opus audio. */
-const rtcNat = new Map();   /* native pc id -> RTCPeerConnection */
+const rtcNat = new SMap();   /* native pc id -> RTCPeerConnection */
 let rtcNatInit = false;
 const rtcCand = s => String(s).replace(/^a=/, '');
 /* received audio for Web Audio (MediaStreamAudioSourceNode subscribes to .subs like a mic hub) */
 class RtcHub {
-    constructor(h) { this.h = h; this.refs = 1; this.subs = new Set(); this.tapping = false; this.timer = setInterval(() => this.poll(), 40); }
+    constructor(h) { this.h = h; this.refs = 1; this.subs = new SSet(); this.tapping = false; this.timer = setInterval(() => this.poll(), 40); }
     poll() {
         if (!this.h) return;
         if (!this.subs.size) { if (this.tapping) { this.tapping = false; N.rtcRead(this.h, false); } return; }
@@ -17,7 +17,7 @@ class RtcHub {
     release() { if (--this.refs > 0) return; clearInterval(this.timer); if (this.tapping && this.h) N.rtcRead(this.h, false); this.subs.clear(); }
 }
 /* <audio>/<video> elements playing a MediaStream: the native side plays its remote audio tracks */
-const rtcPlayers = new Map();   /* MediaStreamTrack -> Set of elements */
+const rtcPlayers = new SMap();   /* MediaStreamTrack -> Set of elements */
 function rtcPlayUpdate(t) {
     const els = [...(rtcPlayers.get(t) || [])];
     if (!els.length) rtcPlayers.delete(t);
@@ -28,7 +28,7 @@ function mediaStreamPlay(el, on) {
     if (!(s instanceof MediaStream)) return;
     for (const t of s.getAudioTracks()) {
         let set = rtcPlayers.get(t);
-        if (!set) rtcPlayers.set(t, set = new Set());
+        if (!set) rtcPlayers.set(t, set = new SSet());
         if (on) set.add(el); else set.delete(el);
         rtcPlayUpdate(t);
     }
@@ -119,7 +119,7 @@ Object.assign(RTCPeerConnection.prototype, {
         for (const s of me.cfg.iceServers) for (const u of s.urls) servers.push([u, s.username ?? null, s.credential ?? null]);
         const id = N.rtcNew(servers, me.cfg.iceTransportPolicy === 'relay', me.cert._.crt, me.cert._.key);
         if (!id) return false;
-        me.nat = { id, dcs: new Map() };
+        me.nat = { id, dcs: new SMap() };
         rtcNat.set(id, this);
         for (const dc of me.channels) if (dc._.readyState === 'connecting' && (dc._.negotiated || me.pendLocal || me.curLocal)) this._natDc(dc);
         return true;

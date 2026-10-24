@@ -33,7 +33,7 @@ const tomKnown = p => p.startsWith('--') || CSS_PROP_NAMES.has(p) || CSS.support
 /* coarse value-type validation: dimensions must suit the property, keyword-only properties take no numbers */
 const TOM_LENGTH_PROPS = /^(width|height|(min|max)-(width|height)|(min-|max-)?(block|inline)-size|margin(-.*)?|padding(-.*)?|top|right|bottom|left|inset(-.*)?|gap|row-gap|column-gap|column-width|flex-basis|border(-[a-z]+)*-width|outline-width|outline-offset|letter-spacing|word-spacing|text-indent|font-size|line-height|vertical-align|perspective|shape-margin|scroll-(margin|padding)(-.*)?|text-underline-offset|text-decoration-thickness|border(-[a-z]+)*-radius)$/;
 const TOM_DIM = /([+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?)([a-z%]+)?/gi;
-const TOM_LEN_UNITS = new Set(['', '%', 'px', 'em', 'rem', 'ex', 'rex', 'ch', 'rch', 'ic', 'ric', 'cap', 'rcap', 'lh', 'rlh', 'vw', 'vh', 'vi', 'vb', 'vmin', 'vmax', 'svw', 'svh', 'svi', 'svb', 'svmin', 'svmax', 'lvw', 'lvh', 'lvi', 'lvb', 'lvmin', 'lvmax', 'dvw', 'dvh', 'dvi', 'dvb', 'dvmin', 'dvmax', 'cqw', 'cqh', 'cqi', 'cqb', 'cqmin', 'cqmax', 'cm', 'mm', 'q', 'in', 'pt', 'pc']);
+const TOM_LEN_UNITS = new SSet(['', '%', 'px', 'em', 'rem', 'ex', 'rex', 'ch', 'rch', 'ic', 'ric', 'cap', 'rcap', 'lh', 'rlh', 'vw', 'vh', 'vi', 'vb', 'vmin', 'vmax', 'svw', 'svh', 'svi', 'svb', 'svmin', 'svmax', 'lvw', 'lvh', 'lvi', 'lvb', 'lvmin', 'lvmax', 'dvw', 'dvh', 'dvi', 'dvb', 'dvmin', 'dvmax', 'cqw', 'cqh', 'cqi', 'cqb', 'cqmin', 'cqmax', 'cm', 'mm', 'q', 'in', 'pt', 'pc']);
 function tomValidText(prop, text) {
     const t = text.trim();
     if (TOM_WIDE.test(t) || /var\(|env\(|attr\(/i.test(t)) return true;

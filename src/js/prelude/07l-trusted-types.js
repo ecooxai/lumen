@@ -21,7 +21,7 @@ for (const [k] of SPVE_KEYS) acc(SecurityPolicyViolationEvent.prototype, k, func
 
 /* a policy: { d: directive name -> value tokens, lc: the same lowercased, report, src } */
 function cspParse(text, report, out, meta) {
-    const d = new Map(), lc = new Map();
+    const d = new SMap(), lc = new SMap();
     for (const part of text.split(';')) {
         const t = part.trim().split(/[\t\n\f\r ]+/);
         const name = t[0].toLowerCase();
@@ -164,7 +164,7 @@ function ttParserOpts(v) { return v !== null && typeof v === 'object' && ttOptsO
 
 const ttPolicies = new WeakMap();   /* TrustedTypePolicy -> { name, fns } */
 const ttPolOf = p => { const r = ttPolicies.get(p); if (!r) throw new TypeError('Illegal invocation'); return r; };
-const TT_FN = new Map([[TrustedHTML, 'createHTML'], [TrustedScript, 'createScript'], [TrustedScriptURL, 'createScriptURL']]);
+const TT_FN = new SMap([[TrustedHTML, 'createHTML'], [TrustedScript, 'createScript'], [TrustedScriptURL, 'createScriptURL']]);
 const ttDOMString = (v, m) => { if (typeof v === 'symbol') throw new TypeError(`Failed to execute '${m}': Cannot convert a Symbol value to a string.`); return String(v); };
 function ttCreate(pol, C, args) {
     const p = ttPolOf(pol), fn = TT_FN.get(C);
@@ -196,7 +196,7 @@ class TrustedTypePolicy {
 }
 const ttNames = [];
 let ttDefault = null, ttEmptyHTML = null, ttEmptyScript = null;
-const TT_PROPS = new Map([['iframe', [['srcdoc', 'TrustedHTML']]], ['script', [['innerText', 'TrustedScript'], ['textContent', 'TrustedScript'], ['text', 'TrustedScript'], ['src', 'TrustedScriptURL']]]]);
+const TT_PROPS = new SMap([['iframe', [['srcdoc', 'TrustedHTML']]], ['script', [['innerText', 'TrustedScript'], ['textContent', 'TrustedScript'], ['text', 'TrustedScript'], ['src', 'TrustedScriptURL']]]]);
 class TrustedTypePolicyFactory {
     constructor() { illegal(); }
     createPolicy(policyName, policyOptions = undefined) {
@@ -257,7 +257,7 @@ const ttFactory = Object.create(TrustedTypePolicyFactory.prototype);
 
 /* the event handler content attributes, as the sanitizer knows them, and the media element's encrypted-media ones */
 let ttEventNames = null;
-const ttEvents = () => ttEventNames || (ttEventNames = new Set([...SAN_EVENT_ATTRS.map(a => a.name), 'onencrypted', 'onwaitingforkey']));
+const ttEvents = () => ttEventNames || (ttEventNames = new SSet([...SAN_EVENT_ATTRS.map(a => a.name), 'onencrypted', 'onwaitingforkey']));
 /* "get Trusted Type data for attribute": [the expected type, the sink name], or null */
 function ttAttrData(ln, ns, a, ans) {
     if (ans === null && (ns === SAN_HTML || ns === SAN_SVG || ns === SAN_MATHML) && a.charCodeAt(0) === 111 && ttEvents().has(a)) return [TrustedScript, 'Element ' + a];

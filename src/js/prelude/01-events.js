@@ -1,11 +1,12 @@
 /* Lumen DOM/Web API layer on top of the native bridge N. Runs once per page context. */
 (function (N, G) {
 'use strict';
-const PRE_GLOBALS = new Set(Object.getOwnPropertyNames(G));   /* the engine's own globals: not WebIDL interfaces */
+/*@shared safecoll.js*/
+const PRE_GLOBALS = new SSet(Object.getOwnPropertyNames(G));   /* the engine's own globals: not WebIDL interfaces */
 /* Trusted Types (07l): whether a CSP policy requires them; internal string compiles (inline handlers) skip the checks */
 let ttReq = false, ttInternal = 0;
 {   /* href reflection, baseURI and new URL() re-parse the same (url, base) pairs; parsed parts are never mutated, so share them */
-    const parse = N.urlParse, memo = new Map();
+    const parse = N.urlParse, memo = new SMap();
     N.urlParse = (u, b, enc) => {
         const k = (enc ? enc + ';' : '') + (b == null ? 'a' + u : b.length + ':' + b + u);
         let r = memo.get(k);
@@ -133,7 +134,7 @@ class EventTarget {
         const capture = typeof opts === 'boolean' ? opts : !!(opts && opts.capture);
         const o = typeof opts === 'object' && opts ? opts : {};
         if (o.signal && o.signal.aborted) return;
-        let m = this.__ls; if (!m) { m = new Map(); def(this, '__ls', m); }
+        let m = this.__ls; if (!m) { m = new SMap(); def(this, '__ls', m); }
         type = String(type);
         let a = m.get(type); if (!a) m.set(type, a = []);
         for (const l of a) if (l.fn === fn && l.capture === capture) return;

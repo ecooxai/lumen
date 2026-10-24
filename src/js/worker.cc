@@ -276,6 +276,7 @@ const char kWorkerPrelude[] = R"JS((function (W, G) {
 'use strict';
 const def = (o, k, v) => Object.defineProperty(o, k, { value: v, writable: true, configurable: true, enumerable: false });
 )JS"
+#include "safecoll_shared.inc"
 #include "domexception_shared.inc"
 R"JS(
 W.cloneError(DOMException);

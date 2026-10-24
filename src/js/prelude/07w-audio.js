@@ -46,9 +46,9 @@ class AudioParam {
 }
 
 class AudioNode extends EventTarget {
-    constructor(ctx, ins = 1, outs = 1) { super(); this.context = ctx; this.numberOfInputs = ins; this.numberOfOutputs = outs; this.channelCount = 2; this.channelCountMode = 'max'; this.channelInterpretation = 'speakers'; this._in = new Set(); this._out = new Set(); this._q = -1; this._o = null; }
+    constructor(ctx, ins = 1, outs = 1) { super(); this.context = ctx; this.numberOfInputs = ins; this.numberOfOutputs = outs; this.channelCount = 2; this.channelCountMode = 'max'; this.channelInterpretation = 'speakers'; this._in = new SSet(); this._out = new SSet(); this._q = -1; this._o = null; }
     connect(d) {
-        if (d instanceof AudioParam) { (d._in || (d._in = new Set())).add(this); this._out.add(d); return; }
+        if (d instanceof AudioParam) { (d._in || (d._in = new SSet())).add(this); this._out.add(d); return; }
         if (!(d instanceof AudioNode)) throw new TypeError('connect: not an AudioNode');
         d._in.add(this); this._out.add(d); return d;
     }
@@ -147,7 +147,7 @@ const fft = (re, im) => {
         }
     }
 };
-const blackmanWin = new Map();   /* fftSize -> window, shared by every analyser */
+const blackmanWin = new SMap();   /* fftSize -> window, shared by every analyser */
 const blackman = n => {
     let w = blackmanWin.get(n);
     if (!w) { w = new Float32Array(n); for (let i = 0; i < n; i++) { const x = 2 * Math.PI * i / n; w[i] = 0.42 - 0.5 * Math.cos(x) + 0.08 * Math.cos(2 * x); } blackmanWin.set(n, w); }
@@ -297,7 +297,7 @@ class ScriptProcessorNode extends AudioNode {
 class MediaStreamAudioDestinationNode extends AudioNode {
     constructor(ctx) {
         super(ctx, 1, 0);
-        const t = new MediaStreamTrack(RTC_INTERNAL, 'audio', 'MediaStreamAudioDestinationNode'), hub = { refs: 1, subs: new Set(), release() { if (--this.refs <= 0) this.subs.clear(); } };
+        const t = new MediaStreamTrack(RTC_INTERNAL, 'audio', 'MediaStreamAudioDestinationNode'), hub = { refs: 1, subs: new SSet(), release() { if (--this.refs <= 0) this.subs.clear(); } };
         t._.hub = hub; this._hub = hub; this.stream = new MediaStream([t]);
     }
     _feed(pcm) { for (const f of [...this._hub.subs]) f(pcm); }
@@ -408,7 +408,7 @@ class AudioParamMap {
     [Symbol.iterator]() { return this._m.entries(); }
 }
 class AudioWorklet {
-    constructor(ctx) { Object.defineProperty(this, '_c', { value: ctx }); this._procs = new Map(); this._mods = new Map(); }
+    constructor(ctx) { Object.defineProperty(this, '_c', { value: ctx }); this._procs = new SMap(); this._mods = new SMap(); }
     addModule(url) {
         let u;
         try { u = new URL(String(url), document.baseURI || N.url()).href; }
@@ -454,7 +454,7 @@ class AudioWorkletNode extends AudioNode {
         if (!d) throw new DOMException(`Failed to construct 'AudioWorkletNode': AudioWorkletNode cannot be created: The node name '${name}' is not defined in AudioWorkletGlobalScope.`, 'InvalidStateError');
         const ins = o.numberOfInputs ?? 1, outs = o.numberOfOutputs ?? 1;
         super(ctx, ins, outs);
-        const ch = new MessageChannel(), pm = new Map();
+        const ch = new MessageChannel(), pm = new SMap();
         for (const p of d.params) pm.set(p.name, new AudioParam(ctx, p.defaultValue ?? 0, p.minValue, p.maxValue));
         if (o.parameterData) for (const [k, v] of Object.entries(o.parameterData)) if (pm.has(k)) pm.get(k).value = v;
         this.port = ch.port1; this.parameters = new AudioParamMap(pm); this.onprocessorerror = null;
@@ -528,8 +528,8 @@ class AudioBuffer {
 
 class BaseAudioContext extends EventTarget {
     constructor(rate) {
-        super(); this.sampleRate = rate; this._f = 0; this._active = new Set(); this._state = 'running';
-        this.destination = new AudioDestinationNode(this); this.listener = {}; this.audioWorklet = new AudioWorklet(this); this._auto = new Set();
+        super(); this.sampleRate = rate; this._f = 0; this._active = new SSet(); this._state = 'running';
+        this.destination = new AudioDestinationNode(this); this.listener = {}; this.audioWorklet = new AudioWorklet(this); this._auto = new SSet();
     }
     get state() { return this._state; }
     get currentTime() { return this._f / this.sampleRate; }

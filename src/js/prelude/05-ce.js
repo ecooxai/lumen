@@ -1,5 +1,5 @@
 const timeRanges = (r) => ({ length: r.length, start(i) { return r[i][0]; }, end(i) { return r[i][1]; } });
-const mediaEls = new Set();
+const mediaEls = new SSet();
 const mediaFire = (el, t) => el.dispatchEvent(new Event(t));
 const mediaLater = (el, t) => setTimeout(() => mediaFire(el, t), 0);
 const mediaRanges = (flat) => { const r = []; for (let i = 0; i + 1 < flat.length; i += 2) r.push([flat[i], flat[i + 1]]); return new TimeRanges(r); };
@@ -143,7 +143,7 @@ mk('HTMLMediaElement', HTMLElement, [], p => {
 Object.assign(H.HTMLMediaElement, { NETWORK_EMPTY: 0, NETWORK_IDLE: 1, NETWORK_LOADING: 2, NETWORK_NO_SOURCE: 3, HAVE_NOTHING: 0, HAVE_METADATA: 1, HAVE_CURRENT_DATA: 2, HAVE_FUTURE_DATA: 3, HAVE_ENOUGH_DATA: 4 });
 // A pending callback keeps its element alive, but completed registrations do
 // not. The native pump runs before RAF, only after a new presentation (or arm).
-const videoFrameStates = new WeakMap(), videoFramePending = new Set();
+const videoFrameStates = new WeakMap(), videoFramePending = new SSet();
 let videoFrameId = 0;
 function videoFramePoll(now) {
     const frames = [];
@@ -179,7 +179,7 @@ mk('HTMLVideoElement', H.HTMLMediaElement, ['video'], p => {
             const current = N.videoFrameInfo(this, 0); // native video-element brand check
             if (typeof fn !== 'function') throw new TypeError('Callback must be a function');
             let state = videoFrameStates.get(this);
-            if (!state) { state = {last:0, offset:0, callbacks:new Map()}; videoFrameStates.set(this,state); }
+            if (!state) { state = {last:0, offset:0, callbacks:new SMap()}; videoFrameStates.set(this,state); }
             // A registration after an idle gap must not receive an old frame.
             if (!state.callbacks.size && current) state.last = current[0];
             const id = videoFrameId = ((videoFrameId + 1) >>> 0) || 1;
@@ -210,7 +210,7 @@ function urlParts(p, attr) {
     acc(p, 'origin', function () { const u = get(this); return u ? u.origin : ''; });
     def(p, 'toString', function () { return this[attr]; });
 }
-const PLAIN = new Set('abbr address article aside b bdi bdo cite code dd dfn dt em figcaption figure footer header hgroup i kbd main mark nav noscript rp rt ruby s samp search section small strong sub summary sup u var wbr center nobr big tt acronym strike font marquee'.split(' '));
+const PLAIN = new SSet('abbr address article aside b bdi bdo cite code dd dfn dt em figcaption figure footer header hgroup i kbd main mark nav noscript rp rt ruby s samp search section small strong sub summary sup u var wbr center nobr big tt acronym strike font marquee'.split(' '));
 function protoFor(type, tag, ns) {
     switch (type) {
     case 1:
@@ -230,7 +230,7 @@ function protoFor(type, tag, ns) {
     return Node.prototype;
 }
 
-const registry = { byName: new Map(), byCtor: new Map(), waiting: new Map(), upgrading: [] };
+const registry = { byName: new SMap(), byCtor: new SMap(), waiting: new SMap(), upgrading: [] };
 const validCEName = (n) => /^[a-z][^\0\t\n\f\r />A-Z]*$/.test(n) && n.includes('-') && !/^(annotation-xml|color-profile|font-face|font-face-src|font-face-uri|font-face-format|font-face-name|missing-glyph)$/.test(n);
 function ceConstruct(nt) {
     if (registry.upgrading.length) { const el = registry.upgrading.pop(); Object.setPrototypeOf(el, nt.prototype); return el; }

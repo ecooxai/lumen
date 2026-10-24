@@ -38,7 +38,7 @@ function corsOk(reqUrl, finalUrl, hdrs, cred) {
 const hget = (hdrs, n) => { for (let i = 0; i + 1 < hdrs.length; i += 2) if (String(hdrs[i]).toLowerCase() === n) return String(hdrs[i + 1]).trim(); return null; };
 const CORS_UNSAFE_BYTE = /[\x00-\x08\x0A-\x1F"():<>?@\[\\\]{}\x7F]/;
 function corsUnsafeHeaders(flat) {
-    const out = new Set();
+    const out = new SSet();
     for (let i = 0; i + 1 < flat.length; i += 2) {
         const n = String(flat[i]).toLowerCase(), v = String(flat[i + 1]);
         if (n === 'origin') continue;
@@ -198,7 +198,7 @@ class WebSocket extends EventTarget {
         if (protocols !== null && typeof protocols === 'object' && typeof protocols[Symbol.iterator] !== 'function') protocols = protocols.protocols;
         if (!/^wss?:/.test(s)) throw new DOMException(`Failed to construct 'WebSocket': The URL's scheme must be either 'http', 'https', 'ws', or 'wss'. '${s.split(':')[0]}:' is not allowed.`, 'SyntaxError');
         const ps = protocols === undefined ? [] : typeof protocols === 'string' ? [protocols] : [...protocols].map(String);
-        if (new Set(ps.map(p => p.toLowerCase())).size !== ps.length || ps.some(p => !/^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/.test(p))) throw new DOMException("Failed to construct 'WebSocket': The subprotocol is invalid.", 'SyntaxError');
+        if (new SSet(ps.map(p => p.toLowerCase())).size !== ps.length || ps.some(p => !/^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/.test(p))) throw new DOMException("Failed to construct 'WebSocket': The subprotocol is invalid.", 'SyntaxError');
         def(this, '_s', { url: s, rs: 0, protocol: '', binaryType: 'blob', ps, buf: 0, dead: false });
         if (!cspConnect(s)) { def(this, '_id', 0); this._s.rs = 3; this._fail(); return; }
         def(this, '_id', N.wsOpen(s, ps.join(', '), location.origin, (type, data, code) => this._ev(type, data, code)));
@@ -253,7 +253,7 @@ const portList = t => (t && typeof t[Symbol.iterator] === 'function' ? [...t] : 
 class MessagePort extends EventTarget { constructor() { super(); this.onmessage = null; def(this, '_other', null); } postMessage(d, t) { const ps = portList(t), r = this._wk || (this._other && this._other._wk); if (r) { N.workerPost(r[0], { __lumenPort: r[1], data: d, xfer: ps.map(p => { const k = ++portSeq; p._wk = [r[0], k]; if (p._other) remotePorts.set(k, p._other); return k; }) }); return; } const x = this._xt || (this._other && this._other._xt); if (x) { N.portTo(x[0], x[1], d, ps.map(p => exportPort(p, x[0]))); return; } const o = this._other; if (o) { const c = structuredClone(d); N.timer(() => o._deliver(c, ps), 0, false, true); } } _deliver(data, ports) { dispatch(this, new MessageEvent('message', { data, ports: ports || [] }), true); } start() {} close() { this._other = null; } }
 // A port sent to another tab (another isolate) is bridged by a random key: the receiving tab gets a proxy port
 // keyed by it, and each side's tabPorts maps the key to its local end, so messages on either end cross over.
-const tabPorts = new Map();
+const tabPorts = new SMap();
 const tabKey = () => { const a = crypto.getRandomValues(new Uint32Array(2)); return a[0] * 2097152 + (a[1] & 2097151) || 1; };
 function exportPort(p, dest) { const k = tabKey(); def(p, '_xt', [dest, k]); if (p._other) tabPorts.set(k, p._other); return k; }
 function importPort(src, k) { const q = new MessagePort(); def(q, '_xt', [src, k]); tabPorts.set(k, q); return q; }
@@ -261,7 +261,7 @@ function portMessage(k, data, src, keys) { const p = tabPorts.get(k); if (p) p._
 class MessageChannel { constructor() { this.port1 = new MessagePort(); this.port2 = new MessagePort(); this.port1._other = this.port2; this.port2._other = this.port1; } }
 class BroadcastChannel extends EventTarget { constructor(n) { super(); this.name = String(n); } postMessage() {} close() {} }
 
-const workers = new Map(); let portSeq = 0; const remotePorts = new Map();
+const workers = new SMap(); let portSeq = 0; const remotePorts = new SMap();
 class Worker extends EventTarget {
     constructor(url, opts) {
         super();
@@ -280,7 +280,7 @@ class Worker extends EventTarget {
 }
 /* A SharedWorker: one worker per script URL and name in this document; each SharedWorker object connects to it
    through its own MessageChannel, which the worker's global receives as a connect event. */
-const SHARED_WORKER = Symbol('shared'), sharedWorkers = new Map();
+const SHARED_WORKER = Symbol('shared'), sharedWorkers = new SMap();
 class SharedWorker extends EventTarget {
     constructor(url, opts = undefined) {
         super();
@@ -291,7 +291,7 @@ class SharedWorker extends EventTarget {
         let entry = sharedWorkers.get(key);
         if (!entry || !entry.w._id) {
             const w = new Worker(href, { name, type: o.type, [SHARED_WORKER]: true });
-            entry = { w, objs: new Set() };
+            entry = { w, objs: new SSet() };
             w.onerror = e => { e.preventDefault(); for (const s of entry.objs) dispatch(s, new Event('error'), true); };
             sharedWorkers.set(key, entry);
         }
@@ -327,7 +327,7 @@ function workerEvent(id, kind, data, message, filename, lineno, colno) {
    this side drives install and activate ({__lumenSW} messages, one lifecycle step per task) and relays messages
    between the worker's clients and navigator.serviceWorker. Fetches are not intercepted. An idle worker stops after
    30 s and starts again, without install or activate, when a message is sent to it. */
-const SWK = Symbol('ServiceWorker'), swRegs = new Map();
+const SWK = Symbol('ServiceWorker'), swRegs = new SMap();
 let swClientId = '', swCtrl = null, swReadyResolve = null, regSet, regUvc, swSetState, swRec;
 const swClient = () => ({ id: swClientId || (swClientId = crypto.randomUUID()), url: location.href, type: 'window',
     frameType: G.parent !== G ? 'nested' : 'top-level', visibility: document.visibilityState, focused: document.hasFocus() });

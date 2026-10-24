@@ -127,7 +127,7 @@ function waCompute(eff) {
     return r;
 }
 /* ---- keyframes ---- */
-const WA_PROPS = new Set(('align-content align-items align-self all aspect-ratio backdrop-filter background background-attachment background-blend-mode background-clip background-color background-image background-origin background-position background-position-x background-position-y background-repeat background-size baseline-shift block-size border border-block border-block-end border-block-start border-bottom border-bottom-color border-bottom-left-radius border-bottom-right-radius border-bottom-style border-bottom-width border-collapse border-color border-image border-image-outset border-image-repeat border-image-slice border-image-source border-image-width border-inline border-inline-end border-inline-start border-left border-left-color border-left-style border-left-width border-radius border-right border-right-color border-right-style border-right-width border-spacing border-style border-top border-top-color border-top-left-radius border-top-right-radius border-top-style border-top-width border-width bottom box-shadow box-sizing break-after break-before break-inside caption-side caret-color clear clip clip-path clip-rule color color-interpolation color-interpolation-filters color-scheme column-count column-fill column-gap column-rule column-rule-color column-rule-style column-rule-width column-span column-width columns content content-visibility counter-increment counter-reset counter-set cursor cx cy d display dominant-baseline empty-cells fill fill-opacity fill-rule filter flex flex-basis flex-direction flex-flow flex-grow flex-shrink flex-wrap float flood-color flood-opacity font font-family font-feature-settings font-kerning font-optical-sizing font-palette font-size font-size-adjust font-stretch font-style font-synthesis font-variant font-variant-caps font-variant-east-asian font-variant-ligatures font-variant-numeric font-variation-settings font-weight gap grid grid-area grid-auto-columns grid-auto-flow grid-auto-rows grid-column grid-column-end grid-column-gap grid-column-start grid-gap grid-row grid-row-end grid-row-gap grid-row-start grid-template grid-template-areas grid-template-columns grid-template-rows height hyphens image-orientation image-rendering inline-size inset inset-block inset-block-end inset-block-start inset-inline inset-inline-end inset-inline-start isolation justify-content justify-items justify-self left letter-spacing lighting-color line-break line-height list-style list-style-image list-style-position list-style-type margin margin-block margin-block-end margin-block-start margin-bottom margin-inline margin-inline-end margin-inline-start margin-left margin-right margin-top marker marker-end marker-mid marker-start mask mask-image mask-position mask-repeat mask-size mask-type math-depth max-block-size max-height max-inline-size max-width min-block-size min-height min-inline-size min-width mix-blend-mode object-fit object-position offset offset-anchor offset-distance offset-path offset-position offset-rotate opacity order orphans outline outline-color outline-offset outline-style outline-width overflow overflow-anchor overflow-clip-margin overflow-wrap overflow-x overflow-y overscroll-behavior overscroll-behavior-x overscroll-behavior-y padding padding-block padding-block-end padding-block-start padding-bottom padding-inline padding-inline-end padding-inline-start padding-left padding-right padding-top page-break-after page-break-before page-break-inside paint-order perspective perspective-origin place-content place-items place-self pointer-events position quotes r resize right rotate row-gap rx ry scale scroll-behavior scroll-margin scroll-padding scroll-snap-align scroll-snap-stop scroll-snap-type scrollbar-color scrollbar-gutter scrollbar-width shape-image-threshold shape-margin shape-outside shape-rendering stop-color stop-opacity stroke stroke-dasharray stroke-dashoffset stroke-linecap stroke-linejoin stroke-miterlimit stroke-opacity stroke-width tab-size table-layout text-align text-align-last text-anchor text-decoration text-decoration-color text-decoration-line text-decoration-skip-ink text-decoration-style text-decoration-thickness text-emphasis text-emphasis-color text-emphasis-position text-emphasis-style text-indent text-overflow text-rendering text-shadow text-size-adjust text-transform text-underline-offset text-underline-position text-wrap top touch-action transform transform-box transform-origin transform-style translate user-select vector-effect vertical-align visibility white-space white-space-collapse widows width word-break word-spacing word-wrap x y z-index zoom -webkit-line-clamp -webkit-mask-image -webkit-text-stroke-color -webkit-text-fill-color -webkit-text-stroke-width').split(' '));
+const WA_PROPS = new SSet(('align-content align-items align-self all aspect-ratio backdrop-filter background background-attachment background-blend-mode background-clip background-color background-image background-origin background-position background-position-x background-position-y background-repeat background-size baseline-shift block-size border border-block border-block-end border-block-start border-bottom border-bottom-color border-bottom-left-radius border-bottom-right-radius border-bottom-style border-bottom-width border-collapse border-color border-image border-image-outset border-image-repeat border-image-slice border-image-source border-image-width border-inline border-inline-end border-inline-start border-left border-left-color border-left-style border-left-width border-radius border-right border-right-color border-right-style border-right-width border-spacing border-style border-top border-top-color border-top-left-radius border-top-right-radius border-top-style border-top-width border-width bottom box-shadow box-sizing break-after break-before break-inside caption-side caret-color clear clip clip-path clip-rule color color-interpolation color-interpolation-filters color-scheme column-count column-fill column-gap column-rule column-rule-color column-rule-style column-rule-width column-span column-width columns content content-visibility counter-increment counter-reset counter-set cursor cx cy d display dominant-baseline empty-cells fill fill-opacity fill-rule filter flex flex-basis flex-direction flex-flow flex-grow flex-shrink flex-wrap float flood-color flood-opacity font font-family font-feature-settings font-kerning font-optical-sizing font-palette font-size font-size-adjust font-stretch font-style font-synthesis font-variant font-variant-caps font-variant-east-asian font-variant-ligatures font-variant-numeric font-variation-settings font-weight gap grid grid-area grid-auto-columns grid-auto-flow grid-auto-rows grid-column grid-column-end grid-column-gap grid-column-start grid-gap grid-row grid-row-end grid-row-gap grid-row-start grid-template grid-template-areas grid-template-columns grid-template-rows height hyphens image-orientation image-rendering inline-size inset inset-block inset-block-end inset-block-start inset-inline inset-inline-end inset-inline-start isolation justify-content justify-items justify-self left letter-spacing lighting-color line-break line-height list-style list-style-image list-style-position list-style-type margin margin-block margin-block-end margin-block-start margin-bottom margin-inline margin-inline-end margin-inline-start margin-left margin-right margin-top marker marker-end marker-mid marker-start mask mask-image mask-position mask-repeat mask-size mask-type math-depth max-block-size max-height max-inline-size max-width min-block-size min-height min-inline-size min-width mix-blend-mode object-fit object-position offset offset-anchor offset-distance offset-path offset-position offset-rotate opacity order orphans outline outline-color outline-offset outline-style outline-width overflow overflow-anchor overflow-clip-margin overflow-wrap overflow-x overflow-y overscroll-behavior overscroll-behavior-x overscroll-behavior-y padding padding-block padding-block-end padding-block-start padding-bottom padding-inline padding-inline-end padding-inline-start padding-left padding-right padding-top page-break-after page-break-before page-break-inside paint-order perspective perspective-origin place-content place-items place-self pointer-events position quotes r resize right rotate row-gap rx ry scale scroll-behavior scroll-margin scroll-padding scroll-snap-align scroll-snap-stop scroll-snap-type scrollbar-color scrollbar-gutter scrollbar-width shape-image-threshold shape-margin shape-outside shape-rendering stop-color stop-opacity stroke stroke-dasharray stroke-dashoffset stroke-linecap stroke-linejoin stroke-miterlimit stroke-opacity stroke-width tab-size table-layout text-align text-align-last text-anchor text-decoration text-decoration-color text-decoration-line text-decoration-skip-ink text-decoration-style text-decoration-thickness text-emphasis text-emphasis-color text-emphasis-position text-emphasis-style text-indent text-overflow text-rendering text-shadow text-size-adjust text-transform text-underline-offset text-underline-position text-wrap top touch-action transform transform-box transform-origin transform-style translate user-select vector-effect vertical-align visibility white-space white-space-collapse widows width word-break word-spacing word-wrap x y z-index zoom -webkit-line-clamp -webkit-mask-image -webkit-text-stroke-color -webkit-text-fill-color -webkit-text-stroke-width').split(' '));
 const waPropOf = (k) => {
     if (k.startsWith('--')) return k;
     if (k === 'cssFloat') return 'float';
@@ -142,7 +142,7 @@ const WA_COMP = ['replace', 'add', 'accumulate'];
 const waComp = (v) => waEnum(v, [...WA_COMP, 'auto'], 'CompositeOperationOrAuto');
 const waOff = (v) => { if (v === null) return null; const n = +v; if (!isFinite(n)) throw waTypeErr('Failed to execute: Non-finite offset.'); return n; };
 function waReadKf(o, indexed) {
-    const c = o.composite, e = o.easing, off = o.offset, r = { props: new Map() };
+    const c = o.composite, e = o.easing, off = o.offset, r = { props: new SMap() };
     if (indexed) {
         r.composite = c === undefined ? [] : waSeq(c) ? [...c].map(waComp) : [waComp(c)];
         r.easing = e === undefined ? [] : waSeq(e) ? [...e].map(String) : [String(e)];
@@ -185,7 +185,7 @@ function waKeyframes(obj) {
         for (const e of list) {
             const last = out[out.length - 1];
             if (last && last.co === e.co) last.props.set(e.p, e.v);
-            else out.push({ offset: null, co: e.co, easing: 'linear', composite: 'auto', props: new Map([[e.p, e.v]]) });
+            else out.push({ offset: null, co: e.co, easing: 'linear', composite: 'auto', props: new SMap([[e.p, e.v]]) });
         }
         b.offset.forEach((o, i) => { if (i < out.length) out[i].offset = o; });
         waCheckOffsets(out);
@@ -236,9 +236,9 @@ function waJoin(toks) {
     }
     return s.replace(/\(\s+/g, '(').replace(/\s+\)/g, ')');
 }
-const WA_INT = new Set(['z-index', 'order', 'column-count', 'orphans', 'widows', '-webkit-line-clamp']);
+const WA_INT = new SSet(['z-index', 'order', 'column-count', 'orphans', 'widows', '-webkit-line-clamp']);
 const WA_NONNEG = /^(width|height|min-|max-|padding|border-.*width|border-.*radius|outline-width|font-size|line-height|flex-basis|flex-grow|flex-shrink|column-width|column-rule-width|stroke-width|r$|rx$|ry$|perspective|letter-spacing$^)/;
-const WA_UNIT01 = new Set(['opacity', 'fill-opacity', 'stroke-opacity', 'flood-opacity', 'stop-opacity', 'shape-image-threshold']);
+const WA_UNIT01 = new SSet(['opacity', 'fill-opacity', 'stroke-opacity', 'flood-opacity', 'stop-opacity', 'shape-image-threshold']);
 function waMix(prop, a, b, p, op) {   /* op: interpolate (p) or add (p ignored, b added to a) */
     const A = waTokens(a), B = waTokens(b);
     if (A.length !== B.length) return null;
@@ -356,7 +356,7 @@ class KeyframeEffect extends AnimationEffect {
         if (arguments.length === 1 && target instanceof KeyframeEffect) {
             const s = target;
             def(this, '_t', Object.assign({}, s._t)); def(this, '_target', s._target); def(this, '_pseudo', s._pseudo);
-            def(this, '_comp', s._comp); def(this, '_icomp', s._icomp); def(this, '_kfs', s._kfs.map(k => Object.assign({}, k, { props: new Map(k.props) }))); def(this, '_anim', null);
+            def(this, '_comp', s._comp); def(this, '_icomp', s._icomp); def(this, '_kfs', s._kfs.map(k => Object.assign({}, k, { props: new SMap(k.props) }))); def(this, '_anim', null);
             return;
         }
         if (target !== null && !(N.isNode(target) && N.type(target) === 1)) throw waTypeErr("Failed to construct 'KeyframeEffect': parameter 1 is not of type 'Element'.");
@@ -423,7 +423,7 @@ function waEffectValue(eff, prop, under, c) {
 }
 /* ---- timeline and frame loop ---- */
 let waFrameTime = null, waInFrame = false, waSeqN = 0, waLoop = false, waDirty = false;
-const waAll = new Set(), waApplied = new Map(), waEvents = [];
+const waAll = new SSet(), waApplied = new SMap(), waEvents = [];
 const waNow = () => { if (waInFrame && waFrameTime !== null) return waFrameTime; if (!waLoop) waKick(); return waFrameTime === null ? performance.now() : Math.max(waFrameTime, performance.now() - 1000 / 60); };
 function waInvalidate() { waDirty = true; waKick(); }
 function waKick() { if (waLoop) return; waLoop = true; N.raf((t) => { waLoop = false; waTick(t); }); }
@@ -443,11 +443,11 @@ function waTick(t) {
 /* the properties an animation-layer change touches won't start transitions on the next restyle */
 function trSuppressCss(el, a, b) {
     let s = trSuppress.get(el);
-    for (const css of [a || '', b || '']) for (const m of css.matchAll(/(?:^|; )([-a-z]+):/g)) { if (!s) trSuppress.set(el, s = new Set()); s.add(m[1]); }
+    for (const css of [a || '', b || '']) for (const m of css.matchAll(/(?:^|; )([-a-z]+):/g)) { if (!s) trSuppress.set(el, s = new SSet()); s.add(m[1]); }
 }
 function waFlush() {
     if (!waDirty) return; waDirty = false;
-    const byEl = new Map();
+    const byEl = new SMap();
     for (const a of [...waAll].sort((x, y) => x._seq - y._seq)) {
         const e = a._effect;
         if (!e || !(e instanceof KeyframeEffect) || !e._target || e._pseudo || a._replace === 'removed') continue;
@@ -456,7 +456,7 @@ function waFlush() {
     }
     for (const el of waApplied.keys()) if (!byEl.has(el)) { trSuppressCss(el, waApplied.get(el), ''); N.setAnimStyle(el, ''); waApplied.delete(el); }
     for (const [el, list] of byEl) {
-        const props = new Set(); for (const [e] of list) for (const k of e._kfs) for (const p of k.props.keys()) props.add(p);
+        const props = new SSet(); for (const [e] of list) for (const k of e._kfs) for (const p of k.props.keys()) props.add(p);
         const needBase = list.some(([e]) => e._comp !== 'replace' || e._icomp !== 'replace' || e._kfs.length < 2 || e._kfs[0].co !== 0 || e._kfs[e._kfs.length - 1].co !== 1 || e._kfs.some(k => k.composite !== 'auto' && k.composite !== 'replace'));
         if (needBase && waApplied.has(el)) { trSuppressCss(el, waApplied.get(el), ''); N.setAnimStyle(el, ''); waApplied.delete(el); }
         let css = '';
@@ -470,9 +470,9 @@ function waFlush() {
 }
 function waRemoveReplaced() {
     const list = [...waAll].filter(a => a._replaceable()).sort((x, y) => x._seq - y._seq);
-    const seen = new Map();
+    const seen = new SMap();
     for (let i = list.length - 1; i >= 0; i--) {
-        const a = list[i], el = a._effect._target, ps = seen.get(el) || new Set(), mine = new Set();
+        const a = list[i], el = a._effect._target, ps = seen.get(el) || new SSet(), mine = new SSet();
         for (const k of a._effect._kfs) for (const p of k.props.keys()) mine.add(p);
         if (a._replace === 'active' && mine.size && [...mine].every(p => ps.has(p))) {
             a._replace = 'removed'; waDirty = true;
@@ -725,7 +725,7 @@ class Animation extends EventTarget {
         if (!el.style || el.namespaceURI !== 'http://www.w3.org/1999/xhtml' && el.namespaceURI !== 'http://www.w3.org/2000/svg') throw new DOMException("Failed to execute 'commitStyles' on 'Animation': Target element does not have a style attribute.", 'NoModificationAllowedError');
         if (!el.isConnected || N.computed(el, 'display') === 'none') throw new DOMException("Failed to execute 'commitStyles' on 'Animation': Target element is not rendered.", 'InvalidStateError');
         const c = waCompute(e); if (c.progress === null) return;
-        const props = new Set(); for (const k of e._kfs) for (const p of k.props.keys()) props.add(p);
+        const props = new SSet(); for (const k of e._kfs) for (const p of k.props.keys()) props.add(p);
         waFlush();
         for (const p of props) el.style.setProperty(p, waEffectValue(e, p, N.computed(el, p) || '', c));
     }
@@ -738,7 +738,7 @@ const waGetAnims = (pred) => [...waAll].filter(a => {
 /* CSS transitions: restyle reports changed computed values (N.trTake, or fireAnim 'lumen-transition'), and each
    becomes a CSSTransition animating from the old to the new value. Values the animation layer itself writes are
    suppressed once so animations don't start transitions. */
-const trRunning = new Map(), trSuppress = new Map();
+const trRunning = new SMap(), trSuppress = new SMap();
 class CSSTransition extends Animation {
     get transitionProperty() { return this._trProp; }
 }
@@ -771,7 +771,7 @@ function trStart(el, packed) {
     const t0 = performance.now();
     setTimeout(() => { fire('transitionrun', Math.max(0, -delay)); if (delay <= 0 && a.playState !== 'idle') { started = true; fire('transitionstart', -delay); } }, 0);
     if (delay > 0) setTimeout(() => { if (!started && a.playState === 'running') { started = true; fire('transitionstart', 0); } }, delay);
-    if (!trRunning.has(el)) trRunning.set(el, new Map());
+    if (!trRunning.has(el)) trRunning.set(el, new SMap());
     trRunning.get(el).set(prop, a);
     a.play();
 }
@@ -788,7 +788,7 @@ function trPoll() {
     return l.length > 0;
 }
 /* CSS animations: when an element's animation-name list changes, its CSSAnimations are rebuilt from @keyframes */
-const caRunning = new Map();
+const caRunning = new SMap();
 class CSSAnimation extends Animation {
     get animationName() { return this._caName; }
 }

@@ -13,7 +13,7 @@ const rtcRange = (v, max, what) => { const n = Number(v); if (!Number.isFinite(n
 const rtcRO = (C, keys) => { for (const k of keys) Object.defineProperty(C.prototype, k, { get() { return this._[k]; }, configurable: true, enumerable: true }); };
 const rtcOn = (C, names) => { for (const n of names) Object.defineProperty(C.prototype, 'on' + n, { get() { return (this._on && this._on[n]) || null; }, set(f) { if (!this._on) def(this, '_on', {}); this._on[n] = typeof f === 'function' ? f : null; }, configurable: true, enumerable: true }); };
 const RTC_INTERNAL = Symbol('rtc');
-const rtcPeers = new Map();
+const rtcPeers = new SMap();
 
 const RTC_ERROR_DETAILS = ['data-channel-failure', 'dtls-failure', 'fingerprint-failure', 'sctp-failure', 'sdp-syntax-error', 'hardware-encoder-not-available', 'hardware-encoder-error'];
 class RTCError extends DOMException {
@@ -126,7 +126,7 @@ rtcRO(MediaStreamTrack, ['kind', 'id', 'label', 'muted', 'readyState']);
 rtcOn(MediaStreamTrack, ['mute', 'unmute', 'ended']);
 /* a microphone capture (N.mic*) shared by the tracks cloned from it; a 40 ms poll fans its mono 48 kHz PCM out to recorders and audio sources */
 class MicHub {
-    constructor(id) { this.id = id; this.refs = 1; this.subs = new Set(); this.timer = setInterval(() => this.poll(), 40); }
+    constructor(id) { this.id = id; this.refs = 1; this.subs = new SSet(); this.timer = setInterval(() => this.poll(), 40); }
     poll() {
         if (this.refs <= 0) return;
         const pcm = N.micRead(this.id);
@@ -145,8 +145,8 @@ const camTrack = id => { const h = new CamHub(id), f = h.info()[3]; const t = ne
    recorders and audio sources every 40 ms like a microphone's: its tracks end when the system stops the sharing */
 class ScreenHub {
     constructor(id, fps, audio) {
-        this.id = id; this.refs = 1; this.fps = fps; this.src = N.screenSource(id); this.display = 'monitor'; this.deviceId = 'screen:0:0'; this.tracks = new Set();
-        this.subs = new Set(); this.atimer = audio ? setInterval(() => this.poll(), 40) : 0;
+        this.id = id; this.refs = 1; this.fps = fps; this.src = N.screenSource(id); this.display = 'monitor'; this.deviceId = 'screen:0:0'; this.tracks = new SSet();
+        this.subs = new SSet(); this.atimer = audio ? setInterval(() => this.poll(), 40) : 0;
         this.timer = setInterval(() => {
             if (N.screenState(this.id) >= 0) return;
             clearInterval(this.timer); this.timer = 0;
@@ -180,7 +180,7 @@ class MediaStream extends EventTarget {
         super();
         const tracks = a instanceof MediaStream ? a.getTracks() : a === undefined ? [] : [...a];
         for (const t of tracks) if (!(t instanceof MediaStreamTrack)) throw new TypeError("Failed to construct 'MediaStream': Failed to convert value to 'MediaStreamTrack'.");
-        def(this, '_', { id: rtcUUID(), tracks: [...new Set(tracks)] });
+        def(this, '_', { id: rtcUUID(), tracks: [...new SSet(tracks)] });
     }
     get active() { return this._.tracks.some(t => t.readyState === 'live'); }
     getTracks() { return this._.tracks.slice(); }
@@ -380,7 +380,7 @@ class RTCRtpSender {
         if (tr && tr._.stopping) return Promise.reject(rtcErr('InvalidStateError'));
         return new Promise(r => rtcTask(() => { this._.track = t; if (t) this._.used = true; if (tr && tr._.nh) pc._natSender(tr); r(undefined); }));
     }
-    setStreams(...s) { if (this._.pc._.closed) throw rtcErr('InvalidStateError'); this._.streams = [...new Set(s)]; this._.pc._updateNeg(); }
+    setStreams(...s) { if (this._.pc._.closed) throw rtcErr('InvalidStateError'); this._.streams = [...new SSet(s)]; this._.pc._updateNeg(); }
     getStats() { return this._.pc.getStats(this._.track); }
 }
 class RTCRtpReceiver {
@@ -553,7 +553,7 @@ class RTCPeerConnection extends EventTarget {
             transceivers: [], channels: [], order: [], dataMid: null, dataInOrder: false, ice, dtls, sctp: null, dtlsReady: false,
             ufrag: rtcRand(4), pwd: rtcRand(24), cert: c.certificates[0] || new RTCCertificate(RTC_INTERNAL, Date.now() + 2592e6), cname: rtcRand(16),
             sessId: String(Date.now()) + (++rtcSessSeq), sessVer: 1, ops: [], nn: false, nnLater: false, restart: false, localCands: [], gatherGen: 0,
-            remoteCands: [], canTrickle: null, connected: false, peer: null, role: null, streams: new Map(), dcOpened: 0, dcClosed: 0, nextMid: 0, gatheredFor: null,
+            remoteCands: [], canTrickle: null, connected: false, peer: null, role: null, streams: new SMap(), dcOpened: 0, dcClosed: 0, nextMid: 0, gatheredFor: null,
         });
         rtcPeers.set(this._.ufrag, this);
     }
@@ -684,7 +684,7 @@ class RTCPeerConnection extends EventTarget {
         if (this._.dataInOrder && !secs.some(s => s.kind === 'application')) secs.push({ kind: 'application', mid: this._.dataMid });
         return secs;
     }
-    _freshMid() { const used = new Set([...this._.transceivers.map(t => t._.mid), this._.dataMid].filter(x => x !== null)); for (const d of [this._.curLocal, this._.curRemote, this._.pendRemote]) if (d) for (const m of rtcParseSdp(d.sdp)?.media || []) used.add(m.mid); while (used.has(String(this._.nextMid))) this._.nextMid++; return String(this._.nextMid++); }
+    _freshMid() { const used = new SSet([...this._.transceivers.map(t => t._.mid), this._.dataMid].filter(x => x !== null)); for (const d of [this._.curLocal, this._.curRemote, this._.pendRemote]) if (d) for (const m of rtcParseSdp(d.sdp)?.media || []) used.add(m.mid); while (used.has(String(this._.nextMid))) this._.nextMid++; return String(this._.nextMid++); }
     _codecList(t) { const all = RTC_CODECS[t._.kind]; return t._.prefs ? t._.prefs.concat(all.filter(c => /\/rtx$/.test(c.mimeType) && t._.prefs.some(p => c.sdpFmtpLine === 'apt=' + p.pt))) : all; }
     _codecsFor(x) {
         const t = this._.transceivers.find(k => k.sender === x || k.receiver === x);
@@ -1050,7 +1050,7 @@ class RTCPeerConnection extends EventTarget {
     }
     _assignId(dc) {
         if (dc._.id !== null) return true;
-        const used = new Set(this._.channels.filter(x => x._.readyState !== 'closed').map(x => x._.id));
+        const used = new SSet(this._.channels.filter(x => x._.readyState !== 'closed').map(x => x._.id));
         if (this._.peer) for (const x of this._.peer._.channels) if (x._.readyState !== 'closed') used.add(x._.id);
         for (let i = this._.role === 'client' ? 0 : 1; i < 65535; i += 2) if (!used.has(i)) { dc._.id = i; return true; }
         return false;
@@ -1123,7 +1123,7 @@ class RTCPeerConnection extends EventTarget {
             const rids = encs.filter(e => e.rid !== undefined).map(e => String(e.rid));
             if (rids.some(r => !/^[A-Za-z0-9]{1,255}$/.test(r))) throw new TypeError('Invalid rid.');
             if (encs.length > 1 && rids.length !== encs.length) throw new TypeError('rid is required for every encoding with simulcast.');
-            if (new Set(rids).size !== rids.length) throw new TypeError('Duplicate rid.');
+            if (new SSet(rids).size !== rids.length) throw new TypeError('Duplicate rid.');
             rtcCheckEncodings(encs, kind);
             for (const e of encs) if (e.codec !== undefined && !RTC_CODECS[kind].some(c => rtcCodecEq(c, e.codec))) throw rtcErr('OperationError', 'Unsupported codec in sendEncodings.');
             if (kind === 'audio') encs = encs.length > 1 ? [{ active: true }] : encs.map(e => { const o = Object.assign({}, e); delete o.scaleResolutionDownBy; return o; });
@@ -1148,7 +1148,7 @@ class RTCPeerConnection extends EventTarget {
         let t = this._.transceivers.find(x => !x._.stopping && x._.kind === track.kind && !x._.sender._.used && x._.sender._.track === null && !x._.addTrack && x._.fromSRD);
         if (t) { t._.addTrackLater = true; t._.sender._.track = track; t._.sender._.used = true; t._.direction = rtcMkDir(true, rtcHasRecv(t._.direction)); }
         else { t = this._addTr(track.kind, track, 'sendrecv'); t._.addTrack = true; }
-        t._.sender._.streams = [...new Set(streams)];
+        t._.sender._.streams = [...new SSet(streams)];
         this._updateNeg();
         return t._.sender;
     }
@@ -1210,7 +1210,7 @@ class RTCPeerConnection extends EventTarget {
         if (sel !== null && sel !== undefined && !(sel instanceof MediaStreamTrack)) return Promise.reject(new TypeError("Failed to execute 'getStats': parameter 1 is not of type 'MediaStreamTrack'."));
         if (sel && !this._.transceivers.some(t => t.sender.track === sel || t.receiver.track === sel)) return Promise.reject(rtcErr('InvalidAccessError', 'Track not found.'));
         return new Promise(res => rtcTask(() => {
-            const ts = performance.timeOrigin + performance.now(), m = new Map(), me = this._;
+            const ts = performance.timeOrigin + performance.now(), m = new SMap(), me = this._;
             const add = o => m.set(o.id, Object.assign({ timestamp: ts }, o));
             add({ id: 'P', type: 'peer-connection', dataChannelsOpened: me.dcOpened, dataChannelsClosed: me.dcClosed });
             const ns = me.nat ? N.rtcStats(me.nat.id) : null, sent = ns ? ns[0] : 0, recvd = ns ? ns[1] : 0, rtt = ns && ns[2] >= 0 ? ns[2] / 1000 : undefined;

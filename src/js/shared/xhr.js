@@ -9,7 +9,7 @@
      XHR_DOC_BODY(body, headers) a Document body serialized (setting Content-Type), or undefined for other bodies
      XHR_SYNC(method, url, headers, body, credentials)  a synchronous request:
                                  [status, statusText, url, headers, ArrayBuffer body, error] */
-const XHR_FORBIDDEN = new Set(['accept-charset', 'accept-encoding', 'access-control-request-headers', 'access-control-request-method', 'connection', 'content-length', 'cookie', 'cookie2', 'date', 'dnt', 'expect', 'host', 'keep-alive', 'origin', 'referer', 'set-cookie', 'te', 'trailer', 'transfer-encoding', 'upgrade', 'via']);
+const XHR_FORBIDDEN = new SSet(['accept-charset', 'accept-encoding', 'access-control-request-headers', 'access-control-request-method', 'connection', 'content-length', 'cookie', 'cookie2', 'date', 'dnt', 'expect', 'host', 'keep-alive', 'origin', 'referer', 'set-cookie', 'te', 'trailer', 'transfer-encoding', 'upgrade', 'via']);
 const xhrU32 = v => { v = Number(v); if (!Number.isFinite(v)) return 0; v = Math.trunc(v) % 4294967296; return v < 0 ? v + 4294967296 : v; };
 let xhrMakeTarget = false;
 class XMLHttpRequestEventTarget extends EventTarget { constructor() { if (!xhrMakeTarget) throw new TypeError('Illegal constructor'); super(); } }
@@ -81,7 +81,7 @@ class XMLHttpRequest extends XMLHttpRequestEventTarget {
     }
     getAllResponseHeaders() {
         if (this._rs < 2) return '';
-        const m = new Map();
+        const m = new SMap();
         for (const [k, v] of this._hdrList()) { if (k === 'set-cookie' || k === 'set-cookie2') continue; m.set(k, m.has(k) ? m.get(k) + ', ' + v : v); }
         return [...m.keys()].sort((a, b) => a < b ? -1 : a > b ? 1 : 0).map(k => k + ': ' + m.get(k) + '\r\n').join('');
     }

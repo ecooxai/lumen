@@ -2,7 +2,7 @@
    once their transaction may start (transactions whose scopes overlap with a writer run in creation
    order); a transaction commits when a task passes with no request outstanding, and an abort restores
    the stores it wrote. Errors bubble request -> transaction -> database (EventTarget __evp). */
-const idbDBs = new Map(), idbOps = new Map();
+const idbDBs = new SMap(), idbOps = new SMap();
 const idbErr = (name, msg) => new DOMException(msg || name, name);
 const idbTag = v => Object.prototype.toString.call(v).slice(8, -1);
 /* keys: number < Date < string < binary (ArrayBuffer) < array, kept as private copies */
@@ -15,7 +15,7 @@ function idbKey(v, seen) {
     if (tag === 'ArrayBuffer') return v.slice(0);
     if (ArrayBuffer.isView(v)) return v.buffer.slice(v.byteOffset, v.byteOffset + v.byteLength);
     if (!Array.isArray(v)) return undefined;
-    seen = seen || new Set();
+    seen = seen || new SSet();
     if (seen.has(v)) return undefined;
     seen.add(v);
     const o = [];
@@ -171,7 +171,7 @@ class IDBTransaction extends EventTarget {
         this.db = db; this.mode = mode; this.durability = durability || 'default'; this.error = null;
         this.onabort = null; this.oncomplete = null; this.onerror = null;
         def(this, '__evp', db); def(this, '_names', names); def(this, '_q', []); def(this, '_state', 'active'); def(this, '_ok', false);
-        def(this, '_busy', false); def(this, '_timer', 0); def(this, '_snap', new Map()); def(this, '_stores', new Map()); def(this, '_vsnap', null); def(this, '_onfinish', null);
+        def(this, '_busy', false); def(this, '_timer', 0); def(this, '_snap', new SMap()); def(this, '_stores', new SMap()); def(this, '_vsnap', null); def(this, '_onfinish', null);
         db._d.txs.push(this);
         this._wait();
     }
@@ -261,7 +261,7 @@ function idbTxDone(tx) {
 }
 
 class IDBObjectStore {
-    constructor(tx, s) { if (!idbMaking) throw new TypeError('Illegal constructor'); def(this, '_t', tx); def(this, '_s', s); def(this, '_ix', new Map()); }
+    constructor(tx, s) { if (!idbMaking) throw new TypeError('Illegal constructor'); def(this, '_t', tx); def(this, '_s', s); def(this, '_ix', new SMap()); }
     get name() { return this._s.name; }
     set name(v) {
         v = String(v); const t = this._t, d = t.db._d, s = this._s;
@@ -495,7 +495,7 @@ class IDBDatabase extends EventTarget {
         if (kp !== null && !idbPathOk(kp)) throw idbErr('SyntaxError', 'The key path is not valid.');
         if (this._d.stores.has(name)) throw idbErr('ConstraintError', 'An object store named ' + name + ' already exists.');
         if (o.autoIncrement && (kp === '' || Array.isArray(kp))) throw idbErr('InvalidAccessError', 'An auto-increment store needs a non-empty string key path or none.');
-        this._d.stores.set(name, { name, keyPath: idbCopyPath(kp), auto: !!o.autoIncrement, gen: 1, recs: [], ver: 0, indexes: new Map(), deleted: false });
+        this._d.stores.set(name, { name, keyPath: idbCopyPath(kp), auto: !!o.autoIncrement, gen: 1, recs: [], ver: 0, indexes: new SMap(), deleted: false });
         return t.objectStore(name);
     }
     deleteObjectStore(name) {
@@ -508,7 +508,7 @@ class IDBDatabase extends EventTarget {
         if (this._closing) throw idbErr('InvalidStateError', 'The database connection is closing.');
         if (this._vtx && this._vtx._state !== 'finished') throw idbErr('InvalidStateError', 'A version change transaction is running.');
         names = typeof names === 'string' ? [names] : [...names].map(String);
-        names = [...new Set(names)].sort();
+        names = [...new SSet(names)].sort();
         if (!names.length) throw idbErr('InvalidAccessError', 'The scope is empty.');
         for (const n of names) if (!this._d.stores.has(n)) throw idbErr('NotFoundError', 'No object store named ' + n + '.');
         mode = mode === undefined ? 'readonly' : String(mode);
@@ -524,7 +524,7 @@ function idbQueue(name, fn) {
     const next = prev.then(() => new Promise(done => setTimeout(() => { try { fn(done); } catch (e) { report(e); done(); } })));
     idbOps.set(name, next);
 }
-const idbDB = name => { let d = idbDBs.get(name); if (!d) { d = { name, version: 0, stores: new Map(), conns: new Set(), txs: [], waiters: [] }; idbDBs.set(name, d); } return d; };
+const idbDB = name => { let d = idbDBs.get(name); if (!d) { d = { name, version: 0, stores: new SMap(), conns: new SSet(), txs: [], waiters: [] }; idbDBs.set(name, d); } return d; };
 function idbBlock(d, req, oldV, newV, then) {   /* tell the other connections; wait for them to close */
     for (const c of [...d.conns]) if (!c._closing) dispatch(c, new IDBVersionChangeEvent('versionchange', { oldVersion: oldV, newVersion: newV }), true);
     if (!d.conns.size) { then(); return; }
@@ -546,7 +546,7 @@ class IDBFactory {
             idbBlock(d, req, old, want, () => {
                 d.conns.add(conn);
                 const tx = idbNew(IDBTransaction, conn, [], 'versionchange');
-                tx._vsnap = { version: old, stores: new Map(d.stores), idx: new Map([...d.stores.values()].map(s => [s, { indexes: new Map(s.indexes), name: s.name }])) };
+                tx._vsnap = { version: old, stores: new SMap(d.stores), idx: new SMap([...d.stores.values()].map(s => [s, { indexes: new SMap(s.indexes), name: s.name }])) };
                 d.version = want; conn._vtx = tx;
                 tx._onfinish = aborted => {
                     conn._vtx = null; req.transaction = null;

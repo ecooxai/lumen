@@ -16,7 +16,7 @@ const elKids = (n) => { const a = []; for (let c = N.first(n); c; c = N.next(c))
 const LIVE_KEY = Symbol.for('lumen:live-ranges');
 const topLiveSets = () => { try { const t = N.topWin(); if (t && typeof t === 'object' && t !== G && t[LIVE_KEY]) return t[LIVE_KEY]; } catch (e) {} return null; };
 let [liveRanges, liveIters] = (() => {
-    const sets = topLiveSets() || [new Set(), new Set()];
+    const sets = topLiveSets() || [new SSet(), new SSet()];
     Object.defineProperty(G, LIVE_KEY, { value: sets, writable: true, configurable: true });
     return sets;
 })();
@@ -132,7 +132,7 @@ const liveHandler = {
 /* HTMLCollection named properties: the first element whose id is the name, or an HTML element whose name attribute is */
 const collFind = (a, k) => { for (const e of a) if (N.attr(e, 'id') === k || (N.ns(e) === 0 && N.attr(e, 'name') === k)) return e; return null; };
 function collNames(a) {
-    const out = new Set();
+    const out = new SSet();
     for (const e of a) {
         const id = N.attr(e, 'id'); if (id) out.add(id);
         if (N.ns(e) === 0) { const nm = N.attr(e, 'name'); if (nm) out.add(nm); }
@@ -583,7 +583,7 @@ function mkAttr(el, ns, pfx, ln, v, doc) {
 const attrKey = (ns, ln) => (ns ?? '') + '\u0000' + ln;
 /* the attribute node of el's attribute (ns, ln), made on first use */
 function attrNode(el, ns, pfx, ln) {
-    let m = attrNodes.get(el); if (!m) attrNodes.set(el, m = new Map());
+    let m = attrNodes.get(el); if (!m) attrNodes.set(el, m = new SMap());
     const k = attrKey(ns, ln);
     let a = m.get(k);
     if (!a || a._el !== el) m.set(k, a = mkAttr(el, ns, pfx, ln, '', null));
@@ -675,7 +675,7 @@ const tokThis = (o, op) => { if (!tokLists.has(o)) throw new TypeError(`Failed t
 const tokNeed = (n, want, op) => { if (n < want) throw new TypeError(`Failed to execute '${op}' on 'DOMTokenList': ${want} argument${want > 1 ? 's' : ''} required, but only ${n} present.`); };
 class DOMTokenList {
     constructor(...a) { if (a[0] !== TOK_KEY) illegal(); def(this, '_el', a[1]); def(this, '_attr', a[2]); const p = new Proxy(this, tokHandler); tokLists.add(p); return p; }
-    _get() { const v = N.attr(this._el, this._attr); return v ? [...new Set(v.split(/[\t\n\f\r ]+/).filter(Boolean))] : []; }
+    _get() { const v = N.attr(this._el, this._attr); return v ? [...new SSet(v.split(/[\t\n\f\r ]+/).filter(Boolean))] : []; }
     _set(a) { if (!a.length && N.attr(this._el, this._attr) == null) return; this._el.setAttribute(this._attr, a.join(' ')); }
     static _empty(t) { if (!t) throw new DOMException('The token provided must not be empty.', 'SyntaxError'); }
     static _ws(t) { if (/[\t\n\f\r ]/.test(t)) throw new DOMException(`The token provided ('${t}') contains HTML space characters, which are not valid in tokens.`, 'InvalidCharacterError'); }

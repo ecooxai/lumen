@@ -283,7 +283,7 @@ function c2dXf(to, from) {
         c2dEnc = new Uint8Array(16385);
         for (let i = 0; i <= 16384; i++) { const v = i / 16384; c2dEnc[i] = Math.round(255 * (v <= 0.0031308 ? v * 12.92 : 1.055 * v ** (1 / 2.4) - 0.055)); }
     }
-    const p3 = c => c === 'display-p3', M = p3(to) === p3(from) ? [1, 0, 0, 0, 1, 0, 0, 0, 1] : p3(to) ? C2D_TOP3 : C2D_TOSRGB, memo = new Map();
+    const p3 = c => c === 'display-p3', M = p3(to) === p3(from) ? [1, 0, 0, 0, 1, 0, 0, 0, 1] : p3(to) ? C2D_TOP3 : C2D_TOSRGB, memo = new SMap();
     const lin = from === 'srgb-linear' ? i => i / 255 : i => c2dLin[i], enc = to === 'srgb-linear' ? v => Math.round(clamp01(v) * 255) : v => c2dEnc[Math.round(clamp01(v) * 16384)];
     return (r, g, b) => {
         const k = (r << 16) | (g << 8) | b;

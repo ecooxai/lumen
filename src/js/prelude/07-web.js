@@ -35,7 +35,7 @@ const ENCN = N;
 /*@shared encoding.js*/
 const ZN = N;
 /*@shared compression.js*/
-const objectURLs = new Map();
+const objectURLs = new SMap();
 /* a blob: URL's path ends with a random UUID (version 4) */
 const blobUUID = () => { const h = [...Array(32)].map(() => (Math.random() * 16 | 0).toString(16)); h[12] = '4'; h[16] = '89ab'[Math.random() * 4 | 0]; const s = h.join(''); return `${s.slice(0, 8)}-${s.slice(8, 12)}-${s.slice(12, 16)}-${s.slice(16, 20)}-${s.slice(20)}`; };
 const URLN = N;

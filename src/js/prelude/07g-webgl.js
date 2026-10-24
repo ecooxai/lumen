@@ -638,10 +638,10 @@ class WebGL2RenderingContext { constructor() { glIllegal(); } }
 function glInit(g, id) {
     const s = g._;
     s.id = id; s.lost = false; s.errs = []; s.dirty = false; s.exts = {}; s.ctf = [];
-    s.m = GL_KINDS.map(() => new Map());
+    s.m = GL_KINDS.map(() => new SMap());
     s.vao0 = glVao(null); s.vao = s.vao0; s.abuf = null; s.prog = null; s.dfb = null; s.rfb = null;
     s.flip = false; s.premul = false; s.conv = 0x9244;
-    s.dexts = new Set(N.gl.exts(id).split(' '));
+    s.dexts = new SSet(N.gl.exts(id).split(' '));
     s.maxAttr = N.gl.getParameter(id, 0x8869) || 16;
     const z = N.gl.size(id); s.w = z[0]; s.h = z[1];
     if (glReg) glReg.register(g, id, g);

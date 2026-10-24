@@ -4,8 +4,8 @@ const GPU_ID = Symbol('gpu');
 const GPUI = Symbol('gpu internal');
 const gpuIllegal = t => { if (t !== GPUI) throw new TypeError('Illegal constructor'); };
 const gpuReg = typeof FinalizationRegistry === 'function' ? new FinalizationRegistry(id => N.gpu.release(id)) : null;
-const gpuTickets = new Map();      /* ticket -> (a, message) */
-const gpuDevices = new Map();      /* device id -> WeakRef(GPUDevice), for its errors and loss */
+const gpuTickets = new SMap();      /* ticket -> (a, message) */
+const gpuDevices = new SMap();      /* device id -> WeakRef(GPUDevice), for its errors and loss */
 let gpuInited = false;
 const gpuErr = (name, msg) => new DOMException(msg, name);
 function gpuEvent(kind, t, a, msg, type) {
@@ -33,7 +33,7 @@ const gpuRO = (C, keys) => { for (const k of keys) Object.defineProperty(C.proto
 const gpuDict = d => d === undefined || d === null ? {} : typeof d === 'object' ? d : (() => { throw new TypeError('The descriptor is not a dictionary.'); })();
 
 const GPU_FEATURES = 'core-features-and-limits depth-clip-control depth32float-stencil8 texture-compression-bc texture-compression-bc-sliced-3d texture-compression-etc2 texture-compression-astc texture-compression-astc-sliced-3d timestamp-query indirect-first-instance shader-f16 rg11b10ufloat-renderable bgra8unorm-storage float32-filterable float32-blendable clip-distances dual-source-blending subgroups texture-formats-tier1 texture-formats-tier2 primitive-index texture-component-swizzle'.split(' ');
-const GPU_FEATURE_OF = new Map(GPU_FEATURES.map(f => [f.replace(/-/g, ''), f]));
+const GPU_FEATURE_OF = new SMap(GPU_FEATURES.map(f => [f.replace(/-/g, ''), f]));
 const GPU_LIMITS = 'maxTextureDimension1D maxTextureDimension2D maxTextureDimension3D maxTextureArrayLayers maxBindGroups maxBindGroupsPlusVertexBuffers maxBindingsPerBindGroup maxDynamicUniformBuffersPerPipelineLayout maxDynamicStorageBuffersPerPipelineLayout maxSampledTexturesPerShaderStage maxSamplersPerShaderStage maxStorageBuffersPerShaderStage maxStorageTexturesPerShaderStage maxUniformBuffersPerShaderStage maxUniformBufferBindingSize maxStorageBufferBindingSize minUniformBufferOffsetAlignment minStorageBufferOffsetAlignment maxVertexBuffers maxBufferSize maxVertexAttributes maxVertexBufferArrayStride maxInterStageShaderVariables maxColorAttachments maxColorAttachmentBytesPerSample maxComputeWorkgroupStorageSize maxComputeInvocationsPerWorkgroup maxComputeWorkgroupSizeX maxComputeWorkgroupSizeY maxComputeWorkgroupSizeZ maxComputeWorkgroupsPerDimension'.split(' ');
 
 class GPUSupportedFeatures {
@@ -46,7 +46,7 @@ class GPUSupportedFeatures {
     forEach(f, t) { for (const k of this._) f.call(t, k, k, this); }
     [Symbol.iterator]() { return this._.values(); }
 }
-const gpuFeatures = names => { const o = Object.create(GPUSupportedFeatures.prototype); def(o, '_', new Set((names || []).map(n => GPU_FEATURE_OF.get(n)).filter(Boolean))); return o; };
+const gpuFeatures = names => { const o = Object.create(GPUSupportedFeatures.prototype); def(o, '_', new SSet((names || []).map(n => GPU_FEATURE_OF.get(n)).filter(Boolean))); return o; };
 class WGSLLanguageFeatures extends GPUSupportedFeatures {}
 class GPUSupportedLimits { constructor(t) { gpuIllegal(t); } }
 gpuRO(GPUSupportedLimits, GPU_LIMITS);

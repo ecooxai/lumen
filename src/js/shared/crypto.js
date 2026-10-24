@@ -170,7 +170,7 @@ const jwkCommon = (jwk, kty, use, usages, extractable) => {
     if (jwk.kty !== kty) throw dataError(`The JWK 'kty' member was not '${kty}'`);
     if (usages.length && jwk.use !== undefined && jwk.use !== use) throw dataError(`The JWK 'use' member was not '${use}'`);
     if (jwk.key_ops !== undefined) {
-        if (new Set(jwk.key_ops).size !== jwk.key_ops.length) throw dataError("The JWK 'key_ops' member contains duplicates");
+        if (new SSet(jwk.key_ops).size !== jwk.key_ops.length) throw dataError("The JWK 'key_ops' member contains duplicates");
         if (usages.some(u => !jwk.key_ops.includes(u))) throw dataError("The JWK 'key_ops' member does not include the requested usages");
     }
     if (jwk.ext === false && extractable) throw dataError("The JWK 'ext' member was false but the key is requested to be extractable");
