@@ -474,6 +474,7 @@ const dispatch = (t, ev, trusted) => { if (trusted) evTrusted(ev); return fireOn
 )JS"
 #include "idb_shared.inc"
 #include "color_shared.inc"
+#include "geometry_shared.inc"
 #include "canvas2d_shared.inc"
 #include "fontface_shared.inc"
 R"JS(
@@ -695,7 +696,7 @@ const api = {
     btoa, atob, TextEncoder, TextDecoder, TextEncoderStream, TextDecoderStream, CompressionStream, DecompressionStream, ReadableStream, ReadableStreamDefaultReader, ReadableStreamBYOBReader,
     ReadableStreamDefaultController, ReadableByteStreamController, ReadableStreamBYOBRequest, WritableStream, WritableStreamDefaultWriter,
     WritableStreamDefaultController, TransformStream, TransformStreamDefaultController, ByteLengthQueuingStrategy, CountQueuingStrategy, Blob, File, FileReader, FileReaderSync, URL, URLSearchParams, Headers, Request, Response, FormData, fetch, Cache, CacheStorage, caches, URLPattern, XMLHttpRequest, XMLHttpRequestEventTarget, XMLHttpRequestUpload, ProgressEvent, performance, console,
-    Event, MessageEvent, MessagePort, MessageChannel, ErrorEvent, AbortController, AbortSignal, Observable, Subscriber, CustomEvent, PromiseRejectionEvent, EventTarget, DOMException, QuotaExceededError, Crypto,
+    Event, MessageEvent, MessagePort, MessageChannel, ErrorEvent, AbortController, AbortSignal, Observable, Subscriber, CustomEvent, PromiseRejectionEvent, EventTarget, DOMException, QuotaExceededError, DOMPointReadOnly, DOMPoint, DOMRectReadOnly, DOMRect, DOMQuad, DOMMatrixReadOnly, DOMMatrix, Crypto,
     ...(secureContext ? { CryptoKey, SubtleCrypto } : {}), WorkerGlobalScope, DedicatedWorkerGlobalScope, WorkerLocation, WorkerNavigator,
     ImageData, Path2D, CanvasGradient, CanvasPattern, TextMetrics, OffscreenCanvas, OffscreenCanvasRenderingContext2D, ImageBitmap: C2IB, createImageBitmap, FontFace, fonts,
     IDBFactory, IDBDatabase, IDBTransaction, IDBObjectStore, IDBIndex, IDBCursor, IDBCursorWithValue, IDBKeyRange, IDBRecord, IDBRequest, IDBOpenDBRequest, IDBVersionChangeEvent, DOMStringList, indexedDB,

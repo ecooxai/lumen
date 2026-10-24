@@ -547,3 +547,9 @@ broke the whole page prelude: 33 ctest failures).
   next commit: empty data, reported size kept); exif-orientation 0/7; ImageBitmap serializable/transfer 0/12 each;
   requestPaint/draw-element-image (tentative) 330; getTextClusters 15; DOMPoint in workers 12; filters ~33.
   Layers + TextMetrics methods committed 0770437 (not yet WPT-run).
+- bcac952: srgb-linear canvas/ImageData space (C2D_SPACES; c2dXf(to, from) handles transfer + primaries); oversized
+  createImageBitmap keeps w/h with empty data.
+- NEXT COMMIT: real Geometry Interfaces in src/js/shared/geometry.js (DOMPoint[ReadOnly], DOMRect[ReadOnly], DOMQuad,
+  DOMMatrix[ReadOnly] 4x4 with all ops, fromMatrix validate/fixup, CSS transform-list parsing in windows only,
+  WebKitCSSMatrix alias) on pages and workers; replaced the 06c stubs and the 01-events DOMRect. Smoke /tmp/geo.html,
+  /tmp/geow.html. Needs a WPT run of /css/geometry/ and /html/canvas/ (getTransform), /svg/ (uses DOMMatrix).

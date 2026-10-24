@@ -33,14 +33,7 @@ function report(e) {
 
 /*@shared domexception.js*/
 /*@shared quota.js*/
-class DOMRectReadOnly {
-    constructor(x = 0, y = 0, w = 0, h = 0) { this.x = x; this.y = y; this.width = w; this.height = h; }
-    get left() { return Math.min(this.x, this.x + this.width); } get right() { return Math.max(this.x, this.x + this.width); }
-    get top() { return Math.min(this.y, this.y + this.height); } get bottom() { return Math.max(this.y, this.y + this.height); }
-    toJSON() { const { x, y, width, height, top, right, bottom, left } = this; return { x, y, width, height, top, right, bottom, left }; }
-    static fromRect(r = {}) { return new this(r.x, r.y, r.width, r.height); }
-}
-class DOMRect extends DOMRectReadOnly {}
+/*@shared geometry.js*/
 
 const EVN = N;
 /*@shared event.js*/
