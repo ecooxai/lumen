@@ -745,3 +745,5 @@ broke the whole page prelude: 33 ctest failures).
   specified colour canonicalisation (03-element.js specColor/SPEC_COLOR_PROPS) written; smoke /tmp/sc.html; unbuilt
 - committed specified colours (5467407); not yet WPT-tested
   shorthandPart (03-element.js) written: longhand reads derived from stored shorthand; smoke /tmp/sh.html
+- committed shorthandPart (acad551); not WPT-tested
+  computed insets: % resolved against containing block for positioned elements (style.c computed_of); unbuilt

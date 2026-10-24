@@ -4109,10 +4109,23 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
     else if (!strcmp(prop, "min-height")) len_str(&b, s->min_height, "auto");
     else if (!strcmp(prop, "max-width")) len_str(&b, s->max_width, "none");
     else if (!strcmp(prop, "max-height")) len_str(&b, s->max_height, "none");
-    else if (!strcmp(prop, "top")) len_str(&b, s->inset[0], "auto");
-    else if (!strcmp(prop, "right")) len_str(&b, s->inset[1], "auto");
-    else if (!strcmp(prop, "bottom")) len_str(&b, s->inset[2], "auto");
-    else if (!strcmp(prop, "left")) len_str(&b, s->inset[3], "auto");
+    else if (!strcmp(prop, "top") || !strcmp(prop, "right") || !strcmp(prop, "bottom") || !strcmp(prop, "left")) {
+        int i = prop[0] == 't' ? 0 : prop[0] == 'r' ? 1 : prop[0] == 'b' ? 2 : 3;
+        Length l = s->inset[i];
+        const Box *cb = NULL;
+        /* positioned boxes resolve percentages against the containing block */
+        if (el && el->box && s->position != P_STATIC && l.kind == LK_LEN && l.pct) {
+            bool abs = s->position == P_ABSOLUTE || s->position == P_FIXED;
+            for (const Node *a = el->parent; a && !cb; a = a->parent)
+                if (a->type == NODE_ELEMENT && a->box && (!abs || (a->style && a->style->position != P_STATIC) || !a->parent || a->parent->type != NODE_ELEMENT)) cb = a->box;
+        }
+        if (cb) {
+            bool vert = i == 0 || i == 2;
+            float size = vert ? cb->h - cb->b[0] - cb->b[2] : cb->w - cb->b[1] - cb->b[3];
+            if (!(s->position == P_ABSOLUTE || s->position == P_FIXED)) size -= vert ? cb->p[0] + cb->p[2] : cb->p[1] + cb->p[3];
+            sb_printf(&b, "%gpx", l.px + l.pct * size / 100);
+        } else len_str(&b, l, "auto");
+    }
     else if (!strcmp(prop, "flex-grow")) sb_printf(&b, "%g", s->flex_grow);
     else if (!strcmp(prop, "flex-shrink")) sb_printf(&b, "%g", s->flex_shrink);
     else if (!strcmp(prop, "flex-basis")) len_str(&b, s->flex_basis, "auto");
