@@ -540,3 +540,10 @@ broke the whole page prelude: 33 ctest failures).
   c2dMeasure; measureText keeps text+font in _); beginLayer/endLayer (s.layers stack of {px, st, depth}; endLayer
   composites the layer bitmap with the beginLayer-time alpha/op/shadow/clip; restore can't pop past a layer).
   Smoke /tmp/c2dl.html. Run 125 (canvas + the-img-element, 2870572 build) in progress.
+- RUN 125 (2870572: colour spaces + shared createImageBitmap + ICC): canvas 66.3% -> 71.3% (4127/5787); img 24.3% flat;
+  no crash; monitor clean (peak RSS 342 MB). Wide-gamut drawImage tests 76 -> 124/192 each; pattern-canvas, ImageData,
+  canvas sources all pass. Remaining: P3/Adobe image on P3 canvas needs wide source data (keep a P3 copy of images with
+  wide ICC profiles); 'srgb-linear' (15); video sources 0/24; createImageBitmap oversized resize must keep w/h (fixed
+  next commit: empty data, reported size kept); exif-orientation 0/7; ImageBitmap serializable/transfer 0/12 each;
+  requestPaint/draw-element-image (tentative) 330; getTextClusters 15; DOMPoint in workers 12; filters ~33.
+  Layers + TextMetrics methods committed 0770437 (not yet WPT-run).

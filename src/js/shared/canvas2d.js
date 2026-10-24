@@ -48,7 +48,7 @@ class ImageData {
             this.#w = sw; this.#h = sh; this.#d = new Uint8ClampedArray(sw * sh * 4); settings = c;
         }
         const cs = settings != null && settings.colorSpace !== undefined ? String(settings.colorSpace) : 'srgb';
-        if (cs !== 'srgb' && cs !== 'display-p3') throw new TypeError(`The provided value '${cs}' is not a valid enum value of type PredefinedColorSpace.`);
+        if (!C2D_SPACES.includes(cs)) throw new TypeError(`The provided value '${cs}' is not a valid enum value of type PredefinedColorSpace.`);
         this.#cs = cs;
     }
     get width() { return this.#w; }
@@ -266,24 +266,26 @@ for (const [k, f] of Object.entries(PATH_METHODS)) Object.defineProperty(Path2D.
 const premul = (r, g, b, a) => { const A = Math.round(a * 255), k = A / 255; return ((A << 24) | (Math.round(r * 255 * k) << 16) | (Math.round(g * 255 * k) << 8) | Math.round(b * 255 * k)) >>> 0; };
 const colorNum3 = v => { const r = +v.toFixed(6); return String(Object.is(r, -0) ? 0 : r); };
 const clamp01 = v => Math.max(0, Math.min(1, v));
+const C2D_SPACES = ['srgb', 'display-p3', 'srgb-linear'];
 /* 'srgb' <-> 'display-p3' for 8-bit values: same transfer curve, different primaries (linear-light matrices) */
 const C2D_TOP3 = [0.8224621, 0.177538, 0, 0.0331941, 0.9668058, 0, 0.0170827, 0.0723974, 0.9105199];
 const C2D_TOSRGB = [1.2249401, -0.2249404, 0, -0.0420569, 1.0420571, 0, -0.0196376, -0.0786361, 1.0982735];
 let c2dLin = null, c2dEnc = null;
-/* a function (r, g, b) -> 0xRRGGBB converting 8-bit values into colour space `to` */
-function c2dXf(to) {
+/* a function (r, g, b) -> 0xRRGGBB converting 8-bit values from colour space `from` into `to` */
+function c2dXf(to, from) {
     if (!c2dLin) {
         c2dLin = new Float32Array(256);
         for (let i = 0; i < 256; i++) { const v = i / 255; c2dLin[i] = v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }
         c2dEnc = new Uint8Array(16385);
         for (let i = 0; i <= 16384; i++) { const v = i / 16384; c2dEnc[i] = Math.round(255 * (v <= 0.0031308 ? v * 12.92 : 1.055 * v ** (1 / 2.4) - 0.055)); }
     }
-    const M = to === 'display-p3' ? C2D_TOP3 : C2D_TOSRGB, memo = new Map(), enc = v => c2dEnc[Math.round(clamp01(v) * 16384)];
+    const p3 = c => c === 'display-p3', M = p3(to) === p3(from) ? [1, 0, 0, 0, 1, 0, 0, 0, 1] : p3(to) ? C2D_TOP3 : C2D_TOSRGB, memo = new Map();
+    const lin = from === 'srgb-linear' ? i => i / 255 : i => c2dLin[i], enc = to === 'srgb-linear' ? v => Math.round(clamp01(v) * 255) : v => c2dEnc[Math.round(clamp01(v) * 16384)];
     return (r, g, b) => {
         const k = (r << 16) | (g << 8) | b;
         let q = memo.get(k);
         if (q === undefined) {
-            const R = c2dLin[r], G = c2dLin[g], B = c2dLin[b];
+            const R = lin(r), G = lin(g), B = lin(b);
             q = (enc(M[0] * R + M[1] * G + M[2] * B) << 16) | (enc(M[3] * R + M[4] * G + M[5] * B) << 8) | enc(M[6] * R + M[7] * G + M[8] * B);
             if (memo.size > 65536) memo.clear();
             memo.set(k, q);
@@ -294,7 +296,7 @@ function c2dXf(to) {
 /* premultiplied ARGB pixels from colour space `from` into `to` (a new array, or px itself when they match) */
 function c2dConvert(px, from, to) {
     if ((from || 'srgb') === (to || 'srgb') || !px.length) return px;
-    const f = c2dXf(to), out = new Uint32Array(px.length);
+    const f = c2dXf(to, from || 'srgb'), out = new Uint32Array(px.length);
     for (let i = 0; i < px.length; i++) {
         const p = px[i], a = p >>> 24;
         if (!a) continue;
@@ -306,7 +308,7 @@ function c2dConvert(px, from, to) {
 /* straight-alpha RGBA bytes converted in place */
 function c2dConvertRGBA(d, from, to) {
     if ((from || 'srgb') === (to || 'srgb')) return;
-    const f = c2dXf(to);
+    const f = c2dXf(to, from || 'srgb');
     for (let j = 0; j < d.length; j += 4) { if (!d[j + 3]) continue; const q = f(d[j], d[j + 1], d[j + 2]); d[j] = q >>> 16; d[j + 1] = (q >>> 8) & 255; d[j + 2] = q & 255; }
 }
 /* a colour string -> { s: serialization, v: [r, g, b, a] 0..1 in colour space cs } or null */
@@ -330,7 +332,7 @@ function c2dColor(text, cv, cs = 'srgb') {
         const body = c.c.map(colorNum3).join(' ') + (a < 1 ? ' / ' + colorNum3(a) : '');
         s = c.space === 'lab' || c.space === 'oklab' ? `${c.space}(${body})` : `color(${c.space} ${body})`;
     }
-    const v = cs === 'srgb' ? b8.map(x => x / 255) : colorTo(col, cs).map(clamp01);
+    const v = cs === 'srgb' ? b8.map(x => x / 255) : colorTo(col, cs === 'srgb-linear' ? 'srgb-linear' : cs).map(clamp01);
     return { s, v: [v[0], v[1], v[2], a] };
 }
 class CanvasGradient {
@@ -475,6 +477,11 @@ function c2dBitmap(src, args, decode) {
             if (cw < 0) { cx += cw; cw = -cw; } if (ch < 0) { cy += ch; ch = -ch; }
             const ow = o.resizeWidth ?? (o.resizeHeight !== undefined ? Math.ceil(cw * o.resizeHeight / ch) : cw);
             const oh = o.resizeHeight ?? (o.resizeWidth !== undefined ? Math.ceil(ch * o.resizeWidth / cw) : ch);
+            if (ow * oh > 268435456) {   /* too large to allocate: an empty bitmap that keeps its size */
+                const b = Object.create(C2IB.prototype);
+                def(b, '_', { src: new ImageData(1, 1, { colorSpace: cs }), w: ow, h: oh, flipY: false, premul: false });
+                return b;
+            }
             let d;
             if (isD && ow === cw && oh === ch) {
                 d = new ImageData(ow, oh, { colorSpace: cs });
@@ -571,7 +578,7 @@ function c2dAlloc(s, w, h) {
 }
 function c2dState(target, w, h, opts) {
     const alpha = !(opts && opts.alpha === false);
-    const s = { target, w, h, alpha, opts: { alpha, colorSpace: opts && opts.colorSpace === 'display-p3' ? 'display-p3' : 'srgb', desynchronized: !!(opts && opts.desynchronized), willReadFrequently: !!(opts && opts.willReadFrequently) },
+    const s = { target, w, h, alpha, opts: { alpha, colorSpace: opts && C2D_SPACES.includes(opts.colorSpace) ? opts.colorSpace : 'srgb', desynchronized: !!(opts && opts.desynchronized), willReadFrequently: !!(opts && opts.willReadFrequently) },
         st: c2dDefaults(), stack: [], path: new PathData(), dirty: false };
     s.cs = s.opts.colorSpace;
     c2dAlloc(s, w, h);
@@ -1005,7 +1012,7 @@ const C2D_METHODS = {
             if (x0 < 0) { w += x0; x0 = 0; } if (y0 < 0) { h += y0; y0 = 0; }
             w = Math.min(w, img.width - x0); h = Math.min(h, img.height - y0);
         }
-        const s = this._, f = (img.colorSpace || 'srgb') !== s.cs ? c2dXf(s.cs) : null;
+        const s = this._, f = (img.colorSpace || 'srgb') !== s.cs ? c2dXf(s.cs, img.colorSpace || 'srgb') : null;
         for (let yy = y0; yy < y0 + h; yy++) {
             const ty = dy + yy; if (ty < 0 || ty >= s.h) continue;
             for (let xx = x0; xx < x0 + w; xx++) {
