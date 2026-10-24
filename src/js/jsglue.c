@@ -303,6 +303,7 @@ static void style_change(Node *n, const ComputedStyle *o, const ComputedStyle *s
     bool vis = s->display != D_NONE && !hidden_chain(n->parent);
     const char *on = o && o->display != D_NONE ? o->anim_name : NULL, *nn = vis ? s->anim_name : NULL;
     if (on && on != nn) js_anim_cancel(n, on);
+    if ((on || nn) && (!on || !nn || strcmp(on, nn))) js_animation_names(n, nn ? nn : "");
     if (nn && nn != on) {
         js_anim_event(n, "animationstart", nn, s->anim_delay * 1000, s->anim_delay < 0 ? -s->anim_delay : 0, true);
         if (isfinite(s->anim_iter)) {

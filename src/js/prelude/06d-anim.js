@@ -770,7 +770,56 @@ function trStart(el, packed) {
 }
 function trPoll() {
     const l = N.trTake();
-    for (const [el, packed] of l) trStart(el, packed);
+    for (const [el, packed, type] of l) type === 'lumen-animation' ? caStart(el, packed) : trStart(el, packed);
     if (l.length) { waDirty = true; waFlush(); }
     return l.length > 0;
+}
+/* CSS animations: when an element's animation-name list changes, its CSSAnimations are rebuilt from @keyframes */
+const caRunning = new Map();
+class CSSAnimation extends Animation {
+    get animationName() { return this._caName; }
+}
+function caFindKeyframes(el, name) {
+    let found = null;
+    const walk = rules => { for (const r of rules || []) { if (r instanceof CSSKeyframesRule) { if (r.name === name) found = r; } else if (r instanceof CSSGroupingRule || r instanceof CSSMediaRule || r instanceof CSSSupportsRule) { try { walk(r.cssRules); } catch (e) {} } } };
+    const root = el.getRootNode && el.getRootNode();
+    const sheets = [...document.styleSheets, ...(root && root !== document && root.styleSheets ? root.styleSheets : [])];
+    for (const sh of sheets) { try { walk(sh.cssRules); } catch (e) {} }
+    return found;
+}
+const caKey = p => p === 'float' ? 'cssFloat' : p.replace(/^-webkit-/, 'webkit-').replace(/-([a-z])/g, (m, c) => c.toUpperCase());
+function caStart(el, names) {
+    const old = caRunning.get(el) || [];
+    caRunning.delete(el);
+    for (const a of old) a.cancel();
+    const list = names.split(',').map(s => s.trim()).filter(s => s && s !== 'none');
+    if (!list.length) return;
+    const lists = {}, at = (p, i, d) => { const l = lists[p] || (lists[p] = trList(el, p)); return l.length && l[0] ? l[i % l.length] : d; };
+    const made = [];
+    list.forEach((name, i) => {
+        const rule = caFindKeyframes(el, name.replace(/^["']|["']$/g, '')); if (!rule) return;
+        const easing = at('animation-timing-function', i, 'ease');
+        const frames = [];
+        for (const kr of rule.cssRules) {
+            const st = kr.style, f = {};
+            for (let j = 0; j < st.length; j++) {
+                const p = st.item(j), v = st.getPropertyValue(p);
+                if (p === 'animation-timing-function') f.easing = v; else if (p === 'animation-composition') f.composite = v; else if (!p.startsWith('animation')) f[caKey(p)] = v;
+            }
+            for (const k of kr.keyText.split(',')) frames.push(Object.assign({ offset: parseFloat(k) / 100, easing }, f));
+        }
+        frames.sort((a, b) => a.offset - b.offset);
+        const iter = at('animation-iteration-count', i, '1'), fill = at('animation-fill-mode', i, 'none');
+        const timing = { duration: Math.max(0, trTime(at('animation-duration', i, '0s'))), delay: trTime(at('animation-delay', i, '0s')), iterations: iter === 'infinite' ? Infinity : Math.max(0, parseFloat(iter) || 0),
+            direction: at('animation-direction', i, 'normal'), fill: ['none', 'forwards', 'backwards', 'both'].includes(fill) ? fill : 'none', composite: at('animation-composition', i, 'replace') };
+        let eff;
+        try { eff = new KeyframeEffect(el, frames, timing); }
+        catch (e) { try { eff = new KeyframeEffect(el, frames.map(f => Object.assign({}, f, { easing: 'linear' })), Object.assign(timing, { composite: 'replace' })); } catch (e2) { return; } }
+        const a = new CSSAnimation(eff, document.timeline);
+        a._caName = name;
+        a.play();
+        if (at('animation-play-state', i, 'running') === 'paused') a.pause();
+        made.push(a);
+    });
+    if (made.length) caRunning.set(el, made);
 }

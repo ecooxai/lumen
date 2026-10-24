@@ -706,3 +706,16 @@ broke the whole page prelude: 33 ctest failures).
   jsnative N.trTake) — unbuilt; JS side next in 06d-anim.js.
   JS side written: 06d-anim.js trStart/trPoll/CSSTransition/trSuppressCss; 03-element getPropertyValue polls; 08-window fireAnim handles 'lumen-transition'. Smoke /tmp/tr.html.
   fix: transition-*/animation-* longhands also stored raw in gen (computed_of prefers them; native tr_delay is max>=0 for events); excluded from transition scan.
+- committed transitions; RUN 131 (/css/) started
+- CSS ANIMATIONS DESIGN (next): jsglue.c style_change already detects anim_name change (on/nn) -> also push AnimEv
+  type "lumen-animation" (name = new animation-name list, "" = removed) via a js.cc helper like js_transition_start;
+  N.trTake returns [el, packed, type] for both types. JS: find @keyframes by name in document.styleSheets
+  (CSSKeyframesRule._list of CSSKeyframeRule: keyText + style) -> keyframes [{offset, prop: value, easing}];
+  read animation-duration/delay/timing-function/iteration-count/direction/fill-mode/play-state/composition lists
+  (gen store keeps raw longhands) -> CSSAnimation (Animation subclass, animationName) with KeyframeEffect; cancel
+  previous CSSAnimations of the element not in the new list. Keep native animationstart/end events for now.
+  CSS animations implemented (unbuilt): js.cc js_style_job/js_animation_names, jsglue style_change, 06d caStart/CSSAnimation; smoke /tmp/ca.html
+  CSS animations built OK (ctest 104/104; /tmp/ca.html longhands width=150px correct). TODO now: shorthand
+  `animation`/`transition` must also fill the raw gen longhand lists (delay is lost: native anim_delay/tr_delay are
+  clamped/max). Implement in style.c css_apply_decl near anim_decl: split layers on top-level commas, classify tokens.
+  shorthand expansion written: style.c anim_shorthand_gen (before anim_decl), called for animation/transition shorthands; unbuilt.

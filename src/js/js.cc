@@ -1763,15 +1763,18 @@ void js_anim_event(Node *n, const char *type, const char *name, double delay, do
 }
 
 /* a CSS transition for the JS side to start (taken by fireAnim or synchronously by N.trTake) */
-void js_transition_start(Node *n, const char *prop, const char *from, const char *to) {
+static void js_style_job(Node *n, const char *type, std::string name) {
     JsCtx *c = ctx_for(n);
     if (!c || c->ctx.IsEmpty()) return;
     JS_ENTER(c);
     AnimEv e;
     e.due = now_ms(); e.n = n; e.target.Reset(iso, jwrap(c, n));
-    e.type = "lumen-transition"; e.name = std::string(prop) + '\x01' + from + '\x01' + to; e.elapsed = 0; e.anim = false;
+    e.type = type; e.name = std::move(name); e.elapsed = 0; e.anim = false;
     c->anims.push_back(std::move(e));
 }
+void js_transition_start(Node *n, const char *prop, const char *from, const char *to) { js_style_job(n, "lumen-transition", std::string(prop) + '\x01' + from + '\x01' + to); }
+/* the element's animation-name list changed: the JS side (re)builds its CSSAnimations */
+void js_animation_names(Node *n, const char *names) { js_style_job(n, "lumen-animation", names); }
 
 bool js_anim_cancel(Node *n, const char *name) {
     JsCtx *c = ctx_for(n);

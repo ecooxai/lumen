@@ -847,6 +847,46 @@ static const char *layer_list(char **layer, int nl) {
     char *s = sb_take(&b); const char *a = atom(s); free(s);
     return a;
 }
+/* `animation` / `transition` shorthands: the raw longhand lists for the generic store (the JS animation side reads them) */
+static void anim_shorthand_gen(ComputedStyle *st, const char *Q, const char *val) {
+    bool tr = Q[0] == 't';
+    static const char *const an[] = { "animation-duration", "animation-delay", "animation-timing-function", "animation-iteration-count", "animation-direction", "animation-fill-mode", "animation-play-state", "animation-name" };
+    static const char *const tn[] = { "transition-duration", "transition-delay", "transition-timing-function", "transition-behavior", "transition-property" };
+    static const char *const ad[] = { "0s", "0s", "ease", "1", "normal", "none", "running", "none" }, *const td[] = { "0s", "0s", "ease", "normal", "all" };
+    const char *const *names = tr ? tn : an, *const *defs = tr ? td : ad;
+    int nf = tr ? 5 : 8;
+    SB out[8]; for (int f = 0; f < nf; f++) sb_init(&out[f]);
+    const char *p = val; int layer = 0;
+    while (*p) {
+        const char *e = p; int d = 0;
+        for (; *e && (d || *e != ','); e++) { if (*e == '(') d++; else if (*e == ')') d--; }
+        char *ly = xstrndup(p, (size_t)(e - p)); const char *v[8] = { 0 }; char *tok[8]; int nt = 0, ntime = 0;
+        for (char *q = ly; *q && nt < 8;) {
+            while (*q == ' ') q++;
+            if (!*q) break;
+            char *t = q; int dd = 0;
+            for (; *q && (dd || *q != ' '); q++) { if (*q == '(') dd++; else if (*q == ')') dd--; }
+            if (*q) *q++ = 0;
+            tok[nt++] = t;
+        }
+        for (int i = 0; i < nt; i++) {
+            const char *t = tok[i]; float f;
+            bool ease = !strcmp(t, "linear") || !strncmp(t, "ease", 4) || !strncmp(t, "step-", 5) || !strncmp(t, "cubic-bezier(", 13) || !strncmp(t, "steps(", 6) || !strncmp(t, "linear(", 7);
+            if (css_time(t, &f) && ntime < 2) v[ntime++] = t;
+            else if (ease && !v[2]) v[2] = t;
+            else if (tr) { if (!strcmp(t, "allow-discrete") || (!strcmp(t, "normal") && !v[3])) v[3] = t; else v[4] = t; }
+            else if ((!strcmp(t, "infinite") || isdigit((unsigned char)t[0]) || t[0] == '.') && !v[3]) v[3] = t;
+            else if ((!strcmp(t, "reverse") || !strcmp(t, "alternate") || !strcmp(t, "alternate-reverse") || (!strcmp(t, "normal") && !v[4])) && !v[4]) v[4] = t;
+            else if ((!strcmp(t, "forwards") || !strcmp(t, "backwards") || !strcmp(t, "both") || (!strcmp(t, "none") && !v[5] && i + 1 < nt)) && !v[5]) v[5] = t;
+            else if ((!strcmp(t, "running") || !strcmp(t, "paused")) && !v[6]) v[6] = t;
+            else v[7] = t;
+        }
+        for (int f = 0; f < nf; f++) { if (layer) sb_puts(&out[f], ", "); sb_puts(&out[f], v[f] ? v[f] : defs[f]); }
+        free(ly); layer++;
+        p = *e ? e + 1 : e;
+    }
+    for (int f = 0; f < nf; f++) gen_put(&st->gen_n, names[f], sb_take(&out[f]));
+}
 static void anim_decl(ComputedStyle *st, const char *Q, const char *val) {
     char *buf = xstrdup(val), *layer[32], *tok[16];
     int nl = split_top(buf, ',', layer, 32);
@@ -958,6 +998,7 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
     }
     {
         const char *Q = strncmp(P, "-webkit-", 8) ? P : P + 8;
+        if (!strcmp(Q, "animation") || !strcmp(Q, "transition")) anim_shorthand_gen(st, Q, inherit || initial || unset ? "" : val);
         if (!strncmp(Q, "animation", 9) || !strncmp(Q, "transition", 10)) { anim_decl(st, Q, inherit || initial || unset ? "" : val); free(vbuf); free(subst); return; }
     }
     if (inherit || initial || unset) {
