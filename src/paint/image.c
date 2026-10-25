@@ -1,4 +1,4 @@
-/* Image decoding (PNG, JPEG, WebP, animated GIF, SVG) to premultiplied ARGB32 */
+/* Image decoding (PNG, JPEG, WebP, animated GIF, BMP, SVG) to premultiplied ARGB32 */
 #include "paint.h"
 #include "../gpu/webgpu.h"
 #include "../dom/dom.h"
@@ -351,12 +351,72 @@ static Image *dec_svg(const uint8_t *d, size_t n) {
     return im;
 }
 
+/* BMP: core / info / V4 / V5 headers, 1-8 bit palettes and 16/24/32 bit with optional bitfields (RLE unsupported) */
+static uint32_t rd32(const uint8_t *p) { return p[0] | p[1] << 8 | p[2] << 16 | (uint32_t)p[3] << 24; }
+static unsigned rd16(const uint8_t *p) { return p[0] | p[1] << 8; }
+static unsigned mask_chan(uint32_t v, uint32_t m) {
+    if (!m) return 0;
+    int sh = 0; while (!(m >> sh & 1)) sh++;
+    uint32_t mm = m >> sh, x = (v & m) >> sh;
+    return mm == 255 ? x : (unsigned)((x * 255 + mm / 2) / mm);
+}
+static Image *dec_bmp(const uint8_t *d, size_t n) {
+    if (n < 26) return NULL;
+    uint32_t off = rd32(d + 10), hs = rd32(d + 14);
+    int32_t w, h; unsigned bpp, comp = 0, ncol = 0;
+    uint32_t mr = 0, mg = 0, mb = 0, ma = 0;
+    if (hs == 12) { w = (int16_t)rd16(d + 18); h = (int16_t)rd16(d + 20); bpp = rd16(d + 24); }
+    else if (hs >= 40 && 14 + (size_t)hs <= n) {
+        w = (int32_t)rd32(d + 18); h = (int32_t)rd32(d + 22); bpp = rd16(d + 28); comp = rd32(d + 30); ncol = rd32(d + 46);
+        if (comp == 3 || comp == 6) {
+            size_t mo = 54; if (mo + 12 > n) return NULL;
+            mr = rd32(d + mo); mg = rd32(d + mo + 4); mb = rd32(d + mo + 8);
+            if ((comp == 6 || hs >= 56) && mo + 16 <= n) ma = rd32(d + mo + 12);
+        }
+    } else return NULL;
+    bool top = h < 0; if (top) h = -h;
+    if (w <= 0 || h <= 0 || w > 32768 || h > 32768) return NULL;
+    if (comp != 0 && comp != 3 && comp != 6) return NULL;
+    if (comp == 0) {
+        if (bpp == 16) { mr = 0x7C00; mg = 0x03E0; mb = 0x001F; }
+        else if (bpp == 32) { mr = 0xFF0000; mg = 0xFF00; mb = 0xFF; }
+    } else if (bpp != 16 && bpp != 32) return NULL;
+    if (bpp != 1 && bpp != 2 && bpp != 4 && bpp != 8 && bpp != 16 && bpp != 24 && bpp != 32) return NULL;
+    uint32_t pal[256] = { 0 };
+    if (bpp <= 8) {
+        size_t po = 14 + hs, ps = hs == 12 ? 3 : 4, np = ncol && ncol <= (1u << bpp) ? ncol : 1u << bpp;
+        if (comp == 3 && hs == 40) po += 12;
+        for (size_t i = 0; i < np && po + i * ps + 3 <= n; i++) { const uint8_t *q = d + po + i * ps; pal[i] = 0xFF000000u | q[2] << 16 | q[1] << 8 | q[0]; }
+    }
+    size_t stride = (((size_t)w * bpp + 31) / 32) * 4;
+    if (off >= n || stride * (size_t)(h - 1) + ((size_t)w * bpp + 7) / 8 > n - off) return NULL;
+    Image *im = img_new(w, h);
+    if (!im) return NULL;
+    for (int y = 0; y < h; y++) {
+        const uint8_t *row = d + off + stride * (size_t)(top ? y : h - 1 - y);
+        uint32_t *o = im->px + (size_t)y * w;
+        for (int x = 0; x < w; x++) {
+            uint32_t c;
+            if (bpp <= 8) { unsigned bit = (unsigned)x * bpp, v = row[bit / 8] >> (8 - bpp - bit % 8) & ((1u << bpp) - 1); c = pal[v]; }
+            else if (bpp == 24) { const uint8_t *q = row + x * 3; c = 0xFF000000u | q[2] << 16 | q[1] << 8 | q[0]; }
+            else {
+                uint32_t v = bpp == 16 ? rd16(row + x * 2) : rd32(row + x * 4);
+                c = (ma ? mask_chan(v, ma) : 255) << 24 | mask_chan(v, mr) << 16 | mask_chan(v, mg) << 8 | mask_chan(v, mb);
+            }
+            o[x] = c;
+        }
+    }
+    if (ma) premultiply(im->px, (size_t)w * (size_t)h);
+    return im;
+}
+
 Image *image_decode_bitmap(const uint8_t *d, size_t n) {
     if (!d || n < 8) return NULL;
     if (!memcmp(d, "\x89PNG", 4)) return dec_png(d, n);
     if (d[0] == 0xFF && d[1] == 0xD8) return dec_jpeg(d, n);
     if (n > 12 && !memcmp(d, "RIFF", 4) && !memcmp(d + 8, "WEBP", 4)) return dec_webp(d, n);
     if (!memcmp(d, "GIF8", 4)) return dec_gif(d, n);
+    if (d[0] == 'B' && d[1] == 'M') return dec_bmp(d, n);
     return NULL;
 }
 Image *image_decode(const uint8_t *d, size_t n) {

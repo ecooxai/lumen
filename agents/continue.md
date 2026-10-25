@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **189**.
+  - Number the runs. The next run is **190**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,12 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 189 ...)
+(append here: RUN 190 ...)
+
+RUN 189: BMP decoding (`dec_bmp`, src/paint/image.c): core/info/V4/V5 headers, 1/2/4/8-bit palettes, 16/24/32-bit
+with BI_BITFIELDS/ALPHABITFIELDS masks; RLE unsupported. The referrer-policy image tests get their result as a BMP.
+/referrer-policy/gen/{req.attr,top.meta}/ + the-img-element/: +212, lost 0 (7 flaky, recovered on rerun); one hard
+timeout (image-loading-lazy-base-url-2.html). Biggest the-img-element gap: sizes/ "ref currentSrc was ''" (858).
 
 RUN 188: activating an SVG <a> resolves its href attribute (a.href is an SVGAnimatedString, which navigated to
 "[object SVGAnimatedString]"), 06b-activate.js. No WPT gain yet (svg-a-tag referrer tests still time out: the
