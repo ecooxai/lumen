@@ -519,7 +519,7 @@ methods(Text.prototype, {
         replaceData(this, o, len - o, '');
         return t;
     },
-    get assignedSlot() { return null; },
+    get assignedSlot() { return slotOpenFor(this); },
 });
 class CDATASection extends Text { constructor() { illegal(); } }
 class Comment extends CharacterData { constructor(s = '') { return N.comment(String(s)); } }

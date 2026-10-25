@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **206**.
+  - Number the runs. The next run is **207**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,16 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 206 ...)
+(append here: RUN 207 ...)
+
+RUN 206: slots in the DOM API (04-tags.js slotFind/slotAssigned/slotFlat/slotSignal): named assignment by the slot
+attribute (first slot in tree order with that name), manual assign(), assignedNodes/assignedElements({flatten}),
+Element/Text.assignedSlot (null for closed roots), and slotchange (bubbles) fired in a microtask on each slot whose
+assigned nodes changed, driven from notify() (01-events.js) for childList on a host or inside a shadow root, slot
+attribute on a host's child, and name on a slot. Before, assignedNodes() was always [] and assignedSlot null.
+/shadow-dom/ /dom/nodes/ /custom-elements/ /css/css-scoping/ /dom/events/: +125, lost 1 (fixed: a slot outside a
+shadow tree flattens to []); the slot files then +61. Not yet: signalling a parent slot when a slot assigned to it
+changes, slotchange for fallback-content changes.
 
 RUN 205: ShadowRoot.elementFromPoint()/elementsFromPoint(); both document and shadow versions retarget the hit
 against the root (shadow hosts, not shadow-internal nodes, from document) and throw TypeError for missing or

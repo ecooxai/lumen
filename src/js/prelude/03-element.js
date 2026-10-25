@@ -371,7 +371,7 @@ methods(Element.prototype, {
         return sr;
     },
     get shadowRoot() { const sr = N.shadowOf(this); return sr && !(N.srFlags(sr) & 1) ? sr : null; },
-    get assignedSlot() { return null; },
+    get assignedSlot() { return slotOpenFor(this); },
     requestFullscreen() { return fsRequest(this); }, webkitRequestFullscreen() { fsRequest(this).catch(() => {}); }, webkitRequestFullScreen() { fsRequest(this).catch(() => {}); },
     requestPointerLock() {}, setPointerCapture(id) { capturePointer(this, id, true); }, releasePointerCapture(id) { capturePointer(this, id, false); }, hasPointerCapture(id) { return hasCapture(this, id); },
     animate(kf, o) {

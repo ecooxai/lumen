@@ -128,7 +128,80 @@ mk('HTMLMetaElement', HTMLElement, ['meta'], p => reflectStr(p, 'name', 'content
 mk('HTMLTitleElement', HTMLElement, ['title'], textProp);
 mk('HTMLBaseElement', HTMLElement, ['base'], p => { reflectUrl(p, 'href'); reflectStr(p, 'target'); });
 mk('HTMLTemplateElement', HTMLElement, ['template'], p => methods(p, { get content() { return N.templateContent(this); } }));
-mk('HTMLSlotElement', HTMLElement, ['slot'], p => { reflectStr(p, 'name'); methods(p, { assignedNodes() { return []; }, assignedElements() { return []; }, assign() {} }); });
+/* slots: named assignment by the slot attribute, manual by assign(); slotchange is fired, in a microtask, on each
+   slot whose assigned nodes changed after a mutation of its host's children or its shadow tree */
+const slotManual = new WeakMap(), slotManualOf = new WeakMap(), slotLast = new WeakMap();
+const isSlottable = n => { const t = N.type(n); return t === 1 || t === 3; };
+const isSlot = n => N.type(n) === 1 && n.localName === 'slot' && n.namespaceURI === 'http://www.w3.org/1999/xhtml';
+function slotsIn(root) { const r = []; const w = n => { for (let c = N.first(n); c; c = N.next(c)) { if (isSlot(c)) r.push(c); if (N.type(c) === 1) w(c); } }; w(root); return r; }
+/* the slot n is assigned to, or null */
+function slotFind(n) {
+    const host = N.parent(n), sr = host && N.type(host) === 1 && N.shadowOf(host);
+    if (!sr || !isSlottable(n)) return null;
+    if (N.srFlags(sr) & 16) { const s = slotManualOf.get(n); return s && rootOf(s) === sr ? s : null; }
+    const name = N.type(n) === 1 ? (N.attr(n, 'slot') ?? '') : '';
+    for (const s of slotsIn(sr)) if ((N.attr(s, 'name') ?? '') === name) return s;
+    return null;
+}
+function slotOpenFor(n) { const s = slotFind(n); return s && !(N.srFlags(rootOf(s)) & 1) ? s : null; }
+function slotAssigned(slot) {
+    const sr = rootOf(slot);
+    if (N.type(sr) !== 11 || !N.host(sr)) return [];
+    const host = N.host(sr), r = [];
+    if (N.srFlags(sr) & 16) { for (const n of slotManual.get(slot) || []) if (N.parent(n) === host && slotFind(n) === slot) r.push(n); return r; }
+    for (let c = N.first(host); c; c = N.next(c)) if (isSlottable(c) && slotFind(c) === slot) r.push(c);
+    return r;
+}
+function slotFlat(slot) {
+    if (N.type(rootOf(slot)) !== 11 || !N.host(rootOf(slot))) return [];
+    const r = [], a = slotAssigned(slot);
+    const add = n => { if (isSlot(n) && N.type(rootOf(n)) === 11 && N.host(rootOf(n))) r.push(...slotFlat(n)); else r.push(n); };
+    if (a.length) a.forEach(add);
+    else for (let c = N.first(slot); c; c = N.next(c)) if (isSlottable(c)) add(c);
+    return r;
+}
+const slotDirty = new Set();
+function slotSignal(root) {
+    if (!root || N.type(root) !== 11 || !N.host(root)) return;
+    if (!slotDirty.size) queueMicrotask(() => {
+        const roots = [...slotDirty]; slotDirty.clear();
+        for (const sr of roots) for (const s of slotsIn(sr)) {
+            const now = slotAssigned(s), was = slotLast.get(s) || [];
+            slotLast.set(s, now);
+            if (now.length !== was.length || now.some((n, i) => n !== was[i])) s.dispatchEvent(new Event('slotchange', { bubbles: true }));
+        }
+    });
+    slotDirty.add(root);
+}
+/* called for every DOM mutation record */
+function slotMutated(type, target, extra) {
+    if (type === 'childList') {
+        if (N.type(target) === 1 && N.shadowOf(target)) slotSignal(N.shadowOf(target));
+        const r = rootOf(target);
+        if (N.type(r) === 11 && N.host(r)) slotSignal(r);
+    } else if (type === 'attributes') {
+        if (extra.attributeName === 'slot') { const p = N.parent(target); if (p && N.type(p) === 1 && N.shadowOf(p)) slotSignal(N.shadowOf(p)); }
+        else if (extra.attributeName === 'name' && isSlot(target)) slotSignal(rootOf(target));
+    }
+}
+const slotMethods = {
+    assignedNodes(o = undefined) { return o && o.flatten ? slotFlat(this) : slotAssigned(this); },
+    assignedElements(o = undefined) { return (o && o.flatten ? slotFlat(this) : slotAssigned(this)).filter(n => N.type(n) === 1); },
+    assign(...nodes) {
+        for (const n of slotManual.get(this) || []) if (slotManualOf.get(n) === this) slotManualOf.delete(n);
+        const list = [];
+        for (const n of nodes) {
+            if (!N.isNode(n) || !isSlottable(n)) throw new TypeError("Failed to execute 'assign' on 'HTMLSlotElement': The provided value is not of type '(Element or Text)'.");
+            const old = slotManualOf.get(n);
+            if (old && old !== this) { const l = slotManual.get(old); if (l) l.splice(l.indexOf(n), 1); slotSignal(rootOf(old)); }
+            if (!list.includes(n)) list.push(n);
+            slotManualOf.set(n, this);
+        }
+        slotManual.set(this, list);
+        slotSignal(rootOf(this));
+    },
+};
+mk('HTMLSlotElement', HTMLElement, ['slot'], p => { reflectStr(p, 'name'); methods(p, slotMethods); });
 mk('HTMLIFrameElement', HTMLElement, ['iframe'], p => { reflectUrl(p, 'src'); reflectStr(p, 'srcdoc', 'name', 'allow', 'width', 'height', 'referrerPolicy', 'loading', 'frameBorder', 'scrolling', 'marginWidth', 'marginHeight', 'align'); reflectBool(p, 'allowFullscreen'); methods(p, { get sandbox() { if (!this.__sb) def(this, '__sb', new DOMTokenList(TOK_KEY, this, 'sandbox')); return this.__sb; }, set sandbox(v) { this.setAttribute('sandbox', v); }, get contentWindow() { return asWin(N.frameWin(this)); }, get contentDocument() { return N.frameDoc(this); } }); });
 mk('HTMLCanvasElement', HTMLElement, ['canvas'], p => {
     /* resizing resizes the WebGL drawing buffer; WebGPU reads the size each frame */

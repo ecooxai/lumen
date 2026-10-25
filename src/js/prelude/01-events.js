@@ -337,6 +337,7 @@ class MutationObserver {
 }
 function notify(type, target, extra) {
     if (type === 'attributes' && extra.attributeName === 'commandfor') commandTargets.delete(target);
+    if (type !== 'characterData') slotMutated(type, target, extra);
     if (!observers.length) return;
     /* nodes removed from an observed subtree stay observed, through transient registrations, until the observers
        are next notified */
