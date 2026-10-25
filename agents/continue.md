@@ -143,6 +143,12 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 ## Runs
 (append here: RUN 204 ...)
 
+Phone check after run 203 (APK fecdb19, 92,185,964 bytes): google/youtube/webgl/webgpu pass, no crash/ANR/tombstone,
+no E-level lumen lines; last-10-s CPU 0-3.5%, peak RSS 549 MB (youtube), WebGL 57.6 fps, WebGPU 23.5 fps. Only
+YouTube's known EvalError + 2 Polymer warnings. The 12+12 E/AdrenoUtils + E/GraphicBufferAllocator "(4 x 4) format
+56/59" lines per GPU start are driver probing noise, present since run 175's logs at least. Android build: there is
+no gradlew; use the Gradle command in the build section above.
+
 RUN 203: execCommand('undo'/'redo') (editing.js undoList/redoList: each command that changes an editing host
 records its markup + selection before and after; undo/redo only act when the selection is in that host;
 06-document.js lets undo/redo past the supported check and fires historyUndo/historyRedo input events). Element
