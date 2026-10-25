@@ -5,6 +5,7 @@
 #endif
 /* Cascade, inheritance and computed values */
 #include "css.h"
+#include "color.h"
 #include "../layout/layout.h"
 #include "../base/url.h"
 #include <math.h>
@@ -95,7 +96,7 @@ static const char *gen_value(const ComputedStyle *s, const GenProp *g) {
 ComputedStyle *style_inherit(const ComputedStyle *p) {
     ComputedStyle *s = style_new_default();
     if (!p) return s;
-    s->color = p->color; s->font_size = p->font_size; s->font_weight = p->font_weight; s->font_style = p->font_style; s->font_family = p->font_family;
+    s->color = p->color; s->color_ser = p->color_ser; s->font_size = p->font_size; s->font_weight = p->font_weight; s->font_style = p->font_style; s->font_family = p->font_family;
     s->line_height = p->line_height; s->line_height_normal = p->line_height_normal; s->line_height_factor = p->line_height_factor;
     s->text_align = p->text_align; s->white_space = p->white_space; s->text_transform = p->text_transform; s->visibility = p->visibility;
     s->letter_spacing = p->letter_spacing; s->word_spacing = p->word_spacing; s->text_indent = p->text_indent; s->list_style = p->list_style;
@@ -122,160 +123,31 @@ void style_free(ComputedStyle *s) {
 /* ---------------- colors ---------------- */
 static const struct { const char *n; uint32_t c; } named_colors[] = {
 {"aliceblue",0xf0f8ff},{"antiquewhite",0xfaebd7},{"aqua",0x00ffff},{"aquamarine",0x7fffd4},{"azure",0xf0ffff},{"beige",0xf5f5dc},{"bisque",0xffe4c4},{"black",0x000000},{"blanchedalmond",0xffebcd},{"blue",0x0000ff},{"blueviolet",0x8a2be2},{"brown",0xa52a2a},{"burlywood",0xdeb887},{"cadetblue",0x5f9ea0},{"chartreuse",0x7fff00},{"chocolate",0xd2691e},{"coral",0xff7f50},{"cornflowerblue",0x6495ed},{"cornsilk",0xfff8dc},{"crimson",0xdc143c},{"cyan",0x00ffff},{"darkblue",0x00008b},{"darkcyan",0x008b8b},{"darkgoldenrod",0xb8860b},{"darkgray",0xa9a9a9},{"darkgreen",0x006400},{"darkgrey",0xa9a9a9},{"darkkhaki",0xbdb76b},{"darkmagenta",0x8b008b},{"darkolivegreen",0x556b2f},{"darkorange",0xff8c00},{"darkorchid",0x9932cc},{"darkred",0x8b0000},{"darksalmon",0xe9967a},{"darkseagreen",0x8fbc8f},{"darkslateblue",0x483d8b},{"darkslategray",0x2f4f4f},{"darkslategrey",0x2f4f4f},{"darkturquoise",0x00ced1},{"darkviolet",0x9400d3},{"deeppink",0xff1493},{"deepskyblue",0x00bfff},{"dimgray",0x696969},{"dimgrey",0x696969},{"dodgerblue",0x1e90ff},{"firebrick",0xb22222},{"floralwhite",0xfffaf0},{"forestgreen",0x228b22},{"fuchsia",0xff00ff},{"gainsboro",0xdcdcdc},{"ghostwhite",0xf8f8ff},{"gold",0xffd700},{"goldenrod",0xdaa520},{"gray",0x808080},{"green",0x008000},{"greenyellow",0xadff2f},{"grey",0x808080},{"honeydew",0xf0fff0},{"hotpink",0xff69b4},{"indianred",0xcd5c5c},{"indigo",0x4b0082},{"ivory",0xfffff0},{"khaki",0xf0e68c},{"lavender",0xe6e6fa},{"lavenderblush",0xfff0f5},{"lawngreen",0x7cfc00},{"lemonchiffon",0xfffacd},{"lightblue",0xadd8e6},{"lightcoral",0xf08080},{"lightcyan",0xe0ffff},{"lightgoldenrodyellow",0xfafad2},{"lightgray",0xd3d3d3},{"lightgreen",0x90ee90},{"lightgrey",0xd3d3d3},{"lightpink",0xffb6c1},{"lightsalmon",0xffa07a},{"lightseagreen",0x20b2aa},{"lightskyblue",0x87cefa},{"lightslategray",0x778899},{"lightslategrey",0x778899},{"lightsteelblue",0xb0c4de},{"lightyellow",0xffffe0},{"lime",0x00ff00},{"limegreen",0x32cd32},{"linen",0xfaf0e6},{"magenta",0xff00ff},{"maroon",0x800000},{"mediumaquamarine",0x66cdaa},{"mediumblue",0x0000cd},{"mediumorchid",0xba55d3},{"mediumpurple",0x9370db},{"mediumseagreen",0x3cb371},{"mediumslateblue",0x7b68ee},{"mediumspringgreen",0x00fa9a},{"mediumturquoise",0x48d1cc},{"mediumvioletred",0xc71585},{"midnightblue",0x191970},{"mintcream",0xf5fffa},{"mistyrose",0xffe4e1},{"moccasin",0xffe4b5},{"navajowhite",0xffdead},{"navy",0x000080},{"oldlace",0xfdf5e6},{"olive",0x808000},{"olivedrab",0x6b8e23},{"orange",0xffa500},{"orangered",0xff4500},{"orchid",0xda70d6},{"palegoldenrod",0xeee8aa},{"palegreen",0x98fb98},{"paleturquoise",0xafeeee},{"palevioletred",0xdb7093},{"papayawhip",0xffefd5},{"peachpuff",0xffdab9},{"peru",0xcd853f},{"pink",0xffc0cb},{"plum",0xdda0dd},{"powderblue",0xb0e0e6},{"purple",0x800080},{"rebeccapurple",0x663399},{"red",0xff0000},{"rosybrown",0xbc8f8f},{"royalblue",0x4169e1},{"saddlebrown",0x8b4513},{"salmon",0xfa8072},{"sandybrown",0xf4a460},{"seagreen",0x2e8b57},{"seashell",0xfff5ee},{"sienna",0xa0522d},{"silver",0xc0c0c0},{"skyblue",0x87ceeb},{"slateblue",0x6a5acd},{"slategray",0x708090},{"slategrey",0x708090},{"snow",0xfffafa},{"springgreen",0x00ff7f},{"steelblue",0x4682b4},{"tan",0xd2b48c},{"teal",0x008080},{"thistle",0xd8bfd8},{"tomato",0xff6347},{"turquoise",0x40e0d0},{"violet",0xee82ee},{"wheat",0xf5deb3},{"white",0xffffff},{"whitesmoke",0xf5f5f5},{"yellow",0xffff00},{"yellowgreen",0x9acd32},
-{"canvas",0xffffff},{"canvastext",0x000000},{"linktext",0x0000ee},{"buttonface",0xefefef},{"buttontext",0x000000},{"field",0xffffff},{"fieldtext",0x000000},{"graytext",0x808080},{"highlight",0x3390ff},{"highlighttext",0xffffff},{"buttonborder",0x767676},{"windowtext",0x000000},{"window",0xffffff},{"menu",0xffffff}};
+{"canvas",0xffffff},{"canvastext",0x000000},{"linktext",0x0000ee},{"buttonface",0xefefef},{"buttontext",0x000000},{"field",0xffffff},{"fieldtext",0x000000},{"graytext",0x808080},{"highlight",0x3390ff},{"highlighttext",0xffffff},{"buttonborder",0x767676},{"windowtext",0x000000},{"window",0xffffff},{"menu",0xffffff},{"accentcolor",0x0075ff},{"accentcolortext",0xffffff},{"activetext",0xff0000},{"mark",0xffff00},{"marktext",0x000000},{"selecteditem",0x0075ff},{"selecteditemtext",0xffffff},{"visitedtext",0x551a8b},{"activeborder",0x767676},{"activecaption",0xffffff},{"appworkspace",0xffffff},{"background",0xffffff},{"buttonhighlight",0xefefef},{"buttonshadow",0xefefef},{"captiontext",0x000000},{"inactiveborder",0x767676},{"inactivecaption",0xffffff},{"inactivecaptiontext",0x808080},{"infobackground",0xffffff},{"infotext",0x000000},{"menutext",0x000000},{"scrollbar",0xffffff},{"threeddarkshadow",0x767676},{"threedface",0xefefef},{"threedhighlight",0x767676},{"threedlightshadow",0x767676},{"threedshadow",0x767676},{"windowframe",0x767676}};
 
-static float hue2rgb(float p, float q, float t) { if (t < 0) t += 1; if (t > 1) t -= 1; if (t < 1.f / 6) return p + (q - p) * 6 * t; if (t < .5f) return q; if (t < 2.f / 3) return p + (q - p) * (2.f / 3 - t) * 6; return p; }
 
-static int parse_fn_args(const char *s, float *v, bool *pct, int max) {
-    int n = 0; const char *p = s;
-    while (*p && n < max) {
-        while (*p && (is_ws((unsigned char)*p) || *p == ',' || *p == '/')) p++;
-        if (!*p || *p == ')') break;
-        char *e; float x = strtof(p, &e);
-        if (e == p) { if (str_istarts(p, "none")) { x = 0; e = (char *)p + 4; } else break; }
-        pct[n] = *e == '%';
-        if (str_istarts(e, "deg")) e += 3; else if (str_istarts(e, "turn")) { x *= 360; e += 4; } else if (str_istarts(e, "rad")) { x *= 57.2958f; e += 3; }
-        if (*e == '%') e++;
-        v[n++] = x; p = e;
-    }
-    return n;
+bool css_named_color(const char *name, uint32_t *rgb) {
+    for (size_t i = 0; i < ARRLEN(named_colors); i++) if (!strcmp(named_colors[i].n, name)) { *rgb = named_colors[i].c; return true; }
+    return false;
 }
 
-/* CSS Color 4 colours outside legacy sRGB syntax, converted to 8-bit sRGB (clipped) */
-static float srgb_enc(float x) { float a = fabsf(x), r = a <= 0.0031308f ? 12.92f * a : 1.055f * powf(a, 1 / 2.4f) - .055f; return x < 0 ? -r : r; }
-static float srgb_dec(float x) { float a = fabsf(x), r = a <= 0.04045f ? a / 12.92f : powf((a + .055f) / 1.055f, 2.4f); return x < 0 ? -r : r; }
-static void mat3(const float m[9], float v[3]) { float x = v[0], y = v[1], z = v[2]; for (int i = 0; i < 3; i++) v[i] = m[i * 3] * x + m[i * 3 + 1] * y + m[i * 3 + 2] * z; }
-static const float XYZ65_TO_LSRGB[9] = {3.2409699f, -1.5373832f, -0.4986108f, -0.9692436f, 1.8759675f, 0.0415551f, 0.0556301f, -0.2039770f, 1.0569715f};
-static const float D50_TO_D65[9] = {0.9554734f, -0.0230985f, 0.0632593f, -0.0283697f, 1.0099955f, 0.0210414f, 0.0123140f, -0.0205077f, 1.3303659f};
-static const float LP3_TO_XYZ65[9] = {0.4865709f, 0.2656677f, 0.1982173f, 0.2289746f, 0.6917385f, 0.0792869f, 0, 0.0451134f, 1.0439444f};
-static const float LREC2020_TO_XYZ65[9] = {0.6369580f, 0.1446169f, 0.1688810f, 0.2627002f, 0.6779981f, 0.0593017f, 0, 0.0280727f, 1.0609851f};
-static const float LA98_TO_XYZ65[9] = {0.5766690f, 0.1855582f, 0.1882286f, 0.2973450f, 0.6273636f, 0.0752915f, 0.0270314f, 0.0706889f, 0.9913375f};
-static const float LPRO_TO_XYZ50[9] = {0.7977605f, 0.1351858f, 0.0313493f, 0.2880711f, 0.7118432f, 0.0000857f, 0, 0, 0.8251046f};
-static bool wide_color(const char *s, Color *out) {
-    const char *args = strchr(s, '(') + 1; char space[24] = "";
-    if (str_starts(s, "color(")) {
-        while (is_ws((unsigned char)*args)) args++;
-        size_t k = 0; while (*args && !is_ws((unsigned char)*args) && *args != ')' && k < sizeof space - 1) space[k++] = *args++;
-        space[k] = 0;
-    }
-    float v[4] = {0, 0, 0, 1}; bool pc[4] = {0}; int n = parse_fn_args(args, v, pc, 4);
-    if (n < 3) return false;
-    float a = n > 3 ? (pc[3] ? v[3] / 100 : v[3]) : 1, c[3];   /* c: linear sRGB */
-    if (*space) {
-        for (int i = 0; i < 3; i++) c[i] = pc[i] ? v[i] / 100 : v[i];
-        if (!strcmp(space, "srgb")) for (int i = 0; i < 3; i++) c[i] = srgb_dec(c[i]);
-        else if (!strcmp(space, "srgb-linear")) {}
-        else if (!strcmp(space, "display-p3")) { for (int i = 0; i < 3; i++) c[i] = srgb_dec(c[i]); mat3(LP3_TO_XYZ65, c); mat3(XYZ65_TO_LSRGB, c); }
-        else if (!strcmp(space, "rec2020")) {
-            for (int i = 0; i < 3; i++) { float x = fabsf(c[i]), r = x < 0.081242858f ? x / 4.5f : powf((x + 0.09929683f) / 1.09929683f, 1 / 0.45f); c[i] = c[i] < 0 ? -r : r; }
-            mat3(LREC2020_TO_XYZ65, c); mat3(XYZ65_TO_LSRGB, c);
-        } else if (!strcmp(space, "a98-rgb")) { for (int i = 0; i < 3; i++) c[i] = copysignf(powf(fabsf(c[i]), 563.f / 256), c[i]); mat3(LA98_TO_XYZ65, c); mat3(XYZ65_TO_LSRGB, c); }
-        else if (!strcmp(space, "prophoto-rgb")) {
-            for (int i = 0; i < 3; i++) { float x = fabsf(c[i]); c[i] = copysignf(x <= 16.f / 512 ? x / 16 : powf(x, 1.8f), c[i]); }
-            mat3(LPRO_TO_XYZ50, c); mat3(D50_TO_D65, c); mat3(XYZ65_TO_LSRGB, c);
-        } else if (!strcmp(space, "xyz") || !strcmp(space, "xyz-d65")) mat3(XYZ65_TO_LSRGB, c);
-        else if (!strcmp(space, "xyz-d50")) { mat3(D50_TO_D65, c); mat3(XYZ65_TO_LSRGB, c); }
-        else return false;
-    } else if (s[0] == 'h') {   /* hwb(h w b) */
-        float w = v[1] / 100, bk = v[2] / 100, h = fmodf(v[0], 360) / 360; if (h < 0) h += 1;
-        if (w + bk >= 1) { float g = w / (w + bk); c[0] = c[1] = c[2] = g; }
-        else { c[0] = hue2rgb(0, 1, h + 1.f / 3); c[1] = hue2rgb(0, 1, h); c[2] = hue2rgb(0, 1, h - 1.f / 3); for (int i = 0; i < 3; i++) c[i] = c[i] * (1 - w - bk) + w; }
-        for (int i = 0; i < 3; i++) c[i] = srgb_dec(c[i]);
-    } else {
-        bool ok = s[0] == 'o', polar = strstr(s, "lch(") == s || strstr(s, "oklch(") == s;
-        float L = pc[0] ? v[0] / 100 * (ok ? 1 : 100) : v[0];
-        float scale = ok ? 0.4f : polar ? 150 : 125, A = pc[1] ? v[1] / 100 * scale : v[1], B = pc[2] ? v[2] / 100 * scale : v[2];
-        if (polar) { float C = A < 0 ? 0 : A, h = v[2] * (float)M_PI / 180; A = C * cosf(h); B = C * sinf(h); }
-        if (ok) {
-            float l = L + 0.3963377774f * A + 0.2158037573f * B, m = L - 0.1055613458f * A - 0.0638541728f * B, q = L - 0.0894841775f * A - 1.2914855480f * B;
-            l = l * l * l; m = m * m * m; q = q * q * q;
-            c[0] = 4.0767416621f * l - 3.3077115913f * m + 0.2309699292f * q;
-            c[1] = -1.2684380046f * l + 2.6097574011f * m - 0.3413193965f * q;
-            c[2] = -0.0041960863f * l - 0.7034186147f * m + 1.7076147010f * q;
-        } else {
-            const float k = 24389.f / 27, e = 216.f / 24389;
-            float fy = (L + 16) / 116, fx = fy + A / 500, fz = fy - B / 200;
-            c[0] = (fx * fx * fx > e ? fx * fx * fx : (116 * fx - 16) / k) * 0.96422f;
-            c[1] = L > k * e ? fy * fy * fy : L / k;
-            c[2] = (fz * fz * fz > e ? fz * fz * fz : (116 * fz - 16) / k) * 0.82521f;
-            mat3(D50_TO_D65, c); mat3(XYZ65_TO_LSRGB, c);
-        }
-    }
-    int r8[3]; for (int i = 0; i < 3; i++) r8[i] = (int)lroundf(LCLAMP(srgb_enc(c[i]), 0, 1) * 255);
-    *out = RGBA(r8[0], r8[1], r8[2], (int)LCLAMP(a * 255 + .5f, 0, 255));
+static CssColor color_of(Color c) { CssColor r = { CSPACE_SRGB, 0, true, { COLOR_R(c) / 255.0, COLOR_G(c) / 255.0, COLOR_B(c) / 255.0 }, COLOR_A(c) / 255.0 }; return r; }
+/* the colour value of st's color property, in full precision */
+static CssColor cur_color(const ComputedStyle *st) { CssColor c; if (st->color_ser && css_color_parse(st->color_ser, &c, NULL)) return c; return color_of(st->color); }
+/* parses a colour into *out and *ser (the computed value's serialization when 8-bit sRGB can't express it) */
+static bool parse_color_ser(const char *in, Color *out, const char **ser, const CssColor *cur) {
+    CssColor c;
+    if (!css_color_parse(in, &c, cur)) return false;
+    *out = css_color_rgba8(&c);
+    if (c.legacy && !c.none) *ser = NULL;
+    else { char buf[160]; css_color_serialize(&c, buf, sizeof buf); *ser = atom(buf); }
     return true;
 }
-
 bool css_parse_color(const char *in, Color *out, Color current) {
-    while (is_ws((unsigned char)*in)) in++;
-    char buf[128]; size_t L = strlen(in); if (L >= sizeof buf) L = sizeof buf - 1;
-    memcpy(buf, in, L); buf[L] = 0; while (L && is_ws((unsigned char)buf[L - 1])) buf[--L] = 0;
-    for (size_t i = 0; i < L; i++) buf[i] = (char)lc((unsigned char)buf[i]);
-    const char *s = buf;
-    if (s[0] == '#') {
-        unsigned v = 0; size_t n = strlen(s + 1);
-        for (size_t i = 1; s[i]; i++) if (!isxdigit((unsigned char)s[i])) return false;
-        v = (unsigned)strtoul(s + 1, NULL, 16);
-        if (n == 3) { *out = RGBA(((v >> 8) & 15) * 17, ((v >> 4) & 15) * 17, (v & 15) * 17, 255); return true; }
-        if (n == 4) { *out = RGBA(((v >> 12) & 15) * 17, ((v >> 8) & 15) * 17, ((v >> 4) & 15) * 17, (v & 15) * 17); return true; }
-        if (n == 6) { *out = 0xff000000u | v; return true; }
-        if (n == 8) { *out = ((v & 0xff) << 24) | (v >> 8); return true; }
-        return false;
-    }
-    if (!strcmp(s, "transparent")) { *out = 0; return true; }
-    if (!strcmp(s, "currentcolor")) { *out = current; return true; }
-    if (str_starts(s, "rgb(") || str_starts(s, "rgba(")) {
-        float v[4] = {0, 0, 0, 1}; bool pc[4] = {0}; int n = parse_fn_args(strchr(s, '(') + 1, v, pc, 4);
-        if (n < 3) return false;
-        int c[3]; for (int i = 0; i < 3; i++) c[i] = (int)LCLAMP(pc[i] ? v[i] * 2.55f : v[i], 0, 255);
-        float a = n > 3 ? (pc[3] ? v[3] / 100 : v[3]) : 1;
-        *out = RGBA(c[0], c[1], c[2], (int)LCLAMP(a * 255 + .5f, 0, 255)); return true;
-    }
-    if (str_starts(s, "hsl(") || str_starts(s, "hsla(")) {
-        float v[4] = {0, 0, 0, 1}; bool pc[4] = {0}; int n = parse_fn_args(strchr(s, '(') + 1, v, pc, 4);
-        if (n < 3) return false;
-        float h = fmodf(v[0], 360) / 360; if (h < 0) h += 1; float sat = v[1] / 100, l = v[2] / 100;
-        float q = l < .5f ? l * (1 + sat) : l + sat - l * sat, p = 2 * l - q;
-        float a = n > 3 ? (pc[3] ? v[3] / 100 : v[3]) : 1;
-        *out = RGBA((int)(hue2rgb(p, q, h + 1.f / 3) * 255 + .5f), (int)(hue2rgb(p, q, h) * 255 + .5f), (int)(hue2rgb(p, q, h - 1.f / 3) * 255 + .5f), (int)LCLAMP(a * 255 + .5f, 0, 255));
-        return true;
-    }
-    if (str_starts(s, "color-mix(")) {   /* color-mix(in <space>, c1 [p1], c2 [p2]): premultiplied sRGB mix */
-        char a[3][128]; int na = 0, d = 0; size_t k = 0;
-        for (const char *q = s + 10; *q && na < 3; q++) {
-            if (*q == '(') d++;
-            else if (*q == ')' && d-- == 0) { a[na][k] = 0; na++; break; }
-            if (*q == ',' && d == 0) { a[na][k] = 0; na++; k = 0; continue; }
-            if (k < sizeof a[0] - 1) a[na][k++] = *q;
-        }
-        if (na != 3) return false;
-        Color c[2]; float w[2]; bool hw[2];
-        for (int i = 0; i < 2; i++) {
-            char *t = a[i + 1]; while (*t == ' ') t++;
-            char *e = t + strlen(t); while (e > t && e[-1] == ' ') *--e = 0;
-            hw[i] = false; w[i] = 0;
-            char *sp = NULL; int dd = 0; for (char *q = t; *q; q++) { if (*q == '(') dd++; else if (*q == ')') dd--; else if (*q == ' ' && !dd) sp = q; }
-            if (sp && e > t && e[-1] == '%') { w[i] = (float)atof(sp + 1) / 100; hw[i] = true; *sp = 0; }
-            else if (*t && isdigit((unsigned char)*t) && (sp = strchr(t, ' ')) && sp[-1] == '%') { w[i] = (float)atof(t) / 100; hw[i] = true; t = sp + 1; }
-            if (!css_parse_color(t, &c[i], current)) return false;
-        }
-        if (!hw[0] && !hw[1]) w[0] = w[1] = .5f; else if (!hw[0]) w[0] = 1 - w[1]; else if (!hw[1]) w[1] = 1 - w[0];
-        float sum = w[0] + w[1]; if (sum <= 0) return false;
-        float mult = sum < 1 ? sum : 1; w[0] /= sum; w[1] /= sum;
-        float a0 = COLOR_A(c[0]) / 255.f * w[0], a1 = COLOR_A(c[1]) / 255.f * w[1], al = a0 + a1;
-        if (al <= 0) { *out = 0; return true; }
-        int r = (int)((COLOR_R(c[0]) * a0 + COLOR_R(c[1]) * a1) / al + .5f), g = (int)((COLOR_G(c[0]) * a0 + COLOR_G(c[1]) * a1) / al + .5f), b = (int)((COLOR_B(c[0]) * a0 + COLOR_B(c[1]) * a1) / al + .5f);
-        *out = RGBA(r, g, b, (int)LCLAMP(al * mult * 255 + .5f, 0, 255)); return true;
-    }
-    if (str_starts(s, "light-dark(")) { char t[96]; snprintf(t, sizeof t, "%s", s + 11); char *c = strchr(t, ','); if (c) *c = 0; return css_parse_color(t, out, current); }
-    if (str_starts(s, "oklch(") || str_starts(s, "lab(") || str_starts(s, "lch(") || str_starts(s, "oklab(") || str_starts(s, "color(") || str_starts(s, "hwb(")) {
-        if (strstr(s, "from ")) return false;   /* relative colours: not supported natively */
-        return wide_color(s, out);
-    }
-    int lo = 0, hi = (int)ARRLEN(named_colors) - 1;
-    for (int i = 0; i <= hi; i++) if (!strcmp(named_colors[i].n, s)) { *out = 0xff000000u | named_colors[i].c; return true; }
-    (void)lo;
-    return false;
+    CssColor cur = color_of(current), c;
+    if (!css_color_parse(in, &c, &cur)) return false;
+    *out = css_color_rgba8(&c);
+    return true;
 }
 
 /* ---------------- lengths ---------------- */
@@ -589,7 +461,7 @@ static void apply_bg_size(ACtx *c, const char *v) {
 }
 static void apply_background(ACtx *c, const char *v) {
     /* use last layer for color, first for image */
-    c->st->bg_color = 0; free(c->st->bg_image); c->st->bg_image = NULL; free(c->st->bg_gradient); c->st->bg_gradient = NULL;
+    c->st->bg_color = 0; c->st->bg_ser = NULL; free(c->st->bg_image); c->st->bg_image = NULL; free(c->st->bg_gradient); c->st->bg_gradient = NULL;
     c->st->bg_repeat = BG_REPEAT; c->st->bg_size_kind = BGS_AUTO; c->st->bg_pos[0] = c->st->bg_pos[1] = (Length){0, 0, LK_LEN};
     if (str_ieq(v, "none")) return;
     if (strstr(v, "url(") || strstr(v, "gradient(")) apply_background_image(c, v);
@@ -605,7 +477,7 @@ static void apply_background(ACtx *c, const char *v) {
         else if (str_ieq(tt, "repeat")) c->st->bg_repeat = BG_REPEAT;
         else if (str_ieq(tt, "cover") || str_ieq(tt, "contain")) apply_bg_size(c, tt);
         else if (!strcmp(tt, "/")) {}
-        else if (css_parse_color(tt, &col, c->st->color)) c->st->bg_color = col;
+        else if (css_parse_color(tt, &col, c->st->color)) { CssColor cc = cur_color(c->st); const char *ser = NULL; parse_color_ser(tt, &col, &ser, &cc); c->st->bg_color = col; c->st->bg_ser = ser; }
         else if (pos_n < 2 && (str_ieq(tt, "center") || str_ieq(tt, "left") || str_ieq(tt, "right") || str_ieq(tt, "top") || str_ieq(tt, "bottom") || isdigit((unsigned char)tt[0]) || tt[0] == '-' || tt[0] == '.')) { strncat(posbuf, " ", sizeof posbuf - strlen(posbuf) - 1); strncat(posbuf, tt, sizeof posbuf - strlen(posbuf) - 1); pos_n++; }
         free(t);
     }
@@ -1007,12 +879,12 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         const ComputedStyle *src = inherit ? (par ? par : def) : def;
         /* unset: inherited props inherit, others initial -- approximate: inherit color/font/text props */
         if (unset && par && (strstr(P, "color") == P || strstr(P, "font") || strstr(P, "text") || strstr(P, "line-height") || strstr(P, "white-space") || strstr(P, "visibility") || strstr(P, "cursor") || strstr(P, "letter"))) src = par;
-        if (!strcmp(P, "color")) st->color = src->color;
+        if (!strcmp(P, "color")) { st->color = src->color; st->color_ser = src->color_ser; }
         else if (!strcmp(P, "font-size")) st->font_size = src->font_size;
         else if (!strcmp(P, "font-weight")) st->font_weight = src->font_weight;
         else if (!strcmp(P, "font-family")) st->font_family = src->font_family;
         else if (!strcmp(P, "line-height")) { st->line_height = src->line_height; st->line_height_normal = src->line_height_normal; st->line_height_factor = src->line_height_factor; }
-        else if (!strcmp(P, "background-color") || !strcmp(P, "background")) { st->bg_color = src->bg_color; if (!strcmp(P, "background")) { free(st->bg_image); st->bg_image = NULL; free(st->bg_gradient); st->bg_gradient = NULL; } }
+        else if (!strcmp(P, "background-color") || !strcmp(P, "background")) { st->bg_color = src->bg_color; st->bg_ser = src->bg_ser; if (!strcmp(P, "background")) { free(st->bg_image); st->bg_image = NULL; free(st->bg_gradient); st->bg_gradient = NULL; } }
         else if (!strcmp(P, "display")) { st->display = src->display; st->display_text = src->display_text; }
         else if (!strcmp(P, "text-align")) st->text_align = src->text_align;
         else if (!strcmp(P, "width")) st->width = src->width;
@@ -1063,7 +935,7 @@ apply:
         else if (!strcmp(P, "appearance") || !strcmp(P, "-webkit-appearance")) st->appearance = str_ieq(val, "none") ? 1 : 0;
         break;
     case 'b':
-        if (!strcmp(P, "background-color")) { if (css_parse_color(val, &col, st->color)) st->bg_color = col; }
+        if (!strcmp(P, "background-color")) { CssColor cc = cur_color(st); const char *ser; if (parse_color_ser(val, &col, &ser, &cc)) { st->bg_color = col; st->bg_ser = ser; } }
         else if (!strcmp(P, "background")) apply_background(&c, val);
         else if (!strcmp(P, "background-image")) apply_background_image(&c, val);
         else if (!strcmp(P, "background-repeat")) { st->bg_repeat = str_ieq(val, "no-repeat") ? BG_NO_REPEAT : str_ieq(val, "repeat-x") ? BG_REPEAT_X : str_ieq(val, "repeat-y") ? BG_REPEAT_Y : BG_REPEAT; }
@@ -1111,7 +983,7 @@ apply:
         else if (!strcmp(P, "backdrop-filter") || !strcmp(P, "-webkit-backdrop-filter")) { const char *b = strstr(val, "blur("); st->backdrop_blur = b ? alen_px(&c, b + 5, 0) : 0; }
         break;
     case 'c':
-        if (!strcmp(P, "color")) { if (css_parse_color(val, &col, par ? par->color : st->color)) { st->color = col; } }
+        if (!strcmp(P, "color")) { CssColor cc = cur_color(par ? par : st); const char *ser; if (parse_color_ser(val, &col, &ser, &cc)) { st->color = col; st->color_ser = ser; } }
         else if (!strcmp(P, "clear")) { static const char *const cl[] = { "none", "left", "right", "both", NULL }; k = kw(val, cl); if (k >= 0) st->clear = (uint8_t)k; else if (str_ieq(val, "inline-start")) st->clear = CLEAR_LEFT; }
         else if (!strcmp(P, "cursor")) { st->cursor = str_ieq(val, "pointer") ? CUR_POINTER : str_ieq(val, "text") ? CUR_TEXT : str_ieq(val, "move") ? CUR_MOVE : str_ieq(val, "not-allowed") ? CUR_NOT_ALLOWED : str_istarts(val, "grab") ? CUR_GRAB : CUR_DEFAULT; }
         else if (!strcmp(P, "content")) { free(st->content); st->content = NULL; if (!str_ieq(val, "none") && !str_ieq(val, "normal")) { SB b; sb_init(&b); const char *q = val; while (*q) { if (*q == '"' || *q == '\'') { char qc = *q++; while (*q && *q != qc) { if (*q == '\\' && q[1]) { q++; if (isxdigit((unsigned char)*q)) { uint32_t cp = (uint32_t)strtoul(q, (char **)&q, 16); sb_utf8(&b, cp); if (*q == ' ') q++; continue; } } sb_putc(&b, *q++); } if (*q) q++; } else if (str_istarts(q, "attr(")) { const char *e2 = strchr(q, ')'); char an[64]; snprintf(an, sizeof an, "%.*s", (int)(e2 ? e2 - q - 5 : 0), q + 5); const char *attribute = str_trim(an); st->attribute_dependencies |= custom_bit(atom_lower(attribute, strlen(attribute))); const char *av = el ? node_attr(el, attribute) : NULL; if (av) sb_puts(&b, av); q = e2 ? e2 + 1 : q + strlen(q); } else if (str_istarts(q, "open-quote")) { sb_puts(&b, "\xe2\x80\x9c"); q += 10; } else if (str_istarts(q, "close-quote")) { sb_puts(&b, "\xe2\x80\x9d"); q += 11; } else q++; } st->content = sb_take(&b); } }
@@ -4116,8 +3988,8 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
     }
     else if (!strcmp(prop, "position")) sb_puts(&b, ps[s->position]);
     else if (!strcmp(prop, "visibility")) sb_puts(&b, s->visibility ? "hidden" : "visible");
-    else if (!strcmp(prop, "color")) color_str(&b, s->color);
-    else if (!strcmp(prop, "background-color")) color_str(&b, s->bg_color);
+    else if (!strcmp(prop, "color")) { if (s->color_ser) sb_puts(&b, s->color_ser); else color_str(&b, s->color); }
+    else if (!strcmp(prop, "background-color")) { if (s->bg_ser) sb_puts(&b, s->bg_ser); else color_str(&b, s->bg_color); }
     else if (!strcmp(prop, "background-image")) {
         const Gradient *g = s->bg_gradient;
         if (s->bg_image) sb_printf(&b, "url(\"%s\")", s->bg_image);

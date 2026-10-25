@@ -135,12 +135,54 @@ function specNormalize(p, v) {
 const SPEC_COLOR_PROPS = new SSet(['color', 'background-color', 'border-top-color', 'border-right-color', 'border-bottom-color', 'border-left-color', 'border-block-start-color', 'border-block-end-color',
     'border-inline-start-color', 'border-inline-end-color', 'outline-color', 'caret-color', 'column-rule-color', 'text-decoration-color', 'text-emphasis-color', 'flood-color', 'lighting-color', 'stop-color', '-webkit-text-fill-color', '-webkit-text-stroke-color']);
 const specAlpha = a => { const b = Math.round(a * 255); for (const d of [2, 3]) { const t = +a.toFixed(d); if (Math.round(t * 255) === b) return String(t); } return String(+a.toFixed(6)); };
+/* top-level pieces of s: split at commas (commas) or at whitespace with '/' its own piece */
+function specSplit(s, commas) {
+    const out = []; let d = 0, cur = '';
+    for (const ch of s) {
+        if (ch === '(') d++; else if (ch === ')') d--;
+        if (!d && (commas ? ch === ',' : /\s|\//.test(ch))) { if (cur.trim()) out.push(cur.trim()); if (ch === '/') out.push('/'); cur = ''; continue; }
+        cur += ch;
+    }
+    if (cur.trim()) out.push(cur.trim());
+    return out;
+}
+const specTok = t => t.replace(/^([+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?)(%|[a-z]*)$/, (m, n, u) => String(+(+n).toFixed(6)) + u);
+/* Chrome's specified form of relative colours and color-mix(): nested colours in their specified form, rgba/hsla as
+   rgb/hsl, color-mix percentages normalized; null when the colour is invalid */
+function specColorFn(low) {
+    if (N.cssColor(low) === null) return null;
+    let m = /^(rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\(\s*from\s+([\s\S]*)\)$/.exec(low);
+    if (m) {
+        const t = specSplit(m[2]), origin = specColor(t[0], 'color');
+        if (origin == null) return null;
+        const rest = t.slice(1).map(x => x === '/' ? x : specTok(x));
+        return `${m[1].replace(/a$/, '')}(from ${origin} ${rest.join(' ')})`;
+    }
+    m = /^color-mix\(([\s\S]*)\)$/.exec(low);
+    if (!m) return low;
+    const parts = specSplit(m[1], true), head = /^in\s/.test(parts[0]) ? parts.shift().split(/\s+/).join(' ') : null, items = [];
+    for (const part of parts) {
+        const toks = specSplit(part); let pct = null, col = [];
+        for (const x of toks) if (pct === null && (/%$/.test(x) || /^calc\(/.test(x))) pct = specTok(x); else col.push(x);
+        const c = specColor(col.join(' '), 'color');
+        if (c == null) return null;
+        items.push([c, pct]);
+    }
+    if (items.length === 2) {
+        const [a, b] = items, num = p => p !== null && /^[\d.]+%$/.test(p) ? parseFloat(p) : null;
+        if (a[1] === null && num(b[1]) !== null) a[1] = (100 - num(b[1])) + '%';
+        else if (b[1] === null && num(a[1]) !== null) b[1] = (100 - num(a[1])) + '%';
+        if (num(a[1]) === 50 && num(b[1]) === 50) a[1] = b[1] = null;
+    }
+    return `color-mix(${head ? head + ', ' : ''}${items.map(([c, p]) => p === null ? c : `${c} ${p}`).join(', ')})`;
+}
 function specColor(v, p) {
     const t = v.replace(/\/\*[\s\S]*?\*\//g, '').trim(), low = t.toLowerCase();
     if (low === 'auto' && /^(caret|accent)-color$/.test(p)) return t;
     if (/rule-color$/.test(p || '')) { let f = low, g; while ((g = f.replace(/[a-z-]*\([^()]*\)/g, 'x')) !== f) f = g; if (/,|\brepeat\b|^x$/.test(f) && /,|repeat\(/.test(low)) return t; }
     if (/^(inherit|initial|unset|revert|revert-layer)$/.test(low) || /var\(|env\(|attr\(/i.test(t)) return v;
     /* forms cssColor does not model are kept as written unless plainly empty */
+    if (/^(color-mix\(|(rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\(\s*from\s)/.test(low)) return specColorFn(low);
     if (/\bfrom\b|calc\(|color-mix\(|color-layers\(|alpha\(|contrast-color\(|light-dark\(|device-cmyk\(|sibling-(index|count)\(|display-p3-linear/.test(low)) return /\(\s*\)/.test(low) ? null : v;
     const c = cssColor(t);
     if (!c) return null;
@@ -148,6 +190,16 @@ function specColor(v, p) {
     if (/\bnone\b/.test(low)) return t;
     if (/^[a-z]+$/.test(low)) return low;
     if (/^color\(/.test(low) && c.space) return `color(${c.space === 'xyz' ? 'xyz-d65' : c.space} ${c.c.map(colorNum).join(' ')}${c.alpha < 1 ? ' / ' + colorNum(c.alpha) : ''})`;
+    const lm = /^(lab|lch|oklab|oklch)\(([^()]*)\)$/.exec(low);
+    if (lm) {
+        const ok = lm[1][0] === 'o', tk = specSplit(lm[2]);
+        if (tk.length === 3 || (tk.length === 5 && tk[3] === '/')) {
+            const L = tk[0].endsWith('%') ? parseFloat(tk[0]) / (ok ? 100 : 1) : parseFloat(tk[0]);
+            const ch = [String(+Math.min(ok ? 1 : 100, Math.max(0, L)).toFixed(6)), ...tk.slice(1, 3).map(x => specTok(x.replace(/deg$/, '')))];
+            const a = tk[4] === undefined ? null : tk[4].endsWith('%') ? String(+(parseFloat(tk[4]) / 100).toFixed(6)) : specTok(tk[4]);
+            return `${lm[1]}(${ch.join(' ')}${a !== null && a !== '1' ? ' / ' + a : ''})`;
+        }
+    }
     if (/^(ok)?lch\(/.test(low)) return t.replace(/([\d.])deg\b/gi, '$1');
     if (!c.legacy && !/^(#|rgba?\(|hsla?\(|hwb\()/.test(low)) return v;
     const [r, g, b] = (c.legacy ? c.c : colorTo(c, 'srgb')).map(x => Math.round(Math.min(1, Math.max(0, x)) * 255));

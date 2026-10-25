@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **175**.
+  - Number the runs. The next run is **176**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,22 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 175 ...)
+(append here: RUN 176 ...)
+
+RUN 175: CSS colours in double precision. `/css/css-color/parsing/` 78.7%* -> **89.6%** (+1,240 against the first
+175 measurement; earlier native colours: about 4,200 short), `/css/css-color/` animation unchanged (59.6%).
+- New `src/css/color.c`/`color.h`: CSS Color 4/5 parser (hex, named + all system colours, rgb/hsl/hwb, lab/lch/oklab/oklch,
+  color() incl. display-p3-linear, relative colours with channel keywords and calc()/min/max/clamp/round/..., color-mix()
+  in any space with hue methods, 1 or 2 colours, `none`, carried-forward analogous components, powerless hues,
+  alpha(from ...), contrast-color(), light-dark()), conversions via XYZ D65, computed serialization.
+- `css_parse_color` (style.c) now uses it (no 128-byte limit; color-mix no longer sRGB-only). Computed `color` and
+  `background-color` keep a full serialization (`ComputedStyle.color_ser`/`bg_ser`, atoms) when 8-bit sRGB can't express it.
+- `N.cssColor(str)` validates/serializes for JS; `specColorFn` (03-element.js) gives Chrome's specified form of
+  relative colours and color-mix() (nested colours specified-serialized, rgba->rgb, mix percentages normalized);
+  absolute lab-family specified values normalized (alpha %, L clamp).
+- Tried: transitions between non-legacy colours in OKLab (06d-anim.js `waMix`) -> color-interpolation.html threw
+  "Cannot read properties of undefined (reading '0')" (test or later code reads tokens), reverted; lead.
+- Remaining regressions: system-color-consistency dark scheme (12), `sign(100em - 1px)` in a mix percentage (1).
 
 RUN 174: `/editing/other/` 42.1% -> **54.5%** (+1,890; `/editing/run/` unchanged at 98.5%), the-script-element 30.1% -> **43.4%** (+432).
 - `src/js/lazy/editing.js`: joining sibling blocks of different white-space (the `whiteSpaceSpan` case) moves only the

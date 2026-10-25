@@ -86,6 +86,7 @@ typedef struct ComputedStyle {
     Length border_radius[4]; /* tl tr br bl */
     float outline_width, outline_offset; Color outline_color;
     Color color, bg_color;
+    const char *color_ser, *bg_ser;  /* atoms: computed values of colours that 8-bit sRGB can't express, else NULL */
     char *bg_image;         /* url (owned) */
     Gradient *bg_gradient;  /* owned */
     char *mask_image;       /* url (owned) */
