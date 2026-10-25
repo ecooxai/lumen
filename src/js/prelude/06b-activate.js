@@ -20,15 +20,22 @@ function pickFiles(el) {
         dispatch(el, new Event('input', { bubbles: true, composed: true })); dispatch(el, new Event('change', { bubbles: true }));
     }, !!el.multiple, el.accept || '');
 }
+/* a button's commandfor behavior; false if it has no commandfor target (the popovertarget behavior runs then) */
 function buttonCommand(el) {
     const target = el.commandForElement, command = el.command;
-    if (!target || !command) return;
-    const custom = command.startsWith('--');
-    if (!custom && (!(target instanceof H.HTMLDialogElement) || !['show-modal', 'close', 'request-close'].includes(command))) return;
-    if (!dispatch(target, new CommandEvent('command', { command, source: el, cancelable: true }), true) || !target.isConnected || custom) return;
-    if (command === 'show-modal') { if (!target.open) dialogShow(target, true, el); }
+    if (!target) return false;
+    if (!command) return true;
+    const custom = command.startsWith('--'), pop = POP_CMDS.has(command);
+    if (!custom && !(pop ? popState(target) : target instanceof H.HTMLDialogElement && ['show-modal', 'close', 'request-close'].includes(command))) return true;
+    if (pop && (command === 'show-popover' ? N.popover(target) : command === 'hide-popover' ? !N.popover(target) : false)) return true;
+    if (!dispatch(target, new CommandEvent('command', { command, source: el, cancelable: true }), true) || !target.isConnected || custom) return true;
+    if (pop) {
+        if (N.popover(target)) { if (command !== 'show-popover') popHide(target, true, true, false, el); }
+        else if (command !== 'hide-popover' && popValid(target, false, false, null)) popShow(target, false, el);
+    } else if (command === 'show-modal') { if (!target.open) dialogShow(target, true, el); }
     else if (command === 'close') dialogClose(target, el.getAttribute('value') ?? undefined, el);
     else dialogRequestClose(target, el.getAttribute('value') ?? undefined, el);
+    return true;
 }
 // <a download>, blob: and data: links become downloads; http(s) ones go to the download manager with cookies
 function saveHref(href, name) {
@@ -67,9 +74,10 @@ function activate(el, ev, pre) {
             if (f) {
                 if (t === 'submit') { f.requestSubmit(el); return; }
                 if (t === 'reset') { f.reset(); return; }
-                if ((el.getAttribute('type') || '').toLowerCase() !== 'button') return;
+                if ((el.getAttribute('type') || '').toLowerCase() !== 'button') { popTargetActivate(el, ev); return; }
             }
-            buttonCommand(el); return;
+            if (!buttonCommand(el)) popTargetActivate(el, ev);
+            return;
         }
         if (pre) { if (!pre.noop) { dispatch(el, new Event('input', { bubbles: true })); dispatch(el, new Event('change', { bubbles: true })); } }
         else if (t === 'checkbox' || (t === 'radio' && !el.checked)) {
@@ -80,6 +88,7 @@ function activate(el, ev, pre) {
         else if (t === 'submit' || t === 'image') { const f = el.form; if (f) f.requestSubmit(el); }
         else if (t === 'reset') { const f = el.form; if (f) f.reset(); }
         else if (name === 'input') N.focus(el);
+        if (name === 'input' && (t === 'button' || ((t === 'reset' || t === 'submit' || t === 'image') && !el.form))) popTargetActivate(el, ev);
     } else if (name === 'label') {
         /* a click on the control itself or on interactive content inside the label is that element's alone */
         for (let n = ev && ev.target; n && n !== el; n = N.parent(n)) if (N.type(n) === 1 && INTERACTIVE.has(N.name(n))) return;

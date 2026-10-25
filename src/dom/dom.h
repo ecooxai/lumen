@@ -40,6 +40,7 @@ enum {
     NF_SR_CLOSED = 1 << 22, NF_SR_DELEGATES = 1 << 23, NF_SR_SERIALIZABLE = 1 << 24, NF_SR_CLONABLE = 1 << 25,
     NF_SR_MANUAL = 1 << 26, NF_SR_DECLARATIVE = 1 << 27,
     NF_SAN_MADE = 1 << 28,        /* made by a sanitizing parser, which frees it unless inserted */
+    NF_POPOVER_OPEN = 1u << 29,   /* a showing popover: :popover-open */
 };
 
 /* name is an atom: the qualified name. ns and pfx are atoms of a namespaced attribute (setAttributeNS, XML), else NULL. */

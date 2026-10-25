@@ -278,6 +278,9 @@ function dispatch(target, ev, trusted) {
     if (ev.bubbles) { evPhase(ev, 3); for (let i = 0; i < path.length; i++) { if (ev._stop) break; if (formStop && formStop(path[i])) { ev._stop = true; break; } invoke(path[i], ev, 3, shadow[i + 1]); } }
     evPhase(ev, 0); evCurrent(ev, null);
     if (act) { if (!ev.defaultPrevented) { try { activate(act, ev, pre); } catch (e) { report(e); } } else if (pre && pre.restore) pre.restore(); }
+    /* popover light dismiss and close requests (04p-popover.js) */
+    const ty = ev._type;
+    if (trusted && (ty === 'pointerdown' || ty === 'pointerup' || ty === 'keydown') && typeof popUserEvent === 'function') { try { popUserEvent(target, ev); } catch (e) { report(e); } }
     return !ev.defaultPrevented;
 }
 const ABORT_FIRE = (t, ev) => dispatch(t, ev, true);

@@ -47,7 +47,7 @@
             if (o.k0) kw.set('', o.k0);
             const miss = o.m ?? (o.nul ? null : ''), inv = o.i ?? miss;
             return [function () { const v = N.attr(this, a); if (v == null) return miss; const k = kw.get(asciiLower(v)); return k === undefined ? inv : k; },
-                function (v) { if (o.nul && v === null) this.removeAttribute(a); else set(this, a, v); }];
+                function (v) { if (o.nul && v == null) this.removeAttribute(a); else set(this, a, v); }];
         },
     };
     const RP = { k: 'no-referrer no-referrer-when-downgrade same-origin origin strict-origin origin-when-cross-origin strict-origin-when-cross-origin unsafe-url', k0: '' };
@@ -60,7 +60,8 @@
     /* interface: space-separated entries "prop[/attr]" of type t (s if none), as groups [type, entries, options] */
     const table = {
         HTMLElement: [['e', 'dir', { k: 'ltr rtl auto' }], ['e', 'enterKeyHint', { k: 'enter done go next previous search send' }],
-            ['e', 'inputMode', { k: 'none text tel url email numeric decimal search' }]],
+            ['e', 'inputMode', { k: 'none text tel url email numeric decimal search' }],
+            ['e', 'popover', { k: 'auto manual hint', k0: 'auto', nul: 1, i: 'manual' }]],
         HTMLHtmlElement: [['s', 'version']],
         HTMLScriptElement: [['u', 'src'], ['s', 'type charset integrity event htmlFor/for'], ['b', 'noModule defer'], ['e', 'crossOrigin', CORS]],
         HTMLModElement: [['u', 'cite'], ['s', 'dateTime']],

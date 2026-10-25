@@ -392,9 +392,14 @@ function dialogShow(d, modal, source = null) {
         if (!!N.modal(d) !== modal) throw new DOMException('Dialog is already open in another mode', 'InvalidStateError');
         return;
     }
+    if (N.popover(d)) throw new DOMException('The dialog is already open as a Popover.', 'InvalidStateError');
     if (modal && !d.isConnected) throw new DOMException('Dialog is not connected', 'InvalidStateError');
     if (!dispatch(d, new ToggleEvent('beforetoggle', { oldState: 'closed', newState: 'open', source, cancelable: true }), true)) return;
     if (d.open || (modal && !d.isConnected)) return;
+    if (modal) {   /* a modal dialog hides the popovers it is not nested in */
+        const doc = d.ownerDocument || document, L = popLists(doc);
+        hideAllUntil(topmostAncestor(d, L.hint, null, false) || topmostAncestor(d, L.auto, null, false) || doc, false, true);
+    }
     const s = dialogState(d); s.previousFocus = document.activeElement;
     dialogToggle(d, 'closed', 'open', source);
     d.open = true; N.modal(d, modal);

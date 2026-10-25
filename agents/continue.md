@@ -42,7 +42,7 @@ Older notes, read on demand:
   - Chrome baseline: `wpt-data/chrome-base.json`.
   - Run: `python3 tools/codex_compile.py python3 tests/wpt/lumen_wpt.py run --jobs 5 /css/css-grid/ ...`. Add `--rerun` to redo tests that already have results; otherwise they are skipped.
   - Report: `python3 tests/wpt/lumen_wpt.py report [PREFIX...] [--deep]`. It rewrites `report.md` and `gaps.json`, and "Lumen of Chrome-passing" is the number to compare.
-  - Number the runs. The next run is **173**.
+  - Number the runs. The next run is **174**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -138,7 +138,21 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 173 ...)
+(append here: RUN 174 ...)
+
+RUN 173: the popover API. `/html/semantics/popovers/` 25.0% -> **95.2%** (+2,741), interactive-elements 46.6% -> 49.5%,
+`/html/` 81.6% -> **83.4%**. Phone check of runs 171–172 first (APK built, `device_tests.py google youtube webgl
+webgpu`): all settled <= 3.5% CPU, peak RSS 540 MB, no crashes; WebGPU anim 23.7 fps vs WebGL 57.8 (not flagged).
+- New `src/js/prelude/04p-popover.js`: show/hide/toggle popover algorithms, showing auto and hint lists, topmost popover
+  ancestor, light dismiss (trusted pointerdown/up, hooked at the end of `dispatch` in `01-events.js`), Escape closes the
+  topmost popover (else the last modal dialog gets a close request), coalesced toggle events, popovertarget activation
+  (`06b-activate.js`), `toggle-/show-/hide-popover` commands, popover attribute changes hide (`ceAttr`), showModal hides
+  popovers. Visibility is the native flag `NF_POPOVER_OPEN` (`N.popover`), matched by `:popover-open` and cleared on
+  disconnect (lists drop such entries lazily). UA sheet: spec `[popover]` rules (fixed, inset 0, fit-content, border).
+- Reflection: `popover` enum; nullable enum setters take `undefined` as null (WebIDL).
+- Left: popover-focus (sequential Tab navigation into popovers), top-layer nesting tests time out, `overlay` property.
+- Never-run first measurement started (referrer-policy, mimesniff, user-timing, cookies, websockets, scroll-animations)
+  but stopped at 62/2571: 0.15 tests/s, many timeouts. testdriver-vendor lacks `delete_all_cookies` (cookies tests).
 
 RUN 172: fixed run 171's `url-base-about` regression: `documentBaseURI` uses the document's own URL (`N.url()`) for
 non-window documents without `__url` (DOMParser), the inherited base only for the window document. `/domparsing/`

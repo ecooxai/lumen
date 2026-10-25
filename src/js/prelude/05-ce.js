@@ -282,7 +282,7 @@ function ceMoved(root) {
 }
 function ceAttr(el, name, old, v, ns = null) {
     if (name === 'type' && ns === null && old !== v && oprOf.has(el)) oprDisconnectAll(el);
-    if (ns === null && N.ns(el) === 0) formAttr(el, name, old, v);
+    if (ns === null && N.ns(el) === 0) { formAttr(el, name, old, v); if (name === 'popover') popAttrChanged(el, old, v); }
     const d = el.__ce; if (!d || !d.observed.includes(name) || typeof el.attributeChangedCallback !== 'function') return;
     try { el.attributeChangedCallback(name, old, v, ns); } catch (e) { report(e); }
 }

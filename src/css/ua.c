@@ -33,5 +33,7 @@ const char *css_ua_sheet =
 /* Chrome's fullscreen element; with no top layer here, the highest z-index puts it over the page */
 ":not(:root):fullscreen{object-fit:contain;position:fixed!important;top:0!important;right:0!important;bottom:0!important;left:0!important;margin:0!important;box-sizing:border-box!important;min-width:0!important;max-width:none!important;min-height:0!important;max-height:none!important;width:100%!important;height:100%!important;transform:none!important;z-index:2147483647!important}"
 "iframe:fullscreen{border:none!important;padding:0!important}video:fullscreen{background-color:#000}"
-"[popover]:not(:popover-open){display:none}marquee{display:inline-block}"
+"[popover]:not(:popover-open):not(dialog[open]){display:none}dialog:popover-open{display:block}"
+"[popover]{position:fixed;inset:0;width:fit-content;height:fit-content;margin:auto;border:solid;padding:.25em;overflow:auto;color:CanvasText;background-color:Canvas}"
+"marquee{display:inline-block}"
 ;

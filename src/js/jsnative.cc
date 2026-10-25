@@ -604,6 +604,18 @@ FN(modal) {
     }
     RET(!!(n->flags & NF_MODAL));
 }
+/* popover(el[, showing]): el's popover visibility state (:popover-open); disconnecting hides it */
+FN(popover) {
+    CTX; ARGN(n, 0);
+    if (a.Length() > 1) {
+        bool on = BOOL(1);
+        if (on != !!(n->flags & NF_POPOVER_OPEN)) {
+            if (on) n->flags |= NF_POPOVER_OPEN; else n->flags &= ~(uint32_t)NF_POPOVER_OPEN;
+            if (n->doc) doc_mark_state_dirty(n->doc, n, true);
+        }
+    }
+    RET(!!(n->flags & NF_POPOVER_OPEN));
+}
 /* fullscreen(el, on, window): marks el :fullscreen or not, and the <iframe>s holding this document with it;
    window asks the browser to fill the window with the page or put it back */
 FN(fullscreen) {
@@ -1461,7 +1473,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(matches); REG(byId); REG(clone); REG(doc); REG(contains); REG(connected); REG(host); REG(setRealm); REG(realmOf); REG(attachShadow);
     REG(shadowOf); REG(srFlags); REG(srSetFlags); REG(srRef); REG(getHTML); REG(parseFragEx); REG(parseDocEx);
     REG(templateContent); REG(rect); REG(textRects); REG(vrect); REG(clipSet); REG(clipGet); REG(clipImage); REG(scrollPos); REG(setScroll); REG(computed); REG(trTake); REG(setAnimStyle); REG(value); REG(setValue); REG(ctlSel); REG(setCtlSel); REG(checked); REG(setChecked); REG(pickFiles);
-    REG(modal); REG(fullscreen); REG(focus); REG(active); REG(cookie); REG(setCookie); REG(url); REG(docBase); REG(setUrl); REG(navigate); REG(navigatePost); REG(histGo);
+    REG(modal); REG(popover); REG(fullscreen); REG(focus); REG(active); REG(cookie); REG(setCookie); REG(url); REG(docBase); REG(setUrl); REG(navigate); REG(navigatePost); REG(histGo);
     REG(histLen); REG(internal); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
     REG(abort); REG(fetchPause); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(mediaOpenBytes); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove);
     REG(mediaBuffered); REG(mediaEos); REG(mediaSetDuration); REG(mediaPlay); REG(mediaPause); REG(mediaSeek);

@@ -366,7 +366,7 @@ function attrSetQ(el, n, v) {
 }
 const reflectUrl = (p, ...ns) => { for (const n of ns) { const a = n.toLowerCase(); racc(p, n, function () { const v = N.attr(this, a); if (v == null) return ''; const r = N.urlParse(v, document.baseURI, docEnc(this)); return r ? r[0] : v; }, function (v) { this.setAttribute(a, v); }); } };
 const reflectInt = (p, d, ...ns) => { for (const n of ns) { const a = n.toLowerCase(); racc(p, n, function () { const v = parseInt(N.attr(this, a), 10); return isNaN(v) ? d : v; }, function (v) { this.setAttribute(a, String(v | 0)); }); } };
-const EVENT_HANDLERS = 'abort animationend animationiteration animationstart auxclick beforeinput blur cancel canplay canplaythrough change click close contextmenu copy cut dblclick drag dragend dragenter dragleave dragover dragstart drop durationchange emptied ended error focus focusin focusout input invalid keydown keypress keyup load loadeddata loadedmetadata loadstart mousedown mouseenter mouseleave mousemove mouseout mouseover mouseup paste pause play playing pointercancel pointerdown pointerenter pointerleave pointermove pointerout pointerover pointerup progress ratechange reset resize scroll seeked seeking select selectionchange selectstart stalled submit suspend timeupdate toggle touchcancel touchend touchmove touchstart transitionend volumechange waiting wheel webkitanimationend webkitanimationiteration webkitanimationstart webkittransitionend'.split(' ');
+const EVENT_HANDLERS = 'abort animationend animationiteration animationstart auxclick beforeinput beforetoggle blur cancel canplay canplaythrough change click close contextmenu copy cut dblclick drag dragend dragenter dragleave dragover dragstart drop durationchange emptied ended error focus focusin focusout input invalid keydown keypress keyup load loadeddata loadedmetadata loadstart mousedown mouseenter mouseleave mousemove mouseout mouseover mouseup paste pause play playing pointercancel pointerdown pointerenter pointerleave pointermove pointerout pointerover pointerup progress ratechange reset resize scroll seeked seeking select selectionchange selectstart stalled submit suspend timeupdate toggle touchcancel touchend touchmove touchstart transitionend volumechange waiting wheel webkitanimationend webkitanimationiteration webkitanimationstart webkittransitionend'.split(' ');
 const EMPTY_SCOPE = Object.freeze(Object.create(null));
 function compileHandler(el, k, src) {
     const c = el.__hc || (def(el, '__hc', {}), el.__hc);
@@ -473,7 +473,6 @@ methods(HTMLElement.prototype, {
         finally { this.__clicking = false; }
     },
     attachInternals() { return { setFormValue() {}, setValidity() {}, checkValidity() { return true; }, reportValidity() { return true; }, states: new SSet(), form: null, labels: [] }; },
-    showPopover() {}, hidePopover() {}, togglePopover() {},
 });
 class SVGElement extends Element {}
 installHandlers(SVGElement.prototype, true);

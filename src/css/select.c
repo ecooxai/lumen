@@ -337,7 +337,8 @@ static bool match_pseudo(const SimpleSel *s, Node *el, Node *scope) {
         const char *u = el->doc && el->doc->url ? strchr(el->doc->url, '#') : NULL;
         return u && u[1] && el->id && !strcmp(el->id, u + 1) && (el->flags & NF_CONNECTED);
     }
-    if (n == P_default || n == P_popover_open) return false;
+    if (n == P_popover_open) return (el->flags & NF_POPOVER_OPEN) != 0;
+    if (n == P_default) return false;
     if (n == P_playing || n == P_paused) return n == P_paused;
     /* vendor / unknown pseudo-classes never match */
     return false;
