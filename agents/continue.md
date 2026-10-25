@@ -146,6 +146,9 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 RUN 202: Selection.addRange() accepts a Range from another realm (brand check on the internal _sc instead of
 instanceof; 06c-traversal.js). /editing/run/undo-redo.html 1 -> 35 / 69 (no longer times out); /selection/ +1,
 lost 0. Lead: the remaining undo-redo failures are undo not restoring the content after insertParagraph & co.
+The only undo history is the edit bar's (08-window.js undoStack: per-host innerHTML snapshots taken on input
+events, 'lumenundo'); execCommand('undo'/'redo') needs its own per-document transaction history (snapshot the
+host's markup + selection before each execCommand, restore on undo, redo stack cleared by new edits).
 
 Gap ranking after run 201 within /editing/ (Chrome-passing subtests Lumen misses): whitespaces/chrome-compat 387
 (12 files), exec-command-with-text-editor.tentative.html textarea/text/password 112/94/84, plaintext-only/
