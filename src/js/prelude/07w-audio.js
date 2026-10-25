@@ -7,8 +7,10 @@ const silence = new Float32Array(Q);
 const apNum = (v, m) => { v = +v; if (!Number.isFinite(v)) throw new TypeError(`Failed to execute '${m}' on 'AudioParam': The provided float value is non-finite.`); return v; };
 const apTime = (t, m) => { t = apNum(t, m); if (t < 0) throw new RangeError(`Failed to execute '${m}' on 'AudioParam': The time provided (${t}) is less than the minimum bound (0).`); return t; };
 class AudioParam {
-    constructor(ctx, v, min = -3.4e38, max = 3.4e38) { this._c = ctx; this._v = v; this.defaultValue = v; this.minValue = min; this.maxValue = max; this._ev = []; this._t0 = 0; }
+    constructor(ctx, v, min = -3.4e38, max = 3.4e38) { this._c = ctx; this._v = v; this._dv = v; this._min = min; this._max = max; this._ev = []; this._t0 = 0; }
     get value() { return this._v; }
+    get defaultValue() { return this._dv; } get minValue() { return this._min; } get maxValue() { return this._max; }
+    get automationRate() { return this._rate || 'a-rate'; } set automationRate(v) { if (v === 'a-rate' || v === 'k-rate') this._rate = v; }
     set value(x) { x = +x; if (x === x) { this._v = x; this._ev = []; } }
     _add(e) {
         const ev = this._ev;
@@ -63,7 +65,12 @@ class AudioParam {
 class AudioNode extends EventTarget {
     constructor(ctx, ins = 1, outs = 1) {
         if (!(ctx instanceof BaseAudioContext)) throw new TypeError(`Failed to construct '${new.target.name}': parameter 1 is not of type 'BaseAudioContext'.`);
-        super(); this.context = ctx; this.numberOfInputs = ins; this.numberOfOutputs = outs; this.channelCount = 2; this.channelCountMode = 'max'; this.channelInterpretation = 'speakers'; this._in = new SSet(); this._out = new SSet(); this._q = -1; this._o = null; }
+        super(); this._ctx = ctx; this._nin = ins; this._nout = outs; this._cc = 2; this._ccm = 'max'; this._ci = 'speakers'; this._in = new SSet(); this._out = new SSet(); this._q = -1; this._o = null; }
+    get context() { return this._ctx; } get numberOfInputs() { return this._nin; } get numberOfOutputs() { return this._nout; }
+    get channelCount() { return this._cc; }
+    set channelCount(v) { v = +v; if (!(v >= 1 && v <= 32)) throw new DOMException(`Failed to set the 'channelCount' property on 'AudioNode': The channel count provided (${v}) is outside the range [1, 32].`, 'NotSupportedError'); this._cc = v; }
+    get channelCountMode() { return this._ccm; } set channelCountMode(v) { v = String(v); if (['max', 'clamped-max', 'explicit'].includes(v)) this._ccm = v; }
+    get channelInterpretation() { return this._ci; } set channelInterpretation(v) { v = String(v); if (['speakers', 'discrete'].includes(v)) this._ci = v; }
     connect(d) {
         if (d instanceof AudioParam) { (d._in || (d._in = new SSet())).add(this); this._out.add(d); return; }
         if (!(d instanceof AudioNode)) throw new TypeError('connect: not an AudioNode');
