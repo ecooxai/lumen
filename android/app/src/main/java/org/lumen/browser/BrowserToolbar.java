@@ -1,5 +1,8 @@
 package org.lumen.browser;
 
+import android.view.MenuItem;
+import android.view.Menu;
+import android.view.ActionMode;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Canvas;
@@ -111,7 +114,19 @@ final class BrowserToolbar extends FrameLayout {
         field.setGravity(Gravity.CENTER_VERTICAL);
         field.setBackground(null);
         field.setContentDescription("Address");
-        field.setOnFocusChangeListener((view, focused) -> { if (focused && !holding) { holding = true; look(true); field.setText(address); field.selectAll(); } });
+        field.setOnFocusChangeListener((view, focused) -> {
+            if (focused && !holding) { holding = true; look(true); field.setText(address); field.selectAll(); }
+            if (focused) showFieldBar();
+        });
+        field.setOnClickListener(view -> { if (holding) showFieldBar(); });
+        ActionMode.Callback none = new ActionMode.Callback() {   /* Lumen's own bar replaces the system text toolbar */
+            @Override public boolean onCreateActionMode(ActionMode mode, Menu menu) { return false; }
+            @Override public boolean onPrepareActionMode(ActionMode mode, Menu menu) { return false; }
+            @Override public boolean onActionItemClicked(ActionMode mode, MenuItem item) { return false; }
+            @Override public void onDestroyActionMode(ActionMode mode) { }
+        };
+        field.setCustomSelectionActionModeCallback(none);
+        field.setCustomInsertionActionModeCallback(none);
         field.setOnEditorActionListener((view, id, event) -> {
             boolean enter = event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER;
             if (id != EditorInfo.IME_ACTION_GO && !enter) return false;
@@ -312,7 +327,12 @@ final class BrowserToolbar extends FrameLayout {
     boolean editing() { return holding; }
 
     /* leaves the address field: the keyboard goes and the page has the focus again */
+    private void showFieldBar() {
+        post(() -> { if (holding && field.hasFocus()) BrowserMenus.showFieldBar(this, field, () -> field.onEditorAction(EditorInfo.IME_ACTION_GO), action); });
+    }
+
     void stopEditing() {
+        BrowserMenus.hideFieldBar();
         if (!holding) return;
         holding = false;
         look(false);

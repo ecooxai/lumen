@@ -211,4 +211,20 @@ void android_ui_tab_menu(const char *title, const char *const *items, const bool
     }
     end(env);
 }
+void android_ui_list_menu(const char *title, const char *const *items, int n) {
+    jclass c; jmethodID m; JNIEnv *env = begin(&c, "showListMenu", "([B[[B)V", &m);
+    if (!env) return;
+    jbyteArray t = jbytes(env, title); jobjectArray v = jbytes_array(env, items, n);
+    if (t && v) (*env)->CallStaticVoidMethod(env, c, m, t, v);
+    end(env);
+}
+static void path_call(const char *name, const char *path) {
+    jclass c; jmethodID m; JNIEnv *env = begin(&c, name, "([B)V", &m);
+    if (!env) return;
+    jbyteArray b = jbytes(env, path);
+    if (b) (*env)->CallStaticVoidMethod(env, c, m, b);
+    end(env);
+}
+void android_ui_clip_image_file(const char *path) { path_call("clipImageFile", path); }
+void android_ui_share_image_file(const char *path) { path_call("shareImageFile", path); }
 #endif

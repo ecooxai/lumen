@@ -225,7 +225,7 @@ static Link g_bms[MAX_BM], g_hv[MAX_HV]; static int g_nbm, g_nhv;
 static void pref_path(char *out, size_t n, const char *f) { snprintf(out, n, "%s%s", g_pref, f); }
 #ifdef __ANDROID__
 /* the touch selection and edit bars' actions; the edit bar's two slots and text snippets (defined with the bar) */
-enum { TA_CUT, TA_COPY, TA_PASTE, TA_ALL, TA_KBD, TA_BKSP, TA_ENTER, TA_UNDO, TA_CLEAR, TA_HIDE, TA_MORE, TA_NACT };
+enum { TA_CUT, TA_COPY, TA_PASTE, TA_ALL, TA_KBD, TA_BKSP, TA_ENTER, TA_UNDO, TA_CLEAR, TA_HIDE, TA_MORE, TA_REDO, TA_NACT };
 static int g_bar_slot[2];
 #define MAX_SNIP 16
 static char *g_snip[MAX_SNIP]; static int g_nsnip;
@@ -4116,7 +4116,7 @@ static void snip_decode(const char *v) {
     }
 }
 static const char *ta_label(int act) {
-    static const char *l[TA_NACT] = { "Cut", "Copy", "Paste", "Select all", "Keyboard", "Backspace", "Enter", "Undo", "Clear", "Hide menu", "More" };
+    static const char *l[TA_NACT] = { "Cut", "Copy", "Paste", "Select all", "Keyboard", "Backspace", "Enter", "Undo", "Clear", "Hide menu", "More", "Redo" };
     return act >= 0 && act < TA_NACT ? l[act] : "";
 }
 static const char *ta_path(int act) {
@@ -4132,6 +4132,7 @@ static const char *ta_path(int act) {
     case TA_CLEAR: return "O 12 12 9 M8.5 8.5 L15.5 15.5 M15.5 8.5 L8.5 15.5";
     case TA_HIDE: return "M5 9 L12 16 L19 9";
     case TA_MORE: return "O 5 12 1.2 O 12 12 1.2 O 19 12 1.2";
+    case TA_REDO: return "M15 5 L20 10 L15 15 M20 10 L10 10 A 10 15 5 -90 -180 M10 20 L15 20";
     default: return NULL;
     }
 }
@@ -4181,13 +4182,13 @@ static int bar_index(const float bar[4], const float *bend, int n, float px, flo
     int i = 0; while (i < n - 1 && px >= bend[i]) i++;
     return i + 1;
 }
-/* an editable field's bar: Keyboard, Cut, Copy (the whole value with nothing selected), Paste, Select all, the
-   two slots and More */
-static int edit_bar_acts(int *act, bool cutcopy) {
+/* an editable field's bar: Keyboard, [Cut,] Copy (the whole value with nothing selected), Paste, the two slots and
+   More (with Cut on the edit bar, and Select all) */
+static int edit_bar_acts(int *act, bool cutcopy, bool cut) {
     int n = 0;
     act[n++] = TA_KBD;
-    if (cutcopy) { act[n++] = TA_CUT; act[n++] = TA_COPY; }
-    act[n++] = TA_PASTE; act[n++] = TA_ALL; act[n++] = g_bar_slot[0]; act[n++] = g_bar_slot[1]; act[n++] = TA_MORE;
+    if (cutcopy) { if (cut) act[n++] = TA_CUT; act[n++] = TA_COPY; }
+    act[n++] = TA_PASTE; act[n++] = g_bar_slot[0]; act[n++] = g_bar_slot[1]; act[n++] = TA_MORE;
     return n;
 }
 /* the More menu (kind 1) or the clipboard history (kind 2) under the bar; act: TA_*, 100 + snippet, 200 + clip */
@@ -4197,7 +4198,7 @@ static struct { int kind, n, ni, hit; bool free; float x, y, w; int act[POP_MAX]
 static bool pop_shown(void) { return g_epop.kind != 0; }
 static int pop_rows(void) { return (g_epop.ni ? 1 : 0) + g_epop.n - g_epop.ni; }
 /* the last clipboard contents, newest first: text, or an image's bytes and type */
-static struct { char *text; unsigned char *img; size_t n; char *mime; } g_clips[CLIP_MAX]; static int g_nclips;
+static struct { char *text; unsigned char *img; size_t n; char *mime; Image *thumb; } g_clips[CLIP_MAX]; static int g_nclips;
 static struct {
     bool armed, ui, url; int mode, kind;   /* mode 1: the long-press finger extends from its word; 2: a handle is dragged */
     double down; float x, y;      /* armed long press, window px; url: it is on the URL field */
@@ -4250,7 +4251,7 @@ static void tsel_overlay(App *a, DisplayList *dl) {
     bool secret = f && f->tag == A_input && node_attr(f, "type") && !strcasecmp(node_attr(f, "type"), "password");
     int n = 0;
     if (g_ts.kind == TK_PAGE) { g_ts.bact[n++] = TA_COPY; g_ts.bact[n++] = TA_ALL; }
-    else n = edit_bar_acts(g_ts.bact, !secret);
+    else n = edit_bar_acts(g_ts.bact, !secret, true);
     TselCaret anchor = { true, g_ts.ax, g_ts.ay - 20, 40, 0 };
     const TselCaret *top = c[0].ok ? &c[0] : c[1].ok ? &c[1] : &anchor, *bot = c[1].ok ? &c[1] : c[0].ok ? &c[0] : &anchor;
     float cx = c[0].ok && c[1].ok && fabsf(c[0].y - c[1].y) < 1 ? (c[0].x + c[1].x) / 2 : top->x;
@@ -4290,7 +4291,7 @@ static void kbm_overlay(App *a, DisplayList *dl) {
     if (!g_kbm.menu || !f || f != g_kbm.n || tsel_ui(a)) { g_kbm.menu = false; geom_log(0, "bar edit hidden"); return; }
     bool any = true, secret = f->tag == A_input && node_attr(f, "type") && !strcasecmp(node_attr(f, "type"), "password");
     if (is_text_ctl(f)) { char *v = ctl_value(f); any = *v != 0; free(v); }
-    int n = edit_bar_acts(g_kbm.act, any && !secret);
+    int n = edit_bar_acts(g_kbm.act, any && !secret, false);
     float cy = g_kbm.my - a->t->sy, vh = page_height(a);
     if (cy < -BAR_H || cy > vh + BAR_H) return;   /* scrolled away */
     bar_draw(a, dl, g_kbm.act, n, g_kbm.mx, cy - 24, cy + 24, g_kbm.bar, g_kbm.bend, g_kbm.hit);
@@ -4352,6 +4353,7 @@ static void bar_do(App *a, int act, Node *f, Node *h, bool whole) {
     case TA_BKSP: key_push(SDLK_BACKSPACE); break;
     case TA_ENTER: key_push(SDLK_RETURN); break;
     case TA_UNDO: if (p->js) js_dispatch(p->js, f ? f : h, "lumenundo", "KeyboardEvent", false, false, 0, 0, 0, NULL); break;
+    case TA_REDO: key_push_mod(SDLK_Z, SDL_KMOD_LCTRL | SDL_KMOD_LSHIFT); break;
     case TA_CLEAR:
         field_all(a, f, h);
         if (f) ctl_insert(a, f, "", "deleteContentBackward"); else if (p->js) js_dispatch(p->js, h, "lumeneditdel", "KeyboardEvent", false, false, 0, 0, 0, "Backspace");
@@ -4395,7 +4397,7 @@ static void kbm_action(App *a, int act) {
         return;
     }
     bar_do(a, act, f, h, true);
-    if (act == TA_BKSP || act == TA_ENTER || act == TA_UNDO || act == TA_CLEAR) g_kbm.menu = true;   /* the bar stays for more edits */
+    if (act == TA_BKSP || act == TA_ENTER || act == TA_UNDO || act == TA_REDO || act == TA_CLEAR) g_kbm.menu = true;   /* the bar stays for more edits */
 }
 static void tsel_action(App *a, int act) {
     Page *p = a->t->cur; Node *f = g_ts.kind == TK_CTL ? tsel_ctl(a) : NULL, *h = g_ts.kind == TK_EDIT ? edit_focus(a) : NULL;
@@ -4415,9 +4417,16 @@ static void tsel_action(App *a, int act) {
 /* the More menu: the slot actions not on the bar, then the snippets; the clipboard history: its entries */
 static void pop_open(App *a, int kind, const float bar[4]) {
     g_epop.kind = kind; g_epop.n = g_epop.ni = g_epop.hit = 0; g_epop.free = false;
-    if (kind == 1) {   /* Undo, Clear and Hide as icons on the top line; the keys not on the bar and the snippets below */
-        static const int icons[] = { TA_UNDO, TA_CLEAR, TA_HIDE }, keys[] = { TA_BKSP, TA_ENTER };
-        for (size_t i = 0; i < sizeof icons / sizeof *icons; i++) g_epop.act[g_epop.n++] = icons[i];
+    if (kind == 1) {   /* icons on the top line: Cut (the edit bar has none) and Select all for a field, Undo, Redo, Clear,
+                          Hide; text rows below: the keys not on the bar, the snippets */
+        static const int keys[] = { TA_BKSP, TA_ENTER };
+        Node *f = page_focus(a), *h = f ? NULL : edit_focus(a);
+        if (f || h) {
+            bool secret = f && f->tag == A_input && node_attr(f, "type") && !strcasecmp(node_attr(f, "type"), "password");
+            if (bar != g_ts.bar && !secret) g_epop.act[g_epop.n++] = TA_CUT;
+            g_epop.act[g_epop.n++] = TA_ALL;
+        }
+        g_epop.act[g_epop.n++] = TA_UNDO; g_epop.act[g_epop.n++] = TA_REDO; g_epop.act[g_epop.n++] = TA_CLEAR; g_epop.act[g_epop.n++] = TA_HIDE;
         g_epop.ni = g_epop.n;
         for (size_t i = 0; i < sizeof keys / sizeof *keys; i++) if (keys[i] != g_bar_slot[0] && keys[i] != g_bar_slot[1]) g_epop.act[g_epop.n++] = keys[i];
         for (int i = 0; i < g_nsnip && g_epop.n < POP_MAX; i++) g_epop.act[g_epop.n++] = 100 + i;
@@ -4443,7 +4452,7 @@ static void pop_label(int act, char *out, size_t n) {
     }
     int k = act - 200;
     if (k >= g_nclips) { out[0] = 0; return; }
-    if (g_clips[k].img) { snprintf(out, n, "Image (%s, %zu KB)", g_clips[k].mime ? g_clips[k].mime : "image", (g_clips[k].n + 1023) / 1024); return; }
+    if (g_clips[k].img) { const char *mt = g_clips[k].mime ? g_clips[k].mime : "image"; snprintf(out, n, "%s, %zu KB", strncmp(mt, "image/", 6) ? mt : mt + 6, (g_clips[k].n + 1023) / 1024); return; }
     size_t j = 0;
     for (const char *c = g_clips[k].text; *c && j + 4 < n && j < 40; c++) out[j++] = *c == '\n' || *c == '\t' ? ' ' : *c;
     out[j] = 0;
@@ -4471,10 +4480,18 @@ static void pop_overlay(App *a, DisplayList *dl) {
         float y = g_epop.y + (float)(i - g_epop.ni + (g_epop.ni ? 1 : 0)) * POP_RH; char lb[96]; int act = g_epop.act[i];
         if (i + 1 == g_epop.hit) push_rect(dl, g_epop.x + 2, y + 2, g_epop.w - 4, POP_RH - 4, 6, RGBA(232, 234, 237, 255));
         if (i > g_epop.ni && (act >= 100) != (g_epop.act[i - 1] >= 100)) push_rect(dl, g_epop.x + 8, y, g_epop.w - 16, 1, 0, RGBA(218, 220, 224, 255));
-        Image *im = act < 100 ? ta_icon(a, act) : NULL;
-        if (im) push_img(dl, im, g_epop.x + 10, y + (POP_RH - 22) / 2.0f, 22, 22);
+        float tx = g_epop.x + 16;   /* text rows, aligned at the left; a clipboard image shows as a small picture */
+        if (act >= 200 && act - 200 < g_nclips && g_clips[act - 200].img) {
+            __typeof__(g_clips[0]) *c = &g_clips[act - 200];
+            if (!c->thumb) c->thumb = image_decode(c->img, c->n);
+            if (c->thumb && c->thumb->w > 0 && c->thumb->h > 0) {
+                float s = LMIN(64.0f / (float)c->thumb->w, (POP_RH - 8.0f) / (float)c->thumb->h), tw = (float)c->thumb->w * s, th = (float)c->thumb->h * s;
+                push_img(dl, c->thumb, tx, y + (POP_RH - th) / 2, tw, th);
+                tx += 72;
+            }
+        }
         pop_label(act, lb, sizeof lb);
-        push_text(dl, ft, lb, g_epop.x + 42, y + POP_RH / 2.0f + (ft->ascent - ft->descent) / 2, g_epop.w - 50, RGBA(32, 33, 36, 255));
+        push_text(dl, ft, lb, tx, y + POP_RH / 2.0f + (ft->ascent - ft->descent) / 2, g_epop.x + g_epop.w - 8 - tx, RGBA(32, 33, 36, 255));
     }
 }
 static int pop_hit(App *a, float x, float y) {
@@ -4491,7 +4508,7 @@ static void pop_action(App *a, int i) {
     g_epop.kind = 0; sel_dirty(a);
     if (act < 0) return;
     if (!f && !h) {   /* opened from the browser menu with no field: keys and snippets go to the page as typed */
-        if (act == TA_UNDO) key_push_mod(SDLK_Z, SDL_KMOD_LCTRL);
+        if (act == TA_UNDO || act == TA_REDO) key_push_mod(SDLK_Z, SDL_KMOD_LCTRL | (act == TA_REDO ? SDL_KMOD_LSHIFT : 0));
         else if (act == TA_BKSP) key_push(SDLK_BACKSPACE);
         else if (act == TA_ENTER) key_push(SDLK_RETURN);
         else if (act >= 100 && act < 200 && act - 100 < g_nsnip) snip_type(g_snip[act - 100]);
@@ -4499,7 +4516,8 @@ static void pop_action(App *a, int i) {
         a->dirty = true;
         return;
     }
-    if (act < 100) { bar_do(a, act, f, h, true); if (act != TA_HIDE) g_kbm.menu = true; return; }
+    if (act == TA_ALL) { g_kbm.menu = true; kbm_action(a, TA_ALL); return; }   /* then the selection bar */
+    if (act < 100) { bar_do(a, act, f, h, true); if (act != TA_HIDE && act != TA_CUT) g_kbm.menu = true; return; }
     if (act < 200) { if (act - 100 < g_nsnip) snip_type(g_snip[act - 100]); return; }
     int k = act - 200;
     if (k >= g_nclips) return;
@@ -4521,10 +4539,10 @@ static void clip_record(const char *text, const unsigned char *img, size_t n, co
         __typeof__(g_clips[0]) c = g_clips[i]; memmove(&g_clips[1], &g_clips[0], (size_t)i * sizeof c); g_clips[0] = c;
         return;
     }
-    if (g_nclips == CLIP_MAX) { g_nclips--; free(g_clips[g_nclips].text); free(g_clips[g_nclips].img); free(g_clips[g_nclips].mime); }
+    if (g_nclips == CLIP_MAX) { g_nclips--; free(g_clips[g_nclips].text); free(g_clips[g_nclips].img); free(g_clips[g_nclips].mime); if (g_clips[g_nclips].thumb) image_unref(g_clips[g_nclips].thumb); }
     memmove(&g_clips[1], &g_clips[0], (size_t)g_nclips * sizeof g_clips[0]);
     g_clips[0].text = text && !img ? xstrdup(text) : NULL;
-    g_clips[0].img = NULL; g_clips[0].n = 0; g_clips[0].mime = NULL;
+    g_clips[0].img = NULL; g_clips[0].n = 0; g_clips[0].mime = NULL; g_clips[0].thumb = NULL;
     if (img) { g_clips[0].img = xmalloc(n); memcpy(g_clips[0].img, img, n); g_clips[0].n = n; g_clips[0].mime = xstrdup(mime ? mime : "image/png"); }
     g_nclips++;
 }
@@ -4697,6 +4715,7 @@ static void tsel_take_touch(App *a, bool page) {
     android_fling_reset(&a->fling);
     g_press = g_drag = g_epress = false;
 }
+static bool img_ctx_menu(App *a, Node *n, float x, float y);
 static void tsel_long_press(App *a) {
     if (!g_ts.armed || now_ms() - g_ts.down < LONG_PRESS_MS) return;
     g_ts.armed = false;
@@ -4719,6 +4738,7 @@ static void tsel_long_press(App *a) {
     if (a->t->cur != p || !p->L) return;
     h_sync_in(a, p->d, true);
     b = layout_hit(p->L, px, py + a->t->sy, 0, a->t->sy);
+    if (img_ctx_menu(a, b ? b->node : NULL, px, py + a->t->sy)) { tsel_take_touch(a, true); return; }   /* an image: its menu */
     Node *ctl = NULL;
     for (Node *k = b ? b->node : NULL; k; k = k->parent) if (is_text_ctl(k)) { ctl = k; break; }
     if (ctl) {   /* a text control: focus it and select the word, or offer Paste when it is empty */
@@ -5557,6 +5577,81 @@ static void site_clear(App *a, const char *url) {
     else snprintf(msg, sizeof msg, "Deleted data of %s", site);
     ui_toast(a, msg);
 }
+/* a long-pressed image's menu: Copy image (onto the clipboard and its history), Download image, Copy link address
+   (an enclosing link), Copy image address, Share */
+enum { CTX_COPY_IMG, CTX_SAVE_IMG, CTX_COPY_LINK, CTX_COPY_IMG_URL, CTX_SHARE };
+static struct { char *img, *link; int act[5], n; } g_ctx;
+/* the <img> under page point x, y in n's subtree (a hit can land on the link or figure around it) */
+static Node *img_under(Node *n, float x, float y, int depth) {
+    for (Node *c = n ? n->first : NULL; c && depth < 8; c = c->next) {
+        if (c->type != NODE_ELEMENT) continue;
+        const Box *b = c->box;
+        if (c->tag == A_img && b && x >= b->x && x < b->x + b->w && y >= b->y && y < b->y + b->h) return c;
+        Node *r = img_under(c, x, y, depth + 1); if (r) return r;
+    }
+    return NULL;
+}
+static bool img_ctx_menu(App *a, Node *n, float x, float y) {
+    Page *p = a->t->cur; Node *img = NULL, *link = NULL;
+    for (Node *k = n; k; k = k->parent) { if (!img && k->tag == A_img) img = k; if (!link && k->tag == A_a && node_attr(k, "href")) link = k; }
+    if (!img) img = img_under(link ? link : n, x, y, 0);
+#if !defined(NDEBUG)
+    __android_log_print(ANDROID_LOG_INFO, "LumenUi", "long press node=%s img=%d link=%d", n && n->tag ? n->tag : "-", img != NULL, link != NULL);
+#endif
+    const char *s = img ? node_attr(img, "src") : NULL, *u = s && *s ? node_src_url(img, s) : NULL;
+    if (!u || !p || !p->d) return false;
+    free(g_ctx.img); free(g_ctx.link);
+    g_ctx.img = xstrdup(u); g_ctx.link = link ? url_join(p->d->url, node_attr(link, "href")) : NULL;
+    Image *im = url_img(g_ctx.img);
+    const char *items[5]; int k = 0;
+    if (im && im->px) { items[k] = "Copy image"; g_ctx.act[k++] = CTX_COPY_IMG; }
+    items[k] = "Download image"; g_ctx.act[k++] = CTX_SAVE_IMG;
+    if (g_ctx.link) { items[k] = "Copy link address"; g_ctx.act[k++] = CTX_COPY_LINK; }
+    items[k] = "Copy image address"; g_ctx.act[k++] = CTX_COPY_IMG_URL;
+    items[k] = "Share image"; g_ctx.act[k++] = CTX_SHARE;
+    g_ctx.n = k;
+    const char *alt = node_attr(img, "alt");
+    android_ui_list_menu(alt && *alt ? alt : g_ctx.link ? g_ctx.link : g_ctx.img, items, k);
+    return true;
+}
+/* the image as a PNG under the cache's clip directory, for the clipboard and the share sheet */
+static bool ctx_png(const char *u, char *path, size_t n) {
+    Image *im = url_img(u); const char *cache = SDL_GetAndroidCachePath();
+    if (!im || !im->px || im->w <= 0 || im->h <= 0 || !cache) return false;
+    snprintf(path, n, "%s/clip", cache); mkdir(path, 0700);
+    snprintf(path, n, "%s/clip/image.png", cache);
+    return png_write(path, im->px, im->w, im->h, im->w);
+}
+static void ctx_do(App *a, int i) {
+    Page *p = a->t->cur; char path[1024];
+    if (i < 0 || i >= g_ctx.n || !g_ctx.img || !p) return;
+    switch (g_ctx.act[i]) {
+    case CTX_COPY_IMG: {
+        if (!ctx_png(g_ctx.img, path, sizeof path)) { ui_toast(a, "The image is not loaded"); break; }
+        FILE *f = fopen(path, "rb"); unsigned char *b = NULL; long len = 0;
+        if (f && !fseek(f, 0, SEEK_END) && (len = ftell(f)) > 0 && !fseek(f, 0, SEEK_SET)) { b = xmalloc((size_t)len); if (fread(b, 1, (size_t)len, f) != (size_t)len) { free(b); b = NULL; } }
+        if (f) fclose(f);
+        if (b) clip_record(NULL, b, (size_t)len, "image/png");   /* Paste's history shows it */
+        free(b);
+        android_ui_clip_image_file(path);
+        ui_toast(a, "Image copied");
+        break; }
+    case CTX_SAVE_IMG:
+        if (!strncmp(g_ctx.img, "http:", 5) || !strncmp(g_ctx.img, "https:", 6)) dl_start(g_ctx.img, p->url, NULL);
+        else if (p->js) {   /* data: and blob: images, by the page's script context */
+            SB b; sb_init(&b); sb_puts(&b, "__lumenSaveHref("); js_quote(&b, g_ctx.img); sb_puts(&b, ",null)");
+            char *src = sb_take(&b); js_eval(p->js, src, "lumen:save"); free(src);
+        }
+        break;
+    case CTX_COPY_LINK: case CTX_COPY_IMG_URL: {
+        const char *t = g_ctx.act[i] == CTX_COPY_LINK && g_ctx.link ? g_ctx.link : g_ctx.img;
+        SDL_SetClipboardText(t); clip_record(t, NULL, 0, NULL); ui_toast(a, "Link copied");
+        break; }
+    case CTX_SHARE:
+        if (ctx_png(g_ctx.img, path, sizeof path)) android_ui_share_image_file(path); else android_share_text(g_ctx.img);
+        break;
+    }
+}
 /* the browser menu's Copy: a field's selection, else the page's (native or as the page's script sees it) */
 static void menu_copy(App *a) {
     Page *p = a->t->cur; Node *f = page_focus(a); bool failed = false;
@@ -5591,6 +5686,7 @@ static void ui_action(App *a, UiAction *u, bool *quit) {
     case UI_SETTINGS: panel_open(a, "settings"); break;
     case UI_KEYBOARD: g_kbd_sticky = true; g_kbd_show_at = now_ms() + 350; a->dirty = true; break;
     case UI_COPY: menu_copy(a); break;
+    case UI_CTX_MENU: ctx_do(a, u->value); break;
     case UI_PASTE: page_paste(a, page_focus(a), page_focus(a) ? NULL : edit_focus(a)); restyle(a); a->dirty = true; break;   /* else the body */
     case UI_UNDO: case UI_REDO: key_push_mod(SDLK_Z, SDL_KMOD_LCTRL | (u->code == UI_REDO ? SDL_KMOD_LSHIFT : 0)); break;
     case UI_EDIT_MORE: { float vw = page_width(a), bar[4] = { vw - 4, -2, vw - 4, -2 }; pop_open(a, 1, bar); g_epop.free = g_epop.kind != 0; a->dirty = true; break; }

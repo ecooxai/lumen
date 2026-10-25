@@ -550,27 +550,6 @@ function asWin(v) {
     remoteWins.set(v, w);
     return w;
 }
-/* HTML "tokenize the features argument" and "parse a boolean feature" */
-function openFeatures(f) {
-    const m = new SMap(), sep = c => c === '=' || c === ',' || c === ' ' || c === '\t' || c === '\n' || c === '\f' || c === '\r', n = f.length;
-    const NORM = { screenx: 'left', screeny: 'top', innerwidth: 'width', innerheight: 'height' };
-    let i = 0;
-    while (i < n) {
-        let name = '', value = '';
-        while (i < n && sep(f[i])) i++;
-        while (i < n && !sep(f[i])) name += f[i++];
-        name = name.replace(/[A-Z]+/g, c => c.toLowerCase()); name = NORM[name] || name;
-        while (i < n && f[i] !== '=') { if (f[i] === ',' || !sep(f[i])) break; i++; }
-        if (i < n && sep(f[i])) {
-            while (i < n && sep(f[i])) { if (f[i] === ',') break; i++; }
-            while (i < n && !sep(f[i])) value += f[i++];
-            value = value.replace(/[A-Z]+/g, c => c.toLowerCase());
-        }
-        if (name) m.set(name, value);
-    }
-    return m;
-}
-const openBool = v => v === '' || v === 'yes' || v === 'true' || ((m => m ? +m[1] !== 0 : false)(/^[\t\n\f\r ]*([+-]?\d+)/.exec(v)));
 // window.open: a new tab, its proxy for the opener; _self, _top, _parent and frame names navigate those
 function openWin(u, t, f) {
     u = u === undefined || u === null ? '' : String(u); t = t === undefined || t === null || t === '' ? '_blank' : String(t); f = String(f ?? '');
@@ -578,7 +557,7 @@ function openWin(u, t, f) {
     if (/^javascript:/i.test(url)) return null;
     if (lt === '_self' || (lt === '_top' && top === G) || (lt === '_parent' && parent === G)) { location.href = url; return G; }
     if (lt !== '_blank' && N.navTarget(t, url)) return lt === '_top' ? top : lt === '_parent' ? parent : null;
-    const feats = openFeatures(f), on = k => feats.has(k) && openBool(feats.get(k)), noop = on('noopener') || on('noreferrer');
+    const noop = /(^|[\s,])(noopener|noreferrer)\s*(=\s*(yes|1|true))?\s*($|,)/i.test(f);
     const id = N.openWin(url, lt === '_blank' ? '' : t, !noop);
     return id && !noop ? asWin(-id) : null;
 }

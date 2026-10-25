@@ -28,6 +28,7 @@ enum {
     UI_PASTE,        /* paste into the focused (last active) field, else the body */
     UI_UNDO, UI_REDO,   /* Ctrl+Z, Ctrl+Shift+Z */
     UI_EDIT_MORE,    /* the edit bar's More menu, opened from the browser menu */
+    UI_CTX_MENU,     /* value: the chosen row of android_ui_list_menu */
 };
 /* can_desktop: 1 for the page's site, 2 for every site (on a page that is not a site) */
 typedef struct { bool can_forward, desktop, can_zoom, bookmarked, can_bookmark, can_back, fullscreen; int can_desktop, zoom_pct; } AndroidMenuState;
@@ -61,6 +62,11 @@ void android_ui_bookmarks(const char *const *titles, const char *const *urls, in
 void android_ui_workspaces(const char *const *names, const int *tabs, int n, int current);
 /* the tab menu: n items, those with on[i] checked; the choice comes back as UI_TAB_MENU */
 void android_ui_tab_menu(const char *title, const char *const *items, const bool *on, int n);
+/* a page item's menu; the chosen row comes back as UI_CTX_MENU */
+void android_ui_list_menu(const char *title, const char *const *items, int n);
+/* an image file under the cache's clip directory: onto the clipboard, or to the share sheet */
+void android_ui_clip_image_file(const char *path);
+void android_ui_share_image_file(const char *path);
 /* set by the app; called on the Android UI thread, takes ownership of s1 and s2 (malloc'd, may be NULL) */
 extern void (*android_ui_action)(int code, int value, char *s1, char *s2);
 #endif

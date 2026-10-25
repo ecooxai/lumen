@@ -234,6 +234,50 @@ public final class LumenActivity extends SDLActivity {
         });
     }
 
+    /* from the native thread: a page item's menu */
+    public static void showListMenu(byte[] title, byte[][] items) {
+        final SDLActivity activity = mSingleton;
+        if (activity == null || title == null || items == null) return;
+        final String heading = new String(title, StandardCharsets.UTF_8);
+        final String[] labels = utf8(items);
+        activity.runOnUiThread(() -> BrowserMenus.showListMenu(activity, heading, labels, UI_ACTION));
+    }
+
+    /* from the native thread: an image file under cache/clip becomes the primary clip (ClipProvider serves it) */
+    public static void clipImageFile(byte[] path) {
+        final SDLActivity activity = mSingleton;
+        if (activity == null || path == null) return;
+        final java.io.File file = new java.io.File(new String(path, StandardCharsets.UTF_8));
+        activity.runOnUiThread(() -> {
+            try {
+                android.content.ClipboardManager clipboard = (android.content.ClipboardManager) activity.getSystemService(Context.CLIPBOARD_SERVICE);
+                if (clipboard != null) clipboard.setPrimaryClip(android.content.ClipData.newUri(activity.getContentResolver(), "Image", ClipProvider.uri(activity, file)));
+            } catch (RuntimeException exception) {
+                Log.w("Lumen", "Unable to copy the image", exception);
+            }
+        });
+    }
+
+    /* from the native thread: the system share sheet for an image file under cache/clip */
+    public static void shareImageFile(byte[] path) {
+        final SDLActivity activity = mSingleton;
+        if (activity == null || path == null) return;
+        final java.io.File file = new java.io.File(new String(path, StandardCharsets.UTF_8));
+        activity.runOnUiThread(() -> {
+            Uri uri = ClipProvider.uri(activity, file);
+            Intent send = new Intent(Intent.ACTION_SEND);
+            send.setType("image/png");
+            send.putExtra(Intent.EXTRA_STREAM, uri);
+            send.setClipData(android.content.ClipData.newRawUri("Image", uri));
+            send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            try {
+                activity.startActivity(Intent.createChooser(send, null));
+            } catch (RuntimeException exception) {
+                Log.e("Lumen", "Unable to share the image", exception);
+            }
+        });
+    }
+
     /* from the native thread on paste: the primary clip's first image as {MIME type, bytes} (at most 32 MB), else null */
     public static byte[][] clipboardImage() {
         final SDLActivity activity = mSingleton;

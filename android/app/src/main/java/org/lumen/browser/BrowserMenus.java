@@ -1,5 +1,9 @@
 package org.lumen.browser;
 
+import android.view.inputmethod.InputMethodManager;
+import android.view.inputmethod.EditorInfo;
+import android.view.KeyEvent;
+import android.content.Intent;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
@@ -34,7 +38,7 @@ final class BrowserMenus {
     static final int NEW_TAB = 1, FORWARD = 2, BOOKMARKS = 3, DOWNLOADS = 4, HISTORY = 5, WORKSPACES = 6, SETTINGS = 7,
         DESKTOP = 8, ZOOM = 9, BM_TOGGLE = 10, BM_OPEN = 11, BM_SAVE = 12, BM_DELETE = 13,
         WS_SELECT = 14, WS_NEW = 15, WS_RENAME = 16, WS_CLOSE = 17, BACK = 18, RELOAD = 19, FULLSCREEN = 20, URL_GO = 21, BM_ADD = 22, TAB_MENU = 23, SITE_CLEAR = 24, KEYBOARD = 26,
-        COPY = 27, PASTE = 28, UNDO = 29, REDO = 30, EDIT_MORE = 31;
+        COPY = 27, PASTE = 28, UNDO = 29, REDO = 30, EDIT_MORE = 31, CTX_MENU = 32;
     private static final int MAX_WORKSPACES = 16, ZOOM_MIN = 20, ZOOM_MAX = 300, ZOOM_STEP = 10;
     private static final int TEXT = 0xff202124, SUBTLE = 0xff5f6368, DISABLED = 0xffbdc1c6, DIVIDER = 0xffe8eaed, ACCENT = 0xff1a73e8, UNSAFE = 0xffd93025;
     private static PopupWindow menu;
@@ -170,8 +174,8 @@ final class BrowserMenus {
         final PopupWindow popup = new PopupWindow(context);
 
         /* two lines of icon buttons: navigation, then editing on the page (the keyboard for the last focused field,
-           Copy the selection, Paste into the last active field or the body, Undo, Redo, the edit bar's More menu) */
-        int[][] lines = { { BACK, FORWARD, RELOAD, BM_TOGGLE, DOWNLOADS }, { KEYBOARD, COPY, PASTE, UNDO, REDO, EDIT_MORE } };
+           Copy the selection, Paste into the last active field or the body, Undo, the edit bar's More menu with Redo) */
+        int[][] lines = { { BACK, FORWARD, RELOAD, BM_TOGGLE, DOWNLOADS }, { KEYBOARD, COPY, PASTE, UNDO, EDIT_MORE } };
         final ImageView[] star = new ImageView[1];
         for (int[] codes : lines) {
             LinearLayout icons = new LinearLayout(context);
@@ -569,6 +573,126 @@ final class BrowserMenus {
     }
 
     /* the tab menu (a double tap on the tab bar): the chosen item's index goes back as TAB_MENU */
+    /* the edit bar's outlines (main.c ta_path), for the URL field's own bar */
+    private static final String P_KBD = "M3 6 L21 6 L21 18 L3 18 Z M6.5 9.5 L7.5 9.5 M10 9.5 L11 9.5 M13 9.5 L14 9.5 M16.5 9.5 L17.5 9.5 M6.5 12.5 L7.5 12.5 M10 12.5 L11 12.5 M13 12.5 L14 12.5 M16.5 12.5 L17.5 12.5 M8 15.3 L16 15.3",
+        P_CUT = "O 6.5 17.5 2.7 O 17.5 17.5 2.7 M8.4 15.4 L17 3.5 M15.6 15.4 L7 3.5",
+        P_COPY = "M9 8 L19 8 L19 20.5 L9 20.5 Z M6 16.5 L5 16.5 L5 3.5 L15 3.5 L15 5",
+        P_PASTE = "M6 5 L18 5 L18 21 L6 21 Z M9 3 L15 3 L15 7 L9 7 Z",
+        P_ALL = "M4 4 L7 4 M10.5 4 L13.5 4 M17 4 L20 4 L20 7 M20 10.5 L20 13.5 M20 17 L20 20 L17 20 M13.5 20 L10.5 20 M7 20 L4 20 L4 17 M4 13.5 L4 10.5 M4 7 L4 4 M8.5 8.5 L15.5 8.5 L15.5 15.5 L8.5 15.5 Z",
+        P_BKSP = "M9 5 L21 5 L21 19 L9 19 L3 12 Z M12 9 L18 15 M18 9 L12 15",
+        P_ENTER = "M19 5 L19 13 L5 13 M9 9 L5 13 L9 17",
+        P_UNDO = "M9 5 L4 10 L9 15 M4 10 L14 10 A 14 15 5 -90 180 M14 20 L9 20",
+        P_REDO = "M15 5 L20 10 L15 15 M20 10 L10 10 A 10 15 5 -90 -180 M10 20 L15 20",
+        P_CLEAR = "O 12 12 9 M8.5 8.5 L15.5 15.5 M15.5 8.5 L8.5 15.5",
+        P_HIDE = "M5 9 L12 16 L19 9",
+        P_MORE = "O 5 12 1.2 O 12 12 1.2 O 19 12 1.2";
+    private static PopupWindow fieldBar;
+
+    private static PopupWindow popupAt(View anchor, View content, int width) {
+        Context context = anchor.getContext();
+        GradientDrawable background = new GradientDrawable();
+        background.setColor(Color.WHITE);
+        background.setCornerRadius(dp(context, 8));
+        PopupWindow popup = new PopupWindow(content, width, ViewGroup.LayoutParams.WRAP_CONTENT, false);
+        popup.setBackgroundDrawable(background);
+        popup.setElevation(dp(context, 6));
+        popup.setOutsideTouchable(false);
+        popup.setInputMethodMode(PopupWindow.INPUT_METHOD_NOT_NEEDED);
+        TouchFeedback.popup(popup);
+        popup.showAsDropDown(anchor, 0, dp(context, 4));
+        return popup;
+    }
+
+    private static ImageView pathButton(Context context, String path, String name, Runnable run) {
+        ImageView button = new ImageView(context);
+        button.setScaleType(ImageView.ScaleType.CENTER);
+        button.setImageDrawable(BrowserIcons.path(path, TEXT, dp(context, 22)));
+        button.setContentDescription(name);
+        ripple(button, true);
+        button.setOnClickListener(view -> run.run());
+        return button;
+    }
+
+    static void hideFieldBar() { if (fieldBar != null) { fieldBar.dismiss(); fieldBar = null; } }
+
+    /* the URL field's bar under the address bar, as the page's edit bar: Keyboard, Copy (everything with nothing
+       selected), Paste, Backspace, Go and More (Cut, Select all, Undo, Redo, Clear, Hide on its top line; Paste and go,
+       Share below) */
+    static void showFieldBar(View anchor, EditText field, Runnable go, Action action) {
+        hideFieldBar();
+        final Context context = anchor.getContext();
+        LinearLayout bar = new LinearLayout(context);
+        bar.setOrientation(LinearLayout.HORIZONTAL);
+        Runnable[] runs = {
+            () -> { field.requestFocus(); InputMethodManager ime = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE); if (ime != null) ime.showSoftInput(field, 0); },
+            () -> { if (field.getSelectionStart() == field.getSelectionEnd()) field.selectAll(); field.onTextContextMenuItem(android.R.id.copy); },
+            () -> field.onTextContextMenuItem(android.R.id.paste),
+            () -> field.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL)),
+            go,
+            () -> showFieldMore(anchor, field, action)
+        };
+        String[] paths = { P_KBD, P_COPY, P_PASTE, P_BKSP, P_ENTER, P_MORE }, names = { "Keyboard", "Copy", "Paste", "Backspace", "Go", "More" };
+        for (int i = 0; i < runs.length; i++) bar.addView(pathButton(context, paths[i], names[i], runs[i]), new LinearLayout.LayoutParams(dp(context, 44), dp(context, 44)));
+        fieldBar = popupAt(anchor, bar, ViewGroup.LayoutParams.WRAP_CONTENT);
+    }
+
+    private static void showFieldMore(View anchor, EditText field, Action action) {
+        hideFieldBar();
+        final Context context = anchor.getContext();
+        LinearLayout root = new LinearLayout(context);
+        root.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout icons = new LinearLayout(context);
+        icons.setOrientation(LinearLayout.HORIZONTAL);
+        Runnable[] runs = {
+            () -> field.onTextContextMenuItem(android.R.id.cut),
+            () -> field.selectAll(),
+            () -> field.onTextContextMenuItem(android.R.id.undo),
+            () -> field.onTextContextMenuItem(android.R.id.redo),
+            () -> field.setText(""),
+            () -> { }
+        };
+        String[] paths = { P_CUT, P_ALL, P_UNDO, P_REDO, P_CLEAR, P_HIDE }, names = { "Cut", "Select all", "Undo", "Redo", "Clear", "Hide menu" };
+        for (int i = 0; i < runs.length; i++) {
+            final Runnable run = runs[i];
+            icons.addView(pathButton(context, paths[i], names[i], () -> { run.run(); hideFieldBar(); }), new LinearLayout.LayoutParams(0, dp(context, 44), 1));
+        }
+        root.addView(icons);
+        root.addView(divider(context));
+        String[] rows = { "Paste and go", "Share" };
+        for (int i = 0; i < rows.length; i++) {
+            final int which = i;
+            TextView row = label(context, rows[i], 15, TEXT);
+            row.setGravity(Gravity.CENTER_VERTICAL | Gravity.START);
+            row.setPadding(dp(context, 16), 0, dp(context, 16), 0);
+            ripple(row, false);
+            row.setOnClickListener(view -> {
+                hideFieldBar();
+                if (which == 0) {
+                    android.content.ClipboardManager clipboard = (android.content.ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+                    android.content.ClipData clip = clipboard != null ? clipboard.getPrimaryClip() : null;
+                    CharSequence text = clip != null && clip.getItemCount() > 0 ? clip.getItemAt(0).coerceToText(context) : null;
+                    if (text != null && text.toString().trim().length() > 0) { field.setText(text.toString().trim()); field.onEditorAction(EditorInfo.IME_ACTION_GO); }
+                } else {
+                    Intent send = new Intent(Intent.ACTION_SEND);
+                    send.setType("text/plain");
+                    send.putExtra(Intent.EXTRA_TEXT, field.getText().toString());
+                    try { context.startActivity(Intent.createChooser(send, null)); } catch (RuntimeException ignored) { }
+                }
+            });
+            root.addView(row, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(context, 44)));
+        }
+        fieldBar = popupAt(anchor, root, dp(context, 264));
+    }
+
+    /* a page item's menu (a long-pressed image): the chosen row goes back as CTX_MENU */
+    static void showListMenu(Activity activity, String title, String[] items, Action action) {
+        if (menu != null) { menu.dismiss(); menu = null; }
+        show(new AlertDialog.Builder(activity)
+            .setTitle(title)
+            .setItems(items, (dialog, which) -> action.send(CTX_MENU, which, null, null))
+            .setNegativeButton("Cancel", null));
+    }
+
     static void showTabMenu(Activity activity, String title, String[] items, boolean[] checked, Action action) {
         if (menu != null) { menu.dismiss(); menu = null; }
         String[] labels = new String[items.length];

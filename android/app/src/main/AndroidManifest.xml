@@ -69,5 +69,7 @@
         </activity>
         <service android:name=".ScreenCapture$Service" android:exported="false"
             android:foregroundServiceType="mediaProjection" />
+        <provider android:name=".ClipProvider" android:authorities="${applicationId}.clip"
+            android:exported="false" android:grantUriPermissions="true" />
     </application>
 </manifest>
