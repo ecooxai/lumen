@@ -143,6 +143,9 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 ## Runs
 (append here: RUN 215 ...)
 
+Phone check after run 214 (APK 56d508d): google/youtube/webgl/webgpu pass, no crash/ANR/tombstone/new errors;
+last-10-s CPU 0-3.5%, peak RSS 556 MB (youtube), WebGL 57.6 fps, WebGPU 23.7 fps.
+
 RUN 214: the older node constructors (Gain, StereoPanner, Delay, BiquadFilter, Analyser, Oscillator, ConstantSource,
 AudioBufferSource) take ctorCheck (BaseAudioContext + dictionary) and nodeOpts (AudioNodeOptions) too
 (07w-audio.js). /webaudio/: +70, lost 0 (3492 / 5787).
