@@ -42,7 +42,7 @@ Older notes, read on demand:
   - Chrome baseline: `wpt-data/chrome-base.json`.
   - Run: `python3 tools/codex_compile.py python3 tests/wpt/lumen_wpt.py run --jobs 5 /css/css-grid/ ...`. Add `--rerun` to redo tests that already have results; otherwise they are skipped.
   - Report: `python3 tests/wpt/lumen_wpt.py report [PREFIX...] [--deep]`. It rewrites `report.md` and `gaps.json`, and "Lumen of Chrome-passing" is the number to compare.
-  - Number the runs. The next run is **172**.
+  - Number the runs. The next run is **173**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -138,7 +138,13 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 172 ...)
+(append here: RUN 173 ...)
+
+RUN 172: fixed run 171's `url-base-about` regression: `documentBaseURI` uses the document's own URL (`N.url()`) for
+non-window documents without `__url` (DOMParser), the inherited base only for the window document. `/domparsing/`
+57.3%, both subtests pass. The two `DOMParser-parseFromString-url*-pushstate` tests still hard-time out (lead).
+Build clean, ctest 104/104, monitor: peak RSS 407 MB, no crashes.
+
 
 RUN 171 (uncommitted -> this commit): `/html/dom/` 67.5% -> **94.5%** (+19,113 Chrome-passing subtests),
 `/html/the-xhtml-syntax/` 0% -> **91.7%** (+23,486), `/dom/nodes/` 99.0%, `/domparsing/` 56.9% -> 57.2%. Net +42,609.
@@ -153,8 +159,7 @@ RUN 171 (uncommitted -> this commit): `/html/dom/` 67.5% -> **94.5%** (+19,113 C
   Global `dir`/`enterKeyHint`/`inputMode` are enums on HTMLElement; `popoverTargetAction` added (popover API itself
   is still a no-op stub: `showPopover() {}` in `03-element.js`; `:popover-open`, top layer and toggle events missing).
 - tabIndex parses with the HTML integer rules (`-0` -> 0, no NBSP skipping).
-- Regression: `DOMParser-parseFromString-url-base-about` 2 subtests. `documentBaseURI` uses the realm-wide
-  `N.docBase()`, so a DOMParser document made in an about:blank/srcdoc frame gets the parent's base. Fix: per-document base.
+- Regression: `DOMParser-parseFromString-url-base-about` 2 subtests (fixed in run 172).
 - Leads: remaining reflection fails (tokenlists, input.type, customGetter ones); `/domparsing/tentative/` 6.9%
   (streaming HTML APIs); render-blocking and partial-updates timeouts; the two pushstate DOMParser tests hang.
 

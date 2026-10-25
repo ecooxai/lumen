@@ -1,7 +1,7 @@
 const allColl = new WeakMap(), allMeta = new WeakMap();
 const baseURICache = new WeakMap();
 function documentBaseURI(doc) {
-    const version = N.version(doc), url = N.docBase(), cached = baseURICache.get(doc);
+    const version = N.version(doc), url = doc === document || doc.__url != null ? N.docBase() : N.url(), cached = baseURICache.get(doc);
     if (cached && cached.version === version && cached.url === url) return cached.value;
     const base = N.query(doc, 'base[href]', false);
     const parsed = base && N.urlParse(N.attr(base, 'href'), url);
