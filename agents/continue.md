@@ -143,6 +143,10 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 ## Runs
 (append here: RUN 182 ...)
 
+Phone check after runs 179-181 (APK 5eb81c0, libmain.so contains the Temporal polyfill): google/youtube/webgl/webgpu
+pass, no crash/ANR/tombstone, settled CPU 1.3-3.8%, peak RSS 547 MB, WebGL 57.6 fps, WebGPU 23.7 fps; logcat only the
+known gralloc/AdrenoUtils format probes (12 per cold start) and the YouTube EvalError.
+
 RUN 181: Temporal. The V8 prebuilt (15.6) is built without Temporal (`--harmony-temporal` has no effect), so
 temporal-polyfill 1.0.6 (MIT, global build, vendored unmodified as src/js/lazy/temporal.js, ~190 KB) is compiled on a
 page's first `Temporal` access (accessor in 08-window.js; `Date.prototype.toTemporalInstant` stub loads it too). It
