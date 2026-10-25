@@ -143,6 +143,10 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 ## Runs
 (append here: RUN 207 ...)
 
+Phone check after run 206 (APK fbfb042): google/youtube/webgl/webgpu pass, no crash/ANR/tombstone/new errors;
+last-10-s CPU 0-3.4% (youtube 3.3-3.4%, so the slotchange bookkeeping costs nothing visible), peak RSS 529 MB,
+WebGL 57.8 fps, WebGPU 23.6 fps.
+
 RUN 206: slots in the DOM API (04-tags.js slotFind/slotAssigned/slotFlat/slotSignal): named assignment by the slot
 attribute (first slot in tree order with that name), manual assign(), assignedNodes/assignedElements({flatten}),
 Element/Text.assignedSlot (null for closed roots), and slotchange (bubbles) fired in a microtask on each slot whose
