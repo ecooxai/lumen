@@ -143,6 +143,11 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 ## Runs
 (append here: RUN 194 ...)
 
+NEXT LEAD (run 194): /html/semantics/scripting-1/the-template-element/template-for/ (434 short, 6.3%): WICG
+declarative partial updates. `<?start name="p"?>` (and end markers) must survive parsing as processing-instruction
+markers (the HTML parser makes them bogus comments today), and a parsed `<template for="p">` moves its content to the
+marker's position instead of staying a template. Then json/text-module leftovers, css-grid (~11k).
+
 Phone check after runs 191-193 (APK a4c3432; the first build failed because Android's V8 15.0 lacks synthetic-module
 host_defined_options, fixed with a per-isolate table): google/youtube/webgl/webgpu pass, no crash/ANR/tombstone,
 settled CPU 1.1-3.5%, peak RSS 557 MB, WebGL 57.6 fps, WebGPU 23.7 fps; only the known YouTube EvalError.
