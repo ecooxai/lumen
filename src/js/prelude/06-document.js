@@ -143,8 +143,9 @@ methods(Document.prototype, {
         if (this !== document) return false;
         const E = editing();
         val = val === undefined ? '' : `${val}`;
-        if (!E.supported(cmd) || !E.enabled(cmd)) return false;
-        const host = editHostOf(sel), type = EXEC_INPUT[cmd];
+        const hist = cmd === 'undo' ? 'historyUndo' : cmd === 'redo' ? 'historyRedo' : null;
+        if (!hist && (!E.supported(cmd) || !E.enabled(cmd))) return false;
+        const host = editHostOf(sel), type = hist || EXEC_INPUT[cmd];
         let ok = false;
         try { ok = E.exec(cmd, !!ui, val, undefined); } catch (e) { ok = false; }
         if ((ok || EXEC_COLOR.has(cmd)) && host && type !== undefined)

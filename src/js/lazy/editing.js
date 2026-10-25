@@ -536,10 +536,44 @@ function editCommandMethod(command, range, callback) {
     return ret;
 }
 
+/* Lumen (as Chrome): execCommand's undo history, per document: the editing host's markup and selection before
+   and after each command that changed it */
+var undoList = [], redoList = [];
+function undoPath(host, node, offset) {
+    var path = [offset];
+    for (var n = node; n && n != host; n = n.parentNode) path.unshift(getNodeIndex(n));
+    return path;
+}
+function undoSel(host) {
+    var r = getSelection().rangeCount ? getSelection().getRangeAt(0) : null;
+    return r && host.contains(r.startContainer) && host.contains(r.endContainer) ? [undoPath(host, r.startContainer, r.startOffset), undoPath(host, r.endContainer, r.endOffset)] : null;
+}
+function undoRestore(host, html, sel) {
+    host.innerHTML = html;
+    if (!sel) return;
+    var at = function(path) { var n = host; for (var i = 0; i < path.length - 1 && n; i++) n = n.childNodes[path[i]]; return n ? [n, Math.min(path[path.length - 1], getNodeLength(n))] : [host, 0]; };
+    var a = at(sel[0]), b = at(sel[1]), r = document.createRange();
+    r.setStart(a[0], a[1]); r.setEnd(b[0], b[1]);
+    getSelection().removeAllRanges(); getSelection().addRange(r);
+}
+function undoHostOf() {
+    var r = getSelection().rangeCount ? getSelection().getRangeAt(0) : null, n = r && r.startContainer;
+    return n && (n.nodeType == Node.TEXT_NODE || n.nodeType == Node.ELEMENT_NODE) && n.isConnected ? getEditingHostOf(n) : null;
+}
+function undoRedo(undo) {
+    var list = undo ? undoList : redoList, e = list[list.length - 1], host = undoHostOf();
+    if (!e || !host || e.host != host || !host.isConnected) return false;
+    list.pop();
+    (undo ? redoList : undoList).push(e);
+    if (undo) undoRestore(e.host, e.before, e.selBefore); else undoRestore(e.host, e.after, e.selAfter);
+    return true;
+}
+
 function myExecCommand(command, showUi, value, range) {
     // "All of these methods must treat their command argument ASCII
     // case-insensitively."
     command = command.toLowerCase();
+    if ((command == "undo" || command == "redo") && !range) return undoRedo(command == "undo");
 
     // "If only one argument was provided, let show UI be false."
     //
@@ -565,7 +599,14 @@ function myExecCommand(command, showUi, value, range) {
 
         // "Take the action for command, passing value to the instructions as an
         // argument."
+        var undoHost = !range && undoHostOf();
+        var undoBefore = undoHost && undoHost.innerHTML, undoSelBefore = undoHost && undoSel(undoHost);
         var ret = commands[command].action(value);
+        if (undoHost && ret === true && undoHost.innerHTML !== undoBefore) {
+            undoList.push({ host: undoHost, before: undoBefore, selBefore: undoSelBefore, after: undoHost.innerHTML, selAfter: undoSel(undoHost) });
+            if (undoList.length > 100) undoList.shift();
+            redoList.length = 0;
+        }
 
         // Check for bugs
         if (ret !== true && ret !== false) {

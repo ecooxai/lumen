@@ -385,6 +385,7 @@ methods(Element.prototype, {
 });
 function setInner(el, html) {
     const removed = kids(el);
+    if (liveRanges.size || liveIters.size) for (let i = removed.length - 1; i >= 0; i--) rangePreRemove(removed[i]);
     for (const r of removed) ceConnected(r, false);
     N.setHTML(el, html);
     if (el.__ass) readopt(el);

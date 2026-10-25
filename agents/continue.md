@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **203**.
+  - Number the runs. The next run is **204**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,18 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 203 ...)
+(append here: RUN 204 ...)
+
+RUN 203: execCommand('undo'/'redo') (editing.js undoList/redoList: each command that changes an editing host
+records its markup + selection before and after; undo/redo only act when the selection is in that host;
+06-document.js lets undo/redo past the supported check and fires historyUndo/historyRedo input events). Element
+innerHTML setter now updates live ranges and the selection like textContent (03-element.js setInner
+rangePreRemove); before, a selection in replaced content kept pointing into detached nodes and execCommand threw
+"Invalid active range". /editing/ /input-events/ /dom/ranges/ /selection/ /domparsing/ /dom/nodes/: +558 net
+(undo-redo.html 35 -> 69 / 69), lost 4 after reruns: 2 in selection/shadow-dom/tentative/Selection-direction.html
+were false passes (Lumen's Selection ignores points in shadow trees: collapse/extend/setBaseAndExtent return when
+rootOf(n) !== document; lead), 2 typing-around-link DesignMode variants hard-time out only under load (pass alone).
+Big parallel batches cause whole-file TIMEOUTs early in the run (peak 940 MB): always rerun lost files alone.
 
 RUN 202: Selection.addRange() accepts a Range from another realm (brand check on the internal _sc instead of
 instanceof; 06c-traversal.js). /editing/run/undo-redo.html 1 -> 35 / 69 (no longer times out); /selection/ +1,
