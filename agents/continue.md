@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **207**.
+  - Number the runs. The next run is **208**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,10 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 207 ...)
+(append here: RUN 208 ...)
+
+RUN 207: a slot assigned to an outer slot fires slotchange on that outer slot too when its own assigned nodes change
+(04-tags.js slotSignal). /shadow-dom/: +1, lost 0 (14493 / 15075).
 
 Phone check after run 206 (APK fbfb042): google/youtube/webgl/webgpu pass, no crash/ANR/tombstone/new errors;
 last-10-s CPU 0-3.4% (youtube 3.3-3.4%, so the slotchange bookkeeping costs nothing visible), peak RSS 529 MB,

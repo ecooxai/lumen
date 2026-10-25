@@ -168,7 +168,12 @@ function slotSignal(root) {
         for (const sr of roots) for (const s of slotsIn(sr)) {
             const now = slotAssigned(s), was = slotLast.get(s) || [];
             slotLast.set(s, now);
-            if (now.length !== was.length || now.some((n, i) => n !== was[i])) s.dispatchEvent(new Event('slotchange', { bubbles: true }));
+            if (now.length !== was.length || now.some((n, i) => n !== was[i])) {
+                s.dispatchEvent(new Event('slotchange', { bubbles: true }));
+                /* a slot that is itself assigned to a slot changes that slot's flattened nodes too */
+                const outer = slotFind(s);
+                if (outer) outer.dispatchEvent(new Event('slotchange', { bubbles: true }));
+            }
         }
     });
     slotDirty.add(root);
