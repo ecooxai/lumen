@@ -879,9 +879,24 @@ function fireAnim(t, type, name, elapsed, anim) {
         if (!(t instanceof Element) || !t.isContentEditable || editHost(t) !== t) return;
         const s = document.getSelection();
         if (s.rangeCount && t.contains(s.anchorNode)) return;
-        let n = t;
-        while (n.firstChild && !(n.firstChild.nodeType === 1 && (n.firstChild.tagName === 'BR' || n.firstChild.tagName === 'IMG'))) n = n.firstChild;
-        s.collapse(n, 0);
+        /* as Chrome: the first visible character, or before a <br>, <img> or empty element */
+        let n = t, o = 0;
+        while (n.firstChild) {
+            const c = n.firstChild;
+            if (c.nodeType === 1 && (c.tagName === 'BR' || c.tagName === 'IMG')) break;
+            if (c.nodeType === 1 && !c.firstChild) {
+                const cs = getComputedStyle(c), box = ['Top', 'Right', 'Bottom', 'Left'].some(k => parseFloat(cs['padding' + k]) > 0 || parseFloat(cs['border' + k + 'Width']) > 0);
+                if (box) n = c;
+                break;
+            }
+            n = c;
+            if (c.nodeType === 3) {
+                const ws = /^(pre|pre-wrap|break-spaces)$/.test(getComputedStyle(c.parentNode).whiteSpace) ? 0 : /^[ \t\n\r\f]*/.exec(c.data)[0].length;
+                o = ws < c.data.length ? ws : 0;
+                break;
+            }
+        }
+        s.collapse(n, o);
     }, true);
     /* the edit bar's Undo: each text field's earlier values (an editing host's markup), taken as input events
        change it; undoing restores one through the value setter, so editors that track it see the change */

@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **208**.
+  - Number the runs. The next run is **209**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,13 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 208 ...)
+(append here: RUN 209 ...)
+
+RUN 208: focusing an editing host puts the caret where Chrome does (08-window.js focus handler): after collapsible
+leading white-space of the first text, before an empty inline element unless it has padding/border (then inside),
+before <br>/<img>. /selection/ + /editing/other/: +50 then +26 on the rerun files; lost 2:
+typing-around-link-element-at-non-collapsed-selection DesignMode variants, which hard-time out (seen under load
+since run 203; recheck alone).
 
 RUN 207: a slot assigned to an outer slot fires slotchange on that outer slot too when its own assigned nodes change
 (04-tags.js slotSignal). /shadow-dom/: +1, lost 0 (14493 / 15075).
