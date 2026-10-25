@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **178**.
+  - Number the runs. The next run is **179**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,11 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 178 ...)
+(append here: RUN 179 ...)
+
+RUN 178: dynamic import() of a module still instantiating/evaluating (self import, cycles) no longer re-enters
+v8::Module::Evaluate (V8 fatal check, SIGTRAP): `mod_eval` (js.cc) returns a resolved promise and the running
+evaluation finishes it. test262 language/expressions/dynamic-import/: 12 CRASH -> 0, **99.8%** (830/832).
 
 Phone check after run 175 (APK with color.c): google/youtube/webgl/webgpu pass, no crash/ANR, settled CPU 0.8-3.7%,
 peak RSS 552 MB, WebGL 57.6 fps, WebGPU 23.5 fps (unchanged). Logcat: 12 gralloc 4x4 format-probe errors per cold start

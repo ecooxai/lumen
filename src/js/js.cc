@@ -568,6 +568,14 @@ static v8::MaybeLocal<v8::Promise> mod_eval(JsCtx *c, v8::Local<v8::Module> m) {
     v8::Local<v8::Context> ctx = c->iso->GetCurrentContext();
     if (!mod_graph(c, m)) return {};
     if (m->GetStatus() == v8::Module::kUninstantiated && !m->InstantiateModule(ctx, mod_resolve_cb).FromMaybe(false)) return {};
+    /* a module importing itself (or a cycle member) while it is still being linked or evaluated: the running
+       evaluation finishes it, and Evaluate() must not be re-entered */
+    if (m->GetStatus() == v8::Module::kInstantiating || m->GetStatus() == v8::Module::kEvaluating) {
+        v8::Local<v8::Promise::Resolver> r;
+        if (!v8::Promise::Resolver::New(ctx).ToLocal(&r)) return {};
+        (void)r->Resolve(ctx, v8::Undefined(c->iso));
+        return r->GetPromise();
+    }
     v8::Local<v8::Value> result;
     bool evaluated = m->Evaluate(ctx).ToLocal(&result);
     /* while the user interacts, the code refresh queue stores these later instead */
