@@ -1,6 +1,6 @@
 # Agent notes for Lumen
 
-See `CONTINUE.md` for project state, build layout and next steps.
+See `agents/continue.md` for project state, commands, WPT standings and next steps (older notes in `agents/archive/`).
 
 ## Host compilation CPU budget
 

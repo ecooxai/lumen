@@ -21,7 +21,7 @@ The separate [Android font adapter and device gate](codex-android-fonts.md)
 now exercise real engine text on the phone. Only the font-test APK has passed runtime tests;
 the browser's native library now links with the verified prebuilt V8, and APK
 packaging passes all 23 gates. All 36 grouped font/emoji checks now pass;
-see `CONTINUE.md` for the device evidence and remaining browser gates.
+see `agents/archive/CONTINUE-2026-10-25.md` for the device evidence and remaining browser gates.
 
 The active route is the [pinned Android prebuilt V8](codex-android-v8-prebuilt.md),
 not the frozen source compilation documented historically below. It requires
@@ -142,7 +142,7 @@ moved the build out of its scope. Its safety monitor stopped the existing
 Ninja/workers at 826/2592 steps. The scope no longer exists; the global
 cpulimit parent also has a 200% cap. The 320% wrapper/watcher mock tests pass,
 but sustained live acceptance failed. See
-`build/codex-android-v8-forty-percent/REPORT.md` and `CONTINUE.md` before any
+`build/codex-android-v8-forty-percent/REPORT.md` and `agents/archive/CONTINUE-2026-10-25.md` before any
 recovery. Do not restart the build or simply SIGCONT the guard-latched monitor.
 **Historical recovery verified:** the same build resumed in
 `/cpulimit.slice/codex-lumen-v8-recovery.scope` with a 320% local ceiling below

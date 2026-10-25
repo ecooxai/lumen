@@ -4,7 +4,7 @@
 
 **Scope update: Android only for the current task.** Further Linux work is
 deferred. The own-engine APK builds and has been installed and tested on the
-authorized arm64 MI 8 running API 35. See `../CONTINUE.md` for the current
+authorized arm64 MI 8 running API 35. See `../agents/archive/CONTINUE-2026-10-25.md` for the current
 artifact hashes and test reports; the prerequisite sections below include
 historical milestones, not the latest runtime status.
 

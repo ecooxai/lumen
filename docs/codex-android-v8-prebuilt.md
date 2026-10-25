@@ -9,7 +9,7 @@ objects, not Android ARM64 objects. It cannot serve the phone build. The Android
 source build remains intact but safety-frozen at 891/2592 while alternatives
 are tested; its guard double-counted a Clang driver and its cc1 child as separate
 jobs. Do not discard its outputs, change hashed inputs or automatically resume
-it. See `CONTINUE.md` for the actual scope/guard state.
+it. See `agents/archive/CONTINUE-2026-10-25.md` for the actual scope/guard state.
 
 ## Downloaded candidates
 
