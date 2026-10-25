@@ -2,6 +2,7 @@
 #include "jsglue.h"
 #include <math.h>
 #include <string.h>
+#include <strings.h>
 #include "../css/css.h"
 #include "../layout/layout.h"
 #include "../paint/paint.h"
@@ -271,16 +272,25 @@ bool jsg_module_script(Node *s) {
     return n == 6 && str_istarts(t, "module");
 }
 
+/* HTML "prepare the script element": the type string (the type attribute, else "text/" + the language attribute of an
+   HTML script) with ASCII whitespace stripped must be a JavaScript MIME type essence; an empty type or language runs */
 bool jsg_classic_script(Node *s) {
     if (node_has_attr(s, "nomodule")) return false;
-    const char *t = node_attr(s, "type");
-    if (!t) return true;
-    while (*t == ' ' || *t == '\t' || *t == '\n') t++;
-    if (!*t) return true;
-    static const char *ok[] = { "text/javascript", "application/javascript", "text/ecmascript", "application/ecmascript",
-                                "application/x-javascript", "text/x-javascript", "text/jscript", "text/livescript" };
+    const char *t = node_attr(s, "type"), *pre = "";
+    if (!t) {
+        t = s->ns == NS_HTML ? node_attr(s, "language") : NULL;
+        if (!t || !*t) return true;
+        pre = "text/";
+    } else if (!*t) return true;
+    while (*t == ' ' || *t == '\t' || *t == '\n' || *t == '\f' || *t == '\r') t++;
+    size_t n = strlen(t);
+    while (n && (t[n - 1] == ' ' || t[n - 1] == '\t' || t[n - 1] == '\n' || t[n - 1] == '\f' || t[n - 1] == '\r')) n--;
+    static const char *ok[] = { "application/ecmascript", "application/javascript", "application/x-ecmascript", "application/x-javascript",
+        "text/ecmascript", "text/javascript", "text/javascript1.0", "text/javascript1.1", "text/javascript1.2", "text/javascript1.3",
+        "text/javascript1.4", "text/javascript1.5", "text/jscript", "text/livescript", "text/x-ecmascript", "text/x-javascript" };
+    size_t pl = strlen(pre);
     for (size_t i = 0; i < sizeof ok / sizeof *ok; i++)
-        if (str_istarts(t, ok[i]) && (!t[strlen(ok[i])] || t[strlen(ok[i])] == ';' || t[strlen(ok[i])] == ' ')) return true;
+        if (strlen(ok[i]) == pl + n && !strncmp(ok[i], pre, pl) && !strncasecmp(ok[i] + pl, t, n)) return true;
     return false;
 }
 

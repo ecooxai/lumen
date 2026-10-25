@@ -42,7 +42,10 @@ Older notes, read on demand:
   - Chrome baseline: `wpt-data/chrome-base.json`.
   - Run: `python3 tools/codex_compile.py python3 tests/wpt/lumen_wpt.py run --jobs 5 /css/css-grid/ ...`. Add `--rerun` to redo tests that already have results; otherwise they are skipped.
   - Report: `python3 tests/wpt/lumen_wpt.py report [PREFIX...] [--deep]`. It rewrites `report.md` and `gaps.json`, and "Lumen of Chrome-passing" is the number to compare.
-  - Number the runs. The next run is **174**.
+  - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
+    (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
+    don't change it mid-run.
+  - Number the runs. The next run is **175**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -138,7 +141,22 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 174 ...)
+(append here: RUN 175 ...)
+
+RUN 174: `/editing/other/` 42.1% -> **54.5%** (+1,890; `/editing/run/` unchanged at 98.5%), the-script-element 30.1% -> **43.4%** (+432).
+- `src/js/lazy/editing.js`: joining sibling blocks of different white-space (the `whiteSpaceSpan` case) moves only the
+  first line (`firstLineBreak`: first `<br>` or significant `\n`), removes that break and leaves the rest in the end
+  block, as Chrome (`join-different-white-space-style-paragraphs.html`, 60 variants).
+- `jsg_classic_script` (`src/js/jsglue.c`): the spec's type string: ASCII-whitespace-stripped exact essence match of
+  the 16 JavaScript MIME types, `language` gives `text/` + language for HTML scripts, `type=" "` does not run.
+- Never-run measurement (`/referrer-policy/ /mimesniff/ /user-timing/ /cookies/ /websockets/ /scroll-animations/
+  /content-security-policy/ /webaudio/ /pointerevents/ /resource-timing/`, `--binary lumen-wpt`) stopped at 1236/4213:
+  `/referrer-policy/4K+1/gen/top.http-rp/*` all hard-time out (about 90 s each, browsers idle); skip that directory
+  (`--skip`) when resuming. CSP `form-action/*-target-blank*` and cookies `form-*-blank` also hard-time out.
+- Next leads: css-color computed values (needs a float-precision colour model in `src/css/style.c`: computed colours
+  are 8-bit `Color`, `css_parse_color` truncates at 128 bytes, `color-mix` mixes only in sRGB (Tailwind v4 uses
+  `in oklab`), relative colours unsupported; WPT fuzzy-compares numbers at 0.01 in the colour's own space, about
+  3,500 subtests); popover-focus (Tab into popovers); JSON/text module tests reject with "Error: Not supported".
 
 RUN 173: the popover API. `/html/semantics/popovers/` 25.0% -> **95.2%** (+2,741), interactive-elements 46.6% -> 49.5%,
 `/html/` 81.6% -> **83.4%**. Phone check of runs 171–172 first (APK built, `device_tests.py google youtube webgl

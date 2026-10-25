@@ -1100,6 +1100,16 @@ function whiteSpaceSpan(from, to, nodes) {
     return span;
 }
 
+/* Lumen: the first <br> ({br}) or segment break in a text that keeps them ({text, offset}) in block, else null */
+function firstLineBreak(block) {
+    var w = block.ownerDocument.createTreeWalker(block, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT);
+    for (var n = w.nextNode(); n; n = w.nextNode()) {
+        if (isHtmlElement(n, "br")) return { br: n };
+        if (n.nodeType == Node.TEXT_NODE && n.data.indexOf("\n") >= 0 && newlinesSignificant(n)) return { text: n, offset: n.data.indexOf("\n") };
+    }
+    return null;
+}
+
 /* Lumen: the white-space of node's element preserves segment breaks (pre, pre-wrap, pre-line, break-spaces) */
 function newlinesSignificant(node) {
     var el = node.nodeType == Node.ELEMENT_NODE ? node : node.parentNode;
@@ -5030,7 +5040,24 @@ function deleteSelection(flags) {
         // to start block, preserving ranges."
         var wsSpan = whiteSpaceSpan(endBlock, startBlock, [].slice.call(endBlock.childNodes));
         if (wsSpan) startBlock.appendChild(wsSpan);
-        while (endBlock.hasChildNodes()) {
+        /* Lumen (as Chrome): with a white-space span only the first line moves; the line break is removed and the
+           rest stays in end block */
+        var lineBreak = wsSpan && firstLineBreak(endBlock);
+        if (lineBreak) {
+            var lineRange = document.createRange();
+            lineRange.setStart(endBlock, 0);
+            if (lineBreak.br) lineRange.setEndBefore(lineBreak.br);
+            else lineRange.setEnd(lineBreak.text, lineBreak.offset);
+            wsSpan.appendChild(lineRange.extractContents());
+            var breakParent;
+            if (lineBreak.br) { breakParent = lineBreak.br.parentNode; breakParent.removeChild(lineBreak.br); }
+            else {
+                var rest = endBlock.ownerDocument.createTreeWalker(endBlock, NodeFilter.SHOW_TEXT);
+                for (var t = rest.nextNode(); t; t = rest.nextNode()) if (t.data.charAt(0) == "\n") { t.deleteData(0, 1); breakParent = t.data ? null : t.parentNode; if (!t.data) t.parentNode.removeChild(t); break; }
+            }
+            for (var p = breakParent; p && p != endBlock && !p.hasChildNodes(); ) { var up = p.parentNode; up.removeChild(p); p = up; }
+        }
+        while (!lineBreak && endBlock.hasChildNodes()) {
             movePreservingRanges(endBlock.firstChild, wsSpan || startBlock, -1);
         }
 
