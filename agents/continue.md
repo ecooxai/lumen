@@ -143,6 +143,10 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 ## Runs
 (append here: RUN 217 ...)
 
+Phone check after run 216 (APK d33bab1): google/youtube/webgl/webgpu pass, no crash/ANR/tombstone/new errors;
+last-10-s CPU 0-3.6% (script), peak RSS 547 MB, WebGL 57.5 fps, WebGPU 23.5 fps. YouTube had a second ~10 s busy
+stretch after load and its last 10 s read 3.3-10.7% (mean ~5.4%) in the monitor: lead, check a longer settle.
+
 RUN 216: SVG <script> runs (jsg_is_script/jsg_script_src in jsglue.c: href or xlink:href; main.c parser scripts,
 js_run_inserted). Parser: an SVG script is marked started at its start tag and released at its </script> (never in
 fragments), so a breakout-ended one doesn't run (html.c foreign()). Clones copy "already started" (dom.c
