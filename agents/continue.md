@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **205**.
+  - Number the runs. The next run is **206**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,14 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 205 ...)
+(append here: RUN 206 ...)
+
+RUN 205: ShadowRoot.elementFromPoint()/elementsFromPoint(); both document and shadow versions retarget the hit
+against the root (shadow hosts, not shadow-internal nodes, from document) and throw TypeError for missing or
+non-finite coordinates (06-document.js hitRetarget/hitsFrom/hitArgs). /shadow-dom/ + /css/cssom-view/: +71 then +34
+on the rerun files, lost 1: getBoundingClientRect-empty-inline.html is flaky (y 89.31 vs 92; passed 1 of its last 4
+runs, doesn't hit-test). Open: slotchange-event.html 0/32 (slotchange isn't fired for default slots when assigned
+nodes change).
 
 RUN 204: Selection.extend() aborts silently (before the empty check and offset validation) when the node isn't in
 the document, as the spec orders it; selectAllChildren() ends at the node's child count (0 for a Text node), not its

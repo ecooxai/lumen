@@ -100,7 +100,7 @@ methods(Document.prototype, {
     getElementsByName(n) { return nodeList(N.query(this, `[name="${CSS.escape(String(n))}"]`, true)); },
     importNode(n, deep = undefined) { const r = N.clone(n, !!deep); ceUpgradeTree(r); return r; }, adoptNode(n) { if (!N.isNode(n)) throw new TypeError("Failed to execute 'adoptNode' on 'Document': parameter 1 is not of type 'Node'."); if (N.type(n) === 9) throw new DOMException('The node provided is a document, which may not be adopted.', 'NotSupportedError'); if (N.type(n) === 11 && N.host(n)) throw new DOMException('The node provided is a shadow root, which may not be adopted.', 'HierarchyRequestError'); if (N.parent(n)) removeNode(n); N.adopt(n, this); return n; },
     hasFocus() { return true; }, getAnimations() { return waGetAnims(t => N.doc(t) === this && t.isConnected); },
-    elementFromPoint(x, y) { return N.hit(+x, +y); },
+    elementFromPoint(x, y) { hitArgs(arguments, 'elementFromPoint', 'Document'); return hitRetarget(N.hit(+x, +y), this); },
     caretPositionFromPoint(x, y, opts) {
         if (arguments.length < 2) throw new TypeError(`Failed to execute 'caretPositionFromPoint' on 'Document': 2 arguments required, but only ${arguments.length} present.`);
         x = +x; y = +y;
@@ -117,7 +117,7 @@ methods(Document.prototype, {
         if (!r) return null;
         const rg = this.createRange(); rg.setStart(r[0], r[1]); rg.collapse(true); return rg;
     },
-    elementsFromPoint(x, y) { const r = []; for (let e = N.hit(+x, +y); e && N.type(e) === 1; e = N.parent(e)) r.push(e); return r; },
+    elementsFromPoint(x, y) { hitArgs(arguments, 'elementsFromPoint', 'Document'); return hitsFrom(this, +x, +y); },
     getSelection() { return selection; },
     execCommand(cmd, ui, val) {
         if (!arguments.length) throw argErr('execCommand');
@@ -330,3 +330,31 @@ function fsCurrent(doc) {
     return e;
 }
 Object.defineProperty(globalThis, '__lumenFullscreenExit', { value: () => { if (fsEl) fsExit().catch(() => {}); } });
+
+/* hit testing seen from a document or shadow root: the spec's "retarget" of the hit element against that root */
+const shadowIncAncestor = (a, b) => { for (let n = b; n; n = N.parent(n) || (N.type(n) === 11 ? N.host(n) : null)) if (n === a) return true; return false; };
+function hitArgs(a, m, i) {
+    if (a.length < 2) throw new TypeError(`Failed to execute '${m}' on '${i}': 2 arguments required, but only ${a.length} present.`);
+    for (const k of [0, 1]) if (!Number.isFinite(+a[k])) throw new TypeError(`Failed to execute '${m}' on '${i}': The provided double value is non-finite.`);
+}
+function hitRetarget(e, root) {
+    while (e) {
+        const r = rootOf(e);
+        if (N.type(r) !== 11 || !N.host(r) || shadowIncAncestor(r, root)) return e;
+        e = N.host(r);
+    }
+    return null;
+}
+function hitsFrom(root, x, y) {
+    const r = [];
+    for (let e = N.hit(x, y); e; e = N.parent(e) || (N.type(e) === 11 ? N.host(e) : null)) {
+        if (N.type(e) !== 1) continue;
+        const t = hitRetarget(e, root);
+        if (t && N.type(t) === 1 && r[r.length - 1] !== t) r.push(t);
+    }
+    return r;
+}
+methods(ShadowRoot.prototype, {
+    elementFromPoint(x, y) { hitArgs(arguments, 'elementFromPoint', 'ShadowRoot'); return hitRetarget(N.hit(+x, +y), this); },
+    elementsFromPoint(x, y) { hitArgs(arguments, 'elementsFromPoint', 'ShadowRoot'); return hitsFrom(this, +x, +y); },
+});
