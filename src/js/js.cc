@@ -380,7 +380,7 @@ static std::string mod_resolve(const std::string &spec, const std::string &base)
 }
 static bool mod_fetch(const std::string &u, const std::string &ref, std::string &out) {
     NetRequest *rq = net_request_new("GET", u.c_str());
-    if (!ref.compare(0, 4, "http")) headers_add(&rq->headers, "Referer", ref.c_str());
+    { char rv[4200]; if (url_referrer(ref.c_str(), u.c_str(), NULL, rv, sizeof rv)) headers_add(&rq->headers, "Referer", rv); }
     NetResponse *r = net_fetch_sync(rq);
     bool ok = r && r->status >= 200 && r->status < 300;
     if (ok) out.assign(r->body ? r->body : "", r->body_len);

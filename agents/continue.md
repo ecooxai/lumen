@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **187**.
+  - Number the runs. The next run is **188**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,12 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 187 ...)
+(append here: RUN 188 ...)
+
+RUN 187: module script fetches (`mod_fetch`, js.cc) apply the default referrer policy through `url_referrer()`
+(dom.c; no document there, may run on the loader thread) instead of always sending the full URL. /referrer-policy/gen/
++ script-element/module/: +149, lost 1 (module/referrer-unsafe-url.sub.html: the element's referrerpolicy and the
+document policy don't reach msrc_get yet: lead).
 
 RUN 186: document images (`sync_images`, main.c) send the policy's Referer (`doc_referrer`, element referrerpolicy).
 No WPT change (iframe.http-rp + req.attr 738/1,110, lost 0): the img-tag tests decode the referrer from the image's

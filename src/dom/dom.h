@@ -179,6 +179,8 @@ char *node_serialize(const Node *n, bool outer);  /* innerHTML/outerHTML */
 /* the Referer for a request from d to url under policy (NULL/"": the document's, then strict-origin-when-cross-origin):
    written to out, or false for none (Referrer Policy § 8.3) */
 bool doc_referrer(const Document *d, const char *url, const char *policy, char *out, size_t n);
+/* the same for a referrer URL ref (a module script's) with no document policy */
+bool url_referrer(const char *ref, const char *url, const char *policy, char *out, size_t n);
 Node *node_next_in_tree(Node *n, Node *root);     /* pre-order traversal */
 Node *node_next_deep(Node *n, Node *root);        /* pre-order, entering shadow trees */
 Node *doc_get_element_by_id(Document *d, const char *id);

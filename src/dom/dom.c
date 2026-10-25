@@ -728,6 +728,12 @@ static bool url_trustworthy(const char *u) {
     const char *h = strstr(u, "://"); if (!h) return false; h += 3;
     return !strncmp(h, "localhost", 9) || !strncmp(h, "127.", 4) || !strncmp(h, "[::1]", 5);
 }
+static bool ref_apply(const char *ref, const char *url, int p, char *out, size_t n);
+bool url_referrer(const char *ref, const char *url, const char *policy, char *out, size_t n) {
+    if (!ref || strncasecmp(ref, "http", 4) || !url) return false;
+    int p = policy && *policy ? ref_policy_parse(policy) : -1;
+    return ref_apply(ref, url, p < 0 ? 6 : p, out, n);
+}
 bool doc_referrer(const Document *d, const char *url, const char *policy, char *out, size_t n) {
     const char *ref = d ? d->url : NULL;
     if (!ref || strncasecmp(ref, "http", 4) || !url) return false;
@@ -737,6 +743,9 @@ bool doc_referrer(const Document *d, const char *url, const char *policy, char *
         if (node_is(m, atom("meta"))) { const char *nm = node_attr(m, "name"), *ct = node_attr(m, "content"); if (nm && ct && !strcasecmp(nm, "referrer")) { int q = ref_policy_parse(ct); if (q >= 0) p = q; } }
     if (p < 0 && d->referrer_policy) p = ref_policy_parse(d->referrer_policy);
     if (p < 0) p = 6;
+    return ref_apply(ref, url, p, out, n);
+}
+static bool ref_apply(const char *ref, const char *url, int p, char *out, size_t n) {
     size_t ol = url_origin_len(ref), fl = strcspn(ref, "#");
     if (!ol || n < 2) return false;
     size_t tl = url_origin_len(url);
