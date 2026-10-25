@@ -552,9 +552,28 @@ static bool json_mime(const std::string &ct) {
     size_t b = 0; while (b < t.size() && isspace((unsigned char)t[b])) b++; t = t.substr(b);
     return t == "application/json" || t == "text/json" || (t.size() > 5 && t.compare(t.size() - 5, 5, "+json") == 0 && t.find('/') != std::string::npos);
 }
+/* each synthetic module's [value(, css flag)] until it evaluates, per isolate (the Android V8 has no
+   host_defined_options on synthetic modules); mod_synth_drop clears an isolate's before it goes away */
+namespace {
+struct SynthEnt { v8::Global<v8::Module> m; v8::Global<v8::Array> d; };
+std::mutex g_synth_mu;
+std::unordered_map<v8::Isolate *, std::unordered_multimap<int, SynthEnt>> *g_synth = new std::unordered_map<v8::Isolate *, std::unordered_multimap<int, SynthEnt>>;
+}  // namespace
+void mod_synth_drop(v8::Isolate *iso) { std::lock_guard<std::mutex> lk(g_synth_mu); g_synth->erase(iso); }
+#if V8_MAJOR_VERSION > 15 || (V8_MAJOR_VERSION == 15 && V8_MINOR_VERSION >= 6)
 static v8::MaybeLocal<v8::Promise> synth_steps(v8::Local<v8::Context> ctx, v8::Local<v8::Module> m) {
+#else
+static v8::MaybeLocal<v8::Value> synth_steps(v8::Local<v8::Context> ctx, v8::Local<v8::Module> m) {
+#endif
     v8::Isolate *iso = v8::Isolate::GetCurrent();
-    v8::Local<v8::Array> d = m->GetSyntheticModuleHostDefinedOptions().As<v8::Array>();
+    v8::Local<v8::Array> d;
+    {
+        std::lock_guard<std::mutex> lk(g_synth_mu);
+        auto &tab = (*g_synth)[iso];
+        auto r = tab.equal_range(m->GetIdentityHash());
+        for (auto it = r.first; it != r.second; ++it) if (it->second.m.Get(iso) == m) { d = it->second.d.Get(iso); tab.erase(it); break; }
+    }
+    if (d.IsEmpty()) { mod_throw(iso, "Module source is no longer available"); return {}; }
     v8::Local<v8::Value> v = d->Get(ctx, 0).ToLocalChecked();
     if (d->Length() > 1) {   /* css: a constructed CSSStyleSheet */
         v8::Local<v8::Value> C, sheet, rs;
@@ -585,7 +604,14 @@ v8::MaybeLocal<v8::Module> mod_synthetic(v8::Local<v8::Context> ctx, const std::
     (void)d->Set(ctx, 0, v);
     if (type == "css") (void)d->Set(ctx, 1, v8::True(iso));
     v8::Local<v8::String> names[1] = { jstr(iso, "default") };
-    return v8::Module::CreateSyntheticModule(iso, jstr(iso, u.c_str()), std::span<const v8::Local<v8::String>>(names, 1), synth_steps, d);
+#if V8_MAJOR_VERSION > 15 || (V8_MAJOR_VERSION == 15 && V8_MINOR_VERSION >= 6)
+    v8::Local<v8::Module> m = v8::Module::CreateSyntheticModule(iso, jstr(iso, u.c_str()), std::span<const v8::Local<v8::String>>(names, 1), synth_steps);
+#else
+    v8::Local<v8::Module> m = v8::Module::CreateSyntheticModule(iso, jstr(iso, u.c_str()), v8::MemorySpan<const v8::Local<v8::String>>(names, 1), synth_steps);
+#endif
+    std::lock_guard<std::mutex> lk(g_synth_mu);
+    (*g_synth)[iso].emplace(m->GetIdentityHash(), SynthEnt{ v8::Global<v8::Module>(iso, m), v8::Global<v8::Array>(iso, d) });
+    return m;
 }
 static v8::MaybeLocal<v8::Module> mod_build(JsCtx *c, const std::string &key, const std::string &body, const std::string &ctype) {
     std::string t = mod_ktype(key);
@@ -1296,7 +1322,7 @@ void js_free(JsCtx *c) {
         c->protoFor.Reset(); c->fire.Reset(); c->report.Reset(); c->viewportChanged.Reset();
         c->tt_script.Reset(); c->tt_eval.Reset(); c->code_like.Reset();
         c->api.Reset(); c->node_tmpl.Reset();
-        c->mods.clear(); c->mod_url.clear(); c->mod_jobs.clear(); c->code_refresh.clear();
+        c->mods.clear(); c->mod_url.clear(); c->mod_jobs.clear(); c->code_refresh.clear(); if (!c->parent) mod_synth_drop(c->iso);
         for (Node *n : c->wrapped) { delete static_cast<v8::Global<v8::Object> *>(n->js); n->js = nullptr; }
         for (Node *n : c->wrapped)
             if (!n->parent && n->type != NODE_DOCUMENT && !n->refcount && !n->host) roots.push_back(n);

@@ -908,7 +908,7 @@ void worker_main(std::shared_ptr<Worker> w) {
             }
         }
         for (auto &f : E->fetches) { { std::lock_guard<std::mutex> lk(g_wfetch_mu); g_wfetch.erase(f.first); } net_cancel(f.first); }
-        E->fetches.clear(); E->timers.clear(); E->mods.clear(); E->murl.clear(); E->onmsg.Reset(); E->report.Reset(); E->ctx.Reset();
+        E->fetches.clear(); E->timers.clear(); E->mods.clear(); E->murl.clear(); mod_synth_drop(iso); E->onmsg.Reset(); E->report.Reset(); E->ctx.Reset();
     }
     std::deque<Buf> abandoned;
     {
