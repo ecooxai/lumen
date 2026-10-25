@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **186**.
+  - Number the runs. The next run is **187**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,14 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 186 ...)
+(append here: RUN 187 ...)
+
+RUN 186: document images (`sync_images`, main.c) send the policy's Referer (`doc_referrer`, element referrerpolicy).
+No WPT change (iframe.http-rp + req.attr 738/1,110, lost 0): the img-tag tests decode the referrer from the image's
+pixels via canvas and fail earlier ("[object Event]" = the Image's error event for `new Image()` loads, which don't go
+through sync_images; iframe img-tag times out). Next: trace common/security-features/resources/common.sub.js
+requestViaImage in Lumen; svg-a-tag "Failed to construct 'URL'" (SVGAElement.href is an SVGAnimatedString);
+script-tag-dynamic-import referrer (mod_fetch in js.cc still sends the full URL).
 
 RUN 184: first full /referrer-policy/gen/ (961 tests, 1,765 s, 82 TIMEOUT, no crashes, peak RSS 443 MB): **67.8%**
 (4,772 / 7,042). Leads: img-tag requests (no Referer policy for images: 413 + 354 "[object Event]"), svg-a-tag

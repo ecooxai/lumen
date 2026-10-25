@@ -2899,6 +2899,7 @@ static bool sync_images(Page *p) {
         if (!have) {
             if (getenv("LUMEN_DEBUG_IMG")) fprintf(stderr, "lumen: img fetch %.80s\n", u);
             NetRequest *rq = net_request_new("GET", u); ImgLoad *l = xcalloc(1, sizeof *l); l->gen = p->gen; l->u = u;
+            { char ref[4200]; if (doc_referrer(p->d, u, n->tag == A_img ? node_attr(n, "referrerpolicy") : NULL, ref, sizeof ref)) headers_add(&rq->headers, "Referer", ref); }
             rq->done = img_done; rq->work = img_work; rq->ud = l; rq->priority = 2; net_fetch(rq);
         } else free(u);
     }
