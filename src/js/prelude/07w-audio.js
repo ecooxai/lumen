@@ -776,7 +776,7 @@ class IIRFilterNode extends AudioNode {
 class AudioListener {
     constructor(ctx) {
         for (const [k, v] of [['positionX', 0], ['positionY', 0], ['positionZ', 0], ['forwardX', 0], ['forwardY', 0], ['forwardZ', -1], ['upX', 0], ['upY', 1], ['upZ', 0]])
-            Object.defineProperty(this, k, { value: new AudioParam(ctx, v), enumerable: true });
+            this[k] = new AudioParam(ctx, v);
     }
     setPosition(x, y, z) { this.positionX.value = x; this.positionY.value = y; this.positionZ.value = z; }
     setOrientation(x, y, z, ux, uy, uz) { this.forwardX.value = x; this.forwardY.value = y; this.forwardZ.value = z; this.upX.value = ux; this.upY.value = uy; this.upZ.value = uz; }
@@ -787,7 +787,7 @@ class PannerNode extends AudioNode {
         o = ctorCheck(ctx, o, 'PannerNode');
         super(ctx); this.channelCountMode = 'clamped-max'; nodeOpts(this, o);
         for (const [k, v] of [['positionX', 0], ['positionY', 0], ['positionZ', 0], ['orientationX', 1], ['orientationY', 0], ['orientationZ', 0]])
-            Object.defineProperty(this, k, { value: new AudioParam(ctx, o[k] ?? v), enumerable: true });
+            this[k] = new AudioParam(ctx, o[k] ?? v);
         this.panningModel = o.panningModel ?? 'equalpower'; this.distanceModel = o.distanceModel ?? 'inverse';
         this._ref = 1; this._max = 10000; this._roll = 1; this.coneInnerAngle = o.coneInnerAngle ?? 360; this.coneOuterAngle = o.coneOuterAngle ?? 360; this._cog = 0;
         for (const k of ['refDistance', 'maxDistance', 'rolloffFactor', 'coneOuterGain']) if (o[k] !== undefined) this[k] = o[k];
@@ -810,6 +810,15 @@ class OfflineAudioCompletionEvent extends Event {
     }
     get renderedBuffer() { return this._rb; }
 }
+/* a node's AudioParams are readonly prototype attributes; the constructor's assignment is the only one kept */
+for (const [C, ns] of [[AudioBufferSourceNode, 'detune playbackRate'], [BiquadFilterNode, 'detune frequency gain Q'], [ConstantSourceNode, 'offset'],
+    [DelayNode, 'delayTime'], [DynamicsCompressorNode, 'attack knee ratio release threshold'], [GainNode, 'gain'], [OscillatorNode, 'detune frequency'],
+    [StereoPannerNode, 'pan'], [PannerNode, 'positionX positionY positionZ orientationX orientationY orientationZ'],
+    [AudioListener, 'positionX positionY positionZ forwardX forwardY forwardZ upX upY upZ']])
+    for (const n of ns.split(' ')) {
+        const k = Symbol(n);
+        Object.defineProperty(C.prototype, n, { get() { return this[k]; }, set(v) { if (this[k] === undefined && v instanceof AudioParam) this[k] = v; }, enumerable: true, configurable: true });
+    }
 methods(BaseAudioContext.prototype, {
     createChannelMerger(n = 6) { return new ChannelMergerNode(this, { numberOfInputs: n }); },
     createChannelSplitter(n = 6) { return new ChannelSplitterNode(this, { numberOfOutputs: n }); },
