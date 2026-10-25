@@ -459,6 +459,26 @@ for (const proto of [Element.prototype, CharacterData.prototype]) for (const u o
         },
     });
 }
+/* stream*HTML(Unsafe)(options): a WritableStream of strings whose markup is applied, with the matching
+   non-streaming method, once the stream closes */
+function htmlStream(apply, self, name, safe, options) {
+    const on = self instanceof ShadowRoot ? 'ShadowRoot' : self instanceof CharacterData ? 'CharacterData' : 'Element';
+    htmlArgs(['', options], safe, `execute '${name}' on '${on}'`);   /* bad options and Trusted Types throw now */
+    let buf = '';
+    return new WritableStream({ write(c) { buf += String(c); }, close() { apply(buf); } });
+}
+for (const u of ['', 'Unsafe']) {
+    for (const proto of [Element.prototype, ShadowRoot.prototype]) methods(proto, {
+        [`streamHTML${u}`](options = undefined) { return htmlStream(h => this[`setHTML${u}`](h, options), this, `streamHTML${u}`, !u, options); },
+        [`streamAppendHTML${u}`](options = undefined) { return htmlStream(h => this[`appendHTML${u}`](h, options), this, `streamAppendHTML${u}`, !u, options); },
+        [`streamPrependHTML${u}`](options = undefined) { return htmlStream(h => this[`prependHTML${u}`](h, options), this, `streamPrependHTML${u}`, !u, options); },
+    });
+    for (const proto of [Element.prototype, CharacterData.prototype]) methods(proto, {
+        [`streamBeforeHTML${u}`](options = undefined) { return htmlStream(h => this[`beforeHTML${u}`](h, options), this, `streamBeforeHTML${u}`, !u, options); },
+        [`streamAfterHTML${u}`](options = undefined) { return htmlStream(h => this[`afterHTML${u}`](h, options), this, `streamAfterHTML${u}`, !u, options); },
+        [`streamReplaceWithHTML${u}`](options = undefined) { return htmlStream(h => this[`replaceWithHTML${u}`](h, options), this, `streamReplaceWithHTML${u}`, !u, options); },
+    });
+}
 /* Document.parseHTML(Unsafe)(): a new document, scripting disabled, declarative shadow roots allowed */
 function parseHTMLDoc(args, safe, m) {
     const [html, o] = htmlArgs(args, true, m, !safe);

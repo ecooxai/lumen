@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **198**.
+  - Number the runs. The next run is **199**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,15 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 198 ...)
+(append here: RUN 199 ...)
+
+RUN 198: element/ShadowRoot/CharacterData stream{,Append,Prepend,Before,After,ReplaceWith}HTML(Unsafe)()
+(07k-sanitizer.js htmlStream): a WritableStream that buffers chunks and applies the matching method on close;
+Trusted Types/options checked at call time. /domparsing/ + template-element/ + /html/dom/partial-updates/:
++795, lost 30 (they passed only because the method was missing). Leads: the sanitizer config must be resolved
+(and an invalid one throw) at call time, not at close (stream-html-sanitizer.html "mutating the sanitizer while
+streaming", "invalid sanitizer config"); TT checks for elements adopted between TT and non-TT documents
+(stream-html-with-trusted-types-adopt/from-non-tt); real incremental parsing into the target.
 
 RUN 197: history traversal within a document fires hashchange after popstate when only the fragment changed
 (08-window.js histUrls per entry). /html/browsers/history/: +2 net in the full run; history_pushstate_url.html
