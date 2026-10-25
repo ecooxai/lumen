@@ -617,29 +617,61 @@ for (const [p, a] of [['ariaControlsElements', 'aria-controls'], ['ariaDescribed
     ['ariaErrorMessageElements', 'aria-errormessage'], ['ariaFlowToElements', 'aria-flowto'], ['ariaLabelledByElements', 'aria-labelledby'], ['ariaOwnsElements', 'aria-owns']])
     reflectElements(Element.prototype, p, a);
 
+/* innerText (HTML "rendered text collection steps"), from computed display, white-space, visibility and
+   text-transform; elements that aren't rendered give their text content */
 function innerTextOf(el) {
-    const BLK = /^(ADDRESS|ARTICLE|ASIDE|BLOCKQUOTE|CAPTION|DD|DETAILS|DIALOG|DIV|DL|DT|FIELDSET|FIGCAPTION|FIGURE|FOOTER|FORM|H[1-6]|HEADER|HR|LI|MAIN|NAV|OL|PRE|SECTION|SUMMARY|TABLE|TBODY|TFOOT|THEAD|TR|UL)$/;
-    const SKIP = /^(SCRIPT|STYLE|TEMPLATE|NOSCRIPT|HEAD|TITLE)$/i;
-    let out = '', nlc = 0;
-    const add = t => { if (!t) return; out += t; const m = /\n*$/.exec(t)[0].length; nlc = m === t.length ? nlc + m : m; };
-    const nl = k => { if (out && nlc < k) add('\n'.repeat(k - nlc)); };
-    const walk = (n, pre) => {
+    const cs = (e, p) => N.computed(e, p) || '';
+    for (let a = el; a; a = a.parentElement) if (cs(a, 'display') === 'none') return el.textContent;
+    if (!el.isConnected) return el.textContent;
+    const BLOCK = /^(block|flow-root|flex|grid|table|list-item|table-caption|-webkit-box|block flow|block flow-root|block flex|block grid|block table)/;
+    const NOKIDS = /^(TEXTAREA|INPUT|IMG|VIDEO|AUDIO|CANVAS|IFRAME|OBJECT|EMBED|SELECT)$/;
+    const items = [];
+    let pendSpace = false, lineStart = true;
+    const trimTail = () => { if (pendSpace) { const k = items.length - 1; if (typeof items[k] === 'string') items[k] = items[k].slice(0, -1); pendSpace = false; } };
+    const text = (t, coll) => {
+        if (coll) { if ((pendSpace || lineStart) && t[0] === ' ') t = t.slice(1); }
+        if (!t) return;
+        items.push(t); lineStart = t.endsWith('\n'); pendSpace = coll && t.endsWith(' ');
+    };
+    const brk = k => { trimTail(); items.push(k); lineStart = true; };
+    const xform = (t, tt) => tt === 'uppercase' ? t.toUpperCase() : tt === 'lowercase' ? t.toLowerCase() : tt === 'capitalize' ? t.replace(/(^|[^\p{L}\p{N}'’])(\p{L})/gu, (m, a, b) => a + b.toUpperCase()) : t;
+    const walk = n => {
         for (let c = n.firstChild; c; c = c.nextSibling) {
             if (c.nodeType === 3) {
+                const par = c.parentElement || n;
+                if (cs(par, 'visibility') === 'hidden' || cs(par, 'visibility') === 'collapse') continue;
+                const ws = cs(par, 'white-space') || 'normal';
                 let t = c.data;
-                if (!pre) { t = t.replace(/[\t\n\r ]+/g, ' '); const last = out[out.length - 1]; if (!out || last === ' ' || last === '\n' || last === '\t') t = t.replace(/^ /, ''); }
-                add(t);
+                const coll = !/^(pre|pre-wrap|break-spaces)$/.test(ws) && !/preserve/.test(ws);
+                if (coll) {
+                    if (/pre-line|preserve-breaks/.test(ws)) t = t.replace(/[ \t\r]+/g, ' ').replace(/ ?\n ?/g, '\n');
+                    else t = t.replace(/[ \t\r]*\n[ \t\r]*/g, ' ').replace(/[ \t\r\n]+/g, ' ');
+                } else t = t.replace(/\r\n?/g, '\n');
+                t = xform(t, cs(par, 'text-transform'));
+                if (coll && t.startsWith('\n')) trimTail();
+                text(t, coll);
             } else if (c.nodeType === 1) {
-                const tg = c.tagName;
-                if (SKIP.test(tg) || c.hasAttribute('hidden')) continue;
-                if (tg === 'BR') { add('\n'); continue; }
-                const k = tg === 'P' ? 2 : BLK.test(tg) ? 1 : 0;
-                if (k) nl(k);
-                walk(c, pre || tg === 'PRE' || tg === 'TEXTAREA');
-                if (k) nl(k); else if ((tg === 'TD' || tg === 'TH') && c.nextElementSibling) add('\t');
+                const d = cs(c, 'display');
+                if (d === 'none') continue;
+                if (c.localName === 'br' && c.namespaceURI === 'http://www.w3.org/1999/xhtml') { if (cs(c, 'visibility') === 'visible' || !cs(c, 'visibility')) { trimTail(); items.push('\n'); lineStart = true; pendSpace = false; } continue; }
+                if (d === 'contents') { walk(c); continue; }
+                const k = c.localName === 'p' && c.namespaceURI === 'http://www.w3.org/1999/xhtml' ? 2 : BLOCK.test(d) ? 1 : 0;
+                if (k) brk(k);
+                if (!NOKIDS.test(c.tagName)) walk(c);
+                if (k) brk(k);
+                else if (d === 'table-cell') { let nx = c.nextElementSibling; while (nx && cs(nx, 'display') === 'none') nx = nx.nextElementSibling; if (nx) { trimTail(); items.push('\t'); lineStart = false; pendSpace = false; } }
+                else if (d === 'table-row') { let nx = c.nextElementSibling; while (nx && cs(nx, 'display') === 'none') nx = nx.nextElementSibling; if (nx || c.parentElement?.nextElementSibling) brk(1); }
+                else if (/^table-(row-group|header-group|footer-group)$/.test(d) && c.nextElementSibling) brk(1);
             }
         }
     };
-    walk(el, false);
-    return out.replace(/ +\n/g, '\n').replace(/^\n+|[\n ]+$/g, '');
+    walk(el);
+    trimTail();
+    let out = '', req = -1;
+    for (const it of items) {
+        if (typeof it === 'number') { if (out !== '' ) req = Math.max(req, it); continue; }
+        if (req > 0) out += '\n'.repeat(req);
+        req = -1; out += it;
+    }
+    return out;
 }

@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **191**.
+  - Number the runs. The next run is **192**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,13 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 191 ...)
+(append here: RUN 192 ...)
+
+RUN 191: innerText follows the rendered-text steps (03-element.js `innerTextOf`): computed display (none, contents,
+block-level, table-cell tabs, table-row breaks), white-space collapsing per value (pre-line keeps breaks),
+visibility, text-transform, required line-break counts; unrendered elements give textContent. innertext dir
+33.9% -> **81.1%** (+604), /dom/nodes/ no change; lost 1 (<select><optgroup><option> contents: SELECT children are
+skipped, lead).
 
 Phone check after runs 188-190 (APK 2c5bb00, srcset now picks by dpr): google/youtube/webgl/webgpu pass, no
 crash/ANR/tombstone, settled CPU 0.8-3.8%, peak RSS 549 MB (youtube, +15 MB vs before), WebGL 57.5 fps, WebGPU
