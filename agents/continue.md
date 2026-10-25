@@ -146,7 +146,10 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 NEXT LEAD (run 194): /html/semantics/scripting-1/the-template-element/template-for/ (434 short, 6.3%): WICG
 declarative partial updates. `<?start name="p"?>` (and end markers) must survive parsing as processing-instruction
 markers (the HTML parser makes them bogus comments today), and a parsed `<template for="p">` moves its content to the
-marker's position instead of staying a template. Then json/text-module leftovers, css-grid (~11k).
+marker's position instead of staying a template. Finding: html.c already tokenizes `<?start name="p"?>` into PI nodes
+(pi_or_bogus -> T_PI -> node_new_pi), so only the tree-builder side is missing: on `</template>` of a template with
+a `for` attribute, find the matching start PI, insert the template content there and drop the marker and the
+template (expected e.g. "Some<span> </span><span>content</span>" from template-for-append-element.html). Then json/text-module leftovers, css-grid (~11k).
 
 Phone check after runs 191-193 (APK a4c3432; the first build failed because Android's V8 15.0 lacks synthetic-module
 host_defined_options, fixed with a per-isolate table): google/youtube/webgl/webgpu pass, no crash/ANR/tombstone,
