@@ -143,6 +143,9 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 ## Runs
 (append here: RUN 179 ...)
 
+Phone check after runs 176-178 (APK 210712f): google/youtube/webgl/webgpu pass, no crash/ANR/tombstone, settled CPU
+1.3-4.1%, peak RSS 555 MB, WebGL 57.5 fps, WebGPU 23.5 fps (unchanged), only the known YouTube EvalError.
+
 RUN 178: dynamic import() of a module still instantiating/evaluating (self import, cycles) no longer re-enters
 v8::Module::Evaluate (V8 fatal check, SIGTRAP): `mod_eval` (js.cc) returns a resolved promise and the running
 evaluation finishes it. test262 language/expressions/dynamic-import/: 12 CRASH -> 0, **99.8%** (830/832).
