@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **194**.
+  - Number the runs. The next run is **195**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,16 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 194 ...)
+(append here: RUN 195 ...)
+
+RUN 194: <template for> (declarative partial updates), html.c template_for() at </template>: first <?marker name=N?>
+gets the content inserted, or <?start name=N?> replaces up to its closing <?end?> (nested starts counted, end names
+ignored) or to the end of the parent; markers and the template removed; empty name does nothing. template-for/
+29 -> 235 / 463 (+198 net); html5lib losses in the same run were flaky (314/314 on rerun). Lost 1:
+template-for-scripting-nested (the placeholder's script is removed before it runs). The remaining ~230 need
+Chrome's streaming model: the target is cleared at the <template for> START tag and following content parses
+directly into the target (append/prepend/gradual/move-while-appending tests, scripts inside patches executing,
+innerHTML/shadow/setters). Also element.streamAppendHTMLUnsafe() (207 subtests) is missing.
 
 NEXT LEAD (run 194): /html/semantics/scripting-1/the-template-element/template-for/ (434 short, 6.3%): WICG
 declarative partial updates. `<?start name="p"?>` (and end markers) must survive parsing as processing-instruction

@@ -681,11 +681,54 @@ static void m_before_head(P, Tok *t) {
     }
     p->head_el = insert_fake(p, A_head); p->mode = M_IN_HEAD; reprocess(p, t);
 }
+/* the name="..." (or name=...) value in a processing instruction's data, into out */
+static bool pi_name(const char *d, char *out, size_t cap) {
+    const char *q = d ? strstr(d, "name=") : NULL;
+    if (!q || (q > d && !isspace((unsigned char)q[-1]))) return false;
+    q += 5;
+    char qu = *q == '"' || *q == '\'' ? *q++ : 0;
+    size_t k = 0;
+    while (*q && (qu ? *q != qu : !isspace((unsigned char)*q)) && k + 1 < cap) out[k++] = *q++;
+    out[k] = 0;
+    return true;
+}
+/* declarative partial updates: a parsed <template for=NAME> patches the first <?marker name=NAME?> (inserting its
+   content there) or <?start name=NAME?> (replacing everything up to the <?end?> closing it, nested starts counted,
+   or to the end of the parent); the markers and the template go away. An empty name or no marker: nothing happens. */
+static void template_for(P, Node *t) {
+    const char *nm = node_attr(t, "for");
+    if (!nm || !*nm || !t->template_content) return;
+    Node *root = t; while (root->parent) root = root->parent;
+    Node *mk = NULL; char nb[256];
+    for (Node *n = root->first; n && !mk; n = node_next_in_tree(n, root))
+        if (n->type == NODE_PI && (n->tag == atom("start") || n->tag == atom("marker")) && pi_name(n->text, nb, sizeof nb) && !strcmp(nb, nm)) mk = n;
+    if (!mk || !mk->parent) return;
+    Node *par = mk->parent;
+    if (mk->tag == atom("start")) {
+        int depth = 0;
+        for (Node *e = mk->next; e; ) {
+            Node *nx = e->next;
+            if (e == t) break;
+            bool stop = false;
+            if (e->type == NODE_PI && e->tag == atom("start")) depth++;
+            else if (e->type == NODE_PI && e->tag == atom("end")) { if (!depth) stop = true; else depth--; }
+            node_remove(e); node_free_tree(e);
+            if (stop) break;
+            e = nx;
+        }
+    }
+    Node *ref = mk->next;
+    for (Node *c = t->template_content->first; c; c = t->template_content->first) { node_remove(c); node_insert_before(par, c, ref); }
+    node_remove(mk); node_free_tree(mk);
+    if (t->parent) node_remove(t);
+}
 static void end_template(P) {
     if (!tmpl_on_stack(p)) return;
+    Node *t = NULL; for (int i = p->open.n - 1; i >= 0; i--) if (p->open.v[i]->tag == A_template) { t = p->open.v[i]; break; }
     gen_implied_all(p); pop_until(p, A_template); clear_to_marker(p);
     if (p->tmpl_modes.n) p->tmpl_modes.n--;
     reset_mode(p);
+    if (t) template_for(p, t);
 }
 /* a template start tag: a declarative shadow root, or a template element */
 static void template_start(P, Tok *t) {
