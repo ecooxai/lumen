@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **184**.
+  - Number the runs. The next run is **186**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,16 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 184 ...)
+(append here: RUN 186 ...)
+
+RUN 184: first full /referrer-policy/gen/ (961 tests, 1,765 s, 82 TIMEOUT, no crashes, peak RSS 443 MB): **67.8%**
+(4,772 / 7,042). Leads: img-tag requests (no Referer policy for images: 413 + 354 "[object Event]"), svg-a-tag
+("reading undefined", 344), shared workers ("Failed to construct 'Worker'", 272), svg-a-tag URL (155), top.meta
+document.referrer (133).
+
+RUN 185: streams.js underlying source/sink/transformer dictionaries are null-prototype (`d = { __proto__: null }`),
+so Object.prototype accessors (start/type/size/highWaterMark) don't break body streams. /fetch/api/basic/ + /streams/ +
+/encoding/streams/ + /compression/: +359, lost 0 (scheme-about.any.serviceworker.html is flaky: 7 subtests flip).
 
 RUN 183: referrer policy. Documents keep their Referrer-Policy header (`Document.referrer_policy`, frames.cc/main.c;
 third element of N.csp()). `doc_referrer()` (dom.c) implements "determine request's referrer" for the native

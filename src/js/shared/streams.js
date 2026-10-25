@@ -911,7 +911,7 @@ class ReadableStream {
         const what = "Failed to construct 'ReadableStream'";
         if (underlyingSource !== undefined && !isObj(underlyingSource)) throw new TypeError(`${what}: The provided value is not of type 'object'.`);
         const st = toStrategy(strategy, what);
-        const src = underlyingSource === undefined ? null : underlyingSource, d = {};
+        const src = underlyingSource === undefined ? null : underlyingSource, d = { __proto__: null };
         if (src !== null) {
             const a = src.autoAllocateChunkSize;
             if (a !== undefined) d.autoAllocateChunkSize = enforceULL(a, `${what}: Failed to read the 'autoAllocateChunkSize' property from 'UnderlyingSource'`);
@@ -1380,7 +1380,7 @@ class WritableStream {
         const what = "Failed to construct 'WritableStream'";
         if (underlyingSink !== undefined && !isObj(underlyingSink)) throw new TypeError(`${what}: The provided value is not of type 'object'.`);
         const st = toStrategy(strategy, what);
-        const sink = underlyingSink === undefined ? null : underlyingSink, d = {};
+        const sink = underlyingSink === undefined ? null : underlyingSink, d = { __proto__: null };
         if (sink !== null) {
             d.abort = fnMember(sink, 'abort', what, 'UnderlyingSink');
             d.close = fnMember(sink, 'close', what, 'UnderlyingSink');
@@ -1563,7 +1563,7 @@ class TransformStream {
         const what = "Failed to construct 'TransformStream'";
         if (transformer !== undefined && !isObj(transformer)) throw new TypeError(`${what}: The provided value is not of type 'object'.`);
         const ws = toStrategy(writableStrategy, what), rs = toStrategy(readableStrategy, what);
-        const tr = transformer === undefined ? null : transformer, d = {};
+        const tr = transformer === undefined ? null : transformer, d = { __proto__: null };
         if (tr !== null) {
             d.cancel = fnMember(tr, 'cancel', what, 'Transformer');
             d.flush = fnMember(tr, 'flush', what, 'Transformer');
