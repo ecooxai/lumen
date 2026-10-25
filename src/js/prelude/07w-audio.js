@@ -3,6 +3,9 @@ if (N.waOpen) (() => {
 const RATE = 48000, Q = 128, LAT = RATE * 0.08;
 const silence = new Float32Array(Q);
 
+/* AudioParam argument checks: non-finite floats are TypeErrors (WebIDL), negative times RangeErrors */
+const apNum = (v, m) => { v = +v; if (!Number.isFinite(v)) throw new TypeError(`Failed to execute '${m}' on 'AudioParam': The provided float value is non-finite.`); return v; };
+const apTime = (t, m) => { t = apNum(t, m); if (t < 0) throw new RangeError(`Failed to execute '${m}' on 'AudioParam': The time provided (${t}) is less than the minimum bound (0).`); return t; };
 class AudioParam {
     constructor(ctx, v, min = -3.4e38, max = 3.4e38) { this._c = ctx; this._v = v; this.defaultValue = v; this.minValue = min; this.maxValue = max; this._ev = []; this._t0 = 0; }
     get value() { return this._v; }
@@ -16,16 +19,28 @@ class AudioParam {
         if (i === ev.length) ev.push(e); else ev.splice(i, 0, e);
         return this;
     }
-    setValueAtTime(v, t) { return this._add({ k: 0, v: +v, t: +t }); }
-    linearRampToValueAtTime(v, t) { return this._add({ k: 1, v: +v, t: +t }); }
-    exponentialRampToValueAtTime(v, t) { return this._add({ k: 2, v: +v, t: +t }); }
-    setTargetAtTime(v, t, c) { return this._add({ k: 3, v: +v, t: +t, c: Math.max(+c, 1e-6) }); }
+    setValueAtTime(v, t) { v = apNum(v, 'setValueAtTime'); t = apTime(t, 'setValueAtTime'); return this._add({ k: 0, v, t }); }
+    linearRampToValueAtTime(v, t) { v = apNum(v, 'linearRampToValueAtTime'); t = apTime(t, 'linearRampToValueAtTime'); return this._add({ k: 1, v, t }); }
+    exponentialRampToValueAtTime(v, t) {
+        v = apNum(v, 'exponentialRampToValueAtTime'); t = apTime(t, 'exponentialRampToValueAtTime');
+        if (v === 0) throw new RangeError(`Failed to execute 'exponentialRampToValueAtTime' on 'AudioParam': The float target value provided (0) should not be in the range (-1.40130e-45, 1.40130e-45).`);
+        return this._add({ k: 2, v, t });
+    }
+    setTargetAtTime(v, t, c) {
+        v = apNum(v, 'setTargetAtTime'); t = apTime(t, 'setTargetAtTime'); c = apNum(c, 'setTargetAtTime');
+        if (c < 0) throw new RangeError(`Failed to execute 'setTargetAtTime' on 'AudioParam': Time constant must be a non-negative number: ${c}`);
+        return this._add({ k: 3, v, t, c: Math.max(c, 1e-6) });
+    }
     setValueCurveAtTime(curve, t, d) {
-        const n = curve.length; for (let i = 0; i < n; i++) this._add({ k: i ? 1 : 0, v: curve[i], t: +t + d * i / Math.max(n - 1, 1) });
+        t = apTime(t, 'setValueCurveAtTime'); d = apNum(d, 'setValueCurveAtTime');
+        if (!(d > 0)) throw new RangeError(`Failed to execute 'setValueCurveAtTime' on 'AudioParam': The duration provided (${d}) is less than or equal to the minimum bound (0).`);
+        const c = Array.from(curve, x => apNum(x, 'setValueCurveAtTime')), n = c.length;
+        if (n < 2) throw new DOMException(`Failed to execute 'setValueCurveAtTime' on 'AudioParam': The curve length provided (${n}) is less than the minimum bound (2).`, 'InvalidStateError');
+        for (let i = 0; i < n; i++) this._add({ k: i ? 1 : 0, v: c[i], t: t + d * i / (n - 1) });
         return this;
     }
-    cancelScheduledValues(t) { this._ev = this._ev.filter(e => e.t < t); return this; }
-    cancelAndHoldAtTime(t) { this._v = this._at(t); this._ev = []; return this; }
+    cancelScheduledValues(t) { t = apTime(t, 'cancelScheduledValues'); this._ev = this._ev.filter(e => e.t < t); return this; }
+    cancelAndHoldAtTime(t) { t = apTime(t, 'cancelAndHoldAtTime'); this._v = this._at(t); this._ev = []; return this; }
     _at(t) {
         const ev = this._ev;
         while (ev.length) {
@@ -46,7 +61,9 @@ class AudioParam {
 }
 
 class AudioNode extends EventTarget {
-    constructor(ctx, ins = 1, outs = 1) { super(); this.context = ctx; this.numberOfInputs = ins; this.numberOfOutputs = outs; this.channelCount = 2; this.channelCountMode = 'max'; this.channelInterpretation = 'speakers'; this._in = new SSet(); this._out = new SSet(); this._q = -1; this._o = null; }
+    constructor(ctx, ins = 1, outs = 1) {
+        if (!(ctx instanceof BaseAudioContext)) throw new TypeError(`Failed to construct '${new.target.name}': parameter 1 is not of type 'BaseAudioContext'.`);
+        super(); this.context = ctx; this.numberOfInputs = ins; this.numberOfOutputs = outs; this.channelCount = 2; this.channelCountMode = 'max'; this.channelInterpretation = 'speakers'; this._in = new SSet(); this._out = new SSet(); this._q = -1; this._o = null; }
     connect(d) {
         if (d instanceof AudioParam) { (d._in || (d._in = new SSet())).add(this); this._out.add(d); return; }
         if (!(d instanceof AudioNode)) throw new TypeError('connect: not an AudioNode');
@@ -529,7 +546,7 @@ class AudioBuffer {
 class BaseAudioContext extends EventTarget {
     constructor(rate) {
         super(); this.sampleRate = rate; this._f = 0; this._active = new SSet(); this._state = 'running';
-        this.destination = new AudioDestinationNode(this); this.listener = {}; this.audioWorklet = new AudioWorklet(this); this._auto = new SSet();
+        this.destination = new AudioDestinationNode(this); this.audioWorklet = new AudioWorklet(this); this._auto = new SSet();
     }
     get state() { return this._state; }
     get currentTime() { return this._f / this.sampleRate; }
@@ -633,7 +650,7 @@ class OfflineAudioContext extends BaseAudioContext {
                 for (let c = 0; c < this._chn; c++) b._ch[c].set(o[Math.min(c, 1)].subarray(0, m), f);
             }
             this._setState('closed');
-            const ev = new Event('complete'); ev.renderedBuffer = b; this.dispatchEvent(ev);
+            const ev = new OfflineAudioCompletionEvent('complete', { renderedBuffer: b }); this.dispatchEvent(ev);
             res(b);
         }, 0));
     }
@@ -641,7 +658,162 @@ class OfflineAudioContext extends BaseAudioContext {
     resume() { return Promise.resolve(); }
 }
 
+/* node constructor options: a dictionary, and the AudioNodeOptions applied with the node's fixed-value rules */
+const ctorCheck = (ctx, o, name) => {
+    if (!(ctx instanceof BaseAudioContext)) throw new TypeError(`Failed to construct '${name}': parameter 1 is not of type 'BaseAudioContext'.`);
+    if (o == null) return {};
+    if (typeof o !== 'object' && typeof o !== 'function') throw new TypeError(`Failed to construct '${name}': The provided value is not of type '${name.replace(/Node$/, '')}Options'.`);
+    return o;
+};
+function nodeOpts(n, o, fixed = {}) {
+    const bad = m => new DOMException(`Failed to construct '${n.constructor.name}': ${m}`, 'InvalidStateError');
+    if (o.channelCount !== undefined) {
+        const c = +o.channelCount;
+        if (fixed.count !== undefined && c !== fixed.count) throw bad(`channelCount cannot be changed from ${fixed.count} to ${c}`);
+        if (!(c >= 1 && c <= 32)) throw new DOMException(`Failed to construct '${n.constructor.name}': The channel count provided (${c}) is outside the range [1, 32].`, 'NotSupportedError');
+        n.channelCount = c;
+    }
+    if (o.channelCountMode !== undefined) {
+        const v = String(o.channelCountMode);
+        if (!['max', 'clamped-max', 'explicit'].includes(v)) throw new TypeError(`Failed to read the 'channelCountMode' property: The provided value '${v}' is not a valid enum value of type ChannelCountMode.`);
+        if (fixed.mode !== undefined && v !== fixed.mode) throw bad(`channelCountMode cannot be changed from '${fixed.mode}' to '${v}'`);
+        n.channelCountMode = v;
+    }
+    if (o.channelInterpretation !== undefined) {
+        const v = String(o.channelInterpretation);
+        if (!['speakers', 'discrete'].includes(v)) throw new TypeError(`Failed to read the 'channelInterpretation' property: The provided value '${v}' is not a valid enum value of type ChannelInterpretation.`);
+        n.channelInterpretation = v;
+    }
+    return n;
+}
+class ChannelMergerNode extends AudioNode {
+    constructor(ctx, o = {}) {
+        o = ctorCheck(ctx, o, 'ChannelMergerNode');
+        const n = o.numberOfInputs ?? 6;
+        if (!(n >= 1 && n <= 32)) throw new DOMException(`Failed to construct 'ChannelMergerNode': The number of inputs provided (${n}) is outside the range [1, 32].`, 'IndexSizeError');
+        super(ctx, n, 1); this.channelCount = 1; this.channelCountMode = 'explicit';
+        nodeOpts(this, o, { count: 1, mode: 'explicit' });
+    }
+}
+class ChannelSplitterNode extends AudioNode {
+    constructor(ctx, o = {}) {
+        o = ctorCheck(ctx, o, 'ChannelSplitterNode');
+        const n = o.numberOfOutputs ?? 6;
+        if (!(n >= 1 && n <= 32)) throw new DOMException(`Failed to construct 'ChannelSplitterNode': The number of outputs provided (${n}) is outside the range [1, 32].`, 'IndexSizeError');
+        super(ctx, 1, n); this.channelCount = n; this.channelCountMode = 'explicit'; this.channelInterpretation = 'discrete';
+        if (o.channelInterpretation !== undefined && o.channelInterpretation !== 'discrete') throw new DOMException("Failed to construct 'ChannelSplitterNode': channelInterpretation must be 'discrete'", 'InvalidStateError');
+        nodeOpts(this, o, { count: n, mode: 'explicit' });
+    }
+}
+class WaveShaperNode extends AudioNode {
+    constructor(ctx, o = {}) { o = ctorCheck(ctx, o, 'WaveShaperNode'); super(ctx); this._curve = null; this.oversample = o.oversample ?? 'none'; if (o.curve) this.curve = o.curve; nodeOpts(this, o); }
+    get curve() { return this._curve; }
+    set curve(c) {
+        if (c === null) { this._curve = null; return; }
+        if (!(c instanceof Float32Array)) c = Float32Array.from(c);
+        if (c.length < 2) throw new DOMException(`Failed to set the 'curve' property on 'WaveShaperNode': The curve length provided (${c.length}) is less than the minimum bound (2).`, 'InvalidStateError');
+        this._curve = c;
+    }
+    _render(f) {
+        const m = this._mix(f), c = this._curve; if (!m || !c) return m;
+        const n = c.length;
+        for (const ch of m) for (let i = 0; i < Q; i++) {
+            const v = (n - 1) * (ch[i] + 1) / 2;
+            if (v <= 0) ch[i] = c[0]; else if (v >= n - 1) ch[i] = c[n - 1];
+            else { const k = Math.floor(v), t = v - k; ch[i] = c[k] + (c[k + 1] - c[k]) * t; }
+        }
+        return m;
+    }
+}
+class IIRFilterNode extends AudioNode {
+    constructor(ctx, o) {
+        o = ctorCheck(ctx, o, 'IIRFilterNode');
+        for (const k of ['feedforward', 'feedback']) if (o[k] === undefined) throw new TypeError(`Failed to construct 'IIRFilterNode': required member ${k} is undefined.`);
+        const ff = Array.from(o.feedforward), fb = Array.from(o.feedback);
+        for (const [a, nm] of [[ff, 'feedforward'], [fb, 'feedback']])
+            if (a.length < 1 || a.length > 20) throw new DOMException(`Failed to construct 'IIRFilterNode': The ${nm} array length provided (${a.length}) is outside the range [1, 20].`, 'NotSupportedError');
+        if (ff.every(x => x === 0)) throw new DOMException("Failed to construct 'IIRFilterNode': At least one feedforward coefficient must be non-zero.", 'InvalidStateError');
+        if (fb[0] === 0) throw new DOMException("Failed to construct 'IIRFilterNode': First feedback coefficient cannot be zero.", 'InvalidStateError');
+        super(ctx); nodeOpts(this, o); this._b = ff.map(x => x / fb[0]); this._a = fb.map(x => x / fb[0]); this._x = [[], []]; this._y = [[], []];
+    }
+    getFrequencyResponse(fr, mag, ph) {
+        if (mag.length < fr.length || ph.length < fr.length) throw new DOMException("Failed to execute 'getFrequencyResponse' on 'IIRFilterNode': array lengths differ", 'InvalidAccessError');
+        const ny = this.context.sampleRate / 2;
+        for (let i = 0; i < fr.length; i++) {
+            const f = fr[i];
+            if (!(f >= 0 && f <= ny)) { mag[i] = NaN; ph[i] = NaN; continue; }
+            const w = -Math.PI * f / ny;
+            let nr = 0, ni = 0, dr = 0, di = 0;
+            this._b.forEach((b, k) => { nr += b * Math.cos(w * k); ni += b * Math.sin(w * k); });
+            this._a.forEach((a, k) => { dr += a * Math.cos(w * k); di += a * Math.sin(w * k); });
+            const d = dr * dr + di * di, rr = (nr * dr + ni * di) / d, ri = (ni * dr - nr * di) / d;
+            mag[i] = Math.hypot(rr, ri); ph[i] = Math.atan2(ri, rr);
+        }
+    }
+    _render(f) {
+        const m = this._mix(f); if (!m) return null;
+        const b = this._b, a = this._a;
+        m.forEach((ch, c) => {
+            const x = this._x[c], y = this._y[c];
+            for (let i = 0; i < Q; i++) {
+                x.unshift(ch[i]); if (x.length > b.length) x.pop();
+                let v = 0; for (let k = 0; k < x.length; k++) v += b[k] * x[k];
+                for (let k = 1; k < a.length && k - 1 < y.length; k++) v -= a[k] * y[k - 1];
+                y.unshift(v); if (y.length > a.length) y.pop();
+                ch[i] = v;
+            }
+        });
+        return m;
+    }
+}
+class AudioListener {
+    constructor(ctx) {
+        for (const [k, v] of [['positionX', 0], ['positionY', 0], ['positionZ', 0], ['forwardX', 0], ['forwardY', 0], ['forwardZ', -1], ['upX', 0], ['upY', 1], ['upZ', 0]])
+            Object.defineProperty(this, k, { value: new AudioParam(ctx, v), enumerable: true });
+    }
+    setPosition(x, y, z) { this.positionX.value = x; this.positionY.value = y; this.positionZ.value = z; }
+    setOrientation(x, y, z, ux, uy, uz) { this.forwardX.value = x; this.forwardY.value = y; this.forwardZ.value = z; this.upX.value = ux; this.upY.value = uy; this.upZ.value = uz; }
+}
+/* PannerNode: parameters and checks; the signal passes through unspatialized */
+class PannerNode extends AudioNode {
+    constructor(ctx, o = {}) {
+        o = ctorCheck(ctx, o, 'PannerNode');
+        super(ctx); this.channelCountMode = 'clamped-max'; nodeOpts(this, o);
+        for (const [k, v] of [['positionX', 0], ['positionY', 0], ['positionZ', 0], ['orientationX', 1], ['orientationY', 0], ['orientationZ', 0]])
+            Object.defineProperty(this, k, { value: new AudioParam(ctx, o[k] ?? v), enumerable: true });
+        this.panningModel = o.panningModel ?? 'equalpower'; this.distanceModel = o.distanceModel ?? 'inverse';
+        this._ref = 1; this._max = 10000; this._roll = 1; this.coneInnerAngle = o.coneInnerAngle ?? 360; this.coneOuterAngle = o.coneOuterAngle ?? 360; this._cog = 0;
+        for (const k of ['refDistance', 'maxDistance', 'rolloffFactor', 'coneOuterGain']) if (o[k] !== undefined) this[k] = o[k];
+    }
+    get refDistance() { return this._ref; }
+    set refDistance(v) { v = +v; if (v < 0) throw new RangeError(`Failed to set the 'refDistance' property on 'PannerNode': The refDistance provided (${v}) is less than the minimum bound (0).`); this._ref = v; }
+    get maxDistance() { return this._max; }
+    set maxDistance(v) { v = +v; if (!(v > 0)) throw new RangeError(`Failed to set the 'maxDistance' property on 'PannerNode': The maxDistance provided (${v}) is less than or equal to the minimum bound (0).`); this._max = v; }
+    get rolloffFactor() { return this._roll; }
+    set rolloffFactor(v) { v = +v; if (v < 0) throw new RangeError(`Failed to set the 'rolloffFactor' property on 'PannerNode': The rolloffFactor provided (${v}) is less than the minimum bound (0).`); this._roll = v; }
+    get coneOuterGain() { return this._cog; }
+    set coneOuterGain(v) { v = +v; if (!(v >= 0 && v <= 1)) throw new DOMException(`Failed to set the 'coneOuterGain' property on 'PannerNode': The coneOuterGain provided (${v}) is outside the range [0, 1].`, 'InvalidStateError'); this._cog = v; }
+    setPosition(x, y, z) { this.positionX.value = x; this.positionY.value = y; this.positionZ.value = z; }
+    setOrientation(x, y, z) { this.orientationX.value = x; this.orientationY.value = y; this.orientationZ.value = z; }
+}
+class OfflineAudioCompletionEvent extends Event {
+    constructor(type, init) {
+        if (!init || !(init.renderedBuffer instanceof AudioBuffer)) throw new TypeError("Failed to construct 'OfflineAudioCompletionEvent': required member renderedBuffer is undefined.");
+        super(type, init); this._rb = init.renderedBuffer;
+    }
+    get renderedBuffer() { return this._rb; }
+}
+methods(BaseAudioContext.prototype, {
+    createChannelMerger(n = 6) { return new ChannelMergerNode(this, { numberOfInputs: n }); },
+    createChannelSplitter(n = 6) { return new ChannelSplitterNode(this, { numberOfOutputs: n }); },
+    createWaveShaper() { return new WaveShaperNode(this); },
+    createIIRFilter(feedforward, feedback) { return new IIRFilterNode(this, { feedforward, feedback }); },
+    createPanner() { return new PannerNode(this); },
+});
+Object.defineProperty(BaseAudioContext.prototype, 'listener', { get() { return this._listener || (this._listener = new AudioListener(this)); }, configurable: true });
+
 Object.assign(globalThis, {
+    ChannelMergerNode, ChannelSplitterNode, WaveShaperNode, IIRFilterNode, PannerNode, AudioListener, OfflineAudioCompletionEvent,
     AudioContext, webkitAudioContext: AudioContext, OfflineAudioContext, webkitOfflineAudioContext: OfflineAudioContext, BaseAudioContext,
     AudioNode, AudioParam, AudioBuffer, AudioDestinationNode, AudioScheduledSourceNode, GainNode, OscillatorNode, AudioBufferSourceNode,
     ConstantSourceNode, StereoPannerNode, DelayNode, BiquadFilterNode, DynamicsCompressorNode, ConvolverNode, AnalyserNode, PeriodicWave, MediaStreamAudioSourceNode,

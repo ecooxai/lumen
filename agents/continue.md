@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **210**.
+  - Number the runs. The next run is **211**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,19 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 210 ...)
+(append here: RUN 211 ...)
+
+RUN 210: /webaudio/ first measured (348 files, 0 crashes): 2,235 of 5,787 Chrome-passing subtests before this run.
+07w-audio.js: added ChannelMergerNode, ChannelSplitterNode, WaveShaperNode (curve), IIRFilterNode (filtering +
+getFrequencyResponse), PannerNode (params/attribute checks; audio passes through unspatialized), AudioListener
+(context.listener), OfflineAudioCompletionEvent, create* methods; AudioParam automation argument checks (non-finite
+TypeError, negative time RangeError, exponential 0, curve length/duration); node constructors need a
+BaseAudioContext; ctorCheck/nodeOpts for the new nodes (dictionary + AudioNodeOptions with fixed-count rules).
+Net about +1,250 (3461+ / 5787). The reported "losses" are mostly audit.js subtests whose names embed the old
+error text or "AUDIT TASK RUNNER FINISHED: N tasks", so they change name, not result. Leads: graph is stereo-only
+(merger/splitter don't route channels: audionode-disconnect, channel tests), PannerNode doesn't spatialize
+(the-pannernode-interface ~680), idlharness (attributes are own properties, not prototype accessors, ~650),
+AudioParam automation accuracy (~700, audit.js sample-exact checks), apply AudioNodeOptions to the older nodes.
 
 RUN 209: no execCommand undo history in designMode documents (editing host = <html>; editing.js myExecCommand). Since
 run 203, snapshotting the whole document per command made
