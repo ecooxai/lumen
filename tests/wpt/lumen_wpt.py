@@ -113,11 +113,11 @@ VENDOR_JS = VENDOR_MARK + r"""
 PRE_JS = r'''(function () {
     if (window.__lumenWpt || location.pathname === "/lumen/c.py") return;
     var INST = %d, XHR = XMLHttpRequest, stringify = JSON.stringify, st = setTimeout, L = location, rp = L.replace;
-    var base = L.protocol + "//" + L.host + "/lumen/c.py?inst=" + INST, sent = false, went = false;
+    var base = L.protocol + "//" + L.host + "/lumen/c.py?inst=" + INST, sent = false, went = false, U0 = L.pathname + L.search;
     var go = function () { if (went) return; went = true; rp.call(L, base + "&op=next"); };
     var w = {harness: false, report: function (r) {
         if (sent || window.opener) return; sent = true;
-        r.url = L.pathname + L.search;
+        r.url = U0;   // the test URL, even after the test pushState()s
         var x = new XHR(); x.open("POST", base + "&op=result"); x.onloadend = go;
         try { x.send(stringify(r)); } catch (e) { go(); }
         st(go, 3000);
