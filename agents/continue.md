@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **195**.
+  - Number the runs. The next run is **196**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,13 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 195 ...)
+(append here: RUN 196 ...)
+
+RUN 195: beforeHTML/afterHTML/replaceWithHTML(Unsafe) accept a template's content fragment as the parent
+(07k-sanitizer.js htmlParent; new N.tplHost = inert template-content fragment; a plain DocumentFragment still
+throws HierarchyRequestError). /domparsing/ + the-template-element/: +171, lost 0. Pre-existing hard timeouts:
+DOMParser-parseFromString-url(-base)-pushstate.html (pushState to /fake/... seems to navigate for real).
+Next leads: positional-methods-with-parser-options (createParserOptions / Trusted Types), stream*HTML methods.
 
 RUN 194: <template for> (declarative partial updates), html.c template_for() at </template>: first <?marker name=N?>
 gets the content inserted, or <?start name=N?> replaces up to its closing <?end?> (nested starts counted, end names

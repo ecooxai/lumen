@@ -387,7 +387,7 @@ function htmlParent(node) {
     const p = N.parent(node);
     if (!p) return null;
     if (N.type(p) === 1 && p.localName === 'template' && p.namespaceURI === SAN_HTML) throw hre('The parent is a template element.');
-    if (N.type(p) === 1 || (N.type(p) === 11 && N.host(p))) return p;
+    if (N.type(p) === 1 || (N.type(p) === 11 && (N.host(p) || N.tplHost(p)))) return p;
     throw hre('The parent is not an element or a shadow root.');
 }
 const isHtmlRoot = p => isHtmlEl(p, 'html');
