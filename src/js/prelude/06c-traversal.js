@@ -462,7 +462,7 @@ class Selection {
     get type() { return !this._r ? 'None' : this._r.collapsed ? 'Caret' : 'Range'; }
     get direction() { return !this._r || this._r.collapsed ? 'none' : this._back ? 'backward' : 'forward'; }
     getRangeAt(i) { if (toU32(i) !== 0 || !this._r) throw rErr(`The index provided (${i}) is greater than or equal to the maximum bound (${this.rangeCount}).`, 'IndexSizeError'); return this._r; }
-    addRange(r) { if (!(r instanceof Range)) throw new TypeError("Failed to execute 'addRange' on 'Selection': parameter 1 is not of type 'Range'."); if (this._r || rootOf(r._sc) !== document) return; this._r = r; this._back = false; }
+    addRange(r) { if (!(r instanceof Range) && !(r !== null && typeof r === 'object' && '_sc' in r && typeof r.collapse === 'function')) throw new TypeError("Failed to execute 'addRange' on 'Selection': parameter 1 is not of type 'Range'."); if (this._r || rootOf(r._sc) !== document) return; this._r = r; this._back = false; }
     removeRange(r) { if (!(r instanceof Range)) throw new TypeError("Failed to execute 'removeRange' on 'Selection': parameter 1 is not of type 'Range'."); if (r !== this._r) throw rErr('The given range isn\'t in document.', 'NotFoundError'); this._r = null; }
     removeAllRanges() { this._r = null; } empty() { this._r = null; }
     _point(n, o, m) { needNode(n, m, 'Selection'); noDoctype(n); o = toU32(o); checkOffset(n, o); return o; }

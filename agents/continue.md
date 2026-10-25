@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **202**.
+  - Number the runs. The next run is **203**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,11 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 202 ...)
+(append here: RUN 203 ...)
+
+RUN 202: Selection.addRange() accepts a Range from another realm (brand check on the internal _sc instead of
+instanceof; 06c-traversal.js). /editing/run/undo-redo.html 1 -> 35 / 69 (no longer times out); /selection/ +1,
+lost 0. Lead: the remaining undo-redo failures are undo not restoring the content after insertParagraph & co.
 
 Gap ranking after run 201 within /editing/ (Chrome-passing subtests Lumen misses): whitespaces/chrome-compat 387
 (12 files), exec-command-with-text-editor.tentative.html textarea/text/password 112/94/84, plaintext-only/
