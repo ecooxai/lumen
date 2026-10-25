@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **204**.
+  - Number the runs. The next run is **205**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,11 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 204 ...)
+(append here: RUN 205 ...)
+
+RUN 204: Selection.extend() aborts silently (before the empty check and offset validation) when the node isn't in
+the document, as the spec orders it; selectAllChildren() ends at the node's child count (0 for a Text node), not its
+length (06c-traversal.js). /selection/ + /editing/run/: +490, lost 0 (selectAllChildren.html, extend-00/20).
 
 Phone check after run 203 (APK fecdb19, 92,185,964 bytes): google/youtube/webgl/webgpu pass, no crash/ANR/tombstone,
 no E-level lumen lines; last-10-s CPU 0-3.5%, peak RSS 549 MB (youtube), WebGL 57.6 fps, WebGPU 23.5 fps. Only

@@ -476,9 +476,10 @@ class Selection {
     collapseToStart() { if (!this._r) throw rErr('There is no selection to collapse.', 'InvalidStateError'); this.collapse(this._r._sc, this._r._so); }
     collapseToEnd() { if (!this._r) throw rErr('There is no selection to collapse.', 'InvalidStateError'); this.collapse(this._r._ec, this._r._eo); }
     extend(n, o = 0) {
+        needNode(n, 'extend', 'Selection');
+        if (rootOf(n) !== document) return;
         if (!this._r) throw rErr('This Selection object doesn\'t have any Ranges.', 'InvalidStateError');
         o = this._point(n, o, 'extend');
-        if (rootOf(n) !== document) return;
         const an = this.anchorNode, ao = this.anchorOffset, r = new Range();
         if (rootOf(an) !== rootOf(n) || bpCompare(an, ao, n, o) <= 0) { r._sc = an; r._so = ao; r._ec = n; r._eo = o; this._back = false; if (rootOf(an) !== rootOf(n)) { r._sc = n; r._so = o; } }
         else { r._sc = n; r._so = o; r._ec = an; r._eo = ao; this._back = true; }
@@ -493,7 +494,7 @@ class Selection {
         else { r._sc = fn; r._so = fo; r._ec = an; r._eo = ao; this._back = true; }
         this._r = r;
     }
-    selectAllChildren(n) { needNode(n, 'selectAllChildren', 'Selection'); noDoctype(n); if (rootOf(n) !== document) return; const r = new Range(); r.selectNodeContents(n); this._r = r; this._back = false; }
+    selectAllChildren(n) { needNode(n, 'selectAllChildren', 'Selection'); noDoctype(n); if (rootOf(n) !== document) return; const r = new Range(); r._sc = r._ec = n; r._so = 0; r._eo = kids(n).length; this._r = r; this._back = false; }
     deleteFromDocument() { if (this._r) this._r.deleteContents(); }
     containsNode(n, partial = false) {
         needNode(n, 'containsNode', 'Selection');
