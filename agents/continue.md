@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **182**.
+  - Number the runs. The next run is **183**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,10 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 182 ...)
+(append here: RUN 183 ...)
+
+RUN 182: src/js/lazy/temporal.js is now the polyfill's *full* global build (all non-ISO calendars; 220 KB vs 190 KB).
+test262 intl402/ 53.2% -> **98.4%** (+1,513), built-ins/Temporal/ unchanged 99.8%; no crashes, peak RSS 367 MB.
 
 Phone check after runs 179-181 (APK 5eb81c0, libmain.so contains the Temporal polyfill): google/youtube/webgl/webgpu
 pass, no crash/ANR/tombstone, settled CPU 1.3-3.8%, peak RSS 547 MB, WebGL 57.6 fps, WebGPU 23.7 fps; logcat only the
