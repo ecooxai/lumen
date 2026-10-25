@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **199**.
+  - Number the runs. The next run is **200**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,14 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 199 ...)
+(append here: RUN 200 ...)
+
+RUN 199: stream*HTML: options, Trusted Types and the sanitizer config are settled when the method is called
+(htmlStream passes a precomputed cfg through htmlForInsertion). The Unsafe sinks in a require-trusted-types
+document now get their parser options from the default policy's createParserOptions(options,
+'TrustedHTMLParserOptions', sink) (htmlArgs; sink "Element|ShadowRoot|Node method"). /domparsing/ +
+/trusted-types/ + /sanitizer-api/: +428, lost 1 (trusted-types-navigation.html?26-30, which timed out in 3 of its 4
+recorded runs: flaky). Peak RSS 1.13 GB per process in this run.
 
 Phone check after runs 194-198 (APK 1034e4b): google/youtube/webgl/webgpu pass, no crash/ANR/tombstone, settled CPU
 0-3.7%, peak RSS 533 MB (youtube), WebGL 57.6 fps, WebGPU 23.7 fps; only the known YouTube EvalError and Polymer

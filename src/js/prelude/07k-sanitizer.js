@@ -372,7 +372,7 @@ function sanFlat(c) {
 }
 /* parse HTML for insertion: the fragment, or null for a script context in Safe mode */
 function htmlForInsertion(target, html, o, safe, m) {
-    const cfg = sanFromOptions(o, safe, m);
+    const cfg = 'cfg' in o ? o.cfg : sanFromOptions(o, safe, m);
     const cx = N.type(target) === 1 ? target : N.host(target) || tplOwner.get(target) || null;
     if (safe && cx && N.type(cx) === 1 && cx.localName === 'script' && (cx.namespaceURI === SAN_HTML || cx.namespaceURI === SAN_SVG)) return null;
     return N.parseFragEx(cx, html, cfg, true, !!o.runScripts);
@@ -398,9 +398,12 @@ function htmlArgs(args, safe, m, tt = !safe) {
     /* the Unsafe sinks take TrustedHTML, and options a policy made (TrustedHTMLParserOptions) */
     const po = ttParserOpts(args[1]);
     if (po) return [sanStr(args[0], m), po];
-    const html = ttIsHTML(args[0]) ? args[0] : sanStr(args[0], m), o = sanOptions(args[1], m, !safe);
-    const [, fn, on] = /'(\w+)' on '(\w+)'/.exec(m);
-    return [ttString(TrustedHTML, html, on + ' ' + fn), o];
+    const [, fn, on] = /'(\w+)' on '(\w+)'/.exec(m), sink = on + ' ' + fn;
+    /* a required-Trusted-Types document's default policy makes the parser options first */
+    const dp = ttReq && ttDefault && ttPolicies.get(ttDefault).fns.createParserOptions;
+    const o = dp ? ttOptsOf.get(TrustedTypePolicy.prototype.createParserOptions.call(ttDefault, args[1], 'TrustedHTMLParserOptions', sink)) : sanOptions(args[1], m, !safe);
+    const html = ttIsHTML(args[0]) ? args[0] : sanStr(args[0], m);
+    return [ttString(TrustedHTML, html, sink), o];
 }
 function htmlSet(target, [html, o], safe, m) {
     const f = htmlForInsertion(target, html, o, safe, m);
@@ -461,22 +464,25 @@ for (const proto of [Element.prototype, CharacterData.prototype]) for (const u o
 }
 /* stream*HTML(Unsafe)(options): a WritableStream of strings whose markup is applied, with the matching
    non-streaming method, once the stream closes */
-function htmlStream(apply, self, name, safe, options) {
-    const on = self instanceof ShadowRoot ? 'ShadowRoot' : self instanceof CharacterData ? 'CharacterData' : 'Element';
-    htmlArgs(['', options], safe, `execute '${name}' on '${on}'`);   /* bad options and Trusted Types throw now */
+function htmlStream(self, name, safe, options, apply) {
+    const on = /^stream(Before|After|ReplaceWith)/.test(name) ? 'Node' : self instanceof ShadowRoot ? 'ShadowRoot' : 'Element';
+    const m = `execute '${name}' on '${on}'`, [, o] = htmlArgs(['', options], safe, m);
+    /* bad options, Trusted Types and the sanitizer config are settled now; later changes to them don't count */
+    const a = Object.assign({}, o, { cfg: sanFromOptions(o, safe, m) });
     let buf = '';
-    return new WritableStream({ write(c) { buf += String(c); }, close() { apply(buf); } });
+    return new WritableStream({ write(c) { buf += String(c); }, close() { apply([buf, a], m); } });
 }
 for (const u of ['', 'Unsafe']) {
+    const safe = !u, st = x => x instanceof Element ? htmlTarget(x) : x;
     for (const proto of [Element.prototype, ShadowRoot.prototype]) methods(proto, {
-        [`streamHTML${u}`](options = undefined) { return htmlStream(h => this[`setHTML${u}`](h, options), this, `streamHTML${u}`, !u, options); },
-        [`streamAppendHTML${u}`](options = undefined) { return htmlStream(h => this[`appendHTML${u}`](h, options), this, `streamAppendHTML${u}`, !u, options); },
-        [`streamPrependHTML${u}`](options = undefined) { return htmlStream(h => this[`prependHTML${u}`](h, options), this, `streamPrependHTML${u}`, !u, options); },
+        [`streamHTML${u}`](options = undefined) { return htmlStream(this, `streamHTML${u}`, safe, options, (a, m) => htmlSet(st(this), a, safe, m)); },
+        [`streamAppendHTML${u}`](options = undefined) { return htmlStream(this, `streamAppendHTML${u}`, safe, options, (a, m) => htmlInsert(st(this), null, a, safe, m)); },
+        [`streamPrependHTML${u}`](options = undefined) { return htmlStream(this, `streamPrependHTML${u}`, safe, options, (a, m) => { const t = st(this); htmlInsert(t, N.first(t), a, safe, m); }); },
     });
     for (const proto of [Element.prototype, CharacterData.prototype]) methods(proto, {
-        [`streamBeforeHTML${u}`](options = undefined) { return htmlStream(h => this[`beforeHTML${u}`](h, options), this, `streamBeforeHTML${u}`, !u, options); },
-        [`streamAfterHTML${u}`](options = undefined) { return htmlStream(h => this[`afterHTML${u}`](h, options), this, `streamAfterHTML${u}`, !u, options); },
-        [`streamReplaceWithHTML${u}`](options = undefined) { return htmlStream(h => this[`replaceWithHTML${u}`](h, options), this, `streamReplaceWithHTML${u}`, !u, options); },
+        [`streamBeforeHTML${u}`](options = undefined) { return htmlStream(this, `streamBeforeHTML${u}`, safe, options, (a, m) => { const p = htmlParent(this); if (p) htmlInsert(p, this, a, safe, m); }); },
+        [`streamAfterHTML${u}`](options = undefined) { return htmlStream(this, `streamAfterHTML${u}`, safe, options, (a, m) => { const p = htmlParent(this); if (p) htmlInsert(p, N.next(this), a, safe, m); }); },
+        [`streamReplaceWithHTML${u}`](options = undefined) { return htmlStream(this, `streamReplaceWithHTML${u}`, safe, options, (a, m) => { const p = htmlParent(this); if (p) htmlReplace(p, this, a, safe, m); }); },
     });
 }
 /* Document.parseHTML(Unsafe)(): a new document, scripting disabled, declarative shadow roots allowed */
