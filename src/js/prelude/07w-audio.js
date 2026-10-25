@@ -572,7 +572,7 @@ class BaseAudioContext extends EventTarget {
     createAnalyser() { return new AnalyserNode(this); }
     createPeriodicWave(real, imag, o = {}) { return new PeriodicWave(this, { real, imag, disableNormalization: o.disableNormalization }); }
     createBuffer(c, n, r) { return new AudioBuffer({ numberOfChannels: c, length: n, sampleRate: r }); }
-    createMediaElementSource() { throw new DOMException('createMediaElementSource is not supported', 'NotSupportedError'); }
+    createMediaElementSource(el) { return new MediaElementAudioSourceNode(this, { mediaElement: el }); }
     createMediaStreamSource(s) { return new MediaStreamAudioSourceNode(this, { mediaStream: s }); }
     createScriptProcessor(size = 0, ins = 2, outs = 2) { return new ScriptProcessorNode(this, size, ins, outs); }
     decodeAudioData(data, ok, err) {
@@ -803,6 +803,17 @@ class PannerNode extends AudioNode {
     setPosition(x, y, z) { this.positionX.value = x; this.positionY.value = y; this.positionZ.value = z; }
     setOrientation(x, y, z) { this.orientationX.value = x; this.orientationY.value = y; this.orientationZ.value = z; }
 }
+/* the element keeps playing through its own output; the node itself renders silence */
+class MediaElementAudioSourceNode extends AudioNode {
+    constructor(ctx, o) {
+        o = ctorCheck(ctx, o, 'MediaElementAudioSourceNode');
+        if (!(o.mediaElement instanceof HTMLMediaElement)) throw new TypeError("Failed to construct 'MediaElementAudioSourceNode': Failed to read the 'mediaElement' property from 'MediaElementAudioSourceOptions': Required member is undefined.");
+        if (!(ctx instanceof AudioContext)) throw new TypeError("Failed to construct 'MediaElementAudioSourceNode': parameter 1 is not of type 'AudioContext'.");
+        super(ctx, 0, 1); this._el = o.mediaElement; nodeOpts(this, o);
+    }
+    get mediaElement() { return this._el; }
+    _render() { return null; }
+}
 class OfflineAudioCompletionEvent extends Event {
     constructor(type, init) {
         if (!init || !(init.renderedBuffer instanceof AudioBuffer)) throw new TypeError("Failed to construct 'OfflineAudioCompletionEvent': required member renderedBuffer is undefined.");
@@ -829,7 +840,7 @@ methods(BaseAudioContext.prototype, {
 Object.defineProperty(BaseAudioContext.prototype, 'listener', { get() { return this._listener || (this._listener = new AudioListener(this)); }, configurable: true });
 
 Object.assign(globalThis, {
-    ChannelMergerNode, ChannelSplitterNode, WaveShaperNode, IIRFilterNode, PannerNode, AudioListener, OfflineAudioCompletionEvent,
+    MediaElementAudioSourceNode, ChannelMergerNode, ChannelSplitterNode, WaveShaperNode, IIRFilterNode, PannerNode, AudioListener, OfflineAudioCompletionEvent,
     AudioContext, webkitAudioContext: AudioContext, OfflineAudioContext, webkitOfflineAudioContext: OfflineAudioContext, BaseAudioContext,
     AudioNode, AudioParam, AudioBuffer, AudioDestinationNode, AudioScheduledSourceNode, GainNode, OscillatorNode, AudioBufferSourceNode,
     ConstantSourceNode, StereoPannerNode, DelayNode, BiquadFilterNode, DynamicsCompressorNode, ConvolverNode, AnalyserNode, PeriodicWave, MediaStreamAudioSourceNode,
