@@ -146,7 +146,7 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 RUN 188: activating an SVG <a> resolves its href attribute (a.href is an SVGAnimatedString, which navigated to
 "[object SVGAnimatedString]"), 06b-activate.js. No WPT gain yet (svg-a-tag referrer tests still time out: the
 synthetic click on an SVG <a> doesn't reach `activate`, lead); 9 lost in iframe-tag/xhr tests that don't touch
-this path (61 TIMEOUTs in the run, likely flaky: recheck).
+this path (61 TIMEOUTs in the run); rerun alone: 36/36, all 9 recovered (flaky).
 
 Phone check after runs 183-187 (APK 8e154ba): google/youtube/webgl/webgpu pass, no crash/ANR/tombstone, settled CPU
 0.8-4.1%, peak RSS 534 MB, WebGL 57.8 fps, WebGPU 23.7 fps; logcat only known probe lines and the YouTube EvalError.
