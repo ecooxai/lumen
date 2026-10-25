@@ -104,6 +104,128 @@ function specFoldMath(t) {
     return t.replace(/\b(?:sin|cos|tan|asin|acos|atan|atan2|sqrt|exp|pow|log)\((?:[^()]|\((?:[^()]|\([^()]*\))*\))*\)/gi, m => { const r = mathEval(m); return r ? mathSer(r) : m; })
         .replace(/\bcalc\((?:[^()]|\((?:[^()]|\([^()]*\))*\))*\)/gi, m => { const r = /calc\(.*calc\(/i.test(m) && mathEval(m); return r ? mathSer(r) : m; });
 }
+/* CSS math functions (calc, min/max/clamp, round/mod/rem, trig, ...): a type check. Types are '' (number), '%',
+   or a dimension kind; length + % is 'length%'. An unknown function, unit or var() makes the result unknown (no
+   check). Number properties need a number (opacity-like also %), length properties a length or percentage. */
+const MATH_UNITS = (() => {
+    const m = new SMap();
+    for (const u of 'px em rem ex rex ch rch cap rcap ic ric lh rlh vw vh vmin vmax vi vb svw svh svi svb svmin svmax lvw lvh lvi lvb lvmin lvmax dvw dvh dvi dvb dvmin dvmax cqw cqh cqi cqb cqmin cqmax cm mm q in pt pc'.split(' ')) m.set(u, 'length');
+    for (const u of ['deg', 'rad', 'grad', 'turn']) m.set(u, 'angle');
+    for (const u of ['s', 'ms']) m.set(u, 'time');
+    for (const u of ['hz', 'khz']) m.set(u, 'frequency');
+    for (const u of ['dpi', 'dpcm', 'dppx', 'x']) m.set(u, 'resolution');
+    m.set('fr', 'flex');
+    return m;
+})();
+const MATH_FNS = /^(calc|-webkit-calc|min|max|clamp|round|mod|rem|abs|sign|sin|cos|tan|asin|acos|atan|atan2|pow|sqrt|hypot|log|exp)$/;
+function mathType(src) {   /* src starts at a math function name; returns [type | null (invalid) | undefined (unknown), end] */
+    let i = 0, unknown = false;
+    const ws = () => { const s = i; while (/\s/.test(src[i] || '')) i++; return i > s; };
+    const dec = t => { const m = {}; if (t) for (const e of t.split(',')) { const [d, n] = e.split('^'); m[d] = +n; } return m; };
+    const enc = m => Object.keys(m).filter(d => m[d]).sort().map(d => d + '^' + m[d]).join(',');
+    const mul = (a, b, sg) => { if (a === '?' || b === '?') return '?'; const m = dec(a), n = dec(b); for (const d in n) m[d] = (m[d] || 0) + sg * n[d]; return enc(m); };
+    const pl = t => { const m = dec(t); if (m['%']) { m.length = (m.length || 0) + m['%']; delete m['%']; } return enc(m); };
+    const add = (a, b) => {
+        if (a === null || b === null) return null;
+        if (a === '?' || b === '?') return '?';
+        if (a === b) return a;
+        return pl(a) === pl(b) && pl(a) === 'length^1' ? 'length^1' : null;
+    };
+    function sum() {
+        let t = prod(); if (t === null) return null;
+        for (;;) {
+            const s = i, w = ws();
+            if ((src[i] === '+' || src[i] === '-') && w && /\s/.test(src[i + 1] || '')) { i++; ws(); t = add(t, prod()); if (t === null) return null; continue; }
+            i = s; return t;
+        }
+    }
+    function prod() {
+        let t = val(); if (t === null) return null;
+        for (;;) {
+            const s = i; ws();
+            const op = src[i];
+            if (op !== '*' && op !== '/') { i = s; return t; }
+            i++; ws(); const u = val(); if (u === null) return null;
+            t = mul(t, u, op === '*' ? 1 : -1);
+        }
+    }
+    function args() {   /* comma list of sums up to ')' */
+        const r = []; ws();
+        if (src[i] === ')') { i++; return r; }
+        for (;;) {
+            ws(); const t = sum(); if (t === null) return null; r.push(t); ws();
+            if (src[i] === ',') { i++; continue; }
+            if (src[i] === ')' || i >= src.length) { i++; return r; }   /* end of input closes it */
+            return null;
+        }
+    }
+    function fn(name) {
+        name = name.toLowerCase();
+        if (!MATH_FNS.test(name)) {   /* not a math function: skip its balanced arguments, type unknown */
+            let d = 1; while (i < src.length && d) { if (src[i] === '(') d++; else if (src[i] === ')') d--; i++; }
+            unknown = true; return '?';
+        }
+        let strat = false;
+        if (name === 'round') { const m = /^\s*(nearest|up|down|to-zero)\s*,/i.exec(src.slice(i)); if (m) { i += m[0].length; strat = true; } }
+        const a = args(); if (a === null) return null;
+        const same = () => a.reduce((x, y) => x === '?' || y === '?' ? '?' : x === null ? null : add(x, y));
+        const num = t => t === '' || t === '?';
+        switch (name) {
+        case 'calc': case '-webkit-calc': case 'abs': return a.length === 1 ? a[0] : null;
+        case 'min': case 'max': case 'hypot': return a.length ? same() : null;
+        case 'clamp': return a.length === 3 ? same() : null;
+        case 'round': if (a.length === 1) return strat || num(a[0]) || a[0] === '?' ? (num(a[0]) ? a[0] : null) : null;
+            return a.length === 2 ? same() : null;
+        case 'mod': case 'rem': return a.length === 2 ? same() : null;
+        case 'sign': return a.length === 1 ? '' : null;
+        case 'sin': case 'cos': case 'tan': return a.length === 1 && (num(a[0]) || a[0] === 'angle^1') ? '' : null;
+        case 'asin': case 'acos': case 'atan': return a.length === 1 && num(a[0]) ? 'angle^1' : null;
+        case 'atan2': return a.length === 2 && same() !== null ? 'angle^1' : null;
+        case 'pow': return a.length === 2 && a.every(num) ? '' : null;
+        case 'sqrt': case 'exp': return a.length === 1 && num(a[0]) ? '' : null;
+        case 'log': return (a.length === 1 || a.length === 2) && a.every(num) ? '' : null;
+        }
+        return null;
+    }
+    function val() {
+        ws();
+        if (src[i] === '(') { i++; ws(); const t = sum(); ws(); if (t === null || (src[i] !== ')' && i < src.length)) return null; i++; return t; }
+        let m = /^[+-]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?(%|[a-z]+)?/i.exec(src.slice(i));
+        if (m) {
+            i += m[0].length;
+            if (!m[3]) return '';
+            if (m[3] === '%') return '%^1';
+            const u = MATH_UNITS.get(m[3].toLowerCase());
+            if (u === undefined) { unknown = true; return '?'; }
+            return u + '^1';
+        }
+        m = /^-?[a-z_][\w-]*/i.exec(src.slice(i));
+        if (!m) return null;
+        i += m[0].length;
+        if (src[i] === '(') { i++; return fn(m[0]); }
+        if (/^(-?infinity|pi|e|nan)$/i.test(m[0])) return '';
+        unknown = true; return '?';   /* e.g. a relative color's channel keyword */
+    }
+    const t = val();
+    return [unknown || t === '?' ? undefined : t, i];
+}
+const MATH_LEN_PROPS = /^((min-|max-)?(width|height|block-size|inline-size))$/;
+const MATH_NUM_PROPS = /^((fill-|stroke-|stop-|flood-)?opacity|flex-grow|flex-shrink)$/;
+function mathValid(p, v) {
+    if (/var\(|env\(|attr\(|calc-size\(|anchor/i.test(v)) return true;
+    const re = /(^|[\s,(/])((?:-webkit-)?[a-z][a-z0-9-]*)\(/gi;
+    let m;
+    while ((m = re.exec(v))) {
+        if (!MATH_FNS.test(m[2].toLowerCase())) continue;
+        const st = m.index + m[1].length, [t, n] = mathType(v.slice(st));
+        if (t === null) return false;
+        re.lastIndex = st + Math.max(n, 1);
+        if (t === undefined || st !== 0 && v.slice(0, st).trim()) continue;   /* only a whole-value function is checked against the property */
+        if (MATH_NUM_PROPS.test(p) && !(t === '' || (t === '%^1' && /opacity$/.test(p)))) return false;
+        if (MATH_LEN_PROPS.test(p) && n >= v.trim().length && !(t === 'length^1' || t === '%^1')) return false;
+    }
+    return true;
+}
 function specNormalize(p, v) {
     if (/["'\\]|url\(|var\(|env\(|attr\(|#/i.test(v) || /timing-function$|^transition$|^animation$/.test(p)) return v;
     let t = v.trim().replace(/(^|[\s(,/*+-])([+-]?)(\d*\.\d+|\d+\.?)(e[+-]?\d+)?(?=[a-z%]*(?:$|[\s),/*]))/gi, (m, pre, sign, num, exp) => {
@@ -218,7 +340,7 @@ class CSSStyleDeclaration {
     item(i) { return [...this._m().keys()][i] || ''; }
     getPropertyValue(p) { p = camelToKebab(String(p)); const m = this._m(), e = m.get(p); return e ? e[0] : shorthandPart(m, p); }
     getPropertyPriority(p) { const e = this._m().get(camelToKebab(String(p))); return e ? e[1] : ''; }
-    setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p); if (v != null && v !== '' && SPEC_COLOR_PROPS.has(p)) { v = specColor(String(v), p); if (v === null) return; } if (v != null && v !== '' && !p.startsWith('--')) v = specNormalize(p, String(v)); const m = new SMap(this._m()); if (v == null || v === '') m.delete(p); else m.set(p, [String(v), pri ? 'important' : '']); this._el.setAttribute('style', serDecls(m)); }
+    setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p); if (v != null && v !== '' && SPEC_COLOR_PROPS.has(p)) { v = specColor(String(v), p); if (v === null) return; } if (v != null && v !== '' && !p.startsWith('--')) { if (!mathValid(p, String(v))) return; v = specNormalize(p, String(v)); } const m = new SMap(this._m()); if (v == null || v === '') m.delete(p); else m.set(p, [String(v), pri ? 'important' : '']); this._el.setAttribute('style', serDecls(m)); }
     removeProperty(p) { p = camelToKebab(String(p)); const m = new SMap(this._m()); const e = m.get(p); if (e) { m.delete(p); this._el.setAttribute('style', serDecls(m)); } return e ? e[0] : ''; }
 }
 const styleHandler = {

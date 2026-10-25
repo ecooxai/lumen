@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **215**.
+  - Number the runs. The next run is **216**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,18 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 215 ...)
+(append here: RUN 216 ...)
+
+RUN 215: CSS math-function type check (mathType/mathValid in 03-element.js), used by style.setProperty (and the
+e.style[x] proxy) and CSS.supports(): syntax (args, commas, "+"/"-" need spaces, unclosed at end allowed), typed
+arithmetic with unit exponents (px*px/px ok), round/mod/rem/min/max/clamp/hypot same types, length+% mixing,
+one-argument round only for numbers, trig/pow/sqrt/log/exp domains; a whole-value function must give a number
+for opacity/flex-grow/flex-shrink (opacity also %) and a length/% for width/height/min-/max-/block-/inline-size.
+Unknown functions, units, identifiers (relative-color channels) and var()/env()/attr()/anchor make it unknown (no
+check). Before this, setProperty accepted any value. Over 12 CSS dirs (1,599 files): +480, -14. The 14
+(css-sizing/keyword-sizes-on-abspos.html 13->10, keyword-sizes-on-flex-item-002.html 27->16) fail the same with
+this change stashed: an earlier regression, still to find (the files use stretch/-webkit-fill-available/Ahem).
+Lead: the stylesheet (C) parser still accepts these invalid math values.
 
 Phone check after run 214 (APK 56d508d): google/youtube/webgl/webgpu pass, no crash/ANR/tombstone/new errors;
 last-10-s CPU 0-3.5%, peak RSS 556 MB (youtube), WebGL 57.6 fps, WebGPU 23.7 fps.
