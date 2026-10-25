@@ -153,6 +153,9 @@ RUN 174: `/editing/other/` 42.1% -> **54.5%** (+1,890; `/editing/run/` unchanged
   /content-security-policy/ /webaudio/ /pointerevents/ /resource-timing/`, `--binary lumen-wpt`) stopped at 1236/4213:
   `/referrer-policy/4K+1/gen/top.http-rp/*` all hard-time out (about 90 s each, browsers idle); skip that directory
   (`--skip`) when resuming. CSP `form-action/*-target-blank*` and cookies `form-*-blank` also hard-time out.
+- Phone check of runs 173–174 (debug APK, apksigner verifies, `install -r`, `device_tests.py google youtube webgl
+  webgpu`): no crash/ANR, settled last-10-s CPU 0–3.7%, peak RSS 540 MB (youtube), WebGL 57.9 fps, WebGPU 23.5 fps
+  (same as before; lead), one YouTube `EvalError: Code generation from strings disallowed` (seen before).
 - Next leads: css-color computed values (needs a float-precision colour model in `src/css/style.c`: computed colours
   are 8-bit `Color`, `css_parse_color` truncates at 128 bytes, `color-mix` mixes only in sRGB (Tailwind v4 uses
   `in oklab`), relative colours unsupported; WPT fuzzy-compares numbers at 0.01 in the colour's own space, about
