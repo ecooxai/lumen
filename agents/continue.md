@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **181**.
+  - Number the runs. The next run is **182**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,14 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 181 ...)
+(append here: RUN 182 ...)
+
+RUN 181: Temporal. The V8 prebuilt (15.6) is built without Temporal (`--harmony-temporal` has no effect), so
+temporal-polyfill 1.0.6 (MIT, global build, vendored unmodified as src/js/lazy/temporal.js, ~190 KB) is compiled on a
+page's first `Temporal` access (accessor in 08-window.js; `Date.prototype.toTemporalInstant` stub loads it too). It
+also installs a Temporal-aware Intl.DateTimeFormat (only once loaded). test262 built-ins/Temporal/ 0% -> **99.8%**,
+intl402/ -> 53.2%, together +5,144, lost 0; no crashes, peak RSS 364 MB. Uses `new Function`, so it fails on pages
+whose CSP forbids eval (same as the lazy editing engine): lead.
 
 RUN 180: window.postMessage detaches transferred ArrayBuffers in the sender (`xferBuffers` in 08-window.js, via
 ArrayBuffer.prototype.transfer() after structuredClone), which is test262's $262.detachArrayBuffer. test262

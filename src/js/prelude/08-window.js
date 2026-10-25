@@ -1062,5 +1062,12 @@ function fireAnim(t, type, name, elapsed, anim) {
         shape(C, STATIC_SKIP);
     }
 }
+/* Temporal: this V8 is built without it, so the temporal-polyfill (src/js/lazy/temporal.js, which also installs a
+   Temporal-aware Intl.DateTimeFormat) is compiled on a page's first use */
+{
+    const load = () => { delete globalThis.Temporal; delete Date.prototype.toTemporalInstant; new Function(N.lazySrc('temporal'))(); return globalThis.Temporal; };
+    Object.defineProperty(globalThis, 'Temporal', { get: load, set(v) { Object.defineProperty(globalThis, 'Temporal', { value: v, writable: true, configurable: true }); }, configurable: true });
+    Object.defineProperty(Date.prototype, 'toTemporalInstant', { value: function toTemporalInstant() { load(); return Date.prototype.toTemporalInstant.call(this); }, writable: true, configurable: true });
+}
 return { ttInit, ttScript, ttEval, queueMessage, exportPort, portMessage, rejection, workerEvent, protoFor, dispatch, fire, fireAnim, report, mediaChanged, viewportChanged, ceConnected, nativeTouch, Event, MouseEvent, PointerEvent, KeyboardEvent, FocusEvent, WheelEvent, InputEvent, PopStateEvent, ErrorEvent };
 })

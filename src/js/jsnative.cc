@@ -268,13 +268,18 @@ FN(codeLike) {
     v8::Local<v8::Object> o;
     if (c->code_like.Get(iso)->NewInstance(ctx).ToLocal(&o)) RET(o);
 }
-/* lazySrc(name): a src/js/lazy module's source (the editing commands), compiled by the prelude on first use */
+/* lazySrc(name): a src/js/lazy module's source (the editing commands, the Temporal polyfill), compiled by the prelude on first use */
 static const char kLazyEditing[] =
 #include "editing_lazy.inc"
 ;
+static const char kLazyTemporal[] =
+#include "temporal_lazy.inc"
+;
 FN(lazySrc) {
     CTX;
-    if (jcstr(iso, a[0]) == "editing") RET(v8::String::NewFromUtf8(iso, kLazyEditing, v8::NewStringType::kNormal, (int)sizeof kLazyEditing - 1).ToLocalChecked());
+    std::string name = jcstr(iso, a[0]);
+    if (name == "editing") RET(v8::String::NewFromUtf8(iso, kLazyEditing, v8::NewStringType::kNormal, (int)sizeof kLazyEditing - 1).ToLocalChecked());
+    if (name == "temporal") RET(v8::String::NewFromUtf8(iso, kLazyTemporal, v8::NewStringType::kNormal, (int)sizeof kLazyTemporal - 1).ToLocalChecked());
 }
 FN(ctype) { CTX; ARGN(n, 0); if (n->type == NODE_DOCUMENT && ((Document *)n)->content_type) RET(jstr(iso, ((Document *)n)->content_type)); else a.GetReturnValue().SetNull(); }
 /* parseXml(xmlDoc, source): the document's content; its scripts never run */
