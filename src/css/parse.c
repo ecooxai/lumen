@@ -496,6 +496,8 @@ DeclList *css_parse_decls(const char *s, size_t n) {
 void css_decls_free(DeclList *d) { if (!d) return; for (int i = 0; i < d->n; i++) free(d->v[i].value); vec_free(*d); free(d); }
 
 /* ---------------- media queries ---------------- */
+/* set when a query uses an unknown feature: the whole query is then false, even under not */
+static _Thread_local bool g_mq_unknown;
 static bool media_feature(const char *f, const MediaCtx *mc) {
     char buf[256]; snprintf(buf, sizeof buf, "%s", f);
     char *s = str_trim(buf);
@@ -527,9 +529,16 @@ static bool media_feature(const char *f, const MediaCtx *mc) {
                 switch (op) { case 0: return fv >= v; case 1: return fv <= v; case 2: return fv > v; case 3: return fv < v; default: return fabsf(fv - v) < 0.5f; }
             }
         }
-        if (!strcmp(s, "color") || !strcmp(s, "hover") || !strcmp(s, "pointer")) return true;
-        if (!strcmp(s, "grid")) return false;
-        return true;
+        /* boolean context: features with a non-zero / non-none value here; unknown ones are false */
+        static const char *const on[] = { "color", "hover", "pointer", "any-hover", "any-pointer", "width", "height", "aspect-ratio",
+                                          "device-width", "device-height", "device-aspect-ratio", "resolution", "scripting", "update", "color-gamut", "orientation", "dynamic-range", "video-dynamic-range", "display-mode", "display-state", "prefers-color-scheme" };
+        for (size_t i = 0; i < sizeof on / sizeof *on; i++) if (!strcmp(s, on[i])) return true;
+        static const char *const off[] = { "grid", "monochrome", "color-index", "inverted-colors", "prefers-reduced-motion", "prefers-reduced-data",
+                                           "prefers-reduced-transparency", "prefers-contrast", "forced-colors", "overflow-block", "overflow-inline", "environment-blending", "resizable" };
+        bool known = false;
+        for (size_t i = 0; i < sizeof off / sizeof *off; i++) if (!strcmp(s, off[i])) known = true;
+        if (!known) g_mq_unknown = true;
+        return false;
     }
     *colon = 0; char *name = str_trim(s), *val = str_trim(colon + 1);
     Length l;
@@ -543,6 +552,8 @@ static bool media_feature(const char *f, const MediaCtx *mc) {
     if (!strcmp(name, "prefers-reduced-motion")) return !strcmp(val, "no-preference");
     if (!strcmp(name, "prefers-contrast")) return !strcmp(val, "no-preference");
     if (!strcmp(name, "forced-colors")) return !strcmp(val, "none");
+    if (!strcmp(name, "inverted-colors")) return !strcmp(val, "none");
+    if (!strcmp(name, "prefers-reduced-data") || !strcmp(name, "prefers-reduced-transparency")) return !strcmp(val, "no-preference");
     if (!strcmp(name, "hover") || !strcmp(name, "any-hover")) return !strcmp(val, "hover");
     if (!strcmp(name, "pointer") || !strcmp(name, "any-pointer")) return !strcmp(val, "fine");
     if (!strcmp(name, "display-mode")) return !strcmp(val, "browser");
@@ -602,7 +613,7 @@ bool css_media_matches(const char *q, const MediaCtx *mc) {
     int depth = 0; char *st = t;
     for (char *c = t;; c++) {
         if (*c == '(') depth++; else if (*c == ')') depth--;
-        if ((*c == ',' && !depth) || !*c) { char sv = *c; *c = 0; if (media_single(st, mc)) any = true; if (!sv) break; st = c + 1; }
+        if ((*c == ',' && !depth) || !*c) { char sv = *c; *c = 0; g_mq_unknown = false; if (media_single(st, mc) && !g_mq_unknown) any = true; g_mq_unknown = false; if (!sv) break; st = c + 1; }
     }
     free(s);
     return any;

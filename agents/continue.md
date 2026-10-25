@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **192**.
+  - Number the runs. The next run is **193**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,12 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 192 ...)
+(append here: RUN 193 ...)
+
+RUN 192: media queries: unknown features make the whole query false (even under `not`; parse.c `g_mq_unknown`);
+boolean context true only for features with a non-none value (list in media_feature); inverted-colors,
+prefers-reduced-data/-transparency values. /css/mediaqueries/ +9 net, /css/cssom/ +2, update-the-source-set
+"not all and (!)" fixed. Remaining 1 lost: none.
 
 RUN 191: innerText follows the rendered-text steps (03-element.js `innerTextOf`): computed display (none, contents,
 block-level, table-cell tabs, table-row breaks), white-space collapsing per value (pre-line keeps breaks),
