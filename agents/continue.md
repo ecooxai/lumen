@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **201**.
+  - Number the runs. The next run is **202**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,14 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 201 ...)
+(append here: RUN 202 ...)
+
+RUN 201: deleting the last content of an inline editing host no longer leaves a <br> in it (editing.js delete
+algorithm's "block node of parent has no visible children" step skips inline editing hosts, as Chrome).
+inline-editing-host-has-placeholder-with-{before,after}-pseudo-element pass again; /editing/run/delete,
+forwarddelete and /editing/other/: +8, lost 0. Still open from run 200's list: insertparagraph.html?6001-7000
+("a&nbsp; " keeps a trailing plain space where Chrome makes "a&nbsp;&nbsp;"), typing into a text control that is
+also an editing host, edit-in-textcontrol-immediately-after-hidden, plaintext-only paste into <b>.
 
 RUN 200: editing join of a line into a following paragraph with another white-space (editing.js, the "end block
 is a descendant of start block" branch): as Chrome, only the first line moves into the white-space <span> (also

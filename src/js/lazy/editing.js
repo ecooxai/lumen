@@ -4803,8 +4803,10 @@ function deleteSelection(flags) {
         // "If the block node of parent has no visible children, and parent is
         // editable or an editing host, call createElement("br") on the context
         // object and append the result as the last child of parent."
+        /* Lumen (as Chrome): an emptied inline editing host stays empty */
         if (![].some.call(getBlockNodeOf(parent_).childNodes, isVisible)
-        && (isEditable(parent_) || isEditingHost(parent_))) {
+        && (isEditable(parent_) || isEditingHost(parent_))
+        && !(isEditingHost(parent_) && isInlineNode(parent_))) {
             parent_.appendChild(document.createElement("br"));
         }
 
