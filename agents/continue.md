@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **200**.
+  - Number the runs. The next run is **201**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,18 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 200 ...)
+(append here: RUN 201 ...)
+
+RUN 200: editing join of a line into a following paragraph with another white-space (editing.js, the "end block
+is a descendant of start block" branch): as Chrome, only the first line moves into the white-space <span> (also
+when the line ends at a preserved \n inside a moved text or a <br> inside an inline), the line break goes, and the
+<br> before the span is removed. /editing/: +2716 (join-different-white-space-style-left-line-and-right-paragraph
+variants now pass), 101846 / 108016. 16 losses there are NOT from this change (same with HEAD's editing.js) but
+from an earlier run since the last /editing/ measurement; lead: edit-in-textcontrol-immediately-after-hidden,
+inline-editing-host-has-placeholder-with-{before,after}-pseudo-element (an empty host gets "<br>"),
+input-in-text-control-which-is-also-editing-host (typed text becomes a child of the control),
+insertparagraph.html?6001-7000 ("a&nbsp; " trailing space), plaintext-only/paste.https.html?white-space=pre-wrap.
+Hard timeouts: delete-in-child-of-{head,html}.tentative.html, delete-in-shadow-hosted-in-body.html.
 
 RUN 199: stream*HTML: options, Trusted Types and the sanitizer config are settled when the method is called
 (htmlStream passes a precomputed cfg through htmlForInsertion). The Unsafe sinks in a require-trusted-types

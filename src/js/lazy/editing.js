@@ -1110,6 +1110,18 @@ function firstLineBreak(block) {
     return null;
 }
 
+/* Lumen: removes the line break firstLineBreak(block) found, once the line before it was extracted, and the elements it
+   leaves empty */
+function removeLineBreak(block, lineBreak) {
+    var breakParent;
+    if (lineBreak.br) { breakParent = lineBreak.br.parentNode; breakParent.removeChild(lineBreak.br); }
+    else {
+        var rest = block.ownerDocument.createTreeWalker(block, NodeFilter.SHOW_TEXT);
+        for (var t = rest.nextNode(); t; t = rest.nextNode()) if (t.data.charAt(0) == "\n") { t.deleteData(0, 1); breakParent = t.data ? null : t.parentNode; if (!t.data) t.parentNode.removeChild(t); break; }
+    }
+    for (var p = breakParent; p && p != block && !p.hasChildNodes(); ) { var up = p.parentNode; up.removeChild(p); p = up; }
+}
+
 /* Lumen: the white-space of node's element preserves segment breaks (pre, pre-wrap, pre-line, break-spaces) */
 function newlinesSignificant(node) {
     var el = node.nodeType == Node.ELEMENT_NODE ? node : node.parentNode;
@@ -4944,20 +4956,42 @@ function deleteSelection(flags) {
         // "Record the values of children, and let values be the result."
         var values = recordValues(children);
         var wsSpan = whiteSpaceSpan(endBlock, startBlock, children);
+        /* Lumen (as Chrome): with a white-space span only the first line moves, also when it ends inside one of
+           children (a preserved linefeed, or a <br> in an inline element); the line break is removed */
+        var lineBreak = wsSpan && firstLineBreak(endBlock);
+        if (lineBreak && children.some(function(c) { return lineBreak.text ? c == lineBreak.text || isDescendant(lineBreak.text, c) : isDescendant(lineBreak.br, c); })) {
+            var ref = endBlock;
+            while (ref.parentNode != startBlock) ref = ref.parentNode;
+            var lineRange = document.createRange();
+            lineRange.setStart(endBlock, 0);
+            if (lineBreak.br) lineRange.setEndBefore(lineBreak.br); else lineRange.setEnd(lineBreak.text, lineBreak.offset);
+            wsSpan.appendChild(lineRange.extractContents());
+            removeLineBreak(endBlock, lineBreak);
+            startBlock.insertBefore(wsSpan, ref);
+            if (isEditable(wsSpan.previousSibling) && isHtmlElement(wsSpan.previousSibling, "br")) startBlock.removeChild(wsSpan.previousSibling);
+            getSelection().collapse(wsSpan, 0);
+            getActiveRange().setStart(wsSpan, 0);
+            getActiveRange().collapse(true);
+            children = [];
+        }
 
         // "While children's first member's parent is not start block, split
         // the parent of children."
-        while (children[0].parentNode != startBlock) {
+        while (children.length && children[0].parentNode != startBlock) {
             splitParent(children);
         }
-        if (wsSpan) {
+        if (wsSpan && children.length) {
             startBlock.insertBefore(wsSpan, children[0]);
             children.forEach(function(node) { movePreservingRanges(node, wsSpan, -1); });
+            /* Lumen (as Chrome): the <br> ending the moved line goes, and a <br> before the line is checked below */
+            var lastMoved = children[children.length - 1];
+            if (children.length > 1 && isHtmlElement(lastMoved, "br")) { wsSpan.removeChild(lastMoved); children.pop(); }
+            children = [wsSpan];
         }
 
         // "If children's first member's previousSibling is an editable br,
         // remove that br from its parent."
-        if (isEditable(children[0].previousSibling)
+        if (children.length && isEditable(children[0].previousSibling)
         && isHtmlElement(children[0].previousSibling, "br")) {
             children[0].parentNode.removeChild(children[0].previousSibling);
         }
@@ -5049,13 +5083,7 @@ function deleteSelection(flags) {
             if (lineBreak.br) lineRange.setEndBefore(lineBreak.br);
             else lineRange.setEnd(lineBreak.text, lineBreak.offset);
             wsSpan.appendChild(lineRange.extractContents());
-            var breakParent;
-            if (lineBreak.br) { breakParent = lineBreak.br.parentNode; breakParent.removeChild(lineBreak.br); }
-            else {
-                var rest = endBlock.ownerDocument.createTreeWalker(endBlock, NodeFilter.SHOW_TEXT);
-                for (var t = rest.nextNode(); t; t = rest.nextNode()) if (t.data.charAt(0) == "\n") { t.deleteData(0, 1); breakParent = t.data ? null : t.parentNode; if (!t.data) t.parentNode.removeChild(t); break; }
-            }
-            for (var p = breakParent; p && p != endBlock && !p.hasChildNodes(); ) { var up = p.parentNode; up.removeChild(p); p = up; }
+            removeLineBreak(endBlock, lineBreak);
         }
         while (!lineBreak && endBlock.hasChildNodes()) {
             movePreservingRanges(endBlock.firstChild, wsSpan || startBlock, -1);
