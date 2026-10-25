@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **190**.
+  - Number the runs. The next run is **191**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,15 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 190 ...)
+(append here: RUN 191 ...)
+
+RUN 190: srcset/sizes/<picture> source selection. `css_img_source()` (style.c) parses srcset (spec descriptor rules),
+evaluates sizes (media conditions via css_media_matches, lengths via css_parse_length; default 100vw) and <picture>
+<source> media/type, and picks the smallest density >= dpr (else the densest). main.c reads image sources through
+`img_src()` (fetch, layout size / density, load events, load blocking); N.imgSrc backs currentSrc/complete; srcset,
+sizes and media changes bump resource_version. the-img-element/ + the-picture-element/: +683 vs before (lost 11, of
+which lazy-in-scroller-nested-4/5 flaky and the media="," case fixed). Leads: css_media_matches matches invalid
+queries such as "all and (!)" (2); src-then-lazy-load.html (6); real sites on the phone now fetch dpr-sized images.
 
 RUN 189: BMP decoding (`dec_bmp`, src/paint/image.c): core/info/V4/V5 headers, 1/2/4/8-bit palettes, 16/24/32-bit
 with BI_BITFIELDS/ALPHABITFIELDS masks; RLE unsupported. The referrer-policy image tests get their result as a BMP.

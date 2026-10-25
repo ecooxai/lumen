@@ -113,8 +113,8 @@ mk('HTMLImageElement', HTMLElement, ['img'], p => {
     methods(p, {
         get width() { const v = parseInt(N.attr(this, 'width'), 10); if (!isNaN(v)) return v; const r = N.rect(this); return r ? Math.round(r[2]) : 0; }, set width(v) { this.setAttribute('width', String(v | 0)); },
         get height() { const v = parseInt(N.attr(this, 'height'), 10); if (!isNaN(v)) return v; const r = N.rect(this); return r ? Math.round(r[3]) : 0; }, set height(v) { this.setAttribute('height', String(v | 0)); },
-        get naturalWidth() { const s = N.imgSize(this); return s ? s[0] : 0; }, get naturalHeight() { const s = N.imgSize(this); return s ? s[1] : 0; },
-        get complete() { const s = this.getAttribute('src'); return !s || !s.trim() || !!N.imgSize(this) || N.imgDone(this) || imgFailed.get(this) === s || /^\s*(about|javascript|mailto|tel):/i.test(s); }, get currentSrc() { return this.src; }, decode() { return Promise.resolve(); },
+        get naturalWidth() { const s = N.imgSize(this); return s ? Math.trunc(s[0]) : 0; }, get naturalHeight() { const s = N.imgSize(this); return s ? Math.trunc(s[1]) : 0; },
+        get complete() { const s = N.imgSrc(this); return !s || !s.trim() || !!N.imgSize(this) || N.imgDone(this) || imgFailed.get(this) === s || /^\s*(about|javascript|mailto|tel):/i.test(s); }, get currentSrc() { const s = N.imgSrc(this); if (!s) return ''; if (s === this.getAttribute('src')) return this.src || s; try { return new URL(s, this.baseURI).href; } catch (e) { return s; } }, decode() { return Promise.resolve(); },
     });
 });
 mk('HTMLScriptElement', HTMLElement, ['script'], p => {

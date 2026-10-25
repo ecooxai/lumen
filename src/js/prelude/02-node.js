@@ -24,7 +24,7 @@ let [liveRanges, liveIters] = (() => {
 const imgFailed = new WeakMap();
 function imgSrcChanged(el) {
     if (!el.isConnected) N.imgWatch(el);   /* new Image(): still loads */
-    if (!imgFailed.has(el)) el.addEventListener('error', () => imgFailed.set(el, el.getAttribute('src')));
+    if (!imgFailed.has(el)) el.addEventListener('error', () => imgFailed.set(el, N.imgSrc(el)));
     imgFailed.set(el, null);
     const s = el.getAttribute('src');
     if (s && s.trim()) { try { new URL(s, document.baseURI); } catch (e) { setTimeout(() => { if (el.getAttribute('src') === s) { imgFailed.set(el, s); el.dispatchEvent(new Event('error')); } }, 0); } }

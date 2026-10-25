@@ -222,7 +222,7 @@ __attribute__((weak)) bool css_selector_only_attribute(const char *name) { retur
 __attribute__((weak)) bool node_style_attribute_changed(Node *n, bool presence) { (void)n; (void)presence; return true; }
 static void mark_attribute(Node *n, const char *name, bool presence) {
     Document *d = n->doc;
-    if (d && str_ieq(name, "src")) d->resource_version++;
+    if (d && (str_ieq(name, "src") || str_ieq(name, "srcset") || str_ieq(name, "sizes") || str_ieq(name, "media"))) d->resource_version++;
     if (d && node_attribute_style_changed(n, name, href_value_edit(n, name, presence))) {
         d->dom_version++; d->selector_version++;
         if (str_ieq(name, "disabled") && node_is(n, A_fieldset)) mark_impl(d, n, false, true, NULL, true, true);   /* its descendants' :disabled */

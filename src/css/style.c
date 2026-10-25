@@ -4192,3 +4192,114 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
     }
     return sb_take(&b);
 }
+
+/* the width in px that a sizes attribute gives (default 100vw) */
+static float sizes_px(const char *sz, const MediaCtx *mc) {
+    float vw = mc ? mc->vw : 1280;
+    if (!sz) return vw;
+    const char *p = sz;
+    while (*p) {
+        const char *e = p; int dep = 0;
+        while (*e && (dep || *e != ',')) { if (*e == '(') dep++; else if (*e == ')' && dep) dep--; e++; }
+        char item[512]; size_t l = (size_t)(e - p); if (l >= sizeof item) l = sizeof item - 1;
+        memcpy(item, p, l); item[l] = 0;
+        char *a = item; while (isspace((unsigned char)*a)) a++;
+        char *z = a + strlen(a); while (z > a && isspace((unsigned char)z[-1])) *--z = 0;
+        p = *e ? e + 1 : e;
+        if (!*a) continue;
+        /* the last component value: a function call/parenthesized block or a token */
+        char *c = z;
+        if (z[-1] == ')') { int d = 0; while (c > a) { c--; if (*c == ')') d++; else if (*c == '(' && !--d) break; } while (c > a && (isalnum((unsigned char)c[-1]) || c[-1] == '-')) c--; }
+        else while (c > a && !isspace((unsigned char)c[-1])) c--;
+        if (*c == '(') continue;
+        char *cond = a; char last[256]; snprintf(last, sizeof last, "%s", c); *c = 0;
+        char *ce = cond + strlen(cond); while (ce > cond && isspace((unsigned char)ce[-1])) *--ce = 0;
+        if (!strcasecmp(last, "auto")) { if (!*cond) return vw; continue; }
+        Length L;
+        if (!css_parse_length(last, &L, 16, 16, mc) || L.pct || L.kind != LK_LEN || L.px < 0) continue;
+        if (!strcmp(last, "0") || !strcmp(last, "-0") || !strcmp(last, "+0")) L.px = 0;
+        else { const char *u = last; while (*u && (isdigit((unsigned char)*u) || *u == '.' || *u == '+' || *u == '-' || *u == 'e' || *u == 'E')) u++; if (!*u && isdigit((unsigned char)last[strlen(last) - 1])) continue; }
+        if (*cond && !css_media_matches(cond, mc)) continue;
+        return L.px;
+    }
+    return vw;
+}
+static bool digits_only(const char *t) { if (!*t) return false; for (; *t; t++) if (!isdigit((unsigned char)*t)) return false; return true; }
+/* an HTML valid floating-point number: -?digits(.digits)?(e[+-]?digits)? or -?.digits... */
+static bool valid_float(const char *t) {
+    if (*t == '-') t++;
+    bool dig = false; while (isdigit((unsigned char)*t)) { t++; dig = true; }
+    if (*t == '.') { t++; if (!isdigit((unsigned char)*t)) return false; while (isdigit((unsigned char)*t)) t++; dig = true; }
+    if (!dig) return false;
+    if (*t == 'e' || *t == 'E') { t++; if (*t == '+' || *t == '-') t++; if (!isdigit((unsigned char)*t)) return false; while (isdigit((unsigned char)*t)) t++; }
+    return !*t;
+}
+/* srcset candidates (HTML "parse a srcset attribute"); picks the one with the smallest density >= dpr, else the
+   densest. Returns false when none parse. */
+static bool srcset_pick(const char *ss, const char *sz, const char *src, const MediaCtx *mc, char *buf, size_t bn, float *dens) {
+    float dpr = mc && mc->dpr > 0 ? mc->dpr : 1, width = -1, best = -1; bool have1x = false, anyw = false; size_t bl = 0; const char *bu = NULL;
+    for (int pass = 0; pass < 2; pass++) {
+        const char *p = ss;
+        while (p && *p) {
+            while (isspace((unsigned char)*p) || *p == ',') p++;
+            if (!*p) break;
+            const char *u = p; while (*p && !isspace((unsigned char)*p)) p++;
+            size_t ul = (size_t)(p - u); bool trailing = false;
+            while (ul && u[ul - 1] == ',') { ul--; trailing = true; }
+            float d = 1; bool ok = true, gotd = false, gotw = false, goth = false;
+            if (!trailing) {
+                for (;;) {
+                    while (isspace((unsigned char)*p)) p++;
+                    if (!*p || *p == ',') { if (*p) p++; break; }
+                    const char *t = p; int dep = 0;
+                    while (*p && (dep || (!isspace((unsigned char)*p) && *p != ','))) { if (*p == '(') dep++; else if (*p == ')' && dep) dep--; p++; }
+                    size_t tl = (size_t)(p - t); char tok[64]; if (tl >= sizeof tok) { ok = false; continue; }
+                    memcpy(tok, t, tl); tok[tl] = 0; char last = tok[tl - 1]; tok[tl - 1] = 0; char *end;
+                    if (last == 'w' && tl > 1) { long w = strtol(tok, &end, 10); if (*end || w <= 0 || !digits_only(tok) || gotd || gotw) ok = false; else { gotw = true; d = (float)w; } }
+                    else if (last == 'x' && tl > 1) { double x = strtod(tok, &end); if (*end || x < 0 || !valid_float(tok) || gotd || gotw || goth) ok = false; else { gotd = true; d = (float)x; } }
+                    else if (last == 'h' && tl > 1) { long h = strtol(tok, &end, 10); if (*end || h <= 0 || !digits_only(tok) || goth || gotd) ok = false; else goth = true; }
+                    else ok = false;
+                }
+                if (goth && !gotw) ok = false;
+            }
+            if (!ok || !ul) continue;
+            if (pass == 0) { if (gotw) anyw = true; else if (d == 1) have1x = true; continue; }
+            if (gotw) { if (width < 0) width = sizes_px(sz, mc); d = width > 0 ? d / width : INFINITY; }
+            bool better = !bu || (best < dpr ? d > best : d >= dpr && d < best);
+            if (better) { bu = u; bl = ul; best = d; }
+        }
+    }
+    if (src && *src && !have1x && !anyw) { float d = 1; bool better = !bu || (best < dpr ? d > best : d >= dpr && d < best); if (better) { bu = src; bl = strlen(src); best = 1; } }
+    if (!bu || bn < 2) return false;
+    if (bl >= bn) bl = bn - 1;
+    memcpy(buf, bu, bl); buf[bl] = 0; *dens = best > 0 ? best : 1;
+    return true;
+}
+static bool img_type_ok(const char *t) {
+    if (!t || !*t) return true;
+    static const char *const ok[] = { "image/png", "image/jpeg", "image/jpg", "image/gif", "image/webp", "image/bmp", "image/svg+xml", "image/x-icon", "image/vnd.microsoft.icon", "image/apng" };
+    char m[64]; size_t i = 0; while (t[i] && t[i] != ';' && i < sizeof m - 1) { m[i] = (char)tolower((unsigned char)t[i]); i++; } m[i] = 0;
+    while (i && isspace((unsigned char)m[i - 1])) m[--i] = 0;
+    const char *b = m; while (isspace((unsigned char)*b)) b++;
+    for (size_t k = 0; k < sizeof ok / sizeof *ok; k++) if (!strcmp(b, ok[k])) return true;
+    return false;
+}
+bool css_img_source(const Node *img, char *buf, size_t bn, float *dens) {
+    const Document *d = img->doc;
+    const StyleEngine *e = d ? d->stylesheets : NULL;
+    const MediaCtx *mc = e ? &e->media : NULL;
+    *dens = 1;
+    const Node *pic = img->parent;
+    if (pic && node_is(pic, atom("picture")))
+        for (const Node *s = pic->first; s && s != img; s = s->next) {
+            if (!node_is(s, atom("source"))) continue;
+            const char *ss = node_attr(s, "srcset"), *m = node_attr(s, "media");
+            if (!ss || !*ss || !img_type_ok(node_attr(s, "type")) || (m && *m && (m[strspn(m, " \t\n\r\f,")] ? !css_media_matches(m, mc) : !!strchr(m, ',')))) continue;
+            if (srcset_pick(ss, node_attr(s, "sizes"), NULL, mc, buf, bn, dens)) return true;
+        }
+    const char *ss = node_attr(img, "srcset"), *src = node_attr(img, "src");
+    if (ss && *ss) return srcset_pick(ss, node_attr(img, "sizes"), src, mc, buf, bn, dens);
+    if (!src) return false;
+    snprintf(buf, bn, "%s", src);
+    return true;
+}

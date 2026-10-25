@@ -315,11 +315,18 @@ static const char *node_src_url(Node *n, const char *s) {
     m->n = n; m->base = base ? xstrdup(base) : NULL; m->src = xstrdup(s); m->abs = url_join(base, s);
     return m->abs;
 }
+/* an <img>'s chosen source (srcset/sizes/<picture>), else its src (a video's poster); NULL for none */
+static const char *img_src(Node *n, char *buf, size_t bn, float *dens) {
+    *dens = 1;
+    if (n->tag != A_img) return node_attr(n, n->tag == A_video ? "poster" : "src");
+    if (!node_attr(n, "srcset") && !(n->parent && node_is(n->parent, atom("picture")))) return node_attr(n, "src");
+    return css_img_source(n, buf, bn, dens) ? buf : NULL;
+}
 static Image *node_img(Node *n) {
     if (n->tag == A_iframe) { Page *fp = frame_find(n); return fp && fp->cv.px ? &fp->img : NULL; }
     if (n->tag == A_video) { Image *f = media_frame_for(n); if (f) return f; }
     if (n->tag == A_canvas) { Image *c = c2d_image_for(n); return c ? c : media_frame_for(n); }   /* 2D canvases present here; WebGL/WebGPU push frames to a live player */
-    const char *s = node_attr(n, n->tag == A_video ? "poster" : "src"); if (!s) return NULL;
+    char b[2048]; float dn; const char *s = img_src(n, b, sizeof b, &dn); if (!s) return NULL;
     const char *u = node_src_url(n, s); return u ? cache_get(u) : NULL;
 }
 static Image *url_img(const char *u) { return u ? cache_get(u) : NULL; }
@@ -327,11 +334,12 @@ static bool img_size(Node *n, float *w, float *h) {
     if (n->tag == A_iframe) return false;
     g_in_layout = true; Image *im = node_img(n); g_in_layout = false;
     if (!im) {
-        const char *s = n->tag == A_img ? node_attr(n, "src") : NULL; const char *u = s ? node_src_url(n, s) : NULL;
-        SDL_LockMutex(icache_mu); ImgSlot *sl = u ? hm_get(&icache, u) : NULL; bool ok = sl && sl->evicted; if (ok) { *w = sl->ew; *h = sl->eh; } SDL_UnlockMutex(icache_mu);
+        char b[2048]; float dn; const char *s = n->tag == A_img ? img_src(n, b, sizeof b, &dn) : NULL; const char *u = s ? node_src_url(n, s) : NULL;
+        SDL_LockMutex(icache_mu); ImgSlot *sl = u ? hm_get(&icache, u) : NULL; bool ok = sl && sl->evicted; if (ok) { *w = sl->ew / dn; *h = sl->eh / dn; } SDL_UnlockMutex(icache_mu);
         return ok;
     }
-    *w = image_css_w(im); *h = image_css_h(im); return true; }
+    float dn = 1; char b[2048]; if (n->tag == A_img) img_src(n, b, sizeof b, &dn);
+    *w = image_css_w(im) / dn; *h = image_css_h(im) / dn; return true; }
 
 typedef struct { char *url; uint64_t gen; float vw, vh, dpr; char *body; size_t blen; char *ctype; char *html; char *ref; } LoadReq;
 
@@ -2858,7 +2866,7 @@ static bool vis_doc(Node *n, void *ud) {
 /* Start async loads for <img> sources and CSS background images that appeared after the initial load. */
 /* Walks the whole tree, so it runs only after image-relevant changes. */
 static bool img_fetch_done(Node *n) {
-    const char *src = node_attr(n, "src"); if (!src || !*src || !n->doc) return false;
+    char sb[2048]; float dn; const char *src = img_src(n, sb, sizeof sb, &dn); if (!src || !*src || !n->doc) return false;
     char *u = url_join(doc_base(n->doc), src); if (!u) return false;
     SDL_LockMutex(icache_mu); ImgSlot *s = hm_get(&icache, u); bool d = s && s->done; SDL_UnlockMutex(icache_mu);
     free(u); return d;
@@ -2870,9 +2878,10 @@ static bool h_load_blocked(JsCtx *c) {
     bool busy = false;
     SDL_LockMutex(icache_mu);
     for (Node *n = p->d->node.first; n && !busy; n = node_next_in_tree(n, &p->d->node)) {
-        if (n->type != NODE_ELEMENT || n->ns != NS_HTML || n->tag != A_img || !node_attr(n, "src") || !*node_attr(n, "src")) continue;
+        if (n->type != NODE_ELEMENT || n->ns != NS_HTML || n->tag != A_img) continue;
+        char sb[2048]; float dn; const char *sv = img_src(n, sb, sizeof sb, &dn); if (!sv || !*sv) continue;
         const char *lz = node_attr(n, "loading"); if (lz && !strcasecmp(lz, "lazy")) continue;
-        char *u = url_join(doc_base(p->d), node_attr(n, "src"));
+        char *u = url_join(doc_base(p->d), sv);
         ImgSlot *slot = u ? hm_get(&icache, u) : NULL;
         busy = slot && !slot->done;
         free(u);
@@ -2889,7 +2898,7 @@ static bool sync_images(Page *p) {
         if (n->type != NODE_ELEMENT) continue;
         char *u = NULL;
         if (n->style && (n->style->mask_image || n->style->bg_image) && n->style->display != D_NONE) u = xstrdup(n->style->mask_image ? n->style->mask_image : n->style->bg_image);
-        else if (n->ns == NS_HTML && n->tag == A_img && node_attr(n, "src")) u = url_join(doc_base(p->d), node_attr(n, "src"));
+        else if (n->ns == NS_HTML && n->tag == A_img) { char sb[2048]; float dn; const char *sv = img_src(n, sb, sizeof sb, &dn); if (!sv) continue; u = url_join(doc_base(p->d), sv); }
         else continue;
         if (!u || !*u || !strncmp(u, "blob:", 5)) { free(u); continue; }
         SDL_LockMutex(icache_mu);
@@ -2912,8 +2921,9 @@ static void fire_img_events(Page *p) {
     Node **ev = NULL; bool *ok = NULL; int ne = 0, cap = 0;
     for (int di = -1; di < p->d->ndimg; di++)
     for (Node *n = di < 0 ? p->d->node.first : p->d->dimg[di]; n; n = di < 0 ? node_next_in_tree(n, &p->d->node) : NULL) {
-        if (n->type != NODE_ELEMENT || n->ns != NS_HTML || n->tag != A_img || !node_attr(n, "src")) continue;
-        char *u = url_join(doc_base(p->d), node_attr(n, "src")); if (!u) continue;
+        if (n->type != NODE_ELEMENT || n->ns != NS_HTML || n->tag != A_img) continue;
+        char sb[2048]; float dn; const char *sv = img_src(n, sb, sizeof sb, &dn); if (!sv) continue;
+        char *u = url_join(doc_base(p->d), sv); if (!u) continue;
         char key[2048]; snprintf(key, sizeof key, "%p %s", (void *)n, u);
         if (!hm_get(&p->img_fired, key)) {
             SDL_LockMutex(icache_mu); ImgSlot *s = hm_get(&icache, u); bool done = s && s->done, good = done && s->im; SDL_UnlockMutex(icache_mu);
@@ -2929,8 +2939,9 @@ static void fire_img_events(Page *p) {
     int keep = 0;
     for (int i = 0; i < p->d->ndimg; i++) {
         Node *n = p->d->dimg[i]; bool pending = false;
-        if (!(n->flags & NF_CONNECTED) && node_attr(n, "src")) {
-            char *u = url_join(doc_base(p->d), node_attr(n, "src"));
+        char sb[2048]; float dn; const char *sv = n->flags & NF_CONNECTED ? NULL : img_src(n, sb, sizeof sb, &dn);
+        if (sv) {
+            char *u = url_join(doc_base(p->d), sv);
             if (u) { char key[2048]; snprintf(key, sizeof key, "%p %s", (void *)n, u); pending = !hm_get(&p->img_fired, key); free(u); }
         }
         if (pending) p->d->dimg[keep++] = n; else node_release(n);

@@ -1119,6 +1119,9 @@ FN(imgWatch) {
     n->refcount++; d->dimg[d->ndimg++] = n; d->resource_version++; d->dom_version++;
 }
 FN(imgDone) { CTX; ARGN(n, 0); RET(v8::Boolean::New(iso, jsg_img_done(n))); }
+/* an <img>'s source chosen by srcset/sizes/<picture> (unresolved), or null */
+extern "C" bool css_img_source(const Node *img, char *buf, size_t bn, float *dens);
+FN(imgSrc) { CTX; ARGN(n, 0); char b[2048]; float d; RET(css_img_source(n, b, sizeof b, &d) ? nstr(iso, b) : v8::Local<v8::Value>(v8::Null(iso))); }
 FN(imgSize) {
     CTX; ARGN(n, 0); float w, h;
     if (!jsg_img_size(n, &w, &h)) { RET(v8::Null(iso)); return; }
@@ -1488,7 +1491,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(mediaPump); REG(resizePump); REG(intersectionPump); REG(vclip); REG(videoFramePump); REG(videoFrameInfo); REG(videoQuality);
     REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(errPos); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(scrollTo); REG(hit); REG(caret); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(camCount); REG(camOpen); REG(camState); REG(camSource); REG(camPermission); REG(camInfo); REG(camClose); REG(mediaLive); REG(screenOpen); REG(screenState); REG(screenSource); REG(screenInfo); REG(screenClose); REG(screenAudio); REG(micOpen); REG(micPermission); REG(micState); REG(micRead); REG(micClose); REG(recKind); REG(recOpen); REG(recPause); REG(recPush); REG(recFinish); REG(recTake); REG(recClose); REG(recMime); REG(readyState); REG(quirks);
     REG(currentScript); REG(hidden); REG(media); REG(cssSupports); REG(cssColor); REG(registerProp); REG(cssSelText); REG(encode); REG(decode); REG(random);
-    REG(heap); REG(imgWatch); REG(imgSize); REG(imgDone); REG(imgDecode); REG(imgTake); REG(userAgent); REG(platform); REG(download); REG(downloadBytes); REG(touchPoints); REG(cpus); REG(makeAll);
+    REG(heap); REG(imgWatch); REG(imgSize); REG(imgDone); REG(imgSrc); REG(imgDecode); REG(imgTake); REG(userAgent); REG(platform); REG(download); REG(downloadBytes); REG(touchPoints); REG(cpus); REG(makeAll);
 #undef REG
     js_install_frames(c, N); js_install_workers(c, N); js_install_rtc(c, N); js_install_webgl(c, N); js_install_webgpu(c, N);
 }
