@@ -525,7 +525,9 @@ function cloneValue(v, seen) {
     const o = Array.isArray(v) ? [] : {}; seen.set(v, o); for (const k of Object.keys(v)) o[k] = cloneValue(v[k], seen); return o;
 }
 const xferPorts = (o, t) => { const tr = o && typeof o === 'object' ? o.transfer : t; return (tr && typeof tr[Symbol.iterator] === 'function' ? [...tr] : []).filter(p => p && typeof p.postMessage === 'function' && typeof p.start === 'function'); };
-function postMessage(data, origin, transfer) { const [src, org] = N.caller(); const d = structuredClone(data), ports = xferPorts(origin, transfer); N.timer(() => { try { dispatch(G, new MessageEvent('message', { data: d, origin: org, source: asWin(src), ports }), true); } catch (e) { report(e); } }, 0, false, true); }
+/* transferred ArrayBuffers are detached in the sender (after the clone took their contents) */
+const xferBuffers = (o, t) => { const tr = o && typeof o === 'object' && !Array.isArray(o) ? o.transfer : t; for (const b of (tr && typeof tr[Symbol.iterator] === 'function' ? [...tr] : [])) if (b instanceof ArrayBuffer && !b.detached) b.transfer(); };
+function postMessage(data, origin, transfer) { const [src, org] = N.caller(); const d = structuredClone(data), ports = xferPorts(origin, transfer); xferBuffers(origin, transfer); N.timer(() => { try { dispatch(G, new MessageEvent('message', { data: d, origin: org, source: asWin(src), ports }), true); } catch (e) { report(e); } }, 0, false, true); }
 function rejection(promise, reason) { const e = new PromiseRejectionEvent('unhandledrejection', { promise, reason, cancelable: true }); try { dispatch(G, e, true); } catch (x) { report(x); } return e.defaultPrevented; }
 function queueMessage(data, origin, src, ports) { setTimeout(() => dispatch(G, new MessageEvent('message', { data, origin, source: asWin(src), ports: ports ? [...ports].map(p => typeof p === 'number' ? importPort(src, p) : p) : [] }), true)); }
 const remoteWins = new SMap();

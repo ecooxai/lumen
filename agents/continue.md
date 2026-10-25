@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **180**.
+  - Number the runs. The next run is **181**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,11 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 180 ...)
+(append here: RUN 181 ...)
+
+RUN 180: window.postMessage detaches transferred ArrayBuffers in the sender (`xferBuffers` in 08-window.js, via
+ArrayBuffer.prototype.transfer() after structuredClone), which is test262's $262.detachArrayBuffer. test262
+DataView/ArrayBuffer/TypedArray + /html/webappapis/structured-clone/ + /webmessaging/: +152, lost 0.
 
 RUN 179: event/MutationObserver internals append with `apush` (01-events.js, defineProperty, no [[Set]]), so index
 getters a page puts on Array.prototype don't break dispatch. test262 built-ins/Array/ +22, /dom/events/ no losses
