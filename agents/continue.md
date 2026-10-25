@@ -143,6 +143,9 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 ## Runs
 (append here: RUN 188 ...)
 
+Phone check after runs 183-187 (APK 8e154ba): google/youtube/webgl/webgpu pass, no crash/ANR/tombstone, settled CPU
+0.8-4.1%, peak RSS 534 MB, WebGL 57.8 fps, WebGPU 23.7 fps; logcat only known probe lines and the YouTube EvalError.
+
 RUN 187: module script fetches (`mod_fetch`, js.cc) apply the default referrer policy through `url_referrer()`
 (dom.c; no document there, may run on the loader thread) instead of always sending the full URL. /referrer-policy/gen/
 + script-element/module/: +149, lost 1 (module/referrer-unsafe-url.sub.html: the element's referrerpolicy and the
