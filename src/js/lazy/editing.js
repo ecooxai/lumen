@@ -600,6 +600,7 @@ function myExecCommand(command, showUi, value, range) {
         // "Take the action for command, passing value to the instructions as an
         // argument."
         var undoHost = !range && undoHostOf();
+        if (undoHost && undoHost == undoHost.ownerDocument.documentElement) undoHost = null;
         var undoBefore = undoHost && undoHost.innerHTML, undoSelBefore = undoHost && undoSel(undoHost);
         var ret = commands[command].action(value);
         if (undoHost && ret === true && undoHost.innerHTML !== undoBefore) {

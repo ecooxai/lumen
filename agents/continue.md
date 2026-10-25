@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **209**.
+  - Number the runs. The next run is **210**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,16 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 209 ...)
+(append here: RUN 210 ...)
+
+RUN 209: no execCommand undo history in designMode documents (editing host = <html>; editing.js myExecCommand). Since
+run 203, snapshotting the whole document per command made
+typing-around-link-element-at-non-collapsed-selection.tentative.html?target=DesignMode&parent=b&child=i hard-time out
+(it passed 1/21 in all 9 earlier runs; with run 202's editing.js it passed again). Root cause of the slowness not found
+(a plain designMode page with jsrun is fast); lead: undo in designMode. Also seen: in designMode,
+execCommand('insertText') over a selection of <b><a><i>abc</i></a></b> returns false and leaves
+<p style="height: auto; max-height: none; min-height: 0px;">...<i><br></i> (same with run 202's editing.js).
+Rerun: typing-around-link (that variant) back to 1/21, undo-redo.html 69/69.
 
 RUN 208: focusing an editing host puts the caret where Chrome does (08-window.js focus handler): after collapsible
 leading white-space of the first text, before an empty inline element unless it has padding/border (then inside),
