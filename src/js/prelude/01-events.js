@@ -21,6 +21,8 @@ const acc = (proto, name, get, set) => Object.defineProperty(proto, name, { get:
 const methods = (proto, obj) => { for (const k of Object.getOwnPropertyNames(obj)) { const d = Object.getOwnPropertyDescriptor(obj, k); d.enumerable = false; Object.defineProperty(proto, k, d); } };
 const fmt = (args) => args.map(a => { if (typeof a === 'string') return a; if (a instanceof Error) return a.stack || String(a); if (a && N.isNode(a)) return '<' + a.nodeName.toLowerCase() + '>'; try { return JSON.stringify(a) ?? String(a); } catch (e) { return String(a); } }).join(' ');
 let reporting = false;
+/* appends v to the array a without [[Set]]: index accessors a page puts on Array.prototype must not see it */
+const apushDef = Reflect.defineProperty, apush = (a, v) => { apushDef(a, a.length, { value: v, writable: true, enumerable: true, configurable: true }); return a.length; };
 function report(e) {
     if (reporting) { N.log(3, 'Uncaught ' + (e && e.stack || e)); return; }
     reporting = true;
@@ -141,7 +143,7 @@ class EventTarget {
         /* Chrome's intervention: unless told otherwise, these listeners on the window, document, html or body are passive */
         const passive = o.passive !== undefined ? !!o.passive : /^(?:touchstart|touchmove|wheel|mousewheel)$/.test(type) && (this === G || this.nodeType === 9 ||
             (this.nodeType === 1 && this.parentNode && (this.parentNode.nodeType === 9 || (this.localName === 'body' && this.parentNode.parentNode && this.parentNode.parentNode.nodeType === 9))));
-        a.push({ fn, capture, once: !!o.once, passive, removed: false });
+        apush(a, { fn, capture, once: !!o.once, passive, removed: false });
         if (o.signal) abortSignalAdd(o.signal, () => this.removeEventListener(type, fn, capture));
     }
     removeEventListener(type, fn, opts) {
@@ -254,7 +256,7 @@ function dispatch(target, ev, trusted) {
     if (trusted && activates(ev)) { activationAt = N.now(); stickyActivation = true; }
     ev._stop = ev._imm = false;
     const path = [];
-    for (let t = parentForEvent(target, ev); t; t = parentForEvent(t, ev)) path.push(t);
+    for (let t = parentForEvent(target, ev); t; t = parentForEvent(t, ev)) apush(path, t);
     ev._path = [target].concat(path);
     /* whether each path entry is in a shadow tree, fixed now: an entry below a shadow root (inclusive) is */
     const shadow = new Array(ev._path.length);
@@ -327,8 +329,8 @@ class MutationObserver {
         if (o.attributeFilter !== undefined && !o.attributes) throw fail("The options object may only set 'attributeFilter' when 'attributes' is true or not present.");
         if (o.characterDataOldValue && !o.characterData) throw fail("The options object may only set 'characterDataOldValue' to true when 'characterData' is true or not present.");
         const ex = this._targets.find(x => x.t === target && !x.source);
-        if (ex) { ex.o = o; this._targets = this._targets.filter(x => x.source !== ex); } else this._targets.push({ t: target, o });
-        if (!observers.includes(this)) observers.push(this);
+        if (ex) { ex.o = o; this._targets = this._targets.filter(x => x.source !== ex); } else apush(this._targets, { t: target, o });
+        if (!observers.includes(this)) apush(observers, this);
     }
     disconnect() { this._targets = []; this._records = []; const i = observers.indexOf(this); if (i >= 0) observers.splice(i, 1); }
     takeRecords() { const r = this._records; this._records = []; return r; }
@@ -341,7 +343,7 @@ function notify(type, target, extra) {
     if (type === 'childList' && extra.removedNodes && extra.removedNodes.length) {
         for (const mo of observers) for (const reg of mo._targets.slice()) {
             if (!reg.o.subtree || !(reg.t === target || N.contains(reg.t, target))) continue;
-            for (const n of extra.removedNodes) mo._targets.push({ t: n, o: reg.o, source: reg });
+            for (const n of extra.removedNodes) apush(mo._targets, { t: n, o: reg.o, source: reg });
         }
     }
     for (const mo of observers) {
@@ -352,7 +354,7 @@ function notify(type, target, extra) {
             if (type === 'characterData' && !o.characterData) continue;
             const keepOld = (type === 'attributes' && o.attributeOldValue) || (type === 'characterData' && o.characterDataOldValue);
             const rec = new MutationRecord(MR_KEY, Object.assign({ type, target }, extra, keepOld ? {} : { oldValue: null }));
-            mo._records.push(rec);
+            apush(mo._records, rec);
             break;
         }
     }
