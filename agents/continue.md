@@ -143,6 +143,9 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 ## Runs
 (append here: RUN 216 ...)
 
+Phone check after run 215 (APK 21cd8b9): google/youtube/webgl/webgpu pass, no crash/ANR/tombstone/new errors;
+last-10-s CPU 0-3.4%, peak RSS 555 MB (youtube), WebGL 57.1 fps, WebGPU 23.7 fps.
+
 RUN 215: CSS math-function type check (mathType/mathValid in 03-element.js), used by style.setProperty (and the
 e.style[x] proxy) and CSS.supports(): syntax (args, commas, "+"/"-" need spaces, unclosed at end allowed), typed
 arithmetic with unit exponents (px*px/px ok), round/mod/rem/min/max/clamp/hypot same types, length+% mixing,
