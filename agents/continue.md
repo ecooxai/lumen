@@ -143,6 +143,12 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 ## Runs
 (append here: RUN 194 ...)
 
+Phone check after runs 191-193 (APK a4c3432; the first build failed because Android's V8 15.0 lacks synthetic-module
+host_defined_options, fixed with a per-isolate table): google/youtube/webgl/webgpu pass, no crash/ANR/tombstone,
+settled CPU 1.1-3.5%, peak RSS 557 MB, WebGL 57.6 fps, WebGPU 23.7 fps; only the known YouTube EvalError.
+Lead: YouTube settled CPU is spiky (median 3.6%, many 10-30% samples; ~75 50-ms timers/s from the page).
+NOTE: host V8 is 15.6, Android V8 15.0: guard newer V8 APIs with V8_MAJOR/MINOR_VERSION.
+
 RUN 193: import attributes and worker import(). js.cc: `with { type: 'json' | 'text' | 'css' }` builds V8 synthetic
 modules (value in host_defined_options; JSON needs a JSON MIME type, CSS text/css -> constructed CSSStyleSheet);
 module-map key = URL + '\x01' + type (mod_mkey/kurl/ktype); unsupported attribute key -> SyntaxError, type ->
