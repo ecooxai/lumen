@@ -51,6 +51,8 @@ uint32_t g_wseq;
 const int kEnvSlot = 2;
 v8::MaybeLocal<v8::Module> wm_compile(WEnv *E, const std::string &u, const std::string &src);
 bool wm_graph(WEnv *E, v8::Local<v8::Module> m);
+bool wm_load(WEnv *E, const std::string &key);
+v8::MaybeLocal<v8::Promise> wm_dynamic(v8::Local<v8::Context>, v8::Local<v8::Data>, v8::Local<v8::Value>, v8::Local<v8::String>, v8::Local<v8::FixedArray>);
 v8::MaybeLocal<v8::Module> wm_resolve_cb(v8::Local<v8::Context>, v8::Local<v8::String>, v8::Local<v8::FixedArray>, v8::Local<v8::Module>);
 void wm_meta(v8::Local<v8::Context> ctx, v8::Local<v8::Module> m, v8::Local<v8::Object> meta);
 
@@ -798,6 +800,7 @@ void worker_main(std::shared_ptr<Worker> w) {
     WEnv *E = new WEnv; E->w = w; E->iso = iso; E->t0 = now_ms();
     iso->SetData(kEnvSlot, E);
     iso->SetHostInitializeImportMetaObjectCallback(wm_meta);
+    iso->SetHostImportModuleDynamicallyCallback(wm_dynamic);
     {
         v8::Isolate::Scope is(iso);
         v8::HandleScope hs(iso);
@@ -944,30 +947,90 @@ std::string wm_resolve(const std::string &spec, const std::string &base) {
     if (!rel && spec.find(':') == std::string::npos) return "";
     char *u = url_join(base.c_str(), spec.c_str()); std::string r = u ? u : ""; free(u); return r;
 }
+/* fetches and compiles a module map key (URL, or URL + type) and its static imports, unless already known */
+bool wm_load(WEnv *E, const std::string &key) {
+    v8::Isolate *iso = E->iso;
+    if (E->mods.count(key)) return true;
+    std::string u = mod_kurl(key), ty = mod_ktype(key), body, ct;
+    NetResponse *r = net_fetch_sync(net_request_new("GET", u.c_str()));
+    bool ok = r && r->status >= 200 && r->status < 300;
+    if (ok) { body.assign(r->body ? r->body : "", r->body_len); const char *t = headers_get(&r->headers, "content-type"); ct = t ? t : ""; }
+    if (r) net_response_free(r);
+    if (!ok) { iso->ThrowException(v8::Exception::TypeError(jstr(iso, ("Failed to fetch module: " + u).c_str()))); return false; }
+    v8::Local<v8::Module> d;
+    if (ty.empty()) return wm_compile(E, u, body).ToLocal(&d) && wm_graph(E, d);
+    if (!mod_synthetic(iso->GetCurrentContext(), u, ty, body, ct).ToLocal(&d)) return false;
+    E->mods[key].Reset(iso, d); E->murl.emplace(d->GetIdentityHash(), key);
+    return true;
+}
 bool wm_graph(WEnv *E, v8::Local<v8::Module> m) {
     v8::Isolate *iso = E->iso;
     std::string base = wm_key(E, m);
     v8::Local<v8::FixedArray> rq = m->GetModuleRequests();
     for (int i = 0; i < rq->Length(); i++) {
-        std::string sp = jcstr(iso, rq->Get(i).As<v8::ModuleRequest>()->GetSpecifier()), u = wm_resolve(sp, base);
+        v8::Local<v8::ModuleRequest> mr = rq->Get(i).As<v8::ModuleRequest>();
+        std::string sp = jcstr(iso, mr->GetSpecifier()), ty, u = wm_resolve(sp, base);
+        if (!mod_attr_type(iso, iso->GetCurrentContext(), mr->GetImportAttributes(), 3, false, ty)) return false;
         if (u.empty()) { iso->ThrowException(v8::Exception::TypeError(jstr(iso, ("Failed to resolve module specifier \"" + sp + "\"").c_str()))); return false; }
-        if (E->mods.count(u)) continue;
-        NetResponse *r = net_fetch_sync(net_request_new("GET", u.c_str()));
-        bool ok = r && r->status >= 200 && r->status < 300; std::string body;
-        if (ok) body.assign(r->body ? r->body : "", r->body_len);
-        if (r) net_response_free(r);
-        if (!ok) { iso->ThrowException(v8::Exception::TypeError(jstr(iso, ("Failed to fetch module: " + u).c_str()))); return false; }
-        v8::Local<v8::Module> d;
-        if (!wm_compile(E, u, body).ToLocal(&d) || !wm_graph(E, d)) return false;
+        if (!wm_load(E, mod_mkey(u, ty))) return false;
     }
     return true;
 }
-v8::MaybeLocal<v8::Module> wm_resolve_cb(v8::Local<v8::Context>, v8::Local<v8::String> spec, v8::Local<v8::FixedArray>, v8::Local<v8::Module> ref) {
+v8::MaybeLocal<v8::Module> wm_resolve_cb(v8::Local<v8::Context> ctx, v8::Local<v8::String> spec, v8::Local<v8::FixedArray> attrs, v8::Local<v8::Module> ref) {
     v8::Isolate *iso = v8::Isolate::GetCurrent();
     WEnv *E = (WEnv *)iso->GetData(kEnvSlot);
-    auto it = E->mods.find(wm_resolve(jcstr(iso, spec), wm_key(E, ref)));
+    std::string ty;
+    if (!mod_attr_type(iso, ctx, attrs, 3, false, ty)) return {};
+    auto it = E->mods.find(mod_mkey(wm_resolve(jcstr(iso, spec), wm_key(E, ref)), ty));
     if (it == E->mods.end()) { iso->ThrowException(v8::Exception::TypeError(jstr(iso, "Failed to resolve module"))); return {}; }
     return it->second.Get(iso);
+}
+
+/* import() in a worker: the graph loads (synchronously, like static imports) in a microtask, then R settles with the
+   namespace once evaluation does */
+v8::MaybeLocal<v8::Promise> wm_dynamic(v8::Local<v8::Context> ctx, v8::Local<v8::Data>, v8::Local<v8::Value> res, v8::Local<v8::String> spec, v8::Local<v8::FixedArray> attrs) {
+    v8::Isolate *iso = v8::Isolate::GetCurrent();
+    WEnv *E = (WEnv *)iso->GetData(kEnvSlot);
+    v8::Local<v8::Promise::Resolver> R;
+    if (!v8::Promise::Resolver::New(ctx).ToLocal(&R)) return {};
+    std::string base = res->IsString() ? jcstr(iso, res) : "", ty;
+    if (base.find(':') == std::string::npos || !base.compare(0, 6, "lumen:")) base = E->w->url;
+    v8::TryCatch tc(iso);
+    if (E->w->service) { (void)R->Reject(ctx, v8::Exception::TypeError(jstr(iso, "import() is disallowed on ServiceWorkerGlobalScope"))); return R->GetPromise(); }
+    if (!mod_attr_type(iso, ctx, attrs, 2, false, ty)) { (void)R->Reject(ctx, tc.Exception()); return R->GetPromise(); }
+    std::string u = wm_resolve(jcstr(iso, spec), base);
+    if (u.empty()) {
+        iso->ThrowException(v8::Exception::TypeError(jstr(iso, ("Failed to resolve module specifier \"" + jcstr(iso, spec) + "\"").c_str())));
+        (void)R->Reject(ctx, tc.Exception()); return R->GetPromise();
+    }
+    v8::Local<v8::Array> d = v8::Array::New(iso, 2);
+    (void)d->Set(ctx, 0, R); (void)d->Set(ctx, 1, jstr(iso, mod_mkey(u, ty).c_str()));
+    auto run = [](const v8::FunctionCallbackInfo<v8::Value> &a) {
+        v8::Isolate *iso = a.GetIsolate();
+        v8::Local<v8::Context> cx = iso->GetCurrentContext();
+        WEnv *E = (WEnv *)iso->GetData(kEnvSlot);
+        v8::Local<v8::Array> d = a.Data().As<v8::Array>();
+        v8::Local<v8::Promise::Resolver> R = d->Get(cx, 0).ToLocalChecked().As<v8::Promise::Resolver>();
+        std::string key = jcstr(iso, d->Get(cx, 1).ToLocalChecked());
+        v8::TryCatch tc(iso);
+        v8::Local<v8::Value> r;
+        if (!wm_load(E, key)) { (void)R->Reject(cx, tc.Exception()); return; }
+        v8::Local<v8::Module> m = E->mods[key].Get(iso);
+        if (m->GetStatus() == v8::Module::kErrored) { (void)R->Reject(cx, m->GetException()); return; }
+        if (m->GetStatus() == v8::Module::kUninstantiated && !m->InstantiateModule(cx, wm_resolve_cb).FromMaybe(false)) { (void)R->Reject(cx, tc.Exception()); return; }
+        if (m->GetStatus() == v8::Module::kEvaluating || m->GetStatus() == v8::Module::kInstantiating) { (void)R->Resolve(cx, m->GetModuleNamespace()); return; }
+        if (!m->Evaluate(cx).ToLocal(&r)) { (void)R->Reject(cx, tc.HasCaught() ? tc.Exception() : v8::Undefined(iso).As<v8::Value>()); return; }
+        v8::Local<v8::Array> d2 = v8::Array::New(iso, 2);
+        (void)d2->Set(cx, 0, R); (void)d2->Set(cx, 1, m->GetModuleNamespace());
+        auto ok = [](const v8::FunctionCallbackInfo<v8::Value> &b) { v8::Local<v8::Context> c2 = b.GetIsolate()->GetCurrentContext(); v8::Local<v8::Array> e = b.Data().As<v8::Array>(); (void)e->Get(c2, 0).ToLocalChecked().As<v8::Promise::Resolver>()->Resolve(c2, e->Get(c2, 1).ToLocalChecked()); };
+        auto bad = [](const v8::FunctionCallbackInfo<v8::Value> &b) { v8::Local<v8::Context> c2 = b.GetIsolate()->GetCurrentContext(); (void)b.Data().As<v8::Array>()->Get(c2, 0).ToLocalChecked().As<v8::Promise::Resolver>()->Reject(c2, b[0]); };
+        v8::Local<v8::Function> f1, f2;
+        if (r->IsPromise() && v8::Function::New(cx, ok, d2).ToLocal(&f1) && v8::Function::New(cx, bad, d2).ToLocal(&f2)) (void)r.As<v8::Promise>()->Then(cx, f1, f2);
+        else (void)R->Resolve(cx, m->GetModuleNamespace());
+    };
+    v8::Local<v8::Function> f;
+    if (v8::Function::New(ctx, run, d).ToLocal(&f)) iso->EnqueueMicrotask(f);
+    return R->GetPromise();
 }
 
 void *worker_thread(void *p) {

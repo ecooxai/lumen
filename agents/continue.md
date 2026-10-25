@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **193**.
+  - Number the runs. The next run is **194**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,15 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 193 ...)
+(append here: RUN 194 ...)
+
+RUN 193: import attributes and worker import(). js.cc: `with { type: 'json' | 'text' | 'css' }` builds V8 synthetic
+modules (value in host_defined_options; JSON needs a JSON MIME type, CSS text/css -> constructed CSSStyleSheet);
+module-map key = URL + '\x01' + type (mod_mkey/kurl/ktype); unsupported attribute key -> SyntaxError, type ->
+TypeError. worker.cc: wm_load + wm_dynamic (import() was "Not supported" in every worker; it now loads the graph
+in a microtask; service workers reject). json-module/ text-module/ module/ css-module/ /workers/modules/: +620,
+lost 5 (they passed only because import() always rejected): data:-URL cross-origin dynamic import and CSP
+script-src for worker import() are not enforced; JSON parse-error file location; base-url-worker-importScripts.
 
 RUN 192: media queries: unknown features make the whole query false (even under `not`; parse.c `g_mq_unknown`);
 boolean context true only for features with a non-none value (list in media_feature); inverted-colors,

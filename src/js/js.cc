@@ -378,12 +378,13 @@ static std::string mod_resolve(const std::string &spec, const std::string &base)
     free(u);
     return r;
 }
-static bool mod_fetch(const std::string &u, const std::string &ref, std::string &out) {
+static bool mod_fetch(const std::string &u, const std::string &ref, std::string &out, std::string *ctype = nullptr) {
     NetRequest *rq = net_request_new("GET", u.c_str());
     { char rv[4200]; if (url_referrer(ref.c_str(), u.c_str(), NULL, rv, sizeof rv)) headers_add(&rq->headers, "Referer", rv); }
     NetResponse *r = net_fetch_sync(rq);
     bool ok = r && r->status >= 200 && r->status < 300;
     if (ok) out.assign(r->body ? r->body : "", r->body_len);
+    if (ok && ctype) { const char *t = headers_get(&r->headers, "content-type"); *ctype = t ? t : ""; }
     if (r) net_response_free(r);
     return ok;
 }
@@ -411,7 +412,7 @@ static std::vector<std::string> mod_scan(const std::string &src) {
    loader thread. Each is consumed once; leftovers (false scan hits, modules another
    context compiled) expire. */
 namespace {
-struct ModSrc { std::string body; std::vector<std::string> kids; bool ok = false; double at = 0; };
+struct ModSrc { std::string body, ctype; std::vector<std::string> kids; bool ok = false; double at = 0; };
 std::mutex g_msrc_mu;
 std::condition_variable g_msrc_cv;
 std::unordered_map<std::string, std::shared_ptr<ModSrc>> g_msrc;
@@ -426,7 +427,7 @@ static std::shared_ptr<ModSrc> msrc_get(const std::string &u, const std::string 
     g_msrc_flying.insert(u);
     lk.unlock();
     auto m = std::make_shared<ModSrc>();
-    m->ok = mod_fetch(u, ref, m->body);
+    m->ok = mod_fetch(u, ref, m->body, &m->ctype);
     if (m->ok) for (const std::string &sp : mod_scan(m->body)) { std::string k = mod_resolve(sp, u); if (!k.empty()) m->kids.push_back(k); }
     m->at = now_ms();
     lk.lock();
@@ -463,9 +464,10 @@ static void mod_prefetch(const std::vector<std::string> &roots, const std::strin
     for (std::thread &t : th) t.join();
 }
 /* Takes a module's source, fetching it now if no prefetch has. */
-static bool mod_take(const std::string &u, const std::string &ref, std::string &out) {
+static bool mod_take(const std::string &u, const std::string &ref, std::string &out, std::string *ctype = nullptr) {
     std::shared_ptr<ModSrc> m = msrc_get(u, ref, true);
     { std::lock_guard<std::mutex> lk(g_msrc_mu); auto it = g_msrc.find(u); if (it != g_msrc.end() && it->second == m) g_msrc.erase(it); }
+    if (m->ok && ctype) *ctype = m->ctype;
     if (m->ok) out = m.use_count() == 1 ? std::move(m->body) : m->body;
     return m->ok;
 }
@@ -527,6 +529,73 @@ static v8::MaybeLocal<v8::Module> mod_compile(JsCtx *c, const std::string &key, 
     c->mod_url.emplace(m->GetIdentityHash(), key);
     return m;
 }
+/* Import attributes: a non-JavaScript module's map key is its URL + '\x01' + type (json, text, css). */
+std::string mod_mkey(const std::string &u, const std::string &t) { return t.empty() || u.empty() ? u : u + '\x01' + t; }
+std::string mod_kurl(const std::string &k) { size_t i = k.find('\x01'); return i == std::string::npos ? k : k.substr(0, i); }
+std::string mod_ktype(const std::string &k) { size_t i = k.find('\x01'); return i == std::string::npos ? "" : k.substr(i + 1); }
+/* the module type that import attributes ([key, value(, offset)]... by stride) ask for; throws and returns false for
+   an unsupported key (SyntaxError) or type (TypeError) */
+bool mod_attr_type(v8::Isolate *iso, v8::Local<v8::Context> ctx, v8::Local<v8::FixedArray> a, int stride, bool css, std::string &type) {
+    type.clear();
+    for (int i = 0; !a.IsEmpty() && i + 1 < a->Length(); i += stride) {
+        std::string k = jcstr(iso, a->Get(i).As<v8::Value>()), v = jcstr(iso, a->Get(i + 1).As<v8::Value>());
+        if (k != "type") { iso->ThrowException(v8::Exception::SyntaxError(jstr(iso, ("Unsupported import attribute \"" + k + "\"").c_str()))); return false; }
+        if (v != "json" && v != "text" && !(css && v == "css")) { iso->ThrowException(v8::Exception::TypeError(jstr(iso, ("\"" + v + "\" is not a valid module type.").c_str()))); return false; }
+        type = v;
+    }
+    (void)ctx;
+    return true;
+}
+static bool json_mime(const std::string &ct) {
+    std::string t; for (char ch : ct) { if (ch == ';') break; t += (char)tolower((unsigned char)ch); }
+    while (!t.empty() && isspace((unsigned char)t.back())) t.pop_back();
+    size_t b = 0; while (b < t.size() && isspace((unsigned char)t[b])) b++; t = t.substr(b);
+    return t == "application/json" || t == "text/json" || (t.size() > 5 && t.compare(t.size() - 5, 5, "+json") == 0 && t.find('/') != std::string::npos);
+}
+static v8::MaybeLocal<v8::Promise> synth_steps(v8::Local<v8::Context> ctx, v8::Local<v8::Module> m) {
+    v8::Isolate *iso = v8::Isolate::GetCurrent();
+    v8::Local<v8::Array> d = m->GetSyntheticModuleHostDefinedOptions().As<v8::Array>();
+    v8::Local<v8::Value> v = d->Get(ctx, 0).ToLocalChecked();
+    if (d->Length() > 1) {   /* css: a constructed CSSStyleSheet */
+        v8::Local<v8::Value> C, sheet, rs;
+        if (!ctx->Global()->Get(ctx, jstr(iso, "CSSStyleSheet")).ToLocal(&C) || !C->IsFunction() || !C.As<v8::Function>()->NewInstance(ctx).ToLocal(&sheet)) return {};
+        if (!sheet.As<v8::Object>()->Get(ctx, jstr(iso, "replaceSync")).ToLocal(&rs) || !rs->IsFunction() || rs.As<v8::Function>()->Call(ctx, sheet, 1, &v).IsEmpty()) return {};
+        v = sheet;
+    }
+    if (m->SetSyntheticModuleExport(iso, jstr(iso, "default"), v).IsNothing()) return {};
+    v8::Local<v8::Promise::Resolver> r;
+    if (!v8::Promise::Resolver::New(ctx).ToLocal(&r)) return {};
+    (void)r->Resolve(ctx, v8::Undefined(iso));
+    return r->GetPromise();
+}
+/* a JSON, text or CSS module from a fetched body (JSON needs a JSON MIME type and must parse; CSS text/css) */
+v8::MaybeLocal<v8::Module> mod_synthetic(v8::Local<v8::Context> ctx, const std::string &u, const std::string &type, const std::string &body, const std::string &ctype) {
+    v8::Isolate *iso = v8::Isolate::GetCurrent();
+    v8::Local<v8::String> src = jsrc(iso, body.data(), body.size());
+    v8::Local<v8::Value> v = src;
+    if (type == "json") {
+        if (!json_mime(ctype)) { iso->ThrowException(v8::Exception::TypeError(jstr(iso, ("Failed to load module script: \"" + u + "\" is not a JSON MIME type.").c_str()))); return {}; }
+        if (!v8::JSON::Parse(ctx, src).ToLocal(&v)) return {};
+    } else if (type == "css") {
+        std::string t; for (char ch : ctype) { if (ch == ';') break; t += (char)tolower((unsigned char)ch); }
+        while (!t.empty() && isspace((unsigned char)t.back())) t.pop_back();
+        if (t != "text/css") { iso->ThrowException(v8::Exception::TypeError(jstr(iso, ("Failed to load module script: \"" + u + "\" is not a text/css MIME type.").c_str()))); return {}; }
+    }
+    v8::Local<v8::Array> d = v8::Array::New(iso, type == "css" ? 2 : 1);
+    (void)d->Set(ctx, 0, v);
+    if (type == "css") (void)d->Set(ctx, 1, v8::True(iso));
+    v8::Local<v8::String> names[1] = { jstr(iso, "default") };
+    return v8::Module::CreateSyntheticModule(iso, jstr(iso, u.c_str()), std::span<const v8::Local<v8::String>>(names, 1), synth_steps, d);
+}
+static v8::MaybeLocal<v8::Module> mod_build(JsCtx *c, const std::string &key, const std::string &body, const std::string &ctype) {
+    std::string t = mod_ktype(key);
+    if (t.empty()) return mod_compile(c, key, body);
+    v8::Local<v8::Module> m;
+    if (!mod_synthetic(c->iso->GetCurrentContext(), mod_kurl(key), t, body, ctype).ToLocal(&m)) return {};
+    c->mods[key].Reset(c->iso, m);
+    c->mod_url.emplace(m->GetIdentityHash(), key);
+    return m;
+}
 static bool mod_graph(JsCtx *c, v8::Local<v8::Module> root) {
     v8::Isolate *iso = c->iso;
     std::string ref = c->doc && c->doc->url ? c->doc->url : "";
@@ -537,30 +606,35 @@ static bool mod_graph(JsCtx *c, v8::Local<v8::Module> root) {
             std::string base = mod_key(c, m);
             v8::Local<v8::FixedArray> rq = m->GetModuleRequests();
             for (int i = 0; i < rq->Length(); i++) {
-                std::string sp = jcstr(iso, rq->Get(i).As<v8::ModuleRequest>()->GetSpecifier());
-                std::string u = mod_resolve(sp, base);
+                v8::Local<v8::ModuleRequest> mr = rq->Get(i).As<v8::ModuleRequest>();
+                std::string sp = jcstr(iso, mr->GetSpecifier()), ty;
+                if (!mod_attr_type(iso, iso->GetCurrentContext(), mr->GetImportAttributes(), 3, true, ty)) return false;
+                std::string u = mod_mkey(mod_resolve(sp, base), ty);
                 if (u.empty()) return mod_throw(iso, "Failed to resolve module specifier \"" + sp + "\""), false;
                 if (!c->mods.count(u) && std::find(need.begin(), need.end(), u) == need.end()) need.push_back(u);
             }
         }
         todo.clear();
         double busy = c->busy_since.exchange(0);   /* network time is not script time */
-        mod_prefetch(need, ref, [c](const std::string &u) { return c->mods.count(u) > 0; });
+        std::vector<std::string> urls; for (const std::string &k : need) urls.push_back(mod_kurl(k));
+        mod_prefetch(urls, ref, [c](const std::string &u) { return c->mods.count(u) > 0; });
         if (busy > 0) c->busy_since = now_ms();
         for (size_t i = 0; i < need.size(); i++) {
-            std::string body;
-            if (!mod_take(need[i], ref, body)) return mod_throw(iso, "Failed to fetch module: " + need[i]), false;
+            std::string body, ct;
+            if (!mod_take(urls[i], ref, body, &ct)) return mod_throw(iso, "Failed to fetch module: " + urls[i]), false;
             v8::Local<v8::Module> m;
-            if (!mod_compile(c, need[i], body).ToLocal(&m)) return false;
+            if (!mod_build(c, need[i], body, ct).ToLocal(&m)) return false;
             todo.push_back(m);
         }
     }
     return true;
 }
-static v8::MaybeLocal<v8::Module> mod_resolve_cb(v8::Local<v8::Context> ctx, v8::Local<v8::String> spec, v8::Local<v8::FixedArray>, v8::Local<v8::Module> ref) {
+static v8::MaybeLocal<v8::Module> mod_resolve_cb(v8::Local<v8::Context> ctx, v8::Local<v8::String> spec, v8::Local<v8::FixedArray> attrs, v8::Local<v8::Module> ref) {
     v8::Isolate *iso = v8::Isolate::GetCurrent();
     JsCtx *c = ctx_of(ctx);
-    auto it = c->mods.find(mod_resolve(jcstr(iso, spec), mod_key(c, ref)));
+    std::string ty;
+    if (!mod_attr_type(iso, ctx, attrs, 3, true, ty)) return {};
+    auto it = c->mods.find(mod_mkey(mod_resolve(jcstr(iso, spec), mod_key(c, ref)), ty));
     if (it == c->mods.end()) return mod_throw(iso, "Failed to resolve module specifier \"" + jcstr(iso, spec) + "\""), v8::MaybeLocal<v8::Module>();
     return it->second.Get(iso);
 }
@@ -594,7 +668,7 @@ static void mod_job_start(JsCtx *c, std::unique_ptr<ModJob> j) {
     auto known = std::make_shared<std::unordered_set<std::string>>();
     for (auto &kv : c->mods) known->insert(kv.first);
     j->at = now_ms();
-    std::thread([u = j->url, ref, known, done = j->done] {
+    std::thread([u = mod_kurl(j->url), ref, known, done = j->done] {
         mod_prefetch({ u }, ref, [&known](const std::string &k) { return known->count(k) > 0; });
         *done = true;
         if (js_wakeup) js_wakeup();
@@ -613,11 +687,12 @@ static void import_finish(JsCtx *c, v8::Local<v8::Promise::Resolver> R, const st
     else {
         double busy = c->busy_since.exchange(0);
         std::string ref = c->doc && c->doc->url ? c->doc->url : "";
-        mod_prefetch({ u }, ref, [c](const std::string &k) { return c->mods.count(k) > 0; });
-        bool ok = mod_take(u, ref, body);
+        std::string fu = mod_kurl(u), ct;
+        mod_prefetch({ fu }, ref, [c](const std::string &k) { return c->mods.count(k) > 0; });
+        bool ok = mod_take(fu, ref, body, &ct);
         if (busy > 0) c->busy_since = now_ms();
-        if (ok) (void)mod_compile(c, u, body).ToLocal(&m);
-        else mod_throw(iso, "Failed to fetch dynamically imported module: " + u);
+        if (ok) (void)mod_build(c, u, body, ct).ToLocal(&m);
+        else mod_throw(iso, "Failed to fetch dynamically imported module: " + fu);
     }
     v8::Local<v8::Promise> p;
     if (!m.IsEmpty() && mod_eval(c, m).ToLocal(&p)) {
@@ -684,14 +759,16 @@ static void import_trace(v8::Local<v8::Context> ctx, v8::Local<v8::Promise> p, c
         v8::Function::New(ctx, [](const v8::FunctionCallbackInfo<v8::Value> &a) { import_report(a, "rejected"); }, d).ToLocal(&bad))
         (void)p->Then(ctx, ok, bad);
 }
-static v8::MaybeLocal<v8::Promise> mod_dynamic(v8::Local<v8::Context> ctx, v8::Local<v8::Data>, v8::Local<v8::Value> res, v8::Local<v8::String> spec, v8::Local<v8::FixedArray>) {
+static v8::MaybeLocal<v8::Promise> mod_dynamic(v8::Local<v8::Context> ctx, v8::Local<v8::Data>, v8::Local<v8::Value> res, v8::Local<v8::String> spec, v8::Local<v8::FixedArray> attrs) {
     v8::Isolate *iso = v8::Isolate::GetCurrent();
     JsCtx *c = ctx_of(ctx);
     v8::Local<v8::Promise::Resolver> R;
     if (!v8::Promise::Resolver::New(ctx).ToLocal(&R)) return {};
     std::string base = res->IsString() ? jcstr(iso, res) : "";
     if (base.find(':') == std::string::npos || !base.compare(0, 6, "lumen:")) base = c->doc && c->doc->url ? c->doc->url : "";
-    std::string u = mod_resolve(jcstr(iso, spec), base);
+    std::string ty;
+    { v8::TryCatch tc(iso); if (!mod_attr_type(iso, ctx, attrs, 2, true, ty)) { (void)R->Reject(ctx, tc.Exception()); return R->GetPromise(); } }
+    std::string u = mod_mkey(mod_resolve(jcstr(iso, spec), base), ty);
     if (g_log_level < 3) import_trace(ctx, R->GetPromise(), u, c->mods.count(u) > 0);
     if (u.empty()) {
         v8::TryCatch tc(iso);
