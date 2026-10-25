@@ -143,6 +143,12 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 ## Runs
 (append here: RUN 202 ...)
 
+Gap ranking after run 201 within /editing/ (Chrome-passing subtests Lumen misses): whitespaces/chrome-compat 387
+(12 files), exec-command-with-text-editor.tentative.html textarea/text/password 112/94/84, plaintext-only/
+styling-commands.html (both styleWithCSS) 104+104, run/multitest.html?9001-last 102, run/undo-redo.html 68 (1/69),
+insertlinebreak-with-white-space-style?pre-wrap 42. /editing/ as a whole is now 94.3%; the bigger gaps are
+elsewhere (CSS grid ~11k first).
+
 RUN 201: deleting the last content of an inline editing host no longer leaves a <br> in it (editing.js delete
 algorithm's "block node of parent has no visible children" step skips inline editing hosts, as Chrome).
 inline-editing-host-has-placeholder-with-{before,after}-pseudo-element pass again; /editing/run/delete,
