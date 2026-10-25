@@ -145,7 +145,8 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 
 RUN 196: harness fix: PRE_JS reported r.url = location at report time, so tests that pushState() reported under
 the wrong URL and hit the hard timeout. It now sends the URL captured at load (U0). DOMParser pushstate tests:
-0 -> 54 / 90.
+0 -> 54 / 90. Rerun of history/the-history-interface/, the-location-interface/ and other pushState tests: +31,
+lost 0 (190 / 478; 47 TIMEOUTs left there, e.g. history_pushstate_url.html hard timeout: next lead).
 
 RUN 195: beforeHTML/afterHTML/replaceWithHTML(Unsafe) accept a template's content fragment as the parent
 (07k-sanitizer.js htmlParent; new N.tplHost = inert template-content fragment; a plain DocumentFragment still
