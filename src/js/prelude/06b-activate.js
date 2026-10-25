@@ -60,9 +60,12 @@ function activate(el, ev, pre) {
     const a = (N.name(el) === 'a' || N.name(el) === 'area') && N.attr(el, 'href') != null ? el : null;
     if (a) {
         const raw = N.attr(a, 'href');
+        /* an SVG <a>'s href is an SVGAnimatedString: resolve the attribute */
+        let href = a.href;
+        if (typeof href !== 'string') { try { href = new URL(raw, a.baseURI).href; } catch (e) { href = ''; } }
         if (/^javascript:/i.test(raw)) runJsURL(raw);
-        else if (a.href && (a.hasAttribute('download') || /^(blob|data):/i.test(a.href))) saveHref(a.href, a.getAttribute('download'));
-        else if (a.href && !N.navTarget(linkTarget(a), a.href)) location.assign(a.href);
+        else if (href && (a.hasAttribute('download') || /^(blob|data):/i.test(href))) saveHref(href, a.getAttribute('download'));
+        else if (href && !N.navTarget(linkTarget(a), href)) location.assign(href);
         return;
     }
     const name = N.name(el);

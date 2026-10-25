@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **188**.
+  - Number the runs. The next run is **189**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,12 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 188 ...)
+(append here: RUN 189 ...)
+
+RUN 188: activating an SVG <a> resolves its href attribute (a.href is an SVGAnimatedString, which navigated to
+"[object SVGAnimatedString]"), 06b-activate.js. No WPT gain yet (svg-a-tag referrer tests still time out: the
+synthetic click on an SVG <a> doesn't reach `activate`, lead); 9 lost in iframe-tag/xhr tests that don't touch
+this path (61 TIMEOUTs in the run, likely flaky: recheck).
 
 Phone check after runs 183-187 (APK 8e154ba): google/youtube/webgl/webgpu pass, no crash/ANR/tombstone, settled CPU
 0.8-4.1%, peak RSS 534 MB, WebGL 57.8 fps, WebGPU 23.7 fps; logcat only known probe lines and the YouTube EvalError.
