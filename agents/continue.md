@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **197**.
+  - Number the runs. The next run is **198**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,12 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 197 ...)
+(append here: RUN 198 ...)
+
+RUN 197: history traversal within a document fires hashchange after popstate when only the fragment changed
+(08-window.js histUrls per entry). /html/browsers/history/: +2 net in the full run; history_pushstate_url.html
+passes alone (its hard timeout and the 4 url_rewriting losses were flaky: both pass on rerun). 48 TIMEOUTs left in
+/html/browsers/history/ (location-protocol-setter.html hard timeout, cross-document traversal).
 
 RUN 196: harness fix: PRE_JS reported r.url = location at report time, so tests that pushState() reported under
 the wrong URL and hit the hard timeout. It now sends the URL captured at load (U0). DOMParser pushstate tests:

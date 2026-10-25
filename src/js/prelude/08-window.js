@@ -146,11 +146,16 @@ URL_KEYS.forEach((k, i) => { if (k !== 'href') acc(Location.prototype, k, functi
 }); });
 const location = new Location();
 let histState = null, histIdx = 0;
-const histStates = [null];
+const histStates = [null], histUrls = [N.url()];
+const noHash = u => { const i = u.indexOf('#'); return i < 0 ? u : u.slice(0, i); };
+/* a traversal within this document: popstate, then hashchange when only the fragment changed */
 Object.defineProperty(globalThis, '__lumenPopState', { value: d => {
+    const old = histUrls[histIdx] ?? N.url();
     histIdx = Math.max(0, Math.min(histStates.length - 1, histIdx + d));
     histState = histStates[histIdx] ?? null;
+    const now = N.url(); histUrls[histIdx] = now;
     globalThis.dispatchEvent(new PopStateEvent('popstate', { state: histState }));
+    if (old !== now && noHash(old) === noHash(now)) setTimeout(() => dispatch(G, new HashChangeEvent('hashchange', { oldURL: old, newURL: now })));
 } });
 /* a navigation to another fragment of this document, as Chrome does it: a new history entry, the
    target scrolled into view, popstate at once (routers such as React Router's follow it) and then
@@ -161,7 +166,7 @@ function fragmentNav(href, old, replace = false) {
     const target = id && (document.getElementById(id) || document.getElementsByName(id)[0]);
     if (href === old) { if (target) target.scrollIntoView(); return; }
     histState = null; if (!replace) { histStates.length = ++histIdx; histStates[histIdx] = null; }
-    N.setUrl(href, !replace);
+    N.setUrl(href, !replace); histUrls.length = histIdx + 1; histUrls[histIdx] = N.url();
     if (target) target.scrollIntoView(); else if (!id || id.toLowerCase() === 'top') G.scrollTo(0, 0);
     dispatch(G, new PopStateEvent('popstate', { state: null }));
     setTimeout(() => dispatch(G, new HashChangeEvent('hashchange', { oldURL: old, newURL: href })));
@@ -197,8 +202,8 @@ if (N.internal('td?ping') === 'pong') {
 }
 const history = {
     get length() { return N.histLen(); }, get state() { return histState; }, scrollRestoration: 'auto',
-    pushState(s, t, u) { if (this !== history && this && typeof this.pushState === 'function' && this.pushState !== history.pushState) return this.pushState(s, t, u); histState = structuredClone(s); histStates.length = ++histIdx; histStates[histIdx] = histState; N.setUrl(u != null ? new URL(String(u), N.url()).href : N.url(), true); },
-    replaceState(s, t, u) { if (this !== history && this && typeof this.replaceState === 'function' && this.replaceState !== history.replaceState) return this.replaceState(s, t, u); histState = structuredClone(s); histStates[histIdx] = histState; if (u != null) N.setUrl(new URL(String(u), N.url()).href, false); },
+    pushState(s, t, u) { if (this !== history && this && typeof this.pushState === 'function' && this.pushState !== history.pushState) return this.pushState(s, t, u); histState = structuredClone(s); histStates.length = ++histIdx; histStates[histIdx] = histState; N.setUrl(u != null ? new URL(String(u), N.url()).href : N.url(), true); histUrls.length = histIdx + 1; histUrls[histIdx] = N.url(); },
+    replaceState(s, t, u) { if (this !== history && this && typeof this.replaceState === 'function' && this.replaceState !== history.replaceState) return this.replaceState(s, t, u); histState = structuredClone(s); histStates[histIdx] = histState; if (u != null) N.setUrl(new URL(String(u), N.url()).href, false); histUrls[histIdx] = N.url(); },
     back() { N.histGo(-1); }, forward() { N.histGo(1); }, go(d) { N.histGo(d | 0); },
 };
 /* Web Locks for this page: per name, a FIFO of requests granted from the head while compatible
