@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **214**.
+  - Number the runs. The next run is **215**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,11 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 214 ...)
+(append here: RUN 215 ...)
+
+RUN 214: the older node constructors (Gain, StereoPanner, Delay, BiquadFilter, Analyser, Oscillator, ConstantSource,
+AudioBufferSource) take ctorCheck (BaseAudioContext + dictionary) and nodeOpts (AudioNodeOptions) too
+(07w-audio.js). /webaudio/: +70, lost 0 (3492 / 5787).
 
 RUN 213: MediaElementAudioSourceNode (mediaElement; AudioContext only; renders silence, the element keeps its own
 output) and createMediaElementSource() (07w-audio.js). /webaudio/: +44, lost 1 (an audit.js "AUDIT TASK RUNNER

@@ -109,7 +109,7 @@ class AudioDestinationNode extends AudioNode {
     constructor(ctx) { super(ctx, 1, 0); this.maxChannelCount = 2; }
 }
 class GainNode extends AudioNode {
-    constructor(ctx, o = {}) { super(ctx); this.gain = new AudioParam(ctx, o.gain ?? 1); }
+    constructor(ctx, o = {}) { o = ctorCheck(ctx, o, new.target.name); super(ctx); nodeOpts(this, o); this.gain = new AudioParam(ctx, o.gain ?? 1); }
     _render(f) {
         const m = this._mix(f); if (!m) return null;
         const g = paramIn(this.gain, f), g1 = paramIn(this.gain, f + Q - 1);
@@ -119,7 +119,7 @@ class GainNode extends AudioNode {
     }
 }
 class StereoPannerNode extends AudioNode {
-    constructor(ctx, o = {}) { super(ctx); this.pan = new AudioParam(ctx, o.pan ?? 0, -1, 1); }
+    constructor(ctx, o = {}) { o = ctorCheck(ctx, o, new.target.name); super(ctx); nodeOpts(this, o); this.pan = new AudioParam(ctx, o.pan ?? 0, -1, 1); }
     _render(f) {
         const m = this._mix(f); if (!m) return null;
         const p = Math.max(-1, Math.min(1, paramIn(this.pan, f))), x = (p + 1) * Math.PI / 4, gl = Math.cos(x), gr = Math.sin(x);
@@ -129,7 +129,7 @@ class StereoPannerNode extends AudioNode {
     }
 }
 class DelayNode extends AudioNode {
-    constructor(ctx, o = {}) { super(ctx); this._max = o.maxDelayTime ?? 1; this.delayTime = new AudioParam(ctx, o.delayTime ?? 0, 0, this._max); this._b = [new Float32Array(Math.ceil(this._max * ctx.sampleRate) + Q + 1), null]; this._b[1] = new Float32Array(this._b[0].length); this._w = 0; }
+    constructor(ctx, o = {}) { o = ctorCheck(ctx, o, new.target.name); super(ctx); nodeOpts(this, o); this._max = o.maxDelayTime ?? 1; this.delayTime = new AudioParam(ctx, o.delayTime ?? 0, 0, this._max); this._b = [new Float32Array(Math.ceil(this._max * ctx.sampleRate) + Q + 1), null]; this._b[1] = new Float32Array(this._b[0].length); this._w = 0; }
     _render(f) {
         const m = this._mix(f) || [silence, silence], n = this._b[0].length, d = Math.min(Math.round(paramIn(this.delayTime, f) * this.context.sampleRate), n - Q - 1);
         const o = this._dbuf || (this._dbuf = [[new Float32Array(Q), new Float32Array(Q)], [new Float32Array(Q), new Float32Array(Q)]]), [l, r] = o[(f / Q) & 1];
@@ -143,7 +143,7 @@ class DelayNode extends AudioNode {
 }
 /* Filters, compressors and convolvers pass audio through unchanged for now. */
 class BiquadFilterNode extends AudioNode {
-    constructor(ctx, o = {}) { super(ctx); this.type = o.type || 'lowpass'; this.frequency = new AudioParam(ctx, o.frequency ?? 350); this.detune = new AudioParam(ctx, 0); this.Q = new AudioParam(ctx, o.Q ?? 1); this.gain = new AudioParam(ctx, o.gain ?? 0); }
+    constructor(ctx, o = {}) { o = ctorCheck(ctx, o, new.target.name); super(ctx); nodeOpts(this, o); this.type = o.type || 'lowpass'; this.frequency = new AudioParam(ctx, o.frequency ?? 350); this.detune = new AudioParam(ctx, 0); this.Q = new AudioParam(ctx, o.Q ?? 1); this.gain = new AudioParam(ctx, o.gain ?? 0); }
     getFrequencyResponse(fr, mag, ph) { mag.fill(1); ph.fill(0); }
 }
 class DynamicsCompressorNode extends AudioNode {
@@ -178,7 +178,7 @@ const blackman = n => {
     return w;
 };
 class AnalyserNode extends AudioNode {
-    constructor(ctx, o = {}) { super(ctx); this._fft = 2048; this.fftSize = o.fftSize || 2048; this.minDecibels = -100; this.maxDecibels = -30; this.smoothingTimeConstant = 0.8; this._last = new Float32Array(32768); this._ver = 0; this._specVer = -1; this._sm = null; }
+    constructor(ctx, o = {}) { o = ctorCheck(ctx, o, new.target.name); super(ctx); nodeOpts(this, o); this._fft = 2048; this.fftSize = o.fftSize || 2048; this.minDecibels = -100; this.maxDecibels = -30; this.smoothingTimeConstant = 0.8; this._last = new Float32Array(32768); this._ver = 0; this._specVer = -1; this._sm = null; }
     get fftSize() { return this._fft; }
     set fftSize(v) {
         v = v >>> 0;
@@ -352,7 +352,7 @@ class AudioScheduledSourceNode extends AudioNode {
     }
 }
 class OscillatorNode extends AudioScheduledSourceNode {
-    constructor(ctx, o = {}) { super(ctx); this._type = o.type || 'sine'; this.frequency = new AudioParam(ctx, o.frequency ?? 440); this.detune = new AudioParam(ctx, o.detune ?? 0); this._ph = 0; this._wave = null; }
+    constructor(ctx, o = {}) { o = ctorCheck(ctx, o, new.target.name); super(ctx); nodeOpts(this, o); this._type = o.type || 'sine'; this.frequency = new AudioParam(ctx, o.frequency ?? 440); this.detune = new AudioParam(ctx, o.detune ?? 0); this._ph = 0; this._wave = null; }
     get type() { return this._type; }
     set type(t) { if (['sine', 'square', 'sawtooth', 'triangle'].includes(t)) this._type = t; }
     setPeriodicWave(w) { this._wave = w; this._type = 'custom'; }
@@ -379,11 +379,11 @@ class PeriodicWave {
     }
 }
 class ConstantSourceNode extends AudioScheduledSourceNode {
-    constructor(ctx, o = {}) { super(ctx); this.offset = new AudioParam(ctx, o.offset ?? 1); }
+    constructor(ctx, o = {}) { o = ctorCheck(ctx, o, new.target.name); super(ctx); nodeOpts(this, o); this.offset = new AudioParam(ctx, o.offset ?? 1); }
     _gen(out, a, b, f) { out.fill(paramIn(this.offset, f), a, b); }
 }
 class AudioBufferSourceNode extends AudioScheduledSourceNode {
-    constructor(ctx, o = {}) { super(ctx); this.buffer = o.buffer || null; this.loop = !!o.loop; this.loopStart = o.loopStart || 0; this.loopEnd = o.loopEnd || 0; this.playbackRate = new AudioParam(ctx, o.playbackRate ?? 1); this.detune = new AudioParam(ctx, 0); this._pos = -1; this._left = Infinity; }
+    constructor(ctx, o = {}) { o = ctorCheck(ctx, o, new.target.name); super(ctx); nodeOpts(this, o); this.buffer = o.buffer || null; this.loop = !!o.loop; this.loopStart = o.loopStart || 0; this.loopEnd = o.loopEnd || 0; this.playbackRate = new AudioParam(ctx, o.playbackRate ?? 1); this.detune = new AudioParam(ctx, 0); this._pos = -1; this._left = Infinity; }
     start(when = 0, offset = 0, dur) { super.start(when); this._off = Math.max(0, +offset || 0); if (dur !== undefined) this._left = Math.max(0, +dur) * this.context.sampleRate; }
     _render(f) {
         const buf = this.buffer;
