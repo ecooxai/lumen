@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **176**.
+  - Number the runs. The next run is **178**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,29 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 176 ...)
+(append here: RUN 178 ...)
+
+Phone check after run 175 (APK with color.c): google/youtube/webgl/webgpu pass, no crash/ANR, settled CPU 0.8-3.7%,
+peak RSS 552 MB, WebGL 57.6 fps, WebGPU 23.5 fps (unchanged). Logcat: 12 gralloc 4x4 format-probe errors per cold start
+(driver probing, harmless), the known YouTube EvalError.
+
+RUN 176: first measurement of /third_party/test262/ (53,619 tests, 6,401 s at ~8.4 tests/s, copied binary):
+**85.9%** of Chrome-passing (44,880 / 52,258). 160 TIMEOUT, 12 CRASH. Leads:
+- CRASH: all 12 in language/expressions/dynamic-import/ (eval-export-dflt-*, eval-self-once-*, imported-self-update):
+  V8 fatal "Check failed: module_status == kLinked..." in v8::Module::Evaluate called from Lumen's
+  HostImportModuleDynamically callback (evaluates a module that is not linked yet, likely a cycle/self import).
+- Prelude code breaks when tests put getters on Array.prototype indices ("Cannot set property 1 of [object Array]
+  which has only a getter", "reading '__ls'" in 01-events.js invoke): event/postMessage paths use plain arrays.
+- $262.detachArrayBuffer is postMessage(null, '*', [buf]): Lumen's transfer doesn't detach (DataView/ArrayBuffer
+  "Expected a TypeError but got a RangeError", resize coerced-new-length-detach).
+- RegExp/prototype/Symbol.split/last-index-exceeds-str-size: RSS to 2.85 GB, then hard timeout.
+
+RUN 177: CSS Values 4 math functions in native lengths (`math_fn` in style.c: round (strategies)/mod/rem/abs/sign/
+sin/cos/tan/asin/acos/atan/atan2/pow/sqrt/hypot/log/exp, pi/e/infinity/NaN, rad/grad/turn units); single math
+functions compute to values for `scale`/`rotate`, and `z-index` evaluates them. `/css/css-values/` 34.6% -> **43.1%**
+(+838). Lost 5: calc-infinity-nan-computed (3, infinity/NaN in width), random-serialize (1), typed_arithmetic
+`sign(exp(-1vh / 0px))` (1). Remaining big css-values gaps: calc-size()/interpolate-size animation (~1,600, needs
+layout), if() conditionals (199), random() (153), attr() types (116).
 
 RUN 175: CSS colours in double precision. `/css/css-color/parsing/` 78.7%* -> **89.6%** (+1,240 against the first
 175 measurement; earlier native colours: about 4,200 short), `/css/css-color/` animation unchanged (59.6%).

@@ -159,6 +159,68 @@ static float g_cq[2];
 static bool g_vh_used;
 static float cq_dim(const LCtx *c, int h) { if (g_cq[h] > 0) return g_cq[h]; if (h) { g_vh_used = true; return c->mc ? c->mc->vh : 768; } return c->mc ? c->mc->vw : 1024; }
 static bool calc_expr(const char **pp, Length *out, LCtx *c);
+/* CSS Values 4 math functions and constants on resolved (percentage-free) values; angles are in degrees, a
+   trig argument without an angle unit in radians */
+static bool math_fn(const char **pp, Length *out, LCtx *c) {
+    const char *p = *pp; char id[8]; int k = 0;
+    while ((isalpha((unsigned char)*p) || (k && *p == '-')) && k < 7) id[k++] = (char)lc(*p++);
+    id[k] = 0;
+    Length l = { 0, 0, LK_LEN };
+    if (*p != '(') {
+        if (!strcmp(id, "pi")) l.px = (float)M_PI; else if (!strcmp(id, "e")) l.px = (float)M_E; else if (!strcmp(id, "infinity")) l.px = INFINITY;
+        else if (!strcmp(id, "nan")) l.px = NAN; else return false;
+        *out = l; *pp = p; return true;
+    }
+    static const char *const fns[] = { "round", "mod", "rem", "abs", "sign", "sin", "cos", "tan", "asin", "acos", "atan", "atan2", "pow", "sqrt", "hypot", "log", "exp" };
+    int f = -1; for (int i = 0; i < (int)ARRLEN(fns); i++) if (!strcmp(id, fns[i])) f = i;
+    if (f < 0) return false;
+    p++;
+    int strat = 0;   /* round: nearest, up, down, to-zero */
+    if (f == 0) {
+        static const char *const st[] = { "nearest", "up", "down", "to-zero" };
+        const char *q = p; while (is_ws((unsigned char)*q)) q++;
+        for (int i = 0; i < 4; i++) { size_t n = strlen(st[i]); if (!strncasecmp(q, st[i], n) && (is_ws((unsigned char)q[n]) || q[n] == ',')) { q += n; while (is_ws((unsigned char)*q)) q++; if (*q == ',') { strat = i; p = q + 1; } break; } }
+    }
+    Length v[4]; bool ang[4] = { 0 }; int n = 0;
+    while (n < 4) {
+        const char *s = p;
+        if (!calc_expr(&p, &v[n], c)) return false;
+        for (const char *q = s; q < p; q++) if ((!strncasecmp(q, "deg", 3) || !strncasecmp(q, "rad", 3) || !strncasecmp(q, "turn", 4)) && q > s && (isdigit((unsigned char)q[-1]) || q[-1] == '.' || q[-1] == 'g')) ang[n] = true;
+        if (v[n].pct || v[n].mm) return false;
+        n++; while (is_ws((unsigned char)*p)) p++;
+        if (*p == ',') { p++; continue; }
+        break;
+    }
+    if (*p != ')') return false;
+    p++;
+    double a = v[0].px, b = n > 1 ? v[1].px : 1, r, rad = M_PI / 180;
+    switch (f) {
+    case 0:
+        if (n == 1) b = 1;
+        if (b == 0 || (isinf(a) && isinf(b))) r = NAN;
+        else if (isinf(a)) r = a;
+        else if (isinf(b)) r = strat == 1 ? (a > 0 ? INFINITY : a < 0 ? -0.0 : a) : strat == 2 ? (a < 0 ? -INFINITY : a > 0 ? 0.0 : a) : copysign(0, a);
+        else { double q = a / b; q = strat == 1 ? ceil(q) : strat == 2 ? floor(q) : strat == 3 ? trunc(q) : floor(q + 0.5); r = q * b; }
+        break;
+    case 1: r = (b == 0 || isinf(a)) ? NAN : isinf(b) ? ((a >= 0) == (b > 0) ? a : NAN) : a - b * floor(a / b); break;
+    case 2: r = (b == 0 || isinf(a)) ? NAN : isinf(b) ? a : fmod(a, b); break;
+    case 3: r = fabs(a); break;
+    case 4: r = a > 0 ? 1 : a < 0 ? -1 : a; break;
+    case 5: r = sin(ang[0] ? a * rad : a); break;
+    case 6: r = cos(ang[0] ? a * rad : a); break;
+    case 7: r = tan(ang[0] ? a * rad : a); break;
+    case 8: r = asin(a) / rad; break;
+    case 9: r = acos(a) / rad; break;
+    case 10: r = atan(a) / rad; break;
+    case 11: r = atan2(a, b) / rad; break;
+    case 12: r = pow(a, b); break;
+    case 13: r = sqrt(a); break;
+    case 14: { double s = 0; for (int i = 0; i < n; i++) s += (double)v[i].px * v[i].px; r = sqrt(s); break; }
+    case 15: r = n > 1 ? log(a) / log(b) : log(a); break;
+    default: r = exp(a); break;
+    }
+    l.px = (float)r; *out = l; *pp = p; return true;
+}
 static bool parse_dim(const char **pp, Length *out, LCtx *c) {
     const char *p = *pp; while (is_ws((unsigned char)*p)) p++;
     if (*p == '(') { p++; if (!calc_expr(&p, out, c)) return false; while (is_ws((unsigned char)*p)) p++; if (*p == ')') p++; *pp = p; return true; }
@@ -178,6 +240,7 @@ static bool parse_dim(const char **pp, Length *out, LCtx *c) {
         return true;
     }
     if (str_istarts(p, "var(")) return false;
+    if (isalpha((unsigned char)*p)) { *pp = p; return math_fn(pp, out, c); }
     char *e; float v = strtof(p, &e);
     if (e == p) return false;
     p = e;
@@ -206,6 +269,9 @@ static bool parse_dim(const char **pp, Length *out, LCtx *c) {
     else if (!strcmp(u, "vmax")) { l.px = v * LMAX(c->mc ? c->mc->vw : 1024, c->mc ? c->mc->vh : 768) / 100; g_vh_used = true; }
     else if (!strcmp(u, "fr")) { l.px = v; }
     else if (!strcmp(u, "deg") || !strcmp(u, "s") || !strcmp(u, "ms")) l.px = v;
+    else if (!strcmp(u, "rad")) l.px = v * 180 / (float)M_PI;
+    else if (!strcmp(u, "grad")) l.px = v * 0.9f;
+    else if (!strcmp(u, "turn")) l.px = v * 360;
     else return false;
     *out = l; *pp = p; return true;
 }
@@ -1193,7 +1259,7 @@ apply:
         else if (!strcmp(P, "writing-mode")) st->writing_mode = str_istarts(val, "vertical");
         break;
     case 'z':
-        if (!strcmp(P, "z-index")) { if (str_ieq(val, "auto")) st->z_auto = true; else { st->z_auto = false; st->z_index = atoi(val); } }
+        if (!strcmp(P, "z-index")) { if (str_ieq(val, "auto")) st->z_auto = true; else { st->z_auto = false; st->z_index = atoi(val); if (isalpha((unsigned char)val[0])) { LCtx lc = { st->font_size, 16, NULL }; const char *q = val; Length L; if (parse_dim(&q, &L, &lc) && !L.pct && isfinite(L.px)) st->z_index = (int)lroundf(L.px); } } }
         break;
     }
 out:
@@ -4108,6 +4174,19 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
         const GenProp *g = gen_prop(prop);
         const char *v = g ? gen_value(s, g) : NULL;
         if (!v && g) v = g->initial;
+        /* a single math function of numbers (scale) or angles (rotate) computes to its value */
+        if (v && (!strcmp(prop, "scale") || !strcmp(prop, "rotate")) && isalpha((unsigned char)v[0]) && strchr(v, '(')) {
+            LCtx lc = { s->font_size, 16, NULL }; const char *p = v; Length L;
+            if (parse_dim(&p, &L, &lc) && !L.pct && !L.mm) {
+                while (is_ws((unsigned char)*p)) p++;
+                if (!*p) {
+                    const char *u = prop[0] == 'r' ? "deg" : "";
+                    if (isnan(L.px)) sb_puts(&b, "calc(NaN)"); else if (isinf(L.px)) sb_printf(&b, L.px > 0 ? "calc(infinity%s)" : "calc(-infinity%s)", *u ? " * 1deg" : "");
+                    else sb_printf(&b, "%g%s", fabsf(L.px) < 1e-6f ? 0.0 : (double)L.px, u);
+                    return sb_take(&b);
+                }
+            }
+        }
         if (v && !strcmp(v, "currentcolor") && g && !g->native) color_str(&b, s->color);
         else if (v) sb_puts(&b, v);
     }
