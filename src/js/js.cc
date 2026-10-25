@@ -49,8 +49,24 @@ JsCtx *jctx(v8::Isolate *iso) {
     return static_cast<JsCtx *>(iso->GetData(0));
 }
 
+/* C strings can't hold U+0000, so attribute values store it as the overlong pair C0 80 (jsnative.cc); no valid UTF-8
+   contains that pair, and here it turns back into U+0000 */
 v8::Local<v8::String> jstr(v8::Isolate *iso, const char *s, int n) {
     v8::Local<v8::String> r;
+    if (s) {
+        size_t len = n < 0 ? strlen(s) : (size_t)n;
+        const char *p = (const char *)memchr(s, 0xC0, len);
+        while (p && !(p + 1 < s + len && (unsigned char)p[1] == 0x80)) p = (const char *)memchr(p + 1, 0xC0, (size_t)(s + len - p - 1));
+        if (p) {
+            std::string d; d.reserve(len);
+            for (size_t i = 0; i < len; i++) {
+                if ((unsigned char)s[i] == 0xC0 && i + 1 < len && (unsigned char)s[i + 1] == 0x80) { d += '\0'; i++; }
+                else d += s[i];
+            }
+            if (!v8::String::NewFromUtf8(iso, d.data(), v8::NewStringType::kNormal, (int)d.size()).ToLocal(&r)) return v8::String::Empty(iso);
+            return r;
+        }
+    }
     if (!v8::String::NewFromUtf8(iso, s ? s : "", v8::NewStringType::kNormal, s ? n : 0).ToLocal(&r)) return v8::String::Empty(iso);
     return r;
 }

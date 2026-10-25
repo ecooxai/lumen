@@ -139,7 +139,13 @@ FN(setText) {
     if (!s.empty()) node_append(n, node_new_text(c->doc, s.data(), s.size()));
 }
 FN(attr) { CTX; ARGN(n, 0); std::string k = S(1); RET(nstr(iso, n->type == NODE_ELEMENT || n->type == NODE_DOCTYPE ? node_attr(n, k.c_str()) : nullptr)); }
-FN(setAttr) { CTX; ARGN(n, 0); std::string k = S(1), v = S(2); node_set_attr(n, atom(k.c_str()), v.c_str()); }
+/* an attribute value as a C string: U+0000 becomes C0 80, which jstr turns back */
+static std::string aval(v8::Isolate *iso, v8::Local<v8::Value> v) {
+    std::string s = jcstr(iso, v);
+    for (size_t i = s.find('\0'); i != std::string::npos; i = s.find('\0', i + 2)) s.replace(i, 1, "\xC0\x80");
+    return s;
+}
+FN(setAttr) { CTX; ARGN(n, 0); std::string k = S(1), v = aval(iso, a[2]); node_set_attr(n, atom(k.c_str()), v.c_str()); }
 FN(rmAttr) { CTX; ARGN(n, 0); std::string k = S(1); if (node_has_attr(n, k.c_str())) node_remove_attr(n, k.c_str()); }
 /* the DOM's exact attribute lookups (qualified name without case folding, or namespace + local name); an ns of null
    or "" is no namespace */
@@ -151,12 +157,12 @@ static const char *ns_atom(v8::Isolate *iso, v8::Local<v8::Value> v) {
 static bool attr_host(Node *n) { return n->type == NODE_ELEMENT || n->type == NODE_DOCTYPE; }
 FN(attrQ) { CTX; ARGN(n, 0); std::string k = S(1); int i = attr_host(n) ? node_attr_qindex(n, k.c_str()) : -1; RET(nstr(iso, i >= 0 ? n->attrs[i].value : nullptr)); }
 FN(attrNS) { CTX; ARGN(n, 0); std::string l = S(2); int i = attr_host(n) ? node_attr_ns_index(n, ns_atom(iso, a[1]), l.c_str()) : -1; RET(nstr(iso, i >= 0 ? n->attrs[i].value : nullptr)); }
-FN(setAttrQ) { CTX; ARGN(n, 0); std::string k = S(1), v = S(2); if (attr_host(n)) node_set_attr_at(n, node_attr_qindex(n, k.c_str()), atom(k.c_str()), v.c_str(), nullptr, nullptr); }
+FN(setAttrQ) { CTX; ARGN(n, 0); std::string k = S(1), v = aval(iso, a[2]); if (attr_host(n)) node_set_attr_at(n, node_attr_qindex(n, k.c_str()), atom(k.c_str()), v.c_str(), nullptr, nullptr); }
 FN(setAttrNS) {   /* (el, ns, prefix, local, value): an existing attribute keeps its prefix */
     CTX; ARGN(n, 0);
     if (!attr_host(n)) return;
     const char *ns = ns_atom(iso, a[1]);
-    std::string l = S(3), v = S(4), q = l;
+    std::string l = S(3), v = aval(iso, a[4]), q = l;
     const char *pfx = a[2]->IsNullOrUndefined() ? nullptr : atom(S(2).c_str());
     if (pfx) q = std::string(pfx) + ":" + l;
     node_set_attr_at(n, node_attr_ns_index(n, ns, l.c_str()), atom(q.c_str()), v.c_str(), ns, pfx);
@@ -345,7 +351,11 @@ FN(matches) {
     if (n->type == NODE_ELEMENT && !ok) { throw_dom(iso, ctx, "'" + sel + "' is not a valid selector.", "SyntaxError"); return; }
     RET(m);
 }
-FN(byId) { CTX; std::string id = S(0); RET(jwrap(c, doc_get_element_by_id(c->doc, id.c_str()))); }
+FN(byId) {   /* in the document node given as the second argument, else this realm's document */
+    CTX; std::string id = S(0); Node *dn = a.Length() > 1 ? junwrap(a[1]) : nullptr;
+    Document *d = dn && dn->type == NODE_DOCUMENT && dn->doc ? dn->doc : c->doc;
+    RET(jwrap(c, doc_get_element_by_id(d, id.c_str())));
+}
 FN(clone) { CTX; ARGN(n, 0); RET(jwrap(c, node_clone(n, BOOL(1), c->doc))); }
 FN(doc) { CTX; RET(jwrap(c, &c->doc->node)); }
 FN(contains) { CTX; ARGN(x, 0); ARGN(y, 1); RET(node_is_inclusive_ancestor(x, y)); }

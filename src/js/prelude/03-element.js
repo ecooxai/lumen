@@ -340,8 +340,10 @@ function setInner(el, html) {
     if (removed.length || added.length) notify('childList', el, { removedNodes: removed, addedNodes: added });
     for (const a of added) ceConnected(a, true);
 }
-const reflectStr = (p, ...ns) => { for (const n of ns) { const a = n.toLowerCase(); acc(p, n, function () { return N.attr(this, a) ?? ''; }, function (v) { this.setAttribute(a, v); }); } };
-const reflectBool = (p, ...ns) => { for (const n of ns) { const a = n.toLowerCase(); acc(p, n, function () { return N.attr(this, a) != null; }, function (v) { if (v) this.setAttribute(a, ''); else this.removeAttribute(a); }); } };
+/* getters the reflect* helpers made; 05r-reflect.js replaces those accessors with its spec types */
+const REFLECTED = new SSet(), racc = (p, n, g, s) => { REFLECTED.add(g); acc(p, n, g, s); };
+const reflectStr = (p, ...ns) => { for (const n of ns) { const a = n.toLowerCase(); racc(p, n, function () { return N.attr(this, a) ?? ''; }, function (v) { this.setAttribute(a, v); }); } };
+const reflectBool = (p, ...ns) => { for (const n of ns) { const a = n.toLowerCase(); racc(p, n, function () { return N.attr(this, a) != null; }, function (v) { if (v) this.setAttribute(a, ''); else this.removeAttribute(a); }); } };
 /* the encoding a node's document gives its URLs' queries; undefined for UTF-8 */
 const docEnc = n => { const e = N.charset(n); return e === 'UTF-8' ? undefined : e; };
 /* set el's attribute with qualified name n (validated, lowercased) to the string v */
@@ -362,8 +364,8 @@ function attrSetQ(el, n, v) {
     notify('attributes', el, { attributeName: n, attributeNamespace: null, oldValue: old });
     ceAttr(el, n, old, v, null);
 }
-const reflectUrl = (p, ...ns) => { for (const n of ns) { const a = n.toLowerCase(); acc(p, n, function () { const v = N.attr(this, a); if (v == null) return ''; const r = N.urlParse(v, document.baseURI, docEnc(this)); return r ? r[0] : v; }, function (v) { this.setAttribute(a, v); }); } };
-const reflectInt = (p, d, ...ns) => { for (const n of ns) { const a = n.toLowerCase(); acc(p, n, function () { const v = parseInt(N.attr(this, a), 10); return isNaN(v) ? d : v; }, function (v) { this.setAttribute(a, String(v | 0)); }); } };
+const reflectUrl = (p, ...ns) => { for (const n of ns) { const a = n.toLowerCase(); racc(p, n, function () { const v = N.attr(this, a); if (v == null) return ''; const r = N.urlParse(v, document.baseURI, docEnc(this)); return r ? r[0] : v; }, function (v) { this.setAttribute(a, v); }); } };
+const reflectInt = (p, d, ...ns) => { for (const n of ns) { const a = n.toLowerCase(); racc(p, n, function () { const v = parseInt(N.attr(this, a), 10); return isNaN(v) ? d : v; }, function (v) { this.setAttribute(a, String(v | 0)); }); } };
 const EVENT_HANDLERS = 'abort animationend animationiteration animationstart auxclick beforeinput blur cancel canplay canplaythrough change click close contextmenu copy cut dblclick drag dragend dragenter dragleave dragover dragstart drop durationchange emptied ended error focus focusin focusout input invalid keydown keypress keyup load loadeddata loadedmetadata loadstart mousedown mouseenter mouseleave mousemove mouseout mouseover mouseup paste pause play playing pointercancel pointerdown pointerenter pointerleave pointermove pointerout pointerover pointerup progress ratechange reset resize scroll seeked seeking select selectionchange selectstart stalled submit suspend timeupdate toggle touchcancel touchend touchmove touchstart transitionend volumechange waiting wheel webkitanimationend webkitanimationiteration webkitanimationstart webkittransitionend'.split(' ');
 const EMPTY_SCOPE = Object.freeze(Object.create(null));
 function compileHandler(el, k, src) {
@@ -435,7 +437,7 @@ methods(HTMLElement.prototype, {
         def(this, '__ds', ds); return ds;
     },
     get innerText() { return innerTextOf(this); }, set innerText(v) { this.textContent = v; }, get outerText() { return N.text(this); },
-    get tabIndex() { const v = parseInt(N.attr(this, 'tabindex'), 10); return isNaN(v) ? (/^(a|button|input|select|textarea)$/.test(N.name(this)) ? 0 : -1) : v; },
+    get tabIndex() { const m = /^[\t\n\f\r ]*([-+]?\d+)/.exec(N.attr(this, 'tabindex') || ''), v = m && +m[1] >= -(2 ** 31) && +m[1] < 2 ** 31 ? +m[1] || 0 : NaN; return isNaN(v) ? (/^(a|button|input|select|textarea)$/.test(N.name(this)) ? 0 : -1) : v; },
     set tabIndex(v) { this.setAttribute('tabindex', String(v | 0)); },
     get offsetParent() {
         if (this === document.body || this === document.documentElement || !N.rect(this) || N.computed(this, 'position') === 'fixed') return null;
