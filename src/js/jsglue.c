@@ -274,6 +274,12 @@ bool jsg_module_script(Node *s) {
 
 /* HTML "prepare the script element": the type string (the type attribute, else "text/" + the language attribute of an
    HTML script) with ASCII whitespace stripped must be a JavaScript MIME type essence; an empty type or language runs */
+bool jsg_is_script(const Node *n) { return n->type == NODE_ELEMENT && n->tag == A_script && (n->ns == NS_HTML || n->ns == NS_SVG); }
+const char *jsg_script_src(Node *s) {
+    if (s->ns != NS_SVG) return node_attr(s, "src");
+    const char *h = node_attr(s, "href");
+    return h ? h : node_attr(s, "xlink:href");
+}
 bool jsg_classic_script(Node *s) {
     if (node_has_attr(s, "nomodule")) return false;
     const char *t = node_attr(s, "type"), *pre = "";
@@ -282,9 +288,11 @@ bool jsg_classic_script(Node *s) {
         if (!t || !*t) return true;
         pre = "text/";
     } else if (!*t) return true;
-    while (*t == ' ' || *t == '\t' || *t == '\n' || *t == '\f' || *t == '\r') t++;
     size_t n = strlen(t);
-    while (n && (t[n - 1] == ' ' || t[n - 1] == '\t' || t[n - 1] == '\n' || t[n - 1] == '\f' || t[n - 1] == '\r')) n--;
+    if (!*pre) {   /* only the type attribute is stripped; "text/" + language is compared as is */
+        while (*t == ' ' || *t == '\t' || *t == '\n' || *t == '\f' || *t == '\r') t++, n--;
+        while (n && (t[n - 1] == ' ' || t[n - 1] == '\t' || t[n - 1] == '\n' || t[n - 1] == '\f' || t[n - 1] == '\r')) n--;
+    }
     static const char *ok[] = { "application/ecmascript", "application/javascript", "application/x-ecmascript", "application/x-javascript",
         "text/ecmascript", "text/javascript", "text/javascript1.0", "text/javascript1.1", "text/javascript1.2", "text/javascript1.3",
         "text/javascript1.4", "text/javascript1.5", "text/jscript", "text/livescript", "text/x-ecmascript", "text/x-javascript" };

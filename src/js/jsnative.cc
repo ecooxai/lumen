@@ -1238,12 +1238,12 @@ void js_run_inserted(JsCtx *c, Node *root) {
     if (!(root->flags & NF_CONNECTED)) return;
     std::vector<Node *> list;
     for (Node *x = root; x; x = node_next_in_tree(x, root))
-        if (x->type == NODE_ELEMENT && x->tag == A_script && x->ns == NS_HTML && !(x->flags & NF_SCRIPT_STARTED)) list.push_back(x);
+        if (jsg_is_script(x) && !(x->flags & NF_SCRIPT_STARTED)) list.push_back(x);
     for (Node *s : list) {
         s->flags |= NF_SCRIPT_STARTED;
         bool mod = jsg_module_script(s);
         if (!mod && !jsg_classic_script(s)) continue;
-        const char *src = node_attr(s, "src");
+        const char *src = jsg_script_src(s);
         if (mod) {
             char *t = src ? nullptr : node_text_content(s), *u = src && *src ? url_join(doc_base(c->doc), src) : nullptr;
             if (src && !u) jfire(c, s, "error");

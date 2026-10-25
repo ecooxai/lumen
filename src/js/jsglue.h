@@ -34,6 +34,9 @@ bool jsg_img_done(Node *n);
 /* PNG, JPEG, WebP or GIF (first frame) bytes to malloc'd straight-alpha RGBA rows; any thread */
 uint8_t *jsg_decode_rgba(const uint8_t *d, size_t n, int *w, int *h);
 bool jsg_classic_script(Node *s);
+/* a script element Lumen runs (HTML or SVG) and its URL attribute (src; href or xlink:href for SVG) */
+bool jsg_is_script(const Node *n);
+const char *jsg_script_src(Node *s);
 bool jsg_module_script(Node *s);
 #ifdef __cplusplus
 }

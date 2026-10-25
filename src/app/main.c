@@ -428,7 +428,7 @@ static int loader(void *arg) {
         if (n->type != NODE_ELEMENT) continue;
         const char *rel = n->tag == A_link ? node_attr(n, "rel") : NULL, *href = NULL;
         bool module = false;
-        if (n->tag == A_script && n->ns == NS_HTML && js && (module = jsg_module_script(n), module || jsg_classic_script(n))) href = node_attr(n, "src");
+        if (jsg_is_script(n) && js && (module = jsg_module_script(n), module || jsg_classic_script(n))) href = jsg_script_src(n);
         else if (rel && strstr(rel, "modulepreload")) { href = js ? node_attr(n, "href") : NULL; module = true; }
         else if (rel && strstr(rel, "stylesheet")) href = node_attr(n, "href");
         char *u = href ? url_join(doc_base(p->d), href) : NULL;
@@ -447,11 +447,11 @@ static int loader(void *arg) {
     double t_batch = now_ms();
     if (!getenv("LUMEN_NO_JS")) for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) {
         if (!gen_live(rq->gen)) break;
-        if (n->type != NODE_ELEMENT || n->tag != A_script || n->ns != NS_HTML) continue;
+        if (!jsg_is_script(n)) continue;
         bool mod = jsg_module_script(n);
         if (!mod && !jsg_classic_script(n)) continue;
         PScript sc = { n, NULL, 0, NULL, mod };
-        const char *src = node_attr(n, "src");
+        const char *src = jsg_script_src(n);
         if (src) {
             sc.name = url_join(doc_base(p->d), src);
             if (!sc.name) continue;

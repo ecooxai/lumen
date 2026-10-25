@@ -582,6 +582,7 @@ Node *node_clone(Node *n, bool deep, Document *d) {
     case NODE_CDATA: c = node_new_cdata(d, n->text, n->text_len); break;
     default: c = node_new_fragment(d); break;
     }
+    if (n->type == NODE_ELEMENT && n->tag == A_script) c->flags |= n->flags & NF_SCRIPT_STARTED;   /* "already started" is cloned */
     if (n->template_content) { c->template_content = node_clone(n->template_content, true, d); c->template_content->refcount = 1; c->template_content->flags |= NF_INERT; }
     if (deep) for (Node *k = n->first; k; k = k->next) node_append(c, node_clone(k, true, d));
     /* a clonable shadow root is cloned with its host, its children always */

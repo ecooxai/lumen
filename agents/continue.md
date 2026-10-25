@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **216**.
+  - Number the runs. The next run is **217**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,15 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 216 ...)
+(append here: RUN 217 ...)
+
+RUN 216: SVG <script> runs (jsg_is_script/jsg_script_src in jsglue.c: href or xlink:href; main.c parser scripts,
+js_run_inserted). Parser: an SVG script is marked started at its start tag and released at its </script> (never in
+fragments), so a breakout-ended one doesn't run (html.c foreign()). Clones copy "already started" (dom.c
+node_clone). The language attribute is no longer whitespace-stripped ("text/" + language compared as is).
+Over /html/semantics/scripting-1/, /svg/, /html/syntax/, /dom/nodes/: +1,647, -66; html5lib tests16 (64) is flaky
+(168/112/191/120/127/191 across runs; 191 alone). Left: use-iframe-onload.html (1), a speculative-parsing case (1).
+Also: css-sizing keyword-sizes-on-abspos / -flex-item-002 vary 10-13 / 16-27 between runs (Ahem font timing?).
 
 Phone check after run 215 (APK 21cd8b9): google/youtube/webgl/webgpu pass, no crash/ANR/tombstone/new errors;
 last-10-s CPU 0-3.4%, peak RSS 555 MB (youtube), WebGL 57.1 fps, WebGPU 23.7 fps.

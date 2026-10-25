@@ -1314,12 +1314,15 @@ static void foreign(P, Tok *t) {
         if (aset_has(&S_breakout, n) || (n == A_font && (tok_attr(t, "color") || tok_attr(t, "face") || tok_attr(t, "size")))) { foreign_breakout(p, t); return; }
         int ns = adj_cur(p)->ns;
         insert_el(p, t, ns, ns == NS_SVG ? svg_tag_name(n) : n);
+        /* an SVG script runs only once its end tag (or a self-closing tag) is seen, and never from a fragment */
+        if (ns == NS_SVG && n == A_script && (p->ctx || !t->self_closing)) cur(p)->flags |= NF_SCRIPT_STARTED;
         if (t->self_closing) pop(p);
         return;
     }
     case T_END: {
         const char *n = t->name;
         if (n == A_br || n == A_p) { foreign_breakout(p, t); return; }
+        if (n == A_script && cur(p)->ns == NS_SVG && cur(p)->tag == A_script) { if (!p->ctx) cur(p)->flags &= ~NF_SCRIPT_STARTED; pop(p); return; }
         int i = p->open.n - 1;
         for (;;) {
             if (i <= 0) return;
