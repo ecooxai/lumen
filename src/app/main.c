@@ -400,7 +400,7 @@ static int loader(void *arg) {
     }
     p->url = xstrdup(r && r->url ? r->url : rq->url);
     p->d = doc_new(p->url);
-    if (r && r->status > 0 && !rq->html) { p->d->csp = headers_join(&r->headers, "content-security-policy"); p->d->csp_ro = headers_join(&r->headers, "content-security-policy-report-only"); }
+    if (r && r->status > 0 && !rq->html) { p->d->csp = headers_join(&r->headers, "content-security-policy"); p->d->csp_ro = headers_join(&r->headers, "content-security-policy-report-only"); p->d->referrer_policy = headers_join(&r->headers, "referrer-policy"); }
     bool xml = xml_mime(ctype);
     char *decoded = NULL;
     if (!rq->html && !errbuf) {   /* the document's encoding; anything but UTF-8 is decoded to UTF-8 first */

@@ -86,7 +86,7 @@ static JsCtx *frame_create(JsCtx *p, Node *f, const std::string &key, const char
     if (JsCtx *old = js_frame_ctx(f)) frame_kill(old);
     Document *d = doc_new(url);
     if (!strncmp(url, "about:", 6)) d->base_url = xstrdup(doc_base(p->doc));   /* about:blank and about:srcdoc inherit the parent's */
-    if (hdrs) { d->csp = headers_join(hdrs, "content-security-policy"); d->csp_ro = headers_join(hdrs, "content-security-policy-report-only"); }
+    if (hdrs) { d->csp = headers_join(hdrs, "content-security-policy"); d->csp_ro = headers_join(hdrs, "content-security-policy-report-only"); d->referrer_policy = headers_join(hdrs, "referrer-policy"); }
     bool xml = xml_mime(ctype);
     char *decoded = nullptr;
     if (ctype && html) {   /* a response (not about:blank or srcdoc): decoded by its encoding */
@@ -241,7 +241,7 @@ static void frame_load(JsCtx *p, Node *f, const char *u, const std::string &key,
         rq->body = (char *)xmalloc(blen + 1); if (blen) memcpy(rq->body, body, blen); rq->body[blen] = 0; rq->body_len = blen;
         headers_add(&rq->headers, "Content-Type", ctype);
     }
-    if (p->doc->url && !strncmp(p->doc->url, "http", 4)) headers_add(&rq->headers, "Referer", p->doc->url);
+    { char ref[4200]; if (doc_referrer(p->doc, u, f ? node_attr((Node *)f, "referrerpolicy") : NULL, ref, sizeof ref)) headers_add(&rq->headers, "Referer", ref); }
     FrameLoad *l = new FrameLoad{ p, f, k->id, u };
     g_loads.push_back(l);
     rq->done = frame_done; rq->ud = l;

@@ -255,8 +255,8 @@ FN(charset) { CTX; ARGN(n, 0); RET(jstr(iso, enc_name(n->type == NODE_DOCUMENT ?
 FN(csp) {
     CTX; ARGN(n, 0);
     Document *d = n->type == NODE_DOCUMENT ? (Document *)n : n->doc;
-    v8::Local<v8::Value> v[2] = { nstr(iso, d ? d->csp : nullptr), nstr(iso, d ? d->csp_ro : nullptr) };
-    RET(v8::Array::New(iso, v, 2));
+    v8::Local<v8::Value> v[3] = { nstr(iso, d ? d->csp : nullptr), nstr(iso, d ? d->csp_ro : nullptr), nstr(iso, d ? d->referrer_policy : nullptr) };
+    RET(v8::Array::New(iso, v, 3));
 }
 /* Trusted Types and CSP: string compilation goes through the ttEval hook (evalGuard), inline scripts through
    ttScript (ttOn); codeLike makes an object V8 treats as code (a TrustedScript) */
@@ -1257,7 +1257,7 @@ void js_run_inserted(JsCtx *c, Node *root) {
         if (!u) { jfire(c, s, "error"); continue; }
         jwrap(c, s);
         NetRequest *rq = net_request_new("GET", u);
-        if (c->doc->url && !strncmp(c->doc->url, "http", 4)) headers_add(&rq->headers, "Referer", c->doc->url);
+        { char ref[4200]; if (doc_referrer(c->doc, u, node_attr(s, "referrerpolicy"), ref, sizeof ref)) headers_add(&rq->headers, "Referer", ref); }
         start_fetch(c, rq, new Fetch{ c, 0, {}, s });
         free(u);
     }

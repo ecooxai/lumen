@@ -438,6 +438,7 @@ const FILE_ENCODE = s => new TextEncoder().encode(s), FILEN = W;
 #include "file_shared.inc"
 R"JS(
 const FETCH_BASE = () => location.href;
+const FETCH_RPOLICY = () => null;
 const FETCH_BLOB = b => new Uint8Array(b._buf);
 const FETCH_BLOBURL = u => blobURLs.get(u) || null;
 const FETCH_BRAND = r => W.wasmResponseBrand(r);

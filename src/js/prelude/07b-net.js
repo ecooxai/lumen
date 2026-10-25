@@ -74,6 +74,7 @@ function corsSendSync(cred, method, url, flat, body) {
 
 /* the shared Fetch module's hooks for a document */
 const FETCH_BASE = () => document.baseURI;
+const FETCH_RPOLICY = () => { const h = document.head, m = h ? [...h.children].filter(e => e.localName === 'meta' && /^referrer$/i.test(e.name) && parseReferrerPolicy(e.content)) : []; return m.length ? m[m.length - 1].content : N.csp(document)[2]; };
 const FETCH_BLOB = b => new Uint8Array(b._buf);
 const FETCH_BLOBURL = u => objectURLs.get(u) || null;
 const FETCH_BRAND = r => { if (N.wasmResponseBrand) N.wasmResponseBrand(r); };

@@ -356,7 +356,7 @@ void doc_free(Document *d) {
     hm_free(&d->id_cache, NULL); hm_free(&d->id_dups, NULL);
     Node *c = d->node.first;
     while (c) { Node *nx = c->next; c->parent = NULL; c->refcount = 0; c->js = NULL; node_free_tree(c); c = nx; }
-    free(d->url); free(d->base_url); free(d->title); free(d->content_type); free(d->csp); free(d->csp_ro); free(d);
+    free(d->url); free(d->base_url); free(d->title); free(d->content_type); free(d->csp); free(d->csp_ro); free(d->referrer_policy); free(d);
 }
 
 /* attributes the engine reads by name (style, on*, href...): null-namespace ones and prefixed ones (xlink:href);
@@ -707,4 +707,55 @@ void dom_dump(const Node *n, int depth, FILE *f) {
     else fprintf(f, "%s\n", n->tag);
     const Node *src = n->template_content ? n->template_content : n;
     for (const Node *c = src->first; c; c = c->next) dom_dump(c, depth + 1, f);
+}
+
+static const char *const k_ref_policies[] = { "no-referrer", "no-referrer-when-downgrade", "same-origin", "origin", "strict-origin", "origin-when-cross-origin", "strict-origin-when-cross-origin", "unsafe-url" };
+/* the last policy token of a comma list Lumen knows, else -1 */
+static int ref_policy_parse(const char *v) {
+    int r = -1;
+    while (v && *v) {
+        while (*v == ' ' || *v == '\t' || *v == ',') v++;
+        const char *e = v; while (*e && *e != ',') e++;
+        const char *t = e; while (t > v && (t[-1] == ' ' || t[-1] == '\t')) t--;
+        for (int i = 0; i < 8; i++) if (strlen(k_ref_policies[i]) == (size_t)(t - v) && !strncasecmp(v, k_ref_policies[i], (size_t)(t - v))) r = i;
+        v = e;
+    }
+    return r;
+}
+static size_t url_origin_len(const char *u) { const char *p = strstr(u, "://"); if (!p) return 0; p += 3; while (*p && *p != '/' && *p != '?' && *p != '#') p++; return (size_t)(p - u); }
+static bool url_trustworthy(const char *u) {
+    if (!strncasecmp(u, "https:", 6) || !strncasecmp(u, "wss:", 4) || !strncasecmp(u, "file:", 5)) return true;
+    const char *h = strstr(u, "://"); if (!h) return false; h += 3;
+    return !strncmp(h, "localhost", 9) || !strncmp(h, "127.", 4) || !strncmp(h, "[::1]", 5);
+}
+bool doc_referrer(const Document *d, const char *url, const char *policy, char *out, size_t n) {
+    const char *ref = d ? d->url : NULL;
+    if (!ref || strncasecmp(ref, "http", 4) || !url) return false;
+    int p = policy && *policy ? ref_policy_parse(policy) : -1;
+    /* a <meta name=referrer> in the head (the last one wins) replaces the header's policy */
+    if (p < 0 && d->head) for (const Node *m = d->head->first; m; m = m->next)
+        if (node_is(m, atom("meta"))) { const char *nm = node_attr(m, "name"), *ct = node_attr(m, "content"); if (nm && ct && !strcasecmp(nm, "referrer")) { int q = ref_policy_parse(ct); if (q >= 0) p = q; } }
+    if (p < 0 && d->referrer_policy) p = ref_policy_parse(d->referrer_policy);
+    if (p < 0) p = 6;
+    size_t ol = url_origin_len(ref), fl = strcspn(ref, "#");
+    if (!ol || n < 2) return false;
+    size_t tl = url_origin_len(url);
+    bool same = tl == ol && !strncasecmp(ref, url, ol), down = url_trustworthy(ref) && !url_trustworthy(url);
+    bool full;
+    switch (p) {
+    case 0: return false;
+    case 1: if (down) return false; full = true; break;
+    case 2: if (!same) return false; full = true; break;
+    case 3: full = false; break;
+    case 4: if (down) return false; full = false; break;
+    case 5: full = same; break;
+    case 7: full = true; break;
+    default: if (!same && down) return false; full = same; break;
+    }
+    if (fl > 4096) full = false;
+    size_t len = full ? fl : ol;
+    if (len + 2 > n) len = n - 2;
+    memcpy(out, ref, len); out[len] = 0;
+    if (!full || len == ol) { out[len] = '/'; out[len + 1] = 0; }
+    return true;
 }

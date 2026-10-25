@@ -10,6 +10,7 @@
                            h.done(error, status, statusText, url, headers, ArrayBuffer) last (its body unused after a
                            head). Returns a function that cancels the request; its pause(on) stops and resumes
                            reading a streamed body (flow control).
+     FETCH_RPOLICY()       the realm's referrer policy (its document's Referrer-Policy / <meta name=referrer>), or ''
      FETCH_BRAND(response) marks a Response for WebAssembly's streaming compile
      FORM_ENTRIES(form, submitter)  the entry list [[name, value], ...] of new FormData(form, submitter) */
 const FETCH_TOKEN = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
@@ -734,7 +735,7 @@ function fetchReferrer(R, url) {
     let full = u.href.replace(/#$/, '');
     const origin = u.origin + '/', same = u.origin === url.origin, down = fetchTrustworthy(u) && !fetchTrustworthy(url);
     if (full.length > 4096) full = origin;
-    switch (R.referrerPolicy || 'strict-origin-when-cross-origin') {
+    switch (R.referrerPolicy || parseReferrerPolicy(FETCH_RPOLICY()) || 'strict-origin-when-cross-origin') {
     case 'no-referrer': return null;
     case 'origin': return origin;
     case 'unsafe-url': return full;

@@ -1252,7 +1252,7 @@ static void run_written(JsCtx *c, size_t from) {
         NetResponse *r = nullptr;
         if (u) {
             NetRequest *rq = net_request_new("GET", u);
-            if (c->doc->url && !strncmp(c->doc->url, "http", 4)) headers_add(&rq->headers, "Referer", c->doc->url);
+            { char ref[4200]; if (doc_referrer(c->doc, u, NULL, ref, sizeof ref)) headers_add(&rq->headers, "Referer", ref); }
             r = net_fetch_sync(rq);
         }
         if (r && r->status >= 200 && r->status < 300) js_run_script(c, s, r->body ? r->body : "", r->body_len, u);

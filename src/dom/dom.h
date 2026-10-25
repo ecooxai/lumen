@@ -89,6 +89,7 @@ typedef struct Document {
     char *title;
     char *content_type;           /* the response's MIME type of a loaded XML document, else NULL */
     char *csp, *csp_ro;           /* the response's Content-Security-Policy(-Report-Only) headers, joined; else NULL */
+    char *referrer_policy;        /* the response's Referrer-Policy header (or a <meta name=referrer> policy); else NULL */
     int charset;   /* the document's encoding (base/encoding.h); 0 is UTF-8 */
     Node *html, *head, *body;
     bool quirks;
@@ -175,6 +176,9 @@ void node_set_text_content(Node *n, const char *s);
 void node_set_character_data(Node *n, const char *s, size_t len);
 void node_text_append(Node *n, const char *s, size_t len);
 char *node_serialize(const Node *n, bool outer);  /* innerHTML/outerHTML */
+/* the Referer for a request from d to url under policy (NULL/"": the document's, then strict-origin-when-cross-origin):
+   written to out, or false for none (Referrer Policy § 8.3) */
+bool doc_referrer(const Document *d, const char *url, const char *policy, char *out, size_t n);
 Node *node_next_in_tree(Node *n, Node *root);     /* pre-order traversal */
 Node *node_next_deep(Node *n, Node *root);        /* pre-order, entering shadow trees */
 Node *doc_get_element_by_id(Document *d, const char *id);

@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **183**.
+  - Number the runs. The next run is **184**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,14 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 183 ...)
+(append here: RUN 184 ...)
+
+RUN 183: referrer policy. Documents keep their Referrer-Policy header (`Document.referrer_policy`, frames.cc/main.c;
+third element of N.csp()). `doc_referrer()` (dom.c) implements "determine request's referrer" for the native
+iframe/script/module loads (element `referrerpolicy`, then `<meta name=referrer>` in the head, then the header, then
+strict-origin-when-cross-origin; before, the full URL was always sent). JS fetch uses `FETCH_RPOLICY()` (07b-net.js)
+for the same default. /referrer-policy/ + /fetch/api/{request,basic}/ + document-metadata: +133, lost 0 (7 flaky,
+recovered on rerun).
 
 RUN 182: src/js/lazy/temporal.js is now the polyfill's *full* global build (all non-ISO calendars; 220 KB vs 190 KB).
 test262 intl402/ 53.2% -> **98.4%** (+1,513), built-ins/Temporal/ unchanged 99.8%; no crashes, peak RSS 367 MB.
