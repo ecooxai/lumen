@@ -143,6 +143,10 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 ## Runs
 (append here: RUN 211 ...)
 
+Phone check after run 210 (APK e239e35): google/youtube/webgl/webgpu pass, no crash/ANR/tombstone/new errors;
+last-10-s CPU 0-3.6%, peak RSS 551 MB (youtube), WebGL 57.7 fps, WebGPU 23.5 fps. YouTube settled CPU still
+alternates 0/3.5/7/11% (median 3.5% last 10 s), the same pattern as since run 193 (~75 timers/s).
+
 RUN 210: /webaudio/ first measured (348 files, 0 crashes): 2,235 of 5,787 Chrome-passing subtests before this run.
 07w-audio.js: added ChannelMergerNode, ChannelSplitterNode, WaveShaperNode (curve), IIRFilterNode (filtering +
 getFrequencyResponse), PannerNode (params/attribute checks; audio passes through unspatialized), AudioListener
