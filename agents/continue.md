@@ -143,6 +143,10 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 ## Runs
 (append here: RUN 199 ...)
 
+Phone check after runs 194-198 (APK 1034e4b): google/youtube/webgl/webgpu pass, no crash/ANR/tombstone, settled CPU
+0-3.7%, peak RSS 533 MB (youtube), WebGL 57.6 fps, WebGPU 23.7 fps; only the known YouTube EvalError and Polymer
+warnings.
+
 RUN 198: element/ShadowRoot/CharacterData stream{,Append,Prepend,Before,After,ReplaceWith}HTML(Unsafe)()
 (07k-sanitizer.js htmlStream): a WritableStream that buffers chunks and applies the matching method on close;
 Trusted Types/options checked at call time. /domparsing/ + template-element/ + /html/dom/partial-updates/:
