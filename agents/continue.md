@@ -143,6 +143,10 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 ## Runs
 (append here: RUN 191 ...)
 
+Phone check after runs 188-190 (APK 2c5bb00, srcset now picks by dpr): google/youtube/webgl/webgpu pass, no
+crash/ANR/tombstone, settled CPU 0.8-3.8%, peak RSS 549 MB (youtube, +15 MB vs before), WebGL 57.5 fps, WebGPU
+23.6 fps; logcat only known probe lines and the YouTube EvalError.
+
 RUN 190: srcset/sizes/<picture> source selection. `css_img_source()` (style.c) parses srcset (spec descriptor rules),
 evaluates sizes (media conditions via css_media_matches, lengths via css_parse_length; default 100vw) and <picture>
 <source> media/type, and picks the smallest density >= dpr (else the densest). main.c reads image sources through
