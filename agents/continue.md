@@ -143,6 +143,16 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 ## Runs
 (append here: RUN 226 ...)
 
+LEAD (memory, measured): every removed <iframe>/<frame> keeps its whole JsCtx (own V8 context + prelude,
+~2.8 MB each) until the parent page is freed: jsrun creating+removing 400 about:blank iframes grew RSS
+150 MB -> 1.27 GB, ~86 ms per frame. frame_kill() (frames.cc:60) only marks dead; js_free(kid) runs only from
+the parent's js_free (js.cc:1293). Freeing early is unsafe as-is: frames share the root isolate, node
+wrappers (n->js) are strong Globals, and the parent may still hold the frame's window/document/nodes.
+Design: at kill, make the dead frame's Globals weak (ctx, protos, fire/report/api/node_tmpl, node wrappers)
+with a weak callback on its global; when V8 collects it, js_free the frame at the next safe tick. Any native
+path that touches a dead ctx's handles must then tolerate empty handles. Matters for long-lived pages that
+rotate ad iframes.
+
 Phone check after run 225 (APK 250ff4a): google/youtube/webgl/webgpu pass, no crash/ANR/tombstone/new errors;
 last-10-s CPU 0.8-3.5%, peak RSS 553 MB (youtube), WebGL 57.3 fps, WebGPU 23.7 fps.
 
