@@ -180,6 +180,7 @@ static bool pe_tail_ok(const Compound *c) {
         } else if (x->kind == SK_PSEUDO) {
             if (pe == atom("part")) { if (in_list(x->name, structural)) return false; }
             else if (pe == atom("search-text")) { if (x->name != atom("current")) return false; }
+            else if (!strncmp(pe, "view-transition", 15)) { if (pe == atom("view-transition") || x->name != atom("only-child")) return false; }   /* the one Chrome allows, not on the root */
             else if (in_list(pe, no_classes)) return false;
             else if (in_list(pe, user_action_only) && !in_list(x->name, user_action) && x->name != atom("is") && x->name != atom("where") && x->name != atom("not") && !(pe == atom("selection") && x->name == atom("window-inactive"))) return false;
         } else return false;
@@ -194,6 +195,26 @@ static bool is_ident_arg(const char *v) {
 static bool pe_args_ok(const SimpleSel *x) {
     static const char *const dirs[] = { "*", "up", "down", "left", "right", "block-start", "block-end", "inline-start", "inline-end", NULL };
     if (x->name == atom("picker")) return x->value && str_ieq(x->value, "select");
+    if (x->name == atom("view-transition")) return !x->value;
+    if (x->name == atom("view-transition-group") || x->name == atom("view-transition-image-pair") || x->name == atom("view-transition-old") || x->name == atom("view-transition-new")) {
+        /* <pt-name-and-class-selector>: '*' or a <custom-ident>, then optional .classes, or only .classes */
+        static const char *const css_wide[] = { "default", "initial", "inherit", "unset", "revert", "revert-layer", NULL };
+        if (!x->value) return false;
+        char b[128]; const char *v = x->value; while (is_ws((unsigned char)*v)) v++;
+        size_t n = strlen(v); while (n && is_ws((unsigned char)v[n - 1])) n--;
+        if (!n || n >= sizeof b) return false;
+        memcpy(b, v, n); b[n] = 0;
+        char *dot = strchr(b, '.'), *rest = dot ? dot + 1 : NULL; if (dot) *dot = 0;
+        if (*b) {
+            if (strcmp(b, "*")) {
+                if (!is_ident_arg(b)) return false;
+                char lb[128]; size_t i = 0; for (; b[i]; i++) lb[i] = (char)lc(b[i]); lb[i] = 0;
+                if (in_list(lb, css_wide)) return false;
+            }
+        } else if (!rest) return false;
+        while (rest) { char *d = strchr(rest, '.'); if (d) *d = 0; if (!is_ident_arg(rest)) return false; rest = d ? d + 1 : NULL; }
+        return true;
+    }
     if (x->name == atom("highlight")) return x->value && (!strcmp(x->value, "*") || is_ident_arg(x->value));
     if (x->name == atom("scroll-button")) { if (!x->value) return false; char b[32]; size_t n = strlen(x->value); if (n >= sizeof b) return false; for (size_t i = 0; i <= n; i++) b[i] = (char)lc(x->value[i]); return in_list(b, dirs); }
     return true;

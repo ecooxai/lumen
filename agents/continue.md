@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **222**.
+  - Number the runs. The next run is **223**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -143,11 +143,12 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 ## Runs
 (append here: RUN 222 ...)
 
-Lead for 222: /css/css-view-transitions/parsing/pseudo-elements-invalid.html (0/675 stored). In jsrun,
-querySelector already throws for "::view-transition.a" and "::view-transition div", but accepts
-"::view-transition:hover" and "::view-transition-new(a.b)". Rerun the file first (the stored result may be old),
-then add the view-transition pseudo-elements to pe_tail_ok's no_classes and check their arguments in
-pe_args_ok (parse.c).
+RUN 222: view-transition pseudo-elements in selectors (parse.c pe_args_ok/pe_tail_ok): ::view-transition takes no
+argument; -group/-image-pair/-old/-new need '*' or a <custom-ident> (not default/CSS-wide) with optional .classes, or
+only .classes; the only pseudo-class allowed after them is :only-child, and not after the root ::view-transition.
+pseudo-elements-invalid 228 -> 675/675; /css/css-view-transitions/ about +450 net. In the 5-job selectors run,
+focus-visible-* and active-observable losses came back under 3 jobs (load-sensitive); has-complexity.html
+hard-times out as before.
 
 Phone check after run 221 (APK 9095c31): google/youtube/webgl/webgpu pass, no crash/ANR/tombstone/new errors;
 last-10-s CPU 0-3.3%, peak RSS 532 MB (youtube), WebGL 57.5 fps, WebGPU 23.3 fps.
