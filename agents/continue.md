@@ -242,6 +242,13 @@ CRASH seen once: free(): invalid pointer in node_free_tree <- js_free <- page_fr
 hashless-hex-color then percentage-height-calculation in one instance.
 RUN 256 (committed): MouseEvent/DragEvent/WheelEvent coordinates (and PointerEvent click/auxclick/contextmenu) are
 floored like Chrome: pointerevent_fractional_coordinates_untrusted 1032/1032, /pointerevents/ +767, /uievents/ +32.
+RUN 257 (committed): appearance keywords validated in mathValid; cookie strings with CTLs (not tab) ignored in
+cookies.c and the document.cookie setter: /cookies/ +474, appearance +150. Left: HTTP %x0/%xa/%xd name/value cases.
+RUN 258 (committed): media_feature range syntax picks the first operator by position, device-*/aspect-ratio/
+resolution/color in ranges, unitless rejected; computed -webkit-appearance -> appearance. test_media_queries
+1029 -> 1163/1349, appearance-cssom Invalid 300/300. Left in test_media_queries: zero-size viewport cases (the test
+uses 0x0 iframes), (aspect-ratio: 59/80) exact ratios, invalid values (device-aspect-ratio -1/1, color: 1.0,
+-3dpi, grid: 2, scan: 1), grammar (only (x), not not, mixed and/or).
 
 RUN 245: WebGL idlharness 2065 -> 2086/2099 (window and worker): FLOAT_MATnxm constants, interface .length, prototype
 getters throw, optional-argument defaults for bufferData/getBufferSubData/texImage3D lengths. +50, no losses. Left: setters

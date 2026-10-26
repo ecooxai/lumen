@@ -558,7 +558,7 @@ const styleHandler = {
     has(t, p) { return p in t || cssPropKnown(p); },
 };
 class ComputedStyleDeclaration extends CSSStyleDeclaration {
-    getPropertyValue(p) { if (waDirty) waFlush(); const k = camelToKebab(String(p)); if (k === 'font') return computedFont(this); let v = N.computed(this._el, k); if (trPoll()) v = N.computed(this._el, k); if ((k === 'shape-outside' || k === 'clip-path') && v && /(circle|ellipse)\(/i.test(v)) v = shapePos(v, shapeLenPx(this._el)); if ((k === 'shape-outside' || k === 'clip-path') && v && /inset\(/i.test(v)) v = insetNorm(v, shapeLenPx(this._el)); return v == null ? '' : v; }
+    getPropertyValue(p) { if (waDirty) waFlush(); let k = camelToKebab(String(p)); if (k === '-webkit-appearance') k = 'appearance'; if (k === 'font') return computedFont(this); let v = N.computed(this._el, k); if (trPoll()) v = N.computed(this._el, k); if ((k === 'shape-outside' || k === 'clip-path') && v && /(circle|ellipse)\(/i.test(v)) v = shapePos(v, shapeLenPx(this._el)); if ((k === 'shape-outside' || k === 'clip-path') && v && /inset\(/i.test(v)) v = insetNorm(v, shapeLenPx(this._el)); return v == null ? '' : v; }
     get cssText() { return ''; } get length() { return 0; }
     setProperty() { throw new DOMException('These styles are computed, and therefore read-only.', 'NoModificationAllowedError'); }
 }

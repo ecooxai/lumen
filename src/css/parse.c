@@ -527,13 +527,17 @@ static bool media_feature(const char *f, const MediaCtx *mc) {
     /* range syntax: (width >= 600px), (400px <= width <= 700px) */
     const char *ops[] = { ">=", "<=", ">", "<", "=" };
     if (!colon) {
-        for (int oi = 0; oi < 5; oi++) {
-            char *o = strstr(s, ops[oi]);
-            if (o) {
+        /* the first comparison operator by position: 0 >=, 1 <=, 2 >, 3 <, 4 = */
+        #define MQ_OP(str, at, idx) do { at = strpbrk(str, "<>="); idx = !at ? -1 : *at == '=' ? 4 : *at == '>' ? (at[1] == '=' ? 0 : 2) : (at[1] == '=' ? 1 : 3); } while (0)
+        char *o; int oi; MQ_OP(s, o, oi);
+        if (o) {
+            {
                 char lhs[128], rhs[128]; snprintf(lhs, sizeof lhs, "%.*s", (int)(o - s), s); snprintf(rhs, sizeof rhs, "%s", o + strlen(ops[oi]));
                 char *L = str_trim(lhs), *R = str_trim(rhs);
+                if (!*L || !*R || *R == '=' ) { g_mq_unknown = true; return false; }
                 /* handle double ranges */
-                char *o2 = NULL; int oi2 = -1; for (int k = 0; k < 4; k++) { o2 = strstr(R, ops[k]); if (o2) { oi2 = k; break; } }
+                char *o2; int oi2; MQ_OP(R, o2, oi2);
+                #undef MQ_OP
                 if (o2) {
                     bool lt1 = oi == 1 || oi == 3, lt2 = oi2 == 1 || oi2 == 3;
                     if (oi == 4 || oi2 == 4 || lt1 != lt2) { g_mq_unknown = true; return false; }   /* a < b > c, or = in a double range */
@@ -543,13 +547,31 @@ static bool media_feature(const char *f, const MediaCtx *mc) {
                 }
                 bool feat_left = isalpha((unsigned char)L[0]);
                 const char *feat = feat_left ? L : R; const char *val = feat_left ? R : L;
-                float fv = (!strcmp(feat, "width")) ? mc->vw : (!strcmp(feat, "height")) ? mc->vh : (!strcmp(feat, "aspect-ratio")) ? mc->vw / mc->vh : -1;
+                if (isalpha((unsigned char)val[0])) { g_mq_unknown = true; return false; }   /* a feature on both sides */
+                bool ratio = !strcmp(feat, "aspect-ratio") || !strcmp(feat, "device-aspect-ratio"), res = !strcmp(feat, "resolution"),
+                     num = !strcmp(feat, "color") || !strcmp(feat, "monochrome") || !strcmp(feat, "color-index");
+                float fv = (!strcmp(feat, "width") || !strcmp(feat, "device-width")) ? mc->vw : (!strcmp(feat, "height") || !strcmp(feat, "device-height")) ? mc->vh
+                         : ratio ? mc->vw / mc->vh : res ? mc->dpr : !strcmp(feat, "color") ? 8 : num ? 0 : -1;
                 if (fv < 0) { g_mq_unknown = true; return false; }
-                Length l; float v;
-                if (strchr(val, '/')) { float a = 0, b = 1; sscanf(val, "%f / %f", &a, &b); v = a / b; }
-                else if (css_parse_length(val, &l, em, em, mc)) v = l.px; else { g_mq_unknown = true; return false; }
+                Length l; float v; char *end;
+                if (ratio) {
+                    float a = strtof(val, &end), b = 1; while (*end == ' ') end++;
+                    if (end == val || a < 0) { g_mq_unknown = true; return false; }
+                    if (*end == '/') { char *e2; b = strtof(end + 1, &e2); if (e2 == end + 1 || b < 0) { g_mq_unknown = true; return false; } end = e2; }
+                    while (*end == ' ') end++;
+                    if (*end) { g_mq_unknown = true; return false; }
+                    v = b ? a / b : INFINITY;
+                } else if (res || num) {
+                    v = strtof(val, &end);
+                    if (end == val || (num && (*end || v != (int)v || v < 0))) { g_mq_unknown = true; return false; }
+                    if (res) { if (!strcmp(end, "dpi")) v /= 96.f; else if (!strcmp(end, "dpcm")) v *= 2.54f / 96.f; else if (strcmp(end, "dppx") && strcmp(end, "x")) { g_mq_unknown = true; return false; } }
+                } else {
+                    float n = strtof(val, &end); while (*end == ' ') end++;
+                    if ((end != val && !*end && n != 0) || !css_parse_length(val, &l, em, em, mc) || l.pctu) { g_mq_unknown = true; return false; }   /* unitless */
+                    v = l.px;
+                }
                 int op = oi; if (!feat_left) { if (op == 0) op = 1; else if (op == 1) op = 0; else if (op == 2) op = 3; else if (op == 3) op = 2; }
-                switch (op) { case 0: return fv >= v; case 1: return fv <= v; case 2: return fv > v; case 3: return fv < v; default: return fabsf(fv - v) < 0.5f; }
+                switch (op) { case 0: return fv >= v; case 1: return fv <= v; case 2: return fv > v; case 3: return fv < v; default: return fabsf(fv - v) < (ratio || res || num ? 1e-4f : 0.5f); }
             }
         }
         /* boolean context: features with a non-zero / non-none value here; unknown ones are false */
