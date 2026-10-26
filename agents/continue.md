@@ -143,6 +143,12 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 ## Runs
 (append here: RUN 222 ...)
 
+Lead for 222: /css/css-view-transitions/parsing/pseudo-elements-invalid.html (0/675 stored). In jsrun,
+querySelector already throws for "::view-transition.a" and "::view-transition div", but accepts
+"::view-transition:hover" and "::view-transition-new(a.b)". Rerun the file first (the stored result may be old),
+then add the view-transition pseudo-elements to pe_tail_ok's no_classes and check their arguments in
+pe_args_ok (parse.c).
+
 Phone check after run 221 (APK 9095c31): google/youtube/webgl/webgpu pass, no crash/ANR/tombstone/new errors;
 last-10-s CPU 0-3.3%, peak RSS 532 MB (youtube), WebGL 57.5 fps, WebGPU 23.3 fps.
 
