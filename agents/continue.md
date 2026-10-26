@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **223**.
+  - Number the runs. The next run is **224**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,14 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 222 ...)
+(append here: RUN 224 ...)
+
+RUN 223: font shorthand. Specified (03-element.js fontParts/specNormalize): drops normal parts and /normal, writes
+"size / line-height". Computed (computedFont): built from the computed longhands (stretch percentages back to
+keywords, '' when font-variant isn't normal/small-caps). Native apply_font (style.c) now sets font-stretch keywords
+and small-caps, resets both, and resolves bolder/lighter through the font-weight longhand (they were fixed
+700/300, and stretch keywords were taken as the size). /css/css-fonts/, cssom, cascade, css-text/parsing,
+css-inline: +739, none lost. Lead: system fonts (caption etc.) only set font-family.
 
 RUN 222: view-transition pseudo-elements in selectors (parse.c pe_args_ok/pe_tail_ok): ::view-transition takes no
 argument; -group/-image-pair/-old/-new need '*' or a <custom-ident> (not default/CSS-wide) with optional .classes, or

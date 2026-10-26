@@ -642,12 +642,15 @@ static void apply_font(ACtx *c, const char *v) {
     if (str_ieq(v, "caption") || str_ieq(v, "menu") || str_ieq(v, "message-box") || str_ieq(v, "status-bar") || str_ieq(v, "icon") || str_ieq(v, "small-caption")) { c->st->font_family = atom("system-ui"); return; }
     const char *p = v; char *t;
     c->st->font_style = 0; c->st->font_weight = 400; c->st->line_height_normal = true; c->st->line_height_factor = 0;
+    css_apply_decl(c->st, c->par, "font-stretch", "normal", c->e, c->el); css_apply_decl(c->st, c->par, "font-variant-caps", "normal", c->e, c->el);
     while ((t = next_token(&p))) {
         if (str_ieq(t, "italic") || str_ieq(t, "oblique")) c->st->font_style = 1;
         else if (str_ieq(t, "bold")) c->st->font_weight = 700;
-        else if (str_ieq(t, "bolder")) c->st->font_weight = 700;
-        else if (str_ieq(t, "lighter")) c->st->font_weight = 300;
-        else if (str_ieq(t, "normal") || str_ieq(t, "small-caps")) {}
+        else if (str_ieq(t, "bolder") || str_ieq(t, "lighter")) css_apply_decl(c->st, c->par, "font-weight", t, c->e, c->el);
+        else if (str_ieq(t, "small-caps")) css_apply_decl(c->st, c->par, "font-variant-caps", t, c->e, c->el);
+        else if (str_ieq(t, "ultra-condensed") || str_ieq(t, "extra-condensed") || str_ieq(t, "condensed") || str_ieq(t, "semi-condensed") ||
+                 str_ieq(t, "semi-expanded") || str_ieq(t, "expanded") || str_ieq(t, "extra-expanded") || str_ieq(t, "ultra-expanded")) css_apply_decl(c->st, c->par, "font-stretch", t, c->e, c->el);
+        else if (str_ieq(t, "normal")) {}
         else if (isdigit((unsigned char)t[0]) && !strpbrk(t, "%a-z/") && atoi(t) >= 100 && atoi(t) <= 1000 && strlen(t) == 3) c->st->font_weight = (int16_t)atoi(t);
         else {
             /* size[/lh] */

@@ -226,6 +226,41 @@ function mathValid(p, v) {
     }
     return true;
 }
+/* the font shorthand split into its parts: [style || variant || weight || stretch]? size [/ line-height]? family */
+const FONT_STRETCH_KW = /^(ultra-condensed|extra-condensed|condensed|semi-condensed|semi-expanded|expanded|extra-expanded|ultra-expanded)$/i;
+function fontParts(v) {
+    const w = tomSplitTop(v.replace(/\s*\/\s*/g, ' / '), ' ').map(x => x.trim()).filter(Boolean);
+    const r = { style: 'normal', variant: 'normal', weight: 'normal', stretch: 'normal', lh: 'normal' }; const seen = new SSet();
+    let i = 0, normals = 0;
+    for (; i < w.length && i < 4; i++) {
+        const k = w[i].toLowerCase(), set = (f, x) => { if (seen.has(f)) return false; seen.add(f); r[f] = x; return true; };
+        if (k === 'normal') { normals++; continue; }
+        if (/^(italic|oblique)$/.test(k)) { if (!set('style', k)) return null; continue; }
+        if (k === 'small-caps') { if (!set('variant', k)) return null; continue; }
+        if (/^(bold|bolder|lighter)$/.test(k) || (/^\d+(\.\d+)?$/.test(k) && +k >= 1 && +k <= 1000 && w[i + 1] && w[i + 1] !== '/')) { if (!set('weight', k)) return null; continue; }
+        if (FONT_STRETCH_KW.test(k)) { if (!set('stretch', k)) return null; continue; }
+        break;
+    }
+    if (normals + seen.size > 4 || i >= w.length) return null;
+    r.size = w[i++];
+    if (w[i] === '/') { r.lh = w[i + 1]; i += 2; if (!r.lh) return null; }
+    if (i >= w.length || w[i] === '/') return null;
+    r.family = w.slice(i).join(' ');
+    return r;
+}
+/* computed font shorthand from the computed longhands; '' when a longhand can't be written in the shorthand */
+const FONT_STRETCH_PCT = { 50: 'ultra-condensed', 62.5: 'extra-condensed', 75: 'condensed', 87.5: 'semi-condensed', 100: 'normal', 112.5: 'semi-expanded', 125: 'expanded', 150: 'extra-expanded', 200: 'ultra-expanded' };
+function computedFont(cs) {
+    const g = k => cs.getPropertyValue(k);
+    const size = g('font-size'), family = g('font-family');
+    if (!size || !family) return '';
+    let st = g('font-stretch') || 'normal';
+    if (/%$/.test(st)) { st = FONT_STRETCH_PCT[parseFloat(st)]; if (!st) return ''; }
+    const vr = g('font-variant-caps') || g('font-variant') || 'normal';
+    if (vr !== 'normal' && vr !== 'small-caps') return '';
+    const w = g('font-weight') || '400', lh = g('line-height') || 'normal';
+    return [g('font-style') || 'normal', vr, w === '400' ? 'normal' : w, st].filter(x => x !== 'normal').concat(lh === 'normal' ? size : `${size} / ${lh}`, family).join(' ');
+}
 function specNormalize(p, v) {
     if (/["'\\]|url\(|var\(|env\(|attr\(|#/i.test(v) || /timing-function$|^transition$|^animation$/.test(p)) return v;
     let t = v.trim().replace(/(^|[\s(,/*+-])([+-]?)(\d*\.\d+|\d+\.?)(e[+-]?\d+)?(?=[a-z%]*(?:$|[\s),/*]))/gi, (m, pre, sign, num, exp) => {
@@ -242,6 +277,7 @@ function specNormalize(p, v) {
     if (p === 'text-decoration-line') { const order = ['spelling-error', 'grammar-error', 'underline', 'overline', 'line-through', 'blink'], w = t.toLowerCase().split(' '); if (w.length > 1 && w.every(x => order.includes(x))) t = order.filter(x => w.includes(x)).join(' '); }
     if (p === 'grid-area' || p === 'grid-row' || p === 'grid-column') { const w = tomSplitTop(t, '/').map(x => x.trim()); if (w.length > 1 && w.every(x => x.toLowerCase() === 'auto')) t = 'auto'; }
     if (/\banchor(-size)?\(/i.test(t)) t = t.replace(/\b(anchor-size|anchor)\(\s*([^\s,()-][^\s,()]*)\s+(--[\w-]+)/gi, '$1($3 $2');   /* the name comes first */
+    if (p === 'font') { const f = fontParts(t); if (f) t = [f.style, f.variant, f.weight, f.stretch].filter(x => x !== 'normal').concat(f.lh === 'normal' ? f.size : `${f.size} / ${f.lh}`, f.family).join(' '); }
     if (SPEC_PAIR.has(p) || SPEC_BOX.has(p)) {
         const w = tomSplitTop(t, ' ').map(x => x.trim()).filter(Boolean);
         if (SPEC_PAIR.has(p) && w.length === 2 && w[0] === w[1] && !/^(first|last|safe|unsafe|legacy)$/.test(w[0])) t = w[0];
@@ -349,7 +385,7 @@ const styleHandler = {
     has(t, p) { return p in t || cssPropKnown(p); },
 };
 class ComputedStyleDeclaration extends CSSStyleDeclaration {
-    getPropertyValue(p) { if (waDirty) waFlush(); const k = camelToKebab(String(p)); let v = N.computed(this._el, k); if (trPoll()) v = N.computed(this._el, k); return v == null ? '' : v; }
+    getPropertyValue(p) { if (waDirty) waFlush(); const k = camelToKebab(String(p)); if (k === 'font') return computedFont(this); let v = N.computed(this._el, k); if (trPoll()) v = N.computed(this._el, k); return v == null ? '' : v; }
     get cssText() { return ''; } get length() { return 0; }
     setProperty() { throw new DOMException('These styles are computed, and therefore read-only.', 'NoModificationAllowedError'); }
 }
