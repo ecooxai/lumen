@@ -143,6 +143,9 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 ## Runs
 (append here: RUN 224 ...)
 
+Phone check after run 223 (APK dff6f5a): google/youtube/webgl/webgpu pass, no crash/ANR/tombstone/new errors;
+last-10-s CPU 0.9-3.3%, peak RSS 553 MB (youtube), WebGL 57.7 fps, WebGPU 23.8 fps.
+
 RUN 223: font shorthand. Specified (03-element.js fontParts/specNormalize): drops normal parts and /normal, writes
 "size / line-height". Computed (computedFont): built from the computed longhands (stretch percentages back to
 keywords, '' when font-variant isn't normal/small-caps). Native apply_font (style.c) now sets font-stretch keywords
