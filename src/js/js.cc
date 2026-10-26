@@ -1702,6 +1702,12 @@ void js_tick(JsCtx *c) {
     frames_scan(c);
     for (JsCtx *k : std::vector<JsCtx *>(c->kids)) if (!k->dead) js_tick(k);
     frames_load_check(c);
+    /* removed frames that never shared objects with another context are freed once their loads settled, not with their tab */
+    double now = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
+    for (JsCtx *k : std::vector<JsCtx *>(c->kids)) if (k->dead && k->dead_at && now - k->dead_at > 10) {
+        if (getenv("LUMEN_DEBUG_FRAMES")) fprintf(stderr, "lumen: frame %u removed %.0f s ago, %s\n", k->id, now - k->dead_at, k->xref ? "kept (shared objects)" : "freed");
+        if (k->xref) k->dead_at = 0; else js_free(k);
+    }
 }
 #if defined(__ANDROID__) && !defined(NDEBUG)
 #include <android/log.h>

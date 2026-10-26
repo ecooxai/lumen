@@ -176,7 +176,26 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
   - No image sharing.
 
 ## Runs
-(append here: RUN 246 ...)
+(append here: RUN 248 ...)
+
+RUN 246: HTML dimension attributes parsed per spec (html_dimension() in style.c: digits, fraction, '%', ignoring zero
+for td/th and table width; hspace/vspace margins; marquee and input type=image). dimension-attributes 907 -> 1444/1720,
+run total +410; embedded-content OK->TIMEOUT changes were load flakes (top losers equal alone). Left there: percentage
+margins resolve to px in getComputedStyle, "0px" width on video/input reads back auto/150px, <source> in <picture>.
+UNCOMMITTED (RUN 247, in progress): free removed iframes. Dead frame JsCtx were only freed with their tab (iframe churn
+grows RSS ~11 MB/s, svg-in-iframe/pixel-length-attributes reach 1.3-1.4 GB). Now js_tick frees a dead kid 10 s after
+frame_kill (dead_at) unless xref (set by xref_mark in win_for same-origin, n_frameDoc, n_frameEl, same-isolate
+postMessage with ports; marks both ancestor chains) because doc_free ignores refcounts and other contexts may hold its
+objects. Churn probe /mnt/p3/project/browser/wpt/_lumen_tmp/iframe-churn.html (temporary; delete when done) timed out
+before settling on both builds, so the effect is unproven; LUMEN_DEBUG_FRAMES=1 prints freed/kept per frame. Run 247
+(--jobs 4, heavily loaded) -61, top losers flaky alone; check open-features-tokenization-noopener/noreferrer (-1 each)
+and url-fragment.window.html stack overflow alone before committing.
+RUN 248 (committed): those three suspects match the old binary alone (not regressions). Churn probe (120 srcdoc
+iframes) with LUMEN_DEBUG_FRAMES=1: 120 kept (shared objects), 0 freed, so frame freeing is still inert. Next: find
+what calls xref_mark for a plain srcdoc iframe (add a reason string to xref_mark under LUMEN_DEBUG_FRAMES; suspects:
+testharness iterating window.frames -> n_frameAt -> win_for, or the child prelude reading parent/top at startup) and
+make read-only window lookups like frames[i] not count unless the object escapes. wpt_one only prints log lines on
+error; /tmp/churn_full.py captures full stderr.
 
 RUN 245: WebGL idlharness 2065 -> 2086/2099 (window and worker): FLOAT_MATnxm constants, interface .length, prototype
 getters throw, optional-argument defaults for bufferData/getBufferSubData/texImage3D lengths. +50, no losses. Left: setters

@@ -38,10 +38,16 @@ static bool same_origin(JsCtx *a, JsCtx *b) { return a == b || ctx_origin_key(a)
 /* t as v sees it: its global when they share an isolate and origin, else a number for asWin, a tab's
    top context being -its window id (tabs have isolates of their own) */
 static double remote_id(JsCtx *t) { return !t->parent && t->wid ? -(double)t->wid : (double)t->id; }
+/* a and b now hold each other's objects, so a removed frame among them (or above them) can't be freed early */
+static void xref_mark(JsCtx *a, JsCtx *b) {
+    if (a == b) return;
+    for (JsCtx *x = a; x && !x->xref; x = x->parent) x->xref = true;
+    for (JsCtx *x = b; x && !x->xref; x = x->parent) x->xref = true;
+}
 static v8::Local<v8::Value> win_for(JsCtx *v, JsCtx *t) {
     v8::Isolate *iso = v->iso;
     if (!t || t->dead || t->ctx.IsEmpty()) return v8::Null(iso);
-    if (t->iso == v->iso && same_origin(v, t)) return t->ctx.Get(iso)->Global();
+    if (t->iso == v->iso && same_origin(v, t)) { xref_mark(v, t); return t->ctx.Get(iso)->Global(); }
     return v8::Number::New(iso, t->iso == v->iso ? t->id : remote_id(t));
 }
 static JsCtx *root_of(JsCtx *c) { while (c->parent) c = c->parent; return c; }
@@ -60,6 +66,7 @@ Document *js_frame_doc(Node *f) { JsCtx *k = js_frame_ctx(f); return k ? k->doc 
 void frame_kill(JsCtx *k) {
     if (k->dead) return;
     k->dead = true;
+    k->dead_at = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
     for (JsCtx *g : k->kids) frame_kill(g);
     for (auto &kv : k->fetches) { net_cancel(kv.first); kv.second->c = nullptr; kv.second->cb.Reset(); kv.second->head.Reset(); kv.second->chunk.Reset(); }
     k->fetches.clear(); for (auto &kv : k->sockets) { net_ws_release(kv.second->ws); kv.second->cb.Reset(); delete kv.second; } k->sockets.clear();
@@ -333,11 +340,11 @@ static JsCtx *ensure_frame(Node *f) {
 static void n_frameWin(const FCI &a) { FCTX; Node *f = junwrap(a[0]); if (f) a.GetReturnValue().Set(win_for(c, ensure_frame(f))); else a.GetReturnValue().SetNull(); }
 static void n_frameDoc(const FCI &a) {
     FCTX; Node *f = junwrap(a[0]); JsCtx *k = f ? ensure_frame(f) : nullptr;
-    if (k && same_origin(c, k)) a.GetReturnValue().Set(jwrap(k, &k->doc->node)); else a.GetReturnValue().SetNull();
+    if (k && same_origin(c, k)) { xref_mark(c, k); a.GetReturnValue().Set(jwrap(k, &k->doc->node)); } else a.GetReturnValue().SetNull();
 }
 static void n_parentWin(const FCI &a) { FCTX; if (c->parent) a.GetReturnValue().Set(win_for(c, c->parent)); else a.GetReturnValue().SetNull(); }
 static void n_topWin(const FCI &a) { FCTX; if (c->parent) a.GetReturnValue().Set(win_for(c, root_of(c))); else a.GetReturnValue().SetNull(); }
-static void n_frameEl(const FCI &a) { FCTX; if (c->parent && same_origin(c, c->parent)) a.GetReturnValue().Set(jwrap(c->parent, c->frame_el)); else a.GetReturnValue().SetNull(); }
+static void n_frameEl(const FCI &a) { FCTX; if (c->parent && same_origin(c, c->parent)) { xref_mark(c, c->parent); a.GetReturnValue().Set(jwrap(c->parent, c->frame_el)); } else a.GetReturnValue().SetNull(); }
 static int live_kids(JsCtx *c) { int n = 0; for (JsCtx *k : c->kids) n += !k->dead; return n; }
 static void n_frameCount(const FCI &a) { FCTX; frames_scan(c); a.GetReturnValue().Set(live_kids(c)); }
 static void n_frameAt(const FCI &a) {
@@ -429,6 +436,7 @@ static void n_postTo(const FCI &a) {
         return;
     }
     {
+        if (a[3]->IsArray() && a[3].As<v8::Array>()->Length()) xref_mark(c, t);   /* transferred ports are shared objects */
         v8::Local<v8::Context> tc = t->ctx.Get(iso);
         v8::Context::Scope cs(tc);
         v8::ValueDeserializer des(iso, buf.first, buf.second);

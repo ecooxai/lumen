@@ -3,6 +3,7 @@
 #include <v8.h>
 #include <libplatform/libplatform.h>
 #include <atomic>
+#include <chrono>
 #include <cmath>
 #include <condition_variable>
 #include <map>
@@ -145,6 +146,8 @@ struct JsCtx {
     bool dead = false;
     bool load_deferred = false;       /* its window load waits for its frames (HTML's "delay the load event") */
     bool load_synced = false;         /* laid out once before load, so its web fonts are requested */
+    bool xref = false;                /* it or a descendant shared objects with another context: never freed before its tab */
+    double dead_at = 0;               /* steady-clock seconds when it was removed; freed 10 s later (loads settled) */
     bool el_load = false;             /* a frame: its <iframe> gets a load event after its window's */
     uint64_t frame_scan_ver = ~0ull;
     void *host_ud = nullptr;          /* child host data returned by frame_open */

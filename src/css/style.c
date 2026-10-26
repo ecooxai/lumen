@@ -2995,6 +2995,18 @@ static MDecl *matched_decls(StyleEngine *e, Node *el, int pseudo, int *count, bo
     return md.v;
 }
 
+/* HTML's rules for parsing dimension values: leading whitespace, digits, an optional fraction, then '%' right after
+   for a percentage; anything else ends the number. Without zero_ok a zero value is ignored (td/th, table width). */
+static bool html_dimension(const char *v, bool zero_ok, char *out, size_t n) {
+    while (*v == ' ' || *v == '\t' || *v == '\n' || *v == '\f' || *v == '\r') v++;
+    if (*v < '0' || *v > '9') return false;
+    double x = 0;
+    for (; *v >= '0' && *v <= '9'; v++) x = x * 10 + (*v - '0');
+    if (*v == '.') { v++; for (double f = 0.1; *v >= '0' && *v <= '9'; v++, f /= 10) x += (*v - '0') * f; }
+    if (!zero_ok && x == 0) return false;
+    snprintf(out, n, "%.10g%s", x, *v == '%' ? "%" : "px");
+    return true;
+}
 static void presentational_hints(ComputedStyle *st, const ComputedStyle *par, Node *el, StyleEngine *e) {
     if (el->ns != NS_HTML) {
         if (el->ns == NS_SVG) {
@@ -3007,11 +3019,17 @@ static void presentational_hints(ComputedStyle *st, const ComputedStyle *par, No
         return;
     }
     const char *v;
-    if ((v = node_attr_atom(el, A_width)) && (el->tag == A_img || el->tag == A_video || el->tag == A_canvas || el->tag == A_iframe || el->tag == A_table || el->tag == A_td || el->tag == A_th || el->tag == A_embed || el->tag == A_object || el->tag == A_hr || el->tag == A_col)) {
-        char buf[64]; snprintf(buf, sizeof buf, "%s%s", v, strpbrk(v, "%px") ? "" : "px"); css_apply_decl(st, par, "width", buf, e, el);
-    }
-    if ((v = node_attr_atom(el, A_height)) && (el->tag == A_img || el->tag == A_video || el->tag == A_canvas || el->tag == A_iframe || el->tag == A_table || el->tag == A_td || el->tag == A_tr || el->tag == A_embed || el->tag == A_object)) {
-        char buf[64]; snprintf(buf, sizeof buf, "%s%s", v, strpbrk(v, "%px") ? "" : "px"); css_apply_decl(st, par, "height", buf, e, el);
+    char dim[48];
+    bool marquee = el->tag && !strcmp(el->tag, "marquee"), imgin = el->tag == A_input && (v = node_attr(el, "type")) && !strcasecmp(v, "image");
+    bool replaced = el->tag == A_img || el->tag == A_video || el->tag == A_canvas || el->tag == A_iframe || el->tag == A_embed || el->tag == A_object || marquee || imgin;
+    bool cell = el->tag == A_td || el->tag == A_th;
+    if ((v = node_attr_atom(el, A_width)) && (replaced || cell || el->tag == A_table || el->tag == A_hr || el->tag == A_col) && html_dimension(v, !cell && el->tag != A_table, dim, sizeof dim))
+        css_apply_decl(st, par, "width", dim, e, el);
+    if ((v = node_attr_atom(el, A_height)) && (replaced || cell || el->tag == A_table || el->tag == A_tr) && html_dimension(v, !cell, dim, sizeof dim))
+        css_apply_decl(st, par, "height", dim, e, el);
+    if (el->tag == A_img || el->tag == A_embed || el->tag == A_object || marquee || imgin) {
+        if ((v = node_attr(el, "hspace")) && html_dimension(v, true, dim, sizeof dim)) { css_apply_decl(st, par, "margin-left", dim, e, el); css_apply_decl(st, par, "margin-right", dim, e, el); }
+        if ((v = node_attr(el, "vspace")) && html_dimension(v, true, dim, sizeof dim)) { css_apply_decl(st, par, "margin-top", dim, e, el); css_apply_decl(st, par, "margin-bottom", dim, e, el); }
     }
     if ((v = node_attr_atom(el, A_bgcolor))) css_apply_decl(st, par, "background-color", v, e, el);
     if (el->tag == A_font) { if ((v = node_attr_atom(el, A_color))) css_apply_decl(st, par, "color", v, e, el); if ((v = node_attr_atom(el, A_face))) css_apply_decl(st, par, "font-family", v, e, el); if ((v = node_attr_atom(el, A_size))) { static const char *sz[] = { "x-small", "x-small", "small", "medium", "large", "x-large", "xx-large", "xxx-large" }; int s = atoi(v); if (v[0] == '+' || v[0] == '-') s += 3; css_apply_decl(st, par, "font-size", sz[LCLAMP(s, 1, 7)], e, el); } }
