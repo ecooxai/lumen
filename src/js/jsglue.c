@@ -231,6 +231,29 @@ bool jsg_scroll(Node *n, float r[4]) {
     return true;
 }
 
+/* furthest right/bottom border edge of in-flow and absolute descendants; a scroller or clipping box counts with its
+   own border box only */
+static void overflow_ext(const Box *b, float *mx, float *my) {
+    for (const Box *c = b->first; c; c = c->next) {
+        if (c->fixed) continue;
+        if (c->kind != BX_TEXT && c->w > 0 && c->h > 0) { *mx = LMAX(*mx, c->x + c->w); *my = LMAX(*my, c->y + c->h); }
+        bool clip = c->scroller || (c->st && (c->st->overflow_x != OV_VISIBLE || c->st->overflow_y != OV_VISIBLE));
+        if (!clip) overflow_ext(c, mx, my);
+    }
+}
+
+/* scrollWidth/Height of a box that is not a scroll container: its padding box grown by overflowing descendants */
+bool jsg_overflow_size(Node *n, float r[2]) {
+    struct Box *b = n->box;
+    if (!b || (b->st && b->st->display == D_INLINE)) return false;
+    float ox = b->x + b->b[3], oy = b->y + b->b[0];
+    float pw = b->w - b->b[1] - b->b[3], ph = b->h - b->b[0] - b->b[2];
+    float mx = ox + pw, my = oy + ph;
+    overflow_ext(b, &mx, &my);
+    r[0] = LMAX(pw, mx - ox); r[1] = LMAX(ph, my - oy);
+    return true;
+}
+
 bool jsg_set_scroll(Node *n, float x, float y) {
     struct Box *b = n->box;
     if (!b || !b->scroller) return false;

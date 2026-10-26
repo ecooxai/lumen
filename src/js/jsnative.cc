@@ -541,6 +541,14 @@ FN(borders) {
     (void)o->Set(ctx, 4, v8::Boolean::New(iso, inl));
     RET(o);
 }
+/* overflowSize(node) -> [w, h] padding box grown by overflowing descendants, or null (no box, inline) */
+FN(overflowSize) {
+    CTX; ARGN(n, 0); float r[2];
+    if (c->host.sync) c->host.sync(c->host.ud, c->doc, true);
+    if (!jsg_overflow_size(n, r)) { RET(v8::Null(iso)); return; }
+    v8::Local<v8::Value> v[2] = { v8::Number::New(iso, r[0]), v8::Number::New(iso, r[1]) };
+    RET(v8::Array::New(iso, v, 2));
+}
 FN(scrollPos) {
     CTX; ARGN(n, 0); float r[4];
     if (c->host.sync) c->host.sync(c->host.ud, c->doc, true);
@@ -1497,7 +1505,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(create); REG(textNode); REG(comment); REG(frag); REG(html); REG(setHTML); REG(parseFrag); REG(query);
     REG(matches); REG(byId); REG(clone); REG(doc); REG(contains); REG(connected); REG(host); REG(setRealm); REG(realmOf); REG(attachShadow);
     REG(shadowOf); REG(srFlags); REG(srSetFlags); REG(srRef); REG(getHTML); REG(parseFragEx); REG(parseDocEx);
-    REG(templateContent); REG(tplHost); REG(rect); REG(textRects); REG(vrect); REG(clipSet); REG(clipGet); REG(clipImage); REG(borders); REG(scrollPos); REG(setScroll); REG(computed); REG(trTake); REG(setAnimStyle); REG(value); REG(setValue); REG(ctlSel); REG(setCtlSel); REG(checked); REG(setChecked); REG(pickFiles);
+    REG(templateContent); REG(tplHost); REG(rect); REG(textRects); REG(vrect); REG(clipSet); REG(clipGet); REG(clipImage); REG(borders); REG(overflowSize); REG(scrollPos); REG(setScroll); REG(computed); REG(trTake); REG(setAnimStyle); REG(value); REG(setValue); REG(ctlSel); REG(setCtlSel); REG(checked); REG(setChecked); REG(pickFiles);
     REG(modal); REG(popover); REG(fullscreen); REG(focus); REG(active); REG(cookie); REG(setCookie); REG(url); REG(docBase); REG(setUrl); REG(navigate); REG(navigatePost); REG(histGo);
     REG(histLen); REG(internal); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
     REG(abort); REG(fetchPause); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(mediaOpenBytes); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove);

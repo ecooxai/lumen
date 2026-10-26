@@ -176,7 +176,14 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
   - No image sharing.
 
 ## Runs
-(append here: RUN 240 ...)
+(append here: RUN 241 ...)
+
+RUN 240: scrollWidth/Height of non-scroll-containers now include overflowing descendants (`N.overflowSize`,
+jsg_overflow_size: furthest descendant border edge from the padding edge, clipping boxes count as their border box).
++63 (cssom-view +42, css-position +10, css-overflow +10). To fix next: text-as-flexitem-size-001 -5 (item div with
+<p>s measures 39 instead of 70; check whether the test reads scrollWidth) and
+scrollable-overflow-relative-positioned-block-in-inline -1 (705 vs 405: relpos offset counted twice in overflow_ext).
+Scroll containers still report scroll_w from layout (negative-margin-002 scroll cases 154 vs 216).
 
 RUN 236-239: `minmax(auto, len)` columns (parsed with min kind LK_MIN_CONTENT) size to at least the items'
 `grid_item_auto_min()` (auto/percent width without min-width: min-content clamped to len minus margins; else min-content
