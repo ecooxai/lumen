@@ -200,7 +200,7 @@ static bool attr_match(const SimpleSel *s, Node *el) {
     if (!v) return false;
     if (!s->op) return true;
     const char *w = s->value; size_t wl = strlen(w), vl = strlen(v);
-    bool ci = s->ci == 1 || (!s->ci && el->ns == NS_HTML && html_ci_attr(s->name));
+    bool ci = s->ci == 1 || (!s->ci && el->ns == NS_HTML && el->doc && el->doc->node.ns == NS_HTML && html_ci_attr(s->name));   /* HTML documents only */
     int (*cmp)(const char *, const char *, size_t) = ci ? (int (*)(const char *, const char *, size_t))strncasecmp : strncmp;
     switch (s->op) {
     case '=': return vl == wl && !cmp(v, w, wl);

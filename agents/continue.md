@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **218**.
+  - Number the runs. The next run is **219**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,17 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 218 ...)
+(append here: RUN 219 ...)
+
+RUN 218: (1) selectors: the legacy case-insensitive attribute values (accept, type, ...) only for HTML elements in
+HTML documents (select.c match), case-sensitivity/values.window.html. (2) text controls: with no stored selection
+selGet gives 0,0 (was the end; a cloned or untouched control starts at 0, a script value change still moves it to
+the end); form reset puts the caret at the end of the restored value. select-event.html 180 -> 270/270. Over
+/html/semantics/forms/, selectors, /css/selectors/, /dom/nodes/, /editing/other/, /input-events/, /selection/: +280,
+-233 in the batch, almost all load timeouts; rerun alone the rest were form-submission files (filename/\r tests,
+unrelated) and the designMode typing-around-link timeouts (known). Lead: two instances hit a recovered SIGSEGV in
+v8 GlobalHandles::NodeSpace::Release while moving to the next test (after click-user-gesture.html and
+show-picker-does-not-focus.html in the-input-element/): a global handle released twice or after free.
 
 Tried after 217 (reverted): making a child frame's load wait for its images (h_load_blocked on any frame of the
 loading page, js_load_recheck recursing into kids). hash-name-reference.html stayed at 84 in a batch: a frame's

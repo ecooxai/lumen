@@ -705,8 +705,8 @@ methods(H.HTMLFormElement.prototype, {
 });
 function resetControl(e) {
     switch (N.name(e)) {
-    case 'input': N.setValue(e, null); checkDirty.delete(e); N.setChecked(e, N.attr(e, 'checked') != null); if (e._files) def(e, '_files', null); selStore.delete(e); break;
-    case 'textarea': N.setValue(e, null); selStore.delete(e); break;
+    case 'input': N.setValue(e, null); checkDirty.delete(e); N.setChecked(e, N.attr(e, 'checked') != null); if (e._files) def(e, '_files', null); { const n = String(e.value ?? '').length; selStore.set(e, [n, n, 'none']); } break;
+    case 'textarea': { N.setValue(e, null); const n = e.value.length; selStore.set(e, [n, n, 'none']); break; }
     case 'select': for (const o of optionList(e)) { optDirty.delete(o); setSelected(o, N.attr(o, 'selected') != null); } break;
     case 'output': e.textContent = e.defaultValue; outputDefault.delete(e); break;
     }

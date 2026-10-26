@@ -298,7 +298,7 @@ const selGet = el => {
         return [s, e, f < a ? 'backward' : 'forward'];
     }
     if (st) return [Math.min(st[0], n), Math.min(st[1], n), st[2]];
-    return [n, n, 'none'];
+    return [0, 0, 'none'];   /* untouched (or cloned) controls start at 0; a script value change moves it to the end */
 };
 const selSet = (el, s, e, dir, quiet) => {
     const v = el.value, n = v.length;
