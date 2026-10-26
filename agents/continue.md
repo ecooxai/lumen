@@ -196,6 +196,11 @@ what calls xref_mark for a plain srcdoc iframe (add a reason string to xref_mark
 testharness iterating window.frames -> n_frameAt -> win_for, or the child prelude reading parent/top at startup) and
 make read-only window lookups like frames[i] not count unless the object escapes. wpt_one only prints log lines on
 error; /tmp/churn_full.py captures full stderr.
+RUN 249: the marker is prelude 02-node.js topLiveSets() (called from insertChecked on every insertion): N.topWin()
+-> win_for marks every same-origin frame shared. Fix next: add a native (e.g. N.xrefd(), returning c->xref) and call
+N.topWin() in topLiveSets only when the frame already shares objects (its own sets are complete until then; linkLiveSets
+merges once shared). Then rerun the churn probe (expect "freed" lines and flat RSS) and a frames/dom/ranges WPT run.
+LUMEN_DEBUG_FRAMES=1 now also prints the reason and the JS stack for window shares.
 
 RUN 245: WebGL idlharness 2065 -> 2086/2099 (window and worker): FLOAT_MATnxm constants, interface .length, prototype
 getters throw, optional-argument defaults for bufferData/getBufferSubData/texImage3D lengths. +50, no losses. Left: setters
