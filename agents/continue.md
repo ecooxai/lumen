@@ -183,6 +183,14 @@ RUN 236-239: `minmax(auto, len)` columns (parsed with min kind LK_MIN_CONTENT) s
 contribution), also in the inline-grid intrinsic width (single-column grids only). gap/row-gap/column-gap reject
 angle and time values (alen takes them). grid-items-minimum-width-* +176, css-align +265, no losses.
 Remaining gap-parsing failures: negative gaps, 3 values, slash, inherit.
+Whole-suite report after 239: 82.3% per-test score (Chrome 96.3%); Lumen of Chrome-passing 2,006,956/2,141,897 (93.7%).
+Biggest single gaps (gaps.json): /webgl/idlharness.any.worker.html 2,091 (window version passes 2,065/2,099; worker
+prelude in src/js/worker.cc kWorkerPrelude has no WebGL classes; 07g-webgl.js uses N.gl 213x, HTMLCanvas/Image/Video
+only in texImage source checks, so it could become a src/js/shared/ file with N.gl installed in workers, or at least
+the interface objects), css-anchor-position writing-modes-001 1,296, svg pointer-events-fill-stroke-hittest 1,242,
+html/dom idlharness 980+552, html/rendering/dimension-attributes 813, pointerevent_fractional_coordinates_untrusted 798,
+calc-size interpolation 690+494, css-gaps rule-inset interpolation 600+600, scrollWidthHeight-negative-margin-002 496,
+all-prop-initial-xml 488. By directory: css-grid 10,705, html/semantics 5,186, css-values 5,183, editing/other 4,391.
 
 Debug tool: `python3 tools/codex_compile.py python3 tests/wpt/wpt_one.py URL...` runs single tests offscreen against the
 running `wpt serve` and prints full assertion messages (check-layout outerHTML stripped) plus CPU/RSS. Scratch pages
