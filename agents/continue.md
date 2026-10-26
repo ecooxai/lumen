@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **225**.
+  - Number the runs. The next run is **226**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,14 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 225 ...)
+(append here: RUN 226 ...)
+
+RUN 225: <frame> elements get a browsing context like <iframe> (frames.cc is_iframe, dom.c frame_version bumps)
+and HTMLFrameElement has contentWindow/contentDocument. pixel-length-attributes.html no longer errors;
+/html/rendering/ +604 net, none lost after a 2-job rerun of the batch losses (svg-in-iframe sizing, fieldset,
+table attrs: load). Note: that 2-job rerun peaked at 1.65 GB RSS in one process (pixel-length-attributes makes
+hundreds of iframes); in the 4-job batch three instances rose to 1.1-1.5 GB together for ~2 min, then fell back.
+Lead: frame-heavy tests' memory use; window.open/opener tests in /html/browsers/windows/ hard-time out (11).
 
 RUN 224: style.setProperty/CSS.supports reject an invalid gradient <color-interpolation-method> (03-element.js
 gradInterpValid, called from mathValid): "in <space> [<hue> hue]" only at the start or end of the first argument,

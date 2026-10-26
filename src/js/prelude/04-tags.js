@@ -517,7 +517,7 @@ mk('HTMLDataListElement', HTMLElement, ['datalist'], p => methods(p, { get optio
 mk('HTMLModElement', HTMLElement, ['ins', 'del'], p => { reflectUrl(p, 'cite'); reflectStr(p, 'dateTime'); });
 mk('HTMLDirectoryElement', HTMLElement, ['dir'], p => reflectBool(p, 'compact'));
 mk('HTMLFontElement', HTMLElement, ['font'], p => reflectStr(p, 'color', 'face', 'size'));
-mk('HTMLFrameElement', HTMLElement, ['frame'], p => { reflectStr(p, 'name', 'scrolling', 'frameBorder', 'marginHeight', 'marginWidth'); reflectUrl(p, 'src', 'longDesc'); reflectBool(p, 'noResize'); });
+mk('HTMLFrameElement', HTMLElement, ['frame'], p => { reflectStr(p, 'name', 'scrolling', 'frameBorder', 'marginHeight', 'marginWidth'); reflectUrl(p, 'src', 'longDesc'); reflectBool(p, 'noResize'); methods(p, { get contentWindow() { return asWin(N.frameWin(this)); }, get contentDocument() { return N.frameDoc(this); } }); });
 mk('HTMLOptGroupElement', HTMLElement, ['optgroup'], p => { reflectBool(p, 'disabled'); reflectStr(p, 'label'); });
 mk('HTMLLegendElement', HTMLElement, ['legend'], p => {
     reflectStr(p, 'align');

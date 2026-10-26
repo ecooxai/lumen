@@ -255,7 +255,7 @@ static void record_tree_change(Document *d, Node *n) {
     if (!d) return;
     if (n == d->focus) d->tree_focus_changed = true;
     if (n->type == NODE_ELEMENT) {
-        if (n->tag == A_iframe && n->ns == NS_HTML) d->frame_version++;
+        if ((n->tag == A_iframe || n->tag == A_frame) && n->ns == NS_HTML) d->frame_version++;
         tree_change_key(d, atom_lower(n->tag, strlen(n->tag)));
         tree_change_key(d, n->id);
         for (int i = 0; i < n->nclasses; i++) tree_change_key(d, n->classes[i]);
@@ -429,7 +429,7 @@ static bool class_value_contains(const char *value, const char *key) {
 static void record_selector_attribute(Node *n, const char *name, const char *value) {
     if (!n->doc || !is_connected(n)) return;
     Document *d = n->doc;
-    if (n->tag == A_iframe && n->ns == NS_HTML && (str_ieq(name, "src") || str_ieq(name, "srcdoc"))) d->frame_version++;
+    if ((n->tag == A_iframe || n->tag == A_frame) && n->ns == NS_HTML && (str_ieq(name, "src") || str_ieq(name, "srcdoc"))) d->frame_version++;
     /* node_attribute_style_changed marks these subjects by candidate; their
      * keys must not widen the descendant reselect of unrelated changes. */
     bool precise = d->stylesheets && n->ns == NS_HTML && (css_selector_only_attribute(name) || href_value_edit(n, name, !value || attr_index(n, name) < 0));

@@ -294,7 +294,7 @@ bool js_navigate_target(JsCtx *c, const char *target, const char *url, const cha
     return true;
 }
 
-static bool is_iframe(Node *n) { return n->type == NODE_ELEMENT && n->ns == NS_HTML && n->tag == A_iframe; }
+static bool is_iframe(Node *n) { return n->type == NODE_ELEMENT && n->ns == NS_HTML && (n->tag == A_iframe || n->tag == A_frame); }
 static void collect_iframes(Node *root, std::vector<Node *> &out) {
     for (Node *n = root; n; n = node_next_in_tree(n, root)) {
         if (is_iframe(n) && !js_frame_ctx(n)) out.push_back(n);
