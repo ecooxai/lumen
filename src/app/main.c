@@ -78,6 +78,10 @@ static char g_toast[256]; static double g_toast_until;   /* a short confirmation
    the window and ends in minimize / maximize / close (LUMEN_WM_FRAME=1 keeps the system frame) */
 static bool g_frameless;
 #define WCW (g_frameless ? 138.f : 0.f)
+/* the desktop's tab strip, toolbar row and workspace sidebar share one colour; Android keeps its own */
+#define CHROME_BG (ANDROID_UI ? RGBA(250, 250, 250, 255) : RGBA(236, 238, 241, 255))
+#define CHROME_LINE (ANDROID_UI ? RGBA(226, 226, 226, 255) : RGBA(214, 217, 222, 255))
+#define CHROME_HOVER (ANDROID_UI ? RGBA(232, 232, 232, 255) : RGBA(222, 225, 230, 255))
 #define SIDEW 52.f   /* the workspace sidebar's default width: its icons; dragging its right edge resizes it (saved as sidebar_w) */
 static float g_side_w = SIDEW; static bool g_side_drag;
 #define SIDEY (g_compact ? TB : TABH)
@@ -1589,15 +1593,15 @@ static void build_chrome(App *a) {
     DisplayList *dl = &a->cdl; dl_clear(dl);
     if (g_bare) return;
     float x0 = bar_x0(a), tbw = bar_w(a);
-    if (g_compact) { push_rect(dl, 0, 0, a->vw, TB, 0, RGBA(250, 250, 250, 255)); push_rect(dl, 0, TB - 1, a->vw, 1, 0, RGBA(226, 226, 226, 255)); }
-    else push_rect(dl, 0, 0, a->vw, TABH, 0, ANDROID_UI ? RGBA(222, 225, 230, 255) : RGBA(250, 250, 250, 255));
+    if (g_compact) { push_rect(dl, 0, 0, a->vw, TB, 0, CHROME_BG); push_rect(dl, 0, TB - 1, a->vw, 1, 0, CHROME_LINE); }
+    else push_rect(dl, 0, 0, a->vw, TABH, 0, ANDROID_UI ? RGBA(222, 225, 230, 255) : CHROME_BG);
     int vt[MAX_TABS], nvt = g_compact ? 0 : ws_tabs(a, a->wi, vt);
     float tabw = tab_w(a), tx0 = TLW + 6, tbase = (ANDROID_UI ? 4 + (TABH - 4) / 2 : TABH / 2) + (a->ui->ascent - a->ui->descent) / 2;
     for (int k = 0; k < nvt; k++) {
         int i = vt[k]; Tab *t = a->tabs[i]; float x = tx0 + k * tabw;
         if (!ANDROID_UI) {   /* the strip has the toolbar's colour: the current tab is a darker pill */
-            if (i == a->ti) push_rect(dl, x, 6, tabw - 2, TABH - 12, 8, RGBA(230, 232, 235, 255));
-            else if (a->hover == HB_TAB + i || a->hover == HB_TABX + i) push_rect(dl, x, 6, tabw - 2, TABH - 12, 8, RGBA(240, 241, 243, 255));
+            if (i == a->ti) push_rect(dl, x, 6, tabw - 2, TABH - 12, 8, RGBA(255, 255, 255, 255));
+            else if (a->hover == HB_TAB + i || a->hover == HB_TABX + i) push_rect(dl, x, 6, tabw - 2, TABH - 12, 8, CHROME_HOVER);
             else if (k + 1 < nvt && vt[k + 1] != a->ti) push_rect(dl, x + tabw - 2, 14, 1, TABH - 28, 0, RGBA(210, 212, 216, 255));
         } else if (i == a->ti) push_rect(dl, x, 4, tabw - 2, TABH - 4, 7, RGBA(250, 250, 250, 255));
         else if (a->hover == HB_TAB + i || a->hover == HB_TABX + i) push_rect(dl, x, 6, tabw - 2, TABH - 10, 6, RGBA(235, 237, 240, 255));
@@ -1610,7 +1614,7 @@ static void build_chrome(App *a) {
     }
     if (!g_compact) {
         float npx = tx0 + nvt * tabw + 8;
-        if (a->hover == HB_NEWTAB) push_rect(dl, npx - 4, TABH / 2 - 12, 24, 24, 12, RGBA(232, 232, 232, 255));
+        if (a->hover == HB_NEWTAB) push_rect(dl, npx - 4, TABH / 2 - 12, 24, 24, 12, CHROME_HOVER);
         push_text(dl, a->ui, "+", npx + 4, tbase, 16, RGBA(60, 60, 60, 255));
     }
     if (a->side > 0) {
@@ -1676,8 +1680,8 @@ static void build_chrome(App *a) {
         }
     }
     int n0 = dl->items.n;
-    push_rect(dl, 0, 0, tbw, TB, 0, RGBA(250, 250, 250, 255));
-    push_rect(dl, 0, TB - 1, tbw, 1, 0, RGBA(226, 226, 226, 255));
+    push_rect(dl, 0, 0, tbw, TB, 0, CHROME_BG);
+    push_rect(dl, 0, TB - 1, tbw, 1, 0, CHROME_LINE);
 #ifndef __ANDROID__   /* Android: the toolbar row is BrowserToolbar, fed by bar_push */
     Tab *bt = bar_tab(a);   /* the covered tab while the panel is up */
     g_slot_n = bar_slots(a);
@@ -1686,12 +1690,12 @@ static void build_chrome(App *a) {
         int code = menu ? 0 : g_slot[i], hk = menu ? HB_MENU : HB_SLOT + i;
         bool en = code == UI_BACK ? bt->hpos > 0 : code == UI_FORWARD ? bt->hpos < bt->nhist - 1 : true;
         bool lit = code == UI_BM_TOGGLE ? bm_find(bt->url) >= 0 : code == UI_DESKTOP ? desktop_on(bt) : code == UI_FULLSCREEN && g_fullscreen;
-        if (en && (a->hover == hk || (menu && dm_menu_up()))) push_rect(dl, cx - 18, TB / 2 - 18, 36, 36, 18, RGBA(232, 232, 232, 255));
+        if (en && (a->hover == hk || (menu && dm_menu_up()))) push_rect(dl, cx - 18, TB / 2 - 18, 36, 36, 18, CHROME_HOVER);
         Image *im = path_img(a, menu ? "O 12 6 0.9 O 12 12 0.9 O 12 18 0.9" : android_ui_icon(code), !en ? 0xbebebe : lit ? 0x1a73e8 : 0x3c3c3c, 20);
         if (im) push_img(dl, im, cx - 10, TB / 2 - 10, 20, 20);
     }
     float ux = url_x(a), uw = url_w(a);
-    push_rect(dl, ux, 7, uw, TB - 14, (TB - 14) / 2, a->editing ? RGBA(255, 255, 255, 255) : RGBA(238, 238, 238, 255));
+    push_rect(dl, ux, 7, uw, TB - 14, (TB - 14) / 2, a->editing || !ANDROID_UI ? RGBA(255, 255, 255, 255) : RGBA(238, 238, 238, 255));
     if (a->editing) {
         DItem it; memset(&it, 0, sizeof it); it.op = DO_BORDER; it.x = ux; it.y = 7; it.w = uw; it.h = TB - 14;
         for (int i = 0; i < 4; i++) { it.r[i] = (TB - 14) / 2; it.bw[i] = 1.5f; it.bc[i] = RGBA(66, 133, 244, 255); it.bs[i] = 1; }
