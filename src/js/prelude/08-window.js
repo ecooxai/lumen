@@ -444,9 +444,8 @@ const performance = Object.assign(new EventTarget(), {
 /* a secure context: https, file, or a loopback host (as Chrome treats them); about: and data: frames inherit it, and a frame
    inside a non-secure same-origin parent is never secure */
 const secureContext = (l => {
-    const p = N.parentWin();
     let ps = true;
-    try { if (p && typeof p === 'object') ps = p.isSecureContext !== false; } catch (e) {}
+    try { ps = N.parentSecure(); } catch (e) {}
     if (l.protocol === 'about:' || l.protocol === 'data:') return ps;
     return ps && (l.protocol === 'https:' || l.protocol === 'file:' || /^(localhost|127(\.\d+){3}|\[::1\])$|\.localhost$/.test(l.hostname));
 })(location);

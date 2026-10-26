@@ -1,7 +1,7 @@
 /* Content Security Policy as scripts see it (violation events, string compilation, connect-src) and Trusted Types.
    The policies come from the response headers and the <meta http-equiv> elements of the parsed head; documents with
    a local scheme (about:, blob:, data:) inherit their parent's. */
-const TTError = Error, XLINK_NS = 'http://www.w3.org/1999/xlink', CSP_KEY = Symbol.for('lumen.csp');
+const TTError = Error, XLINK_NS = 'http://www.w3.org/1999/xlink', CSP_TEXT_KEY = Symbol.for('lumen.csp-text');
 
 const SPVE_KEYS = [['documentURI', ''], ['referrer', ''], ['blockedURI', ''], ['violatedDirective', ''], ['effectiveDirective', ''], ['originalPolicy', ''],
     ['sourceFile', ''], ['sample', ''], ['disposition', 'enforce'], ['statusCode', 0], ['lineNumber', 0], ['columnNumber', 0]];
@@ -29,14 +29,16 @@ function cspParse(text, report, out, meta) {
         if (meta && (name === 'report-uri' || name === 'frame-ancestors' || name === 'sandbox')) continue;
         d.set(name, t.slice(1)); lc.set(name, t.slice(1).map(x => x.toLowerCase()));
     }
-    if (d.size) out.push({ d, lc, report, src: text.trim() });
+    if (d.size) out.push({ d, lc, report, meta, src: text.trim() });
 }
 let cspPolicies = null;
 function cspList() {
     if (cspPolicies) return cspPolicies;
     const out = [];
     try {
-        if (/^(about|blob|data):/i.test(N.url()) && G.parent !== G) { const p = G.parent[CSP_KEY]; if (typeof p === 'function') out.push(...p()); }
+        /* the parent's policies as text, re-parsed here: reading its objects would tie this frame's lifetime to it */
+        const t = /^(about|blob|data):/i.test(N.url()) && N.parentText(CSP_TEXT_KEY);
+        if (t) for (const [src, report, meta] of JSON.parse(t)) cspParse(src, report, out, meta);
     } catch (e) {}
     const [h, ro] = N.csp(document);
     if (h) for (const t of h.split(',')) cspParse(t, false, out, false);
@@ -49,7 +51,7 @@ function cspList() {
         }
     return cspPolicies = out;
 }
-def(G, CSP_KEY, () => cspList());
+def(G, CSP_TEXT_KEY, () => JSON.stringify(cspList().map(p => [p.src, p.report, p.meta])));
 /* the calling script's position: the first frame from a script URL */
 function cspLoc() {
     const lim = TTError.stackTraceLimit; TTError.stackTraceLimit = 30;

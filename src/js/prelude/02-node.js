@@ -14,7 +14,9 @@ const elKids = (n) => { const a = []; for (let c = N.first(n); c; c = N.next(c))
    made through another frame's methods must still update this frame's ranges and iterators. A frame whose top window
    was not reachable yet (its prelude ran before its origin was known) links up when it makes a Range or iterator. */
 const LIVE_KEY = Symbol.for('lumen:live-ranges');
-const topLiveSets = () => { try { const t = N.topWin(); if (t && typeof t === 'object' && t !== G && t[LIVE_KEY]) return t[LIVE_KEY]; } catch (e) {} return null; };
+/* only once this frame shares objects with another: until then its own sets see every mutation, and looking up top
+   would itself mark it shared and keep it from being freed when removed */
+const topLiveSets = () => { if (!N.xrefd()) return null; try { const t = N.topWin(); if (t && typeof t === 'object' && t !== G && t[LIVE_KEY]) return t[LIVE_KEY]; } catch (e) {} return null; };
 let [liveRanges, liveIters] = (() => {
     const sets = topLiveSets() || [new SSet(), new SSet()];
     Object.defineProperty(G, LIVE_KEY, { value: sets, writable: true, configurable: true });

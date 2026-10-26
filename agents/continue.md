@@ -201,6 +201,16 @@ RUN 249: the marker is prelude 02-node.js topLiveSets() (called from insertCheck
 N.topWin() in topLiveSets only when the frame already shares objects (its own sets are complete until then; linkLiveSets
 merges once shared). Then rerun the churn probe (expect "freed" lines and flat RSS) and a frames/dom/ranges WPT run.
 LUMEN_DEBUG_FRAMES=1 now also prints the reason and the JS stack for window shares.
+RUN 250 (committed): topLiveSets now skips N.topWin() until N.xrefd(). Still 120 kept: another insertChecked path
+(prelude line ~20300, called from insertChecked/insertNode) reads a window; find it (grep topWin/parentWin in the
+prelude) and gate it the same way. Run 250 +139 (svg-embedded-sizing +153), 0 crash; OpaqueRange-interactive-basic
+timeout was flaky (16/16 alone). Churn page settles at 343 MB, 1.5% CPU.
+RUN 252 (committed): removed iframes are now freed. Two more startup reads stopped marking frames shared: the
+secure-context check uses N.parentSecure() and about:/blob:/data: CSP inheritance uses N.parentText(Symbol.for(
+'lumen.csp-text')) (policy text re-parsed in the frame). Churn probe: 120/120 freed, settles at 120 MB (was 344 MB);
+svg-in-iframe-* alone peak ~570 MB (was ~1.25 GB). Run 252: 0 crash; -300 from load timeouts (svg-in-img-percentage,
+svg-in-iframe-*), all equal to the old binary alone. The churn probe page was deleted; recreate from git history of
+this note if needed (120 srcdoc iframes, each removed after load, 100 ms apart, then 14 s wait).
 
 RUN 245: WebGL idlharness 2065 -> 2086/2099 (window and worker): FLOAT_MATnxm constants, interface .length, prototype
 getters throw, optional-argument defaults for bufferData/getBufferSubData/texImage3D lengths. +50, no losses. Left: setters

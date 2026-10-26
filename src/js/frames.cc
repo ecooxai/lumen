@@ -353,6 +353,26 @@ static void n_frameDoc(const FCI &a) {
 }
 static void n_parentWin(const FCI &a) { FCTX; if (c->parent) a.GetReturnValue().Set(win_for(c, c->parent)); else a.GetReturnValue().SetNull(); }
 static void n_topWin(const FCI &a) { FCTX; if (c->parent) a.GetReturnValue().Set(win_for(c, root_of(c))); else a.GetReturnValue().SetNull(); }
+static void n_xrefd(const FCI &a) { FCTX; a.GetReturnValue().Set(c->xref); }
+/* parentSecure(): the same-origin parent's isSecureContext, read without handing either frame the other's objects */
+static void n_parentSecure(const FCI &a) {
+    FCTX; JsCtx *p = c->parent; bool s = true;
+    if (p && !p->dead && !p->ctx.IsEmpty() && p->iso == iso && same_origin(c, p)) {
+        v8::Local<v8::Context> pc = p->ctx.Get(iso); v8::Local<v8::Value> v;
+        if (pc->Global()->Get(pc, jstr(iso, "isSecureContext")).ToLocal(&v)) s = !v->IsFalse();
+    }
+    a.GetReturnValue().Set(s);
+}
+/* parentText(key): calls the same-origin parent's global function `key` (a string or Symbol.for key) in its realm and returns its result only if a
+   string, so the frames don't share objects (an about: frame inheriting the parent's CSP) */
+static void n_parentText(const FCI &a) {
+    FCTX; JsCtx *p = c->parent;
+    if (!p || p->dead || p->ctx.IsEmpty() || p->iso != iso || !same_origin(c, p) || !a[0]->IsName()) return;
+    v8::Local<v8::Context> pc = p->ctx.Get(iso); v8::Context::Scope cs(pc); v8::TryCatch tc(iso);
+    v8::Local<v8::Value> f, r;
+    if (pc->Global()->Get(pc, a[0]).ToLocal(&f) && f->IsFunction() && f.As<v8::Function>()->Call(pc, pc->Global(), 0, nullptr).ToLocal(&r) && r->IsString())
+        a.GetReturnValue().Set(r);
+}
 static void n_frameEl(const FCI &a) { FCTX; if (c->parent && same_origin(c, c->parent)) { xref_mark(c, c->parent, "frameElement"); a.GetReturnValue().Set(jwrap(c->parent, c->frame_el)); } else a.GetReturnValue().SetNull(); }
 static int live_kids(JsCtx *c) { int n = 0; for (JsCtx *k : c->kids) n += !k->dead; return n; }
 static void n_frameCount(const FCI &a) { FCTX; frames_scan(c); a.GetReturnValue().Set(live_kids(c)); }
@@ -535,6 +555,6 @@ void js_install_frames(JsCtx *c, v8::Local<v8::Object> N) {
     v8::Isolate *iso = c->iso;
     v8::Local<v8::Context> ctx = iso->GetCurrentContext();
 #define REG(nm) (void)N->Set(ctx, jstr(iso, #nm), v8::Function::New(ctx, n_##nm).ToLocalChecked())
-    REG(frameWin); REG(frameDoc); REG(parentWin); REG(topWin); REG(frameEl); REG(frameCount); REG(frameAt); REG(ctxRel); REG(navTarget); REG(caller); REG(fullyActive); REG(postTo); REG(portTo); REG(openWin); REG(winOp); REG(openerWin);
+    REG(frameWin); REG(frameDoc); REG(parentWin); REG(topWin); REG(xrefd); REG(parentSecure); REG(parentText); REG(frameEl); REG(frameCount); REG(frameAt); REG(ctxRel); REG(navTarget); REG(caller); REG(fullyActive); REG(postTo); REG(portTo); REG(openWin); REG(winOp); REG(openerWin);
 #undef REG
 }
