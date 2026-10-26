@@ -168,6 +168,8 @@ void js_fire_load(JsCtx *c) {
     c->load_deferred = false;   /* a frame that finishes during the scan must not fire this load from within it */
     frames_scan(c);   /* the frames its parser inserted start loading now */
     if (c->dead) return;
+    if (!c->load_synced && c->host.sync) { c->load_synced = true; c->host.sync(c->host.ud, c->doc, true); }   /* layout requests the web fonts load waits for */
+    if (c->dead) return;
     if (frames_loading(c)) { c->load_deferred = true; return; }
     js_set_ready_state(c, 2);
     js_dispatch_window(c, "load");

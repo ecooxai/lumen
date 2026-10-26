@@ -144,6 +144,7 @@ struct JsCtx {
     uint32_t wid = 0, opener = 0;     /* top context: its tab's window id, the context that opened the tab */
     bool dead = false;
     bool load_deferred = false;       /* its window load waits for its frames (HTML's "delay the load event") */
+    bool load_synced = false;         /* laid out once before load, so its web fonts are requested */
     bool el_load = false;             /* a frame: its <iframe> gets a load event after its window's */
     uint64_t frame_scan_ver = ~0ull;
     void *host_ud = nullptr;          /* child host data returned by frame_open */

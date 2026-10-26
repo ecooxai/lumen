@@ -231,12 +231,12 @@ bool jsg_scroll(Node *n, float r[4]) {
     return true;
 }
 
-/* furthest right/bottom border edge of in-flow and absolute descendants; a scroller or clipping box counts with its
-   own border box only */
+/* furthest right/bottom edge of in-flow and absolute descendants (border boxes and text); a scroller or clipping box
+   counts with its own border box only */
 static void overflow_ext(const Box *b, float *mx, float *my) {
     for (const Box *c = b->first; c; c = c->next) {
         if (c->fixed) continue;
-        if (c->kind != BX_TEXT && c->w > 0 && c->h > 0) { *mx = LMAX(*mx, c->x + c->w); *my = LMAX(*my, c->y + c->h); }
+        if (!c->anon && c->kind != BX_INLINE && c->w > 0 && c->h > 0) { *mx = LMAX(*mx, c->x + c->w); *my = LMAX(*my, c->y + c->h); }   /* anonymous wrappers and inline boxes keep unshifted block-in-inline extents */
         bool clip = c->scroller || (c->st && (c->st->overflow_x != OV_VISIBLE || c->st->overflow_y != OV_VISIBLE));
         if (!clip) overflow_ext(c, mx, my);
     }

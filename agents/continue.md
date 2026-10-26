@@ -176,7 +176,13 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
   - No image sharing.
 
 ## Runs
-(append here: RUN 241 ...)
+(append here: RUN 244 ...)
+
+RUN 241-243: window load now waits for web fonts the layout requested (h_load_blocked checks font_pending(); js_fire_load
+lays the page out once first; font_done rechecks load), like Chrome. Fixes Ahem tests that measured fallback text at
+onload: css-text +145, offsetTopLeft-border-box back to 28/28, text-as-flexitem-size-001 +5. elementFromPoint returns null
+without a root element or viewport (+2). Still open: scrollable-overflow-relative-positioned-block-in-inline (705 vs 405,
+not anon/inline boxes; find which box ends at 705). dom/nodes run peaked at 839 MB in one instance (no growth).
 
 RUN 240: scrollWidth/Height of non-scroll-containers now include overflowing descendants (`N.overflowSize`,
 jsg_overflow_size: furthest descendant border edge from the padding edge, clipping boxes count as their border box).

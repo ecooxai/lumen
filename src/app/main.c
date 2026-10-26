@@ -3004,7 +3004,7 @@ static bool h_load_blocked(JsCtx *c) {
         free(u);
     }
     SDL_UnlockMutex(icache_mu);
-    return busy;
+    return busy || font_pending() > 0;   /* web fonts the layout asked for, as in Chrome */
 }
 static bool sync_images(Page *p) {
     if (p->res_seen && p->seen_res == p->d->resource_version) return false;
@@ -3214,6 +3214,7 @@ static void font_done(NetRequest *rq, NetResponse *r, void *ud) {
         g_app->t->relayout = g_app->dirty = true; g_app->vonly = false;
     }
     free(u);
+    if (g_loading_page && g_loading_page->js) js_load_recheck(g_loading_page->js);   /* a pending font may hold back load */
 }
 static void font_pump(void) {
     for (char *u; (u = font_next_request()); ) {
