@@ -143,6 +143,11 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 ## Runs
 (append here: RUN 218 ...)
 
+Tried after 217 (reverted): making a child frame's load wait for its images (h_load_blocked on any frame of the
+loading page, js_load_recheck recursing into kids). hash-name-reference.html stayed at 84 in a batch: a frame's
+images aren't in icache (no slot) before its load fires, so nothing waits. Unrestricted (any frame of any page),
+it made 41 files time out. A real fix needs the child page to request its images before its load check.
+
 RUN 217: image-map hit testing for elementFromPoint (imageMapHit in 06-document.js): an <img usemap> hit maps to
 the first <area> of the map (id or name = text after the first '#') containing the point, measured from the content
 box (rect/circle/poly/default); none -> the img. hash-name-reference.html 84 -> 156/168 alone, but 84 in a 5-job
