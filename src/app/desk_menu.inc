@@ -12,6 +12,7 @@ typedef struct {
 } DmRow;
 static struct { bool open; int n, hover; float x, y, w, h, ax, ay; bool right; char title[160], sub[300]; DmRow r[DM_MAX]; } g_dm;
 static float g_dm_mx, g_dm_my;   /* where the last right click was */
+static bool dm_menu_up(void) { return g_dm.open && g_dm.right; }   /* the toolbar's menu is open */
 
 /* a path icon rastered at the window's scale, cached by path, colour and size */
 static Image *path_img(App *a, const char *path, uint32_t rgb, int dip) {

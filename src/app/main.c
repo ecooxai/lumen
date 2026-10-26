@@ -1408,27 +1408,29 @@ static int ws_tabs(App *a, int w, int *out) { int n = 0; for (int i = 0; i < a->
 static float tab_w(App *a) { int v[MAX_TABS], n = ws_tabs(a, a->wi, v); float w = (a->vw - TLW - 48) / (n ? n : 1); return w > 220 ? 220 : w; }
 static float bar_x0(App *a) { return g_compact ? TLW : a->side; }
 /* Android toolbar: URL | back | reload | menu; elsewhere back, forward, reload and star sit left of the URL */
-static float url_x(App *a) {
-    (void)a;
-#ifdef __ANDROID__
-    return 10;
-#else
-    return 144;
-#endif
-}
+/* the desktop row is laid out as Android's BrowserToolbar: the address pill (site icon, text), the action slots, the menu */
+static int bar_slots(App *a) { return a->vw - bar_x0(a) >= 600 ? 4 : 2; }
+static float url_x(App *a) { (void)a; return 10; }
 static float url_w(App *a) {
 #ifdef __ANDROID__
     return a->vw - bar_x0(a) - url_x(a) - 134;
 #else
-    return a->vw - bar_x0(a) - 144 - (g_compact ? 92 : 12) - 36;   /* the menu button at the right end */
+    return a->vw - bar_x0(a) - url_x(a) - 2 - 44.f * (bar_slots(a) + 1);
 #endif
 }
+static float url_tx(App *a) { return url_x(a) + (ANDROID_UI ? 16 : 34); }   /* where the address text starts */
 #ifdef __ANDROID__
 static int android_bar_hit(App *a, float x) {   /* the row is BrowserToolbar's: its touches never come here */
     (void)a; (void)x;
     return HB_NONE;
 }
 #endif
+static int desk_bar_hit(App *a, float x) {   /* x from the row's left end */
+    float w = a->vw - bar_x0(a), s0 = w - 44.f * (bar_slots(a) + 1);
+    if (x >= w - 44) return HB_MENU;
+    if (x >= s0) return HB_SLOT + (int)((x - s0) / 44);
+    return x >= url_x(a) && x < url_x(a) + url_w(a) ? HB_URL : HB_NONE;
+}
 static int bar_hit(App *a, float x, float y) {
     if (g_compact && y < TB) {
         x -= TLW;
@@ -1436,16 +1438,7 @@ static int bar_hit(App *a, float x, float y) {
         return android_bar_hit(a, x);
 #endif
         if (x < 0) return HB_NONE;
-        if (x >= a->vw - bar_x0(a) - 40) return HB_MENU;
-        if (x < 40) return HB_BACK; if (x < 72) return HB_FWD; if (x < 104) return HB_RELOAD; if (x < 136) return HB_STAR;
-        float ue = 144 + url_w(a);
-        return x < 144 ? HB_NONE : x < ue ? HB_URL : x >= ue + 4 && x < ue +
-#ifdef __ANDROID__
-            48
-#else
-            32
-#endif
-            ? HB_NEWTAB : HB_NONE;
+        return desk_bar_hit(a, x);
     }
     if (y < TABH) {
         int v[MAX_TABS], n = ws_tabs(a, a->wi, v), k; float tw = tab_w(a), x0 = TLW + 6; k = (int)((x - x0) / tw);
@@ -1465,9 +1458,7 @@ static int bar_hit(App *a, float x, float y) {
 #ifdef __ANDROID__
     return android_bar_hit(a, x);
 #endif
-    if (x >= a->vw - bar_x0(a) - 40) return HB_MENU;
-    if (x < 40) return HB_BACK; if (x < 72) return HB_FWD; if (x < 104) return HB_RELOAD; if (x < 136) return HB_STAR;
-    return HB_URL;
+    return desk_bar_hit(a, x);
 }
 
 static void push_img(DisplayList *dl, Image *im, float x, float y, float w, float h) { DItem it; memset(&it, 0, sizeof it); it.op = DO_IMAGE; it.x = x; it.y = y; it.w = w; it.h = h; it.img = im; it.alpha = 1; vec_push(dl->items, it); }
@@ -1494,17 +1485,6 @@ static Image *sym_icon(App *a, int k, int c) {   /* k: 0 back 1 forward 2 reload
     }
     return *slot;
 }
-#ifndef __ANDROID__   /* Android: BrowserToolbar draws android_ui_icon's outlines */
-static void draw_icon(DisplayList *dl, int kind, float cx, float cy, Color c) {
-    if (kind == HB_BACK || kind == HB_FWD) {
-        float d = kind == HB_BACK ? -1 : 1;
-        for (int i = 0; i < 6; i++) { push_rect(dl, cx - d * (i * 0.9f) - 1, cy - i - 1, 2, 2, 1, c); push_rect(dl, cx - d * (i * 0.9f) - 1, cy + i - 1, 2, 2, 1, c); }
-    } else {
-        for (int i = 0; i < 28; i++) { float t = (float)i / 28 * 5.4f + 0.6f; push_rect(dl, cx + 6 * sinf(t) - 1, cy - 6 * cosf(t) - 1, 2, 2, 1, c); }
-        push_rect(dl, cx - 1, cy - 8, 4, 2, 1, c); push_rect(dl, cx + 1, cy - 9, 2, 4, 1, c);
-    }
-}
-#endif
 
 static void chrome_tip(App *a) {   /* tooltip for a tab's CPU-limit dot (hover or click) */
     int i = a->hover >= HB_TABDOT ? a->hover - HB_TABDOT : a->tip_until ? a->tip_tab : -1;
@@ -1552,6 +1532,8 @@ static int url_menu_hit(float x, float y) {
 static void dm_build(App *a, DisplayList *dl);
 static Image *path_img(App *a, const char *path, uint32_t rgb, int dip);
 static int site_kind(const char *url);
+static bool dm_menu_up(void);
+static bool desktop_on(const Tab *t);
 static void dm_tab_menu(App *a, const char *title, const char *const *items, const bool *on, int n);
 #endif
 static void build_hud_pop(App *a) {
@@ -1681,20 +1663,16 @@ static void build_chrome(App *a) {
     push_rect(dl, 0, 0, tbw, TB, 0, RGBA(250, 250, 250, 255));
     push_rect(dl, 0, TB - 1, tbw, 1, 0, RGBA(226, 226, 226, 255));
 #ifndef __ANDROID__   /* Android: the toolbar row is BrowserToolbar, fed by bar_push */
-    Color on = RGBA(60, 60, 60, 255), off = RGBA(190, 190, 190, 255);
     Tab *bt = bar_tab(a);   /* the covered tab while the panel is up */
-    int hk[3] = { HB_BACK, HB_FWD, HB_RELOAD };
-    for (int i = 0; i < 3; i++) {
-        float cx = 22.f + i * 32.f;
-        if (a->hover == hk[i]) push_rect(dl, cx - 13, TB / 2 - 13, 26, 26, 13, RGBA(232, 232, 232, 255));
-        bool en = hk[i] == HB_BACK ? bt->hpos > 0 : hk[i] == HB_FWD ? bt->hpos < bt->nhist - 1 : true;
-        Image *si = sym_icon(a, i, en ? 0 : 1); if (si) push_img(dl, si, cx - 8, TB / 2 - 8, 16, 16); else draw_icon(dl, hk[i], cx, TB / 2, en ? on : off);
-    }
-    {
-        bool bmd = !a->editing && bm_find(bt->url) >= 0; float cx = 22.f + 3 * 32.f;
-        if (a->hover == HB_STAR) push_rect(dl, cx - 13, TB / 2 - 13, 26, 26, 13, RGBA(232, 232, 232, 255));
-        Image *si = sym_icon(a, bmd ? 4 : 3, bmd ? 2 : 0);
-        if (si) push_img(dl, si, cx - 8, TB / 2 - 8, 16, 16); else push_text(dl, a->ui, bmd ? "\xE2\x98\x85" : "\xE2\x98\x86", cx - 7, TB / 2 + (a->ui->ascent - a->ui->descent) / 2, 16, on);
+    g_slot_n = bar_slots(a);
+    for (int i = 0; i <= g_slot_n; i++) {   /* the slots (Android's most recently used menu actions), then the menu */
+        float cx = tbw - 44.f * (g_slot_n + 1 - i) + 22; bool menu = i == g_slot_n;
+        int code = menu ? 0 : g_slot[i], hk = menu ? HB_MENU : HB_SLOT + i;
+        bool en = code == UI_BACK ? bt->hpos > 0 : code == UI_FORWARD ? bt->hpos < bt->nhist - 1 : true;
+        bool lit = code == UI_BM_TOGGLE ? bm_find(bt->url) >= 0 : code == UI_DESKTOP ? desktop_on(bt) : code == UI_FULLSCREEN && g_fullscreen;
+        if (en && (a->hover == hk || (menu && dm_menu_up()))) push_rect(dl, cx - 18, TB / 2 - 18, 36, 36, 18, RGBA(232, 232, 232, 255));
+        Image *im = path_img(a, menu ? "O 12 6 0.9 O 12 12 0.9 O 12 18 0.9" : android_ui_icon(code), !en ? 0xbebebe : lit ? 0x1a73e8 : 0x3c3c3c, 20);
+        if (im) push_img(dl, im, cx - 10, TB / 2 - 10, 20, 20);
     }
     float ux = url_x(a), uw = url_w(a);
     push_rect(dl, ux, 7, uw, TB - 14, (TB - 14) / 2, a->editing ? RGBA(255, 255, 255, 255) : RGBA(238, 238, 238, 255));
@@ -1705,7 +1683,7 @@ static void build_chrome(App *a) {
     }
     const char *shown = bt->url;
     if (!a->editing) { const char *p = strstr(shown, "://"); if (p) shown = p + 3; }
-    float base = TB / 2 + (a->ui->ascent - a->ui->descent) / 2, room = uw - 32;
+    float base = TB / 2 + (a->ui->ascent - a->ui->descent) / 2, room = uw - (url_tx(a) - ux) - 14;
     if (a->editing) {   /* scroll the text so the caret stays in the field */
         url_sel_clamp(a);
         float cx = text_width(a->ui, shown, (size_t)a->us[1], 0), tw = text_width(a->ui, shown, strlen(shown), 0);
@@ -1715,31 +1693,17 @@ static void build_chrome(App *a) {
         int lo = LMIN(a->us[0], a->us[1]), hi = LMAX(a->us[0], a->us[1]);
         if (lo < hi) {
             float x0 = LMAX(0, text_width(a->ui, shown, (size_t)lo, 0) - a->uscroll), x1 = LMIN(room, text_width(a->ui, shown, (size_t)hi, 0) - a->uscroll);
-            if (x1 > x0) push_rect(dl, ux + 16 + x0, 12, x1 - x0, TB - 24, 2, RGBA(200, 220, 255, 255));
+            if (x1 > x0) push_rect(dl, url_tx(a) + x0, 12, x1 - x0, TB - 24, 2, RGBA(200, 220, 255, 255));
         }
     } else a->uscroll = 0;
-    float tx = ux + 16;
-    if (!a->editing && site_kind(bt->url)) {   /* the site icon: a lock on https, a warning on http, an info sign on other pages */
-        int sk = site_kind(bt->url);
-        Image *si = path_img(a, ui_site_icon(sk), sk == 2 ? 0xd93025 : 0x5a5a5a, 16);
-        if (si) push_img(dl, si, ux + 10, TB / 2 - 8, 16, 16);
-        tx = ux + 32; room -= 16;
+    float tx = url_tx(a);
+    {   /* the site icon: a lock on https, a warning on http, an info sign on other pages; a magnifier while typing */
+        int sk = a->editing || !site_kind(bt->url) ? 5 : site_kind(bt->url);
+        Image *si = path_img(a, ui_site_icon(sk), sk == 2 ? 0xd93025 : 0x5a5a5a, 18);
+        if (si) push_img(dl, si, ux + 10, TB / 2 - 9, 18, 18);
     }
     push_text_window(dl, a->ui, shown, tx, base, a->uscroll, room, a->editing ? RGBA(20, 20, 20, 255) : RGBA(90, 90, 90, 255));
-    if (a->editing && a->us[0] == a->us[1]) push_rect(dl, ux + 16 + text_width(a->ui, shown, (size_t)a->us[1], 0) - a->uscroll, 13, 1.5f, TB - 26, 0, RGBA(20, 20, 20, 255));
-#ifndef __ANDROID__
-    if (g_compact) {
-        float cx = ux + uw + 18;
-        if (a->hover == HB_NEWTAB) push_rect(dl, cx - 13, TB / 2 - 13, 26, 26, 13, RGBA(232, 232, 232, 255));
-        Image *si = sym_icon(a, 7, 0);
-        if (si) push_img(dl, si, cx - 8, TB / 2 - 8, 16, 16); else { push_rect(dl, cx - 6, TB / 2 - 1, 12, 2, 1, on); push_rect(dl, cx - 1, TB / 2 - 6, 2, 12, 1, on); }
-    }
-#endif
-    {   /* the menu: Lumen's pages in a panel at the right, as on Android */
-        float cx = a->vw - bar_x0(a) - 22;
-        if (a->hover == HB_MENU || panel_shown(a)) push_rect(dl, cx - 13, TB / 2 - 13, 26, 26, 13, RGBA(232, 232, 232, 255));
-        for (int k = -1; k <= 1; k++) push_rect(dl, cx - 1.5f, TB / 2 - 1.5f + k * 5.5f, 3, 3, 1.5f, on);
-    }
+    if (a->editing && a->us[0] == a->us[1]) push_rect(dl, tx + text_width(a->ui, shown, (size_t)a->us[1], 0) - a->uscroll, 13, 1.5f, TB - 26, 0, RGBA(20, 20, 20, 255));
     if (bt->loading) push_rect(dl, 0, TB - 2, tbw * 0.35f, 2, 0, RGBA(66, 133, 244, 255));
 #endif
     for (int i = n0; i < dl->items.n; i++) { DItem *it = &dl->items.v[i]; it->y += TABH; it->x += x0; if (it->op == DO_TEXT) for (int g = 0; g < it->ng; g++) { it->g[g].y += TABH; it->g[g].x += x0; } }
@@ -3701,7 +3665,7 @@ static void url_word(App *a, int o) {
 static int url_at(App *a, float x) {
     const char *u = a->t->url, *shown = u;
     if (!a->editing) { const char *p = strstr(u, "://"); if (p) shown = p + 3; }
-    return (int)(shown - u) + text_hit_x(a->ui, shown, x - (url_x(a) + 16) + a->uscroll);
+    return (int)(shown - u) + text_hit_x(a->ui, shown, x - url_tx(a) + a->uscroll);
 }
 static bool g_upress;   /* mouse selecting in the URL field */
 /* first press selects the whole URL (on Android with a Copy/Paste/Share menu); a press in the editing field places the caret */
@@ -6440,19 +6404,19 @@ int main(int argc, char **argv) {
                 case HB_FWD: history_go(&a, 1); break;
                 case HB_STAR: bm_toggle(&a); a.dirty = true; a.vonly = false; break;
 #ifndef __ANDROID__
-                case HB_MENU: if (a.editing) url_cancel(&a); show_more_menu(&a); a.dirty = true; break;
+                case HB_MENU: if (a.editing) url_cancel(&a); if (g_dm.open) dm_close(&a); else show_more_menu(&a); a.dirty = true; break;
 #else
                 case HB_MENU: if (a.editing) url_cancel(&a); show_more_menu(&a); a.dirty = true; break;
-                case HB_SLOT: case HB_SLOT + 1: {
+#endif
+                case HB_SLOT: case HB_SLOT + 1: case HB_SLOT + 2: case HB_SLOT + 3: {
                     if (a.editing) url_cancel(&a);
                     int code = g_slot[bar_hit(&a, ev.button.x, ev.button.y) - HB_SLOT];
                     UiAction u = { code, code == UI_DESKTOP ? !desktop_on(bar_tab(&a)) : code == UI_FULLSCREEN ? !g_fullscreen : 0, NULL, NULL };
                     ui_action(&a, &u, &quit); a.dirty = true; a.vonly = false; break; }
-#endif
                 case HB_RELOAD: if (a.t->hpos >= 0) navigate(&a, a.t->hist[a.t->hpos], false); break;
 #ifndef __ANDROID__
                 case HB_URL:   /* the site icon at the field's left end: site info */
-                    if (!a.editing && site_kind(bar_tab(&a)->url) && ev.button.x - bar_x0(&a) < url_x(&a) + 28) { dm_site_info(&a); break; }
+                    if (!a.editing && site_kind(bar_tab(&a)->url) && ev.button.x - bar_x0(&a) < url_tx(&a)) { dm_site_info(&a); break; }
                     url_press(&a, ev.button.x, ev.button.clicks); break;
 #else
                 case HB_URL: url_press(&a, ev.button.x, ev.button.clicks); break;

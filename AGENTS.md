@@ -109,3 +109,14 @@ third-party pages only structurally, and delete screenshots that show personal
 content. It iterates at most five times, fixes only simple problems and returns a
 short report. Writing and debugging code stays in the main agent, and source
 files are not edited while a subagent is building.
+
+## Live build on display :0
+
+After finishing each main task, restart this repo's Lumen on the user's display so
+they see the latest work (leave other Lumen builds, e.g. ../lumen/output/..., alone):
+
+```sh
+P=$(cat /tmp/lumen-display0.pid 2>/dev/null); [ -n "$P" ] && kill $P 2>/dev/null; sleep 1
+DISPLAY=:0 setsid nohup $PWD/build/codex-native/lumen >/tmp/lumen-display0.log 2>&1 </dev/null &
+echo $! >/tmp/lumen-display0.pid
+```
