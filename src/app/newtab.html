@@ -405,10 +405,17 @@ function viewPage(n, pdf) {
     viewInfo();
 }
 function viewMeasure() { var r = V.stage.getBoundingClientRect(); V.sx = r.left; V.sy = r.top; V.sw = r.width; V.sh = r.height; }
+function fitScale() {
+    if (V.kind !== 'image' && V.kind !== 'video') return Math.min(V.sw / V.bw, V.sh / V.bh);
+    /* pictures and videos at their own resolution, one source pixel per screen pixel; one that doesn't fit
+       at 50%, else 25%, so the pixels still map evenly */
+    var d = window.devicePixelRatio || 1, k = 1;
+    while (k > 0.25 && (V.bw * k / d > V.sw || V.bh * k / d > V.sh)) k /= 2;
+    return k / d;
+}
 function viewFit() {
     if (!V.bw || !V.sw) return;
-    V.fit = Math.min(V.sw / V.bw, V.sh / V.bh);
-    if (V.kind === 'image') V.fit = Math.min(1, V.fit);   /* small pictures at their own size */
+    V.fit = fitScale();
     V.s = V.fit; viewApply();
 }
 function viewApply() {
@@ -417,8 +424,9 @@ function viewApply() {
     var w = V.bw * V.s, hh = V.bh * V.s, st = V.el.style;
     V.tx = w <= V.sw ? (V.sw - w) / 2 : Math.min(0, Math.max(V.sw - w, V.tx));
     V.ty = hh <= V.sh ? (V.sh - hh) / 2 : Math.min(0, Math.max(V.sh - hh, V.ty));
-    st.width = Math.round(w) + 'px'; st.height = Math.round(hh) + 'px'; st.left = Math.round(V.tx) + 'px'; st.top = Math.round(V.ty) + 'px';
-    $('vwz').textContent = Math.round(V.s / (V.kind === 'image' ? 1 : V.fit) * 100) + '%';
+    var d = window.devicePixelRatio || 1, px = function (v) { return Math.round(v * d) / d + 'px'; };   /* on whole screen pixels */
+    st.width = px(w); st.height = px(hh); st.left = px(V.tx); st.top = px(V.ty);
+    $('vwz').textContent = Math.round(V.s / (V.kind === 'image' || V.kind === 'video' ? 1 / d : V.fit) * 100) + '%';
     if (V.kind === 'pdf') {   /* sharper pages when zoomed in */
         clearTimeout(V.sharp);
         V.sharp = setTimeout(function () { if (V && V.kind === 'pdf' && viewWidth(V.s / V.fit) > V.rendered * 1.25 && V.rendered < 3000) viewPage(V.page); }, 350);
@@ -470,8 +478,7 @@ function viewResize() {
     viewMeasure();
     if (V.kind === 'model') return mdlSize();
     if (!V.bw) return;
-    var f = V.fit; V.fit = Math.min(V.sw / V.bw, V.sh / V.bh);
-    if (V.kind === 'image') V.fit = Math.min(1, V.fit);
+    var f = V.fit; V.fit = fitScale();
     if (atFit) V.s = V.fit; else V.s *= V.fit / f;
     viewApply();
 }

@@ -2726,7 +2726,8 @@ static void update_size(App *a) {
 #endif
     a->input_scale = window_scale / a->scale;
 #ifdef __ANDROID__
-    a->vw = (float)a->pw / a->scale; a->vh = (float)a->ph / a->scale;
+    /* a whole number of CSS pixels: the device pixels a scale doesn't divide evenly stay unused at the right and bottom */
+    a->vw = floorf((float)a->pw / a->scale); a->vh = floorf((float)a->ph / a->scale);
 #else
     a->vw = (float)w * a->input_scale; a->vh = (float)h * a->input_scale;
 #endif

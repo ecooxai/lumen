@@ -514,6 +514,8 @@ class Animation extends EventTarget {
         super();
         if (effect !== null && !(effect instanceof AnimationEffect)) throw waTypeErr("Failed to construct 'Animation': parameter 1 is not of type 'AnimationEffect'.");
         if (timeline === undefined) timeline = document.timeline;
+        else if (timeline !== null && !waIsTimeline(timeline) && typeof timeline === 'object' && 'currentTime' in timeline && typeof timeline.getAnimations === 'function')
+            timeline = document.timeline;   /* a web-animations polyfill's stand-in for document.timeline (YouTube): the same clock */
         else if (timeline !== null && !waIsTimeline(timeline)) {
             if (!waBadTlSeen) { waBadTlSeen = true; try { const p = Object.getPrototypeOf(Object(timeline)); console.warn('[lumen] Animation timeline rejected: ' + typeof timeline + ' ' + ((p && p.constructor && p.constructor.name) || '?') + ' {' + Object.getOwnPropertyNames(p || {}).concat(Object.keys(Object(timeline))).slice(0, 20).join(',') + '}'); } catch (e) {} }
             throw waTypeErr("Failed to construct 'Animation': parameter 2 is not of type 'AnimationTimeline'.");
