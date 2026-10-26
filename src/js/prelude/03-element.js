@@ -653,11 +653,13 @@ methods(Element.prototype, {
     closest(s) { if (!arguments.length) throw argsErr('closest', this, 1); s = cssPre(String(s)); for (let e = this; e && N.type(e) === 1; e = N.parent(e)) if (N.matches(e, s, this)) return e; return null; },
     getBoundingClientRect() { const r = N.vrect(this); return r ? new DOMRect(r[0], r[1], r[2], r[3]) : new DOMRect(); },
     getClientRects() { return N.rect(this) ? [this.getBoundingClientRect()] : []; },
-    get clientWidth() { if (this === document.documentElement) return N.viewport()[0]; const r = N.rect(this); return r ? Math.round(r[2]) : 0; },
-    get clientHeight() { if (this === document.documentElement) return N.viewport()[1]; const r = N.rect(this); return r ? Math.round(r[3]) : 0; },
-    get clientTop() { return 0; }, get clientLeft() { return 0; },
+    /* padding box (border box minus borders); 0 for inline boxes and elements without a box */
+    get clientWidth() { if (this === document.documentElement) return N.viewport()[0]; const r = N.rect(this), b = N.borders(this); return r && b && !b[4] ? Math.round(Math.max(0, r[2] - b[1] - b[3])) : 0; },
+    get clientHeight() { if (this === document.documentElement) return N.viewport()[1]; const r = N.rect(this), b = N.borders(this); return r && b && !b[4] ? Math.round(Math.max(0, r[3] - b[0] - b[2])) : 0; },
+    get clientTop() { const b = N.borders(this); return b && !b[4] ? Math.round(b[0]) : 0; },
+    get clientLeft() { const b = N.borders(this); return b && !b[4] ? Math.round(b[3]) : 0; },
     get scrollWidth() { const s = N.scrollPos(this); return s ? Math.round(s[2]) : this.clientWidth; },
-    get scrollHeight() { const s = N.scrollPos(this); if (s) return Math.round(s[3]); const r = N.rect(this); return r ? Math.round(r[3]) : 0; },
+    get scrollHeight() { const s = N.scrollPos(this); return s ? Math.round(s[3]) : this.clientHeight; },
     get scrollTop() { if (this === document.documentElement || this === document.body) return N.viewport()[3]; const s = N.scrollPos(this); return s ? s[1] : 0; },
     set scrollTop(v) { if (this === document.documentElement || this === document.body) N.scrollTo(N.viewport()[2], +v || 0); else this.__scrollSet(NaN, +v || 0); },
     get scrollLeft() { const s = N.scrollPos(this); return s ? s[0] : 0; }, set scrollLeft(v) { this.__scrollSet(+v || 0, NaN); },
@@ -830,8 +832,9 @@ methods(HTMLElement.prototype, {
         }
         return null;
     },
-    get offsetTop() { const r = N.rect(this); if (!r) return 0; const op = this.offsetParent; const pr = op && op !== document.body ? N.rect(op) : null; return Math.round(r[1] - (pr ? pr[1] : 0)); },
-    get offsetLeft() { const r = N.rect(this); if (!r) return 0; const op = this.offsetParent; const pr = op && op !== document.body ? N.rect(op) : null; return Math.round(r[0] - (pr ? pr[0] : 0)); },
+    /* from the offsetParent's padding edge */
+    get offsetTop() { const r = N.rect(this); if (!r) return 0; const op = this.offsetParent; const pr = op && op !== document.body ? N.rect(op) : null, pb = pr && N.borders(op); return Math.round(r[1] - (pr ? pr[1] + (pb ? pb[0] : 0) : 0)); },
+    get offsetLeft() { const r = N.rect(this); if (!r) return 0; const op = this.offsetParent; const pr = op && op !== document.body ? N.rect(op) : null, pb = pr && N.borders(op); return Math.round(r[0] - (pr ? pr[0] + (pb ? pb[3] : 0) : 0)); },
     get offsetWidth() { const r = N.rect(this); return r ? Math.round(r[2]) : 0; },
     get offsetHeight() { const r = N.rect(this); return r ? Math.round(r[3]) : 0; },
     get isContentEditable() {

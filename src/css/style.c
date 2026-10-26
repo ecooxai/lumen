@@ -1214,6 +1214,25 @@ apply:
         if (!strcmp(P, "gap") || !strcmp(P, "grid-gap")) { char *t[2]; int n = split_ws(val, t, 2); if (n && alen(&c, t[0], &l)) { st->row_gap = l.px; st->row_gap_l = l; st->column_gap = l.px; st->column_gap_l = l; } if (n > 1 && alen(&c, t[1], &l)) { st->column_gap = l.px; st->column_gap_l = l; } free_toks(t, n); }
         else if (!strcmp(P, "grid-template-columns")) { free(st->grid_cols); st->grid_cols = NULL; st->grid_ncols = str_ieq(val, "none") ? 0 : parse_grid_tracks(&c, val, &st->grid_cols); }
         else if (!strcmp(P, "grid-template-rows")) { free(st->grid_rows); st->grid_rows = NULL; st->grid_nrows = str_ieq(val, "none") ? 0 : parse_grid_tracks(&c, val, &st->grid_rows); }
+        else if (!strcmp(P, "grid") && !strstr(val, "auto-flow")) css_apply_decl(st, par, "grid-template", val, e, el);
+        else if (!strcmp(P, "grid-column-end") || !strcmp(P, "grid-row-end")) {
+            bool col = P[5] == 'c'; int *s0 = col ? &st->grid_col_start : &st->grid_row_start, *sp = col ? &st->grid_col_span : &st->grid_row_span;
+            int en = atoi(val);
+            if (str_istarts(val, "span")) *sp = LMAX(1, atoi(val + 4));
+            else if (en > 0 && *s0 > 0) *sp = en > *s0 ? en - *s0 : 1;
+            else if (en > 1) { *s0 = en - 1; *sp = 1; }
+            else if (en < 0 && *s0 > 0) *sp = en;
+        }
+        else if (!strcmp(P, "grid-area") && strchr(val, '/')) {
+            char *s = xstrdup(val), *part[4] = {0}; int np = 0;
+            for (char *q = s; q && np < 4; ) { part[np++] = q; q = strchr(q, '/'); if (q) *q++ = 0; }
+            char buf[160];
+            snprintf(buf, sizeof buf, "%s%s%s", str_trim(part[0]), np > 2 ? " / " : "", np > 2 ? str_trim(part[2]) : "");
+            parse_grid_line(buf, &st->grid_row_start, &st->grid_row_span);
+            snprintf(buf, sizeof buf, "%s%s%s", np > 1 ? str_trim(part[1]) : "auto", np > 3 ? " / " : "", np > 3 ? str_trim(part[3]) : "");
+            parse_grid_line(buf, &st->grid_col_start, &st->grid_col_span);
+            free(st->grid_area); st->grid_area = NULL; free(s);
+        }
         else if (!strcmp(P, "grid-template")) { if (strchr(val, '"') || strchr(val, '\'')) { free(st->grid_areas); st->grid_areas = parse_grid_areas(val); } char *sl = strchr(val, '/'); if (sl) { *sl = 0; css_apply_decl(st, par, "grid-template-rows", val, e, el); css_apply_decl(st, par, "grid-template-columns", sl + 1, e, el); } }
         else if (!strcmp(P, "grid-column")) parse_grid_line(val, &st->grid_col_start, &st->grid_col_span);
         else if (!strcmp(P, "grid-row")) parse_grid_line(val, &st->grid_row_start, &st->grid_row_span);

@@ -66,7 +66,7 @@ static void tr(Box *root, Box *b, float dx, float dy) {
     for (int i = 0; i < b->nlines; i++) { b->lines[i].y += dy; b->lines[i].base += dy; }
     for (int i = 0; i < b->nir; i++) { b->ir[i].x += dx; b->ir[i].y += dy; }
     for (Box *c = b->first; c; c = c->next) {
-        if (c->abs && (c->fixed || (c->cb && !within(c->cb, root)))) continue;
+        if (c->abs && (c->fixed || (c->cb && !within(c->cb, root)))) { c->sx += dx; c->sy += dy; continue; }   /* placed later from its static position */
         tr(root, c, dx, dy);
     }
 }

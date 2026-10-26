@@ -176,7 +176,30 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
   - No image sharing.
 
 ## Runs
-(append here: RUN 234 ...)
+(append here: RUN 236 ...)
+
+Debug tool: `python3 tools/codex_compile.py python3 tests/wpt/wpt_one.py URL...` runs single tests offscreen against the
+running `wpt serve` and prints full assertion messages (check-layout outerHTML stripped) plus CPU/RSS. Scratch pages
+go in `$WPT/lumen/dbg/` (URL `/lumen/dbg/x.html`).
+
+RUN 234/235: layout queries.
+- `document.fonts.ready` resolved at once, so check-layout tests measured Ahem text in the fallback font. Now it waits
+  for readyState complete, no pending @font-face fetch (`font_pending()`, native `N.fontsPending()` after a layout)
+  and no loading FontFace in the set; `status` follows it (06b-activate.js).
+- offsetTop/Left were measured from the offsetParent's border edge; now its padding edge. clientTop/Left were always
+  0 and clientWidth/Height (and the scrollHeight fallback) returned the border box; now borders / padding box, 0 for
+  inline boxes (`N.borders`, jsg_borders).
+- style.c: `grid` shorthand (template form), `grid-area: a / b / c / d`, `grid-column-end`/`grid-row-end`.
+- block.c `tr()`: translating a subtree moves the static position of abspos descendants laid out later
+  (grid items are laid out at the grid top, then moved to their row).
+- RUN 234 (all but grid/abspos fixes): cssom-view, css-flexbox, css-grid, css-position, css-sizing 11,437 -> 12,009 / 30,679
+  Chrome-passing; regressions were scrollWidthHeight-* (scrollHeight fallback, fixed for 235).
+- RUN 235 (all of the above): 12,194 / 30,679 (+185 over 234). Regression to fix next: grid-items-minimum-width-*-002
+  (4 tests, -176): now that the `grid` shorthand applies, `minmax(auto, 0px)` columns size to 0 instead of the items'
+  automatic minimum (grid.c track sizing, kind 3 with an auto min).
+- Leads: native grid is primitive (no named lines, no orthogonal writing-mode items, abspos grid-area containing
+  blocks: positioned-grid-descendants-* expect the abspos sized to its grid area, ~3,200 subtests); grid-template-*
+  resolved values (used track sizes) in getComputedStyle.
 
 RUN 233: inset() serialization (03-element.js insetNorm): '/ vertical radii' equal to the horizontal ones is
 dropped; computed lengths in px. shape-outside-inset-003 208 -> 480/520; /css/css-shapes/ + /css/css-masking/: +303, none lost.

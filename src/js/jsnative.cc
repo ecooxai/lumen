@@ -530,6 +530,17 @@ FN(vclip) {
     for (int i = 0; i < 4; i++) (void)o->Set(ctx, i, v8::Number::New(iso, r[i]));
     RET(o);
 }
+/* borders(node) -> [top, right, bottom, left, inline] border widths of its box, or null */
+FN(borders) {
+    CTX; ARGN(n, 0); float r[4]; bool inl = false;
+    JsCtx *owner = n->doc != c->doc ? owner_ctx(n->doc) : c;
+    if (owner && owner->host.sync) owner->host.sync(owner->host.ud, n->doc, true);
+    if (!jsg_borders(n, r, &inl)) { RET(v8::Null(iso)); return; }
+    v8::Local<v8::Array> o = v8::Array::New(iso, 5);
+    for (int i = 0; i < 4; i++) (void)o->Set(ctx, i, v8::Number::New(iso, r[i]));
+    (void)o->Set(ctx, 4, v8::Boolean::New(iso, inl));
+    RET(o);
+}
 FN(scrollPos) {
     CTX; ARGN(n, 0); float r[4];
     if (c->host.sync) c->host.sync(c->host.ud, c->doc, true);
@@ -1273,6 +1284,8 @@ extern "C" {
 #include "../paint/canvas2d.h"
 #include "../text/font.h"
 }
+/* fontsPending() -> @font-face fetches the laid-out text still waits for (layout first, so text asks for its faces) */
+FN(fontsPending) { CTX; if (c->host.sync) c->host.sync(c->host.ud, c->doc, true); RET(font_pending()); }
 template <class T> static T *c2d_arr(v8::Local<v8::Value> v, size_t *n) {
     const char *p; size_t b;
     if (!v->IsArrayBufferView() || !bytes_of(v, &p, &b)) { *n = 0; return nullptr; }
@@ -1479,12 +1492,12 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
 #define REG(nm) (void)N->Set(ctx, jstr(iso, #nm), NAT_FN(nm))
     REG(isNode); REG(version);
     REG(inert); REG(type); REG(name); REG(ns); REG(parent); REG(first); REG(last); REG(next); REG(prev); REG(index);
-    (void)N->Set(ctx, jstr(iso, "fontFace"), v8::Function::New(ctx, n_fontFace).ToLocalChecked()); REG(c2dFill); REG(c2dClip); REG(c2dMeasure); REG(c2dSource); REG(c2dPresent);
+    (void)N->Set(ctx, jstr(iso, "fontFace"), v8::Function::New(ctx, n_fontFace).ToLocalChecked()); REG(c2dFill); REG(c2dClip); REG(c2dMeasure); REG(c2dSource); REG(c2dPresent); REG(fontsPending);
     REG(text); REG(setText); REG(attr); REG(setAttr); REG(rmAttr); REG(attrs); REG(attrQ); REG(attrNS); REG(setAttrQ); REG(setAttrNS); REG(rmAttrQ); REG(rmAttrNS); REG(attrsNS); REG(insert); REG(remove); REG(newDoc); REG(newXmlDoc); REG(xname); REG(charset); REG(ctype); REG(csp); REG(evalGuard); REG(ttOn); REG(codeLike); REG(lazySrc); REG(parseXml); REG(parseDoc); REG(docReparse); REG(adopt); REG(pi); REG(cdata); REG(doctype); REG(ownerDoc);
     REG(create); REG(textNode); REG(comment); REG(frag); REG(html); REG(setHTML); REG(parseFrag); REG(query);
     REG(matches); REG(byId); REG(clone); REG(doc); REG(contains); REG(connected); REG(host); REG(setRealm); REG(realmOf); REG(attachShadow);
     REG(shadowOf); REG(srFlags); REG(srSetFlags); REG(srRef); REG(getHTML); REG(parseFragEx); REG(parseDocEx);
-    REG(templateContent); REG(tplHost); REG(rect); REG(textRects); REG(vrect); REG(clipSet); REG(clipGet); REG(clipImage); REG(scrollPos); REG(setScroll); REG(computed); REG(trTake); REG(setAnimStyle); REG(value); REG(setValue); REG(ctlSel); REG(setCtlSel); REG(checked); REG(setChecked); REG(pickFiles);
+    REG(templateContent); REG(tplHost); REG(rect); REG(textRects); REG(vrect); REG(clipSet); REG(clipGet); REG(clipImage); REG(borders); REG(scrollPos); REG(setScroll); REG(computed); REG(trTake); REG(setAnimStyle); REG(value); REG(setValue); REG(ctlSel); REG(setCtlSel); REG(checked); REG(setChecked); REG(pickFiles);
     REG(modal); REG(popover); REG(fullscreen); REG(focus); REG(active); REG(cookie); REG(setCookie); REG(url); REG(docBase); REG(setUrl); REG(navigate); REG(navigatePost); REG(histGo);
     REG(histLen); REG(internal); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
     REG(abort); REG(fetchPause); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(mediaOpenBytes); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove);

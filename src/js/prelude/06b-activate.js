@@ -412,11 +412,28 @@ const CSS = {
 };
 /* set-like over the faces a page adds: pages spread it (`[...document.fonts]`) and read .size */
 const fontFaces = new SSet();
-const fontSet = Object.assign(new EventTarget(), { status: 'loaded', load() { return Promise.resolve([]); }, check() { return true; },
+/* loading while the document loads, a FontFace in the set loads, or laid-out text waits for an @font-face fetch */
+const fontsBusy = () => {
+    if (N.readyState() !== 2 || N.fontsPending() > 0) return true;
+    for (const f of fontFaces) if (f.status === 'loading') return true;
+    return false;
+};
+let fontsReady = null, fontsReadyDone = false;
+const fontsWait = () => {
+    if (fontsReady && !fontsReadyDone) return fontsReady;
+    if (fontsReady && !fontsBusy()) return fontsReady;
+    fontsReadyDone = false;
+    let res; fontsReady = new Promise(r => { res = r; });
+    const tick = () => { if (fontsBusy()) setTimeout(tick, 16); else { fontsReadyDone = true; res(fontSet); } };
+    tick();
+    return fontsReady;
+};
+const fontSet = Object.assign(new EventTarget(), { load() { return Promise.resolve([]); }, check() { return true; },
     add(f) { fontFaces.add(f); return this; }, delete(f) { return fontFaces.delete(f); }, clear() { fontFaces.clear(); },
     forEach(cb, t) { for (const f of fontFaces) cb.call(t, f, f, this); }, has(f) { return fontFaces.has(f); },
     values() { return fontFaces.values(); }, keys() { return fontFaces.values(); }, entries() { return fontFaces.entries(); },
     [Symbol.iterator]() { return fontFaces.values(); } });
 Object.defineProperty(fontSet, 'size', { get() { return fontFaces.size; } });
-Object.defineProperty(fontSet, 'ready', { get() { return Promise.resolve(fontSet); } });
+Object.defineProperty(fontSet, 'ready', { get() { return fontsWait(); } });
+Object.defineProperty(fontSet, 'status', { get() { return fontsBusy() ? 'loading' : 'loaded'; } });
 /*@shared fontface.js*/

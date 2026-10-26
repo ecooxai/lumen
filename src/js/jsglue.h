@@ -18,6 +18,7 @@ uint64_t jsg_visual_generation(void);
 void jsg_visual_changed(void);
 uint64_t jsg_activity_generation(void);
 bool jsg_rect(Node *n, float r[4]);
+bool jsg_borders(Node *n, float r[4], bool *inl);
 bool jsg_vrect(Node *n, float r[4], float scroll_x, float scroll_y);
 bool jsg_vclip(Node *n, Node *stop, float c[4], float scroll_x, float scroll_y);   /* clipping ancestors' viewport rect: x0, y0, x1, y1 */
 int jsg_text_rects(Node *n, int s, int e, float *out, int max);   /* UTF-16 range of a text node: x y w h each, document coordinates */

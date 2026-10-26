@@ -84,6 +84,15 @@ bool jsg_rect(Node *n, float r[4]) {
     return true;
 }
 
+/* Border widths top, right, bottom, left; *inl when the box is inline (clientTop/clientWidth are 0 for those) */
+bool jsg_borders(Node *n, float r[4], bool *inl) {
+    struct Box *b = n->box;
+    if (!b) return false;
+    for (int i = 0; i < 4; i++) r[i] = b->b[i];
+    *inl = b->st && b->st->display == D_INLINE;
+    return true;
+}
+
 /* Viewport border box: a fixed ancestor stops document scrolling, while
    element scrollers and translations still affect its descendants. */
 bool jsg_vrect(Node *n, float r[4], float scroll_x, float scroll_y) {

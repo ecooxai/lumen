@@ -609,6 +609,14 @@ char *font_next_request(void) {
     return u;
 }
 
+int font_pending(void) {
+    int n = 0;
+    pthread_mutex_lock(&font_mu);
+    for (WebDecl *d = webdecls; d; d = d->next) n += d->state == 1;
+    pthread_mutex_unlock(&font_mu);
+    return n;
+}
+
 bool font_loaded(const char *url, const void *data, size_t len) {
     pthread_mutex_lock(&font_mu);
     Face *f = NULL; FT_Face ft;
