@@ -317,6 +317,17 @@ function computedFont(cs) {
     return [g('font-style') || 'normal', vr, w === '400' ? 'normal' : w, st].filter(x => x !== 'normal').concat(lh === 'normal' ? size : `${size} / ${lh}`, family).join(' ');
 }
 function specNormalize(p, v) {
+    if (/-gradient\(\s*in\s/i.test(v))   /* "in <space> <direction>" serializes as "<direction> in <space>" */
+        v = v.replace(/((?:repeating-)?(?:linear|radial|conic)-gradient\(\s*)in\s+([a-z0-9-]+(?:\s+(?:shorter|longer|increasing|decreasing)\s+hue)?)\s+([^,()]+?)\s*,/gi, (m, f, cs, dir) => /^(shorter|longer|increasing|decreasing)\s+hue$/i.test(dir.trim()) ? m : f + dir.trim() + ' in ' + cs.replace(/\s+/g, ' ') + ',');
+    if (/-gradient\(/i.test(v)) v = v.replace(/\bin\s+xyz(?=[\s,])/gi, 'in xyz-d65');
+    if (/radial-gradient\(\s*ellipse\s/i.test(v)) v = v.replace(/(radial-gradient\(\s*)ellipse\s+(?=[\d.+-][^\s,]*\s+[\d.+-])/gi, '$1');   /* two sizes: an ellipse already */   /* xyz is xyz-d65 */
+    if (/-gradient\([^)]*\bin\s+(srgb|oklab)\s*,/i.test(v))   /* the default space is not written: srgb for legacy colors only, else oklab */
+        v = v.replace(/((?:repeating-)?(?:linear|radial|conic)-gradient\()((?:[^,()]*?\s)?)in\s+(srgb|oklab)\s*,(.*)$/i, (m, f, dir, cs, rest) => {
+            const modern = /\b(color|lab|lch|oklab|oklch|hwb)\(/i.test(rest) || /\b(rgba?|hsla?)\([^)]*\bnone\b/i.test(rest);
+            if ((cs.toLowerCase() === 'oklab') !== modern) return m;
+            dir = dir.trim();
+            return f + (dir ? dir + ',' : '') + rest.replace(/^\s*/, dir ? ' ' : '');
+        });
     if (p === 'position-area') { const n = posArea(v); if (n !== null) return n; }
     if (/["'\\]|url\(|var\(|env\(|attr\(|#/i.test(v) || /timing-function$|^transition$|^animation$/.test(p)) return v;
     let t = v.trim().replace(/(^|[\s(,/*+-])([+-]?)(\d*\.\d+|\d+\.?)(e[+-]?\d+)?(?=[a-z%]*(?:$|[\s),/*]))/gi, (m, pre, sign, num, exp) => {

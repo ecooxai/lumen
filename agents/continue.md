@@ -141,7 +141,11 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 228 ...)
+(append here: RUN 229 ...)
+
+RUN 228: gradient specified-value serialization in specNormalize: 'in <space>' after the direction, default
+space dropped (srgb for legacy colors, oklab otherwise), xyz -> xyz-d65, 'ellipse' dropped before two sizes.
+gradient-interpolation-method-valid 585 -> 1194/1398, computed 932/932 kept. Lead: remaining valid failures.
 
 RUN 227: position-area validity + canonical serialization in the style setter (03-element.js posArea, hooked
 into mathValid/specNormalize). /css/css-anchor-position/ rerun: +2058, none lost (264 files, 1 timeout).
