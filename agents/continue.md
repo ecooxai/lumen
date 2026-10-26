@@ -240,6 +240,8 @@ keeps its sign on output; clip rect() numbers; calc(1) accepted; border/outline/
 CRASH seen once: free(): invalid pointer in node_free_tree <- js_free <- page_free after
 /quirks/percentage-height-calculation.html (also in an older run; not reproducible alone) -> try ASan with
 hashless-hex-color then percentage-height-calculation in one instance.
+RUN 256 (committed): MouseEvent/DragEvent/WheelEvent coordinates (and PointerEvent click/auxclick/contextmenu) are
+floored like Chrome: pointerevent_fractional_coordinates_untrusted 1032/1032, /pointerevents/ +767, /uievents/ +32.
 
 RUN 245: WebGL idlharness 2065 -> 2086/2099 (window and worker): FLOAT_MATnxm constants, interface .length, prototype
 getters throw, optional-argument defaults for bufferData/getBufferSubData/texImage3D lengths. +50, no losses. Left: setters

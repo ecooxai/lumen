@@ -65,6 +65,9 @@ class MouseEvent extends UIEvent {
     constructor(t, i) {
         super(t, i); i = i || {};
         for (const k of ['screenX', 'screenY', 'clientX', 'clientY', 'button', 'buttons', 'movementX', 'movementY']) this[k] = +i[k] || 0;
+        /* as Chrome: whole pixels, except pointer events other than click/auxclick/contextmenu */
+        if (!(this instanceof PointerEvent) || /^(?:aux)?click$|^contextmenu$/.test(this.type))
+            for (const k of ['screenX', 'screenY', 'clientX', 'clientY']) this[k] = Math.floor(this[k]);
         for (const k of ['ctrlKey', 'shiftKey', 'altKey', 'metaKey']) this[k] = !!i[k];
         this.relatedTarget = i.relatedTarget || null;
     }
