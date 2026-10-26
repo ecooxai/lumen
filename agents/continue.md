@@ -141,11 +141,15 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 233 ...)
+(append here: RUN 234 ...)
+
+RUN 233: inset() serialization (03-element.js insetNorm): '/ vertical radii' equal to the horizontal ones is
+dropped; computed lengths in px. shape-outside-inset-003 208 -> 480/520; /css/css-shapes/ + /css/css-masking/: +303, none lost.
+Whole-suite report regenerated (gaps.json now covers all of WPT again): 82.2% per-test score vs Chrome 96.3%.
 
 RUN 232: parseDecls (stylesheet rules, style attribute) drops font/font-family declarations that fail mathValid;
 fontFamilyPart walks tokens (prefix keywords, size, optional '/ line-height' incl. calc()). test_font_family_parsing
-1630 -> 1774/2232; /css/css-fonts/: +458, -1 (at-font-face-font-matching sanity check, font-load flake, also seen in 231).
+1630 -> 2232/2232; /css/css-fonts/: +458, -1 (at-font-face-font-matching sanity check, font-load flake, also seen in 231).
 
 RUN 231: font-family / font shorthand family validation in mathValid (03-element.js familyValid, fontFamilyPart):
 items are one string or identifiers; a lone CSS-wide keyword or 'default' is invalid. /css/css-fonts/: +166, none lost

@@ -385,6 +385,20 @@ function shapePos(v, px) {
         return out == null ? m : fn + '(' + (head ? head + ' ' : '') + 'at ' + out + ')';
     });
 }
+/* inset(): "/ <vertical radii>" equal to the horizontal ones is dropped; with px, lengths become px */
+function insetNorm(v, px) {
+    return v.replace(/\binset\(([^()]*)\)/gi, (m, args) => {
+        let t = args.trim().split(/\s+/);
+        if (px) { const c = t.map(x => /^(round|\/)$/i.test(x) ? x : px(x)); if (c.some(x => x == null)) return m; t = c; }
+        const r = t.findIndex(x => /^round$/i.test(x)), sl = t.indexOf('/');
+        if (r >= 0 && sl > r) {
+            const four = a => [a[0], a[1] ?? a[0], a[2] ?? a[0], a[3] ?? a[1] ?? a[0]].join(' ');
+            const H = t.slice(r + 1, sl), V = t.slice(sl + 1);
+            if (H.length && V.length && four(H) === four(V)) t = t.slice(0, sl);
+        }
+        return 'inset(' + t.join(' ') + ')';
+    });
+}
 const SHAPE_UNITS = { px: 1, cm: 96 / 2.54, mm: 96 / 25.4, q: 96 / 101.6, in: 96, pt: 4 / 3, pc: 16 };
 function shapeLenPx(el) {
     return a => {
@@ -405,6 +419,7 @@ function shapeLenPx(el) {
 }
 function specNormalize(p, v) {
     if ((p === 'shape-outside' || p === 'clip-path') && /(circle|ellipse)\(/i.test(v)) v = shapePos(v, null);
+    if ((p === 'shape-outside' || p === 'clip-path') && /inset\(/i.test(v)) v = insetNorm(v, null);
     if (/-gradient\(\s*in\s/i.test(v))   /* "in <space> <direction>" serializes as "<direction> in <space>" */
         v = v.replace(/((?:repeating-)?(?:linear|radial|conic)-gradient\(\s*)in\s+([a-z0-9-]+(?:\s+(?:shorter|longer|increasing|decreasing)\s+hue)?)\s+([^,()]+?)\s*,/gi, (m, f, cs, dir) => /^(shorter|longer|increasing|decreasing)\s+hue$/i.test(dir.trim()) ? m : f + dir.trim() + ' in ' + cs.replace(/\s+/g, ' ') + ',');
     if (/-gradient\(/i.test(v)) v = v.replace(/\bin\s+xyz(?=[\s,])/gi, 'in xyz-d65');
@@ -540,7 +555,7 @@ const styleHandler = {
     has(t, p) { return p in t || cssPropKnown(p); },
 };
 class ComputedStyleDeclaration extends CSSStyleDeclaration {
-    getPropertyValue(p) { if (waDirty) waFlush(); const k = camelToKebab(String(p)); if (k === 'font') return computedFont(this); let v = N.computed(this._el, k); if (trPoll()) v = N.computed(this._el, k); if ((k === 'shape-outside' || k === 'clip-path') && v && /(circle|ellipse)\(/i.test(v)) v = shapePos(v, shapeLenPx(this._el)); return v == null ? '' : v; }
+    getPropertyValue(p) { if (waDirty) waFlush(); const k = camelToKebab(String(p)); if (k === 'font') return computedFont(this); let v = N.computed(this._el, k); if (trPoll()) v = N.computed(this._el, k); if ((k === 'shape-outside' || k === 'clip-path') && v && /(circle|ellipse)\(/i.test(v)) v = shapePos(v, shapeLenPx(this._el)); if ((k === 'shape-outside' || k === 'clip-path') && v && /inset\(/i.test(v)) v = insetNorm(v, shapeLenPx(this._el)); return v == null ? '' : v; }
     get cssText() { return ''; } get length() { return 0; }
     setProperty() { throw new DOMException('These styles are computed, and therefore read-only.', 'NoModificationAllowedError'); }
 }
