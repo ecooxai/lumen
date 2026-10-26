@@ -143,6 +143,9 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 ## Runs
 (append here: RUN 220 ...)
 
+Phone check after run 219 (APK 539584e): google/youtube/webgl/webgpu pass, no crash/ANR/tombstone/new errors;
+last-10-s CPU 0-3.2%, peak RSS 543 MB (youtube), WebGL 57.5 fps, WebGPU 23.8 fps.
+
 RUN 219: teardown crash fix. The recovered SIGSEGV in GlobalHandles::NodeSpace::Release resolved (addr2line) to
 ~JsCtx <- js_free <- page_free: JsCtx members still holding v8::Global handles were released by `delete c` after
 iso->Dispose(). js_free now resets pick_cb (set by showPicker(), matching show-picker-does-not-focus.html) and clears
