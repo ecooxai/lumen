@@ -506,12 +506,14 @@ class AnimationPlaybackEvent extends Event {
     }
     get currentTime() { return this._ct; } get timelineTime() { return this._tt; }
 }
+/* a timeline from another frame (its own AnimationTimeline) fails instanceof but is still one */
+const waIsTimeline = t => t instanceof AnimationTimeline || (t !== null && typeof t === 'object' && 'currentTime' in t && /Timeline$/.test((t.constructor && t.constructor.name) || ''));
 class Animation extends EventTarget {
     constructor(effect = null, timeline) {
         super();
         if (effect !== null && !(effect instanceof AnimationEffect)) throw waTypeErr("Failed to construct 'Animation': parameter 1 is not of type 'AnimationEffect'.");
         if (timeline === undefined) timeline = document.timeline;
-        else if (timeline !== null && !(timeline instanceof AnimationTimeline)) throw waTypeErr("Failed to construct 'Animation': parameter 2 is not of type 'AnimationTimeline'.");
+        else if (timeline !== null && !waIsTimeline(timeline)) throw waTypeErr("Failed to construct 'Animation': parameter 2 is not of type 'AnimationTimeline'.");
         Object.defineProperties(this, Object.fromEntries(Object.entries({ _seq: ++waSeqN, _timeline: timeline, _effect: null, _start: null, _hold: null, _rate: 1, _pendRate: null,
             _task: null, _ready: Object.assign(waDefer(), { done: true }), _finished: waDefer(), _prevCT: null, _id: '', _replace: 'active', _finTask: null,
             onfinish: null, oncancel: null, onremove: null }).map(([k, v]) => [k, { value: v, writable: true, configurable: true, enumerable: k[0] !== '_' }])));
@@ -532,7 +534,7 @@ class Animation extends EventTarget {
     get timeline() { return this._timeline; }
     set timeline(tl) {
         if (tl === this._timeline) return;
-        if (tl !== null && !(tl instanceof AnimationTimeline)) throw waTypeErr("Failed to set the 'timeline' property on 'Animation': The provided value is not of type 'AnimationTimeline'.");
+        if (tl !== null && !waIsTimeline(tl)) throw waTypeErr("Failed to set the 'timeline' property on 'Animation': The provided value is not of type 'AnimationTimeline'.");
         const prevState = this.playState, prevCT = this.currentTime;
         this._timeline = tl;
         if (this._start !== null) this._hold = null;
