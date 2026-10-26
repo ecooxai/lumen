@@ -141,7 +141,11 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 231 ...)
+(append here: RUN 232 ...)
+
+RUN 231: font-family / font shorthand family validation in mathValid (03-element.js familyValid, fontFamilyPart):
+items are one string or identifiers; a lone CSS-wide keyword or 'default' is invalid. /css/css-fonts/: +166, none lost
+(an earlier version rejected 'default bongo' and lost 144).
 
 RUN 230: circle()/ellipse() 'at <position>' serialization for shape-outside/clip-path (03-element.js shapePos):
 specified adds 'center' to a lone offset and puts the horizontal pair first; computed gives two values, keywords

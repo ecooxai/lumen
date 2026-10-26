@@ -264,7 +264,39 @@ function posArea(v) {
     const P = { H: 'V', B: 'I', SB: 'SI' };
     return P[ga] === gb ? a + ' ' + b : P[gb] === ga ? b + ' ' + a : null;
 }
+/* a <family-name>#: each item one string or a run of identifiers, none of them a CSS-wide keyword or 'default' */
+function familyValid(v) {
+    const items = []; let cur = '', q = '';
+    for (let i = 0; i < v.length; i++) {
+        const c = v[i];
+        if (q) { cur += c; if (c === '\\') cur += v[++i] || ''; else if (c === q) q = ''; continue; }
+        if (c === '"' || c === "'") { q = c; cur += c; continue; }
+        if (c === ',') { items.push(cur); cur = ''; continue; }
+        cur += c;
+    }
+    if (q) return false;
+    items.push(cur);
+    const BAD = /^(inherit|initial|unset|default|revert|revert-layer)$/i, ID = /^(-?([a-z_\u0080-\uffff]|\\.)|--)([\w\u0080-\uffff-]|\\.)*$/i;
+    return items.every(it => {
+        it = it.trim(); if (!it) return false;
+        if (it[0] === '"' || it[0] === "'") return it.length > 1 && it[it.length - 1] === it[0] && !/^(["']).*\1.+/.test(it);
+        const w = it.split(/\s+/);
+        return w.every(x => ID.test(x)) && !(w.length === 1 && BAD.test(w[0]));
+    });
+}
+const FONT_PRE = /^(normal|italic|oblique|small-caps|bold|bolder|lighter|[1-9]00|ultra-condensed|extra-condensed|condensed|semi-condensed|semi-expanded|expanded|extra-expanded|ultra-expanded)$/i;
+const FONT_SIZE = /^(xx-small|x-small|small|medium|large|x-large|xx-large|xxx-large|smaller|larger|[+]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?([a-z]+|%)|0)$/i;
+function fontFamilyPart(v) {   /* the family list of a font shorthand, or null when no size is found */
+    const m = /^\s*((?:\S+\s+)*?)(\S+?)(\s*\/\s*\S+)?\s+(.*)$/s.exec(v); if (!m) return null;
+    const pre = m[1].trim() ? m[1].trim().split(/\s+/) : [];
+    if (!FONT_SIZE.test(m[2]) || !pre.every(x => FONT_PRE.test(x))) return null;
+    return m[4];
+}
 function mathValid(p, v) {
+    if ((p === 'font-family' || p === 'font') && !/var\(|env\(|attr\(/i.test(v) && !/^\s*(inherit|initial|unset|revert|revert-layer)\s*$/i.test(v)) {
+        if (p === 'font-family') { if (!familyValid(v)) return false; }
+        else if (!/^\s*(caption|icon|menu|message-box|small-caption|status-bar)\s*$/i.test(v)) { const f = fontFamilyPart(v); if (f !== null && !familyValid(f)) return false; }
+    }
     if (p === 'position-area' && !/var\(|env\(|attr\(/i.test(v) && !/^\s*(inherit|initial|unset|revert|revert-layer)\s*$/i.test(v)) return posArea(v) !== null;
     if (/-gradient\(/i.test(v) && !/var\(|env\(|attr\(/i.test(v) && !gradInterpValid(v)) return false;
     if (/var\(|env\(|attr\(|calc-size\(|anchor/i.test(v)) return true;
