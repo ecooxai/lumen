@@ -159,6 +159,7 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
     - Address pill at x=10, 30 px high: site icon (magnifier while typing), then the text at `url_tx`.
     - Then `bar_slots()` action slots (2, or 4 at >= 600 px): `g_slot`, the most recently used menu actions, with the same icons and colours. Then the menu.
     - Hit testing is in `desk_bar_hit`.
+  - Frameless window (`g_frameless`, Linux). `SDL_WINDOW_BORDERLESS`, so there is no system title bar. The tab strip (the toolbar with the tab bar hidden) drags the window (`win_hit`). Minimize/maximize/close (`HB_WMIN..HB_WCLOSE`, `WCW` = 138 px) sit at its right end. The 5 px edges resize. `LUMEN_WM_FRAME=1` keeps the system frame.
 - **Test:** `xvfb-run -a -s "-screen 0 1280x800x24" tools/linux_ui_test.sh [URL]` (through `codex_compile.py`) writes screenshots and CPU/RSS samples to `$OUT` (default /tmp/lumen-ui). Use `tests/device/desktop-menu/` for the field and link menus. With no window manager, the window sits about 20 px above the screen top.
 - **Not done:**
   - Right-click in the Draft.js editor (`tests/device/editbar`) still shows the page menu. The cause is unconfirmed; it may be the placeholder overlay intercepting the hit.

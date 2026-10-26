@@ -70,6 +70,10 @@ static char g_toast[256]; static double g_toast_until;   /* a short confirmation
 #else
 #define TLW 0.f
 #endif
+/* Linux: no system title bar, as in Chrome; the tab strip (the toolbar with the tab bar hidden) moves
+   the window and ends in minimize / maximize / close (LUMEN_WM_FRAME=1 keeps the system frame) */
+static bool g_frameless;
+#define WCW (g_frameless ? 138.f : 0.f)
 #define SIDEW 84.f
 #define SIDEY (g_compact ? TB : TABH)
 #define WSY0 (SIDEY + 8)
@@ -1360,7 +1364,7 @@ static int text_hit_x(Font *f, const char *s, float x) {
 }
 static void url_sel_clamp(App *a) { int n = (int)strlen(a->t->url); for (int k = 0; k < 2; k++) a->us[k] = LCLAMP(a->us[k], 0, n); }
 
-enum { HB_NONE, HB_BACK, HB_FWD, HB_RELOAD, HB_URL, HB_NEWTAB, HB_WSNEW, HB_STAR, HB_HUD, HB_MENU, HB_TAB = 100, HB_TABX = 200, HB_WS = 300, HB_INFO = 400, HB_TABDOT = 500, HB_SLOT = 600 };
+enum { HB_NONE, HB_BACK, HB_FWD, HB_RELOAD, HB_URL, HB_NEWTAB, HB_WSNEW, HB_STAR, HB_HUD, HB_MENU, HB_WMIN, HB_WMAX, HB_WCLOSE, HB_TAB = 100, HB_TABX = 200, HB_WS = 300, HB_INFO = 400, HB_TABDOT = 500, HB_SLOT = 600 };
 static void info_btn(App *a, int k, float *x, float *w) {
     static const float W[4] = { 70, 76, 82, 28 }; float r = a->vw - 12;
     for (int i = 3; i >= k; i--) r -= W[i] + (i < 3 ? 6 : 0);
@@ -1405,17 +1409,18 @@ static Image *ws_icon(App *a, int ic, bool on) {
     return *slot;
 }
 static int ws_tabs(App *a, int w, int *out) { int n = 0; for (int i = 0; i < a->ntabs; i++) if (a->tabs[i]->ws == w) out[n++] = i; return n; }
-static float tab_w(App *a) { int v[MAX_TABS], n = ws_tabs(a, a->wi, v); float w = (a->vw - TLW - 48) / (n ? n : 1); return w > 220 ? 220 : w; }
+static float tab_w(App *a) { int v[MAX_TABS], n = ws_tabs(a, a->wi, v); float w = (a->vw - TLW - 48 - WCW) / (n ? n : 1); return w > 220 ? 220 : w; }
 static float bar_x0(App *a) { return g_compact ? TLW : a->side; }
+static float bar_w(App *a) { return a->vw - bar_x0(a) - (g_compact ? WCW : 0); }   /* the toolbar row's width */
 /* Android toolbar: URL | back | reload | menu; elsewhere back, forward, reload and star sit left of the URL */
 /* the desktop row is laid out as Android's BrowserToolbar: the address pill (site icon, text), the action slots, the menu */
-static int bar_slots(App *a) { return a->vw - bar_x0(a) >= 600 ? 4 : 2; }
+static int bar_slots(App *a) { return bar_w(a) >= 600 ? 4 : 2; }
 static float url_x(App *a) { (void)a; return 10; }
 static float url_w(App *a) {
 #ifdef __ANDROID__
     return a->vw - bar_x0(a) - url_x(a) - 134;
 #else
-    return a->vw - bar_x0(a) - url_x(a) - 2 - 44.f * (bar_slots(a) + 1);
+    return bar_w(a) - url_x(a) - 2 - 44.f * (bar_slots(a) + 1);
 #endif
 }
 static float url_tx(App *a) { return url_x(a) + (ANDROID_UI ? 16 : 34); }   /* where the address text starts */
@@ -1426,12 +1431,13 @@ static int android_bar_hit(App *a, float x) {   /* the row is BrowserToolbar's: 
 }
 #endif
 static int desk_bar_hit(App *a, float x) {   /* x from the row's left end */
-    float w = a->vw - bar_x0(a), s0 = w - 44.f * (bar_slots(a) + 1);
+    float w = bar_w(a), s0 = w - 44.f * (bar_slots(a) + 1);
     if (x >= w - 44) return HB_MENU;
     if (x >= s0) return HB_SLOT + (int)((x - s0) / 44);
     return x >= url_x(a) && x < url_x(a) + url_w(a) ? HB_URL : HB_NONE;
 }
 static int bar_hit(App *a, float x, float y) {
+    if (g_frameless && !g_bare && y < (g_compact ? TB : TABH) && x >= a->vw - WCW) return HB_WMIN + LMIN(2, (int)((x - (a->vw - WCW)) / 46));
     if (g_compact && y < TB) {
         x -= TLW;
 #ifdef __ANDROID__
@@ -1576,7 +1582,7 @@ static void build_chrome(App *a) {
     build_hud_pop(a);
     DisplayList *dl = &a->cdl; dl_clear(dl);
     if (g_bare) return;
-    float x0 = bar_x0(a), tbw = a->vw - x0;
+    float x0 = bar_x0(a), tbw = bar_w(a);
     if (g_compact) { push_rect(dl, 0, 0, a->vw, TB, 0, RGBA(250, 250, 250, 255)); push_rect(dl, 0, TB - 1, a->vw, 1, 0, RGBA(226, 226, 226, 255)); }
     else push_rect(dl, 0, 0, a->vw, TABH, 0, RGBA(222, 225, 230, 255));
     int vt[MAX_TABS], nvt = g_compact ? 0 : ws_tabs(a, a->wi, vt);
@@ -1707,6 +1713,19 @@ static void build_chrome(App *a) {
     if (bt->loading) push_rect(dl, 0, TB - 2, tbw * 0.35f, 2, 0, RGBA(66, 133, 244, 255));
 #endif
     for (int i = n0; i < dl->items.n; i++) { DItem *it = &dl->items.v[i]; it->y += TABH; it->x += x0; if (it->op == DO_TEXT) for (int g = 0; g < it->ng; g++) { it->g[g].y += TABH; it->g[g].x += x0; } }
+#ifndef __ANDROID__
+    if (g_frameless) {   /* the window buttons at the top right, as in Chrome */
+        float h = g_compact ? TB : TABH; bool max = SDL_GetWindowFlags(a->win) & SDL_WINDOW_MAXIMIZED;
+        static const char *ic[4] = { "M6 12 L18 12", "M6.5 6.5 L17.5 6.5 L17.5 17.5 L6.5 17.5 Z", "M6.5 6.5 L17.5 17.5 M17.5 6.5 L6.5 17.5",
+                                     "M6.5 9.5 L14.5 9.5 L14.5 17.5 L6.5 17.5 Z M9.5 9.5 L9.5 6.5 L17.5 6.5 L17.5 14.5 L14.5 14.5" };
+        for (int k = 0; k < 3; k++) {
+            float bx = a->vw - WCW + k * 46; bool hov = a->hover == HB_WMIN + k;
+            if (hov) push_rect(dl, bx, 0, 46, h, 0, k == 2 ? RGBA(232, 17, 35, 255) : RGBA(0, 0, 0, 22));
+            Image *im = path_img(a, ic[k == 1 && max ? 3 : k], hov && k == 2 ? 0xffffff : 0x3c3c3c, 16);
+            if (im) push_img(dl, im, bx + 15, h / 2 - 8, 16, 16);
+        }
+    }
+#endif
 }
 
 static float max_scroll(App *a) { return a->t->cur && a->t->cur->L ? LMAX(0, a->t->cur->L->doc_h - page_height(a)) : 0; }
@@ -5327,9 +5346,14 @@ static void pick_files(bool multiple, const char *accept) {
 }
 #endif
 static SDL_HitTestResult win_hit(SDL_Window *w, const SDL_Point *pt, void *ud) {
-    (void)w;
     App *app = ud;
     float hit_x = (float)pt->x * app->input_scale, hit_y = (float)pt->y * app->input_scale;
+    if (g_frameless && !(SDL_GetWindowFlags(w) & (SDL_WINDOW_MAXIMIZED | SDL_WINDOW_FULLSCREEN))) {   /* the edges resize the frameless window */
+        const float e = 5; bool l = hit_x < e, r = hit_x >= app->vw - e, t = hit_y < e, b = hit_y >= app->vh - e;
+        if (t && l) return SDL_HITTEST_RESIZE_TOPLEFT; if (t && r) return SDL_HITTEST_RESIZE_TOPRIGHT;
+        if (b && l) return SDL_HITTEST_RESIZE_BOTTOMLEFT; if (b && r) return SDL_HITTEST_RESIZE_BOTTOMRIGHT;
+        if (t) return SDL_HITTEST_RESIZE_TOP; if (b) return SDL_HITTEST_RESIZE_BOTTOM; if (l) return SDL_HITTEST_RESIZE_LEFT; if (r) return SDL_HITTEST_RESIZE_RIGHT;
+    }
     return hit_y < (g_compact ? TB : TABH) && bar_hit(app, hit_x, hit_y) == HB_NONE ? SDL_HITTEST_DRAGGABLE : SDL_HITTEST_NORMAL;
 }
 static void history_go(App *a, int d) {
@@ -6021,7 +6045,10 @@ int main(int argc, char **argv) {
     renderer_read_preferences();
 #endif
     int ww = 1280, wh = 840; { const char *e = getenv("LUMEN_WINDOW"); if (e) sscanf(e, "%dx%d", &ww, &wh); }   /* e.g. LUMEN_WINDOW=800x600 */
-    a.win = SDL_CreateWindow("Lumen", ww, wh, SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY | (want_gpu && !strcmp(SDL_GetPlatform(), "macOS") ? SDL_WINDOW_METAL : 0));
+#if !defined(__APPLE__) && !defined(__ANDROID__)
+    g_frameless = !getenv("LUMEN_WM_FRAME") || !atoi(getenv("LUMEN_WM_FRAME"));
+#endif
+    a.win = SDL_CreateWindow("Lumen", ww, wh, SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY | (g_frameless ? SDL_WINDOW_BORDERLESS : 0) | (want_gpu && !strcmp(SDL_GetPlatform(), "macOS") ? SDL_WINDOW_METAL : 0));
     if (!a.win) { fprintf(stderr, "SDL_CreateWindow: %s\n", SDL_GetError()); return 1; }
     g_dialog_win = a.win; js_pick_files = pick_files;
     boot_mark("window");
@@ -6326,7 +6353,7 @@ int main(int argc, char **argv) {
             case SDL_EVENT_QUIT: quit = true; break;
             case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: case SDL_EVENT_WINDOW_RESIZED:
             case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED: update_size(&a); break;
-            case SDL_EVENT_WINDOW_EXPOSED: a.dirty = true; break;
+            case SDL_EVENT_WINDOW_EXPOSED: case SDL_EVENT_WINDOW_MAXIMIZED: case SDL_EVENT_WINDOW_RESTORED: a.dirty = true; a.vonly = false; break;
             case SDL_EVENT_MOUSE_WHEEL: {
                 if ((SDL_GetModState() & SDL_KMOD_CTRL) && ev.wheel.y) {
                     page_zoom_adjust(&a, (ev.wheel.direction == SDL_MOUSEWHEEL_FLIPPED ? -ev.wheel.y : ev.wheel.y) > 0 ? 1 : -1);
@@ -6400,6 +6427,9 @@ int main(int argc, char **argv) {
                   else if (bh >= HB_TAB) { int i = bh - HB_TAB; if (i == a.ti) tab_popup(&a, i, ev.button.x, ev.button.y); else tab_select(&a, i); break; }
                   else if (bh == HB_NEWTAB) { tab_open(&a); break; } }
                 switch (bar_hit(&a, ev.button.x, ev.button.y)) {
+                case HB_WMIN: SDL_MinimizeWindow(a.win); break;
+                case HB_WMAX: if (SDL_GetWindowFlags(a.win) & SDL_WINDOW_MAXIMIZED) SDL_RestoreWindow(a.win); else SDL_MaximizeWindow(a.win); break;
+                case HB_WCLOSE: quit = true; break;
                 case HB_BACK: history_go(&a, -1); break;
                 case HB_FWD: history_go(&a, 1); break;
                 case HB_STAR: bm_toggle(&a); a.dirty = true; a.vonly = false; break;

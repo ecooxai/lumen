@@ -204,8 +204,8 @@ static void dm_more(App *a) {
     dm_add(UI_DOWNLOADS, 0, 0, "Downloads", true);
     dm_sep(); dm_add_sep(UI_EXIT, 0, 0, "Exit", true);
     snprintf(g_dm.title, sizeof g_dm.title, "%s", "");
-    dm_show(a, a->vw - 6, TABH + TB + 2, true);
-    if (g_dm.w < 280) dm_show(a, a->vw - 6, TABH + TB + 2, true), g_dm.x = LMAX(4, a->vw - 6 - 280), g_dm.w = 280, dm_show(a, g_dm.x, TABH + TB + 2, false);
+    dm_show(a, bar_x0(a) + bar_w(a) - 6, TABH + TB + 2, true);
+    if (g_dm.w < 280) dm_show(a, bar_x0(a) + bar_w(a) - 6, TABH + TB + 2, true), g_dm.x = LMAX(4, bar_x0(a) + bar_w(a) - 6 - 280), g_dm.w = 280, dm_show(a, g_dm.x, TABH + TB + 2, false);
 }
 /* a list of choices at the last right click; row i goes back as code with value i */
 static void dm_list(App *a, const char *title, const char *const *items, int n, int code) {
