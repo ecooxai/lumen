@@ -140,6 +140,27 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
   - The Java address-field bar and its More popup.
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
+## Linux desktop UI (Android parity)
+- Menus are drawn natively in the overlay display list (`a->hdl`) by `src/app/desk_menu.inc`, which `main.c` includes after `ui_action` (not on Android). Choices go through the same `ui_action` as Android's Java menus. The `UI_*` codes and icons in `android_ui.h` are now portable; the icon paths live in `src/app/ui_icon.c`, and the desktop rasterizes them with `path_icon_rgba`, cached in `path_img`.
+- **Done:**
+  - Toolbar menu button: Android's more menu. Nav icon line, edit icon line (Cut/Copy/Paste/Undo/Redo, sent as Ctrl keys), New tab, Workspaces, zoom levels (stay open), Desktop site/Fullscreen checks, Settings, Bookmarks/History/Downloads, Exit.
+  - Right-click menus. The page gets `contextmenu` first and can cancel it.
+    - Image (`img_ctx_menu` rows plus open image/link in new tab).
+    - Link (open in new tab, copy address).
+    - Field: right-click focuses it, then Undo/Redo/Cut/Copy/Paste/Select all.
+    - Page: nav icon line, Select all, Copy page address, Site information.
+    - Tab (`tab_menu`): Close tab, CPU limits, video controls, lite mode.
+    - Workspace: rename, close, new, all.
+  - Middle-click on a link opens it in a new tab.
+  - Site icon (lock/warning/info) at the address field's left end, which opens site info: connection, cookie count, Delete data with a confirm step.
+  - Toasts (`ui_toast`) float at the bottom on the desktop instead of using the notice bar. Copy image puts a PNG on the SDL clipboard.
+  - Esc closes a menu, then a Lumen panel. Arrow keys and Enter move through and choose menu rows.
+- **Test:** `xvfb-run -a -s "-screen 0 1280x800x24" tools/linux_ui_test.sh [URL]` (through `codex_compile.py`) writes screenshots and CPU/RSS samples to `$OUT` (default /tmp/lumen-ui). Use `tests/device/desktop-menu/` for the field and link menus. With no window manager, the window sits about 20 px above the screen top.
+- **Not done:**
+  - Right-click in the Draft.js editor (`tests/device/editbar`) still shows the page menu. The cause is unconfirmed; it may be the placeholder overlay intercepting the hit.
+  - No desktop file picker (`UI_FILE_PICK` stays Android-only; the desktop uses the Lumen "pick" panel).
+  - No image sharing.
+
 ## Runs
 (append here: RUN 234 ...)
 

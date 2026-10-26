@@ -2,8 +2,8 @@
 #define LUMEN_ANDROID_UI_H
 /* Browser menus drawn with Android views (LumenActivity): the toolbar's more menu, the
  * bookmarks and workspaces panels, and toasts. Choices come back through android_ui_action. */
-#ifdef __ANDROID__
 #include <stdbool.h>
+/* the action codes and icons are shared with the desktop build, whose menus Lumen draws itself */
 enum {
     UI_NEW_TAB = 1, UI_FORWARD, UI_BOOKMARKS, UI_DOWNLOADS, UI_HISTORY, UI_WORKSPACES, UI_SETTINGS,
     UI_DESKTOP,      /* value: 1 on, 0 off */
@@ -29,6 +29,15 @@ enum {
     UI_UNDO, UI_REDO,   /* Ctrl+Z, Ctrl+Shift+Z */
     UI_EDIT_MORE,    /* the edit bar's More menu, opened from the browser menu */
     UI_CTX_MENU,     /* value: the chosen row of android_ui_list_menu */
+    /* desktop menus only */
+    UI_CUT, UI_SELECT_ALL,   /* Ctrl+X, Ctrl+A in the focused field */
+    UI_LINK_TAB,     /* s2: open in a new tab */
+    UI_COPY_TEXT,    /* s2: onto the clipboard */
+    UI_SITE_INFO,    /* the site info popup of the current page */
+    UI_ZOOM_STEP,    /* value: +1 / -1 */
+    UI_SITE_CLEAR_ASK,   /* s2: the page's URL; asks before UI_SITE_CLEAR */
+    UI_NONE_ROW,     /* a row that only shows text */
+    UI_EXIT,         /* quit Lumen */
 };
 /* can_desktop: 1 for the page's site, 2 for every site (on a page that is not a site) */
 typedef struct { bool can_forward, desktop, can_zoom, bookmarked, can_bookmark, can_back, fullscreen; int can_desktop, zoom_pct; } AndroidMenuState;
@@ -36,6 +45,9 @@ typedef struct { bool can_forward, desktop, can_zoom, bookmarked, can_bookmark, 
    "L x y" polylines, "Z" closes, "O cx cy r" circles, "A cx cy r start sweep" arcs (degrees,
    clockwise from 3 o'clock); NULL if the action has none */
 const char *android_ui_icon(int code);
+/* kind 1 lock, 2 warning, 3 info, 4 cookie, 5 magnifier */
+const char *ui_site_icon(int kind);
+#ifdef __ANDROID__
 /* The toolbar row (address field, two action slots, more menu) is an Android view, drawn and
    touched on the UI thread so it answers while the engine thread is busy. Geometry in window
    pixels; sent only when something changed. */

@@ -59,6 +59,9 @@ static const char *env_hook(int i) {
 #define TB (g_bare ? 0.f : 44.f)
 static float g_info_h;
 static char g_notice[256];   /* dismissable error notice shown in the info bar */
+#ifndef __ANDROID__
+static char g_toast[256]; static double g_toast_until;   /* a short confirmation floating at the bottom (desktop; Android shows a toast) */
+#endif
 #define INFOH 36.f
 #define BAR (TABH + TB + g_info_h)
 #ifdef __APPLE__
@@ -208,7 +211,6 @@ static void pixel_scale_load(const char *line) {
     if (percent) g_pixel_scale_pct = percent;
 }
 #endif
-#ifdef __ANDROID__
 /* the toolbar buttons left of the menu, two (four on a wide window): the most recently used menu actions */
 #define NSLOT 4
 static int g_slot[NSLOT] = { UI_BACK, UI_RELOAD, UI_FORWARD, UI_NEW_TAB }, g_slot_n = 2; static unsigned g_slot_seq[NSLOT], g_slot_clock;
@@ -217,7 +219,6 @@ static bool slot_action(int code) {
     return code == UI_BACK || code == UI_FORWARD || code == UI_RELOAD || code == UI_NEW_TAB || code == UI_BOOKMARKS || code == UI_HISTORY ||
         code == UI_DOWNLOADS || code == UI_WORKSPACES || code == UI_SETTINGS || code == UI_DESKTOP || code == UI_BM_TOGGLE || code == UI_FULLSCREEN;
 }
-#endif
 typedef struct { char *url, *title; } Link;
 #define MAX_BM 512
 #define MAX_HV 1000
@@ -1547,10 +1548,18 @@ static int url_menu_hit(float x, float y) {
     return g_umenu_n - 1;
 }
 #endif
+#ifndef __ANDROID__
+static void dm_build(App *a, DisplayList *dl);
+static Image *path_img(App *a, const char *path, uint32_t rgb, int dip);
+static int site_kind(const char *url);
+static void dm_tab_menu(App *a, const char *title, const char *const *items, const bool *on, int n);
+#endif
 static void build_hud_pop(App *a) {
     DisplayList *dl = &a->hdl; dl_clear(dl);
 #ifdef __ANDROID__
     url_menu_build(a, dl);
+#else
+    dm_build(a, dl);
 #endif
     if (!g_hud || !g_hud_pop || a->side <= 0) return;
     float w = 150, h = 62, x = 8, y = a->vh - HUDH - h - 2, rb = (a->ui->ascent - a->ui->descent) / 2;
@@ -1709,7 +1718,14 @@ static void build_chrome(App *a) {
             if (x1 > x0) push_rect(dl, ux + 16 + x0, 12, x1 - x0, TB - 24, 2, RGBA(200, 220, 255, 255));
         }
     } else a->uscroll = 0;
-    push_text_window(dl, a->ui, shown, ux + 16, base, a->uscroll, room, a->editing ? RGBA(20, 20, 20, 255) : RGBA(90, 90, 90, 255));
+    float tx = ux + 16;
+    if (!a->editing && site_kind(bt->url)) {   /* the site icon: a lock on https, a warning on http, an info sign on other pages */
+        int sk = site_kind(bt->url);
+        Image *si = path_img(a, ui_site_icon(sk), sk == 2 ? 0xd93025 : 0x5a5a5a, 16);
+        if (si) push_img(dl, si, ux + 10, TB / 2 - 8, 16, 16);
+        tx = ux + 32; room -= 16;
+    }
+    push_text_window(dl, a->ui, shown, tx, base, a->uscroll, room, a->editing ? RGBA(20, 20, 20, 255) : RGBA(90, 90, 90, 255));
     if (a->editing && a->us[0] == a->us[1]) push_rect(dl, ux + 16 + text_width(a->ui, shown, (size_t)a->us[1], 0) - a->uscroll, 13, 1.5f, TB - 26, 0, RGBA(20, 20, 20, 255));
 #ifndef __ANDROID__
     if (g_compact) {
@@ -5263,7 +5279,6 @@ static void bm_toggle(App *a) {
     if (i >= 0) link_del(g_bms, &g_nbm, i); else link_put(g_bms, &g_nbm, MAX_BM, a->t->url, a->t->cur->d->title);
     links_save("bookmarks.txt", g_bms, g_nbm);
 }
-#if defined(__APPLE__) || defined(__ANDROID__)
 /* the tab menu's choice c (MENU_TAB_*) for t */
 static void tab_menu_apply(App *a, Tab *t, int c) {
     if (c == MENU_TAB_VCTL) t->vctl = !vctl_on(t);
@@ -5275,9 +5290,7 @@ static void tab_menu_apply(App *a, Tab *t, int c) {
 static void tab_menu_default(char *def, size_t n) {
     if (g_cpu_on) snprintf(def, n, "Default (over %d%% for %d s \xE2\x86\x92 %d%%)", g_cpu_pct, g_cpu_secs, g_cpu_lim); else snprintf(def, n, "Default (limit off)");
 }
-#endif
-#ifdef __ANDROID__
-/* the tab menu (a double tap on the tab bar): Close tab, then the desktop tab menu's choices */
+/* the tab menu (a double tap on the tab bar; a right click on a tab elsewhere): Close tab, then the desktop tab menu's choices */
 static Tab *g_tab_menu_tab;
 static const int g_tab_menu_codes[] = { 0, MENU_TAB_CPU_DEFAULT, MENU_TAB_CPU_NEVER, MENU_TAB_CPU_LIM + 20, MENU_TAB_CPU_LIM + 40, MENU_TAB_CPU_LIM + 60, MENU_TAB_VCTL, MENU_TAB_LITE };
 static void tab_menu(App *a, int i) {
@@ -5291,9 +5304,12 @@ static void tab_menu(App *a, int i) {
     bool on[] = { false, t->cpumode == 0, t->cpumode == 1, t->cpumode == 2 && pct == 20, t->cpumode == 2 && pct == 40, t->cpumode == 2 && pct == 60, vctl_on(t), lite_on(t) };
     const char *title = t->cur && t->cur->d && t->cur->d->title && *t->cur->d->title ? t->cur->d->title : t->stitle ? t->stitle : *t->url ? t->url : "New Tab";
     g_tab_menu_tab = t;
+#ifdef __ANDROID__
     android_ui_tab_menu(title, items, on, (int)(sizeof items / sizeof *items));
-}
+#else
+    dm_tab_menu(a, title, items, on, (int)(sizeof items / sizeof *items));
 #endif
+}
 static void tab_popup(App *a, int i, float x, float y) {
 #ifdef __APPLE__
     Tab *t = a->tabs[i]; char def[96];
@@ -5373,7 +5389,7 @@ static void ui_toast(App *a, const char *text) {
 #ifdef __ANDROID__
     (void)a; android_ui_toast(text);
 #else
-    snprintf(g_notice, sizeof g_notice, "%s", text); a->dirty = true; a->vonly = false;
+    snprintf(g_toast, sizeof g_toast, "%s", text); g_toast_until = now_ms() + (strlen(text) > 48 ? 3500 : 2000); a->dirty = true; a->vonly = false;
 #endif
     fprintf(stderr, "lumen: %s\n", text);
 }
@@ -5509,7 +5525,19 @@ static void panel_service(App *a) {
     if (home && a->t->ws >= 0) panel_open_at(a, "home", true);
     free(go);
 }
-#ifdef __ANDROID__
+#ifndef __ANDROID__
+static void dm_more(App *a);
+static void dm_list(App *a, const char *title, const char *const *items, int n, int code);
+static void dm_tab_menu(App *a, const char *title, const char *const *items, const bool *on, int n);
+static void dm_site_info(App *a);
+static void dm_site_clear_ask(App *a, const char *url);
+static bool clip_png_set(unsigned char *png, size_t n);
+static void key_push_mod(SDL_Keycode k, SDL_Keymod mod) {
+    SDL_Event e; SDL_zero(e); e.type = SDL_EVENT_KEY_DOWN; e.key.key = k; e.key.down = true; e.key.mod = mod; SDL_PushEvent(&e);
+    e.type = SDL_EVENT_KEY_UP; e.key.down = false; SDL_PushEvent(&e);
+}
+static void clip_record(const char *text, const unsigned char *img, size_t n, const char *mime) { (void)text; (void)img; (void)n; (void)mime; }
+#endif
 static void desktop_sites_save(void) {
     char hosts[64 * 130]; net_desktop_hosts(hosts, sizeof hosts);
     char p[1200]; pref_path(p, sizeof p, "desktop_sites.txt"); FILE *f = *g_pref ? fopen(p, "w") : NULL; if (!f) return;
@@ -5528,6 +5556,7 @@ static AndroidMenuState menu_state(App *a) {
         .can_back = t->hpos > 0, .fullscreen = g_fullscreen,
     };
 }
+#ifdef __ANDROID__
 static void show_more_menu(App *a) { AndroidMenuState st = menu_state(a); android_ui_menu(&st); }
 /* hand the toolbar row's state to its Android view (android_ui_toolbar drops repeats) */
 static void bar_push(App *a) {
@@ -5557,8 +5586,12 @@ static void show_workspaces(App *a) {
     for (int i = 0; i < a->nws; i++) { names[i] = a->wsname[i]; tabs[i] = ws_tabs(a, i, v); }
     android_ui_workspaces(names, tabs, a->nws, a->wi);
 }
+#else
+static void show_more_menu(App *a) { dm_more(a); }
+static void show_bookmarks(App *a) { (void)a; }
+#endif
 typedef struct { int code, value; char *s1, *s2; } UiAction;
-static void ui_action_post(int code, int value, char *s1, char *s2) {   /* Android UI thread */
+static void __attribute__((unused)) ui_action_post(int code, int value, char *s1, char *s2) {   /* Android UI thread */
     UiAction *u = malloc(sizeof *u);
     if (!u) { free(s1); free(s2); return; }
     u->code = code; u->value = value; u->s1 = s1; u->s2 = s2;
@@ -5622,7 +5655,7 @@ static bool img_ctx_menu(App *a, Node *n, float x, float y) {
     Page *p = a->t->cur; Node *img = NULL, *link = NULL;
     for (Node *k = n; k; k = k->parent) { if (!img && k->tag == A_img) img = k; if (!link && k->tag == A_a && node_attr(k, "href")) link = k; }
     if (!img) img = img_under(link ? link : n, x, y, 0);
-#if !defined(NDEBUG)
+#if defined(__ANDROID__) && !defined(NDEBUG)
     __android_log_print(ANDROID_LOG_INFO, "LumenUi", "long press node=%s img=%d link=%d", n && n->tag ? n->tag : "-", img != NULL, link != NULL);
 #endif
     const char *s = img ? node_attr(img, "src") : NULL, *u = s && *s ? node_src_url(img, s) : NULL;
@@ -5635,15 +5668,25 @@ static bool img_ctx_menu(App *a, Node *n, float x, float y) {
     items[k] = "Download image"; g_ctx.act[k++] = CTX_SAVE_IMG;
     if (g_ctx.link) { items[k] = "Copy link address"; g_ctx.act[k++] = CTX_COPY_LINK; }
     items[k] = "Copy image address"; g_ctx.act[k++] = CTX_COPY_IMG_URL;
+#ifdef __ANDROID__
     items[k] = "Share image"; g_ctx.act[k++] = CTX_SHARE;
+#endif
     g_ctx.n = k;
     const char *alt = node_attr(img, "alt");
+#ifdef __ANDROID__
     android_ui_list_menu(alt && *alt ? alt : g_ctx.link ? g_ctx.link : g_ctx.img, items, k);
+#else
+    dm_list(a, alt && *alt ? alt : NULL, items, k, UI_CTX_MENU);
+#endif
     return true;
 }
 /* the image as a PNG under the cache's clip directory, for the clipboard and the share sheet */
 static bool ctx_png(const char *u, char *path, size_t n) {
+#ifdef __ANDROID__
     Image *im = url_img(u); const char *cache = SDL_GetAndroidCachePath();
+#else
+    Image *im = url_img(u); const char *cache = getenv("TMPDIR"); if (!cache || !*cache) cache = "/tmp";
+#endif
     if (!im || !im->px || im->w <= 0 || im->h <= 0 || !cache) return false;
     snprintf(path, n, "%s/clip", cache); mkdir(path, 0700);
     snprintf(path, n, "%s/clip/image.png", cache);
@@ -5659,8 +5702,15 @@ static void ctx_do(App *a, int i) {
         if (f && !fseek(f, 0, SEEK_END) && (len = ftell(f)) > 0 && !fseek(f, 0, SEEK_SET)) { b = xmalloc((size_t)len); if (fread(b, 1, (size_t)len, f) != (size_t)len) { free(b); b = NULL; } }
         if (f) fclose(f);
         if (b) clip_record(NULL, b, (size_t)len, "image/png");   /* Paste's history shows it */
+#ifdef __ANDROID__
         free(b);
+#endif
+#ifdef __ANDROID__
         android_ui_clip_image_file(path);
+#else
+        if (b && clip_png_set(b, (size_t)len)) b = NULL;
+        free(b);
+#endif
         ui_toast(a, "Image copied");
         break; }
     case CTX_SAVE_IMG:
@@ -5674,17 +5724,21 @@ static void ctx_do(App *a, int i) {
         const char *t = g_ctx.act[i] == CTX_COPY_LINK && g_ctx.link ? g_ctx.link : g_ctx.img;
         SDL_SetClipboardText(t); clip_record(t, NULL, 0, NULL); ui_toast(a, "Link copied");
         break; }
+#ifdef __ANDROID__
     case CTX_SHARE:
         if (ctx_png(g_ctx.img, path, sizeof path)) android_ui_share_image_file(path); else android_share_text(g_ctx.img);
         break;
+#endif
     }
 }
 /* the browser menu's Copy: a field's selection, else the page's (native or as the page's script sees it) */
-static void menu_copy(App *a) {
+static void __attribute__((unused)) menu_copy(App *a) {
     Page *p = a->t->cur; Node *f = page_focus(a); bool failed = false;
     if (!p) return;
     char *t = f ? ctl_selected(f) : NULL;
+#ifdef __ANDROID__
     if ((!t || !*t) && g_tsel.on && p->L && g_tsel.L == p->L) { free(t); t = tsel_text(p->L); }
+#endif
     if ((!t || !*t) && p->js) { free(t); t = js_eval_result(p->js, "String(getSelection())", "lumen-copy", &failed); if (failed) { free(t); t = NULL; } }
     if (t && *t) { SDL_SetClipboardText(t); clip_record(t, NULL, 0, NULL); ui_toast(a, "Copied"); } else ui_toast(a, "Nothing selected to copy");
     free(t);
@@ -5704,24 +5758,42 @@ static void ui_action(App *a, UiAction *u, bool *quit) {
     case UI_NEW_TAB: tab_open(a); break;
     case UI_BACK: history_go(a, -1); break;
     case UI_RELOAD: if (t->hpos >= 0) navigate(a, t->hist[t->hpos], false); break;
+#ifdef __ANDROID__
     case UI_FULLSCREEN: g_fullscreen = u->value != 0; android_ui_fullscreen(g_fullscreen); break;
+#else
+    case UI_FULLSCREEN: g_fullscreen = u->value != 0; SDL_SetWindowFullscreen(a->win, g_fullscreen); break;
+    case UI_EXIT: *quit = true; break;
+    case UI_CUT: key_push_mod(SDLK_X, SDL_KMOD_LCTRL); break;
+    case UI_SELECT_ALL: key_push_mod(SDLK_A, SDL_KMOD_LCTRL); break;
+    case UI_LINK_TAB: if (u->s2 && *u->s2) { tab_open(a); navigate(a, u->s2, true); } break;
+    case UI_COPY_TEXT: if (u->s2) { SDL_SetClipboardText(u->s2); ui_toast(a, "Copied"); } break;
+    case UI_ZOOM_STEP: page_zoom_adjust(a, u->value); dm_more(a); break;
+    case UI_SITE_INFO: dm_site_info(a); break;
+    case UI_SITE_CLEAR_ASK: dm_site_clear_ask(a, u->s2); break;
+#endif
     case UI_FORWARD: history_go(a, 1); break;
     case UI_BOOKMARKS: panel_open(a, "bookmarks"); break;
     case UI_WORKSPACES: panel_open(a, "home"); break;
     case UI_DOWNLOADS: panel_open(a, "downloads"); break;
     case UI_HISTORY: panel_open(a, "history"); break;
     case UI_SETTINGS: panel_open(a, "settings"); break;
+#ifdef __ANDROID__
     case UI_KEYBOARD: g_kbd_sticky = true; g_kbd_show_at = now_ms() + 350; a->dirty = true; break;
     case UI_COPY: menu_copy(a); break;
+#else
+    case UI_COPY: key_push_mod(SDLK_C, SDL_KMOD_LCTRL); break;
+#endif
     case UI_CTX_MENU: ctx_do(a, u->value); break;
     case UI_PASTE: page_paste(a, page_focus(a), page_focus(a) ? NULL : edit_focus(a)); restyle(a); a->dirty = true; break;   /* else the body */
     case UI_UNDO: case UI_REDO: key_push_mod(SDLK_Z, SDL_KMOD_LCTRL | (u->code == UI_REDO ? SDL_KMOD_LSHIFT : 0)); break;
+#ifdef __ANDROID__
     case UI_EDIT_MORE: { float vw = page_width(a), bar[4] = { vw - 4, -2, vw - 4, -2 }; pop_open(a, 1, bar); g_epop.free = g_epop.kind != 0; a->dirty = true; break; }
     case UI_FILE_PICK:
         g_pick.multi = u->value != 0; snprintf(g_pick.accept, sizeof g_pick.accept, "%s", u->s1 ? u->s1 : "");
         if (a->ntabs >= MAX_TABS) { android_ui_pick_files(g_pick.accept, g_pick.multi); break; }   /* no room for the panel */
         g_pick.wait = true; panel_open(a, "pick");
         break;
+#endif
     case UI_DESKTOP: {
         bool on = u->value != 0;
         if (!page_is_web(t)) {
@@ -5783,6 +5855,8 @@ static void ui_action(App *a, UiAction *u, bool *quit) {
         navigate(a, "lumen://newtab?s=bookmarks", false);
     a->dirty = true; a->vonly = false;
 }
+#ifndef __ANDROID__
+#include "desk_menu.inc"
 #endif
 /* Download events: a navigation that became a download leaves the tab where it was; the
    Downloads page follows progress; starts, completions and failures get a toast. */
@@ -6221,6 +6295,9 @@ int main(int argc, char **argv) {
             if (to > 500) to = 500;  WTAG(7);
         }
         if (a.deferred) { double r = 250 - (now_ms() - a.last_full); if (r <= 0) { a.dirty = true; g_wake[3]++; } else if (r + 1 < to) to = (int)r + 1; }  WTAG(8);
+#ifndef __ANDROID__
+        if (g_toast_until) { double r = g_toast_until - now_ms(); if (r <= 0) { g_toast_until = 0; g_toast[0] = 0; a.dirty = true; a.vonly = false; } else if (r + 1 < to) to = (int)r + 1; }
+#endif
         if (a.tip_until) { double r = a.tip_until - now_ms(); if (r <= 0) { a.tip_until = 0; a.dirty = true; a.vonly = false; } else if (r + 1 < to) to = (int)r + 1; }  WTAG(9);
         {
             /* the caret blinks for 10 s after focus or input, then stays shown, as in GTK: a focused
@@ -6302,6 +6379,12 @@ int main(int argc, char **argv) {
                 wheel_apply(&a, ev.wheel.mouse_x, ev.wheel.mouse_y, wdx, wdy); break;
             }
             case SDL_EVENT_MOUSE_MOTION: {
+#ifndef __ANDROID__
+                if (g_dm.open) {
+                    int r = dm_hit(ev.motion.x, ev.motion.y); if (r != g_dm.hover) { g_dm.hover = r; a.dirty = true; a.vonly = false; }
+                    if (dm_inside(ev.motion.x, ev.motion.y)) { SDL_SetCursor(SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_DEFAULT)); break; }
+                }
+#endif
                 int h = bar_hit(&a, ev.motion.x, ev.motion.y); if (h != a.hover) { a.hover = h; a.dirty = true; }
                 if (!h && ev.motion.y > BAR && ev.motion.x > page_left(&a)) page_move(&a, page_x(&a, ev.motion.x), page_y(&a, ev.motion.y));
                 else if (a.t->cur && page_hover(a.t->cur, NULL)) restyle(&a);
@@ -6314,6 +6397,20 @@ int main(int argc, char **argv) {
             case SDL_EVENT_WINDOW_MOUSE_LEAVE: if (a.t->cur && page_hover(a.t->cur, NULL)) restyle(&a); break;
             case SDL_EVENT_MOUSE_BUTTON_UP: if (ev.button.button == SDL_BUTTON_LEFT) g_press = g_drag = g_cpress = g_upress = false; break;
             case SDL_EVENT_MOUSE_BUTTON_DOWN:
+#ifndef __ANDROID__
+                if (g_dm.open) {   /* a click on a menu row chooses it; anywhere else only closes the menu */
+                    int r = dm_hit(ev.button.x, ev.button.y);
+                    if (r >= 0 && ev.button.button == SDL_BUTTON_LEFT) dm_click(&a, r, &quit);
+                    else if (!dm_inside(ev.button.x, ev.button.y)) { dm_close(&a); if (ev.button.button == SDL_BUTTON_RIGHT) dm_right_click(&a, ev.button.x, ev.button.y); }
+                    break;
+                }
+                if (ev.button.button == SDL_BUTTON_RIGHT) { if (a.editing) url_cancel(&a); dm_right_click(&a, ev.button.x, ev.button.y); break; }
+                if (ev.button.button == SDL_BUTTON_MIDDLE && ev.button.y > BAR && ev.button.x > page_left(&a)) {   /* a link opens in a new tab */
+                    char *l = link_at(&a, page_x(&a, ev.button.x), page_y(&a, ev.button.y));
+                    if (l) { UiAction u = { UI_LINK_TAB, 0, NULL, l }; ui_action(&a, &u, &quit); free(u.s2); }
+                    break;
+                }
+#endif
                 if (ev.button.button != SDL_BUTTON_LEFT) break;
                 { int bh = bar_hit(&a, ev.button.x, ev.button.y);
 #if defined(__ANDROID__) && !defined(NDEBUG)
@@ -6343,7 +6440,7 @@ int main(int argc, char **argv) {
                 case HB_FWD: history_go(&a, 1); break;
                 case HB_STAR: bm_toggle(&a); a.dirty = true; a.vonly = false; break;
 #ifndef __ANDROID__
-                case HB_MENU: if (a.editing) url_cancel(&a); if (a.pan) panel_close(&a, false); else panel_open(&a, "home"); a.dirty = true; break;
+                case HB_MENU: if (a.editing) url_cancel(&a); show_more_menu(&a); a.dirty = true; break;
 #else
                 case HB_MENU: if (a.editing) url_cancel(&a); show_more_menu(&a); a.dirty = true; break;
                 case HB_SLOT: case HB_SLOT + 1: {
@@ -6353,7 +6450,13 @@ int main(int argc, char **argv) {
                     ui_action(&a, &u, &quit); a.dirty = true; a.vonly = false; break; }
 #endif
                 case HB_RELOAD: if (a.t->hpos >= 0) navigate(&a, a.t->hist[a.t->hpos], false); break;
+#ifndef __ANDROID__
+                case HB_URL:   /* the site icon at the field's left end: site info */
+                    if (!a.editing && site_kind(bar_tab(&a)->url) && ev.button.x - bar_x0(&a) < url_x(&a) + 28) { dm_site_info(&a); break; }
+                    url_press(&a, ev.button.x, ev.button.clicks); break;
+#else
                 case HB_URL: url_press(&a, ev.button.x, ev.button.clicks); break;
+#endif
                 default: {
                     unsigned touch_flags = 0;
 #ifdef __ANDROID__
@@ -6398,6 +6501,10 @@ int main(int argc, char **argv) {
                 break;
             case SDL_EVENT_KEY_UP: if (ev.key.key == SDLK_LGUI || ev.key.key == SDLK_RGUI || ev.key.key == SDLK_LCTRL || ev.key.key == SDLK_RCTRL) cmd = false; break;
             case SDL_EVENT_KEY_DOWN: { a.caret_t = now_ms();
+#ifndef __ANDROID__
+                if (dm_key(&a, ev.key.key, &quit)) break;
+                if (ev.key.key == SDLK_ESCAPE && a.pan && !a.editing && !page_focus(&a) && !edit_focus(&a)) { panel_close(&a, false); a.dirty = true; a.vonly = false; break; }
+#endif
                 js_key_mods = key_mods(ev.key.mod);
                 SDL_Keycode k = ev.key.key; float page = page_height(&a) - 40;
 #if defined(__ANDROID__) && !defined(NDEBUG)
@@ -6516,9 +6623,7 @@ int main(int argc, char **argv) {
                 if (ev.type == EV_MENU) menu_cmd(&a, ev.user.code);
                 if (ev.type == EV_DL) dl_event(&a, &ev);
                 if (ev.type == EV_TD && a.t->cur && a.t->cur->js) { char s[48]; snprintf(s, sizeof s, "__lumenTdDone(%d)", (int)ev.user.code); js_eval(a.t->cur->js, s, "lumen:testdriver"); }
-#ifdef __ANDROID__
                 if (ev.type == EV_UI) { UiAction *u = ev.user.data1; ui_action(&a, u, &quit); free(u->s1); free(u->s2); free(u); a.dirty = true; a.vonly = false; }
-#endif
                 if (ev.type == EV_LOADED) {
                     Page *p = ev.user.data1;
                     Tab *lt = NULL; for (int i = 0; i < a.ntabs; i++) if (a.tabs[i]->lgen == p->gen) lt = a.tabs[i];
