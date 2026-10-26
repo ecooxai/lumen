@@ -226,6 +226,13 @@ and limited-quirks documents, and in quirks mode accept them only for the quirky
 quirks/unitless-length/support/common.js) and never when written with escapes ("1\31 "). Internal callers
 (presentational hints, SVG width/height attributes via css_apply_decl) must keep accepting them, so gate it on the
 declaration origin, not inside parse_dim.
+RUN 254 (committed): apply_decl_ordered(author) skips quirky-length declarations with a unitless non-zero number
+outside quirks mode (escaped ones always). unitless-length vs the previous binary: no/limited-quirks 894 -> 1161, quirks
+1057 -> 1195 (an old jsonl entry had 1183/1348). Left: background-position/border-spacing/clip/letter-spacing/
+text-indent/word-spacing parsers don't take unitless numbers in quirks mode (~50 each per file); the border-width
+shorthand resets to medium on an invalid value instead of being ignored; "1\31 " and "+/**/1" still read as 1px
+(the decl value is unescaped before apply); background-position-x/-y accept unitless (excluded-properties-001);
+random-item() in font-family and line-height quirks regressed earlier (same in the previous binary).
 
 RUN 245: WebGL idlharness 2065 -> 2086/2099 (window and worker): FLOAT_MATnxm constants, interface .length, prototype
 getters throw, optional-argument defaults for bufferData/getBufferSubData/texImage3D lengths. +50, no losses. Left: setters

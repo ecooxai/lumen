@@ -3071,7 +3071,38 @@ static ComputedStyle *compute_pseudo(StyleEngine *e, Node *el, ComputedStyle *ba
     return st;
 }
 
-static void apply_decl_ordered(ComputedStyle *st, const ComputedStyle *par, MDecl *v, int n, StyleEngine *e, Node *el) {
+/* the properties whose lengths may be unitless numbers in quirks mode (quirks spec "unitless length quirk") */
+static bool quirky_length_prop(const char *p) {
+    static const char *const L[] = { "background-position", "border-spacing", "border-top-width", "border-right-width", "border-bottom-width",
+        "border-left-width", "border-width", "bottom", "clip", "font-size", "height", "left", "letter-spacing", "margin", "margin-top",
+        "margin-right", "margin-bottom", "margin-left", "max-height", "max-width", "min-height", "min-width", "padding", "padding-top",
+        "padding-right", "padding-bottom", "padding-left", "right", "text-indent", "top", "vertical-align", "width", "word-spacing", NULL };
+    for (int i = 0; L[i]; i++) if (!strcmp(p, L[i])) return true;
+    return false;
+}
+/* a top-level non-zero number without a unit ("1", "+1.5"; "0" is a valid length) */
+static bool has_unitless_number(const char *v) {
+    int depth = 0;
+    for (const char *s = v; *s;) {
+        if (*s == '(') { depth++; s++; continue; }
+        if (*s == ')') { depth--; s++; continue; }
+        if (is_ws((unsigned char)*s) || *s == ',' || *s == '/') { s++; continue; }
+        const char *t = s; while (*s && !is_ws((unsigned char)*s) && *s != '(' && *s != ')' && *s != ',' && *s != '/') s++;
+        if (depth) continue;
+        const char *q = t; if (*q == '+' || *q == '-') q++;
+        bool dig = false, nz = false;
+        for (; q < s && ((*q >= '0' && *q <= '9') || *q == '.'); q++) if (*q != '.') { dig = true; nz |= *q != '0'; }
+        if (dig && nz && q == s) return true;
+    }
+    return false;
+}
+/* author declarations: a unitless length is invalid outside quirks mode, and an escaped one always is */
+static bool unitless_invalid(const char *p, const char *v, Node *el) {
+    if (!quirky_length_prop(p)) return false;
+    if (el && el->doc && el->doc->quirks) return strchr(v, '\\') != NULL;
+    return has_unitless_number(v);
+}
+static void apply_decl_ordered(ComputedStyle *st, const ComputedStyle *par, MDecl *v, int n, StyleEngine *e, Node *el, bool author) {
     /* custom properties first, then font-size (em basis), then rest */
     custom_defer = true;
     for (int i = 0; i < n; i++) if (v[i].d->prop[0] == '-' && v[i].d->prop[1] == '-') css_apply_decl(st, par, v[i].d->prop, v[i].d->value, e, el);
@@ -3084,9 +3115,14 @@ static void apply_decl_ordered(ComputedStyle *st, const ComputedStyle *par, MDec
         char *r = subst_vars(raw, st, 0);
         hm_put(&st->custom->map, p, r ? r : xstrdup("")); free(raw);
     }
-    for (int i = 0; i < n; i++) { const char *p = v[i].d->prop; if (!strcmp(p, "font-size") || !strcmp(p, "font")) css_apply_decl(st, par, p, v[i].d->value, e, el); }
+    for (int i = 0; i < n; i++) { const char *p = v[i].d->prop; if ((!strcmp(p, "font-size") || !strcmp(p, "font")) && !(author && unitless_invalid(p, v[i].d->value, el))) css_apply_decl(st, par, p, v[i].d->value, e, el); }
     for (int i = 0; i < n; i++) { const char *p = v[i].d->prop; if (!strcmp(p, "color")) css_apply_decl(st, par, p, v[i].d->value, e, el); }
-    for (int i = 0; i < n; i++) { const char *p = v[i].d->prop; if ((p[0] == '-' && p[1] == '-') || !strcmp(p, "font-size") || !strcmp(p, "font") || !strcmp(p, "color")) continue; css_apply_decl(st, par, p, v[i].d->value, e, el); }
+    for (int i = 0; i < n; i++) {
+        const char *p = v[i].d->prop;
+        if ((p[0] == '-' && p[1] == '-') || !strcmp(p, "font-size") || !strcmp(p, "font") || !strcmp(p, "color")) continue;
+        if (author && unitless_invalid(p, v[i].d->value, el)) continue;
+        css_apply_decl(st, par, p, v[i].d->value, e, el);
+    }
 }
 
 #if defined(__ANDROID__) && !defined(NDEBUG)
@@ -3118,7 +3154,7 @@ static ComputedStyle *compute(StyleEngine *e, Node *el, const ComputedStyle *par
     int split = 0; while (split < mn && (md[split].key >> 62) < 2) split++;
     /* hints sit above the UA sheet's normal declarations and below the author's (css-cascade "presentational hints") */
     int ua = 0; while (ua < split && (md[ua].key >> 62) == 0) ua++;
-    if (ua) apply_decl_ordered(st, par, md, ua, e, el);
+    if (ua) apply_decl_ordered(st, par, md, ua, e, el, false);
     presentational_hints(st, par, el, e);
     /* one pass so var() in sheet custom properties sees inline custom properties */
     VEC(MDecl) all = {0};
@@ -3131,7 +3167,7 @@ static ComputedStyle *compute(StyleEngine *e, Node *el, const ComputedStyle *par
     }
     if (el->anim_decls) { DeclList *dl = el->anim_decls; for (int i = 0; i < dl->n; i++) { MDecl m = { &dl->v[i], 0, 0 }; vec_push(all, m); } }
     for (int i = split; i < mn; i++) vec_push(all, md[i]);
-    apply_decl_ordered(st, par, all.v, all.n, e, el);
+    apply_decl_ordered(st, par, all.v, all.n, e, el, true);
     vec_free(all);
     if (owned) free(md);
     /* fixups */
