@@ -793,10 +793,7 @@ static const unsigned char newtab_html[] = {
 #include "newtab.inc"
 };
 static const char *const newtab_sections[] = {
-#ifdef __ANDROID__
-    "home",
-#endif
-    "bookmarks", "history", "downloads", "settings" };
+    "home", "bookmarks", "history", "downloads", "settings" };
 #define NEWTAB_NSEC (int)(sizeof newtab_sections / sizeof *newtab_sections)
 static char *internal_page(App *app, const char *u) { (void)app; (void)u; return xstrdup((const char *)newtab_html); }
 /* a query value, %-decoded; NULL when absent */
@@ -1422,7 +1419,7 @@ static float url_w(App *a) {
 #ifdef __ANDROID__
     return a->vw - bar_x0(a) - url_x(a) - 134;
 #else
-    return a->vw - bar_x0(a) - 144 - (g_compact ? 92 : 12);
+    return a->vw - bar_x0(a) - 144 - (g_compact ? 92 : 12) - 36;   /* the menu button at the right end */
 #endif
 }
 #ifdef __ANDROID__
@@ -1438,6 +1435,7 @@ static int bar_hit(App *a, float x, float y) {
         return android_bar_hit(a, x);
 #endif
         if (x < 0) return HB_NONE;
+        if (x >= a->vw - bar_x0(a) - 40) return HB_MENU;
         if (x < 40) return HB_BACK; if (x < 72) return HB_FWD; if (x < 104) return HB_RELOAD; if (x < 136) return HB_STAR;
         float ue = 144 + url_w(a);
         return x < 144 ? HB_NONE : x < ue ? HB_URL : x >= ue + 4 && x < ue +
@@ -1466,6 +1464,7 @@ static int bar_hit(App *a, float x, float y) {
 #ifdef __ANDROID__
     return android_bar_hit(a, x);
 #endif
+    if (x >= a->vw - bar_x0(a) - 40) return HB_MENU;
     if (x < 40) return HB_BACK; if (x < 72) return HB_FWD; if (x < 104) return HB_RELOAD; if (x < 136) return HB_STAR;
     return HB_URL;
 }
@@ -1674,15 +1673,16 @@ static void build_chrome(App *a) {
     push_rect(dl, 0, TB - 1, tbw, 1, 0, RGBA(226, 226, 226, 255));
 #ifndef __ANDROID__   /* Android: the toolbar row is BrowserToolbar, fed by bar_push */
     Color on = RGBA(60, 60, 60, 255), off = RGBA(190, 190, 190, 255);
+    Tab *bt = bar_tab(a);   /* the covered tab while the panel is up */
     int hk[3] = { HB_BACK, HB_FWD, HB_RELOAD };
     for (int i = 0; i < 3; i++) {
         float cx = 22.f + i * 32.f;
         if (a->hover == hk[i]) push_rect(dl, cx - 13, TB / 2 - 13, 26, 26, 13, RGBA(232, 232, 232, 255));
-        bool en = hk[i] == HB_BACK ? a->t->hpos > 0 : hk[i] == HB_FWD ? a->t->hpos < a->t->nhist - 1 : true;
+        bool en = hk[i] == HB_BACK ? bt->hpos > 0 : hk[i] == HB_FWD ? bt->hpos < bt->nhist - 1 : true;
         Image *si = sym_icon(a, i, en ? 0 : 1); if (si) push_img(dl, si, cx - 8, TB / 2 - 8, 16, 16); else draw_icon(dl, hk[i], cx, TB / 2, en ? on : off);
     }
     {
-        bool bmd = !a->editing && bm_find(a->t->url) >= 0; float cx = 22.f + 3 * 32.f;
+        bool bmd = !a->editing && bm_find(bt->url) >= 0; float cx = 22.f + 3 * 32.f;
         if (a->hover == HB_STAR) push_rect(dl, cx - 13, TB / 2 - 13, 26, 26, 13, RGBA(232, 232, 232, 255));
         Image *si = sym_icon(a, bmd ? 4 : 3, bmd ? 2 : 0);
         if (si) push_img(dl, si, cx - 8, TB / 2 - 8, 16, 16); else push_text(dl, a->ui, bmd ? "\xE2\x98\x85" : "\xE2\x98\x86", cx - 7, TB / 2 + (a->ui->ascent - a->ui->descent) / 2, 16, on);
@@ -1694,7 +1694,7 @@ static void build_chrome(App *a) {
         for (int i = 0; i < 4; i++) { it.r[i] = (TB - 14) / 2; it.bw[i] = 1.5f; it.bc[i] = RGBA(66, 133, 244, 255); it.bs[i] = 1; }
         vec_push(dl->items, it);
     }
-    const char *shown = a->t->url;
+    const char *shown = bt->url;
     if (!a->editing) { const char *p = strstr(shown, "://"); if (p) shown = p + 3; }
     float base = TB / 2 + (a->ui->ascent - a->ui->descent) / 2, room = uw - 32;
     if (a->editing) {   /* scroll the text so the caret stays in the field */
@@ -1719,7 +1719,12 @@ static void build_chrome(App *a) {
         if (si) push_img(dl, si, cx - 8, TB / 2 - 8, 16, 16); else { push_rect(dl, cx - 6, TB / 2 - 1, 12, 2, 1, on); push_rect(dl, cx - 1, TB / 2 - 6, 2, 12, 1, on); }
     }
 #endif
-    if (a->t->loading) push_rect(dl, 0, TB - 2, tbw * 0.35f, 2, 0, RGBA(66, 133, 244, 255));
+    {   /* the menu: Lumen's pages in a panel at the right, as on Android */
+        float cx = a->vw - bar_x0(a) - 22;
+        if (a->hover == HB_MENU || panel_shown(a)) push_rect(dl, cx - 13, TB / 2 - 13, 26, 26, 13, RGBA(232, 232, 232, 255));
+        for (int k = -1; k <= 1; k++) push_rect(dl, cx - 1.5f, TB / 2 - 1.5f + k * 5.5f, 3, 3, 1.5f, on);
+    }
+    if (bt->loading) push_rect(dl, 0, TB - 2, tbw * 0.35f, 2, 0, RGBA(66, 133, 244, 255));
 #endif
     for (int i = n0; i < dl->items.n; i++) { DItem *it = &dl->items.v[i]; it->y += TABH; it->x += x0; if (it->op == DO_TEXT) for (int g = 0; g < it->ng; g++) { it->g[g].y += TABH; it->g[g].x += x0; } }
 }
@@ -5425,54 +5430,6 @@ static const char *bm_store(int index, const char *title, const char *raw) {
     links_save("bookmarks.txt", g_bms, g_nbm);
     return "Bookmark saved";
 }
-#ifdef __ANDROID__
-static void desktop_sites_save(void) {
-    char hosts[64 * 130]; net_desktop_hosts(hosts, sizeof hosts);
-    char p[1200]; pref_path(p, sizeof p, "desktop_sites.txt"); FILE *f = *g_pref ? fopen(p, "w") : NULL; if (!f) return;
-    for (char *h = strtok(hosts, " "); h; h = strtok(NULL, " ")) fprintf(f, "%s\n", h);
-    fclose(f);
-}
-static bool page_is_web(const Tab *t) { return t->cur && !t->cur->internal_ui && !strncmp(t->url, "http", 4); }
-/* "Desktop site" on a web page is for its site; on any other page ("*") for every site */
-static bool desktop_on(const Tab *t) { return page_is_web(t) ? t->desktop : net_desktop_host("*"); }
-static AndroidMenuState menu_state(App *a) {
-    Tab *t = bar_tab(a);
-    return (AndroidMenuState){
-        .can_forward = t->hpos < t->nhist - 1, .desktop = desktop_on(t), .can_desktop = page_is_web(t) ? 1 : 2,
-        .can_zoom = true, .zoom_pct = t->zoom_pct ? t->zoom_pct : g_page_zoom_pct,
-        .bookmarked = bm_find(t->url) >= 0, .can_bookmark = t->cur && *t->url && strncmp(t->url, "lumen:", 6),
-        .can_back = t->hpos > 0, .fullscreen = g_fullscreen,
-    };
-}
-static void show_more_menu(App *a) { AndroidMenuState st = menu_state(a); android_ui_menu(&st); }
-/* hand the toolbar row's state to its Android view (android_ui_toolbar drops repeats) */
-static void bar_push(App *a) {
-    Tab *t = bar_tab(a); AndroidBarState st; memset(&st, 0, sizeof st);
-    float s = a->scale, x0 = bar_x0(a);
-    st.left = (int)lroundf(x0 * s); st.top = (int)lroundf(TABH * s);
-    st.width = (int)lroundf((a->vw - x0) * s); st.height = (int)lroundf(TB * s);
-    g_slot_n = st.nslot = a->vw - x0 >= 600 ? 4 : 2;   /* landscape phones and tablets */
-    for (int i = 0; i < st.nslot; i++) {
-        int code = g_slot[i]; st.slot[i] = code;
-        st.slot_enabled[i] = code == UI_BACK ? t->hpos > 0 : code == UI_FORWARD ? t->hpos < t->nhist - 1 : true;
-        st.slot_lit[i] = code == UI_BM_TOGGLE ? bm_find(t->url) >= 0 : code == UI_DESKTOP ? desktop_on(t) : code == UI_FULLSCREEN && g_fullscreen;
-    }
-    st.loading = t->loading; st.menu = menu_state(a); st.hud = g_hud; st.touch_feedback = g_touch_fb;
-    st.touch_rgb = g_touch_fb_rgb; st.touch_alpha = g_touch_fb_alpha; st.touch_size = g_touch_fb_size; st.touch_ms = g_touch_fb_ms;
-    android_ui_toolbar(&st, t->url);
-}
-static void show_bookmarks(App *a) {
-    const char *titles[MAX_BM], *urls[MAX_BM];
-    for (int i = 0; i < g_nbm; i++) { titles[i] = g_bms[i].title; urls[i] = g_bms[i].url; }
-    Tab *t = bar_tab(a); bool page = t->cur && *t->url && strncmp(t->url, "lumen:", 6);
-    const char *title = page && t->cur->d->title && *t->cur->d->title ? t->cur->d->title : t->url;
-    android_ui_bookmarks(titles, urls, g_nbm, page ? title : NULL, page ? t->url : NULL);
-}
-static void show_workspaces(App *a) {
-    const char *names[16]; int tabs[16], v[MAX_TABS];
-    for (int i = 0; i < a->nws; i++) { names[i] = a->wsname[i]; tabs[i] = ws_tabs(a, i, v); }
-    android_ui_workspaces(names, tabs, a->nws, a->wi);
-}
 /* The menu's Bookmarks, History, Downloads, Workspaces and Settings: Lumen's new tab page at that
    section in a panel at the right below the toolbar, floating over a picture of the page it covers.
    The panel is a tab of no workspace that is shown (a->t) while a->ti stays on the covered tab; links
@@ -5532,9 +5489,11 @@ static void panel_close(App *a, bool keep_picture) {
     a->pan_dead = p;   /* freed by panel_service: its page may be on the stack */
     if (!keep_picture) { free(a->pan_bg); a->pan_bg = NULL; }
     if (a->t->cur && a->t->cur->js) js_touch(a->t->cur->js, NULL, "reset", 0, 0, 0, 0, 0);
+#ifdef __ANDROID__
     touch_frames_reset();
     android_touch_reset(&a->touch);
     android_fling_reset(&a->fling);
+#endif
     a->t->relayout = true; a->dirty = true; a->vonly = a->osig_ok = a->gvid_ok = false;
     publish_gens(a);
 }
@@ -5549,6 +5508,54 @@ static void panel_service(App *a) {
     else if (go && !workspace_run(a, go)) navigate(a, go, true);
     if (home && a->t->ws >= 0) panel_open_at(a, "home", true);
     free(go);
+}
+#ifdef __ANDROID__
+static void desktop_sites_save(void) {
+    char hosts[64 * 130]; net_desktop_hosts(hosts, sizeof hosts);
+    char p[1200]; pref_path(p, sizeof p, "desktop_sites.txt"); FILE *f = *g_pref ? fopen(p, "w") : NULL; if (!f) return;
+    for (char *h = strtok(hosts, " "); h; h = strtok(NULL, " ")) fprintf(f, "%s\n", h);
+    fclose(f);
+}
+static bool page_is_web(const Tab *t) { return t->cur && !t->cur->internal_ui && !strncmp(t->url, "http", 4); }
+/* "Desktop site" on a web page is for its site; on any other page ("*") for every site */
+static bool desktop_on(const Tab *t) { return page_is_web(t) ? t->desktop : net_desktop_host("*"); }
+static AndroidMenuState menu_state(App *a) {
+    Tab *t = bar_tab(a);
+    return (AndroidMenuState){
+        .can_forward = t->hpos < t->nhist - 1, .desktop = desktop_on(t), .can_desktop = page_is_web(t) ? 1 : 2,
+        .can_zoom = true, .zoom_pct = t->zoom_pct ? t->zoom_pct : g_page_zoom_pct,
+        .bookmarked = bm_find(t->url) >= 0, .can_bookmark = t->cur && *t->url && strncmp(t->url, "lumen:", 6),
+        .can_back = t->hpos > 0, .fullscreen = g_fullscreen,
+    };
+}
+static void show_more_menu(App *a) { AndroidMenuState st = menu_state(a); android_ui_menu(&st); }
+/* hand the toolbar row's state to its Android view (android_ui_toolbar drops repeats) */
+static void bar_push(App *a) {
+    Tab *t = bar_tab(a); AndroidBarState st; memset(&st, 0, sizeof st);
+    float s = a->scale, x0 = bar_x0(a);
+    st.left = (int)lroundf(x0 * s); st.top = (int)lroundf(TABH * s);
+    st.width = (int)lroundf((a->vw - x0) * s); st.height = (int)lroundf(TB * s);
+    g_slot_n = st.nslot = a->vw - x0 >= 600 ? 4 : 2;   /* landscape phones and tablets */
+    for (int i = 0; i < st.nslot; i++) {
+        int code = g_slot[i]; st.slot[i] = code;
+        st.slot_enabled[i] = code == UI_BACK ? t->hpos > 0 : code == UI_FORWARD ? t->hpos < t->nhist - 1 : true;
+        st.slot_lit[i] = code == UI_BM_TOGGLE ? bm_find(t->url) >= 0 : code == UI_DESKTOP ? desktop_on(t) : code == UI_FULLSCREEN && g_fullscreen;
+    }
+    st.loading = t->loading; st.menu = menu_state(a); st.hud = g_hud; st.touch_feedback = g_touch_fb;
+    st.touch_rgb = g_touch_fb_rgb; st.touch_alpha = g_touch_fb_alpha; st.touch_size = g_touch_fb_size; st.touch_ms = g_touch_fb_ms;
+    android_ui_toolbar(&st, t->url);
+}
+static void show_bookmarks(App *a) {
+    const char *titles[MAX_BM], *urls[MAX_BM];
+    for (int i = 0; i < g_nbm; i++) { titles[i] = g_bms[i].title; urls[i] = g_bms[i].url; }
+    Tab *t = bar_tab(a); bool page = t->cur && *t->url && strncmp(t->url, "lumen:", 6);
+    const char *title = page && t->cur->d->title && *t->cur->d->title ? t->cur->d->title : t->url;
+    android_ui_bookmarks(titles, urls, g_nbm, page ? title : NULL, page ? t->url : NULL);
+}
+static void show_workspaces(App *a) {
+    const char *names[16]; int tabs[16], v[MAX_TABS];
+    for (int i = 0; i < a->nws; i++) { names[i] = a->wsname[i]; tabs[i] = ws_tabs(a, i, v); }
+    android_ui_workspaces(names, tabs, a->nws, a->wi);
 }
 typedef struct { int code, value; char *s1, *s2; } UiAction;
 static void ui_action_post(int code, int value, char *s1, char *s2) {   /* Android UI thread */
@@ -5776,10 +5783,6 @@ static void ui_action(App *a, UiAction *u, bool *quit) {
         navigate(a, "lumen://newtab?s=bookmarks", false);
     a->dirty = true; a->vonly = false;
 }
-#else
-static void panel_close(App *a, bool keep_picture) { (void)a; (void)keep_picture; }
-static void panel_backdrop(App *a, int bar_px, int width) { (void)a; (void)bar_px; (void)width; }
-static void panel_service(App *a) { (void)a; }
 #endif
 /* Download events: a navigation that became a download leaves the tab where it was; the
    Downloads page follows progress; starts, completions and failures get a toast. */
@@ -6339,7 +6342,9 @@ int main(int argc, char **argv) {
                 case HB_BACK: history_go(&a, -1); break;
                 case HB_FWD: history_go(&a, 1); break;
                 case HB_STAR: bm_toggle(&a); a.dirty = true; a.vonly = false; break;
-#ifdef __ANDROID__
+#ifndef __ANDROID__
+                case HB_MENU: if (a.editing) url_cancel(&a); if (a.pan) panel_close(&a, false); else panel_open(&a, "home"); a.dirty = true; break;
+#else
                 case HB_MENU: if (a.editing) url_cancel(&a); show_more_menu(&a); a.dirty = true; break;
                 case HB_SLOT: case HB_SLOT + 1: {
                     if (a.editing) url_cancel(&a);

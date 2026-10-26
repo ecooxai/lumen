@@ -156,6 +156,11 @@ hit testing of position:sticky boxes doesn't match where they are painted on And
 MediaPlayback$Service isForeground=true, AAudio player started 20 s after Home, service gone on return. Lead: the
 main loop logged nothing for ~10 s in the background while YouTube played (playback clock may stall). Workspace
 tab cards are now 160x120 (4:3), title 2 lines, URL wraps and is clipped.
+RELEASED v0.3.5-android-preview (94ec7de, asset lumen-v0.3.5-android-preview-debug.apk, sha256 d08ec1ea...).
+LINUX PORT: the Lumen-pages panel (panel_open/close/service) is no longer Android-only; desktop toolbar has a
+menu button (three dots, HB_MENU, right end) that toggles the panel at Home; "home" is a section on desktop too;
+the desktop toolbar shows the covered tab (bar_tab) while the panel is up. Test: xdotool click under xvfb
+(/tmp/menutest.sh). Next Linux items: Android's toolbar slots (download, tabs/workspaces), more-menu entries.
 
 RUN 226: testdriver delete_all_cookies() -> "cookies-clear" td op (main.c td_cmd -> cookies_clear(), cookies.c).
 lumen_wpt.py now rewrites testdriver-vendor.js from .orig whenever VENDOR_JS changes (it appended only once, so
