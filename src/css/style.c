@@ -3116,10 +3116,13 @@ static ComputedStyle *compute(StyleEngine *e, Node *el, const ComputedStyle *par
     ComputedStyle *st = style_inherit(par);
     /* split normal / important so presentational hints & inline style go between */
     int split = 0; while (split < mn && (md[split].key >> 62) < 2) split++;
+    /* hints sit above the UA sheet's normal declarations and below the author's (css-cascade "presentational hints") */
+    int ua = 0; while (ua < split && (md[ua].key >> 62) == 0) ua++;
+    if (ua) apply_decl_ordered(st, par, md, ua, e, el);
     presentational_hints(st, par, el, e);
     /* one pass so var() in sheet custom properties sees inline custom properties */
     VEC(MDecl) all = {0};
-    for (int i = 0; i < split; i++) vec_push(all, md[i]);
+    for (int i = ua; i < split; i++) vec_push(all, md[i]);
     const char *inl = node_attr_atom(el, A_style);
     if (inl) {
         if (!el->inline_style_src || strcmp(el->inline_style_src, inl)) { free(el->inline_style_src); el->inline_style_src = xstrdup(inl); css_decls_free(el->inline_decls); el->inline_decls = css_parse_decls(inl, strlen(inl)); }
@@ -4078,7 +4081,7 @@ static void len_str(SB *b, Length l, const char *au) {
     else if (l.kind == LK_MAX_CONTENT) sb_puts(b, "max-content");
     else if (l.kind == LK_FIT_CONTENT) sb_puts(b, "fit-content");
     else if (l.pct && l.px) sb_printf(b, "calc(%g%% + %gpx)", l.pct, l.px);
-    else if (l.pct) sb_printf(b, "%g%%", l.pct);
+    else if (l.pct || (l.pctu && !l.px)) sb_printf(b, "%g%%", l.pct);
     else sb_printf(b, "%gpx", l.px);
 }
 static void tracks_str(SB *b, const GridTrack *t, int n) {
@@ -4226,7 +4229,10 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
     else if (!strncmp(prop, "margin-", 7) || !strncmp(prop, "padding-", 8)) {
         bool m = prop[0] == 'm'; const char *side = prop + (m ? 7 : 8);
         int i = !strcmp(side, "top") ? 0 : !strcmp(side, "right") ? 1 : !strcmp(side, "bottom") ? 2 : 3;
-        Length l = m ? s->margin[i] : s->padding[i]; sb_printf(&b, "%gpx", l.px);
+        Length l = m ? s->margin[i] : s->padding[i];
+        /* rendered: the used value (resolves %); not rendered: the computed value */
+        if (el->box || !(l.pct || l.pctu)) sb_printf(&b, "%gpx", el->box && (l.pct || l.pctu) ? (m ? el->box->m[i] : el->box->p[i]) : l.px);
+        else if (l.kind == LK_AUTO || l.mm) sb_printf(&b, "%gpx", l.px); else len_str(&b, l, "auto");
     }
     else if (!strcmp(prop, "width") || !strcmp(prop, "height")) {
         bool W = prop[0] == 'w'; const Box *bx = el->box;

@@ -211,6 +211,11 @@ secure-context check uses N.parentSecure() and about:/blob:/data: CSP inheritanc
 svg-in-iframe-* alone peak ~570 MB (was ~1.25 GB). Run 252: 0 crash; -300 from load timeouts (svg-in-img-percentage,
 svg-in-iframe-*), all equal to the old binary alone. The churn probe page was deleted; recreate from git history of
 this note if needed (120 srcdoc iframes, each removed after load, 100 ms apart, then 14 s wait).
+RUN 253 (committed): presentational hints now cascade above UA normal declarations (were below, so ua.c's
+input{width:150px} beat width=), len_str keeps 0% (pctu), getComputedStyle margin/padding give % when unrendered and
+resolved px when rendered. +674 (dimension-attributes 1682/1720, cssom insets +252). Lost 5 css-box/margin-trim
+subtests that passed only because % margins used to read 0px (margin-trim is not implemented). Left in
+dimension-attributes: <source width/height> inside <picture> mapping to the <img> (38).
 
 RUN 245: WebGL idlharness 2065 -> 2086/2099 (window and worker): FLOAT_MATnxm constants, interface .length, prototype
 getters throw, optional-argument defaults for bufferData/getBufferSubData/texImage3D lengths. +50, no losses. Left: setters
