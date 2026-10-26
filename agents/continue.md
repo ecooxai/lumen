@@ -143,6 +143,14 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 ## Runs
 (append here: RUN 227 ...)
 
+UI WORK (4704bd2, APK built+installed, not yet released): newtab.html icon top bar + floating search; viewer zoom
+steps/list/shown size; tab_select blank-frame-first for loading tabs; Android background media (SDL
+BLOCK_ON_PAUSE=0, MediaPlayback.java foreground service, nativeMediaPlaying). OPEN BUG (reproduced on phone, not
+on desktop): tapping a section icon in lumen://newtab?s=home does nothing until the user scrolls (desktop xvfb
+scripted click works; stub test pages /tmp/nt7.html). Suspect the Android touch->click path (android_dom_touch /
+touch_tap in main.c) or a missing wake/render after the click. Background-audio test and device_tests for 4704bd2
+not run yet (someone was using the phone). Then: GitHub release v0.3.5-android-preview, Linux UI port, WPT.
+
 RUN 226: testdriver delete_all_cookies() -> "cookies-clear" td op (main.c td_cmd -> cookies_clear(), cookies.c).
 lumen_wpt.py now rewrites testdriver-vendor.js from .orig whenever VENDOR_JS changes (it appended only once, so
 vendor edits never reached the WPT checkout). /cookies/name, value, attributes: +241, none lost. Lead: the
