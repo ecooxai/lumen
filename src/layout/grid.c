@@ -30,6 +30,17 @@ static void occ_mark(Occ *o, int r, int c, int rs, int cs) {
     for (int y = r; y < r + rs; y++) for (int x = c; x < c + cs && x < o->nc; x++) o->v[(size_t)y * o->nc + x] = 1;
 }
 
+/* A preferred width that behaves as auto (or depends on the grid area) with no min-width contributes the automatic
+   minimum, which a fixed maximum clamps; a definite width or min-width contributes the min-content contribution. */
+float grid_item_auto_min(Layout *L, Box *c, float maxlen) {
+    float a, z; intrinsic_outer(L, c, &a, &z);
+    const ComputedStyle *s = c->st;
+    bool dep = s->width.kind == LK_AUTO || len_has_pct(s->width);
+    bool minw = s->min_width.kind == LK_LEN && (s->min_width.px > 0 || s->min_width.pct);
+    float m = (s->margin[1].pct ? 0 : s->margin[1].px) + (s->margin[3].pct ? 0 : s->margin[3].px);   /* the clamp is on the box, margins come on top */
+    return dep && !minw ? LMIN(a - m, LMAX(0, maxlen - m)) + m : a;
+}
+
 float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) {
     const ComputedStyle *s = b->st;
     float cg = s->column_gap_l.pct ? res(s->column_gap_l, cw) : s->column_gap, rg = s->row_gap;
@@ -91,6 +102,11 @@ float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
         GridTrack *t = &cols.v[i];
         if (t->fr > 0) { kind[i] = 2; frsum += t->fr; cwid[i] = t->min.kind == LK_LEN ? res(t->min, cw) : 0; fixed += cwid[i]; continue; }
         if (t->size.kind == LK_LEN && t->min.kind == LK_LEN && res(t->min, cw) < res(t->size, cw)) { kind[i] = 3; cwid[i] = res(t->min, cw); cap[i] = res(t->size, cw); fixed += cwid[i]; ngrow++; continue; }
+        if (t->min.kind == LK_MIN_CONTENT && t->size.kind == LK_LEN) {   /* minmax(auto, len): at least the items' automatic minimum */
+            float mn = 0;
+            for (int k = 0; k < items.n; k++) if (items.v[k].c == i && items.v[k].cs == 1) mn = LMAX(mn, grid_item_auto_min(L, items.v[k].b, res(t->size, cw)));
+            kind[i] = 1; cwid[i] = LMAX(mn, res(t->size, cw)); fixed += cwid[i]; continue;
+        }
         float f = track_fixed(t, cw);
         if (f >= 0) { kind[i] = 1; cwid[i] = f; fixed += f; continue; }
         float mx = 0;

@@ -77,6 +77,7 @@ float layout_inline(Layout *L, Box *b, float x0, float y0, float W, FloatCtx *fc
 float layout_flow(Layout *L, Box *b, float cx, float cy, float cw, float cbh, FloatCtx *fc);
 float layout_flex(Layout *L, Box *b, float cx, float cy, float cw, float chdef);
 float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef);
+float grid_item_auto_min(Layout *L, Box *c, float maxlen);   /* contribution to a minmax(auto, maxlen) column */
 float layout_table(Layout *L, Box *b, float cx, float cy, float cw, float chdef);
 void table_intrinsic(Layout *L, Box *b, float *mn, float *mx);
 void intrinsic(Layout *L, Box *b, float *mn, float *mx);

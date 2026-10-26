@@ -176,7 +176,13 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
   - No image sharing.
 
 ## Runs
-(append here: RUN 236 ...)
+(append here: RUN 240 ...)
+
+RUN 236-239: `minmax(auto, len)` columns (parsed with min kind LK_MIN_CONTENT) size to at least the items'
+`grid_item_auto_min()` (auto/percent width without min-width: min-content clamped to len minus margins; else min-content
+contribution), also in the inline-grid intrinsic width (single-column grids only). gap/row-gap/column-gap reject
+angle and time values (alen takes them). grid-items-minimum-width-* +176, css-align +265, no losses.
+Remaining gap-parsing failures: negative gaps, 3 values, slash, inherit.
 
 Debug tool: `python3 tools/codex_compile.py python3 tests/wpt/wpt_one.py URL...` runs single tests offscreen against the
 running `wpt serve` and prints full assertion messages (check-layout outerHTML stripped) plus CPU/RSS. Scratch pages

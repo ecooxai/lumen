@@ -764,7 +764,7 @@ static int parse_grid_tracks(ACtx *c, const char *v, GridTrack **out) {
         if (tl > 2 && !strcmp(t + tl - 2, "fr")) { g.fr = strtof(t, NULL); g.min.kind = LK_LEN; }
         else if (str_istarts(t, "minmax(")) {
             char *inner = xstrndup(t + 7, tl - 8); char *comma = strchr(inner, ',');
-            if (comma) { *comma = 0; alen(c, str_trim(inner), &g.min); char *mx = str_trim(comma + 1); size_t ml = strlen(mx); if (ml > 2 && !strcmp(mx + ml - 2, "fr")) g.fr = strtof(mx, NULL); else alen(c, mx, &g.size); }
+            if (comma) { *comma = 0; char *mn = str_trim(inner); if (str_ieq(mn, "auto")) g.min.kind = LK_MIN_CONTENT; else alen(c, mn, &g.min); char *mx = str_trim(comma + 1); size_t ml = strlen(mx); if (ml > 2 && !strcmp(mx + ml - 2, "fr")) g.fr = strtof(mx, NULL); else alen(c, mx, &g.size); }
             free(inner);
         } else alen(c, t, &g.size);
         vec_push(tr, g); free(t);
@@ -779,6 +779,13 @@ static void parse_grid_line(const char *v, int *start, int *span) {
     if (str_istarts(a, "span")) *span = LMAX(1, atoi(a + 4)); else *start = atoi(a);
     if (slash) { char *b = str_trim(slash + 1); if (str_istarts(b, "span")) *span = LMAX(1, atoi(b + 4)); else { int e = atoi(b); if (e > 0 && *start > 0 && e > *start) *span = e - *start; else if (e < 0 && *start > 0) *span = e; } }
     free(s);
+}
+/* alen() also takes angles and times (for calc and transforms); a gap with one is invalid */
+static bool angle_or_time(const char *v) {
+    static const char *const u[] = { "deg", "grad", "rad", "turn", "ms", "s" };
+    size_t n = strlen(v);
+    for (size_t i = 0; i < sizeof u / sizeof *u; i++) { size_t k = strlen(u[i]); if (n > k && !strcasecmp(v + n - k, u[i]) && (isdigit((unsigned char)v[n - k - 1]) || v[n - k - 1] == '.')) return true; }
+    return false;
 }
 static uint8_t parse_align(const char *v) {
     static const char *const al[] = { "auto", "normal", "stretch", "flex-start", "flex-end", "center", "baseline", "space-between", "space-around", "space-evenly", "start", "end", NULL };
@@ -1144,7 +1151,7 @@ apply:
         else if (!strcmp(P, "clear")) { static const char *const cl[] = { "none", "left", "right", "both", NULL }; k = kw(val, cl); if (k >= 0) st->clear = (uint8_t)k; else if (str_ieq(val, "inline-start")) st->clear = CLEAR_LEFT; }
         else if (!strcmp(P, "cursor")) { st->cursor = str_ieq(val, "pointer") ? CUR_POINTER : str_ieq(val, "text") ? CUR_TEXT : str_ieq(val, "move") ? CUR_MOVE : str_ieq(val, "not-allowed") ? CUR_NOT_ALLOWED : str_istarts(val, "grab") ? CUR_GRAB : CUR_DEFAULT; }
         else if (!strcmp(P, "content")) { free(st->content); st->content = NULL; if (!str_ieq(val, "none") && !str_ieq(val, "normal")) { SB b; sb_init(&b); const char *q = val; while (*q) { if (*q == '"' || *q == '\'') { char qc = *q++; while (*q && *q != qc) { if (*q == '\\' && q[1]) { q++; if (isxdigit((unsigned char)*q)) { uint32_t cp = (uint32_t)strtoul(q, (char **)&q, 16); sb_utf8(&b, cp); if (*q == ' ') q++; continue; } } sb_putc(&b, *q++); } if (*q) q++; } else if (str_istarts(q, "attr(")) { const char *e2 = strchr(q, ')'); char an[64]; snprintf(an, sizeof an, "%.*s", (int)(e2 ? e2 - q - 5 : 0), q + 5); const char *attribute = str_trim(an); st->attribute_dependencies |= custom_bit(atom_lower(attribute, strlen(attribute))); const char *av = el ? node_attr(el, attribute) : NULL; if (av) sb_puts(&b, av); q = e2 ? e2 + 1 : q + strlen(q); } else if (str_istarts(q, "open-quote")) { sb_puts(&b, "\xe2\x80\x9c"); q += 10; } else if (str_istarts(q, "close-quote")) { sb_puts(&b, "\xe2\x80\x9d"); q += 11; } else q++; } st->content = sb_take(&b); } }
-        else if (!strcmp(P, "column-gap")) { if (str_ieq(val, "normal")) { st->column_gap = 0; memset(&st->column_gap_l, 0, sizeof st->column_gap_l); } else if (alen(&c, val, &l)) { st->column_gap = l.px; st->column_gap_l = l; } }
+        else if (!strcmp(P, "column-gap")) { if (str_ieq(val, "normal")) { st->column_gap = 0; memset(&st->column_gap_l, 0, sizeof st->column_gap_l); } else if (!angle_or_time(val) && alen(&c, val, &l)) { st->column_gap = l.px; st->column_gap_l = l; } }
         else if (!strcmp(P, "caret-color")) { css_parse_color(val, &st->caret_color, st->color); }
         break;
     case 'd':
@@ -1211,7 +1218,7 @@ apply:
         else if (!strcmp(P, "filter")) { const char *b = strstr(val, "blur("); st->filter_blur = b ? alen_px(&c, b + 5, 0) : 0; const char *br = strstr(val, "brightness("); st->filter_brightness = br ? strtof(br + 11, NULL) : 1; }
         break;
     case 'g':
-        if (!strcmp(P, "gap") || !strcmp(P, "grid-gap")) { char *t[2]; int n = split_ws(val, t, 2); if (n && alen(&c, t[0], &l)) { st->row_gap = l.px; st->row_gap_l = l; st->column_gap = l.px; st->column_gap_l = l; } if (n > 1 && alen(&c, t[1], &l)) { st->column_gap = l.px; st->column_gap_l = l; } free_toks(t, n); }
+        if (!strcmp(P, "gap") || !strcmp(P, "grid-gap")) { char *t[2]; int n = split_ws(val, t, 2); bool ok = n && !angle_or_time(t[0]) && !(n > 1 && angle_or_time(t[1])); if (ok && alen(&c, t[0], &l)) { st->row_gap = l.px; st->row_gap_l = l; st->column_gap = l.px; st->column_gap_l = l; } if (ok && n > 1 && alen(&c, t[1], &l)) { st->column_gap = l.px; st->column_gap_l = l; } free_toks(t, n); }
         else if (!strcmp(P, "grid-template-columns")) { free(st->grid_cols); st->grid_cols = NULL; st->grid_ncols = str_ieq(val, "none") ? 0 : parse_grid_tracks(&c, val, &st->grid_cols); }
         else if (!strcmp(P, "grid-template-rows")) { free(st->grid_rows); st->grid_rows = NULL; st->grid_nrows = str_ieq(val, "none") ? 0 : parse_grid_tracks(&c, val, &st->grid_rows); }
         else if (!strcmp(P, "grid") && !strstr(val, "auto-flow")) css_apply_decl(st, par, "grid-template", val, e, el);
@@ -1327,7 +1334,7 @@ apply:
         break;
     case 'r':
         if (!strcmp(P, "right")) alen(&c, val, &st->inset[1]);
-        else if (!strcmp(P, "row-gap")) { if (str_ieq(val, "normal")) { st->row_gap = 0; memset(&st->row_gap_l, 0, sizeof st->row_gap_l); } else if (alen(&c, val, &l)) { st->row_gap = l.px; st->row_gap_l = l; } }
+        else if (!strcmp(P, "row-gap")) { if (str_ieq(val, "normal")) { st->row_gap = 0; memset(&st->row_gap_l, 0, sizeof st->row_gap_l); } else if (!angle_or_time(val) && alen(&c, val, &l)) { st->row_gap = l.px; st->row_gap_l = l; } }
         else if (!strcmp(P, "rotate")) { char buf[64]; snprintf(buf, sizeof buf, "rotate(%s)", val); if (!str_ieq(val, "none")) parse_transform(&c, buf); }
         break;
     case 's':

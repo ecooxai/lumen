@@ -433,7 +433,13 @@ void intrinsic(Layout *L, Box *b, float *omn, float *omx) {
     } else if (b->fmt == FMT_GRID) {
         int nc = LMAX(1, st->grid_ncols); bool fixed = st->grid_ncols > 0;
         float fsum = 0;
-        for (int i = 0; i < st->grid_ncols; i++) { if (st->grid_cols[i].size.kind == LK_LEN && !st->grid_cols[i].size.pct && !st->grid_cols[i].fr) fsum += st->grid_cols[i].size.px; else fixed = false; }
+        for (int i = 0; i < st->grid_ncols; i++) {
+            const GridTrack *t = &st->grid_cols[i];
+            if (t->size.kind != LK_LEN || t->size.pct || t->fr) { fixed = false; continue; }
+            float w = t->size.px;
+            if (t->min.kind == LK_MIN_CONTENT && st->grid_ncols == 1) for (Box *c = b->first; c; c = c->next) if (in_flow(c)) w = LMAX(w, grid_item_auto_min(L, c, t->size.px));   /* minmax(auto, len); which items land in which of several columns is not known here */
+            fsum += w;
+        }
         if (fixed) mn = mx = fsum + st->column_gap * (nc - 1);
         else {
             float cmx = 0, cmn = 0;
