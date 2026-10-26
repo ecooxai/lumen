@@ -216,6 +216,16 @@ input{width:150px} beat width=), len_str keeps 0% (pctu), getComputedStyle margi
 resolved px when rendered. +674 (dimension-attributes 1682/1720, cssom insets +252). Lost 5 css-box/margin-trim
 subtests that passed only because % margins used to read 0px (margin-trim is not implemented). Left in
 dimension-attributes: <source width/height> inside <picture> mapping to the <img> (38).
+Whole-suite report regenerated after 253 (15,513 tests with Chrome-passing gaps). Largest single tests: anchor-position
+writing-modes-001 (1296), svg pointer-events-fill-stroke-hittest (1242), html/dom idlharness (980 + 552),
+pointerevent_fractional_coordinates_untrusted (798), calc-size interpolation (690 + 494), css-gaps rule-inset
+interpolation (600 x2), all-prop-initial-xml (488), quirks/unitless-length no-quirks + limited-quirks (398 each,
+quirks.html 242). NEXT: unitless lengths. css_parse_length -> parse_dim (style.c ~311) accepts "1" as 1px for every
+caller; author declarations (sheets, inline style, CSSOM setters) must reject non-zero unitless numbers in no-quirks
+and limited-quirks documents, and in quirks mode accept them only for the quirky property list (see
+quirks/unitless-length/support/common.js) and never when written with escapes ("1\31 "). Internal callers
+(presentational hints, SVG width/height attributes via css_apply_decl) must keep accepting them, so gate it on the
+declaration origin, not inside parse_dim.
 
 RUN 245: WebGL idlharness 2065 -> 2086/2099 (window and worker): FLOAT_MATnxm constants, interface .length, prototype
 getters throw, optional-argument defaults for bufferData/getBufferSubData/texImage3D lengths. +50, no losses. Left: setters
