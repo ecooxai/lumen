@@ -141,7 +141,11 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 230 ...)
+(append here: RUN 231 ...)
+
+RUN 230: circle()/ellipse() 'at <position>' serialization for shape-outside/clip-path (03-element.js shapePos):
+specified adds 'center' to a lone offset and puts the horizontal pair first; computed gives two values, keywords
+as %, lengths in px, far-edge offsets as calc(100% - X). /css/css-shapes/ + /css/css-masking/: +1162, none lost.
 
 RUN 229: three native fixes found via test_media_queries.html (698 -> 1029/1349):
 - <style>/<link> media attribute was ignored natively: style_recalc now re-checks each sheet owner's media

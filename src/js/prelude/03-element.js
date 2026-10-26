@@ -316,7 +316,58 @@ function computedFont(cs) {
     const w = g('font-weight') || '400', lh = g('line-height') || 'normal';
     return [g('font-style') || 'normal', vr, w === '400' ? 'normal' : w, st].filter(x => x !== 'normal').concat(lh === 'normal' ? size : `${size} / ${lh}`, family).join(' ');
 }
+/* circle()/ellipse() "at <position>": the specified form (a lone offset gets "center", the horizontal pair
+   first) or, given a length resolver, the computed form (two values, keywords as percentages, px) */
+function shapePos(v, px) {
+    return v.replace(/\b(circle|ellipse)\(([^()]*)\)/gi, (m, fn, args) => {
+        const i = args.search(/(^|\s)at\s/i); if (i < 0) return m;
+        const head = args.slice(0, i).trim(), t = args.slice(i).trim().slice(3).trim().split(/\s+/);
+        const H = /^(left|right)$/i, V = /^(top|bottom)$/i, K = /^(left|right|top|bottom|center)$/i;
+        let out = null;
+        if (!px) {
+            if (t.length === 1 && !K.test(t[0])) out = t[0] + ' center';
+            else if (t.length === 4 && V.test(t[0])) out = [t[2], t[3], t[0], t[1]].join(' ');
+        } else {
+            let x, y;
+            if (t.length === 1) { if (V.test(t[0])) { x = ['center']; y = [t[0]]; } else { x = [t[0]]; y = ['center']; } }
+            else if (t.length === 2) { const sw = V.test(t[0]) || H.test(t[1]); x = [sw ? t[1] : t[0]]; y = [sw ? t[0] : t[1]]; }
+            else if (t.length === 4) { const sw = V.test(t[0]); x = sw ? t.slice(2) : t.slice(0, 2); y = sw ? t.slice(0, 2) : t.slice(2); }
+            else return m;
+            const one = (a, far) => {
+                const kw = a[0].toLowerCase(), off = a[1];
+                if (a.length === 1 && !K.test(kw)) { const r = px(kw); return r; }
+                if (!off) return kw === 'center' ? '50%' : kw === far ? '100%' : '0%';
+                if (/%$/.test(off)) { const n = parseFloat(off); return kw === far ? +(100 - n).toPrecision(6) + '%' : off; }
+                const r = px(off); if (r == null) return null;
+                return kw === far ? 'calc(100% - ' + r + ')' : r;
+            };
+            const xs = one(x, 'right'), ys = one(y, 'bottom');
+            if (xs == null || ys == null) return m;
+            out = xs + ' ' + ys;
+        }
+        return out == null ? m : fn + '(' + (head ? head + ' ' : '') + 'at ' + out + ')';
+    });
+}
+const SHAPE_UNITS = { px: 1, cm: 96 / 2.54, mm: 96 / 25.4, q: 96 / 101.6, in: 96, pt: 4 / 3, pc: 16 };
+function shapeLenPx(el) {
+    return a => {
+        const m = /^(-?[\d.]+(?:e[+-]?\d+)?)([a-z%]*)$/i.exec(a); if (!m) return null;
+        const n = parseFloat(m[1]), u = m[2].toLowerCase();
+        if (u === '%') return a;
+        let f = SHAPE_UNITS[u];
+        if (f == null) {
+            const W = innerWidth / 100, Hh = innerHeight / 100;
+            if (u === 'em') f = parseFloat(N.computed(el, 'font-size')) || 16;
+            else if (u === 'rem') f = parseFloat(N.computed(document.documentElement, 'font-size')) || 16;
+            else if (u === 'vw') f = W; else if (u === 'vh') f = Hh; else if (u === 'vmin') f = Math.min(W, Hh); else if (u === 'vmax') f = Math.max(W, Hh);
+            else if (u === '' && n === 0) f = 1;
+            else return null;
+        }
+        return +(n * f).toPrecision(6) + 'px';
+    };
+}
 function specNormalize(p, v) {
+    if ((p === 'shape-outside' || p === 'clip-path') && /(circle|ellipse)\(/i.test(v)) v = shapePos(v, null);
     if (/-gradient\(\s*in\s/i.test(v))   /* "in <space> <direction>" serializes as "<direction> in <space>" */
         v = v.replace(/((?:repeating-)?(?:linear|radial|conic)-gradient\(\s*)in\s+([a-z0-9-]+(?:\s+(?:shorter|longer|increasing|decreasing)\s+hue)?)\s+([^,()]+?)\s*,/gi, (m, f, cs, dir) => /^(shorter|longer|increasing|decreasing)\s+hue$/i.test(dir.trim()) ? m : f + dir.trim() + ' in ' + cs.replace(/\s+/g, ' ') + ',');
     if (/-gradient\(/i.test(v)) v = v.replace(/\bin\s+xyz(?=[\s,])/gi, 'in xyz-d65');
@@ -452,7 +503,7 @@ const styleHandler = {
     has(t, p) { return p in t || cssPropKnown(p); },
 };
 class ComputedStyleDeclaration extends CSSStyleDeclaration {
-    getPropertyValue(p) { if (waDirty) waFlush(); const k = camelToKebab(String(p)); if (k === 'font') return computedFont(this); let v = N.computed(this._el, k); if (trPoll()) v = N.computed(this._el, k); return v == null ? '' : v; }
+    getPropertyValue(p) { if (waDirty) waFlush(); const k = camelToKebab(String(p)); if (k === 'font') return computedFont(this); let v = N.computed(this._el, k); if (trPoll()) v = N.computed(this._el, k); if ((k === 'shape-outside' || k === 'clip-path') && v && /(circle|ellipse)\(/i.test(v)) v = shapePos(v, shapeLenPx(this._el)); return v == null ? '' : v; }
     get cssText() { return ''; } get length() { return 0; }
     setProperty() { throw new DOMException('These styles are computed, and therefore read-only.', 'NoModificationAllowedError'); }
 }
