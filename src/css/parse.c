@@ -535,6 +535,8 @@ static bool media_feature(const char *f, const MediaCtx *mc) {
                 /* handle double ranges */
                 char *o2 = NULL; int oi2 = -1; for (int k = 0; k < 4; k++) { o2 = strstr(R, ops[k]); if (o2) { oi2 = k; break; } }
                 if (o2) {
+                    bool lt1 = oi == 1 || oi == 3, lt2 = oi2 == 1 || oi2 == 3;
+                    if (oi == 4 || oi2 == 4 || lt1 != lt2) { g_mq_unknown = true; return false; }   /* a < b > c, or = in a double range */
                     char mid[128]; snprintf(mid, sizeof mid, "%.*s", (int)(o2 - R), R);
                     char a[200], b[200]; snprintf(a, sizeof a, "%s %s %s", L, ops[oi], str_trim(mid)); snprintf(b, sizeof b, "%s %s %s", str_trim(mid), ops[oi2], o2 + strlen(ops[oi2]));
                     return media_feature(a, mc) && media_feature(b, mc);
@@ -542,10 +544,10 @@ static bool media_feature(const char *f, const MediaCtx *mc) {
                 bool feat_left = isalpha((unsigned char)L[0]);
                 const char *feat = feat_left ? L : R; const char *val = feat_left ? R : L;
                 float fv = (!strcmp(feat, "width")) ? mc->vw : (!strcmp(feat, "height")) ? mc->vh : (!strcmp(feat, "aspect-ratio")) ? mc->vw / mc->vh : -1;
-                if (fv < 0) return false;
+                if (fv < 0) { g_mq_unknown = true; return false; }
                 Length l; float v;
                 if (strchr(val, '/')) { float a = 0, b = 1; sscanf(val, "%f / %f", &a, &b); v = a / b; }
-                else if (css_parse_length(val, &l, em, em, mc)) v = l.px; else return false;
+                else if (css_parse_length(val, &l, em, em, mc)) v = l.px; else { g_mq_unknown = true; return false; }
                 int op = oi; if (!feat_left) { if (op == 0) op = 1; else if (op == 1) op = 0; else if (op == 2) op = 3; else if (op == 3) op = 2; }
                 switch (op) { case 0: return fv >= v; case 1: return fv <= v; case 2: return fv > v; case 3: return fv < v; default: return fabsf(fv - v) < 0.5f; }
             }
@@ -555,7 +557,7 @@ static bool media_feature(const char *f, const MediaCtx *mc) {
                                           "device-width", "device-height", "device-aspect-ratio", "resolution", "scripting", "update", "color-gamut", "orientation", "dynamic-range", "video-dynamic-range", "display-mode", "display-state", "prefers-color-scheme" };
         for (size_t i = 0; i < sizeof on / sizeof *on; i++) if (!strcmp(s, on[i])) return true;
         static const char *const off[] = { "grid", "monochrome", "color-index", "inverted-colors", "prefers-reduced-motion", "prefers-reduced-data",
-                                           "prefers-reduced-transparency", "prefers-contrast", "forced-colors", "overflow-block", "overflow-inline", "environment-blending", "resizable" };
+                                           "prefers-reduced-transparency", "prefers-contrast", "forced-colors", "overflow-block", "overflow-inline", "environment-blending", "resizable", "navigation-controls" };
         bool known = false;
         for (size_t i = 0; i < sizeof off / sizeof *off; i++) if (!strcmp(s, off[i])) known = true;
         if (!known) g_mq_unknown = true;
@@ -584,8 +586,20 @@ static bool media_feature(const char *f, const MediaCtx *mc) {
         if (str_starts(name, "max") || strstr(name, "max-")) return mc->dpr <= v;
         return fabsf(mc->dpr - v) < 0.01f;
     }
-    if (!strcmp(name, "min-aspect-ratio") || !strcmp(name, "max-aspect-ratio")) { float a = 0, b = 1; sscanf(val, "%f / %f", &a, &b); float r = a / b, cur = mc->vw / mc->vh; return name[1] == 'i' ? cur >= r : cur <= r; }
+    if (!strcmp(name, "min-aspect-ratio") || !strcmp(name, "max-aspect-ratio")) {
+        float a = 0, b = 1; int used = 0, got = sscanf(val, "%f%n", &a, &used);
+        const char *rest = val + (got == 1 ? used : 0); while (*rest == ' ') rest++;
+        if (got == 1 && *rest == '/') { int u2 = 0; if (sscanf(rest + 1, " %f%n", &b, &u2) != 1) got = 0; else { rest += 1 + u2; while (*rest == ' ') rest++; } }
+        if (got != 1 || *rest || a < 0 || b <= 0) { g_mq_unknown = true; return false; } float r = a / b, cur = mc->vw / mc->vh; return name[1] == 'i' ? cur >= r : cur <= r; }
     if (!strcmp(name, "scripting")) return !strcmp(val, "enabled");
+    static const char *const range[] = { "color", "color-index", "monochrome", "width", "height", "aspect-ratio", "device-width", "device-height",
+                                         "device-aspect-ratio", "resolution" };   /* the only ones with min-/max- */
+    static const char *const discrete[] = { "grid", "update", "color-gamut", "dynamic-range", "video-dynamic-range", "display-state", "overflow-block",
+                                            "overflow-inline", "environment-blending", "resizable", "orientation", "scan", "navigation-controls" };
+    bool pre = str_starts(name, "min-") || str_starts(name, "max-"), k = false;
+    for (size_t i = 0; i < sizeof range / sizeof *range; i++) if (!strcmp(pre ? name + 4 : name, range[i])) k = true;
+    if (!pre) for (size_t i = 0; i < sizeof discrete / sizeof *discrete; i++) if (!strcmp(name, discrete[i])) k = true;
+    if (!k) g_mq_unknown = true;   /* unknown: false even under "not" */
     return false;
 }
 

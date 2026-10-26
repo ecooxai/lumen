@@ -179,6 +179,7 @@ typedef struct StyleSheet {
     VEC(char *) font_faces; /* raw @font-face src urls, family pairs */
     char *base_url;
     bool disabled;
+    bool media_off;   /* its <style>/<link> media attribute doesn't match */
     Node *owner;
     int origin;
     uint32_t rank; /* cascade order among the engine's sheets; gaps let a sheet be indexed between two others */

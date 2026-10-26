@@ -141,7 +141,20 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 229 ...)
+(append here: RUN 230 ...)
+
+RUN 229: three native fixes found via test_media_queries.html (698 -> 1029/1349):
+- <style>/<link> media attribute was ignored natively: style_recalc now re-checks each sheet owner's media
+  (StyleSheet.media_off) and rebuilds the index when it flips (style.c).
+- getComputedStyle text-decoration-line read 'none' when set via the text-decoration shorthand (computed_of
+  now serializes st->text_decoration unless a longhand value is stored).
+- media queries: unknown names in (name: value), bad range syntax (a < b > c, '=' in a double range, bad
+  values), min-/max- on discrete features and bad aspect ratios are 'unknown' (false even under not); iframes'
+  media context follows their size (frame_update -> page_viewport).
+/css/mediaqueries, css-text-decor, cssom, css-cascade: +385, -52 (all in test_media_queries should_not_apply
+after an iframe resize: the resize reaches the frame's media only on the next frame, not synchronously).
+document-metadata, css-conditional, replaced-elements, css-transitions: +108, -1 (container
+query-evaluation '(not (unknown))' now true: lead). Unit tests 104/104.
 
 RUN 228: gradient specified-value serialization in specNormalize: 'in <space>' after the direction, default
 space dropped (srgb for legacy colors, oklab otherwise), xyz -> xyz-d65, 'ellipse' dropped before two sizes.

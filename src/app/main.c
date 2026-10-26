@@ -3021,7 +3021,7 @@ static bool frame_update(Page *p) {
     float w = b->w - (b->b[1] + b->b[3] + b->p[1] + b->p[3]), h = b->h - (b->b[0] + b->b[2] + b->p[0] + b->p[2]);
     if (w < 1 || h < 1) return false;
     frame_restyle(p);
-    if (w != p->fw || h != p->fh) { p->fw = w; p->fh = h; p->frelayout = true; }
+    if (w != p->fw || h != p->fh) { p->fw = w; p->fh = h; p->frelayout = true; page_viewport(p, w, h, p->e->media.dpr); }   /* its media queries see its size */
     frame_layout(p);
     float s = frame_scale(p); int pw = (int)ceilf(w * s), ph = (int)ceilf(h * s);
     if (p->cv.w != pw || p->cv.h != ph || p->cv.scale != s || !p->cv.px) { canvas_free(&p->cv); canvas_init(&p->cv, pw, ph, s); p->drawn_ver = ~0ull; }

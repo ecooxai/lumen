@@ -2515,7 +2515,7 @@ static void attribute_subjects_queue(StyleEngine *e, Node *n, const char *key) {
 }
 /* Index one sheet's rules after everything indexed so far in the cascade. */
 static void idx_add_sheet(StyleEngine *e, StyleSheet *sh) {
-    if (sh->disabled) return;
+    if (sh->disabled || sh->media_off) return;
     unsigned fw_bit = dom_tree_key_bit(":focus-within");
     {
         for (int i = 0; i < sh->rules.n; i++) {
@@ -3773,6 +3773,11 @@ void style_recalc(StyleEngine *e, Node *root, bool force) {
        the elements that resolved a viewport-height unit, not the whole document */
     bool height_only = media_changed && e->media_valid && e->media.vw == e->styled_media.vw &&
         e->media.dpr == e->styled_media.dpr && e->media.dark == e->styled_media.dark && !e->idx_dirty && !e->idx_changed;
+    for (int i = 0; i < e->sheets.n; i++) {   /* the owner's media attribute: set, changed, or the viewport moved */
+        StyleSheet *sh = e->sheets.v[i]; const char *m = sh->owner ? node_attr(sh->owner, "media") : NULL;
+        bool off = m && *m && !css_media_matches(m, &e->media);
+        if (off != sh->media_off) { sh->media_off = off; e->idx_dirty = true; e->delta_all = true; force = true; }
+    }
     if (e->idx_dirty) idx_build(e);
     if (force) e->npending_attrs = 0;
     else attribute_subjects_flush(e);
@@ -4131,6 +4136,10 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
     static const char *const ps[] = { "static", "relative", "absolute", "fixed", "sticky" };
     static const char *const bs[] = { "none", "hidden", "solid", "dashed", "dotted", "double", "groove", "ridge", "inset", "outset" };
     if (prop[0] == '-' && prop[1] == '-') { const char *v = custom_get(s->custom, prop); if (!v) v = css_property_initial(prop); if (v) sb_puts(&b, v); }
+    else if (!strcmp(prop, "text-decoration-line") && s->text_decoration && !(gen_prop(prop) && gen_value(s, gen_prop(prop)) && strcmp(gen_value(s, gen_prop(prop)), "none"))) {   /* set by the shorthand too */
+        int n = 0; static const char *const td[] = { "underline", "overline", "line-through" };
+        for (int i = 0; i < 3; i++) if (s->text_decoration & (1 << i)) sb_printf(&b, "%s%s", n++ ? " " : "", td[i]);
+    }
     else if (!strcmp(prop, "display")) { const char *d = s->display_text ? s->display_text : ds[s->display];
         if (s->display_text && (!el || el->ns != NS_MATHML)) { if (!strcmp(d, "math")) d = "inline"; else if (!strcmp(d, "block math")) d = "block"; }   /* math is only for MathML elements */ sb_puts(&b, (s->position == 2 || s->position == 3 || s->float_) && s->display != D_NONE ? display_blockify(d) : d); }
     else if (!strncmp(prop, "animation-", 10) || !strncmp(prop, "transition-", 11) || !strncmp(prop, "-webkit-animation-", 18) || !strncmp(prop, "-webkit-transition-", 19)) {
