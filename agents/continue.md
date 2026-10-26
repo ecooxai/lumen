@@ -150,6 +150,12 @@ on desktop): tapping a section icon in lumen://newtab?s=home does nothing until 
 scripted click works; stub test pages /tmp/nt7.html). Suspect the Android touch->click path (android_dom_touch /
 touch_tap in main.c) or a missing wake/render after the click. Background-audio test and device_tests for 4704bd2
 not run yet (someone was using the phone). Then: GitHub release v0.3.5-android-preview, Linux UI port, WPT.
+UPDATE 2523c52: the Home tap bug was the sticky top bar (nav position:sticky): after making it position:relative,
+phone taps on section icons switch at once and the search icon opens its field. Lead (WPT-relevant): Lumen's
+hit testing of position:sticky boxes doesn't match where they are painted on Android. Background audio verified:
+MediaPlayback$Service isForeground=true, AAudio player started 20 s after Home, service gone on return. Lead: the
+main loop logged nothing for ~10 s in the background while YouTube played (playback clock may stall). Workspace
+tab cards are now 160x120 (4:3), title 2 lines, URL wraps and is clipped.
 
 RUN 226: testdriver delete_all_cookies() -> "cookies-clear" td op (main.c td_cmd -> cookies_clear(), cookies.c).
 lumen_wpt.py now rewrites testdriver-vendor.js from .orig whenever VENDOR_JS changes (it appended only once, so

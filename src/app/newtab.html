@@ -63,8 +63,9 @@ a.wsicon{flex:none;display:block;width:96px;margin-right:10px;padding:6px 8px;ba
 .ws .pop{left:4px;right:auto;top:30px}
 h2.small{font-size:17px}
 .tabs{flex:1;min-width:0;display:flex;flex-wrap:wrap}
-a.tab{display:block;width:200px;max-width:100%;margin:0 6px 8px 0;padding:5px 10px;background:#fff;border:1px solid #e3e5e8;border-radius:8px;color:inherit;text-decoration:none;font-size:13px}
-a.tab .u{font-size:11px;margin-top:0}
+a.tab{display:flex;flex-direction:column;box-sizing:border-box;width:160px;height:120px;overflow:hidden;margin:0 8px 8px 0;padding:8px 10px;background:#fff;border:1px solid #e3e5e8;border-radius:8px;color:inherit;text-decoration:none;font-size:13px;line-height:17px}
+a.tab .t{flex:none;max-height:34px;overflow:hidden;white-space:normal;text-overflow:clip;font-weight:500}
+a.tab .u{flex:1;min-height:0;margin-top:4px;font-size:11px;line-height:15px;white-space:normal;word-break:break-all;text-overflow:clip;overflow:hidden}
 a.tab.cur{border-color:#1a73e8}
 .tabs .empty{padding:6px 0}
 .ws .x{flex:none;margin-left:6px}
@@ -1129,7 +1130,7 @@ document.addEventListener('click', function (e) {
         if (!t.getAttribute) continue;
         var v;
         if ((v = t.getAttribute('data-sec'))) {
-            e.preventDefault(); console.log('[newtab] section click ' + v + ' scrollY=' + scrollY);
+            e.preventDefault();
             if (v === sec) { if (state()) render(); return; }   /* again: fresh state, e.g. after granting file access */
             sec = v; query = ''; shown = 300; menuFor = editing = -1; $('search').value = '';
             history.replaceState(null, '', 'lumen://newtab?s=' + v);
