@@ -508,12 +508,16 @@ class AnimationPlaybackEvent extends Event {
 }
 /* a timeline from another frame (its own AnimationTimeline) fails instanceof but is still one */
 const waIsTimeline = t => t instanceof AnimationTimeline || (t !== null && typeof t === 'object' && 'currentTime' in t && /Timeline$/.test((t.constructor && t.constructor.name) || ''));
+let waBadTlSeen = false;   /* diagnostic: what a page passed as a timeline, logged once */
 class Animation extends EventTarget {
     constructor(effect = null, timeline) {
         super();
         if (effect !== null && !(effect instanceof AnimationEffect)) throw waTypeErr("Failed to construct 'Animation': parameter 1 is not of type 'AnimationEffect'.");
         if (timeline === undefined) timeline = document.timeline;
-        else if (timeline !== null && !waIsTimeline(timeline)) throw waTypeErr("Failed to construct 'Animation': parameter 2 is not of type 'AnimationTimeline'.");
+        else if (timeline !== null && !waIsTimeline(timeline)) {
+            if (!waBadTlSeen) { waBadTlSeen = true; try { const p = Object.getPrototypeOf(Object(timeline)); console.warn('[lumen] Animation timeline rejected: ' + typeof timeline + ' ' + ((p && p.constructor && p.constructor.name) || '?') + ' {' + Object.getOwnPropertyNames(p || {}).concat(Object.keys(Object(timeline))).slice(0, 20).join(',') + '}'); } catch (e) {} }
+            throw waTypeErr("Failed to construct 'Animation': parameter 2 is not of type 'AnimationTimeline'.");
+        }
         Object.defineProperties(this, Object.fromEntries(Object.entries({ _seq: ++waSeqN, _timeline: timeline, _effect: null, _start: null, _hold: null, _rate: 1, _pendRate: null,
             _task: null, _ready: Object.assign(waDefer(), { done: true }), _finished: waDefer(), _prevCT: null, _id: '', _replace: 'active', _finTask: null,
             onfinish: null, oncancel: null, onremove: null }).map(([k, v]) => [k, { value: v, writable: true, configurable: true, enumerable: k[0] !== '_' }])));
