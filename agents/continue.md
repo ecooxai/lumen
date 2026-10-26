@@ -143,6 +143,9 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 ## Runs
 (append here: RUN 222 ...)
 
+Phone check after run 221 (APK 9095c31): google/youtube/webgl/webgpu pass, no crash/ANR/tombstone/new errors;
+last-10-s CPU 0-3.3%, peak RSS 532 MB (youtube), WebGL 57.5 fps, WebGPU 23.3 fps.
+
 RUN 221: computed background-image gradients serialize from the declared text (gradient_ser in style.c, stored in
 the Gradient's own allocation as g->ser): colors computed, lengths to px, percentages and single-unit calc()
 resolved, stop positions only where given, direction keywords kept, the default ellipse/farthest-corner dropped,
