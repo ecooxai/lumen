@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **224**.
+  - Number the runs. The next run is **225**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,12 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 224 ...)
+(append here: RUN 225 ...)
+
+RUN 224: style.setProperty/CSS.supports reject an invalid gradient <color-interpolation-method> (03-element.js
+gradInterpValid, called from mathValid): "in <space> [<hue> hue]" only at the start or end of the first argument,
+hue methods only for hsl/hwb/lch/oklch, none in the colour stops, and no empty first argument.
+/css/css-images, backgrounds, values, masking: +293, none lost.
 
 Phone check after run 223 (APK dff6f5a): google/youtube/webgl/webgpu pass, no crash/ANR/tombstone/new errors;
 last-10-s CPU 0.9-3.3%, peak RSS 553 MB (youtube), WebGL 57.7 fps, WebGPU 23.8 fps.

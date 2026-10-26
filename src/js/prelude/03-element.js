@@ -211,7 +211,29 @@ function mathType(src) {   /* src starts at a math function name; returns [type 
 }
 const MATH_LEN_PROPS = /^((min-|max-)?(width|height|block-size|inline-size))$/;
 const MATH_NUM_PROPS = /^((fill-|stroke-|stop-|flood-)?opacity|flex-grow|flex-shrink)$/;
+/* the <color-interpolation-method> of gradients: only "in <space> [<hue> hue]" at the start or end of the first argument */
+const GRAD_SPACES = /^(srgb|srgb-linear|display-p3|a98-rgb|prophoto-rgb|rec2020|lab|oklab|xyz|xyz-d50|xyz-d65|hsl|hwb|lch|oklch)$/i;
+function gradInterpValid(v) {
+    const re = /\b((?:repeating-)?(?:linear|radial|conic)-gradient)\(/gi; let m;
+    while ((m = re.exec(v))) {
+        let d = 1, i = re.lastIndex; const s = i;
+        for (; i < v.length && d; i++) { if (v[i] === '(') d++; else if (v[i] === ')') d--; }
+        const args = tomSplitTop(v.slice(s, i - 1), ',').map(x => x.trim());
+        if (!args[0]) return false;
+        for (let k = 1; k < args.length; k++) { const w = args[k].split(/\s+/); if (w.some(x => /^(in|hue)$/i.test(x)) || GRAD_SPACES.test(w[0])) return false; }
+        const w = tomSplitTop(args[0], ' ').map(x => x.trim()).filter(Boolean), at = w.findIndex(x => /^in$/i.test(x));
+        if (at < 0) { if (w.some(x => GRAD_SPACES.test(x) || /^hue$/i.test(x))) return false; continue; }
+        const sp = w[at + 1]; if (!sp || !GRAD_SPACES.test(sp)) return false;
+        let end = at + 2;
+        if (w[end] && /^hue$/i.test(w[end + 1] || '')) { if (!/^(hsl|hwb|lch|oklch)$/i.test(sp) || !/^(shorter|longer|increasing|decreasing)$/i.test(w[end])) return false; end += 2; }
+        const rest = w.slice(0, at).concat(w.slice(end));
+        if (at > 0 && end < w.length) return false;
+        if (rest.some(x => /^(in|hue|shorter|longer|increasing|decreasing|specified)$/i.test(x) || GRAD_SPACES.test(x))) return false;
+    }
+    return true;
+}
 function mathValid(p, v) {
+    if (/-gradient\(/i.test(v) && !/var\(|env\(|attr\(/i.test(v) && !gradInterpValid(v)) return false;
     if (/var\(|env\(|attr\(|calc-size\(|anchor/i.test(v)) return true;
     const re = /(^|[\s,(/])((?:-webkit-)?[a-z][a-z0-9-]*)\(/gi;
     let m;
