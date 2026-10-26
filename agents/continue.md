@@ -233,6 +233,13 @@ text-indent/word-spacing parsers don't take unitless numbers in quirks mode (~50
 shorthand resets to medium on an invalid value instead of being ignored; "1\31 " and "+/**/1" still read as 1px
 (the decl value is unescaped before apply); background-position-x/-y accept unitless (excluded-properties-001);
 random-item() in font-family and line-height quirks regressed earlier (same in the previous binary).
+RUN 255 (committed): quirks mode appends px to unitless numbers (quirk_px) for the quirky properties: quirks.html
+1195 -> 1221. Left: invalid tokens (a, 1a, #1, url(1)) kept verbatim by text-indent/letter-spacing/word-spacing/
+border-spacing/background-position parsers; "+/**/1" (comment between sign and number) must not get the quirk; "+1px"
+keeps its sign on output; clip rect() numbers; calc(1) accepted; border/outline/font shorthands must not get the quirk.
+CRASH seen once: free(): invalid pointer in node_free_tree <- js_free <- page_free after
+/quirks/percentage-height-calculation.html (also in an older run; not reproducible alone) -> try ASan with
+hashless-hex-color then percentage-height-calculation in one instance.
 
 RUN 245: WebGL idlharness 2065 -> 2086/2099 (window and worker): FLOAT_MATnxm constants, interface .length, prototype
 getters throw, optional-argument defaults for bufferData/getBufferSubData/texImage3D lengths. +50, no losses. Left: setters

@@ -3096,6 +3096,20 @@ static bool has_unitless_number(const char *v) {
     }
     return false;
 }
+/* quirks mode: the value with "px" after each top-level unitless number, for parsers that only take lengths */
+static char *quirk_px(const char *v) {
+    SB b = {0}; int depth = 0;
+    for (const char *s = v; *s;) {
+        if (*s == '(' || *s == ')' || is_ws((unsigned char)*s) || *s == ',' || *s == '/') { depth += *s == '(' ? 1 : *s == ')' ? -1 : 0; sb_putc(&b, *s++); continue; }
+        const char *t = s; while (*s && !is_ws((unsigned char)*s) && *s != '(' && *s != ')' && *s != ',' && *s != '/') s++;
+        const char *q = t; if (*q == '+' || *q == '-') q++;
+        bool dig = false; for (; q < s && ((*q >= '0' && *q <= '9') || *q == '.'); q++) dig |= *q != '.';
+        for (const char *c = t; c < s; c++) sb_putc(&b, *c);
+        if (!depth && dig && q == s) sb_puts(&b, "px");
+    }
+    if (!b.s) sb_puts(&b, "");
+    return b.s;
+}
 /* author declarations: a unitless length is invalid outside quirks mode, and an escaped one always is */
 static bool unitless_invalid(const char *p, const char *v, Node *el) {
     if (!quirky_length_prop(p)) return false;
@@ -3121,6 +3135,9 @@ static void apply_decl_ordered(ComputedStyle *st, const ComputedStyle *par, MDec
         const char *p = v[i].d->prop;
         if ((p[0] == '-' && p[1] == '-') || !strcmp(p, "font-size") || !strcmp(p, "font") || !strcmp(p, "color")) continue;
         if (author && unitless_invalid(p, v[i].d->value, el)) continue;
+        if (author && el && el->doc && el->doc->quirks && quirky_length_prop(p) && has_unitless_number(v[i].d->value)) {
+            char *q = quirk_px(v[i].d->value); css_apply_decl(st, par, p, q, e, el); free(q); continue;
+        }
         css_apply_decl(st, par, p, v[i].d->value, e, el);
     }
 }
