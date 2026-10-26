@@ -176,7 +176,11 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
   - No image sharing.
 
 ## Runs
-(append here: RUN 245 ...)
+(append here: RUN 246 ...)
+
+RUN 245: WebGL idlharness 2065 -> 2086/2099 (window and worker): FLOAT_MATnxm constants, interface .length, prototype
+getters throw, optional-argument defaults for bufferData/getBufferSubData/texImage3D lengths. +50, no losses. Left: setters
+must throw on the prototype, drawingBufferFormat/Storage, WebGLObject.label, getBufferSubData this=null.
 
 RUN 244: WebGL interfaces in workers. 07g-webgl.js moved to src/js/shared/webgl.js (page prelude splices it at
 /*@shared webgl.js*/; the page-only ImageBitmap/createImageBitmap/canvasStream tail stays in 07g-webgl.js); the worker
