@@ -17,6 +17,34 @@ class HTMLAllCollection {
     namedItem(k) { return allNamed(allMeta.get(this)(), String(k)); }
     [Symbol.iterator]() { return allMeta.get(this)()[Symbol.iterator](); }
 }
+/* HTML image maps: a point over an <img usemap="#name"> hits the first <area> of that map containing it, measured
+   from the image's content box; the image itself when none does */
+function imageMapHit(el, x, y) {
+    if (!el || N.ns(el) !== 0 || el.localName !== 'img') return el;
+    const um = N.attr(el, 'usemap');
+    const h = um ? um.indexOf('#') : -1;
+    if (h < 0 || h === um.length - 1) return el;
+    const name = um.slice(h + 1), root = el.getRootNode();
+    let map = null;
+    for (const m of root.querySelectorAll('map')) if (N.attr(m, 'id') === name || N.attr(m, 'name') === name) { map = m; break; }
+    if (!map) return el;
+    const r = el.getBoundingClientRect(), cs = getComputedStyle(el), px = k => parseFloat(cs.getPropertyValue(k)) || 0;
+    const ox = x - r.left - px('border-left-width') - px('padding-left'), oy = y - r.top - px('border-top-width') - px('padding-top');
+    for (const a of map.querySelectorAll('area')) {
+        const sh = (N.attr(a, 'shape') || 'rect').toLowerCase(), c = (N.attr(a, 'coords') || '').split(/[\s,;]+/).filter(Boolean).map(v => parseFloat(v) || 0);
+        let hit = false;
+        if (sh === 'default') hit = true;
+        else if (sh === 'circle' || sh === 'circ') hit = c.length >= 3 && c[2] > 0 && Math.hypot(ox - c[0], oy - c[1]) <= c[2];
+        else if (sh === 'poly' || sh === 'polygon') {
+            const n = c.length >> 1;
+            if (n >= 3) for (let i = 0, j = n - 1; i < n; j = i++) { const xi = c[2 * i], yi = c[2 * i + 1], xj = c[2 * j], yj = c[2 * j + 1]; if ((yi > oy) !== (yj > oy) && ox < (xj - xi) * (oy - yi) / (yj - yi) + xi) hit = !hit; }
+        } else if (sh === 'rect' || sh === 'rectangle') {
+            if (c.length >= 4) { const [x1, x2] = c[0] < c[2] ? [c[0], c[2]] : [c[2], c[0]], [y1, y2] = c[1] < c[3] ? [c[1], c[3]] : [c[3], c[1]]; hit = ox >= x1 && ox < x2 && oy >= y1 && oy < y2; }
+        }
+        if (hit) return a;
+    }
+    return el;
+}
 class Document extends Node { constructor() { if (new.target === HTMLDocument) illegal(); const d = N.newXmlDoc(); Object.setPrototypeOf(d, new.target.prototype); def(d, '__url', 'about:blank'); return d; } }
 unscopable(Document, ['append', 'fullscreen', 'prepend', 'replaceChildren']);
 class HTMLDocument extends Document {}
@@ -100,7 +128,7 @@ methods(Document.prototype, {
     getElementsByName(n) { return nodeList(N.query(this, `[name="${CSS.escape(String(n))}"]`, true)); },
     importNode(n, deep = undefined) { const r = N.clone(n, !!deep); ceUpgradeTree(r); return r; }, adoptNode(n) { if (!N.isNode(n)) throw new TypeError("Failed to execute 'adoptNode' on 'Document': parameter 1 is not of type 'Node'."); if (N.type(n) === 9) throw new DOMException('The node provided is a document, which may not be adopted.', 'NotSupportedError'); if (N.type(n) === 11 && N.host(n)) throw new DOMException('The node provided is a shadow root, which may not be adopted.', 'HierarchyRequestError'); if (N.parent(n)) removeNode(n); N.adopt(n, this); return n; },
     hasFocus() { return true; }, getAnimations() { return waGetAnims(t => N.doc(t) === this && t.isConnected); },
-    elementFromPoint(x, y) { hitArgs(arguments, 'elementFromPoint', 'Document'); return hitRetarget(N.hit(+x, +y), this); },
+    elementFromPoint(x, y) { hitArgs(arguments, 'elementFromPoint', 'Document'); return hitRetarget(imageMapHit(N.hit(+x, +y), +x, +y), this); },
     caretPositionFromPoint(x, y, opts) {
         if (arguments.length < 2) throw new TypeError(`Failed to execute 'caretPositionFromPoint' on 'Document': 2 arguments required, but only ${arguments.length} present.`);
         x = +x; y = +y;

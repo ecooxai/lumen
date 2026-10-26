@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **217**.
+  - Number the runs. The next run is **218**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,15 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 217 ...)
+(append here: RUN 218 ...)
+
+RUN 217: image-map hit testing for elementFromPoint (imageMapHit in 06-document.js): an <img usemap> hit maps to
+the first <area> of the map (id or name = text after the first '#') containing the point, measured from the content
+box (rect/circle/poly/default); none -> the img. hash-name-reference.html 84 -> 156/168 alone, but 84 in a 5-job
+batch: the img (width from its natural size) is still 0-wide when the parent's onload runs, so the hit lands on the
+div. Lead: the window load event must wait for iframes, and an iframe's load for its images, laid out. Lead: real
+clicks/taps target through the native hit (c->host.hit), which doesn't map areas yet
+(hash-name-reference-dynamic.html 2/8). Rest of the run (cssom-view, shadow-dom): +7, none lost.
 
 Phone check after run 216 (APK d33bab1): google/youtube/webgl/webgpu pass, no crash/ANR/tombstone/new errors;
 last-10-s CPU 0-3.6% (script), peak RSS 547 MB, WebGL 57.5 fps, WebGPU 23.5 fps. YouTube had a second ~10 s busy
