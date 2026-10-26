@@ -55,7 +55,11 @@ static const char *env_hook(int i) {
     if (!got[i]) { v[i] = getenv(names[i]); got[i] = true; }
     return v[i];
 }
+#ifdef __ANDROID__
 #define TABH (g_compact || g_bare ? 0.f : 30.f)
+#else
+#define TABH (g_compact || g_bare ? 0.f : 44.f)   /* as high as the toolbar row, in its colour */
+#endif
 #define TB (g_bare ? 0.f : 44.f)
 static float g_info_h;
 static char g_notice[256];   /* dismissable error notice shown in the info bar */
@@ -74,7 +78,8 @@ static char g_toast[256]; static double g_toast_until;   /* a short confirmation
    the window and ends in minimize / maximize / close (LUMEN_WM_FRAME=1 keeps the system frame) */
 static bool g_frameless;
 #define WCW (g_frameless ? 138.f : 0.f)
-#define SIDEW 84.f
+#define SIDEW 52.f   /* the workspace sidebar's default width: its icons; dragging its right edge resizes it (saved as sidebar_w) */
+static float g_side_w = SIDEW; static bool g_side_drag;
 #define SIDEY (g_compact ? TB : TABH)
 #define WSY0 (SIDEY + 8)
 #define WSRH 40.f
@@ -240,11 +245,11 @@ static void snip_decode(const char *v);
 static void settings_save(void) {
     char p[1200]; pref_path(p, sizeof p, "settings.txt"); FILE *f = *g_pref ? fopen(p, "w") : NULL; if (!f) return;
     fprintf(f, "offscreen_media_eviction=%d\ncpu_limit=%d\ncpu_pct=%d\ncpu_secs=%d\ncpu_lim=%d\nvideo_controls=%d\nchatgpt_sleep=%d\nuser_agent=%d\n%s=%d\nsmooth_scrolling=%d\nscroll_px=%d\ntap_keyboard=%d\nhide_tabs=%d\ndesktop_default=%d\n", g_lowmem, g_cpu_on, g_cpu_pct, g_cpu_secs, g_cpu_lim, g_vctl, g_tab_sleep, g_ua, HUD_KEY, g_hud, g_smooth, g_scroll_px, g_tap_kbd, g_hide_tabs, g_desktop_seeded);
-    fprintf(f, "page_zoom=%d\n", g_page_zoom_pct);
+    fprintf(f, "page_zoom=%d\nsidebar_w=%d\n", g_page_zoom_pct, (int)g_side_w);
+    for (int i = 0; i < NSLOT; i++) fprintf(f, "bar_slot%d=%d\n", i, g_slot[i]);
 #ifdef __ANDROID__
     fprintf(f, "pixel_scale=%d\n", g_pixel_scale_pct);
     fprintf(f, "renderer=%s\n", renderer_key(g_renderer));
-    for (int i = 0; i < NSLOT; i++) fprintf(f, "bar_slot%d=%d\n", i, g_slot[i]);
     { char sn[4096]; snip_encode(sn, sizeof sn); fprintf(f, "edit_slot0=%d\nedit_slot1=%d\nsnippets=%s\n", g_bar_slot[0], g_bar_slot[1], sn); }
     fprintf(f, "touch_feedback=%d\ntouch_feedback_color=%d\ntouch_feedback_opacity=%d\ntouch_feedback_size=%d\ntouch_feedback_ms=%d\n", g_touch_fb, g_touch_fb_rgb, g_touch_fb_alpha, g_touch_fb_size, g_touch_fb_ms);
 #endif
@@ -1364,7 +1369,7 @@ static int text_hit_x(Font *f, const char *s, float x) {
 }
 static void url_sel_clamp(App *a) { int n = (int)strlen(a->t->url); for (int k = 0; k < 2; k++) a->us[k] = LCLAMP(a->us[k], 0, n); }
 
-enum { HB_NONE, HB_BACK, HB_FWD, HB_RELOAD, HB_URL, HB_NEWTAB, HB_WSNEW, HB_STAR, HB_HUD, HB_MENU, HB_WMIN, HB_WMAX, HB_WCLOSE, HB_TAB = 100, HB_TABX = 200, HB_WS = 300, HB_INFO = 400, HB_TABDOT = 500, HB_SLOT = 600 };
+enum { HB_NONE, HB_BACK, HB_FWD, HB_RELOAD, HB_URL, HB_NEWTAB, HB_WSNEW, HB_STAR, HB_HUD, HB_MENU, HB_WMIN, HB_WMAX, HB_WCLOSE, HB_SIDE, HB_TAB = 100, HB_TABX = 200, HB_WS = 300, HB_INFO = 400, HB_TABDOT = 500, HB_SLOT = 600 };
 static void info_btn(App *a, int k, float *x, float *w) {
     static const float W[4] = { 70, 76, 82, 28 }; float r = a->vw - 12;
     for (int i = 3; i >= k; i--) r -= W[i] + (i < 3 ? 6 : 0);
@@ -1452,6 +1457,7 @@ static int bar_hit(App *a, float x, float y) {
         if (x >= x0 + n * tw && x < x0 + n * tw + 32) return HB_NEWTAB;
         return HB_NONE;
     }
+    if (!ANDROID_UI && a->side > 0 && y >= SIDEY && x >= a->side - 4 && x < a->side + 3) return HB_SIDE;
     if (x < a->side) {
         if (g_hud && y >= a->vh - HUDH) return HB_HUD;
         int r = (int)floorf((y - WSY0) / WSRH);
@@ -1584,12 +1590,16 @@ static void build_chrome(App *a) {
     if (g_bare) return;
     float x0 = bar_x0(a), tbw = bar_w(a);
     if (g_compact) { push_rect(dl, 0, 0, a->vw, TB, 0, RGBA(250, 250, 250, 255)); push_rect(dl, 0, TB - 1, a->vw, 1, 0, RGBA(226, 226, 226, 255)); }
-    else push_rect(dl, 0, 0, a->vw, TABH, 0, RGBA(222, 225, 230, 255));
+    else push_rect(dl, 0, 0, a->vw, TABH, 0, ANDROID_UI ? RGBA(222, 225, 230, 255) : RGBA(250, 250, 250, 255));
     int vt[MAX_TABS], nvt = g_compact ? 0 : ws_tabs(a, a->wi, vt);
-    float tabw = tab_w(a), tx0 = TLW + 6, tbase = 4 + (TABH - 4) / 2 + (a->ui->ascent - a->ui->descent) / 2;
+    float tabw = tab_w(a), tx0 = TLW + 6, tbase = (ANDROID_UI ? 4 + (TABH - 4) / 2 : TABH / 2) + (a->ui->ascent - a->ui->descent) / 2;
     for (int k = 0; k < nvt; k++) {
         int i = vt[k]; Tab *t = a->tabs[i]; float x = tx0 + k * tabw;
-        if (i == a->ti) push_rect(dl, x, 4, tabw - 2, TABH - 4, 7, RGBA(250, 250, 250, 255));
+        if (!ANDROID_UI) {   /* the strip has the toolbar's colour: the current tab is a darker pill */
+            if (i == a->ti) push_rect(dl, x, 6, tabw - 2, TABH - 12, 8, RGBA(230, 232, 235, 255));
+            else if (a->hover == HB_TAB + i || a->hover == HB_TABX + i) push_rect(dl, x, 6, tabw - 2, TABH - 12, 8, RGBA(240, 241, 243, 255));
+            else if (k + 1 < nvt && vt[k + 1] != a->ti) push_rect(dl, x + tabw - 2, 14, 1, TABH - 28, 0, RGBA(210, 212, 216, 255));
+        } else if (i == a->ti) push_rect(dl, x, 4, tabw - 2, TABH - 4, 7, RGBA(250, 250, 250, 255));
         else if (a->hover == HB_TAB + i || a->hover == HB_TABX + i) push_rect(dl, x, 6, tabw - 2, TABH - 10, 6, RGBA(235, 237, 240, 255));
         else if (k + 1 < nvt && vt[k + 1] != a->ti) push_rect(dl, x + tabw - 2, 9, 1, TABH - 16, 0, RGBA(170, 175, 180, 255));
         const char *title = t->cur && t->cur->d && t->cur->d->title && *t->cur->d->title ? t->cur->d->title : t->stitle ? t->stitle : *t->url ? t->url : "New Tab";
@@ -1600,7 +1610,7 @@ static void build_chrome(App *a) {
     }
     if (!g_compact) {
         float npx = tx0 + nvt * tabw + 8;
-        if (a->hover == HB_NEWTAB) push_rect(dl, npx - 4, 6, 24, 20, 10, RGBA(235, 237, 240, 255));
+        if (a->hover == HB_NEWTAB) push_rect(dl, npx - 4, TABH / 2 - 12, 24, 24, 12, RGBA(232, 232, 232, 255));
         push_text(dl, a->ui, "+", npx + 4, tbase, 16, RGBA(60, 60, 60, 255));
     }
     if (a->side > 0) {
@@ -5203,7 +5213,7 @@ static void menu_cmd(App *a, int c) {
     case MENU_WS_REFRESH: { Tab *act = a->t; for (int i = 0; i < a->ntabs; i++) { Tab *t = a->tabs[i]; if (t->ws != a->wi || t->hpos < 0) continue; a->t = t; navigate(a, t->hist[t->hpos], false); } a->t = act; break; }
     case MENU_WS_NEXT: ws_select(a, (a->wi + 1) % a->nws); break;
     case MENU_WS_PREV: ws_select(a, (a->wi + a->nws - 1) % a->nws); break;
-    case MENU_WS_SIDEBAR: a->side = sidebar_width(a->side > 0 ? 0 : SIDEW); for (int i = 0; i < a->ntabs; i++) a->tabs[i]->relayout = true; break;
+    case MENU_WS_SIDEBAR: a->side = sidebar_width(a->side > 0 ? 0 : g_side_w); for (int i = 0; i < a->ntabs; i++) a->tabs[i]->relayout = true; break;
     }
     a->dirty = true; a->vonly = false;
 }
@@ -6122,8 +6132,9 @@ int main(int argc, char **argv) {
 #endif
             char k[64]; int v; if (sscanf(line, "%63[^=]=%d", k, &v) != 2) continue;
             if (!strcmp(k, "page_zoom") && page_zoom_valid(v)) g_page_zoom_pct = v;
-#ifdef __ANDROID__
             else if (!strncmp(k, "bar_slot", 8) && k[8] >= '0' && k[8] < '0' + NSLOT && !k[9] && slot_action(v)) g_slot[k[8] - '0'] = v;
+            else if (!strcmp(k, "sidebar_w") && v >= 44 && v <= 320) { g_side_w = (float)v; if (a.side > 0) a.side = sidebar_width(g_side_w); }
+#ifdef __ANDROID__
             else if (!strcmp(k, "touch_feedback")) g_touch_fb = v != 0;
             else if ((!strcmp(k, "edit_slot0") || !strcmp(k, "edit_slot1")) && (v == TA_BKSP || v == TA_ENTER || v == TA_UNDO || v == TA_CLEAR || v == TA_HIDE)) g_bar_slot[k[9] - '0'] = v;
             else if (!strcmp(k, "touch_feedback_color")) g_touch_fb_rgb = v & 0xffffff;
@@ -6379,14 +6390,19 @@ int main(int argc, char **argv) {
                 int h = bar_hit(&a, ev.motion.x, ev.motion.y); if (h != a.hover) { a.hover = h; a.dirty = true; }
                 if (!h && ev.motion.y > BAR && ev.motion.x > page_left(&a)) page_move(&a, page_x(&a, ev.motion.x), page_y(&a, ev.motion.y));
                 else if (a.t->cur && page_hover(a.t->cur, NULL)) restyle(&a);
+                if (g_side_drag && (ev.motion.state & SDL_BUTTON_LMASK)) {   /* the sidebar's right edge follows the mouse */
+                    float nw = LCLAMP(roundf(ev.motion.x), 44, LMIN(320, a.vw / 3));
+                    if (nw != a.side) { a.side = g_side_w = nw; for (int i = 0; i < a.ntabs; i++) a.tabs[i]->relayout = true; update_size(&a); a.dirty = true; a.vonly = false; }
+                    break;
+                }
                 if (g_press && (ev.motion.state & SDL_BUTTON_LMASK)) sel_drag(&a, ev.motion.x, ev.motion.y);
                 else if (g_epress && (ev.motion.state & SDL_BUTTON_LMASK)) edit_drag(&a, ev.motion.x, ev.motion.y);
                 else if (g_cpress && (ev.motion.state & SDL_BUTTON_LMASK)) ctl_drag(&a, ev.motion.x, ev.motion.y);
                 else if (g_upress && (ev.motion.state & SDL_BUTTON_LMASK)) url_drag(&a, ev.motion.x);
-                SDL_SetCursor(SDL_CreateSystemCursor(h == HB_URL ? SDL_SYSTEM_CURSOR_TEXT : over_link(&a, ev.motion.x, ev.motion.y) || (h && h != HB_URL) ? SDL_SYSTEM_CURSOR_POINTER : SDL_SYSTEM_CURSOR_DEFAULT));
+                SDL_SetCursor(SDL_CreateSystemCursor(h == HB_SIDE || g_side_drag ? SDL_SYSTEM_CURSOR_EW_RESIZE : h == HB_URL ? SDL_SYSTEM_CURSOR_TEXT : over_link(&a, ev.motion.x, ev.motion.y) || (h && h != HB_URL) ? SDL_SYSTEM_CURSOR_POINTER : SDL_SYSTEM_CURSOR_DEFAULT));
                 break; }
             case SDL_EVENT_WINDOW_MOUSE_LEAVE: if (a.t->cur && page_hover(a.t->cur, NULL)) restyle(&a); break;
-            case SDL_EVENT_MOUSE_BUTTON_UP: if (ev.button.button == SDL_BUTTON_LEFT) g_press = g_drag = g_cpress = g_upress = false; break;
+            case SDL_EVENT_MOUSE_BUTTON_UP: if (ev.button.button == SDL_BUTTON_LEFT) { if (g_side_drag) settings_save(); g_press = g_drag = g_cpress = g_upress = g_side_drag = false; } break;
             case SDL_EVENT_MOUSE_BUTTON_DOWN:
 #ifndef __ANDROID__
                 if (g_dm.open) {   /* a click on a menu row chooses it; anywhere else only closes the menu */
@@ -6427,6 +6443,7 @@ int main(int argc, char **argv) {
                   else if (bh >= HB_TAB) { int i = bh - HB_TAB; if (i == a.ti) tab_popup(&a, i, ev.button.x, ev.button.y); else tab_select(&a, i); break; }
                   else if (bh == HB_NEWTAB) { tab_open(&a); break; } }
                 switch (bar_hit(&a, ev.button.x, ev.button.y)) {
+                case HB_SIDE: g_side_drag = true; break;
                 case HB_WMIN: SDL_MinimizeWindow(a.win); break;
                 case HB_WMAX: if (SDL_GetWindowFlags(a.win) & SDL_WINDOW_MAXIMIZED) SDL_RestoreWindow(a.win); else SDL_MaximizeWindow(a.win); break;
                 case HB_WCLOSE: quit = true; break;
