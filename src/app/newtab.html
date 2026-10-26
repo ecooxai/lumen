@@ -819,10 +819,10 @@ function settings() {
         if (T.gpus) {
             gp = '<p class=sub>GPU. Auto prefers an NVIDIA or AMD graphics card over integrated graphics. None draws everything with the CPU.</p><p class=choices>';
             T.gpus.forEach(function (v) { gp += '<a id="lumen-gpu-' + v[0] + '" class="btn' + (v[0] === T.gpu ? ' on' : '') + '" href="lumen://set?s=settings&open=' + op + '&gpu=' + v[0] + '">' + h(v[1]) + '</a> '; });
-            gp += '</p><p class=sub>Backend</p>';
+            gp += '</p><p class=sub id=lumen-gpu-active>' + h(T.gpuActive) + '</p><p class=sub>Backend</p>';
         }
         cards.push('<div class=card><div class=t>Graphics' + (T.gpus ? '' : ' backend') + '</div><p class=sub>Vulkan through wgpu is the default. GPU acceleration composites the page and video; page rasterization still uses the CPU. Switch instantly; unavailable backends fall back to software.</p>'
-            + gp + '<p class=choices>' + r.slice(17) + '</p><p class=sub id=lumen-renderer>' + h(T.rendererText) + '</p></div>');
+            + gp + '<p class=choices>' + r.slice(17) + '</p>' + (T.backendActive ? '<p class=sub id=lumen-backend-active>' + h(T.backendActive) + '</p>' : '<p class=sub id=lumen-renderer>' + h(T.rendererText) + '</p>') + '</div>');
     }
     cards.push(card('Hide tab bar', 'The tab bar stays hidden even with several tabs open. Switch tabs from the menu\u2019s Workspaces.', toggle('hidetabs', T.hideTabs)));
     group = 'perf';

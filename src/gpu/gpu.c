@@ -248,10 +248,13 @@ Gpu *gpu_create(const GpuSurfSrc *src, int w, int h, bool prefer_vulkan) {
 Gpu *gpu_create_backend(const GpuSurfSrc *src, int w, int h, GpuBackend backend) {
     if (getenv("LUMEN_NO_GPU") || !gpu_backend_flags(backend)) return NULL;
     wgpuSetLogCallback(on_log, NULL);
-    wgpuSetLogLevel(WGPULogLevel_Warn);
+    wgpuSetLogLevel(getenv("LUMEN_WGPU_LOG") && !strcmp(getenv("LUMEN_WGPU_LOG"), "info") ? WGPULogLevel_Info : WGPULogLevel_Warn);   /* LUMEN_WGPU_LOG=info: adapter and surface details */
     Gpu *g = calloc(1, sizeof *g); g->w = w; g->h = h;
     WGPUInstanceExtras ex = { 0 }; ex.chain.sType = (WGPUSType)WGPUSType_InstanceExtras;
     ex.backends = gpu_backend_flags(backend);
+    /* the GL backend makes window surfaces only on the display it was given */
+    if (src && src->kind == GPU_SURF_XLIB) { ex.displayHandle.type = WGPUNativeDisplayHandleType_Xlib; ex.displayHandle.data.xlib.display = src->a; }
+    else if (src && src->kind == GPU_SURF_WAYLAND) { ex.displayHandle.type = WGPUNativeDisplayHandleType_Wayland; ex.displayHandle.data.wayland.display = src->a; }
 #ifndef NDEBUG
     ex.flags = WGPUInstanceFlag_Validation;
 #endif

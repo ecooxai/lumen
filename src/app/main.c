@@ -723,16 +723,23 @@ static void renderer_text(App *app, char *text, size_t capacity) {
     snprintf(text, capacity, "Requested: %s%s%s. Active: %s%s%s.%s", renderer_key(g_renderer), ANDROID_UI ? "" : ", GPU ", ANDROID_UI ? "" : GPU_KEYS[g_gpu_pick],
         gpu_backend_name(app->gpu), *gn ? " on " : "", gn, !app->gpu && renderer_effective() != GPU_BACKEND_CPU ? " GPU unavailable; software fallback." : "");
 }
+/* what the GPU and backend choices give now: "Auto is using ..." for auto */
+static void gpu_active_text(App *app, char *gt, char *bt, size_t cap) {
+    const char *gn = gpu_adapter_name(app->gpu), *bn = gpu_backend_name(app->gpu);
+    const char *bl = !app->gpu ? "Software (CPU)" : strstr(bn, "vulkan") ? "Vulkan" : strstr(bn, "gl") ? "OpenGL" : strstr(bn, "metal") ? "Metal" : "wgpu";
+    snprintf(gt, cap, "%s %s", g_gpu_pick == 0 ? "Auto is using" : "In use:", app->gpu && *gn ? gn : "the CPU (no GPU)");
+    snprintf(bt, cap, "%s %s", g_renderer == GPU_BACKEND_AUTO ? "Auto is using" : "In use:", bl);
+}
+static void set_text_id(App *app, const char *id, const char *text) {
+    Node *n = app->t->cur && app->t->cur->d ? doc_get_element_by_id(app->t->cur->d, id) : NULL;
+    if (n && !(n->first && n->first == n->last && n->first->type == NODE_TEXT && !strcmp(n->first->text, text))) { node_set_text_content(n, text); app->t->relayout = true; }
+}
 static void update_renderer_readout(App *app) {
     Page *page = app->t->cur;
     if (!page || !page->internal_ui || !page->d) return;
-    Node *readout = doc_get_element_by_id(page->d, "lumen-renderer");
-    if (!readout) return;
-    char text[256]; renderer_text(app, text, sizeof text);
-    if (!(readout->first && readout->first == readout->last && readout->first->type == NODE_TEXT && !strcmp(readout->first->text, text))) {
-        node_set_text_content(readout, text);
-        app->t->relayout = true;
-    }
+    char text[256], gt[200], bt[200]; renderer_text(app, text, sizeof text);
+    set_text_id(app, "lumen-renderer", text);
+    gpu_active_text(app, gt, bt, sizeof gt); set_text_id(app, "lumen-gpu-active", gt); set_text_id(app, "lumen-backend-active", bt);
     for (int backend = GPU_BACKEND_AUTO; backend <= GPU_BACKEND_CPU; backend++) {
         char id[40]; snprintf(id, sizeof id, "lumen-renderer-%s", renderer_key((GpuBackend)backend));
         Node *button = doc_get_element_by_id(page->d, id);
@@ -985,6 +992,8 @@ static void settings_json(App *app, SB *b) {
         for (int k = 0; k < 5; k++) sb_printf(b, "%s[\"%s\",\"%s\"]", k ? "," : "", GPU_KEYS[k], gpu_labels[k]);
         renderer_text(app, text, sizeof text);
         sb_printf(b, "],\"gpu\":\"%s\",\"renderer\":\"%s\",\"rendererText\":", GPU_KEYS[g_gpu_pick], renderer_key(g_renderer)); sb_json(b, text);
+        char gt[200], bt[200]; gpu_active_text(app, gt, bt, sizeof gt);
+        sb_puts(b, ",\"gpuActive\":"); sb_json(b, gt); sb_puts(b, ",\"backendActive\":"); sb_json(b, bt);
     }
 #endif
     sb_printf(b, ",\"lite\":%s,\"cpu\":%s,\"cpuPct\":%d,\"cpuSecs\":%d,\"cpuLim\":%d,\"vctl\":%s,\"sleep\":%s,\"hud\":%s,\"smooth\":%s,\"ua\":%d,\"hudText\":",
@@ -6147,6 +6156,11 @@ int main(int argc, char **argv) {
     install_crash_handler();
     const char *start = argc > 1 ? argv[1] : "https://en.wikipedia.org/wiki/Web_browser";
     SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
+#if !defined(__ANDROID__) && !defined(__APPLE__)
+    /* the software window surface by plain X11 (XShm), not an OpenGL texture: after Vulkan presented to the window, NVIDIA
+       denies GLX on it (BadAccess) and Xlib exits, so choosing the CPU in Settings killed Lumen */
+    SDL_SetHint(SDL_HINT_FRAMEBUFFER_ACCELERATION, "0");
+#endif
 #ifdef __ANDROID__
     SDL_SetHint(SDL_HINT_ANDROID_TRAP_BACK_BUTTON, "1");
     SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
