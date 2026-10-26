@@ -811,10 +811,18 @@ function settings() {
         T.pixelScales.forEach(function (v) { ps += '<a id="lumen-pixel-scale-' + v + '" class="btn' + (v === T.pixelScale ? ' on' : '') + '" href="lumen://set?s=settings&open=' + op + '&pixel_scale=' + v + '">' + v / 100 + 'x</a> '; });
         cards.push('<div class=card><div class=t>Physical pixel scale</div><p class=sub>Independent of Android display size. 1x maps one layout pixel to one screen pixel; 2x uses 2 by 2 screen pixels. Default: 2x. Rendering stays at native resolution.</p>'
             + ps + '</p><p class=sub id=lumen-resolution>' + h(T.resolution) + '</p><p class=sub>App render excludes system bars and the keyboard. Layout is the app area before pixel scaling.</p></div>');
+    }
+    if (T.renderers) {
         var r = '<p class=choices>';
         T.renderers.forEach(function (v) { r += '<a id="lumen-renderer-' + v[0] + '" class="btn' + (v[0] === T.renderer ? ' on' : '') + '" href="lumen://set?s=settings&open=' + op + '&renderer=' + v[0] + '">' + h(v[1]) + '</a> '; });
-        cards.push('<div class=card><div class=t>Graphics backend</div><p class=sub>Vulkan through wgpu is the default. GPU acceleration composites the page and video; page rasterization still uses the CPU. Switch instantly; unavailable backends fall back to software.</p>'
-            + r + '</p><p class=sub id=lumen-renderer>' + h(T.rendererText) + '</p></div>');
+        var gp = '';
+        if (T.gpus) {
+            gp = '<p class=sub>GPU. Auto prefers an NVIDIA or AMD graphics card over integrated graphics. None draws everything with the CPU.</p><p class=choices>';
+            T.gpus.forEach(function (v) { gp += '<a id="lumen-gpu-' + v[0] + '" class="btn' + (v[0] === T.gpu ? ' on' : '') + '" href="lumen://set?s=settings&open=' + op + '&gpu=' + v[0] + '">' + h(v[1]) + '</a> '; });
+            gp += '</p><p class=sub>Backend</p>';
+        }
+        cards.push('<div class=card><div class=t>Graphics' + (T.gpus ? '' : ' backend') + '</div><p class=sub>Vulkan through wgpu is the default. GPU acceleration composites the page and video; page rasterization still uses the CPU. Switch instantly; unavailable backends fall back to software.</p>'
+            + gp + '<p class=choices>' + r.slice(17) + '</p><p class=sub id=lumen-renderer>' + h(T.rendererText) + '</p></div>');
     }
     cards.push(card('Hide tab bar', 'The tab bar stays hidden even with several tabs open. Switch tabs from the menu\u2019s Workspaces.', toggle('hidetabs', T.hideTabs)));
     group = 'perf';

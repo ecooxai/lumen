@@ -16,6 +16,7 @@ struct Gpu {
     WGPUTextureFormat fmt; WGPURenderPipeline pipe; WGPUBindGroupLayout bgl; WGPUSampler samp;
     WGPUTexture tex; WGPUTextureView view; WGPUBindGroup bg; int tw, th; int w, h; bool configured;
     WGPUBackendType backend;
+    char name[128];   /* the adapter's device name */
     bool full;   /* the device has the adapter's WebGPU features and limits: pages may share it */
     int scroll_toolbar, scroll_height, scroll_offset;
     WGPUSampler vsamp; WGPUBuffer ubuf, vubuf; WGPUTexture vtex; WGPUTextureView vview; WGPUBindGroup vbg; int vtw, vth;
@@ -201,6 +202,45 @@ static WGPUInstanceBackend gpu_backend_flags(GpuBackend backend) {
     }
 }
 
+static int g_pick;
+void gpu_set_pick(int pick) { g_pick = pick; }
+const char *gpu_adapter_name(Gpu *g) { return g ? g->name : ""; }
+static void sv_copy(char *out, size_t cap, WGPUStringView v) {
+    size_t n = !v.data ? 0 : v.length == WGPU_STRLEN ? strlen(v.data) : v.length;
+    if (n >= cap) n = cap - 1;
+    if (n) memcpy(out, v.data, n);
+    out[n] = 0;
+}
+/* the adapter of the chosen vendor (g_pick), or for auto a discrete NVIDIA / AMD one before others, among those that can
+   present to the window; Vulkan before GL on the same GPU. NULL: none matched, the default request decides */
+static WGPUAdapter pick_adapter(Gpu *g, WGPUInstanceBackend backends) {
+    WGPUInstanceEnumerateAdapterOptions o = { 0 }; o.backends = backends;
+    size_t n = wgpuInstanceEnumerateAdapters(g->inst, &o, NULL);
+    if (!n) return NULL;
+    WGPUAdapter *v = calloc(n, sizeof *v); if (!v) return NULL;
+    n = wgpuInstanceEnumerateAdapters(g->inst, &o, v);
+    uint32_t want = g_pick == 1 ? 0x8086 : g_pick == 2 ? 0x10de : g_pick == 3 ? 0x1002 : 0;
+    int best = -1, bs = 0;
+    for (size_t i = 0; i < n; i++) {
+        WGPUAdapterInfo info = WGPU_ADAPTER_INFO_INIT; int sc = 0;
+        if (wgpuAdapterGetInfo(v[i], &info) == WGPUStatus_Success) {
+            WGPUSurfaceCapabilities caps = WGPU_SURFACE_CAPABILITIES_INIT;
+            bool ok = info.adapterType != WGPUAdapterType_CPU && wgpuSurfaceGetCapabilities(g->surf, v[i], &caps) == WGPUStatus_Success && caps.formatCount;
+            if (caps.formatCount) wgpuSurfaceCapabilitiesFreeMembers(caps);
+            bool big = info.vendorID == 0x10de || info.vendorID == 0x1002 || info.adapterType == WGPUAdapterType_DiscreteGPU;
+            if (ok && (!want || info.vendorID == want)) sc = (want || big ? 4 : 2) + (info.backendType == WGPUBackendType_Vulkan);
+            char nm[128]; sv_copy(nm, sizeof nm, info.device);
+            gpu_log("gpu: adapter %s vendor %04x type %d backend %d%s\n", nm, info.vendorID, (int)info.adapterType, (int)info.backendType, ok ? "" : " (cannot present)");
+            wgpuAdapterInfoFreeMembers(info);
+        }
+        if (sc > bs) { bs = sc; best = (int)i; }
+    }
+    WGPUAdapter r = best >= 0 ? v[best] : NULL;
+    for (size_t i = 0; i < n; i++) if (v[i] != r) wgpuAdapterRelease(v[i]);
+    free(v);
+    return r;
+}
+
 Gpu *gpu_create(const GpuSurfSrc *src, int w, int h, bool prefer_vulkan) {
     return gpu_create_backend(src, w, h, prefer_vulkan ? GPU_BACKEND_VULKAN : GPU_BACKEND_AUTO);
 }
@@ -219,16 +259,20 @@ Gpu *gpu_create_backend(const GpuSurfSrc *src, int w, int h, GpuBackend backend)
     if (!(g->inst = wgpuCreateInstance(&id))) goto fail;
     if (!(g->surf = create_surface(g, src))) goto fail;
 
-    WGPURequestAdapterOptions ao = WGPU_REQUEST_ADAPTER_OPTIONS_INIT;
-    ao.compatibleSurface = g->surf; ao.powerPreference = WGPUPowerPreference_HighPerformance;
-    WGPURequestAdapterCallbackInfo ac = WGPU_REQUEST_ADAPTER_CALLBACK_INFO_INIT;
-    ac.mode = WGPUCallbackMode_AllowProcessEvents; ac.callback = on_adapter; ac.userdata1 = &g->adapter;
-    wgpuInstanceRequestAdapter(g->inst, &ao, ac);
-    wgpuInstanceProcessEvents(g->inst);
+    g->adapter = pick_adapter(g, ex.backends);
+    if (!g->adapter) {
+        WGPURequestAdapterOptions ao = WGPU_REQUEST_ADAPTER_OPTIONS_INIT;
+        ao.compatibleSurface = g->surf; ao.powerPreference = WGPUPowerPreference_HighPerformance;
+        WGPURequestAdapterCallbackInfo ac = WGPU_REQUEST_ADAPTER_CALLBACK_INFO_INIT;
+        ac.mode = WGPUCallbackMode_AllowProcessEvents; ac.callback = on_adapter; ac.userdata1 = &g->adapter;
+        wgpuInstanceRequestAdapter(g->inst, &ao, ac);
+        wgpuInstanceProcessEvents(g->inst);
+    }
     if (!g->adapter) goto fail;
     WGPUAdapterInfo info = WGPU_ADAPTER_INFO_INIT;
     if (wgpuAdapterGetInfo(g->adapter, &info) == WGPUStatus_Success) {
-        g->backend = info.backendType;
+        g->backend = info.backendType; sv_copy(g->name, sizeof g->name, info.device);
+        gpu_log("gpu: using %s\n", g->name);
         if (info.adapterType == WGPUAdapterType_CPU) { wgpuAdapterInfoFreeMembers(info); goto fail; }
         wgpuAdapterInfoFreeMembers(info);
     }

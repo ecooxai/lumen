@@ -184,7 +184,13 @@ static int g_ua;   /* UA_CHROME / UA_FIREFOX / UA_LUMEN */
 static char g_pref[1024];
 #ifdef __ANDROID__
 static int g_pixel_scale_pct = 200;
+#endif
 static GpuBackend g_renderer = GPU_BACKEND_VULKAN;
+/* the GPU: auto (NVIDIA or AMD before others), intel, nvidia, amd, or none (the CPU draws, as the software backend) */
+static int g_gpu_pick;
+static const char *const GPU_KEYS[5] = { "auto", "intel", "nvidia", "amd", "none" };
+static int gpu_pick_parse(const char *value) { for (int i = 0; i < 5; i++) if (!strcmp(value, GPU_KEYS[i])) return i; return -1; }
+static GpuBackend renderer_effective(void) { return g_gpu_pick == 4 ? GPU_BACKEND_CPU : g_renderer; }
 static int renderer_parse(const char *value) {
     static const char *choices[] = {"auto", "vulkan", "opengl", "software"};
     for (int index = 0; index < 4; index++) if (!strcmp(value, choices[index])) return index;
@@ -195,6 +201,7 @@ static const char *renderer_key(GpuBackend backend) {
     return backend >= GPU_BACKEND_AUTO && backend <= GPU_BACKEND_CPU ? choices[backend] : "vulkan";
 }
 static void renderer_load(const char *line) {
+    if (!strncmp(line, "gpu=", 4)) { char v[16]; size_t n = strcspn(line + 4, "\r\n"); if (n < sizeof v) { memcpy(v, line + 4, n); v[n] = 0; int k = gpu_pick_parse(v); if (k >= 0) g_gpu_pick = k; } return; }
     if (strncmp(line, "renderer=", 9)) return;
     size_t length = strcspn(line + 9, "\r\n");
     if (length >= 16) return;
@@ -212,6 +219,7 @@ static void renderer_read_preferences(void) {
     while (fgets(line, sizeof line, settings)) renderer_load(line);
     fclose(settings);
 }
+#ifdef __ANDROID__
 static int pixel_scale_parse(const char *value) {
     static const char *choices[] = {"100", "150", "200", "250", "300"};
     for (int index = 0; index < 5; index++) if (!strcmp(value, choices[index])) return 100 + index * 50;
@@ -253,9 +261,9 @@ static void settings_save(void) {
     fprintf(f, "offscreen_media_eviction=%d\ncpu_limit=%d\ncpu_pct=%d\ncpu_secs=%d\ncpu_lim=%d\nvideo_controls=%d\nchatgpt_sleep=%d\nuser_agent=%d\n%s=%d\nsmooth_scrolling=%d\nscroll_px=%d\ntap_keyboard=%d\nhide_tabs=%d\ndesktop_default=%d\n", g_lowmem, g_cpu_on, g_cpu_pct, g_cpu_secs, g_cpu_lim, g_vctl, g_tab_sleep, g_ua, HUD_KEY, g_hud, g_smooth, g_scroll_px, g_tap_kbd, g_hide_tabs, g_desktop_seeded);
     fprintf(f, "page_zoom=%d\nsidebar_w=%d\n", g_page_zoom_pct, (int)g_side_w);
     for (int i = 0; i < NSLOT; i++) fprintf(f, "bar_slot%d=%d\n", i, g_slot[i]);
+    fprintf(f, "renderer=%s\ngpu=%s\n", renderer_key(g_renderer), GPU_KEYS[g_gpu_pick]);
 #ifdef __ANDROID__
     fprintf(f, "pixel_scale=%d\n", g_pixel_scale_pct);
-    fprintf(f, "renderer=%s\n", renderer_key(g_renderer));
     { char sn[4096]; snip_encode(sn, sizeof sn); fprintf(f, "edit_slot0=%d\nedit_slot1=%d\nsnippets=%s\n", g_bar_slot[0], g_bar_slot[1], sn); }
     fprintf(f, "touch_feedback=%d\ntouch_feedback_color=%d\ntouch_feedback_opacity=%d\ntouch_feedback_size=%d\ntouch_feedback_ms=%d\n", g_touch_fb, g_touch_fb_rgb, g_touch_fb_alpha, g_touch_fb_size, g_touch_fb_ms);
 #endif
@@ -710,10 +718,10 @@ static void sb_json(SB *b, const char *s) {
 #else
 #define HUD_TEXT "Shows how much CPU and memory (GB) Lumen uses at the bottom of the workspace sidebar, updated every 2 seconds. Click it to see the whole computer's CPU and memory use."
 #endif
-#ifdef __ANDROID__
 static void renderer_text(App *app, char *text, size_t capacity) {
-    snprintf(text, capacity, "Requested: %s. Active: %s.%s", renderer_key(g_renderer), gpu_backend_name(app->gpu),
-        !app->gpu && g_renderer != GPU_BACKEND_CPU ? " GPU unavailable; software fallback." : "");
+    const char *gn = gpu_adapter_name(app->gpu);
+    snprintf(text, capacity, "Requested: %s%s%s. Active: %s%s%s.%s", renderer_key(g_renderer), ANDROID_UI ? "" : ", GPU ", ANDROID_UI ? "" : GPU_KEYS[g_gpu_pick],
+        gpu_backend_name(app->gpu), *gn ? " on " : "", gn, !app->gpu && renderer_effective() != GPU_BACKEND_CPU ? " GPU unavailable; software fallback." : "");
 }
 static void update_renderer_readout(App *app) {
     Page *page = app->t->cur;
@@ -733,7 +741,15 @@ static void update_renderer_readout(App *app) {
         const char *current = node_attr(button, "class");
         if (!current || strcmp(current, classes)) { node_set_attr(button, "class", classes); app->t->relayout = true; }
     }
+    for (int k = 0; k < 5; k++) {
+        char id[40]; snprintf(id, sizeof id, "lumen-gpu-%s", GPU_KEYS[k]);
+        Node *button = doc_get_element_by_id(page->d, id);
+        if (!button) continue;
+        const char *classes = k == g_gpu_pick ? "btn on" : "btn", *current = node_attr(button, "class");
+        if (!current || strcmp(current, classes)) { node_set_attr(button, "class", classes); app->t->relayout = true; }
+    }
 }
+#ifdef __ANDROID__
 static void resolution_text(App *app, char *text, size_t capacity) {
     char screen[64] = "unavailable";
     if (app->screen_w > 0 && app->screen_h > 0) snprintf(screen, sizeof screen, "%d x %d px", app->screen_w, app->screen_h);
@@ -960,7 +976,16 @@ static void settings_json(App *app, SB *b) {
     for (int i = 0; i < g_nsnip; i++) { if (i) sb_putc(b, ','); sb_json(b, g_snip[i]); }
     sb_puts(b, "]}");
 #else
-    (void)app;
+    {
+        static const char *backend_labels[] = { "Auto", "Vulkan", "OpenGL", "Software" }, *gpu_labels[] = { "Auto", "Intel", "NVIDIA", "AMD", "None (CPU only)" };
+        char text[256];
+        sb_puts(b, ",\"renderers\":[");
+        for (int backend = GPU_BACKEND_AUTO; backend <= GPU_BACKEND_CPU; backend++) sb_printf(b, "%s[\"%s\",\"%s\"]", backend ? "," : "", renderer_key((GpuBackend)backend), backend_labels[backend]);
+        sb_puts(b, "],\"gpus\":[");
+        for (int k = 0; k < 5; k++) sb_printf(b, "%s[\"%s\",\"%s\"]", k ? "," : "", GPU_KEYS[k], gpu_labels[k]);
+        renderer_text(app, text, sizeof text);
+        sb_printf(b, "],\"gpu\":\"%s\",\"renderer\":\"%s\",\"rendererText\":", GPU_KEYS[g_gpu_pick], renderer_key(g_renderer)); sb_json(b, text);
+    }
 #endif
     sb_printf(b, ",\"lite\":%s,\"cpu\":%s,\"cpuPct\":%d,\"cpuSecs\":%d,\"cpuLim\":%d,\"vctl\":%s,\"sleep\":%s,\"hud\":%s,\"smooth\":%s,\"ua\":%d,\"hudText\":",
         g_lowmem ? "true" : "false", g_cpu_on ? "true" : "false", g_cpu_pct, g_cpu_secs, g_cpu_lim, g_vctl ? "true" : "false", g_tab_sleep ? "true" : "false", g_hud ? "true" : "false", g_smooth ? "true" : "false", g_ua);
@@ -1223,13 +1248,48 @@ static void renderer_apply(App *app, GpuBackend backend) {
     SDL_Log("Lumen: requested renderer %s, active %s", renderer_key(g_renderer), gpu_backend_name(app->gpu));
 }
 #endif
+#ifndef __ANDROID__
+/* the window's surface for wgpu; false: no GPU surface on this platform */
+static bool window_gpu_src(App *a, GpuSurfSrc *src) {
+    memset(src, 0, sizeof *src);
+    SDL_PropertiesID pr = SDL_GetWindowProperties(a->win);
+    if (!strcmp(SDL_GetPlatform(), "macOS")) {
+        if (!a->mview) a->mview = SDL_Metal_CreateView(a->win);
+        if (a->mview) { src->kind = GPU_SURF_METAL; src->a = SDL_Metal_GetLayer(a->mview); return src->a != NULL; }
+        return false;
+    }
+    if (SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, NULL)) { src->kind = GPU_SURF_WAYLAND; src->a = SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER, NULL); src->b = SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, NULL); return true; }
+    if (SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_X11_DISPLAY_POINTER, NULL)) { src->kind = GPU_SURF_XLIB; src->a = SDL_GetPointerProperty(pr, SDL_PROP_WINDOW_X11_DISPLAY_POINTER, NULL); src->win = (uint64_t)SDL_GetNumberProperty(pr, SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0); return true; }
+    return false;
+}
+/* switches the GPU and backend now, on the same window; settings.txt keeps them */
+static void renderer_apply_desktop(App *a, GpuBackend backend, int pick) {
+    g_renderer = backend; g_gpu_pick = pick; gpu_set_pick(pick < 4 ? pick : 0);
+    gpu_destroy(a->gpu); a->gpu = NULL;
+    GpuSurfSrc src;
+    if (renderer_effective() != GPU_BACKEND_CPU && !getenv("LUMEN_NO_GPU") && window_gpu_src(a, &src)) {
+        SDL_DestroyWindowSurface(a->win);
+        a->gpu = gpu_create_backend(&src, a->pw, a->ph, renderer_effective());
+    }
+    media_yuv = gpu_yuv_ok(a->gpu) && !getenv("LUMEN_NO_YUV");
+    a->vonly = a->sdirty = a->gvid_ok = a->osig_ok = false; a->dirty = true;
+    for (int i = 0; i < a->ntabs; i++) a->tabs[i]->relayout = true;
+    fprintf(stderr, "lumen: presenting with %s%s%s\n", gpu_backend_name(a->gpu), *gpu_adapter_name(a->gpu) ? " on " : "", gpu_adapter_name(a->gpu));
+    settings_save();
+}
+#endif
 static void apply_set(App *a, const char *q) {
     char v[32];
     if (qparam(q, "page_zoom", v, sizeof v)) {
         int percent = page_zoom_parse(v);
         if (percent && percent != g_page_zoom_pct) { g_page_zoom_pct = percent; page_zoom_changed(a); }
     }
-#ifdef __ANDROID__
+#ifndef __ANDROID__
+    {
+        int backend = qparam(q, "renderer", v, sizeof v) ? renderer_parse(v) : -1, pick = qparam(q, "gpu", v, sizeof v) ? gpu_pick_parse(v) : -1;
+        if (backend >= 0 || pick >= 0) renderer_apply_desktop(a, backend >= 0 ? (GpuBackend)backend : g_renderer, pick >= 0 ? pick : g_gpu_pick);
+    }
+#else
     if (qparam(q, "renderer", v, sizeof v)) {
         int backend = renderer_parse(v);
         if (backend >= 0 && (backend != (int)g_renderer || !a->gpu)) renderer_apply(a, (GpuBackend)backend);
@@ -2232,6 +2292,7 @@ static void render(App *a) {
     update_renderer_readout(a);
 #else
     update_compact(a);
+    update_renderer_readout(a);
 #endif
     double t0 = now_ms();
     PaintFrame profile_frame = paint_profile_begin(t0);
@@ -6109,8 +6170,11 @@ int main(int argc, char **argv) {
     paint_image_hook = node_img; paint_url_image_hook = url_img; svg_ext_ref_hook = svg_ext_ref; layout_image_size_hook = img_size; jsg_img_done_hook = img_fetch_done;
     App a; memset(&a, 0, sizeof a); g_app = &a; a.nws = 1; a.wsicon[0] = WORKSPACE_DEFAULT_ICON; snprintf(a.wsname[0], sizeof a.wsname[0], "Personal"); a.side = sidebar_width(getenv("LUMEN_NO_SIDEBAR") ? 0 : SIDEW); tab_new(&a);
     bool want_gpu = !getenv("LUMEN_NO_GPU");
-#ifdef __ANDROID__
     renderer_read_preferences();
+#ifndef __ANDROID__
+    gpu_set_pick(g_gpu_pick < 4 ? g_gpu_pick : 0);
+    if (getenv("LUMEN_VULKAN")) g_renderer = GPU_BACKEND_VULKAN;
+    if (renderer_effective() == GPU_BACKEND_CPU) want_gpu = false;
 #endif
     int ww = 1280, wh = 840; { const char *e = getenv("LUMEN_WINDOW"); if (e) sscanf(e, "%dx%d", &ww, &wh); }   /* e.g. LUMEN_WINDOW=800x600 */
 #if !defined(__APPLE__) && !defined(__ANDROID__)
@@ -6137,7 +6201,7 @@ int main(int argc, char **argv) {
 #ifdef __ANDROID__
         if (ok) a.gpu = gpu_create_backend(&src, a.pw, a.ph, g_renderer);
 #else
-        if (ok) a.gpu = gpu_create(&src, a.pw, a.ph, getenv("LUMEN_VULKAN") != NULL || strcmp(SDL_GetPlatform(), "macOS"));
+        if (ok) a.gpu = gpu_create_backend(&src, a.pw, a.ph, !strcmp(SDL_GetPlatform(), "macOS") && g_renderer == GPU_BACKEND_VULKAN ? GPU_BACKEND_AUTO : renderer_effective());
 #endif
         media_yuv = gpu_yuv_ok(a.gpu) && !getenv("LUMEN_NO_YUV");
         if (!a.gpu && a.mview) { SDL_Metal_DestroyView(a.mview); a.mview = NULL; }
@@ -6152,7 +6216,7 @@ int main(int argc, char **argv) {
     }
 #endif
     boot_mark("gpu");
-    fprintf(stderr, "lumen: presenting with %s\n", gpu_backend_name(a.gpu));
+    fprintf(stderr, "lumen: presenting with %s%s%s\n", gpu_backend_name(a.gpu), *gpu_adapter_name(a.gpu) ? " on " : "", gpu_adapter_name(a.gpu));
 #ifdef __ANDROID__
     SDL_Log("Lumen: requested renderer %s, active %s", renderer_key(g_renderer), gpu_backend_name(a.gpu));
 #endif

@@ -45,6 +45,9 @@ bool gpu_present_frame(Gpu *g, const uint32_t *px, int w, int h, int stride, int
 #define GPU_EXTRA_LAYERS 3
 void gpu_set_extra_layers(Gpu *g, const GpuVideo *v, int n);
 const char *gpu_backend_name(Gpu *g);
+/* which GPU gpu_create_backend picks: 0 auto (NVIDIA or AMD before others), 1 Intel, 2 NVIDIA, 3 AMD */
+void gpu_set_pick(int pick);
+const char *gpu_adapter_name(Gpu *g);   /* the adapter in use, e.g. "NVIDIA GeForce MX110"; "" without one */
 /* The presenter's wgpu instance, adapter, device and queue (unowned), for WebGPU pages to share so their canvases
    are sampled in place. False without a presenter, or when its device lacks the adapter's features and limits. */
 typedef struct { void *inst, *adapter, *dev, *queue; } GpuShared;
