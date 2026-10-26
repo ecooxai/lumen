@@ -11,7 +11,7 @@ function parseDecls(s) {
     let depth = 0, q = 0, start = 0; const parts = [];
     for (let i = 0; i < s.length; i++) { const c = s[i]; if (q) { if (c === q) q = 0; } else if (c === '"' || c === "'") q = c; else if (c === '(') depth++; else if (c === ')') depth--; else if (c === ';' && !depth) { parts.push(s.slice(start, i)); start = i + 1; } }
     parts.push(s.slice(start));
-    for (const p of parts) { const i = p.indexOf(':'); if (i < 0) continue; const k = p.slice(0, i).trim(); let v = p.slice(i + 1).trim(); if (!k) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } m.set(k.startsWith('--') ? k : k.toLowerCase(), [v, imp]); }
+    for (const p of parts) { const i = p.indexOf(':'); if (i < 0) continue; const k = p.slice(0, i).trim(); let v = p.slice(i + 1).trim(); if (!k) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const lk = k.startsWith('--') ? k : k.toLowerCase(); if ((lk === 'font' || lk === 'font-family') && !mathValid(lk, v)) continue; m.set(lk, [v, imp]); }
     return m;
 }
 const serDecls = (m) => [...m].map(([k, [v, i]]) => k + ': ' + v + (i ? ' !important' : '') + ';').join(' ');
@@ -287,10 +287,15 @@ function familyValid(v) {
 const FONT_PRE = /^(normal|italic|oblique|small-caps|bold|bolder|lighter|[1-9]00|ultra-condensed|extra-condensed|condensed|semi-condensed|semi-expanded|expanded|extra-expanded|ultra-expanded)$/i;
 const FONT_SIZE = /^(xx-small|x-small|small|medium|large|x-large|xx-large|xxx-large|smaller|larger|[+]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?([a-z]+|%)|0)$/i;
 function fontFamilyPart(v) {   /* the family list of a font shorthand, or null when no size is found */
-    const m = /^\s*((?:\S+\s+)*?)(\S+?)(\s*\/\s*\S+)?\s+(.*)$/s.exec(v); if (!m) return null;
-    const pre = m[1].trim() ? m[1].trim().split(/\s+/) : [];
-    if (!FONT_SIZE.test(m[2]) || !pre.every(x => FONT_PRE.test(x))) return null;
-    return m[4];
+    const re = /[^\s\/]+/g; let m;
+    while ((m = re.exec(v))) {
+        if (FONT_SIZE.test(m[0])) {
+            const lh = /^\s*\/\s*([a-z-]+\((?:[^()]|\([^()]*\))*\)|[^\s\/]+)/i.exec(v.slice(re.lastIndex)), rest = v.slice(re.lastIndex + (lh ? lh[0].length : 0));
+            return /^\s/.test(rest) ? rest : null;
+        }
+        if (!FONT_PRE.test(m[0])) return null;
+    }
+    return null;
 }
 function mathValid(p, v) {
     if ((p === 'font-family' || p === 'font') && !/var\(|env\(|attr\(/i.test(v) && !/^\s*(inherit|initial|unset|revert|revert-layer)\s*$/i.test(v)) {

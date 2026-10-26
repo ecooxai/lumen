@@ -141,7 +141,11 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 232 ...)
+(append here: RUN 233 ...)
+
+RUN 232: parseDecls (stylesheet rules, style attribute) drops font/font-family declarations that fail mathValid;
+fontFamilyPart walks tokens (prefix keywords, size, optional '/ line-height' incl. calc()). test_font_family_parsing
+1630 -> 1774/2232; /css/css-fonts/: +458, -1 (at-font-face-font-matching sanity check, font-load flake, also seen in 231).
 
 RUN 231: font-family / font shorthand family validation in mathValid (03-element.js familyValid, fontFamilyPart):
 items are one string or identifiers; a lone CSS-wide keyword or 'default' is invalid. /css/css-fonts/: +166, none lost
