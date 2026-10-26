@@ -143,6 +143,9 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 ## Runs
 (append here: RUN 226 ...)
 
+Phone check after run 225 (APK 250ff4a): google/youtube/webgl/webgpu pass, no crash/ANR/tombstone/new errors;
+last-10-s CPU 0.8-3.5%, peak RSS 553 MB (youtube), WebGL 57.3 fps, WebGPU 23.7 fps.
+
 RUN 225: <frame> elements get a browsing context like <iframe> (frames.cc is_iframe, dom.c frame_version bumps)
 and HTMLFrameElement has contentWindow/contentDocument. pixel-length-attributes.html no longer errors;
 /html/rendering/ +604 net, none lost after a 2-job rerun of the batch losses (svg-in-iframe sizing, fieldset,
