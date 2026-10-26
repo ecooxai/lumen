@@ -6515,6 +6515,18 @@ int main(int argc, char **argv) {
                     if (ev.wheel.mouse_x != g_sm_x || ev.wheel.mouse_y != g_sm_y || (g_sm_dy && (g_sm_dy > 0) != (wdy > 0))) g_sm_dx = g_sm_dy = 0;
                     g_sm_x = ev.wheel.mouse_x; g_sm_y = ev.wheel.mouse_y; g_sm_dx += wdx; g_sm_dy += wdy; break;
                 }
+#ifndef __ANDROID__
+                if (!notch && !g_smooth && (wdx || wdy)) {   /* smooth scrolling off: a trackpad moves the page in steps, as touch does on Android */
+                    static float rx, ry; static double last; static bool started;
+                    double tn = now_ms(); if (tn - last > 150) { rx = ry = 0; started = false; }   /* a new swipe */
+                    last = tn; rx += wdx; ry += wdy;
+                    float step = (float)LMIN(g_scroll_px, scroll_px_max(&a)), out[2] = { 0, 0 }, *r[2] = { &rx, &ry };
+                    for (int k = 0; k < 2; k++)
+                        for (float need; fabsf(*r[k]) >= (need = started ? 10 : 5); ) { float sg = *r[k] > 0 ? 1 : -1; out[k] += sg * step; *r[k] -= sg * need; started = true; }
+                    if (out[0] || out[1]) wheel_apply(&a, ev.wheel.mouse_x, ev.wheel.mouse_y, out[0], out[1]);
+                    break;
+                }
+#endif
                 wheel_apply(&a, ev.wheel.mouse_x, ev.wheel.mouse_y, wdx, wdy); break;
             }
             case SDL_EVENT_MOUSE_MOTION: {

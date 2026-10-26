@@ -852,10 +852,10 @@ function settings() {
     var step = '';
     if (!T.smooth && T.scrollMax) {
         var sp = spPos(T.scrollPx, T.scrollMax) + '%';
-        step = '<div class=sub>Touch scroll step: <b id=spv>' + T.scrollPx + ' px</b></div><div class=rng id=sp><i></i><b style="width:' + sp + '"></b><s style="left:' + sp + '"></s></div>' +
+        step = '<div class=sub>' + (T.gpus ? 'Trackpad scroll step' : 'Touch scroll step') + ': <b id=spv>' + T.scrollPx + ' px</b></div><div class=rng id=sp><i></i><b style="width:' + sp + '"></b><s style="left:' + sp + '"></s></div>' +
             '<div class=stepl><span>10 px</span><span>' + T.scrollMax + ' px, one screen</span></div>';
     }
-    cards.push(card('Smooth scrolling', 'Scrolling follows your finger and glides. When off, the page jumps by the step below, which uses less CPU.', toggle('smooth', T.smooth), step));
+    cards.push(card('Smooth scrolling', T.gpus ? 'Mouse wheel and trackpad scrolling glide. When off, the wheel jumps a notch at a time and a trackpad moves the page by the step below, which uses less CPU.' : 'Scrolling follows your finger and glides. When off, the page jumps by the step below, which uses less CPU.', toggle('smooth', T.smooth), step));
     if (T.tapKbd !== undefined)
         cards.push(card('Keyboard on second tap', 'The first tap in a text field only places the cursor and offers Paste. Tap the same spot again to type.', toggle('tapkbd', T.tapKbd)));
     if (T.editBar) {
