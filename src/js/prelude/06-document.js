@@ -67,7 +67,7 @@ methods(Document.prototype, {
     get location() { return this === document ? location : null; }, set location(v) { if (this === document) location.href = v; },
     get domain() { const r = N.urlParse(N.url(), null); return r ? r[5] : ''; }, set domain(v) {},
     get referrer() { return ''; },
-    get cookie() { return N.cookie(); }, set cookie(v) { N.setCookie(String(v)); },
+    get cookie() { return N.cookie(); }, set cookie(v) { v = String(v); if (!/[\x00-\x08\x0a-\x1f\x7f]/.test(v)) N.setCookie(v); },
     get readyState() { return ['loading', 'interactive', 'complete'][N.readyState()]; },
     get characterSet() { return N.charset(this); }, get charset() { return N.charset(this); }, get inputEncoding() { return N.charset(this); }, get contentType() { return this.__ct ?? N.ctype(this) ?? (N.ns(this) === 3 ? 'application/xml' : 'text/html'); },
     get compatMode() { return N.quirks() ? 'BackCompat' : 'CSS1Compat'; },

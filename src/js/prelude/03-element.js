@@ -303,6 +303,9 @@ function mathValid(p, v) {
         else if (!/^\s*(caption|icon|menu|message-box|small-caption|status-bar)\s*$/i.test(v)) { const f = fontFamilyPart(v); if (f !== null && !familyValid(f)) return false; }
     }
     if (p === 'position-area' && !/var\(|env\(|attr\(/i.test(v) && !/^\s*(inherit|initial|unset|revert|revert-layer)\s*$/i.test(v)) return posArea(v) !== null;
+    /* css-ui-4 appearance: none | auto | base | base-select | <compat-auto> | <compat-special> */
+    if ((p === 'appearance' || p === '-webkit-appearance') && !/var\(|env\(|attr\(/i.test(v))
+        return /^\s*(inherit|initial|unset|revert|revert-layer|none|auto|base|base-select|textfield|menulist-button|button|checkbox|listbox|menulist|meter|progress-bar|radio|searchfield|textarea)\s*$/i.test(v);
     if (/-gradient\(/i.test(v) && !/var\(|env\(|attr\(/i.test(v) && !gradInterpValid(v)) return false;
     if (/var\(|env\(|attr\(|calc-size\(|anchor/i.test(v)) return true;
     const re = /(^|[\s,(/])((?:-webkit-)?[a-z][a-z0-9-]*)\(/gi;

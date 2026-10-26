@@ -35,6 +35,8 @@ static double parse_http_date(const char *s) {
 }
 
 static void set_cookie(const char *host, const char *rpath, const char *sc, bool from_http) {
+    /* RFC 6265bis: a cookie string with a control character other than tab is ignored */
+    for (const unsigned char *p = (const unsigned char *)sc; *p; p++) if ((*p < 0x20 && *p != '\t') || *p == 0x7f) return;
     char *s = xstrdup(sc);
     char *semi = strchr(s, ';'); if (semi) *semi = 0;
     char *eq = strchr(s, '=');
