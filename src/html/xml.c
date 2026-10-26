@@ -165,7 +165,14 @@ static bool doctype(XP *p) {
     Node *dt = node_new_doctype(p->d, name);
     node_set_attr(dt, atom("publicId"), ids[0] ? ids[0] : ""); node_set_attr(dt, atom("systemId"), ids[1] ? ids[1] : "");
     node_append(&p->d->node, dt);
-    if (ids[0] && strstr(ids[0], "XHTML")) p->html_ents = true;
+    static const char *const ent_ids[] = {   /* HTML "Parsing XHTML documents": these public ids get HTML's entities */
+        "-//W3C//DTD XHTML 1.0 Transitional//EN", "-//W3C//DTD XHTML 1.1//EN", "-//W3C//DTD XHTML 1.0 Strict//EN",
+        "-//W3C//DTD XHTML 1.0 Frameset//EN", "-//W3C//DTD XHTML Basic 1.0//EN", "-//W3C//DTD XHTML 1.1 plus MathML 2.0//EN",
+        "-//W3C//DTD XHTML 1.1 plus MathML 2.0 plus SVG 1.1//EN", "-//W3C//DTD MathML 2.0//EN", "-//WAPFORUM//DTD XHTML Mobile 1.0//EN" };
+    if (ids[0]) {
+        for (size_t k = 0; k < sizeof ent_ids / sizeof *ent_ids; k++) if (!strcmp(ids[0], ent_ids[k])) p->html_ents = true;
+        if (strstr(ids[0], "XHTML")) p->html_ents = true;   /* Chrome: any XHTML public id (Mobile 1.1/1.2 too) */
+    }
     free(name); free(ids[0]); free(ids[1]);
     return true;
 }
