@@ -232,7 +232,40 @@ function gradInterpValid(v) {
     }
     return true;
 }
+/* position-area: null when invalid, else Chrome's serialization (physical/logical pairs in a fixed order,
+   a redundant 'span-all' or repeated keyword dropped) */
+const PA_G = (() => {
+    const m = new Map(), add = (g, ks) => ks.forEach(k => m.set(k, g));
+    add('H', ['left', 'right', 'span-left', 'span-right', 'x-start', 'x-end', 'span-x-start', 'span-x-end', 'self-x-start', 'self-x-end', 'span-self-x-start', 'span-self-x-end']);
+    add('V', ['top', 'bottom', 'span-top', 'span-bottom', 'y-start', 'y-end', 'span-y-start', 'span-y-end', 'self-y-start', 'self-y-end', 'span-self-y-start', 'span-self-y-end']);
+    add('I', ['inline-start', 'inline-end', 'span-inline-start', 'span-inline-end']);
+    add('B', ['block-start', 'block-end', 'span-block-start', 'span-block-end']);
+    add('SI', ['self-inline-start', 'self-inline-end', 'span-self-inline-start', 'span-self-inline-end']);
+    add('SB', ['self-block-start', 'self-block-end', 'span-self-block-start', 'span-self-block-end']);
+    add('SE', ['start', 'end', 'span-start', 'span-end']);
+    add('SSE', ['self-start', 'self-end', 'span-self-start', 'span-self-end']);
+    add('A', ['center', 'span-all']);
+    return m;
+})();
+function posArea(v) {
+    const t = v.trim().toLowerCase().split(/\s+/);
+    if (t.length === 1) return t[0] === 'none' || PA_G.has(t[0]) ? t[0] : null;
+    if (t.length !== 2) return null;
+    const [a, b] = t, ga = PA_G.get(a), gb = PA_G.get(b);
+    if (!ga || !gb) return null;
+    if (ga === 'A' && gb === 'A') return a === b ? a : a + ' ' + b;
+    if (ga === 'A' || gb === 'A') {
+        const [x, gx, y] = ga === 'A' ? [b, gb, a] : [a, ga, b];
+        if (gx === 'SE' || gx === 'SSE') return a + ' ' + b;
+        if (y === 'span-all') return x;
+        return gx === 'H' || gx === 'B' || gx === 'SB' ? x + ' center' : 'center ' + x;
+    }
+    if (ga === gb && (ga === 'SE' || ga === 'SSE')) return a === b ? a : a + ' ' + b;
+    const P = { H: 'V', B: 'I', SB: 'SI' };
+    return P[ga] === gb ? a + ' ' + b : P[gb] === ga ? b + ' ' + a : null;
+}
 function mathValid(p, v) {
+    if (p === 'position-area' && !/var\(|env\(|attr\(/i.test(v) && !/^\s*(inherit|initial|unset|revert|revert-layer)\s*$/i.test(v)) return posArea(v) !== null;
     if (/-gradient\(/i.test(v) && !/var\(|env\(|attr\(/i.test(v) && !gradInterpValid(v)) return false;
     if (/var\(|env\(|attr\(|calc-size\(|anchor/i.test(v)) return true;
     const re = /(^|[\s,(/])((?:-webkit-)?[a-z][a-z0-9-]*)\(/gi;
@@ -284,6 +317,7 @@ function computedFont(cs) {
     return [g('font-style') || 'normal', vr, w === '400' ? 'normal' : w, st].filter(x => x !== 'normal').concat(lh === 'normal' ? size : `${size} / ${lh}`, family).join(' ');
 }
 function specNormalize(p, v) {
+    if (p === 'position-area') { const n = posArea(v); if (n !== null) return n; }
     if (/["'\\]|url\(|var\(|env\(|attr\(|#/i.test(v) || /timing-function$|^transition$|^animation$/.test(p)) return v;
     let t = v.trim().replace(/(^|[\s(,/*+-])([+-]?)(\d*\.\d+|\d+\.?)(e[+-]?\d+)?(?=[a-z%]*(?:$|[\s),/*]))/gi, (m, pre, sign, num, exp) => {
         const n = Number(num + (exp || ''));

@@ -141,7 +141,10 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 227 ...)
+(append here: RUN 228 ...)
+
+RUN 227: position-area validity + canonical serialization in the style setter (03-element.js posArea, hooked
+into mathValid/specNormalize). /css/css-anchor-position/ rerun: +2058, none lost (264 files, 1 timeout).
 
 UI WORK (4704bd2, APK built+installed, not yet released): newtab.html icon top bar + floating search; viewer zoom
 steps/list/shown size; tab_select blank-frame-first for loading tabs; Android background media (SDL
