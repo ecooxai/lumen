@@ -563,7 +563,7 @@ static bool media_feature(const char *f, const MediaCtx *mc) {
                     v = b ? a / b : INFINITY;
                 } else if (res || num) {
                     v = strtof(val, &end);
-                    if (end == val || (num && (*end || v != (int)v || v < 0))) { g_mq_unknown = true; return false; }
+                    if (end == val || v < 0 || (num && (*end || strchr(val, '.') || strchr(val, 'e') || strchr(val, 'E')))) { g_mq_unknown = true; return false; }
                     if (res) { if (!strcmp(end, "dpi")) v /= 96.f; else if (!strcmp(end, "dpcm")) v *= 2.54f / 96.f; else if (strcmp(end, "dppx") && strcmp(end, "x")) { g_mq_unknown = true; return false; } }
                 } else {
                     float n = strtof(val, &end); while (*end == ' ') end++;
@@ -575,23 +575,37 @@ static bool media_feature(const char *f, const MediaCtx *mc) {
             }
         }
         /* boolean context: features with a non-zero / non-none value here; unknown ones are false */
-        static const char *const on[] = { "color", "hover", "pointer", "any-hover", "any-pointer", "width", "height", "aspect-ratio",
-                                          "device-width", "device-height", "device-aspect-ratio", "resolution", "scripting", "update", "color-gamut", "orientation", "dynamic-range", "video-dynamic-range", "display-mode", "display-state", "prefers-color-scheme" };
+        if (!strcmp(s, "width") || !strcmp(s, "device-width")) return mc->vw > 0;
+        if (!strcmp(s, "height") || !strcmp(s, "device-height")) return mc->vh > 0;
+        static const char *const on[] = { "color", "hover", "pointer", "any-hover", "any-pointer", "aspect-ratio",
+                                          "device-aspect-ratio", "resolution", "scripting", "update", "color-gamut", "orientation", "dynamic-range", "video-dynamic-range", "display-mode", "display-state", "prefers-color-scheme",
+                                          "overflow-block", "overflow-inline" };
         for (size_t i = 0; i < sizeof on / sizeof *on; i++) if (!strcmp(s, on[i])) return true;
         static const char *const off[] = { "grid", "monochrome", "color-index", "inverted-colors", "prefers-reduced-motion", "prefers-reduced-data",
-                                           "prefers-reduced-transparency", "prefers-contrast", "forced-colors", "overflow-block", "overflow-inline", "environment-blending", "resizable", "navigation-controls" };
+                                           "prefers-reduced-transparency", "prefers-contrast", "forced-colors", "environment-blending", "resizable", "navigation-controls", "scan" };
         bool known = false;
         for (size_t i = 0; i < sizeof off / sizeof *off; i++) if (!strcmp(s, off[i])) known = true;
         if (!known) g_mq_unknown = true;
         return false;
     }
     *colon = 0; char *name = str_trim(s), *val = str_trim(colon + 1);
-    Length l;
-    if (!strcmp(name, "min-width")) return css_parse_length(val, &l, em, em, mc) && mc->vw >= l.px;
-    if (!strcmp(name, "max-width")) return css_parse_length(val, &l, em, em, mc) && mc->vw <= l.px;
-    if (!strcmp(name, "min-height")) return css_parse_length(val, &l, em, em, mc) && mc->vh >= l.px;
-    if (!strcmp(name, "max-height")) return css_parse_length(val, &l, em, em, mc) && mc->vh <= l.px;
-    if (!strcmp(name, "width")) return css_parse_length(val, &l, em, em, mc) && fabsf(mc->vw - l.px) < 0.5f;
+    /* range features in the colon form: (min-width: 10px) is (width >= 10px), (aspect-ratio: 4/3) is (aspect-ratio = 4/3) */
+    {
+        static const char *const rf[] = { "width", "height", "device-width", "device-height", "aspect-ratio", "device-aspect-ratio",
+                                          "resolution", "color", "monochrome", "color-index" };
+        bool mn = str_starts(name, "min-"), mx = str_starts(name, "max-");
+        const char *base = mn || mx ? name + 4 : name;
+        for (size_t i = 0; i < sizeof rf / sizeof *rf; i++) if (!strcmp(base, rf[i])) {
+            if (!*val || strpbrk(val, "<>=")) { g_mq_unknown = true; return false; }
+            char e[300]; snprintf(e, sizeof e, "%s %s %s", base, mn ? ">=" : mx ? "<=" : "=", val);
+            return media_feature(e, mc);
+        }
+    }
+    if (!strcmp(name, "grid")) { if (strcmp(val, "0") && strcmp(val, "1")) g_mq_unknown = true; return !strcmp(val, "0"); }
+    if (!strcmp(name, "scan")) { if (strcmp(val, "interlace") && strcmp(val, "progressive")) g_mq_unknown = true; return false; }
+    if (!strcmp(name, "overflow-block")) { if (strcmp(val, "none") && strcmp(val, "scroll") && strcmp(val, "paged")) g_mq_unknown = true; return !strcmp(val, "scroll"); }
+    if (!strcmp(name, "overflow-inline")) { if (strcmp(val, "none") && strcmp(val, "scroll")) g_mq_unknown = true; return !strcmp(val, "scroll"); }
+    if (!strcmp(name, "update")) { if (strcmp(val, "none") && strcmp(val, "slow") && strcmp(val, "fast")) g_mq_unknown = true; return !strcmp(val, "fast"); }
     if (!strcmp(name, "orientation")) return !strcmp(val, mc->vw >= mc->vh ? "landscape" : "portrait");
     if (!strcmp(name, "prefers-color-scheme")) return !strcmp(val, mc->dark ? "dark" : "light");
     if (!strcmp(name, "prefers-reduced-motion")) return !strcmp(val, "no-preference");
@@ -608,11 +622,6 @@ static bool media_feature(const char *f, const MediaCtx *mc) {
         if (str_starts(name, "max") || strstr(name, "max-")) return mc->dpr <= v;
         return fabsf(mc->dpr - v) < 0.01f;
     }
-    if (!strcmp(name, "min-aspect-ratio") || !strcmp(name, "max-aspect-ratio")) {
-        float a = 0, b = 1; int used = 0, got = sscanf(val, "%f%n", &a, &used);
-        const char *rest = val + (got == 1 ? used : 0); while (*rest == ' ') rest++;
-        if (got == 1 && *rest == '/') { int u2 = 0; if (sscanf(rest + 1, " %f%n", &b, &u2) != 1) got = 0; else { rest += 1 + u2; while (*rest == ' ') rest++; } }
-        if (got != 1 || *rest || a < 0 || b <= 0) { g_mq_unknown = true; return false; } float r = a / b, cur = mc->vw / mc->vh; return name[1] == 'i' ? cur >= r : cur <= r; }
     if (!strcmp(name, "scripting")) return !strcmp(val, "enabled");
     static const char *const range[] = { "color", "color-index", "monochrome", "width", "height", "aspect-ratio", "device-width", "device-height",
                                          "device-aspect-ratio", "resolution" };   /* the only ones with min-/max- */
@@ -627,10 +636,12 @@ static bool media_feature(const char *f, const MediaCtx *mc) {
 
 static bool media_single(const char *q, const MediaCtx *mc) {
     char *s = xstrdup(q); char *t = str_trim(s);
-    bool neg = false, result = true;
+    bool neg = false, result = true, only = false;
     if (str_istarts(t, "not ")) { neg = true; t += 4; }
-    else if (str_istarts(t, "only ")) t += 5;
+    else if (str_istarts(t, "only ")) { only = true; t += 5; }
     t = str_trim(t);
+    /* "only" needs a media type, and "not" can't repeat */
+    if ((only && t[0] == '(') || ((neg || only) && (str_istarts(t, "not ") || str_istarts(t, "only ")))) g_mq_unknown = true;
     /* media type */
     if (t[0] && t[0] != '(') {
         char *e = t; while (*e && !is_ws((unsigned char)*e)) e++;
@@ -638,9 +649,10 @@ static bool media_single(const char *q, const MediaCtx *mc) {
         if (!str_ieq(t, "all") && !str_ieq(t, "screen")) result = false;
         *e = save; t = str_trim(e);
         if (str_istarts(t, "and")) t = str_trim(t + 3);
+        else if (*t) g_mq_unknown = true;   /* "screen or (x)", "screen (x)" */
     }
-    /* features joined by and / or */
-    bool use_or = false;
+    /* features joined by and / or (not both at one level) */
+    bool use_or = false, saw_and = false, saw_or = false;
     while (*t && result != (use_or)) {
         if (*t == '(') {
             size_t close = find_close_paren(t, 1, strlen(t));
@@ -654,9 +666,10 @@ static bool media_single(const char *q, const MediaCtx *mc) {
             free(inner);
             if (use_or) result = result || r; else result = result && r;
             t = str_trim(t + (close < strlen(t) ? close + 1 : strlen(t)));
-            if (str_istarts(t, "and")) { t = str_trim(t + 3); use_or = false; }
-            else if (str_istarts(t, "or")) { t = str_trim(t + 2); use_or = true; }
+            if (str_istarts(t, "and")) { t = str_trim(t + 3); use_or = false; saw_and = true; }
+            else if (str_istarts(t, "or")) { t = str_trim(t + 2); use_or = true; saw_or = true; }
             else break;
+            if (saw_and && saw_or) { g_mq_unknown = true; break; }
         } else break;
     }
     free(s);

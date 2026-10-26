@@ -249,6 +249,11 @@ resolution/color in ranges, unitless rejected; computed -webkit-appearance -> ap
 1029 -> 1163/1349, appearance-cssom Invalid 300/300. Left in test_media_queries: zero-size viewport cases (the test
 uses 0x0 iframes), (aspect-ratio: 59/80) exact ratios, invalid values (device-aspect-ratio -1/1, color: 1.0,
 -3dpi, grid: 2, scan: 1), grammar (only (x), not not, mixed and/or).
+RUN 259 (committed): colon-form range features go through the range evaluator; grid/scan/overflow-*/update values
+validated; boolean width/height false at 0 size; only/not/screen-or/mixed and-or grammar -> unknown.
+test_media_queries 1206/1349, run +111, no crash, losers flaky. Left: (width <= Npx)/(width: Npx) against the test's
+iframe width (check the iframe's viewport size in MediaCtx: the failures look like the frame's vw is wrong), boolean
+(height) at height 0, "(a) and (b) or (c)" still accepted (the loop exits early once the result is decided).
 
 RUN 245: WebGL idlharness 2065 -> 2086/2099 (window and worker): FLOAT_MATnxm constants, interface .length, prototype
 getters throw, optional-argument defaults for bufferData/getBufferSubData/texImage3D lengths. +50, no losses. Left: setters
