@@ -4922,6 +4922,12 @@ static void tab_select(App *a, int i) {
     if (a->t->asleep && !a->t->loading) navigate(a, a->t->url, false);
     Page *p = a->t->cur;
     SDL_SetWindowTitle(a->win, p && p->d->title && *p->d->title ? p->d->title : "Lumen");
+    if (p && (a->t->loading || !p->L)) {
+        /* switching shows at once: a frame with the tab already selected and a blank page, then the loop lays out
+           the page (it is still loading, or was never laid out) */
+        a->t->cur = NULL; render(a); a->t->cur = p;
+        a->t->relayout = a->dirty = true; a->vonly = a->sdirty = a->osig_ok = a->gvid_ok = false;
+    }
 }
 static void tab_open(App *a) {
     panel_close(a, false);
@@ -5950,6 +5956,7 @@ int main(int argc, char **argv) {
 #ifdef __ANDROID__
     SDL_SetHint(SDL_HINT_ANDROID_TRAP_BACK_BUTTON, "1");
     SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
+    SDL_SetHint(SDL_HINT_ANDROID_BLOCK_ON_PAUSE, "0");   /* pages keep playing audio and video in the background */
 #endif
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) { fprintf(stderr, "SDL_Init: %s\n", SDL_GetError()); return 1; }
 #ifdef __ANDROID__
@@ -6113,6 +6120,7 @@ int main(int argc, char **argv) {
         panel_service(&a);
         popup_service(&a, &quit);
 #ifdef __ANDROID__
+        android_media_playing = media_timeout_ms() >= 0;   /* LumenActivity keeps a media foreground service while it is set */
         session_service(&a, a.android_suspended);
 #else
         session_service(&a, false);
@@ -6242,6 +6250,9 @@ int main(int argc, char **argv) {
         if (g_kbd_show_at) { double l = g_kbd_show_at - now_ms(); if (l < to) to = l > 0 ? (int)l + 1 : 0; }
 #endif
         WTAG(14);
+#endif
+#ifdef __ANDROID__
+        if (a.android_suspended && !android_media_playing && (to < 0 || to < 1000)) to = 1000;   /* in the background with nothing playing: wake once a second */
 #endif
         double boot_wait = now_ms();
         bool boot_got = SDL_WaitEventTimeout(&ev, to);

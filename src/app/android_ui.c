@@ -61,6 +61,11 @@ JNIEXPORT jstring JNICALL Java_org_lumen_browser_LumenActivity_nativeSite(JNIEnv
 }
 
 volatile float android_ui_stats[4];
+volatile int android_media_playing;
+JNIEXPORT jboolean JNICALL Java_org_lumen_browser_LumenActivity_nativeMediaPlaying(JNIEnv *env, jclass activity_class) {
+    (void)env; (void)activity_class;
+    return android_media_playing ? JNI_TRUE : JNI_FALSE;
+}
 JNIEXPORT jfloatArray JNICALL Java_org_lumen_browser_LumenActivity_nativeTabStats(JNIEnv *env, jclass activity_class) {
     (void)activity_class;
     jfloat v[4]; for (int i = 0; i < 4; i++) v[i] = android_ui_stats[i];

@@ -57,6 +57,7 @@ void android_ui_toast(const char *text);
    once a second while the readout is on: the current tab's CPU (% of one core), the JS heap and
    V8 external memory of all tabs (MB), the number of tabs */
 extern volatile float android_ui_stats[4];
+extern volatile int android_media_playing;   /* media is playing (set by the main loop, read by LumenActivity) */
 void android_ui_menu(const AndroidMenuState *state);
 void android_ui_bookmarks(const char *const *titles, const char *const *urls, int n, const char *page_title, const char *page_url);
 void android_ui_workspaces(const char *const *names, const int *tabs, int n, int current);

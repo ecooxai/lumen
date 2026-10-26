@@ -7,6 +7,9 @@
     <!-- getDisplayMedia: a media projection runs in a foreground service -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
+    <!-- audio and video keep playing in the background -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <!-- optional, granted by the user from the Downloads page: lets its file browser list every file -->
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
@@ -69,6 +72,8 @@
         </activity>
         <service android:name=".ScreenCapture$Service" android:exported="false"
             android:foregroundServiceType="mediaProjection" />
+        <service android:name=".MediaPlayback$Service" android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
         <provider android:name=".ClipProvider" android:authorities="${applicationId}.clip"
             android:exported="false" android:grantUriPermissions="true" />
     </application>

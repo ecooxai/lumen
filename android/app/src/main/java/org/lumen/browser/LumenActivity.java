@@ -45,6 +45,7 @@ public final class LumenActivity extends SDLActivity {
     private static native void nativeUiAction(int code, int value, byte[] first, byte[] second);
     static native String nativeUiIcon(int code);
     static native float[] nativeTabStats();
+    static native boolean nativeMediaPlaying();
     static native int nativeSiteCookies(byte[] url);
     static native String nativeSite(byte[] url);
     private static native void nativeFilesPicked(byte[] paths);
@@ -159,17 +160,20 @@ public final class LumenActivity extends SDLActivity {
     protected void onPause() {
         super.onPause();
         if (toolbar != null) toolbar.pause(true);
+        MediaPlayback.activityPaused(this, true);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         if (toolbar != null) toolbar.pause(false);
+        MediaPlayback.activityPaused(this, false);
     }
 
     @Override
     protected void onDestroy() {
         if (toolbar != null) toolbar.pause(true);
+        MediaPlayback.activityPaused(this, false);
         if (browserSurface != null) browserSurface.close();
         if (unregisterBack != null) {
             unregisterBack.run();

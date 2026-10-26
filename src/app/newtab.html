@@ -6,12 +6,18 @@
      graphics changes are lumen:// links that the browser follows itself. -->
 <style>
 *{box-sizing:border-box}
-body{margin:0;font:14px -apple-system,system-ui,sans-serif;color:#202124;background:#f6f7f9;display:flex;min-height:100vh}
-nav{width:180px;flex:none;min-height:100vh;background:#fff;border-right:1px solid #e3e5e8;padding:20px 10px}
-nav h1{font-size:20px;font-weight:600;margin:0 12px 16px}
-nav a{display:block;padding:9px 12px;margin:2px 0;border-radius:8px;color:#3c4043;text-decoration:none}
-nav a.on{background:#e8f0fe;color:#1967d2;font-weight:600}
-main{flex:1;min-width:0;padding:24px 32px;max-width:900px}
+body{margin:0;font:14px -apple-system,system-ui,sans-serif;color:#202124;background:#f6f7f9;min-height:100vh}
+nav{position:sticky;top:0;z-index:8;display:flex;align-items:center;background:#fff;border-bottom:1px solid #e3e5e8;padding:6px 10px}
+nav .s{border:0;background:transparent;padding:0;cursor:pointer;flex:none;display:flex;align-items:center;justify-content:center;width:46px;height:42px;margin-right:2px;border-radius:10px;color:#5f6368}
+nav .s.on{background:#e8f0fe;color:#1967d2}
+nav .sp{flex:1;min-width:8px}
+nav{position:sticky}
+nav .search{display:none;position:absolute;right:10px;top:56px;width:420px;max-width:calc(100% - 20px);height:44px;padding:0 16px;font-size:15px;border:1px solid #dadce0;border-radius:22px;box-shadow:0 4px 16px rgba(0,0,0,.18)}
+nav.sopen .search{display:block}
+nav.sopen #sbtn,nav.found #sbtn{background:#e8f0fe;color:#1967d2}
+nav .add{display:inline-flex;align-items:center;justify-content:center;flex:none;width:38px;height:38px;margin-right:8px;border:0;border-radius:19px;background:#e8f0fe;color:#1967d2;cursor:pointer;padding:0}
+nav .add.off{background:#f1f3f4;color:#9aa0a6}
+main{padding:16px 24px;max-width:960px;margin:0 auto}
 .head{display:flex;align-items:center;margin:0 0 16px}
 h2{font-size:22px;font-weight:600;margin:0;flex:1}
 .search{width:260px;max-width:50%;padding:8px 14px;border:1px solid #dadce0;border-radius:18px;background:#fff;font:14px -apple-system,system-ui,sans-serif;margin:0}
@@ -44,12 +50,9 @@ a.l{color:inherit;text-decoration:none;display:block}
 .dlbar{height:4px;background:#e8eaed;border-radius:2px;margin-top:8px;overflow:hidden}.dlbar i{display:block;height:4px;background:#1a73e8}
 .ws{position:relative;border-radius:12px;padding:8px 10px 2px;margin-bottom:12px}
 .ws.open{z-index:6}
-.ws.first{border-top-left-radius:0;border-top-right-radius:0;padding-top:2px}
 a.wsn{display:block;padding:2px 2px 8px;color:#3c4043;font-size:15px;font-weight:600;text-decoration:none;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 a.wsn.cur{color:#1967d2}
 a.wsn.cur:before{content:'';display:inline-block;width:8px;height:8px;border-radius:4px;background:#1a73e8;margin-right:7px;vertical-align:1px}
-.head.hh{margin:0;padding:8px 10px 4px;border-radius:12px 12px 0 0}
-.hh a.wsn{flex:1;min-width:0;padding:0 8px 0 2px}
 #wsnew{position:fixed;right:20px;bottom:24px;z-index:7;display:flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:28px;background:#1a73e8;color:#fff;box-shadow:0 3px 10px rgba(0,0,0,.25)}
 #wsnew.off{background:#dadce0;color:#9aa0a6;box-shadow:none}
 #list.home{padding-bottom:84px}
@@ -92,7 +95,7 @@ h2 .add.off{background:#f1f3f4;color:#9aa0a6}
 .rng b{background:#1a73e8}
 .rng s{position:absolute;top:7px;width:18px;height:18px;margin-left:-9px;border-radius:9px;background:#1a73e8}
 .stepl{display:flex;justify-content:space-between;color:#5f6368;font-size:12px;margin:0 0 12px}
-nav a.close{flex:0 0 48px;font-size:20px;color:#5f6368}
+nav a.close{flex:none;width:40px;text-align:center;font-size:22px;color:#5f6368;text-decoration:none;margin-left:6px}
 #vw{position:fixed;left:0;top:0;right:0;bottom:0;z-index:50;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center}
 #vw .box{position:relative;width:94%;height:88%;max-width:1200px;background:#111;border-radius:12px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.45)}
 #vw.full{background:#000}
@@ -101,6 +104,9 @@ nav a.close{flex:0 0 48px;font-size:20px;color:#5f6368}
 #vw .nm{flex:1;min-width:0;padding:0 8px;font-size:13px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 #vw .bar button{flex:none;display:flex;align-items:center;justify-content:center;min-width:36px;height:36px;margin-left:2px;padding:0 6px;border:0;border-radius:18px;background:transparent;color:#e8eaed;font:500 17px -apple-system,system-ui,sans-serif;cursor:pointer}
 #vw .bar button.z{min-width:52px;font-size:12px}
+#vw .bar{position:relative}
+#vw .vwdd{position:absolute;top:44px;z-index:3;display:flex;flex-direction:column;background:#202124;border-radius:0 0 10px 10px;padding:4px 0;box-shadow:0 4px 12px rgba(0,0,0,.4)}
+#vw .vwdd button{min-width:64px;height:38px;margin:0;border-radius:0;font-size:14px}
 #vw .pg{flex:none;font-size:12px;color:#bdc1c6;padding:0 2px}
 #vw .stage{flex:1;position:relative;overflow:hidden;touch-action:none}
 #vw .stage>img,#vw .stage>video,#vw .stage>canvas{position:absolute;left:0;top:0;display:block;max-width:none}
@@ -141,14 +147,11 @@ body.pick main{padding:0;max-width:none}
 .pka{display:flex;align-items:center}
 .pka .btn{margin-left:6px}
 @media(max-width:760px){
-body{display:block}
-nav{display:flex;width:auto;min-height:0;padding:6px;border-right:0;border-bottom:1px solid #e3e5e8}
-nav h1{display:none}
-nav a{flex:1;min-width:0;min-height:44px;padding:12px 4px;margin:0;text-align:center}
-main{padding:16px 12px}
+nav{padding:6px}
+nav a.s{width:40px}
+main{padding:12px 10px}
 .card{padding:4px 12px}.x{padding:10px}
 a.tab{width:160px}
-.search{width:180px}
 }
 </style></head><body>
 <nav id=nav></nav>
@@ -181,11 +184,18 @@ function matches(/* strings */) {
 var ADD = '<button id=bmadd class=add title="Add the current page" aria-label="Add the current page" data-cmd="bm_add=1"><svg width=20 height=20 viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg></button>';
 var DOTS = '<svg width=20 height=20 viewBox="0 0 24 24"><circle cx=12 cy=5 r=2 fill="currentColor"/><circle cx=12 cy=12 r=2 fill="currentColor"/><circle cx=12 cy=19 r=2 fill="currentColor"/></svg>';
 var menuFor = -1, editing = -1;   /* the bookmark whose \u22ee menu is open, the one being edited */
-var HEADS = { home: ['Workspaces', 'Search'], bookmarks: ['Bookmarks', 'Search bookmarks'], history: ['History', 'Search history'],
+var HEADS = { home: ['Home', 'Search tabs or type a URL'], bookmarks: ['Bookmarks', 'Search bookmarks'], history: ['History', 'Search history'],
     downloads: ['Downloads', 'Search this folder'], settings: ['Settings', 'Search settings'] };
+var ICONS = { home: '<path d="M3.5 10.5 12 4l8.5 6.5V20h-5.5v-6h-6v6H3.5z"/>', bookmarks: '<path d="M6.5 3.5h11v17l-5.5-4-5.5 4z"/>',
+    history: '<circle cx=12 cy=12 r=8.5 /><path d="M12 7.5V12l3 2"/>', downloads: '<path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/>',
+    settings: '<circle cx=12 cy=12 r=3 /><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/>' };
+/* stroke attributes on each shape: Lumen's SVG doesn't inherit them from the <svg> */
+function icon(shapes) { return shapes.replace(/<(path|circle)/g, '<$1 fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"'); }
+/* the top bar: a section icon each, then the search field of the section shown (it only searches there) */
 function nav() {
-    var o = '<h1>Lumen</h1>';
-    S.sections.forEach(function (s) { o += '<a href="lumen://newtab?s=' + s + '"' + (s === sec ? ' class=on' : '') + ' data-sec=' + s + '>' + NAMES[s] + '</a>'; });
+    var o = '';
+    S.sections.forEach(function (s) { o += '<a class="s' + (s === sec ? ' on' : '') + '" href="lumen://newtab?s=' + s + '" data-sec=' + s + ' title="' + NAMES[s] + '" aria-label="' + NAMES[s] + '"><svg width=24 height=24 viewBox="0 0 24 24">' + icon(ICONS[s]) + '</svg></a>'; });
+    o += '<span class=sp></span>' + (sec === 'bookmarks' ? ADD : '') + '<button class=s id=sbtn title="' + h(HEADS[sec][1]) + '" aria-label="Search"><svg width=24 height=24 viewBox="0 0 24 24">' + icon('<circle cx=10.5 cy=10.5 r=6 /><path d="M15 15l5 5"/>') + '</svg></button><input id=search class=search type=search placeholder="' + h(HEADS[sec][1]) + '" value="' + h(query) + '">';
     if (S.panel) o += '<a class=close href="lumen://panel?close" title=Close>×</a>';   /* the menu's panel over a page */
     $('nav').innerHTML = o;
 }
@@ -203,24 +213,22 @@ function when(t) {
 }
 function ext(name) { var i = name.lastIndexOf('.'); return i > 0 && name.length - i <= 6 ? name.slice(i + 1).toUpperCase() : ''; }
 
-/* ---------- Home: each workspace in its own lightly tinted box, its name above its tabs; the first one's name
-   shares the top line with the search field ---------- */
+/* ---------- Home: each workspace in its own lightly tinted box, its name above its tabs ---------- */
 var wsMenu = -1, wsEdit = -1;   /* the workspace whose long-press menu is open, the one being renamed */
-var WSC = ['#eef3fd', '#edf7ef', '#fdf5e6', '#f4effb', '#e9f6f6', '#fcedf1', '#f2f5e4', '#f0f1f4'];
+var WSC = ['#f5f8fe', '#f4faf5', '#fefaf1', '#f9f6fd', '#f2f9f9', '#fdf5f8', '#f8faef', '#f6f7f9'];
 function wsName(w, wi) { return '<a class="wsn' + (w.cur ? ' cur' : '') + '" data-ws=' + wi + ' href="lumen://workspace?select=' + wi + '" title="' + h(w.name) + '">' + h(w.name) + '</a>'; }
 function home() {
     var o = '', first = -1;
     S.ws.forEach(function (w, wi) {
         var tabs = w.tabs.filter(function (t) { return matches(t.title, t.url); });
         if (query && !tabs.length && !matches(w.name)) return;
-        var top = first < 0;
-        if (top) first = wi;
-        o += '<div class="ws' + (top ? ' first' : '') + (w.cur ? ' cur' : '') + (wsMenu === wi ? ' open' : '') + '" data-ws=' + wi + ' style="background:' + WSC[wi % WSC.length] + '">';
+        if (first < 0) first = wi;
+        o += '<div class="ws' + (w.cur ? ' cur' : '') + (wsMenu === wi ? ' open' : '') + '" data-ws=' + wi + ' style="background:' + WSC[wi % WSC.length] + '">';
         if (wsEdit === wi) {
             o += '<div class=wsedit><input id=ws_name placeholder="Workspace name" maxlength=60 value="' + h(w.name) + '"><button class="btn on" data-wssave=' + wi + '>Save</button><button class=btn data-wsedit=-1>Cancel</button></div></div>';
             return;
         }
-        if (!top) o += wsName(w, wi);
+        o += wsName(w, wi);
         o += '<div class=tabs>';
         tabs.forEach(function (t) {
             o += '<a class="tab' + (t.cur ? ' cur' : '') + '" href="lumen://workspace?open=' + t.i + '"><div class=t>' + h(t.title) + '</div><div class=u>' + h(t.url) + '</div></a>';
@@ -233,11 +241,6 @@ function home() {
         }
         o += '</div>';
     });
-    var hh = $('hh');   /* the top line: the first shown workspace's name, then the search field */
-    if (hh) {
-        hh.style.background = first >= 0 ? WSC[first % WSC.length] : '';
-        $('ws0').outerHTML = first >= 0 && wsEdit !== first ? wsName(S.ws[first], first).replace('<a ', '<a id=ws0 ') : '<span id=ws0 class=grow></span>';
-    }
     if (first < 0) o += '<div class="card"><div class=empty>No tabs match. Press Enter to open it.</div></div>';
     o += '<p class=sub>Tap a tab to open it, or a workspace name to switch to it. Long-press a workspace to rename, duplicate or close it.</p>';
     return o;
@@ -427,6 +430,7 @@ function viewApply() {
     var d = window.devicePixelRatio || 1, px = function (v) { return Math.round(v * d) / d + 'px'; };   /* on whole screen pixels */
     st.width = px(w); st.height = px(hh); st.left = px(V.tx); st.top = px(V.ty);
     $('vwz').textContent = Math.round(V.s / (V.kind === 'image' || V.kind === 'video' ? 1 / d : V.fit) * 100) + '%';
+    if (V.kind === 'image' || V.kind === 'video') { V.shown = Math.round(V.bw * V.s * d) + ' × ' + Math.round(V.bh * V.s * d); viewInfo(); }
     if (V.kind === 'pdf') {   /* sharper pages when zoomed in */
         clearTimeout(V.sharp);
         V.sharp = setTimeout(function () { if (V && V.kind === 'pdf' && viewWidth(V.s / V.fit) > V.rendered * 1.25 && V.rendered < 3000) viewPage(V.page); }, 350);
@@ -464,6 +468,7 @@ function viewInfo() {
         if (V.g && V.g.tris) a.push(V.g.tris.toLocaleString() + ' triangles', V.g.dims);
         a.push(size(F.size), ext(V.path));
     }
+    if (V.shown && (V.kind === 'image' || V.kind === 'video')) a.push('shown at ' + V.shown);   /* screen pixels */
     $('vwinfo').textContent = a.join(' · ');
 }
 function viewFull(on) {
@@ -492,13 +497,35 @@ function viewClose() {
     if (v.g && v.g.gl) { var lose = v.g.gl.getExtension('WEBGL_lose_context'); if (lose) lose.loseContext(); }
     if (v.root && v.root.parentNode) v.root.parentNode.removeChild(v.root);
 }
+function viewPct() { return V.s * (window.devicePixelRatio || 1) * 100; }   /* of the picture's own pixels */
+function viewSetPct(p) { viewZoom(p / 100 / (window.devicePixelRatio || 1) / V.s); }
+function viewPcts() {   /* the zoom value's long-press list */
+    var o = '<div class=vwdd id=vwdd>';
+    [10, 25, 50, 100, 200, 300, 400].forEach(function (p) { o += '<button data-vwpct=' + p + '>' + p + '%</button>'; });
+    var b = $('vwz'), old = $('vwdd');
+    if (old) old.parentNode.removeChild(old);
+    b.insertAdjacentHTML('afterend', o + '</div>');
+    $('vwdd').style.left = b.offsetLeft + 'px';
+}
 function viewCmd(c) {
+    var dd = $('vwdd');
+    if (dd) dd.parentNode.removeChild(dd);
     if (c === 'close') return viewClose();
     if (c === 'full') return viewFull(!V.full);
     if (c === 'app') { var p = V.path; viewClose(); load('set?s=downloads&dir=' + q(dir) + '&files_open=' + q(p)); return; }
-    if (c === 'in') return viewZoom(1.25);
-    if (c === 'out') return viewZoom(0.8);
-    if (c === 'fit') { if (V.kind === 'model') { mdlReset(); return viewApply(); } return viewFit(); }
+    var px = V.kind === 'image' || V.kind === 'video';
+    if (c === 'in' || c === 'out') {   /* pictures and videos: to the next 10% of their own size (25% on a long press) */
+        if (!px) return viewZoom(c === 'in' ? 1.25 : 0.8);
+        var st = V.held ? 25 : 10, cur = viewPct() / st;
+        return viewSetPct(c === 'in' ? (Math.floor(cur + 1e-6) + 1) * st : Math.max(10, (Math.ceil(cur - 1e-6) - 1) * st));
+    }
+    if (c === 'fit') {
+        if (V.kind === 'model') { mdlReset(); return viewApply(); }
+        if (V.held) return viewPcts();
+        var now = Date.now(), dbl = px && now - (V.fitAt || 0) < 400;   /* a double tap: 200% */
+        V.fitAt = dbl ? 0 : now;
+        return dbl ? viewSetPct(200) : viewFit();
+    }
     if ((c === 'prev' || c === 'next') && V.pages) { var n = V.page + (c === 'next' ? 1 : -1); if (n >= 0 && n < V.pages) { V.page = -1; viewPage(n); } }
 }
 /* gestures on the stage: drag pans (turns a model), two fingers pinch, the wheel zooms, a double tap zooms in or back to fit, a tap shows or hides the facts */
@@ -1015,9 +1042,7 @@ function render() {
     if (sec === 'pick') { headFor = 'pick'; document.body.className = 'pick' + (S.panel ? ' panel' : ''); $('main').innerHTML = pick(); return; }
     if (headFor !== sec) {
         var prevSec = headFor; headFor = sec; nav();
-        var srch = '<input id=search class=search type=search placeholder="' + h(HEADS[sec][1]) + '" value="' + h(query) + '">';
-        $('main').innerHTML = sec === 'home' ? '<div class="head hh" id=hh><span id=ws0 class=grow></span>' + srch + '</div><div id=list class=home></div>' + NEWWS
-            : '<div class=head><h2>' + h(HEADS[sec][0]) + (sec === 'bookmarks' ? ADD : '') + '</h2>' + srch + '</div><div id=list></div>';
+        $('main').innerHTML = sec === 'home' ? '<div id=list class=home></div>' + NEWWS : '<div id=list></div>';
     }
     $('list').innerHTML = sec === 'home' ? home() : sec === 'downloads' ? downloads() : sec === 'settings' ? settings() : links(sec === 'bookmarks');
     if (S.msg) setTimeout(function (m) { if (S.msg === m) { S.msg = null; var n = document.querySelector('.toast'); if (n) n.parentNode.removeChild(n); } }, 2500, S.msg);
@@ -1069,6 +1094,19 @@ document.addEventListener('keydown', function (e) {
     var url = /^[a-z][a-z0-9+.-]*:/i.test(v) && !/\s/.test(v) ? v : /^[^\s]+\.[^\s]{2,}$/.test(v) ? 'https://' + v : 'https://www.google.com/search?q=' + q(v).replace(/%20/g, '+');
     if (!/^javascript:/i.test(url)) location.href = url;
 });
+/* the viewer's +, - and zoom value act differently on a long press: the press ends in a click, which reads V.held */
+var vwHold = 0;
+document.addEventListener('pointerdown', function (e) {
+    var t = e.target.closest && e.target.closest('#vw [data-vw]'), c = t && t.getAttribute('data-vw');
+    if (!V || (c !== 'in' && c !== 'out' && c !== 'fit')) return;
+    V.held = false; clearTimeout(vwHold);
+    vwHold = setTimeout(function () { if (V) { V.held = true; if (c === 'fit') { viewPcts(); V.held = false; V.ate = true; } } }, 500);
+});
+document.addEventListener('pointerup', function () { clearTimeout(vwHold); });
+document.addEventListener('pointercancel', function () { clearTimeout(vwHold); if (V) V.held = false; });
+document.addEventListener('click', function (e) {   /* the click that ends the press that opened the zoom list */
+    if (V && V.ate) { V.ate = false; e.preventDefault(); e.stopPropagation(); }
+}, true);
 /* a long press (or right click) on a workspace opens its menu; the tap that ends the press is not a click */
 var pressedAt = 0;
 document.addEventListener('contextmenu', function (e) {
@@ -1100,13 +1138,21 @@ document.addEventListener('click', function (e) {
             if (state()) render();
             return;
         }
-        if (V && (v = t.getAttribute('data-vw'))) { viewCmd(v); return; }
+        if (V && (v = t.getAttribute('data-vwpct'))) { var dd = $('vwdd'); if (dd) dd.parentNode.removeChild(dd); viewSetPct(+v); return; }
+        if (V && (v = t.getAttribute('data-vw'))) { viewCmd(v); V.held = false; return; }
         if (t.id === 'snipsave') {
             e.preventDefault();
             var enc = $('snips').value.split('\n').filter(function (l) { return l.trim(); }).map(function (l) {
                 return l.replace(/\\n/g, '\n').replace(/[%|\r\n]/g, function (c) { return '%' + ('0' + c.charCodeAt(0).toString(16).toUpperCase()).slice(-2); });
             }).join('|');
             set('snippets=' + q(enc)); return;
+        }
+        if (t.id === 'sbtn') {   /* the search icon: a floating field that searches this section as you type */
+            e.preventDefault();
+            var nv = $('nav'), open = !/\bsopen\b/.test(nv.className);
+            nv.className = open ? 'sopen' : query ? 'found' : '';
+            if (open) $('search').focus();
+            return;
         }
         if ((v = t.getAttribute('data-cmd'))) { e.preventDefault(); menuFor = wsMenu = -1; set(v); return; }
         if ((v = t.getAttribute('data-grp'))) {
