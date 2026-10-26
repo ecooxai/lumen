@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **219**.
+  - Number the runs. The next run is **220**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,13 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 219 ...)
+(append here: RUN 220 ...)
+
+RUN 219: teardown crash fix. The recovered SIGSEGV in GlobalHandles::NodeSpace::Release resolved (addr2line) to
+~JsCtx <- js_free <- page_free: JsCtx members still holding v8::Global handles were released by `delete c` after
+iso->Dispose(). js_free now resets pick_cb (set by showPicker(), matching show-picker-does-not-focus.html) and clears
+rejs (pending unhandled rejections) with the other handles. /html/semantics/forms/the-input-element/ 5 jobs: no
+crash, 0 gained/lost. The crash was intermittent (19 fatal-signal-11 entries over the whole crash log).
 
 RUN 218: (1) selectors: the legacy case-insensitive attribute values (accept, type, ...) only for HTML elements in
 HTML documents (select.c match), case-sensitivity/values.window.html. (2) text controls: with no stored selection

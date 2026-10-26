@@ -1319,7 +1319,7 @@ void js_free(JsCtx *c) {
         c->video_frame_pump.Reset(); c->resize_pump.Reset(); c->intersection_pump.Reset(); c->media_pump.Reset();
         c->anims.clear();
         c->protos.clear();
-        c->protoFor.Reset(); c->fire.Reset(); c->report.Reset(); c->viewportChanged.Reset();
+        c->protoFor.Reset(); c->fire.Reset(); c->report.Reset(); c->viewportChanged.Reset(); c->pick_cb.Reset(); c->rejs.clear();   /* before Dispose: ~JsCtx must not release handles */
         c->tt_script.Reset(); c->tt_eval.Reset(); c->code_like.Reset();
         c->api.Reset(); c->node_tmpl.Reset();
         c->mods.clear(); c->mod_url.clear(); c->mod_jobs.clear(); c->code_refresh.clear(); if (!c->parent) mod_synth_drop(c->iso);
