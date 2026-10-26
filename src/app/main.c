@@ -78,12 +78,14 @@ static char g_toast[256]; static double g_toast_until;   /* a short confirmation
    the window and ends in minimize / maximize / close (LUMEN_WM_FRAME=1 keeps the system frame) */
 static bool g_frameless;
 #define WCW (g_frameless ? 138.f : 0.f)
+#define LOGOW (g_frameless ? 40.f : 0.f)   /* the Lumen logo at the strip's left end: a click shows the window menu */
+#define TABX0 (TLW + 6 + LOGOW)
 /* the desktop's tab strip, toolbar row and workspace sidebar share one colour; Android keeps its own */
 #define CHROME_BG (ANDROID_UI ? RGBA(250, 250, 250, 255) : RGBA(236, 238, 241, 255))
 #define CHROME_LINE (ANDROID_UI ? RGBA(226, 226, 226, 255) : RGBA(214, 217, 222, 255))
 #define CHROME_HOVER (ANDROID_UI ? RGBA(232, 232, 232, 255) : RGBA(222, 225, 230, 255))
 #define SIDEW 52.f   /* the workspace sidebar's default width: its icons; dragging its right edge resizes it (saved as sidebar_w) */
-static float g_side_w = SIDEW; static bool g_side_drag;
+static float g_side_w = SIDEW, g_side_drag_x; static bool g_side_drag, g_dm_logo;
 #define SIDEY (g_compact ? TB : TABH)
 #define WSY0 (SIDEY + 8)
 #define WSRH 40.f
@@ -1373,7 +1375,7 @@ static int text_hit_x(Font *f, const char *s, float x) {
 }
 static void url_sel_clamp(App *a) { int n = (int)strlen(a->t->url); for (int k = 0; k < 2; k++) a->us[k] = LCLAMP(a->us[k], 0, n); }
 
-enum { HB_NONE, HB_BACK, HB_FWD, HB_RELOAD, HB_URL, HB_NEWTAB, HB_WSNEW, HB_STAR, HB_HUD, HB_MENU, HB_WMIN, HB_WMAX, HB_WCLOSE, HB_SIDE, HB_TAB = 100, HB_TABX = 200, HB_WS = 300, HB_INFO = 400, HB_TABDOT = 500, HB_SLOT = 600 };
+enum { HB_NONE, HB_BACK, HB_FWD, HB_RELOAD, HB_URL, HB_NEWTAB, HB_WSNEW, HB_STAR, HB_HUD, HB_MENU, HB_WMIN, HB_WMAX, HB_WCLOSE, HB_SIDE, HB_LOGO, HB_TAB = 100, HB_TABX = 200, HB_WS = 300, HB_INFO = 400, HB_TABDOT = 500, HB_SLOT = 600 };
 static void info_btn(App *a, int k, float *x, float *w) {
     static const float W[4] = { 70, 76, 82, 28 }; float r = a->vw - 12;
     for (int i = 3; i >= k; i--) r -= W[i] + (i < 3 ? 6 : 0);
@@ -1418,8 +1420,8 @@ static Image *ws_icon(App *a, int ic, bool on) {
     return *slot;
 }
 static int ws_tabs(App *a, int w, int *out) { int n = 0; for (int i = 0; i < a->ntabs; i++) if (a->tabs[i]->ws == w) out[n++] = i; return n; }
-static float tab_w(App *a) { int v[MAX_TABS], n = ws_tabs(a, a->wi, v); float w = (a->vw - TLW - 48 - WCW) / (n ? n : 1); return w > 220 ? 220 : w; }
-static float bar_x0(App *a) { return g_compact ? TLW : a->side; }
+static float tab_w(App *a) { int v[MAX_TABS], n = ws_tabs(a, a->wi, v); float w = (a->vw - TLW - 48 - WCW - LOGOW) / (n ? n : 1); return w > 220 ? 220 : w; }
+static float bar_x0(App *a) { return g_compact ? TLW + LOGOW : a->side; }
 static float bar_w(App *a) { return a->vw - bar_x0(a) - (g_compact ? WCW : 0); }   /* the toolbar row's width */
 /* Android toolbar: URL | back | reload | menu; elsewhere back, forward, reload and star sit left of the URL */
 /* the desktop row is laid out as Android's BrowserToolbar: the address pill (site icon, text), the action slots, the menu */
@@ -1447,6 +1449,7 @@ static int desk_bar_hit(App *a, float x) {   /* x from the row's left end */
 }
 static int bar_hit(App *a, float x, float y) {
     if (g_frameless && !g_bare && y < (g_compact ? TB : TABH) && x >= a->vw - WCW) return HB_WMIN + LMIN(2, (int)((x - (a->vw - WCW)) / 46));
+    if (g_frameless && !g_bare && y < (g_compact ? TB : TABH) && x < LOGOW) return HB_LOGO;
     if (g_compact && y < TB) {
         x -= TLW;
 #ifdef __ANDROID__
@@ -1456,7 +1459,7 @@ static int bar_hit(App *a, float x, float y) {
         return desk_bar_hit(a, x);
     }
     if (y < TABH) {
-        int v[MAX_TABS], n = ws_tabs(a, a->wi, v), k; float tw = tab_w(a), x0 = TLW + 6; k = (int)((x - x0) / tw);
+        int v[MAX_TABS], n = ws_tabs(a, a->wi, v), k; float tw = tab_w(a), x0 = TABX0; k = (int)((x - x0) / tw);
         if (x >= x0 && k < n) { float lx = x - x0 - k * tw; return lx > tw - 28 && !ANDROID_UI ? HB_TABX + v[k] : a->tabs[v[k]]->limited && lx < 26 ? HB_TABDOT + v[k] : HB_TAB + v[k]; }
         if (x >= x0 + n * tw && x < x0 + n * tw + 32) return HB_NEWTAB;
         return HB_NONE;
@@ -1507,7 +1510,7 @@ static void chrome_tip(App *a) {   /* tooltip for a tab's CPU-limit dot (hover o
     if (i < 0 || i >= a->ntabs || !a->tabs[i]->limited || a->tabs[i]->ws != a->wi) return;
     int vt[MAX_TABS], n = ws_tabs(a, a->wi, vt), k = 0; while (k < n && vt[k] != i) k++;
     char msg[64]; snprintf(msg, sizeof msg, "CPU use of this tab is limited to %d%%", (int)(a->tabs[i]->lim * 100 + 0.5f));
-    float tw = tab_w(a), w = text_width(a->ui, msg, strlen(msg), 0) + 20, x = TLW + 6 + k * tw + 15 - w / 2, y = TABH + 3;
+    float tw = tab_w(a), w = text_width(a->ui, msg, strlen(msg), 0) + 20, x = TABX0 + k * tw + 15 - w / 2, y = TABH + 3;
     if (x + w > a->vw - 6) x = a->vw - 6 - w;
     if (x < 6) x = 6;
     push_rect(&a->cdl, x, y, w, 26, 6, RGBA(45, 45, 48, 240));
@@ -1550,6 +1553,7 @@ static Image *path_img(App *a, const char *path, uint32_t rgb, int dip);
 static int site_kind(const char *url);
 static bool dm_menu_up(void);
 static bool desktop_on(const Tab *t);
+static void ui_action_post(int code, int value, char *s1, char *s2);
 static void dm_tab_menu(App *a, const char *title, const char *const *items, const bool *on, int n);
 #endif
 static void build_hud_pop(App *a) {
@@ -1557,6 +1561,10 @@ static void build_hud_pop(App *a) {
 #ifdef __ANDROID__
     url_menu_build(a, dl);
 #else
+    if (g_side_drag) {   /* where the sidebar's edge goes on release */
+        push_rect(dl, g_side_drag_x - 1, SIDEY, 2, a->vh - SIDEY, 0, RGBA(66, 133, 244, 255));
+        g_pop[0] = g_side_drag_x - 2; g_pop[1] = SIDEY; g_pop[2] = g_side_drag_x + 2; g_pop[3] = a->vh;
+    }
     dm_build(a, dl);
 #endif
     if (!g_hud || !g_hud_pop || a->side <= 0) return;
@@ -1588,6 +1596,25 @@ static void hud_sample(void) {
         g_host_cpu = (float)(100.0 * (double)(stats.host_busy_ticks - hb) / (double)(stats.host_total_ticks - ht));
     hb = stats.host_busy_ticks; ht = stats.host_total_ticks;
 }
+static const char *const WIN_IC[4] = { "M6 12 L18 12", "M6.5 6.5 L17.5 6.5 L17.5 17.5 L6.5 17.5 Z", "M6.5 6.5 L17.5 17.5 M17.5 6.5 L6.5 17.5",
+                                        "M6.5 9.5 L14.5 9.5 L14.5 17.5 L6.5 17.5 Z M9.5 9.5 L9.5 6.5 L17.5 6.5 L17.5 14.5 L14.5 14.5" };
+/* the app icon box-filtered down to dip points at the window's scale */
+static Image *logo_img(App *a, int dip) {
+    static Image *src, *out;
+    int px = (int)(dip * a->scale + 0.5f);
+    if (out && out->w == px) return out;
+    if (!src) src = image_decode(app_icon_png, sizeof app_icon_png);
+    if (!src || px <= 0) return NULL;
+    if (out) image_unref(out);
+    out = xcalloc(1, sizeof *out); out->w = out->h = px; out->refs = 1; out->scale = a->scale; out->px = xcalloc((size_t)px * (size_t)px, 4);
+    for (int y = 0; y < px; y++) for (int x = 0; x < px; x++) {
+        int x0 = x * src->w / px, x1 = LMAX(x0 + 1, (x + 1) * src->w / px), y0 = y * src->h / px, y1 = LMAX(y0 + 1, (y + 1) * src->h / px);
+        uint32_t c[4] = { 0 }, n = 0;
+        for (int sy = y0; sy < y1; sy++) for (int sx = x0; sx < x1; sx++, n++) { uint32_t p = src->px[(size_t)sy * (size_t)src->w + (size_t)sx]; for (int k = 0; k < 4; k++) c[k] += (p >> (8 * k)) & 255; }
+        out->px[(size_t)y * (size_t)px + (size_t)x] = (c[3] / n) << 24 | (c[2] / n) << 16 | (c[1] / n) << 8 | c[0] / n;
+    }
+    return out;
+}
 static void build_chrome(App *a) {
     build_hud_pop(a);
     DisplayList *dl = &a->cdl; dl_clear(dl);
@@ -1596,7 +1623,7 @@ static void build_chrome(App *a) {
     if (g_compact) { push_rect(dl, 0, 0, a->vw, TB, 0, CHROME_BG); push_rect(dl, 0, TB - 1, a->vw, 1, 0, CHROME_LINE); }
     else push_rect(dl, 0, 0, a->vw, TABH, 0, ANDROID_UI ? RGBA(222, 225, 230, 255) : CHROME_BG);
     int vt[MAX_TABS], nvt = g_compact ? 0 : ws_tabs(a, a->wi, vt);
-    float tabw = tab_w(a), tx0 = TLW + 6, tbase = (ANDROID_UI ? 4 + (TABH - 4) / 2 : TABH / 2) + (a->ui->ascent - a->ui->descent) / 2;
+    float tabw = tab_w(a), tx0 = TABX0, tbase = (ANDROID_UI ? 4 + (TABH - 4) / 2 : TABH / 2) + (a->ui->ascent - a->ui->descent) / 2;
     for (int k = 0; k < nvt; k++) {
         int i = vt[k]; Tab *t = a->tabs[i]; float x = tx0 + k * tabw;
         if (!ANDROID_UI) {   /* the strip has the toolbar's colour: the current tab is a darker pill */
@@ -1730,14 +1757,14 @@ static void build_chrome(App *a) {
 #ifndef __ANDROID__
     if (g_frameless) {   /* the window buttons at the top right, as in Chrome */
         float h = g_compact ? TB : TABH; bool max = SDL_GetWindowFlags(a->win) & SDL_WINDOW_MAXIMIZED;
-        static const char *ic[4] = { "M6 12 L18 12", "M6.5 6.5 L17.5 6.5 L17.5 17.5 L6.5 17.5 Z", "M6.5 6.5 L17.5 17.5 M17.5 6.5 L6.5 17.5",
-                                     "M6.5 9.5 L14.5 9.5 L14.5 17.5 L6.5 17.5 Z M9.5 9.5 L9.5 6.5 L17.5 6.5 L17.5 14.5 L14.5 14.5" };
         for (int k = 0; k < 3; k++) {
             float bx = a->vw - WCW + k * 46; bool hov = a->hover == HB_WMIN + k;
             if (hov) push_rect(dl, bx, 0, 46, h, 0, k == 2 ? RGBA(232, 17, 35, 255) : RGBA(0, 0, 0, 22));
-            Image *im = path_img(a, ic[k == 1 && max ? 3 : k], hov && k == 2 ? 0xffffff : 0x3c3c3c, 16);
+            Image *im = path_img(a, WIN_IC[k == 1 && max ? 3 : k], hov && k == 2 ? 0xffffff : 0x3c3c3c, 16);
             if (im) push_img(dl, im, bx + 15, h / 2 - 8, 16, 16);
         }
+        if (a->hover == HB_LOGO || g_dm_logo) push_rect(dl, 4, h / 2 - 16, 32, 32, 8, CHROME_HOVER);
+        Image *lg = logo_img(a, 22); if (lg) push_img(dl, lg, 9, h / 2 - 11, 22, 22);
     }
 #endif
 }
@@ -5359,6 +5386,29 @@ static void pick_files(bool multiple, const char *accept) {
     SDL_ShowOpenFileDialog(pick_done, NULL, g_dialog_win, pat[0] ? &flt : NULL, pat[0] ? 1 : 0, NULL, multiple);
 }
 #endif
+/* moving the frameless window: a press on the logo or an empty part of the strip, held 0.5 s, then follows the mouse */
+static struct { bool on, moving, logo; int seq, wx, wy; float gx, gy; } g_wd;
+static bool g_wd_wm;   /* the window manager moves it (Wayland) */
+static Uint32 wd_timer(void *ud, SDL_TimerID id, Uint32 iv) { (void)id; (void)iv; ui_action_post(UI_WIN_DRAG, (int)(intptr_t)ud, NULL, NULL); return 0; }
+static void wd_press(bool logo) {
+    g_wd.on = true; g_wd.moving = false; g_wd.logo = logo; g_wd.seq++;
+    SDL_AddTimer(500, wd_timer, (void *)(intptr_t)g_wd.seq);
+}
+static void wd_arm(App *a, int seq) {
+    if (!g_wd.on || g_wd.moving || seq != g_wd.seq || !(SDL_GetGlobalMouseState(&g_wd.gx, &g_wd.gy) & SDL_BUTTON_LMASK)) return;
+    if (SDL_GetWindowFlags(a->win) & SDL_WINDOW_MAXIMIZED) {   /* a maximized window comes off the edge under the mouse */
+        SDL_RestoreWindow(a->win); SDL_SyncWindow(a->win);
+        int w, h; SDL_GetWindowSize(a->win, &w, &h);
+        SDL_SetWindowPosition(a->win, (int)g_wd.gx - w / 2, (int)g_wd.gy - 20);
+    }
+    SDL_GetWindowPosition(a->win, &g_wd.wx, &g_wd.wy);
+    g_wd.moving = true;
+    SDL_SetCursor(SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_MOVE));
+}
+static void wd_move(App *a) {
+    float gx, gy; SDL_GetGlobalMouseState(&gx, &gy);
+    SDL_SetWindowPosition(a->win, g_wd.wx + (int)lroundf(gx - g_wd.gx), g_wd.wy + (int)lroundf(gy - g_wd.gy));
+}
 static SDL_HitTestResult win_hit(SDL_Window *w, const SDL_Point *pt, void *ud) {
     App *app = ud;
     float hit_x = (float)pt->x * app->input_scale, hit_y = (float)pt->y * app->input_scale;
@@ -5368,7 +5418,8 @@ static SDL_HitTestResult win_hit(SDL_Window *w, const SDL_Point *pt, void *ud) {
         if (b && l) return SDL_HITTEST_RESIZE_BOTTOMLEFT; if (b && r) return SDL_HITTEST_RESIZE_BOTTOMRIGHT;
         if (t) return SDL_HITTEST_RESIZE_TOP; if (b) return SDL_HITTEST_RESIZE_BOTTOM; if (l) return SDL_HITTEST_RESIZE_LEFT; if (r) return SDL_HITTEST_RESIZE_RIGHT;
     }
-    return hit_y < (g_compact ? TB : TABH) && bar_hit(app, hit_x, hit_y) == HB_NONE ? SDL_HITTEST_DRAGGABLE : SDL_HITTEST_NORMAL;
+    /* X11 moves the window with Lumen's own hold-to-drag (the window manager's move jumped on the press); Wayland can't */
+    return g_wd_wm && hit_y < (g_compact ? TB : TABH) && bar_hit(app, hit_x, hit_y) == HB_NONE ? SDL_HITTEST_DRAGGABLE : SDL_HITTEST_NORMAL;
 }
 static void history_go(App *a, int d) {
     int np = a->t->hpos + d; if (np < 0 || np >= a->t->nhist) return;
@@ -5765,6 +5816,9 @@ static void ui_action(App *a, UiAction *u, bool *quit) {
 #else
     case UI_FULLSCREEN: g_fullscreen = u->value != 0; SDL_SetWindowFullscreen(a->win, g_fullscreen); break;
     case UI_EXIT: *quit = true; break;
+    case UI_WIN_MIN: SDL_MinimizeWindow(a->win); break;
+    case UI_WIN_MAX: if (SDL_GetWindowFlags(a->win) & SDL_WINDOW_MAXIMIZED) SDL_RestoreWindow(a->win); else SDL_MaximizeWindow(a->win); break;
+    case UI_WIN_DRAG: wd_arm(a, u->value); break;
     case UI_CUT: key_push_mod(SDLK_X, SDL_KMOD_LCTRL); break;
     case UI_SELECT_ALL: key_push_mod(SDLK_A, SDL_KMOD_LCTRL); break;
     case UI_LINK_TAB: if (u->s2 && *u->s2) { tab_open(a); navigate(a, u->s2, true); } break;
@@ -6070,6 +6124,7 @@ int main(int argc, char **argv) {
 #ifdef __APPLE__
     mac_style_window(a.win); mac_install_menu(EV_MENU);
 #endif
+    g_wd_wm = !strcmp(SDL_GetCurrentVideoDriver() ? SDL_GetCurrentVideoDriver() : "", "wayland");
     SDL_SetWindowHitTest(a.win, win_hit, &a);
     update_size(&a);
     if (want_gpu) {
@@ -6394,11 +6449,16 @@ int main(int argc, char **argv) {
                 int h = bar_hit(&a, ev.motion.x, ev.motion.y); if (h != a.hover) { a.hover = h; a.dirty = true; }
                 if (!h && ev.motion.y > BAR && ev.motion.x > page_left(&a)) page_move(&a, page_x(&a, ev.motion.x), page_y(&a, ev.motion.y));
                 else if (a.t->cur && page_hover(a.t->cur, NULL)) restyle(&a);
-                if (g_side_drag && (ev.motion.state & SDL_BUTTON_LMASK)) {   /* the sidebar's right edge follows the mouse */
+                if (g_side_drag && (ev.motion.state & SDL_BUTTON_LMASK)) {   /* a guide line follows the mouse; the page is resized on release */
                     float nw = LCLAMP(roundf(ev.motion.x), 44, LMIN(320, a.vw / 3));
-                    if (nw != a.side) { a.side = g_side_w = nw; for (int i = 0; i < a.ntabs; i++) a.tabs[i]->relayout = true; update_size(&a); a.dirty = true; a.vonly = false; }
+                    if (nw != g_side_drag_x) { g_side_drag_x = nw; a.dirty = true; a.vonly = false; }
+                    SDL_SetCursor(SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_EW_RESIZE));
                     break;
                 }
+#ifndef __ANDROID__
+                if (g_wd.moving) { wd_move(&a); break; }
+                if (g_wd.on) break;
+#endif
                 if (g_press && (ev.motion.state & SDL_BUTTON_LMASK)) sel_drag(&a, ev.motion.x, ev.motion.y);
                 else if (g_epress && (ev.motion.state & SDL_BUTTON_LMASK)) edit_drag(&a, ev.motion.x, ev.motion.y);
                 else if (g_cpress && (ev.motion.state & SDL_BUTTON_LMASK)) ctl_drag(&a, ev.motion.x, ev.motion.y);
@@ -6406,7 +6466,21 @@ int main(int argc, char **argv) {
                 SDL_SetCursor(SDL_CreateSystemCursor(h == HB_SIDE || g_side_drag ? SDL_SYSTEM_CURSOR_EW_RESIZE : h == HB_URL ? SDL_SYSTEM_CURSOR_TEXT : over_link(&a, ev.motion.x, ev.motion.y) || (h && h != HB_URL) ? SDL_SYSTEM_CURSOR_POINTER : SDL_SYSTEM_CURSOR_DEFAULT));
                 break; }
             case SDL_EVENT_WINDOW_MOUSE_LEAVE: if (a.t->cur && page_hover(a.t->cur, NULL)) restyle(&a); break;
-            case SDL_EVENT_MOUSE_BUTTON_UP: if (ev.button.button == SDL_BUTTON_LEFT) { if (g_side_drag) settings_save(); g_press = g_drag = g_cpress = g_upress = g_side_drag = false; } break;
+            case SDL_EVENT_MOUSE_BUTTON_UP:
+                if (ev.button.button != SDL_BUTTON_LEFT) break;
+                if (g_side_drag && g_side_drag_x != a.side) {
+                    a.side = g_side_w = g_side_drag_x; for (int i = 0; i < a.ntabs; i++) a.tabs[i]->relayout = true;
+                    update_size(&a); settings_save();
+                }
+#ifndef __ANDROID__
+                if (g_wd.on) {   /* a click on the logo (not a hold) shows the window menu */
+                    bool menu = g_wd.logo && !g_wd.moving; g_wd.on = g_wd.moving = false;
+                    SDL_SetCursor(SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_DEFAULT));
+                    if (menu) dm_win_menu(&a);
+                }
+#endif
+                if (g_side_drag) { a.dirty = true; a.vonly = false; }
+                g_press = g_drag = g_cpress = g_upress = g_side_drag = false; break;
             case SDL_EVENT_MOUSE_BUTTON_DOWN:
 #ifndef __ANDROID__
                 if (g_dm.open) {   /* a click on a menu row chooses it; anywhere else only closes the menu */
@@ -6446,8 +6520,12 @@ int main(int argc, char **argv) {
                   else if (bh >= HB_TABX) { tab_close(&a, bh - HB_TABX, &quit); break; }
                   else if (bh >= HB_TAB) { int i = bh - HB_TAB; if (i == a.ti) tab_popup(&a, i, ev.button.x, ev.button.y); else tab_select(&a, i); break; }
                   else if (bh == HB_NEWTAB) { tab_open(&a); break; } }
+#ifndef __ANDROID__
+                if (g_frameless && !g_wd_wm && !g_bare && ev.button.y < (g_compact ? TB : TABH) && bar_hit(&a, ev.button.x, ev.button.y) == HB_NONE) { wd_press(false); break; }
+#endif
                 switch (bar_hit(&a, ev.button.x, ev.button.y)) {
-                case HB_SIDE: g_side_drag = true; break;
+                case HB_SIDE: g_side_drag = true; g_side_drag_x = a.side; break;
+                case HB_LOGO: wd_press(true); break;
                 case HB_WMIN: SDL_MinimizeWindow(a.win); break;
                 case HB_WMAX: if (SDL_GetWindowFlags(a.win) & SDL_WINDOW_MAXIMIZED) SDL_RestoreWindow(a.win); else SDL_MaximizeWindow(a.win); break;
                 case HB_WCLOSE: quit = true; break;

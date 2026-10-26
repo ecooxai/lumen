@@ -31,6 +31,7 @@ static void dm_close(App *a) {
     if (!g_dm.open && !g_dm.n) return;
     for (int i = 0; i < g_dm.n; i++) { free(g_dm.r[i].s2); g_dm.r[i].s2 = NULL; }
     g_dm.open = false; g_dm.n = 0; g_dm.hover = -1; g_dm.title[0] = g_dm.sub[0] = 0;
+    g_dm_logo = false;
     a->dirty = true; a->vonly = false;
 }
 static DmRow *dm_add(int code, int value, int line, const char *label, bool enabled) {
@@ -227,6 +228,16 @@ static void dm_tab_menu(App *a, const char *title, const char *const *items, con
         if (r) r->icon = i == 0 ? "M6 6 L18 18 M18 6 L6 18" : "";
     }
     dm_show(a, g_dm_mx, g_dm_my, false);
+}
+/* the logo's window menu: minimize, maximize / restore, close */
+static void dm_win_menu(App *a) {
+    dm_close(a);
+    bool max = SDL_GetWindowFlags(a->win) & SDL_WINDOW_MAXIMIZED;
+    dm_add(UI_WIN_MIN, 0, 0, "Minimize", true)->icon = WIN_IC[0];
+    dm_add(UI_WIN_MAX, 0, 0, max ? "Restore" : "Maximize", true)->icon = WIN_IC[max ? 3 : 1];
+    dm_sep(); dm_add_sep(UI_EXIT, 0, 0, "Close", true)->icon = WIN_IC[2];
+    dm_show(a, 4, (g_compact ? TB : TABH) + 2, false);
+    g_dm_logo = true;
 }
 static int site_kind(const char *url) {
     if (!url || !*url) return 0;

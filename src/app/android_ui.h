@@ -38,6 +38,9 @@ enum {
     UI_SITE_CLEAR_ASK,   /* s2: the page's URL; asks before UI_SITE_CLEAR */
     UI_NONE_ROW,     /* a row that only shows text */
     UI_EXIT,         /* quit Lumen */
+    UI_WIN_MIN,      /* desktop window: minimize */
+    UI_WIN_MAX,      /* desktop window: maximize or restore */
+    UI_WIN_DRAG,     /* desktop window: the press held 0.5 s starts moving it (value: the press) */
 };
 /* can_desktop: 1 for the page's site, 2 for every site (on a page that is not a site) */
 typedef struct { bool can_forward, desktop, can_zoom, bookmarked, can_bookmark, can_back, fullscreen; int can_desktop, zoom_pct; } AndroidMenuState;
