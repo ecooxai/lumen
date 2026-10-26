@@ -277,6 +277,7 @@ WFN(reportErr) { WENV; werr(E, a[0], v8::Exception::CreateMessage(iso, a[0])); }
 const char kWorkerPrelude[] = R"JS((function (W, G) {
 'use strict';
 const def = (o, k, v) => Object.defineProperty(o, k, { value: v, writable: true, configurable: true, enumerable: false });
+const N = W;   /* shared files call the page's N; a worker has no N.gl, so shared/webgl.js gives interfaces but no contexts */
 )JS"
 #include "safecoll_shared.inc"
 #include "domexception_shared.inc"
@@ -482,6 +483,7 @@ const dispatch = (t, ev, trusted) => { if (trusted) evTrusted(ev); return fireOn
 #include "typedom_shared.inc"
 #include "canvas2d_shared.inc"
 #include "fontface_shared.inc"
+#include "webgl_shared.inc"
 R"JS(
 const ffSet = new Set();
 const fonts = Object.assign(new EventTarget(), { status: 'loaded', load() { return Promise.resolve([]); }, check() { return true; },
@@ -704,6 +706,7 @@ const api = {
     Event, MessageEvent, MessagePort, MessageChannel, ErrorEvent, AbortController, AbortSignal, Observable, Subscriber, CustomEvent, PromiseRejectionEvent, EventTarget, DOMException, QuotaExceededError, DOMPointReadOnly, DOMPoint, DOMRectReadOnly, DOMRect, DOMQuad, DOMMatrixReadOnly, DOMMatrix, CSSStyleValue, CSSNumericValue, CSSUnitValue, CSSMathValue, CSSMathSum, CSSMathProduct, CSSMathNegate, CSSMathInvert, CSSMathMin, CSSMathMax, CSSMathClamp, CSSNumericArray, CSSKeywordValue, CSSVariableReferenceValue, CSSUnparsedValue, CSSImageValue, CSSTransformComponent, CSSTranslate, CSSRotate, CSSScale, CSSSkew, CSSSkewX, CSSSkewY, CSSPerspective, CSSMatrixComponent, CSSTransformValue, CSSColorValue, CSSRGB, CSSHSL, CSSHWB, Crypto,
     ...(secureContext ? { CryptoKey, SubtleCrypto } : {}), WorkerGlobalScope, DedicatedWorkerGlobalScope, WorkerLocation, WorkerNavigator,
     ImageData, Path2D, CanvasGradient, CanvasPattern, TextMetrics, OffscreenCanvas, OffscreenCanvasRenderingContext2D, ImageBitmap: C2IB, createImageBitmap, FontFace, fonts,
+    WebGLRenderingContext, WebGL2RenderingContext, WebGLObject, WebGLBuffer, WebGLFramebuffer, WebGLRenderbuffer, WebGLTexture, WebGLProgram, WebGLShader, WebGLVertexArrayObject, WebGLQuery, WebGLSampler, WebGLSync, WebGLTransformFeedback, WebGLUniformLocation, WebGLActiveInfo, WebGLShaderPrecisionFormat, WebGLContextEvent,
     IDBFactory, IDBDatabase, IDBTransaction, IDBObjectStore, IDBIndex, IDBCursor, IDBCursorWithValue, IDBKeyRange, IDBRecord, IDBRequest, IDBOpenDBRequest, IDBVersionChangeEvent, DOMStringList, indexedDB,
 };
 if (W.shared) {   /* a shared worker talks only through the ports its connect events bring */

@@ -176,7 +176,16 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
   - No image sharing.
 
 ## Runs
-(append here: RUN 244 ...)
+(append here: RUN 245 ...)
+
+RUN 244: WebGL interfaces in workers. 07g-webgl.js moved to src/js/shared/webgl.js (page prelude splices it at
+/*@shared webgl.js*/; the page-only ImageBitmap/createImageBitmap/canvasStream tail stays in 07g-webgl.js); the worker
+prelude defines `const N = W` at its top (must precede canvas2d/fontface `typeof N`) and exports the WebGL classes.
+Workers have no N.gl, so no contexts yet. /webgl/idlharness.any.worker.html 4 -> 2065/2099; run total +2105.
+Remaining idlharness misses (both): FLOAT_MAT2x3..4x3 constants, drawingBufferColorSpace/unpackColorSpace/statusMessage
+getters must throw on the prototype, interface/operation .length (WebGLObject 0, bufferData 3, texImage3D 10),
+drawingBufferFormat/Storage, WebGLObject.label. Open: 2d.text.draw.align.end.ltr.worker.html -1 (red at 5,5);
+three instances spiked to ~1.05 GB for ~15 s late in the webgl/workers/offscreen run (not identified); /webgpu/ ran 0 tests.
 
 RUN 241-243: window load now waits for web fonts the layout requested (h_load_blocked checks font_pending(); js_fire_load
 lays the page out once first; font_done rechecks load), like Chrome. Fixes Ahem tests that measured fallback text at
