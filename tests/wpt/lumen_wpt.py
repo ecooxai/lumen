@@ -75,6 +75,7 @@ VENDOR_JS = VENDOR_MARK + r"""
         var l = Math.max(0, r.left), t = Math.max(0, r.top), ri = Math.min(innerWidth, r.right), b = Math.min(innerHeight, r.bottom);
         return [Math.floor((l + ri) / 2), Math.floor((t + b) / 2)];
     };
+    I.delete_all_cookies = function () { return td("cookies-clear"); };
     I.click = function (el, c) { return td("move " + c.x + " " + c.y + "\ndown 0\nup 0"); };
     I.send_keys = function (el, keys) {
         if (document.activeElement !== el) el.focus();
@@ -183,9 +184,9 @@ def setup_wpt():
         with open(rp, "a") as f: f.write("\n" + REPORT_JS)
     vp = os.path.join(WPT, "resources", "testdriver-vendor.js")
     src = open(vp).read()
-    if VENDOR_MARK not in src:
+    if VENDOR_JS not in src:   # rewritten whenever VENDOR_JS changes
         if not os.path.exists(vp + ".orig"): shutil.copyfile(vp, vp + ".orig")
-        with open(vp, "a") as f: f.write("\n" + VENDOR_JS)
+        with open(vp, "w") as f: f.write(open(vp + ".orig").read() + "\n" + VENDOR_JS)
     os.makedirs(TMP, exist_ok=True)
     ca = os.path.join(TMP, "ca.pem")
     with open(ca, "w") as out:

@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **226**.
+  - Number the runs. The next run is **227**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,12 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 226 ...)
+(append here: RUN 227 ...)
+
+RUN 226: testdriver delete_all_cookies() -> "cookies-clear" td op (main.c td_cmd -> cookies_clear(), cookies.c).
+lumen_wpt.py now rewrites testdriver-vendor.js from .orig whenever VENDOR_JS changes (it appended only once, so
+vendor edits never reached the WPT checkout). /cookies/name, value, attributes: +241, none lost. Lead: the
+cookie tests also use get_all_cookies/get_named_cookie; samesite form-*-blank tests hard-time out.
 
 LEAD (memory, measured): every removed <iframe>/<frame> keeps its whole JsCtx (own V8 context + prelude,
 ~2.8 MB each) until the parent page is freed: jsrun creating+removing 400 about:blank iframes grew RSS

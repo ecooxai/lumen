@@ -119,6 +119,13 @@ void net_site_of(const char *host, char *out, size_t n) {
     snprintf(out, n, "%s", start);
     for (char *q = out; *q; q++) *q = (char)tolower((unsigned char)*q);
 }
+void cookies_clear(void) {
+    pthread_mutex_lock(&g_mu);
+    for (int i = 0; i < g_jar.n; i++) cookie_free(&g_jar.v[i]);
+    if (g_jar.n) g_dirty = true;
+    g_jar.n = 0;
+    pthread_mutex_unlock(&g_mu);
+}
 int cookies_site(const char *site, bool remove) {
     if (!site || !*site) return 0;
     size_t sl = strlen(site); int count = 0; double now = (double)time(NULL);

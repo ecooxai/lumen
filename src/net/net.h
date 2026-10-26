@@ -109,6 +109,7 @@ bool cookies_save(const char *path); /* writes only when the jar changed */
 void net_site_of(const char *host, char *out, size_t n);
 /* the cookies of a site and its subdomains: counts them, or deletes them and returns how many went */
 int cookies_site(const char *site, bool remove);
+void cookies_clear(void);   /* every cookie (WebDriver Delete All Cookies, for WPT) */
 
 extern const char *g_user_agent;
 /* Authentication providers must see Lumen's own identity, including after redirects. */

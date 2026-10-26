@@ -1081,7 +1081,8 @@ static char *td_cmd(App *a, const char *q) {
         int got = sscanf(line, "%15s %lf %lf", op, &v1, &v2);
         SDL_Event ev; SDL_zero(ev);
         Uint8 btn = v1 == 1 ? SDL_BUTTON_MIDDLE : v1 == 2 ? SDL_BUTTON_RIGHT : SDL_BUTTON_LEFT;
-        if (got == 3 && !strcmp(op, "move")) {
+        if (!strcmp(op, "cookies-clear")) cookies_clear();
+        else if (got == 3 && !strcmp(op, "move")) {
             x = (page_left(a) + (float)v1 * z) / s; y = (BAR + (float)v2 * z) / s;
             ev.type = SDL_EVENT_MOUSE_MOTION; ev.motion.x = x; ev.motion.y = y; ev.motion.state = buttons; SDL_PushEvent(&ev);
         } else if (got >= 1 && (!strcmp(op, "down") || !strcmp(op, "up"))) {
