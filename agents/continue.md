@@ -155,6 +155,8 @@ RUN 229: three native fixes found via test_media_queries.html (698 -> 1029/1349)
 after an iframe resize: the resize reaches the frame's media only on the next frame, not synchronously).
 document-metadata, css-conditional, replaced-elements, css-transitions: +108, -1 (container
 query-evaluation '(not (unknown))' now true: lead). Unit tests 104/104.
+PHONE after 229 (75f4bd0): APK 92,185,964 B, verifies, installed; google 1.3% / youtube 4.8% / webgl 0.8% settled
+CPU, peak RSS 544 MB, WebGL 57.6 fps, no crashes/ANRs/new errors.
 
 RUN 228: gradient specified-value serialization in specNormalize: 'in <space>' after the direction, default
 space dropped (srgb for legacy colors, oklab otherwise), xyz -> xyz-d65, 'ellipse' dropped before two sizes.
