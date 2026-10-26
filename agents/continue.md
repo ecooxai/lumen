@@ -152,6 +152,13 @@ Design: at kill, make the dead frame's Globals weak (ctx, protos, fire/report/ap
 with a weak callback on its global; when V8 collects it, js_free the frame at the next safe tick. Any native
 path that touches a dead ctx's handles must then tolerate empty handles. Matters for long-lived pages that
 rotate ad iframes.
+Tried (run 226, reverted; patch kept at /tmp/frame-park-226.patch): js_frame_park() at frame_kill moved the dead
+frame's handles (api/protos/fire/... and node wrappers) onto a private array on its global, made them and ctx
+weak, and freed the frame from frames_scan once a weak callback on the global fired. No crash after guarding
+the js_free path, but A/B on pixel-length-attributes.html alone: peak RSS 1.53 GB with it vs 1.57 GB without.
+So something else still roots dead frames (not yet found: candidates are other modules' strong Globals,
+event-listener/observer storage, testharness closures holding the frames' bodies, or GC not running).
+Next: count live contexts with a heap snapshot or a JsCtx counter before trying again.
 
 Phone check after run 225 (APK 250ff4a): google/youtube/webgl/webgpu pass, no crash/ANR/tombstone/new errors;
 last-10-s CPU 0.8-3.5%, peak RSS 553 MB (youtube), WebGL 57.3 fps, WebGPU 23.7 fps.
