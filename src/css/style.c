@@ -416,6 +416,89 @@ static void apply_border_side(ACtx *c, int side, const char *v) {
     if (!sc) c->st->border_color[side] = c->st->color;
     free_toks(t, n);
 }
+static void color_str(SB *b, Color c);
+static bool str_iends(const char *s, const char *suf) { size_t n = strlen(s), k = strlen(suf); return n >= k && !strcasecmp(s + n - k, suf); }
+/* a gradient length or percentage as computed: lengths in px, percentages kept; anything else as written */
+static void grad_len(ACtx *c, SB *b, const char *t) {
+    size_t n = strlen(t); Length l;
+    if (n && t[n - 1] == '%' && !strchr(t, '(')) { sb_printf(b, "%g%%", strtof(t, NULL)); return; }
+    if (n > 3 && (str_iends(t, "deg") || str_iends(t, "rad") || str_iends(t, "turn"))) { sb_puts(b, t); return; }   /* angles as written */
+    if (!strchr(t, '(') && alen(c, t, &l) && !l.pct && !l.pctu) { sb_printf(b, "%gpx", l.px); return; }
+    if (str_istarts(t, "calc(") && !strstr(t, "deg") && !strstr(t, "turn") && !strstr(t, "rad") && alen(c, t, &l) && !l.mm) {   /* calc() down to one unit */
+        if (l.pctu && !l.px) { sb_printf(b, "%g%%", l.pct); return; }
+        if (!l.pctu && !l.pct) { sb_printf(b, "%gpx", l.px); return; }
+    }
+    sb_puts(b, t);
+}
+/* a <position> after "at": keywords become percentages, keyword-offset pairs (left 10px) their offset */
+static void grad_pos(ACtx *c, SB *b, char **t, int n) {
+    const char *x = NULL, *y = NULL; char xb[64], yb[64];
+    for (int i = 0; i < n; i++) {
+        const char *k = t[i]; bool hz = str_ieq(k, "left") || str_ieq(k, "right"), vt = str_ieq(k, "top") || str_ieq(k, "bottom");
+        const char *off = i + 1 < n && !str_ieq(t[i + 1], "center") && !str_ieq(t[i + 1], "left") && !str_ieq(t[i + 1], "right") && !str_ieq(t[i + 1], "top") && !str_ieq(t[i + 1], "bottom") && n == 4 ? t[i + 1] : NULL;
+        char *dst = NULL; const char **slot = NULL;
+        if (hz) { slot = &x; dst = xb; } else if (vt) { slot = &y; dst = yb; }
+        if (slot) {
+            bool far = str_ieq(k, "right") || str_ieq(k, "bottom");
+            if (off && !far) { snprintf(dst, 64, "%s", off); i++; }
+            else if (off) { snprintf(dst, 64, "calc(100%% - %s)", off); i++; }
+            else snprintf(dst, 64, far ? "100%%" : "0%%");
+            *slot = dst;
+        } else if (str_ieq(k, "center")) { if (!x) x = "50%"; else y = "50%"; }
+        else if (!x) x = k; else y = k;
+    }
+    if (!x) x = "50%"; if (!y) y = "50%";
+    grad_len(c, b, x); sb_putc(b, ' '); grad_len(c, b, y);
+}
+/* the computed value of a gradient (CSS Images 4): colors computed, lengths absolute, positions only where given,
+   and the color interpolation method unless it is the default (srgb for legacy colors, else oklab) */
+static char *gradient_ser(ACtx *c, const char *fn, char **args, int na, int start) {
+    SB b; sb_init(&b); sb_puts(&b, fn); sb_putc(&b, '(');
+    bool legacy = true;
+    for (int i = start; i < na; i++) {
+        char *t[3]; int n = split_ws(args[i], t, 3); CssColor cc, cur = cur_color(c->st);
+        if (n && css_color_parse(t[0], &cc, &cur) && !cc.legacy) legacy = false;
+        free_toks(t, n);
+    }
+    if (start) {
+        char *t[24]; int n = split_ws(args[0], t, 24); char *rest[24]; int nr = 0; char meth[64] = "";
+        for (int i = 0; i < n; i++) {
+            if (str_ieq(t[i], "in") && i + 1 < n) {
+                char sp[24]; snprintf(sp, sizeof sp, "%s", t[i + 1]); for (char *q = sp; *q; q++) *q = (char)tolower((unsigned char)*q);
+                if (!strcmp(sp, "xyz")) snprintf(sp, sizeof sp, "xyz-d65");
+                i++;
+                const char *hue = NULL;
+                if (i + 2 < n && str_ieq(t[i + 2], "hue")) { hue = t[i + 1]; i += 2; }
+                if (hue && !str_ieq(hue, "shorter")) snprintf(meth, sizeof meth, "%s %s hue", sp, hue);
+                else if (strcmp(sp, legacy ? "srgb" : "oklab")) snprintf(meth, sizeof meth, "%s", sp);
+                for (char *q = meth; *q; q++) *q = (char)tolower((unsigned char)*q);
+            } else rest[nr++] = t[i];
+        }
+        bool any = false;
+        for (int i = 0; i < nr; i++) {
+            if (str_ieq(rest[i], "ellipse") || str_ieq(rest[i], "farthest-corner")) continue;   /* the defaults */
+            if (any) sb_putc(&b, ' ');
+            any = true;
+            if (str_ieq(rest[i], "at")) { sb_puts(&b, "at "); grad_pos(c, &b, rest + i + 1, nr - i - 1); break; }
+            if (str_ieq(rest[i], "from") || str_ieq(rest[i], "to") || isalpha((unsigned char)rest[i][0])) { for (char *q = rest[i]; *q; q++) *q = (char)tolower((unsigned char)*q); sb_puts(&b, rest[i]); }
+            else grad_len(c, &b, rest[i]);
+        }
+        if (*meth) { if (any) sb_putc(&b, ' '); sb_puts(&b, "in "); sb_puts(&b, meth); any = true; }
+        if (any) sb_puts(&b, ", ");
+        free_toks(t, n);
+    }
+    for (int i = start; i < na; i++) {
+        char *t[3]; int n = split_ws(args[i], t, 3);
+        if (i > start) sb_puts(&b, ", ");
+        Color col; const char *ser = NULL; CssColor cur = cur_color(c->st);
+        int k = 0;
+        if (n && parse_color_ser(t[0], &col, &ser, &cur)) { if (ser) sb_puts(&b, ser); else color_str(&b, col); k = 1; }
+        for (; k < n; k++) { if (k) sb_putc(&b, ' '); grad_len(c, &b, t[k]); }
+        free_toks(t, n);
+    }
+    sb_putc(&b, ')');
+    return sb_take(&b);
+}
 static Gradient *parse_gradient(ACtx *c, const char *v) {
     bool rep = str_istarts(v, "repeating-");
     const char *f = rep ? v + 10 : v;
@@ -430,6 +513,10 @@ static Gradient *parse_gradient(ACtx *c, const char *v) {
         else if (*p == ',' && !d) { args[na++] = xstrndup(s, (size_t)(p - s)); s = p + 1; }
     }
     int start = 0;
+    { char *t0[1]; int n0 = na ? split_ws(args[0], t0, 1) : 0; Color cc; if (n0 && !css_parse_color(t0[0], &cc, c->st->color)) start = 1; free_toks(t0, n0); }
+    char fnb[48]; snprintf(fnb, sizeof fnb, "%s%.*s", rep ? "repeating-" : "", (int)(a - 1 - f), f); for (char *q = fnb; *q; q++) *q = (char)tolower((unsigned char)*q);
+    char *ser = na && !str_istarts(f, "-webkit-") ? gradient_ser(c, fnb, args, na, start) : NULL;
+    start = 0;
     if (na) {
         char *a0 = str_trim(args[0]);
         if (str_istarts(a0, "to ")) {
@@ -453,7 +540,8 @@ static Gradient *parse_gradient(ACtx *c, const char *v) {
         free_toks(t, n);
     }
     for (int i = 0; i < na; i++) free(args[i]);
-    if (g->nstops < 2) { if (g->nstops == 1) { g->stops[1] = g->stops[0]; g->nstops = 2; } else { free(g); return NULL; } }
+    if (g->nstops < 2) { if (g->nstops == 1) { g->stops[1] = g->stops[0]; g->nstops = 2; } else { free(g); free(ser); return NULL; } }
+    if (ser) { size_t n = strlen(ser); g = xrealloc(g, sizeof *g + n + 1); memcpy(g + 1, ser, n + 1); g->ser = (const char *)(g + 1); free(ser); }
     /* distribute missing positions (px positions encoded as -2-px kept as-is for layout) */
     if (g->stops[0].pos == -1) g->stops[0].pos = 0;
     if (g->stops[g->nstops - 1].pos == -1) g->stops[g->nstops - 1].pos = 1;
@@ -4060,6 +4148,7 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
         const Gradient *g = s->bg_gradient;
         if (s->bg_image) sb_printf(&b, "url(\"%s\")", s->bg_image);
         else if (!g) sb_puts(&b, "none");
+        else if (g->ser) sb_puts(&b, g->ser);
         else {
             sb_puts(&b, g->repeating ? "repeating-" : ""); sb_puts(&b, g->type ? "radial-gradient(" : "linear-gradient(");
             if (!g->type) sb_printf(&b, "%gdeg", g->angle);

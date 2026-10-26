@@ -45,7 +45,7 @@ Older notes, read on demand:
   - Only one harness run at a time (fixed controller port 8790). For long runs, copy the binary
     (`cp build/codex-native/lumen build/codex-native/lumen-wpt`, then `--binary build/codex-native/lumen-wpt`) so rebuilds
     don't change it mid-run.
-  - Number the runs. The next run is **221**.
+  - Number the runs. The next run is **222**.
 - **Android APK:**
   ```
   python3 tools/codex_compile.py /usr/lib/jvm/java-21-openjdk/bin/java -Xmx64m -Xms64m -Dorg.gradle.appname=gradle \
@@ -141,7 +141,15 @@ Some need hardware or permissions (bluetooth, serial, webusb, payment, xr); skip
 - **Not implemented:** native Redo has no fallback stack. It relies on the page handling Ctrl+Shift+Z.
 
 ## Runs
-(append here: RUN 221 ...)
+(append here: RUN 222 ...)
+
+RUN 221: computed background-image gradients serialize from the declared text (gradient_ser in style.c, stored in
+the Gradient's own allocation as g->ser): colors computed, lengths to px, percentages and single-unit calc()
+resolved, stop positions only where given, direction keywords kept, the default ellipse/farthest-corner dropped,
+"at" positions as percentages/offsets, and the interpolation method unless it's the default (srgb for legacy
+colors, else oklab; xyz -> xyz-d65, "shorter hue" dropped). /css/css-images, backgrounds, values, masking, color,
+cssom: +1042, 1 lost (calc-size-flex-basis-on-row, layout, unrelated). Lead: angle calc() in gradients
+(calc(0.1turn + 0.15turn) -> 90deg) and canonical order of mixed calc (calc(50% + 90deg)).
 
 RUN 220: XHTML entity doctypes (xml.c): HTML named character references also for "-//W3C//DTD MathML 2.0//EN"
 (the spec's list; any public id containing XHTML still counts, as Chrome). xhtml-mathml-dtd-entity-8.htm 5 -> 2125,

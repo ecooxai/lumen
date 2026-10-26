@@ -44,7 +44,7 @@ enum { CUR_DEFAULT, CUR_POINTER, CUR_TEXT, CUR_MOVE, CUR_NOT_ALLOWED, CUR_GRAB }
 enum { TO_CLIP, TO_ELLIPSIS };
 
 typedef struct { float pos; Color color; } GradStop;
-typedef struct Gradient { uint8_t type; /* 0 linear 1 radial */ float angle; int nstops; GradStop stops[8]; bool repeating; } Gradient;
+typedef struct Gradient { uint8_t type; /* 0 linear 1 radial */ float angle; int nstops; GradStop stops[8]; bool repeating; const char *ser; /* computed value text, in the same allocation (or NULL) */ } Gradient;
 
 typedef struct { float x, y, blur, spread; Color color; bool inset; } Shadow;
 
