@@ -564,7 +564,7 @@ static bool computed_needs_layout(const std::string &p) {
     for (const char *x : l) if (!p.compare(0, strlen(x), x)) return true;
     return false;
 }
-FN(computed) { CTX; ARGN(n, 0); std::string p = S(1); if (c->host.sync) c->host.sync(c->host.ud, c->doc, computed_needs_layout(p)); char *v = jsg_computed(n, p.c_str()); RET(nstr(iso, v)); free(v); }
+FN(computed) { CTX; ARGN(n, 0); std::string p = S(1); if (c->host.sync) c->host.sync(c->host.ud, c->doc, computed_needs_layout(p)); char *v = jsg_computed(n, p.c_str(), a.Length() > 2 ? a[2]->Int32Value(ctx).FromMaybe(0) : 0); RET(nstr(iso, v)); free(v); }
 FN(trTake) {
     CTX; v8::Local<v8::Array> out = v8::Array::New(iso); uint32_t k = 0;
     for (size_t i = 0; i < c->anims.size();)

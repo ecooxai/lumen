@@ -4263,6 +4263,14 @@ char *css_get_computed_value(Node *el, const char *prop) {
     }
     return computed_of(el, el && el->type == NODE_ELEMENT ? el->style : NULL, prop);
 }
+/* a ::before (1) or ::after (2) value: the pseudo-element's own style, or content: none when it generates no box */
+char *css_get_computed_pseudo(Node *el, int which, const char *prop) {
+    free(css_get_computed_value(el, "display"));
+    const ComputedStyle *b = el && el->type == NODE_ELEMENT ? el->style : NULL;
+    const ComputedStyle *ps = b ? (which == 1 ? b->before : b->after) : NULL;
+    if (!ps && !strcmp(prop, "content")) return xstrdup("none");
+    return computed_of(el, ps ? ps : b, prop);
+}
 /* Properties whose computed value differs between o and s, for CSS transitions: the names in the
  * transition-property list, or for "all" every natively computed property plus the generic ones. */
 static void tr_scan_one(Node *n, const ComputedStyle *o, const ComputedStyle *s, const char *prop, void (*cb)(Node *, const char *, const char *, const char *)) {

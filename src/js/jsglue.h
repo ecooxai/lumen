@@ -11,7 +11,7 @@ void js_anim_event(Node *n, const char *type, const char *name, double delay_ms,
 bool js_anim_cancel(Node *n, const char *name);
 void js_transition_start(Node *n, const char *prop, const char *from, const char *to);
 void js_animation_names(Node *n, const char *names);
-char *jsg_computed(Node *el, const char *prop);
+char *jsg_computed(Node *el, const char *prop, int pseudo);
 void jsg_set_anim_style(Node *el, const char *css);
 uint64_t jsg_layout_generation(void);
 uint64_t jsg_visual_generation(void);
