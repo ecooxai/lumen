@@ -972,3 +972,6 @@ mutation (src/srcset change while disconnected), not on detach itself.
 RUN 284 (committed): size-contained sizes=auto imgs have no intrinsic aspect ratio (box.c replaced_size), so
 `img{height:10px}` keeps the 300px default width. sizes-auto 66->70/74. LEFT: vertical-rl block-size (inline size
 should be the physical height), abspos left/right replaced width (CSS2 abs-replaced-width ignores left/right).
+RUN 285 (committed): abspos replaced elements aren't stretched between left/right (block.c, CSS2 10.3.8).
+sizes-auto 70->72/74, anchor-center +22, position +2; total +30, no losses or crashes.
+LEFT in sizes-auto: vertical-rl block-size:10px (the inline size is the physical height).

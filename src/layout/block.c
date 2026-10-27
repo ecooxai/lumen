@@ -102,13 +102,13 @@ static void layout_abs(Layout *L, Box *cb) {
         bool mlA = s->margin[3].kind == LK_AUTO, mrA = s->margin[1].kind == LK_AUTO, mtA = s->margin[0].kind == LK_AUTO, mbA = s->margin[2].kind == LK_AUTO;
         int mode = SZ_SHRINK; float fw = 0, fh = -1;
         bool wdef = len_def(s->width, pw);
-        if (!wdef && !lA && !rA && s->width.kind == LK_AUTO) { mode = SZ_FORCED; fw = pw - l - r - a->m[1] - a->m[3]; }
+        if (!wdef && !lA && !rA && s->width.kind == LK_AUTO && a->fmt != FMT_REPLACED) { mode = SZ_FORCED;   /* replaced: CSS2 10.3.8, insets don't size it */ fw = pw - l - r - a->m[1] - a->m[3]; }
         float avail = pw - (lA ? 0 : l) - (rA ? 0 : r);
         if (!len_def(s->height, ph) && !tA && !bA) fh = ph - t - bt - a->m[0] - a->m[2];
         if (a->fmt == FMT_REPLACED) fh = -1;
         /* Insets constrain shrink-to-fit space, not the percentage basis of a
            specified width (or its percentage padding, margins and limits). */
-        layout_box(L, a, 0, 0, mode == SZ_FORCED || wdef ? pw : avail, ph, NULL, mode, fw, fh);
+        layout_box(L, a, 0, 0, mode == SZ_FORCED || wdef || a->fmt == FMT_REPLACED ? pw : avail, ph, NULL, mode, fw, fh);
         float ow = a->w, oh = a->h;
         if (!lA && !rA && mlA && mrA) { float m = (pw - l - r - ow) / 2; a->m[1] = a->m[3] = LMAX(0, m); }
         if (!tA && !bA && mtA && mbA) { float m = (ph - t - bt - oh) / 2; a->m[0] = a->m[2] = LMAX(0, m); }
