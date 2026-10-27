@@ -547,9 +547,9 @@ static bool media_feature(const char *f, const MediaCtx *mc) {
                     char a[200], b[200]; snprintf(a, sizeof a, "%s %s %s", L, ops[oi], str_trim(mid)); snprintf(b, sizeof b, "%s %s %s", str_trim(mid), ops[oi2], o2 + strlen(ops[oi2]));
                     return media_feature(a, mc) && media_feature(b, mc);
                 }
-                bool feat_left = isalpha((unsigned char)L[0]);
+                bool feat_left = isalpha((unsigned char)L[0]) && !str_starts(L, "calc(");
                 const char *feat = feat_left ? L : R; const char *val = feat_left ? R : L;
-                if (isalpha((unsigned char)val[0])) { g_mq_unknown = true; return false; }   /* a feature on both sides */
+                if (isalpha((unsigned char)val[0]) && !str_starts(val, "calc(")) { g_mq_unknown = true; return false; }   /* a feature on both sides */
                 bool ratio = !strcmp(feat, "aspect-ratio") || !strcmp(feat, "device-aspect-ratio"), res = !strcmp(feat, "resolution"),
                      num = !strcmp(feat, "color") || !strcmp(feat, "monochrome") || !strcmp(feat, "color-index");
                 /* the device is the screen, as JS screen.width/height (jsnative.cc FN(viewport)) */
@@ -566,8 +566,12 @@ static bool media_feature(const char *f, const MediaCtx *mc) {
                     if (*end) { g_mq_unknown = true; return false; }
                     v = b ? a / b : INFINITY;
                 } else if (res || num) {
-                    v = strtof(val, &end);
-                    if (end == val || v < 0 || (num && (*end || strchr(val, '.') || strchr(val, 'e') || strchr(val, 'E')))) { g_mq_unknown = true; return false; }
+                    char cu[8] = "", cop = 0; float cb = 0; int cn = 0;
+                    if (res && str_starts(val, "calc(") && (cn = sscanf(val + 5, "%f%7[a-z] %c %f )", &v, cu, &cop, &cb)) >= 2) {   /* calc(6x / 2) */
+                        if (cn == 4) { if (cop == '/' && cb) v /= cb; else if (cop == '*') v *= cb; else { g_mq_unknown = true; return false; } }
+                        end = cu;
+                    } else v = strtof(val, &end);
+                    if (end == val || (res && v < 0) || (num && (*end || strchr(val, '.') || strchr(val, 'e') || strchr(val, 'E')))) { g_mq_unknown = true; return false; }
                     if (res) { if (!strcmp(end, "dpi")) v /= 96.f; else if (!strcmp(end, "dpcm")) v *= 2.54f / 96.f; else if (strcmp(end, "dppx") && strcmp(end, "x")) { g_mq_unknown = true; return false; } }
                 } else {
                     float n = strtof(val, &end); while (*end == ' ') end++;
@@ -638,23 +642,77 @@ static bool media_feature(const char *f, const MediaCtx *mc) {
     return false;
 }
 
+/* Media conditions are three-valued: an unknown feature or <general-enclosed> is unknown, which "or" with a true
+   operand and "and" with a false one still decide; "not unknown" stays unknown. */
+enum { MQ_FALSE, MQ_TRUE, MQ_UNKNOWN };
+static int mq_cond(const char *t, const MediaCtx *mc);
+static int mq_in_parens(const char *inner, const MediaCtx *mc) {
+    char *in = str_trim((char *)inner);
+    const char *w = in; while (isalnum((unsigned char)*w) || *w == '-' || *w == '_') w++;
+    if (in[0] == '(' || str_istarts(in, "not ") || (w > in && *w == '(')) return mq_cond(in, mc);   /* nested condition or name(...) */
+    bool saved = g_mq_unknown; g_mq_unknown = false;
+    bool r = media_feature(in, mc);
+    int v = g_mq_unknown ? MQ_UNKNOWN : r ? MQ_TRUE : MQ_FALSE;
+    g_mq_unknown = saved;
+    return v;
+}
+static int mq_cond(const char *t0, const MediaCtx *mc) {
+    char *s = xstrdup(t0); char *t = str_trim(s);
+    int res = -1; bool use_or = false;
+    if (str_istarts(t, "not ")) {
+        t = str_trim(t + 4);
+        int v = MQ_UNKNOWN;
+        if (*t == '(') { size_t close = find_close_paren(t, 1, strlen(t)); char *inner = xstrndup(t + 1, close - 1); v = mq_in_parens(inner, mc); free(inner); }
+        free(s);
+        return v == MQ_UNKNOWN ? v : v == MQ_TRUE ? MQ_FALSE : MQ_TRUE;
+    }
+    while (*t) {
+        int v;
+        if (*t == '(') {
+            size_t close = find_close_paren(t, 1, strlen(t));
+            char *inner = xstrndup(t + 1, close - 1);
+            v = mq_in_parens(inner, mc);
+            free(inner);
+            t = str_trim(t + (close < strlen(t) ? close + 1 : strlen(t)));
+        } else if (isalpha((unsigned char)*t) && strchr(t, '(')) {   /* <general-enclosed>: name(...) */
+            char *o = strchr(t, '(');
+            size_t close = find_close_paren(o, 1, strlen(o));
+            v = MQ_UNKNOWN;
+            t = str_trim(o + (close < strlen(o) ? close + 1 : strlen(o)));
+        } else { v = MQ_UNKNOWN; t += strlen(t); g_mq_unknown = g_mq_bad = true; }   /* "color :" */
+        if (res < 0) res = v;
+        else if (use_or) res = (res == MQ_TRUE || v == MQ_TRUE) ? MQ_TRUE : (res == MQ_UNKNOWN || v == MQ_UNKNOWN) ? MQ_UNKNOWN : MQ_FALSE;
+        else res = (res == MQ_FALSE || v == MQ_FALSE) ? MQ_FALSE : (res == MQ_UNKNOWN || v == MQ_UNKNOWN) ? MQ_UNKNOWN : MQ_TRUE;
+        if (str_istarts(t, "and")) { t = str_trim(t + 3); use_or = false; }
+        else if (str_istarts(t, "or")) { t = str_trim(t + 2); use_or = true; }
+        else break;   /* trailing tokens are left to the caller (a sizes attribute's size follows the condition) */
+        if (str_istarts(t, "not ")) g_mq_unknown = g_mq_bad = true;   /* "(a) and not (b)": not only starts a condition */
+    }
+    free(s);
+    return res < 0 ? MQ_UNKNOWN : res;
+}
 static bool media_single(const char *q, const MediaCtx *mc) {
     char *s = xstrdup(q); char *t = str_trim(s);
     bool neg = false, result = true, only = false;
+    if (!*t) { free(s); return false; }   /* an empty query in a list */
     if (str_istarts(t, "not ")) { neg = true; t += 4; }
     else if (str_istarts(t, "only ")) { only = true; t += 5; }
     t = str_trim(t);
     /* "only" needs a media type, and "not" can't repeat */
     if ((only && t[0] == '(') || ((neg || only) && (str_istarts(t, "not ") || str_istarts(t, "only ")))) g_mq_unknown = g_mq_bad = true;
-    /* media type */
+    /* media type (a name followed by "(" is <general-enclosed>, part of a condition) */
+    bool typed = false;
+    { const char *e = t; while (*e && *e != '(' && !is_ws((unsigned char)*e)) e++; if (*e == '(' && t[0] != '(') goto cond; }
     if (t[0] && t[0] != '(') {
+        typed = true;
         char *e = t; while (*e && !is_ws((unsigned char)*e)) e++;
         char save = *e; *e = 0;
         if (!str_ieq(t, "all") && !str_ieq(t, "screen")) result = false;
         *e = save; t = str_trim(e);
-        if (str_istarts(t, "and")) t = str_trim(t + 3);
+        if (str_istarts(t, "and")) { t = str_trim(t + 3); if (t[0] != '(' && !str_istarts(t, "not ")) g_mq_unknown = g_mq_bad = true; }   /* "all and color :" */
         else if (*t) g_mq_unknown = g_mq_bad = true;   /* "screen or (x)", "screen (x)" */
     }
+cond:;
     /* features joined by and / or (not both at one level) */
     bool use_or = false, saw_and = false, saw_or = false;
     for (int d = 0, i = 0; t[i]; i++) {
@@ -664,27 +722,13 @@ static bool media_single(const char *q, const MediaCtx *mc) {
             else if (str_istarts(t + i, "or ") || str_istarts(t + i, "or(")) saw_or = true;
         }
     }
-    if (saw_and && saw_or) g_mq_unknown = g_mq_bad = true;
-    while (*t && result != (use_or)) {
-        if (*t == '(') {
-            size_t close = find_close_paren(t, 1, strlen(t));
-            char *inner = xstrndup(t + 1, close - 1);
-            bool r;
-            if (inner[0] == '(' || str_istarts(str_trim(inner), "not ")) {
-                char *in2 = str_trim(inner);
-                if (str_istarts(in2, "not ")) r = !media_single(in2 + 4, mc);
-                else r = media_single(in2, mc);
-            } else r = media_feature(inner, mc);
-            free(inner);
-            if (use_or) result = result || r; else result = result && r;
-            t = str_trim(t + (close < strlen(t) ? close + 1 : strlen(t)));
-            if (str_istarts(t, "and")) { t = str_trim(t + 3); use_or = false; }
-            else if (str_istarts(t, "or")) { t = str_trim(t + 2); use_or = true; }
-            else break;
-        } else break;
-    }
+    (void)use_or;
+    if ((saw_and && saw_or) || (typed && saw_or)) g_mq_unknown = g_mq_bad = true;   /* after a type: a condition without "or" */
+    int r = *t ? mq_cond(t, mc) : MQ_TRUE;
     free(s);
-    return neg ? !result : result;
+    if (!result) return neg;   /* the media type alone decides "and" */
+    if (r == MQ_UNKNOWN) return false;   /* an unknown query matches nothing, negated or not */
+    return neg ? r == MQ_FALSE : r == MQ_TRUE;
 }
 /* one query (no commas) parses: CSSOM serializes the others as "not all" */
 bool css_media_valid(const char *q) {

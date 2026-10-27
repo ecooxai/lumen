@@ -930,3 +930,11 @@ creates a new JS context and runs the whole prelude (~50-100 ms each). Tests tha
 (pixel-length-attributes, svg-in-iframe-*) are dominated by it. Options: a V8 startup snapshot / context
 snapshot for frame contexts, or lazily creating about:blank frame contexts until script touches them. Both also
 cut memory per frame (pairs with the xref'd-frame MEMORY FINDING).
+
+RUNS 274-276 (committed): media conditions are three-valued (mq_cond/mq_in_parens in parse.c): <general-enclosed>
+and unknown features are unknown; "or" with true / "and" with false still decide; "not unknown" stays unknown.
+Grammar: "not" only starts a condition; no "or" after a media type; "all and color :" invalid; empty list entries
+never match; negative integers valid for color/monochrome/color-index; calc() in resolution. Trailing tokens after
+a condition stay with the caller (sizes attributes). test_media_queries 1349/1349; sizes +12.
+/tmp/lumen-old is stale (Oct 26): refresh it from the previous commit's build before relying on old-vs-new reruns.
+LEFT in parse-a-sizes-attribute (35): comments, escapes, "not print 100vw", angle/time units, unclosed min(/max(.
