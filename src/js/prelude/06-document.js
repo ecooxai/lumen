@@ -45,6 +45,10 @@ function imageMapHit(el, x, y) {
     }
     return el;
 }
+/* Legacy document colors reflect the body attributes, including null-to-empty
+   DOMString conversion, and do nothing when the document has no HTML body. */
+const docColorGet = (doc, attr) => { const b = doc.body; return b && b.namespaceURI === NSURI[0] && b.localName === 'body' ? N.attr(b, attr) ?? '' : ''; };
+const docColorSet = (doc, attr, value) => { if (typeof value === 'symbol') throw new TypeError('Cannot convert a Symbol value to a string'); value = value === null ? '' : String(value); const b = doc.body; if (b && b.namespaceURI === NSURI[0] && b.localName === 'body') reflectSetAttr(b, attr, value); };
 class Document extends Node { constructor() { if (new.target === HTMLDocument) illegal(); const d = N.newXmlDoc(); Object.setPrototypeOf(d, new.target.prototype); def(d, '__url', 'about:blank'); return d; } }
 unscopable(Document, ['append', 'fullscreen', 'prepend', 'replaceChildren']);
 class HTMLDocument extends Document {}
@@ -57,6 +61,15 @@ const docColl = (doc, sel) => cachedLive(doc, 'coll:' + sel, () => N.query(doc, 
 methods(Document.prototype, {
     get all() { let o = allColl.get(this); if (!o) { const d = this, list = () => d.getElementsByTagName('*'); o = N.makeAll(function (k) { if (typeof k === 'number' || /^\d+$/.test(k)) return list()[+k] ?? undefined; return k === undefined ? undefined : allNamed(list(), String(k)) ?? undefined; }); Object.setPrototypeOf(o, HTMLAllCollection.prototype); allMeta.set(o, list); allColl.set(this, o); } return o; },
     get documentElement() { for (let c = N.first(this); c; c = N.next(c)) if (N.type(c) === 1) return c; return null; },
+    /* HTMLDocument.dir reflects the HTML root's enumerated dir attribute. A
+       Document without an HTML root has no attribute to reflect. */
+    get dir() { const root = this.documentElement; return root && root.namespaceURI === 'http://www.w3.org/1999/xhtml' && root.localName === 'html' ? root.dir : ''; },
+    set dir(v) { if (typeof v === 'symbol') throw new TypeError('Cannot convert a Symbol value to a string'); v = String(v); const root = this.documentElement; if (root && root.namespaceURI === 'http://www.w3.org/1999/xhtml' && root.localName === 'html') root.dir = v; },
+    get fgColor() { return docColorGet(this, 'text'); }, set fgColor(v) { docColorSet(this, 'text', v); },
+    get bgColor() { return docColorGet(this, 'bgcolor'); }, set bgColor(v) { docColorSet(this, 'bgcolor', v); },
+    get linkColor() { return docColorGet(this, 'link'); }, set linkColor(v) { docColorSet(this, 'link', v); },
+    get alinkColor() { return docColorGet(this, 'alink'); }, set alinkColor(v) { docColorSet(this, 'alink', v); },
+    get vlinkColor() { return docColorGet(this, 'vlink'); }, set vlinkColor(v) { docColorSet(this, 'vlink', v); },
     get head() { return findChild(this.documentElement, 'head'); },
     get body() { return findChild(this.documentElement, 'body'); },
     get doctype() { for (let c = N.first(this); c; c = N.next(c)) if (N.type(c) === 10) return c; return null; },

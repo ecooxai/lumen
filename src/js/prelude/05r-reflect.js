@@ -23,7 +23,7 @@
     };
     const idxErr = (v) => new DOMException(`The value provided (${v}) is outside the range.`, 'IndexSizeError');
     const finite = (v, n) => { v = +v; if (!Number.isFinite(v)) throw new TypeError(`Failed to set the '${n}' property: The provided double value is non-finite.`); return v; };
-    const set = (el, a, v) => el.setAttribute(a, v);
+    const set = reflectSetAttr;
     const types = {
         s: (a, n, o) => [function () { return N.attr(this, a) ?? ''; }, function (v) { set(this, a, o.tn && v === null ? '' : v); }],
         u: (a, n, o) => [function () {
@@ -32,7 +32,7 @@
             if (v == null) return '';
             const r = N.urlParse(v, doc.baseURI, docEnc(this)); return r ? r[0] : v;
         }, function (v) { set(this, a, v); }],
-        b: (a) => [function () { return N.attr(this, a) != null; }, function (v) { if (v) set(this, a, ''); else this.removeAttribute(a); }],
+        b: (a) => [function () { return N.attr(this, a) != null; }, function (v) { if (v) set(this, a, ''); else reflectRemoveAttr(this, a); }],
         l: (a, n, o) => [function () { const v = pInt(N.attr(this, a)); return v >= -MAXI - 1 && v <= MAXI ? v : (o.d ?? 0); }, function (v) { set(this, a, String(v | 0)); }],
         ll: (a, n, o) => [function () { const v = pInt(N.attr(this, a)); return v >= 0 && v <= MAXI ? v : (o.d ?? -1); }, function (v) { v |= 0; if (v < 0) throw idxErr(v); set(this, a, String(v)); }],
         ul: (a, n, o) => [function () { const v = pInt(N.attr(this, a)); return v >= 0 && v <= MAXI ? v : (o.d ?? 0); }, function (v) { v >>>= 0; set(this, a, String(v > MAXI ? (o.d ?? 0) : v)); }],
@@ -47,7 +47,7 @@
             if (o.k0) kw.set('', o.k0);
             const miss = o.m ?? (o.nul ? null : ''), inv = o.i ?? miss;
             return [function () { const v = N.attr(this, a); if (v == null) return miss; const k = kw.get(asciiLower(v)); return k === undefined ? inv : k; },
-                function (v) { if (o.nul && v == null) this.removeAttribute(a); else set(this, a, v); }];
+                function (v) { if (o.nul && v == null) reflectRemoveAttr(this, a); else set(this, a, v); }];
         },
     };
     const RP = { k: 'no-referrer no-referrer-when-downgrade same-origin origin strict-origin origin-when-cross-origin strict-origin-when-cross-origin unsafe-url', k0: '' };
@@ -87,7 +87,7 @@
         HTMLInputElement: [['s', 'accept alt dirName formTarget max min name pattern placeholder step align useMap'],
             ['b', 'disabled formNoValidate multiple readOnly required'], ['u', 'formAction', { doc: 1 }], ['u', 'src'],
             ['e', 'formEnctype', Object.assign({ i: 'application/x-www-form-urlencoded' }, ENC)], ['e', 'formMethod', { k: 'get post dialog', i: 'get' }],
-            ['ll', 'maxLength minLength'], ['lul', 'size', { d: 20 }], ['e', 'popoverTargetAction', POPACT]],
+            ['ul', 'height width'], ['ll', 'maxLength minLength'], ['lul', 'size', { d: 20 }], ['e', 'popoverTargetAction', POPACT]],
         HTMLButtonElement: [['b', 'disabled formNoValidate'], ['u', 'formAction', { doc: 1 }], ['s', 'formTarget name value'],
             ['e', 'formEnctype', Object.assign({ i: 'application/x-www-form-urlencoded' }, ENC)], ['e', 'formMethod', { k: 'get post dialog', i: 'get' }],
             ['e', 'type', { k: 'submit reset button', m: 'submit' }], ['e', 'popoverTargetAction', POPACT]],

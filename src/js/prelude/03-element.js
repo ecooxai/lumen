@@ -738,8 +738,14 @@ function setInner(el, html) {
 }
 /* getters the reflect* helpers made; 05r-reflect.js replaces those accessors with its spec types */
 const REFLECTED = new SSet(), racc = (p, n, g, s) => { REFLECTED.add(g); acc(p, n, g, s); };
-const reflectStr = (p, ...ns) => { for (const n of ns) { const a = n.toLowerCase(); racc(p, n, function () { return N.attr(this, a) ?? ''; }, function (v) { this.setAttribute(a, v); }); } };
-const reflectBool = (p, ...ns) => { for (const n of ns) { const a = n.toLowerCase(); racc(p, n, function () { return N.attr(this, a) != null; }, function (v) { if (v) this.setAttribute(a, ''); else this.removeAttribute(a); }); } };
+/* Reflection invokes the platform attribute algorithm, not overridable instance
+   methods. Retain the original methods so mutation/custom-element hooks remain. */
+const reflectSetAttrMethod = Element.prototype.setAttribute, reflectRemoveAttrMethod = Element.prototype.removeAttribute;
+const reflectSetAttr = (el, name, value) => { if (typeof value === 'symbol') throw new TypeError('Cannot convert a Symbol value to a string'); reflectSetAttrMethod.call(el, name, value); };
+const reflectRemoveAttr = (el, name) => reflectRemoveAttrMethod.call(el, name);
+
+const reflectStr = (p, ...ns) => { for (const n of ns) { const a = n.toLowerCase(); racc(p, n, function () { return N.attr(this, a) ?? ''; }, function (v) { reflectSetAttr(this, a, v); }); } };
+const reflectBool = (p, ...ns) => { for (const n of ns) { const a = n.toLowerCase(); racc(p, n, function () { return N.attr(this, a) != null; }, function (v) { if (v) reflectSetAttr(this, a, ''); else reflectRemoveAttr(this, a); }); } };
 /* the encoding a node's document gives its URLs' queries; undefined for UTF-8 */
 const docEnc = n => { const e = N.charset(n); return e === 'UTF-8' ? undefined : e; };
 /* set el's attribute with qualified name n (validated, lowercased) to the string v */
@@ -817,6 +823,18 @@ reflectStr(HTMLElement.prototype, 'title', 'lang', 'accessKey', 'nonce', 'dir');
 reflectBool(HTMLElement.prototype, 'hidden', 'inert', 'autofocus');
 installHandlers(HTMLElement.prototype, true);
 methods(HTMLElement.prototype, {
+    get translate() {
+        for (let el = this; el && N.type(el) === 1; el = N.parent(el)) {
+            if (el.namespaceURI !== NSURI[0]) continue;
+            const raw = N.attr(el, 'translate');
+            if (raw == null) continue;
+            const mode = asciiLower(raw);
+            if (mode === '' || mode === 'yes') return true;
+            if (mode === 'no') return false;
+        }
+        return true;
+    },
+    set translate(v) { reflectSetAttr(this, 'translate', v ? 'yes' : 'no'); },
     get style() { if (!this.__style) def(this, '__style', makeStyle(this)); return this.__style; },
     set style(v) { this.setAttribute('style', v); },
     get dataset() {
@@ -906,7 +924,7 @@ for (const k of ['role', 'ariaAtomic', 'ariaAutoComplete', 'ariaBrailleLabel', '
     'ariaRequired', 'ariaRoleDescription', 'ariaRowCount', 'ariaRowIndex', 'ariaRowIndexText', 'ariaRowSpan', 'ariaSelected',
     'ariaSetSize', 'ariaSort', 'ariaValueMax', 'ariaValueMin', 'ariaValueNow', 'ariaValueText']) {
     const a = k === 'role' ? 'role' : 'aria-' + k.slice(4).toLowerCase();
-    acc(Element.prototype, k, function () { return N.attr(this, a) ?? null; }, function (v) { if (v === null) this.removeAttribute(a); else this.setAttribute(a, v); });
+    acc(Element.prototype, k, function () { return N.attr(this, a) ?? null; }, function (v) { if (v == null) reflectRemoveAttr(this, a); else reflectSetAttr(this, a, v); });
 }
 /* the element a reference to el ends at, following shadow roots' referenceTarget; null when one names no element */
 function refResolve(el) {

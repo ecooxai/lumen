@@ -500,6 +500,7 @@ function createImageBitmap(src, ...a) {
 }
 const toFn =f => typeof f === 'function' ? f : (0, eval)('(function(){' + String(f) + '\n})');
 const perfNow = () => W.now(), perfOrigin = () => W.timeOrigin, perfExtra = () => [], perfTiming = () => undefined;
+const perfHasNavigation = false;
 )JS"
 #include "perf_shared.inc"
 R"JS(
@@ -742,6 +743,8 @@ for (const k of Object.keys(api)) Object.defineProperty(G, k, { value: api[k], w
         shape(C, STATIC_SKIP);
     }
 }
+delete G.performance;
+Object.defineProperty(WorkerGlobalScope.prototype, 'performance', { get() { if (this !== G) throw new TypeError('Illegal invocation'); return performance; }, enumerable: true, configurable: true });
 Object.defineProperty(WorkerGlobalScope.prototype, 'crypto', { get: Object.getOwnPropertyDescriptor({ get crypto() { if (this !== globalThis) throw new TypeError('Illegal invocation'); return crypto; } }, 'crypto').get, enumerable: true, configurable: true });
 return {
     onmsg(data) {

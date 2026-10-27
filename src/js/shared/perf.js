@@ -2,21 +2,27 @@
    The includer defines perfNow(), perfOrigin(), perfExtra(type) (its own entries, e.g. the page's navigation entry)
    and perfTiming(name) (a PerformanceTiming attribute offset, or undefined; pages only). */
 const PERF_KEY = {};
-const PERF_TYPES = Object.freeze(['mark', 'measure', 'navigation']);
+/* Internal slots must not be forgeable by setting a prototype or public field. */
+const perfBrands = Object.fromEntries(['entry', 'mark', 'measure', 'performance', 'observer', 'list'].map(n => [n, new WeakSet()]));
+let perfNextId = 1;
+const perfNavigationId = perfHasNavigation ? Math.floor(Math.random() * 0x1fffffffffffff) + 1 : 0;
+const perfString = v => { if (typeof v === 'symbol') throw new TypeError('Cannot convert a Symbol value to a string'); return String(v); };
+const PERF_TYPES = Object.freeze(perfHasNavigation ? ['mark', 'measure', 'navigation'] : ['mark', 'measure']);
 const perfBuf = [];
 const perfObservers = new SSet();
 const perfClone = v => v === undefined ? null : typeof structuredClone === 'function' ? structuredClone(v) : v;
 class PerformanceEntry {
-    constructor(k) { if (k !== PERF_KEY) throw new TypeError('Illegal constructor'); }
+    constructor(k = undefined) { if (k !== PERF_KEY) throw new TypeError('Illegal constructor'); perfBrands.entry.add(this); }
+    get id() { return this._id; } get navigationId() { return perfNavigationId; }
     get name() { return this._n; } get entryType() { return this._t; } get startTime() { return this._s; } get duration() { return this._d; }
-    toJSON() { return { name: this.name, entryType: this.entryType, startTime: this.startTime, duration: this.duration }; }
+    toJSON() { return { id: this.id, name: this.name, entryType: this.entryType, startTime: this.startTime, duration: this.duration, navigationId: this.navigationId }; }
 }
-const perfInit = (e, n, t, s, d) => { def(e, '_n', n); def(e, '_t', t); def(e, '_s', s); def(e, '_d', d); return e; };
+const perfInit = (e, n, t, s, d) => { perfBrands.entry.add(e); if (perfBrands[t]) perfBrands[t].add(e); def(e, '_id', perfNextId++); def(e, '_n', n); def(e, '_t', t); def(e, '_s', s); def(e, '_d', d); return e; };
 class PerformanceMark extends PerformanceEntry {
-    constructor(name, opts) {
+    constructor(name, opts = undefined) {
         if (!arguments.length) throw new TypeError("Failed to construct 'PerformanceMark': 1 argument required, but only 0 present.");
         super(PERF_KEY);
-        name = String(name);
+        name = perfString(name);
         if (perfTiming(name) !== undefined) throw new DOMException(`Failed to construct 'PerformanceMark': '${name}' is part of the PerformanceTiming interface, and cannot be used as a mark name.`, 'SyntaxError');
         if (opts != null && typeof opts !== 'object') throw new TypeError("Failed to construct 'PerformanceMark': The provided value is not of type 'PerformanceMarkOptions'.");
         let s = opts ? opts.startTime : undefined;
@@ -26,10 +32,12 @@ class PerformanceMark extends PerformanceEntry {
         def(this, '_detail', perfClone(opts ? opts.detail : undefined));
     }
     get detail() { return this._detail; }
+    toJSON() { return Object.assign(super.toJSON(), { detail: this.detail }); }
 }
 class PerformanceMeasure extends PerformanceEntry {
-    constructor(k) { super(k); }
+    constructor(k = undefined) { super(k); perfBrands.measure.add(this); }
     get detail() { return this._detail; }
+    toJSON() { return Object.assign(super.toJSON(), { detail: this.detail }); }
 }
 const perfSorted = l => l.slice().sort((a, b) => a.startTime - b.startTime);
 const perfAll = () => perfSorted(perfExtra(null).concat(perfBuf));
@@ -47,18 +55,18 @@ const perfTime = (m, what) => {
     throw new DOMException(`Failed to execute 'measure' on 'Performance': The mark '${m}' does not exist.`, 'SyntaxError');
 };
 class Performance extends EventTarget {
-    constructor(k) { if (k !== PERF_KEY) throw new TypeError('Illegal constructor'); super(); }
+    constructor(k = undefined) { if (k !== PERF_KEY) throw new TypeError('Illegal constructor'); super(); perfBrands.performance.add(this); }
     now() { return perfNow(); }
     get timeOrigin() { return perfOrigin(); }
-    mark(name, opts) {
+    mark(name, opts = undefined) {
         if (!arguments.length) throw new TypeError("Failed to execute 'mark' on 'Performance': 1 argument required, but only 0 present.");
         const e = new PerformanceMark(name, opts);
         perfBuf.push(e); if (perfBuf.length > 16384) perfBuf.splice(0, 4096);
         perfQueue(e); return e;
     }
-    measure(name, so, endMark) {
+    measure(name, so = undefined, endMark = undefined) {
         if (!arguments.length) throw new TypeError("Failed to execute 'measure' on 'Performance': 1 argument required, but only 0 present.");
-        name = String(name);
+        name = perfString(name);
         const dict = so !== null && typeof so === 'object';
         const has = k => dict && so[k] !== undefined;
         if (dict && (has('start') || has('end') || has('duration') || has('detail'))) {
@@ -82,26 +90,27 @@ class Performance extends EventTarget {
         perfQueue(e); return e;
     }
     getEntries() { return perfAll(); }
-    getEntriesByType(t) { return perfSorted(perfByType(String(t))); }
-    getEntriesByName(n, t) { n = String(n); return (t === undefined ? perfAll() : perfSorted(perfByType(String(t)))).filter(e => e.name === n); }
-    clearMarks(n) { for (let i = perfBuf.length; i--;) if (perfBuf[i].entryType === 'mark' && (n === undefined || perfBuf[i].name === String(n))) perfBuf.splice(i, 1); }
-    clearMeasures(n) { for (let i = perfBuf.length; i--;) if (perfBuf[i].entryType === 'measure' && (n === undefined || perfBuf[i].name === String(n))) perfBuf.splice(i, 1); }
+    getEntriesByType(t) { return perfSorted(perfByType(perfString(t))); }
+    getEntriesByName(n, t = undefined) { n = perfString(n); return (t === undefined ? perfAll() : perfSorted(perfByType(perfString(t)))).filter(e => e.name === n); }
+    clearMarks(n = undefined) { for (let i = perfBuf.length; i--;) if (perfBuf[i].entryType === 'mark' && (n === undefined || perfBuf[i].name === perfString(n))) perfBuf.splice(i, 1); }
+    clearMeasures(n = undefined) { for (let i = perfBuf.length; i--;) if (perfBuf[i].entryType === 'measure' && (n === undefined || perfBuf[i].name === perfString(n))) perfBuf.splice(i, 1); }
     clearResourceTimings() {}
     setResourceTimingBufferSize(n) {}
     toJSON() { return { timeOrigin: this.timeOrigin }; }
 }
 class PerformanceObserverEntryList {
-    constructor(k) { if (k !== PERF_KEY) throw new TypeError('Illegal constructor'); }
+    constructor(k = undefined) { if (k !== PERF_KEY) throw new TypeError('Illegal constructor'); perfBrands.list.add(this); }
     getEntries() { return perfSorted(this._l); }
-    getEntriesByType(t) { t = String(t); return perfSorted(this._l.filter(e => e.entryType === t)); }
-    getEntriesByName(n, t) { n = String(n); return perfSorted(this._l.filter(e => e.name === n && (t === undefined || e.entryType === String(t)))); }
+    getEntriesByType(t) { t = perfString(t); return perfSorted(this._l.filter(e => e.entryType === t)); }
+    getEntriesByName(n, t = undefined) { n = perfString(n); t = t === undefined ? undefined : perfString(t); return perfSorted(this._l.filter(e => e.name === n && (t === undefined || e.entryType === t))); }
 }
 class PerformanceObserver {
     constructor(cb) {
         if (typeof cb !== 'function') throw new TypeError("Failed to construct 'PerformanceObserver': The callback provided as parameter 1 is not a function.");
+        perfBrands.observer.add(this);
         def(this, '_cb', cb); def(this, '_types', new SSet()); def(this, '_q', []); def(this, '_due', false); def(this, '_mode', ''); def(this, '_dropped', true);
     }
-    observe(o) {
+    observe(o = {}) {
         if (o != null && typeof o !== 'object') throw new TypeError("Failed to execute 'observe' on 'PerformanceObserver': The provided value is not of type 'PerformanceObserverInit'.");
         o = o || {};
         const et = o.entryTypes, ty = o.type;
@@ -111,13 +120,13 @@ class PerformanceObserver {
         if (this._mode === 'single' && et !== undefined) throw new DOMException("Failed to execute 'observe' on 'PerformanceObserver': You cannot call observe() with an entryTypes argument after calling observe() with a type argument.", 'InvalidModificationError');
         if (et !== undefined) {
             if (typeof et === 'string' || et === null || typeof et !== 'object' || typeof et[Symbol.iterator] !== 'function') throw new TypeError("Failed to execute 'observe' on 'PerformanceObserver': The provided value cannot be converted to a sequence.");
-            const ts = Array.from(et, String).filter(t => PERF_TYPES.includes(t));
+            const ts = Array.from(et, perfString).filter(t => PERF_TYPES.includes(t));
             if (!ts.length) return;
             this._mode = 'multiple'; this._types.clear(); for (const t of ts) this._types.add(t);
             perfObservers.add(this);
             return;
         }
-        const t = String(ty);
+        const t = perfString(ty);
         if (!PERF_TYPES.includes(t)) return;
         this._mode = 'single'; this._types.add(t);
         perfObservers.add(this);
@@ -136,4 +145,30 @@ class PerformanceObserver {
     disconnect() { perfObservers.delete(this); this._q.length = 0; this._types.clear(); this._mode = ''; }
     takeRecords() { return this._q.splice(0); }
     static get supportedEntryTypes() { return PERF_TYPES; }
+}
+
+/* WebIDL methods validate their receiver before argument conversion. Keeping this
+   in the shared implementation makes worker and Window semantics identical. */
+for (const [C, brand] of [[PerformanceEntry, 'entry'], [PerformanceMark, 'mark'], [PerformanceMeasure, 'measure'],
+    [Performance, 'performance'], [PerformanceObserver, 'observer'], [PerformanceObserverEntryList, 'list']]) {
+    Object.defineProperty(C.prototype, Symbol.toStringTag, { value: C.name, configurable: true });
+    for (const key of Object.getOwnPropertyNames(C.prototype)) {
+        if (key === 'constructor' || key[0] === '_') continue;
+        const desc = Object.getOwnPropertyDescriptor(C.prototype, key);
+        const checked = fn => {
+            const f = { [key](...args) {
+                if (!perfBrands[brand].has(this)) throw new TypeError('Illegal invocation');
+                if (args.length < fn.length) throw new TypeError(`Failed to execute '${key}' on '${C.name}': ${fn.length} argument(s) required, but only ${args.length} present.`);
+                return Reflect.apply(fn, this, args);
+            } }[key];
+            Object.defineProperty(f, 'name', { value: fn.name, configurable: true });
+            Object.defineProperty(f, 'length', { value: fn.length, configurable: true });
+            return f;
+        };
+        if (typeof desc.value === 'function') desc.value = checked(desc.value);
+        if (desc.get) desc.get = checked(desc.get);
+        if (desc.set) desc.set = checked(desc.set);
+        desc.enumerable = true;
+        Object.defineProperty(C.prototype, key, desc);
+    }
 }

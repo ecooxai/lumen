@@ -111,8 +111,8 @@ mk('HTMLAreaElement', HTMLElement, ['area'], p => { urlParts(p, 'href'); reflect
 mk('HTMLImageElement', HTMLElement, ['img'], p => {
     reflectUrl(p, 'src'); reflectStr(p, 'alt', 'srcset', 'sizes', 'crossOrigin', 'useMap', 'referrerPolicy', 'decoding', 'loading', 'fetchPriority');
     methods(p, {
-        get width() { const v = parseInt(N.attr(this, 'width'), 10); if (!isNaN(v)) return v; const r = N.rect(this); return r ? Math.round(r[2]) : 0; }, set width(v) { this.setAttribute('width', String(v | 0)); },
-        get height() { const v = parseInt(N.attr(this, 'height'), 10); if (!isNaN(v)) return v; const r = N.rect(this); return r ? Math.round(r[3]) : 0; }, set height(v) { this.setAttribute('height', String(v | 0)); },
+        get width() { const v = parseInt(N.attr(this, 'width'), 10); if (!isNaN(v)) return v; const r = N.rect(this); return r ? Math.round(r[2]) : 0; }, set width(v) { v >>>= 0; reflectSetAttr(this, 'width', String(v > 2147483647 ? 0 : v)); },
+        get height() { const v = parseInt(N.attr(this, 'height'), 10); if (!isNaN(v)) return v; const r = N.rect(this); return r ? Math.round(r[3]) : 0; }, set height(v) { v >>>= 0; reflectSetAttr(this, 'height', String(v > 2147483647 ? 0 : v)); },
         get naturalWidth() { const s = N.imgSize(this); return s ? Math.trunc(s[0]) : 0; }, get naturalHeight() { const s = N.imgSize(this); return s ? Math.trunc(s[1]) : 0; },
         get complete() { const s = N.imgSrc(this); return !s || !s.trim() || !!N.imgSize(this) || N.imgDone(this) || imgFailed.get(this) === s || /^\s*(about|javascript|mailto|tel):/i.test(s); }, get currentSrc() { const s = N.imgSrc(this); if (!s) return ''; if (s === this.getAttribute('src')) return this.src || s; try { return new URL(s, this.baseURI).href; } catch (e) { return s; } }, decode() { return Promise.resolve(); },
     });
@@ -211,7 +211,7 @@ mk('HTMLIFrameElement', HTMLElement, ['iframe'], p => { reflectUrl(p, 'src'); re
 mk('HTMLCanvasElement', HTMLElement, ['canvas'], p => {
     /* resizing resizes the WebGL drawing buffer; WebGPU reads the size each frame */
     for (const [n, d] of [['width', 300], ['height', 150]])
-        acc(p, n, function () { const v = parseInt(N.attr(this, n), 10); return isNaN(v) || v < 0 ? d : v; }, function (v) { this.setAttribute(n, String(v >>> 0)); canvasResized(this); });
+        acc(p, n, function () { const m = /^[\t\n\f\r ]*([+-]?\d+)/.exec(N.attr(this, n) ?? ''), v = m ? Number(m[1]) : NaN; return v >= 0 && v <= 2147483647 ? v : d; }, function (v) { reflectSetAttr(this, n, String(v >>> 0)); canvasResized(this); });
     methods(p, {
         /* one context per canvas: asking for another kind gives null */
         getContext(t, o) {
@@ -510,7 +510,7 @@ mk('HTMLDialogElement', HTMLElement, ['dialog'], p => {
 mk('HTMLTableCaptionElement', HTMLElement, ['caption'], p => reflectStr(p, 'align'));
 mk('HTMLTableColElement', HTMLElement, ['col', 'colgroup'], p => {
     reflectStr(p, 'align', 'ch', 'chOff', 'vAlign', 'width');
-    acc(p, 'span', function () { const v = parseInt(N.attr(this, 'span'), 10); return v >= 1 ? Math.min(v, 1000) : 1; }, function (v) { this.setAttribute('span', String(v >>> 0)); });
+    /* span is installed by the shared constrained unsigned-long reflector. */
 });
 mk('HTMLDataElement', HTMLElement, ['data'], p => reflectStr(p, 'value'));
 mk('HTMLDataListElement', HTMLElement, ['datalist'], p => methods(p, { get options() { return htmlColl(N.query(this, 'option', true)); } }));
@@ -535,7 +535,7 @@ mk('HTMLOutputElement', HTMLElement, ['output'], p => {
 const numAttr = (el, a, d) => { const v = parseFloat(N.attr(el, a)); return Number.isFinite(v) ? v : d; };
 const setNum = (el, a, v) => { v = +v; if (!Number.isFinite(v)) throw new TypeError(`The provided double value is non-finite.`); el.setAttribute(a, String(v)); };
 mk('HTMLProgressElement', HTMLElement, ['progress'], p => methods(p, {
-    get max() { const m = numAttr(this, 'max', 1); return m > 0 ? m : 1; }, set max(v) { if (+v > 0) setNum(this, 'max', v); },
+    /* max is installed by the shared positive finite-double reflector. */
     get value() { const v = numAttr(this, 'value', 0); return Math.min(Math.max(v, 0), this.max); }, set value(v) { setNum(this, 'value', v); },
     get position() { return N.attr(this, 'value') == null ? -1 : this.value / this.max; },
     get labels() { return nodeList([]); },
