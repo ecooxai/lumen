@@ -966,3 +966,6 @@ LEFT: sizes-auto ref2 cases (min-inline-size, abspos left/right, vertical min-bl
 from min-size/abspos, got 1x1); unrendered: display:none / sizes change keep last width (sizes change
 re-picks), disconnected img stalls the harness. In suite mode the sizes-auto files' first subtest sometimes
 times out (passes alone).
+Tried (reverted): disconnected sizes=auto img -> 300px: detached images must NOT reselect (2 subtests lost,
+5->3/15). The "disconnected ... does not use its previous rendered width" case wants 300px only on a later
+mutation (src/srcset change while disconnected), not on detach itself.
