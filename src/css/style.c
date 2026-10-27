@@ -4448,10 +4448,16 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
 static float sizes_px(const char *sz, const MediaCtx *mc) {
     float vw = mc ? mc->vw : 1280;
     if (!sz) return vw;
-    const char *p = sz;
+    char *nc = xstrdup(sz);   /* comments removed */
+    for (char *r = nc, *w = nc;; ) {
+        if (r[0] == '/' && r[1] == '*') { char *x = strstr(r + 2, "*/"); r = x ? x + 2 : r + strlen(r); continue; }
+        if (!(*w++ = *r++)) break;
+    }
+    float res = vw;
+    const char *p = nc;
     while (*p) {
-        const char *e = p; int dep = 0;
-        while (*e && (dep || *e != ',')) { if (*e == '(') dep++; else if (*e == ')' && dep) dep--; e++; }
+        const char *e = p; int dep = 0;   /* a comma inside an open (, [ or { block doesn't end the entry */
+        while (*e && (dep || *e != ',')) { if (*e == '(' || *e == '[' || *e == '{') dep++; else if ((*e == ')' || *e == ']' || *e == '}') && dep) dep--; e++; }
         char item[512]; size_t l = (size_t)(e - p); if (l >= sizeof item) l = sizeof item - 1;
         memcpy(item, p, l); item[l] = 0;
         char *a = item; while (isspace((unsigned char)*a)) a++;
@@ -4465,15 +4471,30 @@ static float sizes_px(const char *sz, const MediaCtx *mc) {
         if (*c == '(') continue;
         char *cond = a; char last[256]; snprintf(last, sizeof last, "%s", c); *c = 0;
         char *ce = cond + strlen(cond); while (ce > cond && isspace((unsigned char)ce[-1])) *--ce = 0;
-        if (!strcasecmp(last, "auto")) { if (!*cond) return vw; continue; }
+        if (*cond) {   /* a <media-condition>: no media type, balanced blocks, parseable */
+            const char *q = cond; if (!strncasecmp(q, "not ", 4)) { q += 4; while (*q == ' ') q++; }
+            const char *w = q; while (isalnum((unsigned char)*w) || *w == '-' || *w == '_') w++;
+            int bal = 0; bool ok = *q == '(' || (w > q && *w == '(');
+            for (const char *x = cond; *x && ok; x++) { if (*x == '(' || *x == '[' || *x == '{') bal++; else if (*x == ')' || *x == ']' || *x == '}') { if (--bal < 0) ok = false; } else if (*x == '\\') ok = false; }
+            if (!ok || bal || !css_media_valid(cond)) continue;
+        }
+        if (!strcasecmp(last, "auto")) { if (!*cond) break; continue; }
+        if (strchr(last, '\\')) continue;
         Length L;
-        if (!css_parse_length(last, &L, 16, 16, mc) || L.pct || L.kind != LK_LEN || L.px < 0) continue;
+        if (!css_parse_length(last, &L, 16, 16, mc) || L.pct || L.kind != LK_LEN || L.px < 0 || !isfinite(L.px)) continue;
+        const char *u = last; if (*u == '+' || *u == '-') u++;
+        while (isdigit((unsigned char)*u) || *u == '.') u++;
+        if ((*u == 'e' || *u == 'E') && (isdigit((unsigned char)u[1]) || ((u[1] == '+' || u[1] == '-') && isdigit((unsigned char)u[2])))) { u += 2; while (isdigit((unsigned char)*u)) u++; if (*u == '.') continue; }   /* 1e1.5px */
+        static const char *const bad[] = { "deg", "grad", "rad", "turn", "s", "ms", "hz", "khz", "dpi", "dpcm", "dppx", "x" };
+        bool angle = false; for (size_t i = 0; i < sizeof bad / sizeof *bad; i++) if (!strcasecmp(u, bad[i])) angle = true;
+        if (angle) continue;
         if (!strcmp(last, "0") || !strcmp(last, "-0") || !strcmp(last, "+0")) L.px = 0;
-        else { const char *u = last; while (*u && (isdigit((unsigned char)*u) || *u == '.' || *u == '+' || *u == '-' || *u == 'e' || *u == 'E')) u++; if (!*u && isdigit((unsigned char)last[strlen(last) - 1])) continue; }
+        else if (!*u && isdigit((unsigned char)last[strlen(last) - 1])) continue;
         if (*cond && !css_media_matches(cond, mc)) continue;
-        return L.px;
+        res = L.px; break;
     }
-    return vw;
+    free(nc);
+    return res;
 }
 static bool digits_only(const char *t) { if (!*t) return false; for (; *t; t++) if (!isdigit((unsigned char)*t)) return false; return true; }
 /* an HTML valid floating-point number: -?digits(.digits)?(e[+-]?digits)? or -?.digits... */
