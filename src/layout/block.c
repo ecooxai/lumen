@@ -174,6 +174,68 @@ static bool anchor_inset(const Box *a, const Box *cb, int i, float px, float py,
     *out = res(l, i & 1 ? pw : ph); return true;
 }
 
+/* one position-area keyword: its axis (0 x, 1 y, 2 either) and the grid tracks lo..hi it covers (0 before the anchor,
+   1 the anchor, 2 after); horizontal writing modes only, rtl flips the inline axis */
+static int area_kw(const char *k, bool rtl, bool srtl, int *lo, int *hi) {
+    static const struct { const char *k; int8_t ax, lo, hi, inl; } t[] = {
+        { "left", 0, 0, 0, 0 }, { "right", 0, 2, 2, 0 }, { "span-left", 0, 0, 1, 0 }, { "span-right", 0, 1, 2, 0 },
+        { "top", 1, 0, 0, 0 }, { "bottom", 1, 2, 2, 0 }, { "span-top", 1, 0, 1, 0 }, { "span-bottom", 1, 1, 2, 0 },
+        { "x-start", 0, 0, 0, 1 }, { "x-end", 0, 2, 2, 1 }, { "span-x-start", 0, 0, 1, 1 }, { "span-x-end", 0, 1, 2, 1 },
+        { "inline-start", 0, 0, 0, 1 }, { "inline-end", 0, 2, 2, 1 }, { "span-inline-start", 0, 0, 1, 1 }, { "span-inline-end", 0, 1, 2, 1 },
+        { "self-x-start", 0, 0, 0, 2 }, { "self-x-end", 0, 2, 2, 2 }, { "span-self-x-start", 0, 0, 1, 2 }, { "span-self-x-end", 0, 1, 2, 2 },
+        { "self-inline-start", 0, 0, 0, 2 }, { "self-inline-end", 0, 2, 2, 2 }, { "span-self-inline-start", 0, 0, 1, 2 }, { "span-self-inline-end", 0, 1, 2, 2 },
+        { "y-start", 1, 0, 0, 0 }, { "y-end", 1, 2, 2, 0 }, { "span-y-start", 1, 0, 1, 0 }, { "span-y-end", 1, 1, 2, 0 },
+        { "block-start", 1, 0, 0, 0 }, { "block-end", 1, 2, 2, 0 }, { "span-block-start", 1, 0, 1, 0 }, { "span-block-end", 1, 1, 2, 0 },
+        { "self-y-start", 1, 0, 0, 0 }, { "self-y-end", 1, 2, 2, 0 }, { "span-self-y-start", 1, 0, 1, 0 }, { "span-self-y-end", 1, 1, 2, 0 },
+        { "self-block-start", 1, 0, 0, 0 }, { "self-block-end", 1, 2, 2, 0 }, { "span-self-block-start", 1, 0, 1, 0 }, { "span-self-block-end", 1, 1, 2, 0 },
+        { "center", 2, 1, 1, 0 }, { "span-all", 2, 0, 2, 0 }, { "start", 2, 0, 0, 3 }, { "end", 2, 2, 2, 3 },
+        { "span-start", 2, 0, 1, 3 }, { "span-end", 2, 1, 2, 3 }, { "self-start", 2, 0, 0, 4 }, { "self-end", 2, 2, 2, 4 },
+        { "span-self-start", 2, 0, 1, 4 }, { "span-self-end", 2, 1, 2, 4 } };
+    for (size_t i = 0; i < sizeof t / sizeof *t; i++) if (!strcmp(k, t[i].k)) {
+        *lo = t[i].lo; *hi = t[i].hi;
+        if ((t[i].inl == 1 && rtl) || (t[i].inl == 2 && srtl)) { int x = *lo; *lo = 2 - *hi; *hi = 2 - x; }
+        return t[i].ax | (t[i].inl == 3 ? 8 : t[i].inl == 4 ? 16 : 0);   /* 8/16: generic start/end, flipped by direction if it lands inline */
+    }
+    return -1;
+}
+/* position-area: shrink the containing block to the chosen region around the default anchor. f[0]/f[1]: where a box
+   that isn't stretched sits in it (0 start, 1 end), -2 when stretched. false: no area applies. */
+static bool area_apply(const Box *a, const Box *cb, float *px, float *py, float *pw, float *ph, float f[2]) {
+    const ComputedStyle *s = a->st, *cs = cb->st ? cb->st : s;
+    const Box *ab = find_anchor(a, s->pos_anchor);
+    if (!ab) return false;
+    char buf[128]; snprintf(buf, sizeof buf, "%s", s->pos_area);
+    char *tk[3]; int nt = 0;
+    for (char *p = strtok(buf, " \t\n"); p && nt < 3; p = strtok(NULL, " \t\n")) tk[nt++] = p;
+    if (nt < 1 || nt > 2) return false;
+    int lo[2], hi[2], ax[2];
+    for (int i = 0; i < nt; i++) { ax[i] = area_kw(tk[i], cs->direction, s->direction, &lo[i], &hi[i]); if (ax[i] < 0) return false; }
+    if (nt == 1) { ax[1] = ax[0]; lo[1] = lo[0]; hi[1] = hi[0]; if ((ax[0] & 3) != 2) { ax[1] = 2; lo[1] = 0; hi[1] = 2; } }
+    /* two generics: block (y) then inline (x); one generic takes the other axis */
+    int a0 = ax[0] & 3, a1 = ax[1] & 3;
+    if (a0 == 2 && a1 == 2) { a0 = 1; a1 = 0; } else if (a0 == 2) a0 = !a1; else if (a1 == 2) a1 = !a0;
+    if (a0 == a1) return false;
+    int rx = a0 == 0 ? 0 : 1, ry = !rx;
+    int xl = lo[rx], xh = hi[rx], yl = lo[ry], yh = hi[ry];
+    if (((ax[rx] & 8) && cs->direction) || ((ax[rx] & 16) && s->direction)) { int x = xl; xl = 2 - xh; xh = 2 - x; }
+    float scx = 0, scy = 0;
+    for (const Node *p = ab->node ? ab->node->parent : NULL; p && p != cb->node; p = p->parent) if (p->box && p->box->scroller) { scx += p->scroll_x; scy += p->scroll_y; }
+    float X[4] = { 0, ab->x - *px - scx, ab->x - *px - scx + ab->w, *pw }, Y[4] = { 0, ab->y - *py - scy, ab->y - *py - scy + ab->h, *ph };
+    for (int i = 1; i < 3; i++) { X[i] = LMIN(LMAX(X[i], X[0]), X[3]); Y[i] = LMIN(LMAX(Y[i], Y[0]), Y[3]); }
+    *px += X[xl]; *pw = X[xh + 1] - X[xl]; *py += Y[yl]; *ph = Y[yh + 1] - Y[yl];
+    /* normal alignment points toward the anchor; span-all centres */
+    uint8_t al[2] = { s->justify_self, s->align_self }; int l2[2] = { xl, yl }, h2[2] = { xh, yh };
+    for (int i = 0; i < 2; i++) {
+        uint8_t v = al[i];
+        if (v == AL_STRETCH) f[i] = -2;
+        else if (v == AL_START || v == AL_FLEX_START) f[i] = 0;
+        else if (v == AL_END || v == AL_FLEX_END) f[i] = 1;
+        else if (v == AL_CENTER) f[i] = 0.5f;
+        else f[i] = l2[i] == 0 && h2[i] < 2 ? 1 : h2[i] == 2 && l2[i] > 0 ? 0 : 0.5f;
+    }
+    return true;
+}
+
 static void layout_abs(Layout *L, Box *cb) {
     /* Laying out one positioned box can register more (e.g. a fixed box inside an absolute one), so repeat until no new ones appear. */
     Box *stop = NULL;
@@ -186,6 +248,8 @@ static void layout_abs(Layout *L, Box *cb) {
         if (cb == L->root || (a->fixed && cb == L->root)) { px = 0; py = 0; pw = L->vw; ph = L->vh; }
         else { px = cb->x + cb->b[3]; py = cb->y + cb->b[0]; pw = cb->w - cb->b[1] - cb->b[3]; ph = cb->h - cb->b[0] - cb->b[2]; }
         const ComputedStyle *s = a->st;
+        float af[2] = { -1, -1 };
+        bool area = s->pos_area && s->pos_anchor && area_apply(a, cb, &px, &py, &pw, &ph, af);
         compute_mbp(a, pw);
         bool lA = s->inset[3].kind != LK_LEN, rA = s->inset[1].kind != LK_LEN, tA = s->inset[0].kind != LK_LEN, bA = s->inset[2].kind != LK_LEN;
         float l = res(s->inset[3], pw), r = res(s->inset[1], pw), t = res(s->inset[0], ph), bt = res(s->inset[2], ph);
@@ -193,6 +257,14 @@ static void layout_abs(Layout *L, Box *cb) {
             float *iv[4] = { &t, &r, &bt, &l }; bool *ia[4] = { &tA, &rA, &bA, &lA };
             a->anchor_ok = 0;
             for (int k = 0; k < 4; k++) if (s->anchor_ins[k] && anchor_inset(a, cb, k, px, py, pw, ph, iv[k])) { *ia[k] = false; a->anchor_ok |= (uint8_t)(1 << k); }
+        }
+        if (area) {   /* auto insets are 0 in the area; a box that isn't stretched keeps its size and is aligned after layout */
+            if (lA) { lA = false; l = 0; }
+            if (rA) { rA = false; r = 0; }
+            if (tA) { tA = false; t = 0; }
+            if (bA) { bA = false; bt = 0; }
+            if (af[0] >= 0) rA = true;
+            if (af[1] >= 0) bA = true;
         }
         bool mlA = s->margin[3].kind == LK_AUTO, mrA = s->margin[1].kind == LK_AUTO, mtA = s->margin[0].kind == LK_AUTO, mbA = s->margin[2].kind == LK_AUTO;
         int mode = SZ_SHRINK; float fw = 0, fh = -1;
@@ -216,6 +288,8 @@ static void layout_abs(Layout *L, Box *cb) {
         float sx = a->sx, sy = a->sy;
         if (!lA) x = px + l + a->m[3]; else if (!rA) x = px + pw - r - a->m[1] - ow; else x = sx + a->m[3];
         if (!tA) y = py + t + a->m[0]; else if (!bA) y = py + ph - bt - a->m[2] - oh; else y = sy + a->m[0];
+        if (area && af[0] >= 0) x += af[0] * (pw - l - r - ow - a->m[1] - a->m[3]);
+        if (area && af[1] >= 0) y += af[1] * (ph - t - bt - oh - a->m[0] - a->m[2]);
         box_translate(a, x - a->x, y - a->y);
     }
     stop = list;
