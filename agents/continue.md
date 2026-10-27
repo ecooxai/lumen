@@ -910,3 +910,11 @@ LEFT: iframe/frame marginwidth/marginheight must reach the nested document's bod
 container pointer from Document to its frame element). pixel-length-attributes peaks at ~1.4 GB RSS (hundreds of
 iframes; removed frames are only reaped 10 s later) and hits the 60 s script limit in parallel runs -> look at
 reaping removed, unshared frames sooner. select/details slotted children don't inherit from the slot.
+
+MEMORY FINDING (pixel-length-attributes, 1.43 GB peak): every iframe whose contentDocument the parent touches is
+marked xref ("frames 1 and N share objects (contentDocument)") and is never freed, so ~400 removed iframes stay
+alive until the tab closes (~3.5 MB each). Real sites that read iframe.contentDocument and then remove the iframe
+leak the same way. Fix idea: when a dead frame is xref'd, free everything that isn't reachable from the other
+context (its Page: layout, canvas, style engine, images; timers; network) right away, and/or make cross-context
+wrappers neuterable so the V8 context itself can go. Debug: LUMEN_DEBUG_FRAMES=1 and
+`tests/wpt/wpt_one.py --dump FILE` (new: saves the browser's raw stdout/stderr).

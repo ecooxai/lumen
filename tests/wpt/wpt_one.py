@@ -61,6 +61,8 @@ def run_one(url, a, ca, pre):
                     else: res["subtests"].append(v)
     p.kill(); p.wait()
     text = buf.decode("utf-8", "replace")
+    if a.dump:
+        with open(a.dump, "a") as f: f.write(text)
     print("== %s" % url)
     if res is None:
         print("  no report (%s)" % ("exit %s" % p.returncode if p.returncode not in (None, -9) else "timeout"))
@@ -82,6 +84,7 @@ def main():
     ap = argparse.ArgumentParser(); ap.add_argument("urls", nargs="+"); ap.add_argument("--all", action="store_true")
     ap.add_argument("--binary", default=os.path.join(W.REPO, "build", "codex-native", "lumen"))
     ap.add_argument("--timeout", type=float, default=40); ap.add_argument("--tail", type=int, default=15); ap.add_argument("--errors", type=int, default=8)
+    ap.add_argument("--dump", help="write the browser's raw stdout/stderr to this file")
     a = ap.parse_args()
     ca = W.setup_wpt()
     rp = os.path.join(W.WPT, "resources", "testharnessreport.js")
