@@ -353,12 +353,14 @@ static void abs_place_try(Layout *L, Box *cb, Box *a) {
     ComputedStyle *s = a->st;
     if (abs_place(L, cb, a, s->pos_area, ID4, ID4) || !s->pos_try) return;
     char list[512]; snprintf(list, sizeof list, "%s", s->pos_try);
+    for (char *c0; (c0 = strstr(list, "/*")); ) { char *c1 = strstr(c0 + 2, "*/"); if (!c1) { *c0 = 0; break; } memmove(c0, c1 + 2, strlen(c1 + 2) + 1); }
+    for (char *c = list; *c; c++) if (*c == '\n' || *c == '\t') *c = ' ';
     char *opts[16]; float key[16]; int n = 0;
     for (char *opt = list, *next; opt && n < 16; opt = next) {
         next = strchr(opt, ','); if (next) *next++ = 0;
         while (*opt == ' ') opt++;
         char *e = opt + strlen(opt); while (e > opt && e[-1] == ' ') *--e = 0;
-        opts[n++] = opt;
+        if (*opt) opts[n++] = opt;
     }
     if (s->pos_try_order) {   /* stable sort by the space each option leaves */
         for (int i = 0; i < n; i++) { char tmp[128]; snprintf(tmp, sizeof tmp, "%s", opts[i]); key[i] = try_option(L, cb, a, tmp) < 0 ? -1e30f : g_imcb[s->pos_try_order - 1]; }

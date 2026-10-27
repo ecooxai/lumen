@@ -1066,6 +1066,7 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
     if (inherit && inherit_copies_uncompared(P)) st->parent_sensitive = true;
     {   /* anchor() insets wait for layout; anchor-name is kept for it */
         if (!strcmp(P, "inset")) for (int k = 0; k < 4; k++) { free(st->anchor_ins[k]); st->anchor_ins[k] = NULL; }
+        if (!strcmp(P, "inset") && (inherit || initial || unset)) { for (int k = 0; k < 4; k++) st->inset[k] = inherit && par ? par->inset[k] : (Length){ .kind = LK_AUTO }; return; }
         if (!strcmp(P, "inset") && strstr(val, "anchor(")) {   /* each side may be (or replace) an anchor() inset */
             char *t[4]; int n = split_ws(val, t, 4);
             if (n) { static const char *const sd[4] = { "top", "right", "bottom", "left" }; int ix[4][4] = { { 0, 0, 0, 0 }, { 0, 1, 0, 1 }, { 0, 1, 2, 1 }, { 0, 1, 2, 3 } };
@@ -1079,7 +1080,7 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         if (si >= 0) { free(st->anchor_sz[si]); st->anchor_sz[si] = NULL; if (strstr(val, "anchor-size(")) { st->anchor_sz[si] = xstrdup(val); if (si) st->height = L_auto(); else st->width = L_auto(); return; } }
         if (!strcmp(P, "position-try-fallbacks") || !strcmp(P, "position-try")) {
             const char *v = val;
-            if (P[12] == 0) { static const char *const ord[] = { "normal ", "most-width ", "most-height ", "most-block-size ", "most-inline-size " }; static const uint8_t om[] = { 0, 1, 2, 2, 1 }; st->pos_try_order = 0; for (int k = 0; k < 5; k++) if (str_istarts(v, ord[k])) { v += strlen(ord[k]); st->pos_try_order = om[k]; break; } }
+            if (P[12] == 0) { static const char *const ord[] = { "normal", "most-width", "most-height", "most-block-size", "most-inline-size" }; static const uint8_t om[] = { 0, 1, 2, 2, 1 }; st->pos_try_order = 0; for (int k = 0; k < 5; k++) { size_t L = strlen(ord[k]); if (str_istarts(v, ord[k]) && is_ws((unsigned char)v[L])) { v += L; while (is_ws((unsigned char)*v)) v++; st->pos_try_order = om[k]; break; } } }
             free(st->pos_try); st->pos_try = str_ieq(v, "none") || str_ieq(v, "normal") || inherit || initial || unset ? NULL : xstrdup(v);
         }
         if (!strcmp(P, "position-try-order")) st->pos_try_order = str_ieq(val, "most-width") || str_ieq(val, "most-inline-size") ? 1 : str_ieq(val, "most-height") || str_ieq(val, "most-block-size") ? 2 : 0;
