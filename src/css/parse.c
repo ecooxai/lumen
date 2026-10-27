@@ -552,8 +552,10 @@ static bool media_feature(const char *f, const MediaCtx *mc) {
                 if (isalpha((unsigned char)val[0])) { g_mq_unknown = true; return false; }   /* a feature on both sides */
                 bool ratio = !strcmp(feat, "aspect-ratio") || !strcmp(feat, "device-aspect-ratio"), res = !strcmp(feat, "resolution"),
                      num = !strcmp(feat, "color") || !strcmp(feat, "monochrome") || !strcmp(feat, "color-index");
-                float fv = (!strcmp(feat, "width") || !strcmp(feat, "device-width")) ? mc->vw : (!strcmp(feat, "height") || !strcmp(feat, "device-height")) ? mc->vh
-                         : ratio ? mc->vw / mc->vh : res ? mc->dpr : !strcmp(feat, "color") ? 8 : num ? 0 : -1;
+                /* the device is the screen, as JS screen.width/height (jsnative.cc FN(viewport)) */
+                float dw = fmaxf(mc->vw, 1440), dh = fmaxf(mc->vh, 900);
+                float fv = !strcmp(feat, "width") ? mc->vw : !strcmp(feat, "height") ? mc->vh : !strcmp(feat, "device-width") ? dw : !strcmp(feat, "device-height") ? dh
+                         : !strcmp(feat, "aspect-ratio") ? mc->vw / mc->vh : ratio ? dw / dh : res ? mc->dpr : !strcmp(feat, "color") ? 8 : num ? 0 : -1;
                 if (fv < 0) { g_mq_unknown = true; return false; }
                 Length l; float v; char *end;
                 if (ratio) {
@@ -573,13 +575,13 @@ static bool media_feature(const char *f, const MediaCtx *mc) {
                     v = l.px;
                 }
                 int op = oi; if (!feat_left) { if (op == 0) op = 1; else if (op == 1) op = 0; else if (op == 2) op = 3; else if (op == 3) op = 2; }
-                switch (op) { case 0: return fv >= v; case 1: return fv <= v; case 2: return fv > v; case 3: return fv < v; default: return fabsf(fv - v) < (ratio || res || num ? 1e-4f : 0.5f); }
+                switch (op) { case 0: return fv >= v; case 1: return fv <= v; case 2: return fv > v; case 3: return fv < v; default: return fabsf(fv - v) < (ratio ? 1e-6f : res || num ? 1e-4f : 0.5f); }
             }
         }
         /* boolean context: features with a non-zero / non-none value here; unknown ones are false */
-        if (!strcmp(s, "width") || !strcmp(s, "device-width")) return mc->vw > 0;
-        if (!strcmp(s, "height") || !strcmp(s, "device-height")) return mc->vh > 0;
-        static const char *const on[] = { "color", "hover", "pointer", "any-hover", "any-pointer", "aspect-ratio",
+        if (!strcmp(s, "width")) return mc->vw > 0;
+        if (!strcmp(s, "height")) return mc->vh > 0;
+        static const char *const on[] = { "color", "hover", "pointer", "any-hover", "any-pointer", "aspect-ratio", "device-width", "device-height",
                                           "device-aspect-ratio", "resolution", "scripting", "update", "color-gamut", "orientation", "dynamic-range", "video-dynamic-range", "display-mode", "display-state", "prefers-color-scheme",
                                           "overflow-block", "overflow-inline" };
         for (size_t i = 0; i < sizeof on / sizeof *on; i++) if (!strcmp(s, on[i])) return true;

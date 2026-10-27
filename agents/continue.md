@@ -270,6 +270,9 @@ frame viewport. test_media_queries 1211 -> 1270/1349, cssom-view +25 (MediaQuery
 --jobs 4 shows ~70 image/media load timeouts (same alone on old binary); at --jobs 2 it is even/+9.
 Left in test_media_queries: device-width/height inside frames should be screen.width/height (58 subtests), calc()
 in resolution, "color : 1" grammar, (unknown) three-valued logic, 5900/8001 ratio precision.
+RUN 266 (committed): media device-width/height = max(viewport, 1440x900) like JS screen; ratio equality 1e-6.
+test_media_queries 1330/1349. Left (19): "(a) and not (b)" / "screen and (a) or (b)" grammar, color: -1 should be
+known (false), calc() in resolution, "color : 1" without parens, three-valued logic for unknown/general-enclosed.
 
 RUN 245: WebGL idlharness 2065 -> 2086/2099 (window and worker): FLOAT_MATnxm constants, interface .length, prototype
 getters throw, optional-argument defaults for bufferData/getBufferSubData/texImage3D lengths. +50, no losses. Left: setters
