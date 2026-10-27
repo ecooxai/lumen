@@ -977,6 +977,11 @@ static void parse_rules(PCtx *c, const char *s, size_t n, const char *parent_sel
             else if (str_istarts(pt, "@font-face") && (!c->mq || c->mq->matches)) {
                 SB ff; sb_init(&ff); sb_put(&ff, body, bn); vec_push(c->sh->font_faces, sb_take(&ff));
             }
+            else if (str_istarts(pt, "@position-try") && (!c->mq || c->mq->matches)) {
+                char *nm = xstrdup(pt + 13), *bd = xstrndup(body, bn);
+                css_register_position_try(str_trim(nm), bd);
+                free(nm); free(bd);
+            }
             else if (str_istarts(pt, "@property") && (!c->mq || c->mq->matches)) {
                 SB nm; sb_init(&nm); sb_puts(&nm, pt + 9); char *name = str_trim(nm.s);
                 char *bd = xstrndup(body, bn), *iv = strstr(bd, "initial-value");

@@ -95,10 +95,13 @@ static bool name_in_list(const char *list, const char *nm, size_t nl) {
 }
 static const Box *find_anchor(const Box *a, const char *name) {   /* the last laid-out element with that anchor-name */
     const Box *ab = NULL; size_t nl = strlen(name); Node *root = &a->node->doc->node;
+    /* acceptable: inside the positioned box's containing block, or before the positioned box in tree order */
+    const Node *cbn = a->cb && a->cb->node ? a->cb->node : NULL; bool before = true;
     for (Node *m = root->first; m; m = node_next_in_tree(m, root)) {
-        if (m->type != NODE_ELEMENT || !m->style || !m->style->anchor_name || !m->box || m == a->node || !name_in_list(m->style->anchor_name, name, nl)) continue;
-        bool inside = false; for (Node *p = m->parent; p; p = p->parent) if (p == a->node) { inside = true; break; }
-        if (!inside) ab = m->box;
+        if (m == a->node) { before = false; continue; }
+        if (m->type != NODE_ELEMENT || !m->style || !m->style->anchor_name || !m->box || !name_in_list(m->style->anchor_name, name, nl)) continue;
+        bool inside = false, incb = !cbn; for (Node *p = m->parent; p; p = p->parent) { if (p == a->node) inside = true; if (p == cbn) incb = true; }
+        if (!inside && (before || incb)) ab = m->box;
     }
     return ab;
 }
@@ -131,8 +134,8 @@ static bool anchor_size(const Box *a, int h, float cbs, float *out) {
     Length l; if (!css_parse_length(fb, &l, a->st->font_size, a->st->font_size, NULL) || l.kind != LK_LEN) return false;
     *out = res(l, cbs); return true;
 }
-static bool anchor_inset(const Box *a, const Box *cb, int i, int src, float px, float py, float pw, float ph, float *out) {
-    const char *v = a->st->anchor_ins[src];   /* src != i: a flipped fallback, the anchor point mirrored */
+static bool anchor_inset(const Box *a, const Box *cb, int i, int src, const int kwm[4], float px, float py, float pw, float ph, float *out) {
+    const char *v = a->st->anchor_ins[src];   /* src != i: a try tactic moved it from side src; kwm maps its anchor side */
     while (*v == ' ') v++;
     if (strncmp(v, "anchor(", 7)) return false;
     const char *q = v + 7, *end = strrchr(q, ')'); if (!end) return false;
@@ -148,27 +151,31 @@ static bool anchor_inset(const Box *a, const Box *cb, int i, int src, float px, 
     float scx = 0, scy = 0;   /* scrollers between the anchor and the containing block shift it */
     if (ab) for (const Node *p = ab->node ? ab->node->parent : NULL; p && p != cb->node; p = p->parent) if (p->box && p->box->scroller) { scx += p->scroll_x; scy += p->scroll_y; }
     if (ab) {
-        bool hz = i & 1;
-        float lo = hz ? ab->x - px - scx : ab->y - py - scy, sz = hz ? ab->w : ab->h, pos;
+        /* the side as a physical side q (0 top 1 right 2 bottom 3 left) and a fraction from q toward the opposite side,
+           read on the declaring side's axis, then moved by the try tactics */
+        bool hzs = src & 1, low = i == 0 || i == 3, fixed = false;
+        int q = hzs ? 3 : 0; float fr = -1;
         const ComputedStyle *cs = cb->st ? cb->st : a->st;
-        /* start of the axis is its low (left/top) side unless the writing mode or direction flips it */
-        bool cflip = hz ? (cs->writing_mode ? cs->writing_mode == 2 : cs->direction) : (cs->writing_mode ? cs->direction : false);
-        bool sflip = hz ? (a->st->writing_mode ? a->st->writing_mode == 2 : a->st->direction) : (a->st->writing_mode ? a->st->direction : false);
-        bool low = i == 0 || i == 3;
+        bool cflip = hzs ? (cs->writing_mode ? cs->writing_mode == 2 : cs->direction) : (cs->writing_mode ? cs->direction : false);
+        bool sflip = hzs ? (a->st->writing_mode ? a->st->writing_mode == 2 : a->st->direction) : (a->st->writing_mode ? a->st->direction : false);
         char *e;
         float pct = strtof(side, &e);
-        if (e != side && *e == '%' && !e[1]) pos = lo + sz * pct / 100;
-        else if (!strcmp(side, "center")) pos = lo + sz / 2;
-        else if (hz && !strcmp(side, "left")) pos = lo;
-        else if (hz && !strcmp(side, "right")) pos = lo + sz;
-        else if (!hz && !strcmp(side, "top")) pos = lo;
-        else if (!hz && !strcmp(side, "bottom")) pos = lo + sz;
-        else if (!strcmp(side, "start") || !strcmp(side, "end")) pos = (side[0] == 's') != cflip ? lo : lo + sz;
-        else if (!strcmp(side, "self-start") || !strcmp(side, "self-end")) pos = (side[5] == 's') != sflip ? lo : lo + sz;
-        else if (!strcmp(side, "inside") || !strcmp(side, "outside")) pos = (side[0] == 'i') == low ? lo : lo + sz;
-        else ab = NULL;
-        if (src != i) pos = 2 * lo + sz - pos;
-        if (ab) { *out = low ? pos : (hz ? pw : ph) - pos; return true; }
+        if (e != side && *e == '%' && !e[1]) fr = pct / 100;
+        else if (!strcmp(side, "center")) fr = 0.5f;
+        else if (hzs && !strcmp(side, "left")) fr = 0;
+        else if (hzs && !strcmp(side, "right")) fr = 1;
+        else if (!hzs && !strcmp(side, "top")) fr = 0;
+        else if (!hzs && !strcmp(side, "bottom")) fr = 1;
+        else if (!strcmp(side, "start") || !strcmp(side, "end")) fr = (side[0] == 's') != cflip ? 0 : 1;
+        else if (!strcmp(side, "self-start") || !strcmp(side, "self-end")) fr = (side[5] == 's') != sflip ? 0 : 1;
+        else if (!strcmp(side, "inside") || !strcmp(side, "outside")) { q = i; fr = side[0] == 'i' ? 0 : 1; fixed = true; }
+        if (fr >= 0 && !fixed) q = kwm[q];
+        if (fr >= 0 && (q & 1) == (i & 1)) {
+            bool hz = i & 1;
+            float lo = hz ? ab->x - px - scx : ab->y - py - scy, sz = hz ? ab->w : ab->h;
+            float pos = q == 0 || q == 3 ? lo + fr * sz : lo + sz - fr * sz;
+            *out = low ? pos : (hz ? pw : ph) - pos; return true;
+        }
     }
     if (!fb) return false;
     Length l; if (!css_parse_length(fb, &l, a->st->font_size, a->st->font_size, NULL) || l.kind != LK_LEN) return false;
@@ -201,7 +208,7 @@ static int area_kw(const char *k, bool rtl, bool srtl, int *lo, int *hi) {
 }
 /* position-area: shrink the containing block to the chosen region around the default anchor. f[0]/f[1]: where a box
    that isn't stretched sits in it (0 start, 1 end), -2 when stretched. false: no area applies. */
-static bool area_apply(const Box *a, const Box *cb, const char *area, int flip, float *px, float *py, float *pw, float *ph, float f[2]) {
+static bool area_apply(const Box *a, const Box *cb, const char *area, const int kwm[4], float *px, float *py, float *pw, float *ph, float f[2]) {
     const ComputedStyle *s = a->st, *cs = cb->st ? cb->st : s;
     const Box *ab = find_anchor(a, s->pos_anchor);
     if (!ab) return false;
@@ -219,8 +226,13 @@ static bool area_apply(const Box *a, const Box *cb, const char *area, int flip, 
     int rx = a0 == 0 ? 0 : 1, ry = !rx;
     int xl = lo[rx], xh = hi[rx], yl = lo[ry], yh = hi[ry];
     if (((ax[rx] & 8) && cs->direction) || ((ax[rx] & 16) && s->direction)) { int x = xl; xl = 2 - xh; xh = 2 - x; }
-    if (flip & 1) { int y = yl; yl = 2 - yh; yh = 2 - y; }
-    if (flip & 2) { int x = xl; xl = 2 - xh; xh = 2 - x; }
+    {   /* try tactics: the y tracks (from side 0) and x tracks (from side 3) move with their start sides */
+        int yl0 = yl, yh0 = yh, xl0 = xl, xh0 = xh, sy0 = kwm[0], sx0 = kwm[3];
+        int *dl = sy0 & 1 ? &xl : &yl, *dh = sy0 & 1 ? &xh : &yh;
+        if (sy0 == 0 || sy0 == 3) { *dl = yl0; *dh = yh0; } else { *dl = 2 - yh0; *dh = 2 - yl0; }
+        dl = sx0 & 1 ? &xl : &yl; dh = sx0 & 1 ? &xh : &yh;
+        if (sx0 == 0 || sx0 == 3) { *dl = xl0; *dh = xh0; } else { *dl = 2 - xh0; *dh = 2 - xl0; }
+    }
     float scx = 0, scy = 0;
     for (const Node *p = ab->node ? ab->node->parent : NULL; p && p != cb->node; p = p->parent) if (p->box && p->box->scroller) { scx += p->scroll_x; scy += p->scroll_y; }
     float X[4] = { 0, ab->x - *px - scx, ab->x - *px - scx + ab->w, *pw }, Y[4] = { 0, ab->y - *py - scy, ab->y - *py - scy + ab->h, *ph };
@@ -241,25 +253,23 @@ static bool area_apply(const Box *a, const Box *cb, const char *area, int flip, 
 
 /* places one absolutely positioned box, with a position-area and flips (1 block, 2 inline) from its style or a
    position-try fallback; true when its margin box fits the containing block */
-static bool abs_place(Layout *L, Box *cb, Box *a, const char *area_v, int flip) {
+static bool abs_place(Layout *L, Box *cb, Box *a, const char *area_v, const int src[4], const int kwm[4]) {
     float px, py, pw, ph;
     if (cb == L->root || (a->fixed && cb == L->root)) { px = 0; py = 0; pw = L->vw; ph = L->vh; }
     else { px = cb->x + cb->b[3]; py = cb->y + cb->b[0]; pw = cb->w - cb->b[1] - cb->b[3]; ph = cb->h - cb->b[0] - cb->b[2]; }
     const ComputedStyle *s = a->st;
     float af[2] = { -1, -1 };
     float x0 = px, y0 = py, w0 = pw, h0 = ph;
-    bool area = area_v && s->pos_anchor && area_apply(a, cb, area_v, flip, &px, &py, &pw, &ph, af);
+    bool area = area_v && s->pos_anchor && area_apply(a, cb, area_v, kwm, &px, &py, &pw, &ph, af);
     compute_mbp(a, pw);
-    if (flip & 1) { float m = a->m[0]; a->m[0] = a->m[2]; a->m[2] = m; }
-    if (flip & 2) { float m = a->m[1]; a->m[1] = a->m[3]; a->m[3] = m; }
-    /* fi: the declared side that inset k takes (flip-block swaps top/bottom, flip-inline left/right) */
-#define FI(k) ((flip & 1) && !((k) & 1) ? 2 - (k) : (flip & 2) && ((k) & 1) ? 4 - (k) : (k))
+    { float m[4]; memcpy(m, a->m, sizeof m); for (int k = 0; k < 4; k++) a->m[k] = m[src[k]]; }
+#define FI(k) (src[k])   /* the declared side that side k takes under the try tactics */
     bool lA = s->inset[FI(3)].kind != LK_LEN, rA = s->inset[FI(1)].kind != LK_LEN, tA = s->inset[FI(0)].kind != LK_LEN, bA = s->inset[FI(2)].kind != LK_LEN;
     float l = res(s->inset[FI(3)], pw), r = res(s->inset[FI(1)], pw), t = res(s->inset[FI(0)], ph), bt = res(s->inset[FI(2)], ph);
     if (s->anchor_ins[0] || s->anchor_ins[1] || s->anchor_ins[2] || s->anchor_ins[3]) {
         float *iv[4] = { &t, &r, &bt, &l }; bool *ia[4] = { &tA, &rA, &bA, &lA };
         a->anchor_ok = 0;
-        for (int k = 0; k < 4; k++) if (s->anchor_ins[FI(k)] && anchor_inset(a, cb, k, FI(k), px, py, pw, ph, iv[k])) { *ia[k] = false; a->anchor_ok |= (uint8_t)(1 << k); }
+        for (int k = 0; k < 4; k++) if (s->anchor_ins[FI(k)] && anchor_inset(a, cb, k, FI(k), kwm, px, py, pw, ph, iv[k])) { *ia[k] = false; a->anchor_ok |= (uint8_t)(1 << k); }
     }
     if (area) {   /* auto insets are 0 in the area; a box that isn't stretched keeps its size and is aligned after layout */
         if (lA) { lA = false; l = 0; }
@@ -299,25 +309,48 @@ static bool abs_place(Layout *L, Box *cb, Box *a, const char *area_v, int flip) 
 }
 /* position-try-fallbacks: when the box overflows, the first option that fits (a <position-area>, or flip-block /
    flip-inline); none fits: the base position */
+static const int ID4[4] = { 0, 1, 2, 3 };
 static void abs_place_try(Layout *L, Box *cb, Box *a) {
-    const ComputedStyle *s = a->st;
-    if (abs_place(L, cb, a, s->pos_area, 0) || !s->pos_try) return;
+    ComputedStyle *s = a->st;
+    if (abs_place(L, cb, a, s->pos_area, ID4, ID4) || !s->pos_try) return;
     char list[512]; snprintf(list, sizeof list, "%s", s->pos_try);
     for (char *opt = list, *next; opt; opt = next) {
         next = strchr(opt, ','); if (next) *next++ = 0;
         while (*opt == ' ') opt++;
         char *e = opt + strlen(opt); while (e > opt && e[-1] == ' ') *--e = 0;
-        int lo, hi, flip = 0; bool ok = true;
+        int lo, hi; bool ok = true;
         char first[48]; size_t fl = strcspn(opt, " "); if (fl >= sizeof first) continue;
         memcpy(first, opt, fl); first[fl] = 0;
-        if (area_kw(first, false, false, &lo, &hi) >= 0) { if (abs_place(L, cb, a, opt, 0)) return; continue; }
-        char tmp[128]; snprintf(tmp, sizeof tmp, "%s", opt);
+        if (area_kw(first, false, false, &lo, &hi) >= 0) { if (abs_place(L, cb, a, opt, ID4, ID4)) return; continue; }
+        /* tactics: flip-block swaps top/bottom, flip-inline left/right, flip-start top<->left and bottom<->right.
+           Declared side src[k] lands on side k; an anchor side q becomes kwm[q]. */
+        static const int TB[4] = { 2, 1, 0, 3 }, TI[4] = { 0, 3, 2, 1 }, TS[4] = { 3, 2, 1, 0 };
+        const int *tac[8]; int nt = 0; char tmp[128], *rule = NULL; snprintf(tmp, sizeof tmp, "%s", opt);
         for (char *t = strtok(tmp, " "); t; t = strtok(NULL, " ")) {
-            if (!strcmp(t, "flip-block")) flip |= 1; else if (!strcmp(t, "flip-inline")) flip |= 2; else ok = false;
+            if ((!strcmp(t, "flip-block") || !strcmp(t, "flip-y")) && nt < 8) tac[nt++] = TB; else if ((!strcmp(t, "flip-inline") || !strcmp(t, "flip-x")) && nt < 8) tac[nt++] = TI;
+            else if (!strcmp(t, "flip-start") && nt < 8) tac[nt++] = TS;
+            else if (!strncmp(t, "--", 2) && !rule) rule = t; else ok = false;
         }
-        if (ok && flip && abs_place(L, cb, a, s->pos_area, flip)) return;
+        if (!ok || (!nt && !rule)) continue;
+        int src[4], kwm[4]; bool tr = false;
+        for (int k = 0; k < 4; k++) { int x = k; for (int j = 0; j < nt; j++) x = tac[j][x]; kwm[k] = x; x = k; for (int j = nt - 1; j >= 0; j--) x = tac[j][x]; src[k] = x; }
+        for (int j = 0; j < nt; j++) if (tac[j] == TS) tr = !tr;
+        ComputedStyle *ts = css_position_try_style(s, rule, a->node);
+        if (!ts) continue;
+        if (tr) {   /* flip-start swaps the axes of sizes and self-alignment */
+#define SWP(T, x, y) { T t_ = ts->x; ts->x = ts->y; ts->y = t_; }
+            SWP(Length, width, height) SWP(Length, min_width, min_height) SWP(Length, max_width, max_height) SWP(uint8_t, justify_self, align_self) SWP(char *, anchor_sz[0], anchor_sz[1])
+#undef SWP
+        }
+        /* an axis whose start side lands on an end side reverses its self-alignment */
+        uint8_t *al[2] = { &ts->justify_self, &ts->align_self }; bool rev[2] = { kwm[tr ? 0 : 3] == 1 || kwm[tr ? 0 : 3] == 2, kwm[tr ? 3 : 0] == 1 || kwm[tr ? 3 : 0] == 2 };
+        for (int k = 0; k < 2; k++) if (rev[k]) { uint8_t *v = al[k]; *v = *v == AL_START ? AL_END : *v == AL_END ? AL_START : *v == AL_FLEX_START ? AL_FLEX_END : *v == AL_FLEX_END ? AL_FLEX_START : *v; }
+        a->st = ts;
+        bool fit = abs_place(L, cb, a, ts->pos_area, src, kwm);
+        a->st = s; css_position_try_free(ts);
+        if (fit) return;
     }
-    abs_place(L, cb, a, s->pos_area, 0);
+    abs_place(L, cb, a, s->pos_area, ID4, ID4);
 }
 
 static void layout_abs(Layout *L, Box *cb) {

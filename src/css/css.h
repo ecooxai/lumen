@@ -53,6 +53,10 @@ typedef struct CustomProps { int refs, depth; HMap map; struct CustomProps *pare
 const char *custom_get(const CustomProps *c, const char *name);
 /* @property registrations: initial-value used when a custom property is unset */
 void css_register_property(const char *name, const char *initial);
+/* @position-try rules: a fallback's style is the box's style with the rule's (allowed) declarations applied */
+void css_register_position_try(const char *name, const char *body);
+struct ComputedStyle *css_position_try_style(const struct ComputedStyle *s, const char *name, Node *el);
+void css_position_try_free(struct ComputedStyle *t);
 const char *css_property_initial(const char *name);
 
 typedef struct GridTrack { Length size; float fr; Length min; } GridTrack;

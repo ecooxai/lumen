@@ -327,6 +327,43 @@ typedef struct RegProp { char *name, *init; struct RegProp *next; } RegProp;
 static RegProp *g_regprops[256];
 static uint64_t g_regprop_version; /* a sheet's @property can change any unset var() */
 static unsigned regprop_hash(const char *s) { unsigned h = 5381; while (*s) h = h * 33 + (unsigned char)*s++; return h & 255; }
+typedef struct PTry { char *name, *body; struct PTry *next; } PTry;
+static PTry *g_ptry;
+void css_register_position_try(const char *name, const char *body) {
+    if (!name || strncmp(name, "--", 2) || !body) return;
+    for (PTry *p = g_ptry; p; p = p->next) if (!strcmp(p->name, name)) { free(p->body); p->body = xstrdup(body); return; }
+    PTry *p = xmalloc(sizeof *p); p->name = xstrdup(name); p->body = xstrdup(body); p->next = g_ptry; g_ptry = p;
+}
+ComputedStyle *css_position_try_style(const ComputedStyle *s, const char *name, Node *el) {
+    static const char *const ok[] = { "top", "right", "bottom", "left", "inset", "inset-block", "inset-inline", "inset-block-start", "inset-block-end",
+        "inset-inline-start", "inset-inline-end", "margin", "margin-top", "margin-right", "margin-bottom", "margin-left", "margin-block", "margin-inline",
+        "margin-block-start", "margin-block-end", "margin-inline-start", "margin-inline-end", "width", "height", "min-width", "min-height", "max-width",
+        "max-height", "inline-size", "block-size", "min-inline-size", "min-block-size", "max-inline-size", "max-block-size", "justify-self", "align-self",
+        "place-self", "position-anchor", "position-area", NULL };
+    const PTry *p = g_ptry; while (name && p && strcmp(p->name, name)) p = p->next;
+    if (name && !p) return NULL;
+    ComputedStyle *t = xmalloc(sizeof *t); *t = *s;
+    /* the fields the allowed declarations may replace are owned by the copy */
+    for (int i = 0; i < 4; i++) t->anchor_ins[i] = s->anchor_ins[i] ? xstrdup(s->anchor_ins[i]) : NULL;
+    for (int i = 0; i < 2; i++) t->anchor_sz[i] = s->anchor_sz[i] ? xstrdup(s->anchor_sz[i]) : NULL;
+    t->pos_area = s->pos_area ? xstrdup(s->pos_area) : NULL; t->pos_anchor = s->pos_anchor ? xstrdup(s->pos_anchor) : NULL;
+    const ComputedStyle *par = el && el->parent && el->parent->type == NODE_ELEMENT ? el->parent->style : NULL;
+    char *b = xstrdup(name ? p->body : "");
+    for (char *c0; (c0 = strstr(b, "/*")); ) { char *c1 = strstr(c0 + 2, "*/"); if (!c1) { *c0 = 0; break; } memmove(c0, c1 + 2, strlen(c1 + 2) + 1); }
+    for (char *d = b, *n; d; d = n) {
+        n = strchr(d, ';'); if (n) *n++ = 0;
+        char *c = strchr(d, ':'); if (!c) continue;
+        *c = 0; char *k = str_trim(d), *v = str_trim(c + 1), *imp = strstr(v, "!important"); if (imp) { *imp = 0; v = str_trim(v); }
+        for (int i = 0; ok[i]; i++) if (!strcmp(k, ok[i])) { css_apply_decl(t, par, k, v, NULL, el); break; }
+    }
+    free(b);
+    return t;
+}
+void css_position_try_free(ComputedStyle *t) {
+    if (!t) return;
+    for (int i = 0; i < 4; i++) free(t->anchor_ins[i]);
+    free(t->anchor_sz[0]); free(t->anchor_sz[1]); free(t->pos_area); free(t->pos_anchor); free(t);
+}
 void css_register_property(const char *name, const char *initial) {
     if (!name || strncmp(name, "--", 2) || !initial) return;
     RegProp **b = &g_regprops[regprop_hash(name)];
@@ -1028,6 +1065,14 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
     bool inherit = str_ieq(val, "inherit"), initial = str_ieq(val, "initial") || str_ieq(val, "revert") || str_ieq(val, "revert-layer"), unset = str_ieq(val, "unset");
     if (inherit && inherit_copies_uncompared(P)) st->parent_sensitive = true;
     {   /* anchor() insets wait for layout; anchor-name is kept for it */
+        if (!strcmp(P, "inset")) for (int k = 0; k < 4; k++) { free(st->anchor_ins[k]); st->anchor_ins[k] = NULL; }
+        if (!strcmp(P, "inset") && strstr(val, "anchor(")) {   /* each side may be (or replace) an anchor() inset */
+            char *t[4]; int n = split_ws(val, t, 4);
+            if (n) { static const char *const sd[4] = { "top", "right", "bottom", "left" }; int ix[4][4] = { { 0, 0, 0, 0 }, { 0, 1, 0, 1 }, { 0, 1, 2, 1 }, { 0, 1, 2, 3 } };
+                     for (int k = 0; k < 4; k++) css_apply_decl(st, par, sd[k], t[ix[n - 1][k]], e, el); }
+            free_toks(t, n);
+            if (n) return;
+        }
         int ai = !strcmp(P, "top") ? 0 : !strcmp(P, "right") ? 1 : !strcmp(P, "bottom") ? 2 : !strcmp(P, "left") ? 3 : -1;
         if (ai >= 0) { free(st->anchor_ins[ai]); st->anchor_ins[ai] = NULL; if (strstr(val, "anchor(")) { st->anchor_ins[ai] = xstrdup(val); st->inset[ai] = L_auto(); return; } }
         int si = !strcmp(P, "width") ? 0 : !strcmp(P, "height") ? 1 : -1;
