@@ -56,12 +56,12 @@ Older notes, read on demand:
   restored ChatGPT session.
 - **Android APK:** see `agents/archive/continue-2026-10-27.md` (Commands section). Phone: `adb -s 2d4f6bc0`.
 
-## Standing (2026-10-27, latest result per test, 83,442 tests)
-- **Lumen:** 2,038,162 / 2,182,360 subtests passing (93.4%).
+## Standing (2026-10-27, latest result per test, 83,532 tests; may include run 309, the uncommitted perf build)
+- **Lumen:** 2,040,063 / 2,183,858 subtests passing (93.4%).
 - **Chrome:** 97.9%.
 - **Lumen of Chrome-passing:** 94.1%.
 - **wpt.fyi-style score:** Lumen 82.4%, Chrome 96.3%.
-- **Statuses:** OK 80,519, TIMEOUT 2,290, ERROR 617, CRASH 7.
+- **Statuses:** OK 80,599, TIMEOUT 2,300, ERROR 617, CRASH 7.
 - **Biggest gaps:** `/css/` 62.7% vs Chrome 95.6%, `/html/` 88.1% vs 97.7%, `/uievents/` 35%, `/performance-timeline/` 18%,
   `/webmessaging/` 59%, `/svg/` 75%, `/fetch/` 74%.
 - **By CSS directory** (failing subtests): css-grid ~10.7k, css-values ~5.5k (calc-size interpolation), css-text
@@ -78,7 +78,7 @@ Older notes, read on demand:
     `droppedEntriesCount`. Workers now have all of these; before they had a stub `performance`.
   - Built and focused-tested: `po-observe` 6/6 (page and worker), idlharness 40/58 (page) and 38/58 (worker),
     user-timing `mark-errors` 10/10, `measure-with-dict` 2/2.
-  - **WPT run 309 was started** by a background subagent but its result wasn't read. It covers
+  - **WPT run 309 was started** by a background subagent and its results are already in lumen.jsonl, but nobody has compared them yet. It covers
     performance-timeline, user-timing, hr-time, navigation-timing, resource-timing, paint-timing, event-timing,
     largest-contentful-paint and workers; log `/tmp/wpt-run309.log`, compare with `/tmp/cmp308.py`-style script.
   - Rerun or compare the run, fix any losses, run ctest, then commit and `cp build/codex-native/lumen /tmp/lumen-old`.
