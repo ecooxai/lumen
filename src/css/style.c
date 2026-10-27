@@ -1079,9 +1079,10 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         if (si >= 0) { free(st->anchor_sz[si]); st->anchor_sz[si] = NULL; if (strstr(val, "anchor-size(")) { st->anchor_sz[si] = xstrdup(val); if (si) st->height = L_auto(); else st->width = L_auto(); return; } }
         if (!strcmp(P, "position-try-fallbacks") || !strcmp(P, "position-try")) {
             const char *v = val;
-            if (P[12] == 0) { static const char *const ord[] = { "normal ", "most-width ", "most-height ", "most-block-size ", "most-inline-size " }; for (int k = 0; k < 5; k++) if (str_istarts(v, ord[k])) { v += strlen(ord[k]); break; } }
+            if (P[12] == 0) { static const char *const ord[] = { "normal ", "most-width ", "most-height ", "most-block-size ", "most-inline-size " }; static const uint8_t om[] = { 0, 1, 2, 2, 1 }; st->pos_try_order = 0; for (int k = 0; k < 5; k++) if (str_istarts(v, ord[k])) { v += strlen(ord[k]); st->pos_try_order = om[k]; break; } }
             free(st->pos_try); st->pos_try = str_ieq(v, "none") || str_ieq(v, "normal") || inherit || initial || unset ? NULL : xstrdup(v);
         }
+        if (!strcmp(P, "position-try-order")) st->pos_try_order = str_ieq(val, "most-width") || str_ieq(val, "most-inline-size") ? 1 : str_ieq(val, "most-height") || str_ieq(val, "most-block-size") ? 2 : 0;
         if (!strcmp(P, "position-area")) { free(st->pos_area); st->pos_area = str_ieq(val, "none") || inherit || initial || unset ? NULL : xstrdup(val); }
         if (!strcmp(P, "position-anchor")) { free(st->pos_anchor); st->pos_anchor = strncmp(val, "--", 2) || inherit || initial || unset ? NULL : xstrdup(val); if (st->pos_anchor) return; }
         if (!strcmp(P, "anchor-name")) { free(st->anchor_name); st->anchor_name = str_ieq(val, "none") || inherit || initial || unset ? NULL : xstrdup(val); return; }

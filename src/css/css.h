@@ -69,7 +69,7 @@ typedef struct ComputedStyle {
     uint8_t flex_direction, flex_wrap, justify_content, align_items, align_self, align_content, justify_items, justify_self;
     uint8_t vertical_align, bg_repeat, bg_size_kind, object_fit, text_overflow, word_break, overflow_wrap, direction;
     uint8_t border_style[4];
-    uint8_t outline_style, user_select, appearance, isolation, table_layout, border_collapse, container_type, resize, writing_mode;
+    uint8_t outline_style, user_select, appearance, isolation, table_layout, border_collapse, container_type, resize, writing_mode, pos_try_order;   /* pos_try_order: 0 normal, 1 most-width, 2 most-height */
     uint8_t inert;   /* inside an inert subtree: never hit, focused or selected, whatever pointer-events the page sets */
     uint8_t touch_block;   /* touch-action as the panning it forbids: TOUCH_NO_X | TOUCH_NO_Y (0: auto) */
     const char *container_name; /* atom: space-separated names, or NULL */

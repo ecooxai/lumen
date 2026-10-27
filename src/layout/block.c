@@ -253,6 +253,7 @@ static bool area_apply(const Box *a, const Box *cb, const char *area, const int 
 
 /* places one absolutely positioned box, with a position-area and flips (1 block, 2 inline) from its style or a
    position-try fallback; true when its margin box fits the containing block */
+static float g_imcb[2];   /* the last abs_place's inset-modified containing block size */
 static bool abs_place(Layout *L, Box *cb, Box *a, const char *area_v, const int src[4], const int kwm[4]) {
     float px, py, pw, ph;
     if (cb == L->root || (a->fixed && cb == L->root)) { px = 0; py = 0; pw = L->vw; ph = L->vh; }
@@ -279,6 +280,7 @@ static bool abs_place(Layout *L, Box *cb, Box *a, const char *area_v, const int 
         if (af[0] >= 0) rA = true;
         if (af[1] >= 0) bA = true;
     }
+    g_imcb[0] = pw - (lA ? 0 : l) - (rA ? 0 : r); g_imcb[1] = ph - (tA ? 0 : t) - (bA ? 0 : bt);
     bool mlA = s->margin[FI(3)].kind == LK_AUTO, mrA = s->margin[FI(1)].kind == LK_AUTO, mtA = s->margin[FI(0)].kind == LK_AUTO, mbA = s->margin[FI(2)].kind == LK_AUTO;
 #undef FI
     int mode = SZ_SHRINK; float fw = 0, fh = -1;
@@ -310,18 +312,13 @@ static bool abs_place(Layout *L, Box *cb, Box *a, const char *area_v, const int 
 /* position-try-fallbacks: when the box overflows, the first option that fits (a <position-area>, or flip-block /
    flip-inline); none fits: the base position */
 static const int ID4[4] = { 0, 1, 2, 3 };
-static void abs_place_try(Layout *L, Box *cb, Box *a) {
-    ComputedStyle *s = a->st;
-    if (abs_place(L, cb, a, s->pos_area, ID4, ID4) || !s->pos_try) return;
-    char list[512]; snprintf(list, sizeof list, "%s", s->pos_try);
-    for (char *opt = list, *next; opt; opt = next) {
-        next = strchr(opt, ','); if (next) *next++ = 0;
-        while (*opt == ' ') opt++;
-        char *e = opt + strlen(opt); while (e > opt && e[-1] == ' ') *--e = 0;
+/* one position-try option: 1 fits, 0 doesn't, -1 invalid; g_imcb has its space */
+static int try_option(Layout *L, Box *cb, Box *a, char *opt) {
+        ComputedStyle *s = a->st;
         int lo, hi; bool ok = true;
-        char first[48]; size_t fl = strcspn(opt, " "); if (fl >= sizeof first) continue;
+        char first[48]; size_t fl = strcspn(opt, " "); if (fl >= sizeof first) return -1;
         memcpy(first, opt, fl); first[fl] = 0;
-        if (area_kw(first, false, false, &lo, &hi) >= 0) { if (abs_place(L, cb, a, opt, ID4, ID4)) return; continue; }
+        if (area_kw(first, false, false, &lo, &hi) >= 0) return abs_place(L, cb, a, opt, ID4, ID4);
         /* tactics: flip-block swaps top/bottom, flip-inline left/right, flip-start top<->left and bottom<->right.
            Declared side src[k] lands on side k; an anchor side q becomes kwm[q]. */
         static const int TB[4] = { 2, 1, 0, 3 }, TI[4] = { 0, 3, 2, 1 }, TS[4] = { 3, 2, 1, 0 };
@@ -331,12 +328,12 @@ static void abs_place_try(Layout *L, Box *cb, Box *a) {
             else if (!strcmp(t, "flip-start") && nt < 8) tac[nt++] = TS;
             else if (!strncmp(t, "--", 2) && !rule) rule = t; else ok = false;
         }
-        if (!ok || (!nt && !rule)) continue;
+        if (!ok || (!nt && !rule)) return -1;
         int src[4], kwm[4]; bool tr = false;
         for (int k = 0; k < 4; k++) { int x = k; for (int j = 0; j < nt; j++) x = tac[j][x]; kwm[k] = x; x = k; for (int j = nt - 1; j >= 0; j--) x = tac[j][x]; src[k] = x; }
         for (int j = 0; j < nt; j++) if (tac[j] == TS) tr = !tr;
         ComputedStyle *ts = css_position_try_style(s, rule, a->node);
-        if (!ts) continue;
+        if (!ts) return -1;
         if (tr) {   /* flip-start swaps the axes of sizes and self-alignment */
 #define SWP(T, x, y) { T t_ = ts->x; ts->x = ts->y; ts->y = t_; }
             SWP(Length, width, height) SWP(Length, min_width, min_height) SWP(Length, max_width, max_height) SWP(uint8_t, justify_self, align_self) SWP(char *, anchor_sz[0], anchor_sz[1])
@@ -348,8 +345,26 @@ static void abs_place_try(Layout *L, Box *cb, Box *a) {
         a->st = ts;
         bool fit = abs_place(L, cb, a, ts->pos_area, src, kwm);
         a->st = s; css_position_try_free(ts);
-        if (fit) return;
+        return fit;
+}
+/* position-try-fallbacks: when the base position overflows, the first option that fits, in list order or (with
+   position-try-order) by most space; none fits: the base position */
+static void abs_place_try(Layout *L, Box *cb, Box *a) {
+    ComputedStyle *s = a->st;
+    if (abs_place(L, cb, a, s->pos_area, ID4, ID4) || !s->pos_try) return;
+    char list[512]; snprintf(list, sizeof list, "%s", s->pos_try);
+    char *opts[16]; float key[16]; int n = 0;
+    for (char *opt = list, *next; opt && n < 16; opt = next) {
+        next = strchr(opt, ','); if (next) *next++ = 0;
+        while (*opt == ' ') opt++;
+        char *e = opt + strlen(opt); while (e > opt && e[-1] == ' ') *--e = 0;
+        opts[n++] = opt;
     }
+    if (s->pos_try_order) {   /* stable sort by the space each option leaves */
+        for (int i = 0; i < n; i++) { char tmp[128]; snprintf(tmp, sizeof tmp, "%s", opts[i]); key[i] = try_option(L, cb, a, tmp) < 0 ? -1e30f : g_imcb[s->pos_try_order - 1]; }
+        for (int i = 1; i < n; i++) for (int j = i; j > 0 && key[j] > key[j - 1]; j--) { float k = key[j]; key[j] = key[j - 1]; key[j - 1] = k; char *o = opts[j]; opts[j] = opts[j - 1]; opts[j - 1] = o; }
+    }
+    for (int i = 0; i < n; i++) { char tmp[128]; snprintf(tmp, sizeof tmp, "%s", opts[i]); if (try_option(L, cb, a, tmp) == 1) return; }
     abs_place(L, cb, a, s->pos_area, ID4, ID4);
 }
 
