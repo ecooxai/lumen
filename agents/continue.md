@@ -900,3 +900,13 @@ RUN 171 (uncommitted -> this commit): `/html/dom/` 67.5% -> **94.5%** (+19,113 C
 - Leads: remaining reflection fails (tokenlists, input.type, customGetter ones); `/domparsing/tentative/` 6.9%
   (streaming HTML APIs); render-blocking and partial-updates timeouts; the two pushstate DOMParser tests hang.
 
+
+RUNS 269-272 (committed): body marginwidth/marginheight/leftmargin/topmargin and img/object/input-image border map to
+px (html_pixel_length, HTML non-negative integer rules; rightmargin/bottommargin stay ignored, body-margin-3a/3b).
+css_get_computed_value() styles an unstyled element under display:none on demand (g_style_hidden in recalc;
+skipped outside the flat tree). Computed style length 0 for unstyled elements and children of video/audio.
+pixel-length-attributes 70 -> 418/546; html/rendering +155, selectors +29 (timeouts -> OK), shadow-dom.html 4/9.
+LEFT: iframe/frame marginwidth/marginheight must reach the nested document's body (128 subtests; needs a safe
+container pointer from Document to its frame element). pixel-length-attributes peaks at ~1.4 GB RSS (hundreds of
+iframes; removed frames are only reaped 10 s later) and hits the 60 s script limit in parallel runs -> look at
+reaping removed, unshared frames sooner. select/details slotted children don't inherit from the slot.

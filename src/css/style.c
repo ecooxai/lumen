@@ -2995,6 +2995,18 @@ static MDecl *matched_decls(StyleEngine *e, Node *el, int pseudo, int *count, bo
     return md.v;
 }
 
+/* HTML "maps to the pixel length property": the rules for parsing non-negative integers, as "Npx" */
+static bool html_pixel_length(const char *v, char *out, size_t n) {
+    while (*v == ' ' || *v == '\t' || *v == '\n' || *v == '\f' || *v == '\r') v++;
+    bool neg = *v == '-';
+    if (*v == '-' || *v == '+') v++;
+    if (!isdigit((unsigned char)*v)) return false;
+    long x = 0;
+    for (; isdigit((unsigned char)*v); v++) x = x < 100000000 ? x * 10 + (*v - '0') : x;
+    if (neg && x) return false;
+    snprintf(out, n, "%ldpx", x);
+    return true;
+}
 /* HTML's rules for parsing dimension values: leading whitespace, digits, an optional fraction, then '%' right after
    for a percentage; anything else ends the number. Without zero_ok a zero value is ignored (td/th, table width). */
 static bool html_dimension(const char *v, bool zero_ok, char *out, size_t n) {
@@ -3036,7 +3048,20 @@ static void presentational_hints(ComputedStyle *st, const ComputedStyle *par, No
     if (el->tag == A_body && (v = node_attr_atom(el, A_text_attr))) css_apply_decl(st, par, "color", v, e, el);
     if ((v = node_attr_atom(el, A_align)) && (el->tag == A_div || el->tag == A_p || el->tag == A_td || el->tag == A_th || el->tag == A_tr || el->tag == A_h1 || el->tag == A_h2 || el->tag == A_h3)) css_apply_decl(st, par, "text-align", v, e, el);
     if (el->tag == A_table && (v = node_attr_atom(el, A_align)) && str_ieq(v, "center")) { css_apply_decl(st, par, "margin-left", "auto", e, el); css_apply_decl(st, par, "margin-right", "auto", e, el); }
-    if ((el->tag == A_img || el->tag == A_table) && (v = node_attr_atom(el, A_border))) { char buf[64]; snprintf(buf, sizeof buf, "%spx solid", v); css_apply_decl(st, par, "border", buf, e, el); }
+    if (el->tag == A_table && (v = node_attr_atom(el, A_border))) { char buf[64]; snprintf(buf, sizeof buf, "%spx solid", v); css_apply_decl(st, par, "border", buf, e, el); }
+    if ((el->tag == A_img || el->tag == A_object || imgin) && (v = node_attr_atom(el, A_border)) && html_pixel_length(v, dim, sizeof dim)) {
+        static const char *const side[] = { "top", "right", "bottom", "left" };
+        char p[32];
+        for (int i = 0; i < 4; i++) {
+            snprintf(p, sizeof p, "border-%s-width", side[i]); css_apply_decl(st, par, p, dim, e, el);
+            snprintf(p, sizeof p, "border-%s-style", side[i]); css_apply_decl(st, par, p, "solid", e, el);
+        }
+    }
+    if (el->tag == A_body) {   /* marginheight/marginwidth, then the per-side legacy names win */
+        static const char *const attr[] = { "marginheight", "margin-top", "marginheight", "margin-bottom", "marginwidth", "margin-left", "marginwidth", "margin-right",
+                                            "topmargin", "margin-top", "leftmargin", "margin-left" };   /* rightmargin/bottommargin are ignored, as in browsers */
+        for (int i = 0; i < 12; i += 2) if ((v = node_attr(el, attr[i])) && html_pixel_length(v, dim, sizeof dim)) css_apply_decl(st, par, attr[i + 1], dim, e, el);
+    }
     if ((el->tag == A_td || el->tag == A_th) && (v = node_attr_atom(el, A_valign))) css_apply_decl(st, par, "vertical-align", v, e, el);
     if (el->tag == A_td || el->tag == A_th) {
         /* cellpadding from table */
@@ -3395,6 +3420,7 @@ static void indep_inherit(ComputedStyle *s, const ComputedStyle *par, unsigned d
 #ifdef __ANDROID__
 static int inl_has_color(Node *n) { const char *v = node_attr_atom(n, A_style); return v && strstr(v, "color") != NULL; }
 #endif
+static _Thread_local bool g_style_hidden;   /* style dirty elements under display:none too (css_get_computed_value) */
 static void recalc(StyleEngine *e, Node *n, const ComputedStyle *par, bool force, bool reselect, bool keyed,
         const uint64_t ancestors[16], CustomProps *old_parent, const CustomMask *changed, unsigned parent_diff) {
     uint64_t classes[16]; memcpy(classes, ancestors, sizeof classes);
@@ -3508,7 +3534,7 @@ static void recalc(StyleEngine *e, Node *n, const ComputedStyle *par, bool force
         n->flags &= ~(uint32_t)(NF_STYLE_DIRTY);
         if (!force && !(n->flags & NF_CHILD_STYLE_DIRTY)) { custom_unref(old_custom); return; }
         n->flags &= ~(uint32_t)NF_CHILD_STYLE_DIRTY;
-        if (n->style->display == D_NONE && !force) { custom_unref(old_custom); return; }
+        if (n->style->display == D_NONE && !force && !g_style_hidden) { custom_unref(old_custom); return; }
         Node *kids = n->template_content ? NULL : n;
         if (kids) for (Node *c = n->first; c; c = c->next) recalc(e, c, n->style, force, reselect, keyed, classes, old_custom, &child_changed, child_diff);
         if (n->shadow_root) for (Node *c = n->shadow_root->first; c; c = c->next) recalc(e, c, n->style, force, reselect, keyed, classes, old_custom, &child_changed, child_diff);
@@ -4149,7 +4175,20 @@ static void tracks_str(SB *b, const GridTrack *t, int n) {
 }
 static void gap_str(SB *b, float px, Length l) { if (l.kind == LK_LEN && l.pct) len_str(b, l, "normal"); else if (px) sb_printf(b, "%gpx", px); else sb_puts(b, "normal"); }
 static char *computed_of(Node *el, const ComputedStyle *s, const char *prop);
-char *css_get_computed_value(Node *el, const char *prop) { return computed_of(el, el && el->type == NODE_ELEMENT ? el->style : NULL, prop); }
+char *css_get_computed_value(Node *el, const char *prop) {
+    /* restyle skips display:none subtrees; an unstyled element there is styled when script asks for its style */
+    if (el && el->type == NODE_ELEMENT && (!el->style || (el->flags & NF_STYLE_DIRTY)) && (el->flags & NF_CONNECTED) && el->doc && el->doc->stylesheets) {
+        bool flat = true;   /* not for children outside the flat tree: of a shadow host or of an element that doesn't render its children */
+        for (Node *a = el->parent; a && flat; a = a->parent)
+            if (a->shadow_root || (a->ns == NS_HTML && (a->tag == A_video || a->tag == A_audio || a->tag == A_object || a->tag == A_iframe || a->tag == A_canvas || a->tag == A_textarea))) flat = false;
+        if (flat) {
+        el->flags |= NF_STYLE_DIRTY;
+        for (Node *a = el->parent; a; a = a->parent) a->flags |= NF_CHILD_STYLE_DIRTY;
+        g_style_hidden = true; style_recalc(el->doc->stylesheets, &el->doc->node, false); g_style_hidden = false;
+        }
+    }
+    return computed_of(el, el && el->type == NODE_ELEMENT ? el->style : NULL, prop);
+}
 /* Properties whose computed value differs between o and s, for CSS transitions: the names in the
  * transition-property list, or for "all" every natively computed property plus the generic ones. */
 static void tr_scan_one(Node *n, const ComputedStyle *o, const ComputedStyle *s, const char *prop, void (*cb)(Node *, const char *, const char *, const char *)) {

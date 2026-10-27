@@ -561,11 +561,13 @@ class ComputedStyleDeclaration extends CSSStyleDeclaration {
     getPropertyValue(p) { if (this._none) return ''; if (waDirty) waFlush(); let k = camelToKebab(String(p)); if (k === '-webkit-appearance') k = 'appearance'; if (k === 'font') return computedFont(this); let v = N.computed(this._el, k); if (trPoll()) v = N.computed(this._el, k); if ((k === 'shape-outside' || k === 'clip-path') && v && /(circle|ellipse)\(/i.test(v)) v = shapePos(v, shapeLenPx(this._el)); if ((k === 'shape-outside' || k === 'clip-path') && v && /inset\(/i.test(v)) v = insetNorm(v, shapeLenPx(this._el)); return v == null ? '' : v; }
     get cssText() { return ''; } get length() { return this._names().length; }
     /* an invalid pseudo-element or an element outside the document has an empty style */
-    _names() { return this._none || !this._el.isConnected ? [] : computedNames(); }
+    _names() { return this._none || !this._el.isConnected || !N.computed(this._el, 'display') || mediaChild(this._el) ? [] : computedNames(); }   /* no style: outside the flat tree */
     item(i) { if (!arguments.length) throw new TypeError("Failed to execute 'item' on 'CSSStyleDeclaration': 1 argument required, but only 0 present."); return this._names()[i >>> 0] ?? ''; }
     *[Symbol.iterator]() { yield* this._names(); }
     setProperty() { throw new DOMException('These styles are computed, and therefore read-only.', 'NoModificationAllowedError'); }
 }
+/* inside <video>/<audio>, whose shadow trees have no slots */
+const mediaChild = el => { for (let p = el.parentNode; p && p.nodeType === 1; p = p.parentNode) if (p.namespaceURI === 'http://www.w3.org/1999/xhtml' && (p.localName === 'video' || p.localName === 'audio')) return true; return false; };
 /* the longhands a computed style lists (length / item / iteration), sorted like Chrome's */
 const CSS_SHORTHANDS = /^(all|animation|animation-range|background|background-position|border|border-(block|inline)(-(start|end))?(-(color|style|width))?|border-(top|right|bottom|left|color|style|width|image|radius)|column-rule|columns|contain-intrinsic-size|container|flex|flex-flow|font|font-synthesis|font-variant|gap|grid|grid-area|grid-column|grid-row|grid-template|grid-gap|grid-row-gap|grid-column-gap|inset|inset-block|inset-inline|list-style|margin|margin-block|margin-inline|marker|mask|mask-border|offset|outline|overflow|overscroll-behavior|padding|padding-block|padding-inline|place-content|place-items|place-self|position-try|scroll-margin(-block|-inline)?|scroll-padding(-block|-inline)?|scroll-timeline|text-box|text-decoration|text-emphasis|text-wrap|transition|view-timeline|white-space|word-wrap|page-break-(before|after|inside)|-webkit-.*|-epub-.*)$/;
 let computedList = null;
