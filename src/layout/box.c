@@ -466,12 +466,12 @@ void intrinsic(Layout *L, Box *b, float *omn, float *omx) {
 
 void replaced_size(Layout *L, Box *b, float cbw, float *ow, float *oh) {
     Node *n = b->node; const ComputedStyle *st = b->st;
-    float nw = 300, nh = 150, ratio = 0; bool have = false;
+    float nw = 300, nh = 150, ratio = 0; bool have = false, contained = false;
     if (b->ctl == CTL_CHECK || b->ctl == CTL_RADIO) { nw = nh = 13; have = true; }
     else if (b->ctl == CTL_RANGE) { nw = 129; nh = 16; have = true; }
     else if (n && n->tag == A_img) {
         float w, h;
-        if (css_img_sizes_auto(n)) have = true;   /* size-contained at 300x150 (UA contain-intrinsic-size), whatever it loads */
+        if (css_img_sizes_auto(n)) have = contained = true;   /* size-contained at 300x150 (UA contain-intrinsic-size), whatever it loads; no aspect ratio */
         else if (layout_image_size_hook && layout_image_size_hook(n, &w, &h) && w > 0) { nw = w; nh = h; have = true; }
         else { nw = nh = 0; const char *aw = node_attr(n, "width"), *ah = node_attr(n, "height"); if (aw) nw = (float)atof(aw); if (ah) nh = (float)atof(ah); have = aw || ah; }
     } else if (n && n->ns == NS_SVG) {
@@ -487,7 +487,7 @@ void replaced_size(Layout *L, Box *b, float cbw, float *ow, float *oh) {
     } else if (n && n->tag == A_canvas) {
         const char *aw = node_attr(n, "width"), *ah = node_attr(n, "height"); if (aw) nw = (float)atof(aw); if (ah) nh = (float)atof(ah);
     } else if (n && n->tag == A_audio) { nw = 300; nh = 54; }
-    if (!ratio && nh > 0) ratio = nw / nh;
+    if (!ratio && nh > 0 && !contained) ratio = nw / nh;
     if (st->aspect_ratio > 0) ratio = st->aspect_ratio;
     bool bs = st->box_sizing == BOX_BORDER; float hb = hbp(b), vb2 = vbp(b);
     float w = -1, h = -1;

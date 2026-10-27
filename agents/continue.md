@@ -969,3 +969,6 @@ times out (passes alone).
 Tried (reverted): disconnected sizes=auto img -> 300px: detached images must NOT reselect (2 subtests lost,
 5->3/15). The "disconnected ... does not use its previous rendered width" case wants 300px only on a later
 mutation (src/srcset change while disconnected), not on detach itself.
+RUN 284 (committed): size-contained sizes=auto imgs have no intrinsic aspect ratio (box.c replaced_size), so
+`img{height:10px}` keeps the 300px default width. sizes-auto 66->70/74. LEFT: vertical-rl block-size (inline size
+should be the physical height), abspos left/right replaced width (CSS2 abs-replaced-width ignores left/right).
