@@ -112,7 +112,7 @@ void style_ref(ComputedStyle *s) { if (s) s->refs++; }
 void style_free(ComputedStyle *s) {
     if (!s || --s->refs > 0) return;
     g_styles_live--;
-    free(s->anchor_name); free(s->pos_anchor); free(s->pos_area); for (int i = 0; i < 4; i++) free(s->anchor_ins[i]); free(s->anchor_sz[0]); free(s->anchor_sz[1]);
+    free(s->anchor_name); free(s->pos_anchor); free(s->pos_area); free(s->pos_try); for (int i = 0; i < 4; i++) free(s->anchor_ins[i]); free(s->anchor_sz[0]); free(s->anchor_sz[1]);
     free(s->bg_image); free(s->mask_image); free(s->bg_gradient); free(s->content); free(s->grid_cols); free(s->grid_rows); free(s->grid_areas); free(s->grid_area);
     custom_unref(s->custom); custom_unref(s->gen_i); custom_unref(s->gen_n);
     if (s->before) style_free(s->before);
@@ -1032,6 +1032,11 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         if (ai >= 0) { free(st->anchor_ins[ai]); st->anchor_ins[ai] = NULL; if (strstr(val, "anchor(")) { st->anchor_ins[ai] = xstrdup(val); st->inset[ai] = L_auto(); return; } }
         int si = !strcmp(P, "width") ? 0 : !strcmp(P, "height") ? 1 : -1;
         if (si >= 0) { free(st->anchor_sz[si]); st->anchor_sz[si] = NULL; if (strstr(val, "anchor-size(")) { st->anchor_sz[si] = xstrdup(val); if (si) st->height = L_auto(); else st->width = L_auto(); return; } }
+        if (!strcmp(P, "position-try-fallbacks") || !strcmp(P, "position-try")) {
+            const char *v = val;
+            if (P[12] == 0) { static const char *const ord[] = { "normal ", "most-width ", "most-height ", "most-block-size ", "most-inline-size " }; for (int k = 0; k < 5; k++) if (str_istarts(v, ord[k])) { v += strlen(ord[k]); break; } }
+            free(st->pos_try); st->pos_try = str_ieq(v, "none") || str_ieq(v, "normal") || inherit || initial || unset ? NULL : xstrdup(v);
+        }
         if (!strcmp(P, "position-area")) { free(st->pos_area); st->pos_area = str_ieq(val, "none") || inherit || initial || unset ? NULL : xstrdup(val); }
         if (!strcmp(P, "position-anchor")) { free(st->pos_anchor); st->pos_anchor = strncmp(val, "--", 2) || inherit || initial || unset ? NULL : xstrdup(val); if (st->pos_anchor) return; }
         if (!strcmp(P, "anchor-name")) { free(st->anchor_name); st->anchor_name = str_ieq(val, "none") || inherit || initial || unset ? NULL : xstrdup(val); return; }
@@ -3269,7 +3274,7 @@ static bool str_same(const char *a, const char *b) { return a == b || (a && b &&
 static bool paint_only(const ComputedStyle *a, const ComputedStyle *b) {
     if (!a || !b) return a == b;
     if (a->has_transform != b->has_transform || !str_same(a->content, b->content) || !str_same(a->grid_areas, b->grid_areas) || !str_same(a->grid_area, b->grid_area)) return false;
-    if (!str_same(a->anchor_name, b->anchor_name) || !str_same(a->pos_anchor, b->pos_anchor) || !str_same(a->pos_area, b->pos_area)) return false;
+    if (!str_same(a->anchor_name, b->anchor_name) || !str_same(a->pos_anchor, b->pos_anchor) || !str_same(a->pos_area, b->pos_area) || !str_same(a->pos_try, b->pos_try)) return false;
     for (int i = 0; i < 4; i++) if (!str_same(a->anchor_ins[i], b->anchor_ins[i]) || (i < 2 && !str_same(a->anchor_sz[i], b->anchor_sz[i]))) return false;
     if (a->grid_ncols != b->grid_ncols || a->grid_nrows != b->grid_nrows) return false;
     if (a->grid_ncols && memcmp(a->grid_cols, b->grid_cols, sizeof *a->grid_cols * (size_t)a->grid_ncols)) return false;
@@ -3277,7 +3282,7 @@ static bool paint_only(const ComputedStyle *a, const ComputedStyle *b) {
     if (!paint_only(a->before, b->before) || !paint_only(a->after, b->after) || !paint_only(a->marker, b->marker)) return false;
     ComputedStyle x = *a, y = *b;
 #define PO_Z(f) (memset(&x.f, 0, sizeof x.f), memset(&y.f, 0, sizeof y.f))
-    PO_Z(anchor_name); PO_Z(pos_anchor); PO_Z(pos_area); PO_Z(anchor_ins); PO_Z(anchor_sz); PO_Z(refs); PO_Z(grid_cols); PO_Z(grid_rows); PO_Z(content); PO_Z(grid_areas); PO_Z(grid_area); PO_Z(before); PO_Z(after); PO_Z(custom); PO_Z(gen_i); PO_Z(gen_n);
+    PO_Z(anchor_name); PO_Z(pos_anchor); PO_Z(pos_area); PO_Z(pos_try); PO_Z(anchor_ins); PO_Z(anchor_sz); PO_Z(refs); PO_Z(grid_cols); PO_Z(grid_rows); PO_Z(content); PO_Z(grid_areas); PO_Z(grid_area); PO_Z(before); PO_Z(after); PO_Z(custom); PO_Z(gen_i); PO_Z(gen_n);
     PO_Z(custom_dependencies); PO_Z(attribute_dependencies); PO_Z(parent_sensitive); PO_Z(inherited_dynamic); PO_Z(indep_set);
     PO_Z(color); PO_Z(bg_color); PO_Z(bg_image); PO_Z(bg_gradient); PO_Z(bg_repeat); PO_Z(bg_size_kind); PO_Z(bg_size); PO_Z(bg_pos);
     PO_Z(mask_image); PO_Z(mask_fit); PO_Z(border_color); PO_Z(outline_style); PO_Z(outline_width); PO_Z(outline_offset); PO_Z(outline_color);

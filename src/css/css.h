@@ -91,6 +91,7 @@ typedef struct ComputedStyle {
     char *anchor_name;      /* anchor-name list (owned), NULL for none */
     char *pos_anchor;       /* position-anchor name (owned), NULL for auto */
     char *pos_area;         /* position-area value (owned), NULL for none */
+    char *pos_try;          /* position-try-fallbacks list (owned), NULL for none */
     char *anchor_sz[2];     /* width/height written with anchor-size(), resolved at layout (owned) */
     char *anchor_ins[4];    /* an inset (top right bottom left) written with anchor(), resolved at layout (owned) */
     Gradient *bg_gradient;  /* owned */

@@ -131,8 +131,8 @@ static bool anchor_size(const Box *a, int h, float cbs, float *out) {
     Length l; if (!css_parse_length(fb, &l, a->st->font_size, a->st->font_size, NULL) || l.kind != LK_LEN) return false;
     *out = res(l, cbs); return true;
 }
-static bool anchor_inset(const Box *a, const Box *cb, int i, float px, float py, float pw, float ph, float *out) {
-    const char *v = a->st->anchor_ins[i];
+static bool anchor_inset(const Box *a, const Box *cb, int i, int src, float px, float py, float pw, float ph, float *out) {
+    const char *v = a->st->anchor_ins[src];   /* src != i: a flipped fallback, the anchor point mirrored */
     while (*v == ' ') v++;
     if (strncmp(v, "anchor(", 7)) return false;
     const char *q = v + 7, *end = strrchr(q, ')'); if (!end) return false;
@@ -167,6 +167,7 @@ static bool anchor_inset(const Box *a, const Box *cb, int i, float px, float py,
         else if (!strcmp(side, "self-start") || !strcmp(side, "self-end")) pos = (side[5] == 's') != sflip ? lo : lo + sz;
         else if (!strcmp(side, "inside") || !strcmp(side, "outside")) pos = (side[0] == 'i') == low ? lo : lo + sz;
         else ab = NULL;
+        if (src != i) pos = 2 * lo + sz - pos;
         if (ab) { *out = low ? pos : (hz ? pw : ph) - pos; return true; }
     }
     if (!fb) return false;
@@ -200,11 +201,11 @@ static int area_kw(const char *k, bool rtl, bool srtl, int *lo, int *hi) {
 }
 /* position-area: shrink the containing block to the chosen region around the default anchor. f[0]/f[1]: where a box
    that isn't stretched sits in it (0 start, 1 end), -2 when stretched. false: no area applies. */
-static bool area_apply(const Box *a, const Box *cb, float *px, float *py, float *pw, float *ph, float f[2]) {
+static bool area_apply(const Box *a, const Box *cb, const char *area, int flip, float *px, float *py, float *pw, float *ph, float f[2]) {
     const ComputedStyle *s = a->st, *cs = cb->st ? cb->st : s;
     const Box *ab = find_anchor(a, s->pos_anchor);
     if (!ab) return false;
-    char buf[128]; snprintf(buf, sizeof buf, "%s", s->pos_area);
+    char buf[128]; snprintf(buf, sizeof buf, "%s", area);
     char *tk[3]; int nt = 0;
     for (char *p = strtok(buf, " \t\n"); p && nt < 3; p = strtok(NULL, " \t\n")) tk[nt++] = p;
     if (nt < 1 || nt > 2) return false;
@@ -218,6 +219,8 @@ static bool area_apply(const Box *a, const Box *cb, float *px, float *py, float 
     int rx = a0 == 0 ? 0 : 1, ry = !rx;
     int xl = lo[rx], xh = hi[rx], yl = lo[ry], yh = hi[ry];
     if (((ax[rx] & 8) && cs->direction) || ((ax[rx] & 16) && s->direction)) { int x = xl; xl = 2 - xh; xh = 2 - x; }
+    if (flip & 1) { int y = yl; yl = 2 - yh; yh = 2 - y; }
+    if (flip & 2) { int x = xl; xl = 2 - xh; xh = 2 - x; }
     float scx = 0, scy = 0;
     for (const Node *p = ab->node ? ab->node->parent : NULL; p && p != cb->node; p = p->parent) if (p->box && p->box->scroller) { scx += p->scroll_x; scy += p->scroll_y; }
     float X[4] = { 0, ab->x - *px - scx, ab->x - *px - scx + ab->w, *pw }, Y[4] = { 0, ab->y - *py - scy, ab->y - *py - scy + ab->h, *ph };
@@ -236,6 +239,87 @@ static bool area_apply(const Box *a, const Box *cb, float *px, float *py, float 
     return true;
 }
 
+/* places one absolutely positioned box, with a position-area and flips (1 block, 2 inline) from its style or a
+   position-try fallback; true when its margin box fits the containing block */
+static bool abs_place(Layout *L, Box *cb, Box *a, const char *area_v, int flip) {
+    float px, py, pw, ph;
+    if (cb == L->root || (a->fixed && cb == L->root)) { px = 0; py = 0; pw = L->vw; ph = L->vh; }
+    else { px = cb->x + cb->b[3]; py = cb->y + cb->b[0]; pw = cb->w - cb->b[1] - cb->b[3]; ph = cb->h - cb->b[0] - cb->b[2]; }
+    const ComputedStyle *s = a->st;
+    float af[2] = { -1, -1 };
+    float x0 = px, y0 = py, w0 = pw, h0 = ph;
+    bool area = area_v && s->pos_anchor && area_apply(a, cb, area_v, flip, &px, &py, &pw, &ph, af);
+    compute_mbp(a, pw);
+    if (flip & 1) { float m = a->m[0]; a->m[0] = a->m[2]; a->m[2] = m; }
+    if (flip & 2) { float m = a->m[1]; a->m[1] = a->m[3]; a->m[3] = m; }
+    /* fi: the declared side that inset k takes (flip-block swaps top/bottom, flip-inline left/right) */
+#define FI(k) ((flip & 1) && !((k) & 1) ? 2 - (k) : (flip & 2) && ((k) & 1) ? 4 - (k) : (k))
+    bool lA = s->inset[FI(3)].kind != LK_LEN, rA = s->inset[FI(1)].kind != LK_LEN, tA = s->inset[FI(0)].kind != LK_LEN, bA = s->inset[FI(2)].kind != LK_LEN;
+    float l = res(s->inset[FI(3)], pw), r = res(s->inset[FI(1)], pw), t = res(s->inset[FI(0)], ph), bt = res(s->inset[FI(2)], ph);
+    if (s->anchor_ins[0] || s->anchor_ins[1] || s->anchor_ins[2] || s->anchor_ins[3]) {
+        float *iv[4] = { &t, &r, &bt, &l }; bool *ia[4] = { &tA, &rA, &bA, &lA };
+        a->anchor_ok = 0;
+        for (int k = 0; k < 4; k++) if (s->anchor_ins[FI(k)] && anchor_inset(a, cb, k, FI(k), px, py, pw, ph, iv[k])) { *ia[k] = false; a->anchor_ok |= (uint8_t)(1 << k); }
+    }
+    if (area) {   /* auto insets are 0 in the area; a box that isn't stretched keeps its size and is aligned after layout */
+        if (lA) { lA = false; l = 0; }
+        if (rA) { rA = false; r = 0; }
+        if (tA) { tA = false; t = 0; }
+        if (bA) { bA = false; bt = 0; }
+        if (af[0] >= 0) rA = true;
+        if (af[1] >= 0) bA = true;
+    }
+    bool mlA = s->margin[FI(3)].kind == LK_AUTO, mrA = s->margin[FI(1)].kind == LK_AUTO, mtA = s->margin[FI(0)].kind == LK_AUTO, mbA = s->margin[FI(2)].kind == LK_AUTO;
+#undef FI
+    int mode = SZ_SHRINK; float fw = 0, fh = -1;
+    bool wdef = len_def(s->width, pw);
+    if (!wdef && !lA && !rA && s->width.kind == LK_AUTO && a->fmt != FMT_REPLACED) { mode = SZ_FORCED;   /* replaced: CSS2 10.3.8, insets don't size it */ fw = pw - l - r - a->m[1] - a->m[3]; }
+    float avail = pw - (lA ? 0 : l) - (rA ? 0 : r);
+    if (!len_def(s->height, ph) && !tA && !bA) fh = ph - t - bt - a->m[0] - a->m[2];
+    if (a->fmt == FMT_REPLACED) fh = -1;
+    if (s->anchor_sz[0] || s->anchor_sz[1]) {   /* anchor-size() widths and heights are border-box sizes here */
+        float v; bool bs = s->box_sizing == BOX_BORDER;
+        if (s->anchor_sz[0] && anchor_size(a, 0, pw, &v)) { mode = SZ_FORCED; fw = bs ? v : v + a->b[1] + a->b[3] + a->p[1] + a->p[3]; }
+        if (s->anchor_sz[1] && anchor_size(a, 1, ph, &v)) fh = bs ? v : v + a->b[0] + a->b[2] + a->p[0] + a->p[2];
+    }
+    /* Insets constrain shrink-to-fit space, not the percentage basis of a
+       specified width (or its percentage padding, margins and limits). */
+    layout_box(L, a, 0, 0, mode == SZ_FORCED || wdef || a->fmt == FMT_REPLACED ? pw : avail, ph, NULL, mode, fw, fh);
+    float ow = a->w, oh = a->h;
+    if (!lA && !rA && mlA && mrA) { float m = (pw - l - r - ow) / 2; a->m[1] = a->m[3] = LMAX(0, m); }
+    if (!tA && !bA && mtA && mbA) { float m = (ph - t - bt - oh) / 2; a->m[0] = a->m[2] = LMAX(0, m); }
+    float x, y;
+    float sx = a->sx, sy = a->sy;
+    if (!lA) x = px + l + a->m[3]; else if (!rA) x = px + pw - r - a->m[1] - ow; else x = sx + a->m[3];
+    if (!tA) y = py + t + a->m[0]; else if (!bA) y = py + ph - bt - a->m[2] - oh; else y = sy + a->m[0];
+    if (area && af[0] >= 0) x += af[0] * (pw - l - r - ow - a->m[1] - a->m[3]);
+    if (area && af[1] >= 0) y += af[1] * (ph - t - bt - oh - a->m[0] - a->m[2]);
+    box_translate(a, x - a->x, y - a->y);
+    return x - a->m[3] >= x0 - 0.5f && y - a->m[0] >= y0 - 0.5f && x + ow + a->m[1] <= x0 + w0 + 0.5f && y + oh + a->m[2] <= y0 + h0 + 0.5f;
+}
+/* position-try-fallbacks: when the box overflows, the first option that fits (a <position-area>, or flip-block /
+   flip-inline); none fits: the base position */
+static void abs_place_try(Layout *L, Box *cb, Box *a) {
+    const ComputedStyle *s = a->st;
+    if (abs_place(L, cb, a, s->pos_area, 0) || !s->pos_try) return;
+    char list[512]; snprintf(list, sizeof list, "%s", s->pos_try);
+    for (char *opt = list, *next; opt; opt = next) {
+        next = strchr(opt, ','); if (next) *next++ = 0;
+        while (*opt == ' ') opt++;
+        char *e = opt + strlen(opt); while (e > opt && e[-1] == ' ') *--e = 0;
+        int lo, hi, flip = 0; bool ok = true;
+        char first[48]; size_t fl = strcspn(opt, " "); if (fl >= sizeof first) continue;
+        memcpy(first, opt, fl); first[fl] = 0;
+        if (area_kw(first, false, false, &lo, &hi) >= 0) { if (abs_place(L, cb, a, opt, 0)) return; continue; }
+        char tmp[128]; snprintf(tmp, sizeof tmp, "%s", opt);
+        for (char *t = strtok(tmp, " "); t; t = strtok(NULL, " ")) {
+            if (!strcmp(t, "flip-block")) flip |= 1; else if (!strcmp(t, "flip-inline")) flip |= 2; else ok = false;
+        }
+        if (ok && flip && abs_place(L, cb, a, s->pos_area, flip)) return;
+    }
+    abs_place(L, cb, a, s->pos_area, 0);
+}
+
 static void layout_abs(Layout *L, Box *cb) {
     /* Laying out one positioned box can register more (e.g. a fixed box inside an absolute one), so repeat until no new ones appear. */
     Box *stop = NULL;
@@ -243,55 +327,7 @@ static void layout_abs(Layout *L, Box *cb) {
     Box *list = stop;
     for (Box *a = cb->abs_head; a != stop; ) { Box *n = a->abs_next; a->abs_next = list; list = a; a = n; } /* restore document order */
     cb->abs_head = list;
-    for (Box *a = list; a != stop; a = a->abs_next) {
-        float px, py, pw, ph;
-        if (cb == L->root || (a->fixed && cb == L->root)) { px = 0; py = 0; pw = L->vw; ph = L->vh; }
-        else { px = cb->x + cb->b[3]; py = cb->y + cb->b[0]; pw = cb->w - cb->b[1] - cb->b[3]; ph = cb->h - cb->b[0] - cb->b[2]; }
-        const ComputedStyle *s = a->st;
-        float af[2] = { -1, -1 };
-        bool area = s->pos_area && s->pos_anchor && area_apply(a, cb, &px, &py, &pw, &ph, af);
-        compute_mbp(a, pw);
-        bool lA = s->inset[3].kind != LK_LEN, rA = s->inset[1].kind != LK_LEN, tA = s->inset[0].kind != LK_LEN, bA = s->inset[2].kind != LK_LEN;
-        float l = res(s->inset[3], pw), r = res(s->inset[1], pw), t = res(s->inset[0], ph), bt = res(s->inset[2], ph);
-        if (s->anchor_ins[0] || s->anchor_ins[1] || s->anchor_ins[2] || s->anchor_ins[3]) {
-            float *iv[4] = { &t, &r, &bt, &l }; bool *ia[4] = { &tA, &rA, &bA, &lA };
-            a->anchor_ok = 0;
-            for (int k = 0; k < 4; k++) if (s->anchor_ins[k] && anchor_inset(a, cb, k, px, py, pw, ph, iv[k])) { *ia[k] = false; a->anchor_ok |= (uint8_t)(1 << k); }
-        }
-        if (area) {   /* auto insets are 0 in the area; a box that isn't stretched keeps its size and is aligned after layout */
-            if (lA) { lA = false; l = 0; }
-            if (rA) { rA = false; r = 0; }
-            if (tA) { tA = false; t = 0; }
-            if (bA) { bA = false; bt = 0; }
-            if (af[0] >= 0) rA = true;
-            if (af[1] >= 0) bA = true;
-        }
-        bool mlA = s->margin[3].kind == LK_AUTO, mrA = s->margin[1].kind == LK_AUTO, mtA = s->margin[0].kind == LK_AUTO, mbA = s->margin[2].kind == LK_AUTO;
-        int mode = SZ_SHRINK; float fw = 0, fh = -1;
-        bool wdef = len_def(s->width, pw);
-        if (!wdef && !lA && !rA && s->width.kind == LK_AUTO && a->fmt != FMT_REPLACED) { mode = SZ_FORCED;   /* replaced: CSS2 10.3.8, insets don't size it */ fw = pw - l - r - a->m[1] - a->m[3]; }
-        float avail = pw - (lA ? 0 : l) - (rA ? 0 : r);
-        if (!len_def(s->height, ph) && !tA && !bA) fh = ph - t - bt - a->m[0] - a->m[2];
-        if (a->fmt == FMT_REPLACED) fh = -1;
-        if (s->anchor_sz[0] || s->anchor_sz[1]) {   /* anchor-size() widths and heights are border-box sizes here */
-            float v; bool bs = s->box_sizing == BOX_BORDER;
-            if (s->anchor_sz[0] && anchor_size(a, 0, pw, &v)) { mode = SZ_FORCED; fw = bs ? v : v + a->b[1] + a->b[3] + a->p[1] + a->p[3]; }
-            if (s->anchor_sz[1] && anchor_size(a, 1, ph, &v)) fh = bs ? v : v + a->b[0] + a->b[2] + a->p[0] + a->p[2];
-        }
-        /* Insets constrain shrink-to-fit space, not the percentage basis of a
-           specified width (or its percentage padding, margins and limits). */
-        layout_box(L, a, 0, 0, mode == SZ_FORCED || wdef || a->fmt == FMT_REPLACED ? pw : avail, ph, NULL, mode, fw, fh);
-        float ow = a->w, oh = a->h;
-        if (!lA && !rA && mlA && mrA) { float m = (pw - l - r - ow) / 2; a->m[1] = a->m[3] = LMAX(0, m); }
-        if (!tA && !bA && mtA && mbA) { float m = (ph - t - bt - oh) / 2; a->m[0] = a->m[2] = LMAX(0, m); }
-        float x, y;
-        float sx = a->sx, sy = a->sy;
-        if (!lA) x = px + l + a->m[3]; else if (!rA) x = px + pw - r - a->m[1] - ow; else x = sx + a->m[3];
-        if (!tA) y = py + t + a->m[0]; else if (!bA) y = py + ph - bt - a->m[2] - oh; else y = sy + a->m[0];
-        if (area && af[0] >= 0) x += af[0] * (pw - l - r - ow - a->m[1] - a->m[3]);
-        if (area && af[1] >= 0) y += af[1] * (ph - t - bt - oh - a->m[0] - a->m[2]);
-        box_translate(a, x - a->x, y - a->y);
-    }
+    for (Box *a = list; a != stop; a = a->abs_next) abs_place_try(L, cb, a);
     stop = list;
     }
 }
