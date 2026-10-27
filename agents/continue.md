@@ -254,6 +254,13 @@ validated; boolean width/height false at 0 size; only/not/screen-or/mixed and-or
 test_media_queries 1206/1349, run +111, no crash, losers flaky. Left: (width <= Npx)/(width: Npx) against the test's
 iframe width (check the iframe's viewport size in MediaCtx: the failures look like the frame's vw is wrong), boolean
 (height) at height 0, "(a) and (b) or (c)" still accepted (the loop exits early once the result is decided).
+RUN 260 (committed, 0 change): mixed and/or now scanned over the whole condition. The grammar subtests check
+serialization instead: `@media screen, <q> {}` must give mediaText "screen, not all", so invalid queries must be
+replaced by "not all" when the MediaList is serialized (CSSOM side). The width/height/aspect/orientation failures are
+because a frame's media viewport doesn't follow its iframe's inline style size synchronously (test sets
+iframe.style.width=117px then reads the subdocument's computed style; Lumen stays at 300x150), and media
+device-width/height are smaller than screen.width/height. NEXT: resize the child frame's viewport (MediaCtx vw/vh)
+when the host iframe's box changes, before getComputedStyle in the child (flush parent layout from the child).
 
 RUN 245: WebGL idlharness 2065 -> 2086/2099 (window and worker): FLOAT_MATnxm constants, interface .length, prototype
 getters throw, optional-argument defaults for bufferData/getBufferSubData/texImage3D lengths. +50, no losses. Left: setters

@@ -653,6 +653,14 @@ static bool media_single(const char *q, const MediaCtx *mc) {
     }
     /* features joined by and / or (not both at one level) */
     bool use_or = false, saw_and = false, saw_or = false;
+    for (int d = 0, i = 0; t[i]; i++) {
+        if (t[i] == '(') d++; else if (t[i] == ')') d--;
+        else if (!d && (i == 0 || is_ws((unsigned char)t[i - 1]))) {
+            if (str_istarts(t + i, "and ") || str_istarts(t + i, "and(")) saw_and = true;
+            else if (str_istarts(t + i, "or ") || str_istarts(t + i, "or(")) saw_or = true;
+        }
+    }
+    if (saw_and && saw_or) g_mq_unknown = true;
     while (*t && result != (use_or)) {
         if (*t == '(') {
             size_t close = find_close_paren(t, 1, strlen(t));
@@ -666,10 +674,9 @@ static bool media_single(const char *q, const MediaCtx *mc) {
             free(inner);
             if (use_or) result = result || r; else result = result && r;
             t = str_trim(t + (close < strlen(t) ? close + 1 : strlen(t)));
-            if (str_istarts(t, "and")) { t = str_trim(t + 3); use_or = false; saw_and = true; }
-            else if (str_istarts(t, "or")) { t = str_trim(t + 2); use_or = true; saw_or = true; }
+            if (str_istarts(t, "and")) { t = str_trim(t + 3); use_or = false; }
+            else if (str_istarts(t, "or")) { t = str_trim(t + 2); use_or = true; }
             else break;
-            if (saw_and && saw_or) { g_mq_unknown = true; break; }
         } else break;
     }
     free(s);
