@@ -78,10 +78,17 @@ Older notes, read on demand:
     `droppedEntriesCount`. Workers now have all of these; before they had a stub `performance`.
   - Built and focused-tested: `po-observe` 6/6 (page and worker), idlharness 40/58 (page) and 38/58 (worker),
     user-timing `mark-errors` 10/10, `measure-with-dict` 2/2.
-  - **WPT run 309 was started** by a background subagent and its results are already in lumen.jsonl, but nobody has compared them yet. It covers
-    performance-timeline, user-timing, hr-time, navigation-timing, resource-timing, paint-timing, event-timing,
-    largest-contentful-paint and workers; log `/tmp/wpt-run309.log`, compare with `/tmp/cmp308.py`-style script.
-  - Rerun or compare the run, fix any losses, run ctest, then commit and `cp build/codex-native/lumen /tmp/lumen-old`.
+  - **WPT run 309 result** (923 URLs, `/tmp/wpt-run309.log`, `/tmp/cmp309.py`): +1267 PASS subtests (1347 -> 2614):
+    performance-timeline +168, user-timing +812, navigation-timing +144, event-timing +59, resource-timing +34,
+    hr-time +33, workers +7. No crashes or memory errors; ctest 104/104.
+  - **One real loss to fix before committing:** `buffered-flag-with-entryTypes-observer.tentative.any.html` 1 -> 0.
+    `observe({entryTypes, buffered: true})` must ignore `buffered`; in `perf.js` `observe()` drop the
+    `|| o.buffered !== undefined` part of the "both entryTypes and type" check.
+  - `droppedentriescount.any.worker.html` now times out (0/5 before and after): workers produce no resource-timing
+    entries, so the test waits. Not a subtest loss.
+  - Then rerun `/performance-timeline/` and `/user-timing/`, commit, and `cp build/codex-native/lumen /tmp/lumen-old`.
+  - **Memory:** `/hr-time/clamped-time-origin.html` peaks at ~2.9 GB RSS on old and new builds alike (not a
+    regression). Worth investigating: it's the largest single-test RSS seen.
 
 ## Done this session (commits `4b2141e`..`dc1a7b8`)
 - **Anchor positioning:**
@@ -133,5 +140,5 @@ Older notes, read on demand:
 Always rerun losses alone on the new build and on `/tmp/lumen-old` before calling them regressions.
 
 ## Run log
-The next run number is **310** (309 = performance timeline, result pending). Append one line per run here:
+The next run number is **310** (309 = performance timeline, +1267, one loss noted above, uncommitted). Append one line per run here:
 `RUN N (committed|reverted): change. Result vs before. Losses and their cause.`
