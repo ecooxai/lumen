@@ -943,3 +943,9 @@ RUNS 277-279 (committed): <img sizes> parser (sizes_px in style.c) follows HTML:
 escapes, blocks close at end of input, media conditions only, no angle/time units, math results clamp to 0,
 x/0 invalid. parse-a-sizes-attribute-* 144 -> 179/179 (x4). Next in sizes/: sizes=auto (sizes-auto 38/74,
 sizes-auto-unrendered 0/15 TIMEOUT), sizes-2d (tentative).
+
+SIZES=AUTO (tried, reverted): using the img's laid-out content width (img->box, else 300px) in css_img_source for
+lazy imgs with sizes="auto" (and a <source> without sizes) made sizes-auto.html TIMEOUT deterministically (old
+build: 38/74 OK in ~1 s). Likely the source flips between 300px (box missing during a restyle/relayout) and the
+real width, restarting the load each time. Do it with a width stored on the node at layout time (only re-pick
+when that stored width changes), never from a transient missing box. Saved attempt: /tmp/style-sizes-auto2.c.
