@@ -4367,7 +4367,13 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
             for (const Node *a = el->parent; a && !cb; a = a->parent)
                 if (a->type == NODE_ELEMENT && a->box && (!abs || (a->style && a->style->position != P_STATIC) || !a->parent || a->parent->type != NODE_ELEMENT)) cb = a->box;
         }
-        if (cb) {
+        const Box *ab = el && el->box && s->anchor_ins[i] ? el->box : NULL;
+        if (ab && ab->cb && (ab->anchor_ok >> i & 1)) {   /* a resolved anchor() inset: the used value */
+            const Box *c = ab->cb;
+            float v = i == 3 ? ab->x - ab->m[3] - (c->x + c->b[3]) : i == 0 ? ab->y - ab->m[0] - (c->y + c->b[0])
+                    : i == 1 ? c->x + c->w - c->b[1] - (ab->x + ab->w + ab->m[1]) : c->y + c->h - c->b[2] - (ab->y + ab->h + ab->m[2]);
+            sb_printf(&b, "%gpx", v);
+        } else if (cb) {
             bool vert = i == 0 || i == 2;
             float size = vert ? cb->h - cb->b[0] - cb->b[2] : cb->w - cb->b[1] - cb->b[3];
             if (!(s->position == P_ABSOLUTE || s->position == P_FIXED)) size -= vert ? cb->p[0] + cb->p[2] : cb->p[1] + cb->p[3];

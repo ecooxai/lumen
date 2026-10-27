@@ -161,7 +161,8 @@ static void layout_abs(Layout *L, Box *cb) {
         float l = res(s->inset[3], pw), r = res(s->inset[1], pw), t = res(s->inset[0], ph), bt = res(s->inset[2], ph);
         if (s->anchor_ins[0] || s->anchor_ins[1] || s->anchor_ins[2] || s->anchor_ins[3]) {
             float *iv[4] = { &t, &r, &bt, &l }; bool *ia[4] = { &tA, &rA, &bA, &lA };
-            for (int k = 0; k < 4; k++) if (s->anchor_ins[k] && anchor_inset(a, cb, k, px, py, pw, ph, iv[k])) *ia[k] = false;
+            a->anchor_ok = 0;
+            for (int k = 0; k < 4; k++) if (s->anchor_ins[k] && anchor_inset(a, cb, k, px, py, pw, ph, iv[k])) { *ia[k] = false; a->anchor_ok |= (uint8_t)(1 << k); }
         }
         bool mlA = s->margin[3].kind == LK_AUTO, mrA = s->margin[1].kind == LK_AUTO, mtA = s->margin[0].kind == LK_AUTO, mbA = s->margin[2].kind == LK_AUTO;
         int mode = SZ_SHRINK; float fw = 0, fh = -1;
