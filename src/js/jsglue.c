@@ -227,7 +227,11 @@ int jsg_ctl_rects(Node *el, int s, int e, float *out, int max) {
 bool jsg_scroll(Node *n, float r[4]) {
     struct Box *b = n->box;
     if (!b || !b->scroller) return false;
-    r[0] = n->scroll_x; r[1] = n->scroll_y; r[2] = LMAX(b->scroll_w, b->w); r[3] = LMAX(b->scroll_h, b->h);
+    /* scrollWidth/Height: the padding box, or the overflow measured from the padding edge */
+    float pw = b->w - b->b[1] - b->b[3], ph = b->h - b->b[0] - b->b[2];
+    r[0] = n->scroll_x; r[1] = n->scroll_y;
+    r[2] = b->scroll_w > b->w + 0.01f ? LMAX(pw, b->scroll_w - b->b[3]) : pw;
+    r[3] = b->scroll_h > b->h + 0.01f ? LMAX(ph, b->scroll_h - b->b[0]) : ph;
     return true;
 }
 

@@ -552,16 +552,17 @@ static void rel_offset(const Length in[4], float cbw, float cbh, float *dx, floa
  * Looking only at immediate border boxes makes long conversations appear
  * to have no scroll range. Compute bottom-up once, stopping at clips. */
 static void overflow(Box *b) {
-    float r = b->x + b->w, btm = b->y + b->h - b->p[2];
+    float r = b->x + b->w, btm = b->y + b->h - b->p[2], bb = btm;
     for (Box *c = b->first; c; c = c->next) {
         if (c->fixed || (c->abs && c->cb && !box_within(c->cb, b))) continue;
         float w = c->w, h = c->h;
         if (!c->st || c->st->overflow_x == OV_VISIBLE) w = LMAX(w, c->scroll_w);
         if (!c->st || c->st->overflow_y == OV_VISIBLE) h = LMAX(h, c->scroll_h);
-        r = LMAX(r, c->x + w + c->m[1]); btm = LMAX(btm, c->y + h + c->m[2]);
+        /* the border box counts even when negative margins pull the margin box in; end padding follows margin boxes */
+        r = LMAX(r, LMAX(c->x + w + c->m[1], c->x + w)); btm = LMAX(btm, c->y + h + c->m[2]); bb = LMAX(bb, c->y + h);
     }
     for (int i = 0; i < b->nfrags; i++) { r = LMAX(r, b->frags[i].x + b->frags[i].w); btm = LMAX(btm, b->frags[i].y + b->frags[i].h); }
-    b->scroll_w = r - b->x; b->scroll_h = btm - b->y + b->p[2];
+    b->scroll_w = r - b->x; b->scroll_h = LMAX(btm - b->y + b->p[2], bb - b->y);
 }
 static void clamp_scroll(Box *b, float maxx, float maxy) {
     b->node->scroll_x = LCLAMP(b->node->scroll_x, 0, maxx); b->node->scroll_y = box_scroll_from_end(b) ? LCLAMP(b->node->scroll_y, -maxy, 0) : LCLAMP(b->node->scroll_y, 0, maxy);
