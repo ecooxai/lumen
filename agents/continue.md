@@ -980,3 +980,4 @@ always horizontally. Vertical writing modes need the mapping after the cascade (
 the same block, e.g. sizes-auto "block-size:10px; writing-mode:vertical-rl"): record logical sizes separately
 and resolve them once st->writing_mode is final. Affects sizes-auto (2), css-writing-modes, css-logical, anchor.
 RUN 286 (committed): logical sizes map vertically when the writing mode is already vertical (inherited or declared earlier). css-logical +14, sizes +9. Old regressions to investigate (fail on previous build too, passed at jsonl ~174874): css-writing-modes/forms/text-input-vertical-overflow-no-scroll (0/16, was 16/16), select-multiple-options-visual-order (0/5, was 5/5).
+RUN 288 (committed): trusted clicks in a list-box <select> (multiple/size>1) pick the clicked row (01-events.js dispatch -> listboxClick in 06b-activate.js). select-multiple-options-visual-order 0->5/5; +16 total, no losses. Still open: text-input-vertical-overflow-no-scroll 0/16.

@@ -102,6 +102,26 @@ function activate(el, ev, pre) {
     else if (name === 'summary') { const d = N.parent(el); if (d && N.name(d) === 'details') d.open = !d.open; }
     else if (name === 'textarea' || name === 'select') N.focus(el);
 }
+/* a click in a list box (multiple or size > 1) picks the option in that row; vertical writing modes lay the
+   rows out along x, right to left for *-rl */
+function listboxClick(el, ev) {
+    const size = el.size || (el.multiple ? 4 : 1);
+    if (size <= 1 || typeof ev.clientX !== 'number') return;
+    const r = el.getBoundingClientRect(), cs = getComputedStyle(el), px = (k) => parseFloat(cs[k]) || 0;
+    const l = r.left + px('borderLeftWidth') + px('paddingLeft'), t = r.top + px('borderTopWidth') + px('paddingTop');
+    const w = r.width - (l - r.left) - px('borderRightWidth') - px('paddingRight'), h = r.height - (t - r.top) - px('borderBottomWidth') - px('paddingBottom');
+    const wm = cs.writingMode || '', vert = /^(vertical|sideways)/.test(wm);
+    let f = vert ? (ev.clientX - l) / w : (ev.clientY - t) / h;
+    if (!(f >= 0 && f < 1)) return;
+    if (vert && wm.endsWith('-rl')) f = 1 - f;
+    const opts = el.options, i = Math.floor(f * size) + Math.floor(el.scrollTop / ((vert ? w : h) / size) || 0);
+    const o = opts[i];
+    if (!o || o.disabled) return;
+    const before = Array.prototype.map.call(opts, (x) => x.selected).join();
+    if (el.multiple && (ev.ctrlKey || ev.metaKey)) o.selected = !o.selected;
+    else { for (const x of opts) x.selected = x === o; }
+    if (Array.prototype.map.call(opts, (x) => x.selected).join() !== before) { dispatch(el, new Event('input', { bubbles: true, composed: true })); dispatch(el, new Event('change', { bubbles: true })); }
+}
 /* the browsing context a link or form navigates: its target, else the document's <base target> */
 function linkTarget(el, submitter) {
     const t = (submitter && submitter.getAttribute('formtarget')) ?? el.getAttribute('target');

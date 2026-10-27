@@ -285,6 +285,7 @@ function dispatch(target, ev, trusted) {
     if (act) { if (!ev.defaultPrevented) { try { activate(act, ev, pre); } catch (e) { report(e); } } else if (pre && pre.restore) pre.restore(); }
     /* popover light dismiss and close requests (04p-popover.js) */
     const ty = ev._type;
+    if (trusted && ty === 'click' && !ev.defaultPrevented && target.closest) { const sel = target.closest('select'); if (sel && !sel.disabled) { try { listboxClick(sel, ev); } catch (e) { report(e); } } }
     if (trusted && (ty === 'pointerdown' || ty === 'pointerup' || ty === 'keydown') && typeof popUserEvent === 'function') { try { popUserEvent(target, ev); } catch (e) { report(e); } }
     return !ev.defaultPrevented;
 }
