@@ -962,12 +962,14 @@ static void anim_decl(ComputedStyle *st, const char *Q, const char *val) {
     free(buf);
 }
 
-/* Logical sizes map to the physical ones (horizontal writing modes). */
-static const char *logical_size_prop(const char *p) {
+/* Logical sizes map to the physical ones; in vertical writing modes inline is the height */
+static const char *logical_size_prop(const char *p, bool vert) {
     static const char *const map[][2] = { { "inline-size", "width" }, { "block-size", "height" }, { "min-inline-size", "min-width" },
         { "max-inline-size", "max-width" }, { "min-block-size", "min-height" }, { "max-block-size", "max-height" } };
     if (!strstr(p, "-size")) return p;
-    for (size_t i = 0; i < sizeof map / sizeof *map; i++) if (!strcmp(p, map[i][0])) return map[i][1];
+    static const char *const vmap[][2] = { { "inline-size", "height" }, { "block-size", "width" }, { "min-inline-size", "min-height" },
+        { "max-inline-size", "max-height" }, { "min-block-size", "min-width" }, { "max-block-size", "max-width" } };
+    for (size_t i = 0; i < sizeof map / sizeof *map; i++) if (!strcmp(p, map[i][0])) return vert ? vmap[i][1] : map[i][1];
     return p;
 }
 
@@ -1019,7 +1021,7 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
     if (el && strstr(v, "cq")) for (const Node *a = el->parent; a; a = a->parent)
         if (a->type == NODE_ELEMENT && a->style && a->style->container_type) { g_cq[0] = a->cq_w; g_cq[1] = a->style->container_type == 2 ? a->cq_h : 0; break; }
     if (e && e->doc && e->doc->html && e->doc->html->style && el != e->doc->html) c.rem = e->doc->html->style->font_size;
-    const char *P = logical_size_prop(prop);
+    const char *P = logical_size_prop(prop, st->writing_mode);
     Length l; Color col; int k;
     st->indep_set |= indep_bit(P);
     bool inherit = str_ieq(val, "inherit"), initial = str_ieq(val, "initial") || str_ieq(val, "revert") || str_ieq(val, "revert-layer"), unset = str_ieq(val, "unset");
