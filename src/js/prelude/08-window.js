@@ -87,33 +87,13 @@ const ioAll = new SSet();
 // Native layout/style/scroll changes drive observation; idle documents do no work.
 const ioStop = () => { if (!ioAll.size) N.intersectionPump(null); };
 const ioRun = () => { for (const o of [...ioAll]) if (o._t.size) o._check(); ioStop(); };
-// Marks, measures and the page's navigation entry; observers get them in a microtask, buffered ones too
-const PERF_TYPES = Object.freeze(['mark', 'measure', 'navigation']);
-const perfObservers = new SSet();
-const perfNotify = (e) => { for (const o of perfObservers) if (o._types.has(e.entryType)) o._push([e]); };
-class PerformanceObserverEntryList {
-    constructor(l) { def(this, '_l', l); }
-    getEntries() { return this._l.slice(); } getEntriesByType(t) { return this._l.filter(e => e.entryType === t); }
-    getEntriesByName(n, t) { return this._l.filter(e => e.name === n && (t == null || e.entryType === t)); }
-}
-class PerformanceObserver {
-    constructor(cb) { if (typeof cb !== 'function') throw new TypeError('PerformanceObserver: callback must be a function'); def(this, '_cb', cb); def(this, '_types', new SSet()); def(this, '_q', []); def(this, '_due', false); }
-    observe(o) {
-        o = o || {}; const ts = o.entryTypes || (o.type != null ? [String(o.type)] : []);
-        for (const t of ts) if (PERF_TYPES.includes(t)) this._types.add(t);
-        if (!this._types.size) return;
-        perfObservers.add(this);
-        if (o.buffered && o.type != null && this._types.has(o.type)) this._push(performance.getEntriesByType(o.type));
-    }
-    _push(l) {
-        if (!l.length) return; this._q.push(...l);
-        if (this._due) return; this._due = true;
-        queueMicrotask(() => { this._due = false; if (!this._q.length || !perfObservers.has(this)) return; const q = this._q.splice(0); try { this._cb.call(this, new PerformanceObserverEntryList(q), this); } catch (e) { report(e); } });
-    }
-    disconnect() { perfObservers.delete(this); this._q.length = 0; this._types.clear(); }
-    takeRecords() { return this._q.splice(0); }
-    static get supportedEntryTypes() { return PERF_TYPES; }
-}
+// Marks, measures and the page's navigation entry; observers get them in a task, buffered ones too
+const perfNow = () => N.now(), perfOrigin = () => T0;
+const perfExtra = t => t == null || t === 'navigation' ? (navTimes.dcl ? [navigationEntry()] : []) : [];
+const PERF_TIMING = new SSet('navigationStart unloadEventStart unloadEventEnd redirectStart redirectEnd fetchStart domainLookupStart domainLookupEnd connectStart connectEnd secureConnectionStart requestStart responseStart responseEnd domLoading domInteractive domContentLoadedEventStart domContentLoadedEventEnd domComplete loadEventStart loadEventEnd'.split(' '));
+const perfTiming = n => !PERF_TIMING.has(n) ? undefined : /^(unload|redirect|secureConnection)/.test(n) ? null : /^(domInteractive|domContentLoaded)/.test(n) ? navTimes.dcl || null : /^(domComplete|loadEvent)/.test(n) ? navTimes.load || null : 0;
+/*@shared perf.js*/
+const perfNotify = perfQueue;
 class Storage {
     constructor() { def(this, '_m', new SMap()); }
     get length() { return this._m.size; } key(i) { return [...this._m.keys()][i] ?? null; }
@@ -428,18 +408,11 @@ Promise.resolve().then(() => {
     document.addEventListener('DOMContentLoaded', () => { navTimes.dcl = N.now(); }, { once: true });
     G.addEventListener('load', () => { navTimes.load = N.now(); setTimeout(() => perfNotify(navigationEntry())); }, { once: true });
 });
-const perfEntries = (t) => t === 'navigation' ? (navTimes.dcl ? [navigationEntry()] : []) : marks.filter(m => m.entryType === t);
-const performance = Object.assign(new EventTarget(), {
-    now() { return N.now(); }, timeOrigin: T0,
-    timing: { navigationStart: T0, fetchStart: T0, domLoading: T0, responseStart: T0 },
-    navigation: { type: 0, redirectCount: 0 },
-    mark(n, o) { const e = { name: n, entryType: 'mark', startTime: o && o.startTime != null ? o.startTime : N.now(), duration: 0, detail: o && o.detail }; marks.push(e); if (marks.length > 4096) marks.splice(0, 1024); perfNotify(e); return e; },
-    measure(n, s, e) { const f = (x) => typeof x === 'string' ? (marks.findLast(m => m.name === x) || { startTime: 0 }).startTime : x ?? N.now(); const st = typeof s === 'object' && s ? f(s.start) : f(s ?? 0); const en = typeof s === 'object' && s ? f(s.end) : f(e); const m = { name: n, entryType: 'measure', startTime: st, duration: en - st, detail: typeof s === 'object' && s ? s.detail ?? null : null }; marks.push(m); if (marks.length > 4096) marks.splice(0, 1024); perfNotify(m); return m; },
-    getEntries() { return perfEntries('navigation').concat(marks); }, getEntriesByType(t) { return perfEntries(t); }, getEntriesByName(n, t) { return (t == null ? this.getEntries() : perfEntries(t)).filter(m => m.name === n); },
-    clearMarks(n) { for (let i = marks.length; i--;) if (marks[i].entryType === 'mark' && (n == null || marks[i].name === n)) marks.splice(i, 1); },
-    clearMeasures(n) { for (let i = marks.length; i--;) if (marks[i].entryType === 'measure' && (n == null || marks[i].name === n)) marks.splice(i, 1); }, clearResourceTimings() {}, setResourceTimingBufferSize() {},
-    get memory() { const h = N.heap(); return { usedJSHeapSize: h[0], totalJSHeapSize: h[1], jsHeapSizeLimit: h[2] }; },
-    toJSON() { return { timeOrigin: T0 }; },
+const performance = new Performance(PERF_KEY);
+Object.defineProperties(performance, {
+    timing: { value: { navigationStart: T0, fetchStart: T0, domLoading: T0, responseStart: T0 }, configurable: true },
+    navigation: { value: { type: 0, redirectCount: 0 }, configurable: true },
+    memory: { get() { const h = N.heap(); return { usedJSHeapSize: h[0], totalJSHeapSize: h[1], jsHeapSizeLimit: h[2] }; }, configurable: true },
 });
 /* a secure context: https, file, or a loopback host (as Chrome treats them); about: and data: frames inherit it, and a frame
    inside a non-secure same-origin parent is never secure */
@@ -651,10 +624,7 @@ const document = N.doc();
 Object.setPrototypeOf(document, HTMLDocument.prototype);
 function illegalCtor() { throw new TypeError('Illegal constructor'); }
 const History = function History() { illegalCtor(); }, Navigator = function Navigator() { illegalCtor(); }, Screen = function Screen() { illegalCtor(); };
-const Performance = function Performance() { illegalCtor(); };
-Object.setPrototypeOf(Performance.prototype, EventTarget.prototype);
 Object.setPrototypeOf(history, History.prototype); Object.setPrototypeOf(navigator, Navigator.prototype); Object.setPrototypeOf(screen, Screen.prototype);
-Object.setPrototypeOf(performance, Performance.prototype);
 const globals = {
     ...(secureContext ? { CryptoKey, SubtleCrypto, ServiceWorker, ServiceWorkerContainer, ServiceWorkerRegistration, NavigationPreloadManager } : {}), QuotaExceededError,
     TrustedHTML, TrustedScript, TrustedScriptURL, TrustedHTMLParserOptions, TrustedTypePolicy, TrustedTypePolicyFactory, SecurityPolicyViolationEvent, get trustedTypes() { return ttFactory; },
@@ -671,7 +641,7 @@ const globals = {
     GPUQuerySet, GPUShaderModule, GPUComputePipeline, GPURenderPipeline, GPUCommandEncoder, GPURenderPassEncoder, GPUComputePassEncoder, GPURenderBundleEncoder, GPUQueue, GPUCanvasContext,
     MediaRecorder, BlobEvent, RTCPeerConnection, RTCSessionDescription, RTCIceCandidate, RTCPeerConnectionIceEvent, RTCPeerConnectionIceErrorEvent, RTCDataChannel, RTCDataChannelEvent, RTCTrackEvent, RTCRtpSender, RTCRtpReceiver, RTCRtpTransceiver, RTCIceTransport, RTCDtlsTransport, RTCSctpTransport, RTCCertificate, RTCStatsReport, RTCError, RTCErrorEvent, MediaStream, MediaStreamTrack, MediaStreamTrackEvent,
     IDBFactory, IDBDatabase, IDBTransaction, IDBObjectStore, IDBIndex, IDBCursor, IDBCursorWithValue, IDBKeyRange, IDBRecord, IDBRequest, FormDataEvent, IDBOpenDBRequest, IDBVersionChangeEvent, DOMStringList, indexedDB,
-    ResizeObserver, IntersectionObserver, IntersectionObserverEntry, HTMLAllCollection, PerformanceObserver, Storage, localStorage, sessionStorage, Location, get location() { return location; }, set location(v) { location.href = v; }, history, navigator, screen, performance, get crypto() { return crypto; }, MediaQueryList, matchMedia, getComputedStyle, PermissionStatus,
+    ResizeObserver, IntersectionObserver, IntersectionObserverEntry, HTMLAllCollection, PerformanceObserver, PerformanceObserverEntryList, PerformanceEntry, PerformanceMark, PerformanceMeasure, Performance, Storage, localStorage, sessionStorage, Location, get location() { return location; }, set location(v) { location.href = v; }, history, navigator, screen, performance, get crypto() { return crypto; }, MediaQueryList, matchMedia, getComputedStyle, PermissionStatus,
     setTimeout, setInterval, clearTimeout, clearInterval, requestAnimationFrame, cancelAnimationFrame, requestIdleCallback, cancelIdleCallback, queueMicrotask, structuredClone, postMessage, console, customElements, Window, document,
     window: G, self: G, globalThis: G, get top() { return asWin(N.topWin()) ?? G; }, get parent() { return asWin(N.parentWin()) ?? G; }, frames: G, get opener() { return openerSet !== undefined ? openerSet : asWin(N.openerWin()); }, set opener(v) { openerSet = v; }, get frameElement() { return N.frameEl(); }, closed: false, name: '', get length() { return N.frameCount(); }, origin: location.origin, isSecureContext: secureContext, crossOriginIsolated: false,
     get innerWidth() { return N.viewport()[0]; }, get innerHeight() { return N.viewport()[1]; }, get outerWidth() { return N.viewport()[0]; }, get outerHeight() { return N.viewport()[1] + 40; },
