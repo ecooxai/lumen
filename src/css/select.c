@@ -230,6 +230,39 @@ static bool in_disabled_fieldset(const Node *el) {
     return false;
 }
 /* "actually disabled" */
+/* HTML directionality, for :dir(): the dir attribute, dir=auto (and <bdi>) from the first strong character, else the parent's */
+static int strong_dir(uint32_t c) {
+    if ((c >= 0x0590 && c <= 0x08FF) || (c >= 0xFB1D && c <= 0xFDFF) || (c >= 0xFE70 && c <= 0xFEFF) || (c >= 0x10800 && c <= 0x10FFF) || (c >= 0x1E800 && c <= 0x1EFFF)) return 2;
+    if ((c | 0x20) >= 'a' && (c | 0x20) <= 'z') return 1;
+    if (c >= 0xC0 && c != 0xD7 && c != 0xF7 && !(c >= 0x2000 && c <= 0x2BFF) && !(c >= 0x3000 && c <= 0x303F) && !(c >= 0xFE00 && c <= 0xFE6F) && !(c >= 0xFF00 && c <= 0xFF20)) return 1;
+    return 0;
+}
+static int text_dir(const char *t, size_t n) {
+    for (size_t i = 0; i < n;) { uint32_t c; i += (size_t)utf8_decode(t + i, n - i, &c); int d = strong_dir(c); if (d) return d; }
+    return 0;
+}
+static int auto_dir(const Node *el) {
+    if (el->ns == NS_HTML && (el->tag == A_input || el->tag == A_textarea)) { const char *v = node_attr_atom(el, A_value); return v ? text_dir(v, strlen(v)) : 0; }
+    for (const Node *c = el->first; c; c = c->next) {
+        if (c->type == NODE_TEXT) { int d = text_dir(c->text, c->text_len); if (d) return d; }
+        else if (c->type == NODE_ELEMENT) {
+            if (c->ns == NS_HTML && (!strcmp(c->tag, "bdi") || c->tag == A_script || c->tag == A_style || c->tag == A_textarea)) continue;
+            const char *dv = node_attr_atom(c, A_dir);
+            if (dv && (!strcasecmp(dv, "ltr") || !strcasecmp(dv, "rtl") || !strcasecmp(dv, "auto"))) continue;
+            int d = auto_dir(c); if (d) return d;
+        }
+    }
+    return 0;
+}
+static bool el_dir_rtl(const Node *el) {
+    for (const Node *x = el; x && x->type == NODE_ELEMENT; x = x->parent) {
+        const char *dv = node_attr_atom(x, A_dir);
+        if (dv && !strcasecmp(dv, "rtl")) return true;
+        if (dv && !strcasecmp(dv, "ltr")) return false;
+        if ((dv && !strcasecmp(dv, "auto")) || (!dv && x->ns == NS_HTML && !strcmp(x->tag, "bdi"))) return auto_dir(x) == 2;
+    }
+    return false;
+}
 static bool is_disabled(Node *el) {
     if (el->ns != NS_HTML) return false;
     if (el->tag == A_button || el->tag == A_input || el->tag == A_select || el->tag == A_textarea || el->tag == A_fieldset)
@@ -330,7 +363,7 @@ static bool match_pseudo(const SimpleSel *s, Node *el, Node *scope) {
     if (n == P_read_only) return !(el->tag == A_input || el->tag == A_textarea) || node_has_attr(el, "readonly");
     if (n == P_read_write) return (el->tag == A_input || el->tag == A_textarea) && !node_has_attr(el, "readonly");
     if (n == P_lang) { for (Node *x = el; x && x->type == NODE_ELEMENT; x = x->parent) { const char *l = node_attr_atom(x, A_lang); if (l) return s->value && str_istarts(l, s->value); } return false; }
-    if (n == P_dir) return s->value && !strcmp(s->value, "ltr");
+    if (n == P_dir) return s->value && !strcasecmp(s->value, el_dir_rtl(el) ? "rtl" : "ltr");
     if (n == P_modal) return (el->flags & NF_MODAL) != 0;
     if (n == P_fullscreen) return (el->flags & NF_FULLSCREEN) != 0;
     if (n == P_target) {   /* the element the document URL's fragment names */
