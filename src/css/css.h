@@ -309,6 +309,7 @@ bool css_match_selector(const Selector *s, Node *el, Node *scope);
 typedef VEC(Node *) NodeVec;
 Node *css_query(Node *root, const char *sel, bool all, NodeVec *out);
 bool css_media_matches(const char *q, const MediaCtx *mc);
+bool css_media_valid(const char *q);
 bool css_supports(const char *cond);
 
 StyleEngine *style_engine_new(Document *d);

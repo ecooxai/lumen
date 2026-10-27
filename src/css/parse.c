@@ -519,6 +519,8 @@ void css_decls_free(DeclList *d) { if (!d) return; for (int i = 0; i < d->n; i++
 /* ---------------- media queries ---------------- */
 /* set when a query uses an unknown feature: the whole query is then false, even under not */
 static _Thread_local bool g_mq_unknown;
+/* set on a top-level grammar error: CSSOM then serializes the query as "not all" */
+static _Thread_local bool g_mq_bad;
 static bool media_feature(const char *f, const MediaCtx *mc) {
     char buf[256]; snprintf(buf, sizeof buf, "%s", f);
     char *s = str_trim(buf);
@@ -641,7 +643,7 @@ static bool media_single(const char *q, const MediaCtx *mc) {
     else if (str_istarts(t, "only ")) { only = true; t += 5; }
     t = str_trim(t);
     /* "only" needs a media type, and "not" can't repeat */
-    if ((only && t[0] == '(') || ((neg || only) && (str_istarts(t, "not ") || str_istarts(t, "only ")))) g_mq_unknown = true;
+    if ((only && t[0] == '(') || ((neg || only) && (str_istarts(t, "not ") || str_istarts(t, "only ")))) g_mq_unknown = g_mq_bad = true;
     /* media type */
     if (t[0] && t[0] != '(') {
         char *e = t; while (*e && !is_ws((unsigned char)*e)) e++;
@@ -649,7 +651,7 @@ static bool media_single(const char *q, const MediaCtx *mc) {
         if (!str_ieq(t, "all") && !str_ieq(t, "screen")) result = false;
         *e = save; t = str_trim(e);
         if (str_istarts(t, "and")) t = str_trim(t + 3);
-        else if (*t) g_mq_unknown = true;   /* "screen or (x)", "screen (x)" */
+        else if (*t) g_mq_unknown = g_mq_bad = true;   /* "screen or (x)", "screen (x)" */
     }
     /* features joined by and / or (not both at one level) */
     bool use_or = false, saw_and = false, saw_or = false;
@@ -660,7 +662,7 @@ static bool media_single(const char *q, const MediaCtx *mc) {
             else if (str_istarts(t + i, "or ") || str_istarts(t + i, "or(")) saw_or = true;
         }
     }
-    if (saw_and && saw_or) g_mq_unknown = true;
+    if (saw_and && saw_or) g_mq_unknown = g_mq_bad = true;
     while (*t && result != (use_or)) {
         if (*t == '(') {
             size_t close = find_close_paren(t, 1, strlen(t));
@@ -681,6 +683,13 @@ static bool media_single(const char *q, const MediaCtx *mc) {
     }
     free(s);
     return neg ? !result : result;
+}
+/* one query (no commas) parses: CSSOM serializes the others as "not all" */
+bool css_media_valid(const char *q) {
+    MediaCtx mc = {0}; mc.vw = 1024; mc.vh = 768; mc.dpr = 1;
+    g_mq_unknown = g_mq_bad = false; media_single(q, &mc);
+    bool ok = !g_mq_bad; g_mq_unknown = g_mq_bad = false;
+    return ok;
 }
 bool css_media_matches(const char *q, const MediaCtx *mc) {
     if (!q) return true;

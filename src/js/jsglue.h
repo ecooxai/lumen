@@ -29,6 +29,7 @@ bool jsg_set_scroll(Node *n, float x, float y);  /* NAN keeps an axis; true if i
 bool jsg_media(void *media, const char *q);
 bool jsg_supports(const char *cond);
 char *css_selector_text(const char *src);
+bool css_media_valid(const char *q);
 bool jsg_img_size(Node *n, float *w, float *h);
 /* host hook: the fetch of an <img>'s current src has finished (loaded or failed) */
 extern bool (*jsg_img_done_hook)(Node *n);

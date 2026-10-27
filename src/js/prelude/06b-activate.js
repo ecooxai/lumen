@@ -175,7 +175,7 @@ function cssSplit(s) {
 class CSSRuleList extends Array { static get [Symbol.species]() { return Array; } item(i) { return this[i] ?? null; } }
 class MediaList {
     constructor(t, o) { def(this, '_m', []); def(this, '_o', o); this._set(t); }
-    _set(t) { this._m = String(t || '').split(',').map(x => x.trim().replace(/\s+/g, ' ')).filter(Boolean); }
+    _set(t) { this._m = String(t || '').split(',').map(x => x.trim().replace(/\s+/g, ' ')).filter(Boolean).map(x => /supports\(|layer\b/i.test(x) || N.mediaValid(x) ? x : 'not all'); }
     get mediaText() { return this._m.join(', '); } set mediaText(v) { this._set(v); this._o && this._o._changed(); }
     get length() { return this._m.length; } item(i) { return this._m[i] ?? null; } toString() { return this.mediaText; }
     appendMedium(m) { m = String(m).trim(); if (!this._m.includes(m)) { this._m.push(m); this._o && this._o._changed(); } }

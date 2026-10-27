@@ -261,6 +261,9 @@ because a frame's media viewport doesn't follow its iframe's inline style size s
 iframe.style.width=117px then reads the subdocument's computed style; Lumen stays at 300x150), and media
 device-width/height are smaller than screen.width/height. NEXT: resize the child frame's viewport (MediaCtx vw/vh)
 when the host iframe's box changes, before getComputedStyle in the child (flush parent layout from the child).
+RUN 262 (committed): css_media_valid() (grammar errors only, g_mq_bad) -> N.mediaValid; MediaList serializes those
+as "not all" (skips @import supports()/layer). +5. Careful: unknown features / general-enclosed must stay valid
+(run 261 rejected them: -280).
 
 RUN 245: WebGL idlharness 2065 -> 2086/2099 (window and worker): FLOAT_MATnxm constants, interface .length, prototype
 getters throw, optional-argument defaults for bufferData/getBufferSubData/texImage3D lengths. +50, no losses. Left: setters
