@@ -949,3 +949,7 @@ lazy imgs with sizes="auto" (and a <source> without sizes) made sizes-auto.html 
 build: 38/74 OK in ~1 s). Likely the source flips between 300px (box missing during a restyle/relayout) and the
 real width, restarting the load each time. Do it with a width stored on the node at layout time (only re-pick
 when that stored width changes), never from a transient missing box. Saved attempt: /tmp/style-sizes-auto2.c.
+SIZES=AUTO debug (LUMEN_DEBUG_SIZES print, reverted): each lazy img's source is re-picked ~32 times with box
+widths 0 / 10 / 500 / 300 (no box): the width depends on the image's own load (0 before, natural size after), so
+the pick keeps changing and load never settles. Needs: pick once when the lazy load starts (first layout in
+viewport), store that width on the node, and only re-pick on a later real resize after load completed.
