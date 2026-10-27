@@ -84,6 +84,63 @@ void add_abs(Layout *L, Box *c) {
     c->abs_next = cb->abs_head; cb->abs_head = c;
 }
 
+/* anchor(<name>? <side>[, <fallback>]) as a whole inset (0 top, 1 right, 2 bottom, 3 left): the named element's edge, as an
+   inset from the containing block's padding box (origin px,py, size pw,ph). false: unresolvable (the fallback, else auto). */
+static bool name_in_list(const char *list, const char *nm, size_t nl) {
+    for (const char *p = list; (p = strstr(p, nm)); p += nl) {
+        bool st = p == list || p[-1] == ',' || p[-1] == ' ', en = !p[nl] || p[nl] == ',' || p[nl] == ' ';
+        if (st && en) return true;
+    }
+    return false;
+}
+static bool anchor_inset(const Box *a, const Box *cb, int i, float px, float py, float pw, float ph, float *out) {
+    const char *v = a->st->anchor_ins[i];
+    while (*v == ' ') v++;
+    if (strncmp(v, "anchor(", 7)) return false;
+    const char *q = v + 7, *end = strrchr(q, ')'); if (!end) return false;
+    for (const char *z = end + 1; *z; z++) if (*z != ' ') return false;
+    char buf[256]; size_t n = (size_t)(end - q); if (n >= sizeof buf) return false;
+    memcpy(buf, q, n); buf[n] = 0;
+    char *fb = strchr(buf, ','); if (fb) *fb++ = 0;
+    char *tok[3]; int nt = 0;
+    for (char *s = strtok(buf, " \t\n"); s && nt < 3; s = strtok(NULL, " \t\n")) tok[nt++] = s;
+    const char *name = nt && !strncmp(tok[0], "--", 2) ? tok[0] : NULL, *side = nt > (name ? 1 : 0) ? tok[name ? 1 : 0] : NULL;
+    const Box *ab = NULL;
+    if (name && side) {
+        size_t nl = strlen(name); Node *root = &a->node->doc->node;
+        for (Node *m = root->first; m; m = node_next_in_tree(m, root)) {
+            if (m->type != NODE_ELEMENT || !m->style || !m->style->anchor_name || !m->box || m == a->node || !name_in_list(m->style->anchor_name, name, nl)) continue;
+            bool inside = false; for (Node *p = m->parent; p; p = p->parent) if (p == a->node) { inside = true; break; }
+            if (!inside) ab = m->box;
+        }
+    }
+    if (ab) {
+        bool hz = i & 1;
+        float lo = hz ? ab->x - px : ab->y - py, sz = hz ? ab->w : ab->h, pos;
+        const ComputedStyle *cs = cb->st ? cb->st : a->st;
+        /* start of the axis is its low (left/top) side unless the writing mode or direction flips it */
+        bool cflip = hz ? (cs->writing_mode ? cs->writing_mode == 2 : cs->direction) : (cs->writing_mode ? cs->direction : false);
+        bool sflip = hz ? (a->st->writing_mode ? a->st->writing_mode == 2 : a->st->direction) : (a->st->writing_mode ? a->st->direction : false);
+        bool low = i == 0 || i == 3;
+        char *e;
+        float pct = strtof(side, &e);
+        if (e != side && *e == '%' && !e[1]) pos = lo + sz * pct / 100;
+        else if (!strcmp(side, "center")) pos = lo + sz / 2;
+        else if (hz && !strcmp(side, "left")) pos = lo;
+        else if (hz && !strcmp(side, "right")) pos = lo + sz;
+        else if (!hz && !strcmp(side, "top")) pos = lo;
+        else if (!hz && !strcmp(side, "bottom")) pos = lo + sz;
+        else if (!strcmp(side, "start") || !strcmp(side, "end")) pos = (side[0] == 's') != cflip ? lo : lo + sz;
+        else if (!strcmp(side, "self-start") || !strcmp(side, "self-end")) pos = (side[5] == 's') != sflip ? lo : lo + sz;
+        else if (!strcmp(side, "inside") || !strcmp(side, "outside")) pos = (side[0] == 'i') == low ? lo : lo + sz;
+        else ab = NULL;
+        if (ab) { *out = low ? pos : (hz ? pw : ph) - pos; return true; }
+    }
+    if (!fb) return false;
+    Length l; if (!css_parse_length(fb, &l, a->st->font_size, a->st->font_size, NULL) || l.kind != LK_LEN) return false;
+    *out = res(l, i & 1 ? pw : ph); return true;
+}
+
 static void layout_abs(Layout *L, Box *cb) {
     /* Laying out one positioned box can register more (e.g. a fixed box inside an absolute one), so repeat until no new ones appear. */
     Box *stop = NULL;
@@ -99,6 +156,10 @@ static void layout_abs(Layout *L, Box *cb) {
         compute_mbp(a, pw);
         bool lA = s->inset[3].kind != LK_LEN, rA = s->inset[1].kind != LK_LEN, tA = s->inset[0].kind != LK_LEN, bA = s->inset[2].kind != LK_LEN;
         float l = res(s->inset[3], pw), r = res(s->inset[1], pw), t = res(s->inset[0], ph), bt = res(s->inset[2], ph);
+        if (s->anchor_ins[0] || s->anchor_ins[1] || s->anchor_ins[2] || s->anchor_ins[3]) {
+            float *iv[4] = { &t, &r, &bt, &l }; bool *ia[4] = { &tA, &rA, &bA, &lA };
+            for (int k = 0; k < 4; k++) if (s->anchor_ins[k] && anchor_inset(a, cb, k, px, py, pw, ph, iv[k])) *ia[k] = false;
+        }
         bool mlA = s->margin[3].kind == LK_AUTO, mrA = s->margin[1].kind == LK_AUTO, mtA = s->margin[0].kind == LK_AUTO, mbA = s->margin[2].kind == LK_AUTO;
         int mode = SZ_SHRINK; float fw = 0, fh = -1;
         bool wdef = len_def(s->width, pw);

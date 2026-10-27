@@ -112,6 +112,7 @@ void style_ref(ComputedStyle *s) { if (s) s->refs++; }
 void style_free(ComputedStyle *s) {
     if (!s || --s->refs > 0) return;
     g_styles_live--;
+    free(s->anchor_name); for (int i = 0; i < 4; i++) free(s->anchor_ins[i]);
     free(s->bg_image); free(s->mask_image); free(s->bg_gradient); free(s->content); free(s->grid_cols); free(s->grid_rows); free(s->grid_areas); free(s->grid_area);
     custom_unref(s->custom); custom_unref(s->gen_i); custom_unref(s->gen_n);
     if (s->before) style_free(s->before);
@@ -1026,6 +1027,11 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
     st->indep_set |= indep_bit(P);
     bool inherit = str_ieq(val, "inherit"), initial = str_ieq(val, "initial") || str_ieq(val, "revert") || str_ieq(val, "revert-layer"), unset = str_ieq(val, "unset");
     if (inherit && inherit_copies_uncompared(P)) st->parent_sensitive = true;
+    {   /* anchor() insets wait for layout; anchor-name is kept for it */
+        int ai = !strcmp(P, "top") ? 0 : !strcmp(P, "right") ? 1 : !strcmp(P, "bottom") ? 2 : !strcmp(P, "left") ? 3 : -1;
+        if (ai >= 0) { free(st->anchor_ins[ai]); st->anchor_ins[ai] = NULL; if (strstr(val, "anchor(")) { st->anchor_ins[ai] = xstrdup(val); st->inset[ai] = L_auto(); return; } }
+        if (!strcmp(P, "anchor-name")) { free(st->anchor_name); st->anchor_name = str_ieq(val, "none") || inherit || initial || unset ? NULL : xstrdup(val); return; }
+    }
     const GenProp *gp = gen_prop(P);
     bool anim_longhand = !strncmp(P, "transition-", 11) || !strncmp(P, "animation-", 10);
     if (gp && (!gp->native || anim_longhand)) {
@@ -1375,7 +1381,7 @@ apply:
         else if (!strcmp(P, "white-space") || !strcmp(P, "white-space-collapse")) { static const char *const ws[] = { "normal", "nowrap", "pre", "pre-wrap", "pre-line", "break-spaces", NULL }; k = kw(val, ws); if (k >= 0) st->white_space = (uint8_t)k; else if (str_ieq(val, "preserve")) st->white_space = WS_PRE_WRAP; }
         else if (!strcmp(P, "word-break")) st->word_break = str_ieq(val, "break-all") ? 1 : str_ieq(val, "break-word") ? 2 : 0;
         else if (!strcmp(P, "word-spacing")) st->word_spacing = str_ieq(val, "normal") ? 0 : alen_px(&c, val, 0);
-        else if (!strcmp(P, "writing-mode")) st->writing_mode = str_istarts(val, "vertical");
+        else if (!strcmp(P, "writing-mode")) st->writing_mode = str_istarts(val, "vertical") ? (strstr(val, "-rl") || strstr(val, "-RL") ? 2 : 1) : 0;   /* 2: vertical-rl */
         break;
     case 'z':
         if (!strcmp(P, "z-index")) { if (str_ieq(val, "auto")) st->z_auto = true; else { st->z_auto = false; st->z_index = atoi(val); if (isalpha((unsigned char)val[0])) { LCtx lc = { st->font_size, 16, NULL }; const char *q = val; Length L; if (parse_dim(&q, &L, &lc) && !L.pct && isfinite(L.px)) st->z_index = (int)lroundf(L.px); } } }
@@ -3259,13 +3265,15 @@ static bool str_same(const char *a, const char *b) { return a == b || (a && b &&
 static bool paint_only(const ComputedStyle *a, const ComputedStyle *b) {
     if (!a || !b) return a == b;
     if (a->has_transform != b->has_transform || !str_same(a->content, b->content) || !str_same(a->grid_areas, b->grid_areas) || !str_same(a->grid_area, b->grid_area)) return false;
+    if (!str_same(a->anchor_name, b->anchor_name)) return false;
+    for (int i = 0; i < 4; i++) if (!str_same(a->anchor_ins[i], b->anchor_ins[i])) return false;
     if (a->grid_ncols != b->grid_ncols || a->grid_nrows != b->grid_nrows) return false;
     if (a->grid_ncols && memcmp(a->grid_cols, b->grid_cols, sizeof *a->grid_cols * (size_t)a->grid_ncols)) return false;
     if (a->grid_nrows && memcmp(a->grid_rows, b->grid_rows, sizeof *a->grid_rows * (size_t)a->grid_nrows)) return false;
     if (!paint_only(a->before, b->before) || !paint_only(a->after, b->after) || !paint_only(a->marker, b->marker)) return false;
     ComputedStyle x = *a, y = *b;
 #define PO_Z(f) (memset(&x.f, 0, sizeof x.f), memset(&y.f, 0, sizeof y.f))
-    PO_Z(refs); PO_Z(grid_cols); PO_Z(grid_rows); PO_Z(content); PO_Z(grid_areas); PO_Z(grid_area); PO_Z(before); PO_Z(after); PO_Z(custom); PO_Z(gen_i); PO_Z(gen_n);
+    PO_Z(anchor_name); PO_Z(anchor_ins); PO_Z(refs); PO_Z(grid_cols); PO_Z(grid_rows); PO_Z(content); PO_Z(grid_areas); PO_Z(grid_area); PO_Z(before); PO_Z(after); PO_Z(custom); PO_Z(gen_i); PO_Z(gen_n);
     PO_Z(custom_dependencies); PO_Z(attribute_dependencies); PO_Z(parent_sensitive); PO_Z(inherited_dynamic); PO_Z(indep_set);
     PO_Z(color); PO_Z(bg_color); PO_Z(bg_image); PO_Z(bg_gradient); PO_Z(bg_repeat); PO_Z(bg_size_kind); PO_Z(bg_size); PO_Z(bg_pos);
     PO_Z(mask_image); PO_Z(mask_fit); PO_Z(border_color); PO_Z(outline_style); PO_Z(outline_width); PO_Z(outline_offset); PO_Z(outline_color);

@@ -88,6 +88,8 @@ typedef struct ComputedStyle {
     Color color, bg_color;
     const char *color_ser, *bg_ser;  /* atoms: computed values of colours that 8-bit sRGB can't express, else NULL */
     char *bg_image;         /* url (owned) */
+    char *anchor_name;      /* anchor-name list (owned), NULL for none */
+    char *anchor_ins[4];    /* an inset (top right bottom left) written with anchor(), resolved at layout (owned) */
     Gradient *bg_gradient;  /* owned */
     char *mask_image;       /* url (owned) */
     uint8_t mask_fit;       /* 0 auto, 1 contain, 2 cover */
