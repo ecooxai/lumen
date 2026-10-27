@@ -4450,16 +4450,19 @@ static float sizes_px(const char *sz, const MediaCtx *mc) {
     if (!sz) return vw;
     char *nc = xstrdup(sz);   /* comments removed */
     for (char *r = nc, *w = nc;; ) {
-        if (r[0] == '/' && r[1] == '*') { char *x = strstr(r + 2, "*/"); r = x ? x + 2 : r + strlen(r); continue; }
+        if (r[0] == '/' && r[1] == '*') { char *x = strstr(r + 2, "*/"); r = x ? x + 2 : r + strlen(r); *w++ = ' '; continue; }   /* a comment separates tokens */
+        if (r[0] == '\\' && isalpha((unsigned char)r[1]) && !isxdigit((unsigned char)r[1])) { r++; continue; }   /* 1\p\x is 1px */
+        if (r[0] == '\\' && r[1]) { *w++ = *r++; *w++ = *r++; continue; }
         if (!(*w++ = *r++)) break;
     }
     float res = vw;
     const char *p = nc;
     while (*p) {
         const char *e = p; int dep = 0;   /* a comma inside an open (, [ or { block doesn't end the entry */
-        while (*e && (dep || *e != ',')) { if (*e == '(' || *e == '[' || *e == '{') dep++; else if ((*e == ')' || *e == ']' || *e == '}') && dep) dep--; e++; }
-        char item[512]; size_t l = (size_t)(e - p); if (l >= sizeof item) l = sizeof item - 1;
+        while (*e && (dep || *e != ',')) { if (*e == '\\' && e[1]) e++; else if (*e == '(' || *e == '[' || *e == '{') dep++; else if ((*e == ')' || *e == ']' || *e == '}') && dep) dep--; e++; }
+        char item[512]; size_t l = (size_t)(e - p); if (l >= sizeof item - 8) l = sizeof item - 9;
         memcpy(item, p, l); item[l] = 0;
+        if (!*e && dep > 0 && dep < 8) { for (int i = 0; i < dep; i++) item[l + i] = ')'; item[l + dep] = 0; }   /* blocks close at the end of input */
         char *a = item; while (isspace((unsigned char)*a)) a++;
         char *z = a + strlen(a); while (z > a && isspace((unsigned char)z[-1])) *--z = 0;
         p = *e ? e + 1 : e;
@@ -4481,7 +4484,10 @@ static float sizes_px(const char *sz, const MediaCtx *mc) {
         if (!strcasecmp(last, "auto")) { if (!*cond) break; continue; }
         if (strchr(last, '\\')) continue;
         Length L;
-        if (!css_parse_length(last, &L, 16, 16, mc) || L.pct || L.kind != LK_LEN || L.px < 0 || !isfinite(L.px)) continue;
+        bool math = !strncasecmp(last, "min(", 4) || !strncasecmp(last, "max(", 4) || !strncasecmp(last, "clamp(", 6) || !strncasecmp(last, "calc(", 5);
+        if (!css_parse_length(last, &L, 16, 16, mc) || L.pct || L.kind != LK_LEN || (L.px < 0 && !math) || !isfinite(L.px)) continue;
+        if (L.px < 0) L.px = 0;   /* a math function's result is clamped to the allowed range */
+        if (math) { bool z = false; for (const char *d = strchr(last, '/'); d && !z; d = strchr(d + 1, '/')) { const char *q = d + 1; while (*q == ' ') q++; if (*q == '0' || *q == '-' || *q == '+') { if (*q != '0') q++; while (*q == '0') q++; if (*q == '.') { q++; while (*q == '0') q++; } z = !isdigit((unsigned char)*q) && q[-1] == '0'; } } if (z) continue; }   /* x / 0 is infinite or NaN: invalid */
         const char *u = last; if (*u == '+' || *u == '-') u++;
         while (isdigit((unsigned char)*u) || *u == '.') u++;
         if ((*u == 'e' || *u == 'E') && (isdigit((unsigned char)u[1]) || ((u[1] == '+' || u[1] == '-') && isdigit((unsigned char)u[2])))) { u += 2; while (isdigit((unsigned char)*u)) u++; if (*u == '.') continue; }   /* 1e1.5px */

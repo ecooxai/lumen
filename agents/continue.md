@@ -938,3 +938,8 @@ never match; negative integers valid for color/monochrome/color-index; calc() in
 a condition stay with the caller (sizes attributes). test_media_queries 1349/1349; sizes +12.
 /tmp/lumen-old is stale (Oct 26): refresh it from the previous commit's build before relying on old-vs-new reruns.
 LEFT in parse-a-sizes-attribute (35): comments, escapes, "not print 100vw", angle/time units, unclosed min(/max(.
+
+RUNS 277-279 (committed): <img sizes> parser (sizes_px in style.c) follows HTML: comments separate tokens,
+escapes, blocks close at end of input, media conditions only, no angle/time units, math results clamp to 0,
+x/0 invalid. parse-a-sizes-attribute-* 144 -> 179/179 (x4). Next in sizes/: sizes=auto (sizes-auto 38/74,
+sizes-auto-unrendered 0/15 TIMEOUT), sizes-2d (tentative).
