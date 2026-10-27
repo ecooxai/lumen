@@ -3231,8 +3231,24 @@ static void frames_tick(App *a) {
         fire_img_events(p);
     }
 }
+static void h_sync_in(void *ud, Document *d, bool layout);
 static void hf_sync(void *ud, Document *d, bool layout) {
     Page *p = ud; if (p->d != d) return;
+    /* the host lays out first, so the frame's viewport (and its media queries) follow its iframe's current size */
+    static int depth;   /* an iframe put into its own child document makes the host chain a cycle */
+    Document *hd = p->frame_el->doc; Page *q = g_frames;
+    while (q && q->d != hd) q = q->fnext;
+    if (depth < 16) {
+        depth++;
+        if (q) hf_sync(q, hd, true);
+        else { Tab *t = tab_of_doc(g_app, hd); if (t) TAB_CALL(t, h_sync_in(g_app, hd, true)); }
+        depth--;
+    }
+    Box *b = p->frame_el->box;
+    if (b && (p->frame_el->flags & NF_CONNECTED)) {
+        float w = fmaxf(0, b->w - (b->b[1] + b->b[3] + b->p[1] + b->p[3])), h = fmaxf(0, b->h - (b->b[0] + b->b[2] + b->p[0] + b->p[2]));
+        if (w != p->fw || h != p->fh) { p->fw = w; p->fh = h; p->frelayout = true; page_viewport(p, w, h, p->e->media.dpr); }
+    }
     frame_restyle(p);
     if (layout && p->fw > 0) frame_layout(p);
 }

@@ -264,6 +264,12 @@ when the host iframe's box changes, before getComputedStyle in the child (flush 
 RUN 262 (committed): css_media_valid() (grammar errors only, g_mq_bad) -> N.mediaValid; MediaList serializes those
 as "not all" (skips @import supports()/layer). +5. Careful: unknown features / general-enclosed must stay valid
 (run 261 rejected them: -280).
+RUNS 263-265 (committed): hf_sync() flushes the host document first (recursive, depth guard 16: an iframe appended
+into its own child document is a cycle and crashed) and adopts the iframe's current content size (0 too) as the
+frame viewport. test_media_queries 1211 -> 1270/1349, cssom-view +25 (MediaQueryList tests). embedded-content at
+--jobs 4 shows ~70 image/media load timeouts (same alone on old binary); at --jobs 2 it is even/+9.
+Left in test_media_queries: device-width/height inside frames should be screen.width/height (58 subtests), calc()
+in resolution, "color : 1" grammar, (unknown) three-valued logic, 5900/8001 ratio precision.
 
 RUN 245: WebGL idlharness 2065 -> 2086/2099 (window and worker): FLOAT_MATnxm constants, interface .length, prototype
 getters throw, optional-argument defaults for bufferData/getBufferSubData/texImage3D lengths. +50, no losses. Left: setters
