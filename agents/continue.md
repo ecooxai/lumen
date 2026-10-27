@@ -953,3 +953,7 @@ SIZES=AUTO debug (LUMEN_DEBUG_SIZES print, reverted): each lazy img's source is 
 widths 0 / 10 / 500 / 300 (no box): the width depends on the image's own load (0 before, natural size after), so
 the pick keeps changing and load never settles. Needs: pick once when the lazy load starts (first layout in
 viewport), store that width on the node, and only re-pick on a later real resize after load completed.
+SIZES=AUTO v3 (fixed first laid-out width on Node, reverted): worse, 22/74 TIMEOUT, low CPU (no loop). Every
+lazy sizes=auto img hangs: onload/onerror never fire. So the real blocker is the loader: when the chosen URL
+changes after a lazy load began (300px pick before layout -> laid-out pick), the new URL is never fetched / the
+load event never fires. Look at main.c img_src()/node_img() and the lazy-load trigger before retrying.
