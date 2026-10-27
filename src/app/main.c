@@ -101,6 +101,7 @@ typedef struct Page {
     double load_t0;   /* when its load event first became due (images delay it up to 10 s) */
     /* <iframe> child browsing context (document owned by the JS layer) */
     Node *frame_el; float fw, fh, fsy; Canvas cv; Image img; DisplayList fdl;
+    char fmargin[48];   /* the frame element's marginwidth/marginheight its body was styled with */
     uint64_t drawn_ver, drawn_paint_ver; int drawn_epoch; bool frelayout; struct Page *fnext;
 } Page;
 static Page *g_frames;
@@ -3248,6 +3249,14 @@ static void hf_sync(void *ud, Document *d, bool layout) {
     if (b && (p->frame_el->flags & NF_CONNECTED)) {
         float w = fmaxf(0, b->w - (b->b[1] + b->b[3] + b->p[1] + b->p[3])), h = fmaxf(0, b->h - (b->b[0] + b->b[2] + b->p[0] + b->p[2]));
         if (w != p->fw || h != p->fh) { p->fw = w; p->fh = h; p->frelayout = true; page_viewport(p, w, h, p->e->media.dpr); }
+    }
+    char m[48]; const char *mw = node_attr(p->frame_el, "marginwidth"), *mh = node_attr(p->frame_el, "marginheight");
+    snprintf(m, sizeof m, "%.20s|%.20s", mw ? mw : "", mh ? mh : "");
+    if (strcmp(m, p->fmargin) && p->d->body) {   /* the body maps them (style.c) */
+        memcpy(p->fmargin, m, sizeof m);
+        p->d->body->flags |= NF_STYLE_DIRTY;
+        for (Node *a = p->d->body->parent; a; a = a->parent) a->flags |= NF_CHILD_STYLE_DIRTY;
+        style_recalc(p->e, &p->d->node, false); p->frelayout = true;
     }
     frame_restyle(p);
     if (layout && p->fw > 0) frame_layout(p);

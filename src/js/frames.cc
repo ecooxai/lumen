@@ -71,6 +71,8 @@ JsCtx *js_frame_ctx(Node *f) {
 void frame_nav(JsCtx *k, const char *u);
 void js_frame_navigate(Node *f, const char *u) { if (JsCtx *k = js_frame_ctx(f)) frame_nav(k, u); }
 Document *js_frame_doc(Node *f) { JsCtx *k = js_frame_ctx(f); return k ? k->doc : nullptr; }
+/* the iframe/frame element showing d (the context holds a reference to it), else NULL */
+extern "C" Node *js_doc_frame_el(Document *d) { JsCtx *k = owner_ctx(d); return k && k->parent && !k->dead && k->doc == d ? k->frame_el : nullptr; }
 
 void frame_kill(JsCtx *k) {
     if (k->dead) return;

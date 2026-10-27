@@ -2995,6 +2995,7 @@ static MDecl *matched_decls(StyleEngine *e, Node *el, int pseudo, int *count, bo
     return md.v;
 }
 
+__attribute__((weak)) Node *js_doc_frame_el(Document *d) { (void)d; return NULL; }   /* js/frames.cc */
 /* HTML "maps to the pixel length property": the rules for parsing non-negative integers, as "Npx" */
 static bool html_pixel_length(const char *v, char *out, size_t n) {
     while (*v == ' ' || *v == '\t' || *v == '\n' || *v == '\f' || *v == '\r') v++;
@@ -3055,6 +3056,13 @@ static void presentational_hints(ComputedStyle *st, const ComputedStyle *par, No
         for (int i = 0; i < 4; i++) {
             snprintf(p, sizeof p, "border-%s-width", side[i]); css_apply_decl(st, par, p, dim, e, el);
             snprintf(p, sizeof p, "border-%s-style", side[i]); css_apply_decl(st, par, p, "solid", e, el);
+        }
+    }
+    if (el->tag == A_body && el == el->doc->body) {   /* a frame's body takes its iframe/frame element's margins */
+        Node *f = js_doc_frame_el(el->doc);
+        if (f && f->ns == NS_HTML && (f->tag == A_iframe || f->tag == A_frame)) {
+            if ((v = node_attr(f, "marginheight")) && html_pixel_length(v, dim, sizeof dim)) { css_apply_decl(st, par, "margin-top", dim, e, el); css_apply_decl(st, par, "margin-bottom", dim, e, el); }
+            if ((v = node_attr(f, "marginwidth")) && html_pixel_length(v, dim, sizeof dim)) { css_apply_decl(st, par, "margin-left", dim, e, el); css_apply_decl(st, par, "margin-right", dim, e, el); }
         }
     }
     if (el->tag == A_body) {   /* marginheight/marginwidth, then the per-side legacy names win */

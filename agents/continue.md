@@ -918,3 +918,9 @@ leak the same way. Fix idea: when a dead frame is xref'd, free everything that i
 context (its Page: layout, canvas, style engine, images; timers; network) right away, and/or make cross-context
 wrappers neuterable so the V8 context itself can go. Debug: LUMEN_DEBUG_FRAMES=1 and
 `tests/wpt/wpt_one.py --dump FILE` (new: saves the browser's raw stdout/stderr).
+
+RUN 273 (committed): iframe/frame marginwidth/marginheight map to the nested body (js_doc_frame_el() in frames.cc,
+weak NULL fallback in style.c; main.c hf_sync restyles the body when they change). pixel-length-attributes
+546/546 alone. Under 3 parallel jobs it still passes the 60 s script limit: appendChild of an iframe goes
+through prelude insertChecked -> prelude line ~13877 and is slow, plus 1.3 GB RSS from never-freed xref'd frames
+(see MEMORY FINDING). svg-in-iframe-* time out on old and new binaries alike.
