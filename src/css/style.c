@@ -4576,9 +4576,9 @@ bool css_img_sizes_auto(const Node *img) {
 static const char *sizes_auto(const Node *img, const char *sz, char *out, size_t n) {
     if (!sizes_is_auto(sz) || !css_img_sizes_auto(img)) return sz;
     const Box *b = img->box;
-    float w = b ? fmaxf(0, b->w - b->b[1] - b->b[3] - b->p[1] - b->p[3]) : 300;
-    Node *m = (Node *)img;   /* a new width picks again: the loader refetches on a resource change */
-    if (m->img_auto_w != w + 1) { if (m->img_auto_w && m->doc) { m->doc->resource_version++; m->doc->dom_version++; }   /* sync_images runs on a DOM change */ m->img_auto_w = w + 1; }
+    Node *m = (Node *)img;   /* unrendered (no box): its last rendered width, else 300px */
+    float w = b ? fmaxf(0, b->w - b->b[1] - b->b[3] - b->p[1] - b->p[3]) : m->img_auto_w > 0 ? m->img_auto_w - 1 : 300;
+    if (m->img_auto_w != w + 1) {   /* a new width picks again: the loader refetches on a resource change */ if (m->img_auto_w && m->doc) { m->doc->resource_version++; m->doc->dom_version++; }   /* sync_images runs on a DOM change */ m->img_auto_w = w + 1; }
     snprintf(out, n, "%gpx", w);
     return out;
 }

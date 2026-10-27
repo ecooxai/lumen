@@ -957,3 +957,12 @@ SIZES=AUTO v3 (fixed first laid-out width on Node, reverted): worse, 22/74 TIMEO
 lazy sizes=auto img hangs: onload/onerror never fire. So the real blocker is the loader: when the chosen URL
 changes after a lazy load began (300px pick before layout -> laid-out pick), the new URL is never fetched / the
 load event never fires. Look at main.c img_src()/node_img() and the lazy-load trigger before retrying.
+
+SIZES=AUTO DONE (runs 280-281, committed): lazy img sizes="auto" -> img_size gives 300x150 (size containment),
+sizes_auto() picks with the laid-out content width (unrendered: last rendered width, else 300) and bumps
+resource_version+dom_version when that width changes, since sync_images only runs on a DOM change.
+sizes-auto 38->66/74, dynamic-attributes 0->3/3, resize-observer-removes-auto 0->1/1, unrendered 0->5/15.
+LEFT: sizes-auto ref2 cases (min-inline-size, abspos left/right, vertical min-block-size: width should come
+from min-size/abspos, got 1x1); unrendered: display:none / sizes change keep last width (sizes change
+re-picks), disconnected img stalls the harness. In suite mode the sizes-auto files' first subtest sometimes
+times out (passes alone).
