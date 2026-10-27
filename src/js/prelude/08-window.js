@@ -477,7 +477,10 @@ function mediaChanged() {
     }
 }
 class MediaQueryListEvent extends Event { constructor(t, i = {}) { super(t, i); this.matches = !!i.matches; this.media = i.media || ''; } }
-function getComputedStyle(el) { if (!el || !N.isNode(el) || N.type(el) !== 1) throw new TypeError("Failed to execute 'getComputedStyle': parameter 1 is not of type 'Element'."); if (!el.__cstyle) def(el, '__cstyle', new Proxy(new ComputedStyleDeclaration(el, true), computedHandler)); return el.__cstyle; }   /* live, so one per element */
+/* pseudo-elements getComputedStyle resolves; any other non-empty argument gives an empty style */
+const CS_PSEUDO = /^::?(before|after|first-line|first-letter)$|^::(marker|placeholder|selection|backdrop|file-selector-button|search-text|target-text|spelling-error|grammar-error|details-content|scroll-marker|scroll-marker-group|column|checkmark|picker-icon|picker\(select\)|highlight\(\s*-?[a-zA-Z_][\w-]*\s*\)|view-transition)$/;
+const csNone = new WeakMap();
+function getComputedStyle(el, pseudo) { if (!el || !N.isNode(el) || N.type(el) !== 1) throw new TypeError("Failed to execute 'getComputedStyle': parameter 1 is not of type 'Element'."); if (pseudo != null && pseudo !== '' && !CS_PSEUDO.test(String(pseudo))) { let n = csNone.get(el); if (!n) { n = new ComputedStyleDeclaration(el, true); def(n, '_none', true); n = new Proxy(n, computedHandler); csNone.set(el, n); } return n; } if (!el.__cstyle) def(el, '__cstyle', new Proxy(new ComputedStyleDeclaration(el, true), computedHandler)); return el.__cstyle; }   /* live, so one per element */
 for (const u of CSS_UNIT_FACTORIES) CSS[u] = { [u](v) { return new CSSUnitValue(v, u); } }[u];
 const timerFn = (repeat) => (fn, ms, ...args) => { if (typeof fn !== 'function') { const src = ttString(TrustedScript, fn, repeat ? 'Window setInterval' : 'Window setTimeout'); fn = () => { ttTimerSrc = src; (0, eval)(src); }; } return N.timer(() => { try { fn(...args); } catch (e) { report(e); } }, Math.max(0, +ms || 0), repeat); };
 const setTimeout = timerFn(false), setInterval = timerFn(true);
