@@ -93,6 +93,44 @@ static bool name_in_list(const char *list, const char *nm, size_t nl) {
     }
     return false;
 }
+static const Box *find_anchor(const Box *a, const char *name) {   /* the last laid-out element with that anchor-name */
+    const Box *ab = NULL; size_t nl = strlen(name); Node *root = &a->node->doc->node;
+    for (Node *m = root->first; m; m = node_next_in_tree(m, root)) {
+        if (m->type != NODE_ELEMENT || !m->style || !m->style->anchor_name || !m->box || m == a->node || !name_in_list(m->style->anchor_name, name, nl)) continue;
+        bool inside = false; for (Node *p = m->parent; p; p = p->parent) if (p == a->node) { inside = true; break; }
+        if (!inside) ab = m->box;
+    }
+    return ab;
+}
+/* anchor-size(<name>? <size>[, <fallback>]) as a whole width (h=0) or height (h=1), border-box excluded */
+static bool anchor_size(const Box *a, int h, float cbs, float *out) {
+    const char *v = a->st->anchor_sz[h];
+    while (*v == ' ') v++;
+    if (strncmp(v, "anchor-size(", 12)) return false;
+    const char *q = v + 12, *end = strrchr(q, ')'); if (!end) return false;
+    for (const char *z = end + 1; *z; z++) if (*z != ' ') return false;
+    char buf[256]; size_t n = (size_t)(end - q); if (n >= sizeof buf) return false;
+    memcpy(buf, q, n); buf[n] = 0;
+    char *fb = strchr(buf, ','); if (fb) *fb++ = 0;
+    char *tok[3]; int nt = 0;
+    for (char *s = strtok(buf, " \t\n"); s && nt < 3; s = strtok(NULL, " \t\n")) tok[nt++] = s;
+    const char *name = nt && !strncmp(tok[0], "--", 2) ? tok[0] : NULL, *dim = nt > (name ? 1 : 0) ? tok[name ? 1 : 0] : NULL;
+    if (!name) name = a->st->pos_anchor;
+    const Box *ab = name ? find_anchor(a, name) : NULL;
+    if (ab) {
+        bool vm = a->st->writing_mode != 0, wide;
+        if (!dim) wide = !h;
+        else if (!strcmp(dim, "width")) wide = true;
+        else if (!strcmp(dim, "height")) wide = false;
+        else if (!strcmp(dim, "inline") || !strcmp(dim, "self-inline")) wide = !vm;
+        else if (!strcmp(dim, "block") || !strcmp(dim, "self-block")) wide = vm;
+        else return false;
+        *out = wide ? ab->w : ab->h; return true;
+    }
+    if (!fb) return false;
+    Length l; if (!css_parse_length(fb, &l, a->st->font_size, a->st->font_size, NULL) || l.kind != LK_LEN) return false;
+    *out = res(l, cbs); return true;
+}
 static bool anchor_inset(const Box *a, const Box *cb, int i, float px, float py, float pw, float ph, float *out) {
     const char *v = a->st->anchor_ins[i];
     while (*v == ' ') v++;
@@ -106,15 +144,7 @@ static bool anchor_inset(const Box *a, const Box *cb, int i, float px, float py,
     for (char *s = strtok(buf, " \t\n"); s && nt < 3; s = strtok(NULL, " \t\n")) tok[nt++] = s;
     const char *name = nt && !strncmp(tok[0], "--", 2) ? tok[0] : NULL, *side = nt > (name ? 1 : 0) ? tok[name ? 1 : 0] : NULL;
     if (!name) name = a->st->pos_anchor;   /* the default anchor */
-    const Box *ab = NULL;
-    if (name && side) {
-        size_t nl = strlen(name); Node *root = &a->node->doc->node;
-        for (Node *m = root->first; m; m = node_next_in_tree(m, root)) {
-            if (m->type != NODE_ELEMENT || !m->style || !m->style->anchor_name || !m->box || m == a->node || !name_in_list(m->style->anchor_name, name, nl)) continue;
-            bool inside = false; for (Node *p = m->parent; p; p = p->parent) if (p == a->node) { inside = true; break; }
-            if (!inside) ab = m->box;
-        }
-    }
+    const Box *ab = name && side ? find_anchor(a, name) : NULL;
     float scx = 0, scy = 0;   /* scrollers between the anchor and the containing block shift it */
     if (ab) for (const Node *p = ab->node ? ab->node->parent : NULL; p && p != cb->node; p = p->parent) if (p->box && p->box->scroller) { scx += p->scroll_x; scy += p->scroll_y; }
     if (ab) {
@@ -171,6 +201,11 @@ static void layout_abs(Layout *L, Box *cb) {
         float avail = pw - (lA ? 0 : l) - (rA ? 0 : r);
         if (!len_def(s->height, ph) && !tA && !bA) fh = ph - t - bt - a->m[0] - a->m[2];
         if (a->fmt == FMT_REPLACED) fh = -1;
+        if (s->anchor_sz[0] || s->anchor_sz[1]) {   /* anchor-size() widths and heights are border-box sizes here */
+            float v; bool bs = s->box_sizing == BOX_BORDER;
+            if (s->anchor_sz[0] && anchor_size(a, 0, pw, &v)) { mode = SZ_FORCED; fw = bs ? v : v + a->b[1] + a->b[3] + a->p[1] + a->p[3]; }
+            if (s->anchor_sz[1] && anchor_size(a, 1, ph, &v)) fh = bs ? v : v + a->b[0] + a->b[2] + a->p[0] + a->p[2];
+        }
         /* Insets constrain shrink-to-fit space, not the percentage basis of a
            specified width (or its percentage padding, margins and limits). */
         layout_box(L, a, 0, 0, mode == SZ_FORCED || wdef || a->fmt == FMT_REPLACED ? pw : avail, ph, NULL, mode, fw, fh);
