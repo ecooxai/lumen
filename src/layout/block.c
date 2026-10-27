@@ -105,6 +105,7 @@ static bool anchor_inset(const Box *a, const Box *cb, int i, float px, float py,
     char *tok[3]; int nt = 0;
     for (char *s = strtok(buf, " \t\n"); s && nt < 3; s = strtok(NULL, " \t\n")) tok[nt++] = s;
     const char *name = nt && !strncmp(tok[0], "--", 2) ? tok[0] : NULL, *side = nt > (name ? 1 : 0) ? tok[name ? 1 : 0] : NULL;
+    if (!name) name = a->st->pos_anchor;   /* the default anchor */
     const Box *ab = NULL;
     if (name && side) {
         size_t nl = strlen(name); Node *root = &a->node->doc->node;
@@ -114,9 +115,11 @@ static bool anchor_inset(const Box *a, const Box *cb, int i, float px, float py,
             if (!inside) ab = m->box;
         }
     }
+    float scx = 0, scy = 0;   /* scrollers between the anchor and the containing block shift it */
+    if (ab) for (const Node *p = ab->node ? ab->node->parent : NULL; p && p != cb->node; p = p->parent) if (p->box && p->box->scroller) { scx += p->scroll_x; scy += p->scroll_y; }
     if (ab) {
         bool hz = i & 1;
-        float lo = hz ? ab->x - px : ab->y - py, sz = hz ? ab->w : ab->h, pos;
+        float lo = hz ? ab->x - px - scx : ab->y - py - scy, sz = hz ? ab->w : ab->h, pos;
         const ComputedStyle *cs = cb->st ? cb->st : a->st;
         /* start of the axis is its low (left/top) side unless the writing mode or direction flips it */
         bool cflip = hz ? (cs->writing_mode ? cs->writing_mode == 2 : cs->direction) : (cs->writing_mode ? cs->direction : false);
