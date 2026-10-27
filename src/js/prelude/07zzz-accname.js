@@ -59,7 +59,7 @@ const axHidden = el => {
     const cs = getComputedStyle(el);
     return cs.display === 'none' || cs.visibility === 'hidden' || cs.visibility === 'collapse';
 };
-const axTrim = s => s.replace(/[ \t\n\r\f]+/g, ' ').trim();
+const axTrim = s => s.replace(/[ \t\n\r\f]+/g, ' ').replace(/^ | $/g, '');
 const axControlValue = (el, role) => {
     if (role === 'textbox' || role === 'searchbox') return el.value !== undefined && axHtml(el) && /^(input|textarea)$/.test(el.localName) ? el.value : el.textContent;
     if (role === 'combobox' || role === 'listbox') {
@@ -133,13 +133,15 @@ function axText(el, cx) {
         const h = axHostLabel(el);
         if (h && axTrim(h)) return h;
     }
+    let ws = '';
     if (cx.rec || AX_FROM_CONTENT.has(role) || cx.lby) {
         const s = axFromContent(el, cx);
         if (axTrim(s)) return s;
+        ws = s;   /* whitespace-only content still separates its neighbours */
     }
     const ti = el.getAttribute('title'); if (ti && axTrim(ti)) return ti;
     if (axHtml(el) && /^(input|textarea)$/.test(el.localName)) { const ph = el.getAttribute('placeholder'); if (ph) return ph; }
-    return '';
+    return cx.rec ? ws : '';
 }
 function axName(el) {
     if (!el || el.nodeType !== 1) return '';
