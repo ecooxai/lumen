@@ -924,3 +924,9 @@ weak NULL fallback in style.c; main.c hf_sync restyles the body when they change
 546/546 alone. Under 3 parallel jobs it still passes the 60 s script limit: appendChild of an iframe goes
 through prelude insertChecked -> prelude line ~13877 and is slow, plus 1.3 GB RSS from never-freed xref'd frames
 (see MEMORY FINDING). svg-in-iframe-* time out on old and new binaries alike.
+
+SLOW IFRAME INSERT: the 60 s stack ends in N.insert (prelude insertChecked): inserting an iframe synchronously
+creates a new JS context and runs the whole prelude (~50-100 ms each). Tests that create hundreds of iframes
+(pixel-length-attributes, svg-in-iframe-*) are dominated by it. Options: a V8 startup snapshot / context
+snapshot for frame contexts, or lazily creating about:blank frame contexts until script touches them. Both also
+cut memory per frame (pairs with the xref'd-frame MEMORY FINDING).
