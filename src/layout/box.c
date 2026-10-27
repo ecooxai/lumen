@@ -471,7 +471,8 @@ void replaced_size(Layout *L, Box *b, float cbw, float *ow, float *oh) {
     else if (b->ctl == CTL_RANGE) { nw = 129; nh = 16; have = true; }
     else if (n && n->tag == A_img) {
         float w, h;
-        if (layout_image_size_hook && layout_image_size_hook(n, &w, &h) && w > 0) { nw = w; nh = h; have = true; }
+        if (css_img_sizes_auto(n)) have = true;   /* size-contained at 300x150 (UA contain-intrinsic-size), whatever it loads */
+        else if (layout_image_size_hook && layout_image_size_hook(n, &w, &h) && w > 0) { nw = w; nh = h; have = true; }
         else { nw = nh = 0; const char *aw = node_attr(n, "width"), *ah = node_attr(n, "height"); if (aw) nw = (float)atof(aw); if (ah) nh = (float)atof(ah); have = aw || ah; }
     } else if (n && n->ns == NS_SVG) {
         const char *vb = node_attr(n, "viewBox");
