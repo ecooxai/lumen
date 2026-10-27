@@ -76,6 +76,8 @@ VENDOR_JS = VENDOR_MARK + r"""
         return [Math.floor((l + ri) / 2), Math.floor((t + b) / 2)];
     };
     I.delete_all_cookies = function () { return td("cookies-clear"); };
+    var ax = window.__lumenAx;
+    if (ax) { I.get_computed_label = function (el) { return Promise.resolve(ax.label(el)); }; I.get_computed_role = function (el) { return Promise.resolve(ax.role(el)); }; }
     I.click = function (el, c) { return td("move " + c.x + " " + c.y + "\ndown 0\nup 0"); };
     I.send_keys = function (el, keys) {
         if (document.activeElement !== el) el.focus();
