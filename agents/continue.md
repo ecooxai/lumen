@@ -975,3 +975,7 @@ should be the physical height), abspos left/right replaced width (CSS2 abs-repla
 RUN 285 (committed): abspos replaced elements aren't stretched between left/right (block.c, CSS2 10.3.8).
 sizes-auto 70->72/74, anchor-center +22, position +2; total +30, no losses or crashes.
 LEFT in sizes-auto: vertical-rl block-size:10px (the inline size is the physical height).
+LOGICAL SIZES: style.c logical_size_prop() maps inline-size/block-size to width/height at declaration time,
+always horizontally. Vertical writing modes need the mapping after the cascade (writing-mode may come later in
+the same block, e.g. sizes-auto "block-size:10px; writing-mode:vertical-rl"): record logical sizes separately
+and resolve them once st->writing_mode is final. Affects sizes-auto (2), css-writing-modes, css-logical, anchor.
