@@ -4562,7 +4562,28 @@ static bool img_type_ok(const char *t) {
     for (size_t k = 0; k < sizeof ok / sizeof *ok; k++) if (!strcmp(b, ok[k])) return true;
     return false;
 }
+/* sizes="auto" (first entry) on a lazy-loading img is its used width: the laid-out content width, else 300px */
+static bool sizes_is_auto(const char *a) {
+    while (a && isspace((unsigned char)*a)) a++;
+    return a && !strncasecmp(a, "auto", 4) && (!a[4] || a[4] == ',' || isspace((unsigned char)a[4]));
+}
+/* a lazy img with sizes="auto" is size-contained at 300x150 (the UA sheet's contain-intrinsic-size), so its
+   width never depends on its own load */
+bool css_img_sizes_auto(const Node *img) {
+    const char *lz = node_attr(img, "loading");
+    return lz && !strcasecmp(lz, "lazy") && sizes_is_auto(node_attr(img, "sizes"));
+}
+static const char *sizes_auto(const Node *img, const char *sz, char *out, size_t n) {
+    if (!sizes_is_auto(sz) || !css_img_sizes_auto(img)) return sz;
+    const Box *b = img->box;
+    float w = b ? fmaxf(0, b->w - b->b[1] - b->b[3] - b->p[1] - b->p[3]) : 300;
+    Node *m = (Node *)img;   /* a new width picks again: the loader refetches on a resource change */
+    if (m->img_auto_w != w + 1) { if (m->img_auto_w && m->doc) { m->doc->resource_version++; m->doc->dom_version++; }   /* sync_images runs on a DOM change */ m->img_auto_w = w + 1; }
+    snprintf(out, n, "%gpx", w);
+    return out;
+}
 bool css_img_source(const Node *img, char *buf, size_t bn, float *dens) {
+    char autosz[32];
     const Document *d = img->doc;
     const StyleEngine *e = d ? d->stylesheets : NULL;
     const MediaCtx *mc = e ? &e->media : NULL;
@@ -4573,10 +4594,13 @@ bool css_img_source(const Node *img, char *buf, size_t bn, float *dens) {
             if (!node_is(s, atom("source"))) continue;
             const char *ss = node_attr(s, "srcset"), *m = node_attr(s, "media");
             if (!ss || !*ss || !img_type_ok(node_attr(s, "type")) || (m && *m && (m[strspn(m, " \t\n\r\f,")] ? !css_media_matches(m, mc) : !!strchr(m, ',')))) continue;
-            if (srcset_pick(ss, node_attr(s, "sizes"), NULL, mc, buf, bn, dens)) return true;
+            const char *ssz = node_attr(s, "sizes");   /* a source without sizes follows the img's sizes="auto" */
+            if (!ssz) { const char *isz = sizes_auto(img, node_attr(img, "sizes"), autosz, sizeof autosz); if (isz == autosz) ssz = isz; }
+            else ssz = sizes_auto(img, ssz, autosz, sizeof autosz);
+            if (srcset_pick(ss, ssz, NULL, mc, buf, bn, dens)) return true;
         }
     const char *ss = node_attr(img, "srcset"), *src = node_attr(img, "src");
-    if (ss && *ss) return srcset_pick(ss, node_attr(img, "sizes"), src, mc, buf, bn, dens);
+    if (ss && *ss) return srcset_pick(ss, sizes_auto(img, node_attr(img, "sizes"), autosz, sizeof autosz), src, mc, buf, bn, dens);
     if (!src) return false;
     snprintf(buf, bn, "%s", src);
     return true;

@@ -357,6 +357,7 @@ static Image *node_img(Node *n) {
 static Image *url_img(const char *u) { return u ? cache_get(u) : NULL; }
 static bool img_size(Node *n, float *w, float *h) {
     if (n->tag == A_iframe) return false;
+    if (n->tag == A_img && css_img_sizes_auto(n)) { *w = 300; *h = 150; return true; }
     g_in_layout = true; Image *im = node_img(n); g_in_layout = false;
     if (!im) {
         char b[2048]; float dn; const char *s = n->tag == A_img ? img_src(n, b, sizeof b, &dn) : NULL; const char *u = s ? node_src_url(n, s) : NULL;

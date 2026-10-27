@@ -333,6 +333,7 @@ bool css_parse_length(const char *s, Length *out, float em, float rem, const Med
 /* an <img>'s source by srcset/sizes and its <picture>'s <source>s (HTML "select an image source"): the chosen URL
    (unresolved) into buf and its pixel density; false when there is none. Without srcset or <picture>: src at 1x */
 bool css_img_source(const Node *img, char *buf, size_t bn, float *dens);
+bool css_img_sizes_auto(const Node *img);   /* lazy with sizes="auto": 300x150 intrinsic size */
 void css_apply_decl(ComputedStyle *st, const ComputedStyle *parent, const char *prop, const char *value, StyleEngine *e, Node *el);
 char *css_get_computed_value(Node *el, const char *prop);
 void css_transition_scan(Node *n, const ComputedStyle *o, const ComputedStyle *s, void (*cb)(Node *, const char *, const char *, const char *));
