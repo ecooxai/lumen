@@ -10,6 +10,13 @@ fs.mkdirSync(runtime,{recursive:true,mode:0o700}); fs.chmodSync(runtime,0o700);
 const secretPath=path.join(runtime,'viewer-token');
 if(!fs.existsSync(secretPath)) fs.writeFileSync(secretPath,crypto.randomBytes(32).toString('hex'),{mode:0o600});
 const secret=fs.readFileSync(secretPath,'utf8').trim();
+// Posting is a separate, session-scoped capability; it never unlocks private history.
+const messageSession=data('status.json',{}), messageSessionId=String(messageSession.session_id||'inactive').replace(/[^A-Za-z0-9_-]/g,'');
+const messageSecretPath=path.join(runtime,'message-token-'+messageSessionId);
+if(!fs.existsSync(messageSecretPath))fs.writeFileSync(messageSecretPath,crypto.randomBytes(32).toString('hex'),{mode:0o600});
+const messageSecret=fs.readFileSync(messageSecretPath,'utf8').trim();
+const postEqual=s=>{if(typeof s!=='string')return false;const a=Buffer.from(s),b=Buffer.from(messageSecret);return a.length===b.length&&crypto.timingSafeEqual(a,b)};
+const postingOpen=()=>{const s=currentStatus();return s.session_active===true&&s.session_id===messageSession.session_id&&Date.parse(s.session_deadline_utc)>Date.now()};
 const equal=s=>{if(typeof s!=='string')return false;const candidate=Buffer.from(s),expected=Buffer.from(secret);return candidate.length===expected.length&&crypto.timingSafeEqual(candidate,expected)};
 const authorized=req=>equal((req.headers.authorization||'').replace(/^Bearer /,''));
 function endpoints(){try{return JSON.parse(fs.readFileSync(path.join(runtime,'endpoints.json'),'utf8'))}catch{return {}}}
@@ -77,11 +84,11 @@ function reviewedShowcase(){
  }catch{return null}finally{if(fd!==undefined)fs.closeSync(fd)}
 }
 function reviewedSourceArchive(){
- const meta=data('runtime/source150-publication.json',null);
+ const meta=data('runtime/source-publication.json',null);
  if(meta?.reviewed_publication!==true||!Number.isSafeInteger(meta.bytes)||meta.bytes<=0||meta.bytes>64*1024*1024||!/^[0-9a-f]{64}$/.test(meta.sha256||''))return null;
  let fd;
  try{
-  fd=fs.openSync(path.join(runtime,'published-source150-tools.tar.gz'),fs.constants.O_RDONLY|fs.constants.O_NOFOLLOW|fs.constants.O_NONBLOCK);
+  fd=fs.openSync(path.join(runtime,'published-source.tar.gz'),fs.constants.O_RDONLY|fs.constants.O_NOFOLLOW|fs.constants.O_NONBLOCK);
   const stat=fs.fstatSync(fd);if(!stat.isFile()||stat.size!==meta.bytes)return null;
   const bytes=Buffer.alloc(meta.bytes+1);let read=0,n;
   while(read<bytes.length&&(n=fs.readSync(fd,bytes,read,bytes.length-read,null))>0)read+=n;
@@ -92,7 +99,7 @@ function reviewedSourceArchive(){
 }
 function currentStatus(){return data('status.json',{})}
 
-function snapshot(isPrivate){return {type:'snapshot',status:currentStatus(),telemetry,messages:visibleMessages(isPrivate)}}
+function snapshot(isPrivate,canPost=false){return {type:'snapshot',status:currentStatus(),telemetry,messages:visibleMessages(isPrivate),access:{can_post:canPost&&postingOpen(),private_history:isPrivate}}}
 function append(message){const f=path.join(runtime,'messages.jsonl');if(fs.existsSync(f)&&fs.statSync(f).size>1048576)fs.writeFileSync(f,messages().slice(-50).map(x=>JSON.stringify(x)).join('\n')+'\n',{mode:0o600});fs.appendFileSync(f,JSON.stringify(message)+'\n',{mode:0o600})}
 let previousCpu=null, telemetry={utc:new Date().toISOString(),cpu_percent:null,ram:{},disks:[]};
 function sample(){
@@ -115,9 +122,9 @@ const server=http.createServer(async(req,res)=>{
  if(req.method==='OPTIONS'){res.writeHead(204);return res.end()}
  const url=new URL(req.url,'http://localhost');if(req.method!=='GET')return json(res,405,{error:'Method not allowed'});
  if(url.pathname==='/healthz')return json(res,200,{ok:true,service:'lumen-wpt-progress'});
- if(url.pathname==='/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-showcase.mp4'){const item=reviewedFinalShowcase();if(!item)return json(res,404,{error:'Reviewed showcase not prepared'});res.writeHead(200,{'Content-Type':'video/mp4','Content-Length':item.bytes.length,'Content-Disposition':'attachment; filename="lumen-linux-gpt-6-astra-builtin-agents-rubywebterm-showcase.mp4"','Cache-Control':'no-store'});return res.end(item.bytes)}
-  if(url.pathname==='/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-demo.mp4'){const item=reviewedCleanDemo();if(!item)return json(res,404,{error:'Reviewed showcase not prepared'});res.writeHead(200,{'Content-Type':'video/mp4','Content-Length':item.bytes.length,'Content-Disposition':'attachment; filename="lumen-linux-gpt-6-astra-builtin-agents-rubywebterm-showcase.mp4"','Cache-Control':'no-store'});return res.end(item.bytes)}
-  if(url.pathname==='/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-media-manifest.json'){const item=reviewedMediaManifest();if(!item)return json(res,404,{error:'Reviewed showcase not prepared'});res.writeHead(200,{'Content-Type':'application/json','Content-Length':item.bytes.length,'Content-Disposition':'attachment; filename="lumen-linux-gpt-6-astra-builtin-agents-rubywebterm-showcase.mp4"','Cache-Control':'no-store'});return res.end(item.bytes)}
+ if(url.pathname==='/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-showcase.mp4'){const item=reviewedFinalShowcase();if(!item)return json(res,404,{error:'Reviewed showcase not prepared'});res.writeHead(200,{'Content-Type':'video/mp4','Content-Length':item.bytes.length,'Content-Disposition':'attachment; filename="lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-showcase.mp4"','Cache-Control':'no-store'});return res.end(item.bytes)}
+  if(url.pathname==='/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-demo.mp4'){const item=reviewedCleanDemo();if(!item)return json(res,404,{error:'Reviewed showcase not prepared'});res.writeHead(200,{'Content-Type':'video/mp4','Content-Length':item.bytes.length,'Content-Disposition':'attachment; filename="lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-demo.mp4"','Cache-Control':'no-store'});return res.end(item.bytes)}
+  if(url.pathname==='/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-media-manifest.json'){const item=reviewedMediaManifest();if(!item)return json(res,404,{error:'Reviewed showcase not prepared'});res.writeHead(200,{'Content-Type':'application/json','Content-Length':item.bytes.length,'Content-Disposition':'attachment; filename="lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-media-manifest.json"','Cache-Control':'no-store'});return res.end(item.bytes)}
   if(url.pathname==='/showcase.mp4'){const item=reviewedShowcase();if(!item)return json(res,404,{error:'Reviewed showcase not prepared'});res.writeHead(200,{'Content-Type':'video/mp4','Content-Length':item.bytes.length,'Content-Disposition':'attachment; filename="lumen-linux-gpt-6-astra-builtin-agents-rubywebterm-showcase.mp4"','Cache-Control':'no-store'});return res.end(item.bytes)}
  if(url.pathname.startsWith('/api/')||url.pathname==='/src.tar.gz'){
   if(url.pathname==='/api/status')return json(res,200,snapshot(authorized(req)));
@@ -130,23 +137,24 @@ const server=http.createServer(async(req,res)=>{
 });
 const wss=new WebSocketServer({noServer:true,maxPayload:4096,handleProtocols:p=>p.has('lumen-status')?'lumen-status':false});
 server.on('upgrade',(req,socket,head)=>{
- const protocols=(req.headers['sec-websocket-protocol']||'').split(',').map(x=>x.trim());const key=protocols.find(x=>x.startsWith('auth.'))?.slice(5);
- if(req.url!=='/ws'||!originAllowed(req.headers.origin)||(key&&!equal(key))||wss.clients.size>=16){socket.write('HTTP/1.1 403 Forbidden\r\n\r\n');return socket.destroy()}
- wss.handleUpgrade(req,socket,head,ws=>{ws.isPrivate=equal(key);wss.emit('connection',ws,req)});
+ const protocols=(req.headers['sec-websocket-protocol']||'').split(',').map(x=>x.trim());const key=protocols.find(x=>x.startsWith('auth.'))?.slice(5),postKey=protocols.find(x=>x.startsWith('post.'))?.slice(5);
+ if(req.url!=='/ws'||!originAllowed(req.headers.origin)||(key&&!equal(key))||(postKey&&!postEqual(postKey))||wss.clients.size>=16){socket.write('HTTP/1.1 403 Forbidden\r\n\r\n');return socket.destroy()}
+ wss.handleUpgrade(req,socket,head,ws=>{ws.isPrivate=equal(key);ws.canPost=postEqual(postKey);wss.emit('connection',ws,req)});
 });
 wss.on('connection',ws=>{
- let sent=[];ws.send(JSON.stringify(snapshot(ws.isPrivate)));
+ let sent=[];ws.send(JSON.stringify(snapshot(ws.isPrivate,ws.canPost)));
  ws.on('error',()=>{});ws.on('message',buf=>{
   let msg;try{msg=JSON.parse(buf.toString())}catch{return}
   if(msg.type==='ping'&&Number.isFinite(msg.client_ms))return ws.send(JSON.stringify({type:'pong',client_ms:msg.client_ms,server_utc:new Date().toISOString()}));
   if(msg.type==='message'&&typeof msg.text==='string'){
+   if(!ws.canPost||!postingOpen())return ws.send(JSON.stringify({type:'error',text:'A current session message key is required to post.'}));
    sent=sent.filter(t=>Date.now()-t<10000);if(sent.length>=4)return ws.send(JSON.stringify({type:'error',text:'Please wait before sending more messages.'}));
    const body=msg.text.trim().slice(0,2000);if(!body)return;sent.push(Date.now());
    append({id:crypto.randomUUID(),utc:new Date().toISOString(),role:'user',public:!ws.isPrivate,text:body});broadcast();
   }
  });
 });
-function broadcast(){for(const ws of wss.clients)if(ws.readyState===1&&ws.bufferedAmount<65536)ws.send(JSON.stringify(snapshot(ws.isPrivate)))}
+function broadcast(){for(const ws of wss.clients)if(ws.readyState===1&&ws.bufferedAmount<65536)ws.send(JSON.stringify(snapshot(ws.isPrivate,ws.canPost)))}
 sample();setInterval(()=>{sample();broadcast()},2000);
 const port=Number(process.env.LUMEN_PROGRESS_PORT||4187);server.listen(port,'127.0.0.1',()=>console.log(`Lumen progress listening at 127.0.0.1:${port}`));
 for(const sig of ['SIGTERM','SIGINT'])process.on(sig,()=>{wss.close();server.close();setTimeout(()=>process.exit(0),250).unref()});

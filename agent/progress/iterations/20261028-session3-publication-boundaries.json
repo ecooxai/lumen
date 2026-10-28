@@ -1,0 +1,30 @@
+{
+  "recorded_utc": "2026-10-28T17:04:40.205451+00:00",
+  "live_preview": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/",
+  "verified_live_source_iteration": 151,
+  "cloud_deployed_snapshot": "previous150; new151 showcase staging not pushed",
+  "blocked_actions": [
+    {
+      "action": "Print session posting-token URL",
+      "review": "Rejected by automatic approval review: capability-bearing secret disclosure was not explicitly authorized to this destination.",
+      "outcome": "No token disclosed; message form requires project-local key entry; telemetry remains public."
+    },
+    {
+      "action": "Read retained Surge authentication-result file and filter login/email lines",
+      "review": "Rejected by automatic approval review: private account/authentication metadata could be disclosed; safer deployment checks available.",
+      "outcome": "No authentication metadata read or printed; source-only work resumed."
+    },
+    {
+      "action": "Push accepted151 source/archive showcase to GitHub origin",
+      "review": "Engine lead reported current automatic approval rejection: exact archive payload to this external GitHub destination deemed insufficiently verified/authorized.",
+      "outcome": "No push executed; exact staged assets retained; no alternate export route attempted after denial."
+    }
+  ],
+  "reachability": [
+    {
+      "destination": "FileHarbor public homepage and standardOpenAPI discovery",
+      "result": "HTTP403; no authentication bypass or retry loop attempted."
+    }
+  ],
+  "unaffected": "Native engine implementation, monitored independent tests, Git-local accepted commits and the already-approved live151 checkpoint continue."
+}

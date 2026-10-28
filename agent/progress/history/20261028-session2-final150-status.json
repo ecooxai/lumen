@@ -1,0 +1,125 @@
+{
+  "title": "Lumen \u00b7 Linux engine conformance",
+  "phase": "Final Lumen and fresh primary Chromium comparisons are sealed. Native selected full passes improved by 53; measured Grid, absolute layout and DOM elapsed medians increased 39.0%, 7.1% and 1.0%. Whole-goal estimate remains 19/100; final publication is being completed.",
+  "iteration": 150,
+  "score": 19,
+  "iteration_quality": 96,
+  "score_note": "Subjective whole-goal readiness estimate with no scoring formula; this is not a test pass percentage. Full WPT / Chromium parity and the requested 98/100 remain unachieved.",
+  "branch": "gpt-6-astra-builtin-agent-lumen-linux-conformance-20261028-0920",
+  "checkpoint": "0f62172b08683c7c0d89722c588af6ff94f82ca3",
+  "updated_utc": "2026-10-28T13:55:40.545630+00:00",
+  "session_started_utc": "2026-10-28T09:12:12Z",
+  "deadline_utc": "2026-10-28T14:12:12Z",
+  "current_evidence": [
+    [
+      "Accepted combined source 150",
+      "Commit 0f62172b0868; 584/584 compiled files match Git. Full native gate: 132/132. Final 47 cache controls, 37 parser URLs and 9 Typed OM URLs retain their reviewed results."
+    ],
+    [
+      "Measured performance regression",
+      "Median elapsed milliseconds for Lumen 128 / Lumen 150 / Chromium: Grid 136.76 / 190.03 / 56.90; absolute layout 359.38 / 385.06 / 67.50; DOM 44.74 / 45.19 / 11.60. All 21 trials passed 9,395 custom checks each. Final native medians increased 39.0%, 7.1% and 1.0%. Median trial sampled maximum PSS was 123.42 / 123.80 / 376.68 decimal MB. Memory and CPU measurements cover these controlled workloads."
+    ],
+    [
+      "Final painted rendering pilot",
+      "Lumen 150: 38 PASS, 60 FAIL, 1 UNSUPPORTED and 1 TIMEOUT across 100 selected painted reftests; baseline 128: 37 / 61 / 1 / 1; retained Chromium reference: 95 PASS and 5 FAIL. One matching case does not establish Grid 3 support. All 198 guarded capture launches are drained."
+    ],
+    [
+      "Final primary 150 complete",
+      "783/2,000 fully passing variants (39.15%);101,588/109,272 PASS reported subtests; 1,765 OK / 149 TIMEOUT / 86 ERROR. Existing identities: 620 gains, 27 losses; 365 new PASS and 42 new FAIL identities. Full-variant changes: 14 gains and two losses. The 27 losses comprise21 unsupported tentative Grid 3, five inherited isolated flex failures, and one batch-dependent animation observation."
+    ],
+    [
+      "Deduplicated selected union",
+      "Lumen 150: 1,620/4,200 fully passing variants and 199,144/215,657 PASS reported subtests. Baseline 128: 1,567 full and 197,240/215,081 PASS. Chromium reference: 3,532 full and 209,533/217,348 PASS, combining fresh primary/expanded with historical supplemental. This 10.66% selection of 39,394 testharness variants includes six explicitly marked jsshell entries. All 30 existing-identity PASS losses remain counted."
+    ],
+    [
+      "Accepted 150 supplemental holdout",
+      "1,767/3,370 PASS reported subtests; 77/200 fully passing URLs; all 200 harnesses OK. +554 existing gains / zero losses versus 128 and +128 / zero versus 139. All 21 placement-experiment losses are restored after rollback."
+    ],
+    [
+      "Expanded Chromium reference complete",
+      "1,648/2,000 selected testharness manifest URL variants fully pass (82.40%); 100,508/103,406 PASS reported subtests. Statuses: 1,948 OK, 26 TIMEOUT, 14 ERROR, 6 CRASH, 6 SKIP. All selected variants remain in the denominator; not every entry executed successfully."
+    ],
+    [
+      "Completed primary 142",
+      "783/2,000 fully passing URLs (39.15%); 101,564/109,272 PASS reported subtests; 1,763 OK / 149 TIMEOUT / 88 ERROR harnesses. Fresh baseline 128: 771/2,000 (38.55%), 100,630/108,868 PASS, 1,717 OK / 196 TIMEOUT / 87 ERROR."
+    ],
+    [
+      "Fresh primary Chromium reference",
+      "Sealed at 13:44:03 UTC: 1,695/2,000 fully passing URLs (84.75%) and 105,688/110,572 PASS reported subtests. Harness statuses: 1,956 OK, 25 TIMEOUT, 8 ERROR, 9 CRASH and 2 SKIP. All records retained; owned processes and profiles drained. Fresh primary and expanded references share the pinned selection and browser version; supplemental reference remains historical."
+    ],
+    [
+      "Intermediate primary 142 identity changes",
+      "592 existing gains, 23 losses; 407 new identities (365 PASS, 42 FAIL); three old nonpasses absent (two NOTRUN, one TIMEOUT). Net PASS +934; no lost harness-OK result. Losses: 21 unsupported tentative Grid 3 cases, one Typed OM regression repaired in 148, and one batch-dependent Trusted Types PASS-to-NOTRUN observation whose isolated target passes."
+    ],
+    [
+      "Intermediate primary 142 integrity",
+      "4,044 callback requests with begin/end pairing verified, zero request errors or unfinished callbacks; 23 complete guard launches, no surviving owned PIDs, protected hashes unchanged. Cohort duration is not a speed benchmark. Compromised136 remains diagnostic-only."
+    ],
+    [
+      "Expanded and final comparisons",
+      "Final expanded native sample: 760/2,000 fully passing variants (38.00%) and 95,789/103,015 PASS reported subtests; baseline 128: 742/2,000 (37.10%) and 95,397/102,843. There are 286 existing gains, three retained observed losses and 109 new PASS identities. Two decoder failures reproduce in baseline with variability; the referrer observation remains unresolved. Native primary, rendering, performance and fresh primary Chromium are complete."
+    ],
+    [
+      "Used-track cache: focused evidence",
+      "Final 150 passes 47/47 unchanged authored controls and 1,087/1,172 reported subtests across 37 URLs (32 fully passing, all harnesses OK): +28 gains / zero losses versus 141. Original failed runs remain retained. The separate placement experiment was rolled back; all 21 demonstrated geometry losses are restored."
+    ],
+    [
+      "Typed OM 148: focused evidence",
+      "Nine unchanged URLs improve from 471/542 to 479/542 reported subtests: eight existing gains, zero losses, all identities and harnesses retained. The exact grid-area regression is restored. Authored controls: 62/62 versus baseline 32/62 and Chromium 60/62; two inherited append differences have independent draft review and are not new gains. Native gate: 131/131."
+    ],
+    [
+      "Final module correction 150",
+      "44 unchanged URLs: 308/320 reported subtests, 38/44 fully passing, all 44 harnesses OK; five existing gains and zero losses versus 144. Original identity controls 25/25 and new graph controls 42/42 pass. Chromium 320/320; remaining module/CSS gaps stay explicit."
+    ],
+    [
+      "Accepted Grid CSSOM and arithmetic",
+      "Build 141: 1,059/1,172 reported subtests and 31/37 fully passing URLs, versus baseline 128 at 347/1,172 and Chromium at 1,130/1,172. All 754 gains and 42 unsupported tentative Grid 3 losses remain visible. The ten valid calculated-count regressions were repaired with supported typed arithmetic; broader math and context limits remain explicit."
+    ],
+    [
+      "Accepted JSON-module subset",
+      "Corrected build 130: 225/225 reported subtests and all eight files fully passing, matching Chromium 150. Starting build 128 passed 101/225. This focused subset is not a broad WPT pass rate."
+    ],
+    [
+      "Accepted placement repair 139",
+      "Supplemental 200 URLs: 1,639/3,370 reported subtests, 73 fully passing URLs, all harnesses OK; +426 gains / zero losses versus 128. All three original placement regressions were repaired. Retained Chromium: 3,337/3,370 reported subtests and 189 fully passing URLs."
+    ]
+  ],
+  "coverage": "The disjoint 4,200-variant selection is sealed: Lumen 150 has 1,620 fully passing variants versus 1,567 baseline; the Chromium union has 3,532. Primary and expanded Chromium references are fresh; supplemental Chromium remains historical. Six selected entries are explicitly marked jsshell. This selection covers 10.66% of 39,394 testharness variants and is not the full WPT suite.",
+  "findings": [
+    "One-second process-tree CPU/RSS and shared-cgroup monitoring remain required. Compilation shares a 480% CPU budget and at most six compiler jobs.",
+    "This dashboard publishes reviewed aggregates, host telemetry and public task feedback. The exact audited accepted-source archive is available at /src.tar.gz; raw results, private runtime paths and directory listings remain unavailable.",
+    "Native CSS grammar, intrinsic track sizing, automatic placement and full rendering parity remain incomplete. Accepted scoped repairs do not establish Chromium parity."
+  ],
+  "active_iteration": {
+    "number": 150,
+    "scope": "Final measurements of accepted combined source; no further engine changes planned."
+  },
+  "accepted_binary_sha256": "79874c9c16af2086cb1de93a6194276d4b17512897aeca118244beddef7bb967",
+  "accepted_binary_scope": "Accepted combined source 150: all 584 compiled inputs match tested Git commit 0f62172b08683c7c0d89722c588af6ff94f82ca3. Focused, supplemental, primary, expanded, rendering, performance and fresh primary Chromium measurements are complete. Metadata-only publication work does not change the tested binary.",
+  "agent_session": "active",
+  "showcase_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-showcase.mp4",
+  "candidate_binary_sha256": "79874c9c16af2086cb1de93a6194276d4b17512897aeca118244beddef7bb967",
+  "publication_status": "The public cloud showcase carries the distinct allowlisted aggregate report, approved recordings and reviewed engine-source snapshot. Full development history remains local because the tracked comparator export was rejected. The publication manifest records verified artifact identities.",
+  "showcase_note": "Actual accepted 150 browser recording from 13:01 UTC, before final primary measurements sealed. Independently reviewed clean and credited copies are 36 seconds, 960\u00d7720.",
+  "source_archive_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/src.tar.gz",
+  "source_archive_sha256": null,
+  "source_archive_bytes": null,
+  "measurement_units": "WPT numbers count reported testharness subtests, not individual assert_* calls. Native CTest entries and custom correctness checks are separate.",
+  "clean_demo_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-demo.mp4",
+  "fresh_primary_chromium": {
+    "fully_passing_variants": 1695,
+    "pass_subtests": 105688,
+    "reported_subtests": 110572,
+    "completed_utc": "2026-10-28T13:44:03Z",
+    "cleanup_complete": true
+  },
+  "mixed_chromium_union": {
+    "fully_passing_variants": 3532,
+    "pass_subtests": 209533,
+    "reported_subtests": 217348,
+    "supplemental_reference": "historical"
+  },
+  "source_archive_scope": "Engine-source snapshot with all 584 recorded inputs; validation/runtime tooling and Git history omitted. Complete standalone validation and Android build reproducibility are not claimed.",
+  "public_report_url": "https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-public-report.json",
+  "cloud_snapshot_url": "https://ecooxai.github.io/lumen/"
+}

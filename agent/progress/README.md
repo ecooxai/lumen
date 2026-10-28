@@ -1,6 +1,6 @@
 # Lumen live progress
 
-The task dashboard binds to `127.0.0.1:4187` and uses a dedicated HTTPS opentunnel route. It serves a small explicit set of resources, never the repository root. Safe aggregate status, host telemetry and the public task message board are public. Source and raw-result publication remain blocked; the source route always returns404, even when an archive exists. An existing optional viewer key unlocks private task history; do not commit or print it. Runtime files and browser profiles are ignored by Git.
+The task dashboard binds to `127.0.0.1:4187` and uses a dedicated HTTPS opentunnel route. It serves a small explicit set of resources, never the repository root. Safe aggregate status, host telemetry and public task history are public. Posting requires a separate session message key and an active session before its deadline. The message key cannot unlock private history. The exact reviewed engine-source snapshot is available at `/src.tar.gz`; raw results, full Git history and unreviewed artifacts are not served. An existing optional viewer key unlocks private task history; do not commit or print it. Runtime files and browser profiles are ignored by Git.
 
 ## Run and manage
 
@@ -13,14 +13,11 @@ The task dashboard binds to `127.0.0.1:4187` and uses a dedicated HTTPS opentunn
 - The health path is `/healthz`; use GET. HEAD is not implemented.
 - Update `agent/progress/status.json`, preserving scope, version, binary, timestamp and uncertainty boundaries. Focused iteration quality and whole-goal readiness are separate; neither substitutes for actual test counts.
 
-The browser receives CPU, RAM and disk metrics every two seconds and measures WebSocket ping/pong latency. Public messages are length/rate limited and treated as untrusted text. The server cannot execute them. An active agent polls and replies; the server alone does not wake an agent after the task ends. Public message history must not contain passwords or private data.
+The browser receives CPU, RAM and disk metrics every two seconds and measures WebSocket ping/pong latency. Messages require the current session posting capability, are length/rate limited, and are treated as untrusted text. The key is stored only in `runtime/message-token-SESSION_ID` (0600), can be entered in the UI or supplied as the `post` URL fragment, and is not included in published status, source, logs or archives. Posting access expires at `session_deadline_utc` and when `session_active` becomes false. Read-only viewers cannot post; posting access cannot read private history. The server cannot execute them. An active agent polls and replies; the server alone does not wake an agent after the task ends. Public message history must not contain passwords or private data.
 
 ## Private source review staging
 
-Source publication was rejected by automatic approval review for lack of explicit
-destination-specific authorization. Do not publish the source or raw-result
-archive through an alternate destination. `/src.tar.gz` is disabled independently
-of file existence to prevent accidental exposure.
+Historical automatic review rejected a complete source export containing the comparator. The reviewed engine-only snapshot is now explicitly allowlisted and served after exact size/SHA-256 verification. New source packages require concrete file/content review; do not re-export a previously denied payload through another route. Raw results, profiles, secrets and full Git history stay private.
 
 After a reviewed accepted commit, `python3 tools/codex_compile.py python3
 agent/progress/snapshot.py` stages a source archive and portable Git bundle only
@@ -39,10 +36,7 @@ This follows the process tree, sampling CPU deltas and RSS every second and PSS 
 
 ## Static publication preparation
 
-The existing static preparer is a local review aid. Do not run a source-bearing
-publisher, Git push or Pages activation until the specific rejected destination
-and payload are authorized. No source or raw-result artifact is included in the
-current live preview. Surge has no retained authenticated account; do not create
+The existing static preparer is a local review aid. Current user instructions explicitly request source and cloud publication. Publish only the concretely reviewed package and destination; preserve any current automatic-review rejection. The live preview includes the reviewed engine-source snapshot, not raw results. Surge has no retained authenticated account; do not create
 an account or transmit a new login as part of this task.
 
 Official requirements checked on 2026-10-28:

@@ -1,0 +1,67 @@
+{
+  "iteration": 152,
+  "lane": "preview_deploy native data-URL repair",
+  "started_utc": "2026-10-28T16:47:30Z",
+  "recorded_utc": "2026-10-28T17:01:39.298406+00:00",
+  "scoped_quality_score": 97,
+  "whole_goal_score": 19,
+  "agents": [
+    "preview_deploy",
+    "engine_and_git",
+    "validation_wpt",
+    "root"
+  ],
+  "changes": [
+    "Native data-URL byte lengths survive percent-decoded NUL",
+    "Infra forgiving-base64 validation rejects bad alphabet, padding and vertical tab while preserving valid unpadded input and discarded bits",
+    "URL fragments are excluded before body processing",
+    "Case-insensitive trailing base64 marker and MIME metadata normalization follow the standards"
+  ],
+  "validation": {
+    "native_ctest": [
+      133,
+      133
+    ],
+    "native_data_url_authored_controls": [
+      70,
+      70
+    ],
+    "authored_navigation_baseline150": [
+      7,
+      18
+    ],
+    "authored_navigation_candidate152": [
+      18,
+      18
+    ],
+    "unchanged_upstream_selected_urls": 9,
+    "baseline150_reported_subtests": [
+      620,
+      623
+    ],
+    "candidate152_reported_subtests": [
+      623,
+      623
+    ],
+    "chromium_reported_subtests": [
+      623,
+      623
+    ],
+    "all_harnesses_ok": true,
+    "upstream_subtest_gains": 3,
+    "upstream_subtest_losses": 0,
+    "full_url_gains": 1
+  },
+  "scope_note": "JavaScript fetch() already passed all four-realm base64/processing vector sets on150. The3 upstream gains are native-path navigation cases; authored and native counts are kept separate. Full WPT parity is not claimed.",
+  "source_hashes": {
+    "src/net/http.c": "bdf9e3fffc30531aa2c32950c6638731b72b07f576a8d2e761b86ea1db22ed96",
+    "tests/test_data_url.c": "eb20473dffe0421b9a3e9b49c4a7ceb5680143f8f02b263be3b8638c1055e2ed",
+    "tests/browser/data-url-forgiving-base64-regression.html": "823ed84a0b6a89265832f855f5b664f297e77dfb01ad198b70c670abc71b1614"
+  },
+  "primary_sources": [
+    "https://fetch.spec.whatwg.org/#data-url-processor",
+    "https://infra.spec.whatwg.org/#forgiving-base64-decode",
+    "https://mimesniff.spec.whatwg.org/#parse-a-mime-type"
+  ],
+  "timing_note": "Overlapping agent intervals are not added to total session wall time. Final gate end/resource summaries are retained by validation_wpt and engine_and_git."
+}

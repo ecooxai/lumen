@@ -1,0 +1,32 @@
+{
+  "iteration": "preview-session3-1",
+  "started_utc": "2026-10-28T16:41:09Z",
+  "finished_utc": "2026-10-28T16:50:15.689008+00:00",
+  "scope": "Live developer progress UI and authenticated task messaging; not browser conformance",
+  "quality": 96,
+  "whole_goal": 19,
+  "reviewed_by": [
+    "preview_deploy",
+    "root"
+  ],
+  "checks": [
+    "isolated desktop and mobile Chromium screenshots",
+    "HTTP200 tunnel health",
+    "read-only message attempt rejected without queue mutation",
+    "separate posting token grants no private-history access",
+    "new branch/start/deadline shown; historical results distinctly dated"
+  ],
+  "sources": [
+    "agent/progress/server.mjs",
+    "agent/progress/site/index.html",
+    "agent/progress/status.json",
+    "agent/progress/README.md"
+  ],
+  "limitations": [
+    "Surge authentication unavailable in inherited preflight; staticPages still prior published snapshot",
+    "source/video downloads remain reviewed iteration150 until a new tested package replaces them",
+    "current automatic approval review rejected printing the session posting-token link; private runtime key entry remains available"
+  ],
+  "no_engine_gain_claim": true,
+  "elapsed_minutes": 9.111483466666666
+}

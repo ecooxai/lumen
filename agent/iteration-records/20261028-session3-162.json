@@ -1,6 +1,6 @@
 {
   "iteration": 162,
-  "status": "focused accepted; final coherent4200 and rendering pending",
+  "status": "qualified experimental checkpoint; 4200 selected URLs and 100 rendering cases complete; 13 common PASS losses and 16 missing registrations remain unresolved",
   "implementation_start_utc": "2026-10-28T18:33:55+00:00",
   "build_started_utc": "2026-10-28T18:35:37Z",
   "accepted_utc": "2026-10-28T18:47:48.259466+00:00",
@@ -36,7 +36,20 @@
   "native_ctest": {
     "passed": 137,
     "total": 137,
-    "elapsed_seconds": 48.61
+    "elapsed_seconds": 48.61,
+    "one_second_resources": {
+      "cpu_percent": {
+        "minimum": 0.0,
+        "median": 43.0025,
+        "maximum": 159.011,
+        "samples": 48
+      },
+      "sampled_peak_rss_decimal_mb": 336.167,
+      "sampled_peak_pss_decimal_mb": 228.605,
+      "rss_samples": 49,
+      "pss_samples": 10,
+      "limits": "Exact owned runner tree; interval sampling can miss short peaks. RSS may double count shared pages; PSS is less frequently sampled. Shared cgroup telemetry is the aggregate quota evidence."
+    }
   },
   "upstream_sizing": {
     "urls": 38,
@@ -82,5 +95,71 @@
     "source_manifest": "agent/validation/iteration-162/source-manifest-after.json",
     "source_attribution": "agent/validation/linux-wpt-20261028-session3/accepted-source162.json"
   },
-  "performance": "Not rebenchmarked on162 before broad replay. The final matched150/161/Chromium round remains a predecessor161 measurement, not162 performance."
+  "performance": "Not rebenchmarked on162 before broad replay. The final matched150/161/Chromium round remains a predecessor161 measurement, not162 performance.",
+  "regression_free": false,
+  "original_combined_run_findings": {
+    "linebox_semantic_pass_losses": 4,
+    "referrer_semantic_pass_losses": 2,
+    "all_original_losses_remain_counted": true,
+    "fresh_confirmations_are_supplementary_not_substitutions": true,
+    "final_total_must_come_from_complete_aggregate": true,
+    "reviews": [
+      "engine-linebox-loss-path-review.json",
+      "engine-referrer-loss-path-review.json",
+      "engine-style-metadata-loss-path-review.json",
+      "engine-focusgroup-loss-path-review.json"
+    ]
+  },
+  "final_broad": {
+    "completed_utc": "2026-10-28T19:30:18+00:00",
+    "selected_urls": 4200,
+    "fully_passing_urls": 1627,
+    "pass_subtests": 199248,
+    "registered_subtests": 215641,
+    "common_pass_gains": 121,
+    "common_pass_losses": 13,
+    "new_identities": 0,
+    "missing_identities": 16,
+    "missing_previous_PASS": 4,
+    "missing_previous_FAIL": 12,
+    "real_guard_launches": 56,
+    "cleanup_complete": true,
+    "all_source_inputs_match": 601,
+    "aggregate": "agent/validation/linux-wpt-20261028-session3/reporting-final162/broad162-aggregate.json",
+    "independent_reconciliation": "agent/validation/linux-wpt-20261028-session3/aggregate-independent-review162/final-reconciliation.json",
+    "nonzero_exit_note": "One expanded guard exit -9 strongly matches the unchanged 40-second hard timeout plus 5-second SIGTERM grace/SIGKILL path; identical baseline TIMEOUT, OOM counters zero, sender not directly traced. See exceptional-guard-exit-correlation.json."
+  },
+  "release_local_commit": "126b2c35d93cfc513c7133d239235023ad063309",
+  "publication": {
+    "status": "source/media-only Git checkpoint published and remote ref verified",
+    "commit": "126b2c35d93cfc513c7133d239235023ad063309",
+    "origin": "https://github.com/ecooxai/lumen.git",
+    "remote_ref": "refs/heads/gpt-6-astra-builtin-agents-rubywebterm-showcase-20261028",
+    "verified_utc": "2026-10-28T19:35:40.930077+00:00",
+    "method": "One normal fast-forward push; no force or development history",
+    "private_docs_reports_runtime_excluded": true,
+    "website_verification": "All eight raw Git blobs and GitHub Pages payload assets matched; Surge exit1 authentication required, no Surge publication"
+  },
+  "rendering": {
+    "selection_cases": 100,
+    "PASS": 38,
+    "FAIL": 60,
+    "UNSUPPORTED": 1,
+    "TIMEOUT": 1,
+    "baseline150_exact_status_parity": true,
+    "gains": 0,
+    "losses": 0,
+    "chromium": {
+      "PASS": 94,
+      "FAIL": 5,
+      "TIMEOUT": 1
+    },
+    "native_actual_guard_launches": 198,
+    "cleanup_complete": true,
+    "duration_seconds": 451.33,
+    "evidence": "agent/validation/linux-wpt-20261028-session3/reporting-final162/render100-comparison.json"
+  },
+  "final_performance162": "Skipped at strict19:38 cutoff; no162 trial; retained161 timings labeled predecessor only",
+  "desktop_restart": "Pending:19:39:24 normal-window preflight could not enumerate window-manager clients; no user window action or duplicate launch",
+  "resource_audit": "agent/validation/linux-wpt-20261028-session3/reporting-final162/final-resource-audit.json"
 }

@@ -1,16 +1,103 @@
 {
-  "title": "Lumen · Linux engine conformance",
-  "phase": "Final Lumen and fresh primary Chromium comparisons are sealed. Native selected full passes improved by 53; measured Grid, absolute layout and DOM elapsed medians increased 39.0%, 7.1% and 1.0%. Whole-goal estimate remains 19/100; final publication is being completed.",
-  "iteration": 150,
+  "title": "Lumen \u00b7 Linux engine conformance",
+  "phase": "Experimental 162 complete: selected tests audited; substantial compatibility gaps remain",
+  "iteration": 162,
   "score": 19,
-  "iteration_quality": 96,
-  "score_note": "Subjective whole-goal readiness estimate with no scoring formula; this is not a test pass percentage. Full WPT / Chromium parity and the requested 98/100 remain unachieved.",
-  "branch": "gpt-6-astra-builtin-agent-lumen-linux-conformance-20261028-0920",
-  "checkpoint": "0f62172b08683c7c0d89722c588af6ff94f82ca3",
-  "updated_utc": "2026-10-28T13:55:40.545630+00:00",
-  "session_started_utc": "2026-10-28T09:12:12Z",
-  "deadline_utc": "2026-10-28T14:12:12Z",
+  "iteration_quality": null,
+  "score_note": "Whole-goal readiness remains 19/100. Focused repairs passed; Chromium/full-WPT parity is not achieved.",
+  "branch": "gpt-6-astra-builtin-agent-linux-engine-performance-20261028-1641",
+  "checkpoint": "e858139105c0743d8416fe6c91cd3ac42480a3b0",
+  "updated_utc": "2026-10-28T19:39:40.451961+00:00",
+  "session_started_utc": "2026-10-28T16:41:09Z",
+  "deadline_utc": "2026-10-28T19:41:09Z",
   "current_evidence": [
+    [
+      "Audited selected-platform result",
+      "All 4,200 selected URLs completed: 1,627 fully passing URLs and 199,248/215,641 reported PASS subtests. This is not full WPT."
+    ],
+    [
+      "Retained comparison",
+      "Lumen 150: 1,620 fully passing URLs, 199,144/215,657 reported PASS subtests. Fresh Chromium: 3,534 fully passing URLs, 209,574/217,350 reported PASS subtests."
+    ],
+    [
+      "Combined-run failures remain counted",
+      "Independent comparison retains 121 common PASS gains, 13 common losses and 16 missing identities (4 previously PASS, 12 FAIL). No regression-free or Chromium-parity claim is made."
+    ],
+    [
+      "Source and process integrity",
+      "All 601 recorded inputs match the final binary source; all 56 actual broad guarded launches cleaned up."
+    ],
+    [
+      "Native and focused gates",
+      "Corrected 162 passes all 137 native CTest entries. Six unchanged animation WPT URLs return to 1,380/1,504 PASS, restoring all 120 losses observed in withdrawn 161."
+    ],
+    [
+      "Known limitations",
+      "Fourteen authored vertical-writing stylesheet transition checks still fail in retained 150, withdrawn 161 and final 162. Original combined-run failures remain counted despite isolated reruns passing."
+    ],
+    [
+      "Native demonstration",
+      "The actual 36-second native-window recording passed all five authored checks and two distinct Grid interactions. Root visually approved its frame; owned capture/display/profile processes and encoders are drained."
+    ],
+    [
+      "Rendering validation",
+      "All 100 native cases completed: 38 PASS, 60 FAIL, 1 UNSUPPORTED and 1 TIMEOUT, identical to retained 150. Fresh Chromium: 94 PASS, 5 FAIL and 1 TIMEOUT."
+    ],
+    [
+      "Published source and native demo",
+      "The reviewed eight-file source/media release is published at https://ecooxai.github.io/lumen/ and all public payload hashes match. Source is also available at /src.tar.gz. Surge requires ordinary account authentication and did not publish."
+    ],
+    [
+      "Final performance",
+      "A fresh matched162 performance run was skipped because the strict19:38 quiet-start window was missed. Earlier161 timings do not describe162."
+    ]
+  ],
+  "coverage": "The fixed selection contains 4,200 variants (10.66% of 39,394 pinned testharness variants), not full WPT. Experimental Lumen 162: 1,627 fully passing URLs and 199,248/215,641 reported PASS subtests. Retained Lumen 150: 1,620 fully passing URLs and 199,144/215,657 PASS subtests. Fresh Chromium: 3,534 fully passing URLs and 209,574/217,350 PASS subtests. Original combined-run failures and missing identities remain counted.",
+  "findings": [
+    "This remains Lumen\u2019s native C/C++ + V8 + wgpu browser engine.",
+    "The corrected 162 checkpoint restores all 120 focused min-width/min-height animation losses found in withdrawn 161 while preserving corrected public style values.",
+    "The fixed 4,200-URL selection is complete and remains a subset of the pinned WPT inventory. Full-WPT and Chromium parity are not achieved.",
+    "Original combined-run regressions and missing test identities remain in the audited results. Passing isolated checks do not erase the failed combined-run observations.",
+    "Earlier 161 CPU benchmark numbers describe a withdrawn candidate and do not measure 162. No new 162 performance claim is made here.",
+    "Live agent replies are available only during this work session, ending 19:41:09 UTC on 2026-10-28. Afterward, new messages remain queued for a later session; unattended replies are not promised.",
+    "The reviewed source snapshot and actual36-second native recording are published at https://ecooxai.github.io/lumen/. The source download contains all601 recorded inputs and omits local task/handoff, private runtime and report files."
+  ],
+  "active_iteration": {
+    "number": 162,
+    "scope": "Final 4,200-URL and 100-case rendering validation complete; qualified source and native demo published. Full-WPT/Chromium parity is not achieved."
+  },
+  "accepted_binary_sha256": null,
+  "accepted_binary_scope": "Qualified experimental checkpoint; original combined-run failures remain counted. No regression-free or Chromium-parity claim.",
+  "agent_session": "active",
+  "showcase_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-showcase.mp4",
+  "candidate_binary_sha256": "d76d88b2c6d67dadfc75375bd47679ae17d88d0cdb07f62d6d5969e422a949e5",
+  "publication_status": "Qualified native recording is waiting for complete audited totals; publication remains manual and reviewed.",
+  "showcase_note": "The native 162 recording is staged and will use independently reported final totals. Earlier media remains historical.",
+  "source_archive_url": "https://ecooxai.github.io/lumen/src.tar.gz",
+  "source_archive_sha256": "85c4d1b3958d68c3347c9b6825621ef6159fe85cd68fad07a62405488d98a40f",
+  "source_archive_bytes": 4433706,
+  "measurement_units": "WPT numbers count reported testharness subtests, not individual assert_* calls. Native CTest entries and custom correctness checks are separate.",
+  "clean_demo_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-demo.mp4",
+  "fresh_primary_chromium": {
+    "fully_passing_variants": 1695,
+    "pass_subtests": 105688,
+    "reported_subtests": 110572,
+    "completed_utc": "2026-10-28T13:44:03Z",
+    "cleanup_complete": true
+  },
+  "mixed_chromium_union": {
+    "fully_passing_variants": 3532,
+    "pass_subtests": 209533,
+    "reported_subtests": 217348,
+    "supplemental_reference": "historical"
+  },
+  "source_archive_scope": "Prepared source snapshot: 694 repository files and one metadata file, all 601 recorded inputs; separate external dependencies, not a hermetic build or Git history.",
+  "public_report_url": "https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-public-report.json",
+  "cloud_snapshot_url": "https://ecooxai.github.io/lumen/",
+  "session_active": true,
+  "session_id": "20261028-1641",
+  "session_deadline_utc": "2026-10-28T19:41:09Z",
+  "previous_session_evidence": [
     [
       "Accepted combined source 150",
       "Commit 0f62172b0868; 584/584 compiled files match Git. Full native gate: 132/132. Final 47 cache controls, 37 parser URLs and 9 Typed OM URLs retain their reviewed results."
@@ -84,42 +171,68 @@
       "Supplemental 200 URLs: 1,639/3,370 reported subtests, 73 fully passing URLs, all harnesses OK; +426 gains / zero losses versus 128. All three original placement regressions were repaired. Retained Chromium: 3,337/3,370 reported subtests and 189 fully passing URLs."
     ]
   ],
-  "coverage": "The disjoint 4,200-variant selection is sealed: Lumen 150 has 1,620 fully passing variants versus 1,567 baseline; the Chromium union has 3,532. Primary and expanded Chromium references are fresh; supplemental Chromium remains historical. Six selected entries are explicitly marked jsshell. This selection covers 10.66% of 39,394 testharness variants and is not the full WPT suite.",
-  "findings": [
-    "One-second process-tree CPU/RSS and shared-cgroup monitoring remain required. Compilation shares a 480% CPU budget and at most six compiler jobs.",
-    "This dashboard publishes reviewed aggregates, host telemetry and public task feedback. The exact audited accepted-source archive is available at /src.tar.gz; raw results, private runtime paths and directory listings remain unavailable.",
-    "Native CSS grammar, intrinsic track sizing, automatic placement and full rendering parity remain incomplete. Accepted scoped repairs do not establish Chromium parity."
-  ],
-  "active_iteration": {
-    "number": 150,
-    "scope": "Final measurements of accepted combined source; no further engine changes planned."
+  "historical": {
+    "label": "Previous session, 2026-10-28, frozen native150 and mixed-date Chromium cohorts",
+    "test_files": 4200,
+    "comparison": "Lumen150: 1,620 full URLs, 199,144/215,657 PASS reported subtests. Chromium union: 3,532 full URLs, 209,533/217,348 PASS reported subtests; primary/expanded fresh in prior session, supplemental historical."
   },
-  "accepted_binary_sha256": "79874c9c16af2086cb1de93a6194276d4b17512897aeca118244beddef7bb967",
-  "accepted_binary_scope": "Accepted combined source 150: all 584 compiled inputs match tested Git commit 0f62172b08683c7c0d89722c588af6ff94f82ca3. Focused, supplemental, primary, expanded, rendering, performance and fresh primary Chromium measurements are complete. Metadata-only publication work does not change the tested binary.",
-  "agent_session": "active",
-  "showcase_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-showcase.mp4",
-  "candidate_binary_sha256": "79874c9c16af2086cb1de93a6194276d4b17512897aeca118244beddef7bb967",
-  "publication_status": "The public cloud showcase carries the distinct allowlisted aggregate report, approved recordings and reviewed engine-source snapshot. Full development history remains local because the tracked comparator export was rejected. The publication manifest records verified artifact identities.",
-  "showcase_note": "Actual accepted 150 browser recording from 13:01 UTC, before final primary measurements sealed. Independently reviewed clean and credited copies are 36 seconds, 960×720.",
-  "source_archive_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/src.tar.gz",
-  "source_archive_sha256": null,
-  "source_archive_bytes": null,
-  "measurement_units": "WPT numbers count reported testharness subtests, not individual assert_* calls. Native CTest entries and custom correctness checks are separate.",
-  "clean_demo_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-demo.mp4",
-  "fresh_primary_chromium": {
-    "fully_passing_variants": 1695,
-    "pass_subtests": 105688,
-    "reported_subtests": 110572,
-    "completed_utc": "2026-10-28T13:44:03Z",
-    "cleanup_complete": true
+  "source_archive_iteration": 162,
+  "source_archive_commit": "dba9bb7808ad4bcb457441540a65b75a111049c5",
+  "source_archive_note": "No public download. Local task/handoff documents, private runtime, raw validation material and the blocked report are excluded.",
+  "fresh_chromium4200": {
+    "completed_utc": "2026-10-28T17:36:29Z",
+    "fully_passing_variants": 3534,
+    "pass_subtests": 209574,
+    "reported_subtests": 217350,
+    "selection_variants": 4200,
+    "source": "validation agent verified completion and cleanup"
   },
-  "mixed_chromium_union": {
-    "fully_passing_variants": 3532,
-    "pass_subtests": 209533,
-    "reported_subtests": 217348,
-    "supplemental_reference": "historical"
+  "source_archive_available": true,
+  "session_response_availability": "This work session closes no later than19:41:09 UTC on2026-10-28. After closeout, new messages remain queued for a later session; unattended replies are not promised.",
+  "selected_wpt": {
+    "selected_urls": 4200,
+    "native162": {
+      "fully_passing_urls": 1627,
+      "pass_subtests": 199248,
+      "registered_subtests": 215641
+    },
+    "baseline150": {
+      "fully_passing_urls": 1620,
+      "pass_subtests": 199144,
+      "registered_subtests": 215657
+    },
+    "chromium": {
+      "fully_passing_urls": 3534,
+      "pass_subtests": 209574,
+      "registered_subtests": 217350
+    },
+    "common_pass_gains": 121,
+    "common_pass_losses": 13,
+    "missing_identities": 16,
+    "full_wpt": false,
+    "regression_free": false
   },
-  "source_archive_scope": "Engine-source snapshot with all 584 recorded inputs; validation/runtime tooling and Git history omitted. Complete standalone validation and Android build reproducibility are not claimed.",
-  "public_report_url": "https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-public-report.json",
-  "cloud_snapshot_url": "https://ecooxai.github.io/lumen/"
+  "publication": {
+    "git_commit": "126b2c35d93cfc513c7133d239235023ad063309",
+    "site": "https://ecooxai.github.io/lumen/",
+    "anonymous_exact_payload_verified": true,
+    "surge": "authentication_required",
+    "source": "https://ecooxai.github.io/lumen/src.tar.gz"
+  },
+  "rendering": {
+    "selected_cases": 100,
+    "native162": {
+      "PASS": 38,
+      "FAIL": 60,
+      "UNSUPPORTED": 1,
+      "TIMEOUT": 1
+    },
+    "baseline150_parity": true,
+    "fresh_chromium": {
+      "PASS": 94,
+      "FAIL": 5,
+      "TIMEOUT": 1
+    }
+  },
+  "session_active_until": "2026-10-28T19:41:09Z"
 }
