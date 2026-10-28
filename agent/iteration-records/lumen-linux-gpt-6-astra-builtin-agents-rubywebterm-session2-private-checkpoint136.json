@@ -1,0 +1,34 @@
+{
+  "created_utc": "2026-10-28T10:00:39.248606+00:00",
+  "accepted_head": "02b13b507b8f4d107df814fc77f18620c5760c29",
+  "engine_source_commit": "b41da82ef34e588d8400a213e82156316c69bdc6",
+  "source_archive": {
+    "path": "agent/progress/runtime/private-prepared/session2-checkpoint136/lumen-gpt-6-astra-builtin-agent-rubywebterm-source-i136.tar.gz",
+    "sha256": "0c5c3a8555dda877e8c734fb4f11d2b813a14214f27fcb7fd7001f6e4e526d27",
+    "bytes": 4769064,
+    "included_files": 669,
+    "excluded_paths": 89,
+    "compiled_manifest_files_verified": 552,
+    "compiled_source_mismatches": [],
+    "credential_pattern_exclusions": 0
+  },
+  "private_binary": {
+    "path": "agent/progress/runtime/private-prepared/session2-checkpoint136/lumen-gpt-6-astra-builtin-agent-rubywebterm-i136",
+    "sha256": "27591f3c55f84aa81221bf00ba301a574d60745757ba6dd3caf4bdb0b39b353a",
+    "bytes": 6652576
+  },
+  "private_history": {
+    "path": "agent/progress/runtime/private-prepared/session2-checkpoint136/lumen-gpt-6-astra-builtin-agent-rubywebterm-private-history.bundle",
+    "sha256": "a7ef97f56913bf9d5824fc1acdb1b2f724f41437cfbd7ba48fe3f0358116e5eb",
+    "bytes": 5596489,
+    "reachable_objects": 6836,
+    "protected_raw_history_paths": 0,
+    "publication": "BLOCKED. History contains development summaries and validation records; prefix inspection is not a full content clearance. Keep separate from sanitized source archive and review before any future source push.",
+    "development_report_object_versions": 202,
+    "development_report_unique_paths": 56,
+    "audit_scope": "All6836 reachable object names inspected; no raw run/output path matched the current naming filter.202 development report object versions still require content-aware review before publication."
+  },
+  "raw_evidence": "Retained separately in original private validation directories. Source tar contains no agent directory or raw result history.",
+  "publication": "Private local checkpoint only; source/raw/history publication disabled.",
+  "elapsed_seconds": 2.21626578993164
+}
