@@ -1,14 +1,14 @@
 {
   "title": "Lumen \u00b7 Linux engine conformance",
-  "phase": "Core and supplemental verification of frozen combined build 127 are complete; final publication is in progress. The primary 2,000-URL report retains all 505 raw lost identities. Full Chromium-level WPT conformance and the 98/100 target remain unmet.",
+  "phase": "Frozen candidate 128 corrects a newly reproduced flex baseline-alignment regression. Final validation is in progress. All completed build 127 reports remain labeled antecedent; the 98/100 whole-browser target remains unmet.",
   "iteration": 11,
   "score": 19,
   "iteration_quality": 97,
   "score_note": "PROVISIONAL whole-goal readiness estimate, inherited from historical scope. This is not a measured pass percentage. Goal:98/100 after fresh complete comparable coverage.",
   "branch": "gpt-6-astra-engine-lead-linux-wpt-20261028",
-  "checkpoint": "163567579c077e35c7f6c6ed366162524530f5f8",
-  "updated_utc": "2026-10-28T08:19:50.495620+00:00",
-  "session_started_utc": "2026-10-28T03:50:07Z",
+  "checkpoint": "23e1d1eb185d85fc08ee3b930c5f6abde476cb44",
+  "updated_utc": "2026-10-28T08:40:41.928750+00:00",
+  "session_started_utc": "2026-10-28T03:50:07.309Z",
   "deadline_utc": "2026-10-28T08:50:07Z",
   "historical": {
     "label": "Historical multi-revision web-only audit, 2026-10-27T17:15:44Z; not fresh branch validation",
@@ -22,215 +22,47 @@
   },
   "current_evidence": [
     [
-      "Final combined native gate",
-      "Post-commit final127:117/117 native testsPASS,26.25seconds wall. Actual relink from runtime1635675 produced SHAa06dc09b\u202643db88, identical to reviewed126. This is test completion, not a browser speed comparison."
+      "Frozen128 correction",
+      "Runtime23e1d1e; SHAe41f9f04\u20265e8801. Container-axis first/last baseline fallback repairs two reproduced127 vertical-writing-mode losses; explicit self-start/self-end remains unchanged. Chromium150/pinnedWPT compatibility policy differs from the latest draft."
     ],
     [
-      "Final guarded replay",
-      "55 focused guard URLs: all harnessesOK,5,505/5,963 assertionsPASS,zero lost accepted identities or harnesses. The identical guarded first2,000 testharness selection is running;100 own-reference rendering replay follows. No full-WPT claim."
+      "128 completed gates",
+      "Native117/117PASS,41.40s CTest wall; no performance inference. Vertical guard26/28 repairs both regressions. Supplemental200:1,213/3,370PASS,+176/0 versus original,+4/0 versus127,all200harnessOK."
     ],
     [
-      "Accepted background geometry",
-      "Commit415ae501; focused quality96/100. Unchanged24 own-reference tests10\u219218PASS,+8/0lost; Chromium21PASS/1FAIL/2TIMEOUT. Native color-list cascade25/25. Full multilayer image painting remains unsupported."
+      "128 geometry preservation",
+      "Same24 guarded own-reference URLs:18PASS/6FAIL,zero changes versus127.48 verified/released/exited captures. Broad first2,000 and unbiased100 rendering run separately; shared55 timeout observations are retained pending isolated review."
     ],
     [
-      "Actual GPU presentation evidence",
-      "Antecedent122 ordinary X11-presented round-repeat test/reference pixels match exactly on NVIDIA MX110 wgpu/Vulkan, with engine screenshot hooks disabled. Three GPU-enabled internal references improve2\u21923PASS. Final127 showcase is being recorded separately."
+      "127 primary antecedent",
+      "Same guarded2,000: original747\u2192127765 fully passing;98,485/107,088\u2192100,737/108,961 nativePASS; exactChromePASSmatches95,417\u219297,712/105,689. All2,757 gains and505 raw losses retained. Fresh isolates do not replace primary outcomes or establish their cause."
     ],
     [
-      "Accepted adopted-node cleanup",
-      "Commit1635675; focused quality97/100. Deterministic real-JS original/clone adoption and live-parent Node/ownerDocument retention fail before and pass after; final node count balances. Five unchanged guarded cleanup repetitions pass. Exact historical invalid-free heap-address attribution remains unproven."
+      "127 rendering antecedent",
+      "Guarded100: capture11436PASS/62FAIL/1UNSUPPORTED/1TIMEOUT\u219212737/61/1/1. One ChromiumPASS SVG gain,zero lostPASS; Chrome95PASS/5FAIL. One native-onlyPASS divergence unchanged."
     ],
     [
-      "Accepted Linux capture policy",
-      "Commit7b9ce339; focused quality97/100. Physical camera/microphone acquisition is refused with NotAllowedError until a real site-consent UI exists. Independent actual-source19checks atO0/O3 and integrated audio/video/both denial pass. This is a privacy repair, not a WPT gain."
+      "Supplement reference scope",
+      "Fixed outcome-blind grid/sizing/flex200 excludes primary2,000 and shared55. Retained same-URL Chromium150:3,337/3,370PASS,189fullypassing. Reference rows come from prior shards001\u2013003,not a concurrent rerun."
     ],
     [
-      "Fresh guarded original baseline",
-      "A separate first2,000-URL run completed07:07:33UTC. Original Lumen:747fullypassingURLs,98,485/107,088 observed assertion passes; retained Chromium150:1,693fullypassing,105,689/110,572 passes. Same selection, changed native acquisition guard; do not append to historical8,000."
+      "Reviewed actual128 video",
+      "36s960x720 actual X11 presentation during verification; visible127 metrics and iteration11 are historical. VideoSHA84001865\u202674f488,441,746bytes; HTTPS exact bytes verified08:36:42UTC. Sizing20/20 is one named regression guard."
     ],
     [
-      "Guarded baseline exact comparison",
-      "95,417 of105,689 Chromium-passing assertion identities matched;3,547 ChromePASS identities unobserved natively. Native harnesses:1,702OK,212TIMEOUT,86ERROR. Final improved-candidate replay is pending."
+      "Linux presentation and privacy",
+      "Actual default wgpu/Vulkan NVIDIA MX110 presentation verified; softwareWPT remains separate. Physical camera/microphone acquisition is refused pending real site consent. Synthetic/canvas/file streams and playback are preserved."
     ],
     [
-      "Guarded baseline safety validation",
-      "36verified native launches and36author-navigation releases; zero guard startup failures. Sealed hash-pinned acquisition-refusal library, exact constructor PID/nonce ACK, fresh profiles. No successful physical capture is synthesized."
+      "Accepted repairs",
+      "Structured grid animation,process-local BroadcastChannel,image decode lifecycle,Fontconfig21801 matching,replaced sizing,background position/geometry,flex static positioning and adopted-node cleanup. Focused quality95\u201398/100 is not whole-browser readiness."
     ],
     [
-      "Accepted flex static-position repair",
-      "Commit c4694182; focused quality 95/100. Guarded baseline121 to candidate123: 163 to 685 of 689 assertions, +522 passes and zero lost identities; Chromium 689/689."
-    ],
-    [
-      "Flex independent rendering",
-      "Five unchanged reftests improve 2 to 4 passes, zero losses; Chromium 5/5. Both safe-overflow passes are preserved. Four vertical-baseline assertions and tentative outer-containing-block safe overflow remain gaps."
-    ],
-    [
-      "Accepted background-position repair",
-      "Commit2508cf2; focused quality96/100. Computed positions and repeatable-list animation improved with zero lost baseline passes across70 harnesses; public specified-value getters retain accepted behavior."
-    ],
-    [
-      "Accepted combined runtime baseline",
-      "Candidate121 SHA a19039e4\u2026d15534 combines accepted grid, BC, image, font, sizing, position and capture; build06:29:53\u201306:30:23 UTC with unchanged source."
-    ],
-    [
-      "Linux renderer smoke",
-      "Real native default wgpu/Vulkan presentation used NVIDIA GeForce MX110 and displayed20/20 sizing checks plus the live dashboard. WPT software conditions remain unchanged; this is not WebGL/WebGPU conformance."
-    ],
-    [
-      "Accepted replaced-element sizing repair",
-      "Commit288a368b; focused quality96/100, whole-goal19/100 provisional. Preferred ratio, min/max transfer, natural ratio and forced dimensions are handled coherently."
-    ],
-    [
-      "Sizing correctness gates",
-      "Unchanged180-case canvas matrix64\u2192180/180; independent four upstream URLs2\u219210/11; portable geometry9\u219220/20, Chromium20/20; ten native gates pass. Zero lost observed passes."
-    ],
-    [
-      "Sizing rendering holdouts",
-      "Six unchanged own-reference reftests improve1\u21922PASS with zero losses; Chromium6/6. Loaded-image auto-ratio reftests029\u2013032 remain failing."
-    ],
-    [
-      "Separate100-URL rendering sample",
-      "Identical unbiased reftest URLs: accepted capture114 has36PASS,62FAIL,1UNSUPPORTED,1TIMEOUT; Chromium150 has95PASS,5FAIL. This binary includes grid/BC/image/capture, before later font/sizing/position work."
-    ],
-    [
-      "Accepted Fontconfig performance repair",
-      "Commit dc7bae76; focused quality 96/100, whole-goal 19/100. Exact Fontconfig 2.18.1; other versions and unsupported configurations retain original behavior"
-    ],
-    [
-      "Font matcher correctness",
-      "16,843 large-CJK selections plus 718 varied/threaded/configuration comparisons exactly match the original matcher. Eight official URLs retain 10/125 native passes with zero losses"
-    ],
-    [
-      "One unchanged encoding workload",
-      "1,000/1,000 assertions before and after. Native CPU 26.90 to 11.33 seconds; wall 31.28 to 12.43 seconds. No general browser speed claim; background workload may overlap"
-    ],
-    [
-      "Font memory and bounds",
-      "920 referenced patterns observed; cap 8,192, one snapshot. Peak RSS increased 5.8 MiB; sampled PSS stayed about 201.6 MiB"
-    ],
-    [
-      "Accepted capture and build tooling",
-      "Capture commit 029d030c; build graph 05a087eb. Real viewport controls accepted; unchanged embedded assets no longer force unrelated C++ compilation. Makefiles verified; Ninja unexecuted"
-    ],
-    [
-      "Completed original-baseline comparison",
-      "8,000 identical testharness URLs in four completed paired shards. Lumen:2,946 fully passing; Chromium150:6,691 fully passing. These are original-checkpoint results, not the improved candidate."
-    ],
-    [
-      "Exact raw matched Chromium passes",
-      "289,358 / 394,031 Chromium-passing assertion identities matched. Native observed298,804/357,652 passes; Chromium394,031/409,240."
-    ],
-    [
-      "Eight-thousand-URL harness outcomes",
-      "Lumen:6,804 OK,852 TIMEOUT,342 ERROR,1 CRASH,1 PRECONDITION_FAILED. Chromium:7,762 OK,142 TIMEOUT,45 ERROR,24 CRASH,27 SKIP. Different outcome classifiers prevent a direct crash-rate claim."
-    ],
-    [
-      "Accepted capture and oracle validation",
-      "Iteration 6 focused quality 96/100: 11/11 intended controls, represented by 8 passes and 3 deliberate failures. Page viewport 800\u00d7600, DPR 1; full reftest conformance remains unproven"
-    ],
-    [
-      "Accepted image lifecycle repair",
-      "Commit f1be9d; candidate111 on accepted grid+BC base. Focused quality96/100; whole-goal19/100"
-    ],
-    [
-      "Image official and context verification",
-      "Original lifecycle16/16. Official9 URLs:49 to50/64, Chromium61/64, zero lost passes. Five new context outcomes match Chromium; four older picture/context divergences remain"
-    ],
-    [
-      "Image native verification",
-      "Candidate111 targeted image/DOM3/3; prior isolated110 full native109/109 is antecedent evidence only"
-    ],
-    [
-      "Accepted native engine change",
-      "Grid track interpolation/composition; commit 61ff455cfa484b3c357292c27700bf6e2ea92965"
-    ],
-    [
-      "Focused grid verification",
-      "3,628/3,975 upstream assertions across 28 URLs; +884 passes, zero lost passes"
-    ],
-    [
-      "Independent grid holdout",
-      "74/82 assertions; +28 passes, zero lost passes; portable regression 18/18"
-    ],
-    [
-      "Accepted BroadcastChannel change",
-      "Commit dce02bbb plus popup evidence e0a4e1f; focused patch quality95/100, whole-goal19/100"
-    ],
-    [
-      "Focused BroadcastChannel comparison",
-      "14 official URLs: baseline9/72 to candidate72/72; Chromium72/72. Existing boundary/realm assertions16/16"
-    ],
-    [
-      "Additional BC guards",
-      "20 URLs:50/62 to52/62, zero lost native passes; Chromium57/62. Two native WASM gains had Chromium timeouts, so they are not matched-reference gains"
-    ],
-    [
-      "Same-process popup transport",
-      "Unmodified window-open-noreferrer: baseline0/1 TIMEOUT, candidate1/1 OK, Chromium1/1 OK; no separate OS-process IPC claim"
-    ],
-    [
-      "Supplemental port-role comparison",
-      "Raw first-shard identity match remains88,326/105,689. Explicit port-role normalization gives88,333/105,689; observed/full-page totals unchanged"
-    ],
-    [
-      "Fresh 241-URL baseline",
-      "Lumen 19,218/24,360 observed assertions; Chromium 22,565/24,376; selected diagnostic/seeded scope"
-    ],
-    [
-      "Strict paired baseline",
-      "Lumen matches 17,724 of 22,565 Chromium-passing assertions; 68 fully matching Chromium-passing URLs"
-    ],
-    [
-      "Pinned WPT revision",
-      "0e1c0bce3defd59a76cf2f351c7da5c5a42b26fb"
-    ],
-    [
-      "Installed Chromium and ChromeDriver",
-      "150.0.7871.114"
-    ],
-    [
-      "Automated WPT inventory",
-      "71,398 URLs; Test262 excluded"
-    ],
-    [
-      "Historical testharness run stopped",
-      "8,000 completed paired URLs plus partial shard004 preserved. Native broad execution stopped06:44:52 UTC because old test mode did not itself deny real capture; fresh guarded comparisons will be separate."
-    ],
-    [
-      "Other automated WPT, not yet verified",
-      "28,654 reftest; 2,062 crashtest; 658 wdspec; 440 print-reftest; 190 aamtest"
-    ],
-    [
-      "Separate JavaScript language suite",
-      "53,679 Test262 URLs in the legacy combined reference"
-    ],
-    [
-      "Frozen baseline binary SHA-256",
-      "1ac9421854c63e503f9d865abf0d1d2a9c3a2dd3cedcf2aaf52c7ac073992913"
-    ],
-    [
-      "Final guarded2000 raw comparison",
-      "Baseline747\u2192final765 fully passing URLs; exact ChromePASS matches95,417\u219297,712/105,689.2,757 gained and505 lost identities; losses remain under review, not an accepted net-gain claim."
-    ],
-    [
-      "Final guarded rendering sample",
-      "The same 100 own-reference URLs: baseline 36 PASS / 62 FAIL / 1 UNSUPPORTED / 1 TIMEOUT; final build 127 has 37 PASS / 61 FAIL / 1 UNSUPPORTED / 1 TIMEOUT. One Chromium-PASS gain and zero lost passes. Chromium: 95 PASS / 5 FAIL. The existing native-PASS/Chromium-FAIL divergence is unchanged at one case."
-    ],
-    [
-      "Final combined geometry confirmation",
-      "The 24 targeted own-reference tests retain accepted build 125 exactly: 18 PASS / 6 FAIL, zero status changes, 48 verified and completed guarded captures. This cohort is separate from the unbiased 100."
-    ],
-    [
-      "Final showcase",
-      "The approved 36-second, 960\u00d7720 actual build 127 screen recording is available at /showcase.mp4. It was captured during verification; the displayed 20/20 result is the named sizing guard, not full WPT conformance."
-    ],
-    [
-      "Supplemental corpus",
-      "Separate outcome-blind layout supplement: final127 has1,209/3,370 PASS assertions and54/200 fully passing URLs; retained same-URL Chromium150 has3,337/3,370 and189/200. All200 harnessesOK in each engine. Exact ChromiumPASS matches1,200/3,337; nine native-only PASS divergences. No original before/after claim or primary-denominator merge."
+      "Unresolved scope",
+      "Full multilayer backgrounds,SVG/image/natural-ratio gaps,document.domain prerequisites,separate-process BroadcastChannel IPC,long-run retention and unrun WPT categories remain. Target98/100 not met."
     ]
   ],
-  "coverage": "Full WPT parity remains unproven. Evidence separates historical8,000 original-checkpoint testharness URLs, fresh guarded original2,000 on the same first selection,100rendering URLs on accepted114, and focused later-candidate gates. Crashtest, WebDriver, print and accessibility categories remain unverified. Final guarded improved-candidate replay is pending.",
+  "coverage": "Full WPT parity remains unproven. Final128 has its own frozen reports;127 broad results are retained as antecedents. Historical8,000, guarded first2,000, supplemental200 and100 rendering URLs remain separate. Crash, WebDriver, print and accessibility categories are unverified.",
   "findings": [
     "Grid candidate101 was rejected after independent tests found two lost hidden-subtree assertions. Candidate102 corrects the cause and passed focused independent review.",
     "Grid iteration quality is 97/100 for the focused patch; whole-goal readiness remains 19/100 provisional. Full Chromium parity is unproven.",
@@ -247,8 +79,11 @@
     "All accepted runtime repairs are combined in post-commit127 with117/117 native gates passing. Final guarded WPT/reftest replay is a separate pending integration gate; whole-goal readiness remains19/100 provisional."
   ],
   "active_iteration": 13,
-  "accepted_binary_sha256": "a06dc09b0065a7727bb837c30fd5e5faf49a365b3401adbb1e31b4d4e143db88",
-  "accepted_binary_scope": "Post-commit final127 combines every accepted runtime repair, including flex, geometry, cleanup and Linux physical-capture refusal.",
+  "accepted_binary_sha256": "e41f9f04359464d4a229a74371cc6badd25aa01f3289d585286db67cec5e8801",
+  "accepted_binary_scope": "Frozen review candidate128; final disposition pending. Not a production rollout or full-WPT completion claim.",
   "agent_session": "active",
-  "showcase_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/showcase.mp4"
+  "showcase_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/showcase.mp4",
+  "candidate_binary_sha256": "e41f9f04359464d4a229a74371cc6badd25aa01f3289d585286db67cec5e8801",
+  "candidate_runtime_commit": "23e1d1eb185d85fc08ee3b930c5f6abde476cb44",
+  "publication_status": "Git push and Pages activation blocked by automatic approval review: explicit destination authorization required for ecooxai/lumen. Local review payload prepared; no push/activation performed."
 }

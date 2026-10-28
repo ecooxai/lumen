@@ -153,6 +153,19 @@
       "native_only_pass_divergences": 9,
       "verified_spawns": 16,
       "startup_failures": 0
+    },
+    {
+      "name": "actual128_window_showcase",
+      "status": "PM_approved_and_HTTPS_bytes_verified",
+      "started_utc": "2026-10-28T08:31:15.347983+00:00",
+      "ended_utc": "2026-10-28T08:31:55.530117+00:00",
+      "bytes": 441746,
+      "sha256": "840018657cd5e9d37de063b5908e4256f03febf03f0aedcbff7d9df50374f488",
+      "duration_seconds": 36,
+      "width": 960,
+      "height": 720,
+      "scope": "Actual128 recorded during verification; visible127 metrics are historical",
+      "publication_verified_utc": "2026-10-28T08:36:42.633967+00:00"
     }
   ],
   "limits": [
@@ -160,5 +173,25 @@
     "Runtime/source/archive commits and binary hash remain distinct",
     "No raw denied evidence archive, credentials, profiles, inbox or QA screenshot collection is published"
   ],
-  "updated_utc": "2026-10-28T08:19:50.495620+00:00"
+  "updated_utc": "2026-10-28T08:38:10.257642+00:00",
+  "candidate128": {
+    "runtime_commit": "23e1d1eb185d85fc08ee3b930c5f6abde476cb44",
+    "binary_sha256": "e41f9f04359464d4a229a74371cc6badd25aa01f3289d585286db67cec5e8801",
+    "source_edit_utc": "2026-10-28T08:27:27.071291+00:00",
+    "build_started_utc": "2026-10-28T08:29:11Z",
+    "build_ended_utc": "2026-10-28T08:29:18Z",
+    "manifest_sha256": "036bbc2268973e9e55d2599225e4e95d815f7f726cadff0c1c8fc5a08c44f48b",
+    "native_suite": "117/117PASS,41.40s",
+    "geometry24": "18PASS/6FAIL,zero changes from127,48 verified releases/exits",
+    "supplement200": "1213/3370,+176/0 versus original,+4/0 versus127,all200harnessOK",
+    "status": "critical shared/broad disposition pending",
+    "compatibility_policy": "Chromium150/pinnedWPT container-axis baseline fallback; current draft divergence explicit"
+  },
+  "publication_block": {
+    "status": "automatic_review_rejected_before_execution",
+    "destination": "ecooxai/lumen Git branches and GitHub Pages",
+    "reason": "Explicit end-user destination/source-archive publication authorization required; general push/deploy authorization judged insufficient",
+    "actions_performed": false,
+    "no_workaround": true
+  }
 }

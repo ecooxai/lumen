@@ -120,10 +120,10 @@ Do not inspect or record the user's existing display; use a fresh isolated Xvfb
 profile for showcase recording. Record the new exact PID for monitoring.
 
 
-## Linux handoff — 2026-10-28 (draft awaiting final replay/publication)
+## Linux handoff — 2026-10-28
 
 - Working branch: `gpt-6-astra-engine-lead-linux-wpt-20261028`.
-- Session start: `2026-10-28T03:50:07Z`; time limit: `08:50:07Z`.
+- Session start: `2026-10-28T03:50:07.309Z`; time limit: `08:50:07Z`.
 - Original requested task is preserved in `agent/task.md`; iteration timing,
   scores, agents and rejected attempts are in `devsummary.md` and
   `agent/iteration-records/`.
@@ -141,8 +141,8 @@ profile for showcase recording. Record the new exact PID for monitoring.
   remains historical and must not be appended to the new guarded measurement.
 - Fresh guarded original first2,000 completed separately with36verified launches,
   no startup failures:747 fully passing native versus1,693 Chromium;
-  95,417/105,689 exact ChromiumPASS identities matched. Final improved-candidate
-  replay is pending; do not substitute these baseline counts for final results.
+  95,417/105,689 exact ChromiumPASS identities matched. The separate127 replay
+  is complete below;128 has its own records and must not inherit127 results.
 - Separate same-guard100-URL rendering baseline on accepted114 completed
   07:29:06UTC with198verified releases/exits:36PASS/62FAIL/1UNSUPPORTED/1TIMEOUT,
   identical to all100 prior114outcomes; Chromium95PASS/5FAIL. It excludes later
@@ -158,8 +158,9 @@ Library SHA256:
 Set `LUMEN_CAPTURE_GUARD_LIBRARY`, `LUMEN_CAPTURE_GUARD_SHA256` and a unique
 absolute `LUMEN_CAPTURE_GUARD_AUDIT_DIR`. Do not weaken the required guard or
 synthesize successful physical capture. The production Linux refusal and the
-old-binary test guard are separate protections. Positive media support remains
-unavailable, not a conformance pass.
+old-binary test guard are separate protections. Physical camera/microphone
+acquisition remains unavailable pending real site consent. Synthetic, canvas and
+file streams and playback are preserved; refusal is not a positive media conformance pass.
 
 Use project-backed temporary storage via the short aliases
 `/tmp/lumen-astra-checks-20261028` and `/tmp/lumen-astra-full-20261028`;
@@ -177,28 +178,36 @@ Separate actual X11 presented-window checks verified default wgpu/Vulkan on
 NVIDIA GeForce MX110. This is bounded presentation proof, not WebGL/WebGPU
 conformance or live-media-overlay coverage.
 
-### Final delivery identifiers and next work
+### Final128 correction and delivery status
+
+Runtime commit: `23e1d1eb185d85fc08ee3b930c5f6abde476cb44`; frozen executable `build/codex-native/lumen-astra-i128`; SHA256 `e41f9f04359464d4a229a74371cc6badd25aa01f3289d585286db67cec5e8801`. Post-commit build ran08:29:11–08:29:18UTC with unchanged source; compiled-input manifest SHA256 `036bbc2268973e9e55d2599225e4e95d815f7f726cadff0c1c8fc5a08c44f48b`. Final128 source is six added/two removed lines in `src/layout/block.c` relative to the reviewed127 tree: first/last baseline static-position fallback follows the container logical axes, while explicit self-start/self-end retain child axes. This targets installed Chromium150 and pinned WPT behavior; the current CSS Align draft's safe self-axis fallback differs and is not claimed implemented.
+
+The new original-control supplemental run exposed two reproducible127 last-baseline losses in vertical writing mode. Unchanged original→127→original runs reproduced8/28→22/28→8/28 with the same two lost passes. Candidate128 gives26/28 and repairs both without losing old passes. The identical supplemental200 now gives1,213/3,370 PASS assertions, +176/0 lost versus original and +4/0 versus127, all200 harnessesOK. Native128 suite is117/117PASS,41.40seconds CTest wall, with no skipped rows; elapsed suite timings are not a browser performance comparison. Final128 geometry24 retains18PASS/6FAIL exactly,48 verified/released/exited captures. Shared55 and the separate primary2,000/rendering100 replays are pending final disposition at this checkpoint; all127 results below remain explicitly antecedent.
+
+The source archive's separate manifest identifies the exported source/docs commit and SHA256. Accepted runtime, archive commit and binary hash are distinct; source-tree equality is not a bit-for-bit reproducible-build claim.
+
+### Retained127 verification antecedent
 
 Accepted runtime commit: `163567579c077e35c7f6c6ed366162524530f5f8` (geometry `415ae50192c8218a68e6ba5b5b3575ff79ed3f98` plus cleanup and all earlier accepted repairs).
 The exact exported source/docs commit, byte count and SHA256 are recorded in `agent/progress/runtime/src.tar.manifest.json` and the public static `publication-manifest.json`. The portable Git bundle identifies that exported source HEAD; the accepted runtime commit above is distinct.
-Final frozen binary: `build/codex-native/lumen-astra-i127`, SHA256 `a06dc09b0065a7727bb837c30fd5e5faf49a365b3401adbb1e31b4d4e143db88`. Actual post-commit relink ran07:32:35.661322–07:32:41.768763UTC and produced the same bytes as126. Compiled-input manifest SHA256 `8527cee83e3085dcd127af551a88ec2a2012c3d85ae4d5f5f4b7ff10b13e2ff1`.
-Final native suite:117/117PASS,26.25seconds CTest wall; binary unchanged. Run `python3 tools/codex_compile.py ctest --test-dir build/codex-native --output-on-failure -j4`. Focused55 unchanged accepted guards:5,505/5,963 assertionsPASS, all55harnessesOK, zero lost accepted identities/harnesses. The same guarded first 2,000 testharness URLs give baseline 747→final 765 fully passing URLs, native 98,485/107,088→100,737/108,961 PASS assertions, and exact matches of Chromium PASS assertions 95,417→97,712/105,689. Preserve all 2,757 raw gained and 505 raw lost native identities. Existing original→127→original batch isolates for input-events, editing and inline webfont fetch produced identical records; floated-stretch isolates were also identical with both existing runner methods. These do not replace the primary run or prove timing causality. There is no global zero-regression claim; remaining loss investigations are incomplete.
+Retained127 frozen binary: `build/codex-native/lumen-astra-i127`, SHA256 `a06dc09b0065a7727bb837c30fd5e5faf49a365b3401adbb1e31b4d4e143db88`. Actual post-commit relink ran07:32:35.661322–07:32:41.768763UTC and produced the same bytes as126. Compiled-input manifest SHA256 `8527cee83e3085dcd127af551a88ec2a2012c3d85ae4d5f5f4b7ff10b13e2ff1`.
+Retained127 native suite:117/117PASS,26.25seconds CTest wall; binary unchanged. Run `python3 tools/codex_compile.py ctest --test-dir build/codex-native --output-on-failure -j4`. Focused55 unchanged accepted guards:5,505/5,963 assertionsPASS, all55harnessesOK, zero lost accepted identities/harnesses. The same guarded first 2,000 testharness URLs give baseline 747→final 765 fully passing URLs, native 98,485/107,088→100,737/108,961 PASS assertions, and exact matches of Chromium PASS assertions 95,417→97,712/105,689. Preserve all 2,757 raw gained and 505 raw lost native identities. Existing original→127→original batch isolates for input-events, editing and inline webfont fetch produced identical records; floated-stretch isolates were also identical with both existing runner methods. These do not replace the primary run or prove timing causality. There is no global zero-regression claim; remaining loss investigations are incomplete.
 
 The same guarded 100 own-reference rendering URLs give capture114 baseline 36 PASS/62 FAIL/1 UNSUPPORTED/1 TIMEOUT→combined127 37/61/1/1, one Chromium PASS gain and zero lost passes. Chromium remains 95 PASS/5 FAIL; one native PASS/Chromium FAIL case persists unchanged. This baseline is accepted capture114, not the original pre-feature checkpoint. Final targeted geometry24 retains accepted125 18 PASS/6 FAIL exactly with48 verified/released/exited captures; the100 sample has198 such captures. These cohorts remain separate.
 
-Final gate timestamps: first2,000 07:38:24.334695–07:47:16.618940Z; rendering100 08:01:55.681285–08:09:24.983862Z; geometry24 08:09:54.142944–08:11:37.902762Z. Frozen/default/named executables remain byte-identical.
+Retained127 gate timestamps: first2,000 07:38:24.334695–07:47:16.618940Z; rendering100 08:01:55.681285–08:09:24.983862Z; geometry24 08:09:54.142944–08:11:37.902762Z. The127 frozen executable remains preserved; default/named delivery identity is checked separately for128.
 
 ### Supplemental ordinary compatibility corpus
 
-The separate supplemental layout corpus completed 2026-10-28T08:17:22.751753+00:00–2026-10-28T08:17:38.889905+00:00. It selected 200 of 235 eligible URLs from fixed grid/sizing/flex prefixes by hash order without inspecting outcomes, excluding the primary 2,000 and final 55. Final127:1,209/3,370 PASS assertions and54/200 fully passing URLs; retained same-URL Chromium150:3,337/3,370 PASS assertions and189/200 fully passing URLs. All200 harnesses wereOK in each engine. Exact ChromiumPASS matches:1,200/3,337; nine native-only PASS divergences. The guard verified16 launches with zero startup failures. Chromium results come from prior completed shards, not a simultaneous rerun. No guarded-original before/after claim is made; these counts are never merged into primary2,000 or rendering100 denominators.
+The separate supplemental layout corpus completed 2026-10-28T08:17:22.751753+00:00–2026-10-28T08:17:38.889905+00:00. It selected 200 of 235 eligible URLs from fixed grid/sizing/flex prefixes by hash order without inspecting outcomes, excluding the primary 2,000 and final 55. Final127:1,209/3,370 PASS assertions and54/200 fully passing URLs; retained same-URL Chromium150:3,337/3,370 PASS assertions and189/200 fully passing URLs. All200 harnesses wereOK in each engine. Exact ChromiumPASS matches:1,200/3,337; nine native-only PASS divergences. The guard verified16 launches with zero startup failures. Chromium results come from prior completed shards, not a simultaneous rerun. This first127-versus-Chromium phase preceded the separate original control, which exposed two baseline-alignment regressions subsequently corrected in128. The128 supplemental outcome is1,213/3,370 PASS, +176/0 versus original and +4/0 versus127. Counts are never merged into primary2,000 or rendering100 denominators.
 
-The named final host executable is `build/codex-native/lumen-linux-gpt-6-astra-builtin-agents-rubywebterm`, a byte-identical copy of `build/codex-native/lumen-astra-i127` and the default `build/codex-native/lumen`. The final127 executable is `build/codex-native/lumen-astra-i127`; its SHA256 is `a06dc09b0065a7727bb837c30fd5e5faf49a365b3401adbb1e31b4d4e143db88`. On this x86_64 host, `ldd` exits0 with154 shared-library entries and no missing libraries. SDL3, Fontconfig, FreeType, HarfBuzz, OpenSSL3 and libstdc++ resolve from the installed environment. This is host-specific validation, not a portable cross-distribution binary package.
+The named host executable is `build/codex-native/lumen-linux-gpt-6-astra-builtin-agents-rubywebterm`; it is a byte-identical copy of frozen128 and the default executable, prepared as a review candidate while final disposition is pending. Final128 is `build/codex-native/lumen-astra-i128`, SHA256 `e41f9f04359464d4a229a74371cc6badd25aa01f3289d585286db67cec5e8801`. The128 x86_64 host dependency audit found154 resolved shared-library entries and no missing libraries, including SDL3, Fontconfig, FreeType, HarfBuzz, OpenSSL3 and libstdc++. This is host-specific validation, not a portable cross-distribution installer.
 
-The actual127 showcase used `xvfb-run -a -s '-screen 0 960x720x24'` and inherited its fresh DISPLAY, with `SDL_VIDEODRIVER=x11`, `LUMEN_WINDOW=960x720`, `LUMEN_CONSOLE=2`, `LUMEN_NO_SESSION=1`, and a fresh temporary XDG_DATA_HOME/XDG_CONFIG_HOME. The executed browser argv was the absolute final127 path followed by `http://127.0.0.1:4187/`. LUMEN_WPT_CAPTURE, LUMEN_SHOT, LUMEN_SHOT_MS, LUMEN_PRE_FILE, LUMEN_TESTDRIVER and LUMEN_NO_GPU were unset. Renderer logs identified wgpu/Vulkan NVIDIA GeForce MX110. No claim is made that DISPLAY=:0 was tested by this recording. For an ordinary GUI launch, run the same executable from an existing authorized X11 terminal with its DISPLAY inherited; preserve the user's profile unless a fresh one is explicitly requested.
+The actual128 showcase used `xvfb-run -a -s '-screen 0 960x720x24'` and inherited its fresh DISPLAY, with `SDL_VIDEODRIVER=x11`, `LUMEN_WINDOW=960x720`, `LUMEN_CONSOLE=2`, `LUMEN_NO_SESSION=1`, and a fresh temporary XDG_DATA_HOME/XDG_CONFIG_HOME. The executed browser argv was the absolute final128 path followed by `http://127.0.0.1:4187/`. LUMEN_WPT_CAPTURE, LUMEN_SHOT, LUMEN_SHOT_MS, LUMEN_PRE_FILE, LUMEN_TESTDRIVER and LUMEN_NO_GPU were unset. Renderer logs identified wgpu/Vulkan NVIDIA GeForce MX110. No claim is made that DISPLAY=:0 was tested by this recording. For an ordinary GUI launch, run the same executable from an existing authorized X11 terminal with its DISPLAY inherited; preserve the user's profile unless a fresh one is explicitly requested.
 
-Live preview: https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz . Reviewed source is available at /src.tar.gz; its separate manifest identifies the archive/docs commit and source SHA256. Approved showcase: https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/showcase.mp4 ,476,197bytes,SHA25648e22ae5c4ccbc8227bf3fc19dc4625051a985467af7b0bc5c405b97bfc4bede,36seconds,960×720. It is actual127 X11 presentation recorded while final verification was in progress, with large white model/agent/tool credits on black. HTTPS bytes were rehashed at08:16:23Z. It is not a full-WPT demonstration.
+Live preview: https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz . Reviewed source is available at /src.tar.gz; its separate manifest identifies the archive/docs commit and source SHA256. Approved128 showcase: https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/showcase.mp4 ,441,746bytes,SHA256840018657cd5e9d37de063b5908e4256f03febf03f0aedcbff7d9df50374f488,36seconds,960×720. It is actual128 X11 presentation recorded08:31:15–08:31:55UTC during verification, with large white model/agent/tool credits on black. Visible127 metrics and iteration11 remain historical. HTTPS GET200 bytes were rehashed08:36:42UTC. It is not a full-WPT demonstration.
 
-PAGES_PUBLICATION_PENDING: Reviewed static/source publication is prepared for dedicated branch gpt-6-astra-ops-preview-pages-20261028; no Pages activation is claimed until its provider URL is verified. The static page has no telemetry/message backend and links to the live tunnel. Messages persist between sessions, but replies require an active agent session.
+PAGES_PUBLICATION_BLOCKED: Automatic approval review rejected source-branch push and Pages activation to ecooxai/lumen because explicit end-user authorization identifying that destination/source archive was not present. No push or activation was performed. The local six-file payload is prepared for dedicated branch gpt-6-astra-ops-preview-pages-20261028; do not split or indirectly route the rejected publication. The static page has no telemetry/message backend and links to the live tunnel. Messages persist between sessions, but replies require an active agent session.
 
 Accepted areas include structured grid animation, in-process BroadcastChannel
 and EventTarget branding, pending-image decode lifecycle, version-gated Fontconfig
