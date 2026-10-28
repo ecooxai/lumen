@@ -6,7 +6,7 @@
     147
   ],
   "scope": "Actual Box-owned Grid used-track values, narrow ungenerated-pseudo computed fallback, and corrected native fixture migration",
-  "status": "Focused final 150 CSS and 33-URL Grid gates pass; full 132/132 native gate passes. Final supplemental and broad release gates remain separately owned.",
+  "status": "Accepted scoped cache correction in source150, with132/132 native and200-URL supplemental gates passed. Final broad/rendering/performance measurements remain separate.",
   "scoped_score": 96,
   "score_scope": "Reviewed bounded cache/serializer repair, not browser parity; combined release remains gated",
   "whole_goal_score": 19,
@@ -191,7 +191,19 @@
     },
     "ctest_log_sha256": "9bca37fd3bba0abe3b0bdba59194b5495e2ce0b63868094142cbe066ab945d5a"
   },
-  "final_supplemental_gate": null,
+  "final_supplemental_gate": {
+    "pass": 1767,
+    "total": 3370,
+    "fully_passing_urls": 77,
+    "urls": 200,
+    "harness_OK": 200,
+    "gains_vs128": 554,
+    "losses_vs128": 0,
+    "gains_vs139": 128,
+    "losses_vs139": 0,
+    "evidence": "agent/validation/linux-wpt-20261028-session2/candidate150-supplemental200/acceptance-summary.json",
+    "sha256": "003a17c5195212e048efc44368164eb936b4c1200a50377d954d87970a98272a"
+  },
   "capture_cleanup": {
     "parser37": {
       "runner": "agent/validation/paired_wpt.py",

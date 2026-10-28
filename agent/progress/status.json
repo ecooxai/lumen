@@ -1,87 +1,122 @@
 {
-  "title": "Lumen \u00b7 Linux engine conformance",
-  "phase": "Active session: preserving checkpoint128, investigating measured Linux compatibility gaps, and preparing unchanged-test Chromium comparisons. Full WPT parity remains unproven.",
-  "iteration": 1,
+  "title": "Lumen · Linux engine conformance",
+  "phase": "Final Lumen and fresh primary Chromium comparisons are sealed. Native selected full passes improved by 53; measured Grid, absolute layout and DOM elapsed medians increased 39.0%, 7.1% and 1.0%. Whole-goal estimate remains 19/100; final publication is being completed.",
+  "iteration": 150,
   "score": 19,
-  "iteration_quality": null,
-  "score_note": "PROVISIONAL whole-goal readiness estimate, inherited from historical scope. This is not a measured pass percentage. Goal:98/100 after fresh complete comparable coverage.",
+  "iteration_quality": 96,
+  "score_note": "Subjective whole-goal readiness estimate with no scoring formula; this is not a test pass percentage. Full WPT / Chromium parity and the requested 98/100 remain unachieved.",
   "branch": "gpt-6-astra-builtin-agent-lumen-linux-conformance-20261028-0920",
-  "checkpoint": "e6b7c5f721212173482510dde9717c1fdb24ce3d",
-  "updated_utc": "2026-10-28T09:16:34.262870+00:00",
+  "checkpoint": "0f62172b08683c7c0d89722c588af6ff94f82ca3",
+  "updated_utc": "2026-10-28T13:47:30.112077+00:00",
   "session_started_utc": "2026-10-28T09:12:12Z",
   "deadline_utc": "2026-10-28T14:12:12Z",
-  "historical": {
-    "label": "Historical multi-revision web-only audit, 2026-10-27T17:15:44Z; not fresh branch validation",
-    "lumen_chrome_passing_percent": 91.39966,
-    "test_files": 39356,
-    "observed_urls": 30284,
-    "fully_passing_url_parity_percent": 37.24783,
-    "test262_assertion_parity_percent": 98.95726,
-    "conservative_task_score": 19.0215,
-    "comparison": "Chrome158.0.8116.0 Linux22.04, wpt.fyi canary experimental run5128138001743872,2026-10-21/22"
-  },
   "current_evidence": [
     [
-      "Current session",
-      "2026-10-28 09:12:12UTC start, five-hour budget. New branch preserved; unchanged comparison planning underway. No new conformance result claimed."
+      "Accepted combined source 150",
+      "Commit 0f62172b0868; 584/584 compiled files match Git. Full native gate: 132/132. Final 47 cache controls, 37 parser URLs and 9 Typed OM URLs retain their reviewed results."
     ],
     [
-      "Inherited Final128 primary2,000",
-      "Original747\u2192128766 fully passing; Chromium1,693. Native98,485/107,088\u2192101,199/109,139PASS; exactChromePASSmatches95,417\u219298,124/105,689.2,764 gains and50 lost identities retained; no global zero-regression claim."
+      "Measured performance regression",
+      "Median elapsed milliseconds for Lumen 128 / Lumen 150 / Chromium: Grid 136.76 / 190.03 / 56.90; absolute layout 359.38 / 385.06 / 67.50; DOM 44.74 / 45.19 / 11.60. All 21 trials passed 9,395 custom checks each. Final native medians increased 39.0%, 7.1% and 1.0%. Median trial sampled maximum PSS was 123.42 / 123.80 / 376.68 decimal MB. Memory and CPU measurements cover these controlled workloads."
     ],
     [
-      "Inherited Loss and coverage caveat",
-      "50 losses:12FAIL,8TIMEOUT,19NOTRUN,11missing.1,497ChromePASS identities unobserved. Prior127505losses retained;128vs127569gains/107losses are not causal proof."
+      "Final painted rendering pilot",
+      "Lumen 150: 38 PASS, 60 FAIL, 1 UNSUPPORTED and 1 TIMEOUT across 100 selected painted reftests; baseline 128: 37 / 61 / 1 / 1; retained Chromium reference: 95 PASS and 5 FAIL. One matching case does not establish Grid 3 support. All 198 guarded capture launches are drained."
     ],
     [
-      "Inherited Native and shared128 gates",
-      "117/117nativePASS,41.40sCTest; no speed inference. Shared555,509/5,963PASS,+4/0 assertion losses;52OK/3TIMEOUT. All three timeout cases also observed on127 controls; cause unproven."
+      "Final primary 150 complete",
+      "783/2,000 fully passing variants (39.15%);101,588/109,272 PASS reported subtests; 1,765 OK / 149 TIMEOUT / 86 ERROR. Existing identities: 620 gains, 27 losses; 365 new PASS and 42 new FAIL identities. Full-variant changes: 14 gains and two losses. The 27 losses comprise21 unsupported tentative Grid 3, five inherited isolated flex failures, and one batch-dependent animation observation."
     ],
     [
-      "Inherited Final128 rendering",
-      "Unbiased100:37PASS/61FAIL/1UNSUPPORTED/1TIMEOUT,exactly127. Accepted114baseline36/62/1/1;oneChromePASS gain,zero lostPASS. Chromium95/5. Targeted24 retains18PASS/6FAIL."
+      "Deduplicated selected union",
+      "Lumen 150: 1,620/4,200 fully passing variants and 199,144/215,657 PASS reported subtests. Baseline 128: 1,567 full and 197,240/215,081 PASS. Chromium reference: 3,532 full and 209,533/217,348 PASS, combining fresh primary/expanded with historical supplemental. This 10.66% selection of 39,394 testharness variants includes six explicitly marked jsshell entries. All 30 existing-identity PASS losses remain counted."
     ],
     [
-      "Inherited Supplemental layout200",
-      "Original1,037\u21921281,213/3,370PASS,+176/0;127\u2192128+4/0. All200harnessOK. Chrome3,337/3,370PASS and189fullypassing;native54fullypassing. Separate reference shards001\u2013003."
+      "Accepted 150 supplemental holdout",
+      "1,767/3,370 PASS reported subtests; 77/200 fully passing URLs; all 200 harnesses OK. +554 existing gains / zero losses versus 128 and +128 / zero versus 139. All 21 placement-experiment losses are restored after rollback."
     ],
     [
-      "Inherited Baseline correction",
-      "Iteration14quality95/100. Two reproduced127 last-baseline losses repaired;verticalguard26/28. Container logical fallback targetsChromium150/pinnedWPT; current draft divergence explicit."
+      "Expanded Chromium reference complete",
+      "1,648/2,000 selected testharness manifest URL variants fully pass (82.40%); 100,508/103,406 PASS reported subtests. Statuses: 1,948 OK, 26 TIMEOUT, 14 ERROR, 6 CRASH, 6 SKIP. All selected variants remain in the denominator; not every entry executed successfully."
     ],
     [
-      "Inherited Actual128 showcase",
-      "36s960x720 actual X11 presentation during verification; visible127 metrics/iteration11 historical. SHA84001865\u202674f488,441,746bytes. Sizing20/20 is one named guard."
+      "Completed primary 142",
+      "783/2,000 fully passing URLs (39.15%); 101,564/109,272 PASS reported subtests; 1,763 OK / 149 TIMEOUT / 88 ERROR harnesses. Fresh baseline 128: 771/2,000 (38.55%), 100,630/108,868 PASS, 1,717 OK / 196 TIMEOUT / 87 ERROR."
     ],
     [
-      "Inherited Linux presentation/privacy",
-      "Default wgpu/Vulkan NVIDIA MX110 verified. SoftwareWPT separate. Physicalcamera/microphone refused pending site consent; synthetic/canvas/file streams/playback preserved."
+      "Fresh primary Chromium reference",
+      "Sealed at 13:44:03 UTC: 1,695/2,000 fully passing URLs (84.75%) and 105,688/110,572 PASS reported subtests. Harness statuses: 1,956 OK, 25 TIMEOUT, 8 ERROR, 9 CRASH and 2 SKIP. All records retained; owned processes and profiles drained. Fresh primary and expanded references share the pinned selection and browser version; supplemental reference remains historical."
     ],
     [
-      "Inherited Publication blocked",
-      "Git push/Pages activation rejected by automatic review pending explicit ecooxai/lumen destination approval. Source route404; final source/static payload local only. Approved live preview/video remain available."
+      "Intermediate primary 142 identity changes",
+      "592 existing gains, 23 losses; 407 new identities (365 PASS, 42 FAIL); three old nonpasses absent (two NOTRUN, one TIMEOUT). Net PASS +934; no lost harness-OK result. Losses: 21 unsupported tentative Grid 3 cases, one Typed OM regression repaired in 148, and one batch-dependent Trusted Types PASS-to-NOTRUN observation whose isolated target passes."
     ],
     [
-      "Inherited Goal and delivery quality",
-      "Whole-goal19/100 provisional; target98 unmet. Final verification/delivery iteration13quality90. FullWPT,layout,SVG/image,multilayer,document.domain,OS-processBC,retention and unrun categories remain."
+      "Intermediate primary 142 integrity",
+      "4,044 callback requests with begin/end pairing verified, zero request errors or unfinished callbacks; 23 complete guard launches, no surviving owned PIDs, protected hashes unchanged. Cohort duration is not a speed benchmark. Compromised136 remains diagnostic-only."
+    ],
+    [
+      "Expanded and final comparisons",
+      "Final expanded native sample: 760/2,000 fully passing variants (38.00%) and 95,789/103,015 PASS reported subtests; baseline 128: 742/2,000 (37.10%) and 95,397/102,843. There are 286 existing gains, three retained observed losses and 109 new PASS identities. Two decoder failures reproduce in baseline with variability; the referrer observation remains unresolved. Native primary, rendering, performance and fresh primary Chromium are complete."
+    ],
+    [
+      "Used-track cache: focused evidence",
+      "Final 150 passes 47/47 unchanged authored controls and 1,087/1,172 reported subtests across 37 URLs (32 fully passing, all harnesses OK): +28 gains / zero losses versus 141. Original failed runs remain retained. The separate placement experiment was rolled back; all 21 demonstrated geometry losses are restored."
+    ],
+    [
+      "Typed OM 148: focused evidence",
+      "Nine unchanged URLs improve from 471/542 to 479/542 reported subtests: eight existing gains, zero losses, all identities and harnesses retained. The exact grid-area regression is restored. Authored controls: 62/62 versus baseline 32/62 and Chromium 60/62; two inherited append differences have independent draft review and are not new gains. Native gate: 131/131."
+    ],
+    [
+      "Final module correction 150",
+      "44 unchanged URLs: 308/320 reported subtests, 38/44 fully passing, all 44 harnesses OK; five existing gains and zero losses versus 144. Original identity controls 25/25 and new graph controls 42/42 pass. Chromium 320/320; remaining module/CSS gaps stay explicit."
+    ],
+    [
+      "Accepted Grid CSSOM and arithmetic",
+      "Build 141: 1,059/1,172 reported subtests and 31/37 fully passing URLs, versus baseline 128 at 347/1,172 and Chromium at 1,130/1,172. All 754 gains and 42 unsupported tentative Grid 3 losses remain visible. The ten valid calculated-count regressions were repaired with supported typed arithmetic; broader math and context limits remain explicit."
+    ],
+    [
+      "Accepted JSON-module subset",
+      "Corrected build 130: 225/225 reported subtests and all eight files fully passing, matching Chromium 150. Starting build 128 passed 101/225. This focused subset is not a broad WPT pass rate."
+    ],
+    [
+      "Accepted placement repair 139",
+      "Supplemental 200 URLs: 1,639/3,370 reported subtests, 73 fully passing URLs, all harnesses OK; +426 gains / zero losses versus 128. All three original placement regressions were repaired. Retained Chromium: 3,337/3,370 reported subtests and 189 fully passing URLs."
     ]
   ],
-  "coverage": "Full WPT parity remains unproven. Final128 has its own frozen reports;127 broad results are retained as antecedents. Historical8,000, guarded first2,000, supplemental200 and100 rendering URLs remain separate. Crash, WebDriver, print and accessibility categories are unverified.",
+  "coverage": "The disjoint 4,200-variant selection is sealed: Lumen 150 has 1,620 fully passing variants versus 1,567 baseline; the Chromium union has 3,532. Primary and expanded Chromium references are fresh; supplemental Chromium remains historical. Six selected entries are explicitly marked jsshell. This selection covers 10.66% of 39,394 testharness variants and is not the full WPT suite.",
   "findings": [
-    "One-second process-tree CPU/RSS and shared-cgroup monitoring remain required. All compilation shares480% total CPU and at most six compiler jobs.",
-    "This dashboard publishes reviewed aggregates, host telemetry and public task feedback only. Source and raw-results routes remain unavailable.",
-    "Historical checkpoint128 evidence is preserved separately; new iteration scores will follow measured results."
+    "One-second process-tree CPU/RSS and shared-cgroup monitoring remain required. Compilation shares a 480% CPU budget and at most six compiler jobs.",
+    "This dashboard publishes reviewed aggregates, host telemetry and public task feedback. The exact audited accepted-source archive is available at /src.tar.gz; raw results, private runtime paths and directory listings remain unavailable.",
+    "Native CSS grammar, intrinsic track sizing, automatic placement and full rendering parity remain incomplete. Accepted scoped repairs do not establish Chromium parity."
   ],
   "active_iteration": {
-    "number": 1,
-    "started_utc": "2026-10-28T09:12:12Z",
-    "scope": "Repository preservation, unchanged baseline selection, monitoring and progress renewal"
+    "number": 150,
+    "scope": "Final measurements of accepted combined source; no further engine changes planned."
   },
-  "accepted_binary_sha256": "e41f9f04359464d4a229a74371cc6badd25aa01f3289d585286db67cec5e8801",
-  "accepted_binary_scope": "Inherited accepted focused engineering checkpoint128. Its historical results below are retained; current-session validation is pending. Whole-goal19/100 is a provisional readiness estimate.",
+  "accepted_binary_sha256": "79874c9c16af2086cb1de93a6194276d4b17512897aeca118244beddef7bb967",
+  "accepted_binary_scope": "Accepted combined source 150: all 584 compiled inputs match tested Git commit 0f62172b08683c7c0d89722c588af6ff94f82ca3. Focused, supplemental, primary, expanded, rendering, performance and fresh primary Chromium measurements are complete. Metadata-only publication work does not change the tested binary.",
   "agent_session": "active",
-  "showcase_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/showcase.mp4",
-  "candidate_binary_sha256": "e41f9f04359464d4a229a74371cc6badd25aa01f3289d585286db67cec5e8801",
-  "candidate_runtime_commit": "23e1d1eb185d85fc08ee3b930c5f6abde476cb44",
-  "publication_status": "Existing aggregate telemetry/message preview remains live. Source, raw-results, Git push and Pages publication are withheld pending explicit destination-specific authorization; prior automatic-review denial remains effective."
+  "showcase_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-showcase.mp4",
+  "candidate_binary_sha256": "79874c9c16af2086cb1de93a6194276d4b17512897aeca118244beddef7bb967",
+  "publication_status": "Final metadata and audited source snapshot are being prepared for the model-named Git branch and static cloud showcase. Reviewed live preview and both videos are available.",
+  "showcase_note": "Actual accepted 150 browser recording from 13:01 UTC, before final primary measurements sealed. Independently reviewed clean and credited copies are 36 seconds, 960×720.",
+  "source_archive_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/src.tar.gz",
+  "source_archive_sha256": "68d5b4882b960af17a9034096e9023427634281ff5249d7a5706d66b12c4c6de",
+  "source_archive_bytes": 4717263,
+  "measurement_units": "WPT numbers count reported testharness subtests, not individual assert_* calls. Native CTest entries and custom correctness checks are separate.",
+  "clean_demo_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-demo.mp4",
+  "fresh_primary_chromium": {
+    "fully_passing_variants": 1695,
+    "pass_subtests": 105688,
+    "reported_subtests": 110572,
+    "completed_utc": "2026-10-28T13:44:03Z",
+    "cleanup_complete": true
+  },
+  "mixed_chromium_union": {
+    "fully_passing_variants": 3532,
+    "pass_subtests": 209533,
+    "reported_subtests": 217348,
+    "supplemental_reference": "historical"
+  }
 }

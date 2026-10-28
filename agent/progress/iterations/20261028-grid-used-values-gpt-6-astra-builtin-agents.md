@@ -41,3 +41,7 @@ The remaining 39 of 67 original used-size misses reflect unresolved sizing/seria
 ## Final native gate update
 
 The immutable build 150 full native suite completed 132/132 checks with exit 0 from 12:02:46 to 12:04:01 UTC (74.87 seconds in CTest; 75 one-second resource samples). The 33 unchanged Grid rollback controls also restore all 21 geometry losses and exactly match build 145. Supplemental 200, final broad, rendering and dedicated performance gates remain pending; this completion is not a claim of full WPT parity.
+
+## Accepted combined source and supplemental gate
+
+Source 150 is accepted as commit `0f62172b08683c7c0d89722c588af6ff94f82ca3`, with all 584 compiled files matched to Git. The sealed supplemental cohort passes 1,767/3,370 assertions and 77/200 URLs, with all 200 harnesses OK: 554 existing gains and zero losses versus 128, and 128 gains with zero losses versus 139. The scoped correction is accepted; final primary, expanded, rendering and dedicated performance measurements continue separately.

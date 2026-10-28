@@ -17,12 +17,71 @@ function originAllowed(origin){if(!origin)return true;try{const u=new URL(origin
 function data(file,fallback){try{return JSON.parse(fs.readFileSync(path.join(base,file),'utf8'))}catch{return fallback}}
 function messages(){try{return fs.readFileSync(path.join(runtime,'messages.jsonl'),'utf8').trim().split('\n').filter(Boolean).slice(-100).map(x=>JSON.parse(x))}catch{return []}}
 function visibleMessages(isPrivate){return messages().filter(m=>isPrivate||m.public===true)}
+function reviewedFinalShowcase(){
+ const meta=data('runtime/final-showcase-manifest.json',null);
+ if(meta?.reviewed_publication!==true||!Number.isSafeInteger(meta.bytes)||meta.bytes<=0||meta.bytes>64*1024*1024||!/^[0-9a-f]{64}$/.test(meta.sha256||''))return null;
+ let fd;
+ try{
+  fd=fs.openSync(path.join(runtime,'lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-showcase.mp4'),fs.constants.O_RDONLY|fs.constants.O_NOFOLLOW|fs.constants.O_NONBLOCK);
+  const stat=fs.fstatSync(fd);if(!stat.isFile()||stat.size!==meta.bytes)return null;
+  const bytes=Buffer.alloc(meta.bytes+1);let read=0,n;
+  while(read<bytes.length&&(n=fs.readSync(fd,bytes,read,bytes.length-read,null))>0)read+=n;
+  if(read!==meta.bytes)return null;
+  const verified=bytes.subarray(0,read);if(crypto.createHash('sha256').update(verified).digest('hex')!==meta.sha256)return null;
+  return {bytes:verified};
+ }catch{return null}finally{if(fd!==undefined)fs.closeSync(fd)}
+}
+
+function reviewedCleanDemo(){
+ const meta=data('runtime/clean-demo-manifest.json',null);
+ if(meta?.reviewed_publication!==true||!Number.isSafeInteger(meta.bytes)||meta.bytes<=0||meta.bytes>64*1024*1024||!/^[0-9a-f]{64}$/.test(meta.sha256||''))return null;
+ let fd;
+ try{
+  fd=fs.openSync(path.join(runtime,'lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-demo.mp4'),fs.constants.O_RDONLY|fs.constants.O_NOFOLLOW|fs.constants.O_NONBLOCK);
+  const stat=fs.fstatSync(fd);if(!stat.isFile()||stat.size!==meta.bytes)return null;
+  const bytes=Buffer.alloc(meta.bytes+1);let read=0,n;
+  while(read<bytes.length&&(n=fs.readSync(fd,bytes,read,bytes.length-read,null))>0)read+=n;
+  if(read!==meta.bytes)return null;
+  const verified=bytes.subarray(0,read);if(crypto.createHash('sha256').update(verified).digest('hex')!==meta.sha256)return null;
+  return {bytes:verified};
+ }catch{return null}finally{if(fd!==undefined)fs.closeSync(fd)}
+}
+
+function reviewedMediaManifest(){
+ const meta=data('runtime/media-manifest-publication.json',null);
+ if(meta?.reviewed_publication!==true||!Number.isSafeInteger(meta.bytes)||meta.bytes<=0||meta.bytes>64*1024*1024||!/^[0-9a-f]{64}$/.test(meta.sha256||''))return null;
+ let fd;
+ try{
+  fd=fs.openSync(path.join(runtime,'lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-media-manifest.json'),fs.constants.O_RDONLY|fs.constants.O_NOFOLLOW|fs.constants.O_NONBLOCK);
+  const stat=fs.fstatSync(fd);if(!stat.isFile()||stat.size!==meta.bytes)return null;
+  const bytes=Buffer.alloc(meta.bytes+1);let read=0,n;
+  while(read<bytes.length&&(n=fs.readSync(fd,bytes,read,bytes.length-read,null))>0)read+=n;
+  if(read!==meta.bytes)return null;
+  const verified=bytes.subarray(0,read);if(crypto.createHash('sha256').update(verified).digest('hex')!==meta.sha256)return null;
+  return {bytes:verified};
+ }catch{return null}finally{if(fd!==undefined)fs.closeSync(fd)}
+}
+
 function reviewedShowcase(){
  const meta=data('runtime/showcase-manifest.json',null);
  if(meta?.reviewed_publication!==true||!Number.isSafeInteger(meta.bytes)||meta.bytes<=0||meta.bytes>64*1024*1024||!/^[0-9a-f]{64}$/.test(meta.sha256||''))return null;
  let fd;
  try{
   fd=fs.openSync(path.join(runtime,'lumen-linux-gpt-6-astra-builtin-agents-rubywebterm-showcase.mp4'),fs.constants.O_RDONLY|fs.constants.O_NOFOLLOW|fs.constants.O_NONBLOCK);
+  const stat=fs.fstatSync(fd);if(!stat.isFile()||stat.size!==meta.bytes)return null;
+  const bytes=Buffer.alloc(meta.bytes+1);let read=0,n;
+  while(read<bytes.length&&(n=fs.readSync(fd,bytes,read,bytes.length-read,null))>0)read+=n;
+  if(read!==meta.bytes)return null;
+  const verified=bytes.subarray(0,read);if(crypto.createHash('sha256').update(verified).digest('hex')!==meta.sha256)return null;
+  return {bytes:verified};
+ }catch{return null}finally{if(fd!==undefined)fs.closeSync(fd)}
+}
+function reviewedSourceArchive(){
+ const meta=data('runtime/source150-publication.json',null);
+ if(meta?.reviewed_publication!==true||!Number.isSafeInteger(meta.bytes)||meta.bytes<=0||meta.bytes>64*1024*1024||!/^[0-9a-f]{64}$/.test(meta.sha256||''))return null;
+ let fd;
+ try{
+  fd=fs.openSync(path.join(runtime,'published-source150-tools.tar.gz'),fs.constants.O_RDONLY|fs.constants.O_NOFOLLOW|fs.constants.O_NONBLOCK);
   const stat=fs.fstatSync(fd);if(!stat.isFile()||stat.size!==meta.bytes)return null;
   const bytes=Buffer.alloc(meta.bytes+1);let read=0,n;
   while(read<bytes.length&&(n=fs.readSync(fd,bytes,read,bytes.length-read,null))>0)read+=n;
@@ -56,10 +115,13 @@ const server=http.createServer(async(req,res)=>{
  if(req.method==='OPTIONS'){res.writeHead(204);return res.end()}
  const url=new URL(req.url,'http://localhost');if(req.method!=='GET')return json(res,405,{error:'Method not allowed'});
  if(url.pathname==='/healthz')return json(res,200,{ok:true,service:'lumen-wpt-progress'});
- if(url.pathname==='/showcase.mp4'){const item=reviewedShowcase();if(!item)return json(res,404,{error:'Reviewed showcase not prepared'});res.writeHead(200,{'Content-Type':'video/mp4','Content-Length':item.bytes.length,'Content-Disposition':'attachment; filename="lumen-linux-gpt-6-astra-builtin-agents-rubywebterm-showcase.mp4"','Cache-Control':'no-store'});return res.end(item.bytes)}
+ if(url.pathname==='/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-showcase.mp4'){const item=reviewedFinalShowcase();if(!item)return json(res,404,{error:'Reviewed showcase not prepared'});res.writeHead(200,{'Content-Type':'video/mp4','Content-Length':item.bytes.length,'Content-Disposition':'attachment; filename="lumen-linux-gpt-6-astra-builtin-agents-rubywebterm-showcase.mp4"','Cache-Control':'no-store'});return res.end(item.bytes)}
+  if(url.pathname==='/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-demo.mp4'){const item=reviewedCleanDemo();if(!item)return json(res,404,{error:'Reviewed showcase not prepared'});res.writeHead(200,{'Content-Type':'video/mp4','Content-Length':item.bytes.length,'Content-Disposition':'attachment; filename="lumen-linux-gpt-6-astra-builtin-agents-rubywebterm-showcase.mp4"','Cache-Control':'no-store'});return res.end(item.bytes)}
+  if(url.pathname==='/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-media-manifest.json'){const item=reviewedMediaManifest();if(!item)return json(res,404,{error:'Reviewed showcase not prepared'});res.writeHead(200,{'Content-Type':'application/json','Content-Length':item.bytes.length,'Content-Disposition':'attachment; filename="lumen-linux-gpt-6-astra-builtin-agents-rubywebterm-showcase.mp4"','Cache-Control':'no-store'});return res.end(item.bytes)}
+  if(url.pathname==='/showcase.mp4'){const item=reviewedShowcase();if(!item)return json(res,404,{error:'Reviewed showcase not prepared'});res.writeHead(200,{'Content-Type':'video/mp4','Content-Length':item.bytes.length,'Content-Disposition':'attachment; filename="lumen-linux-gpt-6-astra-builtin-agents-rubywebterm-showcase.mp4"','Cache-Control':'no-store'});return res.end(item.bytes)}
  if(url.pathname.startsWith('/api/')||url.pathname==='/src.tar.gz'){
   if(url.pathname==='/api/status')return json(res,200,snapshot(authorized(req)));
-  if(url.pathname==='/src.tar.gz')return json(res,404,{error:'Source publication is disabled pending destination-specific approval'});
+  if(url.pathname==='/src.tar.gz'){const item=reviewedSourceArchive();if(!item)return json(res,404,{error:'Reviewed source snapshot unavailable'});res.writeHead(200,{'Content-Type':'application/gzip','Content-Length':item.bytes.length,'Content-Disposition':'attachment; filename="lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-source.tar.gz"','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});return res.end(item.bytes)}
   return json(res,404,{error:'Unknown endpoint'});
  }
  if(url.pathname==='/'||url.pathname==='/index.html'){res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-cache','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','Content-Security-Policy':"default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' https: wss:; img-src 'self' data:; base-uri 'none'; frame-ancestors 'none'"});return fs.createReadStream(path.join(site,'index.html')).pipe(res)}

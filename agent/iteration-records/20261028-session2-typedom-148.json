@@ -1,7 +1,7 @@
 {
   "iteration": 148,
   "title": "Property-aware CSS Typed OM reification and direct-value ownership",
-  "status": "Scoped148 gates and immutable150 holdout passed; accepted for combined validation by repository_lead; final combined release remains separately gated",
+  "status": "Accepted scoped Typed OM repair retained by accepted source150; final broad/rendering/performance measurements remain separate.",
   "scoped_score_proposed": 96,
   "whole_goal_score": 19,
   "whole_goal_score_method": "Subjective readiness judgment, not a test pass percentage or parity formula",
@@ -253,5 +253,18 @@
       "finished_utc": "2026-10-28T12:04:01Z",
       "elapsed_seconds": 75.13784546498209
     }
+  },
+  "final150_supplemental_gate": {
+    "pass": 1767,
+    "total": 3370,
+    "fully_passing_urls": 77,
+    "urls": 200,
+    "harness_OK": 200,
+    "gains_vs128": 554,
+    "losses_vs128": 0,
+    "gains_vs139": 128,
+    "losses_vs139": 0,
+    "evidence": "agent/validation/linux-wpt-20261028-session2/candidate150-supplemental200/acceptance-summary.json",
+    "sha256": "003a17c5195212e048efc44368164eb936b4c1200a50377d954d87970a98272a"
   }
 }
