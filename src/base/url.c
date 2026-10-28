@@ -47,6 +47,7 @@ static bool in_set(unsigned char c, int set) {
 }
 static void pe(SB *b, unsigned char c, int set) { if (in_set(c, set)) sb_printf(b, "%%%02X", c); else sb_putc(b, (char)c); }
 static int hexv(int c) { if (c >= '0' && c <= '9') return c - '0'; c = lc(c); if (c >= 'a' && c <= 'f') return c - 'a' + 10; return -1; }
+static char *url_decode_length(const char *s, size_t n, size_t *length);
 
 static bool ipv6_parse(const char *s, size_t n, uint16_t a[8]) {
     memset(a, 0, 16);
@@ -203,7 +204,10 @@ static char *host_parse(const char *s, size_t n, bool opaque) {
         return sb_take(&o);
     }
     {
-        char *dec = url_decode(s, n); size_t dn = strlen(dec); bool simple = true;
+        size_t dn;
+        /* Percent-decoding may produce NUL. Keep its length until the domain
+         * validation below rejects forbidden bytes instead of accepting a prefix. */
+        char *dec = url_decode_length(s, n, &dn); bool simple = true;
         for (size_t i = 0; i < dn; i++) { unsigned char c = (unsigned char)dec[i]; if (c >= 0x80) simple = false; dec[i] = (char)(c >= 'A' && c <= 'Z' ? c + 32 : c); }
         bool ok = simple ? (sb_put(&o, dec, dn), true) : idna_to_ascii(dec, dn, &o);
         free(dec);
@@ -332,13 +336,15 @@ static bool parse(const char *raw, size_t rawn, const URL *base, URL *u, int ov)
             if (ov >= 0 && !strcmp(scheme, "file")) { p--; st = S_FILE_HOST; }
             else if (c == ':' && !br) {
                 if (!buf.n || ov == S_HOSTNAME) goto done;
-                free(host); host = host_parse(buf.s, buf.n, !sp); if (!host) goto done;
+                char *parsed_host = host_parse(buf.s, buf.n, !sp); if (!parsed_host) goto done;
+                free(host); host = parsed_host;
                 sb_clear(&buf); st = S_PORT;
             } else if (c == -1 || c == '/' || c == '?' || c == '#' || (sp && c == '\\')) {
                 p--;
                 if (sp && !buf.n) goto done;
                 if (ov >= 0 && !buf.n && (user.n || pass.n || port >= 0)) { fine = true; goto done; }
-                free(host); host = host_parse(buf.s ? buf.s : "", buf.n, !sp); if (!host) goto done;
+                char *parsed_host = host_parse(buf.s ? buf.s : "", buf.n, !sp); if (!parsed_host) goto done;
+                free(host); host = parsed_host;
                 sb_clear(&buf); st = S_PATH_START;
                 if (ov >= 0) goto good;
             } else { if (c == '[') br = true; if (c == ']') br = false; sb_putc(&buf, (char)c); }
@@ -385,7 +391,8 @@ static bool parse(const char *raw, size_t rawn, const URL *base, URL *u, int ov)
                 if (ov < 0 && drive_letter(buf.s ? buf.s : "", buf.n, false)) st = S_PATH;
                 else if (!buf.n) { free(host); host = xstrdup(""); if (ov >= 0) goto good; st = S_PATH_START; }
                 else {
-                    free(host); host = host_parse(buf.s, buf.n, false); if (!host) goto done;
+                    char *parsed_host = host_parse(buf.s, buf.n, false); if (!parsed_host) goto done;
+                    free(host); host = parsed_host;
                     if (!strcmp(host, "localhost")) { free(host); host = xstrdup(""); }
                     if (ov >= 0) goto good;
                     sb_clear(&buf); st = S_PATH_START;
@@ -554,13 +561,17 @@ char *url_join(const char *base, const char *rel) {
     if (!url_resolve(hb ? &b : NULL, rel, &o)) { if (hb) url_free(&b); return NULL; }
     char *r = url_to_string(&o); url_free(&o); if (hb) url_free(&b); return r;
 }
-char *url_decode(const char *s, size_t n) {
+static char *url_decode_length(const char *s, size_t n, size_t *length) {
     SB b; sb_init(&b);
     for (size_t i = 0; i < n; i++) {
         if (s[i] == '%' && i + 2 < n && hexv((unsigned char)s[i + 1]) >= 0 && hexv((unsigned char)s[i + 2]) >= 0) { sb_putc(&b, (char)(hexv((unsigned char)s[i + 1]) * 16 + hexv((unsigned char)s[i + 2]))); i += 2; }
         else sb_putc(&b, s[i]);
     }
+    if (length) *length = b.n;
     return sb_take(&b);
+}
+char *url_decode(const char *s, size_t n) {
+    return url_decode_length(s, n, NULL);
 }
 char *url_encode_component(const char *s) {
     SB b; sb_init(&b);

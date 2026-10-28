@@ -1,0 +1,23 @@
+{
+  "iteration": 154,
+  "status": "superseded",
+  "decision_utc": "2026-10-28T17:15:32.203924+00:00",
+  "started_utc": "2026-10-28T17:03:24Z",
+  "build_finished_utc": "2026-10-28T17:03:55Z",
+  "elapsed_minutes_to_decision": 12.14,
+  "session_wall_minutes": 34.39,
+  "scoped_quality_estimate": 85,
+  "whole_goal_estimate": 19,
+  "reason": "Superseded before acceptance: new cache depended on author-mutable Map/Array helper methods.",
+  "binary_sha256": "10f46f7c47a310b397d360e37ca0de0b0c003958f8e9f98625ba5f0504206fc8",
+  "build_source_unchanged": true,
+  "agents": [
+    "engine_and_git",
+    "validation_wpt",
+    "preview_deploy",
+    "engine_recovery",
+    "validation_recovery",
+    "platform_recovery",
+    "root"
+  ]
+}

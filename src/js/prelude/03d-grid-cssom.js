@@ -254,9 +254,38 @@ function cssGridTemplate(tokens) {
     }
     const areas = cssGridStrings(strings); return areas ? [rows.join(' '), columns.text, areas.join(' ')] : null;
 }
+/* Specified-value grammar depends only on the property and input text. Keep
+   this separate from declaration merging, var/env substitution and native
+   computed/layout values, all of which still run for every relevant mutation.
+   Results are internal read-only data. Bound both entry count and retained text
+   so a page generating unique declarations cannot grow this cache unbounded. */
+const CSS_GRID_PARSE_CACHE = Object.create(null), CSS_GRID_PARSE_KEYS = Object.create(null);
+const cssGridFreeze = Object.freeze;
+let cssGridParseCacheUnits = 0, cssGridParseCacheHead = 0, cssGridParseCacheCount = 0;
 function cssGridParse(p, input) {
     if (!cssGridRelevant(p)) return undefined;
     const raw = String(input).trim(); if (!raw) return null;
+    if (raw.length > 512) return cssGridParseUncached(p, raw);
+    const key = p + '\0' + raw, cached = CSS_GRID_PARSE_CACHE[key];
+    if (cached !== undefined) return cached.parsed;
+    const parsed = cssGridParseUncached(p, raw), values = parsed && parsed.values;
+    let units = key.length + (parsed ? parsed.value.length : 0);
+    if (values) for (let i = 0; i < values.length; i++) units += values[i].length;
+    if (units <= 16384) {
+        while (cssGridParseCacheCount >= 128 || cssGridParseCacheUnits + units > 16384) {
+            const oldest = CSS_GRID_PARSE_KEYS[cssGridParseCacheHead];
+            cssGridParseCacheUnits -= CSS_GRID_PARSE_CACHE[oldest].units;
+            delete CSS_GRID_PARSE_CACHE[oldest]; delete CSS_GRID_PARSE_KEYS[cssGridParseCacheHead];
+            cssGridParseCacheHead = (cssGridParseCacheHead + 1) % 128; cssGridParseCacheCount--;
+        }
+        if (parsed) { if (values) cssGridFreeze(values); cssGridFreeze(parsed); }
+        CSS_GRID_PARSE_CACHE[key] = { parsed, units };
+        CSS_GRID_PARSE_KEYS[(cssGridParseCacheHead + cssGridParseCacheCount) % 128] = key;
+        cssGridParseCacheCount++; cssGridParseCacheUnits += units;
+    }
+    return parsed;
+}
+function cssGridParseUncached(p, raw) {
     const tokens = cssGridTokens(raw); if (!tokens?.length) return null;
     const children = cssGridChildren(p);
     if (tokens.length === 1 && cssGridWide(tokens[0])) { const value = tokens[0].toLowerCase(); return { value, values: children ? children.map(() => value) : null }; }

@@ -1,0 +1,118 @@
+{
+  "iteration": 156,
+  "status": "accepted",
+  "start_utc": "2026-10-28T17:15:32.203924+00:00",
+  "end_utc": "2026-10-28T17:36:24.008869+00:00",
+  "elapsed_minutes": 20.86,
+  "session_wall_minutes": 55.25,
+  "agents": [
+    "engine_recovery",
+    "platform_recovery",
+    "validation_recovery",
+    "engine_integration",
+    "validation_gate",
+    "root"
+  ],
+  "global_score": 19,
+  "scoped_score": 97,
+  "score_limit": "Global estimate is subjective and has no numerical weighting rubric. Scoped correctness is not full WPT or Chromium parity.",
+  "changes": [
+    "Bound specified Grid grammar cache:128entries,16384UTF16units,512unit bypass, frozen results and private null-prototype cache/FIFO.",
+    "Reject decoded NUL special hosts with explicit length; retain old host on host parse failure while preserving successful host plus invalid port partial mutation."
+  ],
+  "build": {
+    "source_manifest_before": "b4c31029ca8d5812db611376724805216db8303e4efdf28f25426d6f4e3086f1",
+    "source_diff_before": "fca9884e2649ca69a1dd3aac70e5c575f145af55a6185912c25c78e5b79575e1",
+    "head": "5d1d09b0b3c22f0e8e13912fc58d8d72857018f6",
+    "started_utc": "2026-10-28T17:17:07Z",
+    "pid": 2718722,
+    "build_exit_code": 0,
+    "binary": "build/codex-native/lumen-astra-i156",
+    "binary_sha256": "698e2e39084afc80af6fe42898e2d9ece80e18aec1f0b644fac96e7f718c73cc",
+    "diff_sha256": "fca9884e2649ca69a1dd3aac70e5c575f145af55a6185912c25c78e5b79575e1",
+    "startup_exit_code": 0,
+    "source_diff_after": "fca9884e2649ca69a1dd3aac70e5c575f145af55a6185912c25c78e5b79575e1",
+    "source_manifest_after": "b4c31029ca8d5812db611376724805216db8303e4efdf28f25426d6f4e3086f1",
+    "source_unchanged_during_build": true,
+    "finished_utc": "2026-10-28T17:17:26Z"
+  },
+  "staged_manifest_files_matched": 592,
+  "ctest": {
+    "passed": 135,
+    "total": 135,
+    "seconds": 59.8,
+    "resources": {
+      "label": "owned native156 CTest tree",
+      "started_utc": "2026-10-28T17:18:35.586906+00:00",
+      "finished_utc": "2026-10-28T17:19:35.655001+00:00",
+      "root_pid": 2730842,
+      "comm": null,
+      "exe": null,
+      "interval_seconds": 1,
+      "samples": 60,
+      "elapsed_seconds": 60.068,
+      "cpu_one_core_equals_100": true,
+      "cpu_min": 0.0,
+      "cpu_median": 77.998,
+      "cpu_max": 183.979,
+      "cpu_last10_median": 31.0,
+      "rss_peak_mb": 313.106,
+      "rss_final_mb": 20.427,
+      "pss_peak_mb": 186.075,
+      "csv": "agent/validation/linux-wpt-20261028-session3/native156/resources.csv",
+      "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+    }
+  },
+  "authored_controls": {
+    "url_native": 86,
+    "url_browser": 170,
+    "cache_groups": 18,
+    "used_tracks": 47
+  },
+  "wpt_summary": {
+    "baseline_observed_urls": 74,
+    "baseline_observed_subtests": 8216,
+    "baseline_pass_subtests": 7935,
+    "baseline_fully_passing_urls": 56,
+    "baseline_harness_ok_zero_subtests": 0,
+    "candidate_observed_urls": 74,
+    "candidate_observed_subtests": 8216,
+    "candidate_pass_subtests": 8095,
+    "candidate_fully_passing_urls": 66,
+    "candidate_harness_ok_zero_subtests": 0,
+    "chromium_observed_urls": 74,
+    "chromium_observed_subtests": 8216,
+    "chromium_pass_subtests": 7594,
+    "chromium_fully_passing_urls": 46,
+    "chromium_harness_ok_zero_subtests": 0,
+    "chromium_passing_subtests": 7594,
+    "baseline_matches_chromium_pass": 7395,
+    "candidate_matches_chromium_pass": 7551,
+    "candidate_missing_chromium_assertions": 0,
+    "candidate_fully_matches_chromium_passing_urls": 43
+  },
+  "statuses": {
+    "baseline": {
+      "OK": 73,
+      "TIMEOUT": 1
+    },
+    "candidate": {
+      "OK": 73,
+      "TIMEOUT": 1
+    },
+    "chromium": {
+      "OK": 73,
+      "TIMEOUT": 1
+    }
+  },
+  "true_pass_gains": 160,
+  "pass_losses": 0,
+  "identity_added": 0,
+  "identity_removed": 0,
+  "caveats": [
+    "74selected URLs include73testharness and1crashtest; crashtest timeout on all3engines is unsupported reporter method and remains in totals.",
+    "No end-to-end speed claim until quiet balanced replay.",
+    "Sizing56fixture existed in156manifest and is preserved as upcoming test design, not accepted sizing coverage."
+  ],
+  "comparison": "agent/validation/linux-wpt-20261028-session3/url-grid156-comparison.json"
+}
