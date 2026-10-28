@@ -44,7 +44,7 @@ All shared-file changes used `agent/validation/runtime/source-edit.lock`, readin
 
 ## Parked grid work
 
-`06d-anim.js` and `style.c` were restored byte-for-byte to accepted db088f4 at17:47:19UTC. The complete patch is `agent/progress/parked-grid-iteration005.patch`, SHA256`0714d590ed527bcf0591924f177ce558e5caaaba5b9e7965c65d66976026d532`; metadata is adjacent JSON. Frozen candidate i5 SHA256`a457f28c4dfbec6a9b355a711edc78ce206c12acab19ca90ed7f3a22051976af`.
+`06d-anim.js` and `style.c` were restored byte-for-byte to accepted db088f4 at17:47:19UTC. The complete patch is `agent/validation/linux-wpt-20261028/preserved-prior-experiments/parked-grid-iteration005.patch`, SHA256`0714d590ed527bcf0591924f177ce558e5caaaba5b9e7965c65d66976026d532`; metadata remains `agent/progress/parked-grid-iteration005.json`. Frozen candidate i5 SHA256`a457f28c4dfbec6a9b355a711edc78ce206c12acab19ca90ed7f3a22051976af`.
 
 Direct two-file interpolation gate1368/1368 (+384). Broader28-URL gate2744→3504/3975 had28 lost passes:12 discrete grid-auto transitions and8 additive-composition assertions per axis. Therefore it was not accepted despite net gain. Exact failures: `agent/validation/iteration-05/grid-regression-comparison.json`. Calc-size native basis evaluation remains unsupported; do not add JS-only algebra and call the feature complete. A fresh agent should review composition/discrete semantics before reapplying the patch and independently run the broader gate.
 

@@ -5,7 +5,7 @@
     "src/js/prelude/06d-anim.js",
     "src/css/style.c"
   ],
-  "patch": "agent/progress/parked-grid-iteration005.patch",
+  "patch": "agent/validation/linux-wpt-20261028/preserved-prior-experiments/parked-grid-iteration005.patch",
   "patch_sha256": "0714d590ed527bcf0591924f177ce558e5caaaba5b9e7965c65d66976026d532",
   "candidate_binary": "build/codex-native/lumen-astra-i5",
   "candidate_binary_sha256": "a457f28c4dfbec6a9b355a711edc78ce206c12acab19ca90ed7f3a22051976af",

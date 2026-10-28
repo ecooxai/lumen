@@ -1,0 +1,51 @@
+{
+  "iteration": 10,
+  "title": "Flex absolute-child static-position alignment",
+  "status": "isolated123_built_pending_independent_tests",
+  "started_utc": "2026-10-28T06:25:48.589804Z",
+  "start_basis": "first retained source/spec investigation timestamp",
+  "finished_utc": null,
+  "whole_goal_readiness": 19,
+  "focused_quality_score": null,
+  "agents": [
+    "/root/ops_preview",
+    "/root/engine_lead",
+    "/root/conformance",
+    "/root"
+  ],
+  "owned_files": [
+    "src/layout/block.c",
+    "src/css/style.c: alignment token retention only"
+  ],
+  "baseline": {
+    "candidate": 121,
+    "sha256": "a19039e411bb686379fc5b59026cf3747b1f4322d5e357ff094acba144d15534",
+    "harness_urls": 10,
+    "native_passes": 163,
+    "native_assertions": 689,
+    "chromium_passes": 689,
+    "all_harnesses_ok": true,
+    "native_reftests": {
+      "PASS": 2,
+      "FAIL": 3
+    },
+    "chromium_reftests": {
+      "PASS": 5
+    }
+  },
+  "hypothesis": "Resolve the static position after absolute used size, using direct flex-parent content edges, original writing-mode/direction/alignment tokens and zero auto margins; explicit inset axes remain unchanged.",
+  "review_status": "Independent source review clears bounded direct-child and auto-axis scope; negative free-space distribution and safe overflow remain under explicit reference/spec review.",
+  "attempts": [
+    {
+      "candidate": 123,
+      "started_utc": "2026-10-28T06:40:13Z",
+      "finished_utc": "2026-10-28T06:42:47Z",
+      "build_exit_code": 0,
+      "source_unchanged": true,
+      "binary_sha256": "fce57bf30d78bd6cbb97e2bc1d00da103860d3f219cc70e5139b7527293a9d26",
+      "composition": "accepted combined121 runtime plus flex-only changes; geometry excluded and restored exactly",
+      "score": null
+    }
+  ],
+  "updated_utc": "2026-10-28T06:45:29.591718+00:00"
+}

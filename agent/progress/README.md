@@ -1,30 +1,42 @@
 # Lumen live progress
 
-Small task dashboard at localhost:4187, exposed through a dedicated HTTPS opentunnel route. It never serves the repository root. A random task-specific viewer key gates all metrics, messages, and source downloads; the static page itself contains no key. Runtime files are ignored by Git.
+The task dashboard binds to `127.0.0.1:4187` and uses a dedicated HTTPS opentunnel route. It serves a small explicit set of resources, never the repository root. Safe aggregate status, host telemetry, the public task message board and the audited accepted-source archive are public. An existing optional viewer key unlocks private task history; do not commit or print it. Runtime files and browser profiles are ignored by Git.
 
 ## Run and manage
 
-- Install: `npm ci --prefix agent/progress --omit=dev`.
-- Run: `node agent/progress/server.mjs` (binds only 127.0.0.1).
-- Read pending user messages: `node agent/progress/manage.mjs poll --mark`.
+- Install existing dependencies: `npm ci --prefix agent/progress --omit=dev`.
+- Run the local server: `node agent/progress/server.mjs`.
+- Read only new user messages: `node agent/progress/manage.mjs poll`.
+- Mark those messages read: `node agent/progress/manage.mjs poll --mark`.
 - Reply: `node agent/progress/manage.mjs reply MESSAGE_ID "Reply text"`.
-- Verify HTTPS health: `node agent/progress/manage.mjs health`.
-- View authorized URL: `node agent/progress/manage.mjs url` (contains private task key; do not commit).
-- Update evidence in `agent/progress/status.json`; preserve historical/current labels and disclose uncovered tests.
-- Rebuild immutable audited snapshot after iterations: `python3 agent/progress/archive-source.py`. Runtime audit JSON records Git HEAD, dirty status, SHA-256, and exclusions. `/src.tar.gz` is an authenticated working-tree source snapshot, not a release or Git-history archive.
+- Verify configured HTTPS endpoints: `node agent/progress/manage.mjs health`.
+- The health path is `/healthz`; use GET. HEAD is not implemented.
+- Update `agent/progress/status.json`, preserving scope, version, binary, timestamp and uncertainty boundaries. Focused iteration quality and whole-goal readiness are separate; neither substitutes for actual test counts.
+
+The browser receives CPU, RAM and disk metrics every two seconds and measures WebSocket ping/pong latency. Public messages are length/rate limited and treated as untrusted text. The server cannot execute them. An active agent polls and replies; the server alone does not wake an agent after the task ends. Public message history must not contain passwords or private data.
+
+## Accepted source snapshot
+
+Run `python3 tools/codex_compile.py python3 agent/progress/snapshot.py` only after a reviewed accepted commit. It exports Git HEAD, excluding uncommitted experimental changes, and adds an audited portable Git bundle. It excludes runtime credentials, browser profiles, private messages, untracked data, Git hooks and repository configuration. The fixed `/src.tar.gz` endpoint serves only that artifact. Its commit, byte count and SHA-256 are recorded in `runtime/src.tar.manifest.json`.
+
+Raw test-result archives and QA screenshot collections are not served by this endpoint or included in the static publication. Retain local evidence separately from reviewed source and aggregate status.
 
 ## Test monitoring
 
-`python3 agent/progress/monitor.py --root-pid PID --comm lumen-wpt --output agent/progress/runtime/RUN.csv --label RUN`
+`python3 agent/progress/monitor.py --root-pid PID --output agent/progress/runtime/RUN.csv --label RUN`
 
-Samples CPU deltas and RSS at one-second intervals, PSS every five seconds, follows descendants, stops when the root exits or at five hours. Omit `--comm` for the entire tree. SIGTERM flushes summary JSON. One core equals100% CPU. RSS sums can double-count shared memory; PSS is labeled separately. Short processes between samples can be missed.
+This follows the process tree, sampling CPU deltas and RSS every second and PSS every five seconds. SIGTERM flushes the summary. One core equals 100% CPU. RSS can count shared pages more than once, and interval snapshots can miss short-lived processes. Use `cgroup_monitor.py` alongside it for authoritative monotonic `cpu.stat` deltas under the shared task quota. New tests use project-backed temporary storage and core limit zero. All builds and tests use the existing capped `tools/codex_compile.py` wrapper; the experimental CPUWeight wrapper was retired.
 
-## Static Surge deployment
+## Static publication preparation
 
-`npx surge whoami` returned **Not Authenticated** on2026-10-27. Publishing requires an existing authorized account/token. No account was created. Once authenticated, copy the audited archive to `agent/progress/site/src.tar.gz`, generate public `config.js` with `window.LUMEN_API` set to the tunnel origin (never include the viewer key), deploy `agent/progress/site`, and add the exact resulting Surge origin to runtime/endpoints.json for CORS. The live HTTPS tunnel remains available independently.
+`python3 agent/progress/prepare_pages.py` prepares a dedicated ignored runtime directory containing the saved public aggregate status, a static HTML fallback, `.nojekyll`, and the reviewed source archive. It verifies the archive hash and accepted commit. The fallback links to the live tunnel for telemetry and messages and remains readable when the tunnel is unavailable. This command does not push, create a remote branch or enable Pages.
 
-## Verified2026-10-27
+At the task's final publication stage, publish the reviewed source branch and the separate model/agent-named static branch as distinct operations. Configure GitHub Pages to use the static branch root only after that branch is present, then verify the build and public GET response. Keep existing repository branches and documentation intact. Use existing authenticated tooling; do not initiate a new login or account creation flow.
 
-HTTPS health200; anonymous API401; authorized API200; WSS ping/pong; real CPU/RAM and six block-device filesystems. Desktop1365px and mobile390px layouts viewed; no mobile horizontal overflow. A clearly marked synthetic message and agent reply completed the round trip and were removed afterward. Browser validation used an isolated Chrome profile and one-second process monitoring. No screenshot is included in durable checkpoint files.
+Official requirements checked on 2026-10-28:
 
-Incoming text is displayed and stored only; it cannot execute commands. Operators must still treat all messages as untrusted task input and respect authorization boundaries. The main agent polls during active work; the server alone does not wake an agent after the task ends.
+- https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site
+- https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site
+- https://docs.github.com/en/rest/pages/pages
+
+Surge had no existing authenticated account in the retained preflight, and no new account was created. The live HTTPS tunnel remains the current preview until the final reviewed Pages deployment is verified.

@@ -1,13 +1,13 @@
 {
   "title": "Lumen \u00b7 Linux engine conformance",
-  "phase": "Grid animation fix accepted; full paired baseline running; image and BroadcastChannel candidates remain experimental",
-  "iteration": 1,
+  "phase": "Accepted engine improvements retained; broad native run stopped pending physical-capture safeguards",
+  "iteration": 4,
   "score": 19,
-  "iteration_quality": 97,
+  "iteration_quality": 96,
   "score_note": "PROVISIONAL whole-goal readiness estimate, inherited from historical scope. This is not a measured pass percentage. Goal:98/100 after fresh complete comparable coverage.",
   "branch": "gpt-6-astra-engine-lead-linux-wpt-20261028",
-  "checkpoint": "864c2d4dcc098162d969cf0ce46794e3e36fa662",
-  "updated_utc": "2026-10-28T04:24:38.093687+00:00",
+  "checkpoint": "12523c8c5fbc117891f965b3593c7f562812385a",
+  "updated_utc": "2026-10-28T06:45:29.591718+00:00",
   "session_started_utc": "2026-10-28T03:50:07Z",
   "deadline_utc": "2026-10-28T08:50:07Z",
   "historical": {
@@ -22,6 +22,86 @@
   },
   "current_evidence": [
     [
+      "Accepted background-position repair",
+      "Commit2508cf2; focused quality96/100. Computed positions and repeatable-list animation improved with zero lost baseline passes across70 harnesses; public specified-value getters retain accepted behavior."
+    ],
+    [
+      "Accepted combined runtime baseline",
+      "Candidate121 SHA a19039e4\u2026d15534 combines accepted grid, BC, image, font, sizing, position and capture; build06:29:53\u201306:30:23 UTC with unchanged source."
+    ],
+    [
+      "Linux renderer smoke",
+      "Real native default wgpu/Vulkan presentation used NVIDIA GeForce MX110 and displayed20/20 sizing checks plus the live dashboard. WPT software conditions remain unchanged; this is not WebGL/WebGPU conformance."
+    ],
+    [
+      "Accepted replaced-element sizing repair",
+      "Commit288a368b; focused quality96/100, whole-goal19/100 provisional. Preferred ratio, min/max transfer, natural ratio and forced dimensions are handled coherently."
+    ],
+    [
+      "Sizing correctness gates",
+      "Unchanged180-case canvas matrix64\u2192180/180; independent four upstream URLs2\u219210/11; portable geometry9\u219220/20, Chromium20/20; ten native gates pass. Zero lost observed passes."
+    ],
+    [
+      "Sizing rendering holdouts",
+      "Six unchanged own-reference reftests improve1\u21922PASS with zero losses; Chromium6/6. Loaded-image auto-ratio reftests029\u2013032 remain failing."
+    ],
+    [
+      "Separate100-URL rendering sample",
+      "Identical unbiased reftest URLs: accepted capture114 has36PASS,62FAIL,1UNSUPPORTED,1TIMEOUT; Chromium150 has95PASS,5FAIL. This binary includes grid/BC/image/capture, before later font/sizing/position work."
+    ],
+    [
+      "Accepted Fontconfig performance repair",
+      "Commit dc7bae76; focused quality 96/100, whole-goal 19/100. Exact Fontconfig 2.18.1; other versions and unsupported configurations retain original behavior"
+    ],
+    [
+      "Font matcher correctness",
+      "16,843 large-CJK selections plus 718 varied/threaded/configuration comparisons exactly match the original matcher. Eight official URLs retain 10/125 native passes with zero losses"
+    ],
+    [
+      "One unchanged encoding workload",
+      "1,000/1,000 assertions before and after. Native CPU 26.90 to 11.33 seconds; wall 31.28 to 12.43 seconds. No general browser speed claim; background workload may overlap"
+    ],
+    [
+      "Font memory and bounds",
+      "920 referenced patterns observed; cap 8,192, one snapshot. Peak RSS increased 5.8 MiB; sampled PSS stayed about 201.6 MiB"
+    ],
+    [
+      "Accepted capture and build tooling",
+      "Capture commit 029d030c; build graph 05a087eb. Real viewport controls accepted; unchanged embedded assets no longer force unrelated C++ compilation. Makefiles verified; Ninja unexecuted"
+    ],
+    [
+      "Active work, not yet accepted",
+      "Iteration10 flex absolute-child static positioning and iteration7 background tile geometry; isolated candidates will be compared with frozen accepted121."
+    ],
+    [
+      "Completed original-baseline comparison",
+      "8,000 identical testharness URLs in four completed paired shards. Lumen:2,946 fully passing; Chromium150:6,691 fully passing. These are original-checkpoint results, not the improved candidate."
+    ],
+    [
+      "Exact raw matched Chromium passes",
+      "289,358 / 394,031 Chromium-passing assertion identities matched. Native observed298,804/357,652 passes; Chromium394,031/409,240."
+    ],
+    [
+      "Eight-thousand-URL harness outcomes",
+      "Lumen:6,804 OK,852 TIMEOUT,342 ERROR,1 CRASH,1 PRECONDITION_FAILED. Chromium:7,762 OK,142 TIMEOUT,45 ERROR,24 CRASH,27 SKIP. Different outcome classifiers prevent a direct crash-rate claim."
+    ],
+    [
+      "Accepted capture and oracle validation",
+      "Iteration 6 focused quality 96/100: 11/11 intended controls, represented by 8 passes and 3 deliberate failures. Page viewport 800\u00d7600, DPR 1; full reftest conformance remains unproven"
+    ],
+    [
+      "Accepted image lifecycle repair",
+      "Commit f1be9d; candidate111 on accepted grid+BC base. Focused quality96/100; whole-goal19/100"
+    ],
+    [
+      "Image official and context verification",
+      "Original lifecycle16/16. Official9 URLs:49 to50/64, Chromium61/64, zero lost passes. Five new context outcomes match Chromium; four older picture/context divergences remain"
+    ],
+    [
+      "Image native verification",
+      "Candidate111 targeted image/DOM3/3; prior isolated110 full native109/109 is antecedent evidence only"
+    ],
+    [
       "Accepted native engine change",
       "Grid track interpolation/composition; commit 61ff455cfa484b3c357292c27700bf6e2ea92965"
     ],
@@ -32,6 +112,26 @@
     [
       "Independent grid holdout",
       "74/82 assertions; +28 passes, zero lost passes; portable regression 18/18"
+    ],
+    [
+      "Accepted BroadcastChannel change",
+      "Commit dce02bbb plus popup evidence e0a4e1f; focused patch quality95/100, whole-goal19/100"
+    ],
+    [
+      "Focused BroadcastChannel comparison",
+      "14 official URLs: baseline9/72 to candidate72/72; Chromium72/72. Existing boundary/realm assertions16/16"
+    ],
+    [
+      "Additional BC guards",
+      "20 URLs:50/62 to52/62, zero lost native passes; Chromium57/62. Two native WASM gains had Chromium timeouts, so they are not matched-reference gains"
+    ],
+    [
+      "Same-process popup transport",
+      "Unmodified window-open-noreferrer: baseline0/1 TIMEOUT, candidate1/1 OK, Chromium1/1 OK; no separate OS-process IPC claim"
+    ],
+    [
+      "Supplemental port-role comparison",
+      "Raw first-shard identity match remains88,326/105,689. Explicit port-role normalization gives88,333/105,689; observed/full-page totals unchanged"
     ],
     [
       "Fresh 241-URL baseline",
@@ -54,8 +154,8 @@
       "71,398 URLs; Test262 excluded"
     ],
     [
-      "WPT testharness baseline underway",
-      "39,394 URLs in 20 resumable shards, frozen original binary; deadline 08:25 UTC"
+      "Historical testharness run stopped",
+      "8,000 completed paired URLs plus partial shard004 preserved. Native broad execution stopped06:44:52 UTC because old test mode did not itself deny real capture; fresh guarded comparisons will be separate."
     ],
     [
       "Other automated WPT, not yet verified",
@@ -70,13 +170,20 @@
       "1ac9421854c63e503f9d865abf0d1d2a9c3a2dd3cedcf2aaf52c7ac073992913"
     ]
   ],
-  "coverage": "Full WPT parity is unproven. Historical result files combine revisions and cannot establish current-branch conformance. Reftests, crashtests, WebDriver, print and accessibility categories remain unverified. Fresh scoped results will report exact counts, binary hash, upstream revision and Chromium configuration.",
+  "coverage": "Full WPT parity remains unproven. Fresh evidence includes8,000 original-checkpoint testharness URLs, a separate100-URL rendering sample on accepted114, and focused later-candidate gates. Crashtest, WebDriver, print and accessibility categories remain unverified. Binary, revision and method boundaries remain explicit.",
   "findings": [
     "Grid candidate101 was rejected after independent tests found two lost hidden-subtree assertions. Candidate102 corrects the cause and passed focused independent review.",
     "Grid iteration quality is 97/100 for the focused patch; whole-goal readiness remains 19/100 provisional. Full Chromium parity is unproven.",
     "The 200-URL broad guard showed load-sensitive timeouts. Isolated editing/cookie baseline-candidate-baseline runs retained identical 30/60 assertions; long-name calc-size retained identical 466/1,156 assertions without identity losses.",
     "The unchanged image lifecycle fixture passes 16/16 in Chromium and 15/16 on the frozen Lumen baseline. Experimental image103 did not fix it and used three invalid ordering expectations; that patch was reverted.",
-    "A native image request-identity fix and BroadcastChannel implementation are under independent review. Neither is included in the accepted source archive yet.",
-    "CPU/RSS are sampled every second during tests. Authoritative cgroup cpu.stat deltas supplement process estimates; all builds/tests share the 480% CPU quota. HTTPS telemetry and the public task inbox remain live."
-  ]
+    "CPU/RSS are sampled every second during tests. Authoritative cgroup cpu.stat deltas supplement process estimates; all builds/tests share the 480% CPU quota. HTTPS telemetry and the public task inbox remain live.",
+    "Sequential CPUWeight100/200 probes showed workload-sensitive timeout differences but cannot establish a causal speedup. The task weight was restored to its original default; shared480% quota and one-second monitoring remain.",
+    "Accepted BC covers measured in-process page/worker/popup transport with pinned public-suffix data. document.domain prerequisite failures, separate-process IPC, synthetic brand/newTarget guards, long lifetime slope and browser-level private-tenant checks remain explicit gaps.",
+    "Image110 was blocked by a new referrerPolicy decode regression. Candidate111 fixes it without changing expectations, retains CORS and native document/URL identity improvements, and is now accepted. Remaining SVG/image-document and picture/context failures are documented; long-run retention slope is unproven.",
+    "Four completed paired shards cover8,000/39,394 testharness URLs on the original frozen baseline. Whole-goal readiness remains19/100 provisional; the100-URL reftest sample is separate.",
+    "Font115 preserves exact observed Fontconfig matching while reducing CPU on one large CJK workload. Its version gate, configuration invalidation and fallback paths are explicit; complete font geometry conformance is not established.",
+    "Sizing118 improves the measured preferred-ratio/constraint cases without lost passes. Separate SVG intrinsic-size, nonreplaced absolute positioning, ratio serialization and loaded-image rendering failures remain explicit.",
+    "At06:45:01 UTC independent process verification found no task-native WPT workers and no active broad supervisor. Existing task Chromium processes had explicit fake-device/fake-UI flags. No device inventory or media inspection was performed. Production Linux capture refusal and old-binary test interposition are being reviewed separately."
+  ],
+  "active_iteration": 10
 }
