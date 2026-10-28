@@ -1,0 +1,45 @@
+<!doctype html><meta charset="utf-8"><title>Grid track animation regression</title>
+<h1>Grid track animation regression</h1><pre id="results">Running</pre>
+<script>
+(() => {
+  const results = [], nodes = [], animations = [];
+  const check = (condition, message) => { if (!condition) throw new Error(message); };
+  const normalize = value => value.replace(/\s+/g,' ').replace(/\s*([,\[\]()])\s*/g,'$1').trim();
+  const make = (display='block', parent=document.body) => { const e=document.createElement('div'); e.style.cssText='display:'+display+';width:300px;height:300px;font-size:20px;min-width:0;min-height:0'; parent.appendChild(e);nodes.push(e);return e; };
+  const test = (name, fn) => { try { fn();results.push({name,status:'PASS'}); } catch(e) { results.push({name,status:'FAIL',message:e.message}); } finally { animations.splice(0).forEach(a=>a.cancel());nodes.splice(0).forEach(e=>e.remove()); } };
+  const sample = (property, from, to, progress, expected, options={}) => {
+    const key=property.replace(/-([a-z])/g,(_,c)=>c.toUpperCase()), parent=make(options.parentDisplay||'block');
+    if(options.parentValue)parent.style.setProperty(property,options.parentValue);
+    const target=make(options.display||'block',parent), reference=make(options.display||'block');
+    target.style.setProperty(property,options.underlying||'none');reference.style.setProperty(property,expected);
+    check(reference.style.getPropertyValue(property)!=='','invalid expected CSS');
+    const a=target.animate([{[key]:from},{[key]:to}],{duration:1000,fill:'both',composite:options.composite||'replace'});animations.push(a);a.pause();a.currentTime=progress*1000;
+    check(a.effect.getKeyframes().some(f=>Object.prototype.hasOwnProperty.call(f,key)),'unrecognized keyframe property');
+    const actual=normalize(getComputedStyle(target).getPropertyValue(property)), wanted=normalize(getComputedStyle(reference).getPropertyValue(property));
+    check(actual===wanted,'expected '+wanted+'; got '+actual);
+  };
+  for(const axis of ['columns','rows']) {
+    const property='grid-template-'+axis, key='gridTemplate'+axis[0].toUpperCase()+axis.slice(1);
+    test(property+' independent keyword start',()=>sample(property,'2fr min-content 8px','6fr auto 40px',.25,'3fr min-content 16px'));
+    test(property+' independent keyword end',()=>sample(property,'2fr min-content 8px','6fr auto 40px',.75,'5fr auto 32px'));
+    test(property+' line names and numbers',()=>sample(property,'[start] 8px [mid] 2fr','[end] 40px [last] 6fr',.25,'[start] 16px [mid] 3fr'));
+    test(property+' repeat additive composition',()=>sample(property,'repeat(3,8px 2fr)','repeat(3,40px 6fr)',.25,'repeat(3,20px 4fr)',{underlying:'repeat(3,4px 1fr)',composite:'add'}));
+    test(property+' minmax component switch',()=>sample(property,'minmax(8px,2fr) 2fr','minmax(40px,auto) 6fr',.75,'minmax(32px,auto) 5fr'));
+    test(property+' mixed length percentage',()=>sample(property,'8px 20%','40% 24px',.25,'calc(6px + 10%) calc(15% + 6px)'));
+    test(property+' inheritance uses computed tracks',()=>sample(property,'inherit','6fr 8fr',.25,'3fr 5fr',{parentDisplay:'grid',parentValue:'2fr 4fr'}));
+    test(property+' hidden fresh underlying',()=>{
+      const host=make('none'),e=make('block',host);e.style.setProperty(property,'100px');getComputedStyle(e).getPropertyValue(property);e.style.setProperty(property,'120px');
+      const a=e.animate([{[key]:'200px'}],{duration:1000,fill:'both'});animations.push(a);a.pause();a.currentTime=500;
+      check(getComputedStyle(e).getPropertyValue(property)==='160px','hidden computed style was stale');
+    });
+    test(property+' normal template transition',()=>{
+      const e=make();e.style.setProperty(property,'auto');getComputedStyle(e).getPropertyValue(property);e.style.transitionProperty=property;e.style.transitionDuration='10s';e.style.transitionTimingFunction='linear';e.style.setProperty(property,'47px');
+      check(getComputedStyle(e).getPropertyValue(property)==='auto','template transition did not start');const a=e.getAnimations()[0];check(!!a,'transition missing');animations.push(a);a.pause();a.currentTime=7500;check(getComputedStyle(e).getPropertyValue(property)==='47px','discrete item did not switch');
+    });
+  }
+  window.__gridRegression=results;
+  results.forEach(r=>console.log('GRID-CASE '+r.status+' '+r.name+(r.message?': '+r.message:'')));
+  const failures=results.filter(r=>r.status!=='PASS');const summary='RESULTS browser-grid-track-regression:'+(failures.length?'FAIL '+failures.map(r=>r.name+': '+r.message).join('; '):'PASS '+results.length+'/'+results.length);
+  document.getElementById('results').textContent=summary;console.log(summary);
+})();
+</script>

@@ -1,0 +1,64 @@
+{
+  "iteration": 1,
+  "started_utc": "2026-10-28T03:56:45+00:00",
+  "accepted_utc": "2026-10-28T04:22:50.931922+00:00",
+  "elapsed_minutes": 26.099,
+  "agents": [
+    "engine_lead",
+    "conformance",
+    "ops_preview"
+  ],
+  "model": "GPT-6 Astra",
+  "tools": [
+    "built-in subagents",
+    "RubyWebTerm",
+    "native V8/C++",
+    "WPT",
+    "Chromium"
+  ],
+  "iteration_quality": 97,
+  "quality_rubric": {
+    "correctness": 38,
+    "regression": 20,
+    "independent_review": 20,
+    "resources": 9,
+    "maintainability": 10
+  },
+  "whole_goal_readiness": 19,
+  "whole_goal_readiness_caveat": "Provisional; full Chromium-level WPT parity is not achieved.",
+  "baseline_commit": "c06a0e094ac771c7e9d5ebddcaa82b99d797514a",
+  "accepted_binary": "build/codex-native/lumen-gpt-6-astra-grid-accepted-20261028",
+  "binary_sha256": "95b3b91868de97ece28f0e453f1f4b2b1c1f9bccdf93f934915413c4e515e713",
+  "upstream_grid": {
+    "urls": 28,
+    "baseline_pass": 2744,
+    "candidate_pass": 3628,
+    "chromium_pass": 3975,
+    "total": 3975,
+    "gains": 884,
+    "lost_passes": 0,
+    "remaining_failures": 347
+  },
+  "independent_holdout": {
+    "baseline_pass": 46,
+    "candidate_pass": 74,
+    "chromium_pass": 82,
+    "total": 82,
+    "lost_passes": 0,
+    "remaining_preexisting_failures": 8
+  },
+  "portable_regression": {
+    "baseline_pass": 4,
+    "candidate_pass": 18,
+    "total": 18
+  },
+  "broader_guard": "Random200 run had two high-concurrency timeouts losing30 observations; fresh-profile baseline\u2192candidate\u2192baseline isolates reproduced identical20/50 editing and10/10 cookie results. Adjacent calc-size full-name comparison466/1156 on both, no lost/gained identities. Timeouts retained as instability, never counted as passes.",
+  "native_regression": "107/108; image sequential pending/cached decode failure independently reproduced3/3 on baseline and3/3 on candidate. Separate image lane is not part of this commit.",
+  "review_fixes": [
+    "Shared hidden-element computed-style preparation",
+    "Computed track dimensions captured during cascade with current font/viewport/container context",
+    "Animation getter preserves repeat/fr/percent/line-name structure without layout flush",
+    "Per-component grid composition; repeated track counts remain structural"
+  ],
+  "evidence_root": "agent/validation/linux-wpt-20261028"
+}

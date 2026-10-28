@@ -1012,6 +1012,8 @@ static const char *logical_size_prop(const char *p, bool vert) {
 }
 
 static bool custom_defer;
+static char *tr_grid_value(Node *n, const ComputedStyle *s, const char *prop);
+static char *grid_computed_tokens(const char *raw, float em, float rem, const MediaCtx *mc);
 void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *prop, const char *value_in, StyleEngine *e, Node *el) {
     if (prop[0] == '-' && prop[1] == '-') {
         char *kb = xstrdup(value_in), *k = str_trim(kb), *v;
@@ -1090,12 +1092,15 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
     }
     const GenProp *gp = gen_prop(P);
     bool anim_longhand = !strncmp(P, "transition-", 11) || !strncmp(P, "animation-", 10);
-    if (gp && (!gp->native || anim_longhand)) {
+    bool grid_tracks = !strcmp(P, "grid-template-columns") || !strcmp(P, "grid-template-rows");
+    /* Retain the computed track-list structure for animation: the layout arrays
+       expand repeat() and cannot preserve line names or all minmax components. */
+    if (gp && (!gp->native || anim_longhand || grid_tracks)) {
         CustomProps **slot = gp->inherited ? &st->gen_i : &st->gen_n;
         const char *pv = par ? gen_value(par, gp) : NULL;
-        if (inherit || (unset && gp->inherited)) gen_put(slot, P, xstrdup(pv ? pv : ""));
+        if (inherit || (unset && gp->inherited)) gen_put(slot, P, grid_tracks && par ? tr_grid_value(el, par, P) : xstrdup(pv ? pv : ""));
         else if (initial || unset) gen_put(slot, P, xstrdup(""));
-        else gen_put(slot, P, xstrdup(val));
+        else gen_put(slot, P, grid_tracks ? grid_computed_tokens(val, c.em, c.rem, c.mc) : xstrdup(val));
     }
     {
         const char *Q = strncmp(P, "-webkit-", 8) ? P : P + 8;
@@ -1117,6 +1122,15 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         else if (!strcmp(P, "text-align")) st->text_align = src->text_align;
         else if (!strcmp(P, "width")) st->width = src->width;
         else if (!strcmp(P, "height")) st->height = src->height;
+        else if (grid_tracks) {
+            bool rows = !strcmp(P, "grid-template-rows");
+            GridTrack **dst = rows ? &st->grid_rows : &st->grid_cols;
+            int count = rows ? src->grid_nrows : src->grid_ncols;
+            const GridTrack *tracks = rows ? src->grid_rows : src->grid_cols;
+            free(*dst); *dst = count ? xmalloc((size_t)count * sizeof **dst) : NULL;
+            if (count) memcpy(*dst, tracks, (size_t)count * sizeof **dst);
+            if (rows) st->grid_nrows = count; else st->grid_ncols = count;
+        }
         else if (!strcmp(P, "margin")) memcpy(st->margin, src->margin, sizeof st->margin);
         else if (!strcmp(P, "padding")) memcpy(st->padding, src->padding, sizeof st->padding);
         else if (!strcmp(P, "border")) { memcpy(st->border_style, src->border_style, 4); }
@@ -4249,7 +4263,7 @@ static void tracks_str(SB *b, const GridTrack *t, int n) {
 }
 static void gap_str(SB *b, float px, Length l) { if (l.kind == LK_LEN && l.pct) len_str(b, l, "normal"); else if (px) sb_printf(b, "%gpx", px); else sb_puts(b, "normal"); }
 static char *computed_of(Node *el, const ComputedStyle *s, const char *prop);
-char *css_get_computed_value(Node *el, const char *prop) {
+static void computed_prepare(Node *el) {
     /* restyle skips display:none subtrees; an unstyled element there is styled when script asks for its style */
     if (el && el->type == NODE_ELEMENT && (!el->style || (el->flags & NF_STYLE_DIRTY)) && (el->flags & NF_CONNECTED) && el->doc && el->doc->stylesheets) {
         bool flat = true;   /* not for children outside the flat tree: of a shadow host or of an element that doesn't render its children */
@@ -4261,6 +4275,9 @@ char *css_get_computed_value(Node *el, const char *prop) {
         g_style_hidden = true; style_recalc(el->doc->stylesheets, &el->doc->node, false); g_style_hidden = false;
         }
     }
+}
+char *css_get_computed_value(Node *el, const char *prop) {
+    computed_prepare(el);
     return computed_of(el, el && el->type == NODE_ELEMENT ? el->style : NULL, prop);
 }
 /* a ::before (1) or ::after (2) value: the pseudo-element's own style, or content: none when it generates no box */
@@ -4271,11 +4288,53 @@ char *css_get_computed_pseudo(Node *el, int which, const char *prop) {
     if (!ps && !strcmp(prop, "content")) return xstrdup("none");
     return computed_of(el, ps ? ps : b, prop);
 }
+/* Resolve track dimensions while css_apply_decl has the correct element,
+   font, viewport and container-query context. Store this computed structure,
+   rather than reparsing old declarations against a later document state. */
+static char *grid_computed_tokens(const char *raw, float em, float rem, const MediaCtx *mc) {
+    SB out; sb_init(&out);
+    for (const char *p = raw; *p;) {
+        if (*p == '[') {
+            do { char c = *p++; sb_putc(&out, c); if (c == '\\' && *p) sb_putc(&out, *p++); else if (c == ']') break; } while (*p);
+            continue;
+        }
+        bool start = p == raw || !(isalnum((unsigned char)p[-1]) || p[-1] == '_' || p[-1] == '-');
+        if (start && (isdigit((unsigned char)*p) || *p == '+' || *p == '-' || *p == '.')) {
+            char *end; (void)strtof(p, &end);
+            if (end != p) {
+                const char *u = end; while (isalpha((unsigned char)*u)) u++;
+                size_t length = (size_t)(u - p);
+                if (u > end && length < 128 && !str_ieqn(end, "fr", (size_t)(u - end))) {
+                    char token[128]; memcpy(token, p, length); token[length] = 0;
+                    Length l;
+                    if (css_parse_length(token, &l, em, rem, mc) && l.kind == LK_LEN) {
+                        len_str(&out, l, "auto"); p = u; continue;
+                    }
+                }
+            }
+        }
+        sb_putc(&out, *p++);
+    }
+    return sb_take(&out);
+}
+static char *tr_grid_value(Node *n, const ComputedStyle *s, const char *prop) {
+    if (!s || (strcmp(prop, "grid-template-columns") && strcmp(prop, "grid-template-rows"))) return computed_of(n, s, prop);
+    const GenProp *g = gen_prop(prop);
+    const char *value = g ? gen_value(s, g) : NULL;
+    return value ? xstrdup(value) : computed_of(n, s, prop);
+}
+/* Animation uses computed track values; CSSOM intentionally returns flattened
+   used tracks for a grid box and must keep that public behavior. */
+char *css_get_animation_value(Node *el, const char *prop) {
+    computed_prepare(el);
+    const ComputedStyle *s = el && el->type == NODE_ELEMENT ? el->style : NULL;
+    return tr_grid_value(el, s, prop);
+}
 /* Properties whose computed value differs between o and s, for CSS transitions: the names in the
  * transition-property list, or for "all" every natively computed property plus the generic ones. */
 static void tr_scan_one(Node *n, const ComputedStyle *o, const ComputedStyle *s, const char *prop, void (*cb)(Node *, const char *, const char *, const char *)) {
     if (!strncmp(prop, "transition", 10) || !strncmp(prop, "animation", 9)) return;
-    char *a = computed_of(n, o, prop), *b = computed_of(n, s, prop);
+    char *a = tr_grid_value(n, o, prop), *b = tr_grid_value(n, s, prop);
     if (strcmp(a, b)) cb(n, prop, a, b);
     free(a); free(b);
 }

@@ -347,6 +347,7 @@ bool css_img_sizes_auto(const Node *img);   /* lazy with sizes="auto": 300x150 i
 void css_apply_decl(ComputedStyle *st, const ComputedStyle *parent, const char *prop, const char *value, StyleEngine *e, Node *el);
 char *css_get_computed_value(Node *el, const char *prop);
 char *css_get_computed_pseudo(Node *el, int which, const char *prop);
+char *css_get_animation_value(Node *el, const char *prop); /* computed, not CSSOM used values */
 void css_transition_scan(Node *n, const ComputedStyle *o, const ComputedStyle *s, void (*cb)(Node *, const char *, const char *, const char *));
 void css_set_anim_style(Node *n, const char *css);   /* Web Animations declaration layer; "" clears it */
 extern const char *css_ua_sheet;

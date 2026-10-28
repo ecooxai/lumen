@@ -239,7 +239,124 @@ function waJoin(toks) {
 const WA_INT = new SSet(['z-index', 'order', 'column-count', 'orphans', 'widows', '-webkit-line-clamp']);
 const WA_NONNEG = /^(width|height|min-|max-|padding|border-.*width|border-.*radius|outline-width|font-size|line-height|flex-basis|flex-grow|flex-shrink|column-width|column-rule-width|stroke-width|r$|rx$|ry$|perspective|letter-spacing$^)/;
 const WA_UNIT01 = new SSet(['opacity', 'fill-opacity', 'stroke-opacity', 'flood-opacity', 'stop-opacity', 'shape-image-threshold']);
+/* Grid track lists interpolate each track component independently. Line-name sets
+   are discrete; a keyword in one track must not stop neighboring numeric tracks.
+   https://drafts.csswg.org/css-grid-1/#track-listing */
+const WA_GRID = /^grid-template-(?:columns|rows)$/;
+function waGridList(value) {
+    const tracks = [], lines = ['']; let i = 0;
+    while (i < value.length) {
+        while (/\s/.test(value[i] || '') && i < value.length) i++;
+        if (i >= value.length) break;
+        const start = i;
+        if (value[i] === '[') {
+            for (i++; i < value.length && value[i] !== ']'; i++) if (value[i] === '\\') i++;
+            if (i >= value.length) return null;
+            const name = value.slice(start, ++i);
+            lines[tracks.length] += (lines[tracks.length] ? ' ' : '') + name;
+        } else {
+            let depth = 0;
+            for (; i < value.length; i++) {
+                const c = value[i];
+                if (c === '\\') { i++; continue; }
+                if (c === '(') depth++;
+                else if (c === ')') { if (!depth) return null; depth--; }
+                else if (!depth && (/\s/.test(c) || c === '[')) break;
+            }
+            if (depth || i === start) return null;
+            tracks.push(value.slice(start, i)); lines.push('');
+        }
+    }
+    if (!tracks.length || tracks.some(t => /^(none|subgrid|masonry)$/i.test(t))) return null;
+    return { tracks, lines };
+}
+/* Numeric track breadths are linear sums of dimensions, not token strings.
+   Reuse Typed OM's dimensional parser so calc(px + %) can combine with a
+   simple length, and absolute units share one canonical basis. */
+function waGridNumeric(text) {
+    try {
+        const parsed = tomSumMap(CSSNumericValue.parse(text));
+        if (!parsed) return null;
+        const out = new SMap();
+        for (let [unit, value] of parsed) {
+            if (!Number.isFinite(value)) return null;
+            if (unit === 'number') { if (value !== 0) return null; unit = 'px'; }
+            const info = TOM_UNITS[unit];
+            if (!info || !['length', 'percent', 'flex'].includes(info[0])) return null;
+            if (info[0] === 'length' && info[1]) { value *= info[1]; unit = 'px'; }
+            out.set(unit, (out.get(unit) || 0) + value);
+        }
+        if (out.has('fr') && out.size !== 1) return null;
+        return out;
+    } catch (_) { return null; }
+}
+function waGridNumericMix(a, b, p, op) {
+    const A = waGridNumeric(a), B = waGridNumeric(b);
+    if (!A || !B || A.has('fr') !== B.has('fr')) return null;
+    const out = [];
+    for (const unit of new SSet([...A.keys(), ...B.keys()])) {
+        const x = A.get(unit) || 0, y = B.get(unit) || 0;
+        const value = op ? x + y : x + (y - x) * p;
+        if (Math.abs(value) > 1e-9) out.push([unit, value]);
+    }
+    if (!out.length) return A.has('fr') ? '0fr' : A.size === 1 && B.size === 1 && A.has('percent') && B.has('percent') ? '0%' : '0px';
+    const token = (unit, value) => waFmt(value) + (unit === 'percent' ? '%' : unit);
+    if (out.length === 1) return token(out[0][0], Math.max(0, out[0][1]));
+    /* Mixed length/percentage coefficients may be negative; the nonnegative
+       track range is applied after percentage resolution, not per term. */
+    let value = token(out[0][0], out[0][1]);
+    for (const [unit, number] of out.slice(1)) value += (number < 0 ? ' - ' : ' + ') + token(unit, Math.abs(number));
+    return 'calc(' + value + ')';
+}
+function waGridTrack(a, b, p, op) {
+    if (a === b && !op) return a;
+    const fallback = () => op ? b : (p < .5 ? a : b);
+    const af = /^(minmax|fit-content)\((.*)\)$/i.exec(a), bf = /^(minmax|fit-content)\((.*)\)$/i.exec(b);
+    if (af || bf) {
+        if (!af || !bf || af[1].toLowerCase() !== bf[1].toLowerCase()) return fallback();
+        const aa = tomSplitTop(af[2], ',').map(v => v.trim()), bb = tomSplitTop(bf[2], ',').map(v => v.trim());
+        if (aa.length !== bb.length) return fallback();
+        return af[1].toLowerCase() + '(' + aa.map((v, i) => waGridTrack(v, bb[i], p, op)).join(', ') + ')';
+    }
+    const numeric = waGridNumericMix(a, b, p, op);
+    if (numeric !== null) return numeric;
+    /* A flex fraction and a length are distinct types. Matching math function
+       structures still use the general mixer; keywords combine discretely. */
+    if (/fr\b/i.test(a) !== /fr\b/i.test(b)) return fallback();
+    const value = waMix('width', a, b, p, op);
+    return value === null ? fallback() : value;
+}
+function waGridMix(a, b, p, op = false, depth = 0) {
+    if (depth > 2 || a.length + b.length > 65536) return null;
+    const A = waGridList(a), B = waGridList(b);
+    if (!A || !B || A.tracks.length !== B.tracks.length) return null;
+    const out = [], names = op || p >= .5 ? B.lines : A.lines;
+    for (let i = 0; i < A.tracks.length; i++) {
+        if (names[i]) out.push(names[i]);
+        const x = A.tracks[i], y = B.tracks[i];
+        const xr = /^repeat\((.*)\)$/i.exec(x), yr = /^repeat\((.*)\)$/i.exec(y);
+        if (xr || yr) {
+            if (!xr || !yr) return null;
+            const xx = tomSplitTop(xr[1], ',').map(v => v.trim()), yy = tomSplitTop(yr[1], ',').map(v => v.trim());
+            /* Repetition is structure: never add or interpolate the count.
+               Auto-repeat counts depend on layout, so combine discretely. */
+            if (xx.length !== 2 || yy.length !== 2 || !/^[1-9]\d*$/.test(xx[0]) || xx[0] !== yy[0]) return null;
+            const inner = waGridMix(xx[1], yy[1], p, op, depth + 1);
+            if (inner === null) return null;
+            out.push('repeat(' + xx[0] + ', ' + inner + ')');
+        } else out.push(waGridTrack(x, y, p, op));
+    }
+    if (names[A.tracks.length]) out.push(names[A.tracks.length]);
+    return out.join(' ');
+}
+const waBaseValue = (el, prop) => N.computed(el, prop, WA_GRID.test(prop) ? 3 : 0) || '';
+function waGridSpecified(el, prop, value) {
+    if (value === 'inherit') return el && el.parentElement ? (waBaseValue(el.parentElement, prop) || 'none') : (prop.startsWith('grid-auto-') ? 'auto' : 'none');
+    if (value === 'initial' || value === 'unset') return prop.startsWith('grid-auto-') ? 'auto' : 'none';
+    return value;
+}
 function waMix(prop, a, b, p, op) {   /* op: interpolate (p) or add (p ignored, b added to a) */
+    if (WA_GRID.test(prop)) return waGridMix(a, b, p, !!op);
     const A = waTokens(a), B = waTokens(b);
     if (A.length !== B.length) return null;
     const out = [];
@@ -397,8 +514,9 @@ function waEffectValue(eff, prop, under, c) {
     const kfs = eff._kfs.filter(k => k.props.has(prop));
     if (!kfs.length) return under;
     const p = c.progress, val = (k) => {
-        const v = k ? k.props.get(prop) : under;
-        return k ? waCompose(prop, under, v, k.composite === 'auto' ? eff._comp : k.composite) : under;
+        let v = k ? k.props.get(prop) : under;
+        if (v != null && WA_GRID.test(prop)) v = waGridSpecified(eff._target, prop, v);
+        return k ? waCompose(prop, under, v, k.composite === 'auto' ? eff._comp : k.composite) : v;
     };
     let pts = kfs.map(k => ({ co: k.co, k }));
     if (pts[0].co !== 0) pts.unshift({ co: 0, k: null });
@@ -461,7 +579,7 @@ function waFlush() {
         if (needBase && waApplied.has(el)) { trSuppressCss(el, waApplied.get(el), ''); N.setAnimStyle(el, ''); waApplied.delete(el); }
         let css = '';
         for (const p of props) {
-            let v = needBase ? (N.computed(el, p) || '') : null;
+            let v = needBase ? waBaseValue(el, p) : null;
             for (const [e, c] of list) v = waEffectValue(e, p, v, c);
             if (v != null && v !== '') css += `${p}: ${v}; `;
         }
@@ -735,7 +853,7 @@ class Animation extends EventTarget {
         const c = waCompute(e); if (c.progress === null) return;
         const props = new SSet(); for (const k of e._kfs) for (const p of k.props.keys()) props.add(p);
         waFlush();
-        for (const p of props) el.style.setProperty(p, waEffectValue(e, p, N.computed(el, p) || '', c));
+        for (const p of props) el.style.setProperty(p, waEffectValue(e, p, waBaseValue(el, p), c));
     }
 }
 const waGetAnims = (pred) => [...waAll].filter(a => {

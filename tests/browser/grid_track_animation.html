@@ -1,0 +1,146 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Independent grid track animation and CSSOM regression cases</title>
+<link rel="help" href="https://drafts.csswg.org/css-grid-1/#track-sizing">
+<link rel="help" href="https://drafts.csswg.org/css-grid-1/#repeat-interpolation">
+<link rel="help" href="https://drafts.csswg.org/css-grid-1/#resolved-track-list">
+<link rel="help" href="https://drafts.csswg.org/web-animations-1/#effect-composition">
+<script src="/resources/testharness.js">
+</script>
+<script src="/resources/testharnessreport.js">
+</script>
+<body>
+<script>
+'use strict';
+const normalize = value => value.replace(/\s+/g, ' ').replace(/\s*([,\[\]()])\s*/g, '$1').trim();
+function element(t, display = 'block', parent = document.body) {
+  const e = document.createElement('div');
+  e.style.cssText = 'width:300px;height:300px;font-size:20px;min-width:0;min-height:0;box-sizing:content-box;display:' + display;
+  parent.appendChild(e); t.add_cleanup(() => e.remove()); return e;
+}
+function sample(t, property, from, to, progress, expected, options = {}) {
+  const key = property.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+  const parent = element(t, options.parentDisplay || 'block');
+  if (options.parentValue) parent.style.setProperty(property, options.parentValue);
+  const e = element(t, options.display || 'block', parent), reference = element(t, options.display || 'block');
+  e.style.setProperty(property, options.underlying || 'none');
+  reference.style.setProperty(property, expected);
+  assert_not_equals(reference.style.getPropertyValue(property), '', 'Expected value must be valid CSS');
+  const animation = e.animate([
+    {[key]: from, composite: options.fromComposite || options.composite || 'replace'},
+    {[key]: to, composite: options.toComposite || options.composite || 'replace'}
+  ], {duration:1000, fill:'both', easing:'linear'});
+  assert_true(animation.effect.getKeyframes().some(frame => Object.prototype.hasOwnProperty.call(frame, key)), 'Keyframe property must be recognized');
+  t.add_cleanup(() => animation.cancel()); animation.pause(); animation.currentTime = progress * 1000;
+  assert_equals(normalize(getComputedStyle(e).getPropertyValue(property)), normalize(getComputedStyle(reference).getPropertyValue(property)), 'Animated value must match independently specified expected value');
+}
+// Different numbers and combinations from the upstream interpolation table.
+const cases = [
+  ['fractional tracks and independent keyword', '2fr min-content 8px', '6fr auto 40px', .25, '3fr min-content 16px'],
+  ['fractional tracks after keyword switch', '2fr min-content 8px', '6fr auto 40px', .75, '5fr auto 32px'],
+  ['line names before half', '[start first] 8px [middle] 2fr [end]', '[start second] 40px [other] 6fr [finish]', .25, '[start first] 16px [middle] 3fr [end]'],
+  ['line names after half', '[start first] 8px [middle] 2fr [end]', '[start second] 40px [other] 6fr [finish]', .75, '[start second] 32px [other] 5fr [finish]'],
+  ['minmax independent minimum switch', 'minmax(auto, 2fr) 8px', 'minmax(40px, 6fr) 40px', .25, 'minmax(auto, 3fr) 16px'],
+  ['minmax independent maximum switch', 'minmax(8px, 2fr) 2fr', 'minmax(40px, auto) 6fr', .75, 'minmax(32px, auto) 5fr'],
+  ['matching repeat counts and arity', 'repeat(3, 8px 2fr)', 'repeat(3, 40px 6fr)', .25, 'repeat(3, 16px 3fr)'],
+  ['repeat count mismatch stays discrete', 'repeat(2, 8px 16px)', 'repeat(4, 40px)', .25, 'repeat(2, 8px 16px)'],
+  ['repeat count mismatch selects end', 'repeat(2, 8px 16px)', 'repeat(4, 40px)', .75, 'repeat(4, 40px)'],
+  ['repeat arity mismatch stays discrete', 'repeat(3, 8px 16px)', 'repeat(3, 40px)', .25, 'repeat(3, 8px 16px)'],
+  ['repeat versus flat list stays discrete', 'repeat(2, 8px)', '24px 40px', .25, 'repeat(2, 8px)'],
+  ['track count mismatch stays discrete', '8px 16px 24px', '32px 40px', .25, '8px 16px 24px'],
+  ['none switch before half', 'none', '8px 2fr', .25, 'none'],
+  ['none switch after half', 'none', '8px 2fr', .75, '8px 2fr'],
+  ['length percentage mixed components', '8px 20%', '40% 24px', .25, 'calc(6px + 10%) calc(15% + 6px)'],
+  ['fit-content mixed units', 'fit-content(8px) 2fr', 'fit-content(40%) 6fr', .25, 'fit-content(calc(6px + 10%)) 3fr'],
+  ['relative lengths compute before interpolation', 'minmax(1em, 2fr)', 'minmax(3em, 6fr)', .25, 'minmax(30px, 3fr)'],
+];
+for (const axis of ['columns', 'rows']) {
+  const property = 'grid-template-' + axis;
+  const key = property.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+  for (const [name, from, to, p, expected] of cases) test(t => sample(t, property, from, to, p, expected), property + ': ' + name);
+  for (const mode of ['add', 'accumulate']) {
+    test(t => sample(t, property, '3fr 1fr 10px', '5fr 3fr 30px', .25, '5.5fr 1.5fr 21px', {underlying:'2fr auto 6px', composite:mode}), property + ': ' + mode + ' preserves compatible underlying components');
+    test(t => sample(t, property, '8px 16px', '24px 40px', .25, '12px 22px', {underlying:'2fr 3fr 4fr', composite:mode}), property + ': ' + mode + ' with incompatible underlying list length');
+    test(t => sample(t, property, 'repeat(3, 8px 2fr)', 'repeat(3, 40px 6fr)', .25, 'repeat(3, 20px 4fr)', {underlying:'repeat(3, 4px 1fr)', composite:mode}), property + ': ' + mode + ' inside matching repeat');
+  }
+  test(t => sample(t, property, '12px 3fr', '40px 7fr', .25, '25px 5.5fr', {underlying:'8px 2fr', fromComposite:'add', toComposite:'replace'}), property + ': mixed keyframe composite operations');
+  test(t => sample(t, property, 'inherit', '6fr 8fr', .25, '3fr 5fr', {parentDisplay:'grid', parentValue:'2fr 4fr'}), property + ': inherit uses computed tracks instead of parent used pixels');
+  test(t => sample(t, property, '2fr 4fr', '6fr 8fr', .25, '4fr 6fr', {display:'grid', underlying:'1fr 1fr', composite:'add'}), property + ': attached grid additive underlying retains fractional types');
+  test(t => sample(t, property, 'repeat(2, 8px 2fr)', 'repeat(2, 40px 6fr)', .25, 'repeat(2, 20px 4fr)', {display:'grid', underlying:'repeat(2, 4px 1fr)', composite:'add'}), property + ': attached grid repeat composition');
+  test(t => {
+    const e = element(t, 'grid'); e.style.setProperty(property, '[start] 1fr [middle] 2fr [end]');
+    assert_equals(normalize(getComputedStyle(e).getPropertyValue(property)), '[start]100px[middle]200px[end]', 'Public grid CSSOM exposes used pixel tracks');
+    e.style.display = 'block';
+    assert_equals(normalize(getComputedStyle(e).getPropertyValue(property)), '[start]1fr[middle]2fr[end]', 'Non-grid CSSOM preserves computed track sizes');
+    e.style.display = 'none';
+    assert_equals(normalize(getComputedStyle(e).getPropertyValue(property)), '[start]1fr[middle]2fr[end]', 'Hidden CSSOM preserves computed track sizes');
+  }, property + ': public computed versus used value boundary');
+  test(t => {
+    const e = element(t, 'grid'); e.style.setProperty(property, '1fr 2fr'); e.remove();
+    assert_equals(getComputedStyle(e).getPropertyValue(property), '', 'Detached elements have no resolved declarations');
+  }, property + ': detached CSSOM has no declarations');
+  test(t => {
+    const e = element(t); e.style.setProperty(property, 'auto'); getComputedStyle(e).getPropertyValue(property);
+    e.style.transitionProperty = property; e.style.transitionDuration = '10s'; e.style.transitionTimingFunction = 'linear'; e.style.setProperty(property, '47px');
+    assert_equals(getComputedStyle(e).getPropertyValue(property), 'auto', 'A template track list starts a transition even when its sole item combines discretely');
+    const a = e.getAnimations()[0]; assert_true(!!a, 'Transition exists'); a.pause(); a.currentTime = 7500;
+    assert_equals(getComputedStyle(e).getPropertyValue(property), '47px', 'Discrete track switches at halfway'); a.cancel();
+  }, property + ': normal CSS transition permits a discrete item inside a template list');
+  for (const mutate of [false, true]) test(t => {
+    const host = element(t, 'none'), e = element(t, 'block', host);
+    e.style.setProperty(property, '100px'); getComputedStyle(e).getPropertyValue(property);
+    if (mutate) e.style.setProperty(property, '120px');
+    const a = e.animate([{[key]:'200px'}], {duration:1000, fill:'both'});a.pause();a.currentTime=500;t.add_cleanup(()=>a.cancel());
+    assert_equals(getComputedStyle(e).getPropertyValue(property), mutate ? '160px' : '150px', 'Hidden target must resolve fresh underlying style');
+  }, property + ': hidden ancestor sparse keyframes' + (mutate ? ' after style mutation' : ''));
+  test(t => {
+    const host = element(t), other = element(t);host.style.cssText += ';container-type:size;width:200px;height:200px';other.style.cssText += ';container-type:size;width:600px;height:600px';
+    const e = element(t, 'block', host), sibling = element(t, 'block', other);e.style.setProperty(property, '10cqw');sibling.style.width='10cqw';
+    const a=e.animate([{[key]:'200px'}], {duration:1000,fill:'both'});a.pause();a.currentTime=500;t.add_cleanup(()=>a.cancel());
+    getComputedStyle(sibling).width;
+    assert_equals(getComputedStyle(e).getPropertyValue(property), '110px', 'Underlying container units use the target container, not a previous sibling context');
+  }, property + ': container units preserve target context');
+  test(t => {
+    const old=document.documentElement.style.fontSize;t.add_cleanup(()=>{document.documentElement.style.fontSize=old});document.documentElement.style.fontSize='16px';
+    const e=element(t);e.style.setProperty(property,'2rem');
+    const a=e.animate([{[key]:'100px'}], {duration:1000,fill:'both'});a.pause();a.currentTime=500;t.add_cleanup(()=>a.cancel());
+    assert_equals(getComputedStyle(e).getPropertyValue(property),'66px');document.documentElement.style.fontSize='20px';
+    assert_equals(getComputedStyle(e).getPropertyValue(property),'70px','Underlying rem responds to root font change');
+  }, property + ': root font change updates underlying computed lengths');
+  test(t => sample(t, property, '0%', '20%', 0, '0%'), property + ': zero-percent start retains percentage type');
+  test(t => sample(t, property, '20%', '0%', 1, '0%'), property + ': zero-percent end retains percentage type');
+  test(t => sample(t, property, 'calc(20px - 10%)', '10%', .5, 'calc(10px + 0%)'), property + ': zero-percent mixed calculation retains percentage type');
+  test(t => {
+    const e = element(t); e.style.setProperty(property, '10px 20px');
+    const a = e.animate([{[key]:'5px 10px'}, {[key]:'15px 30px'}], {duration:1000, fill:'both', composite:'add'});
+    a.pause(); a.currentTime = 500; t.add_cleanup(() => a.cancel());
+    assert_equals(normalize(getComputedStyle(e).getPropertyValue(property)), '20px 40px');
+    e.style.setProperty(property, '30px 40px');
+    assert_equals(normalize(getComputedStyle(e).getPropertyValue(property)), '40px 60px', 'Live underlying style is recomputed');
+    a.cancel();
+    assert_equals(normalize(getComputedStyle(e).getPropertyValue(property)), '30px 40px', 'Cancel restores authored underlying style');
+  }, property + ': style mutation and cancellation');
+}
+for (const property of ['grid-auto-columns', 'grid-auto-rows']) {
+  test(t => sample(t, property, 'auto', '47px', .25, 'auto'), property + ': keyword-to-length is discrete before half');
+  test(t => sample(t, property, 'auto', '47px', .75, '47px'), property + ': keyword-to-length is discrete after half');
+  test(t => {
+    const e = element(t); e.style.setProperty(property, 'auto'); getComputedStyle(e).getPropertyValue(property);
+    e.style.transitionProperty = property; e.style.transitionDuration = '10s'; e.style.setProperty(property, '47px');
+    assert_equals(getComputedStyle(e).getPropertyValue(property), '47px', 'A normal transition must not start for this discrete pair');
+  }, property + ': normal CSS transition suppresses discrete pair');
+}
+
+for (const axis of ['columns','rows']) {
+  const property='grid-template-'+axis;
+  for (const [from,to] of [['auto','47px'],['10px auto','10px 47px'],['10px auto','30px 47px']]) {
+    const e=document.createElement('div');e.style.display='block';document.body.appendChild(e);
+    e.style.setProperty(property,from);getComputedStyle(e).getPropertyValue(property);
+    e.style.transitionProperty=property;e.style.transitionDuration='10s';e.style.setProperty(property,to);
+    const value=getComputedStyle(e).getPropertyValue(property);const animations=e.getAnimations();
+    animations.forEach(a=>{a.pause();a.currentTime=2500});
+    console.error('ASTRA-GRID-PROBE '+JSON.stringify({property,from,to,count:animations.length,initial:value,quarter:getComputedStyle(e).getPropertyValue(property)}));
+    animations.forEach(a=>a.cancel());e.remove();
+  }
+}
+</script>
