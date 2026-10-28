@@ -41,6 +41,91 @@ float grid_item_auto_min(Layout *L, Box *c, float maxlen) {
     return dep && !minw ? LMIN(a - m, LMAX(0, maxlen - m)) + m : a;
 }
 
+/* CSS Grid 10: align tracks in the content box, then items in their areas.
+   Keep qualifier/physical-edge text: the compact Align enum loses left/right,
+   self-start/self-end and safe/unsafe. */
+static const char *grid_alignment(const ComputedStyle *s, const char *property, int fallback, char out[64]) {
+    static const char *const names[] = { "auto", "normal", "stretch", "flex-start", "flex-end", "center", "baseline", "space-between", "space-around", "space-evenly", "start", "end" };
+    const char *value = custom_get(s->gen_n, property);
+    if (!value) return fallback >= 0 && (size_t)fallback < sizeof names / sizeof *names ? names[fallback] : "normal";
+    if (!*value) return !strcmp(property, "align-self") || !strcmp(property, "justify-self") ? "auto" : "normal";
+    size_t n = 0; bool space = false;
+    for (const unsigned char *q = (const unsigned char *)value; *q; q++) {
+        if (is_ws(*q)) { if (n) space = true; continue; }
+        if (n + (space ? 1 : 0) + 1 >= 64) return "normal";
+        if (space) out[n++] = ' '; space = false;
+        out[n++] = *q >= 'A' && *q <= 'Z' ? (char)(*q + ('a' - 'A')) : (char)*q;
+    }
+    out[n] = 0; return out;
+}
+static const char *grid_self_alignment(const ComputedStyle *s, const ComputedStyle *parent, bool horizontal, char out[64]) {
+    const char *v = grid_alignment(s, horizontal ? "justify-self" : "align-self", horizontal ? s->justify_self : s->align_self, out);
+    if (!strcmp(v, "auto")) v = grid_alignment(parent, horizontal ? "justify-items" : "align-items", horizontal ? parent->justify_items : parent->align_items, out);
+    return v;
+}
+static bool grid_axis_reverse(const ComputedStyle *s, bool horizontal) {
+    return horizontal ? (s->writing_mode ? s->writing_mode == 2 : s->direction != 0) : (s->writing_mode && s->direction);
+}
+static float grid_align_offset(const char *value, bool reverse, bool self_reverse, float free_space) {
+    bool safe = false;
+    if (!strncmp(value, "safe ", 5)) { safe = true; value += 5; }
+    else if (!strncmp(value, "unsafe ", 7)) value += 7;
+    float fraction = reverse ? 1 : 0;
+    if (!strcmp(value, "center")) fraction = .5f;
+    else if (!strcmp(value, "end") || !strcmp(value, "flex-end") || !strcmp(value, "last baseline")) fraction = reverse ? 0 : 1;
+    else if (!strcmp(value, "left")) fraction = 0;
+    else if (!strcmp(value, "right")) fraction = 1;
+    else if (!strcmp(value, "self-start")) fraction = self_reverse ? 1 : 0;
+    else if (!strcmp(value, "self-end")) fraction = self_reverse ? 0 : 1;
+    if (safe && free_space < 0) fraction = reverse ? 1 : 0;
+    return free_space * fraction;
+}
+static void grid_content_alignment(const char *value, bool reverse, int tracks, float free_space, float *offset, float *gap) {
+    *gap = 0;
+    if (!strcmp(value, "space-between")) {
+        if (tracks > 1 && free_space > 0) { *offset = 0; *gap = free_space / (tracks - 1); }
+        else *offset = reverse ? free_space : 0;
+    } else if (!strcmp(value, "space-around") || !strcmp(value, "space-evenly")) {
+        if (tracks && free_space > 0) {
+            bool around = !strcmp(value, "space-around");
+            *gap = free_space / (around ? tracks : tracks + 1);
+            *offset = *gap / (around ? 2 : 1);
+        } else *offset = reverse ? free_space : 0;
+    } else *offset = grid_align_offset(value, reverse, reverse, free_space);
+}
+static bool grid_stretches(const Box *c, bool horizontal, const char *alignment) {
+    const ComputedStyle *s = c->st;
+    if ((horizontal ? s->width : s->height).kind != LK_AUTO) return false;
+    if (s->margin[horizontal ? 3 : 0].kind == LK_AUTO || s->margin[horizontal ? 1 : 2].kind == LK_AUTO) return false;
+    if (!strcmp(alignment, "stretch")) return true;
+    return (!strcmp(alignment, "normal") || !strcmp(alignment, "auto")) && c->fmt != FMT_REPLACED && s->aspect_ratio <= 0;
+}
+static float grid_stretch_size(const Box *c, bool horizontal, float available, float reference) {
+    const ComputedStyle *s = c->st;
+    float bp = horizontal ? hbp(c) : vbp(c), extra = s->box_sizing == BOX_BORDER ? 0 : bp;
+    Length lo = horizontal ? s->min_width : s->min_height, hi = horizontal ? s->max_width : s->max_height;
+    float size = LMAX(bp, available);
+    if (len_def(hi, reference)) size = LMIN(size, LMAX(bp, res(hi, reference) + extra));
+    if (len_def(lo, reference)) size = LMAX(size, res(lo, reference) + extra);
+    return size;
+}
+static float grid_item_offset(Box *c, bool horizontal, const char *alignment, bool reverse, float area_size) {
+    int low = horizontal ? 3 : 0, high = horizontal ? 1 : 2;
+    bool a = c->st->margin[low].kind == LK_AUTO, z = c->st->margin[high].kind == LK_AUTO;
+    float free_space = area_size - (horizontal ? c->w : c->h) - c->m[low] - c->m[high];
+    if (a || z) {
+        if (free_space > 0) {
+            float share = free_space / ((int)a + (int)z);
+            if (a) c->m[low] = share;
+            if (z) c->m[high] = share;
+        }
+        /* Auto margins take precedence over self-alignment. On overflow the
+           zero margins keep the item at the container's start (also in RTL). */
+        return c->m[low] + (reverse && free_space < 0 ? free_space : 0);
+    }
+    return c->m[low] + grid_align_offset(alignment, reverse, grid_axis_reverse(c->st, horizontal), free_space);
+}
+
 float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) {
     const ComputedStyle *s = b->st;
     float cg = s->column_gap_l.pct ? res(s->column_gap_l, cw) : s->column_gap, rg = s->row_gap;
@@ -124,6 +209,13 @@ float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
     else if (nauto && left > 0 && (s->justify_content == AL_NORMAL || s->justify_content == AL_STRETCH)) { for (int i = 0; i < nc; i++) if (kind[i] == 0) cwid[i] += left / nauto; }
     else if (left < 0 && nauto) { float need = -left; for (int i = 0; i < nc && need > 0; i++) if (kind[i] == 0) { float take = LMIN(need / nauto, cwid[i]); cwid[i] -= take; } }
     free(cap); free(kind);
+    float grid_width = cg * (nc - 1);
+    for (int i = 0; i < nc; i++) grid_width += cwid[i];
+    char justify_buf[64]; float xoff = 0, column_extra = 0;
+    const char *justify = grid_alignment(s, "justify-content", s->justify_content, justify_buf);
+    bool rtl = !s->writing_mode && s->direction;
+    grid_content_alignment(justify, rtl, nc, cw - grid_width, &xoff, &column_extra);
+    cg += column_extra; grid_width += column_extra * (nc - 1);
     float *cx0 = xcalloc((size_t)nc + 1, sizeof(float));
     for (int i = 0; i < nc; i++) cx0[i + 1] = cx0[i] + cwid[i] + (i < nc - 1 ? cg : 0);
     int nr = 0; for (int k = 0; k < items.n; k++) nr = LMAX(nr, items.v[k].r + items.v[k].rs);
@@ -137,10 +229,10 @@ float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
         float w = cx0[g->c + g->cs] - cx0[g->c] - (g->c + g->cs < nc ? cg : 0);
         if (g->c + g->cs == nc) w = cx0[nc] - cx0[g->c];
         compute_mbp(c, w);
-        int ja = c->st->justify_self ? c->st->justify_self : s->justify_items;
-        bool stretch = (ja == AL_NORMAL || ja == AL_STRETCH || ja == AL_AUTO) && c->st->width.kind == LK_AUTO;
-        layout_box(L, c, cx + cx0[g->c] + c->m[3], cy, w, -1, NULL, stretch ? SZ_FORCED : SZ_SHRINK, w - c->m[1] - c->m[3], -1);
-        if (!stretch && (ja == AL_CENTER || ja == AL_END || ja == AL_FLEX_END)) { float fr = w - c->w - c->m[1] - c->m[3]; box_translate(c, ja == AL_CENTER ? fr / 2 : fr, 0); }
+        char align_buf[64]; const char *ja = grid_self_alignment(c->st, s, true, align_buf);
+        bool stretch = grid_stretches(c, true, ja);
+        float forced_w = grid_stretch_size(c, true, w - c->m[1] - c->m[3], w);
+        layout_box(L, c, cx + cx0[g->c] + c->m[3], cy, w, -1, NULL, stretch ? SZ_FORCED : SZ_SHRINK, forced_w, -1);
         if (g->rs == 1) { float need = c->h + c->m[0] + c->m[2]; bool fixedrow = g->r < s->grid_nrows && track_fixed(&s->grid_rows[g->r], chdef) >= 0; if (!fixedrow) rh[g->r] = LMAX(rh[g->r], LMAX(need, auto_row)); }
     }
     /* align-content: normal/stretch grows auto rows to fill a definite height */
@@ -149,24 +241,31 @@ float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
         for (int i = 0; i < nr; i++) { used += rh[i]; if (!(i < s->grid_nrows && track_fixed(&s->grid_rows[i], chdef) >= 0) && auto_row < 0) na++; }
         if (na && chdef - used > 0.01f) for (int i = 0; i < nr; i++) if (!(i < s->grid_nrows && track_fixed(&s->grid_rows[i], chdef) >= 0) && auto_row < 0) rh[i] += (chdef - used) / na;
     }
+    float grid_height = rg * LMAX(0, nr - 1);
+    for (int i = 0; i < nr; i++) grid_height += rh[i];
+    char align_content_buf[64]; float yoff = 0, row_extra = 0;
+    const char *align_content = grid_alignment(s, "align-content", s->align_content, align_content_buf);
+    grid_content_alignment(align_content, false, nr, chdef >= 0 ? chdef - grid_height : 0, &yoff, &row_extra);
+    rg += row_extra;
     float *ry = xcalloc((size_t)nr + 1, sizeof(float));
     for (int i = 0; i < nr; i++) ry[i + 1] = ry[i] + rh[i] + (i < nr - 1 ? rg : 0);
     for (int k = 0; k < items.n; k++) {
         GI *g = &items.v[k]; Box *c = g->b;
         float top = ry[g->r], hh = ry[g->r + g->rs] - top - (g->r + g->rs < nr ? rg : 0);
-        if (len_has_pct(c->st->height) && fabsf(c->h + c->m[0] + c->m[2] - hh) > 0.01f) {
-            float w = g->c + g->cs == nc ? cx0[nc] - cx0[g->c] : cx0[g->c + g->cs] - cx0[g->c] - cg;
-            int ja = c->st->justify_self ? c->st->justify_self : s->justify_items;
-            bool st = (ja == AL_NORMAL || ja == AL_STRETCH || ja == AL_AUTO) && c->st->width.kind == LK_AUTO;
-            float x0 = c->x;
-            layout_box(L, c, cx + cx0[g->c] + c->m[3], c->y, w, hh, NULL, st ? SZ_FORCED : SZ_SHRINK, w - c->m[1] - c->m[3], -1);
-            box_translate(c, x0 - c->x, 0);
+        float w = cx0[g->c + g->cs] - cx0[g->c] - (g->c + g->cs < nc ? cg : 0);
+        char justify_self_buf[64], align_self_buf[64];
+        const char *ja = grid_self_alignment(c->st, s, true, justify_self_buf);
+        const char *al = grid_self_alignment(c->st, s, false, align_self_buf);
+        bool stretch_x = grid_stretches(c, true, ja), stretch_y = grid_stretches(c, false, al);
+        if (stretch_y || len_has_pct(c->st->height) || len_has_pct(c->st->min_height) || len_has_pct(c->st->max_height)) {
+            float fw = grid_stretch_size(c, true, w - c->m[1] - c->m[3], w);
+            float fh = stretch_y ? grid_stretch_size(c, false, hh - c->m[0] - c->m[2], hh) : -1;
+            layout_box(L, c, cx + cx0[g->c] + c->m[3], cy, w, hh, NULL, stretch_x ? SZ_FORCED : SZ_SHRINK, fw, fh);
         }
-        int al = c->st->align_self == AL_AUTO ? s->align_items : c->st->align_self;
-        float off = 0, fr = hh - c->h - c->m[0] - c->m[2];
-        if (al == AL_CENTER) off = fr / 2; else if (al == AL_END || al == AL_FLEX_END) off = fr;
-        else if ((al == AL_NORMAL || al == AL_STRETCH) && c->st->height.kind == LK_AUTO && fr > 0.01f) { if (c->fmt == FMT_FLEX || c->fmt == FMT_GRID || c->has_abs) layout_box(L, c, c->x, c->y, c->w, hh, NULL, SZ_FORCED, c->w, hh - c->m[0] - c->m[2]); else c->h = hh - c->m[0] - c->m[2]; }
-        box_translate(c, 0, cy + top + c->m[0] + off - c->y);
+        float x = cx + xoff + (rtl ? grid_width - cx0[g->c] - w : cx0[g->c]);
+        x += grid_item_offset(c, true, ja, rtl, w);
+        float y = cy + yoff + top + grid_item_offset(c, false, al, false, hh);
+        box_translate(c, x - c->x, y - c->y);
     }
     float total = ry[nr];
     free(cwid); free(cx0); free(rh); free(ry); vec_free(items); vec_free(cols);

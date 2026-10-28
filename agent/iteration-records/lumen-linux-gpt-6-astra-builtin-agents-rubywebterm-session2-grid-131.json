@@ -1,0 +1,58 @@
+{
+  "iteration": 131,
+  "title": "Grid item/content alignment and bounded stretch",
+  "started_utc": "2026-10-28T09:30:32+00:00",
+  "finished_utc": "2026-10-28T09:32:50.015283+00:00",
+  "duration_minutes": 2.3,
+  "timing_scope": "Frozen candidate build start through completed paired validation; source editing/review prior to build is outside this measured interval.",
+  "subagents": [
+    "/root/standards_comparison",
+    "/root/repository_lead",
+    "/root/progress_and_deployment"
+  ],
+  "assessed_whole_goal_score": 19,
+  "acceptance": "REJECTED: one assertion regressed; correction132 pending",
+  "binary": "build/codex-native/lumen-astra-i131",
+  "binary_sha256": "16a8e8699d34ceea55aea07cd7d05df49f04d8c4bdbbe7d72a0c413a825bc6ec",
+  "baseline_native_pass": 40,
+  "candidate_native_pass": 119,
+  "chromium_pass": 177,
+  "total_assertions": 177,
+  "unchanged_upstream_urls": 10,
+  "assertion_gains": 80,
+  "assertion_losses": 1,
+  "lost_identity": [
+    "/css/css-grid/alignment/grid-align-content.html",
+    ".grid 3",
+    0
+  ],
+  "harness_statuses": {
+    "OK": 10
+  },
+  "native_control": "131 compiled14 geometry cases PASS; expanded22 source cases pending132 build",
+  "guard_audit": "10 started/verified/released/exited with unchanged guard-source hash; separate drained launcher joins actual trusted cleanup threads and fails if any remain",
+  "evidence": [
+    "comparison131.json",
+    "candidate131/results.jsonl",
+    "candidate131-drain.json",
+    "candidate131-launch.json",
+    "native131/run.log"
+  ],
+  "remaining_clusters": {
+    "implicit_tracks_and_distribution": 48,
+    "computed_auto_tracks": 3,
+    "invalid_align_content_physical_keywords": 2,
+    "orthogonal_baseline_group_alignment_and_style_changes": 5
+  },
+  "notes": [
+    "No upstream assertions modified or removed.",
+    "Current whole-browser score remains19/100; focus cohort is not representative of full WPT.",
+    "Installed Chromium150 margin:auto overflow behavior is retained; current Grid1 editor wording differs and no full spec completeness is claimed."
+  ],
+  "session_iteration": 4,
+  "stage": "rejected initial candidate",
+  "focused_quality_score": 88,
+  "broad_holdout_status": "pending",
+  "source_build_manifest": "agent/validation/iteration-131/build-state.json",
+  "fixture_note": "After132 validation, only the fixture stdout label was corrected18to22; all22 assertions already ran. The next build records the corrected test-source hash."
+}

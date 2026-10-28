@@ -1120,6 +1120,20 @@ static bool angle_or_time(const char *v) {
     for (size_t i = 0; i < sizeof u / sizeof *u; i++) { size_t k = strlen(u[i]); if (n > k && !strcasecmp(v + n - k, u[i]) && (isdigit((unsigned char)v[n - k - 1]) || v[n - k - 1] == '.')) return true; }
     return false;
 }
+/* Physical left/right keywords only belong to justify-* in CSS Box Alignment.
+ * Reject the entire align-* declaration before updating either the compact
+ * value or its qualifier metadata, so an earlier valid declaration survives. */
+static bool align_axis_value(const char *v) {
+    while (*v) {
+        while (isspace((unsigned char)*v)) v++;
+        const char *start = v;
+        while (*v && !isspace((unsigned char)*v)) v++;
+        size_t n = (size_t)(v - start);
+        if ((n == 4 && !strncasecmp(start, "left", n)) ||
+            (n == 5 && !strncasecmp(start, "right", n))) return false;
+    }
+    return true;
+}
 static uint8_t parse_align(const char *v) {
     static const char *const al[] = { "auto", "normal", "stretch", "flex-start", "flex-end", "center", "baseline", "space-between", "space-around", "space-evenly", "start", "end", NULL };
     const char *x = v; if (str_istarts(x, "safe ")) x += 5; else if (str_istarts(x, "unsafe ")) x += 7;
@@ -1396,9 +1410,11 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
     bool grid_tracks = !strcmp(P, "grid-template-columns") || !strcmp(P, "grid-template-rows");
     /* Retain the computed track-list structure for animation: the layout arrays
        expand repeat() and cannot preserve line names or all minmax components. */
-    /* Keep computed alignment qualifiers for absolute flex static positions.
+    /* Keep qualifiers used by grid alignment and absolute flex static positions.
        The compact enums still serve public CSSOM and existing in-flow layout. */
-    bool abs_align = !strcmp(P, "align-self") || !strcmp(P, "align-items") || !strcmp(P, "justify-content");
+    bool abs_align = !strcmp(P, "align-self") || !strcmp(P, "align-items") || !strcmp(P, "align-content") ||
+                     !strcmp(P, "justify-self") || !strcmp(P, "justify-items") || !strcmp(P, "justify-content");
+    if (abs_align && P[0] == 'a' && !align_axis_value(val)) goto out;
     const char *place_align = !strcmp(P, "place-self") ? "align-self" : !strcmp(P, "place-items") ? "align-items" : !strcmp(P, "place-content") ? "justify-content" : NULL;
     if (inherit && (abs_align || place_align)) st->parent_sensitive = true;
     if (place_align && (inherit || initial || unset)) {
@@ -3663,7 +3679,8 @@ static bool paint_only(const ComputedStyle *a, const ComputedStyle *b) {
     if (a->grid_ncols != b->grid_ncols || a->grid_nrows != b->grid_nrows) return false;
     if (a->grid_ncols && memcmp(a->grid_cols, b->grid_cols, sizeof *a->grid_cols * (size_t)a->grid_ncols)) return false;
     if (a->grid_nrows && memcmp(a->grid_rows, b->grid_rows, sizeof *a->grid_rows * (size_t)a->grid_nrows)) return false;
-    static const char *const abs_align_props[] = { "align-self", "align-items", "justify-content" };
+    static const char *const abs_align_props[] = { "align-self", "align-items", "align-content",
+        "justify-self", "justify-items", "justify-content", "grid-auto-columns" };
     for (size_t i = 0; i < sizeof abs_align_props / sizeof *abs_align_props; i++)
         if (!str_same(custom_get(a->gen_n, abs_align_props[i]), custom_get(b->gen_n, abs_align_props[i]))) return false;
     if (!paint_only(a->before, b->before) || !paint_only(a->after, b->after) || !paint_only(a->marker, b->marker)) return false;

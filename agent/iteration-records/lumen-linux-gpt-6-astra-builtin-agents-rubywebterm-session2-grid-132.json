@@ -1,0 +1,53 @@
+{
+  "iteration": 132,
+  "title": "Grid alignment correction: invalid physical align values and overflowing auto margins",
+  "started_utc": "2026-10-28T09:37:35+00:00",
+  "finished_utc": "2026-10-28T09:39:33.165063+00:00",
+  "duration_minutes": 1.969,
+  "timing_scope": "Frozen candidate build start through completed paired validation; source editing/review prior to build is outside this measured interval.",
+  "subagents": [
+    "/root/standards_comparison",
+    "/root/repository_lead",
+    "/root/progress_and_deployment"
+  ],
+  "assessed_whole_goal_score": 19,
+  "acceptance": "Focused gates PASS; broad holdouts pending",
+  "binary": "build/codex-native/lumen-astra-i132",
+  "binary_sha256": "f7b256c3bdef4b012b87a8e501646b90ef484a6b65943dec3885b8d534b7d18c",
+  "baseline_native_pass": 40,
+  "candidate_native_pass": 121,
+  "chromium_pass": 177,
+  "total_assertions": 177,
+  "unchanged_upstream_urls": 10,
+  "assertion_gains": 81,
+  "assertion_losses": 0,
+  "lost_identity": null,
+  "harness_statuses": {
+    "OK": 10
+  },
+  "native_control": "All118 native CTest tests PASS, including22-case grid geometry fixture",
+  "guard_audit": "10 started/verified/released/exited with unchanged guard-source hash; separate drained launcher joins actual trusted cleanup threads and fails if any remain",
+  "evidence": [
+    "comparison132.json",
+    "candidate132/results.jsonl",
+    "candidate132-drain.json",
+    "candidate132-launch.json",
+    "native132/run.log"
+  ],
+  "remaining_clusters": {
+    "implicit_tracks_and_distribution": 48,
+    "computed_auto_tracks": 3,
+    "orthogonal_baseline_group_alignment_and_style_changes": 5
+  },
+  "notes": [
+    "No upstream assertions modified or removed.",
+    "Current whole-browser score remains19/100; focus cohort is not representative of full WPT.",
+    "Installed Chromium150 margin:auto overflow behavior is retained; current Grid1 editor wording differs and no full spec completeness is claimed."
+  ],
+  "session_iteration": 4,
+  "stage": "focused accepted correction",
+  "focused_quality_score": 96,
+  "broad_holdout_status": "pending",
+  "source_build_manifest": "agent/validation/iteration-132/build-state.json",
+  "fixture_note": "After132 validation, only the fixture stdout label was corrected18to22; all22 assertions already ran. The next build records the corrected test-source hash."
+}
