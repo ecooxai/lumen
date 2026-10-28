@@ -1,0 +1,33 @@
+{
+  "session": 4,
+  "start_utc": "2026-10-28T22:46:53+00:00",
+  "start_client": "2026-10-29T06:46:53+08:00",
+  "deadline_utc": "2026-10-29T01:46:53+00:00",
+  "repair_extension_limit_utc": "2026-10-29T02:46:53+00:00",
+  "recorded_utc": "2026-10-28T22:48:34.041625+00:00",
+  "base_head": "879c633714d99943c0ec6d817eca12086d776660",
+  "base_engine": "e858139105c0743d8416fe6c91cd3ac42480a3b0",
+  "base_iteration": 162,
+  "new_branch": "gpt-6-astra-engine-lead-linux-conformance-20261029-0647",
+  "whole_goal_score": 19,
+  "target_score": 98,
+  "prior_task_sha256": "70882dc686e883e0eaacb0bbae887e2692b59e6d731dfdd1fa75ea4b063c56f4",
+  "task_bytes": 8029,
+  "task_sha256": "1fd961d4427df1b11499ac3d560d0541dae84900f189102278d66c13724d47f4",
+  "preexisting_fixtures": {
+    "agent/validation/fixtures/astra-image-lifecycle.html": "19f3a98dff7b860798f4997ccf1548ce5dec85243f2b1b1ac45f0aeed2ad8dc1",
+    "agent/validation/fixtures/astra-edit-replacement.html": "91234e404ef3256f2a903618bce4cbdf139de5dc1db5a84ece6b5751c28a66da",
+    "agent/validation/fixtures/astra-edit-replacement-v2.html": "cb87142a0dfc1db057f006c471b1f7a7a3aacc136065f46558e38df43bdcf083",
+    "agent/validation/fixtures/astra-image-lifecycle-v2.html": "f708a6a9dc440b0a05f135d1c7820ef4e06e12b1bb0423c09626f53c710939e6",
+    "agent/validation/fixtures/astra-image-lifecycle-v3.html": "1a95920408d820189a0b090075e591d97862b04929dfdd6f472ae4bd1488f7dc",
+    "agent/validation/fixtures/astra-edit-selection-regression-v3.html": "70fa4429da5a2bf2c5debbf8170df68c128afb38da894e64a1eae4ebbc76c955",
+    "agent/validation/fixtures/astra-react-edit-replacement.html": "b3456953b2776fca49459e3e638a34b79df5b8e9830c7bb5cea403b19bd39780"
+  },
+  "agents": [
+    "root",
+    "engine_lead_20261029",
+    "conformance_20261029",
+    "progress_20261029"
+  ],
+  "publication_scope": "Prior denied private payloads/history remain unexported; separately reviewed source/media only."
+}
