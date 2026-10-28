@@ -1,0 +1,145 @@
+{
+  "iteration": 7,
+  "title": "Shared first-layer background image and gradient geometry",
+  "status": "accepted_focused",
+  "started_utc": "2026-10-28T06:32:31.326082+00:00",
+  "whole_goal_readiness": 19,
+  "focused_quality_score": 96,
+  "agents": [
+    "/root/engine_lead",
+    "/root/conformance",
+    "/root/ops_preview",
+    "/root"
+  ],
+  "baseline": {
+    "candidate": 121,
+    "head": "2508cf2accd24b482d81b1932e0af90ef4f77503",
+    "sha256": "a19039e411bb686379fc5b59026cf3747b1f4322d5e357ff094acba144d15534",
+    "source_diff_empty": true
+  },
+  "scope": "Shared origin/clip/size/signed-position/repeat geometry and bounded raster sampling; preserve existing non-background raster paths.",
+  "known_limits": [
+    "First-layer representation; full multilayer backgrounds remain unsupported.",
+    "Existing radial/conic/gradient syntax and circular-radius approximations are not a full gradient/border implementation.",
+    "Fixed background attachment and broader special-element propagation remain outside this repair."
+  ],
+  "primary_source": "https://drafts.csswg.org/css-backgrounds-3/",
+  "source_files": [
+    "src/css/css.h",
+    "src/css/style.c",
+    "src/paint/paint.h",
+    "src/paint/display.c",
+    "src/paint/raster.c",
+    "src/app/main.c"
+  ],
+  "ended_utc": "2026-10-28T07:29:39.809587+00:00",
+  "duration_minutes": 57.141391750000004,
+  "accepted_candidate": {
+    "candidate": 125,
+    "binary": "build/codex-native/lumen-astra-i125",
+    "sha256": "4026e951b42f724215a242b63c263ce85eaaa6fbce3a26fb088de7ce05ae7e84",
+    "build_started_utc": "2026-10-28T07:21:58Z",
+    "build_finished_utc": "2026-10-28T07:22:22Z",
+    "composition": "Runtime121 plus exactly six geometry files; accepted flex123 and privacy124 deliberately excluded for attribution. Guarded launch required.",
+    "working_source_hashes_including_already_accepted_flex_hunk": {
+      "src/css/css.h": "8b9d84f5280c811137b8ebf04981b7260cb035fea7b2bb6347e675a08ec26173",
+      "src/css/style.c": "0b372abae09845774de2efbe32350bc1cefcfded6f56c99900e5fc839ac47dbe",
+      "src/paint/paint.h": "6ab24e0b6c8043632fd092bfcc68326a1d33fabd086609abd538ff4755fe4d7b",
+      "src/paint/display.c": "076037ddc77fa65b3906a32e940620ea656c675545df6fb3c606a3a577730944",
+      "src/paint/raster.c": "d86ee5d5eae6e9a52ded9d371bb065297421705d7cbccb0b977ad345b33dc599",
+      "src/app/main.c": "4297e60d36c22dc6be7aa9f91f8fa22f54e6e6da5a7b6f3c66fed0dc054b23c3"
+    }
+  },
+  "validation": {
+    "unchanged_reftests": {
+      "urls": 24,
+      "baseline121": {
+        "pass": 10,
+        "fail": 14
+      },
+      "candidate125": {
+        "pass": 18,
+        "fail": 6
+      },
+      "gained": 8,
+      "lost": 0,
+      "all_eight_gains_also_chromium_pass": true,
+      "chromium": {
+        "pass": 21,
+        "fail": 1,
+        "timeout": 2
+      },
+      "verified_capture_processes": 48
+    },
+    "native_color_list": {
+      "passed": 25,
+      "total": 25,
+      "engine_archive_sha256": "cfaa2a38df080e691713bf48c26e8732d451816b91489120fdf956e662a753fd",
+      "cases": "order, short/extra lists, none layers, quoted/function commas, shorthand and CSS-wide inherit/initial/unset"
+    },
+    "native_raster_antecedent122": {
+      "passed": 4,
+      "total": 4,
+      "names": [
+        "svg_gradient_img",
+        "raster_bands",
+        "raster_spans",
+        "radius_inherit"
+      ]
+    },
+    "gpu_antecedent122": {
+      "backend": "default MX110 Vulkan",
+      "own_reference_before_pass": 2,
+      "own_reference_after_pass": 3,
+      "total": 3,
+      "actual_X11_presented_round_repeat_pixel_differences": 0,
+      "stable_frames": 3,
+      "viewport": "800x600 DPR1",
+      "scope": "One real presented static bitmap test/reference pair and three internal own-reference cases on122; not a separate125 presentation run."
+    },
+    "raster_resource_antecedent122": {
+      "instrumented_frames": 6,
+      "normal_before_total_ms": 1.272,
+      "normal_after_total_ms": 0.797,
+      "near_zero_before_total_ms": 0.675,
+      "near_zero_after_total_ms": 0.675,
+      "observed_peak_rss_mib_range": [
+        134.7,
+        135.6
+      ],
+      "thread_cpu_measurement_available": false,
+      "scope": "Separate position-toggle diagnostic with restored inline value/priority; not unchanged WPT conformance or a broad performance claim."
+    }
+  },
+  "rejected_attempts": [
+    {
+      "candidate": 122,
+      "result": "17/24 PASS, eight gains and one lost background-color-clip pass",
+      "diagnosis": "Baseline test/reference both incorrectly used border-box.122 corrected the single-layer reference but kept the multilayer test incorrect; loss preserved.125 resolves bottom-image-layer clip list matching generally."
+    }
+  ],
+  "implementation_notes": [
+    "One constant-size display item per background source; O(visible damage width) temporary sampling and no tile-count loops.",
+    "Shared CPU raster feeds software and default GPU presentation; tiled items excluded from image overlay bypass, tile metadata participates in item hashing.",
+    "Color clip is independently resolved from last image layer, including none, repeating/truncating clip lists after cascade; this does not implement multilayer image painting."
+  ],
+  "remaining_reftest_failures": [
+    "border-shape clip",
+    "right-in-body multilayer",
+    "subpixel center",
+    "subpixel at border",
+    "background size006",
+    "gradient subpixel fill"
+  ],
+  "evidence": [
+    "agent/validation/linux-wpt-20261028/geometry125-independent-comparison.json",
+    "agent/validation/linux-wpt-20261028/geometry122-independent-comparison.json",
+    "agent/validation/linux-wpt-20261028/geometry122-ops/independent-ops-summary.json",
+    "agent/validation/linux-wpt-20261028/geometry-color-native/result.json",
+    "agent/validation/linux-wpt-20261028/geometry-isolated125/isolation.json"
+  ],
+  "primary_sources": [
+    "https://drafts.csswg.org/css-backgrounds-3/",
+    "https://drafts.csswg.org/css-backgrounds-4/"
+  ]
+}

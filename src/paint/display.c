@@ -57,6 +57,82 @@ static Image *tinted(Image *src, Color c) {
     return o;
 }
 
+typedef struct BgArea { float x, y, w, h, r[4]; } BgArea;
+static BgArea background_area(const Box *b, float x, float y, float w, float h,
+                              int kind, const float outer_r[4], bool l_edge, bool r_edge) {
+    float in[4] = {0};
+    if (kind != BG_BORDER_BOX) for (int i = 0; i < 4; i++) {
+        if ((i == 3 && !l_edge) || (i == 1 && !r_edge)) continue;
+        in[i] = b->b[i] + (kind == BG_CONTENT_BOX ? b->p[i] : 0);
+    }
+    BgArea a = {x + in[3], y + in[0], LMAX(0, w - in[1] - in[3]), LMAX(0, h - in[0] - in[2]), {0}};
+    a.r[0] = LMAX(0, outer_r[0] - LMAX(in[0], in[3]));
+    a.r[1] = LMAX(0, outer_r[1] - LMAX(in[0], in[1]));
+    a.r[2] = LMAX(0, outer_r[2] - LMAX(in[2], in[1]));
+    a.r[3] = LMAX(0, outer_r[3] - LMAX(in[2], in[3]));
+    return a;
+}
+/* Background position percentages use (positioning area - image size), which
+ * may be negative. Layout's indefinite-size resolver must not be used here. */
+static float background_length(Length l, float reference) {
+    if (l.kind != LK_LEN) return 0;
+    float a = l.px + l.pct * reference / 100.f;
+    if (!l.mm) return a;
+    float b = l.px2 + l.pct2 * reference / 100.f;
+    return l.mm == 1 ? LMIN(a, b) : LMAX(a, b);
+}
+static void paint_background_source(PB *p, const ComputedStyle *s, const BgArea *area,
+                                    const BgArea *clip_area, Image *im, Gradient *grad) {
+    if (clip_area->w <= 0 || clip_area->h <= 0 || !isfinite(area->w) || !isfinite(area->h)) return;
+    float iw = im ? image_css_w(im) : area->w, ih = im ? image_css_h(im) : area->h;
+    if ((im && (iw <= 0 || ih <= 0)) || !isfinite(iw) || !isfinite(ih)) return;
+    bool auto_x = s->bg_size_kind == BGS_AUTO || (s->bg_size_kind == BGS_LEN && s->bg_size[0].kind != LK_LEN);
+    bool auto_y = s->bg_size_kind == BGS_AUTO || (s->bg_size_kind == BGS_LEN && s->bg_size[1].kind != LK_LEN);
+    if (s->bg_size_kind == BGS_COVER || s->bg_size_kind == BGS_CONTAIN) {
+        if (im) { float scale = s->bg_size_kind == BGS_COVER ? LMAX(area->w / iw, area->h / ih) : LMIN(area->w / iw, area->h / ih); iw *= scale; ih *= scale; }
+        else { iw = area->w; ih = area->h; }
+    } else if (s->bg_size_kind == BGS_LEN) {
+        float w = auto_x ? -1 : LMAX(0, background_length(s->bg_size[0], area->w));
+        float h = auto_y ? -1 : LMAX(0, background_length(s->bg_size[1], area->h));
+        if (w >= 0 && h >= 0) { iw = w; ih = h; }
+        else if (w >= 0) { ih = im ? ih * w / iw : area->h; iw = w; }
+        else if (h >= 0) { iw = im ? iw * h / ih : area->w; ih = h; }
+    }
+    if (iw <= 0 || ih <= 0 || !isfinite(iw) || !isfinite(ih)) return;
+    int rx = s->bg_repeat & 3, ry = (s->bg_repeat >> 2) & 3;
+    float original_w = iw, original_h = ih;
+    if (rx == BGR_ROUND) iw = (float)(area->w / fmax(1, floor((double)area->w / iw + .5)));
+    if (ry == BGR_ROUND) ih = (float)(area->h / fmax(1, floor((double)area->h / ih + .5)));
+    if (rx == BGR_ROUND && ry != BGR_ROUND && auto_y) ih = original_h * iw / original_w;
+    if (ry == BGR_ROUND && rx != BGR_ROUND && auto_x) iw = original_w * ih / original_h;
+    if (iw <= 0 || ih <= 0 || !isfinite(iw) || !isfinite(ih)) return;
+    double ox = (double)area->x + background_length(s->bg_pos[0], area->w - iw);
+    double oy = (double)area->y + background_length(s->bg_pos[1], area->h - ih);
+    float step_x = rx == BGR_NO_REPEAT ? 0 : iw, step_y = ry == BGR_NO_REPEAT ? 0 : ih;
+    if (rx == BGR_SPACE) {
+        double count = floor((double)area->w / iw);
+        if (count < 2) step_x = 0;
+        else { ox = area->x; step_x = (float)((area->w - iw) / (count - 1)); }
+    }
+    if (ry == BGR_SPACE) {
+        double count = floor((double)area->h / ih);
+        if (count < 2) step_y = 0;
+        else { oy = area->y; step_y = (float)((area->h - ih) / (count - 1)); }
+    }
+    if (!isfinite(ox) || !isfinite(oy) || !isfinite(step_x) || !isfinite(step_y)) return;
+    /* Reduce the phase once, without a subtraction loop or integer tile count. */
+    if (step_x > 0) ox = clip_area->x + fmod(ox - clip_area->x, step_x);
+    if (step_y > 0) oy = clip_area->y + fmod(oy - clip_area->y, step_y);
+    float x = clip_area->x, y = clip_area->y, right = x + clip_area->w, bottom = y + clip_area->h;
+    if (step_x <= 0) { x = LMAX(x, (float)ox); right = LMIN(right, (float)(ox + iw)); }
+    if (step_y <= 0) { y = LMAX(y, (float)oy); bottom = LMIN(bottom, (float)(oy + ih)); }
+    if (right <= x || bottom <= y || !visible(p, x, y, right - x, bottom - y)) return;
+    DItem *it = emit(p, im ? DO_IMAGE : DO_GRADIENT); it->x = x; it->y = y; it->w = right - x; it->h = bottom - y; it->img = im; it->grad = grad;
+    memcpy(it->r, clip_area->r, sizeof it->r);
+    it->tile = (BackgroundTile){(float)(ox - x), (float)(oy - y), iw, ih, step_x, step_y,
+                               clip_area->x - x, clip_area->y - y, clip_area->w, clip_area->h};
+}
+
 static void paint_rect_deco(PB *p, Box *b, float x, float y, float w, float h, bool l_edge, bool r_edge) {
     const ComputedStyle *s = b->st;
     if (!visible(p, x - 64, y - 64, w + 128, h + 128)) return;
@@ -76,7 +152,10 @@ static void paint_rect_deco(PB *p, Box *b, float x, float y, float w, float h, b
         memcpy(it->r, r, sizeof r); it->color = s->box_shadow.color; it->blur = s->box_shadow.blur; it->spread = s->box_shadow.spread;
         it->ox = s->box_shadow.x; it->oy = s->box_shadow.y;
     }
-    if (COLOR_A(s->bg_color)) {
+    BgArea bg_clip = background_area(b, x, y, w, h, s->bg_clip, r, l_edge, r_edge);
+    BgArea bg_origin = background_area(b, x, y, w, h, s->bg_origin, r, l_edge, r_edge);
+    BgArea color_clip = background_area(b, x, y, w, h, s->bg_color_clip, r, l_edge, r_edge);
+    if (COLOR_A(s->bg_color) && color_clip.w > 0 && color_clip.h > 0) {
         Color c = s->bg_color;
         /* backdrop-filter: blur() isn't rendered; blurred content behind a translucent surface reads as
            nearly flat, so approximate it by cutting the remaining transparency to a quarter. A strong blur
@@ -84,25 +163,12 @@ static void paint_rect_deco(PB *p, Box *b, float x, float y, float w, float h, b
            opaque, since faint sharp text behind it reads as stale pixels */
         if (s->backdrop_blur > 0 && COLOR_A(c) < 255)
             c = (c & 0xffffff) | (Color)(s->backdrop_blur >= 16 && COLOR_A(c) >= 128 ? 255 : 255 - (255 - COLOR_A(c)) / 4) << 24;
-        DItem *it = emit(p, DO_RECT); it->x = x; it->y = y; it->w = w; it->h = h; memcpy(it->r, r, sizeof r); it->color = c;
+        DItem *it = emit(p, DO_RECT); it->x = color_clip.x; it->y = color_clip.y; it->w = color_clip.w; it->h = color_clip.h; memcpy(it->r, color_clip.r, sizeof it->r); it->color = c;
     }
-    if (s->bg_gradient) { DItem *it = emit(p, DO_GRADIENT); it->x = x; it->y = y; it->w = w; it->h = h; memcpy(it->r, r, sizeof r); it->grad = s->bg_gradient; }
+    if (s->bg_gradient) paint_background_source(p, s, &bg_origin, &bg_clip, NULL, s->bg_gradient);
     if (s->bg_image && paint_url_image_hook) {
         Image *im = paint_url_image_hook(s->bg_image);
-        if (im && im->w && im->h) {
-            float iw = image_css_w(im), ih = image_css_h(im);
-            if (s->bg_size_kind == BGS_COVER || s->bg_size_kind == BGS_CONTAIN) { float k = s->bg_size_kind == BGS_COVER ? LMAX(w / iw, h / ih) : LMIN(w / iw, h / ih); iw *= k; ih *= k; }
-            else if (s->bg_size_kind == BGS_LEN) { float a = s->bg_size[0].kind == LK_LEN ? res(s->bg_size[0], w) : -1, c = s->bg_size[1].kind == LK_LEN ? res(s->bg_size[1], h) : -1; if (a >= 0 && c >= 0) { iw = a; ih = c; } else if (a >= 0) { ih = ih * a / iw; iw = a; } else if (c >= 0) { iw = iw * c / ih; ih = c; } }
-            float ox = x + res(s->bg_pos[0], w - iw), oy = y + res(s->bg_pos[1], h - ih);
-            DItem *c = emit(p, DO_PUSH_CLIP); c->x = x; c->y = y; c->w = w; c->h = h; memcpy(c->r, r, sizeof r);
-            bool rx = s->bg_repeat == BG_REPEAT || s->bg_repeat == BG_REPEAT_X, ry = s->bg_repeat == BG_REPEAT || s->bg_repeat == BG_REPEAT_Y;
-            float x0 = ox, y0 = oy;
-            if (rx && iw > 1) while (x0 > x) x0 -= iw;
-            if (ry && ih > 1) while (y0 > y) y0 -= ih;
-            int n = 0;
-            for (float yy = y0; yy < y + h && n < 4096; yy += ih) { for (float xx = x0; xx < x + w && n < 4096; xx += iw) { if (visible(p, xx, yy, iw, ih)) { DItem *it = emit(p, DO_IMAGE); it->x = xx; it->y = yy; it->w = iw; it->h = ih; it->img = im; } n++; if (!rx || iw <= 1) break; } if (!ry || ih <= 1) break; }
-            emit(p, DO_POP_CLIP);
-        }
+        if (im && im->w && im->h) paint_background_source(p, s, &bg_origin, &bg_clip, im, NULL);
     }
     float bw[4]; bool any = false;
     for (int i = 0; i < 4; i++) { bw[i] = b->b[i]; if ((i == 3 && !l_edge) || (i == 1 && !r_edge)) bw[i] = 0; if (bw[i] > 0 && s->border_style[i] > BS_HIDDEN && COLOR_A(s->border_color[i])) any = true; else bw[i] = 0; }

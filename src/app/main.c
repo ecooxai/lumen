@@ -1910,6 +1910,7 @@ static int64_t hq(float v) { return isfinite(v) ? (int64_t)llrintf(LCLAMP(v, -1e
 static uint64_t ditem_hash(const DItem *it, float dy) {
     uint64_t h = 1469598103934665603ull; int64_t y = hq(it->y + dy);
     HMIX(h, it->op); HMIX(h, it->x); HMIX(h, y); HMIX(h, it->w); HMIX(h, it->h); HMIX(h, it->r); HMIX(h, it->color);
+    HMIX(h, it->tile);
     HMIX(h, it->bw); HMIX(h, it->bc); HMIX(h, it->bs); HMIX(h, it->img); HMIX(h, it->blur); HMIX(h, it->spread); HMIX(h, it->alpha); HMIX(h, it->inset);
     if (it->img) HMIX(h, it->img->content_version);
     if (it->grad) { const Gradient *g = it->grad; HMIX(h, g->type); HMIX(h, g->angle); HMIX(h, g->nstops); HMIX(h, g->repeating); h = hmix(h, g->stops, sizeof g->stops[0] * (size_t)LCLAMP(g->nstops, 0, 8)); }
@@ -2399,7 +2400,7 @@ static void render(App *a) {
         bool xpx = true;   /* every frame after the first has RGBA pixels (only the first layer can be YUV) */
         for (int i = 0; i < a->pdl.items.n; i++) {
             const DItem *it = &a->pdl.items.v[i];
-            if (it->op != DO_IMAGE || !media_is_frame(it->img)) continue;
+            if (it->op != DO_IMAGE || it->tile.w > 0 || !media_is_frame(it->img)) continue;
             if (!nv++) vit = it;
             if (nvit && !it->img->px && !it->img->gpu) xpx = false;
             if (nvit < 1 + GPU_EXTRA_LAYERS) vits[nvit] = it;

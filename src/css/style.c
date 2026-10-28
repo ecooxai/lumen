@@ -35,6 +35,7 @@ ComputedStyle *style_new_default(void) {
     s->z_auto = true; s->font_family = atom("sans-serif");
     s->list_style = LST_DISC; s->align_items = AL_NORMAL; s->align_self = AL_AUTO; s->justify_content = AL_NORMAL; s->align_content = AL_NORMAL;
     s->bg_size[0] = s->bg_size[1] = L_auto();
+    s->bg_origin = BG_PADDING_BOX; s->bg_clip = s->bg_color_clip = BG_BORDER_BOX; s->bg_layers = 1;
     s->transform_origin[0].pct = 50; s->transform_origin[1].pct = 50;
     s->filter_brightness = 1; s->caret_color = 0; s->fill = RGBA(0, 0, 0, 255); s->stroke_width = 1;
     s->grid_col_span = s->grid_row_span = 1; s->grid_auto_rows = L_auto();
@@ -611,7 +612,26 @@ static char *style_url_join(const char *base, const char *rel) {
     m->base = base ? xstrdup(base) : NULL; m->rel = xstrdup(rel); m->abs = abs ? xstrdup(abs) : NULL;
     return abs;
 }
+/* Top-level layer boundaries ignore commas in URLs, functions and strings. */
+static const char *bg_layer_end(const char *v) {
+    int depth = 0; char quote = 0;
+    for (const char *p = v; *p; p++) {
+        if (*p == '\\' && p[1]) { p++; continue; }
+        if (quote) { if (*p == quote) quote = 0; continue; }
+        if (*p == '\'' || *p == '"') { quote = *p; continue; }
+        if (*p == '(') depth++;
+        else if (*p == ')' && depth) depth--;
+        else if (*p == ',' && !depth) return p;
+    }
+    return v + strlen(v);
+}
+static uint32_t bg_layer_count(const char *v) {
+    uint32_t count = 1;
+    for (const char *p = v; *(p = bg_layer_end(p)); p++) if (count < UINT32_MAX) count++;
+    return count;
+}
 static void apply_background_image(ACtx *c, const char *v) {
+    c->st->bg_layers = bg_layer_count(v);
     free(c->st->bg_image); c->st->bg_image = NULL; free(c->st->bg_gradient); c->st->bg_gradient = NULL;
     if (str_ieq(v, "none")) return;
     if (strstr(v, "gradient(")) {
@@ -793,14 +813,117 @@ static char *bg_position_computed(const ComputedStyle *s, int axis) {
     } while (true);
     return sb_take(&out);
 }
+/* Geometry is currently painted for the first layer; keep comma-separated
+ * declaration text available to CSSOM rather than treating nested commas as
+ * layer separators. */
+static char *bg_first_layer(const char *value) {
+    const char *start = value, *p = value; int depth = 0; char quote = 0;
+    while (*p) {
+        if (quote) { if (*p == '\\' && p[1]) p++; else if (*p == quote) quote = 0; }
+        else if (*p == '\'' || *p == '"') quote = *p;
+        else if (*p == '(') depth++;
+        else if (*p == ')' && depth) depth--;
+        else if (*p == ',' && !depth) break;
+        p++;
+    }
+    while (start < p && is_ws((unsigned char)*start)) start++;
+    while (p > start && is_ws((unsigned char)p[-1])) p--;
+    return xstrndup(start, (size_t)(p - start));
+}
+static int bg_repeat_mode(const char *value) {
+    if (str_ieq(value, "repeat")) return BGR_REPEAT;
+    if (str_ieq(value, "no-repeat")) return BGR_NO_REPEAT;
+    if (str_ieq(value, "round")) return BGR_ROUND;
+    if (str_ieq(value, "space")) return BGR_SPACE;
+    return -1;
+}
+static void apply_bg_repeat(ACtx *c, const char *value) {
+    char *first = bg_first_layer(value), *t[3]; int n = split_ws(first, t, 3), x = -1, y = -1;
+    if (n == 1 && str_ieq(t[0], "repeat-x")) { x = BGR_REPEAT; y = BGR_NO_REPEAT; }
+    else if (n == 1 && str_ieq(t[0], "repeat-y")) { x = BGR_NO_REPEAT; y = BGR_REPEAT; }
+    else if (n == 1 || n == 2) { x = bg_repeat_mode(t[0]); y = bg_repeat_mode(t[n - 1]); }
+    if (x >= 0 && y >= 0) c->st->bg_repeat = (uint8_t)(x | (y << 2));
+    free_toks(t, n); free(first);
+}
+static int bg_box_kind(const char *value) {
+    if (str_ieq(value, "border-box")) return BG_BORDER_BOX;
+    if (str_ieq(value, "padding-box")) return BG_PADDING_BOX;
+    if (str_ieq(value, "content-box")) return BG_CONTENT_BOX;
+    return -1;
+}
+/* Color belongs below the last image layer. Resolve list repetition/truncation
+ * once during the cascade, independently of our first-image paint support. */
+static void bg_resolve_color_clip(ComputedStyle *st) {
+    const char *v = gen_value(st, gen_prop("background-clip"));
+    if (!v || !*v) v = "border-box";
+    uint32_t n = bg_layer_count(v), index = ((st->bg_layers ? st->bg_layers : 1) - 1) % n;
+    const char *p = v;
+    while (index--) p = bg_layer_end(p) + 1;
+    char *item = xstrndup(p, (size_t)(bg_layer_end(p) - p));
+    int box = bg_box_kind(str_trim(item)); free(item);
+    st->bg_color_clip = (uint8_t)(box >= 0 ? box : BG_BORDER_BOX);
+}
+static void bg_shorthand_clips(ComputedStyle *st, const char *v) {
+    static const char *const names[] = { "border-box", "padding-box", "content-box" };
+    SB clips; sb_init(&clips);
+    for (const char *p = v;;) {
+        const char *end = bg_layer_end(p);
+        char *layer = xstrndup(p, (size_t)(end - p)), *t; const char *q = layer;
+        int clip = BG_BORDER_BOX;
+        while ((t = next_token(&q))) { int box = bg_box_kind(t); if (box >= 0) clip = box; free(t); }
+        if (clips.n) sb_puts(&clips, ", ");
+        sb_puts(&clips, names[clip]); free(layer);
+        if (!*end) break;
+        p = end + 1;
+    }
+    gen_put(&st->gen_n, "background-clip", sb_take(&clips));
+}
+static void apply_bg_box(ACtx *c, const char *value, bool clip) {
+    char *first = bg_first_layer(value); int box = bg_box_kind(first); free(first);
+    if (box >= 0) { if (clip) c->st->bg_clip = (uint8_t)box; else c->st->bg_origin = (uint8_t)box; }
+}
 static void apply_bg_size(ACtx *c, const char *v) {
-    if (str_ieq(v, "cover")) { c->st->bg_size_kind = BGS_COVER; return; }
-    if (str_ieq(v, "contain")) { c->st->bg_size_kind = BGS_CONTAIN; return; }
-    char *t[2]; int n = split_ws(v, t, 2);
-    c->st->bg_size_kind = BGS_LEN; c->st->bg_size[0] = c->st->bg_size[1] = L_auto();
-    for (int i = 0; i < n; i++) alen(c, t[i], &c->st->bg_size[i]);
-    if (n == 1) c->st->bg_size[1] = L_auto();
-    free_toks(t, n);
+    char *first = bg_first_layer(v);
+    if (str_ieq(first, "cover") || str_ieq(first, "contain")) { c->st->bg_size_kind = str_ieq(first, "cover") ? BGS_COVER : BGS_CONTAIN; free(first); return; }
+    char *t[3]; int n = split_ws(first, t, 3); Length size[2] = {L_auto(), L_auto()}; bool ok = n == 1 || n == 2;
+    for (int i = 0; ok && i < n; i++) ok = alen(c, t[i], &size[i]) && (size[i].kind == LK_LEN || size[i].kind == LK_AUTO);
+    if (ok) { c->st->bg_size_kind = BGS_LEN; c->st->bg_size[0] = size[0]; c->st->bg_size[1] = size[1]; }
+    free_toks(t, n); free(first);
+}
+static void bg_shorthand_geometry(ACtx *c, const char *value) {
+    char *first = bg_first_layer(value); char *slash = NULL; int depth = 0; char quote = 0;
+    for (char *p = first; *p; p++) {
+        if (quote) { if (*p == '\\' && p[1]) p++; else if (*p == quote) quote = 0; }
+        else if (*p == '\'' || *p == '"') quote = *p;
+        else if (*p == '(') depth++;
+        else if (*p == ')' && depth) depth--;
+        else if (*p == '/' && !depth) { slash = p; break; }
+    }
+    if (slash) {
+        const char *q = slash + 1; SB size; sb_init(&size); char *t; int count = 0;
+        while (count < 2 && (t = next_token(&q))) {
+            Length l; bool keyword = str_ieq(t, "cover") || str_ieq(t, "contain");
+            bool valid = keyword || (alen(c, t, &l) && (l.kind == LK_LEN || l.kind == LK_AUTO));
+            if (!valid || (count && keyword)) { free(t); break; }
+            if (size.n) sb_putc(&size, ' '); sb_puts(&size, t); free(t); count++;
+            if (keyword) break;
+        }
+        if (size.n) apply_bg_size(c, size.s);
+        sb_free(&size); *slash = ' ';
+    }
+    const char *q = first; char *t; SB repeats; sb_init(&repeats); int boxes = 0;
+    while ((t = next_token(&q))) {
+        int box = bg_box_kind(t);
+        if (box >= 0 && boxes < 2) {
+            if (!boxes++) c->st->bg_origin = c->st->bg_clip = (uint8_t)box;
+            else c->st->bg_clip = (uint8_t)box;
+        } else if (bg_repeat_mode(t) >= 0 || str_ieq(t, "repeat-x") || str_ieq(t, "repeat-y")) {
+            if (repeats.n) sb_putc(&repeats, ' '); sb_puts(&repeats, t);
+        }
+        free(t);
+    }
+    if (repeats.n) apply_bg_repeat(c, repeats.s);
+    sb_free(&repeats); free(first);
 }
 static void bg_shorthand_positions(ACtx *c, const char *value) {
     SB positions; sb_init(&positions); int layer = 0;
@@ -827,9 +950,11 @@ static void bg_shorthand_positions(ACtx *c, const char *value) {
     apply_bg_pos(c, positions.s ? positions.s : "0% 0%"); sb_free(&positions);
 }
 static void apply_background(ACtx *c, const char *v) {
+    c->st->bg_layers = bg_layer_count(v);
+    bg_shorthand_clips(c->st, v);
     /* use last layer for color, first for image */
     c->st->bg_color = 0; c->st->bg_ser = NULL; free(c->st->bg_image); c->st->bg_image = NULL; free(c->st->bg_gradient); c->st->bg_gradient = NULL;
-    c->st->bg_repeat = BG_REPEAT; c->st->bg_size_kind = BGS_AUTO; bg_position_copy(c->st, NULL, -1);
+    c->st->bg_repeat = BG_REPEAT; c->st->bg_size_kind = BGS_AUTO; c->st->bg_size[0] = c->st->bg_size[1] = L_auto(); c->st->bg_origin = BG_PADDING_BOX; c->st->bg_clip = BG_BORDER_BOX; bg_position_copy(c->st, NULL, -1);
     if (str_ieq(v, "none")) return;
     if (strstr(v, "url(") || strstr(v, "gradient(")) apply_background_image(c, v);
     const char *p = v; char *t;
@@ -838,15 +963,11 @@ static void apply_background(ACtx *c, const char *v) {
         char *tt = t; if (tl && tt[tl - 1] == ',') tt[tl - 1] = 0;
         Color col;
         if (strstr(tt, "url(") || strstr(tt, "gradient(")) {}
-        else if (str_ieq(tt, "no-repeat")) c->st->bg_repeat = BG_NO_REPEAT;
-        else if (str_ieq(tt, "repeat-x")) c->st->bg_repeat = BG_REPEAT_X;
-        else if (str_ieq(tt, "repeat-y")) c->st->bg_repeat = BG_REPEAT_Y;
-        else if (str_ieq(tt, "repeat")) c->st->bg_repeat = BG_REPEAT;
-        else if (str_ieq(tt, "cover") || str_ieq(tt, "contain")) apply_bg_size(c, tt);
         else if (!strcmp(tt, "/")) {}
         else if (css_parse_color(tt, &col, c->st->color)) { CssColor cc = cur_color(c->st); const char *ser = NULL; parse_color_ser(tt, &col, &ser, &cc); c->st->bg_color = col; c->st->bg_ser = ser; }
         free(t);
     }
+    bg_shorthand_geometry(c, v);
     bg_shorthand_positions(c, v);
 }
 static void apply_font(ACtx *c, const char *v) {
@@ -1306,7 +1427,12 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         else if (!strcmp(P, "font-weight")) st->font_weight = src->font_weight;
         else if (!strcmp(P, "font-family")) st->font_family = src->font_family;
         else if (!strcmp(P, "line-height")) { st->line_height = src->line_height; st->line_height_normal = src->line_height_normal; st->line_height_factor = src->line_height_factor; }
-        else if (!strcmp(P, "background-color") || !strcmp(P, "background")) { st->bg_color = src->bg_color; st->bg_ser = src->bg_ser; if (!strcmp(P, "background")) { bg_position_copy(st, inherit ? par : NULL, -1); free(st->bg_image); st->bg_image = NULL; free(st->bg_gradient); st->bg_gradient = NULL; } }
+        else if (!strcmp(P, "background-repeat")) st->bg_repeat = src->bg_repeat;
+        else if (!strcmp(P, "background-origin")) st->bg_origin = src->bg_origin;
+        else if (!strcmp(P, "background-clip")) st->bg_clip = src->bg_clip;
+        else if (!strcmp(P, "background-image")) st->bg_layers = src->bg_layers;
+        else if (!strcmp(P, "background-size")) { st->bg_size_kind = src->bg_size_kind; memcpy(st->bg_size, src->bg_size, sizeof st->bg_size); }
+        else if (!strcmp(P, "background-color") || !strcmp(P, "background")) { st->bg_color = src->bg_color; st->bg_ser = src->bg_ser; if (!strcmp(P, "background")) { st->bg_repeat = src->bg_repeat; st->bg_origin = src->bg_origin; st->bg_clip = src->bg_clip; st->bg_layers = src->bg_layers; const char *clip = gen_value(src, gen_prop("background-clip")); gen_put(&st->gen_n, "background-clip", xstrdup(clip ? clip : "border-box")); st->bg_size_kind = src->bg_size_kind; memcpy(st->bg_size, src->bg_size, sizeof st->bg_size); bg_position_copy(st, inherit ? par : NULL, -1); free(st->bg_image); st->bg_image = NULL; free(st->bg_gradient); st->bg_gradient = NULL; } }
         else if (!strcmp(P, "display")) { st->display = src->display; st->display_text = src->display_text; }
         else if (!strcmp(P, "text-align")) st->text_align = src->text_align;
         else if (!strcmp(P, "width")) st->width = src->width;
@@ -1369,7 +1495,9 @@ apply:
         if (!strcmp(P, "background-color")) { CssColor cc = cur_color(st); const char *ser; if (parse_color_ser(val, &col, &ser, &cc)) { st->bg_color = col; st->bg_ser = ser; } }
         else if (!strcmp(P, "background")) apply_background(&c, val);
         else if (!strcmp(P, "background-image")) apply_background_image(&c, val);
-        else if (!strcmp(P, "background-repeat")) { st->bg_repeat = str_ieq(val, "no-repeat") ? BG_NO_REPEAT : str_ieq(val, "repeat-x") ? BG_REPEAT_X : str_ieq(val, "repeat-y") ? BG_REPEAT_Y : BG_REPEAT; }
+        else if (!strcmp(P, "background-repeat")) apply_bg_repeat(&c, val);
+        else if (!strcmp(P, "background-origin")) apply_bg_box(&c, val, false);
+        else if (!strcmp(P, "background-clip")) apply_bg_box(&c, val, true);
         else if (!strcmp(P, "background-size")) apply_bg_size(&c, val);
         else if (!strcmp(P, "background-position")) apply_bg_pos(&c, val);
         else if (!strcmp(P, "box-sizing")) st->box_sizing = str_ieq(val, "border-box") ? BOX_BORDER : BOX_CONTENT;
@@ -1647,6 +1775,10 @@ apply:
         break;
     }
 out:
+    if (!strcmp(P, "background") || !strcmp(P, "background-image") || !strcmp(P, "background-clip")) {
+        if (inherit) st->parent_sensitive = true;
+        bg_resolve_color_clip(st);
+    }
     free(vbuf); free(subst);
 }
 
@@ -3539,7 +3671,7 @@ static bool paint_only(const ComputedStyle *a, const ComputedStyle *b) {
 #define PO_Z(f) (memset(&x.f, 0, sizeof x.f), memset(&y.f, 0, sizeof y.f))
     PO_Z(anchor_name); PO_Z(pos_anchor); PO_Z(pos_area); PO_Z(pos_try); PO_Z(anchor_ins); PO_Z(anchor_sz); PO_Z(refs); PO_Z(grid_cols); PO_Z(grid_rows); PO_Z(content); PO_Z(grid_areas); PO_Z(grid_area); PO_Z(before); PO_Z(after); PO_Z(custom); PO_Z(gen_i); PO_Z(gen_n);
     PO_Z(custom_dependencies); PO_Z(attribute_dependencies); PO_Z(parent_sensitive); PO_Z(inherited_dynamic); PO_Z(indep_set);
-    PO_Z(color); PO_Z(bg_color); PO_Z(bg_image); PO_Z(bg_gradient); PO_Z(bg_repeat); PO_Z(bg_size_kind); PO_Z(bg_size); PO_Z(bg_pos);
+    PO_Z(color); PO_Z(bg_color); PO_Z(bg_image); PO_Z(bg_gradient); PO_Z(bg_repeat); PO_Z(bg_origin); PO_Z(bg_clip); PO_Z(bg_color_clip); PO_Z(bg_layers); PO_Z(bg_size_kind); PO_Z(bg_size); PO_Z(bg_pos);
     PO_Z(mask_image); PO_Z(mask_fit); PO_Z(border_color); PO_Z(outline_style); PO_Z(outline_width); PO_Z(outline_offset); PO_Z(outline_color);
     PO_Z(box_shadow); PO_Z(has_shadow); PO_Z(text_shadow); PO_Z(has_text_shadow); PO_Z(text_decoration);
     PO_Z(opacity); PO_Z(transform); PO_Z(transform_origin); PO_Z(translate_pending); PO_Z(visibility); PO_Z(z_index); PO_Z(z_auto); PO_Z(isolation);

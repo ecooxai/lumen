@@ -299,39 +299,87 @@ static Color grad_at(const Gradient *g, float t) {
     }
     return g->stops[g->nstops - 1].color;
 }
+/* Background repeats are sampled within the visible damage, never expanded to
+ * a display item or loop per tile. Space gaps retain fractional pixel coverage. */
+typedef struct { float q, cov; } TileCoord;
+static double tile_covered(double x, double size, double step) {
+    double n = floor(x / step), q = x - n * step;
+    return n * size + fmin(size, fmax(0, q));
+}
+static TileCoord tile_coord(int pixel, float origin, float size, float step) {
+    double x = (double)pixel - origin, q = x + .5;
+    if (!(step > 0)) return (TileCoord){ (float)q, 1 };
+    q = fmod(q, step); if (q < 0) q += step;
+    float cov = 1;
+    if (step > size) {
+        cov = (float)fmin(1, fmax(0, tile_covered(x + 1, size, step) - tile_covered(x, size, step)));
+        /* A pixel can straddle a tile while its center is in a gap. Sample the
+         * nearest tile edge; coverage, rather than a false opaque gap, blends it. */
+        if (q > size) q = q - size < step - q ? size : 0;
+    }
+    return (TileCoord){ (float)q, cov };
+}
 static void gradient(R *r, const DItem *it) {
     const Gradient *g = it->grad; float s = r->s;
-    float x0 = it->x * s, y0 = it->y * s, x1 = (it->x + it->w) * s, y1 = (it->y + it->h) * s, w = x1 - x0, h = y1 - y0;
+    float x0 = it->x * s, y0 = it->y * s, x1 = (it->x + it->w) * s, y1 = (it->y + it->h) * s;
+    bool tiled = it->tile.w > 0 && it->tile.h > 0;
+    float w = tiled ? it->tile.w * s : x1 - x0, h = tiled ? it->tile.h * s : y1 - y0;
+    float tx = x0 + it->tile.x * s, ty = y0 + it->tile.y * s;
+    float stepx = it->tile.step_x * s, stepy = it->tile.step_y * s;
+    if (!(w > 0) || !(h > 0) || !isfinite(w) || !isfinite(h)) return;
     float rad[4]; for (int i = 0; i < 4; i++) rad[i] = it->r[i] * s;
     bool round = rad[0] > 0 || rad[1] > 0 || rad[2] > 0 || rad[3] > 0;
+    float clipx = tiled ? x0 + it->tile.clip_x * s : x0, clipy = tiled ? y0 + it->tile.clip_y * s : y0;
+    float clipr = tiled ? clipx + it->tile.clip_w * s : x1, clipb = tiled ? clipy + it->tile.clip_h * s : y1;
     float a = g->angle * (float)M_PI / 180.f, dxv = sinf(a), dyv = -cosf(a);
-    /* Cardinal directions are exact. sinf(pi) otherwise leaves a small x
-       component and can change a vertical gradient by a color step across
-       a wide row. Exact vertical gradients also need just one color per row. */
+    /* Cardinal directions stay exact, including the fast vertical row path. */
     float angle = fmodf(g->angle, 360.f); if (angle < 0) angle += 360.f;
     if (angle == 0) { dxv = 0; dyv = -1; }
     else if (angle == 180) { dxv = 0; dyv = 1; }
     else if (angle == 90) { dxv = 1; dyv = 0; }
     else if (angle == 270) { dxv = -1; dyv = 0; }
     float L = fabsf(w * dxv) + fabsf(h * dyv); if (L < 1e-3f) L = 1;
-    float cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, R2 = sqrtf(w * w + h * h) / 2;
+    float cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, R2 = hypotf(w, h) / 2;
+    if (!isfinite(L) || !isfinite(R2)) return;
     const Clip *c = clip(r);
-    int px0 = LMAX(c->x0, (int)floorf(x0)), py0 = LMAX(c->y0, (int)floorf(y0)), px1 = LMIN(c->x1, (int)ceilf(x1)), py1 = LMIN(c->y1, (int)ceilf(y1));
-    if (g->type != 1 && dxv == 0 && !round && !c->round) {
+    /* Clip floating coordinates before integer conversion; CSS dimensions can
+     * exceed the integer range even though visible raster damage cannot. */
+    int px0 = (int)floorf(LCLAMP(x0, (float)c->x0, (float)c->x1));
+    int py0 = (int)floorf(LCLAMP(y0, (float)c->y0, (float)c->y1));
+    int px1 = (int)ceilf(LCLAMP(x1, (float)c->x0, (float)c->x1));
+    int py1 = (int)ceilf(LCLAMP(y1, (float)c->y0, (float)c->y1));
+    if (px1 <= px0 || py1 <= py0) return;
+    if (g->type != 1 && dxv == 0 && !round && !c->round && (!tiled || !(stepx > w))) {
         for (int y = py0; y < py1; y++) {
-            float t = ((y + .5f - cy) * dyv) / L + .5f;
-            fill(r, x0, LMAX(y0, (float)y), x1, LMIN(y1, (float)y + 1), NULL, grad_at(g, t));
+            TileCoord q = tiled ? tile_coord(y, ty, h, stepy) : (TileCoord){ y + .5f - y0, 1 };
+            if (!(q.cov > 0)) continue;
+            float t = ((q.q - h / 2) * dyv) / L + .5f;
+            Color col = grad_at(g, t);
+            if (q.cov < .999f) col = RGBA(COLOR_R(col), COLOR_G(col), COLOR_B(col), (int)(COLOR_A(col) * q.cov));
+            fill(r, LMAX(x0, (float)c->x0), LMAX(y0, (float)y), LMIN(x1, (float)c->x1), LMIN(y1, (float)y + 1), NULL, col);
         }
         return;
     }
-    for (int y = py0; y < py1; y++) for (int x = px0; x < px1; x++) {
-        float fx = x + 0.5f, fy = y + 0.5f;
-        float t = g->type == 1 ? sqrtf((fx - cx) * (fx - cx) + (fy - cy) * (fy - cy)) / LMAX(1, R2) : ((fx - cx) * dxv + (fy - cy) * dyv) / L + 0.5f;
-        float cov = span_cov(x0, x1, x) * span_cov(y0, y1, y);
-        if (round) cov = LCLAMP(0.5f - sd_rrect(fx, fy, x0, y0, x1, y1, rad), 0, 1);
-        cov *= clip_cov(r, fx, fy);
-        if (cov > 0) over(&raster_row(r, y)[x - r->origin_x], premul(grad_at(g, t), cov));
+    TileCoord *xs = tiled ? xmalloc(sizeof *xs * (size_t)(px1 - px0)) : NULL;
+    if (xs) for (int x = px0; x < px1; x++) xs[x - px0] = tile_coord(x, tx, w, stepx);
+    for (int y = py0; y < py1; y++) {
+        TileCoord qy = tiled ? tile_coord(y, ty, h, stepy) : (TileCoord){ y + .5f - y0, 1 };
+        if (!(qy.cov > 0)) continue;
+        for (int x = px0; x < px1; x++) {
+            float fx = x + .5f, fy = y + .5f;
+            TileCoord qx = xs ? xs[x - px0] : (TileCoord){ fx - x0, 1 };
+            float gx = tiled ? qx.q - w / 2 : fx - cx, gy = tiled ? qy.q - h / 2 : fy - cy;
+            float t = g->type == 1 ? sqrtf(gx * gx + gy * gy) / LMAX(1, R2) : (gx * dxv + gy * dyv) / L + .5f;
+            float cov = span_cov(x0, x1, x) * span_cov(y0, y1, y);
+            if (round) {
+                float rounded_cov = LCLAMP(.5f - sd_rrect(fx, fy, clipx, clipy, clipr, clipb, rad), 0, 1);
+                cov = tiled ? LMIN(cov, rounded_cov) : rounded_cov;
+            }
+            cov *= qx.cov * qy.cov * clip_cov(r, fx, fy);
+            if (cov > 0) over(&raster_row(r, y)[x - r->origin_x], premul(grad_at(g, t), cov));
+        }
     }
+    free(xs);
 }
 
 /* premultiplied pixel per glyph coverage for one text color (same values premul() gives) */
@@ -380,7 +428,7 @@ static void text(R *r, const DItem *it) {
     }
 }
 
-typedef struct { int a, b; uint32_t w; float cov; } ImgCol;
+typedef struct { int a, b; uint32_t w; float cov, gap; } ImgCol;
 static void image_horizontal(uint32_t *dst, const uint32_t *src, const ImgCol *cols, int count) {
     for (int x = 0; x < count; x++) {
         const ImgCol *k = &cols[x];
@@ -425,12 +473,13 @@ static void image_vertical(uint32_t *restrict dst, const uint32_t *restrict top,
 }
 static void image(R *r, const DItem *it) {
     const Image *im = it->img; float s = r->s;
+    bool tiled = it->tile.w > 0 && it->tile.h > 0;
     float x0 = it->x * s, y0 = it->y * s, x1 = (it->x + it->w) * s, y1 = (it->y + it->h) * s;
-    if (x1 - x0 < 0.5f || y1 - y0 < 0.5f) return;
+    if (tiled ? (!(x1 > x0) || !(y1 > y0)) : (x1 - x0 < .5f || y1 - y0 < .5f)) return;
     const Clip *c = clip(r);
     int more = -1;
     for (int i = 0; i < 3 && r->c->punch_more[i]; i++) if ((const void *)im == r->c->punch_more[i]) more = i;
-    if ((r->c->punch && (const void *)im == r->c->punch) || more >= 0) {
+    if (!tiled && ((r->c->punch && (const void *)im == r->c->punch) || more >= 0)) {
         int qx0 = LMAX(c->x0, (int)floorf(x0 + 0.5f)), qy0 = LMAX(c->y0, (int)floorf(y0 + 0.5f)), qx1 = LMIN(c->x1, (int)floorf(x1 + 0.5f)), qy1 = LMIN(c->y1, (int)floorf(y1 + 0.5f));
         for (int y = qy0; qx1 > qx0 && y < qy1; y++) memset(raster_row(r, y) + qx0 - r->origin_x, 0, (size_t)(qx1 - qx0) * 4);
         bool ok = !r->nlayer && !c->round;
@@ -441,11 +490,25 @@ static void image(R *r, const DItem *it) {
         return;
     }
     if (!im->px) { if (!im->yuv && !im->gpu) return; image_yuv_materialize((Image *)im); if (!im->px) return; }
-    int px0 = LMAX(c->x0, (int)floorf(x0)), py0 = LMAX(c->y0, (int)floorf(y0)), px1 = LMIN(c->x1, (int)ceilf(x1)), py1 = LMIN(c->y1, (int)ceilf(y1));
+    /* Clip floating coordinates before integer conversion; CSS dimensions can
+     * exceed the integer range even though visible raster damage cannot. */
+    int px0 = (int)floorf(LCLAMP(x0, (float)c->x0, (float)c->x1));
+    int py0 = (int)floorf(LCLAMP(y0, (float)c->y0, (float)c->y1));
+    int px1 = (int)ceilf(LCLAMP(x1, (float)c->x0, (float)c->x1));
+    int py1 = (int)ceilf(LCLAMP(y1, (float)c->y0, (float)c->y1));
     if (px1 <= px0 || py1 <= py0) return;
+    float tw = tiled ? it->tile.w * s : x1 - x0, th = tiled ? it->tile.h * s : y1 - y0;
+    float tx = x0 + it->tile.x * s, ty = y0 + it->tile.y * s;
+    float stepx = it->tile.step_x * s, stepy = it->tile.step_y * s;
+    if (!(tw > 0) || !(th > 0) || !isfinite(tw) || !isfinite(th)) return;
     float kx = im->w / (x1 - x0), ky = im->h / (y1 - y0);
-    bool down = kx > 1.5f || ky > 1.5f, rclip = c->round;
-    int inner0 = LMAX(px0, (int)ceilf(x0)), inner1 = LMIN(px1, (int)floorf(x1));
+    double tile_kx = tiled ? im->w / (double)tw : kx, tile_ky = tiled ? im->h / (double)th : ky;
+    bool down = tile_kx > 1.5 || tile_ky > 1.5, rclip = c->round;
+    int inner0 = span_bound(ceilf(x0), px0, px1), inner1 = span_bound(floorf(x1), px0, px1);
+    float rad[4]; bool background_round = false;
+    for (int i = 0; i < 4; i++) { rad[i] = it->r[i] * s; if (tiled && rad[i] > 0) background_round = true; }
+    float clipx = x0 + it->tile.clip_x * s, clipy = y0 + it->tile.clip_y * s;
+    float clipr = clipx + it->tile.clip_w * s, clipb = clipy + it->tile.clip_h * s;
     int width = px1 - px0;
     ImgCol *cols = xmalloc((sizeof *cols + (down ? 0 : 2 * sizeof(uint32_t))) * (size_t)width);
     /* Upscaled thumbnails reuse each source row several times. Cache just the
@@ -457,13 +520,16 @@ static void image(R *r, const DItem *it) {
     int cached_y[2] = {-1, -1};
     for (int x = px0; x < px1; x++) {
         ImgCol *k = &cols[x - px0];
-        float sx = (x + 0.5f - x0) * kx - 0.5f;
+        TileCoord q = tiled ? tile_coord(x, tx, tw, stepx) : (TileCoord){ x + .5f - x0, 1 };
+        float sx = tiled ? (float)fmin(im->w - .5, fmax(-.5, q.q * tile_kx - .5)) : q.q * kx - .5f;
         if (down) { k->a = k->b = LCLAMP((int)(sx + 0.5f), 0, im->w - 1); k->w = 0; }
         else { int ix = (int)floorf(sx); k->a = LCLAMP(ix, 0, im->w - 1); k->b = LCLAMP(ix + 1, 0, im->w - 1); k->w = (uint32_t)((sx - ix) * 256); }
-        k->cov = span_cov(x0, x1, x);
+        k->cov = span_cov(x0, x1, x); k->gap = q.cov;
     }
     for (int y = py0; y < py1; y++) {
-        float sy = (y + 0.5f - y0) * ky - 0.5f; int iy = (int)floorf(sy);
+        TileCoord q = tiled ? tile_coord(y, ty, th, stepy) : (TileCoord){ y + .5f - y0, 1 };
+        if (!(q.cov > 0)) continue;
+        float sy = tiled ? (float)fmin(im->h - .5, fmax(-.5, q.q * tile_ky - .5)) : q.q * ky - .5f; int iy = (int)floorf(sy);
         uint32_t wy = (uint32_t)((sy - iy) * 256);
         const uint32_t *ra, *rb;
         if (down) ra = rb = im->px + (size_t)LCLAMP((int)(sy + 0.5f), 0, im->h - 1) * (size_t)im->w;
@@ -488,7 +554,7 @@ static void image(R *r, const DItem *it) {
         }
         float cy = span_cov(y0, y1, y);
         uint32_t *row = raster_row(r, y);
-        bool span = !down && !rclip && cy >= 0.999f && inner1 > inner0;
+        bool span = !down && !rclip && !background_round && cy >= .999f && q.cov >= .999f && inner1 > inner0 && (!tiled || !(stepx > tw));
         if (span) image_vertical(row + inner0 - r->origin_x, ra + inner0 - px0,
                                  rb + inner0 - px0, inner1 - inner0, wy);
         for (int x = px0; x < px1; x++) {
@@ -497,7 +563,10 @@ static void image(R *r, const DItem *it) {
             uint32_t p;
             if (down) p = ra[k->a];
             else p = scale_px(ra[x - px0], 256 - wy) + scale_px(rb[x - px0], wy);
-            float cov = k->cov * cy; if (rclip) cov *= clip_cov(r, x + 0.5f, y + 0.5f);
+            float cov = k->cov * cy;
+            if (background_round) cov = LMIN(cov, LCLAMP(.5f - sd_rrect(x + .5f, y + .5f, clipx, clipy, clipr, clipb, rad), 0, 1));
+            cov *= k->gap * q.cov;
+            if (rclip) cov *= clip_cov(r, x + .5f, y + .5f);
             if (cov < 0.999f) p = scale_px(p, (uint32_t)(cov * 256));
             over(&row[x - r->origin_x], p);
         }
@@ -553,7 +622,7 @@ static CullBox *cull_build(const Canvas *cv, const DisplayList *dl, float s) {
         switch (it->op) {
         case DO_RECT: case DO_LINE: case DO_BORDER: case DO_GRADIENT: cb[i] = cull_rect(x0, y0, x1, y1); break;
         case DO_IMAGE:
-            if (punch_image(cv, it->img)) { for (int k = 0; k < nopen; k++) bad[k] = true; break; }
+            if (!(it->tile.w > 0) && punch_image(cv, it->img)) { for (int k = 0; k < nopen; k++) bad[k] = true; break; }
             cb[i] = cull_rect(x0, y0, x1, y1); break;
         case DO_SHADOW: { float pad = fabsf(it->spread * s) + LMAX(.5f, it->blur * s); cb[i] = cull_rect(x0 - pad, y0 - pad, x1 + pad, y1 + pad); break; }
         case DO_TEXT:
@@ -742,8 +811,8 @@ void raster_rect(Canvas *cv, const DisplayList *dl, Color clearc, int rx0, int r
     /* video frames convert to RGB once, before the bands read them; GPU frames are read back */
     for (int i = 0; i < dl->items.n; i++) {
         const DItem *it = &dl->items.v[i]; Image *im = it->img;
-        if (it->op != DO_IMAGE || !im || im->px || (!im->yuv && !im->gpu) || im == cv->punch) continue;
-        if (im == cv->punch_more[0] || im == cv->punch_more[1] || im == cv->punch_more[2]) continue;
+        if (it->op != DO_IMAGE || !im || im->px || (!im->yuv && !im->gpu)) continue;
+        if (!(it->tile.w > 0) && punch_image(cv, im)) continue;
         if (it->w > 0 && it->h > 0) image_yuv_materialize(im);
     }
     pthread_mutex_lock(&pool.mu);

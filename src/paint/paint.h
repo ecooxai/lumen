@@ -14,9 +14,18 @@ enum DOp { DO_RECT, DO_BORDER, DO_TEXT, DO_IMAGE, DO_GRADIENT, DO_SHADOW, DO_LIN
 
 typedef struct DGlyph { uint32_t gid; float x, y; Font *font; } DGlyph;
 
+/* Background tile coordinates are relative to the display item's paint bounds,
+ * so scrolling moves the paint bounds and tile lattice together. Zero w/h means
+ * an ordinary image/gradient. A zero step means no repeat in that axis. */
+typedef struct BackgroundTile {
+    float x, y, w, h, step_x, step_y;
+    float clip_x, clip_y, clip_w, clip_h;  /* full radius box, relative to item origin */
+} BackgroundTile;
+
 typedef struct DItem {
     uint8_t op;
     float x, y, w, h;           /* viewport CSS px */
+    BackgroundTile tile;
     float r[4];                 /* corner radii tl tr br bl */
     Color color;
     float bw[4]; Color bc[4]; uint8_t bs[4];

@@ -36,7 +36,10 @@ enum { TOUCH_NO_X = 1, TOUCH_NO_Y = 2 };
 enum { TD_UNDERLINE = 1, TD_OVERLINE = 2, TD_LINE_THROUGH = 4 };
 enum { BOX_CONTENT, BOX_BORDER };
 enum { VIS_VISIBLE, VIS_HIDDEN, VIS_COLLAPSE };
-enum { BG_REPEAT = 0, BG_NO_REPEAT = 1, BG_REPEAT_X = 2, BG_REPEAT_Y = 3 };
+/* Two repeat modes packed into bg_repeat: horizontal in bits0..1, vertical in bits2..3. */
+enum { BGR_REPEAT = 0, BGR_NO_REPEAT = 1, BGR_ROUND = 2, BGR_SPACE = 3 };
+enum { BG_REPEAT = 0, BG_NO_REPEAT = 5, BG_REPEAT_X = 4, BG_REPEAT_Y = 1 };
+enum { BG_BORDER_BOX = 0, BG_PADDING_BOX = 1, BG_CONTENT_BOX = 2 };
 enum { BGS_AUTO, BGS_COVER, BGS_CONTAIN, BGS_LEN };
 enum { OF_FILL, OF_CONTAIN, OF_COVER, OF_NONE, OF_SCALE_DOWN };
 enum { LST_NONE, LST_DISC, LST_CIRCLE, LST_SQUARE, LST_DECIMAL, LST_LOWER_ALPHA, LST_UPPER_ALPHA, LST_LOWER_ROMAN, LST_UPPER_ROMAN };
@@ -68,6 +71,8 @@ typedef struct ComputedStyle {
     uint8_t text_align, white_space, text_transform, text_decoration, font_style, list_style, cursor, pointer_events;
     uint8_t flex_direction, flex_wrap, justify_content, align_items, align_self, align_content, justify_items, justify_self;
     uint8_t vertical_align, bg_repeat, bg_size_kind, object_fit, text_overflow, word_break, overflow_wrap, direction;
+    uint8_t bg_origin, bg_clip, bg_color_clip;
+    uint32_t bg_layers;             /* includes none layers; color uses the last layer clip */
     uint8_t border_style[4];
     uint8_t outline_style, user_select, appearance, isolation, table_layout, border_collapse, container_type, resize, writing_mode, pos_try_order;   /* pos_try_order: 0 normal, 1 most-width, 2 most-height */
     uint8_t inert;   /* inside an inert subtree: never hit, focused or selected, whatever pointer-events the page sets */
