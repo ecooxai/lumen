@@ -75,6 +75,11 @@ Accepted source `4517145578ef3374cba6e699b2fe183fc25e48a0` and immutable native 
 Native `2c27f3bb2c305b2fc3b79d1e257c9913380432014a5a85832306afa13441dc32` passes815 targeted checks and1850/1850 original six-file WPT assertions. Frame microtask realm and Storage.key conversion fixes are committed with exact source hashes. Score40/100; expanded1515-variant work is incomplete, old reference URL behavior remains quarantined, and current-artifact performance/IPA needs proof. New header/encoding work must remain isolated until another measured checkpoint.
 
 
-## Latest verified task checkpoint —10290244-009
+## Previous verified task checkpoint —10290244-009
 
 Native `1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9` passes1122 targeted native checks and1850/1850 original-subset WPT assertions. Headers conversion/guard/iteration and HTTP ByteString transport fixes are committed with exact source hashes. Score40/100; current-artifact performance, full frozen priority coverage and same-device IPA execution remain incomplete. Preserve reference quarantine and coordinate further shared-source edits before mutation.
+
+
+## Latest verified task checkpoint —10290244-010
+
+Current immutable native `1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9` has independently reproduced resource evidence in `agent/evidence/10290244-010-current-native-resources.json`. Score50/100; idle accepted=True, SDL scroll accepted=False, navigation soak accepted=True. Thresholds and source are unchanged. Whole-task98/100 and same-IPA acceptance remain incomplete. Use the tenth-iteration source/archive checkpoint before more edits.

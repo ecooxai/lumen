@@ -5,8 +5,8 @@
   "session_start_utc": "2026-10-28T18:47:35Z",
   "deadline_utc": "2026-10-28T21:47:35Z",
   "target_score": 98,
-  "score": 40,
-  "score_state": "selected_subset_pass_headers_codec_fixed_broader_incomplete_performance_unverified",
+  "score": 50,
+  "score_state": "selected_subset_pass_current_resources_measured_broader_and_same_ipa_incomplete",
   "unknown_means": "unverified, not measured failure",
   "rubric": "agent/scorecard-rubric-10290244.md",
   "gates": [
@@ -83,9 +83,12 @@
       "category": "performance",
       "weight": 5,
       "name": "Idle",
-      "status": "unverified",
-      "earned": 0,
-      "evidence": [],
+      "status": "passed",
+      "earned": 5,
+      "evidence": [
+        "agent/evidence/10290244-010-current-native-resources.json",
+        "output/session-10290244/final-native-resources-1/scroll/independent-review.json"
+      ],
       "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
       "settle_seconds": 15,
       "valid_window_seconds": 64.009,
@@ -146,17 +149,131 @@
           }
         }
       ],
-      "note": "Changed Headers/codec executable. Prior CPU/RSS/soak evidence remains historical until reproduced on this artifact."
+      "note": "Current artifact; fixed scroll workload final idle after at least15s settle, >=45s, p95<=3%.",
+      "review": {
+        "scenario": "scroll",
+        "source": "output/session-10290244/final-native-resources-1/scroll",
+        "expected_binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+        "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+        "source_sha256": {
+          "receipt.json": "591ef27a4032ad270edeb13f95321e6e852308a7ef2f0ae1d3abbd41fb6d67c9",
+          "process-summary.json": "6511971b3575c6a8c7d51ba4346aeaf165358023774d32189c4b5c3779600b6b",
+          "process-samples.jsonl": "204230f4e4b1c6cf9d23dc3ec65829dca211be95438acf92ec876e04c787b9c4"
+        },
+        "runner_sha256": "61f919ee0be6e2a972237d7ed7cf9e71f827ff3d9f6d2a8336cebca9fbd9cfb7",
+        "started_utc": "2026-10-28T21:20:53.244302+00:00",
+        "finished_utc": "2026-10-28T21:22:49.315187+00:00",
+        "duration_seconds": 116.064,
+        "policy": {
+          "sampling_seconds": 1,
+          "max_sampling_gap_seconds": 1.5,
+          "initial_settle_seconds": 15,
+          "final_settle_seconds": 15,
+          "final_idle_seconds_minimum": 45,
+          "idle_cpu_p95_ceiling_percent": 3,
+          "scroll_cpu_p95_ceiling_percent": 10,
+          "settled_rss_growth_ceiling_mib": 32,
+          "settled_rss_growth_ceiling_fraction": 0.2,
+          "initial_rss_window": "Last 5 samples of initial idle phase",
+          "final_rss_window": "Last 15 samples of final idle phase",
+          "native_live_nodes_growth_allowance": 50,
+          "native_live_styles_growth_allowance": 50
+        },
+        "issues": [],
+        "phases": {
+          "scrolling": {
+            "observations": 34,
+            "cpu_intervals": 33,
+            "duration_seconds": 33.012,
+            "monotonic_span_seconds": 33.006,
+            "first_after_launch_seconds": 16.093,
+            "maximum_gap_seconds": 1.024,
+            "cpu_p95_percent": 23.024,
+            "cpu_mean_percent": 18.571,
+            "cpu_peak_percent": 23.974,
+            "cpu_ceiling_percent": 10,
+            "rss_start_mib": 156.9375,
+            "rss_end_mib": 150.265625,
+            "rss_peak_mib": 160.765625,
+            "accepted": false,
+            "issues": [
+              "CPU p95 unverified or above predeclared ceiling"
+            ]
+          },
+          "idle:after": {
+            "observations": 50,
+            "cpu_intervals": 49,
+            "duration_seconds": 49.023,
+            "monotonic_span_seconds": 49.007,
+            "first_after_launch_seconds": 66.089,
+            "maximum_gap_seconds": 1.04,
+            "cpu_p95_percent": 0.992,
+            "cpu_mean_percent": 0.061,
+            "cpu_peak_percent": 1.002,
+            "cpu_ceiling_percent": 3,
+            "rss_start_mib": 149.5,
+            "rss_end_mib": 149.5,
+            "rss_peak_mib": 149.5,
+            "accepted": true,
+            "issues": []
+          }
+        },
+        "receipt_issues": [
+          "scrolling: CPU p95 23.024% exceeds 10%"
+        ],
+        "scope": "Fixed native Mac process-tree workload; synthetic SDL scrolling or20 actual navigations across21 pages. No IPA/simulator, physical-input, same-page Document GC, or universal resource guarantee.",
+        "cleanup": {
+          "app_pid": 13373,
+          "natural_app_return_code": 0,
+          "app_termination": {
+            "pid": 13373,
+            "return_code": 0,
+            "forced": false
+          },
+          "sampler_termination": {
+            "pid": 13372,
+            "return_code": 0,
+            "forced": false
+          }
+        },
+        "cumulative_cpu_crosscheck": {
+          "intervals_checked": 112,
+          "disagreements": []
+        },
+        "fixture_proofs": [
+          {
+            "step": 0,
+            "exact_fixture_sha256_match": true
+          }
+        ],
+        "normalized_fixture_sha256": "10eb5092d225d40c9b60fee4538a5ab5890f703b8729b9b73340f37e6dad53a8",
+        "scroll_report": {
+          "kind": "scroll-complete",
+          "events": 2702,
+          "lastEventMs": 46261.97799998522,
+          "maxY": 6000.07177734375,
+          "finalY": 6000.07177734375,
+          "url": "http://127.0.0.1:50078/page/0?nonce=17f3ec33240465dc443adf53d4e81861",
+          "step": 0
+        },
+        "idle_accepted": true,
+        "interaction_accepted": false,
+        "soak_accepted": false,
+        "accepted": false
+      }
     },
     {
       "id": "perf_interaction",
       "category": "performance",
       "weight": 5,
       "name": "Ordinary interaction",
-      "status": "unverified",
+      "status": "failed",
       "earned": 0,
-      "evidence": [],
-      "note": "Changed Headers/codec executable. Prior CPU/RSS/soak evidence remains historical until reproduced on this artifact.",
+      "evidence": [
+        "agent/evidence/10290244-010-current-native-resources.json",
+        "output/session-10290244/final-native-resources-1/scroll/independent-review.json"
+      ],
+      "note": "Current artifact; fixed30s SDL wheel input, p95<=10%. This does not establish keyboard or physical-device interaction.",
       "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
       "ceiling_percent": 10,
       "historical_evidence": [
@@ -178,17 +295,132 @@
           "prior_earned": 0,
           "review": null
         }
-      ]
+      ],
+      "review": {
+        "scenario": "scroll",
+        "source": "output/session-10290244/final-native-resources-1/scroll",
+        "expected_binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+        "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+        "source_sha256": {
+          "receipt.json": "591ef27a4032ad270edeb13f95321e6e852308a7ef2f0ae1d3abbd41fb6d67c9",
+          "process-summary.json": "6511971b3575c6a8c7d51ba4346aeaf165358023774d32189c4b5c3779600b6b",
+          "process-samples.jsonl": "204230f4e4b1c6cf9d23dc3ec65829dca211be95438acf92ec876e04c787b9c4"
+        },
+        "runner_sha256": "61f919ee0be6e2a972237d7ed7cf9e71f827ff3d9f6d2a8336cebca9fbd9cfb7",
+        "started_utc": "2026-10-28T21:20:53.244302+00:00",
+        "finished_utc": "2026-10-28T21:22:49.315187+00:00",
+        "duration_seconds": 116.064,
+        "policy": {
+          "sampling_seconds": 1,
+          "max_sampling_gap_seconds": 1.5,
+          "initial_settle_seconds": 15,
+          "final_settle_seconds": 15,
+          "final_idle_seconds_minimum": 45,
+          "idle_cpu_p95_ceiling_percent": 3,
+          "scroll_cpu_p95_ceiling_percent": 10,
+          "settled_rss_growth_ceiling_mib": 32,
+          "settled_rss_growth_ceiling_fraction": 0.2,
+          "initial_rss_window": "Last 5 samples of initial idle phase",
+          "final_rss_window": "Last 15 samples of final idle phase",
+          "native_live_nodes_growth_allowance": 50,
+          "native_live_styles_growth_allowance": 50
+        },
+        "issues": [],
+        "phases": {
+          "scrolling": {
+            "observations": 34,
+            "cpu_intervals": 33,
+            "duration_seconds": 33.012,
+            "monotonic_span_seconds": 33.006,
+            "first_after_launch_seconds": 16.093,
+            "maximum_gap_seconds": 1.024,
+            "cpu_p95_percent": 23.024,
+            "cpu_mean_percent": 18.571,
+            "cpu_peak_percent": 23.974,
+            "cpu_ceiling_percent": 10,
+            "rss_start_mib": 156.9375,
+            "rss_end_mib": 150.265625,
+            "rss_peak_mib": 160.765625,
+            "accepted": false,
+            "issues": [
+              "CPU p95 unverified or above predeclared ceiling"
+            ]
+          },
+          "idle:after": {
+            "observations": 50,
+            "cpu_intervals": 49,
+            "duration_seconds": 49.023,
+            "monotonic_span_seconds": 49.007,
+            "first_after_launch_seconds": 66.089,
+            "maximum_gap_seconds": 1.04,
+            "cpu_p95_percent": 0.992,
+            "cpu_mean_percent": 0.061,
+            "cpu_peak_percent": 1.002,
+            "cpu_ceiling_percent": 3,
+            "rss_start_mib": 149.5,
+            "rss_end_mib": 149.5,
+            "rss_peak_mib": 149.5,
+            "accepted": true,
+            "issues": []
+          }
+        },
+        "receipt_issues": [
+          "scrolling: CPU p95 23.024% exceeds 10%"
+        ],
+        "scope": "Fixed native Mac process-tree workload; synthetic SDL scrolling or20 actual navigations across21 pages. No IPA/simulator, physical-input, same-page Document GC, or universal resource guarantee.",
+        "cleanup": {
+          "app_pid": 13373,
+          "natural_app_return_code": 0,
+          "app_termination": {
+            "pid": 13373,
+            "return_code": 0,
+            "forced": false
+          },
+          "sampler_termination": {
+            "pid": 13372,
+            "return_code": 0,
+            "forced": false
+          }
+        },
+        "cumulative_cpu_crosscheck": {
+          "intervals_checked": 112,
+          "disagreements": []
+        },
+        "fixture_proofs": [
+          {
+            "step": 0,
+            "exact_fixture_sha256_match": true
+          }
+        ],
+        "normalized_fixture_sha256": "10eb5092d225d40c9b60fee4538a5ab5890f703b8729b9b73340f37e6dad53a8",
+        "scroll_report": {
+          "kind": "scroll-complete",
+          "events": 2702,
+          "lastEventMs": 46261.97799998522,
+          "maxY": 6000.07177734375,
+          "finalY": 6000.07177734375,
+          "url": "http://127.0.0.1:50078/page/0?nonce=17f3ec33240465dc443adf53d4e81861",
+          "step": 0
+        },
+        "idle_accepted": true,
+        "interaction_accepted": false,
+        "soak_accepted": false,
+        "accepted": false
+      },
+      "scroll_cpu_p95_percent": 23.024
     },
     {
       "id": "perf_soak",
       "category": "performance",
       "weight": 5,
       "name": "Controlled memory soak",
-      "status": "unverified",
-      "earned": 0,
-      "evidence": [],
-      "note": "Changed Headers/codec executable. Prior CPU/RSS/soak evidence remains historical until reproduced on this artifact.",
+      "status": "passed",
+      "earned": 5,
+      "evidence": [
+        "agent/evidence/10290244-010-current-native-resources.json",
+        "output/session-10290244/final-native-resources-1/navigation/independent-review.json"
+      ],
+      "note": "Current artifact;20 navigations across21 pages, fixed settled RSS windows and native live counters. No same-page GC or universal memory claim.",
       "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
       "historical_evidence": [
         {
@@ -245,7 +477,251 @@
             "scope": "Controlled20-navigation context-teardown workload with identical16-document work per page. Initial/final URL step differs; no tab-close, forced-GC, IPA or universal memory claim."
           }
         }
-      ]
+      ],
+      "review": {
+        "scenario": "navigation",
+        "source": "output/session-10290244/final-native-resources-1/navigation",
+        "expected_binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+        "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+        "source_sha256": {
+          "receipt.json": "bc30b697a56bd53dbb0262e1f1a578337e5d369ec8485a09450ee48d280550da",
+          "process-summary.json": "27f076bfca57fb96c27664089bee0a8b60640082a8523e8124231320b02f709b",
+          "process-samples.jsonl": "044b8345e55c4c659a9547d698f8964e109e37b82ed99b2168db186a2573dac4"
+        },
+        "runner_sha256": "61f919ee0be6e2a972237d7ed7cf9e71f827ff3d9f6d2a8336cebca9fbd9cfb7",
+        "started_utc": "2026-10-28T21:22:49.522650+00:00",
+        "finished_utc": "2026-10-28T21:25:36.071140+00:00",
+        "duration_seconds": 166.543,
+        "policy": {
+          "sampling_seconds": 1,
+          "max_sampling_gap_seconds": 1.5,
+          "initial_settle_seconds": 15,
+          "final_settle_seconds": 15,
+          "final_idle_seconds_minimum": 45,
+          "idle_cpu_p95_ceiling_percent": 3,
+          "scroll_cpu_p95_ceiling_percent": 10,
+          "settled_rss_growth_ceiling_mib": 32,
+          "settled_rss_growth_ceiling_fraction": 0.2,
+          "initial_rss_window": "Last 5 samples of initial idle phase",
+          "final_rss_window": "Last 15 samples of final idle phase",
+          "native_live_nodes_growth_allowance": 50,
+          "native_live_styles_growth_allowance": 50
+        },
+        "issues": [],
+        "phases": {
+          "idle:before": {
+            "observations": 15,
+            "cpu_intervals": 14,
+            "duration_seconds": 13.99,
+            "monotonic_span_seconds": 13.994,
+            "first_after_launch_seconds": 16.119,
+            "maximum_gap_seconds": 1.039,
+            "cpu_p95_percent": 0.996,
+            "cpu_mean_percent": 0.071,
+            "cpu_peak_percent": 0.996,
+            "cpu_ceiling_percent": 3,
+            "rss_start_mib": 154.015625,
+            "rss_end_mib": 154.015625,
+            "rss_peak_mib": 154.015625,
+            "accepted": true,
+            "issues": []
+          },
+          "navigation": {
+            "observations": 58,
+            "cpu_intervals": 57,
+            "duration_seconds": 56.968,
+            "monotonic_span_seconds": 56.991,
+            "first_after_launch_seconds": 31.128,
+            "maximum_gap_seconds": 1.055,
+            "cpu_p95_percent": 7.001,
+            "cpu_mean_percent": 1.842,
+            "cpu_peak_percent": 8.047,
+            "cpu_ceiling_percent": null,
+            "rss_start_mib": 158.03125,
+            "rss_end_mib": 158.90625,
+            "rss_peak_mib": 161.828125,
+            "accepted": true,
+            "issues": []
+          },
+          "idle:after": {
+            "observations": 62,
+            "cpu_intervals": 61,
+            "duration_seconds": 61.002,
+            "monotonic_span_seconds": 61.006,
+            "first_after_launch_seconds": 104.084,
+            "maximum_gap_seconds": 1.051,
+            "cpu_p95_percent": 0.0,
+            "cpu_mean_percent": 0.049,
+            "cpu_peak_percent": 1.005,
+            "cpu_ceiling_percent": 3,
+            "rss_start_mib": 158.859375,
+            "rss_end_mib": 147.0625,
+            "rss_peak_mib": 158.859375,
+            "accepted": true,
+            "issues": []
+          }
+        },
+        "receipt_issues": [],
+        "scope": "Fixed native Mac process-tree workload; synthetic SDL scrolling or20 actual navigations across21 pages. No IPA/simulator, physical-input, same-page Document GC, or universal resource guarantee.",
+        "cleanup": {
+          "app_pid": 15058,
+          "natural_app_return_code": 0,
+          "app_termination": {
+            "pid": 15058,
+            "return_code": 0,
+            "forced": false
+          },
+          "sampler_termination": {
+            "pid": 15057,
+            "return_code": 0,
+            "forced": false
+          }
+        },
+        "cumulative_cpu_crosscheck": {
+          "intervals_checked": 161,
+          "disagreements": []
+        },
+        "fixture_proofs": [
+          {
+            "step": 0,
+            "exact_fixture_sha256_match": true
+          },
+          {
+            "step": 1,
+            "exact_fixture_sha256_match": true
+          },
+          {
+            "step": 2,
+            "exact_fixture_sha256_match": true
+          },
+          {
+            "step": 3,
+            "exact_fixture_sha256_match": true
+          },
+          {
+            "step": 4,
+            "exact_fixture_sha256_match": true
+          },
+          {
+            "step": 5,
+            "exact_fixture_sha256_match": true
+          },
+          {
+            "step": 6,
+            "exact_fixture_sha256_match": true
+          },
+          {
+            "step": 7,
+            "exact_fixture_sha256_match": true
+          },
+          {
+            "step": 8,
+            "exact_fixture_sha256_match": true
+          },
+          {
+            "step": 9,
+            "exact_fixture_sha256_match": true
+          },
+          {
+            "step": 10,
+            "exact_fixture_sha256_match": true
+          },
+          {
+            "step": 11,
+            "exact_fixture_sha256_match": true
+          },
+          {
+            "step": 12,
+            "exact_fixture_sha256_match": true
+          },
+          {
+            "step": 13,
+            "exact_fixture_sha256_match": true
+          },
+          {
+            "step": 14,
+            "exact_fixture_sha256_match": true
+          },
+          {
+            "step": 15,
+            "exact_fixture_sha256_match": true
+          },
+          {
+            "step": 16,
+            "exact_fixture_sha256_match": true
+          },
+          {
+            "step": 17,
+            "exact_fixture_sha256_match": true
+          },
+          {
+            "step": 18,
+            "exact_fixture_sha256_match": true
+          },
+          {
+            "step": 19,
+            "exact_fixture_sha256_match": true
+          },
+          {
+            "step": 20,
+            "exact_fixture_sha256_match": true
+          }
+        ],
+        "normalized_fixture_sha256": "a18103b8259ded8f8208265b90a272f2ee38c5ea6d5cfc1ef795e51fc0644908",
+        "page_sequence": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20
+        ],
+        "settled_rss_comparison": {
+          "initial_median_mib": 154.015625,
+          "final_median_mib": 147.0625,
+          "growth_mib": -6.953125,
+          "growth_fraction": -0.04514558182002638
+        },
+        "native_counter_comparison": {
+          "initial": {
+            "malloc_in_use": 0.6,
+            "nodes": 1218.0,
+            "styles": 11.0,
+            "css_parsed": 0.0,
+            "workers": 0.0,
+            "heap": 0.0,
+            "ext": 0.0
+          },
+          "final": {
+            "malloc_in_use": 0.6,
+            "nodes": 1218.0,
+            "styles": 11.0,
+            "css_parsed": 0.1,
+            "workers": 0.0,
+            "heap": 0.0,
+            "ext": 0.0
+          }
+        },
+        "idle_accepted": true,
+        "interaction_accepted": false,
+        "soak_accepted": true,
+        "accepted": true
+      }
     },
     {
       "id": "perf_budgets",
@@ -384,10 +860,25 @@
       "source_base_commit": "14b7fe6050061104fa603d6513775563f79697fe",
       "targeted_checks": 1122,
       "performance": "unverified on changed executable"
+    },
+    {
+      "iteration": "10290244-010",
+      "updated_utc": "2026-10-28T21:28:11.356457+00:00",
+      "prior_score": 40,
+      "score": 50,
+      "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+      "source_commit": "436916ceb3b32630ed251bb666b02fa39a3cd0c8",
+      "source_base_commit": "436916ceb3b32630ed251bb666b02fa39a3cd0c8",
+      "resource_results": {
+        "idle": true,
+        "interaction": false,
+        "navigation_soak": true
+      }
     }
   ],
-  "updated_utc": "2026-10-28T21:07:22.953952+00:00",
+  "updated_utc": "2026-10-28T21:28:11.356457+00:00",
   "current_baseline_binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
   "full_official_wpt_pass_percent": null,
-  "current_native_source_base_commit": "14b7fe6050061104fa603d6513775563f79697fe"
+  "current_native_source_base_commit": "14b7fe6050061104fa603d6513775563f79697fe",
+  "current_native_source_commit": "436916ceb3b32630ed251bb666b02fa39a3cd0c8"
 }

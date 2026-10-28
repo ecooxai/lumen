@@ -85,3 +85,12 @@ Immutable native `build-apple-load-20261029/lumen-frame-storage-2c27f3bb2c305b2f
 ## Accepted Headers/codec checkpoint10290244-009
 
 Native `build-apple-load-20261029/lumen-headers-codec-1b9d43ed19cd616b` SHA `1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9` passes1122 targeted checks and the unchanged1850-assertion WPT subset. Shared Headers guards/iteration and actual HTTP ByteString transport are repaired with137 new regression assertions. Score40/100; new-artifact performance and same-device IPA remain unverified. Shared text codecs add170 regression assertions across window, dedicated worker and cross-realm behavior; multibyte/fatal legacy streaming stays explicitly unsupported. New edits must retain this exact committed baseline and use another immutable artifact. Upstream Headers52 variants are not replaced by the custom fixture.
+
+
+## Current native resource checkpoint10290244-010
+
+Native `1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9`: final idle p95 0.992% over 49.023s with 49 valid CPU intervals; scroll p95 23.024% against the unchanged10% ceiling, accepted=False. Navigation soak accepted=True; settled RSS medians 154.016→147.062MiB (growth -6.953MiB). Raw phase timing, one-second samples, CPU counters, fixture hashes, process identities and natural cleanup reproduce independently.
+
+Score50/100. Source remains009 `436916ceb3b32630ed251bb666b02fa39a3cd0c8`; exact current artifact passes the original1850 assertion subset and1122 custom checks, with89 native encoding assertions separately. Resource gate statuses are in `agent/scorecard-10290244.json`; do not transfer them to another executable. Preserve all failed/unsupported/unrun WPT and Apple gaps. Push, source-pack, refresh progress, verify the tunnel and save the current delivery receipt after this tenth iteration.
+
+The official Google stable DMG diagnostic is preserved at `output/wpt-10290244/reference/official-signed-chrome-dmg-supportdoc-10290244/receipt.json` (receipt SHA `245ea39c0a1513860188dbd45329548bb2f5c036d3b1473e3015048b7244e4f8`). The278,915,685-byte download SHA `fb63667b7e800fc63f906de5fb40c15337f5c97c92fcd94fbb0a7b75f44b8600` passed disk-image integrity, but mounted-app deep strict signature validation rejected Finder metadata. Its owned read-only mount was detached. The app was not copied or executed; no trust or metadata changes were made, and installed-reference quarantine remains in force. This diagnostic earns no parity credit.

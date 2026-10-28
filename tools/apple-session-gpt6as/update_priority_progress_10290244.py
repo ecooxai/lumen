@@ -47,11 +47,16 @@ status['wpt']={'passed':candidate['subtests']['passed'],'total':candidate['subte
     'fullyPassingFiles':candidate['files']['passed'],'chromePassed':reference['subtests']['passed'],
     'chromeTotal':reference['subtests']['union_inventory'],'binarySha256':native,
     'scope':'Pinned six-file upstream WPT-source subset. Full official WPT remains unmeasured.','evidence':comparison_path}
-interaction=gates['perf_interaction'];idle=gates['perf_idle']
+interaction=gates['perf_interaction'];idle=gates['perf_idle'];soak=gates['perf_soak']
+idle_review=idle.get('review',{});idle_phase=idle_review.get('phases',{}).get('idle:after',{})
+soak_memory=soak.get('review',{}).get('settled_rss_comparison')or{}
 status['performance']={'binarySha256':native,'interactionStatus':interaction['status'],
     'interactionCpuP95Percent':interaction.get('scroll_cpu_p95_percent'),'interactionCpuCeilingPercent':10,
-    'idleStatus':idle['status'],'idleCpuP95Percent':idle.get('review',{}).get('cpuP95Percent'),
-    'idleRssMiB':idle.get('review',{}).get('rssEndMiB'),
+    'idleStatus':idle['status'],'idleCpuP95Percent':idle_phase.get('cpu_p95_percent',idle_review.get('cpuP95Percent')),
+    'idleRssMiB':idle_phase.get('rss_end_mib',idle_review.get('rssEndMiB')),
+    'idleSeconds':idle_phase.get('duration_seconds'),'idleValidCpuIntervals':idle_phase.get('cpu_intervals'),
+    'soakStatus':soak['status'],'soakInitialRssMiB':soak_memory.get('initial_median_mib'),
+    'soakFinalRssMiB':soak_memory.get('final_median_mib'),'soakRssGrowthMiB':soak_memory.get('growth_mib'),
     'scope':'Artifact-matched native test process measurements; system live metrics are separate.'}
 if interaction['status']=='failed'and isinstance(interaction.get('scroll_cpu_p95_percent'),(int,float)):
     status['phase']=f"The original important WPT subset passes completely. Current native scrolling p95 is {interaction['scroll_cpu_p95_percent']:.3f}% against the 10% target; optimization and broader standards checks continue."
