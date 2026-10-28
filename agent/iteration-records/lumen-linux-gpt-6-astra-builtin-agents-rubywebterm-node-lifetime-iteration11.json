@@ -1,0 +1,95 @@
+{
+  "iteration": 11,
+  "title": "Cross-realm adopted-node teardown lifetime",
+  "status": "accepted_focused",
+  "started_utc": "2026-10-28T06:38:07.263440+00:00",
+  "start_basis": "Earliest retained original invalid-free audit; diagnostic work overlaps other iterations.",
+  "code_started_utc": "2026-10-28T07:25:16.394675+00:00",
+  "ended_utc": "2026-10-28T07:31:20.865058+00:00",
+  "duration_minutes": 53.22669363333333,
+  "focused_quality_score": 97,
+  "whole_goal_readiness": 19,
+  "agents": [
+    "/root/engine_lead",
+    "/root/conformance",
+    "/root/ops_preview",
+    "/root"
+  ],
+  "source_files": [
+    "src/js/js.cc"
+  ],
+  "regression_files": [
+    "tests/test_js_node_lifetime.cc",
+    "CMakeLists.txt"
+  ],
+  "source_hashes": {
+    "start_utc": "2026-10-28T07:25:16.394675+00:00",
+    "js_cc_sha256": "967ac3c97e4eadd821e3f5eeec6b1fb758cd5e1e93c588c91c0525721d25327d",
+    "test_sha256": "dc1999db4ee08442f8bf3d2aeb4f5dae77746e4b96c79b4cc6d86e8ab94ff6c9"
+  },
+  "scope": "Retire all wrappers and V8 contexts in a context subtree before releasing its adopted nodes or documents. Preserve existing shared-child xref retention while its parent is alive; release everything when the tab retires.",
+  "cause_evidence": {
+    "source_invariant": "A parent-realm wrapper survives node adoption into a child document. Immediate child doc_free clears/frees that document root before the parent wrapped-node list is processed.",
+    "deterministic_before125": {
+      "root_retirement": "assertion abort: adopted root freed while parent wrapper remains live",
+      "shared_child_retirement": "same deterministic assertion abort",
+      "engine_archive_sha256": "cfaa2a38df080e691713bf48c26e8732d451816b91489120fdf956e662a753fd"
+    },
+    "after126": {
+      "root_retirement": "PASS",
+      "shared_child_retirement": "PASS",
+      "retained_node_ownerDocument_and_attributes": "PASS before and after shared-child retirement",
+      "eventual_g_nodes_live_balance": "PASS"
+    },
+    "historical_abort": "Original stack free(n->attrs[i].value) in node_free_tree; exact historical heap-address causality remains unproven. Non-monotonic old binary outcomes are retained, not treated as fixed evidence."
+  },
+  "validation": {
+    "native_focused_ctest": {
+      "passed": 4,
+      "total": 4,
+      "names": [
+        "js_node_lifetime_root",
+        "js_node_lifetime_child",
+        "background_clip",
+        "linux_capture_refusal"
+      ]
+    },
+    "unchanged_guarded_cleanup": {
+      "url": "/quirks/percentage-height-calculation.html",
+      "then": "about:blank",
+      "repetitions": 5,
+      "blank_reached": 5,
+      "spontaneous_abort": 0,
+      "planned_stop_exit_zero": 5,
+      "prefile_sha256": "b20433561d860c5845e4df02773175270ff303d4f5da34006ff701392b20a620",
+      "scope": "Cleanup diagnostic with completion callback or one-second post-load fallback; not WPT assertion gains or proof of every historical crash cause."
+    },
+    "independent_review": "Ops reviewed exact wrapper clearing order, xref boundary, ownerDocument lifetime, deduplication and eventual release; conformance ran unchanged browser cleanup repeats."
+  },
+  "accepted_candidate": {
+    "candidate": 126,
+    "binary": "build/codex-native/lumen-astra-i126",
+    "sha256": "a06dc09b0065a7727bb837c30fd5e5faf49a365b3401adbb1e31b4d4e143db88",
+    "composition": "Accepted HEAD including flex and privacy plus geometry125 and this lifetime correction; combined candidate, not a cleanup-only binary.",
+    "build_started_utc": "2026-10-28T07:26:42Z",
+    "build_finished_utc": "2026-10-28T07:27:07Z",
+    "source_unchanged_during_build": true
+  },
+  "lifetime_policy": [
+    "Existing same-origin cross-context bridges mark xref on both contexts and ancestors.",
+    "Public retirement of a parented xref context deactivates it but retains its wrappers/document until its tab retires; no new document cache.",
+    "Root retirement privately collects all child contexts regardless of xref, then frees deduplicated detached roots while every ownerDocument remains alive, then owned documents.",
+    "Top-level page document remains caller-owned and is freed by the existing page lifecycle."
+  ],
+  "limitations": [
+    "No blanket memory-safety or crash-free claim.",
+    "Historical intermittent invalid-free heap address was not captured; source invariant repair and exact-address attribution remain distinct.",
+    "Final full native suite and combined broad replay are separate final gates."
+  ],
+  "evidence": [
+    "agent/validation/linux-wpt-20261028/cleanup-lifetime-before125/summary.json",
+    "agent/validation/linux-wpt-20261028/combined126/focused-ctest.log",
+    "agent/validation/linux-wpt-20261028/cleanup-quirks-candidate126/summary.json",
+    "agent/validation/linux-wpt-20261028/cleanup126-independent-disposition.json"
+  ]
+}

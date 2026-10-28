@@ -1322,12 +1322,15 @@ static void pick_deliver(JsCtx *c) {
     (void)jcall(c, fn, ctx->Global(), 1, argv);
 }
 void js_debug_profile(JsCtx *c) { if (c && !c->parent) jsprof_tap(c); }
-void js_free(JsCtx *c) {
+/* A node keeps the wrapper from its creation realm after adoption. Retire all
+ * contexts in this subtree before releasing any of their DOM storage, so a
+ * child document cannot invalidate a live ancestor's wrapped-node list. */
+static void js_free_collect(JsCtx *c, std::vector<Node *> &roots, std::vector<Document *> &docs) {
     if (!c) return;
     jsprof_free(c);
     { std::lock_guard<std::mutex> l(g_pick_mu); if (g_pick_ctx == c) g_pick_ctx = nullptr; }
     workers_kill(c);
-    for (JsCtx *k : std::vector<JsCtx *>(c->kids)) js_free(k);
+    for (JsCtx *k : std::vector<JsCtx *>(c->kids)) js_free_collect(k, roots, docs);
     frames_forget(c);
     if (c->parent) {
         frame_kill(c);
@@ -1343,8 +1346,8 @@ void js_free(JsCtx *c) {
     wa_close_owner(c); mic_close_owner(c); cam_close_owner(c); screen_close_owner(c); rec_close_owner(c); gl_close_owner(c); webgpu_close_owner(c); rtc_ctx_free(c);
     g_ctxs.erase(std::remove(g_ctxs.begin(), g_ctxs.end(), c), g_ctxs.end());
     c->players.clear();
-    std::vector<Node *> roots;
-    std::vector<Document *> docs = std::move(c->docs);
+    docs.insert(docs.end(), c->docs.begin(), c->docs.end());
+    c->docs.clear();
     if (c->parent) docs.push_back(c->doc);
     {
         v8::Isolate::Scope is(c->iso);
@@ -1374,9 +1377,24 @@ void js_free(JsCtx *c) {
         js_unregister_foreground_tasks(c->iso);
         delete c->alloc;
     }
-    for (Node *n : roots) node_free_tree(n);
-    for (Document *d : docs) doc_free(d);
     delete c;
+}
+void js_free(JsCtx *c) {
+    if (!c) return;
+    /* Same-origin frame bridges already retain shared contexts until their tab
+     * retires. Keep that boundary explicit for callers other than js_tick. */
+    if (c->parent && c->xref) { frame_kill(c); c->dead_at = 0; return; }
+    std::vector<Node *> roots;
+    std::vector<Document *> docs;
+    js_free_collect(c, roots, docs);
+    /* Parent links were inspected before any destruction: document children,
+     * shadow roots and retained template contents are not detached roots.
+     * Deduplicate defensively, and keep every ownerDocument alive through the
+     * detached-node release phase. The caller owns a top-level page document. */
+    std::unordered_set<Node *> seen_roots;
+    for (Node *n : roots) if (seen_roots.insert(n).second) node_free_tree(n);
+    std::unordered_set<Document *> seen_docs;
+    for (Document *d : docs) if (seen_docs.insert(d).second) doc_free(d);
 }
 
 /* The scripts a script wrote with document.write() run right after it, in order, as the parser
