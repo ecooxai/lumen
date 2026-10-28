@@ -14,6 +14,25 @@ mk('HTMLHeadingElement', HTMLElement, ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']); mk(
 mk('HTMLPreElement', HTMLElement, ['pre']); mk('HTMLQuoteElement', HTMLElement, ['blockquote', 'q']); mk('HTMLUListElement', HTMLElement, ['ul']);
 mk('HTMLOListElement', HTMLElement, ['ol'], p => reflectInt(p, 1, 'start')); mk('HTMLLIElement', HTMLElement, ['li']); mk('HTMLDListElement', HTMLElement, ['dl']);
 mk('HTMLPictureElement', HTMLElement, ['picture']); mk('HTMLTimeElement', HTMLElement, ['time'], p => reflectStr(p, 'dateTime'));
+// Use each tag's HTML interface for both newly created nodes and native clones.
+// The shared wrapper path deliberately reconstructs this prototype instead of
+// copying a prototype that page script may have installed on the source node.
+mk('HTMLTableCaptionElement', HTMLElement, ['caption']);
+mk('HTMLTableColElement', HTMLElement, ['col', 'colgroup']);
+mk('HTMLDataElement', HTMLElement, ['data']);
+mk('HTMLDataListElement', HTMLElement, ['datalist']);
+mk('HTMLModElement', HTMLElement, ['del', 'ins']);
+mk('HTMLDirectoryElement', HTMLElement, ['dir']);
+mk('HTMLFontElement', HTMLElement, ['font']);
+mk('HTMLFrameElement', HTMLElement, ['frame']);
+mk('HTMLFrameSetElement', HTMLElement, ['frameset']);
+mk('HTMLLegendElement', HTMLElement, ['legend']);
+mk('HTMLMapElement', HTMLElement, ['map']);
+mk('HTMLMeterElement', HTMLElement, ['meter']);
+mk('HTMLOptGroupElement', HTMLElement, ['optgroup']);
+mk('HTMLOutputElement', HTMLElement, ['output']);
+mk('HTMLParamElement', HTMLElement, ['param']);
+mk('HTMLProgressElement', HTMLElement, ['progress']);
 mk('HTMLTrackElement', HTMLElement, ['track'], p => { reflectUrl(p, 'src'); reflectStr(p, 'kind', 'srclang', 'label'); });
 mk('HTMLObjectElement', HTMLElement, ['object'], p => { reflectUrl(p, 'data'); reflectStr(p, 'type', 'name', 'width', 'height'); });
 mk('HTMLEmbedElement', HTMLElement, ['embed'], p => { reflectUrl(p, 'src'); reflectStr(p, 'type', 'width', 'height'); });
