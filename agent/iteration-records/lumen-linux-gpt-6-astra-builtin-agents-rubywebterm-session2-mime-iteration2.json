@@ -1,0 +1,208 @@
+{
+  "iteration": 2,
+  "candidate": 129,
+  "model": "GPT-6 Astra",
+  "agents": [
+    "repository_lead",
+    "standards_comparison",
+    "root"
+  ],
+  "tools": [
+    "built-in agents",
+    "rubywebterm",
+    "WPT",
+    "Chromium"
+  ],
+  "whole_goal_score": 19,
+  "whole_goal_score_status": "provisional readiness, not a pass percentage",
+  "focused_quality_score": 96,
+  "scope": "Validated ASCII HTTP tokens and HTTP whitespace for JSON/CSS module MIME essence.",
+  "specification": "https://mimesniff.spec.whatwg.org/#parse-a-mime-type",
+  "first_retained_baseline_utc": "2026-10-28T09:19:01Z",
+  "finished_utc": "2026-10-28T09:24:18.287958+00:00",
+  "cohorts": {
+    "json": {
+      "urls": [
+        "/html/semantics/scripting-1/the-script-element/json-module/invalid-content-type.any.html",
+        "/html/semantics/scripting-1/the-script-element/json-module/invalid-content-type.any.worker.html",
+        "/html/semantics/scripting-1/the-script-element/json-module/valid-content-type.html",
+        "/html/semantics/scripting-1/the-script-element/json-module/non-object.any.html",
+        "/html/semantics/scripting-1/the-script-element/json-module/non-object.any.worker.html",
+        "/html/semantics/scripting-1/the-script-element/json-module/charset-bom.any.html",
+        "/html/semantics/scripting-1/the-script-element/json-module/charset-bom.any.worker.html",
+        "/html/semantics/scripting-1/the-script-element/json-module/module.html"
+      ],
+      "runs": {
+        "baseline128": {
+          "urls": 8,
+          "fully_passing_urls": 4,
+          "passing_assertions": 101,
+          "observed_assertions": 225,
+          "harness_statuses": {
+            "OK": 8
+          },
+          "report": "agent/validation/linux-wpt-20261028/session2-mime/baseline128/results.jsonl",
+          "sha256": "4d8b046b6bf1543a3453c8fdfb5916768c114ad37878721ddb8d03319f2fc1ff"
+        },
+        "candidate129": {
+          "urls": 8,
+          "fully_passing_urls": 6,
+          "passing_assertions": 223,
+          "observed_assertions": 225,
+          "harness_statuses": {
+            "OK": 8
+          },
+          "report": "agent/validation/linux-wpt-20261028/session2-mime/candidate129/results.jsonl",
+          "sha256": "15a5c6a14f2ae00ea744618e149a2eb27ead3c81b98454b0a6096c55bd7dd17d"
+        },
+        "chromium": {
+          "urls": 8,
+          "fully_passing_urls": 8,
+          "passing_assertions": 225,
+          "observed_assertions": 225,
+          "harness_statuses": {
+            "OK": 8
+          },
+          "report": "agent/validation/linux-wpt-20261028/session2-mime/chromium/results.jsonl",
+          "sha256": "701598e7a31fb1f1da2d4cab60388ec5c8dd15122ad909eb32441fe47affe0d6"
+        }
+      },
+      "gains": 122,
+      "losses": 0
+    },
+    "css_holdout": {
+      "urls": [
+        "/html/semantics/scripting-1/the-script-element/css-module/content-type-checking.html",
+        "/html/semantics/scripting-1/the-script-element/css-module/import-css-module-basic.html",
+        "/html/semantics/scripting-1/the-script-element/css-module/import-css-module-dynamic.html",
+        "/html/semantics/scripting-1/the-script-element/css-module/charset-bom.html",
+        "/html/semantics/scripting-1/the-script-element/css-module/charset.html",
+        "/html/semantics/scripting-1/the-script-element/css-module/charset-2.html"
+      ],
+      "runs": {
+        "baseline128": {
+          "urls": 6,
+          "fully_passing_urls": 1,
+          "passing_assertions": 9,
+          "observed_assertions": 21,
+          "harness_statuses": {
+            "ERROR": 2,
+            "OK": 4
+          },
+          "report": "agent/validation/linux-wpt-20261028/session2-mime/css-holdout/baseline128/results.jsonl",
+          "sha256": "13c5b4552878777927abd837cc1d623d00fe97a00f19e0508d488d57f8141577"
+        },
+        "candidate129": {
+          "urls": 6,
+          "fully_passing_urls": 1,
+          "passing_assertions": 9,
+          "observed_assertions": 21,
+          "harness_statuses": {
+            "ERROR": 2,
+            "OK": 4
+          },
+          "report": "agent/validation/linux-wpt-20261028/session2-mime/css-holdout/candidate129/results.jsonl",
+          "sha256": "4fe413bb5f72d72f69796570d1ba5bd8667a5c4425ad2147ec8f64ad3b8529e3"
+        },
+        "chromium": {
+          "urls": 6,
+          "fully_passing_urls": 6,
+          "passing_assertions": 22,
+          "observed_assertions": 22,
+          "harness_statuses": {
+            "OK": 6
+          },
+          "report": "agent/validation/linux-wpt-20261028/session2-mime/css-holdout/chromium/results.jsonl",
+          "sha256": "552592b0e5d1f0f6b941ae530e82b30e73a3a0c8e52abbb4450daa592dafcc13"
+        }
+      },
+      "gains": 0,
+      "losses": 0
+    }
+  },
+  "identity_policy": "Exact URL, full assertion name and duplicate occurrence; no normalization.",
+  "build": {
+    "source_manifest_before": "d95ed0407d418030c1860d7cea0fd722ff513576aa4687efbc6089b0d5e5d22d",
+    "source_diff_before": "b8f693bb839befc40cae35b8c5e2c5169f5190a8c9b1e2d14b18994db20c9b72",
+    "head": "e6b7c5f721212173482510dde9717c1fdb24ce3d",
+    "started_utc": "2026-10-28T09:19:52Z",
+    "pid": 433653,
+    "build_exit_code": 0,
+    "binary": "build/codex-native/lumen-astra-i129",
+    "binary_sha256": "018c98e22196b2991f248aeb7d4d15a6a87a0aa9d268c017a2d3c8ab48dfef06",
+    "diff_sha256": "b8f693bb839befc40cae35b8c5e2c5169f5190a8c9b1e2d14b18994db20c9b72",
+    "startup_exit_code": 0,
+    "source_diff_after": "b8f693bb839befc40cae35b8c5e2c5169f5190a8c9b1e2d14b18994db20c9b72",
+    "source_manifest_after": "d95ed0407d418030c1860d7cea0fd722ff513576aa4687efbc6089b0d5e5d22d",
+    "source_unchanged_during_build": true,
+    "finished_utc": "2026-10-28T09:20:15Z"
+  },
+  "build_resources": {
+    "label": "isolated MIME candidate129 build process tree",
+    "started_utc": "2026-10-28T09:19:52.094673+00:00",
+    "finished_utc": "2026-10-28T09:20:16.094778+00:00",
+    "root_pid": 433653,
+    "comm": null,
+    "exe": null,
+    "interval_seconds": 1,
+    "samples": 24,
+    "elapsed_seconds": 24.0,
+    "cpu_one_core_equals_100": true,
+    "cpu_min": 1.0,
+    "cpu_median": 93.001,
+    "cpu_max": 132.997,
+    "cpu_last10_median": 66.493,
+    "rss_peak_mb": 518.832,
+    "rss_final_mb": 41.947,
+    "pss_peak_mb": 386.586,
+    "csv": "agent/validation/iteration-129/build-resources.csv",
+    "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+  },
+  "guards": {
+    "agent/validation/linux-wpt-20261028/session2-mime/baseline-guard": {
+      "events": {
+        "started_at_private_gate": 8,
+        "constructor_verified_and_acknowledged": 8,
+        "author_url_released": 8,
+        "exited": 7
+      },
+      "sha256": "c2e6cab511ad9466b4060c10a178489ad6a650958ea8f5cc0bd9448190c80fe9"
+    },
+    "agent/validation/linux-wpt-20261028/session2-mime/candidate129-guard": {
+      "events": {
+        "started_at_private_gate": 8,
+        "constructor_verified_and_acknowledged": 8,
+        "author_url_released": 8,
+        "exited": 7
+      },
+      "sha256": "064fade380cd23b4ab2660c68ec230f0522f0e7aa056dcbf0d9cfeb1fd97084e"
+    },
+    "agent/validation/linux-wpt-20261028/session2-mime/css-holdout/baseline128-guard": {
+      "events": {
+        "started_at_private_gate": 6,
+        "constructor_verified_and_acknowledged": 6,
+        "author_url_released": 6,
+        "exited": 5
+      },
+      "sha256": "d6941d126b5e4a3a7f6937c0c392a90ab399002d7929e27fe0be259043137f8f"
+    },
+    "agent/validation/linux-wpt-20261028/session2-mime/css-holdout/candidate129-guard": {
+      "events": {
+        "started_at_private_gate": 6,
+        "constructor_verified_and_acknowledged": 6,
+        "author_url_released": 6,
+        "exited": 5
+      },
+      "sha256": "3601a61eb184bfb5b91d97f156cddcac5dca4bbdc09e89fb947965780fd35fa3"
+    }
+  },
+  "elapsed_from_first_retained_baseline_min": 5.288,
+  "total_session_wall_min": 12.105,
+  "limitations": [
+    "Full WPT and Chromium parity remain unmet.",
+    "Two JSON UTF8BOM failures remain.",
+    "CSS holdout retains two ERROR outcomes and one unobserved assertion.",
+    "Only native startup gate executed at this scoped checkpoint; full native gate remains queued.",
+    "ExactPID1s resource CSVs retained. Short processes may be missed; RSS may double-count shared pages."
+  ]
+}

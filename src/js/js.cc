@@ -548,11 +548,33 @@ bool mod_attr_type(v8::Isolate *iso, v8::Local<v8::Context> ctx, v8::Local<v8::F
     (void)ctx;
     return true;
 }
+/* MIME Sniffing's parse-a-MIME-type algorithm, through the essence. Parameters
+   cannot invalidate an otherwise valid essence and are not needed for modules.
+   HTTP whitespace deliberately excludes form feed and vertical tab. */
+static std::string module_mime_essence(const std::string &ct) {
+    const auto ws = [](unsigned char c) { return c == '\t' || c == '\n' || c == '\r' || c == ' '; };
+    const auto token = [](unsigned char c) {
+        return (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
+            (c && std::strchr("!#$%&'*+-.^_`|~", c));
+    };
+    size_t begin = 0, end = ct.size();
+    while (begin < end && ws((unsigned char)ct[begin])) ++begin;
+    while (end > begin && ws((unsigned char)ct[end - 1])) --end;
+    const size_t slash = ct.find('/', begin);
+    if (slash == std::string::npos || slash == begin || slash >= end) return {};
+    for (size_t i = begin; i < slash; ++i) if (!token((unsigned char)ct[i])) return {};
+    const size_t semicolon = ct.find(';', slash + 1);
+    if (semicolon != std::string::npos && semicolon < end) end = semicolon;
+    while (end > slash + 1 && ws((unsigned char)ct[end - 1])) --end;
+    if (end == slash + 1) return {};
+    for (size_t i = slash + 1; i < end; ++i) if (!token((unsigned char)ct[i])) return {};
+    std::string result = ct.substr(begin, end - begin);
+    for (char &ch : result) if (ch >= 'A' && ch <= 'Z') ch += 'a' - 'A';
+    return result;
+}
 static bool json_mime(const std::string &ct) {
-    std::string t; for (char ch : ct) { if (ch == ';') break; t += (char)tolower((unsigned char)ch); }
-    while (!t.empty() && isspace((unsigned char)t.back())) t.pop_back();
-    size_t b = 0; while (b < t.size() && isspace((unsigned char)t[b])) b++; t = t.substr(b);
-    return t == "application/json" || t == "text/json" || (t.size() > 5 && t.compare(t.size() - 5, 5, "+json") == 0 && t.find('/') != std::string::npos);
+    const std::string t = module_mime_essence(ct);
+    return t == "application/json" || t == "text/json" || (t.size() > 5 && t.compare(t.size() - 5, 5, "+json") == 0);
 }
 /* each synthetic module's [value(, css flag)] until it evaluates, per isolate (the Android V8 has no
    host_defined_options on synthetic modules); mod_synth_drop clears an isolate's before it goes away */
@@ -598,9 +620,7 @@ v8::MaybeLocal<v8::Module> mod_synthetic(v8::Local<v8::Context> ctx, const std::
         if (!json_mime(ctype)) { iso->ThrowException(v8::Exception::TypeError(jstr(iso, ("Failed to load module script: \"" + u + "\" is not a JSON MIME type.").c_str()))); return {}; }
         if (!v8::JSON::Parse(ctx, src).ToLocal(&v)) return {};
     } else if (type == "css") {
-        std::string t; for (char ch : ctype) { if (ch == ';') break; t += (char)tolower((unsigned char)ch); }
-        while (!t.empty() && isspace((unsigned char)t.back())) t.pop_back();
-        if (t != "text/css") { iso->ThrowException(v8::Exception::TypeError(jstr(iso, ("Failed to load module script: \"" + u + "\" is not a text/css MIME type.").c_str()))); return {}; }
+        if (module_mime_essence(ctype) != "text/css") { iso->ThrowException(v8::Exception::TypeError(jstr(iso, ("Failed to load module script: \"" + u + "\" is not a text/css MIME type.").c_str()))); return {}; }
     }
     v8::Local<v8::Array> d = v8::Array::New(iso, type == "css" ? 2 : 1);
     (void)d->Set(ctx, 0, v);
