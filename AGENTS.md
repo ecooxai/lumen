@@ -1,3 +1,18 @@
+# Current Apple compatibility task — 2026-10-29
+
+Read `agent/task.md` and `agent/continue.md` first. The current task uses branch
+`gpt6-astra-pro_browser-engine_apple-compat-20261029`; preexisting source was
+preserved in commit `ef11866750b52dfbdd800200965656c409b16e02`.
+The requested goal is 98/100 across real Mac/iPad/browser capability, same-IPA
+provenance and one-second resource measurements. Test counts alone do not
+establish that score. Retain unsupported and unverified gates explicitly.
+
+Only the browser_engine integrator stages/commits. Other agents own disjoint
+files. The root agent brokers remote commands because child MCP calls hung.
+Do not replace this native source with an older public-reference checkout.
+
+Previous instructions are preserved below and in the dated archive.
+
 # Agent notes for Lumen
 
 See `CONTINUE.md` for project state, build layout and next steps.
