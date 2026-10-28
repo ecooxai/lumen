@@ -17,7 +17,12 @@ int enc_label(const char *s, size_t n) {
     while (n && ascii_ws((unsigned char)s[n - 1])) n--;
     if (!n || n > 32) return -1;
     char lo[33];
-    for (size_t i = 0; i < n; i++) lo[i] = (char)tolower((unsigned char)s[i]);
+    for (size_t i = 0; i < n; i++) {
+        /* Labels are exact byte sequences; an embedded NUL must not make the
+         * C-string search accept a valid prefix. Case folding is ASCII-only. */
+        if (!s[i]) return -1;
+        lo[i] = (char)lc((unsigned char)s[i]);
+    }
     lo[n] = 0;
     int a = 0, b = (int)ARRLEN(enc_labels) - 1;
     while (a <= b) {

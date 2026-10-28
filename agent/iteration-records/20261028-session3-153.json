@@ -1,0 +1,70 @@
+{
+  "session": "20261028-session3",
+  "iteration": 153,
+  "started_utc": "2026-10-28T16:53:40Z",
+  "finished_utc": "2026-10-28T17:02:16Z",
+  "elapsed_minutes": 8.6,
+  "session_elapsed_minutes": 21.1167,
+  "agents": [
+    "preview_deploy",
+    "engine_and_git",
+    "validation_wpt",
+    "root"
+  ],
+  "overall_score": 19,
+  "scoped_quality_score": 97,
+  "score_basis": "Subjective bounded repair quality; overall19 estimate inherited, not full-suite parity.",
+  "decision": "Accept exact byte-length encoding label validation after independent native, authored browser and unchanged upstream checks.",
+  "changes": [
+    "Reject embedded NUL in explicit-length labels before C-string lookup.",
+    "Use ASCII-only case folding; preserve aliases, ASCII whitespace trimming and decode behavior."
+  ],
+  "binary": "build/codex-native/lumen-astra-i153",
+  "binary_sha256": "f9377159e7e958c3cec60e84913fc4704f0cdcbbe3395972c33447ceded7ac87",
+  "source_content_sha256": "4757a415449842b17caf67c813d40c0e82830484d83c6146ec685749deb1a34b",
+  "authored_controls": {
+    "native_encoding_labels": 221,
+    "browser_encoding_labels": 443,
+    "focused_ctest_pass": 2,
+    "focused_ctest_total": 2,
+    "other_focused_ctest": "accepted dataURL70 controls"
+  },
+  "unchanged_wpt": {
+    "selected_urls": 38,
+    "reported_subtests": 21220,
+    "baseline150_pass": 20776,
+    "candidate153_pass": 21220,
+    "chromium_pass": 21216,
+    "pass_identity_gains": 444,
+    "pass_identity_losses": 0,
+    "baseline150_full_urls": 30,
+    "candidate153_full_urls": 38,
+    "chromium_full_urls": 34,
+    "all_harnesses_ok": true,
+    "exact_chromium_identity_set": true,
+    "chromium_failures": "Four SharedArrayBuffer-copy type rejection controls, one in each affected URL; retained as observed."
+  },
+  "collector_correction": {
+    "method": "Separate LF-delimited record framing re-derives both native runs from retained original logs. Python splitlines had split literal Unicode line separators inside JSON names.",
+    "recovered_preexisting_pass_records_per_native_run": 2736,
+    "not_engine_gains": true,
+    "original_outputs_unchanged": true,
+    "collector_fix_commit": "separate from this engine repair"
+  },
+  "resource_monitoring": {
+    "interval_seconds": 1,
+    "authored_browser_elapsed_sample_seconds": 1.0,
+    "authored_browser_sampled_peak_rss_decimal_mb": 88.134,
+    "authored_browser_cpu_rate_available": false,
+    "caveat": "This short fixture yielded no CPU delta; do not claim measured low CPU or a sustained-memory result. Upstream per-run samples remain private."
+  },
+  "private_evidence": [
+    "agent/validation/iteration-153",
+    "agent/validation/linux-wpt-20261028-session3/encoding-corrected-comparison.json",
+    "agent/validation/linux-wpt-20261028-session3/encoding-url-counts.json"
+  ],
+  "limits": [
+    "38 selected URLs, not all encoding WPT or full browser parity.",
+    "Full135 native gate is running on combined155; no invented134-entry153 full gate."
+  ]
+}
