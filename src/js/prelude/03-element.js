@@ -11,7 +11,7 @@ function parseDecls(s) {
     let depth = 0, q = 0, start = 0; const parts = [];
     for (let i = 0; i < s.length; i++) { const c = s[i]; if (q) { if (c === q) q = 0; } else if (c === '"' || c === "'") q = c; else if (c === '(') depth++; else if (c === ')') depth--; else if (c === ';' && !depth) { parts.push(s.slice(start, i)); start = i + 1; } }
     parts.push(s.slice(start));
-    for (const p of parts) { const i = p.indexOf(':'); if (i < 0) continue; const k = p.slice(0, i).trim(); let v = p.slice(i + 1).trim(); if (!k) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const lk = k.startsWith('--') ? k : k.toLowerCase(); if ((lk === 'font' || lk === 'font-family' || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } m.set(lk, [v, imp]); }
+    for (const p of parts) { const i = p.indexOf(':'); if (i < 0) continue; const k = p.slice(0, i).trim(); let v = p.slice(i + 1).trim(); if (!k) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const lk = k.startsWith('--') ? k : k.toLowerCase(); if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if ((lk === 'font' || lk === 'font-family' || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } m.set(lk, [v, imp]); }
     return m;
 }
 const serDecls = (m) => [...m].map(([k, [v, i]]) => k + ': ' + v + (i ? ' !important' : '') + ';').join(' ');
@@ -298,6 +298,7 @@ function fontFamilyPart(v) {   /* the family list of a font shorthand, or null w
     return null;
 }
 function mathValid(p, v) {
+    if (cssGridRelevant(p)) return cssGridParse(p, v) !== null;
     if ((p === 'font-family' || p === 'font') && !/var\(|env\(|attr\(/i.test(v) && !/^\s*(inherit|initial|unset|revert|revert-layer)\s*$/i.test(v)) {
         if (p === 'font-family') { if (!familyValid(v)) return false; }
         else if (!/^\s*(caption|icon|menu|message-box|small-caption|status-bar)\s*$/i.test(v)) { const f = fontFamilyPart(v); if (f !== null && !familyValid(f)) return false; }
@@ -664,10 +665,17 @@ class CSSStyleDeclaration {
     get cssText() { return serDecls(this._m()); } set cssText(v) { this._el.setAttribute('style', String(v)); }
     get length() { return this._m().size; }
     item(i) { return [...this._m().keys()][i] || ''; }
-    getPropertyValue(p) { p = camelToKebab(String(p)); const m = this._m(), e = m.get(p); return e ? e[0] : shorthandPart(m, p); }
-    getPropertyPriority(p) { const e = this._m().get(camelToKebab(String(p))); return e ? e[1] : ''; }
-    setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p); if (v != null && v !== '' && SPEC_COLOR_PROPS.has(p)) { v = specColor(String(v), p); if (v === null) return; } if (v != null && v !== '' && !p.startsWith('--')) { if (!mathValid(p, String(v))) return; v = specNormalize(p, String(v)); } const m = new SMap(this._m()); if (p === 'background-position') { m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); } else if (CSS_POSITION.test(p)) m.delete(p); if (v == null || v === '') m.delete(p); else m.set(p, [String(v), pri ? 'important' : '']); this._el.setAttribute('style', serDecls(m)); }
-    removeProperty(p) { p = camelToKebab(String(p)); const m = new SMap(this._m()); if (p === 'background-position') { const v = cssPositionDeclaration(m, p), size = m.size; m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); if (m.size !== size) this._el.setAttribute('style', serDecls(m)); return v; } const e = m.get(p); if (e) { m.delete(p); this._el.setAttribute('style', serDecls(m)); } return e ? e[0] : ''; }
+    getPropertyValue(p) { p = camelToKebab(String(p)); const m = this._m(), e = m.get(p); if (cssGridRelevant(p)) return cssGridValue(m, p); return e ? e[0] : shorthandPart(m, p); }
+    getPropertyPriority(p) { p = camelToKebab(String(p)); const m = this._m(); if (cssGridRelevant(p)) return cssGridValue(m, p, true); const e = m.get(p); return e ? e[1] : ''; }
+    setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p);
+        if (cssGridRelevant(p)) {
+            const value = v == null ? '' : String(v), priority = pri == null ? '' : String(pri), m = new SMap(this._m());
+            if (value === '') cssGridRemove(m, p);
+            else if (priority && !/^important$/i.test(priority) || !cssGridSet(m, p, value, priority ? 'important' : '')) return;
+            this._el.setAttribute('style', serDecls(m)); return;
+        }
+        if (v != null && v !== '' && SPEC_COLOR_PROPS.has(p)) { v = specColor(String(v), p); if (v === null) return; } if (v != null && v !== '' && !p.startsWith('--')) { if (!mathValid(p, String(v))) return; v = specNormalize(p, String(v)); } const m = new SMap(this._m()); if (p === 'background-position') { m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); } else if (CSS_POSITION.test(p)) m.delete(p); if (v == null || v === '') m.delete(p); else m.set(p, [String(v), pri ? 'important' : '']); this._el.setAttribute('style', serDecls(m)); }
+    removeProperty(p) { p = camelToKebab(String(p)); const m = new SMap(this._m()); if (cssGridRelevant(p)) { const size = m.size, value = cssGridRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (p === 'background-position') { const v = cssPositionDeclaration(m, p), size = m.size; m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); if (m.size !== size) this._el.setAttribute('style', serDecls(m)); return v; } const e = m.get(p); if (e) { m.delete(p); this._el.setAttribute('style', serDecls(m)); } return e ? e[0] : ''; }
 }
 const styleHandler = {
     get(t, p) { if (typeof p !== 'string' || p in t) return Reflect.get(t, p, t); if (/^\d+$/.test(p)) return t.item(+p); return t.getPropertyValue(p); },
@@ -675,7 +683,7 @@ const styleHandler = {
     has(t, p) { return p in t || cssPropKnown(p); },
 };
 class ComputedStyleDeclaration extends CSSStyleDeclaration {
-    getPropertyValue(p) { if (this._none) return ''; if (waDirty) waFlush(); let k = camelToKebab(String(p)); if (k === '-webkit-appearance') k = 'appearance'; if (k === 'font') return computedFont(this); let v = N.computed(this._el, k, this._ps | 0); if (trPoll()) v = N.computed(this._el, k, this._ps | 0); if ((k === 'shape-outside' || k === 'clip-path') && v && /(circle|ellipse)\(/i.test(v)) v = shapePos(v, shapeLenPx(this._el)); if ((k === 'shape-outside' || k === 'clip-path') && v && /inset\(/i.test(v)) v = insetNorm(v, shapeLenPx(this._el)); return v == null ? '' : v; }
+    getPropertyValue(p) { if (this._none || !this._el.isConnected) return ''; if (waDirty) waFlush(); let k = camelToKebab(String(p)); if (k === '-webkit-appearance') k = 'appearance'; if (k === 'font') return computedFont(this); const grid = cssGridChildren(k); if (grid) return cssGridValue(new SMap(grid.map(p => [p, [this.getPropertyValue(p), '']])), k); let v = N.computed(this._el, k, this._ps | 0); if (trPoll()) v = N.computed(this._el, k, this._ps | 0); if ((k === 'shape-outside' || k === 'clip-path') && v && /(circle|ellipse)\(/i.test(v)) v = shapePos(v, shapeLenPx(this._el)); if ((k === 'shape-outside' || k === 'clip-path') && v && /inset\(/i.test(v)) v = insetNorm(v, shapeLenPx(this._el)); return v == null ? '' : v; }
     get cssText() { return ''; } get length() { return this._names().length; }
     /* an invalid pseudo-element or an element outside the document has an empty style */
     _names() { return this._none || !this._el.isConnected || !N.computed(this._el, 'display') || mediaChild(this._el) ? [] : computedNames(); }   /* no style: outside the flat tree */

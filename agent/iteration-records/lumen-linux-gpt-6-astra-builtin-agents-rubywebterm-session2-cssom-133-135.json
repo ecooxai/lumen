@@ -1,0 +1,138 @@
+{
+  "iteration": 2,
+  "started_utc": "2026-10-28T09:23:44Z",
+  "finished_utc": "2026-10-28T09:51:22Z",
+  "elapsed_minutes": 27.6333,
+  "time_scope": "complete37-URL baseline start through135 replay finish; earlier inspection excluded",
+  "records": [
+    {
+      "candidate": 133,
+      "started_utc": "2026-10-28T09:42:42Z",
+      "finished_utc": "2026-10-28T09:43:52Z",
+      "elapsed_minutes": 1.1667,
+      "score": 88,
+      "score_scope": "bounded CSSOM iteration quality, not pass rate",
+      "whole_goal_score": 19,
+      "state": "not accepted: detached computed-style regression and six appended control failures",
+      "agents": [
+        "progress_and_deployment",
+        "repository_lead",
+        "standards_comparison",
+        "root"
+      ],
+      "model": "GPT-6 Astra",
+      "tools": [
+        "built-in agents",
+        "Ruby MCP",
+        "guarded paired_wpt",
+        "Chromium150 CDP",
+        "CTest",
+        "monitor.py"
+      ],
+      "cohort": {
+        "baseline": {
+          "urls": 37,
+          "harness_ok": 37,
+          "pass": 347,
+          "total": 1172
+        },
+        "candidate": {
+          "urls": 37,
+          "harness_ok": 37,
+          "pass": 1058,
+          "total": 1172
+        },
+        "chromium": {
+          "urls": 37,
+          "harness_ok": 37,
+          "pass": 1130,
+          "total": 1172
+        }
+      },
+      "gains": 754,
+      "losses": 43,
+      "comparison": "agent/validation/linux-wpt-20261028/session2/css-grid-parser/candidate133-comparison.json",
+      "source": {
+        "started": "2026-10-28T09:42:41.991546+00:00",
+        "binary": "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen-astra-i133",
+        "sha256": "8e9e3a30a3b41f2df3bdeda2376d1e3c1be71f1ffe9bcf782ce51da3613ac8ee",
+        "source_helper_sha256": "434bd96a636a6424b23b77d2c1f3a8d564d0ce110ae14a194f91f5ac64dd88b9",
+        "fixture_sha256": "168111e5b391293d9baa45c2d512a0e9b616be1ee35d8ce9005462d2d41107ed",
+        "probe_sha256": "b563f7593e1e9c78753806a39263c1c9dd5916545d44e1ef269ab085c92928bf"
+      }
+    },
+    {
+      "candidate": 135,
+      "started_utc": "2026-10-28T09:50:13Z",
+      "finished_utc": "2026-10-28T09:51:22Z",
+      "elapsed_minutes": 1.15,
+      "score": 96,
+      "score_scope": "bounded CSSOM iteration quality, not pass rate",
+      "whole_goal_score": 19,
+      "state": "scoped acceptance approved after independent source review; inherited pending-provenance limitation retained",
+      "agents": [
+        "progress_and_deployment",
+        "repository_lead",
+        "standards_comparison",
+        "root"
+      ],
+      "model": "GPT-6 Astra",
+      "tools": [
+        "built-in agents",
+        "Ruby MCP",
+        "guarded paired_wpt",
+        "Chromium150 CDP",
+        "CTest",
+        "monitor.py"
+      ],
+      "cohort": {
+        "baseline": {
+          "urls": 37,
+          "harness_ok": 37,
+          "fully_passing_urls": 3,
+          "pass": 347,
+          "total": 1172
+        },
+        "candidate": {
+          "urls": 37,
+          "harness_ok": 37,
+          "fully_passing_urls": 31,
+          "pass": 1059,
+          "total": 1172
+        },
+        "chromium": {
+          "urls": 37,
+          "harness_ok": 37,
+          "fully_passing_urls": 35,
+          "pass": 1130,
+          "total": 1172
+        }
+      },
+      "gains": 754,
+      "losses": 42,
+      "comparison": "agent/validation/linux-wpt-20261028/session2/css-grid-parser/candidate135-comparison.json",
+      "source": {
+        "started": "2026-10-28T09:50:13.027021+00:00",
+        "binary": "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen-astra-i135",
+        "sha256": "0aa08e7163a04181ef986e7a6a660c1fa445e83bce398ff261fdd50171da3b64",
+        "source_helper_sha256": "af097294ab5f90865e1f186a4c3b8d5a9b0432acae5d61d7bb2346ba259d92c0",
+        "fixture_sha256": "9b86ccd6d2ad5b77d312ba02f9027db8c076388d27a422bd2700bb518a333ec8",
+        "probe_sha256": "b563f7593e1e9c78753806a39263c1c9dd5916545d44e1ef269ab085c92928bf"
+      }
+    }
+  ],
+  "controls": {
+    "original20": "1283/20;13320/20;unchanged in135",
+    "appended8": "13322/28;13528/28;Chromium27/28, normative removeProperty return mismatch retained",
+    "native135": "119/119 CTest PASS,42.74seconds,-j3,exact1s tree monitor",
+    "review": "14 unchanged pending-provenance observations in128/135/Chromium confirm inherited limitation"
+  },
+  "limitations": [
+    "42 tentative Grid3 intrinsic auto-repeat losses retained; current grammar supports Grid1/2.",
+    "Native raw stylesheet grammar and fallback remain separately permissive.",
+    "71 remaining Chromium-passing misses:67 resolved track sizes,3 declaration-block recomposition,1 native area-template computation.",
+    "Partial/overlapping pending-substitution provenance, important override and removal remain inherited limitations; same-shorthand replacement is repaired.",
+    "Full CSS/WPT/rendering parity is unproven."
+  ],
+  "evidence_root": "agent/validation/linux-wpt-20261028/session2/css-grid-parser"
+}

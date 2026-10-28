@@ -430,6 +430,10 @@ else()
         set_tests_properties(js_xpath PROPERTIES ENVIRONMENT LUMEN_CONSOLE=0 PASS_REGULAR_EXPRESSION "RESULTS xpath:PASS" TIMEOUT 30)
         add_test(NAME js_get_animations COMMAND jsrun "${CMAKE_CURRENT_SOURCE_DIR}/tests/js/get-animations.html" 1000)
         set_tests_properties(js_get_animations PROPERTIES ENVIRONMENT LUMEN_CONSOLE=0 PASS_REGULAR_EXPRESSION "RESULTS get-animations:PASS" TIMEOUT 30)
+        add_test(NAME browser_grid_cssom COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/run.py"
+            --binary "$<TARGET_FILE:lumen>" --fixture "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/grid-cssom-regression.html"
+            --marker browser-grid-cssom --output "${CMAKE_CURRENT_BINARY_DIR}/browser-grid-cssom")
+        set_tests_properties(browser_grid_cssom PROPERTIES PASS_REGULAR_EXPRESSION "RESULTS browser-grid-cssom:PASS" TIMEOUT 35)
         add_test(NAME browser_grid_track_regression COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/run.py"
             --binary "$<TARGET_FILE:lumen>" --fixture "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/grid-track-regression.html"
             --marker browser-grid-track-regression --output "${CMAKE_CURRENT_BINARY_DIR}/browser-grid-track-regression")
