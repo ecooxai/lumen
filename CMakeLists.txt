@@ -427,6 +427,10 @@ else()
             --binary "$<TARGET_FILE:lumen>" --fixture "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/replaced-sizing-regression.html"
             --marker browser-replaced-sizing --output "${CMAKE_CURRENT_BINARY_DIR}/browser-replaced-sizing")
         set_tests_properties(browser_replaced_sizing PROPERTIES PASS_REGULAR_EXPRESSION "RESULTS browser-replaced-sizing:PASS" TIMEOUT 35)
+        add_test(NAME browser_position_cssom_regression COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/run.py"
+            --binary "$<TARGET_FILE:lumen>" --fixture "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/position-cssom-regression.html"
+            --marker browser-position-cssom-regression --output "${CMAKE_CURRENT_BINARY_DIR}/browser-position-cssom-regression")
+        set_tests_properties(browser_position_cssom_regression PROPERTIES PASS_REGULAR_EXPRESSION "RESULTS browser-position-cssom-regression:PASS" TIMEOUT 35)
         add_test(NAME browser_image_lifecycle COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/run.py"
             --binary "$<TARGET_FILE:lumen>" --fixture "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/image-lifecycle.html"
             --marker browser-image-lifecycle --output "${CMAKE_CURRENT_BINARY_DIR}/browser-image-lifecycle")

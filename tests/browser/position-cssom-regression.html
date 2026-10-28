@@ -1,0 +1,65 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Portable background position specified CSSOM regression</title>
+<pre id="results">RUNNING</pre>
+<script>
+'use strict';
+const results=[];
+function assert_equals(actual,expected,message){if(actual!==expected)throw new Error((message?message+': ':'')+'expected '+JSON.stringify(expected)+' but got '+JSON.stringify(actual));}
+function test(body,name){const cleanups=[];let error=null;try{body({add_cleanup:function(fn){cleanups.push(fn);}});}catch(e){error=String(e&&e.stack||e);}finally{for(let i=cleanups.length-1;i>=0;i--){try{cleanups[i]();}catch(e){error=error||String(e);}}}results.push({name:name,status:error?'FAIL':'PASS',message:error||''});}
+function attachedStyle(t, declarations) {
+  const element = document.createElement('div');
+  document.documentElement.append(element);
+  t.add_cleanup(() => element.remove());
+  element.style.cssText = declarations;
+  return element;
+}
+test(() => {
+  const style = document.createElement('div').style;
+  style.cssText = 'background-position: var(--p)';
+  assert_equals(style.backgroundPosition, 'var(--p)');
+},"Specified background-position preserves its pending variable token stream");
+{ const property="backgroundPosition", expected="20px 20px";
+test(() => {
+    const style = document.createElement('div').style;
+    style.cssText = 'background-position:0 0; background-position-x:10px; background-position:20px 20px';
+    assert_equals(style[property], expected);
+  },"Last shorthand declaration overrides earlier axis for backgroundPosition");
+}
+test(t => {
+  const e = attachedStyle(t, '--p: 11px 22px; background-position: var(--p)');
+  assert_equals(e.style.backgroundPositionX, '');
+  assert_equals(e.style.backgroundPositionY, '');
+  assert_equals(getComputedStyle(e).backgroundPosition, '11px 22px');
+},"Pending shorthand axes are empty while computed substitution resolves");
+test(t => {
+  const e = attachedStyle(t, '--p: 11px; background-position-y: 22px; background-position-x: var(--p)');
+  assert_equals(e.style.backgroundPositionX, 'var(--p)');
+  assert_equals(e.style.backgroundPosition, '');
+  assert_equals(getComputedStyle(e).backgroundPosition, '11px 22px');
+},"Direct pending axis preserves its token stream and resolves at computed value");
+test(() => {
+  const s = document.createElement('div').style;
+  s.cssText = 'background-position: 1px 2px !important';
+  s.setProperty('background-position', '4px 5px');
+  assert_equals(s.backgroundPosition, '4px 5px');
+  assert_equals(s.getPropertyPriority('background-position'), '');
+},"Explicit setProperty replaces an important value with a normal value");
+test(() => {
+  const s = document.createElement('div').style;
+  s.cssText = 'background-position: 1px 2px !important';
+  s.backgroundPosition = '6px 7px';
+  assert_equals(s.backgroundPosition, '6px 7px');
+  assert_equals(s.getPropertyPriority('background-position'), '');
+},"Explicit property assignment replaces an important value with a normal value");
+test(t => {
+  const e = attachedStyle(t, '--Accent: 11px 22px; --accent: 33px 44px; background-position: var(--Accent)');
+  assert_equals(e.style.backgroundPosition, 'var(--Accent)');
+  assert_equals(getComputedStyle(e).backgroundPosition, '11px 22px');
+},"Custom-property identifiers remain case-sensitive in specified and computed positions");
+window.__positionCssomRegression=results;
+const passed=results.filter(function(x){return x.status==='PASS';}).length;
+const marker='browser-position-cssom-regression:'+(passed===results.length&&results.length===7?'PASS':'FAIL');
+document.getElementById('results').textContent=marker+' '+passed+'/'+results.length+'\n'+JSON.stringify(results);
+console.log('RESULTS '+marker+' '+passed+'/'+results.length+' '+JSON.stringify(results));
+</script>

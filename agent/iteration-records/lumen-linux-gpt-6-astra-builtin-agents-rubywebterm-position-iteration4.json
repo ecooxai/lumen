@@ -205,5 +205,15 @@
     "src/js/prelude/03-element.js": "40d2a5a1b11f0e69ab22f1d8b53ebd3db71073dcd684b14473fd2ed6426bf338",
     "src/js/prelude/06d-anim.js": "ceeaddf670c47f073b678e20f9ac2c72b4bf78bfe0f94606ab5707afb95c981b"
   },
-  "comparison_composition_limit": "The actual independent gate baseline is114, which predates the accepted font optimization. Accepted candidate120 contains font plus position, while sizing is excluded. Earlier candidate116 excluded font and independently showed the identical482\u21921192/1299 (+710) main gain, with the same adjacent/shared/grid outcomes, supporting attribution of those gains to position. No pure position-on115 paired comparison is claimed. Geometry will use a new combined accepted121 baseline."
+  "comparison_composition_limit": "The actual independent gate baseline is114, which predates the accepted font optimization. Accepted candidate120 contains font plus position, while sizing is excluded. Earlier candidate116 excluded font and independently showed the identical482\u21921192/1299 (+710) main gain, with the same adjacent/shared/grid outcomes, supporting attribution of those gains to position. No pure position-on115 paired comparison is claimed. Geometry will use a new combined accepted121 baseline.",
+  "portable_regression": {
+    "fixture": "tests/browser/position-cssom-regression.html",
+    "sha256": "ffea84a98f530dfe92ed49c97b477be2b8226241bda952d65398139050d41038",
+    "selected_original_callbacks": 7,
+    "result": "7/7 on exact frozen120",
+    "ctest": "browser_position_cssom_regression",
+    "interpretation": "Regression protection only: seven selected already passing callbacks from full10, not seven additional gains or independent coverage. The full10 remains7/10 with three unresolved cases.",
+    "wrapper_failures": "Three invalid wrapper attempts retained; marker prefix and original loop closure bindings corrected without changing callback bodies or expectations.",
+    "evidence": "agent/validation/linux-wpt-20261028/position-cssom-portable120-bindings-corrected"
+  }
 }
