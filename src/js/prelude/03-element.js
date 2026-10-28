@@ -63,6 +63,7 @@ function qualifiedName(namespace, name, attribute = false) {
 function setAttributeValue(element, name, value) {
     const old = N.attr(element, name);
     N.setAttr(element, name, value);
+    bodyWindowAttributeChanged(element, name, value);
     notify('attributes', element, { attributeName: name, oldValue: old });
     ceAttr(element, name, old, value);
 }
@@ -81,7 +82,7 @@ methods(Element.prototype, {
         setAttributeValue(this, n, String(v));
     },
     setAttributeNS(ns, n, v) { n = String(n); const i = n.indexOf(':'); this.setAttribute(i >= 0 ? n.slice(i + 1) : n, v); },
-    removeAttribute(n) { n = lcName(this, n); const old = N.attr(this, n); if (old == null) return; detachAttribute(this, n); N.rmAttr(this, n); notify('attributes', this, { attributeName: n, oldValue: old }); ceAttr(this, n, old, null); },
+    removeAttribute(n) { n = lcName(this, n); const old = N.attr(this, n); if (old == null) return; detachAttribute(this, n); N.rmAttr(this, n); bodyWindowAttributeChanged(this, n, null); notify('attributes', this, { attributeName: n, oldValue: old }); ceAttr(this, n, old, null); },
     removeAttributeNS(ns, n) { this.removeAttribute(n); },
     hasAttribute(n) { return N.attr(this, lcName(this, n)) != null; }, hasAttributeNS(ns, n) { return N.attr(this, String(n)) != null; },
     hasAttributes() { return N.attrs(this).length > 0; },
@@ -178,14 +179,48 @@ const reflectUrl = (p, ...ns) => { for (const n of ns) { const a = n.toLowerCase
 const reflectInt = (p, d, ...ns) => { for (const n of ns) { const a = n.toLowerCase(); acc(p, n, function () { const v = parseInt(N.attr(this, a), 10); return isNaN(v) ? d : v; }, function (v) { this.setAttribute(a, String(v | 0)); }); } };
 const EVENT_HANDLERS = 'abort animationend animationiteration animationstart auxclick beforeinput blur cancel canplay canplaythrough change click close contextmenu copy cut dblclick drag dragend dragenter dragleave dragover dragstart drop durationchange emptied ended error focus focusin focusout input invalid keydown keypress keyup load loadeddata loadedmetadata loadstart mousedown mouseenter mouseleave mousemove mouseout mouseover mouseup paste pause play playing pointercancel pointerdown pointerenter pointerleave pointermove pointerout pointerover pointerup progress ratechange reset resize scroll seeked seeking select selectionchange selectstart stalled submit suspend timeupdate toggle touchcancel touchend touchmove touchstart transitionend volumechange waiting wheel'.split(' ');
 const SB_NOSCRIPT = (N.sbFlags() & 2) !== 0;   /* <iframe sandbox> without allow-scripts: inline handlers don't run */
-function compileHandler(el, k, src) {
-    if (SB_NOSCRIPT) return null;
-    const c = el.__hc || (def(el, '__hc', {}), el.__hc);
-    if (c[k] && c[k].src === src) return c[k].fn;
-    let fn = null;
-    try { fn = N.compileHandler(src); } catch (e) { report(e); }
-    c[k] = { src, fn };
-    return fn;
+// Content attributes use the element's owner realm and the existing native CSP
+// compiler. A blocked update preserves an earlier IDL callback; a syntax error
+// instead replaces it with a null callback. Keep that distinction private.
+const compiledEventHandlers = new WeakMap();
+function compiledHandler(el, k, src, refresh = false) {
+    const doc = N.ownerDoc(el);
+    let cache = compiledEventHandlers.get(el);
+    if (!cache) compiledEventHandlers.set(el, cache = new Map());
+    const old = cache.get(k);
+    if (!refresh && old && old.src === src && old.document === doc) return old;
+    let result = null;
+    try { result = N.compileHandler(src, el, k); } catch (e) { report(e); }
+    const record = { src, document: doc, fn: typeof result === 'function' ? result : null, blocked: result === false };
+    cache.set(k, record);
+    return record;
+}
+function compileHandler(el, k, src) { return compiledHandler(el, k, src).fn; }
+// HTML's six Window-reflecting body handlers plus WindowEventHandlers. Other
+// handlers (including onclick) and addEventListener remain element-local.
+const BODY_WINDOW_HANDLERS = 'blur error focus load resize scroll afterprint beforeprint beforeunload hashchange languagechange message messageerror offline online pageswap pagehide pagereveal pageshow popstate rejectionhandled storage unhandledrejection unload'.split(' ');
+const bodyWindowHandlerNames = new Set(BODY_WINDOW_HANDLERS);
+function isBodyWindowElement(element) {
+    return N.isNode(element) && N.type(element) === 1 && N.ns(element) === 0 && (N.name(element) === 'body' || N.name(element) === 'frameset');
+}
+function bodyWindowTarget(element) {
+    if (!isBodyWindowElement(element)) throw new TypeError('Illegal invocation');
+    const doc = N.ownerDoc(element), view = doc && doc.defaultView;
+    const state = view && N.domStateGet(view, 9);
+    return state && state.document === doc && !view.closed ? view : null;
+}
+function bodyWindowAttributeChanged(element, name, value) {
+    if (!name.startsWith('on') || !bodyWindowHandlerNames.has(name.slice(2)) || !isBodyWindowElement(element)) return;
+    const view = bodyWindowTarget(element);
+    if (!view) return;
+    if (value === null) { view[name] = null; return; }
+    // Recheck CSP even for the same source text: attribute-change steps run on
+    // same-value writes, and a document's policy can become stricter.
+    const record = compiledHandler(element, name, value, true);
+    if (!record.blocked) view[name] = record.fn;
+}
+function handlerHasRegisteredListener(target, type) {
+    return bodyWindowHandlerNames.has(type) && (N.domStateGet(target, 9) !== undefined || isBodyWindowElement(target));
 }
 function installHandlers(proto, attrBacked, list = EVENT_HANDLERS) {
     for (const t of list) {

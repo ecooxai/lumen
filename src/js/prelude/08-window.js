@@ -452,6 +452,52 @@ const console = {
 const customElements = new CustomElementRegistry();
 class Window extends EventTarget {}
 installHandlers(Window.prototype, false, EVENT_HANDLERS.concat(['beforeunload', 'hashchange', 'message', 'messageerror', 'offline', 'online', 'pagehide', 'pageshow', 'popstate', 'storage', 'unhandledrejection', 'rejectionhandled', 'unload', 'DOMContentLoaded']));
+// These Window handlers occupy their real listener-registration position.
+// Replacing a non-null callback keeps that position; null removes it entirely.
+// Isolate-private state survives borrowed Window accessors across realms.
+N.domStateSet(G, 9, { handlers: Object.create(null), document: N.doc() });
+const handlerAddListener = EventTarget.prototype.addEventListener;
+const handlerRemoveListener = EventTarget.prototype.removeEventListener;
+const handlerCall = Reflect.apply;
+for (const type of BODY_WINDOW_HANDLERS) {
+    const key = 'on' + type;
+    acc(Window.prototype, key, function () {
+        const state = N.domStateGet(this, 9);
+        if (!state) throw new TypeError('Illegal invocation');
+        return state.handlers[key]?.callback ?? null;
+    }, function (value) {
+        const target = this, callback = typeof value === 'function' ? value : null;
+        const state = N.domStateGet(target, 9);
+        if (!state) throw new TypeError('Illegal invocation');
+        const map = state.handlers; let record = map[key];
+        if (!callback) {
+            if (record) { handlerCall(handlerRemoveListener, target, [type, record.listener]); delete map[key]; }
+            return;
+        }
+        if (record) { record.callback = callback; return; }
+        record = { callback, listener: null };
+        record.listener = function (event) {
+            const fn = record.callback;
+            const specialError = type === 'error' && eventState(event).errorEvent === true;
+            const result = handlerCall(fn, target, specialError ? [event.message, event.filename, event.lineno, event.colno, event.error] : [event]);
+            if (type === 'beforeunload' && eventState(event).beforeUnloadEvent === true) {
+                if (result != null) { const text = '' + result; event.preventDefault(); if (event.returnValue === '') event.returnValue = text; }
+            } else if (specialError ? result === true : result === false) event.preventDefault();
+        };
+        map[key] = record;
+        handlerCall(handlerAddListener, target, [type, record.listener]);
+    });
+}
+for (const constructor of [H.HTMLBodyElement, H.HTMLFrameSetElement]) {
+    for (const type of BODY_WINDOW_HANDLERS) {
+        const key = 'on' + type;
+        acc(constructor.prototype, key, function () {
+            const view = bodyWindowTarget(this); return view ? view[key] : null;
+        }, function (value) {
+            const view = bodyWindowTarget(this); if (view) view[key] = value;
+        });
+    }
+}
 Object.setPrototypeOf(G, Window.prototype);
 {
     const namedGet = (p) => { const d = G.document; return typeof p === 'string' && p && d ? N.byId(p) : null; };
@@ -506,6 +552,14 @@ for (const k of ['addEventListener', 'removeEventListener', 'dispatchEvent']) {
     const f = EventTarget.prototype[k];
     Object.defineProperty(G, k, { value: function (...a) { return f.apply(this ?? G, a); }, writable: true, configurable: true });
 }
+// Hydrate parsed content attributes at the initial realm checkpoint, after
+// native protoFor installation and before any author script executes.
+queueMicrotask(() => {
+    for (const element of N.query(document, 'body,frameset', true)) {
+        const attributes = N.attrs(element);
+        for (let i = 0; i < attributes.length; i += 2) bodyWindowAttributeChanged(element, attributes[i], attributes[i + 1]);
+    }
+});
 const CAPTURED_ = new Set(['pointermove', 'pointerup', 'pointercancel', 'mousemove', 'mouseup']);
 function fire(target, type, init, Ctor = Event) {
     if (pointerCapture_ && CAPTURED_.has(type)) { if (pointerCapture_.isConnected) target = pointerCapture_; else pointerCapture_ = null; }

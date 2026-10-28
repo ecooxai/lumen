@@ -1,0 +1,8 @@
+[js log] BORROWED_WINDOW_CHECK {"i":0,"name":"borrowed Window setter is visible to child and borrowed getter","ok":true}
+[js log] BORROWED_WINDOW_CHECK {"i":1,"name":"child replacement after borrowed setter has one active listener","ok":true}
+[js log] BORROWED_WINDOW_CHECK {"i":2,"name":"borrowed null setter deactivates the child listener before reactivation","ok":true}
+[js log] BORROWED_WINDOW_CHECK {"i":3,"name":"borrowed Window onerror accepts cross-realm ErrorEvent five arguments","ok":false,"error":"Error: expected 5, got 1"}
+[js log] BORROWED_WINDOW_RESULTS {"total":4,"passed":3,"failed":1}
+jsrun: context 21.7ms, 1 scripts 8.6ms, dom_version 19
+BORROWED_WINDOW_RECEIPT {"binarySHA256": "2f3170840352af15bbe42d5222f8e021013d385f96f3e80a293dc54f6201d0f0", "fixtureSHA256": "3cf3649d288b9cd810b727b33c3af500030d143187115aa1045b54458c590e6c", "htmlSHA256": "c2220d8af4db4ff05a43a2a5c1a14ee7d76f97d324ccb582c967e21929c8679f", "cspHTMLSHA256": "e98ad3888533a782c2bbe8e033324faa99b67305c86c2a483fe475b8f2d074fd", "cspJSSHA256": "4df015c7a63d44513a86887dc1e44f28cbefac00088ddd4c917562f6cc7c308f", "total": 4, "passed": 3, "failed": 1}
+RESULTS borrowed-window-handlers FAIL (3/4 checks)

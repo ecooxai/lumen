@@ -1,0 +1,38 @@
+[js log] FRAME_MICROTASK_CHECK {"i":0,"name":"static index 0 ready before length/contentWindow","ok":true,"detail":null}
+[js log] FRAME_MICROTASK_CHECK {"i":1,"name":"static index 1 ready before length/contentWindow","ok":true,"detail":null}
+[js log] FRAME_MICROTASK_CHECK {"i":2,"name":"static index 2 ready before length/contentWindow","ok":true,"detail":null}
+[js log] FRAME_MICROTASK_CHECK {"i":3,"name":"indexed frame 0 identity","ok":true,"detail":null}
+[js log] FRAME_MICROTASK_CHECK {"i":4,"name":"indexed frame 1 identity","ok":true,"detail":null}
+[js log] FRAME_MICROTASK_CHECK {"i":5,"name":"indexed frame 2 identity","ok":true,"detail":null}
+[js log] FRAME_MICROTASK_CHECK {"i":6,"name":"frame count","ok":true,"detail":3}
+[js log] FRAME_MICROTASK_CHECK {"i":7,"name":"out-of-range frame","ok":true,"detail":null}
+[js log] FRAME_MICROTASK_CHECK {"i":8,"name":"blank frames synchronously accessible","ok":true,"detail":null}
+[js log] FRAME_MICROTASK_CHECK {"i":9,"name":"parent load once","ok":true,"detail":1}
+[js log] FRAME_MICROTASK_CHECK {"i":10,"name":"three-realm callback report realm","ok":true,"detail":"frame1"}
+[js log] FRAME_MICROTASK_CHECK {"i":11,"name":"three-realm callback original error","ok":true,"detail":null}
+[js log] FRAME_MICROTASK_CHECK {"i":12,"name":"three-realm onerror property realm","ok":true,"detail":["frame1"]}
+[js log] FRAME_MICROTASK_CHECK {"i":13,"name":"three-realm callback runs once","ok":true,"detail":1}
+[js log] FRAME_MICROTASK_CHECK {"i":14,"name":"top callback report realm","ok":true,"detail":"top"}
+[js log] FRAME_MICROTASK_CHECK {"i":15,"name":"top callback original error","ok":true,"detail":null}
+[js log] FRAME_MICROTASK_CHECK {"i":16,"name":"top scheduler report realm","ok":true,"detail":"frame1"}
+[js log] FRAME_MICROTASK_CHECK {"i":17,"name":"top scheduler original error","ok":true,"detail":null}
+[js log] FRAME_MICROTASK_CHECK {"i":18,"name":"same frame report realm","ok":true,"detail":"frame0"}
+[js log] FRAME_MICROTASK_CHECK {"i":19,"name":"same frame original error","ok":true,"detail":null}
+[js log] FRAME_MICROTASK_CHECK {"i":20,"name":"bound callback report realm","ok":true,"detail":"frame1"}
+[js log] FRAME_MICROTASK_CHECK {"i":21,"name":"bound callback original error","ok":true,"detail":null}
+[js log] FRAME_MICROTASK_CHECK {"i":22,"name":"strict callback this undefined","ok":true,"detail":null}
+[js log] FRAME_MICROTASK_CHECK {"i":23,"name":"callback receives no arguments","ok":true,"detail":0}
+[js log] FRAME_MICROTASK_CHECK {"i":24,"name":"callback return ignored","ok":true,"detail":0}
+[js log] FRAME_MICROTASK_CHECK {"i":25,"name":"microtask FIFO preserved","ok":true,"detail":["a","b","c"]}
+[js log] FRAME_MICROTASK_CHECK {"i":26,"name":"report does not recursively settle","ok":true,"detail":["handler","tail","from-handler"]}
+[js log] FRAME_MICROTASK_CHECK {"i":27,"name":"invalid callback undefined throws synchronously","ok":true,"detail":null}
+[js log] FRAME_MICROTASK_CHECK {"i":28,"name":"invalid callback null throws synchronously","ok":true,"detail":null}
+[js log] FRAME_MICROTASK_CHECK {"i":29,"name":"invalid callback 0 throws synchronously","ok":true,"detail":null}
+[js log] FRAME_MICROTASK_CHECK {"i":30,"name":"invalid callback callback throws synchronously","ok":true,"detail":null}
+[js log] FRAME_MICROTASK_CHECK {"i":31,"name":"invalid callback [object Object] throws synchronously","ok":true,"detail":null}
+[js log] FRAME_MICROTASK_CHECK {"i":32,"name":"queueMicrotask returns undefined","ok":true,"detail":null}
+[js log] FRAME_MICROTASK_CHECK {"i":33,"name":"queue remains live after reports","ok":true,"detail":1}
+[js log] FRAME_MICROTASK_CHECK {"i":34,"name":"callback exceptions are not promise rejections","ok":true,"detail":0}
+[js log] FRAME_MICROTASK_RESULTS {"total":35,"passed":35,"failed":0,"diagnostics":{"loadCount":1,"rejectionCount":0}}
+jsrun: context 18.4ms, 1 scripts 21.2ms, dom_version 26
+FRAME_MICROTASK_RECEIPT {"binary": "/Users/devin/repos/lumen/build-apple-load-20261029/jsrun-body-handlers-8c5a7e7f3de1001b", "binary_sha256": "8c5a7e7f3de1001b44fd6850f070baa31abfd2f5b6b558c53c3f0478811402d7", "fixture_sha256": "d4d53fbc8b33e3b714e7b1aec27e392fd16c00c83fe36578d61c266804f0a92c", "total": 35, "passed": 35, "failed": 0}

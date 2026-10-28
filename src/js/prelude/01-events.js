@@ -110,7 +110,7 @@ class KeyboardEvent extends UIEvent {
     getModifierState(k) { return MouseEvent.prototype.getModifierState.call(this, k); }
 }
 class InputEvent extends UIEvent { constructor(t, i) { super(t, i); i = i || {}; this.data = i.data ?? null; this.inputType = i.inputType || ''; this.isComposing = !!i.isComposing; } }
-class ErrorEvent extends Event { constructor(t, i) { super(t, i); i = i || {}; this.message = i.message || ''; this.filename = i.filename || ''; this.lineno = i.lineno || 0; this.colno = i.colno || 0; this.error = i.error; } }
+class ErrorEvent extends Event { constructor(t, i) { super(t, i); eventState(this).errorEvent = true; i = i || {}; this.message = i.message || ''; this.filename = i.filename || ''; this.lineno = i.lineno || 0; this.colno = i.colno || 0; this.error = i.error; } }
 class ProgressEvent extends Event { constructor(t, i) { super(t, i); i = i || {}; this.lengthComputable = !!i.lengthComputable; this.loaded = i.loaded || 0; this.total = i.total || 0; } }
 class MessageEvent extends Event { constructor(t, i) { super(t, i); i = i || {}; this.data = i.data; this.origin = i.origin || ''; this.lastEventId = i.lastEventId || ''; this.source = i.source || null; this.ports = i.ports || []; } }
 class PopStateEvent extends Event { #state; constructor(t, i) { super(t, i); this.#state = i && i.state !== undefined ? i.state : null; } get state() { return this.#state; } }
@@ -126,7 +126,7 @@ const legacyEventToken = {};
 class BeforeUnloadEvent extends Event {
     constructor(token) {
         if (token !== legacyEventToken) throw new TypeError('Illegal constructor');
-        super(''); this._returnValue = '';
+        super(''); eventState(this).beforeUnloadEvent = true; this._returnValue = '';
     }
     get returnValue() { return this._returnValue; }
     set returnValue(value) { this._returnValue = String(value); }
@@ -243,7 +243,7 @@ function parentForEvent(t, ev) {
 const LEGACY_EV = { animationstart: 'webkitAnimationStart', animationend: 'webkitAnimationEnd', animationiteration: 'webkitAnimationIteration', transitionend: 'webkitTransitionEnd' };
 function invoke(t, ev, phase, checkpoint, skipHandler) {
     ev._ct = t;
-    if (phase !== 1 && !skipHandler) {
+    if (phase !== 1 && !skipHandler && !handlerHasRegisteredListener(t, ev._type)) {
         let h = null;
         try { h = t['on' + ev._type]; } catch (e) {}
         if (typeof h === 'function') {

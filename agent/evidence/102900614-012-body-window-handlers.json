@@ -1,0 +1,258 @@
+{
+  "iteration": "102900614-012",
+  "started_utc": "2026-10-28T23:56:23.528969+00:00",
+  "updated_utc": "2026-10-28T23:57:08.141365+00:00",
+  "elapsed_seconds": 44.612,
+  "total_session_seconds": 6146.682,
+  "score": 45,
+  "status": "Body and frameset Window handler aliases",
+  "native_artifact_promoted": false,
+  "accepted_native_unchanged": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
+  "candidate_binary_sha256": "c2a47e90b142feb848e9dce21296075fa8cbec5ae01b8d973e80608794338a2e",
+  "candidate_jsrun_sha256": "8c5a7e7f3de1001b44fd6850f070baa31abfd2f5b6b558c53c3f0478811402d7",
+  "candidate_source_manifest": "agent/evidence/102900614-012/compiled-source-sha256.json",
+  "red": {
+    "passed": 5,
+    "total": 45,
+    "borrowed_passed": 3,
+    "borrowed_total": 4
+  },
+  "green": {
+    "passed": 45,
+    "total": 45,
+    "borrowed_passed": 4,
+    "borrowed_total": 4,
+    "build_seconds": 3.091,
+    "all_build_test_seconds": 16.126,
+    "frame_tasks": 7,
+    "frame_order": 14,
+    "microtask_realm": 35,
+    "window_lifecycle": 445,
+    "transfer": 68,
+    "streams": 74,
+    "legacy": 178
+  },
+  "qualification": {
+    "qualifiedChromeBodyFixture": {
+      "recorded": 45,
+      "passed": 43,
+      "failed": 2,
+      "failures": [
+        "body and frameset reflect Window onpagereveal",
+        "body and frameset reflect Window onpageswap"
+      ],
+      "policy": "Actual reference failures retained; current HTML WindowEventHandlers includes both event-handler attributes."
+    },
+    "primarySpecification": [
+      "https://html.spec.whatwg.org/multipage/webappapis.html#windoweventhandlers",
+      "https://html.spec.whatwg.org/multipage/webappapis.html#event-handler-content-attributes"
+    ],
+    "inheritedTokenizerSanitizerFailureUnresolvedInThisArtifact": true
+  },
+  "evidence": [
+    {
+      "source": "output/session-102900614/body-window-handlers-candidate-1/patch-receipt.json",
+      "committed": "agent/evidence/102900614-012/00-body-window-handlers-candidate-1-patch-receipt.json",
+      "sha256": "c16e312b2e43bff6b1653d32dd3cd31d37a3796fdfdfda6dcb1283264550deba",
+      "bytes": 2786
+    },
+    {
+      "source": "output/session-102900614/body-window-handlers-green-1/summary.json",
+      "committed": "agent/evidence/102900614-012/01-body-window-handlers-green-1-summary.json",
+      "sha256": "ac5fa79117bffb065e89a89f75d16f34f703bba974736b54bce7f6c8eecff4ae",
+      "bytes": 15376
+    },
+    {
+      "source": "output/session-102900614/body-window-handlers-green-1/compiled-source-sha256.json",
+      "committed": "agent/evidence/102900614-012/02-body-window-handlers-green-1-compiled-source-sha256.json",
+      "sha256": "5e65e048d68adac972093017594c86a46ab2b9e0b5ba22c31a1ae21ee8a985a4",
+      "bytes": 15370
+    },
+    {
+      "source": "output/session-102900614/body-window-handlers-red-1.json",
+      "committed": "agent/evidence/102900614-012/03-session-102900614-body-window-handlers-red-1.json",
+      "sha256": "7fdb9523f9b2e8b09d4639fd534b595bbbcfeeb305660dd44b9bd94bbe976ba2",
+      "bytes": 2045
+    },
+    {
+      "source": "output/session-102900614/body-window-handlers-red-1.log",
+      "committed": "agent/evidence/102900614-012/04-session-102900614-body-window-handlers-red-1.log",
+      "sha256": "d5d4c1bbd062ac9be71ba1824ca937391f6eae5e6045322c3241636a573069d0",
+      "bytes": 7603
+    },
+    {
+      "source": "output/session-102900614/body-window-handlers-red-1.csv",
+      "committed": "agent/evidence/102900614-012/05-session-102900614-body-window-handlers-red-1.csv",
+      "sha256": "4f81bbd405f9683cdbb5ae5c9917ca88769c85d4aea4d58a940a00f26d7136e3",
+      "bytes": 80
+    },
+    {
+      "source": "output/session-102900614/borrowed-window-handlers-red-1.json",
+      "committed": "agent/evidence/102900614-012/06-session-102900614-borrowed-window-handlers-red-1.json",
+      "sha256": "42e045948de1f0f1d6706d4317c900cdd1a30bbc5aa4c188a415a4d40c1580da",
+      "bytes": 2046
+    },
+    {
+      "source": "output/session-102900614/borrowed-window-handlers-red-1.log",
+      "committed": "agent/evidence/102900614-012/07-session-102900614-borrowed-window-handlers-red-1.log",
+      "sha256": "2f5d9bc918be5a0f30152bb36e0fc740e57ce2ac725bb2d486f6fd19924a8965",
+      "bytes": 1192
+    },
+    {
+      "source": "output/session-102900614/borrowed-window-handlers-red-1.csv",
+      "committed": "agent/evidence/102900614-012/08-session-102900614-borrowed-window-handlers-red-1.csv",
+      "sha256": "eb64420806b2a20072010371495ffdf7c5da2f238c51e379291cb2aaf937c7a4",
+      "bytes": 80
+    },
+    {
+      "source": "output/session-102900614/body-window-handlers-chrome-1/receipt.json",
+      "committed": "agent/evidence/102900614-012/09-body-window-handlers-chrome-1-receipt.json",
+      "sha256": "790b4a9ecfecabc27a4bd7e3a9144303ced917f3e2c07b05492130663f761955",
+      "bytes": 15642
+    },
+    {
+      "source": "output/session-102900614/body-window-handlers-green-1/build.json",
+      "committed": "agent/evidence/102900614-012/10-body-window-handlers-green-1-build.json",
+      "sha256": "2102820821fe9587698cca8fce8396dafa83ff01267af728675c95963f8bb04e",
+      "bytes": 2046
+    },
+    {
+      "source": "output/session-102900614/body-window-handlers-green-1/build.log",
+      "committed": "agent/evidence/102900614-012/11-body-window-handlers-green-1-build.log",
+      "sha256": "4191e63ce79e36e0d68e29e0aa1cfd35114be64e5f385ac7a3a640f1aaa8d257",
+      "bytes": 13121
+    },
+    {
+      "source": "output/session-102900614/body-window-handlers-green-1/body-window-handlers.json",
+      "committed": "agent/evidence/102900614-012/12-body-window-handlers-green-1-body-window-handlers.json",
+      "sha256": "8f2e58b7ed7943f9fe7aa08972f12e123b577cff2f83cbbb0db08c18dc1ce3b7",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/body-window-handlers-green-1/body-window-handlers.log",
+      "committed": "agent/evidence/102900614-012/13-body-window-handlers-green-1-body-window-handlers.log",
+      "sha256": "fb8eb84bdcc02731c7f9463eef48a9ff18d8b5dc19a656caf21a0d26b4015305",
+      "bytes": 5763
+    },
+    {
+      "source": "output/session-102900614/body-window-handlers-green-1/borrowed-window-handlers.json",
+      "committed": "agent/evidence/102900614-012/14-body-window-handlers-green-1-borrowed-window-handlers.json",
+      "sha256": "0446afc7545f81661b243c83f3e78313d48f365725c6bda3f58ae7108f15df2e",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/body-window-handlers-green-1/borrowed-window-handlers.log",
+      "committed": "agent/evidence/102900614-012/15-body-window-handlers-green-1-borrowed-window-handlers.log",
+      "sha256": "2627d96d8355b3cbe9118e19d258579c7a7d965b59761cf7265581405071e8a0",
+      "bytes": 1156
+    },
+    {
+      "source": "output/session-102900614/body-window-handlers-green-1/frame-load-tasks.json",
+      "committed": "agent/evidence/102900614-012/16-body-window-handlers-green-1-frame-load-tasks.json",
+      "sha256": "df2744c3ce9923654c192d99d3810a4cfd191e6ec042255680ac549ba2a52cf2",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/body-window-handlers-green-1/frame-load-tasks.log",
+      "committed": "agent/evidence/102900614-012/17-body-window-handlers-green-1-frame-load-tasks.log",
+      "sha256": "511912a0155a6307487c8614ef3de504973a3e7e03265af6b0fa02df67314b00",
+      "bytes": 1305
+    },
+    {
+      "source": "output/session-102900614/body-window-handlers-green-1/frame-load-order.json",
+      "committed": "agent/evidence/102900614-012/18-body-window-handlers-green-1-frame-load-order.json",
+      "sha256": "243c65ccdd2eab9b583050a56e1754196a4d1e11203b657fb2699369f5b66afb",
+      "bytes": 2019
+    },
+    {
+      "source": "output/session-102900614/body-window-handlers-green-1/frame-load-order.log",
+      "committed": "agent/evidence/102900614-012/19-body-window-handlers-green-1-frame-load-order.log",
+      "sha256": "889ed323474c743c2803773fbcdd35dc92563aeacfefd3a9ac97166bd14ffe5c",
+      "bytes": 1954
+    },
+    {
+      "source": "output/session-102900614/body-window-handlers-green-1/frame-microtask-realm.json",
+      "committed": "agent/evidence/102900614-012/20-body-window-handlers-green-1-frame-microtask-realm.json",
+      "sha256": "3b1178e1a0d3ab0977f06558e6e4433385c996cae3147b65a751d4f673425039",
+      "bytes": 2004
+    },
+    {
+      "source": "output/session-102900614/body-window-handlers-green-1/frame-microtask-realm.log",
+      "committed": "agent/evidence/102900614-012/21-body-window-handlers-green-1-frame-microtask-realm.log",
+      "sha256": "c07250798ae45a2a2cea3568464baf97d44f724b804d7f8e4b764e5a26be4e0f",
+      "bytes": 4249
+    },
+    {
+      "source": "output/session-102900614/body-window-handlers-green-1/window-lifecycle.json",
+      "committed": "agent/evidence/102900614-012/22-body-window-handlers-green-1-window-lifecycle.json",
+      "sha256": "0d75c55294a484037a88967b4bdedafdab140826fc0e72a008a21d95448179cb",
+      "bytes": 2035
+    },
+    {
+      "source": "output/session-102900614/body-window-handlers-green-1/window-lifecycle.log",
+      "committed": "agent/evidence/102900614-012/23-body-window-handlers-green-1-window-lifecycle.log",
+      "sha256": "fd8a9b1aaf8b5717c738989c67e5e5fba32fe53f7fdc672012931923fc2c3b32",
+      "bytes": 47
+    },
+    {
+      "source": "output/session-102900614/body-window-handlers-green-1/message-transfer.json",
+      "committed": "agent/evidence/102900614-012/24-body-window-handlers-green-1-message-transfer.json",
+      "sha256": "6f8cf4e71839d62b7377293e02f85851007538d72dd2bbfeb92b1c05db0882d6",
+      "bytes": 2004
+    },
+    {
+      "source": "output/session-102900614/body-window-handlers-green-1/message-transfer.log",
+      "committed": "agent/evidence/102900614-012/25-body-window-handlers-green-1-message-transfer.log",
+      "sha256": "dc0e6c9969729a8310344f5035022f7c93c76ed5b5db4583bca5b0ec3fef18e6",
+      "bytes": 10028
+    },
+    {
+      "source": "output/session-102900614/body-window-handlers-green-1/text-streams.json",
+      "committed": "agent/evidence/102900614-012/26-body-window-handlers-green-1-text-streams.json",
+      "sha256": "1a6fcd0554c06a2d94a11f5ead5edbcd6552c0a3050506ad78e8bde942773f6f",
+      "bytes": 2003
+    },
+    {
+      "source": "output/session-102900614/body-window-handlers-green-1/text-streams.log",
+      "committed": "agent/evidence/102900614-012/27-body-window-handlers-green-1-text-streams.log",
+      "sha256": "5f0c7a4f62e04503612df0f37e429d9e473fe11f66c07acbbb6ba2d02428dd10",
+      "bytes": 10268
+    },
+    {
+      "source": "output/session-102900614/body-window-handlers-green-1/legacy-codecs.json",
+      "committed": "agent/evidence/102900614-012/28-body-window-handlers-green-1-legacy-codecs.json",
+      "sha256": "77a14f73b23f0ec2631c60c3761bbc7f5250f015f6d72644a1b61c7718bb385c",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/body-window-handlers-green-1/legacy-codecs.log",
+      "committed": "agent/evidence/102900614-012/29-body-window-handlers-green-1-legacy-codecs.log",
+      "sha256": "3910d52f25f3b113def9630d32f216ed18c4ffa1e0f7931310ffbe71bfe777d7",
+      "bytes": 24106
+    }
+  ],
+  "raw_byte_preservation": [
+    "agent/evidence/102900614-012/04-session-102900614-body-window-handlers-red-1.log",
+    "agent/evidence/102900614-012/05-session-102900614-body-window-handlers-red-1.csv",
+    "agent/evidence/102900614-012/07-session-102900614-borrowed-window-handlers-red-1.log",
+    "agent/evidence/102900614-012/08-session-102900614-borrowed-window-handlers-red-1.csv",
+    "agent/evidence/102900614-012/11-body-window-handlers-green-1-build.log",
+    "agent/evidence/102900614-012/13-body-window-handlers-green-1-body-window-handlers.log",
+    "agent/evidence/102900614-012/15-body-window-handlers-green-1-borrowed-window-handlers.log",
+    "agent/evidence/102900614-012/17-body-window-handlers-green-1-frame-load-tasks.log",
+    "agent/evidence/102900614-012/19-body-window-handlers-green-1-frame-load-order.log",
+    "agent/evidence/102900614-012/21-body-window-handlers-green-1-frame-microtask-realm.log",
+    "agent/evidence/102900614-012/23-body-window-handlers-green-1-window-lifecycle.log",
+    "agent/evidence/102900614-012/25-body-window-handlers-green-1-message-transfer.log",
+    "agent/evidence/102900614-012/27-body-window-handlers-green-1-text-streams.log",
+    "agent/evidence/102900614-012/29-body-window-handlers-green-1-legacy-codecs.log"
+  ],
+  "implementation": "Use private shared Window records for cross-realm handler identity, existing event-listener activation order, private special-event brands and the owner document\u2019s existing inline-handler CSP/sandbox compiler. Blocked attributes preserve valid prior handlers; syntax failure clears them. Parsed body aliases hydrate before author scripts.",
+  "limits": [
+    "General parser/script interleaving and all DOM event semantics are not claimed.",
+    "The inherited tokenizer sanitizer failure is unresolved in this exact historical binary.",
+    "No fresh original/full-WPT, GUI resource, navigation soak or same signed IPA acceptance is claimed by this checkpoint."
+  ],
+  "model_compute_duration": "Unavailable; parallel worker wall times are not summed",
+  "sourceStaging": "Reviewed historical source was reconstructed from exact installer/preimage hashes and staged directly in the index. Later working-tree candidates were preserved."
+}

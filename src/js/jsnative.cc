@@ -103,7 +103,7 @@ FN(isNode) { CTX; RET(junwrap(a[0]) != nullptr); }
 static v8::Local<v8::Private> dom_state_key(v8::Isolate *iso, int slot) {
     static const char *names[] = { "lumen.dom.attr", "lumen.dom.attrs", "lumen.dom.name",
                                   "lumen.dom.content-type", "lumen.dom.document-interface", "lumen.dom.event",
-                                  "lumen.fetch.headers", "lumen.encoding.encoder", "lumen.encoding.decoder" };
+                                  "lumen.fetch.headers", "lumen.encoding.encoder", "lumen.encoding.decoder", "lumen.dom.window-handlers" };
     if (slot < 0 || slot >= (int)ARRLEN(names)) return v8::Local<v8::Private>();
     return v8::Private::ForApi(iso, jstr(iso, names[slot]));
 }
@@ -1245,14 +1245,23 @@ FN(ctxOrigin) { CTX; RET(jstr(iso, ctx_origin(c).c_str())); }
 FN(sbFlags) { CTX; RET((int)(c->sb_opaque ? 1 : 0) | (c->sb_noscript ? 2 : 0)); }
 FN(compileHandler) {
     CTX; std::string s = S(0);
-    if (c->doc && c->doc->csp && !csp_allows_attr(c->doc->csp, s.c_str(), s.size())) {
+    Node *element = a.Length() > 1 ? junwrap(a[1]) : nullptr;
+    // A borrowed DOM method must compile in the element's owner document, not
+    // the caller's realm, and must retain that document's sandbox/CSP policy.
+    JsCtx *owner = element && element->doc ? owner_ctx(element->doc) : c;
+    if (!owner || owner->dead || owner->sb_noscript) { RET(false); return; }
+    if (owner->doc && owner->doc->csp && !csp_allows_attr(owner->doc->csp, s.c_str(), s.size())) {
         fprintf(stderr, "lumen: CSP blocked inline event handler %.80s\n", s.c_str());
-        RET(v8::Null(iso)); return;
+        RET(false); return; // Internal blocked sentinel; public getters return null.
     }
+    ctx = owner->ctx.Get(iso);
+    v8::Context::Scope owner_scope(ctx);
     v8::ScriptCompiler::Source src(jstr(iso, s.c_str(), (int)s.size()));
-    v8::Local<v8::String> args[1] = { jstr(iso, "event") };
+    const bool window_error = element && element->ns == NS_HTML &&
+        (element->tag == A_body || element->tag == A_frameset) && a.Length() > 2 && S(2) == "onerror";
+    v8::Local<v8::String> args[5] = { jstr(iso, "event"), jstr(iso, "source"), jstr(iso, "lineno"), jstr(iso, "colno"), jstr(iso, "error") };
     v8::Local<v8::Function> f;
-    if (v8::ScriptCompiler::CompileFunction(ctx, &src, 1, args).ToLocal(&f)) RET(f);
+    if (v8::ScriptCompiler::CompileFunction(ctx, &src, window_error ? 5 : 1, args).ToLocal(&f)) RET(f);
 }
 FN(currentScript) { CTX; RET(jwrap(c, c->current_script)); }
 FN(media) { CTX; std::string q = S(0); RET(jsg_media(c->host.media, q.c_str())); }

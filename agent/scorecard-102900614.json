@@ -674,7 +674,7 @@
       }
     }
   ],
-  "updated_utc": "2026-10-28T23:56:23.528969+00:00",
+  "updated_utc": "2026-10-28T23:57:08.141365+00:00",
   "current_baseline_binary_sha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
   "full_official_wpt_pass_percent": null,
   "current_native_source_base_commit": "22359337f8036da7170fa0e06e4b486dfc5cd440",
@@ -883,6 +883,15 @@
       "total_session_seconds": 6102.07,
       "score": 45,
       "status": "Bounded HTML encoding metadata candidate"
+    },
+    {
+      "iteration": "102900614-012",
+      "started_utc": "2026-10-28T23:56:23.528969+00:00",
+      "updated_utc": "2026-10-28T23:57:08.141365+00:00",
+      "elapsed_seconds": 44.612,
+      "total_session_seconds": 6146.682,
+      "score": 45,
+      "status": "Body and frameset Window handler aliases"
     }
   ],
   "current_native_source_manifest": "agent/evidence/102900614-003/compiled-source-sha256.json",
@@ -935,6 +944,14 @@
       "evidence": "agent/evidence/102900614-011-html-meta.json",
       "accepted": false,
       "note": "Bounded HTML encoding metadata candidate; unresolved inherited tokenizer sanitizer failure, fresh combined gates pending."
+    },
+    {
+      "iteration": "102900614-012",
+      "binary_sha256": "c2a47e90b142feb848e9dce21296075fa8cbec5ae01b8d973e80608794338a2e",
+      "source_manifest": "agent/evidence/102900614-012/compiled-source-sha256.json",
+      "evidence": "agent/evidence/102900614-012-body-window-handlers.json",
+      "accepted": false,
+      "note": "Body and frameset Window handler aliases; unresolved inherited tokenizer sanitizer failure, fresh combined gates pending."
     }
   ],
   "reference_qualification": {

@@ -1,0 +1,52 @@
+[js log] BODY_WINDOW_CHECK {"i":0,"name":"parsed body onload runs once with Window receiver","ok":false,"error":"Error: expected 1, got undefined"}
+[js log] BODY_WINDOW_CHECK {"i":1,"name":"body and frameset reflect Window onblur","ok":false,"error":"Error: expected function(){}, got null"}
+[js log] BODY_WINDOW_CHECK {"i":2,"name":"body and frameset reflect Window onerror","ok":false,"error":"Error: expected function(){}, got null"}
+[js log] BODY_WINDOW_CHECK {"i":3,"name":"body and frameset reflect Window onfocus","ok":false,"error":"Error: expected function(){}, got null"}
+[js log] BODY_WINDOW_CHECK {"i":4,"name":"body and frameset reflect Window onload","ok":false,"error":"Error: expected function(){}, got null"}
+[js log] BODY_WINDOW_CHECK {"i":5,"name":"body and frameset reflect Window onresize","ok":false,"error":"Error: expected function(){}, got null"}
+[js log] BODY_WINDOW_CHECK {"i":6,"name":"body and frameset reflect Window onscroll","ok":false,"error":"Error: expected function(){}, got null"}
+[js log] BODY_WINDOW_CHECK {"i":7,"name":"body and frameset reflect Window onafterprint","ok":false,"error":"Error: expected function(){}, got undefined"}
+[js log] BODY_WINDOW_CHECK {"i":8,"name":"body and frameset reflect Window onbeforeprint","ok":false,"error":"Error: expected function(){}, got undefined"}
+[js log] BODY_WINDOW_CHECK {"i":9,"name":"body and frameset reflect Window onbeforeunload","ok":false,"error":"Error: expected function(){}, got null"}
+[js log] BODY_WINDOW_CHECK {"i":10,"name":"body and frameset reflect Window onhashchange","ok":false,"error":"Error: expected function(){}, got null"}
+[js log] BODY_WINDOW_CHECK {"i":11,"name":"body and frameset reflect Window onlanguagechange","ok":false,"error":"Error: expected function(){}, got undefined"}
+[js log] BODY_WINDOW_CHECK {"i":12,"name":"body and frameset reflect Window onmessage","ok":false,"error":"Error: expected function(){}, got null"}
+[js log] BODY_WINDOW_CHECK {"i":13,"name":"body and frameset reflect Window onmessageerror","ok":false,"error":"Error: expected function(){}, got null"}
+[js log] BODY_WINDOW_CHECK {"i":14,"name":"body and frameset reflect Window onoffline","ok":false,"error":"Error: expected function(){}, got null"}
+[js log] BODY_WINDOW_CHECK {"i":15,"name":"body and frameset reflect Window ononline","ok":false,"error":"Error: expected function(){}, got null"}
+[js log] BODY_WINDOW_CHECK {"i":16,"name":"body and frameset reflect Window onpageswap","ok":false,"error":"Error: expected function(){}, got undefined"}
+[js log] BODY_WINDOW_CHECK {"i":17,"name":"body and frameset reflect Window onpagehide","ok":false,"error":"Error: expected function(){}, got null"}
+[js log] BODY_WINDOW_CHECK {"i":18,"name":"body and frameset reflect Window onpagereveal","ok":false,"error":"Error: expected function(){}, got undefined"}
+[js log] BODY_WINDOW_CHECK {"i":19,"name":"body and frameset reflect Window onpageshow","ok":false,"error":"Error: expected function(){}, got null"}
+[js log] BODY_WINDOW_CHECK {"i":20,"name":"body and frameset reflect Window onpopstate","ok":false,"error":"Error: expected function(){}, got null"}
+[js log] BODY_WINDOW_CHECK {"i":21,"name":"body and frameset reflect Window onrejectionhandled","ok":false,"error":"Error: expected function(){}, got null"}
+[js log] BODY_WINDOW_CHECK {"i":22,"name":"body and frameset reflect Window onstorage","ok":false,"error":"Error: expected function(){}, got null"}
+[js log] BODY_WINDOW_CHECK {"i":23,"name":"body and frameset reflect Window onunhandledrejection","ok":false,"error":"Error: expected function(){}, got null"}
+[js log] BODY_WINDOW_CHECK {"i":24,"name":"body and frameset reflect Window onunload","ok":false,"error":"Error: expected function(){}, got null"}
+[js log] BODY_WINDOW_CHECK {"i":25,"name":"Window assignment is visible through body","ok":false,"error":"Error: expected function(){}, got function(){}"}
+[js log] BODY_WINDOW_CHECK {"i":26,"name":"disconnected body still targets its active document Window","ok":false,"error":"Error: expected function(){}, got function(){}"}
+[js log] BODY_WINDOW_CHECK {"i":27,"name":"inactive document body handler getter is null and setter ignored","ok":false,"error":"Error: expected null, got function(){}"}
+[js log] BODY_WINDOW_CHECK {"i":28,"name":"foreign body targets its own Window through a borrowed setter","ok":false,"error":"TypeError: Cannot read properties of undefined (reading 'set')"}
+[js log] BODY_WINDOW_CHECK {"i":29,"name":"ordinary element load handler remains element local","ok":false,"error":"Error: expected null, got function(){}"}
+[js log] BODY_WINDOW_CHECK {"i":30,"name":"body click is not in the reflecting set","ok":true}
+[js log] BODY_WINDOW_CHECK {"i":31,"name":"body dispatch does not invoke aliased Window handler","ok":false,"error":"Error: expected 0, got 1"}
+[js log] BODY_WINDOW_CHECK {"i":32,"name":"body addEventListener remains element local","ok":true}
+[js log] BODY_WINDOW_CHECK {"i":33,"name":"handler activation respects registration order and replacement position","ok":false,"error":"Error: expected a,new,b, got a,b"}
+[js log] BODY_WINDOW_CHECK {"i":34,"name":"null deactivation and reactivation moves listener to the end","ok":false,"error":"Error: expected a,b,new, got a,b"}
+[js log] BODY_WINDOW_CHECK {"i":35,"name":"body content attribute compiles through the Window handler","ok":false,"error":"Error: expected null, got ()=>order.push('new')"}
+[js log] BODY_WINDOW_CHECK {"i":36,"name":"setting the same content attribute replaces an intervening IDL assignment","ok":false,"error":"Error: expected 1, got 0"}
+[js log] BODY_WINDOW_CHECK {"i":37,"name":"removing a present content attribute clears an intervening Window assignment","ok":false,"error":"Error: expected null, got function(){}"}
+[js log] BODY_WINDOW_CHECK {"i":38,"name":"Attr.value updates the Window handler","ok":false,"error":"Error: expected 2, got 0"}
+[js log] BODY_WINDOW_CHECK {"i":39,"name":"setAttributeNode updates the Window handler","ok":false,"error":"Error: expected 3, got 0"}
+[js log] BODY_WINDOW_CHECK {"i":40,"name":"Window error alias preserves five arguments and true cancellation","ok":false,"error":"Error: expected 1, got 0"}
+[js log] BODY_WINDOW_CHECK {"i":41,"name":"syntax failure replaces a prior valid Window handler with null","ok":false,"error":"Error: expected null, got ()=>{}"}
+lumen: CSP blocked inline event handler window.__cspAliasRan=true;
+lumen: CSP blocked inline event handler window.__cspAliasRan=true;
+lumen: CSP blocked inline event handler window.__cspAliasRan=true;
+[js log] BODY_WINDOW_CHECK {"i":42,"name":"CSP blocks body alias and ordinary inline handlers through the same compiler","ok":true}
+[js log] BODY_WINDOW_CHECK {"i":43,"name":"CSP-blocked attribute update preserves prior JS-installed Window callback","ok":true}
+[js log] BODY_WINDOW_CHECK {"i":44,"name":"borrowed parent attribute method uses foreign owner document CSP","ok":true}
+[js log] BODY_WINDOW_RESULTS {"total":45,"passed":5,"failed":40}
+jsrun: context 25.7ms, 1 scripts 1.2ms, dom_version 39
+BODY_WINDOW_RECEIPT {"binarySHA256": "9dbf792698c8e504d9f3d93df6b28de9e6c95ee180b1e089d6e33b4a5d6e10a8", "fixtureSHA256": "04bbd4c2d5044b0d402f4c6354d98e6fab1cc70f94ccfa0d7c4963da4f8948e9", "htmlSHA256": "591bb9b24c19e2ef42f880a0127e3472aa494e64ceeab98099aa714877e6d760", "cspHTMLSHA256": "e98ad3888533a782c2bbe8e033324faa99b67305c86c2a483fe475b8f2d074fd", "cspJSSHA256": "4df015c7a63d44513a86887dc1e44f28cbefac00088ddd4c917562f6cc7c308f", "total": 45, "passed": 5, "failed": 40}
+RESULTS body-window-handlers FAIL (5/45 checks)

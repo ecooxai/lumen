@@ -66,3 +66,7 @@ Native4d81029 `4d81029fec2383cdb1e25bfe7b91fba65640f244e4564c19a344686f7ee5b5c5`
 ## Checkpoint011 — Bounded HTML encoding metadata candidate
 
 Candidate `9e5d9bd983bc7525cfad92c07e14049ef941c2a56796148906e31c4c63c2c7dd`: Frozen real-HTTP metadata checks **9/29 RED →29/29 GREEN**; legacy178, streams74, transfer68, codec170 and native document78 remain green. Build1.128s; ten build/test stages12.175s under1Hz sampling with existing V8 reused. Supplemental ASan exposed a pre-existing tokenizer EOF underflow; its failure remains explicit. Exact historical source staged without overwriting later working changes. Accepted733/score45 unchanged. The inherited tokenizer sanitizer failure remains unresolved in this binary and requires the separately tested correction. See `agent/evidence/102900614-011-html-meta.json`.
+
+## Checkpoint012 — Body and frameset Window handler aliases
+
+Candidate `c2a47e90b142feb848e9dce21296075fa8cbec5ae01b8d973e80608794338a2e`: Frozen body/frameset checks **5/45 RED →45/45 GREEN**; separate borrowed-Window regression **3/4 →4/4**. Existing frame7/14/35, native window445, transfer68, streams74 and legacy178 pass. Build3.091s; all ten stages16.126s. Qualified Chrome actually passes43/45; its pageswap/pagereveal alias failures remain visible. Exact historical source staged without overwriting later working changes. Accepted733/score45 unchanged. The inherited tokenizer sanitizer failure remains unresolved in this binary and requires the separately tested correction. See `agent/evidence/102900614-012-body-window-handlers.json`.

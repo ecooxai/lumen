@@ -1,0 +1,51 @@
+{
+  "before": {
+    "src/js/prelude/01-events.js": "a2a2fecb69eb278b8e1b9df8376e88c78ff9d479bbce61dd7c85daf1cb6cac9e",
+    "src/js/prelude/03-element.js": "3e29bc3458971ae4ababef37826f4b11f23b2bfef956742999d8007c7a1aab94",
+    "src/js/prelude/08-window.js": "f26aa76c02988f74b105e89352e29adeecb6bcc280b6ed934cf4e412b75f7f1e",
+    "src/js/jsnative.cc": "2ab45b8ab511b65ad2caaf0c4e2826083858603ceb24d977a596ade8ace4898f"
+  },
+  "after": {
+    "src/js/prelude/01-events.js": "ef927c0e9281ce9d22d267b09ff81d8ebdbbe4db83eaf1f91e597f5c36c6311d",
+    "src/js/prelude/03-element.js": "48b7ac01190fcb2c732560fc7705d3d1d793228ad508a62ba1313b469dd1e7dd",
+    "src/js/prelude/08-window.js": "56c1e0bbbd58e1ece29e9060787c46bd9651fd8488f7135d21c33dca5cab0186",
+    "src/js/jsnative.cc": "dbf1b47500e0803c78903cee2da2e75c6e789134a7ca88910b94f986eef9931a"
+  },
+  "fixture": "tests/test_body_window_handlers.py",
+  "fixtureSHA256": "04bbd4c2d5044b0d402f4c6354d98e6fab1cc70f94ccfa0d7c4963da4f8948e9",
+  "taskId": "102900614",
+  "startedUTC": "2026-10-28T23:48:44.662861+00:00",
+  "sourceBaseCommit": "62814214300802705485cccbfaaa684c004ea44a",
+  "red": {
+    "monitor": "output/session-102900614/body-window-handlers-red-1.json",
+    "monitorSHA256": "7fdb9523f9b2e8b09d4639fd534b595bbbcfeeb305660dd44b9bd94bbe976ba2",
+    "logSHA256": "d5d4c1bbd062ac9be71ba1824ca937391f6eae5e6045322c3241636a573069d0",
+    "total": 45,
+    "passed": 5,
+    "failed": 40
+  },
+  "reference": {
+    "receipt": "output/session-102900614/body-window-handlers-chrome-1/receipt.json",
+    "sha256": "790b4a9ecfecabc27a4bd7e3a9144303ced917f3e2c07b05492130663f761955",
+    "total": 45,
+    "passed": 43,
+    "failed": 2,
+    "raw_all_pass": false,
+    "known_spec_gap_names": [
+      "body and frameset reflect Window onpagereveal",
+      "body and frameset reflect Window onpageswap"
+    ],
+    "primary_source": "https://html.spec.whatwg.org/multipage/webappapis.html#windoweventhandlers",
+    "qualification": "All45 unchanged assertions are retained.43pass; pageswap/pagereveal alias failures remainFAIL. Current HTML WindowEventHandlers IDL explicitly requires both."
+  },
+  "borrowedWindowBaseline": {
+    "fixture": "tests/test_borrowed_window_handlers.py",
+    "fixtureSHA256": "3cf3649d288b9cd810b727b33c3af500030d143187115aa1045b54458c590e6c",
+    "monitor": "output/session-102900614/borrowed-window-handlers-red-1.json",
+    "monitorSHA256": "42e045948de1f0f1d6706d4317c900cdd1a30bbc5aa4c188a415a4d40c1580da",
+    "total": 4,
+    "passed": 3
+  },
+  "scope": "HTML body/frameset WindowEventHandlers targeting, listener activation order and owner-realm CSP-aware inline compilation; parser/script interleaving and all event platform conformance are not claimed.",
+  "finishedUTC": "2026-10-28T23:48:44.674546+00:00"
+}

@@ -1,0 +1,286 @@
+{
+  "schema": 1,
+  "taskId": "102900614",
+  "startedUTC": "2026-10-28T23:48:45.675361+00:00",
+  "sourceBaseCommit": "62814214300802705485cccbfaaa684c004ea44a",
+  "compiledSourceManifest": "output/session-102900614/body-window-handlers-green-1/compiled-source-sha256.json",
+  "baseCompiledSourceManifest": "output/session-102900614/html-meta-green-1/compiled-source-sha256.json",
+  "baseCompiledSourceManifestSHA256": "4efce9737d9cc2e2f86c3261106c453c4222d74aa77f645b8fe83ce57720cc9b",
+  "changedCompiledSources": [
+    "src/js/prelude/01-events.js",
+    "src/js/prelude/03-element.js",
+    "src/js/prelude/08-window.js",
+    "src/js/jsnative.cc"
+  ],
+  "patchReceipt": "output/session-102900614/body-window-handlers-candidate-1/patch-receipt.json",
+  "patchReceiptSHA256": "c16e312b2e43bff6b1653d32dd3cd31d37a3796fdfdfda6dcb1283264550deba",
+  "fixtureSHA256": {
+    "tests/test_borrowed_window_handlers.py": "3cf3649d288b9cd810b727b33c3af500030d143187115aa1045b54458c590e6c",
+    "tests/test_body_window_handlers.py": "04bbd4c2d5044b0d402f4c6354d98e6fab1cc70f94ccfa0d7c4963da4f8948e9",
+    "tests/test_frame_load_tasks.py": "64edfda6febcfe6d4c634faeae0587024a4b5df57fdbd79746e2ed08f2694ed8",
+    "tests/test_frame_load_order.py": "9d825427b005e0ff6ffcee6c6261b01564f7506c2296f896b8b493d702a428db",
+    "tests/test_frame_microtask_realm.py": "aeb86f23ff1c3d49fb3d10842db96504b0be2d342241fdfea1df06594e580238"
+  },
+  "prebuiltV8": "Existing matched V8 reused; no V8 compilation.",
+  "stages": [
+    {
+      "stage": "build",
+      "startedUTC": "2026-10-28T23:48:45.686678+00:00",
+      "finishedUTC": "2026-10-28T23:48:48.777182+00:00",
+      "durationSeconds": 3.091,
+      "command": [
+        "make",
+        "-j3",
+        "BUILD=build-apple-load-20261029",
+        "MODE=release",
+        "RTC=1",
+        "WT=1",
+        "build-apple-load-20261029/lumen",
+        "build-apple-load-20261029/jsrun",
+        "build-apple-load-20261029/test_window_lifecycle"
+      ],
+      "passed": true,
+      "monitor": "output/session-102900614/body-window-handlers-green-1/build.json",
+      "logSHA256": "4191e63ce79e36e0d68e29e0aa1cfd35114be64e5f385ac7a3a640f1aaa8d257",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 2,
+      "rssPeakMiB": 659.266,
+      "resultLines": []
+    },
+    {
+      "stage": "body-window-handlers",
+      "startedUTC": "2026-10-28T23:48:48.870332+00:00",
+      "finishedUTC": "2026-10-28T23:48:49.965083+00:00",
+      "durationSeconds": 1.095,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tests/test_body_window_handlers.py",
+        "--binary",
+        "build-apple-load-20261029/jsrun-body-handlers-8c5a7e7f3de1001b"
+      ],
+      "passed": true,
+      "monitor": "output/session-102900614/body-window-handlers-green-1/body-window-handlers.json",
+      "logSHA256": "fb8eb84bdcc02731c7f9463eef48a9ff18d8b5dc19a656caf21a0d26b4015305",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 0,
+      "rssPeakMiB": 5.891,
+      "resultLines": [
+        "[js log] BODY_WINDOW_RESULTS {\"total\":45,\"passed\":45,\"failed\":0}",
+        "BODY_WINDOW_RECEIPT {\"binarySHA256\": \"8c5a7e7f3de1001b44fd6850f070baa31abfd2f5b6b558c53c3f0478811402d7\", \"fixtureSHA256\": \"04bbd4c2d5044b0d402f4c6354d98e6fab1cc70f94ccfa0d7c4963da4f8948e9\", \"htmlSHA256\": \"591bb9b24c19e2ef42f880a0127e3472aa494e64ceeab98099aa714877e6d760\", \"cspHTMLSHA256\": \"e98ad3888533a782c2bbe8e033324faa99b67305c86c2a483fe475b8f2d074fd\", \"cspJSSHA256\": \"4df015c7a63d44513a86887dc1e44f28cbefac00088ddd4c917562f6cc7c308f\", \"total\": 45, \"passed\": 45, \"failed\": 0}",
+        "RESULTS body-window-handlers PASS (45/45 checks)"
+      ]
+    },
+    {
+      "stage": "borrowed-window-handlers",
+      "startedUTC": "2026-10-28T23:48:49.965348+00:00",
+      "finishedUTC": "2026-10-28T23:48:51.080489+00:00",
+      "durationSeconds": 1.115,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tests/test_borrowed_window_handlers.py",
+        "--binary",
+        "build-apple-load-20261029/jsrun-body-handlers-8c5a7e7f3de1001b"
+      ],
+      "passed": true,
+      "monitor": "output/session-102900614/body-window-handlers-green-1/borrowed-window-handlers.json",
+      "logSHA256": "2627d96d8355b3cbe9118e19d258579c7a7d965b59761cf7265581405071e8a0",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 0,
+      "rssPeakMiB": 5.688,
+      "resultLines": [
+        "[js log] BORROWED_WINDOW_RESULTS {\"total\":4,\"passed\":4,\"failed\":0}",
+        "BORROWED_WINDOW_RECEIPT {\"binarySHA256\": \"8c5a7e7f3de1001b44fd6850f070baa31abfd2f5b6b558c53c3f0478811402d7\", \"fixtureSHA256\": \"3cf3649d288b9cd810b727b33c3af500030d143187115aa1045b54458c590e6c\", \"htmlSHA256\": \"c2220d8af4db4ff05a43a2a5c1a14ee7d76f97d324ccb582c967e21929c8679f\", \"cspHTMLSHA256\": \"e98ad3888533a782c2bbe8e033324faa99b67305c86c2a483fe475b8f2d074fd\", \"cspJSSHA256\": \"4df015c7a63d44513a86887dc1e44f28cbefac00088ddd4c917562f6cc7c308f\", \"total\": 4, \"passed\": 4, \"failed\": 0}",
+        "RESULTS borrowed-window-handlers PASS (4/4 checks)"
+      ]
+    },
+    {
+      "stage": "frame-load-tasks",
+      "startedUTC": "2026-10-28T23:48:51.080750+00:00",
+      "finishedUTC": "2026-10-28T23:48:52.173018+00:00",
+      "durationSeconds": 1.092,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tests/test_frame_load_tasks.py",
+        "--binary",
+        "build-apple-load-20261029/jsrun-body-handlers-8c5a7e7f3de1001b"
+      ],
+      "passed": true,
+      "monitor": "output/session-102900614/body-window-handlers-green-1/frame-load-tasks.json",
+      "logSHA256": "511912a0155a6307487c8614ef3de504973a3e7e03265af6b0fa02df67314b00",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 0,
+      "rssPeakMiB": 5.531,
+      "resultLines": [
+        "[js log] FRAME_LOAD_RESULTS {\"total\":7,\"passed\":7,\"failed\":0}",
+        "FRAME_LOAD_RECEIPT {\"binarySHA256\": \"8c5a7e7f3de1001b44fd6850f070baa31abfd2f5b6b558c53c3f0478811402d7\", \"fixtureSHA256\": \"64edfda6febcfe6d4c634faeae0587024a4b5df57fdbd79746e2ed08f2694ed8\", \"htmlSHA256\": \"0b6c8fdd9b4466f87720ce4d5581844fcce787fbc00e6ad32e72ab37c21f16f6\", \"nestedSHA256\": \"752323f9a9243532894a93ba69393cc37caa5d7189462f8cdba16dedbb632492\", \"total\": 7, \"passed\": 7, \"failed\": 0}",
+        "RESULTS frame-load-tasks PASS (7/7 checks)"
+      ]
+    },
+    {
+      "stage": "frame-load-order",
+      "startedUTC": "2026-10-28T23:48:52.173268+00:00",
+      "finishedUTC": "2026-10-28T23:48:54.291471+00:00",
+      "durationSeconds": 2.118,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tests/test_frame_load_order.py",
+        "--binary",
+        "build-apple-load-20261029/jsrun-body-handlers-8c5a7e7f3de1001b",
+        "--runtime",
+        "jsrun"
+      ],
+      "passed": true,
+      "monitor": "output/session-102900614/body-window-handlers-green-1/frame-load-order.json",
+      "logSHA256": "889ed323474c743c2803773fbcdd35dc92563aeacfefd3a9ac97166bd14ffe5c",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 1,
+      "rssPeakMiB": 24.359,
+      "resultLines": [
+        "[js log] FRAME_LOAD_RESULTS {\"passed\":14,\"total\":14,\"order\":{\"dcl\":\"interactive\",\"complete\":1,\"parentLoads\":1,\"xmlLoads\":1,\"xhtmlLoads\":1,\"nestedLoads\":1,\"nestedWindowLoads\":1,\"removedLoads\":0}}",
+        "RESULTS frame-load-order jsrun PASS (14/14 checks)"
+      ]
+    },
+    {
+      "stage": "frame-microtask-realm",
+      "startedUTC": "2026-10-28T23:48:54.291776+00:00",
+      "finishedUTC": "2026-10-28T23:48:55.397409+00:00",
+      "durationSeconds": 1.106,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tests/test_frame_microtask_realm.py",
+        "--binary",
+        "build-apple-load-20261029/jsrun-body-handlers-8c5a7e7f3de1001b"
+      ],
+      "passed": true,
+      "monitor": "output/session-102900614/body-window-handlers-green-1/frame-microtask-realm.json",
+      "logSHA256": "c07250798ae45a2a2cea3568464baf97d44f724b804d7f8e4b764e5a26be4e0f",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 0,
+      "rssPeakMiB": 4.844,
+      "resultLines": [
+        "[js log] FRAME_MICROTASK_RESULTS {\"total\":35,\"passed\":35,\"failed\":0,\"diagnostics\":{\"loadCount\":1,\"rejectionCount\":0}}",
+        "FRAME_MICROTASK_RECEIPT {\"binary\": \"/Users/devin/repos/lumen/build-apple-load-20261029/jsrun-body-handlers-8c5a7e7f3de1001b\", \"binary_sha256\": \"8c5a7e7f3de1001b44fd6850f070baa31abfd2f5b6b558c53c3f0478811402d7\", \"fixture_sha256\": \"d4d53fbc8b33e3b714e7b1aec27e392fd16c00c83fe36578d61c266804f0a92c\", \"total\": 35, \"passed\": 35, \"failed\": 0}"
+      ]
+    },
+    {
+      "stage": "window-lifecycle",
+      "startedUTC": "2026-10-28T23:48:55.397792+00:00",
+      "finishedUTC": "2026-10-28T23:48:58.505447+00:00",
+      "durationSeconds": 3.108,
+      "command": [
+        "env",
+        "LUMEN_PROFILE_DIR=/Users/devin/repos/lumen/output/session-102900614/body-window-handlers-green-1/window-lifecycle-profile",
+        "/Users/devin/repos/lumen/build-apple-load-20261029/test_window_lifecycle-body-handlers-cc9610fcef1cad05"
+      ],
+      "passed": true,
+      "monitor": "output/session-102900614/body-window-handlers-green-1/window-lifecycle.json",
+      "logSHA256": "fd8a9b1aaf8b5717c738989c67e5e5fba32fe53f7fdc672012931923fc2c3b32",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 2,
+      "rssPeakMiB": 110.719,
+      "resultLines": [
+        "RESULTS window-lifecycle PASS (445/445 checks)"
+      ]
+    },
+    {
+      "stage": "message-transfer",
+      "startedUTC": "2026-10-28T23:48:58.505723+00:00",
+      "finishedUTC": "2026-10-28T23:48:59.586124+00:00",
+      "durationSeconds": 1.08,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tests/test_message_transfer.py",
+        "--binary",
+        "build-apple-load-20261029/jsrun-body-handlers-8c5a7e7f3de1001b"
+      ],
+      "passed": true,
+      "monitor": "output/session-102900614/body-window-handlers-green-1/message-transfer.json",
+      "logSHA256": "dc0e6c9969729a8310344f5035022f7c93c76ed5b5db4583bca5b0ec3fef18e6",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 0,
+      "rssPeakMiB": 5.391,
+      "resultLines": [
+        "[js log] MESSAGE_TRANSFER_RESULTS {\"total\":68,\"passed\":68,\"failed\":0,\"issue\":null}",
+        "MESSAGE_TRANSFER_RECEIPT {\"binary\": \"/Users/devin/repos/lumen/build-apple-load-20261029/jsrun-body-handlers-8c5a7e7f3de1001b\", \"binary_sha256\": \"8c5a7e7f3de1001b44fd6850f070baa31abfd2f5b6b558c53c3f0478811402d7\", \"fixture_sha256\": \"31f3e40bebaa4ba9f06bb705c5e5b4dc3eb9a375ccf5f4d4c47eeb88540b052d\", \"worker_sha256\": \"456a04b5a1e00d4b4ba1ec870613aef2e77429fb8c9a63090e7b51829d9026d4\", \"total\": 68, \"passed\": 68, \"failed\": 0, \"scopes\": {\"window\": {\"total\": 31, \"passed\": 31}, \"worker\": {\"total\": 31, \"passed\": 31}, \"cross-worker\": {\"total\": 6, \"passed\": 6}}}",
+        "RESULTS message-transfer PASS (68/68 checks)"
+      ]
+    },
+    {
+      "stage": "text-streams",
+      "startedUTC": "2026-10-28T23:48:59.586474+00:00",
+      "finishedUTC": "2026-10-28T23:49:00.691089+00:00",
+      "durationSeconds": 1.105,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tests/test_text_streams.py",
+        "--binary",
+        "build-apple-load-20261029/jsrun-body-handlers-8c5a7e7f3de1001b"
+      ],
+      "passed": true,
+      "monitor": "output/session-102900614/body-window-handlers-green-1/text-streams.json",
+      "logSHA256": "5f0c7a4f62e04503612df0f37e429d9e473fe11f66c07acbbb6ba2d02428dd10",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 0,
+      "rssPeakMiB": 5.266,
+      "resultLines": [
+        "[js log] TEXT_STREAM_RESULTS {\"total\":74,\"passed\":74,\"failed\":0,\"issue\":null}",
+        "TEXT_STREAM_RECEIPT {\"binary\": \"/Users/devin/repos/lumen/build-apple-load-20261029/jsrun-body-handlers-8c5a7e7f3de1001b\", \"binary_sha256\": \"8c5a7e7f3de1001b44fd6850f070baa31abfd2f5b6b558c53c3f0478811402d7\", \"fixture_sha256\": \"45d4a163068810e3fde0595b99d6f3db6814ac75dfd737131ef77b67ed1dbf82\", \"worker_sha256\": \"c95f251bec89bf94130284d6710c8d02c5c4295450ce0d0be4b6dd9b4df81f41\", \"total\": 74, \"passed\": 74, \"failed\": 0, \"scopes\": {\"window\": {\"total\": 35, \"passed\": 35}, \"worker\": {\"total\": 35, \"passed\": 35}, \"cross-realm\": {\"total\": 4, \"passed\": 4}}}",
+        "RESULTS text-streams PASS (74/74 checks)"
+      ]
+    },
+    {
+      "stage": "legacy-codecs",
+      "startedUTC": "2026-10-28T23:49:00.691468+00:00",
+      "finishedUTC": "2026-10-28T23:49:01.791010+00:00",
+      "durationSeconds": 1.1,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tests/test_legacy_codecs.py",
+        "--binary",
+        "build-apple-load-20261029/jsrun-body-handlers-8c5a7e7f3de1001b"
+      ],
+      "passed": true,
+      "monitor": "output/session-102900614/body-window-handlers-green-1/legacy-codecs.json",
+      "logSHA256": "3910d52f25f3b113def9630d32f216ed18c4ffa1e0f7931310ffbe71bfe777d7",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 0,
+      "rssPeakMiB": 5.422,
+      "resultLines": [
+        "[js log] LEGACY_CODEC_RESULTS {\"total\":178,\"passed\":178,\"failed\":0,\"issue\":null}",
+        "LEGACY_CODEC_RECEIPT {\"binary\": \"/Users/devin/repos/lumen/build-apple-load-20261029/jsrun-body-handlers-8c5a7e7f3de1001b\", \"binary_sha256\": \"8c5a7e7f3de1001b44fd6850f070baa31abfd2f5b6b558c53c3f0478811402d7\", \"fixture_sha256\": \"f78c296512856e34b9344616a3c27d946be81d73f375a2af6f0a4fb4de343f69\", \"worker_sha256\": \"90e27c54ec30a348803560ad4d7ae9921254acb0c49dbb85c04228f99f9c2386\", \"total\": 178, \"passed\": 178, \"failed\": 0, \"scopes\": {\"window\": {\"total\": 88, \"passed\": 88}, \"worker\": {\"total\": 88, \"passed\": 88}, \"cross-realm\": {\"total\": 2, \"passed\": 2}}}",
+        "RESULTS legacy-codecs PASS (178/178 checks)"
+      ]
+    }
+  ],
+  "artifacts": {
+    "lumen": {
+      "snapshot": "build-apple-load-20261029/lumen-body-handlers-c2a47e90b142feb8",
+      "sha256": "c2a47e90b142feb848e9dce21296075fa8cbec5ae01b8d973e80608794338a2e",
+      "bytes": 14038440
+    },
+    "jsrun": {
+      "snapshot": "build-apple-load-20261029/jsrun-body-handlers-8c5a7e7f3de1001b",
+      "sha256": "8c5a7e7f3de1001b44fd6850f070baa31abfd2f5b6b558c53c3f0478811402d7",
+      "bytes": 13827128
+    },
+    "test_window_lifecycle": {
+      "snapshot": "build-apple-load-20261029/test_window_lifecycle-body-handlers-cc9610fcef1cad05",
+      "sha256": "cc9610fcef1cad050850d47514bb1178c102e1fd158a4b24d37311690cb6a9b2",
+      "bytes": 13933928
+    }
+  },
+  "passed": true,
+  "finishedUTC": "2026-10-28T23:49:01.812256+00:00",
+  "durationSeconds": 16.126,
+  "scope": "Body/frameset handler alias and listener activation with unchanged owner CSP, native lifecycle, frame realm and codec regressions. Original/upstream WPT and final same-binary resource/soak gates remain separate."
+}
