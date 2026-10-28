@@ -112,7 +112,6 @@
     "known_prerequisite_gap": "Both BC multiglobal tests set document.domain; native 06-document.js setter is empty, and unrelaxed frame/global access fails before delivery assertions.",
     "executed_routing": "Positive dedicated/shared/service-worker, blob-worker and multi-frame ordering fixtures.",
     "unexecuted_guards": [
-      "Direct separate-tab BC transport pending existing upstream supplemental probe",
       "New synthetic forged/proxy/foreign EventTarget/newTarget guards denied transfer",
       "Long repeated in-process registry lifetime slope",
       "Browser-level private-suffix tenant partition comparisons"
@@ -149,5 +148,15 @@
   "accepted_binary": {
     "path": "build/codex-native/lumen-gpt-6-astra-broadcast-accepted-20261028",
     "sha256": "3c71a05c9e62a3614ed549e3f62734154167b24bf30f1ffa8d0022e5b98bf4ff"
+  },
+  "supplemental_popup_routing": {
+    "url": "/html/browsers/the-window-object/window-open-noreferrer.html",
+    "support": "/html/browsers/the-window-object/support/noreferrer-target.html",
+    "baseline": "0/1; TIMEOUT",
+    "candidate109": "1/1; OK",
+    "chromium150": "1/1; OK",
+    "transport": "Unmodified support page sends through BroadcastChannel.postMessage, not opener.postMessage. This executes window.open into a separate native root page/isolate within the same App process.",
+    "evidence": "agent/validation/linux-wpt-20261028/*-bc-upstream-popup",
+    "limits": "One positive cross-root popup case; separate OS-process IPC and long in-process lifetime stress remain unsupported or untested."
   }
 }
