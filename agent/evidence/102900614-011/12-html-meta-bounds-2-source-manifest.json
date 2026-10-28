@@ -1,0 +1,17 @@
+{
+  "tests/test_html_encoding_bounds.c": "ce828546e389a1af1bdc25e534c79d28189af4f8927086a703f5658895fd0c50",
+  "src/html/html.c": "99218b33f6190d865619f233164c7bb81627637b7d021ff39899ee8fa20e9a07",
+  "src/html/entities.c": "940fdae3500b9853c17d01c30d8540726ad5b4594bb744395a5b3aa115a1d80d",
+  "src/dom/dom.c": "cb8f23b39814ac5ed527b4f2090cf14dd4d4793660564ed1dc9ee071a1c2d740",
+  "src/dom/dom.h": "6e5d23c6996c84f160a3309090042582536d254a022e91211e4b9fb06b22ae1f",
+  "src/dom/control.c": "e19826994feb3aa1991fc1265b2d75737d60914514233a135172d6ef7468f902",
+  "src/dom/control.h": "bef0e14f0d117cd2c91a2132dbd2d1e2ed97c8c50282e24164856e235438bd7f",
+  "src/base/url.c": "55b2563cc28d7413e68684a807babcfddd108bea23a15f8221f3e82f3233c5cb",
+  "src/base/url.h": "96671ef2f15601542aec4a856d1de0cb85c75fca21d946984a0e629025209d4d",
+  "src/base/encoding.c": "21788c99d1ebd0559d63b987efaaf4bfa42eda8df2d91a759413d47af32186ab",
+  "src/base/encoding.h": "b205d19524e9a5227f4cb7cb0ed6172ff5154a610c6e29d86df1360ff5b6aa38",
+  "src/base/encoding_decode_data.inc": "759a6b5cb49e450b6aab966e176a7f410c7cdcb0e140abee88ea009a2d8d9a65",
+  "src/base/encoding_encode_index.inc": "b02e3642d966daf8e9d15a1e58d8074c5e4fa3f44f11e503230dc65bef5e4584",
+  "src/base/util.c": "61f4ee7e3816b0e6376ab919b62c119418c914a74dda337027183e5ee7f7af1f",
+  "src/base/util.h": "680133c78cb21f9de98ba35c100ac72c3a74f13d322a2e06f4aa355cd901d298"
+}

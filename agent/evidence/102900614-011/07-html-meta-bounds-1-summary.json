@@ -1,0 +1,48 @@
+{
+  "startedUTC": "2026-10-28T23:50:35.249494+00:00",
+  "sourceBaseCommit": "62814214300802705485cccbfaaa684c004ea44a",
+  "fixtureSHA256": "ce828546e389a1af1bdc25e534c79d28189af4f8927086a703f5658895fd0c50",
+  "sourceManifestSHA256": "1572e976e36d4399a01eb202833582c3c0ec131b2ec377d7a7dd379b64eec34e",
+  "stages": [
+    {
+      "stage": "build",
+      "command": [
+        "clang",
+        "-std=c11",
+        "-D_DARWIN_C_SOURCE",
+        "-g",
+        "-O1",
+        "-UNDEBUG",
+        "-fsanitize=address,undefined",
+        "-fno-omit-frame-pointer",
+        "-I/opt/homebrew/opt/icu4c/include",
+        "-L/opt/homebrew/opt/icu4c/lib",
+        "tests/test_html_encoding_bounds.c",
+        "src/html/html.c",
+        "src/dom/dom.c",
+        "src/dom/control.c",
+        "src/base/url.c",
+        "src/base/encoding.c",
+        "src/base/util.c",
+        "-licuuc",
+        "-lm",
+        "-o",
+        "/Users/devin/repos/lumen/output/session-102900614/html-meta-bounds-1/test_html_encoding_bounds_asan"
+      ],
+      "startedUTC": "2026-10-28T23:50:35.261503+00:00",
+      "finishedUTC": "2026-10-28T23:50:37.369115+00:00",
+      "durationSeconds": 2.108,
+      "passed": false,
+      "monitor": "output/session-102900614/html-meta-bounds-1/build.json",
+      "naturalExitCode": 1,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 1,
+      "intervalCpuPeakPercent": 0.987,
+      "rssPeakMiB": 35.297
+    }
+  ],
+  "passed": false,
+  "scope": "Native byte parser bounds and semantic controls, not full HTML conformance.",
+  "finishedUTC": "2026-10-28T23:50:37.370469+00:00",
+  "durationSeconds": 2.121
+}

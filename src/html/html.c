@@ -787,11 +787,177 @@ static void html_parse_plaintext(Document *document, const char *text, size_t le
     html_parser_free(parser);
 }
 
-/* Decode an HTML or plain-text response before tokenization. A BOM overrides the supported
- * transport charset and is removed by the shared replacement decoder. This
- * bounded transport/BOM hook deliberately preserves the existing UTF-8
- * fallback; it does not implement meta prescanning or parser restarts.
- * Unicode input paths (srcdoc, document.write, DOMParser and generated pages)
+/* HTML's byte prescan is intentionally distinct from MIME parameter parsing.
+ * It is bounded to the first 1024 response bytes, uses no heap allocations,
+ * and never interprets character references or runs the tokenizer/scripts. */
+static bool encoding_space(unsigned char c) {
+    return c == 9 || c == 10 || c == 12 || c == 13 || c == 32;
+}
+static bool encoding_alpha(unsigned char c) {
+    return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
+}
+static bool encoding_equal(const unsigned char *s, size_t n, const char *word) {
+    if (strlen(word) != n) return false;
+    for (size_t i = 0; i < n; ++i) if (lc(s[i]) != word[i]) return false;
+    return true;
+}
+typedef struct { size_t name, name_length, value, value_length; } EncodingAttribute;
+/* 1 = attribute, 0 = end of tag, -1 = prescan boundary/EOF. position stays
+ * on the delimiter when that delimiter starts the next attribute/tag step. */
+static int encoding_attribute(const unsigned char *s, size_t n, size_t *position,
+                              EncodingAttribute *attribute) {
+    size_t p = *position;
+    while (p < n && (encoding_space(s[p]) || s[p] == '/')) ++p;
+    if (p == n) return -1;
+    if (s[p] == '>') { *position = p; return 0; }
+    *attribute = (EncodingAttribute){p, 0, p, 0};
+    while (p < n) {
+        if ((s[p] == '=' && p > attribute->name) || encoding_space(s[p]) ||
+            s[p] == '/' || s[p] == '>') break;
+        ++p;
+    }
+    if (p == n) return -1;
+    attribute->name_length = p - attribute->name;
+    if (s[p] == '/' || s[p] == '>') { *position = p; return 1; }
+    while (p < n && encoding_space(s[p])) ++p;
+    if (p == n) return -1;
+    if (s[p] != '=') { *position = p; return 1; }
+    ++p;
+    while (p < n && encoding_space(s[p])) ++p;
+    if (p == n) return -1;
+    if (s[p] == '"' || s[p] == '\'') {
+        unsigned char quote = s[p++];
+        attribute->value = p;
+        while (p < n && s[p] != quote) ++p;
+        if (p == n) return -1;
+        attribute->value_length = p - attribute->value;
+        *position = p + 1;
+        return 1;
+    }
+    attribute->value = p;
+    while (p < n && !encoding_space(s[p]) && s[p] != '>') ++p;
+    if (p == n) return -1;
+    attribute->value_length = p - attribute->value;
+    *position = p;
+    return 1;
+}
+static WebEncoding encoding_meta_content(const unsigned char *s, size_t n) {
+    for (size_t p = 0; p + 7 <= n;) {
+        if (!encoding_equal(s + p, 7, "charset")) { ++p; continue; }
+        p += 7;
+        while (p < n && encoding_space(s[p])) ++p;
+        if (p == n) return WEB_ENC_UNKNOWN;
+        if (s[p] != '=') continue;
+        ++p;
+        while (p < n && encoding_space(s[p])) ++p;
+        if (p == n) return WEB_ENC_UNKNOWN;
+        size_t begin;
+        if (s[p] == '"' || s[p] == '\'') {
+            unsigned char quote = s[p++];
+            begin = p;
+            while (p < n && s[p] != quote) ++p;
+            if (p == n) return WEB_ENC_UNKNOWN;
+        } else {
+            begin = p;
+            while (p < n && !encoding_space(s[p]) && s[p] != ';') ++p;
+        }
+        return web_encoding_label_n((const char *)s + begin, p - begin);
+    }
+    return WEB_ENC_UNKNOWN;
+}
+static WebEncoding encoding_xml_fallback(const unsigned char *s, size_t n) {
+    if (n < 5 || memcmp(s, "<?xml", 5)) return WEB_ENC_UNKNOWN;
+    size_t end = 5;
+    while (end < n && s[end] != '>') ++end;
+    if (end == n) return WEB_ENC_UNKNOWN;
+    size_t p = 5;
+    while (p + 8 <= end && memcmp(s + p, "encoding", 8)) ++p;
+    if (p + 8 > end) return WEB_ENC_UNKNOWN;
+    p += 8;
+    while (p < n && s[p] <= 32) ++p;
+    if (p == n || s[p++] != '=') return WEB_ENC_UNKNOWN;
+    while (p < n && s[p] <= 32) ++p;
+    if (p == n || (s[p] != '"' && s[p] != '\'')) return WEB_ENC_UNKNOWN;
+    unsigned char quote = s[p++];
+    size_t begin = p;
+    while (p < n && s[p] != quote) {
+        if (s[p] <= 32) return WEB_ENC_UNKNOWN;
+        ++p;
+    }
+    if (p == n) return WEB_ENC_UNKNOWN;
+    WebEncoding encoding = web_encoding_label_n((const char *)s + begin, p - begin);
+    if (encoding == WEB_ENC_UTF16LE || encoding == WEB_ENC_UTF16BE) encoding = WEB_ENC_UTF8;
+    return encoding;
+}
+static WebEncoding html_prescan_encoding(const unsigned char *s, size_t length) {
+    const size_t n = length < 1024 ? length : 1024;
+    if (n >= 6) {
+        if (!memcmp(s, "<\0?\0x\0", 6)) return WEB_ENC_UTF16LE;
+        if (!memcmp(s, "\0<\0?\0x", 6)) return WEB_ENC_UTF16BE;
+    }
+    for (size_t p = 0; p < n; ++p) {
+        if (s[p] != '<') continue;
+        if (p + 4 <= n && !memcmp(s + p, "<!--", 4)) {
+            p += 3;
+            while (p < n && !(s[p] == '>' && s[p - 1] == '-' && s[p - 2] == '-')) ++p;
+        } else if (p + 5 < n && encoding_equal(s + p + 1, 4, "meta") &&
+                   (encoding_space(s[p + 5]) || s[p + 5] == '/')) {
+            p += 5;
+            unsigned seen = 0;
+            bool got_pragma = false, charset_null = true;
+            int need_pragma = -1;
+            WebEncoding charset = WEB_ENC_UNKNOWN;
+            for (;;) {
+                EncodingAttribute attribute;
+                int status = encoding_attribute(s, n, &p, &attribute);
+                if (status < 0) return encoding_xml_fallback(s, n);
+                if (!status) break;
+                unsigned kind = encoding_equal(s + attribute.name, attribute.name_length, "http-equiv") ? 1 :
+                    encoding_equal(s + attribute.name, attribute.name_length, "content") ? 2 :
+                    encoding_equal(s + attribute.name, attribute.name_length, "charset") ? 4 : 0;
+                if (!kind || (seen & kind)) continue;
+                seen |= kind;
+                const unsigned char *value = s + attribute.value;
+                const size_t value_length = attribute.value_length;
+                if (kind == 1) got_pragma = encoding_equal(value, value_length, "content-type");
+                else if (kind == 2 && charset_null) {
+                    WebEncoding found = encoding_meta_content(value, value_length);
+                    if (found != WEB_ENC_UNKNOWN) { charset = found; charset_null = false; need_pragma = 1; }
+                } else if (kind == 4) {
+                    charset = web_encoding_label_n((const char *)value, value_length);
+                    charset_null = false; need_pragma = 0;
+                }
+            }
+            if (need_pragma < 0 || (need_pragma && !got_pragma) || charset == WEB_ENC_UNKNOWN) continue;
+            if (charset == WEB_ENC_UTF16LE || charset == WEB_ENC_UTF16BE) charset = WEB_ENC_UTF8;
+            if (charset == WEB_ENC_X_USER_DEFINED) charset = WEB_ENC_WINDOWS_1252;
+            return charset;
+        } else {
+            size_t next = p + 1;
+            if (next < n && s[next] == '/') ++next;
+            if (next < n && encoding_alpha(s[next])) {
+                p = next + 1;
+                while (p < n && !encoding_space(s[p]) && s[p] != '>') ++p;
+                if (p == n) break;
+                for (;;) {
+                    EncodingAttribute ignored;
+                    int status = encoding_attribute(s, n, &p, &ignored);
+                    if (status < 0) return encoding_xml_fallback(s, n);
+                    if (!status) break;
+                }
+            } else if (p + 1 < n && (s[p + 1] == '!' || s[p + 1] == '/' || s[p + 1] == '?')) {
+                while (p < n && s[p] != '>') ++p;
+            }
+        }
+    }
+    return encoding_xml_fallback(s, n);
+}
+
+/* Decode response bytes once before tokenization. BOM and supported transport
+ * charset take precedence over the bounded HTML metadata/XML prescan. Plain
+ * text does not inspect HTML syntax. Parser restarts beyond the first 1024
+ * bytes and inherited parent encodings remain separate work.
+ * Unicode inputs (srcdoc, document.write, DOMParser and generated pages)
  * continue to call html_parse directly and are not decoded a second time.
  */
 bool html_parse_bytes(Document *document, const char *bytes, size_t length,
@@ -808,6 +974,9 @@ bool html_parse_bytes(Document *document, const char *bytes, size_t length,
         encoding = WEB_ENC_UTF16BE;
     else if (content_type)
         encoding = web_encoding_mime_n(content_type, strlen(content_type));
+    const bool plaintext = response_is_plaintext(content_type);
+    if (encoding == WEB_ENC_UNKNOWN && !plaintext)
+        encoding = html_prescan_encoding(input, length);
     if (encoding == WEB_ENC_UNKNOWN) encoding = WEB_ENC_UTF8;
 
     /* Three output bytes per input byte bounds even an all-error input. The
@@ -817,7 +986,7 @@ bool html_parse_bytes(Document *document, const char *bytes, size_t length,
     bool ok = web_encoding_decode_n(&decoded, encoding, bytes, length, true, length * 3);
     if (ok) {
         document->encoding = encoding;
-        if (response_is_plaintext(content_type))
+        if (plaintext)
             html_parse_plaintext(document, decoded.s ? decoded.s : "", decoded.n);
         else
             html_parse(document, decoded.s ? decoded.s : "", decoded.n);

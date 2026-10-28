@@ -62,3 +62,7 @@ Native050b `050b0160e0869c4ac9e840a1835403c7dbb678c90a49c3619e0acf3275d007b6` pa
 ## Checkpoint010 — queued frame completion
 
 Native4d81029 `4d81029fec2383cdb1e25bfe7b91fba65640f244e4564c19a344686f7ee5b5c5` passes7frame checks, existing lifecycle gates and26/26 pinned Encoding Streams variants (358 assertions). Other expanded groups are separate. Source is only src/js/js.cc; meta/body/XHR working changes are excluded. Accepted733/score45 unchanged; combined current-artifact resources, original suite and navigation soak remain required. See `agent/evidence/102900614-010-frame-completion.json`.
+
+## Checkpoint011 — Bounded HTML encoding metadata candidate
+
+Candidate `9e5d9bd983bc7525cfad92c07e14049ef941c2a56796148906e31c4c63c2c7dd`: Frozen real-HTTP metadata checks **9/29 RED →29/29 GREEN**; legacy178, streams74, transfer68, codec170 and native document78 remain green. Build1.128s; ten build/test stages12.175s under1Hz sampling with existing V8 reused. Supplemental ASan exposed a pre-existing tokenizer EOF underflow; its failure remains explicit. Exact historical source staged without overwriting later working changes. Accepted733/score45 unchanged. The inherited tokenizer sanitizer failure remains unresolved in this binary and requires the separately tested correction. See `agent/evidence/102900614-011-html-meta.json`.
