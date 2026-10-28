@@ -1,0 +1,73 @@
+<!doctype html><meta charset="utf-8"><title>Automatic minimum animation and resolved-style controls</title>
+<pre id="results">Running</pre><script>
+(async()=>{
+ const rows=[],elements=[],animations=[];
+ const properties=[['min-width','minWidth'],['min-height','minHeight'],['min-inline-size','minInlineSize'],['min-block-size','minBlockSize']];
+ const writings=['horizontal-tb','vertical-rl'];
+ function eq(actual,expected){if(actual!==expected)throw Error(JSON.stringify(actual)+' != '+JSON.stringify(expected));}
+ function test(name,fn){try{fn();rows.push({name,status:'PASS'});}catch(e){rows.push({name,status:'FAIL',message:String(e.message||e)});}}
+ function node(writing,aspect='auto'){
+  const e=document.createElement('div');e.style.cssText='display:block;position:absolute;left:-10000px;top:0;width:64px;height:64px;margin:0;padding:0;border:0;writing-mode:'+writing+';aspect-ratio:'+aspect;
+  document.body.appendChild(e);elements.push(e);return e;
+ }
+ function computed(e,property){return getComputedStyle(e).getPropertyValue(property);}
+ function finish(){
+  for(const a of animations){try{a.cancel();}catch(e){}}
+  for(const e of elements)e.remove();
+  const pass=rows.filter(x=>x.status==='PASS').length,marker='RESULTS browser-sizing-auto-interpolation:'+(pass===rows.length&&rows.length===224?'PASS':'FAIL')+' '+pass+'/'+rows.length;
+  for(const row of rows)console.log('SIZING_AUTO_INTERPOLATION_RESULT '+JSON.stringify(row));
+  console.log(marker);document.getElementById('results').textContent=marker;
+ }
+ try{
+  for(const [property,key] of properties)for(const writing of writings)for(const aspect of ['auto','2 / 1']){
+   const e=node(writing,aspect);e.style.setProperty(property,'auto');
+   const autoExpected=aspect==='auto'?'0px':'auto',label=property+' '+writing+' aspect '+aspect;
+   test('public resolved auto '+label,()=>eq(computed(e,property),autoExpected));
+   const shapes=[
+    ['explicit auto to length',[{[key]:'auto'},{[key]:'40px'}],true],
+    ['explicit length to auto',[{[key]:'40px'},{[key]:'auto'}],false],
+    ['underlying auto to length',[{}, {[key]:'40px'}],true],
+    ['length to underlying auto',[{[key]:'40px'}, {}],false]
+   ];
+   for(const [shape,frames,forward] of shapes){
+    let animation=null,error=null;
+    try{animation=e.animate(frames,{duration:1000,fill:'both',easing:'linear'});animations.push(animation);animation.pause();}catch(e){error=e;}
+    for(const progress of [.25,.75])test('Web Animations '+shape+' at '+progress+' '+label,()=>{
+     if(error)throw error;if(!animation)throw Error('No animation created');
+     animation.currentTime=1000*progress;
+     const expectAuto=forward?progress<.5:progress>=.5;eq(computed(e,property),expectAuto?autoExpected:'40px');
+    });
+    if(animation)animation.cancel();
+   }
+  }
+  const sheet=document.createElement('style'),cases=[];let css='',id=0;
+  for(const [property] of properties)for(const writing of writings)for(const behavior of ['normal','allow-discrete'])for(const forward of [true,false]){
+   const e=node(writing);e.id='minimum-transition-'+(++id);e.style.transitionProperty=property;e.style.transitionDuration='1000ms';e.style.transitionTimingFunction='linear';e.style.transitionBehavior=behavior;
+   css+='#'+e.id+'{'+property+':auto;}#'+e.id+'.length{'+property+':40px;}\n';
+   if(!forward)e.className='length';cases.push({e,property,writing,behavior,forward});
+  }
+  sheet.textContent=css;document.head.appendChild(sheet);elements.push(sheet);
+  for(const c of cases)computed(c.e,c.property);
+  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+  for(const c of cases){
+   c.e.className=c.forward?'length':'';computed(c.e,c.property);
+   let found=null,error=null;
+   try{found=c.e.getAnimations();}catch(e){error=e;}
+   const label='CSS transition '+c.property+' '+c.writing+' '+c.behavior+' '+(c.forward?'stylesheet auto to length':'length to stylesheet auto');
+   test(label+' animation count',()=>{if(error)throw error;eq(found.length,c.behavior==='normal'?0:1);});
+   if(c.behavior==='normal'){
+    test(label+' resolved endpoint',()=>eq(computed(c.e,c.property),c.forward?'40px':'0px'));
+   }else{
+    const animation=found&&found.length===1?found[0]:null;
+    if(animation){animations.push(animation);animation.pause();}
+    for(const progress of [.25,.75])test(label+' at '+progress,()=>{
+     if(error)throw error;if(!animation)throw Error('Expected one allow-discrete transition');
+     animation.currentTime=1000*progress;const expectAuto=c.forward?progress<.5:progress>=.5;eq(computed(c.e,c.property),expectAuto?'0px':'40px');
+    });
+   }
+   if(found)for(const a of found){try{a.cancel();}catch(e){}}
+  }
+ }catch(e){rows.push({name:'fixture setup/completion',status:'FAIL',message:String(e.message||e)});}
+ finish();
+})();
+</script>

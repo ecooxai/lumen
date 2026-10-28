@@ -1473,7 +1473,7 @@ static const char *logical_size_prop(const char *p, bool vert) {
 }
 
 static bool custom_defer;
-static char *tr_grid_value(Node *n, const ComputedStyle *s, const char *prop);
+static char *animation_value_of(Node *n, const ComputedStyle *s, const char *prop);
 static char *grid_computed_tokens(const char *raw, float em, float rem, const MediaCtx *mc);
 void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *prop, const char *value_in, StyleEngine *e, Node *el) {
     if (prop[0] == '-' && prop[1] == '-') {
@@ -1584,7 +1584,7 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
     if (gp && (!gp->native || anim_longhand || grid_tracks || abs_align)) {
         CustomProps **slot = gp->inherited ? &st->gen_i : &st->gen_n;
         const char *pv = par ? gen_value(par, gp) : NULL;
-        if (inherit || (unset && gp->inherited)) gen_put(slot, P, grid_tracks && par ? tr_grid_value(el, par, P) : xstrdup(pv ? pv : ""));
+        if (inherit || (unset && gp->inherited)) gen_put(slot, P, grid_tracks && par ? animation_value_of(el, par, P) : xstrdup(pv ? pv : ""));
         else if (initial || unset) gen_put(slot, P, xstrdup(""));
         else gen_put(slot, P, grid_tracks ? grid_computed_tokens(val, c.em, c.rem, c.mc) : xstrdup(val));
     }
@@ -4973,7 +4973,18 @@ static char *grid_computed_tokens(const char *raw, float em, float rem, const Me
     }
     return sb_take(&out);
 }
-static char *tr_grid_value(Node *n, const ComputedStyle *s, const char *prop) {
+static char *animation_value_of(Node *n, const ComputedStyle *s, const char *prop) {
+    /* Animation combines computed values, before CSSOM resolves an automatic
+       minimum to zero. Keep the keyword for discrete interpolation and for
+       underlying/neutral keyframes, independent of box or aspect-ratio state. */
+    if (s && !strncmp(prop, "min-", 4)) {
+        const char *physical = logical_size_prop(prop, s->writing_mode != 0);
+        if (!strcmp(physical, "min-width") || !strcmp(physical, "min-height")) {
+            SB out; sb_init(&out);
+            len_str(&out, !strcmp(physical, "min-width") ? s->min_width : s->min_height, "auto");
+            return sb_take(&out);
+        }
+    }
     if (!s || (strcmp(prop, "grid-template-columns") && strcmp(prop, "grid-template-rows"))) return computed_of(n, s, prop);
     const GenProp *g = gen_prop(prop);
     const char *value = g ? gen_value(s, g) : NULL;
@@ -4983,18 +4994,18 @@ static char *tr_grid_value(Node *n, const ComputedStyle *s, const char *prop) {
     tracks_str(&out, rows ? s->grid_rows : s->grid_cols, rows ? s->grid_nrows : s->grid_ncols);
     return sb_take(&out);
 }
-/* Animation uses computed track values; CSSOM intentionally returns flattened
-   used tracks for a grid box and must keep that public behavior. */
+/* Animation keeps computed track structure and minimum-size keywords. CSSOM
+   intentionally resolves those values differently and keeps its public behavior. */
 char *css_get_animation_value(Node *el, const char *prop) {
     computed_prepare(el);
     const ComputedStyle *s = el && el->type == NODE_ELEMENT ? el->style : NULL;
-    return tr_grid_value(el, s, prop);
+    return animation_value_of(el, s, prop);
 }
 /* Properties whose computed value differs between o and s, for CSS transitions: the names in the
  * transition-property list, or for "all" every natively computed property plus the generic ones. */
 static void tr_scan_one(Node *n, const ComputedStyle *o, const ComputedStyle *s, const char *prop, void (*cb)(Node *, const char *, const char *, const char *)) {
     if (!strncmp(prop, "transition", 10) || !strncmp(prop, "animation", 9)) return;
-    char *a = tr_grid_value(n, o, prop), *b = tr_grid_value(n, s, prop);
+    char *a = animation_value_of(n, o, prop), *b = animation_value_of(n, s, prop);
     if (strcmp(a, b)) cb(n, prop, a, b);
     free(a); free(b);
 }

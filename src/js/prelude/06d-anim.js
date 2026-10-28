@@ -349,7 +349,8 @@ function waGridMix(a, b, p, op = false, depth = 0) {
     if (names[A.tracks.length]) out.push(names[A.tracks.length]);
     return out.join(' ');
 }
-const waBaseValue = (el, prop) => N.computed(el, prop, WA_GRID.test(prop) ? 3 : 0) || '';
+const WA_MIN_SIZE = /^min-(?:width|height|block-size|inline-size)$/;
+const waBaseValue = (el, prop) => N.computed(el, prop, WA_GRID.test(prop) || WA_MIN_SIZE.test(prop) ? 3 : 0) || '';
 function waGridSpecified(el, prop, value) {
     if (value === 'inherit') return el && el.parentElement ? (waBaseValue(el.parentElement, prop) || 'none') : (prop.startsWith('grid-auto-') ? 'auto' : 'none');
     if (value === 'initial' || value === 'unset') return prop.startsWith('grid-auto-') ? 'auto' : 'none';
