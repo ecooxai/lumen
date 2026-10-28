@@ -1,0 +1,40 @@
+{
+  "iteration": 14,
+  "title": "Flex static-position baseline compatibility correction",
+  "status": "accepted_focused_checkpoint",
+  "started_utc": "2026-10-28T08:27:27.071291+00:00",
+  "ended_utc": "2026-10-28T08:44:53.020117+00:00",
+  "end_basis": "Acceptance and completed evidence recorded; PM accepted earlier in this turn",
+  "duration_minutes": 17.432,
+  "focused_quality_score": 95,
+  "whole_goal_readiness": 19,
+  "agents": [
+    "/root/ops_preview",
+    "/root/engine_lead",
+    "/root/conformance",
+    "/root"
+  ],
+  "model": "GPT-6 Astra",
+  "tools": [
+    "built-in agents",
+    "RubyWebTerm"
+  ],
+  "runtime_commit": "23e1d1eb185d85fc08ee3b930c5f6abde476cb44",
+  "binary_sha256": "e41f9f04359464d4a229a74371cc6badd25aa01f3289d585286db67cec5e8801",
+  "change": "Container logical first/last baseline fallback; explicit child-relative self-start/self-end unchanged",
+  "scope": "Chromium150/pinned-WPT compatibility; current CSS Align draft fallback differs",
+  "proof": {
+    "fresh_original_127_original": "8/28\u219222/28\u21928/28; two same last-baseline losses",
+    "corrected128": "26/28; both losses repaired, no old pass lost",
+    "supplement200": "1037\u21921213/3370;+176/0;127\u2192128+4/0;all200harnessOK",
+    "native": "117/117PASS",
+    "shared55": "5509/5963PASS;+4/0 assertion losses;52OK/3TIMEOUT. All three timeout cases also observed on127 controls; cause unproven; raw rows retained.",
+    "geometry24": "18PASS/6FAIL,zero status changes from127"
+  },
+  "limits": [
+    "Whole-browser98 target unmet",
+    "No global zero-regression claim",
+    "Primary12850 lost identities retained; prior127505 retained",
+    "Publication requires explicit destination approval after automatic review rejection"
+  ]
+}

@@ -1,11 +1,11 @@
 {
   "iteration": 13,
   "title": "Final combined verification and delivery",
-  "status": "in_progress",
+  "status": "verification_complete_local_delivery_publication_blocked",
   "started_utc": "2026-10-28T07:32:35.661322+00:00",
   "start_basis": "Actual retained post-commit127 build start",
-  "ended_utc": null,
-  "focused_quality_score": null,
+  "ended_utc": "2026-10-28T08:44:53.020117+00:00",
+  "focused_quality_score": 90,
   "whole_goal_readiness": 19,
   "agents": [
     "/root/engine_lead",
@@ -18,8 +18,8 @@
     "built-in agents",
     "RubyWebTerm"
   ],
-  "accepted_runtime_commit": "163567579c077e35c7f6c6ed366162524530f5f8",
-  "frozen_binary_sha256": "a06dc09b0065a7727bb837c30fd5e5faf49a365b3401adbb1e31b4d4e143db88",
+  "accepted_runtime_commit": "23e1d1eb185d85fc08ee3b930c5f6abde476cb44",
+  "frozen_binary_sha256": "e41f9f04359464d4a229a74371cc6badd25aa01f3289d585286db67cec5e8801",
   "steps": [
     {
       "name": "post-commit actual relink",
@@ -173,7 +173,7 @@
     "Runtime/source/archive commits and binary hash remain distinct",
     "No raw denied evidence archive, credentials, profiles, inbox or QA screenshot collection is published"
   ],
-  "updated_utc": "2026-10-28T08:38:10.257642+00:00",
+  "updated_utc": "2026-10-28T08:44:53.020117+00:00",
   "candidate128": {
     "runtime_commit": "23e1d1eb185d85fc08ee3b930c5f6abde476cb44",
     "binary_sha256": "e41f9f04359464d4a229a74371cc6badd25aa01f3289d585286db67cec5e8801",
@@ -184,7 +184,7 @@
     "native_suite": "117/117PASS,41.40s",
     "geometry24": "18PASS/6FAIL,zero changes from127,48 verified releases/exits",
     "supplement200": "1213/3370,+176/0 versus original,+4/0 versus127,all200harnessOK",
-    "status": "critical shared/broad disposition pending",
+    "status": "PM_accepted_focused_iteration14_quality95",
     "compatibility_policy": "Chromium150/pinnedWPT container-axis baseline fallback; current draft divergence explicit"
   },
   "publication_block": {
@@ -193,5 +193,125 @@
     "reason": "Explicit end-user destination/source-archive publication authorization required; general push/deploy authorization judged insufficient",
     "actions_performed": false,
     "no_workaround": true
-  }
+  },
+  "duration_minutes": 72.289,
+  "quality_basis": "PM score90: unresolved harness discrepancies and blocked external publication; whole19 unchanged",
+  "final128_results": {
+    "primary2000": {
+      "summary": {
+        "baseline": {
+          "observed_urls": 2000,
+          "missing_urls": 0,
+          "unselected_reported_urls": 0,
+          "observed_assertions": 107088,
+          "passing_assertions": 98485,
+          "fully_passing_urls": 747,
+          "harness_ok_zero_assertions": 0,
+          "harness_statuses": {
+            "OK": 1702,
+            "TIMEOUT": 212,
+            "ERROR": 86
+          }
+        },
+        "candidate": {
+          "observed_urls": 2000,
+          "missing_urls": 0,
+          "unselected_reported_urls": 0,
+          "observed_assertions": 109139,
+          "passing_assertions": 101199,
+          "fully_passing_urls": 766,
+          "harness_ok_zero_assertions": 0,
+          "harness_statuses": {
+            "OK": 1732,
+            "TIMEOUT": 181,
+            "ERROR": 87
+          }
+        },
+        "chromium": {
+          "observed_urls": 2000,
+          "missing_urls": 0,
+          "unselected_reported_urls": 0,
+          "observed_assertions": 110572,
+          "passing_assertions": 105689,
+          "fully_passing_urls": 1693,
+          "harness_ok_zero_assertions": 0,
+          "harness_statuses": {
+            "OK": 1962,
+            "TIMEOUT": 18,
+            "CRASH": 9,
+            "ERROR": 9,
+            "SKIP": 2
+          }
+        }
+      },
+      "totals": {
+        "common_assertions": 107070,
+        "chromium_passing_assertions": 105689,
+        "baseline_matches_chromium_pass": 95417,
+        "candidate_matches_chromium_pass": 98124,
+        "candidate_missing_chromium_pass": 1497,
+        "candidate_missing_chromium_assertions": 1977,
+        "lost_passes": 50,
+        "lost_passes_to_observed_nonpass": 39,
+        "gained_passes": 2764,
+        "existing_assertions_gained_pass": 713,
+        "baseline_assertions_not_observed": 18,
+        "lost_passes_not_observed": 11,
+        "newly_observed_assertions": 2069,
+        "newly_observed_passes": 2051,
+        "observed_assertion_delta": 2051,
+        "passing_assertion_delta": 2714
+      },
+      "loss_states": {
+        "FAIL": 12,
+        "TIMEOUT": 8,
+        "NOTRUN": 19,
+        "MISSING": 11
+      },
+      "raw127_losses_retained": 505
+    },
+    "shared55": {
+      "baseline": {
+        "urls": 55,
+        "harness_statuses": {
+          "OK": 55
+        },
+        "passing_assertions": 5505,
+        "observed_assertions": 5963
+      },
+      "candidate": {
+        "urls": 55,
+        "harness_statuses": {
+          "OK": 52,
+          "TIMEOUT": 3
+        },
+        "passing_assertions": 5509,
+        "observed_assertions": 5963
+      }
+    },
+    "shared_harness_caveat": "All three128 timeout cases also observed on127 controls; no cause assigned, raw outcomes retained",
+    "rendering100": {
+      "PASS": 37,
+      "FAIL": 61,
+      "UNSUPPORTED": 1,
+      "TIMEOUT": 1,
+      "same_as127": true,
+      "verified_released_exited": 198
+    },
+    "geometry24": {
+      "PASS": 18,
+      "FAIL": 6,
+      "same_as127": true,
+      "verified_released_exited": 48
+    },
+    "supplement200": {
+      "original_pass": 1037,
+      "final128_pass": 1213,
+      "assertions": 3370,
+      "gains": 176,
+      "losses": 0,
+      "chromium_pass": 3337
+    }
+  },
+  "session_wall_minutes_at_checkpoint": 294.762
 }
