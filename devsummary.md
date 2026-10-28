@@ -541,3 +541,10 @@ Whole-goal estimate remains 19/100 against requested 98/100; the scoped patch co
 The tested engine remains 0f62172b08683c7c0d89722c588af6ff94f82ca3; the final commit adds only documentation and public progress metadata. Final source archive and publication identity are recorded in the separately reviewed publication manifest.
 
 Publication history note: the unpublished metadata snapshot was preserved under a local-only backup ref because it contained private artifact identifiers. Its complete intended current metadata tree was sanitized and folded directly onto tested engine commit 0f62172b08683c7c0d89722c588af6ff94f82ca3. No engine history, remote branch, default branch or user fixture was rewritten. Only the named source and showcase branches are eligible for publication.
+
+
+## Final publication scope — 2026-10-28T13:55:40.544258+00:00
+
+Automatic publication review rejected exporting the tracked comparator agent/validation/compare_wpt_runs_v2.py in a new archive: the denied harness payload is not authorized by the general source-snapshot request. The full development branch and history are preserved locally and are not pushed. The separately reviewed cloud showcase publishes an engine-source snapshot with all 584 recorded inputs, the explicit prompt, build configuration and required Linux embed generator; validation/progress/agents tooling, other tools scripts, Git history, raw results and profiles are omitted. No new build was run, and complete standalone validation or Android build reproducibility is not claimed.
+
+Final measured results and engine hashes remain unchanged. The public aggregate report and source inclusion manifest carry the exact final metadata and artifact identities.

@@ -7,7 +7,7 @@
   "score_note": "Subjective whole-goal readiness estimate with no scoring formula; this is not a test pass percentage. Full WPT / Chromium parity and the requested 98/100 remain unachieved.",
   "branch": "gpt-6-astra-builtin-agent-lumen-linux-conformance-20261028-0920",
   "checkpoint": "0f62172b08683c7c0d89722c588af6ff94f82ca3",
-  "updated_utc": "2026-10-28T13:47:30.112077+00:00",
+  "updated_utc": "2026-10-28T13:55:40.545630+00:00",
   "session_started_utc": "2026-10-28T09:12:12Z",
   "deadline_utc": "2026-10-28T14:12:12Z",
   "current_evidence": [
@@ -99,11 +99,11 @@
   "agent_session": "active",
   "showcase_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-showcase.mp4",
   "candidate_binary_sha256": "79874c9c16af2086cb1de93a6194276d4b17512897aeca118244beddef7bb967",
-  "publication_status": "Final metadata and audited source snapshot are being prepared for the model-named Git branch and static cloud showcase. Reviewed live preview and both videos are available.",
+  "publication_status": "The public cloud showcase carries the distinct allowlisted aggregate report, approved recordings and reviewed engine-source snapshot. Full development history remains local because the tracked comparator export was rejected. The publication manifest records verified artifact identities.",
   "showcase_note": "Actual accepted 150 browser recording from 13:01 UTC, before final primary measurements sealed. Independently reviewed clean and credited copies are 36 seconds, 960×720.",
   "source_archive_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/src.tar.gz",
-  "source_archive_sha256": "68d5b4882b960af17a9034096e9023427634281ff5249d7a5706d66b12c4c6de",
-  "source_archive_bytes": 4717263,
+  "source_archive_sha256": null,
+  "source_archive_bytes": null,
   "measurement_units": "WPT numbers count reported testharness subtests, not individual assert_* calls. Native CTest entries and custom correctness checks are separate.",
   "clean_demo_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-demo.mp4",
   "fresh_primary_chromium": {
@@ -118,5 +118,8 @@
     "pass_subtests": 209533,
     "reported_subtests": 217348,
     "supplemental_reference": "historical"
-  }
+  },
+  "source_archive_scope": "Engine-source snapshot with all 584 recorded inputs; validation/runtime tooling and Git history omitted. Complete standalone validation and Android build reproducibility are not claimed.",
+  "public_report_url": "https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-public-report.json",
+  "cloud_snapshot_url": "https://ecooxai.github.io/lumen/"
 }
