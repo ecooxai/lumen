@@ -8,7 +8,7 @@ $dev_tools=         use       mcp      or       localvm, prefer mcp if you are c
 &#x20;          for 3d task,prefer web dev tech ,chrome (make sure gpu works and use headless if no display) then blender ( headless) \
 \
 \
-$iteration_times=    1000        and stop when goal done or working time >5h\
+$iteration_times=    1000        and stop when goal done or working time >3h\
 $reffiles=\
 only use pasted image ignore file link , if no upload then use the file  link\
 $goal_score= 98/100\
