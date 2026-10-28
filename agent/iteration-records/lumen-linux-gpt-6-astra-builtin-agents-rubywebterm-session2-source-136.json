@@ -1,0 +1,10 @@
+{
+  "accepted_commit": "b41da82ef34e588d8400a213e82156316c69bdc6",
+  "binary": "build/codex-native/lumen-astra-i136",
+  "binary_sha256": "27591f3c55f84aa81221bf00ba301a574d60745757ba6dd3caf4bdb0b39b353a",
+  "compiled_source_manifest": "agent/validation/iteration-136/source-manifest-after.json",
+  "files_verified_from_git": 552,
+  "mismatches": [],
+  "missing_in_git": [],
+  "verified_utc": "2026-10-28T09:59:21.633642+00:00"
+}

@@ -317,3 +317,10 @@ Measured applied-source checkpoint09:50:32.405268UTC to focused/native completio
 Fifteen unchanged, deduplicated upstream URLs improve130→189/230 assertions (+59/0), all15 harnesses OK,12 fully passing URLs; Chromium230/230. The original ten grid URLs now172/177. Full native CTest119/119 including36 geometry controls passes. Remaining41 failures:30 before-explicit negative-line placement,6 auto-flow,5 orthogonal baseline alignment. General spanning-track intrinsic sizing also remains incomplete. All15 native guard sequences contain start, verification, release and exit; no synthetic audit events. Source review passed and broad holdouts remain required.
 
 Review UTC 2026-10-28T09:59:21.633642+00:00; total session wall minutes 47.161.
+
+
+### Guarded cohort cleanup and combined source checkpoint
+
+The reusable run_guarded_cohort.py launcher preserves the sealed pre-main capture refusal and existing runners, joins only their actual cleanup threads, verifies source hashes before/after, and rethrows original runner failures. Wrong-product rejection and the15-URL136 positive cohort passed. Scoped tooling quality97/100; whole-goal readiness19/100. Agents: standards_comparison and repository_lead; GPT-6 Astra, built-in agents and Ruby MCP.
+
+Combined accepted136 source is Git commitb41da82ef34e588d8400a213e82156316c69bdc6. All552 compiled-source files were read directly from that commit and SHA256-matched against the frozen136 build manifest: zero mismatches and zero missing paths. The binarySHA256 is27591f3c55f84aa81221bf00ba301a574d60745757ba6dd3caf4bdb0b39b353a. This establishes recoverable exact source bytes before subsequent edits; broad global acceptance remains pending.

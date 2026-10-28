@@ -1,0 +1,27 @@
+{
+  "scope": "Guarded cohort launcher cleanup and provenance",
+  "quality_score": 97,
+  "whole_goal_score": 19,
+  "status": "Reviewed positive and wrong-product negative controls pass; original guard/runners unchanged",
+  "model": "gpt-6-astra",
+  "agents": [
+    "standards_comparison",
+    "repository_lead"
+  ],
+  "tools": [
+    "builtin agents",
+    "rubywebterm MCP",
+    "sealed native capture guard"
+  ],
+  "finished_utc": "2026-10-28T09:59:51.568363+00:00",
+  "elapsed_scope": "Timing is retained in positive/negative evidence; this is an orchestration fix, not an engine pass-rate iteration.",
+  "launcher_sha256": "9d515fee536f6c50b4d863e51a5b929f16649aa6be5985d580393e3ff0d4877c",
+  "positive_report": "agent/validation/linux-wpt-20261028-session2/implicit-grid/candidate136-cleanup.json",
+  "positive_report_sha256": "947bb39d6ee1c0b3cd8150b4303e7ef1fed855fcdbdb197a3a3628caf1c2f36b",
+  "negative_report": "agent/validation/linux-wpt-20261028-session2/launcher-controls/wrong-product.json",
+  "negative_report_sha256": "102b86b3379a0576f8c0986c8b8e6c12a299838b2443061da4577d1062ef6b72",
+  "actual_cleanup_workers_joined": 1,
+  "remaining_workers": [],
+  "source_hashes_unchanged": true,
+  "safety_scope": "Joins actual existing trusted cleanup threads; cannot bypass sealed capture refusal/ACK; never fabricates audit events; original runner exceptions rethrown."
+}
