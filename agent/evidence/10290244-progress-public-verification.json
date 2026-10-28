@@ -1,0 +1,667 @@
+{
+  "schema": 1,
+  "createdUTC": "2026-10-28T20:09:13.618684+00:00",
+  "sourceBaseCommit": "0d6ebec7d39bb291aa4fdbf17ba34d5879571145",
+  "sourceHashes": {
+    "tools/lume-progress-10290244/model.mjs": "f5716c98fbeb772d57cc8a7f516d32ea2979e7adabad94120fda2f8403638322",
+    "tools/lume-progress-10290244/server.mjs": "3d359ed43ac9333da30be1f35522cb84d69f79f92b46b7b93e6c552b93ebb149",
+    "tools/lume-progress-10290244/inbox.mjs": "0d72184491734b6439d73f68baf33375b54f21c541d675bb9925a2a29dfa9c62",
+    "tools/lume-progress-10290244/build.mjs": "08bc0da800f1bb30672e6634a0cf4bd48889c29b17056c1d7e48da2b75dd7d87",
+    "tools/lume-progress-10290244/README.md": "4ad910ad2a085e59e9660a429e36464ccf05ce4fed17603ef7b169e37fa21be3",
+    "tools/lume-progress-10290244/tests/progress.test.mjs": "c10851d0894e6eb459af943e2141972e1af5915765706b87961010ca5321b0d2",
+    "tools/lume-progress-10290244/public/index.html": "d6b0205dcacd2401eb7214519f3e95a53dde1203ae0f2666a21ea073fa2558f2",
+    "tools/lume-progress-10290244/public/app.js": "aa8bdf0e189234f35818439f92d52cfb1a5e64dad5fd53cb321fc4289a635bc7",
+    "tools/lume-progress-10290244/public/config.json": "9b3dcfb0793606879235669f3042f3bb6566bf888d8854e20c04d8d1a725d861",
+    "tools/lume-progress-10290244/public/style.css": "9fb9f02b63e591d3c96be4c76a2a976ce98fffcd3830e845ce3004d067195b19",
+    "tools/apple-session-gpt6as/package_source_10290244.py": "2a17293c14d88958b906cce251be4560abac38bdf435d53bd8427ea8a5e5aad9",
+    "tools/apple-session-gpt6as/publish_progress_surge_10290244.py": "4dc5a4e885ace086ed6582b6eb1ad3cee3c96ec64097d78e28796d3dc931badf",
+    "tools/apple-session-gpt6as/update_priority_progress_10290244.py": "3ad0d3e7045090dd174188165abfb0b62cfacd4901e6810530dd686d76ff81d1",
+    "tools/apple-session-gpt6as/verify_progress_public_10290244.mjs": "4cc7df272e64929b475b01415b4a005b67afbe679f4a3e462615d4c6a4290ac9",
+    "tools/apple-session-gpt6as/verify_progress_visual_10290244.py": "c248b1cda7d34663da039bd5b720d99ac73290a266a282bde724b76f998d8909",
+    "tools/apple-session-gpt6as/enable_progress_origin_10290244.py": "a6cbc8a5fbaca293e5fe40598f41c9b8725cfed27a4e3c9831cdc2d699212339"
+  },
+  "publicOrigin": "https://4d3ee194969f5f51.czd5qzludboe.opentunnel.xyz",
+  "publicProbe": {
+    "schema": 1,
+    "mode": "probe",
+    "startedUTC": "2026-10-28T19:56:20.923Z",
+    "publicURL": "https://4d3ee194969f5f51.czd5qzludboe.opentunnel.xyz",
+    "passed": true,
+    "wpt": {
+      "passed": 1850,
+      "total": 1850,
+      "scope": "Pinned six-file upstream WPT-source subset. Full official WPT remains unmeasured.",
+      "binarySha256": "5ec2abd8d1503c17524e65ec6ed89ed5ba4a75253e326a0d8715f7a49b60fd75"
+    },
+    "websocket": {
+      "tlsCertificateValidated": true,
+      "handshakeAcceptVerified": true,
+      "websocketRoundTripMs": [
+        68.559,
+        68.356
+      ],
+      "sampleTimestamps": [
+        "2026-10-28T19:56:21.127Z",
+        "2026-10-28T19:56:23.138Z"
+      ],
+      "observedSampleIntervalSeconds": 2.011
+    },
+    "publicSourceArchive": {
+      "bytes": 8793612,
+      "sha256": "b8fa78960703b1e47b12fb133e86e59757342233b974be2c36840778c5848ecd",
+      "sourceCommit": "7a069f7fe694154fcff2b265d7c7aec3ab390e9b",
+      "fullByteHashVerified": true
+    },
+    "messageId": "8414063b-3c6c-4623-ad6d-22874a6024d4",
+    "messageStoredForAgentReview": true,
+    "privateKeysOmitted": true,
+    "finishedUTC": "2026-10-28T19:56:23.627Z"
+  },
+  "messageReplyVerified": {
+    "messageId": "8414063b-3c6c-4623-ad6d-22874a6024d4",
+    "agentReplyObserved": true,
+    "finishedUTC": "2026-10-28T19:59:14.192Z"
+  },
+  "visualQA": {
+    "schema": 1,
+    "startedUTC": "2026-10-28T20:04:55.302226+00:00",
+    "publicOrigin": "https://4d3ee194969f5f51.czd5qzludboe.opentunnel.xyz",
+    "method": "Native Chrome and existing full_runner CDP; fresh isolated profile, no extensions or user accounts.",
+    "chromiumSHA256": "4f71e9dbe725fec1110977b6a6dd0708fb32fbde9c905b4b461cef880ac08288",
+    "runnerSHA256": "a7bc96c3697fb099ad63c145011bc434a66d865a713a62e5198731bed9600ac7",
+    "passed": true,
+    "views": [
+      {
+        "label": "desktop",
+        "passed": true,
+        "title": "Lume \u00b7 Apple browser progress",
+        "wptRate": "100.00%",
+        "wptCount": "1,850 / 1,850 assertions \u00b7 6 files reported",
+        "scope": "Pinned six-file upstream WPT-source subset. Full official WPT remains unmeasured.",
+        "phase": "The current accepted native build de338a9f0891 passes all 1,850 assertions in the original six-file WPT subset. Fresh CPU/RAM acceptance for this build is unverified; broader standards and Apple package checks continue. The previous executable failed the scrolling CPU target; its measurements remain historical.",
+        "score": "Iteration 5 \u00b7 35.00/100 task gates",
+        "artifact": "Native binary de338a9f08913dc814d0\u2026",
+        "firstHostSample": "01:04:57 PM",
+        "secondHostSample": "01:04:59 PM",
+        "cpu": "22.4%",
+        "ram": "17.06 GB",
+        "latency": "77.2 ms",
+        "categoryRows": [
+          [
+            "DOM construction / cloning",
+            "14",
+            "14 / 10",
+            "14 / 13",
+            "99.29%",
+            "4 Lume files need fixes"
+          ],
+          [
+            "Events",
+            "16",
+            "16 / 12",
+            "16 / 16",
+            "64.10%",
+            "4 Lume files need fixes"
+          ],
+          [
+            "URL",
+            "77",
+            "0 / 0",
+            "0 / 0",
+            "Unmeasured",
+            "Unrun"
+          ],
+          [
+            "Fetch headers",
+            "52",
+            "0 / 0",
+            "0 / 0",
+            "Unmeasured",
+            "Unrun"
+          ],
+          [
+            "Microtasks",
+            "10",
+            "10 / 1",
+            "10 / 10",
+            "37.04%",
+            "Errors / timeouts / incomplete harnesses"
+          ],
+          [
+            "Web storage",
+            "7",
+            "0 / 0",
+            "0 / 0",
+            "Unmeasured",
+            "Unrun"
+          ],
+          [
+            "Encoding",
+            "1339",
+            "0 / 0",
+            "0 / 0",
+            "Unmeasured",
+            "Unrun"
+          ]
+        ],
+        "expandedSummary": "1,515 frozen variants \u00b7 235 sources \u00b7 earlier native artifact",
+        "compatibility": [
+          "Chrome reference1850 / 1850 assertions",
+          "Fully passing files6 / 6",
+          "Full official WPT rateUnmeasured",
+          "Current native idle CPUunverified \u00b7 p95 \u2014%",
+          "Current native idle RSSUnverified",
+          "Native scrolling CPUunverified \u00b7 p95 \u2014% (target \u226410%)",
+          "Identical IPA on Mac / iPad / iPhoneUnverified on Mac, iPad and iPhone",
+          "Last verified source7a069f7fe694",
+          "Previous-build scrolling CPUfailed \u00b7 p95 23.86% \u00b7 f941cfcdedd9\u2026 (historical)"
+        ],
+        "scoreBox": {
+          "left": 1056.375,
+          "top": 1047,
+          "right": 1262,
+          "bottom": 1084
+        },
+        "viewport": {
+          "width": 1280,
+          "height": 1100
+        },
+        "documentWidth": 1280,
+        "snapshot": {
+          "wpt": {
+            "passed": 1850,
+            "total": 1850,
+            "passPercent": 100,
+            "reportedFiles": 6,
+            "fullyPassingFiles": 6,
+            "chromePassed": 1850,
+            "chromeTotal": 1850,
+            "binarySha256": "de338a9f08913dc814d0051918ade567548f4f1c9231dcc7e44247ffbdf018e5",
+            "scope": "Pinned six-file upstream WPT-source subset. Full official WPT remains unmeasured.",
+            "evidence": "output/session-20261029/native-qa-kit-v1/source/output/wpt-comparison-session10290244-clone-allocation-1.json"
+          },
+          "expanded": {
+            "selectedVariants": 1515,
+            "selectedSourceFiles": 235,
+            "scope": "Predeclared priority subset; not full WPT. All frozen URL variants remain in the schedule.",
+            "selectionScheduleSHA256": "adcbf9719f722368b1e53ac1bd61cf38e566d3bd7495d9d6127cad38dd6aeabe",
+            "categories": {
+              "dom": {
+                "scheduled": 14,
+                "lumenRecorded": 14,
+                "chromeRecorded": 14,
+                "lumenFullyPassing": 10,
+                "chromeFullyPassing": 13,
+                "chromePassRetention": 0.9928861788617886,
+                "bothComplete": true,
+                "harnessesHealthy": true,
+                "lumenRemaining": 0,
+                "chromeRemaining": 0,
+                "lumenFileOutcomes": {
+                  "OK": 14
+                },
+                "chromeFileOutcomes": {
+                  "OK": 14
+                }
+              },
+              "events": {
+                "scheduled": 16,
+                "lumenRecorded": 16,
+                "chromeRecorded": 16,
+                "lumenFullyPassing": 12,
+                "chromeFullyPassing": 16,
+                "chromePassRetention": 0.6410256410256411,
+                "bothComplete": true,
+                "harnessesHealthy": true,
+                "lumenRemaining": 0,
+                "chromeRemaining": 0,
+                "lumenFileOutcomes": {
+                  "OK": 16
+                },
+                "chromeFileOutcomes": {
+                  "OK": 16
+                }
+              },
+              "url": {
+                "scheduled": 77,
+                "lumenRecorded": 0,
+                "chromeRecorded": 0,
+                "lumenFullyPassing": 0,
+                "chromeFullyPassing": 0,
+                "chromePassRetention": null,
+                "bothComplete": false,
+                "harnessesHealthy": false,
+                "lumenRemaining": 77,
+                "chromeRemaining": 77,
+                "lumenFileOutcomes": {},
+                "chromeFileOutcomes": {}
+              },
+              "encoding": {
+                "scheduled": 1339,
+                "lumenRecorded": 0,
+                "chromeRecorded": 0,
+                "lumenFullyPassing": 0,
+                "chromeFullyPassing": 0,
+                "chromePassRetention": null,
+                "bothComplete": false,
+                "harnessesHealthy": false,
+                "lumenRemaining": 1339,
+                "chromeRemaining": 1339,
+                "lumenFileOutcomes": {},
+                "chromeFileOutcomes": {}
+              },
+              "headers": {
+                "scheduled": 52,
+                "lumenRecorded": 0,
+                "chromeRecorded": 0,
+                "lumenFullyPassing": 0,
+                "chromeFullyPassing": 0,
+                "chromePassRetention": null,
+                "bothComplete": false,
+                "harnessesHealthy": false,
+                "lumenRemaining": 52,
+                "chromeRemaining": 52,
+                "lumenFileOutcomes": {},
+                "chromeFileOutcomes": {}
+              },
+              "microtasks": {
+                "scheduled": 10,
+                "lumenRecorded": 10,
+                "chromeRecorded": 10,
+                "lumenFullyPassing": 1,
+                "chromeFullyPassing": 10,
+                "chromePassRetention": 0.37037037037037035,
+                "bothComplete": true,
+                "harnessesHealthy": false,
+                "lumenRemaining": 0,
+                "chromeRemaining": 0,
+                "lumenFileOutcomes": {
+                  "ERROR": 4,
+                  "OK": 2,
+                  "TIMEOUT": 4
+                },
+                "chromeFileOutcomes": {
+                  "OK": 10
+                }
+              },
+              "storage": {
+                "scheduled": 7,
+                "lumenRecorded": 0,
+                "chromeRecorded": 0,
+                "lumenFullyPassing": 0,
+                "chromeFullyPassing": 0,
+                "chromePassRetention": null,
+                "bothComplete": false,
+                "harnessesHealthy": false,
+                "lumenRemaining": 7,
+                "chromeRemaining": 7,
+                "lumenFileOutcomes": {},
+                "chromeFileOutcomes": {}
+              }
+            },
+            "lumenBinarySHA256": "f941cfcdedd9a59b60f41b1cb2be560dce136fc4e6d44cacfce0e5ab25cbbe46",
+            "chromiumBinarySHA256": "4f71e9dbe725fec1110977b6a6dd0708fb32fbde9c905b4b461cef880ac08288",
+            "reportSHA256": "5bf41c81a1e7c3652b6df88e9d9ce9bc1d6ed294eea68ea6493ed4efb8a7347f",
+            "reportUpdatedUTC": "2026-10-28T20:01:41.120358+00:00",
+            "isCurrentAcceptedNativeArtifact": false
+          },
+          "iteration": 5,
+          "score": 35
+        }
+      },
+      {
+        "label": "phone",
+        "passed": true,
+        "title": "Lume \u00b7 Apple browser progress",
+        "wptRate": "100.00%",
+        "wptCount": "1,850 / 1,850 assertions \u00b7 6 files reported",
+        "scope": "Pinned six-file upstream WPT-source subset. Full official WPT remains unmeasured.",
+        "phase": "The current accepted native build de338a9f0891 passes all 1,850 assertions in the original six-file WPT subset. Fresh CPU/RAM acceptance for this build is unverified; broader standards and Apple package checks continue. The previous executable failed the scrolling CPU target; its measurements remain historical.",
+        "score": "Iteration 5 \u00b7 35.00/100 task gates",
+        "artifact": "Native binary de338a9f08913dc814d0\u2026",
+        "firstHostSample": "01:05:03 PM",
+        "secondHostSample": "01:05:05 PM",
+        "cpu": "14.5%",
+        "ram": "17.03 GB",
+        "latency": "70.7 ms",
+        "categoryRows": [
+          [
+            "DOM construction / cloning",
+            "14",
+            "14 / 10",
+            "14 / 13",
+            "99.29%",
+            "4 Lume files need fixes"
+          ],
+          [
+            "Events",
+            "16",
+            "16 / 12",
+            "16 / 16",
+            "64.10%",
+            "4 Lume files need fixes"
+          ],
+          [
+            "URL",
+            "77",
+            "0 / 0",
+            "0 / 0",
+            "Unmeasured",
+            "Unrun"
+          ],
+          [
+            "Fetch headers",
+            "52",
+            "0 / 0",
+            "0 / 0",
+            "Unmeasured",
+            "Unrun"
+          ],
+          [
+            "Microtasks",
+            "10",
+            "10 / 1",
+            "10 / 10",
+            "37.04%",
+            "Errors / timeouts / incomplete harnesses"
+          ],
+          [
+            "Web storage",
+            "7",
+            "0 / 0",
+            "0 / 0",
+            "Unmeasured",
+            "Unrun"
+          ],
+          [
+            "Encoding",
+            "1339",
+            "0 / 0",
+            "0 / 0",
+            "Unmeasured",
+            "Unrun"
+          ]
+        ],
+        "expandedSummary": "1,515 frozen variants \u00b7 235 sources \u00b7 earlier native artifact",
+        "compatibility": [
+          "Chrome reference1850 / 1850 assertions",
+          "Fully passing files6 / 6",
+          "Full official WPT rateUnmeasured",
+          "Current native idle CPUunverified \u00b7 p95 \u2014%",
+          "Current native idle RSSUnverified",
+          "Native scrolling CPUunverified \u00b7 p95 \u2014% (target \u226410%)",
+          "Identical IPA on Mac / iPad / iPhoneUnverified on Mac, iPad and iPhone",
+          "Last verified source7a069f7fe694",
+          "Previous-build scrolling CPUfailed \u00b7 p95 23.86% \u00b7 f941cfcdedd9\u2026 (historical)"
+        ],
+        "scoreBox": {
+          "left": 166.375,
+          "top": 791,
+          "right": 372,
+          "bottom": 828
+        },
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "documentWidth": 390,
+        "snapshot": {
+          "wpt": {
+            "passed": 1850,
+            "total": 1850,
+            "passPercent": 100,
+            "reportedFiles": 6,
+            "fullyPassingFiles": 6,
+            "chromePassed": 1850,
+            "chromeTotal": 1850,
+            "binarySha256": "de338a9f08913dc814d0051918ade567548f4f1c9231dcc7e44247ffbdf018e5",
+            "scope": "Pinned six-file upstream WPT-source subset. Full official WPT remains unmeasured.",
+            "evidence": "output/session-20261029/native-qa-kit-v1/source/output/wpt-comparison-session10290244-clone-allocation-1.json"
+          },
+          "expanded": {
+            "selectedVariants": 1515,
+            "selectedSourceFiles": 235,
+            "scope": "Predeclared priority subset; not full WPT. All frozen URL variants remain in the schedule.",
+            "selectionScheduleSHA256": "adcbf9719f722368b1e53ac1bd61cf38e566d3bd7495d9d6127cad38dd6aeabe",
+            "categories": {
+              "dom": {
+                "scheduled": 14,
+                "lumenRecorded": 14,
+                "chromeRecorded": 14,
+                "lumenFullyPassing": 10,
+                "chromeFullyPassing": 13,
+                "chromePassRetention": 0.9928861788617886,
+                "bothComplete": true,
+                "harnessesHealthy": true,
+                "lumenRemaining": 0,
+                "chromeRemaining": 0,
+                "lumenFileOutcomes": {
+                  "OK": 14
+                },
+                "chromeFileOutcomes": {
+                  "OK": 14
+                }
+              },
+              "events": {
+                "scheduled": 16,
+                "lumenRecorded": 16,
+                "chromeRecorded": 16,
+                "lumenFullyPassing": 12,
+                "chromeFullyPassing": 16,
+                "chromePassRetention": 0.6410256410256411,
+                "bothComplete": true,
+                "harnessesHealthy": true,
+                "lumenRemaining": 0,
+                "chromeRemaining": 0,
+                "lumenFileOutcomes": {
+                  "OK": 16
+                },
+                "chromeFileOutcomes": {
+                  "OK": 16
+                }
+              },
+              "url": {
+                "scheduled": 77,
+                "lumenRecorded": 0,
+                "chromeRecorded": 0,
+                "lumenFullyPassing": 0,
+                "chromeFullyPassing": 0,
+                "chromePassRetention": null,
+                "bothComplete": false,
+                "harnessesHealthy": false,
+                "lumenRemaining": 77,
+                "chromeRemaining": 77,
+                "lumenFileOutcomes": {},
+                "chromeFileOutcomes": {}
+              },
+              "encoding": {
+                "scheduled": 1339,
+                "lumenRecorded": 0,
+                "chromeRecorded": 0,
+                "lumenFullyPassing": 0,
+                "chromeFullyPassing": 0,
+                "chromePassRetention": null,
+                "bothComplete": false,
+                "harnessesHealthy": false,
+                "lumenRemaining": 1339,
+                "chromeRemaining": 1339,
+                "lumenFileOutcomes": {},
+                "chromeFileOutcomes": {}
+              },
+              "headers": {
+                "scheduled": 52,
+                "lumenRecorded": 0,
+                "chromeRecorded": 0,
+                "lumenFullyPassing": 0,
+                "chromeFullyPassing": 0,
+                "chromePassRetention": null,
+                "bothComplete": false,
+                "harnessesHealthy": false,
+                "lumenRemaining": 52,
+                "chromeRemaining": 52,
+                "lumenFileOutcomes": {},
+                "chromeFileOutcomes": {}
+              },
+              "microtasks": {
+                "scheduled": 10,
+                "lumenRecorded": 10,
+                "chromeRecorded": 10,
+                "lumenFullyPassing": 1,
+                "chromeFullyPassing": 10,
+                "chromePassRetention": 0.37037037037037035,
+                "bothComplete": true,
+                "harnessesHealthy": false,
+                "lumenRemaining": 0,
+                "chromeRemaining": 0,
+                "lumenFileOutcomes": {
+                  "ERROR": 4,
+                  "OK": 2,
+                  "TIMEOUT": 4
+                },
+                "chromeFileOutcomes": {
+                  "OK": 10
+                }
+              },
+              "storage": {
+                "scheduled": 7,
+                "lumenRecorded": 0,
+                "chromeRecorded": 0,
+                "lumenFullyPassing": 0,
+                "chromeFullyPassing": 0,
+                "chromePassRetention": null,
+                "bothComplete": false,
+                "harnessesHealthy": false,
+                "lumenRemaining": 7,
+                "chromeRemaining": 7,
+                "lumenFileOutcomes": {},
+                "chromeFileOutcomes": {}
+              }
+            },
+            "lumenBinarySHA256": "f941cfcdedd9a59b60f41b1cb2be560dce136fc4e6d44cacfce0e5ab25cbbe46",
+            "chromiumBinarySHA256": "4f71e9dbe725fec1110977b6a6dd0708fb32fbde9c905b4b461cef880ac08288",
+            "reportSHA256": "5bf41c81a1e7c3652b6df88e9d9ce9bc1d6ed294eea68ea6493ed4efb8a7347f",
+            "reportUpdatedUTC": "2026-10-28T20:01:41.120358+00:00",
+            "isCurrentAcceptedNativeArtifact": false
+          },
+          "iteration": 5,
+          "score": 35
+        }
+      }
+    ],
+    "chromeVersion": {
+      "protocolVersion": "1.3",
+      "product": "Chrome/156.0.8078.48",
+      "revision": "@d0c02bfad08ec92a6ffcf989e53cd995e6381a4c",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+      "jsVersion": "15.6.75.19"
+    },
+    "screenshots": [
+      {
+        "path": "output/session-10290244/progress-visual-qa/gpt6-astra-pro_release-integrator_builtin-subagents_devinmac3d_lume-progress-desktop-viewport.png",
+        "sha256": "5e9a6ff3baebcc871ea2ef741a57884bf4b0d403bc61715da3fbe8c009551285",
+        "bytes": 179540
+      },
+      {
+        "path": "output/session-10290244/progress-visual-qa/gpt6-astra-pro_release-integrator_builtin-subagents_devinmac3d_lume-progress-desktop-full.png",
+        "sha256": "6105ea5cfa4807c10faa7071de0d129878fc8a24ae8d3afe8a741a7e436de1df",
+        "bytes": 325150
+      },
+      {
+        "path": "output/session-10290244/progress-visual-qa/gpt6-astra-pro_release-integrator_builtin-subagents_devinmac3d_lume-progress-phone-viewport.png",
+        "sha256": "c13bacaf8e0955dd088c979f34121b244f46046657ac43ba671ec2904ecae5ee",
+        "bytes": 75921
+      },
+      {
+        "path": "output/session-10290244/progress-visual-qa/gpt6-astra-pro_release-integrator_builtin-subagents_devinmac3d_lume-progress-phone-full.png",
+        "sha256": "0577f7c39e37018531b159d9bfaf5d3d181807a2cfebd5e76a1156eaf195e8a7",
+        "bytes": 305885
+      }
+    ],
+    "cleanup": {
+      "process": {
+        "sent_sigterm": false,
+        "sent_sigkill": false,
+        "error": null,
+        "post_signal_verification": {
+          "allowed_wait_s": 10,
+          "initial_live_members": {},
+          "duration_ms": 17
+        },
+        "process_group_gone": true,
+        "remaining_group_members": {},
+        "root_exit_code": 0,
+        "root_exit_before_signal_cleanup": 0,
+        "root_exit_observation_verified": true
+      },
+      "errors": [],
+      "graceful_close": {
+        "method": "Browser.close",
+        "attempted": true,
+        "acknowledged": true,
+        "allowed_drain_s": 20,
+        "exit_requirement": "All live owned-group members must disappear; an exiting process state is not ignored.",
+        "initial_process_state": {
+          "observed_unix_ms": 1793217907783,
+          "members": [
+            {
+              "pid": 46347,
+              "ppid": 46345,
+              "pgid": 46347,
+              "uid": 501,
+              "ruid": 501,
+              "stat": "Ss",
+              "start_identity": "Wed Oct 28 13:04:55 2026",
+              "executable": "/Users/devin/repos/lumen/output/wpt-10290244/reference/chrome-4f71e9dbe725fec1-mac-arm64-10290244/Google Chrome.app/Contents/MacOS/Google Chrome"
+            },
+            {
+              "pid": 46354,
+              "ppid": 46347,
+              "pgid": 46347,
+              "uid": 501,
+              "ruid": 501,
+              "stat": "S",
+              "start_identity": "Wed Oct 28 13:04:55 2026",
+              "executable": "/Users/devin/repos/lumen/output/wpt-10290244/reference/chrome-4f71e9dbe725fec1-mac-arm64-10290244/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/156.0.8078.48/Helpers/Google Chrome Helper.app/Contents/MacOS/Google Chrome Helper"
+            },
+            {
+              "pid": 46355,
+              "ppid": 46347,
+              "pgid": 46347,
+              "uid": 501,
+              "ruid": 501,
+              "stat": "S",
+              "start_identity": "Wed Oct 28 13:04:55 2026",
+              "executable": "/Users/devin/repos/lumen/output/wpt-10290244/reference/chrome-4f71e9dbe725fec1-mac-arm64-10290244/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/156.0.8078.48/Helpers/Google Chrome Helper.app/Contents/MacOS/Google Chrome Helper"
+            },
+            {
+              "pid": 46356,
+              "ppid": 46347,
+              "pgid": 46347,
+              "uid": 501,
+              "ruid": 501,
+              "stat": "S",
+              "start_identity": "Wed Oct 28 13:04:55 2026",
+              "executable": "/Users/devin/repos/lumen/output/wpt-10290244/reference/chrome-4f71e9dbe725fec1-mac-arm64-10290244/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/156.0.8078.48/Helpers/Google Chrome Helper.app/Contents/MacOS/Google Chrome Helper"
+            },
+            {
+              "pid": 46388,
+              "ppid": 46347,
+              "pgid": 46347,
+              "uid": 501,
+              "ruid": 501,
+              "stat": "S",
+              "start_identity": "Wed Oct 28 13:04:55 2026",
+              "executable": "(Google Chrome He)"
+            }
+          ]
+        },
+        "process_group_gone": true,
+        "drain_duration_ms": 288
+      }
+    },
+    "finishedUTC": "2026-10-28T20:05:08.108524+00:00",
+    "wallSeconds": 12.806
+  },
+  "unitTestLogSHA256": "1fcbc4eadb8e984f832aed142dcb357d6e49b473ca441db6579551d4eba4e887",
+  "scope": "Progress infrastructure only. The referenced archive predates this code checkpoint and must be refreshed before current-publication acceptance. No access key, inbox text, tunnel credentials or runtime state is committed."
+}

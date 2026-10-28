@@ -61,3 +61,10 @@ Clone metadata now walks native trees and copies private platform state only whe
 All 292 retained native compatibility/allocation checks passed across nine timed stages; prebuilt-V8 incremental build 3.093 s. The unchanged six-file pinned WPT subset freshly passes 1850/1850 in Lume and Chrome, 6/6 files, on native SHA `de338a9f08913dc814d0051918ade567548f4f1c9231dcc7e44247ffbdf018e5`. Evidence and full compiled-source hashes: `agent/evidence/10290244-005-clone-allocation.json`.
 
 Task score 35.00/100. The previous 40.00 score included 5 idle points measured on f941; they are now explicitly historical because the executable changed. No current-artifact idle/interaction/soak or same-IPA success is inferred from these short checks. Expanded 1515-variant inventory is unchanged; the completed f941 DOM comparison remains a separate artifact cohort.
+
+
+## Progress publication checkpoint — 2026-10-28T20:09:13.618684+00:00
+
+Native iteration and task score remain unchanged (35.00/100). The isolated progress view passed six service regressions, actual public TLS/WebSocket tests with two live samples and nonce RTT, full downloaded source SHA verification, authenticated message storage and an agent reply. Fresh-profile native Chrome verified desktop1280×1100 and phone390×844 layout, exact current native/subset counts, all seven frozen categories, historical cohort labeling, real CPU/RAM/RTT updates and a fixed bottom-right iteration badge. Visual QA wall time 12.806s includes one-second Chromium process sampling; it is not a Lume performance benchmark.
+
+Public origin: https://4d3ee194969f5f51.czd5qzludboe.opentunnel.xyz. Keys remain solely in ignored private runtime state; no access-fragment link belongs in source or public manifests. Pending release steps: push this source checkpoint, refresh the committed-source/archive alias, verify its public SHA again and publish the same view/archive to Surge if existing authentication permits. The release gate stays unchanged until current-source publication evidence is complete.

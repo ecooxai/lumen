@@ -53,3 +53,8 @@ Current native snapshot is `build-apple-load-20261029/lumen-render-overdraw-f941
 ## Latest verified task checkpoint — 10290244-005
 
 Current native snapshot `build-apple-load-20261029/lumen-clone-allocation-de338a9f08913dc8` (de338a9f08913dc8…) passes 292 targeted allocation/compatibility checks and 1850/1850 assertions in the original six-file WPT subset. Lazy-wrapper allocation regression is fixed with exact counters, but current-binary CPU/RSS/soak still needs fresh evidence; previous f941 idle/scroll observations are historical. Expanded official-server WPT keeps 1515 frozen variants in seven categories and reports missing cases. Same-IPA Mac/iPad/iPhone execution remains unverified. Read the latest continuation and scorecard before modifying shared Makefile or native runtime files.
+
+
+## Task10290244 progress service
+
+Public HTTPS base: https://4d3ee194969f5f51.czd5qzludboe.opentunnel.xyz. It is verified with actual WebSocket snapshots and private message/reply round trips. Preserve explicit current/historical executable labels. Keep the private access fragment, message receipt keys, ignored state, tunnel profiles and user profiles out of Git/source archives. The progress helper reads exact scorecard evidence; successful UI/build work is not browser conformance.
