@@ -26,7 +26,7 @@ def read(path):
 
 def states(r):return {k:s['status'] for k,s in r['tests'].items()} if r else {}
 def passed(r):return {k for k,s in states(r).items() if s=='PASS'}
-def fully(r):return bool(r and r['status']=='OK' and all(v=='PASS' for v in states(r).values()))
+def fully(r):return bool(r and r['status']=='OK' and states(r) and all(v=='PASS' for v in states(r).values()))
 def identity(u,k):return [u,k[0],k[1]]
 
 def main():
@@ -43,6 +43,7 @@ def main():
             summary[name+'_observed_urls']+=item is not None
             summary[name+'_observed_subtests']+=len(states(item));summary[name+'_pass_subtests']+=len(passed(item))
             summary[name+'_fully_passing_urls']+=fully(item)
+            summary[name+'_harness_ok_zero_subtests']+=bool(item and item['status']=='OK' and not states(item))
         gains=cp-bp;losses=bp-cp;gained.extend(identity(u,k) for k in sorted(gains));lost.extend(identity(u,k) for k in sorted(losses))
         if b and b['status']=='OK' and (not c or c['status']!='OK'):harness_losses.append([u,b['status'],c['status'] if c else 'MISSING'])
         summary['chromium_passing_subtests']+=len(rp);summary['baseline_matches_chromium_pass']+=len(bp&rp);summary['candidate_matches_chromium_pass']+=len(cp&rp)
