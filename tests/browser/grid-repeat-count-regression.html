@@ -1,0 +1,20 @@
+<!doctype html><meta charset="utf-8"><title>Calculated Grid repetition counts</title><pre id="results">Running</pre><script>
+(() => {
+ const cases=[["2",2],["calc(1 + 1)",2],["min(2, 3)",2],["max(1, 2)",2],["clamp(1, 2, 3)",2],["calc(2.4)",2],["calc(2.5)",3],["calc(0)",1],["calc(-2)",1],["calc(4 / 2)",2],["calc(20px / 10px)",2],["2.5",null],["calc(2px)",null],["calc(50%)",null],["calc(1 + 1px)",null],["calc()",null],["calc(250ms / .125s)",2],["calc((2 + 3) * 2 / 5)",2],["min(4, 3, 2, 5)",2],["sqrt(9)",3],["pow(2, 1)",2],["round(up, 2.1)",3],["mod(7, 3)",1],["rem(8, 3)",2],["calc(sin(90deg) + 1)",2],["calc(20px * 2px / 20px / 1px)",2],["min(2, 3px)",null],["max(2px, 3px)",null],["calc(1px * 2px)",null],["calc(50% / 10px)",null],["unknown(2)",null],["min()",null]];
+ const results=[];let serial=0;
+ const eq=(a,b)=>{if(a!==b)throw Error('expected '+JSON.stringify(b)+', got '+JSON.stringify(a))};
+ const test=(name,fn)=>{try{fn();results.push({name,status:'PASS'})}catch(e){results.push({name,status:'FAIL',message:String(e.message||e)})}};
+ function grid(value,cssom){const e=document.createElement('div');e.id='count-grid-'+(++serial);const rule=document.createElement('style');rule.textContent='#'+e.id+'{display:grid;width:200px;justify-content:start;align-content:start;grid-template-columns:25px}'+(cssom?'':'#'+e.id+'{grid-template-columns:'+value+'}');document.head.appendChild(rule);document.body.appendChild(e);for(let i=0;i<4;i++){const c=document.createElement('div');c.style.height='10px';e.appendChild(c);}if(cssom)e.style.gridTemplateColumns=value;return {e,rule};}
+ function checkGeometry(e,count){const r=e.getBoundingClientRect(),n=count===null?1:count,w=count===null?25:10;Array.from(e.children).forEach((c,i)=>{const q=c.getBoundingClientRect();for(const[a,b]of[[q.x-r.x,(i%n)*w],[q.y-r.y,Math.floor(i/n)*10],[q.width,w],[q.height,10]])if(Math.abs(a-b)>.05)throw Error('geometry expected '+b+', got '+a+' for item '+i);});}
+ function condition(value){const e=document.createElement('div');e.id='count-support-'+(++serial);const rule=document.createElement('style');rule.textContent='#'+e.id+'{height:17px}@supports(grid-template-columns:'+value+'){#'+e.id+'{height:29px}}';document.head.appendChild(rule);document.body.appendChild(e);try{return getComputedStyle(e).height==='29px'}finally{e.remove();rule.remove()}}
+ for(const[count,n]of cases){const value='repeat('+count+',10px)',valid=n!==null;
+  test('CSS.supports typed count '+count,()=>{eq(CSS.supports('grid-template-columns',value),valid);eq(CSS.supports('grid-template-rows',value),valid);});
+  test('@supports typed count '+count,()=>eq(condition(value),valid));
+  test('raw-style rounded/clamped track count '+count,()=>{const{e,rule}=grid(value,false);try{checkGeometry(e,n)}finally{e.remove();rule.remove()}});
+  test('CSSOM rounded/clamped track count '+count,()=>{const{e,rule}=grid(value,true);try{eq(e.style.gridTemplateColumns!=='',valid);checkGeometry(e,n)}finally{e.remove();rule.remove()}});
+ }
+ window.__gridRepeatCountRegression=results;
+ for(const row of results)console.log('GRID-COUNT-CASE '+JSON.stringify(row));
+ const pass=results.filter(x=>x.status==='PASS').length,marker='RESULTS browser-grid-repeat-count:'+(pass===results.length?'PASS':'FAIL')+' '+pass+'/'+results.length;document.querySelector('#results').textContent=marker;console.log(marker);
+})();
+</script>

@@ -434,6 +434,14 @@ else()
             --binary "$<TARGET_FILE:lumen>" --fixture "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/body-event-regression.html"
             --marker browser-body-event --output "${CMAKE_CURRENT_BINARY_DIR}/browser-body-event")
         set_tests_properties(browser_body_event PROPERTIES PASS_REGULAR_EXPRESSION "RESULTS browser-body-event:PASS" TIMEOUT 35)
+        add_test(NAME browser_grid_repeat_count COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/run.py"
+            --binary "$<TARGET_FILE:lumen>" --fixture "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/grid-repeat-count-regression.html"
+            --marker browser-grid-repeat-count --output "${CMAKE_CURRENT_BINARY_DIR}/browser-grid-repeat-count")
+        set_tests_properties(browser_grid_repeat_count PROPERTIES PASS_REGULAR_EXPRESSION "RESULTS browser-grid-repeat-count:PASS" TIMEOUT 35)
+        add_test(NAME browser_grid_repeat COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/run.py"
+            --binary "$<TARGET_FILE:lumen>" --fixture "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/grid-auto-repeat-regression.html"
+            --marker browser-grid-repeat --output "${CMAKE_CURRENT_BINARY_DIR}/browser-grid-repeat")
+        set_tests_properties(browser_grid_repeat PROPERTIES PASS_REGULAR_EXPRESSION "RESULTS browser-grid-repeat:PASS" TIMEOUT 35)
         add_test(NAME browser_grid_cssom COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/run.py"
             --binary "$<TARGET_FILE:lumen>" --fixture "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/grid-cssom-regression.html"
             --marker browser-grid-cssom --output "${CMAKE_CURRENT_BINARY_DIR}/browser-grid-cssom")
@@ -539,6 +547,10 @@ else()
         target_link_libraries(test_paint_cull PRIVATE lumen_engine)
         target_compile_options(test_paint_cull PRIVATE -UNDEBUG)
         add_test(NAME paint_cull COMMAND test_paint_cull)
+        add_executable(test_grid_repeat_validation tests/test_grid_repeat_validation.c)
+        target_link_libraries(test_grid_repeat_validation PRIVATE lumen_engine)
+        target_compile_options(test_grid_repeat_validation PRIVATE -UNDEBUG)
+        add_test(NAME grid_repeat_validation COMMAND test_grid_repeat_validation)
         add_executable(test_grid_alignment tests/test_grid_alignment.c)
         target_link_libraries(test_grid_alignment PRIVATE lumen_engine)
         target_compile_options(test_grid_alignment PRIVATE -UNDEBUG)

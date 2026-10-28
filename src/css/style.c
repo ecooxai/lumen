@@ -11,6 +11,7 @@
 #include <math.h>
 #include <ctype.h>
 #include <strings.h>
+#include <limits.h>
 
 typedef VEC(Rule *) RuleVec;
 
@@ -1075,36 +1076,141 @@ static void parse_shadow(ACtx *c, const char *v, Shadow *sh, bool *has) {
     if (!*has && have_inset) { *sh = inset; *has = true; }
     free(all);
 }
-static int parse_grid_tracks(ACtx *c, const char *v, GridTrack **out) {
+/* Grid1/2 automatic repetition requires fixed-size tracks throughout the
+ * list. Reuse the track parser's dimensions, rather than recognizing a set
+ * of failing strings. Grid3 intrinsic automatic repetition is not supported.
+ * https://drafts.csswg.org/css-grid-2/#repeat-syntax */
+static int split_top(char *s, char sep, char **out, int max);
+static bool angle_or_time(const char *v);
+#include "numeric-count.h"
+/* Literal integer tokens enforce the grammar range immediately; math functions
+ * are typed as numbers, rounded toward +infinity at ties, then range-clamped.
+ * Materialized tracks use the same 1000-track limit as the surrounding parser. */
+static bool grid_repeat_count(ACtx *c, const char *text, long *count) {
+    const char *p = text; if (*p == '+') p++;
+    if (isdigit((unsigned char)*p)) {
+        long value = 0;
+        while (isdigit((unsigned char)*p)) { if (value < 1000) value = LMIN(1000, value * 10 + *p - '0'); p++; }
+        if (!*p) { if (!value) return false; *count = value; return true; }
+    }
+    if (!(isalpha((unsigned char)*text) || *text == '-') || !strchr(text, '(')) return false;
+    CssNumber value;
+    if (!css_number_parse(text, c->em, c->rem, c->mc, &value) || !css_number_scalar(&value)) return false;
+    double rounded = isnan(value.value) ? 0 : floor(value.value + .5);
+    *count = rounded <= 1 ? 1 : rounded >= 1000 ? 1000 : (long)rounded;
+    return true;
+}
+typedef struct { bool fixed, automatic, repeated; } GridTrackParseInfo;
+static bool grid_fixed_dimension(const char *text, Length value, bool parsed) {
+    if (!parsed || value.kind != LK_LEN || angle_or_time(text)) return false;
+    /* Literal negative sizes are invalid; math ranges are checked after
+       computation, so a calc() remains a fixed-size grammar component. */
+    if (*text == '+' || *text == '-' || *text == '.' || isdigit((unsigned char)*text)) {
+        char *end; float number = strtof(text, &end);
+        if (end != text && (number < 0 || (!*end && number != 0))) return false;
+    }
+    return true;
+}
+static int parse_grid_tracks_info(ACtx *c, const char *v, GridTrack **out, GridTrackParseInfo *info, bool repeated_body) {
     VEC(GridTrack) tr = {0};
-    const char *p = v; char *t;
-    while ((t = next_token(&p))) {
-        if (t[0] == '[') { free(t); continue; }
+    const char *p = v; char *t = NULL;
+    bool fixed = true, automatic = false, repeated = false, have_track = false, subgrid = false;
+    if (out) *out = NULL;
+    for (;;) {
+        while (is_ws((unsigned char)*p)) p++;
+        /* A bracketed line-name list is one component even with spaces. */
+        if (*p == '[') { const char *end = strchr(p + 1, ']'); if (!end) goto invalid; p = end + 1; continue; }
+        t = next_token(&p); if (!t) break;
+        size_t tl = strlen(t);
+        if (!have_track && str_ieq(t, "subgrid")) subgrid = true;
         if (str_istarts(t, "repeat(")) {
-            char *inner = xstrndup(t + 7, strlen(t) - 8); char *comma = strchr(inner, ',');
-            if (comma) {
-                *comma = 0; int cnt = atoi(inner); if (cnt <= 0) cnt = str_istarts(str_trim(inner), "auto") ? -1 : 1;
-                GridTrack *sub = NULL; int ns = parse_grid_tracks(c, comma + 1, &sub);
-                if (cnt == -1) { /* auto-fill/auto-fit: estimate from min size */ cnt = 1; if (ns && sub[0].min.kind == LK_LEN && sub[0].min.px > 0) cnt = -(int)sub[0].min.px; }
-                if (cnt < 0) { /* store negative marker for layout to compute */ GridTrack g = sub[0]; g.fr = g.fr ? g.fr : 1; g.size.kind = LK_FIT_CONTENT; g.size.px = (float)-cnt; vec_push(tr, g); }
-                else for (int k = 0; k < cnt; k++) for (int j = 0; j < ns; j++) vec_push(tr, sub[j]);
-                free(sub);
+            /* Subgrid repeats line names, not track sizes; retain that separate
+               existing syntax path without applying the automatic-track rule. */
+            if (subgrid) { free(t); t = NULL; continue; }
+            if (repeated_body) goto invalid;
+            if (tl < 9 || t[tl - 1] != ')') goto invalid;
+            char *inner = xstrndup(t + 7, tl - 8), *parts[3];
+            int np = split_top(inner, ',', parts, 3);
+            if (np != 2) { free(inner); goto invalid; }
+            char *count = str_trim(parts[0]);
+            bool auto_count = str_ieq(count, "auto-fill") || str_ieq(count, "auto-fit");
+            long repeat = 1;
+            if (!auto_count && !grid_repeat_count(c, count, &repeat)) { free(inner); goto invalid; }
+            GridTrack *sub = NULL; GridTrackParseInfo si;
+            int ns = parse_grid_tracks_info(c, parts[1], out ? &sub : NULL, &si, true);
+            if (ns <= 0 || si.automatic || (auto_count && (automatic || !si.fixed || si.repeated))) { free(sub); free(inner); goto invalid; }
+            fixed &= si.fixed; automatic |= auto_count; repeated = true; have_track = true;
+            if (out) {
+                if (auto_count && sub[0].min.kind == LK_LEN && sub[0].min.px >= 1 && isfinite(sub[0].min.px) && (double)sub[0].min.px <= (double)INT_MAX) {
+                    /* Preserve the existing layout marker and sizing behavior. */
+                    GridTrack g = sub[0]; g.fr = g.fr ? g.fr : 1; g.size.kind = LK_FIT_CONTENT; g.size.px = sub[0].min.px;
+                    if (tr.n < 1000) vec_push(tr, g);
+                } else {
+                    /* Layout's implicit placement is bounded to1000 tracks;
+                       parsed repetition must obey the same storage bound. */
+                    for (long k = 0; k < repeat && tr.n < 1000; k++) for (int j = 0; j < ns && tr.n < 1000; j++) vec_push(tr, sub[j]);
+                }
             }
-            free(inner); free(t); continue;
+            free(sub); free(inner); free(t); t = NULL; continue;
         }
         GridTrack g; memset(&g, 0, sizeof g); g.size = L_auto(); g.min = L_auto();
-        size_t tl = strlen(t);
-        if (tl > 2 && !strcmp(t + tl - 2, "fr")) { g.fr = strtof(t, NULL); g.min.kind = LK_LEN; }
+        bool track_fixed = false;
+        if (tl > 2 && str_ieq(t + tl - 2, "fr")) { g.fr = strtof(t, NULL); g.min.kind = LK_LEN; }
         else if (str_istarts(t, "minmax(")) {
-            char *inner = xstrndup(t + 7, tl - 8); char *comma = strchr(inner, ',');
-            if (comma) { *comma = 0; char *mn = str_trim(inner); if (str_ieq(mn, "auto")) g.min.kind = LK_MIN_CONTENT; else alen(c, mn, &g.min); char *mx = str_trim(comma + 1); size_t ml = strlen(mx); if (ml > 2 && !strcmp(mx + ml - 2, "fr")) g.fr = strtof(mx, NULL); else alen(c, mx, &g.size); }
+            if (tl < 9 || t[tl - 1] != ')') goto invalid;
+            char *inner = xstrndup(t + 7, tl - 8), *parts[3];
+            int np = split_top(inner, ',', parts, 3);
+            if (np == 2) {
+                char *mn = str_trim(parts[0]), *mx = str_trim(parts[1]);
+                bool min_ok;
+                if (str_ieq(mn, "auto")) { g.min.kind = LK_MIN_CONTENT; min_ok = true; }
+                else min_ok = alen(c, mn, &g.min);
+                size_t ml = strlen(mx); bool max_ok;
+                if (ml > 2 && str_ieq(mx + ml - 2, "fr")) {
+                    char *end; g.fr = strtof(mx, &end); max_ok = end != mx && str_ieq(end, "fr") && isfinite(g.fr) && g.fr >= 0;
+                } else max_ok = alen(c, mx, &g.size);
+                size_t nl = strlen(mn); if (nl > 2 && str_ieq(mn + nl - 2, "fr")) min_ok = false;
+                bool min_fixed = grid_fixed_dimension(mn, g.min, min_ok), max_fixed = grid_fixed_dimension(mx, g.size, max_ok);
+                if (g.min.kind == LK_LEN && !min_fixed) min_ok = false;
+                if (g.size.kind == LK_LEN && !max_fixed) max_ok = false;
+                bool min_inflexible = min_ok && (g.min.kind == LK_LEN || g.min.kind == LK_AUTO || g.min.kind == LK_MIN_CONTENT || g.min.kind == LK_MAX_CONTENT);
+                track_fixed = min_ok && max_ok && (min_fixed || (min_inflexible && max_fixed));
+            }
             free(inner);
-        } else alen(c, t, &g.size);
-        vec_push(tr, g); free(t);
+        } else { bool ok = alen(c, t, &g.size); track_fixed = grid_fixed_dimension(t, g.size, ok); }
+        fixed &= track_fixed; have_track = true;
+        if (out && tr.n < 1000) vec_push(tr, g);
+        free(t); t = NULL;
     }
-    *out = tr.v; return tr.n;
+    if (automatic && !fixed) goto invalid;
+    *info = (GridTrackParseInfo){fixed, automatic, repeated};
+    if (out) { *out = tr.v; return tr.n; }
+    return have_track ? 1 : 0;
+invalid:
+    free(t); free(tr.v); *info = (GridTrackParseInfo){false, false, false};
+    return -1;
 }
-/* Implicit tracks share the explicit track-size representation. */
+static int parse_grid_tracks(ACtx *c, const char *v, GridTrack **out) {
+    GridTrackParseInfo info;
+    return parse_grid_tracks_info(c, v, out, &info, false);
+}
+static bool grid_repeat_value_valid(const char *value) {
+    /* Unsubstituted values remain pending at parse/support-query time. */
+    for (const char *p = value; *p; p++) if (str_istarts(p, "var(") || str_istarts(p, "env(") || str_istarts(p, "attr(")) return true;
+    char *copy = xstrdup(value), *comment;
+    while ((comment = strstr(copy, "/*"))) { char *end = strstr(comment + 2, "*/"); if (!end) { *comment = 0; break; } *comment = ' '; memmove(comment + 1, end + 2, strlen(end + 2) + 1); }
+    ACtx c = {0}; c.em = c.rem = 16; GridTrackParseInfo info;
+    bool valid = parse_grid_tracks_info(&c, copy, NULL, &info, false) >= 0;
+    free(copy); return valid;
+}
+bool css_grid_repeat_valid(const char *property, const char *value) {
+    if (!strcmp(property, "grid-template-columns") || !strcmp(property, "grid-template-rows")) return grid_repeat_value_valid(value);
+    if (strcmp(property, "grid") && strcmp(property, "grid-template")) return true;
+    char *copy = xstrdup(value), *parts[3]; int n = split_top(copy, '/', parts, 3); bool valid = true;
+    for (int i = 0; i < n; i++) if (!grid_repeat_value_valid(parts[i])) valid = false;
+    free(copy); return valid;
+}
+
 int css_parse_grid_tracks(const char *value, float em, float rem, const MediaCtx *media, GridTrack **out) {
     ACtx context = { .em = em, .rem = rem, .mc = media };
     *out = NULL;
@@ -1395,8 +1501,17 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
     if (e && e->doc && e->doc->html && e->doc->html->style && el != e->doc->html) c.rem = e->doc->html->style->font_size;
     const char *P = logical_size_prop(prop, st->writing_mode);
     Length l; Color col; int k;
-    st->indep_set |= indep_bit(P);
     bool inherit = str_ieq(val, "inherit"), initial = str_ieq(val, "initial") || str_ieq(val, "revert") || str_ieq(val, "revert-layer"), unset = str_ieq(val, "unset");
+    bool grid_tracks = !strcmp(P, "grid-template-columns") || !strcmp(P, "grid-template-rows");
+    GridTrack *prepared_tracks = NULL; int prepared_count = 0;
+    if (!inherit && !initial && !unset) {
+        if (grid_tracks && !str_ieq(val, "none")) {
+            prepared_count = parse_grid_tracks(&c, val, &prepared_tracks);
+            if (prepared_count < 0) goto out;
+        } else if ((!strcmp(P, "grid") || !strcmp(P, "grid-template")) && !css_grid_repeat_valid(P, val)) goto out;
+    }
+    /* Reject unsupported repetition before replacing arrays or generic values. */
+    st->indep_set |= indep_bit(P);
     if (inherit && inherit_copies_uncompared(P)) st->parent_sensitive = true;
     {   /* anchor() insets wait for layout; anchor-name is kept for it */
         if (!strcmp(P, "inset")) for (int k = 0; k < 4; k++) { free(st->anchor_ins[k]); st->anchor_ins[k] = NULL; }
@@ -1430,7 +1545,6 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
     }
     const GenProp *gp = gen_prop(P);
     bool anim_longhand = !strncmp(P, "transition-", 11) || !strncmp(P, "animation-", 10);
-    bool grid_tracks = !strcmp(P, "grid-template-columns") || !strcmp(P, "grid-template-rows");
     /* Retain the computed track-list structure for animation: the layout arrays
        expand repeat() and cannot preserve line names or all minmax components. */
     /* Keep qualifiers used by grid alignment and absolute flex static positions.
@@ -1664,8 +1778,8 @@ apply:
         break;
     case 'g':
         if (!strcmp(P, "gap") || !strcmp(P, "grid-gap")) { char *t[2]; int n = split_ws(val, t, 2); bool ok = n && !angle_or_time(t[0]) && !(n > 1 && angle_or_time(t[1])); if (ok && alen(&c, t[0], &l)) { st->row_gap = l.px; st->row_gap_l = l; st->column_gap = l.px; st->column_gap_l = l; } if (ok && n > 1 && alen(&c, t[1], &l)) { st->column_gap = l.px; st->column_gap_l = l; } free_toks(t, n); }
-        else if (!strcmp(P, "grid-template-columns")) { free(st->grid_cols); st->grid_cols = NULL; st->grid_ncols = str_ieq(val, "none") ? 0 : parse_grid_tracks(&c, val, &st->grid_cols); }
-        else if (!strcmp(P, "grid-template-rows")) { free(st->grid_rows); st->grid_rows = NULL; st->grid_nrows = str_ieq(val, "none") ? 0 : parse_grid_tracks(&c, val, &st->grid_rows); }
+        else if (!strcmp(P, "grid-template-columns")) { free(st->grid_cols); st->grid_cols = prepared_tracks; st->grid_ncols = prepared_count; prepared_tracks = NULL; }
+        else if (!strcmp(P, "grid-template-rows")) { free(st->grid_rows); st->grid_rows = prepared_tracks; st->grid_nrows = prepared_count; prepared_tracks = NULL; }
         else if (!strcmp(P, "grid") && !strstr(val, "auto-flow")) css_apply_decl(st, par, "grid-template", val, e, el);
         else if (!strcmp(P, "grid-column-end")) st->grid_column.end = parse_grid_component(val);
         else if (!strcmp(P, "grid-row-end")) st->grid_row.end = parse_grid_component(val);
@@ -1827,6 +1941,7 @@ apply:
         break;
     }
 out:
+    free(prepared_tracks);
     if (!strcmp(P, "background") || !strcmp(P, "background-image") || !strcmp(P, "background-clip")) {
         if (inherit) st->parent_sensitive = true;
         bg_resolve_color_clip(st);

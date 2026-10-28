@@ -1,0 +1,141 @@
+{
+  "iteration": 3,
+  "candidate": 138,
+  "started_utc": "2026-10-28T10:14:51.129212+00:00",
+  "finished_utc": "2026-10-28T10:20:47+00:00",
+  "elapsed_minutes": 5.9312,
+  "time_scope": "Recorded source-ready checkpoint through final unchanged37-URL replay completion; earlier design/baseline investigation excluded.",
+  "score": 88,
+  "score_scope": "Bounded native automatic-repeat validation quality; conditional final independent source review",
+  "whole_goal_score": 19,
+  "state": "Not accepted: independent review discovered10 valid calculated-count rejections. Candidate141 will repair both135 CSSOM and138 raw/support regressions.",
+  "model": "GPT-6 Astra",
+  "agents": [
+    "progress_and_deployment",
+    "repository_lead",
+    "standards_comparison",
+    "root"
+  ],
+  "tools": [
+    "built-in agents",
+    "Ruby MCP",
+    "guarded paired_wpt",
+    "Chromium150 CDP",
+    "CTest",
+    "monitor.py"
+  ],
+  "binary_sha256": "6b758aacf3049a2c37942dbd7aa41885ea20336ff3e6f98e9fd3547330705fca",
+  "source_manifest_sha256": "b69447d1788cbdb7a545f8209a2a332f95e32db9a791d9b73b10b93f8f71c236",
+  "source_ready": {
+    "ready_utc": "2026-10-28T10:14:51.129212+00:00",
+    "scope": "native automatic-repeat fixed-size validation; no placement or JS changes",
+    "files": {
+      "src/css/style.c": "acc42a14e3d218ca8c92a045f7c9936f558026f9ae323020b5dd8e09060091f1",
+      "src/css/css.h": "53c9f378374fbbf3fcfc0d0e796b965db1f49bf8b0a4ae8be93e6ac3dd49a356",
+      "src/css/parse.c": "09fd13d63d0abb751123deedff4d90162561ee90c09352d16a7ea70ae7f0204c",
+      "tests/test_grid_repeat_validation.c": "6b1de043a5f0d0430275b24d820efbaa55887977b132f00f63477377563ee998",
+      "tests/browser/grid-auto-repeat-regression.html": "89cfbee6912cda82c7d2f7f7851197d469bc587d005bc9d5b85912cb2ce3c1b9",
+      "CMakeLists.txt": "b796c8fba543dc2c90bc25f8dc9ee4d4cf9fcbac5161cabb1fa6f3ef2eb5493b"
+    }
+  },
+  "controls": {
+    "baseline135": {
+      "pass": 41,
+      "total": 84
+    },
+    "candidate138": {
+      "pass": 84,
+      "total": 84
+    },
+    "chromium150": {
+      "pass": 84,
+      "total": 84
+    },
+    "native_ctest": {
+      "pass": 122,
+      "total": 122,
+      "ctest_real_seconds": 38.39,
+      "completion": {
+        "started_utc": "2026-10-28T10:19:41.116714+00:00",
+        "finished_utc": "2026-10-28T10:20:20.321469+00:00",
+        "exit_code": 0,
+        "jobs": 3,
+        "label": "Full native CTest candidate138; overlaps separately monitored frozen WPT controllers; timing not an isolated benchmark"
+      },
+      "resources": {
+        "label": "native138 CTest",
+        "started_utc": "2026-10-28T10:19:41.192035+00:00",
+        "finished_utc": "2026-10-28T10:20:20.274453+00:00",
+        "root_pid": 789613,
+        "comm": null,
+        "exe": null,
+        "interval_seconds": 1,
+        "samples": 39,
+        "elapsed_seconds": 39.082,
+        "cpu_one_core_equals_100": true,
+        "cpu_min": 4.0,
+        "cpu_median": 129.49450000000002,
+        "cpu_max": 253.012,
+        "cpu_last10_median": 107.4795,
+        "rss_peak_mb": 494.371,
+        "rss_final_mb": 178.012,
+        "pss_peak_mb": 203.908,
+        "csv": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261028/session2/css-grid-parser/native138/resources.csv",
+        "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+      }
+    }
+  },
+  "cohort": {
+    "baseline128": {
+      "pass": 347,
+      "total": 1172,
+      "harness_ok": 37,
+      "fully_passing_urls": 3
+    },
+    "previous136": {
+      "pass": 1059,
+      "total": 1172,
+      "harness_ok": 37,
+      "fully_passing_urls": 31
+    },
+    "candidate138": {
+      "pass": 1059,
+      "total": 1172,
+      "harness_ok": 37,
+      "fully_passing_urls": 31
+    },
+    "chromium": {
+      "pass": 1130,
+      "total": 1172,
+      "harness_ok": 37,
+      "fully_passing_urls": 35
+    }
+  },
+  "exact_identity_deltas": {
+    "versus136": {
+      "gains": 0,
+      "losses": 0
+    },
+    "versus128": {
+      "gains": 754,
+      "losses": 42,
+      "loss_classification": "Unsupported tentative Grid3 intrinsic auto-repeat, valid in Grid3; preserved unchanged denominator"
+    }
+  },
+  "limits": [
+    "This check shares existing native track metadata with CSS.supports/@supports; the complete JS and C CSS grammars are not unified.",
+    "The fixed-size repeat boundary implements Grid1/2. All42 tentative Grid3 losses remain in the1172-assertion denominator.",
+    "Literal/math and wider native grammar, complete stable auto-repeat layout, pending-substitution provenance, and resolved track-size serialization remain incomplete.",
+    "Three supplemental placement lost passes exposed by135 are being repaired independently in139 and remain visible until its unchanged replay verifies repair.",
+    "The earlier native intrinsic-repeat raw-style fallback inconsistency is fixed by138; the ordinary25px fallback observation does not establish Grid3 rendering."
+  ],
+  "evidence_root": "agent/validation/linux-wpt-20261028/session2/css-grid-parser",
+  "exact_native_sources": "agent/progress/runtime/native-repeat-staged-tree/src/css",
+  "additional_review": {
+    "observations": 16,
+    "valid_math_counts": 10,
+    "comparison": "agent/validation/linux-wpt-20261028/session2/css-grid-parser/repeat-count{128,135,138}.json and chromium-repeat-count-observation.json",
+    "fixture_sha256": "3f70ff4bdd9947f5b8cf9508c26abf73728fa194176d05c537ac5e40c8031ade",
+    "classification": "Real135 CSSOM/supports and138 raw/@supports regressions; old128 native geometry also inaccurate, so permissive acceptance was not full support."
+  }
+}

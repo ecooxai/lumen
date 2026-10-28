@@ -813,6 +813,7 @@ bool css_supports(const char *cond) {
             r = (p[0] == '-' && p[1] == '-') || (css_property_known(p) && !strstr(v, "-webkit-") && !strstr(p, "-webkit-"));
             if (!strcmp(p, "display") && (strstr(v, "contents") || strstr(v, "subgrid"))) r = !strstr(v, "subgrid");
             if (strstr(p, "backdrop-filter") || strstr(p, "anchor")) r = false;
+            if (r && p[0] == 'g') r = css_grid_repeat_valid(p, v);
         } else r = css_supports(in);
     }
     free(s);

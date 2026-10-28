@@ -1,0 +1,190 @@
+{
+  "iteration": 4,
+  "candidate": 141,
+  "started_utc": "2026-10-28T10:31:16.686735+00:00",
+  "finished_utc": "2026-10-28T10:42:39.537553+00:00",
+  "elapsed_minutes": 11.3808,
+  "time_scope": "First unchanged16-case cross-browser observation launch through corrected full CTest completion; earlier source review/design excluded.",
+  "score": 96,
+  "score_scope": "Bounded calculated repeat-count repair quality; root conditional acceptance after final independent source review",
+  "whole_goal_score": 19,
+  "state": "Accepted at96/100 scoped quality after root authorization and independent standards source review; whole-goal19/100 provisional",
+  "model": "GPT-6 Astra",
+  "agents": [
+    "progress_and_deployment",
+    "repository_lead",
+    "standards_comparison",
+    "root"
+  ],
+  "tools": [
+    "built-in agents",
+    "Ruby MCP",
+    "guarded paired_wpt",
+    "Chromium150 CDP",
+    "CTest",
+    "monitor.py"
+  ],
+  "binary_sha256": "c5c1707e327ef6354ef7b04a59cd0bb63679ea9d4f088c366043c9f6c3f97c53",
+  "source_manifest_sha256": "c0316d6cdda73ef4ca24fbd7dbf6dcf8ffbb7f27c2aec0df9a22eef03685e1ed",
+  "source_ready": {
+    "ready_utc": "2026-10-28T10:38:00.608382+00:00",
+    "scope": "141 typed calculated repeat-count correction; percent/length quotient expectation under independent normative review; no resolved-size cache yet",
+    "files": {
+      "src/css/style.c": "2bf66ad6c3d38e4fb57c8150a6eb16cb777f753f14528815aad1061eedb0e56e",
+      "src/css/numeric-count.h": "b8b24ae51fa73bb6f00a8af7f5d7334b0086138fcb150d8046bb0b184f629b3d",
+      "src/js/prelude/03d-grid-cssom.js": "94c751446b747a1c279150fc3a03138fc07b8ad1d6f50976143b4fc08f8bfb5d",
+      "tests/test_grid_repeat_validation.c": "82ed02fa720844b2b87774a5923d55fe210ec5c7a08788a191791f295d31dffa",
+      "tests/browser/grid-repeat-count-regression.html": "12550bc753264a12db447bd1d9f6165316936152ef8b3fa6ee1ea3c73f9a2026",
+      "CMakeLists.txt": "44b20a96e3d617ef5253a000f49115515af9607d47d1fb412030371b0efa4347"
+    }
+  },
+  "controls": {
+    "original_repeat_fixture": {
+      "baseline135_pass": 41,
+      "candidate138_pass": 84,
+      "candidate141_pass": 84,
+      "chromium_pass": 84,
+      "total": 84
+    },
+    "math_repeat_fixture": {
+      "candidate138_pass": 48,
+      "candidate141_pass": 128,
+      "chromium_pass": 124,
+      "total": 128,
+      "chromium_difference": "Four assertions for one percent/length quotient, retained as interpretation-dependent authored coverage"
+    },
+    "context_order_updates": {
+      "candidate141_pass": 8,
+      "chromium_pass": 8,
+      "total": 8
+    },
+    "unchanged_count_observations": {
+      "total": 16,
+      "candidate141_acceptance_and_geometry_differences_from_chromium": 0,
+      "valid_math_regressions_repaired": 10
+    },
+    "native_ctest": {
+      "first_run": {
+        "pass": 124,
+        "total": 125,
+        "tmpdir": "/tmp/lumen-astra-checks-20261028",
+        "completion": {
+          "started_utc": "2026-10-28T10:40:44.374300+00:00",
+          "finished_utc": "2026-10-28T10:41:21.468615+00:00",
+          "exit_code": 8,
+          "jobs": 3,
+          "label": "Full native CTest candidate141; overlaps separately monitored frozen WPT controllers; timing not an isolated benchmark"
+        }
+      },
+      "corrected_run": {
+        "pass": 125,
+        "total": 125,
+        "tmpdir": "/tmp",
+        "ctest_real_seconds": 33.89,
+        "completion": {
+          "started_utc": "2026-10-28T10:42:05.436245+00:00",
+          "finished_utc": "2026-10-28T10:42:39.537553+00:00",
+          "exit_code": 0,
+          "jobs": 3,
+          "label": "Full native CTest candidate141; overlaps separately monitored frozen WPT controllers; timing not an isolated benchmark"
+        },
+        "resources": {
+          "label": "native141 CTest",
+          "started_utc": "2026-10-28T10:42:05.473787+00:00",
+          "finished_utc": "2026-10-28T10:42:39.519433+00:00",
+          "root_pid": 908484,
+          "comm": null,
+          "exe": null,
+          "interval_seconds": 1,
+          "samples": 34,
+          "elapsed_seconds": 34.046,
+          "cpu_one_core_equals_100": true,
+          "cpu_min": 21.0,
+          "cpu_median": 113.0,
+          "cpu_max": 222.999,
+          "cpu_last10_median": 39.5,
+          "rss_peak_mb": 431.17,
+          "rss_final_mb": 118.792,
+          "pss_peak_mb": 262.52,
+          "csv": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261028/session2/css-grid-parser/native141-physical-tmp/resources.csv",
+          "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+        }
+      },
+      "inherited_tooling_audit": {
+        "tests/test_android_deps.py": {
+          "baseline_sha256": "e05dddaf41b674c9e5ee7028eace199e8d96526ff29ca592a83fed6df1eb22a4",
+          "current_sha256": "e05dddaf41b674c9e5ee7028eace199e8d96526ff29ca592a83fed6df1eb22a4",
+          "unchanged_from_initial_baseline": true
+        },
+        "tools/android/build_deps.py": {
+          "baseline_sha256": "8e1ef7af3717eacdb81568a0f92bbc7089ae1bc29a2ead6a277778498a5e33f0",
+          "current_sha256": "8e1ef7af3717eacdb81568a0f92bbc7089ae1bc29a2ead6a277778498a5e33f0",
+          "unchanged_from_initial_baseline": true
+        }
+      }
+    }
+  },
+  "cohort": {
+    "baseline128": {
+      "pass": 347,
+      "total": 1172,
+      "harness_ok": 37,
+      "fully_passing_urls": 3
+    },
+    "chromium": {
+      "pass": 1130,
+      "total": 1172,
+      "harness_ok": 37,
+      "fully_passing_urls": 35
+    },
+    "previous138": {
+      "pass": 1059,
+      "total": 1172,
+      "harness_ok": 37,
+      "fully_passing_urls": 31
+    },
+    "candidate141": {
+      "pass": 1059,
+      "total": 1172,
+      "harness_ok": 37,
+      "fully_passing_urls": 31
+    }
+  },
+  "exact_identity_deltas": {
+    "versus138": {
+      "gains": 0,
+      "losses": 0
+    },
+    "versus128": {
+      "gains": 754,
+      "losses": 42,
+      "loss_classification": "Unsupported tentative Grid3 intrinsic auto-repeat, valid Grid3 syntax"
+    }
+  },
+  "limits": [
+    "Bounded supported repeat-count arithmetic only; this is not complete CSS math implementation. clamp(none,...) remains unsupported, and unresolved/legacy relative-length contexts beyond the eight em/rem controls remain unverified.",
+    "Percent divided by length retains the negative authored expectation under an independent reading of Values4 calculation context; Chromium150 accepts it. This is a draft interpretation/implementation discrepancy, not a universal browser-bug claim or shared-WPT superiority.",
+    "Integer count storage retains the pre-existing 1000-track bound; supported expressions round ties toward positive infinity and clamp to the required positive range. Specified complex arithmetic serialization can differ from Chromium.",
+    "All42 tentative Grid3 intrinsic automatic-repeat losses remain visible in the unchanged1172-assertion denominator; these are valid Grid3 syntax outside the implemented Grid1/2 profile.",
+    "Pending shorthand provenance, wider native CSS grammar, several CSSOM shorthand serializations and actual used-grid-size serialization remain separate limitations.",
+    "The first full CTest run failed an inherited canonical-path assumption under a symlink TMPDIR. Both runs are retained; physical /tmp is the passing unchanged125-test condition, and no test expectation was modified."
+  ],
+  "evidence_root": "agent/validation/linux-wpt-20261028/session2/css-grid-parser",
+  "evidence_sha256": {
+    "agent/validation/linux-wpt-20261028/session2/css-grid-parser/candidate141-comparison.json": "d8b3e53fd3feff1f64391cb78ad8b598e17a735aafce8e355d476577d13b1845",
+    "agent/validation/linux-wpt-20261028/session2/css-grid-parser/candidate141-native-repeat.json": "fd301a08fb4d8db7c35bde98600264381b677e2c6a863745e5d347ac5c0958d1",
+    "agent/validation/linux-wpt-20261028/session2/css-grid-parser/candidate141-count-regression.json": "742f7e04c26b4245ae91f569a13497fd5d80185b3839ede9bf43dd3a548d0447",
+    "agent/validation/linux-wpt-20261028/session2/css-grid-parser/candidate141-count-context.json": "05e3f97dd7491d85a0b10872403b9460db51a4a5fc3503b465c76e9f9d246623",
+    "agent/validation/linux-wpt-20261028/session2/css-grid-parser/repeat-count141.json": "db7c2113ca2daab2ec1a2a3cc0c2644d5346d266dd6970215bc394212ef80673",
+    "agent/validation/linux-wpt-20261028/session2/css-grid-parser/chromium-repeat-count-observation.json": "a560994ecb71604386167dcfecd8fe37567040c652a8c7226a0d51a8ca6e7976",
+    "agent/validation/linux-wpt-20261028/session2/css-grid-parser/chromium-grid-repeat-count-regression.json": "46183f24edf0b3c4a42edb94828131d75d74f6e21a86279a53dffbc358323f5f",
+    "agent/validation/linux-wpt-20261028/session2/css-grid-parser/chromium-grid-repeat-context-regression.json": "ebdd60d290b4477c7fdec4e2b101c6335ae9fa4358835964c2b2c2f3d7ffa471",
+    "agent/validation/linux-wpt-20261028/session2/css-grid-parser/native141/ctest.log": "60b83acce6ae714f767c2ad04928b925c948b565d66e978ca5a5a71649fb7027",
+    "agent/validation/linux-wpt-20261028/session2/css-grid-parser/native141-physical-tmp/ctest.log": "5d156c15bcdffa9e9db1f1db469a9dfc7023a9be3391f77a3ef664f684a63eb9"
+  },
+  "independent_review": {
+    "reviewer": "standards_comparison",
+    "status": "approved",
+    "scope": "typed arithmetic, dimensional final value, safe rounding/range, bounded allocation; stated unsupported contexts and percentage interpretation retained"
+  }
+}

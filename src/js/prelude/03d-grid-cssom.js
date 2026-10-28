@@ -104,6 +104,10 @@ function cssGridTrack(token) {
     const a = cssGridBreadth(t[0], false), b = cssGridBreadth(t[2]);
     return a && b ? { text: 'minmax(' + a.text + ', ' + b.text + ')', fixed: a.fixed || !a.flex && b.fixed, flex: false } : null;
 }
+function cssGridRepeatCount(token) {
+    if (/^[+]?\d+$/.test(token) && Number(token) > 0 && Number.isFinite(Number(token))) return String(Number(token));
+    return cssGridIntegerMath(token);
+}
 function cssGridTrackList(tokens, options = {}) {
     if (!tokens?.length) return null;
     const { implicit = false, noRepeat = false, repeated = false } = options;
@@ -114,10 +118,10 @@ function cssGridTrackList(tokens, options = {}) {
             const names = cssGridLineNames(token);
             if (names !== null) { out.push('[' + names + ']'); continue; }
             const m = /^repeat\(([\s\S]*)\)$/i.exec(token), t = m && cssGridTokens(m[1]);
-            if (!t || t.length < 3 || t[1] !== ',' || !((/^[+]?\d+$/.test(t[0]) && Number(t[0]) > 0 && Number.isFinite(Number(t[0]))) || /^auto-fill$/i.test(t[0]))) return null;
+            if (!t || t.length < 3 || t[1] !== ',' || !(cssGridRepeatCount(t[0]) !== null || /^auto-fill$/i.test(t[0]))) return null;
             const group = t.slice(2).map(cssGridLineNames); if (group.some(x => x === null)) return null;
             if (/^auto-fill$/i.test(t[0]) && ++auto > 1) return null;
-            out.push('repeat(' + (/auto-fill/i.test(t[0]) ? 'auto-fill' : String(Number(t[0]))) + ', ' + group.map(x => '[' + x + ']').join(' ') + ')');
+            out.push('repeat(' + (/auto-fill/i.test(t[0]) ? 'auto-fill' : cssGridRepeatCount(t[0])) + ', ' + group.map(x => '[' + x + ']').join(' ') + ')');
         }
         return { text: out.join(' '), fixed: false };
     }
@@ -131,11 +135,11 @@ function cssGridTrackList(tokens, options = {}) {
             if (implicit || noRepeat || repeated) return null;
             const t = cssGridTokens(m[1]); if (!t || t.length < 3 || t[1] !== ',') return null;
             const isAuto = /^auto-(fill|fit)$/i.test(t[0]);
-            if (!isAuto && !(/^[+]?\d+$/.test(t[0]) && Number(t[0]) > 0 && Number.isFinite(Number(t[0])))) return null;
+            const repeatCount = isAuto ? t[0].toLowerCase() : cssGridRepeatCount(t[0]); if (repeatCount === null) return null;
             if (isAuto && ++auto > 1) return null;
             const inner = cssGridTrackList(t.slice(2), { repeated: true }); if (!inner || isAuto && !inner.fixed) return null;
             allFixed = allFixed && inner.fixed; count++;
-            out.push('repeat(' + (isAuto ? t[0].toLowerCase() : String(Number(t[0]))) + ', ' + inner.text + ')');
+            out.push('repeat(' + repeatCount + ', ' + inner.text + ')');
         } else {
             const track = cssGridTrack(token); if (!track) return null;
             allFixed = allFixed && track.fixed; count++; out.push(track.text);

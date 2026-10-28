@@ -330,6 +330,8 @@ Node *css_query(Node *root, const char *sel, bool all, NodeVec *out);
 bool css_media_matches(const char *q, const MediaCtx *mc);
 bool css_media_valid(const char *q);
 bool css_supports(const char *cond);
+/* Grid1/2 automatic-repeat constraint; not a complete property grammar validator. */
+bool css_grid_repeat_valid(const char *property, const char *value);
 /* Caller owns *out. Used for implicit grid track-size patterns. */
 int css_parse_grid_tracks(const char *value, float em, float rem, const MediaCtx *media, GridTrack **out);
 

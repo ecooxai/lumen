@@ -58,3 +58,7 @@ Raw reports are in project-backed /tmp/lumen-astra-checks-20261028/css-grid-pars
 - https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-removeproperty
 - https://drafts.csswg.org/cssom/#dom-window-getcomputedstyle
 - https://drafts.csswg.org/css-values-5/#arbitrary-substitution
+
+## Append-only review discovery and correction — candidate 141
+
+Later independent review found that candidate 135 rejected ten valid calculated repeat counts in CSSOM and CSS.supports; candidate 138 also rejected them in the raw stylesheet and @supports paths. These were real regressions missed by the earlier 37-URL/28-control acceptance scope. The original 135 acceptance evidence remains unchanged. Candidate 138 was withheld after this discovery, and candidate 141 repairs the supported calculated-count scope. The unchanged 16 observations now match Chromium acceptance and actual geometry; 84 original controls, 128 arithmetic controls, eight em/rem context controls, the unchanged 37 URLs and all 125 native CTest checks pass under the documented physical-/tmp environment. The separate calculated-grid-repeat report retains the original full-run path-assumption failure, percentage-context interpretation, unsupported math/context limits and exact provenance.
