@@ -12,7 +12,7 @@ typedef struct { uint32_t pointer, codepoint; } WebEncodingRange;
 #include "encoding_decode_data.inc"
 
 #define MISSING 0xFFFFFFFFu
-#define EMIT(cp) do { if (!emit(output, (cp), max_output)) return false; } while (0)
+#define EMIT(cp) do { if (!emit_checked(output, (cp), max_output, fatal, had_error)) return false; } while (0)
 
 static bool ascii_space(unsigned char c) {
     return c == 0x09 || c == 0x0A || c == 0x0C || c == 0x0D || c == 0x20;
@@ -134,6 +134,16 @@ static bool emit(SB *output, uint32_t codepoint, size_t maximum) {
     return true;
 }
 
+/* MISSING denotes a decoder error; a literal decoded U+FFFD remains valid. */
+static bool emit_checked(SB *output, uint32_t codepoint, size_t maximum,
+                         bool fatal, bool *had_error) {
+    if (codepoint == MISSING) {
+        if (had_error) *had_error = true;
+        if (fatal) return false;
+    }
+    return emit(output, codepoint, maximum);
+}
+
 static uint32_t lookup(const uint32_t *table, size_t count, uint32_t pointer) {
     return pointer < count ? table[pointer] : MISSING;
 }
@@ -151,7 +161,7 @@ static uint32_t gb_range(uint32_t pointer) {
     return range->codepoint + pointer - range->pointer;
 }
 
-static bool decode_utf8(SB *output, const unsigned char *bytes, size_t length, size_t max_output) {
+static bool decode_utf8(SB *output, const unsigned char *bytes, size_t length, size_t max_output, bool fatal, bool *had_error) {
     size_t pos = 0;
     while (pos < length) {
         unsigned char first = bytes[pos++];
@@ -167,7 +177,7 @@ static bool decode_utf8(SB *output, const unsigned char *bytes, size_t length, s
             need = 3; point = first & 7;
             if (first == 0xF0) low = 0x90;
             if (first == 0xF4) high = 0x8F;
-        } else { EMIT(0xFFFD); continue; }
+        } else { EMIT(MISSING); continue; }
         bool complete = true;
         for (unsigned index = 0; index < need; ++index) {
             if (pos == length || bytes[pos] < low || bytes[pos] > high) {
@@ -176,13 +186,13 @@ static bool decode_utf8(SB *output, const unsigned char *bytes, size_t length, s
             point = (point << 6) | (bytes[pos++] & 0x3F);
             low = 0x80; high = 0xBF;
         }
-        EMIT(complete ? point : 0xFFFD);
+        EMIT(complete ? point : MISSING);
     }
     return true;
 }
 
 static bool decode_utf16(SB *output, const unsigned char *bytes, size_t length,
-                         bool big_endian, size_t max_output) {
+                         bool big_endian, size_t max_output, bool fatal, bool *had_error) {
     size_t pos = 0; uint32_t high = 0;
     while (length - pos >= 2) {
         uint32_t unit = big_endian ? ((uint32_t)bytes[pos] << 8) | bytes[pos + 1] :
@@ -194,31 +204,31 @@ static bool decode_utf16(SB *output, const unsigned char *bytes, size_t length,
                 EMIT(0x10000 + ((previous - 0xD800) << 10) + unit - 0xDC00);
                 continue;
             }
-            EMIT(0xFFFD); /* reconsume the complete non-low code unit */
+            EMIT(MISSING); /* reconsume the complete non-low code unit */
         }
         if (unit >= 0xD800 && unit <= 0xDBFF) high = unit;
-        else EMIT(unit >= 0xDC00 && unit <= 0xDFFF ? 0xFFFD : unit);
+        else EMIT(unit >= 0xDC00 && unit <= 0xDFFF ? MISSING : unit);
     }
     /* A pending high surrogate and one trailing byte share the EOF error. */
-    if (high || pos < length) EMIT(0xFFFD);
+    if (high || pos < length) EMIT(MISSING);
     return true;
 }
 
-static bool decode_gb18030(SB *output, const unsigned char *bytes, size_t length, size_t max_output) {
+static bool decode_gb18030(SB *output, const unsigned char *bytes, size_t length, size_t max_output, bool fatal, bool *had_error) {
     size_t pos = 0;
     while (pos < length) {
         unsigned first = bytes[pos++];
         if (first < 0x80) { EMIT(first); continue; }
         if (first == 0x80) { EMIT(0x20AC); continue; }
-        if (first < 0x81 || first > 0xFE || pos == length) { EMIT(0xFFFD); continue; }
+        if (first < 0x81 || first > 0xFE || pos == length) { EMIT(MISSING); continue; }
         unsigned second = bytes[pos];
         if (second >= 0x30 && second <= 0x39) {
-            if (length - pos < 2) { pos = length; EMIT(0xFFFD); continue; }
+            if (length - pos < 2) { pos = length; EMIT(MISSING); continue; }
             unsigned third = bytes[pos + 1];
-            if (third < 0x81 || third > 0xFE) { EMIT(0xFFFD); continue; }
-            if (length - pos < 3) { pos = length; EMIT(0xFFFD); continue; }
+            if (third < 0x81 || third > 0xFE) { EMIT(MISSING); continue; }
+            if (length - pos < 3) { pos = length; EMIT(MISSING); continue; }
             unsigned fourth = bytes[pos + 2];
-            if (fourth < 0x30 || fourth > 0x39) { EMIT(0xFFFD); continue; }
+            if (fourth < 0x30 || fourth > 0x39) { EMIT(MISSING); continue; }
             uint32_t pointer = (first - 0x81) * 12600 + (second - 0x30) * 1260 +
                                (third - 0x81) * 10 + fourth - 0x30;
             pos += 3; EMIT(gb_range(pointer)); continue;
@@ -233,12 +243,12 @@ static bool decode_gb18030(SB *output, const unsigned char *bytes, size_t length
     return true;
 }
 
-static bool decode_big5(SB *output, const unsigned char *bytes, size_t length, size_t max_output) {
+static bool decode_big5(SB *output, const unsigned char *bytes, size_t length, size_t max_output, bool fatal, bool *had_error) {
     size_t pos = 0;
     while (pos < length) {
         unsigned first = bytes[pos++];
         if (first < 0x80) { EMIT(first); continue; }
-        if (first < 0x81 || first > 0xFE || pos == length) { EMIT(0xFFFD); continue; }
+        if (first < 0x81 || first > 0xFE || pos == length) { EMIT(MISSING); continue; }
         unsigned second = bytes[pos]; uint32_t pointer = MISSING;
         if ((second >= 0x40 && second <= 0x7E) || (second >= 0xA1 && second <= 0xFE))
             pointer = (first - 0x81) * 157 + second - (second < 0x7F ? 0x40 : 0x62);
@@ -253,20 +263,20 @@ static bool decode_big5(SB *output, const unsigned char *bytes, size_t length, s
     return true;
 }
 
-static bool decode_euc_jp(SB *output, const unsigned char *bytes, size_t length, size_t max_output) {
+static bool decode_euc_jp(SB *output, const unsigned char *bytes, size_t length, size_t max_output, bool fatal, bool *had_error) {
     size_t pos = 0;
     while (pos < length) {
         unsigned first = bytes[pos++];
         if (first < 0x80) { EMIT(first); continue; }
         if (!(first == 0x8E || first == 0x8F || (first >= 0xA1 && first <= 0xFE)) ||
-            pos == length) { EMIT(0xFFFD); continue; }
+            pos == length) { EMIT(MISSING); continue; }
         unsigned second = bytes[pos]; bool jis0212 = false;
         if (first == 0x8E && second >= 0xA1 && second <= 0xDF) {
             ++pos; EMIT(0xFF61 + second - 0xA1); continue;
         }
         if (first == 0x8F && second >= 0xA1 && second <= 0xFE) {
             first = second; ++pos; jis0212 = true;
-            if (pos == length) { EMIT(0xFFFD); continue; }
+            if (pos == length) { EMIT(MISSING); continue; }
             second = bytes[pos];
         }
         uint32_t point = MISSING;
@@ -281,14 +291,14 @@ static bool decode_euc_jp(SB *output, const unsigned char *bytes, size_t length,
     return true;
 }
 
-static bool decode_shift_jis(SB *output, const unsigned char *bytes, size_t length, size_t max_output) {
+static bool decode_shift_jis(SB *output, const unsigned char *bytes, size_t length, size_t max_output, bool fatal, bool *had_error) {
     size_t pos = 0;
     while (pos < length) {
         unsigned first = bytes[pos++];
         if (first <= 0x80) { EMIT(first); continue; }
         if (first >= 0xA1 && first <= 0xDF) { EMIT(0xFF61 + first - 0xA1); continue; }
         if (!((first >= 0x81 && first <= 0x9F) || (first >= 0xE0 && first <= 0xFC)) ||
-            pos == length) { EMIT(0xFFFD); continue; }
+            pos == length) { EMIT(MISSING); continue; }
         unsigned second = bytes[pos]; uint32_t pointer = MISSING;
         if ((second >= 0x40 && second <= 0x7E) || (second >= 0x80 && second <= 0xFC))
             pointer = (first - (first < 0xA0 ? 0x81 : 0xC1)) * 188 +
@@ -301,12 +311,12 @@ static bool decode_shift_jis(SB *output, const unsigned char *bytes, size_t leng
     return true;
 }
 
-static bool decode_euc_kr(SB *output, const unsigned char *bytes, size_t length, size_t max_output) {
+static bool decode_euc_kr(SB *output, const unsigned char *bytes, size_t length, size_t max_output, bool fatal, bool *had_error) {
     size_t pos = 0;
     while (pos < length) {
         unsigned first = bytes[pos++];
         if (first < 0x80) { EMIT(first); continue; }
-        if (first < 0x81 || first > 0xFE || pos == length) { EMIT(0xFFFD); continue; }
+        if (first < 0x81 || first > 0xFE || pos == length) { EMIT(MISSING); continue; }
         unsigned second = bytes[pos];
         uint32_t point = second >= 0x41 && second <= 0xFE ?
             lookup(kDecodeEucKr, ARRLEN(kDecodeEucKr), (first - 0x81) * 190 + second - 0x41) : MISSING;
@@ -316,7 +326,7 @@ static bool decode_euc_kr(SB *output, const unsigned char *bytes, size_t length,
     return true;
 }
 
-static bool decode_iso2022_jp(SB *output, const unsigned char *bytes, size_t length, size_t max_output) {
+static bool decode_iso2022_jp(SB *output, const unsigned char *bytes, size_t length, size_t max_output, bool fatal, bool *had_error) {
     enum { ASCII, ROMAN, KATAKANA, LEADING, TRAILING, ESCAPE_START, ESCAPE };
     int state = ASCII, output_state = ASCII; unsigned leading = 0;
     bool escaped_output = false;
@@ -331,16 +341,16 @@ static bool decode_iso2022_jp(SB *output, const unsigned char *bytes, size_t len
                 escaped_output = false;
                 if (state == LEADING) {
                     if (byte >= 0x21 && byte <= 0x7E) { leading = byte; state = TRAILING; }
-                    else EMIT(0xFFFD);
+                    else EMIT(MISSING);
                 } else if (state == KATAKANA) {
-                    EMIT(byte >= 0x21 && byte <= 0x5F ? 0xFF61 + byte - 0x21 : 0xFFFD);
+                    EMIT(byte >= 0x21 && byte <= 0x5F ? 0xFF61 + byte - 0x21 : MISSING);
                 } else if (byte <= 0x7F && byte != 0x0E && byte != 0x0F) {
                     EMIT(state == ROMAN && byte == 0x5C ? 0xA5 :
                          state == ROMAN && byte == 0x7E ? 0x203E : byte);
-                } else EMIT(0xFFFD);
+                } else EMIT(MISSING);
                 break;
             case TRAILING:
-                if (byte == 0x1B) { state = ESCAPE_START; EMIT(0xFFFD); break; }
+                if (byte == 0x1B) { state = ESCAPE_START; EMIT(MISSING); break; }
                 state = LEADING;
                 EMIT(byte >= 0x21 && byte <= 0x7E ?
                      lookup(kDecodeJis0208, ARRLEN(kDecodeJis0208), (leading - 0x21) * 94 + byte - 0x21) : MISSING);
@@ -348,7 +358,7 @@ static bool decode_iso2022_jp(SB *output, const unsigned char *bytes, size_t len
             case ESCAPE_START:
                 if (byte == 0x24 || byte == 0x28) { leading = byte; state = ESCAPE; break; }
                 if (!eof) --pos;
-                escaped_output = false; state = output_state; EMIT(0xFFFD);
+                escaped_output = false; state = output_state; EMIT(MISSING);
                 break;
             case ESCAPE: {
                 int next = leading == 0x28 && byte == 0x42 ? ASCII :
@@ -358,12 +368,12 @@ static bool decode_iso2022_jp(SB *output, const unsigned char *bytes, size_t len
                 leading = 0;
                 if (next >= 0) {
                     state = output_state = next;
-                    if (escaped_output) EMIT(0xFFFD);
+                    if (escaped_output) EMIT(MISSING);
                     escaped_output = true;
                 } else {
                     /* Reconsume the preceding 0x24/0x28 and current byte. */
                     pos -= eof ? 1 : 2;
-                    escaped_output = false; state = output_state; EMIT(0xFFFD);
+                    escaped_output = false; state = output_state; EMIT(MISSING);
                 }
                 break;
             }
@@ -371,9 +381,10 @@ static bool decode_iso2022_jp(SB *output, const unsigned char *bytes, size_t len
     }
 }
 
-bool web_encoding_decode_n(SB *output, WebEncoding encoding,
+bool web_encoding_decode_checked_n(SB *output, WebEncoding encoding,
                            const char *input, size_t length,
-                           bool sniff_bom, size_t max_output) {
+                           bool sniff_bom, size_t max_output, bool fatal, bool *had_error) {
+    if (had_error) *had_error = false;
     if (!output || (!input && length) || encoding < 0 || encoding >= WEB_ENC_COUNT ||
         output->n > max_output) return false;
     const unsigned char *bytes = (const unsigned char *)input;
@@ -386,9 +397,9 @@ bool web_encoding_decode_n(SB *output, WebEncoding encoding,
             encoding = WEB_ENC_UTF16LE; bytes += 2; length -= 2;
         }
     }
-    if (encoding == WEB_ENC_UTF8) return decode_utf8(output, bytes, length, max_output);
+    if (encoding == WEB_ENC_UTF8) return decode_utf8(output, bytes, length, max_output, fatal, had_error);
     if (encoding == WEB_ENC_UTF16BE || encoding == WEB_ENC_UTF16LE)
-        return decode_utf16(output, bytes, length, encoding == WEB_ENC_UTF16BE, max_output);
+        return decode_utf16(output, bytes, length, encoding == WEB_ENC_UTF16BE, max_output, fatal, had_error);
     if (kEncodingMetadata[encoding].single_byte) {
         for (size_t i = 0; i < length; ++i) {
             unsigned byte = bytes[i];
@@ -398,20 +409,27 @@ bool web_encoding_decode_n(SB *output, WebEncoding encoding,
     }
     switch (encoding) {
         case WEB_ENC_GBK: case WEB_ENC_GB18030:
-            return decode_gb18030(output, bytes, length, max_output);
-        case WEB_ENC_BIG5: return decode_big5(output, bytes, length, max_output);
-        case WEB_ENC_EUC_JP: return decode_euc_jp(output, bytes, length, max_output);
-        case WEB_ENC_ISO_2022_JP: return decode_iso2022_jp(output, bytes, length, max_output);
-        case WEB_ENC_SHIFT_JIS: return decode_shift_jis(output, bytes, length, max_output);
-        case WEB_ENC_EUC_KR: return decode_euc_kr(output, bytes, length, max_output);
+            return decode_gb18030(output, bytes, length, max_output, fatal, had_error);
+        case WEB_ENC_BIG5: return decode_big5(output, bytes, length, max_output, fatal, had_error);
+        case WEB_ENC_EUC_JP: return decode_euc_jp(output, bytes, length, max_output, fatal, had_error);
+        case WEB_ENC_ISO_2022_JP: return decode_iso2022_jp(output, bytes, length, max_output, fatal, had_error);
+        case WEB_ENC_SHIFT_JIS: return decode_shift_jis(output, bytes, length, max_output, fatal, had_error);
+        case WEB_ENC_EUC_KR: return decode_euc_kr(output, bytes, length, max_output, fatal, had_error);
         case WEB_ENC_REPLACEMENT:
-            if (length) EMIT(0xFFFD);
+            if (length) EMIT(MISSING);
             return true;
         case WEB_ENC_X_USER_DEFINED:
             for (size_t i = 0; i < length; ++i) EMIT(bytes[i] < 0x80 ? bytes[i] : 0xF700 + bytes[i]);
             return true;
         default: return false;
     }
+}
+
+bool web_encoding_decode_n(SB *output, WebEncoding encoding,
+                           const char *input, size_t length,
+                           bool sniff_bom, size_t max_output) {
+    return web_encoding_decode_checked_n(output, encoding, input, length,
+        sniff_bom, max_output, false, NULL);
 }
 
 #undef EMIT

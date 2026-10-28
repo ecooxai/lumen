@@ -6,10 +6,12 @@
 #include <chrono>
 /* Native functions (the `N` object) backing the JS DOM/Web API prelude */
 #include "js_int.h"
+#include "header_bytes.h"
 #include "url_parts.h"
 #include "idl_state.h"
 #include "blob_state.h"
 #include "file_reader.h"
+#include "text_codec.h"
 #include "clone_brand.h"
 #include "../dom/control.h"
 #include <thread>
@@ -100,7 +102,8 @@ FN(isNode) { CTX; RET(junwrap(a[0]) != nullptr); }
  * ordinary object tracing owns the state, including cycles involving Attrs. */
 static v8::Local<v8::Private> dom_state_key(v8::Isolate *iso, int slot) {
     static const char *names[] = { "lumen.dom.attr", "lumen.dom.attrs", "lumen.dom.name",
-                                  "lumen.dom.content-type", "lumen.dom.document-interface", "lumen.dom.event" };
+                                  "lumen.dom.content-type", "lumen.dom.document-interface", "lumen.dom.event",
+                                  "lumen.fetch.headers", "lumen.encoding.encoder", "lumen.encoding.decoder" };
     if (slot < 0 || slot >= (int)ARRLEN(names)) return v8::Local<v8::Private>();
     return v8::Private::ForApi(iso, jstr(iso, names[slot]));
 }
@@ -935,8 +938,9 @@ static NetRequest *mkreq(JsCtx *c, const FCI &a, int credentials_arg) {
         v8::Local<v8::Array> h = a[2].As<v8::Array>();
         for (uint32_t i = 0; i + 1 < h->Length(); i += 2) {
             v8::Local<v8::Value> k, v;
-            if (!h->Get(ctx, i).ToLocal(&k) || !h->Get(ctx, i + 1).ToLocal(&v)) continue;
-            std::string ks = jcstr(iso, k), vs = jcstr(iso, v);
+            if (!h->Get(ctx, i).ToLocal(&k) || !h->Get(ctx, i + 1).ToLocal(&v)) { net_request_free(rq); return nullptr; }
+            std::string ks, vs;
+            if (!jheader_bytes(iso, k, true, ks) || !jheader_bytes(iso, v, false, vs)) { net_request_free(rq); return nullptr; }
             if (str_ieq(ks.c_str(), "referer")) referer = true;
             headers_add(&rq->headers, ks.c_str(), vs.c_str());
         }
@@ -955,7 +959,7 @@ static void resp_args(v8::Isolate *iso, NetResponse *r, v8::Local<v8::Value> out
     v8::Local<v8::Array> h = v8::Array::New(iso, r ? (int)r->headers.n * 2 : 0);
     if (r) for (size_t i = 0; i < r->headers.n; i++) {
         (void)h->Set(ctx, (uint32_t)(2 * i), jstr(iso, r->headers.v[i].name));
-        (void)h->Set(ctx, (uint32_t)(2 * i + 1), jstr(iso, r->headers.v[i].value));
+        (void)h->Set(ctx, (uint32_t)(2 * i + 1), jheader_string(iso, r->headers.v[i].value));
     }
     out[3] = h;
     out[4] = mkab(iso, r && r->body ? r->body : "", r && r->body ? r->body_len : 0);
@@ -1102,9 +1106,10 @@ FN(mediaCanPlay) { CTX; RET((double)media_can_play(S(0).c_str(), BOOL(1))); }
 FN(fetch) {
     CTX;
     if (!a[4]->IsFunction()) return;
+    NetRequest *rq = mkreq(c, a, 7);
+    if (!rq) return;
     Fetch *f = new Fetch{ c, 0, {}, nullptr };
     f->cb.Reset(iso, a[4].As<v8::Function>());
-    NetRequest *rq = mkreq(c, a, 7);
     if (a.Length() > 6 && a[5]->IsFunction() && a[6]->IsFunction()) {
         f->head.Reset(iso, a[5].As<v8::Function>()); f->chunk.Reset(iso, a[6].As<v8::Function>());
         rq->head = fetch_head; rq->chunk = fetch_chunk;
@@ -1157,6 +1162,7 @@ FN(wsClose) {
 FN(fetchSync) {
     CTX;
     NetRequest *rq = mkreq(c, a, 4);
+    if (!rq) return;
     NetResponse *r = net_fetch_sync(rq);
     net_request_free(rq);
     v8::Local<v8::Value> out[6];
@@ -1296,6 +1302,8 @@ FN(fileReaderPackage) { jsg_file_reader_package(a); }
 FN(fileReaderCheckpoint) { jsg_file_reader_checkpoint(a); }
 
 FN(encode) { v8::Isolate *iso = a.GetIsolate(); v8::String::Utf8Value u(iso, a[0]); RET(mkab(iso, *u ? *u : "", *u ? (size_t)u.length() : 0)); }
+FN(textEncoding) { jsg_text_encoding(a); }
+FN(textDecode) { jsg_text_decode(a); }
 FN(decode) {
     v8::Isolate *iso = a.GetIsolate(); const char *p = ""; size_t n = 0;
     bytes_of(a[0], &p, &n);
@@ -1600,7 +1608,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(blobFile); REG(blobFileFree); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove); REG(mediaAbort);
     REG(mediaBuffered); REG(mediaEos); REG(mediaSetDuration); REG(mediaPlay); REG(mediaPause); REG(mediaSeek);
     REG(sbFlags); REG(compileHandler); REG(ctxOrigin); REG(mediaVolume); REG(mediaState); REG(mediaQuality); REG(mediaCanPlay); REG(log); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(deviceInfo); REG(scrollTo); REG(hit); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(readyState); REG(quirks); REG(coi);
-    REG(currentScript); REG(media); REG(cssSupports); REG(cssSelText); REG(urlParse); REG(urlSet); REG(documentEncoding); REG(documentURL); REG(setDocumentURL); REG(documentQuirks); REG(documentBaseUrl); REG(htmlUrl); REG(idlGet); REG(idlPut); REG(idlRegister); REG(idlFallback); REG(initCloneIntrinsic); REG(cloneUnsupported); REG(blobState); REG(fileReaderPackage); REG(fileReaderCheckpoint); REG(encode); REG(decode); REG(random); REG(cDigest); REG(cHmac); REG(cAes); REG(cEcGen); REG(cEcDerive); REG(cEcSign); REG(cEcVerify); REG(cSpki); REG(cSpkiParse); REG(cPkcs8Parse); REG(cEcFromD); REG(cHkdf); REG(cPbkdf2);
+    REG(currentScript); REG(media); REG(cssSupports); REG(cssSelText); REG(urlParse); REG(urlSet); REG(documentEncoding); REG(documentURL); REG(setDocumentURL); REG(documentQuirks); REG(documentBaseUrl); REG(htmlUrl); REG(idlGet); REG(idlPut); REG(idlRegister); REG(idlFallback); REG(initCloneIntrinsic); REG(cloneUnsupported); REG(blobState); REG(fileReaderPackage); REG(fileReaderCheckpoint); REG(encode); REG(decode); REG(textEncoding); REG(textDecode); REG(random); REG(cDigest); REG(cHmac); REG(cAes); REG(cEcGen); REG(cEcDerive); REG(cEcSign); REG(cEcVerify); REG(cSpki); REG(cSpkiParse); REG(cPkcs8Parse); REG(cEcFromD); REG(cHkdf); REG(cPbkdf2);
     REG(heap); REG(imgSize); REG(userAgent); REG(platform); REG(cpus); REG(makeAll);
 #undef REG
     js_install_frames(c, N); js_install_windows(c, N); js_install_workers(c, N); js_install_canvas(c, N); js_install_webgpu(c, N); js_install_capture(c, N);

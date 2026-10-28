@@ -1,5 +1,7 @@
-class TextEncoder { get encoding() { return 'utf-8'; } encode(s = '') { return new Uint8Array(N.encode(String(s))); } encodeInto(s, u8) { const b = this.encode(s); const n = Math.min(b.length, u8.length); u8.set(b.subarray(0, n)); return { read: s.length, written: n }; } }
-class TextDecoder { constructor(l = 'utf-8') { this.encoding = String(l).toLowerCase(); } decode(b) { if (b == null) return ''; const ab = b instanceof ArrayBuffer ? b : b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength); return N.decode(ab); } }
+const { TextEncoder, TextDecoder } = createTextCodecInterfaces({
+    get: (kind, object) => N.domStateGet(object, kind),
+    put: (kind, object, state) => N.domStateSet(object, kind, state),
+}, { label: N.textEncoding, decode: N.textDecode });
 const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 function btoa(s) { s = String(s); let r = ''; for (let i = 0; i < s.length; i += 3) { const a = s.charCodeAt(i), b = s.charCodeAt(i + 1), c = s.charCodeAt(i + 2); if (a > 255 || b > 255 || c > 255) throw new DOMException('The string to be encoded contains characters outside of the Latin1 range.', 'InvalidCharacterError'); const n = (a << 16) | ((b || 0) << 8) | (c || 0); r += B64[n >> 18 & 63] + B64[n >> 12 & 63] + (i + 1 < s.length ? B64[n >> 6 & 63] : '=') + (i + 2 < s.length ? B64[n & 63] : '='); } return r; }
 function atob(s) { s = String(s).replace(/[\t\n\f\r ]/g, ''); if (s.length % 4 === 0) s = s.replace(/==?$/, ''); if (s.length % 4 === 1 || /[^A-Za-z0-9+/]/.test(s)) throw new DOMException('The string to be decoded is not correctly encoded.', 'InvalidCharacterError'); let r = '', bits = 0, n = 0; for (const ch of s) { n = (n << 6) | B64.indexOf(ch); bits += 6; if (bits >= 8) { bits -= 8; r += String.fromCharCode((n >> bits) & 255); } } return r; }

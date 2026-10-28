@@ -39,8 +39,12 @@ bool web_encoding_decode_n(SB *output, WebEncoding encoding,
                            const char *bytes, size_t length,
                            bool sniff_bom, size_t max_output);
 
-/* Append before encoding.h's final include guard. The actual decoder API and
- * enum remain unchanged. This is a source-only candidate, not installed. */
+/* As above, with a fatal error mode. had_error distinguishes malformed
+ * sequences from a valid decoded U+FFFD and from output-size failure. */
+bool web_encoding_decode_checked_n(SB *output, WebEncoding encoding,
+                                   const char *bytes, size_t length,
+                                   bool sniff_bom, size_t max_output,
+                                   bool fatal, bool *had_error);
 
 /* Output encodings map replacement and UTF-16 to UTF-8. Unknown/invalid input
  * remains UNKNOWN; it is not silently accepted as an encoding. */

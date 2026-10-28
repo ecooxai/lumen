@@ -80,3 +80,8 @@ Run source-only priority provenance checkpoint, push and refresh the public sour
 ## Accepted frame/storage checkpoint10290244-008
 
 Immutable native `build-apple-load-20261029/lumen-frame-storage-2c27f3bb2c305b2f` SHA `2c27f3bb2c305b2fc3b79d1e257c9913380432014a5a85832306afa13441dc32` has815 targeted checks and the unchanged1850 WPT assertions passing. Score40/100, with new-artifact performance and same-device IPA still unverified. Two new regressions cover frame microtask realms and Storage.key unsigned-long semantics. Broad installed-Chrome parity remains quarantined; preserve absolute native failures and all1515 frozen variants. Next header/encoding edits may proceed after this narrow source checkpoint, with a new immutable artifact and acceptance run.
+
+
+## Accepted Headers/codec checkpoint10290244-009
+
+Native `build-apple-load-20261029/lumen-headers-codec-1b9d43ed19cd616b` SHA `1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9` passes1122 targeted checks and the unchanged1850-assertion WPT subset. Shared Headers guards/iteration and actual HTTP ByteString transport are repaired with137 new regression assertions. Score40/100; new-artifact performance and same-device IPA remain unverified. Shared text codecs add170 regression assertions across window, dedicated worker and cross-realm behavior; multibyte/fatal legacy streaming stays explicitly unsupported. New edits must retain this exact committed baseline and use another immutable artifact. Upstream Headers52 variants are not replaced by the custom fixture.

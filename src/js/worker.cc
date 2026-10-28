@@ -1,11 +1,13 @@
 /* Dedicated Web Workers: each worker runs on its own thread with its own V8 isolate.
    Messages cross threads as V8 ValueSerializer buffers. */
 #include "js_int.h"
+#include "header_bytes.h"
 #include "jsglue.h"
 #include "url_parts.h"
 #include "idl_state.h"
 #include "blob_state.h"
 #include "file_reader.h"
+#include "text_codec.h"
 #include "clone_brand.h"
 #include <libplatform/libplatform.h>
 #include <pthread.h>
@@ -250,6 +252,8 @@ WFN(log) { WENV; if (getenv("LUMEN_CONSOLE")) fprintf(stderr, "[worker %d] %.200
 WFN(blobState) { jsg_blob_state(a); }
 WFN(fileReaderPackage) { jsg_file_reader_package(a); }
 WFN(fileReaderCheckpoint) { jsg_file_reader_checkpoint(a); }
+WFN(textEncoding) { jsg_text_encoding(a); }
+WFN(textDecode) { jsg_text_decode(a); }
 WFN(decode) {
     WENV; const char *p; size_t n;
     if (!bytes_of(a[0], p, n)) { a.GetReturnValue().Set(jstr(iso, "")); return; }
@@ -315,14 +319,17 @@ WFN(fetch) {
         v8::Local<v8::Array> h = a[3].As<v8::Array>();
         for (uint32_t i = 0; i + 1 < h->Length(); i += 2) {
             v8::Local<v8::Value> k, v;
-            if (h->Get(ctx, i).ToLocal(&k) && h->Get(ctx, i + 1).ToLocal(&v)) headers_add(&rq->headers, jcstr(iso, k).c_str(), jcstr(iso, v).c_str());
+            if (!h->Get(ctx, i).ToLocal(&k) || !h->Get(ctx, i + 1).ToLocal(&v)) { net_request_free(rq); return; }
+            std::string key, value;
+            if (!jheader_bytes(iso, k, true, key) || !jheader_bytes(iso, v, false, value)) { net_request_free(rq); return; }
+            headers_add(&rq->headers, key.c_str(), value.c_str());
         }
     }
     if (a[4]->IsTrue()) rq->no_cookies = true;
     NetResponse *r = worker_fetch(E->w.get(), rq);
     if (!r || r->status == 0 || E->w->term) { if (r) net_response_free(r); a.GetReturnValue().SetNull(); return; }
     v8::Local<v8::Array> hs = v8::Array::New(iso);
-    for (int i = 0; i < r->headers.n; i++) { (void)hs->Set(ctx, (uint32_t)(2 * i), jstr(iso, r->headers.v[i].name)); (void)hs->Set(ctx, (uint32_t)(2 * i + 1), jstr(iso, r->headers.v[i].value)); }
+    for (int i = 0; i < r->headers.n; i++) { (void)hs->Set(ctx, (uint32_t)(2 * i), jstr(iso, r->headers.v[i].name)); (void)hs->Set(ctx, (uint32_t)(2 * i + 1), jheader_string(iso, r->headers.v[i].value)); }
     v8::Local<v8::Value> out[4] = { v8::Integer::New(iso, r->status), jstr(iso, r->url ? r->url : u.c_str()), make_ab(iso, r->body, r->body_len), hs };
     net_response_free(r);
     a.GetReturnValue().Set(v8::Array::New(iso, out, 4));
@@ -509,6 +516,8 @@ Object.setPrototypeOf(G, DedicatedWorkerGlobalScope.prototype);
 #include "url_search_params.inc"
 #include "file_reader.inc"
 #include "blob_file.inc"
+#include "text_codec.inc"
+#include "headers.inc"
 R"JS(
 const urlSearchParamsOps = createURLSearchParams(nativeIDL);
 const { URLSearchParams } = urlSearchParamsOps;
@@ -555,29 +564,9 @@ function atob(s) {
     for (const ch of s) { n = (n << 6 | B64.indexOf(ch)) & 0xffffff; bits += 6; if (bits >= 8) { bits -= 8; o += String.fromCharCode(n >> bits & 255); } }
     return o;
 }
-class TextEncoder {
-    get encoding() { return 'utf-8'; }
-    encode(s = '') {
-        s = String(s); const out = [];
-        for (let i = 0; i < s.length; i++) {
-            let c = s.charCodeAt(i);
-            if (c >= 0xd800 && c < 0xdc00 && i + 1 < s.length) { const d = s.charCodeAt(i + 1); if (d >= 0xdc00 && d < 0xe000) { c = 0x10000 + (c - 0xd800 << 10) + (d - 0xdc00); i++; } }
-            if (c >= 0xd800 && c < 0xe000) c = 0xfffd;
-            if (c < 0x80) out.push(c); else if (c < 0x800) out.push(0xc0 | c >> 6, 0x80 | c & 63);
-            else if (c < 0x10000) out.push(0xe0 | c >> 12, 0x80 | c >> 6 & 63, 0x80 | c & 63);
-            else out.push(0xf0 | c >> 18, 0x80 | c >> 12 & 63, 0x80 | c >> 6 & 63, 0x80 | c & 63);
-        }
-        return new Uint8Array(out);
-    }
-}
-class TextDecoder { constructor(label = 'utf-8') { this.encoding = 'utf-8'; this.fatal = false; this.ignoreBOM = false; } decode(b) { return b == null ? '' : W.decode(b); } }
-class Headers {
-    constructor(h) { def(this, '_m', new Map()); if (h) for (const [k, v] of (h instanceof Headers ? h._m : Array.isArray(h) ? h : Object.entries(h))) this.append(k, v); }
-    get(k) { return this._m.get(String(k).toLowerCase()) ?? null; } has(k) { return this._m.has(String(k).toLowerCase()); }
-    set(k, v) { this._m.set(String(k).toLowerCase(), String(v)); } append(k, v) { k = String(k).toLowerCase(); this._m.set(k, this._m.has(k) ? this._m.get(k) + ', ' + v : String(v)); }
-    delete(k) { this._m.delete(String(k).toLowerCase()); } forEach(f) { this._m.forEach((v, k) => f(v, k, this)); }
-    entries() { return this._m.entries(); } keys() { return this._m.keys(); } values() { return this._m.values(); } [Symbol.iterator]() { return this._m.entries(); }
-}
+const { TextEncoder, TextDecoder } = createTextCodecInterfaces(null, { label: W.textEncoding, decode: W.textDecode });
+const headerOps = createHeadersInterface();
+const { Headers } = headerOps;
 const blobFileOps = createBlobFileInterfaces(nativeIDL, {
     blobState: W.blobState, encode: urlSearchParamsOps.utf8Bytes, decode: W.decode,
 });
@@ -785,8 +774,8 @@ class Request {
         const suppliedMethod = init.method;
         const method = workerMethod(suppliedMethod === undefined ? source ? source.method : 'GET' : suppliedMethod);
         const suppliedHeaders = init.headers;
-        const headers = new Headers(suppliedHeaders === undefined ? source && source.headers : suppliedHeaders);
-        const state = { url: url.href, method, headers };
+        const headerInit = suppliedHeaders === undefined ? source ? source.headers : undefined : suppliedHeaders;
+        const state = { url: url.href, method };
         for (const [key, fallback] of Object.entries({ credentials: 'same-origin', mode: 'cors', cache: 'default',
             redirect: 'follow', referrer: 'about:client', referrerPolicy: '', integrity: '', keepalive: false, priority: 'auto' })) {
             const suppliedValue = init[key];
@@ -799,6 +788,9 @@ class Request {
         if (state.cache === 'only-if-cached' && state.mode !== 'same-origin') throw new TypeError('Cache mode requires same-origin mode');
         if (!['follow', 'error', 'manual'].includes(state.redirect)) throw new TypeError('Invalid Request redirect mode');
         if (!['high', 'low', 'auto'].includes(state.priority)) throw new TypeError('Invalid Request priority');
+        if (state.mode === 'no-cors' && !['GET', 'HEAD', 'POST'].includes(method)) throw new TypeError('Invalid no-cors method');
+        const headers = headerOps.create(headerInit, state.mode === 'no-cors' ? 'request-no-cors' : 'request');
+        state.headers = headers;
         const suppliedBody = init.body, supplied = suppliedBody !== undefined && suppliedBody !== null;
         if (!supplied && sourceBody && sourceBody.used) throw new TypeError('Source request body has been consumed');
         const bytes = supplied ? workerExtractBody(suppliedBody, headers) : sourceBody ? sourceBody.bytes : null;
@@ -810,14 +802,14 @@ class Request {
         const state = workerSlot(workerRequestSlots, this), body = workerSlot(workerBodySlots, this);
         if (body.used) throw new TypeError('Body has already been consumed');
         const copy = Object.create(Request.prototype);
-        workerRequestSlots.set(copy, { ...state, headers: new Headers(state.headers) });
+        workerRequestSlots.set(copy, { ...state, headers: headerOps.clone(state.headers) });
         workerBodySlots.set(copy, { bytes: body.bytes === null ? null : body.bytes.slice(), used: false });
         return copy;
     }
 }
 function workerResponse(object, body, init, internal = false) {
     init = workerDictionary(init);
-    const headers = new Headers(init.headers), suppliedStatus = init.status;
+    const headers = headerOps.create(init.headers, 'response'), suppliedStatus = init.status;
     const number = suppliedStatus === undefined ? 200 : +suppliedStatus;
     const status = Number.isFinite(number) ? ((Math.trunc(number) % 65536) + 65536) % 65536 : 0;
     if (!internal && (status < 200 || status > 599)) throw new RangeError('Invalid response status');
@@ -836,20 +828,21 @@ class Response {
         const state = workerSlot(workerResponseSlots, this), body = workerSlot(workerBodySlots, this);
         if (body.used) throw new TypeError('Body has already been consumed');
         const copy = Object.create(Response.prototype);
-        workerResponseSlots.set(copy, { ...state, headers: new Headers(state.headers) });
+        workerResponseSlots.set(copy, { ...state, headers: headerOps.clone(state.headers) });
         workerBodySlots.set(copy, { bytes: body.bytes === null ? null : body.bytes.slice(), used: false });
         return copy;
     }
     static error() {
         const response = Object.create(Response.prototype); workerResponse(response, null, { status: 0 }, true);
-        workerResponseSlots.get(response).type = 'error'; return response;
+        workerResponseSlots.get(response).type = 'error'; headerOps.setGuard(workerResponseSlots.get(response).headers, 'immutable'); return response;
     }
     static redirect(url, status = 302) {
         workerArguments(arguments.length, 1);
         const parsed = new URL(workerUSV(url), location.href), number = +status;
         const converted = Number.isFinite(number) ? ((Math.trunc(number) % 65536) + 65536) % 65536 : 0;
         if (![301, 302, 303, 307, 308].includes(converted)) throw new RangeError('Invalid redirect status');
-        return new Response(null, { status: converted, headers: { location: parsed.href } });
+        const response = new Response(null, { status: converted, headers: { location: parsed.href } });
+        headerOps.setGuard(workerResponseSlots.get(response).headers, 'immutable'); return response;
     }
     static json(data, init = {}) {
         workerArguments(arguments.length, 1);
@@ -884,7 +877,7 @@ for (const name of ['error', 'redirect', 'json']) Object.defineProperty(Response
 function fetch(input, init) {
     try {
         const request = new Request(input, init), state = workerRequestSlots.get(request), body = workerBodySlots.get(request);
-        const flat = []; state.headers.forEach((value, name) => flat.push(name, value));
+        const flat = headerOps.flat(state.headers);
         const bytes = body.bytes;
         if (bytes !== null) { body.used = true; body.bytes = null; }
         const result = W.fetch(state.url, state.method, bytes === null ? undefined : bytes, flat, state.credentials === 'omit');
@@ -893,6 +886,7 @@ function fetch(input, init) {
         for (let index = 0; index + 1 < result[3].length; index += 2) headers.append(result[3][index], result[3][index + 1]);
         const response = new Response([101, 103, 204, 205, 304].includes(result[0]) ? null : result[2], { status: result[0], headers });
         Object.assign(workerResponseSlots.get(response), { url: result[1], type: 'basic', redirected: result[1] !== state.url });
+        headerOps.setGuard(workerResponseSlots.get(response).headers, 'immutable');
         return Promise.resolve(response);
     } catch (error) { return Promise.reject(error); }
 }
@@ -1023,7 +1017,7 @@ void worker_main(std::shared_ptr<Worker> w) {
         v8::Context::Scope cs(ctx);
         v8::Local<v8::Object> W = v8::Object::New(iso);
 #define WREG(nm) (void)W->Set(ctx, jstr(iso, #nm), v8::Function::New(ctx, w_##nm).ToLocalChecked())
-        WREG(post); WREG(clone); WREG(timer); WREG(clear); WREG(close); WREG(now); WREG(log); WREG(decode); WREG(blobState); WREG(fileReaderPackage); WREG(fileReaderCheckpoint); WREG(resolve); WREG(urlParse); WREG(urlSet); WREG(idlGet); WREG(idlPut); WREG(idlRegister); WREG(idlFallback); WREG(initCloneIntrinsic); WREG(fetch); WREG(importScript); WREG(reportErr); WREG(busOrigin); WREG(busPost);
+        WREG(post); WREG(clone); WREG(timer); WREG(clear); WREG(close); WREG(now); WREG(log); WREG(decode); WREG(textEncoding); WREG(textDecode); WREG(blobState); WREG(fileReaderPackage); WREG(fileReaderCheckpoint); WREG(resolve); WREG(urlParse); WREG(urlSet); WREG(idlGet); WREG(idlPut); WREG(idlRegister); WREG(idlFallback); WREG(initCloneIntrinsic); WREG(fetch); WREG(importScript); WREG(reportErr); WREG(busOrigin); WREG(busPost);
         auto setS = [&](const char *k, const std::string &v) { (void)W->Set(ctx, jstr(iso, k), jstr(iso, v.c_str())); };
         setS("url", w->url); setS("ua", w->ua); setS("platform", w->platform); setS("name", w->name);
         (void)W->Set(ctx, jstr(iso, "coi"), v8::Boolean::New(iso, w->coi));

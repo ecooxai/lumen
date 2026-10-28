@@ -1,14 +1,8 @@
-class Headers {
-    constructor(init) { def(this, '_m', new Map()); def(this, '_n', new Map()); if (init instanceof Headers) for (const [k, v] of init) this.append(k, v); else if (Array.isArray(init)) for (const [k, v] of init) this.append(k, v); else if (init && typeof init === 'object') for (const k of Object.keys(init)) this.append(k, init[k]); }
-    append(k, v) { k = String(k); const l = k.toLowerCase(); if (!this._n.has(l)) this._n.set(l, k); k = l; v = String(v).trim(); const o = this._m.get(k); this._m.set(k, o == null ? v : k === 'set-cookie' ? o + '\n' + v : o + ', ' + v); }
-    set(k, v) { k = String(k); const l = k.toLowerCase(); if (!this._n.has(l)) this._n.set(l, k); this._m.set(l, String(v).trim()); } get(k) { return this._m.get(String(k).toLowerCase()) ?? null; }
-    has(k) { return this._m.has(String(k).toLowerCase()); } delete(k) { k = String(k).toLowerCase(); this._m.delete(k); this._n.delete(k); }
-    getSetCookie() { const v = this._m.get('set-cookie'); return v ? v.split('\n') : []; }
-    forEach(fn, self) { for (const [k, v] of this) fn.call(self, v, k, this); }
-    *entries() { yield* [...this._m].sort((a, b) => a[0] < b[0] ? -1 : 1); } keys() { return [...this._m.keys()].sort()[Symbol.iterator](); } values() { return [...this.entries()].map(e => e[1])[Symbol.iterator](); }
-    [Symbol.iterator]() { return this.entries(); }
-    _flat() { const a = []; for (const [k, v] of this._m) a.push(this._n.get(k) || k, v); return a; }
-}
+const headerOps = createHeadersInterface({
+    getState: object => N.domStateGet(object, 6),
+    setState: (object, state) => N.domStateSet(object, 6, state),
+});
+const { Headers } = headerOps;
 
 // Fetch "append a request Origin header": CORS requests and non-GET/HEAD requests carry the document origin.
 function withOrigin(flat, url, method, mode) {
@@ -144,16 +138,22 @@ class Body {
 class Request extends Body {
     constructor(input, init = {}) {
         super(); const src = input instanceof Request ? input : null;
+        if (init == null) init = {};
+        if (typeof init !== 'object' && typeof init !== 'function') throw new TypeError('Expected RequestInit dictionary');
         this.url = new URL(src ? src.url : String(input), document.baseURI).href;
         this.method = String(init.method || (src && src.method) || 'GET').toUpperCase();
-        this.headers = new Headers(init.headers || (src && src.headers));
-        def(this, '_b', init.body !== undefined ? bodyInit(init.body, this.headers) : src ? src._b : null);
+        const suppliedHeaders = init.headers;
         this.signal = init.signal || (src && src.signal) || new AbortController().signal;
         for (const [key, fallback] of Object.entries({ credentials: 'same-origin', mode: 'cors', cache: 'default', redirect: 'follow', referrer: 'about:client', integrity: '', keepalive: false, priority: 'auto' })) {
             const value = init[key] !== undefined ? init[key] : src ? src[key] : fallback;
             this[key] = key === 'keepalive' ? !!value : String(value);
         }
         if (!['omit', 'same-origin', 'include'].includes(this.credentials)) throw new TypeError('Invalid Request credentials mode');
+        if (!['same-origin', 'no-cors', 'cors'].includes(this.mode)) throw new TypeError('Invalid Request mode');
+        if (this.mode === 'no-cors' && !['GET', 'HEAD', 'POST'].includes(this.method)) throw new TypeError('Invalid no-cors method');
+        this.headers = headerOps.create(suppliedHeaders === undefined ? src ? src.headers : undefined : suppliedHeaders,
+                                        this.mode === 'no-cors' ? 'request-no-cors' : 'request');
+        def(this, '_b', init.body !== undefined ? bodyInit(init.body, this.headers) : src ? src._b : null);
     }
     clone() {
         if (this.bodyUsed || (this._b instanceof ReadableStream && this._b.locked)) throw new TypeError('Request body has already been consumed or is locked.');
@@ -163,13 +163,14 @@ class Request extends Body {
     }
 }
 class Response extends Body {
-    constructor(body = null, init = {}) { super(); this.headers = new Headers(init.headers); def(this, '_b', bodyInit(body, this.headers)); this.status = init.status ?? 200; this.statusText = init.statusText || ''; this.type = 'default'; this.url = ''; this.redirected = false; }
+    constructor(body = null, init = {}) { super(); this.headers = headerOps.create(init.headers, 'response'); def(this, '_b', bodyInit(body, this.headers)); this.status = init.status ?? 200; this.statusText = init.statusText || ''; this.type = 'default'; this.url = ''; this.redirected = false; }
     get ok() { return this.status >= 200 && this.status < 300; }
-    clone() { const r = new Response(null, this); if (this._b instanceof ReadableStream) { const [a, b] = this._b.tee(); this._b = a; r._b = b; } else r._b = this._b; r.url = this.url; r.type = this.type; return r; }
+    clone() { const r = new Response(null, this); if (this._b instanceof ReadableStream) { const [a, b] = this._b.tee(); this._b = a; r._b = b; } else r._b = this._b; r.url = this.url; r.type = this.type; headerOps.setGuard(r.headers, headerOps.guard(this.headers)); return r; }
     static json(d, i) { const r = new Response(JSON.stringify(d), i); r.headers.set('content-type', 'application/json'); return r; }
-    static error() { const r = new Response(null, { status: 0 }); r.type = 'error'; return r; }
-    static redirect(u, s = 302) { return new Response(null, { status: s, headers: { location: String(u) } }); }
+    static error() { const r = new Response(null, { status: 0 }); r.type = 'error'; return immutableResponse(r); }
+    static redirect(u, s = 302) { return immutableResponse(new Response(null, { status: s, headers: { location: String(u) } })); }
 }
+function immutableResponse(response) { headerOps.setGuard(response.headers, 'immutable'); return response; }
 function localBody(url) {
     if (url.startsWith('blob:')) { const b = objectURLs.get(url); return blobFileOps.isBlob(b) ? [blobFileOps.copyBuffer(b), blobFileOps.type(b)] : null; }
     const m = /^data:([^,]*?)(;base64)?,(.*)$/s.exec(url); if (!m) return undefined;
@@ -194,16 +195,16 @@ function fetch(input, init) {
     return new Promise((resolve, reject) => {
         if (req.signal.aborted) return reject(req.signal.reason);
         const lb = localBody(req.url);
-        if (lb !== undefined) { const br = lb && blobResponse(req.url, lb, req.headers.get('range')); if (!br) return reject(new TypeError('Failed to fetch')); const r = new Response(null, { status: br[0], statusText: br[1], headers: fromFlat(br[2]) }); r._b = br[3]; r.url = req.url; r.type = 'basic'; return resolve(r); }
+        if (lb !== undefined) { const br = lb && blobResponse(req.url, lb, req.headers.get('range')); if (!br) return reject(new TypeError('Failed to fetch')); const r = new Response(null, { status: br[0], statusText: br[1], headers: fromFlat(br[2]) }); r._b = br[3]; r.url = req.url; r.type = 'basic'; return resolve(immutableResponse(r)); }
         const build = (status, statusText, url, hdrs) => {
             if (!corsOk(req.url, url, hdrs || [], req.credentials === 'include')) {
                 if (req.mode !== 'no-cors') return null;
                 const r = new Response(null); r.status = 0; r.url = ''; r.type = 'opaque';
-                return r;
+                return immutableResponse(r);
             }
             if (req.mode === 'same-origin') { try { if (new URL(url || req.url).origin !== location.origin) return null; } catch (e) {} }
             const r = new Response(null, { status, statusText, headers: fromFlat(hdrs) }); r.url = url; r.redirected = url !== req.url; r.type = 'basic';
-            return r;
+            return immutableResponse(r);
         };
         let id = 0, ctl = null, settled = false;
         const head = (status, statusText, url, hdrs) => {
@@ -212,7 +213,7 @@ function fetch(input, init) {
             r._b = new ReadableStream({ start(c) { ctl = c; } }); settled = true; resolve(r);
         };
         const chunk = (ab) => { if (ctl) try { ctl.enqueue(new Uint8Array(ab)); } catch (e) {} };
-        corsSend(req.credentials, (i) => id = i, req.method, req.url, withOrigin(req.headers._flat(), req.url, req.method, req.mode), req._b, (status, statusText, url, hdrs, body, err) => {
+        corsSend(req.credentials, (i) => id = i, req.method, req.url, withOrigin(headerOps.flat(req.headers), req.url, req.method, req.mode), req._b, (status, statusText, url, hdrs, body, err) => {
             if (settled) { if (ctl) { try { if (err) ctl.error(new TypeError('network error')); else ctl.close(); } catch (e) {} ctl = null; } return; }
             if (err) return reject(new TypeError('Failed to fetch'));
             const r = build(status, statusText, url, hdrs); if (!r) return reject(new TypeError('Failed to fetch'));
@@ -453,8 +454,8 @@ class XMLHttpRequest extends XMLHttpRequestEventTarget {
         const lb = localBody(this._u);
         if (lb !== undefined) { const br = lb && blobResponse(this._u, lb, this._rh.get('range')); const f = () => br ? this._done(gen, br[0], br[1], this._u, br[2], br[3], false) : this._done(gen, 0, '', this._u, [], null, true); if (this._async) setTimeout(f); else f(); return; }
         const credentials = this._wc ? 'include' : 'same-origin';
-        if (!this._async) { const r = corsSendSync(credentials, this._m, this._u, withOrigin(this._rh._flat(), this._u, this._m, 'cors'), b); this._done(gen, ...r); return; }
-        corsSend(credentials, (i) => this._id = i, this._m, this._u, withOrigin(this._rh._flat(), this._u, this._m, 'cors'), b, (...a) => this._done(gen, ...a));
+        if (!this._async) { const r = corsSendSync(credentials, this._m, this._u, withOrigin(headerOps.flat(this._rh), this._u, this._m, 'cors'), b); this._done(gen, ...r); return; }
+        corsSend(credentials, (i) => this._id = i, this._m, this._u, withOrigin(headerOps.flat(this._rh), this._u, this._m, 'cors'), b, (...a) => this._done(gen, ...a));
         if (this._to > 0) this._timer = setTimeout(() => { if (gen !== this._gen) return; this._terminate(); this._errorSteps('timeout'); }, this._to);
     }
     abort() {

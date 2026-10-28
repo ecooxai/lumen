@@ -587,3 +587,16 @@ $(BUILD)/tests/test_app_wheel.c.o: CFLAGS += -I$(BUILD)/src/app
 $(BUILD)/tests/test_app_wheel.c.o: $(BUILD)/src/app/icon.inc src/app/main.c
 $(BUILD)/test_app_wheel: $(call OBJ,tests/test_app_wheel.c $(CORE_SRC) $(JS_SRC) $(filter-out src/app/main.c,$(APP_SRC))) $(V8LINK_RSP)
 	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
+
+# One Fetch Headers implementation is shared by window and worker contexts.
+$(BUILD)/src/js/headers.inc: src/js/prelude/06y-headers.js
+	@mkdir -p $(dir $@)
+	{ printf 'R"JS('; cat $<; printf ')JS"'; } > $@
+$(BUILD)/src/js/worker.cc.o $(BUILD)/tests/test_worker_lifecycle.cc.o $(BUILD)/tests/test_url_idl.cc.o: $(BUILD)/src/js/headers.inc
+
+# One Encoding Standard interface factory and checked decoder in all realms.
+$(BUILD)/src/js/text_codec.inc: src/js/prelude/06u-textcodec.js
+	@mkdir -p $(dir $@)
+	{ printf 'R"JS('; cat $<; printf ')JS"'; } > $@
+$(BUILD)/src/js/worker.cc.o $(BUILD)/tests/test_worker_lifecycle.cc.o $(BUILD)/tests/test_url_idl.cc.o: $(BUILD)/src/js/text_codec.inc
+$(BUILD)/src/js/jsnative.cc.o $(BUILD)/src/js/worker.cc.o $(BUILD)/tests/test_worker_lifecycle.cc.o $(BUILD)/tests/test_url_idl.cc.o: src/js/text_codec.h src/base/encoding.h

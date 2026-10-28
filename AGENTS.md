@@ -70,6 +70,11 @@ Native `build-apple-load-20261029/lumen-wheel-fast-path-7f0cafc374cf2cf1` (7f0ca
 Accepted source `4517145578ef3374cba6e699b2fe183fc25e48a0` and immutable native `eac62c75a9958f9cdc26cc85d4aa54e17c4031f9c9e43915263673375626fb55`:714 targeted checks;1850/1850 original six-file WPT assertions. Expanded1515-variant coverage is incomplete. Absolute DOM995/996 and events78/78 are promising but installed Chrome control URL sanity failed, so no broad comparative acceptance. Task score40/100 includes verified live delivery workflow; new native performance and same-device IPA gates remain unverified. Preserve the next candidate's uncommitted files and keep root as the only remote I/O broker. Refresh archive/status after each accepted source checkpoint.
 
 
-## Latest verified task checkpoint —10290244-008
+## Previous verified task checkpoint —10290244-008
 
 Native `2c27f3bb2c305b2fc3b79d1e257c9913380432014a5a85832306afa13441dc32` passes815 targeted checks and1850/1850 original six-file WPT assertions. Frame microtask realm and Storage.key conversion fixes are committed with exact source hashes. Score40/100; expanded1515-variant work is incomplete, old reference URL behavior remains quarantined, and current-artifact performance/IPA needs proof. New header/encoding work must remain isolated until another measured checkpoint.
+
+
+## Latest verified task checkpoint —10290244-009
+
+Native `1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9` passes1122 targeted native checks and1850/1850 original-subset WPT assertions. Headers conversion/guard/iteration and HTTP ByteString transport fixes are committed with exact source hashes. Score40/100; current-artifact performance, full frozen priority coverage and same-device IPA execution remain incomplete. Preserve reference quarantine and coordinate further shared-source edits before mutation.

@@ -6,7 +6,7 @@
   "deadline_utc": "2026-10-28T21:47:35Z",
   "target_score": 98,
   "score": 40,
-  "score_state": "selected_subset_pass_frame_storage_fixed_broader_incomplete_performance_unverified",
+  "score_state": "selected_subset_pass_headers_codec_fixed_broader_incomplete_performance_unverified",
   "unknown_means": "unverified, not measured failure",
   "rubric": "agent/scorecard-rubric-10290244.md",
   "gates": [
@@ -18,7 +18,7 @@
       "status": "passed",
       "earned": 10,
       "evidence": [
-        "output/session-20261029/native-qa-kit-v1/source/output/wpt-comparison-session10290244-frame-storage-1.json"
+        "output/session-20261029/native-qa-kit-v1/source/output/wpt-comparison-session10290244-headers-codec-1.json"
       ],
       "passed": 1850,
       "denominator": 1850,
@@ -44,11 +44,11 @@
       "status": "passed",
       "earned": 10,
       "evidence": [
-        "output/session-20261029/native-qa-kit-v1/source/output/wpt-comparison-session10290244-frame-storage-1.json",
-        "output/session-10290244/frame-storage-green-1/compiled-source-sha256.json",
-        "output/session-10290244/frame-storage-green-1/summary.json"
+        "output/session-20261029/native-qa-kit-v1/source/output/wpt-comparison-session10290244-headers-codec-1.json",
+        "output/session-10290244/headers-codec-green-1/compiled-source-sha256.json",
+        "output/session-10290244/headers-codec-green-1/summary.json"
       ],
-      "binary_sha256": "2c27f3bb2c305b2fc3b79d1e257c9913380432014a5a85832306afa13441dc32",
+      "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
       "source_commit": "4517145578ef3374cba6e699b2fe183fc25e48a0"
     },
     {
@@ -86,7 +86,7 @@
       "status": "unverified",
       "earned": 0,
       "evidence": [],
-      "binary_sha256": "2c27f3bb2c305b2fc3b79d1e257c9913380432014a5a85832306afa13441dc32",
+      "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
       "settle_seconds": 15,
       "valid_window_seconds": 64.009,
       "samples": 65,
@@ -146,7 +146,7 @@
           }
         }
       ],
-      "note": "New frame/storage executable. Old wheel idle/scroll/soak observations remain historical; fresh native acceptance is required."
+      "note": "Changed Headers/codec executable. Prior CPU/RSS/soak evidence remains historical until reproduced on this artifact."
     },
     {
       "id": "perf_interaction",
@@ -156,8 +156,8 @@
       "status": "unverified",
       "earned": 0,
       "evidence": [],
-      "note": "New frame/storage executable. Old wheel idle/scroll/soak observations remain historical; fresh native acceptance is required.",
-      "binary_sha256": "2c27f3bb2c305b2fc3b79d1e257c9913380432014a5a85832306afa13441dc32",
+      "note": "Changed Headers/codec executable. Prior CPU/RSS/soak evidence remains historical until reproduced on this artifact.",
+      "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
       "ceiling_percent": 10,
       "historical_evidence": [
         {
@@ -188,8 +188,8 @@
       "status": "unverified",
       "earned": 0,
       "evidence": [],
-      "note": "New frame/storage executable. Old wheel idle/scroll/soak observations remain historical; fresh native acceptance is required.",
-      "binary_sha256": "2c27f3bb2c305b2fc3b79d1e257c9913380432014a5a85832306afa13441dc32",
+      "note": "Changed Headers/codec executable. Prior CPU/RSS/soak evidence remains historical until reproduced on this artifact.",
+      "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
       "historical_evidence": [
         {
           "binary_sha256": "7f0cafc374cf2cf1c51f83f44eec8da7220b996ac836bef4fd6caf3687623026",
@@ -255,11 +255,11 @@
       "status": "passed",
       "earned": 5,
       "evidence": [
-        "output/session-10290244/frame-storage-green-1/summary.json"
+        "output/session-10290244/headers-codec-green-1/summary.json"
       ],
-      "build_seconds": 5.106,
+      "build_seconds": 11.104,
       "prebuilt_v8": true,
-      "note": "Seventeen individually timed stages with1s samples;5.106s prebuilt-V8 build. All stages below five minutes."
+      "note": "Twenty individually timed stages with one-second process samples; no stage above five minutes."
     },
     {
       "id": "repro_tdd",
@@ -269,9 +269,11 @@
       "status": "passed",
       "earned": 5,
       "evidence": [
-        "output/session-10290244/frame-microtask-red.log",
-        "output/session-10290244/storage-key-red.log",
-        "output/session-10290244/frame-storage-green-1/summary.json"
+        "output/session-10290244/headers-red-1.log",
+        "output/session-10290244/headers-red-1.json",
+        "output/session-10290244/text-codec-red-1.log",
+        "output/session-10290244/text-codec-red-1.json",
+        "output/session-10290244/headers-codec-green-1/summary.json"
       ]
     },
     {
@@ -282,10 +284,10 @@
       "status": "passed",
       "earned": 5,
       "evidence": [
-        "output/session-10290244/frame-storage-green-1/compiled-source-sha256.json",
-        "output/session-10290244/frame-storage-green-1/summary.json"
+        "output/session-10290244/headers-codec-green-1/compiled-source-sha256.json",
+        "output/session-10290244/headers-codec-green-1/summary.json"
       ],
-      "binary_sha256": "2c27f3bb2c305b2fc3b79d1e257c9913380432014a5a85832306afa13441dc32",
+      "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
       "source_commit": "4517145578ef3374cba6e699b2fe183fc25e48a0"
     },
     {
@@ -372,10 +374,20 @@
       "source_base_commit": "eda91a106a6efd3db806391b3dda0b3224c6855a",
       "targeted_checks": 815,
       "performance": "unverified on changed artifact"
+    },
+    {
+      "iteration": "10290244-009",
+      "updated_utc": "2026-10-28T21:07:22.953952+00:00",
+      "prior_score": 40,
+      "score": 40,
+      "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+      "source_base_commit": "14b7fe6050061104fa603d6513775563f79697fe",
+      "targeted_checks": 1122,
+      "performance": "unverified on changed executable"
     }
   ],
-  "updated_utc": "2026-10-28T21:00:46.673756+00:00",
-  "current_baseline_binary_sha256": "2c27f3bb2c305b2fc3b79d1e257c9913380432014a5a85832306afa13441dc32",
+  "updated_utc": "2026-10-28T21:07:22.953952+00:00",
+  "current_baseline_binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
   "full_official_wpt_pass_percent": null,
-  "current_native_source_base_commit": "eda91a106a6efd3db806391b3dda0b3224c6855a"
+  "current_native_source_base_commit": "14b7fe6050061104fa603d6513775563f79697fe"
 }

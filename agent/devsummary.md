@@ -103,3 +103,14 @@ Frame window initialization and queued microtask execution now preserve the appr
 All815 targeted native checks passed in17 measured stages, prebuilt-V8 incremental build5.106s. Immutable native `build-apple-load-20261029/lumen-frame-storage-2c27f3bb2c305b2f` SHA `2c27f3bb2c305b2fc3b79d1e257c9913380432014a5a85832306afa13441dc32` freshly passes the unchanged1850-assertion, six-file upstream WPT subset. Frozen1515-variant coverage remains incomplete and does not earn broader parity credit. Evidence `agent/evidence/10290244-008-frame-storage.json`.
 
 Task score40/100. Current native idle/interaction/navigation-soak and same-device IPA remain unverified. Prior wheel scrolling21.973%p95 remains a historical failed10% gate, not a pass for this executable. Refresh source publication/status after this checkpoint; do not change upstream tests or hide unsupported workers.
+
+
+## Iteration10290244-009 — Fetch Headers and shared text codec interfaces
+
+Start: 2026-10-28T21:00:46.673756+00:00. End: 2026-10-28T21:07:22.953952+00:00. Iteration wall: 396.28s. Session elapsed: 8387.954s. Implementation/TDD: wpt_engine and apple_runtime; independent JS/native integration review: release_integrator and both implementation owners; root brokers execution. Separate model compute duration is unavailable.
+
+The shared window/worker Headers implementation now validates WebIDL iterable/record conversion order, live sorted iteration, Set-Cookie handling, request/no-cors/response/immutable guards and cross-realm brands. Fetch and XHR transport preserve actual ByteString octets; replaced public header helpers cannot inject transport bytes. Review regressions cover quoted override-method tokens and overwritten Set.has.
+
+The137-check Headers fixture improved 33/137→137/137; the170-check codec fixture improved 46/170→170/170. All1122 retained/Headers/codec checks pass across20 timed stages, with the native test_encoding assertion target passing separately. Prebuilt-V8 build 11.104s. Native `build-apple-load-20261029/lumen-headers-codec-1b9d43ed19cd616b` SHA `1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9` freshly preserves1850/1850 original six-file WPT assertions. TextEncoder/Decoder now share window/worker behavior, native canonical labels and one-shot legacy tables, checked fatal errors, UTF8/UTF16 streaming, BOM handling, scalar-safe encodeInto, fixed-length BufferSource validation and cross-realm brands. Legacy multibyte/fatal streaming is explicitly unsupported. The52 frozen upstream Headers variants and all1515 broader variants remain separate, unchanged inventories. Evidence `agent/evidence/10290244-009-fetch-headers-text-codec.json`.
+
+Score40/100. Current executable CPU/RSS/soak and same-device IPA remain unverified; previous scrolling failure stays historical. Preserve reference quarantine and rerun the frozen Headers category on this immutable executable before claiming upstream improvement.
