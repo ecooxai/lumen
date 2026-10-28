@@ -279,8 +279,12 @@ static float static_align_offset(const char *value, const Box *a, bool horizonta
     else if (!strcmp(value, "flex-end")) fraction = flex_reverse ? 0 : 1;
     else if (!strcmp(value, "start")) fraction = normal_reverse ? 1 : 0;
     else if (!strcmp(value, "end")) fraction = normal_reverse ? 0 : 1;
-    else if (!strcmp(value, "self-start") || !strcmp(value, "baseline") || !strcmp(value, "first baseline")) fraction = static_axis_reverse(a->st, horizontal) ? 1 : 0;
-    else if (!strcmp(value, "self-end") || !strcmp(value, "last baseline")) fraction = static_axis_reverse(a->st, horizontal) ? 0 : 1;
+    /* Match the interoperable flex static-position baseline fallback in the
+       container's logical axes, independently of child axes and wrap reversal. */
+    else if (!strcmp(value, "baseline") || !strcmp(value, "first baseline")) fraction = normal_reverse ? 1 : 0;
+    else if (!strcmp(value, "last baseline")) fraction = normal_reverse ? 0 : 1;
+    else if (!strcmp(value, "self-start")) fraction = static_axis_reverse(a->st, horizontal) ? 1 : 0;
+    else if (!strcmp(value, "self-end")) fraction = static_axis_reverse(a->st, horizontal) ? 0 : 1;
     else if (!strcmp(value, "left")) fraction = horizontal || row ? 0 : (normal_reverse ? 1 : 0);
     else if (!strcmp(value, "right")) fraction = horizontal || row ? 1 : (normal_reverse ? 1 : 0);
     if (safe && free_space < 0) fraction = flex_reverse ? 1 : 0;
