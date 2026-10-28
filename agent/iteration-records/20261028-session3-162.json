@@ -1,0 +1,86 @@
+{
+  "iteration": 162,
+  "status": "focused accepted; final coherent4200 and rendering pending",
+  "implementation_start_utc": "2026-10-28T18:33:55+00:00",
+  "build_started_utc": "2026-10-28T18:35:37Z",
+  "accepted_utc": "2026-10-28T18:47:48.259466+00:00",
+  "duration_minutes": 13.888,
+  "session_wall_minutes_at_acceptance": 126.654,
+  "whole_goal_score": 19,
+  "scoped_score": 97,
+  "score_limit": "Subjective bounded repair review, not whole-browser readiness or measured WPT percentage. Fourteen authored failures remain explicitly preexisting.",
+  "agents": [
+    "engine_integration",
+    "validation_gate",
+    "platform_network",
+    "root"
+  ],
+  "source": {
+    "accepted_commit": "e858139105c0743d8416fe6c91cd3ac42480a3b0",
+    "iteration": 162,
+    "attribution_utc": "2026-10-28T18:47:48.259466+00:00",
+    "binary": "build/codex-native/lumen-astra-i162",
+    "binary_sha256": "d76d88b2c6d67dadfc75375bd47679ae17d88d0cdb07f62d6d5969e422a949e5",
+    "recorded_inputs": 601,
+    "manifest_path": "agent/validation/iteration-162/source-manifest-after.json",
+    "manifest_sha256": "48ed537f69e2fcc7cf862a00fdf3640fb2cdde0a1a5397c9687a7aab31df40d0",
+    "all_recorded_inputs_match": true,
+    "build_time_head": "14fad818077043915c0084d63e1a3e69065306dc",
+    "build_time_dirty_source_sha256": "a109777059167fd93563b1b3ca5e4a016820add03cb2aa42c99688a947f2deba",
+    "build_started_utc": "2026-10-28T18:35:37Z",
+    "source_freeze_started_utc": "2026-10-28T18:35:37Z",
+    "provenance_note": "Built from the frozen dirty working tree before this acceptance commit existed. Original build manifest and active broad launch metadata are unchanged; this separate record maps all 601 exact input bytes to the later source commit.",
+    "scope": "Focused acceptance: 137 native tests; unchanged sizing38; all120 animation losses restored; 210/224 authored with14 proven preexisting vertical logical stylesheet transition failures. Final4200 replay pending."
+  },
+  "change": "Use stored computed minimum-size auto values for CSS transitions and neutral Web Animations endpoints, while leaving public CSSOM resolved serialization unchanged.",
+  "native_ctest": {
+    "passed": 137,
+    "total": 137,
+    "elapsed_seconds": 48.61
+  },
+  "upstream_sizing": {
+    "urls": 38,
+    "pass": 213,
+    "total": 326,
+    "all_harnesses_ok": true,
+    "identities_unchanged_from161": true
+  },
+  "upstream_animation": {
+    "urls": 6,
+    "pass": 1380,
+    "total": 1504,
+    "restored_pass_losses_vs161": 120,
+    "losses_vs150": 0,
+    "added_or_missing_identities": 0
+  },
+  "authored_existing": {
+    "passed": 312,
+    "total": 312,
+    "groups": [
+      48,
+      144,
+      96,
+      24
+    ]
+  },
+  "authored_new": {
+    "passed": 210,
+    "total": 224,
+    "remaining_failures": 14,
+    "all_remaining_preexisting_on150_and161": true,
+    "gains_vs150": 98,
+    "losses_vs150": 0,
+    "gains_vs161": 48,
+    "losses_vs161": 0,
+    "chromium_pass": 184,
+    "chromium_known_aspect_resolution_disagreements": 40
+  },
+  "all49_guard_launches_actually_exited_profiles_removed": true,
+  "evidence": {
+    "gates": "agent/validation/linux-wpt-20261028-session3/candidate162-independent-gates.json",
+    "identity_audit": "agent/validation/linux-wpt-20261028-session3/candidate162-exact-identity-audit.json",
+    "source_manifest": "agent/validation/iteration-162/source-manifest-after.json",
+    "source_attribution": "agent/validation/linux-wpt-20261028-session3/accepted-source162.json"
+  },
+  "performance": "Not rebenchmarked on162 before broad replay. The final matched150/161/Chromium round remains a predecessor161 measurement, not162 performance."
+}

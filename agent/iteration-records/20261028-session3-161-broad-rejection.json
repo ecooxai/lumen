@@ -1,0 +1,22 @@
+{
+  "iteration": 161,
+  "post_acceptance_status": "withdrawn as final release after fresh broad semantic regression",
+  "observed_utc": "2026-10-28T18:30:52Z",
+  "original_focused_acceptance_retained": true,
+  "broad_partial_urls": 1183,
+  "broad_cleanup_utc": "2026-10-28T18:32:50Z",
+  "actual_guard_launches": 15,
+  "all_profiles_and_pids_absent": true,
+  "source601_note": "161 manifest has600 inputs; all600 matched at18:33:55 before162 edits.",
+  "semantic_regression": "Automatic minimum CSSOM resolved0px was used as animation computed endpoint, turning auto/length discrete interpolation into numeric interpolation.",
+  "fresh_min_width_150_pass": 326,
+  "fresh_min_width_161_pass": 266,
+  "fresh_min_width_total": 366,
+  "six_url_150_pass": 1380,
+  "six_url_161_pass": 1260,
+  "six_url_total": 1504,
+  "restored_by162": 120,
+  "whole_goal_score": 19,
+  "rejected_candidate_scoped_score": 88,
+  "retained_evidence": "agent/validation/linux-wpt-20261028-session3/broad161-final"
+}

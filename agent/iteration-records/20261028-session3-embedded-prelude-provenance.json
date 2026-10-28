@@ -26,6 +26,15 @@
       "prelude_bytes": 1609617,
       "prelude_sha256": "ef5553a84365fb4a56dcebeed980c9676f02de1bb07fd7f963ab5dee43c65dfc",
       "exact_bytes_found_at": 2652464
+    },
+    {
+      "iteration": 162,
+      "commit": "e858139105c0743d8416fe6c91cd3ac42480a3b0",
+      "binary_sha256": "d76d88b2c6d67dadfc75375bd47679ae17d88d0cdb07f62d6d5969e422a949e5",
+      "prelude_bytes": 1609712,
+      "prelude_sha256": "a4e6b070ae5637fb054de8ac7c1cf6d25a251be0db2940d011882167609695a2",
+      "exact_bytes_found_at": 2652464,
+      "build_provenance": "Compiled from dirty frozen HEAD14fad818 before the later exact-content acceptance commit; original manifest retained."
     }
   ],
   "loader_review": {
@@ -44,7 +53,8 @@
     "performance": "agent/validation/performance/compare.py explicitly removes LUMEN_PRE_FILE, LUMEN_WPT_CTRL, LUMEN_TESTDRIVER and LUMEN_TESTDRIVER_URL before launch.",
     "focused_wpt": "paired_wpt.py and paired_wpt_lf.py write a short private reporter script and explicitly set LUMEN_PRE_FILE to it.",
     "broad_wpt": "tests/wpt/lumen_wpt.py writes PRE_JS per instance: result reporting, navigation to the controller and a watchdog. The launcher explicitly replaces any inherited LUMEN_PRE_FILE. It does not load engine JavaScript from src/.",
-    "final_coordinator": "agent/validation/linux-wpt-20261028-session3/broad161-final/run_sequence.py clears controller/pre overrides and verifies exact binary and protocol hashes."
+    "final_coordinator": "agent/validation/linux-wpt-20261028-session3/broad161-final/run_sequence.py clears controller/pre overrides and verifies exact binary and protocol hashes.",
+    "final162_coordinator": "Read-only reviewed. Clears LUMEN_WPT_CTRL and LUMEN_WPT_PRE; existing WPT launcher still explicitly installs only its short reporter after embedded engine initialization. The immutable162 binary and unchanged protocol/runner hashes are checked; original launch acceptance commit is null, separately attributed by accepted-source162.json."
   },
   "reviewed_file_sha256": {
     "CMakeLists.txt": "846fa5629f059f68e869b7b1ec73a99518cc67f218519982332531ce402a65fa",
@@ -57,6 +67,8 @@
     "agent/validation/paired_wpt.py": "ea8b177e030d808fd4924028d2001fd9b40d1f4026fcdc994828940107a4c6bb",
     "agent/validation/paired_wpt_lf.py": "5198a471220116c2a07c4285854cd3dfa4732c44f6e6c78bfaedb3d9c03ab42c",
     "tests/wpt/lumen_wpt.py": "005dffe9f72b5c5a04f83a51154670d1aac5db816d6c77fb26a2ba1f08b17dca",
-    "agent/validation/linux-wpt-20261028-session3/broad161-final/run_sequence.py": "a993221797fca274c4b03d2165794cab7b76bc42cb280f8ccbc1ba46f2732d6b"
-  }
+    "agent/validation/linux-wpt-20261028-session3/broad161-final/run_sequence.py": "a993221797fca274c4b03d2165794cab7b76bc42cb280f8ccbc1ba46f2732d6b",
+    "agent/validation/linux-wpt-20261028-session3/broad162-final/run_sequence.py": "7f571ecf878843b7ab719a70ef10ac73023e08afb4d41f4e820f9f3f29acde2f"
+  },
+  "extended_utc": "2026-10-28T18:49:06.888705+00:00"
 }

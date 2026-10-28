@@ -45,10 +45,12 @@ Early preview. Expect broken pages and missing features.
 
 ## Linux and Android development
 
-Linux runs Lumen's native C/C++ engine with V8 and wgpu-native. Current accepted
-Linux binaries, exact source hashes, measured compatibility and remaining work
-are recorded in the latest dated [AGENTS.md](AGENTS.md) handoff and
-[devsummary.md](devsummary.md). The [portability status and test plan](docs/codex-android-linux-status.md)
+Linux runs Lumen's native C/C++ engine with V8 and wgpu-native. In the full
+development checkout, current accepted binaries, exact source hashes, measured
+compatibility and remaining work are recorded in the dated `AGENTS.md` handoff
+and `devsummary.md`. These private task and handoff documents, including
+`agent/task.md`, are intentionally omitted from public source snapshots.
+The [portability status and test plan](docs/codex-android-linux-status.md)
 retains earlier Linux/Android milestones; its historical results are not the
 current engine's validation.
 
