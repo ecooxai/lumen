@@ -63,12 +63,72 @@ class MonitorTests(unittest.TestCase):
                  'rss_kb': rss} for t, cpu, rss in [(0, None, 1024), (1, 80, 2048), (10, 2, 3072), (11, 0, 4096)]]
         result = monitor.summarize(rows, 10)
         self.assertEqual(result['interval_cpu_samples'], 3)
-        self.assertEqual(result['steady_interval_cpu_samples'], 2)
-        self.assertEqual(result['steady_interval_cpu_mean_percent'], 1)
-        self.assertEqual(result['steady_interval_cpu_p95_percent'], 2)
+        # The interval ending at t=10 began at t=1 and crosses the settling
+        # boundary. Only intervals entirely within the steady window qualify.
+        self.assertEqual(result['steady_interval_cpu_samples'], 1)
+        self.assertEqual(result['steady_interval_cpu_mean_percent'], 0)
+        self.assertEqual(result['steady_interval_cpu_p95_percent'], 0)
         self.assertEqual(result['rss_steady_median_mb'], 3.5)
         self.assertEqual(result['rss_steady_p95_mb'], 4)
         self.assertIsNone(monitor.summarize([], 0)['interval_cpu_mean_percent'])
+
+    def test_interval_gate_catches_repeated_busy_seconds_hidden_by_average(self):
+        rows = [{'elapsed_s': t, 'cpu_percent': 0,
+                 'interval_cpu_percent': None if t == 0 else (12 if t % 5 == 0 else 0),
+                 'rss_kb': 1024} for t in range(21)]
+        result = monitor.summarize(rows, 0)
+        result['completed_full_duration'] = True
+        self.assertLess(result['steady_interval_cpu_mean_percent'], 3)
+        self.assertEqual(result['steady_interval_cpu_p95_percent'], 12)
+        violations = monitor.performance_violations(result, max_steady_interval_cpu=3)
+        self.assertTrue(any('interval CPU p95' in value for value in violations))
+
+    def test_short_quiet_window_does_not_pass_interval_cpu_gate(self):
+        rows = [{'elapsed_s': t, 'cpu_percent': 0,
+                 'interval_cpu_percent': None if t == 0 else 0,
+                 'rss_kb': 1024} for t in range(5)]
+        result = monitor.summarize(rows, 0)
+        result['completed_full_duration'] = True
+        violations = monitor.performance_violations(result, max_steady_interval_cpu=3)
+        self.assertTrue(any('at least 10' in value for value in violations))
+
+    def test_missing_second_makes_low_cpu_gate_inconclusive(self):
+        rows = [{'elapsed_s': t, 'cpu_percent': 0,
+                 'interval_cpu_percent': None if t == 0 else 0,
+                 'rss_kb': 1024} for t in list(range(6)) + list(range(9, 21))]
+        result = monitor.summarize(rows, 0)
+        result['completed_full_duration'] = True
+        self.assertEqual(result['max_sampling_gap_s'], 4)
+        violations = monitor.performance_violations(result, max_steady_interval_cpu=3)
+        self.assertTrue(any('sampling gap' in value for value in violations))
+
+    def test_start_and_finish_collection_gaps_remain_visible(self):
+        rows = [{'elapsed_s': t, 'cpu_percent': 0,
+                 'interval_cpu_percent': None if t == 3 else 0,
+                 'rss_kb': 1024} for t in range(3, 21)]
+        result = monitor.summarize(rows, 0, monitoring_duration=25)
+        result['completed_full_duration'] = True
+        self.assertEqual(result['max_sampling_gap_s'], 5)
+        self.assertTrue(monitor.performance_violations(result, max_steady_interval_cpu=3))
+
+    def test_complete_quiet_window_passes_interval_cpu_gate(self):
+        rows = [{'elapsed_s': t, 'cpu_percent': 80,
+                 'interval_cpu_percent': None if t == 0 else 1,
+                 'rss_kb': 1024} for t in range(21)]
+        result = monitor.summarize(rows, 5)
+        result['completed_full_duration'] = True
+        self.assertEqual(monitor.performance_violations(result, max_steady_interval_cpu=3), [])
+
+    def test_interval_gate_cli_rejects_process_that_exits_before_requested_window(self):
+        snapshots = ['10 1 0.0 1024 S 00:01.00 Thu Oct 22 09:00:00 2026\n', '']
+        with tempfile.TemporaryDirectory() as directory:
+            prefix = Path(directory) / 'sample'
+            with mock.patch.object(monitor.sys, 'argv', ['monitor_process.py', '--pid', '10', '--duration', '20', '--settle', '0', '--max-steady-interval-cpu', '3', '--output', str(prefix)]), mock.patch.object(monitor.subprocess, 'check_output', side_effect=snapshots), mock.patch.object(monitor.time, 'sleep'), contextlib.redirect_stdout(io.StringIO()):
+                code = monitor.main()
+            result = json.loads(prefix.with_suffix('.json').read_text())
+        self.assertEqual(code, 1)
+        self.assertTrue(any('inconclusive' in value for value in result['violations']))
+        self.assertEqual(result['performance_gate']['interval_cpu_statistic'], 'steady p95')
 
     def test_reused_pid_with_higher_counter_is_a_new_process(self):
         before = monitor.process_snapshot('10 1 1.0 1024 S 00:01.00 Thu Oct 22 09:00:00 2026\n11 10 1.0 1024 S 00:01.00 Thu Oct 22 09:00:01 2026\n', 10)

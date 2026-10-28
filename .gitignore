@@ -8,3 +8,7 @@ build-g/
 dist/
 build-*/
 __pycache__/
+
+# Generated test/runtime output may contain local tunnel credentials.
+.DS_Store
+/output/

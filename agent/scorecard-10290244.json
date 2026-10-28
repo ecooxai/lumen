@@ -1,0 +1,139 @@
+{
+  "schema_version": 1,
+  "task_id": "10290244",
+  "scope": "Task acceptance checklist; not official full WPT conformance or Chrome parity",
+  "session_start_utc": "2026-10-28T18:47:35Z",
+  "deadline_utc": "2026-10-28T21:47:35Z",
+  "target_score": 98,
+  "score": 9.967568,
+  "score_state": "current_frozen_subset_verified_other_gates_pending",
+  "unknown_means": "unverified, not measured failure",
+  "rubric": "agent/scorecard-rubric-10290244.md",
+  "gates": [
+    {
+      "id": "wpt_original",
+      "category": "wpt",
+      "weight": 10,
+      "name": "Original frozen important subset",
+      "status": "partial",
+      "earned": 9.967568,
+      "evidence": [
+        "output/session-20261029/native-qa-kit-v1/source/output/wpt-comparison-session10290244-baseline-1.json"
+      ],
+      "passed": 1844,
+      "denominator": 1850
+    },
+    {
+      "id": "wpt_expanded",
+      "category": "wpt",
+      "weight": 20,
+      "name": "Expanded important suite",
+      "status": "unverified",
+      "earned": 0,
+      "evidence": []
+    },
+    {
+      "id": "wpt_no_regression",
+      "category": "wpt",
+      "weight": 10,
+      "name": "Provenance and no-regression confirmation",
+      "status": "unverified",
+      "earned": 0,
+      "evidence": []
+    },
+    {
+      "id": "ipa_mac",
+      "category": "apple",
+      "weight": 10,
+      "name": "Same IPA on Mac",
+      "status": "unverified",
+      "earned": 0,
+      "evidence": []
+    },
+    {
+      "id": "ipa_ipad",
+      "category": "apple",
+      "weight": 10,
+      "name": "Same IPA on iPad",
+      "status": "unverified",
+      "earned": 0,
+      "evidence": []
+    },
+    {
+      "id": "ipa_iphone",
+      "category": "apple",
+      "weight": 5,
+      "name": "Same IPA on iPhone",
+      "status": "unverified",
+      "earned": 0,
+      "evidence": []
+    },
+    {
+      "id": "perf_idle",
+      "category": "performance",
+      "weight": 5,
+      "name": "Idle",
+      "status": "unverified",
+      "earned": 0,
+      "evidence": []
+    },
+    {
+      "id": "perf_interaction",
+      "category": "performance",
+      "weight": 5,
+      "name": "Ordinary interaction",
+      "status": "unverified",
+      "earned": 0,
+      "evidence": []
+    },
+    {
+      "id": "perf_soak",
+      "category": "performance",
+      "weight": 5,
+      "name": "Controlled memory soak",
+      "status": "unverified",
+      "earned": 0,
+      "evidence": []
+    },
+    {
+      "id": "perf_budgets",
+      "category": "performance",
+      "weight": 5,
+      "name": "Build/test budgets",
+      "status": "unverified",
+      "earned": 0,
+      "evidence": []
+    },
+    {
+      "id": "repro_tdd",
+      "category": "reproducibility_release",
+      "weight": 5,
+      "name": "Regression-first improvement",
+      "status": "unverified",
+      "earned": 0,
+      "evidence": []
+    },
+    {
+      "id": "repro_source",
+      "category": "reproducibility_release",
+      "weight": 5,
+      "name": "Source/artifact continuity",
+      "status": "unverified",
+      "earned": 0,
+      "evidence": []
+    },
+    {
+      "id": "release_progress",
+      "category": "reproducibility_release",
+      "weight": 5,
+      "name": "Reviewed progress/release delivery",
+      "status": "unverified",
+      "earned": 0,
+      "evidence": []
+    }
+  ],
+  "history": [],
+  "updated_utc": "2026-10-28T19:00:32.602027+00:00",
+  "current_baseline_binary_sha256": "7a4bfec10412f3e2c0eee92a01bf8c9bec496eb122114ab4844e8e4a4c783b85",
+  "full_official_wpt_pass_percent": null
+}
