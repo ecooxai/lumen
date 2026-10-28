@@ -611,8 +611,41 @@ function fireAnim(t, type, name, elapsed, anim) {
     const PN = { camera: 'camera', microphone: 'microphone', geolocation: 'location', 'display-capture': 'screen' };
     const state = n => { const s = N.capState(PN[n] || n, origin()); return s > 0 ? 'granted' : s < 0 ? 'denied' : 'prompt'; };
     const ask = n => N.capAllowed(n) && N.capAsk(PN[n] || n, origin());
-    class PermissionStatus extends EventTarget { constructor(n) { super(); this.name = n; this.onchange = null; } get state() { return state(this.name); } }
-    navigator.permissions.query = d => { const n = d && d.name; if (!n) return Promise.reject(new TypeError('name required')); return Promise.resolve(new PermissionStatus(n)); };
+    // A status retains its converted descriptor privately. A writable or
+    // shadowed public name must never retarget the native permission query.
+    const permissionNames = new WeakMap(), permissionToken = {};
+    const permissionGet = Function.prototype.call.bind(WeakMap.prototype.get);
+    const permissionSet = Function.prototype.call.bind(WeakMap.prototype.set);
+    const permissionSupported = Function.prototype.call.bind(Object.prototype.hasOwnProperty, PN);
+    const permissionString = String, PermissionError = TypeError;
+    const permissionResolve = Promise.resolve.bind(Promise), permissionReject = Promise.reject.bind(Promise);
+    const permissionName = status => {
+        const n = permissionGet(permissionNames, status);
+        if (n === undefined) throw new PermissionError('Illegal invocation');
+        return n;
+    };
+    class PermissionStatus extends EventTarget {
+        constructor(token, n) {
+            super();
+            if (token !== permissionToken) throw new PermissionError('Illegal constructor');
+            permissionSet(permissionNames, this, n); this.onchange = null;
+        }
+        get name() { return permissionName(this); }
+        get state() { return state(permissionName(this)); }
+    }
+    Object.defineProperty(PermissionStatus.prototype, 'name', {enumerable: true});
+    Object.defineProperty(PermissionStatus.prototype, 'state', {enumerable: true});
+    navigator.permissions.query = d => {
+        try {
+            if (d === null || (typeof d !== 'object' && typeof d !== 'function'))
+                throw new PermissionError('A permission descriptor object is required');
+            const value = d.name;
+            if (typeof value === 'symbol') throw new PermissionError('A permission name must be a DOMString');
+            const n = permissionString(value);
+            if (!permissionSupported(n)) throw new PermissionError('Unsupported permission name: ' + n);
+            return permissionResolve(new PermissionStatus(permissionToken, n));
+        } catch (error) { return permissionReject(error); }
+    };
     const ideal = v => v == null ? 0 : typeof v === 'number' ? v : v.exact || v.ideal || v.max || v.min || 0;
     const md = navigator.mediaDevices;
     md.enumerateDevices = () => Promise.resolve([

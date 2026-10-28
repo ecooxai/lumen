@@ -40,6 +40,11 @@ static bool permission(JsCtx *c, const char *name, const char *expected) {
     if (!value(c,script.c_str())) return false; pump(c);
     return value(c,("permissionResult==='"+std::string(expected)+"'").c_str());
 }
+static bool permission_rejection(JsCtx *c, const char *descriptor, const char *name) {
+    std::string script="globalThis.permissionOutcome='pending';try { const p=navigator.permissions.query("+std::string(descriptor)+"); if(!p || typeof p.then!=='function')permissionOutcome='not-promise';else p.then(()=>permissionOutcome='resolved', e=>permissionOutcome='rejected:'+e.name); }catch(e){permissionOutcome='sync:'+e.name;}true";
+    if (!value(c,script.c_str())) return false; pump(c);
+    return value(c,("permissionOutcome==='rejected:"+std::string(name)+"'").c_str());
+}
 int main(int argc, char **argv) {
     (void)argc; setenv("LUMEN_PERMISSIONS","grant",1);
     dom_init();net_init(2);font_init();js_global_init(argv[0]);
@@ -110,6 +115,22 @@ int main(int argc, char **argv) {
         js_free(f.context);f.context=nullptr;
         CHECK("page teardown releases un-stopped native source",!cap_screen_active());
         for(int id=1;id<=8;++id)cap_cam_close(id); /* avoid leaking the intentionally failing old implementation */
+    }
+    {
+        // Permissions query converts and retains a supported DOMString descriptor.
+        // https://w3c.github.io/permissions/#dom-permissions-query
+        Fixture f("https://capture.example/");
+        CHECK("unknown permission names reject with TypeError",permission_rejection(f.context,"({name:'lumen-unknown-permission'})","TypeError"));
+        CHECK("prototype property names are not supported permissions",permission_rejection(f.context,"({name:'toString'})","TypeError"));
+        CHECK("Symbol permission names reject with TypeError",permission_rejection(f.context,"({name:Symbol('camera')})","TypeError"));
+        CHECK("descriptor getter errors reject the returned promise",permission_rejection(f.context,"({get name(){throw new RangeError('fixture getter')}})","RangeError"));
+        value(f.context,"globalThis.permissionObject=null;navigator.permissions.query({name:{toString(){return 'camera'}}}).then(p=>permissionObject=p);true");pump(f.context);
+        CHECK("permission name is converted to a retained DOMString",value(f.context,"permissionObject && permissionObject.name==='camera'"));
+        value(f.context,"navigator.permissions.query({name:'camera'}).then(p=>permissionObject=p);true");pump(f.context);
+        CHECK("PermissionStatus name is readonly",value(f.context,"Reflect.set(permissionObject,'name','microphone')===false && permissionObject.name==='camera'"));
+        CHECK("PermissionStatus cannot be constructed by page script",value(f.context,"(()=>{try{new permissionObject.constructor('camera');return false;}catch(e){return e instanceof TypeError;}})()"));
+        f.document->permissions_policy=strdup("camera=(), microphone=(self)");
+        CHECK("shadowing status name cannot retarget its native permission",value(f.context,"Object.defineProperty(permissionObject,'name',{value:'microphone',configurable:true});permissionObject.state==='denied'"));
     }
     net_shutdown(); printf("RESULTS capture-policy %s (%d/%d checks)\n",failures?"FAIL":"PASS",checks-failures,checks);return failures?1:0;
 }
