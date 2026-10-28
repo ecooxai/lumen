@@ -1,0 +1,100 @@
+{
+  "iteration": 140,
+  "scope": "Stable tab/document generation for native queued input and dispatch-time virtual modifier state",
+  "started_utc": "2026-10-28T10:30:40Z",
+  "finished_utc": "2026-10-28T10:38:14.672330+00:00",
+  "elapsed_minutes": 7.5779,
+  "time_scope": "Build start through failed modifier observation140 or final explicit cleanup142; prior design excluded, overlapping work retained.",
+  "score": 88,
+  "whole_goal_score": 19,
+  "accepted": false,
+  "agents": [
+    "repository_lead",
+    "standards_comparison",
+    "progress_and_deployment",
+    "root"
+  ],
+  "model": "GPT-6 Astra",
+  "tools": [
+    "built-in agents",
+    "Ruby MCP",
+    "CTest",
+    "sealed capture guard",
+    "1-second monitor"
+  ],
+  "build": {
+    "source_manifest_before": "fdac66d40e5785d0b4c12fad2abd7cfc23200bdbf3bd967282c1eb285f58de28",
+    "source_diff_before": "8dfe145c7cfab2b07516679219a5d63a529d83a76b741e41e396701d5acb8e13",
+    "head": "77ff20397f1a3e95c2feb21e9ce51b64aa89d30a",
+    "started_utc": "2026-10-28T10:30:40Z",
+    "pid": 852439,
+    "build_exit_code": 0,
+    "binary": "build/codex-native/lumen-astra-i140",
+    "binary_sha256": "ab31e06cca9e0fce58ebd9d78b16e63752fda6b000b1e37952792858db80354d",
+    "diff_sha256": "8dfe145c7cfab2b07516679219a5d63a529d83a76b741e41e396701d5acb8e13",
+    "startup_exit_code": 0,
+    "source_diff_after": "8dfe145c7cfab2b07516679219a5d63a529d83a76b741e41e396701d5acb8e13",
+    "source_manifest_after": "fdac66d40e5785d0b4c12fad2abd7cfc23200bdbf3bd967282c1eb285f58de28",
+    "source_unchanged_during_build": true,
+    "finished_utc": "2026-10-28T10:31:04Z"
+  },
+  "source_snapshot": "agent/progress/runtime/private-prepared/source-snapshots/iteration-140",
+  "owned_controls": {
+    "popup": [
+      2,
+      2
+    ],
+    "lifecycle": [
+      11,
+      11
+    ],
+    "modifier": [
+      5,
+      7
+    ],
+    "baseline139_popup": [
+      0,
+      2
+    ],
+    "baseline139_lifecycle": [
+      6,
+      11
+    ]
+  },
+  "native_ctest": {
+    "pass": 124,
+    "total": 124,
+    "completion": {
+      "started_utc": "2026-10-28T10:32:28Z",
+      "root_pid": 863318,
+      "monitor_pid": 863319,
+      "exit": 0,
+      "finished_utc": "2026-10-28T10:33:04Z",
+      "elapsed_seconds": 36.10729763098061
+    }
+  },
+  "upstream_replay": {
+    "baseline128_single": [
+      413,
+      440
+    ],
+    "baseline128_after_freeze": "TIMEOUT: 0 PASS,1 TIMEOUT,219 NOTRUN",
+    "candidate_single": [
+      413,
+      440
+    ],
+    "candidate_after_freeze": [
+      413,
+      440
+    ],
+    "freeze": "TIMEOUT unchanged",
+    "evidence": "agent/validation/linux-wpt-20261028-session2/drift-check/navigation-replay-v2/candidate140-freeze-then-input",
+    "transport": "Identical isolated relay/controller and deadlines; protected sources unchanged; actual cleanup threads drained."
+  },
+  "limits": [
+    "140 rejected because cancelled key-down changes replacement input and cancelled key-up clears already delivered state;142 repairs both.",
+    "Cross-origin/nested-frame inherited50ms completion fallback remains outside scope.",
+    "Early fixture storage/cross-tab assumptions were corrected, then identical final fixture bytes replayed on139 and candidates.",
+    "Owned fixture adapter may omit final daemon exit audit; actual sealed pre-author records retained and explicit PID/group absence checked."
+  ]
+}

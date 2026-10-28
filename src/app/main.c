@@ -1117,6 +1117,34 @@ static char *files_view(const char *q) {
    viewport pixels: "move X Y", "down B", "up B" (WebDriver buttons), "key CP", "keyup CP" (WebDriver key code
    points). The ops become SDL events behind the queue, then an EV_TD event with the returned id calls
    __lumenTdDone(id) once they have been handled. */
+/* Only programmatic testdriver events use this envelope. Physical SDL input
+   retains the ordinary active-tab route. A stable window id and page generation
+   prevent queued work from moving to a popup or a later document. */
+typedef struct TdQueuedEvent {
+    SDL_Event input;
+    uint32_t wid, request;
+    uint64_t generation;
+    bool queue_failed;
+} TdQueuedEvent;
+static void td_event_free(TdQueuedEvent *event) {
+    if (!event) return;
+    if (event->input.type == SDL_EVENT_TEXT_INPUT) free((char *)event->input.text.text);
+    free(event);
+}
+static bool td_push(App *a, const SDL_Event *input, uint32_t request, bool failed) {
+    if (!a->t || !a->t->cur || !a->t->cur->js) return false;
+    TdQueuedEvent *event = xcalloc(1, sizeof *event);
+    event->wid = a->t->wid; event->generation = a->t->cur->gen;
+    event->request = request; event->queue_failed = failed;
+    if (input) {
+        event->input = *input;
+        if (input->type == SDL_EVENT_TEXT_INPUT) event->input.text.text = xstrdup(input->text.text);
+    }
+    SDL_Event queued; SDL_zero(queued); queued.type = EV_TD; queued.user.data1 = event;
+    if (SDL_PushEvent(&queued)) return true;
+    td_event_free(event); return false;
+}
+/* Delivered virtual modifiers are separate from SDL physical device state. */
 static SDL_Keymod g_td_mod;
 static SDL_Keycode td_keycode(uint32_t cp, SDL_Keymod *mod) {
     switch (cp) {
@@ -1135,8 +1163,10 @@ static SDL_Keycode td_keycode(uint32_t cp, SDL_Keymod *mod) {
     return cp >= 0xE000 && cp <= 0xF8FF ? SDLK_UNKNOWN : cp;
 }
 static char *td_cmd(App *a, const char *q) {
-    static float x, y; static Uint32 buttons; static double down_t; static int clicks; static int id;
+    static float x, y; static Uint32 buttons; static double down_t; static int clicks; static uint32_t id;
     if (!strcmp(q, "ping")) return xstrdup("pong");
+    uint32_t request = ++id; if (!request) request = ++id;
+    bool queued = true;
     float z = tab_zoom(a->t), s = a->input_scale > 0 ? a->input_scale : 1;
     for (const char *l = q; *l; ) {
         const char *e = strchr(l, '\n'); size_t n = e ? (size_t)(e - l) : strlen(l);
@@ -1148,41 +1178,37 @@ static char *td_cmd(App *a, const char *q) {
         if (!strcmp(op, "cookies-clear")) cookies_clear();
         else if (got == 3 && !strcmp(op, "move")) {
             x = (page_left(a) + (float)v1 * z) / s; y = (BAR + (float)v2 * z) / s;
-            ev.type = SDL_EVENT_MOUSE_MOTION; ev.motion.x = x; ev.motion.y = y; ev.motion.state = buttons; SDL_PushEvent(&ev);
+            ev.type = SDL_EVENT_MOUSE_MOTION; ev.motion.x = x; ev.motion.y = y; ev.motion.state = buttons; queued = td_push(a, &ev, 0, false) && queued;
         } else if (got >= 1 && (!strcmp(op, "down") || !strcmp(op, "up"))) {
             bool down = op[0] == 'd';
             if (down) { double t = now_ms(); clicks = t - down_t < 500 ? clicks + 1 : 1; down_t = t; buttons |= SDL_BUTTON_MASK(btn); }
             else buttons &= ~SDL_BUTTON_MASK(btn);
             ev.type = down ? SDL_EVENT_MOUSE_BUTTON_DOWN : SDL_EVENT_MOUSE_BUTTON_UP;
             ev.button.button = btn; ev.button.down = down; ev.button.clicks = (Uint8)clicks; ev.button.x = x; ev.button.y = y;
-            SDL_PushEvent(&ev);
+            queued = td_push(a, &ev, 0, false) && queued;
         } else if (got >= 2 && (!strcmp(op, "key") || !strcmp(op, "keyup"))) {
             uint32_t cp = (uint32_t)v1; SDL_Keymod mod = 0; SDL_Keycode k = td_keycode(cp, &mod);
             bool modifier = k == SDLK_LSHIFT || k == SDLK_LCTRL || k == SDLK_LALT || k == SDLK_LGUI;
-            if (modifier) { if (op[3]) g_td_mod &= ~mod; else g_td_mod |= mod; SDL_SetModState(g_td_mod); }
             if (k != SDLK_UNKNOWN && !(op[3] && !modifier)) {
-                ev.type = op[3] ? SDL_EVENT_KEY_UP : SDL_EVENT_KEY_DOWN; ev.key.key = k; ev.key.down = !op[3]; ev.key.mod = g_td_mod | mod;
-                /* the browser's own shortcuts stay out of tests: tab, window and history keys go to the page without Ctrl */
-                if ((ev.key.mod & (SDL_KMOD_CTRL | SDL_KMOD_GUI)) && !modifier && (k == SDLK_Q || k == SDLK_W || k == SDLK_T || k == SDLK_N || k == SDLK_L || k == SDLK_R || k == SDLK_TAB ||
-                    k == SDLK_LEFTBRACKET || k == SDLK_RIGHTBRACKET || (k >= SDLK_0 && k <= SDLK_9) || k == SDLK_EQUALS || k == SDLK_MINUS || k == SDLK_PLUS))
-                    ev.key.mod &= ~(SDL_KMOD_CTRL | SDL_KMOD_GUI);
-                SDL_PushEvent(&ev);
+                /* The implicit Shift for an uppercase code point is carried
+                   with this key. Held virtual modifiers are added at dispatch. */
+                ev.type = op[3] ? SDL_EVENT_KEY_UP : SDL_EVENT_KEY_DOWN; ev.key.key = k; ev.key.down = !op[3]; ev.key.mod = mod;
+                queued = td_push(a, &ev, 0, false) && queued;
             }
-            if (!op[3] && cp >= 32 && cp != 127 && !(cp >= 0xE000 && cp <= 0xF8FF) && !(g_td_mod & (SDL_KMOD_CTRL | SDL_KMOD_GUI | SDL_KMOD_ALT))) {
-                static char *texts[64]; static int ti;   /* the text outlives the queued event; reused 64 events later */
-                char *t = xmalloc(5); size_t tn = 0;
+            if (!op[3] && cp >= 32 && cp != 127 && !(cp >= 0xE000 && cp <= 0xF8FF)) {
+                char t[5]; size_t tn = 0;
                 if (cp < 0x80) t[tn++] = (char)cp;
                 else if (cp < 0x800) { t[tn++] = (char)(0xC0 | cp >> 6); t[tn++] = (char)(0x80 | (cp & 63)); }
                 else if (cp < 0x10000) { t[tn++] = (char)(0xE0 | cp >> 12); t[tn++] = (char)(0x80 | (cp >> 6 & 63)); t[tn++] = (char)(0x80 | (cp & 63)); }
                 else { t[tn++] = (char)(0xF0 | cp >> 18); t[tn++] = (char)(0x80 | (cp >> 12 & 63)); t[tn++] = (char)(0x80 | (cp >> 6 & 63)); t[tn++] = (char)(0x80 | (cp & 63)); }
-                t[tn] = 0; free(texts[ti]); texts[ti] = t; ti = (ti + 1) % 64;
-                SDL_Event te; SDL_zero(te); te.type = SDL_EVENT_TEXT_INPUT; te.text.text = t; SDL_PushEvent(&te);
+                t[tn] = 0;
+                SDL_Event te; SDL_zero(te); te.type = SDL_EVENT_TEXT_INPUT; te.text.text = t; queued = td_push(a, &te, 0, false) && queued;
             }
         }
         l += n; if (*l) l++;
     }
-    SDL_Event done; SDL_zero(done); done.type = EV_TD; done.user.code = ++id; SDL_PushEvent(&done);
-    char b[16]; snprintf(b, sizeof b, "%d", id); return xstrdup(b);
+    if (!td_push(a, NULL, request, !queued)) return NULL;
+    char b[16]; snprintf(b, sizeof b, "%u", request); return xstrdup(b);
 }
 
 /* lumenInternal(cmd) of Lumen's own pages: "state?s=SEC[&dir=PATH]", or "set?s=SEC&key=value..."
@@ -6659,6 +6685,45 @@ int main(int argc, char **argv) {
         boot_turn += now_ms() - boot_wait;   /* waiting is not work */
         if (!boot_got) { if (a.t->loading || env_hook(ENV_SHOT)) a.dirty = true; }
         else do {
+            TdQueuedEvent *td_event = NULL;
+            if (ev.type == EV_TD) {
+                td_event = ev.user.data1;
+                if (!td_event) continue;
+                Tab *target = tab_of_wid(&a, td_event->wid);
+                bool same_document = target && target->cur && target->cur->gen == td_event->generation && target->cur->js;
+                bool current = same_document && target->lgen == td_event->generation && !target->close_req;
+                if (!td_event->input.type) {
+                    /* A still-live document receives an explicit cancellation.
+                       Destroyed documents have no callbacks to resolve; never
+                       deliver their completion to a replacement document. */
+                    if (same_document) {
+                        char source[96];
+                        const char *error = !current ? "'AbortError'" : td_event->queue_failed ? "'OperationError'" : "null";
+                        snprintf(source, sizeof source, "__lumenTdDone(%u,%s)", td_event->request, error);
+                        TAB_CALL(target, js_eval(target->cur->js, source, "lumen:testdriver"));
+                    }
+                    td_event_free(td_event); continue;
+                }
+                if (!current) { td_event_free(td_event); continue; }
+                if (target != a.t) for (int i = 0; i < a.ntabs; i++) if (a.tabs[i] == target) { tab_select(&a, i); break; }
+                ev = td_event->input;
+                if (ev.type == SDL_EVENT_KEY_DOWN || ev.type == SDL_EVENT_KEY_UP) {
+                    SDL_Keycode k = ev.key.key;
+                    SDL_Keymod modifier = k == SDLK_LSHIFT ? SDL_KMOD_LSHIFT : k == SDLK_LCTRL ? SDL_KMOD_LCTRL :
+                                          k == SDLK_LALT ? SDL_KMOD_LALT : k == SDLK_LGUI ? SDL_KMOD_LGUI : 0;
+                    if (modifier) {
+                        if (ev.type == SDL_EVENT_KEY_UP) g_td_mod &= ~modifier; else g_td_mod |= modifier;
+                    }
+                    ev.key.mod = g_td_mod | (modifier ? 0 : ev.key.mod);
+                    /* Preserve the automation bridge's existing page-only
+                       shortcut policy, using the actual dispatch-time state. */
+                    if ((ev.key.mod & (SDL_KMOD_CTRL | SDL_KMOD_GUI)) && !modifier && (k == SDLK_Q || k == SDLK_W || k == SDLK_T || k == SDLK_N || k == SDLK_L || k == SDLK_R || k == SDLK_TAB ||
+                        k == SDLK_LEFTBRACKET || k == SDLK_RIGHTBRACKET || (k >= SDLK_0 && k <= SDLK_9) || k == SDLK_EQUALS || k == SDLK_MINUS || k == SDLK_PLUS))
+                        ev.key.mod &= ~(SDL_KMOD_CTRL | SDL_KMOD_GUI);
+                } else if (ev.type == SDL_EVENT_TEXT_INPUT && (g_td_mod & (SDL_KMOD_CTRL | SDL_KMOD_GUI | SDL_KMOD_ALT))) {
+                    td_event_free(td_event); continue;
+                }
+            }
             bool wheel0 = ev.type == SDL_EVENT_MOUSE_WHEEL && !ev.wheel.x && !ev.wheel.y;
             if ((ev.type >= SDL_EVENT_KEY_DOWN && ev.type <= SDL_EVENT_TEXT_INPUT) || (ev.type >= SDL_EVENT_MOUSE_MOTION && ev.type <= SDL_EVENT_MOUSE_WHEEL) ||
                 (ev.type >= SDL_EVENT_FINGER_DOWN && ev.type <= SDL_EVENT_FINGER_CANCELED)) doc_activity();   /* input: full-rate animation frames */
@@ -6669,12 +6734,12 @@ int main(int argc, char **argv) {
             /* in-page route changes (taps) also get a load trace window */
             if (touch_tap) { if (a.t->cur && a.t->cur->js) js_debug_profile(a.t->cur->js); if (now_ms() + 30000 > g_load_trace_until) { net_trace_load(30); g_load_trace_until = now_ms() + 30000; } }
 #endif
-            if (android_touch_input(&a, &ev)) continue;
+            if (android_touch_input(&a, &ev)) { td_event_free(td_event); continue; }
             touch_tap = touch_tap && ev.type == SDL_EVENT_MOUSE_BUTTON_DOWN;
 #endif
             if ((ev.type >= SDL_EVENT_KEY_DOWN && ev.type <= SDL_EVENT_TEXT_INPUT) || (ev.type >= SDL_EVENT_MOUSE_MOTION && ev.type <= SDL_EVENT_MOUSE_WHEEL && !wheel0)) a.last_input = now_ms();
             if (ev.type != EV_NET && ev.type != SDL_EVENT_MOUSE_WHEEL) a.vonly = false;
-            js_key_mods = key_mods(SDL_GetModState());
+            js_key_mods = key_mods(td_event ? g_td_mod : SDL_GetModState());
             switch (ev.type) {
             case SDL_EVENT_QUIT: quit = true; break;
             case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: case SDL_EVENT_WINDOW_RESIZED:
@@ -6983,7 +7048,6 @@ int main(int argc, char **argv) {
             default:
                 if (ev.type == EV_MENU) menu_cmd(&a, ev.user.code);
                 if (ev.type == EV_DL) dl_event(&a, &ev);
-                if (ev.type == EV_TD && a.t->cur && a.t->cur->js) { char s[48]; snprintf(s, sizeof s, "__lumenTdDone(%d)", (int)ev.user.code); js_eval(a.t->cur->js, s, "lumen:testdriver"); }
                 if (ev.type == EV_UI) { UiAction *u = ev.user.data1; ui_action(&a, u, &quit); free(u->s1); free(u->s2); free(u); a.dirty = true; a.vonly = false; }
                 if (ev.type == EV_LOADED) {
                     Page *p = ev.user.data1;
@@ -7018,6 +7082,7 @@ int main(int argc, char **argv) {
 #ifdef __ANDROID__
             if (touch_tap) g_press = g_drag = g_epress = g_cpress = g_upress = false;
 #endif
+            td_event_free(td_event);
         } while (SDL_PollEvent(&ev));
 #ifdef __ANDROID__
         android_fling_tick(&a);

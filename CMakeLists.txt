@@ -430,6 +430,18 @@ else()
         set_tests_properties(js_xpath PROPERTIES ENVIRONMENT LUMEN_CONSOLE=0 PASS_REGULAR_EXPRESSION "RESULTS xpath:PASS" TIMEOUT 30)
         add_test(NAME js_get_animations COMMAND jsrun "${CMAKE_CURRENT_SOURCE_DIR}/tests/js/get-animations.html" 1000)
         set_tests_properties(js_get_animations PROPERTIES ENVIRONMENT LUMEN_CONSOLE=0 PASS_REGULAR_EXPRESSION "RESULTS get-animations:PASS" TIMEOUT 30)
+        add_test(NAME browser_input_modifier COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/run.py"
+            --binary "$<TARGET_FILE:lumen>" --fixture "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/input-modifier-cancel-regression.html"
+            --marker browser-input-modifier --output "${CMAKE_CURRENT_BINARY_DIR}/browser-input-modifier" --testdriver)
+        set_tests_properties(browser_input_modifier PROPERTIES PASS_REGULAR_EXPRESSION "RESULTS browser-input-modifier:PASS" TIMEOUT 35)
+        add_test(NAME browser_popup_input COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/run.py"
+            --binary "$<TARGET_FILE:lumen>" --fixture "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/popup-input-regression.html"
+            --marker browser-popup-input --output "${CMAKE_CURRENT_BINARY_DIR}/browser-popup-input" --testdriver)
+        set_tests_properties(browser_popup_input PROPERTIES PASS_REGULAR_EXPRESSION "RESULTS browser-popup-input:PASS" TIMEOUT 35)
+        add_test(NAME browser_input_queue COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/run.py"
+            --binary "$<TARGET_FILE:lumen>" --fixture "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/input-queue-lifecycle-regression.html"
+            --marker browser-input-queue --output "${CMAKE_CURRENT_BINARY_DIR}/browser-input-queue" --testdriver)
+        set_tests_properties(browser_input_queue PROPERTIES PASS_REGULAR_EXPRESSION "RESULTS browser-input-queue:PASS" TIMEOUT 35)
         add_test(NAME browser_body_event COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/run.py"
             --binary "$<TARGET_FILE:lumen>" --fixture "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/body-event-regression.html"
             --marker browser-body-event --output "${CMAKE_CURRENT_BINARY_DIR}/browser-body-event")

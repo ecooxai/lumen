@@ -1,0 +1,201 @@
+{
+  "iteration": 142,
+  "scope": "Stable tab/document generation for native queued input and dispatch-time virtual modifier state",
+  "started_utc": "2026-10-28T10:46:42Z",
+  "finished_utc": "2026-10-28T10:50:56Z",
+  "elapsed_minutes": 4.2333,
+  "time_scope": "Build start through failed modifier observation140 or final explicit cleanup142; prior design excluded, overlapping work retained.",
+  "score": 97,
+  "whole_goal_score": 19,
+  "accepted": true,
+  "agents": [
+    "repository_lead",
+    "standards_comparison",
+    "progress_and_deployment",
+    "root"
+  ],
+  "model": "GPT-6 Astra",
+  "tools": [
+    "built-in agents",
+    "Ruby MCP",
+    "CTest",
+    "sealed capture guard",
+    "1-second monitor"
+  ],
+  "build": {
+    "source_manifest_before": "68ba3359dcf5677f62dafb292185e59344e86386aa826903d127c3cd36775983",
+    "source_diff_before": "ce83fb44705c28c436dd8627f8b7be9c9faa78bf352c287a9cf4316d30c011f0",
+    "head": "5552f8d260a41242bfe34327e4b01c9de5afdf5d",
+    "started_utc": "2026-10-28T10:46:42Z",
+    "pid": 939641,
+    "build_exit_code": 0,
+    "binary": "build/codex-native/lumen-astra-i142",
+    "binary_sha256": "48e9b66b877c253f430d05215293c7e8bde384774986646f19f67df6bd82fd89",
+    "diff_sha256": "ce83fb44705c28c436dd8627f8b7be9c9faa78bf352c287a9cf4316d30c011f0",
+    "startup_exit_code": 0,
+    "source_diff_after": "ce83fb44705c28c436dd8627f8b7be9c9faa78bf352c287a9cf4316d30c011f0",
+    "source_manifest_after": "68ba3359dcf5677f62dafb292185e59344e86386aa826903d127c3cd36775983",
+    "source_unchanged_during_build": true,
+    "finished_utc": "2026-10-28T10:46:54Z"
+  },
+  "source_snapshot": "agent/progress/runtime/private-prepared/source-snapshots/iteration-142",
+  "owned_controls": {
+    "popup": [
+      2,
+      2
+    ],
+    "lifecycle": [
+      11,
+      11
+    ],
+    "modifier": [
+      7,
+      7
+    ],
+    "baseline139_popup": [
+      0,
+      2
+    ],
+    "baseline139_lifecycle": [
+      6,
+      11
+    ]
+  },
+  "native_ctest": {
+    "pass": 126,
+    "total": 126,
+    "completion": {
+      "started_utc": "2026-10-28T10:47:41Z",
+      "root_pid": 945655,
+      "monitor_pid": 945656,
+      "exit": 0,
+      "finished_utc": "2026-10-28T10:48:18Z",
+      "elapsed_seconds": 37.09437887009699
+    }
+  },
+  "upstream_replay": {
+    "baseline128_single": [
+      413,
+      440
+    ],
+    "baseline128_after_freeze": "TIMEOUT: 0 PASS,1 TIMEOUT,219 NOTRUN",
+    "candidate_single": [
+      413,
+      440
+    ],
+    "candidate_after_freeze": [
+      413,
+      440
+    ],
+    "freeze": "TIMEOUT unchanged",
+    "evidence": "agent/validation/linux-wpt-20261028-session2/drift-check/navigation-replay-v2/candidate142-freeze-then-input",
+    "transport": "Identical isolated relay/controller and deadlines; protected sources unchanged; actual cleanup threads drained."
+  },
+  "limits": [
+    "140 rejected because cancelled key-down changes replacement input and cancelled key-up clears already delivered state;142 repairs both.",
+    "Cross-origin/nested-frame inherited50ms completion fallback remains outside scope.",
+    "Early fixture storage/cross-tab assumptions were corrected, then identical final fixture bytes replayed on139 and candidates.",
+    "Owned fixture adapter may omit final daemon exit audit; actual sealed pre-author records retained and explicit PID/group absence checked."
+  ],
+  "explicit_os_cleanup": {
+    "checked_utc": "2026-10-28T10:50:56Z",
+    "checks": [
+      {
+        "run": "popup-candidate140",
+        "pid": 863336,
+        "pid_present": false,
+        "process_group_present": false,
+        "events": [
+          "started_at_private_gate",
+          "constructor_verified_and_acknowledged",
+          "author_url_released"
+        ],
+        "audit_sha256": "52bd62cef9ec6eb8dbc79595884e92d8efb69934cf983ba52a95c583a4e1b66b"
+      },
+      {
+        "run": "lifecycle-candidate140",
+        "pid": 863338,
+        "pid_present": false,
+        "process_group_present": false,
+        "events": [
+          "started_at_private_gate",
+          "constructor_verified_and_acknowledged",
+          "author_url_released"
+        ],
+        "audit_sha256": "d92a221278bad50d734aaead4c3c1f94d448304fc7b1f235a2ca1a6704e4fe8e"
+      },
+      {
+        "run": "modifier-baseline140-v2",
+        "pid": 887607,
+        "pid_present": false,
+        "process_group_present": false,
+        "events": [
+          "started_at_private_gate",
+          "constructor_verified_and_acknowledged",
+          "author_url_released"
+        ],
+        "audit_sha256": "e60373fc5a20353f8b8151569799ca1a9ec3d399d69c73c2cba55ebd7a8fe7e0"
+      },
+      {
+        "run": "popup-candidate142",
+        "pid": 947946,
+        "pid_present": false,
+        "process_group_present": false,
+        "events": [
+          "started_at_private_gate",
+          "constructor_verified_and_acknowledged",
+          "author_url_released"
+        ],
+        "audit_sha256": "45f2680ffb150f5470f7ca71fc6834e87950704f17c10d3b4b35c19bcc3b8f6f"
+      },
+      {
+        "run": "lifecycle-candidate142",
+        "pid": 947950,
+        "pid_present": false,
+        "process_group_present": false,
+        "events": [
+          "started_at_private_gate",
+          "constructor_verified_and_acknowledged",
+          "author_url_released"
+        ],
+        "audit_sha256": "e89e4c773b32ee33614f30eedc046a6b8264036d0f4adb72ffc57e83d24cdebb"
+      },
+      {
+        "run": "modifier-candidate142",
+        "pid": 947948,
+        "pid_present": false,
+        "process_group_present": false,
+        "events": [
+          "started_at_private_gate",
+          "constructor_verified_and_acknowledged",
+          "author_url_released",
+          "exited"
+        ],
+        "audit_sha256": "9cf98d528ddeb01f337b1064ac861569aa848291f49aa299ebe8860bf41828f5"
+      }
+    ],
+    "all_absent": true,
+    "limitation": "Authored fixture adapter exits before daemon cleanup exit audit; real pre-author sealed guard records retained and OS PID/group absence checked explicitly. Upstream cohort uses drained launcher and complete audit."
+  },
+  "resources": {
+    "label": "candidate142 full native CTest",
+    "started_utc": "2026-10-28T10:47:41.082056+00:00",
+    "finished_utc": "2026-10-28T10:48:18.118506+00:00",
+    "root_pid": 945655,
+    "comm": null,
+    "exe": null,
+    "interval_seconds": 1,
+    "samples": 37,
+    "elapsed_seconds": 37.036,
+    "cpu_one_core_equals_100": true,
+    "cpu_min": 0.0,
+    "cpu_median": 101.0835,
+    "cpu_max": 225.003,
+    "cpu_last10_median": 47.001000000000005,
+    "rss_peak_mb": 431.706,
+    "rss_final_mb": 42.889,
+    "pss_peak_mb": 226.154,
+    "csv": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261028/session2-navigation/native142/resources.csv",
+    "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+  }
+}

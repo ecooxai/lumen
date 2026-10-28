@@ -1,0 +1,26 @@
+<!doctype html><meta charset="utf-8"><title>Native input context routing</title>
+<textarea id="input" autofocus></textarea><button id="button">Click</button>
+<script>
+(async function () {
+  if (!location.search) {
+    window.open('about:blank', 'native-input-context-control');
+    await new Promise(r => setTimeout(r, 200));
+    location.replace(location.pathname + '?after-navigation');
+    return;
+  }
+  const results = [];
+  function check(name, condition, detail) { results.push({name, status: condition ? 'PASS' : 'FAIL', detail}); }
+  const input = document.getElementById('input');
+  input.focus();
+  let settled = false;
+  try {
+    if (typeof window.__lumenTd !== 'function') throw new Error('Native automation protocol is unavailable');
+    const pending = window.__lumenTd('key 120').then(() => { settled = true; });
+    await Promise.race([pending, new Promise(r => setTimeout(r, 1500))]);
+    check('queued input completion reaches its originating document after popup and navigation', settled, 'settled=' + settled);
+    check('trusted text input reaches its originating textarea', input.value === 'x', 'value=' + JSON.stringify(input.value));
+  } catch (e) { results.push({name: 'native input protocol', status: 'FAIL', detail: String(e)}); }
+  window.__popupInputResults = results;
+  console.log('RESULTS browser-popup-input:' + (results.every(r => r.status === 'PASS') ? 'PASS' : 'FAIL') + ' ' + results.filter(r => r.status === 'PASS').length + '/' + results.length + ' ' + JSON.stringify(results));
+})();
+</script>

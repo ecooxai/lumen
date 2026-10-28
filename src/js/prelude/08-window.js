@@ -173,12 +173,12 @@ const tdOrigin = () => {
 };
 if (N.internal('td?ping') === 'pong') {
     const waiting = new SMap();
-    Object.defineProperty(G, '__lumenTdDone', { value: id => { const r = waiting.get(id); waiting.delete(id); if (r) r(); } });
+    Object.defineProperty(G, '__lumenTdDone', { value: (id, error) => { const r = waiting.get(id); waiting.delete(id); if (r) error ? r[1](new DOMException('Queued input was cancelled or could not be delivered', error)) : r[0](); } });
     Object.defineProperty(G, '__lumenTd', { value: ops => {
         const t = topTd();
         if (t) { const [ox, oy] = tdOrigin(); return t(String(ops).replace(/^move (\S+) (\S+)$/gm, (m, x, y) => `move ${+x + ox} ${+y + oy}`)); }
         /* the top document resolves its own ops; a frame without access to it resolves after a short wait */
-        return new Promise(res => { const id = +N.internal('td?' + ops); if (id && window === window.top) waiting.set(id, res); else setTimeout(res, 50); });
+        return new Promise((resolve, reject) => { const id = +N.internal('td?' + ops); if (!id) reject(new DOMException('Input target is unavailable', 'InvalidStateError')); else if (window === window.top) waiting.set(id, [resolve, reject]); else setTimeout(resolve, 50); });
     } });
 }
 const history = {
