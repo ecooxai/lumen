@@ -1,0 +1,27 @@
+{
+  "task_id": "102900614",
+  "iteration": "102900614-001",
+  "recorded_utc": "2026-10-28T22:21:43.088519+00:00",
+  "task_sha256": "115ae547eeb991cfd00144e5e3bcbecd074ed5387d117c8f9b8cba275d2043f5",
+  "task_bytes": 8574,
+  "branch": "gpt6-astra-pro_builtin-agents_lume-apple-wpt-102900614",
+  "baseline_head": "6f811534f33c33016a161bd4b3f548f2d8afb2fd",
+  "archived": [
+    "agent/archive/AGENTS-before-102900614-20261029-062143.md",
+    "agent/archive/continue-before-102900614-20261029-062143.md",
+    "agent/archive/task-before-102900614-20261029-062143.md"
+  ],
+  "elapsed_session_seconds": 421.629519,
+  "tracked_allowlist": [
+    "AGENTS.md",
+    "agent/continue.md",
+    "agent/task.md",
+    "agent/devsummary.md",
+    "agent/scorecard-102900614.json",
+    "agent/scorecard-102900614-inherited.json",
+    "agent/archive/AGENTS-before-102900614-20261029-062143.md",
+    "agent/archive/continue-before-102900614-20261029-062143.md",
+    "agent/archive/task-before-102900614-20261029-062143.md",
+    "agent/evidence/102900614-001-setup.json"
+  ]
+}

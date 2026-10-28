@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "task_id": "102900614",
+  "iteration": "102900614-001",
+  "session_start_utc": "2026-10-28T22:14:41.459Z",
+  "deadline_utc": "2026-10-29T01:14:41.459Z",
+  "recorded_utc": "2026-10-28T22:21:43.088519+00:00",
+  "source_head": "6f811534f33c33016a161bd4b3f548f2d8afb2fd",
+  "branch": "gpt6-astra-pro_builtin-agents_lume-apple-wpt-102900614",
+  "score": 50,
+  "goal_score": 98,
+  "score_status": "inherited_previous_artifact_not_fresh_acceptance",
+  "inherited_scorecard": "agent/scorecard-102900614-inherited.json",
+  "baseline_native_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+  "wpt": {
+    "full_suite_pass_rate": null,
+    "original_subset_assertions_pass": 1850,
+    "original_subset_assertions_total": 1850,
+    "original_subset_files_pass": 6,
+    "original_subset_files_total": 6,
+    "priority_frozen_variants": 1515,
+    "priority_recorded_variants": 207,
+    "priority_fully_passed_variants": 158,
+    "priority_observed_variant_pass_rate_percent": 76.3285,
+    "priority_scheduled_fully_passed_percent": 10.429,
+    "reference_status": "quarantined_native_url_anchor_sanity_failures"
+  },
+  "notes": [
+    "No new executable has yet earned acceptance gates in this task.",
+    "Preserve all frozen variants including unrun and unsupported contexts.",
+    "Each changed executable requires fresh resource and regression acceptance."
+  ]
+}

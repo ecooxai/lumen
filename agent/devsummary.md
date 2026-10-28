@@ -139,3 +139,12 @@ The measured priority wrapper is preserved with its external-SIGTERM cleanup lim
 ## Integration handoff checkpoint 2026-10-28T21:32:30.811977+00:00
 
 Consolidated outdated task-owned instructions and archived both previous documents as ['agent/archive/AGENTS-20261029-053230-10290244-checkpoint.md', 'agent/archive/continue-20261029-053230-10290244-checkpoint.md']. Accepted iteration 10290244-010, source base `952ed465f803118bc6ee8b4c31c82bea7ee1c0b3`, native `1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9`, score 50/100. Source hashes and immutable artifact were rechecked; no native code, score or raw WPT result changed. Session elapsed 9895.812s. Separate model compute time remains unavailable. Refresh/push source publication after this documentation commit.
+
+## 102900614-001 — baseline and task setup
+
+- Start `2026-10-28T22:14:41.459Z`; end `2026-10-28T22:21:43.088519+00:00`; elapsed `421.630s`; total session wall time `421.630s`.
+- Score **50/100 inherited**, no fresh acceptance earned. Goal98/100.
+- Read previous handoff and preserved prior untracked work. Created isolated task branch; archived old instructions and saved full user request.
+- Historical WPT1850/1850 assertions in6files;158/207 observed priority variants fully pass,1515variants frozen; full WPT rate unknown.
+- Root and all3built-in workers use identical inherited model/reasoning. Child MCP hung; root now brokers remote I/O. Model compute duration unavailable; parallel wall times are not summed.
+- No build/test in this setup iteration; test/build timing and resource evidence will be appended by stage.
