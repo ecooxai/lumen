@@ -234,6 +234,7 @@ let curEvent;
 /* this realm's hooks for other realms: an Event is dispatched by its own realm (its state is in private fields) */
 const REALM = Object.freeze({
     isEvent: e => evIs(e),
+    compileEventHandler: (el, name, source) => compileHandler(el, name, source),
     dispatch(t, ev) {
         if (ev._uninit) throw new DOMException("Failed to execute 'dispatchEvent' on 'EventTarget': The event provided is uninitialized.", 'InvalidStateError');
         return dispatch(t, ev);

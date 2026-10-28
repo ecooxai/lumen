@@ -1,0 +1,290 @@
+{
+  "iteration": 134,
+  "scope": "HTML event-handler global exposure, owner-document targeting, lazy handler realm/source form, and Document.body getter",
+  "status": "accepted scoped improvement; global release pending parser acceptance and broad holdouts",
+  "quality_score": 96,
+  "whole_goal_score": 19,
+  "whole_goal_note": "Provisional readiness estimate, not WPT percentage or Chromium parity. Full user goal remains unmet.",
+  "started_utc": "2026-10-28T09:44:09+00:00",
+  "finished_utc": "2026-10-28T09:52:25.489577+00:00",
+  "elapsed_minutes": 8.274826283333333,
+  "duration_scope": "Monitored build through evidence review; staging/edit time before build is excluded. Parallel agent lanes overlap.",
+  "total_session_wall_minutes": 40.22482628333333,
+  "subagents": [
+    "repository_lead",
+    "standards_comparison",
+    "progress_and_deployment"
+  ],
+  "model": "gpt-6-astra",
+  "tools": [
+    "builtin agents",
+    "rubywebterm MCP",
+    "local Chromium150",
+    "primary web standards"
+  ],
+  "build": {
+    "source_manifest_before": "fff44a741b608aab4e096005a0fc10c2318156af271551494b5e73e83dcba047",
+    "source_diff_before": "e8c812e5092257378d32b750fc43cb3aa0f30bc151d95947551d908b75146e0d",
+    "head": "0a2b2d144e424c260e8794fc0b6ba6b63e60ef66",
+    "started_utc": "2026-10-28T09:44:09Z",
+    "pid": 586596,
+    "build_exit_code": 0,
+    "binary": "build/codex-native/lumen-astra-i134",
+    "binary_sha256": "3e9fdac41a6affb4e46275b8e9f8e0154e69bc899a3f5de2736969ab1ecce49d",
+    "diff_sha256": "e8c812e5092257378d32b750fc43cb3aa0f30bc151d95947551d908b75146e0d",
+    "startup_exit_code": 0,
+    "source_diff_after": "e8c812e5092257378d32b750fc43cb3aa0f30bc151d95947551d908b75146e0d",
+    "source_manifest_after": "fff44a741b608aab4e096005a0fc10c2318156af271551494b5e73e83dcba047",
+    "source_unchanged_during_build": true,
+    "finished_utc": "2026-10-28T09:44:34Z"
+  },
+  "source_provenance_note": "Candidate134 includes unaccepted CSSOM parser133 overlay. Direct baseline133 versus134 isolates event changes; this binary is not an accepted release snapshot. Final release must be rebuilt from accepted sources.",
+  "comparison": {
+    "baseline": {
+      "urls": 37,
+      "harness": {
+        "OK": 35,
+        "ERROR": 1,
+        "TIMEOUT": 1
+      },
+      "assertions": 1313,
+      "pass": 787,
+      "fully_passing": 18
+    },
+    "candidate": {
+      "urls": 37,
+      "harness": {
+        "OK": 36,
+        "TIMEOUT": 1
+      },
+      "assertions": 1453,
+      "pass": 1299,
+      "fully_passing": 20
+    },
+    "chromium": {
+      "urls": 37,
+      "harness": {
+        "OK": 37
+      },
+      "assertions": 1453,
+      "pass": 1389,
+      "fully_passing": 26
+    },
+    "gains": 386,
+    "losses": 0,
+    "new_assertions": 140,
+    "missing_vs_baseline": 0,
+    "missing_vs_chromium": 0,
+    "extra_vs_chromium": 0,
+    "chromium_pass_matched": 1249,
+    "chromium_pass_total": 1389
+  },
+  "restored_assertions": {
+    "count": 140,
+    "passing": 126,
+    "not_passing": 14
+  },
+  "native_only_passes": {
+    "count": 50,
+    "baseline_distribution": {
+      "FAIL": 20,
+      "PASS": 21,
+      "MISSING": 9
+    },
+    "groups": {
+      "clipboard_global_handler_exposure": 18,
+      "pageswap_pagereveal_forwarding": 28,
+      "synthetic_event_dispatch": 3,
+      "tentative_onmove": 1
+    },
+    "normative_supported": 49,
+    "tentative_preexisting": 1
+  },
+  "remaining": {
+    "observed_nonpass_assertions": 154,
+    "chromium_pass_misses": 140,
+    "timeout_urls": [
+      "/html/webappapis/scripting/events/event-handler-processing-algorithm-error/frameset-element-synthetic-event.html"
+    ],
+    "known_prior_lifecycle_gap": "Forwarded body/frameset content attributes still eagerly compile; next lifecycle work must preserve raw-source listener activation semantics."
+  },
+  "holdouts": {
+    "document_body": {
+      "baseline": {
+        "urls": 1,
+        "harness": {
+          "OK": 1
+        },
+        "assertions": 26,
+        "pass": 11,
+        "fully_passing": 0
+      },
+      "candidate": {
+        "urls": 1,
+        "harness": {
+          "OK": 1
+        },
+        "assertions": 26,
+        "pass": 17,
+        "fully_passing": 0
+      },
+      "chromium": {
+        "urls": 1,
+        "harness": {
+          "OK": 1
+        },
+        "assertions": 26,
+        "pass": 26,
+        "fully_passing": 1
+      },
+      "gains": [
+        [
+          "/html/dom/documents/dom-tree-accessors/Document.body.html",
+          "Frameset as the root node with a body child",
+          0
+        ],
+        [
+          "/html/dom/documents/dom-tree-accessors/Document.body.html",
+          "Frameset followed by body inside a non-HTML html element",
+          0
+        ],
+        [
+          "/html/dom/documents/dom-tree-accessors/Document.body.html",
+          "Frameset followed by body inside the html element",
+          0
+        ],
+        [
+          "/html/dom/documents/dom-tree-accessors/Document.body.html",
+          "Non-HTML body followed by body inside the html element",
+          0
+        ],
+        [
+          "/html/dom/documents/dom-tree-accessors/Document.body.html",
+          "Body followed by frameset inside a non-HTML html element",
+          0
+        ],
+        [
+          "/html/dom/documents/dom-tree-accessors/Document.body.html",
+          "Frameset inside an x element followed by a frameset",
+          0
+        ]
+      ],
+      "losses": [],
+      "new_assertions": 0,
+      "missing_vs_baseline": 0,
+      "missing_vs_chromium": 0,
+      "extra_vs_chromium": 0,
+      "chromium_pass_matched": 17,
+      "chromium_pass_total": 26
+    },
+    "json_modules": {
+      "baseline": {
+        "urls": 8,
+        "harness": {
+          "OK": 8
+        },
+        "assertions": 225,
+        "pass": 225,
+        "fully_passing": 8
+      },
+      "candidate": {
+        "urls": 8,
+        "harness": {
+          "OK": 8
+        },
+        "assertions": 225,
+        "pass": 225,
+        "fully_passing": 8
+      },
+      "chromium": {
+        "urls": 8,
+        "harness": {
+          "OK": 8
+        },
+        "assertions": 225,
+        "pass": 225,
+        "fully_passing": 8
+      },
+      "gains": [],
+      "losses": [],
+      "new_assertions": 0,
+      "missing_vs_baseline": 0,
+      "missing_vs_chromium": 0,
+      "extra_vs_chromium": 0,
+      "chromium_pass_matched": 225,
+      "chromium_pass_total": 225
+    },
+    "css_modules": {
+      "baseline": {
+        "urls": 6,
+        "harness": {
+          "ERROR": 2,
+          "OK": 4
+        },
+        "assertions": 21,
+        "pass": 9,
+        "fully_passing": 1
+      },
+      "candidate": {
+        "urls": 6,
+        "harness": {
+          "ERROR": 2,
+          "OK": 4
+        },
+        "assertions": 21,
+        "pass": 9,
+        "fully_passing": 1
+      },
+      "chromium": {
+        "urls": 6,
+        "harness": {
+          "OK": 6
+        },
+        "assertions": 22,
+        "pass": 22,
+        "fully_passing": 6
+      },
+      "gains": [],
+      "losses": [],
+      "new_assertions": 0,
+      "missing_vs_baseline": 0,
+      "missing_vs_chromium": 1,
+      "extra_vs_chromium": 0,
+      "chromium_pass_matched": 9,
+      "chromium_pass_total": 22
+    }
+  },
+  "independent_review": "standards_comparison approved final actual source; inert local body handlers and non-HTML-root body getter were corrected before134 build.",
+  "resources": {
+    "interval_seconds": 1,
+    "candidate_monitored_tests": 37,
+    "peak_cpu_one_core_100": 102.047,
+    "peak_rss_mb": 205.488
+  },
+  "capture_audit": {
+    "event_body_launches": 76,
+    "all_four_audit_steps_complete": true,
+    "all_recorded_pids_absent": true,
+    "module_launches": 14,
+    "module_note": "Both compact module runs accidentally reused older guarded launcher; final exited marker absent in each, all14 native PIDs independently absent. Raw audit events retained; no synthetic exit events."
+  },
+  "spec_sources": [
+    "https://html.spec.whatwg.org/multipage/webappapis.html#event-handler-attributes",
+    "https://html.spec.whatwg.org/multipage/webappapis.html#event-handlers-on-elements-document-objects-and-window-objects",
+    "https://html.spec.whatwg.org/multipage/dom.html#dom-document-body",
+    "https://webidl.spec.whatwg.org/#Global"
+  ],
+  "evidence_sha256": {
+    "agent/validation/linux-wpt-20261028/session2-events/urls.json": "51a9a0ab835bc6eb4e343f8e5e31d84655eedbe1894896ee87f3926b7ddafb0c",
+    "agent/validation/linux-wpt-20261028/session2-events/context-patch.json": "535493ebe293299615e713ab756960f2d283bc317071666ec263cf96664b506d",
+    "agent/validation/linux-wpt-20261028/session2-events/context-source-change.json": "23d4429724ed29e6aa630f8088bd72b448d805c6996e0a9bcb893e02e00959cc",
+    "agent/validation/linux-wpt-20261028/session2-events/event134-comparison.json": "27ab57b42c2e668883909e0f43f7b0a12829726f65b42ccd2aace0c0bf7af041",
+    "agent/validation/linux-wpt-20261028/session2-events/event134-native-only.json": "9e219bb184df39e435718b41dd7632899465a0145585923546a4b10490b08668",
+    "agent/validation/linux-wpt-20261028/session2-events/event134-cleanup.json": "952a0c35f5383324b22a2b16d359a8f7b70e6ad491cd4dc27086fbad51f23c41",
+    "agent/validation/linux-wpt-20261028/session2-events/context134-state.json": "eb32dc74a79e84633cb099de1c8175621fc3a2cd8c009df6a205a4d788895890",
+    "agent/validation/linux-wpt-20261028/session2-events/body-holdout/body134-comparison.json": "b3ad4b225c92338b4d7cd89b5fbbac83d0be2f929606128e6d473d687bd7523a",
+    "agent/validation/linux-wpt-20261028/session2-mime/json134-comparison.json": "b5abc6d1d8f4776ea98c4fc71ef978c137502752280d5c57eab0c707a22fbb1d",
+    "agent/validation/linux-wpt-20261028/session2-mime/css-holdout/css134-comparison.json": "2147ea8e4e55239e89b1de86d77afd644f5aad9c620c12f5716a25eb976c84af",
+    "agent/validation/iteration-134/build-state.json": "880a502f9562ff46d40ecc4a6ad42f08f803929acf916f84d3edc48de82fae31"
+  }
+}

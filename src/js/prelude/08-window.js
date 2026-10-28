@@ -569,12 +569,13 @@ acc(Document.prototype, 'customElementRegistry', function () { return nodeRegist
 acc(Element.prototype, 'customElementRegistry', function () { return nodeRegistry(this); });
 acc(ShadowRoot.prototype, 'customElementRegistry', function () { return nodeRegistry(this); });
 class Window extends EventTarget {}
-installHandlers(Window.prototype, false, EVENT_HANDLERS.concat(['beforeunload', 'hashchange', 'message', 'messageerror', 'offline', 'online', 'pagehide', 'pageshow', 'popstate', 'storage', 'unhandledrejection', 'rejectionhandled', 'unload', 'DOMContentLoaded']));
+/* Global interface attributes are own properties of the Window global. */
+installHandlers(G, false, EVENT_HANDLERS.concat(['beforeunload', 'hashchange', 'message', 'messageerror', 'offline', 'online', 'pagehide', 'pageshow', 'popstate', 'storage', 'unhandledrejection', 'rejectionhandled', 'unload', 'DOMContentLoaded']));
 /* <body onload="..."> from the parser: the window's handler until a script sets one */
 for (const t of WINDOW_FWD) {
-    const k = 'on' + t, d = Object.getOwnPropertyDescriptor(Window.prototype, k);
+    const k = 'on' + t, d = Object.getOwnPropertyDescriptor(G, k);
     if (!d) continue;
-    acc(Window.prototype, k, function () {
+    acc(G, k, function () {
         const own = this.__on && this.__on[k];
         if (own !== undefined) return own;
         const d = this === G && document, b = d && d.body;

@@ -887,18 +887,37 @@ const reflectUrl = (p, ...ns) => { for (const n of ns) { const a = n.toLowerCase
 const reflectInt = (p, d, ...ns) => { for (const n of ns) { const a = n.toLowerCase(); racc(p, n, function () { const v = parseInt(N.attr(this, a), 10); return isNaN(v) ? d : v; }, function (v) { this.setAttribute(a, String(v | 0)); }); } };
 const EVENT_HANDLERS = 'abort animationend animationiteration animationstart auxclick beforeinput beforetoggle blur cancel canplay canplaythrough change click close contextmenu copy cut dblclick drag dragend dragenter dragleave dragover dragstart drop durationchange emptied ended error focus focusin focusout input invalid keydown keypress keyup load loadeddata loadedmetadata loadstart mousedown mouseenter mouseleave mousemove mouseout mouseover mouseup paste pause play playing pointercancel pointerdown pointerenter pointerleave pointermove pointerout pointerover pointerup progress ratechange reset resize scroll seeked seeking select selectionchange selectstart stalled submit suspend timeupdate toggle touchcancel touchend touchmove touchstart transitionend volumechange waiting wheel webkitanimationend webkitanimationiteration webkitanimationstart webkittransitionend'.split(' ');
 const EMPTY_SCOPE = Object.freeze(Object.create(null));
+/* Body/frameset handlers target their document's Window when required. Only
+   forwarded names require a Window; ordinary handlers remain local even on inert bodies. */
+function eventHandlerTarget(el, name) {
+    if (N.isNode(el) && N.type(el) === 1 && N.ns(el) === 0) {
+        const tag = N.name(el);
+        if ((tag === 'body' || tag === 'frameset') && WINDOW_FWD.includes(name.slice(2))) {
+            const doc = N.ownerDoc(el);
+            return doc && doc.defaultView || null;
+        }
+    }
+    return el;
+}
 function compileHandler(el, k, src) {
     const c = el.__hc || (def(el, '__hc', {}), el.__hc);
     if (c[k] && c[k].src === src) return c[k].fn;
+    const doc = N.ownerDoc(el), win = doc && doc.defaultView;
+    if (!win) return null;   /* only uncompiled content attributes require scripting */
+    if (win !== G) {
+        const realm = N.realmOf(win);
+        if (realm && realm.compileEventHandler) return realm.compileEventHandler(el, k, src);
+    }
     let fn = null;
     /* the handler's scope is the element, its form owner, its document, then the global object */
     try {
-        ttInternal++;
         let make;
-        try { make = new Function('__lumenScope', `with (__lumenScope[0]) with (__lumenScope[1]) return function (${N.ns(el) === 1 ? 'evt' : 'event'}) { with (this) {\n${src}\n} };`); } finally { ttInternal--; }
+        const args = k === 'onerror' && eventHandlerTarget(el, k) === win ? 'event, source, lineno, colno, error' : N.ns(el) === 1 ? 'evt' : 'event';
+        ttInternal++;
+        try { make = new Function('__lumenScope', `with (__lumenScope[0]) with (__lumenScope[1]) with (__lumenScope[2]) return function ${k}(${args}) {\n${src}\n};`); } finally { ttInternal--; }
         let form = null;
         try { form = N.ns(el) === 0 ? el.form : null; } catch (e) {}
-        fn = make([el.ownerDocument || EMPTY_SCOPE, form || EMPTY_SCOPE]);
+        fn = make([doc || EMPTY_SCOPE, form || EMPTY_SCOPE, el]);
     } catch (e) { report(e); }
     c[k] = { src, fn };
     return fn;
@@ -907,21 +926,31 @@ function compileHandler(el, k, src) {
    window's events' handlers are the window's */
 function handlerAttr(el, k, src) {
     if (el.__on && k in el.__on) delete el.__on[k];
-    const t = N.name(el);
-    if ((t === 'body' || t === 'frameset') && N.ns(el) === 0 && WINDOW_FWD.includes(k.slice(2))) {
-        if (!G.__on) def(G, '__on', {});
-        G.__on[k] = src == null ? null : compileHandler(el, k, src);
+    if (el.__hc) delete el.__hc[k];
+    const target = eventHandlerTarget(el, k);
+    if (target && target !== el) {
+        if (!target.__on) def(target, '__on', {});
+        target.__on[k] = src == null ? null : compileHandler(el, k, src);
     }
 }
 function installHandlers(proto, attrBacked, list = EVENT_HANDLERS) {
     for (const t of list) {
         const k = 'on' + t;
         acc(proto, k, function () {
+            const target = eventHandlerTarget(this, k);
+            if (!target) return null;
+            if (target !== this) return target[k];
             const own = this.__on && this.__on[k];
             if (own !== undefined) return own;
             if (attrBacked) { const src = N.attr(this, k); if (src != null) return compileHandler(this, k, src); }
             return null;
-        }, function (v) { if (!this.__on) def(this, '__on', {}); this.__on[k] = typeof v === 'function' ? v : null; });
+        }, function (v) {
+            const target = eventHandlerTarget(this, k);
+            if (!target) return;
+            if (target !== this) { target[k] = v; return; }
+            if (!this.__on) def(this, '__on', {});
+            this.__on[k] = typeof v === 'function' ? v : null;
+        });
     }
 }
 /* pages pick the fullscreen event name by `'on' + name in document` (YouTube's player listens to none without it) */

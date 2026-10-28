@@ -71,7 +71,13 @@ methods(Document.prototype, {
     get alinkColor() { return docColorGet(this, 'alink'); }, set alinkColor(v) { docColorSet(this, 'alink', v); },
     get vlinkColor() { return docColorGet(this, 'vlink'); }, set vlinkColor(v) { docColorSet(this, 'vlink', v); },
     get head() { return findChild(this.documentElement, 'head'); },
-    get body() { return findChild(this.documentElement, 'body'); },
+    get body() {
+        const root = this.documentElement;
+        if (!root || N.ns(root) !== 0 || N.name(root) !== 'html') return null;
+        for (let c = N.first(root); c; c = N.next(c))
+            if (N.type(c) === 1 && N.ns(c) === 0 && (N.name(c) === 'body' || N.name(c) === 'frameset')) return c;
+        return null;
+    },
     get doctype() { for (let c = N.first(this); c; c = N.next(c)) if (N.type(c) === 10) return c; return null; },
     get title() { const t = N.query(this, 'title', false); return t ? N.text(t).replace(/\s+/g, ' ').trim() : ''; },
     set title(v) { let t = N.query(this, 'title', false); if (!t) { const h = this.head; if (!h) return; t = N.create('title', 0); insertNode(h, t, null); } t.textContent = v; },

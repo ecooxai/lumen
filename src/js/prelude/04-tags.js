@@ -13,7 +13,7 @@ mk('HTMLHtmlElement', HTMLElement, ['html']); mk('HTMLHeadElement', HTMLElement,
    attributes both) */
 const WINDOW_FWD = ['blur', 'error', 'focus', 'load', 'resize', 'scroll', 'afterprint', 'beforeprint', 'beforeunload', 'hashchange', 'languagechange', 'message', 'messageerror',
     'offline', 'online', 'pagehide', 'pagereveal', 'pageshow', 'pageswap', 'popstate', 'rejectionhandled', 'storage', 'unhandledrejection', 'unload'];
-const fwdHandlers = p => { for (const t of WINDOW_FWD) acc(p, 'on' + t, function () { return G['on' + t] ?? null; }, function (v) { G['on' + t] = v; }); };
+const fwdHandlers = p => { for (const t of WINDOW_FWD) acc(p, 'on' + t, function () { const target = eventHandlerTarget(this, 'on' + t); return target ? target['on' + t] ?? null : null; }, function (v) { const target = eventHandlerTarget(this, 'on' + t); if (target) target['on' + t] = v; }); };
 mk('HTMLBodyElement', HTMLElement, ['body'], p => { fwdHandlers(p); reflectStr(p, 'text', 'link', 'vLink', 'aLink', 'bgColor', 'background'); });
 mk('HTMLFrameSetElement', HTMLElement, ['frameset'], p => { fwdHandlers(p); reflectStr(p, 'cols', 'rows'); });
 mk('HTMLDivElement', HTMLElement, ['div']); mk('HTMLSpanElement', HTMLElement, ['span']); mk('HTMLParagraphElement', HTMLElement, ['p']);
