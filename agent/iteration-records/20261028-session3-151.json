@@ -1,0 +1,70 @@
+{
+  "session": "20261028-session3",
+  "iteration": 151,
+  "started_utc": "2026-10-28T16:41:09Z",
+  "finished_utc": "2026-10-28T16:51:45Z",
+  "elapsed_minutes": 10.6,
+  "agents": [
+    "root",
+    "engine_and_git",
+    "validation_wpt",
+    "preview_deploy"
+  ],
+  "overall_score": 19,
+  "scoped_quality_score": 96,
+  "score_basis": "Subjective scoped engineering assessment; overall estimate inherited. Neither is a weighted Chromium-parity metric.",
+  "decision": "Accept bounded correctness-preserving reduction in unnecessary allocations and parsing; do not claim a proven workload-wide speed gain.",
+  "changes": [
+    "Unnamed resolved Grid tracks serialize cached actual sizes without allocating line-name buffers or reparsing track declarations. Named-track, computed fallback, pseudo and animation behavior remain on existing paths."
+  ],
+  "binary": "build/codex-native/lumen-astra-i151",
+  "binary_sha256": "ad3e572241500aab74eda55fc85c3b2d83124fb08672d986248b335fd751282a",
+  "source_content_sha256": "e75cbdd86f388b2249e039216b9dd4b834a28b608895ed2baa328b84ef917cf7",
+  "source_file_sha256": {
+    "src/css/style.c": "5fcd1b8d54a82b22270542651fa9a8b5225716a18bf640e575e085639d2b986f"
+  },
+  "correctness": {
+    "native_ctest_pass": 132,
+    "native_ctest_total": 132,
+    "grid_used_track_authored_pass": 47,
+    "grid_used_track_authored_total": 47,
+    "balanced_performance_trials_pass": 21,
+    "balanced_performance_trials_total": 21,
+    "checks_per_performance_trial": 9395,
+    "additional_performance_preflight_trials": 3,
+    "source_and_binary_hashes_stable": true,
+    "cleanup_drained": true
+  },
+  "performance": {
+    "baseline150_grid_median_ms": 162.266,
+    "candidate151_grid_median_ms": 152.534,
+    "relative_change_percent": -6.0,
+    "baseline150_grid_range_ms": [
+      148.5,
+      183.83
+    ],
+    "candidate151_grid_range_ms": [
+      148.46,
+      182.14
+    ],
+    "unrelated_dom_change_percent": -8.4,
+    "unrelated_absolute_layout_change_percent": -4.9,
+    "interpretation": "Ranges overlap and unrelated phases changed; no isolated causal attribution. The large historical slowdown versus128 is not resolved."
+  },
+  "resource_monitoring": {
+    "sample_interval_seconds": 1,
+    "build_cpu_min": 1.0,
+    "build_cpu_median": 29.5,
+    "build_cpu_max": 96.001,
+    "build_peak_rss_decimal_mb": 296.575,
+    "build_final_rss_decimal_mb": 41.714,
+    "build_sampled_peak_pss_decimal_mb": 151.549,
+    "caveat": "Process snapshots may miss short-lived children; summed RSS can double-count shared pages."
+  },
+  "private_evidence": [
+    "agent/validation/iteration-151",
+    "agent/validation/linux-wpt-20261028-session3/candidate151-performance",
+    "agent/validation/linux-wpt-20261028-session3/baseline128-150-chromium"
+  ],
+  "next": "Actual frozen-engine V8 sampling before a bounded pure-grammar cache; dataURL candidate152 independently validated in parallel."
+}

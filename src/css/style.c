@@ -4862,8 +4862,12 @@ static void grid_resolved_tracks(SB *out, Node *el, const ComputedStyle *s, cons
     }
     int count = used->count[axis];
     if (!count) { sb_puts(out, "none"); return; }
-    SB *names = xcalloc((size_t)count + 1, sizeof *names);
-    if (value) {
+    /* Layout already resolved every track size. Only declarations with a
+       line-name delimiter need name expansion; ordinary/repeated/calculated
+       unnamed tracks can serialize these arrays without reparsing or a second
+       allocation. Escaped identifiers still occur inside literal brackets. */
+    SB *names = value && strchr(value, '[') ? xcalloc((size_t)count + 1, sizeof *names) : NULL;
+    if (names) {
         ACtx c = {0}; c.em = s->font_size; c.rem = 16;
         if (el && el->doc) {
             if (el->doc->html && el->doc->html->style) c.rem = el->doc->html->style->font_size;
@@ -4878,7 +4882,7 @@ static void grid_resolved_tracks(SB *out, Node *el, const ComputedStyle *s, cons
             for (int i = 0; i <= count; i++) { free(names[i].s); sb_init(names + i); }
     }
     for (int i = 0; i <= count; i++) {
-        if (names[i].n) {
+        if (names && names[i].n) {
             if (out->n) sb_putc(out, ' ');
             sb_putc(out, '['); sb_puts(out, names[i].s); sb_putc(out, ']');
         }
@@ -4886,7 +4890,7 @@ static void grid_resolved_tracks(SB *out, Node *el, const ComputedStyle *s, cons
             if (out->n) sb_putc(out, ' ');
             float size = used->size[axis][i]; sb_printf(out, "%gpx", size == 0 ? 0.0 : (double)size);
         }
-        free(names[i].s);
+        if (names) free(names[i].s);
     }
     free(names);
 }
