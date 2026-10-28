@@ -73,7 +73,7 @@ methods(Document.prototype, {
         const value = qualifiedName(namespace, name, true);
         return makeAttribute(null, value.name, this, value.namespace, value.prefix, value.localName);
     },
-    createEvent(t) { const m = { event: Event, events: Event, htmlevents: Event, customevent: CustomEvent, uievent: UIEvent, uievents: UIEvent, mouseevent: MouseEvent, mouseevents: MouseEvent, keyboardevent: KeyboardEvent, focusevent: FocusEvent, messageevent: MessageEvent }; const C = m[String(t).toLowerCase()]; if (!C) throw new DOMException(`The provided event type ('${t}') is invalid.`, 'NotSupportedError'); return new C(''); },
+    createEvent(t) { if (!arguments.length) throw new TypeError('createEvent requires an interface name'); return createLegacyEvent(t); },
     createRange() { return new Range(); },
     createTreeWalker(root, what = 0xFFFFFFFF, filter = null) { return mkTraversal(TreeWalker, root, what, filter); },
     createNodeIterator(root, what = 0xFFFFFFFF, filter = null) { return mkTraversal(NodeIterator, root, what, filter); },
@@ -86,7 +86,21 @@ methods(Document.prototype, {
         const r = cloneDOMNode(n, !!deep, this);
         if (!attributeState.has(r)) ceUpgradeTree(r);
         return r;
-    }, adoptNode(n) { if (!N.isNode(n)) throw new TypeError("Failed to execute 'adoptNode' on 'Document': parameter 1 is not of type 'Node'."); if (N.type(n) === 9) throw new DOMException('The node provided is a document, which may not be adopted.', 'NotSupportedError'); if (N.parent(n)) removeNode(n); N.adopt(n, this); return n; },
+    }, adoptNode(n) {
+        if (N.type(this) !== 9) throw new TypeError('Illegal invocation');
+        if (attributeState.has(n)) {
+            const state = requireAttribute(n);
+            if (state.element) Element.prototype.removeAttributeNode.call(state.element, n);
+            state.document = this;
+            return n;
+        }
+        if (!N.isNode(n)) throw new TypeError("Failed to execute 'adoptNode' on 'Document': parameter 1 is not of type 'Node'.");
+        if (N.type(n) === 9) throw new DOMException('The node provided is a document, which may not be adopted.', 'NotSupportedError');
+        if (N.type(n) === 11 && N.host(n)) throw new DOMException('A shadow root may not be adopted.', 'HierarchyRequestError');
+        if (N.parent(n)) removeNode(n);
+        N.adopt(n, this);
+        return n;
+    },
     hasFocus() { return true; },
     elementFromPoint(x, y) { return N.hit(+x, +y); },
     elementsFromPoint(x, y) { const r = []; for (let e = N.hit(+x, +y); e && N.type(e) === 1; e = N.parent(e)) r.push(e); return r; },

@@ -53,7 +53,6 @@ static bool bytes_of(v8::Local<v8::Value> v, const char **p, size_t *n) {
     return false;
 }
 static bool is_textish(Node *n) { return n->type == NODE_TEXT || n->type == NODE_COMMENT || n->type == NODE_CDATA || n->type == NODE_PI; }
-static void adopt_tree(Node *n, Document *d) { for (Node *x = n; x; x = node_next_in_tree(x, n)) x->doc = d; }
 #define ADOC(i) Document *od = c->doc; if (a.Length() > (i)) if (Node *dn_ = junwrap(a[i])) if (dn_->type == NODE_DOCUMENT) od = (Document *)dn_
 static void clear_children(Node *n) {
     while (n->first) { Node *ch = n->first; node_remove(ch); node_free_tree(ch); }
@@ -74,7 +73,7 @@ FN(isNode) { CTX; RET(junwrap(a[0]) != nullptr); }
  * ordinary object tracing owns the state, including cycles involving Attrs. */
 static v8::Local<v8::Private> dom_state_key(v8::Isolate *iso, int slot) {
     static const char *names[] = { "lumen.dom.attr", "lumen.dom.attrs", "lumen.dom.name",
-                                  "lumen.dom.content-type", "lumen.dom.document-interface" };
+                                  "lumen.dom.content-type", "lumen.dom.document-interface", "lumen.dom.event" };
     if (slot < 0 || slot >= (int)ARRLEN(names)) return v8::Local<v8::Private>();
     return v8::Private::ForApi(iso, jstr(iso, names[slot]));
 }
@@ -126,6 +125,7 @@ FN(attr) {
     size_t length = 0; const char *value = node_attr_n(n, k.c_str(), &length);
     if (value) RET(jstr(iso, value, (int)length)); else RET(v8::Null(iso));
 }
+FN(attrNamespace) { CTX; ARGN(n, 0); std::string name = S(1); RET(nstr(iso, node_attr_namespace(n, name.c_str()))); }
 FN(setAttr) {
     CTX; ARGN(n, 0); std::string k = S(1), v = S(2); node_set_attr_n(n, atom(k.c_str()), v.data(), v.size());
     if (k == "style") { if (a.Length() > 3 && a[3]->IsTrue()) n->flags |= NF_STYLE_CSSOM; else n->flags &= ~(uint32_t)NF_STYLE_CSSOM; }
@@ -148,12 +148,12 @@ FN(insert) {
     std::vector<Node *> added;
     if (ch->type == NODE_FRAGMENT) for (Node *x = ch->first; x; x = x->next) added.push_back(x);
     else added.push_back(ch);
-    if (ch->doc != p->doc) for (Node *x = ch; x; x = node_next_in_tree(x, ch)) x->doc = p->doc;
-    if (ch->doc != p->doc) adopt_tree(ch, p->doc);
+    /* The shared insertion primitive adopts the nodes actually inserted. A
+     * DocumentFragment itself stays detached in its original owner document. */
     node_insert_before(p, ch, ref && ref->parent == p ? ref : nullptr);
     for (Node *x : added) js_run_inserted(c, x);
 }
-FN(adopt) { CTX; ARGN(n, 0); ARGN(d, 1); adopt_tree(n, d->doc); }
+FN(adopt) { CTX; ARGN(n, 0); ARGN(d, 1); node_adopt_tree(n, d->doc); }
 FN(newDoc) {
     CTX;
     Document *nd = doc_new("about:blank");
@@ -193,12 +193,11 @@ FN(setHTML) {
     CTX; ARGN(n, 0); std::string s = S(1);
     Node *target = n;
     if (n->type == NODE_ELEMENT && n->tag == A_template) {
-        if (!n->template_content) { n->template_content = node_new_fragment(c->doc); n->template_content->refcount = 1; n->template_content->flags |= NF_INERT; }
-        target = n->template_content;
+        target = node_template_content(n);
     }
     clear_children(target);
     Node *ctxn = n->type == NODE_ELEMENT ? n : n->host ? n->host : nullptr;
-    Node *f = html_parse_fragment(c->doc, ctxn ? ctxn : c->doc->body, s.data(), s.size());
+    Node *f = html_parse_fragment(target->doc, ctxn ? ctxn : target->doc->body, s.data(), s.size());
     if (!f) return;
     mark_started(f);
     node_append(target, f);
@@ -207,7 +206,7 @@ FN(setHTML) {
 FN(parseFrag) {
     CTX; Node *cx = junwrap(a[0]); std::string s = S(1);
     if (!cx || cx->type != NODE_ELEMENT) cx = c->doc->body;
-    Node *f = html_parse_fragment(c->doc, cx, s.data(), s.size());
+    Node *f = html_parse_fragment(cx ? cx->doc : c->doc, cx, s.data(), s.size());
     if (f) mark_started(f);
     RET(jwrap(c, f));
 }
@@ -250,6 +249,40 @@ FN(query) {
     for (int i = 0; i < k; i++) (void)r->Set(ctx, i, jwrap(c, out[i]));
     free(out);
     RET(r);
+}
+FN(elementsByTagName) {
+    CTX; ARGN(root, 0);
+    const std::string wanted = S(1);
+    std::string folded = wanted;
+    for (char &ch : folded) if (ch >= 'A' && ch <= 'Z') ch += 'a' - 'A';
+    const bool html_document = root->doc && root->doc->node.ns != NS_NONE;
+    auto result = v8::Array::New(iso);
+    uint32_t index = 0;
+    for (Node *n = root->first; n; n = node_next_in_tree(n, root)) {
+        if (n->type != NODE_ELEMENT) continue;
+        bool html_namespace = n->ns == NS_HTML;
+        std::string name = n->tag;
+        /* Qualified names created by createElementNS use platform private
+         * state. Inspect an existing wrapper only; unmatched parsed elements
+         * need not acquire a strong V8 wrapper just to answer a collection. */
+        if (n->js) {
+            auto object = static_cast<v8::Global<v8::Object> *>(n->js)->Get(iso);
+            v8::Local<v8::Value> value;
+            if (!object.IsEmpty() && object->GetPrivate(ctx, dom_state_key(iso, 2)).ToLocal(&value) && value->IsObject()) {
+                auto state = value.As<v8::Object>();
+                v8::Local<v8::Value> local, prefix, ns;
+                if (!state->Get(ctx, jstr(iso, "localName")).ToLocal(&local) ||
+                    !state->Get(ctx, jstr(iso, "prefix")).ToLocal(&prefix) ||
+                    !state->Get(ctx, jstr(iso, "namespace")).ToLocal(&ns)) return;
+                name = jcstr(iso, local);
+                if (!prefix->IsNullOrUndefined()) name = jcstr(iso, prefix) + ":" + name;
+                html_namespace = ns->IsString() && jcstr(iso, ns) == "http://www.w3.org/1999/xhtml";
+            }
+        }
+        if (wanted != "*" && name != (html_document && html_namespace ? folded : wanted)) continue;
+        if (!result->CreateDataProperty(ctx, index++, jwrap(c, n)).FromMaybe(false)) return;
+    }
+    RET(result);
 }
 FN(matches) {
     CTX; ARGN(n, 0); std::string sel = S(1); bool ok = false;
@@ -344,8 +377,7 @@ FN(attachShadow) {
 }
 FN(templateContent) {
     CTX; ARGN(n, 0);
-    if (!n->template_content) { n->template_content = node_new_fragment(n->doc); n->template_content->refcount = 1; n->template_content->flags |= NF_INERT; }
-    RET(jwrap(c, n->template_content));
+    RET(jwrap(c, node_template_content(n)));
 }
 FN(rect) {
     CTX; ARGN(n, 0); float r[4];
@@ -1529,8 +1561,8 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
 #define REG(nm) (void)N->Set(ctx, jstr(iso, #nm), v8::Function::New(ctx, n_##nm).ToLocalChecked())
     REG(isNode); REG(domStateGet); REG(domStateSet); REG(version);
     REG(inert); REG(type); REG(name); REG(ns); REG(parent); REG(first); REG(last); REG(next); REG(prev);
-    REG(text); REG(setText); REG(attr); REG(setAttr); REG(rmAttr); REG(cspExempt); REG(cspMedia); REG(referrer); REG(attrs); REG(insert); REG(remove); REG(newDoc); REG(newXmlDoc); REG(parseDoc); REG(xmlAppend); REG(xmlScript); REG(adopt); REG(pi); REG(cdata); REG(doctype); REG(ownerDoc);
-    REG(create); REG(textNode); REG(comment); REG(frag); REG(html); REG(setHTML); REG(parseFrag); REG(query);
+    REG(text); REG(setText); REG(attr); REG(attrNamespace); REG(setAttr); REG(rmAttr); REG(cspExempt); REG(cspMedia); REG(referrer); REG(attrs); REG(insert); REG(remove); REG(newDoc); REG(newXmlDoc); REG(parseDoc); REG(xmlAppend); REG(xmlScript); REG(adopt); REG(pi); REG(cdata); REG(doctype); REG(ownerDoc);
+    REG(create); REG(textNode); REG(comment); REG(frag); REG(html); REG(setHTML); REG(parseFrag); REG(query); REG(elementsByTagName);
     REG(matches); REG(byId); REG(clone); REG(cloneMetadataPairs); REG(doc); REG(contains); REG(connected); REG(host); REG(attachShadow);
     REG(templateContent); REG(rect); REG(vrect); REG(clipSet); REG(clipGet); REG(scrollPos); REG(setScroll); REG(computed); REG(value); REG(setValue); REG(checked); REG(setChecked); REG(setPseudo); REG(pickFiles);
     REG(controlSelection); REG(controlSetSelection); REG(controlSetRangeText); REG(controlSelect); REG(controlEditable);

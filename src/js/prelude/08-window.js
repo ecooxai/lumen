@@ -329,7 +329,7 @@ const requestAnimationFrame = (fn) => N.raf((t) => { try { fn(t); } catch (e) { 
 const cancelAnimationFrame = (id) => N.cancelRaf(id);
 const requestIdleCallback = (fn, o) => setTimeout(() => fn({ didTimeout: false, timeRemaining() { return 10; } }), 1);
 const cancelIdleCallback = clearTimeout;
-const queueMicrotask = (fn) => { Promise.resolve().then(() => { try { fn(); } catch (e) { report(e); } }); };
+const queueMicrotask = (fn) => { if (typeof fn !== 'function') throw new TypeError('queueMicrotask callback must be callable'); Promise.resolve().then(() => { try { fn(); } catch (e) { report(e); } }); };
 // The exception constructor is the original lexical interface of this realm.
 N.initCloneIntrinsic((message, name) => new DOMException(message, name));
 function structuredClone(v, seen = new Map()) {
@@ -464,6 +464,7 @@ Object.setPrototypeOf(history, History.prototype); Object.setPrototypeOf(navigat
 Object.setPrototypeOf(performance, Performance.prototype); Object.setPrototypeOf(crypto, Crypto.prototype);
 const globals = {
     CryptoKey, SubtleCrypto,
+    BeforeUnloadEvent, TextEvent, DeviceMotionEvent, DeviceMotionEventAcceleration, DeviceMotionEventRotationRate, DeviceOrientationEvent,
     ProcessingInstruction, TouchEvent, CompositionEvent, ClipboardEvent, ClipboardItem, DragEvent, StorageEvent, PromiseRejectionEvent, SubmitEvent,
     StyleSheet, IdleDeadline, TimeRanges, MediaError, MediaSource, SourceBuffer, SourceBufferList, ImageData, Path2D, CanvasGradient, CanvasPattern, CanvasRenderingContext2D, History, Navigator, Screen, Performance, Crypto, SubtleCrypto,
     DOMException, DOMRectReadOnly, DOMRect, Event, CustomEvent, UIEvent, FocusEvent, MouseEvent, PointerEvent, WheelEvent, KeyboardEvent, InputEvent, ErrorEvent, ProgressEvent, MessageEvent, PopStateEvent, HashChangeEvent, PageTransitionEvent, AnimationEvent, TransitionEvent, MediaQueryListEvent,

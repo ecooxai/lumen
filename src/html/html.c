@@ -70,12 +70,29 @@ static const char *const head_tags[] = { "base","basefont","bgsound","link","met
 
 static void flush_chars(HtmlParser *p);
 
+/* HTML's foreign attribute adjustment is a parser operation. A colon in an
+ * author-created attribute name alone never assigns it a namespace. */
+static const char *foreign_attribute_namespace(const char *name) {
+    static const char *const xlink[] = { "xlink:actuate", "xlink:arcrole", "xlink:href", "xlink:role", "xlink:show", "xlink:title", "xlink:type", NULL };
+    if (in_list(name, xlink)) return "http://www.w3.org/1999/xlink";
+    if (!strcmp(name, "xml:base") || !strcmp(name, "xml:lang") || !strcmp(name, "xml:space")) return "http://www.w3.org/XML/1998/namespace";
+    if (!strcmp(name, "xmlns") || !strcmp(name, "xmlns:xlink")) return "http://www.w3.org/2000/xmlns/";
+    return NULL;
+}
+
 static Node *insert_el(HtmlParser *p, const char *tag, int ns) {
     Node *e = node_new_element(p->doc, tag, ns);
-    for (int i = 0; i < p->attrs.n; i++) if (!node_has_attr(e, p->attrs.v[i].name)) node_set_attr(e, p->attrs.v[i].name, p->attrs.v[i].value);
+    for (int i = 0; i < p->attrs.n; i++) if (!node_has_attr(e, p->attrs.v[i].name)) {
+        const char *name = p->attrs.v[i].name;
+        node_set_attr(e, name, p->attrs.v[i].value);
+        if (ns == NS_SVG || ns == NS_MATHML) {
+            const char *namespace_uri = foreign_attribute_namespace(name);
+            if (namespace_uri) node_set_attr_namespace(e, name, namespace_uri);
+        }
+    }
     e->flags |= NF_PARSER_INSERTED;
-    if (tag == A_template && ns == NS_HTML) { e->template_content = node_new_fragment(p->doc); e->template_content->refcount = 1; e->template_content->flags |= NF_INERT; }
     node_append(insertion_parent(p), e);
+    if (tag == A_template && ns == NS_HTML) node_template_content(e);
     vec_push(p->open, e);
     return e;
 }

@@ -376,16 +376,55 @@ const def = (o, k, v) => Object.defineProperty(o, k, { value: v, writable: true,
 const nativeIDL = { get: W.idlGet, put: W.idlPut, register: W.idlRegister, fallback: W.idlFallback };
 const DOMException = createDOMExceptionInterface(nativeIDL);
 W.initCloneIntrinsic((message, name) => new DOMException(message, name));
+const eventStates = new WeakMap();
+const eventState = event => {
+    const state = eventStates.get(event);
+    if (state === undefined) throw new TypeError('The object does not implement Event');
+    return state;
+};
+function initializeEvent(event, type, bubbles, cancelable) {
+    const state = eventState(event);
+    if (state.dispatching) return false;
+    state.initialized = true;
+    event._stop = event._imm = event.defaultPrevented = false;
+    event.isTrusted = false; event.target = null;
+    event.type = type; event.bubbles = bubbles; event.cancelable = cancelable;
+    return true;
+}
 class Event {
-    constructor(type, init) { init = init || {}; this.type = String(type); this.bubbles = !!init.bubbles; this.cancelable = !!init.cancelable; this.composed = !!init.composed; this.defaultPrevented = false; this.target = null; this.currentTarget = null; this.eventPhase = 0; this.isTrusted = false; this.timeStamp = W.now(); def(this, '_stop', false); }
-    preventDefault() { if (this.cancelable) this.defaultPrevented = true; }
-    stopPropagation() {} stopImmediatePropagation() { this._stop = true; }
-    get srcElement() { return this.target; } get returnValue() { return !this.defaultPrevented; } get cancelBubble() { return false; }
+    constructor(type, init) {
+        if (!arguments.length) throw new TypeError('Event requires a type');
+        init = init || {}; eventStates.set(this, { initialized: true, dispatching: false });
+        this.type = String(type); this.bubbles = !!init.bubbles; this.cancelable = !!init.cancelable; this.composed = !!init.composed;
+        this.defaultPrevented = false; this.target = null; this.currentTarget = null; this.eventPhase = 0; this.isTrusted = false; this.timeStamp = W.now();
+        def(this, '_stop', false); def(this, '_imm', false); def(this, '_passive', false);
+    }
+    preventDefault() { if (this.cancelable && !this._passive) this.defaultPrevented = true; }
+    stopPropagation() { this._stop = true; } stopImmediatePropagation() { this._stop = this._imm = true; }
+    get srcElement() { return this.target; }
+    get returnValue() { return !this.defaultPrevented; } set returnValue(value) { if (!value) this.preventDefault(); }
+    get cancelBubble() { return this._stop; } set cancelBubble(value) { if (value) this._stop = true; }
     composedPath() { return this.currentTarget ? [this.currentTarget] : []; }
+    initEvent(type, bubbles = false, cancelable = false) {
+        eventState(this);
+        if (!arguments.length) throw new TypeError('initEvent requires a type');
+        initializeEvent(this, String(type), !!bubbles, !!cancelable);
+    }
+}
+for (const [name, value] of Object.entries({ NONE: 0, CAPTURING_PHASE: 1, AT_TARGET: 2, BUBBLING_PHASE: 3 })) {
+    Object.defineProperty(Event, name, { value, enumerable: true });
+    Object.defineProperty(Event.prototype, name, { value, enumerable: true });
 }
 class MessageEvent extends Event { constructor(t, i) { super(t, i); i = i || {}; this.data = i.data === undefined ? null : i.data; this.origin = i.origin || ''; this.lastEventId = i.lastEventId || ''; this.source = i.source || null; this.ports = i.ports || []; } }
 class ErrorEvent extends Event { constructor(t, i) { super(t, i); i = i || {}; this.message = i.message || ''; this.filename = i.filename || ''; this.lineno = i.lineno || 0; this.colno = i.colno || 0; this.error = i.error; } }
-class CustomEvent extends Event { constructor(t, i) { super(t, i); this.detail = i && i.detail !== undefined ? i.detail : null; } }
+class CustomEvent extends Event {
+    constructor(t, i) { if (!arguments.length) throw new TypeError('CustomEvent requires a type'); super(t, i); this.detail = i && i.detail !== undefined ? i.detail : null; }
+    initCustomEvent(t, b = false, c = false, d = null) {
+        eventState(this);
+        if (!arguments.length) throw new TypeError('initCustomEvent requires a type');
+        if (initializeEvent(this, String(t), !!b, !!c)) this.detail = d;
+    }
+}
 class PromiseRejectionEvent extends Event { constructor(t, i) { super(t, i); this.promise = i && i.promise; this.reason = i && i.reason; } }
 // Web IDL operations substitute this realm's global for a null/undefined
 // receiver, then require an object that implements the interface. The map
@@ -398,35 +437,67 @@ const eventTargetReceiver = receiver => {
 };
 const listeners = t => lsn.get(t);
 function fireOn(t, e, skipHandler, checkpoint) {
-    e.target = t; e.currentTarget = t; e.eventPhase = 2;
-    if (!skipHandler) {
-        const h = t['on' + e.type];
-        if (typeof h === 'function') {
-            try {
-                let result;
-                try { result = h.call(t, e); }
-                finally { if (checkpoint) checkpoint(); }
-                if (result === false && e.type !== 'error') e.preventDefault();
-            } catch (error) { W.reportErr(error); if (checkpoint) checkpoint(); }
+    const state = eventState(e);
+    if (state.dispatching || !state.initialized) throw new DOMException('The event is uninitialized or already dispatching.', 'InvalidStateError');
+    state.dispatching = true;
+    try {
+        e.target = t; e.currentTarget = t; e.eventPhase = 2;
+        const invoke = capture => {
+            for (const l of (listeners(t).get(e.type) || []).slice()) {
+                if (l.removed || l.capture !== capture) continue;
+                if (l.once) t.removeEventListener(e.type, l.fn, l.capture);
+                e._passive = l.passive;
+                try {
+                    try { if (typeof l.fn === 'function') l.fn.call(t, e); else if (l.fn && typeof l.fn.handleEvent === 'function') l.fn.handleEvent(e); }
+                    finally { if (checkpoint) checkpoint(); }
+                } catch (error) { W.reportErr(error); if (checkpoint) checkpoint(); }
+                e._passive = false;
+                if (e._imm) break;
+            }
+        };
+        if (!e._stop) invoke(true);
+        if (!e._stop) {
+          if (!skipHandler) {
+            const h = t['on' + e.type];
+            if (typeof h === 'function') {
+                try {
+                    let result;
+                    try { result = h.call(t, e); }
+                    finally { if (checkpoint) checkpoint(); }
+                    if (result === false && e.type !== 'error') e.preventDefault();
+                } catch (error) { W.reportErr(error); if (checkpoint) checkpoint(); }
+            }
         }
+          if (!e._imm) invoke(false);
+        }
+        return !e.defaultPrevented;
+    } finally {
+        state.dispatching = false;
+        e.currentTarget = null; e.eventPhase = 0; e._stop = e._imm = e._passive = false;
     }
-    for (const l of (listeners(t).get(e.type) || []).slice()) {
-        if (l.removed) continue;
-        if (l.once) t.removeEventListener(e.type, l.fn);
-        try {
-            try { if (typeof l.fn === 'function') l.fn.call(t, e); else if (l.fn && typeof l.fn.handleEvent === 'function') l.fn.handleEvent(e); }
-            finally { if (checkpoint) checkpoint(); }
-        } catch (error) { W.reportErr(error); if (checkpoint) checkpoint(); }
-        if (e._stop) break;
-    }
-    e.currentTarget = null; e.eventPhase = 0;
-    return !e.defaultPrevented;
 }
 class EventTarget {
     constructor() { lsn.set(this, new Map()); }
-    addEventListener(t, fn, o) { const target = eventTargetReceiver(this); if (!fn) return; t = String(t); const L = listeners(target).get(t) || []; if (L.some(x => x.fn === fn)) return; L.push({ fn, once: !!(o && typeof o === 'object' && o.once) }); listeners(target).set(t, L); }
-    removeEventListener(t, fn) { const target = eventTargetReceiver(this); const L = listeners(target).get(String(t)); if (!L) return; const i = L.findIndex(x => x.fn === fn); if (i >= 0) { L[i].removed = true; L.splice(i, 1); } }
-    dispatchEvent(e) { const target = eventTargetReceiver(this); if (!(e instanceof Event)) throw new TypeError("parameter 1 is not of type 'Event'."); return fireOn(target, e, nativeIDL.get(4, target) !== undefined); }
+    addEventListener(t, fn, o) {
+        const target = eventTargetReceiver(this); if (!fn) return; t = String(t);
+        const options = o && typeof o === 'object' ? o : {}, capture = typeof o === 'boolean' ? o : !!options.capture;
+        if (options.signal && options.signal.aborted) return;
+        const L = listeners(target).get(t) || [];
+        if (L.some(x => x.fn === fn && x.capture === capture)) return;
+        L.push({ fn, capture, once: !!options.once, passive: !!options.passive, removed: false }); listeners(target).set(t, L);
+        if (options.signal) options.signal.addEventListener('abort', () => target.removeEventListener(t, fn, capture));
+    }
+    removeEventListener(t, fn, o) {
+        const target = eventTargetReceiver(this), capture = typeof o === 'boolean' ? o : !!(o && o.capture);
+        const L = listeners(target).get(String(t)); if (!L) return;
+        const i = L.findIndex(x => x.fn === fn && x.capture === capture);
+        if (i >= 0) { L[i].removed = true; L.splice(i, 1); }
+    }
+    dispatchEvent(e) {
+        const target = eventTargetReceiver(this); eventState(e);
+        if (eventState(e).dispatching) throw new DOMException('The event is already dispatching.', 'InvalidStateError');
+        e.isTrusted = false; return fireOn(target, e, nativeIDL.get(4, target) !== undefined);
+    }
 }
 class WorkerGlobalScope extends EventTarget {}
 class DedicatedWorkerGlobalScope extends WorkerGlobalScope {}
@@ -862,7 +933,7 @@ const api = {
     importScripts(...urls) { for (const u of urls) W.importScript(String(u)); },
     setTimeout: (f, ms, ...args) => W.timer(toFn(f), +ms || 0, false, args), setInterval: (f, ms, ...args) => W.timer(toFn(f), +ms || 0, true, args),
     clearTimeout: id => W.clear(+id || 0), clearInterval: id => W.clear(+id || 0),
-    queueMicrotask: f => { Promise.resolve().then(() => f()); }, structuredClone: v => W.clone(v),
+    queueMicrotask: f => { if (typeof f !== 'function') throw new TypeError('queueMicrotask callback must be callable'); Promise.resolve().then(() => { try { f(); } catch (error) { W.reportErr(error); } }); }, structuredClone: v => W.clone(v),
     btoa, atob, TextEncoder, TextDecoder, Blob, File, FileReader, FileReaderSync, URL, URLSearchParams, FormData, Headers, Request, Response, fetch, performance, console,
     Event, ProgressEvent, MessageEvent, MessagePort, MessageChannel, BroadcastChannel, ErrorEvent, CustomEvent, PromiseRejectionEvent, EventTarget, DOMException, WorkerGlobalScope, DedicatedWorkerGlobalScope, WorkerLocation, WorkerNavigator,
 };

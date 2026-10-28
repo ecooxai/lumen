@@ -44,6 +44,36 @@ Document *doc_new(const char *url) {
     return d;
 }
 
+Document *doc_template_contents_owner(Document *d) {
+    if (d->is_template_contents_owner) return d;
+    if (!d->template_contents_owner) {
+        Document *owner = doc_new("about:blank");
+        owner->node.ns = d->node.ns;
+        owner->is_template_contents_owner = true;
+        d->template_contents_owner = owner;
+    }
+    return d->template_contents_owner;
+}
+
+Node *node_template_content(Node *n) {
+    if (!n->template_content) {
+        n->template_content = node_new_fragment(doc_template_contents_owner(n->doc));
+        n->template_content->refcount = 1;
+        n->template_content->flags |= NF_INERT;
+    }
+    return n->template_content;
+}
+
+void node_adopt_tree(Node *n, Document *d) {
+    if (n->doc == d) return;
+    for (Node *x = n; x; x = node_next_in_tree(x, n)) {
+        x->doc = d;
+        if (x->shadow_root) node_adopt_tree(x->shadow_root, d);
+        if (x->template_content)
+            node_adopt_tree(x->template_content, doc_template_contents_owner(d));
+    }
+}
+
 long g_nodes_live;
 static Node *alloc_node(Document *d, int type) { Node *n = xcalloc(1, sizeof *n); n->ncls = -1; g_nodes_live++; n->type = (uint8_t)type; n->doc = d; n->flags = NF_STYLE_DIRTY | NF_LAYOUT_DIRTY; return n; }
 Node *node_new_element(Document *d, const char *tag, int ns) { Node *n = alloc_node(d, NODE_ELEMENT); n->tag = atom(tag); n->ns = (uint8_t)ns; return n; }
@@ -92,6 +122,7 @@ void node_insert_before(Node *parent, Node *child, Node *ref) {
         return;
     }
     if (child->parent) node_remove(child);
+    if (child->doc != parent->doc) node_adopt_tree(child, parent->doc);
     child->parent = parent;
     if (ref && ref->parent == parent) {
         child->next = ref; child->prev = ref->prev;
@@ -158,6 +189,7 @@ void doc_free(Document *d) {
     hm_free(&d->id_cache, NULL);
     Node *c = d->node.first;
     while (c) { Node *nx = c->next; c->parent = NULL; c->refcount = 0; c->js = NULL; node_free_tree(c); c = nx; }
+    if (d->template_contents_owner) doc_free(d->template_contents_owner);
     free(d->url); free(d->base_url); free(d->title); free(d->csp); free(d->permissions_policy); free(d->referrer); free(d);
 }
 
@@ -256,6 +288,15 @@ const char *node_attr(const Node *n, const char *name) {
     return value && !memchr(value, 0, length) ? value : NULL;
 }
 bool node_has_attr(const Node *n, const char *name) { return node_attr_n(n, name, NULL) != NULL; }
+const char *node_attr_namespace(const Node *n, const char *name) {
+    if (!n || n->type != NODE_ELEMENT) return NULL;
+    int i = attr_index(n, name);
+    return i < 0 ? NULL : n->attrs[i].namespace_uri;
+}
+void node_set_attr_namespace(Node *n, const char *name, const char *namespace_uri) {
+    int i = attr_index(n, name);
+    if (i >= 0) n->attrs[i].namespace_uri = namespace_uri ? atom(namespace_uri) : NULL;
+}
 void node_set_attr(Node *n, const char *name, const char *value) { node_set_attr_n(n, name, value, strlen(value)); }
 void node_set_attr_n(Node *n, const char *name, const char *value, size_t length) {
     bool control_type = node_is(n, A_input) && str_ieq(name, "type");
@@ -267,7 +308,8 @@ void node_set_attr_n(Node *n, const char *name, const char *value, size_t length
     }
     else {
         if (n->nattrs >= n->attrcap) { n->attrcap = n->attrcap ? n->attrcap * 2 : 4; n->attrs = xrealloc(n->attrs, sizeof(Attr) * (size_t)n->attrcap); }
-        n->attrs[n->nattrs].name = atom(name); n->attrs[n->nattrs].value = xstrndup(value, length); i = n->nattrs++;
+        n->attrs[n->nattrs].name = atom(name); n->attrs[n->nattrs].value = xstrndup(value, length);
+        n->attrs[n->nattrs].namespace_uri = NULL; i = n->nattrs++;
     }
     n->attrs[i].value_len = length;
     if (n->attrs[i].name == A_id) n->id = node_attr(n, A_id);
@@ -365,7 +407,13 @@ Node *node_clone(Node *n, bool deep, Document *d) {
         c = &d->node;
         break;
     }
-    case NODE_ELEMENT: c = node_new_element(d, n->tag, n->ns); for (int i = 0; i < n->nattrs; i++) node_set_attr_n(c, n->attrs[i].name, n->attrs[i].value, n->attrs[i].value_len); break;
+    case NODE_ELEMENT:
+        c = node_new_element(d, n->tag, n->ns);
+        for (int i = 0; i < n->nattrs; i++) {
+            node_set_attr_n(c, n->attrs[i].name, n->attrs[i].value, n->attrs[i].value_len);
+            if (n->attrs[i].namespace_uri) node_set_attr_namespace(c, n->attrs[i].name, n->attrs[i].namespace_uri);
+        }
+        break;
     case NODE_TEXT: c = node_new_text(d, n->text, n->text_len); break;
     case NODE_COMMENT: c = node_new_comment(d, n->text, n->text_len); break;
     case NODE_DOCTYPE: c = node_new_doctype(d, n->text); for (int i = 0; i < n->nattrs; i++) node_set_attr_n(c, n->attrs[i].name, n->attrs[i].value, n->attrs[i].value_len); break;
@@ -373,7 +421,7 @@ Node *node_clone(Node *n, bool deep, Document *d) {
     case NODE_CDATA: c = node_new_cdata(d, n->text, n->text_len); break;
     default: c = node_new_fragment(d); break;
     }
-    if (n->template_content) { c->template_content = node_clone(n->template_content, deep, d); c->template_content->refcount = 1; c->template_content->flags |= NF_INERT; }
+    if (n->template_content) { c->template_content = node_clone(n->template_content, deep, doc_template_contents_owner(d)); c->template_content->refcount = 1; c->template_content->flags |= NF_INERT; }
     if (deep) for (Node *k = n->first; k; k = k->next) node_append(c, node_clone(k, true, d));
     control_clone_state(c, n);
     return c;

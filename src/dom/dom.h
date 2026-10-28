@@ -23,7 +23,7 @@ enum {
     NF_CSP_SATTR_CHECKED = 1 << 19, NF_CSP_SATTR_BLOCKED = 1 << 20,   /* style= attribute CSP decision for inline_style_src */
 };
 
-typedef struct { const char *name; char *value; size_t value_len; } Attr; /* name is an atom; value may contain NUL */
+typedef struct { const char *name; char *value; size_t value_len; const char *namespace_uri; } Attr; /* names/namespaces are atoms; value may contain NUL */
 
 struct Document;
 struct ComputedStyle;
@@ -65,6 +65,8 @@ typedef struct Document {
     Node *target_element;         /* retained initial fragment target; independent of later ID/URL mutations */
     WebEncoding encoding;        /* immutable response encoding; zero keeps Unicode/default documents UTF-8 */
     bool quirks;
+    struct Document *template_contents_owner; /* owned, lazily created inert document */
+    bool is_template_contents_owner;
     char *csp;                    /* enforced Content-Security-Policy, one policy per line (NULL = none) */
     char *permissions_policy;     /* Permissions-Policy response header (NULL = default) */
     char *referrer;               /* document.referrer: the Referer sent for this navigation (NULL = none) */
@@ -85,6 +87,9 @@ typedef struct Document {
 
 Document *doc_new(const char *url);
 void doc_free(Document *d);
+Document *doc_template_contents_owner(Document *d);
+Node *node_template_content(Node *n);
+void node_adopt_tree(Node *n, Document *d);
 void doc_update_fragment_target(Document *d); /* initial navigation, before interactive readiness */
 Node *node_new_element(Document *d, const char *tag, int ns);
 Node *node_new_text(Document *d, const char *s, size_t n);
@@ -104,6 +109,8 @@ Node *node_clone(Node *n, bool deep, Document *into);
 const char *node_attr_n(const Node *n, const char *name, size_t *length); /* raw DOM bytes */
 const char *node_attr(const Node *n, const char *name); /* NULL if absent or not a C string; use node_has_attr for presence */
 bool node_has_attr(const Node *n, const char *name);
+const char *node_attr_namespace(const Node *n, const char *name);
+void node_set_attr_namespace(Node *n, const char *name, const char *namespace_uri);
 void node_set_attr_n(Node *n, const char *name, const char *value, size_t length);
 void node_set_attr(Node *n, const char *name, const char *value);
 void node_remove_attr(Node *n, const char *name);

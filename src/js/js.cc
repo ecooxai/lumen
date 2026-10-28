@@ -620,8 +620,14 @@ void js_mem_stats(size_t *heap, size_t *external) {
     *heap = h; *external = e;
 }
 JsCtx *owner_ctx(Document *d) {
-    for (JsCtx *c : g_ctxs) if (c->doc == d) return c;
-    for (JsCtx *c : g_ctxs) if (std::find(c->docs.begin(), c->docs.end(), d) != c->docs.end()) return c;
+    /* Inert template documents belong to their source document's realm even
+     * when their first wrapper is requested through a different window. Their
+     * native lifetime remains owned solely by that source Document. */
+    for (JsCtx *c : g_ctxs)
+        if (c->doc == d || (c->doc && c->doc->template_contents_owner == d)) return c;
+    for (JsCtx *c : g_ctxs)
+        for (Document *owned : c->docs)
+            if (owned == d || owned->template_contents_owner == d) return c;
     return nullptr;
 }
 JsCtx *js_new(Document *d, const JsHost *host) { return js_new_ex(d, host, nullptr, nullptr); }

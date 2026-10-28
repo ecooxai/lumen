@@ -91,8 +91,8 @@ const liveHandler = {
     set(t, k, v, r) { return liveIdx(k) >= 0 || k === 'length' ? true : Reflect.set(t, k, v, r); },
 };
 /* Live NodeList: recomputed lazily whenever the owner document has mutated. */
-function liveList(owner, compute) {
-    const t = Object.create(NodeList.prototype);
+function liveList(owner, compute, prototype = NodeList.prototype) {
+    const t = Object.create(prototype);
     let ver = -1, arr = [];
     Object.defineProperty(t, '_cur', { value() { const v = N.version(owner); if (v !== ver) { ver = v; arr = compute(); } return arr; } });
     return new Proxy(t, liveHandler);
@@ -242,7 +242,7 @@ const ParentNode = {
     replaceChildren(...ns) { for (const c of kids(this)) removeNode(c); this.append(...ns); if (this.__ass) readopt(this); },
     querySelector(s) { return N.query(this, String(s), false); },
     querySelectorAll(s) { return nodeList(N.query(this, String(s), true)); },
-    getElementsByTagName(t) { t = String(t); const sel = t === '*' ? '*' : t.replace(/[^\w-]/g, ''); return liveList(this, () => sel ? N.query(this, sel, true) : []); },
+    getElementsByTagName(t) { t = String(t); return liveList(this, () => N.elementsByTagName(this, t), HTMLCollection.prototype); },
     getElementsByClassName(c) { const p = String(c).trim().split(/\s+/).filter(Boolean); const sel = p.map(x => '.' + CSS.escape(x)).join(''); return liveList(this, () => sel ? N.query(this, sel, true) : []); },
 };
 const ChildNode = {
@@ -336,7 +336,10 @@ function attachedAttribute(element, name) {
     const value = N.attr(element, name);
     if (value === null) return null;
     const cached = elementAttributes.get(element)?.get(name);
-    return cached || makeAttribute(element, name, N.ownerDoc(element), null, null, name, value);
+    if (cached) return cached;
+    const namespace = N.attrNamespace(element, name), colon = namespace === null ? -1 : name.indexOf(':');
+    return makeAttribute(element, name, N.ownerDoc(element), namespace,
+        colon < 0 ? null : name.slice(0, colon), colon < 0 ? name : name.slice(colon + 1), value);
 }
 function detachAttribute(element, name) {
     const cache = elementAttributes.get(element), attribute = cache?.get(name);

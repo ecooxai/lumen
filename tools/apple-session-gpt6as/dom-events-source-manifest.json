@@ -1,0 +1,52 @@
+[
+  {
+    "path": "src/dom/dom.c",
+    "before": "87120dba2fb8ba4b09c4ae0c24a15871ad8e3adfe2000c057c6ce2516d554d46",
+    "after": "cb8f23b39814ac5ed527b4f2090cf14dd4d4793660564ed1dc9ee071a1c2d740"
+  },
+  {
+    "path": "src/dom/dom.h",
+    "before": "f20dcdab510891ca2dbb056ebd606817e686fc9f121c9227537c716b5c8fa6c0",
+    "after": "6e5d23c6996c84f160a3309090042582536d254a022e91211e4b9fb06b22ae1f"
+  },
+  {
+    "path": "src/html/html.c",
+    "before": "a3f50f67074d6e2fd0b0306f7557963470ed2edb752cfb44081447a183c18cb9",
+    "after": "f1180f15467d66e2518ae1be82e65a9599f0b04a3450697a65d1de46af6daead"
+  },
+  {
+    "path": "src/js/js.cc",
+    "before": "7736c66eb4f5e700dac05b82771bb4f46085b99be591408a14775609de38a597",
+    "after": "6d3b89ce2960532dff22c5a888385a69152de26cff1cd8e1f2cd09099ce18d26"
+  },
+  {
+    "path": "src/js/jsnative.cc",
+    "before": "296709b11a810b3dce458ccda72ec4c71aa73701fe47762aabdc79ee665942dc",
+    "after": "7fc541e21e554b4b351a21c4a8126c6885d83554b41d7f7bb3b9c060fd57a069"
+  },
+  {
+    "path": "src/js/prelude/02-node.js",
+    "before": "6642c125f90e53f98db5a1323809b3e3bdd6534ff2f3aeaf10d891aa5e2fb203",
+    "after": "68dbfc71982d48c5638a36a917ee9d490530b1f97462aee5c22e3b592f2bd50f"
+  },
+  {
+    "path": "src/js/prelude/06-document.js",
+    "before": "d132997c43f2d75a5b72df68c8dbbdc09811d6134452914db89b70086c6c3713",
+    "after": "3f2e30effe49d43e68ca0948df538004d6226146f42d1a7b75f732aaf2ba93a9"
+  },
+  {
+    "path": "src/js/prelude/01-events.js",
+    "before": "bc65fcadc60bc8de66d99accd0ebdea841cc4ffbceea4e548581ce2994f76e0e",
+    "after": "a2a2fecb69eb278b8e1b9df8376e88c78ff9d479bbce61dd7c85daf1cb6cac9e"
+  },
+  {
+    "path": "src/js/worker.cc",
+    "before": "d5346471f60946471f9d2b88bda31707af0be115df6e668cdda646c12c740100",
+    "after": "4a558749fcb3126e1a7f51e226c8a0e6bbe8a85ff9bbfe3e1d38004b95c5a359"
+  },
+  {
+    "path": "src/js/prelude/08-window.js",
+    "before": "23ac8785201c1b343a0acc07bf4f5f2a4486011b2f736504b11750fa422aa807",
+    "after": "8d01dc87f8640939e227ef71178673f172c20b0cc49750fce98d09f5d5fb9fe9"
+  }
+]

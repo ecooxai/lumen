@@ -27,11 +27,28 @@ class DOMRectReadOnly {
 }
 class DOMRect extends DOMRectReadOnly {}
 
+// Native private state is shared across same-origin realms and cannot be
+// forged by inheriting Event.prototype or assigning a page-visible expando.
+const eventState = event => {
+    const state = N.domStateGet(event, 5);
+    if (state === undefined) throw new TypeError("The object does not implement Event");
+    return state;
+};
+function initializeEvent(event, type, bubbles, cancelable) {
+    const state = eventState(event);
+    if (state.dispatching) return false;
+    state.initialized = true;
+    event._stop = event._imm = event.defaultPrevented = false;
+    event.isTrusted = false; event.target = null;
+    event._type = type; event.bubbles = bubbles; event.cancelable = cancelable;
+    return true;
+}
 class Event {
     get currentTarget() { return this._ct === undefined ? null : this._ct; }
     constructor(type, init) {
         if (arguments.length < 1) throw new TypeError("Failed to construct 'Event': 1 argument required");
         init = init || {};
+        N.domStateSet(this, 5, { initialized: true, dispatching: false });
         def(this, '_type', String(type)); this.bubbles = !!init.bubbles; this.cancelable = !!init.cancelable; this.composed = !!init.composed;
         this.defaultPrevented = false; this.target = null; this._ct = null; this.eventPhase = 0; this.timeStamp = N.now(); this.isTrusted = false;
         def(this, '_stop', false); def(this, '_imm', false); def(this, '_passive', false); def(this, '_path', null);
@@ -44,10 +61,27 @@ class Event {
     stopPropagation() { this._stop = true; }
     stopImmediatePropagation() { this._stop = this._imm = true; }
     composedPath() { return this._path ? this._path.slice() : []; }
-    initEvent(type, bubbles, cancelable) { this._type = String(type); this.bubbles = !!bubbles; this.cancelable = !!cancelable; }
+    initEvent(type, bubbles = false, cancelable = false) {
+        eventState(this);
+        if (!arguments.length) throw new TypeError("initEvent requires a type");
+        initializeEvent(this, String(type), !!bubbles, !!cancelable);
+    }
 }
-Object.assign(Event, { NONE: 0, CAPTURING_PHASE: 1, AT_TARGET: 2, BUBBLING_PHASE: 3 });
-class CustomEvent extends Event { constructor(t, i) { super(t, i); this.detail = i && i.detail !== undefined ? i.detail : null; } initCustomEvent(t, b, c, d) { this.initEvent(t, b, c); this.detail = d; } }
+for (const [name, value] of Object.entries({ NONE: 0, CAPTURING_PHASE: 1, AT_TARGET: 2, BUBBLING_PHASE: 3 })) {
+    Object.defineProperty(Event, name, { value, enumerable: true });
+    Object.defineProperty(Event.prototype, name, { value, enumerable: true });
+}
+class CustomEvent extends Event {
+    constructor(t, i) {
+        if (!arguments.length) throw new TypeError("CustomEvent requires a type");
+        super(t, i); this.detail = i && i.detail !== undefined ? i.detail : null;
+    }
+    initCustomEvent(t, b = false, c = false, d = null) {
+        eventState(this);
+        if (!arguments.length) throw new TypeError("initCustomEvent requires a type");
+        if (initializeEvent(this, String(t), !!b, !!c)) this.detail = d;
+    }
+}
 class UIEvent extends Event { constructor(t, i) { super(t, i); i = i || {}; this.view = i.view || null; this.detail = i.detail || 0; } }
 class FocusEvent extends UIEvent { constructor(t, i) { super(t, i); this.relatedTarget = (i && i.relatedTarget) || null; } }
 class MouseEvent extends UIEvent {
@@ -85,6 +119,90 @@ class PageTransitionEvent extends Event { constructor(t, i) { super(t, i); this.
 class AnimationEvent extends Event { constructor(t, i) { super(t, i); i = i || {}; this.animationName = i.animationName || ''; this.elapsedTime = i.elapsedTime || 0; } }
 class TransitionEvent extends Event { constructor(t, i) { super(t, i); i = i || {}; this.propertyName = i.propertyName || ''; this.elapsedTime = i.elapsedTime || 0; } }
 
+
+// Legacy createEvent interfaces retain their actual data fields. Sensor event
+// constructors describe supplied data; they do not grant sensor permissions.
+const legacyEventToken = {};
+class BeforeUnloadEvent extends Event {
+    constructor(token) {
+        if (token !== legacyEventToken) throw new TypeError('Illegal constructor');
+        super(''); this._returnValue = '';
+    }
+    get returnValue() { return this._returnValue; }
+    set returnValue(value) { this._returnValue = String(value); }
+}
+class TextEvent extends UIEvent {
+    constructor(token) {
+        if (token !== legacyEventToken) throw new TypeError('Illegal constructor');
+        super(''); this._data = '';
+    }
+    get data() { return this._data; }
+    initTextEvent(type, bubbles = false, cancelable = false, view = null, data = 'undefined') {
+        eventState(this);
+        if (!arguments.length) throw new TypeError('initTextEvent requires a type');
+        type = String(type); data = String(data);
+        if (initializeEvent(this, type, !!bubbles, !!cancelable)) { this.view = view; this._data = data; }
+    }
+}
+function eventDouble(value) {
+    const number = +value;
+    if (!Number.isFinite(number)) throw new TypeError('Event number must be finite');
+    return number;
+}
+const nullableEventDouble = value => value == null ? null : eventDouble(value);
+class DeviceOrientationEvent extends Event {
+    constructor(type, init = {}) {
+        if (!arguments.length) throw new TypeError('DeviceOrientationEvent requires a type');
+        super(type, init); init = init || {};
+        this._alpha = nullableEventDouble(init.alpha); this._beta = nullableEventDouble(init.beta);
+        this._gamma = nullableEventDouble(init.gamma); this._absolute = !!init.absolute;
+    }
+    get alpha() { return this._alpha; } get beta() { return this._beta; }
+    get gamma() { return this._gamma; } get absolute() { return this._absolute; }
+}
+class DeviceMotionEventAcceleration {
+    constructor(token, value) {
+        if (token !== legacyEventToken) throw new TypeError('Illegal constructor');
+        this._x = nullableEventDouble(value.x); this._y = nullableEventDouble(value.y); this._z = nullableEventDouble(value.z);
+    }
+    get x() { return this._x; } get y() { return this._y; } get z() { return this._z; }
+}
+class DeviceMotionEventRotationRate {
+    constructor(token, value) {
+        if (token !== legacyEventToken) throw new TypeError('Illegal constructor');
+        this._alpha = nullableEventDouble(value.alpha); this._beta = nullableEventDouble(value.beta); this._gamma = nullableEventDouble(value.gamma);
+    }
+    get alpha() { return this._alpha; } get beta() { return this._beta; } get gamma() { return this._gamma; }
+}
+class DeviceMotionEvent extends Event {
+    constructor(type, init = {}) {
+        if (!arguments.length) throw new TypeError('DeviceMotionEvent requires a type');
+        super(type, init); init = init || {};
+        this._acceleration = init.acceleration == null ? null : new DeviceMotionEventAcceleration(legacyEventToken, init.acceleration);
+        this._accelerationIncludingGravity = init.accelerationIncludingGravity == null ? null : new DeviceMotionEventAcceleration(legacyEventToken, init.accelerationIncludingGravity);
+        this._rotationRate = init.rotationRate == null ? null : new DeviceMotionEventRotationRate(legacyEventToken, init.rotationRate);
+        this._interval = init.interval === undefined ? 0 : eventDouble(init.interval);
+    }
+    get acceleration() { return this._acceleration; }
+    get accelerationIncludingGravity() { return this._accelerationIncludingGravity; }
+    get rotationRate() { return this._rotationRate; } get interval() { return this._interval; }
+}
+function createLegacyEvent(type) {
+    const name = String(type).toLowerCase();
+    const constructors = {
+        beforeunloadevent: BeforeUnloadEvent, compositionevent: CompositionEvent, customevent: CustomEvent,
+        devicemotionevent: DeviceMotionEvent, deviceorientationevent: DeviceOrientationEvent, dragevent: DragEvent,
+        event: Event, events: Event, focusevent: FocusEvent, hashchangeevent: HashChangeEvent, htmlevents: Event,
+        keyboardevent: KeyboardEvent, messageevent: MessageEvent, mouseevent: MouseEvent, mouseevents: MouseEvent,
+        storageevent: StorageEvent, svgevents: Event, textevent: TextEvent, uievent: UIEvent, uievents: UIEvent,
+    };
+    const C = Object.prototype.hasOwnProperty.call(constructors, name) ? constructors[name] : null;
+    if (!C) throw new DOMException('The provided event type is invalid.', 'NotSupportedError');
+    const event = new C(C === BeforeUnloadEvent || C === TextEvent ? legacyEventToken : '');
+    eventState(event).initialized = false;
+    return event;
+}
+
 class EventTarget {
     addEventListener(type, fn, opts) {
         if (!fn) return;
@@ -106,7 +224,7 @@ class EventTarget {
         if (i >= 0) { a[i].removed = true; a.splice(i, 1); }
     }
     dispatchEvent(ev) {
-        if (!(ev instanceof Event)) throw new TypeError("Failed to execute 'dispatchEvent': parameter 1 is not of type 'Event'.");
+        eventState(ev);
         return dispatch(this, ev, false, undefined, nativeIDL.get(4, this) !== undefined);
     }
 }
@@ -160,17 +278,25 @@ function invoke(t, ev, phase, checkpoint, skipHandler) {
     ev._type = type;
 }
 function dispatch(target, ev, trusted, checkpoint, skipHandler) {
-    ev.target = target; if (trusted) ev.isTrusted = true;
-    ev._stop = ev._imm = false;
-    const path = [];
-    for (let t = parentForEvent(target, ev); t; t = parentForEvent(t, ev)) path.push(t);
-    ev._path = [target].concat(path);
-    ev.eventPhase = 1;
-    for (let i = path.length - 1; i >= 0 && !ev._stop; i--) invoke(path[i], ev, 1, checkpoint, false);
-    if (!ev._stop) { ev.eventPhase = 2; invoke(target, ev, 2, checkpoint, skipHandler); }
-    if (ev.bubbles) { ev.eventPhase = 3; for (const t of path) { if (ev._stop) break; invoke(t, ev, 3, checkpoint, false); } }
-    ev.eventPhase = 0; ev._ct = null;
-    return !ev.defaultPrevented;
+    const state = eventState(ev);
+    if (state.dispatching || !state.initialized) throw new DOMException('The event is uninitialized or already dispatching.', 'InvalidStateError');
+    state.dispatching = true;
+    try {
+        ev.target = target; if (trusted !== undefined) ev.isTrusted = !!trusted;
+        const path = [];
+        for (let t = parentForEvent(target, ev); t; t = parentForEvent(t, ev)) path.push(t);
+        ev._path = [target].concat(path);
+        ev.eventPhase = 1;
+        for (let i = path.length - 1; i >= 0 && !ev._stop; i--) invoke(path[i], ev, 1, checkpoint, false);
+        if (!ev._stop) { ev.eventPhase = 2; invoke(target, ev, 1, checkpoint, true); }
+        if (!ev._stop) { ev.eventPhase = 2; invoke(target, ev, 3, checkpoint, skipHandler); }
+        if (ev.bubbles) { ev.eventPhase = 3; for (const t of path) { if (ev._stop) break; invoke(t, ev, 3, checkpoint, false); } }
+        return !ev.defaultPrevented;
+    } finally {
+        state.dispatching = false;
+        ev.eventPhase = 0; ev._ct = null; ev._path = null;
+        ev._stop = ev._imm = ev._passive = false;
+    }
 }
 class AbortSignal extends EventTarget {
     constructor() { super(); this.aborted = false; this.reason = undefined; this.onabort = null; }
@@ -201,6 +327,7 @@ class MutationObserver {
 }
 function notify(type, target, extra) {
     if (!observers.length) return;
+    let added = false;
     for (const mo of observers) {
         for (const { t, o } of mo._targets) {
             if (!(t === target || (o.subtree && N.contains(t, target)))) continue;
@@ -209,11 +336,11 @@ function notify(type, target, extra) {
             if (type === 'characterData' && !o.characterData) continue;
             const rec = new MutationRecord(Object.assign({ type, target }, extra));
             if (!((type === 'attributes' && o.attributeOldValue) || (type === 'characterData' && o.characterDataOldValue))) rec.oldValue = null;
-            mo._records.push(rec);
+            mo._records.push(rec); added = true;
             break;
         }
     }
-    if (!moQueued) { moQueued = true; Promise.resolve().then(deliverMutations); }
+    if (added && !moQueued) { moQueued = true; Promise.resolve().then(deliverMutations); }
 }
 function deliverMutations() {
     moQueued = false;
