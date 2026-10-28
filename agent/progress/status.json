@@ -1,13 +1,13 @@
 {
   "title": "Lumen \u00b7 Linux engine conformance",
-  "phase": "Accepted engineering checkpoint128: completed comparisons and focused repairs are preserved. Full WPT/Chromium parity and98/100 target remain unmet. Git/Pages publication is blocked pending explicit destination approval; live preview and reviewed video remain available.",
+  "phase": "Engineering work is complete for this session at the five-hour handoff boundary. Accepted checkpoint128 is preserved; whole-goal19/100 and target98 remain unmet. Messages stay queued and require a future active agent session for replies. Source/Git/Pages publication remains blocked; the reviewed video is available.",
   "iteration": 14,
   "score": 19,
   "iteration_quality": 95,
   "score_note": "PROVISIONAL whole-goal readiness estimate, inherited from historical scope. This is not a measured pass percentage. Goal:98/100 after fresh complete comparable coverage.",
   "branch": "gpt-6-astra-engine-lead-linux-wpt-20261028",
   "checkpoint": "23e1d1eb185d85fc08ee3b930c5f6abde476cb44",
-  "updated_utc": "2026-10-28T08:44:53.020117+00:00",
+  "updated_utc": "2026-10-28T08:49:42.337045+00:00",
   "session_started_utc": "2026-10-28T03:50:07.309Z",
   "deadline_utc": "2026-10-28T08:50:07Z",
   "historical": {
@@ -81,9 +81,11 @@
   "active_iteration": null,
   "accepted_binary_sha256": "e41f9f04359464d4a229a74371cc6badd25aa01f3289d585286db67cec5e8801",
   "accepted_binary_scope": "Accepted focused engineering checkpoint128; whole-goal19/100, not fullWPT completion.",
-  "agent_session": "active",
+  "agent_session": "ended",
   "showcase_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/showcase.mp4",
   "candidate_binary_sha256": "e41f9f04359464d4a229a74371cc6badd25aa01f3289d585286db67cec5e8801",
   "candidate_runtime_commit": "23e1d1eb185d85fc08ee3b930c5f6abde476cb44",
-  "publication_status": "Git push and Pages activation blocked by automatic approval review: explicit destination authorization required for ecooxai/lumen. Local review payload prepared; no push/activation performed."
+  "publication_status": "Git push and Pages activation blocked by automatic approval review: explicit destination authorization required for ecooxai/lumen. Local review payload prepared; no push/activation performed.",
+  "session_ended_utc": "2026-10-28T08:49:42.337045+00:00",
+  "session_wall_minutes": 299.5838
 }
