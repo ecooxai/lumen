@@ -1104,6 +1104,14 @@ static int parse_grid_tracks(ACtx *c, const char *v, GridTrack **out) {
     }
     *out = tr.v; return tr.n;
 }
+/* Implicit tracks share the explicit track-size representation. */
+int css_parse_grid_tracks(const char *value, float em, float rem, const MediaCtx *media, GridTrack **out) {
+    ACtx context = { .em = em, .rem = rem, .mc = media };
+    *out = NULL;
+    int count = parse_grid_tracks(&context, value, out);
+    if (count < 0) { free(*out); *out = NULL; return 0; }
+    return count;
+}
 static void parse_grid_line(const char *v, int *start, int *span) {
     *start = 0; *span = 1;
     char *s = xstrdup(v); char *slash = strchr(s, '/');
@@ -3680,7 +3688,7 @@ static bool paint_only(const ComputedStyle *a, const ComputedStyle *b) {
     if (a->grid_ncols && memcmp(a->grid_cols, b->grid_cols, sizeof *a->grid_cols * (size_t)a->grid_ncols)) return false;
     if (a->grid_nrows && memcmp(a->grid_rows, b->grid_rows, sizeof *a->grid_rows * (size_t)a->grid_nrows)) return false;
     static const char *const abs_align_props[] = { "align-self", "align-items", "align-content",
-        "justify-self", "justify-items", "justify-content", "grid-auto-columns" };
+        "justify-self", "justify-items", "justify-content", "grid-auto-columns", "grid-auto-rows" };
     for (size_t i = 0; i < sizeof abs_align_props / sizeof *abs_align_props; i++)
         if (!str_same(custom_get(a->gen_n, abs_align_props[i]), custom_get(b->gen_n, abs_align_props[i]))) return false;
     if (!paint_only(a->before, b->before) || !paint_only(a->after, b->after) || !paint_only(a->marker, b->marker)) return false;

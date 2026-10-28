@@ -4,7 +4,9 @@
 #include <math.h>
 #include <stdio.h>
 
+static int geometry_checks;
 static void check(Document *d, const char *id, float x, float y, float w, float h) {
+    geometry_checks++;
     Node *n = doc_get_element_by_id(d, id);
     assert(n && n->box && n->box->parent);
     Box *b = n->box, *p = b->parent;
@@ -45,6 +47,19 @@ int main(void) {
         "<div class='one' style='align-items:end;align-items:safe right'><div id='invalid-items' class='item'></div></div>"
         "<div class='one'><div id='invalid-self' class='item' style='align-self:end;align-self:LEFT'></div></div>"
         "<div class='g' style='justify-content:right'><div id='valid-right' class='item'></div></div>"
+        "<div style='display:grid;position:relative;width:300px;height:200px;grid-auto-columns:20px;grid-auto-rows:40px;justify-content:space-between'>"
+        "<div id='implicit-left'></div><div id='implicit-right' style='grid-column:2;grid-row:2'></div></div>"
+        "<div style='display:grid;position:relative;width:300px;height:100px;grid-auto-rows:40px'><div id='implicit-stretch' style='grid-column:2'></div></div>"
+        "<div style='display:grid;position:relative;width:300px;height:200px;grid-template-columns:10px;grid-template-rows:20px;grid-auto-columns:50px;grid-auto-rows:30px'><div id='explicit-implicit' style='grid-column:2;grid-row:2'></div></div>"
+        "<div style='display:grid;position:relative;width:300px;height:200px;grid-template-columns:10px;grid-template-rows:10px;grid-auto-columns:20px 40px;grid-auto-rows:10px 30px'><div id='cyclic' style='grid-column:4;grid-row:4'></div></div>"
+        "<div style='display:grid;position:relative;width:1000px;height:1000px;grid-template-columns:10px;grid-template-rows:20px;grid-auto-columns:minmax(30%,100px);grid-auto-rows:minmax(10%,15px)'><div id='implicit-minmax' style='grid-column:2;grid-row:2'></div></div>"
+        "<div style='display:grid;position:relative;width:100px;height:200px;grid-auto-columns:20px;grid-auto-rows:40px'><div style='height:80px'></div><div id='row-overflow' style='grid-row:2'></div></div>"
+        "<div style='display:grid;position:relative;width:40px;height:20px'><div id='implicit-min'><span style='display:block;width:50px;height:10px'></span></div></div>"
+        "<div style='display:grid;position:relative;width:200px;height:20px;grid-auto-columns:max-content'><div id='intrinsic-max'><span style='display:block;width:50px;height:10px'></span></div></div>"
+        "<div style='display:grid;position:relative;width:300px;grid-template-columns:100px 20px;grid-template-rows:20px;grid-auto-columns:20px'><div id='negative-end' style='grid-column:1 / -1;grid-row:1'></div><div style='grid-column:4;grid-row:1'></div></div>"
+        "<div style='display:grid;position:relative;width:100px;height:90px;grid-template-rows:1fr 2fr'><div id='row-fr-one'></div><div id='row-fr-two'></div></div>"
+        "<div style='display:grid;position:relative;width:100px;height:90px;grid-template-rows:1fr 2fr'><div style='min-height:60px'></div><div id='row-fr-min'></div></div>"
+        "<div style='display:grid;position:relative;width:100px;height:80px;grid-template-rows:.25fr .25fr'><div></div><div id='row-fr-small'></div></div>"
         "</body></html>";
     html_parse(d, html, strlen(html));
     StyleEngine *e = style_engine_new(d);
@@ -75,6 +90,20 @@ int main(void) {
     check(d, "invalid-items", 0, 50, 20, 10);
     check(d, "invalid-self", 0, 50, 20, 10);
     check(d, "valid-right", 90, 0, 20, 10);
-    puts("grid alignment: 22 geometry cases passed");
+    check(d, "implicit-left", 0, 0, 20, 40);
+    check(d, "implicit-right", 280, 40, 20, 40);
+    check(d, "implicit-stretch", 150, 0, 150, 40);
+    check(d, "explicit-implicit", 10, 20, 50, 30);
+    check(d, "cyclic", 70, 50, 20, 10);
+    check(d, "implicit-minmax", 10, 20, 300, 100);
+    check(d, "row-overflow", 0, 40, 20, 40);
+    check(d, "implicit-min", 0, 0, 50, 20);
+    check(d, "intrinsic-max", 0, 0, 50, 20);
+    check(d, "negative-end", 0, 0, 120, 20);
+    check(d, "row-fr-one", 0, 0, 100, 30);
+    check(d, "row-fr-two", 0, 30, 100, 60);
+    check(d, "row-fr-min", 0, 60, 100, 30);
+    check(d, "row-fr-small", 0, 20, 100, 20);
+    printf("grid alignment: %d geometry cases passed\n", geometry_checks);
     return 0;
 }

@@ -308,3 +308,12 @@ Candidate133 is retained as rejected at88/100: detached computed-style regressio
 Fourteen independent pending-substitution observations confirm a preexisting partial/overlapping override limitation in both128 and135. The accepted fix repairs same-shorthand replacement; full persistent per-longhand pending provenance and permissive native stylesheet grammar remain separate work. Scoped source review accepted with these explicit limits. Records preserve exact binary/source/test hashes and all failed candidates. Whole-browser readiness stays19/100 provisional; global acceptance requires broad gates.
 
 Checkpoint review UTC 2026-10-28T09:58:30.692808+00:00; total session wall minutes 46.312.
+
+
+### Candidate iteration136: implicit Grid tracks and fractional rows
+
+Measured applied-source checkpoint09:50:32.405268UTC to focused/native completion09:55:24.279823UTC (4.865minutes); prior staged design/review excluded. Agents: standards_comparison, repository_lead, progress_and_deployment; GPT-6 Astra, built-in agents, Ruby MCP, native CTest and Chromium150. Focused quality96/100; whole-goal readiness19/100 provisional.
+
+Fifteen unchanged, deduplicated upstream URLs improve130→189/230 assertions (+59/0), all15 harnesses OK,12 fully passing URLs; Chromium230/230. The original ten grid URLs now172/177. Full native CTest119/119 including36 geometry controls passes. Remaining41 failures:30 before-explicit negative-line placement,6 auto-flow,5 orthogonal baseline alignment. General spanning-track intrinsic sizing also remains incomplete. All15 native guard sequences contain start, verification, release and exit; no synthetic audit events. Source review passed and broad holdouts remain required.
+
+Review UTC 2026-10-28T09:59:21.633642+00:00; total session wall minutes 47.161.

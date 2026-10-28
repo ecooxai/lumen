@@ -1,0 +1,68 @@
+{
+  "iteration": 136,
+  "title": "Implicit track patterns, placement expansion, intrinsic floors and fractional rows",
+  "started_utc": "2026-10-28T09:50:32.405268+00:00",
+  "finished_utc": "2026-10-28T09:55:24.279823+00:00",
+  "duration_minutes": 4.865,
+  "timing_scope": "Applied-source checkpoint through final focused/native gate; prior staged design/review outside measured interval.",
+  "subagents": [
+    "/root/standards_comparison",
+    "/root/repository_lead",
+    "/root/progress_and_deployment"
+  ],
+  "assessed_whole_goal_score": 19,
+  "acceptance": "Focused/native gates PASS; broad WPT/rendering holdouts pending",
+  "binary": "build/codex-native/lumen-astra-i136",
+  "binary_sha256": "27591f3c55f84aa81221bf00ba301a574d60745757ba6dd3caf4bdb0b39b353a",
+  "baseline_build": 135,
+  "baseline_native_pass": 130,
+  "candidate_native_pass": 189,
+  "chromium_pass": 230,
+  "total_assertions": 230,
+  "unique_upstream_urls": 15,
+  "assertion_gains": 59,
+  "assertion_losses": 0,
+  "missing_assertions": 0,
+  "harness_statuses": {
+    "OK": 15
+  },
+  "native_ctest": {
+    "passed": 119,
+    "total": 119,
+    "geometry_controls": 36,
+    "elapsed_seconds": 43.55
+  },
+  "remaining_failures": {
+    "before_explicit_negative_line_placement": 30,
+    "auto_flow_cases": 6,
+    "orthogonal_baseline_alignment": 5
+  },
+  "capture_audit": {
+    "started": 15,
+    "verified": 15,
+    "released": 15,
+    "exited": 15,
+    "sources_unchanged": true,
+    "synthetic_events": false
+  },
+  "evidence": [
+    "comparison136.json",
+    "candidate136/results.jsonl",
+    "candidate136-cleanup.json",
+    "candidate136-launch.json",
+    "native136/run.log",
+    "iteration136-source.json"
+  ],
+  "sources": [
+    "https://drafts.csswg.org/css-grid-1/#auto-tracks",
+    "https://drafts.csswg.org/css-grid-1/#algo-flex-tracks"
+  ],
+  "limitations": [
+    "No full WPT parity claim.",
+    "Before-explicit negative lines, column-flow and spanning-track intrinsic sizing remain incomplete.",
+    "Comparison is assertion correctness, not a performance benchmark."
+  ],
+  "focused_quality_score": 96,
+  "independent_review": "repository_lead reviewed actual placement, allocation and fractional-row code; root approved scoped acceptance pending broad holdouts.",
+  "source_provenance": "All compiled source files match the build136 manifest; accepted Git mapping is recorded after this commit."
+}

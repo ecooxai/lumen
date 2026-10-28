@@ -2,7 +2,20 @@
 /* Grid and table layout */
 #include "layout.h"
 
-static float track_fixed(const GridTrack *t, float W) { if (t->size.kind == LK_LEN && !t->fr) return res(t->size, W); if (t->min.kind == LK_LEN && t->min.px > 0 && !t->fr) return res(t->min, W); return -1; }
+static float track_fixed(const GridTrack *t, float reference) {
+    if (t->fr || t->size.kind != LK_LEN || !len_def(t->size, reference)) return -1;
+    float maximum = res(t->size, reference);
+    /* A minmax() maximum below its minimum is floored at the minimum. */
+    return t->min.kind == LK_LEN && len_def(t->min, reference) ? LMAX(maximum, res(t->min, reference)) : maximum;
+}
+static int implicit_track_pattern(Layout *L, const ComputedStyle *s, const char *property, GridTrack **out) {
+    const char *value = custom_get(s->gen_n, property);
+    *out = NULL;
+    if (!value || !*value || str_ieq(value, "auto")) return 0;
+    float rem = L->doc && L->doc->html && L->doc->html->style ? L->doc->html->style->font_size : 16;
+    MediaCtx media = { L->vw, L->vh, L->dpr, false };
+    return css_parse_grid_tracks(value, s->font_size, rem, &media, out);
+}
 
 static bool area_lookup(const char *areas, const char *name, int *r, int *c, int *rs, int *cs) {
     int r0 = 1 << 20, c0 = 1 << 20, r1 = -1, c1 = -1, row = 0, col = 0;
@@ -130,7 +143,10 @@ float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
     const ComputedStyle *s = b->st;
     float cg = s->column_gap_l.pct ? res(s->column_gap_l, cw) : s->column_gap, rg = s->row_gap;
     int nc = s->grid_ncols; GridTrack *tracks = s->grid_cols;
-    GridTrack one = { L_auto(), 1, L_auto() };
+    GridTrack one = { L_auto(), 0, L_auto() };
+    GridTrack *auto_cols = NULL, *auto_rows = NULL;
+    int n_auto_cols = implicit_track_pattern(L, s, "grid-auto-columns", &auto_cols);
+    int n_auto_rows = implicit_track_pattern(L, s, "grid-auto-rows", &auto_rows);
     VEC(GridTrack) cols = {0};
     for (int i = 0; i < nc; i++) {
         GridTrack t = tracks[i];
@@ -142,8 +158,19 @@ float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
         }
         vec_push(cols, t);
     }
-    if (!cols.n) vec_push(cols, one);
-    if (s->grid_areas) { int an = area_cols(s->grid_areas); GridTrack at = { L_auto(), 0, L_auto() }; while (cols.n < an) vec_push(cols, at); }
+    if (s->grid_areas) { int an = area_cols(s->grid_areas); while (cols.n < an) vec_push(cols, one); }
+    int explicit_columns = cols.n, needed_columns = LMAX(1, explicit_columns);
+    /* Definite placement and the largest auto-placed span establish the
+       implicit columns before row-major auto-placement runs. */
+    for (Box *child = b->first; child; child = child->next) if (!child->abs) {
+        int span = child->st->grid_col_span > 0 ? LMIN(child->st->grid_col_span, 1000) : 1;
+        int start = child->st->grid_col_start > 0 ? LMIN(child->st->grid_col_start - 1, 999) : 0;
+        needed_columns = LMAX(needed_columns, LMIN(1000, start + span));
+    }
+    while (cols.n < needed_columns) {
+        GridTrack next = n_auto_cols ? auto_cols[(cols.n - explicit_columns) % n_auto_cols] : one;
+        vec_push(cols, next);
+    }
     nc = cols.n;
     /* items + placement */
     typedef struct { Box *b; int r, c, rs, cs; } GI;
@@ -153,11 +180,11 @@ float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
         if (c->abs) { c->sx = cx; c->sy = cy; add_abs(L, c); continue; }
         c->bfc = true;
         const ComputedStyle *is = c->st;
-        int cs = is->grid_col_span < 0 ? nc : LMAX(1, LMIN(is->grid_col_span, nc));
+        int cs = is->grid_col_span < 0 ? LMAX(1, explicit_columns) : LMAX(1, LMIN(is->grid_col_span, nc));
         int rs = LMAX(1, is->grid_row_span);
         GI g = { c, -1, -1, rs, cs };
         if (!(s->grid_areas && is->grid_area && area_lookup(s->grid_areas, is->grid_area, &g.r, &g.c, &g.rs, &g.cs))) {
-            if (is->grid_col_start > 0) { g.c = LMIN(is->grid_col_start - 1, nc - 1); if (is->grid_col_span < 0) g.cs = LMAX(1, nc + 1 + is->grid_col_span - g.c); }
+            if (is->grid_col_start > 0) { g.c = LMIN(is->grid_col_start - 1, nc - 1); if (is->grid_col_span < 0) g.cs = LMAX(1, explicit_columns + 1 + is->grid_col_span - g.c); }
             if (is->grid_row_start > 0) g.r = is->grid_row_start - 1;
         }
         if (g.c >= 0 && g.c + g.cs > nc) g.cs = nc - g.c;
@@ -181,6 +208,7 @@ float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
     free(oc.v);
     /* column sizes: kind 0=auto 1=fixed 2=fr 3=minmax(len,len) */
     float *cwid = xcalloc((size_t)nc, sizeof(float)), *cap = xcalloc((size_t)nc, sizeof(float));
+    float *minimum = xcalloc((size_t)nc, sizeof(float));
     uint8_t *kind = xcalloc((size_t)nc, 1);
     float fixed = cg * (nc - 1), frsum = 0; int nauto = 0, ngrow = 0;
     for (int i = 0; i < nc; i++) {
@@ -194,9 +222,15 @@ float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
         }
         float f = track_fixed(t, cw);
         if (f >= 0) { kind[i] = 1; cwid[i] = f; fixed += f; continue; }
-        float mx = 0;
-        for (int k = 0; k < items.n; k++) if (items.v[k].c == i && items.v[k].cs == 1) { float a, z; intrinsic_outer(L, items.v[k].b, &a, &z); mx = LMAX(mx, t->size.kind == LK_MIN_CONTENT ? a : z); }
-        cwid[i] = mx; fixed += mx; nauto++;
+        float mn = t->min.kind == LK_LEN && len_def(t->min, cw) ? res(t->min, cw) : 0, mx = mn;
+        for (int k = 0; k < items.n; k++) if (items.v[k].c == i && items.v[k].cs == 1) {
+            float a, z; intrinsic_outer(L, items.v[k].b, &a, &z);
+            if (t->min.kind != LK_LEN) mn = LMAX(mn, a);
+            mx = LMAX(mx, t->size.kind == LK_MIN_CONTENT ? a : z);
+        }
+        cwid[i] = LMAX(mn, mx); minimum[i] = mn; fixed += cwid[i];
+        if (t->size.kind == LK_AUTO) nauto++;
+        else kind[i] = 1; /* intrinsic maxima do not stretch with alignment */
     }
     float left = cw - fixed;
     for (int pass = 0; pass < 4 && left > 0.01f && ngrow; pass++) {
@@ -207,8 +241,19 @@ float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
     }
     if (frsum > 0 && left > 0) { for (int i = 0; i < nc; i++) if (kind[i] == 2) cwid[i] += left * cols.v[i].fr / LMAX(1, frsum); }
     else if (nauto && left > 0 && (s->justify_content == AL_NORMAL || s->justify_content == AL_STRETCH)) { for (int i = 0; i < nc; i++) if (kind[i] == 0) cwid[i] += left / nauto; }
-    else if (left < 0 && nauto) { float need = -left; for (int i = 0; i < nc && need > 0; i++) if (kind[i] == 0) { float take = LMIN(need / nauto, cwid[i]); cwid[i] -= take; } }
-    free(cap); free(kind);
+    else if (left < 0 && nauto) {
+        float need = -left;
+        for (int pass = 0; pass < nc && need > .01f; pass++) {
+            int shrinkable = 0;
+            for (int i = 0; i < nc; i++) if (kind[i] == 0 && cwid[i] > minimum[i] + .01f) shrinkable++;
+            if (!shrinkable) break;
+            float share = need / shrinkable;
+            for (int i = 0; i < nc; i++) if (kind[i] == 0) {
+                float take = LMIN(share, LMAX(0, cwid[i] - minimum[i])); cwid[i] -= take; need -= take;
+            }
+        }
+    }
+    free(cap); free(kind); free(minimum);
     float grid_width = cg * (nc - 1);
     for (int i = 0; i < nc; i++) grid_width += cwid[i];
     char justify_buf[64]; float xoff = 0, column_extra = 0;
@@ -221,8 +266,13 @@ float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
     int nr = 0; for (int k = 0; k < items.n; k++) nr = LMAX(nr, items.v[k].r + items.v[k].rs);
     nr = LMAX(nr, s->grid_nrows);
     float *rh = xcalloc((size_t)nr + 1, sizeof(float));
-    for (int i = 0; i < s->grid_nrows && i < nr; i++) { float f = track_fixed(&s->grid_rows[i], chdef); if (f >= 0) rh[i] = f; }
-    float auto_row = s->grid_auto_rows.kind == LK_LEN ? res(s->grid_auto_rows, chdef) : -1;
+    GridTrack *rows = xcalloc((size_t)nr + 1, sizeof(GridTrack));
+    for (int i = 0; i < nr; i++) {
+        rows[i] = i < s->grid_nrows ? s->grid_rows[i] : n_auto_rows ? auto_rows[(i - s->grid_nrows) % n_auto_rows] : one;
+        float fixed_height = track_fixed(&rows[i], chdef);
+        if (fixed_height >= 0) rh[i] = fixed_height;
+        else if (rows[i].min.kind == LK_LEN && len_def(rows[i].min, chdef)) rh[i] = res(rows[i].min, chdef);
+    }
     /* layout items to find row heights */
     for (int k = 0; k < items.n; k++) {
         GI *g = &items.v[k]; Box *c = g->b;
@@ -233,13 +283,42 @@ float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
         bool stretch = grid_stretches(c, true, ja);
         float forced_w = grid_stretch_size(c, true, w - c->m[1] - c->m[3], w);
         layout_box(L, c, cx + cx0[g->c] + c->m[3], cy, w, -1, NULL, stretch ? SZ_FORCED : SZ_SHRINK, forced_w, -1);
-        if (g->rs == 1) { float need = c->h + c->m[0] + c->m[2]; bool fixedrow = g->r < s->grid_nrows && track_fixed(&s->grid_rows[g->r], chdef) >= 0; if (!fixedrow) rh[g->r] = LMAX(rh[g->r], LMAX(need, auto_row)); }
+        if (g->rs == 1 && track_fixed(&rows[g->r], chdef) < 0)
+            rh[g->r] = LMAX(rh[g->r], c->h + c->m[0] + c->m[2]);
+    }
+    /* Flexible tracks divide the remaining definite height. A row whose
+       intrinsic minimum exceeds its share freezes before redistribution.
+       A total flex factor below one intentionally leaves unused space. */
+    float row_fractions = 0, available_height = chdef - rg * LMAX(0, nr - 1);
+    for (int i = 0; i < nr; i++) {
+        if (rows[i].fr > 0) row_fractions += rows[i].fr;
+        else available_height -= rh[i];
+    }
+    if (row_fractions > 0 && chdef >= 0) {
+        uint8_t *frozen = xcalloc((size_t)nr, 1);
+        for (int pass = 0; pass <= nr; pass++) {
+            float fraction = LMAX(0, available_height) / LMAX(1, row_fractions);
+            bool changed = false;
+            for (int i = 0; i < nr; i++) if (rows[i].fr > 0 && !frozen[i] && rh[i] > fraction * rows[i].fr + .01f) {
+                frozen[i] = 1; available_height -= rh[i]; row_fractions -= rows[i].fr; changed = true;
+            }
+            if (!changed) {
+                for (int i = 0; i < nr; i++) if (rows[i].fr > 0 && !frozen[i]) rh[i] = LMAX(rh[i], fraction * rows[i].fr);
+                break;
+            }
+        }
+        free(frozen);
+    } else if (row_fractions > 0) {
+        float fraction = 0;
+        for (int i = 0; i < nr; i++) if (rows[i].fr > 0) fraction = LMAX(fraction, rh[i] / LMAX(1, rows[i].fr));
+        for (int i = 0; i < nr; i++) if (rows[i].fr > 0) rh[i] = LMAX(rh[i], fraction * rows[i].fr);
     }
     /* align-content: normal/stretch grows auto rows to fill a definite height */
     if (chdef >= 0 && nr && (s->align_content == AL_NORMAL || s->align_content == AL_STRETCH)) {
         float used = rg * (nr - 1); int na = 0;
-        for (int i = 0; i < nr; i++) { used += rh[i]; if (!(i < s->grid_nrows && track_fixed(&s->grid_rows[i], chdef) >= 0) && auto_row < 0) na++; }
-        if (na && chdef - used > 0.01f) for (int i = 0; i < nr; i++) if (!(i < s->grid_nrows && track_fixed(&s->grid_rows[i], chdef) >= 0) && auto_row < 0) rh[i] += (chdef - used) / na;
+        for (int i = 0; i < nr; i++) { used += rh[i]; if (!rows[i].fr && rows[i].size.kind == LK_AUTO) na++; }
+        if (na && chdef - used > 0.01f) for (int i = 0; i < nr; i++)
+            if (!rows[i].fr && rows[i].size.kind == LK_AUTO) rh[i] += (chdef - used) / na;
     }
     float grid_height = rg * LMAX(0, nr - 1);
     for (int i = 0; i < nr; i++) grid_height += rh[i];
@@ -268,7 +347,7 @@ float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
         box_translate(c, x - c->x, y - c->y);
     }
     float total = ry[nr];
-    free(cwid); free(cx0); free(rh); free(ry); vec_free(items); vec_free(cols);
+    free(cwid); free(cx0); free(rh); free(ry); free(rows); free(auto_cols); free(auto_rows); vec_free(items); vec_free(cols);
     return total;
 }
 
