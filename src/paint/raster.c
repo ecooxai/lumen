@@ -5,11 +5,16 @@
 
 typedef struct { int x0, y0, x1, y1; float fx, fy, fw, fh, r[4]; bool round; } Clip;
 typedef struct { uint32_t *px; float alpha; int x0, y0, x1, y1; bool clipped; } LayerSave;
+typedef struct { Font *font; uint32_t gid; float scale; const Glyph *glyph; } RasterGlyph;
 typedef struct {
     Canvas *c; float s;
     Clip clips[64]; int nclip;
     LayerSave layers[16]; int nlayer;
     uint32_t *px;
+    /* Frame-local caches retain no fonts/glyphs beyond this raster call. Their
+       fixed storage avoids per-glyph allocation and never changes font keys. */
+    RasterGlyph glyph_cache[64];
+    uint32_t text_palette[256]; Color text_palette_color; bool text_palette_valid;
 } R;
 
 void canvas_init(Canvas *c, int w, int h, float scale) { c->w = w; c->h = h; c->stride = w; c->scale = scale; c->punch = NULL; c->punched = false; c->track_media = true; c->media_retry = false; c->media_frames = (PaintFrames){0}; c->px = xcalloc((size_t)w * (size_t)h, 4); }
@@ -58,20 +63,27 @@ static void fill(R *r, float x0, float y0, float x1, float y1, const float rad[4
     uint32_t solid = premul(col, 1);
     int W = r->c->stride;
     if (!round && !c->round) {
-        bool opaque = (solid >> 24) == 255;
         int ax = LMAX(ix0, (int)ceilf(x0)), bx = LMIN(ix1, (int)floorf(x1)); if (bx < ax) bx = ax;
         for (int y = iy0; y < iy1; y++) {
             uint32_t *row = r->px + (size_t)y * (size_t)W;
             float cy = span_cov(y0, y1, y);
-            bool full = cy >= 0.999f;
-            for (int x = ix0; x < ix1; x++) {
-                if (full && x == ax) {
-                    if (opaque) for (; x < bx; x++) row[x] = solid; else for (; x < bx; x++) over(&row[x], solid);
-                    if (x >= ix1) break;
-                }
+            /* Horizontal interior pixels share exactly the same coverage,
+               including fractional top/bottom edges during smooth scrolling. */
+            uint32_t span = cy >= 0.999f ? solid : premul(col, cy);
+            int x = ix0;
+            for (; x < ax; x++) {
                 float cov = cy * span_cov(x0, x1, x);
-                if (cov <= 0) continue;
-                over(&row[x], cov >= 0.999f ? solid : premul(col, cov));
+                if (cov > 0) over(&row[x], cov >= 0.999f ? solid : premul(col, cov));
+            }
+            uint32_t alpha = span >> 24;
+            if (alpha == 255) for (; x < bx; x++) row[x] = span;
+            else if (span) {
+                uint32_t k = 256 - alpha - (alpha >> 7);
+                for (; x < bx; x++) row[x] = span + scale_px(row[x], k);
+            } else x = bx;
+            for (; x < ix1; x++) {
+                float cov = cy * span_cov(x0, x1, x);
+                if (cov > 0) over(&row[x], cov >= 0.999f ? solid : premul(col, cov));
             }
         }
         return;
@@ -207,16 +219,49 @@ static void gradient(R *r, const DItem *it) {
     free(colc);
 }
 
+static const Glyph *raster_glyph(R *r, const DGlyph *glyph, float scale) {
+    RasterGlyph *entry = &r->glyph_cache[glyph->gid & 63u];
+    if (entry->font != glyph->font || entry->gid != glyph->gid || entry->scale != scale) {
+        entry->glyph = font_glyph(glyph->font, glyph->gid, scale);
+        entry->font = glyph->font; entry->gid = glyph->gid; entry->scale = scale;
+    }
+    return entry->glyph;
+}
+static const uint32_t *text_palette(R *r, Color color) {
+    if (!r->text_palette_valid || r->text_palette_color != color) {
+        uint32_t opacity = COLOR_A(color);
+        for (unsigned coverage = 0; coverage < 256; coverage++) {
+            uint32_t alpha = coverage * opacity / 255;
+            /* Keep the scalar renderer's exact order, division and rounding. */
+            r->text_palette[coverage] = premul(color | 0xff000000u, alpha / 255.f);
+        }
+        r->text_palette_color = color; r->text_palette_valid = true;
+    }
+    return r->text_palette;
+}
 static void text(R *r, const DItem *it) {
     float s = r->s, gs = s * (it->ts > 0 ? it->ts : 1); const Clip *c = clip(r);
-    uint32_t ca = COLOR_A(it->color);
+    uint32_t ca = COLOR_A(it->color); const uint32_t *palette = NULL;
     for (int i = 0; i < it->ng; i++) {
         const DGlyph *dg = &it->g[i];
         if (!dg->font) continue;
-        const Glyph *gl = font_glyph(dg->font, dg->gid, gs);
+        const Glyph *gl = raster_glyph(r, dg, gs);
         if (!gl || !gl->w) continue;
         int ox = (int)lroundf(dg->x * s) + gl->left, oy = (int)lroundf(dg->y * s) - gl->top;
         if (ox >= c->x1 || oy >= c->y1 || ox + gl->w <= c->x0 || oy + gl->h <= c->y0) continue;
+        if (!c->round && gl->alpha && !(gl->color && gl->rgba)) {
+            if (!palette) palette = text_palette(r, it->color);
+            int x0 = LMAX(0, c->x0 - ox), x1 = LMIN(gl->w, c->x1 - ox);
+            for (int y = LMAX(0, c->y0 - oy); y < gl->h && oy + y < c->y1; y++) {
+                uint32_t *row = r->px + (size_t)(oy + y) * (size_t)r->c->stride;
+                const uint8_t *alpha = gl->alpha + (size_t)y * (size_t)gl->w;
+                for (int x = x0; x < x1; x++) {
+                    uint32_t pixel = palette[alpha[x]];
+                    if (pixel) over(&row[ox + x], pixel);
+                }
+            }
+            continue;
+        }
         for (int y = LMAX(0, c->y0 - oy); y < gl->h && oy + y < c->y1; y++) {
             uint32_t *row = r->px + (size_t)(oy + y) * (size_t)r->c->stride;
             for (int x = LMAX(0, c->x0 - ox); x < gl->w && ox + x < c->x1; x++) {

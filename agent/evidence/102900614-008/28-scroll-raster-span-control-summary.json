@@ -1,0 +1,108 @@
+{
+  "startedUTC": "2026-10-28T23:24:48.258035+00:00",
+  "binary": {
+    "path": "build-apple-load-20261029/lumen-raster-span-candidate-970e6cafc95133ca",
+    "sha256": "970e6cafc95133ca62ec02f7c9deeaffe568f276dbafda39d117c4f04fc9217b",
+    "bytes": 14020888
+  },
+  "changedCompiledSources": [
+    "src/paint/raster.c"
+  ],
+  "runnerSHA256": "61f919ee0be6e2a972237d7ed7cf9e71f827ff3d9f6d2a8336cebca9fbd9cfb7",
+  "changedCompiledDependencies": [
+    "src/paint/raster.c"
+  ],
+  "scope": "The original 115s native scroll workload, 1875 inputs, 1Hz telemetry and thresholds are unchanged. An external PID-scoped window capture may perturb one candidate interval; it never alters application input/render cadence.",
+  "resourceAccepted": false,
+  "pixelIdentical": true,
+  "nativeWindowCaptured": true,
+  "runnerExitCode": 1,
+  "captureExitCode": 0,
+  "resourceReceipt": "output/session-102900614/scroll-raster-span/receipt.json",
+  "resourceReceiptSHA256": "a253dce759d44f162519baebb040b189d71184612ac5bce4b0b0014e0b3d6460",
+  "resourceIssues": [
+    "scrolling: CPU p95 16.935% exceeds 10%"
+  ],
+  "phaseMetrics": {
+    "startup": {
+      "samples": 16,
+      "observed_samples": 16,
+      "duration_seconds": 15.001,
+      "cpu_mean_percent": 2.999,
+      "cpu_median_percent": 1.978,
+      "cpu_p95_percent": 23.995,
+      "cpu_peak_percent": 23.995,
+      "samples_above_threshold": null,
+      "cpu_threshold_percent": null,
+      "cpu_status": "measured_no_threshold",
+      "rss_start_mib": 0.031,
+      "rss_end_mib": 157.25,
+      "rss_peak_mib": 157.297,
+      "rss_change_mib": 157.219,
+      "phase_boundary_samples_excluded_from_cpu_summary": 1,
+      "first_seen_process_events": 1
+    },
+    "scrolling": {
+      "samples": 35,
+      "observed_samples": 35,
+      "duration_seconds": 34.01,
+      "cpu_mean_percent": 12.348,
+      "cpu_median_percent": 13.009,
+      "cpu_p95_percent": 16.935,
+      "cpu_peak_percent": 16.958,
+      "samples_above_threshold": null,
+      "cpu_threshold_percent": null,
+      "cpu_status": "measured_no_threshold",
+      "rss_start_mib": 160.156,
+      "rss_end_mib": 153.438,
+      "rss_peak_mib": 163.969,
+      "rss_change_mib": -6.719,
+      "phase_boundary_samples_excluded_from_cpu_summary": 1,
+      "first_seen_process_events": 0
+    },
+    "settle:after": {
+      "samples": 15,
+      "observed_samples": 15,
+      "duration_seconds": 14.003,
+      "cpu_mean_percent": 0.072,
+      "cpu_median_percent": 0.0,
+      "cpu_p95_percent": 1.008,
+      "cpu_peak_percent": 1.008,
+      "samples_above_threshold": null,
+      "cpu_threshold_percent": null,
+      "cpu_status": "measured_no_threshold",
+      "rss_start_mib": 153.438,
+      "rss_end_mib": 152.703,
+      "rss_peak_mib": 153.438,
+      "rss_change_mib": -0.734,
+      "phase_boundary_samples_excluded_from_cpu_summary": 1,
+      "first_seen_process_events": 0
+    },
+    "idle:after": {
+      "samples": 50,
+      "observed_samples": 50,
+      "duration_seconds": 48.989,
+      "cpu_mean_percent": 0.102,
+      "cpu_median_percent": 0.0,
+      "cpu_p95_percent": 0.996,
+      "cpu_peak_percent": 2.015,
+      "samples_above_threshold": 0,
+      "cpu_threshold_percent": 3,
+      "cpu_status": "within_threshold",
+      "rss_start_mib": 152.703,
+      "rss_end_mib": 152.656,
+      "rss_peak_mib": 152.703,
+      "rss_change_mib": -0.047,
+      "phase_boundary_samples_excluded_from_cpu_summary": 1,
+      "first_seen_process_events": 0
+    }
+  },
+  "windowCaptureReceipt": "output/session-102900614/scroll-raster-span/native-window-capture/receipt.json",
+  "windowCaptureIssue": null,
+  "pixelCommandExitCode": 0,
+  "pixelComparison": "output/session-102900614/scroll-raster-span/pixel-comparison.json",
+  "gpuErrors": [],
+  "gpuClean": true,
+  "finishedUTC": "2026-10-28T23:26:45.675615+00:00",
+  "durationSeconds": 117.418
+}

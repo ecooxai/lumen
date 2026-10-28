@@ -1,0 +1,509 @@
+{
+  "started_utc": "2026-10-28T23:31:23.388836+00:00",
+  "scenario": "scroll",
+  "binary": "build-apple-load-20261029/lumen-glyph-cache-candidate-4773b85d28d3b1a7",
+  "binary_sha256": "4773b85d28d3b1a7c17a1beee5225abc5141bb4cec4b713d409464ebe42582e9",
+  "telemetry_sha256": "70a9c367e6b7649e5469167c4431f7dc0cb4ad428a9d89ceb291e7834aaa4ec2",
+  "profile": "New isolated task-owned profile",
+  "policy": {
+    "sampling_seconds": 1,
+    "max_sampling_gap_seconds": 1.5,
+    "initial_settle_seconds": 15,
+    "final_settle_seconds": 15,
+    "final_idle_seconds_minimum": 45,
+    "idle_cpu_p95_ceiling_percent": 3,
+    "scroll_cpu_p95_ceiling_percent": 10,
+    "settled_rss_growth_ceiling_mib": 32,
+    "settled_rss_growth_ceiling_fraction": 0.2,
+    "initial_rss_window": "Last 5 samples of initial idle phase",
+    "final_rss_window": "Last 15 samples of final idle phase",
+    "native_live_nodes_growth_allowance": 50,
+    "native_live_styles_growth_allowance": 50
+  },
+  "scope": "Native Mac process tree; synthetic SDL wheel input or actual top-level navigation. No physical typing, IPA, simulator or full-browser benchmark claim.",
+  "fixture_sha256_by_step": {
+    "0": "ad33b844243140cacb739d90a97c70a7c5843d1063f3a9e6dc9cc04472b993d0"
+  },
+  "input": {
+    "source": "Existing native SDL wheel hook",
+    "parameters": "400,400,-0.08,15000,1875",
+    "scheduled_event_count": 1875,
+    "scheduled_duration_seconds": 30
+  },
+  "app_started_utc": "2026-10-28T23:31:23.395245+00:00",
+  "app_pid": 48305,
+  "natural_app_return_code": 0,
+  "app_termination": {
+    "pid": 48305,
+    "return_code": 0,
+    "forced": false
+  },
+  "sampler_termination": {
+    "pid": 48304,
+    "return_code": 0,
+    "forced": false
+  },
+  "finished_utc": "2026-10-28T23:33:19.613471+00:00",
+  "duration_seconds": 116.219,
+  "phase_transitions": [
+    {
+      "phase": "baseline",
+      "utc": "2026-10-28T23:31:23.393461+00:00",
+      "elapsed_seconds": null
+    },
+    {
+      "phase": "startup",
+      "utc": "2026-10-28T23:31:23.396381+00:00",
+      "elapsed_seconds": 0.001
+    },
+    {
+      "phase": "scrolling",
+      "utc": "2026-10-28T23:31:38.498892+00:00",
+      "elapsed_seconds": 15.104
+    },
+    {
+      "phase": "settle:after",
+      "utc": "2026-10-28T23:32:13.567338+00:00",
+      "elapsed_seconds": 50.172
+    },
+    {
+      "phase": "idle:after",
+      "utc": "2026-10-28T23:32:28.455733+00:00",
+      "elapsed_seconds": 65.061
+    },
+    {
+      "phase": "shutdown",
+      "utc": "2026-10-28T23:33:18.977188+00:00",
+      "elapsed_seconds": 115.582
+    }
+  ],
+  "reports": [
+    {
+      "utc": "2026-10-28T23:31:23.739050+00:00",
+      "value": {
+        "kind": "ready",
+        "url": "http://127.0.0.1:57023/page/0?nonce=afff327486a847469acbd76801ccea54",
+        "step": 0
+      }
+    },
+    {
+      "utc": "2026-10-28T23:32:18.745812+00:00",
+      "value": {
+        "kind": "scroll-complete",
+        "events": 2530,
+        "lastEventMs": 46261.67600005865,
+        "maxY": 6000.07177734375,
+        "finalY": 6000.07177734375,
+        "url": "http://127.0.0.1:57023/page/0?nonce=afff327486a847469acbd76801ccea54",
+        "step": 0
+      }
+    }
+  ],
+  "native_memory_counters": [
+    {
+      "utc": "2026-10-28T23:31:23.698791+00:00",
+      "elapsed_seconds": 0.304,
+      "kind": "lumen-mem",
+      "values": {
+        "mse": 0.0,
+        "vframes": 0.0,
+        "images": 0.0,
+        "js_heap": 0.0,
+        "js_external": 0.0,
+        "canvases": 0.0
+      }
+    },
+    {
+      "utc": "2026-10-28T23:31:23.698850+00:00",
+      "elapsed_seconds": 0.304,
+      "kind": "lumen-mem2",
+      "values": {
+        "malloc_in_use": 0.6,
+        "nodes": 0.0,
+        "styles": 0.0,
+        "css_parsed": 0.0,
+        "workers": 0.0,
+        "heap": 0.0,
+        "ext": 0.0
+      }
+    },
+    {
+      "utc": "2026-10-28T23:31:33.715082+00:00",
+      "elapsed_seconds": 10.32,
+      "kind": "lumen-mem",
+      "values": {
+        "mse": 0.0,
+        "vframes": 0.0,
+        "images": 0.0,
+        "js_heap": 7.4,
+        "js_external": 0.0,
+        "canvases": 5.2
+      }
+    },
+    {
+      "utc": "2026-10-28T23:31:33.715117+00:00",
+      "elapsed_seconds": 10.32,
+      "kind": "lumen-mem2",
+      "values": {
+        "malloc_in_use": 0.6,
+        "nodes": 2015.0,
+        "styles": 1010.0,
+        "css_parsed": 0.0,
+        "workers": 0.0,
+        "heap": 0.0,
+        "ext": 0.0
+      }
+    },
+    {
+      "utc": "2026-10-28T23:31:43.724648+00:00",
+      "elapsed_seconds": 20.329,
+      "kind": "lumen-mem",
+      "values": {
+        "mse": 0.0,
+        "vframes": 0.0,
+        "images": 0.0,
+        "js_heap": 7.7,
+        "js_external": 0.0,
+        "canvases": 5.2
+      }
+    },
+    {
+      "utc": "2026-10-28T23:31:43.724685+00:00",
+      "elapsed_seconds": 20.33,
+      "kind": "lumen-mem2",
+      "values": {
+        "malloc_in_use": 0.6,
+        "nodes": 2015.0,
+        "styles": 1010.0,
+        "css_parsed": 0.0,
+        "workers": 0.0,
+        "heap": 0.0,
+        "ext": 0.0
+      }
+    },
+    {
+      "utc": "2026-10-28T23:31:53.725549+00:00",
+      "elapsed_seconds": 30.33,
+      "kind": "lumen-mem",
+      "values": {
+        "mse": 0.0,
+        "vframes": 0.0,
+        "images": 0.0,
+        "js_heap": 8.4,
+        "js_external": 0.0,
+        "canvases": 5.2
+      }
+    },
+    {
+      "utc": "2026-10-28T23:31:53.725586+00:00",
+      "elapsed_seconds": 30.33,
+      "kind": "lumen-mem2",
+      "values": {
+        "malloc_in_use": 0.6,
+        "nodes": 2015.0,
+        "styles": 1010.0,
+        "css_parsed": 0.0,
+        "workers": 0.0,
+        "heap": 0.0,
+        "ext": 0.0
+      }
+    },
+    {
+      "utc": "2026-10-28T23:32:03.740982+00:00",
+      "elapsed_seconds": 40.346,
+      "kind": "lumen-mem",
+      "values": {
+        "mse": 0.0,
+        "vframes": 0.0,
+        "images": 0.0,
+        "js_heap": 2.8,
+        "js_external": 0.0,
+        "canvases": 5.2
+      }
+    },
+    {
+      "utc": "2026-10-28T23:32:03.741045+00:00",
+      "elapsed_seconds": 40.346,
+      "kind": "lumen-mem2",
+      "values": {
+        "malloc_in_use": 0.6,
+        "nodes": 2015.0,
+        "styles": 1010.0,
+        "css_parsed": 0.0,
+        "workers": 0.0,
+        "heap": 0.0,
+        "ext": 0.0
+      }
+    },
+    {
+      "utc": "2026-10-28T23:32:14.005213+00:00",
+      "elapsed_seconds": 50.61,
+      "kind": "lumen-mem",
+      "values": {
+        "mse": 0.0,
+        "vframes": 0.0,
+        "images": 0.0,
+        "js_heap": 2.4,
+        "js_external": 0.0,
+        "canvases": 5.2
+      }
+    },
+    {
+      "utc": "2026-10-28T23:32:14.005256+00:00",
+      "elapsed_seconds": 50.61,
+      "kind": "lumen-mem2",
+      "values": {
+        "malloc_in_use": 0.6,
+        "nodes": 2015.0,
+        "styles": 1010.0,
+        "css_parsed": 0.0,
+        "workers": 0.0,
+        "heap": 0.0,
+        "ext": 0.0
+      }
+    },
+    {
+      "utc": "2026-10-28T23:32:24.760857+00:00",
+      "elapsed_seconds": 61.366,
+      "kind": "lumen-mem",
+      "values": {
+        "mse": 0.0,
+        "vframes": 0.0,
+        "images": 0.0,
+        "js_heap": 2.4,
+        "js_external": 0.0,
+        "canvases": 5.2
+      }
+    },
+    {
+      "utc": "2026-10-28T23:32:24.760882+00:00",
+      "elapsed_seconds": 61.366,
+      "kind": "lumen-mem2",
+      "values": {
+        "malloc_in_use": 0.6,
+        "nodes": 2015.0,
+        "styles": 1010.0,
+        "css_parsed": 0.0,
+        "workers": 0.0,
+        "heap": 0.0,
+        "ext": 0.0
+      }
+    },
+    {
+      "utc": "2026-10-28T23:32:34.788139+00:00",
+      "elapsed_seconds": 71.393,
+      "kind": "lumen-mem",
+      "values": {
+        "mse": 0.0,
+        "vframes": 0.0,
+        "images": 0.0,
+        "js_heap": 2.4,
+        "js_external": 0.0,
+        "canvases": 5.2
+      }
+    },
+    {
+      "utc": "2026-10-28T23:32:34.788197+00:00",
+      "elapsed_seconds": 71.393,
+      "kind": "lumen-mem2",
+      "values": {
+        "malloc_in_use": 0.6,
+        "nodes": 2015.0,
+        "styles": 1010.0,
+        "css_parsed": 0.0,
+        "workers": 0.0,
+        "heap": 0.0,
+        "ext": 0.0
+      }
+    },
+    {
+      "utc": "2026-10-28T23:32:44.823488+00:00",
+      "elapsed_seconds": 81.428,
+      "kind": "lumen-mem",
+      "values": {
+        "mse": 0.0,
+        "vframes": 0.0,
+        "images": 0.0,
+        "js_heap": 2.4,
+        "js_external": 0.0,
+        "canvases": 5.2
+      }
+    },
+    {
+      "utc": "2026-10-28T23:32:44.823528+00:00",
+      "elapsed_seconds": 81.429,
+      "kind": "lumen-mem2",
+      "values": {
+        "malloc_in_use": 0.6,
+        "nodes": 2015.0,
+        "styles": 1010.0,
+        "css_parsed": 0.0,
+        "workers": 0.0,
+        "heap": 0.0,
+        "ext": 0.0
+      }
+    },
+    {
+      "utc": "2026-10-28T23:32:54.848013+00:00",
+      "elapsed_seconds": 91.453,
+      "kind": "lumen-mem",
+      "values": {
+        "mse": 0.0,
+        "vframes": 0.0,
+        "images": 0.0,
+        "js_heap": 2.4,
+        "js_external": 0.0,
+        "canvases": 5.2
+      }
+    },
+    {
+      "utc": "2026-10-28T23:32:54.848040+00:00",
+      "elapsed_seconds": 91.453,
+      "kind": "lumen-mem2",
+      "values": {
+        "malloc_in_use": 0.6,
+        "nodes": 2015.0,
+        "styles": 1010.0,
+        "css_parsed": 0.0,
+        "workers": 0.0,
+        "heap": 0.0,
+        "ext": 0.0
+      }
+    },
+    {
+      "utc": "2026-10-28T23:33:04.877271+00:00",
+      "elapsed_seconds": 101.482,
+      "kind": "lumen-mem",
+      "values": {
+        "mse": 0.0,
+        "vframes": 0.0,
+        "images": 0.0,
+        "js_heap": 2.4,
+        "js_external": 0.0,
+        "canvases": 5.2
+      }
+    },
+    {
+      "utc": "2026-10-28T23:33:04.877415+00:00",
+      "elapsed_seconds": 101.482,
+      "kind": "lumen-mem2",
+      "values": {
+        "malloc_in_use": 0.6,
+        "nodes": 2015.0,
+        "styles": 1010.0,
+        "css_parsed": 0.0,
+        "workers": 0.0,
+        "heap": 0.0,
+        "ext": 0.0
+      }
+    },
+    {
+      "utc": "2026-10-28T23:33:14.906232+00:00",
+      "elapsed_seconds": 111.511,
+      "kind": "lumen-mem",
+      "values": {
+        "mse": 0.0,
+        "vframes": 0.0,
+        "images": 0.0,
+        "js_heap": 2.4,
+        "js_external": 0.0,
+        "canvases": 5.2
+      }
+    },
+    {
+      "utc": "2026-10-28T23:33:14.906463+00:00",
+      "elapsed_seconds": 111.512,
+      "kind": "lumen-mem2",
+      "values": {
+        "malloc_in_use": 0.6,
+        "nodes": 2015.0,
+        "styles": 1010.0,
+        "css_parsed": 0.0,
+        "workers": 0.0,
+        "heap": 0.0,
+        "ext": 0.0
+      }
+    }
+  ],
+  "binary_sha256_after": "4773b85d28d3b1a7c17a1beee5225abc5141bb4cec4b713d409464ebe42582e9",
+  "summary_exit_code": 0,
+  "phase_metrics": {
+    "startup": {
+      "samples": 16,
+      "observed_samples": 16,
+      "duration_seconds": 14.993,
+      "cpu_mean_percent": 2.597,
+      "cpu_median_percent": 1.001,
+      "cpu_p95_percent": 22.939,
+      "cpu_peak_percent": 22.939,
+      "samples_above_threshold": null,
+      "cpu_threshold_percent": null,
+      "cpu_status": "measured_no_threshold",
+      "rss_start_mib": 0.031,
+      "rss_end_mib": 157.109,
+      "rss_peak_mib": 157.156,
+      "rss_change_mib": 157.078,
+      "phase_boundary_samples_excluded_from_cpu_summary": 1,
+      "first_seen_process_events": 1
+    },
+    "scrolling": {
+      "samples": 35,
+      "observed_samples": 35,
+      "duration_seconds": 33.995,
+      "cpu_mean_percent": 9.912,
+      "cpu_median_percent": 11.005,
+      "cpu_p95_percent": 12.06,
+      "cpu_peak_percent": 12.062,
+      "samples_above_threshold": null,
+      "cpu_threshold_percent": null,
+      "cpu_status": "measured_no_threshold",
+      "rss_start_mib": 160.594,
+      "rss_end_mib": 153.906,
+      "rss_peak_mib": 164.469,
+      "rss_change_mib": -6.688,
+      "phase_boundary_samples_excluded_from_cpu_summary": 1,
+      "first_seen_process_events": 0
+    },
+    "settle:after": {
+      "samples": 15,
+      "observed_samples": 15,
+      "duration_seconds": 13.999,
+      "cpu_mean_percent": 0.071,
+      "cpu_median_percent": 0.0,
+      "cpu_p95_percent": 0.99,
+      "cpu_peak_percent": 0.99,
+      "samples_above_threshold": null,
+      "cpu_threshold_percent": null,
+      "cpu_status": "measured_no_threshold",
+      "rss_start_mib": 153.906,
+      "rss_end_mib": 153.203,
+      "rss_peak_mib": 153.906,
+      "rss_change_mib": -0.703,
+      "phase_boundary_samples_excluded_from_cpu_summary": 1,
+      "first_seen_process_events": 0
+    },
+    "idle:after": {
+      "samples": 50,
+      "observed_samples": 50,
+      "duration_seconds": 48.998,
+      "cpu_mean_percent": 0.061,
+      "cpu_median_percent": 0.0,
+      "cpu_p95_percent": 0.991,
+      "cpu_peak_percent": 1.008,
+      "samples_above_threshold": 0,
+      "cpu_threshold_percent": 3,
+      "cpu_status": "within_threshold",
+      "rss_start_mib": 153.203,
+      "rss_end_mib": 153.203,
+      "rss_peak_mib": 153.203,
+      "rss_change_mib": 0.0,
+      "phase_boundary_samples_excluded_from_cpu_summary": 1,
+      "first_seen_process_events": 0
+    }
+  },
+  "samples_sha256": "a736b48ea498d093e5d0852dd5e805f2c3fe79420cb08691326d9391b4f14169",
+  "issues": [
+    "scrolling: CPU p95 12.06% exceeds 10%"
+  ],
+  "accepted": false
+}

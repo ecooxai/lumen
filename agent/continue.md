@@ -50,3 +50,7 @@ Use exact Chrome `output/session-102900614/chrome-official-reference-v2/Google C
 ## Checkpoint007 — verified shared-stream functional candidate
 
 Candidate `build-apple-load-20261029/lumen-text-streams-80a60752a025a3b1` SHA-256 `80a60752a025a3b1c0bfda4485c9e37c9da2e203eaab63b5cc884ccaec218129` passes946 custom assertions and original6/6 files,1850/1850 assertions. Fresh upstream Encoding Streams group23/26 fully passes; non-UTF8 window/worker and cross-realm timeout remain. Accepted resource artifact733 and score45 unchanged until combined current-artifact gates pass. All1515 inventory rows retained. Exact source/evidence: `agent/evidence/102900614-007-shared-streams.json`. Do not merge historical207 results into this candidate's rates.
+
+## Checkpoint008 — measured span/glyph candidate
+
+Native `4773b85d28d3b1a7c17a1beee5225abc5141bb4cec4b713d409464ebe42582e9` passes97/97 raster checks, exact paired page pixels and scoped native capture. Scroll p95 is12.060%, improved from same-stream20.175%, but still fails fixed10%. Idle p95.991%, stable153.203MiB belong only to this exact binary. Current accepted733/score45 unchanged. Source manifest, byte-identical reference and all timing/evidence are in `agent/evidence/102900614-008-raster-glyph.json`.

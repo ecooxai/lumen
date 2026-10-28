@@ -1,0 +1,296 @@
+{
+  "iteration": "102900614-008",
+  "started_utc": "2026-10-28T23:26:56.745213+00:00",
+  "updated_utc": "2026-10-28T23:37:49.194609+00:00",
+  "elapsed_seconds": 652.449,
+  "total_session_seconds": 4987.736,
+  "score": 45,
+  "status": "Bounded span and glyph reuse improve fixed scrolling CPU;12.060% still exceeds10% gate",
+  "native_artifact_promoted": false,
+  "accepted_native_unchanged": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
+  "candidate_binary_sha256": "4773b85d28d3b1a7c17a1beee5225abc5141bb4cec4b713d409464ebe42582e9",
+  "candidate_source_manifest": "agent/evidence/102900614-008/tracked-compiled-source-sha256.json",
+  "compiled_tracked_inputs": 150,
+  "ignored_inventory_inputs": 52,
+  "source_sha256": {
+    "src/paint/raster.c": "ab8490489c5c3f670d903ee0959ded347464b5b3bcc577007db164d0012cedf1",
+    "tests/test_render_overdraw.c": "c46fb31407ef24b9fa050b1aba964fb34d6cb707eb4be48c02f54a5806fe924f"
+  },
+  "implementation": "Whole-span fractional rectangle blending preserves exact coverage; a bounded glyph lookup cache reuses persistent font-owned glyph pointers. No event/input/frame throttling or acceptance threshold changes.",
+  "unit_checks": {
+    "span_reference": 93,
+    "span_candidate": 93,
+    "span_independent_cases": 12000,
+    "glyph_red_passed": 95,
+    "glyph_red_total": 97,
+    "glyph_green_passed": 97,
+    "glyph_green_total": 97,
+    "glyph_independent_text_cases": 7168
+  },
+  "build_and_test_seconds": {
+    "raster-span-reference-1": 2.885,
+    "raster-span-candidate-1": 2.551,
+    "glyph-cache-reference-1": 2.597,
+    "glyph-cache-candidate-1": 2.555
+  },
+  "resources": {
+    "reference_binary_sha256": "80a60752a025a3b1c0bfda4485c9e37c9da2e203eaab63b5cc884ccaec218129",
+    "span_binary_sha256": "970e6cafc95133ca62ec02f7c9deeaffe568f276dbafda39d117c4f04fc9217b",
+    "glyph_binary_sha256": "4773b85d28d3b1a7c17a1beee5225abc5141bb4cec4b713d409464ebe42582e9",
+    "reference_scroll_p95_percent": 20.175,
+    "span_scroll_p95_percent": 16.935,
+    "glyph_scroll_p95_percent": 12.06,
+    "glyph_scroll_mean_percent": 9.912,
+    "p95_reduction_from_same_stream_baseline_percent": 40.223,
+    "fixed_scroll_p95_ceiling_percent": 10,
+    "accepted": false,
+    "idle_p95_percent": 0.991,
+    "idle_rss_start_mib": 153.203,
+    "idle_rss_end_mib": 153.203,
+    "glyph_duration_seconds": 117.419,
+    "page_pixels_identical": true,
+    "native_window_captured": true,
+    "gpu_clean": true
+  },
+  "evidence": [
+    {
+      "source": "output/session-102900614/raster-span-reference-1/summary.json",
+      "committed": "agent/evidence/102900614-008/00-raster-span-reference-1-summary.json",
+      "sha256": "4be2abd5d25f8a405551e5c1ff0a40b5d2e8252e77a1a2e1b5b99a79c8aade4c",
+      "bytes": 7448
+    },
+    {
+      "source": "output/session-102900614/raster-span-reference-1/compiled-source-sha256.json",
+      "committed": "agent/evidence/102900614-008/01-raster-span-reference-1-compiled-source-sha256.json",
+      "sha256": "b327a549b71b21f46934236db8e231a37e6e16063fb140d079bb0a369443d8cb",
+      "bytes": 22197
+    },
+    {
+      "source": "output/session-102900614/raster-span-reference-1/compiled-dependency-sha256.json",
+      "committed": "agent/evidence/102900614-008/02-raster-span-reference-1-compiled-dependency-sha256.json",
+      "sha256": "786de82a24ec6fc6f68c1e7d774e7d14f2f67555ed27927ff651ae2cd983c426",
+      "bytes": 72005
+    },
+    {
+      "source": "output/session-102900614/raster-span-reference-1/build.json",
+      "committed": "agent/evidence/102900614-008/03-raster-span-reference-1-build.json",
+      "sha256": "41096571b7398e209c2e2711bcdf3b04269332cc96935b237d186662f0cea2dc",
+      "bytes": 2006
+    },
+    {
+      "source": "output/session-102900614/raster-span-reference-1/build.log",
+      "committed": "agent/evidence/102900614-008/04-raster-span-reference-1-build.log",
+      "sha256": "80e630694458db04b44b41931e0794370359cfb56b21865d87860e56a76c302c",
+      "bytes": 4537
+    },
+    {
+      "source": "output/session-102900614/raster-span-reference-1/pixel-equivalence.json",
+      "committed": "agent/evidence/102900614-008/05-raster-span-reference-1-pixel-equivalence.json",
+      "sha256": "9d295387563ed31f145147c07612c2f75aec5b98595f8113eaa3f74dfba94f91",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/raster-span-reference-1/pixel-equivalence.log",
+      "committed": "agent/evidence/102900614-008/06-raster-span-reference-1-pixel-equivalence.log",
+      "sha256": "38ff16d5b1dbba4354856fa9507c0c0d1db7c9f0284b0fd8ae673ef703fbb3f2",
+      "bytes": 44
+    },
+    {
+      "source": "output/session-102900614/raster-span-candidate-1/summary.json",
+      "committed": "agent/evidence/102900614-008/07-raster-span-candidate-1-summary.json",
+      "sha256": "312db22f35889934eaac3bce15c559a139da4d585f70d1fb8a4b77cfba799863",
+      "bytes": 7445
+    },
+    {
+      "source": "output/session-102900614/raster-span-candidate-1/compiled-source-sha256.json",
+      "committed": "agent/evidence/102900614-008/08-raster-span-candidate-1-compiled-source-sha256.json",
+      "sha256": "7f3174828aa6bcd5833d0d8b3ef9c828b1be1bb60b8d988f0050ead38bbad1ae",
+      "bytes": 22197
+    },
+    {
+      "source": "output/session-102900614/raster-span-candidate-1/compiled-dependency-sha256.json",
+      "committed": "agent/evidence/102900614-008/09-raster-span-candidate-1-compiled-dependency-sha256.json",
+      "sha256": "2b2060af9d6d3341fa1a143a742175781fa284d5a2b62f098ad8d8df3cd59435",
+      "bytes": 72005
+    },
+    {
+      "source": "output/session-102900614/raster-span-candidate-1/build.json",
+      "committed": "agent/evidence/102900614-008/10-raster-span-candidate-1-build.json",
+      "sha256": "cf89ec0827ef4fba1c16857ad7257c948d10dc5ca1fbf0fface29856cade7834",
+      "bytes": 1998
+    },
+    {
+      "source": "output/session-102900614/raster-span-candidate-1/build.log",
+      "committed": "agent/evidence/102900614-008/11-raster-span-candidate-1-build.log",
+      "sha256": "97b49d285a833ac8e31a72eff9b7cb01b1f6f156171faaa0d7613a39ad0c0b28",
+      "bytes": 8735
+    },
+    {
+      "source": "output/session-102900614/raster-span-candidate-1/pixel-equivalence.json",
+      "committed": "agent/evidence/102900614-008/12-raster-span-candidate-1-pixel-equivalence.json",
+      "sha256": "47a2900dca2637981ee60cc2761b6a9a1fa432d49f6482abd1ed4947c0785fa4",
+      "bytes": 2004
+    },
+    {
+      "source": "output/session-102900614/raster-span-candidate-1/pixel-equivalence.log",
+      "committed": "agent/evidence/102900614-008/13-raster-span-candidate-1-pixel-equivalence.log",
+      "sha256": "38ff16d5b1dbba4354856fa9507c0c0d1db7c9f0284b0fd8ae673ef703fbb3f2",
+      "bytes": 44
+    },
+    {
+      "source": "output/session-102900614/glyph-cache-reference-1/summary.json",
+      "committed": "agent/evidence/102900614-008/14-glyph-cache-reference-1-summary.json",
+      "sha256": "3cc24bfb94e40bac154bb214f3e7b3139a0b08c7b9eac06f6fa08eae96bbb3c4",
+      "bytes": 7413
+    },
+    {
+      "source": "output/session-102900614/glyph-cache-reference-1/compiled-source-sha256.json",
+      "committed": "agent/evidence/102900614-008/15-glyph-cache-reference-1-compiled-source-sha256.json",
+      "sha256": "7f3174828aa6bcd5833d0d8b3ef9c828b1be1bb60b8d988f0050ead38bbad1ae",
+      "bytes": 22197
+    },
+    {
+      "source": "output/session-102900614/glyph-cache-reference-1/compiled-dependency-sha256.json",
+      "committed": "agent/evidence/102900614-008/16-glyph-cache-reference-1-compiled-dependency-sha256.json",
+      "sha256": "30dd2207fa2613ce1d138ffe7df2f4da56c1911bb28ca280fa621a7811ae5dad",
+      "bytes": 72005
+    },
+    {
+      "source": "output/session-102900614/glyph-cache-reference-1/build.json",
+      "committed": "agent/evidence/102900614-008/17-glyph-cache-reference-1-build.json",
+      "sha256": "bd69fb9efaaa2e2d1cb7ca1a7365ad2f65ba2543e63cc95e42d9e15c047728d6",
+      "bytes": 2006
+    },
+    {
+      "source": "output/session-102900614/glyph-cache-reference-1/build.log",
+      "committed": "agent/evidence/102900614-008/18-glyph-cache-reference-1-build.log",
+      "sha256": "80e630694458db04b44b41931e0794370359cfb56b21865d87860e56a76c302c",
+      "bytes": 4537
+    },
+    {
+      "source": "output/session-102900614/glyph-cache-reference-1/pixel-equivalence.json",
+      "committed": "agent/evidence/102900614-008/19-glyph-cache-reference-1-pixel-equivalence.json",
+      "sha256": "4a19be97466435f6613e770dedd086a9081a6985d4793559916c151b427c7834",
+      "bytes": 2046
+    },
+    {
+      "source": "output/session-102900614/glyph-cache-reference-1/pixel-equivalence.log",
+      "committed": "agent/evidence/102900614-008/20-glyph-cache-reference-1-pixel-equivalence.log",
+      "sha256": "fce5612338e840a366a4cb540ce245d582c23abce4c4597ac054828f9cf65297",
+      "bytes": 225
+    },
+    {
+      "source": "output/session-102900614/glyph-cache-candidate-1/summary.json",
+      "committed": "agent/evidence/102900614-008/21-glyph-cache-candidate-1-summary.json",
+      "sha256": "3bbf770b2670fa5f2a0a33983b0e2bc1b61577c0209ac34be0c44c6730bf1030",
+      "bytes": 7409
+    },
+    {
+      "source": "output/session-102900614/glyph-cache-candidate-1/compiled-source-sha256.json",
+      "committed": "agent/evidence/102900614-008/22-glyph-cache-candidate-1-compiled-source-sha256.json",
+      "sha256": "b1661b00ce1d1bd974bfa948da42114aaf3851d9dfecc65f6d34cac45eedad3a",
+      "bytes": 22197
+    },
+    {
+      "source": "output/session-102900614/glyph-cache-candidate-1/compiled-dependency-sha256.json",
+      "committed": "agent/evidence/102900614-008/23-glyph-cache-candidate-1-compiled-dependency-sha256.json",
+      "sha256": "8bf270e8418becd9faff8f3ac72150202780b10cdd55b94413624c71213b29d3",
+      "bytes": 72005
+    },
+    {
+      "source": "output/session-102900614/glyph-cache-candidate-1/build.json",
+      "committed": "agent/evidence/102900614-008/24-glyph-cache-candidate-1-build.json",
+      "sha256": "d75db0d91fd59ad02635bd6aeba079e96d6769ec9bba8b4c9ae37806a2165116",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/glyph-cache-candidate-1/build.log",
+      "committed": "agent/evidence/102900614-008/25-glyph-cache-candidate-1-build.log",
+      "sha256": "97b49d285a833ac8e31a72eff9b7cb01b1f6f156171faaa0d7613a39ad0c0b28",
+      "bytes": 8735
+    },
+    {
+      "source": "output/session-102900614/glyph-cache-candidate-1/pixel-equivalence.json",
+      "committed": "agent/evidence/102900614-008/26-glyph-cache-candidate-1-pixel-equivalence.json",
+      "sha256": "ef4955ff7ff25ca755b3b5ad3ba9f2e34b3244e9afb2ea98cee097f6b1576e46",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/glyph-cache-candidate-1/pixel-equivalence.log",
+      "committed": "agent/evidence/102900614-008/27-glyph-cache-candidate-1-pixel-equivalence.log",
+      "sha256": "6768c102335f6b2f85a3784bc0cf43b1662e0773322d1d876b638830b782a446",
+      "bytes": 44
+    },
+    {
+      "source": "output/session-102900614/scroll-raster-span-control/summary.json",
+      "committed": "agent/evidence/102900614-008/28-scroll-raster-span-control-summary.json",
+      "sha256": "de676e797a61478c067ed2451b8b3674dbc9ef84bf099125f6ecc73fa8d5428a",
+      "bytes": 3839
+    },
+    {
+      "source": "output/session-102900614/scroll-raster-span/receipt.json",
+      "committed": "agent/evidence/102900614-008/29-scroll-raster-span-receipt.json",
+      "sha256": "a253dce759d44f162519baebb040b189d71184612ac5bce4b0b0014e0b3d6460",
+      "bytes": 13191
+    },
+    {
+      "source": "output/session-102900614/scroll-raster-span/pixel-comparison.json",
+      "committed": "agent/evidence/102900614-008/30-scroll-raster-span-pixel-comparison.json",
+      "sha256": "6dcf84a4b4d147754e67260956a32ff993e48b9a2f7459fb4a1ad1e8875b0681",
+      "bytes": 1764
+    },
+    {
+      "source": "output/session-102900614/scroll-raster-span/native-window-capture/receipt.json",
+      "committed": "agent/evidence/102900614-008/31-native-window-capture-receipt.json",
+      "sha256": "a343e23df17ec7944398981b5d8b7891f1bee49a63c935993f35dafc84a073c4",
+      "bytes": 1646
+    },
+    {
+      "source": "output/session-102900614/scroll-glyph-cache-control/summary.json",
+      "committed": "agent/evidence/102900614-008/32-scroll-glyph-cache-control-summary.json",
+      "sha256": "1cab4bab5ebe56c36de7be35badfaca8bac5c7b3b63f9f8606612c703882d5ac",
+      "bytes": 4191
+    },
+    {
+      "source": "output/session-102900614/scroll-glyph-cache/receipt.json",
+      "committed": "agent/evidence/102900614-008/33-scroll-glyph-cache-receipt.json",
+      "sha256": "29b2175a2f2a3fae08dcf53b813d9e317a782e5728fe77b4365b368e19592b45",
+      "bytes": 13182
+    },
+    {
+      "source": "output/session-102900614/scroll-glyph-cache/pixel-comparison.json",
+      "committed": "agent/evidence/102900614-008/34-scroll-glyph-cache-pixel-comparison.json",
+      "sha256": "6e6d9b823decdbfe14799fc5a63079dccf20f05ad4012023802b865f6d7d7ff9",
+      "bytes": 1759
+    },
+    {
+      "source": "output/session-102900614/scroll-glyph-cache/native-window-capture/receipt.json",
+      "committed": "agent/evidence/102900614-008/35-native-window-capture-receipt.json",
+      "sha256": "dad123d32afd82f795049dff3b48fa52b074b3096db5eec6c780a1fd136833a7",
+      "bytes": 1646
+    },
+    {
+      "source": "output/session-102900614/scroll-raster-reference/receipt.json",
+      "committed": "agent/evidence/102900614-008/36-scroll-raster-reference-receipt.json",
+      "sha256": "4cfe550f0c4998245550712346448516e16848f12527cc2632c26e0e94674831",
+      "bytes": 13180
+    }
+  ],
+  "raw_byte_preservation": [
+    "agent/evidence/102900614-008/04-raster-span-reference-1-build.log",
+    "agent/evidence/102900614-008/06-raster-span-reference-1-pixel-equivalence.log",
+    "agent/evidence/102900614-008/11-raster-span-candidate-1-build.log",
+    "agent/evidence/102900614-008/13-raster-span-candidate-1-pixel-equivalence.log",
+    "agent/evidence/102900614-008/18-glyph-cache-reference-1-build.log",
+    "agent/evidence/102900614-008/20-glyph-cache-reference-1-pixel-equivalence.log",
+    "agent/evidence/102900614-008/25-glyph-cache-candidate-1-build.log",
+    "agent/evidence/102900614-008/27-glyph-cache-candidate-1-pixel-equivalence.log"
+  ],
+  "limits": [
+    "Current accepted733 and score45 remain unchanged; fresh combined standards and navigation soak gates remain pending.",
+    "Fixed10% scrollingCPU acceptance still fails; idle/CPU results belong only to the exact measured binaries.",
+    "The earlier b62 GPU abort and all previous raw failures remain preserved in checkpoint004.",
+    "Same signed IPA execution on Mac/iOS/iPad remains unproved."
+  ],
+  "model_compute_duration": "Unavailable; parallel worker wall times are not summed"
+}

@@ -674,7 +674,7 @@
       }
     }
   ],
-  "updated_utc": "2026-10-28T23:26:56.745213+00:00",
+  "updated_utc": "2026-10-28T23:37:49.194609+00:00",
   "current_baseline_binary_sha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
   "full_official_wpt_pass_percent": null,
   "current_native_source_base_commit": "22359337f8036da7170fa0e06e4b486dfc5cd440",
@@ -847,6 +847,15 @@
       "total_session_seconds": 4335.286,
       "score": 45,
       "status": "Shared stream candidate validated; original WPT retained;23/26 fresh upstream stream variants pass"
+    },
+    {
+      "iteration": "102900614-008",
+      "started_utc": "2026-10-28T23:26:56.745213+00:00",
+      "updated_utc": "2026-10-28T23:37:49.194609+00:00",
+      "elapsed_seconds": 652.449,
+      "total_session_seconds": 4987.736,
+      "score": 45,
+      "status": "Bounded span and glyph reuse improve fixed scrolling CPU;12.060% still exceeds10% gate"
     }
   ],
   "current_native_source_manifest": "agent/evidence/102900614-003/compiled-source-sha256.json",
@@ -867,6 +876,14 @@
       "evidence": "agent/evidence/102900614-007-shared-streams.json",
       "accepted": false,
       "note": "Verified functional shared-stream candidate with original6/6 and fresh23/26 upstream variants; combined resource/soak acceptance pending."
+    },
+    {
+      "iteration": "102900614-008",
+      "binary_sha256": "4773b85d28d3b1a7c17a1beee5225abc5141bb4cec4b713d409464ebe42582e9",
+      "source_manifest": "agent/evidence/102900614-008/tracked-compiled-source-sha256.json",
+      "evidence": "agent/evidence/102900614-008-raster-glyph.json",
+      "accepted": false,
+      "note": "Paired span/glyph resource improvement with exact pixels and native capture;12.060% still exceeds fixed10% gate."
     }
   ],
   "reference_qualification": {

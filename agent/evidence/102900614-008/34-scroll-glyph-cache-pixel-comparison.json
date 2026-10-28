@@ -1,0 +1,47 @@
+{
+  "startedUTC": "2026-10-28T23:33:19.720789+00:00",
+  "scope": "Exact final CPU-frame page pixels and fractional DOM position; dynamic compact toolbar excluded. Actual native window capture is separate.",
+  "passed": true,
+  "baseline": {
+    "directory": "output/session-102900614/scroll-raster-span",
+    "receiptSHA256": "a253dce759d44f162519baebb040b189d71184612ac5bce4b0b0014e0b3d6460",
+    "binarySHA256": "970e6cafc95133ca62ec02f7c9deeaffe568f276dbafda39d117c4f04fc9217b",
+    "imageSHA256": "ac791f9996ecf5a50debd841b7e8897b2cfb2470aa4614427ec48916a60ca561",
+    "scroll": {
+      "events": 2662,
+      "maxY": 6000.07177734375,
+      "finalY": 6000.07177734375
+    },
+    "input": {
+      "source": "Existing native SDL wheel hook",
+      "parameters": "400,400,-0.08,15000,1875",
+      "scheduled_event_count": 1875,
+      "scheduled_duration_seconds": 30
+    }
+  },
+  "candidate": {
+    "directory": "output/session-102900614/scroll-glyph-cache",
+    "receiptSHA256": "29b2175a2f2a3fae08dcf53b813d9e317a782e5728fe77b4365b368e19592b45",
+    "binarySHA256": "4773b85d28d3b1a7c17a1beee5225abc5141bb4cec4b713d409464ebe42582e9",
+    "imageSHA256": "15194460fffa41f6bde006643f64e06bd9c96807425e088edbd51e1f48b756f2",
+    "scroll": {
+      "events": 2530,
+      "maxY": 6000.07177734375,
+      "finalY": 6000.07177734375
+    },
+    "input": {
+      "source": "Existing native SDL wheel hook",
+      "parameters": "400,400,-0.08,15000,1875",
+      "scheduled_event_count": 1875,
+      "scheduled_duration_seconds": 30
+    }
+  },
+  "width": 1000,
+  "height": 700,
+  "toolbarPixelsExcluded": 44,
+  "pagePixelsCompared": 656000,
+  "differingPagePixels": 0,
+  "examples": [],
+  "finishedUTC": "2026-10-28T23:33:19.736350+00:00",
+  "durationSeconds": 0.016
+}

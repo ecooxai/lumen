@@ -1,0 +1,3 @@
+FAIL render-overdraw: one raster call reuses an exact repeated font/glyph/scale lookup
+FAIL render-overdraw: a fresh raster invocation never inherits a previous frame glyph pointer
+RESULTS render-overdraw FAIL (95/97 checks)

@@ -1,0 +1,46 @@
+{
+  "startedUTC": "2026-10-28T23:31:23.367308+00:00",
+  "scope": "One PID-verified native Lumen window only; no whole-desktop capture, permission request, or security change.",
+  "binary": "/Users/devin/repos/lumen/build-apple-load-20261029/lumen-glyph-cache-candidate-4773b85d28d3b1a7",
+  "binarySHA256": "4773b85d28d3b1a7c17a1beee5225abc5141bb4cec4b713d409464ebe42582e9",
+  "captured": true,
+  "helperSHA256": "c5d89b66a77cea47eeb9acc287ec819bedb9e322aed0171ba9602d5b9aeed939",
+  "process": {
+    "pid": 48305,
+    "executable": "/Users/devin/repos/lumen/build-apple-load-20261029/lumen-glyph-cache-candidate-4773b85d28d3b1a7",
+    "startIdentity": "Wed Oct 28 16:31:23 2026"
+  },
+  "windowInventory": {
+    "pid": 48305,
+    "screenCapturePermission": true,
+    "windows": [
+      {
+        "id": 5578,
+        "layer": 0,
+        "alpha": 1.0,
+        "width": 1000.0,
+        "height": 700.0
+      }
+    ]
+  },
+  "selectedWindow": {
+    "id": 5578,
+    "layer": 0,
+    "alpha": 1.0,
+    "width": 1000.0,
+    "height": 700.0
+  },
+  "captureExitCode": 0,
+  "captureStderr": "",
+  "processAfterCapture": {
+    "pid": 48305,
+    "executable": "/Users/devin/repos/lumen/build-apple-load-20261029/lumen-glyph-cache-candidate-4773b85d28d3b1a7",
+    "startIdentity": "Wed Oct 28 16:31:23 2026"
+  },
+  "screenshot": "output/session-102900614/scroll-glyph-cache/native-window-capture/gpt6-astra-pro_builtin-agents_devinmac3d_lumen-window.png",
+  "screenshotSHA256": "4ad4a19a9f47fb16115c49d7f4ec53ad56c25f02f68229efcbfe3747fb998bb2",
+  "width": 1000,
+  "height": 700,
+  "finishedUTC": "2026-10-28T23:31:48.801225+00:00",
+  "durationSeconds": 25.434
+}

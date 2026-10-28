@@ -206,3 +206,11 @@ Consolidated outdated task-owned instructions and archived both previous documen
 - Source/fixture/compiled-manifest identities are checked against this isolated commit. Raster, legacy-codec and frame-lifecycle working edits are excluded. No733/2dac resource numbers are attributed to80a. Evidence `agent/evidence/102900614-007-shared-streams.json`.
 
 Checkpoint007 commit infrastructure follow-up `2026-10-28T23:29:47.289388+00:00`: Git's whitespace check found original CRLF CSV rows and Node assertion whitespace in exactly three measured RED copies. Their hashes were independently matched to original raw files and staged bytes, then only these copies were excluded from the whitespace check. All authored source remains strictly checked; original bytes, test results and iteration count are unchanged. See `agent/evidence/102900614-007/raw-byte-preservation.json`.
+
+## 102900614-008 — exact span blending and bounded glyph reuse
+
+- Start `2026-10-28T23:26:56.745213+00:00`; end `2026-10-28T23:37:49.194609+00:00`; checkpoint `652.449s`; total session `4987.736s`. Accepted score **45/100** and native733 remain unchanged.
+- Fractional rectangle oracle **93/93**, including12,000 independent coverage/alpha/clipping cases. Glyph reuse frozen fixture **95/97 RED →97/97 GREEN**, including7,168 independent text cases. Existing V8 binaries reused; each build/test stage monitored at1Hz. Short checks provide no steady-state CPU credit.
+- Same-stream paired native scroll p95 **20.175% →16.935% →12.060%**; glyph mean **9.912%**, final idle p95 **0.991%**, settledRSS **153.203MiB**, stable across the measured idle phase. Fixed **10% scrolling gate still fails**. Final workload117.419s; exact page pixels, scoped native-window capture and GPU errors all pass.
+- Source and compiler dependency comparisons differ only in raster.c; glyph reference bytes exactly equal the prior measured span binary. Persistent font-owned glyph allocations were independently reviewed; the bounded lookup cache does not own/free them.
+- Combined candidate4773 remains unpromoted pending fresh combined standards/resource/soak checks. Prior failedGPU receipts remain preserved; no historical performance numbers are transferred to a new binary. Evidence `agent/evidence/102900614-008-raster-glyph.json`. Parallel worker wall times are not summed.

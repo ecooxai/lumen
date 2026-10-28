@@ -1,0 +1,46 @@
+{
+  "startedUTC": "2026-10-28T23:24:48.286558+00:00",
+  "scope": "One PID-verified native Lumen window only; no whole-desktop capture, permission request, or security change.",
+  "binary": "/Users/devin/repos/lumen/build-apple-load-20261029/lumen-raster-span-candidate-970e6cafc95133ca",
+  "binarySHA256": "970e6cafc95133ca62ec02f7c9deeaffe568f276dbafda39d117c4f04fc9217b",
+  "captured": true,
+  "helperSHA256": "c5d89b66a77cea47eeb9acc287ec819bedb9e322aed0171ba9602d5b9aeed939",
+  "process": {
+    "pid": 39038,
+    "executable": "/Users/devin/repos/lumen/build-apple-load-20261029/lumen-raster-span-candidate-970e6cafc95133ca",
+    "startIdentity": "Wed Oct 28 16:24:48 2026"
+  },
+  "windowInventory": {
+    "pid": 39038,
+    "screenCapturePermission": true,
+    "windows": [
+      {
+        "id": 5571,
+        "layer": 0,
+        "alpha": 1.0,
+        "width": 1000.0,
+        "height": 700.0
+      }
+    ]
+  },
+  "selectedWindow": {
+    "id": 5571,
+    "layer": 0,
+    "alpha": 1.0,
+    "width": 1000.0,
+    "height": 700.0
+  },
+  "captureExitCode": 0,
+  "captureStderr": "",
+  "processAfterCapture": {
+    "pid": 39038,
+    "executable": "/Users/devin/repos/lumen/build-apple-load-20261029/lumen-raster-span-candidate-970e6cafc95133ca",
+    "startIdentity": "Wed Oct 28 16:24:48 2026"
+  },
+  "screenshot": "output/session-102900614/scroll-raster-span/native-window-capture/gpt6-astra-pro_builtin-agents_devinmac3d_lumen-window.png",
+  "screenshotSHA256": "d329c5081ba0412750e92c015d93535cba895651ba284ef00d44cf3728dc55b0",
+  "width": 1000,
+  "height": 700,
+  "finishedUTC": "2026-10-28T23:25:13.689869+00:00",
+  "durationSeconds": 25.403
+}

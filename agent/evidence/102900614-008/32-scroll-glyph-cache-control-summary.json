@@ -1,0 +1,114 @@
+{
+  "startedUTC": "2026-10-28T23:31:23.333662+00:00",
+  "binary": {
+    "path": "build-apple-load-20261029/lumen-glyph-cache-candidate-4773b85d28d3b1a7",
+    "sha256": "4773b85d28d3b1a7c17a1beee5225abc5141bb4cec4b713d409464ebe42582e9",
+    "bytes": 14020888
+  },
+  "changedCompiledSources": [
+    "src/paint/raster.c"
+  ],
+  "runnerSHA256": "61f919ee0be6e2a972237d7ed7cf9e71f827ff3d9f6d2a8336cebca9fbd9cfb7",
+  "changedCompiledDependencies": [
+    "src/paint/raster.c"
+  ],
+  "baselineByteIdentity": {
+    "sha256": "970e6cafc95133ca62ec02f7c9deeaffe568f276dbafda39d117c4f04fc9217b",
+    "measuredBinary": "build-apple-load-20261029/lumen-raster-span-candidate-970e6cafc95133ca",
+    "referenceBuildBinary": "build-apple-load-20261029/lumen-glyph-cache-reference-970e6cafc95133ca",
+    "sameBytesAtDistinctSnapshotPaths": true
+  },
+  "scope": "The original 115s native scroll workload, 1875 inputs, 1Hz telemetry and thresholds are unchanged. An external PID-scoped window capture may perturb one candidate interval; it never alters application input/render cadence.",
+  "resourceAccepted": false,
+  "pixelIdentical": true,
+  "nativeWindowCaptured": true,
+  "runnerExitCode": 1,
+  "captureExitCode": 0,
+  "resourceReceipt": "output/session-102900614/scroll-glyph-cache/receipt.json",
+  "resourceReceiptSHA256": "29b2175a2f2a3fae08dcf53b813d9e317a782e5728fe77b4365b368e19592b45",
+  "resourceIssues": [
+    "scrolling: CPU p95 12.06% exceeds 10%"
+  ],
+  "phaseMetrics": {
+    "startup": {
+      "samples": 16,
+      "observed_samples": 16,
+      "duration_seconds": 14.993,
+      "cpu_mean_percent": 2.597,
+      "cpu_median_percent": 1.001,
+      "cpu_p95_percent": 22.939,
+      "cpu_peak_percent": 22.939,
+      "samples_above_threshold": null,
+      "cpu_threshold_percent": null,
+      "cpu_status": "measured_no_threshold",
+      "rss_start_mib": 0.031,
+      "rss_end_mib": 157.109,
+      "rss_peak_mib": 157.156,
+      "rss_change_mib": 157.078,
+      "phase_boundary_samples_excluded_from_cpu_summary": 1,
+      "first_seen_process_events": 1
+    },
+    "scrolling": {
+      "samples": 35,
+      "observed_samples": 35,
+      "duration_seconds": 33.995,
+      "cpu_mean_percent": 9.912,
+      "cpu_median_percent": 11.005,
+      "cpu_p95_percent": 12.06,
+      "cpu_peak_percent": 12.062,
+      "samples_above_threshold": null,
+      "cpu_threshold_percent": null,
+      "cpu_status": "measured_no_threshold",
+      "rss_start_mib": 160.594,
+      "rss_end_mib": 153.906,
+      "rss_peak_mib": 164.469,
+      "rss_change_mib": -6.688,
+      "phase_boundary_samples_excluded_from_cpu_summary": 1,
+      "first_seen_process_events": 0
+    },
+    "settle:after": {
+      "samples": 15,
+      "observed_samples": 15,
+      "duration_seconds": 13.999,
+      "cpu_mean_percent": 0.071,
+      "cpu_median_percent": 0.0,
+      "cpu_p95_percent": 0.99,
+      "cpu_peak_percent": 0.99,
+      "samples_above_threshold": null,
+      "cpu_threshold_percent": null,
+      "cpu_status": "measured_no_threshold",
+      "rss_start_mib": 153.906,
+      "rss_end_mib": 153.203,
+      "rss_peak_mib": 153.906,
+      "rss_change_mib": -0.703,
+      "phase_boundary_samples_excluded_from_cpu_summary": 1,
+      "first_seen_process_events": 0
+    },
+    "idle:after": {
+      "samples": 50,
+      "observed_samples": 50,
+      "duration_seconds": 48.998,
+      "cpu_mean_percent": 0.061,
+      "cpu_median_percent": 0.0,
+      "cpu_p95_percent": 0.991,
+      "cpu_peak_percent": 1.008,
+      "samples_above_threshold": 0,
+      "cpu_threshold_percent": 3,
+      "cpu_status": "within_threshold",
+      "rss_start_mib": 153.203,
+      "rss_end_mib": 153.203,
+      "rss_peak_mib": 153.203,
+      "rss_change_mib": 0.0,
+      "phase_boundary_samples_excluded_from_cpu_summary": 1,
+      "first_seen_process_events": 0
+    }
+  },
+  "windowCaptureReceipt": "output/session-102900614/scroll-glyph-cache/native-window-capture/receipt.json",
+  "windowCaptureIssue": null,
+  "pixelCommandExitCode": 0,
+  "pixelComparison": "output/session-102900614/scroll-glyph-cache/pixel-comparison.json",
+  "gpuErrors": [],
+  "gpuClean": true,
+  "finishedUTC": "2026-10-28T23:33:20.752734+00:00",
+  "durationSeconds": 117.419
+}
