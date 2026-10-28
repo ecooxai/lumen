@@ -81,3 +81,14 @@ Native SHA `7f0cafc374cf2cf1c51f83f44eec8da7220b996ac836bef4fd6caf3687623026`: s
 A separate166.162s controlled20-navigation run completed21pages×80clone/Attr/import checks. Settled RSSmedian155.750→147.656MiB(-8.094MiB), live nodes1218/styles11/workers0 unchanged, no gaps/errors or forced process cleanup. Identical workload per page, with different step URLs; no tab-close, forced-GC, deviceIPA or universalRAM claim. Evidence `agent/evidence/10290244-006-wheel-routing.json`.
 
 Task score 45.00/100. Expanded1515-variant WPT stays incomplete and f941 cohort historical; same-device IPA gates remain unverified. Continue broader failure fixes and high scrolling CPU work until the deadline.
+
+
+## Iteration10290244-007 — DOM ownership, events and microtask ordering
+
+Start: 2026-10-28T20:09:22.517549+00:00. End: 2026-10-28T20:40:00.823780+00:00. Iteration wall: 1838.306s. Session elapsed: 6745.824s. Implementation: wpt_engine and apple_runtime; independent peer review by both owners; integration by release_integrator and root. Parallel model compute time is unavailable. Native source checkpoint `4517145578ef3374cba6e699b2fe183fc25e48a0` was committed before the next candidate was applied.
+
+This checkpoint repairs adopted/template document ownership, foreign attribute namespace metadata, live qualified-name collections, event initialization and dispatch state, and event/microtask FIFO/error reporting. Fifteen measured build/test stages passed; the prebuilt-V8 incremental build took11.092s. The exact total is714/714 targeted checks (the earlier814 summary was a counting typo). The unchanged six-file WPT subset freshly passes1850/1850 in native Lume and the installed control. Current native SHA `eac62c75a9958f9cdc26cc85d4aa54e17c4031f9c9e43915263673375626fb55`.
+
+Additional absolute upstream evidence on this artifact includes DOM995/996 with13/14 fully passing files, events78/78 with16/16 fully passing files, and microtasks5/10 fully passing files. The complete frozen1515-variant inventory remains unchanged and incomplete. The installed Google-signed Chrome156.0.8078.48 separately failed9of12 native URL/anchor sanity checks on fresh about:blank; preserve all recorded failures and quarantine comparative retention. Downloaded official CfT archive integrity matches its Google storage ETag, but its macOS signing verification failed; no CfT execution or trust bypass has been accepted.
+
+Task score 40.00/100. Previous wheel idle/soak points are historical for this changed executable; scroll remains a known prior failure, not a current pass. Verified public delivery adds5points: live2s telemetry, full source-archive hash, and message/response. Its last verified archive identifies source `0e5c8e5c93e92f79d8461afc54af6f16debe5327`; refresh/push the new checkpoint immediately. Same-device IPA execution remains unverified. Evidence `agent/evidence/10290244-007-dom-events.json`.

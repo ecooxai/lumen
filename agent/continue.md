@@ -68,3 +68,10 @@ Verified base URL: https://4d3ee194969f5f51.czd5qzludboe.opentunnel.xyz. Code: t
 Current immutable native `build-apple-load-20261029/lumen-wheel-fast-path-7f0cafc374cf2cf1` SHA `7f0cafc374cf2cf1c51f83f44eec8da7220b996ac836bef4fd6caf3687623026` passes303 targeted checks and the unchanged1850-assertion WPT subset in both engines. Idle and controlled20-navigation memory gates pass on this exact artifact. Scroll p9521.973% stillFAILS10%; keep it visible. Task score 45.00/100 is not fullWPT conformance. SameIPA Mac/iPad/iPhone remains unverified.
 
 Expand category coverage without changing the frozen1515URL inventory. The existing f941 priority cohort is historical and may expose failures for new fixes; each changed candidate needs its own immutable cohort and baseline/performance proof. Refresh live status from the accepted scorecard after this commit, then push and regenerate the public source archive.
+
+
+## Accepted DOM/events checkpoint10290244-007
+
+Native `build-apple-load-20261029/lumen-dom-events-eac62c75a9958f9c` SHA `eac62c75a9958f9cdc26cc85d4aa54e17c4031f9c9e43915263673375626fb55` maps to committed source `4517145578ef3374cba6e699b2fe183fc25e48a0` and passes714 targeted checks plus the fixed1850-assertion WPT subset. Score40/100; native idle/scroll/soak needs fresh artifact-matched evidence. Expanded absolute DOM995/996 and events78/78 improve coverage, but the installed control failed independent URL sanity and comparative results remain quarantined. Preserve old reports. Newer frame/storage worktree changes belong to the next candidate and must not be staged with this documentation.
+
+Run source-only priority provenance checkpoint, push and refresh the public source archive/status, then resume isolated native/performance gates. The user deadline remains21:47:35Z. Child Mac MCP hung again; root brokers remote I/O. Local scratch recovered, but transport failures are not source/test failures.

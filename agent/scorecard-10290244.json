@@ -5,8 +5,8 @@
   "session_start_utc": "2026-10-28T18:47:35Z",
   "deadline_utc": "2026-10-28T21:47:35Z",
   "target_score": 98,
-  "score": 45,
-  "score_state": "selected_wpt_idle_navigation_pass_scroll_failed_broader_incomplete",
+  "score": 40,
+  "score_state": "selected_subset_pass_broader_incomplete_control_quarantined_native_performance_unverified",
   "unknown_means": "unverified, not measured failure",
   "rubric": "agent/scorecard-rubric-10290244.md",
   "gates": [
@@ -18,19 +18,23 @@
       "status": "passed",
       "earned": 10,
       "evidence": [
-        "output/session-20261029/native-qa-kit-v1/source/output/wpt-comparison-session10290244-wheel-fast-path-1.json"
+        "output/session-20261029/native-qa-kit-v1/source/output/wpt-comparison-session10290244-dom-events-1.json"
       ],
       "passed": 1850,
-      "denominator": 1850
+      "denominator": 1850,
+      "note": "Unchanged six-file upstream assertions only. The installed control has an independent URL anomaly; no broad Chrome parity claim."
     },
     {
       "id": "wpt_expanded",
       "category": "wpt",
       "weight": 20,
       "name": "Expanded important suite",
-      "status": "unverified",
+      "status": "incomplete_reference_quarantined",
       "earned": 0,
-      "evidence": []
+      "evidence": [
+        "output/wpt-10290244/priority-eac62-v1/priority-comparison.json"
+      ],
+      "note": "All1515 frozen variants stay in the inventory. Absolute native outcomes remain useful; incomplete categories and anomalous installed control cannot establish expanded comparative acceptance."
     },
     {
       "id": "wpt_no_regression",
@@ -40,11 +44,12 @@
       "status": "passed",
       "earned": 10,
       "evidence": [
-        "output/session-20261029/native-qa-kit-v1/source/output/wpt-comparison-session10290244-wheel-fast-path-1.json",
-        "output/session-10290244/wheel-fast-path-green-1/compiled-source-sha256.json",
-        "output/session-10290244/wheel-fast-path-green-1/summary.json"
+        "output/session-20261029/native-qa-kit-v1/source/output/wpt-comparison-session10290244-dom-events-1.json",
+        "output/session-10290244/dom-events-green-1/summary.json",
+        "output/session-10290244/dom-events-green-1/compiled-source-sha256.json"
       ],
-      "binary_sha256": "7f0cafc374cf2cf1c51f83f44eec8da7220b996ac836bef4fd6caf3687623026"
+      "binary_sha256": "eac62c75a9958f9cdc26cc85d4aa54e17c4031f9c9e43915263673375626fb55",
+      "source_commit": "4517145578ef3374cba6e699b2fe183fc25e48a0"
     },
     {
       "id": "ipa_mac",
@@ -78,14 +83,10 @@
       "category": "performance",
       "weight": 5,
       "name": "Idle",
-      "status": "passed",
-      "earned": 5,
-      "evidence": [
-        "output/session-10290244/native-scroll-wheel-fast-path/receipt.json",
-        "output/session-10290244/native-scroll-wheel-fast-path/process-summary.json",
-        "output/session-10290244/native-scroll-wheel-fast-path/process-samples.jsonl"
-      ],
-      "binary_sha256": "7f0cafc374cf2cf1c51f83f44eec8da7220b996ac836bef4fd6caf3687623026",
+      "status": "unverified",
+      "earned": 0,
+      "evidence": [],
+      "binary_sha256": "eac62c75a9958f9cdc26cc85d4aa54e17c4031f9c9e43915263673375626fb55",
       "settle_seconds": 15,
       "valid_window_seconds": 64.009,
       "samples": 65,
@@ -120,35 +121,43 @@
             "verdict": "passed",
             "scope": "Fixed post-scroll idle subgate only; does not make the scrolling or soak gate pass."
           }
+        },
+        {
+          "binary_sha256": "7f0cafc374cf2cf1c51f83f44eec8da7220b996ac836bef4fd6caf3687623026",
+          "evidence": [
+            "output/session-10290244/native-scroll-wheel-fast-path/receipt.json",
+            "output/session-10290244/native-scroll-wheel-fast-path/process-summary.json",
+            "output/session-10290244/native-scroll-wheel-fast-path/process-samples.jsonl"
+          ],
+          "prior_status": "passed",
+          "prior_earned": 5,
+          "review": {
+            "samples": 50,
+            "validIntervalSamples": 49,
+            "durationSeconds": 49.012,
+            "settleSeconds": 66.093,
+            "cpuP95Percent": 0.0,
+            "cpuMeanPercent": 0.04079591836734694,
+            "cpuPeakPercent": 1.0,
+            "rssStartMiB": 151.90625,
+            "rssEndMiB": 151.90625,
+            "verdict": "passed",
+            "scope": "Fixed final idle phase; raw peaks remain visible and zero p95 reflects sampler granularity, not literally zero CPU work."
+          }
         }
       ],
-      "note": "The allocation candidate is a new executable. Previous renderer CPU/RSS observations remain historical until an exact-artifact fresh run.",
-      "review": {
-        "samples": 50,
-        "validIntervalSamples": 49,
-        "durationSeconds": 49.012,
-        "settleSeconds": 66.093,
-        "cpuP95Percent": 0.0,
-        "cpuMeanPercent": 0.04079591836734694,
-        "cpuPeakPercent": 1.0,
-        "rssStartMiB": 151.90625,
-        "rssEndMiB": 151.90625,
-        "verdict": "passed",
-        "scope": "Fixed final idle phase; raw peaks remain visible and zero p95 reflects sampler granularity, not literally zero CPU work."
-      }
+      "note": "New native executable: prior wheel idle/scroll/navigation observations are historical. A short diagnostic profile is not an acceptance window."
     },
     {
       "id": "perf_interaction",
       "category": "performance",
       "weight": 5,
       "name": "Ordinary interaction",
-      "status": "failed",
+      "status": "unverified",
       "earned": 0,
-      "evidence": [
-        "output/session-10290244/native-scroll-wheel-fast-path/receipt.json"
-      ],
-      "note": "Ordinary SDL scrolling still exceeds unchanged10% target. Sequential observed reduction includes allocation and wheel changes, not an isolated wheel-only experiment.",
-      "binary_sha256": "7f0cafc374cf2cf1c51f83f44eec8da7220b996ac836bef4fd6caf3687623026",
+      "evidence": [],
+      "note": "New native executable: prior wheel idle/scroll/navigation observations are historical. A short diagnostic profile is not an acceptance window.",
+      "binary_sha256": "eac62c75a9958f9cdc26cc85d4aa54e17c4031f9c9e43915263673375626fb55",
       "ceiling_percent": 10,
       "historical_evidence": [
         {
@@ -159,68 +168,84 @@
           "prior_earned": 0,
           "prior_status": "failed",
           "review": null
+        },
+        {
+          "binary_sha256": "7f0cafc374cf2cf1c51f83f44eec8da7220b996ac836bef4fd6caf3687623026",
+          "evidence": [
+            "output/session-10290244/native-scroll-wheel-fast-path/receipt.json"
+          ],
+          "prior_status": "failed",
+          "prior_earned": 0,
+          "review": null
         }
-      ],
-      "scroll_cpu_p95_percent": 21.973
+      ]
     },
     {
       "id": "perf_soak",
       "category": "performance",
       "weight": 5,
       "name": "Controlled memory soak",
-      "status": "passed",
-      "earned": 5,
-      "evidence": [
-        "output/session-10290244/native-navigation-wheel-fast-path/receipt.json",
-        "output/session-10290244/native-navigation-wheel-fast-path/process-summary.json",
-        "output/session-10290244/native-navigation-wheel-fast-path/process-samples.jsonl"
-      ],
-      "note": "The allocation candidate is a new executable. Previous renderer CPU/RSS observations remain historical until an exact-artifact fresh run.",
-      "binary_sha256": "7f0cafc374cf2cf1c51f83f44eec8da7220b996ac836bef4fd6caf3687623026",
-      "review": {
-        "durationSeconds": 166.162,
-        "actualNavigations": 20,
-        "pages": 21,
-        "cloneAttrImportChecks": 1680,
-        "initialMedianRSSMiB": 155.75,
-        "finalMedianRSSMiB": 147.65625,
-        "growthMiB": -8.09375,
-        "nativeCounters": {
-          "initial": {
-            "malloc_in_use": 0.6,
-            "nodes": 1218.0,
-            "styles": 11.0,
-            "css_parsed": 0.0,
-            "workers": 0.0,
-            "heap": 0.0,
-            "ext": 0.0
-          },
-          "final": {
-            "malloc_in_use": 0.6,
-            "nodes": 1218.0,
-            "styles": 11.0,
-            "css_parsed": 0.1,
-            "workers": 0.0,
-            "heap": 0.0,
-            "ext": 0.0
+      "status": "unverified",
+      "earned": 0,
+      "evidence": [],
+      "note": "New native executable: prior wheel idle/scroll/navigation observations are historical. A short diagnostic profile is not an acceptance window.",
+      "binary_sha256": "eac62c75a9958f9cdc26cc85d4aa54e17c4031f9c9e43915263673375626fb55",
+      "historical_evidence": [
+        {
+          "binary_sha256": "7f0cafc374cf2cf1c51f83f44eec8da7220b996ac836bef4fd6caf3687623026",
+          "evidence": [
+            "output/session-10290244/native-navigation-wheel-fast-path/receipt.json",
+            "output/session-10290244/native-navigation-wheel-fast-path/process-summary.json",
+            "output/session-10290244/native-navigation-wheel-fast-path/process-samples.jsonl"
+          ],
+          "prior_status": "passed",
+          "prior_earned": 5,
+          "review": {
+            "durationSeconds": 166.162,
+            "actualNavigations": 20,
+            "pages": 21,
+            "cloneAttrImportChecks": 1680,
+            "initialMedianRSSMiB": 155.75,
+            "finalMedianRSSMiB": 147.65625,
+            "growthMiB": -8.09375,
+            "nativeCounters": {
+              "initial": {
+                "malloc_in_use": 0.6,
+                "nodes": 1218.0,
+                "styles": 11.0,
+                "css_parsed": 0.0,
+                "workers": 0.0,
+                "heap": 0.0,
+                "ext": 0.0
+              },
+              "final": {
+                "malloc_in_use": 0.6,
+                "nodes": 1218.0,
+                "styles": 11.0,
+                "css_parsed": 0.1,
+                "workers": 0.0,
+                "heap": 0.0,
+                "ext": 0.0
+              }
+            },
+            "finalIdle": {
+              "samples": 62,
+              "validIntervalSamples": 61,
+              "durationSeconds": 60.998,
+              "settleSeconds": 104.079,
+              "cpuP95Percent": 0.997,
+              "cpuMeanPercent": 0.0821967213114754,
+              "cpuPeakPercent": 1.011,
+              "rssStartMiB": 159.8125,
+              "rssEndMiB": 147.65625,
+              "verdict": "passed",
+              "scope": "Fixed final idle phase; raw peaks remain visible and zero p95 reflects sampler granularity, not literally zero CPU work."
+            },
+            "verdict": "passed",
+            "scope": "Controlled20-navigation context-teardown workload with identical16-document work per page. Initial/final URL step differs; no tab-close, forced-GC, IPA or universal memory claim."
           }
-        },
-        "finalIdle": {
-          "samples": 62,
-          "validIntervalSamples": 61,
-          "durationSeconds": 60.998,
-          "settleSeconds": 104.079,
-          "cpuP95Percent": 0.997,
-          "cpuMeanPercent": 0.0821967213114754,
-          "cpuPeakPercent": 1.011,
-          "rssStartMiB": 159.8125,
-          "rssEndMiB": 147.65625,
-          "verdict": "passed",
-          "scope": "Fixed final idle phase; raw peaks remain visible and zero p95 reflects sampler granularity, not literally zero CPU work."
-        },
-        "verdict": "passed",
-        "scope": "Controlled20-navigation context-teardown workload with identical16-document work per page. Initial/final URL step differs; no tab-close, forced-GC, IPA or universal memory claim."
-      }
+        }
+      ]
     },
     {
       "id": "perf_budgets",
@@ -230,11 +255,11 @@
       "status": "passed",
       "earned": 5,
       "evidence": [
-        "output/session-10290244/wheel-fast-path-green-1/summary.json"
+        "output/session-10290244/dom-events-green-1/summary.json"
       ],
-      "build_seconds": 4.098,
+      "build_seconds": 11.092,
       "prebuilt_v8": true,
-      "note": "Seven timed stages, one-second samples and4.098s prebuilt-V8 incremental build; all below five minutes."
+      "note": "Fifteen individually timed stages with1s samples;11.092s prebuilt-V8 build. Short test intervals do not establish idle or RSS acceptance."
     },
     {
       "id": "repro_tdd",
@@ -244,8 +269,8 @@
       "status": "passed",
       "earned": 5,
       "evidence": [
-        "output/session-10290244/wheel-fast-path-red.log",
-        "output/session-10290244/wheel-fast-path-green-1/summary.json"
+        "output/session-10290244/event-state-red.log",
+        "output/session-10290244/dom-events-green-1/summary.json"
       ]
     },
     {
@@ -256,19 +281,31 @@
       "status": "passed",
       "earned": 5,
       "evidence": [
-        "output/session-10290244/wheel-fast-path-green-1/compiled-source-sha256.json",
-        "output/session-10290244/wheel-fast-path-green-1/summary.json"
+        "output/session-10290244/dom-events-green-1/compiled-source-sha256.json",
+        "output/session-10290244/dom-events-green-1/summary.json"
       ],
-      "binary_sha256": "7f0cafc374cf2cf1c51f83f44eec8da7220b996ac836bef4fd6caf3687623026"
+      "binary_sha256": "eac62c75a9958f9cdc26cc85d4aa54e17c4031f9c9e43915263673375626fb55",
+      "source_commit": "4517145578ef3374cba6e699b2fe183fc25e48a0"
     },
     {
       "id": "release_progress",
       "category": "reproducibility_release",
       "weight": 5,
       "name": "Reviewed progress/release delivery",
-      "status": "unverified",
-      "earned": 0,
-      "evidence": []
+      "status": "passed",
+      "earned": 5,
+      "evidence": [
+        "output/session-10290244/progress-public-probe.json",
+        "output/session-10290244/progress-public-reply-check.json"
+      ],
+      "review": {
+        "liveOrigin": "https://4d3ee194969f5f51.czd5qzludboe.opentunnel.xyz",
+        "verifiedSourceCommit": "0e5c8e5c93e92f79d8461afc54af6f16debe5327",
+        "verifiedArchiveSHA256": "9db38aeeb1c12738e2ee25fb623031aa5ddd29ae8fc331664678c70646f25967",
+        "currentNativeCommit": "4517145578ef3374cba6e699b2fe183fc25e48a0",
+        "refreshCurrentSourceArchive": "required immediately after this documentation checkpoint",
+        "scope": "Reachable reviewed delivery workflow, live2s telemetry, verified source backup, message/response. This infrastructure proof does not validate native performance or IPA execution."
+      }
     }
   ],
   "history": [
@@ -313,9 +350,21 @@
       "scroll_cpu_p95_percent": 21.973,
       "scroll_target_percent": 10,
       "navigationSoak": "passed"
+    },
+    {
+      "iteration": "10290244-007",
+      "updated_utc": "2026-10-28T20:40:00.823780+00:00",
+      "prior_score": 45,
+      "score": 40,
+      "binary_sha256": "eac62c75a9958f9cdc26cc85d4aa54e17c4031f9c9e43915263673375626fb55",
+      "native_source_commit": "4517145578ef3374cba6e699b2fe183fc25e48a0",
+      "targeted_checks": 714,
+      "performance": "unverified on changed artifact",
+      "reference": "installed control URL sanity failed; raw reports preserved"
     }
   ],
-  "updated_utc": "2026-10-28T20:09:22.517549+00:00",
-  "current_baseline_binary_sha256": "7f0cafc374cf2cf1c51f83f44eec8da7220b996ac836bef4fd6caf3687623026",
-  "full_official_wpt_pass_percent": null
+  "updated_utc": "2026-10-28T20:40:00.823780+00:00",
+  "current_baseline_binary_sha256": "eac62c75a9958f9cdc26cc85d4aa54e17c4031f9c9e43915263673375626fb55",
+  "full_official_wpt_pass_percent": null,
+  "current_native_source_commit": "4517145578ef3374cba6e699b2fe183fc25e48a0"
 }
