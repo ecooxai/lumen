@@ -18,9 +18,12 @@ function fixture() {
     let viewport = [412, 800, 0, 0, 2];
     let document;
     const errors = [];
+    const eventTargets = new WeakSet();
     const native = {
         viewport: () => viewport.slice(),
         now: () => 100,
+        etBrand: target => eventTargets.add(target),
+        etBranded: target => eventTargets.has(target),
         isNode: target => target === document,
         parent: () => null,
         type: () => 9,

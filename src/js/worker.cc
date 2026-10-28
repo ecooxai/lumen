@@ -1,3 +1,5 @@
+#include "broadcast.h"
+#include "event_target.h"
 /* Dedicated Web Workers: each worker runs on its own thread with its own V8 isolate.
    Messages cross threads as V8 ValueSerializer buffers. */
 #include "js_int.h"
@@ -26,6 +28,7 @@ enum { WM_MESSAGE, WM_ERROR, WM_LOADFAIL };
 struct OutMsg { int kind; Buf data; std::string msg, file; int line = 0, col = 0; };
 struct WFetchEv { uint64_t id; int kind; NetResponse *resp; std::string data; };   /* kind: 0 done, 1 head, 2 chunk */
 struct Worker {
+    JsBroadcastIdentity broadcast_identity;
     uint32_t id = 0; JsCtx *owner = nullptr;
     std::string url, src, ua, platform, name; bool have_src = false, module = false, shared = false, service = false;
     std::mutex mu; std::condition_variable cv;
@@ -40,6 +43,7 @@ struct Worker {
 struct WFetchCb { v8::Global<v8::Function> head, chunk, done; };
 struct WTimer { double due = 0, interval = 0; bool repeat = false; v8::Global<v8::Function> fn; std::vector<v8::Global<v8::Value>> args; };
 struct WEnv {
+    std::shared_ptr<JsBroadcastContext> broadcast;
     std::shared_ptr<Worker> w; v8::Isolate *iso = nullptr;
     v8::Global<v8::Context> ctx; v8::Global<v8::Function> onmsg, report;
     std::map<std::string, v8::Global<v8::Module>> mods; std::multimap<int, std::string> murl;
@@ -125,7 +129,7 @@ WFN(timer) {
     a.GetReturnValue().Set(id);
 }
 WFN(clear) { WENV; E->timers.erase(a[0]->Uint32Value(ctx).FromMaybe(0)); }
-WFN(close) { WENV; E->closing = true; }
+WFN(close) { WENV; E->closing = true; js_broadcast_deactivate(E->broadcast); }
 WFN(now) { WENV; a.GetReturnValue().Set(now_ms() - E->t0); }
 WFN(log) { WENV; if (getenv("LUMEN_CONSOLE")) fprintf(stderr, "[worker %d] %.2000s\n", a[0]->Int32Value(ctx).FromMaybe(1), jcstr(iso, a[1]).c_str()); }
 WFN(decode) {
@@ -299,7 +303,7 @@ const listeners = t => { let m = lsn.get(t); if (!m) lsn.set(t, m = new Map()); 
    on<type> handler. A bare call (no receiver) targets the worker global, as WebIDL operations on the global do. */
 const etThis = (o, op) => {
     if (o == null) return G;
-    if ((typeof o === 'object' || typeof o === 'function') && (o instanceof EventTarget || o === G)) return o;
+    if ((typeof o === 'object' || typeof o === 'function') && N.etBranded(o)) return o;
     throw new TypeError(`Failed to execute '${op}' on 'EventTarget': Illegal invocation`);
 };
 const etArgs = (op, n, have) => { if (have < n) throw new TypeError(`Failed to execute '${op}' on 'EventTarget': ${n} argument${n > 1 ? 's' : ''} required, but only ${have} present.`); };
@@ -328,7 +332,9 @@ function fireOn(t, e, skipHandler) {
     evCurrent(e, null); evPhase(e, 0);
     return !e.defaultPrevented;
 }
+let etListenerChanged = null;
 class EventTarget {
+    constructor() { N.etBrand(this); }
     addEventListener(type, callback, options = undefined) {
         const self = etThis(this, 'addEventListener');
         etArgs('addEventListener', 2, arguments.length);
@@ -342,6 +348,7 @@ class EventTarget {
         const m = listeners(self); let L = m.get(type); if (!L) m.set(type, L = []);
         if (L.some(l => l.fn === callback && l.capture === capture)) return;
         L.push({ fn: callback, capture, once, passive, removed: false });
+        if (etListenerChanged) etListenerChanged(self);
         if (sig) abortSignalAdd(sig, () => EventTarget.prototype.removeEventListener.call(self, type, callback, capture));
     }
     removeEventListener(type, callback, options = undefined) {
@@ -350,7 +357,7 @@ class EventTarget {
         const capture = typeof options === 'boolean' ? options : !!(options !== null && typeof options === 'object' && options.capture);
         const L = listeners(self).get(String(type)); if (!L) return;
         const i = L.findIndex(l => l.fn === callback && l.capture === capture);
-        if (i >= 0) { L[i].removed = true; L.splice(i, 1); }
+        if (i >= 0) { L[i].removed = true; L.splice(i, 1); if (etListenerChanged) etListenerChanged(self); }
     }
     dispatchEvent(event) {
         const self = etThis(this, 'dispatchEvent');
@@ -368,6 +375,7 @@ const OBS_REPORT = e => W.reportErr(e);
 )JS"
 #include "observable_shared.inc"
 R"JS(
+N.etBrand(G);
 class WorkerGlobalScope extends EventTarget {}
 class DedicatedWorkerGlobalScope extends WorkerGlobalScope {}
 class SharedWorkerGlobalScope extends WorkerGlobalScope {}
@@ -514,6 +522,11 @@ class MessagePort extends EventTarget {
     start() {} close() { this._other = null; }
 }
 class MessageChannel { constructor() { this.port1 = new MessagePort(); this.port2 = new MessagePort(); this.port1._other = this.port2; this.port2._other = this.port1; } }
+const BC_FIRE = (target, event) => { evTrusted(event); fireOn(target, event); };
+const BC_LISTENERS = target => lsn.get(target);
+)JS"
+#include "broadcast_shared.inc"
+R"JS(
 /* A service worker's side of the registration. The page drives the lifecycle with {__lumenSW} messages (install,
    activate, state, msg) and this side answers with evaluated / installed / activated, and cmsg for Client.postMessage. */
 const xferOut = (t, op) => {
@@ -708,7 +721,7 @@ const api = {
     btoa, atob, TextEncoder, TextDecoder, TextEncoderStream, TextDecoderStream, CompressionStream, DecompressionStream, ReadableStream, ReadableStreamDefaultReader, ReadableStreamBYOBReader,
     ReadableStreamDefaultController, ReadableByteStreamController, ReadableStreamBYOBRequest, WritableStream, WritableStreamDefaultWriter,
     WritableStreamDefaultController, TransformStream, TransformStreamDefaultController, ByteLengthQueuingStrategy, CountQueuingStrategy, Blob, File, FileReader, FileReaderSync, URL, URLSearchParams, Headers, Request, Response, FormData, fetch, Cache, CacheStorage, caches, URLPattern, XMLHttpRequest, XMLHttpRequestEventTarget, XMLHttpRequestUpload, ProgressEvent, performance, Performance, PerformanceEntry, PerformanceMark, PerformanceMeasure, PerformanceObserver, PerformanceObserverEntryList, console,
-    Event, MessageEvent, MessagePort, MessageChannel, ErrorEvent, AbortController, AbortSignal, Observable, Subscriber, CustomEvent, PromiseRejectionEvent, EventTarget, DOMException, QuotaExceededError, DOMPointReadOnly, DOMPoint, DOMRectReadOnly, DOMRect, DOMQuad, DOMMatrixReadOnly, DOMMatrix, CSSStyleValue, CSSNumericValue, CSSUnitValue, CSSMathValue, CSSMathSum, CSSMathProduct, CSSMathNegate, CSSMathInvert, CSSMathMin, CSSMathMax, CSSMathClamp, CSSNumericArray, CSSKeywordValue, CSSVariableReferenceValue, CSSUnparsedValue, CSSImageValue, CSSTransformComponent, CSSTranslate, CSSRotate, CSSScale, CSSSkew, CSSSkewX, CSSSkewY, CSSPerspective, CSSMatrixComponent, CSSTransformValue, CSSColorValue, CSSRGB, CSSHSL, CSSHWB, Crypto,
+    Event, MessageEvent, MessagePort, MessageChannel, BroadcastChannel, ErrorEvent, AbortController, AbortSignal, Observable, Subscriber, CustomEvent, PromiseRejectionEvent, EventTarget, DOMException, QuotaExceededError, DOMPointReadOnly, DOMPoint, DOMRectReadOnly, DOMRect, DOMQuad, DOMMatrixReadOnly, DOMMatrix, CSSStyleValue, CSSNumericValue, CSSUnitValue, CSSMathValue, CSSMathSum, CSSMathProduct, CSSMathNegate, CSSMathInvert, CSSMathMin, CSSMathMax, CSSMathClamp, CSSNumericArray, CSSKeywordValue, CSSVariableReferenceValue, CSSUnparsedValue, CSSImageValue, CSSTransformComponent, CSSTranslate, CSSRotate, CSSScale, CSSSkew, CSSSkewX, CSSSkewY, CSSPerspective, CSSMatrixComponent, CSSTransformValue, CSSColorValue, CSSRGB, CSSHSL, CSSHWB, Crypto,
     ...(secureContext ? { CryptoKey, SubtleCrypto } : {}), WorkerGlobalScope, DedicatedWorkerGlobalScope, WorkerLocation, WorkerNavigator,
     ImageData, Path2D, CanvasGradient, CanvasPattern, TextMetrics, OffscreenCanvas, OffscreenCanvasRenderingContext2D, ImageBitmap: C2IB, createImageBitmap, FontFace, fonts,
     WebGLRenderingContext, WebGL2RenderingContext, WebGLObject, WebGLBuffer, WebGLFramebuffer, WebGLRenderbuffer, WebGLTexture, WebGLProgram, WebGLShader, WebGLVertexArrayObject, WebGLQuery, WebGLSampler, WebGLSync, WebGLTransformFeedback, WebGLUniformLocation, WebGLActiveInfo, WebGLShaderPrecisionFormat, WebGLContextEvent,
@@ -820,6 +833,9 @@ void worker_main(std::shared_ptr<Worker> w) {
         v8::Local<v8::Object> W = v8::Object::New(iso);
         js_wasm_install(ctx, W);
         js_clone_install(ctx, W);
+        js_event_target_install(ctx, W);
+        E->broadcast = js_broadcast_install(ctx, W, w->broadcast_identity, tasks,
+                                            [E] { return !E->closing && !E->w->term; });
         js_url_install(ctx, W);
         js_c2d_install(ctx, W);
         js_crypto_install(ctx, W); js_encoding_install(ctx, W); js_compress_install(ctx, W);
@@ -918,6 +934,7 @@ void worker_main(std::shared_ptr<Worker> w) {
             }
         }
         for (auto &f : E->fetches) { { std::lock_guard<std::mutex> lk(g_wfetch_mu); g_wfetch.erase(f.first); } net_cancel(f.first); }
+        js_broadcast_deactivate(E->broadcast);
         E->fetches.clear(); E->timers.clear(); E->mods.clear(); E->murl.clear(); mod_synth_drop(iso); E->onmsg.Reset(); E->report.Reset(); E->ctx.Reset();
     }
     std::deque<Buf> abandoned;
@@ -1067,8 +1084,12 @@ void n_workerNew(const FCI &a) {
     w->id = ++g_wseq; w->owner = jctx(iso);
     w->url = jcstr(iso, a[0]); w->have_src = a[1]->IsString(); if (w->have_src) w->src = jcstr(iso, a[1]);
     w->ua = jcstr(iso, a[2]); w->platform = jcstr(iso, a[3]); w->name = a[4]->IsString() ? jcstr(iso, a[4]) : ""; w->module = a.Length() > 5 && a[5]->IsTrue();
+    w->broadcast_identity = js_broadcast_worker_identity(js_broadcast_identity(w->owner), w->url);
     w->shared = a.Length() > 6 && a[6]->IsTrue();   /* a SharedWorker's global */
     w->service = a.Length() > 7 && a[7]->IsTrue();  /* a ServiceWorker's global */
+    /* Shared/service workers are separate agent clusters; dedicated workers
+       inherit their creator cluster for structured-clone restrictions. */
+    if (w->shared || w->service) w->broadcast_identity.cluster = "worker-agent:" + std::to_string(w->id);
     g_workers[w->id] = w;
     pthread_attr_t at; pthread_attr_init(&at); pthread_attr_setstacksize(&at, 8u << 20); pthread_attr_setdetachstate(&at, PTHREAD_CREATE_DETACHED);
     pthread_t th;

@@ -128,10 +128,12 @@ class TransitionEvent extends Event { constructor(t, i) { super(t, i); i = i || 
    interface on the global's prototype chain; anything but an EventTarget is an illegal invocation */
 const etThis = (o, op) => {
     if (o == null) return G;
-    if ((typeof o === 'object' || typeof o === 'function') && (o instanceof EventTarget || o === G || N.isNode(o))) return o;
+    if ((typeof o === 'object' || typeof o === 'function') && (N.isNode(o) || N.etBranded(o))) return o;
     throw new TypeError(`Failed to execute '${op}' on 'EventTarget': Illegal invocation`);
 };
+let etListenerChanged = null;
 class EventTarget {
+    constructor() { N.etBrand(this); }
     addEventListener(type, fn, opts) {
         const self = etThis(this, 'addEventListener');
         if (self !== this) return self.addEventListener(type, fn, opts);
@@ -147,6 +149,7 @@ class EventTarget {
         const passive = o.passive !== undefined ? !!o.passive : /^(?:touchstart|touchmove|wheel|mousewheel)$/.test(type) && (this === G || this.nodeType === 9 ||
             (this.nodeType === 1 && this.parentNode && (this.parentNode.nodeType === 9 || (this.localName === 'body' && this.parentNode.parentNode && this.parentNode.parentNode.nodeType === 9))));
         apush(a, { fn, capture, once: !!o.once, passive, removed: false });
+        if (etListenerChanged) etListenerChanged(this);
         if (o.signal) abortSignalAdd(o.signal, () => this.removeEventListener(type, fn, capture));
     }
     removeEventListener(type, fn, opts) {
@@ -156,7 +159,7 @@ class EventTarget {
         const capture = typeof opts === 'boolean' ? opts : !!(opts && opts.capture);
         const a = m.get(String(type)); if (!a) return;
         const i = a.findIndex(l => l.fn === fn && l.capture === capture);
-        if (i >= 0) { a[i].removed = true; a.splice(i, 1); }
+        if (i >= 0) { a[i].removed = true; a.splice(i, 1); if (etListenerChanged) etListenerChanged(this); }
     }
     dispatchEvent(ev) {
         const self = etThis(this, 'dispatchEvent');
@@ -170,6 +173,7 @@ class EventTarget {
         return dispatch(this, ev);
     }
 }
+N.etBrand(G);
 function parentForEvent(t, ev) {
     if (t === G) return null;
     if (N.isNode(t)) {

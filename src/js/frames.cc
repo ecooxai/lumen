@@ -1,3 +1,4 @@
+#include "broadcast.h"
 /* Nested browsing contexts (<iframe>): child V8 contexts sharing the parent's isolate */
 #include "js_int.h"
 #include "jsglue.h"
@@ -77,6 +78,7 @@ extern "C" Node *js_doc_frame_el(Document *d) { JsCtx *k = owner_ctx(d); return 
 void frame_kill(JsCtx *k) {
     if (k->dead) return;
     k->dead = true;
+    js_broadcast_deactivate(k->broadcast);
     k->dead_at = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
     for (JsCtx *g : k->kids) frame_kill(g);
     for (auto &kv : k->fetches) { net_cancel(kv.first); kv.second->c = nullptr; kv.second->cb.Reset(); kv.second->head.Reset(); kv.second->chunk.Reset(); }
@@ -412,7 +414,7 @@ static JsCtx *ctx_of_value(v8::Isolate *iso, JsCtx *c, v8::Local<v8::Value> v) {
     return static_cast<JsCtx *>(cx->GetAlignedPointerFromEmbedderData(1, kTag));
 }
 /* HTML "fully active": the context still shows its frame's document, its <iframe> is connected, and so on up */
-static bool fully_active(JsCtx *c) {
+bool js_context_fully_active(JsCtx *c) {
     for (; c; c = c->parent) {
         if (c->dead) return false;
         if (!c->parent) return true;
@@ -428,7 +430,7 @@ static void n_fullyActive(const FCI &a) {
     if (Node *n = junwrap(a[0])) k = n->doc ? owner_ctx(n->doc) : nullptr;
     else k = ctx_of_value(iso, c, a[0]);
     if (!k && !a[0]->IsNumber()) k = c;
-    a.GetReturnValue().Set(k ? fully_active(k) : true);
+    a.GetReturnValue().Set(k ? js_context_fully_active(k) : true);
 }
 static void n_caller(const FCI &a) {
     FCTX;

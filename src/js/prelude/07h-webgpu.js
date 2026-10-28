@@ -131,6 +131,7 @@ gpuLabeled(GPUDevice);
 Object.defineProperty(GPUDevice.prototype, 'onuncapturederror', { get() { return this._.on || null; }, set(f) { this._.on = typeof f === 'function' ? f : null; }, configurable: true, enumerable: true });
 const gpuDevice = (id, ad, d) => {
     const dev = Object.create(GPUDevice.prototype);
+    N.etBrand(dev);
     Object.defineProperty(dev, GPU_ID, { value: id });
     let lose;
     const lost = new Promise(r => { lose = r; });

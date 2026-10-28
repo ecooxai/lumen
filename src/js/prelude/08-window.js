@@ -678,6 +678,7 @@ Object.defineProperty(G, 'event', { get: { get event() {
     if (this != null && this !== G) throw new TypeError("Failed to read the 'event' property from 'Window': Illegal invocation");
     return curEvent; } }.__lookupGetter__('event'), set(v) { if (this != null && this !== G) throw new TypeError("Failed to set the 'event' property on 'Window': Illegal invocation"); Object.defineProperty(G, 'event', { value: v, writable: true, configurable: true, enumerable: true }); }, configurable: true, enumerable: true });
 const visual = Object.assign(Object.create(VisualViewport.prototype), { onresize: null, onscroll: null, onscrollend: null });
+N.etBrand(visual);
 G.visualViewport = visual;
 function viewportChanged(resized, scrolled, media = true) {
     if (resized) {

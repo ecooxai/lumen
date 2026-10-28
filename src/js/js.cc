@@ -1,3 +1,5 @@
+#include "broadcast.h"
+#include "event_target.h"
 #include <map>
 #include <string>
 /* V8 embedding: platform, per-page isolate/context, node wrappers, script execution, timers, events */
@@ -1211,6 +1213,10 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
     js_install_native(c, N);
     js_wasm_install(ctx, N);
     js_clone_install(ctx, N);
+    js_event_target_install(ctx, N);
+    JsCtx *bc_root = c; while (bc_root->parent) bc_root = bc_root->parent;
+    c->broadcast = js_broadcast_install(ctx, N, js_broadcast_identity(c), bc_root->foreground_tasks,
+                                      [c] { return js_context_fully_active(c); });
     js_url_install(ctx, N);
     js_crypto_install(ctx, N); js_encoding_install(ctx, N); js_compress_install(ctx, N);
     v8::TryCatch tc(iso);
@@ -1342,6 +1348,7 @@ void js_free(JsCtx *c) {
     if (c->parent) docs.push_back(c->doc);
     {
         v8::Isolate::Scope is(c->iso);
+        js_broadcast_deactivate(c->broadcast);
         v8::HandleScope hs(c->iso);
         for (auto &kv : c->fetches) { net_cancel(kv.first); kv.second->c = nullptr; kv.second->cb.Reset(); kv.second->head.Reset(); kv.second->chunk.Reset(); }
         c->fetches.clear(); for (auto &kv : c->sockets) { net_ws_release(kv.second->ws); kv.second->cb.Reset(); delete kv.second; } c->sockets.clear();

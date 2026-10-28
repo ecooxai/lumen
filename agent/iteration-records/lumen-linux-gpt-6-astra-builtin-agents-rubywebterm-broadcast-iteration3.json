@@ -1,0 +1,153 @@
+{
+  "iteration": 3,
+  "title": "Native BroadcastChannel and cross-realm EventTarget branding",
+  "agents": [
+    "engine_lead",
+    "conformance",
+    "ops_preview",
+    "root"
+  ],
+  "started_utc": null,
+  "earliest_retained_evidence_utc": "2026-10-28T04:15:09Z",
+  "start_basis": "First retained candidate104 compile; earlier design/implementation start was not precisely recorded",
+  "finished_utc": "2026-10-28T05:09:50.912888+00:00",
+  "updated_utc": "2026-10-28T05:09:50.912888+00:00",
+  "status": "accepted as a focused incremental patch; full BroadcastChannel and WPT parity unproven",
+  "iteration_quality_score": 95,
+  "whole_goal_readiness": 19,
+  "duration_note": "Report a lower bound from earliest retained evidence, not an invented exact design start. Concurrent lanes overlap.",
+  "attempts": [
+    {
+      "candidate": 104,
+      "status": "compile failed",
+      "iteration_quality_score": null,
+      "score_status": "No accepted patch score assigned; pending independent PM review or rejected gate",
+      "whole_goal_readiness": 19,
+      "whole_goal_status": "provisional estimate, not measured pass percentage",
+      "build_started_utc": "2026-10-28T04:15:09Z",
+      "build_finished_utc": "2026-10-28T04:15:21Z",
+      "binary_sha256": null,
+      "build_exit_code": 2,
+      "source_unchanged_during_build": true,
+      "evidence": "agent/validation/iteration-104/build-state.json",
+      "note": "First retained compile evidence; exit2. No acceptance."
+    },
+    {
+      "candidate": 105,
+      "status": "experimental",
+      "iteration_quality_score": null,
+      "score_status": "No accepted patch score assigned; pending independent PM review or rejected gate",
+      "whole_goal_readiness": 19,
+      "whole_goal_status": "provisional estimate, not measured pass percentage",
+      "build_started_utc": "2026-10-28T04:16:42Z",
+      "build_finished_utc": "2026-10-28T04:17:05Z",
+      "binary_sha256": "3868f1f8588c0bb337d8f7362cc7a1a7d508dfd8675f9d641663ecc135250934",
+      "build_exit_code": 0,
+      "source_unchanged_during_build": true,
+      "evidence": "agent/validation/iteration-105/build-state.json",
+      "note": "Initial implementation; subsequent sandbox/activity, foreign receiver and partition checks required corrections."
+    },
+    {
+      "candidate": 107,
+      "status": "experimental isolated BC",
+      "iteration_quality_score": null,
+      "score_status": "No accepted patch score assigned; pending independent PM review or rejected gate",
+      "whole_goal_readiness": 19,
+      "whole_goal_status": "provisional estimate, not measured pass percentage",
+      "build_started_utc": "2026-10-28T04:31:53Z",
+      "build_finished_utc": "2026-10-28T04:34:57Z",
+      "binary_sha256": "9251fb11ffd72d93cbf822231cd0b6f1175287cac8403c98954df824d13c82cc",
+      "build_exit_code": 0,
+      "source_unchanged_during_build": true,
+      "evidence": "agent/validation/iteration-107/build-state.json",
+      "note": "Image patch removed/restored exactly. Independent review identified cross-realm EventTarget branding and public-suffix partition limitations."
+    },
+    {
+      "candidate": 109,
+      "status": "accepted focused incremental patch",
+      "iteration_quality_score": 95,
+      "score_status": "PM accepted; focused scope only",
+      "whole_goal_readiness": 19,
+      "whole_goal_status": "provisional estimate, not measured pass percentage",
+      "build_started_utc": "2026-10-28T04:47:46Z",
+      "build_finished_utc": "2026-10-28T04:49:23Z",
+      "binary_sha256": "3c71a05c9e62a3614ed549e3f62734154167b24bf30f1ffa8d0022e5b98bf4ff",
+      "build_exit_code": 0,
+      "source_unchanged_during_build": true,
+      "evidence": "agent/validation/iteration-109/build-state.json",
+      "note": "Isolated BC on accepted grid. Feature16URLs88/88; requiredPSL30/30; full native109/110 after viewport mock repair, sole image failure independently pre-existing. Keep document.domain/direct-tab limits explicit."
+    }
+  ],
+  "spec_sources": [
+    "https://html.spec.whatwg.org/multipage/web-messaging.html#broadcasting-to-other-browsing-contexts"
+  ],
+  "acceptance_time_basis": "PM decision recorded after independent disposition; this is the record timestamp",
+  "quality_scope": "Focused incremental patch only; PM reviewed",
+  "duration_lower_bound_minutes": 54.7,
+  "independent_disposition": {
+    "utc": "2026-10-28T05:09:06.650293+00:00",
+    "disposition": "Recommend scoped incremental acceptance; no verified regression in executed gates.",
+    "official14": {
+      "baseline_PASS": 9,
+      "candidate_PASS": 72,
+      "total": 72,
+      "chromium_PASS": 72
+    },
+    "existing_boundary_and_realm": {
+      "candidate_PASS": 16,
+      "total": 16,
+      "chromium_sender_close_getter_divergences": 2
+    },
+    "additional20": {
+      "baseline_PASS": 50,
+      "candidate_PASS": 52,
+      "total": 62,
+      "chromium_PASS": 57,
+      "lost_native_PASS": 0,
+      "harness_losses": 0,
+      "native_WASM_gains_reference_status": "Both Chromium TIMEOUT, not matched-reference gains."
+    },
+    "native_PSL_required_cases": 30,
+    "project_native_gate": "109/110; sole preexisting image lifecycle failure; Node viewport mock check reads worktree and is separate from frozen-browser evidence.",
+    "known_prerequisite_gap": "Both BC multiglobal tests set document.domain; native 06-document.js setter is empty, and unrelaxed frame/global access fails before delivery assertions.",
+    "executed_routing": "Positive dedicated/shared/service-worker, blob-worker and multi-frame ordering fixtures.",
+    "unexecuted_guards": [
+      "Direct separate-tab BC transport pending existing upstream supplemental probe",
+      "New synthetic forged/proxy/foreign EventTarget/newTarget guards denied transfer",
+      "Long repeated in-process registry lifetime slope",
+      "Browser-level private-suffix tenant partition comparisons"
+    ],
+    "source_review_limit": "Bounded invariant summaries and behavior only; full source export was denied.",
+    "implementation_limit": "No IPC across separate OS browser processes."
+  },
+  "psl_provenance": {
+    "source": "https://publicsuffix.org/list/public_suffix_list.dat",
+    "license_source": "https://raw.githubusercontent.com/publicsuffix/list/master/LICENSE",
+    "license": "MPL-2.0",
+    "retrieved_utc": "2026-10-28T04:44:50.260886+00:00",
+    "sha256": "0232f4df0831911356e8ee1f4d5c3b6b12c0ed3f6bd66b0f81c8ab5d3d49e9ca",
+    "license_sha256": "66a3107d5ad6a058aab753eaac2047ccb2ed0e39465dd0fe5844da3e300d5172",
+    "bytes": 338012,
+    "version": "2026-10-22_08-36-41_UTC",
+    "upstream_commit": "8437e5262f13305f94087abe699b4fe2be1d1de8"
+  },
+  "license_note": "The upstream MPL license bytes are preserved exactly, including its line38 trailing space; the recorded digest is intentional.",
+  "known_multiglobal_failures": [
+    {
+      "url": "/webmessaging/multi-globals/broadcastchannel-current.sub.html",
+      "name": "The current page being cross-origin must prevent the BroadcastChannel message from being seen",
+      "message": "TypeError: parent.frames[1].BroadcastChannel is not a constructor"
+    },
+    {
+      "url": "/webmessaging/multi-globals/broadcastchannel-incumbent.sub.html",
+      "name": "The incumbent page being cross-origin must not prevent the BroadcastChannel message from being seen",
+      "message": "TypeError: frames[0].createBroadcastChannel is not a function"
+    }
+  ],
+  "document_domain_remediation_scope": "A validated same-origin-domain access state and V8 security-token update, with public-suffix checks, active sandbox restrictions, and origin-agent-cluster/permissions-policy behavior, are separate prerequisites. BroadcastChannel must retain its original tuple-origin/storage identity; relaxing channel keys or WindowProxy allowlists is not a correct fix.",
+  "psl_behavior": "Embedded pinned ICANN and PRIVATE rules are parsed once with libpsl. When unavailable or unusable, the canonical full host is retained as a conservative partition key. No runtime network fetch or build-directory read. Different Chromium PSL revisions can still differ.",
+  "accepted_binary": {
+    "path": "build/codex-native/lumen-gpt-6-astra-broadcast-accepted-20261028",
+    "sha256": "3c71a05c9e62a3614ed549e3f62734154167b24bf30f1ffa8d0022e5b98bf4ff"
+  }
+}

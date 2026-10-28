@@ -1,4 +1,6 @@
 import argparse
+import hashlib
+import json
 import pathlib
 import tempfile
 
@@ -41,7 +43,27 @@ def main():
     newtab = (arguments.root / "src/app/newtab.html").read_bytes() + b"\0"
     newtab_rows = [", ".join(f"0x{value:02x}" for value in newtab[offset:offset + 16]) + ",\n"
                    for offset in range(0, len(newtab), 16)]
+    suffix_path = arguments.root / "assets/data/public_suffix_list.dat"
+    suffix_data = suffix_path.read_bytes()
+    suffix_meta = json.loads((arguments.root / "assets/data/public_suffix_list.metadata.json").read_text())
+    suffix_license = (arguments.root / "assets/data/public_suffix_list.LICENSE").read_bytes()
+    if hashlib.sha256(suffix_data).hexdigest() != suffix_meta["sha256"] or hashlib.sha256(suffix_license).hexdigest() != suffix_meta["license_sha256"]:
+        parser.error("Pinned Public Suffix List or license digest does not match its metadata")
+    suffix_data.decode("utf-8")
+    if b')PSL"' in suffix_data:
+        parser.error("Public Suffix List contains the reserved raw-string delimiter")
+    suffix_chunks, chunk = [], b""
+    for line in suffix_data.splitlines(keepends=True):
+        if len(line) > 60000:
+            parser.error("Public Suffix List contains an oversized line")
+        if len(chunk) + len(line) > 60000:
+            suffix_chunks.append(chunk)
+            chunk = b""
+        chunk += line
+    if chunk:
+        suffix_chunks.append(chunk)
     arguments.output_dir.mkdir(parents=True, exist_ok=True)
+    write_atomic(arguments.output_dir / "public_suffix_list.inc", b"\n".join(b'R"PSL(' + part + b')PSL"' for part in suffix_chunks))
     write_atomic(arguments.output_dir / "prelude.inc", b'R"JS(' + prelude + b')JS"')
     for name, data in shared.items():
         write_atomic(arguments.output_dir / (name[:-3] + "_shared.inc"), b'R"JS(' + data + b')JS"')

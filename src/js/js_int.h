@@ -31,6 +31,7 @@ extern int g_log_level;
 
 struct JsCtx;
 class JsForegroundTasks;
+struct JsBroadcastContext;
 struct Fetch {
     JsCtx *c;
     uint64_t id;
@@ -76,6 +77,7 @@ void mod_synth_drop(v8::Isolate *iso);
 v8::MaybeLocal<v8::Module> mod_synthetic(v8::Local<v8::Context> ctx, const std::string &u, const std::string &type, const std::string &body, const std::string &ctype);
 struct JsCtx {
     v8::Isolate *iso = nullptr;
+    std::shared_ptr<JsBroadcastContext> broadcast;
     std::shared_ptr<JsForegroundTasks> foreground_tasks; // Root owns the shared frame isolate.
     bool bg = false, bg_gc = false; double bg_since = 0;   /* tab in the background: V8 favours memory, one idle GC */
     bool bg_seen = false;   /* the bg the page last got a visibilitychange for */
@@ -199,6 +201,7 @@ void js_run_inserted(JsCtx *c, Node *root);
 extern "C" void js_run_module_inserted(JsCtx *c, Node *script, const char *src, size_t n, const char *url);
 extern "C" JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame);
 extern "C" JsCtx *owner_ctx(Document *d);
+bool js_context_fully_active(JsCtx *c);
 std::string ctx_origin(JsCtx *c);
 std::string ctx_origin_key(JsCtx *c);   /* for same-origin checks: ctx_origin, but each file: document is its own origin, as in Chrome */
 void frames_scan(JsCtx *c);

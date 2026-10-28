@@ -260,7 +260,9 @@ function exportPort(p, dest) { const k = tabKey(); def(p, '_xt', [dest, k]); if 
 function importPort(src, k) { const q = new MessagePort(); def(q, '_xt', [src, k]); tabPorts.set(k, q); return q; }
 function portMessage(k, data, src, keys) { const p = tabPorts.get(k); if (p) p._deliver(data, keys.map(j => importPort(src, j))); }
 class MessageChannel { constructor() { this.port1 = new MessagePort(); this.port2 = new MessagePort(); this.port1._other = this.port2; this.port2._other = this.port1; } }
-class BroadcastChannel extends EventTarget { constructor(n) { super(); this.name = String(n); } postMessage() {} close() {} }
+const BC_FIRE = (target, event) => dispatch(target, event, true);
+const BC_LISTENERS = target => target.__ls;
+/*@shared broadcast.js*/
 
 const workers = new SMap(); let portSeq = 0; const remotePorts = new SMap();
 class Worker extends EventTarget {
