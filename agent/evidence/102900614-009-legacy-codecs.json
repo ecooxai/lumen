@@ -1,0 +1,1617 @@
+{
+  "iteration": "102900614-009",
+  "started_utc": "2026-10-28T23:37:49.194609+00:00",
+  "updated_utc": "2026-10-28T23:47:18.582930+00:00",
+  "elapsed_seconds": 569.388,
+  "total_session_seconds": 5557.124,
+  "score": 45,
+  "status": "Legacy incremental codecs candidate:178/178 and459119 sanitizer cases;90/103 fresh diagnostic variants pass",
+  "native_artifact_promoted": false,
+  "accepted_native_unchanged": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
+  "candidate_binary_sha256": "050b0160e0869c4ac9e840a1835403c7dbb678c90a49c3619e0acf3275d007b6",
+  "candidate_jsrun_sha256": "9dbf792698c8e504d9f3d93df6b28de9e6c95ee180b1e089d6e33b4a5d6e10a8",
+  "candidate_source_manifest": "agent/evidence/102900614-009/compiled-source-sha256.json",
+  "red": {
+    "passed": 14,
+    "total": 178
+  },
+  "green": {
+    "passed": 178,
+    "total": 178,
+    "text_codec": 170,
+    "text_streams": 74,
+    "transfer": 68,
+    "document_encoding": 78,
+    "asan_ubsan_cases": 459119,
+    "persistent_state_bytes": 44,
+    "build_seconds": 9.106,
+    "all_build_test_seconds": 20.3
+  },
+  "original_wpt": {
+    "startedUTC": "2026-10-28T23:39:35.169205+00:00",
+    "binarySHA256": "050b0160e0869c4ac9e840a1835403c7dbb678c90a49c3619e0acf3275d007b6",
+    "command": [
+      "/opt/homebrew/opt/python@3.15/bin/python3.15",
+      "tools/apple-session-gpt6as/probe_native_wpt.py",
+      "--binary",
+      "build/lumen-task102900614-050b0160e0869c4a",
+      "--expected-sha256",
+      "050b0160e0869c4ac9e840a1835403c7dbb678c90a49c3619e0acf3275d007b6",
+      "--output",
+      "output/native-wpt-task102900614-050b0160e0869c4a",
+      "--seconds-per-test",
+      "25"
+    ],
+    "passed": true,
+    "finishedUTC": "2026-10-28T23:39:44.402707+00:00",
+    "durationSeconds": 9.234,
+    "exitCode": 0,
+    "report": "/Users/devin/repos/lumen/output/session-20261029/native-qa-kit-v1/source/output/native-wpt-task102900614-050b0160e0869c4a/wpt-report.json",
+    "reportSHA256": "baf0869f97f61390d7e10a0da697f3d10e869e98666e9e7be96a63616a4d0c7f",
+    "files": 6,
+    "fullyPassing": 6,
+    "assertions": {
+      "PASS": 1850
+    }
+  },
+  "diagnostic_wpt": {
+    "schema": 1,
+    "binarySHA256": "050b0160e0869c4ac9e840a1835403c7dbb678c90a49c3619e0acf3275d007b6",
+    "scheduled": 1515,
+    "run": 103,
+    "fullyPassing": 90,
+    "unrun": 1412,
+    "passingPercentOfRun": 87.379,
+    "fullyPassingPercentOfFrozenSchedule": 5.941,
+    "assertions": {
+      "PASS": 23408,
+      "FAIL": 235
+    },
+    "harnessStatuses": {
+      "OK": 101,
+      "TIMEOUT": 2
+    },
+    "groups": {
+      "encoding-streams": {
+        "scheduled": 26,
+        "recorded": 26,
+        "fullyPassing": 25,
+        "assertions": {
+          "PASS": 346
+        },
+        "harnessStatuses": {
+          "OK": 25,
+          "TIMEOUT": 1
+        },
+        "failures": [
+          {
+            "test": "/encoding/streams/realms.window.html",
+            "status": "TIMEOUT",
+            "assertions": []
+          }
+        ]
+      },
+      "encoding-core": {
+        "scheduled": 77,
+        "recorded": 77,
+        "fullyPassing": 65,
+        "assertions": {
+          "PASS": 23062,
+          "FAIL": 235
+        },
+        "harnessStatuses": {
+          "OK": 76,
+          "TIMEOUT": 1
+        },
+        "failures": [
+          {
+            "test": "/encoding/big5-encoder.html",
+            "status": "OK",
+            "assertions": [
+              {
+                "name": "big5 encoder: Highest-pointer BMP character excluded from encoder",
+                "status": "FAIL",
+                "message": "assert_equals: expected \"X%26%2340614%3BX\" but got \"X%E9%BA%A6X\""
+              },
+              {
+                "name": "big5 encoder: Highest-pointer character excluded from encoder",
+                "status": "FAIL",
+                "message": "assert_equals: expected \"X%26%23156267%3BX\" but got \"X%F0%A6%89%ABX\""
+              },
+              {
+                "name": "big5 encoder: Lowest-pointer character included in encoder",
+                "status": "FAIL",
+                "message": "assert_equals: expected \"X%A1@X\" but got \"X%E3%80%80X\""
+              },
+              {
+                "name": "big5 encoder: Euro; the highest-pointer character before a range of 30 unmapped pointers",
+                "status": "FAIL",
+                "message": "assert_equals: expected \"X%A3%E1X\" but got \"X%E2%82%ACX\""
+              },
+              {
+                "name": "big5 encoder: The lowest-pointer character after the range of 30 unmapped pointers",
+                "status": "FAIL",
+                "message": "assert_equals: expected \"X%A4@X\" but got \"X%E4%B8%80X\""
+              },
+              {
+                "name": "big5 encoder: The highest-pointer character before a range of 41 unmapped pointers",
+                "status": "FAIL",
+                "message": "assert_equals: expected \"X%C8%A4X\" but got \"X%F0%A7%98%87X\""
+              },
+              {
+                "name": "big5 encoder: The lowest-pointer character after the range of 41 unmapped pointers",
+                "status": "FAIL",
+                "message": "assert_equals: expected \"X%C8%CDX\" but got \"X%EF%BF%A2X\""
+              },
+              {
+                "name": "big5 encoder: The last character in the index",
+                "status": "FAIL",
+                "message": "assert_equals: expected \"X%FE%FEX\" but got \"X%E7%A7%94X\""
+              },
+              {
+                "name": "big5 encoder: The canonical BMP test character that is not in the index",
+                "status": "FAIL",
+                "message": "assert_equals: expected \"X%26%239731%3BX\" but got \"X%E2%98%83X\""
+              },
+              {
+                "name": "big5 encoder: The canonical astral test character that is not in the index",
+                "status": "FAIL",
+                "message": "assert_equals: expected \"X%26%23128169%3BX\" but got \"X%F0%9F%92%A9X\""
+              },
+              {
+                "name": "big5 encoder: A Plane 2 character whose low 16 bits match a BMP character that has a lower pointer",
+                "status": "FAIL",
+                "message": "assert_equals: expected \"X%FDjX\" but got \"X%F0%A0%8E%B5X\""
+              },
+              {
+                "name": "big5 encoder: A duplicate-mapped code point that prefers the highest pointer in the encoder",
+                "status": "FAIL",
+                "message": "assert_equals: expected \"X%F9%F9X\" but got \"X%E2%95%90X\""
+              }
+            ]
+          },
+          {
+            "test": "/encoding/iso-2022-jp-encoder.html",
+            "status": "OK",
+            "assertions": [
+              {
+                "name": "iso-2022-jp encoder: basics",
+                "status": "FAIL",
+                "message": "assert_equals: expected \"%1B(J\\\\~s%1B(B\\\\%1B$B%_PP%1B(B\" but got \"%C2%A5%E2%80%BEs\\\\%EF%BE%90%E4%BD%A9\""
+              },
+              {
+                "name": "iso-2022-jp encoder: Katakana",
+                "status": "FAIL",
+                "message": "assert_equals: expected \"%1B$B!%23%1B(B\" but got \"%EF%BD%A1\""
+              },
+              {
+                "name": "iso-2022-jp encoder: jis0208",
+                "status": "FAIL",
+                "message": "assert_equals: expected \"%1B$B&%23%1B(B\" but got \"%CE%93\""
+              },
+              {
+                "name": "iso-2022-jp encoder: SO/SI ESC",
+                "status": "FAIL",
+                "message": "assert_equals: expected \"%26%2365533%3B%26%2365533%3B%26%2365533%3Bx\" but got \"%0E%0F%1Bx\""
+              },
+              {
+                "name": "iso-2022-jp encoder: Roman SO/SI ESC",
+                "status": "FAIL",
+                "message": "assert_equals: expected \"%1B(J~%26%2365533%3B%26%2365533%3B%26%2365533%3Bx%1B(B\" but got \"%E2%80%BE%0E%0F%1Bx\""
+              },
+              {
+                "name": "iso-2022-jp encoder: Katakana SO/SI ESC",
+                "status": "FAIL",
+                "message": "assert_equals: expected \"%1B$B!%23%1B(B%26%2365533%3B%26%2365533%3B%26%2365533%3Bx\" but got \"%EF%BD%A1%0E%0F%1Bx\""
+              },
+              {
+                "name": "iso-2022-jp encoder: jis0208 SO/SI ESC",
+                "status": "FAIL",
+                "message": "assert_equals: expected \"%1B$B&%23%1B(B%26%2365533%3B%26%2365533%3B%26%2365533%3Bx\" but got \"%CE%93%0E%0F%1Bx\""
+              },
+              {
+                "name": "iso-2022-jp encoder: U+FFFD",
+                "status": "FAIL",
+                "message": "assert_equals: expected \"%26%2365533%3B\" but got \"%EF%BF%BD\""
+              },
+              {
+                "name": "iso-2022-jp encoder: Roman U+FFFD",
+                "status": "FAIL",
+                "message": "assert_equals: expected \"%1B(J~%26%2365533%3B%1B(B\" but got \"%E2%80%BE%EF%BF%BD\""
+              },
+              {
+                "name": "iso-2022-jp encoder: Katakana U+FFFD",
+                "status": "FAIL",
+                "message": "assert_equals: expected \"%1B$B!%23%1B(B%26%2365533%3B\" but got \"%EF%BD%A1%EF%BF%BD\""
+              },
+              {
+                "name": "iso-2022-jp encoder: jis0208 U+FFFD",
+                "status": "FAIL",
+                "message": "assert_equals: expected \"%1B$B&%23%1B(B%26%2365533%3B\" but got \"%CE%93%EF%BF%BD\""
+              }
+            ]
+          },
+          {
+            "test": "/encoding/remove-only-one-bom.html",
+            "status": "TIMEOUT",
+            "assertions": []
+          },
+          {
+            "test": "/encoding/replacement-encodings.any.html",
+            "status": "OK",
+            "assertions": [
+              {
+                "name": "csiso2022kr - non-empty input decodes to one replacement character.",
+                "status": "FAIL",
+                "message": "promise_test: Unhandled rejection with value: object \"URIError: URI malformed\""
+              },
+              {
+                "name": "hz-gb-2312 - non-empty input decodes to one replacement character.",
+                "status": "FAIL",
+                "message": "promise_test: Unhandled rejection with value: object \"URIError: URI malformed\""
+              },
+              {
+                "name": "iso-2022-cn - non-empty input decodes to one replacement character.",
+                "status": "FAIL",
+                "message": "promise_test: Unhandled rejection with value: object \"URIError: URI malformed\""
+              },
+              {
+                "name": "iso-2022-cn-ext - non-empty input decodes to one replacement character.",
+                "status": "FAIL",
+                "message": "promise_test: Unhandled rejection with value: object \"URIError: URI malformed\""
+              },
+              {
+                "name": "iso-2022-kr - non-empty input decodes to one replacement character.",
+                "status": "FAIL",
+                "message": "promise_test: Unhandled rejection with value: object \"URIError: URI malformed\""
+              },
+              {
+                "name": "replacement - non-empty input decodes to one replacement character.",
+                "status": "FAIL",
+                "message": "promise_test: Unhandled rejection with value: object \"URIError: URI malformed\""
+              }
+            ]
+          },
+          {
+            "test": "/encoding/replacement-encodings.any.worker.html",
+            "status": "OK",
+            "assertions": [
+              {
+                "name": "csiso2022kr - non-empty input decodes to one replacement character.",
+                "status": "FAIL",
+                "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+              },
+              {
+                "name": "csiso2022kr - empty input decodes to empty output.",
+                "status": "FAIL",
+                "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+              },
+              {
+                "name": "hz-gb-2312 - non-empty input decodes to one replacement character.",
+                "status": "FAIL",
+                "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+              },
+              {
+                "name": "hz-gb-2312 - empty input decodes to empty output.",
+                "status": "FAIL",
+                "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+              },
+              {
+                "name": "iso-2022-cn - non-empty input decodes to one replacement character.",
+                "status": "FAIL",
+                "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+              },
+              {
+                "name": "iso-2022-cn - empty input decodes to empty output.",
+                "status": "FAIL",
+                "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+              },
+              {
+                "name": "iso-2022-cn-ext - non-empty input decodes to one replacement character.",
+                "status": "FAIL",
+                "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+              },
+              {
+                "name": "iso-2022-cn-ext - empty input decodes to empty output.",
+                "status": "FAIL",
+                "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+              },
+              {
+                "name": "iso-2022-kr - non-empty input decodes to one replacement character.",
+                "status": "FAIL",
+                "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+              },
+              {
+                "name": "iso-2022-kr - empty input decodes to empty output.",
+                "status": "FAIL",
+                "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+              },
+              {
+                "name": "replacement - non-empty input decodes to one replacement character.",
+                "status": "FAIL",
+                "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+              },
+              {
+                "name": "replacement - empty input decodes to empty output.",
+                "status": "FAIL",
+                "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+              }
+            ]
+          },
+          {
+            "test": "/encoding/single-byte-decoder.any.html?XMLHttpRequest",
+            "status": "OK",
+            "assertions": [
+              {
+                "name": "ISO-8859-2: csisolatin2 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-2:128 expected 128 but got 65533"
+              },
+              {
+                "name": "IBM866: csibm866 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: IBM866:128 expected 1040 but got 65533"
+              },
+              {
+                "name": "IBM866: ibm866 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: IBM866:128 expected 1040 but got 65533"
+              },
+              {
+                "name": "IBM866: cp866 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: IBM866:128 expected 1040 but got 65533"
+              },
+              {
+                "name": "ISO-8859-2: iso-8859-2 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-2:128 expected 128 but got 65533"
+              },
+              {
+                "name": "IBM866: 866 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: IBM866:128 expected 1040 but got 65533"
+              },
+              {
+                "name": "ISO-8859-6: iso88596 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-6:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-6: iso-ir-127 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-6:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-7: sun_eu_greek (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-7:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-7: greek (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-7:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-7: ecma-118 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-7:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-8-I: csiso88598i (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-8:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-7: iso8859-7 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-7:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-7: elot_928 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-7:128 expected 128 but got 65533"
+              },
+              {
+                "name": "windows-874: dos-874 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-874:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1252: latin1 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1252:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1254: windows-1254 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1254:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "ISO-8859-10: iso8859-10 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-10:128 expected 128 but got 65533"
+              },
+              {
+                "name": "x-mac-cyrillic: x-mac-ukrainian (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: x-mac-cyrillic:128 expected 1040 but got 65533"
+              },
+              {
+                "name": "windows-1258: windows-1258 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1258:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1257: windows-1257 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1257:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "x-mac-cyrillic: x-mac-cyrillic (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: x-mac-cyrillic:128 expected 1040 but got 65533"
+              },
+              {
+                "name": "windows-1258: x-cp1258 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1258:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1257: x-cp1257 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1257:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1258: cp1258 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1258:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1257: cp1257 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1257:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1256: cp1256 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1256:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1255: cp1255 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1255:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1256: windows-1256 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1256:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1255: windows-1255 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1255:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1255: x-cp1255 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1255:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1256: x-cp1256 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1256:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1254: x-cp1254 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1254:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1254: latin5 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1254:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1254: l5 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1254:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1254: iso_8859-9:1989 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1254:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1254: iso88599 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1254:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1254: iso_8859-9 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1254:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1254: iso-ir-148 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1254:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1254: cp1254 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1254:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1254: iso8859-9 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1254:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1254: iso-8859-9 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1254:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1254: csisolatin5 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1254:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1253: windows-1253 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1253:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1252: x-cp1252 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1252:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1252: l1 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1252:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1253: cp1253 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1253:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1252: us-ascii (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1252:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1252: windows-1252 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1252:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1253: x-cp1253 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1253:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1252: iso_8859-1:1987 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1252:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1252: ibm819 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1252:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1252: iso88591 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1252:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1252: iso-ir-100 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1252:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1252: iso8859-1 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1252:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1252: iso_8859-1 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1252:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1252: iso-8859-1 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1252:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1252: cp819 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1252:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1252: cp1252 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1252:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1251: x-cp1251 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1251:128 expected 1026 but got 65533"
+              },
+              {
+                "name": "windows-1252: ansi_x3.4-1968 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1252:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1252: ascii (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1252:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1252: csisolatin1 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1252:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1250: x-cp1250 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1250:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1251: windows-1251 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1251:128 expected 1026 but got 65533"
+              },
+              {
+                "name": "windows-1251: cp1251 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1251:128 expected 1026 but got 65533"
+              },
+              {
+                "name": "windows-874: iso885911 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-874:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1250: cp1250 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1250:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-1250: windows-1250 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-1250:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-874: iso8859-11 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-874:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-874: tis-620 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-874:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "windows-874: windows-874 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-874:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "KOI8-U: koi8-u (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: KOI8-U:128 expected 9472 but got 65533"
+              },
+              {
+                "name": "windows-874: iso-8859-11 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: windows-874:128 expected 8364 but got 65533"
+              },
+              {
+                "name": "macintosh: x-mac-roman (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: macintosh:128 expected 196 but got 65533"
+              },
+              {
+                "name": "KOI8-U: koi8-ru (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: KOI8-U:128 expected 9472 but got 65533"
+              },
+              {
+                "name": "macintosh: macintosh (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: macintosh:128 expected 196 but got 65533"
+              },
+              {
+                "name": "KOI8-R: koi8-r (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: KOI8-R:128 expected 9472 but got 65533"
+              },
+              {
+                "name": "KOI8-R: koi8_r (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: KOI8-R:128 expected 9472 but got 65533"
+              },
+              {
+                "name": "macintosh: mac (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: macintosh:128 expected 196 but got 65533"
+              },
+              {
+                "name": "macintosh: csmacintosh (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: macintosh:128 expected 196 but got 65533"
+              },
+              {
+                "name": "KOI8-R: koi8 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: KOI8-R:128 expected 9472 but got 65533"
+              },
+              {
+                "name": "KOI8-R: cskoi8r (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: KOI8-R:128 expected 9472 but got 65533"
+              },
+              {
+                "name": "ISO-8859-16: iso-8859-16 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-16:128 expected 128 but got 65533"
+              },
+              {
+                "name": "KOI8-R: koi (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: KOI8-R:128 expected 9472 but got 65533"
+              },
+              {
+                "name": "ISO-8859-15: l9 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-15:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-15: iso_8859-15 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-15:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-15: iso885915 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-15:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-15: iso8859-15 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-15:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-15: csisolatin9 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-15:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-14: iso885914 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-14:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-13: iso8859-13 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-13:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-13: iso885913 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-13:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-15: iso-8859-15 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-15:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-14: iso-8859-14 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-14:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-14: iso8859-14 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-14:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-10: iso885910 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-10:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-13: iso-8859-13 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-13:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-10: iso-ir-157 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-10:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-10: latin6 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-10:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-8-I: iso-8859-8-i (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-8:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-10: l6 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-10:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-10: csisolatin6 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-10:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-10: iso-8859-10 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-10:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-8-I: logical (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-8:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-8: iso_8859-8:1988 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-8:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-8: iso_8859-8 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-8:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-8: visual (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-8:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-8: iso88598 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-8:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-8: iso8859-8 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-8:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-8: iso-ir-138 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-8:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-8: iso-8859-8 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-8:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-8: hebrew (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-8:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-7: iso_8859-7 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-7:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-8: csisolatinhebrew (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-8:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-7: iso_8859-7:1987 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-7:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-8: iso-8859-8-e (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-8:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-7: greek8 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-7:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-7: iso-8859-7 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-7:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-7: iso88597 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-7:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-8: csiso88598e (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-8:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-7: csisolatingreek (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-7:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-7: iso-ir-126 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-7:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-6: iso_8859-6:1987 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-6:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-6: iso_8859-6 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-6:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-6: iso-8859-6-i (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-6:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-6: iso8859-6 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-6:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-6: iso-8859-6 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-6:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-6: iso-8859-6-e (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-6:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-6: csiso88596e (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-6:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-6: ecma-114 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-6:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-6: csisolatinarabic (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-6:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-6: csiso88596i (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-6:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-5: iso88595 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-5:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-6: asmo-708 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-6:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-5: iso_8859-5:1988 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-5:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-5: iso8859-5 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-5:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-5: iso_8859-5 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-5:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-6: arabic (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-6:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-5: iso-ir-144 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-5:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-4: l4 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-4:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-4: iso_8859-4:1988 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-4:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-5: iso-8859-5 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-5:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-5: csisolatincyrillic (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-5:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-5: cyrillic (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-5:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-4: latin4 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-4:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-4: iso-8859-4 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-4:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-4: iso_8859-4 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-4:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-4: iso88594 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-4:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-4: csisolatin4 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-4:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-4: iso-ir-110 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-4:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-4: iso8859-4 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-4:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-3: iso_8859-3 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-3:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-3: l3 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-3:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-3: iso_8859-3:1988 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-3:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-3: latin3 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-3:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-3: iso8859-3 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-3:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-3: iso-ir-109 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-3:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-3: iso88593 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-3:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-3: csisolatin3 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-3:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-2: l2 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-2:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-3: iso-8859-3 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-3:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-2: latin2 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-2:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-2: iso_8859-2 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-2:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-2: iso88592 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-2:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-2: iso8859-2 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-2:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-2: iso-ir-101 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-2:128 expected 128 but got 65533"
+              },
+              {
+                "name": "ISO-8859-2: iso_8859-2:1987 (XMLHttpRequest)",
+                "status": "FAIL",
+                "message": "assert_equals: ISO-8859-2:128 expected 128 but got 65533"
+              }
+            ]
+          },
+          {
+            "test": "/encoding/sniffing.html",
+            "status": "OK",
+            "assertions": [
+              {
+                "name": "No (UTF-8) sniffing allowed",
+                "status": "FAIL",
+                "message": "assert_equals: expected \"\u00c2\u20ac\u00c2\u20ac Hello World! \u00c2\u20ac\u00c2\u20ac\" but got \"\u0080\u0080 Hello World! \u0080\u0080\""
+              }
+            ]
+          },
+          {
+            "test": "/encoding/textdecoder-mistakes.any.html",
+            "status": "OK",
+            "assertions": [
+              {
+                "name": "fatal stream: utf-8",
+                "status": "FAIL",
+                "message": "The encoded data is not valid for utf-8"
+              }
+            ]
+          },
+          {
+            "test": "/encoding/textdecoder-mistakes.any.worker.html",
+            "status": "OK",
+            "assertions": [
+              {
+                "name": "fatal stream: utf-8",
+                "status": "FAIL",
+                "message": "The encoded data is not valid for utf-8"
+              }
+            ]
+          },
+          {
+            "test": "/encoding/unsupported-encodings.any.html",
+            "status": "OK",
+            "assertions": [
+              {
+                "name": "UTF-32 with BOM should decode as UTF-16LE",
+                "status": "FAIL",
+                "message": "promise_test: Unhandled rejection with value: object \"URIError: URI malformed\""
+              },
+              {
+                "name": "utf-32 with BOM should decode as UTF-16LE",
+                "status": "FAIL",
+                "message": "promise_test: Unhandled rejection with value: object \"URIError: URI malformed\""
+              },
+              {
+                "name": "UTF-32LE with BOM should decode as UTF-16LE",
+                "status": "FAIL",
+                "message": "promise_test: Unhandled rejection with value: object \"URIError: URI malformed\""
+              },
+              {
+                "name": "utf-32le with BOM should decode as UTF-16LE",
+                "status": "FAIL",
+                "message": "promise_test: Unhandled rejection with value: object \"URIError: URI malformed\""
+              },
+              {
+                "name": "UTF-32be with BOM should decode as UTF-8",
+                "status": "FAIL",
+                "message": "promise_test: Unhandled rejection with value: object \"URIError: URI malformed\""
+              },
+              {
+                "name": "utf-32be with BOM should decode as UTF-8",
+                "status": "FAIL",
+                "message": "promise_test: Unhandled rejection with value: object \"URIError: URI malformed\""
+              }
+            ]
+          },
+          {
+            "test": "/encoding/unsupported-encodings.any.worker.html",
+            "status": "OK",
+            "assertions": [
+              {
+                "name": "UTF-7 should not be supported",
+                "status": "FAIL",
+                "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+              },
+              {
+                "name": "utf-7 should not be supported",
+                "status": "FAIL",
+                "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+              },
+              {
+                "name": "UTF-32 with BOM should decode as UTF-16LE",
+                "status": "FAIL",
+                "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+              },
+              {
+                "name": "UTF-32 with no BOM should decode as UTF-8",
+                "status": "FAIL",
+                "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+              },
+              {
+                "name": "utf-32 with BOM should decode as UTF-16LE",
+                "status": "FAIL",
+                "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+              },
+              {
+                "name": "utf-32 with no BOM should decode as UTF-8",
+                "status": "FAIL",
+                "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+              },
+              {
+                "name": "UTF-32LE with BOM should decode as UTF-16LE",
+                "status": "FAIL",
+                "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+              },
+              {
+                "name": "UTF-32LE with no BOM should decode as UTF-8",
+                "status": "FAIL",
+                "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+              },
+              {
+                "name": "utf-32le with BOM should decode as UTF-16LE",
+                "status": "FAIL",
+                "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+              },
+              {
+                "name": "utf-32le with no BOM should decode as UTF-8",
+                "status": "FAIL",
+                "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+              },
+              {
+                "name": "UTF-32be with no BOM should decode as UTF-8",
+                "status": "FAIL",
+                "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+              },
+              {
+                "name": "UTF-32be with BOM should decode as UTF-8",
+                "status": "FAIL",
+                "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+              },
+              {
+                "name": "utf-32be with no BOM should decode as UTF-8",
+                "status": "FAIL",
+                "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+              },
+              {
+                "name": "utf-32be with BOM should decode as UTF-8",
+                "status": "FAIL",
+                "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+              }
+            ]
+          },
+          {
+            "test": "/encoding/utf-32-from-win1252.html",
+            "status": "OK",
+            "assertions": [
+              {
+                "name": "Expect resources/utf-32-big-endian-bom.html to parse as windows-1252",
+                "status": "FAIL",
+                "message": "assert_equals: expected \"windows-1252\" but got \"UTF-8\""
+              },
+              {
+                "name": "Expect resources/utf-32-big-endian-nobom.html to parse as windows-1252",
+                "status": "FAIL",
+                "message": "assert_equals: expected \"windows-1252\" but got \"UTF-8\""
+              },
+              {
+                "name": "Expect resources/utf-32-little-endian-nobom.html to parse as windows-1252",
+                "status": "FAIL",
+                "message": "assert_equals: expected \"windows-1252\" but got \"UTF-8\""
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "fullOfficialWptPassRate": null,
+    "note": "Only this immutable103-row native cohort. Historical207 and80a results are not combined."
+  },
+  "evidence": [
+    {
+      "source": "output/session-102900614/legacy-codecs-candidate-1/patch-receipt.json",
+      "committed": "agent/evidence/102900614-009/00-legacy-codecs-candidate-1-patch-receipt.json",
+      "sha256": "a2583cc0aaafc7482437bfaaedf6293dd8015eabf44a6a57e1ebf3276c121195",
+      "bytes": 1180
+    },
+    {
+      "source": "output/session-102900614/legacy-codecs-green-1/summary.json",
+      "committed": "agent/evidence/102900614-009/01-legacy-codecs-green-1-summary.json",
+      "sha256": "d821fee032871cf23742fb97fd1bdcf89a4cb7fa5909deef0ab1dd33af6f1e61",
+      "bytes": 15593
+    },
+    {
+      "source": "output/session-102900614/legacy-codecs-green-1/compiled-source-sha256.json",
+      "committed": "agent/evidence/102900614-009/02-legacy-codecs-green-1-compiled-source-sha256.json",
+      "sha256": "8e10411b3eb34fb69a23db35d2636409be9ccc5159608c39cacc66e40b229406",
+      "bytes": 15370
+    },
+    {
+      "source": "output/session-102900614/legacy-codecs-red-1.json",
+      "committed": "agent/evidence/102900614-009/03-session-102900614-legacy-codecs-red-1.json",
+      "sha256": "7e7ae8399a83a34510398a2653e1aa64264adc1a04414bd050ca3fd3d951e07c",
+      "bytes": 2046
+    },
+    {
+      "source": "output/session-102900614/legacy-codecs-red-1.log",
+      "committed": "agent/evidence/102900614-009/04-session-102900614-legacy-codecs-red-1.log",
+      "sha256": "72ad61ffb80e1209cb8a9fcdf086f3007ce76d22d261f639597c7fcd7f940e63",
+      "bytes": 35508
+    },
+    {
+      "source": "output/session-102900614/legacy-codecs-red-1.csv",
+      "committed": "agent/evidence/102900614-009/05-session-102900614-legacy-codecs-red-1.csv",
+      "sha256": "cbdc01daf410453a2b326b666e074fe2ec24d2b0b63d368cdaf7d1aece59ca1d",
+      "bytes": 80
+    },
+    {
+      "source": "output/session-102900614/wpt-legacy-native-1/cohort.json",
+      "committed": "agent/evidence/102900614-009/06-wpt-legacy-native-1-cohort.json",
+      "sha256": "6d8123c4521ec7112d3e3ba7d0950cdfebe6eacc63880dcddc1dd683c37cf94f",
+      "bytes": 1106601
+    },
+    {
+      "source": "output/session-102900614/wpt-legacy-native-1/original-six-receipt.json",
+      "committed": "agent/evidence/102900614-009/07-wpt-legacy-native-1-original-six-receipt.json",
+      "sha256": "50d860afe04728fe886eaeda1077e241ace986a24e452062e6eca61afd4c590e",
+      "bytes": 967
+    },
+    {
+      "source": "output/session-102900614/wpt-legacy-native-1-invocation.json",
+      "committed": "agent/evidence/102900614-009/08-session-102900614-wpt-legacy-native-1-invocation.json",
+      "sha256": "d91eb46090751c32cbb82c3362431e73ac9883a34f6d3e5c155e6aa6f581599c",
+      "bytes": 2602
+    },
+    {
+      "source": "output/session-102900614/wpt-legacy-native-1/encoding-streams/run.json",
+      "committed": "agent/evidence/102900614-009/09-encoding-streams-run.json",
+      "sha256": "4033467df8c387f7c653eba1f4c78ff4c534adf9b7e0d47bc7de4ecc1ff8ccfc",
+      "bytes": 11987
+    },
+    {
+      "source": "output/session-102900614/wpt-legacy-native-1/encoding-streams/schedule.json",
+      "committed": "agent/evidence/102900614-009/10-encoding-streams-schedule.json",
+      "sha256": "4eb5134ee561a6c86181f72d8d821557965d0c89d421f9ef6d6b1a1b3b59a08a",
+      "bytes": 10971
+    },
+    {
+      "source": "output/session-102900614/wpt-legacy-native-1/encoding-streams/results.jsonl",
+      "committed": "agent/evidence/102900614-009/11-encoding-streams-results.jsonl",
+      "sha256": "7752462a180e85f46f94824b6afa0f9ab72b251c98efb41e336f23009dc97151",
+      "bytes": 99839
+    },
+    {
+      "source": "output/session-102900614/wpt-legacy-native-1/encoding-streams/summary.json",
+      "committed": "agent/evidence/102900614-009/12-encoding-streams-summary.json",
+      "sha256": "e3fd0cd60ca46575d24707aa5da8f77981fe34cbf7d82f04b6e2e084a1770161",
+      "bytes": 2018
+    },
+    {
+      "source": "output/session-102900614/wpt-legacy-native-1/encoding-core/run.json",
+      "committed": "agent/evidence/102900614-009/13-encoding-core-run.json",
+      "sha256": "52b265fc53f9f4f9ca5ed238a0392c7b82b5e09f0c10b78b420c412dd4e0dae5",
+      "bytes": 14966
+    },
+    {
+      "source": "output/session-102900614/wpt-legacy-native-1/encoding-core/schedule.json",
+      "committed": "agent/evidence/102900614-009/14-encoding-core-schedule.json",
+      "sha256": "67ac39bf9bfe7cc8a2a7a9316cbee264c6bf5782dd36d4af9a1e65611507084e",
+      "bytes": 44730
+    },
+    {
+      "source": "output/session-102900614/wpt-legacy-native-1/encoding-core/results.jsonl",
+      "committed": "agent/evidence/102900614-009/15-encoding-core-results.jsonl",
+      "sha256": "4d7e91a75ac66a5cf39337b3e0dc1c0cff1e6c57b552ec1e76c194803224b783",
+      "bytes": 2466988
+    },
+    {
+      "source": "output/session-102900614/wpt-legacy-native-1/encoding-core/summary.json",
+      "committed": "agent/evidence/102900614-009/16-encoding-core-summary.json",
+      "sha256": "12ca6d6c37cdee7795699366c25dfda8923dd71f43edf2ec4f9aa3c64fb086ed",
+      "bytes": 2124
+    },
+    {
+      "source": "output/session-102900614/legacy-codecs-green-1/build.json",
+      "committed": "agent/evidence/102900614-009/17-legacy-codecs-green-1-build.json",
+      "sha256": "d7ff77a9f953a47de3c451224f64a833de300f6c73fd6f63ed7fb9836bb343a7",
+      "bytes": 2045
+    },
+    {
+      "source": "output/session-102900614/legacy-codecs-green-1/build.log",
+      "committed": "agent/evidence/102900614-009/18-legacy-codecs-green-1-build.log",
+      "sha256": "a164e891c5b90d6c21b85cb4860307149dbb2eb6e2ba621801413bfc6a57e589",
+      "bytes": 57328
+    },
+    {
+      "source": "output/session-102900614/legacy-codecs-green-1/legacy-codecs.json",
+      "committed": "agent/evidence/102900614-009/19-legacy-codecs-green-1-legacy-codecs.json",
+      "sha256": "5dee4084992cf44178d13f983a929a4ff44426ca086e716821380112bdab3a72",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/legacy-codecs-green-1/legacy-codecs.log",
+      "committed": "agent/evidence/102900614-009/20-legacy-codecs-green-1-legacy-codecs.log",
+      "sha256": "353a54b89ff1dedeee7b1440df91a1bd8e74c20ef65635318e954594c383a1bc",
+      "bytes": 24106
+    },
+    {
+      "source": "output/session-102900614/legacy-codecs-green-1/text-codec.json",
+      "committed": "agent/evidence/102900614-009/21-legacy-codecs-green-1-text-codec.json",
+      "sha256": "be148c273a11bc2a0db2c13acb8e067002314140d169839eb4cfe208e4964aae",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/legacy-codecs-green-1/text-codec.log",
+      "committed": "agent/evidence/102900614-009/22-legacy-codecs-green-1-text-codec.log",
+      "sha256": "fef3a5e58ec206de837ec563f014eeeb58d0d4d05908826faa40a2fef9b418bc",
+      "bytes": 21137
+    },
+    {
+      "source": "output/session-102900614/legacy-codecs-green-1/text-streams.json",
+      "committed": "agent/evidence/102900614-009/23-legacy-codecs-green-1-text-streams.json",
+      "sha256": "8d01e74f2f38d5611329cce900b2caa495ff4880606b20e77e2cec6279c6f7eb",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/legacy-codecs-green-1/text-streams.log",
+      "committed": "agent/evidence/102900614-009/24-legacy-codecs-green-1-text-streams.log",
+      "sha256": "b780ad02ff7ffc51c76d50f5bc3f50e4021dd24932d6a5d032fb00ef4ca40440",
+      "bytes": 10268
+    },
+    {
+      "source": "output/session-102900614/legacy-codecs-green-1/message-transfer.json",
+      "committed": "agent/evidence/102900614-009/25-legacy-codecs-green-1-message-transfer.json",
+      "sha256": "4ef24b1369e2884ae1b421ba3be909bf6fb4373593911e72c0e9b02a6c115680",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/legacy-codecs-green-1/message-transfer.log",
+      "committed": "agent/evidence/102900614-009/26-legacy-codecs-green-1-message-transfer.log",
+      "sha256": "49086e65040a5b468b69e582d9de7fdfa3cc8937b69e3fed20fd07107ef52a90",
+      "bytes": 10028
+    },
+    {
+      "source": "output/session-102900614/legacy-codecs-green-1/test_encoding.json",
+      "committed": "agent/evidence/102900614-009/27-legacy-codecs-green-1-test_encoding.json",
+      "sha256": "b5c945943d1ae15ab0a6a7b5ce977e36e9aea2407365b45b29beb2b3b24e46b6",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/legacy-codecs-green-1/test_encoding.log",
+      "committed": "agent/evidence/102900614-009/28-legacy-codecs-green-1-test_encoding.log",
+      "sha256": "dfbaa42bf908960b0e192756842ddf3403ecd583d2c08fd0868827220896a0e2",
+      "bytes": 30
+    },
+    {
+      "source": "output/session-102900614/legacy-codecs-green-1/test_encoding_encoder.json",
+      "committed": "agent/evidence/102900614-009/29-legacy-codecs-green-1-test_encoding_encoder.json",
+      "sha256": "c5bc5766e8e164f290909bc29237b7aa5a44413806f5010c2baaa52870f6b539",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/legacy-codecs-green-1/test_encoding_encoder.log",
+      "committed": "agent/evidence/102900614-009/30-legacy-codecs-green-1-test_encoding_encoder.log",
+      "sha256": "3d0d7958a1bc993f0a545f8b6c667fefc55af300eb5590293405b3a43edafe62",
+      "bytes": 40
+    },
+    {
+      "source": "output/session-102900614/legacy-codecs-green-1/test_url_encoding.json",
+      "committed": "agent/evidence/102900614-009/31-legacy-codecs-green-1-test_url_encoding.json",
+      "sha256": "19490de6dcee8862592d5c1143013f4c75aef0a16fa6d095b22552e50499b66d",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/legacy-codecs-green-1/test_url_encoding.log",
+      "committed": "agent/evidence/102900614-009/32-legacy-codecs-green-1-test_url_encoding.log",
+      "sha256": "bf0b0ec6a486af905b4aa0dc3415d15c7822111fe415e2ad09fba5ba79c3ee2f",
+      "bytes": 34
+    },
+    {
+      "source": "output/session-102900614/legacy-codecs-green-1/test_document_encoding.json",
+      "committed": "agent/evidence/102900614-009/33-legacy-codecs-green-1-test_document_encoding.json",
+      "sha256": "cec8b9ad02c8319378407f6fc96c699c05bd6c75e9c94e94e87d51fdb472dc8a",
+      "bytes": 2004
+    },
+    {
+      "source": "output/session-102900614/legacy-codecs-green-1/test_document_encoding.log",
+      "committed": "agent/evidence/102900614-009/34-legacy-codecs-green-1-test_document_encoding.log",
+      "sha256": "951d1fad04152778fc17ce36777774b590d1b6c177ec1210452aacfad2c37db8",
+      "bytes": 5104
+    },
+    {
+      "source": "output/session-102900614/legacy-codecs-green-1/asan-build.json",
+      "committed": "agent/evidence/102900614-009/35-legacy-codecs-green-1-asan-build.json",
+      "sha256": "8c325e95e13a03afb80ceadf8f78dd478e9c309d62754fdc2e1a70ec930ae546",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/legacy-codecs-green-1/asan-build.log",
+      "committed": "agent/evidence/102900614-009/36-legacy-codecs-green-1-asan-build.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "source": "output/session-102900614/legacy-codecs-green-1/asan-legacy-bounds.json",
+      "committed": "agent/evidence/102900614-009/37-legacy-codecs-green-1-asan-legacy-bounds.json",
+      "sha256": "7a3a42272657378d39a98ef34cc50d06c96553e29df119e55dee18d06c3483a3",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/legacy-codecs-green-1/asan-legacy-bounds.log",
+      "committed": "agent/evidence/102900614-009/38-legacy-codecs-green-1-asan-legacy-bounds.log",
+      "sha256": "dc0230852c12ab2eacee5ad9a197ffb3d7cea4a76f35d47d815d3c4d38cee8d1",
+      "bytes": 64
+    }
+  ],
+  "raw_byte_preservation": [
+    "agent/evidence/102900614-009/04-session-102900614-legacy-codecs-red-1.log",
+    "agent/evidence/102900614-009/05-session-102900614-legacy-codecs-red-1.csv",
+    "agent/evidence/102900614-009/18-legacy-codecs-green-1-build.log",
+    "agent/evidence/102900614-009/20-legacy-codecs-green-1-legacy-codecs.log",
+    "agent/evidence/102900614-009/22-legacy-codecs-green-1-text-codec.log",
+    "agent/evidence/102900614-009/24-legacy-codecs-green-1-text-streams.log",
+    "agent/evidence/102900614-009/26-legacy-codecs-green-1-message-transfer.log",
+    "agent/evidence/102900614-009/28-legacy-codecs-green-1-test_encoding.log",
+    "agent/evidence/102900614-009/30-legacy-codecs-green-1-test_encoding_encoder.log",
+    "agent/evidence/102900614-009/32-legacy-codecs-green-1-test_url_encoding.log",
+    "agent/evidence/102900614-009/34-legacy-codecs-green-1-test_document_encoding.log",
+    "agent/evidence/102900614-009/36-legacy-codecs-green-1-asan-build.log",
+    "agent/evidence/102900614-009/38-legacy-codecs-green-1-asan-legacy-bounds.log"
+  ],
+  "implementation": "Native finite-state incremental decoders reuse immutable encoding tables with44-byte private state, at most3 restored bytes and one native call per chunk; only a fatal call retains its unconsumed input tail.",
+  "limits": [
+    "This artifact still has iframe/body-handler/meta/XHR gaps and two fatal UTF8 streaming failures. Raw failures remain unchanged.",
+    "Current accepted733/score45 unchanged; combined current-artifact resources and navigation soak remain pending.",
+    "Same signed IPA execution remains unproved."
+  ],
+  "model_compute_duration": "Unavailable; parallel worker wall times are not summed"
+}

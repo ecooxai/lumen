@@ -46,6 +46,26 @@ bool web_encoding_decode_checked_n(SB *output, WebEncoding encoding,
                                    bool sniff_bom, size_t max_output,
                                    bool fatal, bool *had_error);
 
+/* Fixed-size state for the legacy incremental decoder. Zero initialization
+ * starts a new decoding session. pending holds only bytes the standard asks
+ * to reconsume; input chunks are never retained by this structure. */
+typedef struct {
+    uint32_t leading, second, third, mode, output_mode, output_flag, jis0212;
+    uint32_t pending_count, pending[3];
+} WebEncodingDecoder;
+
+/* Decode one chunk using persistent state; stream=true does not feed EOF.
+ * A fatal error returns false with had_error=true, preserving decoder state
+ * and its reconsume queue. consumed identifies the first unconsumed byte in
+ * this input chunk. The caller owns that remaining tail until its next call.
+ * Nonfatal replacement errors return true unless the output bound is exceeded.
+ * UTF-8/UTF-16 use their separately tested Unicode streaming implementation. */
+bool web_encoding_decode_stream_n(SB *output, WebEncoding encoding,
+                                  WebEncodingDecoder *state,
+                                  const char *bytes, size_t length, bool stream,
+                                  size_t max_output, bool fatal,
+                                  size_t *consumed, bool *had_error);
+
 /* Output encodings map replacement and UTF-16 to UTF-8. Unknown/invalid input
  * remains UNKNOWN; it is not silently accepted as an encoding. */
 WebEncoding web_encoding_output(WebEncoding encoding);

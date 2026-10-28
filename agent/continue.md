@@ -54,3 +54,7 @@ Candidate `build-apple-load-20261029/lumen-text-streams-80a60752a025a3b1` SHA-25
 ## Checkpoint008 — measured span/glyph candidate
 
 Native `4773b85d28d3b1a7c17a1beee5225abc5141bb4cec4b713d409464ebe42582e9` passes97/97 raster checks, exact paired page pixels and scoped native capture. Scroll p95 is12.060%, improved from same-stream20.175%, but still fails fixed10%. Idle p95.991%, stable153.203MiB belong only to this exact binary. Current accepted733/score45 unchanged. Source manifest, byte-identical reference and all timing/evidence are in `agent/evidence/102900614-008-raster-glyph.json`.
+
+## Checkpoint009 — legacy decoder candidate
+
+Native050b `050b0160e0869c4ac9e840a1835403c7dbb678c90a49c3619e0acf3275d007b6` passes178legacy checks,459119sanitizer cases, original1850 and fresh90/103 variants (25/26streams,65/77core).1412 of frozen1515 remain unrun. Cross-realm load still times out in this exact artifact; later frame fix must retain separate identity. Accepted733/score45 unchanged. See `agent/evidence/102900614-009-legacy-codecs.json`.

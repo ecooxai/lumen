@@ -1,0 +1,173 @@
+[js log] TEXT_CODEC_CHECK {"i":0,"scope":"window","name":"default decoder attributes","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":1,"scope":"window","name":"canonical label \" \\tUTF-8\\r\\n\"","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":2,"scope":"window","name":"canonical label \"latin1\"","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":3,"scope":"window","name":"canonical label \"ASCII\"","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":4,"scope":"window","name":"canonical label \"Utf-16\"","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":5,"scope":"window","name":"canonical label \"unicodefffe\"","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":6,"scope":"window","name":"canonical label \"Shift_JIS\"","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":7,"scope":"window","name":"canonical label \"iso-8859-8-i\"","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":8,"scope":"window","name":"invalid label \"\"","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":9,"scope":"window","name":"invalid label \"utf-7\"","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":10,"scope":"window","name":"invalid label \"utf-8\\u0000\"","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":11,"scope":"window","name":"invalid label \" utf-8\"","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":12,"scope":"window","name":"invalid label \"utf8﻿\"","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":13,"scope":"window","name":"invalid label \"replacement\"","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":14,"scope":"window","name":"invalid label \"iso-2022-cn\"","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":15,"scope":"window","name":"invalid label \"hz-gb-2312\"","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":16,"scope":"window","name":"Symbol labels throw TypeError","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":17,"scope":"window","name":"constructor options null is empty","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":18,"scope":"window","name":"constructor options primitive rejects","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":19,"scope":"window","name":"options convert before label algorithm","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":20,"scope":"window","name":"label uses string coercion hint once","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":21,"scope":"window","name":"decoder attributes are readonly","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":22,"scope":"window","name":"decoder brand cannot be forged","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":23,"scope":"window","name":"encoder brand cannot be forged","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":24,"scope":"window","name":"encoder Symbol input rejects","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":25,"scope":"window","name":"encoder defaults and null conversion","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":26,"scope":"window","name":"encoder replaces lone surrogates","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":27,"scope":"window","name":"encoder preserves non-BMP scalars","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":28,"scope":"window","name":"encodeInto never writes partial scalar","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":29,"scope":"window","name":"encodeInto counts UTF16 units","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":30,"scope":"window","name":"encodeInto bounds offset writes","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":31,"scope":"window","name":"encodeInto consumes only fitted surrogate replacements","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":32,"scope":"window","name":"encodeInto requires both arguments","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":33,"scope":"window","name":"encodeInto rejects destination 33","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":34,"scope":"window","name":"encodeInto rejects destination 34","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":35,"scope":"window","name":"encodeInto rejects destination 35","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":36,"scope":"window","name":"encodeInto rejects destination 36","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":37,"scope":"window","name":"encodeInto rejects destination 37","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":38,"scope":"window","name":"encodeInto rejects destination 38","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":39,"scope":"window","name":"encodeInto ignores shadowed public length","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":40,"scope":"window","name":"encodeInto rejects Proxy without traps","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":41,"scope":"window","name":"decode empty and explicit undefined","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":42,"scope":"window","name":"decode rejects null","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":43,"scope":"window","name":"decode rejects fake buffer properties","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":44,"scope":"window","name":"decode accepts a DataView byte range","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":45,"scope":"window","name":"decode ignores shadowed view properties","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":46,"scope":"window","name":"decode observes mutation by options getter","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":47,"scope":"window","name":"decode invalid options rejects","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":48,"scope":"window","name":"UTF8 maximal invalid subsequences","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":49,"scope":"window","name":"UTF8 fatal rejects malformed sequence","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":50,"scope":"window","name":"UTF8 fatal accepts literal replacement scalar","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":51,"scope":"window","name":"UTF8 BOM is stripped by default","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":52,"scope":"window","name":"UTF8 ignoreBOM preserves BOM","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":53,"scope":"window","name":"independent decodes reset BOM state","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":54,"scope":"window","name":"UTF8 streaming splits a scalar","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":55,"scope":"window","name":"UTF8 streaming splits BOM","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":56,"scope":"window","name":"UTF8 streaming reconsumes invalid continuation","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":57,"scope":"window","name":"UTF8 flush emits one unfinished replacement","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":58,"scope":"window","name":"UTF8 fatal flush rejects incomplete scalar","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":59,"scope":"window","name":"UTF16LE sample","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":60,"scope":"window","name":"UTF16BE sample","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":61,"scope":"window","name":"UTF16 does not sniff opposite-endian BOM","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":62,"scope":"window","name":"UTF16 streaming spans bytes and surrogate pair","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":63,"scope":"window","name":"UTF16 high surrogate reconsumes next unit","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":64,"scope":"window","name":"UTF16 high surrogate and odd EOF form one error","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":65,"scope":"window","name":"UTF16 fatal rejects unpaired surrogate","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":66,"scope":"window","name":"UTF16 fatal accepts literal replacement scalar","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":67,"scope":"window","name":"Latin1 aliases use Windows1252 table","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":68,"scope":"window","name":"legacy encodings do not strip UTF8 BOM bytes","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":69,"scope":"window","name":"ShiftJIS native table decoding","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":70,"scope":"window","name":"ShiftJIS fatal invalid pair","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":71,"scope":"window","name":"ISO2022JP native state within one decode","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":72,"scope":"window","name":"undefined legacy index is replacement","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":73,"scope":"window","name":"undefined legacy index fatal error","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":74,"scope":"window","name":"decode rejects resizable buffer before options getter","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":75,"scope":"window","name":"decode rejects view backed by resizable buffer","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":76,"scope":"window","name":"encodeInto rejects resizable destination","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":77,"scope":"window","name":"encodeInto converts source before destination validation","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":78,"scope":"window","name":"fixed shared buffers remain supported","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":79,"scope":"window","name":"decode rejects growable shared buffer","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":80,"scope":"window","name":"encodeInto rejects growable shared destination","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":81,"scope":"cross-realm","name":"parent getter reads child decoder state","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":82,"scope":"cross-realm","name":"child getter reads parent decoder state","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":83,"scope":"cross-realm","name":"parent decode uses child encoding state","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":84,"scope":"cross-realm","name":"child decode uses parent encoding state","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":85,"scope":"cross-realm","name":"parent encode allocates in child receiver realm","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":86,"scope":"cross-realm","name":"child encode allocates in parent receiver realm","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":87,"scope":"cross-realm","name":"parent encodeInto writes child destination","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":88,"scope":"cross-realm","name":"public properties cannot change private child decoder","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":89,"scope":"worker","name":"default decoder attributes","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":90,"scope":"worker","name":"canonical label \" \\tUTF-8\\r\\n\"","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":91,"scope":"worker","name":"canonical label \"latin1\"","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":92,"scope":"worker","name":"canonical label \"ASCII\"","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":93,"scope":"worker","name":"canonical label \"Utf-16\"","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":94,"scope":"worker","name":"canonical label \"unicodefffe\"","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":95,"scope":"worker","name":"canonical label \"Shift_JIS\"","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":96,"scope":"worker","name":"canonical label \"iso-8859-8-i\"","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":97,"scope":"worker","name":"invalid label \"\"","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":98,"scope":"worker","name":"invalid label \"utf-7\"","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":99,"scope":"worker","name":"invalid label \"utf-8\\u0000\"","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":100,"scope":"worker","name":"invalid label \" utf-8\"","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":101,"scope":"worker","name":"invalid label \"utf8﻿\"","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":102,"scope":"worker","name":"invalid label \"replacement\"","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":103,"scope":"worker","name":"invalid label \"iso-2022-cn\"","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":104,"scope":"worker","name":"invalid label \"hz-gb-2312\"","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":105,"scope":"worker","name":"Symbol labels throw TypeError","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":106,"scope":"worker","name":"constructor options null is empty","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":107,"scope":"worker","name":"constructor options primitive rejects","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":108,"scope":"worker","name":"options convert before label algorithm","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":109,"scope":"worker","name":"label uses string coercion hint once","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":110,"scope":"worker","name":"decoder attributes are readonly","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":111,"scope":"worker","name":"decoder brand cannot be forged","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":112,"scope":"worker","name":"encoder brand cannot be forged","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":113,"scope":"worker","name":"encoder Symbol input rejects","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":114,"scope":"worker","name":"encoder defaults and null conversion","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":115,"scope":"worker","name":"encoder replaces lone surrogates","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":116,"scope":"worker","name":"encoder preserves non-BMP scalars","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":117,"scope":"worker","name":"encodeInto never writes partial scalar","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":118,"scope":"worker","name":"encodeInto counts UTF16 units","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":119,"scope":"worker","name":"encodeInto bounds offset writes","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":120,"scope":"worker","name":"encodeInto consumes only fitted surrogate replacements","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":121,"scope":"worker","name":"encodeInto requires both arguments","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":122,"scope":"worker","name":"encodeInto rejects destination 33","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":123,"scope":"worker","name":"encodeInto rejects destination 34","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":124,"scope":"worker","name":"encodeInto rejects destination 35","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":125,"scope":"worker","name":"encodeInto rejects destination 36","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":126,"scope":"worker","name":"encodeInto rejects destination 37","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":127,"scope":"worker","name":"encodeInto rejects destination 38","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":128,"scope":"worker","name":"encodeInto ignores shadowed public length","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":129,"scope":"worker","name":"encodeInto rejects Proxy without traps","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":130,"scope":"worker","name":"decode empty and explicit undefined","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":131,"scope":"worker","name":"decode rejects null","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":132,"scope":"worker","name":"decode rejects fake buffer properties","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":133,"scope":"worker","name":"decode accepts a DataView byte range","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":134,"scope":"worker","name":"decode ignores shadowed view properties","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":135,"scope":"worker","name":"decode observes mutation by options getter","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":136,"scope":"worker","name":"decode invalid options rejects","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":137,"scope":"worker","name":"UTF8 maximal invalid subsequences","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":138,"scope":"worker","name":"UTF8 fatal rejects malformed sequence","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":139,"scope":"worker","name":"UTF8 fatal accepts literal replacement scalar","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":140,"scope":"worker","name":"UTF8 BOM is stripped by default","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":141,"scope":"worker","name":"UTF8 ignoreBOM preserves BOM","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":142,"scope":"worker","name":"independent decodes reset BOM state","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":143,"scope":"worker","name":"UTF8 streaming splits a scalar","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":144,"scope":"worker","name":"UTF8 streaming splits BOM","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":145,"scope":"worker","name":"UTF8 streaming reconsumes invalid continuation","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":146,"scope":"worker","name":"UTF8 flush emits one unfinished replacement","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":147,"scope":"worker","name":"UTF8 fatal flush rejects incomplete scalar","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":148,"scope":"worker","name":"UTF16LE sample","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":149,"scope":"worker","name":"UTF16BE sample","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":150,"scope":"worker","name":"UTF16 does not sniff opposite-endian BOM","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":151,"scope":"worker","name":"UTF16 streaming spans bytes and surrogate pair","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":152,"scope":"worker","name":"UTF16 high surrogate reconsumes next unit","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":153,"scope":"worker","name":"UTF16 high surrogate and odd EOF form one error","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":154,"scope":"worker","name":"UTF16 fatal rejects unpaired surrogate","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":155,"scope":"worker","name":"UTF16 fatal accepts literal replacement scalar","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":156,"scope":"worker","name":"Latin1 aliases use Windows1252 table","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":157,"scope":"worker","name":"legacy encodings do not strip UTF8 BOM bytes","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":158,"scope":"worker","name":"ShiftJIS native table decoding","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":159,"scope":"worker","name":"ShiftJIS fatal invalid pair","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":160,"scope":"worker","name":"ISO2022JP native state within one decode","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":161,"scope":"worker","name":"undefined legacy index is replacement","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":162,"scope":"worker","name":"undefined legacy index fatal error","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":163,"scope":"worker","name":"decode rejects resizable buffer before options getter","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":164,"scope":"worker","name":"decode rejects view backed by resizable buffer","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":165,"scope":"worker","name":"encodeInto rejects resizable destination","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":166,"scope":"worker","name":"encodeInto converts source before destination validation","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":167,"scope":"worker","name":"fixed shared buffers remain supported","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":168,"scope":"worker","name":"decode rejects growable shared buffer","ok":true,"error":null}
+[js log] TEXT_CODEC_CHECK {"i":169,"scope":"worker","name":"encodeInto rejects growable shared destination","ok":true,"error":null}
+[js log] TEXT_CODEC_RESULTS {"total":170,"passed":170,"failed":0,"workerIssue":null}
+jsrun: context 20.1ms, 1 scripts 10.4ms, dom_version 22
+TEXT_CODEC_RECEIPT {"binary": "/Users/devin/repos/lumen/build-apple-load-20261029/jsrun-legacy-codecs-9dbf792698c8e504", "binary_sha256": "9dbf792698c8e504d9f3d93df6b28de9e6c95ee180b1e089d6e33b4a5d6e10a8", "fixture_sha256": "fe9efe3f8452bc46ae30f280b9c930b3f510e8fb9ccd2335824a11338bdc188b", "worker_sha256": "6e49e4aad71a6e60e2490243b46c861631ad2b48924673ac63be1129f4c6ff88", "total": 170, "passed": 170, "failed": 0, "scopes": {"window": {"total": 81, "passed": 81}, "worker": {"total": 81, "passed": 81}, "cross-realm": {"total": 8, "passed": 8}}}

@@ -123,6 +123,7 @@ function createTextCodecInterfaces(privateState, codec) {
     const reset = state => {
         state.cp = state.need = state.seen = 0; state.low = 0x80; state.high = 0xBF;
         state.byte = state.surrogate = null; state.bomSeen = false; state.queue = new U8(0);
+        state.nativeLegacy = null;
     };
     const serialize = (state, output) => {
         if (!state.ignoreBOM && !state.bomSeen && output.length &&
@@ -198,7 +199,22 @@ function createTextCodecInterfaces(privateState, codec) {
         }
         flush(); return serialize(state, parts.join(''));
     }
-    const multibyteLegacy = new Set(['gbk', 'gb18030', 'big5', 'euc-jp', 'iso-2022-jp', 'shift_jis', 'euc-kr']);
+    function decodeLegacy(state, bytes, stream) {
+        if (state.queue.length) {
+            const combined = new U8(state.queue.length + bytes.length);
+            combined.set(state.queue); combined.set(bytes, state.queue.length);
+            bytes = combined; state.queue = new U8(0);
+        }
+        const result = codec.decode(bytes.buffer, state.encoding, state.fatal, stream, state.nativeLegacy);
+        state.nativeLegacy = result[1];
+        if (result[3]) {
+            // The native finite state owns at most three restored bytes. Only
+            // a fatal call needs to retain an unconsumed input chunk tail.
+            state.queue = new U8(new U8(apply(bufferGet, bytes, []), result[2]));
+            throw new TypeError('The encoded data is not valid for ' + state.encoding);
+        }
+        return result[0];
+    }
     class TextDecoder {
         constructor(label = 'utf-8', options = {}) {
             label = string(label); options = dictionary(options);
@@ -215,11 +231,9 @@ function createTextCodecInterfaces(privateState, codec) {
             checkInput(input); options = dictionary(options); const stream = !!options.stream;
             const bytes = copyInput(input);
             const unicode = state.encoding === 'utf-8' || state.encoding === 'utf-16le' || state.encoding === 'utf-16be';
-            if (stream && !unicode && (multibyteLegacy.has(state.encoding) || state.fatal))
-                throw new TypeError('Streaming this legacy encoding/error mode is not implemented');
             if (!state.streaming) reset(state);
             const wasStreaming = state.streaming; state.streaming = stream;
-            if (unicode && (stream || wasStreaming)) return decodeUnicode(state, bytes, stream);
+            if (stream || wasStreaming) return unicode ? decodeUnicode(state, bytes, stream) : decodeLegacy(state, bytes, stream);
             return serialize(state, codec.decode(bytes.buffer, state.encoding, state.fatal));
         }
     }

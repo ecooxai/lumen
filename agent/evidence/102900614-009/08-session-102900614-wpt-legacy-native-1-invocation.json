@@ -1,0 +1,80 @@
+{
+  "startedUTC": "2026-10-28T23:39:34.632793+00:00",
+  "buildSummary": "output/session-102900614/legacy-codecs-green-1/summary.json",
+  "buildSummarySHA256": "d821fee032871cf23742fb97fd1bdcf89a4cb7fa5909deef0ab1dd33af6f1e61",
+  "binarySHA256": "050b0160e0869c4ac9e840a1835403c7dbb678c90a49c3619e0acf3275d007b6",
+  "stages": [
+    {
+      "stage": "prepare",
+      "startedUTC": "2026-10-28T23:39:34.633050+00:00",
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tools/apple-session-gpt6as/run_task_wpt_102900614.py",
+        "prepare",
+        "--binary",
+        "build-apple-load-20261029/lumen-legacy-codecs-050b0160e0869c4a",
+        "--sha256",
+        "050b0160e0869c4ac9e840a1835403c7dbb678c90a49c3619e0acf3275d007b6",
+        "--output",
+        "output/session-102900614/wpt-legacy-native-1"
+      ],
+      "finishedUTC": "2026-10-28T23:39:34.984927+00:00",
+      "seconds": 0.352,
+      "exitCode": 0
+    },
+    {
+      "stage": "original-six",
+      "startedUTC": "2026-10-28T23:39:34.985056+00:00",
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tools/apple-session-gpt6as/run_task_wpt_102900614.py",
+        "original",
+        "--plan",
+        "output/session-102900614/wpt-legacy-native-1/cohort.json"
+      ],
+      "finishedUTC": "2026-10-28T23:39:44.416155+00:00",
+      "seconds": 9.431,
+      "exitCode": 0
+    },
+    {
+      "stage": "encoding-streams",
+      "startedUTC": "2026-10-28T23:39:44.416380+00:00",
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tools/apple-session-gpt6as/run_task_wpt_102900614.py",
+        "run",
+        "--plan",
+        "output/session-102900614/wpt-legacy-native-1/cohort.json",
+        "--group",
+        "encoding-streams",
+        "--max-seconds",
+        "180"
+      ],
+      "finishedUTC": "2026-10-28T23:40:07.637547+00:00",
+      "seconds": 23.221,
+      "exitCode": 0
+    },
+    {
+      "stage": "encoding-core",
+      "startedUTC": "2026-10-28T23:40:07.637676+00:00",
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tools/apple-session-gpt6as/run_task_wpt_102900614.py",
+        "run",
+        "--plan",
+        "output/session-102900614/wpt-legacy-native-1/cohort.json",
+        "--group",
+        "encoding-core",
+        "--max-seconds",
+        "180"
+      ],
+      "finishedUTC": "2026-10-28T23:41:03.706080+00:00",
+      "seconds": 56.069,
+      "exitCode": 0
+    }
+  ],
+  "completed": true,
+  "error": null,
+  "finishedUTC": "2026-10-28T23:41:03.706215+00:00",
+  "seconds": 89.074
+}

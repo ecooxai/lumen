@@ -1,0 +1,322 @@
+{
+  "startedUTC": "2026-10-28T23:34:22.739592+00:00",
+  "sourceBaseCommit": "89660f30e044e1c3d700211d0b3910af545878ef",
+  "compiledSourceManifest": "output/session-102900614/legacy-codecs-green-1/compiled-source-sha256.json",
+  "build": "build-apple-load-20261029",
+  "rtcEnabled": true,
+  "webtransportEnabled": true,
+  "prebuiltV8": "Existing platform-matched binary reused; no V8 source build.",
+  "stages": [
+    {
+      "stage": "build",
+      "passed": true,
+      "startedUTC": "2026-10-28T23:34:22.750830+00:00",
+      "finishedUTC": "2026-10-28T23:34:31.856620+00:00",
+      "durationSeconds": 9.106,
+      "command": [
+        "make",
+        "-j3",
+        "BUILD=build-apple-load-20261029",
+        "MODE=release",
+        "RTC=1",
+        "WT=1",
+        "build-apple-load-20261029/lumen",
+        "build-apple-load-20261029/jsrun",
+        "build-apple-load-20261029/test_encoding",
+        "build-apple-load-20261029/test_encoding_encoder",
+        "build-apple-load-20261029/test_url_encoding",
+        "build-apple-load-20261029/test_document_encoding"
+      ],
+      "monitor": "output/session-102900614/legacy-codecs-green-1/build.json",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 8,
+      "intervalCpuPeakPercent": 228.379,
+      "rssPeakMiB": 654.25,
+      "resultLines": [],
+      "performanceNote": "One-second samples are retained; short assertion tests do not establish idle or GUI performance."
+    },
+    {
+      "stage": "legacy-codecs",
+      "passed": true,
+      "startedUTC": "2026-10-28T23:34:31.961354+00:00",
+      "finishedUTC": "2026-10-28T23:34:33.072873+00:00",
+      "durationSeconds": 1.112,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tests/test_legacy_codecs.py",
+        "--binary",
+        "build-apple-load-20261029/jsrun-legacy-codecs-9dbf792698c8e504"
+      ],
+      "monitor": "output/session-102900614/legacy-codecs-green-1/legacy-codecs.json",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 0,
+      "intervalCpuPeakPercent": null,
+      "rssPeakMiB": 5.344,
+      "resultLines": [
+        "[js log] LEGACY_CODEC_RESULTS {\"total\":178,\"passed\":178,\"failed\":0,\"issue\":null}",
+        "LEGACY_CODEC_RECEIPT {\"binary\": \"/Users/devin/repos/lumen/build-apple-load-20261029/jsrun-legacy-codecs-9dbf792698c8e504\", \"binary_sha256\": \"9dbf792698c8e504d9f3d93df6b28de9e6c95ee180b1e089d6e33b4a5d6e10a8\", \"fixture_sha256\": \"f78c296512856e34b9344616a3c27d946be81d73f375a2af6f0a4fb4de343f69\", \"worker_sha256\": \"90e27c54ec30a348803560ad4d7ae9921254acb0c49dbb85c04228f99f9c2386\", \"total\": 178, \"passed\": 178, \"failed\": 0, \"scopes\": {\"window\": {\"total\": 88, \"passed\": 88}, \"worker\": {\"total\": 88, \"passed\": 88}, \"cross-realm\": {\"total\": 2, \"passed\": 2}}}",
+        "RESULTS legacy-codecs PASS (178/178 checks)"
+      ],
+      "performanceNote": "One-second samples are retained; short assertion tests do not establish idle or GUI performance."
+    },
+    {
+      "stage": "text-codec",
+      "passed": true,
+      "startedUTC": "2026-10-28T23:34:33.073188+00:00",
+      "finishedUTC": "2026-10-28T23:34:34.165720+00:00",
+      "durationSeconds": 1.093,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tests/test_text_codec.py",
+        "--binary",
+        "build-apple-load-20261029/jsrun-legacy-codecs-9dbf792698c8e504"
+      ],
+      "monitor": "output/session-102900614/legacy-codecs-green-1/text-codec.json",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 0,
+      "intervalCpuPeakPercent": null,
+      "rssPeakMiB": 5.297,
+      "resultLines": [
+        "[js log] TEXT_CODEC_RESULTS {\"total\":170,\"passed\":170,\"failed\":0,\"workerIssue\":null}",
+        "TEXT_CODEC_RECEIPT {\"binary\": \"/Users/devin/repos/lumen/build-apple-load-20261029/jsrun-legacy-codecs-9dbf792698c8e504\", \"binary_sha256\": \"9dbf792698c8e504d9f3d93df6b28de9e6c95ee180b1e089d6e33b4a5d6e10a8\", \"fixture_sha256\": \"fe9efe3f8452bc46ae30f280b9c930b3f510e8fb9ccd2335824a11338bdc188b\", \"worker_sha256\": \"6e49e4aad71a6e60e2490243b46c861631ad2b48924673ac63be1129f4c6ff88\", \"total\": 170, \"passed\": 170, \"failed\": 0, \"scopes\": {\"window\": {\"total\": 81, \"passed\": 81}, \"worker\": {\"total\": 81, \"passed\": 81}, \"cross-realm\": {\"total\": 8, \"passed\": 8}}}"
+      ],
+      "performanceNote": "One-second samples are retained; short assertion tests do not establish idle or GUI performance."
+    },
+    {
+      "stage": "text-streams",
+      "passed": true,
+      "startedUTC": "2026-10-28T23:34:34.166020+00:00",
+      "finishedUTC": "2026-10-28T23:34:35.256840+00:00",
+      "durationSeconds": 1.091,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tests/test_text_streams.py",
+        "--binary",
+        "build-apple-load-20261029/jsrun-legacy-codecs-9dbf792698c8e504"
+      ],
+      "monitor": "output/session-102900614/legacy-codecs-green-1/text-streams.json",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 0,
+      "intervalCpuPeakPercent": null,
+      "rssPeakMiB": 5.406,
+      "resultLines": [
+        "[js log] TEXT_STREAM_RESULTS {\"total\":74,\"passed\":74,\"failed\":0,\"issue\":null}",
+        "TEXT_STREAM_RECEIPT {\"binary\": \"/Users/devin/repos/lumen/build-apple-load-20261029/jsrun-legacy-codecs-9dbf792698c8e504\", \"binary_sha256\": \"9dbf792698c8e504d9f3d93df6b28de9e6c95ee180b1e089d6e33b4a5d6e10a8\", \"fixture_sha256\": \"45d4a163068810e3fde0595b99d6f3db6814ac75dfd737131ef77b67ed1dbf82\", \"worker_sha256\": \"c95f251bec89bf94130284d6710c8d02c5c4295450ce0d0be4b6dd9b4df81f41\", \"total\": 74, \"passed\": 74, \"failed\": 0, \"scopes\": {\"window\": {\"total\": 35, \"passed\": 35}, \"worker\": {\"total\": 35, \"passed\": 35}, \"cross-realm\": {\"total\": 4, \"passed\": 4}}}",
+        "RESULTS text-streams PASS (74/74 checks)"
+      ],
+      "performanceNote": "One-second samples are retained; short assertion tests do not establish idle or GUI performance."
+    },
+    {
+      "stage": "message-transfer",
+      "passed": true,
+      "startedUTC": "2026-10-28T23:34:35.257076+00:00",
+      "finishedUTC": "2026-10-28T23:34:36.359719+00:00",
+      "durationSeconds": 1.103,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tests/test_message_transfer.py",
+        "--binary",
+        "build-apple-load-20261029/jsrun-legacy-codecs-9dbf792698c8e504"
+      ],
+      "monitor": "output/session-102900614/legacy-codecs-green-1/message-transfer.json",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 0,
+      "intervalCpuPeakPercent": null,
+      "rssPeakMiB": 5.453,
+      "resultLines": [
+        "[js log] MESSAGE_TRANSFER_RESULTS {\"total\":68,\"passed\":68,\"failed\":0,\"issue\":null}",
+        "MESSAGE_TRANSFER_RECEIPT {\"binary\": \"/Users/devin/repos/lumen/build-apple-load-20261029/jsrun-legacy-codecs-9dbf792698c8e504\", \"binary_sha256\": \"9dbf792698c8e504d9f3d93df6b28de9e6c95ee180b1e089d6e33b4a5d6e10a8\", \"fixture_sha256\": \"31f3e40bebaa4ba9f06bb705c5e5b4dc3eb9a375ccf5f4d4c47eeb88540b052d\", \"worker_sha256\": \"456a04b5a1e00d4b4ba1ec870613aef2e77429fb8c9a63090e7b51829d9026d4\", \"total\": 68, \"passed\": 68, \"failed\": 0, \"scopes\": {\"window\": {\"total\": 31, \"passed\": 31}, \"worker\": {\"total\": 31, \"passed\": 31}, \"cross-worker\": {\"total\": 6, \"passed\": 6}}}",
+        "RESULTS message-transfer PASS (68/68 checks)"
+      ],
+      "performanceNote": "One-second samples are retained; short assertion tests do not establish idle or GUI performance."
+    },
+    {
+      "stage": "test_encoding",
+      "passed": true,
+      "startedUTC": "2026-10-28T23:34:36.360069+00:00",
+      "finishedUTC": "2026-10-28T23:34:37.447949+00:00",
+      "durationSeconds": 1.088,
+      "command": [
+        "env",
+        "LUMEN_PROFILE_DIR=/Users/devin/repos/lumen/output/session-102900614/legacy-codecs-green-1/test_encoding-profile",
+        "/Users/devin/repos/lumen/build-apple-load-20261029/test_encoding-legacy-codecs-f5d3ebe141d77c4e"
+      ],
+      "monitor": "output/session-102900614/legacy-codecs-green-1/test_encoding.json",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 0,
+      "intervalCpuPeakPercent": null,
+      "rssPeakMiB": 0.031,
+      "resultLines": [],
+      "performanceNote": "One-second samples are retained; short assertion tests do not establish idle or GUI performance."
+    },
+    {
+      "stage": "test_encoding_encoder",
+      "passed": true,
+      "startedUTC": "2026-10-28T23:34:37.448313+00:00",
+      "finishedUTC": "2026-10-28T23:34:38.554259+00:00",
+      "durationSeconds": 1.106,
+      "command": [
+        "env",
+        "LUMEN_PROFILE_DIR=/Users/devin/repos/lumen/output/session-102900614/legacy-codecs-green-1/test_encoding_encoder-profile",
+        "/Users/devin/repos/lumen/build-apple-load-20261029/test_encoding_encoder-legacy-codecs-a7bb0dea83194792"
+      ],
+      "monitor": "output/session-102900614/legacy-codecs-green-1/test_encoding_encoder.json",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 0,
+      "intervalCpuPeakPercent": null,
+      "rssPeakMiB": 0.031,
+      "resultLines": [],
+      "performanceNote": "One-second samples are retained; short assertion tests do not establish idle or GUI performance."
+    },
+    {
+      "stage": "test_url_encoding",
+      "passed": true,
+      "startedUTC": "2026-10-28T23:34:38.554562+00:00",
+      "finishedUTC": "2026-10-28T23:34:39.663836+00:00",
+      "durationSeconds": 1.109,
+      "command": [
+        "env",
+        "LUMEN_PROFILE_DIR=/Users/devin/repos/lumen/output/session-102900614/legacy-codecs-green-1/test_url_encoding-profile",
+        "/Users/devin/repos/lumen/build-apple-load-20261029/test_url_encoding-legacy-codecs-38ca34fc6b2d0b07"
+      ],
+      "monitor": "output/session-102900614/legacy-codecs-green-1/test_url_encoding.json",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 0,
+      "intervalCpuPeakPercent": null,
+      "rssPeakMiB": 0.031,
+      "resultLines": [],
+      "performanceNote": "One-second samples are retained; short assertion tests do not establish idle or GUI performance."
+    },
+    {
+      "stage": "test_document_encoding",
+      "passed": true,
+      "startedUTC": "2026-10-28T23:34:39.664196+00:00",
+      "finishedUTC": "2026-10-28T23:34:40.824809+00:00",
+      "durationSeconds": 1.161,
+      "command": [
+        "env",
+        "LUMEN_PROFILE_DIR=/Users/devin/repos/lumen/output/session-102900614/legacy-codecs-green-1/test_document_encoding-profile",
+        "/Users/devin/repos/lumen/build-apple-load-20261029/test_document_encoding-legacy-codecs-e34b167ce6fd9d1b"
+      ],
+      "monitor": "output/session-102900614/legacy-codecs-green-1/test_document_encoding.json",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 0,
+      "intervalCpuPeakPercent": null,
+      "rssPeakMiB": 0.031,
+      "resultLines": [
+        "RESULTS document-encoding PASS (78/78 checks)"
+      ],
+      "performanceNote": "One-second samples are retained; short assertion tests do not establish idle or GUI performance."
+    },
+    {
+      "stage": "asan-build",
+      "passed": true,
+      "startedUTC": "2026-10-28T23:34:40.825126+00:00",
+      "finishedUTC": "2026-10-28T23:34:41.918021+00:00",
+      "durationSeconds": 1.093,
+      "command": [
+        "clang",
+        "-std=c11",
+        "-D_DARWIN_C_SOURCE",
+        "-g",
+        "-O1",
+        "-UNDEBUG",
+        "-fsanitize=address,undefined",
+        "-fno-omit-frame-pointer",
+        "tests/test_encoding_stream.c",
+        "src/base/encoding.c",
+        "src/base/util.c",
+        "-lm",
+        "-o",
+        "/Users/devin/repos/lumen/output/session-102900614/legacy-codecs-green-1/test_encoding_stream_asan"
+      ],
+      "monitor": "output/session-102900614/legacy-codecs-green-1/asan-build.json",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 0,
+      "intervalCpuPeakPercent": null,
+      "rssPeakMiB": 7.984,
+      "resultLines": [],
+      "performanceNote": "One-second samples are retained; short assertion tests do not establish idle or GUI performance."
+    },
+    {
+      "stage": "asan-legacy-bounds",
+      "passed": true,
+      "startedUTC": "2026-10-28T23:34:41.918836+00:00",
+      "finishedUTC": "2026-10-28T23:34:43.006350+00:00",
+      "durationSeconds": 1.088,
+      "command": [
+        "env",
+        "ASAN_OPTIONS=halt_on_error=1",
+        "UBSAN_OPTIONS=halt_on_error=1",
+        "/Users/devin/repos/lumen/output/session-102900614/legacy-codecs-green-1/test_encoding_stream_asan"
+      ],
+      "monitor": "output/session-102900614/legacy-codecs-green-1/asan-legacy-bounds.json",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 0,
+      "intervalCpuPeakPercent": null,
+      "rssPeakMiB": 0.031,
+      "resultLines": [
+        "RESULTS legacy-native PASS cases=459119 persistentStateBytes=44"
+      ],
+      "performanceNote": "One-second samples are retained; short assertion tests do not establish idle or GUI performance."
+    }
+  ],
+  "artifacts": {
+    "lumen": {
+      "path": "build-apple-load-20261029/lumen",
+      "snapshot": "build-apple-load-20261029/lumen-legacy-codecs-050b0160e0869c4a",
+      "sha256": "050b0160e0869c4ac9e840a1835403c7dbb678c90a49c3619e0acf3275d007b6",
+      "bytes": 14038232
+    },
+    "jsrun": {
+      "path": "build-apple-load-20261029/jsrun",
+      "snapshot": "build-apple-load-20261029/jsrun-legacy-codecs-9dbf792698c8e504",
+      "sha256": "9dbf792698c8e504d9f3d93df6b28de9e6c95ee180b1e089d6e33b4a5d6e10a8",
+      "bytes": 13810392
+    },
+    "test_encoding": {
+      "path": "build-apple-load-20261029/test_encoding",
+      "snapshot": "build-apple-load-20261029/test_encoding-legacy-codecs-f5d3ebe141d77c4e",
+      "sha256": "f5d3ebe141d77c4ead20ae9d694b7c24fd41b2960f061a3b16bee0e89c4c7f79",
+      "bytes": 588960
+    },
+    "test_encoding_encoder": {
+      "path": "build-apple-load-20261029/test_encoding_encoder",
+      "snapshot": "build-apple-load-20261029/test_encoding_encoder-legacy-codecs-a7bb0dea83194792",
+      "sha256": "a7bb0dea831947926fd549b93cd5bb20789d787081f515294d8e05d63943398d",
+      "bytes": 589224
+    },
+    "test_url_encoding": {
+      "path": "build-apple-load-20261029/test_url_encoding",
+      "snapshot": "build-apple-load-20261029/test_url_encoding-legacy-codecs-38ca34fc6b2d0b07",
+      "sha256": "38ca34fc6b2d0b071eb8f7cad9fa72a22eebb5616e1ef115c832c1e3ebb5d4a7",
+      "bytes": 609520
+    },
+    "test_document_encoding": {
+      "path": "build-apple-load-20261029/test_document_encoding",
+      "snapshot": "build-apple-load-20261029/test_document_encoding-legacy-codecs-e34b167ce6fd9d1b",
+      "sha256": "e34b167ce6fd9d1b53d0e3b42a4f325847c5396f354215f8915f390019c1fde3",
+      "bytes": 13850664
+    },
+    "test_encoding_stream_asan": {
+      "path": "output/session-102900614/legacy-codecs-green-1/test_encoding_stream_asan",
+      "sha256": "03087bb692c1b87a9cd7c37ade6f539e8d98d8cc41f7c9e5fcf9359aeb9f0b31",
+      "bytes": 875080
+    }
+  },
+  "passed": true,
+  "finishedUTC": "2026-10-28T23:34:43.018956+00:00",
+  "durationSeconds": 20.3,
+  "scope": "Native incremental legacy codec regressions; exact upstream WPT and GUI resource acceptance remain separate gates."
+}

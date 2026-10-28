@@ -381,6 +381,240 @@ static bool decode_iso2022_jp(SB *output, const unsigned char *bytes, size_t len
     }
 }
 
+/* Incremental legacy decoder state is owned by the caller, never by a global
+ * decoder cache. Only three reconsumed bytes can be pending in the WHATWG
+ * legacy algorithms. Mapping tables remain the immutable tables above. */
+enum { LEGACY_ASCII, LEGACY_ROMAN, LEGACY_KATAKANA, LEGACY_LEADING,
+       LEGACY_TRAILING, LEGACY_ESCAPE_START, LEGACY_ESCAPE };
+enum { LEGACY_CONTINUE, LEGACY_POINT, LEGACY_PAIR, LEGACY_FINISHED,
+       LEGACY_ERROR, LEGACY_INVALID };
+
+static bool legacy_restore(WebEncodingDecoder *state, const uint32_t *bytes,
+                           uint32_t count) {
+    if (count > 3 || state->pending_count > 3 - count) return false;
+    memmove(state->pending + count, state->pending,
+            state->pending_count * sizeof state->pending[0]);
+    memcpy(state->pending, bytes, count * sizeof state->pending[0]);
+    state->pending_count += count;
+    return true;
+}
+
+static int legacy_mapped(WebEncodingDecoder *state, unsigned byte,
+                         uint32_t point, uint32_t output[2]) {
+    if (point != MISSING) { output[0] = point; return LEGACY_POINT; }
+    if (byte < 0x80 && !legacy_restore(state, (uint32_t[]){ byte }, 1))
+        return LEGACY_INVALID;
+    return LEGACY_ERROR;
+}
+
+static int legacy_iso_step(WebEncodingDecoder *state, unsigned byte,
+                           uint32_t output[2]) {
+    const bool eof = byte == 256;
+    switch (state->mode) {
+        case LEGACY_ASCII: case LEGACY_ROMAN:
+        case LEGACY_KATAKANA: case LEGACY_LEADING:
+            if (eof) return LEGACY_FINISHED;
+            if (byte == 0x1B) { state->mode = LEGACY_ESCAPE_START; return LEGACY_CONTINUE; }
+            state->output_flag = 0;
+            if (state->mode == LEGACY_LEADING) {
+                if (byte < 0x21 || byte > 0x7E) return LEGACY_ERROR;
+                state->leading = byte; state->mode = LEGACY_TRAILING;
+                return LEGACY_CONTINUE;
+            }
+            if (state->mode == LEGACY_KATAKANA) {
+                if (byte < 0x21 || byte > 0x5F) return LEGACY_ERROR;
+                output[0] = 0xFF61 + byte - 0x21; return LEGACY_POINT;
+            }
+            if (byte > 0x7F || byte == 0x0E || byte == 0x0F) return LEGACY_ERROR;
+            output[0] = state->mode == LEGACY_ROMAN && byte == 0x5C ? 0xA5 :
+                        state->mode == LEGACY_ROMAN && byte == 0x7E ? 0x203E : byte;
+            return LEGACY_POINT;
+        case LEGACY_TRAILING:
+            if (byte == 0x1B) { state->mode = LEGACY_ESCAPE_START; return LEGACY_ERROR; }
+            state->mode = LEGACY_LEADING;
+            output[0] = byte >= 0x21 && byte <= 0x7E ?
+                lookup(kDecodeJis0208, ARRLEN(kDecodeJis0208),
+                       (state->leading - 0x21) * 94 + byte - 0x21) : MISSING;
+            return output[0] == MISSING ? LEGACY_ERROR : LEGACY_POINT;
+        case LEGACY_ESCAPE_START:
+            if (byte == 0x24 || byte == 0x28) {
+                state->leading = byte; state->mode = LEGACY_ESCAPE;
+                return LEGACY_CONTINUE;
+            }
+            if (!eof && !legacy_restore(state, (uint32_t[]){ byte }, 1)) return LEGACY_INVALID;
+            state->output_flag = 0; state->mode = state->output_mode;
+            return LEGACY_ERROR;
+        case LEGACY_ESCAPE: {
+            const unsigned leading = state->leading;
+            state->leading = 0;
+            int next = leading == 0x28 && byte == 0x42 ? LEGACY_ASCII :
+                       leading == 0x28 && byte == 0x4A ? LEGACY_ROMAN :
+                       leading == 0x28 && byte == 0x49 ? LEGACY_KATAKANA :
+                       leading == 0x24 && (byte == 0x40 || byte == 0x42) ? LEGACY_LEADING : -1;
+            if (next >= 0) {
+                const bool repeated = state->output_flag != 0;
+                state->mode = state->output_mode = (uint32_t)next;
+                state->output_flag = 1;
+                return repeated ? LEGACY_ERROR : LEGACY_CONTINUE;
+            }
+            if (!legacy_restore(state, (uint32_t[]){ leading, byte }, eof ? 1 : 2))
+                return LEGACY_INVALID;
+            state->output_flag = 0; state->mode = state->output_mode;
+            return LEGACY_ERROR;
+        }
+        default: return LEGACY_INVALID;
+    }
+}
+
+static int legacy_step(WebEncodingDecoder *state, WebEncoding encoding,
+                       unsigned byte, uint32_t output[2]) {
+    if (encoding == WEB_ENC_ISO_2022_JP) return legacy_iso_step(state, byte, output);
+    if (byte == 256) {
+        if (state->leading || state->second || state->third) {
+            state->leading = state->second = state->third = 0;
+            return LEGACY_ERROR;
+        }
+        return LEGACY_FINISHED;
+    }
+    if (kEncodingMetadata[encoding].single_byte) {
+        output[0] = byte < 0x80 ? byte : kEncodingMetadata[encoding].single_byte[byte - 0x80];
+        return output[0] == MISSING ? LEGACY_ERROR : LEGACY_POINT;
+    }
+    if (encoding == WEB_ENC_X_USER_DEFINED) {
+        output[0] = byte < 0x80 ? byte : 0xF700 + byte; return LEGACY_POINT;
+    }
+    if (encoding == WEB_ENC_GBK || encoding == WEB_ENC_GB18030) {
+        if (state->third) {
+            if (byte < 0x30 || byte > 0x39) {
+                if (!legacy_restore(state, (uint32_t[]){ state->second, state->third, byte }, 3))
+                    return LEGACY_INVALID;
+                state->leading = state->second = state->third = 0;
+                return LEGACY_ERROR;
+            }
+            const uint32_t pointer = (state->leading - 0x81) * 12600 +
+                (state->second - 0x30) * 1260 + (state->third - 0x81) * 10 + byte - 0x30;
+            state->leading = state->second = state->third = 0;
+            output[0] = gb_range(pointer);
+            return output[0] == MISSING ? LEGACY_ERROR : LEGACY_POINT;
+        }
+        if (state->second) {
+            if (byte >= 0x81 && byte <= 0xFE) { state->third = byte; return LEGACY_CONTINUE; }
+            if (!legacy_restore(state, (uint32_t[]){ state->second, byte }, 2)) return LEGACY_INVALID;
+            state->leading = state->second = 0; return LEGACY_ERROR;
+        }
+        if (state->leading) {
+            if (byte >= 0x30 && byte <= 0x39) { state->second = byte; return LEGACY_CONTINUE; }
+            const unsigned leading = state->leading; state->leading = 0;
+            const uint32_t point = (byte >= 0x40 && byte <= 0x7E) || (byte >= 0x80 && byte <= 0xFE) ?
+                lookup(kDecodeGb18030, ARRLEN(kDecodeGb18030),
+                       (leading - 0x81) * 190 + byte - (byte < 0x7F ? 0x40 : 0x41)) : MISSING;
+            return legacy_mapped(state, byte, point, output);
+        }
+        if (byte < 0x80 || byte == 0x80) { output[0] = byte == 0x80 ? 0x20AC : byte; return LEGACY_POINT; }
+        if (byte >= 0x81 && byte <= 0xFE) { state->leading = byte; return LEGACY_CONTINUE; }
+        return LEGACY_ERROR;
+    }
+    if (encoding == WEB_ENC_EUC_JP) {
+        if (state->leading == 0x8E && byte >= 0xA1 && byte <= 0xDF) {
+            state->leading = 0; output[0] = 0xFF61 + byte - 0xA1; return LEGACY_POINT;
+        }
+        if (state->leading == 0x8F && byte >= 0xA1 && byte <= 0xFE) {
+            state->jis0212 = 1; state->leading = byte; return LEGACY_CONTINUE;
+        }
+        if (state->leading) {
+            const unsigned leading = state->leading; state->leading = 0;
+            uint32_t point = MISSING;
+            if (leading >= 0xA1 && leading <= 0xFE && byte >= 0xA1 && byte <= 0xFE) {
+                const uint32_t pointer = (leading - 0xA1) * 94 + byte - 0xA1;
+                point = state->jis0212 ? lookup(kDecodeJis0212, ARRLEN(kDecodeJis0212), pointer) :
+                                        lookup(kDecodeJis0208, ARRLEN(kDecodeJis0208), pointer);
+            }
+            state->jis0212 = 0;
+            return legacy_mapped(state, byte, point, output);
+        }
+        if (byte < 0x80) { output[0] = byte; return LEGACY_POINT; }
+        if (byte == 0x8E || byte == 0x8F || (byte >= 0xA1 && byte <= 0xFE)) {
+            state->leading = byte; return LEGACY_CONTINUE;
+        }
+        return LEGACY_ERROR;
+    }
+    if (state->leading) {
+        const unsigned leading = state->leading; state->leading = 0;
+        uint32_t point = MISSING;
+        if (encoding == WEB_ENC_BIG5) {
+            uint32_t pointer = MISSING;
+            if ((byte >= 0x40 && byte <= 0x7E) || (byte >= 0xA1 && byte <= 0xFE))
+                pointer = (leading - 0x81) * 157 + byte - (byte < 0x7F ? 0x40 : 0x62);
+            if (pointer == 1133 || pointer == 1135 || pointer == 1164 || pointer == 1166) {
+                output[0] = pointer < 1164 ? 0xCA : 0xEA;
+                output[1] = pointer == 1133 || pointer == 1164 ? 0x304 : 0x30C;
+                return LEGACY_PAIR;
+            }
+            point = lookup(kDecodeBig5, ARRLEN(kDecodeBig5), pointer);
+        } else if (encoding == WEB_ENC_SHIFT_JIS) {
+            uint32_t pointer = MISSING;
+            if ((byte >= 0x40 && byte <= 0x7E) || (byte >= 0x80 && byte <= 0xFC))
+                pointer = (leading - (leading < 0xA0 ? 0x81 : 0xC1)) * 188 +
+                          byte - (byte < 0x7F ? 0x40 : 0x41);
+            point = pointer >= 8836 && pointer <= 10715 ? 0xE000 + pointer - 8836 :
+                    lookup(kDecodeJis0208, ARRLEN(kDecodeJis0208), pointer);
+        } else if (encoding == WEB_ENC_EUC_KR && byte >= 0x41 && byte <= 0xFE) {
+            point = lookup(kDecodeEucKr, ARRLEN(kDecodeEucKr), (leading - 0x81) * 190 + byte - 0x41);
+        }
+        return legacy_mapped(state, byte, point, output);
+    }
+    if (byte < 0x80 || (encoding == WEB_ENC_SHIFT_JIS && byte == 0x80)) {
+        output[0] = byte; return LEGACY_POINT;
+    }
+    if (encoding == WEB_ENC_SHIFT_JIS) {
+        if (byte >= 0xA1 && byte <= 0xDF) { output[0] = 0xFF61 + byte - 0xA1; return LEGACY_POINT; }
+        if ((byte >= 0x81 && byte <= 0x9F) || (byte >= 0xE0 && byte <= 0xFC)) {
+            state->leading = byte; return LEGACY_CONTINUE;
+        }
+    } else if ((encoding == WEB_ENC_BIG5 || encoding == WEB_ENC_EUC_KR) && byte >= 0x81 && byte <= 0xFE) {
+        state->leading = byte; return LEGACY_CONTINUE;
+    }
+    return LEGACY_ERROR;
+}
+
+bool web_encoding_decode_stream_n(SB *output, WebEncoding encoding,
+                                  WebEncodingDecoder *state,
+                                  const char *input, size_t length, bool stream,
+                                  size_t max_output, bool fatal,
+                                  size_t *consumed, bool *had_error) {
+    if (consumed) *consumed = 0;
+    if (had_error) *had_error = false;
+    if (!output || !state || !consumed || (!input && length) || encoding < 0 || encoding >= WEB_ENC_COUNT ||
+        encoding == WEB_ENC_UTF8 || encoding == WEB_ENC_UTF16LE || encoding == WEB_ENC_UTF16BE ||
+        encoding == WEB_ENC_REPLACEMENT || output->n > max_output ||
+        state->pending_count > 3 || state->leading > 255 || state->second > 255 || state->third > 255 ||
+        state->mode > LEGACY_ESCAPE || state->output_mode > LEGACY_LEADING ||
+        state->output_flag > 1 || state->jis0212 > 1) return false;
+    for (uint32_t i = 0; i < state->pending_count; ++i) if (state->pending[i] > 255) return false;
+    const unsigned char *bytes = (const unsigned char *)input;
+    for (;;) {
+        unsigned byte;
+        if (state->pending_count) {
+            byte = state->pending[0]; --state->pending_count;
+            memmove(state->pending, state->pending + 1, state->pending_count * sizeof state->pending[0]);
+        } else if (*consumed < length) byte = bytes[(*consumed)++];
+        else if (stream) return true;
+        else byte = 256;
+        uint32_t points[2] = { 0, 0 };
+        const int result = legacy_step(state, encoding, byte, points);
+        if (result == LEGACY_FINISHED) return true;
+        if (result == LEGACY_INVALID) return false;
+        if (result == LEGACY_CONTINUE) continue;
+        if (result == LEGACY_ERROR) {
+            if (had_error) *had_error = true;
+            if (fatal || !emit(output, MISSING, max_output)) return false;
+        } else {
+            if (!emit(output, points[0], max_output)) return false;
+            if (result == LEGACY_PAIR && !emit(output, points[1], max_output)) return false;
+        }
+    }
+}
+
 bool web_encoding_decode_checked_n(SB *output, WebEncoding encoding,
                            const char *input, size_t length,
                            bool sniff_bom, size_t max_output, bool fatal, bool *had_error) {

@@ -3,6 +3,7 @@
 
 #include <v8.h>
 #include <string>
+#include <cstring>
 extern "C" {
 #include "../base/encoding.h"
 }
@@ -26,6 +27,61 @@ inline void jsg_text_encoding(const v8::FunctionCallbackInfo<v8::Value> &args) {
             static_cast<int>(name.size())).ToLocal(&value)) args.GetReturnValue().Set(value);
 }
 
+/* The opaque finite state stays in a private, GC-owned ArrayBuffer. Native
+ * decoding retains no JS handles or input pointers between calls. Errors
+ * return the consumed offset so the JS algorithm can retain exactly the
+ * unconsumed input queue before throwing in the method's realm. */
+inline void jsg_text_decode_stream(const v8::FunctionCallbackInfo<v8::Value> &args,
+                                 WebEncoding encoding) {
+    auto iso = args.GetIsolate();
+    if (!args[3]->IsBoolean() || (!args[4]->IsNull() && !args[4]->IsArrayBuffer())) {
+        iso->ThrowException(v8::Exception::TypeError(
+            v8::String::NewFromUtf8Literal(iso, "Invalid internal incremental decoder state")));
+        return;
+    }
+    WebEncodingDecoder state{};
+    v8::Local<v8::ArrayBuffer> state_buffer;
+    if (args[4]->IsNull()) state_buffer = v8::ArrayBuffer::New(iso, sizeof state);
+    else {
+        state_buffer = args[4].As<v8::ArrayBuffer>();
+        if (state_buffer->WasDetached() || state_buffer->ByteLength() != sizeof state) {
+            iso->ThrowException(v8::Exception::TypeError(
+                v8::String::NewFromUtf8Literal(iso, "Invalid internal incremental decoder storage")));
+            return;
+        }
+        memcpy(&state, state_buffer->Data(), sizeof state);
+    }
+    auto input = args[0].As<v8::ArrayBuffer>();
+    auto backing = input->GetBackingStore();
+    size_t consumed = 0;
+    bool malformed = false;
+    SB output; sb_init(&output);
+    const bool decoded = web_encoding_decode_stream_n(&output, encoding, &state,
+        static_cast<const char *>(backing->Data()), input->ByteLength(), args[3]->IsTrue(),
+        static_cast<size_t>(v8::String::kMaxLength), args[2]->IsTrue(), &consumed, &malformed);
+    memcpy(state_buffer->Data(), &state, sizeof state);
+    const bool fatal_error = !decoded && malformed && args[2]->IsTrue();
+    if (!decoded && !fatal_error) {
+        sb_free(&output);
+        iso->ThrowException(v8::Exception::RangeError(
+            v8::String::NewFromUtf8Literal(iso, "Incremental decoded text exceeds its storage contract")));
+        return;
+    }
+    v8::Local<v8::Value> text = v8::Undefined(iso);
+    if (!fatal_error) {
+        v8::Local<v8::String> value;
+        if (!v8::String::NewFromUtf8(iso, output.s ? output.s : "",
+                v8::NewStringType::kNormal, static_cast<int>(output.n)).ToLocal(&value)) {
+            sb_free(&output); return;
+        }
+        text = value;
+    }
+    sb_free(&output);
+    v8::Local<v8::Value> result[] = { text, state_buffer,
+        v8::Number::New(iso, static_cast<double>(consumed)), v8::Boolean::New(iso, fatal_error) };
+    args.GetReturnValue().Set(v8::Array::New(iso, result, 4));
+}
+
 inline void jsg_text_decode(const v8::FunctionCallbackInfo<v8::Value> &args) {
     auto iso = args.GetIsolate();
     if (!args[0]->IsArrayBuffer() || !args[1]->IsString() || !args[2]->IsBoolean()) {
@@ -47,6 +103,7 @@ inline void jsg_text_decode(const v8::FunctionCallbackInfo<v8::Value> &args) {
             v8::String::NewFromUtf8Literal(iso, "Invalid internal text decoder encoding")));
         return;
     }
+    if (args.Length() > 3) { jsg_text_decode_stream(args, encoding); return; }
     auto backing = buffer->GetBackingStore();
     SB output; sb_init(&output);
     bool malformed = false;

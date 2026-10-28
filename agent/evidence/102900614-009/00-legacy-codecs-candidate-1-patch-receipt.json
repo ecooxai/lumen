@@ -1,0 +1,20 @@
+{
+  "createdUTC": "2026-10-28T23:31:24.212785+00:00",
+  "applied": true,
+  "sourceBaseCommit": "89660f30e044e1c3d700211d0b3910af545878ef",
+  "before": {
+    "src/base/encoding.c": "6660456add6569e60523f2c37fa45ee3305fdc3391cd378e940a77801151cfc2",
+    "src/base/encoding.h": "5a73b802b90dd9ace972ffd4976345bfa3ae4051106add58334db14620bc1db4",
+    "src/js/text_codec.h": "1f39a02741959089cc150ff185bc88aad76acf266b9f205e774c9f69900e2276",
+    "src/js/prelude/06u-textcodec.js": "3048452135a8b1456e2e5625bf0f7ad20d3bfa8d523467a2d97116735cae224b"
+  },
+  "after": {
+    "src/base/encoding.c": "fc928f380ee0357e6f307bdf04058a6462e91c8b3674ee9768e37395ee690339",
+    "src/base/encoding.h": "fa2a85fa515c861c047f63587d0e4c00113366e10ce54d79cd3e86ed34dd3920",
+    "src/js/text_codec.h": "9b64d6725aa4c0f8a58a8ed457f8f5898f3c929b3c9f415b9f0b798f397891cf",
+    "src/js/prelude/06u-textcodec.js": "7cade02452e3346de75880f5a2d7ebfafa7f1beb448d95af17124643c34a99a4"
+  },
+  "fixtureSHA256": "b562ebb8d62f5679e7eefffaec90e5a46d591116d83e0273423e9aad74d04d2c",
+  "checks": 178,
+  "scope": "Finite-state legacy TextDecoder streaming using existing immutable indexes; no WPT assertions changed."
+}

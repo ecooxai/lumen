@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "binarySHA256": "050b0160e0869c4ac9e840a1835403c7dbb678c90a49c3619e0acf3275d007b6",
+  "scope": "Unchanged26 Encoding Streams/window/dedicated-worker variants, including IDL; subset of frozen1515 inventory",
+  "recorded": 26,
+  "fullyPassing": 25,
+  "frozenScheduledVariants": 1515,
+  "assertions": {
+    "PASS": 346
+  },
+  "knownLimits": [
+    "Cross-realm iframe completion still times out in this exact050b artifact; frame fix is a separate later candidate."
+  ]
+}

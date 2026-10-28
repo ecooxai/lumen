@@ -214,3 +214,10 @@ Checkpoint007 commit infrastructure follow-up `2026-10-28T23:29:47.289388+00:00`
 - Same-stream paired native scroll p95 **20.175% →16.935% →12.060%**; glyph mean **9.912%**, final idle p95 **0.991%**, settledRSS **153.203MiB**, stable across the measured idle phase. Fixed **10% scrolling gate still fails**. Final workload117.419s; exact page pixels, scoped native-window capture and GPU errors all pass.
 - Source and compiler dependency comparisons differ only in raster.c; glyph reference bytes exactly equal the prior measured span binary. Persistent font-owned glyph allocations were independently reviewed; the bounded lookup cache does not own/free them.
 - Combined candidate4773 remains unpromoted pending fresh combined standards/resource/soak checks. Prior failedGPU receipts remain preserved; no historical performance numbers are transferred to a new binary. Evidence `agent/evidence/102900614-008-raster-glyph.json`. Parallel worker wall times are not summed.
+
+## 102900614-009 — native incremental legacy decoding
+
+- Start `2026-10-28T23:37:49.194609+00:00`; end `2026-10-28T23:47:18.582930+00:00`; checkpoint `569.388s`; total session `5557.124s`. Accepted **45/100**, artifact733 unchanged.
+- Frozen legacy fixture **14/178 RED →178/178 GREEN**; codec170,streams74,transfer68,document78 and existing native encoding/encoder/URL gates remain green. AddressSanitizer/UBSan **459,119 cases** pass with44-byte persistent decoder state. Build9.106s; all build/test stages20.3s under1Hz monitoring, reusing prebuilt V8.
+- Exact050b original upstream **6/6 files,1850/1850 assertions** pass in9.234s. Fresh pinned diagnostic **90/103 variants fully pass (87.379%)**: streams25/26,core65/77;23,408 passed assertions,235 failed assertions,2timeouts,**1,412 unrun of1,515**. Full official WPT rate remains unknown.
+- Known iframe/body/meta/XHR failures and fatalUTF8 streaming cases remain visible. No historical207/80a measurements or later frame improvements are mixed into050b. Source/receipts `agent/evidence/102900614-009-legacy-codecs.json`. Current performance/soak and same-IPA gates remain pending.
