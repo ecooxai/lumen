@@ -1,0 +1,31 @@
+{
+  "iteration": 1,
+  "started_utc": "2026-10-28T09:12:12Z",
+  "finished_utc": "2026-10-28T09:20:00Z",
+  "cost_minutes": 7.8,
+  "agents": [
+    "progress_and_deployment"
+  ],
+  "focused_quality": 96,
+  "whole_goal_score": 19,
+  "changes": [
+    "active new session dashboard",
+    "publication source route disabled independent of file existence",
+    "source staging constrained to private-prepared"
+  ],
+  "validation": {
+    "isolated_checks": "22/22",
+    "public_browser": "Chromium desktop/mobile no horizontal overflow; messages/reply roundtrip verified",
+    "live_rtt_ms": 582,
+    "mounted_disks": 6,
+    "script": "agent/progress/runtime/verify-session2-boundaries.mjs",
+    "result": "agent/progress/runtime/20261028-session2-boundary-check.json",
+    "browser_log": "agent/progress/runtime/session2-browser-smoke.log"
+  },
+  "limits": [
+    "No source/raw publication",
+    "Surge unauthenticated",
+    "Whole engine compatibility remains unproven"
+  ],
+  "relation": "Parallel operations checkpoint supporting continuation iteration1; not a browser-conformance gain."
+}

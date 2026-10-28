@@ -31,20 +31,8 @@ function reviewedShowcase(){
   return {bytes:verified};
  }catch{return null}finally{if(fd!==undefined)fs.closeSync(fd)}
 }
-function currentStatus(){
- const status=data('status.json',{}),run=data('../validation/linux-wpt-20261028/full-paired-checkpoint/state.json',null);
- if(run){
-  const completed=Array.isArray(run.shards)?run.shards.length:0,active=run.current?.shard;
-  status.full_baseline={state:run.status||'unknown',completed_shards:completed,total_shards:20,selected_urls:39394,current_shard:active||null,started_utc:run.started_utc||null};
-  status.current_evidence=[...(status.current_evidence||[]),['Historical broad-run state',`${completed}/20 shards completed; ${run.status||'unknown'}. Historical8,000 and partial004 remain separate from guarded measurements.`]];
- }
- const guarded=data('../validation/linux-wpt-20261028/guarded-original-first2000/state.json',null);
- if(guarded){status.guarded_baseline={state:guarded.status,observed_urls:guarded.observed_urls,selected_urls:guarded.selected_urls,verified_spawns:guarded.verified_native_spawns,startup_failures:guarded.guard_startup_failures,finished_utc:guarded.finished_utc||null};status.current_evidence=[...(status.current_evidence||[]),['Guarded original baseline state',`${guarded.observed_urls||0}/${guarded.selected_urls||2000} URLs; ${guarded.status||'unknown'}; ${guarded.verified_native_spawns||0} verified launches, ${guarded.guard_startup_failures||0} startup failures. Separate measurement condition.`]];}
- const finalPlan=data('../validation/linux-wpt-20261028/final-accepted-verification-plan.json',null),finalHarness=data('../validation/linux-wpt-20261028/final-accepted-first2000/state.json',null),finalRender=data('../validation/linux-wpt-20261028/final-accepted-reftest100-launch/state.json',null);
- if(finalPlan){status.final_verification={native:finalPlan.native_suite||null,focused55:finalPlan.shared_style55||null,harness:finalHarness?{state:finalHarness.status,observed_urls:finalHarness.observed_urls,selected_urls:finalHarness.selected_urls,verified_spawns:finalHarness.verified_native_spawns,startup_failures:finalHarness.guard_startup_failures}:null,rendering:finalRender?{state:finalRender.status,observed_urls:finalRender.observed??finalRender.observed_urls,selected_urls:finalRender.selected??finalRender.selected_urls,updated_utc:finalRender.updated_utc}:null};if(finalHarness)status.current_evidence=[...(status.current_evidence||[]),['Final frozen127 live replay',`${finalHarness.observed_urls||0}/${finalHarness.selected_urls||2000} testharness URLs observed; ${finalHarness.status||'unknown'}; ${finalHarness.verified_native_spawns||0} verified launches, ${finalHarness.guard_startup_failures||0} startup failures. Observed count is not a pass count.`]];}
- if(finalRender)status.current_evidence=[...(status.current_evidence||[]),['Final frozen127 rendering replay',`${finalRender.observed??finalRender.observed_urls??0}/${finalRender.selected??finalRender.selected_urls??100} own-reference URLs observed; ${finalRender.status||'unknown'}; saved progress ${finalRender.updated_utc||'pending'}. Observed count is not a pass count.`]];
- return status;
-}
+function currentStatus(){return data('status.json',{})}
+
 function snapshot(isPrivate){return {type:'snapshot',status:currentStatus(),telemetry,messages:visibleMessages(isPrivate)}}
 function append(message){const f=path.join(runtime,'messages.jsonl');if(fs.existsSync(f)&&fs.statSync(f).size>1048576)fs.writeFileSync(f,messages().slice(-50).map(x=>JSON.stringify(x)).join('\n')+'\n',{mode:0o600});fs.appendFileSync(f,JSON.stringify(message)+'\n',{mode:0o600})}
 let previousCpu=null, telemetry={utc:new Date().toISOString(),cpu_percent:null,ram:{},disks:[]};
@@ -71,7 +59,7 @@ const server=http.createServer(async(req,res)=>{
  if(url.pathname==='/showcase.mp4'){const item=reviewedShowcase();if(!item)return json(res,404,{error:'Reviewed showcase not prepared'});res.writeHead(200,{'Content-Type':'video/mp4','Content-Length':item.bytes.length,'Content-Disposition':'attachment; filename="lumen-linux-gpt-6-astra-builtin-agents-rubywebterm-showcase.mp4"','Cache-Control':'no-store'});return res.end(item.bytes)}
  if(url.pathname.startsWith('/api/')||url.pathname==='/src.tar.gz'){
   if(url.pathname==='/api/status')return json(res,200,snapshot(authorized(req)));
-  if(url.pathname==='/src.tar.gz'){const f=path.join(runtime,'src.tar.gz');if(!fs.existsSync(f))return json(res,404,{error:'Source archive not prepared'});res.writeHead(200,{'Content-Type':'application/gzip','Content-Disposition':'attachment; filename="lumen-linux-gpt-6-astra-builtin-agents-rubywebterm-src.tar.gz"','Cache-Control':'no-store'});return fs.createReadStream(f).pipe(res)}
+  if(url.pathname==='/src.tar.gz')return json(res,404,{error:'Source publication is disabled pending destination-specific approval'});
   return json(res,404,{error:'Unknown endpoint'});
  }
  if(url.pathname==='/'||url.pathname==='/index.html'){res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-cache','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','Content-Security-Policy':"default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' https: wss:; img-src 'self' data:; base-uri 'none'; frame-ancestors 'none'"});return fs.createReadStream(path.join(site,'index.html')).pipe(res)}

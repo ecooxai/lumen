@@ -1,6 +1,6 @@
 # Lumen live progress
 
-The task dashboard binds to `127.0.0.1:4187` and uses a dedicated HTTPS opentunnel route. It serves a small explicit set of resources, never the repository root. Safe aggregate status, host telemetry, the public task message board and the audited accepted-source archive are public. An existing optional viewer key unlocks private task history; do not commit or print it. Runtime files and browser profiles are ignored by Git.
+The task dashboard binds to `127.0.0.1:4187` and uses a dedicated HTTPS opentunnel route. It serves a small explicit set of resources, never the repository root. Safe aggregate status, host telemetry and the public task message board are public. Source and raw-result publication remain blocked; the source route always returns404, even when an archive exists. An existing optional viewer key unlocks private task history; do not commit or print it. Runtime files and browser profiles are ignored by Git.
 
 ## Run and manage
 
@@ -15,11 +15,21 @@ The task dashboard binds to `127.0.0.1:4187` and uses a dedicated HTTPS opentunn
 
 The browser receives CPU, RAM and disk metrics every two seconds and measures WebSocket ping/pong latency. Public messages are length/rate limited and treated as untrusted text. The server cannot execute them. An active agent polls and replies; the server alone does not wake an agent after the task ends. Public message history must not contain passwords or private data.
 
-## Accepted source snapshot
+## Private source review staging
 
-Run `python3 tools/codex_compile.py python3 agent/progress/snapshot.py` only after a reviewed accepted commit. It exports Git HEAD, excluding uncommitted experimental changes, and adds an audited portable Git bundle. It excludes runtime credentials, browser profiles, private messages, untracked data, Git hooks and repository configuration. The fixed `/src.tar.gz` endpoint serves only that artifact. Its commit, byte count and SHA-256 are recorded in `runtime/src.tar.manifest.json`.
+Source publication was rejected by automatic approval review for lack of explicit
+destination-specific authorization. Do not publish the source or raw-result
+archive through an alternate destination. `/src.tar.gz` is disabled independently
+of file existence to prevent accidental exposure.
 
-Raw test-result archives and QA screenshot collections are not served by this endpoint or included in the static publication. Retain local evidence separately from reviewed source and aggregate status.
+After a reviewed accepted commit, `python3 tools/codex_compile.py python3
+agent/progress/snapshot.py` stages a source archive and portable Git bundle only
+under ignored `runtime/private-prepared/`. Its manifest records the exact commit,
+size and SHA256. Custom output paths outside that private directory are rejected.
+It does not publish or upload anything. The caller must retain the separate
+artifact and destination review before any later publication implementation.
+Runtime credentials, browser profiles, private messages and untracked data are
+excluded; raw test-result archives and QA collections stay local.
 
 ## Test monitoring
 
@@ -29,9 +39,11 @@ This follows the process tree, sampling CPU deltas and RSS every second and PSS 
 
 ## Static publication preparation
 
-`python3 agent/progress/prepare_pages.py` prepares a dedicated ignored runtime directory containing the saved public aggregate status, a static HTML fallback, `.nojekyll`, and the reviewed source archive. It verifies the archive hash and accepted commit. The fallback links to the live tunnel for telemetry and messages and remains readable when the tunnel is unavailable. This command does not push, create a remote branch or enable Pages.
-
-At the task's final publication stage, publish the reviewed source branch and the separate model/agent-named static branch as distinct operations. Configure GitHub Pages to use the static branch root only after that branch is present, then verify the build and public GET response. Keep existing repository branches and documentation intact. Use existing authenticated tooling; do not initiate a new login or account creation flow.
+The existing static preparer is a local review aid. Do not run a source-bearing
+publisher, Git push or Pages activation until the specific rejected destination
+and payload are authorized. No source or raw-result artifact is included in the
+current live preview. Surge has no retained authenticated account; do not create
+an account or transmit a new login as part of this task.
 
 Official requirements checked on 2026-10-28:
 

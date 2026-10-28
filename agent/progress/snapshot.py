@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Publish accepted HEAD sources plus a portable Git bundle, never .git config/runtime."""
+"""Privately stage accepted HEAD sources and a portable Git bundle for review."""
 import argparse, datetime, hashlib, io, json, os, pathlib, re, subprocess, tarfile, tempfile
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -12,8 +12,12 @@ def git(*args, **kw):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument('--output', type=pathlib.Path, default=RUNTIME / 'src.tar.gz')
+    ap.add_argument('--output', type=pathlib.Path, default=RUNTIME / 'private-prepared' / 'src.tar.gz')
     args = ap.parse_args()
+    private_root = (RUNTIME / 'private-prepared').resolve()
+    args.output = args.output.resolve()
+    if not args.output.is_relative_to(private_root):
+        ap.error('Source snapshots must remain under runtime/private-prepared while publication is blocked')
     head = git('rev-parse', 'HEAD', capture_output=True, text=True).stdout.strip()
     objects = git('rev-list', '--objects', head, capture_output=True, text=True).stdout.splitlines()
     names = [line.split(' ', 1)[1] for line in objects if ' ' in line]
@@ -43,7 +47,7 @@ def main():
         git('bundle', 'create', str(bundle), 'HEAD', stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         if git('rev-parse', 'HEAD', capture_output=True, text=True).stdout.strip() != head: raise RuntimeError('HEAD changed during snapshot; retry after the commit completes')
         git('bundle', 'verify', str(bundle), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        manifest = {'generated_utc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'commit': head, 'source': 'Accepted Git HEAD only; uncommitted working changes excluded', 'git_history': 'lumen.git.bundle; clone with git clone lumen.git.bundle lumen-history', 'audited_history_objects': checked, 'excludes': ['.git/config', '.git/hooks', 'untracked files', 'runtime credentials', 'browser profiles', 'private messages'], 'archive_creator': 'GPT-6 Astra Pro / built-in ops_preview / RubyWebTerm'}
+        manifest = {'generated_utc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'commit': head, 'source': 'Accepted Git HEAD only; uncommitted working changes excluded', 'git_history': 'lumen.git.bundle; clone with git clone lumen.git.bundle lumen-history', 'audited_history_objects': checked, 'excludes': ['.git/config', '.git/hooks', 'untracked files', 'runtime credentials', 'browser profiles', 'private messages'], 'archive_creator': 'GPT-6 Astra Pro / built-in progress_and_deployment / RubyWebTerm', 'publication': 'Private review staging only; publication disabled pending destination-specific approval'}
         with tarfile.open(dest, 'w:gz', compresslevel=4) as out, tarfile.open(source) as src:
             for member in src:
                 out.addfile(member, src.extractfile(member) if member.isfile() else None)

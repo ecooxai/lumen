@@ -1,15 +1,15 @@
 {
   "title": "Lumen \u00b7 Linux engine conformance",
-  "phase": "Engineering work is complete for this session at the five-hour handoff boundary. Accepted checkpoint128 is preserved; whole-goal19/100 and target98 remain unmet. Messages stay queued and require a future active agent session for replies. Source/Git/Pages publication remains blocked; the reviewed video is available.",
-  "iteration": 14,
+  "phase": "Active session: preserving checkpoint128, investigating measured Linux compatibility gaps, and preparing unchanged-test Chromium comparisons. Full WPT parity remains unproven.",
+  "iteration": 1,
   "score": 19,
-  "iteration_quality": 95,
+  "iteration_quality": null,
   "score_note": "PROVISIONAL whole-goal readiness estimate, inherited from historical scope. This is not a measured pass percentage. Goal:98/100 after fresh complete comparable coverage.",
-  "branch": "gpt-6-astra-engine-lead-linux-wpt-20261028",
-  "checkpoint": "23e1d1eb185d85fc08ee3b930c5f6abde476cb44",
-  "updated_utc": "2026-10-28T08:49:42.337045+00:00",
-  "session_started_utc": "2026-10-28T03:50:07.309Z",
-  "deadline_utc": "2026-10-28T08:50:07Z",
+  "branch": "gpt-6-astra-builtin-agent-lumen-linux-conformance-20261028-0920",
+  "checkpoint": "e6b7c5f721212173482510dde9717c1fdb24ce3d",
+  "updated_utc": "2026-10-28T09:16:34.262870+00:00",
+  "session_started_utc": "2026-10-28T09:12:12Z",
+  "deadline_utc": "2026-10-28T14:12:12Z",
   "historical": {
     "label": "Historical multi-revision web-only audit, 2026-10-27T17:15:44Z; not fresh branch validation",
     "lumen_chrome_passing_percent": 91.39966,
@@ -22,70 +22,66 @@
   },
   "current_evidence": [
     [
-      "Final128 primary2,000",
+      "Current session",
+      "2026-10-28 09:12:12UTC start, five-hour budget. New branch preserved; unchanged comparison planning underway. No new conformance result claimed."
+    ],
+    [
+      "Inherited Final128 primary2,000",
       "Original747\u2192128766 fully passing; Chromium1,693. Native98,485/107,088\u2192101,199/109,139PASS; exactChromePASSmatches95,417\u219298,124/105,689.2,764 gains and50 lost identities retained; no global zero-regression claim."
     ],
     [
-      "Loss and coverage caveat",
+      "Inherited Loss and coverage caveat",
       "50 losses:12FAIL,8TIMEOUT,19NOTRUN,11missing.1,497ChromePASS identities unobserved. Prior127505losses retained;128vs127569gains/107losses are not causal proof."
     ],
     [
-      "Native and shared128 gates",
+      "Inherited Native and shared128 gates",
       "117/117nativePASS,41.40sCTest; no speed inference. Shared555,509/5,963PASS,+4/0 assertion losses;52OK/3TIMEOUT. All three timeout cases also observed on127 controls; cause unproven."
     ],
     [
-      "Final128 rendering",
+      "Inherited Final128 rendering",
       "Unbiased100:37PASS/61FAIL/1UNSUPPORTED/1TIMEOUT,exactly127. Accepted114baseline36/62/1/1;oneChromePASS gain,zero lostPASS. Chromium95/5. Targeted24 retains18PASS/6FAIL."
     ],
     [
-      "Supplemental layout200",
+      "Inherited Supplemental layout200",
       "Original1,037\u21921281,213/3,370PASS,+176/0;127\u2192128+4/0. All200harnessOK. Chrome3,337/3,370PASS and189fullypassing;native54fullypassing. Separate reference shards001\u2013003."
     ],
     [
-      "Baseline correction",
+      "Inherited Baseline correction",
       "Iteration14quality95/100. Two reproduced127 last-baseline losses repaired;verticalguard26/28. Container logical fallback targetsChromium150/pinnedWPT; current draft divergence explicit."
     ],
     [
-      "Actual128 showcase",
+      "Inherited Actual128 showcase",
       "36s960x720 actual X11 presentation during verification; visible127 metrics/iteration11 historical. SHA84001865\u202674f488,441,746bytes. Sizing20/20 is one named guard."
     ],
     [
-      "Linux presentation/privacy",
+      "Inherited Linux presentation/privacy",
       "Default wgpu/Vulkan NVIDIA MX110 verified. SoftwareWPT separate. Physicalcamera/microphone refused pending site consent; synthetic/canvas/file streams/playback preserved."
     ],
     [
-      "Publication blocked",
+      "Inherited Publication blocked",
       "Git push/Pages activation rejected by automatic review pending explicit ecooxai/lumen destination approval. Source route404; final source/static payload local only. Approved live preview/video remain available."
     ],
     [
-      "Goal and delivery quality",
+      "Inherited Goal and delivery quality",
       "Whole-goal19/100 provisional; target98 unmet. Final verification/delivery iteration13quality90. FullWPT,layout,SVG/image,multilayer,document.domain,OS-processBC,retention and unrun categories remain."
     ]
   ],
   "coverage": "Full WPT parity remains unproven. Final128 has its own frozen reports;127 broad results are retained as antecedents. Historical8,000, guarded first2,000, supplemental200 and100 rendering URLs remain separate. Crash, WebDriver, print and accessibility categories are unverified.",
   "findings": [
-    "Grid candidate101 was rejected after independent tests found two lost hidden-subtree assertions. Candidate102 corrects the cause and passed focused independent review.",
-    "Grid iteration quality is 97/100 for the focused patch; whole-goal readiness remains 19/100 provisional. Full Chromium parity is unproven.",
-    "The 200-URL broad guard showed load-sensitive timeouts. Isolated editing/cookie baseline-candidate-baseline runs retained identical 30/60 assertions; long-name calc-size retained identical 466/1,156 assertions without identity losses.",
-    "The unchanged image lifecycle fixture passes 16/16 in Chromium and 15/16 on the frozen Lumen baseline. Experimental image103 did not fix it and used three invalid ordering expectations; that patch was reverted.",
-    "CPU/RSS are sampled every second during tests. Authoritative cgroup cpu.stat deltas supplement process estimates; all builds/tests share the 480% CPU quota. HTTPS telemetry and the public task inbox remain live.",
-    "Sequential CPUWeight100/200 probes showed workload-sensitive timeout differences but cannot establish a causal speedup. The task weight was restored to its original default; shared480% quota and one-second monitoring remain.",
-    "Accepted BC covers measured in-process page/worker/popup transport with pinned public-suffix data. document.domain prerequisite failures, separate-process IPC, synthetic brand/newTarget guards, long lifetime slope and browser-level private-tenant checks remain explicit gaps.",
-    "Image110 was blocked by a new referrerPolicy decode regression. Candidate111 fixes it without changing expectations, retains CORS and native document/URL identity improvements, and is now accepted. Remaining SVG/image-document and picture/context failures are documented; long-run retention slope is unproven.",
-    "Four completed paired shards cover8,000/39,394 testharness URLs on the original frozen baseline. Whole-goal readiness remains19/100 provisional; the100-URL reftest sample is separate.",
-    "Font115 preserves exact observed Fontconfig matching while reducing CPU on one large CJK workload. Its version gate, configuration invalidation and fallback paths are explicit; complete font geometry conformance is not established.",
-    "Sizing118 improves the measured preferred-ratio/constraint cases without lost passes. Separate SVG intrinsic-size, nonreplaced absolute positioning, ratio serialization and loaded-image rendering failures remain explicit.",
-    "Historical broad run stopped06:44:52UTC; independent06:45:01audit found no task-native WPT workers. The fresh guarded original2,000 completed separately07:07:33UTC. Production Linux physical acquisition is now refused pending real site consent; old binaries require verified pre-main refusal. No device inventory or media inspection occurred.",
-    "All accepted runtime repairs are combined in post-commit127 with117/117 native gates passing. Final guarded WPT/reftest replay is a separate pending integration gate; whole-goal readiness remains19/100 provisional."
+    "One-second process-tree CPU/RSS and shared-cgroup monitoring remain required. All compilation shares480% total CPU and at most six compiler jobs.",
+    "This dashboard publishes reviewed aggregates, host telemetry and public task feedback only. Source and raw-results routes remain unavailable.",
+    "Historical checkpoint128 evidence is preserved separately; new iteration scores will follow measured results."
   ],
-  "active_iteration": null,
+  "active_iteration": {
+    "number": 1,
+    "started_utc": "2026-10-28T09:12:12Z",
+    "scope": "Repository preservation, unchanged baseline selection, monitoring and progress renewal"
+  },
   "accepted_binary_sha256": "e41f9f04359464d4a229a74371cc6badd25aa01f3289d585286db67cec5e8801",
-  "accepted_binary_scope": "Accepted focused engineering checkpoint128; whole-goal19/100, not fullWPT completion.",
-  "agent_session": "ended",
+  "accepted_binary_scope": "Inherited accepted focused engineering checkpoint128. Its historical results below are retained; current-session validation is pending. Whole-goal19/100 is a provisional readiness estimate.",
+  "agent_session": "active",
   "showcase_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/showcase.mp4",
   "candidate_binary_sha256": "e41f9f04359464d4a229a74371cc6badd25aa01f3289d585286db67cec5e8801",
   "candidate_runtime_commit": "23e1d1eb185d85fc08ee3b930c5f6abde476cb44",
-  "publication_status": "Git push and Pages activation blocked by automatic approval review: explicit destination authorization required for ecooxai/lumen. Local review payload prepared; no push/activation performed.",
-  "session_ended_utc": "2026-10-28T08:49:42.337045+00:00",
-  "session_wall_minutes": 299.5838
+  "publication_status": "Existing aggregate telemetry/message preview remains live. Source, raw-results, Git push and Pages publication are withheld pending explicit destination-specific authorization; prior automatic-review denial remains effective."
 }
