@@ -1,0 +1,23 @@
+[
+  "/html/semantics/forms/textfieldselection/defaultSelection.html",
+  "/html/semantics/forms/textfieldselection/select-event.html",
+  "/html/semantics/forms/textfieldselection/selection-after-content-change.html",
+  "/html/semantics/forms/textfieldselection/selection-not-application-textarea.html",
+  "/html/semantics/forms/textfieldselection/selection-not-application.html?default",
+  "/html/semantics/forms/textfieldselection/selection-not-application.html?week,month",
+  "/html/semantics/forms/textfieldselection/selection-preserved-after-text-password-type-change.html",
+  "/html/semantics/forms/textfieldselection/selection-set-value-after-focus.html",
+  "/html/semantics/forms/textfieldselection/selection-start-end-extra.html",
+  "/html/semantics/forms/textfieldselection/selection-start-end.html",
+  "/html/semantics/forms/textfieldselection/selection-value-interactions.html",
+  "/html/semantics/forms/textfieldselection/selection.html",
+  "/html/semantics/forms/textfieldselection/setSelectionRange.html",
+  "/html/semantics/forms/textfieldselection/textarea-selection-while-parsing.xhtml",
+  "/html/semantics/forms/textfieldselection/textfieldselection-setRangeText.html",
+  "/html/semantics/forms/textfieldselection/textfieldselection-setSelectionRange.html",
+  "/html/semantics/forms/the-textarea-element/change-to-empty-value.html",
+  "/html/semantics/forms/the-textarea-element/selection-after-whitespace-change.html",
+  "/html/semantics/forms/the-textarea-element/textarea-validity-valueMissing-inside-datalist.html",
+  "/html/semantics/forms/the-textarea-element/value-defaultValue-textContent-xhtml.xhtml",
+  "/html/semantics/forms/the-textarea-element/value-defaultValue-textContent.html"
+]

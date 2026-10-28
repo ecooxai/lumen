@@ -7,6 +7,9 @@ extern "C" {
 #endif
 
 typedef struct JsCtx JsCtx;
+/* Resolve a Blob URL from this document or a same-origin frame realm. No script-visible
+   properties are consulted. Optional bytes/type outputs are malloc-owned by the caller. */
+bool js_read_blob(JsCtx *ctx, const char *url, unsigned char **bytes, size_t *len, char **type);
 /* system clipboard, set by the embedder (navigator.clipboard, execCommand copy); get returns malloc'd text */
 extern void (*js_clip_set)(const char *text);
 extern char *(*js_clip_get)(void);

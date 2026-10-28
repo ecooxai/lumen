@@ -149,7 +149,7 @@ function inputTypeChanged(el, oldRaw, newRaw) {
     else if (nm === 'file') N.setValue(el, null);
     else if (nm === 'value') { const d = N.value(el); if (d != null) N.setValue(el, sanitizeAs(el, nt, d)); }
     if (om === 'file' && el._files) def(el, '_files', null);
-    if (!SEL_TYPES.test(ot) && SEL_TYPES.test(nt)) selStore.set(el, [0, 0, 'none']);
+    if (!SEL_TYPES.test(ot) && SEL_TYPES.test(nt)) selSet(el, 0, 0, 'none', true);
 }
 
 const valueChangedSel = (el, before) => { if (el.value !== before) { const n = el.value.length; selStore.set(el, [n, n, 'none']); } };
@@ -705,8 +705,8 @@ methods(H.HTMLFormElement.prototype, {
 });
 function resetControl(e) {
     switch (N.name(e)) {
-    case 'input': N.setValue(e, null); checkDirty.delete(e); N.setChecked(e, N.attr(e, 'checked') != null); if (e._files) def(e, '_files', null); { const n = String(e.value ?? '').length; selStore.set(e, [n, n, 'none']); } break;
-    case 'textarea': { N.setValue(e, null); const n = e.value.length; selStore.set(e, [n, n, 'none']); break; }
+    case 'input': N.setValue(e, null); checkDirty.delete(e); N.setChecked(e, N.attr(e, 'checked') != null); if (e._files) def(e, '_files', null); { const n = String(e.value ?? '').length; selSet(e, n, n, 'none', true); } break;
+    case 'textarea': { N.setValue(e, null); const n = e.value.length; selSet(e, n, n, 'none', true); break; }
     case 'select': for (const o of optionList(e)) { optDirty.delete(o); setSelected(o, N.attr(o, 'selected') != null); } break;
     case 'output': e.textContent = e.defaultValue; outputDefault.delete(e); break;
     }

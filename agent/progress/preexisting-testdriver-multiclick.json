@@ -1,0 +1,17 @@
+{
+  "recorded_utc": "2026-10-27T18:08:40.923003+00:00",
+  "classification": "Preexisting synthetic testdriver multi-click aggregation defect; not a regression from native control-selection changes",
+  "source": "src/app/main.c td_cmd mouse down handling",
+  "behavior": "All down events within500ms increment one global click count even if pointer position or button changes; real SDL mouse events provide their own count",
+  "canonical_evidence": "agent/validation/permanent-selection-canonical/browser.log",
+  "candidate_evidence": "agent/validation/iteration-08/native-control-debug/browser.log",
+  "chromium_evidence": "agent/validation/permanent-selection-chromium/00-000/result.json",
+  "canonical_and_candidate_failures": [
+    "Native click places caret after prior programmatic selection",
+    "Native click caret insertion preserves old text"
+  ],
+  "chromium": "37/37 on exact combined permanent fixture",
+  "geometry": "DOM rect and elementFromPoint confirm textarea under pointer; no coordinate failure",
+  "current_fixture_change": "Own permanent caret fixture explicitly waits600ms before its single click; upstreamWPT expectations unchanged",
+  "followup": "Separate bridge fix should track time, position and button; do not include in accepted selection engine change."
+}

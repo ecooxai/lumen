@@ -22,15 +22,59 @@ let [liveRanges, liveIters] = (() => {
     Object.defineProperty(G, LIVE_KEY, { value: sets, writable: true, configurable: true });
     return sets;
 })();
-/* <img>: the src whose load failed (complete is true for a broken image) */
-const imgFailed = new WeakMap();
+/* Image loads also run for disconnected elements. decode() observes the selected request,
+   waits for native decoding, and rejects if that request changes or its document becomes inactive. */
+const imgFailed = new WeakMap(), imgDecodeWaiters = new WeakMap();
 function imgSrcChanged(el) {
-    if (!el.isConnected) N.imgWatch(el);   /* new Image(): still loads */
-    if (!imgFailed.has(el)) el.addEventListener('error', () => imgFailed.set(el, N.imgSrc(el)));
+    if (!el.isConnected) N.imgWatch(el);
+    if (!imgFailed.has(el)) EventTarget.prototype.addEventListener.call(el, 'error', () => imgFailed.set(el, N.imgSrc(el)));
     imgFailed.set(el, null);
-    const s = el.getAttribute('src');
-    if (s && s.trim()) { try { new URL(s, document.baseURI); } catch (e) { setTimeout(() => { if (el.getAttribute('src') === s) { imgFailed.set(el, s); el.dispatchEvent(new Event('error')); } }, 0); } }
+    const waiting = imgDecodeWaiters.get(el);
+    if (waiting) for (const check of waiting) queueMicrotask(check);
+    const s = N.attr(el, 'src');
+    if (s && s.trim()) { try { new URL(s, el.baseURI); } catch (e) { setTimeout(() => { if (N.attr(el, 'src') === s) { imgFailed.set(el, s); el.dispatchEvent(new Event('error')); } }, 0); } }
 }
+function decodeImage(el) {
+    return new Promise((resolve, reject) => {
+        const src = N.imgSrc(el), available = !!N.imgSize(el);
+        const pictureParent = () => { const p = N.parent(el); return p && N.name(p) === 'picture' ? p : null; };
+        const picture = pictureParent();
+        /* A picture insertion/removal restarts pending source selection even if the selected URL
+           is unchanged. An already available image keeps its current request while that runs. */
+        const changed = () => N.imgSrc(el) !== src || (!available && pictureParent() !== picture);
+        let settled = false, queued = false;
+        const active = () => !!el.ownerDocument?.defaultView && N.fullyActive(el);
+        const error = () => new DOMException('The image could not be decoded.', 'EncodingError');
+        const cleanup = () => {
+            EventTarget.prototype.removeEventListener.call(el, 'load', check);
+            EventTarget.prototype.removeEventListener.call(el, 'error', check);
+            const waiting = imgDecodeWaiters.get(el);
+            if (waiting) { waiting.delete(check); if (!waiting.size) imgDecodeWaiters.delete(el); }
+        };
+        const finish = ok => {
+            if (settled) return;
+            settled = true; cleanup();
+            if (ok) resolve(undefined); else reject(error());
+        };
+        const check = () => {
+            if (settled || queued) return;
+            if (!active() || !src || !src.trim() || changed() || imgFailed.get(el) === src) { finish(false); return; }
+            if (N.imgSize(el)) {
+                queued = true;
+                /* The decode promise resolves in a task, after the update-image microtask. */
+                setTimeout(() => { queued = false; finish(active() && !changed() && !!N.imgSize(el)); }, 0);
+            } else if (N.imgDone(el)) finish(false);
+        };
+        let waiting = imgDecodeWaiters.get(el);
+        if (!waiting) imgDecodeWaiters.set(el, waiting = new Set());
+        waiting.add(check);
+        EventTarget.prototype.addEventListener.call(el, 'load', check);
+        EventTarget.prototype.addEventListener.call(el, 'error', check);
+        if (!el.isConnected) N.imgWatch(el);
+        queueMicrotask(check);
+    });
+}
+
 function linkLiveSets() {
     const sets = topLiveSets();
     if (!sets || sets[0] === liveRanges) return;
@@ -342,6 +386,7 @@ const cloneControl = (a, b) => {
     if (a.namespaceURI !== 'http://www.w3.org/1999/xhtml' || (a.localName !== 'input' && a.localName !== 'textarea')) return;
     const v = N.value(a);
     if (v != null) N.setValue(b, v);
+    selSet(b, 0, 0, 'none', true);   /* clone value/checkedness, never its selection */
     if (a.localName === 'input') { if (N.checked(a) !== N.checked(b)) N.setChecked(b, N.checked(a)); if (a.__ind) def(b, '__ind', true); }
 };
 function cloneControls(a, b, deep) {
@@ -605,7 +650,7 @@ function attrDetach(el, ns, ln, v) {
 function attrChange(el, ns, pfx, ln, v) {
     const old = N.attrNS(el, ns, ln);
     N.setAttrNS(el, ns, pfx, ln, v);   /* by namespace: a namespaced attribute with the same qualified name stays */
-    if (ln === 'src' && !ns && el instanceof H.HTMLImageElement) imgSrcChanged(el);
+    if (!ns && (ln === 'src' || ln === 'srcset' || ln === 'sizes') && el instanceof H.HTMLImageElement) imgSrcChanged(el);
     notify('attributes', el, { attributeName: ln, attributeNamespace: ns, oldValue: old });
     ceAttr(el, ln, old, v, ns);
 }
@@ -614,6 +659,7 @@ function attrRemove(el, ns, ln) {
     if (old == null) return null;
     attrDetach(el, ns, ln, old);
     N.rmAttrNS(el, ns, ln);
+    if (!ns && (ln === 'src' || ln === 'srcset' || ln === 'sizes') && el instanceof H.HTMLImageElement) imgSrcChanged(el);
     notify('attributes', el, { attributeName: ln, attributeNamespace: ns, oldValue: old });
     ceAttr(el, ln, old, null, ns);
     return old;

@@ -1,0 +1,46 @@
+<!doctype html><meta charset="utf-8"><title>Image lifecycle regression</title>
+<style>body{font:16px sans-serif;background:#eef7ff}.images{display:flex;gap:12px;flex-wrap:wrap}img{width:48px;height:48px;background:#ddd}pre{white-space:pre-wrap}</style>
+<h1>Image loading and decode lifecycle</h1><p>Successful images below should be green.</p><div class="images" id="images"></div><pre id="results"></pre>
+<script>
+(async () => {
+  const failures = [], names = [], urls = [];
+  const check = (condition, message) => { if (!condition) throw new Error(message); };
+  const url = blob => { const value = URL.createObjectURL(blob); urls.push(value); return value; };
+  const visible = img => document.getElementById('images').appendChild(img);
+  const loaded = (img, src) => new Promise((resolve, reject) => { img.onload = () => resolve(img); img.onerror = () => reject(new Error('Unexpected image load error')); img.src = src; });
+  const rejects = async (promise, name) => { try { await promise; } catch (e) { check(e.name === name, 'Expected ' + name + ', got ' + e.name); return; } throw new Error('Expected ' + name + ' rejection'); };
+  const decoded = img => check(img.complete && img.naturalWidth > 0 && img.naturalHeight > 0, 'decode resolved before image data was available');
+  const test = async (name, body) => { names.push(name); let timer; try { await Promise.race([body(), new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('Timed out')), 8000); })]); console.log('IMAGE-CASE PASS ' + name); } catch (e) { failures.push(name + ': ' + e.message); console.log('IMAGE-CASE FAIL ' + name + ': ' + e.message); } finally { clearTimeout(timer); } };
+  const response = await fetch(new URL('green.png', document.baseURI).href);
+  const blob = await response.blob();
+  await Promise.all([
+    test('ordinary connected URL', async () => { const img = new Image(); visible(img); await loaded(img, 'green.png'); decoded(img); }),
+    test('connected Blob URL', async () => { const img = new Image(); visible(img); await loaded(img, url(blob)); decoded(img); }),
+    test('disconnected Blob load', async () => { const img = await loaded(new Image(), url(blob)); decoded(img); visible(img); }),
+    test('disconnected Blob decode', async () => { const img = new Image(); img.src = url(blob); const value = await img.decode(); check(value === undefined, 'decode result'); decoded(img); visible(img); }),
+    test('cached Blob decode in new element', async () => { const src = url(blob); await loaded(new Image(), src); const img = new Image(); img.src = src; await img.decode(); decoded(img); visible(img); }),
+    test('ordinary disconnected decode', async () => { const img = new Image(); img.src = 'green.png'; await img.decode(); decoded(img); visible(img); }),
+    test('revoke before loading', async () => { const src = url(blob); URL.revokeObjectURL(src); const img = new Image(); img.src = src; await rejects(img.decode(), 'EncodingError'); check(img.naturalWidth === 0, 'revoked URL loaded'); }),
+    test('revoke after loading preserves existing image', async () => { const src = url(blob), img = await loaded(new Image(), src); URL.revokeObjectURL(src); await img.decode(); decoded(img); visible(img); const other = new Image(); other.src = src; await rejects(other.decode(), 'EncodingError'); check(other.naturalWidth === 0, 'new image reused revoked URL'); }),
+    test('missing source rejects', async () => { await rejects(new Image().decode(), 'EncodingError'); }),
+    test('source mutation rejects old decode', async () => { const img = new Image(); img.src = 'green.png?old'; const before = img.decode(); img.src = 'green.png?new'; await Promise.all([rejects(before, 'EncodingError'), img.decode()]); decoded(img); visible(img); }),
+    test('invalid image data rejects', async () => { const img = new Image(); img.src = url(new Blob(['not an image'], {type:'image/png'})); await rejects(img.decode(), 'EncodingError'); }),
+    test('pending src inserted into picture rejects', async () => { const img = new Image(), picture = document.createElement('picture'); document.body.append(picture); img.src = 'green.png?pending-picture'; const pending = img.decode(); picture.append(img); await rejects(pending, 'EncodingError'); await img.decode(); decoded(img); }),
+    test('pending srcset inserted into picture rejects', async () => { const img = new Image(), picture = document.createElement('picture'); document.body.append(picture); img.srcset = 'green.png?pending-picture-srcset 1x'; const pending = img.decode(); picture.append(img); await rejects(pending, 'EncodingError'); await img.decode(); decoded(img); }),
+    test('cached src inserted into picture decodes', async () => { const src = 'green.png?cached-picture'; await loaded(new Image(), src); const img = new Image(), picture = document.createElement('picture'); document.body.append(picture); img.src = src; const pending = img.decode(); picture.append(img); await pending; decoded(img); }),
+    test('picture sequential uncached then cached decode', async () => {
+      const src = 'green.png?sequential-picture', firstPicture = document.createElement('picture'), secondPicture = document.createElement('picture');
+      document.body.append(firstPicture, secondPicture);
+      const first = new Image(); first.src = src; const firstPromise = first.decode().then(value => check(value === undefined, 'decode result')); firstPicture.append(first);
+      await rejects(firstPromise, 'EncodingError');
+      // Match the upstream quick-attach test: begin the second case after rejection, without awaiting load.
+      const second = new Image(); second.src = src; const secondPromise = second.decode().then(value => check(value === undefined, 'decode result')); secondPicture.append(second);
+      await secondPromise; decoded(second);
+    }),
+    test('multiple decode promises', async () => { const img = new Image(); img.src = url(blob); const a = img.decode(), b = img.decode(); check(a !== b, 'decode reused a promise'); await Promise.all([a,b]); decoded(img); visible(img); })
+  ]);
+  for (const value of urls) URL.revokeObjectURL(value);
+  const result = 'RESULTS browser-image-lifecycle:' + (failures.length ? 'FAIL ' + failures.join('; ') : 'PASS ' + names.length + '/' + names.length);
+  document.getElementById('results').textContent = result; console.log(result);
+})().catch(e => console.log('RESULTS browser-image-lifecycle:FAIL ' + e.message));
+</script>

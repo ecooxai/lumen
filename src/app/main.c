@@ -97,13 +97,15 @@ typedef struct Page {
     JsCtx *js; PScript *scripts; int nscripts; uint64_t seen_ver, lay_ver, seen_sheet_ver, seen_paint_ver, seen_res; bool res_seen;
     bool sheets_pending; /* a fetched stylesheet was added: next restyle recomputes everything once */
     SheetRef *sref; int nsref;
-    HMap img_fired; bool img_check, internal_ui;
+    HMap img_fired, image_urls, blob_requests; bool img_check, internal_ui;
     double load_t0;   /* when its load event first became due (images delay it up to 10 s) */
     /* <iframe> child browsing context (document owned by the JS layer) */
     Node *frame_el; float fw, fh, fsy; Canvas cv; Image img; DisplayList fdl;
     char fmargin[48];   /* the frame element's marginwidth/marginheight its body was styled with */
     uint64_t drawn_ver, drawn_paint_ver; int drawn_epoch; bool frelayout; struct Page *fnext;
 } Page;
+static void release_page_images(Page *p);
+static int blob_image_state(Node *n, const char *url);
 static Page *g_frames;
 static Page *frame_find(Node *f) { for (Page *p = g_frames; p; p = p->fnext) if (p->frame_el == f) return p; return NULL; }
 #ifdef __ANDROID__
@@ -128,7 +130,7 @@ static bool page_viewport(Page *page, float width, float height, float scale) {
     page->img_check = true;
     return true;
 }
-typedef struct { Image *im; bool done, evicted, refetch; double used; float ew, eh; uint8_t *enc; size_t enclen; } ImgSlot;   /* enc: compressed bytes kept in Lite mode for local re-decode */
+typedef struct { Image *im; bool done, evicted, refetch, local_blob, blob_pending; unsigned blob_refs; double used; float ew, eh; uint8_t *enc; size_t enclen; } ImgSlot;   /* enc: compressed bytes kept in Lite mode for local re-decode */
 static bool g_lite_active;
 
 static SDL_Mutex *icache_mu;
@@ -352,7 +354,7 @@ static Image *node_img(Node *n) {
     if (n->tag == A_video) { Image *f = media_frame_for(n); if (f) return f; }
     if (n->tag == A_canvas) { Image *c = c2d_image_for(n); return c ? c : media_frame_for(n); }   /* 2D canvases present here; WebGL/WebGPU push frames to a live player */
     char b[2048]; float dn; const char *s = img_src(n, b, sizeof b, &dn); if (!s) return NULL;
-    const char *u = node_src_url(n, s); return u ? cache_get(u) : NULL;
+    const char *u = node_src_url(n, s); return u && (strncmp(u, "blob:", 5) || blob_image_state(n, u) == 1) ? cache_get(u) : NULL;
 }
 static Image *url_img(const char *u) { return u ? cache_get(u) : NULL; }
 static bool img_size(Node *n, float *w, float *h) {
@@ -360,6 +362,7 @@ static bool img_size(Node *n, float *w, float *h) {
     g_in_layout = true; Image *im = node_img(n); g_in_layout = false;
     if (!im) {
         char b[2048]; float dn; const char *s = n->tag == A_img ? img_src(n, b, sizeof b, &dn) : NULL; const char *u = s ? node_src_url(n, s) : NULL;
+        if (u && !strncmp(u, "blob:", 5) && blob_image_state(n, u) != 1) return false;
         SDL_LockMutex(icache_mu); ImgSlot *sl = u ? hm_get(&icache, u) : NULL; bool ok = sl && sl->evicted; if (ok) { *w = sl->ew / dn; *h = sl->eh / dn; } SDL_UnlockMutex(icache_mu);
         return ok;
     }
@@ -529,6 +532,7 @@ static void page_free(Page *p) {
     if (!p) return;
     if (g_loading_page == p) g_loading_page = NULL;
     js_free(p->js);
+    release_page_images(p);
     hm_free(&p->img_fired, NULL);
     free(p->sref);
     for (int i = 0; i < p->nscripts; i++) { free(p->scripts[i].src); free(p->scripts[i].name); }
@@ -2871,6 +2875,41 @@ static void input_coordinates(App *app, SDL_Event *event) {
 static App *g_app;
 static uint64_t fnv(const char *s) { uint64_t h = 1469598103934665603ull; for (; s && *s; s++) h = (h ^ (uint8_t)*s) * 1099511628211ull; return h; }
 static uint64_t fnvn(const char *s, size_t n) { uint64_t h = 1469598103934665603ull; for (size_t i = 0; i < n; i++) h = (h ^ (uint8_t)s[i]) * 1099511628211ull; return h; }
+/* Blob requests retain their decoded image after URL revocation, while a new
+   request must still resolve the URL. Compressed bytes allow Lite mode to re-decode
+   without referring to a revoked registry entry. The last owning page releases both. */
+static Page *image_page(const Node *n) {
+    if (!n || !n->doc) return NULL;
+    if (g_loading_page && g_loading_page->d == n->doc) return g_loading_page;
+    for (Page *p = g_frames; p; p = p->fnext) if (p->d == n->doc) return p;
+    if (g_app) for (int i = 0; i < g_app->ntabs; i++) if (g_app->tabs[i]->cur && g_app->tabs[i]->cur->d == n->doc) return g_app->tabs[i]->cur;
+    return NULL;
+}
+static void blob_request_key(char key[64], const Node *n, const char *url) { snprintf(key, 64, "%p %016llx", (const void *)n, (unsigned long long)fnv(url)); }
+static int blob_image_state(Node *n, const char *url) {
+    Page *p = image_page(n); if (!p) return 0;
+    char key[64]; blob_request_key(key, n, url);
+    return (int)(uintptr_t)hm_get(&p->blob_requests, key);
+}
+static void release_page_images(Page *p) {
+    if (!p->image_urls.e) { hm_free(&p->blob_requests, NULL); return; }
+    SDL_LockMutex(icache_mu);
+    hm_foreach(&p->image_urls, e) {
+        ImgSlot *slot = hm_get(&icache, e->key);
+        if (!slot || !slot->local_blob || !slot->blob_refs || --slot->blob_refs) continue;
+        if (slot->im) { g_icache_bytes -= (size_t)slot->im->w * (size_t)slot->im->h * 4; g_icache_n--; image_unref(slot->im); slot->im = NULL; }
+        free(slot->enc); slot->enc = NULL; slot->enclen = 0;
+        slot->done = slot->evicted = slot->refetch = false;
+    }
+    SDL_UnlockMutex(icache_mu);
+    hm_free(&p->image_urls, NULL); hm_free(&p->blob_requests, NULL);
+}
+static void image_completed_page(Page *p, const char *url) {
+    if (!p || !hm_get(&p->image_urls, url)) return;
+    p->img_check = true;
+    if (p->frame_el) p->frelayout = true;
+    if (g_app) for (int i = 0; i < g_app->ntabs; i++) if (g_app->tabs[i]->cur == p) g_app->tabs[i]->relayout = true;
+}
 /* Does CSS text end between top-level rules (braces balanced outside strings and comments, last token '}')? */
 static bool css_rule_boundary(const char *s, size_t n) {
     int depth = 0; char last = 0;
@@ -2922,16 +2961,19 @@ static void img_done(NetRequest *rq, NetResponse *r, void *ud) {
     if (getenv("LUMEN_DEBUG_IMG")) fprintf(stderr, "lumen: img decode -> %s\n", im ? "ok" : "NULL");
     SDL_LockMutex(icache_mu);
     ImgSlot *slot = hm_get(&icache, l->u);
+    if (slot) slot->blob_pending = false;
+    if (slot && slot->local_blob && !slot->blob_refs) slot = NULL;
     if (slot && !slot->im && im) { g_icache_bytes += (size_t)im->w * (size_t)im->h * 4; g_icache_n++; }
     if (slot && !slot->im) { slot->im = im; im = NULL; }
-    if (slot && slot->im && !slot->enc && g_lite_active && r->body_len < (8u << 20)) { slot->enc = xmalloc(r->body_len); memcpy(slot->enc, r->body, r->body_len); slot->enclen = r->body_len; }
+    if (slot && slot->im && !slot->enc && r && r->body && (slot->local_blob || (g_lite_active && r->body_len < (8u << 20)))) { slot->enc = (uint8_t *)r->body; slot->enclen = r->body_len; r->body = NULL; r->body_len = 0; }
     if (slot) { slot->done = true; slot->evicted = slot->refetch = false; }
     SDL_UnlockMutex(icache_mu);
     if (getenv("LUMEN_DEBUG_IMG")) fprintf(stderr, "lumen: img done status=%d len=%zu decoded=%d slot=%d %.80s\n", r ? r->status : -1, r && r->body ? r->body_len : 0, slot && slot->im ? 1 : 0, slot ? 1 : 0, l->u);
     if (im) image_unref(im);
-    if (g_app->t->cur && g_app->t->cur->gen == l->gen) {
-        g_app->t->cur->img_check = true; g_app->t->relayout = g_app->dirty = true;
-    }
+    for (int i = 0; i < g_app->ntabs; i++) image_completed_page(g_app->tabs[i]->cur, l->u);
+    for (Page *p = g_frames; p; p = p->fnext) image_completed_page(p, l->u);
+    image_completed_page(g_loading_page, l->u);
+    g_app->dirty = true; g_app->vonly = false;
     if (g_loading_page && g_loading_page != g_app->t->cur && g_loading_page->js) js_load_recheck(g_loading_page->js);
     else if (!l->gen) { g_app->dirty = true; g_app->vonly = false; }
     free(l->u); free(l);
@@ -2987,6 +3029,7 @@ static bool img_fetch_done(Node *n) {
     char sb[2048]; float dn; const char *src = img_src(n, sb, sizeof sb, &dn); if (!src || !*src || !n->doc) return false;
     char *u = url_join(doc_base(n->doc), src); if (!u) return false;
     SDL_LockMutex(icache_mu); ImgSlot *s = hm_get(&icache, u); bool d = s && s->done; SDL_UnlockMutex(icache_mu);
+    if (!strncmp(u, "blob:", 5)) { int state = blob_image_state(n, u); d = state == 2 || (state == 1 && d); }
     free(u); return d;
 }
 /* the current page's load event waits for its images (capped at 10 s) */
@@ -3014,11 +3057,44 @@ static bool sync_images(Page *p) {
     for (int di = -1; di < p->d->ndimg; di++)
     for (Node *n = di < 0 ? p->d->node.first : p->d->dimg[di]; n; n = di < 0 ? node_next_in_tree(n, &p->d->node) : NULL) {
         if (n->type != NODE_ELEMENT) continue;
+        if (n->flags & NF_IMG_REQUEST) {
+            char prefix[48]; snprintf(prefix, sizeof prefix, "%p ", (void *)n); size_t len = strlen(prefix);
+            hm_foreach(&p->img_fired, e) if (!strncmp(e->key, prefix, len)) e->val = NULL;
+            hm_foreach(&p->blob_requests, e) if (!strncmp(e->key, prefix, len)) e->val = NULL;
+            n->flags &= ~(uint32_t)NF_IMG_REQUEST;
+        }
         char *u = NULL;
         if (n->style && (n->style->mask_image || n->style->bg_image) && n->style->display != D_NONE) u = xstrdup(n->style->mask_image ? n->style->mask_image : n->style->bg_image);
         else if (n->ns == NS_HTML && n->tag == A_img) { char sb[2048]; float dn; const char *sv = img_src(n, sb, sizeof sb, &dn); if (!sv) continue; u = url_join(doc_base(p->d), sv); }
         else continue;
-        if (!u || !*u || !strncmp(u, "blob:", 5)) { free(u); continue; }
+        if (!u || !*u) { free(u); continue; }
+        if (!strncmp(u, "blob:", 5)) {
+            char key[64]; blob_request_key(key, n, u);
+            if (hm_get(&p->blob_requests, key)) { free(u); continue; }
+            bool valid = js_read_blob(p->js, u, NULL, NULL, NULL);
+            hm_put(&p->blob_requests, key, (void *)(uintptr_t)(valid ? 1 : 2));
+            if (!valid) { p->img_check = true; free(u); continue; }
+            SDL_LockMutex(icache_mu);
+            ImgSlot *slot = hm_get(&icache, u);
+            if (!slot) { slot = xcalloc(1, sizeof *slot); slot->local_blob = true; hm_put(&icache, u, slot); }
+            if (!hm_get(&p->image_urls, u)) { hm_put(&p->image_urls, u, (void *)1); slot->blob_refs++; }
+            bool start = !slot->done && !slot->blob_pending;
+            if (start) slot->blob_pending = true;
+            SDL_UnlockMutex(icache_mu);
+            if (start) {
+                unsigned char *bytes = NULL; size_t len = 0; char *type = NULL;
+                valid = js_read_blob(p->js, u, &bytes, &len, &type);
+                NetRequest *rq = net_request_new("GET", u); ImgLoad *l = xcalloc(1, sizeof *l); l->gen = p->gen; l->u = xstrdup(u);
+                NetResponse *r = xcalloc(1, sizeof *r); r->url = xstrdup(u); r->status = valid ? 200 : 0;
+                r->status_text = xstrdup(valid ? "OK" : ""); r->body = (char *)bytes; r->body_len = len;
+                if (valid) headers_add(&r->headers, "Content-Type", type && *type ? type : "application/octet-stream");
+                else r->error = xstrdup("Blob URL is no longer available");
+                free(type); rq->done = img_done; rq->work = img_work; rq->ud = l; rq->priority = 2;
+                net_fetch_prepared(rq, r);
+            }
+            p->img_check = true; free(u); continue;
+        }
+        hm_put(&p->image_urls, u, (void *)1);
         SDL_LockMutex(icache_mu);
         bool have = hm_get(&icache, u) != NULL;
         if (!have) { ImgSlot *slot = xcalloc(1, sizeof *slot); hm_put(&icache, u, slot); }
@@ -3045,6 +3121,7 @@ static void fire_img_events(Page *p) {
         char key[2048]; snprintf(key, sizeof key, "%p %s", (void *)n, u);
         if (!hm_get(&p->img_fired, key)) {
             SDL_LockMutex(icache_mu); ImgSlot *s = hm_get(&icache, u); bool done = s && s->done, good = done && s->im; SDL_UnlockMutex(icache_mu);
+            if (!strncmp(u, "blob:", 5) && blob_image_state(n, u) == 2) { done = true; good = false; }
             if (done) {
                 hm_put(&p->img_fired, key, (void *)1);
                 if (ne == cap) { cap = cap ? cap * 2 : 16; ev = xrealloc(ev, (size_t)cap * sizeof *ev); ok = xrealloc(ok, (size_t)cap * sizeof *ok); }
@@ -3310,6 +3387,7 @@ static void h_frame_close(void *ud) {
     if (p->L) layout_free(p->L);
     if (p->e) style_engine_free(p->e);
     for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) { n->box = NULL; n->style = NULL; }
+    release_page_images(p);
     hm_free(&p->img_fired, NULL); free(p->sref);
     canvas_free(&p->cv); dl_clear(&p->fdl); free(p->fdl.items.v);
     free(p->url); free(p);
@@ -3659,14 +3737,12 @@ static bool word_byte(unsigned char c) { return isalnum(c) || c == '_' || c >= 0
 static int u8_prev(const char *v, int i) { if (i > 0) i--; while (i > 0 && ((unsigned char)v[i] & 0xC0) == 0x80) i--; return i; }
 static int u8_next(const char *v, int n, int i) { if (i < n) i++; while (i < n && ((unsigned char)v[i] & 0xC0) == 0x80) i++; return i; }
 static void ctl_sel(Node *f, const char *v, int *an, int *fo) {
-    const Document *d = f->doc; int n = u8_byte_cp(v, (int)strlen(v));
-    if (d && d->csel_n == f) { *an = LCLAMP(d->csel[0], 0, n); *fo = LCLAMP(d->csel[1], 0, n); }
+    int n = u8_byte_cp(v, (int)strlen(v));
+    if (node_control_selection_get(f, an, fo)) { *an = LCLAMP(*an, 0, n); *fo = LCLAMP(*fo, 0, n); }
     else *an = *fo = n;
 }
 static void ctl_sel_set(App *a, Node *f, int an, int fo) {
-    Document *d = f->doc;
-    if (!d) return;
-    d->csel_n = f; d->csel[0] = an; d->csel[1] = fo; d->paint_version++;
+    node_control_selection_set(f, an, fo);
     a->caret_t = now_ms(); a->dirty = true; a->vonly = false;
 }
 /* the codepoint (or with word, the word) before (dir < 0) or after the caret */

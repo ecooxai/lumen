@@ -32,6 +32,7 @@ struct NetRequest {
     char *url;
     Headers headers;
     char *body; size_t body_len;
+    NetResponse *prepared_response; /* owned local response; uses the same asynchronous work/done queue */
     int max_redirects;     /* 0 = the default (20); -1 = none: a redirect is the response */
     bool no_cookies;
     bool cancelled;
@@ -75,6 +76,8 @@ NetRequest *net_request_new(const char *method, const char *url);
 bool net_request_control(NetRequest *rq, const char *name, const char *value);
 /* Asynchronous: callbacks fire on the thread calling net_poll(). Ownership of req moves to net. */
 uint64_t net_fetch(NetRequest *req);
+/* Takes ownership of both objects; local bytes run work() off-thread and done() in net_poll(). */
+uint64_t net_fetch_prepared(NetRequest *req, NetResponse *response);
 void net_cancel(uint64_t id);
 /* streaming flow control: a paused request reads no more of its body until resumed */
 void net_pause(uint64_t id, bool on);

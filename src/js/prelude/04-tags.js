@@ -114,7 +114,7 @@ mk('HTMLImageElement', HTMLElement, ['img'], p => {
         get width() { const v = parseInt(N.attr(this, 'width'), 10); if (!isNaN(v)) return v; const r = N.rect(this); return r ? Math.round(r[2]) : 0; }, set width(v) { v >>>= 0; reflectSetAttr(this, 'width', String(v > 2147483647 ? 0 : v)); },
         get height() { const v = parseInt(N.attr(this, 'height'), 10); if (!isNaN(v)) return v; const r = N.rect(this); return r ? Math.round(r[3]) : 0; }, set height(v) { v >>>= 0; reflectSetAttr(this, 'height', String(v > 2147483647 ? 0 : v)); },
         get naturalWidth() { const s = N.imgSize(this); return s ? Math.trunc(s[0]) : 0; }, get naturalHeight() { const s = N.imgSize(this); return s ? Math.trunc(s[1]) : 0; },
-        get complete() { const s = N.imgSrc(this); return !s || !s.trim() || !!N.imgSize(this) || N.imgDone(this) || imgFailed.get(this) === s || /^\s*(about|javascript|mailto|tel):/i.test(s); }, get currentSrc() { const s = N.imgSrc(this); if (!s) return ''; if (s === this.getAttribute('src')) return this.src || s; try { return new URL(s, this.baseURI).href; } catch (e) { return s; } }, decode() { return Promise.resolve(); },
+        get complete() { const s = N.imgSrc(this); return !s || !s.trim() || !!N.imgSize(this) || N.imgDone(this) || imgFailed.get(this) === s || /^\s*(about|javascript|mailto|tel):/i.test(s); }, get currentSrc() { const s = N.imgSrc(this); if (!s) return ''; if (s === this.getAttribute('src')) return this.src || s; try { return new URL(s, this.baseURI).href; } catch (e) { return s; } }, decode() { return decodeImage(this); },
     });
 });
 mk('HTMLScriptElement', HTMLElement, ['script'], p => {
@@ -283,7 +283,7 @@ const cpU16 = (v, cp) => { let i = 0; for (; cp > 0 && i < v.length; cp--) i += 
 const u16Cp = (v, o) => { let n = 0; for (let i = 0; i < o && i < v.length; n++) i += v.codePointAt(i) > 0xffff ? 2 : 1; return n; };
 const SEL_TYPES = /^(text|search|url|tel|password)$/;
 const selOk = el => el.localName === 'textarea' || SEL_TYPES.test(el.type);
-/* each control keeps its own selection; the one holding the native caret reports that (a user's change) */
+/* Each control's native selection survives focus changes; retain exact UTF-16 offsets and direction for the DOM API. */
 const selStore = new WeakMap(), selPending = new WeakSet();
 const selFire = el => {
     if (selPending.has(el)) return;
@@ -294,7 +294,10 @@ const selGet = el => {
     const v = el.value, n = v.length, r = N.ctlSel(el), st = selStore.get(el);
     if (r) {
         const a = Math.min(cpU16(v, r[0]), n), f = Math.min(cpU16(v, r[1]), n), s = Math.min(a, f), e = Math.max(a, f);
-        if (st && st[0] === s && st[1] === e) return st.slice();
+        if (st) {
+            const saved = [Math.min(st[0], n), Math.min(st[1], n), st[2]], back = saved[2] === 'backward';
+            if (u16Cp(v, back ? saved[1] : saved[0]) === r[0] && u16Cp(v, back ? saved[0] : saved[1]) === r[1]) return saved;
+        }
         return [s, e, f < a ? 'backward' : 'forward'];
     }
     if (st) return [Math.min(st[0], n), Math.min(st[1], n), st[2]];
@@ -306,7 +309,7 @@ const selSet = (el, s, e, dir, quiet) => {
     dir = dir === 'backward' || dir === 'forward' ? dir : 'none';
     const old = selGet(el);
     selStore.set(el, [s, e, dir]);
-    if (N.ctlSel(el) || (el.isConnected && document.activeElement === el)) { const back = dir === 'backward'; N.setCtlSel(el, u16Cp(v, back ? e : s), u16Cp(v, back ? s : e)); }
+    const back = dir === 'backward'; N.setCtlSel(el, u16Cp(v, back ? e : s), u16Cp(v, back ? s : e));
     if (!quiet && (old[0] !== s || old[1] !== e || old[2] !== dir)) selFire(el);
 };
 let oprSplicing = false;

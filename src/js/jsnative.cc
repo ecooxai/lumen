@@ -578,33 +578,35 @@ FN(trTake) {
 FN(setAnimStyle) { CTX; ARGN(n, 0); (void)c; std::string s = S(1); jsg_set_anim_style(n, s.c_str()); }
 FN(value) { CTX; ARGN(n, 0); RET(nstr(iso, n->value_override)); }
 static int cp_count(const char *s) { int k = 0; for (; s && *s; s++) if (((unsigned char)*s & 0xC0) != 0x80) k++; return k; }
+static std::string control_value(Node *n) {
+    if (n->value_override) return n->value_override;
+    if (n->tag == A_textarea) { char *v = node_text_content(n); std::string s = v ? v : ""; free(v); return s; }
+    const char *v = node_attr(n, "value"); return v ? v : "";
+}
 FN(setValue) {
     CTX; ARGN(n, 0);
+    std::string old = control_value(n);
     char *v = a[1]->IsNullOrUndefined() ? nullptr : xstrdup(S(1).c_str());
-    Document *d = n->doc;
-    if (d && d->csel_n == n) {   /* a changed value puts the caret at its end, as in Chrome */
-        const char *old = n->value_override ? n->value_override : node_attr(n, "value");
-        int len = cp_count(v);
-        if (strcmp(old ? old : "", v ? v : "")) d->csel[0] = d->csel[1] = len;
-        else { d->csel[0] = d->csel[0] < len ? d->csel[0] : len; d->csel[1] = d->csel[1] < len ? d->csel[1] : len; }
-        d->paint_version++;
-    }
-    free(n->value_override); n->value_override = v; doc_mark_state_dirty(n->doc, n, true);
+    free(n->value_override); n->value_override = v;
+    const std::string value = control_value(n);
+    const int len = cp_count(value.c_str()); int anchor, focus;
+    /* A changed value moves this control's caret even while it is unfocused.
+       Reassigning an unchanged value preserves its selection. */
+    if (old != value) node_control_selection_set(n, len, len);
+    else if (node_control_selection_get(n, &anchor, &focus)) node_control_selection_set(n, std::min(anchor, len), std::min(focus, len));
+    doc_mark_state_dirty(n->doc, n, true);
 }
 /* <input>/<textarea> selection as [anchor, focus] codepoints of the value; null when never set */
 FN(ctlSel) {
-    CTX; ARGN(n, 0);
-    Document *d = n->doc;
-    if (!d || d->csel_n != n) { RET(v8::Null(iso)); return; }
+    CTX; ARGN(n, 0); int positions[2];
+    if (!node_control_selection_get(n, &positions[0], &positions[1])) { RET(v8::Null(iso)); return; }
     v8::Local<v8::Array> o = v8::Array::New(iso, 2);
-    for (int i = 0; i < 2; i++) (void)o->Set(ctx, i, v8::Integer::New(iso, d->csel[i]));
+    for (int i = 0; i < 2; i++) (void)o->Set(ctx, i, v8::Integer::New(iso, positions[i]));
     RET(o);
 }
 FN(setCtlSel) {
     CTX; ARGN(n, 0);
-    Document *d = n->doc;
-    if (!d) return;
-    d->csel_n = n; d->csel[0] = (int)NUM(1); d->csel[1] = (int)NUM(2); d->paint_version++;
+    node_control_selection_set(n, (int)NUM(1), (int)NUM(2));
 }
 FN(checked) {
     CTX; ARGN(n, 0);

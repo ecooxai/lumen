@@ -40,6 +40,7 @@ enum {
     NF_SR_CLOSED = 1 << 22, NF_SR_DELEGATES = 1 << 23, NF_SR_SERIALIZABLE = 1 << 24, NF_SR_CLONABLE = 1 << 25,
     NF_SR_MANUAL = 1 << 26, NF_SR_DECLARATIVE = 1 << 27,
     NF_SAN_MADE = 1 << 28,        /* made by a sanitizing parser, which frees it unless inserted */
+    NF_IMG_REQUEST = 1u << 30,    /* source mutation starts a fresh image request, even for the same URL */
     NF_POPOVER_OPEN = 1u << 29,   /* a showing popover: :popover-open */
 };
 
@@ -192,6 +193,10 @@ void doc_mark_style_dirty(Document *d, Node *n);   /* style only: layout follows
  * and with subtree its descendants, without an unknown document-wide change. */
 void doc_mark_state_dirty(Document *d, Node *n, bool subtree);
 void doc_set_focus(Document *d, Node *n);         /* moves focus, invalidating :focus and :focus-within */
+/* Each input/textarea owns its selection, including while detached or unfocused.
+   Document.csel is only the focused control's paint cache. Offsets are codepoints. */
+bool node_control_selection_get(Node *n, int *anchor, int *focus);
+void node_control_selection_set(Node *n, int anchor, int focus);
 void dom_dump(const Node *n, int depth, FILE *f);
 bool node_is_inclusive_ancestor(const Node *a, const Node *b);
 

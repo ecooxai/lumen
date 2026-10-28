@@ -868,10 +868,14 @@ NetRequest *net_request_new(const char *method, const char *url) {
     r->method = xstrdup(method ? method : "GET"); r->url = xstrdup(url);
     return r;
 }
-static void net_request_free(NetRequest *r) { free(r->method); free(r->url); headers_free(&r->headers); free(r->body); free(r); }
+static void net_request_free(NetRequest *r) { free(r->method); free(r->url); headers_free(&r->headers); free(r->body); if (r->prepared_response) net_response_free(r->prepared_response); free(r); }
+static NetResponse *net_request_response(NetRequest *req) {
+    if (req->prepared_response) { NetResponse *r = req->prepared_response; req->prepared_response = NULL; return r; }
+    return net_fetch_impl(req);
+}
 
 NetResponse *net_fetch_sync(NetRequest *req) {
-    NetResponse *response = net_fetch_impl(req);
+    NetResponse *response = net_request_response(req);
     net_request_free(req);
     return response;
 }
@@ -898,7 +902,7 @@ static void *worker(void *arg) {
         j->rnext = g_running; g_running = j;
         pthread_mutex_unlock(&g_mu);
         if (j->req->cancelled) { j->resp = xcalloc(1, sizeof *j->resp); j->resp->error = xstrdup("cancelled"); }
-        else { t_stream = j->req->chunk ? j->req : NULL; j->resp = net_fetch_impl(j->req); t_stream = NULL; }
+        else { t_stream = j->req->chunk ? j->req : NULL; j->resp = net_request_response(j->req); t_stream = NULL; }
         if (j->req->work && !j->req->cancelled) j->req->work(j->req, j->resp, j->req->ud);
         pthread_mutex_lock(&g_mu);
         for (Job **pp = &g_running; *pp; pp = &(*pp)->rnext) if (*pp == j) { *pp = j->rnext; break; }
@@ -942,6 +946,10 @@ uint64_t net_fetch(NetRequest *req) {
     pthread_cond_signal(&g_cv);
     pthread_mutex_unlock(&g_mu);
     return req->id;
+}
+uint64_t net_fetch_prepared(NetRequest *req, NetResponse *response) {
+    req->prepared_response = response;
+    return net_fetch(req);
 }
 void net_cancel(uint64_t id) {
     pthread_mutex_lock(&g_mu);

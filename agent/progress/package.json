@@ -1,0 +1,1 @@
+{"name":"lumen-wpt-progress","private":true,"version":"1.0.0","type":"module","description":"Authenticated progress telemetry for Lumen WPT work","dependencies":{"ws":"^8.18.3"}}

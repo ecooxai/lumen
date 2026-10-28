@@ -183,6 +183,27 @@ __attribute__((weak)) bool doc_uses_focus_within(Document *d) { (void)d; return 
 /* ... and may restyle exactly the elements whose :focus-within-dependent matches change. */
 __attribute__((weak)) bool doc_focus_within_moved(Document *d, Node *old, Node *n) { (void)d; (void)old; (void)n; return false; }
 static void selector_change_key(Document *d, const char *key);
+/* Allocated only for controls whose selection is touched. Other Node.ext users
+   have distinct free-function discriminants; cloning starts with no selection. */
+typedef struct { int anchor, focus; } ControlSelection;
+static void control_selection_free(void *p) { free(p); }
+bool node_control_selection_get(Node *n, int *anchor, int *focus) {
+    if (!n || !n->ext || n->ext_free != control_selection_free) return false;
+    const ControlSelection *s = n->ext;
+    *anchor = s->anchor; *focus = s->focus;
+    return true;
+}
+void node_control_selection_set(Node *n, int anchor, int focus) {
+    if (!n || n->type != NODE_ELEMENT || n->ns != NS_HTML || (n->tag != A_input && n->tag != A_textarea)) return;
+    if (n->ext && n->ext_free != control_selection_free) return;
+    if (!n->ext) { n->ext = xcalloc(1, sizeof(ControlSelection)); n->ext_free = control_selection_free; }
+    ControlSelection *s = n->ext;
+    s->anchor = LMAX(0, anchor); s->focus = LMAX(0, focus);
+    Document *d = n->doc;
+    if (d && d->focus == n) {
+        d->csel_n = n; d->csel[0] = s->anchor; d->csel[1] = s->focus; d->paint_version++;
+    }
+}
 void doc_set_focus(Document *d, Node *n) {
     Node *old = d->focus;
     if (old == n) return;
@@ -204,7 +225,13 @@ void doc_set_focus(Document *d, Node *n) {
     }
     if (old) { old->flags &= ~(uint32_t)NF_FOCUS; doc_mark_state_dirty(d, old, true); }
     d->focus = n;
-    if (n) { n->flags |= NF_FOCUS; doc_mark_state_dirty(d, n, true); }
+    d->csel_n = NULL;
+    if (n) {
+        int anchor = 0, focus = 0;
+        (void)node_control_selection_get(n, &anchor, &focus);
+        node_control_selection_set(n, anchor, focus);
+        n->flags |= NF_FOCUS; doc_mark_state_dirty(d, n, true);
+    }
 }
 static bool style_only_attr(const char *name) { return !strcmp(name, "style") || !strcmp(name, "class"); }
 /* CSS may precisely invalidate attribute-selector subjects. DOM-only users
@@ -222,6 +249,7 @@ __attribute__((weak)) bool css_selector_only_attribute(const char *name) { retur
 __attribute__((weak)) bool node_style_attribute_changed(Node *n, bool presence) { (void)n; (void)presence; return true; }
 static void mark_attribute(Node *n, const char *name, bool presence) {
     Document *d = n->doc;
+    if (node_is(n, A_img) && (str_ieq(name, "src") || str_ieq(name, "srcset") || str_ieq(name, "sizes"))) n->flags |= NF_IMG_REQUEST;
     if (d && (str_ieq(name, "src") || str_ieq(name, "srcset") || str_ieq(name, "sizes") || str_ieq(name, "media"))) d->resource_version++;
     if (d && node_attribute_style_changed(n, name, href_value_edit(n, name, presence))) {
         d->dom_version++; d->selector_version++;
@@ -329,6 +357,7 @@ __attribute__((weak)) void style_free(struct ComputedStyle *s) { free(s); }
 __attribute__((weak)) void node_free_inline_style(Node *n) { (void)n; }
 __attribute__((weak)) void box_detach_node(Node *n) { n->box = NULL; }
 static void node_free_one(Node *n) {
+    if (n->doc && n->doc->csel_n == n) n->doc->csel_n = NULL;
     for (int i = 0; i < n->nattrs; i++) free(n->attrs[i].value);
     free(n->attrs); free(n->text); free(n->inline_style_src); free(n->classes);
     node_free_inline_style(n);

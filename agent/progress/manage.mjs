@@ -1,0 +1,9 @@
+import fs from 'node:fs';import path from 'node:path';import crypto from 'node:crypto';import {fileURLToPath} from 'node:url';
+const base=path.dirname(fileURLToPath(import.meta.url)),rt=path.join(base,'runtime');const [cmd,...args]=process.argv.slice(2);
+const read=(f,d)=>{try{return JSON.parse(fs.readFileSync(path.join(rt,f),'utf8'))}catch{return d}};
+const all=()=>{try{return fs.readFileSync(path.join(rt,'messages.jsonl'),'utf8').trim().split('\n').filter(Boolean).map(JSON.parse)}catch{return []}};
+if(cmd==='poll'){const previous=read('cursor.json',{ids:[]}),messages=all().filter(m=>m.role==='user'&&!previous.ids.includes(m.id));console.log(JSON.stringify({messages},null,2));if(args.includes('--mark'))fs.writeFileSync(path.join(rt,'cursor.json'),JSON.stringify({ids:all().filter(m=>m.role==='user').map(m=>m.id)}),{mode:0o600})}
+else if(cmd==='reply'){const [reply_to,...parts]=args,text=parts.join(' ').trim();if(!text)throw Error('reply ID TEXT required');fs.appendFileSync(path.join(rt,'messages.jsonl'),JSON.stringify({id:crypto.randomUUID(),utc:new Date().toISOString(),role:'assistant',reply_to,text:text.slice(0,4000)})+'\n',{mode:0o600});console.log('Reply recorded')}
+else if(cmd==='url'){const e=read('endpoints.json',{}),key=fs.readFileSync(path.join(rt,'viewer-token'),'utf8').trim();console.log((e.tunnel||'http://127.0.0.1:4187')+'/#key='+key)}
+else if(cmd==='health'){const e=read('endpoints.json',{});for(const [name,url] of Object.entries(e)){try{const r=await fetch(url+'/healthz',{signal:AbortSignal.timeout(12000)});console.log(name,r.status,(await r.text()).slice(0,150))}catch(err){console.log(name,'ERROR',err.message)}}console.log(JSON.stringify({unread:all().filter(m=>m.role==='user'&&!read('cursor.json',{ids:[]}).ids.includes(m.id)).length}))}
+else {console.error('Usage: manage.mjs poll [--mark] | reply ID TEXT | url | health');process.exitCode=2}

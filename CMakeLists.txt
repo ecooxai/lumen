@@ -384,6 +384,18 @@ else()
         set_tests_properties(js_xpath PROPERTIES ENVIRONMENT LUMEN_CONSOLE=0 PASS_REGULAR_EXPRESSION "RESULTS xpath:PASS" TIMEOUT 30)
         add_test(NAME js_get_animations COMMAND jsrun "${CMAKE_CURRENT_SOURCE_DIR}/tests/js/get-animations.html" 1000)
         set_tests_properties(js_get_animations PROPERTIES ENVIRONMENT LUMEN_CONSOLE=0 PASS_REGULAR_EXPRESSION "RESULTS get-animations:PASS" TIMEOUT 30)
+        add_test(NAME browser_image_lifecycle COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/run.py"
+            --binary "$<TARGET_FILE:lumen>" --fixture "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/image-lifecycle.html"
+            --marker browser-image-lifecycle --output "${CMAKE_CURRENT_BINARY_DIR}/browser-image-lifecycle")
+        set_tests_properties(browser_image_lifecycle PROPERTIES PASS_REGULAR_EXPRESSION "RESULTS browser-image-lifecycle:PASS" TIMEOUT 35)
+        add_test(NAME browser_control_selection COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/run.py"
+            --binary "$<TARGET_FILE:lumen>" --fixture "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/control-selection.html"
+            --marker control-selection --testdriver --output "${CMAKE_CURRENT_BINARY_DIR}/browser-control-selection")
+        set_tests_properties(browser_control_selection PROPERTIES PASS_REGULAR_EXPRESSION "RESULTS control-selection:PASS" TIMEOUT 35)
+        add_test(NAME browser_react_message_replacement COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/run.py"
+            --binary "$<TARGET_FILE:lumen>" --fixture "${CMAKE_CURRENT_SOURCE_DIR}/tests/device/editbar/controlled-message.html"
+            --marker react-message-replacement --testdriver --output "${CMAKE_CURRENT_BINARY_DIR}/browser-react-message-replacement")
+        set_tests_properties(browser_react_message_replacement PROPERTIES PASS_REGULAR_EXPRESSION "RESULTS react-message-replacement:PASS" TIMEOUT 35)
         add_test(NAME js_performance_startup COMMAND jsrun "${CMAKE_CURRENT_SOURCE_DIR}/tests/js/performance-startup.html" 3000)
         set_tests_properties(js_performance_startup PROPERTIES ENVIRONMENT LUMEN_CONSOLE=0 PASS_REGULAR_EXPRESSION "RESULTS performance-startup:PASS" TIMEOUT 30)
         add_test(NAME js_worker_global_listener COMMAND jsrun "${CMAKE_CURRENT_SOURCE_DIR}/tests/js/worker-global-listener.html" 2000)

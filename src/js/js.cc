@@ -1119,6 +1119,37 @@ JsCtx *owner_ctx(Document *d) {
     for (JsCtx *c : g_ctxs) if (std::find(c->docs.begin(), c->docs.end(), d) != c->docs.end()) return c;
     return nullptr;
 }
+bool js_read_blob(JsCtx *owner, const char *url, unsigned char **bytes_out, size_t *len_out, char **type_out) {
+    if (bytes_out) *bytes_out = nullptr;
+    if (len_out) *len_out = 0;
+    if (type_out) *type_out = nullptr;
+    if (!owner || owner->dead || owner->ctx.IsEmpty() || !url || strncmp(url, "blob:", 5)) return false;
+    const std::string origin = ctx_origin_key(owner);
+    for (JsCtx *c : g_ctxs) {
+        if (c->dead || c->iso != owner->iso || c->ctx.IsEmpty() || ctx_origin_key(c) != origin) continue;
+        JS_ENTER(c);
+        v8::TryCatch tc(iso);
+        v8::Local<v8::Value> realm, fn, result, bytes, type;
+        if (!ctx->Global()->GetPrivate(ctx, v8::Private::ForApi(iso, jstr(iso, "lumen:realm"))).ToLocal(&realm) || !realm->IsObject()) continue;
+        if (!realm.As<v8::Object>()->Get(ctx, jstr(iso, "blob")).ToLocal(&fn) || !fn->IsFunction()) continue;
+        v8::Local<v8::Value> arg = jstr(iso, url);
+        if (!fn.As<v8::Function>()->Call(ctx, realm, 1, &arg).ToLocal(&result) || !result->IsArray()) continue;
+        auto r = result.As<v8::Array>();
+        if (!r->Get(ctx, 0).ToLocal(&bytes) || !bytes->IsUint8Array() || !r->Get(ctx, 1).ToLocal(&type)) continue;
+        auto view = bytes.As<v8::Uint8Array>();
+        const size_t len = view->ByteLength();
+        if (len_out) *len_out = len;
+        if (bytes_out) {
+            unsigned char *copy = (unsigned char *)xmalloc(len + 1);
+            if (len) view->CopyContents(copy, len);
+            copy[len] = 0; *bytes_out = copy;
+        }
+        if (type_out) *type_out = xstrdup(jcstr(iso, type).c_str());
+        return true;
+    }
+    return false;
+}
+
 JsCtx *js_new(Document *d, const JsHost *host) { return js_new_ex(d, host, nullptr, nullptr); }
 
 static unsigned viewport_changes(JsCtx *context, bool commit = true) {
