@@ -1,55 +1,28 @@
-# Lumen Apple compatibility — native source session
+# Lume Apple WPT 10290244 — active task
 
-Session start: 2026-10-28 16:51:59 UTC (2026-10-29 00:51:59 Asia/Shanghai).
-Deadline: 2026-10-28 19:51:59 UTC. Goal: 98/100 for the whole requested Apple task.
-Read agent/task.md for the current request. Read CONTINUE-ios.md for prior build
-configuration; historical binaries and tests may no longer exist.
+Session start: 2026-10-28 18:47:35 UTC / 2026-10-29 02:47:35 Asia/Shanghai.
+Deadline: 2026-10-28 21:47:35 UTC / 2026-10-29 05:47:35 Asia/Shanghai.
+Goal: 98/100 overall; stop after goal or authorized three-hour budget, maximum 1000 iterations.
 
-## Authoritative native source
+## Source and team
 
-This is the native repository /Users/devin/repos/lumen. Its preexisting dirty
-source was preserved as ef11866750b52dfbdd800200965656c409b16e02 before the new
-branch gpt6-astra-pro_browser-engine_apple-compat-20261029. No source from an older
-public checkout may overwrite it. The separate companion tooling checkout is
-/workspace/scratch/7ea84bb88052/lumen in the ChatGPT workspace, cloned at60b35dd;
-that companion is not a complete native engine or native-runtime proof.
+Native source is `/Users/devin/repos/lumen`, the canonical target of requested `~/project/lumen`.
+Current branch `gpt6-astra-pro_release-integrator_lume-apple-wpt-10290244`; inherited source checkpoint `a8bd64552f9379cca33cd736a187924ec18eb356`.
+Only release_integrator stages/commits. Engine/tests belong to wpt_engine; Apple build/runtime/monitoring belongs to apple_runtime; root brokers remote I/O and reviews.
+The three worker agents inherit the main model and reasoning level. Child MCP calls hung; root calls are functioning. Do not overwrite the native source with older public/companion checkouts.
+The complete current user request is in `agent/task.md`. Prior handoff and instructions are archived with timestamp `20261029-024735+0800`.
 
-## Team ownership
+## Intake findings and pending evidence
 
-Three subagents inherit the main model/reasoning. browser_engine owns native
-changes and Git integration; web_demos owns the demo UI, server, telemetry
-interface and deployment; qa_deploy owns independent QA, platform/runtime
-verification and CPU/RAM attribution. Only the Git integrator stages/commits.
-The root agent brokers remote commands because child MCP requests hung while
-identical root requests worked. Use absolute workspace_id for this repository.
+- Source inherited +19 HTML tag interface registrations in `src/js/prelude/04-tags.js`; checkpoint preserves rather than reclassifies those changes as new work.
+- Existing untracked clone tests/tooling/evidence remain in place; review and add only meaningful source files when verified.
+- Native host is Apple arm64, macOS 26.6.2. Default developer tools are Command Line Tools; Xcode/simulator availability needs explicit-path diagnosis. No valid code-signing identity appeared in initial inventory.
+- Existing matching prebuilt V8/dependencies should be reused before considering rebuilds.
+- Latest raw focused WPT report candidates are under `output/session-20261029/native-qa-kit-v1/source/output/`; wpt_engine is auditing them. Do not promote the older 1695/1850 summary to current full-WPT status.
+- Existing progress/tunnel processes are present. Validate their scope, authentication, and evidence freshness before publishing. `output/` includes tunnel private keys and tokens; it must never be staged or shared wholesale.
 
-## Current environment and evidence
+## Next work
 
-The Mac has about61GiB free. Apple clang21 and the Command Line Tools macOS SDK
-work. Matching prebuilt Homebrew V8 15.6.75.16, SDL3 3.4.16, wgpu-native29.0.1.1,
-FFmpeg9.0.2 and desktop dependency libraries were found: reuse these before
-considering a V8 rebuild. A restored Xcode27RC exists but its asset-framework
-Info.plist failure prevents normal Xcode/simulator operation. No valid signing
-identities were observed. No current repo build artifacts existed initially.
-
-Last recovered native WPT-source summary is1695/1850 assertions (91.62%) across
-six selected files, three fully passing files and a WASM timeout, from an older
-existing binary on2026-10-28 12:41UTC. Its raw full report was not recovered.
-This is not a full official WPT rate or a fresh result for current source.
-The current source includes later v44 suites, but their missing receipts must
-not be replaced by inferred pass counts.
-
-## Next execution
-
-Build the unmodified checkpoint with the installed prebuilt libraries first,
-record source and binary hashes, and run focused native API/WPT tests with
-one-second CPU/RAM sampling. Then apply test-first fixes, rebuild candidates
-and preserve all raw reports and failed cases. Scores come from the full-task
-rubric, separately from test percentages; missing gates remain explicit.
-
-Test only the designated iPad simulator after confirming its exact identity.
-A simulator build or separate Catalyst app does not prove same-IPA execution.
-Local Google/Apple popup emulations must remain labeled simulations. Actual
-provider sign-in, physical capture and location require their real supported
-flows and device evidence. Record completed iterations in devsummary.md; do not
-count retries as completed iterations.
+Audit existing WPT raw reports and Chrome reference; report scope and denominator first. Run a fresh focused baseline against an explicitly identified binary/source revision, then regression-first standards fixes. Verify native Mac launch and inspect actual IPA/simulator feasibility. Reuse resource monitors, sample every second, and record timings/limits.
+Prioritize important DOM/events/URL/encoding/fetch/Promise behavior by evidence rather than aggregate score inflation. Treat simulator, macOS-native and same-device-IPA evidence as separate gates.
+Publish only reviewed files and committed tracked source, using the existing project release workflow where possible. Check a progress message inbox if available; retain raw metrics and run receipts separately from user-facing summaries.

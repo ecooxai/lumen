@@ -1,17 +1,25 @@
-# Current Apple compatibility task — 2026-10-29
+# Current task: Lume Apple WPT 10290244
 
-Read `agent/task.md` and `agent/continue.md` first. The current task uses branch
-`gpt6-astra-pro_browser-engine_apple-compat-20261029`; preexisting source was
-preserved in commit `ef11866750b52dfbdd800200965656c409b16e02`.
-The requested goal is 98/100 across real Mac/iPad/browser capability, same-IPA
-provenance and one-second resource measurements. Test counts alone do not
-establish that score. Retain unsupported and unverified gates explicitly.
+Read `agent/task.md` and `agent/continue.md` before work.
+Canonical source: `/Users/devin/repos/lumen` (requested `~/project/lumen`).
+Current branch: `gpt6-astra-pro_release-integrator_lume-apple-wpt-10290244`.
+Inherited tracked source checkpoint: `a8bd64552f9379cca33cd736a187924ec18eb356`.
+Session: 2026-10-29 02:47:35 Asia/Shanghai to 05:47:35 (three hours).
 
-Only the browser_engine integrator stages/commits. Other agents own disjoint
-files. The root agent brokers remote commands because child MCP calls hung.
-Do not replace this native source with an older public-reference checkout.
+## Current ownership and acceptance
 
-Previous instructions are preserved below and in the dated archive.
+- `release_integrator` owns Git staging/commits, task/handoff/timing records, and progress publication.
+- `wpt_engine` owns standards and engine fixes with regression-first tests.
+- `apple_runtime` owns Apple packaging/build/runtime and resource sampling.
+- Root manages and brokers remote I/O because child MCP calls hang; three built-in workers inherit the same model and reasoning level.
+- Coordinate shared source edits; serialize heavy builds. Preserve existing untracked evidence and tooling.
+- Sample CPU/RAM every second for every test/build. Record wall times; investigate abnormal runs over five minutes. Reuse matching prebuilt V8 when supported.
+- State WPT subtest numerator/denominator, file harness completion, exact suite and revision. Focused WPT and custom regressions never establish full-suite Chrome parity.
+- The goal is 98/100 for the whole Apple task. Keep unverified gates visible; a build or package alone does not satisfy the goal. Same-IPA acceptance requires a real compatible package plus actual platform execution/provenance.
+- Output evidence includes tunnel credentials: never stage or publicly archive `output/` wholesale. Publish only an explicit reviewed source/evidence allowlist, excluding credentials, `.DS_Store`, dependency environments, and `.git/config`.
+- Record completed iterations and elapsed session/worker/test/build time in `agent/devsummary.md`; commit important progress and checkpoint at least every ten iterations.
+
+Prior session guidance is archived in `agent/archive/AGENTS-20261029-024735+0800.md`; stable project instructions follow.
 
 # Agent notes for Lumen
 

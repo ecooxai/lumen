@@ -1,22 +1,23 @@
- improve browser for apple device test on  write a demo pages test main web tech include mic camera iframe cameralocation  webrtc websocket quic wasm  webtransport webgl webgpu real demos and emulate google login apple login  make sure all works.
-make alll fubctiob works like chrome also run ipa in mac we are now use same ipa fr mac ios ipad. kerp monitor cpu and ram usage ensure no abnormal high usage  . prefer use prebuilt v8 js binary.  show current progress wpt passrate first. utilize many subagent to accelate dev. tell me max number subagents you can spawn and use max them with same model and think levl of main agent
+ improve lume  browser for apple device . 10290244
+pass web platform test like chrome,focus on important test first.
+ also run ipa in mac we are now use same ipa fr mac ios ipad. kerp monitor cpu and ram usage ensure no abnormal high usage  . prefer use prebuilt v8 js binary.  show current progress wpt passrate first. utilize many subagent to accelate dev. tell me max number subagents you can spawn and use max them with same model and think levl of main agent
 
- $project\_dir=\
-~/project/lumen\
-\
-$dev\_tools=\
-mac and  ipad simulator\
-$goal\_score= 98/100\
+
+
+
+ $project\_dir=~/project/lumen
+$dev\_tools=mac and  ipad simulator
+$goal\_score= 98/100
 $work\_env=
 use specified mcp plugin @devinmac3d if you are chatgpt, or use local if you are other agent like codex agy
 use local pc if this mcp server not works.
 $working_timeout=3h
 $iteration_times=    1000        and stop when goal done or working time >workingtimeout
-and if the mcp or env error, wait for 30s then try again, wait and retry at least for 20 tim, fallback to localvm if you are chatgpt
+$subagent=prefer use as many subagents as you can,same model and high thinking lvl as main agent
+ write this whole text into agent/task.md
 
-
-
-cal p
+ 
+ 
 # use smarter subagent
 this is only for subagent with same smart or even smarter as main agent, so put most tasks to subagent is ok, only do this if main agent can start same smart or smarter model subagent like chatgpt chat mode gpt pro chat with subagent.
 use subagents to do all works, you main agent only for project manager, like cto, plan and evaluate , give all tasks to new subagents, do not coding ,debuging, testing in main agent as much as possible, only do thiese task if necessary, even for evaluatte and plan or analyze, you can start subagents for these task too,you only get most imprtant result info. keep main agent context clearn including only most important info
@@ -25,13 +26,10 @@ use subagents to do all works, you main agent only for project manager, like cto
 if subagents is using low cost and faster smaller models then main agent should does main work ,only gve it simple task like testing and building task. claude agent can also give computer use taks to latest hiku(>=hike5.5) since hiku is good at vision and fast. 
 
 
-c if you are chatgpt, if not chatgpt, just exit
 
 
-wri
 
 # note
-
 
 ##  dev manage
 keep project and code clean . 
@@ -41,7 +39,9 @@ use your model name and agent tool and keytool nmes like web or blender name whe
 use git to manage project,create a new branch with your model name and agent name+branchname ,save to https://fileharbor-meak.basicgleam65.chatgpt.site/ via its rest api     or  chatgpt library after a important progress, alwasy save after each 10 iterations.  
 
 ### iterate
-iterate user specified number and give score of your work n/100 every iteration . 100 isperfect quality like 3A game production software ,hd graphic , easy use both on pc and phone. same check for each subagent if user need ask subagent. after subagent finish ,main agent should check quality and if not good then start a new subagent to improve.  record each iteration start time and end time, time cost in min and subagents used write to devsummary.md and calculte total times cost from start to last . for each teration finished if total  working time >4h stop iterate
+iterate user specified number and give score of your work n/100 every iteration . 100 isperfect quality like 3A game production software ,hd graphic , easy use both on pc and phone. same check for each subagent if user need ask subagent. after subagent finish ,main agent should check quality and if not good then start a new subagent to improve.  record each iteration start time and end time, time cost in main and subagents used write to agent/devsummary.md and calculte total times cost from start to last . 
+record each test,build task time cost too,if one of them cost more than 5mins find why if abnormal then try to optimize testing or building
+
 do not stop util get high score or time >$workingtimeout or 4h
 
 
@@ -71,23 +71,15 @@ cd webappdir && surge
 when deploy to chatgpt Sites if its 3d demo depoy to demo3d site(create if it not exsited)
 
 
-
-
-
-
-
-
-
 # chatgpt notes
 
 these are for chatgpt app If you are not, you can ignore it.
+and if the mcp or env error, wait for 30s then try again, wait and retry at least for 20 tim, fallback to localvm if you are chatgpt
 
 the most important is avoid stop while score <95.do not treat anythig as stoppoint only treat 95scre as stopping point.
 ## subagent
 use builtin subagents if you can, not mcpagent only use built in subagent, subagent should use same model and think level,same quaick score check.
 for 3d modeling multi objects,use subagent to build each
-
-
 
 ## never stop util high scoe95  ;avoid ending session and other stop point
 when dev env not works,wait 20s and  try again for 3 times. then fallback to local vm. never stop util you get 95/100 score.  for exception when you stop whil score lessthan 95 (try to avoid this in max effort) tell user why stop and try continue agian
@@ -95,10 +87,7 @@ when dev env not works,wait 20s and  try again for 3 times. then fallback to loc
 you need not ended the working session to report progress instead of continuing development, need not report progress you must  keep working session and  improving util 95score high quality
 never incorrectly treated the successful build, testing, and packaging as a stopping point only treat goal score complete as stopping point.   never treated a verified prototype checkpoint or anything else as a stopping point
 
-
-
-
-
+     
 ## post task
 
 only do these after get finish goal as finnal stop:
@@ -107,6 +96,28 @@ write summary give neceesary conext for next agent start new task in end of AGEN
 push git and deploy to cloud like github page or cloudflare . when ouput image video audio or 3d obj, create  showcase version copys files too,put the model and agent tool name below with big white font and black bg to show who created this work clearly.  createa video 4:3ess than   60s to show your works well.
 
 you need not ended the working session to report progress instead of continuing development, need not report progress you must  keep working session and  improving util  high quality. do not pause the working session before achive goal and score for post task
-te this whole text into agent/task.md
 
-use subagent if you are chatgpt chat mode
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+ $project\_dir=~/project/lumen
+$dev\_tools=mac and  ipad simulator
+$goal\_score= 98/100
+$work\_env=
+use specified mcp plugin @devinmac3d if you are chatgpt, or use local if you are other agent like codex agy
+use local pc if this mcp server not works.
+$working_timeout=3h
+$iteration_times=    1000        and stop when goal done or working time >workingtimeout
+$subagent=prefer use as many subagents as you can,same model and high thinking lvl as main agent
+ write this whole text into agent/task.md
