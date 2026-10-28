@@ -173,5 +173,8 @@
       "url": "https://html.spec.whatwg.org/multipage/semantics.html#fetching-and-processing-a-resource-from-a-link-element",
       "scope": "Fetching and processing external stylesheet links."
     }
-  ]
+  ],
+  "global_build_id": 163,
+  "session_iteration": 1,
+  "iteration_note": "Build163 is the first accepted candidate in session4. Global build IDs do not count iterations completed during this three-hour window."
 }

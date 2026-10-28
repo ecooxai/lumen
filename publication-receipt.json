@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "prepared_utc": "2026-10-28T23:12:54.919843+00:00",
+  "verification_scope": "Observed publication of immutable source/status payload2184bc245c83d26588783d3976c2d58d9565fde4. The subsequent commit carrying this receipt clarifies build/session labels; it does not change the engine source or media bytes.",
+  "payload_commit": "2184bc245c83d26588783d3976c2d58d9565fde4",
+  "payload_parent": "126b2c35d93cfc513c7133d239235023ad063309",
+  "source_commit": "1df07afad74459acae3d66cd5e9fd4225b593d1c",
+  "source_iteration": 163,
+  "session_iteration": 1,
+  "media_iteration": 162,
+  "git_push": {
+    "completed_utc": "2026-10-28T23:10:21.363617+00:00",
+    "returncode": 0,
+    "remote_commit_verified": "2184bc245c83d26588783d3976c2d58d9565fde4",
+    "force": false,
+    "development_history_exported": false
+  },
+  "pages_build": {
+    "status": "built",
+    "commit": "2184bc245c83d26588783d3976c2d58d9565fde4",
+    "created_at": "2026-10-28T23:10:21Z",
+    "updated_at": "2026-10-28T23:10:45Z",
+    "duration": 24552,
+    "error": {
+      "message": null
+    }
+  },
+  "anonymous_raw_verification": {
+    "completed_utc": "2026-10-28T23:10:47.072165+00:00",
+    "assets_checked": 10,
+    "exact_matches": 10
+  },
+  "pages_verification": {
+    "completed_utc": "2026-10-28T23:11:04.675555+00:00",
+    "assets_checked": 10,
+    "exact_matches": 10,
+    "checks": [
+      {
+        "file": "src.tar.gz",
+        "http": 200,
+        "bytes": 4438760,
+        "sha256": "d8b2247fb79cdb3ba6c02a1486fb05ba7cca8566ab543b3c301a71d13a0f91b0",
+        "exact": true
+      },
+      {
+        "file": "source-inclusion-manifest.json",
+        "http": 200,
+        "bytes": 158967,
+        "sha256": "bf8694f867a854fab58fb49f647a654a36365632b263a67626047c2d6e5005b3",
+        "exact": true
+      },
+      {
+        "file": "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-demo.mp4",
+        "http": 200,
+        "bytes": 232212,
+        "sha256": "2367c099b72af97c2eb06c290ad7efe33fa195569c183a00a8be4023b7dc1c1c",
+        "exact": true
+      },
+      {
+        "file": "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-showcase.mp4",
+        "http": 200,
+        "bytes": 258733,
+        "sha256": "b0cdbd0a1f8cb9616a0537c40ec1e20d4cc71b9ff0d6ab757e788702160c25ee",
+        "exact": true
+      },
+      {
+        "file": "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-media-manifest.json",
+        "http": 200,
+        "bytes": 2496,
+        "sha256": "8836f09545df8bcc069b93e27a860f6e541fd0e891d3427ffa4f247bc9fc3235",
+        "exact": true
+      },
+      {
+        "file": "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-native-frame.png",
+        "http": 200,
+        "bytes": 287204,
+        "sha256": "1589be9963e37fa026cd17967cf73f6158e4979a87c112775d2216c08207b289",
+        "exact": true
+      },
+      {
+        "file": "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-public-report.json",
+        "http": 200,
+        "bytes": 7154,
+        "sha256": "290f53fa08f2a2a1682dd825f04e79ad959fe83591c507d52f71fca36a8c7f07",
+        "exact": true
+      },
+      {
+        "file": "index.html",
+        "http": 200,
+        "bytes": 5821,
+        "sha256": "99b84246fb7285b1807538da32cec4f9485b2e30f04047e87c14e636f600f5ea",
+        "exact": true
+      },
+      {
+        "file": ".nojekyll",
+        "http": 200,
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "exact": true
+      },
+      {
+        "file": "publication-manifest.json",
+        "http": 200,
+        "bytes": 2201,
+        "sha256": "392e38363e567e85ef70c73c2dd8b8989d900c89cab05aad5b36887bb08cd5d7",
+        "exact": true
+      }
+    ]
+  },
+  "live_source_verification": {
+    "verified_utc": "2026-10-28T23:11:27.600115+00:00",
+    "live_http": 200,
+    "live_source_bytes": 4438760,
+    "live_source_sha256": "d8b2247fb79cdb3ba6c02a1486fb05ba7cca8566ab543b3c301a71d13a0f91b0",
+    "source_iteration": 163,
+    "media_iteration": 162
+  },
+  "source_archive": {
+    "bytes": 4438760,
+    "sha256": "d8b2247fb79cdb3ba6c02a1486fb05ba7cca8566ab543b3c301a71d13a0f91b0"
+  },
+  "other_destinations": {
+    "FileHarbor": "Current-session read-only health and documentation requests returned403. No upload was attempted.",
+    "Surge": "Retained preflight requires ordinary account authentication. No Surge publication is claimed."
+  },
+  "later_metadata_update": "Build/session labels and this receipt are prepared after the observations above; verification of the later commit is recorded separately."
+}
