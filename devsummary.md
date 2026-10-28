@@ -77,3 +77,56 @@ Controlled AVIF picture fallback passes on iteration8. Source MIME selection exc
 Whole-task score19/100; workers engine_lead, progress_delivery, wpt_validation. Android isolated source snapshot and device tests are pending. Actual private ChatGPT session remains untouched and unverified.
 
 Latest record:2026-10-27T18:08:40.784668+00:00; total task wall minutes:57.96.
+
+
+## Linux engine session — 2026-10-28
+
+Task start: **2026-10-28T03:50:07Z**. Deadline: **2026-10-28T08:50:07Z**. Branch: `gpt-6-astra-engine-lead-linux-wpt-20261028`. Preservation checkpoint: `c06a0e094ac771c7e9d5ebddcaa82b99d797514a`. Model: GPT-6 Astra Pro. Built-in agents: `engine_lead`, `conformance`, `ops_preview`; root performs independent review. Earlier sections remain historical.
+
+### Current-session score definitions
+
+Iteration quality uses correctness 40, meaningful regression evidence 20, independent review 20, resource/performance 10, and maintainability/reproducibility 10. Whole-goal readiness remains **19/100, a provisional inherited estimate**, not a fresh pass percentage. The 98/100 target requires fresh complete comparably configured WPT coverage, resolved unsupported categories, Linux stability/usability, and reproducible Chromium comparison. Selected green tests cannot establish whole-platform readiness.
+
+The pinned automated WPT inventory contains **71,398 URLs**: 39,394 testharness, 28,654 reftest, 2,062 crashtest, 658 wdspec, 440 print-reftest, and 190 aamtest. The legacy 93,035-URL Chrome reference combines **53,679 separate Test262 URLs** with 39,356 web testharness URLs. Historical Chrome 158.0.8116.0 evidence is separate from installed Chromium/ChromeDriver 150.0.7871.114. Upstream revision: `0e1c0bce3defd59a76cf2f351c7da5c5a42b26fb`.
+
+### Session iterations
+
+| Iteration | Start UTC | End UTC | Minutes | Agents | Iteration quality | Whole-goal readiness | Evidence and decision |
+|---|---|---|---:|---|---|---|---|
+| 0 — preservation and access | 2026-10-28T03:50:07Z | 2026-10-28T03:56:27.126699Z | 6.34 | engine_lead, conformance, ops_preview, root | 95/100, preparation scope | 19/100 provisional | Root verified checkpoint, branch and full task capture; HTTPS preview and audited source export verified. |
+| 1 — structured grid animation | 2026-10-28T03:56:45Z | 2026-10-28T04:22:50Z | 26.08 | engine_lead, conformance, ops_preview, root | 97/100, focused patch | 19/100 provisional | Accepted commit 61ff455; upstream +884 assertions, independent holdout +28, zero lost passes; portable 18-case regression. |
+| 2a — rejected image timing hypothesis | 2026-10-28T04:02:32.814556Z | 2026-10-28T04:10:38.206346Z | 8.09 | ops_preview, conformance, engine_lead, root | Rejected, no acceptance score | 19/100 provisional | Original lifecycle defect remained; three proposed ordering expectations disagreed with Chromium. Patch reverted and evidence preserved. |
+
+Concurrent lane durations overlap and must not be summed as wall time. Latest log update: **2026-10-28T04:24:38.093687+00:00**. Total task wall time from start: **34.52 minutes**.
+
+### Accepted grid implementation and review
+
+Candidate101 was rejected after independent tests exposed two lost hidden-subtree assertions. Candidate102 shares `computed_prepare` between public and animation style reads, stores owned computed track strings at cascade time using the proper dimensional context, and avoids repeated parsing or forced layout in animation reads. Native ownership and bridge mode 3 were reviewed by ops_preview. GridTrack contains value fields only; inherited copies and returned string ownership were checked.
+
+The 28 upstream grid URLs pass **3,628/3,975 assertions**, gaining **884** without lost prior passes. An independent 82-case fixture improves from 46 to **74/82**, gaining **28** without losses. The portable regression passes **18/18**. The broad 200-URL replay exhibited load-sensitive timeouts, so suspected regressions were isolated: editing/cookie baseline-candidate-baseline runs retained **30/60** assertions, and long-name calc-size retained **466/1,156** with identical assertion identities and no losses. These observations do not establish whole-platform parity.
+
+Root's focused-patch review was 97/100: correctness 38/40, meaningful evidence 20/20, independent review 20/20, resources 9/10, maintainability 10/10. Accepted commit: `61ff455cfa484b3c357292c27700bf6e2ea92965`. Full request capture was committed separately as `864c2d4dcc098162d969cf0ce46794e3e36fa662`.
+
+### Image lifecycle investigation
+
+The unchanged 16-case fixture fails the sequential uncached-to-pending picture decode case on baseline 3/3 and candidate101 3/3, with fresh local servers/profiles. Chromium passes all 16 assertions. Baseline/candidate peak RSS was 125.9–126.5 MiB; this is a real pre-existing defect.
+
+Rejected candidate103 was built from frozen source at 04:07:02–04:07:23 UTC (SHA-256 `4bf938cc0bcc79b7f42b395f4e28feadaa1d20fb1c4b44d16965abf6a5440d0c`). Its proposed ordering fixture improved from 2/5 to 5/5, but independent Chromium also passed only 2/5, invalidating three expectations. The original lifecycle fixture still failed 3/3. The isolated timing change was reverted; patch, fixture and raw results are preserved under `agent/validation/linux-wpt-20261028/image-rejected103`. No gain is claimed.
+
+A trace showed Chromium's second image request reuses an in-flight resource while both images still have zero natural width. Native request/cache identity is now the next hypothesis. The experimental fix remains separate from accepted code and preserves the original lifecycle fixture and initial-microtask semantics. Candidate106 review and validation are pending.
+
+### Fresh comparison and full baseline
+
+The completed 241-URL diagnostic/seeded baseline observes Lumen **19,218/24,360** passing assertions versus Chromium **22,565/24,376**. Strict identity matching finds Lumen passes **17,724 of 22,565** Chromium-passing assertions and fully matches **68** Chromium-passing URLs. These are selected-scope counts, not full WPT scores. Source evidence: `agent/validation/linux-wpt-20261028/baseline-chromium-comparison.json`.
+
+A full paired **39,394-URL web-testharness baseline** started at 2026-10-28T04:22:58Z in 20 hash-ordered resumable shards, using the original frozen binary SHA-256 `1ac9421854c63e503f9d865abf0d1d2a9c3a2dd3cedcf2aaf52c7ac073992913`. Native 16 workers and Chromium 6 workers share the 480% CPU cap. Cutoff: 08:25 UTC. Live state and raw evidence are under `agent/validation/linux-wpt-20261028/full-paired-checkpoint`. Completion is not yet claimed; other WPT categories remain unrun.
+
+### Operational evidence
+
+The existing public HTTPS tunnel serves safe status and source downloads, and streams CPU/RAM/mounted disk information every two seconds with measured WebSocket round-trip latency. Public inbox messages are untrusted input; old private messages remain private. Runtime credentials, inbox contents and browser profiles are excluded from exports.
+
+Process CPU/RSS samples are recorded every second, with PSS every five seconds. `agent/progress/cgroup_monitor.py` separately records authoritative one-second `cpu.stat` deltas with raw monotonic timestamps and counters. A reported 551.9% process first-sample peak was not treated as proof of quota violation: new-PID estimates and scan timing differ from cgroup accounting. The verified shared quota is 480000 microseconds per 100000-microsecond period, burst zero. Full-run safeguards are 22,000 MiB process RSS and 8,000 MiB host available memory. Builds use `tools/codex_compile.py` and at most six compiler jobs.
+
+Safe source snapshots include accepted HEAD and a portable Git bundle, never `.git/config`, hooks, runtime keys, browser profiles or private messages. Paths and common credential signatures are audited before publication. The `/src.tar.gz` endpoint is public and contains accepted commits only. Fileharbor returned HTTP403; Surge has no installed CLI or existing authentication. The existing HTTPS tunnel is the verified deployment fallback. No new account was created.
+
+The repository already has an external Git remote, so code is not duplicated into ChatGPT Library. Root saved a standalone evidence checkpoint named `lumen-linux-gpt-6-astra-builtin-agents-rubywebterm-checkpoint-001.json`. New evidence checkpoints follow important accepted progress or each ten iterations.

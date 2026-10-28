@@ -1,0 +1,30 @@
+{
+  "title": "Lumen \u00b7 Web Platform Tests",
+  "phase": "Repairing one upstream image regression before acceptance",
+  "iteration": 9,
+  "score": null,
+  "score_note": "Whole-platform goal remains unverified. Historical coverage and focused regression results are reported separately.",
+  "branch": "gpt-6-astra-pro-builtin-subagent-wpt-parity-20261027",
+  "checkpoint": "db088f4ba4e50121582e00eff403dbfea8f0ee52",
+  "updated_utc": "2026-10-27T18:12:13.796509+00:00",
+  "historical": {
+    "label": "Historical multi-revision WPT-only results; not fresh validation",
+    "lumen_chrome_passing_percent": 91.39966,
+    "test_files": 39356,
+    "observed_urls": 30284,
+    "fully_passing_url_parity_percent": 37.24783,
+    "test262_assertion_parity_percent": 98.95726,
+    "conservative_task_score": 19.0215,
+    "comparison": "Chrome 158.0.8116.0 Linux wpt.fyi, 2026-10-21; Lumen results span revisions"
+  },
+  "coverage": "WPT testharness: 30,284 observed of39,356 Chrome-reference URLs; matched Chrome-passing assertions91.40%, completely matching clean URLs37.25%. Test262 is reported separately. Reftests, WebDriver and other uncovered automated categories count as unverified. The inherited run and current candidate are not yet fresh accepted results.",
+  "findings": [
+    "Accepted core db088f4: +528 matched WPT assertions across 23 URLs, zero lost prior passes, and native suite 105/105.",
+    "Iteration 9 is not accepted: the independent image gate gained two assertions but lost one previously passing cached-image empty-picture case. A bounded repair is in progress.",
+    "The durable image fixture passes 15/15, but it did not cover the exact upstream cached-image timing; that reproduction is being added to the gate.",
+    "Editing passes 59 exploratory native/React assertions and permanent 37 native plus 4 React assertions. Expanded upstream selection results match canonical 792/807.",
+    "The pointer discrepancy also occurs on the starting version and was traced to testdriver multi-click counting; it is tracked separately from the editor engine fix.",
+    "Android iteration 9 is an exploratory toolchain build only. Final device acceptance and the unchanged 360-URL replay will use the repaired immutable candidate.",
+    "Grid experiment remains parked after 28 expanded-gate regressions. Whole-platform coverage and the signed-in ChatGPT session remain unverified."
+  ]
+}

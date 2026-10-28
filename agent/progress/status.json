@@ -1,0 +1,82 @@
+{
+  "title": "Lumen \u00b7 Linux engine conformance",
+  "phase": "Grid animation fix accepted; full paired baseline running; image and BroadcastChannel candidates remain experimental",
+  "iteration": 1,
+  "score": 19,
+  "iteration_quality": 97,
+  "score_note": "PROVISIONAL whole-goal readiness estimate, inherited from historical scope. This is not a measured pass percentage. Goal:98/100 after fresh complete comparable coverage.",
+  "branch": "gpt-6-astra-engine-lead-linux-wpt-20261028",
+  "checkpoint": "864c2d4dcc098162d969cf0ce46794e3e36fa662",
+  "updated_utc": "2026-10-28T04:24:38.093687+00:00",
+  "session_started_utc": "2026-10-28T03:50:07Z",
+  "deadline_utc": "2026-10-28T08:50:07Z",
+  "historical": {
+    "label": "Historical multi-revision web-only audit, 2026-10-27T17:15:44Z; not fresh branch validation",
+    "lumen_chrome_passing_percent": 91.39966,
+    "test_files": 39356,
+    "observed_urls": 30284,
+    "fully_passing_url_parity_percent": 37.24783,
+    "test262_assertion_parity_percent": 98.95726,
+    "conservative_task_score": 19.0215,
+    "comparison": "Chrome158.0.8116.0 Linux22.04, wpt.fyi canary experimental run5128138001743872,2026-10-21/22"
+  },
+  "current_evidence": [
+    [
+      "Accepted native engine change",
+      "Grid track interpolation/composition; commit 61ff455cfa484b3c357292c27700bf6e2ea92965"
+    ],
+    [
+      "Focused grid verification",
+      "3,628/3,975 upstream assertions across 28 URLs; +884 passes, zero lost passes"
+    ],
+    [
+      "Independent grid holdout",
+      "74/82 assertions; +28 passes, zero lost passes; portable regression 18/18"
+    ],
+    [
+      "Fresh 241-URL baseline",
+      "Lumen 19,218/24,360 observed assertions; Chromium 22,565/24,376; selected diagnostic/seeded scope"
+    ],
+    [
+      "Strict paired baseline",
+      "Lumen matches 17,724 of 22,565 Chromium-passing assertions; 68 fully matching Chromium-passing URLs"
+    ],
+    [
+      "Pinned WPT revision",
+      "0e1c0bce3defd59a76cf2f351c7da5c5a42b26fb"
+    ],
+    [
+      "Installed Chromium and ChromeDriver",
+      "150.0.7871.114"
+    ],
+    [
+      "Automated WPT inventory",
+      "71,398 URLs; Test262 excluded"
+    ],
+    [
+      "WPT testharness baseline underway",
+      "39,394 URLs in 20 resumable shards, frozen original binary; deadline 08:25 UTC"
+    ],
+    [
+      "Other automated WPT, not yet verified",
+      "28,654 reftest; 2,062 crashtest; 658 wdspec; 440 print-reftest; 190 aamtest"
+    ],
+    [
+      "Separate JavaScript language suite",
+      "53,679 Test262 URLs in the legacy combined reference"
+    ],
+    [
+      "Frozen baseline binary SHA-256",
+      "1ac9421854c63e503f9d865abf0d1d2a9c3a2dd3cedcf2aaf52c7ac073992913"
+    ]
+  ],
+  "coverage": "Full WPT parity is unproven. Historical result files combine revisions and cannot establish current-branch conformance. Reftests, crashtests, WebDriver, print and accessibility categories remain unverified. Fresh scoped results will report exact counts, binary hash, upstream revision and Chromium configuration.",
+  "findings": [
+    "Grid candidate101 was rejected after independent tests found two lost hidden-subtree assertions. Candidate102 corrects the cause and passed focused independent review.",
+    "Grid iteration quality is 97/100 for the focused patch; whole-goal readiness remains 19/100 provisional. Full Chromium parity is unproven.",
+    "The 200-URL broad guard showed load-sensitive timeouts. Isolated editing/cookie baseline-candidate-baseline runs retained identical 30/60 assertions; long-name calc-size retained identical 466/1,156 assertions without identity losses.",
+    "The unchanged image lifecycle fixture passes 16/16 in Chromium and 15/16 on the frozen Lumen baseline. Experimental image103 did not fix it and used three invalid ordering expectations; that patch was reverted.",
+    "A native image request-identity fix and BroadcastChannel implementation are under independent review. Neither is included in the accepted source archive yet.",
+    "CPU/RSS are sampled every second during tests. Authoritative cgroup cpu.stat deltas supplement process estimates; all builds/tests share the 480% CPU quota. HTTPS telemetry and the public task inbox remain live."
+  ]
+}

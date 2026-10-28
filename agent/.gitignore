@@ -1,0 +1,10 @@
+# Generated verification outputs; keep authored harnesses and fixtures visible.
+/validation/*
+!/validation/*.py
+!/validation/*.sh
+!/validation/*.mjs
+!/validation/*.js
+!/validation/*.html
+!/validation/*.md
+!/validation/fixtures/
+/progress/runtime/

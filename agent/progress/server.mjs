@@ -10,12 +10,23 @@ fs.mkdirSync(runtime,{recursive:true,mode:0o700}); fs.chmodSync(runtime,0o700);
 const secretPath=path.join(runtime,'viewer-token');
 if(!fs.existsSync(secretPath)) fs.writeFileSync(secretPath,crypto.randomBytes(32).toString('hex'),{mode:0o600});
 const secret=fs.readFileSync(secretPath,'utf8').trim();
-const equal=s=>typeof s==='string'&&s.length===secret.length&&crypto.timingSafeEqual(Buffer.from(s),Buffer.from(secret));
+const equal=s=>{if(typeof s!=='string')return false;const candidate=Buffer.from(s),expected=Buffer.from(secret);return candidate.length===expected.length&&crypto.timingSafeEqual(candidate,expected)};
 const authorized=req=>equal((req.headers.authorization||'').replace(/^Bearer /,''));
 function endpoints(){try{return JSON.parse(fs.readFileSync(path.join(runtime,'endpoints.json'),'utf8'))}catch{return {}}}
 function originAllowed(origin){if(!origin)return true;try{const u=new URL(origin);return ['http://127.0.0.1:4187','http://localhost:4187',endpoints().tunnel,endpoints().surge].includes(u.origin)}catch{return false}}
 function data(file,fallback){try{return JSON.parse(fs.readFileSync(path.join(base,file),'utf8'))}catch{return fallback}}
 function messages(){try{return fs.readFileSync(path.join(runtime,'messages.jsonl'),'utf8').trim().split('\n').filter(Boolean).slice(-100).map(x=>JSON.parse(x))}catch{return []}}
+function visibleMessages(isPrivate){return messages().filter(m=>isPrivate||m.public===true)}
+function currentStatus(){
+ const status=data('status.json',{}),run=data('../validation/linux-wpt-20261028/full-paired-checkpoint/state.json',null);
+ if(run){
+  const completed=Array.isArray(run.shards)?run.shards.length:0,active=run.current?.shard;
+  status.full_baseline={state:run.status||'unknown',completed_shards:completed,total_shards:20,selected_urls:39394,current_shard:active||null,started_utc:run.started_utc||null};
+  status.current_evidence=[...(status.current_evidence||[]),['Live full-baseline progress',`${completed}/20 shards completed; ${active?`active ${active}`:'no active shard'}; ${run.status||'unknown'}. In-shard counts are not yet summarized.`]];
+ }
+ return status;
+}
+function snapshot(isPrivate){return {type:'snapshot',status:currentStatus(),telemetry,messages:visibleMessages(isPrivate)}}
 function append(message){const f=path.join(runtime,'messages.jsonl');if(fs.existsSync(f)&&fs.statSync(f).size>1048576)fs.writeFileSync(f,messages().slice(-50).map(x=>JSON.stringify(x)).join('\n')+'\n',{mode:0o600});fs.appendFileSync(f,JSON.stringify(message)+'\n',{mode:0o600})}
 let previousCpu=null, telemetry={utc:new Date().toISOString(),cpu_percent:null,ram:{},disks:[]};
 function sample(){
@@ -39,9 +50,8 @@ const server=http.createServer(async(req,res)=>{
  const url=new URL(req.url,'http://localhost');if(req.method!=='GET')return json(res,405,{error:'Method not allowed'});
  if(url.pathname==='/healthz')return json(res,200,{ok:true,service:'lumen-wpt-progress'});
  if(url.pathname.startsWith('/api/')||url.pathname==='/src.tar.gz'){
-  if(!authorized(req))return json(res,401,{error:'Viewer key required'});
-  if(url.pathname==='/api/status')return json(res,200,{status:data('status.json',{}),telemetry,messages:messages()});
-  if(url.pathname==='/src.tar.gz'){const f=path.join(runtime,'src.tar.gz');if(!fs.existsSync(f))return json(res,404,{error:'Source archive not prepared'});res.writeHead(200,{'Content-Type':'application/gzip','Content-Disposition':'attachment; filename="gpt-6-astra-pro-builtin-subagent-lumen-src.tar.gz"','Cache-Control':'no-store'});return fs.createReadStream(f).pipe(res)}
+  if(url.pathname==='/api/status')return json(res,200,snapshot(authorized(req)));
+  if(url.pathname==='/src.tar.gz'){const f=path.join(runtime,'src.tar.gz');if(!fs.existsSync(f))return json(res,404,{error:'Source archive not prepared'});res.writeHead(200,{'Content-Type':'application/gzip','Content-Disposition':'attachment; filename="lumen-linux-gpt-6-astra-builtin-agents-rubywebterm-src.tar.gz"','Cache-Control':'no-store'});return fs.createReadStream(f).pipe(res)}
   return json(res,404,{error:'Unknown endpoint'});
  }
  if(url.pathname==='/'||url.pathname==='/index.html'){res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-cache','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','Content-Security-Policy':"default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' https: wss:; img-src 'self' data:; base-uri 'none'; frame-ancestors 'none'"});return fs.createReadStream(path.join(site,'index.html')).pipe(res)}
@@ -51,22 +61,22 @@ const server=http.createServer(async(req,res)=>{
 const wss=new WebSocketServer({noServer:true,maxPayload:4096,handleProtocols:p=>p.has('lumen-status')?'lumen-status':false});
 server.on('upgrade',(req,socket,head)=>{
  const protocols=(req.headers['sec-websocket-protocol']||'').split(',').map(x=>x.trim());const key=protocols.find(x=>x.startsWith('auth.'))?.slice(5);
- if(req.url!=='/ws'||!originAllowed(req.headers.origin)||!equal(key)||wss.clients.size>=16){socket.write('HTTP/1.1 403 Forbidden\r\n\r\n');return socket.destroy()}
- wss.handleUpgrade(req,socket,head,ws=>wss.emit('connection',ws,req));
+ if(req.url!=='/ws'||!originAllowed(req.headers.origin)||(key&&!equal(key))||wss.clients.size>=16){socket.write('HTTP/1.1 403 Forbidden\r\n\r\n');return socket.destroy()}
+ wss.handleUpgrade(req,socket,head,ws=>{ws.isPrivate=equal(key);wss.emit('connection',ws,req)});
 });
 wss.on('connection',ws=>{
- let sent=[];ws.send(JSON.stringify({type:'snapshot',status:data('status.json',{}),telemetry,messages:messages()}));
+ let sent=[];ws.send(JSON.stringify(snapshot(ws.isPrivate)));
  ws.on('error',()=>{});ws.on('message',buf=>{
   let msg;try{msg=JSON.parse(buf.toString())}catch{return}
   if(msg.type==='ping'&&Number.isFinite(msg.client_ms))return ws.send(JSON.stringify({type:'pong',client_ms:msg.client_ms,server_utc:new Date().toISOString()}));
   if(msg.type==='message'&&typeof msg.text==='string'){
    sent=sent.filter(t=>Date.now()-t<10000);if(sent.length>=4)return ws.send(JSON.stringify({type:'error',text:'Please wait before sending more messages.'}));
    const body=msg.text.trim().slice(0,2000);if(!body)return;sent.push(Date.now());
-   append({id:crypto.randomUUID(),utc:new Date().toISOString(),role:'user',text:body});broadcast();
+   append({id:crypto.randomUUID(),utc:new Date().toISOString(),role:'user',public:!ws.isPrivate,text:body});broadcast();
   }
  });
 });
-function broadcast(){const msg=JSON.stringify({type:'snapshot',status:data('status.json',{}),telemetry,messages:messages()});for(const ws of wss.clients)if(ws.readyState===1&&ws.bufferedAmount<65536)ws.send(msg)}
+function broadcast(){for(const ws of wss.clients)if(ws.readyState===1&&ws.bufferedAmount<65536)ws.send(JSON.stringify(snapshot(ws.isPrivate)))}
 sample();setInterval(()=>{sample();broadcast()},2000);
 const port=Number(process.env.LUMEN_PROGRESS_PORT||4187);server.listen(port,'127.0.0.1',()=>console.log(`Lumen progress listening at 127.0.0.1:${port}`));
 for(const sig of ['SIGTERM','SIGINT'])process.on(sig,()=>{wss.close();server.close();setTimeout(()=>process.exit(0),250).unref()});
