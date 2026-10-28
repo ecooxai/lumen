@@ -414,7 +414,7 @@ void intrinsic(Layout *L, Box *b, float *omn, float *omx) {
     if (st->width.kind == LK_LEN && st->width.pct == 0 && b->fmt != FMT_TABLE) {
         mn = mx = st->width.px - (st->box_sizing == BOX_BORDER ? bp : 0);
     } else if (b->fmt == FMT_REPLACED) {
-        float w, h; replaced_size(L, b, -1, &w, &h); mn = mx = w;
+        float w, h; replaced_size(L, b, -1, -1, -1, -1, &w, &h); mn = mx = w;
         if (st->width.kind == LK_LEN && st->width.pct) mn = 0;
     } else if (b->fmt == FMT_INLINE) {
         IState s = {0}; inline_intrinsic(L, b, &s);
@@ -464,40 +464,89 @@ void intrinsic(Layout *L, Box *b, float *omn, float *omx) {
     *omn = b->imin; *omx = b->imax;
 }
 
-void replaced_size(Layout *L, Box *b, float cbw, float *ow, float *oh) {
+/* CSS Sizing 4: transfer only definite constraints, then clamp each axis
+ * independently. A destination's own preferred/min/max size always wins over
+ * a transferred constraint. Coordinates below use the ratio's sizing box. */
+static float replaced_bound(Length value, float reference, float subtract, float add, float fallback) {
+    return len_def(value, reference) ? LMAX(0, res(value, reference) - subtract) + add : fallback;
+}
+static bool replaced_auto_ratio(const char *value) {
+    if (!value || !*value) return true;
+    for (const char *p = value; *p;) {
+        while (is_ws((unsigned char)*p)) p++;
+        if (str_istarts(p, "auto") && (!p[4] || is_ws((unsigned char)p[4]))) return true;
+        while (*p && !is_ws((unsigned char)*p)) p++;
+    }
+    return false;
+}
+void replaced_size(Layout *L, Box *b, float cbw, float cbh, float fw, float fh, float *ow, float *oh) {
     Node *n = b->node; const ComputedStyle *st = b->st;
-    float nw = 300, nh = 150, ratio = 0; bool have = false, contained = false;
-    if (b->ctl == CTL_CHECK || b->ctl == CTL_RADIO) { nw = nh = 13; have = true; }
-    else if (b->ctl == CTL_RANGE) { nw = 129; nh = 16; have = true; }
+    float nw = 300, nh = 150, ratio = 0, natural_ratio = 0;
+    bool contained = false, have_width = true;
+    if (b->ctl == CTL_CHECK || b->ctl == CTL_RADIO) nw = nh = 13;
+    else if (b->ctl == CTL_RANGE) { nw = 129; nh = 16; }
     else if (n && n->tag == A_img) {
         float w, h;
-        if (css_img_sizes_auto(n)) have = contained = true;   /* size-contained at 300x150 (UA contain-intrinsic-size), whatever it loads; no aspect ratio */
-        else if (layout_image_size_hook && layout_image_size_hook(n, &w, &h) && w > 0) { nw = w; nh = h; have = true; }
-        else { nw = nh = 0; const char *aw = node_attr(n, "width"), *ah = node_attr(n, "height"); if (aw) nw = (float)atof(aw); if (ah) nh = (float)atof(ah); have = aw || ah; }
+        if (css_img_sizes_auto(n)) contained = true; /* UA size containment has no natural ratio. */
+        else if (layout_image_size_hook && layout_image_size_hook(n, &w, &h) && w > 0) {
+            nw = w; nh = h; if (h > 0) natural_ratio = w / h;
+        } else {
+            nw = nh = 0; const char *aw = node_attr(n, "width"), *ah = node_attr(n, "height");
+            if (aw) nw = (float)atof(aw); if (ah) nh = (float)atof(ah); have_width = aw != NULL;
+        }
     } else if (n && n->ns == NS_SVG) {
-        const char *vb = node_attr(n, "viewBox");
-        float v[4]; int nv = 0;
-        for (const char *q = vb; q && *q && nv < 4;) { char *e; float f = strtof(q, &e); if (e == q) break; v[nv++] = f; q = e; while (*q == ' ' || *q == ',' || *q == '\t' || *q == '\n') q++; }
-        if (nv == 4 && v[3] > 0) { ratio = v[2] / v[3]; nw = v[2]; nh = v[3]; }
-        /* An outer <svg> without width is 100% wide; the viewBox ratio gives its height */
+        const char *viewbox = node_attr(n, "viewBox"); float v[4]; int nv = 0;
+        for (const char *q = viewbox; q && *q && nv < 4;) { char *e; float f = strtof(q, &e); if (e == q) break; v[nv++] = f; q = e; while (*q == ' ' || *q == ',' || *q == '\t' || *q == '\n') q++; }
+        if (nv == 4 && v[3] > 0) { ratio = natural_ratio = v[2] / v[3]; nw = v[2]; nh = v[3]; }
+        /* Preserve the existing SVG intrinsic-size path; viewBox-only flex
+           sizing is a separate issue from preferred ratio/constraint transfer. */
         bool outer = !n->parent || n->parent->type != NODE_ELEMENT || n->parent->ns != NS_SVG;
         if (outer && ratio > 0 && cbw > 0 && !node_attr(n, "width") && !node_attr(n, "height")) { nw = cbw; nh = cbw / ratio; }
     } else if (n && n->tag == A_video) {
-        float w, h; if (layout_image_size_hook && layout_image_size_hook(n, &w, &h) && w > 0) { nw = w; nh = h; }
+        float w, h;
+        if (layout_image_size_hook && layout_image_size_hook(n, &w, &h) && w > 0) { nw = w; nh = h; if (h > 0) natural_ratio = w / h; }
     } else if (n && n->tag == A_canvas) {
-        const char *aw = node_attr(n, "width"), *ah = node_attr(n, "height"); if (aw) nw = (float)atof(aw); if (ah) nh = (float)atof(ah);
+        const char *aw = node_attr(n, "width"), *ah = node_attr(n, "height");
+        if (aw) nw = (float)atof(aw); if (ah) nh = (float)atof(ah);
+        if (nh > 0) natural_ratio = nw / nh;
     } else if (n && n->tag == A_audio) { nw = 300; nh = 54; }
-    if (!ratio && nh > 0 && !contained) ratio = nw / nh;
-    if (st->aspect_ratio > 0) ratio = st->aspect_ratio;
-    bool bs = st->box_sizing == BOX_BORDER; float hb = hbp(b), vb2 = vbp(b);
-    float w = -1, h = -1;
-    if (len_def(st->width, cbw)) w = res(st->width, cbw) - (bs ? hb : 0);
-    if (st->height.kind == LK_LEN && st->height.pct == 0) h = st->height.px - (bs ? vb2 : 0);
-    if (w >= 0 && h < 0) h = ratio > 0 ? w / ratio : nh;
-    else if (h >= 0 && w < 0) w = ratio > 0 ? h * ratio : nw;
-    else if (w < 0 && h < 0) { w = nw; h = nh; (void)have; }
-    if (st->max_width.kind == LK_LEN && cbw >= 0) { float mxw = res(st->max_width, cbw) - (bs ? hb : 0); if (w > mxw) { w = mxw; if (ratio > 0 && st->height.kind != LK_LEN) h = w / ratio; } }
-    if (st->min_width.kind == LK_LEN) { float mnw = res(st->min_width, cbw) - (bs ? hb : 0); if (w < mnw) w = mnw; }
-    if (st->max_height.kind == LK_LEN && !st->max_height.pct) { float mxh = st->max_height.px - (bs ? vb2 : 0); if (h > mxh) { h = mxh; if (ratio > 0 && st->width.kind != LK_LEN) w = h * ratio; } }
-    *ow = LMAX(0, w); *oh = LMAX(0, h);
+    /* A default object size (for example iframe300x150) is not a natural ratio. */
+    if (!contained && natural_ratio > 0) ratio = natural_ratio;
+    bool auto_ratio = replaced_auto_ratio(custom_get(st->gen_n, "aspect-ratio"));
+    bool authored_ratio = st->aspect_ratio > 0 && isfinite(st->aspect_ratio);
+    if (authored_ratio && (!auto_ratio || natural_ratio <= 0)) ratio = st->aspect_ratio;
+    else if (auto_ratio && natural_ratio > 0) ratio = natural_ratio;
+    if (!isfinite(ratio) || ratio <= 0) ratio = 0;
+    bool bs = st->box_sizing == BOX_BORDER;
+    float hb = hbp(b), vb = vbp(b), subtract_w = bs ? hb : 0, subtract_h = bs ? vb : 0;
+    /* auto && <ratio> always uses content dimensions; a bare CSS ratio uses
+       the box selected by box-sizing. Natural sizes themselves are content sizes. */
+    bool border_ratio = authored_ratio && !auto_ratio && bs;
+    float rw = border_ratio ? hb : 0, rh = border_ratio ? vb : 0;
+    /* Flex/grid may already have chosen a border-box size. It determines the
+       dependent automatic axis, and must not be clamped a second time here. */
+    bool wdef = fw >= 0 || len_def(st->width, cbw), hdef = fh >= 0 || len_def(st->height, cbh);
+    float w = fw >= 0 ? LMAX(0, fw - hb) + rw : wdef ? LMAX(0, res(st->width, cbw) - subtract_w) + rw : -1;
+    float h = fh >= 0 ? LMAX(0, fh - vb) + rh : hdef ? LMAX(0, res(st->height, cbh) - subtract_h) + rh : -1;
+    if (wdef && !hdef) h = ratio > 0 ? w / ratio : nh + rh;
+    else if (hdef && !wdef) w = ratio > 0 ? h * ratio : nw + rw;
+    else if (!wdef && !hdef) {
+        if (ratio > 0 && !have_width && nh > 0) { h = nh + rh; w = h * ratio; }
+        else { w = nw + rw; h = ratio > 0 ? w / ratio : nh + rh; }
+    }
+    float minw = replaced_bound(st->min_width, cbw, subtract_w, rw, rw);
+    float minh = replaced_bound(st->min_height, cbh, subtract_h, rh, rh);
+    float maxw = LMAX(minw, replaced_bound(st->max_width, cbw, subtract_w, rw, INFINITY));
+    float maxh = LMAX(minh, replaced_bound(st->max_height, cbh, subtract_h, rh, INFINITY));
+    if (ratio > 0) {
+        float transferred_minw = LMIN(minh * ratio, LMIN(maxw, wdef ? w : INFINITY));
+        float transferred_minh = LMIN(minw / ratio, LMIN(maxh, hdef ? h : INFINITY));
+        float transferred_maxw = LMAX(maxh * ratio, LMAX(minw, LMAX(wdef ? w : rw, transferred_minw)));
+        float transferred_maxh = LMAX(maxw / ratio, LMAX(minh, LMAX(hdef ? h : rh, transferred_minh)));
+        minw = LMAX(minw, transferred_minw); minh = LMAX(minh, transferred_minh);
+        maxw = LMIN(maxw, transferred_maxw); maxh = LMIN(maxh, transferred_maxh);
+    }
+    w = LMAX(minw, LMIN(maxw, w)); h = LMAX(minh, LMIN(maxh, h));
+    *ow = fw >= 0 ? LMAX(0, fw - hb) : LMAX(0, w - rw);
+    *oh = fh >= 0 ? LMAX(0, fh - vb) : LMAX(0, h - rh);
 }

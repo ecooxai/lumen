@@ -1,0 +1,49 @@
+<!doctype html><meta charset="utf-8"><title>Replaced element preferred ratio and constraints</title>
+<link rel="help" href="https://drafts.csswg.org/css-sizing-4/#aspect-ratio-size-transfers">
+<h1>Replaced element sizing regression</h1><pre id="results">Running</pre>
+<script>
+(() => {
+  'use strict';
+  const results = [];
+  function measure(name, css, width, height, parentCSS = '') {
+    const parent = document.createElement('div'), canvas = document.createElement('canvas');
+    parent.style.cssText = 'display:block;width:500px;height:300px;padding:0;border:0;' + parentCSS;
+    canvas.width = 120; canvas.height = 80;
+    canvas.style.cssText = 'display:block;width:auto;height:auto;min-width:0;min-height:0;max-width:none;max-height:none;padding:0;border:0;box-sizing:content-box;aspect-ratio:2;' + css;
+    parent.appendChild(canvas); document.body.appendChild(parent);
+    try {
+      const rect = canvas.getBoundingClientRect();
+      if (Math.abs(rect.width-width) > .05 || Math.abs(rect.height-height) > .05)
+        throw new Error('Expected ' + width + ' x ' + height + ', got ' + rect.width + ' x ' + rect.height);
+      results.push([name, 'PASS', null]);
+    } catch (error) { results.push([name, 'FAIL', String(error.message || error)]); }
+    finally { parent.remove(); }
+  }
+  measure('authored ratio uses natural width', '', 120, 60);
+  measure('auto ratio retains acquired natural ratio', 'aspect-ratio:auto 2', 120, 80);
+  measure('definite width transfers to auto height', 'width:90px', 90, 45);
+  measure('definite height transfers to auto width', 'height:30px', 60, 30);
+  measure('two definite dimensions retain their independent values', 'width:90px;height:20px', 90, 20);
+  measure('minimum width transfers to auto height', 'min-width:180px', 180, 90);
+  measure('maximum width transfers to auto height', 'max-width:60px', 60, 30);
+  measure('minimum height transfers to auto width', 'min-height:100px', 200, 100);
+  measure('maximum height transfers to auto width', 'max-height:20px', 40, 20);
+  measure('own minimum width wins conflicting opposite maximum', 'min-width:180px;max-height:40px', 180, 40);
+  measure('own minimum height wins conflicting opposite maximum', 'max-width:60px;min-height:100px', 60, 100);
+  measure('own minimum wins smaller same-axis maximum', 'min-width:100px;max-width:50px', 100, 50);
+  measure('bare ratio uses border-box ratio space', 'box-sizing:border-box;padding:10px;border:2px solid', 144, 72);
+  measure('auto ratio uses natural content-box ratio space', 'aspect-ratio:auto 2;box-sizing:border-box;padding:10px;border:2px solid', 144, 104);
+  measure('definite border-box width transfers once', 'width:100px;box-sizing:border-box;padding:10px;border:2px solid', 100, 50);
+  measure('natural ratio with definite border-box width', 'aspect-ratio:auto 2;width:100px;box-sizing:border-box;padding:10px;border:2px solid', 100, 74 + 2/3);
+  measure('percentage height uses definite containing block', 'height:50%', 300, 150);
+  measure('forced flex width determines ratio-dependent height', 'aspect-ratio:1;width:120px;flex:0 1 auto', 60, 60, 'display:flex;width:60px;height:auto;align-items:flex-start');
+  measure('forced grid width determines ratio-dependent height', 'aspect-ratio:1;justify-self:stretch;align-self:start', 60, 60, 'display:grid;grid-template-columns:60px;width:60px;height:auto');
+  measure('zero definite width transfers a zero height', 'width:0', 0, 0);
+  window.__astraResult = {status:'OK', subtests:results, message:null};
+  const failures = results.filter(result => result[1] !== 'PASS');
+  const summary = 'RESULTS browser-replaced-sizing:' + (failures.length ? 'FAIL ' + failures.map(result => result[0] + ': ' + result[2]).join('; ') : 'PASS ' + results.length + '/' + results.length);
+  document.getElementById('results').textContent = summary;
+  results.forEach(result => console.log('SIZING-CASE ' + result[1] + ' ' + result[0] + (result[2] ? ': ' + result[2] : '')));
+  console.log(summary);
+})();
+</script>

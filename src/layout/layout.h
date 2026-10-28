@@ -83,7 +83,8 @@ float layout_table(Layout *L, Box *b, float cx, float cy, float cw, float chdef)
 void table_intrinsic(Layout *L, Box *b, float *mn, float *mx);
 void intrinsic(Layout *L, Box *b, float *mn, float *mx);
 void intrinsic_outer(Layout *L, Box *b, float *mn, float *mx);
-void replaced_size(Layout *L, Box *b, float cbw, float *w, float *h);
+/* fw/fh are resolved border-box sizes from flex/grid, or -1 when unforced. */
+void replaced_size(Layout *L, Box *b, float cbw, float cbh, float fw, float fh, float *w, float *h);
 void box_translate(Box *b, float dx, float dy);
 bool layout_move(Layout *L, Node *n, const Length old[4]);
 void add_abs(Layout *L, Box *c);

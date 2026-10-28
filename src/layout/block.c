@@ -482,7 +482,7 @@ static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float 
     bool bs = s->box_sizing == BOX_BORDER;
     bool is_cell = s->display == D_TABLE_CELL;
     if (mode == SZ_FORCED) b->w = fw;
-    else if (b->fmt == FMT_REPLACED) { float w, h; replaced_size(L, b, cbw, &w, &h); b->w = w + hb; }
+    else if (b->fmt == FMT_REPLACED) { float w, h; replaced_size(L, b, cbw, cbh, -1, fh, &w, &h); b->w = w + hb; }
     else if (len_def(s->width, cbw) && !is_cell) { b->w = clampw(s, res(s->width, cbw) + (bs ? 0 : hb), cbw, hb); if (b->w < hb) b->w = hb; }
     else if (mode == SZ_FILL && b->fmt != FMT_TABLE && s->width.kind != LK_FIT_CONTENT && s->width.kind != LK_MAX_CONTENT && s->width.kind != LK_MIN_CONTENT) b->w = clampw(s, cbw - b->m[1] - b->m[3], cbw, hb);
     else {
@@ -521,7 +521,7 @@ static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float 
     case FMT_FLEX: ch = layout_flex(L, b, cx, cy, cw, ch_for_kids); break;
     case FMT_GRID: ch = layout_grid(L, b, cx, cy, cw, ch_for_kids); break;
     case FMT_TABLE: ch = layout_table(L, b, cx, cy, cw, ch_for_kids); break;
-    case FMT_REPLACED: { float w, h; replaced_size(L, b, cbw, &w, &h); ch = h; if (len_def(s->height, cbh) && s->height.pct) ch = res(s->height, cbh) - (bs ? vb : 0); break; }
+    case FMT_REPLACED: { float w, h; replaced_size(L, b, cbw, cbh, mode == SZ_FORCED ? b->w : -1, fh, &w, &h); ch = h; break; }
     }
     if (b->fmt != FMT_FLOW) b->eff_mb = b->m[2];
     if (b->bfc && f == &own) { float fb = fc_bottom(&own); if (fb > cy + ch) ch = fb - cy; }

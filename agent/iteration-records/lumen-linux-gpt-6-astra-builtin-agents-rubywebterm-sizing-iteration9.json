@@ -1,0 +1,122 @@
+{
+  "iteration": 9,
+  "title": "Replaced-element preferred aspect ratio and constraint transfer",
+  "status": "accepted-focused-sizing-repair",
+  "started_utc": "2026-10-28T05:58:09.318344+00:00",
+  "start_basis": "First retained current accepted-font115 baseline launch; earlier read-only triage was not precisely timestamped",
+  "ended_utc": "2026-10-28T06:20:26.571257+00:00",
+  "iteration_quality": 96,
+  "whole_goal_readiness": 19,
+  "model": "GPT-6 Astra",
+  "agents": [
+    "ops_preview implementation",
+    "engine_lead independent review",
+    "conformance independent validation",
+    "root PM"
+  ],
+  "tools": [
+    "built-in agents",
+    "RubyWebTerm",
+    "Chromium150"
+  ],
+  "owned_source": [
+    "src/layout/box.c",
+    "src/layout/block.c narrow replaced-size callsites",
+    "src/layout/layout.h signature"
+  ],
+  "primary_case": "/css/css-sizing/aspect-ratio/replaced-element-043.html",
+  "primary_canvas_cases": 180,
+  "hypothesis": "Both-auto replaced boxes should derive the ratio-dependent size from the preferred ratio, then transfer definite min/max constraints while preserving nontransferred constraints and box-sizing",
+  "separate_causes": [
+    "SVG viewBox treated as natural dimensions",
+    "Nonreplaced absolute insets versus preferred ratio",
+    "CSSOM ratio serialization"
+  ],
+  "spec_sources": [
+    "https://drafts.csswg.org/css-sizing-4/#aspect-ratio-size-transfers",
+    "https://www.w3.org/TR/CSS22/visudet.html#min-max-widths"
+  ],
+  "resource_policy": "1-second CPU/RSS monitoring, core0, aggregate480%quota, unchanged60second case limit",
+  "updated_utc": "2026-10-28T06:20:26.571257+00:00",
+  "candidate": 118,
+  "binary_sha256": "fc98d580a9a91818ce51f28d9ec6808ee15b2a76696077f2578baafdc96d516a",
+  "upstream_primary": {
+    "baseline": 64,
+    "candidate": 180,
+    "chromium": 180,
+    "total": 180,
+    "gained": 116,
+    "lost": 0
+  },
+  "portable": {
+    "baseline": 9,
+    "candidate": 20,
+    "chromium": 20,
+    "total": 20
+  },
+  "native_gate": "10/10 relevant native tests, frozen118; final combined suite remains queued",
+  "elapsed_minutes": 22.288,
+  "whole_goal_status": "Provisional readiness estimate, not a WPT pass percentage",
+  "accepted_binary": "build/codex-native/lumen-linux-gpt-6-astra-builtin-agents-rubywebterm-sizing-accepted-20261028",
+  "source_sha256": {
+    "src/layout/box.c": "a3a088b31ecda2b33efc74674dd48845729e11a55a00937148ef6573b0d5bd18",
+    "src/layout/block.c": "c7adc90ddb21dba64070caf70f91e1be639b39517a4a56f153826d106d82433d",
+    "src/layout/layout.h": "f26e6c166e890dbe9745eefd44a7276de063f36eff825ccec6f213fce6e4d138"
+  },
+  "composition": "Accepted font/capture/build-graph HEAD plus sizing only; experimental position sources excluded during118 and restored exactly",
+  "independent_reviews": [
+    "engine_lead final source review",
+    "conformance unchanged upstream/test and reftest disposition",
+    "root PM acceptance"
+  ],
+  "upstream_holdout": {
+    "baseline_pass": 2,
+    "candidate_pass": 10,
+    "chromium_pass": 11,
+    "total": 11,
+    "lost": 0,
+    "harness_losses": 0
+  },
+  "reftest_holdout": {
+    "baseline_pass": 1,
+    "candidate_pass": 2,
+    "chromium_pass": 6,
+    "total": 6,
+    "lost": 0
+  },
+  "limitations": [
+    "Separate SVG viewBox intrinsic-size, nonreplaced absolute-inset and aspect-ratio CSSOM serialization failures remain unchanged",
+    "Four loaded-image natural/auto-ratio reftests029\u2013032 remain failing",
+    "Focused guard coverage is not complete replaced-element or WPT conformance",
+    "Resource sampling may miss short-lived child processes; shared workload affects wall time"
+  ],
+  "evidence": [
+    "agent/validation/linux-wpt-20261028/sizing-primary-118-comparison.json",
+    "agent/validation/linux-wpt-20261028/sizing-portable-provenance.json",
+    "agent/validation/linux-wpt-20261028/sizing9-holdout-118-comparison.json",
+    "agent/validation/linux-wpt-20261028/sizing9-reftest-118-comparison.json",
+    "agent/validation/linux-wpt-20261028/sizing118-independent-disposition.json",
+    "agent/validation/linux-wpt-20261028/sizing118-native-gate/provenance.json"
+  ],
+  "build_resources": {
+    "label": "isolated replaced-size118 build",
+    "started_utc": "2026-10-28T06:07:01.243864+00:00",
+    "finished_utc": "2026-10-28T06:10:59.254473+00:00",
+    "root_pid": 3625470,
+    "comm": null,
+    "exe": null,
+    "interval_seconds": 1,
+    "samples": 238,
+    "elapsed_seconds": 238.016,
+    "cpu_one_core_equals_100": true,
+    "cpu_min": 0.0,
+    "cpu_median": 28.324,
+    "cpu_max": 142.629,
+    "cpu_last10_median": 6.005,
+    "rss_peak_mb": 763.638,
+    "rss_final_mb": 16.736,
+    "pss_peak_mb": 491.536,
+    "csv": "agent/validation/linux-wpt-20261028/sizing-isolated118/build-resources.csv",
+    "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+  }
+}

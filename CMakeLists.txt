@@ -423,6 +423,10 @@ else()
             --binary "$<TARGET_FILE:lumen>" --fixture "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/grid-track-regression.html"
             --marker browser-grid-track-regression --output "${CMAKE_CURRENT_BINARY_DIR}/browser-grid-track-regression")
         set_tests_properties(browser_grid_track_regression PROPERTIES PASS_REGULAR_EXPRESSION "RESULTS browser-grid-track-regression:PASS" TIMEOUT 35)
+        add_test(NAME browser_replaced_sizing COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/run.py"
+            --binary "$<TARGET_FILE:lumen>" --fixture "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/replaced-sizing-regression.html"
+            --marker browser-replaced-sizing --output "${CMAKE_CURRENT_BINARY_DIR}/browser-replaced-sizing")
+        set_tests_properties(browser_replaced_sizing PROPERTIES PASS_REGULAR_EXPRESSION "RESULTS browser-replaced-sizing:PASS" TIMEOUT 35)
         add_test(NAME browser_image_lifecycle COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/run.py"
             --binary "$<TARGET_FILE:lumen>" --fixture "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/image-lifecycle.html"
             --marker browser-image-lifecycle --output "${CMAKE_CURRENT_BINARY_DIR}/browser-image-lifecycle")
