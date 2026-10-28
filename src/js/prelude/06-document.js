@@ -41,7 +41,7 @@ methods(Document.prototype, {
     get implementation() { if (this === document) return implementation; if (!this.__impl) def(this, '__impl', Object.create(implementation, { _doc: { value: this } })); return this.__impl; },
     createElement(tag, opts) {
         tag = String(tag); if (!validLocalName(tag)) throw new DOMException(`The tag name provided ('${tag}') is not a valid name.`, 'InvalidCharacterError');
-        const xml = N.ns(this) === 3, name = xml ? tag : asciiLower(tag), el = N.create(name, xml ? 3 : 0, this); if (N.name(el) !== name) def(el, '__ln', name);
+        const xml = N.ns(this) === 3, name = xml ? tag : asciiLower(tag), ns = !xml || this.contentType === 'application/xhtml+xml' ? 0 : 3, el = N.create(name, ns, this); if (N.name(el) !== name) def(el, '__ln', name);
         if (opts && typeof opts === 'object' && opts.is) N.setAttr(el, 'is', String(opts.is));
         if (!xml && registry.byName.has(name)) ceUpgrade(el);
         return el;

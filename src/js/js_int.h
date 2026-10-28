@@ -160,6 +160,7 @@ double js_webtransport_deadline(JsCtx *c);
 void js_webtransport_deliver(JsCtx *c);
 void js_webtransport_resource_counts(uint64_t out[6]);
 void js_run_inserted(JsCtx *c, Node *root);
+void js_run_parsed_script(JsCtx *c, Node *script);
 extern "C" JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame);
 extern "C" JsCtx *owner_ctx(Document *d);
 /* URL of the top-level document this context belongs to (site for cookies) */

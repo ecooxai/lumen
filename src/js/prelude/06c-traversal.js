@@ -417,8 +417,9 @@ class DOMMatrixReadOnly { constructor() { Object.assign(this, { a: 1, b: 0, c: 0
 class DOMMatrix extends DOMMatrixReadOnly {}
 class DOMPoint { constructor(x = 0, y = 0, z = 0, w = 1) { Object.assign(this, { x, y, z, w }); } }
 const XML_TYPES = ['text/xml', 'application/xml', 'application/xhtml+xml', 'image/svg+xml'];
-function parseXML(src, type) {
-    const doc = N.newXmlDoc(); Object.setPrototypeOf(doc, Document.prototype); def(doc, '__ct', type);
+function parseXML(src, type, target = null) {
+    const doc = target || N.newXmlDoc(); Object.setPrototypeOf(doc, XMLDocument.prototype); def(doc, '__ct', type);
+    const append = (parent, child) => N.xmlAppend(parent, child, target === null);
     const ents = { lt: '<', gt: '>', amp: '&', quot: '"', apos: "'" };
     const decode = (s) => s.indexOf('&') < 0 ? s : s.replace(/&([^;\s&<]*);?/g, (m, e) => {
         if (!m.endsWith(';')) throw 'unterminated entity';
@@ -435,16 +436,16 @@ function parseXML(src, type) {
             if (src[i] !== '<') {
                 let j = src.indexOf('<', i); if (j < 0) j = src.length;
                 const t = src.slice(i, j);
-                if (cur !== doc) insertNode(cur, N.textNode(decode(t), doc), null);
+                if (cur !== doc) append(cur, N.textNode(decode(t), doc));
                 else if (/\S/.test(t)) throw 'content outside the root element';
                 i = j; continue;
             }
-            if (src.startsWith('<!--', i)) { const j = src.indexOf('-->', i + 4); if (j < 0) throw 'unterminated comment'; insertNode(cur, N.comment(src.slice(i + 4, j), doc), null); i = j + 3; continue; }
-            if (src.startsWith('<![CDATA[', i)) { const j = src.indexOf(']]>', i); if (j < 0 || cur === doc) throw 'bad CDATA section'; insertNode(cur, N.cdata(src.slice(i + 9, j), doc), null); i = j + 3; continue; }
+            if (src.startsWith('<!--', i)) { const j = src.indexOf('-->', i + 4); if (j < 0) throw 'unterminated comment'; append(cur, N.comment(src.slice(i + 4, j), doc)); i = j + 3; continue; }
+            if (src.startsWith('<![CDATA[', i)) { const j = src.indexOf(']]>', i); if (j < 0 || cur === doc) throw 'bad CDATA section'; append(cur, N.cdata(src.slice(i + 9, j), doc)); i = j + 3; continue; }
             if (src.startsWith('<?', i)) {
                 const j = src.indexOf('?>', i); if (j < 0) throw 'unterminated processing instruction';
                 const m = /^([^\s?]+)\s*([\s\S]*)$/.exec(src.slice(i + 2, j)); if (!m) throw 'bad processing instruction';
-                if (m[1].toLowerCase() !== 'xml') insertNode(cur, N.pi(m[1], m[2], doc), null);
+                if (m[1].toLowerCase() !== 'xml') append(cur, N.pi(m[1], m[2], doc));
                 else if (i !== 0 && !(i === 1 && src.charCodeAt(0) === 0xFEFF)) throw 'XML declaration not at start';
                 i = j + 2; continue;
             }
@@ -453,13 +454,15 @@ function parseXML(src, type) {
                 for (; j < src.length; j++) { const ch = src[j]; if (ch === '[') depth++; else if (ch === ']') depth--; else if (ch === '>' && depth <= 0) break; }
                 const m = /^<!DOCTYPE\s+([^\s>\[]+)(?:\s+(?:PUBLIC\s+(?:"([^"]*)"|'([^']*)')\s*(?:"([^"]*)"|'([^']*)')?|SYSTEM\s+(?:"([^"]*)"|'([^']*)')))?/.exec(src.slice(i, j + 1));
                 if (!m || cur !== doc) throw 'bad doctype';
-                insertNode(doc, N.doctype(m[1], m[2] ?? m[3] ?? '', m[4] ?? m[5] ?? m[6] ?? m[7] ?? '', doc), null);
+                append(doc, N.doctype(m[1], m[2] ?? m[3] ?? '', m[4] ?? m[5] ?? m[6] ?? m[7] ?? '', doc));
                 i = j + 1; continue;
             }
             if (src[i + 1] === '/') {
                 closeRe.lastIndex = i; const m = closeRe.exec(src);
                 if (!m || stack.length < 2 || stack[stack.length - 1].tagName !== m[1]) throw `mismatched end tag ${m ? m[1] : ''}`;
-                stack.pop(); scopes.pop(); i = closeRe.lastIndex; continue;
+                const closed = stack.pop(); scopes.pop(); i = closeRe.lastIndex;
+                if (target && N.ns(closed) === 0 && N.name(closed) === 'script' && !N.xmlScript(closed)) return doc;
+                continue;
             }
             tagRe.lastIndex = i; const tm = tagRe.exec(src); if (!tm) throw 'bad start tag';
             i = tagRe.lastIndex;
@@ -478,8 +481,9 @@ function parseXML(src, type) {
             if (cur === doc && doc.documentElement) throw 'extra content at the end of the document';
             const el = Document.prototype.createElementNS.call(doc, uri ?? null, q);
             for (const [k, v] of attrs) N.setAttr(el, k, v);
-            insertNode(cur, el, null);
+            append(cur, el);
             if (!em[1]) { stack.push(el); scopes.push(scope); }
+            else if (target && N.ns(el) === 0 && N.name(el) === 'script' && !N.xmlScript(el)) return doc;
         }
         if (stack.length > 1) throw `unclosed element ${stack[stack.length - 1].tagName}`;
         if (!doc.documentElement) throw 'no root element';
@@ -487,8 +491,8 @@ function parseXML(src, type) {
         if (typeof e !== 'string') throw e;
         while (N.first(doc)) removeNode(N.first(doc));
         const pe = Document.prototype.createElementNS.call(doc, 'http://www.mozilla.org/newlayout/xml/parsererror.xml', 'parsererror');
-        insertNode(pe, N.textNode('XML Parsing Error: ' + e, doc), null);
-        insertNode(doc, pe, null);
+        append(pe, N.textNode('XML Parsing Error: ' + e, doc));
+        append(doc, pe);
     }
     return doc;
 }

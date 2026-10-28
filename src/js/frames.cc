@@ -3,6 +3,7 @@
 #include "clone_brand.h"
 #include "jsglue.h"
 #include "../base/url.h"
+#include <climits>
 
 using FCI = v8::FunctionCallbackInfo<v8::Value>;
 
@@ -87,6 +88,90 @@ static std::string src_key(JsCtx *p, Node *f) {
 static std::string g_next_csp;   /* CSP of the response frame_create is about to build a document from */
 static std::string g_next_permissions; /* Permissions-Policy on the incoming frame response */
 static std::string g_next_ref;   /* Referer sent for the frame navigation frame_create is about to build */
+static std::string xml_content_type(const char *value) {
+    if (!value) return {};
+    std::string type(value, strcspn(value, ";"));
+    const size_t start = type.find_first_not_of(" \t\r\n"), end = type.find_last_not_of(" \t\r\n");
+    if (start == std::string::npos) return {};
+    type = type.substr(start, end - start + 1);
+    for (char &ch : type) if (ch >= 'A' && ch <= 'Z') ch += 'a' - 'A';
+    if (type == "application/xml" || type == "text/xml" ||
+        (type.find('/') != std::string::npos && type.size() > 4 && type.compare(type.size() - 4, 4, "+xml") == 0))
+        return type;
+    return {};
+}
+static bool frame_parse_xml(JsCtx *c, const char *bytes, size_t length,
+                            const char *content_type, const std::string &type) {
+    /* Decode once before entering the existing XML parser. The private parser
+     * target is the actual browsing-context document, not an inert substitute. */
+    if ((!bytes && length) || length > SIZE_MAX / 3 || length > INT_MAX / 3) return false;
+    if (!bytes) bytes = "";
+    const unsigned char *input = reinterpret_cast<const unsigned char *>(bytes);
+    WebEncoding encoding = content_type ? web_encoding_mime_n(content_type, strlen(content_type)) : WEB_ENC_UNKNOWN;
+    if (length >= 3 && input[0] == 0xEF && input[1] == 0xBB && input[2] == 0xBF) encoding = WEB_ENC_UTF8;
+    else if (length >= 2 && input[0] == 0xFF && input[1] == 0xFE) encoding = WEB_ENC_UTF16LE;
+    else if (length >= 2 && input[0] == 0xFE && input[1] == 0xFF) encoding = WEB_ENC_UTF16BE;
+    if (encoding == WEB_ENC_UNKNOWN) encoding = WEB_ENC_UTF8;
+    SB decoded; sb_init(&decoded);
+    bool okay = web_encoding_decode_n(&decoded, encoding, bytes, length, true, length * 3);
+    if (okay) {
+        c->doc->encoding = encoding;
+        JS_ENTER(c); v8::TryCatch caught(iso);
+        v8::Local<v8::Value> parser, result;
+        okay = !c->api.IsEmpty() && c->api.Get(iso)->Get(ctx, jstr(iso, "parseXML")).ToLocal(&parser) && parser->IsFunction();
+        if (okay) {
+            v8::Local<v8::Value> arguments[] = { jstr(iso, decoded.s ? decoded.s : "", static_cast<int>(decoded.n)),
+                jstr(iso, type.c_str()), jwrap(c, &c->doc->node) };
+            okay = parser.As<v8::Function>()->Call(ctx, v8::Undefined(iso), 3, arguments).ToLocal(&result);
+        }
+        if (!okay && caught.HasCaught()) fprintf(stderr, "lumen: XML frame parser failed: %s\n", jcstr(iso, caught.Exception()).c_str());
+    }
+    sb_free(&decoded);
+    if (okay) {
+        /* Native layout/script consumers use these conveniences; the DOM
+         * documentElement remains the original XML root for every MIME type. */
+        Document *d = c->doc;
+        for (Node *node = d->node.first; node; node = node->next) {
+            if (node->type != NODE_ELEMENT || node->ns != NS_HTML || node->tag != A_html) continue;
+            d->html = node;
+            for (Node *child = node->first; child; child = child->next) {
+                if (child->type != NODE_ELEMENT || child->ns != NS_HTML) continue;
+                if (child->tag == A_head && !d->head) d->head = child;
+                if (child->tag == A_body && !d->body) d->body = child;
+            }
+            break;
+        }
+    }
+    return okay;
+}
+void js_run_parsed_script(JsCtx *c, Node *s) {
+    if (!c || c->dead || c->sb_noscript || !s || s->type != NODE_ELEMENT ||
+        s->tag != A_script || s->ns != NS_HTML || (s->flags & NF_SCRIPT_STARTED)) return;
+    bool mod = jsg_module_script(s);
+    if (!mod && !jsg_classic_script(s)) return;
+    size_t src_length = 0; const char *src = node_attr_n(s, "src", &src_length);
+    if (mod) {
+        char *t = src ? nullptr : node_text_content(s), *u = src && src_length ? url_join_n(c->doc->url, src, src_length) : nullptr;
+        if (src && !u) { s->flags |= NF_SCRIPT_STARTED; js_dispatch(c, s, "error", "Event", false, false, 0, 0, 0, NULL); }
+        else js_run_module(c, s, t ? t : (src ? nullptr : ""), t ? strlen(t) : 0, u ? u : c->doc->url);
+        free(t); free(u);
+    } else if (src) {
+        char *u = src_length ? url_join_n(c->doc->url, src, src_length) : nullptr;
+        NetRequest *srq = u ? net_request_ctx("GET", u, js_top_url(c)) : nullptr;
+        if (srq && c->doc->url) { srq->no_cors_origin = strdup(c->doc->url); srq->coep_require_corp = c->doc->coep_require_corp; }
+        NetResponse *sr = srq ? net_fetch_sync(srq) : nullptr;
+        net_request_free(srq);
+        if (sr && sr->status >= 200 && sr->status < 300) js_run_script(c, s, sr->body ? sr->body : "", sr->body_len, u);
+        else { s->flags |= NF_SCRIPT_STARTED; js_dispatch(c, s, "error", "Event", false, false, 0, 0, 0, NULL); }
+        if (sr) net_response_free(sr);
+        free(u);
+    } else {
+        char *t = node_text_content(s);
+        js_run_script(c, s, t ? t : "", t ? strlen(t) : 0, c->doc->url);
+        free(t);
+    }
+}
+
 static JsCtx *frame_create(JsCtx *p, Node *f, const char *url, const char *html, size_t n, bool fire_load,
                            const char *content_type = nullptr) {
     JsCtx *old = js_frame_ctx(f);
@@ -95,7 +180,9 @@ static JsCtx *frame_create(JsCtx *p, Node *f, const char *url, const char *html,
     if (!g_next_csp.empty()) { d->csp = csp_append(nullptr, g_next_csp.c_str()); g_next_csp.clear(); }
     if (!g_next_ref.empty()) { d->referrer = strdup(g_next_ref.c_str()); g_next_ref.clear(); }
     else if (!strncmp(url, "about:", 6) && p->doc && p->doc->csp) d->csp = strdup(p->doc->csp);
-    if (content_type) {
+    const std::string xml_type = xml_content_type(content_type);
+    if (!xml_type.empty()) d->node.ns = NS_NONE;
+    else if (content_type) {
         if (!html_parse_bytes(d, html ? html : "", html ? n : 0, content_type)) {
             fprintf(stderr, "lumen: frame HTML decoding exceeded its byte contract\n");
             html_parse(d, "", 0);
@@ -114,31 +201,11 @@ static JsCtx *frame_create(JsCtx *p, Node *f, const char *url, const char *html,
     JsCtx *k = js_new_ex(d, &ch, p, f);
     k->host_ud = ch.ud;
     if (const char *fp = getenv("LUMEN_FRAME_PRE")) if (strncmp(url, "about:", 6)) js_eval(k, fp, "lumen:frame-pre");
+    if (!xml_type.empty() && !frame_parse_xml(k, html, n, content_type, xml_type))
+        fprintf(stderr, "lumen: frame XML decoding or parsing exceeded its contract\n");
     for (Node *s = d->node.first; s && !k->dead && !k->sb_noscript; s = node_next_in_tree(s, &d->node)) {
         if (s->type != NODE_ELEMENT || s->tag != A_script || s->ns != NS_HTML || (s->flags & NF_SCRIPT_STARTED)) continue;
-        bool mod = jsg_module_script(s);
-        if (!mod && !jsg_classic_script(s)) continue;
-        size_t src_length = 0; const char *src = node_attr_n(s, "src", &src_length);
-        if (mod) {
-            char *t = src ? nullptr : node_text_content(s), *u = src && src_length ? url_join_n(d->url, src, src_length) : nullptr;
-            if (src && !u) { s->flags |= NF_SCRIPT_STARTED; js_dispatch(k, s, "error", "Event", false, false, 0, 0, 0, NULL); }
-            else js_run_module(k, s, t ? t : (src ? nullptr : ""), t ? strlen(t) : 0, u ? u : d->url);
-            free(t); free(u);
-        } else if (src) {
-            char *u = src_length ? url_join_n(d->url, src, src_length) : nullptr;
-            NetRequest *srq = u ? net_request_ctx("GET", u, js_top_url(k)) : nullptr;
-            if (srq && d->url) { srq->no_cors_origin = strdup(d->url); srq->coep_require_corp = d->coep_require_corp; }
-            NetResponse *sr = srq ? net_fetch_sync(srq) : nullptr;
-            net_request_free(srq);
-            if (sr && sr->status >= 200 && sr->status < 300) js_run_script(k, s, sr->body ? sr->body : "", sr->body_len, u);
-            else { s->flags |= NF_SCRIPT_STARTED; js_dispatch(k, s, "error", "Event", false, false, 0, 0, 0, NULL); }
-            if (sr) net_response_free(sr);
-            free(u);
-        } else {
-            char *t = node_text_content(s);
-            js_run_script(k, s, t ? t : "", t ? strlen(t) : 0, d->url);
-            free(t);
-        }
+        js_run_parsed_script(k, s);
     }
     if (k->dead) return k;
     js_set_ready_state(k, 1);

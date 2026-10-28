@@ -455,7 +455,7 @@ Object.setPrototypeOf(G, Window.prototype);
     }));
 }
 const document = N.doc();
-Object.setPrototypeOf(document, HTMLDocument.prototype);
+Object.setPrototypeOf(document, N.ns(document) === 3 ? XMLDocument.prototype : HTMLDocument.prototype);
 function illegalCtor() { throw new TypeError('Illegal constructor'); }
 const History = function History() { illegalCtor(); }, Navigator = function Navigator() { illegalCtor(); }, Screen = function Screen() { illegalCtor(); };
 const Performance = function Performance() { illegalCtor(); }, Crypto = function Crypto() { illegalCtor(); };
@@ -942,5 +942,5 @@ const windowCloneBlocked = Object.keys(globals)
     .map(name => Object.getOwnPropertyDescriptor(globals, name).value)
     .filter(value => typeof value === 'function' && value.prototype)
     .map(value => value.prototype);
-return { DOMException, windowCloneBlocked, receiveWindowMessage, busDeliver, queueMessage, workerEvent, protoFor, dispatch, fire, fireAnim, report, controlSelectionChanged, mediaChanged, deviceChanged, viewportChanged, ceConnected, Event, MouseEvent, PointerEvent, KeyboardEvent, FocusEvent, WheelEvent, InputEvent, PopStateEvent, ErrorEvent };
+return { DOMException, parseXML, windowCloneBlocked, receiveWindowMessage, busDeliver, queueMessage, workerEvent, protoFor, dispatch, fire, fireAnim, report, controlSelectionChanged, mediaChanged, deviceChanged, viewportChanged, ceConnected, Event, MouseEvent, PointerEvent, KeyboardEvent, FocusEvent, WheelEvent, InputEvent, PopStateEvent, ErrorEvent };
 })
