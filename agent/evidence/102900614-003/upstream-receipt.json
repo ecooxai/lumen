@@ -1,0 +1,76 @@
+{
+  "startedUTC": "2026-10-28T22:53:52.511052+00:00",
+  "binary": "build-apple-load-20261029/lumen-message-transfer-733943aa9496d134",
+  "binarySHA256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
+  "scope": "Two unchanged upstream transfer variants plus revalidated original six-file1850 receipt; never full WPT",
+  "stages": [
+    {
+      "name": "encoding-transfer",
+      "startedUTC": "2026-10-28T22:53:52.669588+00:00",
+      "upstreamRevision": "7f8d49b5a82606efc771f43d10aad5bce5ccbfeb",
+      "fullFrozenScheduleSHA256": "adcbf9719f722368b1e53ac1bd61cf38e566d3bd7495d9d6127cad38dd6aeabe",
+      "fullFrozenVariantCount": 1515,
+      "diagnosticVariants": [
+        "/encoding/encodeInto.any.html",
+        "/encoding/encodeInto.any.worker.html"
+      ],
+      "selectedScheduleSHA256": "7c2f10b629b5a486328006b78c664e142cc37dc58c47022b3b7c4a8b9c47fca8",
+      "runnerSHA256": "a7bc96c3697fb099ad63c145011bc434a66d865a713a62e5198731bed9600ac7",
+      "finishedUTC": "2026-10-28T22:53:53.862510+00:00",
+      "durationSeconds": 1.193,
+      "files": 2,
+      "assertions": {
+        "PASS": 222
+      },
+      "fullyPassingFiles": 2,
+      "resultsSHA256": "045bc4d8da6ae01c6d945ac6affcdbd53c9a04fed9a601f87020d2f36a30c4e1",
+      "detachedBufferAssertions": [
+        {
+          "name": "encodeInto() and a detached output buffer",
+          "status": "PASS",
+          "message": null
+        },
+        {
+          "name": "encodeInto() and a detached output buffer",
+          "status": "PASS",
+          "message": null
+        }
+      ],
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "originalReused": {
+    "name": "original",
+    "startedUTC": "2026-10-28T22:40:51.916581+00:00",
+    "command": [
+      "/opt/homebrew/opt/python@3.15/bin/python3.15",
+      "tools/apple-session-gpt6as/probe_native_wpt.py",
+      "--binary",
+      "build/lumen-session102900614-message-transfer-1",
+      "--expected-sha256",
+      "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
+      "--output",
+      "output/native-wpt-session102900614-message-transfer-1",
+      "--seconds-per-test",
+      "25"
+    ],
+    "finishedUTC": "2026-10-28T22:41:01.152403+00:00",
+    "durationSeconds": 9.236,
+    "exitCode": 0,
+    "report": "output/session-20261029/native-qa-kit-v1/source/output/native-wpt-session102900614-message-transfer-1/wpt-report.json",
+    "reportSHA256": "cb1cb27d5a87d91dc138d41e72200474202c198a10c7ddbe1ebd490953f2ab4b",
+    "files": 6,
+    "assertions": {
+      "PASS": 1850
+    },
+    "fullyPassingFiles": 6,
+    "passed": true,
+    "receipt": "output/session-102900614/message-transfer-upstream-1/receipt.json",
+    "receiptSHA256": "c6e012e57d938fe0a3b138041489c61357cf75d9f9581bc3f0ce02083349a308"
+  },
+  "binarySHA256After": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
+  "kitBinarySHA256After": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
+  "finishedUTC": "2026-10-28T22:53:53.877859+00:00",
+  "durationSeconds": 1.367
+}

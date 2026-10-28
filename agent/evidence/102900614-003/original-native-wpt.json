@@ -1,0 +1,16 @@
+{
+  "format": "native_absolute_wpt",
+  "taskId": "102900614",
+  "binarySHA256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
+  "report": "output/session-20261029/native-qa-kit-v1/source/output/native-wpt-session102900614-message-transfer-1/wpt-report.json",
+  "reportSHA256": "cb1cb27d5a87d91dc138d41e72200474202c198a10c7ddbe1ebd490953f2ab4b",
+  "files": 6,
+  "fullyPassingFiles": 6,
+  "assertions": {
+    "PASS": 1850
+  },
+  "passed": true,
+  "sourceReceipt": "output/session-102900614/message-transfer-upstream-2/receipt.json",
+  "referenceStatus": "Quarantined native URL sanity; no Chrome parity claim",
+  "scope": "Six unchanged upstream WPT-source files only; full official WPT remains unmeasured"
+}

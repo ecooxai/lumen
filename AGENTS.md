@@ -22,3 +22,7 @@ Goal 98/100, at most 1000 iterations, bounded by three hours. A build or package
 Historical baseline50/100 from the previous accepted executable, not freshly earned this task. Original pinned subset1850/1850 assertions,6/6 files. Wider priority cohort158/207 recorded variants fully pass (76.33%);1515 variants frozen, so158/1515 (10.43%) are recorded fully passing. Full WPT pass rate unknown.
 
 Priorities: meaningful high-impact red/green standards fixes; high scrolling CPU; actual same signed IPA execution; trustworthy Chrome control. Exact previous handoff and task are archived with suffix `before-102900614-20261029-062143`. See refreshed continuation for artifact identities and reproduction paths.
+
+### Current checkpoint003
+
+Verified transfer native `733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848`; original WPT1850/1850 and targeted222/222 pass. Current artifact acceptance40/100, prior50 historical. Fresh soak and task public delivery pending; scroll p9523.054% still fails10% ceiling. Keep GPU/stream candidates isolated. Details and exact sources in `agent/evidence/102900614-003-message-transfer.json`.

@@ -332,7 +332,14 @@ const cancelIdleCallback = clearTimeout;
 const queueMicrotask = (fn) => { if (typeof fn !== 'function') throw new TypeError('queueMicrotask callback must be callable'); Promise.resolve().then(() => { N.runMicrotask(fn); }); };
 // The exception constructor is the original lexical interface of this realm.
 N.initCloneIntrinsic((message, name) => new DOMException(message, name));
-function structuredClone(v, seen = new Map()) {
+function structuredClone(value, options) {
+    if (!arguments.length) throw new TypeError("Failed to execute 'structuredClone': 1 argument required.");
+    const transfer = cloneTransferList(options);
+    // Preserve the established platform-value clone path when no transfers
+    // are requested; transferable graph reconstruction uses the native codec.
+    return transfer.length ? N.transferClone(value, transfer) : cloneValue(value);
+}
+function cloneValue(v, seen = new Map()) {
     if (v === null || typeof v !== 'object') { if (typeof v === 'function' || typeof v === 'symbol') throw new DOMException('could not be cloned.', 'DataCloneError'); return v; }
     // Platform identity is checked before any public tag, prototype or getter.
     if (N.cloneUnsupported(v)) throw new DOMException('could not be cloned.', 'DataCloneError');
@@ -340,11 +347,11 @@ function structuredClone(v, seen = new Map()) {
     const tag = Object.prototype.toString.call(v).slice(8, -1);
     if (tag === 'Date') return new Date(Date.prototype.getTime.call(v)); if (tag === 'RegExp') return new RegExp(v.source, v.flags);
     if (tag === 'ArrayBuffer') { const b = new ArrayBuffer(v.byteLength); new Uint8Array(b).set(new Uint8Array(v)); seen.set(v, b); return b; }
-    if (ArrayBuffer.isView(v)) { const b = structuredClone(v.buffer, seen); return tag === 'DataView' ? new DataView(b, v.byteOffset, v.byteLength) : new globalThis[tag](b, v.byteOffset, v.length); }
+    if (ArrayBuffer.isView(v)) { const b = cloneValue(v.buffer, seen); return tag === 'DataView' ? new DataView(b, v.byteOffset, v.byteLength) : new globalThis[tag](b, v.byteOffset, v.length); }
     if (blobFileOps.isBlob(v)) return v; if (N.isNode(v)) throw new DOMException('could not be cloned.', 'DataCloneError');
-    if (tag === 'Map') { const m = new Map(); seen.set(v, m); for (const [k, x] of v) m.set(structuredClone(k, seen), structuredClone(x, seen)); return m; }
-    if (tag === 'Set') { const s = new Set(); seen.set(v, s); for (const x of v) s.add(structuredClone(x, seen)); return s; }
-    const o = Array.isArray(v) ? [] : {}; seen.set(v, o); for (const k of Object.keys(v)) o[k] = structuredClone(v[k], seen); return o;
+    if (tag === 'Map') { const m = new Map(); seen.set(v, m); for (const [k, x] of v) m.set(cloneValue(k, seen), cloneValue(x, seen)); return m; }
+    if (tag === 'Set') { const s = new Set(); seen.set(v, s); for (const x of v) s.add(cloneValue(x, seen)); return s; }
+    const o = Array.isArray(v) ? [] : {}; seen.set(v, o); for (const k of Object.keys(v)) o[k] = cloneValue(v[k], seen); return o;
 }
 const xferPorts = (o, t) => { const tr = o && typeof o === 'object' ? o.transfer : t; return (tr && typeof tr[Symbol.iterator] === 'function' ? [...tr] : []).filter(p => p && typeof p.postMessage === 'function' && typeof p.start === 'function'); };
 function windowString(value) { if (typeof value === 'symbol') throw new TypeError('A Symbol cannot be converted to a string.'); return String(value); }

@@ -28,7 +28,14 @@ extern "C" {
 void (*js_wakeup)(void) = nullptr;
 
 namespace {
-struct Side { std::vector<v8::CompiledWasmModule> wasm; std::vector<std::shared_ptr<v8::BackingStore>> sab; };
+struct Side {
+    std::vector<v8::CompiledWasmModule> wasm;
+    std::vector<std::shared_ptr<v8::BackingStore>> sab;
+    /* Transfer envelopes retain storage, never source-isolate handles. The
+     * allocator is shared by JsCtx and worker_main, so queued buffers may
+     * safely outlive their creator or be discarded during termination. */
+    std::vector<std::shared_ptr<v8::BackingStore>> buffers;
+};
 struct Buf { uint8_t *p = nullptr; size_t n = 0; std::shared_ptr<Side> side; };
 enum { WM_MESSAGE, WM_ERROR, WM_LOADFAIL };
 struct OutMsg { int kind; Buf data; std::string msg, file; int line = 0, col = 0; };
@@ -124,18 +131,55 @@ struct DesDel : v8::ValueDeserializer::Delegate {
         return v8::SharedArrayBuffer::New(iso, side->sab[id]);
     }
 };
-bool ser(v8::Isolate *iso, v8::Local<v8::Context> ctx, v8::Local<v8::Value> v, Buf &out) {
+bool ser(v8::Isolate *iso, v8::Local<v8::Context> ctx, v8::Local<v8::Value> v, Buf &out,
+         v8::Local<v8::Value> transfer = {}) {
+    std::vector<v8::Local<v8::ArrayBuffer>> buffers;
+    if (!transfer.IsEmpty() && !transfer->IsUndefined()) {
+        if (!transfer->IsArray()) {
+            jsg_idl_type_error(iso, "Expected the normalized transfer list");
+            return false;
+        }
+        auto list = transfer.As<v8::Array>();
+        for (uint32_t i = 0; i < list->Length(); ++i) {
+            v8::Local<v8::Value> value;
+            if (!list->Get(ctx, i).ToLocal(&value)) return false;
+            if (!value->IsArrayBuffer()) {
+                jsg_throw_clone_exception(iso, jstr(iso, "This object is not transferable."));
+                return false;
+            }
+            auto buffer = value.As<v8::ArrayBuffer>();
+            if (std::any_of(buffers.begin(), buffers.end(), [&](auto other) { return buffer->StrictEquals(other); })) {
+                jsg_throw_clone_exception(iso, jstr(iso, "The transfer list contains a duplicate buffer."));
+                return false;
+            }
+            buffers.push_back(buffer);
+        }
+    }
     SerDel del(iso);
     v8::ValueSerializer s(iso, &del);
+    for (uint32_t i = 0; i < buffers.size(); ++i) s.TransferArrayBuffer(i, buffers[i]);
     s.WriteHeader();
     if (!s.WriteValue(ctx, v).FromMaybe(false)) return false;
+    /* HTML StructuredSerializeWithTransfer serializes before any detachment.
+     * It then transfers in list order: a later detached item must not undo
+     * earlier transfers. Getters may have detached/resized these buffers. */
+    for (auto buffer : buffers) {
+        if (buffer->WasDetached() || !buffer->IsDetachable()) {
+            jsg_throw_clone_exception(iso, jstr(iso, "The transfer list contains a detached or non-transferable buffer."));
+            return false;
+        }
+        del.side->buffers.push_back(buffer->GetBackingStore());
+        if (!buffer->Detach(v8::Local<v8::Value>()).FromMaybe(false)) return false;
+    }
     auto r = s.Release(); out.p = r.first; out.n = r.second;
-    if (!del.side->wasm.empty() || !del.side->sab.empty()) out.side = del.side;
+    if (!del.side->wasm.empty() || !del.side->sab.empty() || !del.side->buffers.empty()) out.side = del.side;
     return true;
 }
 v8::MaybeLocal<v8::Value> deser(v8::Isolate *iso, v8::Local<v8::Context> ctx, const Buf &b) {
     DesDel del(b.side);
     v8::ValueDeserializer d(iso, b.p, b.n, &del);
+    if (b.side) for (uint32_t i = 0; i < b.side->buffers.size(); ++i)
+        d.TransferArrayBuffer(i, v8::ArrayBuffer::New(iso, b.side->buffers[i]));
     if (!d.ReadHeader(ctx).FromMaybe(false)) return {};
     return d.ReadValue(ctx);
 }
@@ -230,8 +274,8 @@ std::string resolve(WEnv *E, const std::string &rel, const char *base = nullptr)
 typedef v8::FunctionCallbackInfo<v8::Value> FCI;
 #define WFN(nm) void w_##nm(const FCI &a)
 #define WENV WEnv *E = wenv(a.GetIsolate()); v8::Isolate *iso = E->iso; v8::Local<v8::Context> ctx = iso->GetCurrentContext(); (void)ctx
-WFN(post) { WENV; Buf b; if (ser(iso, ctx, a[0], b)) post_out(E, OutMsg{ WM_MESSAGE, b, {}, {}, 0, 0 }); }
-WFN(clone) { WENV; Buf b; if (!ser(iso, ctx, a[0], b)) return; v8::Local<v8::Value> v; if (deser(iso, ctx, b).ToLocal(&v)) a.GetReturnValue().Set(v); free(b.p); }
+WFN(post) { WENV; Buf b; if (ser(iso, ctx, a[0], b, a[1])) post_out(E, OutMsg{ WM_MESSAGE, b, {}, {}, 0, 0 }); }
+WFN(clone) { WENV; Buf b; if (!ser(iso, ctx, a[0], b, a[1])) return; v8::Local<v8::Value> v; if (deser(iso, ctx, b).ToLocal(&v)) a.GetReturnValue().Set(v); free(b.p); }
 WFN(timer) {
     WENV; if (!a[0]->IsFunction()) return;
     uint32_t id = ++E->tseq; WTimer &t = E->timers[id];
@@ -912,22 +956,87 @@ class BroadcastChannel extends EventTarget {
 }
 const portSub = (v, ps, seen = new Set()) => { if (!ps.length || !v || typeof v !== 'object' || seen.has(v)) return v; const i = ps.indexOf(v); if (i >= 0) return { __lumenPortRef: i }; seen.add(v); if (Array.isArray(v)) return v.map(x => portSub(x, ps, seen)); const pr = Object.getPrototypeOf(v); if (pr !== Object.prototype && pr !== null) return v; const o = {}; for (const k of Object.keys(v)) o[k] = portSub(v[k], ps, seen); return o; };
 const portRes = (v, ps, seen = new Set()) => { if (!ps.length || !v || typeof v !== 'object' || seen.has(v)) return v; if (typeof v.__lumenPortRef === 'number' && Object.keys(v).length === 1) return ps[v.__lumenPortRef]; seen.add(v); for (const k of Object.keys(v)) v[k] = portRes(v[k], ps, seen); return v; };
+// Convert the Web IDL overload before serialization. In particular, do not
+// silently discard non-port transferables or evaluate a transfer getter twice.
+function cloneTransferList(options, legacy = false) {
+    if (options === undefined || options === null) return [];
+    if (typeof options !== 'object' && typeof options !== 'function') throw new TypeError('Transfer options must be an object.');
+    let value, method;
+    if (legacy) {
+        method = options[Symbol.iterator];
+        value = method === undefined || method === null ? options.transfer : options;
+    } else value = options.transfer;
+    if (value === undefined) return [];
+    if (value === null || (typeof value !== 'object' && typeof value !== 'function')) throw new TypeError('Transfer must be a sequence of objects.');
+    if (value !== options || method === undefined || method === null) method = value[Symbol.iterator];
+    if (typeof method !== 'function') throw new TypeError('Transfer must be iterable.');
+    const iterator = method.call(value);
+    const list = [];
+    for (const item of { [Symbol.iterator]() { return iterator; } }) {
+        if (item === null || (typeof item !== 'object' && typeof item !== 'function')) throw new TypeError('A transferable must be an object.');
+        list.push(item);
+    }
+    return list;
+}
+const portBufferLength = Object.getOwnPropertyDescriptor(ArrayBuffer.prototype, 'byteLength').get;
+function portList(options) {
+    const list = cloneTransferList(options, true), ports = [], buffers = [], seen = new Set();
+    for (const item of list) {
+        if (seen.has(item)) throw new DOMException('The transfer list contains a duplicate object.', 'DataCloneError');
+        seen.add(item);
+        if (item instanceof MessagePort) ports.push(item);
+        else {
+            // The intrinsic checks the ArrayBuffer brand, including detached
+            // buffers; public properties and SharedArrayBuffer cannot spoof it.
+            try { portBufferLength.call(item); }
+            catch (_) { throw new DOMException('This object is not transferable.', 'DataCloneError'); }
+            buffers.push(item);
+        }
+    }
+    return { ports, buffers };
+}
 const wports = new Map(); let wpseq = 0;
 class MessagePort extends EventTarget {
     constructor() { super(); this.onmessage = null; this.onmessageerror = null; Object.defineProperty(this, '_other', { value: null, writable: true }); Object.defineProperty(this, '_k', { value: 0, writable: true }); }
-    postMessage(d, t) { const ps = (Array.isArray(t) ? t : t && t.transfer || []).filter(p => p instanceof MessagePort), k = this._k || (this._other && this._other._k); if (k) { W.post({ __lumenPort: k, data: portSub(d, ps), xfer: ps.map(p => { const j = -(++wpseq); p._k = j; if (p._other) wports.set(j, p._other); return j; }) }); return; } const o = this._other; if (o) { const c = W.clone(d); setTimeout(() => { const e = new MessageEvent('message', { data: c, ports: ps }); e.isTrusted = true; fireOn(o, e); }); } }
+    postMessage(data, options) {
+        if (!arguments.length) throw new TypeError("Failed to execute 'postMessage': 1 argument required.");
+        const { ports, buffers } = portList(options), key = this._k || (this._other && this._other._k);
+        if (key) {
+            const ids = ports.map(() => -(++wpseq));
+            W.post({ __lumenPort: key, data: portSub(data, ports), xfer: ids }, buffers);
+            ports.forEach((port, i) => { port._k = ids[i]; if (port._other) wports.set(ids[i], port._other); });
+            return;
+        }
+        const other = this._other;
+        const cloned = W.clone(portSub(data, ports), buffers);
+        if (other) setTimeout(() => {
+            const event = new MessageEvent('message', { data: portRes(cloned, ports), ports });
+            event.isTrusted = true; fireOn(other, event);
+        });
+    }
     start() {} close() { this._other = null; }
 }
 class MessageChannel { constructor() { this.port1 = new MessagePort(); this.port2 = new MessagePort(); this.port1._other = this.port2; this.port2._other = this.port1; } }
 const api = {
     self: G, globalThis: G, location, navigator, name: W.name, origin: location.origin, isSecureContext: !!W.secure, crossOriginIsolated: !!W.coi,
     onmessage: null, onmessageerror: null, onerror: null, onunhandledrejection: null, onrejectionhandled: null, onlanguagechange: null, onoffline: null, ononline: null,
-    postMessage(m, t) { if (arguments.length < 1) throw new TypeError("Failed to execute 'postMessage': 1 argument required, but only 0 present."); const ps = (Array.isArray(t) ? t : t && t.transfer || []).filter(p => p instanceof MessagePort); if (!ps.length) return W.post(m); W.post({ __lumenXfer: ps.map(p => { const k = -(++wpseq); p._k = k; if (p._other) wports.set(k, p._other); return k; }), data: portSub(m, ps) }); },
+    postMessage(data, options) {
+        if (!arguments.length) throw new TypeError("Failed to execute 'postMessage': 1 argument required.");
+        const { ports, buffers } = portList(options);
+        if (!ports.length) return W.post(data, buffers);
+        const ids = ports.map(() => -(++wpseq));
+        W.post({ __lumenXfer: ids, data: portSub(data, ports) }, buffers);
+        ports.forEach((port, i) => { port._k = ids[i]; if (port._other) wports.set(ids[i], port._other); });
+    },
     close() { W.close(); },
     importScripts(...urls) { for (const u of urls) W.importScript(String(u)); },
     setTimeout: (f, ms, ...args) => W.timer(toFn(f), +ms || 0, false, args), setInterval: (f, ms, ...args) => W.timer(toFn(f), +ms || 0, true, args),
     clearTimeout: id => W.clear(+id || 0), clearInterval: id => W.clear(+id || 0),
-    queueMicrotask: f => { if (typeof f !== 'function') throw new TypeError('queueMicrotask callback must be callable'); Promise.resolve().then(() => { try { f(); } catch (error) { W.reportErr(error); } }); }, structuredClone: v => W.clone(v),
+    queueMicrotask: f => { if (typeof f !== 'function') throw new TypeError('queueMicrotask callback must be callable'); Promise.resolve().then(() => { try { f(); } catch (error) { W.reportErr(error); } }); },
+    structuredClone(value, options) {
+        if (!arguments.length) throw new TypeError("Failed to execute 'structuredClone': 1 argument required.");
+        return W.clone(value, cloneTransferList(options));
+    },
     btoa, atob, TextEncoder, TextDecoder, Blob, File, FileReader, FileReaderSync, URL, URLSearchParams, FormData, Headers, Request, Response, fetch, performance, console,
     Event, ProgressEvent, MessageEvent, MessagePort, MessageChannel, BroadcastChannel, ErrorEvent, CustomEvent, PromiseRejectionEvent, EventTarget, DOMException, WorkerGlobalScope, DedicatedWorkerGlobalScope, WorkerLocation, WorkerNavigator,
 };
@@ -1261,7 +1370,7 @@ void n_workerPost(const FCI &a) {
      * registry entry. Keep the Worker alive, never retain an iterator across JS. */
     std::shared_ptr<Worker> w = it == g_workers.end() ? nullptr : it->second;
     Buf b;
-    if (!ser(iso, ctx, a[1], b)) return;
+    if (!ser(iso, ctx, a[1], b, a[2])) return;
     if (!w) { free(b.p); return; }
     {
         std::lock_guard<std::mutex> lk(w->mu);
@@ -1270,6 +1379,14 @@ void n_workerPost(const FCI &a) {
         w->in.push_back(std::move(b));
     }
     w->cv.notify_all();
+}
+void n_transferClone(const FCI &a) {
+    auto iso = a.GetIsolate(); auto ctx = iso->GetCurrentContext();
+    Buf buffer;
+    if (!ser(iso, ctx, a[0], buffer, a[1])) return;
+    v8::Local<v8::Value> value;
+    if (deser(iso, ctx, buffer).ToLocal(&value)) a.GetReturnValue().Set(value);
+    free(buffer.p);
 }
 void n_workerTerm(const FCI &a) {
     v8::Isolate *iso = a.GetIsolate(); v8::Local<v8::Context> ctx = iso->GetCurrentContext();
@@ -1293,6 +1410,7 @@ void js_install_workers(JsCtx *c, v8::Local<v8::Object> N) {
     (void)N->Set(ctx, jstr(iso, "workerNew"), v8::Function::New(ctx, n_workerNew).ToLocalChecked());
     (void)N->Set(ctx, jstr(iso, "workerPost"), v8::Function::New(ctx, n_workerPost).ToLocalChecked());
     (void)N->Set(ctx, jstr(iso, "workerTerm"), v8::Function::New(ctx, n_workerTerm).ToLocalChecked());
+    (void)N->Set(ctx, jstr(iso, "transferClone"), v8::Function::New(ctx, n_transferClone).ToLocalChecked());
 }
 
 double workers_deadline(JsCtx *c) {

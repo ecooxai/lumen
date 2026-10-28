@@ -30,3 +30,7 @@ Existing helpers: `tools/monitor_process.py`, `tools/apple-session-gpt6as/run_pr
 The prior FileHarbor API403 is not permission to seek alternate bypass routes. Git-backed source remains in its remote and reviewed archive; standalone delivery receipts may use Library where appropriate.
 
 See `agent/devsummary.md` for task iterations and per-stage timings. Child Mac MCP was observed to hang again; root brokers all remote operations.
+
+## Checkpoint003 — current native transfer artifact
+
+Current verified native `build-apple-load-20261029/lumen-message-transfer-733943aa9496d134` SHA-256 `733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848`. Source manifest `agent/evidence/102900614-003/compiled-source-sha256.json`. Original1850/1850 and targeted222/222 upstream assertions pass;826 custom regression assertions pass. Current score40/100; prior50 remains historical, fresh soak and task delivery pending. Current final idle passes; scroll p9523.054% fails10% target. GPU and stream candidates must be separately validated and never silently attributed to this snapshot. All broader158/207 priority results remain historical. See `agent/evidence/102900614-003-message-transfer.json`.

@@ -564,8 +564,64 @@ for (const k of ['url', 'readyState', 'bufferedAmount', 'onopen', 'onerror', 'on
 }
 for (const k of ['wasClean', 'code', 'reason']) { const d = Object.getOwnPropertyDescriptor(CloseEvent.prototype, k); d.enumerable = true; Object.defineProperty(CloseEvent.prototype, k, d); }
 for (const [k, v] of Object.entries({ CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3 })) { Object.defineProperty(WebSocket, k, { value: v, enumerable: true }); Object.defineProperty(WebSocket.prototype, k, { value: v, enumerable: true }); }
-const portList = t => (t && typeof t[Symbol.iterator] === 'function' ? [...t] : t && t.transfer ? [...t.transfer] : []).filter(p => p && typeof p.postMessage === 'function' && typeof p.start === 'function');
-class MessagePort extends EventTarget { constructor() { super(); this.onmessage = null; def(this, '_other', null); } postMessage(d, t) { const ps = portList(t), r = this._wk || (this._other && this._other._wk); if (r) { N.workerPost(r[0], { __lumenPort: r[1], data: portSub(d, ps), xfer: ps.map(p => { const k = ++portSeq; p._wk = [r[0], k]; if (p._other) remotePorts.set(k, p._other); return k; }) }); return; } const o = this._other; if (o) { const c = structuredClone(d); setTimeout(() => o._deliver(c, ps)); } } _deliver(data, ports) { dispatch(this, new MessageEvent('message', { data, ports: ports || [] }), true); } start() {} close() { this._other = null; } }
+// Convert the Web IDL overload before serialization. In particular, do not
+// silently discard non-port transferables or evaluate a transfer getter twice.
+function cloneTransferList(options, legacy = false) {
+    if (options === undefined || options === null) return [];
+    if (typeof options !== 'object' && typeof options !== 'function') throw new TypeError('Transfer options must be an object.');
+    let value, method;
+    if (legacy) {
+        method = options[Symbol.iterator];
+        value = method === undefined || method === null ? options.transfer : options;
+    } else value = options.transfer;
+    if (value === undefined) return [];
+    if (value === null || (typeof value !== 'object' && typeof value !== 'function')) throw new TypeError('Transfer must be a sequence of objects.');
+    if (value !== options || method === undefined || method === null) method = value[Symbol.iterator];
+    if (typeof method !== 'function') throw new TypeError('Transfer must be iterable.');
+    const iterator = method.call(value);
+    const list = [];
+    for (const item of { [Symbol.iterator]() { return iterator; } }) {
+        if (item === null || (typeof item !== 'object' && typeof item !== 'function')) throw new TypeError('A transferable must be an object.');
+        list.push(item);
+    }
+    return list;
+}
+const portBufferLength = Object.getOwnPropertyDescriptor(ArrayBuffer.prototype, 'byteLength').get;
+function portList(options) {
+    const list = cloneTransferList(options, true), ports = [], buffers = [], seen = new Set();
+    for (const item of list) {
+        if (seen.has(item)) throw new DOMException('The transfer list contains a duplicate object.', 'DataCloneError');
+        seen.add(item);
+        if (item instanceof MessagePort) ports.push(item);
+        else {
+            // The intrinsic checks the ArrayBuffer brand, including detached
+            // buffers; public properties and SharedArrayBuffer cannot spoof it.
+            try { portBufferLength.call(item); }
+            catch (_) { throw new DOMException('This object is not transferable.', 'DataCloneError'); }
+            buffers.push(item);
+        }
+    }
+    return { ports, buffers };
+}
+class MessagePort extends EventTarget {
+    constructor() { super(); this.onmessage = null; def(this, '_other', null); }
+    postMessage(data, options) {
+        if (!arguments.length) throw new TypeError("Failed to execute 'postMessage': 1 argument required.");
+        const { ports, buffers } = portList(options), remote = this._wk || (this._other && this._other._wk);
+        if (remote) {
+            const ids = ports.map(() => ++portSeq);
+            N.workerPost(remote[0], { __lumenPort: remote[1], data: portSub(data, ports), xfer: ids }, buffers);
+            ports.forEach((port, i) => { port._wk = [remote[0], ids[i]]; if (port._other) remotePorts.set(ids[i], port._other); });
+            return;
+        }
+        const other = this._other;
+        const cloned = structuredClone(portSub(data, ports), { transfer: buffers });
+        if (other) setTimeout(() => other._deliver(portRes(cloned, ports), ports));
+    }
+    _deliver(data, ports) { dispatch(this, new MessageEvent('message', { data, ports: ports || [] }), true); }
+    start() {}
+    close() { this._other = null; }
+}
 class MessageChannel { constructor() { this.port1 = new MessagePort(); this.port2 = new MessagePort(); this.port1._other = this.port2; this.port2._other = this.port1; } }
 const bcAll = new Set();
 let bcIds = 0;
@@ -599,7 +655,14 @@ class Worker extends EventTarget {
         def(this, '_id', N.workerNew(u.href, src, N.userAgent(), N.platform(), opts && opts.name != null ? String(opts.name) : '', !!opts && opts.type === 'module'));
         workers.set(this._id, this);
     }
-    postMessage(m, t) { if (arguments.length < 1) throw new TypeError("Failed to execute 'postMessage' on 'Worker': 1 argument required, but only 0 present."); if (!this._id) return; const ps = (Array.isArray(t) ? t : t && t.transfer || []).filter(p => p instanceof MessagePort); if (!ps.length) return N.workerPost(this._id, m); N.workerPost(this._id, { __lumenXfer: ps.map(p => { const k = ++portSeq; p._wk = [this._id, k]; if (p._other) remotePorts.set(k, p._other); return k; }), data: portSub(m, ps) }); }
+    postMessage(data, options) {
+        if (!arguments.length) throw new TypeError("Failed to execute 'postMessage' on 'Worker': 1 argument required.");
+        const { ports, buffers } = portList(options);
+        if (!ports.length) return N.workerPost(this._id, data, buffers);
+        const ids = ports.map(() => ++portSeq);
+        N.workerPost(this._id, { __lumenXfer: ids, data: portSub(data, ports) }, buffers);
+        ports.forEach((port, i) => { port._wk = [this._id, ids[i]]; if (port._other) remotePorts.set(ids[i], port._other); });
+    }
     terminate() { if (this._id) { N.workerTerm(this._id); workers.delete(this._id); this._id = 0; } }
 }
 function workerEvent(id, kind, data, message, filename, lineno, colno) {

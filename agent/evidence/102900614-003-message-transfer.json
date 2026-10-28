@@ -1,0 +1,66 @@
+{
+  "iteration": "102900614-003",
+  "started_utc": "2026-10-28T22:39:39.725760+00:00",
+  "updated_utc": "2026-10-28T23:02:31.987958+00:00",
+  "elapsed_seconds": 1372.262,
+  "total_session_seconds": 2870.529,
+  "score": 40,
+  "status": "ArrayBuffer transfer accepted on733; fresh soak and task delivery remain pending",
+  "binary_sha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
+  "source_base_commit": "22359337f8036da7170fa0e06e4b486dfc5cd440",
+  "source_manifest": "agent/evidence/102900614-003/compiled-source-sha256.json",
+  "source_manifest_sha256": "279c29208552766248294271186fe8b7b68557a59dcdf0d7337bb69544e6a5f2",
+  "red": {
+    "passed": 15,
+    "total": 68,
+    "failed": 53,
+    "log": "output/session-102900614/message-transfer-red-1.log",
+    "log_sha256": "8fdddc2011be45d20daffeae6e72462176458d4e7a54ccd616596353a6250943",
+    "monitor": "output/session-102900614/message-transfer-red-1.json",
+    "monitor_sha256": "8f8d007af540412415adf20b20e010b16d192eb9c6ab51e437dfab7a037ea79a",
+    "duration_seconds": 1.063,
+    "valid_cpu_intervals": 0
+  },
+  "green": {
+    "passed": 68,
+    "total": 68,
+    "regression_checks": 826,
+    "duration_seconds": 14.989,
+    "build_seconds": 6.083,
+    "receipt": "output/session-102900614/message-transfer-green-1/summary.json",
+    "receipt_sha256": "3bc80a772d0c4d5e068830aabc4232fc9419438289acdc6c61f32630a699427e"
+  },
+  "wpt": {
+    "original_assertions": "1850/1850",
+    "original_files": "6/6",
+    "original_seconds": 9.236,
+    "target_assertions": "222/222",
+    "target_files": "2/2",
+    "target_seconds": 1.193,
+    "full_official_pass_rate": null
+  },
+  "resources": {
+    "duration_seconds": 116.233,
+    "idle_p95_percent": 0.0,
+    "idle_rss_mib": 150.656,
+    "scroll_p95_percent": 23.054,
+    "scroll_target_percent": 10
+  },
+  "historical_score": 50,
+  "score_explanation": "Fresh executable acceptance resets artifact-specific soak and new-task delivery to pending. This is an evidence refresh, not a claimed functional regression. Criterion weights unchanged.",
+  "limits": [
+    "ArrayBuffer transfer is implemented; complete MessagePort shipping/entanglement lifecycle is not established.",
+    "Raw expanded priority counts remain historical158/207 observed,158/1515 scheduled.",
+    "Chrome reference remains quarantined; native absolute WPT results remain valid.",
+    "No identical signed IPA execution proof."
+  ],
+  "infrastructure_note": "Initial target runner stopped because the old official WPT fixture PID had exited. Restored owned fixture and reran only the two pending variants; original1850 accepted results were retained.",
+  "model_compute_duration": "Unavailable; parallel worker wall times are not summed",
+  "post_run_helper_whitespace_correction": {
+    "path": "tools/apple-session-gpt6as/verify_transfer_wpt_v2_102900614.py",
+    "line": 67,
+    "executed_source_sha256": "0ee028d5e7aebd89a31b13eea8824e1a3cd84a6d30044b190891a35fd486a6c0",
+    "committed_source_sha256": "be626b3b7215b78993daab829bbdb25075845f889fa3ab5ce0e5e0f2560d8cdb",
+    "scope": "Four trailing spaces removed from otherwise blank source line after the measured run; execution receipt hashes remain unchanged. No production input or test assertion changed."
+  }
+}

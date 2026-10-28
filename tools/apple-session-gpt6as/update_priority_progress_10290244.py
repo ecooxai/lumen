@@ -44,14 +44,23 @@ status['taskId']=TASK
 gates={row['id']:row for row in score['gates']}
 comparison_path=gates['wpt_original']['evidence'][0]
 comparison=json.loads((ROOT/comparison_path).read_text())
-candidate,reference=comparison['candidate'],comparison['reference']
-native=candidate['run_info']['browser_version'].removeprefix('sha256:')
-if not comparison.get('comparable')or comparison.get('blockers')or native!=score['current_baseline_binary_sha256']:raise RuntimeError('Current accepted WPT artifact does not match the scorecard')
-status['wpt']={'passed':candidate['subtests']['passed'],'total':candidate['subtests']['union_inventory'],
-    'passPercent':candidate['subtests']['observed_pass_percent'],'reportedFiles':candidate['files']['reported'],
-    'fullyPassingFiles':candidate['files']['passed'],'chromePassed':reference['subtests']['passed'],
-    'chromeTotal':reference['subtests']['union_inventory'],'binarySha256':native,
-    'scope':'Pinned six-file upstream WPT-source subset. Full official WPT remains unmeasured.','evidence':comparison_path}
+if gates['wpt_original'].get('evidence_format')=='native_absolute_wpt':
+    native=comparison['binarySHA256']
+    if comparison.get('format')!='native_absolute_wpt' or not comparison.get('passed') or native!=score['current_baseline_binary_sha256'] or sha(ROOT/comparison['report'])!=comparison['reportSHA256']:raise RuntimeError('Native absolute WPT evidence does not match current artifact')
+    counts=comparison['assertions'];total=sum(counts.values());passed=counts.get('PASS',0)
+    status['wpt']={'passed':passed,'total':total,'passPercent':round(100*passed/total,4) if total else None,
+        'reportedFiles':comparison['files'],'fullyPassingFiles':comparison['fullyPassingFiles'],
+        'chromePassed':None,'chromeTotal':None,'binarySha256':native,'scope':comparison['scope'],
+        'referenceStatus':comparison['referenceStatus'],'evidence':comparison_path}
+else:
+    candidate,reference=comparison['candidate'],comparison['reference']
+    native=candidate['run_info']['browser_version'].removeprefix('sha256:')
+    if not comparison.get('comparable')or comparison.get('blockers')or native!=score['current_baseline_binary_sha256']:raise RuntimeError('Current accepted WPT artifact does not match the scorecard')
+    status['wpt']={'passed':candidate['subtests']['passed'],'total':candidate['subtests']['union_inventory'],
+        'passPercent':candidate['subtests']['observed_pass_percent'],'reportedFiles':candidate['files']['reported'],
+        'fullyPassingFiles':candidate['files']['passed'],'chromePassed':reference['subtests']['passed'],
+        'chromeTotal':reference['subtests']['union_inventory'],'binarySha256':native,
+        'scope':'Pinned six-file upstream WPT-source subset. Full official WPT remains unmeasured.','evidence':comparison_path}
 interaction=gates['perf_interaction'];idle=gates['perf_idle'];soak=gates['perf_soak']
 idle_review=idle.get('review',{});idle_phase=idle_review.get('phases',{}).get('idle:after',{})
 soak_memory=soak.get('review',{}).get('settled_rss_comparison')or{}
@@ -119,7 +128,8 @@ passed=sum(row['lumenFullyPassing'] for row in value['categories'].values())
 scheduled=value['selectedVariants']
 status['prioritySummary']={'recorded':recorded,'fullyPassing':passed,'scheduled':scheduled,'unrun':scheduled-recorded,
     'observedVariantPassPercent':round(100*passed/recorded,4) if recorded else None,
-    'scheduledFullyPassingPercent':round(100*passed/scheduled,4),'scope':'Raw frozen priority variants, not full WPT'}
+    'scheduledFullyPassingPercent':round(100*passed/scheduled,4),'scope':'Raw frozen priority variants, not full WPT',
+    'binarySha256':value.get('lumenBinarySHA256'),'isCurrentAcceptedNativeArtifact':value['isCurrentAcceptedNativeArtifact']}
 if score.get('accepted_artifact_status')=='inherited_baseline':status['phase']='Inherited previous-build evidence; new task validation is in progress. '+status['phase']
 archive=ROOT/('output/session-'+TASK+'/public/manifest.json')
 if archive.is_file():

@@ -157,3 +157,15 @@ Consolidated outdated task-owned instructions and archived both previous documen
 - Reused existing MVC progress stack with explicit task identity, isolated message storage, raw priority pass denominator, inherited-score label, dynamic status validation, and exact private-key/reachable-history publication checks. Full WPT rate remains unmeasured.
 - Initial commit pager/whitespace interruption was infrastructure only; exact user text and archived bytes retained. No separate timing was captured, and no acceptance points were awarded for the repair.
 - Evidence: `agent/evidence/102900614-002-progress-task-isolation.json`. Model compute duration unavailable; parallel wall times are not summed.
+
+## 102900614-003 — native ArrayBuffer transfer and unchanged upstream validation
+
+- Start `2026-10-28T22:39:39.725760+00:00`; end `2026-10-28T23:02:31.987958+00:00`; iteration `1372.262s`; total session `2870.529s`. Parallel worker times are not summed; model compute duration unavailable.
+- Current acceptance **40/100**. Prior **50/100** remains historical. Current soak and external delivery are pending on the new executable; no functional regression is implied by the evidence reset.
+- Native regression **15/68 RED → 68/68 GREEN**; all **826/826** transfer, codec, clone, worker lifecycle/security and port regression checks pass. Build `6.083s`; full regression stage `14.989s`. Existing prebuilt V8 reused.
+- Original upstream **1850/1850 assertions across6/6 files** in `9.236s`; targeted encodeInto window/worker **222/222 across2/2** in `1.193s`. Full WPT and Chrome parity remain unmeasured.
+- Current-artifact resource run `116.233s`: final idle p95 `0.0%` with stable `150.656MiB` RSS; fractional scrolling p95 `23.054%` still exceeds10%. Subsecond regression runs do not establish steady-state performance.
+- The stale official fixture was repaired before rerunning the two pending variants; the accepted original six-file result was preserved. Source commit excludes unrelated GPU candidate work.
+- Evidence `agent/evidence/102900614-003-message-transfer.json`; immutable native SHA-256 `733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848`. MessagePort lifecycle, full Streams and same signed IPA execution remain outside this acceptance.
+
+- Checkpoint003 commit whitespace gate caught four trailing spaces on a blank line of the targeted-run helper. Removed that authored-source defect; execution and committed helper hashes are both recorded. No test or production behavior changed, and no verification was rerun or relabelled.

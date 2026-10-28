@@ -5,8 +5,8 @@
   "session_start_utc": "2026-10-28T22:14:41.459Z",
   "deadline_utc": "2026-10-29T01:14:41.459Z",
   "target_score": 98,
-  "score": 50,
-  "score_state": "inherited_previous_artifact_not_fresh_acceptance",
+  "score": 40,
+  "score_state": "current_native_artifact_accepted_partial_gates_pending",
   "unknown_means": "unverified, not measured failure",
   "rubric": "agent/scorecard-rubric-10290244.md",
   "gates": [
@@ -18,12 +18,24 @@
       "status": "passed",
       "earned": 10,
       "evidence": [
-        "output/session-20261029/native-qa-kit-v1/source/output/wpt-comparison-session10290244-headers-codec-1.json"
+        "agent/evidence/102900614-003/original-native-wpt.json"
       ],
+      "evidence_generation": "current_task",
+      "historical_evidence": [
+        {
+          "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+          "prior_status": "passed",
+          "prior_earned": 10,
+          "evidence": [
+            "output/session-20261029/native-qa-kit-v1/source/output/wpt-comparison-session10290244-headers-codec-1.json"
+          ]
+        }
+      ],
+      "evidence_format": "native_absolute_wpt",
       "passed": 1850,
       "denominator": 1850,
-      "note": "Unchanged six-file upstream assertions only. The installed control has an independent URL anomaly; no broad Chrome parity claim.",
-      "evidence_generation": "inherited_previous_artifact"
+      "binary_sha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
+      "note": "Six unchanged upstream files; absolute native assertions only. Chrome control quarantined."
     },
     {
       "id": "wpt_expanded",
@@ -35,8 +47,18 @@
       "evidence": [
         "output/wpt-10290244/priority-eac62-v1/priority-comparison.json"
       ],
-      "note": "All1515 frozen variants stay in the inventory. Absolute native outcomes remain useful; incomplete categories and anomalous installed control cannot establish expanded comparative acceptance.",
-      "evidence_generation": "inherited_previous_artifact"
+      "evidence_generation": "current_task",
+      "historical_evidence": [
+        {
+          "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+          "prior_status": "incomplete_reference_quarantined",
+          "prior_earned": 0,
+          "evidence": [
+            "output/wpt-10290244/priority-eac62-v1/priority-comparison.json"
+          ]
+        }
+      ],
+      "note": "All1515 variants remain frozen; historical158/207 cannot establish current build acceptance or full WPT conformance."
     },
     {
       "id": "wpt_no_regression",
@@ -46,13 +68,26 @@
       "status": "passed",
       "earned": 10,
       "evidence": [
-        "output/session-20261029/native-qa-kit-v1/source/output/wpt-comparison-session10290244-headers-codec-1.json",
-        "output/session-10290244/headers-codec-green-1/compiled-source-sha256.json",
-        "output/session-10290244/headers-codec-green-1/summary.json"
+        "agent/evidence/102900614-003/native-regression-summary.json",
+        "agent/evidence/102900614-003/compiled-source-sha256.json",
+        "agent/evidence/102900614-003/original-native-wpt.json",
+        "agent/evidence/102900614-003/upstream-receipt.json"
       ],
-      "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
-      "source_commit": "4517145578ef3374cba6e699b2fe183fc25e48a0",
-      "evidence_generation": "inherited_previous_artifact"
+      "evidence_generation": "current_task",
+      "historical_evidence": [
+        {
+          "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+          "prior_status": "passed",
+          "prior_earned": 10,
+          "evidence": [
+            "output/session-20261029/native-qa-kit-v1/source/output/wpt-comparison-session10290244-headers-codec-1.json",
+            "output/session-10290244/headers-codec-green-1/compiled-source-sha256.json",
+            "output/session-10290244/headers-codec-green-1/summary.json"
+          ]
+        }
+      ],
+      "binary_sha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
+      "note": "826 custom regression assertions plus unchanged original and targeted upstream assertions; source manifest matches this isolated commit."
     },
     {
       "id": "ipa_mac",
@@ -62,7 +97,15 @@
       "status": "unverified",
       "earned": 0,
       "evidence": [],
-      "evidence_generation": "inherited_previous_artifact"
+      "evidence_generation": "current_task",
+      "historical_evidence": [
+        {
+          "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+          "prior_status": "unverified",
+          "prior_earned": 0,
+          "evidence": []
+        }
+      ]
     },
     {
       "id": "ipa_ipad",
@@ -72,7 +115,15 @@
       "status": "unverified",
       "earned": 0,
       "evidence": [],
-      "evidence_generation": "inherited_previous_artifact"
+      "evidence_generation": "current_task",
+      "historical_evidence": [
+        {
+          "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+          "prior_status": "unverified",
+          "prior_earned": 0,
+          "evidence": []
+        }
+      ]
     },
     {
       "id": "ipa_iphone",
@@ -82,7 +133,15 @@
       "status": "unverified",
       "earned": 0,
       "evidence": [],
-      "evidence_generation": "inherited_previous_artifact"
+      "evidence_generation": "current_task",
+      "historical_evidence": [
+        {
+          "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+          "prior_status": "unverified",
+          "prior_earned": 0,
+          "evidence": []
+        }
+      ]
     },
     {
       "id": "perf_idle",
@@ -92,14 +151,9 @@
       "status": "passed",
       "earned": 5,
       "evidence": [
-        "agent/evidence/10290244-010-current-native-resources.json",
-        "output/session-10290244/final-native-resources-1/scroll/independent-review.json"
+        "agent/evidence/102900614-003/resource-review.json"
       ],
-      "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
-      "settle_seconds": 15,
-      "valid_window_seconds": 64.009,
-      "samples": 65,
-      "interval_cpu_p95_percent": 0.996,
+      "evidence_generation": "current_task",
       "historical_evidence": [
         {
           "binary_sha256": "7a4bfec10412f3e2c0eee92a01bf8c9bec496eb122114ab4844e8e4a4c783b85",
@@ -153,23 +207,26 @@
             "verdict": "passed",
             "scope": "Fixed final idle phase; raw peaks remain visible and zero p95 reflects sampler granularity, not literally zero CPU work."
           }
+        },
+        {
+          "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+          "prior_status": "passed",
+          "prior_earned": 5,
+          "evidence": [
+            "agent/evidence/10290244-010-current-native-resources.json",
+            "output/session-10290244/final-native-resources-1/scroll/independent-review.json"
+          ]
         }
       ],
-      "note": "Current artifact; fixed scroll workload final idle after at least15s settle, >=45s, p95<=3%.",
+      "binary_sha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
       "review": {
         "scenario": "scroll",
-        "source": "output/session-10290244/final-native-resources-1/scroll",
-        "expected_binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
-        "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
-        "source_sha256": {
-          "receipt.json": "591ef27a4032ad270edeb13f95321e6e852308a7ef2f0ae1d3abbd41fb6d67c9",
-          "process-summary.json": "6511971b3575c6a8c7d51ba4346aeaf165358023774d32189c4b5c3779600b6b",
-          "process-samples.jsonl": "204230f4e4b1c6cf9d23dc3ec65829dca211be95438acf92ec876e04c787b9c4"
-        },
-        "runner_sha256": "61f919ee0be6e2a972237d7ed7cf9e71f827ff3d9f6d2a8336cebca9fbd9cfb7",
-        "started_utc": "2026-10-28T21:20:53.244302+00:00",
-        "finished_utc": "2026-10-28T21:22:49.315187+00:00",
-        "duration_seconds": 116.064,
+        "binary_sha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
+        "source_receipt": "output/session-102900614/scroll-transfer-baseline/receipt.json",
+        "source_sha256": "2c77377097883a09dc4ab4568548d22edc9a14480e43d044caba144a45b5d1e1",
+        "started_utc": "2026-10-28T22:36:02.474714+00:00",
+        "finished_utc": "2026-10-28T22:37:58.714490+00:00",
+        "duration_seconds": 116.233,
         "policy": {
           "sampling_seconds": 1,
           "max_sampling_gap_seconds": 1.5,
@@ -185,89 +242,93 @@
           "native_live_nodes_growth_allowance": 50,
           "native_live_styles_growth_allowance": 50
         },
-        "issues": [],
+        "issues": [
+          "scrolling: CPU p95 23.054% exceeds 10%"
+        ],
         "phases": {
+          "startup": {
+            "samples": 16,
+            "observed_samples": 16,
+            "duration_seconds": 14.993,
+            "cpu_mean_percent": 2.605,
+            "cpu_median_percent": 1.001,
+            "cpu_p95_percent": 26.064,
+            "cpu_peak_percent": 26.064,
+            "samples_above_threshold": null,
+            "cpu_threshold_percent": null,
+            "cpu_status": "measured_no_threshold",
+            "rss_start_mib": 0.031,
+            "rss_end_mib": 154.25,
+            "rss_peak_mib": 154.297,
+            "rss_change_mib": 154.219,
+            "phase_boundary_samples_excluded_from_cpu_summary": 1,
+            "first_seen_process_events": 1,
+            "cpu_intervals": 15
+          },
           "scrolling": {
-            "observations": 34,
-            "cpu_intervals": 33,
-            "duration_seconds": 33.012,
-            "monotonic_span_seconds": 33.006,
-            "first_after_launch_seconds": 16.093,
-            "maximum_gap_seconds": 1.024,
-            "cpu_p95_percent": 23.024,
-            "cpu_mean_percent": 18.571,
-            "cpu_peak_percent": 23.974,
-            "cpu_ceiling_percent": 10,
-            "rss_start_mib": 156.9375,
-            "rss_end_mib": 150.265625,
-            "rss_peak_mib": 160.765625,
-            "accepted": false,
-            "issues": [
-              "CPU p95 unverified or above predeclared ceiling"
-            ]
+            "samples": 34,
+            "observed_samples": 34,
+            "duration_seconds": 32.996,
+            "cpu_mean_percent": 18.093,
+            "cpu_median_percent": 18.897,
+            "cpu_p95_percent": 23.054,
+            "cpu_peak_percent": 24.001,
+            "samples_above_threshold": null,
+            "cpu_threshold_percent": null,
+            "cpu_status": "measured_no_threshold",
+            "rss_start_mib": 157.969,
+            "rss_end_mib": 151.375,
+            "rss_peak_mib": 161.797,
+            "rss_change_mib": -6.594,
+            "phase_boundary_samples_excluded_from_cpu_summary": 1,
+            "first_seen_process_events": 0,
+            "cpu_intervals": 33
+          },
+          "settle:after": {
+            "samples": 16,
+            "observed_samples": 16,
+            "duration_seconds": 15.002,
+            "cpu_mean_percent": 0.067,
+            "cpu_median_percent": 0.0,
+            "cpu_p95_percent": 1.006,
+            "cpu_peak_percent": 1.006,
+            "samples_above_threshold": null,
+            "cpu_threshold_percent": null,
+            "cpu_status": "measured_no_threshold",
+            "rss_start_mib": 151.375,
+            "rss_end_mib": 150.656,
+            "rss_peak_mib": 151.375,
+            "rss_change_mib": -0.719,
+            "phase_boundary_samples_excluded_from_cpu_summary": 1,
+            "first_seen_process_events": 0,
+            "cpu_intervals": 15
           },
           "idle:after": {
-            "observations": 50,
-            "cpu_intervals": 49,
-            "duration_seconds": 49.023,
-            "monotonic_span_seconds": 49.007,
-            "first_after_launch_seconds": 66.089,
-            "maximum_gap_seconds": 1.04,
-            "cpu_p95_percent": 0.992,
+            "samples": 50,
+            "observed_samples": 50,
+            "duration_seconds": 49.01,
             "cpu_mean_percent": 0.061,
-            "cpu_peak_percent": 1.002,
-            "cpu_ceiling_percent": 3,
-            "rss_start_mib": 149.5,
-            "rss_end_mib": 149.5,
-            "rss_peak_mib": 149.5,
-            "accepted": true,
-            "issues": []
+            "cpu_median_percent": 0.0,
+            "cpu_p95_percent": 0.0,
+            "cpu_peak_percent": 2.01,
+            "samples_above_threshold": 0,
+            "cpu_threshold_percent": 3,
+            "cpu_status": "within_threshold",
+            "rss_start_mib": 150.656,
+            "rss_end_mib": 150.656,
+            "rss_peak_mib": 150.656,
+            "rss_change_mib": 0.0,
+            "phase_boundary_samples_excluded_from_cpu_summary": 1,
+            "first_seen_process_events": 0,
+            "cpu_intervals": 49
           }
-        },
-        "receipt_issues": [
-          "scrolling: CPU p95 23.024% exceeds 10%"
-        ],
-        "scope": "Fixed native Mac process-tree workload; synthetic SDL scrolling or20 actual navigations across21 pages. No IPA/simulator, physical-input, same-page Document GC, or universal resource guarantee.",
-        "cleanup": {
-          "app_pid": 13373,
-          "natural_app_return_code": 0,
-          "app_termination": {
-            "pid": 13373,
-            "return_code": 0,
-            "forced": false
-          },
-          "sampler_termination": {
-            "pid": 13372,
-            "return_code": 0,
-            "forced": false
-          }
-        },
-        "cumulative_cpu_crosscheck": {
-          "intervals_checked": 112,
-          "disagreements": []
-        },
-        "fixture_proofs": [
-          {
-            "step": 0,
-            "exact_fixture_sha256_match": true
-          }
-        ],
-        "normalized_fixture_sha256": "10eb5092d225d40c9b60fee4538a5ab5890f703b8729b9b73340f37e6dad53a8",
-        "scroll_report": {
-          "kind": "scroll-complete",
-          "events": 2702,
-          "lastEventMs": 46261.97799998522,
-          "maxY": 6000.07177734375,
-          "finalY": 6000.07177734375,
-          "url": "http://127.0.0.1:50078/page/0?nonce=17f3ec33240465dc443adf53d4e81861",
-          "step": 0
         },
         "idle_accepted": true,
         "interaction_accepted": false,
         "soak_accepted": false,
-        "accepted": false
+        "scope": "Current native Mac process-tree controlled scroll/final idle only; no IPA, physical-input, memory-soak or universal resource claim"
       },
-      "evidence_generation": "inherited_previous_artifact"
+      "note": "Fixed final idle after15s settle,49.010s window; zero p95 reflects sampler granularity."
     },
     {
       "id": "perf_interaction",
@@ -277,12 +338,9 @@
       "status": "failed",
       "earned": 0,
       "evidence": [
-        "agent/evidence/10290244-010-current-native-resources.json",
-        "output/session-10290244/final-native-resources-1/scroll/independent-review.json"
+        "agent/evidence/102900614-003/resource-review.json"
       ],
-      "note": "Current artifact; fixed30s SDL wheel input, p95<=10%. This does not establish keyboard or physical-device interaction.",
-      "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
-      "ceiling_percent": 10,
+      "evidence_generation": "current_task",
       "historical_evidence": [
         {
           "binary_sha256": "f941cfcdedd9a59b60f41b1cb2be560dce136fc4e6d44cacfce0e5ab25cbbe46",
@@ -301,22 +359,26 @@
           "prior_status": "failed",
           "prior_earned": 0,
           "review": null
+        },
+        {
+          "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+          "prior_status": "failed",
+          "prior_earned": 0,
+          "evidence": [
+            "agent/evidence/10290244-010-current-native-resources.json",
+            "output/session-10290244/final-native-resources-1/scroll/independent-review.json"
+          ]
         }
       ],
+      "binary_sha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
       "review": {
         "scenario": "scroll",
-        "source": "output/session-10290244/final-native-resources-1/scroll",
-        "expected_binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
-        "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
-        "source_sha256": {
-          "receipt.json": "591ef27a4032ad270edeb13f95321e6e852308a7ef2f0ae1d3abbd41fb6d67c9",
-          "process-summary.json": "6511971b3575c6a8c7d51ba4346aeaf165358023774d32189c4b5c3779600b6b",
-          "process-samples.jsonl": "204230f4e4b1c6cf9d23dc3ec65829dca211be95438acf92ec876e04c787b9c4"
-        },
-        "runner_sha256": "61f919ee0be6e2a972237d7ed7cf9e71f827ff3d9f6d2a8336cebca9fbd9cfb7",
-        "started_utc": "2026-10-28T21:20:53.244302+00:00",
-        "finished_utc": "2026-10-28T21:22:49.315187+00:00",
-        "duration_seconds": 116.064,
+        "binary_sha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
+        "source_receipt": "output/session-102900614/scroll-transfer-baseline/receipt.json",
+        "source_sha256": "2c77377097883a09dc4ab4568548d22edc9a14480e43d044caba144a45b5d1e1",
+        "started_utc": "2026-10-28T22:36:02.474714+00:00",
+        "finished_utc": "2026-10-28T22:37:58.714490+00:00",
+        "duration_seconds": 116.233,
         "policy": {
           "sampling_seconds": 1,
           "max_sampling_gap_seconds": 1.5,
@@ -332,104 +394,105 @@
           "native_live_nodes_growth_allowance": 50,
           "native_live_styles_growth_allowance": 50
         },
-        "issues": [],
+        "issues": [
+          "scrolling: CPU p95 23.054% exceeds 10%"
+        ],
         "phases": {
+          "startup": {
+            "samples": 16,
+            "observed_samples": 16,
+            "duration_seconds": 14.993,
+            "cpu_mean_percent": 2.605,
+            "cpu_median_percent": 1.001,
+            "cpu_p95_percent": 26.064,
+            "cpu_peak_percent": 26.064,
+            "samples_above_threshold": null,
+            "cpu_threshold_percent": null,
+            "cpu_status": "measured_no_threshold",
+            "rss_start_mib": 0.031,
+            "rss_end_mib": 154.25,
+            "rss_peak_mib": 154.297,
+            "rss_change_mib": 154.219,
+            "phase_boundary_samples_excluded_from_cpu_summary": 1,
+            "first_seen_process_events": 1,
+            "cpu_intervals": 15
+          },
           "scrolling": {
-            "observations": 34,
-            "cpu_intervals": 33,
-            "duration_seconds": 33.012,
-            "monotonic_span_seconds": 33.006,
-            "first_after_launch_seconds": 16.093,
-            "maximum_gap_seconds": 1.024,
-            "cpu_p95_percent": 23.024,
-            "cpu_mean_percent": 18.571,
-            "cpu_peak_percent": 23.974,
-            "cpu_ceiling_percent": 10,
-            "rss_start_mib": 156.9375,
-            "rss_end_mib": 150.265625,
-            "rss_peak_mib": 160.765625,
-            "accepted": false,
-            "issues": [
-              "CPU p95 unverified or above predeclared ceiling"
-            ]
+            "samples": 34,
+            "observed_samples": 34,
+            "duration_seconds": 32.996,
+            "cpu_mean_percent": 18.093,
+            "cpu_median_percent": 18.897,
+            "cpu_p95_percent": 23.054,
+            "cpu_peak_percent": 24.001,
+            "samples_above_threshold": null,
+            "cpu_threshold_percent": null,
+            "cpu_status": "measured_no_threshold",
+            "rss_start_mib": 157.969,
+            "rss_end_mib": 151.375,
+            "rss_peak_mib": 161.797,
+            "rss_change_mib": -6.594,
+            "phase_boundary_samples_excluded_from_cpu_summary": 1,
+            "first_seen_process_events": 0,
+            "cpu_intervals": 33
+          },
+          "settle:after": {
+            "samples": 16,
+            "observed_samples": 16,
+            "duration_seconds": 15.002,
+            "cpu_mean_percent": 0.067,
+            "cpu_median_percent": 0.0,
+            "cpu_p95_percent": 1.006,
+            "cpu_peak_percent": 1.006,
+            "samples_above_threshold": null,
+            "cpu_threshold_percent": null,
+            "cpu_status": "measured_no_threshold",
+            "rss_start_mib": 151.375,
+            "rss_end_mib": 150.656,
+            "rss_peak_mib": 151.375,
+            "rss_change_mib": -0.719,
+            "phase_boundary_samples_excluded_from_cpu_summary": 1,
+            "first_seen_process_events": 0,
+            "cpu_intervals": 15
           },
           "idle:after": {
-            "observations": 50,
-            "cpu_intervals": 49,
-            "duration_seconds": 49.023,
-            "monotonic_span_seconds": 49.007,
-            "first_after_launch_seconds": 66.089,
-            "maximum_gap_seconds": 1.04,
-            "cpu_p95_percent": 0.992,
+            "samples": 50,
+            "observed_samples": 50,
+            "duration_seconds": 49.01,
             "cpu_mean_percent": 0.061,
-            "cpu_peak_percent": 1.002,
-            "cpu_ceiling_percent": 3,
-            "rss_start_mib": 149.5,
-            "rss_end_mib": 149.5,
-            "rss_peak_mib": 149.5,
-            "accepted": true,
-            "issues": []
+            "cpu_median_percent": 0.0,
+            "cpu_p95_percent": 0.0,
+            "cpu_peak_percent": 2.01,
+            "samples_above_threshold": 0,
+            "cpu_threshold_percent": 3,
+            "cpu_status": "within_threshold",
+            "rss_start_mib": 150.656,
+            "rss_end_mib": 150.656,
+            "rss_peak_mib": 150.656,
+            "rss_change_mib": 0.0,
+            "phase_boundary_samples_excluded_from_cpu_summary": 1,
+            "first_seen_process_events": 0,
+            "cpu_intervals": 49
           }
-        },
-        "receipt_issues": [
-          "scrolling: CPU p95 23.024% exceeds 10%"
-        ],
-        "scope": "Fixed native Mac process-tree workload; synthetic SDL scrolling or20 actual navigations across21 pages. No IPA/simulator, physical-input, same-page Document GC, or universal resource guarantee.",
-        "cleanup": {
-          "app_pid": 13373,
-          "natural_app_return_code": 0,
-          "app_termination": {
-            "pid": 13373,
-            "return_code": 0,
-            "forced": false
-          },
-          "sampler_termination": {
-            "pid": 13372,
-            "return_code": 0,
-            "forced": false
-          }
-        },
-        "cumulative_cpu_crosscheck": {
-          "intervals_checked": 112,
-          "disagreements": []
-        },
-        "fixture_proofs": [
-          {
-            "step": 0,
-            "exact_fixture_sha256_match": true
-          }
-        ],
-        "normalized_fixture_sha256": "10eb5092d225d40c9b60fee4538a5ab5890f703b8729b9b73340f37e6dad53a8",
-        "scroll_report": {
-          "kind": "scroll-complete",
-          "events": 2702,
-          "lastEventMs": 46261.97799998522,
-          "maxY": 6000.07177734375,
-          "finalY": 6000.07177734375,
-          "url": "http://127.0.0.1:50078/page/0?nonce=17f3ec33240465dc443adf53d4e81861",
-          "step": 0
         },
         "idle_accepted": true,
         "interaction_accepted": false,
         "soak_accepted": false,
-        "accepted": false
+        "scope": "Current native Mac process-tree controlled scroll/final idle only; no IPA, physical-input, memory-soak or universal resource claim"
       },
-      "scroll_cpu_p95_percent": 23.024,
-      "evidence_generation": "inherited_previous_artifact"
+      "scroll_cpu_p95_percent": 23.054,
+      "ceiling_percent": 10,
+      "note": "Fixed controlled fractional-scroll workload; interaction target not met."
     },
     {
       "id": "perf_soak",
       "category": "performance",
       "weight": 5,
       "name": "Controlled memory soak",
-      "status": "passed",
-      "earned": 5,
-      "evidence": [
-        "agent/evidence/10290244-010-current-native-resources.json",
-        "output/session-10290244/final-native-resources-1/navigation/independent-review.json"
-      ],
-      "note": "Current artifact;20 navigations across21 pages, fixed settled RSS windows and native live counters. No same-page GC or universal memory claim.",
-      "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+      "status": "pending_current_artifact",
+      "earned": 0,
+      "evidence": [],
+      "evidence_generation": "current_task",
       "historical_evidence": [
         {
           "binary_sha256": "7f0cafc374cf2cf1c51f83f44eec8da7220b996ac836bef4fd6caf3687623026",
@@ -484,253 +547,19 @@
             "verdict": "passed",
             "scope": "Controlled20-navigation context-teardown workload with identical16-document work per page. Initial/final URL step differs; no tab-close, forced-GC, IPA or universal memory claim."
           }
+        },
+        {
+          "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+          "prior_status": "passed",
+          "prior_earned": 5,
+          "evidence": [
+            "agent/evidence/10290244-010-current-native-resources.json",
+            "output/session-10290244/final-native-resources-1/navigation/independent-review.json"
+          ]
         }
       ],
-      "review": {
-        "scenario": "navigation",
-        "source": "output/session-10290244/final-native-resources-1/navigation",
-        "expected_binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
-        "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
-        "source_sha256": {
-          "receipt.json": "bc30b697a56bd53dbb0262e1f1a578337e5d369ec8485a09450ee48d280550da",
-          "process-summary.json": "27f076bfca57fb96c27664089bee0a8b60640082a8523e8124231320b02f709b",
-          "process-samples.jsonl": "044b8345e55c4c659a9547d698f8964e109e37b82ed99b2168db186a2573dac4"
-        },
-        "runner_sha256": "61f919ee0be6e2a972237d7ed7cf9e71f827ff3d9f6d2a8336cebca9fbd9cfb7",
-        "started_utc": "2026-10-28T21:22:49.522650+00:00",
-        "finished_utc": "2026-10-28T21:25:36.071140+00:00",
-        "duration_seconds": 166.543,
-        "policy": {
-          "sampling_seconds": 1,
-          "max_sampling_gap_seconds": 1.5,
-          "initial_settle_seconds": 15,
-          "final_settle_seconds": 15,
-          "final_idle_seconds_minimum": 45,
-          "idle_cpu_p95_ceiling_percent": 3,
-          "scroll_cpu_p95_ceiling_percent": 10,
-          "settled_rss_growth_ceiling_mib": 32,
-          "settled_rss_growth_ceiling_fraction": 0.2,
-          "initial_rss_window": "Last 5 samples of initial idle phase",
-          "final_rss_window": "Last 15 samples of final idle phase",
-          "native_live_nodes_growth_allowance": 50,
-          "native_live_styles_growth_allowance": 50
-        },
-        "issues": [],
-        "phases": {
-          "idle:before": {
-            "observations": 15,
-            "cpu_intervals": 14,
-            "duration_seconds": 13.99,
-            "monotonic_span_seconds": 13.994,
-            "first_after_launch_seconds": 16.119,
-            "maximum_gap_seconds": 1.039,
-            "cpu_p95_percent": 0.996,
-            "cpu_mean_percent": 0.071,
-            "cpu_peak_percent": 0.996,
-            "cpu_ceiling_percent": 3,
-            "rss_start_mib": 154.015625,
-            "rss_end_mib": 154.015625,
-            "rss_peak_mib": 154.015625,
-            "accepted": true,
-            "issues": []
-          },
-          "navigation": {
-            "observations": 58,
-            "cpu_intervals": 57,
-            "duration_seconds": 56.968,
-            "monotonic_span_seconds": 56.991,
-            "first_after_launch_seconds": 31.128,
-            "maximum_gap_seconds": 1.055,
-            "cpu_p95_percent": 7.001,
-            "cpu_mean_percent": 1.842,
-            "cpu_peak_percent": 8.047,
-            "cpu_ceiling_percent": null,
-            "rss_start_mib": 158.03125,
-            "rss_end_mib": 158.90625,
-            "rss_peak_mib": 161.828125,
-            "accepted": true,
-            "issues": []
-          },
-          "idle:after": {
-            "observations": 62,
-            "cpu_intervals": 61,
-            "duration_seconds": 61.002,
-            "monotonic_span_seconds": 61.006,
-            "first_after_launch_seconds": 104.084,
-            "maximum_gap_seconds": 1.051,
-            "cpu_p95_percent": 0.0,
-            "cpu_mean_percent": 0.049,
-            "cpu_peak_percent": 1.005,
-            "cpu_ceiling_percent": 3,
-            "rss_start_mib": 158.859375,
-            "rss_end_mib": 147.0625,
-            "rss_peak_mib": 158.859375,
-            "accepted": true,
-            "issues": []
-          }
-        },
-        "receipt_issues": [],
-        "scope": "Fixed native Mac process-tree workload; synthetic SDL scrolling or20 actual navigations across21 pages. No IPA/simulator, physical-input, same-page Document GC, or universal resource guarantee.",
-        "cleanup": {
-          "app_pid": 15058,
-          "natural_app_return_code": 0,
-          "app_termination": {
-            "pid": 15058,
-            "return_code": 0,
-            "forced": false
-          },
-          "sampler_termination": {
-            "pid": 15057,
-            "return_code": 0,
-            "forced": false
-          }
-        },
-        "cumulative_cpu_crosscheck": {
-          "intervals_checked": 161,
-          "disagreements": []
-        },
-        "fixture_proofs": [
-          {
-            "step": 0,
-            "exact_fixture_sha256_match": true
-          },
-          {
-            "step": 1,
-            "exact_fixture_sha256_match": true
-          },
-          {
-            "step": 2,
-            "exact_fixture_sha256_match": true
-          },
-          {
-            "step": 3,
-            "exact_fixture_sha256_match": true
-          },
-          {
-            "step": 4,
-            "exact_fixture_sha256_match": true
-          },
-          {
-            "step": 5,
-            "exact_fixture_sha256_match": true
-          },
-          {
-            "step": 6,
-            "exact_fixture_sha256_match": true
-          },
-          {
-            "step": 7,
-            "exact_fixture_sha256_match": true
-          },
-          {
-            "step": 8,
-            "exact_fixture_sha256_match": true
-          },
-          {
-            "step": 9,
-            "exact_fixture_sha256_match": true
-          },
-          {
-            "step": 10,
-            "exact_fixture_sha256_match": true
-          },
-          {
-            "step": 11,
-            "exact_fixture_sha256_match": true
-          },
-          {
-            "step": 12,
-            "exact_fixture_sha256_match": true
-          },
-          {
-            "step": 13,
-            "exact_fixture_sha256_match": true
-          },
-          {
-            "step": 14,
-            "exact_fixture_sha256_match": true
-          },
-          {
-            "step": 15,
-            "exact_fixture_sha256_match": true
-          },
-          {
-            "step": 16,
-            "exact_fixture_sha256_match": true
-          },
-          {
-            "step": 17,
-            "exact_fixture_sha256_match": true
-          },
-          {
-            "step": 18,
-            "exact_fixture_sha256_match": true
-          },
-          {
-            "step": 19,
-            "exact_fixture_sha256_match": true
-          },
-          {
-            "step": 20,
-            "exact_fixture_sha256_match": true
-          }
-        ],
-        "normalized_fixture_sha256": "a18103b8259ded8f8208265b90a272f2ee38c5ea6d5cfc1ef795e51fc0644908",
-        "page_sequence": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12,
-          13,
-          14,
-          15,
-          16,
-          17,
-          18,
-          19,
-          20
-        ],
-        "settled_rss_comparison": {
-          "initial_median_mib": 154.015625,
-          "final_median_mib": 147.0625,
-          "growth_mib": -6.953125,
-          "growth_fraction": -0.04514558182002638
-        },
-        "native_counter_comparison": {
-          "initial": {
-            "malloc_in_use": 0.6,
-            "nodes": 1218.0,
-            "styles": 11.0,
-            "css_parsed": 0.0,
-            "workers": 0.0,
-            "heap": 0.0,
-            "ext": 0.0
-          },
-          "final": {
-            "malloc_in_use": 0.6,
-            "nodes": 1218.0,
-            "styles": 11.0,
-            "css_parsed": 0.1,
-            "workers": 0.0,
-            "heap": 0.0,
-            "ext": 0.0
-          }
-        },
-        "idle_accepted": true,
-        "interaction_accepted": false,
-        "soak_accepted": true,
-        "accepted": true
-      },
-      "evidence_generation": "inherited_previous_artifact"
+      "binary_sha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
+      "note": "Previous executable soak remains historical; current executable needs fresh20-navigation evidence."
     },
     {
       "id": "perf_budgets",
@@ -740,12 +569,22 @@
       "status": "passed",
       "earned": 5,
       "evidence": [
-        "output/session-10290244/headers-codec-green-1/summary.json"
+        "agent/evidence/102900614-003/native-regression-summary.json"
       ],
-      "build_seconds": 11.104,
+      "evidence_generation": "current_task",
+      "historical_evidence": [
+        {
+          "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+          "prior_status": "passed",
+          "prior_earned": 5,
+          "evidence": [
+            "output/session-10290244/headers-codec-green-1/summary.json"
+          ]
+        }
+      ],
+      "build_seconds": 6.083,
       "prebuilt_v8": true,
-      "note": "Twenty individually timed stages with one-second process samples; no stage above five minutes.",
-      "evidence_generation": "inherited_previous_artifact"
+      "note": "Existing matched V8 binary reused; eight individually timed1Hz monitored stages, none above5min."
     },
     {
       "id": "repro_tdd",
@@ -755,13 +594,25 @@
       "status": "passed",
       "earned": 5,
       "evidence": [
-        "output/session-10290244/headers-red-1.log",
-        "output/session-10290244/headers-red-1.json",
-        "output/session-10290244/text-codec-red-1.log",
-        "output/session-10290244/text-codec-red-1.json",
-        "output/session-10290244/headers-codec-green-1/summary.json"
+        "agent/evidence/102900614-003-message-transfer.json",
+        "agent/evidence/102900614-003/native-regression-summary.json"
       ],
-      "evidence_generation": "inherited_previous_artifact"
+      "evidence_generation": "current_task",
+      "historical_evidence": [
+        {
+          "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+          "prior_status": "passed",
+          "prior_earned": 5,
+          "evidence": [
+            "output/session-10290244/headers-red-1.log",
+            "output/session-10290244/headers-red-1.json",
+            "output/session-10290244/text-codec-red-1.log",
+            "output/session-10290244/text-codec-red-1.json",
+            "output/session-10290244/headers-codec-green-1/summary.json"
+          ]
+        }
+      ],
+      "note": "Unchanged native fixture15/68 RED to68/68 GREEN, then unchanged upstream detached-buffer checks pass."
     },
     {
       "id": "repro_source",
@@ -771,41 +622,53 @@
       "status": "passed",
       "earned": 5,
       "evidence": [
-        "output/session-10290244/headers-codec-green-1/compiled-source-sha256.json",
-        "output/session-10290244/headers-codec-green-1/summary.json"
+        "agent/evidence/102900614-003/compiled-source-sha256.json",
+        "agent/evidence/102900614-003/native-regression-summary.json"
       ],
-      "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
-      "source_commit": "4517145578ef3374cba6e699b2fe183fc25e48a0",
-      "evidence_generation": "inherited_previous_artifact"
+      "evidence_generation": "current_task",
+      "historical_evidence": [
+        {
+          "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+          "prior_status": "passed",
+          "prior_earned": 5,
+          "evidence": [
+            "output/session-10290244/headers-codec-green-1/compiled-source-sha256.json",
+            "output/session-10290244/headers-codec-green-1/summary.json"
+          ]
+        }
+      ],
+      "binary_sha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
+      "note": "All compiled src/Makefile/ios inputs match isolated committed source; unrelated GPU working changes are excluded."
     },
     {
       "id": "release_progress",
       "category": "reproducibility_release",
       "weight": 5,
       "name": "Reviewed progress/release delivery",
-      "status": "passed",
-      "earned": 5,
-      "evidence": [
-        "output/session-10290244/progress-public-probe.json",
-        "output/session-10290244/progress-public-reply-check.json"
+      "status": "pending_current_task",
+      "earned": 0,
+      "evidence": [],
+      "evidence_generation": "current_task",
+      "historical_evidence": [
+        {
+          "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+          "prior_status": "passed",
+          "prior_earned": 5,
+          "evidence": [
+            "output/session-10290244/progress-public-probe.json",
+            "output/session-10290244/progress-public-reply-check.json"
+          ]
+        }
       ],
-      "review": {
-        "liveOrigin": "https://4d3ee194969f5f51.czd5qzludboe.opentunnel.xyz",
-        "verifiedSourceCommit": "0e5c8e5c93e92f79d8461afc54af6f16debe5327",
-        "verifiedArchiveSHA256": "9db38aeeb1c12738e2ee25fb623031aa5ddd29ae8fc331664678c70646f25967",
-        "currentNativeCommit": "4517145578ef3374cba6e699b2fe183fc25e48a0",
-        "refreshCurrentSourceArchive": "required immediately after this documentation checkpoint",
-        "scope": "Reachable reviewed delivery workflow, live2s telemetry, verified source backup, message/response. This infrastructure proof does not validate native performance or IPA execution."
-      },
-      "evidence_generation": "inherited_previous_artifact"
+      "note": "Task-local identity and9/9 checks pass; public task route, websocket, archive and message-reply still require fresh verification."
     }
   ],
-  "updated_utc": "2026-10-28T22:39:39.725760+00:00",
-  "current_baseline_binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+  "updated_utc": "2026-10-28T23:02:31.987958+00:00",
+  "current_baseline_binary_sha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
   "full_official_wpt_pass_percent": null,
-  "current_native_source_base_commit": "14b7fe6050061104fa603d6513775563f79697fe",
-  "current_native_source_commit": "436916ceb3b32630ed251bb666b02fa39a3cd0c8",
-  "accepted_artifact_status": "inherited_baseline",
+  "current_native_source_base_commit": "22359337f8036da7170fa0e06e4b486dfc5cd440",
+  "current_native_source_commit": null,
+  "accepted_artifact_status": "current_native_partial_acceptance",
   "source_branch": "gpt6-astra-pro_builtin-agents_lume-apple-wpt-102900614",
   "inherited_scorecard": "agent/scorecard-102900614-inherited.json",
   "inherited_task_id": "10290244",
@@ -927,6 +790,18 @@
       "total_session_seconds": 1498.267,
       "score": 50,
       "status": "Progress task isolation and truthful coverage display verified; native baseline remains inherited"
+    },
+    {
+      "iteration": "102900614-003",
+      "started_utc": "2026-10-28T22:39:39.725760+00:00",
+      "updated_utc": "2026-10-28T23:02:31.987958+00:00",
+      "elapsed_seconds": 1372.262,
+      "total_session_seconds": 2870.529,
+      "score": 40,
+      "status": "ArrayBuffer transfer accepted on733; fresh soak and task delivery remain pending",
+      "binary_sha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848"
     }
-  ]
+  ],
+  "current_native_source_manifest": "agent/evidence/102900614-003/compiled-source-sha256.json",
+  "historical_baseline_score": 50
 }
