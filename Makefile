@@ -566,3 +566,8 @@ $(BUILD)/src/js/blob_file.inc: src/js/prelude/06v-blob.js
 	@mkdir -p $(dir $@)
 	{ printf 'R"JS('; cat $<; printf ')JS"'; } > $@
 $(BUILD)/src/js/worker.cc.o $(BUILD)/tests/test_worker_lifecycle.cc.o $(BUILD)/tests/test_url_idl.cc.o: $(BUILD)/src/js/blob_file.inc
+
+# Actual asynchronous V8 foreground work uses a bounded active-work deadline.
+$(BUILD)/tests/test_wasm_async_deadline.cc.o: CXXFLAGS += -fno-rtti -UNDEBUG
+$(BUILD)/test_wasm_async_deadline: $(call OBJ,tests/test_wasm_async_deadline.cc $(CORE_SRC) $(JS_SRC)) $(V8LINK_RSP)
+	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)

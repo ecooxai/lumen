@@ -993,6 +993,11 @@ void js_set_ready_state(JsCtx *c, int state) {
 double js_next_deadline(JsCtx *c) {
     if (!c) return INFINITY;
     double d = INFINITY;
+    // V8's asynchronous compiler posts its completion to the foreground task
+    // runner. Wake while background work is pending so a dormant window does
+    // not defer each promise continuation to the application's 1 s idle wait.
+    // Completed work contributes no deadline, preserving quiescent idle sleep.
+    if (c->iso->HasPendingBackgroundTasks()) d = std::min(d, now_ms() + 4);
     for (auto &kv : c->timers) d = std::min(d, kv.second.due);
     for (auto &e : c->anims) d = std::min(d, e.due);
     if (!c->rafs.empty()) d = std::min(d, c->last_raf + 16);
