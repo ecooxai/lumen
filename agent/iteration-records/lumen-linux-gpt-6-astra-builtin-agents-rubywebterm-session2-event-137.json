@@ -1,0 +1,255 @@
+{
+  "iteration": 137,
+  "scope": "Standard global handler exposure/reflection/dispatch and document.body mutation",
+  "status": "accepted scoped; broad release acceptance pending",
+  "quality_score": 96,
+  "whole_goal_score": 19,
+  "whole_goal_note": "Provisional readiness, not a WPT percentage; Chromium parity remains unachieved.",
+  "started_utc": "2026-10-28T10:07:20Z",
+  "finished_utc": "2026-10-28T10:16:08Z",
+  "elapsed_minutes": 8.8,
+  "duration_scope": "Measured unchanged-baseline controller start through final focused candidate completion; prior implementation/design time excluded. Builds and tests overlap other agents.",
+  "total_session_wall_minutes": 63.93333333333333,
+  "subagents": [
+    "repository_lead",
+    "standards_comparison",
+    "progress_and_deployment"
+  ],
+  "model": "GPT-6 Astra",
+  "tools": [
+    "built-in agents",
+    "Ruby MCP",
+    "native CTest",
+    "Chromium150"
+  ],
+  "build": {
+    "source_manifest_before": "2ce3354d70d52cc42663ecff971f71cc48d24904128018413e82d73509a8e107",
+    "source_diff_before": "0fc33fee6c8c31a2a024383d137ee2017f8aeeba8bad3c0fd2ee2fd037b210cb",
+    "head": "3b43330adca6ca79dcfeaa888ff228214ca7de32",
+    "started_utc": "2026-10-28T10:09:24Z",
+    "pid": 737397,
+    "build_exit_code": 0,
+    "binary": "build/codex-native/lumen-astra-i137",
+    "binary_sha256": "b883e113f5b7321bf728812b09098af446c9a179586227ea6694421dd5c1ded5",
+    "diff_sha256": "0fc33fee6c8c31a2a024383d137ee2017f8aeeba8bad3c0fd2ee2fd037b210cb",
+    "startup_exit_code": 0,
+    "source_diff_after": "0fc33fee6c8c31a2a024383d137ee2017f8aeeba8bad3c0fd2ee2fd037b210cb",
+    "source_manifest_after": "2ce3354d70d52cc42663ecff971f71cc48d24904128018413e82d73509a8e107",
+    "source_unchanged_during_build": true,
+    "finished_utc": "2026-10-28T10:09:50Z"
+  },
+  "source_mapping": {
+    "method": "Every compiled-source manifest path read from selective Git index before commit",
+    "files": 553,
+    "mismatches": []
+  },
+  "comparison": {
+    "events": {
+      "baseline": {
+        "urls": 37,
+        "subtests": 1453,
+        "passed": 1299,
+        "harnesses": {
+          "OK": 36,
+          "TIMEOUT": 1
+        },
+        "fully_passing_urls": 20,
+        "path": "agent/validation/linux-wpt-20261028/session2-events/baseline136/results.jsonl",
+        "sha256": "3a87136dba249472ce788a382aad40bde0716ffddee8c872bf37ff4b47514bf1"
+      },
+      "candidate": {
+        "urls": 37,
+        "subtests": 1453,
+        "passed": 1407,
+        "harnesses": {
+          "OK": 36,
+          "TIMEOUT": 1
+        },
+        "fully_passing_urls": 24,
+        "path": "agent/validation/linux-wpt-20261028/session2-events/candidate137/results.jsonl",
+        "sha256": "8ff263ca44759638012592f1fcf8ecac2764b5960d0cd800f426733af6d246ef"
+      },
+      "chromium": {
+        "urls": 37,
+        "subtests": 1453,
+        "passed": 1389,
+        "harnesses": {
+          "OK": 37
+        },
+        "fully_passing_urls": 26,
+        "path": "agent/validation/linux-wpt-20261028/session2-events/chromium/results.jsonl",
+        "sha256": "2915f3ea76401b78921b3d140e587cea1e71f9cb0768b46372ec3176acbd2ae0"
+      },
+      "gains_count": 108,
+      "losses_count": 0,
+      "missing_from_candidate_count": 0,
+      "added_count": 0,
+      "chromium_pass_misses_count": 34,
+      "native_only_pass_count": 52
+    },
+    "body": {
+      "baseline": {
+        "urls": 1,
+        "subtests": 26,
+        "passed": 17,
+        "harnesses": {
+          "OK": 1
+        },
+        "fully_passing_urls": 0,
+        "path": "agent/validation/linux-wpt-20261028/session2-events/body-holdout/baseline136/results.jsonl",
+        "sha256": "afda415068d70ef6ea3de487424ed474e565b6e7e8f2b9a09b9e6df8c0f71234"
+      },
+      "candidate": {
+        "urls": 1,
+        "subtests": 26,
+        "passed": 26,
+        "harnesses": {
+          "OK": 1
+        },
+        "fully_passing_urls": 1,
+        "path": "agent/validation/linux-wpt-20261028/session2-events/body-holdout/candidate137/results.jsonl",
+        "sha256": "db1d2d31ab3a724a8036cca9ea6f02225ac5896fb78f4c4cd3e304db5973f286"
+      },
+      "chromium": {
+        "urls": 1,
+        "subtests": 26,
+        "passed": 26,
+        "harnesses": {
+          "OK": 1
+        },
+        "fully_passing_urls": 1,
+        "path": "agent/validation/linux-wpt-20261028/session2-events/body-holdout/chromium/results.jsonl",
+        "sha256": "1be3b971e2f5b299a1077776323853811ede5b98bed6b5d487ee0987d1ecba1f"
+      },
+      "gains_count": 9,
+      "losses_count": 0,
+      "missing_from_candidate_count": 0,
+      "added_count": 0,
+      "chromium_pass_misses_count": 0,
+      "native_only_pass_count": 0
+    }
+  },
+  "authored_controls": {
+    "baseline136": {
+      "pass": 1,
+      "total": 10
+    },
+    "candidate137": {
+      "pass": 10,
+      "total": 10
+    },
+    "chromium": {
+      "pass": 10,
+      "total": 10
+    },
+    "fixture": "tests/browser/body-event-regression.html",
+    "sha256": "36757bade2f2dbe618cf2e019624be2b44f9da8688674db6b93e6846a6107007"
+  },
+  "native_ctest": {
+    "passed": 120,
+    "total": 120,
+    "completion": {
+      "started_utc": "2026-10-28T10:14:42Z",
+      "root_pid": 760871,
+      "monitor_pid": 760872,
+      "exit": 0,
+      "finished_utc": "2026-10-28T10:15:23Z",
+      "elapsed_seconds": 41.17940315406304
+    }
+  },
+  "native_only_review": {
+    "previously_classified": 50,
+    "new": 2,
+    "new_scope": "onbeforematch content-attribute compilation and synthetic dispatch; HTML requires both. Installed Chromium150 fails these two unchanged assertions.",
+    "excluded_claim": "This does not establish automatic beforematch event generation or find-in-page/hidden-until-found feature support.",
+    "reviewer": "standards_comparison",
+    "source": "https://html.spec.whatwg.org/multipage/webappapis.html#event-handlers-on-elements-document-objects-and-window-objects"
+  },
+  "source_review": "Independent review approved owner-realm/brand validation, captured replacement, cross-document adoption, mutation records and shared dispatch path.",
+  "resources": {
+    "native_ctest": {
+      "samples": 41,
+      "peak_cpu_pct": 220.014,
+      "peak_rss_mib": 490.795,
+      "peak_pss_mib": 198.387
+    },
+    "authored": {
+      "samples": 2,
+      "peak_cpu_pct": 59.605,
+      "peak_rss_mib": 146.914
+    }
+  },
+  "capture_audit": {
+    "launches": 78,
+    "cohorts": {
+      "baseline136": {
+        "events": {
+          "started_at_private_gate": 37,
+          "constructor_verified_and_acknowledged": 37,
+          "author_url_released": 37,
+          "exited": 37
+        },
+        "pids": 37,
+        "live_after": []
+      },
+      "candidate137": {
+        "events": {
+          "started_at_private_gate": 37,
+          "constructor_verified_and_acknowledged": 37,
+          "author_url_released": 37,
+          "exited": 37
+        },
+        "pids": 37,
+        "live_after": []
+      },
+      "body-holdout/baseline136": {
+        "events": {
+          "started_at_private_gate": 1,
+          "constructor_verified_and_acknowledged": 1,
+          "author_url_released": 1,
+          "exited": 1
+        },
+        "pids": 1,
+        "live_after": []
+      },
+      "body-holdout/candidate137": {
+        "events": {
+          "started_at_private_gate": 1,
+          "constructor_verified_and_acknowledged": 1,
+          "author_url_released": 1,
+          "exited": 1
+        },
+        "pids": 1,
+        "live_after": []
+      },
+      "authored-baseline136": {
+        "events": {
+          "started_at_private_gate": 1,
+          "constructor_verified_and_acknowledged": 1,
+          "author_url_released": 1,
+          "exited": 1
+        },
+        "pids": 1,
+        "live_after": []
+      },
+      "authored-candidate137": {
+        "events": {
+          "started_at_private_gate": 1,
+          "constructor_verified_and_acknowledged": 1,
+          "author_url_released": 1,
+          "exited": 1
+        },
+        "pids": 1,
+        "live_after": []
+      }
+    },
+    "sealed_guard_sha256": "45643caa22bb659bc7b431acfc7b8af04d68f971c3610f4d56dcb2847d808900",
+    "all_runner_sources_unchanged": true
+  },
+  "evidence": {
+    "agent/validation/linux-wpt-20261028/session2-events/comparison137.json": "ea834d7e50548183f5930e191114903b54e4b14d336eb6a65849320c409abbcb",
+    "agent/validation/linux-wpt-20261028/session2-events/chromium-body-event137.json": "949ab523869eee37a9af01d13eac5472d9f6b2895e17f756220dd06c22561ebc",
+    "agent/validation/iteration-137/source-manifest-before.json": "e7f681c9b6cb1e8447c1da43a50b6ad84a8ab18cb1a3ff91e59acb2194027a6e",
+    "agent/validation/iteration-137/applied-source.json": "24e1e345c610d376f641327ad800cdcc68a612aceffba5178b3600fee97d25a1"
+  }
+}

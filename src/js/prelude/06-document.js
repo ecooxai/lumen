@@ -56,6 +56,16 @@ class XMLDocument extends Document { constructor() { illegal(); } }
 methods(Document.prototype, ParentNode);
 installHandlers(Document.prototype, false, EVENT_HANDLERS.concat(FS_HANDLERS, ['readystatechange', 'visibilitychange', 'pointerlockchange', 'pointerlockerror', 'freeze', 'resume']));
 const findChild = (p, tag) => { if (!p) return null; for (let c = N.first(p); c; c = N.next(c)) if (N.type(c) === 1 && N.name(c) === tag) return c; return null; };
+const documentRoot = doc => { for (let c = N.first(doc); c; c = N.next(c)) if (N.type(c) === 1) return c; return null; };
+const documentBody = doc => {
+    const root = documentRoot(doc);
+    if (!root || N.ns(root) !== 0 || N.name(root) !== 'html') return null;
+    for (let c = N.first(root); c; c = N.next(c))
+        if (N.type(c) === 1 && N.ns(c) === 0 && (N.name(c) === 'body' || N.name(c) === 'frameset')) return c;
+    return null;
+};
+/* Keep the DOM replacement algorithm independent of author property overrides. */
+const replaceBodyChild = Node.prototype.replaceChild;
 /* the document's live HTMLCollections (forms, images, ...): the same object each time, with named properties */
 const docColl = (doc, sel) => cachedLive(doc, 'coll:' + sel, () => N.query(doc, sel, true).filter(e => N.ns(e) === 0), HTMLCollection.prototype);
 methods(Document.prototype, {
@@ -72,11 +82,21 @@ methods(Document.prototype, {
     get vlinkColor() { return docColorGet(this, 'vlink'); }, set vlinkColor(v) { docColorSet(this, 'vlink', v); },
     get head() { return findChild(this.documentElement, 'head'); },
     get body() {
-        const root = this.documentElement;
-        if (!root || N.ns(root) !== 0 || N.name(root) !== 'html') return null;
-        for (let c = N.first(root); c; c = N.next(c))
-            if (N.type(c) === 1 && N.ns(c) === 0 && (N.name(c) === 'body' || N.name(c) === 'frameset')) return c;
-        return null;
+        if (!N.isNode(this) || N.type(this) !== 9) throw new TypeError('Illegal invocation');
+        return documentBody(this);
+    },
+    set body(value) {
+        if (!N.isNode(this) || N.type(this) !== 9) throw new TypeError('Illegal invocation');
+        if (value != null && (!N.isNode(value) || N.type(value) !== 1 || N.ns(value) !== 0))
+            throw new TypeError("Failed to set 'body' on 'Document': the value is not of type 'HTMLElement'.");
+        if (value == null || (N.name(value) !== 'body' && N.name(value) !== 'frameset'))
+            throw hre('The new body element must be an HTML body or frameset.');
+        const old = documentBody(this);
+        if (old === value) return;
+        if (old) { replaceBodyChild.call(N.parent(old), value, old); return; }
+        const root = documentRoot(this);
+        if (!root) throw hre('The document has no document element.');
+        insertNode(root, value, null);
     },
     get doctype() { for (let c = N.first(this); c; c = N.next(c)) if (N.type(c) === 10) return c; return null; },
     get title() { const t = N.query(this, 'title', false); return t ? N.text(t).replace(/\s+/g, ' ').trim() : ''; },
