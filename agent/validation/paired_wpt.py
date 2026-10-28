@@ -4,7 +4,7 @@ No edits to WPT resources; own profiles, frozen binaries, exact one-second monit
 """
 import argparse,hashlib,json,os,pathlib,signal,socket,subprocess,tempfile,time,urllib.request,urllib.error
 ROOT=pathlib.Path(__file__).resolve().parents[2]
-PRE=r'''(function(){if(window.opener)return;var done=false;var log=console.error.bind(console);var stringify=JSON.stringify;Object.defineProperty(window,"__lumenWpt",{value:{harness:false,report:function(r){if(done)return;done=true;r.environment={width:innerWidth,height:innerHeight,dpr:devicePixelRatio,userAgent:navigator.userAgent};window.__astraResult=r;log("ASTRAWPT-H "+stringify({status:r.status,message:r.message,environment:r.environment}));r.subtests.forEach(function(s){log("ASTRAWPT-S "+stringify([String(s[0]).slice(0,900),s[1],s[2]==null?null:String(s[2]).slice(0,500)]));});log("ASTRAWPT-E");}}});})();'''
+PRE=r'''(function(){if(window.opener)return;var done=false;var log=console.error.bind(console);var stringify=JSON.stringify;Object.defineProperty(window,"__lumenWpt",{value:{harness:false,report:function(r){if(done)return;done=true;r.environment={width:innerWidth,height:innerHeight,dpr:devicePixelRatio,userAgent:navigator.userAgent};window.__astraResult=r;log("ASTRAWPT-H "+stringify({status:r.status,message:r.message,environment:r.environment}));r.subtests.forEach(function(s){log("ASTRAWPT-S "+stringify([String(s[0]),s[1],s[2]==null?null:String(s[2]).slice(0,500)]));});log("ASTRAWPT-E");}}});})();'''
 URLS=['/performance-timeline/idlharness.any.html','/performance-timeline/idlharness.any.worker.html','/performance-timeline/po-observe.any.html','/performance-timeline/po-observe.any.worker.html','/performance-timeline/po-observe-type.any.html','/performance-timeline/po-observe-type.any.worker.html','/user-timing/idlharness.any.html','/user-timing/idlharness.any.worker.html','/user-timing/mark-errors.any.html','/user-timing/mark-errors.any.worker.html','/user-timing/measure-with-dict.any.html','/user-timing/measure-with-dict.any.worker.html']
 def full_url(u):
  name=u.split('?',1)[0].rsplit('/',1)[-1];https=any(x in name.split('.') for x in ('https','serviceworker','serviceworker-module'))
@@ -66,7 +66,7 @@ def request(base,path,data=None,method=None):
 def chromium(binary,driver,u,out,timeout):
  with tempfile.TemporaryDirectory(prefix='profile-',dir=out) as prof:
   sock=socket.socket();sock.bind(('127.0.0.1',0));port=sock.getsockname()[1];sock.close();base='http://127.0.0.1:'+str(port)
-  f=(out/'driver.log').open('wb');p=subprocess.Popen([driver,'--port='+str(port),'--allowed-ips=127.0.0.1'],stdout=f,stderr=f,stdin=subprocess.DEVNULL);m=monitor(p.pid,out/'resources','chromium tree '+u);sid=None
+  f=(out/'driver.log').open('wb');p=subprocess.Popen([driver,'--port='+str(port),'--allowed-ips=127.0.0.1','--verbose'],stdout=f,stderr=f,stdin=subprocess.DEVNULL);m=monitor(p.pid,out/'resources','chromium tree '+u);sid=None
   result=None
   try:
    for _ in range(100):
@@ -84,7 +84,7 @@ def chromium(binary,driver,u,out,timeout):
     if result is not None:break
    if result is None:result={'status':'TIMEOUT','message':'No complete testharness result within external deadline','subtests':[]}
    result['elapsed_s']=round(time.monotonic()-t0,4);result['capabilities']=val['capabilities']
-  except Exception as e:result={'status':'HARNESS_ERROR','message':repr(e),'subtests':[]}
+  except Exception as e:result={'status':'HARNESS_ERROR','message':repr(e)+' '+getattr(e,'read',lambda:b'')()[:3000].decode(errors='replace'),'subtests':[]}
   finally:
    endmonitor(m)
    if sid:

@@ -3,7 +3,7 @@ import argparse,hashlib,json,os,pathlib,shutil,subprocess,time
 from paired_wpt import monitor,endmonitor
 
 def source_manifest():
- paths=subprocess.check_output(['git','ls-files','--cached','--others','--exclude-standard','--','src','CMakeLists.txt','tests'],text=True).splitlines()
+ paths=subprocess.check_output(['git', 'ls-files', '--cached', '--others', '--exclude-standard', '--', 'src', 'CMakeLists.txt', 'tests', 'assets/data', 'tools/generate_embedded.py'],text=True).splitlines()
  files={}
  for name in sorted(set(paths)):
   path=pathlib.Path(name)
@@ -30,3 +30,11 @@ json.dump(manifest_after,open(out/'source-manifest-after.json','w'),indent=2)
 state['source_manifest_after']=manifest_after['sha256']
 state['source_unchanged_during_build']=manifest_after['sha256']==manifest_before['sha256'] and state['source_diff_after']==before
 state['finished_utc']=time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime());json.dump(state,open(out/'build-state.json','w'),indent=2);print(json.dumps(state),flush=True)
+
+# Propagate build, startup, and source-provenance failures to the caller.
+if state.get("build_exit_code", 1):
+ raise SystemExit(state.get("build_exit_code", 1))
+if state.get("startup_exit_code", 0):
+ raise SystemExit(state["startup_exit_code"])
+if not state.get("source_unchanged_during_build", False):
+ raise SystemExit(3)
