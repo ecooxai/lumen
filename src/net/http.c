@@ -701,27 +701,194 @@ static NetResponse *http_once(const char *method, const URL *u, const Headers *h
     return r;
 }
 
+/* Fetch data: URL processing uses byte lengths throughout: percent-decoding
+ * may produce NUL, which is data for plain bodies and invalid base64 input. */
+static int data_hex(unsigned char c) {
+    if (c >= '0' && c <= '9') return c - '0';
+    c = (unsigned char)lc(c);
+    return c >= 'a' && c <= 'f' ? c - 'a' + 10 : -1;
+}
+
+static char *data_percent_decode(const char *s, size_t n, size_t *length) {
+    char *out = xmalloc(n + 1);
+    size_t used = 0;
+    for (size_t i = 0; i < n; i++) {
+        if (s[i] == '%' && i + 2 < n) {
+            int hi = data_hex((unsigned char)s[i + 1]);
+            int lo = data_hex((unsigned char)s[i + 2]);
+            if (hi >= 0 && lo >= 0) {
+                out[used++] = (char)((hi << 4) | lo);
+                i += 2;
+                continue;
+            }
+        }
+        out[used++] = s[i];
+    }
+    out[used] = 0;
+    *length = used;
+    return out;
+}
+
+static int data_base64_digit(unsigned char c) {
+    if (c >= 'A' && c <= 'Z') return c - 'A';
+    if (c >= 'a' && c <= 'z') return c - 'a' + 26;
+    if (c >= '0' && c <= '9') return c - '0' + 52;
+    if (c == '+') return 62;
+    if (c == '/') return 63;
+    return -1;
+}
+
+/* Infra's forgiving-base64 decoder. Whitespace and omitted final padding are
+ * accepted; invalid alphabet, misplaced padding and remainder-one lengths fail.
+ * The discarded low bits in the last digit need not be zero. */
+static bool data_base64_decode(char *bytes, size_t *length) {
+    size_t n = 0;
+    for (size_t i = 0; i < *length; i++)
+        if (!is_ws((unsigned char)bytes[i])) bytes[n++] = bytes[i];
+    if (n && n % 4 == 0 && bytes[n - 1] == '=') {
+        n--;
+        if (n && bytes[n - 1] == '=') n--;
+    }
+    if (n % 4 == 1) return false;
+    for (size_t i = 0; i < n; i++)
+        if (data_base64_digit((unsigned char)bytes[i]) < 0) return false;
+    size_t used = 0;
+    uint32_t acc = 0;
+    int bits = 0;
+    for (size_t i = 0; i < n; i++) {
+        acc = (acc << 6) | (uint32_t)data_base64_digit((unsigned char)bytes[i]);
+        bits += 6;
+        if (bits >= 8) {
+            bits -= 8;
+            bytes[used++] = (char)((acc >> bits) & 255);
+        }
+    }
+    bytes[used] = 0;
+    *length = used;
+    return true;
+}
+
+static bool data_mime_token(unsigned char c) {
+    return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
+           (c >= '0' && c <= '9') || (c && strchr("!#$%&'*+-.^_`|~", c));
+}
+
+static bool data_http_ws(unsigned char c) {
+    return c == '\t' || c == '\n' || c == '\r' || c == ' ';
+}
+
+/* Parse and serialize only the data URL's MIME metadata. This follows MIME
+ * Sniffing's parameter rules without changing ordinary HTTP response headers. */
+static char *data_mime_type(const char *input) {
+    const char *p = input, *end = input + strlen(input);
+    while (p < end && data_http_ws((unsigned char)*p)) p++;
+    while (end > p && data_http_ws((unsigned char)end[-1])) end--;
+    const char *type = p;
+    while (p < end && *p != '/') p++;
+    if (p == type || p == end) return NULL;
+    for (const char *q = type; q < p; q++) if (!data_mime_token((unsigned char)*q)) return NULL;
+    const char *slash = p++, *subtype = p;
+    while (p < end && *p != ';') p++;
+    const char *subend = p;
+    while (subend > subtype && data_http_ws((unsigned char)subend[-1])) subend--;
+    if (subend == subtype) return NULL;
+    for (const char *q = subtype; q < subend; q++) if (!data_mime_token((unsigned char)*q)) return NULL;
+    SB out; sb_init(&out);
+    for (const char *q = type; q < slash; q++) sb_putc(&out, (char)lc((unsigned char)*q));
+    sb_putc(&out, '/');
+    for (const char *q = subtype; q < subend; q++) sb_putc(&out, (char)lc((unsigned char)*q));
+    Headers parameters = {0};
+    while (p < end) {
+        p++; /* semicolon */
+        while (p < end && data_http_ws((unsigned char)*p)) p++;
+        const char *name_start = p;
+        while (p < end && *p != ';' && *p != '=') p++;
+        if (p == end) break;
+        if (*p == ';') continue;
+        size_t name_length = (size_t)(p - name_start);
+        p++; /* equals */
+        if (p == end) break;
+        SB value; sb_init(&value);
+        bool quoted = *p == '"';
+        if (quoted) {
+            p++;
+            while (p < end) {
+                char c = *p++;
+                if (c == '"') break;
+                if (c == '\\' && p < end) c = *p++;
+                sb_putc(&value, c);
+            }
+            while (p < end && *p != ';') p++;
+        } else {
+            const char *start = p;
+            while (p < end && *p != ';') p++;
+            const char *stop = p;
+            while (stop > start && data_http_ws((unsigned char)stop[-1])) stop--;
+            sb_put(&value, start, (size_t)(stop - start));
+        }
+        bool valid = name_length && (quoted || value.n);
+        for (size_t i = 0; valid && i < name_length; i++) valid = data_mime_token((unsigned char)name_start[i]);
+        for (size_t i = 0; valid && i < value.n; i++) {
+            unsigned char c = (unsigned char)value.s[i];
+            valid = c == '\t' || (c >= 0x20 && c != 0x7f);
+        }
+        if (valid) {
+            char *name = xstrndup(name_start, name_length);
+            for (size_t i = 0; i < name_length; i++) name[i] = (char)lc((unsigned char)name[i]);
+            if (!headers_get(&parameters, name)) headers_add(&parameters, name, value.s ? value.s : "");
+            free(name);
+        }
+        sb_free(&value);
+    }
+    for (int i = 0; i < parameters.n; i++) {
+        const Header *h = &parameters.v[i];
+        sb_putc(&out, ';'); sb_puts(&out, h->name); sb_putc(&out, '=');
+        bool quote = !h->value[0];
+        for (const char *q = h->value; *q; q++) if (!data_mime_token((unsigned char)*q)) quote = true;
+        if (quote) sb_putc(&out, '"');
+        for (const char *q = h->value; *q; q++) {
+            if (quote && (*q == '"' || *q == '\\')) sb_putc(&out, '\\');
+            sb_putc(&out, *q);
+        }
+        if (quote) sb_putc(&out, '"');
+    }
+    headers_free(&parameters);
+    return out.s;
+}
+
 static NetResponse *data_url(const char *url) {
     NetResponse *r = xcalloc(1, sizeof *r);
-    const char *p = url + 5, *comma = strchr(p, ',');
-    if (!comma) { r->error = xstrdup("bad data url"); return r; }
-    char *meta = xstrndup(p, (size_t)(comma - p));
-    bool b64 = strstr(meta, ";base64") != NULL;
-    char *semi = strstr(meta, ";base64"); if (semi) *semi = 0;
-    headers_add(&r->headers, "content-type", meta[0] ? meta : "text/plain;charset=US-ASCII");
-    char *dec = url_decode(comma + 1, strlen(comma + 1));
-    if (b64) {
-        size_t n = strlen(dec); char *out = xmalloc(n + 1); size_t o = 0; uint32_t acc = 0; int bits = 0;
-        for (size_t i = 0; i < n; i++) {
-            int c = (unsigned char)dec[i], v;
-            if (c >= 'A' && c <= 'Z') v = c - 'A'; else if (c >= 'a' && c <= 'z') v = c - 'a' + 26; else if (c >= '0' && c <= '9') v = c - '0' + 52;
-            else if (c == '+' || c == '-') v = 62; else if (c == '/' || c == '_') v = 63; else continue;
-            acc = (acc << 6) | (uint32_t)v; bits += 6;
-            if (bits >= 8) { bits -= 8; out[o++] = (char)((acc >> bits) & 0xff); }
-        }
-        free(dec); r->body = out; r->body_len = o;
-    } else { r->body = dec; r->body_len = strlen(dec); }
-    free(meta);
+    URL parsed;
+    if (!url_parse(url, &parsed)) { r->error = xstrdup("bad data url"); return r; }
+    free(parsed.fragment); parsed.fragment = NULL;
+    char *serialized = url_to_string(&parsed);
+    url_free(&parsed);
+    const char *p = serialized + 5, *comma = strchr(p, ',');
+    if (!comma) { free(serialized); r->error = xstrdup("bad data url"); return r; }
+    char *metadata = xstrndup(p, (size_t)(comma - p));
+    char *meta = str_trim(metadata);
+    size_t meta_length = strlen(meta);
+    bool b64 = false;
+    if (meta_length >= 6 && str_ieqn(meta + meta_length - 6, "base64", 6)) {
+        size_t marker = meta_length - 6;
+        while (marker && meta[marker - 1] == ' ') marker--;
+        if (marker && meta[marker - 1] == ';') { b64 = true; meta[marker - 1] = 0; }
+    }
+    size_t length;
+    char *body = data_percent_decode(comma + 1, strlen(comma + 1), &length);
+    free(serialized);
+    if (b64 && !data_base64_decode(body, &length)) {
+        free(body); free(metadata);
+        r->error = xstrdup("invalid data url base64");
+        return r;
+    }
+    SB mime_input; sb_init(&mime_input);
+    if (*meta == ';') sb_puts(&mime_input, "text/plain");
+    sb_puts(&mime_input, meta);
+    char *mime = data_mime_type(mime_input.s ? mime_input.s : "");
+    headers_add(&r->headers, "content-type", mime ? mime : "text/plain;charset=US-ASCII");
+    free(mime); sb_free(&mime_input); free(metadata);
+    r->body = body; r->body_len = length;
     r->status = 200; r->status_text = xstrdup("OK"); r->url = xstrdup(url);
     return r;
 }

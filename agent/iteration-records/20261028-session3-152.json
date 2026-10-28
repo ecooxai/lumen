@@ -1,0 +1,73 @@
+{
+  "session": "20261028-session3",
+  "iteration": 152,
+  "started_utc": "2026-10-28T16:47:20Z",
+  "finished_utc": "2026-10-28T16:56:14Z",
+  "elapsed_minutes": 8.9,
+  "session_elapsed_minutes": 15.0833,
+  "agents": [
+    "preview_deploy",
+    "engine_and_git",
+    "validation_wpt",
+    "root"
+  ],
+  "overall_score": 19,
+  "scoped_quality_score": 97,
+  "score_basis": "Subjective bounded engineering assessment; overall browser estimate unchanged and not a numerical WPT-parity formula.",
+  "decision": "Accept native dataURL decoding and metadata repair after independent native, browser navigation and unchanged WPT controls.",
+  "changes": [
+    "Byte-length percent-decoding retains embedded NUL in plain bodies.",
+    "Infra forgiving-base64 accepts specified ASCII whitespace and absent padding but rejects malformed padding, URL-safe alphabet and invalid bytes.",
+    "Fragment exclusion, trailing case-insensitive base64 marker and dataURL-only MIME parsing/serialization follow Fetch/MIME algorithms."
+  ],
+  "binary": "build/codex-native/lumen-astra-i152",
+  "binary_sha256": "9929b2bd9c3f8d8e51f9dad95b4ca7f9bce455c2675aa7b5799220db1b07d0eb",
+  "source_content_sha256": "665ed62e463245bdf5a44fda59b265acb4c3ea039bc6b97c912a9e3411eb6887",
+  "native_ctest": {
+    "passed": 133,
+    "total": 133,
+    "elapsed_seconds": 50.97,
+    "dataURL_native_authored_checks": 70
+  },
+  "browser_authored_navigation": {
+    "baseline150_pass": 7,
+    "candidate152_pass": 18,
+    "total": 18
+  },
+  "unchanged_wpt": {
+    "selected_urls": 9,
+    "baseline150_pass_subtests": 620,
+    "candidate152_pass_subtests": 623,
+    "chromium_pass_subtests": 623,
+    "reported_subtests": 623,
+    "pass_identity_gains": 3,
+    "pass_identity_losses": 0,
+    "full_url_gains": 1,
+    "all_harnesses_ok": true
+  },
+  "cleanup": "Real sealed-guard events complete; owned profiles/processes drained; source and binaries unchanged during gates.",
+  "resources": {
+    "interval_seconds": 1,
+    "ctest_cpu_median_percent": 47.5,
+    "ctest_cpu_max_percent": 198.9,
+    "ctest_peak_rss_decimal_mb": 356.05,
+    "caveat": "Process samples can miss short-lived children; RSS can double-count shared mappings."
+  },
+  "primary_standards": [
+    "https://fetch.spec.whatwg.org/#data-url-processor",
+    "https://infra.spec.whatwg.org/#forgiving-base64-decode",
+    "https://mimesniff.spec.whatwg.org/#parse-a-mime-type"
+  ],
+  "private_evidence": [
+    "agent/validation/iteration-152",
+    "agent/validation/linux-wpt-20261028-session3/native152",
+    "agent/validation/linux-wpt-20261028-session3/data-url-native150",
+    "agent/validation/linux-wpt-20261028-session3/data-url-native152",
+    "agent/validation/linux-wpt-20261028-session3/data-url-chromium"
+  ],
+  "limits": [
+    "The three gains are unchanged upstream navigation subtests, not the70 native or18 authored controls.",
+    "Nine URLs are a focused cohort, not full WPT.",
+    "Broad native rerun and additional encoding/sizing work remain active."
+  ]
+}
