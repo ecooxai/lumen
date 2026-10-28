@@ -26,8 +26,18 @@
 #define wgpuQueueSubmit test_submit
 #define wgpuCommandBufferRelease test_release_command_buffer
 #define wgpuCommandEncoderRelease test_release_encoder
+#define wgpuDeviceCreateBuffer test_create_buffer
+#define wgpuBufferGetMappedRange test_mapped_range
+#define wgpuBufferGetMapState test_map_state
+#define wgpuBufferMapAsync test_map_async
+#define wgpuBufferUnmap test_unmap
+#define wgpuBufferDestroy test_destroy_buffer
+#define wgpuBufferRelease test_release_buffer
+#define wgpuDevicePoll test_device_poll
+#define wgpuCommandEncoderCopyBufferToTexture test_copy_buffer_texture
 #define now_ms test_now_ms
 #include "../src/gpu/gpu.c"
+#include <pthread.h>
 
 typedef struct {
     int w, h, bpp;
@@ -41,6 +51,37 @@ static struct {
     unsigned creates, releases, surface_live, uploads, buffer_writes;
     size_t staged_bytes;
 } mock;
+typedef struct {
+    unsigned char *pixels;
+    size_t size;
+    WGPUBufferMapState state;
+    WGPUBufferMapCallbackInfo callback;
+    unsigned submitted_after;
+} TestBuffer;
+static TestBuffer *upload_buffers[16];
+static struct {
+    unsigned creates, releases, live, peak_live, copies, polls, maps;
+    size_t live_bytes, peak_bytes;
+    bool hold_maps, fail_next_map, fail_next_allocation, defer_cancellation, callback_thread, inline_maps;
+} uploads;
+static WGPUBufferMapCallbackInfo cancelled_maps[16];
+static unsigned cancelled_count, completed_callbacks;
+typedef struct { WGPUBufferMapCallbackInfo callback; WGPUMapAsyncStatus status; } TestCompletion;
+static void *complete_on_thread(void *opaque) {
+    TestCompletion *completion = opaque;
+    WGPUBufferMapCallbackInfo callback = completion->callback;
+    callback.callback(completion->status, (WGPUStringView){0}, callback.userdata1, callback.userdata2);
+    return NULL;
+}
+static void complete_callback(WGPUBufferMapCallbackInfo callback, WGPUMapAsyncStatus status) {
+    if (!callback.callback) abort();
+    TestCompletion completion = {callback, status};
+    if (uploads.callback_thread) {
+        pthread_t thread;
+        if (pthread_create(&thread, NULL, complete_on_thread, &completion) || pthread_join(thread, NULL)) abort();
+    } else complete_on_thread(&completion);
+    completed_callbacks++;
+}
 static int checks, failures;
 #define CHECK(name, expression) do { \
     bool ok_ = (expression); checks++; \
@@ -49,6 +90,101 @@ static int checks, failures;
 } while (0)
 
 double test_now_ms(void) { return 0; }
+WGPUBuffer test_create_buffer(WGPUDevice device, WGPUBufferDescriptor const *desc) {
+    (void)device;
+    if (uploads.fail_next_allocation) { uploads.fail_next_allocation = false; return NULL; }
+    TestBuffer *b = calloc(1, sizeof *b);
+    b->size = (size_t)desc->size;
+    b->pixels = calloc(1, b->size);
+    b->state = desc->mappedAtCreation ? WGPUBufferMapState_Mapped : WGPUBufferMapState_Unmapped;
+    if (!b->pixels) abort();
+    unsigned slot = 0; while (slot < 16 && upload_buffers[slot]) slot++;
+    if (slot == 16) abort();
+    upload_buffers[slot] = b;
+    uploads.creates++; uploads.live++; uploads.live_bytes += b->size;
+    if (uploads.live > uploads.peak_live) uploads.peak_live = uploads.live;
+    if (uploads.live_bytes > uploads.peak_bytes) uploads.peak_bytes = uploads.live_bytes;
+    return (WGPUBuffer)b;
+}
+void *test_mapped_range(WGPUBuffer buffer, size_t offset, size_t size) {
+    TestBuffer *b = (TestBuffer *)buffer;
+    if (!b || b->state != WGPUBufferMapState_Mapped || offset > b->size || size > b->size - offset) return NULL;
+    return b->pixels + offset;
+}
+WGPUBufferMapState test_map_state(WGPUBuffer buffer) {
+    (void)buffer;
+    /* The real pinned backend exports this symbol but aborts when called.
+       Keep the mock equally strict so a declaration is never mistaken for support. */
+    fputs("unsupported pinned-backend call: wgpuBufferGetMapState\n", stderr);
+    abort();
+}
+WGPUFuture test_map_async(WGPUBuffer buffer, WGPUMapMode mode, size_t offset, size_t size,
+                          WGPUBufferMapCallbackInfo callback) {
+    TestBuffer *b = (TestBuffer *)buffer;
+    if (mode != WGPUMapMode_Write || offset || size != b->size ||
+            b->state != WGPUBufferMapState_Unmapped || b->submitted_after > mock.submits) abort();
+    b->state = WGPUBufferMapState_Pending; b->callback = callback; uploads.maps++;
+    if (uploads.inline_maps) {
+        b->state = WGPUBufferMapState_Mapped; b->callback.callback = NULL;
+        complete_callback(callback, WGPUMapAsyncStatus_Success);
+    }
+    return (WGPUFuture){ .id = uploads.maps };
+}
+void test_unmap(WGPUBuffer buffer) {
+    TestBuffer *b = (TestBuffer *)buffer;
+    if (!b || b->state != WGPUBufferMapState_Mapped) abort();
+    b->state = WGPUBufferMapState_Unmapped;
+}
+void test_destroy_buffer(WGPUBuffer buffer) {
+    TestBuffer *b = (TestBuffer *)buffer;
+    if (!b) return;
+    if (b->state == WGPUBufferMapState_Pending) {
+        WGPUBufferMapCallbackInfo callback = b->callback; b->callback.callback = NULL;
+        if (uploads.defer_cancellation) {
+            if (cancelled_count == 16) abort();
+            cancelled_maps[cancelled_count++] = callback;
+        } else complete_callback(callback, WGPUMapAsyncStatus_Aborted);
+    }
+    b->state = WGPUBufferMapState_Unmapped;
+}
+void test_release_buffer(WGPUBuffer buffer) {
+    if (!buffer || (uintptr_t)buffer <= 1) return;
+    TestBuffer *b = (TestBuffer *)buffer;
+    unsigned slot = 0; while (slot < 16 && upload_buffers[slot] != b) slot++;
+    if (slot == 16) abort();
+    upload_buffers[slot] = NULL; uploads.live--; uploads.releases++;
+    uploads.live_bytes -= b->size; free(b->pixels); free(b);
+}
+WGPUBool test_device_poll(WGPUDevice device, WGPUBool wait, WGPUSubmissionIndex const *submission) {
+    (void)device; (void)submission;
+    if (wait) abort();  /* Presentation must never block on a staging-buffer map. */
+    uploads.polls++;
+    if (!uploads.hold_maps) for (unsigned i = 0; i < 16; i++) {
+        TestBuffer *b = upload_buffers[i];
+        if (!b || b->state != WGPUBufferMapState_Pending) continue;
+        bool failed = uploads.fail_next_map; uploads.fail_next_map = false;
+        b->state = failed ? WGPUBufferMapState_Unmapped : WGPUBufferMapState_Mapped;
+        WGPUBufferMapCallbackInfo callback = b->callback; b->callback.callback = NULL;
+        complete_callback(callback, failed ? WGPUMapAsyncStatus_Error : WGPUMapAsyncStatus_Success);
+    }
+    return !uploads.hold_maps;
+}
+void test_copy_buffer_texture(WGPUCommandEncoder encoder, WGPUTexelCopyBufferInfo const *source,
+                             WGPUTexelCopyTextureInfo const *destination, WGPUExtent3D const *extent) {
+    (void)encoder;
+    TestBuffer *b = (TestBuffer *)source->buffer;
+    TestTexture *t = (TestTexture *)destination->texture;
+    size_t row = source->layout.bytesPerRow;
+    if (!b || !t || b->state != WGPUBufferMapState_Unmapped || row % 256 || row < (size_t)extent->width * t->bpp ||
+            destination->origin.x + extent->width > (unsigned)t->w || destination->origin.y + extent->height > (unsigned)t->h) abort();
+    for (unsigned y = 0; y < extent->height; y++) {
+        size_t offset = source->layout.offset + y * row, count = (size_t)extent->width * t->bpp;
+        if (offset + count > b->size) abort();
+        memcpy(t->pixels + ((destination->origin.y + y) * (size_t)t->w + destination->origin.x) * t->bpp,
+               b->pixels + offset, count);
+    }
+    b->submitted_after = mock.submits + 1; uploads.copies++;
+}
 static WGPUTexture texture_new(int w, int h, int bpp, bool surface) {
     TestTexture *t = calloc(1, sizeof *t);
     t->w = w; t->h = h; t->bpp = bpp; t->surface = surface;
@@ -139,6 +275,9 @@ void test_release_encoder(WGPUCommandEncoder encoder) { (void)encoder; }
 
 static Gpu gpu_new(int w, int h) {
     memset(&mock, 0, sizeof mock);
+    memset(&uploads, 0, sizeof uploads); memset(upload_buffers, 0, sizeof upload_buffers);
+    if (cancelled_count) abort();
+    completed_callbacks = 0;
     mock.status = WGPUSurfaceGetCurrentTextureStatus_SuccessOptimal;
     return (Gpu){ .configured = true, .w = w, .h = h,
         .ypipe = (WGPURenderPipeline)(uintptr_t)1,
@@ -149,6 +288,8 @@ static void gpu_clear(Gpu *g) {
     /* Only textures are allocated by the mock; pipeline/device handles are tags. */
     test_release_texture(g->tex); test_release_texture(g->vtex);
     test_release_texture(g->yt); test_release_texture(g->ct);
+    for (unsigned i = 0; i < GPU_UPLOAD_SLOTS; i++) upload_release(&g->uploads[i]);
+    if (uploads.live) abort();
 }
 static bool texture_equals(WGPUTexture texture, void const *pixels, size_t size) {
     TestTexture *t = (TestTexture *)texture;
@@ -249,7 +390,103 @@ static void unconfigured_recovery(void) {
     CHECK("restored surface presents retained pixels", gpu_present_rows(&g, pixels, 4, 8, 4, 0, 0) && texture_equals(g.tex, pixels, sizeof pixels));
     gpu_clear(&g);
 }
+static void retained_uploads(void) {
+    Gpu g = gpu_new(13, 9); g.backend = WGPUBackendType_Metal;
+    uint32_t padded[17 * 9], expected[13 * 9]; bool identical = true;
+    for (unsigned frame = 0; frame < 120; frame++) {
+        for (unsigned y = 0; y < 9; y++) for (unsigned x = 0; x < 17; x++)
+            padded[y * 17 + x] = 0xff000000 | (frame << 16) | (y << 8) | x;
+        for (unsigned y = 0; y < 9; y++) memcpy(expected + y * 13, padded + y * 17, 13 * 4);
+        identical &= gpu_present(&g, padded, 13, 9, 17) && texture_equals(g.tex, expected, sizeof expected);
+    }
+    CHECK("retained uploads preserve all padded source pixels over 120 frames", identical);
+    CHECK("steady uploads reuse at most three mapped buffers", uploads.creates > 0 && uploads.creates <= 3 && uploads.peak_live <= 3);
+    CHECK("steady uploads avoid repeated temporary texture staging", mock.uploads == 0 && uploads.copies == 120);
+    CHECK("staging storage is bounded by three aligned frames", uploads.peak_bytes <= 3 * 256 * 9);
+    unsigned copies = uploads.copies, polls = uploads.polls;
+    CHECK("unchanged frame remains presentable", gpu_present_rows(&g, padded, 13, 9, 17, 0, 0));
+    CHECK("unchanged frame performs no upload or map polling", uploads.copies == copies && uploads.polls == polls);
+    gpu_clear(&g);
+}
+static void retained_partial_and_occluded(void) {
+    Gpu g = gpu_new(13, 9); g.backend = WGPUBackendType_Metal;
+    uint32_t pixels[13 * 9] = {0};
+    CHECK("retained partial case starts", gpu_present(&g, pixels, 13, 9, 13));
+    fill_rows(pixels, 13, 2, 3, 0xff112233);
+    CHECK("retained one-row upload is exact", gpu_present_rows(&g, pixels, 13, 9, 13, 2, 3) && texture_equals(g.tex, pixels, sizeof pixels));
+    unsigned creates = uploads.creates, copies = uploads.copies, polls = uploads.polls;
+    mock.status = WGPUSurfaceGetCurrentTextureStatus_Timeout;
+    fill_rows(pixels, 13, 6, 8, 0xffabcdef);
+    for (unsigned n = 0; n < 500; n++) gpu_present_rows(&g, pixels, 13, 9, 13, 6, 8);
+    CHECK("blocked drawable never creates, uploads or polls staging", uploads.creates == creates && uploads.copies == copies && uploads.polls == polls && !mock.staged_bytes);
+    mock.status = WGPUSurfaceGetCurrentTextureStatus_SuccessOptimal;
+    CHECK("retained upload restores every missed row", gpu_present_rows(&g, pixels, 13, 9, 13, 0, 0) && texture_equals(g.tex, pixels, sizeof pixels));
+    gpu_clear(&g);
+}
+static void delayed_upload_maps(void) {
+    Gpu g = gpu_new(13, 9); g.backend = WGPUBackendType_Metal;
+    uint32_t pixels[13 * 9]; bool identical = true; uploads.hold_maps = true;
+    for (unsigned frame = 0; frame < 12; frame++) {
+        fill_rows(pixels, 13, 0, 9, 0xff000000 | frame);
+        identical &= gpu_present(&g, pixels, 13, 9, 13) && texture_equals(g.tex, pixels, sizeof pixels);
+    }
+    CHECK("delayed maps never corrupt or omit a frame", identical);
+    CHECK("delayed maps keep exactly a bounded staging pool", uploads.peak_live == 3 && uploads.creates == 3);
+    CHECK("busy pool uses the existing bounded queue upload", mock.uploads == 9);
+    uploads.hold_maps = false; unsigned creates = uploads.creates, writes = mock.uploads;
+    fill_rows(pixels, 13, 0, 9, 0xfffedcba);
+    CHECK("completed maps resume exact retained uploads", gpu_present(&g, pixels, 13, 9, 13) && texture_equals(g.tex, pixels, sizeof pixels));
+    CHECK("completed maps reuse existing storage", uploads.creates == creates && mock.uploads == writes);
+    gpu_clear(&g);
+}
+static void upload_failure_and_resize(void) {
+    Gpu g = gpu_new(13, 9); g.backend = WGPUBackendType_Metal;
+    uint32_t small[13 * 9], large[67 * 13];
+    fill_rows(small, 13, 0, 9, 0xff778899); fill_rows(large, 67, 0, 13, 0xff112233);
+    uploads.fail_next_allocation = true;
+    CHECK("staging allocation failure preserves frame presentation", gpu_present(&g, small, 13, 9, 13) && texture_equals(g.tex, small, sizeof small));
+    CHECK("failed allocation uses one existing queue upload", mock.uploads == 1);
+    CHECK("a later allocation recovers", gpu_present(&g, small, 13, 9, 13));
+    uploads.fail_next_map = true;
+    CHECK("failed asynchronous map recovers safely", gpu_present(&g, small, 13, 9, 13) && texture_equals(g.tex, small, sizeof small));
+    CHECK("resize preserves all pixels and source alignment", gpu_present(&g, large, 67, 13, 67) && texture_equals(g.tex, large, sizeof large));
+    CHECK("resize retains at most three staging buffers", uploads.peak_live <= 3);
+    CHECK("shrinking the viewport remains exact", gpu_present(&g, small, 13, 9, 13) && texture_equals(g.tex, small, sizeof small));
+    gpu_clear(&g);
+}
+static void upload_callback_lifetime(void) {
+    Gpu g = gpu_new(13, 9); g.backend = WGPUBackendType_Metal;
+    uint32_t pixels[13 * 9]; fill_rows(pixels, 13, 0, 9, 0xff223344);
+    uploads.hold_maps = true; uploads.defer_cancellation = true;
+    CHECK("pending callback case presents", gpu_present(&g, pixels, 13, 9, 13));
+    gpu_clear(&g);
+    CHECK("pending mapping releases its GPU buffer before deferred cancellation", !uploads.live && cancelled_count == 1);
+    /* Erase all owner state before a foreign thread delivers the cancelled map.
+       The ASan run checks the completion token survives this ordering. */
+    memset(&g, 0xa5, sizeof g); uploads.callback_thread = true;
+    for (unsigned i = 0; i < cancelled_count; i++) complete_callback(cancelled_maps[i], WGPUMapAsyncStatus_CallbackCancelled);
+    cancelled_count = 0;
+    CHECK("cancellation after owner destruction completes once", completed_callbacks == 1);
+    g = gpu_new(13, 9); g.backend = WGPUBackendType_Metal; uploads.callback_thread = true;
+    bool identical = true;
+    for (unsigned frame = 0; frame < 20; frame++) {
+        fill_rows(pixels, 13, 0, 9, 0xff000000 | frame);
+        identical &= gpu_present(&g, pixels, 13, 9, 13) && texture_equals(g.tex, pixels, sizeof pixels);
+    }
+    CHECK("foreign-thread map completion preserves exact pixels", identical && completed_callbacks == 19);
+    gpu_clear(&g);
+    g = gpu_new(13, 9); g.backend = WGPUBackendType_Metal; uploads.inline_maps = true;
+    identical = true;
+    for (unsigned frame = 0; frame < 20; frame++) {
+        fill_rows(pixels, 13, 0, 9, 0xff778800 | frame);
+        identical &= gpu_present(&g, pixels, 13, 9, 13) && texture_equals(g.tex, pixels, sizeof pixels);
+    }
+    CHECK("synchronous completion holds token ownership before map returns", identical && completed_callbacks == 20 && uploads.creates == 1);
+    gpu_clear(&g);
+}
 int main(void) {
+    upload_callback_lifetime();
+    retained_uploads(); retained_partial_and_occluded(); delayed_upload_maps(); upload_failure_and_resize();
     partial_recovery(); blocked_video(); resize_recovery(); bgra_video_recovery(); unconfigured_recovery();
     printf("GPU presentation: %d checks, %d failures\n", checks, failures);
     return failures ? 1 : 0;

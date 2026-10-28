@@ -3,12 +3,24 @@
 #include "../base/util.h"
 #include <math.h>
 #include <stdio.h>
+#include <stdatomic.h>
 #include <stdlib.h>
 #include <string.h>
 #include <webgpu.h>
 #include <wgpu.h>
 
+/* Three bounded slots cover in-flight frames without waiting for GPU work.
+ * A callback owns only a reference-counted completion token, never a Gpu or
+ * buffer. This also permits cancellation after the presenter is destroyed. */
+enum { UPLOAD_PENDING, UPLOAD_MAPPED, UPLOAD_FAILED };
+typedef struct { atomic_uint refs; atomic_int state; } GpuUploadMap;
+typedef struct { WGPUBuffer buffer; size_t size; GpuUploadMap *map; } GpuUpload;
+#define GPU_UPLOAD_SLOTS 3
+#define GPU_UPLOAD_MAX_BYTES (16u * 1024u * 1024u)
+
 struct Gpu {
+    GpuUpload uploads[GPU_UPLOAD_SLOTS];
+    uint64_t stats_upload_buffers, stats_upload_copies, stats_upload_fallbacks;
     WGPUInstance inst; WGPUSurface surf; WGPUAdapter adapter; WGPUDevice dev; WGPUQueue q;
     WGPUTextureFormat fmt; WGPURenderPipeline pipe; WGPUBindGroupLayout bgl; WGPUSampler samp;
     WGPUTexture tex; WGPUTextureView view; WGPUBindGroup bg; int tw, th; int w, h; bool configured, present_pending;
@@ -28,10 +40,12 @@ static void gpu_stats_report(Gpu *g, bool final) {
     double now = now_ms();
     if (!final && now < g->stats_next) return;
     g->stats_next = now + 1000;
-    fprintf(stderr, "gpu: stats elapsed_ms=%.0f final=%d acquire_success=%llu timeout=%llu outdated=%llu lost=%llu other=%llu last_other_status=%u submits=%llu texture_uploads=%llu texture_upload_mib=%.3f\n",
+    fprintf(stderr, "gpu: stats elapsed_ms=%.0f final=%d acquire_success=%llu timeout=%llu outdated=%llu lost=%llu other=%llu last_other_status=%u submits=%llu texture_uploads=%llu texture_upload_mib=%.3f upload_buffers=%llu retained_copies=%llu upload_fallbacks=%llu\n",
         now - g->stats_start, final, (unsigned long long)g->stats_success, (unsigned long long)g->stats_timeout,
         (unsigned long long)g->stats_outdated, (unsigned long long)g->stats_lost, (unsigned long long)g->stats_other,
-        g->stats_other_status, (unsigned long long)g->stats_submits, (unsigned long long)g->stats_uploads, (double)g->stats_upload_bytes / (1024 * 1024));
+        g->stats_other_status, (unsigned long long)g->stats_submits, (unsigned long long)g->stats_uploads, (double)g->stats_upload_bytes / (1024 * 1024),
+        (unsigned long long)g->stats_upload_buffers, (unsigned long long)g->stats_upload_copies,
+        (unsigned long long)g->stats_upload_fallbacks);
 }
 static void gpu_stats_upload(Gpu *g, size_t bytes) {
     if (g->stats) { ++g->stats_uploads; g->stats_upload_bytes += bytes; }
@@ -308,6 +322,82 @@ static void gpu_stats_video(Gpu *g, const uint32_t *px, int w, int h, int stride
         now - g->stats_start, yuv ? "nv12" : "bgra", v->x0, v->y0, v->x1, v->y1, w, h, v->w, v->h,
         page_ok, x, y, page, page >> 24, sx, sy, yy, u, vv, bgra, v->mat);
 }
+static void upload_map_release(GpuUploadMap *map) {
+    if (map && atomic_fetch_sub_explicit(&map->refs, 1, memory_order_acq_rel) == 1) free(map);
+}
+static void upload_map_done(WGPUMapAsyncStatus status, WGPUStringView message, void *u1, void *u2) {
+    /* Spontaneous callbacks may run on another thread or after destruction.
+       Publish completion only; do not call wgpu or access presenter/buffer state. */
+    (void)message; (void)u2;
+    GpuUploadMap *map = u1;
+    atomic_store_explicit(&map->state, status == WGPUMapAsyncStatus_Success ? UPLOAD_MAPPED : UPLOAD_FAILED,
+                          memory_order_release);
+    upload_map_release(map);
+}
+static int upload_state(const GpuUpload *upload) {
+    /* The installed wgpu-native exports wgpuBufferGetMapState but panics when
+       called. Completion callbacks are the supported source of mapping state. */
+    return upload->map ? atomic_load_explicit(&upload->map->state, memory_order_acquire) : UPLOAD_FAILED;
+}
+static void upload_release(GpuUpload *upload) {
+    if (upload->buffer) { wgpuBufferDestroy(upload->buffer); wgpuBufferRelease(upload->buffer); }
+    upload_map_release(upload->map);
+    upload->buffer = NULL; upload->size = 0; upload->map = NULL;
+}
+static GpuUpload *upload_acquire(Gpu *g, size_t bytes) {
+    if (g->backend != WGPUBackendType_Metal || !bytes || bytes > GPU_UPLOAD_MAX_BYTES) return NULL;
+    bool pending = false;
+    for (unsigned i = 0; i < GPU_UPLOAD_SLOTS; i++)
+        if (g->uploads[i].buffer && upload_state(&g->uploads[i]) == UPLOAD_PENDING) pending = true;
+    /* One nonblocking poll per presented frame, never a timer or busy wait.
+       No drawable / no damaged rows means this code is never reached. */
+    if (pending) wgpuDevicePoll(g->dev, false, NULL);
+    for (unsigned i = 0; i < GPU_UPLOAD_SLOTS; i++) {
+        GpuUpload *upload = &g->uploads[i];
+        if (upload->buffer && upload->size >= bytes && upload_state(upload) == UPLOAD_MAPPED)
+            return upload;
+    }
+    for (unsigned i = 0; i < GPU_UPLOAD_SLOTS; i++) {
+        GpuUpload *upload = &g->uploads[i];
+        if (upload->buffer && upload_state(upload) == UPLOAD_PENDING) continue;
+        upload_release(upload);
+        upload->map = malloc(sizeof *upload->map);
+        if (!upload->map) return NULL;
+        atomic_init(&upload->map->refs, 1);
+        atomic_init(&upload->map->state, UPLOAD_MAPPED);
+        WGPUBufferDescriptor desc = WGPU_BUFFER_DESCRIPTOR_INIT;
+        desc.size = bytes; desc.usage = WGPUBufferUsage_MapWrite | WGPUBufferUsage_CopySrc; desc.mappedAtCreation = true;
+        upload->buffer = wgpuDeviceCreateBuffer(g->dev, &desc);
+        if (!upload->buffer) { upload_release(upload); return NULL; }
+        upload->size = bytes;
+        if (g->stats) ++g->stats_upload_buffers;
+        return upload;
+    }
+    return NULL;  /* Busy or failed maps use the existing queue upload. */
+}
+static GpuUpload *upload_frame(Gpu *g, WGPUCommandEncoder encoder, const uint32_t *pixels,
+                              int width, int stride, int y0, int y1) {
+    if (width <= 0 || stride < width || y1 <= y0) return NULL;
+    size_t row = (size_t)width * 4, rows = (size_t)(y1 - y0);
+    if (row > UINT32_MAX - 255u) return NULL;
+    size_t pitch = (row + 255u) & ~(size_t)255u;
+    if (rows > GPU_UPLOAD_MAX_BYTES / pitch) return NULL;
+    GpuUpload *upload = upload_acquire(g, pitch * rows);
+    if (!upload) return NULL;
+    unsigned char *mapped = wgpuBufferGetMappedRange(upload->buffer, 0, upload->size);
+    if (!mapped) { upload_release(upload); return NULL; }
+    for (size_t y = 0; y < rows; y++)
+        memcpy(mapped + y * pitch, pixels + ((size_t)y0 + y) * (size_t)stride, row);
+    wgpuBufferUnmap(upload->buffer);
+    WGPUTexelCopyBufferInfo source = WGPU_TEXEL_COPY_BUFFER_INFO_INIT;
+    source.buffer = upload->buffer; source.layout.bytesPerRow = (uint32_t)pitch; source.layout.rowsPerImage = (uint32_t)rows;
+    WGPUTexelCopyTextureInfo destination = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
+    destination.texture = g->tex; destination.origin = (WGPUOrigin3D){0, (uint32_t)y0, 0};
+    WGPUExtent3D extent = {(uint32_t)width, (uint32_t)rows, 1};
+    wgpuCommandEncoderCopyBufferToTexture(encoder, &source, &destination, &extent);
+    if (g->stats) ++g->stats_upload_copies;
+    return upload;
+}
 static void ensure_tex(Gpu *g, int w, int h) {
     if (g->tex && g->tw == w && g->th == h) return;
     if (g->bg) wgpuBindGroupRelease(g->bg);
@@ -361,12 +451,18 @@ bool gpu_present_frame(Gpu *g, const uint32_t *px, int w, int h, int stride, int
     y0 = g->upload_full ? 0 : g->upload_y0;
     y1 = g->upload_full ? h : LMIN(g->upload_y1, h);
     ensure_tex(g, w, h);
+    WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(g->dev, NULL);
+    GpuUpload *upload = NULL;
     if (y1 > y0) {
-        WGPUTexelCopyTextureInfo dst = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT; dst.texture = g->tex; dst.origin = (WGPUOrigin3D){ 0, (uint32_t)y0, 0 };
-        WGPUTexelCopyBufferLayout lay = WGPU_TEXEL_COPY_BUFFER_LAYOUT_INIT; lay.bytesPerRow = (uint32_t)stride * 4; lay.rowsPerImage = (uint32_t)(y1 - y0);
-        WGPUExtent3D ext = { (uint32_t)w, (uint32_t)(y1 - y0), 1 };
-        wgpuQueueWriteTexture(g->q, &dst, px + (size_t)y0 * (size_t)stride, (size_t)stride * 4 * (size_t)(y1 - y0), &lay, &ext);
-        gpu_stats_upload(g, (size_t)stride * 4 * (size_t)(y1 - y0));
+        upload = upload_frame(g, enc, px, w, stride, y0, y1);
+        if (!upload) {
+            WGPUTexelCopyTextureInfo dst = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT; dst.texture = g->tex; dst.origin = (WGPUOrigin3D){ 0, (uint32_t)y0, 0 };
+            WGPUTexelCopyBufferLayout lay = WGPU_TEXEL_COPY_BUFFER_LAYOUT_INIT; lay.bytesPerRow = (uint32_t)stride * 4; lay.rowsPerImage = (uint32_t)(y1 - y0);
+            WGPUExtent3D ext = { (uint32_t)w, (uint32_t)(y1 - y0), 1 };
+            wgpuQueueWriteTexture(g->q, &dst, px + (size_t)y0 * (size_t)stride, (size_t)stride * 4 * (size_t)(y1 - y0), &lay, &ext);
+            if (g->stats && g->backend == WGPUBackendType_Metal) ++g->stats_upload_fallbacks;
+        }
+        gpu_stats_upload(g, (size_t)w * 4 * (size_t)(y1 - y0));
     }
     bool yv = v && v->yuv && gpu_yuv_ok(g) && v->w > 0 && v->h > 0, vid = !yv && v && v->px && v->w > 0 && v->h > 0;
     if (yv || vid) gpu_stats_video(g, px, w, h, stride, v, yv);
@@ -399,7 +495,6 @@ bool gpu_present_frame(Gpu *g, const uint32_t *px, int w, int h, int stride, int
     }
 
     WGPUTextureView tv = wgpuTextureCreateView(st.texture, NULL);
-    WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(g->dev, NULL);
     WGPURenderPassColorAttachment ca = WGPU_RENDER_PASS_COLOR_ATTACHMENT_INIT;
     ca.view = tv; ca.loadOp = WGPULoadOp_Clear; ca.storeOp = WGPUStoreOp_Store; ca.clearValue = (WGPUColor){ 1, 1, 1, 1 };
     WGPURenderPassDescriptor rp = WGPU_RENDER_PASS_DESCRIPTOR_INIT; rp.colorAttachmentCount = 1; rp.colorAttachments = &ca;
@@ -412,6 +507,16 @@ bool gpu_present_frame(Gpu *g, const uint32_t *px, int w, int h, int stride, int
     wgpuRenderPassEncoderEnd(pass); wgpuRenderPassEncoderRelease(pass);
     WGPUCommandBuffer cb = wgpuCommandEncoderFinish(enc, NULL);
     wgpuQueueSubmit(g->q, 1, &cb);
+    if (upload) {
+        WGPUBufferMapCallbackInfo map = WGPU_BUFFER_MAP_CALLBACK_INFO_INIT;
+        map.mode = WGPUCallbackMode_AllowSpontaneous; map.callback = upload_map_done; map.userdata1 = upload->map;
+        /* Acquire callback ownership before the API can invoke it synchronously. */
+        atomic_fetch_add_explicit(&upload->map->refs, 1, memory_order_relaxed);
+        atomic_store_explicit(&upload->map->state, UPLOAD_PENDING, memory_order_release);
+        /* Remapping begins after submission; a still-busy slot is never read,
+           written, unmapped again, resized, or waited on by the next frame. */
+        wgpuBufferMapAsync(upload->buffer, WGPUMapMode_Write, 0, upload->size, map);
+    }
     g->upload_y0 = g->upload_y1 = 0; g->upload_full = false;
     if (g->stats) ++g->stats_submits;
     wgpuCommandBufferRelease(cb); wgpuCommandEncoderRelease(enc);
@@ -434,6 +539,7 @@ const char *gpu_backend_name(Gpu *g) {
 void gpu_destroy(Gpu *g) {
     if (!g) return;
     gpu_stats_report(g, true);
+    for (unsigned i = 0; i < GPU_UPLOAD_SLOTS; i++) upload_release(&g->uploads[i]);
     if (g->bg) wgpuBindGroupRelease(g->bg);
     if (g->view) wgpuTextureViewRelease(g->view);
     if (g->tex) { wgpuTextureDestroy(g->tex); wgpuTextureRelease(g->tex); }

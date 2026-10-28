@@ -169,3 +169,13 @@ Consolidated outdated task-owned instructions and archived both previous documen
 - Evidence `agent/evidence/102900614-003-message-transfer.json`; immutable native SHA-256 `733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848`. MessagePort lifecycle, full Streams and same signed IPA execution remain outside this acceptance.
 
 - Checkpoint003 commit whitespace gate caught four trailing spaces on a blank line of the targeted-run helper. Removed that authored-source defect; execution and committed helper hashes are both recorded. No test or production behavior changed, and no verification was rerun or relabelled.
+
+## 102900614-004 — bounded GPU upload reuse and callback lifetime repair
+
+- Start `2026-10-28T23:02:31.987958+00:00`; end `2026-10-28T23:11:31.564421+00:00`; iteration `539.576s`; total session `3410.105s`. Current acceptance **40/100**, prior50 historical; accepted native remains733.
+- First b62 candidate aborted after `16.463s` because this pinned wgpu backend exports an unimplemented map-state query. A stricter regression reproduced the abort; reference-counted atomic completion tokens replace that query. The failed candidate and original receipts remain preserved.
+- Repaired candidate2dac: normal **68/68** and AddressSanitizer **68/68** pass; build/test stages total `4.439s`. Short1Hz-monitored checks do not establish steady-state CPU usage.
+- Unchanged controlled scroll run `116.078s`: meanCPU `18.093→14.151%`; p95 `23.054→18.997%` (**17.598% lower**), still above fixed10%. Final idle p95 `0.993%`, settledRSS `153.188MiB`.
+- `656000` CPU-frame page pixels compare identically and all1875 fractional wheel inputs retain exact final position. Dynamic toolbar is explicitly excluded. The native-window capture metadata error remains separate; no invented scanout/PID proof.
+- Optional scratch-only preflight22:45:20.172–22:45:21.184Z failed from missing mirror header/ps, with no Mac mutation or performance credit.
+- Only GPU source/test and explicit reproduction helpers are committed; stream/raster working edits are excluded. Evidence `agent/evidence/102900614-004-gpu-upload.json`. Parallel wall time is not summed; model compute duration unavailable.

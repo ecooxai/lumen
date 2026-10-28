@@ -34,3 +34,7 @@ See `agent/devsummary.md` for task iterations and per-stage timings. Child Mac M
 ## Checkpoint003 — current native transfer artifact
 
 Current verified native `build-apple-load-20261029/lumen-message-transfer-733943aa9496d134` SHA-256 `733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848`. Source manifest `agent/evidence/102900614-003/compiled-source-sha256.json`. Original1850/1850 and targeted222/222 upstream assertions pass;826 custom regression assertions pass. Current score40/100; prior50 remains historical, fresh soak and task delivery pending. Current final idle passes; scroll p9523.054% fails10% target. GPU and stream candidates must be separately validated and never silently attributed to this snapshot. All broader158/207 priority results remain historical. See `agent/evidence/102900614-003-message-transfer.json`.
+
+## Checkpoint004 — measured GPU candidate
+
+Candidate `build-apple-load-20261029/lumen-gpu-callback-2dacdbcc36c5be7e` SHA-256 `2dacdbcc36c5be7edeaf8027533be38d85fbefe06c717e172ee324c499f2ec03` has68/68 normal and68/68 ASan checks, no actual Metal errors, identical CPU-frame page pixels and scrollp95 `18.997%` versus23.054%. Fixed10% still fails. Current accepted native733 and score40 remain unchanged until fresh combined gates. Originalb62 crash is retained. See `agent/evidence/102900614-004-gpu-upload.json`.

@@ -1,0 +1,47 @@
+{
+  "startedUTC": "2026-10-28T23:08:04.201106+00:00",
+  "scope": "Exact final CPU-frame page pixels and fractional DOM position; dynamic compact toolbar excluded. Actual native window capture is separate.",
+  "passed": true,
+  "baseline": {
+    "directory": "output/session-102900614/scroll-transfer-baseline",
+    "receiptSHA256": "2c77377097883a09dc4ab4568548d22edc9a14480e43d044caba144a45b5d1e1",
+    "binarySHA256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
+    "imageSHA256": "a07a1a539be0f925fa4d5984d8a6f80a5e4b31427fd90fd33c5f7322bb098b41",
+    "scroll": {
+      "events": 2640,
+      "maxY": 6000.07177734375,
+      "finalY": 6000.07177734375
+    },
+    "input": {
+      "source": "Existing native SDL wheel hook",
+      "parameters": "400,400,-0.08,15000,1875",
+      "scheduled_event_count": 1875,
+      "scheduled_duration_seconds": 30
+    }
+  },
+  "candidate": {
+    "directory": "output/session-102900614/scroll-gpu-callback",
+    "receiptSHA256": "c4c6dcc41ce854a73ae2015978de083ffa29862acd4e83f1e8fe6be88c962012",
+    "binarySHA256": "2dacdbcc36c5be7edeaf8027533be38d85fbefe06c717e172ee324c499f2ec03",
+    "imageSHA256": "9a4391a240cf85fe6a7534111c186b545a1d1b751a51489cebb72419ad1bc8e3",
+    "scroll": {
+      "events": 2660,
+      "maxY": 6000.07177734375,
+      "finalY": 6000.07177734375
+    },
+    "input": {
+      "source": "Existing native SDL wheel hook",
+      "parameters": "400,400,-0.08,15000,1875",
+      "scheduled_event_count": 1875,
+      "scheduled_duration_seconds": 30
+    }
+  },
+  "width": 1000,
+  "height": 700,
+  "toolbarPixelsExcluded": 44,
+  "pagePixelsCompared": 656000,
+  "differingPagePixels": 0,
+  "examples": [],
+  "finishedUTC": "2026-10-28T23:08:04.217542+00:00",
+  "durationSeconds": 0.016
+}

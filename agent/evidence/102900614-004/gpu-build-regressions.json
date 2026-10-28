@@ -1,0 +1,130 @@
+{
+  "startedUTC": "2026-10-28T23:04:57.176453+00:00",
+  "scope": "Native Metal upload-buffer candidate and deterministic GPU presenter regressions; CPU/idle/scroll/Apple-device acceptance is separate.",
+  "sourceBaseCommit": "d665c4920c0c2c0aaf9e22e9945342c772423f1f",
+  "compiledSourceManifest": "output/session-102900614/gpu-callback-green-1/compiled-source-sha256.json",
+  "gpuSourceSHA256": "93f7e48a28806f6ac57e0e3e9c9b3b8f9d5cfa57c20b1328abe57d43e983888a",
+  "fixtureSHA256": "5094bb02ce7f1c792ef1aa0964394b5a276c7181bc296befc9105e8a1e35eb7f",
+  "build": "build-apple-load-20261029",
+  "prebuiltV8": "Reuses the same existing native Homebrew V8 as the paired baseline; no V8 rebuild.",
+  "stages": [
+    {
+      "name": "build",
+      "startedUTC": "2026-10-28T23:04:57.188152+00:00",
+      "finishedUTC": "2026-10-28T23:04:58.258422+00:00",
+      "durationSeconds": 1.07,
+      "passed": true,
+      "command": [
+        "make",
+        "-j3",
+        "BUILD=build-apple-load-20261029",
+        "MODE=release",
+        "RTC=1",
+        "WT=1",
+        "build-apple-load-20261029/test_gpu_present",
+        "build-apple-load-20261029/lumen"
+      ],
+      "monitor": "output/session-102900614/gpu-callback-green-1/build.json",
+      "monitorSHA256": "7813883765d47e5353d5a38002b2d7110e27fa566992860c9142bfc7d1fbb9eb",
+      "log": "output/session-102900614/gpu-callback-green-1/build.log",
+      "logSHA256": "d63b53acf88ed02ddcc167afd2b5b1781ff0a915f52040620d700eefbef4f281",
+      "intervalCpuSamples": 0,
+      "intervalCpuPeakPercent": null,
+      "rssPeakMiB": 8.141,
+      "maximumSamplingGapSeconds": 1.002,
+      "resultLines": [],
+      "measurementScope": "Short build/test observations; these are not idle or scrolling resource gates."
+    },
+    {
+      "name": "gpu-presentation",
+      "startedUTC": "2026-10-28T23:04:58.295929+00:00",
+      "finishedUTC": "2026-10-28T23:04:59.380982+00:00",
+      "durationSeconds": 1.085,
+      "passed": true,
+      "command": [
+        "build-apple-load-20261029/test_gpu_present-gpu-callback-aa18e755e988b678"
+      ],
+      "monitor": "output/session-102900614/gpu-callback-green-1/gpu-presentation.json",
+      "monitorSHA256": "b98075bf297ea5906041e2df2813b3b71a07cbce34ba21aa711f1709e0ec4fba",
+      "log": "output/session-102900614/gpu-callback-green-1/gpu-presentation.log",
+      "logSHA256": "a00302b05386e15ce22fabcdaffb8331c19f72fb11b2d838b8587d6dcec75433",
+      "intervalCpuSamples": 0,
+      "intervalCpuPeakPercent": null,
+      "rssPeakMiB": 0.031,
+      "maximumSamplingGapSeconds": 1.007,
+      "resultLines": [
+        "GPU presentation: 68 checks, 0 failures"
+      ],
+      "measurementScope": "Short build/test observations; these are not idle or scrolling resource gates."
+    },
+    {
+      "name": "asan-build",
+      "startedUTC": "2026-10-28T23:04:59.381383+00:00",
+      "finishedUTC": "2026-10-28T23:05:00.490879+00:00",
+      "durationSeconds": 1.11,
+      "passed": true,
+      "command": [
+        "make",
+        "-j2",
+        "BUILD=build-apple-gpu-asan-102900614",
+        "MODE=debug",
+        "RTC=1",
+        "WT=1",
+        "CC=clang -fsanitize=address -fno-omit-frame-pointer",
+        "build-apple-gpu-asan-102900614/test_gpu_present"
+      ],
+      "monitor": "output/session-102900614/gpu-callback-green-1/asan-build.json",
+      "monitorSHA256": "dbdb526ea6ac413e4c8dcea440e9b6757beda65828841573370a2a05c679f1bf",
+      "log": "output/session-102900614/gpu-callback-green-1/asan-build.log",
+      "logSHA256": "87b38a0d6ba1242db6c16be15876d4518b101c7a53aae2b8abace3ad2a95bdcd",
+      "intervalCpuSamples": 0,
+      "intervalCpuPeakPercent": null,
+      "rssPeakMiB": 7.969,
+      "maximumSamplingGapSeconds": 1.023,
+      "resultLines": [],
+      "measurementScope": "Short build/test observations; these are not idle or scrolling resource gates."
+    },
+    {
+      "name": "asan-callback-lifetime",
+      "startedUTC": "2026-10-28T23:05:00.492135+00:00",
+      "finishedUTC": "2026-10-28T23:05:01.608532+00:00",
+      "durationSeconds": 1.116,
+      "passed": true,
+      "command": [
+        "build-apple-gpu-asan-102900614/test_gpu_present"
+      ],
+      "monitor": "output/session-102900614/gpu-callback-green-1/asan-callback-lifetime.json",
+      "monitorSHA256": "5ef9733b970bc31f6774e7dce6b16652db092452999e70609ea5934b75d904cd",
+      "log": "output/session-102900614/gpu-callback-green-1/asan-callback-lifetime.log",
+      "logSHA256": "a00302b05386e15ce22fabcdaffb8331c19f72fb11b2d838b8587d6dcec75433",
+      "intervalCpuSamples": 0,
+      "intervalCpuPeakPercent": null,
+      "rssPeakMiB": 0.031,
+      "maximumSamplingGapSeconds": 1.022,
+      "resultLines": [
+        "GPU presentation: 68 checks, 0 failures"
+      ],
+      "measurementScope": "Short build/test observations; these are not idle or scrolling resource gates."
+    }
+  ],
+  "artifacts": {
+    "lumen": {
+      "path": "build-apple-load-20261029/lumen-gpu-callback-2dacdbcc36c5be7e",
+      "sha256": "2dacdbcc36c5be7edeaf8027533be38d85fbefe06c717e172ee324c499f2ec03",
+      "bytes": 13987880
+    },
+    "test_gpu_present": {
+      "path": "build-apple-load-20261029/test_gpu_present-gpu-callback-aa18e755e988b678",
+      "sha256": "aa18e755e988b67822b481ca08b964c9389053c6089f8b10e457aa09fda2fe9c",
+      "bytes": 76352
+    },
+    "test_gpu_present_asan": {
+      "path": "build-apple-gpu-asan-102900614/test_gpu_present",
+      "sha256": "a42933e1af2cf0c6c8928de97e81f238fc6beb5958302126bd4c5533ce111d39",
+      "bytes": 384912
+    }
+  },
+  "passed": true,
+  "finishedUTC": "2026-10-28T23:05:01.615652+00:00",
+  "durationSeconds": 4.439
+}

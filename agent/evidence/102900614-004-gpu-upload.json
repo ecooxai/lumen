@@ -1,0 +1,93 @@
+{
+  "iteration": "102900614-004",
+  "started_utc": "2026-10-28T23:02:31.987958+00:00",
+  "updated_utc": "2026-10-28T23:11:31.564421+00:00",
+  "elapsed_seconds": 539.576,
+  "total_session_seconds": 3410.105,
+  "score": 40,
+  "status": "GPU upload candidate reduces CPU with exact CPU-frame pixels;10% interaction gate remains failed",
+  "accepted_native_unchanged": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
+  "candidate_binary_sha256": "2dacdbcc36c5be7edeaf8027533be38d85fbefe06c717e172ee324c499f2ec03",
+  "candidate_source_manifest": "agent/evidence/102900614-004/compiled-source-sha256.json",
+  "native_artifact_promoted": false,
+  "build": {
+    "source_receipt": "output/session-102900614/gpu-callback-green-1/summary.json",
+    "sha256": "e8a3f73d7c2c298724f99acad8971a717e199143e76812590ce16ada06f2664f",
+    "duration_seconds": 4.439,
+    "normal_checks": 68,
+    "asan_checks": 68
+  },
+  "strict_backend_red": [
+    {
+      "path": "output/session-102900614/gpu-callback-red-build.json",
+      "sha256": "4bf1d956096697f94b6aa90258ec92265888883115539379e7114a3a470c58b5",
+      "started_utc": "2026-10-28T23:04:07.569389+00:00",
+      "finished_utc": "2026-10-28T23:04:08.608399+00:00",
+      "duration_seconds": 1.037,
+      "natural_exit_code": 0,
+      "interval_cpu_samples": 0,
+      "collector_error": null
+    },
+    {
+      "path": "output/session-102900614/gpu-callback-red.json",
+      "sha256": "e80d50a7ecfc1449c4ff631f400bc549f8ef2e23ce2019906301a2e43aef3d80",
+      "started_utc": "2026-10-28T23:04:08.642875+00:00",
+      "finished_utc": "2026-10-28T23:04:09.694822+00:00",
+      "duration_seconds": 1.05,
+      "natural_exit_code": -6,
+      "interval_cpu_samples": 0,
+      "collector_error": null
+    }
+  ],
+  "first_failed_candidate": {
+    "binary_sha256": "b62a1720e52d91600fda327418dc3c733965c88550e5f4590f5d423d374efdee",
+    "receipt": "output/session-102900614/scroll-gpu-upload/receipt.json",
+    "sha256": "4f87780735a598ad72273cac4a432051389a5e28138c91ffbd0c230be84ef412",
+    "duration_seconds": 16.463,
+    "natural_exit_code": -6,
+    "cause": "Installed wgpu-native exports wgpuBufferGetMapState but aborts when invoked; strict mock now reproduces that behavior."
+  },
+  "resources": {
+    "resource_receipt": "output/session-102900614/scroll-gpu-callback/receipt.json",
+    "sha256": "c4c6dcc41ce854a73ae2015978de083ffa29862acd4e83f1e8fe6be88c962012",
+    "duration_seconds": 116.078,
+    "baseline_scroll_cpu_mean_percent": 18.093,
+    "candidate_scroll_cpu_mean_percent": 14.151,
+    "mean_reduction_percent": 21.787,
+    "baseline_scroll_cpu_p95_percent": 23.054,
+    "candidate_scroll_cpu_p95_percent": 18.997,
+    "p95_reduction_percent": 17.598,
+    "fixed_scroll_p95_ceiling_percent": 10,
+    "interaction_accepted": false,
+    "candidate_idle_p95_percent": 0.993,
+    "candidate_final_idle_rss_mib": 153.188,
+    "page_pixels_compared": 656000,
+    "differing_page_pixels": 0,
+    "pixel_scope": "Exact final CPU-frame page pixels and fractional DOM position; dynamic compact toolbar excluded. Actual native window capture is separate.",
+    "native_window_capture_receipt_passed": false,
+    "native_window_capture_metadata_issue": "ValueError: 'output/session-102900614/scroll-gpu-callback/native-window-capture/gpt6-astra-pro_builtin-agents_devinmac3d_lumen-window.png' is not in the subpath of '/Users/devin/repos/lumen'"
+  },
+  "implementation": "Three bounded reusable MapWrite slots with reference-counted atomic callback tokens; no polling unsupported GetMapState, no frame/input throttling; fallback upload preserves presentation when slots unavailable.",
+  "source_tool_sha256": {
+    "tools/apple-session-gpt6as/repair_gpu_upload_callback.py": "1397f30d55a20b8ebe94e80ad43b4b99302b422ace0bccd9a8ff0001af3195cf",
+    "tools/apple-session-gpt6as/build_gpu_upload_candidate.py": "6d4002e9ba9b2a04f1c3bcd5ef8e32674e920b675d91dbfb4ed6f806151b2737",
+    "tools/apple-session-gpt6as/run_gpu_scroll_candidate.py": "40cceec176312730e8aeb91d625162cbd0cb226056a80f6b27599f01fac41e77",
+    "tools/apple-session-gpt6as/run_gpu_scroll_candidate_v2_102900614.py": "820b19b9321b115d52a9b10f281c93be18f8aac9112145e9b102c312173308c2",
+    "tools/apple-session-gpt6as/capture_task_window.py": "9c11698492d54bec7077be4ba68d89c345097ad9db36b5050965ad0aecc69b48",
+    "tools/apple-session-gpt6as/task_window_inventory.c": "ed7fefa1031c1dd96a5a047e95351f25d02aeb6ae973015b4f0f4e22787506b9",
+    "tools/apple-session-gpt6as/compare_scroll_pixels.py": "a0606a09752044691d6e91639663e1f3d215a83ed0218024489fb5cc16813799",
+    "tools/apple-session-gpt6as/verify_window_capture_metadata.py": "5e7d0dfa6913269a08a615d3a2d2c5d4ca652879d39121cea1403d54a6e475a6"
+  },
+  "limits": [
+    "Current accepted native remains733 until combined standards/resource acceptance is verified.",
+    "Zero CPU-frame pixel differences do not alone prove GPU scanout equivalence; window capture metadata failure remains recorded.",
+    "Fresh navigation soak and same signed IPA execution remain pending."
+  ],
+  "optional_local_preflight": {
+    "started_utc": "2026-10-28T22:45:20.172Z",
+    "finished_utc": "2026-10-28T22:45:21.184Z",
+    "duration_seconds": 1.012,
+    "result": "Scratch-only compile lacked layout/layout.h and local ps failed; no Mac mutation, test pass or telemetry credit."
+  },
+  "model_compute_duration": "Unavailable; parallel worker wall times are not summed"
+}
