@@ -92,3 +92,14 @@ This checkpoint repairs adopted/template document ownership, foreign attribute n
 Additional absolute upstream evidence on this artifact includes DOM995/996 with13/14 fully passing files, events78/78 with16/16 fully passing files, and microtasks5/10 fully passing files. The complete frozen1515-variant inventory remains unchanged and incomplete. The installed Google-signed Chrome156.0.8078.48 separately failed9of12 native URL/anchor sanity checks on fresh about:blank; preserve all recorded failures and quarantine comparative retention. Downloaded official CfT archive integrity matches its Google storage ETag, but its macOS signing verification failed; no CfT execution or trust bypass has been accepted.
 
 Task score 40.00/100. Previous wheel idle/soak points are historical for this changed executable; scroll remains a known prior failure, not a current pass. Verified public delivery adds5points: live2s telemetry, full source-archive hash, and message/response. Its last verified archive identifies source `0e5c8e5c93e92f79d8461afc54af6f16debe5327`; refresh/push the new checkpoint immediately. Same-device IPA execution remains unverified. Evidence `agent/evidence/10290244-007-dom-events.json`.
+
+
+## Iteration10290244-008 — frame microtask context and Storage.key conversion
+
+Start: 2026-10-28T20:40:00.823780+00:00. End: 2026-10-28T21:00:46.673756+00:00. Iteration wall: 1245.85s. Session elapsed: 7991.674s. Runtime implementation/TDD: apple_runtime; independent source review: wpt_engine; integration/evidence: release_integrator; remote operations: root. Parallel model compute duration unavailable.
+
+Frame window initialization and queued microtask execution now preserve the appropriate frame realm. Storage.key follows unsigned-long WebIDL conversion, including wraparound, nonfinite values and throwing coercions. Meaningful regressions improved frame26/35→35/35 and storage20/66→66/66; the same101 diagnostic assertions passed in the installed Chrome control with clean process cleanup. This is narrow fixture validation and does not remove its separate URL-sanity quarantine.
+
+All815 targeted native checks passed in17 measured stages, prebuilt-V8 incremental build5.106s. Immutable native `build-apple-load-20261029/lumen-frame-storage-2c27f3bb2c305b2f` SHA `2c27f3bb2c305b2fc3b79d1e257c9913380432014a5a85832306afa13441dc32` freshly passes the unchanged1850-assertion, six-file upstream WPT subset. Frozen1515-variant coverage remains incomplete and does not earn broader parity credit. Evidence `agent/evidence/10290244-008-frame-storage.json`.
+
+Task score40/100. Current native idle/interaction/navigation-soak and same-device IPA remain unverified. Prior wheel scrolling21.973%p95 remains a historical failed10% gate, not a pass for this executable. Refresh source publication/status after this checkpoint; do not change upstream tests or hide unsupported workers.

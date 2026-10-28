@@ -41,6 +41,33 @@ using FCI = v8::FunctionCallbackInfo<v8::Value>;
 #define NUM(i) a[i]->NumberValue(ctx).FromMaybe(0)
 #define BOOL(i) a[i]->BooleanValue(iso)
 
+// Invoke a Web IDL callback in its associated realm and report there.
+// Do not use jcall: it settles the microtask queue recursively.
+FN(runMicrotask) {
+    CTX;
+    if (a.Length() < 1 || !a[0]->IsFunction()) {
+        iso->ThrowException(v8::Exception::TypeError(jstr(iso, "queueMicrotask callback must be callable")));
+        return;
+    }
+    auto fn = a[0].As<v8::Function>();
+    v8::Local<v8::Context> callback_context;
+    if (!fn->GetCreationContext(iso).ToLocal(&callback_context)) callback_context = ctx;
+    v8::Context::Scope callback_scope(callback_context);
+    JsCtx *owner = callback_context->GetNumberOfEmbedderDataFields() >= 2 ? jctx(iso) : c;
+    v8::TryCatch caught(iso);
+    v8::Local<v8::Value> ignored;
+    if (!fn->Call(callback_context, v8::Undefined(iso), 0, nullptr).ToLocal(&ignored)) {
+        if (caught.HasCaught() && caught.CanContinue()) {
+            auto exception = caught.Exception();
+            auto message = caught.Message();
+            caught.Reset();
+            jreport(owner, exception, message);
+        } else if (caught.HasCaught()) {
+            (void)caught.ReThrow();
+        }
+    }
+}
+
 static v8::Local<v8::Value> nstr(v8::Isolate *iso, const char *s) { return s ? v8::Local<v8::Value>(jstr(iso, s)) : v8::Local<v8::Value>(v8::Null(iso)); }
 static v8::Local<v8::ArrayBuffer> mkab(v8::Isolate *iso, const void *p, size_t n) {
     v8::Local<v8::ArrayBuffer> ab = v8::ArrayBuffer::New(iso, n);
@@ -1559,7 +1586,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     v8::Isolate *iso = c->iso;
     v8::Local<v8::Context> ctx = iso->GetCurrentContext();
 #define REG(nm) (void)N->Set(ctx, jstr(iso, #nm), v8::Function::New(ctx, n_##nm).ToLocalChecked())
-    REG(isNode); REG(domStateGet); REG(domStateSet); REG(version);
+    REG(isNode); REG(domStateGet); REG(domStateSet); REG(version); REG(runMicrotask);
     REG(inert); REG(type); REG(name); REG(ns); REG(parent); REG(first); REG(last); REG(next); REG(prev);
     REG(text); REG(setText); REG(attr); REG(attrNamespace); REG(setAttr); REG(rmAttr); REG(cspExempt); REG(cspMedia); REG(referrer); REG(attrs); REG(insert); REG(remove); REG(newDoc); REG(newXmlDoc); REG(parseDoc); REG(xmlAppend); REG(xmlScript); REG(adopt); REG(pi); REG(cdata); REG(doctype); REG(ownerDoc);
     REG(create); REG(textNode); REG(comment); REG(frag); REG(html); REG(setHTML); REG(parseFrag); REG(query); REG(elementsByTagName);

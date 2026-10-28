@@ -65,6 +65,11 @@ Public HTTPS base: https://4d3ee194969f5f51.czd5qzludboe.opentunnel.xyz. It is v
 Native `build-apple-load-20261029/lumen-wheel-fast-path-7f0cafc374cf2cf1` (7f0cafc374cf2cf1…) has303 focused checks and1850/1850 original-subset assertions in both engines. Current-artifact idle and20-navigation memory soak pass. Scrolling remains21.973%p95 against10%target. Broader1515variant coverage is incomplete; sameIPA execution remains unverified. Read the newest continuation/evidence and preserve current/historical artifact distinctions.
 
 
-## Latest verified task checkpoint —10290244-007
+## Previous verified task checkpoint —10290244-007
 
 Accepted source `4517145578ef3374cba6e699b2fe183fc25e48a0` and immutable native `eac62c75a9958f9cdc26cc85d4aa54e17c4031f9c9e43915263673375626fb55`:714 targeted checks;1850/1850 original six-file WPT assertions. Expanded1515-variant coverage is incomplete. Absolute DOM995/996 and events78/78 are promising but installed Chrome control URL sanity failed, so no broad comparative acceptance. Task score40/100 includes verified live delivery workflow; new native performance and same-device IPA gates remain unverified. Preserve the next candidate's uncommitted files and keep root as the only remote I/O broker. Refresh archive/status after each accepted source checkpoint.
+
+
+## Latest verified task checkpoint —10290244-008
+
+Native `2c27f3bb2c305b2fc3b79d1e257c9913380432014a5a85832306afa13441dc32` passes815 targeted checks and1850/1850 original six-file WPT assertions. Frame microtask realm and Storage.key conversion fixes are committed with exact source hashes. Score40/100; expanded1515-variant work is incomplete, old reference URL behavior remains quarantined, and current-artifact performance/IPA needs proof. New header/encoding work must remain isolated until another measured checkpoint.

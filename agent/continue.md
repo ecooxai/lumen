@@ -75,3 +75,8 @@ Expand category coverage without changing the frozen1515URL inventory. The exist
 Native `build-apple-load-20261029/lumen-dom-events-eac62c75a9958f9c` SHA `eac62c75a9958f9cdc26cc85d4aa54e17c4031f9c9e43915263673375626fb55` maps to committed source `4517145578ef3374cba6e699b2fe183fc25e48a0` and passes714 targeted checks plus the fixed1850-assertion WPT subset. Score40/100; native idle/scroll/soak needs fresh artifact-matched evidence. Expanded absolute DOM995/996 and events78/78 improve coverage, but the installed control failed independent URL sanity and comparative results remain quarantined. Preserve old reports. Newer frame/storage worktree changes belong to the next candidate and must not be staged with this documentation.
 
 Run source-only priority provenance checkpoint, push and refresh the public source archive/status, then resume isolated native/performance gates. The user deadline remains21:47:35Z. Child Mac MCP hung again; root brokers remote I/O. Local scratch recovered, but transport failures are not source/test failures.
+
+
+## Accepted frame/storage checkpoint10290244-008
+
+Immutable native `build-apple-load-20261029/lumen-frame-storage-2c27f3bb2c305b2f` SHA `2c27f3bb2c305b2fc3b79d1e257c9913380432014a5a85832306afa13441dc32` has815 targeted checks and the unchanged1850 WPT assertions passing. Score40/100, with new-artifact performance and same-device IPA still unverified. Two new regressions cover frame microtask realms and Storage.key unsigned-long semantics. Broad installed-Chrome parity remains quarantined; preserve absolute native failures and all1515 frozen variants. Next header/encoding edits may proceed after this narrow source checkpoint, with a new immutable artifact and acceptance run.

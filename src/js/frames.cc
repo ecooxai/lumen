@@ -427,7 +427,7 @@ static void n_frameEl(const FCI &a) { FCTX; if (c->parent && same_origin(c, c->p
 static int live_kids(JsCtx *c) { int n = 0; for (JsCtx *k : c->kids) n += !k->dead; return n; }
 static void n_frameCount(const FCI &a) { FCTX; frames_scan(c); a.GetReturnValue().Set(live_kids(c)); }
 static void n_frameAt(const FCI &a) {
-    FCTX; int i = a[0]->Int32Value(iso->GetCurrentContext()).FromMaybe(-1);
+    FCTX; frames_scan(c); int i = a[0]->Int32Value(iso->GetCurrentContext()).FromMaybe(-1);
     for (JsCtx *k : c->kids) if (!k->dead && i-- == 0) { a.GetReturnValue().Set(win_for(c, k)); return; }
     a.GetReturnValue().SetUndefined();
 }

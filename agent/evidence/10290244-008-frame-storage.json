@@ -1,0 +1,1922 @@
+{
+  "schema": 1,
+  "createdUTC": "2026-10-28T21:00:46.673756+00:00",
+  "sourceBaseCommit": "eda91a106a6efd3db806391b3dda0b3224c6855a",
+  "nativeSummary": {
+    "startedUTC": "2026-10-28T20:37:10.119512+00:00",
+    "sourceBaseCommit": "4517145578ef3374cba6e699b2fe183fc25e48a0",
+    "candidateFiles": [
+      {
+        "path": "src/dom/dom.c",
+        "before": "87120dba2fb8ba4b09c4ae0c24a15871ad8e3adfe2000c057c6ce2516d554d46",
+        "after": "cb8f23b39814ac5ed527b4f2090cf14dd4d4793660564ed1dc9ee071a1c2d740"
+      },
+      {
+        "path": "src/dom/dom.h",
+        "before": "f20dcdab510891ca2dbb056ebd606817e686fc9f121c9227537c716b5c8fa6c0",
+        "after": "6e5d23c6996c84f160a3309090042582536d254a022e91211e4b9fb06b22ae1f"
+      },
+      {
+        "path": "src/html/html.c",
+        "before": "a3f50f67074d6e2fd0b0306f7557963470ed2edb752cfb44081447a183c18cb9",
+        "after": "f1180f15467d66e2518ae1be82e65a9599f0b04a3450697a65d1de46af6daead"
+      },
+      {
+        "path": "src/js/js.cc",
+        "before": "7736c66eb4f5e700dac05b82771bb4f46085b99be591408a14775609de38a597",
+        "after": "6d3b89ce2960532dff22c5a888385a69152de26cff1cd8e1f2cd09099ce18d26"
+      },
+      {
+        "path": "src/js/jsnative.cc",
+        "before": "296709b11a810b3dce458ccda72ec4c71aa73701fe47762aabdc79ee665942dc",
+        "after": "1f99378265dc9184b95fbdba54a052d2526c0ed39977a9603eebb4d0acd0a055"
+      },
+      {
+        "path": "src/js/prelude/02-node.js",
+        "before": "6642c125f90e53f98db5a1323809b3e3bdd6534ff2f3aeaf10d891aa5e2fb203",
+        "after": "68dbfc71982d48c5638a36a917ee9d490530b1f97462aee5c22e3b592f2bd50f"
+      },
+      {
+        "path": "src/js/prelude/06-document.js",
+        "before": "d132997c43f2d75a5b72df68c8dbbdc09811d6134452914db89b70086c6c3713",
+        "after": "3f2e30effe49d43e68ca0948df538004d6226146f42d1a7b75f732aaf2ba93a9"
+      },
+      {
+        "path": "src/js/prelude/01-events.js",
+        "before": "bc65fcadc60bc8de66d99accd0ebdea841cc4ffbceea4e548581ce2994f76e0e",
+        "after": "a2a2fecb69eb278b8e1b9df8376e88c78ff9d479bbce61dd7c85daf1cb6cac9e"
+      },
+      {
+        "path": "src/js/worker.cc",
+        "before": "d5346471f60946471f9d2b88bda31707af0be115df6e668cdda646c12c740100",
+        "after": "4a558749fcb3126e1a7f51e226c8a0e6bbe8a85ff9bbfe3e1d38004b95c5a359"
+      },
+      {
+        "path": "src/js/prelude/08-window.js",
+        "before": "23ac8785201c1b343a0acc07bf4f5f2a4486011b2f736504b11750fa422aa807",
+        "after": "52811e841fe2557c87817560752ee6238a371bc47d7d05f940b1cb15eee46f96"
+      },
+      {
+        "path": "src/js/frames.cc",
+        "after": "df4b61bd2e89dfaf068222a5cbe94f087cc2a2fcc4a81e37dc6a83bae6845571"
+      }
+    ],
+    "build": "build-apple-load-20261029",
+    "prebuiltV8": true,
+    "rtcEnabled": true,
+    "webtransportEnabled": true,
+    "scope": "DOM adoption and inert template ownership, parsed foreign Attr namespaces, qualified live collections, event initialization/dispatch and microtask FIFO/error reporting. Frozen upstream WPT and controlled performance verdicts remain separate.",
+    "stages": [
+      {
+        "stage": "build",
+        "passed": true,
+        "startedUTC": "2026-10-28T20:37:10.130865+00:00",
+        "finishedUTC": "2026-10-28T20:37:15.236715+00:00",
+        "durationSeconds": 5.106,
+        "command": [
+          "make",
+          "-j3",
+          "BUILD=build-apple-load-20261029",
+          "MODE=release",
+          "RTC=1",
+          "WT=1",
+          "build-apple-load-20261029/lumen",
+          "build-apple-load-20261029/jsrun",
+          "build-apple-load-20261029/test_clone_metadata_allocation",
+          "build-apple-load-20261029/test_frame_removal",
+          "build-apple-load-20261029/test_wasm_async_deadline",
+          "build-apple-load-20261029/test_app_wheel",
+          "build-apple-load-20261029/test_render_overdraw",
+          "build-apple-load-20261029/test_app_windows"
+        ],
+        "monitor": "output/session-10290244/frame-storage-green-1/build.json",
+        "naturalExitCode": 0,
+        "endedByMonitor": false,
+        "intervalCpuSamples": 4,
+        "intervalCpuPeakPercent": 216.267,
+        "rssPeakMiB": 574.672,
+        "performanceNote": "Short stages with fewer than ten CPU intervals do not establish an idle/performance verdict.",
+        "resultLines": []
+      },
+      {
+        "stage": "clone-allocation",
+        "passed": true,
+        "startedUTC": "2026-10-28T20:37:15.296820+00:00",
+        "finishedUTC": "2026-10-28T20:37:16.400640+00:00",
+        "durationSeconds": 1.104,
+        "command": [
+          "env",
+          "LUMEN_PROFILE_DIR=/Users/devin/repos/lumen/output/session-10290244/frame-storage-green-1/clone-allocation-profile",
+          "/Users/devin/repos/lumen/build-apple-load-20261029/test_clone_metadata_allocation"
+        ],
+        "monitor": "output/session-10290244/frame-storage-green-1/clone-allocation.json",
+        "naturalExitCode": 0,
+        "endedByMonitor": false,
+        "intervalCpuSamples": 0,
+        "intervalCpuPeakPercent": null,
+        "rssPeakMiB": 0.031,
+        "performanceNote": "Short stages with fewer than ten CPU intervals do not establish an idle/performance verdict.",
+        "resultLines": [
+          "WRAPPER_COUNT plain clones=2 descendants_per_tree=1024 growth=2",
+          "WRAPPER_COUNT template clones=2 growth=2",
+          "WRAPPER_COUNT sparse metadata_nodes=1 growth=2",
+          "RESULTS clone-metadata-allocation PASS (30/30 checks)"
+        ]
+      },
+      {
+        "stage": "frame-microtask-realm",
+        "passed": true,
+        "startedUTC": "2026-10-28T20:37:16.401052+00:00",
+        "finishedUTC": "2026-10-28T20:37:17.487749+00:00",
+        "durationSeconds": 1.087,
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "tests/test_frame_microtask_realm.py",
+          "--binary",
+          "build-apple-load-20261029/jsrun-frame-storage-abac31fbab2882ef"
+        ],
+        "monitor": "output/session-10290244/frame-storage-green-1/frame-microtask-realm.json",
+        "naturalExitCode": 0,
+        "endedByMonitor": false,
+        "intervalCpuSamples": 0,
+        "intervalCpuPeakPercent": null,
+        "rssPeakMiB": 5.453,
+        "performanceNote": "Short stages with fewer than ten CPU intervals do not establish an idle/performance verdict.",
+        "resultLines": [
+          "[js log] FRAME_MICROTASK_RESULTS {\"total\":35,\"passed\":35,\"failed\":0,\"diagnostics\":{\"loadCount\":1,\"rejectionCount\":0}}"
+        ]
+      },
+      {
+        "stage": "storage-key-unsigned-long",
+        "passed": true,
+        "startedUTC": "2026-10-28T20:37:17.488102+00:00",
+        "finishedUTC": "2026-10-28T20:37:18.570740+00:00",
+        "durationSeconds": 1.083,
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "tests/test_storage_key_unsigned_long.py",
+          "--binary",
+          "build-apple-load-20261029/jsrun-frame-storage-abac31fbab2882ef"
+        ],
+        "monitor": "output/session-10290244/frame-storage-green-1/storage-key-unsigned-long.json",
+        "naturalExitCode": 0,
+        "endedByMonitor": false,
+        "intervalCpuSamples": 0,
+        "intervalCpuPeakPercent": null,
+        "rssPeakMiB": 4.188,
+        "performanceNote": "Short stages with fewer than ten CPU intervals do not establish an idle/performance verdict.",
+        "resultLines": [
+          "[js log] STORAGE_KEY_RESULTS {\"total\":66,\"passed\":66,\"failed\":0}"
+        ]
+      },
+      {
+        "stage": "dom-ownership",
+        "passed": true,
+        "startedUTC": "2026-10-28T20:37:18.571118+00:00",
+        "finishedUTC": "2026-10-28T20:37:19.661710+00:00",
+        "durationSeconds": 1.091,
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "tests/test_dom_ownership_namespaces.py",
+          "--binary",
+          "build-apple-load-20261029/jsrun-frame-storage-abac31fbab2882ef"
+        ],
+        "monitor": "output/session-10290244/frame-storage-green-1/dom-ownership.json",
+        "naturalExitCode": 0,
+        "endedByMonitor": false,
+        "intervalCpuSamples": 0,
+        "intervalCpuPeakPercent": null,
+        "rssPeakMiB": 5.656,
+        "performanceNote": "Short stages with fewer than ten CPU intervals do not establish an idle/performance verdict.",
+        "resultLines": [
+          "[js log] DOM_OWNERSHIP_RESULTS {\"passed\":40,\"total\":40}",
+          "RESULTS dom-ownership PASS (40/40 checks)"
+        ]
+      },
+      {
+        "stage": "template-frame-ownership",
+        "passed": true,
+        "startedUTC": "2026-10-28T20:37:19.662132+00:00",
+        "finishedUTC": "2026-10-28T20:37:20.755294+00:00",
+        "durationSeconds": 1.093,
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "tests/test_template_frame_ownership.py",
+          "--binary",
+          "build-apple-load-20261029/jsrun-frame-storage-abac31fbab2882ef"
+        ],
+        "monitor": "output/session-10290244/frame-storage-green-1/template-frame-ownership.json",
+        "naturalExitCode": 0,
+        "endedByMonitor": false,
+        "intervalCpuSamples": 0,
+        "intervalCpuPeakPercent": null,
+        "rssPeakMiB": 5.938,
+        "performanceNote": "Short stages with fewer than ten CPU intervals do not establish an idle/performance verdict.",
+        "resultLines": [
+          "[js log] TEMPLATE_FRAME_RESULTS {\"passed\":18,\"total\":18}",
+          "RESULTS template-frame-ownership PASS (18/18 checks)"
+        ]
+      },
+      {
+        "stage": "event-dispatch-state",
+        "passed": true,
+        "startedUTC": "2026-10-28T20:37:20.755678+00:00",
+        "finishedUTC": "2026-10-28T20:37:21.854259+00:00",
+        "durationSeconds": 1.099,
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "tests/test_event_dispatch_state.py",
+          "--binary",
+          "build-apple-load-20261029/jsrun-frame-storage-abac31fbab2882ef"
+        ],
+        "monitor": "output/session-10290244/frame-storage-green-1/event-dispatch-state.json",
+        "naturalExitCode": 0,
+        "endedByMonitor": false,
+        "intervalCpuSamples": 0,
+        "intervalCpuPeakPercent": null,
+        "rssPeakMiB": 5.891,
+        "performanceNote": "Short stages with fewer than ten CPU intervals do not establish an idle/performance verdict.",
+        "resultLines": [
+          "[js log] EVENT_STATE_RESULTS {\"passed\":91,\"total\":91}",
+          "RESULTS event-dispatch-state PASS (91/91 checks)"
+        ]
+      },
+      {
+        "stage": "clone-metadata",
+        "passed": true,
+        "startedUTC": "2026-10-28T20:37:21.854692+00:00",
+        "finishedUTC": "2026-10-28T20:37:22.943920+00:00",
+        "durationSeconds": 1.089,
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "tests/test_clone_document_metadata.py",
+          "--binary",
+          "build-apple-load-20261029/jsrun-frame-storage-abac31fbab2882ef"
+        ],
+        "monitor": "output/session-10290244/frame-storage-green-1/clone-metadata.json",
+        "naturalExitCode": 0,
+        "endedByMonitor": false,
+        "intervalCpuSamples": 0,
+        "intervalCpuPeakPercent": null,
+        "rssPeakMiB": 0.219,
+        "performanceNote": "Short stages with fewer than ten CPU intervals do not establish an idle/performance verdict.",
+        "resultLines": [
+          "[js log] CLONE_METADATA_RESULTS {\"passed\":36,\"total\":36}",
+          "RESULTS clone-metadata PASS (36/36 checks)"
+        ]
+      },
+      {
+        "stage": "clone-brands",
+        "passed": true,
+        "startedUTC": "2026-10-28T20:37:22.944389+00:00",
+        "finishedUTC": "2026-10-28T20:37:24.034794+00:00",
+        "durationSeconds": 1.09,
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "tests/test_html_interface_clone_brands.py",
+          "--binary",
+          "build-apple-load-20261029/jsrun-frame-storage-abac31fbab2882ef",
+          "--expected-sha256",
+          "abac31fbab2882ef8504095705dc0327eeee4b17287aaa3637ffa3b77898b647"
+        ],
+        "monitor": "output/session-10290244/frame-storage-green-1/clone-brands.json",
+        "naturalExitCode": 0,
+        "endedByMonitor": false,
+        "intervalCpuSamples": 0,
+        "intervalCpuPeakPercent": null,
+        "rssPeakMiB": 5.422,
+        "performanceNote": "Short stages with fewer than ten CPU intervals do not establish an idle/performance verdict.",
+        "resultLines": [
+          "[js log] RESULTS html-interface-clone-brands PASS (132/132 checks)",
+          "CLONE_BRANDS_RECEIPT {\"binarySHA256\": \"abac31fbab2882ef8504095705dc0327eeee4b17287aaa3637ffa3b77898b647\", \"fixtureSHA256\": \"b2f8fcfc554cd5625d3a5999e981d9ba967571cfc0afd3bac9466e50ce715232\", \"naturalExitCode\": 0, \"resultFound\": true, \"scope\": \"Native V8/DOM interface exports and clone brands; not complete interface semantics\", \"passed\": 132, \"total\": 132}"
+        ]
+      },
+      {
+        "stage": "xml-documents",
+        "passed": true,
+        "startedUTC": "2026-10-28T20:37:24.035244+00:00",
+        "finishedUTC": "2026-10-28T20:37:25.122050+00:00",
+        "durationSeconds": 1.087,
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "tests/test_xml_frame_documents.py",
+          "--binary",
+          "build-apple-load-20261029/jsrun-frame-storage-abac31fbab2882ef"
+        ],
+        "monitor": "output/session-10290244/frame-storage-green-1/xml-documents.json",
+        "naturalExitCode": 0,
+        "endedByMonitor": false,
+        "intervalCpuSamples": 0,
+        "intervalCpuPeakPercent": null,
+        "rssPeakMiB": 5.656,
+        "performanceNote": "Short stages with fewer than ten CPU intervals do not establish an idle/performance verdict.",
+        "resultLines": [
+          "[js log] XML_FRAME_RESULTS {\"passed\":33,\"total\":33}",
+          "RESULTS xml-frame-documents PASS (33/33 checks)"
+        ]
+      },
+      {
+        "stage": "frame-load-jsrun",
+        "passed": true,
+        "startedUTC": "2026-10-28T20:37:25.122452+00:00",
+        "finishedUTC": "2026-10-28T20:37:27.216917+00:00",
+        "durationSeconds": 2.095,
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "tests/test_frame_load_order.py",
+          "--binary",
+          "build-apple-load-20261029/jsrun-frame-storage-abac31fbab2882ef",
+          "--runtime",
+          "jsrun"
+        ],
+        "monitor": "output/session-10290244/frame-storage-green-1/frame-load-jsrun.json",
+        "naturalExitCode": 0,
+        "endedByMonitor": false,
+        "intervalCpuSamples": 1,
+        "intervalCpuPeakPercent": 4.991,
+        "rssPeakMiB": 24.328,
+        "performanceNote": "Short stages with fewer than ten CPU intervals do not establish an idle/performance verdict.",
+        "resultLines": [
+          "[js log] FRAME_LOAD_RESULTS {\"passed\":14,\"total\":14,\"order\":{\"dcl\":\"interactive\",\"complete\":1,\"parentLoads\":1,\"xmlLoads\":1,\"xhtmlLoads\":1,\"nestedLoads\":1,\"nestedWindowLoads\":1,\"removedLoads\":0}}",
+          "RESULTS frame-load-order jsrun PASS (14/14 checks)"
+        ]
+      },
+      {
+        "stage": "frame-load-application",
+        "passed": true,
+        "startedUTC": "2026-10-28T20:37:27.217301+00:00",
+        "finishedUTC": "2026-10-28T20:37:36.322145+00:00",
+        "durationSeconds": 9.105,
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "tests/test_frame_load_order.py",
+          "--binary",
+          "build-apple-load-20261029/lumen-frame-storage-2c27f3bb2c305b2f",
+          "--runtime",
+          "application"
+        ],
+        "monitor": "output/session-10290244/frame-storage-green-1/frame-load-application.json",
+        "naturalExitCode": 0,
+        "endedByMonitor": false,
+        "intervalCpuSamples": 8,
+        "intervalCpuPeakPercent": 42.635,
+        "rssPeakMiB": 228.172,
+        "performanceNote": "Short stages with fewer than ten CPU intervals do not establish an idle/performance verdict.",
+        "resultLines": [
+          "[js log] FRAME_LOAD_RESULTS {\"passed\":14,\"total\":14,\"order\":{\"dcl\":\"interactive\",\"complete\":1,\"parentLoads\":1,\"xmlLoads\":1,\"xhtmlLoads\":1,\"nestedLoads\":1,\"nestedWindowLoads\":1,\"removedLoads\":0}}",
+          "RESULTS frame-load-order application PASS (14/14 checks)"
+        ]
+      },
+      {
+        "stage": "test_frame_removal",
+        "passed": true,
+        "startedUTC": "2026-10-28T20:37:36.322625+00:00",
+        "finishedUTC": "2026-10-28T20:37:37.426461+00:00",
+        "durationSeconds": 1.104,
+        "command": [
+          "env",
+          "LUMEN_PROFILE_DIR=/Users/devin/repos/lumen/output/session-10290244/frame-storage-green-1/test_frame_removal-profile",
+          "/Users/devin/repos/lumen/build-apple-load-20261029/test_frame_removal"
+        ],
+        "monitor": "output/session-10290244/frame-storage-green-1/test_frame_removal.json",
+        "naturalExitCode": 0,
+        "endedByMonitor": false,
+        "intervalCpuSamples": 0,
+        "intervalCpuPeakPercent": null,
+        "rssPeakMiB": 0.031,
+        "performanceNote": "Short stages with fewer than ten CPU intervals do not establish an idle/performance verdict.",
+        "resultLines": [
+          "RESULTS frame-removal PASS (24/24 checks)"
+        ]
+      },
+      {
+        "stage": "test_wasm_async_deadline",
+        "passed": true,
+        "startedUTC": "2026-10-28T20:37:37.426948+00:00",
+        "finishedUTC": "2026-10-28T20:37:38.515256+00:00",
+        "durationSeconds": 1.088,
+        "command": [
+          "env",
+          "LUMEN_PROFILE_DIR=/Users/devin/repos/lumen/output/session-10290244/frame-storage-green-1/test_wasm_async_deadline-profile",
+          "/Users/devin/repos/lumen/build-apple-load-20261029/test_wasm_async_deadline"
+        ],
+        "monitor": "output/session-10290244/frame-storage-green-1/test_wasm_async_deadline.json",
+        "naturalExitCode": 0,
+        "endedByMonitor": false,
+        "intervalCpuSamples": 0,
+        "intervalCpuPeakPercent": null,
+        "rssPeakMiB": 0.031,
+        "performanceNote": "Short stages with fewer than ten CPU intervals do not establish an idle/performance verdict.",
+        "resultLines": [
+          "RESULTS wasm-async-deadline PASS (9/9 checks)"
+        ]
+      },
+      {
+        "stage": "test_app_wheel",
+        "passed": true,
+        "startedUTC": "2026-10-28T20:37:38.515742+00:00",
+        "finishedUTC": "2026-10-28T20:37:39.606020+00:00",
+        "durationSeconds": 1.09,
+        "command": [
+          "env",
+          "LUMEN_PROFILE_DIR=/Users/devin/repos/lumen/output/session-10290244/frame-storage-green-1/test_app_wheel-profile",
+          "/Users/devin/repos/lumen/build-apple-load-20261029/test_app_wheel"
+        ],
+        "monitor": "output/session-10290244/frame-storage-green-1/test_app_wheel.json",
+        "naturalExitCode": 0,
+        "endedByMonitor": false,
+        "intervalCpuSamples": 0,
+        "intervalCpuPeakPercent": null,
+        "rssPeakMiB": 0.031,
+        "performanceNote": "Short stages with fewer than ten CPU intervals do not establish an idle/performance verdict.",
+        "resultLines": [
+          "RESULTS app-wheel PASS (35/35 checks)"
+        ]
+      },
+      {
+        "stage": "test_render_overdraw",
+        "passed": true,
+        "startedUTC": "2026-10-28T20:37:39.606521+00:00",
+        "finishedUTC": "2026-10-28T20:37:40.701010+00:00",
+        "durationSeconds": 1.095,
+        "command": [
+          "env",
+          "LUMEN_PROFILE_DIR=/Users/devin/repos/lumen/output/session-10290244/frame-storage-green-1/test_render_overdraw-profile",
+          "/Users/devin/repos/lumen/build-apple-load-20261029/test_render_overdraw"
+        ],
+        "monitor": "output/session-10290244/frame-storage-green-1/test_render_overdraw.json",
+        "naturalExitCode": 0,
+        "endedByMonitor": false,
+        "intervalCpuSamples": 0,
+        "intervalCpuPeakPercent": null,
+        "rssPeakMiB": 0.031,
+        "performanceNote": "Short stages with fewer than ten CPU intervals do not establish an idle/performance verdict.",
+        "resultLines": [
+          "RESULTS render-overdraw PASS (92/92 checks)"
+        ]
+      },
+      {
+        "stage": "test_app_windows",
+        "passed": true,
+        "startedUTC": "2026-10-28T20:37:40.701527+00:00",
+        "finishedUTC": "2026-10-28T20:37:41.788305+00:00",
+        "durationSeconds": 1.087,
+        "command": [
+          "env",
+          "LUMEN_PROFILE_DIR=/Users/devin/repos/lumen/output/session-10290244/frame-storage-green-1/test_app_windows-profile",
+          "/Users/devin/repos/lumen/build-apple-load-20261029/test_app_windows"
+        ],
+        "monitor": "output/session-10290244/frame-storage-green-1/test_app_windows.json",
+        "naturalExitCode": 0,
+        "endedByMonitor": false,
+        "intervalCpuSamples": 0,
+        "intervalCpuPeakPercent": null,
+        "rssPeakMiB": 0.031,
+        "performanceNote": "Short stages with fewer than ten CPU intervals do not establish an idle/performance verdict.",
+        "resultLines": [
+          "RESULTS app-windows PASS (146/146 checks)"
+        ]
+      }
+    ],
+    "artifacts": {
+      "lumen": {
+        "path": "build-apple-load-20261029/lumen",
+        "sha256": "2c27f3bb2c305b2fc3b79d1e257c9913380432014a5a85832306afa13441dc32",
+        "snapshot": "build-apple-load-20261029/lumen-frame-storage-2c27f3bb2c305b2f"
+      },
+      "jsrun": {
+        "path": "build-apple-load-20261029/jsrun",
+        "sha256": "abac31fbab2882ef8504095705dc0327eeee4b17287aaa3637ffa3b77898b647",
+        "snapshot": "build-apple-load-20261029/jsrun-frame-storage-abac31fbab2882ef"
+      },
+      "test_clone_metadata_allocation": {
+        "path": "build-apple-load-20261029/test_clone_metadata_allocation",
+        "sha256": "522261d663b20ab5efc5bd9e8928c9d91024b4f4a54633590ec23c88aca3106b"
+      },
+      "test_frame_removal": {
+        "path": "build-apple-load-20261029/test_frame_removal",
+        "sha256": "5f96732a8b7617aede9565db7713904cf34517b8b373a8064efeb0bb082369ad"
+      },
+      "test_wasm_async_deadline": {
+        "path": "build-apple-load-20261029/test_wasm_async_deadline",
+        "sha256": "5ee4e0672be11fd24a1f54224217dc458d0565cf86e22b539a86a541ce2b9b30"
+      },
+      "test_app_wheel": {
+        "path": "build-apple-load-20261029/test_app_wheel",
+        "sha256": "816ca0c7b8f1bfb1859a81e3d0d5143adfcf44ba5effc40b473be2d8c65cc752"
+      },
+      "test_render_overdraw": {
+        "path": "build-apple-load-20261029/test_render_overdraw",
+        "sha256": "3feb89347a9aa235e91f57fbb277c3aaaa40c3ca3466613c137768144605aefd"
+      },
+      "test_app_windows": {
+        "path": "build-apple-load-20261029/test_app_windows",
+        "sha256": "a05640535d667496d146d1b52abb09fdecaa2097af0824d5cedc63594e0abee0"
+      }
+    },
+    "passed": true,
+    "finishedUTC": "2026-10-28T20:37:41.797813+00:00"
+  },
+  "compiledSourceHashes": {
+    "Makefile": "036644b7b6c25223dcb34e049e92948b5b4ef5738227df6949e47c6142582ac2",
+    "src/app/chrome_paint.h": "2c1d4f35ae7d73ddb9517b0701e7facb640a4f5484a828eb946dbfcfa28fcd00",
+    "src/app/control_edit.h": "5383f003ae1f694b22dd99979a5b3bccc5696a027d13a760c936e6bcc9232daa",
+    "src/app/iosui.m": "5a2f258cab0f93a03f5e58dc2fe5db288fcb9f695958c5f3a43305dea8145f5a",
+    "src/app/macui.h": "607c2b26bd1c01272cad64941d71f110b29a42ecd572bc3dfc390d2db23fa6d8",
+    "src/app/macui.m": "d17fccffa1311a4e575f06894cc4b611ada6c20c43dea02563c0d0760c02a50e",
+    "src/app/main.c": "820f482562977eb2b3c4d462892250a21549a39ff687c9d6a5a1a19c61795a1a",
+    "src/app/present_retry.h": "394bd4a0b11082b1d85bb69620623657c5ee3dfb8f1fd74e2365bccb2f123268",
+    "src/app/touch_contacts.h": "fe777a8a8747b4b77dc38cc5e153127d2b548288d00dc0fc7da85ad18ecd4d1a",
+    "src/app/uicmd.h": "9f6c3c1da5509eaddd7098007048e7352fabb7ea917c46cacb37ca7f00991763",
+    "src/app/viewport.h": "af596c303054862df77ded1ca96e8231194e03215c892c5d428f17ad29b1332e",
+    "src/app/window_queue.h": "d1cd60cd9b8750de353a3e8c12bc7a900ce8e3a578858c502b688823ebd17f54",
+    "src/base/LICENSE.whatwg-encoding": "85dc6f5ccb57a6fe8c33d158f9fc8fc7ee5655a5d3db2cdd131c6a3d0f48a864",
+    "src/base/device.h": "d898c4ab4290901da85e8da49fc5ce63bb0662a3cd1abb5cb9cb0b29fd8efd2d",
+    "src/base/encoding.c": "420362c9ca353266e2bf7fdb925843141559a2eb0e590dac5609c81c0c659f48",
+    "src/base/encoding.h": "8c901d24ed403ef28765f6a6164a6dc8c45af84afd66d87c83ac52dcf02a562e",
+    "src/base/encoding_decode_data.inc": "759a6b5cb49e450b6aab966e176a7f410c7cdcb0e140abee88ea009a2d8d9a65",
+    "src/base/encoding_decode_data.provenance.json": "0f14b700f94de0a760bb91c61baae2f5788e1b6fe58a1dbf4bb5832f007c854c",
+    "src/base/encoding_encode_index.inc": "b02e3642d966daf8e9d15a1e58d8074c5e4fa3f44f11e503230dc65bef5e4584",
+    "src/base/encoding_encode_index.provenance.json": "ceb161b9382fca2ffc7fe18ce87f70e90d1c95404d1f6560b0e651a873db7f68",
+    "src/base/url.c": "55b2563cc28d7413e68684a807babcfddd108bea23a15f8221f3e82f3233c5cb",
+    "src/base/url.h": "96671ef2f15601542aec4a856d1de0cb85c75fca21d946984a0e629025209d4d",
+    "src/base/util.c": "61f4ee7e3816b0e6376ab919b62c119418c914a74dda337027183e5ee7f7af1f",
+    "src/base/util.h": "680133c78cb21f9de98ba35c100ac72c3a74f13d322a2e06f4aa355cd901d298",
+    "src/css/css.h": "06a8d4d52fbfb590f8c3aaca192e6e0c4b8420c22f2d1aef504f260cbb3e2308",
+    "src/css/parse.c": "771466386be8d20e11ab526ae19f03c47e0a8c6f6a91f209ff8b1855586dd76c",
+    "src/css/select.c": "35a11cddd194a5f602af7b3dcfba1bbb9a7b4f9a9de787c661bb2b9a190363f8",
+    "src/css/style.c": "06e51f39c1fca9cfa4830c78587c11d51bb22dbac7e4c14c9eca53c3d83f36f6",
+    "src/css/ua.c": "dbf15b1a2cbdb8b12a8e753ae6b96720d08587aefc5d2ea24bbdfd4d1c4f298a",
+    "src/dom/control.c": "e19826994feb3aa1991fc1265b2d75737d60914514233a135172d6ef7468f902",
+    "src/dom/control.h": "bef0e14f0d117cd2c91a2132dbd2d1e2ed97c8c50282e24164856e235438bd7f",
+    "src/dom/dom.c": "cb8f23b39814ac5ed527b4f2090cf14dd4d4793660564ed1dc9ee071a1c2d740",
+    "src/dom/dom.h": "6e5d23c6996c84f160a3309090042582536d254a022e91211e4b9fb06b22ae1f",
+    "src/gpu/gpu.c": "77603d749faa79e9f7072b9601e1a42a81a08ef7457bfe29cd8a798853fa9c37",
+    "src/gpu/gpu.h": "0a95f6615e4324d6574a90e65f49b27f29e4a85dc56f22922c9eac76cf48c9c9",
+    "src/html/entities.c": "940fdae3500b9853c17d01c30d8540726ad5b4594bb744395a5b3aa115a1d80d",
+    "src/html/html.c": "f1180f15467d66e2518ae1be82e65a9599f0b04a3450697a65d1de46af6daead",
+    "src/js/blob_state.h": "1f7bd86022791b425c987d722ada95f83460ca944d7204b6e6f14d2f665f4197",
+    "src/js/canvas.cc": "45b6c1e593096fcf79ef2c5ebbd5ae15bc6e8349d26f893c3d4154208e17c2ff",
+    "src/js/capture.cc": "64f740dbe6fc2012b6c4891ac15b50dd69dd0a38781c5b293363cb867cfadb81",
+    "src/js/capture_policy.cc": "510834c972f14cf59e090405d433021a4e553c47cf9fb5c2dcc8d59e02793c0b",
+    "src/js/clone_brand.h": "5e14f2dd9c2e6bc2c8b6a5177f55a6df4851dc8d69da56f9262a3bdb86bbf5d6",
+    "src/js/file_reader.h": "9de18e7581fe162671ac7c9f69c3476aee88d796870d053a3c347376e61e4044",
+    "src/js/form_encoding.h": "7fed18e18499b97422d7c4096af37ea22cfe38553fcc6fb7a5749d85ed9f2f6a",
+    "src/js/form_navigation.h": "bbe76d25418a7c4d185fc2b2957bfc58c5e8c2a5e9e71f90b20e6ab9218dc15c",
+    "src/js/frames.cc": "df4b61bd2e89dfaf068222a5cbe94f087cc2a2fcc4a81e37dc6a83bae6845571",
+    "src/js/idl_state.h": "ad32a106f9ce8e01a926d9a98142da4be8127b996f7eb26ac21e89eb4ff44f17",
+    "src/js/js.cc": "6d3b89ce2960532dff22c5a888385a69152de26cff1cd8e1f2cd09099ce18d26",
+    "src/js/js.h": "ef4adf8e121e848660955a034514589841de85426b56c7ee4b5a4e2cd6bf4960",
+    "src/js/js_int.h": "ea16102d402b70439a7c5d621d9f223cdd33e464100285b275901bc6f4510528",
+    "src/js/jsglue.c": "4d366f09a40c6de9c73358718ea9272b935d70c22889905bacf58cb714c4176b",
+    "src/js/jsglue.h": "4ea49bb94876288cd158b7486ae9d8b7bbe66650363583d878a61f7ede6be6cf",
+    "src/js/jsnative.cc": "1f99378265dc9184b95fbdba54a052d2526c0ed39977a9603eebb4d0acd0a055",
+    "src/js/prelude/01-events.js": "a2a2fecb69eb278b8e1b9df8376e88c78ff9d479bbce61dd7c85daf1cb6cac9e",
+    "src/js/prelude/02-node.js": "68dbfc71982d48c5638a36a917ee9d490530b1f97462aee5c22e3b592f2bd50f",
+    "src/js/prelude/03-element.js": "3e29bc3458971ae4ababef37826f4b11f23b2bfef956742999d8007c7a1aab94",
+    "src/js/prelude/03c-svg.js": "4ec12f382e45f4962bfcfbc97096938c14b02d6c321913759367a724c12ed24c",
+    "src/js/prelude/04-tags.js": "b0549b35e1feab47aa977f0aad14907275c6432884ea749b87e19d52ea1ad9bf",
+    "src/js/prelude/05-ce.js": "99aab51bda702019da5b3f8ee5ce9e8b863aab4266d9804c5fca6d25e2e719ee",
+    "src/js/prelude/06-document.js": "3f2e30effe49d43e68ca0948df538004d6226146f42d1a7b75f732aaf2ba93a9",
+    "src/js/prelude/06b-activate.js": "39808602e9948b71ea889885171ca27e9db1dca77edfd0685c5ab37415370835",
+    "src/js/prelude/06c-traversal.js": "42fbad0c2fb99cc7f68a56bb359873e552bb6873855cb7ee727efa7f72506b0b",
+    "src/js/prelude/06v-blob.js": "e06f5196f473637ea9166d4512df394268204338cc05fe3f0d10e3fbc6818c52",
+    "src/js/prelude/06w-filereader.js": "44fb45ca87dfdedd6458912d6bbf4b8258bc16ab0dcb8db59c00be2996cbe9c9",
+    "src/js/prelude/06x-domexception.js": "8ee1adb926f74f6414768c462ecd128f2fe2dfc9441d4663c5516b2938661a1a",
+    "src/js/prelude/06y-urlinterface.js": "6ef88b62b46827d8f5103cef9c2fb1c8c4dfbef5ea77d004a3c5ab6ec40f6056",
+    "src/js/prelude/06z-urlsearchparams.js": "8647dad3b5c87bd77598aa27e70a20c349dfded23aeadfe10afd5c6e0c425b99",
+    "src/js/prelude/07-web.js": "b057ecadbc0a8b43230b7329279d1b22acbd4e1ef4cd2aa51d488b1464654efc",
+    "src/js/prelude/07b-net.js": "3ca93f70b96f9e3ef1e706f928a40b420072c3222487af54bfb73d13c7c7ffae",
+    "src/js/prelude/07c-idb.js": "f27b1296c96e95dc9ebe0b87baa15682bb2f86853b7fb80c9c7cefe9e0781814",
+    "src/js/prelude/07r-rtc.js": "d606ac44cae47a84979aac21b59bb684ce71475f37c11a2acb1ca643586de540",
+    "src/js/prelude/07s-rtc-native.js": "8ed15d9cbf810ebe73ef2a015ed092f7368f268d81f9b662ecb8f24e46fb9adb",
+    "src/js/prelude/07t-webtransport-native.js": "10ab8a936aed9fb818148c283e750990afd5b3aba14c19c293ec719b23cfa82b",
+    "src/js/prelude/07w-audio.js": "40f6d449ab1fbd0684142357fc3b90fe57fe585ff67acf35e1922039777349f2",
+    "src/js/prelude/07z-extra.js": "574ba6f9e8d2172bbff8cfa88aaff79ea78436eb32feeb8b4036a887d1eea2eb",
+    "src/js/prelude/07z1-canvas2d.js": "63e2375c8b1a6a448c5f428cd23e9e1e5501855350ee76f97faf6cad5c63f69d",
+    "src/js/prelude/07z2-webgpu.js": "955c06141e0cf7a04938c983e73a5c128f74e10c57808542a262a15c984a0a2c",
+    "src/js/prelude/07z3-glsl.js": "8c09fc2c94842f684b27260d15775b6fdf51892766748ff64f84f09917fbc10b",
+    "src/js/prelude/07z4-webgl.js": "c41d9ee899270516569fa4a1c547e3ec05f9be7abcba8d2ed6a485fd8b264dd9",
+    "src/js/prelude/08-window.js": "52811e841fe2557c87817560752ee6238a371bc47d7d05f940b1cb15eee46f96",
+    "src/js/rtc_native.cc": "c5a42615ea9d3df803f52de23cd8e764f3dd9a0179813be24e366babbe4ae629",
+    "src/js/url_parts.h": "52677f17195f9a2d192582a821cbca0dc7db1b0b4dff0ca8f7d8a0e73af582a6",
+    "src/js/webgpu.cc": "1a385d292fe236f1f74d8ae9bc42958513f2a580d30cb34a0dfe2a2baa6ab859",
+    "src/js/webtransport_native.cc": "7190cff5bf2323df726e9944dcd8d3bd9feef8f822abd8044b23fae213760539",
+    "src/js/windows.cc": "0b0143b9be97e7dac6876160591f7bdbab74c2388214da7e0f5dcd94051eee03",
+    "src/js/windows.h": "87a033687a32177896cb7b66097f22b24737ba245637dd5a71e4def9de60cc54",
+    "src/js/worker.cc": "4a558749fcb3126e1a7f51e226c8a0e6bbe8a85ff9bbfe3e1d38004b95c5a359",
+    "src/layout/block.c": "ee257084e344c0f8ca3a9fc7a67bb49f80cfde2fddbe8f61c900c82f11e23a73",
+    "src/layout/box.c": "89ebf883c51aa2641e74fa48c5938f6feeb374d0af374f53a02439ebc6d69c76",
+    "src/layout/flex.c": "21922b61f93d6c933ea35795ffd94dea454753aef1de1e13c2645aa606d5bcb2",
+    "src/layout/grid.c": "c3c0fe5cf36f650b2bc4f94ab846c038b788efee94f90d2751379dd4681be3ac",
+    "src/layout/inline.c": "13de5b83668975dcab87f5afe291dcdb1443d979e9e359670c83205f55985a50",
+    "src/layout/layout.h": "68f039a0e0ba7f59dadbb15ea34c2467a16b15945e1214423717101cd0fbeef4",
+    "src/media/capture.c": "104886ec02d9767367da71e7e31d2f4c8aa8baf0044fcabed8134230b3e473a2",
+    "src/media/media.c": "115eea0811cc29b834f9ab49447a6df3b91ad6ba80ffc64032f77dc0172490f8",
+    "src/media/media.h": "c7d6ab2b4103b76203660437af499cc05285f77811e0ad73a5b7edb166660d7a",
+    "src/net/beacon.c": "eb89766d70b6067ee228743bd92dcc718c9d24ff577b9a6d9cbf9716ac9cd58a",
+    "src/net/beacon.h": "fcb161c9bbe81bbb093960dc9b2c7915d35fa3e6c6f8665a3f6b38bb5b32c784",
+    "src/net/cookies.c": "e32fd3c0343fc1c7ef29a3ec18cc3178b2ff69d3f0e24c1219ae477cae558367",
+    "src/net/csp.c": "4393e16a148cfe03ae7203c894d54cd5a0ab8db16efc4139ddbe0eb6353afe7b",
+    "src/net/hsts.c": "f72c3fc59872e2cbfb98c685da88f8e1149343dbba74fcbfdf277b948855cfb1",
+    "src/net/http.c": "8ffc469a92f915724840cd87a50017a2ee2e6eae88d23ceeb9de23be770d2b32",
+    "src/net/net.h": "e74bbe14823bb09676d95e1f31e848cc285aebab87248a7b862b7bb06cd4b401",
+    "src/net/referrer.c": "f6d5b8b085d47f9025520dcb920f170529f2cde6899c430aa45ea9a21413b3c6",
+    "src/net/webtransport-native/.gitignore": "5250b45087fb9b7c78b1dfdf0479f1afa11d5664eed4ef9ae08cb867b8f55010",
+    "src/net/webtransport-native/CONTRACT.md": "7539f502928f563ec9e4fdb91250fee2526d1f612446934561359cabcaa16452",
+    "src/net/webtransport-native/Cargo.lock": "3b44f8eb7eaf3eddd26380d24d4d2a463a1f5a5743ebb59a55427e2d41fa5420",
+    "src/net/webtransport-native/Cargo.toml": "e8531b6c0bb469f8223b58dc1458c86c8ff96c79fdd76066190a408097e75e06",
+    "src/net/webtransport-native/LICENSE": "ad832c3fd3023766049c49460d938b89ec04e856536e98aef800be6ca1fe8577",
+    "src/net/webtransport-native/README.md": "3b617a0bf4fb6bf3ac63ee541ccf5f79c6e7bd7eddd10b2bf6855ef3c3df2271",
+    "src/net/webtransport-native/build_component.py": "a86c940ae28f55243302f2b5cb1ec64ecc43d922a10c61aede44230e6f2da73d",
+    "src/net/webtransport-native/examples/ffi_gate.rs": "7b923de4bf88f72b2cd524243416141c09a74e7343215b801b53541a92496ff7",
+    "src/net/webtransport-native/include/lumen_wt.h": "12031b4ad95b9905cee6f80573dc9dd880d8f5833c8eb1138fbe927a35476d37",
+    "src/net/webtransport-native/run_measured.py": "bfef18ecc179dd4482ca10969c3c9ddb711466984e86430c3a2eeeb7b27d452c",
+    "src/net/webtransport-native/src/lib.rs": "a3dd69e918de78587a59ed08a9682758fff5fa8a0403026f49c6f085faf8fc89",
+    "src/net/webtransport-native/test_deployment_target.py": "c6f12f996372d2fe612f0445b8cb4568e72829c38a35d68648535be3f764c386",
+    "src/paint/control.c": "fe5ec5b9a41ee4ef92373e993fa811b6dcc53ee6b8e7f5b2887784617a06aad5",
+    "src/paint/control.h": "0aae05a3110ff0b587826dbc75870ef4e0208953d5474839b934fac512a70bcf",
+    "src/paint/cvbuf.c": "882111699a3e8c96113d612ca3292f0d410df2bd173c404a654941328c25c4c1",
+    "src/paint/cvbuf.h": "6fd7b4a61bd62935dafb3fd5a85114f4137b661067106da7bba1c26baac7eb5b",
+    "src/paint/display.c": "5f404708ac4966f3b557c193b6bfa4c364911145500245fe83dc4795e0040d0a",
+    "src/paint/image.c": "f54bac01e070ff36c8619f2556b4224250c9e28f53b9d0df87ea371d0c9966b7",
+    "src/paint/paint.h": "fa2bcd5086f8ff37d9b6a064c92374f7cbd0936d86d7b3b57cfe7bd7277a6d5c",
+    "src/paint/presentation.h": "0837d6a8d5e752f20a0f203647e269b806162779c6d8cf67d543ca8fc9831839",
+    "src/paint/raster.c": "bb31ee0441d0ed8dfbfddd9a858ab76c6fcbbe1880ed5f5e8bdb9a1f308cd550",
+    "src/paint/select.c": "9bff7ec1d371d6a53569e9282bb9e7d6f254f1748c9090cee818a209cd06cb97",
+    "src/paint/svg.c": "d6ecb0002941d19a94b6e9a1f8745b78e0626a510c5d6d3c4e76e2d6c06284bd",
+    "src/text/font.c": "01d9c230a8323dc4ae5982f31715617a9fe8a895f60bb6cf88e3d528f8e65fdd",
+    "src/text/font.h": "9cc9118ca5c361116be14ae3629944729d164e676e6d0ee02164351480724e00",
+    "tests/jsrun.c": "3d4ccec2cbad0aa4ff71e667259c9bbd6a854ad91f798071bb6df9e6faf13aae",
+    "tests/test_frame_load_order.py": "9d825427b005e0ff6ffcee6c6261b01564f7506c2296f896b8b493d702a428db",
+    "tests/test_frame_removal.cc": "6d380b0b610647e448a3b1bf16eefea5abbcbb52c61efb9c6a24ae96667c32f2",
+    "tests/test_wasm_async_deadline.cc": "ef6d8240e4566511aff01f2d94f9dac646ba77a4b8de3ff68cb9be8f3bb48f15",
+    "tests/test_dom_ownership_namespaces.py": "800ee6bb759ea724f0b088da1fc9653845e08a1e0eaf02de2266738b404f2f31",
+    "tests/test_template_frame_ownership.py": "c8b0eab9d817a9d5a4589493b360e751600f496809f17028d7b0464ce1b2b567",
+    "tests/test_event_dispatch_state.py": "9b72afabd0712216e750619ea0b2674d17d4636a3741cc032fe89cd513392dba",
+    "tests/test_clone_metadata_allocation.cc": "600b12592b315a168fddd8207fe31428cf6c0678afc88dc6388eb85fdaa3dd9e",
+    "tests/test_clone_document_metadata.py": "af3638e12ec8dd6e2987d46d46ac70df57f032fee74da2b5315ba91bbfa4a85c",
+    "tests/test_xml_frame_documents.py": "482134caf871c3683f48ce2facd8e74ff17160dea291204cae84d8f39420c73b",
+    "tests/test_html_interface_clone_brands.py": "7f8f6c0dd74ab9c751cee3292ffb3755fa2630c9ae6b84b940ad399242cc7583",
+    "tests/js/html-interface-clone-brands.html": "b2f8fcfc554cd5625d3a5999e981d9ba967571cfc0afd3bac9466e50ce715232",
+    "tests/test_frame_microtask_realm.py": "aeb86f23ff1c3d49fb3d10842db96504b0be2d342241fdfea1df06594e580238",
+    "tests/test_storage_key_unsigned_long.py": "f292dc0d63c32e64802e0946906a110de667f529184a399a1f22da7f5979726c"
+  },
+  "sourceManifest": [
+    {
+      "path": "src/dom/dom.c",
+      "before": "87120dba2fb8ba4b09c4ae0c24a15871ad8e3adfe2000c057c6ce2516d554d46",
+      "after": "cb8f23b39814ac5ed527b4f2090cf14dd4d4793660564ed1dc9ee071a1c2d740"
+    },
+    {
+      "path": "src/dom/dom.h",
+      "before": "f20dcdab510891ca2dbb056ebd606817e686fc9f121c9227537c716b5c8fa6c0",
+      "after": "6e5d23c6996c84f160a3309090042582536d254a022e91211e4b9fb06b22ae1f"
+    },
+    {
+      "path": "src/html/html.c",
+      "before": "a3f50f67074d6e2fd0b0306f7557963470ed2edb752cfb44081447a183c18cb9",
+      "after": "f1180f15467d66e2518ae1be82e65a9599f0b04a3450697a65d1de46af6daead"
+    },
+    {
+      "path": "src/js/js.cc",
+      "before": "7736c66eb4f5e700dac05b82771bb4f46085b99be591408a14775609de38a597",
+      "after": "6d3b89ce2960532dff22c5a888385a69152de26cff1cd8e1f2cd09099ce18d26"
+    },
+    {
+      "path": "src/js/jsnative.cc",
+      "before": "296709b11a810b3dce458ccda72ec4c71aa73701fe47762aabdc79ee665942dc",
+      "after": "1f99378265dc9184b95fbdba54a052d2526c0ed39977a9603eebb4d0acd0a055"
+    },
+    {
+      "path": "src/js/prelude/02-node.js",
+      "before": "6642c125f90e53f98db5a1323809b3e3bdd6534ff2f3aeaf10d891aa5e2fb203",
+      "after": "68dbfc71982d48c5638a36a917ee9d490530b1f97462aee5c22e3b592f2bd50f"
+    },
+    {
+      "path": "src/js/prelude/06-document.js",
+      "before": "d132997c43f2d75a5b72df68c8dbbdc09811d6134452914db89b70086c6c3713",
+      "after": "3f2e30effe49d43e68ca0948df538004d6226146f42d1a7b75f732aaf2ba93a9"
+    },
+    {
+      "path": "src/js/prelude/01-events.js",
+      "before": "bc65fcadc60bc8de66d99accd0ebdea841cc4ffbceea4e548581ce2994f76e0e",
+      "after": "a2a2fecb69eb278b8e1b9df8376e88c78ff9d479bbce61dd7c85daf1cb6cac9e"
+    },
+    {
+      "path": "src/js/worker.cc",
+      "before": "d5346471f60946471f9d2b88bda31707af0be115df6e668cdda646c12c740100",
+      "after": "4a558749fcb3126e1a7f51e226c8a0e6bbe8a85ff9bbfe3e1d38004b95c5a359"
+    },
+    {
+      "path": "src/js/prelude/08-window.js",
+      "before": "23ac8785201c1b343a0acc07bf4f5f2a4486011b2f736504b11750fa422aa807",
+      "after": "52811e841fe2557c87817560752ee6238a371bc47d7d05f940b1cb15eee46f96"
+    },
+    {
+      "path": "src/js/frames.cc",
+      "after": "df4b61bd2e89dfaf068222a5cbe94f087cc2a2fcc4a81e37dc6a83bae6845571"
+    }
+  ],
+  "targetedCheckBreakdown": [
+    {
+      "stage": "clone-allocation",
+      "passed": 30,
+      "total": 30
+    },
+    {
+      "stage": "frame-microtask-realm",
+      "passed": 35,
+      "total": 35
+    },
+    {
+      "stage": "storage-key-unsigned-long",
+      "passed": 66,
+      "total": 66
+    },
+    {
+      "stage": "dom-ownership",
+      "passed": 40,
+      "total": 40
+    },
+    {
+      "stage": "template-frame-ownership",
+      "passed": 18,
+      "total": 18
+    },
+    {
+      "stage": "event-dispatch-state",
+      "passed": 91,
+      "total": 91
+    },
+    {
+      "stage": "clone-metadata",
+      "passed": 36,
+      "total": 36
+    },
+    {
+      "stage": "clone-brands",
+      "passed": 132,
+      "total": 132
+    },
+    {
+      "stage": "xml-documents",
+      "passed": 33,
+      "total": 33
+    },
+    {
+      "stage": "frame-load-jsrun",
+      "passed": 14,
+      "total": 14
+    },
+    {
+      "stage": "frame-load-application",
+      "passed": 14,
+      "total": 14
+    },
+    {
+      "stage": "test_frame_removal",
+      "passed": 24,
+      "total": 24
+    },
+    {
+      "stage": "test_wasm_async_deadline",
+      "passed": 9,
+      "total": 9
+    },
+    {
+      "stage": "test_app_wheel",
+      "passed": 35,
+      "total": 35
+    },
+    {
+      "stage": "test_render_overdraw",
+      "passed": 92,
+      "total": 92
+    },
+    {
+      "stage": "test_app_windows",
+      "passed": 146,
+      "total": 146
+    }
+  ],
+  "targetedChecksPassed": 815,
+  "targetedChecksTotal": 815,
+  "targetedChecksAreWpt": false,
+  "redEvidence": {
+    "FRAME_MICROTASK_RESULTS": {
+      "path": "output/session-10290244/frame-microtask-red.log",
+      "sha256": "f7dcea73361f113a8e831cbf351abe9779b6e6fab3d6dfcd406f1c63c197fba5",
+      "passed": 26,
+      "total": 35
+    },
+    "STORAGE_KEY_RESULTS": {
+      "path": "output/session-10290244/storage-key-red.log",
+      "sha256": "99bd0ba21bdc39b525896c36244612c32ae1f24c8949b724d5c45c75ca537162",
+      "passed": 20,
+      "total": 66
+    }
+  },
+  "wptComparison": {
+    "schema": 1,
+    "scope": "fixed WPT-source testharness subset; not a full WPT score",
+    "wpt_revision": "7f8d49b5a82606efc771f43d10aad5bce5ccbfeb",
+    "selection_sha256": "4b05758fb4923cde9aa04f5bf90802dd5bc56bcfe50d0b6b8e0011c86a98e2b6",
+    "source_provenance": {
+      "source_lock_sha256": {
+        "reference": "88fd85bc378bb54dda33afaf702c5cbc40e42e4c09b25bb9ddd989c77af65345",
+        "candidate": "88fd85bc378bb54dda33afaf702c5cbc40e42e4c09b25bb9ddd989c77af65345"
+      },
+      "adapter_sha256": {
+        "reference": "c2f9dbf00c86d799200d6a84815665d27c188587b222955928083f81a4cf95d9",
+        "candidate": "c2f9dbf00c86d799200d6a84815665d27c188587b222955928083f81a4cf95d9"
+      },
+      "selection_file_sha256": {
+        "reference": "b0c9a20e70002065be9ab2c37fedf3001c414dbf96fdfd43ac1cb8e89815fff6",
+        "candidate": "b0c9a20e70002065be9ab2c37fedf3001c414dbf96fdfd43ac1cb8e89815fff6"
+      }
+    },
+    "comparable": true,
+    "blockers": [],
+    "reference": {
+      "run_info": {
+        "product": "chrome",
+        "browser_version": "Chrome/156.0.8078.48",
+        "os": "darwin",
+        "os_version": "25.6.0",
+        "revision": "7f8d49b5a82606efc771f43d10aad5bce5ccbfeb",
+        "selection_sha256": "4b05758fb4923cde9aa04f5bf90802dd5bc56bcfe50d0b6b8e0011c86a98e2b6",
+        "adapter_name": "lume-fixed-wpt-window-subset",
+        "adapter_version": "1",
+        "official_wpt_run": false
+      },
+      "files": {
+        "selected": 6,
+        "reported": 6,
+        "passed": 6,
+        "notrun": 0,
+        "failed_or_incomplete": 0
+      },
+      "subtests": {
+        "observed": 1850,
+        "passed": 1850,
+        "status_counts": {
+          "PASS": 1850
+        },
+        "union_inventory": 1850,
+        "notrun_in_union_inventory": 0,
+        "observed_pass_percent": 100.0
+      }
+    },
+    "candidate": {
+      "run_info": {
+        "product": "lumen",
+        "browser_version": "sha256:2c27f3bb2c305b2fc3b79d1e257c9913380432014a5a85832306afa13441dc32",
+        "os": "darwin",
+        "os_version": "25.6.0",
+        "revision": "7f8d49b5a82606efc771f43d10aad5bce5ccbfeb",
+        "selection_sha256": "4b05758fb4923cde9aa04f5bf90802dd5bc56bcfe50d0b6b8e0011c86a98e2b6",
+        "adapter_name": "lume-fixed-wpt-window-subset",
+        "adapter_version": "1",
+        "official_wpt_run": false
+      },
+      "files": {
+        "selected": 6,
+        "reported": 6,
+        "passed": 6,
+        "notrun": 0,
+        "failed_or_incomplete": 0
+      },
+      "subtests": {
+        "observed": 1850,
+        "passed": 1850,
+        "status_counts": {
+          "PASS": 1850
+        },
+        "union_inventory": 1850,
+        "notrun_in_union_inventory": 0,
+        "observed_pass_percent": 100.0
+      }
+    },
+    "pass_percentage_point_difference": 0.0,
+    "files": [
+      {
+        "test": "/dom/nodes/Document-createElement.html",
+        "reference_harness": "OK",
+        "candidate_harness": "OK"
+      },
+      {
+        "test": "/dom/nodes/Node-cloneNode.html",
+        "reference_harness": "OK",
+        "candidate_harness": "OK"
+      },
+      {
+        "test": "/dom/nodes/Node-contains.html",
+        "reference_harness": "OK",
+        "candidate_harness": "OK"
+      },
+      {
+        "test": "/html/webappapis/microtask-queuing/queue-microtask.window.html",
+        "reference_harness": "OK",
+        "candidate_harness": "OK"
+      },
+      {
+        "test": "/url/urlsearchparams-constructor.any.html",
+        "reference_harness": "OK",
+        "candidate_harness": "OK"
+      },
+      {
+        "test": "/wasm/jsapi/constructor/instantiate.any.html",
+        "reference_harness": "OK",
+        "candidate_harness": "OK"
+      }
+    ],
+    "limits": [
+      "Observed subtest rates never include unknown, unreported subtests; file coverage and union-inventory NOTRUN counts must accompany them.",
+      "A full WPT conformance percentage cannot be inferred from this subset.",
+      "No candidate report is not a measured zero-percent result.",
+      "Browser harness results do not establish visual, media-hardware, or performance parity."
+    ]
+  },
+  "narrowChromeFixtureDiagnostic": {
+    "started_at": "2026-10-28T20:32:32.649726+00:00",
+    "reference_role": "narrow_diagnostic_only_general_reference_quarantined",
+    "binary": "/Users/devin/repos/lumen/output/wpt-10290244/reference/chrome-4f71e9dbe725fec1-mac-arm64-10290244/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "binary_sha256": "4f71e9dbe725fec1110977b6a6dd0708fb32fbde9c905b4b461cef880ac08288",
+    "fixtures": [
+      {
+        "path": "/frame.html",
+        "expected": 35,
+        "fixture_sha256": "d4d53fbc8b33e3b714e7b1aec27e392fd16c00c83fe36578d61c266804f0a92c",
+        "complete": true,
+        "rows": [
+          {
+            "i": 0,
+            "name": "static index 0 ready before length/contentWindow",
+            "ok": true,
+            "detail": null
+          },
+          {
+            "i": 1,
+            "name": "static index 1 ready before length/contentWindow",
+            "ok": true,
+            "detail": null
+          },
+          {
+            "i": 2,
+            "name": "static index 2 ready before length/contentWindow",
+            "ok": true,
+            "detail": null
+          },
+          {
+            "i": 3,
+            "name": "indexed frame 0 identity",
+            "ok": true,
+            "detail": null
+          },
+          {
+            "i": 4,
+            "name": "indexed frame 1 identity",
+            "ok": true,
+            "detail": null
+          },
+          {
+            "i": 5,
+            "name": "indexed frame 2 identity",
+            "ok": true,
+            "detail": null
+          },
+          {
+            "i": 6,
+            "name": "frame count",
+            "ok": true,
+            "detail": 3
+          },
+          {
+            "i": 7,
+            "name": "out-of-range frame",
+            "ok": true,
+            "detail": null
+          },
+          {
+            "i": 8,
+            "name": "blank frames synchronously accessible",
+            "ok": true,
+            "detail": null
+          },
+          {
+            "i": 9,
+            "name": "parent load once",
+            "ok": true,
+            "detail": 1
+          },
+          {
+            "i": 10,
+            "name": "three-realm callback report realm",
+            "ok": true,
+            "detail": "frame1"
+          },
+          {
+            "i": 11,
+            "name": "three-realm callback original error",
+            "ok": true,
+            "detail": null
+          },
+          {
+            "i": 12,
+            "name": "three-realm onerror property realm",
+            "ok": true,
+            "detail": [
+              "frame1"
+            ]
+          },
+          {
+            "i": 13,
+            "name": "three-realm callback runs once",
+            "ok": true,
+            "detail": 1
+          },
+          {
+            "i": 14,
+            "name": "top callback report realm",
+            "ok": true,
+            "detail": "top"
+          },
+          {
+            "i": 15,
+            "name": "top callback original error",
+            "ok": true,
+            "detail": null
+          },
+          {
+            "i": 16,
+            "name": "top scheduler report realm",
+            "ok": true,
+            "detail": "frame1"
+          },
+          {
+            "i": 17,
+            "name": "top scheduler original error",
+            "ok": true,
+            "detail": null
+          },
+          {
+            "i": 18,
+            "name": "same frame report realm",
+            "ok": true,
+            "detail": "frame0"
+          },
+          {
+            "i": 19,
+            "name": "same frame original error",
+            "ok": true,
+            "detail": null
+          },
+          {
+            "i": 20,
+            "name": "bound callback report realm",
+            "ok": true,
+            "detail": "frame1"
+          },
+          {
+            "i": 21,
+            "name": "bound callback original error",
+            "ok": true,
+            "detail": null
+          },
+          {
+            "i": 22,
+            "name": "strict callback this undefined",
+            "ok": true,
+            "detail": null
+          },
+          {
+            "i": 23,
+            "name": "callback receives no arguments",
+            "ok": true,
+            "detail": 0
+          },
+          {
+            "i": 24,
+            "name": "callback return ignored",
+            "ok": true,
+            "detail": 0
+          },
+          {
+            "i": 25,
+            "name": "microtask FIFO preserved",
+            "ok": true,
+            "detail": [
+              "a",
+              "b",
+              "c"
+            ]
+          },
+          {
+            "i": 26,
+            "name": "report does not recursively settle",
+            "ok": true,
+            "detail": [
+              "handler",
+              "tail",
+              "from-handler"
+            ]
+          },
+          {
+            "i": 27,
+            "name": "invalid callback undefined throws synchronously",
+            "ok": true,
+            "detail": null
+          },
+          {
+            "i": 28,
+            "name": "invalid callback null throws synchronously",
+            "ok": true,
+            "detail": null
+          },
+          {
+            "i": 29,
+            "name": "invalid callback 0 throws synchronously",
+            "ok": true,
+            "detail": null
+          },
+          {
+            "i": 30,
+            "name": "invalid callback callback throws synchronously",
+            "ok": true,
+            "detail": null
+          },
+          {
+            "i": 31,
+            "name": "invalid callback [object Object] throws synchronously",
+            "ok": true,
+            "detail": null
+          },
+          {
+            "i": 32,
+            "name": "queueMicrotask returns undefined",
+            "ok": true,
+            "detail": null
+          },
+          {
+            "i": 33,
+            "name": "queue remains live after reports",
+            "ok": true,
+            "detail": 1
+          },
+          {
+            "i": 34,
+            "name": "callback exceptions are not promise rejections",
+            "ok": true,
+            "detail": 0
+          }
+        ],
+        "url": "http://127.0.0.1:54135/frame.html",
+        "readyState": "complete",
+        "passed": 35,
+        "total": 35,
+        "fixture_pass": true
+      },
+      {
+        "path": "/storage.html",
+        "expected": 66,
+        "fixture_sha256": "90bd4b260c07b51e52be64b43f61cbd3b6754fa9b1db4ba5fe2f9cf7a29bd9d8",
+        "complete": true,
+        "rows": [
+          {
+            "i": 0,
+            "name": "localStorage populated length",
+            "ok": true,
+            "detail": 4
+          },
+          {
+            "i": 1,
+            "name": "localStorage distinct valid baseline keys",
+            "ok": true,
+            "detail": [
+              "lume-key-2",
+              "lume-key-3",
+              "lume-key-0",
+              "lume-key-1"
+            ]
+          },
+          {
+            "i": 2,
+            "name": "localStorage zero",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-2",
+              "want": "lume-key-2",
+              "err": null
+            }
+          },
+          {
+            "i": 3,
+            "name": "localStorage one",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-3",
+              "want": "lume-key-3",
+              "err": null
+            }
+          },
+          {
+            "i": 4,
+            "name": "localStorage three",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-1",
+              "want": "lume-key-1",
+              "err": null
+            }
+          },
+          {
+            "i": 5,
+            "name": "localStorage out of range",
+            "ok": true,
+            "detail": {
+              "got": null,
+              "want": null,
+              "err": null
+            }
+          },
+          {
+            "i": 6,
+            "name": "localStorage 2^32",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-2",
+              "want": "lume-key-2",
+              "err": null
+            }
+          },
+          {
+            "i": 7,
+            "name": "localStorage 2^32+1",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-3",
+              "want": "lume-key-3",
+              "err": null
+            }
+          },
+          {
+            "i": 8,
+            "name": "localStorage 2^32+2",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-0",
+              "want": "lume-key-0",
+              "err": null
+            }
+          },
+          {
+            "i": 9,
+            "name": "localStorage 2^32+3",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-1",
+              "want": "lume-key-1",
+              "err": null
+            }
+          },
+          {
+            "i": 10,
+            "name": "localStorage negative 2^32",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-2",
+              "want": "lume-key-2",
+              "err": null
+            }
+          },
+          {
+            "i": 11,
+            "name": "localStorage negative 2^32 plus1",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-3",
+              "want": "lume-key-3",
+              "err": null
+            }
+          },
+          {
+            "i": 12,
+            "name": "localStorage negative one",
+            "ok": true,
+            "detail": {
+              "got": null,
+              "want": null,
+              "err": null
+            }
+          },
+          {
+            "i": 13,
+            "name": "localStorage positive fraction",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-3",
+              "want": "lume-key-3",
+              "err": null
+            }
+          },
+          {
+            "i": 14,
+            "name": "localStorage negative fraction",
+            "ok": true,
+            "detail": {
+              "got": null,
+              "want": null,
+              "err": null
+            }
+          },
+          {
+            "i": 15,
+            "name": "localStorage NaN",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-2",
+              "want": "lume-key-2",
+              "err": null
+            }
+          },
+          {
+            "i": 16,
+            "name": "localStorage positive infinity",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-2",
+              "want": "lume-key-2",
+              "err": null
+            }
+          },
+          {
+            "i": 17,
+            "name": "localStorage negative infinity",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-2",
+              "want": "lume-key-2",
+              "err": null
+            }
+          },
+          {
+            "i": 18,
+            "name": "localStorage explicit undefined",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-2",
+              "want": "lume-key-2",
+              "err": null
+            }
+          },
+          {
+            "i": 19,
+            "name": "localStorage null",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-2",
+              "want": "lume-key-2",
+              "err": null
+            }
+          },
+          {
+            "i": 20,
+            "name": "localStorage false",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-2",
+              "want": "lume-key-2",
+              "err": null
+            }
+          },
+          {
+            "i": 21,
+            "name": "localStorage true",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-3",
+              "want": "lume-key-3",
+              "err": null
+            }
+          },
+          {
+            "i": 22,
+            "name": "localStorage large numeric string",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-0",
+              "want": "lume-key-0",
+              "err": null
+            }
+          },
+          {
+            "i": 23,
+            "name": "localStorage fraction string",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-3",
+              "want": "lume-key-3",
+              "err": null
+            }
+          },
+          {
+            "i": 24,
+            "name": "localStorage nonnumeric string",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-2",
+              "want": "lume-key-2",
+              "err": null
+            }
+          },
+          {
+            "i": 25,
+            "name": "localStorage 2^53",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-2",
+              "want": "lume-key-2",
+              "err": null
+            }
+          },
+          {
+            "i": 26,
+            "name": "localStorage negative zero",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-2",
+              "want": "lume-key-2",
+              "err": null
+            }
+          },
+          {
+            "i": 27,
+            "name": "localStorage missing index TypeError",
+            "ok": true,
+            "detail": null
+          },
+          {
+            "i": 28,
+            "name": "localStorage BigInt TypeError",
+            "ok": true,
+            "detail": null
+          },
+          {
+            "i": 29,
+            "name": "localStorage Symbol TypeError",
+            "ok": true,
+            "detail": null
+          },
+          {
+            "i": 30,
+            "name": "localStorage number-hint conversion once",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-0",
+              "hints": [
+                "number"
+              ],
+              "err": null
+            }
+          },
+          {
+            "i": 31,
+            "name": "localStorage original coercion exception",
+            "ok": true,
+            "detail": null
+          },
+          {
+            "i": 32,
+            "name": "localStorage reads preserve storage",
+            "ok": true,
+            "detail": null
+          },
+          {
+            "i": 33,
+            "name": "sessionStorage populated length",
+            "ok": true,
+            "detail": 4
+          },
+          {
+            "i": 34,
+            "name": "sessionStorage distinct valid baseline keys",
+            "ok": true,
+            "detail": [
+              "lume-key-2",
+              "lume-key-3",
+              "lume-key-0",
+              "lume-key-1"
+            ]
+          },
+          {
+            "i": 35,
+            "name": "sessionStorage zero",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-2",
+              "want": "lume-key-2",
+              "err": null
+            }
+          },
+          {
+            "i": 36,
+            "name": "sessionStorage one",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-3",
+              "want": "lume-key-3",
+              "err": null
+            }
+          },
+          {
+            "i": 37,
+            "name": "sessionStorage three",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-1",
+              "want": "lume-key-1",
+              "err": null
+            }
+          },
+          {
+            "i": 38,
+            "name": "sessionStorage out of range",
+            "ok": true,
+            "detail": {
+              "got": null,
+              "want": null,
+              "err": null
+            }
+          },
+          {
+            "i": 39,
+            "name": "sessionStorage 2^32",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-2",
+              "want": "lume-key-2",
+              "err": null
+            }
+          },
+          {
+            "i": 40,
+            "name": "sessionStorage 2^32+1",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-3",
+              "want": "lume-key-3",
+              "err": null
+            }
+          },
+          {
+            "i": 41,
+            "name": "sessionStorage 2^32+2",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-0",
+              "want": "lume-key-0",
+              "err": null
+            }
+          },
+          {
+            "i": 42,
+            "name": "sessionStorage 2^32+3",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-1",
+              "want": "lume-key-1",
+              "err": null
+            }
+          },
+          {
+            "i": 43,
+            "name": "sessionStorage negative 2^32",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-2",
+              "want": "lume-key-2",
+              "err": null
+            }
+          },
+          {
+            "i": 44,
+            "name": "sessionStorage negative 2^32 plus1",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-3",
+              "want": "lume-key-3",
+              "err": null
+            }
+          },
+          {
+            "i": 45,
+            "name": "sessionStorage negative one",
+            "ok": true,
+            "detail": {
+              "got": null,
+              "want": null,
+              "err": null
+            }
+          },
+          {
+            "i": 46,
+            "name": "sessionStorage positive fraction",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-3",
+              "want": "lume-key-3",
+              "err": null
+            }
+          },
+          {
+            "i": 47,
+            "name": "sessionStorage negative fraction",
+            "ok": true,
+            "detail": {
+              "got": null,
+              "want": null,
+              "err": null
+            }
+          },
+          {
+            "i": 48,
+            "name": "sessionStorage NaN",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-2",
+              "want": "lume-key-2",
+              "err": null
+            }
+          },
+          {
+            "i": 49,
+            "name": "sessionStorage positive infinity",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-2",
+              "want": "lume-key-2",
+              "err": null
+            }
+          },
+          {
+            "i": 50,
+            "name": "sessionStorage negative infinity",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-2",
+              "want": "lume-key-2",
+              "err": null
+            }
+          },
+          {
+            "i": 51,
+            "name": "sessionStorage explicit undefined",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-2",
+              "want": "lume-key-2",
+              "err": null
+            }
+          },
+          {
+            "i": 52,
+            "name": "sessionStorage null",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-2",
+              "want": "lume-key-2",
+              "err": null
+            }
+          },
+          {
+            "i": 53,
+            "name": "sessionStorage false",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-2",
+              "want": "lume-key-2",
+              "err": null
+            }
+          },
+          {
+            "i": 54,
+            "name": "sessionStorage true",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-3",
+              "want": "lume-key-3",
+              "err": null
+            }
+          },
+          {
+            "i": 55,
+            "name": "sessionStorage large numeric string",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-0",
+              "want": "lume-key-0",
+              "err": null
+            }
+          },
+          {
+            "i": 56,
+            "name": "sessionStorage fraction string",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-3",
+              "want": "lume-key-3",
+              "err": null
+            }
+          },
+          {
+            "i": 57,
+            "name": "sessionStorage nonnumeric string",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-2",
+              "want": "lume-key-2",
+              "err": null
+            }
+          },
+          {
+            "i": 58,
+            "name": "sessionStorage 2^53",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-2",
+              "want": "lume-key-2",
+              "err": null
+            }
+          },
+          {
+            "i": 59,
+            "name": "sessionStorage negative zero",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-2",
+              "want": "lume-key-2",
+              "err": null
+            }
+          },
+          {
+            "i": 60,
+            "name": "sessionStorage missing index TypeError",
+            "ok": true,
+            "detail": null
+          },
+          {
+            "i": 61,
+            "name": "sessionStorage BigInt TypeError",
+            "ok": true,
+            "detail": null
+          },
+          {
+            "i": 62,
+            "name": "sessionStorage Symbol TypeError",
+            "ok": true,
+            "detail": null
+          },
+          {
+            "i": 63,
+            "name": "sessionStorage number-hint conversion once",
+            "ok": true,
+            "detail": {
+              "got": "lume-key-0",
+              "hints": [
+                "number"
+              ],
+              "err": null
+            }
+          },
+          {
+            "i": 64,
+            "name": "sessionStorage original coercion exception",
+            "ok": true,
+            "detail": null
+          },
+          {
+            "i": 65,
+            "name": "sessionStorage reads preserve storage",
+            "ok": true,
+            "detail": null
+          }
+        ],
+        "url": "http://127.0.0.1:54135/storage.html",
+        "readyState": "complete",
+        "passed": 66,
+        "total": 66,
+        "fixture_pass": true
+      }
+    ],
+    "issues": [],
+    "version": {
+      "protocolVersion": "1.3",
+      "product": "Chrome/156.0.8078.48",
+      "revision": "@d0c02bfad08ec92a6ffcf989e53cd995e6381a4c",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+      "jsVersion": "15.6.75.19"
+    },
+    "pid": 66627,
+    "argv": [
+      "/Users/devin/repos/lumen/output/wpt-10290244/reference/chrome-4f71e9dbe725fec1-mac-arm64-10290244/Google Chrome.app/Contents/MacOS/Google Chrome",
+      "--headless=new",
+      "--remote-debugging-port=0",
+      "--user-data-dir=/Users/devin/repos/lumen/output/session-10290244/frame-storage-chrome-diagnostic/chrome/lumen-wpt-chrome-djwg2uke",
+      "--no-first-run",
+      "--no-default-browser-check",
+      "--disable-background-networking",
+      "about:blank"
+    ],
+    "browser_cleanup": {
+      "process": {
+        "sent_sigterm": false,
+        "sent_sigkill": false,
+        "error": null,
+        "post_signal_verification": {
+          "allowed_wait_s": 10,
+          "initial_live_members": {},
+          "duration_ms": 15
+        },
+        "process_group_gone": true,
+        "remaining_group_members": {},
+        "root_exit_code": 0,
+        "root_exit_before_signal_cleanup": 0,
+        "root_exit_observation_verified": true
+      },
+      "errors": [],
+      "graceful_close": {
+        "method": "Browser.close",
+        "attempted": true,
+        "acknowledged": true,
+        "allowed_drain_s": 20,
+        "exit_requirement": "All live owned-group members must disappear; an exiting process state is not ignored.",
+        "initial_process_state": {
+          "observed_unix_ms": 1793219554180,
+          "members": [
+            {
+              "pid": 66627,
+              "ppid": 66625,
+              "pgid": 66627,
+              "uid": 501,
+              "ruid": 501,
+              "stat": "Rs",
+              "start_identity": "Wed Oct 28 13:32:32 2026",
+              "executable": "(Google Chrome)"
+            },
+            {
+              "pid": 66635,
+              "ppid": 66627,
+              "pgid": 66627,
+              "uid": 501,
+              "ruid": 501,
+              "stat": "S",
+              "start_identity": "Wed Oct 28 13:32:32 2026",
+              "executable": "(Google Chrome He)"
+            },
+            {
+              "pid": 66636,
+              "ppid": 66627,
+              "pgid": 66627,
+              "uid": 501,
+              "ruid": 501,
+              "stat": "S",
+              "start_identity": "Wed Oct 28 13:32:32 2026",
+              "executable": "(Google Chrome He)"
+            },
+            {
+              "pid": 66638,
+              "ppid": 66627,
+              "pgid": 66627,
+              "uid": 501,
+              "ruid": 501,
+              "stat": "S",
+              "start_identity": "Wed Oct 28 13:32:32 2026",
+              "executable": "(Google Chrome He)"
+            },
+            {
+              "pid": 66660,
+              "ppid": 66627,
+              "pgid": 66627,
+              "uid": 501,
+              "ruid": 501,
+              "stat": "S",
+              "start_identity": "Wed Oct 28 13:32:33 2026",
+              "executable": "(Google Chrome He)"
+            }
+          ]
+        },
+        "process_group_gone": true,
+        "drain_duration_ms": 346
+      }
+    },
+    "ended_at": "2026-10-28T20:32:34.581441+00:00",
+    "duration_seconds": 1.9317395830294117,
+    "fixture_assertions_passed": true
+  },
+  "limits": [
+    "The101 custom diagnostic assertions are not upstream WPT counts.",
+    "The installed reference remains quarantined for broad URL parity despite this narrow fixture passing.",
+    "No fresh CPU/RSS/soak or same-device IPA execution proof is inferred."
+  ]
+}

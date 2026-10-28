@@ -25,7 +25,7 @@ const ioKick = () => { if (!ioPending) { ioPending = true; setTimeout(ioRun, 0);
 class PerformanceObserver { constructor(cb) { this._cb = cb; } observe() {} disconnect() {} takeRecords() { return []; } static get supportedEntryTypes() { return []; } }
 class Storage {
     constructor(save) { def(this, '_m', new Map()); def(this, '_s', save || null); def(this, '_n', 0); }
-    get length() { return this._m.size; } key(i) { return [...this._m.keys()][i] ?? null; }
+    get length() { return this._m.size; } key(i) { if (!arguments.length) throw new TypeError('Storage.key requires an index'); return [...this._m.keys()][(+i) >>> 0] ?? null; }
     getItem(k) { return this._m.has(String(k)) ? this._m.get(String(k)) : null; }
     setItem(k, v) {
         k = String(k); v = String(v); const o = this._m.get(k) ?? null, d = v.length + (o === null ? k.length : -o.length);
@@ -329,7 +329,7 @@ const requestAnimationFrame = (fn) => N.raf((t) => { try { fn(t); } catch (e) { 
 const cancelAnimationFrame = (id) => N.cancelRaf(id);
 const requestIdleCallback = (fn, o) => setTimeout(() => fn({ didTimeout: false, timeRemaining() { return 10; } }), 1);
 const cancelIdleCallback = clearTimeout;
-const queueMicrotask = (fn) => { if (typeof fn !== 'function') throw new TypeError('queueMicrotask callback must be callable'); Promise.resolve().then(() => { try { fn(); } catch (e) { report(e); } }); };
+const queueMicrotask = (fn) => { if (typeof fn !== 'function') throw new TypeError('queueMicrotask callback must be callable'); Promise.resolve().then(() => { N.runMicrotask(fn); }); };
 // The exception constructor is the original lexical interface of this realm.
 N.initCloneIntrinsic((message, name) => new DOMException(message, name));
 function structuredClone(v, seen = new Map()) {
