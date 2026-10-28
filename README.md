@@ -45,21 +45,58 @@ Early preview. Expect broken pages and missing features.
 
 ## Linux and Android development
 
-The Android adapter builds the same C/C++ engine through SDL3; it does not embed
-Android WebView. It is scaffolding, not a tested APK or a daily-use release.
-See [the portability status and test plan](docs/codex-android-linux-status.md)
-for prerequisites, measured results, and the remaining release gates.
+Linux runs Lumen's native C/C++ engine with V8 and wgpu-native. Current accepted
+Linux binaries, exact source hashes, measured compatibility and remaining work
+are recorded in the latest dated [AGENTS.md](AGENTS.md) handoff and
+[devsummary.md](devsummary.md). The [portability status and test plan](docs/codex-android-linux-status.md)
+retains earlier Linux/Android milestones; its historical results are not the
+current engine's validation.
 
-Native core tests can run without V8 or wgpu-native:
+### Linux prerequisites and build
+
+The core build requires C11/C++20 compilers, CMake 3.22 or newer, Python 3,
+threads, ICU, OpenSSL, zlib, Brotli and Zstandard development libraries.
+The native core test suite also uses Git for an isolated local dependency-plan
+fixture; it does not download or build Android dependencies.
+The full browser additionally requires SDL3, matching V8 headers/libraries and
+build flags, wgpu-native, FreeType, HarfBuzz, FFmpeg, PNG/JPEG/WebP/GIF libraries,
+EGL/OpenGL ES, Fontconfig, libdatachannel and Opus. Install system fonts covering
+the scripts and symbols you use. Optional JavaScript viewer controls need Node.
+
+The commands below use the supplied build-budget wrapper. It requires an active
+systemd user manager plus `chrt` and `nice`, shares a CPU quota equal to 60% of
+host logical CPUs, and fails closed if that quota cannot be established.
+On the managed development host, all compilation must use this wrapper.
+
+Native core tests can run without V8, SDL3 or wgpu-native:
 
 ```sh
-cmake -S . -B build/codex-core -DLUMEN_BUILD_BROWSER=OFF
-cmake --build build/codex-core -j4
-ctest --test-dir build/codex-core --output-on-failure
+python3 tools/codex_compile.py cmake -S . -B build/codex-core -DLUMEN_BUILD_BROWSER=OFF
+python3 tools/codex_compile.py cmake --build build/codex-core -j2
+python3 tools/codex_compile.py ctest --test-dir build/codex-core --output-on-failure -j2
 ```
 
-Linux additionally uses Fontconfig to discover installed fonts rather than
-assuming Debian font paths. Install system sans/serif/monospace fonts and fonts
-covering the languages and symbols you use (for example Noto CJK and DejaVu Sans).
-`make build/test_font_fallback && build/test_font_fallback` checks Latin, CJK,
-emoji and folder indicators against those installed fonts.
+For the full browser, provision the external dependencies first, then configure
+their prefix and build:
+
+```sh
+python3 tools/codex_compile.py cmake -S . -B build/codex-native -DCMAKE_BUILD_TYPE=Release -DLUMEN_DEPS_DIR=/absolute/dependency/prefix
+python3 tools/codex_compile.py cmake --build build/codex-native -j2
+```
+
+`LUMEN_V8_POINTER_COMPRESSION` must match the supplied V8 build. See
+[the native dependency record](docs/codex-linux-native-dependencies.md) for the
+retained dependency versions, archive hashes and runtime ICU setup. Prebuilt
+V8/wgpu libraries, installed system libraries, and the separately pinned WPT
+and Chromium installations are not included in the source snapshot. The source
+archive and recorded source/resource/test/build manifest do not constitute a
+hermetic build or a compiler-generated transitive dependency closure. The
+published source snapshot also omits private validation runners and raw results;
+complete standalone WPT reproduction requires the separate validation setup.
+
+### Android adapter
+
+The Android adapter builds the same C/C++ engine through SDL3; it does not embed
+Android WebView. The earlier portability document records its separate Android
+prerequisites and remaining release gates. Linux results do not establish an
+Android release or Chromium-level web-platform compatibility.

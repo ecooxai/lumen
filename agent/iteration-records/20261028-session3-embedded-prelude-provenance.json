@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "recorded_utc": "2026-10-28T18:20:11.266482+00:00",
+  "method": "Read-only loader/launcher review plus exact Git-reconstructed NUL-terminated prelude byte search in each frozen binary. No browser test or benchmark rerun.",
+  "iterations": [
+    {
+      "iteration": 150,
+      "commit": "0f62172b08683c7c0d89722c588af6ff94f82ca3",
+      "binary_sha256": "79874c9c16af2086cb1de93a6194276d4b17512897aeca118244beddef7bb967",
+      "prelude_bytes": 1607324,
+      "prelude_sha256": "84eed6a82f45eda82c2ea8173ac0ab81626843c9916397feac4600b2c22ddec3",
+      "exact_bytes_found_at": 2648336
+    },
+    {
+      "iteration": 160,
+      "commit": "afffd43c9f5bda662a7327c5e9c1e3dd3d70e74a",
+      "binary_sha256": "0bce10c757a157ea202cc6528f7d611e7289d00bc768b330de436bba4a68dc3a",
+      "prelude_bytes": 1609415,
+      "prelude_sha256": "b41f76b75f52ceae982d90af58ceb77ee0a7c876bfbf0415fe4286ca20c2b76e",
+      "exact_bytes_found_at": 2652464
+    },
+    {
+      "iteration": 161,
+      "commit": "1f736fd03562f392f025bd45ae2f489042267170",
+      "binary_sha256": "e1ce98de93882e5859bb3b4105e3f02f00ed7272cfb9223674ceddc1411f6a93",
+      "prelude_bytes": 1609617,
+      "prelude_sha256": "ef5553a84365fb4a56dcebeed980c9676f02de1bb07fd7f963ab5dee43c65dfc",
+      "exact_bytes_found_at": 2652464
+    }
+  ],
+  "loader_review": {
+    "page": "CMake generates prelude.inc; src/js/js.cc compiles the static kPrelude array. The only prelude bytecode cache is process-local and generated from that same array.",
+    "worker": "src/js/worker.cc compiles static kWorkerPrelude containing generated shared includes.",
+    "lazy": "src/js/jsnative.cc serves editing and Temporal from static generated arrays.",
+    "historical_loader_files_identical": [
+      "src/js/js.cc",
+      "src/js/worker.cc",
+      "src/js/jsnative.cc",
+      "tools/generate_embedded.py"
+    ],
+    "post_bootstrap_hook": "src/app/main.c calls js_new before evaluating LUMEN_PRE_FILE as lumen:pre. This does not replace the embedded engine. No runtime filesystem engine-prelude override exists in this reviewed path."
+  },
+  "launch_review": {
+    "performance": "agent/validation/performance/compare.py explicitly removes LUMEN_PRE_FILE, LUMEN_WPT_CTRL, LUMEN_TESTDRIVER and LUMEN_TESTDRIVER_URL before launch.",
+    "focused_wpt": "paired_wpt.py and paired_wpt_lf.py write a short private reporter script and explicitly set LUMEN_PRE_FILE to it.",
+    "broad_wpt": "tests/wpt/lumen_wpt.py writes PRE_JS per instance: result reporting, navigation to the controller and a watchdog. The launcher explicitly replaces any inherited LUMEN_PRE_FILE. It does not load engine JavaScript from src/.",
+    "final_coordinator": "agent/validation/linux-wpt-20261028-session3/broad161-final/run_sequence.py clears controller/pre overrides and verifies exact binary and protocol hashes."
+  },
+  "reviewed_file_sha256": {
+    "CMakeLists.txt": "846fa5629f059f68e869b7b1ec73a99518cc67f218519982332531ce402a65fa",
+    "src/js/js.cc": "7a364a717f65051f7d7b430f9691e18d1875a335b3abb07656a6bcb31c3981b9",
+    "src/js/worker.cc": "b47597ab90a2352c8e0f3c6a33bcab4569b2c9e38522bd7af1e65b4f467c9430",
+    "src/js/jsnative.cc": "96cd129690b7f7ebccbaeda77ea899c1b1cf1f6cef9e2da1e34bb355a6a233f0",
+    "src/app/main.c": "1146301a9f376ff6688cd4ed37f3553eaccbb236c6b8fa7088a8341e78e646c6",
+    "tools/generate_embedded.py": "d230a2a031f0cd65f7bb988beff232d71952a7e412e7001be8061ae6df362bfa",
+    "agent/validation/performance/compare.py": "b60c47fc26d72e3f7044328668627a6c64e3f5fd68bf3b200998599f15e78c4d",
+    "agent/validation/paired_wpt.py": "ea8b177e030d808fd4924028d2001fd9b40d1f4026fcdc994828940107a4c6bb",
+    "agent/validation/paired_wpt_lf.py": "5198a471220116c2a07c4285854cd3dfa4732c44f6e6c78bfaedb3d9c03ab42c",
+    "tests/wpt/lumen_wpt.py": "005dffe9f72b5c5a04f83a51154670d1aac5db816d6c77fb26a2ba1f08b17dca",
+    "agent/validation/linux-wpt-20261028-session3/broad161-final/run_sequence.py": "a993221797fca274c4b03d2165794cab7b76bc42cb280f8ccbc1ba46f2732d6b"
+  }
+}
