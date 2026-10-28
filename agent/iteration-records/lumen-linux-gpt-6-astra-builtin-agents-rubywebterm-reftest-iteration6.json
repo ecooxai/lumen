@@ -1,0 +1,80 @@
+{
+  "iteration": 6,
+  "title": "Native test-only viewport capture and WPT reftest oracle",
+  "model": "GPT-6 Astra",
+  "agents": [
+    "conformance",
+    "engine_lead",
+    "ops_preview",
+    "root"
+  ],
+  "tools": [
+    "built-in subagents",
+    "RubyWebTerm",
+    "WPT",
+    "Chromium"
+  ],
+  "started_utc": "2026-10-28T05:20:00.154453+00:00",
+  "start_basis": "First retained capture implementation timestamp; earlier design time not reconstructed",
+  "finished_utc": "2026-10-28T05:42:06.670604+00:00",
+  "elapsed_minutes": 22.109,
+  "session_elapsed_minutes": 111.995,
+  "timing_note": "Completion includes independent review and record preparation; parallel iteration times overlap. PM acceptance was received before this record timestamp.",
+  "status": "accepted focused infrastructure capability",
+  "iteration_quality_score": 96,
+  "quality_basis": "PM reviewed fresh viewport controls and montage; engine lead reviewed the bounded hook; all eleven intended control outcomes agreed with official Chromium",
+  "whole_goal_readiness": 19,
+  "whole_goal_status": "Provisional project estimate; not a full WPT pass percentage",
+  "baseline_commit": "f1be9d64021b19786fe05a36c14b6a6d77a19f02",
+  "accepted_binary": "build/codex-native/lumen-astra-i114",
+  "binary_sha256": "fa067d66042f2760fedd598323e173c3e74f2d07e4d4197b060a899438aa67a0",
+  "main_c_sha256": "91600129000bf27991bcda9303095dd6e61249579f91b2593f303a04e32a6292",
+  "wpt_revision": "0e1c0bce3defd59a76cf2f351c7da5c5a42b26fb",
+  "chromium_version": "150.0.7871.114",
+  "capture_contract": {
+    "test_only": true,
+    "signal": "SIGUSR1",
+    "required_environment": [
+      "LUMEN_TESTDRIVER",
+      "LUMEN_WPT_CAPTURE"
+    ],
+    "viewport_css": [
+      800,
+      600
+    ],
+    "device_pixel_ratio": 1,
+    "fresh_paint": true,
+    "actual_url_verified": true,
+    "page_only_crop": true,
+    "fixed_timer_oracle": false
+  },
+  "control_results": {
+    "selected": 11,
+    "raw_pass": 8,
+    "raw_deliberate_fail": 3,
+    "intended_control_agreement": 11,
+    "chromium_agreement": 11,
+    "negative_difference_pixels": 480000,
+    "fuzzy_difference_pixels": 100,
+    "fuzzy_max_channel_difference": 255
+  },
+  "preserved_failed_attempts": [
+    "candidate112 compilation failed because sig_atomic_t was declared before signal.h; fixed by moving the existing include",
+    "capture114-controls retained comparator initialization errors and original PNGs; corrected evidence is capture114-controls-v2"
+  ],
+  "limitations": [
+    "Only 800x600 DPR1 capture contract validated",
+    "Unsupported viewport/DPR overrides, recursive reference graphs, non-HTTP references and testdriver actions remain explicit",
+    "No claim of full reftest coverage or before/after rendering improvement from capture alone",
+    "Candidate113 background-position semantic regressions are separate and not accepted here"
+  ],
+  "evidence_root": "agent/validation/linux-wpt-20261028",
+  "evidence": [
+    "reftest-capture/control-validation.json",
+    "capture114-controls-v2/results.jsonl",
+    "chromium-reftest-pilot/report.json",
+    "reftest-capture/capture-source-provenance.json",
+    "reftest-capture/oracle-adapter-correction.json",
+    "reftest-capture/gpt-6-astra-conformance-rubywebterm-capture-controls.png"
+  ]
+}

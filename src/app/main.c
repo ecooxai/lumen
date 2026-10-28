@@ -48,6 +48,17 @@ static bool g_desktop_seeded;   /* Desktop site was turned on for every site onc
 static bool g_hide_tabs;   /* Hide tab bar (Settings, saved as hide_tabs): compact even with several tabs; the menu's Workspaces lists them */
 static bool g_bare, g_bare_fs __attribute__((unused));   /* the Downloads viewer's full screen: no tab strip or toolbar, the panel fills the window; the system bars' state before */
 /* test hooks read on every main-loop turn: looked up once (Android's getenv scans the environment) */
+#include <signal.h>
+
+/* Explicit WPT automation only: signal requests a fresh, presented page viewport.
+ * The handler performs no allocation, I/O, or rendering. Normal browsing never
+ * installs this handler and never enters the capture path. */
+static const char *g_wpt_capture_path;
+static volatile sig_atomic_t g_wpt_capture_requested;
+static void wpt_capture_signal(int signum) {
+    (void)signum;
+    g_wpt_capture_requested = 1;
+}
 enum { ENV_SHOT, ENV_CRASH_TEST, ENV_TAB_SLEEP_MS, ENV_TAB_SLEEP, ENV_MEM_STATS, ENV_AUTOSCROLL, ENV_CHECK_DAMAGE, ENV_TESTDRIVER, ENV_N };
 static const char *env_hook(int i) {
     static const char *const names[ENV_N] = { "LUMEN_SHOT", "LUMEN_CRASH_TEST", "LUMEN_TAB_SLEEP_MS", "LUMEN_TAB_SLEEP", "LUMEN_MEM_STATS", "LUMEN_AUTOSCROLL", "LUMEN_CHECK_DAMAGE", "LUMEN_TESTDRIVER" };
@@ -2299,6 +2310,8 @@ static void boot_tick(double gap) {
     SDL_Log("lumen: boot process_age_at_main=%.0f%s (settled = last task over 150 ms; %d such tasks, %.0f ms)", g_boot.proc, g_boot.s, g_boot.longs, g_boot.long_ms);
 }
 static void render(App *a) {
+    const bool wpt_capture = g_wpt_capture_path && g_wpt_capture_requested;
+    if (wpt_capture) a->vonly = false;
 #ifdef __ANDROID__
     if (!a->win || a->android_suspended) return;
     update_compact(a);   /* before bar_push: the toolbar's top follows the tab bar */
@@ -2316,7 +2329,7 @@ static void render(App *a) {
     int ph = a->ph - bar_px; if (ph < 1) ph = 1;
     int side_px = (int)(page_left(a) * a->scale), pwp = a->pw - side_px; if (pwp < 1) pwp = 1;
     int why = !a->vonly ? 1 : !a->t->cur || a->t->cur != a->last_page || !a->t->cur->L ? 2 : a->t->relayout ? 3 : a->t->cur->d->dom_version != a->last_ver ? 4 : 0;
-    bool defer = why && why != 2 && !a->t->loading && a->t->cur && a->t->cur->L && t0 - a->last_input > 1000 && t0 - a->last_full < 250 && media_timeout_ms() >= 0 && a->page.w == pwp && a->page.h == ph;
+    bool defer = !wpt_capture && why && why != 2 && !a->t->loading && a->t->cur && a->t->cur->L && t0 - a->last_input > 1000 && t0 - a->last_full < 250 && media_timeout_ms() >= 0 && a->page.w == pwp && a->page.h == ph;
     a->deferred = defer; if (defer) why = 0;
     if (defer && !a->vframe) { a->dirty = false; return; }
     bool part = !why;
@@ -2608,6 +2621,21 @@ static void render(App *a) {
     paint_profile_stage(&profile_frame, PAINT_PRESENT);
     if (!gskip || gvp) doc_activity();   /* page pixels changed: animation frames keep their full rate */
     a->frame_ms = now_ms() - t0;
+    if (wpt_capture) {
+        g_wpt_capture_requested = 0;
+        const bool bounds_ok = a->frame.px && a->frame.row_offset == 0 && side_px >= 0 && bar_px >= 0 &&
+            pwp > 0 && ph > 0 && side_px + pwp <= a->frame.w &&
+            bar_px + ph <= a->frame.h && a->frame.stride >= a->frame.w;
+        const bool written = bounds_ok && png_write(g_wpt_capture_path,
+            a->frame.px + (size_t)bar_px * a->frame.stride + side_px,
+            pwp, ph, a->frame.stride);
+        fprintf(stderr, "LUMEN_REF_CAPTURE {\"ok\":%s,\"width\":%d,\"height\":%d,\"crop_x\":%d,\"crop_y\":%d,\"frame_width\":%d,\"frame_height\":%d,\"scale\":%.9g,\"frame_started_ms\":%.3f,\"frame_ms\":%.3f}\n",
+            written ? "true" : "false", pwp, ph, side_px, bar_px,
+            a->frame.w, a->frame.h, a->scale, t0, a->frame_ms);
+        if (a->t && a->t->cur) fprintf(stderr, "LUMEN_REF_CAPTURE_URL %s\n", a->t->cur->url);
+        fflush(stderr);
+        exit(written ? 0 : 2);
+    }
     if (env_hook(ENV_SHOT)) {   /* write the presented frame to a PNG after LUMEN_SHOT_MS and exit */
         static double ts; if (!ts) ts = t0;
         const char *d = getenv("LUMEN_SHOT_MS");
@@ -6218,7 +6246,6 @@ static void android_handle_back(App *app) {
 #include <execinfo.h>
 #endif
 #include <unistd.h>
-#include <signal.h>
 #include <setjmp.h>
 #include <pthread.h>
 #ifdef __APPLE__
@@ -6288,6 +6315,22 @@ int main(int argc, char **argv) {
     g_no_paint_only = getenv("LUMEN_NO_PAINT_ONLY") != NULL;
     g_main_thr = pthread_self();
     install_crash_handler();
+    const char *wpt_capture_path = getenv("LUMEN_WPT_CAPTURE");
+    if (wpt_capture_path && *wpt_capture_path) {
+        if (!env_hook(ENV_TESTDRIVER)) {
+            fprintf(stderr, "lumen: LUMEN_WPT_CAPTURE requires explicit LUMEN_TESTDRIVER mode\n");
+            return 2;
+        }
+        struct sigaction capture_action = {0};
+        capture_action.sa_handler = wpt_capture_signal;
+        sigemptyset(&capture_action.sa_mask);
+        capture_action.sa_flags = SA_RESTART;
+        if (sigaction(SIGUSR1, &capture_action, NULL) != 0) {
+            perror("lumen: install WPT capture signal");
+            return 2;
+        }
+        g_wpt_capture_path = wpt_capture_path;
+    }
     const char *start = argc > 1 ? argv[1] : "https://en.wikipedia.org/wiki/Web_browser";
     SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
 #if !defined(__ANDROID__) && !defined(__APPLE__)
@@ -6993,6 +7036,7 @@ int main(int argc, char **argv) {
         { Tab *act = a.t; double tn = now_ms(); for (int i = 0; i < a.ntabs; i++) { a.t = a.tabs[i]; if (a.t->limited) { a.t->budget = LMIN(a.t->budget + a.t->lim * (tn - a.t->bud_t), 100); a.t->bud_t = tn; if (a.t->budget < 0) continue; } if (a.t->cur && a.t->cur->js) { double c0 = now_ms(); js_tick(a.t->cur->js); double c1 = now_ms(); restyle(&a); double c2 = now_ms(); fire_img_events(a.t->cur); double c = now_ms() - c0; tr_js += c1 - c0; tr_restyle += c2 - c1; tr_img += now_ms() - c2; a.t->cpu_ms += c; if (a.t != act) tr_bg += c; if (a.t->limited) a.t->budget -= c; } } a.t = act; if (a.t->cur && a.t->cur->js) frames_tick(&a); }
         edit_sel_sync(&a);
         double lt2 = now_ms();
+        if (g_wpt_capture_path && g_wpt_capture_requested) { a.dirty = true; a.vonly = false; }
         bool rendered = a.dirty;
         if (a.dirty) { double r0 = now_ms(); render(&a); a.t->cpu_ms += now_ms() - r0; }
         if (lt0 < g_load_trace_until && now_ms() - lt0 >= 100) LOAD_TRACE("stall_ms=%.0f net_poll_ms=%.0f js_style_ms=%.0f (js=%.0f restyle=%.0f img=%.0f) render_ms=%.0f", now_ms() - lt0, lt1 - lt0, lt2 - lt1, tr_js, tr_restyle, tr_img, now_ms() - lt2);
