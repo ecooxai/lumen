@@ -60,11 +60,25 @@ int main(void) {
         "<div style='display:grid;position:relative;width:100px;height:90px;grid-template-rows:1fr 2fr'><div id='row-fr-one'></div><div id='row-fr-two'></div></div>"
         "<div style='display:grid;position:relative;width:100px;height:90px;grid-template-rows:1fr 2fr'><div style='min-height:60px'></div><div id='row-fr-min'></div></div>"
         "<div style='display:grid;position:relative;width:100px;height:80px;grid-template-rows:.25fr .25fr'><div></div><div id='row-fr-small'></div></div>"
+        "<div class='placement'><div id='span-first' style='grid-column-start:span 2;grid-column-end:3;grid-row-start:span 2;grid-row-end:3'></div></div>"
+        "<div class='placement'><div id='end-first' style='grid-column-end:3;grid-column-start:span 2;grid-row-end:3;grid-row-start:span 2'></div></div>"
+        "<div class='placement'><div id='span-shorthand' style='grid-column:span 2 / 3;grid-row:span 2 / 3'></div></div>"
+        "<div class='placement'><div id='span-named-count' style='grid-column-start:span col 2;grid-column-end:3;grid-row-start:span row 2;grid-row-end:3'></div></div>"
+        "<div class='placement'><div id='end-only' style='grid-column-end:3;grid-row-end:3'></div></div>"
+        "<div class='placement'><div id='end-span' style='grid-column:2 / span 2;grid-row:2 / span 2'></div></div>"
+        "<div class='placement'><div id='start-auto' style='grid-column:span 2 / 3;grid-column-start:auto;grid-row:span 2 / 3;grid-row-start:auto'></div></div>"
+        "<div class='placement'><div id='end-auto' style='grid-column:2 / span 2;grid-column-end:auto;grid-row:2 / span 2;grid-row-end:auto'></div></div>"
+        "<div class='placement'><div id='shorthand-reset' style='grid-column:1 / 3;grid-column:2;grid-row:1 / 3;grid-row:2'></div></div>"
+        "<div class='placement'><div id='reversed-lines' style='grid-column:3 / 1;grid-row:3 / 1'></div></div>"
+        "<div class='placement'><div id='double-span' style='grid-column:span 2 / span 3;grid-row:span 2 / span 3'></div></div>"
+        "<div class='placement'><div id='wide-reset' style='grid-column:span 2 / 3;grid-column-start:initial;grid-row:span 2 / 3;grid-row-start:unset'></div></div>"
+        "<div class='placement' style='grid-column:span 2 / 3;grid-row:span 2 / 3'><div id='wide-inherit' style='grid-column:inherit;grid-row:inherit'></div></div>"
         "</body></html>";
     html_parse(d, html, strlen(html));
     StyleEngine *e = style_engine_new(d);
     const char *css = "body{margin:0}.g{display:grid;position:relative;width:300px;height:200px;grid-template-columns:100px 100px;grid-template-rows:50px 50px;gap:10px}"
-        ".one{display:grid;position:relative;width:100px;height:60px;grid-template-columns:100px;grid-template-rows:60px}.item{width:20px;height:10px}";
+        ".one{display:grid;position:relative;width:100px;height:60px;grid-template-columns:100px;grid-template-rows:60px}.item{width:20px;height:10px}"
+        ".placement{display:grid;position:relative;width:300px;height:490px;grid-template-columns:[col] 50px [col] 100px [col] 150px [col];grid-template-rows:[row] 70px [row] 140px [row] 280px [row]}";
     style_engine_add_sheet(e, css_parse_sheet(css, strlen(css), d->url, 1, &e->media));
     style_recalc(e, &d->node, true);
     Layout *l = layout_new(); layout_run(l, d, 800, 2000);
@@ -82,6 +96,8 @@ int main(void) {
     check(d, "self-start", 80, 50, 20, 10);
     check(d, "self-end", 0, 0, 20, 10);
     check(d, "percent", 0, 0, 100, 30);
+    /* Chromium150 compatibility controls, not normative WPT proof: current
+       Grid1 10.2 / Grid2 11.2 differ for overflowing auto margins. */
     check(d, "overflow-auto", 0, 0, 140, 80);
     check(d, "overflow-rtl", -40, 0, 140, 80);
     check(d, "overflow-one", 0, -20, 140, 80);
@@ -104,6 +120,29 @@ int main(void) {
     check(d, "row-fr-two", 0, 30, 100, 60);
     check(d, "row-fr-min", 0, 60, 100, 30);
     check(d, "row-fr-small", 0, 20, 100, 20);
+    check(d, "span-first", 0, 0, 150, 210);
+    check(d, "end-first", 0, 0, 150, 210);
+    check(d, "span-shorthand", 0, 0, 150, 210);
+    check(d, "span-named-count", 0, 0, 150, 210);
+    check(d, "end-only", 50, 70, 100, 140);
+    check(d, "end-span", 50, 70, 250, 420);
+    check(d, "start-auto", 50, 70, 100, 140);
+    check(d, "end-auto", 50, 70, 100, 140);
+    check(d, "shorthand-reset", 50, 70, 100, 140);
+    check(d, "reversed-lines", 0, 0, 150, 210);
+    check(d, "double-span", 0, 0, 150, 210);
+    check(d, "wide-reset", 50, 70, 100, 140);
+    check(d, "wide-inherit", 0, 0, 150, 210);
+    Node *changing = doc_get_element_by_id(d, "span-first");
+    node_set_attr(changing, "style", "grid-column-end:3;grid-column-start:span 2;grid-row-end:3;grid-row-start:span 2");
+    style_recalc(e, &d->node, true); layout_run(l, d, 800, 2000);
+    check(d, "span-first", 0, 0, 150, 210);
+    node_set_attr(changing, "style", "grid-column-start:2;grid-column-end:auto;grid-row-start:2;grid-row-end:auto");
+    style_recalc(e, &d->node, true); layout_run(l, d, 800, 2000);
+    check(d, "span-first", 50, 70, 100, 140);
+    node_set_attr(changing, "style", "grid-column-end:3;grid-column-start:span 2;grid-row-end:3;grid-row-start:span 2");
+    style_recalc(e, &d->node, true); layout_run(l, d, 800, 2000);
+    check(d, "span-first", 0, 0, 150, 210);
     printf("grid alignment: %d geometry cases passed\n", geometry_checks);
     return 0;
 }

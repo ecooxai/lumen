@@ -38,7 +38,7 @@ ComputedStyle *style_new_default(void) {
     s->bg_origin = BG_PADDING_BOX; s->bg_clip = s->bg_color_clip = BG_BORDER_BOX; s->bg_layers = 1;
     s->transform_origin[0].pct = 50; s->transform_origin[1].pct = 50;
     s->filter_brightness = 1; s->caret_color = 0; s->fill = RGBA(0, 0, 0, 255); s->stroke_width = 1;
-    s->grid_col_span = s->grid_row_span = 1; s->grid_auto_rows = L_auto();
+    s->grid_auto_rows = L_auto();
     s->pointer_events = 1;
     return s;
 }
@@ -1112,13 +1112,28 @@ int css_parse_grid_tracks(const char *value, float em, float rem, const MediaCtx
     if (count < 0) { free(*out); *out = NULL; return 0; }
     return count;
 }
-static void parse_grid_line(const char *v, int *start, int *span) {
-    *start = 0; *span = 1;
-    char *s = xstrdup(v); char *slash = strchr(s, '/');
-    if (slash) *slash = 0;
-    char *a = str_trim(s);
-    if (str_istarts(a, "span")) *span = LMAX(1, atoi(a + 4)); else *start = atoi(a);
-    if (slash) { char *b = str_trim(slash + 1); if (str_istarts(b, "span")) *span = LMAX(1, atoi(b + 4)); else { int e = atoi(b); if (e > 0 && *start > 0 && e > *start) *span = e - *start; else if (e < 0 && *start > 0) *span = e; } }
+static GridLine parse_grid_component(const char *v) {
+    bool is_span = false; int number = 0;
+    for (const char *p = v; *p; ) {
+        while (isspace((unsigned char)*p)) p++;
+        const char *q = p; while (*q && !isspace((unsigned char)*q)) q++;
+        size_t n = (size_t)(q - p);
+        if (n == 4 && !strncasecmp(p, "span", 4)) is_span = true;
+        else if (n) {
+            char *end; long value = strtol(p, &end, 10);
+            if (end == q && end != p) number = (int)LMAX(-10000L, LMIN(value, 10000L));
+        }
+        p = q;
+    }
+    /* Named-line lookup remains a separate placement feature. Preserve the
+       numeric ordinal/span when an identifier accompanies it. */
+    return is_span ? (GridLine){ .span = LMAX(1, number) } : (GridLine){ .number = number };
+}
+static void parse_grid_line(const char *v, GridAxis *axis) {
+    char *s = xstrdup(v), *slash = strchr(s, '/');
+    if (slash) *slash++ = 0;
+    axis->start = parse_grid_component(s);
+    axis->end = slash ? parse_grid_component(slash) : (GridLine){0};
     free(s);
 }
 /* alen() also takes angles and times (for calc and transforms); a gap with one is invalid */
@@ -1461,6 +1476,17 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         else if (!strcmp(P, "text-align")) st->text_align = src->text_align;
         else if (!strcmp(P, "width")) st->width = src->width;
         else if (!strcmp(P, "height")) st->height = src->height;
+        else if (!strcmp(P, "grid-column-start")) { st->grid_column.start = src->grid_column.start; if (inherit) st->parent_sensitive = true; }
+        else if (!strcmp(P, "grid-column-end")) { st->grid_column.end = src->grid_column.end; if (inherit) st->parent_sensitive = true; }
+        else if (!strcmp(P, "grid-row-start")) { st->grid_row.start = src->grid_row.start; if (inherit) st->parent_sensitive = true; }
+        else if (!strcmp(P, "grid-row-end")) { st->grid_row.end = src->grid_row.end; if (inherit) st->parent_sensitive = true; }
+        else if (!strcmp(P, "grid-column")) { st->grid_column = src->grid_column; if (inherit) st->parent_sensitive = true; }
+        else if (!strcmp(P, "grid-row")) { st->grid_row = src->grid_row; if (inherit) st->parent_sensitive = true; }
+        else if (!strcmp(P, "grid-area")) {
+            st->grid_column = src->grid_column; st->grid_row = src->grid_row;
+            free(st->grid_area); st->grid_area = src->grid_area ? xstrdup(src->grid_area) : NULL;
+            if (inherit) st->parent_sensitive = true;
+        }
         else if (grid_tracks) {
             bool rows = !strcmp(P, "grid-template-rows");
             GridTrack **dst = rows ? &st->grid_rows : &st->grid_cols;
@@ -1641,31 +1667,33 @@ apply:
         else if (!strcmp(P, "grid-template-columns")) { free(st->grid_cols); st->grid_cols = NULL; st->grid_ncols = str_ieq(val, "none") ? 0 : parse_grid_tracks(&c, val, &st->grid_cols); }
         else if (!strcmp(P, "grid-template-rows")) { free(st->grid_rows); st->grid_rows = NULL; st->grid_nrows = str_ieq(val, "none") ? 0 : parse_grid_tracks(&c, val, &st->grid_rows); }
         else if (!strcmp(P, "grid") && !strstr(val, "auto-flow")) css_apply_decl(st, par, "grid-template", val, e, el);
-        else if (!strcmp(P, "grid-column-end") || !strcmp(P, "grid-row-end")) {
-            bool col = P[5] == 'c'; int *s0 = col ? &st->grid_col_start : &st->grid_row_start, *sp = col ? &st->grid_col_span : &st->grid_row_span;
-            int en = atoi(val);
-            if (str_istarts(val, "span")) *sp = LMAX(1, atoi(val + 4));
-            else if (en > 0 && *s0 > 0) *sp = en > *s0 ? en - *s0 : 1;
-            else if (en > 1) { *s0 = en - 1; *sp = 1; }
-            else if (en < 0 && *s0 > 0) *sp = en;
-        }
+        else if (!strcmp(P, "grid-column-end")) st->grid_column.end = parse_grid_component(val);
+        else if (!strcmp(P, "grid-row-end")) st->grid_row.end = parse_grid_component(val);
         else if (!strcmp(P, "grid-area") && strchr(val, '/')) {
             char *s = xstrdup(val), *part[4] = {0}; int np = 0;
             for (char *q = s; q && np < 4; ) { part[np++] = q; q = strchr(q, '/'); if (q) *q++ = 0; }
             char buf[160];
             snprintf(buf, sizeof buf, "%s%s%s", str_trim(part[0]), np > 2 ? " / " : "", np > 2 ? str_trim(part[2]) : "");
-            parse_grid_line(buf, &st->grid_row_start, &st->grid_row_span);
+            parse_grid_line(buf, &st->grid_row);
             snprintf(buf, sizeof buf, "%s%s%s", np > 1 ? str_trim(part[1]) : "auto", np > 3 ? " / " : "", np > 3 ? str_trim(part[3]) : "");
-            parse_grid_line(buf, &st->grid_col_start, &st->grid_col_span);
+            parse_grid_line(buf, &st->grid_column);
             free(st->grid_area); st->grid_area = NULL; free(s);
         }
         else if (!strcmp(P, "grid-template")) { if (strchr(val, '"') || strchr(val, '\'')) { free(st->grid_areas); st->grid_areas = parse_grid_areas(val); } char *sl = strchr(val, '/'); if (sl) { *sl = 0; css_apply_decl(st, par, "grid-template-rows", val, e, el); css_apply_decl(st, par, "grid-template-columns", sl + 1, e, el); } }
-        else if (!strcmp(P, "grid-column")) parse_grid_line(val, &st->grid_col_start, &st->grid_col_span);
-        else if (!strcmp(P, "grid-row")) parse_grid_line(val, &st->grid_row_start, &st->grid_row_span);
-        else if (!strcmp(P, "grid-column-start")) { if (str_istarts(val, "span")) st->grid_col_span = atoi(val + 4); else st->grid_col_start = atoi(val); }
-        else if (!strcmp(P, "grid-row-start")) { if (str_istarts(val, "span")) st->grid_row_span = atoi(val + 4); else st->grid_row_start = atoi(val); }
+        else if (!strcmp(P, "grid-column")) parse_grid_line(val, &st->grid_column);
+        else if (!strcmp(P, "grid-row")) parse_grid_line(val, &st->grid_row);
+        else if (!strcmp(P, "grid-column-start")) st->grid_column.start = parse_grid_component(val);
+        else if (!strcmp(P, "grid-row-start")) st->grid_row.start = parse_grid_component(val);
         else if (!strcmp(P, "grid-auto-rows")) alen(&c, val, &st->grid_auto_rows);
-        else if (!strcmp(P, "grid-area")) { free(st->grid_area); st->grid_area = NULL; int a = atoi(val); if (a > 0) st->grid_row_start = a; else if (isalpha((unsigned char)*val) || *val == '_' || *val == '-') { size_t k = strcspn(val, " /"); st->grid_area = xstrndup(val, k); } }
+        else if (!strcmp(P, "grid-area")) {
+            free(st->grid_area); st->grid_area = NULL;
+            st->grid_column = (GridAxis){0}; st->grid_row = (GridAxis){0};
+            st->grid_row.start = parse_grid_component(val);
+            if (!st->grid_row.start.number && !st->grid_row.start.span && !str_ieq(val, "auto") &&
+                (isalpha((unsigned char)*val) || *val == '_' || *val == '-')) {
+                size_t k = strcspn(val, " /"); st->grid_area = xstrndup(val, k);
+            }
+        }
         else if (!strcmp(P, "grid-template-areas")) { free(st->grid_areas); st->grid_areas = parse_grid_areas(val); }
         break;
     case 'h':
@@ -3717,7 +3745,7 @@ static bool inset_only(const ComputedStyle *a, const ComputedStyle *b) {
 static void debug_layout_change(const ComputedStyle *a, const ComputedStyle *b, const Node *node) {
     char out[512]; size_t n = 0; out[0] = 0;
 #define F(f) if (n < sizeof out - 40 && memcmp(&a->f, &b->f, sizeof a->f)) n += (size_t)snprintf(out + n, sizeof out - n, " %s", #f);
-    F(display) F(position) F(float_) F(clear) F(overflow_x) F(overflow_y) F(box_sizing) F(text_align) F(white_space) F(text_transform) F(font_style) F(list_style) F(flex_direction) F(flex_wrap) F(justify_content) F(align_items) F(align_self) F(align_content) F(justify_items) F(justify_self) F(vertical_align) F(text_overflow) F(word_break) F(overflow_wrap) F(direction) F(border_style) F(appearance) F(table_layout) F(border_collapse) F(container_type) F(resize) F(writing_mode) F(container_name) F(font_weight) F(order) F(font_size) F(line_height) F(line_height_normal) F(line_height_factor) F(letter_spacing) F(word_spacing) F(text_indent) F(flex_grow) F(flex_shrink) F(flex_basis) F(row_gap) F(column_gap) F(row_gap_l) F(column_gap_l) F(vertical_align_len) F(width) F(height) F(min_width) F(min_height) F(max_width) F(max_height) F(margin) F(padding) F(inset) F(border_width) F(border_radius) F(font_family) F(aspect_ratio) F(grid_auto_rows) F(grid_col_start) F(grid_col_span) F(grid_row_start) F(grid_row_span) F(line_clamp)
+    F(display) F(position) F(float_) F(clear) F(overflow_x) F(overflow_y) F(box_sizing) F(text_align) F(white_space) F(text_transform) F(font_style) F(list_style) F(flex_direction) F(flex_wrap) F(justify_content) F(align_items) F(align_self) F(align_content) F(justify_items) F(justify_self) F(vertical_align) F(text_overflow) F(word_break) F(overflow_wrap) F(direction) F(border_style) F(appearance) F(table_layout) F(border_collapse) F(container_type) F(resize) F(writing_mode) F(container_name) F(font_weight) F(order) F(font_size) F(line_height) F(line_height_normal) F(line_height_factor) F(letter_spacing) F(word_spacing) F(text_indent) F(flex_grow) F(flex_shrink) F(flex_basis) F(row_gap) F(column_gap) F(row_gap_l) F(column_gap_l) F(vertical_align_len) F(width) F(height) F(min_width) F(min_height) F(max_width) F(max_height) F(margin) F(padding) F(inset) F(border_width) F(border_radius) F(font_family) F(aspect_ratio) F(grid_auto_rows) F(grid_column) F(grid_row) F(line_clamp)
 #undef F
     if (a->has_transform != b->has_transform) n += (size_t)snprintf(out + n, sizeof out - n, " has_transform");
     if ((a->before != NULL) != (b->before != NULL) || (a->after != NULL) != (b->after != NULL)) n += (size_t)snprintf(out + n, sizeof out - n, " pseudo");

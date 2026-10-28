@@ -63,6 +63,10 @@ void css_position_try_free(struct ComputedStyle *t);
 const char *css_property_initial(const char *name);
 
 typedef struct GridTrack { Length size; float fr; Length min; } GridTrack;
+/* Preserve authored edges independently until layout knows the explicit grid.
+   Deriving a start/span during cascading loses start-side spans and order. */
+typedef struct GridLine { int number, span; } GridLine; /* both zero: auto */
+typedef struct GridAxis { GridLine start, end; } GridAxis;
 
 typedef struct ComputedStyle {
     int refs;
@@ -115,7 +119,7 @@ typedef struct ComputedStyle {
     float aspect_ratio;
     char *content;          /* for ::before/::after */
     int grid_ncols; GridTrack *grid_cols; int grid_nrows; GridTrack *grid_rows; Length grid_auto_rows;
-    int grid_col_start, grid_col_span, grid_row_start, grid_row_span;
+    GridAxis grid_column, grid_row;
     char *grid_areas;       /* template areas: cells space-separated, rows '/'-separated */
     char *grid_area;        /* named grid-area of an item */
     float filter_blur; float filter_brightness; float backdrop_blur;

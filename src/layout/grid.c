@@ -132,11 +132,34 @@ static float grid_item_offset(Box *c, bool horizontal, const char *alignment, bo
             if (a) c->m[low] = share;
             if (z) c->m[high] = share;
         }
-        /* Auto margins take precedence over self-alignment. On overflow the
-           zero margins keep the item at the container's start (also in RTL). */
+        /* Chromium150 compatibility: overflowing auto margins still suppress
+           self-alignment. Current Grid1 10.2 / Grid2 11.2 instead say overflow
+           follows box alignment; this is an explicit compatibility divergence.
+           Zero margins keep the item at the container's start (also in RTL). */
         return c->m[low] + (reverse && free_space < 0 ? free_space : 0);
     }
     return c->m[low] + grid_align_offset(alignment, reverse, grid_axis_reverse(c->st, horizontal), free_space);
+}
+
+/* CSS Grid 8.3/8.3.1: resolve numeric edges after the explicit grid is known.
+   Reversed definite lines are swapped; equal lines imply one track; a pair of
+   spans discards its end span. Leading implicit placement remains separate. */
+typedef struct GridPosition { int start, span; bool definite; } GridPosition;
+static int grid_line_index(int number, int explicit_tracks) {
+    number = LMAX(-1000, LMIN(number, 1000));
+    return number > 0 ? number - 1 : explicit_tracks + 1 + number;
+}
+static GridPosition grid_axis_position(GridAxis axis, int explicit_tracks) {
+    int span = axis.start.span ? axis.start.span : axis.end.span;
+    span = LMAX(1, LMIN(span, 1000));
+    bool first = axis.start.number != 0, last = axis.end.number != 0;
+    int start = first ? grid_line_index(axis.start.number, explicit_tracks) : 0;
+    int end = last ? grid_line_index(axis.end.number, explicit_tracks) : 0;
+    if (first && last) {
+        if (end < start) { int tmp = start; start = end; end = tmp; }
+        span = LMAX(1, LMIN(end - start, 1000));
+    } else if (last) start = end - span;
+    return (GridPosition){ start, span, first || last };
 }
 
 float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) {
@@ -163,9 +186,9 @@ float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
     /* Definite placement and the largest auto-placed span establish the
        implicit columns before row-major auto-placement runs. */
     for (Box *child = b->first; child; child = child->next) if (!child->abs) {
-        int span = child->st->grid_col_span > 0 ? LMIN(child->st->grid_col_span, 1000) : 1;
-        int start = child->st->grid_col_start > 0 ? LMIN(child->st->grid_col_start - 1, 999) : 0;
-        needed_columns = LMAX(needed_columns, LMIN(1000, start + span));
+        GridPosition pos = grid_axis_position(child->st->grid_column, explicit_columns);
+        int start = pos.definite ? LMAX(0, LMIN(pos.start, 999)) : 0;
+        needed_columns = LMAX(needed_columns, LMIN(1000, start + pos.span));
     }
     while (cols.n < needed_columns) {
         GridTrack next = n_auto_cols ? auto_cols[(cols.n - explicit_columns) % n_auto_cols] : one;
@@ -180,12 +203,12 @@ float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
         if (c->abs) { c->sx = cx; c->sy = cy; add_abs(L, c); continue; }
         c->bfc = true;
         const ComputedStyle *is = c->st;
-        int cs = is->grid_col_span < 0 ? LMAX(1, explicit_columns) : LMAX(1, LMIN(is->grid_col_span, nc));
-        int rs = LMAX(1, is->grid_row_span);
-        GI g = { c, -1, -1, rs, cs };
+        GridPosition column = grid_axis_position(is->grid_column, explicit_columns);
+        GridPosition row = grid_axis_position(is->grid_row, s->grid_nrows);
+        GI g = { c, -1, -1, row.span, LMIN(column.span, nc) };
         if (!(s->grid_areas && is->grid_area && area_lookup(s->grid_areas, is->grid_area, &g.r, &g.c, &g.rs, &g.cs))) {
-            if (is->grid_col_start > 0) { g.c = LMIN(is->grid_col_start - 1, nc - 1); if (is->grid_col_span < 0) g.cs = LMAX(1, explicit_columns + 1 + is->grid_col_span - g.c); }
-            if (is->grid_row_start > 0) g.r = is->grid_row_start - 1;
+            if (column.definite && column.start >= 0) g.c = LMIN(column.start, nc - 1);
+            if (row.definite && row.start >= 0) g.r = LMIN(row.start, 999);
         }
         if (g.c >= 0 && g.c + g.cs > nc) g.cs = nc - g.c;
         if (g.r >= 0 && g.c >= 0) occ_mark(&oc, g.r, g.c, g.rs, g.cs);

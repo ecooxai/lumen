@@ -1,0 +1,102 @@
+{
+  "iteration": 139,
+  "model": "GPT-6 Astra Pro",
+  "agent": "built-in standards_comparison",
+  "started_utc": "2026-10-28T10:19:40.227057+00:00",
+  "finished_utc": "2026-10-28T10:32:01Z",
+  "wall_interval_minutes": 12.3462,
+  "timing_note": "Wall interval from first completed staged patch through final supplemental gate; individual runner durations use monotonic clocks. Earlier investigation belongs to preceding rejected/provisional iterations.",
+  "assessed_whole_goal_score": 19,
+  "score_basis": "Existing whole-browser rubric; focused pass rates are not full WPT completion or Chromium parity.",
+  "binary_sha256": "0eaadad759884ea53612b0d3030c677b21b326eb00d0b454c399522137ab0546",
+  "source_record": "iteration139-source.json",
+  "patch_sha256": "4294fe7b100ac3fae6ab19eb259eb462fa1c918fe8630611324b6788286600d3",
+  "scope": "Independent native numeric start/end grid state, delayed placement resolution, CSS-wide reset/copy, order and transition controls.",
+  "focused": {
+    "urls": 16,
+    "baseline138_pass": 237,
+    "candidate139_pass": 252,
+    "assertions": 318,
+    "gains": 15,
+    "losses": 0,
+    "all_harnesses_ok": true,
+    "dynamic_placement_pass": 63,
+    "dynamic_placement_assertions": 88,
+    "prior15_holdout_pass": 189,
+    "prior15_holdout_assertions": 230,
+    "restored_original_cases": [
+      ".grid 13",
+      ".grid 16",
+      ".grid 40"
+    ]
+  },
+  "supplemental": {
+    "urls": 200,
+    "assertions": 3370,
+    "baseline128_pass": 1213,
+    "candidate139_pass": 1639,
+    "chromium_retained_pass": 3337,
+    "gains_from128": 426,
+    "losses_from128": 0,
+    "candidate_fully_passing_urls": 73,
+    "baseline_fully_passing_urls": 54,
+    "chromium_fully_passing_urls": 189,
+    "all_harnesses_ok": true,
+    "incremental136_gains": 15,
+    "incremental136_losses": 0
+  },
+  "native_ctest": {
+    "passed": 122,
+    "total": 122,
+    "geometry_checks": 52,
+    "elapsed_seconds": 48.137196790077724,
+    "evidence": "native139/ctest.log"
+  },
+  "guard_audits": {
+    "focused138": {
+      "sources_unchanged": true,
+      "remaining_cleanup_threads": [],
+      "events": {
+        "started_at_private_gate": 16,
+        "constructor_verified_and_acknowledged": 16,
+        "author_url_released": 16,
+        "exited": 16
+      }
+    },
+    "focused139": {
+      "sources_unchanged": true,
+      "remaining_cleanup_threads": [],
+      "events": {
+        "started_at_private_gate": 16,
+        "constructor_verified_and_acknowledged": 16,
+        "author_url_released": 16,
+        "exited": 16
+      }
+    },
+    "supplemental139": {
+      "sources_unchanged": true,
+      "remaining_cleanup_threads": [],
+      "events": {
+        "started_at_private_gate": 3,
+        "constructor_verified_and_acknowledged": 3,
+        "author_url_released": 3,
+        "exited": 3
+      }
+    }
+  },
+  "limitations": [
+    "Scoped acceptance only; binary139 also contains provisional native parser138, whose exact snapshot must remain available.",
+    "Named-line lookup, named-area versus later-longhand precedence, leading implicit tracks and full track sizing remain incomplete.",
+    "Overflow auto margins intentionally follow measured Chromium150; current Grid1 section10.2 and Grid2 section11.2 differ. Authored overflow geometry checks are compatibility controls.",
+    "Primary136 was compromised by a diagnostic transport incident and cancelled; it is not accepted broad-comparison evidence.",
+    "Legacy comparison.json coverage field is misnamed and must not be used; a versioned reporting layer will correct it without changing raw data."
+  ],
+  "selective_commit_provenance": {
+    "base_commit": "77ff20397f1a3e95c2feb21e9ce51b64aa89d30a",
+    "note": "This commit contains only independently accepted139 placement changes. Frozen139 also contains provisional138 parser changes; its complete exact source is retained separately and is not equated to this selective commit.",
+    "snapshot": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/progress/runtime/private-prepared/source-snapshots/iteration-139",
+    "source_manifest_sha256": "d364562030b481f6d4d68a80da91674d164925e88a96116460e9d423fc645292",
+    "verified_source_files": 555,
+    "mismatches": []
+  }
+}
