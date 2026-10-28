@@ -1,0 +1,95 @@
+{
+  "iteration": 143,
+  "start_utc": "2026-10-28T10:45:17.248392+00:00",
+  "start_evidence": "retained terminal9290 first staged patch metadata",
+  "end_utc": "2026-10-28T10:59:08.188417+00:00",
+  "elapsed_minutes": 13.849000416666666,
+  "agents": [
+    "standards_comparison implementation/validation",
+    "repository_lead independent review/build"
+  ],
+  "source": {
+    "iteration": 143,
+    "applied_utc": "2026-10-28T10:54:34.071758+00:00",
+    "patch_sha256": "8f0f44e59b3e48dd077575ee96172e8287e9cae87587826894128757a0ce021a",
+    "source_before": {
+      "src/layout/grid.c": "6b0661258500c479465da6242cd076e2debd3007c0642579c8b6a4184a9a153d",
+      "tests/test_grid_alignment.c": "e5c10646ff2c577115f8d6e9af9c08e81994947590b3825b175cb37431841c6e"
+    },
+    "source_after": {
+      "src/layout/grid.c": "c90da0b4ba0a39943a1454eab763165d20fac928f06aa7e80a8f8747fc0c73a0",
+      "tests/test_grid_alignment.c": "fd21a7d6bc80983d0495d3e2ceb3ebfa3bd09f436d4728c380c9074613ecbacc"
+    },
+    "added_geometry_checks": 23,
+    "retained_previous_geometry_checks": 52,
+    "total_geometry_checks": 75,
+    "scope": "Leading numeric implicit tracks, backwards cyclic auto-track sizing, and template-area explicit extent/unsized tracks"
+  },
+  "baseline_binary_sha256": "48e9b66b877c253f430d05215293c7e8bde384774986646f19f67df6bd82fd89",
+  "candidate_binary_sha256": "5fd18113719ff365507bd5c123e50efe64e2f3be87e79e2b0b0a0a63711927af",
+  "upstream_cohort": {
+    "baseline_observed_urls": 19,
+    "baseline_observed_subtests": 345,
+    "baseline_pass_subtests": 264,
+    "baseline_fully_passing_urls": 12,
+    "baseline_harness_ok_zero_subtests": 0,
+    "candidate_observed_urls": 19,
+    "candidate_observed_subtests": 345,
+    "candidate_pass_subtests": 299,
+    "candidate_fully_passing_urls": 15,
+    "candidate_harness_ok_zero_subtests": 0,
+    "chromium_observed_urls": 19,
+    "chromium_observed_subtests": 345,
+    "chromium_pass_subtests": 345,
+    "chromium_fully_passing_urls": 19,
+    "chromium_harness_ok_zero_subtests": 0,
+    "chromium_passing_subtests": 345,
+    "baseline_matches_chromium_pass": 264,
+    "candidate_matches_chromium_pass": 299,
+    "candidate_missing_chromium_assertions": 0,
+    "candidate_fully_matches_chromium_passing_urls": 15
+  },
+  "existing_identity_gains": 35,
+  "existing_identity_losses": 0,
+  "harness_statuses": {
+    "baseline": {
+      "OK": 19
+    },
+    "candidate": {
+      "OK": 19
+    },
+    "chromium": {
+      "OK": 19
+    }
+  },
+  "full_native_gate": {
+    "passed": 126,
+    "total": 126,
+    "exit": 0,
+    "started_utc": "2026-10-28T10:56:02.289067+00:00",
+    "finished_utc": "2026-10-28T10:56:47.426840+00:00",
+    "elapsed_s": 45.137790251057595,
+    "physical_tmp": "/tmp"
+  },
+  "native_geometry": {
+    "passed": 75,
+    "retained": 52,
+    "added": 23,
+    "added_actual_chromium_passed": 23
+  },
+  "remaining_cluster_counts": {
+    "orthogonal_baseline_alignment": 5,
+    "row_column_auto_flow": 6,
+    "named_line_dynamic_placement": 25,
+    "negative_position_named_lines_or_intrinsic_container_size": 10
+  },
+  "whole_goal_score": 19,
+  "scoped_score_proposal": 96,
+  "acceptance": "Accepted scoped repair after independent source review and focused/native gates; final combined broad acceptance remains pending.",
+  "standards": [
+    "https://drafts.csswg.org/css-grid-1/#auto-tracks",
+    "https://drafts.csswg.org/css-grid-1/#auto-placement-algo"
+  ],
+  "comparison_timing": "Correctness only; primary142 and native gates shared480%CPU budget, no performance claim.",
+  "scoped_score": 96
+}

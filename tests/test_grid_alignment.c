@@ -73,6 +73,7 @@ int main(void) {
         "<div class='placement'><div id='double-span' style='grid-column:span 2 / span 3;grid-row:span 2 / span 3'></div></div>"
         "<div class='placement'><div id='wide-reset' style='grid-column:span 2 / 3;grid-column-start:initial;grid-row:span 2 / 3;grid-row-start:unset'></div></div>"
         "<div class='placement' style='grid-column:span 2 / 3;grid-row:span 2 / 3'><div id='wide-inherit' style='grid-column:inherit;grid-row:inherit'></div></div>"
+        "<div style='display:grid;position:relative;width:400px;height:300px;justify-content:start;align-content:start;grid-template-columns:100px;grid-template-rows:50px;grid-auto-columns:20px;grid-auto-rows:30px;'><div id='leading' style='grid-column:-3;grid-row:-3'></div><div id='leading-anchor' style='grid-column:1;grid-row:1'></div><div id='leading-auto' style=''></div></div><div style='display:grid;position:relative;width:400px;height:300px;justify-content:start;align-content:start;grid-template-columns:100px;grid-template-rows:50px;grid-auto-columns:20px;grid-auto-rows:30px;grid-auto-columns:20px 40px 60px;grid-auto-rows:10px 30px 50px'><div id='cycle-first' style='grid-column:-5;grid-row:-5'></div><div id='cycle-middle' style='grid-column:-4;grid-row:-4'></div><div id='cycle-last' style='grid-column:-3;grid-row:-3'></div><div id='cycle-anchor' style='grid-column:1;grid-row:1'></div></div><div style='display:grid;position:relative;width:400px;height:300px;justify-content:start;align-content:start;grid-template-columns:100px;grid-template-rows:50px;grid-auto-columns:20px;grid-auto-rows:30px;grid-auto-columns:20px 40px 60px;grid-auto-rows:10px 30px 50px'><div id='leading-span' style='grid-column:span 2 / -2;grid-row:span 2 / -2'></div><div id='span-anchor' style='grid-column:1;grid-row:1'></div></div><div style='display:grid;position:relative;width:400px;height:300px;justify-content:start;align-content:start;grid-template-columns:100px;grid-template-rows:50px;grid-auto-columns:20px;grid-auto-rows:30px;grid-template-columns:none;grid-template-rows:none;justify-content:end;align-content:end'><div id='negative-only' style='grid-column:-2 / -1;grid-row:-2 / -1'></div></div><div style='display:grid;position:relative;width:400px;height:300px;justify-content:start;align-content:start;grid-template-columns:100px;grid-template-rows:50px;grid-auto-columns:20px;grid-auto-rows:30px;grid-template-areas:\"main\"'><div id='area-leading' style='grid-column:-3;grid-row:-3'></div><div id='area-anchor' style='grid-area:main'></div></div><div style='display:grid;position:relative;width:400px;height:300px;justify-content:start;align-content:start;grid-template-columns:100px;grid-template-rows:50px;grid-auto-columns:20px;grid-auto-rows:30px;grid-template-columns:none;grid-template-rows:none;grid-template-areas:\"a b\" \"c d\";grid-auto-columns:20px 40px;grid-auto-rows:30px 50px'><div id='unsized-leading' style='grid-column:-4;grid-row:-4'></div><div id='unsized-area' style='grid-area:d'></div><div id='unsized-trailing' style='grid-column:3;grid-row:3'></div></div><div style='display:grid;position:relative;width:400px;height:300px;justify-content:start;align-content:start;grid-template-columns:100px;grid-template-rows:50px;grid-auto-columns:20px;grid-auto-rows:30px;column-gap:5px;row-gap:7px'><div id='gap-leading' style='grid-column:-3;grid-row:-3'></div><div id='gap-anchor' style='grid-column:1;grid-row:1'></div></div><div style='display:grid;position:relative;width:400px;height:300px;justify-content:start;align-content:start;grid-template-columns:100px;grid-template-rows:50px;grid-auto-columns:20px;grid-auto-rows:30px;direction:rtl'><div id='rtl-leading' style='grid-column:-3;grid-row:-3'></div><div id='rtl-anchor' style='grid-column:1;grid-row:1'></div></div>"
         "</body></html>";
     html_parse(d, html, strlen(html));
     StyleEngine *e = style_engine_new(d);
@@ -143,6 +144,34 @@ int main(void) {
     node_set_attr(changing, "style", "grid-column-end:3;grid-column-start:span 2;grid-row-end:3;grid-row-start:span 2");
     style_recalc(e, &d->node, true); layout_run(l, d, 800, 2000);
     check(d, "span-first", 0, 0, 150, 210);
+    check(d, "leading", 0, 0, 20, 30);
+    check(d, "leading-anchor", 20, 30, 100, 50);
+    check(d, "leading-auto", 20, 0, 100, 30);
+    check(d, "cycle-first", 0, 0, 20, 10);
+    check(d, "cycle-middle", 20, 10, 40, 30);
+    check(d, "cycle-last", 60, 40, 60, 50);
+    check(d, "cycle-anchor", 120, 90, 100, 50);
+    check(d, "leading-span", 0, 0, 100, 80);
+    check(d, "span-anchor", 100, 80, 100, 50);
+    check(d, "negative-only", 380, 270, 20, 30);
+    check(d, "area-leading", 0, 0, 20, 30);
+    check(d, "area-anchor", 20, 30, 100, 50);
+    check(d, "unsized-leading", 0, 0, 40, 50);
+    check(d, "unsized-area", 60, 80, 40, 50);
+    check(d, "unsized-trailing", 100, 130, 20, 30);
+    check(d, "gap-leading", 0, 0, 20, 30);
+    check(d, "gap-anchor", 25, 37, 100, 50);
+    check(d, "rtl-leading", 380, 0, 20, 30);
+    check(d, "rtl-anchor", 280, 30, 100, 50);
+    Node *leading = doc_get_element_by_id(d, "leading");
+    node_set_attr(leading, "style", "grid-column:2;grid-row:2");
+    style_recalc(e, &d->node, true); layout_run(l, d, 800, 2000);
+    check(d, "leading", 100, 50, 20, 30);
+    check(d, "leading-anchor", 0, 0, 100, 50);
+    node_set_attr(leading, "style", "grid-column:-3;grid-row:-3");
+    style_recalc(e, &d->node, true); layout_run(l, d, 800, 2000);
+    check(d, "leading", 0, 0, 20, 30);
+    check(d, "leading-anchor", 20, 30, 100, 50);
     printf("grid alignment: %d geometry cases passed\n", geometry_checks);
     return 0;
 }

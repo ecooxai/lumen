@@ -31,6 +31,12 @@ static bool area_lookup(const char *areas, const char *name, int *r, int *c, int
     *r = r0; *c = c0; *rs = r1 - r0 + 1; *cs = c1 - c0 + 1; return true;
 }
 static int area_cols(const char *a) { int n = 1; for (; *a && *a != '/'; a++) if (*a == ' ') n++; return n; }
+static int area_rows(const char *a) { int n = 1; for (; *a; a++) if (*a == '/') n++; return n; }
+static GridTrack grid_auto_track(const GridTrack *pattern, int count, int offset) {
+    if (!count) return (GridTrack){ L_auto(), 0, L_auto() };
+    int index = offset % count;
+    return pattern[index < 0 ? index + count : index];
+}
 
 typedef struct { uint8_t *v; int rows, nc; } Occ;
 static bool occ_free(const Occ *o, int r, int c, int rs, int cs) {
@@ -143,7 +149,7 @@ static float grid_item_offset(Box *c, bool horizontal, const char *alignment, bo
 
 /* CSS Grid 8.3/8.3.1: resolve numeric edges after the explicit grid is known.
    Reversed definite lines are swapped; equal lines imply one track; a pair of
-   spans discards its end span. Leading implicit placement remains separate. */
+   spans discards its end span. Negative positions precede the explicit grid. */
 typedef struct GridPosition { int start, span; bool definite; } GridPosition;
 static int grid_line_index(int number, int explicit_tracks) {
     number = LMAX(-1000, LMIN(number, 1000));
@@ -159,14 +165,13 @@ static GridPosition grid_axis_position(GridAxis axis, int explicit_tracks) {
         if (end < start) { int tmp = start; start = end; end = tmp; }
         span = LMAX(1, LMIN(end - start, 1000));
     } else if (last) start = end - span;
-    return (GridPosition){ start, span, first || last };
+    return (GridPosition){ LMAX(-1000, LMIN(start, 999)), span, first || last };
 }
 
 float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) {
     const ComputedStyle *s = b->st;
     float cg = s->column_gap_l.pct ? res(s->column_gap_l, cw) : s->column_gap, rg = s->row_gap;
     int nc = s->grid_ncols; GridTrack *tracks = s->grid_cols;
-    GridTrack one = { L_auto(), 0, L_auto() };
     GridTrack *auto_cols = NULL, *auto_rows = NULL;
     int n_auto_cols = implicit_track_pattern(L, s, "grid-auto-columns", &auto_cols);
     int n_auto_rows = implicit_track_pattern(L, s, "grid-auto-rows", &auto_rows);
@@ -181,19 +186,37 @@ float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
         }
         vec_push(cols, t);
     }
-    if (s->grid_areas) { int an = area_cols(s->grid_areas); while (cols.n < an) vec_push(cols, one); }
-    int explicit_columns = cols.n, needed_columns = LMAX(1, explicit_columns);
-    /* Definite placement and the largest auto-placed span establish the
-       implicit columns before row-major auto-placement runs. */
+    int sized_columns = cols.n;
+    if (s->grid_areas) { int an = area_cols(s->grid_areas); while (cols.n < an) { GridTrack t = grid_auto_track(auto_cols, n_auto_cols, cols.n - sized_columns); vec_push(cols, t); } }
+    int explicit_columns = cols.n;
+    int explicit_rows = LMAX(s->grid_nrows, s->grid_areas ? area_rows(s->grid_areas) : 0);
+    int first_column = 0, last_column = explicit_columns, first_row = 0, last_row = explicit_rows, auto_span = 1;
+    /* Grid 8.5: establish both ends of the implicit grid before auto-placement.
+       Negative lines remain relative to the explicit grid, then every item is
+       shifted by the number of leading implicit tracks. */
     for (Box *child = b->first; child; child = child->next) if (!child->abs) {
-        GridPosition pos = grid_axis_position(child->st->grid_column, explicit_columns);
-        int start = pos.definite ? LMAX(0, LMIN(pos.start, 999)) : 0;
-        needed_columns = LMAX(needed_columns, LMIN(1000, start + pos.span));
+        GridPosition col = grid_axis_position(child->st->grid_column, explicit_columns);
+        GridPosition row = grid_axis_position(child->st->grid_row, explicit_rows);
+        if (col.definite) {
+            first_column = LMIN(first_column, col.start);
+            last_column = LMAX(last_column, LMIN(1000, col.start + col.span));
+        } else auto_span = LMAX(auto_span, col.span);
+        if (row.definite) {
+            first_row = LMIN(first_row, row.start);
+            last_row = LMAX(last_row, row.start + row.span);
+        }
     }
-    while (cols.n < needed_columns) {
-        GridTrack next = n_auto_cols ? auto_cols[(cols.n - explicit_columns) % n_auto_cols] : one;
-        vec_push(cols, next);
-    }
+    int leading_columns = -first_column, leading_rows = -first_row;
+    int needed_columns = LMAX(last_column - first_column, auto_span);
+    int existing_columns = cols.n;
+    vec_reserve(cols, needed_columns);
+    if (leading_columns) memmove(cols.v + leading_columns, cols.v, (size_t)existing_columns * sizeof *cols.v);
+    cols.n = needed_columns;
+    /* Grid 7.6: repeat forwards after the last explicitly sized track and
+       backwards before the explicit grid; no extra end track is introduced
+       solely because all definite items occupy negative positions. */
+    for (int i = 0; i < leading_columns; i++) cols.v[i] = grid_auto_track(auto_cols, n_auto_cols, i - leading_columns);
+    for (int i = leading_columns + existing_columns; i < cols.n; i++) cols.v[i] = grid_auto_track(auto_cols, n_auto_cols, i - leading_columns - sized_columns);
     nc = cols.n;
     /* items + placement */
     typedef struct { Box *b; int r, c, rs, cs; } GI;
@@ -204,11 +227,13 @@ float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
         c->bfc = true;
         const ComputedStyle *is = c->st;
         GridPosition column = grid_axis_position(is->grid_column, explicit_columns);
-        GridPosition row = grid_axis_position(is->grid_row, s->grid_nrows);
+        GridPosition row = grid_axis_position(is->grid_row, explicit_rows);
         GI g = { c, -1, -1, row.span, LMIN(column.span, nc) };
-        if (!(s->grid_areas && is->grid_area && area_lookup(s->grid_areas, is->grid_area, &g.r, &g.c, &g.rs, &g.cs))) {
-            if (column.definite && column.start >= 0) g.c = LMIN(column.start, nc - 1);
-            if (row.definite && row.start >= 0) g.r = LMIN(row.start, 999);
+        if (s->grid_areas && is->grid_area && area_lookup(s->grid_areas, is->grid_area, &g.r, &g.c, &g.rs, &g.cs)) {
+            g.c += leading_columns; g.r += leading_rows;
+        } else {
+            if (column.definite) g.c = LMIN(column.start + leading_columns, nc - 1);
+            if (row.definite) g.r = row.start + leading_rows;
         }
         if (g.c >= 0 && g.c + g.cs > nc) g.cs = nc - g.c;
         if (g.r >= 0 && g.c >= 0) occ_mark(&oc, g.r, g.c, g.rs, g.cs);
@@ -287,11 +312,12 @@ float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
     float *cx0 = xcalloc((size_t)nc + 1, sizeof(float));
     for (int i = 0; i < nc; i++) cx0[i + 1] = cx0[i] + cwid[i] + (i < nc - 1 ? cg : 0);
     int nr = 0; for (int k = 0; k < items.n; k++) nr = LMAX(nr, items.v[k].r + items.v[k].rs);
-    nr = LMAX(nr, s->grid_nrows);
+    nr = LMAX(nr, last_row + leading_rows);
     float *rh = xcalloc((size_t)nr + 1, sizeof(float));
     GridTrack *rows = xcalloc((size_t)nr + 1, sizeof(GridTrack));
     for (int i = 0; i < nr; i++) {
-        rows[i] = i < s->grid_nrows ? s->grid_rows[i] : n_auto_rows ? auto_rows[(i - s->grid_nrows) % n_auto_rows] : one;
+        int logical_row = i - leading_rows;
+        rows[i] = logical_row >= 0 && logical_row < s->grid_nrows ? s->grid_rows[logical_row] : grid_auto_track(auto_rows, n_auto_rows, logical_row < 0 ? logical_row : logical_row - s->grid_nrows);
         float fixed_height = track_fixed(&rows[i], chdef);
         if (fixed_height >= 0) rh[i] = fixed_height;
         else if (rows[i].min.kind == LK_LEN && len_def(rows[i].min, chdef)) rh[i] = res(rows[i].min, chdef);
