@@ -1,0 +1,17 @@
+[js log] FRAME_LOAD_CHECK {"index":0,"name":"DOMContentLoaded stays interactive before delayed frames complete","passed":true}
+[js log] FRAME_LOAD_CHECK {"index":1,"name":"parent load exposes the complete readyState","passed":true}
+[js log] FRAME_LOAD_CHECK {"index":2,"name":"parent load observes the fully navigated XML document","passed":true}
+[js log] FRAME_LOAD_CHECK {"index":3,"name":"parent load observes the fully navigated XHTML document","passed":true}
+[js log] FRAME_LOAD_CHECK {"index":4,"name":"XML element load precedes parent window load exactly once","passed":true}
+[js log] FRAME_LOAD_CHECK {"index":5,"name":"XHTML element load precedes parent window load exactly once","passed":true}
+[js log] FRAME_LOAD_CHECK {"index":6,"name":"parent load waits through a nested frame navigation","passed":true}
+[js log] FRAME_LOAD_CHECK {"index":7,"name":"nested element load waits for its descendant and fires once","passed":true}
+[js log] FRAME_LOAD_CHECK {"index":8,"name":"nested window load precedes its parent window load","passed":true}
+[js log] FRAME_LOAD_CHECK {"index":9,"name":"removed pending frames have no browsing context association","passed":true}
+[js log] FRAME_LOAD_CHECK {"index":10,"name":"a frame added after parent load still completes normally","passed":true}
+[js log] FRAME_LOAD_CHECK {"index":11,"name":"dynamic frame completion never redispatches parent window load","passed":true}
+[js log] FRAME_LOAD_CHECK {"index":12,"name":"complete readystatechange fires only once for this document","passed":true}
+[js log] FRAME_LOAD_CHECK {"index":13,"name":"a retired navigation never dispatches an iframe load","passed":true}
+[js log] FRAME_LOAD_RESULTS {"passed":14,"total":14,"order":{"dcl":"interactive","complete":1,"parentLoads":1,"xmlLoads":1,"xhtmlLoads":1,"nestedLoads":1,"nestedWindowLoads":1,"removedLoads":0}}
+jsrun: context 17.2ms, 2 scripts 29.9ms, dom_version 47
+RESULTS frame-load-order jsrun PASS (14/14 checks)

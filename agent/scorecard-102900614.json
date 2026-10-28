@@ -674,7 +674,7 @@
       }
     }
   ],
-  "updated_utc": "2026-10-28T23:47:18.582930+00:00",
+  "updated_utc": "2026-10-28T23:51:42.000312+00:00",
   "current_baseline_binary_sha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
   "full_official_wpt_pass_percent": null,
   "current_native_source_base_commit": "22359337f8036da7170fa0e06e4b486dfc5cd440",
@@ -865,6 +865,15 @@
       "total_session_seconds": 5557.124,
       "score": 45,
       "status": "Legacy incremental codecs candidate:178/178 and459119 sanitizer cases;90/103 fresh diagnostic variants pass"
+    },
+    {
+      "iteration": "102900614-010",
+      "started_utc": "2026-10-28T23:47:18.582930+00:00",
+      "updated_utc": "2026-10-28T23:51:42.000312+00:00",
+      "elapsed_seconds": 263.417,
+      "total_session_seconds": 5820.541,
+      "score": 45,
+      "status": "Queued child completion candidate:7/7 regression checks and26/26 fresh upstream stream variants"
     }
   ],
   "current_native_source_manifest": "agent/evidence/102900614-003/compiled-source-sha256.json",
@@ -901,6 +910,14 @@
       "evidence": "agent/evidence/102900614-009-legacy-codecs.json",
       "accepted": false,
       "note": "Native legacy streaming validated;90/103 diagnostic variants pass,1412unrun; fresh combined performance/soak pending."
+    },
+    {
+      "iteration": "102900614-010",
+      "binary_sha256": "4d81029fec2383cdb1e25bfe7b91fba65640f244e4564c19a344686f7ee5b5c5",
+      "source_manifest": "agent/evidence/102900614-010/compiled-source-sha256.json",
+      "evidence": "agent/evidence/102900614-010-frame-completion.json",
+      "accepted": false,
+      "note": "Queued child completion validated;26/26 upstream stream variants pass; fresh combined performance/soak pending."
     }
   ],
   "reference_qualification": {
@@ -912,10 +929,10 @@
     "standards_failures_retained": true
   },
   "latest_functional_candidate": {
-    "binary_sha256": "050b0160e0869c4ac9e840a1835403c7dbb678c90a49c3619e0acf3275d007b6",
-    "evidence": "agent/evidence/102900614-009-legacy-codecs.json",
-    "evidence_sha256": "252848416640057b620f6bb55b3b0271fea3e09831af8f15d382872f828ba7f8",
-    "stream_wpt": "agent/evidence/102900614-009/stream-wpt-review.json",
-    "stream_wpt_sha256": "071a2bf291349185b95b2ab8a88739d995f333a8e9044d280074c21ffdd86828"
+    "binary_sha256": "4d81029fec2383cdb1e25bfe7b91fba65640f244e4564c19a344686f7ee5b5c5",
+    "evidence": "agent/evidence/102900614-010-frame-completion.json",
+    "evidence_sha256": "7863befe49c1a3cb3ba2b0a518b139c346ccb5a91f4a53b50ff7e57794fded63",
+    "stream_wpt": "agent/evidence/102900614-010/stream-wpt-review.json",
+    "stream_wpt_sha256": "e8bbe9744c3141dd1ff2df6c10003a904c93a3a195b469f8455105e8a9efc90f"
   }
 }

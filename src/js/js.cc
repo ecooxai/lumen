@@ -1017,12 +1017,23 @@ void js_complete_document(JsCtx *c) {
     /* Discover parser-created frames before testing blockers. DOM access must
      * not determine whether a child navigation delays the document's load. */
     frames_scan(c);
+    /* A child document's completion is a task, not a callback nested inside
+     * appendChild/srcdoc processing. Keep the blocker until js_tick finishes
+     * the child, after its current script and microtask checkpoint. Initial
+     * about:blank insertion has explicit synchronous iframe-load semantics. */
+    if (c->parent && c->doc->url && strcmp(c->doc->url, "about:blank")) {
+        if (js_wakeup) js_wakeup();
+        return;
+    }
     finish_document_load(c);
 }
 
 double js_next_deadline(JsCtx *c) {
-    if (!c) return INFINITY;
+    if (!c || c->dead || js_window_is_closed(c->window_id)) return INFINITY;
     double d = INFINITY;
+    /* Wake only while a completion task is runnable. A parent blocked on an
+     * unfinished child or network request must not create an idle busy loop. */
+    if (c->document_load_pending && !frames_loading(c)) d = now_ms();
     // V8's asynchronous compiler posts its completion to the foreground task
     // runner. Wake while background work is pending so a dormant window does
     // not defer each promise continuation to the application's 1 s idle wait.

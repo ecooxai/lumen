@@ -1,0 +1,11 @@
+[js log] FRAME_LOAD_CHECK {"i":0,"name":"srcdoc load reaches a handler installed after append","ok":false,"error":"Error: check timeout"}
+[js log] FRAME_LOAD_CHECK {"i":1,"name":"srcdoc load runs after append and microtask checkpoint","ok":false,"error":"Error: expected \"append,microtask,load\", got \"load,append,microtask\""}
+[js log] FRAME_LOAD_CHECK {"i":2,"name":"removed srcdoc has no obsolete load event","ok":false,"error":"Error: expected 0, got 1"}
+[js log] FRAME_LOAD_CHECK {"i":3,"name":"replaced srcdoc dispatches only current document load","ok":false,"error":"Error: expected \"B\", got \"A,B\""}
+[js log] FRAME_LOAD_CHECK {"i":4,"name":"initial blank insertion preserves synchronous iframe load","ok":true}
+[js log] FRAME_LOAD_CHECK {"i":5,"name":"late blank handler does not redispatch completed initial load","ok":true}
+[js log] FRAME_LOAD_CHECK {"i":6,"name":"parent completion waits for srcdoc child completion task","ok":false,"error":"Error: expected \"append,child,parent\", got \"child,append,parent\""}
+[js log] FRAME_LOAD_RESULTS {"total":7,"passed":2,"failed":5}
+jsrun: context 17.6ms, 1 scripts 8.8ms, dom_version 47
+FRAME_LOAD_RECEIPT {"binarySHA256": "582aefb38f35e97167654b550a6afbe69c93b8998f990e3622adae0ad7bafbfa", "fixtureSHA256": "64edfda6febcfe6d4c634faeae0587024a4b5df57fdbd79746e2ed08f2694ed8", "htmlSHA256": "0b6c8fdd9b4466f87720ce4d5581844fcce787fbc00e6ad32e72ab37c21f16f6", "nestedSHA256": "752323f9a9243532894a93ba69393cc37caa5d7189462f8cdba16dedbb632492", "total": 7, "passed": 2, "failed": 5}
+RESULTS frame-load-tasks FAIL (2/7 checks)

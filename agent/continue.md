@@ -58,3 +58,7 @@ Native `4773b85d28d3b1a7c17a1beee5225abc5141bb4cec4b713d409464ebe42582e9` passes
 ## Checkpoint009 — legacy decoder candidate
 
 Native050b `050b0160e0869c4ac9e840a1835403c7dbb678c90a49c3619e0acf3275d007b6` passes178legacy checks,459119sanitizer cases, original1850 and fresh90/103 variants (25/26streams,65/77core).1412 of frozen1515 remain unrun. Cross-realm load still times out in this exact artifact; later frame fix must retain separate identity. Accepted733/score45 unchanged. See `agent/evidence/102900614-009-legacy-codecs.json`.
+
+## Checkpoint010 — queued frame completion
+
+Native4d81029 `4d81029fec2383cdb1e25bfe7b91fba65640f244e4564c19a344686f7ee5b5c5` passes7frame checks, existing lifecycle gates and26/26 pinned Encoding Streams variants (358 assertions). Other expanded groups are separate. Source is only src/js/js.cc; meta/body/XHR working changes are excluded. Accepted733/score45 unchanged; combined current-artifact resources, original suite and navigation soak remain required. See `agent/evidence/102900614-010-frame-completion.json`.

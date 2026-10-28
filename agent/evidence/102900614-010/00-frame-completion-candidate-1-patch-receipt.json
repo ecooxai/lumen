@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "taskId": "102900614",
+  "startedUTC": "2026-10-28T23:36:01.781363+00:00",
+  "sourceBaseCommit": "89660f30e044e1c3d700211d0b3910af545878ef",
+  "before": {
+    "src/js/js.cc": "6d3b89ce2960532dff22c5a888385a69152de26cff1cd8e1f2cd09099ce18d26"
+  },
+  "after": {
+    "src/js/js.cc": "ae8deb196729291c038dca13533808eb06e5c3ad236bf2d1ef815e8abe5f878b"
+  },
+  "fixture": "tests/test_frame_load_tasks.py",
+  "fixtureSHA256": "64edfda6febcfe6d4c634faeae0587024a4b5df57fdbd79746e2ed08f2694ed8",
+  "red": {
+    "passed": 2,
+    "total": 7,
+    "failed": 5,
+    "log": "output/session-102900614/frame-load-tasks-red-1.log",
+    "logSHA256": "b9884bbfebee8dad61deaaef6029f4de7edc36cc5e111fcf30550492623b4bfc",
+    "monitor": "output/session-102900614/frame-load-tasks-red-1.json",
+    "monitorSHA256": "5948ba1ccf6153ccc62d3204bf23620827c5a4a4d27d9e645b42bba0740e76b9"
+  },
+  "scope": "Child non-about:blank document completion is delivered on the host event loop, with existing removal/replacement/parent blockers. Initial blank insertion stays synchronous. This does not implement fully asynchronous srcdoc navigation/parsing.",
+  "finishedUTC": "2026-10-28T23:36:01.793168+00:00"
+}

@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "binarySHA256": "4d81029fec2383cdb1e25bfe7b91fba65640f244e4564c19a344686f7ee5b5c5",
+  "scope": "Unchanged26 Encoding Streams/window/dedicated-worker variants, including IDL; subset of frozen1515 inventory",
+  "recorded": 26,
+  "fullyPassing": 26,
+  "frozenScheduledVariants": 1515,
+  "passingPercentOfRun": 100.0,
+  "assertions": {
+    "PASS": 358
+  },
+  "fullOfficialWptPassRate": null,
+  "knownLimits": [
+    "This reviewed snapshot contains only the26 Encoding Streams variants. Other groups are running separately and are not combined here.",
+    "No original1850 rerun is claimed for this exact frame artifact by this checkpoint.",
+    "Not complete asynchronous parsing/navigation or comprehensive frame conformance."
+  ]
+}

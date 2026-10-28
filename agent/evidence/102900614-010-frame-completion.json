@@ -1,0 +1,246 @@
+{
+  "iteration": "102900614-010",
+  "started_utc": "2026-10-28T23:47:18.582930+00:00",
+  "updated_utc": "2026-10-28T23:51:42.000312+00:00",
+  "elapsed_seconds": 263.417,
+  "total_session_seconds": 5820.541,
+  "score": 45,
+  "status": "Queued child completion candidate:7/7 regression checks and26/26 fresh upstream stream variants",
+  "native_artifact_promoted": false,
+  "accepted_native_unchanged": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
+  "candidate_binary_sha256": "4d81029fec2383cdb1e25bfe7b91fba65640f244e4564c19a344686f7ee5b5c5",
+  "candidate_jsrun_sha256": "2f3170840352af15bbe42d5222f8e021013d385f96f3e80a293dc54f6201d0f0",
+  "candidate_source_manifest": "agent/evidence/102900614-010/compiled-source-sha256.json",
+  "red": {
+    "passed": 2,
+    "total": 7
+  },
+  "green": {
+    "passed": 7,
+    "total": 7,
+    "existing_load_order": 14,
+    "microtask_realm": 35,
+    "native_frame_removal": true,
+    "native_window_lifecycle": true,
+    "text_streams": 74,
+    "transfer": 68,
+    "legacy_codecs": 178,
+    "build_seconds": 4.106,
+    "all_build_test_seconds": 16.046
+  },
+  "diagnostic_wpt": {
+    "schema": 1,
+    "binarySHA256": "4d81029fec2383cdb1e25bfe7b91fba65640f244e4564c19a344686f7ee5b5c5",
+    "scope": "Unchanged26 Encoding Streams/window/dedicated-worker variants, including IDL; subset of frozen1515 inventory",
+    "recorded": 26,
+    "fullyPassing": 26,
+    "frozenScheduledVariants": 1515,
+    "passingPercentOfRun": 100.0,
+    "assertions": {
+      "PASS": 358
+    },
+    "fullOfficialWptPassRate": null,
+    "knownLimits": [
+      "This reviewed snapshot contains only the26 Encoding Streams variants. Other groups are running separately and are not combined here.",
+      "No original1850 rerun is claimed for this exact frame artifact by this checkpoint.",
+      "Not complete asynchronous parsing/navigation or comprehensive frame conformance."
+    ]
+  },
+  "evidence": [
+    {
+      "source": "output/session-102900614/frame-completion-candidate-1/patch-receipt.json",
+      "committed": "agent/evidence/102900614-010/00-frame-completion-candidate-1-patch-receipt.json",
+      "sha256": "1fbc9deb2ef2c101477369aaad86da4d30bb0b627cd75ce2b90e6a0d83690142",
+      "bytes": 1192
+    },
+    {
+      "source": "output/session-102900614/frame-completion-green-1/summary.json",
+      "committed": "agent/evidence/102900614-010/01-frame-completion-green-1-summary.json",
+      "sha256": "2c2489bd8608c63ba970fcaed4f4f21207a9b4fef56d72a0166740fcfb075090",
+      "bytes": 13092
+    },
+    {
+      "source": "output/session-102900614/frame-completion-green-1/compiled-source-sha256.json",
+      "committed": "agent/evidence/102900614-010/02-frame-completion-green-1-compiled-source-sha256.json",
+      "sha256": "7efc7cceb92ae8f9f0fa4779d6c9984f1c81c3616a0aabafaed947bf15a56f47",
+      "bytes": 15370
+    },
+    {
+      "source": "output/session-102900614/frame-load-tasks-red-1.json",
+      "committed": "agent/evidence/102900614-010/03-session-102900614-frame-load-tasks-red-1.json",
+      "sha256": "5948ba1ccf6153ccc62d3204bf23620827c5a4a4d27d9e645b42bba0740e76b9",
+      "bytes": 2058
+    },
+    {
+      "source": "output/session-102900614/frame-load-tasks-red-1.log",
+      "committed": "agent/evidence/102900614-010/04-session-102900614-frame-load-tasks-red-1.log",
+      "sha256": "b9884bbfebee8dad61deaaef6029f4de7edc36cc5e111fcf30550492623b4bfc",
+      "bytes": 1583
+    },
+    {
+      "source": "output/session-102900614/frame-load-tasks-red-1.csv",
+      "committed": "agent/evidence/102900614-010/05-session-102900614-frame-load-tasks-red-1.csv",
+      "sha256": "40f6127d1beaf73575a35ba381ceab9a903188cb00caf443e627def449afb29a",
+      "bytes": 105
+    },
+    {
+      "source": "output/session-102900614/wpt-frame-native-1/cohort.json",
+      "committed": "agent/evidence/102900614-010/06-wpt-frame-native-1-cohort.json",
+      "sha256": "debff73b6a8ebb70857189f2bf9c8b8a6ad4bdacdc6e795b0707553ff16aefa9",
+      "bytes": 1106604
+    },
+    {
+      "source": "output/session-102900614/wpt-frame-native-1/encoding-streams/run.json",
+      "committed": "agent/evidence/102900614-010/07-encoding-streams-run.json",
+      "sha256": "d3ea681979b870a12f2f852d4266f58f834bb1d4e638557282b5e0d2aacb7f46",
+      "bytes": 11990
+    },
+    {
+      "source": "output/session-102900614/wpt-frame-native-1/encoding-streams/schedule.json",
+      "committed": "agent/evidence/102900614-010/08-encoding-streams-schedule.json",
+      "sha256": "4eb5134ee561a6c86181f72d8d821557965d0c89d421f9ef6d6b1a1b3b59a08a",
+      "bytes": 10971
+    },
+    {
+      "source": "output/session-102900614/wpt-frame-native-1/encoding-streams/results.jsonl",
+      "committed": "agent/evidence/102900614-010/09-encoding-streams-results.jsonl",
+      "sha256": "9a094b12aaa4e365cee6f0aac56020082d5033c01559fc65c388b6ea4fd134b6",
+      "bytes": 101658
+    },
+    {
+      "source": "output/session-102900614/wpt-frame-native-1/encoding-streams/summary.json",
+      "committed": "agent/evidence/102900614-010/10-encoding-streams-summary.json",
+      "sha256": "2f22b13c5ac3f958442a6d1a65aeec269ef6e0c0290807376fcab1707b902ee4",
+      "bytes": 1862
+    },
+    {
+      "source": "output/session-102900614/frame-completion-green-1/build.json",
+      "committed": "agent/evidence/102900614-010/11-frame-completion-green-1-build.json",
+      "sha256": "7184dfb95f929fce9848f12adb28472d83562a0fb1044a6ea3c26b56c4086d28",
+      "bytes": 2042
+    },
+    {
+      "source": "output/session-102900614/frame-completion-green-1/build.log",
+      "committed": "agent/evidence/102900614-010/12-frame-completion-green-1-build.log",
+      "sha256": "6579bab2aab217831bf783a8290fe1c40e8a4ce69be8b622c875e6f4ada64b9a",
+      "bytes": 16439
+    },
+    {
+      "source": "output/session-102900614/frame-completion-green-1/frame-load-tasks.json",
+      "committed": "agent/evidence/102900614-010/13-frame-completion-green-1-frame-load-tasks.json",
+      "sha256": "53b8f3ccad7c07161a0e99ad1c5f2f4d03721847881a3341dba9afe4f9dd370d",
+      "bytes": 2004
+    },
+    {
+      "source": "output/session-102900614/frame-completion-green-1/frame-load-tasks.log",
+      "committed": "agent/evidence/102900614-010/14-frame-completion-green-1-frame-load-tasks.log",
+      "sha256": "4261a91d5a9967a700da714929f160a6d01b68105b82f7e940da4a8472b40b42",
+      "bytes": 1305
+    },
+    {
+      "source": "output/session-102900614/frame-completion-green-1/frame-load-order.json",
+      "committed": "agent/evidence/102900614-010/15-frame-completion-green-1-frame-load-order.json",
+      "sha256": "bdc3dbfd4d4640be5a6a2d78670f76708601cfd51e807c4294a8f907da08a030",
+      "bytes": 2017
+    },
+    {
+      "source": "output/session-102900614/frame-completion-green-1/frame-load-order.log",
+      "committed": "agent/evidence/102900614-010/16-frame-completion-green-1-frame-load-order.log",
+      "sha256": "906b01c99a6c075e75d06b1cbb14684fabc4744ae1dc67bacf745e0eb113ad8e",
+      "bytes": 1954
+    },
+    {
+      "source": "output/session-102900614/frame-completion-green-1/frame-microtask-realm.json",
+      "committed": "agent/evidence/102900614-010/17-frame-completion-green-1-frame-microtask-realm.json",
+      "sha256": "47b3da2420ea89a2868b050f72d6aca78ca81d935582963387c66ef6674c294c",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/frame-completion-green-1/frame-microtask-realm.log",
+      "committed": "agent/evidence/102900614-010/18-frame-completion-green-1-frame-microtask-realm.log",
+      "sha256": "16296aeffb9bb6ab7a76395db9b994c72713ffab9697c29b7d23809e8315397b",
+      "bytes": 4252
+    },
+    {
+      "source": "output/session-102900614/frame-completion-green-1/test_frame_removal.json",
+      "committed": "agent/evidence/102900614-010/19-frame-completion-green-1-test_frame_removal.json",
+      "sha256": "6adf909142bdd23b46167eeedf85f8f48937e67dad11665577d041b48b8ee713",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/frame-completion-green-1/test_frame_removal.log",
+      "committed": "agent/evidence/102900614-010/20-frame-completion-green-1-test_frame_removal.log",
+      "sha256": "f5d82bab3b9998a106ee93358cab945db2a1cea7be7d8807b1be409863d34414",
+      "bytes": 1570
+    },
+    {
+      "source": "output/session-102900614/frame-completion-green-1/test_window_lifecycle.json",
+      "committed": "agent/evidence/102900614-010/21-frame-completion-green-1-test_window_lifecycle.json",
+      "sha256": "e57ef6aaa7f0b3a9e0782189101f535f288410153f190951bee6753bb0cfef0a",
+      "bytes": 2036
+    },
+    {
+      "source": "output/session-102900614/frame-completion-green-1/test_window_lifecycle.log",
+      "committed": "agent/evidence/102900614-010/22-frame-completion-green-1-test_window_lifecycle.log",
+      "sha256": "fd8a9b1aaf8b5717c738989c67e5e5fba32fe53f7fdc672012931923fc2c3b32",
+      "bytes": 47
+    },
+    {
+      "source": "output/session-102900614/frame-completion-green-1/text-streams.json",
+      "committed": "agent/evidence/102900614-010/23-frame-completion-green-1-text-streams.json",
+      "sha256": "f13247d44d01aff56e3c363af1b8055390a638cc654c144cdb4e8c18e97ce680",
+      "bytes": 2004
+    },
+    {
+      "source": "output/session-102900614/frame-completion-green-1/text-streams.log",
+      "committed": "agent/evidence/102900614-010/24-frame-completion-green-1-text-streams.log",
+      "sha256": "604cb6c2292da8a2be52f4ddca613274ec9fdf8bbc9878ce328394aebaf4e838",
+      "bytes": 10271
+    },
+    {
+      "source": "output/session-102900614/frame-completion-green-1/message-transfer.json",
+      "committed": "agent/evidence/102900614-010/25-frame-completion-green-1-message-transfer.json",
+      "sha256": "7c3d3ccaa8c0ee6a455ac8021f97d5271a91736f365f647e5bc544c7ef75fd76",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/frame-completion-green-1/message-transfer.log",
+      "committed": "agent/evidence/102900614-010/26-frame-completion-green-1-message-transfer.log",
+      "sha256": "8c61e813283399d50de8b837868ba9cc54c90da7691d7a4c1b14f118e99c41d9",
+      "bytes": 10031
+    },
+    {
+      "source": "output/session-102900614/frame-completion-green-1/legacy-codecs.json",
+      "committed": "agent/evidence/102900614-010/27-frame-completion-green-1-legacy-codecs.json",
+      "sha256": "74429d9d739146b5ceab139b97fb306bf3226076fcade69ab198f2266783a24a",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/frame-completion-green-1/legacy-codecs.log",
+      "committed": "agent/evidence/102900614-010/28-frame-completion-green-1-legacy-codecs.log",
+      "sha256": "38bfc7f8e0fb6d54455b4f3fa277e0f4e4640f0c9d3311c423844b0636849cff",
+      "bytes": 24109
+    }
+  ],
+  "raw_byte_preservation": [
+    "agent/evidence/102900614-010/04-session-102900614-frame-load-tasks-red-1.log",
+    "agent/evidence/102900614-010/05-session-102900614-frame-load-tasks-red-1.csv",
+    "agent/evidence/102900614-010/12-frame-completion-green-1-build.log",
+    "agent/evidence/102900614-010/14-frame-completion-green-1-frame-load-tasks.log",
+    "agent/evidence/102900614-010/16-frame-completion-green-1-frame-load-order.log",
+    "agent/evidence/102900614-010/18-frame-completion-green-1-frame-microtask-realm.log",
+    "agent/evidence/102900614-010/20-frame-completion-green-1-test_frame_removal.log",
+    "agent/evidence/102900614-010/22-frame-completion-green-1-test_window_lifecycle.log",
+    "agent/evidence/102900614-010/24-frame-completion-green-1-text-streams.log",
+    "agent/evidence/102900614-010/26-frame-completion-green-1-message-transfer.log",
+    "agent/evidence/102900614-010/28-frame-completion-green-1-legacy-codecs.log"
+  ],
+  "implementation": "Defer non-initial-blank child completion to the event loop; preserve parent blockers, synchronous initial about:blank, removal/replacement cancellation, and avoid immediate deadlines for dead or closed realms.",
+  "limits": [
+    "This reviewed snapshot contains only the26 Encoding Streams variants. Other groups are running separately and are not combined here.",
+    "No original1850 rerun is claimed for this exact frame artifact by this checkpoint.",
+    "Not complete asynchronous parsing/navigation or comprehensive frame conformance.",
+    "Fresh combined resources/navigation soak and same signed IPA execution remain pending."
+  ],
+  "model_compute_duration": "Unavailable; parallel worker wall times are not summed"
+}

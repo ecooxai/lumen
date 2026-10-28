@@ -221,3 +221,10 @@ Checkpoint007 commit infrastructure follow-up `2026-10-28T23:29:47.289388+00:00`
 - Frozen legacy fixture **14/178 RED →178/178 GREEN**; codec170,streams74,transfer68,document78 and existing native encoding/encoder/URL gates remain green. AddressSanitizer/UBSan **459,119 cases** pass with44-byte persistent decoder state. Build9.106s; all build/test stages20.3s under1Hz monitoring, reusing prebuilt V8.
 - Exact050b original upstream **6/6 files,1850/1850 assertions** pass in9.234s. Fresh pinned diagnostic **90/103 variants fully pass (87.379%)**: streams25/26,core65/77;23,408 passed assertions,235 failed assertions,2timeouts,**1,412 unrun of1,515**. Full official WPT rate remains unknown.
 - Known iframe/body/meta/XHR failures and fatalUTF8 streaming cases remain visible. No historical207/80a measurements or later frame improvements are mixed into050b. Source/receipts `agent/evidence/102900614-009-legacy-codecs.json`. Current performance/soak and same-IPA gates remain pending.
+
+## 102900614-010 — queued child-document completion
+
+- Start `2026-10-28T23:47:18.582930+00:00`; end `2026-10-28T23:51:42.000312+00:00`; checkpoint `263.417s`; total session `5820.541s`. Accepted **45/100**, artifact733 unchanged.
+- Frozen frame regression **2/7 RED →7/7 GREEN**; existing load order14, microtask realm35, native frame-removal/window-lifecycle gates, streams74, transfer68 and legacy178 pass. Build4.106s; nine build/test stages16.046s under1Hz monitoring, with prebuilt V8 reused. Short tests do not establish performance.
+- Exact4d81029 upstream **26/26 Encoding Streams variants and358/358 assertions** pass in13.355s, including the formerly timed-out iframe realm cases. This subset does not establish a full WPT passrate; other groups are recorded separately. No original1850 rerun on4d is claimed here.
+- Initial about:blank remains synchronous; child completion now waits for its task and retains parent blocking/removal/replacement guards. Dead or closed realms do not schedule immediate completion loops. This is not comprehensive asynchronous frame parsing/navigation. Evidence `agent/evidence/102900614-010-frame-completion.json`.
