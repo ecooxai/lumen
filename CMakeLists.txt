@@ -293,12 +293,29 @@ if(APPLE)
     endforeach()
 endif()
 
-file(GLOB PRELUDE_SOURCES CONFIGURE_DEPENDS src/js/prelude/*.js src/js/shared/*.js src/js/lazy/*.js)
+file(GLOB PRELUDE_SOURCES CONFIGURE_DEPENDS src/js/prelude/*.js)
+file(GLOB SHARED_JS_SOURCES CONFIGURE_DEPENDS src/js/shared/*.js)
+file(GLOB LAZY_JS_SOURCES CONFIGURE_DEPENDS src/js/lazy/*.js)
+list(APPEND PRELUDE_SOURCES ${SHARED_JS_SOURCES} ${LAZY_JS_SOURCES})
 set(EMBEDDED_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
-add_custom_command(OUTPUT "${EMBEDDED_DIR}/prelude.inc" "${EMBEDDED_DIR}/icon.inc" "${EMBEDDED_DIR}/newtab.inc" "${EMBEDDED_DIR}/url_shared.inc" "${EMBEDDED_DIR}/crypto_shared.inc" "${EMBEDDED_DIR}/quota_shared.inc" "${EMBEDDED_DIR}/encoding_shared.inc" "${EMBEDDED_DIR}/abort_shared.inc" "${EMBEDDED_DIR}/observable_shared.inc" "${EMBEDDED_DIR}/streams_shared.inc" "${EMBEDDED_DIR}/event_shared.inc" "${EMBEDDED_DIR}/domexception_shared.inc" "${EMBEDDED_DIR}/editing_lazy.inc" "${EMBEDDED_DIR}/temporal_lazy.inc" "${EMBEDDED_DIR}/cache_shared.inc" "${EMBEDDED_DIR}/urlpattern_shared.inc" "${EMBEDDED_DIR}/compression_shared.inc" "${EMBEDDED_DIR}/fetch_shared.inc" "${EMBEDDED_DIR}/file_shared.inc" "${EMBEDDED_DIR}/xhr_shared.inc" "${EMBEDDED_DIR}/idb_shared.inc" "${EMBEDDED_DIR}/color_shared.inc" "${EMBEDDED_DIR}/canvas2d_shared.inc" "${EMBEDDED_DIR}/fontface_shared.inc" "${EMBEDDED_DIR}/safecoll_shared.inc" "${EMBEDDED_DIR}/webgl_shared.inc" "${EMBEDDED_DIR}/perf_shared.inc" "${EMBEDDED_DIR}/broadcast_shared.inc" "${EMBEDDED_DIR}/public_suffix_list.inc"
+# A single target owns every generated include. The generator writes only changed
+# bytes; declaring multiple OUTPUTs makes Unix Makefiles touch all secondary
+# outputs after a prelude change, needlessly rebuilding worker/native code. This
+# inexpensive check also recreates a missing include on both Make and Ninja.
+set(EMBEDDED_OUTPUTS "${EMBEDDED_DIR}/prelude.inc" "${EMBEDDED_DIR}/icon.inc" "${EMBEDDED_DIR}/newtab.inc" "${EMBEDDED_DIR}/public_suffix_list.inc")
+foreach(source IN LISTS SHARED_JS_SOURCES)
+    get_filename_component(name "${source}" NAME_WE)
+    list(APPEND EMBEDDED_OUTPUTS "${EMBEDDED_DIR}/${name}_shared.inc")
+endforeach()
+foreach(source IN LISTS LAZY_JS_SOURCES)
+    get_filename_component(name "${source}" NAME_WE)
+    list(APPEND EMBEDDED_OUTPUTS "${EMBEDDED_DIR}/${name}_lazy.inc")
+endforeach()
+add_custom_target(lumen_embedded
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tools/generate_embedded.py" --root "${CMAKE_CURRENT_SOURCE_DIR}" --output-dir "${EMBEDDED_DIR}"
-    DEPENDS ${PRELUDE_SOURCES} assets/icon/lumen-256.png assets/data/public_suffix_list.dat assets/data/public_suffix_list.LICENSE assets/data/public_suffix_list.metadata.json src/app/newtab.html tools/generate_embedded.py VERBATIM)
-add_custom_target(lumen_embedded DEPENDS "${EMBEDDED_DIR}/prelude.inc" "${EMBEDDED_DIR}/icon.inc" "${EMBEDDED_DIR}/newtab.inc" "${EMBEDDED_DIR}/url_shared.inc" "${EMBEDDED_DIR}/crypto_shared.inc" "${EMBEDDED_DIR}/quota_shared.inc" "${EMBEDDED_DIR}/encoding_shared.inc" "${EMBEDDED_DIR}/abort_shared.inc" "${EMBEDDED_DIR}/observable_shared.inc" "${EMBEDDED_DIR}/streams_shared.inc" "${EMBEDDED_DIR}/event_shared.inc" "${EMBEDDED_DIR}/domexception_shared.inc" "${EMBEDDED_DIR}/editing_lazy.inc" "${EMBEDDED_DIR}/temporal_lazy.inc" "${EMBEDDED_DIR}/cache_shared.inc" "${EMBEDDED_DIR}/urlpattern_shared.inc" "${EMBEDDED_DIR}/compression_shared.inc" "${EMBEDDED_DIR}/fetch_shared.inc" "${EMBEDDED_DIR}/file_shared.inc" "${EMBEDDED_DIR}/xhr_shared.inc" "${EMBEDDED_DIR}/idb_shared.inc" "${EMBEDDED_DIR}/color_shared.inc" "${EMBEDDED_DIR}/canvas2d_shared.inc" "${EMBEDDED_DIR}/fontface_shared.inc" "${EMBEDDED_DIR}/safecoll_shared.inc" "${EMBEDDED_DIR}/webgl_shared.inc" "${EMBEDDED_DIR}/perf_shared.inc" "${EMBEDDED_DIR}/broadcast_shared.inc" "${EMBEDDED_DIR}/public_suffix_list.inc")
+    BYPRODUCTS ${EMBEDDED_OUTPUTS}
+    DEPENDS ${PRELUDE_SOURCES} assets/icon/lumen-256.png assets/data/public_suffix_list.dat assets/data/public_suffix_list.LICENSE assets/data/public_suffix_list.metadata.json src/app/newtab.html tools/generate_embedded.py
+    COMMENT "Checking embedded browser assets" VERBATIM)
 add_library(lumen_engine STATIC ${ENGINE_SOURCES})
 # V8 serializer delegate base classes are built without RTTI.
 set_source_files_properties(src/js/clone.cc PROPERTIES COMPILE_OPTIONS "-fno-rtti")

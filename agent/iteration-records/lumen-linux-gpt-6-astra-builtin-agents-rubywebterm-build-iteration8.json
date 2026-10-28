@@ -1,0 +1,68 @@
+{
+  "iteration": 8,
+  "title": "Preserve unchanged embedded asset timestamps",
+  "model": "GPT-6 Astra Pro",
+  "agent": "engine_lead",
+  "tools": [
+    "built-in subagents",
+    "RubyWebTerm",
+    "CMake 4.3.4",
+    "GNU Make"
+  ],
+  "started_utc": "2026-10-28T05:34:50.393008+00:00",
+  "finished_utc": "2026-10-28T05:45:05.181904+00:00",
+  "elapsed_minutes": 10.246481600000001,
+  "focused_quality_score": 98,
+  "whole_goal_readiness": 19,
+  "acceptance": "PM accepted after independent required-build evidence; does not imply WPT parity",
+  "problem": "The Python generator already skipped identical bytes, but CMake multiple OUTPUT rules touched every secondary include after a page prelude change.",
+  "change": "One generation target declares the byproducts derived from the same shared/lazy source globs. Byte-preserving generator checks run before consumers and recover missing outputs. No generated runtime bytes changed by the build-graph patch.",
+  "verification": {
+    "no-op-first": {
+      "exit_code": 0,
+      "seconds": 14.232994836987928,
+      "all_bytes_mtimes_modes_unchanged": true
+    },
+    "no-op-second": {
+      "exit_code": 0,
+      "seconds": 4.293761758017354,
+      "all_bytes_mtimes_modes_unchanged": true
+    },
+    "missing-secondary": {
+      "exit_code": 0,
+      "seconds": 4.078735121991485,
+      "recovered_exact_bytes": true,
+      "unrelated_outputs_unchanged": true
+    },
+    "outputs": 31
+  },
+  "missing_secondary_permission_preserved": true,
+  "current_generator": "Unix Makefiles",
+  "ninja_status": "Dependency semantics reviewed in official CMake documentation; Ninja execution was not performed.",
+  "required_build115": {
+    "evidence": "agent/validation/linux-wpt-20261028/font-isolated115/isolation.json",
+    "log": "agent/validation/iteration-115/build.log",
+    "intentional_changed_include": "prelude.inc while exact position patch was reversed for isolated font build",
+    "unchanged_includes": "All others retained identical hashes and mtimes",
+    "unchanged_objects": [
+      "worker.cc.o",
+      "jsnative.cc.o",
+      "broadcast.cc.o"
+    ],
+    "compiled_sources": [
+      "style.c",
+      "js.cc",
+      "font.c",
+      "main.c"
+    ],
+    "independent_reviewer": "ops_preview"
+  },
+  "limitations": [
+    "Always-run generation target adds a small check on each build; measured no-op target wall cost includes Make/Python startup and contemporaneous contention.",
+    "No claim of Ninja runtime verification or general build-speed percentage."
+  ],
+  "references": [
+    "https://cmake.org/cmake/help/latest/command/add_custom_target.html",
+    "https://cmake.org/cmake/help/latest/command/add_custom_command.html"
+  ]
+}
