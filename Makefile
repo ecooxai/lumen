@@ -581,3 +581,9 @@ $(BUILD)/test_render_overdraw: $(call OBJ,tests/test_render_overdraw.c $(filter-
 $(BUILD)/tests/test_clone_metadata_allocation.cc.o: CXXFLAGS += -fno-rtti -UNDEBUG
 $(BUILD)/test_clone_metadata_allocation: $(call OBJ,tests/test_clone_metadata_allocation.cc $(CORE_SRC) $(JS_SRC)) $(V8LINK_RSP)
 	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
+
+# Exercise actual native wheel routing, counting expensive layout-hit calls.
+$(BUILD)/tests/test_app_wheel.c.o: CFLAGS += -I$(BUILD)/src/app
+$(BUILD)/tests/test_app_wheel.c.o: $(BUILD)/src/app/icon.inc src/app/main.c
+$(BUILD)/test_app_wheel: $(call OBJ,tests/test_app_wheel.c $(CORE_SRC) $(JS_SRC) $(filter-out src/app/main.c,$(APP_SRC))) $(V8LINK_RSP)
+	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)

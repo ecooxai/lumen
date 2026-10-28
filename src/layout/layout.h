@@ -48,6 +48,7 @@ typedef struct Layout {
     float doc_w, doc_h;
     float scroll_x, scroll_y;
     int nboxes;
+    bool has_wheel_scroller;   /* current layout has an auto/scroll box with a nonzero scroll range */
     float inl_cbh;   /* containing-block height handed to layout_inline (floats/atomics resolve % heights against it) */
     double ms;
     struct Box **alog; int nalog, calog;   /* every add_abs of this run, so a reused subtree can re-register its abs boxes */

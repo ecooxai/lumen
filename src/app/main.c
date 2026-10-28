@@ -1464,7 +1464,7 @@ static void render(App *a) {
 
 /* scroll the innermost scrollable box under (x,y) that can still move; false = let the page scroll */
 static bool wheel_scroll(App *a, float x, float y, float dx, float dy) {
-    Page *p = a->t->cur; if (!p || !p->L || a->t->asleep) return false;
+    Page *p = a->t->cur; if (!p || !p->L || a->t->asleep || !p->L->has_wheel_scroller) return false;
     for (Box *b = layout_hit(p->L, x, y + a->t->sy); b; b = b->parent) {
         if (!b->scroller || !b->node || !b->st) continue;
         bool sx = b->st->overflow_x == OV_AUTO || b->st->overflow_x == OV_SCROLL, sy = b->st->overflow_y == OV_AUTO || b->st->overflow_y == OV_SCROLL;

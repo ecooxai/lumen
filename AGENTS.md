@@ -50,7 +50,7 @@ while kill -0 $P 2>/dev/null; do ps -o %cpu=,rss= -p $P; sleep 1; done
 Current native snapshot is `build-apple-load-20261029/lumen-render-overdraw-f941cfcdedd9a59b` (f941cfcdedd9a59b…). Original fixed WPT subset: 1850/1850 in Lume and Chrome; renderer exact-pixel regressions 92/92. Idle passes independently; scroll p95 23.864% still exceeds 10%. Keep this failed gate explicit. Broader coverage is a frozen 1515-variant,235-source,seven-category priority suite, not all WPT. Same-device IPA execution and a full navigation soak remain unverified. Read the latest `agent/continue.md` entries and scorecard before further source changes; every changed binary needs matching fresh performance evidence.
 
 
-## Latest verified task checkpoint — 10290244-005
+## Previous verified task checkpoint — 10290244-005
 
 Current native snapshot `build-apple-load-20261029/lumen-clone-allocation-de338a9f08913dc8` (de338a9f08913dc8…) passes 292 targeted allocation/compatibility checks and 1850/1850 assertions in the original six-file WPT subset. Lazy-wrapper allocation regression is fixed with exact counters, but current-binary CPU/RSS/soak still needs fresh evidence; previous f941 idle/scroll observations are historical. Expanded official-server WPT keeps 1515 frozen variants in seven categories and reports missing cases. Same-IPA Mac/iPad/iPhone execution remains unverified. Read the latest continuation and scorecard before modifying shared Makefile or native runtime files.
 
@@ -58,3 +58,8 @@ Current native snapshot `build-apple-load-20261029/lumen-clone-allocation-de338a
 ## Task10290244 progress service
 
 Public HTTPS base: https://4d3ee194969f5f51.czd5qzludboe.opentunnel.xyz. It is verified with actual WebSocket snapshots and private message/reply round trips. Preserve explicit current/historical executable labels. Keep the private access fragment, message receipt keys, ignored state, tunnel profiles and user profiles out of Git/source archives. The progress helper reads exact scorecard evidence; successful UI/build work is not browser conformance.
+
+
+## Latest verified task checkpoint —10290244-006
+
+Native `build-apple-load-20261029/lumen-wheel-fast-path-7f0cafc374cf2cf1` (7f0cafc374cf2cf1…) has303 focused checks and1850/1850 original-subset assertions in both engines. Current-artifact idle and20-navigation memory soak pass. Scrolling remains21.973%p95 against10%target. Broader1515variant coverage is incomplete; sameIPA execution remains unverified. Read the newest continuation/evidence and preserve current/historical artifact distinctions.

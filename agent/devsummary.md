@@ -68,3 +68,16 @@ Task score 35.00/100. The previous 40.00 score included 5 idle points measured o
 Native iteration and task score remain unchanged (35.00/100). The isolated progress view passed six service regressions, actual public TLS/WebSocket tests with two live samples and nonce RTT, full downloaded source SHA verification, authenticated message storage and an agent reply. Fresh-profile native Chrome verified desktop1280×1100 and phone390×844 layout, exact current native/subset counts, all seven frozen categories, historical cohort labeling, real CPU/RAM/RTT updates and a fixed bottom-right iteration badge. Visual QA wall time 12.806s includes one-second Chromium process sampling; it is not a Lume performance benchmark.
 
 Public origin: https://4d3ee194969f5f51.czd5qzludboe.opentunnel.xyz. Keys remain solely in ignored private runtime state; no access-fragment link belongs in source or public manifests. Pending release steps: push this source checkpoint, refresh the committed-source/archive alias, verify its public SHA again and publish the same view/archive to Surge if existing authentication permits. The release gate stays unchanged until current-source publication evidence is complete.
+
+
+## Iteration10290244-006 — avoid unnecessary wheel hit searches
+
+Start: 2026-10-28T19:56:47.055158+00:00. End: 2026-10-28T20:09:22.517549+00:00. Iteration wall: 755.462s. Session elapsed: 4907.518s. Workers: wpt_engine implementation/TDD; apple_runtime independent raw CPU/RSS/soak review; release_integrator provenance and commit review; root remote coordination. Parallel model compute durations are unavailable.
+
+The completed layout records whether an element can consume a wheel event. Ordinary pages avoid full-tree hit testing while fractional motion, real overflow scrollers, sticky layout and invalidation remain covered. Wheel regressions improved29/35→35/35; all303 focused wheel/raster/allocation/window checks and overflow/sticky executables pass. Seven measured stages; prebuilt-V8 incremental build4.098s. Fresh unchanged6-file WPT still1850/1850 in both native Lume and Chrome.
+
+Native SHA `7f0cafc374cf2cf1c51f83f44eec8da7220b996ac836bef4fd6caf3687623026`: scroll p9521.973% remainsFAILED against10%, versus23.864% on the previous cumulative renderer artifact. This comparison includes the allocation change and is not an isolated wheel-only benchmark. Fixed final idle passes49CPUintervals over49.012s: p950.000%, peak1.000%, RSS151.906MiB flat. The zero percentile reflects sampler granularity.
+
+A separate166.162s controlled20-navigation run completed21pages×80clone/Attr/import checks. Settled RSSmedian155.750→147.656MiB(-8.094MiB), live nodes1218/styles11/workers0 unchanged, no gaps/errors or forced process cleanup. Identical workload per page, with different step URLs; no tab-close, forced-GC, deviceIPA or universalRAM claim. Evidence `agent/evidence/10290244-006-wheel-routing.json`.
+
+Task score 45.00/100. Expanded1515-variant WPT stays incomplete and f941 cohort historical; same-device IPA gates remain unverified. Continue broader failure fixes and high scrolling CPU work until the deadline.

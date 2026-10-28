@@ -417,14 +417,23 @@ void layout_free(Layout *L) {
     arena_reset(&L->arena); free(L->alog); free(L);
 }
 
-static void track_containers(Document *d, Box *b) {
+static void track_containers(Layout *L, Box *b) {
+    Document *d = L->doc;
     for (; b; b = b->next) {
         Node *n = b->node;
+        /* Wheel input needs hit testing only if some element can consume it.
+         * Recompute with every completed layout; hidden/clip overflow remains
+         * available to its existing APIs but does not consume wheel input. */
+        if (n && b->scroller && b->st) {
+            bool x = b->st->overflow_x == OV_AUTO || b->st->overflow_x == OV_SCROLL;
+            bool y = b->st->overflow_y == OV_AUTO || b->st->overflow_y == OV_SCROLL;
+            if ((x && b->scroll_w > b->w) || (y && b->scroll_h > b->h)) L->has_wheel_scroller = true;
+        }
         if (n && !b->anon && b->st && b->st->container_type && n->style == b->st) {
             float w = b->w - b->b[1] - b->b[3] - b->p[1] - b->p[3], h = b->h - b->b[0] - b->b[2] - b->p[0] - b->p[2];
             if (fabsf(w - n->cq_w) > 0.5f || (b->st->container_type == 2 && fabsf(h - n->cq_h) > 0.5f)) { n->cq_w = w; n->cq_h = h; doc_mark_style_dirty(d, n); }
         }
-        track_containers(d, b->first);
+        track_containers(L, b->first);
     }
 }
 
@@ -453,7 +462,7 @@ void layout_run(Layout *L, Document *d, float vw, float vh) {
     if (L->root) free_box_data(L->root);
     if (L->doc && L->doc != d && L->doc->layout == L) L->doc->layout = NULL;
     arena_reset(&L->arena);
-    L->doc = d; L->vw = vw; L->vh = vh; L->nboxes = 0; L->nalog = 0;
+    L->doc = d; L->vw = vw; L->vh = vh; L->nboxes = 0; L->nalog = 0; L->has_wheel_scroller = false;
     d->layout = L;
     L->root = build_box_tree(L, d);
     Box *r = L->root;
@@ -467,7 +476,7 @@ void layout_run(Layout *L, Document *d, float vw, float vh) {
     L->doc_w = vw; L->doc_h = 0;
     extents(L, r);
     L->doc_h = LMAX(L->doc_h, vh);
-    track_containers(d, r);
+    track_containers(L, r);
     L->ms = now_ms() - t0;
     static int dbg = -1, nrun; static double tsum, tlast;
     if (dbg < 0) { const char *e = getenv("LUMEN_DEBUG_LAYOUT"); dbg = e ? atoi(e) > 0 ? atoi(e) : 1 : 0; }

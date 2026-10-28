@@ -5,8 +5,8 @@
   "session_start_utc": "2026-10-28T18:47:35Z",
   "deadline_utc": "2026-10-28T21:47:35Z",
   "target_score": 98,
-  "score": 35,
-  "score_state": "allocation_compatibility_pass_current_performance_unverified",
+  "score": 45,
+  "score_state": "selected_wpt_idle_navigation_pass_scroll_failed_broader_incomplete",
   "unknown_means": "unverified, not measured failure",
   "rubric": "agent/scorecard-rubric-10290244.md",
   "gates": [
@@ -18,7 +18,7 @@
       "status": "passed",
       "earned": 10,
       "evidence": [
-        "output/session-20261029/native-qa-kit-v1/source/output/wpt-comparison-session10290244-clone-allocation-1.json"
+        "output/session-20261029/native-qa-kit-v1/source/output/wpt-comparison-session10290244-wheel-fast-path-1.json"
       ],
       "passed": 1850,
       "denominator": 1850
@@ -40,11 +40,11 @@
       "status": "passed",
       "earned": 10,
       "evidence": [
-        "output/session-20261029/native-qa-kit-v1/source/output/wpt-comparison-session10290244-clone-allocation-1.json",
-        "output/session-10290244/clone-allocation-green-1/compiled-source-sha256.json",
-        "output/session-10290244/clone-allocation-green-1/summary.json"
+        "output/session-20261029/native-qa-kit-v1/source/output/wpt-comparison-session10290244-wheel-fast-path-1.json",
+        "output/session-10290244/wheel-fast-path-green-1/compiled-source-sha256.json",
+        "output/session-10290244/wheel-fast-path-green-1/summary.json"
       ],
-      "binary_sha256": "de338a9f08913dc814d0051918ade567548f4f1c9231dcc7e44247ffbdf018e5"
+      "binary_sha256": "7f0cafc374cf2cf1c51f83f44eec8da7220b996ac836bef4fd6caf3687623026"
     },
     {
       "id": "ipa_mac",
@@ -78,10 +78,14 @@
       "category": "performance",
       "weight": 5,
       "name": "Idle",
-      "status": "unverified",
-      "earned": 0,
-      "evidence": [],
-      "binary_sha256": "de338a9f08913dc814d0051918ade567548f4f1c9231dcc7e44247ffbdf018e5",
+      "status": "passed",
+      "earned": 5,
+      "evidence": [
+        "output/session-10290244/native-scroll-wheel-fast-path/receipt.json",
+        "output/session-10290244/native-scroll-wheel-fast-path/process-summary.json",
+        "output/session-10290244/native-scroll-wheel-fast-path/process-samples.jsonl"
+      ],
+      "binary_sha256": "7f0cafc374cf2cf1c51f83f44eec8da7220b996ac836bef4fd6caf3687623026",
       "settle_seconds": 15,
       "valid_window_seconds": 64.009,
       "samples": 65,
@@ -118,18 +122,33 @@
           }
         }
       ],
-      "note": "The allocation candidate is a new executable. Previous renderer CPU/RSS observations remain historical until an exact-artifact fresh run."
+      "note": "The allocation candidate is a new executable. Previous renderer CPU/RSS observations remain historical until an exact-artifact fresh run.",
+      "review": {
+        "samples": 50,
+        "validIntervalSamples": 49,
+        "durationSeconds": 49.012,
+        "settleSeconds": 66.093,
+        "cpuP95Percent": 0.0,
+        "cpuMeanPercent": 0.04079591836734694,
+        "cpuPeakPercent": 1.0,
+        "rssStartMiB": 151.90625,
+        "rssEndMiB": 151.90625,
+        "verdict": "passed",
+        "scope": "Fixed final idle phase; raw peaks remain visible and zero p95 reflects sampler granularity, not literally zero CPU work."
+      }
     },
     {
       "id": "perf_interaction",
       "category": "performance",
       "weight": 5,
       "name": "Ordinary interaction",
-      "status": "unverified",
+      "status": "failed",
       "earned": 0,
-      "evidence": [],
-      "note": "The allocation candidate is a new executable. Previous renderer CPU/RSS observations remain historical until an exact-artifact fresh run.",
-      "binary_sha256": "de338a9f08913dc814d0051918ade567548f4f1c9231dcc7e44247ffbdf018e5",
+      "evidence": [
+        "output/session-10290244/native-scroll-wheel-fast-path/receipt.json"
+      ],
+      "note": "Ordinary SDL scrolling still exceeds unchanged10% target. Sequential observed reduction includes allocation and wheel changes, not an isolated wheel-only experiment.",
+      "binary_sha256": "7f0cafc374cf2cf1c51f83f44eec8da7220b996ac836bef4fd6caf3687623026",
       "ceiling_percent": 10,
       "historical_evidence": [
         {
@@ -141,18 +160,67 @@
           "prior_status": "failed",
           "review": null
         }
-      ]
+      ],
+      "scroll_cpu_p95_percent": 21.973
     },
     {
       "id": "perf_soak",
       "category": "performance",
       "weight": 5,
       "name": "Controlled memory soak",
-      "status": "unverified",
-      "earned": 0,
-      "evidence": [],
+      "status": "passed",
+      "earned": 5,
+      "evidence": [
+        "output/session-10290244/native-navigation-wheel-fast-path/receipt.json",
+        "output/session-10290244/native-navigation-wheel-fast-path/process-summary.json",
+        "output/session-10290244/native-navigation-wheel-fast-path/process-samples.jsonl"
+      ],
       "note": "The allocation candidate is a new executable. Previous renderer CPU/RSS observations remain historical until an exact-artifact fresh run.",
-      "binary_sha256": "de338a9f08913dc814d0051918ade567548f4f1c9231dcc7e44247ffbdf018e5"
+      "binary_sha256": "7f0cafc374cf2cf1c51f83f44eec8da7220b996ac836bef4fd6caf3687623026",
+      "review": {
+        "durationSeconds": 166.162,
+        "actualNavigations": 20,
+        "pages": 21,
+        "cloneAttrImportChecks": 1680,
+        "initialMedianRSSMiB": 155.75,
+        "finalMedianRSSMiB": 147.65625,
+        "growthMiB": -8.09375,
+        "nativeCounters": {
+          "initial": {
+            "malloc_in_use": 0.6,
+            "nodes": 1218.0,
+            "styles": 11.0,
+            "css_parsed": 0.0,
+            "workers": 0.0,
+            "heap": 0.0,
+            "ext": 0.0
+          },
+          "final": {
+            "malloc_in_use": 0.6,
+            "nodes": 1218.0,
+            "styles": 11.0,
+            "css_parsed": 0.1,
+            "workers": 0.0,
+            "heap": 0.0,
+            "ext": 0.0
+          }
+        },
+        "finalIdle": {
+          "samples": 62,
+          "validIntervalSamples": 61,
+          "durationSeconds": 60.998,
+          "settleSeconds": 104.079,
+          "cpuP95Percent": 0.997,
+          "cpuMeanPercent": 0.0821967213114754,
+          "cpuPeakPercent": 1.011,
+          "rssStartMiB": 159.8125,
+          "rssEndMiB": 147.65625,
+          "verdict": "passed",
+          "scope": "Fixed final idle phase; raw peaks remain visible and zero p95 reflects sampler granularity, not literally zero CPU work."
+        },
+        "verdict": "passed",
+        "scope": "Controlled20-navigation context-teardown workload with identical16-document work per page. Initial/final URL step differs; no tab-close, forced-GC, IPA or universal memory claim."
+      }
     },
     {
       "id": "perf_budgets",
@@ -162,11 +230,11 @@
       "status": "passed",
       "earned": 5,
       "evidence": [
-        "output/session-10290244/clone-allocation-green-1/summary.json"
+        "output/session-10290244/wheel-fast-path-green-1/summary.json"
       ],
-      "build_seconds": 3.093,
+      "build_seconds": 4.098,
       "prebuilt_v8": true,
-      "note": "Nine timed, one-second-sampled stages completed within five minutes; short tests do not prove sustained idle or RAM behavior."
+      "note": "Seven timed stages, one-second samples and4.098s prebuilt-V8 incremental build; all below five minutes."
     },
     {
       "id": "repro_tdd",
@@ -176,8 +244,8 @@
       "status": "passed",
       "earned": 5,
       "evidence": [
-        "output/session-10290244/clone-allocation-red.log",
-        "output/session-10290244/clone-allocation-green-1/summary.json"
+        "output/session-10290244/wheel-fast-path-red.log",
+        "output/session-10290244/wheel-fast-path-green-1/summary.json"
       ]
     },
     {
@@ -188,10 +256,10 @@
       "status": "passed",
       "earned": 5,
       "evidence": [
-        "output/session-10290244/clone-allocation-green-1/compiled-source-sha256.json",
-        "output/session-10290244/clone-allocation-green-1/summary.json"
+        "output/session-10290244/wheel-fast-path-green-1/compiled-source-sha256.json",
+        "output/session-10290244/wheel-fast-path-green-1/summary.json"
       ],
-      "binary_sha256": "de338a9f08913dc814d0051918ade567548f4f1c9231dcc7e44247ffbdf018e5"
+      "binary_sha256": "7f0cafc374cf2cf1c51f83f44eec8da7220b996ac836bef4fd6caf3687623026"
     },
     {
       "id": "release_progress",
@@ -235,9 +303,19 @@
       "score": 35,
       "binary_sha256": "de338a9f08913dc814d0051918ade567548f4f1c9231dcc7e44247ffbdf018e5",
       "reason_for_removed_idle_points": "New native binary; previous f941 idle result is historical, not a measured regression."
+    },
+    {
+      "iteration": "10290244-006",
+      "updated_utc": "2026-10-28T20:09:22.517549+00:00",
+      "prior_score": 35,
+      "score": 45,
+      "binary_sha256": "7f0cafc374cf2cf1c51f83f44eec8da7220b996ac836bef4fd6caf3687623026",
+      "scroll_cpu_p95_percent": 21.973,
+      "scroll_target_percent": 10,
+      "navigationSoak": "passed"
     }
   ],
-  "updated_utc": "2026-10-28T19:56:47.055158+00:00",
-  "current_baseline_binary_sha256": "de338a9f08913dc814d0051918ade567548f4f1c9231dcc7e44247ffbdf018e5",
+  "updated_utc": "2026-10-28T20:09:22.517549+00:00",
+  "current_baseline_binary_sha256": "7f0cafc374cf2cf1c51f83f44eec8da7220b996ac836bef4fd6caf3687623026",
   "full_official_wpt_pass_percent": null
 }
