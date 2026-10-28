@@ -43,3 +43,8 @@ while kill -0 $P 2>/dev/null; do ps -o %cpu=,rss= -p $P; sleep 1; done
   profile it (`sample <pid> 5 -file out.txt` on macOS, `perf` on Linux),
   find the hot path and fix it before moving on.
 - Report the measured CPU numbers with the test results.
+
+
+## Latest verified task checkpoint — 10290244-004
+
+Current native snapshot is `build-apple-load-20261029/lumen-render-overdraw-f941cfcdedd9a59b` (f941cfcdedd9a59b…). Original fixed WPT subset: 1850/1850 in Lume and Chrome; renderer exact-pixel regressions 92/92. Idle passes independently; scroll p95 23.864% still exceeds 10%. Keep this failed gate explicit. Broader coverage is a frozen 1515-variant,235-source,seven-category priority suite, not all WPT. Same-device IPA execution and a full navigation soak remain unverified. Read the latest `agent/continue.md` entries and scorecard before further source changes; every changed binary needs matching fresh performance evidence.

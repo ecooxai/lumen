@@ -42,3 +42,10 @@ Pinned sparse upstream WPT source was restored under `output/wpt-10290244/upstre
 Lume and Chrome each pass1850/1850 assertions,6/6files, on the unchanged pinned subset. New native artifact `build-apple-load-20261029/lumen-clone-metadata-5ec2abd8d1503c17` SHA-256 `5ec2abd8d1503c17524e65ec6ed89ed5ba4a75253e326a0d8715f7a49b60fd75`. Native targeted regression suite262/262; prebuilt-V8 incremental build3.075s. Reviewed source includes Document/Attr cloning, native owner/document metadata, cross-realm identity and XHR XML URL/baseURI. See `agent/evidence/10290244-003-clone-metadata.json`.
 
 Score 35.00/100 is task acceptance. Expanded official-server WPT and new-artifact resource tests are next; previous7a4b CPU evidence stays historical. SameIPA Mac/iPad/iPhone remains unverified. Do not stop at this selected-suite milestone.
+
+
+## Accepted renderer checkpoint 10290244-004
+
+Current immutable native `build-apple-load-20261029/lumen-render-overdraw-f941cfcdedd9a59b` SHA `f941cfcdedd9a59b60f41b1cb2be560dce136fc4e6d44cacfce0e5ab25cbbe46` preserves 1850/1850 selected WPT assertions in both engines and passes 92 exact-pixel checks. Idle p95 1.000% passes separately; scrolling p95 23.864% still fails 10% and must remain visible. Task score 40.00/100, not full-WPT conformance. See `agent/evidence/10290244-004-renderer.json`.
+
+The next native candidate may add Apple DOM-allocation test infrastructure and wheel-event coalescing; retain separate immutable artifact receipts and rerun current-artifact gates. Expanded WPT uses the frozen 1515-variant schedule with seven categories, process-local exact DNS, upstream CA, unchanged reporter/manifest and one-second measurements. Missing/unrun variants never count as passes. Progress backend is locally healthy; public tunnel registration is still under bounded recovery and must be health-verified before claiming a URL.

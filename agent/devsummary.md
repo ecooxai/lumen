@@ -39,3 +39,14 @@ Fixed native Document allocation/clone ownership; qualified-name, URL/content-ty
 The unchanged six-file pinned WPT subset now passes1850/1850 (100%) in Lume and Chrome, all6files fully passing, no comparison blockers. This is not a full WPT result. Native binary SHA-256 `5ec2abd8d1503c17524e65ec6ed89ed5ba4a75253e326a0d8715f7a49b60fd75`; jsrun `ac22b2347e0d786f220575b140e75a775ea3d38fccdea4f2be460cd4a77e2966`. Incremental native build 3.075 s using prebuilt V8; longest test stage 9.083 s. Every stage retained one-second resource samples; very short stages do not establish idle behavior.
 
 Source, fixtures, complete compiled-source hashes, targeted-stage timing, WPT comparison and red-log hashes are in `agent/evidence/10290244-003-clone-metadata.json`; raw reports remain under the recorded output paths. Score: 35.00/100 task gates. Prior 7a4b idle observations are explicitly historical; the new5ec2 artifact gets no idle/interaction/soak points before its own tests.
+
+
+## Iteration 10290244-004 — renderer overdraw reduction
+
+Start: 2026-10-28T19:18:56.812906+00:00. End: 2026-10-28T19:52:01.222206+00:00. Iteration wall: 1984.409 s. Session elapsed: 3866.222 s. Workers: wpt_engine renderer implementation; apple_runtime independent pixel/performance review; release_integrator evidence/commit review; root remote coordination. Separate model compute durations are unavailable.
+
+Avoided browser chrome pixels that page compositing immediately overwrites, and skipped repaint work hidden by a full opaque rectangle while preserving conservative clip/layer/rounded-edge rules. Regression-first exact-pixel tests improved 54/92 to 92/92. Build plus six raster/layout executables passed; build 2.102 s with prebuilt V8. Each stage has one-second samples and recorded start/end/duration.
+
+The unchanged six-file pinned WPT subset still passes 1850/1850 in both Lume and Chrome, 6/6 files, on native SHA `f941cfcdedd9a59b60f41b1cb2be560dce136fc4e6d44cacfce0e5ab25cbbe46`. This remains a selected-suite result. Controlled scroll p95 decreased from 29.312% to 23.864% (18.59% observed reduction), but the 10% target still FAILS. The independent fixed final idle window passes: 49 valid interval samples over 48.976s, p95 1.000%, RSS 151.859→151.859MiB; no gaps/collector errors and natural cleanup. No soak or same-IPA credit.
+
+Score: 40.00/100 task gates. All source hashes, fresh WPT, timing, raw CPU hash and explicit failed interaction verdict are retained in `agent/evidence/10290244-004-renderer.json`. Expanded priority WPT remains 1515 frozen variants across 235 sources/seven categories; first bounded paired categories are next.

@@ -288,9 +288,10 @@ static void image(R *r, const DItem *it) {
     free(cols);
 }
 
-/* Index of the last opaque image that fully covers the raster rect (0 = none): everything drawn before it is hidden */
+/* Index of the last opaque image or unrounded solid rectangle that covers
+ * every repaint pixel (-1 = none). Item zero can also replace the clear. */
 static int occluder(const Canvas *cv, const DisplayList *dl, float s, int rx0, int ry0, int rx1, int ry1) {
-    int cb[64][4], nc = 1, nl = 0, best = 0; bool rnd[64];
+    int cb[64][4], nc = 1, nl = 0, best = -1; bool rnd[64];
     cb[0][0] = rx0; cb[0][1] = ry0; cb[0][2] = rx1; cb[0][3] = ry1; rnd[0] = false;
     for (int i = 0; i < dl->items.n; i++) {
         const DItem *it = &dl->items.v[i];
@@ -304,7 +305,10 @@ static int occluder(const Canvas *cv, const DisplayList *dl, float s, int rx0, i
         } else if (it->op == DO_POP_CLIP) { if (nc > 1) nc--; }
         else if (it->op == DO_PUSH_LAYER) nl++;
         else if (it->op == DO_POP_LAYER) { if (nl) nl--; }
-        else if (it->op == DO_IMAGE && !nl && !rnd[nc - 1] && it->img && it->img->opaque && (const void *)it->img != cv->punch) {
+        else if (!nl && !rnd[nc - 1] &&
+                 ((it->op == DO_IMAGE && it->img && it->img->opaque && (const void *)it->img != cv->punch) ||
+                  (it->op == DO_RECT && COLOR_A(it->color) == 255 &&
+                   it->r[0] == 0 && it->r[1] == 0 && it->r[2] == 0 && it->r[3] == 0))) {
             const int *c = cb[nc - 1];
             if (c[0] <= rx0 && c[1] <= ry0 && c[2] >= rx1 && c[3] >= ry1 &&
                 ceilf(it->x * s) <= rx0 && ceilf(it->y * s) <= ry0 && floorf((it->x + it->w) * s) >= rx1 && floorf((it->y + it->h) * s) >= ry1) best = i;
@@ -347,7 +351,7 @@ void raster_rect(Canvas *cv, const DisplayList *dl, Color clearc, int rx0, int r
     static int chk = -1; if (chk < 0) chk = getenv("LUMEN_CHECK_OCCLUDE") != NULL;
     if (!chk) {
         int x0 = LMAX(rx0, 0), y0 = LMAX(ry0, 0), x1 = LMIN(rx1, cv->w), y1 = LMIN(ry1, cv->h), ib[4];
-        if (x1 > x0 && y1 > y0 && !cv->punch && !occluder(cv, dl, cv->scale, x0, y0, x1, y1) && occluder_inner(dl, cv->scale, x0, y0, x1, y1, ib)) {
+        if (x1 > x0 && y1 > y0 && !cv->punch && occluder(cv, dl, cv->scale, x0, y0, x1, y1) < 0 && occluder_inner(dl, cv->scale, x0, y0, x1, y1, ib)) {
             raster_rect_(cv, dl, clearc, ib[0], ib[1], ib[2], ib[3], true);
             raster_rect_(cv, dl, clearc, x0, y0, x1, ib[1], true); raster_rect_(cv, dl, clearc, x0, ib[3], x1, y1, true);
             raster_rect_(cv, dl, clearc, x0, ib[1], ib[0], ib[3], true); raster_rect_(cv, dl, clearc, ib[2], ib[1], x1, ib[3], true);
@@ -356,8 +360,8 @@ void raster_rect(Canvas *cv, const DisplayList *dl, Color clearc, int rx0, int r
         raster_rect_(cv, dl, clearc, rx0, ry0, rx1, ry1, true); return;
     }
     int x0 = LMAX(rx0, 0), y0 = LMAX(ry0, 0), x1 = LMIN(rx1, cv->w), y1 = LMIN(ry1, cv->h);
-    int first = x1 > x0 && y1 > y0 ? occluder(cv, dl, cv->scale, x0, y0, x1, y1) : 0;
-    if (!first) { raster_rect_(cv, dl, clearc, rx0, ry0, rx1, ry1, false); return; }
+    int first = x1 > x0 && y1 > y0 ? occluder(cv, dl, cv->scale, x0, y0, x1, y1) : -1;
+    if (first < 0) { raster_rect_(cv, dl, clearc, rx0, ry0, rx1, ry1, false); return; }
     raster_rect_(cv, dl, clearc, rx0, ry0, rx1, ry1, false);
     Canvas t = *cv; t.media_frames = (PaintFrames){0}; t.track_media = false; t.media_retry = false; t.px = xmalloc((size_t)cv->stride * (size_t)cv->h * 4); memcpy(t.px, cv->px, (size_t)cv->stride * (size_t)cv->h * 4);
     raster_rect_(&t, dl, clearc, rx0, ry0, rx1, ry1, true);
@@ -392,9 +396,9 @@ static void raster_rect_(Canvas *cv, const DisplayList *dl, Color clearc, int rx
     rx0 = LMAX(rx0, 0); ry0 = LMAX(ry0, 0); rx1 = LMIN(rx1, cv->w); ry1 = LMIN(ry1, cv->h);
     if (rx1 <= rx0 || ry1 <= ry0) return;
     static int noocc = -1; if (noocc < 0) noocc = getenv("LUMEN_NO_OCCLUDE") != NULL;
-    int first = noocc || !occl ? 0 : occluder(cv, dl, r.s, rx0, ry0, rx1, ry1);
+    int first = noocc || !occl ? -1 : occluder(cv, dl, r.s, rx0, ry0, rx1, ry1);
     uint32_t cl = premul(clearc, 1);
-    if (!first) for (int y = ry0; y < ry1; y++) for (int x = rx0; x < rx1; x++) cv->px[(size_t)y * (size_t)cv->stride + (size_t)x] = cl;
+    if (first < 0) for (int y = ry0; y < ry1; y++) for (int x = rx0; x < rx1; x++) cv->px[(size_t)y * (size_t)cv->stride + (size_t)x] = cl;
     r.clips[0] = (Clip){ rx0, ry0, rx1, ry1, 0, 0, (float)cv->w, (float)cv->h, {0}, false }; r.nclip = 1;
     float s = r.s;
     /* Opt-in single-pixel paint-order evidence, at most once per second. The

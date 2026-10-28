@@ -571,3 +571,8 @@ $(BUILD)/src/js/worker.cc.o $(BUILD)/tests/test_worker_lifecycle.cc.o $(BUILD)/t
 $(BUILD)/tests/test_wasm_async_deadline.cc.o: CXXFLAGS += -fno-rtti -UNDEBUG
 $(BUILD)/test_wasm_async_deadline: $(call OBJ,tests/test_wasm_async_deadline.cc $(CORE_SRC) $(JS_SRC)) $(V8LINK_RSP)
 	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
+
+# Exact-pixel renderer optimization checks, including the unculled oracle.
+$(BUILD)/tests/test_render_overdraw.c.o: src/paint/raster.c src/app/chrome_paint.h
+$(BUILD)/test_render_overdraw: $(call OBJ,tests/test_render_overdraw.c $(filter-out src/paint/raster.c,$(CORE_SRC)) $(JS_SRC)) $(V8LINK_RSP)
+	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)

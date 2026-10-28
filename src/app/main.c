@@ -25,6 +25,7 @@
 #endif
 #include <SDL3/SDL.h>
 #include "viewport.h"
+#include "chrome_paint.h"
 #include "present_retry.h"
 #include "control_edit.h"
 #ifdef LUMEN_IOS
@@ -1401,7 +1402,7 @@ static void render(App *a) {
             raster_rect(&a->frame, &empty, bg, 0, y, x, ey);
             raster_rect(&a->frame, &empty, bg, ex, y, a->pw, ey);
         }
-        raster(&chrome, &a->cdl, RGBA(255, 255, 255, 255));
+        paint_browser_chrome(&chrome, &a->cdl, RGBA(255, 255, 255, 255), sidebar_px, toolbar_px);
     }
     if (!gskip) for (int y = part ? ry0 : 0; y < (part ? ry1 : ph) && y + bar_px < a->ph; y++)
         memcpy(a->frame.px + (size_t)(y + bar_px) * (size_t)a->frame.stride + side_px, a->page.px + (size_t)y * (size_t)a->page.stride, (size_t)pwp * 4);

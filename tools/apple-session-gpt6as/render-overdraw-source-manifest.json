@@ -1,0 +1,27 @@
+[
+  {
+    "path": "Makefile",
+    "before": "4b610448eb3f58dae12e6049e72b43f4fce71d4f2307c8f83716c8eca72f5cfb",
+    "after": "216faf9f7b65837eab9d21895738027eaadaa89d5c59c55fdede9803024f0b3f"
+  },
+  {
+    "path": "src/app/chrome_paint.h",
+    "before": null,
+    "after": "2c1d4f35ae7d73ddb9517b0701e7facb640a4f5484a828eb946dbfcfa28fcd00"
+  },
+  {
+    "path": "tests/test_render_overdraw.c",
+    "before": null,
+    "after": "642457e09afbce67cc3a5f5a6ae6475d7b82907a52dc2b643528bf81751f457e"
+  },
+  {
+    "path": "src/app/main.c",
+    "before": "3c90e32d94a40f0abf9b3aa8301879156cbdacf0d841dc740ce23c95ff226713",
+    "after": "6b59fc8abc4d2bef94172921cb46f690ebb13396e401e90b173be00a756fdb07"
+  },
+  {
+    "path": "src/paint/raster.c",
+    "before": "13be257959a871d6f0dac032170689c63edb9dd652631f895c034f88fa45c2ad",
+    "after": "bb31ee0441d0ed8dfbfddd9a858ab76c6fcbbe1880ed5f5e8bdb9a1f308cd550"
+  }
+]
