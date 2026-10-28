@@ -1,0 +1,359 @@
+{
+  "schema": "lume-final-wpt-matrix-10290244-v1",
+  "createdUTC": "2026-10-28T21:32:20.591343+00:00",
+  "createdBy": {
+    "model": "GPT-6 Astra Pro",
+    "agents": "Built-in same-model agents",
+    "remoteTool": "devinmac3d",
+    "role": "wpt_engine"
+  },
+  "sourceCommit": "436916ceb3b32630ed251bb666b02fa39a3cd0c8",
+  "binarySHA256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+  "upstreamRevision": "7f8d49b5a82606efc771f43d10aad5bce5ccbfeb",
+  "cohort": {
+    "path": "output/wpt-10290244/priority-1b9d-v1/cohort.json",
+    "sha256": "6720f796928e5a83d64c76a4e751e0da672f14f124c04792a97319485170d65d"
+  },
+  "scope": "Predeclared priority subset; not the complete Web Platform Tests suite.",
+  "frozenVariants": 1515,
+  "frozenSourceFiles": 235,
+  "recordedVariants": 207,
+  "unrunVariants": 1308,
+  "categories": {
+    "dom": {
+      "summary": {
+        "scheduled_files": 14,
+        "recorded_files": 14,
+        "remaining_files": 0,
+        "files_passing_all_assertions": 13,
+        "file_outcomes": {
+          "OK": 14
+        },
+        "subtest_outcomes": {
+          "FAIL": 1,
+          "PASS": 995
+        },
+        "zero_assertion_testharness_files": 0,
+        "executed_subtests_excluding_notrun": 996
+      },
+      "results": {
+        "path": "output/wpt-10290244/priority-1b9d-v1/dom/lumen/results.jsonl",
+        "sha256": "62c1d27369b4d91da96165a53bb9bb121726d384a82ee90466cce588eedf6c04"
+      },
+      "run": {
+        "path": "output/wpt-10290244/priority-1b9d-v1/dom/lumen/run.json",
+        "sha256": "4172e1fde7ac6b01c74401cb233af9f4fc41f69073ef07292dca08f104ccb07c"
+      }
+    },
+    "events": {
+      "summary": {
+        "scheduled_files": 16,
+        "recorded_files": 16,
+        "remaining_files": 0,
+        "files_passing_all_assertions": 16,
+        "file_outcomes": {
+          "OK": 16
+        },
+        "subtest_outcomes": {
+          "PASS": 78
+        },
+        "zero_assertion_testharness_files": 0,
+        "executed_subtests_excluding_notrun": 78
+      },
+      "results": {
+        "path": "output/wpt-10290244/priority-1b9d-v1/events/lumen/results.jsonl",
+        "sha256": "93305f7050f1c12c386ea87b18c8d172893c6e4a7c529fc3bf247cf11d11bc34"
+      },
+      "run": {
+        "path": "output/wpt-10290244/priority-1b9d-v1/events/lumen/run.json",
+        "sha256": "70841577d3f358629ced9b2e21cc028a3ab798ef61bdcfde5a1823e16ca670b0"
+      }
+    },
+    "url": {
+      "summary": {
+        "scheduled_files": 77,
+        "recorded_files": 77,
+        "remaining_files": 0,
+        "files_passing_all_assertions": 76,
+        "file_outcomes": {
+          "OK": 77
+        },
+        "subtest_outcomes": {
+          "FAIL": 7,
+          "PASS": 12316
+        },
+        "zero_assertion_testharness_files": 0,
+        "executed_subtests_excluding_notrun": 12323
+      },
+      "results": {
+        "path": "output/wpt-10290244/priority-1b9d-v1/url/lumen/results.jsonl",
+        "sha256": "0c7ff1dee780efb7eefba8c6667f4e43ed61871f5264e7bb86afeeddcbca7b01"
+      },
+      "run": {
+        "path": "output/wpt-10290244/priority-1b9d-v1/url/lumen/run.json",
+        "sha256": "c7c2e876f3129a731be405a8a933b0696660ecf298b8466e37e4afdd2f565549"
+      }
+    },
+    "encoding": {
+      "summary": {
+        "scheduled_files": 1339,
+        "recorded_files": 31,
+        "remaining_files": 1308,
+        "files_passing_all_assertions": 16,
+        "file_outcomes": {
+          "ERROR": 2,
+          "OK": 24,
+          "TIMEOUT": 5
+        },
+        "subtest_outcomes": {
+          "FAIL": 57,
+          "PASS": 7264
+        },
+        "zero_assertion_testharness_files": 7,
+        "executed_subtests_excluding_notrun": 7321
+      },
+      "results": {
+        "path": "output/wpt-10290244/priority-1b9d-v1/encoding/lumen/results.jsonl",
+        "sha256": "cf720e8ce6f20f636d18630db952d3124360e8ef1bf178b63ced6392e6b994d0"
+      },
+      "run": {
+        "path": "output/wpt-10290244/priority-1b9d-v1/encoding/lumen/run.json",
+        "sha256": "2eae250f39d35ccc604d9e8a7c4ac13745fb14159c0fdf184be02490c598af0f"
+      }
+    },
+    "headers": {
+      "summary": {
+        "scheduled_files": 52,
+        "recorded_files": 52,
+        "remaining_files": 0,
+        "files_passing_all_assertions": 24,
+        "file_outcomes": {
+          "ERROR": 13,
+          "OK": 26,
+          "TIMEOUT": 13
+        },
+        "subtest_outcomes": {
+          "FAIL": 2,
+          "PASS": 499
+        },
+        "zero_assertion_testharness_files": 26,
+        "executed_subtests_excluding_notrun": 501
+      },
+      "results": {
+        "path": "output/wpt-10290244/priority-1b9d-v1/headers/lumen/results.jsonl",
+        "sha256": "b2a98bd9fb84020e1afef8aab4804067b72977d148af8ea8097f483c7ee272e9"
+      },
+      "run": {
+        "path": "output/wpt-10290244/priority-1b9d-v1/headers/lumen/run.json",
+        "sha256": "813e656909b2bd127d9183fa409cafd879ed90c2c4eb25214efe302fe2b95764"
+      }
+    },
+    "microtasks": {
+      "summary": {
+        "scheduled_files": 10,
+        "recorded_files": 10,
+        "remaining_files": 0,
+        "files_passing_all_assertions": 6,
+        "file_outcomes": {
+          "ERROR": 2,
+          "OK": 6,
+          "TIMEOUT": 2
+        },
+        "subtest_outcomes": {
+          "PASS": 15
+        },
+        "zero_assertion_testharness_files": 4,
+        "executed_subtests_excluding_notrun": 15
+      },
+      "results": {
+        "path": "output/wpt-10290244/priority-1b9d-v1/microtasks/lumen/results.jsonl",
+        "sha256": "b0aee14d582039127331bd37c08b864611bb788f28e7f1ff87c0adc7865d4a4f"
+      },
+      "run": {
+        "path": "output/wpt-10290244/priority-1b9d-v1/microtasks/lumen/run.json",
+        "sha256": "623e34113ddecf8d5ea37db57dc6fb6f7a6df2bb9a3aa96d945adce5c3da0904"
+      }
+    },
+    "storage": {
+      "summary": {
+        "scheduled_files": 7,
+        "recorded_files": 7,
+        "remaining_files": 0,
+        "files_passing_all_assertions": 7,
+        "file_outcomes": {
+          "OK": 7
+        },
+        "subtest_outcomes": {
+          "PASS": 1152
+        },
+        "zero_assertion_testharness_files": 0,
+        "executed_subtests_excluding_notrun": 1152
+      },
+      "results": {
+        "path": "output/wpt-10290244/priority-1b9d-v1/storage/lumen/results.jsonl",
+        "sha256": "8800f0f757a4b49e0c60aa284f556910d499bf9843d7d73d4638e95d312b5350"
+      },
+      "run": {
+        "path": "output/wpt-10290244/priority-1b9d-v1/storage/lumen/run.json",
+        "sha256": "cdb012ef4a7cfc46df80f630acb9f032716b0df4367b148efdb3de227d2d20f0"
+      }
+    }
+  },
+  "rawAggregateBookkeeping": {
+    "scheduled_files": 1515,
+    "recorded_files": 207,
+    "remaining_files": 1308,
+    "files_passing_all_assertions": 158,
+    "zero_assertion_testharness_files": 37,
+    "executed_subtests_excluding_notrun": 22386,
+    "file_outcomes": {
+      "ERROR": 17,
+      "OK": 170,
+      "TIMEOUT": 20
+    },
+    "subtest_outcomes": {
+      "FAIL": 67,
+      "PASS": 22319
+    }
+  },
+  "headersSupplemental": {
+    "receipt": {
+      "path": "output/wpt-10290244/priority-1b9d-v1-headers-supplemental-1/receipt.json",
+      "sha256": "6bd1483c10336f701501333530520443eca80658f879b4e6066222a2f980a7d6"
+    },
+    "original": {
+      "path": "output/wpt-10290244/priority-1b9d-v1/headers/lumen/results.jsonl",
+      "sha256": "b2a98bd9fb84020e1afef8aab4804067b72977d148af8ea8097f483c7ee272e9"
+    },
+    "adjustedResults": {
+      "path": "output/wpt-10290244/priority-1b9d-v1-headers-supplemental-1/adjusted-headers-results.jsonl",
+      "sha256": "cf6ba86506e6405a7a8b9489e571810b7470993ddad0f3053ab8ffad685b3cfe"
+    },
+    "replacementLedger": [
+      {
+        "test": "/fetch/api/headers/headers-no-cors.any.html",
+        "originalRowSHA256": "d5b1438c291786dfac59f90ca38e52acdd2b171cd90401291714af7d5e4ad9ba",
+        "supplementalRowSHA256": "89ba952ff5683d58e332eed33f2d0ffcad19f26f47ea16c95b3bdd15c1353416",
+        "reason": "Pinned helper restored after original HTTP404 fixture error"
+      },
+      {
+        "test": "/fetch/api/headers/headers-no-cors.any.worker.html",
+        "originalRowSHA256": "bc1b9fc31eccbe6351b9cf747fbb89feac6ac697757740e9fa15222646fd585e",
+        "supplementalRowSHA256": "40cc3ef41db25defd22039ae03a70a433934afab081491c1ae3413dde1d1bcc4",
+        "reason": "Pinned helper restored after original HTTP404 fixture error"
+      }
+    ],
+    "summary": {
+      "scheduled_files": 52,
+      "recorded_files": 52,
+      "remaining_files": 0,
+      "files_passing_all_assertions": 26,
+      "file_outcomes": {
+        "ERROR": 13,
+        "OK": 26,
+        "TIMEOUT": 13
+      },
+      "subtest_outcomes": {
+        "PASS": 539
+      },
+      "zero_assertion_testharness_files": 26,
+      "executed_subtests_excluding_notrun": 539
+    }
+  },
+  "adjustedAggregateBookkeeping": {
+    "scheduled_files": 1515,
+    "recorded_files": 207,
+    "remaining_files": 1308,
+    "files_passing_all_assertions": 160,
+    "zero_assertion_testharness_files": 37,
+    "executed_subtests_excluding_notrun": 22424,
+    "file_outcomes": {
+      "ERROR": 17,
+      "OK": 170,
+      "TIMEOUT": 20
+    },
+    "subtest_outcomes": {
+      "FAIL": 65,
+      "PASS": 22359
+    }
+  },
+  "aggregateWarning": "Assertion-weighted bookkeeping is not an overall browser-quality score or a full-WPT pass rate. Raw and supplemental views overlap and must never be added.",
+  "batch": {
+    "receipt": {
+      "path": "output/session-10290244/final-priority-batch-1/receipt.json",
+      "sha256": "00e5165653ad58179af8783e0bc62b07852b6c4ecf0aceb8bdc2548d6c1e0fbc"
+    },
+    "job": {
+      "path": "output/session-10290244/final-priority-batch-1-job/result.json",
+      "sha256": "306814b5fa8c2400cd3ad53f0b56a3f48b134fe3487e375b43f02cc8ced4d278"
+    },
+    "recordedWallSeconds": 304.18,
+    "overFiveMinuteReason": "Sequential upstream runs with unchanged 15s/65s case timeouts; unsupported service/shared contexts and explicitly unrun encoding cases are retained. The 304.226s launcher result is an expected bounded test batch, not a build regression."
+  },
+  "encodingFailureGroups": [
+    {
+      "count": 23,
+      "area": "Legacy form/query encoding",
+      "tests": [
+        "big5-encoder.html",
+        "iso-2022-jp-encoder.html"
+      ],
+      "assessment": "Output is UTF-8 where the fixtures expect legacy bytes or numeric character references. Exact form/document encoding propagation still needs tracing; this is not a TextEncoder UTF-8 API defect."
+    },
+    {
+      "count": 24,
+      "area": "Stream interface and IDL exposure",
+      "tests": [
+        "idlharness.any.html",
+        "idlharness.any.worker.html"
+      ],
+      "assessment": "Existing TextDecoderStream inheritance/receiver checks and dedicated-worker exposure remain incomplete."
+    },
+    {
+      "count": 8,
+      "area": "Legacy streaming decoder state",
+      "tests": [
+        "iso-2022-jp-decoder.any.html",
+        "iso-2022-jp-decoder.any.worker.html"
+      ],
+      "assessment": "Explicitly unsupported streaming/reset paths; requires persistent bounded legacy decoder state."
+    },
+    {
+      "count": 2,
+      "area": "MessagePort ArrayBuffer transfer",
+      "tests": [
+        "encodeInto.any.html",
+        "encodeInto.any.worker.html"
+      ],
+      "assessment": "The fixture transfers its output buffer through MessagePort; current local-channel paths discard buffer transfer lists. Genuine-detachment codec controls pass. Confirm sender byteLength in a RED transfer regression before implementing shared transfer machinery."
+    }
+  ],
+  "referenceStatus": "Installed Chrome URL control is quarantined after independent sanity failures; no aggregate parity or outperformance claim.",
+  "reproductionFiles": [
+    {
+      "path": "tools/apple-session-gpt6as/remote_priority_batch_10290244.py",
+      "sha256": "1114c72ce92e310d107f8152bdde9273b5a640224d9db3338ac96a214be5b104"
+    },
+    {
+      "path": "tools/apple-session-gpt6as/remote_headers_supplemental_10290244.py",
+      "sha256": "4a39a2422fc72bb73e57005cff04f11f260828508253f35cb351d7cfd6792fd0"
+    },
+    {
+      "path": "tools/apple-session-gpt6as/remote_final_resource_batch_10290244.py",
+      "sha256": "fe1753eef6a4223bf6ff79b30c3a2d4ac01914a00b34aa24831eab106680f006"
+    },
+    {
+      "path": "tools/apple-session-gpt6as/update_priority_progress_10290244.py",
+      "sha256": "e9f406b46cdc70b39059537a6e747e1bc03b820872df59285ff9fe2ceb9a0f79"
+    },
+    {
+      "path": "tools/apple-session-gpt6as/build_delivery_receipt_10290244.py",
+      "sha256": "8c941b0fd3535da4216022177b8f856c87f5d0cbd70bbbfc5050b98aa57e3dc3"
+    },
+    {
+      "path": "agent/gpt6-astra-pro_builtin-agents_devinmac3d_runtime_followup_10290244.md",
+      "sha256": "b25de8aa933721b6b43b86461f32e06dffba1d745b795c1276bb39347d16fd6d"
+    }
+  ],
+  "priorityWrapperLimitation": "The measured priority batch wrapper cleans up owned children in normal/error paths, but has no external SIGTERM handler. Preserve this exact measured revision; an interrupted future invocation needs explicit owned-process cleanup verification."
+}

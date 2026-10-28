@@ -18,7 +18,7 @@ if args.cohort:
     plan=json.loads((args.cohort/'cohort.json').read_text())
     report=json.loads((args.cohort/'priority-comparison.json').read_text())
     if report['cohort_sha256']!=sha(args.cohort/'cohort.json')or plan['schedule_sha256']!=frozen['schedule_sha256']or report['scheduled_variants']!=frozen['selected_variants']:raise RuntimeError('Comparison and frozen cohort identities differ')
-    value.update(lumenBinarySHA256=plan['binaries']['lumen']['sha256'],chromiumBinarySHA256=plan['binaries']['chromium']['sha256'],reportSHA256=sha(args.cohort/'priority-comparison.json'),reportUpdatedUTC=report['created_utc'])
+    value.update(lumenBinarySHA256=plan['binaries']['lumen']['sha256'],chromiumBinarySHA256=plan['binaries']['chromium']['sha256'],reportSHA256=sha(args.cohort/'priority-comparison.json'),reportUpdatedUTC=report['created_utc'],cohortSHA256=sha(args.cohort/'cohort.json'))
 for name,count in frozen['category_counts'].items():
     row={'scheduled':count['variants'],'lumenRecorded':0,'chromeRecorded':0,'lumenFullyPassing':0,'chromeFullyPassing':0,'chromePassRetention':None,'bothComplete':False,'harnessesHealthy':False}
     if report:
@@ -94,6 +94,20 @@ if review_path.is_file():
                 row.setdefault('recordedChromePassRetention',row.get('chromePassRetention'))
                 row['chromePassRetention']=None
                 row['referenceStatus']='quarantined'
+# The original result ledger stays unchanged. A pinned missing-helper rerun
+# replaces exactly two rows only in this separately labelled supplemental view.
+value.pop('headersSupplemental',None)
+supplement_path=ROOT/'agent/evidence/10290244-headers-fixture-supplemental.json'
+if supplement_path.is_file():
+    if sha(supplement_path)!='6bd1483c10336f701501333530520443eca80658f879b4e6066222a2f980a7d6':raise RuntimeError('Reviewed Headers supplemental receipt differs')
+    supplement=json.loads(supplement_path.read_text())
+    if supplement['binarySHA256']==native==value.get('lumenBinarySHA256')and supplement['parentPlanSHA256']==value.get('cohortSHA256'):
+        raw=supplement['rawOriginalSummary'];adjusted=supplement['adjustedSummary']
+        if not(supplement['complete']and supplement['allSupplementalAssertionsPass']and supplement['frozenHeaderVariants']==raw['scheduled_files']==adjusted['scheduled_files']==52 and supplement['supplementalVariants']==2):raise RuntimeError('Supplemental Headers scope is incomplete')
+        if sha(ROOT/supplement['originalResults'])!=supplement['originalResultsSHA256']:raise RuntimeError('Original Headers ledger changed')
+        value['headersSupplemental']={'evidence':'agent/evidence/10290244-headers-fixture-supplemental.json','receiptSHA256':sha(supplement_path),'binarySHA256':native,'frozenVariants':52,'replacedVariants':2,'originalLedgerSHA256':supplement['originalResultsSHA256'],'rawOriginalSummary':raw,'adjustedSummary':adjusted,'policy':supplement['policy']}
+        raw_pass=raw['subtest_outcomes'].get('PASS',0);raw_total=raw['executed_subtests_excluding_notrun'];adjusted_pass=adjusted['subtest_outcomes'].get('PASS',0);adjusted_total=adjusted['executed_subtests_excluding_notrun']
+        status['phase']+=f" Fetch Headers raw run: {raw_pass}/{raw_total} assertions, {raw['files_passing_all_assertions']}/52 fully passing files. After restoring a pinned missing helper, the separate adjusted view is {adjusted_pass}/{adjusted_total} assertions and {adjusted['files_passing_all_assertions']}/52 fully passing files; {adjusted['file_outcomes'].get('ERROR',0)} errors and {adjusted['file_outcomes'].get('TIMEOUT',0)} timeouts remain. Original results are preserved."
 status['expandedWpt']=value;status['updatedUTC']=datetime.now(timezone.utc).isoformat()
 archive=ROOT/'output/session-10290244/public/manifest.json'
 if archive.is_file():

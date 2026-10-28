@@ -1,0 +1,49 @@
+{
+  "schema": "lume-final-wpt-provenance-10290244-v1",
+  "binarySHA256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+  "sourceCommit": "436916ceb3b32630ed251bb666b02fa39a3cd0c8",
+  "generator": {
+    "path": "tools/apple-session-gpt6as/build_final_wpt_matrix_10290244.py",
+    "sha256": "bc63f3e24e57ee3df198772afd18f54cca7b21f852f4e035232050c360d2c60e"
+  },
+  "outputs": [
+    {
+      "path": "agent/gpt6-astra-pro_builtin-agents_devinmac3d_wpt_matrix_10290244.json",
+      "sha256": "46a497541919707b584f0b3e01429ac338863640a6b322032212ecc6ae3ec2f1"
+    },
+    {
+      "path": "agent/gpt6-astra-pro_builtin-agents_devinmac3d_wpt_matrix_10290244.md",
+      "sha256": "12e21bc7b2be0ad46904791c232706444a13a1eb72fd6b3221e7b9e3c9938509"
+    },
+    {
+      "path": "agent/evidence/10290244-headers-fixture-supplemental.json",
+      "sha256": "6bd1483c10336f701501333530520443eca80658f879b4e6066222a2f980a7d6"
+    }
+  ],
+  "reviewedFiles": [
+    {
+      "path": "tools/apple-session-gpt6as/remote_priority_batch_10290244.py",
+      "sha256": "1114c72ce92e310d107f8152bdde9273b5a640224d9db3338ac96a214be5b104"
+    },
+    {
+      "path": "tools/apple-session-gpt6as/remote_headers_supplemental_10290244.py",
+      "sha256": "4a39a2422fc72bb73e57005cff04f11f260828508253f35cb351d7cfd6792fd0"
+    },
+    {
+      "path": "tools/apple-session-gpt6as/remote_final_resource_batch_10290244.py",
+      "sha256": "fe1753eef6a4223bf6ff79b30c3a2d4ac01914a00b34aa24831eab106680f006"
+    },
+    {
+      "path": "tools/apple-session-gpt6as/update_priority_progress_10290244.py",
+      "sha256": "e9f406b46cdc70b39059537a6e747e1bc03b820872df59285ff9fe2ceb9a0f79"
+    },
+    {
+      "path": "tools/apple-session-gpt6as/build_delivery_receipt_10290244.py",
+      "sha256": "8c941b0fd3535da4216022177b8f856c87f5d0cbd70bbbfc5050b98aa57e3dc3"
+    },
+    {
+      "path": "agent/gpt6-astra-pro_builtin-agents_devinmac3d_runtime_followup_10290244.md",
+      "sha256": "b25de8aa933721b6b43b86461f32e06dffba1d745b795c1276bb39347d16fd6d"
+    }
+  ]
+}

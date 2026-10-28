@@ -1,0 +1,209 @@
+{
+  "schema": "lume-headers-fixture-supplemental-10290244-v1",
+  "startedUTC": "2026-10-28T21:20:21.896048+00:00",
+  "parentPlan": "output/wpt-10290244/priority-1b9d-v1/cohort.json",
+  "parentPlanSHA256": "6720f796928e5a83d64c76a4e751e0da672f14f124c04792a97319485170d65d",
+  "binarySHA256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+  "upstreamRevision": "7f8d49b5a82606efc771f43d10aad5bce5ccbfeb",
+  "frozenHeaderVariants": 52,
+  "supplementalVariants": 2,
+  "urls": [
+    "/fetch/api/headers/headers-no-cors.any.html",
+    "/fetch/api/headers/headers-no-cors.any.worker.html"
+  ],
+  "originalResults": "output/wpt-10290244/priority-1b9d-v1/headers/lumen/results.jsonl",
+  "originalResultsSHA256": "b2a98bd9fb84020e1afef8aab4804067b72977d148af8ea8097f483c7ee272e9",
+  "helper": {
+    "path": "fetch/api/cors/resources/not-cors-safelisted.json",
+    "sha256": "ab9125bd514161d9621e02c4ebbca387274207b99171c6420fee8f396f498a3c",
+    "httpStatus": 200,
+    "contentType": "application/json",
+    "httpSHA256": "ab9125bd514161d9621e02c4ebbca387274207b99171c6420fee8f396f498a3c",
+    "jsonType": "array",
+    "entries": 11
+  },
+  "policy": "Preserve original52 rows. Replace exactly two URLs only in a separately labeled adjusted view; never add repeated variants or their subtests to the original denominator.",
+  "complete": true,
+  "replacementLedger": [
+    {
+      "test": "/fetch/api/headers/headers-no-cors.any.html",
+      "originalRowSHA256": "d5b1438c291786dfac59f90ca38e52acdd2b171cd90401291714af7d5e4ad9ba",
+      "supplementalRowSHA256": "89ba952ff5683d58e332eed33f2d0ffcad19f26f47ea16c95b3bdd15c1353416",
+      "reason": "Pinned helper restored after original HTTP404 fixture error"
+    },
+    {
+      "test": "/fetch/api/headers/headers-no-cors.any.worker.html",
+      "originalRowSHA256": "bc1b9fc31eccbe6351b9cf747fbb89feac6ac697757740e9fa15222646fd585e",
+      "supplementalRowSHA256": "40cc3ef41db25defd22039ae03a70a433934afab081491c1ae3413dde1d1bcc4",
+      "reason": "Pinned helper restored after original HTTP404 fixture error"
+    }
+  ],
+  "rawOriginalSummary": {
+    "scheduled_files": 52,
+    "recorded_files": 52,
+    "remaining_files": 0,
+    "file_outcomes": {
+      "ERROR": 13,
+      "OK": 26,
+      "TIMEOUT": 13
+    },
+    "files_passing_all_assertions": 24,
+    "valid_completed_files": 39,
+    "attempted_files": 52,
+    "attempted_file_pass_rate": 0.46153846153846156,
+    "zero_assertion_testharness_files": 26,
+    "zero_assertion_files_by_type": {
+      "testharness": 26
+    },
+    "all_assertions_pass_file_rate": 0.6153846153846154,
+    "completed_only_metric_note": "all_assertions_pass_file_rate excludes timeouts/crashes/infrastructure errors; use attempted_file_pass_rate as headline.",
+    "scheduled_file_pass_fraction": 0.46153846153846156,
+    "subtest_outcomes": {
+      "FAIL": 2,
+      "PASS": 499
+    },
+    "executed_subtests_excluding_notrun": 501,
+    "subtest_pass_rate": 0.9960079840319361,
+    "note": "Timeouts, crashes, infrastructure errors and unrun files are explicit; they never count as passes.",
+    "by_type": {
+      "testharness": {
+        "scheduled_files": 52,
+        "recorded_files": 52,
+        "remaining_files": 0,
+        "file_outcomes": {
+          "ERROR": 13,
+          "OK": 26,
+          "TIMEOUT": 13
+        },
+        "files_passing_all_assertions": 24,
+        "valid_completed_files": 39,
+        "attempted_files": 52,
+        "attempted_file_pass_rate": 0.46153846153846156,
+        "zero_assertion_testharness_files": 26,
+        "zero_assertion_files_by_type": {
+          "testharness": 26
+        },
+        "all_assertions_pass_file_rate": 0.6153846153846154,
+        "completed_only_metric_note": "all_assertions_pass_file_rate excludes timeouts/crashes/infrastructure errors; use attempted_file_pass_rate as headline.",
+        "scheduled_file_pass_fraction": 0.46153846153846156,
+        "subtest_outcomes": {
+          "FAIL": 2,
+          "PASS": 499
+        },
+        "executed_subtests_excluding_notrun": 501,
+        "subtest_pass_rate": 0.9960079840319361,
+        "note": "Timeouts, crashes, infrastructure errors and unrun files are explicit; they never count as passes."
+      }
+    },
+    "headline_metric_note": "Report testharness and test262 separately; the combined counters are coverage bookkeeping, not a web-platform pass-rate headline."
+  },
+  "supplementalSummary": {
+    "scheduled_files": 2,
+    "recorded_files": 2,
+    "remaining_files": 0,
+    "file_outcomes": {
+      "OK": 2
+    },
+    "files_passing_all_assertions": 2,
+    "valid_completed_files": 2,
+    "attempted_files": 2,
+    "attempted_file_pass_rate": 1.0,
+    "zero_assertion_testharness_files": 0,
+    "zero_assertion_files_by_type": {},
+    "all_assertions_pass_file_rate": 1.0,
+    "completed_only_metric_note": "all_assertions_pass_file_rate excludes timeouts/crashes/infrastructure errors; use attempted_file_pass_rate as headline.",
+    "scheduled_file_pass_fraction": 1.0,
+    "subtest_outcomes": {
+      "PASS": 54
+    },
+    "executed_subtests_excluding_notrun": 54,
+    "subtest_pass_rate": 1.0,
+    "note": "Timeouts, crashes, infrastructure errors and unrun files are explicit; they never count as passes.",
+    "by_type": {
+      "testharness": {
+        "scheduled_files": 2,
+        "recorded_files": 2,
+        "remaining_files": 0,
+        "file_outcomes": {
+          "OK": 2
+        },
+        "files_passing_all_assertions": 2,
+        "valid_completed_files": 2,
+        "attempted_files": 2,
+        "attempted_file_pass_rate": 1.0,
+        "zero_assertion_testharness_files": 0,
+        "zero_assertion_files_by_type": {},
+        "all_assertions_pass_file_rate": 1.0,
+        "completed_only_metric_note": "all_assertions_pass_file_rate excludes timeouts/crashes/infrastructure errors; use attempted_file_pass_rate as headline.",
+        "scheduled_file_pass_fraction": 1.0,
+        "subtest_outcomes": {
+          "PASS": 54
+        },
+        "executed_subtests_excluding_notrun": 54,
+        "subtest_pass_rate": 1.0,
+        "note": "Timeouts, crashes, infrastructure errors and unrun files are explicit; they never count as passes."
+      }
+    },
+    "headline_metric_note": "Report testharness and test262 separately; the combined counters are coverage bookkeeping, not a web-platform pass-rate headline."
+  },
+  "adjustedSummary": {
+    "scheduled_files": 52,
+    "recorded_files": 52,
+    "remaining_files": 0,
+    "file_outcomes": {
+      "ERROR": 13,
+      "OK": 26,
+      "TIMEOUT": 13
+    },
+    "files_passing_all_assertions": 26,
+    "valid_completed_files": 39,
+    "attempted_files": 52,
+    "attempted_file_pass_rate": 0.5,
+    "zero_assertion_testharness_files": 26,
+    "zero_assertion_files_by_type": {
+      "testharness": 26
+    },
+    "all_assertions_pass_file_rate": 0.6666666666666666,
+    "completed_only_metric_note": "all_assertions_pass_file_rate excludes timeouts/crashes/infrastructure errors; use attempted_file_pass_rate as headline.",
+    "scheduled_file_pass_fraction": 0.5,
+    "subtest_outcomes": {
+      "PASS": 539
+    },
+    "executed_subtests_excluding_notrun": 539,
+    "subtest_pass_rate": 1.0,
+    "note": "Timeouts, crashes, infrastructure errors and unrun files are explicit; they never count as passes.",
+    "by_type": {
+      "testharness": {
+        "scheduled_files": 52,
+        "recorded_files": 52,
+        "remaining_files": 0,
+        "file_outcomes": {
+          "ERROR": 13,
+          "OK": 26,
+          "TIMEOUT": 13
+        },
+        "files_passing_all_assertions": 26,
+        "valid_completed_files": 39,
+        "attempted_files": 52,
+        "attempted_file_pass_rate": 0.5,
+        "zero_assertion_testharness_files": 26,
+        "zero_assertion_files_by_type": {
+          "testharness": 26
+        },
+        "all_assertions_pass_file_rate": 0.6666666666666666,
+        "completed_only_metric_note": "all_assertions_pass_file_rate excludes timeouts/crashes/infrastructure errors; use attempted_file_pass_rate as headline.",
+        "scheduled_file_pass_fraction": 0.5,
+        "subtest_outcomes": {
+          "PASS": 539
+        },
+        "executed_subtests_excluding_notrun": 539,
+        "subtest_pass_rate": 1.0,
+        "note": "Timeouts, crashes, infrastructure errors and unrun files are explicit; they never count as passes."
+      }
+    },
+    "headline_metric_note": "Report testharness and test262 separately; the combined counters are coverage bookkeeping, not a web-platform pass-rate headline."
+  },
+  "allSupplementalAssertionsPass": true,
+  "finishedUTC": "2026-10-28T21:20:23.022216+00:00",
+  "wallSeconds": 1.126
+}
