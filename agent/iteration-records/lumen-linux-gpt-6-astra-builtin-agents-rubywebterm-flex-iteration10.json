@@ -1,12 +1,12 @@
 {
   "iteration": 10,
   "title": "Flex absolute-child static-position alignment",
-  "status": "isolated123_built_pending_independent_tests",
+  "status": "accepted_focused_increment_pending_final_combined_replay",
   "started_utc": "2026-10-28T06:25:48.589804Z",
   "start_basis": "first retained source/spec investigation timestamp",
-  "finished_utc": null,
+  "finished_utc": "2026-10-28T07:01:46.070453+00:00",
   "whole_goal_readiness": 19,
-  "focused_quality_score": null,
+  "focused_quality_score": 95,
   "agents": [
     "/root/ops_preview",
     "/root/engine_lead",
@@ -34,7 +34,7 @@
     }
   },
   "hypothesis": "Resolve the static position after absolute used size, using direct flex-parent content edges, original writing-mode/direction/alignment tokens and zero auto margins; explicit inset axes remain unchanged.",
-  "review_status": "Independent source review clears bounded direct-child and auto-axis scope; negative free-space distribution and safe overflow remain under explicit reference/spec review.",
+  "review_status": "Independent engine source review and conformance comparison accepted; PM focused quality95/100. No full-browser parity claim.",
   "attempts": [
     {
       "candidate": 123,
@@ -47,5 +47,52 @@
       "score": null
     }
   ],
-  "updated_utc": "2026-10-28T06:45:29.591718+00:00"
+  "updated_utc": "2026-10-28T07:01:46.070453+00:00",
+  "finish_basis": "acceptance record completed after PM focused acceptance",
+  "elapsed_minutes": 35.958,
+  "accepted_evidence": {
+    "guarded_baseline_candidate": {
+      "native_passes_before": 163,
+      "native_passes_after": 685,
+      "assertions": 689,
+      "gained_exact_pass_identities": 522,
+      "lost_exact_pass_identities": 0,
+      "harnesses": 10,
+      "all_harnesses_ok": true,
+      "chromium_passes": 689
+    },
+    "reftests": {
+      "native_passes_before": 2,
+      "native_passes_after": 4,
+      "urls": 5,
+      "lost_passes": 0,
+      "chromium_passes": 5,
+      "preserved_safe_cases": [
+        "safe001",
+        "safe002"
+      ],
+      "gained": [
+        "margin002",
+        "containing-block001"
+      ]
+    },
+    "guard_library_sha256": "45643caa22bb659bc7b431acfc7b8af04d68f971c3610f4d56dcb2847d808900",
+    "method": "Fresh121 and123 harness runs both used the same verified sealed capture guard/bootstrap; original unguarded121 retained separately. Chromium uses its established fake-media configuration.",
+    "reports": [
+      "flex123-independent-comparison.json",
+      "flex123-independent-reftest-comparison.json"
+    ],
+    "resources": "Existing paired runner recorded process CPU/RSS every1second under shared480%quota; no performance speedup claim."
+  },
+  "remaining_limits": [
+    "Four vertical first/last-baseline assertions still fail versus Chromium; all failed before this change.",
+    "Tentative safe overflow with an outer containing block remains failing.",
+    "PinnedWPT/Chromium negative-space space-around/evenly centering is retained; current CSSAlign3 draft describes safe-center fallback and is not claimed completely implemented.",
+    "Scope is direct absolute/fixed children of flex formatting contexts on axes where both insets are auto; no broader in-flow flex rewrite."
+  ],
+  "spec_sources": [
+    "https://drafts.csswg.org/css-flexbox-1/#abspos-items",
+    "https://drafts.csswg.org/css-position-3/#static-position-rectangle",
+    "https://drafts.csswg.org/css-align-3/#overflow-values"
+  ]
 }

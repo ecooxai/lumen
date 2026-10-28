@@ -251,6 +251,64 @@ static bool area_apply(const Box *a, const Box *cb, const char *area, const int 
     return true;
 }
 
+/* Flexbox 4.1: out-of-flow children align as a sole fixed-used-size item.
+ * Their real absolute containing block can be a different ancestor. */
+static bool static_axis_reverse(const ComputedStyle *s, bool horizontal) {
+    return horizontal ? (s->writing_mode ? s->writing_mode == 2 : s->direction != 0) : (s->writing_mode && s->direction);
+}
+static const char *static_align_text(const ComputedStyle *s, const char *property, int fallback, char out[64]) {
+    static const char *const names[] = { "auto", "normal", "stretch", "flex-start", "flex-end", "center", "baseline", "space-between", "space-around", "space-evenly", "start", "end" };
+    const char *value = custom_get(s->gen_n, property);
+    if (!value) return fallback >= 0 && (size_t)fallback < sizeof names / sizeof *names ? names[fallback] : "normal";
+    if (!*value) return !strcmp(property, "align-self") ? "auto" : "normal";
+    size_t n = 0; bool space = false;
+    for (const unsigned char *p = (const unsigned char *)value; *p; p++) {
+        if (is_ws(*p)) { if (n) space = true; continue; }
+        if (n + (space ? 1 : 0) + 1 >= 64) return "normal";
+        if (space) out[n++] = ' '; space = false;
+        out[n++] = *p >= 'A' && *p <= 'Z' ? (char)(*p + ('a' - 'A')) : (char)*p;
+    }
+    out[n] = 0; return out;
+}
+static float static_align_offset(const char *value, const Box *a, bool horizontal, bool flex_reverse, bool normal_reverse, bool main_axis, bool row, float free_space) {
+    bool safe = false;
+    if (!strncmp(value, "safe ", 5)) { safe = true; value += 5; }
+    else if (!strncmp(value, "unsafe ", 7)) value += 7;
+    float fraction = flex_reverse ? 1 : 0;
+    if (!strcmp(value, "center") || (main_axis && (!strcmp(value, "space-around") || !strcmp(value, "space-evenly")))) fraction = .5f;
+    else if (!strcmp(value, "flex-end")) fraction = flex_reverse ? 0 : 1;
+    else if (!strcmp(value, "start")) fraction = normal_reverse ? 1 : 0;
+    else if (!strcmp(value, "end")) fraction = normal_reverse ? 0 : 1;
+    else if (!strcmp(value, "self-start") || !strcmp(value, "baseline") || !strcmp(value, "first baseline")) fraction = static_axis_reverse(a->st, horizontal) ? 1 : 0;
+    else if (!strcmp(value, "self-end") || !strcmp(value, "last baseline")) fraction = static_axis_reverse(a->st, horizontal) ? 0 : 1;
+    else if (!strcmp(value, "left")) fraction = horizontal || row ? 0 : (normal_reverse ? 1 : 0);
+    else if (!strcmp(value, "right")) fraction = horizontal || row ? 1 : (normal_reverse ? 1 : 0);
+    if (safe && free_space < 0) fraction = flex_reverse ? 1 : 0;
+    return free_space * fraction;
+}
+static void flex_static_position(const Box *a, bool auto_x, bool auto_y, float *sx, float *sy) {
+    const Box *p = a->parent;
+    if (!p || p->fmt != FMT_FLEX || !p->st || (!auto_x && !auto_y)) return;
+    const ComputedStyle *s = p->st;
+    bool row = s->flex_direction <= FD_ROW_REVERSE;
+    bool horizontal = row != (s->writing_mode != 0);
+    bool normal_main_reverse = static_axis_reverse(s, horizontal);
+    bool normal_cross_reverse = static_axis_reverse(s, !horizontal);
+    bool main_reverse = normal_main_reverse ^ (s->flex_direction == FD_ROW_REVERSE || s->flex_direction == FD_COLUMN_REVERSE);
+    bool cross_reverse = normal_cross_reverse ^ (s->flex_wrap == 2);
+    char main_buf[64], cross_buf[64], parent_buf[64];
+    const char *main_align = static_align_text(s, "justify-content", s->justify_content, main_buf);
+    const char *cross_align = static_align_text(a->st, "align-self", a->st->align_self, cross_buf);
+    if (!strcmp(cross_align, "auto")) cross_align = static_align_text(s, "align-items", s->align_items, parent_buf);
+    /* compute_mbp resolves auto margins to zero for these out-of-flow boxes. */
+    float free_x = LMAX(0, p->w - hbp(p)) - a->w - a->m[1] - a->m[3];
+    float free_y = LMAX(0, p->h - vbp(p)) - a->h - a->m[0] - a->m[2];
+    float main_off = static_align_offset(main_align, a, horizontal, main_reverse, normal_main_reverse, true, row, horizontal ? free_x : free_y);
+    float cross_off = static_align_offset(cross_align, a, !horizontal, cross_reverse, normal_cross_reverse, false, row, horizontal ? free_y : free_x);
+    if (auto_x) *sx = p->x + p->b[3] + p->p[3] + (horizontal ? main_off : cross_off);
+    if (auto_y) *sy = p->y + p->b[0] + p->p[0] + (horizontal ? cross_off : main_off);
+}
+
 /* places one absolutely positioned box, with a position-area and flips (1 block, 2 inline) from its style or a
    position-try fallback; true when its margin box fits the containing block */
 static float g_imcb[2];   /* the last abs_place's inset-modified containing block size */
@@ -302,6 +360,7 @@ static bool abs_place(Layout *L, Box *cb, Box *a, const char *area_v, const int 
     if (!tA && !bA && mtA && mbA) { float m = (ph - t - bt - oh) / 2; a->m[0] = a->m[2] = LMAX(0, m); }
     float x, y;
     float sx = a->sx, sy = a->sy;
+    if (!area) flex_static_position(a, lA && rA, tA && bA, &sx, &sy);
     if (!lA) x = px + l + a->m[3]; else if (!rA) x = px + pw - r - a->m[1] - ow; else x = sx + a->m[3];
     if (!tA) y = py + t + a->m[0]; else if (!bA) y = py + ph - bt - a->m[2] - oh; else y = sy + a->m[0];
     if (area && af[0] >= 0) x += af[0] * (pw - l - r - ow - a->m[1] - a->m[3]);

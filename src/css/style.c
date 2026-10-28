@@ -1275,7 +1275,16 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
     bool grid_tracks = !strcmp(P, "grid-template-columns") || !strcmp(P, "grid-template-rows");
     /* Retain the computed track-list structure for animation: the layout arrays
        expand repeat() and cannot preserve line names or all minmax components. */
-    if (gp && (!gp->native || anim_longhand || grid_tracks)) {
+    /* Keep computed alignment qualifiers for absolute flex static positions.
+       The compact enums still serve public CSSOM and existing in-flow layout. */
+    bool abs_align = !strcmp(P, "align-self") || !strcmp(P, "align-items") || !strcmp(P, "justify-content");
+    const char *place_align = !strcmp(P, "place-self") ? "align-self" : !strcmp(P, "place-items") ? "align-items" : !strcmp(P, "place-content") ? "justify-content" : NULL;
+    if (inherit && (abs_align || place_align)) st->parent_sensitive = true;
+    if (place_align && (inherit || initial || unset)) {
+        const char *pv = inherit && par ? gen_value(par, gen_prop(place_align)) : NULL;
+        gen_put(&st->gen_n, place_align, xstrdup(pv ? pv : ""));
+    }
+    if (gp && (!gp->native || anim_longhand || grid_tracks || abs_align)) {
         CustomProps **slot = gp->inherited ? &st->gen_i : &st->gen_n;
         const char *pv = par ? gen_value(par, gp) : NULL;
         if (inherit || (unset && gp->inherited)) gen_put(slot, P, grid_tracks && par ? tr_grid_value(el, par, P) : xstrdup(pv ? pv : ""));
@@ -1586,9 +1595,9 @@ apply:
         else if (!strcmp(P, "padding-block")) { char *t[2]; int n = split_ws(val, t, 2); if (n) { alen(&c, t[0], &st->padding[0]); alen(&c, t[n - 1], &st->padding[2]); } free_toks(t, n); }
         else if (!strcmp(P, "position")) { static const char *const ps[] = { "static", "relative", "absolute", "fixed", "sticky", NULL }; k = kw(val, ps); if (k >= 0) st->position = (uint8_t)k; else if (str_ieq(val, "-webkit-sticky")) st->position = P_STICKY; }
         else if (!strcmp(P, "pointer-events")) st->pointer_events = !str_ieq(val, "none");
-        else if (!strcmp(P, "place-items")) { char *t[2]; int n = split_ws(val, t, 2); if (n) { st->align_items = parse_align(t[0]); st->justify_items = parse_align(t[n - 1]); } free_toks(t, n); }
-        else if (!strcmp(P, "place-content")) { char *t[2]; int n = split_ws(val, t, 2); if (n) { st->align_content = parse_align(t[0]); st->justify_content = parse_align(t[n - 1]); } free_toks(t, n); }
-        else if (!strcmp(P, "place-self")) { char *t[2]; int n = split_ws(val, t, 2); if (n) { st->align_self = parse_align(t[0]); st->justify_self = parse_align(t[n - 1]); } free_toks(t, n); }
+        else if (!strcmp(P, "place-items")) { char *t[2]; int n = split_ws(val, t, 2); if (n) { st->align_items = parse_align(t[0]); st->justify_items = parse_align(t[n - 1]); gen_put(&st->gen_n, "align-items", xstrdup(t[0])); } free_toks(t, n); }
+        else if (!strcmp(P, "place-content")) { char *t[2]; int n = split_ws(val, t, 2); if (n) { st->align_content = parse_align(t[0]); st->justify_content = parse_align(t[n - 1]); gen_put(&st->gen_n, "justify-content", xstrdup(t[n - 1])); } free_toks(t, n); }
+        else if (!strcmp(P, "place-self")) { char *t[2]; int n = split_ws(val, t, 2); if (n) { st->align_self = parse_align(t[0]); st->justify_self = parse_align(t[n - 1]); gen_put(&st->gen_n, "align-self", xstrdup(t[0])); } free_toks(t, n); }
         break;
     case 'r':
         if (!strcmp(P, "right")) alen(&c, val, &st->inset[1]);
@@ -3522,6 +3531,9 @@ static bool paint_only(const ComputedStyle *a, const ComputedStyle *b) {
     if (a->grid_ncols != b->grid_ncols || a->grid_nrows != b->grid_nrows) return false;
     if (a->grid_ncols && memcmp(a->grid_cols, b->grid_cols, sizeof *a->grid_cols * (size_t)a->grid_ncols)) return false;
     if (a->grid_nrows && memcmp(a->grid_rows, b->grid_rows, sizeof *a->grid_rows * (size_t)a->grid_nrows)) return false;
+    static const char *const abs_align_props[] = { "align-self", "align-items", "justify-content" };
+    for (size_t i = 0; i < sizeof abs_align_props / sizeof *abs_align_props; i++)
+        if (!str_same(custom_get(a->gen_n, abs_align_props[i]), custom_get(b->gen_n, abs_align_props[i]))) return false;
     if (!paint_only(a->before, b->before) || !paint_only(a->after, b->after) || !paint_only(a->marker, b->marker)) return false;
     ComputedStyle x = *a, y = *b;
 #define PO_Z(f) (memset(&x.f, 0, sizeof x.f), memset(&y.f, 0, sizeof y.f))
