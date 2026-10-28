@@ -26,3 +26,12 @@ The complete current user request is in `agent/task.md`. Prior handoff and instr
 Audit existing WPT raw reports and Chrome reference; report scope and denominator first. Run a fresh focused baseline against an explicitly identified binary/source revision, then regression-first standards fixes. Verify native Mac launch and inspect actual IPA/simulator feasibility. Reuse resource monitors, sample every second, and record timings/limits.
 Prioritize important DOM/events/URL/encoding/fetch/Promise behavior by evidence rather than aggregate score inflation. Treat simulator, macOS-native and same-device-IPA evidence as separate gates.
 Publish only reviewed files and committed tracked source, using the existing project release workflow where possible. Check a progress message inbox if available; retain raw metrics and run receipts separately from user-facing summaries.
+
+
+## Verified checkpoint 10290244-002
+
+Fresh frozen six-file WPT baseline: 1844/1850 (99.675676%), Chrome 1850/1850; six complete harnesses, five fully passing files. Baseline binary SHA-256 `7a4bfec10412f3e2c0eee92a01bf8c9bec496eb122114ab4844e8e4a4c783b85`. Fixed 15-second-settle idle review: 65 samples/64.009 s, p95 0.996%, peak 1%, RSS156.484→144.266 MiB, no gaps/errors. Full WPT and shared-IPA execution remain unverified.
+
+Task scorecard is `agent/scorecard-10290244.json`; current earned score 14.97/100 is an acceptance checklist, not a conformance percentage. The task branch was pushed through configured origin at9518bda. Additional code changes in flight are not automatically covered by baseline evidence.
+
+Pinned sparse upstream WPT source was restored under `output/wpt-10290244/upstream` at7f8d49b5a82606efc771f43d10aad5bce5ccbfeb. Official server/manifest setup is in progress; sparse scope and all unrun categories stay explicit.

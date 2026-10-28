@@ -5,8 +5,8 @@
   "session_start_utc": "2026-10-28T18:47:35Z",
   "deadline_utc": "2026-10-28T21:47:35Z",
   "target_score": 98,
-  "score": 9.967568,
-  "score_state": "current_frozen_subset_verified_other_gates_pending",
+  "score": 14.967568,
+  "score_state": "frozen_subset_and_fixed_idle_verified_other_gates_pending",
   "unknown_means": "unverified, not measured failure",
   "rubric": "agent/scorecard-rubric-10290244.md",
   "gates": [
@@ -73,9 +73,16 @@
       "category": "performance",
       "weight": 5,
       "name": "Idle",
-      "status": "unverified",
-      "earned": 0,
-      "evidence": []
+      "status": "passed",
+      "earned": 5,
+      "evidence": [
+        "output/session-10290244/apple-wasm-idle-baseline/fixed-settle-review.json"
+      ],
+      "binary_sha256": "7a4bfec10412f3e2c0eee92a01bf8c9bec496eb122114ab4844e8e4a4c783b85",
+      "settle_seconds": 15,
+      "valid_window_seconds": 64.009,
+      "samples": 65,
+      "interval_cpu_p95_percent": 0.996
     },
     {
       "id": "perf_interaction",
@@ -132,8 +139,16 @@
       "evidence": []
     }
   ],
-  "history": [],
-  "updated_utc": "2026-10-28T19:00:32.602027+00:00",
+  "history": [
+    {
+      "iteration": "10290244-002",
+      "updated_utc": "2026-10-28T19:10:56.571308+00:00",
+      "prior_score": 9.967568,
+      "score": 14.967568,
+      "baseline_binary_sha256": "7a4bfec10412f3e2c0eee92a01bf8c9bec496eb122114ab4844e8e4a4c783b85"
+    }
+  ],
+  "updated_utc": "2026-10-28T19:10:56.571308+00:00",
   "current_baseline_binary_sha256": "7a4bfec10412f3e2c0eee92a01bf8c9bec496eb122114ab4844e8e4a4c783b85",
   "full_official_wpt_pass_percent": null
 }
