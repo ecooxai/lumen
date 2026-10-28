@@ -1,0 +1,177 @@
+{
+  "schema_version": 1,
+  "title": "Lumen Linux checkpoint163 \u2014 focused correctness and source snapshot",
+  "prepared_utc": "2026-10-28T23:07:28.737444+00:00",
+  "release_scope": "Accepted focused correctness checkpoint. Broad163 comparison is pending; current full-selection counts describe retained162.",
+  "whole_goal_readiness": 19,
+  "readiness_note": "Subjective whole-browser assessment; separate from every test pass percentage. Full-WPT and Chromium parity are not achieved.",
+  "source": {
+    "accepted_commit": "1df07afad74459acae3d66cd5e9fd4225b593d1c",
+    "binary_sha256": "db0027c34c774bcfaea7269a208b26ae3d1ef66ec77213be218f87c173ceaef5",
+    "recorded_inputs": 603,
+    "recorded_input_digest": "f45a6045789179c94eb2c405e8ee66853abacc5fb24275c9ca14072e96cc3712",
+    "recorded_inputs_match_git_and_archive": true,
+    "repository_files": 696,
+    "generated_metadata_files": 1,
+    "archive_regular_files": 697,
+    "archive_bytes": 4438760,
+    "archive_sha256": "d8b2247fb79cdb3ba6c02a1486fb05ba7cca8566ab543b3c301a71d13a0f91b0",
+    "source_inclusion_manifest_sha256": "bf8694f867a854fab58fb49f647a654a36365632b263a67626047c2d6e5005b3",
+    "literal_cmake_references_checked": 124,
+    "literal_cmake_references_missing": [],
+    "fresh_extracted163_build_performed": false,
+    "hermetic_build_claimed": false,
+    "recorded_manifest_is_compiler_dependency_closure": false,
+    "omitted_scope": [
+      "Local agent task and handoff documents",
+      "Private validation helpers, raw result reports and runtime",
+      "Browser profiles, credentials and feedback capabilities",
+      "Full Git history and private development branches"
+    ],
+    "external_requirements": [
+      "Native compiler and platform development libraries",
+      "Matching external V8 and wgpu dependencies for the native browser",
+      "Systemd user quota support for the retained build wrapper"
+    ]
+  },
+  "focused_results": {
+    "native_ctest": {
+      "pass": 138,
+      "total": 138
+    },
+    "authored_logical_sizing": {
+      "baseline162": {
+        "pass": 210,
+        "total": 224
+      },
+      "checkpoint163": {
+        "pass": 224,
+        "total": 224
+      },
+      "chromium": {
+        "pass": 184,
+        "total": 224
+      },
+      "common_pass_gains": 14,
+      "common_pass_losses": 0,
+      "new_or_missing_identities": 0,
+      "all_14_new_passes_match_chromium": true,
+      "qualification": "The 40 Chromium differences are inherited noninitial aspect-ratio resolved-style expectation differences, excluded from the new gains. This authored result does not establish superiority to Chromium."
+    },
+    "upstream_stylesheet_metadata": {
+      "path": "fetch/metadata/style.https.sub.html",
+      "baseline162": {
+        "pass": 8,
+        "total": 20
+      },
+      "checkpoint163": {
+        "pass": 20,
+        "total": 20
+      },
+      "chromium": {
+        "pass": 20,
+        "total": 20
+      },
+      "common_pass_gains": 12,
+      "common_pass_losses": 0
+    },
+    "unchanged_sizing_holdout": {
+      "urls": 38,
+      "pass": 213,
+      "total": 326,
+      "common_pass_losses": 0,
+      "identities_stable": true
+    },
+    "unchanged_animation_holdout": {
+      "urls": 6,
+      "pass": 1380,
+      "total": 1504,
+      "common_pass_losses": 0,
+      "identities_stable": true
+    },
+    "authored_stylesheet_iframe_integration": {
+      "checks": 60,
+      "baseline162_pass": 12,
+      "checkpoint163_pass": 42,
+      "chromium_pass": 60,
+      "checkpoint163_remaining_failures": {
+        "parser_header_checks": 6,
+        "load_callbacks": 12
+      },
+      "collector": "v2 output-only: short per-check records replace a truncated long native console JSON line; identical original totals, expectations, event order and 15-second completion cap retained",
+      "new_or_missing_identities": 0
+    }
+  },
+  "verification": {
+    "independent_acceptance_seal_sha256": "55aada557539c7b9196f0bd20150345c1f3ba00fd802c85a7c495200a4c1cc09",
+    "focused_guard_exits_and_owned_profile_cleanup_verified": true,
+    "wpt_revision": "0e1c0bce3defd59a76cf2f351c7da5c5a42b26fb",
+    "chromium_reference": {
+      "version": "150.0.7871.114",
+      "binary_sha256": "d176751de81c10df1a96052f897155b2b055a8426cddd102f5a1ad102832d5d9",
+      "scope": "Installed reference version, not a claim about the latest Chromium release",
+      "focused_reference_freshness": "Fresh current-session focused and integration comparisons; exact accepted gate and collector scopes remain separate",
+      "broad_reference_freshness": "Previous completed session, retained Chromium4200 reference completed2026-10-28T17:36:29Z; no new broad Chromium measurement is claimed here"
+    }
+  },
+  "broad_reference": {
+    "status": "Previous completed session; fresh162 replay and finalcandidate comparison pending",
+    "selected_variants": 4200,
+    "pinned_testharness_inventory": 39394,
+    "selection_percent": 10.66,
+    "full_wpt": false,
+    "lumen162": {
+      "fully_passing_variants": 1627,
+      "pass_subtests": 199248,
+      "reported_subtests": 215641
+    },
+    "chromium_previous_session": {
+      "fully_passing_variants": 3534,
+      "pass_subtests": 209574,
+      "reported_subtests": 217350
+    },
+    "retained162_versus150": {
+      "common_pass_gains": 121,
+      "common_pass_losses": 13,
+      "missing_identities": 16
+    },
+    "checkpoint163_broad_result": null,
+    "fresh162_replay_started_utc": "2026-10-28T23:03:43Z"
+  },
+  "performance": "No fresh matched163 performance measurement is claimed. Historical161 timings do not measure163.",
+  "media": {
+    "iteration": 162,
+    "description": "Retained actual 36-second native Linux recording from the prior session; not a video of checkpoint163 fixes.",
+    "duration_seconds": 36,
+    "width": 960,
+    "height": 720,
+    "new_capture_or_encoding_performed": false
+  },
+  "links": {
+    "live_progress": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/",
+    "public_site": "https://ecooxai.github.io/lumen/",
+    "source": "src.tar.gz",
+    "source_manifest": "source-inclusion-manifest.json"
+  },
+  "measurement_notes": [
+    "WPT totals count reported testharness subtests, not individual assert calls.",
+    "A fully passing variant requires harness OK, at least one registered subtest, and all reported subtests PASS.",
+    "Authored checks, native CTest entries and upstream WPT subtests are separate categories.",
+    "Focused selections may overlap and are not added to the fixed 4,200 denominator.",
+    "The progress website is not an online replacement for the native Linux browser."
+  ],
+  "standards_references": [
+    {
+      "url": "https://drafts.csswg.org/css-logical-1/#logical-to-physical",
+      "scope": "Logical-to-physical mapping depends on writing mode."
+    },
+    {
+      "url": "https://w3c.github.io/webappsec-fetch-metadata/",
+      "scope": "Request metadata fields and site classification."
+    },
+    {
+      "url": "https://html.spec.whatwg.org/multipage/semantics.html#fetching-and-processing-a-resource-from-a-link-element",
+      "scope": "Fetching and processing external stylesheet links."
+    }
+  ]
+}

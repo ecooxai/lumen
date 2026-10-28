@@ -1,28 +1,23 @@
 {
-  "schema_version": 1,
-  "created_utc": "2026-10-28T19:34:37.623602+00:00",
-  "release": "Lumen native Linux checkpoint162",
-  "engine_source_commit": "e858139105c0743d8416fe6c91cd3ac42480a3b0",
-  "source_packaging_commit": "dba9bb7808ad4bcb457441540a65b75a111049c5",
-  "binary_sha256": "d76d88b2c6d67dadfc75375bd47679ae17d88d0cdb07f62d6d5969e422a949e5",
-  "recorded_input_count": 601,
-  "recorded_input_digest": "48ed537f69e2fcc7cf862a00fdf3640fb2cdde0a1a5397c9687a7aab31df40d0",
-  "build_provenance": "The immutable binary was built from frozen dirty HEAD 14fad818 before the later acceptance commit; all 601 exact recorded inputs were subsequently mapped to the engine source commit. The packaging commit changes documentation only.",
-  "scope": "Reviewed source snapshot and synthetic native demonstration media only. Selected compatibility coverage is not the full WPT suite or Chromium parity. External system libraries and V8/wgpu dependencies are not bundled.",
-  "known_limitations": "Experimental checkpoint with unresolved combined-run failures, including previously passing checks. Passing isolated confirmations do not erase those original failures. This release is not claimed to be regression-free.",
-  "privacy": "Private task/handoff documents, full development history, private reports, validation runtime, profiles and credentials are excluded from this payload.",
+  "schema_version": 2,
+  "prepared_utc": "2026-10-28T23:07:28.737444+00:00",
+  "release": "Lumen Linux focused checkpoint163",
+  "source_commit": "1df07afad74459acae3d66cd5e9fd4225b593d1c",
+  "binary_sha256": "db0027c34c774bcfaea7269a208b26ae3d1ef66ec77213be218f87c173ceaef5",
+  "source_iteration": 163,
+  "media_iteration": 162,
+  "recorded_inputs_exact": 603,
+  "archive_regular_files": 697,
+  "scope": "Reviewed engine-only source plus public aggregate comparison and explicitly historical native media. Broad163 result pending.",
+  "verification": "Preparation facts are immutable; deployment verification is a separate later receipt.",
   "files": {
-    ".nojekyll": {
-      "bytes": 0,
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    },
-    "index.html": {
-      "bytes": 4252,
-      "sha256": "b421e16d8981f89ee9c5fe18517592d1a13b765d344d3f99489a5cfc37d4f791"
-    },
     "src.tar.gz": {
-      "bytes": 4433706,
-      "sha256": "85c4d1b3958d68c3347c9b6825621ef6159fe85cd68fad07a62405488d98a40f"
+      "bytes": 4438760,
+      "sha256": "d8b2247fb79cdb3ba6c02a1486fb05ba7cca8566ab543b3c301a71d13a0f91b0"
+    },
+    "source-inclusion-manifest.json": {
+      "bytes": 158967,
+      "sha256": "bf8694f867a854fab58fb49f647a654a36365632b263a67626047c2d6e5005b3"
     },
     "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-demo.mp4": {
       "bytes": 232212,
@@ -39,6 +34,18 @@
     "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-native-frame.png": {
       "bytes": 287204,
       "sha256": "1589be9963e37fa026cd17967cf73f6158e4979a87c112775d2216c08207b289"
+    },
+    "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-public-report.json": {
+      "bytes": 7154,
+      "sha256": "290f53fa08f2a2a1682dd825f04e79ad959fe83591c507d52f71fca36a8c7f07"
+    },
+    "index.html": {
+      "bytes": 5821,
+      "sha256": "99b84246fb7285b1807538da32cec4f9485b2e30f04047e87c14e636f600f5ea"
+    },
+    ".nojekyll": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     }
   }
 }
