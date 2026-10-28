@@ -1,13 +1,13 @@
 {
   "title": "Lumen \u00b7 Linux engine conformance",
-  "phase": "Final combined127 verification:117/117 native tests and55 focused guards complete; primary2000 completed with505 raw lost identities under independent isolation; rendering100 pending.",
+  "phase": "Core and supplemental verification of frozen combined build 127 are complete; final publication is in progress. The primary 2,000-URL report retains all 505 raw lost identities. Full Chromium-level WPT conformance and the 98/100 target remain unmet.",
   "iteration": 11,
   "score": 19,
   "iteration_quality": 97,
   "score_note": "PROVISIONAL whole-goal readiness estimate, inherited from historical scope. This is not a measured pass percentage. Goal:98/100 after fresh complete comparable coverage.",
   "branch": "gpt-6-astra-engine-lead-linux-wpt-20261028",
   "checkpoint": "163567579c077e35c7f6c6ed366162524530f5f8",
-  "updated_utc": "2026-10-28T07:51:32.331401+00:00",
+  "updated_utc": "2026-10-28T08:19:50.495620+00:00",
   "session_started_utc": "2026-10-28T03:50:07Z",
   "deadline_utc": "2026-10-28T08:50:07Z",
   "historical": {
@@ -214,8 +214,20 @@
       "Baseline747\u2192final765 fully passing URLs; exact ChromePASS matches95,417\u219297,712/105,689.2,757 gained and505 lost identities; losses remain under review, not an accepted net-gain claim."
     ],
     [
+      "Final guarded rendering sample",
+      "The same 100 own-reference URLs: baseline 36 PASS / 62 FAIL / 1 UNSUPPORTED / 1 TIMEOUT; final build 127 has 37 PASS / 61 FAIL / 1 UNSUPPORTED / 1 TIMEOUT. One Chromium-PASS gain and zero lost passes. Chromium: 95 PASS / 5 FAIL. The existing native-PASS/Chromium-FAIL divergence is unchanged at one case."
+    ],
+    [
+      "Final combined geometry confirmation",
+      "The 24 targeted own-reference tests retain accepted build 125 exactly: 18 PASS / 6 FAIL, zero status changes, 48 verified and completed guarded captures. This cohort is separate from the unbiased 100."
+    ],
+    [
       "Final showcase",
-      "PM-approved36-second960\u00d7720 actual127 screen recording with model/agent/tool credits; publication queued until final delta review."
+      "The approved 36-second, 960\u00d7720 actual build 127 screen recording is available at /showcase.mp4. It was captured during verification; the displayed 20/20 result is the named sizing guard, not full WPT conformance."
+    ],
+    [
+      "Supplemental corpus",
+      "Separate outcome-blind layout supplement: final127 has1,209/3,370 PASS assertions and54/200 fully passing URLs; retained same-URL Chromium150 has3,337/3,370 and189/200. All200 harnessesOK in each engine. Exact ChromiumPASS matches1,200/3,337; nine native-only PASS divergences. No original before/after claim or primary-denominator merge."
     ]
   ],
   "coverage": "Full WPT parity remains unproven. Evidence separates historical8,000 original-checkpoint testharness URLs, fresh guarded original2,000 on the same first selection,100rendering URLs on accepted114, and focused later-candidate gates. Crashtest, WebDriver, print and accessibility categories remain unverified. Final guarded improved-candidate replay is pending.",
@@ -236,5 +248,7 @@
   ],
   "active_iteration": 13,
   "accepted_binary_sha256": "a06dc09b0065a7727bb837c30fd5e5faf49a365b3401adbb1e31b4d4e143db88",
-  "accepted_binary_scope": "Post-commit final127 combines every accepted runtime repair, including flex, geometry, cleanup and Linux physical-capture refusal."
+  "accepted_binary_scope": "Post-commit final127 combines every accepted runtime repair, including flex, geometry, cleanup and Linux physical-capture refusal.",
+  "agent_session": "active",
+  "showcase_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/showcase.mp4"
 }

@@ -235,3 +235,13 @@ Started 2026-10-28T07:32:35.661322+00:00 from actual post-commit127 build; end a
 Session wall elapsed at 2026-10-28T07:35:28.790590+00:00: 225.36minutes; parallel durations are not summed.
 
 Iteration13 checkpoint at 2026-10-28T07:56:30.769944+00:00: focused quality pending; whole-goal19/100 provisional. Total session wall 246.40minutes, without summing parallel agent durations.
+
+### Iteration13 finish-stage checkpoint 2026-10-28T08:17:55.968507+00:00
+
+Core verification is complete:117/117 native tests;55 focused harnessesOK with5,505/5,963 assertionsPASS and zero lost accepted identities; primary2,000 with2,757 gains and505 raw losses retained; rendering sample 100: 36→37 PASS with one ChromiumPASS gain and zero lost passes; geometry cohort 24 remains 18 PASS/6 FAIL exactly. Controlled fresh isolates do not replace the primary run or prove timing causality. Approved video v2 HTTPS bytes were verified at08:16:23Z. Runtime127 is unchanged; whole-goal19/100 remains provisional and target98 unmet. Supplemental ordinary compatibility corpus is pending until08:30UTC; Git/Pages publication awaits that subsection. Session wall so far 267.82minutes; parallel durations are not summed.
+
+### Iteration13 supplemental corpus closed 2026-10-28T08:19:50.495620+00:00
+
+The separate supplemental layout corpus completed 2026-10-28T08:17:22.751753+00:00–2026-10-28T08:17:38.889905+00:00. It selected 200 of 235 eligible URLs from fixed grid/sizing/flex prefixes by hash order without inspecting outcomes, excluding the primary 2,000 and final 55. Final127:1,209/3,370 PASS assertions and54/200 fully passing URLs; retained same-URL Chromium150:3,337/3,370 PASS assertions and189/200 fully passing URLs. All200 harnesses wereOK in each engine. Exact ChromiumPASS matches:1,200/3,337; nine native-only PASS divergences. The guard verified16 launches with zero startup failures. Chromium results come from prior completed shards, not a simultaneous rerun. No guarded-original before/after claim is made; these counts are never merged into primary2,000 or rendering100 denominators.
+
+Duration 0.269minutes. Session wall elapsed 269.72minutes; parallel durations are not summed. Agents:conformance measurement, ops_preview provenance/handoff, engine_lead independent review, root evaluation. Whole-goal19/100 remains provisional; final iteration quality and publication completion are pending.
