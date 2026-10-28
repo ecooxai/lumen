@@ -163,6 +163,179 @@ static Face *android_system_face(const char *name, int weight, bool italic, uint
     return face == (Face *)1 ? NULL : face;
 }
 #elif !defined(__APPLE__)
+/* Fontconfig 2.18.1 compares these properties before CHARSET (fcmatch.c,
+ * d87ec67db56518e9e9c36ff38f151dfc9b728b2e, PRI_FILE through PRI_FOUNDRY).
+ * For a singleton charset, a covering font strictly dominates a noncovering
+ * font with identical preceding values. Keep every possible winner, in the
+ * original order, then let Fontconfig perform its unchanged full comparison
+ * and render preparation. Other versions and unsupported patterns use the
+ * original matcher. All accesses are serialized by font_mu. */
+enum { FC_CANDIDATE_LIMIT = 8192, FC_GROUP_LIMIT = 64 };
+static const char *fc_prefix[] = {
+    FC_FILE, "fontwrapper", FC_FONTFORMAT, FC_VARIABLE, "namedinstance",
+    FC_SCALABLE, FC_COLOR, FC_FOUNDRY
+};
+typedef struct {
+    FcConfig *config;
+    FcFontSet *sets[2];
+    int counts[2], count, group_count;
+    FcPattern **fonts, **selected;
+    FcCharSet **charsets;
+    unsigned char *group;
+    unsigned generation, prefix_mask;
+    unsigned long epoch;
+    bool ready, grouped, supported;
+} FcCandidates;
+static FcCandidates fc_candidates;
+
+static void fc_candidates_clear(void) {
+    unsigned long next = fc_candidates.epoch + (fc_candidates.ready || fc_candidates.config);
+    for (int i = 0; i < fc_candidates.count; i++)
+        FcPatternDestroy(fc_candidates.fonts[i]);
+    free(fc_candidates.fonts); free(fc_candidates.selected);
+    free(fc_candidates.charsets); free(fc_candidates.group);
+    if (fc_candidates.config) FcConfigDestroy(fc_candidates.config);
+    memset(&fc_candidates, 0, sizeof fc_candidates);
+    fc_candidates.epoch = next;
+}
+
+/* Retain patterns as well as the config: clearing/replacing application fonts
+ * must not leave borrowed charset pointers dangling or allow pointer reuse to
+ * make a changed font set appear unchanged. One bounded snapshot is retained. */
+static bool fc_candidates_refresh(void) {
+    if (FcGetVersion() != 21801) return false;
+    FcConfig *config = FcConfigGetCurrent();
+    FcFontSet *sets[2] = {config ? FcConfigGetFonts(config, FcSetSystem) : NULL,
+                          config ? FcConfigGetFonts(config, FcSetApplication) : NULL};
+    int counts[2] = {sets[0] ? sets[0]->nfont : 0, sets[1] ? sets[1]->nfont : 0};
+    unsigned generation = __atomic_load_n(&font_gen, __ATOMIC_RELAXED);
+    bool same = fc_candidates.ready && config == fc_candidates.config
+        && generation == fc_candidates.generation;
+    for (int k = 0, offset = 0; same && k < 2; k++) {
+        same = sets[k] == fc_candidates.sets[k] && counts[k] == fc_candidates.counts[k];
+        for (int i = 0; same && i < counts[k]; i++)
+            same = sets[k]->fonts[i] == fc_candidates.fonts[offset + i];
+        offset += counts[k];
+    }
+    if (same) return fc_candidates.supported;
+    fc_candidates_clear();
+    /* Empty/oversized sets take the original matcher/memo path. Repeated
+     * unsupported refreshes must not churn the epoch or its 512-entry memo;
+     * entering or leaving an actual candidate snapshot still invalidates it. */
+    if (!config || counts[0] < 0 || counts[1] < 0
+        || counts[0] > FC_CANDIDATE_LIMIT || counts[1] > FC_CANDIDATE_LIMIT - counts[0])
+        return false;
+    int count = counts[0] + counts[1];
+    if (!count) return false;
+    FcCandidates *c = &fc_candidates;
+    c->config = FcConfigReference(config);
+    if (!c->config) return false;
+    c->fonts = xcalloc((size_t)count, sizeof *c->fonts);
+    c->selected = xcalloc((size_t)count, sizeof *c->selected);
+    c->charsets = xcalloc((size_t)count, sizeof *c->charsets);
+    c->group = xcalloc((size_t)count, sizeof *c->group);
+    c->generation = generation; c->ready = c->supported = true;
+    c->epoch++; /* A new supported-size snapshot invalidates legacy memo entries. */
+    for (int k = 0; k < 2; k++) {
+        c->sets[k] = sets[k]; c->counts[k] = counts[k];
+        for (int i = 0; i < counts[k]; i++) {
+            int n = c->count++;
+            c->fonts[n] = sets[k]->fonts[i];
+            FcPatternReference(c->fonts[n]);
+            FcValue extra;
+            if (FcPatternGetCharSet(c->fonts[n], FC_CHARSET, 0, &c->charsets[n]) != FcResultMatch
+                || FcPatternGet(c->fonts[n], FC_CHARSET, 1, &extra) == FcResultMatch)
+                c->supported = false;
+        }
+    }
+    return c->supported;
+}
+
+static bool fc_prefix_equal(FcPattern *a, FcPattern *b, unsigned mask) {
+    for (unsigned p = 0; p < ARRLEN(fc_prefix); p++) if (mask & (1u << p)) {
+        for (int i = 0; ; i++) {
+            FcValue av, bv; FcValueBinding ab, bb;
+            FcResult ar = FcPatternGetWithBinding(a, fc_prefix[p], i, &av, &ab);
+            FcResult br = FcPatternGetWithBinding(b, fc_prefix[p], i, &bv, &bb);
+            if (ar != br) return false;
+            if (ar != FcResultMatch) break;
+            if (ab != bb || !FcValueEqual(av, bv)) return false;
+        }
+    }
+    return true;
+}
+
+static bool fc_candidates_group(unsigned mask) {
+    FcCandidates *c = &fc_candidates;
+    if (c->grouped && c->prefix_mask == mask) return c->group_count > 0;
+    c->grouped = true; c->prefix_mask = mask; c->group_count = 0;
+    int representative[FC_GROUP_LIMIT], groups = 0;
+    for (int i = 0; i < c->count; i++) {
+        for (unsigned p = 0; p < ARRLEN(fc_prefix); p++) if (mask & (1u << p)) {
+            FcPatternIter iter;
+            if (FcPatternFindIter(c->fonts[i], &iter, fc_prefix[p])
+                && FcPatternIterValueCount(c->fonts[i], &iter) > 64) return false;
+        }
+        int g = 0;
+        while (g < groups && !fc_prefix_equal(c->fonts[i], c->fonts[representative[g]], mask)) g++;
+        if (g == groups) {
+            if (groups == FC_GROUP_LIMIT) return false;
+            representative[groups++] = i;
+        }
+        c->group[i] = (unsigned char)g;
+    }
+    c->group_count = groups;
+    return groups > 0;
+}
+
+static FcPattern *fontconfig_match(FcPattern *pattern, uint32_t codepoint, FcResult *result) {
+    FcCharSet *requested = NULL; FcValue extra;
+    if (!codepoint || !fc_candidates_refresh()
+        || FcPatternGetCharSet(pattern, FC_CHARSET, 0, &requested) != FcResultMatch
+        || FcCharSetCount(requested) != 1 || !FcCharSetHasChar(requested, codepoint)
+        || FcPatternGet(pattern, FC_CHARSET, 1, &extra) == FcResultMatch
+        || FcPatternGet(pattern, FC_FILE, 0, &extra) == FcResultMatch
+        || FcPatternGet(pattern, FC_INDEX, 0, &extra) == FcResultMatch
+        || FcPatternGet(pattern, FC_FT_FACE, 0, &extra) == FcResultMatch)
+        return FcFontMatch(NULL, pattern, result);
+    unsigned mask = 0;
+    for (unsigned p = 0; p < ARRLEN(fc_prefix); p++)
+        if (FcPatternGet(pattern, fc_prefix[p], 0, &extra) == FcResultMatch) mask |= 1u << p;
+    if (!fc_candidates_group(mask)) return FcFontMatch(NULL, pattern, result);
+    FcCandidates *c = &fc_candidates;
+    bool covered[FC_GROUP_LIMIT] = {false};
+    for (int i = 0; i < c->count; i++)
+        if (FcCharSetHasChar(c->charsets[i], codepoint)) covered[c->group[i]] = true;
+    int selected = 0;
+    for (int i = 0; i < c->count; i++)
+        if (!covered[c->group[i]] || FcCharSetHasChar(c->charsets[i], codepoint))
+            c->selected[selected++] = c->fonts[i];
+    if (selected == c->count) return FcFontMatch(NULL, pattern, result);
+    FcFontSet set = {selected, selected, c->selected};
+    FcFontSet *sets[] = {&set};
+    FcPattern *match = FcFontSetMatch(c->config, sets, 1, pattern, result);
+    const char *verify = getenv("LUMEN_FONTCONFIG_VALIDATE");
+    if (verify && *verify && strcmp(verify, "0")) {
+        FcResult original_result;
+        FcPattern *original = FcFontMatch(NULL, pattern, &original_result);
+        bool equal = *result == original_result && ((!match && !original)
+            || (match && original && FcPatternEqual(match, original)));
+        fprintf(stderr, "lumen-fontconfig-verify cp=U+%04X equal=%d result=%d original_result=%d candidates=%d fonts=%d groups=%d\n",
+                codepoint, equal, *result, original_result, selected, c->count, c->group_count);
+        if (!equal) {
+            /* Diagnostic mismatches are explicit validation failures. Return
+             * the original result and disable this snapshot's optimization. */
+            if (match) FcPatternDestroy(match);
+            c->supported = false;
+            c->epoch++; /* Invalidate any previously memoized optimized winner. */
+            *result = original_result;
+            return original;
+        }
+        if (original) FcPatternDestroy(original);
+    }
+    return match;
+}
+
 static Face *fontconfig_face(const char *name, int weight, bool italic, uint32_t codepoint) {
     FcPattern *pattern = FcPatternCreate();
     if (!pattern) return NULL;
@@ -179,7 +352,7 @@ static Face *fontconfig_face(const char *name, int weight, bool italic, uint32_t
     FcConfigSubstitute(NULL, pattern, FcMatchPattern);
     FcDefaultSubstitute(pattern);
     FcResult result;
-    FcPattern *match = FcFontMatch(NULL, pattern, &result);
+    FcPattern *match = fontconfig_match(pattern, codepoint, &result);
     Face *matched = NULL;
     if (match) {
         FcChar8 *filename = NULL; int index = 0;
@@ -406,13 +579,18 @@ static Font *fallback_for(Font *base, uint32_t cp) {
         if (FT_Get_Char_Index(fc->ft, cp)) return font_for_face(fc, base->size, base->synth_bold, base->synth_italic);
     }
 #if !defined(__APPLE__) && !defined(__ANDROID__)
-    typedef struct { uint32_t codepoint; int weight; bool italic, valid; Face *face; } FallbackMemo;
+    typedef struct { uint32_t codepoint; int weight; bool italic, valid; Face *face; unsigned long epoch; unsigned generation; } FallbackMemo;
     static FallbackMemo memo[512];
     int weight = base->synth_bold ? 700 : base->face->weight;
     bool italic = base->synth_italic || base->face->italic;
+    fc_candidates_refresh();
+    unsigned long epoch = fc_candidates.epoch;
+    unsigned generation = __atomic_load_n(&font_gen, __ATOMIC_RELAXED);
     FallbackMemo *entry = &memo[(cp ^ (uint32_t)weight ^ ((uint32_t)italic << 8)) % ARRLEN(memo)];
-    if (!entry->valid || entry->codepoint != cp || entry->weight != weight || entry->italic != italic) {
-        *entry = (FallbackMemo){cp, weight, italic, true, fontconfig_face("sans-serif", weight, italic, cp)};
+    if (!entry->valid || entry->codepoint != cp || entry->weight != weight || entry->italic != italic
+        || entry->epoch != epoch || entry->generation != generation) {
+        Face *face = fontconfig_face("sans-serif", weight, italic, cp);
+        *entry = (FallbackMemo){cp, weight, italic, true, face, fc_candidates.epoch, generation};
     }
     if (entry->face) return font_for_face(entry->face, base->size, weight >= 600 && entry->face->weight < 600, italic && !entry->face->italic);
 #endif

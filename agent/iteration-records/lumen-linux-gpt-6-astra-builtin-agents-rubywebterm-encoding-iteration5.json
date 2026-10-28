@@ -1,0 +1,129 @@
+{
+  "iteration": 5,
+  "title": "Encoding workload performance: Fontconfig fallback matching",
+  "status": "accepted-focused-performance-repair",
+  "started_utc": "2026-10-28T05:20:41.860945+00:00",
+  "start_basis": "First retained controlled unchanged EUC-KR reproduction; prior diagnosis discussion not counted as a precise start",
+  "updated_utc": "2026-10-28T05:50:57.609713+00:00",
+  "ended_utc": "2026-10-28T05:50:57.609713+00:00",
+  "iteration_quality": 96,
+  "whole_goal_readiness": 19,
+  "whole_goal_status": "PROVISIONAL estimate; not a conformance pass percentage",
+  "model": "GPT-6 Astra",
+  "agents": [
+    "ops_preview",
+    "engine_lead independent source review",
+    "conformance independent regression validation",
+    "root PM acceptance"
+  ],
+  "tools": [
+    "built-in subagents",
+    "RubyWebTerm",
+    "perf",
+    "Chromium 150.0.7871.114"
+  ],
+  "baseline": {
+    "url": "/encoding/legacy-mb-korean/euc-kr/euckr-decode-korean.html?11001-12000",
+    "native_passed": 1000,
+    "native_total": 1000,
+    "native_cpu_seconds": 26.9,
+    "native_wall_seconds": 31.2762,
+    "chromium_passed": 1000,
+    "chromium_total": 1000,
+    "chromium_live_tree_cpu_seconds": 2.9,
+    "chromium_navigation_wall_seconds": 7.738055126,
+    "accounting_caveat": "Chromium two live-tree snapshots may omit exited children; no precise speed ratio claimed; active broad work may overlap"
+  },
+  "hypothesis": "Repeated Fontconfig matching dominates hidden-frame shaping for many distinct CJK glyphs; preserve original matching semantics while removing only provably dominated candidates",
+  "candidate_scope": [
+    "src/text/font.c"
+  ],
+  "source_version_gate": 21801,
+  "profile": {
+    "fontconfig_self_percent": 79.74,
+    "text_layout_cumulative_percent_approx": 93,
+    "lost_samples": 0,
+    "path": "agent/validation/linux-wpt-20261028/encoding-diagnosis/euckr-baseline-profile"
+  },
+  "validation_required": [
+    "zero result-code or FcPatternEqual mismatches against original matcher",
+    "unchanged encoding assertions and deadlines",
+    "varied family/style/weight/language and font-availability guards",
+    "independent source and resource review"
+  ],
+  "resource_policy": "1-second CPU/RSS, 5-second PSS, aggregate 480% task CPU quota, core dumps disabled",
+  "limitations": [
+    "Full WPT readiness remains unproven",
+    "No decoder mapping defect was established",
+    "No claim for all Fontconfig versions or complete browser font geometry",
+    "Eight official font URLs retain115 native failing assertions",
+    "No general browser speed or leak-free lifetime claim",
+    "Existing unsupported-environment matcher/memo behavior remains"
+  ],
+  "acceptance": "PM accepted after independent engine_lead source/oracle review and conformance eight-URL guards",
+  "wall_minutes": 30.26,
+  "session_wall_minutes_at_acceptance": 120.84,
+  "candidate": {
+    "binary": "build/codex-native/lumen-astra-i115",
+    "sha256": "621a2832d0fae1fb34cc65df504444c3fb690b9312ee2f2ea20b64159093d93e",
+    "composition": "Accepted capture114 runtime plus font-only changes; nonsemantic CMake build-graph correction explicitly included and separately accepted after required real-build checks; position patch reversed/restored exactly",
+    "build_started_utc": "2026-10-28T05:42:20Z",
+    "build_finished_utc": "2026-10-28T05:43:08Z",
+    "source_unchanged": true,
+    "font_source_sha256": "416aa88e65c152e5828822363d1f0695802060943575cd5fa652ed64211ad11f",
+    "postbuild_test_integration": "Standalone oracle and Linux CMake target added after frozen browser build; exact font source hash retained; targeted oracle build/CTest only"
+  },
+  "validation": {
+    "large_cjk_original_matcher_comparisons": 16843,
+    "large_cjk_mismatches": 0,
+    "standalone_oracle_comparisons": 718,
+    "standalone_oracle_mismatches": 0,
+    "oracle_diagnostic_self_correction": "Disabled explicitly; actual FcFontMatch result code and complete FcPatternEqual are the independent oracle",
+    "oracle_scope": [
+      "four font families",
+      "five languages",
+      "two weights and two slants",
+      "eight codepoints spanning scripts",
+      "pre-charset property variants",
+      "complex requests using original path",
+      "four threads serialized through existing font_mu",
+      "application-font add/clear/re-add and config replacement",
+      "native font generation invalidation",
+      "empty unsupported snapshot does not churn memo epoch"
+    ],
+    "ctest": "fontconfig_match PASS, 1.86 seconds, exact115 font source",
+    "unchanged_euckr_assertions": "1000/1000 PASS before and after",
+    "independent_official_guard": "Eight URLs: native11410/125 to11510/125, Chromium109/125; all harnesses OK, zero lost passes/harness regressions",
+    "independent_source_review": "engine_lead approved final ownership, matching order, version gate, epoch fixes and oracle; root PM accepted96/100"
+  },
+  "measurements": {
+    "native_before_cpu_seconds": 26.9,
+    "native_after_cpu_seconds": 11.33,
+    "native_before_wall_seconds": 31.28,
+    "native_after_wall_seconds": 12.43,
+    "before_peak_rss_mib": 262.906,
+    "after_peak_rss_mib": 268.706,
+    "before_peak_sampled_pss_mib": 201.705,
+    "after_peak_sampled_pss_mib": 201.593,
+    "caveat": "One unchanged workload under active capped background work; no general browsing speed claim. RSS rose5.8MiB; sampled PSS difference is noise, not an asserted memory reduction. Diagnostic oracle timing excluded from performance comparison."
+  },
+  "ownership_and_bounds": {
+    "runtime_fontconfig_version": 21801,
+    "maximum_patterns": 8192,
+    "maximum_prefix_groups": 64,
+    "observed_patterns": 920,
+    "prefix_values_per_property_limit": 64,
+    "snapshot_lifetime": "One bounded process-lifetime snapshot, matching existing global font registries; replacement destroys retained pattern/config references",
+    "charset_lifetime": "Borrowed only while referenced font patterns remain retained",
+    "invalidation": "Actual config and system/application fontset identities, counts, ordered pattern pointers and native font generation; epochs invalidate memoized optimized results and diagnostic mismatch advances epoch",
+    "threading": "Existing font_mu serializes matcher/cache access; concurrent external Fontconfig mutation is not a newly supported API",
+    "fallback": "Other runtime versions, empty/oversized fontsets, missing/multiple charsets, custom file/index/FT-face requests, large prefix groups and other unsupported requests retain original matching behavior; empty/oversized paths retain baseline memo semantics",
+    "oracle_mismatch": "Explicit validation failure; runtime diagnostic fails closed to original result and disables that snapshot optimization"
+  },
+  "reproduction": [
+    "python3 tools/codex_compile.py cmake --build build/codex-native --target test_fontconfig_match -j2",
+    "python3 tools/codex_compile.py ctest --test-dir build/codex-native -R ^fontconfig_match$ --output-on-failure",
+    "LUMEN_FONTCONFIG_VALIDATE=1 enables explicit per-selection differential diagnostics; zero mismatches required"
+  ],
+  "evidence_root": "agent/validation/linux-wpt-20261028"
+}
