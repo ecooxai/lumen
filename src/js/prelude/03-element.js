@@ -11,7 +11,7 @@ function parseDecls(s) {
     let depth = 0, q = 0, start = 0; const parts = [];
     for (let i = 0; i < s.length; i++) { const c = s[i]; if (q) { if (c === q) q = 0; } else if (c === '"' || c === "'") q = c; else if (c === '(') depth++; else if (c === ')') depth--; else if (c === ';' && !depth) { parts.push(s.slice(start, i)); start = i + 1; } }
     parts.push(s.slice(start));
-    for (const p of parts) { const i = p.indexOf(':'); if (i < 0) continue; const k = p.slice(0, i).trim(); let v = p.slice(i + 1).trim(); if (!k) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const lk = k.startsWith('--') ? k : k.toLowerCase(); if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if ((lk === 'font' || lk === 'font-family' || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } m.set(lk, [v, imp]); }
+    for (const p of parts) { const i = p.indexOf(':'); if (i < 0) continue; const k = p.slice(0, i).trim(); let v = p.slice(i + 1).trim(); if (!k) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const lk = k.startsWith('--') ? k : k.toLowerCase(); if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if ((lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } m.set(lk, [v, imp]); }
     return m;
 }
 const serDecls = (m) => [...m].map(([k, [v, i]]) => k + ': ' + v + (i ? ' !important' : '') + ';').join(' ');
@@ -299,6 +299,10 @@ function fontFamilyPart(v) {   /* the family list of a font shorthand, or null w
 }
 function mathValid(p, v) {
     if (cssGridRelevant(p)) return cssGridParse(p, v) !== null;
+    if (MATH_LEN_PROPS.test(p)) {
+        const negative = /^-((?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?)(?:[a-z]+|%)?$/i.exec(v.trim());
+        if (negative && +negative[1] > 0) return false;
+    }
     if ((p === 'font-family' || p === 'font') && !/var\(|env\(|attr\(/i.test(v) && !/^\s*(inherit|initial|unset|revert|revert-layer)\s*$/i.test(v)) {
         if (p === 'font-family') { if (!familyValid(v)) return false; }
         else if (!/^\s*(caption|icon|menu|message-box|small-caption|status-bar)\s*$/i.test(v)) { const f = fontFamilyPart(v); if (f !== null && !familyValid(f)) return false; }

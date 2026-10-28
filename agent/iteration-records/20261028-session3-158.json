@@ -1,0 +1,59 @@
+{
+  "iteration": 158,
+  "status": "superseded_before_acceptance",
+  "start_utc": "2026-10-28T17:41:18Z",
+  "start_scope": "Exact recorded build start; preceding implementation overlaps prior iteration.",
+  "end_utc": "2026-10-28T17:51:53.810074+00:00",
+  "elapsed_minutes": 10.6,
+  "session_wall_minutes": 70.75,
+  "agents": [
+    "engine_integration",
+    "platform_network",
+    "validation_gate",
+    "root"
+  ],
+  "global_score": 19,
+  "scoped_score": 92,
+  "build": {
+    "source_manifest_before": "506aec4db585f810f9caaa22afd8cd31bd18ad53293d181f73d64e831be2a712",
+    "source_diff_before": "c3dc62327f585eede6ef9cce47505777b4dadd7fb213532fedc78fa5cc9eba6d",
+    "head": "9a4d4ab70b5ecc0563e09c310805ff3b6b656a7f",
+    "started_utc": "2026-10-28T17:41:18Z",
+    "pid": 2919892,
+    "build_exit_code": 0,
+    "binary": "build/codex-native/lumen-astra-i158",
+    "binary_sha256": "405732403c22990333200ac966f2fd932015807b285eebdb0ad075004016914f",
+    "diff_sha256": "c3dc62327f585eede6ef9cce47505777b4dadd7fb213532fedc78fa5cc9eba6d",
+    "startup_exit_code": 0,
+    "source_diff_after": "c3dc62327f585eede6ef9cce47505777b4dadd7fb213532fedc78fa5cc9eba6d",
+    "source_manifest_after": "506aec4db585f810f9caaa22afd8cd31bd18ad53293d181f73d64e831be2a712",
+    "source_unchanged_during_build": true,
+    "finished_utc": "2026-10-28T17:41:42Z"
+  },
+  "native_gate": {
+    "passed": 136,
+    "total": 136,
+    "seconds": 50.26
+  },
+  "authored_minimum_controls": {
+    "passed": 48,
+    "total": 48
+  },
+  "targeted_sizing": {
+    "passed_subtests": 213,
+    "reported_subtests": 326,
+    "pass_gains": 56,
+    "pass_losses": 0
+  },
+  "targeted_http": {
+    "passed_subtests": 66,
+    "reported_subtests": 89,
+    "pass_gains": 4,
+    "pass_losses": 0
+  },
+  "decision": "Superseded before acceptance after independent CSSWG/current-draft review identified that automatic minima must preserve noninitial computed aspect-ratio. The Range change passed but this combined binary is not the final accepted engine.",
+  "standards": [
+    "https://drafts.csswg.org/css-sizing-3/#valdef-width-auto",
+    "https://lists.w3.org/Archives/Public/public-css-archive/2025Mar/1114.html"
+  ]
+}

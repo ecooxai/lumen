@@ -611,3 +611,29 @@ Exact build hashes, evidence paths, decision time, agent names and overlapping t
 ### Iteration156 — accepted bounded Grid grammar cache and special-host validation
 
 Start:2026-10-28T17:15:32.203924+00:00;end:2026-10-28T17:36:24.008869+00:00;duration:20.86minutes;total session wall:55.25minutes. Agents:engine_recovery,platform_recovery,validation_recovery,engine_integration,validation_gate,root. Scoped97/100;whole-goal19/100 unchanged. Native135/135(59.80s),86native URL,170browser URL,18cache groups and47used-track controls pass. Unchanged74URL selection:1507935/8216PASS,56full;1568095/8216PASS,66full;Chromium7594/8216PASS,46full.160true PASS-identity gains,0losses,exact8216identitiesunchanged. All three runs have73OK+1TIMEOUT; the timeout is a pinned crashtest unsupported by this testharness reporter, retained rather than counted passing. All592manifestinputs match stagedsource; prewritten sizing56fixtureisnot acceptedcoverage. CTest CPUmin/median/max0/77.998/183.979%,peakRSS313.106MB,sampledpeakPSS186.075MB; interval/RSS-sharing limitations remain. No complete speed-recovery or full-WPT claim. Evidence:agent/iteration-records/20261028-session3-156.json.
+
+
+### Iteration 157 — rejected sizing candidate
+
+Recorded build start 2026-10-28T17:25:55Z; decision 2026-10-28T17:45:41.897540+00:00; measured interval 19.78 minutes; total session wall time 64.55 minutes. Earlier implementation overlapped156 and is not added to wall time. Agents: engine_recovery,engine_integration,validation_recovery,validation_gate,root. Scoped88/100; whole-goal19/100. Authored56 range and114 negative-literal controls pass, but unchanged38-URL WPT has56 gains and2 PASS losses: logical min-block/min-inline auto. Native gate134/135 in97.93s fails js_raf_throttle (49 late-window frames, expected10–20). Three monitored repetitions of the exact copied157 jsrun all pass; the original failure remains and no cause or repair is claimed. Candidate is not accepted. Evidence: agent/iteration-records/20261028-session3-157.json.
+
+
+### Iteration 158 — superseded before acceptance
+
+Recorded build start 2026-10-28T17:41:18Z; decision 2026-10-28T17:51:53.810074+00:00; measured interval 10.6 minutes; total session wall time 70.75 minutes. Same-model agents: engine_integration,platform_network,validation_gate,root. Scoped92/100; whole-goal19/100. Superseded before acceptance after independent CSSWG/current-draft review identified that automatic minima must preserve noninitial computed aspect-ratio. The Range change passed but this combined binary is not the final accepted engine. Exact gates and limitations: agent/iteration-records/20261028-session3-158.json. These overlapping intervals are not summed.
+
+
+### Iteration 159 — rejected and superseded
+
+Recorded build start 2026-10-28T17:44:18Z; decision 2026-10-28T17:51:53.810074+00:00; measured interval 7.6 minutes; total session wall time 70.75 minutes. Same-model agents: engine_integration,platform_network,validation_gate,root. Scoped82/100; whole-goal19/100. Rejected: requiring el->box incorrectly treats lazy-layout computed-style queries as boxless.160 changes only this classification, using connected computed display state and display:none ancestors; contents remains transparent. No layout is forced. Native gate success was insufficient. Exact gates and limitations: agent/iteration-records/20261028-session3-159.json. These overlapping intervals are not summed.
+
+
+### Iteration 160 — accepted sizing, Range and zstd checkpoint
+
+Start: 2026-10-28T17:49:37Z. End: 2026-10-28T17:55:06.990570+00:00. Duration: 5.5 minutes. Total session wall time: 73.97 minutes from 16:41:09 UTC; overlapping iteration durations are not summed. Same-model agents: engine_integration, platform_network, validation_gate, root. Scoped score: 97/100. Whole-goal score: 19/100, unchanged.
+
+The exact candidate passes 137/137 native CTest entries in 49.30 seconds. The unchanged sizing cohort has 213/326 PASS reported subtests across 38 URLs, 18 fully passing URLs, 56 true PASS-identity gains and zero losses versus 150. HTTP has 88/89 PASS across 26 URLs, 25 full URLs, 26 gains and zero losses, matching Chromium PASS identities. All 327 authored controls pass across five fixtures. All 69 native browser launches have actual exits, absent owned PIDs and removed private profiles. Native Range and zstd targets contain 42 and 258 checks respectively.
+
+All 599 recorded source/resource/test/build inputs match the staged tree. CTest CPU min/median/max: 0/50.992/157.006%; sampled peak RSS: 335.843 MB; sampled peak PSS: 211.470 MB. Interval sampling and shared-page RSS limitations remain. The zstd 8 MiB cap is a decoder-window limit, not a total response or browser-memory limit. Current-draft aspect-ratio differences from pinned Chromium remain explicit. Non-item flex/grid container serialization follows existing interoperability while CSSWG issue 14429 remains unresolved.
+
+This is the tenth meaningful session iteration, so the local checkpoint is sealed. Quiet performance and the final 4,200-variant replay remain pending. Existing publication rejections are not bypassed. Exact evidence and limits: agent/iteration-records/20261028-session3-160.json.

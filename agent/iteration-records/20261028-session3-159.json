@@ -1,0 +1,65 @@
+{
+  "iteration": 159,
+  "status": "rejected_and_superseded",
+  "start_utc": "2026-10-28T17:44:18Z",
+  "start_scope": "Exact recorded build start; preceding implementation overlaps prior iteration.",
+  "end_utc": "2026-10-28T17:51:53.810074+00:00",
+  "elapsed_minutes": 7.6,
+  "session_wall_minutes": 70.75,
+  "agents": [
+    "engine_integration",
+    "platform_network",
+    "validation_gate",
+    "root"
+  ],
+  "global_score": 19,
+  "scoped_score": 82,
+  "build": {
+    "source_manifest_before": "60c7748a22e1ad85e607f8120afc81cc22ba259d0caa9ca44defb8297f90562f",
+    "source_diff_before": "7496866e1239a551ddc631ee3dca405b1ea2582e7e4b42ba948f917a4db67ed7",
+    "head": "9a4d4ab70b5ecc0563e09c310805ff3b6b656a7f",
+    "started_utc": "2026-10-28T17:44:18Z",
+    "pid": 2941599,
+    "build_exit_code": 0,
+    "binary": "build/codex-native/lumen-astra-i159",
+    "binary_sha256": "74ecaa3ad8a0f386dd4e45cd96ccd3927578c87b3357e78fe785adfe780879bc",
+    "diff_sha256": "7496866e1239a551ddc631ee3dca405b1ea2582e7e4b42ba948f917a4db67ed7",
+    "startup_exit_code": 0,
+    "source_diff_after": "7496866e1239a551ddc631ee3dca405b1ea2582e7e4b42ba948f917a4db67ed7",
+    "source_manifest_after": "60c7748a22e1ad85e607f8120afc81cc22ba259d0caa9ca44defb8297f90562f",
+    "source_unchanged_during_build": true,
+    "finished_utc": "2026-10-28T17:44:40Z"
+  },
+  "native_gate": {
+    "passed": 137,
+    "total": 137,
+    "seconds": 50.98
+  },
+  "authored_minimum_controls": {
+    "basic": {
+      "passed": 40,
+      "total": 48
+    },
+    "aspect_and_box": {
+      "passed": 112,
+      "total": 144
+    },
+    "aspect_state": {
+      "passed": 44,
+      "total": 96
+    }
+  },
+  "targeted_sizing_regressions": [
+    "min-block-size auto computes to auto with flex layout.",
+    "min-inline-size auto computes to auto with flex layout."
+  ],
+  "targeted_http": {
+    "passed_subtests": 88,
+    "reported_subtests": 89,
+    "pass_gains": 26,
+    "pass_losses": 0,
+    "matches_chromium_pass_identities": 88
+  },
+  "decision": "Rejected: requiring el->box incorrectly treats lazy-layout computed-style queries as boxless.160 changes only this classification, using connected computed display state and display:none ancestors; contents remains transparent. No layout is forced. Native gate success was insufficient.",
+  "network_limit": "8MiB cap is zstd back-reference window only, not total response size or browser memory; streaming gzip/Brotli paths not comprehensively repaired."
+}

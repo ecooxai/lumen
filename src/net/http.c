@@ -447,6 +447,31 @@ static bool conn_readn(Conn *c, SB *out, size_t n) {
 }
 
 /* ---------- decompression ---------- */
+/* HTTP zstd uses the RFC 9659 maximum window, including for streamed bodies. */
+static ZSTD_DStream *zstd_decoder_new(void) {
+    ZSTD_DStream *ds = ZSTD_createDStream();
+    if (!ds) return NULL;
+    if (ZSTD_isError(ZSTD_initDStream(ds)) ||
+        ZSTD_isError(ZSTD_DCtx_setParameter(ds, ZSTD_d_windowLogMax, 23))) {
+        ZSTD_freeDStream(ds); return NULL;
+    }
+    return ds;
+}
+static bool zstd_decode(ZSTD_DStream *ds, const char *bytes, size_t length, SB *out, size_t *remaining) {
+    if (!ds) return false;
+    ZSTD_inBuffer in = { bytes, length, 0 }; char buf[65536];
+    for (;;) {
+        size_t before = in.pos;
+        ZSTD_outBuffer o = { buf, sizeof buf, 0 };
+        *remaining = ZSTD_decompressStream(ds, &o, &in);
+        if (ZSTD_isError(*remaining)) return false;
+        sb_put(out, buf, o.pos);
+        /* A completed frame can be followed by another or a skippable frame.
+           Drain buffered output, but do not start a new frame at clean EOF. */
+        if (in.pos == in.size && (!*remaining || o.pos < sizeof buf)) return true;
+        if (in.pos == before && !o.pos) return false;
+    }
+}
 static bool decompress(const char *enc, SB *body) {
     if (!enc || !body->n) return true;
     SB out; sb_init(&out);
@@ -470,11 +495,10 @@ static bool decompress(const char *enc, SB *body) {
         BrotliDecoderDestroyInstance(st);
         if (r != BROTLI_DECODER_RESULT_SUCCESS) { sb_free(&out); return false; }
     } else if (str_ieq(enc, "zstd")) {
-        ZSTD_DStream *ds = ZSTD_createDStream(); ZSTD_initDStream(ds);
-        ZSTD_inBuffer in = { body->s, body->n, 0 }; char buf[65536]; size_t r = 0;
-        while (in.pos < in.size) { ZSTD_outBuffer o = { buf, sizeof buf, 0 }; r = ZSTD_decompressStream(ds, &o, &in); if (ZSTD_isError(r)) break; sb_put(&out, buf, o.pos); }
+        ZSTD_DStream *ds = zstd_decoder_new(); size_t remaining = 1;
+        bool ok = zstd_decode(ds, body->s, body->n, &out, &remaining) && remaining == 0;
         ZSTD_freeDStream(ds);
-        if (ZSTD_isError(r)) { sb_free(&out); return false; }
+        if (!ok) { sb_free(&out); return false; }
     } else return true;
     sb_free(body); *body = out;
     return true;
@@ -505,7 +529,7 @@ static void ev_push(int type, NetRequest *req, NetResponse *resp, char *data, si
     pthread_mutex_unlock(&g_ev_mu);
     if (net_wakeup) net_wakeup();
 }
-typedef struct { int kind; bool started; z_stream z; BrotliDecoderState *br; ZSTD_DStream *zs; } Dec;
+typedef struct { int kind; bool started, failed; z_stream z; BrotliDecoderState *br; ZSTD_DStream *zs; size_t remaining; } Dec;
 static int enc_kind(const char *enc) {
     if (!enc) return 0;
     if (str_ieq(enc, "gzip") || str_ieq(enc, "x-gzip")) return 1;
@@ -516,7 +540,7 @@ static int enc_kind(const char *enc) {
 }
 static void dec_feed(Dec *d, const char *in, size_t n, SB *out) {
     char buf[65536];
-    if (!n) return;
+    if (!n || d->failed) return;
     if (d->kind == 1 || d->kind == 2) {
         if (!d->started) { int wb = d->kind == 1 ? 15 + 16 : ((unsigned char)in[0] & 0x0f) != 8 ? -15 : 15; if (inflateInit2(&d->z, wb) != Z_OK) return; d->started = true; }
         d->z.next_in = (Bytef *)in; d->z.avail_in = (uInt)n;
@@ -529,9 +553,8 @@ static void dec_feed(Dec *d, const char *in, size_t n, SB *out) {
         do { size_t aout = sizeof buf; uint8_t *nout = (uint8_t *)buf; r = BrotliDecoderDecompressStream(d->br, &ain, &nin, &aout, &nout, NULL); sb_put(out, buf, sizeof buf - aout); }
         while (r == BROTLI_DECODER_RESULT_NEEDS_MORE_OUTPUT);
     } else if (d->kind == 4) {
-        if (!d->zs) { d->zs = ZSTD_createDStream(); ZSTD_initDStream(d->zs); }
-        ZSTD_inBuffer ib = { in, n, 0 };
-        for (;;) { ZSTD_outBuffer o = { buf, sizeof buf, 0 }; size_t r = ZSTD_decompressStream(d->zs, &o, &ib); if (ZSTD_isError(r)) break; sb_put(out, buf, o.pos); if (ib.pos >= ib.size && o.pos < sizeof buf) break; }
+        if (!d->zs) d->zs = zstd_decoder_new();
+        if (!zstd_decode(d->zs, in, n, out, &d->remaining)) d->failed = true;
     } else sb_put(out, in, n);
 }
 static void dec_free(Dec *d) {
@@ -597,7 +620,9 @@ static NetResponse *http_once(const char *method, const URL *u, const Headers *h
     }
     if (!has_ua) sb_printf(&req, "User-Agent: %s\r\n", ua);
     if (!has_accept) sb_puts(&req, "Accept: */*\r\n");
-    if (!has_ae) sb_puts(&req, "Accept-Encoding: gzip, deflate, br, zstd\r\n");
+    /* Fetch appends identity for Range, including when an encoding was supplied. */
+    if (headers_get(hdrs, "range") != NULL) sb_puts(&req, "Accept-Encoding: identity\r\n");
+    else if (!has_ae) sb_puts(&req, "Accept-Encoding: gzip, deflate, br, zstd\r\n");
     if (!has_al) sb_puts(&req, "Accept-Language: en-US,en;q=0.9\r\n");
     if (!has_ch && !strcmp(u->scheme, "https") && strstr(ua, "Chrome/")) {
         bool desk = !strcmp(ua, UA_DESKTOP);
@@ -670,7 +695,7 @@ static NetResponse *http_once(const char *method, const URL *u, const Headers *h
             if (!n) { while (conn_readline(c, &line) && line.n) {} break; }
             if (!conn_readn(c, &b, n)) { ok = false; break; }
             conn_readline(c, &line);
-            if (streaming || sinking) { if (sinking) sink_out(&dec, &b); else stream_out(&dec, &b); if (stream_cancelled()) { ok = false; break; } }
+            if (streaming || sinking) { if (sinking) sink_out(&dec, &b); else stream_out(&dec, &b); if (stream_cancelled() || dec.failed) { ok = false; break; } }
         }
     } else if (cl) {
         size_t n = strtoull(cl, NULL, 10);
@@ -680,21 +705,28 @@ static NetResponse *http_once(const char *method, const URL *u, const Headers *h
             size_t k = LMIN(n, c->rlen - c->rpos);
             sb_put(&b, c->rbuf + c->rpos, k); c->rpos += k; n -= k;
             if (sinking) sink_out(&dec, &b); else stream_out(&dec, &b);
+            if (dec.failed) { ok = false; break; }
         }
     } else {
         keep = false;
         while (conn_fill(c) > 0) {
             sb_put(&b, c->rbuf + c->rpos, c->rlen - c->rpos); c->rpos = c->rlen;
-            if (streaming || sinking) { if (sinking) sink_out(&dec, &b); else stream_out(&dec, &b); if (stream_cancelled()) { ok = !t_sink_stop; break; } }
+            if (streaming || sinking) { if (sinking) sink_out(&dec, &b); else stream_out(&dec, &b); if (stream_cancelled() || dec.failed) { ok = !t_sink_stop && !dec.failed; break; } }
         }
     }
     sb_free(&line);
-    // A partial payload is still a network failure, even after headers/chunks
-    // have been delivered. Never report an incomplete Content-Length as EOF.
-    if (!ok) { keep = false; r->error = xstrdup("truncated body"); }
+    /* Headers may already have resolved fetch(). Propagate a decoding failure
+       through the final body callback, including a started frame cut off at EOF.
+       No decoder is started for HEAD, null-body statuses or an empty body. */
+    bool decoded = true;
+    if (streaming || sinking) {
+        decoded = !dec.failed && (!dec.zs || dec.remaining == 0);
+        dec_free(&dec);
+    } else decoded = decompress(headers_get(&r->headers, "content-encoding"), &b);
+    if (!ok || !decoded) {
+        keep = false; r->error = xstrdup(decoded ? "truncated body" : "content decoding failed"); ok = false;
+    }
     if (keep) pool_put(c); else conn_close(c);
-    if (streaming || sinking) dec_free(&dec);
-    else if (!decompress(headers_get(&r->headers, "content-encoding"), &b)) DLOG("decompress failed for %s", u->host);
     if (streaming && t_copy && !t_copy_over && ok) { sb_free(&b); b = *t_copy; sb_init(t_copy); }   /* the whole body, for the cache */
     r->body_len = b.n; r->body = b.s ? b.s : xcalloc(1, 1);
     r->t_end = now_ms();

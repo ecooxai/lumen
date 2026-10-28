@@ -1,0 +1,26 @@
+<!doctype html><meta charset="utf-8"><title>Nonnegative sizing declaration controls</title><pre id="results">Running</pre><script>
+(()=>{
+ const results=[],eq=(a,b)=>{if(a!==b)throw Error(JSON.stringify(a)+' != '+JSON.stringify(b));};
+ const test=(name,fn)=>{try{fn();results.push({name,status:'PASS'});}catch(e){results.push({name,status:'FAIL',message:String(e.message||e)});}};
+ const physical=['width','height','min-width','min-height','max-width','max-height'];
+ const logical=['min-inline-size','min-block-size','max-inline-size','max-block-size'];
+ const invalid=['-10px','-1%','-0.5em','-1e-2px','-.1rem'];
+ const node=writing=>{const e=document.createElement('div');e.style.cssText='display:none;font-size:20px;writing-mode:'+writing;document.body.append(e);return e;};
+ for(const p of [...physical,...logical])for(const writing of logical.includes(p)?['horizontal-tb','vertical-rl']:['horizontal-tb'])for(const v of invalid)test(writing+' '+p+' rejects '+v+' preserving prior declaration',()=>{
+  const e=node(writing);try{e.style.setProperty(p,'30px');e.style.setProperty(p,v);eq(e.style.getPropertyValue(p),'30px');eq(getComputedStyle(e).getPropertyValue(p),'30px');eq(CSS.supports(p,v),false);}finally{e.remove();}
+ });
+ for(const p of [...physical,...logical])for(const v of ['-0px','-0%','-0'])test(p+' accepts zero '+v,()=>{
+  const e=node('horizontal-tb');try{e.style.setProperty(p,'30px');e.style.setProperty(p,v);eq(parseFloat(e.style.getPropertyValue(p)),0);eq(CSS.supports(p,v),true);}finally{e.remove();}
+ });
+ for(const p of [...physical,...logical])test(p+' cssText discards a later negative literal',()=>{
+  const e=node('horizontal-tb');try{e.style.cssText+=';'+p+':30px;'+p+':-10px';eq(e.style.getPropertyValue(p),'30px');eq(getComputedStyle(e).getPropertyValue(p),'30px');}finally{e.remove();}
+ });
+ let next=0;
+ for(const p of ['width','height','min-width','min-height'])test(p+' native stylesheet preserves prior valid declaration',()=>{
+  const e=node('horizontal-tb'),style=document.createElement('style');e.id='sizing-literal-'+(++next);style.textContent='#'+e.id+'{'+p+':30px;'+p+':-10px}';document.head.append(style);
+  try{eq(getComputedStyle(e).getPropertyValue(p),'30px');}finally{style.remove();e.remove();}
+ });
+ const pass=results.filter(x=>x.status==='PASS').length,marker='RESULTS browser-sizing-negative-literal:'+(pass===results.length?'PASS':'FAIL')+' '+pass+'/'+results.length;
+ console.log(marker);for(const row of results)console.log('SIZING_LITERAL_RESULT '+JSON.stringify(row));document.getElementById('results').textContent=marker;
+})();
+</script>

@@ -1,0 +1,195 @@
+{
+  "iteration": 160,
+  "session_iteration": 10,
+  "status": "accepted_focused_gates_broad_replay_pending",
+  "start_utc": "2026-10-28T17:49:37Z",
+  "start_scope": "Exact build start; earlier implementation belongs to the retained superseded candidates.",
+  "end_utc": "2026-10-28T17:55:06.990570+00:00",
+  "elapsed_minutes": 5.5,
+  "session_wall_minutes": 73.97,
+  "agents": [
+    "engine_integration",
+    "platform_network",
+    "validation_gate",
+    "root"
+  ],
+  "global_score": 19,
+  "scoped_score": 97,
+  "score_limit": "Inherited subjective overall estimate with no numerical weighting rubric. Scoped correctness is not Chromium parity.",
+  "changes": [
+    "Clamp resolved nonpercentage sizing math at property application; reject invalid negative literals while preserving prior declarations and valid negative margins/insets.",
+    "Map logical minimum/maximum queries to physical computed values. Resolve automatic minima from computed display, connected state, hidden ancestors and computed aspect-ratio; do not force layout or require a materialized box.",
+    "Append Accept-Encoding: identity for Range requests while preserving explicit header fields and ordinary compression defaults.",
+    "Propagate malformed, truncated and oversized-window zstd body decoding errors after response headers. Preserve valid concatenated/skippable frames, null bodies and large valid payloads."
+  ],
+  "build": {
+    "source_manifest_before": "37fa8327ed91869ac68a8974c47c78a61c76f50c1dca5c8364d4426a8508646e",
+    "source_diff_before": "5a3865ef74b0afc25a6f0ec6fe6492520bc7e62e2a580d67e0aa23cacc6b6784",
+    "head": "9a4d4ab70b5ecc0563e09c310805ff3b6b656a7f",
+    "started_utc": "2026-10-28T17:49:37Z",
+    "pid": 2979407,
+    "build_exit_code": 0,
+    "binary": "build/codex-native/lumen-astra-i160",
+    "binary_sha256": "0bce10c757a157ea202cc6528f7d611e7289d00bc768b330de436bba4a68dc3a",
+    "diff_sha256": "5a3865ef74b0afc25a6f0ec6fe6492520bc7e62e2a580d67e0aa23cacc6b6784",
+    "startup_exit_code": 0,
+    "source_diff_after": "5a3865ef74b0afc25a6f0ec6fe6492520bc7e62e2a580d67e0aa23cacc6b6784",
+    "source_manifest_after": "37fa8327ed91869ac68a8974c47c78a61c76f50c1dca5c8364d4426a8508646e",
+    "source_unchanged_during_build": true,
+    "finished_utc": "2026-10-28T17:49:57Z"
+  },
+  "source_manifest": {
+    "path": "agent/validation/iteration-160/source-manifest-after.json",
+    "sha256": "37fa8327ed91869ac68a8974c47c78a61c76f50c1dca5c8364d4426a8508646e",
+    "recorded_files": 599,
+    "all_staged_files_matched": true,
+    "definition": "Recorded source, resources, test fixtures and build inputs; not every file is a compiled translation unit or executed fixture."
+  },
+  "independent_gates": {
+    "created_utc": "2026-10-28T17:54:05.886818+00:00",
+    "binary_sha256": "0bce10c757a157ea202cc6528f7d611e7289d00bc768b330de436bba4a68dc3a",
+    "native_ctest": {
+      "pass": 137,
+      "total": 137,
+      "elapsed_s": 49.3
+    },
+    "authored_controls": {
+      "auto_minimum": 48,
+      "auto_edge": 144,
+      "aspect_state": 96,
+      "box_generation": 24,
+      "empty_zstd": 15
+    },
+    "authored_all_pass": true,
+    "cleanup_audits": {
+      "sizing38-native160": {
+        "starts": 38,
+        "actual_exits": 38,
+        "remaining_pids": 0,
+        "remaining_profiles": 0,
+        "exits_all_mark_removed": true,
+        "guard_hashes": [
+          "45643caa22bb659bc7b431acfc7b8af04d68f971c3610f4d56dcb2847d808900"
+        ]
+      },
+      "http26-native160": {
+        "starts": 26,
+        "actual_exits": 26,
+        "remaining_pids": 0,
+        "remaining_profiles": 0,
+        "exits_all_mark_removed": true,
+        "guard_hashes": [
+          "45643caa22bb659bc7b431acfc7b8af04d68f971c3610f4d56dcb2847d808900"
+        ]
+      },
+      "sizing48-native160": {
+        "starts": 1,
+        "actual_exits": 1,
+        "remaining_pids": 0,
+        "remaining_profiles": 0,
+        "exits_all_mark_removed": true,
+        "guard_hashes": [
+          "45643caa22bb659bc7b431acfc7b8af04d68f971c3610f4d56dcb2847d808900"
+        ]
+      },
+      "sizing144-native160": {
+        "starts": 1,
+        "actual_exits": 1,
+        "remaining_pids": 0,
+        "remaining_profiles": 0,
+        "exits_all_mark_removed": true,
+        "guard_hashes": [
+          "45643caa22bb659bc7b431acfc7b8af04d68f971c3610f4d56dcb2847d808900"
+        ]
+      },
+      "sizing96-native160": {
+        "starts": 1,
+        "actual_exits": 1,
+        "remaining_pids": 0,
+        "remaining_profiles": 0,
+        "exits_all_mark_removed": true,
+        "guard_hashes": [
+          "45643caa22bb659bc7b431acfc7b8af04d68f971c3610f4d56dcb2847d808900"
+        ]
+      },
+      "sizing24-native160": {
+        "starts": 1,
+        "actual_exits": 1,
+        "remaining_pids": 0,
+        "remaining_profiles": 0,
+        "exits_all_mark_removed": true,
+        "guard_hashes": [
+          "45643caa22bb659bc7b431acfc7b8af04d68f971c3610f4d56dcb2847d808900"
+        ]
+      },
+      "zstd-empty-native160": {
+        "starts": 1,
+        "actual_exits": 1,
+        "remaining_pids": 0,
+        "remaining_profiles": 0,
+        "exits_all_mark_removed": true,
+        "guard_hashes": [
+          "45643caa22bb659bc7b431acfc7b8af04d68f971c3610f4d56dcb2847d808900"
+        ]
+      }
+    },
+    "whole_goal_score": 19,
+    "scope": "Independent focused gate only; full4200 final-binary replay pending."
+  },
+  "native_resources": {
+    "label": "Owned160 nativeCTest tree",
+    "started_utc": "2026-10-28T17:50:40.813231+00:00",
+    "finished_utc": "2026-10-28T17:51:30.847696+00:00",
+    "root_pid": 2987052,
+    "comm": null,
+    "exe": null,
+    "interval_seconds": 1,
+    "samples": 50,
+    "elapsed_seconds": 50.034,
+    "cpu_one_core_equals_100": true,
+    "cpu_min": 0.0,
+    "cpu_median": 50.992,
+    "cpu_max": 157.006,
+    "cpu_last10_median": 21.5,
+    "rss_peak_mb": 335.843,
+    "rss_final_mb": 20.308,
+    "pss_peak_mb": 211.47,
+    "csv": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261028-session3/native160-gate/resources.csv",
+    "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+  },
+  "sizing_wpt": {
+    "selected_urls": 38,
+    "fully_passing_urls": 18,
+    "passed_subtests": 213,
+    "reported_subtests": 326,
+    "pass_identity_gains": 56,
+    "pass_identity_losses": 0
+  },
+  "http_wpt": {
+    "selected_urls": 26,
+    "fully_passing_urls": 25,
+    "passed_subtests": 88,
+    "reported_subtests": 89,
+    "pass_identity_gains": 26,
+    "pass_identity_losses": 0,
+    "chromium_passed_subtests": 88
+  },
+  "native_target_controls": {
+    "range": 42,
+    "zstd": 258
+  },
+  "reference_limits": [
+    "Chromium passes 128/144 aspect/box controls, 76/96 aspect-state controls and 20/24 contents/box controls; failures preserve the separately resolved current-draft aspect-ratio expectations. They are authored controls, not upstream WPT gains.",
+    "Non-item flex/grid containers retain interoperable zero resolution while CSSWG issue14429 remains open.",
+    "The 8MiB zstd limit bounds the back-reference window, not total response size or total memory; streaming gzip/Brotli error paths are not comprehensively repaired.",
+    "The original157 RAF failure and all superseded-candidate regressions remain recorded.",
+    "Quiet balanced performance and final 4200-variant replay remain pending; no full-WPT or end-to-end speed claim yet."
+  ],
+  "standards": [
+    "https://drafts.csswg.org/css-sizing-3/#valdef-width-auto",
+    "https://lists.w3.org/Archives/Public/public-css-archive/2025Mar/1114.html",
+    "https://github.com/w3c/csswg-drafts/issues/14429",
+    "https://fetch.spec.whatwg.org/"
+  ],
+  "checkpoint": "Tenth meaningful session iteration; exact local source checkpoint sealed. Publication remains subject to the actual recorded automatic-review blocks."
+}

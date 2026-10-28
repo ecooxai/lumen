@@ -1,0 +1,6 @@
+<!doctype html><meta charset="utf-8"><title>Automatic minimum sizing controls</title><pre id="results"></pre><script>
+(()=>{const rows=[];for(const parentDisplay of ['block','flex','grid'])for(const childDisplay of ['block','none'])for(const position of ['static','absolute'])for(const property of ['min-width','min-height','min-inline-size','min-block-size']){
+const parent=document.createElement('div'),child=document.createElement('div');parent.style.display=parentDisplay;child.style.cssText='display:'+childDisplay+';position:'+position;child.style.setProperty(property,'auto');parent.append(child);document.body.append(parent);
+const expected=parentDisplay!=='block'&&childDisplay!=='none'&&position==='static'?'auto':'0px',actual=getComputedStyle(child).getPropertyValue(property),name=[parentDisplay,childDisplay,position,property].join(' ');rows.push({name,expected,actual,status:actual===expected?'PASS':'FAIL'});parent.remove();}
+for(const row of rows)console.log('SIZING_AUTO_RESULT '+JSON.stringify(row));const pass=rows.filter(r=>r.status==='PASS').length,marker='RESULTS browser-sizing-auto-minimum:'+(pass===rows.length?'PASS':'FAIL')+' '+pass+'/'+rows.length;console.log(marker);document.getElementById('results').textContent=marker;})();
+</script>

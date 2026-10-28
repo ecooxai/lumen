@@ -431,6 +431,25 @@ static void free_toks(char **t, int n) { for (int i = 0; i < n; i++) free(t[i]);
 
 typedef struct { ComputedStyle *st; const ComputedStyle *par; StyleEngine *e; Node *el; float em, rem; const MediaCtx *mc; } ACtx;
 static bool alen(ACtx *c, const char *v, Length *out) { return css_parse_length(v, out, c->em, c->rem, c->mc); }
+/* Sizing math is range-clamped once its computed length is independent of a
+ * percentage reference. Keep unresolved percentages/comparisons intact for
+ * layout; margin and inset values deliberately use the unrestricted parser. */
+static bool alen_size(ACtx *c, const char *v, Length *out) {
+    Length value = *out;
+    if (!alen(c, v, &value)) return false;
+    while (is_ws((unsigned char)*v)) v++;
+    bool math = (isalpha((unsigned char)*v) || str_istarts(v, "-webkit-")) && strchr(v, '(');
+    if (value.kind == LK_LEN) {
+        /* Negative literals are invalid declarations, not values to clamp. Do
+           not overwrite an earlier valid declaration when native CSS parses one. */
+        if (!math && (value.px < 0 || value.pct < 0)) return false;
+        if (math && !value.pct && !value.pctu && !value.mm && value.px < 0) value.px = 0;
+        /* Canonicalize signed zero while retaining the percentage unit hint. */
+        if (!value.mm) { if (value.px == 0) value.px = 0.0f; if (value.pct == 0) value.pct = 0.0f; }
+    }
+    *out = value;
+    return true;
+}
 static float alen_px(ACtx *c, const char *v, float def) { Length l; if (alen(c, v, &l) && l.kind == LK_LEN) return l.px; return def; }
 
 static void set4(Length *dst, ACtx *c, const char *v) {
@@ -1812,7 +1831,7 @@ apply:
         else if (!strcmp(P, "grid-template-areas")) { free(st->grid_areas); st->grid_areas = parse_grid_areas(val); }
         break;
     case 'h':
-        if (!strcmp(P, "height")) alen(&c, val, &st->height);
+        if (!strcmp(P, "height")) alen_size(&c, val, &st->height);
         break;
     case 'i':
         if (!strcmp(P, "inset")) set4(st->inset, &c, val);
@@ -1855,10 +1874,10 @@ apply:
         else if (!strcmp(P, "margin-block-end")) alen(&c, val, &st->margin[2]);
         else if (!strcmp(P, "margin-inline")) { char *t[2]; int n = split_ws(val, t, 2); if (n) { alen(&c, t[0], &st->margin[3]); alen(&c, t[n - 1], &st->margin[1]); } free_toks(t, n); }
         else if (!strcmp(P, "margin-block")) { char *t[2]; int n = split_ws(val, t, 2); if (n) { alen(&c, t[0], &st->margin[0]); alen(&c, t[n - 1], &st->margin[2]); } free_toks(t, n); }
-        else if (!strcmp(P, "min-width")) { alen(&c, val, &st->min_width); }
-        else if (!strcmp(P, "min-height")) alen(&c, val, &st->min_height);
-        else if (!strcmp(P, "max-width")) alen(&c, val, &st->max_width);
-        else if (!strcmp(P, "max-height")) alen(&c, val, &st->max_height);
+        else if (!strcmp(P, "min-width")) { alen_size(&c, val, &st->min_width); }
+        else if (!strcmp(P, "min-height")) alen_size(&c, val, &st->min_height);
+        else if (!strcmp(P, "max-width")) alen_size(&c, val, &st->max_width);
+        else if (!strcmp(P, "max-height")) alen_size(&c, val, &st->max_height);
         break;
     case 'o':
         if (!strcmp(P, "opacity")) { float x = strtof(val, NULL); if (strchr(val, '%')) x /= 100; st->opacity = LCLAMP(x, 0, 1); }
@@ -1931,7 +1950,7 @@ apply:
         else if (!strcmp(P, "vertical-align")) { static const char *const va[] = { "baseline", "top", "middle", "bottom", "text-top", "text-bottom", "sub", "super", NULL }; k = kw(val, va); if (k >= 0) st->vertical_align = (uint8_t)k; else if (alen(&c, val, &l)) { st->vertical_align = VA_LENGTH; st->vertical_align_len = l.px + l.pct * st->font_size / 100; } }
         break;
     case 'w':
-        if (!strcmp(P, "width")) alen(&c, val, &st->width);
+        if (!strcmp(P, "width")) alen_size(&c, val, &st->width);
         else if (!strcmp(P, "white-space") || !strcmp(P, "white-space-collapse")) { static const char *const ws[] = { "normal", "nowrap", "pre", "pre-wrap", "pre-line", "break-spaces", NULL }; k = kw(val, ws); if (k >= 0) st->white_space = (uint8_t)k; else if (str_ieq(val, "preserve")) st->white_space = WS_PRE_WRAP; }
         else if (!strcmp(P, "word-break")) st->word_break = str_ieq(val, "break-all") ? 1 : str_ieq(val, "break-word") ? 2 : 0;
         else if (!strcmp(P, "word-spacing")) st->word_spacing = str_ieq(val, "normal") ? 0 : alen_px(&c, val, 0);
@@ -4743,7 +4762,7 @@ static void len_str(SB *b, Length l, const char *au) {
     else if (l.kind == LK_MIN_CONTENT) sb_puts(b, "min-content");
     else if (l.kind == LK_MAX_CONTENT) sb_puts(b, "max-content");
     else if (l.kind == LK_FIT_CONTENT) sb_puts(b, "fit-content");
-    else if (l.pct && l.px) sb_printf(b, "calc(%g%% + %gpx)", l.pct, l.px);
+    else if (l.pct && l.px) sb_printf(b, "calc(%g%% %c %gpx)", l.pct, l.px < 0 ? '-' : '+', fabsf(l.px));
     else if (l.pct || (l.pctu && !l.px)) sb_printf(b, "%g%%", l.pct);
     else sb_printf(b, "%gpx", l.px);
 }
@@ -5050,6 +5069,9 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
         if (v) { sb_puts(&b, v); return sb_take(&b); }
     }
     if (!s) return sb_take(&b);
+    /* Logical minimum/maximum sizes expose the same computed range as their
+       physical counterparts, using this element or pseudo-element's mode. */
+    if (!strncmp(prop, "min-", 4) || !strncmp(prop, "max-", 4)) prop = logical_size_prop(prop, s->writing_mode != 0);
     if (!strcmp(prop, "background-position") || !strcmp(prop, "background-position-x") || !strcmp(prop, "background-position-y")) return bg_position_computed(s, !strcmp(prop, "background-position-x") ? 0 : !strcmp(prop, "background-position-y") ? 1 : -1);
     static const char *const ds[] = { "none", "inline", "block", "inline-block", "flex", "inline-flex", "grid", "inline-grid", "list-item", "table", "inline-table", "table-row", "table-cell", "table-row-group", "table-header-group", "table-footer-group", "table-column", "table-column-group", "table-caption", "contents", "flow-root" };
     static const char *const ps[] = { "static", "relative", "absolute", "fixed", "sticky" };
@@ -5114,8 +5136,33 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
             sb_printf(&b, "%gpx", v > 0 ? v : 0);
         } else len_str(&b, W ? s->width : s->height, "auto");
     }
-    else if (!strcmp(prop, "min-width")) len_str(&b, s->min_width, "auto");
-    else if (!strcmp(prop, "min-height")) len_str(&b, s->min_height, "auto");
+    else if (!strcmp(prop, "min-width") || !strcmp(prop, "min-height")) {
+        /* The resolved automatic minimum is zero for ordinary boxes; flex and
+           grid items retain auto. Logical queries arrive through the same
+           mapping above, so their range and automatic-value rules agree. */
+        Length minimum = !strcmp(prop, "min-width") ? s->min_width : s->min_height;
+        const char *automatic = "auto";
+        if (minimum.kind == LK_AUTO) {
+            const Node *parent = el ? (s == el->style ? el->parent : el) : NULL;
+            while (parent && parent->style && parent->style->display == D_CONTENTS) parent = parent->parent;
+            const ComputedStyle *ps = parent ? parent->style : NULL;
+            /* A computed-style query need not materialize layout boxes. Infer
+               box generation from the computed tree rather than a lazy pointer. */
+            bool box = el && (el->flags & NF_CONNECTED) && s->display != D_NONE && s->display != D_CONTENTS;
+            for (const Node *a = parent; a && box; a = a->parent)
+                if (a->style && a->style->display == D_NONE) box = false;
+            bool item = box && s->position != P_ABSOLUTE && s->position != P_FIXED && ps &&
+                (ps->display == D_FLEX || ps->display == D_INLINE_FLEX || ps->display == D_GRID || ps->display == D_INLINE_GRID);
+            const GenProp *aspect = gen_prop("aspect-ratio");
+            const char *ratio = aspect ? gen_value(s, aspect) : NULL;
+            /* CSS Sizing's resolved-value exception requires initial auto
+               aspect-ratio. Inspect the computed property, not a float that
+               also represents degenerate ratios or intrinsic image ratios. */
+            bool noninitial_ratio = ratio && !str_ieq(ratio, "auto");
+            automatic = box && (item || noninitial_ratio) ? "auto" : "0px";
+        }
+        len_str(&b, minimum, automatic);
+    }
     else if (!strcmp(prop, "max-width")) len_str(&b, s->max_width, "none");
     else if (!strcmp(prop, "max-height")) len_str(&b, s->max_height, "none");
     else if (!strcmp(prop, "top") || !strcmp(prop, "right") || !strcmp(prop, "bottom") || !strcmp(prop, "left")) {

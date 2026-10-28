@@ -1,0 +1,136 @@
+{
+  "iteration": 157,
+  "status": "rejected_and_superseded",
+  "start_utc": "2026-10-28T17:25:55Z",
+  "start_scope": "First exact recorded build timestamp; earlier implementation work overlaps156.",
+  "end_utc": "2026-10-28T17:45:41.897540+00:00",
+  "elapsed_minutes": 19.78,
+  "session_wall_minutes": 64.55,
+  "agents": [
+    "engine_recovery",
+    "engine_integration",
+    "validation_recovery",
+    "validation_gate",
+    "root"
+  ],
+  "global_score": 19,
+  "scoped_score": 88,
+  "build": {
+    "source_manifest_before": "a58e07a21cec7c46ab6b039e9db9a15e1500632c1f8af83e6df7493736bef76c",
+    "source_diff_before": "03f8a447ec70f8d9b77493da40ea9fbdddb4c43254b448d04303efcbba0ba977",
+    "head": "5d1d09b0b3c22f0e8e13912fc58d8d72857018f6",
+    "started_utc": "2026-10-28T17:25:55Z",
+    "pid": 2797100,
+    "build_exit_code": 0,
+    "binary": "build/codex-native/lumen-astra-i157",
+    "binary_sha256": "f5cf59da461b8d8ab15aa2c4ae4bc4cca793d97ee11e63853c8629953b7a051b",
+    "diff_sha256": "03f8a447ec70f8d9b77493da40ea9fbdddb4c43254b448d04303efcbba0ba977",
+    "startup_exit_code": 0,
+    "source_diff_after": "03f8a447ec70f8d9b77493da40ea9fbdddb4c43254b448d04303efcbba0ba977",
+    "source_manifest_after": "a58e07a21cec7c46ab6b039e9db9a15e1500632c1f8af83e6df7493736bef76c",
+    "source_unchanged_during_build": true,
+    "finished_utc": "2026-10-28T17:26:29Z"
+  },
+  "ctest": {
+    "passed": 134,
+    "total": 135,
+    "seconds": 97.93,
+    "failure": "js_raf_throttle: throttled second49 (expected10..20)",
+    "resources": {
+      "label": "owned native157 CTest tree",
+      "started_utc": "2026-10-28T17:28:45.102953+00:00",
+      "finished_utc": "2026-10-28T17:30:23.176450+00:00",
+      "root_pid": 2819461,
+      "comm": null,
+      "exe": null,
+      "interval_seconds": 1,
+      "samples": 98,
+      "elapsed_seconds": 98.074,
+      "cpu_one_core_equals_100": true,
+      "cpu_min": 0.0,
+      "cpu_median": 70.001,
+      "cpu_max": 144.984,
+      "cpu_last10_median": 35.9995,
+      "rss_peak_mb": 282.927,
+      "rss_final_mb": 38.236,
+      "pss_peak_mb": 183.472,
+      "csv": "agent/validation/linux-wpt-20261028-session3/native157/resources.csv",
+      "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+    }
+  },
+  "authored_controls": {
+    "sizing_range": 56,
+    "negative_literal": 114
+  },
+  "wpt_summary": {
+    "baseline_observed_urls": 38,
+    "baseline_observed_subtests": 326,
+    "baseline_pass_subtests": 157,
+    "baseline_fully_passing_urls": 14,
+    "baseline_harness_ok_zero_subtests": 0,
+    "candidate_observed_urls": 38,
+    "candidate_observed_subtests": 326,
+    "candidate_pass_subtests": 211,
+    "candidate_fully_passing_urls": 16,
+    "candidate_harness_ok_zero_subtests": 0,
+    "chromium_observed_urls": 38,
+    "chromium_observed_subtests": 326,
+    "chromium_pass_subtests": 292,
+    "chromium_fully_passing_urls": 28,
+    "chromium_harness_ok_zero_subtests": 0,
+    "chromium_passing_subtests": 292,
+    "baseline_matches_chromium_pass": 139,
+    "candidate_matches_chromium_pass": 193,
+    "candidate_missing_chromium_assertions": 0,
+    "candidate_fully_matches_chromium_passing_urls": 10
+  },
+  "gains": 56,
+  "losses": [
+    [
+      "/css/css-logical/parsing/min-block-size-computed.html",
+      "Property min-block-size value 'auto'",
+      0
+    ],
+    [
+      "/css/css-logical/parsing/min-inline-size-computed.html",
+      "Property min-inline-size value 'auto'",
+      0
+    ]
+  ],
+  "followup_raf": {
+    "binary": "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/jsrun-astra-i157",
+    "sha256": "bd7d501f3084b2bd9aabb34807169a8605d8aad1f4dcaabc284beb19f541fd5d",
+    "fixture_sha256": "77c1df843226fb43a267739933c61bdae647bf7dfcf90293f4ea7ee1a36a212b",
+    "runs": [
+      {
+        "trial": 0,
+        "exit_code": 0,
+        "seconds": 4.076640844345093,
+        "pass": true,
+        "result_lines": [
+          "[js log] RESULTS raf-throttle:PASS"
+        ]
+      },
+      {
+        "trial": 1,
+        "exit_code": 0,
+        "seconds": 4.096252918243408,
+        "pass": true,
+        "result_lines": [
+          "[js log] RESULTS raf-throttle:PASS"
+        ]
+      },
+      {
+        "trial": 2,
+        "exit_code": 0,
+        "seconds": 4.071305751800537,
+        "pass": true,
+        "result_lines": [
+          "[js log] RESULTS raf-throttle:PASS"
+        ]
+      }
+    ],
+    "caveat": "Original157 native gate failure retained. Repetitions do not prove source causation or a fix."
+  },
+  "decision": "Do not accept sizing157 because two upstream logical auto regressions and one native gate failure are preserved.158 repairs ordinary/flex auto serialization;159 separately accounts for noninitial computed aspect-ratio and no-box behavior. Successful RAF repetitions do not establish a source fix or cause."
+}
