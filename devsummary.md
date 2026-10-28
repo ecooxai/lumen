@@ -548,3 +548,25 @@ Publication history note: the unpublished metadata snapshot was preserved under 
 Automatic publication review rejected exporting the tracked comparator agent/validation/compare_wpt_runs_v2.py in a new archive: the denied harness payload is not authorized by the general source-snapshot request. The full development branch and history are preserved locally and are not pushed. The separately reviewed cloud showcase publishes an engine-source snapshot with all 584 recorded inputs, the explicit prompt, build configuration and required Linux embed generator; validation/progress/agents tooling, other tools scripts, Git history, raw results and profiles are omitted. No new build was run, and complete standalone validation or Android build reproducibility is not claimed.
 
 Final measured results and engine hashes remain unchanged. The public aggregate report and source inclusion manifest carry the exact final metadata and artifact identities.
+
+
+## Local closing handoff — 2026-10-28T14:09:47.029539+00:00
+
+Recorded 297.58 elapsed minutes after the 2026-10-28 09:12:12 UTC session start. This closing commit is local documentation metadata after the distributed snapshot; it changes neither the tested engine nor any published artifact. The whole-goal estimate remains 19/100 against the requested 98/100. Full WPT coverage and Chromium parity were not achieved.
+
+- Tested engine: `0f62172b08683c7c0d89722c588af6ff94f82ca3`. All 584 recorded engine/resource/build inputs remain matched to the accepted binary. No new engine tests or builds were run during publication.
+- Distributed engine-source snapshot metadata: `602a5f2f0b40ddc809e47b872eb1ec18758b558c`. The reviewed archive contains 678 files and all 584 recorded inputs. SHA-256: `ae97e4667153cc0d51f7d6ad1bfefc0d4d516d6ec3359cfa8d16f7691cd06362` (4,450,698 bytes). It retains the exact prompt and required Linux embed generator; validation/runtime tooling, other tools scripts and Git history are omitted. Complete standalone validation and Android build reproducibility are not claimed.
+- Verified live cloud showcase: `f9405516cd136f8ad9f7484200c008c21d201665` on `gpt-6-astra-builtin-agents-rubywebterm-showcase-20261028`. Final Pages build completed at 14:01:27 UTC; the final receipt and index were verified with HTTP 200 and exact bytes at 14:01:37 UTC. The eight initial public assets were verified at 13:59:43 UTC.
+- Cloud page: https://ecooxai.github.io/lumen/ . Final delivery receipt: https://ecooxai.github.io/lumen/publication-manifest.json . Engine-source download: https://ecooxai.github.io/lumen/src.tar.gz . Exact inclusion manifest: https://ecooxai.github.io/lumen/source-inclusion-manifest.json .
+- Live preview: https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/ . Its `/src.tar.gz` serves the same reviewed engine-source bytes. The public task-board final reply was appended once at 14:00:17 UTC, preserving previous messages. No future autonomous replies were promised.
+- Final public report: 46,540 bytes, SHA-256 `b822ef66d760a7ad148a5e6bf31e337f34bb787de462c2caf99c07b67eb75c31`; 200 substantive checks plus 26 final metadata checks had zero mismatches. Public URL: https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-public-report.json .
+
+The final public report and both approved videos were independently uploaded to FileHarbor and downloaded again to verify their exact reviewed bytes:
+
+- Report: https://fileharbor-meak.basicgleam65.chatgpt.site/files/lumen-gpt-6-astra-pro/48009acb-327d-415d-8a7a-01a5313e703e/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-public-report.json .
+- Clean demo: https://fileharbor-meak.basicgleam65.chatgpt.site/files/lumen-gpt-6-astra-pro/498b3c18-b305-4ad3-a8cc-c1a911aaacba/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-demo.mp4 .
+- Credited showcase: https://fileharbor-meak.basicgleam65.chatgpt.site/files/lumen-gpt-6-astra-pro/f57ab91b-6bd4-4d34-8091-aa7b0ae9cead/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-showcase.mp4 .
+
+**Publication boundary:** automatic review rejected exporting the tracked comparator `agent/validation/compare_wpt_runs_v2.py` in the complete source archive, including an evidence-backed re-review. The full development branch `gpt-6-astra-builtin-agent-lumen-linux-conformance-20261028-0920` and its history remain local. They were not pushed through another route. Only the isolated reviewed showcase branch was pushed; the default branch and local-only backup refs were not published. The seven pre-existing user fixtures remain untouched.
+
+**Next engineering priority:** profile the measured Grid slowdown before adding more work. Final median elapsed time increased 39.0% for Grid, 7.1% for absolute layout and 1.0% for DOM. Investigate repeated declaration parsing and line-name allocation in the resolved-track getter while preserving the accepted correctness behavior. These are candidate costs, not an established explanation for the whole Grid regression. Keep all observed conformance losses and harness-completion regressions in future comparisons.
